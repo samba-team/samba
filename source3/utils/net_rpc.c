@@ -7501,9 +7501,15 @@ bool net_rpc_check(struct net_context *c, unsigned flags)
 	if (!net_find_server(c, NULL, flags, &server_ss, &server_name))
 		return false;
 
-	status = cli_connect_nb(server_name, &server_ss, 0, 0x20,
-				lp_netbios_name(), SMB_SIGNING_IPC_DEFAULT,
-				0, &cli);
+	status = cli_connect_nb(c,
+				server_name,
+				&server_ss,
+				0,
+				0x20,
+				lp_netbios_name(),
+				SMB_SIGNING_IPC_DEFAULT,
+				0,
+				&cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
 			DBG_ERR("NetBIOS support disabled, unable to connect\n");

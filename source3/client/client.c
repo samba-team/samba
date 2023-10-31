@@ -6407,7 +6407,8 @@ static int do_message_op(struct cli_credentials *creds)
 		return 1;
 	}
 
-	status = cli_connect_nb(desthost, have_ip ? &dest_ss : NULL,
+	status = cli_connect_nb(talloc_tos(),
+				desthost, have_ip ? &dest_ss : NULL,
 				port ? port : NBT_SMB_PORT, name_type,
 				lp_netbios_name(),
 				SMB_SIGNING_OFF,

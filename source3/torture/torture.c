@@ -157,8 +157,15 @@ static struct cli_state *open_nbt_connection(void)
 		flags |= CLI_FULL_CONNECTION_FORCE_DOS_ERRORS;
 	}
 
-	status = cli_connect_nb(host, NULL, port_to_use, 0x20, myname,
-				signing_state, flags, &c);
+	status = cli_connect_nb(NULL,
+				host,
+				NULL,
+				port_to_use,
+				0x20,
+				myname,
+				signing_state,
+				flags,
+				&c);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect with %s. Error %s\n", host, nt_errstr(status) );
 		return NULL;

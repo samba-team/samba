@@ -44,8 +44,15 @@ NTSTATUS remote_password_change(const char *remote_machine,
 
 	*err_str = NULL;
 
-	result = cli_connect_nb(remote_machine, NULL, 0, 0x20, NULL,
-				SMB_SIGNING_IPC_DEFAULT, 0, &cli);
+	result = cli_connect_nb(talloc_tos(),
+				remote_machine,
+				NULL,
+				0,
+				0x20,
+				NULL,
+				SMB_SIGNING_IPC_DEFAULT,
+				0,
+				&cli);
 	if (!NT_STATUS_IS_OK(result)) {
 		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED)) {
 			if (asprintf(err_str, "Unable to connect to SMB server on "

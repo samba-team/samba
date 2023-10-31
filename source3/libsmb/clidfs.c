@@ -178,10 +178,20 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = cli_connect_nb(
-		server, dest_ss, port, name_type, NULL,
-		signing_state,
-		flags, &c);
+	/*
+	 * The functions cli_resolve_path() and cli_cm_open() might not create a
+	 * new cli context, but might return an already existing one. This
+	 * forces us to have a long lived cli allocated on the NULL context.
+	 */
+	status = cli_connect_nb(NULL,
+				server,
+				dest_ss,
+				port,
+				name_type,
+				NULL,
+				signing_state,
+				flags,
+				&c);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {

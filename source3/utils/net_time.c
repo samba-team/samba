@@ -34,8 +34,15 @@ static time_t cli_servertime(const char *host,
 	struct cli_state *cli = NULL;
 	NTSTATUS status;
 
-	status = cli_connect_nb(host, dest_ss, 0, 0x20, lp_netbios_name(),
-				SMB_SIGNING_DEFAULT, 0, &cli);
+	status = cli_connect_nb(talloc_tos(),
+				host,
+				dest_ss,
+				0,
+				0x20,
+				lp_netbios_name(),
+				SMB_SIGNING_DEFAULT,
+				0,
+				&cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
 			fprintf(stderr, "Can't contact server %s. NetBIOS support disabled,"

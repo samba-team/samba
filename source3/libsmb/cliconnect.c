@@ -2751,15 +2751,21 @@ static NTSTATUS cli_connect_nb_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_connect_nb(const char *host, const struct sockaddr_storage *dest_ss,
-			uint16_t port, int name_type, const char *myname,
-			enum smb_signing_setting signing_state, int flags, struct cli_state **pcli)
+NTSTATUS cli_connect_nb(TALLOC_CTX *mem_ctx,
+			const char *host,
+			const struct sockaddr_storage *dest_ss,
+			uint16_t port,
+			int name_type,
+			const char *myname,
+			enum smb_signing_setting signing_state,
+			int flags,
+			struct cli_state **pcli)
 {
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	ev = samba_tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(mem_ctx);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -2774,7 +2780,7 @@ NTSTATUS cli_connect_nb(const char *host, const struct sockaddr_storage *dest_ss
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = cli_connect_nb_recv(req, NULL, pcli);
+	status = cli_connect_nb_recv(req, mem_ctx, pcli);
 fail:
 	TALLOC_FREE(ev);
 	return status;

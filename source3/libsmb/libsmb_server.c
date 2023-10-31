@@ -529,9 +529,15 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 			/*
 			 * Try 139 first for IPC$
 			 */
-			status = cli_connect_nb(server_n, NULL, NBT_SMB_PORT, 0x20,
-					smbc_getNetbiosName(context),
-					signing_state, flags, &c);
+			status = cli_connect_nb(NULL,
+						server_n,
+						NULL,
+						NBT_SMB_PORT,
+						0x20,
+						smbc_getNetbiosName(context),
+						signing_state,
+						flags,
+						&c);
 		}
 	}
 
@@ -539,9 +545,15 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		/*
 		 * No IPC$ or 139 did not work
 		 */
-		status = cli_connect_nb(server_n, NULL, port, 0x20,
+		status = cli_connect_nb(NULL,
+					server_n,
+					NULL,
+					port,
+					0x20,
 					smbc_getNetbiosName(context),
-					signing_state, flags, &c);
+					signing_state,
+					flags,
+					&c);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {

@@ -82,9 +82,15 @@ NTSTATUS cli_tree_connect_creds(struct cli_state *cli,
 NTSTATUS cli_tree_connect(struct cli_state *cli, const char *share,
 			  const char *dev, const char *pass);
 NTSTATUS cli_tdis(struct cli_state *cli);
-NTSTATUS cli_connect_nb(const char *host, const struct sockaddr_storage *dest_ss,
-			uint16_t port, int name_type, const char *myname,
-			enum smb_signing_setting signing_state, int flags, struct cli_state **pcli);
+NTSTATUS cli_connect_nb(TALLOC_CTX *mem_ctx,
+			const char *host,
+			const struct sockaddr_storage *dest_ss,
+			uint16_t port,
+			int name_type,
+			const char *myname,
+			enum smb_signing_setting signing_state,
+			int flags,
+			struct cli_state **pcli);
 NTSTATUS cli_start_connection(struct cli_state **output_cli,
 			      const char *my_name,
 			      const char *dest_host,
