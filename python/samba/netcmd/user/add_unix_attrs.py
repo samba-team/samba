@@ -192,7 +192,7 @@ The users gecos field will be set to 'User4 test'
                                    scope=ldb.SCOPE_SUBTREE,
                                    expression=search_filter)
                 for msg in res:
-                    gid_number=msg.get('gidNumber')
+                    gid_number = msg.get('gidNumber')
             except IndexError:
                 raise CommandError('Domain Users does not have a'
                                    ' gidNumber attribute')
