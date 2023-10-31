@@ -607,6 +607,11 @@ static NTSTATUS auth_generate_session_info_pac(struct auth4_context *auth_ctx,
 	tmp_ctx = talloc_named(mem_ctx, 0, "gensec_gssapi_session_info context");
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
+	/*
+	 * FIXME: To correctly create the security token, we also need to get the
+	 * claims info, device info, and device claims info from the PAC. For now,
+	 * we support claims only in the KDC.
+	 */
 	status = kerberos_pac_blob_to_user_info_dc(tmp_ctx,
 						   *pac_blob,
 						   smb_krb5_context->krb5_context,
