@@ -474,17 +474,14 @@ bool run_posix_readlink_test(int dummy)
 			.name = symlnk_dangling,
 			.target = symlnk_dst_dangling,
 			.expected = symlnk_dangling,
-			.attr = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = symlnk_in_share,
 			.target = symlnk_dst_in_share,
 			.expected = symlnk_in_share,
-			.attr = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = symlnk_outside_share,
 			.target = symlnk_dst_outside_share,
 			.expected = symlnk_outside_share,
-			.attr = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = NULL,
 		}
