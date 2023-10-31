@@ -170,7 +170,7 @@ class cmd_user_rename(Command):
         expected_cn = samdb.fullname_from_names(old_attrs=old_user,
                                         fallback_default=old_user["sAMAccountName"])
         must_change_cn = str(old_cn) != str(new_user_cn) and \
-                         (str(old_cn) == str(expected_cn) or \
+                         (str(old_cn) == str(expected_cn) or
                           reset_cn or bool(force_new_cn))
 
         new_user_dn = ldb.Dn(samdb, "CN=%s" % new_user_cn)
