@@ -2737,6 +2737,7 @@ static void cli_connect_nb_done(struct tevent_req *subreq)
 }
 
 static NTSTATUS cli_connect_nb_recv(struct tevent_req *req,
+				    TALLOC_CTX *mem_ctx,
 				    struct cli_state **pcli)
 {
 	struct cli_connect_nb_state *state = tevent_req_data(
@@ -2746,7 +2747,7 @@ static NTSTATUS cli_connect_nb_recv(struct tevent_req *req,
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
-	*pcli = talloc_move(NULL, &state->cli);
+	*pcli = talloc_move(mem_ctx, &state->cli);
 	return NT_STATUS_OK;
 }
 
@@ -2773,7 +2774,7 @@ NTSTATUS cli_connect_nb(const char *host, const struct sockaddr_storage *dest_ss
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = cli_connect_nb_recv(req, pcli);
+	status = cli_connect_nb_recv(req, NULL, pcli);
 fail:
 	TALLOC_FREE(ev);
 	return status;
@@ -2894,7 +2895,7 @@ static void cli_start_connection_connected(struct tevent_req *subreq)
 		req, struct cli_start_connection_state);
 	NTSTATUS status;
 
-	status = cli_connect_nb_recv(subreq, &state->cli);
+	status = cli_connect_nb_recv(subreq, state, &state->cli);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -2948,7 +2949,7 @@ static NTSTATUS cli_start_connection_recv(struct tevent_req *req,
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
-	*output_cli = state->cli;
+	*output_cli = talloc_move(NULL, &state->cli);
 
 	return NT_STATUS_OK;
 }
