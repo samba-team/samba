@@ -45,7 +45,6 @@ from samba.tests.krb5.raw_testcase import RawKerberosTest
 from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_BADOPTION,
     KDC_ERR_GENERIC,
-    KDC_ERR_MODIFIED,
     KDC_ERR_POLICY,
     NT_PRINCIPAL,
 )
