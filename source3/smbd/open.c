@@ -3752,9 +3752,6 @@ static void possibly_set_archive(struct connection_struct *conn,
 	if (!set_archive) {
 		return;
 	}
-	if (fsp->fsp_flags & FSP_POSIX_FLAGS_OPEN) {
-		return;
-	}
 
 	ret = file_set_dosmode(conn,
 			       smb_fname,

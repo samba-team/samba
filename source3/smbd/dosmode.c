@@ -925,6 +925,10 @@ int file_set_dosmode(connection_struct *conn,
 		return -1;
 	}
 
+	if (fsp->fsp_flags & FSP_POSIX_FLAGS_OPEN) {
+		return;
+	}
+
 	unixmode = smb_fname->st.st_ex_mode;
 
 	get_acl_group_bits(conn, smb_fname->fsp, &smb_fname->st.st_ex_mode);
