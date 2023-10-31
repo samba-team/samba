@@ -186,7 +186,7 @@ The users gecos field will be set to 'User4 test'
 
         if gid_number is None:
             search_filter = ("(samaccountname={})"
-                              .format(ldb.binary_encode('Domain Users')))
+                             .format(ldb.binary_encode('Domain Users')))
             try:
                 res = samdb.search(domaindn,
                                    scope=ldb.SCOPE_SUBTREE,

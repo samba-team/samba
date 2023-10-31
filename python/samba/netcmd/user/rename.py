@@ -154,7 +154,7 @@ class cmd_user_rename(Command):
 
         # use the sAMAccountname as CN if no name is given
         new_fallback_cn = samaccountname if samaccountname is not None \
-                                     else old_user["sAMAccountName"]
+            else old_user["sAMAccountName"]
 
         if force_new_cn is not None:
             new_user_cn = force_new_cn
@@ -168,10 +168,10 @@ class cmd_user_rename(Command):
         # CN must change, if the new CN is different and the old CN is the
         # standard CN or the change is forced with force-new-cn or reset-cn
         expected_cn = samdb.fullname_from_names(old_attrs=old_user,
-                                        fallback_default=old_user["sAMAccountName"])
-        must_change_cn = str(old_cn) != str(new_user_cn) and \
-                         (str(old_cn) == str(expected_cn) or
-                          reset_cn or bool(force_new_cn))
+                                                fallback_default=old_user["sAMAccountName"])
+        must_change_cn = str(old_cn) != str(new_user_cn) and (
+            str(old_cn) == str(expected_cn) or
+            reset_cn or bool(force_new_cn))
 
         new_user_dn = ldb.Dn(samdb, "CN=%s" % new_user_cn)
         new_user_dn.add_base(user_parent_dn)

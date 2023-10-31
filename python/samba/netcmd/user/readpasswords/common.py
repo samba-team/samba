@@ -628,7 +628,7 @@ class GetPasswordCommand(Command):
                 h_value = get_string(h.value)
                 if (scheme_match is None and
                     h.scheme == SCHEME and
-                    h_value.startswith(scheme_prefix)):
+                        h_value.startswith(scheme_prefix)):
                     scheme_match = h_value
                 if h.scheme == SCHEME and h_value.startswith(prefix):
                     return (h_value, scheme_match)
