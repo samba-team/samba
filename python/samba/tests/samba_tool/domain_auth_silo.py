@@ -27,10 +27,10 @@ from samba.netcmd.domain.models.exceptions import ModelError
 from samba.samdb import SamDB
 from samba.sd_utils import SDUtils
 
-from .domain_auth_base import BaseAuthCmdTest
+from .domain_auth_base import SiloTest
 
 
-class AuthSiloCmdTestCase(BaseAuthCmdTest):
+class AuthSiloCmdTestCase(SiloTest):
 
     def test_list(self):
         """Test listing authentication silos in list format."""
@@ -498,7 +498,7 @@ class AuthSiloCmdTestCase(BaseAuthCmdTest):
             self.assertNotIn("Try --force", err)
 
 
-class AuthSiloMemberCmdTestCase(BaseAuthCmdTest):
+class AuthSiloMemberCmdTestCase(SiloTest):
 
     def setUp(self):
         super().setUp()

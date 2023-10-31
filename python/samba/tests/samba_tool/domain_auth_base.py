@@ -30,8 +30,8 @@ HOST = "ldap://{DC_SERVER}".format(**os.environ)
 CREDS = "-U{DC_USERNAME}%{DC_PASSWORD}".format(**os.environ)
 
 
-class BaseAuthCmdTest(SambaToolCmdTest):
-    """Base test class for samba-tool domain auth policy and silo commands."""
+class SiloTest(SambaToolCmdTest):
+    """Base test class for silo and policy related commands."""
 
     @classmethod
     def setUpClass(cls):

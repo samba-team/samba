@@ -30,10 +30,10 @@ from samba.netcmd.domain.models.exceptions import ModelError
 from samba.samdb import SamDB
 from samba.sd_utils import SDUtils
 
-from .domain_auth_base import BaseAuthCmdTest
+from .domain_auth_base import SiloTest
 
 
-class AuthPolicyCmdTestCase(BaseAuthCmdTest):
+class AuthPolicyCmdTestCase(SiloTest):
 
     def test_list(self):
         """Test listing authentication policies in list format."""
