@@ -163,17 +163,17 @@ Example5 shows how to add a new RFC2307/NIS domain enabled user account. If
                 self.outf.write("Sorry, passwords do not match.\n")
 
         if rfc2307_from_nss:
-                pwent = pwd.getpwnam(username)
-                if uid is None:
-                    uid = username
-                if uid_number is None:
-                    uid_number = pwent[2]
-                if gid_number is None:
-                    gid_number = pwent[3]
-                if gecos is None:
-                    gecos = pwent[4]
-                if login_shell is None:
-                    login_shell = pwent[6]
+            pwent = pwd.getpwnam(username)
+            if uid is None:
+                uid = username
+            if uid_number is None:
+                uid_number = pwent[2]
+            if gid_number is None:
+                gid_number = pwent[3]
+            if gecos is None:
+                gecos = pwent[4]
+            if login_shell is None:
+                login_shell = pwent[6]
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)

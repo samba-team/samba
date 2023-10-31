@@ -250,9 +250,9 @@ class GetPasswordCommand(Command):
             return None
 
         formats = [
-                "GeneralizedTime",
-                "UnixTime",
-                "TimeSpec",
+            "GeneralizedTime",
+            "UnixTime",
+            "TimeSpec",
         ]
 
         def get_virtual_format_definition(opts):
