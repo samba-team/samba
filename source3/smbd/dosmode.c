@@ -925,8 +925,10 @@ int file_set_dosmode(connection_struct *conn,
 		return -1;
 	}
 
-	if (fsp->fsp_flags & FSP_POSIX_FLAGS_OPEN) {
-		return;
+	if (smb_fname->fsp->posix_flags & FSP_POSIX_FLAGS_OPEN &&
+	    !lp_store_dos_attributes(SNUM(conn)))
+	{
+		return 0;
 	}
 
 	unixmode = smb_fname->st.st_ex_mode;

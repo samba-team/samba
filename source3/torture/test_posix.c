@@ -143,7 +143,7 @@ bool run_posix_ls_wildcard_test(int dummy)
 			.name = symlnk_in_share,
 			.target = symlnk_dst_in_share,
 			.expected = symlnk_in_share,
-			.attr_win = FILE_ATTRIBUTE_NORMAL,
+			.attr_win = FILE_ATTRIBUTE_ARCHIVE,
 			.attr_lin = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = symlnk_outside_share,
@@ -319,7 +319,7 @@ bool run_posix_ls_single_test(int dummy)
 			.name = symlnk_in_share,
 			.target = symlnk_dst_in_share,
 			.expected = symlnk_in_share,
-			.attr_win = FILE_ATTRIBUTE_NORMAL,
+			.attr_win = FILE_ATTRIBUTE_ARCHIVE,
 			.attr_lin = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = symlnk_outside_share,
