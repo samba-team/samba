@@ -1268,7 +1268,6 @@ static void comp_error(struct ace_condition_sddl_compiler_context *comp,
 	if (msg == NULL) {
 		goto fail;
 	}
-	comp->message_offset = comp->offset;
 
 	if (comp->message == NULL) {
 		/*
@@ -1276,13 +1275,8 @@ static void comp_error(struct ace_condition_sddl_compiler_context *comp,
 		 *
 		 * This is the common case.
 		 */
-		comp->message = talloc_asprintf(comp->mem_ctx,
-						"%"PRIu32": %s",
-						comp->offset, msg);
-		TALLOC_FREE(msg);
-		if (comp->message == NULL) {
-			goto fail;
-		}
+		comp->message_offset = comp->offset;
+		comp->message = msg;
 		return;
 	}
 	/*
@@ -1290,8 +1284,8 @@ static void comp_error(struct ace_condition_sddl_compiler_context *comp,
 	 * This is unlikely to happen.
 	 */
 	comp->message = talloc_asprintf(comp->mem_ctx,
-					"%s AND THEN %"PRIu32": %s",
-					comp->message, comp->offset,
+					"%s AND THEN %s",
+					comp->message,
 					msg);
 	TALLOC_FREE(msg);
 	if (comp->message == NULL) {
