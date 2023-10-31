@@ -168,7 +168,7 @@ for x in range(1, 30):
 # Add Kerberos virtual attributes
 virtual_attributes["virtualKerberosSalt"] = {}
 
-virtual_attributes_help  = "The attributes to display (comma separated). "
+virtual_attributes_help = "The attributes to display (comma separated). "
 virtual_attributes_help += "Possible supported virtual attributes: %s" % ", ".join(sorted(virtual_attributes.keys()))
 if len(disabled_virtual_attributes) != 0:
     virtual_attributes_help += "Unsupported virtual attributes: %s" % ", ".join(sorted(disabled_virtual_attributes.keys()))
@@ -469,96 +469,96 @@ class GetPasswordCommand(Command):
         def get_wDigest(i, primary_wdigest, account_name, account_upn,
                         domain, dns_domain):
             if i == 1:
-                user  = account_name
+                user = account_name
                 realm = domain
             elif i == 2:
-                user  = account_name.lower()
+                user = account_name.lower()
                 realm = domain.lower()
             elif i == 3:
-                user  = account_name.upper()
+                user = account_name.upper()
                 realm = domain.upper()
             elif i == 4:
-                user  = account_name
+                user = account_name
                 realm = domain.upper()
             elif i == 5:
-                user  = account_name
+                user = account_name
                 realm = domain.lower()
             elif i == 6:
-                user  = account_name.upper()
+                user = account_name.upper()
                 realm = domain.lower()
             elif i == 7:
-                user  = account_name.lower()
+                user = account_name.lower()
                 realm = domain.upper()
             elif i == 8:
-                user  = account_name
+                user = account_name
                 realm = dns_domain.lower()
             elif i == 9:
-                user  = account_name.lower()
+                user = account_name.lower()
                 realm = dns_domain.lower()
             elif i == 10:
-                user  = account_name.upper()
+                user = account_name.upper()
                 realm = dns_domain.upper()
             elif i == 11:
-                user  = account_name
+                user = account_name
                 realm = dns_domain.upper()
             elif i == 12:
-                user  = account_name
+                user = account_name
                 realm = dns_domain.lower()
             elif i == 13:
-                user  = account_name.upper()
+                user = account_name.upper()
                 realm = dns_domain.lower()
             elif i == 14:
-                user  = account_name.lower()
+                user = account_name.lower()
                 realm = dns_domain.upper()
             elif i == 15:
-                user  = account_upn
+                user = account_upn
                 realm = ""
             elif i == 16:
-                user  = account_upn.lower()
+                user = account_upn.lower()
                 realm = ""
             elif i == 17:
-                user  = account_upn.upper()
+                user = account_upn.upper()
                 realm = ""
             elif i == 18:
-                user  = "%s\\%s" % (domain, account_name)
+                user = "%s\\%s" % (domain, account_name)
                 realm = ""
             elif i == 19:
-                user  = "%s\\%s" % (domain.lower(), account_name.lower())
+                user = "%s\\%s" % (domain.lower(), account_name.lower())
                 realm = ""
             elif i == 20:
-                user  = "%s\\%s" % (domain.upper(), account_name.upper())
+                user = "%s\\%s" % (domain.upper(), account_name.upper())
                 realm = ""
             elif i == 21:
-                user  = account_name
+                user = account_name
                 realm = DIGEST
             elif i == 22:
-                user  = account_name.lower()
+                user = account_name.lower()
                 realm = DIGEST
             elif i == 23:
-                user  = account_name.upper()
+                user = account_name.upper()
                 realm = DIGEST
             elif i == 24:
-                user  = account_upn
+                user = account_upn
                 realm = DIGEST
             elif i == 25:
-                user  = account_upn.lower()
+                user = account_upn.lower()
                 realm = DIGEST
             elif i == 26:
-                user  = account_upn.upper()
+                user = account_upn.upper()
                 realm = DIGEST
             elif i == 27:
-                user  = "%s\\%s" % (domain, account_name)
+                user = "%s\\%s" % (domain, account_name)
                 realm = DIGEST
             elif i == 28:
                 # Differs from spec, see tests
-                user  = "%s\\%s" % (domain.lower(), account_name.lower())
+                user = "%s\\%s" % (domain.lower(), account_name.lower())
                 realm = DIGEST
             elif i == 29:
                 # Differs from spec, see tests
-                user  = "%s\\%s" % (domain.upper(), account_name.upper())
+                user = "%s\\%s" % (domain.upper(), account_name.upper())
                 realm = DIGEST
             else:
-                user  = ""
+                user = ""
 
             digests = ndr_unpack(drsblobs.package_PrimaryWDigestBlob,
                                  primary_wdigest)

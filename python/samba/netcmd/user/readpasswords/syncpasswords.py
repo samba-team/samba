@@ -706,10 +706,10 @@ samba-tool user syncpasswords --terminate \\
                                         expression="(objectClass=*)",
                                         attrs=["lastCookie"])
                 if len(res) == 0:
-                    add_ldif  = "dn: %s\n" % (dn) +\
-                                "objectClass: userCookie\n" +\
-                                "lastCookie: %s\n" % (lastCookie) +\
-                                "currentTime: %s\n" % ldb.timestring(int(time.time()))
+                    add_ldif = "dn: %s\n" % (dn) +\
+                               "objectClass: userCookie\n" +\
+                               "lastCookie: %s\n" % (lastCookie) +\
+                               "currentTime: %s\n" % ldb.timestring(int(time.time()))
                     self.cache.add_ldif(add_ldif)
                 else:
                     modify_ldif = "dn: %s\n" % (dn) +\
