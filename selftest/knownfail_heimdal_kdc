@@ -58,7 +58,6 @@
 ^samba.tests.krb5.device_tests.samba.tests.krb5.device_tests.DeviceTests.test_device_info_base_sid_resource_attrs_to_service.ad_dc
 ^samba.tests.krb5.device_tests.samba.tests.krb5.device_tests.DeviceTests.test_device_info_extra_sids_to_krbtgt.ad_dc
 ^samba.tests.krb5.device_tests.samba.tests.krb5.device_tests.DeviceTests.test_device_info_extra_sids_to_service.ad_dc
-^samba\.tests\.krb5\.device_tests\.samba\.tests\.krb5\.device_tests\.DeviceTests\.test_device_info_rodc_issued_without_asserted_identity\(ad_dc\)$
 #
 # Authentication policy tests
 #

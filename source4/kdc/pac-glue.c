@@ -2178,15 +2178,14 @@ static krb5_error_code samba_kdc_create_device_info_blob(TALLOC_CTX *mem_ctx,
 static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
 						      krb5_context context,
 						      struct ldb_context *samdb,
-						      struct samba_kdc_entry *device,
+						      const struct samba_kdc_entry_pac device,
 						      DATA_BLOB **device_info_blob)
 {
 	TALLOC_CTX *frame = NULL;
 	krb5_error_code code = EINVAL;
 	NTSTATUS nt_status;
 
-	const struct auth_user_info_dc *device_info_dc_const = NULL;
-	struct auth_user_info_dc *device_info_dc_shallow_copy = NULL;
+	const struct auth_user_info_dc *device_info = NULL;
 	struct netr_SamInfo3 *info3 = NULL;
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP *resource_groups = NULL;
 
@@ -2194,14 +2193,15 @@ static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
 
 	frame = talloc_stackframe();
 
-	code = samba_kdc_get_user_info_from_db(frame,
-					       samdb,
-					       device,
-					       device->msg,
-					       &device_info_dc_const);
+	code = samba_kdc_get_user_info_dc(frame,
+					  context,
+					  samdb,
+					  device,
+					  &device_info,
+					  NULL /* resource_groups_out */);
 	if (code) {
 		const char *krb5_err = krb5_get_error_message(context, code);
-		DBG_ERR("samba_kdc_get_user_info_from_db failed: %s\n",
+		DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
 			krb5_err != NULL ? krb5_err : "<unknown>");
 		krb5_free_error_message(context, krb5_err);
 
@@ -2209,37 +2209,7 @@ static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
 		return KRB5KDC_ERR_TGT_REVOKED;
 	}
 
-	/* Make a shallow copy of the user_info_dc structure. */
-	nt_status = authsam_shallow_copy_user_info_dc(frame,
-						      device_info_dc_const,
-						      &device_info_dc_shallow_copy);
-	device_info_dc_const = NULL;
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to allocate user_info_dc SIDs: %s\n",
-			nt_errstr(nt_status));
-		talloc_free(frame);
-		return map_errno_from_nt_status(nt_status);
-	}
-
-	nt_status = samba_kdc_add_asserted_identity(SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY,
-						    device_info_dc_shallow_copy);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to add asserted identity: %s\n",
-			nt_errstr(nt_status));
-		talloc_free(frame);
-		return KRB5KDC_ERR_TGT_REVOKED;
-	}
-
-	nt_status = samba_kdc_add_claims_valid(device_info_dc_shallow_copy);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to add Claims Valid: %s\n",
-			nt_errstr(nt_status));
-		talloc_free(frame);
-		return KRB5KDC_ERR_TGT_REVOKED;
-	}
-
-	nt_status = auth_convert_user_info_dc_saminfo3(frame, device_info_dc_shallow_copy,
+	nt_status = auth_convert_user_info_dc_saminfo3(frame, device_info,
 						       AUTH_INCLUDE_RESOURCE_GROUPS_COMPRESSED,
 						       &info3,
 						       &resource_groups);
@@ -2586,7 +2556,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				code = samba_kdc_get_device_info_blob(tmp_ctx,
 								      context,
 								      samdb,
-								      device.entry,
+								      device,
 								      &device_info_blob);
 				if (code != 0) {
 					goto done;
