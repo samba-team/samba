@@ -33,55 +33,73 @@ struct posix_test_entry {
 	const char *name;
 	const char *target;
 	const char *expected;
-	uint32_t attr;
+	uint32_t attr_win;
+	uint32_t attr_lin;
 	uint64_t returned_size;
 	bool ok;
+};
+
+enum client_flavour { WINDOWS, POSIX };
+
+struct posix_test_state {
+	enum client_flavour flavour;
+	struct posix_test_entry *entries;
 };
 
 static NTSTATUS posix_ls_fn(struct file_info *finfo,
 			    const char *name,
 			    void *_state)
 {
-	struct posix_test_entry *state =
-		(struct posix_test_entry *)_state;
+	struct posix_test_state *state =
+		(struct posix_test_state *)_state;
+	struct posix_test_entry *e = state->entries;
 
-	for (; state->name != NULL; state++) {
-		if (!strequal(finfo->name, state->expected)) {
+	for (; e->name != NULL; e++) {
+		uint32_t attr;
+		if (!strequal(finfo->name, e->expected)) {
 			continue;
 		}
-		if (state->attr != finfo->attr) {
+		if (state->flavour == WINDOWS) {
+			attr = e->attr_win;
+		} else {
+			attr = e->attr_lin;
+		}
+		if (attr != finfo->attr) {
 			break;
 		}
-		state->ok = true;
-		state->returned_size = finfo->size;
+		e->ok = true;
+		e->returned_size = finfo->size;
 		break;
 	}
 
 	return NT_STATUS_OK;
 }
 
-static void posix_test_entries_reset(struct posix_test_entry *state)
+static void posix_test_entries_reset(struct posix_test_state *state)
 {
-	for (; state->name != NULL; state++) {
-		state->ok = false;
-		state->returned_size = 0;
+	struct posix_test_entry *e = state->entries;
+
+	for (; e->name != NULL; e++) {
+		e->ok = false;
+		e->returned_size = 0;
 	}
 }
 
-static bool posix_test_entry_check(struct posix_test_entry *state,
+static bool posix_test_entry_check(struct posix_test_state *state,
 				   const char *name,
 				   bool expected,
 				   uint64_t expected_size)
 {
+	struct posix_test_entry *e = state->entries;
 	bool result = false;
 
-	for (; state->name != NULL; state++) {
-		if (strequal(name, state->name)) {
-			result = state->ok;
+	for (; e->name != NULL; e++) {
+		if (strequal(name, e->name)) {
+			result = e->ok;
 			break;
 		}
 	}
-	if (state->name == NULL) {
+	if (e->name == NULL) {
 		printf("test failed, unknown name: %s\n", name);
 		return false;
 	}
@@ -114,26 +132,33 @@ bool run_posix_ls_wildcard_test(int dummy)
 	const char *symlnk_dst_in_share = file;
 	const char *symlnk_outside_share = "symlnk_outside_share";
 	const char *symlnk_dst_outside_share = "/etc/passwd";
-	struct posix_test_entry state[] = {
+	struct posix_test_entry entries[] = {
 		{
 			.name = symlnk_dangling,
 			.target = symlnk_dst_dangling,
 			.expected = symlnk_dangling,
-			.attr = FILE_ATTRIBUTE_NORMAL,
+			.attr_win = FILE_ATTRIBUTE_INVALID,
+			.attr_lin = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = symlnk_in_share,
 			.target = symlnk_dst_in_share,
 			.expected = symlnk_in_share,
-			.attr = FILE_ATTRIBUTE_NORMAL,
+			.attr_win = FILE_ATTRIBUTE_NORMAL,
+			.attr_lin = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = symlnk_outside_share,
 			.target = symlnk_dst_outside_share,
 			.expected = symlnk_outside_share,
-			.attr = FILE_ATTRIBUTE_NORMAL,
+			.attr_win = FILE_ATTRIBUTE_INVALID,
+			.attr_lin = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = NULL,
 		}
 	};
+	struct posix_test_state _state = {
+		.entries = entries,
+	};
+	struct posix_test_state *state = &_state;
 	int i;
 	bool correct = false;
 
@@ -184,10 +209,10 @@ bool run_posix_ls_wildcard_test(int dummy)
 	}
 	fnum = (uint16_t)-1;
 
-	for (i = 0; state[i].name != NULL; i++) {
+	for (i = 0; entries[i].name != NULL; i++) {
 		status = cli_posix_symlink(cli_unix,
-					   state[i].target,
-					   state[i].name);
+					   entries[i].target,
+					   entries[i].name);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("POSIX symlink of %s failed (%s)\n",
 			       symlnk_dangling, nt_errstr(status));
@@ -196,6 +221,7 @@ bool run_posix_ls_wildcard_test(int dummy)
 	}
 
 	printf("Doing Windows ls *\n");
+	state->flavour = WINDOWS;
 
 	status = cli_list(cli_win, "*", 0, posix_ls_fn, state);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -216,6 +242,7 @@ bool run_posix_ls_wildcard_test(int dummy)
 	posix_test_entries_reset(state);
 
 	printf("Doing POSIX ls *\n");
+	state->flavour = LINUX;
 
 	status = cli_list(cli_unix, "*", 0, posix_ls_fn, state);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -281,26 +308,33 @@ bool run_posix_ls_single_test(int dummy)
 	const char *symlnk_dst_in_share = file;
 	const char *symlnk_outside_share = "symlnk_outside_share";
 	const char *symlnk_dst_outside_share = "/etc/passwd";
-	struct posix_test_entry state[] = {
+	struct posix_test_entry entries[] = {
 		{
 			.name = symlnk_dangling,
 			.target = symlnk_dst_dangling,
 			.expected = symlnk_dangling,
-			.attr = FILE_ATTRIBUTE_NORMAL,
+			.attr_win = FILE_ATTRIBUTE_INVALID,
+			.attr_lin = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = symlnk_in_share,
 			.target = symlnk_dst_in_share,
 			.expected = symlnk_in_share,
-			.attr = FILE_ATTRIBUTE_NORMAL,
+			.attr_win = FILE_ATTRIBUTE_NORMAL,
+			.attr_lin = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = symlnk_outside_share,
 			.target = symlnk_dst_outside_share,
 			.expected = symlnk_outside_share,
-			.attr = FILE_ATTRIBUTE_NORMAL,
+			.attr_win = FILE_ATTRIBUTE_INVALID,
+			.attr_lin = FILE_ATTRIBUTE_NORMAL,
 		}, {
 			.name = NULL,
 		}
 	};
+	struct posix_test_state _state = {
+		.entries = &entries[0],
+	};
+	struct posix_test_state *state = &_state;
 	int i;
 	bool correct = false;
 
@@ -377,10 +411,10 @@ bool run_posix_ls_single_test(int dummy)
 	}
 	fnum = (uint16_t)-1;
 
-	for (i = 0; state[i].name != NULL; i++) {
+	for (i = 0; entries[i].name != NULL; i++) {
 		status = cli_posix_symlink(cli_unix,
-					   state[i].target,
-					   state[i].name);
+					   entries[i].target,
+					   entries[i].name);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("POSIX symlink of %s failed (%s)\n",
 			       symlnk_dangling, nt_errstr(status));
@@ -389,6 +423,7 @@ bool run_posix_ls_single_test(int dummy)
 	}
 
 	printf("Doing Windows ls single\n");
+	state->flavour = WINDOWS;
 
 	cli_list(cli_win, symlnk_dangling, 0, posix_ls_fn, state);
 	cli_list(cli_win, symlnk_outside_share, 0, posix_ls_fn, state);
@@ -407,6 +442,7 @@ bool run_posix_ls_single_test(int dummy)
 	posix_test_entries_reset(state);
 
 	printf("Doing POSIX ls single\n");
+	state->flavour = LINUX;
 
 	cli_list(cli_unix, symlnk_dangling, 0, posix_ls_fn, state);
 	cli_list(cli_unix, symlnk_outside_share, 0, posix_ls_fn, state);
@@ -469,7 +505,7 @@ bool run_posix_readlink_test(int dummy)
 	const char *symlnk_dst_in_share = file;
 	const char *symlnk_outside_share = "symlnk_outside_share";
 	const char *symlnk_dst_outside_share = "/etc/passwd";
-	struct posix_test_entry state[] = {
+	struct posix_test_entry entries[] = {
 		{
 			.name = symlnk_dangling,
 			.target = symlnk_dst_dangling,
@@ -486,12 +522,17 @@ bool run_posix_readlink_test(int dummy)
 			.name = NULL,
 		}
 	};
+	struct posix_test_state _state = {
+		.entries = &entries[0],
+	};
+	struct posix_test_state *state = &_state;
 	int i;
 	bool correct = false;
 
 	frame = talloc_stackframe();
 
 	printf("Starting POSIX-READLINK test\n");
+	state->flavour = LINUX;
 
 	if (!torture_open_connection(&cli_unix, 0)) {
 		TALLOC_FREE(frame);
@@ -530,10 +571,10 @@ bool run_posix_readlink_test(int dummy)
 	}
 	fnum = (uint16_t)-1;
 
-	for (i = 0; state[i].name != NULL; i++) {
+	for (i = 0; entries[i].name != NULL; i++) {
 		status = cli_posix_symlink(cli_unix,
-					   state[i].target,
-					   state[i].name);
+					   entries[i].target,
+					   entries[i].name);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("POSIX symlink of %s failed (%s)\n",
 			       symlnk_dangling, nt_errstr(status));
@@ -541,24 +582,24 @@ bool run_posix_readlink_test(int dummy)
 		}
 	}
 
-	for (i = 0; state[i].name != NULL; i++) {
+	for (i = 0; entries[i].name != NULL; i++) {
 		char *target = NULL;
 
 		status = cli_readlink(
 			cli_unix,
-			state[i].name,
+			entries[i].name,
 			talloc_tos(),
 			&target,
 			NULL,
 			NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("POSIX readlink on %s failed (%s)\n",
-			       state[i].name, nt_errstr(status));
+			       entries[i].name, nt_errstr(status));
 			goto out;
 		}
-		if (strequal(target, state[i].target)) {
-			state[i].ok = true;
-			state[i].returned_size = strlen(target);
+		if (strequal(target, entries[i].target)) {
+			entries[i].ok = true;
+			entries[i].returned_size = strlen(target);
 		}
 	}
 
@@ -616,7 +657,7 @@ bool run_posix_stat_test(int dummy)
 	const char *symlnk_dst_in_share = file;
 	const char *symlnk_outside_share = "symlnk_outside_share";
 	const char *symlnk_dst_outside_share = "/etc/passwd";
-	struct posix_test_entry state[] = {
+	struct posix_test_entry entries[] = {
 		{
 			.name = symlnk_dangling,
 			.target = symlnk_dst_dangling,
@@ -633,12 +674,17 @@ bool run_posix_stat_test(int dummy)
 			.name = NULL,
 		}
 	};
+	struct posix_test_state _state = {
+		.entries = &entries[0],
+	};
+	struct posix_test_state *state = &_state;
 	int i;
 	bool correct = false;
 
 	frame = talloc_stackframe();
 
 	printf("Starting POSIX-STAT test\n");
+	state->flavour = LINUX;
 
 	if (!torture_open_connection(&cli_unix, 0)) {
 		TALLOC_FREE(frame);
@@ -677,10 +723,10 @@ bool run_posix_stat_test(int dummy)
 	}
 	fnum = (uint16_t)-1;
 
-	for (i = 0; state[i].name != NULL; i++) {
+	for (i = 0; entries[i].name != NULL; i++) {
 		status = cli_posix_symlink(cli_unix,
-					   state[i].target,
-					   state[i].name);
+					   entries[i].target,
+					   entries[i].name);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("POSIX symlink of %s failed (%s)\n",
 			       symlnk_dangling, nt_errstr(status));
@@ -688,19 +734,19 @@ bool run_posix_stat_test(int dummy)
 		}
 	}
 
-	for (i = 0; state[i].name != NULL; i++) {
+	for (i = 0; entries[i].name != NULL; i++) {
 		SMB_STRUCT_STAT sbuf;
 
 		status = cli_posix_stat(cli_unix,
-					state[i].name,
+					entries[i].name,
 					&sbuf);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("POSIX stat on %s failed (%s)\n",
-			       state[i].name, nt_errstr(status));
+			       entries[i].name, nt_errstr(status));
 			continue;
 		}
-		state[i].ok = true;
-		state[i].returned_size = sbuf.st_ex_size;
+		entries[i].ok = true;
+		entries[i].returned_size = sbuf.st_ex_size;
 	}
 
 	if (!posix_test_entry_check(state,
