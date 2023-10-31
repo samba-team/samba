@@ -2659,7 +2659,7 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 			goto done;
 		}
 
-		ok = add_string_to_array(spn_array,
+		ok = add_string_to_array(ctx,
 					 spn,
 					 &spn_array,
 					 &num_spns);
@@ -2680,7 +2680,7 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 			goto done;
 		}
 
-		ok = add_string_to_array(spn_array,
+		ok = add_string_to_array(ctx,
 					 spn,
 					 &spn_array,
 					 &num_spns);
