@@ -710,7 +710,7 @@ uint32_t fdos_mode(struct files_struct *fsp)
 		return FILE_ATTRIBUTE_NORMAL;
 	}
 
-	if (fsp->fsp_name->st.cached_dos_attributes != FILE_ATTRIBUTES_INVALID) {
+	if (fsp->fsp_name->st.cached_dos_attributes != FILE_ATTRIBUTE_INVALID) {
 		return fsp->fsp_name->st.cached_dos_attributes;
 	}
 

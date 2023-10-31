@@ -103,7 +103,7 @@
 #define VALID_STAT_OF_DIR(st) (VALID_STAT(st) && S_ISDIR((st).st_ex_mode))
 #define SET_STAT_INVALID(st) { \
 		(st).st_ex_nlink = 0;					\
-		(st).cached_dos_attributes = FILE_ATTRIBUTES_INVALID;	\
+		(st).cached_dos_attributes = FILE_ATTRIBUTE_INVALID;	\
 };
 
 /* Macros to get at offsets within smb_lkrng and smb_unlkrng
