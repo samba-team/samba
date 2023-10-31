@@ -148,9 +148,14 @@ NTSTATUS get_ea_value_fsp(TALLOC_CTX *mem_ctx,
 	char *val = NULL;
 	ssize_t sizeret;
 	size_t max_xattr_size = 0;
+	NTSTATUS status;
 
 	if (fsp == NULL) {
 		return NT_STATUS_INVALID_HANDLE;
+	}
+	status = refuse_symlink_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	max_xattr_size = lp_smbd_max_xattr_size(SNUM(fsp->conn));
@@ -212,7 +217,7 @@ NTSTATUS get_ea_names_from_fsp(TALLOC_CTX *mem_ctx,
 	}
 	*pnum_names = 0;
 
-	if (fsp == NULL) {
+	if ((fsp == NULL) || !NT_STATUS_IS_OK(refuse_symlink_fsp(fsp))) {
 		/*
 		 * Callers may pass fsp == NULL when passing smb_fname->fsp of a
 		 * symlink. This is ok, handle it here, by just return no EA's
