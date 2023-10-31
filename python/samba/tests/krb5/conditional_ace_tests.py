@@ -4261,7 +4261,11 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
     def test_pac_device_info_no_claims_valid(self):
         self._run_pac_device_info_test(device_claims_valid=False)
 
-    def _run_pac_device_info_test(self, compound_id_support=True, device_claims_valid=True):
+    def _run_pac_device_info_test(self, *,
+                                  compound_id_support=True,
+                                  device_claims_valid=True,
+                                  existing_device_claims=False,
+                                  existing_device_info=False):
         """Test the groups of the client and the device after performing a
         FAST‐armored TGS‐REQ.
         """
@@ -4292,7 +4296,24 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
             ]),
         ]
 
-        if compound_id_support:
+        existing_claim_id = 'the name of an existing device claim'
+        existing_claim_value = 'the value of an existing device claim'
+
+        existing_claims = [
+            (claims.CLAIMS_SOURCE_TYPE_CERTIFICATE, [
+                (existing_claim_id, claims.CLAIM_TYPE_STRING, [existing_claim_value]),
+            ]),
+        ]
+
+        if existing_device_info and existing_device_claims:
+            expected_device_claims = {
+                existing_claim_id: {
+                    'source_type': claims.CLAIMS_SOURCE_TYPE_CERTIFICATE,
+                    'type': claims.CLAIM_TYPE_STRING,
+                    'values': (existing_claim_value,),
+                },
+            }
+        elif compound_id_support and not existing_device_info and not existing_device_claims:
             expected_device_claims = {
                 device_claim_id: {
                     'source_type': claims.CLAIMS_SOURCE_TYPE_AD,
@@ -4343,15 +4364,32 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
         client_creds = self._get_creds(account_type=self.AccountType.USER)
         client_tgt = self.get_tgt(client_creds)
 
+        client_modify_pac_fns = [
+            partial(self.set_pac_sids,
+                    new_sids=client_sids),
+            partial(self.set_pac_claims, client_claims=client_claims),
+        ]
+
+        if existing_device_claims:
+            client_modify_pac_fns.append(
+                partial(self.set_pac_claims, device_claims=existing_claims))
+        if existing_device_info:
+            existing_sids = {
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+                # These are different from the SIDs in the device’s TGT.
+                ('S-1-7-8-9', SidType.EXTRA_SID, self.resource_attrs),
+                ('S-1-9-8-7', SidType.EXTRA_SID, self.resource_attrs),
+            }
+
+            client_modify_pac_fns.append(partial(
+                self.set_pac_device_sids, new_sids=existing_sids, user_rid=mach_creds.get_rid()))
+
         # Modify the client’s TGT to contain only the SID of the client’s
         # primary group.
         client_tgt = self.modified_ticket(
             client_tgt,
-            modify_pac_fn=[
-                partial(self.set_pac_sids,
-                        new_sids=client_sids),
-                partial(self.set_pac_claims, client_claims=client_claims),
-            ],
+            modify_pac_fn=client_modify_pac_fns,
             checksum_keys=self.get_krbtgt_checksum_key())
 
         # Indicate that Compound Identity is supported.
@@ -4365,7 +4403,14 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
             # Claims Valid SIDs.
         }
 
-        if compound_id_support:
+        if existing_device_info:
+            expected_device_sids = {
+                (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
+                (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
+                ('S-1-7-8-9', SidType.EXTRA_SID, self.resource_attrs),
+                ('S-1-9-8-7', SidType.EXTRA_SID, self.resource_attrs),
+            }
+        elif compound_id_support and not existing_device_claims:
             expected_sids.add((security.SID_COMPOUNDED_AUTHENTICATION, SidType.EXTRA_SID, self.default_attrs))
 
             expected_device_sids = {
