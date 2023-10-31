@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    shadow copy file operations
 
    Copyright (C) Andrew Tridgell 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -24,10 +24,10 @@
 #include "libcli/raw/raw_proto.h"
 #include "../libcli/smb/smb_constants.h"
 
-/* 
+/*
    get shadow volume data
 */
-_PUBLIC_ NTSTATUS smb_raw_shadow_data(struct smbcli_tree *tree, 
+_PUBLIC_ NTSTATUS smb_raw_shadow_data(struct smbcli_tree *tree,
 				      TALLOC_CTX *mem_ctx, struct smb_shadow_copy *info)
 {
 	union smb_ioctl nt;
@@ -49,13 +49,13 @@ _PUBLIC_ NTSTATUS smb_raw_shadow_data(struct smbcli_tree *tree,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	blob = nt.ntioctl.out.blob;
 
 	if (blob.length < 12) {
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
-	
+
 	info->out.num_volumes = IVAL(blob.data, 0);
 	info->out.num_names   = IVAL(blob.data, 4);
 	dlength               = IVAL(blob.data, 8);
@@ -69,7 +69,7 @@ _PUBLIC_ NTSTATUS smb_raw_shadow_data(struct smbcli_tree *tree,
 	ofs = 12;
 	for (i=0;i<info->out.num_names;i++) {
 		size_t len;
-		len = smbcli_blob_pull_ucs2(info->out.names, 
+		len = smbcli_blob_pull_ucs2(info->out.names,
 				      &blob, &info->out.names[i],
 				      blob.data+ofs, -1, STR_TERMINATE);
 		if (len == 0) {
@@ -77,6 +77,6 @@ _PUBLIC_ NTSTATUS smb_raw_shadow_data(struct smbcli_tree *tree,
 		}
 		ofs += len;
 	}
-	
+
 	return status;
 }

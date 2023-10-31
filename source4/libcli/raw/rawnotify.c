@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    client change notify operations
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -41,7 +41,7 @@ _PUBLIC_ struct smbcli_request *smb_raw_changenotify_send(struct smbcli_tree *tr
 	nt.in.setup = setup;
 	SIVAL(setup, 0, parms->nttrans.in.completion_filter);
 	SSVAL(setup, 4, parms->nttrans.in.file.fnum);
-	SSVAL(setup, 6, parms->nttrans.in.recursive);	
+	SSVAL(setup, 6, parms->nttrans.in.recursive);
 	nt.in.function = NT_TRANSACT_NOTIFY_CHANGE;
 	nt.in.params = data_blob(NULL, 0);
 	nt.in.data = data_blob(NULL, 0);
@@ -52,7 +52,7 @@ _PUBLIC_ struct smbcli_request *smb_raw_changenotify_send(struct smbcli_tree *tr
 /****************************************************************************
 change notify (async recv)
 ****************************************************************************/
-_PUBLIC_ NTSTATUS smb_raw_changenotify_recv(struct smbcli_request *req, 
+_PUBLIC_ NTSTATUS smb_raw_changenotify_recv(struct smbcli_request *req,
 				   TALLOC_CTX *mem_ctx, union smb_notify *parms)
 {
 	struct smb_nttrans nt;
@@ -91,8 +91,8 @@ _PUBLIC_ NTSTATUS smb_raw_changenotify_recv(struct smbcli_request *req,
 
 	for (i=ofs=0; i<parms->nttrans.out.num_changes; i++) {
 		parms->nttrans.out.changes[i].action = IVAL(nt.out.params.data, ofs+4);
-		smbcli_blob_pull_string(session, mem_ctx, &nt.out.params, 
-					&parms->nttrans.out.changes[i].name, 
+		smbcli_blob_pull_string(session, mem_ctx, &nt.out.params,
+					&parms->nttrans.out.changes[i].name,
 					ofs+8, ofs+12, STR_UNICODE);
 		ofs += IVAL(nt.out.params.data, ofs);
 	}

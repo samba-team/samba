@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB Signing Code
    Copyright (C) Jeremy Allison 2002.
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2002-2003
    Copyright (C) James J Myers <myersjj@samba.org> 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -45,7 +45,7 @@ bool set_smb_signing_common(struct smb_signing_context *sign_info)
 	return true;
 }
 
-void mark_packet_signed(struct smb_request_buffer *out) 
+void mark_packet_signed(struct smb_request_buffer *out)
 {
 	uint16_t flags2;
 	flags2 = SVAL(out->hdr, HDR_FLG2);
@@ -53,8 +53,8 @@ void mark_packet_signed(struct smb_request_buffer *out)
 	SSVAL(out->hdr, HDR_FLG2, flags2);
 }
 
-bool signing_good(struct smb_signing_context *sign_info, 
-			 unsigned int seq, bool good) 
+bool signing_good(struct smb_signing_context *sign_info,
+			 unsigned int seq, bool good)
 {
 	if (good) {
 		if (!sign_info->doing_signing) {
@@ -81,7 +81,7 @@ bool signing_good(struct smb_signing_context *sign_info,
 	return true;
 }
 
-void sign_outgoing_message(struct smb_request_buffer *out, DATA_BLOB *mac_key, unsigned int seq_num) 
+void sign_outgoing_message(struct smb_request_buffer *out, DATA_BLOB *mac_key, unsigned int seq_num)
 {
 	uint8_t calc_md5_mac[16];
 	gnutls_hash_hd_t hash_hnd = NULL;
@@ -119,11 +119,11 @@ void sign_outgoing_message(struct smb_request_buffer *out, DATA_BLOB *mac_key, u
 
 	memcpy(&out->hdr[HDR_SS_FIELD], calc_md5_mac, 8);
 
-	DEBUG(5, ("sign_outgoing_message: SENT SIG (seq: %d): sent SMB signature of\n", 
+	DEBUG(5, ("sign_outgoing_message: SENT SIG (seq: %d): sent SMB signature of\n",
 		  seq_num));
 	dump_data(5, calc_md5_mac, 8);
 	ZERO_ARRAY(calc_md5_mac);
-/*	req->out.hdr[HDR_SS_FIELD+2]=0; 
+/*	req->out.hdr[HDR_SS_FIELD+2]=0;
 	Uncomment this to test if the remote server actually verifies signitures...*/
 }
 
@@ -158,10 +158,10 @@ bool check_signed_incoming_message(struct smb_request_buffer *in, DATA_BLOB *mac
 		 */
 		SIVAL(sequence_buf, 0, seq_num + i);
 		SIVAL(sequence_buf, 4, 0);
-		
+
 		/* get a copy of the server-sent mac */
 	        server_sent_mac = &in->hdr[HDR_SS_FIELD];
-		
+
 		/* Calculate the 16 byte MAC and place first 8 bytes into the field. */
 		rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 		if (rc < 0) {
@@ -204,7 +204,7 @@ bool check_signed_incoming_message(struct smb_request_buffer *in, DATA_BLOB *mac
 			if (!ok) {
 				DEBUG(5, ("check_signed_incoming_message: BAD SIG (seq: %d): wanted SMB signature of\n", seq_num + i));
 				dump_data(5, calc_md5_mac, 8);
-				
+
 				DEBUG(5, ("check_signed_incoming_message: BAD SIG (seq: %d): got SMB signature of\n", seq_num + i));
 				dump_data(5, server_sent_mac, 8);
 			} else {
@@ -245,7 +245,7 @@ bool smbcli_set_signing_off(struct smb_signing_context *sign_info)
 ************************************************************/
 bool smbcli_simple_set_signing(TALLOC_CTX *mem_ctx,
 			       struct smb_signing_context *sign_info,
-			       const DATA_BLOB *user_session_key, 
+			       const DATA_BLOB *user_session_key,
 			       const DATA_BLOB *response)
 {
 	if (sign_info->mandatory_signing) {
@@ -259,7 +259,7 @@ bool smbcli_simple_set_signing(TALLOC_CTX *mem_ctx,
 	} else {
 		sign_info->mac_key = data_blob_talloc(mem_ctx, NULL, user_session_key->length);
 	}
-		
+
 	memcpy(&sign_info->mac_key.data[0], user_session_key->data, user_session_key->length);
 
 	if (response && response->length) {
@@ -273,4 +273,3 @@ bool smbcli_simple_set_signing(TALLOC_CTX *mem_ctx,
 
 	return true;
 }
-

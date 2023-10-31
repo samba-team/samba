@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    client trans2 operations
    Copyright (C) James Myers 2003
    Copyright (C) Andrew Tridgell 2003
    Copyright (C) James Peach 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -53,7 +53,7 @@ NTSTATUS smbcli_parse_stream_info(DATA_BLOB blob, TALLOC_CTX *mem_ctx,
 		void *vstr;
 		size_t converted_size = 0;
 
-		io->streams = 
+		io->streams =
 			talloc_realloc(mem_ctx, io->streams, struct stream_struct, n+1);
 		if (!io->streams) {
 			return NT_STATUS_NO_MEMORY;
@@ -64,7 +64,7 @@ NTSTATUS smbcli_parse_stream_info(DATA_BLOB blob, TALLOC_CTX *mem_ctx,
 		if (nlen > blob.length - (ofs + 24)) {
 			return NT_STATUS_INFO_LENGTH_MISMATCH;
 		}
-		ret = convert_string_talloc(io->streams, 
+		ret = convert_string_talloc(io->streams,
 					     CH_UTF16, CH_UNIX,
 					     blob.data+ofs+24, nlen, &vstr, &converted_size);
 		if (!ret) {
@@ -87,10 +87,10 @@ NTSTATUS smbcli_parse_stream_info(DATA_BLOB blob, TALLOC_CTX *mem_ctx,
 /*
   parse the fsinfo 'passthru' level replies
 */
-NTSTATUS smb_raw_fileinfo_passthru_parse(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
+NTSTATUS smb_raw_fileinfo_passthru_parse(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 					 enum smb_fileinfo_level level,
 					 union smb_fileinfo *parms)
-{	
+{
 	switch (level) {
 	case RAW_FILEINFO_BASIC_INFORMATION:
 		/* some servers return 40 bytes and some 36. w2k3 return 40, so that's
@@ -121,7 +121,7 @@ NTSTATUS smb_raw_fileinfo_passthru_parse(const DATA_BLOB *blob, TALLOC_CTX *mem_
 
 	case RAW_FILEINFO_NAME_INFORMATION:
 		FINFO_CHECK_MIN_SIZE(4);
-		smbcli_blob_pull_string(NULL, mem_ctx, blob, 
+		smbcli_blob_pull_string(NULL, mem_ctx, blob,
 					&parms->name_info.out.fname, 0, 4, STR_UNICODE);
 		return NT_STATUS_OK;
 
@@ -160,7 +160,7 @@ NTSTATUS smb_raw_fileinfo_passthru_parse(const DATA_BLOB *blob, TALLOC_CTX *mem_
 	case RAW_FILEINFO_ALT_NAME_INFORMATION:
 	case RAW_FILEINFO_SMB2_ALT_NAME_INFORMATION:
 		FINFO_CHECK_MIN_SIZE(4);
-		smbcli_blob_pull_string(NULL, mem_ctx, blob, 
+		smbcli_blob_pull_string(NULL, mem_ctx, blob,
 					&parms->alt_name_info.out.fname, 0, 4, STR_UNICODE);
 		return NT_STATUS_OK;
 
@@ -189,7 +189,7 @@ NTSTATUS smb_raw_fileinfo_passthru_parse(const DATA_BLOB *blob, TALLOC_CTX *mem_
 
 	case RAW_FILEINFO_ALIGNMENT_INFORMATION:
 		FINFO_CHECK_SIZE(4);
-		parms->alignment_information.out.alignment_requirement 
+		parms->alignment_information.out.alignment_requirement
 			= IVAL(blob->data, 0);
 		return NT_STATUS_OK;
 
@@ -203,7 +203,7 @@ NTSTATUS smb_raw_fileinfo_passthru_parse(const DATA_BLOB *blob, TALLOC_CTX *mem_
 		/* 3 bytes of padding */
 		return NT_STATUS_OK;
 
-	case RAW_FILEINFO_NETWORK_OPEN_INFORMATION:		
+	case RAW_FILEINFO_NETWORK_OPEN_INFORMATION:
 		FINFO_CHECK_SIZE(56);
 		parms->network_open_information.out.create_time = smbcli_pull_nttime(blob->data,  0);
 		parms->network_open_information.out.access_time = smbcli_pull_nttime(blob->data,  8);
@@ -229,7 +229,7 @@ NTSTATUS smb_raw_fileinfo_passthru_parse(const DATA_BLOB *blob, TALLOC_CTX *mem_
 
 	case RAW_FILEINFO_SMB2_ALL_EAS:
 		FINFO_CHECK_MIN_SIZE(4);
-		return ea_pull_list_chained(blob, mem_ctx, 
+		return ea_pull_list_chained(blob, mem_ctx,
 					    &parms->all_eas.out.num_eas,
 					    &parms->all_eas.out.eas);
 
@@ -286,9 +286,9 @@ NTSTATUS smb_raw_fileinfo_passthru_parse(const DATA_BLOB *blob, TALLOC_CTX *mem_
 ****************************************************************************/
 static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 				     TALLOC_CTX *mem_ctx,
-				     union smb_fileinfo *parms, 
+				     union smb_fileinfo *parms,
 				     DATA_BLOB *blob)
-{	
+{
 	switch (parms->generic.level) {
 	case RAW_FILEINFO_GENERIC:
 	case RAW_FILEINFO_GETATTR:
@@ -334,13 +334,13 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 
 	case RAW_FILEINFO_EA_LIST:
 		FINFO_CHECK_MIN_SIZE(4);
-		return ea_pull_list(blob, mem_ctx, 
+		return ea_pull_list(blob, mem_ctx,
 				    &parms->ea_list.out.num_eas,
 				    &parms->ea_list.out.eas);
 
 	case RAW_FILEINFO_ALL_EAS:
 		FINFO_CHECK_MIN_SIZE(4);
-		return ea_pull_list(blob, mem_ctx, 
+		return ea_pull_list(blob, mem_ctx,
 				    &parms->all_eas.out.num_eas,
 				    &parms->all_eas.out.eas);
 
@@ -351,62 +351,62 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 
 	case RAW_FILEINFO_BASIC_INFO:
 	case RAW_FILEINFO_BASIC_INFORMATION:
-		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx,
 						       RAW_FILEINFO_BASIC_INFORMATION, parms);
 
 	case RAW_FILEINFO_STANDARD_INFO:
 	case RAW_FILEINFO_STANDARD_INFORMATION:
-		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx,
 						       RAW_FILEINFO_STANDARD_INFORMATION, parms);
 
 	case RAW_FILEINFO_EA_INFO:
 	case RAW_FILEINFO_EA_INFORMATION:
-		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx,
 						       RAW_FILEINFO_EA_INFORMATION, parms);
 
 	case RAW_FILEINFO_NAME_INFO:
 	case RAW_FILEINFO_NAME_INFORMATION:
-		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx,
 						       RAW_FILEINFO_NAME_INFORMATION, parms);
 
 	case RAW_FILEINFO_ALL_INFO:
 	case RAW_FILEINFO_ALL_INFORMATION:
-		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx,
 						       RAW_FILEINFO_ALL_INFORMATION, parms);
 
 	case RAW_FILEINFO_ALT_NAME_INFO:
 	case RAW_FILEINFO_ALT_NAME_INFORMATION:
-		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx,
 						       RAW_FILEINFO_ALT_NAME_INFORMATION, parms);
 
 	case RAW_FILEINFO_STREAM_INFO:
 	case RAW_FILEINFO_STREAM_INFORMATION:
-		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx,
 						       RAW_FILEINFO_STREAM_INFORMATION, parms);
 
 	case RAW_FILEINFO_INTERNAL_INFORMATION:
-		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx,
 						       RAW_FILEINFO_INTERNAL_INFORMATION, parms);
 
 	case RAW_FILEINFO_ACCESS_INFORMATION:
-		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx,
 						       RAW_FILEINFO_ACCESS_INFORMATION, parms);
 
 	case RAW_FILEINFO_POSITION_INFORMATION:
-		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx,
 						       RAW_FILEINFO_POSITION_INFORMATION, parms);
 
 	case RAW_FILEINFO_MODE_INFORMATION:
-		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx,
 						       RAW_FILEINFO_MODE_INFORMATION, parms);
 
 	case RAW_FILEINFO_ALIGNMENT_INFORMATION:
-		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx,
 						       RAW_FILEINFO_ALIGNMENT_INFORMATION, parms);
 
 	case RAW_FILEINFO_COMPRESSION_INFO:
 	case RAW_FILEINFO_COMPRESSION_INFORMATION:
-		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx,
 						       RAW_FILEINFO_COMPRESSION_INFORMATION, parms);
 
 	case RAW_FILEINFO_UNIX_BASIC:
@@ -447,16 +447,16 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_UNIX_LINK:
-		smbcli_blob_pull_string(session, mem_ctx, blob, 
+		smbcli_blob_pull_string(session, mem_ctx, blob,
 				     &parms->unix_link_info.out.link_dest, 0, 4, STR_UNICODE);
 		return NT_STATUS_OK;
-		
-	case RAW_FILEINFO_NETWORK_OPEN_INFORMATION:		
-		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+
+	case RAW_FILEINFO_NETWORK_OPEN_INFORMATION:
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx,
 						       RAW_FILEINFO_NETWORK_OPEN_INFORMATION, parms);
 
 	case RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION:
-		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx,
 						       RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION, parms);
 
 	case RAW_FILEINFO_NORMALIZED_NAME_INFORMATION:
@@ -464,11 +464,11 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 						       RAW_FILEINFO_NORMALIZED_NAME_INFORMATION, parms);
 
 	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
-		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx,
 						       RAW_FILEINFO_SMB2_ALL_INFORMATION, parms);
 
 	case RAW_FILEINFO_SMB2_ALL_EAS:
-		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx,
 						       RAW_FILEINFO_SMB2_ALL_EAS, parms);
 
 	case RAW_FILEINFO_SMB2_ALT_NAME_INFORMATION:
@@ -485,7 +485,7 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
  Very raw query file info - returns param/data blobs - (async send)
 ****************************************************************************/
 static struct smbcli_request *smb_raw_fileinfo_blob_send(struct smbcli_tree *tree,
-							 uint16_t fnum, 
+							 uint16_t fnum,
 							 uint16_t info_level,
 							 DATA_BLOB data)
 {
@@ -493,16 +493,16 @@ static struct smbcli_request *smb_raw_fileinfo_blob_send(struct smbcli_tree *tre
 	uint16_t setup = TRANSACT2_QFILEINFO;
 	struct smbcli_request *req;
 	TALLOC_CTX *mem_ctx = talloc_init("raw_fileinfo");
-	
+
 	tp.in.max_setup = 0;
-	tp.in.flags = 0; 
+	tp.in.flags = 0;
 	tp.in.timeout = 0;
 	tp.in.setup_count = 1;
 	tp.in.data = data;
 	tp.in.max_param = 2;
 	tp.in.max_data = 0xFFFF;
 	tp.in.setup = &setup;
-	
+
 	tp.in.params = data_blob_talloc(mem_ctx, NULL, 4);
 	if (!tp.in.params.data) {
 		talloc_free(mem_ctx);
@@ -549,14 +549,14 @@ static struct smbcli_request *smb_raw_pathinfo_blob_send(struct smbcli_tree *tre
 	TALLOC_CTX *mem_ctx = talloc_init("raw_pathinfo");
 
 	tp.in.max_setup = 0;
-	tp.in.flags = 0; 
+	tp.in.flags = 0;
 	tp.in.timeout = 0;
 	tp.in.setup_count = 1;
 	tp.in.data = data;
 	tp.in.max_param = 2;
 	tp.in.max_data = 0xFFFF;
 	tp.in.setup = &setup;
-	
+
 	tp.in.params = data_blob_talloc(mem_ctx, NULL, 6);
 	if (!tp.in.params.data) {
 		talloc_free(mem_ctx);
@@ -567,7 +567,7 @@ static struct smbcli_request *smb_raw_pathinfo_blob_send(struct smbcli_tree *tre
 	SIVAL(tp.in.params.data, 2, 0);
 	smbcli_blob_append_string(tree->session, mem_ctx, &tp.in.params,
 			       fname, STR_TERMINATE);
-	
+
 	req = smb_raw_trans2_send(tree, &tp);
 
 	talloc_free(mem_ctx);
@@ -582,12 +582,12 @@ static struct smbcli_request *smb_raw_getattr_send(struct smbcli_tree *tree,
 						union smb_fileinfo *parms)
 {
 	struct smbcli_request *req;
-	
+
 	req = smbcli_request_setup(tree, SMBgetatr, 0, 0);
 	if (!req) return NULL;
 
 	smbcli_req_append_ascii4(req, parms->getattr.in.file.path, STR_TERMINATE);
-	
+
 	if (!smbcli_request_send(req)) {
 		smbcli_request_destroy(req);
 		return NULL;
@@ -629,10 +629,10 @@ static struct smbcli_request *smb_raw_getattrE_send(struct smbcli_tree *tree,
 						 union smb_fileinfo *parms)
 {
 	struct smbcli_request *req;
-	
+
 	req = smbcli_request_setup(tree, SMBgetattrE, 1, 0);
 	if (!req) return NULL;
-	
+
 	SSVAL(req->out.vwv, VWV(0), parms->getattre.in.file.fnum);
 	if (!smbcli_request_send(req)) {
 		smbcli_request_destroy(req);
@@ -696,7 +696,7 @@ struct smbcli_request *smb_raw_fileinfo_send(struct smbcli_tree *tree,
 	data = data_blob(NULL, 0);
 
 	if (parms->generic.level == RAW_FILEINFO_EA_LIST) {
-		if (!ea_push_name_list(tree, 
+		if (!ea_push_name_list(tree,
 				       &data,
 				       parms->ea_list.in.num_names,
 				       parms->ea_list.in.ea_names)) {
@@ -704,7 +704,7 @@ struct smbcli_request *smb_raw_fileinfo_send(struct smbcli_tree *tree,
 		}
 	}
 
-	req = smb_raw_fileinfo_blob_send(tree, 
+	req = smb_raw_fileinfo_blob_send(tree,
 					 parms->generic.in.file.fnum,
 					 parms->generic.level, data);
 
@@ -768,11 +768,11 @@ _PUBLIC_ struct smbcli_request *smb_raw_pathinfo_send(struct smbcli_tree *tree,
 	if (parms->generic.level >= RAW_FILEINFO_GENERIC) {
 		return NULL;
 	}
-	
+
 	data = data_blob(NULL, 0);
 
 	if (parms->generic.level == RAW_FILEINFO_EA_LIST) {
-		if (!ea_push_name_list(tree, 
+		if (!ea_push_name_list(tree,
 				       &data,
 				       parms->ea_list.in.num_names,
 				       parms->ea_list.in.ea_names)) {

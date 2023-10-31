@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    SMB client tree context management functions
 
    Copyright (C) Andrew Tridgell 1994-2005
    Copyright (C) James Myers 2003 <myersjj@samba.org>
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -62,7 +62,7 @@ _PUBLIC_ struct smbcli_tree *smbcli_tree_init(struct smbcli_session *session,
 /****************************************************************************
  Send a tconX (async send)
 ****************************************************************************/
-struct smbcli_request *smb_raw_tcon_send(struct smbcli_tree *tree, 
+struct smbcli_request *smb_raw_tcon_send(struct smbcli_tree *tree,
 					 union smb_tcon *parms)
 {
 	struct smbcli_request *req = NULL;
@@ -101,7 +101,7 @@ struct smbcli_request *smb_raw_tcon_send(struct smbcli_tree *tree,
 /****************************************************************************
  Send a tconX (async recv)
 ****************************************************************************/
-NTSTATUS smb_raw_tcon_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, 
+NTSTATUS smb_raw_tcon_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
 			   union smb_tcon *parms)
 {
 	uint8_t *p;
@@ -133,7 +133,7 @@ NTSTATUS smb_raw_tcon_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
 		p = req->in.data;
 		if (!p) break;
 
-		p += smbcli_req_pull_string(&req->in.bufinfo, mem_ctx, &parms->tconx.out.dev_type, 
+		p += smbcli_req_pull_string(&req->in.bufinfo, mem_ctx, &parms->tconx.out.dev_type,
 					    p, -1, STR_ASCII | STR_TERMINATE);
 		smbcli_req_pull_string(&req->in.bufinfo, mem_ctx, &parms->tconx.out.fs_type,
 					 p, -1, STR_TERMINATE);
@@ -151,7 +151,7 @@ failed:
 /****************************************************************************
  Send a tconX (sync interface)
 ****************************************************************************/
-_PUBLIC_ NTSTATUS smb_raw_tcon(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, 
+_PUBLIC_ NTSTATUS smb_raw_tcon(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx,
 		      union smb_tcon *parms)
 {
 	struct smbcli_request *req = smb_raw_tcon_send(tree, parms);
@@ -183,7 +183,7 @@ _PUBLIC_ NTSTATUS smb_tree_disconnect(struct smbcli_tree *tree)
   a convenient function to establish a smbcli_tree from scratch
 */
 NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
-				     struct smbcli_tree **ret_tree, 
+				     struct smbcli_tree **ret_tree,
 				     const char *dest_host, const char **dest_ports,
 				     const char *service, const char *service_type,
 					 const char *socket_options,
@@ -213,12 +213,12 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 	io.in.fallback_to_anonymous = false;
 
 	/* This workgroup gets sent out by the SPNEGO session setup.
-	 * I don't know of any servers that look at it, so we 
+	 * I don't know of any servers that look at it, so we
 	 * hardcode it to "". */
 	io.in.workgroup = "";
 	io.in.options = *options;
 	io.in.session_options = *session_options;
-	
+
 	status = smb_composite_connect(&io, parent_ctx, resolve_ctx, ev);
 	if (NT_STATUS_IS_OK(status)) {
 		*ret_tree = io.out.tree;

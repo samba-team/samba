@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    ACL get/set operations
 
    Copyright (C) Andrew Tridgell 2003-2004
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -26,7 +26,7 @@
 /****************************************************************************
 fetch file ACL (async send)
 ****************************************************************************/
-struct smbcli_request *smb_raw_query_secdesc_send(struct smbcli_tree *tree, 
+struct smbcli_request *smb_raw_query_secdesc_send(struct smbcli_tree *tree,
 						  union smb_fileinfo *io)
 {
 	struct smb_nttrans nt;
@@ -45,7 +45,7 @@ struct smbcli_request *smb_raw_query_secdesc_send(struct smbcli_tree *tree,
 
 	nt.in.params.data = params;
 	nt.in.params.length = 8;
-	
+
 	nt.in.data = data_blob(NULL, 0);
 
 	return smb_raw_nttrans_send(tree, &nt);
@@ -55,8 +55,8 @@ struct smbcli_request *smb_raw_query_secdesc_send(struct smbcli_tree *tree,
 /****************************************************************************
 fetch file ACL (async recv)
 ****************************************************************************/
-NTSTATUS smb_raw_query_secdesc_recv(struct smbcli_request *req, 
-				    TALLOC_CTX *mem_ctx, 
+NTSTATUS smb_raw_query_secdesc_recv(struct smbcli_request *req,
+				    TALLOC_CTX *mem_ctx,
 				    union smb_fileinfo *io)
 {
 	NTSTATUS status;
@@ -99,8 +99,8 @@ NTSTATUS smb_raw_query_secdesc_recv(struct smbcli_request *req,
 /****************************************************************************
 fetch file ACL (sync interface)
 ****************************************************************************/
-NTSTATUS smb_raw_query_secdesc(struct smbcli_tree *tree, 
-			       TALLOC_CTX *mem_ctx, 
+NTSTATUS smb_raw_query_secdesc(struct smbcli_tree *tree,
+			       TALLOC_CTX *mem_ctx,
 			       union smb_fileinfo *io)
 {
 	struct smbcli_request *req = smb_raw_query_secdesc_send(tree, io);
@@ -112,7 +112,7 @@ NTSTATUS smb_raw_query_secdesc(struct smbcli_tree *tree,
 /****************************************************************************
 set file ACL (async send)
 ****************************************************************************/
-struct smbcli_request *smb_raw_set_secdesc_send(struct smbcli_tree *tree, 
+struct smbcli_request *smb_raw_set_secdesc_send(struct smbcli_tree *tree,
 						union smb_setfileinfo *io)
 {
 	struct smb_nttrans nt;
@@ -155,7 +155,7 @@ struct smbcli_request *smb_raw_set_secdesc_send(struct smbcli_tree *tree,
 /****************************************************************************
 set file ACL (sync interface)
 ****************************************************************************/
-NTSTATUS smb_raw_set_secdesc(struct smbcli_tree *tree, 
+NTSTATUS smb_raw_set_secdesc(struct smbcli_tree *tree,
 			     union smb_setfileinfo *io)
 {
 	struct smbcli_request *req = smb_raw_set_secdesc_send(tree, io);

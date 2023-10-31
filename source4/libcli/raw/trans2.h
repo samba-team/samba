@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB transaction2 handling
    Copyright (C) Jeremy Allison 1994-2002.
@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -196,7 +196,7 @@ Found 13 valid levels
 #define SMB_SPATHINFO_UNIX_HLINK                       0x203
 #define SMB_SPATHINFO_POSIX_ACL                        0x204
 #define SMB_SPATHINFO_XATTR                            0x205
-#define SMB_SFILEINFO_ATTR_FLAGS                       0x206	
+#define SMB_SFILEINFO_ATTR_FLAGS                       0x206
 #define SMB_SFILEINFO_UNIX_INFO2                       0x20b
 #define SMB_SFILEINFO_BASIC_INFORMATION			1004
 #define SMB_SFILEINFO_RENAME_INFORMATION		1010

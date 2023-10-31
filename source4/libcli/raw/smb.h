@@ -1,24 +1,24 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB parameters and setup, plus a whole lot more.
-   
+
    Copyright (C) Andrew Tridgell              1992-2000
    Copyright (C) John H Terpstra              1996-2002
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Paul Ashton                  1998-2000
    Copyright (C) Simo Sorce                   2001-2002
    Copyright (C) Martin Pool		      2002
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -114,14 +114,14 @@
 						     a test suite for this */
 #define NTCREATEX_FLAGS_EXTENDED             0x10
 
-/* the ntcreatex access_mask field 
+/* the ntcreatex access_mask field
    this is split into 4 pieces
    AAAABBBBCCCCCCCCDDDDDDDDDDDDDDDD
    A -> GENERIC_RIGHT_*
    B -> SEC_RIGHT_*
    C -> STD_RIGHT_*
    D -> SA_RIGHT_*
-   
+
    which set of SA_RIGHT_* bits is applicable depends on the type
    of object.
 */
@@ -212,7 +212,7 @@
 
 /* the desired access to use when opening a pipe */
 #define DESIRED_ACCESS_PIPE 0x2019f
- 
+
 /* Flag for NT transact rename call. */
 #define RENAME_REPLACE_IF_EXISTS 1
 
@@ -282,7 +282,7 @@
  *        Setting this above 4.9 can have undesired side-effects.
  *        This may change again in Samba-3.0 after further testing. JHT
  */
- 
+
 #define DEFAULT_MAJOR_VERSION 0x04
 #define DEFAULT_MINOR_VERSION 0x09
 

@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    client file read/write routines
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) James Myers 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -33,7 +33,7 @@
 _PUBLIC_ struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_read *parms)
 {
 	bool bigoffset = false;
-	struct smbcli_request *req = NULL; 
+	struct smbcli_request *req = NULL;
 
 	switch (parms->generic.level) {
 	case RAW_READ_READBRAW:
@@ -120,19 +120,19 @@ _PUBLIC_ NTSTATUS smb_raw_read_recv(struct smbcli_request *req, union smb_read *
 	switch (parms->generic.level) {
 	case RAW_READ_READBRAW:
 		parms->readbraw.out.nread = req->in.size - NBT_HDR_SIZE;
-		if (parms->readbraw.out.nread > 
+		if (parms->readbraw.out.nread >
 		    MAX(parms->readx.in.mincnt, parms->readx.in.maxcnt)) {
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;
 			goto failed;
 		}
 		memcpy(parms->readbraw.out.data, req->in.buffer + NBT_HDR_SIZE, parms->readbraw.out.nread);
 		break;
-		
+
 	case RAW_READ_LOCKREAD:
 		SMBCLI_CHECK_WCT(req, 5);
 		parms->lockread.out.nread = SVAL(req->in.vwv, VWV(0));
 		if (parms->lockread.out.nread > parms->lockread.in.count ||
-		    !smbcli_raw_pull_data(&req->in.bufinfo, req->in.data+3, 
+		    !smbcli_raw_pull_data(&req->in.bufinfo, req->in.data+3,
 				       parms->lockread.out.nread, parms->lockread.out.data)) {
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;
 		}
@@ -143,7 +143,7 @@ _PUBLIC_ NTSTATUS smb_raw_read_recv(struct smbcli_request *req, union smb_read *
 		SMBCLI_CHECK_WCT(req, 5);
 		parms->read.out.nread = SVAL(req->in.vwv, VWV(0));
 		if (parms->read.out.nread > parms->read.in.count ||
-		    !smbcli_raw_pull_data(&req->in.bufinfo, req->in.data+3, 
+		    !smbcli_raw_pull_data(&req->in.bufinfo, req->in.data+3,
 				       parms->read.out.nread, parms->read.out.data)) {
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;
 		}
@@ -165,7 +165,7 @@ _PUBLIC_ NTSTATUS smb_raw_read_recv(struct smbcli_request *req, union smb_read *
 		    req->in.size >= 0x10000) {
 			parms->readx.out.nread += (SVAL(req->in.vwv, VWV(7)) << 16);
 			if (req->in.hdr + SVAL(req->in.vwv, VWV(6)) +
-			    parms->readx.out.nread <= 
+			    parms->readx.out.nread <=
 			    req->in.buffer + req->in.size) {
 				req->in.data_size += (SVAL(req->in.vwv, VWV(7)) << 16);
 
@@ -175,8 +175,8 @@ _PUBLIC_ NTSTATUS smb_raw_read_recv(struct smbcli_request *req, union smb_read *
 		}
 
 		if (parms->readx.out.nread > MAX(parms->readx.in.mincnt, parms->readx.in.maxcnt) ||
-		    !smbcli_raw_pull_data(&req->in.bufinfo, req->in.hdr + SVAL(req->in.vwv, VWV(6)), 
-				       parms->readx.out.nread, 
+		    !smbcli_raw_pull_data(&req->in.bufinfo, req->in.hdr + SVAL(req->in.vwv, VWV(6)),
+				       parms->readx.out.nread,
 				       parms->readx.out.data)) {
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;
 		}
@@ -207,7 +207,7 @@ _PUBLIC_ NTSTATUS smb_raw_read(struct smbcli_tree *tree, union smb_read *parms)
 _PUBLIC_ struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, union smb_write *parms)
 {
 	bool bigoffset = false;
-	struct smbcli_request *req = NULL; 
+	struct smbcli_request *req = NULL;
 
 	switch (parms->generic.level) {
 	case RAW_WRITE_WRITEUNLOCK:
@@ -219,7 +219,7 @@ _PUBLIC_ struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, uni
 		SCVAL(req->out.data, 0, SMB_DATA_BLOCK);
 		SSVAL(req->out.data, 1, parms->writeunlock.in.count);
 		if (parms->writeunlock.in.count > 0) {
-			memcpy(req->out.data+3, parms->writeunlock.in.data, 
+			memcpy(req->out.data+3, parms->writeunlock.in.data,
 			       parms->writeunlock.in.count);
 		}
 		break;
@@ -246,7 +246,7 @@ _PUBLIC_ struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, uni
 				  req->out.vwv, VWV(4), parms->writeclose.in.mtime);
 		SCVAL(req->out.data, 0, 0);
 		if (parms->writeclose.in.count > 0) {
-			memcpy(req->out.data+1, parms->writeclose.in.data, 
+			memcpy(req->out.data+1, parms->writeclose.in.data,
 			       parms->writeclose.in.count);
 		}
 		break;
@@ -307,7 +307,7 @@ _PUBLIC_ NTSTATUS smb_raw_write_recv(struct smbcli_request *req, union smb_write
 
 	switch (parms->generic.level) {
 	case RAW_WRITE_WRITEUNLOCK:
-		SMBCLI_CHECK_WCT(req, 1);		
+		SMBCLI_CHECK_WCT(req, 1);
 		parms->writeunlock.out.nwritten = SVAL(req->in.vwv, VWV(0));
 		break;
 	case RAW_WRITE_WRITE:

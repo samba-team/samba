@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    client file operations
    Copyright (C) Andrew Tridgell 2003
    Copyright (C) James J Myers 2003 <myersjj@samba.org>
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -27,13 +27,13 @@
 	if (!req) return NULL; \
 } while (0)
 
-/* 
+/*
    send a raw smb ioctl - async send
 */
-static struct smbcli_request *smb_raw_smbioctl_send(struct smbcli_tree *tree, 
+static struct smbcli_request *smb_raw_smbioctl_send(struct smbcli_tree *tree,
 						 union smb_ioctl *parms)
 {
-	struct smbcli_request *req; 
+	struct smbcli_request *req;
 
 	SETUP_REQUEST(SMBioctl, 3, 0);
 
@@ -48,11 +48,11 @@ static struct smbcli_request *smb_raw_smbioctl_send(struct smbcli_tree *tree,
 	return req;
 }
 
-/* 
+/*
    send a raw smb ioctl - async recv
 */
-static NTSTATUS smb_raw_smbioctl_recv(struct smbcli_request *req, 
-				      TALLOC_CTX *mem_ctx, 
+static NTSTATUS smb_raw_smbioctl_recv(struct smbcli_request *req,
+				      TALLOC_CTX *mem_ctx,
 				      union smb_ioctl *parms)
 {
 	if (!smbcli_request_receive(req) ||
@@ -69,7 +69,7 @@ static NTSTATUS smb_raw_smbioctl_recv(struct smbcli_request *req,
 /****************************************************************************
 NT ioctl (async send)
 ****************************************************************************/
-static struct smbcli_request *smb_raw_ntioctl_send(struct smbcli_tree *tree, 
+static struct smbcli_request *smb_raw_ntioctl_send(struct smbcli_tree *tree,
 						union smb_ioctl *parms)
 {
 	struct smb_nttrans nt;
@@ -94,7 +94,7 @@ static struct smbcli_request *smb_raw_ntioctl_send(struct smbcli_tree *tree,
 /****************************************************************************
 NT ioctl (async recv)
 ****************************************************************************/
-static NTSTATUS smb_raw_ntioctl_recv(struct smbcli_request *req, 
+static NTSTATUS smb_raw_ntioctl_recv(struct smbcli_request *req,
 				     TALLOC_CTX *mem_ctx,
 				     union smb_ioctl *parms)
 {
@@ -117,18 +117,18 @@ fail:
 }
 
 
-/* 
+/*
    send a raw ioctl - async send
 */
 struct smbcli_request *smb_raw_ioctl_send(struct smbcli_tree *tree, union smb_ioctl *parms)
 {
 	struct smbcli_request *req = NULL;
-	
+
 	switch (parms->generic.level) {
 	case RAW_IOCTL_IOCTL:
 		req = smb_raw_smbioctl_send(tree, parms);
 		break;
-		
+
 	case RAW_IOCTL_NTIOCTL:
 		req = smb_raw_ntioctl_send(tree, parms);
 		break;
@@ -141,7 +141,7 @@ struct smbcli_request *smb_raw_ioctl_send(struct smbcli_tree *tree, union smb_io
 	return req;
 }
 
-/* 
+/*
    recv a raw ioctl - async recv
 */
 NTSTATUS smb_raw_ioctl_recv(struct smbcli_request *req,
@@ -150,7 +150,7 @@ NTSTATUS smb_raw_ioctl_recv(struct smbcli_request *req,
 	switch (parms->generic.level) {
 	case RAW_IOCTL_IOCTL:
 		return smb_raw_smbioctl_recv(req, mem_ctx, parms);
-		
+
 	case RAW_IOCTL_NTIOCTL:
 		return smb_raw_ntioctl_recv(req, mem_ctx, parms);
 
@@ -161,10 +161,10 @@ NTSTATUS smb_raw_ioctl_recv(struct smbcli_request *req,
 	return NT_STATUS_INVALID_LEVEL;
 }
 
-/* 
+/*
    send a raw ioctl - sync interface
 */
-NTSTATUS smb_raw_ioctl(struct smbcli_tree *tree, 
+NTSTATUS smb_raw_ioctl(struct smbcli_tree *tree,
 		TALLOC_CTX *mem_ctx, union smb_ioctl *parms)
 {
 	struct smbcli_request *req;

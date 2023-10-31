@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB client session context management functions
 
    Copyright (C) Andrew Tridgell 1994-2005
    Copyright (C) James Myers 2003 <myersjj@samba.org>
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -34,7 +34,7 @@
 /****************************************************************************
  Initialize the session context
 ****************************************************************************/
-struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport, 
+struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport,
 					   TALLOC_CTX *parent_ctx, bool primary,
 					   struct smbcli_session_options options)
 {
@@ -93,8 +93,8 @@ struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport,
 /****************************************************************************
  Perform a session setup (async send)
 ****************************************************************************/
-struct smbcli_request *smb_raw_sesssetup_send(struct smbcli_session *session, 
-					      union smb_sesssetup *parms) 
+struct smbcli_request *smb_raw_sesssetup_send(struct smbcli_session *session,
+					      union smb_sesssetup *parms)
 {
 	struct smbcli_request *req = NULL;
 
@@ -169,9 +169,9 @@ struct smbcli_request *smb_raw_sesssetup_send(struct smbcli_session *session,
 /****************************************************************************
  Perform a session setup (async recv)
 ****************************************************************************/
-NTSTATUS smb_raw_sesssetup_recv(struct smbcli_request *req, 
-				TALLOC_CTX *mem_ctx, 
-				union smb_sesssetup *parms) 
+NTSTATUS smb_raw_sesssetup_recv(struct smbcli_request *req,
+				TALLOC_CTX *mem_ctx,
+				union smb_sesssetup *parms)
 {
 	uint16_t len;
 	uint8_t *p;
@@ -179,7 +179,7 @@ NTSTATUS smb_raw_sesssetup_recv(struct smbcli_request *req,
 	if (!smbcli_request_receive(req)) {
 		return smbcli_request_destroy(req);
 	}
-	
+
 	if (!NT_STATUS_IS_OK(req->status) &&
 	    !NT_STATUS_EQUAL(req->status,NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		return smbcli_request_destroy(req);
@@ -245,8 +245,8 @@ failed:
 /*
  Perform a session setup (sync interface)
 */
-NTSTATUS smb_raw_sesssetup(struct smbcli_session *session, 
-			   TALLOC_CTX *mem_ctx, union smb_sesssetup *parms) 
+NTSTATUS smb_raw_sesssetup(struct smbcli_session *session,
+			   TALLOC_CTX *mem_ctx, union smb_sesssetup *parms)
 {
 	struct smbcli_request *req = smb_raw_sesssetup_send(session, parms);
 	return smb_raw_sesssetup_recv(req, mem_ctx, parms);

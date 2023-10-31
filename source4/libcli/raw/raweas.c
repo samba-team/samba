@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    parsing of EA (extended attribute) lists
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -22,7 +22,7 @@
 #include "libcli/raw/raw_proto.h"
 
 /*
-  work out how many bytes on the wire a ea list will consume. 
+  work out how many bytes on the wire a ea list will consume.
   This assumes the names are strict ascii, which should be a
   reasonable assumption
 */
@@ -37,7 +37,7 @@ size_t ea_list_size(unsigned int num_eas, struct ea_struct *eas)
 }
 
 /*
-  work out how many bytes on the wire a ea name list will consume. 
+  work out how many bytes on the wire a ea name list will consume.
 */
 static unsigned int ea_name_list_size(unsigned int num_names, struct ea_name *eas)
 {
@@ -166,7 +166,7 @@ unsigned int ea_pull_struct(const DATA_BLOB *blob,
 /*
   pull a ea_list from a buffer
 */
-NTSTATUS ea_pull_list(const DATA_BLOB *blob, 
+NTSTATUS ea_pull_list(const DATA_BLOB *blob,
 		      TALLOC_CTX *mem_ctx,
 		      unsigned int *num_eas, struct ea_struct **eas)
 {
@@ -215,7 +215,7 @@ NTSTATUS ea_pull_list(const DATA_BLOB *blob,
 /*
   pull a chained ea_list from a buffer
 */
-NTSTATUS ea_pull_list_chained(const DATA_BLOB *blob, 
+NTSTATUS ea_pull_list_chained(const DATA_BLOB *blob,
 			      TALLOC_CTX *mem_ctx,
 			      unsigned int *num_eas, struct ea_struct **eas)
 {
@@ -294,7 +294,7 @@ static unsigned int ea_pull_name(const DATA_BLOB *blob,
 /*
   pull a ea_name list from a buffer
 */
-NTSTATUS ea_pull_name_list(const DATA_BLOB *blob, 
+NTSTATUS ea_pull_name_list(const DATA_BLOB *blob,
 			   TALLOC_CTX *mem_ctx,
 			   unsigned int *num_names, struct ea_name **ea_names)
 {

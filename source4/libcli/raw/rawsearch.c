@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    client directory search routines
    Copyright (C) James Myers 2003 <myersjj@samba.org>
    Copyright (C) James Peach 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -27,7 +27,7 @@
 ****************************************************************************/
 static void smb_raw_search_backend(struct smbcli_request *req,
 				   TALLOC_CTX *mem_ctx,
-				   uint16_t count, 
+				   uint16_t count,
 				   void *private_data,
 				   smbcli_search_callback callback)
 
@@ -40,7 +40,7 @@ static void smb_raw_search_backend(struct smbcli_request *req,
 		req->status = NT_STATUS_INVALID_PARAMETER;
 		return;
 	}
-	
+
 	p = req->in.data + 3;
 
 	for (i=0; i < count; i++) {
@@ -73,7 +73,7 @@ static NTSTATUS smb_raw_search_first_old(struct smbcli_tree *tree,
 					 smbcli_search_callback callback)
 
 {
-	struct smbcli_request *req; 
+	struct smbcli_request *req;
 	uint8_t op = SMBsearch;
 
 	if (io->generic.level == RAW_SEARCH_FFIRST) {
@@ -86,19 +86,19 @@ static NTSTATUS smb_raw_search_first_old(struct smbcli_tree *tree,
 	if (!req) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	SSVAL(req->out.vwv, VWV(0), io->search_first.in.max_count);
 	SSVAL(req->out.vwv, VWV(1), io->search_first.in.search_attrib);
 	smbcli_req_append_ascii4(req, io->search_first.in.pattern, STR_TERMINATE);
 	smbcli_req_append_var_block(req, NULL, 0);
 
-	if (!smbcli_request_send(req) || 
+	if (!smbcli_request_send(req) ||
 	    !smbcli_request_receive(req)) {
 		return smbcli_request_destroy(req);
 	}
 
 	if (NT_STATUS_IS_OK(req->status)) {
-		io->search_first.out.count = SVAL(req->in.vwv, VWV(0));	
+		io->search_first.out.count = SVAL(req->in.vwv, VWV(0));
 		smb_raw_search_backend(req, mem_ctx, io->search_first.out.count, private_data, callback);
 	}
 
@@ -114,19 +114,19 @@ static NTSTATUS smb_raw_search_next_old(struct smbcli_tree *tree,
 					smbcli_search_callback callback)
 
 {
-	struct smbcli_request *req; 
+	struct smbcli_request *req;
 	uint8_t var_block[21];
 	uint8_t op = SMBsearch;
 
 	if (io->generic.level == RAW_SEARCH_FFIRST) {
 		op = SMBffirst;
 	}
-	
+
 	req = smbcli_request_setup(tree, op, 2, 0);
 	if (!req) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	SSVAL(req->out.vwv, VWV(0), io->search_next.in.max_count);
 	SSVAL(req->out.vwv, VWV(1), io->search_next.in.search_attrib);
 	smbcli_req_append_ascii4(req, "", STR_TERMINATE);
@@ -148,7 +148,7 @@ static NTSTATUS smb_raw_search_next_old(struct smbcli_tree *tree,
 		io->search_next.out.count = SVAL(req->in.vwv, VWV(0));
 		smb_raw_search_backend(req, mem_ctx, io->search_next.out.count, private_data, callback);
 	}
-	
+
 	return smbcli_request_destroy(req);
 }
 
@@ -159,14 +159,14 @@ static NTSTATUS smb_raw_search_next_old(struct smbcli_tree *tree,
 static NTSTATUS smb_raw_search_close_old(struct smbcli_tree *tree,
 					 union smb_search_close *io)
 {
-	struct smbcli_request *req; 
+	struct smbcli_request *req;
 	uint8_t var_block[21];
 
 	req = smbcli_request_setup(tree, SMBfclose, 2, 0);
 	if (!req) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	SSVAL(req->out.vwv, VWV(0), io->fclose.in.max_count);
 	SSVAL(req->out.vwv, VWV(1), io->fclose.in.search_attrib);
 	smbcli_req_append_ascii4(req, "", STR_TERMINATE);
@@ -201,9 +201,9 @@ static NTSTATUS smb_raw_search_first_blob(struct smbcli_tree *tree,
 	struct smb_trans2 tp;
 	uint16_t setup = TRANSACT2_FINDFIRST;
 	NTSTATUS status;
-	
+
 	tp.in.max_setup = 0;
-	tp.in.flags = 0; 
+	tp.in.flags = 0;
 	tp.in.timeout = 0;
 	tp.in.setup_count = 1;
 	tp.in.data = data_blob(NULL, 0);
@@ -220,12 +220,12 @@ static NTSTATUS smb_raw_search_first_blob(struct smbcli_tree *tree,
 	}
 
 	if (io->t2ffirst.data_level == RAW_SEARCH_DATA_EA_LIST) {
-		if (!ea_push_name_list(mem_ctx, 
+		if (!ea_push_name_list(mem_ctx,
 				       &tp.in.data,
 				       io->t2ffirst.in.num_names,
 				       io->t2ffirst.in.ea_names)) {
 			return NT_STATUS_NO_MEMORY;
-		}		
+		}
 	}
 
 	tp.in.params = data_blob_talloc(mem_ctx, NULL, 12);
@@ -234,7 +234,7 @@ static NTSTATUS smb_raw_search_first_blob(struct smbcli_tree *tree,
 	}
 
 	SSVAL(tp.in.params.data, 0, io->t2ffirst.in.search_attrib);
-	SSVAL(tp.in.params.data, 2, io->t2ffirst.in.max_count);	
+	SSVAL(tp.in.params.data, 2, io->t2ffirst.in.max_count);
 	SSVAL(tp.in.params.data, 4, io->t2ffirst.in.flags);
 	SSVAL(tp.in.params.data, 6, io->t2ffirst.data_level);
 	SIVAL(tp.in.params.data, 8, io->t2ffirst.in.storage_type);
@@ -269,9 +269,9 @@ static NTSTATUS smb_raw_search_next_blob(struct smbcli_tree *tree,
 	struct smb_trans2 tp;
 	uint16_t setup = TRANSACT2_FINDNEXT;
 	NTSTATUS status;
-	
+
 	tp.in.max_setup = 0;
-	tp.in.flags = 0; 
+	tp.in.flags = 0;
 	tp.in.timeout = 0;
 	tp.in.setup_count = 1;
 	tp.in.data = data_blob(NULL, 0);
@@ -288,19 +288,19 @@ static NTSTATUS smb_raw_search_next_blob(struct smbcli_tree *tree,
 	}
 
 	if (io->t2fnext.data_level == RAW_SEARCH_DATA_EA_LIST) {
-		if (!ea_push_name_list(mem_ctx, 
+		if (!ea_push_name_list(mem_ctx,
 				       &tp.in.data,
 				       io->t2fnext.in.num_names,
 				       io->t2fnext.in.ea_names)) {
 			return NT_STATUS_NO_MEMORY;
-		}		
+		}
 	}
-	
+
 	tp.in.params = data_blob_talloc(mem_ctx, NULL, 12);
 	if (!tp.in.params.data) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	SSVAL(tp.in.params.data, 0, io->t2fnext.in.handle);
 	SSVAL(tp.in.params.data, 2, io->t2fnext.in.max_count);
 	SSVAL(tp.in.params.data, 4, io->t2fnext.data_level);
@@ -329,7 +329,7 @@ static NTSTATUS smb_raw_search_next_blob(struct smbcli_tree *tree,
   parse the wire search formats that are in common between SMB and
   SMB2
 */
-NTSTATUS smb_raw_search_common(TALLOC_CTX *mem_ctx, 
+NTSTATUS smb_raw_search_common(TALLOC_CTX *mem_ctx,
 			       enum smb_search_data_level level,
 			       const DATA_BLOB *blob,
 			       union smb_search_data *data,
@@ -465,7 +465,7 @@ NTSTATUS smb_raw_search_common(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INFO_LENGTH_MISMATCH;
 		}
 		return NT_STATUS_OK;
-	
+
 	default:
 		break;
 	}
@@ -476,13 +476,13 @@ NTSTATUS smb_raw_search_common(TALLOC_CTX *mem_ctx,
 
 
 /*
-  parse a trans2 search response. 
+  parse a trans2 search response.
   Return the number of bytes consumed
   return 0 for success with end of list
   return -1 for a parse error
 */
 static int parse_trans2_search(struct smbcli_tree *tree,
-			       TALLOC_CTX *mem_ctx, 
+			       TALLOC_CTX *mem_ctx,
 			       enum smb_search_data_level level,
 			       uint16_t flags,
 			       DATA_BLOB *blob,
@@ -570,7 +570,7 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 		if (eablob.length > blob->length - 24) {
 			return -1;
 		}
-		status = ea_pull_list(&eablob, mem_ctx, 
+		status = ea_pull_list(&eablob, mem_ctx,
 				      &data->ea_list.eas.num_eas,
 				      &data->ea_list.eas.eas);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -578,7 +578,7 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 		}
 		len = smbcli_blob_pull_string(tree->session, mem_ctx, blob,
 					      &data->ea_list.name,
-					      22+ea_size, 23+ea_size, 
+					      22+ea_size, 23+ea_size,
 					      STR_LEN8BIT | STR_NOALIGN);
 		return len + ea_size + 23 + 1;
 
@@ -661,7 +661,7 @@ static int parse_trans2_search(struct smbcli_tree *tree,
 			if (!(tree->session->transport->negotiate.capabilities & CAP_UNICODE)) {
 				str_flags = STR_ASCII;
 			}
-			
+
 		status = smb_raw_search_common(mem_ctx, level, blob, data, &ofs, str_flags);
 		if (!NT_STATUS_IS_OK(status)) {
 			return -1;
@@ -746,7 +746,7 @@ _PUBLIC_ NTSTATUS smb_raw_search_first(struct smbcli_tree *tree,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (p_blob.length < 10) {
 		DEBUG(1,("smb_raw_search_first: parms wrong size %d != expected_param_size\n",
 			(int)p_blob.length));
@@ -759,10 +759,10 @@ _PUBLIC_ NTSTATUS smb_raw_search_first(struct smbcli_tree *tree,
 	io->t2ffirst.out.end_of_search = SVAL(p_blob.data, 4);
 
 	status = smb_raw_t2search_backend(tree, mem_ctx,
-					  io->generic.data_level, 
+					  io->generic.data_level,
 					  io->t2ffirst.in.flags, io->t2ffirst.out.count,
 					  &d_blob, private_data, callback);
-	
+
 	return status;
 }
 
@@ -796,7 +796,7 @@ NTSTATUS smb_raw_search_next(struct smbcli_tree *tree,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (p_blob.length != 8) {
 		DEBUG(1,("smb_raw_search_next: parms wrong size %d != expected_param_size\n",
 			(int)p_blob.length));
@@ -806,16 +806,16 @@ NTSTATUS smb_raw_search_next(struct smbcli_tree *tree,
 	/* process output data */
 	io->t2fnext.out.count = SVAL(p_blob.data, 0);
 	io->t2fnext.out.end_of_search = SVAL(p_blob.data, 2);
-		
+
 	status = smb_raw_t2search_backend(tree, mem_ctx,
-					  io->generic.data_level, 
+					  io->generic.data_level,
 					  io->t2fnext.in.flags, io->t2fnext.out.count,
 					  &d_blob, private_data, callback);
-	
+
 	return status;
 }
 
-/* 
+/*
    Implements trans2findclose2
  */
 NTSTATUS smb_raw_search_close(struct smbcli_tree *tree,
@@ -826,7 +826,7 @@ NTSTATUS smb_raw_search_close(struct smbcli_tree *tree,
 	if (io->generic.level == RAW_FINDCLOSE_FCLOSE) {
 		return smb_raw_search_close_old(tree, io);
 	}
-	
+
 	req = smbcli_request_setup(tree, SMBfindclose, 1, 0);
 	if (!req) {
 		return NT_STATUS_NO_MEMORY;

@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    client error handling routines
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) James Myers 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -27,7 +27,7 @@
  Return an error message from the last response
 ****************************************************************************/
 _PUBLIC_ const char *smbcli_errstr(struct smbcli_tree *tree)
-{   
+{
 	switch (tree->session->transport->error.etype) {
 	case ETYPE_SMB:
 		return nt_errstr(tree->session->transport->error.e.nt_status);

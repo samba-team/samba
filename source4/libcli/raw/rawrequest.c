@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
-   
+
    Copyright (C) Andrew Tridgell  2003
    Copyright (C) James Myers 2003 <myersjj@samba.org>
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -96,7 +96,7 @@ struct smbcli_request *smbcli_request_setup_transport(struct smbcli_transport *t
 	req->out.size = size;
 
 	/* over allocate by a small amount */
-	req->out.allocated = req->out.size + REQ_OVER_ALLOCATION; 
+	req->out.allocated = req->out.size + REQ_OVER_ALLOCATION;
 
 	req->out.buffer = talloc_zero_array(req, uint8_t, req->out.allocated);
 	if (!req->out.buffer) {
@@ -127,7 +127,7 @@ struct smbcli_request *smbcli_request_setup_transport(struct smbcli_transport *t
 	SSVAL(req->out.hdr, HDR_PIDHIGH,0);
 	SIVAL(req->out.hdr, HDR_RCLS, 0);
 	memset(req->out.hdr+HDR_SS_FIELD, 0, 10);
-	
+
 	return req;
 }
 
@@ -154,7 +154,7 @@ struct smbcli_request *smbcli_request_setup_session(struct smbcli_session *sessi
 	SSVAL(req->out.hdr, HDR_PID, session->pid & 0xFFFF);
 	SSVAL(req->out.hdr, HDR_PIDHIGH, session->pid >> 16);
 	SSVAL(req->out.hdr, HDR_UID, session->vuid);
-	
+
 	return req;
 }
 
@@ -162,7 +162,7 @@ struct smbcli_request *smbcli_request_setup_session(struct smbcli_session *sessi
   setup a request for tree based commands
 */
 struct smbcli_request *smbcli_request_setup(struct smbcli_tree *tree,
-					    uint8_t command, 
+					    uint8_t command,
 					    unsigned int wct, unsigned int buflen)
 {
 	struct smbcli_request *req;
@@ -208,7 +208,7 @@ static void smbcli_req_grow_allocation(struct smbcli_request *req, unsigned int 
 		/* the malloc library gave us the same pointer */
 		return;
 	}
-	
+
 	/* update the pointers into the packet */
 	req->out.data = buf2 + PTR_DIFF(req->out.data, req->out.buffer);
 	req->out.ptr  = buf2 + PTR_DIFF(req->out.ptr,  req->out.buffer);
@@ -222,7 +222,7 @@ static void smbcli_req_grow_allocation(struct smbcli_request *req, unsigned int 
 /*
   grow the data buffer portion of a reply packet. Note that as this
   can reallocate the packet buffer this invalidates any local pointers
-  into the packet. 
+  into the packet.
 
   To cope with this req->out.ptr is supplied. This will be updated to
   point at the same offset into the packet as before this call
@@ -248,7 +248,7 @@ static void smbcli_req_grow_data(struct smbcli_request *req, unsigned int new_si
   initial data buffer size.
 */
 NTSTATUS smbcli_chained_request_setup(struct smbcli_request *req,
-				      uint8_t command, 
+				      uint8_t command,
 				      unsigned int wct, size_t buflen)
 {
 	size_t wct_ofs;
@@ -452,7 +452,7 @@ size_t smbcli_req_append_string(struct smbcli_request *req, const char *str, uns
 		flags |= (req->transport->negotiate.capabilities & CAP_UNICODE) ? STR_UNICODE : STR_ASCII;
 	}
 
-	len = (strlen(str)+2) * MAX_BYTES_PER_CHAR;		
+	len = (strlen(str)+2) * MAX_BYTES_PER_CHAR;
 
 	smbcli_req_grow_allocation(req, len + req->out.data_size);
 
@@ -473,7 +473,7 @@ size_t smbcli_req_append_string(struct smbcli_request *req, const char *str, uns
    2) the string in the packet may need a 1 byte UCS2 alignment
 
  this is used in places where the non-terminated string byte length is
- placed in the packet as a separate field  
+ placed in the packet as a separate field
 */
 size_t smbcli_req_append_string_len(struct smbcli_request *req, const char *str, unsigned int flags, int *len)
 {
@@ -686,10 +686,10 @@ size_t smbcli_req_pull_ascii(struct request_bufinfo *bufinfo, TALLOC_CTX *mem_ct
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the packet is returned
 */
-size_t smbcli_req_pull_string(struct request_bufinfo *bufinfo, TALLOC_CTX *mem_ctx, 
+size_t smbcli_req_pull_string(struct request_bufinfo *bufinfo, TALLOC_CTX *mem_ctx,
 			   char **dest, const uint8_t *src, int byte_len, unsigned int flags)
 {
-	if (!(flags & STR_ASCII) && 
+	if (!(flags & STR_ASCII) &&
 	    (((flags & STR_UNICODE) || (bufinfo->flags & BUFINFO_FLAG_UNICODE)))) {
 		return smbcli_req_pull_ucs2(bufinfo, mem_ctx, dest, src, byte_len, flags);
 	}
@@ -784,7 +784,7 @@ NTTIME smbcli_pull_nttime(void *base, uint16_t offset)
   of bytes consumed in the blob is returned
 */
 size_t smbcli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
-			     const DATA_BLOB *blob, const char **dest, 
+			     const DATA_BLOB *blob, const char **dest,
 			     const uint8_t *src, int byte_len, unsigned int flags)
 {
 	int src_len, src_len2, alignment=0;
@@ -841,7 +841,7 @@ size_t smbcli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
   of bytes consumed in the blob is returned
 */
 static size_t smbcli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
-				     const DATA_BLOB *blob, const char **dest, 
+				     const DATA_BLOB *blob, const char **dest,
 				     const uint8_t *src, int byte_len, unsigned int flags)
 {
 	int src_len, src_len2;
@@ -891,9 +891,9 @@ static size_t smbcli_blob_pull_ascii(TALLOC_CTX *mem_ctx,
 */
 size_t smbcli_blob_pull_string(struct smbcli_session *session,
 			       TALLOC_CTX *mem_ctx,
-			       const DATA_BLOB *blob, 
-			       struct smb_wire_string *dest, 
-			       uint16_t len_offset, uint16_t str_offset, 
+			       const DATA_BLOB *blob,
+			       struct smb_wire_string *dest,
+			       uint16_t len_offset, uint16_t str_offset,
 			       unsigned int flags)
 {
 	int extra;
@@ -931,8 +931,8 @@ size_t smbcli_blob_pull_string(struct smbcli_session *session,
 		if (flags & STR_LEN_NOTERM) {
 			extra = 2;
 		}
-		return align + extra + smbcli_blob_pull_ucs2(mem_ctx, blob, &dest->s, 
-							  blob->data+str_offset+align, 
+		return align + extra + smbcli_blob_pull_ucs2(mem_ctx, blob, &dest->s,
+							  blob->data+str_offset+align,
 							  dest->private_length, flags);
 	}
 
@@ -940,7 +940,7 @@ size_t smbcli_blob_pull_string(struct smbcli_session *session,
 		extra = 1;
 	}
 
-	return extra + smbcli_blob_pull_ascii(mem_ctx, blob, &dest->s, 
+	return extra + smbcli_blob_pull_ascii(mem_ctx, blob, &dest->s,
 					   blob->data+str_offset, dest->private_length, flags);
 }
 
@@ -958,16 +958,16 @@ size_t smbcli_blob_pull_string(struct smbcli_session *session,
 */
 size_t smbcli_blob_pull_unix_string(struct smbcli_session *session,
 			    TALLOC_CTX *mem_ctx,
-			    DATA_BLOB *blob, 
-			    const char **dest, 
-			    uint16_t str_offset, 
+			    DATA_BLOB *blob,
+			    const char **dest,
+			    uint16_t str_offset,
 			    unsigned int flags)
 {
 	int extra = 0;
 	*dest = NULL;
-	
-	if (!(flags & STR_ASCII) && 
-	    ((flags & STR_UNICODE) || 
+
+	if (!(flags & STR_ASCII) &&
+	    ((flags & STR_UNICODE) ||
 	     (session->transport->negotiate.capabilities & CAP_UNICODE))) {
 		int align = 0;
 		if ((str_offset&1) && !(flags & STR_NOALIGN)) {
@@ -976,8 +976,8 @@ size_t smbcli_blob_pull_unix_string(struct smbcli_session *session,
 		if (flags & STR_LEN_NOTERM) {
 			extra = 2;
 		}
-		return align + extra + smbcli_blob_pull_ucs2(mem_ctx, blob, dest, 
-							  blob->data+str_offset+align, 
+		return align + extra + smbcli_blob_pull_ucs2(mem_ctx, blob, dest,
+							  blob->data+str_offset+align,
 							  -1, flags);
 	}
 
@@ -994,7 +994,7 @@ size_t smbcli_blob_pull_unix_string(struct smbcli_session *session,
   append a string into a blob
 */
 size_t smbcli_blob_append_string(struct smbcli_session *session,
-			      TALLOC_CTX *mem_ctx, DATA_BLOB *blob, 
+			      TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 			      const char *str, unsigned int flags)
 {
 	size_t max_len;
@@ -1007,7 +1007,7 @@ size_t smbcli_blob_append_string(struct smbcli_session *session,
 		flags |= (session->transport->negotiate.capabilities & CAP_UNICODE) ? STR_UNICODE : STR_ASCII;
 	}
 
-	max_len = (strlen(str)+2) * MAX_BYTES_PER_CHAR;		
+	max_len = (strlen(str)+2) * MAX_BYTES_PER_CHAR;
 
 	blob->data = talloc_realloc(mem_ctx, blob->data, uint8_t, blob->length + max_len);
 	if (!blob->data) {

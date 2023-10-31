@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB client transport context management functions
 
    Copyright (C) Andrew Tridgell 1994-2005
    Copyright (C) James Myers 2003 <myersjj@samba.org>
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -45,8 +45,8 @@ static int transport_destructor(struct smbcli_transport *transport)
   create a transport structure based on an established socket
 */
 struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
-					       TALLOC_CTX *parent_ctx, 
-					       bool primary, 
+					       TALLOC_CTX *parent_ctx,
+					       bool primary,
 					       struct smbcli_options *options)
 {
 	struct smbcli_transport *transport;
@@ -173,7 +173,7 @@ void smbcli_transport_dead(struct smbcli_transport *transport, NTSTATUS status)
 	smbXcli_conn_disconnect(transport->conn, status);
 }
 
-static void idle_handler(struct tevent_context *ev, 
+static void idle_handler(struct tevent_context *ev,
 			 struct tevent_timer *te, struct timeval t, void *private_data)
 {
 	struct smbcli_transport *transport = talloc_get_type(private_data,
@@ -203,7 +203,7 @@ static void idle_handler(struct tevent_context *ev,
   setup the idle handler for a transport
   the period is in microseconds
 */
-_PUBLIC_ void smbcli_transport_idle_handler(struct smbcli_transport *transport, 
+_PUBLIC_ void smbcli_transport_idle_handler(struct smbcli_transport *transport,
 				   void (*idle_func)(struct smbcli_transport *, void *),
 				   uint64_t period,
 				   void *private_data)
