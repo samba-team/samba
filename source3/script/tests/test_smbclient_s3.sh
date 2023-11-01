@@ -1492,50 +1492,11 @@ EOF
 		return
 	fi
 
-	# Create a file to be accessed behind the symlink
-	touch $local_slink_target_dir/x
-	ret=$?
-	if [ $ret -ne 0 ]; then
-		echo "$out"
-		echo "failed - unable to create file"
-		ls -la $local_test_dir
-		false
-		return
-	fi
-
 	# Can we cd into the symlink name and ls ?
 	tmpfile=$PREFIX/smbclient_interactive_prompt_commands
 	cat >$tmpfile <<EOF
 cd $share_test_dir\\sym_name
 ls
-quit
-EOF
-	cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/local_symlinks -I $SERVER_IP $LOCAL_ADDARGS < $tmpfile 2>&1'
-	eval echo "$cmd"
-	out=$(eval $cmd)
-	ret=$?
-	rm -f $tmpfile
-
-	if [ $ret -ne 0 ]; then
-		echo "$out"
-		echo "failed accessing local_symlinks with error $ret"
-		false
-		return
-	fi
-
-	echo "$out" | grep 'NT_STATUS_'
-	ret=$?
-	if [ $ret -eq 0 ]; then
-		echo "$out"
-		echo "failed - got an NT_STATUS error"
-		false
-		return
-	fi
-
-	# Can we get the test file behind the symlink'ed dir?
-	tmpfile=$PREFIX/smbclient_interactive_prompt_commands
-	cat >$tmpfile <<EOF
-get $share_test_dir\\sym_name\\x -
 quit
 EOF
 	cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/local_symlinks -I $SERVER_IP $LOCAL_ADDARGS < $tmpfile 2>&1'

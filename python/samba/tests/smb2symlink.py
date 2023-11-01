@@ -198,6 +198,29 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
 
         self.assertEqual(syml, ('bar', 'bar', 0, 1));
 
+    def test_bug15505(self):
+        """Test an absolute intermediate symlink inside the share"""
+        (smb1,smb2) = self.connections(smb1share="tmp",smb2share="tmp")
+        symlink="syml"
+
+        localpath=samba.tests.env_get_var_value("LOCAL_PATH")
+
+        smb1.mkdir("sub")
+        self.addCleanup(self.clean_file, smb1, "sub")
+
+        self.create_symlink(smb1, f'{localpath}/sub1', "sub/lnk")
+        self.addCleanup(self.clean_file, smb1, "sub/lnk")
+
+        smb1.mkdir("sub1")
+        self.addCleanup(self.clean_file, smb1, "sub1")
+
+        fd = smb1.create("sub1/x", CreateDisposition=libsmb.FILE_CREATE);
+        smb1.close(fd)
+        self.addCleanup(self.clean_file, smb1, "sub1/x")
+
+        fd = smb2.create("sub\\lnk\\x")
+        smb2.close(fd)
+
 if __name__ == '__main__':
     import unittest
     unittest.main()
