@@ -59,7 +59,10 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
         try:
             conn.unlink(filename)
         except NTSTATUSError as e:
-            if e.args[0] != ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND:
+            if e.args[0] == ntstatus.NT_STATUS_FILE_IS_A_DIRECTORY:
+                conn.rmdir(filename)
+            elif not (e.args[0] == ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND or
+                      e.args[0] == ntstatus.NT_STATUS_OBJECT_PATH_NOT_FOUND):
                 raise
 
     def create_symlink(self, conn, target, symlink):
