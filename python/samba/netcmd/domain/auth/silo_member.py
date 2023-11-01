@@ -21,7 +21,6 @@
 #
 
 import samba.getopt as options
-from ldb import Dn
 from samba.netcmd import Command, CommandError, Option, SuperCommand
 from samba.netcmd.domain.models import AuthenticationSilo, User
 from samba.netcmd.domain.models.exceptions import ModelError
@@ -61,14 +60,8 @@ class cmd_domain_auth_silo_member_add(Command):
         if silo is None:
             raise CommandError(f"Authentication silo {name} not found.")
 
-        # Try a Dn first, then sAMAccountName.
         try:
-            user_query = {"dn": Dn(ldb, member)}
-        except ValueError:
-            user_query = {"username": member}
-
-        try:
-            user = User.get(ldb, **user_query)
+            user = User.find(ldb, member)
         except ModelError as e:
             raise CommandError(e)
 
@@ -170,14 +163,8 @@ class cmd_domain_auth_silo_member_remove(Command):
         if silo is None:
             raise CommandError(f"Authentication silo {name} not found.")
 
-        # Try a Dn first, then sAMAccountName.
         try:
-            user_query = {"dn": Dn(ldb, member)}
-        except ValueError:
-            user_query = {"username": member}
-
-        try:
-            user = User.get(ldb, **user_query)
+            user = User.find(ldb, member)
         except ModelError as e:
             raise CommandError(e)
 
