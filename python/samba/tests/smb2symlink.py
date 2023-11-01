@@ -23,16 +23,17 @@ import samba.tests.libsmb
 
 class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
 
-    def connections(self):
-        share = samba.tests.env_get_var_value(
-            "SMB1_SHARE", allow_missing=True)
-        if not share:
-            share = "nosymlinks_smb1allow"
+    def connections(self, smb1share=None, smb2share=None):
+        if not smb1share:
+            smb1share = samba.tests.env_get_var_value(
+                "SMB1_SHARE", allow_missing=True)
+            if not smb1share:
+                smb1share = "nosymlinks_smb1allow"
 
         try:
             smb1 = libsmb.Conn(
                 self.server_ip,
-                share,
+                smb1share,
                 self.lp,
                 self.creds,
                 force_smb1=True)
@@ -41,13 +42,15 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
                 raise
         smb1.smb1_posix()
 
-        share = samba.tests.env_get_var_value(
-            "SMB2_SHARE", allow_missing=True)
-        if not share:
-            share = "nosymlinks"
+        if not smb2share:
+            smb2share = samba.tests.env_get_var_value(
+                "SMB2_SHARE", allow_missing=True)
+            if not smb2share:
+                smb2share = "nosymlinks"
+
         smb2 = libsmb.Conn(
             self.server_ip,
-            share,
+            smb2share,
             self.lp,
             self.creds)
         return (smb1, smb2)
