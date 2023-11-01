@@ -4390,12 +4390,12 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
         # Show that authorization succeeds.
         self._tgs_req(client_tgt, 0, client_creds, target_creds, armor_tgt=mach_tgt,
                       expected_groups=expected_sids,
-                      expect_device_info=bool(expected_device_sids) or None,
+                      expect_device_info=bool(expected_device_sids),
                       expected_device_domain_sid=domain_sid_str,
                       expected_device_groups=expected_device_sids,
                       expect_client_claims=bool(expected_client_claims) or None,
                       expected_client_claims=expected_client_claims,
-                      expect_device_claims=bool(expected_device_claims) or None,
+                      expect_device_claims=bool(expected_device_claims),
                       expected_device_claims=expected_device_claims)
 
         self.check_tgs_log(client_creds, target_creds)
