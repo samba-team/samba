@@ -133,3 +133,11 @@
 ^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.ConditionalAceTests\.test_device_in_network_group_rbcd\(ad_dc\)$
 ^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.DeviceRestrictionTests\.test_device_in_network_group\(ad_dc\)$
 ^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_device_in_network_group\(ad_dc\)$
+^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_existing_device_claims\(ad_dc\)$
+^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_existing_device_info_and_claims\(ad_dc\)$
+^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_existing_device_info\(ad_dc\)$
+^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_claims_valid_existing_device_claims\(ad_dc\)$
+^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_claims_valid_existing_device_info_and_claims\(ad_dc\)$
+^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_claims_valid_existing_device_info\(ad_dc\)$
+^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_compound_id_support_existing_device_claims\(ad_dc\)$
+^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_compound_id_support_no_claims_valid_existing_device_claims\(ad_dc\)$

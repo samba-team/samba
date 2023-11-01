@@ -4255,11 +4255,63 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
     def test_pac_device_info(self):
         self._run_pac_device_info_test()
 
+    def test_pac_device_info_existing_device_info(self):
+        self._run_pac_device_info_test(existing_device_info=True)
+
+    def test_pac_device_info_existing_device_claims(self):
+        self._run_pac_device_info_test(existing_device_claims=True)
+
+    def test_pac_device_info_existing_device_info_and_claims(self):
+        self._run_pac_device_info_test(existing_device_claims=True,
+                                       existing_device_info=True)
+
     def test_pac_device_info_no_compound_id_support(self):
         self._run_pac_device_info_test(compound_id_support=False)
 
+    def test_pac_device_info_no_compound_id_support_existing_device_info(self):
+        self._run_pac_device_info_test(compound_id_support=False,
+                                       existing_device_info=True)
+
+    def test_pac_device_info_no_compound_id_support_existing_device_claims(self):
+        self._run_pac_device_info_test(compound_id_support=False,
+                                       existing_device_claims=True)
+
+    def test_pac_device_info_no_compound_id_support_existing_device_info_and_claims(self):
+        self._run_pac_device_info_test(compound_id_support=False,
+                                       existing_device_claims=True,
+                                       existing_device_info=True)
+
+    def test_pac_device_info_no_compound_id_support_no_claims_valid_existing_device_info(self):
+        self._run_pac_device_info_test(device_claims_valid=False,
+                                       compound_id_support=False,
+                                       existing_device_info=True)
+
+    def test_pac_device_info_no_compound_id_support_no_claims_valid_existing_device_claims(self):
+        self._run_pac_device_info_test(device_claims_valid=False,
+                                       compound_id_support=False,
+                                       existing_device_claims=True)
+
+    def test_pac_device_info_no_compound_id_support_no_claims_valid_existing_device_info_and_claims(self):
+        self._run_pac_device_info_test(device_claims_valid=False,
+                                       compound_id_support=False,
+                                       existing_device_claims=True,
+                                       existing_device_info=True)
+
     def test_pac_device_info_no_claims_valid(self):
         self._run_pac_device_info_test(device_claims_valid=False)
+
+    def test_pac_device_info_no_claims_valid_existing_device_info(self):
+        self._run_pac_device_info_test(device_claims_valid=False,
+                                       existing_device_info=True)
+
+    def test_pac_device_info_no_claims_valid_existing_device_claims(self):
+        self._run_pac_device_info_test(device_claims_valid=False,
+                                       existing_device_claims=True)
+
+    def test_pac_device_info_no_claims_valid_existing_device_info_and_claims(self):
+        self._run_pac_device_info_test(device_claims_valid=False,
+                                       existing_device_claims=True,
+                                       existing_device_info=True)
 
     def _run_pac_device_info_test(self, *,
                                   compound_id_support=True,
