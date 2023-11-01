@@ -4255,29 +4255,73 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
     def test_pac_device_info(self):
         self._run_pac_device_info_test()
 
+    def test_pac_device_info_target_policy(self):
+        target_policy = self.allow_if('Device_Member_of {{SID({device_0})}}')
+        self._run_pac_device_info_test(target_policy=target_policy)
+
     def test_pac_device_info_existing_device_info(self):
         self._run_pac_device_info_test(existing_device_info=True)
 
+    def test_pac_device_info_existing_device_info_target_policy(self):
+        target_policy = self.allow_if('Device_Member_of {{SID({device_0})}}')
+        self._run_pac_device_info_test(target_policy=target_policy,
+                                       existing_device_info=True)
+
     def test_pac_device_info_existing_device_claims(self):
         self._run_pac_device_info_test(existing_device_claims=True)
+
+    def test_pac_device_info_existing_device_claims_target_policy(self):
+        target_policy = self.allow_if('Device_Member_of {{SID({device_0})}}')
+        self._run_pac_device_info_test(target_policy=target_policy,
+                                       existing_device_claims=True)
 
     def test_pac_device_info_existing_device_info_and_claims(self):
         self._run_pac_device_info_test(existing_device_claims=True,
                                        existing_device_info=True)
 
+    def test_pac_device_info_existing_device_info_and_claims_target_policy(self):
+        target_policy = self.allow_if('Device_Member_of {{SID({device_0})}}')
+        self._run_pac_device_info_test(target_policy=target_policy,
+                                       existing_device_claims=True,
+                                       existing_device_info=True)
+
     def test_pac_device_info_no_compound_id_support(self):
         self._run_pac_device_info_test(compound_id_support=False)
 
+    def test_pac_device_info_no_compound_id_support_target_policy(self):
+        target_policy = self.allow_if('Device_Member_of {{SID({device_0})}}')
+        self._run_pac_device_info_test(target_policy=target_policy,
+                                       compound_id_support=False)
+
     def test_pac_device_info_no_compound_id_support_existing_device_info(self):
         self._run_pac_device_info_test(compound_id_support=False,
+                                       existing_device_info=True)
+
+    def test_pac_device_info_no_compound_id_support_existing_device_info_target_policy(self):
+        target_policy = self.allow_if('Device_Member_of {{SID({device_0})}}')
+        self._run_pac_device_info_test(target_policy=target_policy,
+                                       compound_id_support=False,
                                        existing_device_info=True)
 
     def test_pac_device_info_no_compound_id_support_existing_device_claims(self):
         self._run_pac_device_info_test(compound_id_support=False,
                                        existing_device_claims=True)
 
+    def test_pac_device_info_no_compound_id_support_existing_device_claims_target_policy(self):
+        target_policy = self.allow_if('Device_Member_of {{SID({device_0})}}')
+        self._run_pac_device_info_test(target_policy=target_policy,
+                                       compound_id_support=False,
+                                       existing_device_claims=True)
+
     def test_pac_device_info_no_compound_id_support_existing_device_info_and_claims(self):
         self._run_pac_device_info_test(compound_id_support=False,
+                                       existing_device_claims=True,
+                                       existing_device_info=True)
+
+    def test_pac_device_info_no_compound_id_support_existing_device_info_and_claims_target_policy(self):
+        target_policy = self.allow_if('Device_Member_of {{SID({device_0})}}')
+        self._run_pac_device_info_test(target_policy=target_policy,
+                                       compound_id_support=False,
                                        existing_device_claims=True,
                                        existing_device_info=True)
 
@@ -4286,8 +4330,22 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
                                        compound_id_support=False,
                                        existing_device_info=True)
 
+    def test_pac_device_info_no_compound_id_support_no_claims_valid_existing_device_info_target_policy(self):
+        target_policy = self.allow_if('Device_Member_of {{SID({device_0})}}')
+        self._run_pac_device_info_test(target_policy=target_policy,
+                                       device_claims_valid=False,
+                                       compound_id_support=False,
+                                       existing_device_info=True)
+
     def test_pac_device_info_no_compound_id_support_no_claims_valid_existing_device_claims(self):
         self._run_pac_device_info_test(device_claims_valid=False,
+                                       compound_id_support=False,
+                                       existing_device_claims=True)
+
+    def test_pac_device_info_no_compound_id_support_no_claims_valid_existing_device_claims_target_policy(self):
+        target_policy = self.allow_if('Device_Member_of {{SID({device_0})}}')
+        self._run_pac_device_info_test(target_policy=target_policy,
+                                       device_claims_valid=False,
                                        compound_id_support=False,
                                        existing_device_claims=True)
 
@@ -4297,15 +4355,40 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
                                        existing_device_claims=True,
                                        existing_device_info=True)
 
+    def test_pac_device_info_no_compound_id_support_no_claims_valid_existing_device_info_and_claims_target_policy(self):
+        target_policy = self.allow_if('Device_Member_of {{SID({device_0})}}')
+        self._run_pac_device_info_test(target_policy=target_policy,
+                                       device_claims_valid=False,
+                                       compound_id_support=False,
+                                       existing_device_claims=True,
+                                       existing_device_info=True)
+
     def test_pac_device_info_no_claims_valid(self):
         self._run_pac_device_info_test(device_claims_valid=False)
+
+    def test_pac_device_info_no_claims_valid_target_policy(self):
+        target_policy = self.allow_if('Device_Member_of {{SID({device_0})}}')
+        self._run_pac_device_info_test(target_policy=target_policy,
+                                       device_claims_valid=False)
 
     def test_pac_device_info_no_claims_valid_existing_device_info(self):
         self._run_pac_device_info_test(device_claims_valid=False,
                                        existing_device_info=True)
 
+    def test_pac_device_info_no_claims_valid_existing_device_info_target_policy(self):
+        target_policy = self.allow_if('Device_Member_of {{SID({device_0})}}')
+        self._run_pac_device_info_test(target_policy=target_policy,
+                                       device_claims_valid=False,
+                                       existing_device_info=True)
+
     def test_pac_device_info_no_claims_valid_existing_device_claims(self):
         self._run_pac_device_info_test(device_claims_valid=False,
+                                       existing_device_claims=True)
+
+    def test_pac_device_info_no_claims_valid_existing_device_claims_target_policy(self):
+        target_policy = self.allow_if('Device_Member_of {{SID({device_0})}}')
+        self._run_pac_device_info_test(target_policy=target_policy,
+                                       device_claims_valid=False,
                                        existing_device_claims=True)
 
     def test_pac_device_info_no_claims_valid_existing_device_info_and_claims(self):
@@ -4313,7 +4396,15 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
                                        existing_device_claims=True,
                                        existing_device_info=True)
 
+    def test_pac_device_info_no_claims_valid_existing_device_info_and_claims_target_policy(self):
+        target_policy = self.allow_if('Device_Member_of {{SID({device_0})}}')
+        self._run_pac_device_info_test(target_policy=target_policy,
+                                       device_claims_valid=False,
+                                       existing_device_claims=True,
+                                       existing_device_info=True)
+
     def _run_pac_device_info_test(self, *,
+                                  target_policy=None,
                                   compound_id_support=True,
                                   device_claims_valid=True,
                                   existing_device_claims=False,
@@ -4391,11 +4482,19 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
             ('S-1-2-3-4', SidType.EXTRA_SID, self.default_attrs),
         }
 
+        device_sid_0 = 'S-1-2-3-4'
+        device_sid_1 = 'S-1-3-4-5'
+
+        policy_sids = {
+            'device_0': device_sid_0,
+            'device_1': device_sid_1,
+        }
+
         device_sids = {
             (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
             (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
-            ('S-1-2-3-4', SidType.EXTRA_SID, self.resource_attrs),
-            ('S-1-3-4-5', SidType.EXTRA_SID, self.resource_attrs),
+            (device_sid_0, SidType.EXTRA_SID, self.resource_attrs),
+            (device_sid_1, SidType.EXTRA_SID, self.resource_attrs),
         }
 
         if device_claims_valid:
@@ -4426,12 +4525,20 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
             client_modify_pac_fns.append(
                 partial(self.set_pac_claims, device_claims=existing_claims))
         if existing_device_info:
+            # These are different from the SIDs in the device’s TGT.
+            existing_sid_0 = 'S-1-7-8-9'
+            existing_sid_1 = 'S-1-9-8-7'
+
+            policy_sids.update({
+                'existing_0': existing_sid_0,
+                'existing_1': existing_sid_1,
+            })
+
             existing_sids = {
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
-                # These are different from the SIDs in the device’s TGT.
-                ('S-1-7-8-9', SidType.EXTRA_SID, self.resource_attrs),
-                ('S-1-9-8-7', SidType.EXTRA_SID, self.resource_attrs),
+                (existing_sid_0, SidType.EXTRA_SID, self.resource_attrs),
+                (existing_sid_1, SidType.EXTRA_SID, self.resource_attrs),
             }
 
             client_modify_pac_fns.append(partial(
@@ -4444,8 +4551,25 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
             modify_pac_fn=client_modify_pac_fns,
             checksum_keys=self.get_krbtgt_checksum_key())
 
-        # Indicate that Compound Identity is supported.
-        target_creds, _ = self.get_target(to_krbtgt=False, compound_id=compound_id_support)
+        if target_policy is None:
+            policy = None
+            assigned_policy = None
+        else:
+            policy = self.create_authn_policy(
+                enforced=True,
+                computer_allowed_to=target_policy.format_map(policy_sids))
+            assigned_policy = str(policy.dn)
+
+        target_creds = self.get_cached_creds(
+            account_type=self.AccountType.COMPUTER,
+            opts={
+                'supported_enctypes':
+                    security.KERB_ENCTYPE_RC4_HMAC_MD5
+                    | security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+                # Indicate that Compound Identity is supported.
+                'compound_id_support': compound_id_support,
+                'assigned_policy': assigned_policy,
+            })
 
         expected_sids = {
             (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
@@ -4495,7 +4619,7 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
                       expect_device_claims=bool(expected_device_claims),
                       expected_device_claims=expected_device_claims)
 
-        self.check_tgs_log(client_creds, target_creds)
+        self.check_tgs_log(client_creds, target_creds, policy=policy)
 
     def test_pac_extra_sids_behaviour(self):
         """Test the groups of the client and the device after performing a
