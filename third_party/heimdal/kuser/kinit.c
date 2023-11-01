@@ -1744,7 +1744,7 @@ main(int argc, char **argv)
         pk_anon_fast_armor = 0;
     } else if (argc && argv[0][0] == '@' &&
 	(gss_preauth_mech || anonymous_flag)) {
-	const char *instance;
+	const char *instance = NULL;
 
 	if (gss_preauth_mech) {
 	    instance = KRB5_FEDERATED_NAME;

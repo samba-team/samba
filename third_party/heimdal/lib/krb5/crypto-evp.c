@@ -126,7 +126,7 @@ _krb5_evp_hmac_iov(krb5_context context,
                    ENGINE *engine)
 {
     HMAC_CTX *ctx;
-    krb5_data current = {0, 0};
+    krb5_data current = {0, NULL};
     int i;
 
     if (crypto != NULL) {

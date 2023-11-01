@@ -442,7 +442,7 @@ hx509_ca_tbs_set_from_csr(hx509_context context,
 	                  hx509_request req)
 {
     hx509_san_type san_type;
-    heim_oid oid = { 0, 0 };
+    heim_oid oid = { 0, NULL };
     KeyUsage ku;
     size_t i;
     char *s = NULL;
@@ -2673,7 +2673,7 @@ set_template(hx509_context context,
         size_t i;
 
         for (i = 0; ret == 0 && ekus[i]; i++) {
-            heim_oid oid = { 0, 0 };
+            heim_oid oid = { 0, NULL };
 
             if ((ret = der_find_or_parse_heim_oid(ekus[i], ".", &oid)) == 0)
                 ret = hx509_ca_tbs_add_eku(context, tbs, &oid);

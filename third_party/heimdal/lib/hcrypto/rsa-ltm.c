@@ -167,7 +167,7 @@ ltm_rsa_public_encrypt(int flen, const unsigned char* from,
 			unsigned char* to, RSA* rsa, int padding)
 {
     unsigned char *p = NULL, *p0 = NULL;
-    size_t size, ssize, padlen;
+    size_t size, ssize = 0, padlen;
     mp_int enc, dec, n, e;
     mp_err ret;
     int where = __LINE__;
@@ -222,9 +222,9 @@ static int
 ltm_rsa_public_decrypt(int flen, const unsigned char* from,
 		       unsigned char* to, RSA* rsa, int padding)
 {
-    unsigned char *p;
+    unsigned char *p = NULL;
     mp_err ret;
-    size_t size;
+    size_t size = 0;
     mp_int s, us, n, e;
     int where = __LINE__;
 
@@ -273,7 +273,7 @@ static int
 ltm_rsa_private_encrypt(int flen, const unsigned char* from,
 			unsigned char* to, RSA* rsa, int padding)
 {
-    unsigned char *ptr, *ptr0 = NULL;
+    unsigned char *ptr = NULL, *ptr0 = NULL;
     mp_err ret;
     mp_int in, out, n, e;
     mp_int bi, b;

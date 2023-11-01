@@ -242,7 +242,10 @@ unparse_CMSIdentifier(hx509_context context,
 	if (len < 0)
 	    return ENOMEM;
 
-	ret = asprintf(str, "certificate with id %s", keyid);
+	if (len)
+	    ret = asprintf(str, "certificate with id %s", keyid);
+	else
+	    ret = asprintf(str, "certificate");
 	free(keyid);
 	break;
     }
@@ -925,7 +928,7 @@ hx509_cms_verify_signed_ext(hx509_context context,
     }
 
     for (found_valid_sig = 0, i = 0; i < sd.signerInfos.len; i++) {
-	heim_octet_string signed_data = { 0, 0 };
+	heim_octet_string signed_data = { 0, NULL };
 	const heim_oid *match_oid;
 	heim_oid decode_oid;
 
@@ -1187,7 +1190,7 @@ add_one_attribute(Attribute **attr,
 }
 
 /**
- * Decode SignedData and verify that the signature is correct.
+ * Sign and encode a SignedData structure.
  *
  * @param context A hx509 context.
  * @param flags
@@ -1517,13 +1520,11 @@ hx509_cms_create_signed(hx509_context context,
 			heim_octet_string *signed_data)
 {
     unsigned int i, j;
-    hx509_name name;
     int ret;
     size_t size;
     struct sigctx sigctx;
 
     memset(&sigctx, 0, sizeof(sigctx));
-    memset(&name, 0, sizeof(name));
 
     if (eContentType == NULL)
 	eContentType = &asn1_oid_id_pkcs7_data;
