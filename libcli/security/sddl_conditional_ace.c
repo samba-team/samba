@@ -2451,7 +2451,7 @@ static bool parse_composite(struct ace_condition_sddl_compiler_context *comp)
 	 * in this loop we are looking for:
 	 *
 	 * a) possible whitespace.
-	 * b) a literal, which may recurse into another composite
+	 * b) a literal
 	 * c) more possible whitespace
 	 * d) a comma (or terminating '}')
 	 *
