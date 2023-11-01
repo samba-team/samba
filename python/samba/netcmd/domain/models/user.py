@@ -20,6 +20,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from ldb import Dn
+
 from samba.dsdb import DS_GUID_USERS_CONTAINER
 
 from .fields import DnField, StringField
@@ -53,3 +55,16 @@ class User(Model):
     @staticmethod
     def get_object_class():
         return "user"
+
+    @classmethod
+    def find(cls, ldb, name):
+        """Helper function to find a user first by Dn then username.
+
+        If the Dn can't be parsed, use sAMAccountName instead.
+        """
+        try:
+            query = {"dn": Dn(ldb, name)}
+        except ValueError:
+            query = {"username": name}
+
+        return cls.get(ldb, **query)
