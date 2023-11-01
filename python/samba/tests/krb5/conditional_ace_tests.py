@@ -4393,7 +4393,7 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
                       expect_device_info=bool(expected_device_sids),
                       expected_device_domain_sid=domain_sid_str,
                       expected_device_groups=expected_device_sids,
-                      expect_client_claims=bool(expected_client_claims) or None,
+                      expect_client_claims=True,
                       expected_client_claims=expected_client_claims,
                       expect_device_claims=bool(expected_device_claims),
                       expected_device_claims=expected_device_claims)
