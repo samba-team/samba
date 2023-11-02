@@ -1,8 +1,0 @@
-^samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_pac_claim_cmp__1_a_1_42_42_42___a_equals_a_\(ad_dc\)
-^samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_pac_claim_cmp__1_a_2_42_42___a_equals_a_\(ad_dc\)
-^samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_pac_claim_cmp__1_a_3_FOO_foo___a_equals_a_\(ad_dc\)
-^samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_pac_claim_cmp__1_a_3_foo_foo___a_equals_a_\(ad_dc\)
-^samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_pac_claim_cmp__1_a_6_0_0___a_equals_a_\(ad_dc\)
-^samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_pac_claim_cmp__1_false_booleans_6_0_0___false_booleans_\(ad_dc\)
-^samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_pac_claim_cmp__1_zero_ints_1_0_0___zero_ints_\(ad_dc\)
-^samba.tests.krb5.conditional_ace_tests.ConditionalAceTests.test_pac_claim_cmp__1_zero_uints_2_0_0___zero_uints_\(ad_dc\)

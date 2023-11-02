@@ -897,6 +897,7 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 	uint32_t n_claims = 0;
 	uint32_t expected_n_claims = 0;
 	uint32_t i;
+	NTSTATUS status;
 
 	if (out_claims == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1089,6 +1090,15 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 				.value_count = n_values,
 				.values = claim_values,
 			};
+
+			status = claim_v1_check_and_sort(claims, &claims[n_claims],
+							 false);
+			if (!NT_STATUS_IS_OK(status)) {
+				talloc_free(claims);
+				DBG_WARNING("claim sort and uniquess test failed with %s\n",
+					    nt_errstr(status));
+				return status;
+			}
 			n_claims++;
 		}
 	}
