@@ -1930,6 +1930,29 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
         return pac
 
+    def add_extra_pac_buffers(self, pac, *, buffers=None):
+        if buffers is None:
+            buffers = []
+
+        pac_buffers = pac.buffers
+        for pac_buffer_type in buffers:
+            info = krb5pac.DATA_BLOB_REM()
+            # Having an empty PAC buffer will trigger an assertion failure in
+            # the MIT KDC’s k5_pac_locate_buffer(), so we need at least one
+            # byte.
+            info.remaining = b'0'
+
+            pac_buffer = krb5pac.PAC_BUFFER()
+            pac_buffer.type = pac_buffer_type
+            pac_buffer.info = info
+
+            pac_buffers.append(pac_buffer)
+
+        pac.buffers = pac_buffers
+        pac.num_buffers = len(pac_buffers)
+
+        return pac
+
     def get_cached_creds(self, *,
                          account_type,
                          opts=None,

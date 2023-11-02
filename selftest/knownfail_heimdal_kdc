@@ -35,6 +35,10 @@
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_rodc_not_revealed
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_validate_rodc_not_revealed
 #
+# Extra PAC buffers tests
+#
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_tgs_req_from_rodc_extra_pac_buffers\(ad_dc\)$
+#
 # Protected Users tests
 #
 # This test fails, which is fine, as we have an alternate test that considers a policy error as successful.

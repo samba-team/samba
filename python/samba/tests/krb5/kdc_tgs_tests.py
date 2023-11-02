@@ -23,6 +23,8 @@ import os
 sys.path.insert(0, "bin/python")
 os.environ["PYTHONUNBUFFERED"] = "1"
 
+from functools import partial
+
 import ldb
 
 from samba import dsdb, ntstatus
@@ -327,6 +329,7 @@ class KdcTgsBaseTests(KDCBaseTest):
                  expected_status=None,
                  expected_proxy_target=None,
                  expected_transited_services=None,
+                 expected_extra_pac_buffers=None,
                  check_patypes=True):
         if srealm is False:
             srealm = None
@@ -445,6 +448,7 @@ class KdcTgsBaseTests(KDCBaseTest):
             expected_device_claims=expected_device_claims,
             expected_proxy_target=expected_proxy_target,
             expected_transited_services=expected_transited_services,
+            expected_extra_pac_buffers=expected_extra_pac_buffers,
             check_patypes=check_patypes)
 
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
@@ -1154,6 +1158,28 @@ class KdcTgsTests(KdcTgsBaseTests):
         tgt = self._get_tgt(creds, from_rodc=True, remove_pac_attrs=True)
         self._run_tgs(tgt, creds, expected_error=0, expect_pac=True,
                       expect_pac_attrs=False)
+
+    def test_tgs_req_extra_pac_buffers(self):
+        extra_pac_buffers = [123, 456, 789]
+
+        creds = self._get_creds()
+        tgt = self._get_tgt(creds, extra_pac_buffers=extra_pac_buffers)
+
+        # Expect that the extra PAC buffers are retained in the TGT.
+        self._run_tgs(tgt, creds, expected_error=0,
+                      expected_extra_pac_buffers=extra_pac_buffers)
+
+    def test_tgs_req_from_rodc_extra_pac_buffers(self):
+        extra_pac_buffers = [123, 456, 789]
+
+        creds = self._get_creds(replication_allowed=True,
+                                revealed_to_rodc=True)
+        tgt = self._get_tgt(creds, from_rodc=True,
+                            extra_pac_buffers=extra_pac_buffers)
+
+        # Expect that the extra PAC buffers are removed from the RODC‐issued
+        # TGT.
+        self._run_tgs(tgt, creds, expected_error=0)
 
     # Test making a request without a PAC.
     def test_tgs_no_pac(self):
@@ -3027,7 +3053,8 @@ class KdcTgsTests(KdcTgsBaseTests):
                  remove_pac_attrs=False,
                  remove_requester_sid=False,
                  etype=None,
-                 cksum_etype=None):
+                 cksum_etype=None,
+                 extra_pac_buffers=None):
         self.assertFalse(renewable and invalid)
 
         if remove_pac:
@@ -3048,7 +3075,8 @@ class KdcTgsTests(KdcTgsBaseTests):
             remove_pac_attrs=remove_pac_attrs,
             remove_requester_sid=remove_requester_sid,
             etype=etype,
-            cksum_etype=cksum_etype)
+            cksum_etype=cksum_etype,
+            extra_pac_buffers=extra_pac_buffers)
 
     def _modify_tgt(self,
                     tgt,
@@ -3066,7 +3094,8 @@ class KdcTgsTests(KdcTgsBaseTests):
                     remove_pac_attrs=False,
                     remove_requester_sid=False,
                     etype=None,
-                    cksum_etype=None):
+                    cksum_etype=None,
+                    extra_pac_buffers=None):
         if from_rodc:
             krbtgt_creds = self.get_mock_rodc_krbtgt_creds()
         else:
@@ -3156,6 +3185,10 @@ class KdcTgsTests(KdcTgsBaseTests):
                 return pac
 
             modify_pac_fns.append(change_cname_fn)
+
+        if extra_pac_buffers is not None:
+            modify_pac_fns.append(partial(self.add_extra_pac_buffers,
+                                          buffers=extra_pac_buffers))
 
         return self.modified_ticket(
             tgt,
@@ -3279,7 +3312,8 @@ class KdcTgsTests(KdcTgsBaseTests):
     def _run_tgs(self, tgt, creds, expected_error, *, expect_pac=True,
                  expect_pac_attrs=None, expect_pac_attrs_pac_request=None,
                  expect_requester_sid=None, expected_sid=None,
-                 expect_edata=False, expect_status=None, expected_status=None):
+                 expect_edata=False, expect_status=None, expected_status=None,
+                 expected_extra_pac_buffers=None):
         target_creds = self.get_service_creds()
         return self._tgs_req(
             tgt, expected_error, creds, target_creds,
@@ -3290,7 +3324,8 @@ class KdcTgsTests(KdcTgsBaseTests):
             expected_sid=expected_sid,
             expect_edata=expect_edata,
             expect_status=expect_status,
-            expected_status=expected_status)
+            expected_status=expected_status,
+            expected_extra_pac_buffers=expected_extra_pac_buffers)
 
     # These tests fail against Windows, which does not implement ticket
     # renewal.

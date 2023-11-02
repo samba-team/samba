@@ -3088,6 +3088,7 @@ class RawKerberosTest(TestCase):
                          unexpected_device_claims=None,
                          expect_resource_groups_flag=None,
                          expected_device_groups=None,
+                         expected_extra_pac_buffers=None,
                          to_rodc=False):
         if expected_error_mode == 0:
             expected_error_mode = ()
@@ -3167,6 +3168,7 @@ class RawKerberosTest(TestCase):
             'unexpected_device_claims': unexpected_device_claims,
             'expect_resource_groups_flag': expect_resource_groups_flag,
             'expected_device_groups': expected_device_groups,
+            'expected_extra_pac_buffers': expected_extra_pac_buffers,
             'to_rodc': to_rodc
         }
         if callback_dict is None:
@@ -3241,6 +3243,7 @@ class RawKerberosTest(TestCase):
                           unexpected_device_claims=None,
                           expect_resource_groups_flag=None,
                           expected_device_groups=None,
+                          expected_extra_pac_buffers=None,
                           to_rodc=False):
         if expected_error_mode == 0:
             expected_error_mode = ()
@@ -3319,6 +3322,7 @@ class RawKerberosTest(TestCase):
             'unexpected_device_claims': unexpected_device_claims,
             'expect_resource_groups_flag': expect_resource_groups_flag,
             'expected_device_groups': expected_device_groups,
+            'expected_extra_pac_buffers': expected_extra_pac_buffers,
             'to_rodc': to_rodc
         }
         if callback_dict is None:
@@ -4481,6 +4485,10 @@ class RawKerberosTest(TestCase):
             self.sent_pk_as_req_win2k(kdc_exchange_dict))
         if sent_pk_as_req:
             expected_types.append(krb5pac.PAC_TYPE_CREDENTIAL_INFO)
+
+        expected_extra_pac_buffers = kdc_exchange_dict['expected_extra_pac_buffers']
+        if expected_extra_pac_buffers is not None:
+            expected_types.extend(expected_extra_pac_buffers)
 
         buffer_types = [pac_buffer.type
                         for pac_buffer in pac.buffers]
