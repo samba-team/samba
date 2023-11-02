@@ -2115,6 +2115,54 @@ static bool parse_sid(struct ace_condition_sddl_compiler_context *comp)
 }
 
 
+
+static bool parse_ra_sid(struct ace_condition_sddl_compiler_context *comp)
+{
+	struct dom_sid *sid = NULL;
+	const uint8_t *sidstr = NULL;
+	struct ace_condition_token token = {};
+	size_t end;
+
+	if ((comp->state & SDDL_FLAG_EXPECTING_LITERAL) == 0) {
+		comp_error(comp, "did not expect a SID here");
+		return false;
+	}
+	/*
+	 *  Here we are parsing a resource attribute ACE which doesn't
+	 *  have the SID() wrapper around the SID string (unlike a
+	 *  conditional ACE).
+	 *
+	 * The resource ACE doesn't need this because there is no
+	 * ambiguity with local attribute names, besides which the
+	 * type has already been specified earlier in the ACE.
+	 */
+	if (comp->length - comp->offset < 2){
+		comp_error(comp, "no room for a complete SID");
+		return false;
+	}
+
+	sidstr = comp->sddl + comp->offset;
+
+	sid = sddl_decode_sid(comp->mem_ctx,
+			      (const char **)&sidstr,
+			      comp->domain_sid);
+
+	if (sid == NULL) {
+		comp_error(comp, "could not parse SID");
+		return false;
+	}
+	end = sidstr - comp->sddl;
+	if (end >= comp->length || end < comp->offset) {
+		comp_error(comp, "apparent overflow in SID parsing");
+		return false;
+	}
+	comp->offset = end;
+	token.type = CONDITIONAL_ACE_TOKEN_SID;
+	token.data.sid.sid = *sid;
+	return write_sddl_token(comp, token);
+}
+
+
 static bool parse_int(struct ace_condition_sddl_compiler_context *comp)
 {
 	/*
@@ -3058,7 +3106,7 @@ static bool parse_resource_attr_list(
 			ok = parse_int(comp);
 			break;
 		case 'D':
-			ok = parse_sid(comp);
+			ok = parse_ra_sid(comp);
 			break;
 		default:
 			/* it's a mystery we got this far */
