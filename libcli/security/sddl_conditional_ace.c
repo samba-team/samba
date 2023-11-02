@@ -1294,10 +1294,12 @@ static void comp_error(struct ace_condition_sddl_compiler_context *comp,
 	if (comp->message == NULL) {
 		goto fail;
 	}
+	DBG_NOTICE("%s\n", comp->message);
 	return;
 fail:
 	comp->message = talloc_strdup(comp->mem_ctx,
 				      "failed to set error message");
+	DBG_WARNING("%s\n", comp->message);
 }
 
 
