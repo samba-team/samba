@@ -2984,7 +2984,28 @@ static bool parse_resource_attr_list(
 				   *comp->target_len);
 			goto fail;
 		}
-		ok = parse_literal(comp, true);
+		switch(attr_type_char) {
+		case 'X':
+			ok = parse_octet_string(comp);
+			break;
+		case 'S':
+			ok = parse_unicode(comp);
+			break;
+		case 'U':
+		case 'B':
+		case 'I':
+			ok = parse_int(comp);
+			break;
+		case 'D':
+			ok = parse_sid(comp);
+			break;
+		default:
+			/* it's a mystery we got this far */
+			comp_error(comp,
+				   "unknown attribute type T%c",
+				   attr_type_char);
+			goto fail;
+		}
 		if (!ok) {
 			goto fail;
 		}
