@@ -539,10 +539,7 @@ static NTSTATUS rpc_rights_grant_internal(struct net_context *c,
 					     &sid,
 					     &rights,
 					     &result);
-	if (!NT_STATUS_IS_OK(status))
-		goto done;
-	if (!NT_STATUS_IS_OK(result)) {
-		status = result;
+	if (any_nt_status_not_ok(status, result, &status)) {
 		goto done;
 	}
 
