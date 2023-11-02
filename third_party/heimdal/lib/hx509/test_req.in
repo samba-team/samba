@@ -161,3 +161,51 @@ Certificate Request:
 EOF
     fi
 fi
+
+${hxtool} request-create \
+         --ca \
+         --ca-path-length=3 \
+         --subject="cn=ca-cert" \
+         --key=FILE:$srcdir/data/key.der \
+         pkcs10-request.der || exit 1
+${hxtool} request-print PKCS10:pkcs10-request.der > "${objdir}/actual"|| exit 1
+cat > "$objdir/expected" <<EOF
+request print
+PKCS#10 CertificationRequest:
+  cA: yes
+  pathLenConstraint: 3
+  name: CN=ca-cert
+EOF
+diff "$objdir/expected" "${objdir}/actual" || exit 1
+
+${hxtool} request-create \
+         --ca \
+         --subject="cn=ca-cert" \
+         --key=FILE:$srcdir/data/key.der \
+         pkcs10-request.der || exit 1
+${hxtool} request-print PKCS10:pkcs10-request.der > "${objdir}/actual"|| exit 1
+cat > "$objdir/expected" <<EOF
+request print
+PKCS#10 CertificationRequest:
+  cA: yes
+  pathLenConstraint: unspecified
+  name: CN=ca-cert
+EOF
+diff "$objdir/expected" "${objdir}/actual" || exit 1
+
+${hxtool} request-create \
+         --ee \
+         --subject="cn=ca-cert" \
+         --key=FILE:$srcdir/data/key.der \
+         pkcs10-request.der || exit 1
+${hxtool} request-print PKCS10:pkcs10-request.der > "${objdir}/actual" || exit 1
+cat > "$objdir/expected" <<EOF
+request print
+PKCS#10 CertificationRequest:
+  cA: no
+  pathLenConstraint: unspecified
+  name: CN=ca-cert
+EOF
+diff "$objdir/expected" "${objdir}/actual" || exit 1
+
+exit 0

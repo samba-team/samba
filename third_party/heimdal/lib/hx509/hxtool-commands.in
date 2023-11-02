@@ -476,6 +476,22 @@ command = {
 command = {
 	name = "request-create"
 	option = {
+		long = "ca"
+		type = "flag"
+		help = "Request CA certificate"
+	}
+	option = {
+		long = "ca-path-length"
+		type = "integer"
+		help = "Path length constraint for CA certificate"
+		default = "-1"
+	}
+	option = {
+		long = "ee"
+		type = "flag"
+		help = "Include BasicConstraints w/ cA set to false"
+	}
+	option = {
 		long = "subject"
 		type = "string"
 		help = "Subject DN"

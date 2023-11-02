@@ -449,7 +449,8 @@ hx509_ca_tbs_set_from_csr(hx509_context context,
     int ret;
 
     if (hx509_request_count_unauthorized(req)) {
-        hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+        hx509_set_error_string(context, 0, EACCES,
+                               "Some certificate features requested in the CSR were not authorized");
         return EACCES;
     }
 

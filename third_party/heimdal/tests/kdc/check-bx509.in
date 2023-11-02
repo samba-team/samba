@@ -438,14 +438,60 @@ ec=0
 
 rm -f trivial.pem server.pem email.pem
 
+echo "Making a plain CSR (with BasicConstraints requesting CA cert)"
+csr_revoke
+$hxtool request-create  --subject='CN=H5LCA' --generate-key=rsa --key-bits=1024 \
+                        --ca --key=FILE:"${objdir}/k.der" "${objdir}/req" ||
+    { echo "Failed to make a CSR"; exit 2; }
+
+# XXX Add autoconf check for curl?
+#     Create a barebones bx509 HTTP/1.1 client test program?
+
+echo "Fail to get a certificate using a CSR requesting a CA cert"
+# Encode the CSR in base64, then URL-encode it
+csr=$($rkbase64 -- ${objdir}/req | $rkvis -h --stdin)
+token=$(KRB5CCNAME=$cache $gsstoken HTTP@$server)
+if (set -vx; get_cert '' -sf -o "${objdir}/trivial.pem"); then
+    echo 'Issued a certificate for a CSR that requested a CA cert!'
+    exit 1
+else
+    echo 'CSRs requesting CA certs properly rejected'
+fi
+
+echo "Making a plain CSR (with BasicConstraints requesting EE cert)"
+csr_revoke
+$hxtool request-create  --subject='' --generate-key=rsa --key-bits=1024 \
+                        --ee --key=FILE:"${objdir}/k.der" "${objdir}/req" ||
+    { echo "Failed to make a CSR"; exit 2; }
+
+echo "Fetching a trivial user certificate"
+# Encode the CSR in base64, then URL-encode it
+csr=$($rkbase64 -- ${objdir}/req | $rkvis -h --stdin)
+token=$(KRB5CCNAME=$cache $gsstoken HTTP@$server)
+if (set -vx; get_cert '' -sf -o "${objdir}/trivial.pem"); then
+    $hxtool print --content "FILE:${objdir}/trivial.pem"
+    if $hxtool acert --end-entity                                            \
+                    --expr="%{certificate.subject} == \"CN=foo,$DCs\""  \
+                    -P "foo@${R}" "FILE:${objdir}/trivial.pem"; then
+        echo 'Successfully obtained a trivial client certificate with a CSR w/ BasicConstraints requesting EE cert!'
+    else
+        echo 'FAIL: Obtained a trivial client certificate w/o expected PKINIT SAN)'
+        exit 1
+    fi
+    if $hxtool acert --expr="%{certificate.subject} == \"OU=Users,$DCs\""   \
+                     --has-private-key "FILE:${objdir}/trivial.pem"; then
+        echo 'Successfully obtained a trivial client certificate!'
+    fi
+else
+    echo 'Failed to get a certificate with a CSR w/ BasicConstraints requesting EE cert!'
+    exit 1
+fi
+
 echo "Making a plain CSR"
 csr_revoke
 $hxtool request-create  --subject='' --generate-key=rsa --key-bits=1024 \
                         --key=FILE:"${objdir}/k.der" "${objdir}/req" ||
     { echo "Failed to make a CSR"; exit 2; }
-
-# XXX Add autoconf check for curl?
-#     Create a barebones bx509 HTTP/1.1 client test program?
 
 echo "Fetching a trivial user certificate (no authentication, must fail)"
 # Encode the CSR in base64, then URL-encode it

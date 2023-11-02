@@ -36,6 +36,7 @@ HEIMDAL_X509_1.2 {
 		hx509_request_add_pkinit;
 		hx509_request_add_registered;
 		hx509_request_add_xmpp_name;
+		hx509_request_authorize_cA;
 		hx509_request_authorize_ku;
 		hx509_request_authorize_eku;
 		hx509_request_authorize_san;
@@ -244,6 +245,8 @@ HEIMDAL_X509_1.2 {
 		hx509_query_match_option;
 		hx509_query_statistic_file;
 		hx509_query_unparse_stats;
+		hx509_request_get_cA;
+		hx509_request_get_cA_pathLenConstraint;
 		hx509_request_get_eku;
 		hx509_request_get_exts;
 		hx509_request_get_ku;
@@ -254,6 +257,8 @@ HEIMDAL_X509_1.2 {
 		hx509_request_init;
 		hx509_request_parse;
 		hx509_request_parse_der;
+		hx509_request_set_cA;
+		hx509_request_set_eE;
 		hx509_request_set_ku;
 		hx509_request_set_name;
 		hx509_request_set_SubjectPublicKeyInfo;

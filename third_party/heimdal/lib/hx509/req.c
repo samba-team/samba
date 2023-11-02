@@ -46,11 +46,15 @@ struct hx509_request_data {
     KeyUsage ku;
     ExtKeyUsage eku;
     GeneralNames san;
+    BasicConstraints bc;
     struct abitstring_s authorized_EKUs;
     struct abitstring_s authorized_SANs;
-    uint32_t nunsupported;  /* Count of unsupported features requested */
-    uint32_t nauthorized;   /* Count of supported   features authorized */
+    uint32_t nunsupported_crit; /* Count of unsupported critical features requested */
+    uint32_t nunsupported_opt;  /* Count of unsupported optional features requested */
+    uint32_t nauthorized;       /* Count of supported   features authorized */
+    uint32_t ca_is_authorized:1;
     uint32_t ku_are_authorized:1;
+    uint32_t include_BasicConstraints:1;
 };
 
 /**
@@ -97,8 +101,53 @@ hx509_request_free(hx509_request *reqp)
     free_SubjectPublicKeyInfo(&req->key);
     free_ExtKeyUsage(&req->eku);
     free_GeneralNames(&req->san);
+    free_BasicConstraints(&req->bc);
     memset(req, 0, sizeof(*req));
     free(req);
+}
+
+/**
+ * Make the CSR request a CA certificate
+ *
+ * @param context An hx509 context.
+ * @param req The hx509_request to alter.
+ * @param pathLenConstraint the pathLenConstraint for the BasicConstraints (optional)
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_request
+ */
+HX509_LIB_FUNCTION int HX509_LIB_CALL
+hx509_request_set_cA(hx509_context context,
+                     hx509_request req,
+                     unsigned *pathLenConstraint)
+{
+    req->bc.cA = 1;
+    if (pathLenConstraint) {
+        if (req->bc.pathLenConstraint == NULL)
+            req->bc.pathLenConstraint = malloc(sizeof(*pathLenConstraint));
+        if (req->bc.pathLenConstraint == NULL)
+            return ENOMEM;
+        *req->bc.pathLenConstraint = *pathLenConstraint;
+    }
+    return 0;
+}
+
+/**
+ * Make the CSR request an EE (end-entity, i.e., not a CA) certificate
+ *
+ * @param context An hx509 context.
+ * @param req The hx509_request to alter.
+ *
+ * @ingroup hx509_request
+ */
+HX509_LIB_FUNCTION void HX509_LIB_CALL
+hx509_request_set_eE(hx509_context context, hx509_request req)
+{
+    req->bc.cA = 0;
+    free(req->bc.pathLenConstraint);
+    req->include_BasicConstraints = 1;
+    req->ca_is_authorized = 0;
 }
 
 /**
@@ -524,6 +573,29 @@ get_exts(hx509_context context,
     exts->val = NULL;
     exts->len = 0;
 
+    if (req->bc.cA || req->include_BasicConstraints) {
+        Extension e;
+
+        /*
+         * If `!req->bc.cA' then we don't include BasicConstraints unless
+         * hx509_request_set_eE() was called on this request, and in that case
+         * we make this extension non-critical.  We do this to emulate Dell
+         * iDRAC CSR-making software.
+         *
+         * If `req->bc.cA' then we make the BasicConstraints critical,
+         * obviously.
+         */
+        memset(&e, 0, sizeof(e));
+        e.critical = req->bc.cA ? 1 : 0;
+        if (ret == 0)
+            ASN1_MALLOC_ENCODE(BasicConstraints, e.extnValue.data, e.extnValue.length,
+                               &req->bc, &size, ret);
+        if (ret == 0)
+            ret = der_copy_oid(&asn1_oid_id_x509_ce_basicConstraints, &e.extnID);
+        if (ret == 0)
+            ret = add_Extensions(exts, &e);
+        free_Extension(&e);
+    }
     if (KeyUsage2int(req->ku)) {
         Extension e;
 
@@ -851,8 +923,12 @@ hx509_request_parse_der(hx509_context context,
              * Count all KUs as one requested extension to be authorized,
              * though the caller will have to check the KU values individually.
              */
-            if (KeyUsage2int((*req)->ku) & ~KeyUsage2int(int2KeyUsage(~0)))
-                (*req)->nunsupported++;
+            if (KeyUsage2int((*req)->ku) & ~KeyUsage2int(int2KeyUsage(~0ULL))) {
+                if (e->critical)
+                    (*req)->nunsupported_crit++;
+                else
+                    (*req)->nunsupported_opt++;
+            }
         } else if (der_heim_oid_cmp(&e->extnID,
                                     &asn1_oid_id_x509_ce_extKeyUsage) == 0) {
             ret = decode_ExtKeyUsage(e->extnValue.data, e->extnValue.length,
@@ -873,10 +949,18 @@ hx509_request_parse_der(hx509_context context,
              * Count each SAN as a separate requested extension to be
              * authorized.
              */
+        } else if (der_heim_oid_cmp(&e->extnID,
+                                    &asn1_oid_id_x509_ce_basicConstraints) == 0) {
+            (*req)->include_BasicConstraints = 1;
+            ret = decode_BasicConstraints(e->extnValue.data, e->extnValue.length,
+                                          &(*req)->bc, NULL);
         } else {
             char *oidstr = NULL;
 
-            (*req)->nunsupported++;
+            if (e->critical)
+                (*req)->nunsupported_crit++;
+            else
+                (*req)->nunsupported_opt++;
 
             /*
              * We need an HX509_TRACE facility for this sort of warning.
@@ -1074,6 +1158,26 @@ reject_feat(hx509_request req, abitstring a, size_t n, int idx)
 }
 
 /**
+ * Authorize issuance of a CA certificate as requested.
+ *
+ * @param req The hx509_request object.
+ * @param pathLenConstraint the pathLenConstraint for the BasicConstraints (optional)
+ *
+ * @return an hx509 or system error.
+ *
+ * @ingroup hx509_request
+ */
+HX509_LIB_FUNCTION int HX509_LIB_CALL
+hx509_request_authorize_cA(hx509_request req, unsigned *pathLenConstraint)
+{
+    int ret;
+
+    ret = hx509_request_set_cA(NULL, req, pathLenConstraint);
+    req->ca_is_authorized++;
+    return ret;
+}
+
+/**
  * Filter the requested KeyUsage and mark it authorized.
  *
  * @param req The hx509_request object.
@@ -1201,7 +1305,7 @@ hx509_request_san_authorized_p(hx509_request req, size_t idx)
 HX509_LIB_FUNCTION size_t HX509_LIB_CALL
 hx509_request_count_unsupported(hx509_request req)
 {
-    return req->nunsupported;
+    return req->nunsupported_crit;
 }
 
 /**
@@ -1216,9 +1320,10 @@ HX509_LIB_FUNCTION size_t HX509_LIB_CALL
 hx509_request_count_unauthorized(hx509_request req)
 {
     size_t nrequested = req->eku.len + req->san.len +
-        (KeyUsage2int(req->ku) ? 1 : 0) + req->nunsupported;
+        (KeyUsage2int(req->ku) ? 1 : 0) + !!req->bc.cA +
+        req->nunsupported_crit;
 
-    return nrequested - (req->nauthorized + req->ku_are_authorized);
+    return nrequested - (req->nauthorized + req->ku_are_authorized + req->ca_is_authorized);
 }
 
 static hx509_san_type
@@ -1391,6 +1496,45 @@ hx509_request_get_san(hx509_request req,
 }
 
 /**
+ * Indicate if a CSR requested a CA certificate.
+ *
+ * @param context An hx509 context.
+ * @param req The hx509_request object.
+ *
+ * @return 1 if the CSR requested CA certificate, 0 otherwise.
+ *
+ * @ingroup hx509_request
+ */
+HX509_LIB_FUNCTION int HX509_LIB_CALL
+hx509_request_get_cA(hx509_context context,
+                     hx509_request req)
+{
+    return req->bc.cA;
+}
+
+/**
+ * Return the CSR's requested BasicConstraints pathLenConstraint.
+ *
+ * @param context An hx509 context.
+ * @param req The hx509_request object.
+ *
+ * @return -1 if no pathLenConstraint was requested (or the BasicConstraints
+ * does not request a CA certificate), or the actual requested
+ * pathLenConstraint.
+ *
+ * @ingroup hx509_request
+ */
+HX509_LIB_FUNCTION int HX509_LIB_CALL
+hx509_request_get_cA_pathLenConstraint(hx509_context context,
+                                       hx509_request req)
+{
+    if (req->bc.cA && req->bc.pathLenConstraint &&
+        *req->bc.pathLenConstraint < INT_MAX)
+        return *req->bc.pathLenConstraint;
+    return -1;
+}
+
+/**
  * Display a CSR.
  *
  * @param context An hx509 context.
@@ -1437,6 +1581,13 @@ hx509_request_print(hx509_context context, hx509_request req, FILE *f)
      */
     fprintf(f, "PKCS#10 CertificationRequest:\n");
 
+    if (req->include_BasicConstraints) {
+        fprintf(f, "  cA: %s\n", req->bc.cA ? "yes" : "no");
+        if (req->bc.pathLenConstraint)
+            fprintf(f, "  pathLenConstraint: %u\n", *req->bc.pathLenConstraint);
+        else
+            fprintf(f, "  pathLenConstraint: unspecified\n");
+    }
     if (req->name) {
 	char *subject;
 	ret = hx509_name_to_string(req->name, &subject);
@@ -1514,6 +1665,14 @@ hx509_request_print(hx509_context context, hx509_request req, FILE *f)
             fprintf(f, "  san: <SAN type not supported>\n");
             break;
         }
+    }
+    if (req->nunsupported_crit) {
+        fprintf(f, "  unsupported_critical_extensions_count: %u\n",
+                (unsigned)req->nunsupported_crit);
+    }
+    if (req->nunsupported_crit) {
+        fprintf(f, "  unsupported_optional_extensions_count: %u\n",
+                (unsigned)req->nunsupported_opt);
     }
     free(s); s = NULL;
     if (ret == HX509_NO_ITEM)

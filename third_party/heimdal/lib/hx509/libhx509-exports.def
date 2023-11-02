@@ -36,6 +36,7 @@ EXPORTS
 	hx509_request_add_pkinit
 	hx509_request_add_registered
 	hx509_request_add_xmpp_name
+	hx509_request_authorize_cA
 	hx509_request_authorize_ku
 	hx509_request_authorize_eku
 	hx509_request_authorize_san
@@ -48,6 +49,8 @@ EXPORTS
 	_hx509_private_key_ref
 	hx509_request_eku_authorized_p
 	hx509_request_free
+	hx509_request_get_cA
+	hx509_request_get_cA_pathLenConstraint
 	hx509_request_get_eku
 	hx509_request_get_exts
 	hx509_request_get_ku
@@ -63,6 +66,8 @@ EXPORTS
 	hx509_request_add_email
 	hx509_request_reject_eku
 	hx509_request_reject_san
+	hx509_request_set_cA
+	hx509_request_set_eE
 	hx509_request_set_name
 	hx509_request_set_ku
 	hx509_request_san_authorized_p
