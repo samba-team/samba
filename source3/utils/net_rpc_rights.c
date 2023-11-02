@@ -525,8 +525,9 @@ static NTSTATUS rpc_rights_grant_internal(struct net_context *c,
 	rights.count = argc-1;
 	rights.names = talloc_array(mem_ctx, struct lsa_StringLarge,
 				    rights.count);
-	if (!rights.names) {
-		return NT_STATUS_NO_MEMORY;
+	if (rights.names == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	for (i=0; i<argc-1; i++) {
