@@ -46,12 +46,6 @@
 #define SDDL_FLAG_IS_BINARY_OP              (1 << 21)
 
 
-/*
- * A resource attribute ACE has a slightly different syntax for SIDs.
- */
-#define SDDL_FLAG_IS_RESOURCE_ATTR_ACE      (1 << 30)
-
-
 #define SDDL_FLAGS_EXPR_START (SDDL_FLAG_EXPECTING_UNARY_OP | \
 			       SDDL_FLAG_EXPECTING_LOCAL_ATTR | \
 			       SDDL_FLAG_EXPECTING_NON_LOCAL_ATTR | \
@@ -2581,10 +2575,6 @@ static bool parse_literal(struct ace_condition_sddl_compiler_context *comp,
 		if (strchr("1234567890-+", c) != NULL) {
 			return parse_int(comp);
 		}
-		if ((comp->state & SDDL_FLAG_IS_RESOURCE_ATTR_ACE) &&
-		    isupper(c)) {
-			return parse_sid(comp);
-		}
 	}
 	if (c > 31 && c < 127) {
 		comp_error(comp,
@@ -2998,8 +2988,7 @@ static bool parse_resource_attr_list(
 	struct ace_condition_token *old_target = comp->target;
 	uint32_t *old_target_len = comp->target_len;
 
-	comp->state = (SDDL_FLAG_EXPECTING_LITERAL |
-		       SDDL_FLAG_IS_RESOURCE_ATTR_ACE);
+	comp->state = SDDL_FLAG_EXPECTING_LITERAL;
 
 	/*
 	 * the worst case is one token for every two bytes: {1,1,1}, and we
