@@ -3072,6 +3072,8 @@ class KdcTgsTests(KdcTgsBaseTests):
         else:
             krbtgt_creds = self.get_krbtgt_creds()
 
+        modify_pac_fns = []
+
         if new_rid is not None or remove_requester_sid or remove_pac_attrs:
             def change_sid_fn(pac):
                 pac_buffers = pac.buffers
@@ -3102,8 +3104,8 @@ class KdcTgsTests(KdcTgsBaseTests):
                 pac.buffers = pac_buffers
 
                 return pac
-        else:
-            change_sid_fn = None
+
+            modify_pac_fns.append(change_sid_fn)
 
         krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds,
                                                          etype)
@@ -3143,10 +3145,7 @@ class KdcTgsTests(KdcTgsBaseTests):
             modify_fn = flags_modify_fn
 
         if cname is not None:
-            def modify_pac_fn(pac):
-                if change_sid_fn is not None:
-                    pac = change_sid_fn(pac)
-
+            def change_cname_fn(pac):
                 for pac_buffer in pac.buffers:
                     if pac_buffer.type == krb5pac.PAC_TYPE_LOGON_NAME:
                         logon_info = pac_buffer.info
@@ -3155,14 +3154,14 @@ class KdcTgsTests(KdcTgsBaseTests):
                             cname['name-string'][0].decode('utf-8'))
 
                 return pac
-        else:
-            modify_pac_fn = change_sid_fn
+
+            modify_pac_fns.append(change_cname_fn)
 
         return self.modified_ticket(
             tgt,
             new_ticket_key=krbtgt_key,
             modify_fn=modify_fn,
-            modify_pac_fn=modify_pac_fn,
+            modify_pac_fn=modify_pac_fns or None,
             exclude_pac=remove_pac,
             allow_empty_authdata=allow_empty_authdata,
             update_pac_checksums=not remove_pac,
