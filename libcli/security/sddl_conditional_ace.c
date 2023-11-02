@@ -3045,7 +3045,8 @@ static bool parse_resource_attr_list(
 		if (!first) {
 			if (c != ',') {
 				comp_error(comp,
-					   "malformed composite (expected comma)");
+					   "malformed resource attribute ACE "
+					   "(expected comma)");
 				goto fail;
 			}
 			comp->offset++;
@@ -3058,7 +3059,7 @@ static bool parse_resource_attr_list(
 		first = false;
 		if (*comp->target_len >= alloc_size) {
 			comp_error(comp,
-				   "Too many tokens in composite "
+				   "Too many tokens in resource attribute ACE "
 				   "(>= %"PRIu32" tokens)",
 				   *comp->target_len);
 			goto fail;
