@@ -1937,6 +1937,88 @@ static bool parse_octet_string(struct ace_condition_sddl_compiler_context *comp)
 }
 
 
+static bool parse_ra_octet_string(struct ace_condition_sddl_compiler_context *comp)
+{
+	/*
+	 * Resource attribute octet strings resemble conditional ace octet
+	 * strings, but have some important differences:
+	 *
+	 * 1. The '#' at the start is optional, and if present is
+	 * counted as a zero.
+	 *
+	 * 2. An odd number of characters is implicitly left-padded with a zero.
+	 *
+	 * That is, "abc" means "0abc", "#12" means "0012", "f##"
+	 * means "0f00", and "##" means 00.
+	 */
+	struct ace_condition_token token = {};
+	size_t string_length, bytes_length, i, j;
+	bool ok;
+	char pair[2];
+
+	string_length = strspn((const char*)(comp->sddl + comp->offset),
+			"#0123456789abcdefABCDEF");
+
+	bytes_length = (string_length + 1) / 2;
+
+	if (bytes_length == 0) {
+		comp_error(comp, "zero length octet bytes");
+		return false;
+	}
+
+	token.data.bytes = data_blob_talloc_zero(comp->mem_ctx, bytes_length);
+	if (token.data.bytes.data == NULL) {
+		return false;
+	}
+	token.type = CONDITIONAL_ACE_TOKEN_OCTET_STRING;
+
+	j = comp->offset;
+	i = 0;
+	if (string_length & 1) {
+		/*
+		 * An odd number of characters means the first
+		 * character gains an implicit 0 for the high nybble.
+		 */
+		pair[0] = 0;
+		pair[1] = (comp->sddl[0] == '#') ? '0' : comp->sddl[0];
+
+		ok = hex_byte(pair, &token.data.bytes.data[i]);
+		if (!ok) {
+			goto fail;
+		}
+		j++;
+		i++;
+	}
+
+	for (; i < bytes_length; i++) {
+		/*
+		 * Why not just strhex_to_str() ?
+		 *
+		 * Because we need to treat '#' as '0' in octet string values.
+		 */
+		if (comp->length - j < 2) {
+			goto fail;
+		}
+
+		pair[0] = (comp->sddl[j]     == '#') ? '0' : comp->sddl[j];
+		pair[1] = (comp->sddl[j + 1] == '#') ? '0' : comp->sddl[j + 1];
+
+		ok = hex_byte(pair, &token.data.bytes.data[i]);
+		if (!ok) {
+			goto fail;
+		}
+		j += 2;
+	}
+	comp->offset = j;
+	return write_sddl_token(comp, token);
+
+fail:
+	comp_error(comp, "inexplicable error in octet string");
+	talloc_free(token.data.bytes.data);
+	return false;
+}
+
+
 static bool parse_sid(struct ace_condition_sddl_compiler_context *comp)
 {
 	struct dom_sid *sid = NULL;
@@ -2945,7 +3027,7 @@ static bool parse_resource_attr_list(
 		}
 		switch(attr_type_char) {
 		case 'X':
-			ok = parse_octet_string(comp);
+			ok = parse_ra_octet_string(comp);
 			break;
 		case 'S':
 			ok = parse_unicode(comp);
@@ -3023,7 +3105,9 @@ struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *sddl_decode_resource_attr (
 	 * TX-attr = "TX" "," attr-flags *("," octet-string)
 	 * TB-attr = "TB" "," attr-flags *("," ( "0" / "1" ) )
 	 *
-	 * and the data types are all parsed in the SDDL way.
+	 * and the data types are *mostly* parsed in the SDDL way,
+	 * though there are significant differences for octet-strings.
+	 *
 	 * At this point we only have the "(«attribute-data»)".
 	 *
 	 * What we do is set up a conditional ACE compiler to be expecting a

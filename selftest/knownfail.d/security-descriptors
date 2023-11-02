@@ -1,4 +1,13 @@
 ^samba.tests.security_descriptors.+SDDLvsDescriptorRegistryObjectRights.+
 ^samba.tests.security_descriptors.+SDDLvsDescriptorShortOrdinaryAclsNoMungeV4.+
-^samba.tests.security_descriptors.+SDDLvsDescriptorOverSizeAcls.+
-^samba.tests.security_descriptors.+SDDLvsDescriptorShortConditionalAndResourceAcesTxIntegers.+
+
+samba.tests.security_descriptors.+SDDLvsDescriptorOverSizeAcls.test_sddl_vs_sd_001
+samba.tests.security_descriptors.+SDDLvsDescriptorOverSizeAcls.test_sddl_vs_sd_002
+samba.tests.security_descriptors.+SDDLvsDescriptorOverSizeAcls.test_sddl_vs_sd_003
+samba.tests.security_descriptors.+SDDLvsDescriptorOverSizeAcls.test_sddl_vs_sd_004
+samba.tests.security_descriptors.+SDDLvsDescriptorOverSizeAcls.test_sddl_vs_sd_016
+samba.tests.security_descriptors.+SDDLvsDescriptorOverSizeAcls.test_sddl_vs_sd_017
+samba.tests.security_descriptors.+SDDLvsDescriptorOverSizeAcls.test_sddl_vs_sd_018
+samba.tests.security_descriptors.+SDDLvsDescriptorOverSizeAcls.test_sddl_vs_sd_019
+samba.tests.security_descriptors.+SDDLvsDescriptorOverSizeAcls.test_sddl_vs_sd_020
+
