@@ -2428,7 +2428,6 @@ class ConditionalAceTests(ConditionalAceBaseTests):
               device_sids=None,
               device_claims=None,
               expected_groups=None,
-              expected_device_groups=None,
               expected_claims=None):
         try:
             code, crashes_windows = code
@@ -2574,7 +2573,6 @@ class ConditionalAceTests(ConditionalAceBaseTests):
         ]
 
         expected_groups = self.map_sids(expected_groups, None, domain_sid_str)
-        expected_device_groups = self.map_sids(expected_device_groups, None, domain_sid_str)
 
         # Show that obtaining a service ticket with RBCD is allowed.
         self._tgs_req(service_tgt, code, service_creds, target_creds,
@@ -2587,9 +2585,6 @@ class ConditionalAceTests(ConditionalAceBaseTests):
                       decryption_key=target_decryption_key,
                       expected_sid=client_sid,
                       expected_groups=expected_groups,
-                      expect_device_info=bool(expected_device_groups) or None,
-                      expected_device_domain_sid=domain_sid_str,
-                      expected_device_groups=expected_device_groups,
                       expect_client_claims=bool(expected_claims) or None,
                       expected_client_claims=expected_claims,
                       expected_supported_etypes=target_etypes,
