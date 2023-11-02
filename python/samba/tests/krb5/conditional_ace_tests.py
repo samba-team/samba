@@ -4482,8 +4482,8 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
             ('S-1-2-3-4', SidType.EXTRA_SID, self.default_attrs),
         }
 
-        device_sid_0 = 'S-1-2-3-4'
-        device_sid_1 = 'S-1-3-4-5'
+        device_sid_0 = 'S-1-3-4-5'
+        device_sid_1 = 'S-1-4-5-6'
 
         policy_sids = {
             'device_0': device_sid_0,
@@ -4592,8 +4592,8 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
             expected_device_sids = {
                 (security.DOMAIN_RID_USERS, SidType.BASE_SID, self.default_attrs),
                 (security.DOMAIN_RID_USERS, SidType.PRIMARY_GID, None),
-                ('S-1-2-3-4', SidType.EXTRA_SID, self.resource_attrs),
                 ('S-1-3-4-5', SidType.EXTRA_SID, self.resource_attrs),
+                ('S-1-4-5-6', SidType.EXTRA_SID, self.resource_attrs),
             }
 
             if device_claims_valid:
