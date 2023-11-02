@@ -3021,23 +3021,12 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		 fsp_fnum_dbg(fsp),
 		 info_level, max_data_bytes);
 
-	/*
-	 * In case of querying a symlink in POSIX context,
-	 * fsp will be NULL. fdos_mode() deals with it.
-	 */
-	if (fsp != NULL) {
-		smb_fname = fsp->fsp_name;
-	}
+	smb_fname = fsp->fsp_name;
 	mode = fdos_mode(fsp);
 	psbuf = &smb_fname->st;
 
-	if (fsp != NULL) {
-		base_sp = fsp->base_fsp ?
-			&fsp->base_fsp->fsp_name->st :
-			&fsp->fsp_name->st;
-	} else {
-		base_sp = &smb_fname->st;
-	}
+	base_sp = (fsp->base_fsp != NULL) ? &fsp->base_fsp->fsp_name->st
+					  : &fsp->fsp_name->st;
 
 	nlink = psbuf->st_ex_nlink;
 
