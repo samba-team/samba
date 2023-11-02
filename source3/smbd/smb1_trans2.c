@@ -1970,8 +1970,6 @@ static void call_trans2qpipeinfo(connection_struct *conn,
 
 	send_trans2_replies(conn, req, NT_STATUS_OK, params, param_size, *ppdata, data_size,
 			    max_data_bytes);
-
-	return;
 }
 
 static void handle_trans2qfilepathinfo_result(
@@ -5001,7 +4999,6 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 		close_file_free(NULL, &fsp, NORMAL_CLOSE);
 	}
 	TALLOC_FREE(smb_dname);
-	return;
 }
 
 /****************************************************************************
@@ -5053,8 +5050,6 @@ static void call_trans2findnotifyfirst(connection_struct *conn,
 		fnf_handle = 257;
 
 	send_trans2_replies(conn, req, NT_STATUS_OK, params, 6, *ppdata, 0, max_data_bytes);
-
-	return;
 }
 
 /****************************************************************************
@@ -5084,8 +5079,6 @@ static void call_trans2findnotifynext(connection_struct *conn,
 	SSVAL(params,2,0); /* No EA errors */
 
 	send_trans2_replies(conn, req, NT_STATUS_OK, params, 4, *ppdata, 0, max_data_bytes);
-
-	return;
 }
 
 /****************************************************************************
@@ -5140,8 +5133,6 @@ static void call_trans2getdfsreferral(connection_struct *conn,
 	SSVAL((discard_const_p(uint8_t, req->inbuf)), smb_flg2,
 	      SVAL(req->inbuf,smb_flg2) | FLAGS2_DFS_PATHNAMES);
 	send_trans2_replies(conn, req, NT_STATUS_OK, 0,0,*ppdata,reply_size, max_data_bytes);
-
-	return;
 }
 
 #define LMCAT_SPL       0x53
@@ -5702,5 +5693,4 @@ void reply_transs2(struct smb_request *req)
 	TALLOC_FREE(state);
 	reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 	END_PROFILE(SMBtranss2);
-	return;
 }
