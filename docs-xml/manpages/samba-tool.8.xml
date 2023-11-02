@@ -2407,6 +2407,24 @@
 </refsect3>
 
 <refsect2>
+	<title>shell</title>
+	<para>Opens an interactive Samba Python shell.</para>
+</refsect2>
+
+<refsect3>
+	<title>shell [options]</title>
+	<para>Opens an interactive Python shell for Samba ldb connection.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect2>
 	<title>sites</title>
 	<para>Manage sites.</para>
 </refsect2>
