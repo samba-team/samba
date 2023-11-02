@@ -2041,43 +2041,20 @@ static bool parse_sid(struct ace_condition_sddl_compiler_context *comp)
 	const uint8_t *sidstr = NULL;
 	struct ace_condition_token token = {};
 	size_t end;
-	bool expecting_bare_sids =
-		comp->state & SDDL_FLAG_IS_RESOURCE_ATTR_ACE ? true : false;
-
-	if ((comp->state & SDDL_FLAG_EXPECTING_LITERAL) == 0) {
-		comp_error(comp, "did not expect a SID here");
+	if (comp->length - comp->offset < 7) {
+		/* minimum: "SID(AA)" */
+		comp_error(comp, "no room for a complete SID");
 		return false;
 	}
-	if (expecting_bare_sids) {
-		/*
-		 *  This flag is set for a resource ACE which doesn't have the
-		 *  SID() wrapper around the SID string, and not for a
-		 *  conditional ACE, which must have the "SID(...)".
-		 *
-		 * The resource ACE doesn't need this because there is no
-		 * ambiguity with local attribute names, besides which the
-		 * type has already been specified earlier in the ACE.
-		 */
-		if (comp->length - comp->offset < 2){
-			comp_error(comp, "no room for a complete SID");
-			return false;
-		}
+	/* conditional ACE SID string */
+	if (comp->sddl[comp->offset    ] != 'S' ||
+	    comp->sddl[comp->offset + 1] != 'I' ||
+	    comp->sddl[comp->offset + 2] != 'D' ||
+	    comp->sddl[comp->offset + 3] != '(') {
+		comp_error(comp, "malformed SID() constructor");
+		return false;
 	} else {
-		if (comp->length - comp->offset < 7){
-			/* minimum: "SID(AA)" */
-			comp_error(comp, "no room for a complete SID");
-			return false;
-		}
-		/* conditional ACE SID string */
-		if (comp->sddl[comp->offset    ] != 'S' ||
-		    comp->sddl[comp->offset + 1] != 'I' ||
-		    comp->sddl[comp->offset + 2] != 'D' ||
-		    comp->sddl[comp->offset + 3] != '(') {
-			comp_error(comp, "malformed SID() constructor");
-			return false;
-		} else {
-			comp->offset += 4;
-		}
+		comp->offset += 4;
 	}
 
 	sidstr = comp->sddl + comp->offset;
@@ -2096,19 +2073,16 @@ static bool parse_sid(struct ace_condition_sddl_compiler_context *comp)
 		return false;
 	}
 	comp->offset = end;
-	if (expecting_bare_sids) {
-		/* no trailing ')' in a resource attribute ACE */
-	} else {
-		/*
-		 * offset is now at the end of the SID, but we need to account
-		 * for the ')'.
-		 */
-		if (comp->sddl[comp->offset] != ')') {
-			comp_error(comp, "expected ')' to follow SID");
-			return false;
-		}
-		comp->offset++;
+	/*
+	 * offset is now at the end of the SID, but we need to account
+	 * for the ')'.
+	 */
+	if (comp->sddl[comp->offset] != ')') {
+		comp_error(comp, "expected ')' to follow SID");
+		return false;
 	}
+	comp->offset++;
+
 	token.type = CONDITIONAL_ACE_TOKEN_SID;
 	token.data.sid.sid = *sid;
 	return write_sddl_token(comp, token);
