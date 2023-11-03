@@ -284,29 +284,47 @@ init_context_from_config_file(krb5_context context)
 static krb5_error_code
 cc_ops_register(krb5_context context)
 {
+    krb5_error_code ret;
+
     context->cc_ops = NULL;
     context->num_cc_ops = 0;
 
 #ifndef KCM_IS_API_CACHE
-    krb5_cc_register(context, &krb5_acc_ops, TRUE);
+    ret = krb5_cc_register(context, &krb5_acc_ops, TRUE);
+    if (ret)
+	return ret;
 #endif
-    krb5_cc_register(context, &krb5_fcc_ops, TRUE);
-    krb5_cc_register(context, &krb5_dcc_ops, TRUE);
-    krb5_cc_register(context, &krb5_mcc_ops, TRUE);
+    ret = krb5_cc_register(context, &krb5_fcc_ops, TRUE);
+    if (ret)
+	return ret;
+    ret = krb5_cc_register(context, &krb5_dcc_ops, TRUE);
+    if (ret)
+	return ret;
+    ret = krb5_cc_register(context, &krb5_mcc_ops, TRUE);
+    if (ret)
+	return ret;
 #ifdef HAVE_SCC
-    krb5_cc_register(context, &krb5_scc_ops, TRUE);
+    ret = krb5_cc_register(context, &krb5_scc_ops, TRUE);
+    if (ret)
+	return ret;
 #endif
 #ifdef HAVE_KCM
 #ifdef KCM_IS_API_CACHE
-    krb5_cc_register(context, &krb5_akcm_ops, TRUE);
+    ret = krb5_cc_register(context, &krb5_akcm_ops, TRUE);
+    if (ret)
+	return ret;
 #endif
-    krb5_cc_register(context, &krb5_kcm_ops, TRUE);
+    ret = krb5_cc_register(context, &krb5_kcm_ops, TRUE);
+    if (ret)
+	return ret;
 #endif
 #if defined(HAVE_KEYUTILS_H)
-    krb5_cc_register(context, &krb5_krcc_ops, TRUE);
+    ret = krb5_cc_register(context, &krb5_krcc_ops, TRUE);
+    if (ret)
+	return ret;
 #endif
-    _krb5_load_ccache_plugins(context);
-    return 0;
+    ret = _krb5_load_ccache_plugins(context);
+    return ret;
 }
 
 static krb5_error_code
@@ -338,18 +356,30 @@ cc_ops_copy(krb5_context context, const krb5_context src_context)
 static krb5_error_code
 kt_ops_register(krb5_context context)
 {
+    krb5_error_code ret;
+
     context->num_kt_types = 0;
     context->kt_types     = NULL;
 
-    krb5_kt_register (context, &krb5_fkt_ops);
-    krb5_kt_register (context, &krb5_wrfkt_ops);
-    krb5_kt_register (context, &krb5_javakt_ops);
-    krb5_kt_register (context, &krb5_mkt_ops);
+    ret = krb5_kt_register (context, &krb5_fkt_ops);
+    if (ret)
+	return ret;
+    ret = krb5_kt_register (context, &krb5_wrfkt_ops);
+    if (ret)
+	return ret;
+    ret = krb5_kt_register (context, &krb5_javakt_ops);
+    if (ret)
+	return ret;
+    ret = krb5_kt_register (context, &krb5_mkt_ops);
+    if (ret)
+	return ret;
 #ifndef HEIMDAL_SMALLER
-    krb5_kt_register (context, &krb5_akf_ops);
+    ret = krb5_kt_register (context, &krb5_akf_ops);
+    if (ret)
+	return ret;
 #endif
-    krb5_kt_register (context, &krb5_any_ops);
-    return 0;
+    ret = krb5_kt_register (context, &krb5_any_ops);
+    return ret;
 }
 
 static krb5_error_code
@@ -476,8 +506,12 @@ krb5_init_context(krb5_context *context)
 
     /* init error tables */
     _krb5_init_ets(p);
-    cc_ops_register(p);
-    kt_ops_register(p);
+    ret = cc_ops_register(p);
+    if (ret)
+	goto out;
+    ret = kt_ops_register(p);
+    if (ret)
+	goto out;
 
 #ifdef PKINIT
     ret = hx509_context_init(&p->hx509ctx);

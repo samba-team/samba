@@ -938,7 +938,7 @@ hx509_cms_verify_signed_ext(hx509_context context,
 	if (signer_info->signature.length == 0) {
 	    ret = HX509_CMS_MISSING_SIGNER_DATA;
 	    hx509_set_error_string(context, 0, ret,
-				   "SignerInfo %d in SignedData "
+				   "SignerInfo %zu in SignedData "
 				   "missing sigature", i);
 	    continue;
 	}

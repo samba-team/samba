@@ -1033,7 +1033,7 @@ rd_kx509_resp(krb5_context context,
             code = 0; /* No error */
         } else if (r.error_code < 0) {
             code = KRB5KRB_ERR_GENERIC; /* ??? */
-        } else if (r.error_code <= KX509_ERR_SRV_OVERLOADED) {
+        } else if (r.error_code <= KX509_ERR_SRV_OVERLOADED - ERROR_TABLE_BASE_kx59) {
             /*
              * RFC6717 (kx509) error code.  These are actually not used on the
              * wire in any existing implementations that we are aware of.  Just

@@ -78,7 +78,7 @@ PKCS12_key_gen(const void *key, size_t keylen,
 
     if (salt && saltlen > 0) {
 	for (i = 0; i < vlen; i++)
-	    I[i] = ((unsigned char*)salt)[i % saltlen];
+	    I[i] = ((const unsigned char*)salt)[i % saltlen];
 	size_I += vlen;
     }
     /*
@@ -89,7 +89,7 @@ PKCS12_key_gen(const void *key, size_t keylen,
     if (key) {
 	for (i = 0; i < vlen / 2; i++) {
 	    I[(i * 2) + size_I] = 0;
-	    I[(i * 2) + size_I + 1] = ((unsigned char*)key)[i % (keylen + 1)];
+	    I[(i * 2) + size_I + 1] = ((const unsigned char*)key)[i % (keylen + 1)];
 	}
 	size_I += vlen;
     }

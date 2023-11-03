@@ -448,7 +448,9 @@ build_auth_pack(krb5_context context,
 		krb5_clear_error_message(context);
 		return ret;
 	    }
-	    RAND_bytes(a->clientDHNonce->data, a->clientDHNonce->length);
+	    ret = RAND_bytes(a->clientDHNonce->data, a->clientDHNonce->length);
+	    if (ret != 1)
+		return KRB5_CRYPTO_INTERNAL;
 	    ret = krb5_copy_data(context, a->clientDHNonce,
 				 &ctx->clientDHNonce);
 	    if (ret)

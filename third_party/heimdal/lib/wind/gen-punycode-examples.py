@@ -61,10 +61,10 @@ while True:
         l2 = re.sub('^ *', '', l2)
         l = l[:-2] + l2
     if start:
-        if re.match('7\.2', l):
+        if re.match(r'7\.2', l):
             start = False
         else:
-            m = re.search('^ *\([A-Z]\) *(.*)$', l);
+            m = re.search(r'^ *\([A-Z]\) *(.*)$', l);
             if m:
                 desc = m.group(1)
                 codes = []
@@ -77,7 +77,7 @@ while True:
                     if m:
                         cases.append([codes, m.group(1), desc])
     else:
-        if re.match('^7\.1', l):
+        if re.match(r'^7\.1', l):
             start = True
             cases = []
 
@@ -114,7 +114,7 @@ for x in cases:
     examples_c.file.write(
         "  {%u, {%s}, \"%s\", \"%s\"},\n" %
         (len(cp),
-         ",".join([re.sub('[uU]\+', '0x', x) for x in cp]),
+         ",".join([re.sub(r'[uU]\+', '0x', x) for x in cp]),
          pc,
          desc))
 

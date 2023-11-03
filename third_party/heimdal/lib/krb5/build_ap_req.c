@@ -51,7 +51,11 @@ krb5_build_ap_req (krb5_context context,
     ap.ap_options.use_session_key = (ap_options & AP_OPTS_USE_SESSION_KEY) > 0;
     ap.ap_options.mutual_required = (ap_options & AP_OPTS_MUTUAL_REQUIRED) > 0;
 
-    decode_Ticket(cred->ticket.data, cred->ticket.length, &ap.ticket, &len);
+    ret = decode_Ticket(cred->ticket.data, cred->ticket.length, &ap.ticket, &len);
+    if (ret)
+        return ret;
+    if (cred->ticket.length != len)
+        krb5_abortx(context, "internal error in ASN.1 encoder");
     ap.authenticator.etype = enctype;
     ap.authenticator.kvno  = NULL;
     ap.authenticator.cipher = authenticator;

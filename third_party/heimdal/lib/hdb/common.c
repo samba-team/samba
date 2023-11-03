@@ -1629,7 +1629,6 @@ fetch_it(krb5_context context,
                 /* Extra ':'s?  No virtualization for you! */
                 free(host);
                 host = NULL;
-                htmp = NULL;
             } else {
                 *htmp = '\0';
             }

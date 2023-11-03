@@ -235,7 +235,7 @@ static const unsigned char is_set[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
 int
 BN_is_bit_set(const BIGNUM *bn, int bit)
 {
-    heim_integer *hi = (heim_integer *)bn;
+    const heim_integer *hi = (const heim_integer *)bn;
     unsigned char *p = hi->data;
 
     if ((bit / 8) >= hi->length || hi->length == 0)
@@ -306,7 +306,7 @@ BN_set_word(BIGNUM *bn, unsigned long num)
 unsigned long
 BN_get_word(const BIGNUM *bn)
 {
-    heim_integer *hi = (heim_integer *)bn;
+    const heim_integer *hi = (const heim_integer *)bn;
     unsigned long num = 0;
     int i;
 

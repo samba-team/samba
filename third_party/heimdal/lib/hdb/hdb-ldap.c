@@ -366,6 +366,7 @@ LDAP_get_generalized_time_value(HDB * db, LDAPMessage * entry,
     if (ret)
 	return ret;
 
+    memset(&tm, 0, sizeof tm);
     tmp = strptime(gentime, "%Y%m%d%H%M%SZ", &tm);
     if (tmp == NULL) {
 	free(gentime);

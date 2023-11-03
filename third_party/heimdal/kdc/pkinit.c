@@ -1078,9 +1078,9 @@ pk_mk_pa_reply_dh(krb5_context context,
         unsigned char *p;
         ret = _kdc_serialize_ecdh_key(context, cp->u.ecdh.key, &p,
                                       &dh_info.subjectPublicKey.length);
-        dh_info.subjectPublicKey.data = p;
         if (ret)
             goto out;
+        dh_info.subjectPublicKey.data = p;
     } else
 	krb5_abortx(context, "no keyex selected ?");
 

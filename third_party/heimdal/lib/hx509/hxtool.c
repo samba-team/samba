@@ -2902,9 +2902,11 @@ ptime(const char *s)
     char *rest;
     int at_s;
 
+    memset(&at_tm, 0, sizeof at_tm);
     if ((rest = strptime(s, "%Y-%m-%dT%H:%M:%S", &at_tm)) != NULL &&
         rest[0] == '\0')
         return mktime(&at_tm);
+    memset(&at_tm, 0, sizeof at_tm);
     if ((rest = strptime(s, "%Y%m%d%H%M%S", &at_tm)) != NULL && rest[0] == '\0')
         return mktime(&at_tm);
     if ((at_s = parse_time(s, "s")) != -1)

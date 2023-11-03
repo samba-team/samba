@@ -968,7 +968,7 @@ krb5_ret_data(krb5_storage *sp,
 	bytes = sp->fetch(sp, data->data, size);
 	if (bytes < 0 || bytes != size) {
             krb5_data_free(data);
-	    return (ret < 0)? errno : sp->eof_code;
+	    return (bytes < 0)? errno : sp->eof_code;
 	}
     }
     return 0;

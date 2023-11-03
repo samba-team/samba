@@ -91,14 +91,14 @@ rk_base32_encode(const void *data, int size, char **str, enum rk_base32_flags fl
 	if (i < size)
 	    c += q[i];
 	i++;
-	p[0] = chars[(c & 0x00000000f800000000ULL) >> 35];
-	p[1] = chars[(c & 0x0000000007c0000000ULL) >> 30];
-	p[2] = chars[(c & 0x00000000003e000000ULL) >> 25];
-	p[3] = chars[(c & 0x000000000001f00000ULL) >> 20];
-	p[4] = chars[(c & 0x0000000000000f8000ULL) >> 15];
-	p[5] = chars[(c & 0x000000000000007c00ULL) >> 10];
-	p[6] = chars[(c & 0x0000000000000003e0ULL) >> 5];
-	p[7] = chars[(c & 0x00000000000000001fULL) >> 0];
+	p[0] = chars[(c & 0x000000f800000000ULL) >> 35];
+	p[1] = chars[(c & 0x00000007c0000000ULL) >> 30];
+	p[2] = chars[(c & 0x000000003e000000ULL) >> 25];
+	p[3] = chars[(c & 0x0000000001f00000ULL) >> 20];
+	p[4] = chars[(c & 0x00000000000f8000ULL) >> 15];
+	p[5] = chars[(c & 0x0000000000007c00ULL) >> 10];
+	p[6] = chars[(c & 0x00000000000003e0ULL) >> 5];
+	p[7] = chars[(c & 0x000000000000001fULL) >> 0];
         switch (i - size) {
         case 4: p[2] = p[3] = '=';  HEIM_FALLTHROUGH;
         case 3: p[4] = '=';         HEIM_FALLTHROUGH;

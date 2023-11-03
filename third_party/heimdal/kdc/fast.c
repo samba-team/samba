@@ -406,8 +406,8 @@ _kdc_fast_mk_e_data(astgs_request_t r,
 			    NULL,
 			    error_client,
 			    error_server,
-			    NULL,
-			    NULL,
+			    csec,
+			    cusec,
 			    e_data);
 	if (ret) {
 	    kdc_log(r->context, r->config, 1,
@@ -508,8 +508,8 @@ _kdc_fast_mk_error(astgs_request_t r,
 	    error_client = NULL;
 	    error_server = NULL;
 	}
-	csec = 0;
-	cusec = 0;
+	csec = NULL;
+	cusec = NULL;
     }
 
     ret = krb5_mk_error(r->context,
@@ -603,6 +603,9 @@ fast_unwrap_request(astgs_request_t r,
      *
      */
     if (fxreq.u.armored_data.armor != NULL) {
+	krb5uint32 kvno;
+	krb5uint32 *kvno_ptr = NULL;
+
 	if (fxreq.u.armored_data.armor->armor_type != 1) {
 	    kdc_log(r->context, r->config, 4,
 		    "Incorrect AS-REQ armor type");
@@ -628,9 +631,14 @@ fast_unwrap_request(astgs_request_t r,
 	    goto out;
 	}
 
+	if (ap_req.ticket.enc_part.kvno != NULL) {
+	    kvno = *ap_req.ticket.enc_part.kvno;
+	    kvno_ptr = &kvno;
+	}
+
 	ret = _kdc_db_fetch(r->context, r->config, armor_server_principal,
 			    HDB_F_GET_KRBTGT | HDB_F_DELAY_NEW_KEYS,
-			    (krb5uint32 *)ap_req.ticket.enc_part.kvno,
+			    kvno_ptr,
 			    &r->armor_serverdb, &r->armor_server);
 	if(ret == HDB_ERR_NOT_FOUND_HERE) {
 	    free_AP_REQ(&ap_req);
