@@ -3303,7 +3303,9 @@ class ConditionalAceTests(ConditionalAceBaseTests):
         # Create an authentication policy that explicitly denies the machine
         # account for a user.
         allowed = 'O:SYD:(A;;CR;;;WD)'
-        denied = f'O:SYD:(XD;;CR;;;{mach_creds.get_sid()};(abc))'
+        denied = (f'O:SYD:(XD;;CR;;;{mach_creds.get_sid()};'
+                  f'(Member_of SID({mach_creds.get_sid()})))'
+                  f'(A;;CR;;;WD)')
         policy = self.create_authn_policy(enforced=True,
                                           user_allowed_from=denied,
                                           service_allowed_from=allowed)
