@@ -403,11 +403,11 @@ static struct tevent_req *start_rpc_host_send(
 	return req;
 
 fail:
-	if (ready_fds[0] == -1) {
+	if (ready_fds[0] != -1) {
 		close(ready_fds[0]);
 		ready_fds[0] = -1;
 	}
-	if (ready_fds[1] == -1) {
+	if (ready_fds[1] != -1) {
 		close(ready_fds[1]);
 		ready_fds[1] = -1;
 	}
