@@ -46,6 +46,7 @@ bool conditional_ace_encode_binary(TALLOC_CTX *mem_ctx,
 				   DATA_BLOB *dest);
 
 struct ace_condition_script * ace_conditions_compile_sddl(TALLOC_CTX *mem_ctx,
+							  const enum ace_condition_flags ace_condition_flags,
 							  const char *sddl,
 							  const char **message,
 							  size_t *message_offset,

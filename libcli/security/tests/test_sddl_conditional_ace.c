@@ -94,8 +94,12 @@ static void test_sddl_compile(void **state)
 	DATA_BLOB compiled;
 	size_t length;
 
-	s = ace_conditions_compile_sddl(mem_ctx, sddl, &message,
-					&message_offset, &length);
+	s = ace_conditions_compile_sddl(mem_ctx,
+					ACE_CONDITION_FLAG_ALLOW_DEVICE,
+					sddl,
+					&message,
+					&message_offset,
+					&length);
 	if (message != NULL) {
 		print_error_message(sddl, message, message_offset);
 	}
@@ -130,8 +134,12 @@ static void test_sddl_compile2(void **state)
 	DATA_BLOB compiled;
 	size_t length;
 
-	s = ace_conditions_compile_sddl(mem_ctx, sddl, &message,
-					&message_offset, &length);
+	s = ace_conditions_compile_sddl(mem_ctx,
+					ACE_CONDITION_FLAG_ALLOW_DEVICE,
+					sddl,
+					&message,
+					&message_offset,
+					&length);
 	if (message != NULL) {
 		print_error_message(sddl, message, message_offset);
 	}
@@ -624,6 +632,7 @@ static void test_round_trips(void **state)
 		DATA_BLOB e1, e2, e3;
 		fputs("=======================\n", stderr);
 		s1 = ace_conditions_compile_sddl(mem_ctx,
+						 ACE_CONDITION_FLAG_ALLOW_DEVICE,
 						 sddl[i],
 						 &message,
 						 &message_offset,
@@ -679,6 +688,7 @@ static void test_round_trips(void **state)
 		}
 		print_message("SDDL: %s\n", resddl1);
 		s3 = ace_conditions_compile_sddl(mem_ctx,
+						 ACE_CONDITION_FLAG_ALLOW_DEVICE,
 						 resddl1,
 						 &message,
 						 &message_offset,
@@ -728,6 +738,7 @@ static void test_a_number_of_valid_strings(void **state)
 		size_t message_offset;
 
 		s = ace_conditions_compile_sddl(mem_ctx,
+						ACE_CONDITION_FLAG_ALLOW_DEVICE,
 						sddl[i],
 						&message,
 						&message_offset,
@@ -803,6 +814,7 @@ static void test_a_number_of_invalid_strings(void **state)
 		const char *message = NULL;
 		size_t message_offset;
 		s = ace_conditions_compile_sddl(mem_ctx,
+						ACE_CONDITION_FLAG_ALLOW_DEVICE,
 						sddl[i],
 						&message,
 						&message_offset,
@@ -847,6 +859,7 @@ static void test_valid_strings_with_trailing_crap(void **state)
 		const char *message = NULL;
 		size_t message_offset;
 		s = ace_conditions_compile_sddl(mem_ctx,
+						ACE_CONDITION_FLAG_ALLOW_DEVICE,
 						pairs[i].sddl,
 						&message,
 						&message_offset,

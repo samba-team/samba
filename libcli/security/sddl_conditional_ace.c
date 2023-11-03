@@ -40,6 +40,8 @@
 #define SDDL_FLAG_EXPECTING_PAREN_LITERAL   128
 #define SDDL_FLAG_NOT_EXPECTING_END_PAREN   256
 
+#define SDDL_FLAG_DEVICE                    512
+
 #define SDDL_FLAG_IS_UNARY_OP               (1 << 20)
 #define SDDL_FLAG_IS_BINARY_OP              (1 << 21)
 
@@ -114,6 +116,7 @@ struct ace_condition_sddl_compiler_context {
 	struct dom_sid *domain_sid;
 	uint32_t state;
 	uint8_t last_token_type;
+	bool allow_device;
 };
 
 struct sddl_data {
@@ -133,7 +136,7 @@ static const struct sddl_data sddl_strings[256] = {
 	},
 	[CONDITIONAL_ACE_TOKEN_DEVICE_MEMBER_OF] = {
 		"Device_Member_of",
-		SDDL_FLAGS_MEMBER_OP,
+		SDDL_FLAGS_MEMBER_OP|SDDL_FLAG_DEVICE,
 		SDDL_PRECEDENCE_COMMON,
 		1
 	},
@@ -146,7 +149,7 @@ static const struct sddl_data sddl_strings[256] = {
 	},
 	[CONDITIONAL_ACE_TOKEN_DEVICE_MEMBER_OF_ANY] = {
 		"Device_Member_of_Any",
-		SDDL_FLAGS_MEMBER_OP,
+		SDDL_FLAGS_MEMBER_OP|SDDL_FLAG_DEVICE,
 		SDDL_PRECEDENCE_COMMON,
 		1
 	},
@@ -158,7 +161,7 @@ static const struct sddl_data sddl_strings[256] = {
 	},
 	[CONDITIONAL_ACE_TOKEN_NOT_DEVICE_MEMBER_OF] = {
 		"Not_Device_Member_of",
-		SDDL_FLAGS_MEMBER_OP,
+		SDDL_FLAGS_MEMBER_OP|SDDL_FLAG_DEVICE,
 		SDDL_PRECEDENCE_COMMON,
 		1
 	},
@@ -170,7 +173,7 @@ static const struct sddl_data sddl_strings[256] = {
 	},
 	[CONDITIONAL_ACE_TOKEN_NOT_DEVICE_MEMBER_OF_ANY] = {
 		"Not_Device_Member_of_Any",
-		SDDL_FLAGS_MEMBER_OP,
+		SDDL_FLAGS_MEMBER_OP|SDDL_FLAG_DEVICE,
 		SDDL_PRECEDENCE_COMMON,
 		1
 	},
@@ -356,7 +359,7 @@ static const struct sddl_data sddl_strings[256] = {
 	},
 	[CONDITIONAL_ACE_DEVICE_ATTRIBUTE] = {
 		"device attribute",
-		SDDL_FLAGS_ATTRIBUTE,
+		SDDL_FLAGS_ATTRIBUTE|SDDL_FLAG_DEVICE,
 		SDDL_NOT_AN_OP,
 		0
 	},
@@ -2256,6 +2259,20 @@ static bool parse_word(struct ace_condition_sddl_compiler_context *comp)
 			size_t o = candidates[j];
 			if (sddl_strings[o].name[i] == '\0') {
 				/* it is this one */
+
+				if (!comp->allow_device &&
+				    (sddl_strings[o].flags & SDDL_FLAG_DEVICE))
+				{
+					comp_error(
+						comp,
+						"a device‐relative expression "
+						"will never evaluate to true "
+						"in this context (did you "
+						"intend a user‐relative "
+						"expression?)");
+					return false;
+				}
+
 				token.type = o;
 				token.data.sddl_op.start = comp->offset;
 				comp->offset += i;
@@ -2327,7 +2344,19 @@ static bool parse_attr2(struct ace_condition_sddl_compiler_context *comp)
 				  (const char *) (comp->sddl + comp->offset),
 				  attr_len);
 		if (ret == 0) {
-			token.type = sddl_attr_types[i].code;
+			const uint8_t code = sddl_attr_types[i].code;
+
+			if (!comp->allow_device &&
+			    (sddl_strings[code].flags & SDDL_FLAG_DEVICE))
+			{
+				comp_error(comp,
+					   "a device attribute is not "
+					   "applicable in this context (did "
+					   "you intend a user attribute?)");
+				return false;
+			}
+
+			token.type = code;
 			comp->offset += attr_len;
 			break;
 		}
@@ -2676,6 +2705,7 @@ static bool parse_expression(struct ace_condition_sddl_compiler_context *comp)
 static bool init_compiler_context(
 	TALLOC_CTX *mem_ctx,
 	struct ace_condition_sddl_compiler_context *comp,
+	const enum ace_condition_flags ace_condition_flags,
 	const char *sddl,
 	size_t max_length,
 	size_t max_stack)
@@ -2713,6 +2743,7 @@ static bool init_compiler_context(
 	comp->target_len = &program->length;
 	comp->length = strlen(sddl);
 	comp->state =  SDDL_FLAG_EXPECTING_PAREN;
+	comp->allow_device = ace_condition_flags & ACE_CONDITION_FLAG_ALLOW_DEVICE;
 	return true;
 }
 
@@ -2721,6 +2752,7 @@ static bool init_compiler_context(
  *
  * @param mem_ctx
  * @param sddl - the string to be parsed
+ * @param ace_condition_flags - flags controlling compiler behaviour
  * @param message - on error, a pointer to a compiler message
  * @param message_offset - where the error occurred
  * @param consumed_length - how much of the SDDL was used
@@ -2728,6 +2760,7 @@ static bool init_compiler_context(
  */
 struct ace_condition_script * ace_conditions_compile_sddl(
 	TALLOC_CTX *mem_ctx,
+	const enum ace_condition_flags ace_condition_flags,
 	const char *sddl,
 	const char **message,
 	size_t *message_offset,
@@ -2741,6 +2774,7 @@ struct ace_condition_script * ace_conditions_compile_sddl(
 
 	ok = init_compiler_context(mem_ctx,
 				   &comp,
+				   ace_condition_flags,
 				   sddl,
 				   CONDITIONAL_ACE_MAX_LENGTH,
 				   CONDITIONAL_ACE_MAX_TOKENS);
@@ -3026,7 +3060,12 @@ struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *sddl_decode_resource_attr (
 	size_t len;
 	struct ace_condition_unicode attr_name = {};
 
-	ok = init_compiler_context(mem_ctx, &comp, str, 3, 3);
+	ok = init_compiler_context(mem_ctx,
+				   &comp,
+				   ACE_CONDITION_FLAG_ALLOW_DEVICE,
+				   str,
+				   3,
+				   3);
 	if (!ok) {
 		return NULL;
 	}
@@ -3302,7 +3341,12 @@ struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *parse_sddl_literal_as_claim(
 	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim = NULL;
 	struct ace_condition_sddl_compiler_context comp = {};
 
-	ok = init_compiler_context(mem_ctx, &comp, str, 2, 2);
+	ok = init_compiler_context(mem_ctx,
+				   &comp,
+				   ACE_CONDITION_FLAG_ALLOW_DEVICE,
+				   str,
+				   2,
+				   2);
 	if (!ok) {
 		return NULL;
 	}

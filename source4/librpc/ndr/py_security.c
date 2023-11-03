@@ -299,6 +299,7 @@ static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
 	}
 
 	secdesc = sddl_decode_err_msg(tmp_ctx, sddl, sid,
+				      ACE_CONDITION_FLAG_ALLOW_DEVICE,
 				      &err_msg, &err_msg_offset);
 	if (secdesc == NULL) {
 		PyObject *exc = NULL;

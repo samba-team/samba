@@ -389,6 +389,10 @@ interface conditional_ace
 		uint32 length;
 	} ace_condition_script;
 
+	typedef enum {
+		ACE_CONDITION_FLAG_ALLOW_DEVICE = 0x01
+	} ace_condition_flags;
+
 	/*
 	 * Flags for ace_condition_token.flags field.
 	 *

@@ -95,6 +95,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *input, size_t len)
 	}
 
 	s2 = ace_conditions_compile_sddl(mem_ctx,
+					 ACE_CONDITION_FLAG_ALLOW_DEVICE,
 					 sddl,
 					 &message,
 					 &message_offset,
