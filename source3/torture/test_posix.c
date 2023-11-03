@@ -134,6 +134,12 @@ bool run_posix_ls_wildcard_test(int dummy)
 	const char *symlnk_dst_outside_share = "/etc/passwd";
 	struct posix_test_entry entries[] = {
 		{
+			.name = file,
+			.target = NULL,
+			.expected = file,
+			.attr_win = FILE_ATTRIBUTE_ARCHIVE,
+			.attr_lin = FILE_ATTRIBUTE_ARCHIVE,
+		}, {
 			.name = symlnk_dangling,
 			.target = symlnk_dst_dangling,
 			.expected = symlnk_dangling,
@@ -210,6 +216,9 @@ bool run_posix_ls_wildcard_test(int dummy)
 	fnum = (uint16_t)-1;
 
 	for (i = 0; entries[i].name != NULL; i++) {
+		if (entries[i].target == NULL) {
+			continue;
+		}
 		status = cli_posix_symlink(cli_unix,
 					   entries[i].target,
 					   entries[i].name);
@@ -229,6 +238,9 @@ bool run_posix_ls_wildcard_test(int dummy)
 		goto out;
 	}
 
+	if (!posix_test_entry_check(state, file, true, 0)) {
+		goto out;
+	}
 	if (!posix_test_entry_check(state, symlnk_dangling, false, 0)) {
 		goto out;
 	}
@@ -250,6 +262,9 @@ bool run_posix_ls_wildcard_test(int dummy)
 		goto out;
 	}
 
+	if (!posix_test_entry_check(state, file, true, 0)) {
+		goto out;
+	}
 	if (!posix_test_entry_check(state,
 				    symlnk_dangling,
 				    true,
@@ -310,6 +325,12 @@ bool run_posix_ls_single_test(int dummy)
 	const char *symlnk_dst_outside_share = "/etc/passwd";
 	struct posix_test_entry entries[] = {
 		{
+			.name = file,
+			.target = NULL,
+			.expected = file,
+			.attr_win = FILE_ATTRIBUTE_ARCHIVE,
+			.attr_lin = FILE_ATTRIBUTE_ARCHIVE,
+		}, {
 			.name = symlnk_dangling,
 			.target = symlnk_dst_dangling,
 			.expected = symlnk_dangling,
@@ -412,6 +433,9 @@ bool run_posix_ls_single_test(int dummy)
 	fnum = (uint16_t)-1;
 
 	for (i = 0; entries[i].name != NULL; i++) {
+		if (entries[i].target == NULL) {
+			continue;
+		}
 		status = cli_posix_symlink(cli_unix,
 					   entries[i].target,
 					   entries[i].name);
@@ -425,10 +449,14 @@ bool run_posix_ls_single_test(int dummy)
 	printf("Doing Windows ls single\n");
 	state->flavour = WINDOWS;
 
+	cli_list(cli_win, file, 0, posix_ls_fn, state);
 	cli_list(cli_win, symlnk_dangling, 0, posix_ls_fn, state);
 	cli_list(cli_win, symlnk_outside_share, 0, posix_ls_fn, state);
 	cli_list(cli_win, symlnk_in_share, 0, posix_ls_fn, state);
 
+	if (!posix_test_entry_check(state, file, true, 0)) {
+		goto out;
+	}
 	if (!posix_test_entry_check(state, symlnk_dangling, false, 0)) {
 		goto out;
 	}
@@ -444,10 +472,14 @@ bool run_posix_ls_single_test(int dummy)
 	printf("Doing POSIX ls single\n");
 	state->flavour = LINUX;
 
+	cli_list(cli_unix, file, 0, posix_ls_fn, state);
 	cli_list(cli_unix, symlnk_dangling, 0, posix_ls_fn, state);
 	cli_list(cli_unix, symlnk_outside_share, 0, posix_ls_fn, state);
 	cli_list(cli_unix, symlnk_in_share, 0, posix_ls_fn, state);
 
+	if (!posix_test_entry_check(state, file, true, 0)) {
+		goto out;
+	}
 	if (!posix_test_entry_check(state,
 				    symlnk_dangling,
 				    true,
