@@ -414,11 +414,10 @@ NTSTATUS get_real_filename_at(struct files_struct *dirfsp,
  * vfs_stat() the last component. This will be taken care of by an
  * attempt to do a openat_pathref_fsp().
  */
-static bool get_real_filename_cache_key(
-	TALLOC_CTX *mem_ctx,
-	struct files_struct *dirfsp,
-	const char *name,
-	DATA_BLOB *_key)
+bool get_real_filename_cache_key(TALLOC_CTX *mem_ctx,
+				 struct files_struct *dirfsp,
+				 const char *name,
+				 DATA_BLOB *_key)
 {
 	struct file_id fid = vfs_file_id_from_sbuf(
 		dirfsp->conn, &dirfsp->fsp_name->st);

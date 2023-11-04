@@ -339,6 +339,10 @@ NTSTATUS get_real_filename_full_scan_at(struct files_struct *dirfsp,
 					bool mangled,
 					TALLOC_CTX *mem_ctx,
 					char **found_name);
+bool get_real_filename_cache_key(TALLOC_CTX *mem_ctx,
+				 struct files_struct *dirfsp,
+				 const char *name,
+				 DATA_BLOB *_key);
 char *get_original_lcomp(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			const char *filename_in,
