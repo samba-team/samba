@@ -832,6 +832,55 @@ NTSTATUS create_open_symlink_err(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/*
+ * Create the memcache-key for GETREALFILENAME_CACHE: This supplements
+ * the stat cache for the last component to be looked up. Cache
+ * contents is the correctly capitalized translation of the parameter
+ * "name" as it exists on disk. This is indexed by inode of the dirfsp
+ * and name, and contrary to stat_cahce_lookup() it does not
+ * vfs_stat() the last component. This will be taken care of by an
+ * attempt to do a openat_pathref_fsp().
+ */
+static bool get_real_filename_cache_key(TALLOC_CTX *mem_ctx,
+					struct files_struct *dirfsp,
+					const char *name,
+					DATA_BLOB *_key)
+{
+	struct file_id fid = vfs_file_id_from_sbuf(dirfsp->conn,
+						   &dirfsp->fsp_name->st);
+	char *upper = NULL;
+	uint8_t *key = NULL;
+	size_t namelen, keylen;
+
+	upper = talloc_strdup_upper(mem_ctx, name);
+	if (upper == NULL) {
+		return false;
+	}
+	namelen = talloc_get_size(upper);
+
+	keylen = namelen + sizeof(fid);
+	if (keylen < sizeof(fid)) {
+		TALLOC_FREE(upper);
+		return false;
+	}
+
+	key = talloc_size(mem_ctx, keylen);
+	if (key == NULL) {
+		TALLOC_FREE(upper);
+		return false;
+	}
+
+	memcpy(key, &fid, sizeof(fid));
+	memcpy(key + sizeof(fid), upper, namelen);
+	TALLOC_FREE(upper);
+
+	*_key = (DATA_BLOB){
+		.data = key,
+		.length = keylen,
+	};
+	return true;
+}
+
 static int smb_vfs_openat_ci(TALLOC_CTX *mem_ctx,
 			     bool case_sensitive,
 			     struct connection_struct *conn,

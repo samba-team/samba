@@ -405,52 +405,6 @@ NTSTATUS get_real_filename_at(struct files_struct *dirfsp,
 }
 
 /*
- * Create the memcache-key for GETREALFILENAME_CACHE: This supplements
- * the stat cache for the last component to be looked up. Cache
- * contents is the correctly capitalized translation of the parameter
- * "name" as it exists on disk. This is indexed by inode of the dirfsp
- * and name, and contrary to stat_cahce_lookup() it does not
- * vfs_stat() the last component. This will be taken care of by an
- * attempt to do a openat_pathref_fsp().
- */
-bool get_real_filename_cache_key(TALLOC_CTX *mem_ctx,
-				 struct files_struct *dirfsp,
-				 const char *name,
-				 DATA_BLOB *_key)
-{
-	struct file_id fid = vfs_file_id_from_sbuf(
-		dirfsp->conn, &dirfsp->fsp_name->st);
-	char *upper = NULL;
-	uint8_t *key = NULL;
-	size_t namelen, keylen;
-
-	upper = talloc_strdup_upper(mem_ctx, name);
-	if (upper == NULL) {
-		return false;
-	}
-	namelen = talloc_get_size(upper);
-
-	keylen = namelen + sizeof(fid);
-	if (keylen < sizeof(fid)) {
-		TALLOC_FREE(upper);
-		return false;
-	}
-
-	key = talloc_size(mem_ctx, keylen);
-	if (key == NULL) {
-		TALLOC_FREE(upper);
-		return false;
-	}
-
-	memcpy(key, &fid, sizeof(fid));
-	memcpy(key + sizeof(fid), upper, namelen);
-	TALLOC_FREE(upper);
-
-	*_key = (DATA_BLOB) { .data = key, .length = keylen, };
-	return true;
-}
-
-/*
  * Lightweight function to just get last component
  * for rename / enumerate directory calls.
  */
