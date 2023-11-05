@@ -157,6 +157,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, ndr_flags_type 
 	if (conv_src_len == 0) {
 		as = talloc_strdup(ndr->current_mem_ctx, "");
 		converted_size = 0;
+		if (!as) {
+			return ndr_pull_error(ndr, NDR_ERR_ALLOC,
+					      "Failed to talloc_strndup() in zero-length ndr_string_pull()");
+		}
 	} else {
 		if (!do_convert) {
 			as = talloc_strndup(ndr->current_mem_ctx,
@@ -180,11 +184,11 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, ndr_flags_type 
 	/* this is a way of detecting if a string is sent with the wrong
 	   termination */
 	if (ndr->flags & LIBNDR_FLAG_STR_NOTERM) {
-		if (as && converted_size > 0 && as[converted_size-1] == '\0') {
+		if (converted_size > 0 && as[converted_size-1] == '\0') {
 			DEBUG(6,("short string '%s', sent with NULL termination despite NOTERM flag in IDL\n", as));
 		}
 	} else {
-		if (as && converted_size > 0 && as[converted_size-1] != '\0') {
+		if (converted_size > 0 && as[converted_size-1] != '\0') {
 			DEBUG(6,("long string '%s', send without NULL termination (which was expected)\n", as));
 		}
 	}
