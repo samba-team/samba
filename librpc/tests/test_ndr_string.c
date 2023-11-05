@@ -192,6 +192,325 @@ static void test_pull_string_array(void **state)
 	TALLOC_FREE(mem_ctx);
 }
 
+static void test_pull_string_zero_len_utf8_NOTERM_STR_NO_EMBEDDED_NUL(void **state)
+{
+	struct ndr_pull ndr = {0};
+	enum ndr_err_code err;
+	ndr_flags_type flags = NDR_SCALARS;
+	const char *s = NULL;
+	uint8_t data[] = { 0x0, 0x0 };
+
+	ndr.flags = LIBNDR_FLAG_STR_UTF8 | LIBNDR_FLAG_STR_SIZE2 | LIBNDR_FLAG_STR_NOTERM | LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
+
+	ndr.data = data;
+	ndr.data_size = sizeof(data);
+	err = ndr_pull_string(&ndr, flags, &s);
+	assert_int_equal(err, NDR_ERR_SUCCESS);
+	assert_non_null(s);
+	assert_string_equal(s, "");
+	assert_int_equal(sizeof(data), ndr.offset);
+
+}
+
+static void test_pull_string_utf8_nul_term_STR_NO_EMBEDDED_NUL(void **state)
+{
+
+	struct ndr_pull ndr = {0};
+	enum ndr_err_code err;
+	ndr_flags_type flags = NDR_SCALARS;
+	const char *s = NULL;
+	uint8_t data[] = { 0x2, 0x0, 'a', 0x0 };
+
+	ndr.flags = LIBNDR_FLAG_STR_UTF8 | LIBNDR_FLAG_STR_SIZE2 | LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
+
+	ndr.data = data;
+	ndr.data_size = sizeof(data);
+	err = ndr_pull_string(&ndr, flags, &s);
+	assert_int_equal(err, NDR_ERR_SUCCESS);
+	assert_non_null(s);
+	assert_string_equal(s, "a");
+	assert_int_equal(sizeof(data), ndr.offset);
+
+}
+
+static void test_pull_string_utf8_nul_term_NOTERM_STR_NO_EMBEDDED_NUL(void **state)
+{
+
+	struct ndr_pull ndr = {0};
+	enum ndr_err_code err;
+	ndr_flags_type flags = NDR_SCALARS;
+	const char *s = NULL;
+	uint8_t data[] = { 0x2, 0x0, 'a', 0x0 };
+
+	ndr.flags = LIBNDR_FLAG_STR_UTF8 | LIBNDR_FLAG_STR_SIZE2 | LIBNDR_FLAG_STR_NOTERM | LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
+
+	ndr.data = data;
+	ndr.data_size = sizeof(data);
+	err = ndr_pull_string(&ndr, flags, &s);
+	assert_int_equal(err, NDR_ERR_CHARCNV);
+	assert_int_equal(2, ndr.offset);
+
+}
+
+static void test_pull_string_utf8_nullterm_STR_NO_EMBEDDED_NUL(void **state)
+{
+
+	struct ndr_pull ndr = {0};
+	enum ndr_err_code err;
+	ndr_flags_type flags = NDR_SCALARS;
+	const char *s = NULL;
+	uint8_t data[] = { 0x4, 0x0, 'a', 'b', 'c', 0x0};
+
+	ndr.flags = LIBNDR_FLAG_STR_UTF8 | LIBNDR_FLAG_STR_SIZE2 | LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
+
+	ndr.data = data;
+	ndr.data_size = sizeof(data);
+	err = ndr_pull_string(&ndr, flags, &s);
+	assert_int_equal(err, NDR_ERR_SUCCESS);
+	assert_non_null(s);
+	assert_string_equal(s, "abc");
+	assert_int_equal(sizeof(data), ndr.offset);
+
+}
+
+static void test_pull_string_utf8_STR_NO_EMBEDDED_NUL(void **state)
+{
+
+	struct ndr_pull ndr = {0};
+	enum ndr_err_code err;
+	ndr_flags_type flags = NDR_SCALARS;
+	const char *s = NULL;
+	uint8_t data[] = { 0x3, 0x0, 'a', 'b', 'c'};
+
+	ndr.flags = LIBNDR_FLAG_STR_UTF8 | LIBNDR_FLAG_STR_SIZE2 | LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
+
+	ndr.data = data;
+	ndr.data_size = sizeof(data);
+	err = ndr_pull_string(&ndr, flags, &s);
+	assert_int_equal(err, NDR_ERR_CHARCNV);
+	assert_int_equal(2, ndr.offset);
+
+}
+
+static void test_pull_string_utf8_NOTERM_STR_NO_EMBEDDED_NUL(void **state)
+{
+
+	struct ndr_pull ndr = {0};
+	enum ndr_err_code err;
+	ndr_flags_type flags = NDR_SCALARS;
+	const char *s = NULL;
+	uint8_t data[] = { 0x3, 0x0, 'a', 'b', 'c'};
+
+	ndr.flags = LIBNDR_FLAG_STR_UTF8 | LIBNDR_FLAG_STR_SIZE2 | LIBNDR_FLAG_STR_NOTERM | LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
+
+	ndr.data = data;
+	ndr.data_size = sizeof(data);
+	err = ndr_pull_string(&ndr, flags, &s);
+	assert_int_equal(err, NDR_ERR_SUCCESS);
+	assert_non_null(s);
+	assert_string_equal(s, "abc");
+	assert_int_equal(sizeof(data), ndr.offset);
+
+}
+
+static void test_pull_string_utf8_nullterm_NOTERM_STR_NO_EMBEDDED_NUL(void **state)
+{
+
+	struct ndr_pull ndr = {0};
+	enum ndr_err_code err;
+	ndr_flags_type flags = NDR_SCALARS;
+	const char *s = NULL;
+	uint8_t data[] = { 0x4, 0x0, 'a', 'b', 'c', 0x0};
+
+	ndr.flags = LIBNDR_FLAG_STR_UTF8 | LIBNDR_FLAG_STR_SIZE2 | LIBNDR_FLAG_STR_NOTERM | LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
+
+	ndr.data = data;
+	ndr.data_size = sizeof(data);
+	err = ndr_pull_string(&ndr, flags, &s);
+	assert_int_equal(err, NDR_ERR_CHARCNV);
+	assert_int_equal(2, ndr.offset);
+
+}
+
+static void test_pull_string_utf8_LIBNDR_FLAG_STR_NOTERM_STR_NO_EMBEDDED_NUL_fail(void **state)
+{
+
+	struct ndr_pull ndr = {0};
+	enum ndr_err_code err;
+	ndr_flags_type flags = NDR_SCALARS;
+	const char *s = NULL;
+	uint8_t data[] = { 0x3, 0x0, 'a', 0x0, 'a'};
+
+	ndr.flags = LIBNDR_FLAG_STR_UTF8 | LIBNDR_FLAG_STR_SIZE2 | LIBNDR_FLAG_STR_NOTERM | LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
+
+	ndr.data = data;
+	ndr.data_size = sizeof(data);
+	err = ndr_pull_string(&ndr, flags, &s);
+	assert_int_equal(err, NDR_ERR_CHARCNV);
+	assert_int_equal(2, ndr.offset);
+
+}
+
+static void test_pull_string_utf16_LIBNDR_FLAG_STR_NOTERM_STR_NO_EMBEDDED_NUL(void **state)
+{
+
+	struct ndr_pull ndr = {0};
+	enum ndr_err_code err;
+	ndr_flags_type flags = NDR_SCALARS;
+	const char *s = NULL;
+	uint8_t data[] = { 0x3, 0x0, 'a', 0x0, 'b', 0x0, 'c', 0x0};
+
+	ndr.flags = LIBNDR_FLAG_STR_SIZE2 | LIBNDR_FLAG_STR_NOTERM | LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
+
+	ndr.data = data;
+	ndr.data_size = sizeof(data);
+	err = ndr_pull_string(&ndr, flags, &s);
+	assert_int_equal(err, NDR_ERR_SUCCESS);
+	assert_non_null(s);
+	assert_string_equal(s, "abc");
+	assert_int_equal(sizeof(data), ndr.offset);
+
+}
+
+static void test_pull_string_utf16_LIBNDR_FLAG_STR_NOTERM_STR_NO_EMBEDDED_NUL_fail(void **state)
+{
+
+	struct ndr_pull ndr = {0};
+	enum ndr_err_code err;
+	ndr_flags_type flags = NDR_SCALARS;
+	const char *s = NULL;
+	uint8_t data[] = { 0x3, 0x0, 'a', 0x0, 0x0, 0x0, 'c', 0x0};
+
+	ndr.flags = LIBNDR_FLAG_STR_SIZE2 | LIBNDR_FLAG_STR_NOTERM | LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
+
+	ndr.data = data;
+	ndr.data_size = sizeof(data);
+	err = ndr_pull_string(&ndr, flags, &s);
+	assert_int_equal(err, NDR_ERR_CHARCNV);
+	assert_int_equal(2, ndr.offset);
+
+}
+
+static void test_pull_string_zero_len_utf8_STR_NO_EMBEDDED_NUL(void **state)
+{
+
+	struct ndr_pull ndr = {0};
+	enum ndr_err_code err;
+	ndr_flags_type flags = NDR_SCALARS;
+	const char *s = NULL;
+	uint8_t data[] = { 0x0, 0x0 };
+
+	ndr.flags = LIBNDR_FLAG_STR_UTF8 | LIBNDR_FLAG_STR_SIZE2 | LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
+
+	ndr.data = data;
+	ndr.data_size = sizeof(data);
+	err = ndr_pull_string(&ndr, flags, &s);
+	assert_int_equal(err, NDR_ERR_SUCCESS);
+	assert_non_null(s);
+	assert_string_equal(s, "");
+	assert_int_equal(sizeof(data), ndr.offset);
+
+}
+
+static void test_pull_string_nul_only_utf8_STR_NO_EMBEDDED_NUL(void **state)
+{
+
+	struct ndr_pull ndr = {0};
+	enum ndr_err_code err;
+	ndr_flags_type flags = NDR_SCALARS;
+	const char *s = NULL;
+	uint8_t data[] = { 0x2, 0x0, 0x0, 0x0 };
+
+	ndr.flags = LIBNDR_FLAG_STR_UTF8 | LIBNDR_FLAG_STR_SIZE2 | LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
+
+	ndr.data = data;
+	ndr.data_size = sizeof(data);
+	err = ndr_pull_string(&ndr, flags, &s);
+	assert_int_equal(err, NDR_ERR_CHARCNV);
+	assert_int_equal(2, ndr.offset);
+
+}
+
+static void test_pull_string_nul_term_utf8_NOTERM_NDR_REMAINING_STR_NO_EMBEDDED_NUL(void **state)
+{
+
+	struct ndr_pull ndr = {0};
+	enum ndr_err_code err;
+	ndr_flags_type flags = NDR_SCALARS;
+	const char *s = NULL;
+	uint8_t data[] = {'a', 'b', 'c', 0x0 };
+
+	ndr.flags = LIBNDR_FLAG_STR_UTF8 | LIBNDR_FLAG_STR_NOTERM | LIBNDR_FLAG_REMAINING | LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
+
+	ndr.data = data;
+	ndr.data_size = sizeof(data);
+	err = ndr_pull_string(&ndr, flags, &s);
+	assert_int_equal(err, NDR_ERR_CHARCNV);
+	assert_int_equal(0, ndr.offset);
+
+}
+
+static void test_pull_string_utf8_NOTERM_NDR_REMAINING_STR_NO_EMBEDDED_NUL(void **state)
+{
+
+	struct ndr_pull ndr = {0};
+	enum ndr_err_code err;
+	ndr_flags_type flags = NDR_SCALARS;
+	const char *s = NULL;
+	uint8_t data[] = {'a', 'b', 'c' };
+
+	ndr.flags = LIBNDR_FLAG_STR_UTF8 | LIBNDR_FLAG_STR_NOTERM | LIBNDR_FLAG_REMAINING | LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
+
+	ndr.data = data;
+	ndr.data_size = sizeof(data);
+	err = ndr_pull_string(&ndr, flags, &s);
+	assert_int_equal(err, NDR_ERR_SUCCESS);
+	assert_non_null(s);
+	assert_string_equal(s, "abc");
+	assert_int_equal(sizeof(data), ndr.offset);
+
+}
+
+static void test_pull_string_nul_term_utf8_STR_NULLTERM_NDR_REMAINING_STR_NO_EMBEDDED_NUL(void **state)
+{
+
+	struct ndr_pull ndr = {0};
+	enum ndr_err_code err;
+	ndr_flags_type flags = NDR_SCALARS;
+	const char *s = NULL;
+	uint8_t data[] = {'a', 'b', 'c', 0x0 };
+
+	ndr.flags = LIBNDR_FLAG_STR_UTF8 | LIBNDR_FLAG_STR_NULLTERM | LIBNDR_FLAG_REMAINING | LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
+
+	ndr.data = data;
+	ndr.data_size = sizeof(data);
+	err = ndr_pull_string(&ndr, flags, &s);
+	assert_int_equal(err, NDR_ERR_SUCCESS);
+	assert_non_null(s);
+	assert_string_equal(s, "abc");
+	assert_int_equal(sizeof(data), ndr.offset);
+
+}
+
+static void test_pull_string_utf8_NDR_REMAINING_STR_NULLTERM_STR_NO_EMBEDDED_NUL(void **state)
+{
+
+	struct ndr_pull ndr = {0};
+	enum ndr_err_code err;
+	ndr_flags_type flags = NDR_SCALARS;
+	const char *s = NULL;
+	uint8_t data[] = {'a', 'b', 'c' };
+
+	ndr.flags = LIBNDR_FLAG_STR_UTF8 | LIBNDR_FLAG_STR_NULLTERM | LIBNDR_FLAG_REMAINING | LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
+
+	ndr.data = data;
+	ndr.data_size = sizeof(data);
+	err = ndr_pull_string(&ndr, flags, &s);
+	assert_int_equal(err, NDR_ERR_CHARCNV);
+	assert_int_equal(0, ndr.offset);
+
+}
+
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -199,7 +518,23 @@ int main(int argc, const char **argv)
 		cmocka_unit_test(test_pull_string_len_1_nul_term),
 		cmocka_unit_test(test_pull_string_len_2_nul_term),
 		cmocka_unit_test(test_ndr_string_n_length),
-		cmocka_unit_test(test_pull_string_array)
+		cmocka_unit_test(test_pull_string_array),
+		cmocka_unit_test(test_pull_string_zero_len_utf8_NOTERM_STR_NO_EMBEDDED_NUL),
+		cmocka_unit_test(test_pull_string_utf8_nul_term_STR_NO_EMBEDDED_NUL),
+		cmocka_unit_test(test_pull_string_utf8_nul_term_NOTERM_STR_NO_EMBEDDED_NUL),
+		cmocka_unit_test(test_pull_string_utf8_nullterm_STR_NO_EMBEDDED_NUL),
+		cmocka_unit_test(test_pull_string_utf8_STR_NO_EMBEDDED_NUL),
+		cmocka_unit_test(test_pull_string_utf8_NOTERM_STR_NO_EMBEDDED_NUL),
+		cmocka_unit_test(test_pull_string_utf8_nullterm_NOTERM_STR_NO_EMBEDDED_NUL),
+		cmocka_unit_test(test_pull_string_utf8_LIBNDR_FLAG_STR_NOTERM_STR_NO_EMBEDDED_NUL_fail),
+		cmocka_unit_test(test_pull_string_utf16_LIBNDR_FLAG_STR_NOTERM_STR_NO_EMBEDDED_NUL),
+		cmocka_unit_test(test_pull_string_utf16_LIBNDR_FLAG_STR_NOTERM_STR_NO_EMBEDDED_NUL_fail),
+		cmocka_unit_test(test_pull_string_zero_len_utf8_STR_NO_EMBEDDED_NUL),
+		cmocka_unit_test(test_pull_string_nul_only_utf8_STR_NO_EMBEDDED_NUL),
+		cmocka_unit_test(test_pull_string_nul_term_utf8_NOTERM_NDR_REMAINING_STR_NO_EMBEDDED_NUL),
+		cmocka_unit_test(test_pull_string_utf8_NOTERM_NDR_REMAINING_STR_NO_EMBEDDED_NUL),
+		cmocka_unit_test(test_pull_string_nul_term_utf8_STR_NULLTERM_NDR_REMAINING_STR_NO_EMBEDDED_NUL),
+		cmocka_unit_test(test_pull_string_utf8_NDR_REMAINING_STR_NULLTERM_STR_NO_EMBEDDED_NUL)
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);

@@ -50,6 +50,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, ndr_flags_type 
 		flags &= ~LIBNDR_FLAG_STR_ASCII;
 	}
 
+	/*
+	 * We will check this flag, but from the unmodified
+	 * ndr->flags, so just remove it from flags
+	 */
+	flags &= ~LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
+
 	if (flags & LIBNDR_FLAG_STR_UTF8) {
 		chset = CH_UTF8;
 		byte_mul = 1;
@@ -187,7 +193,39 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, ndr_flags_type 
 		if (converted_size > 0 && as[converted_size-1] == '\0') {
 			DEBUG(6,("short string '%s', sent with NULL termination despite NOTERM flag in IDL\n", as));
 		}
+		/*
+		 * We check the original ndr->flags as it has already
+		 * been removed from the local variable flags
+		 */
+		if (ndr->flags & LIBNDR_FLAG_STR_NO_EMBEDDED_NUL) {
+			size_t strlen_of_unix_string = strlen(as);
+			if (strlen_of_unix_string != converted_size) {
+				return ndr_pull_error(ndr, NDR_ERR_CHARCNV,
+						      "Embedded NUL at position %zu in "
+						      "converted string "
+						      "(and therefore source string) "
+						      "despite "
+						      "LIBNDR_FLAG_NO_EMBEDDED_NUL\n",
+						      strlen_of_unix_string);
+			}
+		}
 	} else {
+		/*
+		 * We check the original ndr->flags as it has already
+		 * been removed from the local variable flags
+		 */
+		if (ndr->flags & LIBNDR_FLAG_STR_NO_EMBEDDED_NUL) {
+			size_t strlen_of_unix_string = strlen(as);
+			if (converted_size > 0 && strlen_of_unix_string != converted_size - 1) {
+				return ndr_pull_error(ndr, NDR_ERR_CHARCNV,
+						      "Embedded NUL at position %zu in "
+						      "converted string "
+						      "(and therefore source string) "
+						      "despite "
+						      "LIBNDR_FLAG_NO_EMBEDDED_NUL\n",
+						      strlen_of_unix_string);
+			}
+		}
 		if (converted_size > 0 && as[converted_size-1] != '\0') {
 			DEBUG(6,("long string '%s', send without NULL termination (which was expected)\n", as));
 		}
@@ -227,6 +265,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, ndr_flags_type 
 		byte_mul = 1;
 		flags &= ~LIBNDR_FLAG_STR_ASCII;
 	}
+
+	/*
+	 * We will check this flag, but from the unmodified
+	 * ndr->flags, so just remove it from flags
+	 */
+	flags &= ~LIBNDR_FLAG_STR_NO_EMBEDDED_NUL;
 
 	if (flags & LIBNDR_FLAG_STR_UTF8) {
 		chset = CH_UTF8;
