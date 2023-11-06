@@ -272,6 +272,7 @@ static PyObject *py_descriptor_new(PyTypeObject *self, PyObject *args, PyObject 
 
 static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
 {
+	TALLOC_CTX *tmp_ctx = NULL;
 	struct security_descriptor *secdesc;
 	char *sddl;
 	PyObject *py_sid;
@@ -291,7 +292,13 @@ static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
 
 	sid = pytalloc_get_ptr(py_sid);
 
-	secdesc = sddl_decode_err_msg(NULL, sddl, sid,
+	tmp_ctx = talloc_new(NULL);
+	if (tmp_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	secdesc = sddl_decode_err_msg(tmp_ctx, sddl, sid,
 				      &err_msg, &err_msg_offset);
 	if (secdesc == NULL) {
 		PyObject *exc = NULL;
@@ -315,13 +322,18 @@ static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
 				    err_msg_offset,
 				    sddl);
 		if (exc == NULL) {
+			talloc_free(tmp_ctx);
 			/* an exception was set by Py_BuildValue() */
 			return NULL;
 		}
 		PyErr_SetObject(PyExc_SDDLValueError, exc);
 		Py_DECREF(exc);
+		talloc_free(tmp_ctx);
 		return NULL;
 	}
+
+	secdesc = talloc_steal(NULL, secdesc);
+	talloc_free(tmp_ctx);
 
 	return pytalloc_steal((PyTypeObject *)self, secdesc);
 }
