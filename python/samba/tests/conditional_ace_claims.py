@@ -24,7 +24,7 @@ from samba.tests.token_factory import token as Token
 from samba.tests.token_factory import list_to_claim
 from samba.dcerpc.security import CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1
 from samba.tests import TestCase, DynamicTestCase, get_env_dir
-from samba.colour import c_RED, c_GREEN
+from samba.colour import c_RED
 import os
 from samba import NTSTATUSError
 from samba.ntstatus import NT_STATUS_ACCESS_DENIED
