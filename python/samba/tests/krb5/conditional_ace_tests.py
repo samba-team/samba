@@ -31,7 +31,7 @@ from string import Formatter
 import ldb
 
 from samba import dsdb, ntstatus
-from samba.dcerpc import claims, krb5pac, security
+from samba.dcerpc import claims, krb5pac, netlogon, security
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.sd_utils import escaped_claim_id
 
@@ -89,6 +89,11 @@ class ConditionalAceBaseTests(AuthnPolicyBaseTests):
             cls._mach_creds = self.get_cached_creds(
                 account_type=self.AccountType.COMPUTER)
 
+            # Create an account with which to perform SamLogon.
+            cls._mach_creds_ntlm = self._get_creds(
+                account_type=self.AccountType.USER,
+                ntlm=True)
+
             # Create some new groups.
 
             group0_name = self.get_new_username()
@@ -109,6 +114,13 @@ class ConditionalAceBaseTests(AuthnPolicyBaseTests):
             cls._member_of_one_creds = self.get_cached_creds(
                 account_type=self.AccountType.COMPUTER,
                 opts={'member_of': (group1_dn,)})
+
+            cls._member_of_both_creds_ntlm = self.get_cached_creds(
+                account_type=self.AccountType.USER,
+                opts={
+                    'member_of': (group0_dn, group1_dn),
+                    'kerberos_enabled': False,
+                })
 
             # Create some authentication silos.
             cls._unenforced_silo = self.create_authn_silo(enforced=False)
@@ -131,6 +143,16 @@ class ConditionalAceBaseTests(AuthnPolicyBaseTests):
                 assigned_silo=self._enforced_silo,
                 cached=True)
             self.add_to_group(str(self._member_of_enforced_silo.get_dn()),
+                              self._enforced_silo.dn,
+                              'msDS-AuthNPolicySiloMembers',
+                              expect_attr=False)
+
+            cls._member_of_enforced_silo_ntlm = self._get_creds(
+                account_type=self.AccountType.USER,
+                assigned_silo=self._enforced_silo,
+                ntlm=True,
+                cached=True)
+            self.add_to_group(str(self._member_of_enforced_silo_ntlm.get_dn()),
                               self._enforced_silo.dn,
                               'msDS-AuthNPolicySiloMembers',
                               expect_attr=False)
@@ -5350,6 +5372,213 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
         self.check_as_log(client_creds,
                           armor_creds=mach_creds,
                           client_policy=client_policy)
+
+
+class SamLogonTests(ConditionalAceBaseTests):
+    # These tests show that although conditional ACEs work with SamLogon,
+    # claims do not appear to be used at all.
+
+    def test_samlogon_allowed_to_computer_member_of(self):
+        # Create an authentication policy that applies to a computer and
+        # requires that the account should belong to both groups.
+        allowed = (f'O:SYD:(XA;;CR;;;WD;(Member_of '
+                   f'{{SID({self._group0_sid}), SID({self._group1_sid})}}))')
+        policy = self.create_authn_policy(enforced=True,
+                                          computer_allowed_to=allowed)
+
+        # Create a computer account with the assigned policy.
+        target_creds = self._get_creds(account_type=self.AccountType.COMPUTER,
+                                       assigned_policy=policy)
+
+        # When the account is a member of both groups, network SamLogon
+        # succeeds.
+        self._test_samlogon(creds=self._member_of_both_creds_ntlm,
+                            domain_joined_mach_creds=target_creds,
+                            logon_type=netlogon.NetlogonNetworkInformation)
+
+        self.check_samlogon_network_log(self._member_of_both_creds_ntlm,
+                                        server_policy=policy)
+
+        # Interactive SamLogon also succeeds.
+        self._test_samlogon(creds=self._member_of_both_creds_ntlm,
+                            domain_joined_mach_creds=target_creds,
+                            logon_type=netlogon.NetlogonInteractiveInformation)
+
+        self.check_samlogon_interactive_log(self._member_of_both_creds_ntlm,
+                                            server_policy=policy)
+
+        # When the account is a member of neither group, network SamLogon
+        # fails.
+        self._test_samlogon(
+            creds=self._mach_creds_ntlm,
+            domain_joined_mach_creds=target_creds,
+            logon_type=netlogon.NetlogonNetworkInformation,
+            expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_samlogon_network_log(
+            self._mach_creds_ntlm,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
+        # Interactive SamLogon also fails.
+        self._test_samlogon(
+            creds=self._mach_creds_ntlm,
+            domain_joined_mach_creds=target_creds,
+            logon_type=netlogon.NetlogonInteractiveInformation,
+            expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_samlogon_interactive_log(
+            self._mach_creds_ntlm,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
+    def test_samlogon_allowed_to_service_member_of(self):
+        # Create an authentication policy that applies to a managed service and
+        # requires that the account should belong to both groups.
+        allowed = (f'O:SYD:(XA;;CR;;;WD;(Member_of '
+                   f'{{SID({self._group0_sid}), SID({self._group1_sid})}}))')
+        policy = self.create_authn_policy(enforced=True,
+                                          service_allowed_to=allowed)
+
+        # Create a managed service account with the assigned policy.
+        target_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            assigned_policy=policy)
+
+        # When the account is a member of both groups, network SamLogon
+        # succeeds.
+        self._test_samlogon(creds=self._member_of_both_creds_ntlm,
+                            domain_joined_mach_creds=target_creds,
+                            logon_type=netlogon.NetlogonNetworkInformation)
+
+        self.check_samlogon_network_log(self._member_of_both_creds_ntlm,
+                                        server_policy=policy)
+
+        # Interactive SamLogon also succeeds.
+        self._test_samlogon(creds=self._member_of_both_creds_ntlm,
+                            domain_joined_mach_creds=target_creds,
+                            logon_type=netlogon.NetlogonInteractiveInformation)
+
+        self.check_samlogon_interactive_log(self._member_of_both_creds_ntlm,
+                                            server_policy=policy)
+
+        # When the account is a member of neither group, network SamLogon
+        # fails.
+        self._test_samlogon(
+            creds=self._mach_creds_ntlm,
+            domain_joined_mach_creds=target_creds,
+            logon_type=netlogon.NetlogonNetworkInformation,
+            expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_samlogon_network_log(
+            self._mach_creds_ntlm,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
+        # Interactive SamLogon also fails.
+        self._test_samlogon(
+            creds=self._mach_creds_ntlm,
+            domain_joined_mach_creds=target_creds,
+            logon_type=netlogon.NetlogonInteractiveInformation,
+            expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_samlogon_interactive_log(
+            self._mach_creds_ntlm,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
+    def test_samlogon_allowed_to_computer_silo(self):
+        # Create an authentication policy that applies to a computer and
+        # requires that the account belong to the enforced silo.
+        allowed = (f'O:SYD:(XA;;CR;;;WD;'
+                   f'(@User.ad://ext/AuthenticationSilo == '
+                   f'"{self._enforced_silo}"))')
+        policy = self.create_authn_policy(enforced=True,
+                                          computer_allowed_to=allowed)
+
+        # Create a computer account with the assigned policy.
+        target_creds = self._get_creds(account_type=self.AccountType.COMPUTER,
+                                       assigned_policy=policy)
+
+        # Even though the account is a member of the silo, its claims are
+        # ignored, and network SamLogon fails.
+        self._test_samlogon(
+            creds=self._member_of_enforced_silo_ntlm,
+            domain_joined_mach_creds=target_creds,
+            logon_type=netlogon.NetlogonNetworkInformation,
+            expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_samlogon_network_log(
+            self._member_of_enforced_silo_ntlm,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
+        # Interactive SamLogon also fails.
+        self._test_samlogon(
+            creds=self._member_of_enforced_silo_ntlm,
+            domain_joined_mach_creds=target_creds,
+            logon_type=netlogon.NetlogonInteractiveInformation,
+            expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_samlogon_interactive_log(
+            self._member_of_enforced_silo_ntlm,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
+    def test_samlogon_allowed_to_service_silo(self):
+        # Create an authentication policy that applies to a managed service and
+        # requires that the account belong to the enforced silo.
+        allowed = (f'O:SYD:(XA;;CR;;;WD;'
+                   f'(@User.ad://ext/AuthenticationSilo == '
+                   f'"{self._enforced_silo}"))')
+        policy = self.create_authn_policy(enforced=True,
+                                          service_allowed_to=allowed)
+
+        # Create a managed service account with the assigned policy.
+        target_creds = self._get_creds(
+            account_type=self.AccountType.MANAGED_SERVICE,
+            assigned_policy=policy)
+
+        # Even though the account is a member of the silo, its claims are
+        # ignored, and network SamLogon fails.
+        self._test_samlogon(
+            creds=self._member_of_enforced_silo_ntlm,
+            domain_joined_mach_creds=target_creds,
+            logon_type=netlogon.NetlogonNetworkInformation,
+            expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_samlogon_network_log(
+            self._member_of_enforced_silo_ntlm,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
+
+        # Interactive SamLogon also fails.
+        self._test_samlogon(
+            creds=self._member_of_enforced_silo_ntlm,
+            domain_joined_mach_creds=target_creds,
+            logon_type=netlogon.NetlogonInteractiveInformation,
+            expect_error=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED)
+
+        self.check_samlogon_interactive_log(
+            self._member_of_enforced_silo_ntlm,
+            server_policy=policy,
+            server_policy_status=ntstatus.NT_STATUS_AUTHENTICATION_FIREWALL_FAILED,
+            event=AuditEvent.NTLM_SERVER_RESTRICTION,
+            reason=AuditReason.ACCESS_DENIED)
 
 
 if __name__ == '__main__':
