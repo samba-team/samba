@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Password and authentication handling
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2001-2009
    Copyright (C) Gerald Carter                             2003
    Copyright (C) Stefan Metzmacher                         2005-2010
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -61,16 +61,16 @@ static NTSTATUS authsam_password_ok(struct auth4_context *auth_context,
 				    struct smb_krb5_context *smb_krb5_context,
 				    const DATA_BLOB *stored_aes_256_key,
 				    const krb5_data *salt,
-				    const struct auth_usersupplied_info *user_info, 
-				    DATA_BLOB *user_sess_key, 
+				    const struct auth_usersupplied_info *user_info,
+				    DATA_BLOB *user_sess_key,
 				    DATA_BLOB *lm_sess_key)
 {
 	NTSTATUS status;
 
 	switch (user_info->password_state) {
-	case AUTH_PASSWORD_PLAIN: 
+	case AUTH_PASSWORD_PLAIN:
 	{
-		const struct auth_usersupplied_info *user_info_temp;	
+		const struct auth_usersupplied_info *user_info_temp;
 
 		if (nt_pwd == NULL && stored_aes_256_key != NULL && user_info->password.plaintext != NULL) {
 			bool pw_equal;
@@ -111,8 +111,8 @@ static NTSTATUS authsam_password_ok(struct auth4_context *auth_context,
 			return NT_STATUS_OK;
 		}
 
-		status = encrypt_user_info(mem_ctx, auth_context, 
-					   AUTH_PASSWORD_HASH, 
+		status = encrypt_user_info(mem_ctx, auth_context,
+					   AUTH_PASSWORD_HASH,
 					   user_info, &user_info_temp);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to convert plaintext password to password HASH: %s\n", nt_errstr(status)));
@@ -125,7 +125,7 @@ static NTSTATUS authsam_password_ok(struct auth4_context *auth_context,
 	case AUTH_PASSWORD_HASH:
 		*lm_sess_key = data_blob(NULL, 0);
 		*user_sess_key = data_blob(NULL, 0);
-		status = hash_password_check(mem_ctx, 
+		status = hash_password_check(mem_ctx,
 					     false,
 					     lpcfg_ntlm_auth(auth_context->lp_ctx),
 					     NULL,
@@ -134,18 +134,18 @@ static NTSTATUS authsam_password_ok(struct auth4_context *auth_context,
 					     NULL, nt_pwd);
 		NT_STATUS_NOT_OK_RETURN(status);
 		break;
-		
+
 	case AUTH_PASSWORD_RESPONSE:
-		status = ntlm_password_check(mem_ctx, 
+		status = ntlm_password_check(mem_ctx,
 					     false,
 					     lpcfg_ntlm_auth(auth_context->lp_ctx),
-					     user_info->logon_parameters, 
-					     &auth_context->challenge.data, 
-					     &user_info->password.response.lanman, 
+					     user_info->logon_parameters,
+					     &auth_context->challenge.data,
+					     &user_info->password.response.lanman,
 					     &user_info->password.response.nt,
 					     user_info->mapped.account_name,
-					     user_info->client.account_name, 
-					     user_info->client.domain_name, 
+					     user_info->client.account_name,
+					     user_info->client.domain_name,
 					     NULL, nt_pwd,
 					     user_sess_key, lm_sess_key);
 		NT_STATUS_NOT_OK_RETURN(status);
@@ -972,7 +972,7 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 
 static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx,
 						 TALLOC_CTX *mem_ctx,
-						 const struct auth_usersupplied_info *user_info, 
+						 const struct auth_usersupplied_info *user_info,
 						 struct auth_user_info_dc **user_info_dc,
 						 struct authn_audit_info **client_audit_info_out,
 						 struct authn_audit_info **server_audit_info_out,
