@@ -823,6 +823,11 @@ static NTSTATUS authsam_check_netlogon_trust(TALLOC_CTX *mem_ctx,
 							      AUTHN_POLICY_AUTH_TYPE_NTLM,
 							      user_info_dc,
 							      NULL /* device_info */,
+							      /*
+							       * It seems that claims go ignored for
+							       * SamLogon (see SamLogonTests —
+							       * test_samlogon_allowed_to_computer_silo).
+							       */
 							      (struct auth_claims) {},
 							      authn_server_policy,
 							      (struct authn_policy_flags) {},
