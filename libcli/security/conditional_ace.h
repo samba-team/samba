@@ -21,6 +21,11 @@
 #ifndef _CONDITIONAL_ACE_H_
 #define _CONDITIONAL_ACE_H_
 
+#include <talloc.h>
+#include "lib/util/data_blob.h"
+
+#include "librpc/gen_ndr/conditional_ace.h"
+
 
 struct ace_condition_script *parse_conditional_ace(TALLOC_CTX *mem_ctx,
 						   DATA_BLOB data);

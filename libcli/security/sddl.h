@@ -21,6 +21,9 @@
 #ifndef __SDDL_H__
 #define __SDDL_H__
 
+#include <talloc.h>
+#include "lib/util/data_blob.h"
+
 #include "librpc/gen_ndr/security.h"
 
 struct security_descriptor *sddl_decode(TALLOC_CTX *mem_ctx, const char *sddl,
