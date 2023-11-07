@@ -2933,6 +2933,9 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 						   new_pac,
 						   type,
 						   (type_data.data != NULL) ? &type_data : &null_data);
+			if (code != 0) {
+				goto done;
+			}
 		} else {
 			code = krb5_pac_get_buffer(context,
 						   client.pac,
@@ -2950,10 +2953,9 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 						   type,
 						   (type_data.data != NULL) ? &type_data : &null_data);
 			smb_krb5_free_data_contents(context, &type_data);
-		}
-
-		if (code != 0) {
-			goto done;
+			if (code != 0) {
+				goto done;
+			}
 		}
 	}
 
