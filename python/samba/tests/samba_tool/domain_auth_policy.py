@@ -25,7 +25,7 @@ from optparse import OptionValueError
 from unittest.mock import patch
 
 from samba.dcerpc import security
-from samba.ndr import ndr_unpack
+from samba.ndr import ndr_pack, ndr_unpack
 from samba.netcmd.domain.models.exceptions import ModelError
 from samba.samdb import SamDB
 from samba.sd_utils import SDUtils
@@ -338,6 +338,107 @@ class AuthPolicyCmdTestCase(BaseAuthCmdTest):
         self.assertIn(f"\n{'^':>12}", err)
         self.assertIn("unknown error", err)
         self.assertNotIn("  File ", err)  # traceback marker
+
+    def test_create__device_attribute_in_sddl_allowed_to(self):
+        """Test creating a new authentication policy that uses
+        user-allowed-to-authenticate-to with a device attribute."""
+
+        sddl = 'O:SYG:SYD:(XA;OICI;CR;;;WD;(@Device.claim == "foo"))'
+
+        name = self.unique_name()
+        self.addCleanup(self.delete_authentication_policy, name=name)
+        result, _, err = self.runcmd("domain", "auth", "policy", "create",
+                                     "--name", name,
+                                     "--user-allowed-to-authenticate-to",
+                                     sddl)
+        self.assertIsNone(result, msg=err)
+
+    def test_create__device_operator_in_sddl_allowed_to(self):
+        """Test creating a new authentication policy that uses
+        user-allowed-to-authenticate-to with a device operator."""
+
+        sddl = 'O:SYG:SYD:(XA;OICI;CR;;;WD;(Not_Device_Member_of {SID(WD)}))'
+
+        name = self.unique_name()
+        self.addCleanup(self.delete_authentication_policy, name=name)
+        result, _, err = self.runcmd("domain", "auth", "policy", "create",
+                                     "--name", name,
+                                     "--user-allowed-to-authenticate-to",
+                                     sddl)
+        self.assertIsNone(result, msg=err)
+
+    def test_create__device_attribute_in_sddl_allowed_from(self):
+        """Test creating a new authentication policy that uses
+        user-allowed-to-authenticate-from with a device attribute."""
+
+        sddl = 'O:SYG:SYD:(XA;OICI;CR;;;WD;(@Device.claim == "foo"))'
+
+        name = self.unique_name()
+        result, _, err = self.runcmd("domain", "auth", "policy", "create",
+                                     "--name", name,
+                                     "--user-allowed-to-authenticate-from",
+                                     sddl)
+        self.assertEqual(result, -1)
+        self.assertIn("Unable to parse SDDL", err)
+        self.assertIn(sddl, err)
+        self.assertIn(f"\n{'^':>31}\n", err)
+        self.assertIn(" a device attribute is not applicable in this context "
+                      "(did you intend a user attribute?)",
+                      err)
+        self.assertNotIn("  File ", err)
+
+    def test_create__device_operator_in_sddl_allowed_from(self):
+        """Test creating a new authentication policy that uses
+        user-allowed-to-authenticate-from with a device operator."""
+
+        sddl = 'O:SYG:SYD:(XA;OICI;CR;;;WD;(Not_Device_Member_of {SID(WD)}))'
+
+        name = self.unique_name()
+        result, _, err = self.runcmd("domain", "auth", "policy", "create",
+                                     "--name", name,
+                                     "--user-allowed-to-authenticate-from",
+                                     sddl)
+        self.assertEqual(result, -1)
+        self.assertIn("Unable to parse SDDL", err)
+        self.assertIn(sddl, err)
+        self.assertIn(f"\n{'^':>30}\n", err)
+        self.assertIn(" a device‐relative expression will never evaluate to "
+                      "true in this context (did you intend a user‐relative "
+                      "expression?)",
+                      err)
+        self.assertNotIn("  File ", err)
+
+    def test_create__device_attribute_in_sddl_already_exists(self):
+        """Test modifying an existing authentication policy that uses
+        user-allowed-to-authenticate-from with a device attribute."""
+
+        # The SDDL refers to ‘Device.claim’.
+        sddl = 'O:SYG:SYD:(XA;OICI;CR;;;WD;(@Device.claim == "foo"))'
+        domain_sid = security.dom_sid(self.samdb.get_domain_sid())
+        descriptor = security.descriptor.from_sddl(sddl, domain_sid)
+
+        # Manually create an authentication policy that refers to a device
+        # attribute.
+
+        name = self.unique_name()
+        dn = self.get_authn_policies_dn()
+        dn.add_child(f"CN={name}")
+        message = {
+            'dn': dn,
+            'msDS-AuthNPolicyEnforced': b'TRUE',
+            'objectClass': b'msDS-AuthNPolicy',
+            'msDS-UserAllowedToAuthenticateFrom': ndr_pack(descriptor),
+        }
+
+        self.addCleanup(self.delete_authentication_policy, name=name)
+        self.samdb.add(message)
+
+        # Change the policy description. This should succeed, in spite of the
+        # policy’s referring to a device attribute when it shouldn’t.
+        result, _, err = self.runcmd("domain", "auth", "policy", "modify",
+                                     "--name", name,
+                                     "--description", "NewDescription")
+        self.assertIsNone(result, msg=err)
 
     def test_create__already_exists(self):
         """Test creating a new authentication policy that already exists."""
