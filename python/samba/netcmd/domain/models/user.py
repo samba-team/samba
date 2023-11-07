@@ -33,6 +33,10 @@ class User(Model):
     assigned_policy = DnField("msDS-AssignedAuthNPolicy")
     assigned_silo = DnField("msDS-AssignedAuthNPolicySilo")
 
+    def __str__(self):
+        """Return username rather than cn for User model."""
+        return self.username
+
     @staticmethod
     def get_base_dn(ldb):
         """Return the base DN for the User model.
