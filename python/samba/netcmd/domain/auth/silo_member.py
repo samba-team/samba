@@ -27,7 +27,7 @@ from samba.netcmd.domain.models.exceptions import ModelError
 
 
 class cmd_domain_auth_silo_member_grant(Command):
-    """Add a member access to an authentication silo."""
+    """Grant a member access to an authentication silo."""
 
     synopsis = "%prog -H <URL> [options]"
 
@@ -69,7 +69,7 @@ class cmd_domain_auth_silo_member_grant(Command):
         if user is None:
             raise CommandError(f"User {member} not found.")
 
-        # Add member.
+        # Grant access to member.
         try:
             silo.grant(ldb, user)
         except ModelError as e:
@@ -81,7 +81,7 @@ class cmd_domain_auth_silo_member_grant(Command):
         else:
             status = "unassigned"
 
-        print(f"User {user} added to the authentication silo {name} ({status}).",
+        print(f"User {user} granted access to the authentication silo {name} ({status}).",
               file=self.outf)
 
 
@@ -133,7 +133,7 @@ class cmd_domain_auth_silo_member_list(Command):
 
 
 class cmd_domain_auth_silo_member_revoke(Command):
-    """Remove a member from an authentication silo."""
+    """Revoke a member from an authentication silo."""
 
     synopsis = "%prog -H <URL> [options]"
 
@@ -175,7 +175,7 @@ class cmd_domain_auth_silo_member_revoke(Command):
         if user is None:
             raise CommandError(f"User {member} not found.")
 
-        # Remove member.
+        # Revoke member access.
         try:
             silo.revoke(ldb, user)
         except ModelError as e:
@@ -187,7 +187,7 @@ class cmd_domain_auth_silo_member_revoke(Command):
         else:
             status = "unassigned"
 
-        print(f"User {user} removed from the authentication silo {name} ({status}).",
+        print(f"User {user} revoked from the authentication silo {name} ({status}).",
               file=self.outf)
 
 

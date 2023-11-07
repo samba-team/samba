@@ -528,7 +528,8 @@ class AuthSiloMemberCmdTestCase(SiloTest):
 
         self.assertIsNone(result, msg=err)
         self.assertIn(
-            f"User {member} added to the authentication silo {silo}", out)
+            f"User {member} granted access to the authentication silo {silo}",
+            out)
         self.addCleanup(self.remove_silo_member, silo, member)
 
     def remove_silo_member(self, silo, member):
@@ -603,7 +604,7 @@ class AuthSiloMemberCmdTestCase(SiloTest):
 
         self.assertIsNone(result, msg=err)
         self.assertIn(
-            f"User {name}$ added to the authentication silo {silo} (unassigned).",
+            f"User {name}$ granted access to the authentication silo {silo} (unassigned).",
             out)
 
     def test_member_add__unknown_user(self):
