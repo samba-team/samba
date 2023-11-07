@@ -527,7 +527,8 @@ class AuthSiloMemberCmdTestCase(BaseAuthCmdTest):
                                        "--name", silo, "--member", member)
 
         self.assertIsNone(result, msg=err)
-        self.assertIn(f"User '{member}' added to the {silo} silo.", out)
+        self.assertIn(
+            f"User {member} added to the authentication silo {silo}", out)
         self.addCleanup(self.remove_silo_member, silo, member)
 
     def remove_silo_member(self, silo, member):
@@ -601,7 +602,8 @@ class AuthSiloMemberCmdTestCase(BaseAuthCmdTest):
                                        "--member", computer)
 
         self.assertIsNone(result, msg=err)
-        self.assertIn(f"User '{name}' added to the {silo} silo.", out)
+        self.assertIn(
+            f"User {name} added to the authentication silo {silo}.", out)
 
     def test_member_add__unknown_user(self):
         """Test adding an unknown user to an authentication silo."""
@@ -611,4 +613,4 @@ class AuthSiloMemberCmdTestCase(BaseAuthCmdTest):
                                        "--member", "does_not_exist")
 
         self.assertIsNotNone(result)
-        self.assertIn("User 'does_not_exist' not found.", err)
+        self.assertIn("User does_not_exist not found.", err)

@@ -67,7 +67,7 @@ class cmd_domain_auth_silo_member_add(Command):
 
         # Ensure the user actually exists first.
         if user is None:
-            raise CommandError(f"User '{member}' not found.")
+            raise CommandError(f"User {member} not found.")
 
         # Add member.
         try:
@@ -75,7 +75,7 @@ class cmd_domain_auth_silo_member_add(Command):
         except ModelError as e:
             raise CommandError(e)
 
-        self.outf.write(f"User '{user.name}' added to the {name} silo.\n")
+        self.outf.write(f"User {user} added to the authentication silo {name}.\n")
 
 
 class cmd_domain_auth_silo_member_list(Command):
@@ -166,7 +166,7 @@ class cmd_domain_auth_silo_member_remove(Command):
 
         # Ensure the user actually exists first.
         if user is None:
-            raise CommandError(f"User '{member}' not found.")
+            raise CommandError(f"User {member} not found.")
 
         # Remove member.
         try:
@@ -174,7 +174,7 @@ class cmd_domain_auth_silo_member_remove(Command):
         except ModelError as e:
             raise CommandError(e)
 
-        self.outf.write(f"User '{user.name}' removed from the {name} silo.\n")
+        self.outf.write(f"User {user} removed from the authentication silo {name}.\n")
 
 
 class cmd_domain_auth_silo_member(SuperCommand):
