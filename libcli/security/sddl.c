@@ -295,7 +295,7 @@ struct dom_sid *sddl_decode_sid(TALLOC_CTX *mem_ctx, const char **sddlp,
 {
 	struct sddl_transition_state state = {
 		/*
-		 * TODO: verify .machine_rid values really belong to
+		 * TODO: verify .machine_rid values really belong
 		 * to the machine_sid on a member, once
 		 * we pass machine_sid from the caller...
 		 */
@@ -822,7 +822,7 @@ struct security_descriptor *sddl_decode_err_msg(TALLOC_CTX *mem_ctx, const char 
 {
 	struct sddl_transition_state state = {
 		/*
-		 * TODO: verify .machine_rid values really belong to
+		 * TODO: verify .machine_rid values really belong
 		 * to the machine_sid on a member, once
 		 * we pass machine_sid from the caller...
 		 */
@@ -1012,7 +1012,7 @@ char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 {
 	struct sddl_transition_state state = {
 		/*
-		 * TODO: verify .machine_rid values really belong to
+		 * TODO: verify .machine_rid values really belong
 		 * to the machine_sid on a member, once
 		 * we pass machine_sid from the caller...
 		 */
@@ -1136,7 +1136,7 @@ char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace,
 {
 	struct sddl_transition_state state = {
 		/*
-		 * TODO: verify .machine_rid values really belong to
+		 * TODO: verify .machine_rid values really belong
 		 * to the machine_sid on a member, once
 		 * we pass machine_sid from the caller...
 		 */
@@ -1185,7 +1185,7 @@ char *sddl_encode(TALLOC_CTX *mem_ctx, const struct security_descriptor *sd,
 {
 	struct sddl_transition_state state = {
 		/*
-		 * TODO: verify .machine_rid values really belong to
+		 * TODO: verify .machine_rid values really belong
 		 * to the machine_sid on a member, once
 		 * we pass machine_sid from the caller...
 		 */
