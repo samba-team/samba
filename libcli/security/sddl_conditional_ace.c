@@ -123,7 +123,7 @@ struct sddl_data {
 	uint8_t nargs;
 };
 
-static struct sddl_data sddl_strings[256] = {
+static const struct sddl_data sddl_strings[256] = {
 	/* operators */
 	[CONDITIONAL_ACE_TOKEN_MEMBER_OF] = {
 		"Member_of",
@@ -390,7 +390,7 @@ struct sddl_attr_type{
  * styles them in title case ("@User."), but Windows itself seems to
  * prefer all-caps, so that is how we render them.
  */
-static struct sddl_attr_type sddl_attr_types[] = {
+static const struct sddl_attr_type sddl_attr_types[] = {
 	{"USER.", CONDITIONAL_ACE_USER_ATTRIBUTE},
 	{"RESOURCE.", CONDITIONAL_ACE_RESOURCE_ATTRIBUTE},
 	{"DEVICE.", CONDITIONAL_ACE_DEVICE_ATTRIBUTE},
@@ -2187,7 +2187,7 @@ static bool parse_word(struct ace_condition_sddl_compiler_context *comp)
 		 */
 		int uc = toupper(c);
 		for (i = 0; i < 256; i++) {
-			struct sddl_data *d = &sddl_strings[i];
+			const struct sddl_data *d = &sddl_strings[i];
 			if (sddl_strings[i].op_precedence != SDDL_NOT_AN_OP &&
 			    uc == toupper((unsigned char)d->name[0])) {
 				if (d->flags & SDDL_FLAG_IS_UNARY_OP) {
