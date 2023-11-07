@@ -26,8 +26,8 @@ from samba.netcmd.domain.models import AuthenticationSilo, User
 from samba.netcmd.domain.models.exceptions import ModelError
 
 
-class cmd_domain_auth_silo_member_add(Command):
-    """Add a member to an authentication silo."""
+class cmd_domain_auth_silo_member_grant(Command):
+    """Add a member access to an authentication silo."""
 
     synopsis = "%prog -H <URL> [options]"
 
@@ -132,7 +132,7 @@ class cmd_domain_auth_silo_member_list(Command):
                 print(member.dn, file=self.outf)
 
 
-class cmd_domain_auth_silo_member_remove(Command):
+class cmd_domain_auth_silo_member_revoke(Command):
     """Remove a member from an authentication silo."""
 
     synopsis = "%prog -H <URL> [options]"
@@ -195,7 +195,7 @@ class cmd_domain_auth_silo_member(SuperCommand):
     """Manage members in an authentication silo."""
 
     subcommands = {
-        "add": cmd_domain_auth_silo_member_add(),
+        "grant": cmd_domain_auth_silo_member_grant(),
         "list": cmd_domain_auth_silo_member_list(),
-        "remove": cmd_domain_auth_silo_member_remove(),
+        "revoke": cmd_domain_auth_silo_member_revoke(),
     }

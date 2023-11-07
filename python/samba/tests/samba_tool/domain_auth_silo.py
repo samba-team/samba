@@ -523,7 +523,7 @@ class AuthSiloMemberCmdTestCase(SiloTest):
     def add_silo_member(self, silo, member):
         """Add a member to an authentication silo."""
         result, out, err = self.runcmd("domain", "auth", "silo",
-                                       "member", "add",
+                                       "member", "grant",
                                        "--name", silo, "--member", member)
 
         self.assertIsNone(result, msg=err)
@@ -534,7 +534,7 @@ class AuthSiloMemberCmdTestCase(SiloTest):
     def remove_silo_member(self, silo, member):
         """Remove a member to an authentication silo."""
         result, out, err = self.runcmd("domain", "auth", "silo",
-                                       "member", "remove",
+                                       "member", "revoke",
                                        "--name", silo, "--member", member)
 
         self.assertIsNone(result, msg=err)
@@ -597,7 +597,7 @@ class AuthSiloMemberCmdTestCase(SiloTest):
 
         # Don't use self.add_silo_member as it will try to clean up the user.
         result, out, err = self.runcmd("domain", "auth", "silo",
-                                       "member", "add",
+                                       "member", "grant",
                                        "--name", silo,
                                        "--member", computer)
 
@@ -609,7 +609,7 @@ class AuthSiloMemberCmdTestCase(SiloTest):
     def test_member_add__unknown_user(self):
         """Test adding an unknown user to an authentication silo."""
         result, out, err = self.runcmd("domain", "auth", "silo",
-                                       "member", "add",
+                                       "member", "grant",
                                        "--name", "Developers",
                                        "--member", "does_not_exist")
 
