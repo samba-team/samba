@@ -44,11 +44,11 @@ class DoesNotExist(ModelError):
     pass
 
 
-class AddMemberError(ModelError):
+class GrantMemberError(ModelError):
     pass
 
 
-class RemoveMemberError(ModelError):
+class RevokeMemberError(ModelError):
     pass
 
 

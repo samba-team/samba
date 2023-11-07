@@ -24,7 +24,7 @@ from ldb import FLAG_MOD_ADD, FLAG_MOD_DELETE, LdbError, Message, MessageElement
 
 from samba.sd_utils import escaped_claim_id
 
-from .exceptions import AddMemberError, RemoveMemberError
+from .exceptions import GrantMemberError, RevokeMemberError
 from .fields import DnField, BooleanField, StringField
 from .model import Model
 
@@ -71,7 +71,7 @@ class AuthenticationSilo(Model):
         try:
             ldb.modify(message)
         except LdbError as e:
-            raise AddMemberError(f"Failed to add silo member: {e}")
+            raise GrantMemberError(f"Failed to add silo member: {e}")
 
         # If the modify operation was successful refresh members field.
         self.refresh(ldb, fields=["members"])
@@ -94,7 +94,7 @@ class AuthenticationSilo(Model):
         try:
             ldb.modify(message)
         except LdbError as e:
-            raise RemoveMemberError(f"Failed to remove silo member: {e}")
+            raise RevokeMemberError(f"Failed to remove silo member: {e}")
 
         # If the modify operation was successful refresh members field.
         self.refresh(ldb, fields=["members"])
