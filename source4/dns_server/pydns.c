@@ -142,7 +142,7 @@ static PyObject *py_dsdb_dns_lookup(PyObject *self,
 	}
 
 	ret = py_dnsp_DnssrvRpcRecord_get_list(records, num_records);
-	pydn = pyldb_Dn_FromDn(dn);
+	pydn = pyldb_Dn_FromDn(dn, (PyLdbObject *)py_ldb);
 	talloc_free(frame);
 	result = Py_BuildValue("(OO)", pydn, ret);
 	Py_CLEAR(ret);

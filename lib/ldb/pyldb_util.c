@@ -145,7 +145,7 @@ bool pyldb_Object_AsDn(TALLOC_CTX *mem_ctx, PyObject *object,
 	return false;
 }
 
-PyObject *pyldb_Dn_FromDn(struct ldb_dn *dn)
+PyObject *pyldb_Dn_FromDn(struct ldb_dn *dn, PyLdbObject *pyldb)
 {
 	TALLOC_CTX *mem_ctx = NULL;
 	struct ldb_dn *dn_ref = NULL;
@@ -182,6 +182,9 @@ PyObject *pyldb_Dn_FromDn(struct ldb_dn *dn)
 	}
 	py_ret->mem_ctx = mem_ctx;
 	py_ret->dn = dn;
+	py_ret->pyldb = pyldb;
+
+	Py_INCREF(py_ret->pyldb);
 	return (PyObject *)py_ret;
 }
 

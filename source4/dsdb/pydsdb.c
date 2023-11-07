@@ -977,7 +977,7 @@ static PyObject *py_dsdb_get_partitions_dn(PyObject *self, PyObject *args)
 		PyErr_NoMemory();
 		return NULL;
 	}
-	ret = pyldb_Dn_FromDn(dn);
+	ret = pyldb_Dn_FromDn(dn, (PyLdbObject *)py_ldb);
 	talloc_free(dn);
 	return ret;
 }
@@ -999,7 +999,7 @@ static PyObject *py_dsdb_get_nc_root(PyObject *self, PyObject *args)
 	ret = dsdb_find_nc_root(ldb, ldb, dn, &nc_root);
 	PyErr_LDB_ERROR_IS_ERR_RAISE(py_ldb_get_exception(), ret, ldb);
 
-	py_nc_root = pyldb_Dn_FromDn(nc_root);
+	py_nc_root = pyldb_Dn_FromDn(nc_root, (PyLdbObject *)py_ldb);
 	talloc_unlink(ldb, nc_root);
 	return py_nc_root;
 }
@@ -1026,7 +1026,7 @@ static PyObject *py_dsdb_get_wellknown_dn(PyObject *self, PyObject *args)
 
 	PyErr_LDB_ERROR_IS_ERR_RAISE(py_ldb_get_exception(), ret, ldb);
 
-	py_wk_dn = pyldb_Dn_FromDn(wk_dn);
+	py_wk_dn = pyldb_Dn_FromDn(wk_dn, (PyLdbObject *)py_ldb);
 	talloc_unlink(ldb, wk_dn);
 	return py_wk_dn;
 }
@@ -1396,7 +1396,8 @@ static PyObject *py_dsdb_create_gkdi_root_key(PyObject *self, PyObject *args, Py
 					  samdb, tmp_ctx);
 
 
-	py_dn = pyldb_Dn_FromDn(root_key_msg->dn);
+	py_dn = pyldb_Dn_FromDn(root_key_msg->dn,
+				(PyLdbObject *)py_ldb);
 	if (py_dn == NULL) {
 		PyErr_LDB_ERROR_IS_ERR_RAISE_FREE(py_ldb_get_exception(),
 						  LDB_ERR_OPERATIONS_ERROR,

@@ -55,9 +55,14 @@ typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX *mem_ctx;
 	struct ldb_dn *dn;
+	/*
+	 * We use this to keep a reference to the ldb context within
+	 * the struct ldb_dn and to know if it is still valid
+	 */
+	PyLdbObject *pyldb;
 } PyLdbDnObject;
 
-PyObject *pyldb_Dn_FromDn(struct ldb_dn *);
+PyObject *pyldb_Dn_FromDn(struct ldb_dn *dn, PyLdbObject *pyldb);
 bool pyldb_Object_AsDn(TALLOC_CTX *mem_ctx, PyObject *object, struct ldb_context *ldb_ctx, struct ldb_dn **dn);
 #define pyldb_Dn_AS_DN(pyobj) ((PyLdbDnObject *)pyobj)->dn
 
@@ -74,6 +79,12 @@ typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX *mem_ctx;
 	struct ldb_message *msg;
+	/*
+	 * We use this to keep a reference to the ldb context within
+	 * the struct ldb_dn (under struct ldb_message) and to know if
+	 * it is still valid
+	 */
+	PyLdbObject *pyldb;
 } PyLdbMessageObject;
 #define pyldb_Message_AsMessage(pyobj) ((PyLdbMessageObject *)pyobj)->msg
 
@@ -104,6 +115,7 @@ typedef struct {
 	PyObject *msgs;
 	PyObject *referals;
 	PyObject *controls;
+	PyLdbObject *pyldb;
 } PyLdbResultObject;
 
 typedef struct {
