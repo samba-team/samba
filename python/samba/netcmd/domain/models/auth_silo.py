@@ -54,13 +54,13 @@ class AuthenticationSilo(Model):
         return "msDS-AuthNPolicySilo"
 
     def grant(self, ldb, member):
-        """Add a member to the Authentication Silo.
+        """Grant a member access to the Authentication Silo.
 
         Rather than saving the silo object and writing the entire member
         list out again, just add one member only.
 
         :param ldb: Ldb connection
-        :param member: Member to add to silo
+        :param member: Member to grant access to silo
         """
         # Create a message with only an add member operation.
         message = Message(dn=self.dn)
@@ -71,19 +71,19 @@ class AuthenticationSilo(Model):
         try:
             ldb.modify(message)
         except LdbError as e:
-            raise GrantMemberError(f"Failed to add silo member: {e}")
+            raise GrantMemberError(f"Failed to grant access to silo member: {e}")
 
         # If the modify operation was successful refresh members field.
         self.refresh(ldb, fields=["members"])
 
     def revoke(self, ldb, member):
-        """Remove a member from the Authentication Silo.
+        """Revoke a member from the Authentication Silo.
 
         Rather than saving the silo object and writing the entire member
         list out again, just remove one member only.
 
         :param ldb: Ldb connection
-        :param member: Member to remove from silo
+        :param member: Member to revoke from silo
         """
         # Create a message with only a remove member operation.
         message = Message(dn=self.dn)
