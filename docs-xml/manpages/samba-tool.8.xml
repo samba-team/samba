@@ -1278,8 +1278,8 @@
 </refsect3>
 
 <refsect3>
-	<title>domain auth silo member add</title>
-	<para>Add a member to an authentication silo.</para>
+	<title>domain auth silo member grant</title>
+	<para>Grant a member access to an authentication silo.</para>
 	<variablelist>
 		<varlistentry>
 			<term>-H, --URL</term>
@@ -1296,7 +1296,7 @@
 		<varlistentry>
 			<term>--member</term>
 			<listitem><para>
-				Member to add to the silo (DN or account name).
+				Member to grant access to the silo (DN or account name).
 			</para></listitem>
 		</varlistentry>
 	</variablelist>
@@ -1328,8 +1328,8 @@
 </refsect3>
 
 <refsect3>
-	<title>domain auth silo member remove</title>
-	<para>Remove a member from an authentication silo.</para>
+	<title>domain auth silo member revoke</title>
+	<para>Revoke a member from an authentication silo.</para>
 	<variablelist>
 		<varlistentry>
 			<term>-H, --URL</term>
@@ -1346,7 +1346,7 @@
 		<varlistentry>
 			<term>--member</term>
 			<listitem><para>
-				Member to remove from the silo (DN or account name).
+				Member to revoke from the silo (DN or account name).
 			</para></listitem>
 		</varlistentry>
 	</variablelist>
