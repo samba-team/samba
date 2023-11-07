@@ -580,7 +580,7 @@ class AuthSiloMemberCmdTestCase(SiloTest):
         self.assertIsNotNone(result)
         self.assertIn("Argument --name is required.", err)
 
-    def test_member_add__user(self):
+    def test_member_grant__user(self):
         """Test adding a user to an authentication silo."""
         self.grant_silo_access("Developers", "joe")
 
@@ -590,7 +590,7 @@ class AuthSiloMemberCmdTestCase(SiloTest):
         members = [str(member) for member in silo["msDS-AuthNPolicySiloMembers"]]
         self.assertIn(str(user.dn), members)
 
-    def test_member_add__computer(self):
+    def test_member_grant__computer(self):
         """Test adding a computer to an authentication silo"""
         name = self.unique_name()
         computer = self.create_computer(name)
@@ -607,7 +607,7 @@ class AuthSiloMemberCmdTestCase(SiloTest):
             f"User {name}$ granted access to the authentication silo {silo} (unassigned).",
             out)
 
-    def test_member_add__unknown_user(self):
+    def test_member_grant__unknown_user(self):
         """Test adding an unknown user to an authentication silo."""
         result, out, err = self.runcmd("domain", "auth", "silo",
                                        "member", "grant",
