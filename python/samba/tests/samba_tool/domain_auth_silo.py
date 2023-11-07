@@ -591,7 +591,7 @@ class AuthSiloMemberCmdTestCase(BaseAuthCmdTest):
 
     def test_member_add__computer(self):
         """Test adding a computer to an authentication silo"""
-        name = "AUTH_SILO_CMP"
+        name = self.unique_name()
         computer = self.create_computer(name)
         silo = "Developers"
 
