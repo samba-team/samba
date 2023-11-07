@@ -58,11 +58,11 @@ class AuthenticationPolicy(Model):
     service_tgt_lifetime = IntegerField("msDS-ServiceTGTLifetime")
     computer_tgt_lifetime = IntegerField("msDS-ComputerTGTLifetime")
     user_allowed_to_authenticate_from = SDDLField(
-        "msDS-UserAllowedToAuthenticateFrom")
+        "msDS-UserAllowedToAuthenticateFrom", allow_device_in_sddl=False)
     user_allowed_to_authenticate_to = SDDLField(
         "msDS-UserAllowedToAuthenticateTo")
     service_allowed_to_authenticate_from = SDDLField(
-        "msDS-ServiceAllowedToAuthenticateFrom")
+        "msDS-ServiceAllowedToAuthenticateFrom", allow_device_in_sddl=False)
     service_allowed_to_authenticate_to = SDDLField(
         "msDS-ServiceAllowedToAuthenticateTo")
     computer_allowed_to_authenticate_to = SDDLField(

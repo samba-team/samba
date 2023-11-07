@@ -1,2 +1,0 @@
-^samba\.tests\.samba_tool\.domain_auth_policy\.samba\.tests\.samba_tool\.domain_auth_policy\.AuthPolicyCmdTestCase\.test_create__device_attribute_in_sddl_allowed_from\(ad_dc_default\)$
-^samba\.tests\.samba_tool\.domain_auth_policy\.samba\.tests\.samba_tool\.domain_auth_policy\.AuthPolicyCmdTestCase\.test_create__device_operator_in_sddl_allowed_from\(ad_dc_default\)$
