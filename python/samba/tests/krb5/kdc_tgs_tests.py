@@ -1218,7 +1218,8 @@ class KdcTgsTests(KdcTgsBaseTests):
     def test_fast_as_req_no_pac(self):
         creds = self._get_creds()
         tgt = self._get_tgt(creds, remove_pac=True)
-        self._fast_as_req(tgt, creds, expected_error=KDC_ERR_TGT_REVOKED)
+        self._fast_as_req(tgt, creds, expected_error=KDC_ERR_TGT_REVOKED,
+                          expected_sname=self.get_krbtgt_sname())
 
     # Test making a request with authdata and without a PAC.
     def test_tgs_authdata_no_pac(self):
@@ -1259,7 +1260,8 @@ class KdcTgsTests(KdcTgsBaseTests):
     def test_fast_as_req_authdata_no_pac(self):
         creds = self._get_creds()
         tgt = self._get_tgt(creds, remove_pac=True, allow_empty_authdata=True)
-        self._fast_as_req(tgt, creds, expected_error=KDC_ERR_TGT_REVOKED)
+        self._fast_as_req(tgt, creds, expected_error=KDC_ERR_TGT_REVOKED,
+                          expected_sname=self.get_krbtgt_sname())
 
     # Test changing the SID in the PAC to that of another account.
     def test_tgs_sid_mismatch_existing(self):
@@ -1307,7 +1309,8 @@ class KdcTgsTests(KdcTgsBaseTests):
         existing_rid = self._get_existing_rid()
         tgt = self._get_tgt(creds, new_rid=existing_rid)
         self._fast_as_req(tgt, creds,
-                          expected_error=KDC_ERR_TGT_REVOKED)
+                          expected_error=KDC_ERR_TGT_REVOKED,
+                          expected_sname=self.get_krbtgt_sname())
 
     def test_requester_sid_mismatch_existing(self):
         creds = self._get_creds()
@@ -1378,7 +1381,8 @@ class KdcTgsTests(KdcTgsBaseTests):
         nonexistent_rid = self._get_non_existent_rid()
         tgt = self._get_tgt(creds, new_rid=nonexistent_rid)
         self._fast_as_req(tgt, creds,
-                          expected_error=KDC_ERR_TGT_REVOKED)
+                          expected_error=KDC_ERR_TGT_REVOKED,
+                          expected_sname=self.get_krbtgt_sname())
 
     def test_requester_sid_mismatch_nonexisting(self):
         creds = self._get_creds()
@@ -3427,13 +3431,14 @@ class KdcTgsTests(KdcTgsBaseTests):
                              expect_pac=expect_pac,
                              expect_edata=expect_edata)
 
-    def _fast_as_req(self, armor_tgt, armor_tgt_creds, expected_error):
+    def _fast_as_req(self, armor_tgt, armor_tgt_creds, expected_error,
+                     expected_sname=None):
         user_creds = self._get_mach_creds()
         target_creds = self.get_service_creds()
 
         return self._armored_as_req(user_creds, target_creds, armor_tgt,
                                     expected_error=expected_error,
-                                    expected_sname=self.get_krbtgt_sname(),
+                                    expected_sname=expected_sname,
                                     expect_edata=False)
 
 
