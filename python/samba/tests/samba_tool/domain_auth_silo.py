@@ -509,7 +509,7 @@ class AuthSiloMemberCmdTestCase(SiloTest):
         self.samdb.create_ou(self.ou)
         self.addCleanup(self.samdb.delete, self.ou, ["tree_delete:1"])
 
-        # Assign members to silos
+        # Grant member access to silos
         self.grant_silo_access("Developers", "bob")
         self.grant_silo_access("Developers", "jane")
         self.grant_silo_access("Managers", "alice")
@@ -521,7 +521,7 @@ class AuthSiloMemberCmdTestCase(SiloTest):
         return dn
 
     def grant_silo_access(self, silo, member):
-        """Add a member to an authentication silo."""
+        """Grant a member access to an authentication silo."""
         result, out, err = self.runcmd("domain", "auth", "silo",
                                        "member", "grant",
                                        "--name", silo, "--member", member)
@@ -533,7 +533,7 @@ class AuthSiloMemberCmdTestCase(SiloTest):
         self.addCleanup(self.revoke_silo_access, silo, member)
 
     def revoke_silo_access(self, silo, member):
-        """Remove a member to an authentication silo."""
+        """Revoke a member from an authentication silo."""
         result, out, err = self.runcmd("domain", "auth", "silo",
                                        "member", "revoke",
                                        "--name", silo, "--member", member)
@@ -596,7 +596,7 @@ class AuthSiloMemberCmdTestCase(SiloTest):
         computer = self.create_computer(name)
         silo = "Developers"
 
-        # Don't use self.add_silo_member as it will try to clean up the user.
+        # Don't use self.grant_silo_member as it will try to clean up the user.
         result, out, err = self.runcmd("domain", "auth", "silo",
                                        "member", "grant",
                                        "--name", silo,
