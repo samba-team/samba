@@ -18,6 +18,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <Python.h>
+#include "gen_ndr/conditional_ace.h"
 #include "py3compat.h"
 #include "libcli/security/sddl.h"
 #include "libcli/security/security.h"
@@ -270,17 +271,27 @@ static PyObject *py_descriptor_new(PyTypeObject *self, PyObject *args, PyObject 
 	return pytalloc_steal(self, security_descriptor_initialise(NULL));
 }
 
-static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
+static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	TALLOC_CTX *tmp_ctx = NULL;
+	static const char *kwnames[] = { "", "", "allow_device_in_sddl", NULL };
 	struct security_descriptor *secdesc;
 	char *sddl;
 	PyObject *py_sid;
+	int allow_device_in_sddl = 1;
 	struct dom_sid *sid;
 	const char *err_msg = NULL;
 	size_t err_msg_offset = 0;
+	enum ace_condition_flags ace_condition_flags = 0;
 
-	if (!PyArg_ParseTuple(args, "sO!", &sddl, &dom_sid_Type, &py_sid))
+	if (!PyArg_ParseTupleAndKeywords(args,
+					 kwargs,
+					 "sO!|$p",
+					 discard_const_p(char *, kwnames),
+					 &sddl,
+					 &dom_sid_Type,
+					 &py_sid,
+					 &allow_device_in_sddl))
 		return NULL;
 
 	if (!PyObject_TypeCheck(py_sid, &dom_sid_Type)) {
@@ -292,6 +303,10 @@ static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
 
 	sid = pytalloc_get_ptr(py_sid);
 
+	if (allow_device_in_sddl) {
+		ace_condition_flags |= ACE_CONDITION_FLAG_ALLOW_DEVICE;
+	}
+
 	tmp_ctx = talloc_new(NULL);
 	if (tmp_ctx == NULL) {
 		PyErr_NoMemory();
@@ -299,7 +314,7 @@ static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
 	}
 
 	secdesc = sddl_decode_err_msg(tmp_ctx, sddl, sid,
-				      ACE_CONDITION_FLAG_ALLOW_DEVICE,
+				      ace_condition_flags,
 				      &err_msg, &err_msg_offset);
 	if (secdesc == NULL) {
 		PyObject *exc = NULL;
@@ -382,7 +397,7 @@ static PyMethodDef py_descriptor_extra_methods[] = {
 		NULL },
 	{ "sacl_del_ace", (PyCFunction)py_descriptor_sacl_del_ace, METH_VARARGS,
 		NULL },
-	{ "from_sddl", (PyCFunction)py_descriptor_from_sddl, METH_VARARGS|METH_CLASS,
+	{ "from_sddl", (PyCFunction)py_descriptor_from_sddl, METH_VARARGS|METH_KEYWORDS|METH_CLASS,
 		NULL },
 	{ "as_sddl", (PyCFunction)py_descriptor_as_sddl, METH_VARARGS,
 		NULL },
