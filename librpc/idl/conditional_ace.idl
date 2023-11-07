@@ -276,7 +276,12 @@ interface conditional_ace
 	} ace_condition_int;
 
 	typedef [public] struct {
-		[flag(STR_SIZE4|STR_NOTERM|STR_BYTESIZE)] string value;
+		/*
+		 * Zeroes are not allowed in the binary format (which
+		 * is otherwise UTF-16), and if we did let them
+		 * through we would end up with a truncated string.
+		 */
+		[flag(STR_SIZE4|STR_NOTERM|STR_BYTESIZE|STR_NO_EMBEDDED_NUL)] string value;
 	} ace_condition_unicode;
 
 	typedef [public] struct {
