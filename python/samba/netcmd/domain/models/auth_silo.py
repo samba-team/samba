@@ -53,7 +53,7 @@ class AuthenticationSilo(Model):
     def get_object_class():
         return "msDS-AuthNPolicySilo"
 
-    def add_member(self, ldb, member):
+    def grant(self, ldb, member):
         """Add a member to the Authentication Silo.
 
         Rather than saving the silo object and writing the entire member
@@ -76,7 +76,7 @@ class AuthenticationSilo(Model):
         # If the modify operation was successful refresh members field.
         self.refresh(ldb, fields=["members"])
 
-    def remove_member(self, ldb, member):
+    def revoke(self, ldb, member):
         """Remove a member from the Authentication Silo.
 
         Rather than saving the silo object and writing the entire member
@@ -94,7 +94,7 @@ class AuthenticationSilo(Model):
         try:
             ldb.modify(message)
         except LdbError as e:
-            raise RevokeMemberError(f"Failed to remove silo member: {e}")
+            raise RevokeMemberError(f"Failed to revoke silo member: {e}")
 
         # If the modify operation was successful refresh members field.
         self.refresh(ldb, fields=["members"])

@@ -71,7 +71,7 @@ class cmd_domain_auth_silo_member_add(Command):
 
         # Add member.
         try:
-            silo.add_member(ldb, user)
+            silo.grant(ldb, user)
         except ModelError as e:
             raise CommandError(e)
 
@@ -177,7 +177,7 @@ class cmd_domain_auth_silo_member_remove(Command):
 
         # Remove member.
         try:
-            silo.remove_member(ldb, user)
+            silo.revoke(ldb, user)
         except ModelError as e:
             raise CommandError(e)
 
