@@ -510,9 +510,9 @@ class AuthSiloMemberCmdTestCase(SiloTest):
         self.addCleanup(self.samdb.delete, self.ou, ["tree_delete:1"])
 
         # Assign members to silos
-        self.add_silo_member("Developers", "bob")
-        self.add_silo_member("Developers", "jane")
-        self.add_silo_member("Managers", "alice")
+        self.grant_silo_access("Developers", "bob")
+        self.grant_silo_access("Developers", "jane")
+        self.grant_silo_access("Managers", "alice")
 
     def create_computer(self, name):
         """Create a Computer and return the dn."""
@@ -520,7 +520,7 @@ class AuthSiloMemberCmdTestCase(SiloTest):
         self.samdb.newcomputer(name, self.ou)
         return dn
 
-    def add_silo_member(self, silo, member):
+    def grant_silo_access(self, silo, member):
         """Add a member to an authentication silo."""
         result, out, err = self.runcmd("domain", "auth", "silo",
                                        "member", "grant",
@@ -530,9 +530,9 @@ class AuthSiloMemberCmdTestCase(SiloTest):
         self.assertIn(
             f"User {member} granted access to the authentication silo {silo}",
             out)
-        self.addCleanup(self.remove_silo_member, silo, member)
+        self.addCleanup(self.revoke_silo_access, silo, member)
 
-    def remove_silo_member(self, silo, member):
+    def revoke_silo_access(self, silo, member):
         """Remove a member to an authentication silo."""
         result, out, err = self.runcmd("domain", "auth", "silo",
                                        "member", "revoke",
@@ -582,7 +582,7 @@ class AuthSiloMemberCmdTestCase(SiloTest):
 
     def test_member_add__user(self):
         """Test adding a user to an authentication silo."""
-        self.add_silo_member("Developers", "joe")
+        self.grant_silo_access("Developers", "joe")
 
         # Check if member is in silo
         user = self.get_user("joe")
