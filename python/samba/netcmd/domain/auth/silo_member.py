@@ -42,7 +42,7 @@ class cmd_domain_auth_silo_member_grant(Command):
                help="Name of authentication silo (required).",
                dest="name", action="store", type=str, required=True),
         Option("--member",
-               help="Member to add to the silo (DN or account name).",
+               help="Member to grant access to the silo (DN or account name).",
                dest="member", action="store", type=str, required=True),
     ]
 
@@ -148,7 +148,7 @@ class cmd_domain_auth_silo_member_revoke(Command):
                help="Name of authentication silo (required).",
                dest="name", action="store", type=str, required=True),
         Option("--member",
-               help="Member to remove from the silo (DN or account name).",
+               help="Member to revoke from the silo (DN or account name).",
                dest="member", action="store", type=str, required=True),
     ]
 
