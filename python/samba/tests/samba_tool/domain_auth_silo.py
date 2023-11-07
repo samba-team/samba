@@ -603,7 +603,8 @@ class AuthSiloMemberCmdTestCase(BaseAuthCmdTest):
 
         self.assertIsNone(result, msg=err)
         self.assertIn(
-            f"User {name} added to the authentication silo {silo}.", out)
+            f"User {name}$ added to the authentication silo {silo} (unassigned).",
+            out)
 
     def test_member_add__unknown_user(self):
         """Test adding an unknown user to an authentication silo."""

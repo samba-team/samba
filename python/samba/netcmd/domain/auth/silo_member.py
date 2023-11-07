@@ -75,7 +75,14 @@ class cmd_domain_auth_silo_member_add(Command):
         except ModelError as e:
             raise CommandError(e)
 
-        self.outf.write(f"User {user} added to the authentication silo {name}.\n")
+        # Display silo assigned status.
+        if user.assigned_silo and user.assigned_silo == silo.dn:
+            status = "assigned"
+        else:
+            status = "unassigned"
+
+        print(f"User {user} added to the authentication silo {name} ({status}).",
+              file=self.outf)
 
 
 class cmd_domain_auth_silo_member_list(Command):
@@ -122,7 +129,7 @@ class cmd_domain_auth_silo_member_list(Command):
             self.print_json([member.as_dict() for member in members])
         else:
             for member in members:
-                self.outf.write(f"{member.dn}\n")
+                print(member.dn, file=self.outf)
 
 
 class cmd_domain_auth_silo_member_remove(Command):
@@ -174,7 +181,14 @@ class cmd_domain_auth_silo_member_remove(Command):
         except ModelError as e:
             raise CommandError(e)
 
-        self.outf.write(f"User {user} removed from the authentication silo {name}.\n")
+        # Display silo assigned status.
+        if user.assigned_silo and user.assigned_silo == silo.dn:
+            status = "assigned"
+        else:
+            status = "unassigned"
+
+        print(f"User {user} removed from the authentication silo {name} ({status}).",
+              file=self.outf)
 
 
 class cmd_domain_auth_silo_member(SuperCommand):
