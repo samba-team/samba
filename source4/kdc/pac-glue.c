@@ -2936,7 +2936,12 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			if (code != 0) {
 				goto done;
 			}
-		} else {
+		} else if (samba_krb5_pac_is_trusted(client)) {
+			/*
+			 * Convey the buffer from the original PAC if we can
+			 * trust it.
+			 */
+
 			code = krb5_pac_get_buffer(context,
 						   client.pac,
 						   type,

@@ -35,10 +35,6 @@
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_user2user_rodc_not_revealed
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_validate_rodc_not_revealed
 #
-# Extra PAC buffers tests
-#
-^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_tgs_req_from_rodc_extra_pac_buffers\(ad_dc\)$
-#
 # Protected Users tests
 #
 # This test fails, which is fine, as we have an alternate test that considers a policy error as successful.
@@ -156,14 +152,8 @@
 ^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_claims_valid_existing_device_info_target_policy\(ad_dc\)$
 ^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_claims_valid_existing_device_info\(ad_dc\)$
 ^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_claims_valid_rodc_issued\(ad_dc\)$
-^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_compound_id_support_existing_device_claims_rodc_issued\(ad_dc\)$
 ^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_compound_id_support_existing_device_claims_target_policy\(ad_dc\)$
 ^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_compound_id_support_existing_device_claims\(ad_dc\)$
-^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_compound_id_support_existing_device_info_and_claims_rodc_issued\(ad_dc\)$
-^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_compound_id_support_existing_device_info_rodc_issued\(ad_dc\)$
-^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_compound_id_support_no_claims_valid_existing_device_claims_rodc_issued\(ad_dc\)$
 ^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_compound_id_support_no_claims_valid_existing_device_claims_target_policy\(ad_dc\)$
 ^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_compound_id_support_no_claims_valid_existing_device_claims\(ad_dc\)$
-^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_compound_id_support_no_claims_valid_existing_device_info_and_claims_rodc_issued\(ad_dc\)$
-^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_compound_id_support_no_claims_valid_existing_device_info_rodc_issued\(ad_dc\)$
 ^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_rodc_issued\(ad_dc\)$
