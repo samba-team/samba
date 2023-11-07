@@ -47,7 +47,8 @@ sub Template($)
 
 #include \"includes.h\"
 #include \"ntdomain.h\"
-#include \"../librpc/gen_ndr/srv_$name.h\"
+#include \"librpc/gen_ndr/ndr_$name.h\"
+#include \"librpc/gen_ndr/ndr_$name\_scompat.h\"
 
 ";
 
@@ -80,6 +81,10 @@ $pad"."struct $fname *r)
 ";
 		}
 	}
+$res .=
+"/* include the generated boilerplate */
+#include \"librpc/gen_ndr/ndr_$name\_scompat.c\
+";
 }
 
 
