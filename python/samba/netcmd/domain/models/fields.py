@@ -315,6 +315,17 @@ class GUIDField(Field):
 class SDDLField(Field):
     """A SDDL field encodes and decodes SDDL data."""
 
+    def __init__(self,
+                 name,
+                 *,
+                 many=False,
+                 default=None,
+                 hidden=False,
+                 allow_device_in_sddl=True):
+        """Create a new SDDLField."""
+        self.allow_device_in_sddl = allow_device_in_sddl
+        super().__init__(name, many=many, default=default, hidden=hidden)
+
     def from_db_value(self, ldb, value):
         if value is None:
             return
@@ -330,13 +341,18 @@ class SDDLField(Field):
             return
         elif isinstance(value, list):
             return MessageElement([ndr_pack(security.descriptor.from_sddl(
-                item, domain_sid)) for item in value],
+                item,
+                domain_sid,
+                allow_device_in_sddl=self.allow_device_in_sddl))
+                                   for item in value],
                 flags,
                 self.name)
         else:
             return MessageElement(
-                ndr_pack(security.descriptor.from_sddl(value,
-                                                       domain_sid)),
+                ndr_pack(security.descriptor.from_sddl(
+                    value,
+                    domain_sid,
+                    allow_device_in_sddl=self.allow_device_in_sddl)),
                 flags,
                 self.name
             )
