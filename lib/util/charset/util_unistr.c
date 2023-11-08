@@ -195,7 +195,7 @@ size_t ucs2_align(const void *base_ptr, const void *p, int flags)
 return the number of bytes occupied by a buffer in CH_UTF16 format
 the result includes the null termination
 **/
-size_t utf16_len(const void *buf)
+size_t utf16_null_terminated_len(const void *buf)
 {
 	size_t len;
 
@@ -501,7 +501,7 @@ static size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t src
 
 	if (flags & STR_TERMINATE) {
 		if (src_len == (size_t)-1) {
-			src_len = utf16_len(src);
+			src_len = utf16_null_terminated_len(src);
 		} else {
 			src_len = utf16_null_terminated_len_n(src, src_len);
 		}
