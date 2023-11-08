@@ -1541,7 +1541,7 @@ NTSTATUS _samr_QueryDisplayInfo(struct pipes_struct *p,
 
 	become_root();
 
-	/* THe following done as ROOT. Don't return without unbecome_root(). */
+	/* The following done as ROOT. Don't return without unbecome_root(). */
 
 	switch (r->in.level) {
 	case 1:
