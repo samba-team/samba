@@ -5224,9 +5224,9 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
 
         # Show that obtaining a service ticket with an AS‐REQ is allowed.
         self._armored_as_req(client_creds,
-                          target_creds,
-                          mach_tgt,
-                          expected_groups=expected_groups)
+                             target_creds,
+                             mach_tgt,
+                             expected_groups=expected_groups)
 
         self.check_as_log(client_creds,
                           armor_creds=mach_creds,
@@ -5365,9 +5365,9 @@ class TgsReqServicePolicyTests(ConditionalAceBaseTests):
 
         # Show that obtaining a service ticket with an AS‐REQ is allowed.
         self._armored_as_req(client_creds,
-                          self.get_krbtgt_creds(),
-                          mach_tgt,
-                          expected_groups=expected_groups)
+                             self.get_krbtgt_creds(),
+                             mach_tgt,
+                             expected_groups=expected_groups)
 
         self.check_as_log(client_creds,
                           armor_creds=mach_creds,
