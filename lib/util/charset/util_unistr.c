@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-2001
    Copyright (C) Simo Sorce 2001
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -521,7 +521,7 @@ static size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t src
 
 /**
  Copy a string from a char* src to a unicode or ascii
- dos codepage destination choosing unicode or ascii based on the 
+ dos codepage destination choosing unicode or ascii based on the
  flags in the SMB buffer starting at base_ptr.
  Return the number of bytes occupied by the string in the destination.
  flags can have:
