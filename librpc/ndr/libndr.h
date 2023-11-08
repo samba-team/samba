@@ -48,11 +48,89 @@ struct ndr_token_list {
 
 struct ndr_compression_state;
 
+#define LIBNDR_STATIC_ASSERT(msg, cond) \
+	typedef char static_assert_##msg[(cond) ? 1 : -1]
+
 /*
  * If you’re considering changing the size of this type, see also
  * $scalar_alignment in pidl/lib/Parse/Pidl/NDR.pm.
  */
-typedef uint64_t libndr_flags;
+typedef enum {
+	LIBNDR_FLAG_BIGENDIAN = 1U << 0,
+	LIBNDR_FLAG_NOALIGN = 1U << 1,
+
+	LIBNDR_FLAG_STR_ASCII = 1U << 2,
+	LIBNDR_FLAG_STR_LEN4 = 1U << 3,
+	LIBNDR_FLAG_STR_SIZE4 = 1U << 4,
+	LIBNDR_FLAG_STR_NOTERM = 1U << 5,
+	LIBNDR_FLAG_STR_NULLTERM = 1U << 6,
+	LIBNDR_FLAG_STR_SIZE2 = 1U << 7,
+	LIBNDR_FLAG_STR_BYTESIZE = 1U << 8,
+	LIBNDR_FLAG_STR_NO_EMBEDDED_NUL = 1U << 9,
+	LIBNDR_FLAG_STR_CONFORMANT = 1U << 10,
+	LIBNDR_FLAG_STR_CHARLEN = 1U << 11,
+	LIBNDR_FLAG_STR_UTF8 = 1U << 12,
+	LIBNDR_FLAG_STR_RAW8 = 1U << 13,
+
+	/*
+	 * Mark an element as SECRET, it won't be printed via
+	 * ndr_print* unless NDR_PRINT_SECRETS is specified.
+	 */
+	LIBNDR_FLAG_IS_SECRET = 1U << 14,
+
+	/* Disable string token compression  */
+	LIBNDR_FLAG_NO_COMPRESSION = 1U << 15,
+
+	/*
+	 * don't debug NDR_ERR_BUFSIZE failures,
+	 * as the available buffer might be incomplete.
+	 *
+	 * return NDR_ERR_INCOMPLETE_BUFFER instead.
+	 */
+	LIBNDR_FLAG_INCOMPLETE_BUFFER = 1U << 16,
+
+	/*
+	 * This lets ndr_pull_subcontext_end() return
+	 * NDR_ERR_UNREAD_BYTES.
+	 */
+	LIBNDR_FLAG_SUBCONTEXT_NO_UNREAD_BYTES = 1U << 17,
+
+	/* set if relative pointers should *not* be marshalled in reverse order */
+	LIBNDR_FLAG_NO_RELATIVE_REVERSE = 1U << 18,
+
+	/* set if relative pointers are marshalled in reverse order */
+	LIBNDR_FLAG_RELATIVE_REVERSE = 1U << 19,
+
+	LIBNDR_FLAG_REF_ALLOC = 1U << 20,
+	LIBNDR_FLAG_REMAINING = 1U << 21,
+	LIBNDR_FLAG_ALIGN2 = 1U << 22,
+	LIBNDR_FLAG_ALIGN4 = 1U << 23,
+	LIBNDR_FLAG_ALIGN8 = 1U << 24,
+
+	LIBNDR_PRINT_ARRAY_HEX = 1U << 25,
+	LIBNDR_PRINT_SET_VALUES = 1U << 26,
+
+	/* used to force a section of IDL to be little-endian */
+	LIBNDR_FLAG_LITTLE_ENDIAN = 1U << 27,
+
+	/* used to check if alignment padding is zero */
+	LIBNDR_FLAG_PAD_CHECK = 1U << 28,
+
+	LIBNDR_FLAG_NDR64 = 1U << 29,
+
+	/* set if an object uuid will be present */
+	LIBNDR_FLAG_OBJECT_PRESENT = 1U << 30,
+
+	/* set to avoid recursion in ndr_size_*() calculation */
+	LIBNDR_FLAG_NO_NDR_SIZE = 1U << 31,
+
+	/*
+	 * present to keep the size of this enumeration 64 bits until we need a
+	 * 33rd flag.
+	 */
+	LIBNDR_FLAG_0x100000000 = UINT64_C(1) << 32,
+} libndr_flags;
+LIBNDR_STATIC_ASSERT(libndr_flags_are_64_bit, sizeof (libndr_flags) == 8);
 #define PRI_LIBNDR_FLAGS PRIx64
 #define PRI_LIBNDR_FLAGS_DECIMAL PRIu64
 
@@ -60,8 +138,29 @@ typedef uint64_t libndr_flags;
 * If you’re considering changing the size of this type, see also
 * $scalar_alignment in pidl/lib/Parse/Pidl/NDR.pm.
 */
-typedef uint32_t ndr_flags_type;
+typedef enum {
+	/*
+	  flags passed to control parse flow
+	  These are deliberately in a different range to the NDR_IN/NDR_OUT
+	  flags to catch mixups
+	*/
+	NDR_SCALARS = 0x100,
+	NDR_BUFFERS = 0x200,
+
+	/*
+	  flags passed to ndr_print_*() and ndr pull/push for functions
+	  These are deliberately in a different range to the
+	  NDR_SCALARS/NDR_BUFFERS flags to catch mixups
+	*/
+	NDR_IN = 0x10,
+	NDR_OUT = 0x20,
+	NDR_BOTH = 0x30,
+	NDR_SET_VALUES = 0x40,
+} ndr_flags_type;
+LIBNDR_STATIC_ASSERT(ndr_flags_are_32_bit, sizeof (ndr_flags_type) == 4);
 #define PRI_NDR_FLAGS_TYPE PRIx32
+
+#undef LIBNDR_STATIC_ASSERT
 
 /* this is the base structure passed to routines that
    parse MSRPC formatted data
@@ -140,21 +239,6 @@ struct ndr_print {
 	bool print_secrets;
 };
 
-#define LIBNDR_FLAG_BIGENDIAN  (1U<<0)
-#define LIBNDR_FLAG_NOALIGN    (1U<<1)
-
-#define LIBNDR_FLAG_STR_ASCII		(1U<<2)
-#define LIBNDR_FLAG_STR_LEN4		(1U<<3)
-#define LIBNDR_FLAG_STR_SIZE4		(1U<<4)
-#define LIBNDR_FLAG_STR_NOTERM		(1U<<5)
-#define LIBNDR_FLAG_STR_NULLTERM	(1U<<6)
-#define LIBNDR_FLAG_STR_SIZE2		(1U<<7)
-#define LIBNDR_FLAG_STR_BYTESIZE	(1U<<8)
-#define LIBNDR_FLAG_STR_NO_EMBEDDED_NUL     (1U<<9)
-#define LIBNDR_FLAG_STR_CONFORMANT	(1U<<10)
-#define LIBNDR_FLAG_STR_CHARLEN		(1U<<11)
-#define LIBNDR_FLAG_STR_UTF8		(1U<<12)
-#define LIBNDR_FLAG_STR_RAW8		(1U<<13)
 #define LIBNDR_STRING_FLAGS		(0U | \
 		LIBNDR_FLAG_STR_ASCII | \
 		LIBNDR_FLAG_STR_LEN4 | \
@@ -176,41 +260,6 @@ struct ndr_print {
 		LIBNDR_FLAG_STR_RAW8 | \
 		0)
 
-/*
- * Mark an element as SECRET, it won't be printed via
- * ndr_print* unless NDR_PRINT_SECRETS is specified.
- */
-#define LIBNDR_FLAG_IS_SECRET		(1U<<14)
-
-/* Disable string token compression  */
-#define LIBNDR_FLAG_NO_COMPRESSION	(1U<<15)
-
-/*
- * don't debug NDR_ERR_BUFSIZE failures,
- * as the available buffer might be incomplete.
- *
- * return NDR_ERR_INCOMPLETE_BUFFER instead.
- */
-#define LIBNDR_FLAG_INCOMPLETE_BUFFER (1U<<16)
-
-/*
- * This lets ndr_pull_subcontext_end() return
- * NDR_ERR_UNREAD_BYTES.
- */
-#define LIBNDR_FLAG_SUBCONTEXT_NO_UNREAD_BYTES (1U<<17)
-
-/* set if relative pointers should *not* be marshalled in reverse order */
-#define LIBNDR_FLAG_NO_RELATIVE_REVERSE	(1U<<18)
-
-/* set if relative pointers are marshalled in reverse order */
-#define LIBNDR_FLAG_RELATIVE_REVERSE	(1U<<19)
-
-#define LIBNDR_FLAG_REF_ALLOC    (1U<<20)
-#define LIBNDR_FLAG_REMAINING    (1U<<21)
-#define LIBNDR_FLAG_ALIGN2       (1U<<22)
-#define LIBNDR_FLAG_ALIGN4       (1U<<23)
-#define LIBNDR_FLAG_ALIGN8       (1U<<24)
-
 #define LIBNDR_ALIGN_FLAGS ( 0        | \
 		LIBNDR_FLAG_NOALIGN   | \
 		LIBNDR_FLAG_REMAINING | \
@@ -218,23 +267,6 @@ struct ndr_print {
 		LIBNDR_FLAG_ALIGN4    | \
 		LIBNDR_FLAG_ALIGN8    | \
 		0)
-
-#define LIBNDR_PRINT_ARRAY_HEX   (1U<<25)
-#define LIBNDR_PRINT_SET_VALUES  (1U<<26)
-
-/* used to force a section of IDL to be little-endian */
-#define LIBNDR_FLAG_LITTLE_ENDIAN (1U<<27)
-
-/* used to check if alignment padding is zero */
-#define LIBNDR_FLAG_PAD_CHECK     (1U<<28)
-
-#define LIBNDR_FLAG_NDR64         (1U<<29)
-
-/* set if an object uuid will be present */
-#define LIBNDR_FLAG_OBJECT_PRESENT    (1U<<30)
-
-/* set to avoid recursion in ndr_size_*() calculation */
-#define LIBNDR_FLAG_NO_NDR_SIZE		(1U<<31)
 
 /* useful macro for debugging */
 #define NDR_PRINT_DEBUG(type, p) (void)ndr_print_debug(1, (ndr_print_fn_t)ndr_print_ ##type, #p, p, __location__, __func__)
@@ -333,25 +365,6 @@ enum ndr_compression_alg {
 	NDR_COMPRESSION_WIN2K3_LZ77_DIRECT2	= 204, /* Unimplemented */
 	NDR_COMPRESSION_INVALID         = 255,
 };
-
-/*
-  flags passed to control parse flow
-  These are deliberately in a different range to the NDR_IN/NDR_OUT
-  flags to catch mixups
-*/
-#define NDR_SCALARS    0x100
-#define NDR_BUFFERS    0x200
-
-/*
-  flags passed to ndr_print_*() and ndr pull/push for functions
-  These are deliberately in a different range to the NDR_SCALARS/NDR_BUFFERS
-  flags to catch mixups
-*/
-#define NDR_IN         0x10
-#define NDR_OUT        0x20
-#define NDR_BOTH       0x30
-#define NDR_SET_VALUES 0x40
-
 
 #define NDR_PULL_CHECK_FLAGS(ndr, ndr_flags) do { \
 	if ((ndr_flags) & ~(NDR_SCALARS|NDR_BUFFERS)) { \
