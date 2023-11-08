@@ -28,7 +28,7 @@ from selftesthelpers import planpythontestsuite, planperltestsuite
 from selftesthelpers import plantestsuite_loadlist
 from selftesthelpers import skiptestsuite, source4dir, valgrindify
 from selftesthelpers import smbtorture4_options, smbtorture4_testsuites
-from selftesthelpers import smbtorture4, ntlm_auth3, samba3srcdir
+from selftesthelpers import smbtorture4, samba3srcdir
 
 
 print("OPTIONS %s" % " ".join(smbtorture4_options), file=sys.stderr)
