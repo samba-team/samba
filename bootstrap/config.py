@@ -541,9 +541,9 @@ RPM_DISTS = {
             'codespell': '',
         }
     },
-    'fedora38': {
-        'docker_image': 'quay.io/fedora/fedora:38',
-        'vagrant_box': 'fedora/38-cloud-base',
+    'fedora39': {
+        'docker_image': 'quay.io/fedora/fedora:39',
+        'vagrant_box': 'fedora/39-cloud-base',
         'bootstrap': DNF_BOOTSTRAP,
         'replace': {
             'lsb-release': 'redhat-lsb',
