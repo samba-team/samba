@@ -612,7 +612,7 @@ static size_t smbcli_req_pull_ucs2(struct request_bufinfo *bufinfo, TALLOC_CTX *
 		src_len = byte_len;
 	}
 
-	src_len2 = utf16_len_n(src, src_len);
+	src_len2 = utf16_null_terminated_len_n(src, src_len);
 
 	/* ucs2 strings must be at least 2 bytes long */
 	if (src_len2 < 2) {
@@ -815,7 +815,7 @@ size_t smbcli_blob_pull_ucs2(TALLOC_CTX* mem_ctx,
 		return 0;
 	}
 
-	src_len2 = utf16_len_n(src, src_len);
+	src_len2 = utf16_null_terminated_len_n(src, src_len);
 
 	ret = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX, src, src_len2, (void **)&dest2, &ret_size);
 	if (!ret) {

@@ -148,7 +148,7 @@ NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, TALLOC_CTX *ctx, const char **v,
 				length = ascii_len_n((const char*)tdr->data.data+tdr->offset, tdr->data.length-tdr->offset);
 				break;
 			case CH_UTF16:
-				length = utf16_len_n(tdr->data.data+tdr->offset, tdr->data.length-tdr->offset);
+				length = utf16_null_terminated_len_n(tdr->data.data+tdr->offset, tdr->data.length-tdr->offset);
 				break;
 
 			default:

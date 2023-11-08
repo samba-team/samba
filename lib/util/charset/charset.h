@@ -114,7 +114,7 @@ return the number of bytes occupied by a buffer in CH_UTF16 format
 the result includes the null termination
 limited by 'n' bytes
 **/
-size_t utf16_len_n(const void *src, size_t n);
+size_t utf16_null_terminated_len_n(const void *src, size_t n);
 
 char *strchr_m(const char *s, char c);
 /**

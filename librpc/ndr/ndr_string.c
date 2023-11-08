@@ -147,7 +147,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, ndr_flags_type 
 			conv_src_len = ascii_len_n((const char *)(ndr->data+ndr->offset), ndr->data_size - ndr->offset);
 		} else {
 			NDR_PULL_NEED_BYTES(ndr, 2);
-			conv_src_len = utf16_len_n(ndr->data+ndr->offset, ndr->data_size - ndr->offset);
+			conv_src_len = utf16_null_terminated_len_n(ndr->data+ndr->offset, ndr->data_size - ndr->offset);
 		}
 		byte_mul = 1; /* the length is now absolute */
 		break;

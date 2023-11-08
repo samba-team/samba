@@ -4615,8 +4615,8 @@ static void smbXcli_negprot_smb1_done(struct tevent_req *subreq)
 			if (blob1.length > 0) {
 				size_t len;
 
-				len = utf16_len_n(blob1.data,
-						  blob1.length);
+				len = utf16_null_terminated_len_n(blob1.data,
+								  blob1.length);
 				blob1.length = len;
 
 				ok = convert_string_talloc(state,
@@ -4733,8 +4733,8 @@ static void smbXcli_negprot_smb1_done(struct tevent_req *subreq)
 			size_t len;
 			bool ok;
 
-			len = utf16_len_n(blob1.data,
-					  blob1.length);
+			len = utf16_null_terminated_len_n(blob1.data,
+							  blob1.length);
 			blob1.length = len;
 
 			ok = convert_string_talloc(state,

@@ -392,7 +392,7 @@ static NTSTATUS internal_bytes_pull_str(TALLOC_CTX *mem_ctx, char **_str,
 	buf += offset;
 
 	if (ucs2) {
-		buf_len = utf16_len_n(buf, buf_len);
+		buf_len = utf16_null_terminated_len_n(buf, buf_len);
 	} else {
 		size_t tmp = strnlen((const char *)buf, buf_len);
 		if (tmp < buf_len) {

@@ -461,7 +461,7 @@ static bool decode_verify_name_request(void *mem_ctx, DATA_BLOB in, void *_out)
 	}
 
 	if (name.length) {
-		len = utf16_len_n(name.data, name.length);
+		len = utf16_null_terminated_len_n(name.data, name.length);
 		convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX,
 					name.data, len,
 					&lvnc->gc, &lvnc->gc_len);

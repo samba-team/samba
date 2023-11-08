@@ -507,7 +507,7 @@ static size_t req_pull_ucs2(struct request_bufinfo *bufinfo, const char **dest, 
 		return 0;
 	}
 
-	src_len2 = utf16_len_n(src, src_len);
+	src_len2 = utf16_null_terminated_len_n(src, src_len);
 	if (src_len2 == 0) {
 		*dest = talloc_strdup(bufinfo->mem_ctx, "");
 		return src_len2 + alignment;
