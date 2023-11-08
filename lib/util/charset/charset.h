@@ -116,6 +116,12 @@ size_t utf16_null_terminated_len(const void *buf);
 
 /**
 return the number of bytes occupied by a buffer in CH_UTF16 format
+limited by 'n' bytes
+**/
+size_t utf16_len_n(const void *src, size_t n);
+
+/**
+return the number of bytes occupied by a buffer in CH_UTF16 format
 the result includes the null termination
 limited by 'n' bytes
 **/
