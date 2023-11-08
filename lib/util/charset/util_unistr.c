@@ -193,15 +193,23 @@ size_t ucs2_align(const void *base_ptr, const void *p, int flags)
 
 /**
 return the number of bytes occupied by a buffer in CH_UTF16 format
-the result includes the null termination
 **/
-size_t utf16_null_terminated_len(const void *buf)
+size_t utf16_len(const void *buf)
 {
 	size_t len;
 
 	for (len = 0; SVAL(buf,len); len += 2) ;
 
-	return len + 2;
+	return len;
+}
+
+/**
+return the number of bytes occupied by a buffer in CH_UTF16 format
+the result includes the null termination
+**/
+size_t utf16_null_terminated_len(const void *buf)
+{
+	return utf16_len(buf) + 2;
 }
 
 /**
