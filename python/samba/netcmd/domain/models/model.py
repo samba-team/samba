@@ -28,9 +28,10 @@ from ldb import ERR_NO_SUCH_OBJECT, FLAG_MOD_ADD, FLAG_MOD_REPLACE, LdbError,\
 from samba.sd_utils import SDUtils
 
 from .exceptions import DeleteError, DoesNotExist, FieldError,\
-    MultipleObjectsReturned, ProtectError, UnprotectError
+    ProtectError, UnprotectError
 from .fields import DateTimeField, DnField, Field, GUIDField, IntegerField,\
     StringField
+from .query import Query
 
 # Keeps track of registered models.
 # This gets populated by the ModelMeta class.
@@ -246,11 +247,7 @@ class Model(metaclass=ModelMeta):
                 raise DoesNotExist(f"Container does not exist: {base_dn}")
             raise
 
-        # For now this returns a simple generator of model instances.
-        # This could eventually become a QuerySet class if we need to add
-        # additional methods on the return value for example .order_by()
-        for message in result:
-            yield cls.from_message(ldb, message)
+        return Query(cls, ldb, result)
 
     @classmethod
     def get(cls, ldb, **kwargs):
@@ -278,27 +275,10 @@ class Model(metaclass=ModelMeta):
                     return None
                 else:
                     raise
-        else:
-            base_dn = cls.get_search_dn(ldb)
 
-            # If the container does not exist produce a friendly error message.
-            try:
-                res = ldb.search(base_dn,
-                                 scope=SCOPE_SUBTREE,
-                                 expression=cls.build_expression(**kwargs))
-            except LdbError as e:
-                if e.args[0] == ERR_NO_SUCH_OBJECT:
-                    raise DoesNotExist(f"Container does not exist: {base_dn}")
-                raise
-
-        # Expect to get one object back or raise MultipleObjectsReturned.
-        # For multiple records, please call .query() instead.
-        count = len(res)
-        if count > 1:
-            raise MultipleObjectsReturned(
-                f"More than one object returned (got {count}).")
-        elif count == 1:
             return cls.from_message(ldb, res[0])
+        else:
+            return cls.query(ldb, **kwargs).get()
 
     @classmethod
     def create(cls, ldb, **kwargs):
