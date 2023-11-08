@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
-   
+
    Copyright (C) Andrew Tridgell              2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -74,7 +74,7 @@ struct smbsrv_request *smbsrv_init_request(struct smbsrv_connection *smb_conn)
 
 
 /*
-  setup a chained reply in req->out with the given word count and initial data buffer size. 
+  setup a chained reply in req->out with the given word count and initial data buffer size.
 */
 static void req_setup_chain_reply(struct smbsrv_request *req, unsigned int wct, unsigned int buflen)
 {
@@ -84,9 +84,9 @@ static void req_setup_chain_reply(struct smbsrv_request *req, unsigned int wct, 
 	req->out.size += 1 + VWV(wct) + 2 + buflen;
 
 	/* over allocate by a small amount */
-	req->out.allocated = req->out.size + REQ_OVER_ALLOCATION; 
+	req->out.allocated = req->out.size + REQ_OVER_ALLOCATION;
 
-	req->out.buffer = talloc_realloc(req, req->out.buffer, 
+	req->out.buffer = talloc_realloc(req, req->out.buffer,
 					 uint8_t, req->out.allocated);
 	if (!req->out.buffer) {
 		smbsrv_terminate_connection(req->smb_conn, "allocation failed");
@@ -106,8 +106,8 @@ static void req_setup_chain_reply(struct smbsrv_request *req, unsigned int wct, 
 
 
 /*
-  setup a reply in req->out with the given word count and initial data buffer size. 
-  the caller will then fill in the command words and data before calling req_send_reply() to 
+  setup a reply in req->out with the given word count and initial data buffer size.
+  the caller will then fill in the command words and data before calling req_send_reply() to
   send the reply on its way
 */
 void smbsrv_setup_reply(struct smbsrv_request *req, unsigned int wct, size_t buflen)
@@ -122,7 +122,7 @@ void smbsrv_setup_reply(struct smbsrv_request *req, unsigned int wct, size_t buf
 	req->out.size = NBT_HDR_SIZE + MIN_SMB_SIZE + VWV(wct) + buflen;
 
 	/* over allocate by a small amount */
-	req->out.allocated = req->out.size + REQ_OVER_ALLOCATION; 
+	req->out.allocated = req->out.size + REQ_OVER_ALLOCATION;
 
 	req->out.buffer = talloc_size(req, req->out.allocated);
 	if (!req->out.buffer) {
@@ -130,8 +130,8 @@ void smbsrv_setup_reply(struct smbsrv_request *req, unsigned int wct, size_t buf
 		return;
 	}
 
-	flags2 = FLAGS2_LONG_PATH_COMPONENTS | 
-		FLAGS2_EXTENDED_ATTRIBUTES | 
+	flags2 = FLAGS2_LONG_PATH_COMPONENTS |
+		FLAGS2_EXTENDED_ATTRIBUTES |
 		FLAGS2_IS_LONG_NAME;
 #define _SMB_FLAGS2_ECHOED_FLAGS ( \
 	FLAGS2_UNICODE_STRINGS | \
@@ -156,14 +156,14 @@ void smbsrv_setup_reply(struct smbsrv_request *req, unsigned int wct, size_t buf
 	SSVAL(req->out.vwv, VWV(wct), buflen);
 
 	memcpy(req->out.hdr, "\377SMB", 4);
-	SCVAL(req->out.hdr,HDR_FLG, FLAG_REPLY | FLAG_CASELESS_PATHNAMES); 
+	SCVAL(req->out.hdr,HDR_FLG, FLAG_REPLY | FLAG_CASELESS_PATHNAMES);
 	SSVAL(req->out.hdr,HDR_FLG2, flags2);
 	SSVAL(req->out.hdr,HDR_PIDHIGH,0);
 	memset(req->out.hdr + HDR_SS_FIELD, 0, 10);
 
 	if (req->in.hdr) {
 		/* copy the cmd, tid, pid, uid and mid from the request */
-		SCVAL(req->out.hdr,HDR_COM,CVAL(req->in.hdr,HDR_COM));	
+		SCVAL(req->out.hdr,HDR_COM,CVAL(req->in.hdr,HDR_COM));
 		SSVAL(req->out.hdr,HDR_TID,SVAL(req->in.hdr,HDR_TID));
 		SSVAL(req->out.hdr,HDR_PID,SVAL(req->in.hdr,HDR_PID));
 		SSVAL(req->out.hdr,HDR_UID,SVAL(req->in.hdr,HDR_UID));
@@ -255,7 +255,7 @@ static void req_grow_allocation(struct smbsrv_request *req, unsigned int new_siz
 		/* the malloc library gave us the same pointer */
 		return;
 	}
-	
+
 	/* update the pointers into the packet */
 	req->out.data = buf2 + PTR_DIFF(req->out.data, req->out.buffer);
 	req->out.ptr  = buf2 + PTR_DIFF(req->out.ptr,  req->out.buffer);
@@ -269,7 +269,7 @@ static void req_grow_allocation(struct smbsrv_request *req, unsigned int new_siz
 /*
   grow the data buffer portion of a reply packet. Note that as this
   can reallocate the packet buffer this invalidates any local pointers
-  into the packet. 
+  into the packet.
 
   To cope with this req->out.ptr is supplied. This will be updated to
   point at the same offset into the packet as before this call
@@ -296,7 +296,7 @@ void req_grow_data(struct smbsrv_request *req, size_t new_size)
 /*
   send a reply and destroy the request buffer
 
-  note that this only looks at req->out.buffer and req->out.size, allowing manually 
+  note that this only looks at req->out.buffer and req->out.size, allowing manually
   constructed packets to be sent
 */
 void smbsrv_send_reply_nosign(struct smbsrv_request *req)
@@ -325,7 +325,7 @@ void smbsrv_send_reply_nosign(struct smbsrv_request *req)
 /*
   possibly sign a message then send a reply and destroy the request buffer
 
-  note that this only looks at req->out.buffer and req->out.size, allowing manually 
+  note that this only looks at req->out.buffer and req->out.size, allowing manually
   constructed packets to be sent
 */
 void smbsrv_send_reply(struct smbsrv_request *req)
@@ -340,7 +340,7 @@ void smbsrv_send_reply(struct smbsrv_request *req)
 	smbsrv_send_reply_nosign(req);
 }
 
-/* 
+/*
    setup the header of a reply to include an NTSTATUS code
 */
 void smbsrv_setup_error(struct smbsrv_request *req, NTSTATUS status)
@@ -367,8 +367,8 @@ void smbsrv_setup_error(struct smbsrv_request *req, NTSTATUS status)
 	}
 }
 
-/* 
-   construct and send an error packet, then destroy the request 
+/*
+   construct and send an error packet, then destroy the request
    auto-converts to DOS error format when appropriate
 */
 void smbsrv_send_error(struct smbsrv_request *req, NTSTATUS status)
@@ -441,7 +441,7 @@ size_t req_push_str(struct smbsrv_request *req, uint8_t *dest, const char *str, 
   append raw bytes into the data portion of the request packet
   return the number of bytes added
 */
-size_t req_append_bytes(struct smbsrv_request *req, 
+size_t req_append_bytes(struct smbsrv_request *req,
 			const uint8_t *bytes, size_t byte_len)
 {
 	req_grow_allocation(req, byte_len + req->out.data_size);
@@ -453,7 +453,7 @@ size_t req_append_bytes(struct smbsrv_request *req,
   append variable block (type 5 buffer) into the data portion of the request packet
   return the number of bytes added
 */
-size_t req_append_var_block(struct smbsrv_request *req, 
+size_t req_append_var_block(struct smbsrv_request *req,
 		const uint8_t *bytes, uint16_t byte_len)
 {
 	req_grow_allocation(req, byte_len + 3 + req->out.data_size);
@@ -506,7 +506,7 @@ static size_t req_pull_ucs2(struct request_bufinfo *bufinfo, const char **dest, 
 		*dest = NULL;
 		return 0;
 	}
-	
+
 	src_len2 = utf16_len_n(src, src_len);
 	if (src_len2 == 0) {
 		*dest = talloc_strdup(bufinfo->mem_ctx, "");
@@ -589,7 +589,7 @@ static size_t req_pull_ascii(struct request_bufinfo *bufinfo, const char **dest,
 */
 size_t req_pull_string(struct request_bufinfo *bufinfo, const char **dest, const uint8_t *src, int byte_len, unsigned int flags)
 {
-	if (!(flags & STR_ASCII) && 
+	if (!(flags & STR_ASCII) &&
 	    (((flags & STR_UNICODE) || (bufinfo->flags & BUFINFO_FLAG_UNICODE)))) {
 		return req_pull_ucs2(bufinfo, dest, src, byte_len, flags);
 	}
@@ -600,7 +600,7 @@ size_t req_pull_string(struct request_bufinfo *bufinfo, const char **dest, const
 
 /**
   pull a ASCII4 string buffer from a request packet, returning a talloced string
-  
+
   an ASCII4 buffer is a null terminated string that has a prefix
   of the character 0x4. It tends to be used in older parts of the protocol.
 
@@ -627,7 +627,7 @@ size_t req_pull_ascii4(struct request_bufinfo *bufinfo, const char **dest, const
 		(*dest) = talloc_strdup(bufinfo->mem_ctx, "");
 		return 1;
 	}
-	
+
 	return ret + 1;
 }
 
@@ -654,7 +654,7 @@ bool req_data_oob(struct request_bufinfo *bufinfo, const uint8_t *ptr, uint32_t 
 	if (count == 0) {
 		return false;
 	}
-	
+
 	/* be careful with wraparound! */
 	if ((uintptr_t)ptr < (uintptr_t)bufinfo->data ||
 	    (uintptr_t)ptr >= (uintptr_t)bufinfo->data + bufinfo->data_size ||
@@ -666,7 +666,7 @@ bool req_data_oob(struct request_bufinfo *bufinfo, const uint8_t *ptr, uint32_t 
 }
 
 
-/* 
+/*
    pull an open file handle from a packet, taking account of the chained_fnum
 */
 static uint16_t req_fnum(struct smbsrv_request *req, const uint8_t *base, unsigned int offset)
@@ -721,7 +721,7 @@ NTSTATUS smbsrv_handle_create_new(void *private_data, struct ntvfs_request *ntvf
 	h = talloc_zero(handle, struct ntvfs_handle);
 	if (!h) goto nomem;
 
-	/* 
+	/*
 	 * note: we don't set handle->ntvfs yet,
 	 *       this will be done by smbsrv_handle_make_valid()
 	 *       this makes sure the handle is invalid for clients
