@@ -198,7 +198,7 @@ size_t utf16_len(const void *buf)
 {
 	size_t len;
 
-	for (len = 0; SVAL(buf,len); len += 2) ;
+	for (len = 0; PULL_LE_U16(buf,len); len += 2) ;
 
 	return len;
 }
@@ -220,7 +220,7 @@ size_t utf16_len_n(const void *src, size_t n)
 {
 	size_t len;
 
-	for (len = 0; (len+2 <= n) && SVAL(src, len); len += 2) ;
+	for (len = 0; (len+2 <= n) && PULL_LE_U16(src, len); len += 2) ;
 
 	return len;
 }
