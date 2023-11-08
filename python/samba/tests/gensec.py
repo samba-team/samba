@@ -35,7 +35,7 @@ class GensecTests(samba.tests.TestCase):
         self.settings["target_hostname"] = self.lp_ctx.get("netbios name")
         self.lp_ctx.set("spnego:simulate_w2k", "no")
 
-        """This is just for the API tests"""
+        # This is just for the API tests
         self.gensec = gensec.Security.start_client(self.settings)
 
     def test_start_mech_by_unknown_name(self):
@@ -50,7 +50,7 @@ class GensecTests(samba.tests.TestCase):
     def _test_update(self, mech, client_mech=None, client_only_opt=None):
         """Test GENSEC by doing an exchange with ourselves using GSSAPI against a KDC"""
 
-        """Start up a client and server GENSEC instance to test things with"""
+        # Start up a client and server GENSEC instance to test things with
 
         if client_only_opt:
             orig_client_opt = self.lp_ctx.get(client_only_opt)
@@ -84,7 +84,7 @@ class GensecTests(samba.tests.TestCase):
         server_to_client = b""
         client_to_server = b""
 
-        """Run the actual call loop"""
+        # Run the actual call loop
         while True:
             if not client_finished:
                 if client_only_opt:
@@ -180,7 +180,7 @@ class GensecTests(samba.tests.TestCase):
     def test_max_update_size(self):
         """Test GENSEC by doing an exchange with ourselves using GSSAPI against a KDC"""
 
-        """Start up a client and server GENSEC instance to test things with"""
+        # Start up a client and server GENSEC instance to test things with
 
         self.gensec_client = gensec.Security.start_client(self.settings)
         self.gensec_client.set_credentials(self.get_credentials())
@@ -202,7 +202,7 @@ class GensecTests(samba.tests.TestCase):
         server_finished = False
         server_to_client = b""
 
-        """Run the actual call loop"""
+        # Run the actual call loop
         i = 0
         while not client_finished or not server_finished:
             i += 1
@@ -213,7 +213,7 @@ class GensecTests(samba.tests.TestCase):
                 print("running server gensec_update: %d: %r" % (len(client_to_server), client_to_server))
                 (server_finished, server_to_client) = self.gensec_server.update(client_to_server)
 
-        """Here we expect a lot more than the typical 1 or 2 roundtrips"""
+        # Here we expect a lot more than the typical 1 or 2 roundtrips
         self.assertTrue(i > 10)
 
         session_info = self.gensec_server.session_info()
