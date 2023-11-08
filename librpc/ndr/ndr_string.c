@@ -293,9 +293,17 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, ndr_flags_type 
 	if (s_len == 0) {
 		d_len = 0;
 		dest = (uint8_t *)talloc_strdup(ndr, "");
+		if (dest == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_ALLOC,
+					      "Failed to talloc_strdup() in ndr_string_push()");
+		}
 	} else if (!do_convert) {
 		d_len = s_len;
 		dest = (uint8_t *)talloc_strndup(ndr, s, s_len);
+		if (dest == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_ALLOC,
+					      "Failed to talloc_strndup() in ndr_string_push()");
+		}
 	} else if (!convert_string_talloc(ndr, CH_UNIX, chset, s, s_len,
 					  &dest, &d_len))
 	{
@@ -745,6 +753,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_charset(struct ndr_pull *ndr, ndr_flags_type
 
 	if (length == 0) {
 		*var = talloc_strdup(ndr->current_mem_ctx, "");
+		if (*var == NULL) {
+			return ndr_pull_error(ndr, NDR_ERR_ALLOC,
+					      "Failed to talloc_strdup() in ndr_pull_charset()");
+		}
 		return NDR_ERR_SUCCESS;
 	}
 
@@ -777,6 +789,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_charset_to_null(struct ndr_pull *ndr, ndr_fl
 
 	if (length == 0) {
 		*var = talloc_strdup(ndr->current_mem_ctx, "");
+		if (*var == NULL) {
+			return ndr_pull_error(ndr, NDR_ERR_ALLOC,
+					      "Failed to talloc_strdup() in ndr_pull_charset_to_null()");
+		}
 		return NDR_ERR_SUCCESS;
 	}
 
