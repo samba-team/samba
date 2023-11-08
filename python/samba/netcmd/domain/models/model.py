@@ -258,7 +258,7 @@ class Model(metaclass=ModelMeta):
 
         :param ldb: Ldb connection
         :param kwargs: Search criteria as keyword args
-        :returns: User object or None if not found
+        :returns: Model instance or None if not found
         :raises: MultipleObjects returned if there are more than one results
         """
         # If a DN is provided use that to get the object directly.
