@@ -48,6 +48,27 @@ def plansmbtorture4testsuite(name, env, options, modname=None, environ=None):
 
 samba4srcdir = source4dir()
 DSDB_PYTEST_DIR = os.path.join(samba4srcdir, "dsdb/tests/python/")
+subunitrun = valgrindify(python) + " " + os.path.join(samba4srcdir, "scripting/bin/subunitrun")
+
+
+def planoldpythontestsuite(env, module, name=None, extra_path=None, environ=None, extra_args=None):
+    if extra_path is None:
+        extra_path = []
+    if environ is None:
+        environ = {}
+    if extra_args is None:
+        extra_args = []
+    environ = dict(environ)
+    py_path = list(extra_path)
+    if py_path:
+        environ["PYTHONPATH"] = ":".join(["$PYTHONPATH"] + py_path)
+    args = ["%s=%s" % item for item in environ.items()]
+    args += [subunitrun, "$LISTOPT", "$LOADLIST", module]
+    args += extra_args
+    if name is None:
+        name = module
+    plantestsuite_loadlist(name, env, args)
+
 
 samba4bindir = bindir()
 validate = os.getenv("VALIDATE", "")
@@ -1051,26 +1072,6 @@ for env in ["ad_dc:local", "s4member:local", "nt4_dc:local", "ad_member:local", 
     else:
         skiptestsuite("samba.nss.test using winbind(%s)" % env, "nsstest not available")
 
-subunitrun = valgrindify(python) + " " + os.path.join(samba4srcdir, "scripting/bin/subunitrun")
-
-
-def planoldpythontestsuite(env, module, name=None, extra_path=None, environ=None, extra_args=None):
-    if extra_path is None:
-        extra_path = []
-    if environ is None:
-        environ = {}
-    if extra_args is None:
-        extra_args = []
-    environ = dict(environ)
-    py_path = list(extra_path)
-    if py_path:
-        environ["PYTHONPATH"] = ":".join(["$PYTHONPATH"] + py_path)
-    args = ["%s=%s" % item for item in environ.items()]
-    args += [subunitrun, "$LISTOPT", "$LOADLIST", module]
-    args += extra_args
-    if name is None:
-        name = module
-    plantestsuite_loadlist(name, env, args)
 
 if have_gnutls_fips_mode_support:
     planoldpythontestsuite("ad_dc",
