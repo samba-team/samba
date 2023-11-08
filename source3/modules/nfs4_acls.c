@@ -548,7 +548,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 		    (win_ace_flags & (SEC_ACE_FLAG_OBJECT_INHERIT|
 				      SEC_ACE_FLAG_CONTAINER_INHERIT))) {
 			/*
-			 * GPFS sets inherits dir_inhert and file_inherit flags
+			 * GPFS sets inherits dir_inherit and file_inherit flags
 			 * to files, too, which confuses windows, and seems to
 			 * be wrong anyways. ==> Map these bits away for files.
 			 */
