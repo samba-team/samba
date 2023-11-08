@@ -142,6 +142,10 @@ static NTSTATUS smb2_negotiate_context_process_posix(
 
 	*posix = false;
 
+	if (!lp_smb3_unix_extensions(GLOBAL_SECTION_SNUM)) {
+		return NT_STATUS_OK;
+	}
+
 	in_posix = smb2_negotiate_context_find(in_c,
 					       SMB2_POSIX_EXTENSIONS_AVAILABLE);
 	if (in_posix == NULL) {

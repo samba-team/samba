@@ -1855,6 +1855,7 @@ sub setup_fileserver
 
 	my $ip4 = Samba::get_ipv4_addr("FILESERVER");
 	my $fileserver_options = "
+        smb3 unix extensions = yes
 	kernel change notify = yes
 	spotlight backend = elasticsearch
 	elasticsearch:address = $ip4

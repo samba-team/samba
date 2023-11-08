@@ -736,7 +736,9 @@ static NTSTATUS smbd_smb2_create_fetch_create_ctx(
 		state->svhdx = smb2_create_blob_find(
 			in_context_blobs, SVHDX_OPEN_DEVICE_CONTEXT);
 	}
-	if (xconn->smb2.server.posix_extensions_negotiated) {
+	if (xconn->smb2.server.posix_extensions_negotiated &&
+	    lp_smb3_unix_extensions(SNUM(state->smb1req->conn)))
+	{
 		/*
 		 * Negprot only allowed this for proto>=3.11
 		 */
