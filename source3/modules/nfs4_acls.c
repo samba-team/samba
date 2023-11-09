@@ -192,8 +192,8 @@ int nfs4_acl_stat(struct vfs_handle_struct *handle,
 	return ret;
 }
 
-int fstat_with_cap_dac_override(int fd, SMB_STRUCT_STAT *sbuf,
-				bool fake_dir_create_times)
+static int fstat_with_cap_dac_override(int fd, SMB_STRUCT_STAT *sbuf,
+				       bool fake_dir_create_times)
 {
 	int ret;
 
