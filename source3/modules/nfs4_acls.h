@@ -133,6 +133,10 @@ int nfs4_acl_stat(struct vfs_handle_struct *handle,
 int fstat_with_cap_dac_override(int fd, SMB_STRUCT_STAT *sbuf,
 				bool fake_dir_create_times);
 
+int nfs4_acl_fstat(struct vfs_handle_struct *handle,
+		   struct files_struct *fsp,
+		   SMB_STRUCT_STAT *sbuf);
+
 struct SMB4ACL_T *smb_create_smb4acl(TALLOC_CTX *mem_ctx);
 
 /* prop's contents are copied */
