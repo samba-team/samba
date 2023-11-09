@@ -136,7 +136,8 @@ def getVtype(prop):
 	return result
 
 def generateSourceCode(propMap, outputFile):
-	source = "#include \"bin/default/librpc/gen_ndr/ndr_wsp.h\"\n"
+	source = "#include \"replace.h\"\n"
+	source = source + "#include \"bin/default/librpc/gen_ndr/ndr_wsp.h\"\n"
 	source = source + "#include \"librpc/wsp/wsp_util.h\"\n"
 	count = 0
 	for guid in propMap.keys():
