@@ -1,0 +1,1 @@
+samba.tests.samba_tool.domain_auth_policy.samba.tests.samba_tool.domain_auth_policy.AuthPolicyCmdTestCase.test_create__invalid_sddl_normal_ace
