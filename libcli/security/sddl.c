@@ -536,6 +536,7 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 	bool has_extra_data = false;
 	ZERO_STRUCTP(ace);
 
+	*msg_offset = 1;
 	if (*str != '(') {
 		return false;
 	}
@@ -585,18 +586,21 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 	}
 	if (count != 6) {
 		/* we hit the '\0' or ')' before all of ';;;;;)' */
-		DBG_WARNING("malformed ACE with only %zu ';'\n", count);
+		*msg = talloc_asprintf(mem_ctx,
+				       "malformed ACE with only %zu ';'", count);
 		return false;
 	}
 
 	/* parse ace type */
 	ok = sddl_map_flag(ace_types, tok[0], &len, &v);
 	if (!ok) {
-		DBG_WARNING("Unknown ACE type - %s\n", tok[0]);
+		*msg = talloc_asprintf(mem_ctx,
+				       "Unknown ACE type - %s", tok[0]);
 		return false;
 	}
 	if (tok[0][len] != '\0') {
-		DBG_WARNING("Garbage after ACE type - %s\n", tok[0]);
+		*msg = talloc_asprintf(mem_ctx,
+				       "Garbage after ACE type - %s", tok[0]);
 		return false;
 	}
 
@@ -607,17 +611,26 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 	 */
 	if (sec_ace_callback(ace->type)) {
 		if (! has_extra_data) {
-			DBG_WARNING("callback ACE has no trailing data\n");
+			*msg = talloc_strdup(
+				mem_ctx,
+				"callback ACE has no trailing data");
+			*msg_offset = str - *sddl_copy;
 			return false;
 		}
 	} else if (sec_ace_resource(ace->type)) {
 		if (! has_extra_data) {
-			DBG_WARNING("resource ACE has no trailing data\n");
+			*msg = talloc_strdup(
+				mem_ctx,
+				"resource attribute ACE has no trailing data");
+			*msg_offset = str - *sddl_copy;
 			return false;
 		}
 	} else if (has_extra_data) {
-		DBG_WARNING("ACE has trailing section but is not a "
-			    "callback or resource ACE\n");
+		*msg = talloc_strdup(
+			mem_ctx,
+			"ACE has trailing section but is not a "
+			"callback or resource ACE");
+		*msg_offset = str - *sddl_copy;
 		return false;
 	}
 
@@ -693,7 +706,10 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 		 * next character should be the ')' to end the ACE.
 		 */
 		if (s[length] != ')') {
-			DBG_WARNING("Conditional ACE has trailing bytes\n");
+			*msg = talloc_strdup(
+				mem_ctx,
+				"Conditional ACE has trailing bytes");
+			*msg_offset = s + length - *sddl_copy;
 			return false;
 		}
 		str = discard_const_p(char, s + length + 1);
@@ -703,15 +719,21 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 
 		if (! dom_sid_equal(&ace->trustee, &global_sid_World)) {
 			/* these are just the rules */
-			DBG_WARNING("Resource Attribute ACE trustee must be "
-				    "'S-1-1-0' or 'WD'.\n");
+			*msg = talloc_strdup(
+				mem_ctx,
+				"Resource Attribute ACE trustee must be "
+				"'S-1-1-0' or 'WD'.");
+			*msg_offset = tok[5] - *sddl_copy;
 			return false;
 		}
 
 		s = tok[6];
 		claim = sddl_decode_resource_attr(mem_ctx, s, &length);
 		if (claim == NULL) {
-			DBG_WARNING("Resource Attribute ACE parse failure\n");
+			*msg = talloc_strdup(
+				mem_ctx,
+				"Resource Attribute ACE parse failure");
+			*msg_offset = s - *sddl_copy;
 			return false;
 		}
 		ace->coda.claim = *claim;
@@ -720,7 +742,10 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 		 * We want a ')' to end the ACE.
 		 */
 		if (s[length] != ')') {
-			DBG_WARNING("Resource ACE has trailing bytes\n");
+			*msg = talloc_strdup(
+				mem_ctx,
+				"Resource Attribute ACE has trailing bytes");
+			*msg_offset = s + length - *sddl_copy;
 			return false;
 		}
 		str = discard_const_p(char, s + length + 1);
