@@ -254,7 +254,7 @@ bool run_posix_ls_wildcard_test(int dummy)
 	posix_test_entries_reset(state);
 
 	printf("Doing POSIX ls *\n");
-	state->flavour = LINUX;
+	state->flavour = POSIX;
 
 	status = cli_list(cli_unix, "*", 0, posix_ls_fn, state);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -470,7 +470,7 @@ bool run_posix_ls_single_test(int dummy)
 	posix_test_entries_reset(state);
 
 	printf("Doing POSIX ls single\n");
-	state->flavour = LINUX;
+	state->flavour = POSIX;
 
 	cli_list(cli_unix, file, 0, posix_ls_fn, state);
 	cli_list(cli_unix, symlnk_dangling, 0, posix_ls_fn, state);
@@ -564,7 +564,7 @@ bool run_posix_readlink_test(int dummy)
 	frame = talloc_stackframe();
 
 	printf("Starting POSIX-READLINK test\n");
-	state->flavour = LINUX;
+	state->flavour = POSIX;
 
 	if (!torture_open_connection(&cli_unix, 0)) {
 		TALLOC_FREE(frame);
@@ -716,7 +716,7 @@ bool run_posix_stat_test(int dummy)
 	frame = talloc_stackframe();
 
 	printf("Starting POSIX-STAT test\n");
-	state->flavour = LINUX;
+	state->flavour = POSIX;
 
 	if (!torture_open_connection(&cli_unix, 0)) {
 		TALLOC_FREE(frame);
