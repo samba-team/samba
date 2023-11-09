@@ -137,6 +137,9 @@ int nfs4_acl_fstat(struct vfs_handle_struct *handle,
 		   struct files_struct *fsp,
 		   SMB_STRUCT_STAT *sbuf);
 
+int nfs4_acl_lstat(struct vfs_handle_struct *handle,
+		   struct smb_filename *smb_fname);
+
 struct SMB4ACL_T *smb_create_smb4acl(TALLOC_CTX *mem_ctx);
 
 /* prop's contents are copied */

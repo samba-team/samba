@@ -225,6 +225,21 @@ int nfs4_acl_fstat(struct vfs_handle_struct *handle,
 	return ret;
 }
 
+int nfs4_acl_lstat(struct vfs_handle_struct *handle,
+		   struct smb_filename *smb_fname)
+{
+	int ret;
+
+	ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
+	if (ret == -1 && errno == EACCES) {
+		DEBUG(10, ("Trying lstat with capability for %s\n",
+			   smb_fname->base_name));
+		ret = stat_with_cap_dac_override(handle, smb_fname,
+						 AT_SYMLINK_NOFOLLOW);
+	}
+	return ret;
+}
+
 /************************************************
  Split the ACE flag mapping between nfs4 and Windows
  into two separate functions rather than trying to do
