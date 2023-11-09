@@ -538,6 +538,7 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 
 	*msg_offset = 1;
 	if (*str != '(') {
+		*msg = talloc_strdup(mem_ctx, "Not an ACE");
 		return false;
 	}
 	str++;
@@ -636,6 +637,9 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 
 	/* ace flags */
 	if (!sddl_map_flags(ace_flags, tok[1], &v, NULL, false)) {
+		*msg = talloc_strdup(mem_ctx,
+				     "could not parse flags");
+		*msg_offset = tok[1] - *sddl_copy;
 		return false;
 	}
 	ace->flags = v;
@@ -643,6 +647,9 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 	/* access mask */
 	ok = sddl_decode_access(tok[2], &ace->access_mask);
 	if (!ok) {
+		*msg = talloc_strdup(mem_ctx,
+				     "could not parse access string");
+		*msg_offset = tok[2] - *sddl_copy;
 		return false;
 	}
 
@@ -650,6 +657,9 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 	if (tok[3][0] != 0) {
 		ok = sddl_decode_guid(tok[3], &ace->object.object.type.type);
 		if (!ok) {
+			*msg = talloc_strdup(mem_ctx,
+					     "could not parse object GUID");
+			*msg_offset = tok[3] - *sddl_copy;
 			return false;
 		}
 		ace->object.object.flags |= SEC_ACE_OBJECT_TYPE_PRESENT;
@@ -660,6 +670,10 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 		ok = sddl_decode_guid(tok[4],
 				      &ace->object.object.inherited_type.inherited_type);
 		if (!ok) {
+			*msg = talloc_strdup(
+				mem_ctx,
+				"could not parse inherited object GUID");
+			*msg_offset = tok[4] - *sddl_copy;
 			return false;
 		}
 		ace->object.object.flags |= SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT;
@@ -669,11 +683,19 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 	s = tok[5];
 	sid = sddl_transition_decode_sid(mem_ctx, &s, state);
 	if (sid == NULL) {
+		*msg = talloc_strdup(
+			mem_ctx,
+			"could not parse trustee SID");
+		*msg_offset = tok[5] - *sddl_copy;
 		return false;
 	}
 	ace->trustee = *sid;
 	talloc_free(sid);
 	if (*s != '\0') {
+		*msg = talloc_strdup(
+			mem_ctx,
+			"garbage after trustee SID");
+		*msg_offset = s - *sddl_copy;
 		return false;
 	}
 
