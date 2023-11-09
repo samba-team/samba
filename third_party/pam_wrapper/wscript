@@ -105,8 +105,13 @@ def build(bld):
                           install=False,
                           realname='pam_set_items.so')
 
+        pypamtest_cflags = ''
+        if bld.CONFIG_SET('HAVE_WNO_ERROR_DECLARATION_AFTER_STATEMENT'):
+            pypamtest_cflags = '-Wno-error=declaration-after-statement'
+
         # Can be used to write pam tests in python
         bld.SAMBA_PYTHON('pypamtest',
                          source='python/pypamtest.c',
+                         cflags_end=pypamtest_cflags,
                          deps='libpamtest',
                          install=False)
