@@ -67,7 +67,7 @@ def generatePythonFile(out_file, errors):
     out_file.write(" * Errors generated from\n")
     out_file.write(" * [MS-ERREF] https://msdn.microsoft.com/en-us/library/cc231199.aspx\n")
     out_file.write(" */\n")
-    out_file.write("#include <Python.h>\n")
+    out_file.write("#include \"lib/replace/system/python.h\"\n")
     out_file.write("#include \"python/py3compat.h\"\n")
     out_file.write("#include \"includes.h\"\n\n")
     # This is needed to avoid a missing prototype error from the C

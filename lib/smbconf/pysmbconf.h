@@ -21,7 +21,7 @@
 #ifndef _PYSMBCONF_H_
 #define _PYSMBCONF_H_
 
-#include <Python.h>
+#include "lib/replace/system/python.h"
 #include "lib/smbconf/smbconf.h"
 
 typedef struct {

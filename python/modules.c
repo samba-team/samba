@@ -17,7 +17,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <Python.h>
+#include "lib/replace/system/python.h"
 #include "py3compat.h"
 #include "includes.h"
 #include "python/modules.h"

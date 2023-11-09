@@ -17,7 +17,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <Python.h>
+#include "lib/replace/system/python.h"
 
 static void PyType_AddMethods(PyTypeObject *type, PyMethodDef *methods)
 {

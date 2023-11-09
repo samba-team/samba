@@ -1,23 +1,23 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba utility functions
 
    Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008-2010
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include <Python.h>
+#include "lib/replace/system/python.h"
 #include "py3compat.h"
 #include "libcli/security/sddl.h"
 #include "libcli/security/security.h"
@@ -31,11 +31,11 @@ static void PyType_AddMethods(PyTypeObject *type, PyMethodDef *methods)
 	dict = type->tp_dict;
 	for (i = 0; methods[i].ml_name; i++) {
 		PyObject *descr;
-		if (methods[i].ml_flags & METH_CLASS) 
+		if (methods[i].ml_flags & METH_CLASS)
 			descr = PyCFunction_New(&methods[i], (PyObject *)type);
-		else 
+		else
 			descr = PyDescr_NewMethod(type, &methods[i]);
-		PyDict_SetItemString(dict, methods[i].ml_name, 
+		PyDict_SetItemString(dict, methods[i].ml_name,
 				     descr);
 		Py_CLEAR(descr);
 	}
@@ -414,7 +414,7 @@ static PyObject *py_token_is_anonymous(PyObject *self,
 	PyObject *Py_UNUSED(ignored))
 {
 	struct security_token *token = pytalloc_get_ptr(self);
-	
+
 	return PyBool_FromLong(security_token_is_anonymous(token));
 }
 
@@ -422,7 +422,7 @@ static PyObject *py_token_is_system(PyObject *self,
 	PyObject *Py_UNUSED(ignored))
 {
 	struct security_token *token = pytalloc_get_ptr(self);
-	
+
 	return PyBool_FromLong(security_token_is_system(token));
 }
 
@@ -430,7 +430,7 @@ static PyObject *py_token_has_builtin_administrators(PyObject *self,
 	PyObject *Py_UNUSED(ignored))
 {
 	struct security_token *token = pytalloc_get_ptr(self);
-	
+
 	return PyBool_FromLong(security_token_has_builtin_administrators(token));
 }
 
@@ -438,7 +438,7 @@ static PyObject *py_token_has_nt_authenticated_users(PyObject *self,
 	PyObject *Py_UNUSED(ignored))
 {
 	struct security_token *token = pytalloc_get_ptr(self);
-	
+
 	return PyBool_FromLong(security_token_has_nt_authenticated_users(token));
 }
 
@@ -468,7 +468,7 @@ static PyObject *py_token_set_privilege(PyObject *self, PyObject *args)
 static PyObject *py_token_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 {
 	return pytalloc_steal(self, security_token_initialise(NULL));
-}	
+}
 
 static PyMethodDef py_token_extra_methods[] = {
 	{ "is_sid", (PyCFunction)py_token_is_sid, METH_VARARGS,

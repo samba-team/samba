@@ -19,7 +19,7 @@
 
 #ifndef _SAMBA_PY3COMPAT_H_
 #define _SAMBA_PY3COMPAT_H_
-#include <Python.h>
+#include "lib/replace/system/python.h"
 
 /* Quick docs:
  * Syntax for module initialization is as in Python 3, except the entrypoint
