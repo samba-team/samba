@@ -834,6 +834,92 @@ static void test_a_number_of_invalid_strings(void **state)
 }
 
 
+static void test_a_number_of_invalid_full_sddl_strings(void **state)
+{
+	/*
+	 * These ones are complete SDDL sentences and should fail to parse,
+	 * with specific message snippets.
+	 */
+	static struct {
+		const char *sddl;
+		const char *snippet;
+		ssize_t offset;
+	} cases[] = {
+		{
+			"O:SYG:SYD:(A;;;;ZZ)(XA;OICI;CR;;;WD;(Member_of {WD}))",
+			"malformed ACE with only 4 ';'",
+			11
+		},
+		{
+			"O:SYG:SYD:QQ(A;;;;ZZ)(XA;OICI;CR;;;WD;(Member_of {WD}))",
+			"expected '[OGDS]:' section start",
+			10
+		}
+	};
+	size_t i;
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	bool failed_to_fail = false;
+	bool message_wrong = false;
+	enum ace_condition_flags ace_condition_flags = \
+		ACE_CONDITION_FLAG_ALLOW_DEVICE;
+	struct dom_sid domain_sid;
+	string_to_sid(&domain_sid, "S-1-2-3");
+
+	for (i = 0; i < ARRAY_SIZE(cases); i++) {
+		struct security_descriptor *sd = NULL;
+		const char *message = NULL;
+		size_t message_offset;
+		sd = sddl_decode_err_msg(mem_ctx,
+					 cases[i].sddl,
+					 &domain_sid,
+					 ace_condition_flags,
+					 &message,
+					 &message_offset);
+		if (sd != NULL) {
+			print_message("unexpected success: ");
+			debug_fail("%s\n", cases[i].sddl);
+			failed_to_fail = true;
+		}
+		if (cases[i].snippet != NULL) {
+			if (message != NULL) {
+				char *c = strstr(message, cases[i].snippet);
+				print_error_message(cases[i].sddl,
+						    message,
+						    message_offset);
+				if (c == NULL) {
+					message_wrong = true;
+					print_message("expected '%s'\n",
+						      cases[i].snippet);
+				}
+			} else {
+				message_wrong = true;
+				print_error_message(cases[i].sddl,
+						    "NO MESSAGE!",
+						    message_offset);
+				print_message("expected '%s', got no message!\n",
+					      cases[i].snippet);
+			}
+		} else {
+			print_message("no assertion about message, got '%s'\n",
+				      message);
+		}
+		if (cases[i].offset >= 0) {
+			if (cases[i].offset != message_offset) {
+				message_wrong = true;
+				print_message("expected offset %zd, got %zu\n",
+					      cases[i].offset,
+					      message_offset);
+			}
+		} else {
+			print_message("no assertion about offset, got '%zu\n",
+				      message_offset);
+		}
+	}
+	assert_false(failed_to_fail);
+	assert_false(message_wrong);
+}
+
+
 static void test_valid_strings_with_trailing_crap(void **state)
 {
 	/*
@@ -888,6 +974,7 @@ static void test_valid_strings_with_trailing_crap(void **state)
 int main(_UNUSED_ int argc, _UNUSED_ const char **argv)
 {
 	const struct CMUnitTest tests[] = {
+		cmocka_unit_test(test_a_number_of_invalid_full_sddl_strings),
 		cmocka_unit_test(test_full_sddl_ra_encode),
 		cmocka_unit_test(test_full_sddl_ra_escapes),
 		cmocka_unit_test(test_full_sddl_compile),
