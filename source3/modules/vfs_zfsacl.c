@@ -487,6 +487,10 @@ static int zfsacl_connect(struct vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers zfsacl_fns = {
 	.connect_fn = zfsacl_connect,
+	.stat_fn = nfs4_acl_stat,
+	.fstat_fn = nfs4_acl_fstat,
+	.lstat_fn = nfs4_acl_lstat,
+	.fstatat_fn = nfs4_acl_fstatat,
 	.sys_acl_get_fd_fn = zfsacl_fail__sys_acl_get_fd,
 	.sys_acl_blob_get_fd_fn = zfsacl_fail__sys_acl_blob_get_fd,
 	.sys_acl_set_fd_fn = zfsacl_fail__sys_acl_set_fd,
