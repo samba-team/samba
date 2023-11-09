@@ -643,18 +643,45 @@ static bool set_process_capability(enum smbd_capability capability,
  Gain the oplock capability from the kernel if possible.
 ****************************************************************************/
 
+#if defined(HAVE_POSIX_CAPABILITIES) && defined(CAP_DAC_OVERRIDE)
+static bool have_cap_dac_override = true;
+#else
+static bool have_cap_dac_override = false;
+#endif
+
 void set_effective_capability(enum smbd_capability capability)
 {
+	bool ret = false;
+
+	if (capability != DAC_OVERRIDE_CAPABILITY || have_cap_dac_override) {
 #if defined(HAVE_POSIX_CAPABILITIES)
-	set_process_capability(capability, True);
+		ret = set_process_capability(capability, True);
 #endif /* HAVE_POSIX_CAPABILITIES */
+	}
+
+	/*
+	 * Fallback to become_root() if CAP_DAC_OVERRIDE is not
+	 * available.
+	 */
+	if (capability == DAC_OVERRIDE_CAPABILITY) {
+		if (!ret) {
+			have_cap_dac_override = false;
+		}
+		if (!have_cap_dac_override) {
+			become_root();
+		}
+	}
 }
 
 void drop_effective_capability(enum smbd_capability capability)
 {
+	if (capability != DAC_OVERRIDE_CAPABILITY || have_cap_dac_override) {
 #if defined(HAVE_POSIX_CAPABILITIES)
-	set_process_capability(capability, False);
+		set_process_capability(capability, False);
 #endif /* HAVE_POSIX_CAPABILITIES */
+	} else {
+		unbecome_root();
+	}
 }
 
 /**************************************************************************
