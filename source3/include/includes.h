@@ -32,7 +32,7 @@
 
 /* only do the C++ reserved word check when we compile
    to include --with-developer since too many systems
-   still have comflicts with their header files (e.g. IRIX 6.4) */
+   still have conflicts with their header files (e.g. IRIX 6.4) */
 
 #if !defined(__cplusplus) && defined(DEVELOPER) && defined(__linux__)
 #define class #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
