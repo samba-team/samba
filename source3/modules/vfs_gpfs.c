@@ -1588,49 +1588,6 @@ static NTSTATUS vfs_gpfs_fset_dos_attributes(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
-static int stat_with_capability(struct vfs_handle_struct *handle,
-				struct smb_filename *smb_fname, int flag)
-{
-	bool fake_dctime = lp_fake_directory_create_times(SNUM(handle->conn));
-	int fd = -1;
-	NTSTATUS status;
-	struct smb_filename *dir_name = NULL;
-	struct smb_filename *rel_name = NULL;
-	int ret = -1;
-#ifdef O_PATH
-	int open_flags = O_PATH;
-#else
-	int open_flags = O_RDONLY;
-#endif
-
-	status = SMB_VFS_PARENT_PATHNAME(handle->conn,
-					 talloc_tos(),
-					 smb_fname,
-					 &dir_name,
-					 &rel_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
-	}
-
-	fd = open(dir_name->base_name, open_flags, 0);
-	if (fd == -1) {
-		TALLOC_FREE(dir_name);
-		return -1;
-	}
-
-	ret = fstatat_with_cap_dac_override(fd,
-					    rel_name->base_name,
-					    &smb_fname->st,
-					    flag,
-					    fake_dctime);
-
-	TALLOC_FREE(dir_name);
-	close(fd);
-
-	return ret;
-}
-
 static int vfs_gpfs_stat(struct vfs_handle_struct *handle,
 			 struct smb_filename *smb_fname)
 {
@@ -1640,7 +1597,7 @@ static int vfs_gpfs_stat(struct vfs_handle_struct *handle,
 	if (ret == -1 && errno == EACCES) {
 		DEBUG(10, ("Trying stat with capability for %s\n",
 			   smb_fname->base_name));
-		ret = stat_with_capability(handle, smb_fname, 0);
+		ret = stat_with_cap_dac_override(handle, smb_fname, 0);
 	}
 	return ret;
 }
@@ -1675,8 +1632,8 @@ static int vfs_gpfs_lstat(struct vfs_handle_struct *handle,
 	if (ret == -1 && errno == EACCES) {
 		DEBUG(10, ("Trying lstat with capability for %s\n",
 			   smb_fname->base_name));
-		ret = stat_with_capability(handle, smb_fname,
-					   AT_SYMLINK_NOFOLLOW);
+		ret = stat_with_cap_dac_override(handle, smb_fname,
+						 AT_SYMLINK_NOFOLLOW);
 	}
 	return ret;
 }
