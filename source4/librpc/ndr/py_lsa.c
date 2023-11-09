@@ -17,7 +17,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include <Python.h>
+#include "lib/replace/system/python.h"
 #include "librpc/gen_ndr/lsa.h"
 
 static PyObject *py_lsa_String_str(PyObject *py_self)

@@ -26,7 +26,7 @@
 
 #include "includes.h"
 #include <talloc.h>
-#include <Python.h>
+#include "lib/replace/system/python.h"
 #include "lzxpress.h"
 #include "lzxpress_huffman.h"
 

@@ -17,7 +17,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include <Python.h>
+#include "lib/replace/system/python.h"
 #include "gen_ndr/conditional_ace.h"
 #include "py3compat.h"
 #include "libcli/security/sddl.h"

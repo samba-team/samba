@@ -45,7 +45,7 @@ c = libsmb.Conn("127.0.0.1",
 -------------------------
 */
 
-#include <Python.h>
+#include "lib/replace/system/python.h"
 #include "includes.h"
 #include "python/py3compat.h"
 #include "python/modules.h"
