@@ -822,7 +822,11 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 	sddl += len;
 
 	if (sddl[0] != '(') {
-		/* it is empty apart from the flags. */
+		/*
+		 * it is empty apart from the flags
+		 * (or the flags are bad, and we will find out when
+		 * we try to parse the next bit as a top-level fragment)
+		 */
 		*sddlp = sddl;
 		return acl;
 	}
