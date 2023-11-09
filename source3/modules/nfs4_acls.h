@@ -118,9 +118,6 @@ struct smbacl4_vfs_params {
 int smbacl4_get_vfs_params(struct connection_struct *conn,
 			   struct smbacl4_vfs_params *params);
 
-int stat_with_cap_dac_override(struct vfs_handle_struct *handle,
-			       struct smb_filename *smb_fname, int flag);
-
 int nfs4_acl_stat(struct vfs_handle_struct *handle,
 		  struct smb_filename *smb_fname);
 

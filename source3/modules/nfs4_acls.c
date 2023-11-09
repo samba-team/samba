@@ -135,8 +135,8 @@ static int fstatat_with_cap_dac_override(int fd,
 	return ret;
 }
 
-int stat_with_cap_dac_override(struct vfs_handle_struct *handle,
-			       struct smb_filename *smb_fname, int flag)
+static int stat_with_cap_dac_override(struct vfs_handle_struct *handle,
+				      struct smb_filename *smb_fname, int flag)
 {
 	bool fake_dctime = lp_fake_directory_create_times(SNUM(handle->conn));
 	int fd = -1;
