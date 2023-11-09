@@ -135,6 +135,49 @@ int fstatat_with_cap_dac_override(int fd,
 	return ret;
 }
 
+int stat_with_cap_dac_override(struct vfs_handle_struct *handle,
+			       struct smb_filename *smb_fname, int flag)
+{
+	bool fake_dctime = lp_fake_directory_create_times(SNUM(handle->conn));
+	int fd = -1;
+	NTSTATUS status;
+	struct smb_filename *dir_name = NULL;
+	struct smb_filename *rel_name = NULL;
+	int ret = -1;
+#ifdef O_PATH
+	int open_flags = O_PATH;
+#else
+	int open_flags = O_RDONLY;
+#endif
+
+	status = SMB_VFS_PARENT_PATHNAME(handle->conn,
+					 talloc_tos(),
+					 smb_fname,
+					 &dir_name,
+					 &rel_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+
+	fd = open(dir_name->base_name, open_flags, 0);
+	if (fd == -1) {
+		TALLOC_FREE(dir_name);
+		return -1;
+	}
+
+	ret = fstatat_with_cap_dac_override(fd,
+					    rel_name->base_name,
+					    &smb_fname->st,
+					    flag,
+					    fake_dctime);
+
+	TALLOC_FREE(dir_name);
+	close(fd);
+
+	return ret;
+}
+
 int fstat_with_cap_dac_override(int fd, SMB_STRUCT_STAT *sbuf,
 				bool fake_dir_create_times)
 {
