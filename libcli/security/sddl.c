@@ -916,8 +916,12 @@ struct security_descriptor *sddl_decode_err_msg(TALLOC_CTX *mem_ctx, const char 
 	while (*sddl) {
 		uint32_t flags;
 		char c = sddl[0];
-		if (sddl[1] != ':') goto failed;
-
+		if (sddl[1] != ':') {
+			*msg = talloc_strdup(mem_ctx,
+					     "expected '[OGDS]:' section start "
+					     "(or the previous section ended prematurely)");
+			goto failed;
+		}
 		sddl += 2;
 		switch (c) {
 		case 'D':
@@ -945,6 +949,7 @@ struct security_descriptor *sddl_decode_err_msg(TALLOC_CTX *mem_ctx, const char 
 			if (sd->group_sid == NULL) goto failed;
 			break;
 		default:
+			*msg = talloc_strdup(mem_ctx, "unexpected character (expected [OGDS])");
 			goto failed;
 		}
 	}
