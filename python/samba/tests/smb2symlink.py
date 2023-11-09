@@ -55,16 +55,6 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
             self.creds)
         return (smb1, smb2)
 
-    def clean_file(self, conn, filename):
-        try:
-            conn.unlink(filename)
-        except NTSTATUSError as e:
-            if e.args[0] == ntstatus.NT_STATUS_FILE_IS_A_DIRECTORY:
-                conn.rmdir(filename)
-            elif not (e.args[0] == ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND or
-                      e.args[0] == ntstatus.NT_STATUS_OBJECT_PATH_NOT_FOUND):
-                raise
-
     def create_symlink(self, conn, target, symlink):
         self.clean_file(conn, symlink)
         if (conn.protocol() < libsmb.PROTOCOL_SMB2_02 and conn.have_posix()):

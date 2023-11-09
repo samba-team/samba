@@ -21,6 +21,7 @@ from samba.samba3 import libsmb_samba_internal as libsmb
 from samba.dcerpc import security
 from samba.samba3 import param as s3param
 from samba import credentials
+from samba import (ntstatus,NTSTATUSError)
 import samba.tests
 import os
 
@@ -42,3 +43,13 @@ class LibsmbTests(samba.tests.TestCase):
         self.global_inject = os.path.join(server_conf_dir, "global_inject.conf")
 
         self.server_ip = samba.tests.env_get_var_value("SERVER_IP")
+
+    def clean_file(self, conn, filename):
+        try:
+            conn.unlink(filename)
+        except NTSTATUSError as e:
+            if e.args[0] == ntstatus.NT_STATUS_FILE_IS_A_DIRECTORY:
+                conn.rmdir(filename)
+            elif not (e.args[0] == ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND or
+                      e.args[0] == ntstatus.NT_STATUS_OBJECT_PATH_NOT_FOUND):
+                raise
