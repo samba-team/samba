@@ -963,6 +963,18 @@ failed:
 	 * offset at least provides a clue.
 	 */
 	*msg_offset += sddl - start;
+
+	if (*msg_offset > strlen(sddl)) {
+		/*
+		 * It's not that we *don't* trust our pointer difference
+		 * arithmetic, just that we *shouldn't*. Let's render it
+		 * harmless, before Python tries printing 18 quadrillion
+		 * spaces.
+		 */
+		DBG_WARNING("sddl error message offset %zu is too big\n",
+			    *msg_offset);
+		*msg_offset = 0;
+	}
 	DEBUG(2,("Badly formatted SDDL '%s'\n", sddl));
 	talloc_free(sd);
 	return NULL;
