@@ -1,21 +1,21 @@
 #ifndef _INCLUDES_H
 #define _INCLUDES_H
-/* 
+/*
    Unix SMB/CIFS implementation.
    Machine customisation and include handling
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) 2002 by Martin Pool <mbp@samba.org>
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -140,7 +140,7 @@ typedef sig_atomic_t volatile SIG_ATOMIC_T;
 #ifdef LARGE_SMB_DEV_T
 #define SDEV_T_VAL(p, ofs, v) (SIVAL((p),(ofs),(v)&0xFFFFFFFF), SIVAL((p),(ofs)+4,(v)>>32))
 #define DEV_T_VAL(p, ofs) ((SMB_DEV_T)(((uint64_t)(IVAL((p),(ofs))))| (((uint64_t)(IVAL((p),(ofs)+4))) << 32)))
-#else 
+#else
 #define SDEV_T_VAL(p, ofs, v) (SIVAL((p),(ofs),v),SIVAL((p),(ofs)+4,0))
 #define DEV_T_VAL(p, ofs) ((SMB_DEV_T)(IVAL((p),(ofs))))
 #endif
@@ -162,7 +162,7 @@ typedef sig_atomic_t volatile SIG_ATOMIC_T;
 #ifdef LARGE_SMB_INO_T
 #define SINO_T_VAL(p, ofs, v) SBVAL(p, ofs, v)
 #define INO_T_VAL(p, ofs) ((SMB_INO_T)BVAL(p, ofs))
-#else 
+#else
 #define SINO_T_VAL(p, ofs, v) SBVAL(p, ofs, ((uint64_t)(v)) & UINT32_MAX)
 #define INO_T_VAL(p, ofs) ((SMB_INO_T)(IVAL((p),(ofs))))
 #endif
