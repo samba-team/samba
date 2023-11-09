@@ -588,7 +588,8 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 	if (count != 6) {
 		/* we hit the '\0' or ')' before all of ';;;;;)' */
 		*msg = talloc_asprintf(mem_ctx,
-				       "malformed ACE with only %zu ';'", count);
+				       "malformed ACE with only %zu ';'",
+				       MIN(count - 1, count));
 		return false;
 	}
 
