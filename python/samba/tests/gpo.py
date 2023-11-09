@@ -7897,7 +7897,7 @@ class GPOTests(tests.TestCase):
 
         # Check that a call to gpupdate --rsop also succeeds
         ret = rsop(self.lp)
-        self.assertEquals(ret, 0, 'gpupdate --rsop failed!')
+        self.assertEqual(ret, 0, 'gpupdate --rsop failed!')
 
         # Unstage the Drives.xml
         unstage_file(xml_path)
