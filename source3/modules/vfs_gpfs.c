@@ -1683,11 +1683,9 @@ static int vfs_gpfs_fstat(struct vfs_handle_struct *handle,
 
 		DBG_DEBUG("fstat for %s failed with EACCES. Trying with "
 			  "CAP_DAC_OVERRIDE.\n", fsp->fsp_name->base_name);
-		ret = fstatat_with_cap_dac_override(fsp_get_pathref_fd(fsp),
-						    "",
-						    sbuf,
-						    AT_EMPTY_PATH,
-						    fake_dctime);
+		ret = fstat_with_cap_dac_override(fsp_get_pathref_fd(fsp),
+						  sbuf,
+						  fake_dctime);
 	}
 
 	return ret;

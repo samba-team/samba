@@ -116,6 +116,18 @@ int smbacl4_get_vfs_params(struct connection_struct *conn,
 	return 0;
 }
 
+int fstat_with_cap_dac_override(int fd, SMB_STRUCT_STAT *sbuf,
+				bool fake_dir_create_times)
+{
+	int ret;
+
+	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
+	ret = sys_fstat(fd, sbuf, fake_dir_create_times);
+	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
+
+	return ret;
+}
+
 /************************************************
  Split the ACE flag mapping between nfs4 and Windows
  into two separate functions rather than trying to do
