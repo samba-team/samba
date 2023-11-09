@@ -118,6 +118,9 @@ struct smbacl4_vfs_params {
 int smbacl4_get_vfs_params(struct connection_struct *conn,
 			   struct smbacl4_vfs_params *params);
 
+int fstat_with_cap_dac_override(int fd, SMB_STRUCT_STAT *sbuf,
+				bool fake_dir_create_times);
+
 struct SMB4ACL_T *smb_create_smb4acl(TALLOC_CTX *mem_ctx);
 
 /* prop's contents are copied */
