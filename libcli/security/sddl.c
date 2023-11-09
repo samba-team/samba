@@ -813,6 +813,8 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 
 	/* work out the ACL flags */
 	if (!sddl_map_flags(acl_flags, sddl, flags, &len, true)) {
+		*msg = talloc_strdup(sd, "bad ACL flags");
+		*msg_offset = 0;
 		talloc_free(acl);
 		return NULL;
 	}
