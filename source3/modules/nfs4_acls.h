@@ -118,6 +118,12 @@ struct smbacl4_vfs_params {
 int smbacl4_get_vfs_params(struct connection_struct *conn,
 			   struct smbacl4_vfs_params *params);
 
+int fstatat_with_cap_dac_override(int fd,
+				  const char *pathname,
+				  SMB_STRUCT_STAT *sbuf,
+				  int flags,
+				  bool fake_dir_create_times);
+
 int fstat_with_cap_dac_override(int fd, SMB_STRUCT_STAT *sbuf,
 				bool fake_dir_create_times);
 
