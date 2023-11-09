@@ -19,7 +19,7 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 #ifndef __LIBRPC_WSP_UTIL_H__
-#define __LIBRPC_WSP_UTIL__H__
+#define __LIBRPC_WSP_UTIL_H__
 
 #include "librpc/gen_ndr/misc.h"
 
