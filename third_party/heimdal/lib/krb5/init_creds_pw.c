@@ -3146,19 +3146,36 @@ init_creds_step(krb5_context context,
 	    memset(&ctx->md, 0, sizeof(ctx->md));
 
 	    if (ctx->error.e_data) {
+		KERB_ERROR_DATA kerb_error_data;
 		krb5_error_code ret2;
 
-		ret2 = decode_METHOD_DATA(ctx->error.e_data->data,
-					 ctx->error.e_data->length,
-					 &ctx->md,
-					 NULL);
+		memset(&kerb_error_data, 0, sizeof(kerb_error_data));
+
+		/* First try to decode the e-data as KERB-ERROR-DATA. */
+		ret2 = decode_KERB_ERROR_DATA(ctx->error.e_data->data,
+					      ctx->error.e_data->length,
+					      &kerb_error_data,
+					      &len);
 		if (ret2) {
-		    /*
-		     * Just ignore any error, the error will be pushed
-		     * out from krb5_error_from_rd_error() if there
-		     * was one.
-		     */
-		    _krb5_debug(context, 5, N_("Failed to decode METHOD-DATA", ""));
+		    /* That failed, so try to decode it as METHOD-DATA. */
+		    ret2 = decode_METHOD_DATA(ctx->error.e_data->data,
+					      ctx->error.e_data->length,
+					      &ctx->md,
+					      NULL);
+		    if (ret2) {
+			/*
+			 * Just ignore any error, the error will be pushed
+			 * out from krb5_error_from_rd_error() if there
+			 * was one.
+			 */
+			_krb5_debug(context, 5, N_("Failed to decode METHOD-DATA", ""));
+		    }
+		} else if (len != ctx->error.e_data->length) {
+		    /* Trailing data — just ignore the error. */
+		    free_KERB_ERROR_DATA(&kerb_error_data);
+		} else {
+		    /* OK. */
+		    free_KERB_ERROR_DATA(&kerb_error_data);
 		}
 	    }
 
