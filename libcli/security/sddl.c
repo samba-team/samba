@@ -842,22 +842,22 @@ struct security_descriptor *sddl_decode_err_msg(TALLOC_CTX *mem_ctx, const char 
 		.forest_sid = domain_sid,
 	};
 	const char *start = sddl;
-	struct security_descriptor *sd;
+	struct security_descriptor *sd = NULL;
+
+	if (msg == NULL || msg_offset == NULL) {
+		DBG_ERR("Programmer misbehaviour: use sddl_decode() "
+			"or provide msg pointers.\n");
+		return NULL;
+	}
+	*msg = NULL;
+	*msg_offset = 0;
+
 	sd = talloc_zero(mem_ctx, struct security_descriptor);
 	if (sd == NULL) {
-		goto failed;
+		return NULL;
 	}
 	sd->revision = SECURITY_DESCRIPTOR_REVISION_1;
 	sd->type     = SEC_DESC_SELF_RELATIVE;
-
-	if (msg != NULL) {
-		if (msg_offset == NULL) {
-			DBG_ERR("Programmer misbehaviour\n");
-			goto failed;
-		}
-		*msg = NULL;
-		*msg_offset = 0;
-	}
 
 	while (*sddl) {
 		uint32_t flags;
@@ -896,16 +896,14 @@ struct security_descriptor *sddl_decode_err_msg(TALLOC_CTX *mem_ctx, const char 
 	}
 	return sd;
 failed:
-	if (msg != NULL) {
-		if (*msg != NULL) {
-			*msg = talloc_steal(mem_ctx, *msg);
-		}
-		/*
-		 * The actual message (*msg) might still be NULL, but the
-		 * offset at least provides a clue.
-		 */
-		*msg_offset += sddl - start;
+	if (*msg != NULL) {
+		*msg = talloc_steal(mem_ctx, *msg);
 	}
+	/*
+	 * The actual message (*msg) might still be NULL, but the
+	 * offset at least provides a clue.
+	 */
+	*msg_offset += sddl - start;
 	DEBUG(2,("Badly formatted SDDL '%s'\n", sddl));
 	talloc_free(sd);
 	return NULL;
