@@ -116,11 +116,11 @@ int smbacl4_get_vfs_params(struct connection_struct *conn,
 	return 0;
 }
 
-int fstatat_with_cap_dac_override(int fd,
-				  const char *pathname,
-				  SMB_STRUCT_STAT *sbuf,
-				  int flags,
-				  bool fake_dir_create_times)
+static int fstatat_with_cap_dac_override(int fd,
+					 const char *pathname,
+					 SMB_STRUCT_STAT *sbuf,
+					 int flags,
+					 bool fake_dir_create_times)
 {
 	int ret;
 
