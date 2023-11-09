@@ -35,6 +35,35 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
 
         self.samsid = os.environ["SAMSID"]
 
+    def connections(self, share1=None, posix1=False, share2=None, posix2=True):
+        if not share1:
+            share1 = samba.tests.env_get_var_value(
+                "SHARE1", allow_missing=True)
+            if not share1:
+                share1 = "tmp"
+
+        if not share2:
+            share2 = samba.tests.env_get_var_value(
+                "SHARE2", allow_missing=True)
+            if not share2:
+                share2 = "tmp"
+
+        conn1 = libsmb.Conn(
+            self.server_ip,
+            share1,
+            self.lp,
+            self.creds,
+            posix=posix1)
+
+        conn2 = libsmb.Conn(
+            self.server_ip,
+            share2,
+            self.lp,
+            self.creds,
+            posix=posix2)
+
+        return (conn1, conn2)
+
     def test_negotiate_context_posix(self):
         c = libsmb.Conn(
             self.server_ip,
@@ -351,3 +380,39 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
         finally:
             self.delete_test_file(c, '\\test_create_context_basic1_file')
             self.delete_test_file(c, '\\test_create_context_basic1_dir')
+
+    def test_delete_on_close(self):
+        """
+        Test two opens with delete-on-close:
+        1. Windows open
+        2. POSIX open
+        Closing handle 1 should unlink the file, a subsequent directory
+        listing shouldn't list the deleted file.
+        """
+        (winconn,posixconn) = self.connections()
+
+        self.clean_file(winconn, 'test_delete_on_close')
+
+        fdw = winconn.create(
+            'test_delete_on_close',
+            DesiredAccess=security.SEC_FILE_WRITE_ATTRIBUTE | security.SEC_STD_DELETE,
+            ShareAccess=0x07,
+            CreateDisposition=libsmb.FILE_CREATE)
+        self.addCleanup(self.clean_file, winconn, 'test_delete_on_close')
+
+        fdp,_,_ = posixconn.create_ex(
+            'test_delete_on_close',
+            DesiredAccess=security.SEC_FILE_WRITE_ATTRIBUTE | security.SEC_STD_DELETE,
+            ShareAccess=0x07,
+            CreateDisposition=libsmb.FILE_OPEN,
+            CreateContexts=[posix_context(0o600)])
+
+        winconn.delete_on_close(fdw, 1)
+        posixconn.delete_on_close(fdp, 1)
+
+        winconn.close(fdw)
+
+        # The file should now already be deleted
+        l = winconn.list('', mask='test_delete_on_close')
+        found_files = {get_string(f['name']): f for f in l}
+        self.assertFalse('test_delete_on_close' in found_files)
