@@ -1594,25 +1594,6 @@ static NTSTATUS vfs_gpfs_fset_dos_attributes(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
-static int fstatat_with_cap_dac_override(int fd,
-					 const char *pathname,
-					 SMB_STRUCT_STAT *sbuf,
-					 int flags,
-					 bool fake_dir_create_times)
-{
-	int ret;
-
-	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
-	ret = sys_fstatat(fd,
-			  pathname,
-			  sbuf,
-			  flags,
-			  fake_dir_create_times);
-	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
-
-	return ret;
-}
-
 static int stat_with_capability(struct vfs_handle_struct *handle,
 				struct smb_filename *smb_fname, int flag)
 {
