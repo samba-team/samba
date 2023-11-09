@@ -686,16 +686,6 @@ uint32_t fdos_mode(struct files_struct *fsp)
 	uint32_t result = 0;
 	NTSTATUS status = NT_STATUS_OK;
 
-	if (fsp == NULL) {
-		/*
-		 * The pathological case where a caller does
-		 * fdos_mode(smb_fname->fsp) passing a pathref fsp. But as
-		 * smb_fname points at a symlink in POSIX context smb_fname->fsp
-		 * is NULL.
-		 */
-		return FILE_ATTRIBUTE_NORMAL;
-	}
-
 	DBG_DEBUG("%s\n", fsp_str_dbg(fsp));
 
 	if (fsp->fake_file_handle != NULL) {
