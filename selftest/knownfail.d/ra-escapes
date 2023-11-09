@@ -1,0 +1,2 @@
+samba.unittests.sddl_conditional_ace.test_full_sddl_ra_escapes
+samba.unittests.run_conditional_ace.test_user_attr_any_of_missing_user_attr

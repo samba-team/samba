@@ -613,7 +613,7 @@ static void test_user_attr_any_of_missing_user_attr(void **state)
         INIT();
         USER_SIDS("WD", "AA");
         SD("D:(XD;;FX;;;S-1-1-0;(@User.Project Any_of @Resource.Project))"
-	   "S:(RA;;;;;WD;(\"Project\",TX,0,#1234))");
+	   "S:(RA;;;;;WD;(\"Project\",TX,0,1234))");
         DENY_CHECK(0x10);
 }
 
