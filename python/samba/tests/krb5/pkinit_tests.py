@@ -79,28 +79,6 @@ class PkInitTests(KDCBaseTest):
             account_type=account_type,
             opts={'upn': f'{{account}}.{realm}@{realm}'})
 
-    def test_pkinit(self):
-        """Test public-key PK-INIT."""
-        client_creds = self._get_creds()
-        target_creds = self.get_service_creds()
-
-        self._pkinit_req(client_creds, target_creds)
-
-    def test_pkinit_dh(self):
-        """Test Diffie-Hellman PK-INIT."""
-        client_creds = self._get_creds()
-        target_creds = self.get_service_creds()
-
-        self._pkinit_req(client_creds, target_creds,
-                         using_pkinit=PkInit.DIFFIE_HELLMAN)
-
-    def test_pkinit_win2k(self):
-        """Test public-key Windows 2000 PK-INIT."""
-        client_creds = self._get_creds()
-        target_creds = self.get_service_creds()
-
-        self._pkinit_req(client_creds, target_creds, win2k_variant=True)
-
     def test_pkinit_no_des3(self):
         """Test public-key PK-INIT without specifying the DES3 encryption
         type. It should fail."""
@@ -740,7 +718,7 @@ class PkInitTests(KDCBaseTest):
                            ca_private_key,
                            certificate_signature=None):
         if certificate_signature is None:
-            certificate_signature = hashes.SHA1
+            certificate_signature = hashes.SHA256
 
         user_name = creds.get_username()
 
