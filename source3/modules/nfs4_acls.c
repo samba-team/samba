@@ -178,6 +178,20 @@ int stat_with_cap_dac_override(struct vfs_handle_struct *handle,
 	return ret;
 }
 
+int nfs4_acl_stat(struct vfs_handle_struct *handle,
+		  struct smb_filename *smb_fname)
+{
+	int ret;
+
+	ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
+	if (ret == -1 && errno == EACCES) {
+		DEBUG(10, ("Trying stat with capability for %s\n",
+			   smb_fname->base_name));
+		ret = stat_with_cap_dac_override(handle, smb_fname, 0);
+	}
+	return ret;
+}
+
 int fstat_with_cap_dac_override(int fd, SMB_STRUCT_STAT *sbuf,
 				bool fake_dir_create_times)
 {

@@ -1588,20 +1588,6 @@ static NTSTATUS vfs_gpfs_fset_dos_attributes(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
-static int vfs_gpfs_stat(struct vfs_handle_struct *handle,
-			 struct smb_filename *smb_fname)
-{
-	int ret;
-
-	ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
-	if (ret == -1 && errno == EACCES) {
-		DEBUG(10, ("Trying stat with capability for %s\n",
-			   smb_fname->base_name));
-		ret = stat_with_cap_dac_override(handle, smb_fname, 0);
-	}
-	return ret;
-}
-
 static int vfs_gpfs_fstat(struct vfs_handle_struct *handle,
 			  struct files_struct *fsp,
 			  SMB_STRUCT_STAT *sbuf)
@@ -2595,7 +2581,7 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.sys_acl_delete_def_fd_fn = gpfsacl_sys_acl_delete_def_fd,
 	.fchmod_fn = vfs_gpfs_fchmod,
 	.close_fn = vfs_gpfs_close,
-	.stat_fn = vfs_gpfs_stat,
+	.stat_fn = nfs4_acl_stat,
 	.fstat_fn = vfs_gpfs_fstat,
 	.lstat_fn = vfs_gpfs_lstat,
 	.fstatat_fn = vfs_gpfs_fstatat,
