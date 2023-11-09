@@ -204,6 +204,27 @@ int fstat_with_cap_dac_override(int fd, SMB_STRUCT_STAT *sbuf,
 	return ret;
 }
 
+int nfs4_acl_fstat(struct vfs_handle_struct *handle,
+		   struct files_struct *fsp,
+		   SMB_STRUCT_STAT *sbuf)
+{
+	int ret;
+
+	ret = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
+	if (ret == -1 && errno == EACCES) {
+		bool fake_dctime =
+			lp_fake_directory_create_times(SNUM(handle->conn));
+
+		DBG_DEBUG("fstat for %s failed with EACCES. Trying with "
+			  "CAP_DAC_OVERRIDE.\n", fsp->fsp_name->base_name);
+		ret = fstat_with_cap_dac_override(fsp_get_pathref_fd(fsp),
+						  sbuf,
+						  fake_dctime);
+	}
+
+	return ret;
+}
+
 /************************************************
  Split the ACE flag mapping between nfs4 and Windows
  into two separate functions rather than trying to do
