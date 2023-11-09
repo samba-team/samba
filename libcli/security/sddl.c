@@ -694,8 +694,8 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 						    msg,
 						    msg_offset);
 		if (conditions.data == NULL) {
-			DBG_WARNING("Conditional ACE compilation failure at %zu: %s\n",
-				    *msg_offset, *msg);
+			DBG_NOTICE("Conditional ACE compilation failure at %zu: %s\n",
+				   *msg_offset, *msg);
 			*msg_offset += s - *sddl_copy;
 			return false;
 		}
