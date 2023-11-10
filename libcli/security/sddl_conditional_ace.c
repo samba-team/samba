@@ -617,7 +617,7 @@ struct sddl_node {
 };
 
 static bool sddl_write_int(struct sddl_write_context *ctx,
-			    struct ace_condition_token *tok)
+			   const struct ace_condition_token *tok)
 {
 	int64_t v = tok->data.int64.value;
 	uint8_t sign = tok->data.int64.sign;
@@ -821,7 +821,7 @@ static bool sddl_write_attr(struct sddl_write_context *ctx,
 
 
 static bool sddl_write_unicode(struct sddl_write_context *ctx,
-			       struct ace_condition_token *tok)
+			       const struct ace_condition_token *tok)
 {
 	char *quoted = NULL;
 	bool ok;
@@ -855,7 +855,7 @@ static bool sddl_write_unicode(struct sddl_write_context *ctx,
 }
 
 static bool sddl_write_octet_string(struct sddl_write_context *ctx,
-				    struct ace_condition_token *tok)
+				    const struct ace_condition_token *tok)
 {
 	bool ok;
 	char *hex  = hex_encode_talloc(ctx->mem_ctx,
@@ -888,7 +888,7 @@ static bool sddl_write_ra_octet_string(struct sddl_write_context *ctx,
 
 
 static bool sddl_write_sid(struct sddl_write_context *ctx,
-			   struct ace_condition_token *tok)
+			   const struct ace_condition_token *tok)
 {
 	bool ok;
 	char *sddl = NULL;
@@ -3281,7 +3281,7 @@ struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *sddl_decode_resource_attr (
 
 
 static bool write_resource_attr_from_token(struct sddl_write_context *ctx,
-					   struct ace_condition_token *tok)
+					   const struct ace_condition_token *tok)
 {
 	/*
 	 * this is a helper for sddl_resource_attr_from_claim(),
@@ -3290,7 +3290,7 @@ static bool write_resource_attr_from_token(struct sddl_write_context *ctx,
 	bool ok;
 	char *sid = NULL;
 	size_t i;
-	struct ace_condition_composite *c = NULL;
+	const struct ace_condition_composite *c = NULL;
 	switch (tok->type) {
 	case CONDITIONAL_ACE_TOKEN_INT64:
 		/*
