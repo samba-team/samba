@@ -1303,37 +1303,11 @@ NTSTATUS vfs_fget_dos_attributes(struct files_struct *fsp,
 	NTSTATUS status;
 
 	/*
-	 * First make sure to pass the base_fsp to the VFS
+	 * Make sure to pass the base_fsp to the VFS
 	 */
 	status = SMB_VFS_FGET_DOS_ATTRIBUTES(
 		fsp->conn, metadata_fsp(fsp), dosmode);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/*
-	 * If this isn't a stream fsp we're done, ...
-	 */
-	if (!fsp_is_alternate_stream(fsp)) {
-		return NT_STATUS_OK;
-	}
-
-	/*
-	 * ...otherwise the VFS might have updated the btime, propagate the
-	 * btime from the base_fsp to the stream fsp.
-	 */
-
-	if (fsp->base_fsp->fsp_name->st.st_ex_iflags & ST_EX_IFLAG_CALCULATED_BTIME) {
-		/*
-		 * Not a value from backend storage, ignore it
-		 */
-		return NT_STATUS_OK;
-	}
-
-	update_stat_ex_create_time(&fsp->fsp_name->st,
-				   fsp->base_fsp->fsp_name->st.st_ex_btime);
-
-	return NT_STATUS_OK;
+	return status;
 }
 
 static struct smb_vfs_deny_state *smb_vfs_deny_global;

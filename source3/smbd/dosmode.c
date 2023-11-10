@@ -1292,6 +1292,10 @@ struct timespec get_create_timespec(connection_struct *conn,
 				struct files_struct *fsp,
 				const struct smb_filename *smb_fname)
 {
+	if (fsp != NULL) {
+		struct files_struct *meta_fsp = metadata_fsp(fsp);
+		return meta_fsp->fsp_name->st.st_ex_btime;
+	}
 	return smb_fname->st.st_ex_btime;
 }
 
