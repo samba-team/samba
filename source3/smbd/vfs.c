@@ -1297,19 +1297,6 @@ NTSTATUS vfs_at_fspcwd(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS vfs_fget_dos_attributes(struct files_struct *fsp,
-				 uint32_t *dosmode)
-{
-	NTSTATUS status;
-
-	/*
-	 * Make sure to pass the base_fsp to the VFS
-	 */
-	status = SMB_VFS_FGET_DOS_ATTRIBUTES(
-		fsp->conn, metadata_fsp(fsp), dosmode);
-	return status;
-}
-
 static struct smb_vfs_deny_state *smb_vfs_deny_global;
 
 void smb_vfs_assert_allowed(void)
