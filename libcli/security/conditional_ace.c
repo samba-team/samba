@@ -28,7 +28,7 @@
 #include "lib/util/bytearray.h"
 #include "lib/util/talloc_stack.h"
 #include "util/discard.h"
-
+#include "lib/util/stable_sort.h"
 /*
  * Conditional ACE logic truth tables.
  *
@@ -1460,58 +1460,347 @@ static bool simple_relational_operator(const struct ace_condition_token *op,
 				       int *cmp);
 
 
+struct composite_sort_context {
+	bool failed;
+};
+
+static int composite_sort_cmp(const struct ace_condition_token *lhs,
+			      const struct ace_condition_token *rhs,
+			      struct composite_sort_context *ctx)
+{
+	bool ok;
+	int cmp = -1;
+	/*
+	 * simple_relational_operator uses the operator token only to
+	 * decide whether the comparison is allowed for the type. In
+	 * particular, boolean result and composite arguments can only
+	 * be used with equality operators. We want those to fail (we
+	 * should not see them here, remembering that claim booleans
+	 * become composite integers), so we use a non-equality op.
+	 */
+	static const struct ace_condition_token op = {
+		.type = CONDITIONAL_ACE_TOKEN_LESS_THAN
+	};
+
+	ok = simple_relational_operator(&op, lhs, rhs, &cmp);
+	if (ok) {
+		return cmp;
+	}
+	/*
+	 * This sort isn't going to work out, but the sort function
+	 * will only find out at the end.
+	 */
+	ctx->failed = true;
+	return cmp;
+}
+
+
+/*
+ * Return a sorted copy of the composite tokens array.
+ *
+ * The copy is shallow, so the actual string pointers are the same, which is
+ * fine for the purposes of comparison.
+ */
+
+static struct ace_condition_token *composite_sorted_copy(
+	TALLOC_CTX *mem_ctx,
+	const struct ace_condition_composite *c,
+	bool case_sensitive)
+{
+	struct ace_condition_token *copy = NULL;
+	bool ok;
+	size_t  i;
+	struct composite_sort_context sort_ctx = {
+		.failed = false
+	};
+
+	/*
+	 * Case sensitivity is a bit tricky. Each token can have a flag saying
+	 * it should be sorted case-sensitively and when comparing two tokens,
+	 * we should respect this flag on either side. The flag can only come
+	 * from claims (including resource attribute ACEs), and as there is only
+	 * one flag per claim, it must apply the same to all members (in fact we
+	 * don't set it on the members, only the composite). So to be sure we
+	 * sort in the way we want, we might need to set the flag on all the
+	 * members of the copy *before* sorting it.
+	 *
+	 * When it comes to comparing two composites, we want to be
+	 * case-sensitive if either side has the flag. This can have odd
+	 * effects. Think of these RA claims:
+	 *
+	 *   (RA;;;;;WD;("foo",TS,0,"a","A"))
+	 *   (RA;;;;;WD;("bar",TS,2,"a","A"))    <-- 2 is the case-sensitive flag
+	 *   (RA;;;;;WD;("baz",TS,0,"a"))
+	 *
+	 * (@Resource.foo == @Resource.bar) is true
+	 * (@Resource.bar == @Resource.foo) is true
+	 * (@Resource.bar == @Resource.bar) is true
+	 * (@Resource.foo == @Resource.foo) is an error (duplicate values on LHS)
+	 * (@Resource.baz == @Resource.foo) is true (RHS case-folds down)
+	 * (@Resource.baz == @Resource.bar) is false
+	 * (@Resource.bar == {"A", "a"})    is true
+	 * (@Resource.baz == {"A", "a"})    is true
+	 * (@Resource.foo == {"A", "a"})    is an error
+	 */
+	copy = talloc_array(mem_ctx, struct ace_condition_token, c->n_members);
+	if (copy == NULL) {
+		return NULL;
+	}
+	memcpy(copy, c->tokens, sizeof(struct ace_condition_token) * c->n_members);
+
+	if (case_sensitive) {
+		for (i = 0; i < c->n_members; i++) {
+			c->tokens[i].flags |= CLAIM_SECURITY_ATTRIBUTE_VALUE_CASE_SENSITIVE;
+		}
+	}
+
+	ok =  stable_sort_talloc_r(mem_ctx,
+				   copy,
+				   c->n_members,
+				   sizeof(struct ace_condition_token),
+				   (samba_compare_with_context_fn_t)composite_sort_cmp,
+				   &sort_ctx);
+
+	if (!ok || sort_ctx.failed) {
+		DBG_NOTICE("composite sort of %"PRIu32" members failed\n",
+			   c->n_members);
+		TALLOC_FREE(copy);
+		return NULL;
+	}
+	return copy;
+}
+
+
+/*
+ * This is a helper for compare composites.
+ */
+static bool compare_composites_via_sort(const struct ace_condition_token *lhs,
+					const struct ace_condition_token *rhs,
+					int *cmp)
+{
+	const struct ace_condition_composite *lc = &lhs->data.composite;
+	const struct ace_condition_composite *rc = &rhs->data.composite;
+	size_t i;
+	TALLOC_CTX *tmp_ctx = NULL;
+	bool ok;
+	int cmp_pair;
+	bool case_sensitive, rhs_case_sensitive;
+	bool rhs_sorted;
+	struct ace_condition_token *ltok = lc->tokens;
+	struct ace_condition_token *rtok = rc->tokens;
+	static const struct ace_condition_token eq = {
+		.type = CONDITIONAL_ACE_TOKEN_EQUAL
+	};
+	*cmp = -1;
+	if (lc->n_members == 0 ||
+	    rc->n_members < lc->n_members) {
+		/* we should not have got this far */
+		return false;
+	}
+
+	tmp_ctx = talloc_new(NULL);
+	if (tmp_ctx == NULL) {
+		return false;
+	}
+
+	case_sensitive = lhs->flags & CLAIM_SECURITY_ATTRIBUTE_VALUE_CASE_SENSITIVE;
+	rhs_case_sensitive = rhs->flags & CLAIM_SECURITY_ATTRIBUTE_VALUE_CASE_SENSITIVE;
+	rhs_sorted = rhs->flags & CLAIM_SECURITY_ATTRIBUTE_UNIQUE_AND_SORTED;
+
+	if (lc->tokens[0].type != CONDITIONAL_ACE_TOKEN_UNICODE) {
+		/*
+		 * All LHS tokens are the same type (because it is a
+		 * claim), and that type is not one that cares about
+		 * case, so nor do we.
+		 */
+		case_sensitive = false;
+	} else if (case_sensitive == rhs_case_sensitive) {
+		/* phew, no extra work */
+	} else if (case_sensitive) {
+		/* trigger a sorted copy */
+		rhs_sorted = false;
+	} else if (rhs_case_sensitive) {
+		/*
+		 * Do we need to rescan for uniqueness, given the new
+		 * comparison function? No! The strings were already
+		 * unique in the looser comparison, and now they can
+		 * only be more so. The number of unique values can't
+		 * change, just their order.
+		 */
+		case_sensitive = true;
+		ltok = composite_sorted_copy(tmp_ctx, lc, case_sensitive);
+		if (ltok == NULL) {
+			DBG_WARNING("sort of LHS failed\n");
+			goto error;
+		}
+	}
+
+	if (! rhs_sorted) {
+		/*
+		 * we need an RHS sorted copy (it's a literal, or
+		 * there was a case sensitivity disagreement).
+		 */
+		rtok = composite_sorted_copy(tmp_ctx, rc, case_sensitive);
+		if (rtok == NULL) {
+			DBG_WARNING("sort of RHS failed\n");
+			goto error;
+		}
+	}
+	/*
+	 * Each member of LHS must match one or more members of RHS.
+	 * Each member of RHS must match at least one of LHS.
+	 *
+	 * If they are the same length we can compare directly, so let's get
+	 * rid of duplicates in RHS. This can only happen with literal
+	 * composites.
+	 */
+	if (rc->n_members > lc->n_members) {
+		size_t gap = 0;
+		for (i = 1; i < rc->n_members; i++) {
+			ok = simple_relational_operator(&eq,
+							&rtok[i - 1],
+							&rtok[i],
+							&cmp_pair);
+			if (! ok) {
+				goto error;
+			}
+			if (cmp_pair == 0) {
+				gap++;
+			}
+			if (gap != 0) {
+				rtok[i - gap] = rtok[i];
+			}
+		}
+		if (rc->n_members - lc->n_members != gap) {
+			/*
+			 * There were too many or too few duplicates to account
+			 * for the difference, and no further comparison is
+			 * necessary.
+			 */
+			goto not_equal;
+		}
+	}
+	/*
+	 * OK, now we know LHS and RHS are the same length and sorted in the
+	 * same way, so we can just iterate over them and check each pair.
+	 */
+
+	for (i = 0; i < lc->n_members; i++) {
+		ok = simple_relational_operator(&eq,
+						&ltok[i],
+						&rtok[i],
+						&cmp_pair);
+		if (! ok){
+			goto error;
+		}
+		if (cmp_pair != 0) {
+			goto not_equal;
+		}
+	}
+
+	*cmp = 0;
+
+not_equal:
+	TALLOC_FREE(tmp_ctx);
+	return true;
+error:
+	TALLOC_FREE(tmp_ctx);
+	return false;
+}
+
+
 static bool compare_composites(const struct ace_condition_token *op,
 			       const struct ace_condition_token *lhs,
 			       const struct ace_condition_token *rhs,
 			       int *cmp)
 {
 	/*
-	 * We treat composites as if they are sets, which is to say we
-	 * don't care about order. This rules out < and > operations.
+	 * This is for comparing multivalued sets, which includes
+	 * conditional ACE composites and claim sets. Because these
+	 * are sets, there are no < and > operations, just equality or
+	 * otherwise.
 	 *
-	 * In Kerberos clams it is not possible to add duplicate
-	 * values to a composite, but in Conditional ACEs you can do
-	 * that. This means we can't short-cut by comparing the
-	 * lengths.
+	 * Claims are true sets, while composites are multisets --
+	 * duplicate values are allowed -- but these are reduced to
+	 * sets in evaluation, and the number of duplicates has no
+	 * effect in comparisons. Resource attribute ACEs live in an
+	 * intermediate state -- they can contain duplicates on the
+	 * wire and as ACE structures, but as soon as they are
+	 * evaluated as claims their values must be unique. Windows
+	 * will treat RA ACEs with duplicate values as not existing,
+	 * rather than as UNKNOWN (This is significant for the Exists
+	 * operator). Claims can have a case-sensitive flags set,
+	 * meaning they must be compared case-sensitively.
 	 *
-	 * The extra sad thing is we might have to do it both ways
-	 * round. For example, comparing {a, a, b, a} to {a, b, c}, we
-	 * find all of the first group in the second, but that doesn't
-	 * mean all of the second are in the first.
+	 * Some good news is that the LHS of a comparison must always
+	 * be a claim. That means we can assume it has unique values
+	 * when it comes to pairwise comparisons. Using the magic of
+	 * flags, we try to check this only once per claim.
+	 *
+	 * Conditional ACE composites, which can have duplicates (and
+	 * mixed types), can only be on the RHS.
+	 *
+	 * To summarise:
+	 *
+	 * {a, b}    vs {a, b}        equal
+	 * { }       vs { }           equal
+	 * {a, b}    vs {b, a}        equal
+	 * {a, b}    vs {a, c}        not equal
+	 * {a, b}    vs {a, a, b}     equal
+	 * {b, a}    vs {a, b, a}     equal
+	 * {a, b}    vs {a, a, b, c}  not equal
+	 * {a, b, a} vs {a, b}        should not happen, error
+	 * {a, b, a} vs {a, b, a}     should not happen, error
+	 *
+	 * mixed types:
+	 * {1, 2}    vs {1, "2"}      error
+	 * {1, "2"}  vs {1, "2"}      should not happen, error
+	 *
+	 * case sensitivity (*{ }* indicates case-sensitive flag):
+	 *
+	 *  {"a", "b"}  vs  {"a", "B"}      equal
+	 *  {"a", "b"}  vs *{"a", "B"}*     not equal
+	 * *{"a", "b"}* vs  {"a", "B"}      not equal
+	 * *{"a", "A"}* vs  {"a", "A"}      equal (if RHS is composite)
+	 *  {"a", "A"}  vs *{"a", "A"}*     impossible (LHS is not unique)
+	 * *{"a"}*      vs  {"a", "A"}      not equal
+	 *
+	 * The naive approach is of course O(n * m) with an additional O(n²)
+	 * if the LHS values are not known to be unique (that is, in resource
+	 * attribute claims). We want to avoid that with big sets.
 	 */
-	struct ace_condition_composite args[2] = {
-		lhs->data.composite,
-		rhs->data.composite
-	};
-	size_t i, j, k;
+	const struct ace_condition_composite *lc = &lhs->data.composite;
+	const struct ace_condition_composite *rc = &rhs->data.composite;
+	bool ok;
+	size_t i;
 
-	for (k = 0; k < 2; k++) {
-		struct ace_condition_composite a = args[k];
-		struct ace_condition_composite b = args[1 - k];
-
-		for (i = 0; i < a.n_members; i++) {
-			const struct ace_condition_token *lhs2 = &a.tokens[i];
-			bool found = false;
-			for (j = 0; j < b.n_members; j++) {
-				const struct ace_condition_token *rhs2 = &b.tokens[j];
-				int cmp_pair;
-				bool ok = simple_relational_operator(op, lhs2, rhs2, &cmp_pair);
-				if (! ok) {
-					return false;
-				}
-				if (cmp_pair == 0) {
-					/* This item in A is also in B. */
-					found = true;
-					break;
-				}
-			}
-			if (! found) {
-				*cmp = -1;
-				return true;
-			}
-		}
+	if (!(lhs->flags & CLAIM_SECURITY_ATTRIBUTE_UNIQUE_AND_SORTED)) {
+		/*
+		 * The LHS needs to be a claim, and it should have gone
+		 * through claim_v1_check_and_sort() to get here.
+		 */
+		*cmp = -1;
+		return false;
 	}
-	*cmp = 0;
+
+	/* if one or both are empty, the answer is easy */
+	if (lc->n_members == 0) {
+		if (rc->n_members == 0) {
+			*cmp = 0;
+			return true;
+		}
+		*cmp = -1;
+		return true;
+	}
+	if (rc->n_members == 0) {
+		*cmp = -1;
+		return true;
+	}
+
+	ok = compare_composites_via_sort(lhs, rhs, cmp);
+	if (! ok) {
+		return false;
+	}
 	return true;
 }
 
