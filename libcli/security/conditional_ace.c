@@ -1273,7 +1273,8 @@ static bool tokens_are_comparable(const struct ace_condition_token *op,
 	/*
 	 * we can't compare different types *unless* they are both
 	 * integers, or one is a bool and the other is an integer 0 or
-	 * 1, and the operator is == or !=.
+	 * 1, and the operator is == or != (or NULL, which for convenience,
+	 * is treated as ==).
 	 */
 	//XXX actually it says "literal integers", do we need to check flags?
 	if (lhs->type == rhs->type) {
@@ -1286,7 +1287,8 @@ static bool tokens_are_comparable(const struct ace_condition_token *op,
 	}
 
 	/* is it == or != */
-	if (op->type != CONDITIONAL_ACE_TOKEN_EQUAL &&
+	if (op != NULL &&
+	    op->type != CONDITIONAL_ACE_TOKEN_EQUAL &&
 	    op->type != CONDITIONAL_ACE_TOKEN_NOT_EQUAL) {
 		return false;
 	}
