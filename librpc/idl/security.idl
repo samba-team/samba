@@ -616,6 +616,26 @@ interface security
 		CLAIM_SECURITY_ATTRIBUTE_DISABLED_BY_DEFAULT  = 8,
 		CLAIM_SECURITY_ATTRIBUTE_DISABLED          = 0x10, /*reserved*/
 		CLAIM_SECURITY_ATTRIBUTE_MANDATORY         = 0x20,
+
+		/*
+		 * These next two are curiously defined in [MS-DTYP] 2.4.10.1:
+		 *
+		 * > Flags: The upper two bytes of this DWORD are available for
+		 * > application-specific data. The two lowest-order bits in the
+		 * > lower of these two bytes are reserved. These two bytes
+		 * > MAY contain only one of the following values in those two
+		 * > bits:
+		 * >
+		 * >  FCI_CLAIM_SECURITY_ATTRIBUTE_MANUAL	   0x0001
+		 * >  FCI_CLAIM_SECURITY_ATTRIBUTE_POLICY_DERIVED  0x0002
+		 *
+		 * That is saying these mutually exclusive flags have offset
+		 * values that are measured from the middle of flags field. We
+		 * instead measure from the start.
+		 */
+		CLAIM_SECURITY_ATTRIBUTE_MANUAL                 =    1 << 16,
+		CLAIM_SECURITY_ATTRIBUTE_POLICY_DERIVED         =    1 << 17,
+
 		/*
 		 * Conditional ACEs use some of the above flags in
 		 * combination with an internal one defined in
