@@ -3381,6 +3381,9 @@ char *sddl_resource_attr_from_claim(
 	}
 
 	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return NULL;
+	}
 	ctx.mem_ctx = tmp_ctx;
 
 	ok = claim_v1_to_ace_token(tmp_ctx, claim, &tok);
