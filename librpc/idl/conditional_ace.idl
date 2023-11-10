@@ -415,7 +415,7 @@ interface conditional_ace
 	 * operator that argument has been resolved into an ordinary
 	 * token. So we set the flag so the operator can know.
 	 */
-	const uint32 CONDITIONAL_ACE_FLAG_TOKEN_FROM_ATTR = 0x8000;
+	const uint32 CONDITIONAL_ACE_FLAG_TOKEN_FROM_ATTR = 1 << 31;
 
 	/*
 	 * The maximum size of the conditional ACE conditions in the

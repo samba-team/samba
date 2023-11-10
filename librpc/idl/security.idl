@@ -618,12 +618,12 @@ interface security
 		CLAIM_SECURITY_ATTRIBUTE_MANDATORY         = 0x20,
 		/*
 		 * Conditional ACEs use some of the above flags in
-		 * combination with an internal one at the other end
-		 * of a 16 bit field (defined in conditional_ace.idl).
+		 * combination with an internal one defined in
+		 * conditional_ace.idl.
 		 * This next definition is warning us in case a clash
 		 * develops (which seems very unlikely).
 		 */
-		CLAIM_SECURITY_ATTRIBUTE_RESERVED_FOR_SAMBA = 0x8000
+		CLAIM_SECURITY_ATTRIBUTE_RESERVED_FOR_SAMBA   = 1UL << 31
 	} claim_flags;
 
 	/*
