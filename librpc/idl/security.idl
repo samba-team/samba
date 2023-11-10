@@ -637,6 +637,28 @@ interface security
 		CLAIM_SECURITY_ATTRIBUTE_POLICY_DERIVED         =    1 << 17,
 
 		/*
+		 * As the quote from [MS-DTYP] 2.4.10.1 above says,
+		 * the upper 14 bits are for application-specific
+		 * data. In Samba's case, we have one application
+		 * specific flag to help us remember when we have
+		 * sorted a claim and checked that it contains no
+		 * duplicate values. We need to check this, and the
+		 * check can be expensive, so it helps to remember.
+		 * Having the values sorted is useful for comparisons
+		 * in conditional ACEs.
+		 *
+		 * We can't just sort every claim_v1 we see, because
+		 * resource attribute ACEs in SACLs contain them and
+		 * are not meant to be evaluated prematurely (i.e. you
+		 * can parse and reserialise a SACL even if it
+		 * contains an ACE that would cause an error when used
+		 * as a claim).
+		 *
+		 * In the case of string claims, evaluating uniqueness
+		 * depends on the _CASE_SENSITIVE flag.
+		 */
+		CLAIM_SECURITY_ATTRIBUTE_UNIQUE_AND_SORTED     =    1 << 30,
+		/*
 		 * Conditional ACEs use some of the above flags in
 		 * combination with an internal one defined in
 		 * conditional_ace.idl.

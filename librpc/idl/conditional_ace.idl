@@ -401,10 +401,23 @@ interface conditional_ace
 	/*
 	 * Flags for ace_condition_token.flags field.
 	 *
-	 * The following two flags from security claims are used:
+	 * The following flags from security claims are used:
 	 *
-	 * const uint8 CLAIM_SECURITY_ATTRIBUTE_NON_INHERITABLE      = 1;
-	 * const uint8 CLAIM_SECURITY_ATTRIBUTE_VALUE_CASE_SENSITIVE = 2;
+	 * CLAIM_SECURITY_ATTRIBUTE_NON_INHERITABLE        = 1
+	 * CLAIM_SECURITY_ATTRIBUTE_VALUE_CASE_SENSITIVE   = 2
+	 *
+	 * CLAIM_SECURITY_ATTRIBUTE_UNIQUE_AND_SORTED      = 1 << 30
+	 *
+	 * The first two of these are used on the wire in
+	 * CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 structures, while the
+	 * latter is in an application specific range that is not
+	 * seen on the wire. It is used to indicate that a composite
+	 * token contains no duplicate values, which is supposed to
+	 * be true for composite values from claims (including from
+	 * resource attribute ACEs), but not literal composites. It's
+	 * expensive to check, so this flag helps us avoid extra work
+	 * can avoid doing it over and over if we remember.
+	 *
 	 *
 	 * CONDITIONAL_ACE_FLAG_TOKEN_FROM_ATTR is set when a token
 	 * value on the stack is set from an attribute lookup.
