@@ -1276,6 +1276,9 @@ static bool tokens_are_comparable(const struct ace_condition_token *op,
 	 * 1, and the operator is == or !=.
 	 */
 	//XXX actually it says "literal integers", do we need to check flags?
+	if (lhs->type == rhs->type) {
+		return true;
+	}
 
 	if (IS_INT_TOKEN(lhs) && IS_INT_TOKEN(rhs)) {
 		/* don't block e.g. comparing an int32 to an int64 */
