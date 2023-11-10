@@ -184,7 +184,7 @@ bld.SAMBA_LIBRARY('dcerpc',
 	# If we just put header_path = 'gen_ndr' then all the public_headers will go
 	# in 'gen_ndr' and for dcerpc.h (at least) it will cause a problem as
 	# we have already a dcerpc.h installed by librpc/wscript_build
-	# and one will overright the other which is not what we expect.
+	# and one will overwrite the other which is not what we expect.
 	header_path=[ ('*gen_ndr*', 'gen_ndr') ],
 	vnum='0.0.1'
 	)
