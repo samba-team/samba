@@ -377,7 +377,7 @@ interface conditional_ace
 	 */
 	typedef [public] struct {
 		[switch_is(type)] ace_condition_token_data data;
-		uint16 flags;
+		uint32 flags;
 		token_type type;
 	} ace_condition_token;
 
