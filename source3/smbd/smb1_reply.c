@@ -1206,13 +1206,6 @@ static bool smbd_dirptr_8_3_mode_fn(TALLOC_CTX *ctx,
 				    bool get_dosmode,
 				    uint32_t *_mode)
 {
-	if (*_mode & FILE_ATTRIBUTE_REPARSE_POINT) {
-		/*
-		 * Don't show symlinks/special files to old clients
-		 */
-		return false;
-	}
-
 	if (get_dosmode) {
 		SMB_ASSERT(smb_fname != NULL);
 		*_mode = fdos_mode(smb_fname->fsp);
@@ -1240,6 +1233,7 @@ static bool get_dir_entry(TALLOC_CTX *ctx,
 	uint32_t mode = 0;
 	bool ok;
 
+again:
 	ok = smbd_dirptr_get_entry(ctx,
 				   dirptr,
 				   mask,
@@ -1255,6 +1249,12 @@ static bool get_dir_entry(TALLOC_CTX *ctx,
 				   &mode);
 	if (!ok) {
 		return false;
+	}
+	if (mode & FILE_ATTRIBUTE_REPARSE_POINT) {
+		/* hide reparse points from ancient clients */
+		TALLOC_FREE(fname);
+		TALLOC_FREE(smb_fname);
+		goto again;
 	}
 
 	*_fname = talloc_move(ctx, &fname);
