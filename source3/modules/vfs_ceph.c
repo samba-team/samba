@@ -1028,7 +1028,7 @@ static int cephwrap_fchmod(struct vfs_handle_struct *handle, files_struct *fsp, 
 	DBG_DEBUG("[CEPH] fchmod(%p, %p, %d)\n", handle, fsp, mode);
 	if (!fsp->fsp_flags.is_pathref) {
 		/*
-		 * We can use an io_fd to remove xattrs.
+		 * We can use an io_fd to change permissions.
 		 */
 		result = ceph_fchmod(handle->data, fsp_get_io_fd(fsp), mode);
 	} else {
