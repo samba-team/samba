@@ -1048,7 +1048,24 @@ static int cephwrap_fchown(struct vfs_handle_struct *handle, files_struct *fsp, 
 	int result;
 
 	DBG_DEBUG("[CEPH] fchown(%p, %p, %d, %d)\n", handle, fsp, uid, gid);
-	result = ceph_fchown(handle->data, fsp_get_io_fd(fsp), uid, gid);
+	if (!fsp->fsp_flags.is_pathref) {
+		/*
+		 * We can use an io_fd to change ownership.
+		 */
+		result = ceph_fchown(handle->data,
+				     fsp_get_io_fd(fsp),
+				     uid,
+				     gid);
+	} else {
+		/*
+		 * This is no longer a handle based call.
+		 */
+		result = ceph_chown(handle->data,
+				    fsp->fsp_name->base_name,
+				    uid,
+				    gid);
+	}
+
 	DBG_DEBUG("[CEPH] fchown(...) = %d\n", result);
 	WRAP_RETURN(result);
 }
