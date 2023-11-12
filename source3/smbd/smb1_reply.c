@@ -1199,23 +1199,6 @@ static bool smbd_dirptr_8_3_match_fn(TALLOC_CTX *ctx,
 	return false;
 }
 
-static bool smbd_dirptr_8_3_mode_fn(TALLOC_CTX *ctx,
-				    void *private_data,
-				    struct files_struct *dirfsp,
-				    struct smb_filename *smb_fname,
-				    bool get_dosmode,
-				    uint32_t *_mode)
-{
-	if (get_dosmode) {
-		SMB_ASSERT(smb_fname != NULL);
-		*_mode = fdos_mode(smb_fname->fsp);
-		if (smb_fname->fsp != NULL) {
-			smb_fname->st = smb_fname->fsp->fsp_name->st;
-		}
-	}
-	return true;
-}
-
 static bool get_dir_entry(TALLOC_CTX *ctx,
 			  connection_struct *conn,
 			  struct dptr_struct *dirptr,
@@ -1242,7 +1225,6 @@ again:
 				   ask_sharemode,
 				   true,
 				   smbd_dirptr_8_3_match_fn,
-				   smbd_dirptr_8_3_mode_fn,
 				   conn,
 				   &fname,
 				   &smb_fname,

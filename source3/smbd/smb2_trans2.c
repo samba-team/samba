@@ -1010,23 +1010,6 @@ static bool smbd_dirptr_lanman2_match_fn(TALLOC_CTX *ctx,
 	return true;
 }
 
-static bool smbd_dirptr_lanman2_mode_fn(TALLOC_CTX *ctx,
-					void *private_data,
-					struct files_struct *dirfsp,
-					struct smb_filename *smb_fname,
-					bool get_dosmode,
-					uint32_t *_mode)
-{
-	if (get_dosmode) {
-		SMB_ASSERT(smb_fname != NULL);
-		*_mode = fdos_mode(smb_fname->fsp);
-		if (smb_fname->fsp != NULL) {
-			smb_fname->st = smb_fname->fsp->fsp_name->st;
-		}
-	}
-	return true;
-}
-
 static uint32_t get_dirent_ea_size(uint32_t mode, files_struct *fsp)
 {
 	if (!(mode & FILE_ATTRIBUTE_REPARSE_POINT)) {
@@ -1840,7 +1823,6 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 				   ask_sharemode,
 				   get_dosmode,
 				   smbd_dirptr_lanman2_match_fn,
-				   smbd_dirptr_lanman2_mode_fn,
 				   &state,
 				   &fname,
 				   &smb_fname,
