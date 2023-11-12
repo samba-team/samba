@@ -731,7 +731,8 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 		if (s[length] != ')') {
 			*msg = talloc_strdup(
 				mem_ctx,
-				"Conditional ACE has trailing bytes");
+				"Conditional ACE has trailing bytes"
+				" or lacks ')'");
 			*msg_offset = s + length - *sddl_copy;
 			return false;
 		}
@@ -767,7 +768,8 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 		if (s[length] != ')') {
 			*msg = talloc_strdup(
 				mem_ctx,
-				"Resource Attribute ACE has trailing bytes");
+				"Resource Attribute ACE has trailing bytes"
+				" or lacks ')'");
 			*msg_offset = s + length - *sddl_copy;
 			return false;
 		}
