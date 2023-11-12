@@ -1125,6 +1125,25 @@ static void make_dir_struct(TALLOC_CTX *ctx,
 	DEBUG(8,("put name [%s] from [%s] into dir struct\n",buf+30, fname));
 }
 
+/*******************************************************************
+ A wrapper that handles case sensitivity and the special handling
+ of the ".." name.
+*******************************************************************/
+
+static bool mask_match_search(const char *string,
+			      const char *pattern,
+			      bool is_case_sensitive)
+{
+	if (ISDOTDOT(string)) {
+		string = ".";
+	}
+	if (ISDOT(pattern)) {
+		return False;
+	}
+
+	return ms_fnmatch(pattern, string, True, is_case_sensitive) == 0;
+}
+
 static bool mangle_mask_match(connection_struct *conn,
 			      const char *filename,
 			      const char *mask)

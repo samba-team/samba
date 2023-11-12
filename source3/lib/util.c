@@ -1482,22 +1482,6 @@ bool mask_match(const char *string, const char *pattern, bool is_case_sensitive)
 }
 
 /*******************************************************************
- A wrapper that handles case sensitivity and the special handling
- of the ".." name. Variant that is only called by old search code which requires
- pattern translation.
-*******************************************************************/
-
-bool mask_match_search(const char *string, const char *pattern, bool is_case_sensitive)
-{
-	if (ISDOTDOT(string))
-		string = ".";
-	if (ISDOT(pattern))
-		return False;
-
-	return ms_fnmatch(pattern, string, True, is_case_sensitive) == 0;
-}
-
-/*******************************************************************
  A wrapper that handles a list of patterns and calls mask_match()
  on each.  Returns True if any of the patterns match.
 *******************************************************************/
