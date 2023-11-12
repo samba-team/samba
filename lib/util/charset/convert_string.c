@@ -354,7 +354,7 @@ bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
 	const char *inbuf = NULL;
 	char *outbuf = NULL, *ob = NULL;
 	smb_iconv_t descriptor;
-	void **dest = (void **)dst;
+	void **dest = dst;
 
 	*dest = NULL;
 	if (converted_size != NULL) {
