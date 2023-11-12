@@ -36,7 +36,6 @@ bld.SAMBA_PLUGIN('nss_wrapper_winbind',
 
 if (Utils.unversioned_sys_platform() == 'linux' or (host_os.rfind('gnu') > -1)):
     bld.SAMBA_PLUGIN('nss_winbind',
-              keep_underscore=True,
               cflags='-D_PUBLIC_ON_LINUX_=_PUBLIC_',
               source='winbind_nss_linux.c',
               deps='wbclient',
@@ -45,7 +44,6 @@ if (Utils.unversioned_sys_platform() == 'linux' or (host_os.rfind('gnu') > -1)):
               vnum='2')
 
     bld.SAMBA3_PLUGIN('nss_wins',
-                      keep_underscore=True,
                       cflags='-D_PUBLIC_ON_LINUX_=_PUBLIC_',
                       source='wins.c',
                       deps='wbclient replace',
