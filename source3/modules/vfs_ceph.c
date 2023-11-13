@@ -27,7 +27,7 @@
  * Add the following smb.conf parameter to each share that will be hosted on
  * Ceph:
  *
- *   vfs objects = ceph [any others you need go here]
+ *   vfs objects = [any others you need go here] ceph
  */
 
 #include "includes.h"
