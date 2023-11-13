@@ -39,9 +39,10 @@ class MessagingTests(TestCase):
 
         def callback():
             pass
-        msg_type = x.register((callback, None))
+        callback_and_context = (callback, None)
+        msg_type = x.register(callback_and_context)
         self.assertTrue(isinstance(msg_type, int))
-        x.deregister(callback, msg_type)
+        x.deregister(callback_and_context, msg_type)
 
     def test_all_servers(self):
         x = self.get_context()
