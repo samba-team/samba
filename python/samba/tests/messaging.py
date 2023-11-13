@@ -41,8 +41,8 @@ class MessagingTests(TestCase):
             pass
         callback_and_context = (callback, None)
         msg_type = x.register(callback_and_context)
+        self.addCleanup(x.deregister, callback_and_context, msg_type)
         self.assertTrue(isinstance(msg_type, int))
-        x.deregister(callback_and_context, msg_type)
 
     def test_all_servers(self):
         x = self.get_context()
@@ -88,13 +88,21 @@ class MessagingTests(TestCase):
             got_ping["count"] += 1
             server_ctx.send(src, msg_pong, data)
 
-        msg_ping = server_ctx.register((ping_callback, got_ping))
+        ping_callback_and_context = (ping_callback, got_ping)
+        msg_ping = server_ctx.register(ping_callback_and_context)
+        self.addCleanup(server_ctx.deregister,
+                        ping_callback_and_context,
+                        msg_ping)
 
         def pong_callback(got_pong, msg_type, src, data):
             got_pong["count"] += 1
 
         client_ctx = self.get_context((0, 2))
-        msg_pong = client_ctx.register((pong_callback, got_pong))
+        pong_callback_and_context = (pong_callback, got_pong)
+        msg_pong = client_ctx.register(pong_callback_and_context)
+        self.addCleanup(client_ctx.deregister,
+                        pong_callback_and_context,
+                        msg_pong)
 
         # Try both server_id forms (structure and tuple)
         client_ctx.send((0, 1), msg_ping, "testing")
@@ -130,13 +138,21 @@ class MessagingTests(TestCase):
             got_ping["count"] += 1
             server_ctx.send(src, msg_pong, data)
 
-        msg_ping = server_ctx.register((ping_callback, got_ping))
+        ping_callback_and_context = (ping_callback, got_ping)
+        msg_ping = server_ctx.register(ping_callback_and_context)
+        self.addCleanup(server_ctx.deregister,
+                        ping_callback_and_context,
+                        msg_ping)
 
         def pong_callback(got_pong, msg_type, src, data):
             got_pong["count"] += 1
 
         client_ctx = self.get_context((2,))
-        msg_pong = client_ctx.register((pong_callback, got_pong))
+        pong_callback_and_context = (pong_callback, got_pong)
+        msg_pong = client_ctx.register(pong_callback_and_context)
+        self.addCleanup(client_ctx.deregister,
+                        pong_callback_and_context,
+                        msg_pong)
 
         # Try one and two element tuple forms
         client_ctx.send((pid, 1), msg_ping, "testing")
