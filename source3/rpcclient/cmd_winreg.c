@@ -111,16 +111,16 @@ static void display_winreg_data(const char *v,
 
 	switch (type) {
 	case REG_DWORD:
-		printf("%s: REG_DWORD: 0x%08x\n", v, r.value);
+		printf("%-20s: REG_DWORD: 0x%08x\n", v, r.value);
 		break;
 	case REG_SZ:
-		printf("%s: REG_SZ: %s\n", v, r.string);
+		printf("%-20s: REG_SZ: %s\n", v, r.string);
 		break;
 	case REG_BINARY: {
 		char *hex = hex_encode_talloc(NULL,
 			r.binary.data, r.binary.length);
 		size_t len;
-		printf("%s: REG_BINARY:", v);
+		printf("%-20s: REG_BINARY:", v);
 		len = strlen(hex);
 		for (i=0; i<len; i++) {
 			if (hex[i] == '\0') {
@@ -136,14 +136,14 @@ static void display_winreg_data(const char *v,
 		break;
 	}
 	case REG_MULTI_SZ:
-		printf("%s: REG_MULTI_SZ: ", v);
+		printf("%-20s: REG_MULTI_SZ: ", v);
 		for (i=0; r.string_array[i] != NULL; i++) {
 			printf("%s ", r.string_array[i]);
 		}
 		printf("\n");
 		break;
 	default:
-		printf("%s: unknown type 0x%02x:\n", v, type);
+		printf("%-20ss: unknown type 0x%02x:\n", v, type);
 		break;
 	}
 }
@@ -314,6 +314,130 @@ static WERROR cmd_winreg_querymultiplevalues2(struct rpc_pipe_client *cli,
 	return cmd_winreg_querymultiplevalues_ex(cli, mem_ctx, argc, argv, true);
 }
 
+static WERROR cmd_winreg_enumval(struct rpc_pipe_client *cli,
+				 TALLOC_CTX *mem_ctx, int argc,
+				 const char **argv)
+{
+	NTSTATUS status;
+	WERROR werr, ignore;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	struct policy_handle parent_handle, handle;
+	uint32_t enum_index = 0;
+
+	if (argc < 1 || argc > 3) {
+		printf("usage: %s [name]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	status = dcerpc_winreg_OpenHKLM(b, mem_ctx,
+					NULL,
+					SEC_FLAG_MAXIMUM_ALLOWED,
+					&parent_handle,
+					&werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	if (argc >= 2) {
+
+		struct winreg_String keyname;
+
+		ZERO_STRUCT(keyname);
+
+		keyname.name = argv[1];
+
+		status = dcerpc_winreg_OpenKey(b, mem_ctx,
+					       &parent_handle,
+					       keyname,
+					       0,
+					       SEC_FLAG_MAXIMUM_ALLOWED,
+					       &handle,
+					       &werr);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ntstatus_to_werror(status);
+		}
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+	} else {
+		handle = parent_handle;
+	}
+
+	do {
+		struct winreg_ValNameBuf name;
+		enum winreg_Type type = REG_NONE;
+		uint32_t size = 0, length = 0;
+		struct winreg_EnumValue r;
+
+		name.name = "";
+		name.size = 1024;
+
+		r.in.handle = &handle;
+		r.in.enum_index = enum_index;
+		r.in.name = &name;
+		r.in.type = &type;
+		r.in.size = &size;
+		r.in.length = &length;
+		r.in.value = talloc_array(mem_ctx, uint8_t, size);
+		if (r.in.value == NULL) {
+			werr = WERR_NOT_ENOUGH_MEMORY;
+			goto done;
+		}
+		r.out.name = &name;
+		r.out.type = &type;
+		r.out.size = &size;
+		r.out.length = &length;
+		r.out.value = r.in.value;
+
+		status = dcerpc_winreg_EnumValue_r(b, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
+			goto done;
+		}
+
+		werr = r.out.result;
+
+		if (W_ERROR_EQUAL(werr, WERR_MORE_DATA)) {
+			*r.in.size = *r.out.size;
+			r.in.value = talloc_zero_array(mem_ctx, uint8_t, *r.in.size);
+			if (r.in.value == NULL) {
+				werr = WERR_NOT_ENOUGH_MEMORY;
+				goto done;
+			}
+
+			status = dcerpc_winreg_EnumValue_r(b, mem_ctx, &r);
+			if (!NT_STATUS_IS_OK(status)) {
+				werr = ntstatus_to_werror(status);
+				goto done;
+			}
+
+			werr = r.out.result;
+		}
+		if (!W_ERROR_IS_OK(r.out.result)) {
+			goto done;
+		}
+
+		printf("%02d: ", enum_index++);
+
+		display_winreg_data(r.out.name->name,
+				    *r.out.type,
+				    r.out.value,
+				    *r.out.size);
+
+	} while (W_ERROR_IS_OK(werr));
+
+ done:
+	if (argc >= 2) {
+		dcerpc_winreg_CloseKey(b, mem_ctx, &handle, &ignore);
+	}
+	dcerpc_winreg_CloseKey(b, mem_ctx, &parent_handle, &ignore);
+
+	return werr;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set winreg_commands[] = {
@@ -349,6 +473,16 @@ struct cmd_set winreg_commands[] = {
 		.table              = &ndr_table_winreg,
 		.rpc_pipe           = NULL,
 		.description        = "Query multiple values",
+		.usage              = "",
+	},
+	{
+		.name               = "winreg_enumval",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = cmd_winreg_enumval,
+		.table              = &ndr_table_winreg,
+		.rpc_pipe           = NULL,
+		.description        = "Enumerate Values",
 		.usage              = "",
 	},
 	{
