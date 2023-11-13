@@ -21,7 +21,7 @@
 */
 
 /*
- * This VFS only works with the libceph.so user-space client. It is not needed
+ * This VFS only works with the libcephfs.so user-space client. It is not needed
  * if you are using the kernel client or the FUSE client.
  *
  * Add the following smb.conf parameter to each share that will be hosted on
@@ -54,8 +54,8 @@
 #define llu(_var) ((long long unsigned)_var)
 
 /*
- * Note, libceph's return code model is to return -errno! So we have to convert
- * to what Samba expects, with is set errno to -return and return -1
+ * Note, libcephfs's return code model is to return -errno! So we have to
+ * convert to what Samba expects, with is set errno to -return and return -1
  */
 #define WRAP_RETURN(_res) \
 	errno = 0; \
@@ -353,7 +353,7 @@ static int cephwrap_get_quota(struct vfs_handle_struct *handle,
 				unid_t id,
 				SMB_DISK_QUOTA *qt)
 {
-	/* libceph: Ceph does not implement this */
+	/* libcephfs: Ceph does not implement this */
 #if 0
 /* was ifdef HAVE_SYS_QUOTAS */
 	int ret;
@@ -374,7 +374,7 @@ static int cephwrap_get_quota(struct vfs_handle_struct *handle,
 
 static int cephwrap_set_quota(struct vfs_handle_struct *handle,  enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt)
 {
-	/* libceph: Ceph does not implement this */
+	/* libcephfs: Ceph does not implement this */
 #if 0
 /* was ifdef HAVE_SYS_QUOTAS */
 	int ret;
@@ -719,7 +719,7 @@ static ssize_t cephwrap_sendfile(struct vfs_handle_struct *handle, int tofd, fil
 			off_t offset, size_t n)
 {
 	/*
-	 * We cannot support sendfile because libceph is in user space.
+	 * We cannot support sendfile because libcephfs is in user space.
 	 */
 	DBG_DEBUG("[CEPH] cephwrap_sendfile\n");
 	errno = ENOTSUP;
@@ -733,7 +733,7 @@ static ssize_t cephwrap_recvfile(struct vfs_handle_struct *handle,
 			size_t n)
 {
 	/*
-	 * We cannot support recvfile because libceph is in user space.
+	 * We cannot support recvfile because libcephfs is in user space.
 	 */
 	DBG_DEBUG("[CEPH] cephwrap_recvfile\n");
 	errno=ENOTSUP;
@@ -1224,7 +1224,7 @@ static bool cephwrap_getlock(struct vfs_handle_struct *handle, files_struct *fsp
 
 /*
  * We cannot let this fall through to the default, because the file might only
- * be accessible from libceph (which is a user-space client) but the fd might
+ * be accessible from libcephfs (which is a user-space client) but the fd might
  * be for some file the kernel knows about.
  */
 static int cephwrap_linux_setlease(struct vfs_handle_struct *handle, files_struct *fsp,
@@ -1354,7 +1354,7 @@ static int cephwrap_mknodat(struct vfs_handle_struct *handle,
 
 /*
  * This is a simple version of real-path ... a better version is needed to
- * ask libceph about symbolic links.
+ * ask libcephfs about symbolic links.
  */
 static struct smb_filename *cephwrap_realpath(struct vfs_handle_struct *handle,
 				TALLOC_CTX *ctx,
