@@ -17,9 +17,11 @@
 
 """Tests for Conditional ACEs, claims, and security tokens."""
 
+import random
 from samba.dcerpc import security
 from samba.security import access_check
 from samba.tests.token_factory import token as Token
+from samba.tests.token_factory import list_to_claim
 from samba.dcerpc.security import CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1
 from samba.tests import TestCase, DynamicTestCase, get_env_dir
 from samba.colour import c_RED, c_GREEN
@@ -399,4 +401,501 @@ class DenyTests(ConditionalAceClaimsBase):
              'device_sids': ['BA', 'BG']},
             "D:(XA;;0x1f;;;AA;(!(!(!(Not_Member_of{SID(BA)})))))",
             0x10),
+    ]
+
+
+def _int_range(n, n_dupes=0, random_seed=None):
+    """Makes a list of stringified integers.
+
+    If n_unique is specified and less than n, there will be that many unique
+    values (and hence some duplicates). If random_seed is set, the list will be
+    shuffled.
+    """
+    claims = [str(x) for x in range(n)]
+
+    if random_seed is None:
+        if n_dupes:
+            claims *= 1 + (n + n_dupes) // n
+        return claims[:n + n_dupes]
+
+    random.seed(random_seed)
+    for i in range(n_dupes):
+        # this purposefully skews the distribution.
+        claims.append(random.choice(claims))
+
+    random.shuffle(claims)
+    return claims
+
+
+def _str_range(n, n_dupes=0, random_seed=None, mix_case=False):
+    """Create a list of strings with somewhat controllable disorder.
+    """
+    ints = _int_range(n, n_dupes, random_seed)
+    claims = [f'a{i}' for i in ints]
+
+    if mix_case:
+        if random_seed is None:
+            random.seed(0)
+        for i in range(len(claims)):
+            if random.random() < 0.5:
+                claims[i] = claims[i].upper()
+
+    return claims
+
+
+def claim_str_range(*args, name="foo", case_sensitive=False, **kwargs):
+    """String value range as a CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1"""
+    vals = _str_range(*args, **kwargs)
+    claim = list_to_claim(name, vals, case_sensitive=case_sensitive)
+    return claim
+
+
+def claim_int_range(*args, name="foo", case_sensitive=False, **kwargs):
+    """Int value range as a CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1"""
+    vals = _int_range(*args, **kwargs)
+    claim = list_to_claim(name, vals, case_sensitive=case_sensitive)
+    return claim
+
+
+def ra_str_range(*args, name="foo", case_sensitive=False, **kwargs):
+    """Make a string claim as a resource attribute"""
+    claim = _str_range(*args, **kwargs)
+    values = '","'.join(claim)
+    c = (2 if case_sensitive else 0)
+    return f'(RA;;;;;WD;("{name}",TS,{c},"{values}"))'
+
+
+def ra_int_range(*args, name="foo", unsigned=False, **kwargs):
+    """Return an integer claim range as a resource attribute."""
+    ints = _int_range(*args, **kwargs)
+    values = ','.join(str(x) for x in ints)
+    return f'(RA;;;;;WD;("{name}",T{"U" if unsigned else "I"},0,{values}))'
+
+
+def composite_int(*args, **kwargs):
+    """Integer conditional ACE composite"""
+    claim = _int_range(*args, **kwargs)
+    values = ', '.join(claim)
+    return '{' + values + '}'
+
+
+def composite_str(*args, **kwargs):
+    """String conditional ACE composite"""
+    claim = _str_range(*args, **kwargs)
+    values = '", "'.join(claim)
+    return '{"' + values + '"}'
+
+
+@DynamicTestCase
+class ConditionalAceLargeComposites(ConditionalAceClaimsBase):
+    """Here we are dynamically generating claims and composites with large numbers
+    of members, and using them in comparisons. Sometimes the comparisons are
+    meant to fail, and sometimes not.
+    """
+    maxDiff = 0
+
+    @classmethod
+    def setUpDynamicTestCases(cls):
+        cls.domain_sid = security.dom_sid("S-1-22-333-4444")
+        for i, row in enumerate(cls.data):
+            name, allow, token, sddl = row
+            name = f'{i+1:03}-{name}'
+            if 'sids' not in token:
+                token['sids'] = ['AU', 'WD']
+            if allow:
+                cls.generate_dynamic_test('test_allow',
+                                          name, token, sddl, 0x10)
+            else:
+                cls.generate_dynamic_test('test_deny',
+                                          name, token, sddl, 0x10)
+
+        fuzz_seed_dir = get_env_dir('SAMBA_WRITE_FUZZ_STRINGS_DIR')
+        if fuzz_seed_dir is not None:
+            cls._write_sddl_strings_for_fuzz_seeds(fuzz_seed_dir)
+
+
+    data = [
+        (
+            "90-disorderly-strings-claim-vs-claim-case-sensitive-with-dupes",
+            False,
+            {'user_claims': {"c": claim_str_range(90,
+                                                  random_seed=2),
+                             "d": claim_str_range(90, 90,
+                                                  case_sensitive=True,
+                                                  random_seed=3)}},
+            ('D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
+        ),
+        (
+            # this one currently fails before we get to compare_composites()
+            "0-vs-0",
+            True,
+            {'user_claims': {"c": claim_str_range(0)}},
+            ('D:(XA;;FA;;;WD;(@USER.c == @USER.c))')
+        ),
+        (
+            "50-orderly-strings",
+            True,
+            {'user_claims': {"c": claim_str_range(50)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(50)}))')
+        ),
+        (
+            "50-disorderly-strings-same-disorder",
+            True,
+            {'user_claims': {"c": claim_str_range(50, random_seed=1)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(50, random_seed=1)}))')
+        ),
+        (
+            "200-disorderly-strings",
+            True,
+            {'user_claims': {"c": claim_str_range(200, random_seed=1)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(200, random_seed=2)}))')
+        ),
+        (
+            "50-orderly-vs-disorderly-strings",
+            True,
+            {'user_claims': {"c": claim_str_range(50)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(50, random_seed=1)}))')
+        ),
+        (
+            "50-disorderly-vs-orderly-strings",
+            True,
+            {'user_claims': {"c": claim_str_range(50, random_seed=1)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(50)}))')
+        ),
+        (
+            "99-orderly-strings",
+            True,
+            {'user_claims': {"c": claim_str_range(99)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(99)}))')
+        ),
+        (
+            "99-disorderly-strings",
+            True,
+            {'user_claims': {"c": claim_str_range(99, random_seed=1)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(99, random_seed=2)}))')
+        ),
+        (
+            "99-orderly-vs-disorderly-strings",
+            True,
+            {'user_claims': {"c": claim_str_range(99)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(99, random_seed=1)}))')
+        ),
+        (
+            "99-disorderly-vs-orderly-strings",
+            True,
+            {'user_claims': {"c": claim_str_range(99, random_seed=1)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(99)}))')
+        ),
+        (
+            "39-orderly-strings-vs-39+60-dupes",
+            True,
+            {'user_claims': {"c": claim_str_range(39)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(39, 60)}))')
+        ),
+        (
+            "39-disorderly-strings-vs-39+60-dupes",
+            True,
+            {'user_claims': {"c": claim_str_range(39, random_seed=1)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(39, 60, random_seed=1)}))')
+        ),
+        (
+            "39-orderly-vs-disorderly-strings-vs-39+60-dupes",
+            True,
+            {'user_claims': {"c": claim_str_range(39)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(39, 60, random_seed=1)}))')
+        ),
+        (
+            "39-disorderly-vs-orderly-strings-vs-39+60-dupes",
+            True,
+            {'user_claims': {"c": claim_str_range(39, random_seed=1)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(39, 60)}))')
+        ),
+        (
+            "3-orderly-strings-vs-3+60-dupes",
+            True,
+            {'user_claims': {"c": claim_str_range(3)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(3, 60)}))')
+        ),
+        (
+            "3-disorderly-strings-vs-3+60-dupes",
+            True,
+            {'user_claims': {"c": claim_str_range(3, random_seed=1)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(3, 60, random_seed=1)}))')
+        ),
+        (
+            "3-orderly-vs-disorderly-strings-vs-3+60-dupes",
+            True,
+            {'user_claims': {"c": claim_str_range(3)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(3, 60, random_seed=1)}))')
+        ),
+        (
+            "3-disorderly-vs-orderly-strings-vs-3+60-dupes",
+            True,
+            {'user_claims': {"c": claim_str_range(3, random_seed=1)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(3, 60)}))')
+        ),
+        (
+            "3-orderly-strings-vs-3+61-dupes",
+            True,
+            {'user_claims': {"c": claim_str_range(3)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(3, 61)}))')
+        ),
+
+        (
+            "63-orderly-strings-vs-62+1-dupe",
+            False,
+            {'user_claims': {"c": claim_str_range(63)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(62, 1)}))')
+        ),
+        (
+            "102+1-dupe-vs-102+1-dupe",
+            False,
+            # this is an invalid claim
+            {'user_claims': {"c": claim_str_range(102, 1)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(102, 1)}))')
+        ),
+        (
+            "0-vs-1",
+            False,
+            {'user_claims': {"c": claim_str_range(0),
+                             "d": claim_str_range(1)}},
+            ('D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
+        ),
+        (
+            "2+1-dupe-vs-2+1-dupe",
+            False,
+            {'user_claims': {"c": claim_str_range(2, 1)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(2, 1)}))')
+        ),
+        (
+            "63-disorderly-strings-vs-62+1-dupe",
+            False,
+            {'user_claims': {"c": claim_str_range(63, random_seed=1)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(62, 1, random_seed=1)}))')
+        ),
+        (
+            "63-disorderly-strings-vs-63+800-dupe",
+            True,
+            {'user_claims': {"c": claim_str_range(63, random_seed=1)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(63, 800, random_seed=1)}))')
+        ),
+        (
+            "63-disorderly-strings-vs-62+800-dupe",
+            False,
+            {'user_claims': {"c": claim_str_range(63, random_seed=1)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(62, 800, random_seed=1)}))')
+        ),
+        (
+            "9-orderly-strings",
+            True,
+            {'user_claims': {"c": claim_str_range(9)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(9)}))')
+        ),
+        (
+            "9-orderly-strings-claim-vs-itself",
+            True,
+            {'user_claims': {"c": claim_str_range(9)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.c))')
+        ),
+        (
+            "300-orderly-strings-claim-vs-itself",
+            True,
+            {'user_claims': {"c": claim_str_range(300)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.c))')
+        ),
+        (
+            "900-disorderly-strings-claim-vs-claim",
+            True,
+            {'user_claims': {"c": claim_str_range(900, random_seed=1),
+                             "d": claim_str_range(900, random_seed=1)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
+        ),
+        (
+            "9-orderly-strings-claim-mixed-case-vs-claim-case-sensitive",
+            False,
+            {'user_claims': {"c": claim_str_range(9, mix_case=True),
+                             "d": claim_str_range(9, case_sensitive=True)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
+        ),
+        (
+            "9-disorderly-strings-claim-vs-claim-case-sensitive-mixed-case",
+            False,
+            {'user_claims': {"c": claim_str_range(9,random_seed=1),
+                             "d": claim_str_range(9,
+                                                  mix_case=True,
+                                                  case_sensitive=True)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
+        ),
+        (
+            "9-disorderly-strings-claim-vs-claim-case-sensitive-both-mixed-case",
+            False,
+            {'user_claims': {"c": claim_str_range(9,
+                                                  mix_case=True,
+                                                  random_seed=1),
+                             "d": claim_str_range(9,
+                                                  mix_case=True,
+                                                  case_sensitive=True)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
+        ),
+        (
+            "9-disorderly-strings-claim-vs-claim-case-sensitive-ne",
+            True,
+            {'user_claims': {"c": claim_str_range(9,random_seed=1),
+                             "d": claim_str_range(9,
+                                                  mix_case=True,
+                                                  case_sensitive=True)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c != @USER.d))')
+        ),
+
+        (
+            "5-disorderly-strings-claim-vs-claim-case-sensitive-with-dupes-all-mixed-case",
+            False,
+            {'user_claims': {"c": claim_str_range(5,
+                                                  mix_case=True,
+                                                  random_seed=2),
+                             "d": claim_str_range(5, 5,
+                                                  mix_case=True,
+                                                  random_seed=3,
+                                                  case_sensitive=True)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
+        ),
+        (
+            "90-disorderly-strings-claim-vs-int-claim",
+            False,
+            {'user_claims': {"c": claim_str_range(90,
+                                                  random_seed=2),
+                             "d": claim_int_range(90,
+                                                  random_seed=3)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
+        ),
+        (
+            "90-disorderly-ints-claim-vs-string-claim",
+            False,
+            {'user_claims': {"c": claim_int_range(90,
+                                                  random_seed=2),
+                             "d": claim_str_range(90,
+                                                  random_seed=3)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
+        ),
+        (
+            "9-disorderly-strings-vs-9+90-dupes",
+            True,
+            {'user_claims': {"c": claim_str_range(9, random_seed=1)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(9, 90, random_seed=1)}))')
+        ),
+        (
+            "9-disorderly-strings-vs-9+90-dupes-case-sensitive",
+            True,
+            {'user_claims': {"c": claim_str_range(9, random_seed=1, case_sensitive=True)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(9, 90, random_seed=2)}))')
+        ),
+        (
+            "9-disorderly-strings-vs-9+90-dupes-mixed-case",
+            True,
+            {'user_claims': {"c": claim_str_range(9, random_seed=1, mix_case=True)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(9, 90, random_seed=2, mix_case=True)}))')
+        ),
+        (
+            "9-disorderly-strings-vs-9+90-dupes-mixed-case-case-sensitive",
+            False,
+            {'user_claims': {"c": claim_str_range(9, random_seed=1, mix_case=True,
+                                                  case_sensitive=True)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(9, 90, random_seed=2, mix_case=True)}))')
+        ),
+        (
+            "99-disorderly-strings-vs-9+90-dupes-mixed-case",
+            False,
+            {'user_claims': {"c": claim_str_range(99, random_seed=1, mix_case=True)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == {composite_str(9, 90, random_seed=2, mix_case=True)}))')
+        ),
+
+        (
+            "RA-99-disorderly-strings-vs-9+90-dupes-mixed-case",
+            False,
+            {},
+            ('D:(XA;;FA;;;WD;(@RESOURCE.c == '
+             f'{composite_str(9, 90, random_seed=1, mix_case=True)}))'
+             f'S:{ra_str_range(99, random_seed=2, mix_case=True)}'
+             )
+        ),
+        (
+            "RA-9+90-dupes-disorderly-strings-vs-9+90-dupes-mixed-case",
+            False,
+            {},
+            ('D:(XA;;FA;;;WD;(@RESOURCE.c == '
+             f'{composite_str(9, 90, random_seed=1, mix_case=True)}))'
+             f'S:{ra_str_range(9, 90, random_seed=2, mix_case=True)}'
+             )
+        ),
+        (
+            "90-disorderly-strings-claim-vs-missing-claim",
+            False,
+            {'user_claims': {"c": claim_str_range(90,
+                                                  random_seed=2)}},
+            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
+        ),
+        (
+            "missing-claim-vs-90-disorderly-strings",
+            False,
+            {'user_claims': {"c": claim_str_range(90,
+                                                  random_seed=2)}},
+            (f'D:(XA;;FA;;;WD;(@USER.z == @USER.c))')
+        ),
+
+        (
+            "RA-9-disorderly-strings-vs-9-mixed-case",
+            False,
+            {'user_claims': {"c": claim_str_range(9,
+                                                  random_seed=1,
+                                                  mix_case=True),
+                             }
+             },
+            ('D:(XA;;FA;;;WD;(@RESOURCE.c == @User.c))'
+             f'S:{ra_str_range(9, random_seed=2, mix_case=True)}'
+             )
+        ),
+
+        (
+            "9-disorderly-strings-vs-9-RA-mixed-case",
+            False,
+            {'user_claims': {"c": claim_str_range(9,
+                                                  random_seed=1,
+                                                  mix_case=True),
+                             }
+             },
+            ('D:(XA;;FA;;;WD;(@user.c == @resource.c))'
+             f'S:{ra_str_range(9, random_seed=2, mix_case=True)}'
+             )
+        ),
+
+        (
+            "RA-29-disorderly-strings-vs-29-mixed-case",
+            False,
+            {'user_claims': {"c": claim_str_range(29,
+                                                  random_seed=1,
+                                                  mix_case=True),
+                             }
+             },
+            ('D:(XA;;FA;;;WD;(@RESOURCE.c == @User.c))'
+             f'S:{ra_str_range(29, random_seed=2, mix_case=True)}'
+             )
+        ),
+        (
+            "0-vs-0-ne",
+            False,
+            {'user_claims': {"c": claim_str_range(0)}},
+            ('D:(XA;;FA;;;WD;(@USER.c != @USER.c))')
+        ),
+        (
+            "1-vs-1",
+            True,
+            {'user_claims': {"c": claim_str_range(1)}},
+            ('D:(XA;;FA;;;WD;(@USER.c == @USER.c))')
+        ),
+        (
+            "1-vs-1-ne",
+            False,
+            {'user_claims': {"c": claim_str_range(1)}},
+            ('D:(XA;;FA;;;WD;(@USER.c != @USER.c))')
+        ),
     ]
