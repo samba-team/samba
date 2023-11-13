@@ -157,6 +157,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         SERVER = object()
         RODC = object()
         MANAGED_SERVICE = object()
+        GROUP_MANAGED_SERVICE = object()
 
     @classmethod
     def setUpClass(cls):
@@ -801,7 +802,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         if ou is None:
             if account_type is self.AccountType.COMPUTER:
                 guid = DS_GUID_COMPUTERS_CONTAINER
-            elif account_type is self.AccountType.MANAGED_SERVICE:
+            elif account_type is self.AccountType.MANAGED_SERVICE or (
+                    account_type is self.AccountType.GROUP_MANAGED_SERVICE):
                 guid = DS_GUID_MANAGED_SERVICE_ACCOUNTS_CONTAINER
             elif account_type is self.AccountType.SERVER:
                 guid = DS_GUID_DOMAIN_CONTROLLERS_CONTAINER
@@ -826,6 +828,10 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             object_class = "msDS-ManagedServiceAccount"
             account_control |= UF_WORKSTATION_TRUST_ACCOUNT
             secure_schannel_type = SEC_CHAN_WKSTA
+        elif account_type is self.AccountType.GROUP_MANAGED_SERVICE:
+            object_class = "msDS-GroupManagedServiceAccount"
+            account_control |= UF_WORKSTATION_TRUST_ACCOUNT
+            secure_schannel_type = SEC_CHAN_WKSTA
         else:
             object_class = "computer"
             if account_type is self.AccountType.COMPUTER:
@@ -837,15 +843,21 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             else:
                 self.fail()
 
-        password = generate_random_password(32, 32)
-        utf16pw = ('"%s"' % password).encode('utf-16-le')
-
         details = {
             "dn": dn,
             "objectClass": object_class,
             "sAMAccountName": account_name,
             "userAccountControl": str(account_control),
-            "unicodePwd": utf16pw}
+        }
+
+        if account_type is self.AccountType.GROUP_MANAGED_SERVICE:
+            password = None
+        else:
+            password = generate_random_password(32, 32)
+            utf16pw = ('"%s"' % password).encode('utf-16-le')
+
+            details['unicodePwd'] = utf16pw
+
         if upn is not None:
             upn = upn.format(account=account_name)
         if spn is not None:
@@ -897,7 +909,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         creds.guess(self.get_lp())
         creds.set_realm(samdb.domain_dns_name().upper())
         creds.set_domain(samdb.domain_netbios_name().upper())
-        creds.set_password(password)
+        if password is not None:
+            creds.set_password(password)
         creds.set_username(account_name)
         if account_type is self.AccountType.USER:
             creds.set_workstation('')
