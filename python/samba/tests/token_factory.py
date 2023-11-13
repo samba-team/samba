@@ -59,6 +59,11 @@ def list_to_claim(k, v, case_sensitive=False):
     if case_sensitive:
         c.flags |= security.CLAIM_SECURITY_ATTRIBUTE_VALUE_CASE_SENSITIVE
 
+    # The claims made here will not have the
+    # CLAIM_SECURITY_ATTRIBUTE_UNIQUE_AND_SORTED flag set, which makes
+    # them like resource attribute claims rather than real wire
+    # claims. It shouldn't matter much, as they will just be sorted
+    # and checked as if they were resource attribute claims.
     return c
 
 
