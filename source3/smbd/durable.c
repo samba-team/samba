@@ -486,14 +486,14 @@ static bool vfs_default_durable_reconnect_check_stat(
 	}
 
 	if (cookie_st->st_ex_flags != fsp_st->st_ex_flags) {
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:%llu != stat:%llu, "
-			  "denying durable reconnect\n",
-			  name,
-			  "st_ex_flags",
-			  (unsigned long long)cookie_st->st_ex_flags,
-			  (unsigned long long)fsp_st->st_ex_flags));
+		DBG_WARNING(" (%s): "
+			    "stat_ex.%s differs: "
+			    "cookie:%"PRIu32" != stat:%"PRIu32", "
+			    "denying durable reconnect\n",
+			    name,
+			    "st_ex_flags",
+			    cookie_st->st_ex_flags,
+			    fsp_st->st_ex_flags);
 		return false;
 	}
 
