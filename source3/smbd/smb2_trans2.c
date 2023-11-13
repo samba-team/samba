@@ -3000,8 +3000,9 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			ok = true;
 		}
 
-		if ((fsp != NULL) &&
-		    (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN)) {
+		if (conn->sconn->using_smb2 &&
+		    (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN))
+		{
 			DBG_DEBUG("SMB2 posix open\n");
 			ok = true;
 		}
