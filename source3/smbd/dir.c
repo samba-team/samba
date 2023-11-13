@@ -526,7 +526,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 	struct smb_Dir *dir_hnd = dirptr->dir_hnd;
 	struct smb_filename *dir_fname = dir_hnd->dir_smb_fname;
 	bool posix = (dir_fname->flags & SMB_FILENAME_POSIX_PATH);
-	const char *dpath = dir_fname->base_name;
+	const bool toplevel = ISDOT(dir_fname->base_name);
 	NTSTATUS status;
 
 	*_smb_fname = NULL;
@@ -554,6 +554,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		struct open_symlink_err *symlink_err = NULL;
 		uint32_t mode = 0;
 		bool get_dosmode = get_dosmode_in;
+		bool toplevel_dotdot;
 		bool ok;
 
 		dname = dptr_ReadDirName(ctx, dirptr);
@@ -586,11 +587,13 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			continue;
 		}
 
+		toplevel_dotdot = toplevel && ISDOTDOT(dname);
+
 		if (ISDOT(dname) || ISDOTDOT(dname)) {
 
 			const char *dotname = dname;
 
-			if (ISDOTDOT(dname) && ISDOT(dpath)) {
+			if (toplevel_dotdot) {
 				/*
 				 * Handle ".." in toplevel like "." to not
 				 * leak info from outside the share.
@@ -624,7 +627,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			 * Don't leak INO/DEV/User SID/Group SID about
 			 * the containing directory of the share.
 			 */
-			if (ISDOT(dpath) && ISDOTDOT(dname)) {
+			if (toplevel_dotdot) {
 				/*
 				 * Ensure posix fileid and sids are hidden
 				 */
