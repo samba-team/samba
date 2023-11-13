@@ -100,5 +100,5 @@ class AuthenticationSilo(Model):
         self.refresh(ldb, fields=["members"])
 
     def get_authentication_sddl(self):
-        return ("O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/"
-                f"AuthenticationSilo/{escaped_claim_id(self.name)}))")
+        return ('O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/'
+                f'AuthenticationSilo == "{escaped_claim_id(self.name)}"))')

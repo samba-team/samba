@@ -173,7 +173,7 @@ class AuthPolicyCmdTestCase(SiloTest):
         sddl = ndr_unpack(security.descriptor, desc).as_sddl()
         self.assertEqual(
             sddl,
-            "O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo/Developers))")
+            'O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo == "Developers"))')
 
     def test_create__service_tgt_lifetime_mins(self):
         """Test create a new authentication policy with --service-tgt-lifetime-mins.
@@ -229,7 +229,7 @@ class AuthPolicyCmdTestCase(SiloTest):
         sddl = ndr_unpack(security.descriptor, desc).as_sddl()
         self.assertEqual(
             sddl,
-            "O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo/Managers))")
+            'O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo == "Managers"))')
 
     def test_create__computer_tgt_lifetime_mins(self):
         """Test create a new authentication policy with --computer-tgt-lifetime-mins.
@@ -509,7 +509,7 @@ class AuthPolicyCmdTestCase(SiloTest):
         --user-allowed-to-authenticate-from
         --user-allowed-to-authenticate-from-silo
         """
-        sddl = "O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo/Developers))"
+        sddl = 'O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo == "Developers"))'
         name = self.unique_name()
 
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
@@ -528,7 +528,7 @@ class AuthPolicyCmdTestCase(SiloTest):
         --service-allowed-to-authenticate-from
         --service-allowed-to-authenticate-from-silo
         """
-        sddl = "O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo/Managers))"
+        sddl = 'O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo == "Managers"))'
         name = self.unique_name()
 
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
@@ -750,7 +750,7 @@ class AuthPolicyCmdTestCase(SiloTest):
         sddl = ndr_unpack(security.descriptor, desc).as_sddl()
         self.assertEqual(
             sddl,
-            "O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo/QA))")
+            'O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo == "QA"))')
 
     def test_modify__user_allowed_to_authenticate_to(self):
         """Modify authentication policy user allowed to authenticate to."""
@@ -819,7 +819,7 @@ class AuthPolicyCmdTestCase(SiloTest):
         sddl = ndr_unpack(security.descriptor, desc).as_sddl()
         self.assertEqual(
             sddl,
-            "O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo/Developers))")
+            'O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo == "Developers"))')
 
     def test_modify__service_allowed_to_authenticate_to(self):
         """Modify authentication policy service allowed to authenticate to."""
