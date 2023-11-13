@@ -30,7 +30,7 @@ CLAIM_VAL_TYPES = {
 }
 
 
-def list_to_claim(k, v):
+def list_to_claim(k, v, case_sensitive=False):
     if isinstance(v, security.CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1):
         # make the name match
         v.name = k
@@ -56,6 +56,8 @@ def list_to_claim(k, v):
     c.value_type = CLAIM_VAL_TYPES[t]
     c.values = v
     c.value_count = len(v)
+    if case_sensitive:
+        c.flags |= security.CLAIM_SECURITY_ATTRIBUTE_VALUE_CASE_SENSITIVE
 
     return c
 
