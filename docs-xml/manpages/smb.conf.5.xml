@@ -664,7 +664,7 @@ chmod 1770 /usr/local/samba/lib/usershares
 		passed names. The default setting of auto allows clients that support case sensitive filenames (Linux CIFSVFS
 		and smbclient 3.0.5 and above currently) to tell the Samba server on a per-packet basis that they wish to
 		access the file system in a case-sensitive manner (to support UNIX case sensitive semantics). No Windows or
-		DOS system supports case-sensitive filename so setting this option to auto is that same as setting it to no
+		DOS system supports case-sensitive filename so setting this option to auto is the same as setting it to no
 		for them. Default <emphasis>auto</emphasis>.
 		</para></listitem>
 		</varlistentry>
