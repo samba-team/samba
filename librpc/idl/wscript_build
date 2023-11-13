@@ -27,7 +27,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
 
 # Services that we only have a client for
 bld.SAMBA_PIDL_LIST('PIDL',
-                    '''atsvc.idl''',
+                    '''atsvc.idl gkdi.idl''',
                     options='--header --ndr-parser --client --python',
                     output_dir='../gen_ndr')
 

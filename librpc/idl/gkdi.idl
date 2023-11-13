@@ -1,0 +1,111 @@
+/*
+ * Type definitions for Group Key Distribution Service
+ *
+ * The below was initially obtained from MS-GKDI which is copyright © 2021
+ * Microsoft Corporation as permitted by the Open Specifications terms
+ * reproduced in IDL_LICENCE.txt.
+ *
+ * Only GetKey() was provided as IDL. The definitions of GroupKeyEnvelope,
+ * KdfParameters, and FfcDhParameters were derived from structure diagrams.
+ * KeyEnvelope was undocumented.
+ */
+
+#include "idl_types.h"
+
+import "misc.idl";
+
+[
+  uuid("b9785960-524f-11df-8b6d-83dcded72085"),
+  endpoint("ncacn_np:[\\pipe\\lsass]", "ncacn_ip_tcp:", "ncalrpc:"),
+  version(1.0),
+  pointer_default(unique),
+  helpstring("Active Directory Group Key Distribution Service")
+]
+interface gkdi
+{
+	/* Public structures. */
+
+	typedef [bitmap32bit] bitmap {
+		ENVELOPE_FLAG_TRANSPORTING_PUBLIC_KEY = 0x00000001,
+		ENVELOPE_FLAG_KEY_MAY_ENCRYPT_NEW_DATA = 0x00000002
+	} EnvelopeFlags;
+
+	/*
+	 * This is an undocumented type. It is similar to GroupKeyEnvelope, but
+	 * with some fields omitted.
+	 */
+	typedef [public] struct {
+		uint32 version;
+		[value(0x4b53444b)] uint32 magic; /* ‘KDSK’ */
+		EnvelopeFlags flags;
+		uint32 l0_index;
+		[range(0, 31)] uint32 l1_index;
+		[range(0, 31)] uint32 l2_index;
+		GUID root_key_id;
+		uint32 unknown; /* This might be the length of a key that is rarely or never present. */
+		[value(2 * ndr_charset_length(domain_name, CH_UTF16))] uint32 domain_name_len;
+		[value(2 * ndr_charset_length(forest_name, CH_UTF16))] uint32 forest_name_len;
+		nstring domain_name;
+		nstring forest_name;
+	} KeyEnvelope;
+
+	typedef [public] struct {
+		uint32 version; /* The version (msKds-Version) of the root key ADM element. */
+		[value(0x4b53444b)] uint32 magic; /* ‘KDSK’ */
+		EnvelopeFlags flags;
+		uint32 l0_index;
+		[range(0, 31)] uint32 l1_index;
+		[range(0, 31)] uint32 l2_index;
+		GUID root_key_id;
+		[value(2 * ndr_charset_length(kdf_algorithm, CH_UTF16))] uint32 kdf_algorithm_len;
+		uint32 kdf_parameters_len;
+		[value(2 * ndr_charset_length(secret_agreement_algorithm, CH_UTF16))] uint32 secret_agreement_algorithm_len;
+		uint32 secret_agreement_parameters_len;
+		uint32 private_key_len;
+		uint32 public_key_len;
+		uint32 l1_key_len;
+		uint32 l2_key_len;
+		[value(2 * ndr_charset_length(domain_name, CH_UTF16))] uint32 domain_name_len;
+		[value(2 * ndr_charset_length(forest_name, CH_UTF16))] uint32 forest_name_len;
+		nstring kdf_algorithm;
+		uint8 kdf_parameters[kdf_parameters_len];
+		nstring secret_agreement_algorithm;
+		uint8 secret_agreement_parameters[secret_agreement_parameters_len];
+		nstring domain_name;
+		nstring forest_name;
+		[flag(NDR_SECRET)] uint8 l1_key[l1_key_len];
+		[flag(NDR_SECRET)] uint8 l2_key[l2_key_len];
+	} GroupKeyEnvelope;
+
+	typedef [public] struct {
+		[value(0)] uint32 padding_0;
+		[value(1)] uint32 padding_1;
+		[value(2 * ndr_charset_length(hash_algorithm, CH_UTF16))] uint32 hash_algorithm_len;
+		[value(0)] uint32 padding_2;
+		nstring hash_algorithm;
+	} KdfParameters;
+
+	typedef [public] struct {
+		/*
+		 * Twelve bytes account for the length, magic number, and key
+		 * length; the remaining bytes cover the two arrays of
+		 * ‘key_length’ bytes each.
+		 */
+		[value(12 + 2 * key_length)] uint32 length;
+		[value(0x4d504844)] uint32 magic; /* ‘DHPM’ */
+		uint32 key_length;
+		uint8 field_order[key_length];
+		uint8 generator[key_length];
+	} FfcDhParameters;
+
+	HRESULT gkdi_GetKey(
+		[in] uint32 target_sd_len,
+		[in] [size_is(target_sd_len)] [ref] char *target_sd,
+		[in] [unique] GUID* root_key_id,
+		[in] int32 l0_key_id,
+		[in] int32 l1_key_id,
+		[in] int32 l2_key_id,
+		[out] uint32 *out_len,
+		[out] [size_is(,*out_len)] uint8** out
+	);
+}

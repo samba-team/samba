@@ -390,6 +390,10 @@ bld.SAMBA_SUBSYSTEM('NDR_CLAIMS',
     source='gen_ndr/ndr_claims.c ndr/ndr_claims.c',
     deps='ndr NDR_COMPRESSION LZXPRESS')
 
+bld.SAMBA_SUBSYSTEM('NDR_GKDI',
+    source='gen_ndr/ndr_gkdi.c',
+    deps='ndr')
+
 bld.SAMBA_SUBSYSTEM('NDR_GMSA',
     source='gen_ndr/ndr_gmsa.c',
     deps='ndr')
@@ -631,6 +635,11 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_MDSSVC',
     public_deps='dcerpc-binding NDR_MDSSVC'
     )
 
+bld.SAMBA_SUBSYSTEM('RPC_NDR_GKDI',
+    source='gen_ndr/ndr_gkdi_c.c',
+    public_deps='dcerpc-binding NDR_GKDI'
+    )
+
 # a grouping library for NDR subsystems that may be used by more than one target
 bld.SAMBA_LIBRARY('ndr-samba',
     source=[],
@@ -638,7 +647,7 @@ bld.SAMBA_LIBRARY('ndr-samba',
     NDR_DNSSERVER NDR_EPMAPPER NDR_XATTR NDR_UNIXINFO NDR_NAMED_PIPE_AUTH
     NDR_NTPRINTING NDR_FSRVP NDR_WITNESS NDR_MDSSVC NDR_OPEN_FILES NDR_SMBXSRV
     NDR_SMB3POSIX
-    NDR_KRB5CCACHE NDR_WSP NDR_GMSA''',
+    NDR_KRB5CCACHE NDR_WSP NDR_GKDI NDR_GMSA''',
     private_library=True,
     grouping_library=True
     )
@@ -649,7 +658,7 @@ bld.SAMBA_LIBRARY('dcerpc-samba',
     deps='''RPC_NDR_LSA RPC_NDR_SAMR RPC_NDR_NETLOGON RPC_NDR_EVENTLOG
     RPC_NDR_DFS RPC_NDR_NTSVCS RPC_NDR_SVCCTL RPC_NDR_INITSHUTDOWN
     RPC_NDR_WKSSVC RPC_NDR_SRVSVC RPC_NDR_WINREG RPC_NDR_ECHO RPC_NDR_EPMAPPER
-    RPC_NDR_ATSVC RPC_NDR_SPOOLSS RPC_NDR_DNSSERVER''',
+    RPC_NDR_ATSVC RPC_NDR_SPOOLSS RPC_NDR_DNSSERVER RPC_NDR_GKDI''',
     public_deps='ndr-standard',
     private_library=True,
     grouping_library=True
