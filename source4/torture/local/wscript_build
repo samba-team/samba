@@ -13,6 +13,7 @@ TORTURE_LOCAL_SOURCE = '''../../../lib/util/charset/tests/iconv.c
 	../../../lib/util/tests/file.c ../../../lib/util/tests/genrand.c
         ../../../lib/util/charset/tests/charset.c
         ../../../lib/util/charset/tests/convert_string.c
+        ../../../lib/util/charset/tests/util_unistr.c
 	../../../lib/tdr/testsuite.c
 	../../../lib/tevent/testsuite.c ../../param/tests/share.c
         ../../../lib/tevent/test_req.c
