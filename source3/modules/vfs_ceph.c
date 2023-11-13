@@ -473,8 +473,22 @@ static int cephwrap_mkdirat(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			mode_t mode)
 {
+	int result = -1;
+#ifdef HAVE_CEPH_MKDIRAT
+	int dirfd = fsp_get_pathref_fd(dirfsp);
+
+	DBG_DEBUG("[CEPH] mkdirat(%p, %d, %s)\n",
+		  handle,
+		  dirfd,
+		  smb_fname->base_name);
+
+	result = ceph_mkdirat(handle->data, dirfd, smb_fname->base_name, mode);
+
+	DBG_DEBUG("[CEPH] mkdirat(...) = %d\n", result);
+
+	WRAP_RETURN(result);
+#else
 	struct smb_filename *full_fname = NULL;
-	int result;
 
 	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
 						dirfsp,
@@ -490,7 +504,8 @@ static int cephwrap_mkdirat(struct vfs_handle_struct *handle,
 
 	TALLOC_FREE(full_fname);
 
-	return WRAP_RETURN(result);
+	WRAP_RETURN(result);
+#endif
 }
 
 static int cephwrap_closedir(struct vfs_handle_struct *handle, DIR *dirp)
@@ -517,15 +532,44 @@ static int cephwrap_openat(struct vfs_handle_struct *handle,
 	bool have_opath = false;
 	bool became_root = false;
 	int result = -ENOENT;
+#ifdef HAVE_CEPH_OPENAT
+	int dirfd = -1;
+#endif
 
 	if (how->resolve != 0) {
 		errno = ENOSYS;
 		return -1;
 	}
 
-	/*
-	 * ceph doesn't have openat().
-	 */
+	if (smb_fname->stream_name) {
+		goto out;
+	}
+
+#ifdef O_PATH
+	have_opath = true;
+	if (fsp->fsp_flags.is_pathref) {
+		flags |= O_PATH;
+	}
+#endif
+
+#ifdef HAVE_CEPH_OPENAT
+	dirfd = fsp_get_pathref_fd(dirfsp);
+
+	DBG_DEBUG("[CEPH] openat(%p, %d, %p, %d, %d)\n",
+		  handle, dirfd, fsp, flags, mode);
+
+	if (fsp->fsp_flags.is_pathref && !have_opath) {
+		become_root();
+		became_root = true;
+	}
+
+	result = ceph_openat(handle->data,
+			     dirfd,
+			     smb_fname->base_name,
+			     flags,
+			     mode);
+
+#else
 	if (fsp_get_pathref_fd(dirfsp) != AT_FDCWD) {
 		name = full_path_from_dirfsp_atname(talloc_tos(),
 						    dirfsp,
@@ -539,28 +583,16 @@ static int cephwrap_openat(struct vfs_handle_struct *handle,
 	DBG_DEBUG("[CEPH] openat(%p, %s, %p, %d, %d)\n", handle,
 		  smb_fname_str_dbg(smb_fname), fsp, flags, mode);
 
-	if (smb_fname->stream_name) {
-		goto out;
-	}
-
-#ifdef O_PATH
-	have_opath = true;
-	if (fsp->fsp_flags.is_pathref) {
-		flags |= O_PATH;
-	}
-#endif
-
 	if (fsp->fsp_flags.is_pathref && !have_opath) {
 		become_root();
 		became_root = true;
 	}
 
 	result = ceph_open(handle->data, smb_fname->base_name, flags, mode);
-
+#endif
 	if (became_root) {
 		unbecome_root();
 	}
-
 out:
 	TALLOC_FREE(name);
 	fsp->fsp_flags.have_proc_fds = false;
@@ -992,8 +1024,28 @@ static int cephwrap_unlinkat(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			int flags)
 {
-	struct smb_filename *full_fname = NULL;
 	int result = -1;
+#ifdef HAVE_CEPH_UNLINKAT
+	int dirfd = fsp_get_pathref_fd(dirfsp);
+
+	DBG_DEBUG("[CEPH] unlinkat(%p, %d, %s)\n",
+		  handle,
+		  dirfd,
+		  smb_fname_str_dbg(smb_fname));
+
+	if (smb_fname->stream_name) {
+		errno = ENOENT;
+		return result;
+	}
+
+	result = ceph_unlinkat(handle->data,
+			       dirfd,
+			       smb_fname->base_name,
+			       flags);
+	DBG_DEBUG("[CEPH] unlinkat(...) = %d\n", result);
+	WRAP_RETURN(result);
+#else
+	struct smb_filename *full_fname = NULL;
 
 	DBG_DEBUG("[CEPH] unlink(%p, %s)\n",
 		handle,
@@ -1019,6 +1071,7 @@ static int cephwrap_unlinkat(struct vfs_handle_struct *handle,
 	TALLOC_FREE(full_fname);
 	DBG_DEBUG("[CEPH] unlink(...) = %d\n", result);
 	WRAP_RETURN(result);
+#endif
 }
 
 static int cephwrap_fchmod(struct vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
@@ -1242,8 +1295,24 @@ static int cephwrap_symlinkat(struct vfs_handle_struct *handle,
 		struct files_struct *dirfsp,
 		const struct smb_filename *new_smb_fname)
 {
-	struct smb_filename *full_fname = NULL;
 	int result = -1;
+#ifdef HAVE_CEPH_SYMLINKAT
+	int dirfd = fsp_get_pathref_fd(dirfsp);
+
+	DBG_DEBUG("[CEPH] symlinkat(%p, %s, %d, %s)\n",
+		  handle,
+		  link_target->base_name,
+		  dirfd,
+		  new_smb_fname->base_name);
+
+	result = ceph_symlinkat(handle->data,
+				link_target->base_name,
+				dirfd,
+				new_smb_fname->base_name);
+	DBG_DEBUG("[CEPH] symlinkat(...) = %d\n", result);
+	WRAP_RETURN(result);
+#else
+	struct smb_filename *full_fname = NULL;
 
 	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
 						dirfsp,
@@ -1262,6 +1331,7 @@ static int cephwrap_symlinkat(struct vfs_handle_struct *handle,
 	TALLOC_FREE(full_fname);
 	DBG_DEBUG("[CEPH] symlink(...) = %d\n", result);
 	WRAP_RETURN(result);
+#endif
 }
 
 static int cephwrap_readlinkat(struct vfs_handle_struct *handle,
@@ -1270,8 +1340,27 @@ static int cephwrap_readlinkat(struct vfs_handle_struct *handle,
 		char *buf,
 		size_t bufsiz)
 {
-	struct smb_filename *full_fname = NULL;
 	int result = -1;
+#ifdef HAVE_CEPH_READLINKAT
+	int dirfd = fsp_get_pathref_fd(dirfsp);
+
+	DBG_DEBUG("[CEPH] readlinkat(%p, %d, %s, %p, %llu)\n",
+		  handle,
+		  dirfd,
+		  smb_fname->base_name,
+		  buf,
+		  llu(bufsiz));
+
+	result = ceph_readlinkat(handle->data,
+				 dirfd,
+				 smb_fname->base_name,
+				 buf,
+				 bufsiz);
+
+	DBG_DEBUG("[CEPH] readlinkat(...) = %d\n", result);
+	WRAP_RETURN(result);
+#else
+	struct smb_filename *full_fname = NULL;
 
 	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
 						dirfsp,
@@ -1287,6 +1376,7 @@ static int cephwrap_readlinkat(struct vfs_handle_struct *handle,
 	TALLOC_FREE(full_fname);
 	DBG_DEBUG("[CEPH] readlink(...) = %d\n", result);
 	WRAP_RETURN(result);
+#endif
 }
 
 static int cephwrap_linkat(struct vfs_handle_struct *handle,
