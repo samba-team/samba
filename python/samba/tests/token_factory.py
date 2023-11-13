@@ -43,17 +43,17 @@ def list_to_claim(k, v, case_sensitive=False):
 
     c = security.CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1()
 
-    if len(v) == 0:
-        raise ValueError("empty claim lists are not valid"
-                         f" (for {k})")
-
-    t = type(v[0])
-    for val in v[1:]:
-        if type(val) != t:
-            raise TypeError(f"claim values for '{k}' "
-                            "should all be the same type")
+    if len(v) != 0:
+        t = type(v[0])
+        c.value_type = CLAIM_VAL_TYPES[t]
+        for val in v[1:]:
+            if type(val) != t:
+                raise TypeError(f"claim values for '{k}' "
+                                "should all be the same type")
+    else:
+        # pick an arbitrary type
+        c.value_type = CLAIM_VAL_TYPES['uint']
     c.name = k
-    c.value_type = CLAIM_VAL_TYPES[t]
     c.values = v
     c.value_count = len(v)
     if case_sensitive:
