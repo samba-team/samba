@@ -28,7 +28,12 @@ def build(bld):
                         ''')
 
     bld.SAMBA_SUBSYSTEM('gkdi',
-                        source='gkdi.c')
+                        source='gkdi.c',
+                        deps='''
+                        talloc
+                        GNUTLS_HELPERS
+                        NDR_GKDI
+                        ''')
 
     bld.SAMBA_PYTHON('python_crypto',
                      source='py_crypto.c',

@@ -104,6 +104,14 @@ interface gkdi
 		uint8 generator[key_length];
 	} FfcDhParameters;
 
+	typedef [public] struct {
+		GUID guid;
+		int32 l0_idx;
+		int32 l1_idx;
+		int32 l2_idx;
+		[flag(NDR_REMAINING)] DATA_BLOB target_security_descriptor;
+	} GkdiDerivationCtx;
+
 	HRESULT gkdi_GetKey(
 		[in] uint32 target_sd_len,
 		[in] [size_is(target_sd_len)] [ref] char *target_sd,
