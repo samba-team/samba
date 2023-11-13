@@ -1948,6 +1948,7 @@ static void samba_extended_info_version(struct smb_extended_info *extended_info)
 }
 
 static bool fsinfo_unix_valid_level(connection_struct *conn,
+				    struct files_struct *fsp,
 				    uint16_t info_level)
 {
 	if (conn->sconn->using_smb2 &&
@@ -2470,7 +2471,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			int rc;
 			struct vfs_statvfs_struct svfs;
 
-			if (!fsinfo_unix_valid_level(conn, info_level)) {
+			if (!fsinfo_unix_valid_level(conn, fsp, info_level)) {
 				return NT_STATUS_INVALID_LEVEL;
 			}
 
