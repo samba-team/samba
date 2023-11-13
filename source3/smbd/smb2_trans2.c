@@ -1952,7 +1952,9 @@ static bool fsinfo_unix_valid_level(connection_struct *conn,
 				    uint16_t info_level)
 {
 	if (conn->sconn->using_smb2 &&
-	    info_level == SMB2_FS_POSIX_INFORMATION_INTERNAL) {
+	    fsp->posix_flags == FSP_POSIX_FLAGS_OPEN &&
+	    info_level == SMB2_FS_POSIX_INFORMATION_INTERNAL)
+	{
 		return true;
 	}
 #if defined(SMB1SERVER)
