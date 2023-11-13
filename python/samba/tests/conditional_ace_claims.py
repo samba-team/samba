@@ -20,6 +20,7 @@
 from samba.dcerpc import security
 from samba.security import access_check
 from samba.tests.token_factory import token as Token
+from samba.dcerpc.security import CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1
 from samba.tests import TestCase, DynamicTestCase, get_env_dir
 from samba.colour import c_RED, c_GREEN
 import os
@@ -73,10 +74,14 @@ def write_c_test_on_failure(f):
                 if s in token:
                     macro = s.upper()
                     for name, values in token[s].items():
-                        if not isinstance(values, (list, tuple)):
-                            values = [values]
-                        v = ', '.join(q(x) for x in values)
-                        v = q(f"{v}")
+                        if isinstance(values,
+                                      CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1):
+                            v = '...'
+                        else:
+                            if not isinstance(values, (list, tuple)):
+                                values = [values]
+                            v = ', '.join(q(x) for x in values)
+                            v = q(f"{v}")
                         print(f'\t{macro}({q(name)}, {v});')
             print(f'\tSD({q(sddl)});')
             if 'allow' in f.__name__:
