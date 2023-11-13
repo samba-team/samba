@@ -234,7 +234,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, ndr_flags_type 
 			}
 		}
 		if (converted_size > 0 && as[converted_size-1] != '\0') {
-			DEBUG(6,("long string '%s', send without NULL termination (which was expected)\n", as));
+			DEBUG(6,("long string '%s', sent without NULL termination (which was expected)\n", as));
 		}
 	}
 
