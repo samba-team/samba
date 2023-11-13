@@ -177,8 +177,8 @@ struct ndr_print {
 		0)
 
 /*
- * Mark an element as SECRET, it won't be printed by
- * via ndr_print* unless NDR_PRINT_SECRETS is specified.
+ * Mark an element as SECRET, it won't be printed via
+ * ndr_print* unless NDR_PRINT_SECRETS is specified.
  */
 #define LIBNDR_FLAG_IS_SECRET		(1U<<14)
 
