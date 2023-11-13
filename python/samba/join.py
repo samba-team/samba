@@ -463,12 +463,6 @@ class DCJoinContext(object):
                               am_rodc=False)
         ctx.tmp_samdb.set_schema(ctx.tmp_schema)
 
-    def build_DsReplicaAttribute(ctx, attrname, attrvalue):
-        '''build a DsReplicaAttributeCtr object'''
-        r = drsuapi.DsReplicaAttribute()
-        r.attid = ctx.tmp_samdb.get_attid_from_lDAPDisplayName(attrname)
-        r.value_ctr = 1
-
     def DsAddEntry(ctx, recs):
         '''add a record via the DRSUAPI DsAddEntry call'''
         if ctx.drsuapi is None:
