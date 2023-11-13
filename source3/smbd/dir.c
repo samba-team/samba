@@ -795,9 +795,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		TALLOC_FREE(dname);
 
 		*_smb_fname = talloc_move(ctx, &smb_fname);
-		if (*_smb_fname == NULL) {
-			return false;
-		}
 		*_fname = fname;
 		*_mode = mode;
 
