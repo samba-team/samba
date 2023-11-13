@@ -27,6 +27,9 @@ def build(bld):
                         LIBCRYPTO
                         ''')
 
+    bld.SAMBA_SUBSYSTEM('gkdi',
+                        source='gkdi.c')
+
     bld.SAMBA_PYTHON('python_crypto',
                      source='py_crypto.c',
                      deps='gnutls talloc LIBCLI_AUTH',
