@@ -155,6 +155,7 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 			 uint16_t flags2,
 			 unsigned int max_data_bytes,
 			 size_t *fixed_portion,
+			 struct files_struct *fsp,
 			 struct smb_filename *smb_fname,
 			 char **ppdata,
 			 int *ret_data_len);

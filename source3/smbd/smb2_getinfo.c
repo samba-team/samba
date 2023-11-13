@@ -473,6 +473,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 					 STR_UNICODE,
 					 in_output_buffer_length,
 					 &fixed_portion,
+					 fsp,
 					 fsp->fsp_name,
 					 &data,
 					 &data_size);

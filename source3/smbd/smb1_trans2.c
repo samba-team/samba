@@ -1681,6 +1681,7 @@ static void call_trans2qfsinfo(connection_struct *conn,
 				 max_data_bytes,
 				 &fixed_portion,
 				 NULL,
+				 NULL,
 				 ppdata, &data_len);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
