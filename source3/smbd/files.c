@@ -1576,7 +1576,7 @@ NTSTATUS openat_pathref_fsp_lcomp(struct files_struct *dirfsp,
 			  (fd >= 0) ? "F" : "",
 			  dirfsp->fsp_name->base_name,
 			  smb_fname_rel->base_name,
-			  nt_errstr(status));
+			  strerror(errno));
 		fd_close(fsp);
 		file_free(NULL, fsp);
 		return status;
