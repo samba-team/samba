@@ -37,6 +37,15 @@ building Samba and LDB is this way.
 As part of this work, the pyldb-util public library, not known to be
 used by any other software, is made private to Samba.
 
+LDB Module API Python bindings removed
+--------------------------------------
+
+The LDB Modules API, which we do not promise a stable ABI or API for,
+was wrapped in python in early LDB development.  However that wrapping
+never took into account later changes, and so has not worked for a
+number of years.  Samba 4.21 and LDB 2.10 removes this unused and
+broken feature.
+
 REMOVED FEATURES
 ================
 

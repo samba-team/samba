@@ -155,10 +155,6 @@ class SegfaultTests(samba.tests.TestCase):
         str(m)
 
     @segfault_detector
-    def test_ldb_register_module(self):
-        ldb.register_module('')
-
-    @segfault_detector
     def test_messaging_deregister(self):
         messaging.deregister('s', 's', 's', False)
 

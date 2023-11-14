@@ -132,23 +132,6 @@ class SimpleLdb(LdbBaseTest):
         x = ldb.Ldb()
         x.set_create_perms(0o600)
 
-    def test_modules_none(self):
-        x = ldb.Ldb()
-        self.assertEqual([], x.modules())
-
-    def test_modules_tdb(self):
-        x = ldb.Ldb(self.url(), flags=self.flags())
-        self.assertEqual("[<ldb module 'tdb'>]", repr(x.modules()))
-
-    def test_firstmodule_none(self):
-        x = ldb.Ldb()
-        self.assertEqual(x.firstmodule, None)
-
-    def test_firstmodule_tdb(self):
-        x = ldb.Ldb(self.url(), flags=self.flags())
-        mod = x.firstmodule
-        self.assertEqual(repr(mod), "<ldb module 'tdb'>")
-
     def test_search(self):
         l = ldb.Ldb(self.url(), flags=self.flags())
         self.assertEqual(len(l.search()), 0)
@@ -3378,47 +3361,6 @@ class MessageElementTests(TestCase):
     def test_bad_text(self):
         el = ldb.MessageElement(b'\xba\xdd')
         self.assertRaises(UnicodeDecodeError, el.text.__getitem__, 0)
-
-
-class ModuleTests(TestCase):
-
-    def setUp(self):
-        super(ModuleTests, self).setUp()
-        self.testdir = tempdir()
-        self.filename = os.path.join(self.testdir, "test.ldb")
-        self.ldb = ldb.Ldb(self.filename)
-
-    def tearDown(self):
-        shutil.rmtree(self.testdir)
-        super(ModuleTests, self).setUp()
-
-    def test_register_module(self):
-        class ExampleModule:
-            name = "example"
-        ldb.register_module(ExampleModule)
-
-    def test_use_module(self):
-        ops = []
-
-        class ExampleModule:
-            name = "bla"
-
-            def __init__(self, ldb, next):
-                ops.append("init")
-                self.next = next
-
-            def search(self, *args, **kwargs):
-                return self.next.search(*args, **kwargs)
-
-            def request(self, *args, **kwargs):
-                pass
-
-        ldb.register_module(ExampleModule)
-        l = ldb.Ldb(self.filename)
-        l.add({"dn": "@MODULES", "@LIST": "bla"})
-        self.assertEqual([], ops)
-        l = ldb.Ldb(self.filename)
-        self.assertEqual(["init"], ops)
 
 
 class LdbResultTests(LdbBaseTest):
