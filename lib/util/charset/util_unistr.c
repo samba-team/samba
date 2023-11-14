@@ -221,7 +221,7 @@ size_t utf16_null_terminated_len_n(const void *src, size_t n)
 {
 	size_t len;
 
-	for (len = 0; (len+2 < n) && SVAL(src, len); len += 2) ;
+	for (len = 0; (len+2 <= n) && SVAL(src, len); len += 2) ;
 
 	if (len+2 <= n) {
 		len += 2;
