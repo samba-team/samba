@@ -631,16 +631,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 				smb_fname->st = smb_fname->fsp->fsp_name->st;
 			}
 
-			if (toplevel_dotdot) {
-				/*
-				 * Ensure posix fileid and sids are hidden
-				 */
-				smb_fname->st.st_ex_ino = 0;
-				smb_fname->st.st_ex_dev = 0;
-				smb_fname->st.st_ex_uid = -1;
-				smb_fname->st.st_ex_gid = -1;
-			}
-
 			goto done;
 		}
 
@@ -739,6 +729,16 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 				update_stat_ex_mtime(&smb_fname->st,
 						     write_time_ts);
 			}
+		}
+
+		if (toplevel_dotdot) {
+			/*
+			 * Ensure posix fileid and sids are hidden
+			 */
+			smb_fname->st.st_ex_ino = 0;
+			smb_fname->st.st_ex_dev = 0;
+			smb_fname->st.st_ex_uid = -1;
+			smb_fname->st.st_ex_gid = -1;
 		}
 
 		DBG_NOTICE("mask=[%s] found %s fname=%s (%s)\n",
