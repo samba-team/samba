@@ -626,11 +626,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		}
 
 		if (!S_ISLNK(smb_fname->st.st_ex_mode)) {
-			if (get_dosmode) {
-				mode = fdos_mode(smb_fname->fsp);
-				smb_fname->st = smb_fname->fsp->fsp_name->st;
-			}
-
 			goto done;
 		}
 
@@ -699,12 +694,11 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			continue;
 		}
 
+done:
 		if (get_dosmode) {
 			mode = fdos_mode(smb_fname->fsp);
 			smb_fname->st = smb_fname->fsp->fsp_name->st;
 		}
-
-	done:
 
 		if (!dir_check_ftype(mode, dirtype)) {
 			DBG_INFO("[%s] attribs 0x%" PRIx32 " didn't match "
