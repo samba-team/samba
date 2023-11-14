@@ -1667,7 +1667,6 @@ sub ConvertStringFromPythonData($$$$$)
 	$self->pidl("unicode = PyUnicode_AsEncodedString($py_var, \"utf-8\", \"ignore\");");
 	$self->pidl("if (unicode == NULL) {");
 	$self->indent;
-	$self->pidl("PyErr_NoMemory();");
 	$self->pidl("$fail");
 	$self->deindent;
 	$self->pidl("}");
