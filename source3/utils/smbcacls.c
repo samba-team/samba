@@ -2001,6 +2001,164 @@ out:
 	return result;
 }
 
+struct restore_dacl {
+	const char *path;
+	struct security_descriptor *sd;
+};
+
+/*
+ * Restore dacls from 'savefile' produced by
+ * 'icacls name /save' or 'smbcacls --save'
+ */
+static int cacl_restore(struct cli_state *cli,
+			struct cli_credentials *creds,
+			bool numeric, const char *restorefile)
+{
+	int restore_fd;
+	int result;
+	struct save_restore_stats stats = { 0 };
+
+	char **lines = NULL;
+	char *content = NULL;
+	char *convert_content = NULL;
+	size_t content_size;
+	struct restore_dacl *entries = NULL;
+	int numlines, i = 0;
+	bool ok;
+	struct dom_sid *sid = NULL;
+
+	if (restorefile == NULL) {
+		DBG_ERR("No restore file specified\n");
+		result = EXIT_FAILED;
+		goto out;
+	}
+
+	if (test_args) {
+		result = EXIT_OK;
+		goto out;
+	}
+
+	restore_fd = open(restorefile, O_RDONLY, S_IRUSR | S_IWUSR);
+	if (restore_fd < 0) {
+		DBG_ERR("Failed to open %s.\n", restorefile);
+		result = EXIT_FAILED;
+		goto out;
+	}
+
+	content = fd_load(restore_fd, &content_size, 0, talloc_tos());
+
+	close(restore_fd);
+
+	if (content == NULL) {
+		DBG_ERR("Failed to load content from %s.\n", restorefile);
+		result = EXIT_FAILED;
+		goto out;
+	}
+
+	ok = convert_string_talloc(talloc_tos(),
+				   CH_UTF16,
+				   CH_UNIX,
+				   content,
+				   utf16_len_n(content, content_size),
+				   (void **)(void *)&convert_content,
+				   &content_size);
+
+	TALLOC_FREE(content);
+
+	if (!ok) {
+		DBG_ERR("Failed to convert content from %s "
+			"to CH_UNIX.\n", restorefile);
+		result = EXIT_FAILED;
+		goto out;
+	}
+
+	lines = file_lines_parse(convert_content,
+				 content_size, &numlines, talloc_tos());
+
+	if (lines == NULL) {
+		DBG_ERR("Failed to parse lines from content of %s.",
+			restorefile);
+		result = EXIT_FAILED;
+		goto out;
+	}
+
+	entries = talloc_zero_array(lines, struct restore_dacl, numlines / 2);
+
+	if (entries == NULL) {
+		DBG_ERR("error processing %s, out of memory\n", restorefile);
+		result = EXIT_FAILED;
+		goto out;
+	}
+
+	sid = get_domain_sid(cli);
+
+	while (i < numlines) {
+		int index = i / 2;
+		int first_line = (i % 2) == 0;
+
+		if (first_line) {
+			char *tmp = NULL;
+			tmp = lines[i];
+			/* line can be blank if root of share */
+			if (strlen(tmp) == 0) {
+				entries[index].path = talloc_strdup(lines,
+								    "\\");
+			} else {
+				entries[index].path = lines[i];
+			}
+		} else {
+			entries[index].sd = sddl_decode(lines, lines[i], sid);
+			entries[index].sd->type |=
+			    SEC_DESC_DACL_AUTO_INHERIT_REQ;
+			entries[index].sd->type |= SEC_DESC_SACL_AUTO_INHERITED;
+		}
+		i++;
+	}
+	for (i = 0; i < (numlines / 2); i++) {
+		int mode = SMB_ACL_SET;
+		int set_result;
+		struct cli_state *targetcli = NULL;
+		char *targetpath = NULL;
+		NTSTATUS status;
+
+		/* check for dfs */
+		status = cli_resolve_path(talloc_tos(),
+					  "",
+					  creds,
+					  cli,
+					  entries[i].path,
+					  &targetcli, &targetpath);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("Error failed to process file: %s\n",
+			       entries[i].path);
+			stats.failure += 1;
+			continue;
+		}
+
+		set_result = cacl_set_from_sd(targetcli,
+					      targetpath,
+					      entries[i].sd, mode, numeric);
+
+		if (set_result == EXIT_OK) {
+			printf("Successfully processed file: %s\n",
+			       entries[i].path);
+			stats.success += 1;
+		} else {
+			printf("Error failed to process file: %s\n",
+			       entries[i].path);
+			stats.failure += 1;
+		}
+	}
+
+	result = EXIT_OK;
+out:
+	TALLOC_FREE(lines);
+	fprintf(stdout, "Successfully processed %d files: "
+		"Failed processing %d files\n", stats.success, stats.failure);
+	return result;
+}
+
 /****************************************************************************
   main program
 ****************************************************************************/
@@ -2382,9 +2540,15 @@ int main(int argc, char *argv[])
 					   numeric);
 		}
 	} else {
-		if (save_file) {
+		if (save_file || restore_file) {
 			sddl = 1;
-			result = cacl_dump_dacl(cli, creds, filename);
+			if (save_file) {
+				result = cacl_dump_dacl(cli, creds, filename);
+			} else {
+				result = cacl_restore(targetcli,
+						      creds,
+						      numeric, restore_file);
+			}
 		} else {
 			result = cacl_dump(targetcli, targetfile, numeric);
 		}
