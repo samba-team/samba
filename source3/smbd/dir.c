@@ -653,8 +653,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			 * smb_fname->fsp just in case it's not
 			 * dangling.
 			 */
-			mode = FILE_ATTRIBUTE_NORMAL;
-			get_dosmode = false;
 			ask_sharemode = false;
 			goto done;
 		}
