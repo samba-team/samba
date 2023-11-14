@@ -1253,7 +1253,7 @@ static inline size_t _talloc_total_limit_size(const void *ptr,
 					struct talloc_memlimit *new_limit);
 
 /*
-   move a lump of memory from one talloc context to another return the
+   move a lump of memory from one talloc context to another returning the
    ptr on success, or NULL if it could not be transferred.
    passing NULL as ptr will always return NULL with no side effects.
 */
@@ -1335,7 +1335,7 @@ static void *_talloc_steal_internal(const void *new_ctx, const void *ptr)
 }
 
 /*
-   move a lump of memory from one talloc context to another return the
+   move a lump of memory from one talloc context to another returning the
    ptr on success, or NULL if it could not be transferred.
    passing NULL as ptr will always return NULL with no side effects.
 */
