@@ -1,0 +1,5 @@
+^samba3.rpc.winreg.winreg.HKLM\(nt4_dc\)
+^samba3.rpc.winreg.winreg.HKCR\(nt4_dc\)
+^samba3.rpc.winreg.winreg.HKCU\(nt4_dc\)
+^samba3.rpc.winreg.winreg.HKU\(nt4_dc\)
+^samba4.rpc.winreg.*
