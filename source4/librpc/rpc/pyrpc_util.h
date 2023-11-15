@@ -59,6 +59,10 @@ PyObject *py_return_ndr_struct(const char *module_name, const char *type_name,
 
 PyObject *PyString_FromStringOrNULL(const char *str);
 
+PyObject *PyBytes_FromUtf16StringOrNULL(const uint16_t *str);
+
+uint16_t *PyUtf16String_FromBytes(TALLOC_CTX *mem_ctx, PyObject *value);
+
 PyObject *pyrpc_import_union(PyTypeObject *type, TALLOC_CTX *mem_ctx, int level,
 			     const void *in, const char *typename);
 void *pyrpc_export_union(PyTypeObject *type, TALLOC_CTX *mem_ctx, int level,
