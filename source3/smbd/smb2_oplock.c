@@ -1379,7 +1379,10 @@ void message_to_share_mode_entry(struct file_id *id,
 				 struct share_mode_entry *e,
 				 const char *msg)
 {
-	e->pid.pid = (pid_t)IVAL(msg,OP_BREAK_MSG_PID_OFFSET);
+	e->pid = (struct server_id){
+		.pid = (pid_t)IVAL(msg, OP_BREAK_MSG_PID_OFFSET),
+		.vnn = IVAL(msg, OP_BREAK_MSG_VNN_OFFSET),
+	};
 	e->op_mid = BVAL(msg,OP_BREAK_MSG_MID_OFFSET);
 	e->op_type = SVAL(msg,OP_BREAK_MSG_OP_TYPE_OFFSET);
 	e->access_mask = IVAL(msg,OP_BREAK_MSG_ACCESS_MASK_OFFSET);
@@ -1395,8 +1398,7 @@ void message_to_share_mode_entry(struct file_id *id,
 	e->share_file_id = (unsigned long)IVAL(msg,OP_BREAK_MSG_FILE_ID_OFFSET);
 	e->uid = (uint32_t)IVAL(msg,OP_BREAK_MSG_UID_OFFSET);
 	e->flags = (uint16_t)SVAL(msg,OP_BREAK_MSG_FLAGS_OFFSET);
-	e->name_hash = IVAL(msg,OP_BREAK_MSG_NAME_HASH_OFFSET);
-	e->pid.vnn = IVAL(msg,OP_BREAK_MSG_VNN_OFFSET);
+	e->name_hash = IVAL(msg, OP_BREAK_MSG_NAME_HASH_OFFSET);
 }
 
 /****************************************************************************
