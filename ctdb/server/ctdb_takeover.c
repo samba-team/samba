@@ -1377,6 +1377,92 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	return 0;
 }
 
+static bool ctdb_client_remove_tcp(struct ctdb_client *client,
+				   const struct ctdb_connection *conn)
+{
+	struct ctdb_tcp_list *tcp = NULL;
+	struct ctdb_tcp_list *tcp_next = NULL;
+	bool found = false;
+
+	for (tcp = client->tcp_list; tcp != NULL; tcp = tcp_next) {
+		bool same;
+
+		tcp_next = tcp->next;
+
+		same = ctdb_connection_same(conn, &tcp->connection);
+		if (!same) {
+			continue;
+		}
+
+		TALLOC_FREE(tcp);
+		found = true;
+	}
+
+	return found;
+}
+
+/*
+  called by a client to inform us of a TCP connection that was disconnected
+ */
+int32_t ctdb_control_tcp_client_disconnected(struct ctdb_context *ctdb,
+					     uint32_t client_id,
+					     TDB_DATA indata)
+{
+	struct ctdb_client *client = reqid_find(ctdb->idr, client_id, struct ctdb_client);
+	struct ctdb_connection *tcp_sock = NULL;
+	int ret;
+	TDB_DATA data;
+	char conn_str[132] = { 0, };
+	bool found = false;
+
+	tcp_sock = (struct ctdb_connection *)indata.dptr;
+
+	ctdb_canonicalize_ip_inplace(&tcp_sock->src);
+	ctdb_canonicalize_ip_inplace(&tcp_sock->dst);
+
+	ret = ctdb_connection_to_buf(conn_str,
+				     sizeof(conn_str),
+				     tcp_sock,
+				     false,
+				     " -> ");
+	if (ret != 0) {
+		strlcpy(conn_str, "UNKNOWN", sizeof(conn_str));
+	}
+
+	found = ctdb_client_remove_tcp(client, tcp_sock);
+	if (!found) {
+		DBG_DEBUG("TCP connection %s not found "
+			  "(client_id %u pid %u).\n",
+			  conn_str, client_id, client->pid);
+		return 0;
+	}
+
+	D_INFO("deregistered TCP connection %s "
+	       "(client_id %u pid %u)\n",
+	       conn_str, client_id, client->pid);
+
+	data.dptr = (uint8_t *)tcp_sock;
+	data.dsize = sizeof(*tcp_sock);
+
+	/* tell all nodes about this tcp connection is gone */
+	ret = ctdb_daemon_send_control(ctdb,
+				       CTDB_BROADCAST_CONNECTED,
+				       0,
+				       CTDB_CONTROL_TCP_REMOVE,
+				       0,
+				       CTDB_CTRL_FLAG_NOREPLY,
+				       data,
+				       NULL,
+				       NULL);
+	if (ret != 0) {
+		DBG_ERR("Failed to send CTDB_CONTROL_TCP_REMOVE: %s\n",
+			conn_str);
+		return -1;
+	}
+
+	return 0;
+}
+
 /*
   find a tcp address on a list
  */
