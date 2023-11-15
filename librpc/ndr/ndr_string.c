@@ -256,6 +256,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, ndr_flags_type 
 	libndr_flags flags = ndr->flags;
 	unsigned byte_mul = 2;
 	uint8_t *dest = NULL;
+	enum ndr_err_code ndr_err = NDR_ERR_SUCCESS;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NDR_ERR_SUCCESS;
@@ -338,48 +339,88 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, ndr_flags_type 
 	switch (flags & LIBNDR_STRING_FLAGS) {
 	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4:
 	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_NOTERM:
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, c_len));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, c_len));
-		NDR_CHECK(ndr_push_bytes(ndr, dest, d_len));
+		ndr_err = ndr_push_uint32(ndr, NDR_SCALARS, c_len);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			goto out;
+		}
+		ndr_err = ndr_push_uint32(ndr, NDR_SCALARS, 0);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			goto out;
+		}
+		ndr_err = ndr_push_uint32(ndr, NDR_SCALARS, c_len);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			goto out;
+		}
+		ndr_err = ndr_push_bytes(ndr, dest, d_len);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			goto out;
+		}
 		break;
 
 	case LIBNDR_FLAG_STR_LEN4:
 	case LIBNDR_FLAG_STR_LEN4|LIBNDR_FLAG_STR_NOTERM:
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, c_len));
-		NDR_CHECK(ndr_push_bytes(ndr, dest, d_len));
+		ndr_err = ndr_push_uint32(ndr, NDR_SCALARS, 0);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			goto out;
+		}
+		ndr_err = ndr_push_uint32(ndr, NDR_SCALARS, c_len);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			goto out;
+		}
+		ndr_err = ndr_push_bytes(ndr, dest, d_len);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			goto out;
+		}
 		break;
 
 	case LIBNDR_FLAG_STR_SIZE4:
 	case LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_NOTERM:
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, c_len));
-		NDR_CHECK(ndr_push_bytes(ndr, dest, d_len));
+		ndr_err = ndr_push_uint32(ndr, NDR_SCALARS, c_len);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			goto out;
+		}
+		ndr_err = ndr_push_bytes(ndr, dest, d_len);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			goto out;
+		}
 		break;
 
 	case LIBNDR_FLAG_STR_SIZE2:
 	case LIBNDR_FLAG_STR_SIZE2|LIBNDR_FLAG_STR_NOTERM:
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, c_len));
-		NDR_CHECK(ndr_push_bytes(ndr, dest, d_len));
+		ndr_err = ndr_push_uint16(ndr, NDR_SCALARS, c_len);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			goto out;
+		}
+		ndr_err = ndr_push_bytes(ndr, dest, d_len);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			goto out;
+		}
 		break;
 
 	case LIBNDR_FLAG_STR_NULLTERM:
-		NDR_CHECK(ndr_push_bytes(ndr, dest, d_len));
+		ndr_err = ndr_push_bytes(ndr, dest, d_len);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			goto out;
+		}
 		break;
 
 	default:
 		if (ndr->flags & LIBNDR_FLAG_REMAINING) {
-			NDR_CHECK(ndr_push_bytes(ndr, dest, d_len));
+			ndr_err = ndr_push_bytes(ndr, dest, d_len);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				goto out;
+			}
 			break;
 		}
 
-		return ndr_push_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%"PRI_LIBNDR_FLAGS"\n",
-				      ndr->flags & LIBNDR_STRING_FLAGS);
+		ndr_err = ndr_push_error(ndr, NDR_ERR_STRING, "Bad string flags 0x%"PRI_LIBNDR_FLAGS"\n",
+					 ndr->flags & LIBNDR_STRING_FLAGS);
+		goto out;
 	}
 
+out:
 	talloc_free(dest);
-
-	return NDR_ERR_SUCCESS;
+	return ndr_err;
 }
 
 /**
