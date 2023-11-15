@@ -502,6 +502,7 @@ WERROR _winreg_EnumValue(struct pipes_struct *p,
 		}
 
 		if (val->data.length > *r->out.size) {
+			*r->out.size = val->data.length;
 			return WERR_MORE_DATA;
 		}
 
