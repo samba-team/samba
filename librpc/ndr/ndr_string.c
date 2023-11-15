@@ -185,10 +185,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, ndr_flags_type 
 			}
 			converted_size = MIN(strlen(as)+1, conv_src_len);
 		} else if (!convert_string_talloc(ndr->current_mem_ctx, chset,
-					   CH_UNIX, ndr->data + ndr->offset,
-					   conv_src_len * byte_mul,
-					   &as,
-					   &converted_size)) {
+						  CH_UNIX, ndr->data + ndr->offset,
+						  conv_src_len * byte_mul,
+						  &as,
+						  &converted_size)) {
 			return ndr_pull_error(ndr, NDR_ERR_CHARCNV,
 					      "Bad character conversion with flags 0x%"PRI_LIBNDR_FLAGS, flags);
 		}
@@ -753,11 +753,11 @@ _PUBLIC_ enum ndr_err_code ndr_check_string_terminator(struct ndr_pull *ndr, uin
 	NDR_PULL_NEED_BYTES(ndr, element_size);
 
 	for (i = 0; i < element_size; i++) {
-		 if (ndr->data[ndr->offset+i] != 0) {
+		if (ndr->data[ndr->offset+i] != 0) {
 			ndr->offset = save_offset;
 
 			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "String terminator not present or outside string boundaries");
-		 }
+		}
 	}
 
 	ndr->offset = save_offset;
@@ -865,10 +865,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, ndr_flags_type
 		}
 
 		if (!convert_string(CH_UNIX, chset,
-			     var, strlen(var),
-			     ndr->data+ndr->offset, required, &size)) {
+				    var, strlen(var),
+				    ndr->data+ndr->offset, required, &size)) {
 			return ndr_push_error(ndr, NDR_ERR_CHARCNV,
-				      "Bad character conversion");
+					      "Bad character conversion");
 		}
 
 		/* Make sure the remaining part of the string is filled with zeroes */
