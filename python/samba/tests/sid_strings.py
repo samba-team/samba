@@ -98,7 +98,7 @@ class SidStringBase(TestCase):
 
         class_dn = f'CN={class_name},{self.schema_dn}'
 
-        governs_id = f'1.3.6.1.4.1.7165.4.6.2.9.{self.timestamp[-8:]}.{suffix}'
+        governs_id = f'1.3.6.1.4.1.7165.4.6.2.9.1{self.timestamp[-7:]}.{suffix}'
 
         # expected_sid can be a SID string, an error code, None, or a
         # special value indicating a deferred error, as follows:
