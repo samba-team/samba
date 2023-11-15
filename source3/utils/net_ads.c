@@ -1140,6 +1140,8 @@ static int ads_user_info(struct net_context *c, int argc, const char **argv)
 
 	ret = 0;
 out:
+	TALLOC_FREE(escaped_user);
+	TALLOC_FREE(searchstring);
 	ads_msgfree(ads, res);
 	TALLOC_FREE(tmp_ctx);
 	return ret;
