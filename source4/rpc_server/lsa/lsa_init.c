@@ -344,10 +344,11 @@ NTSTATUS dcesrv_lsa_OpenPolicy(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
 	}
 
-	r2.in.system_name = NULL;
-	r2.in.attr = r->in.attr;
-	r2.in.access_mask = r->in.access_mask;
-	r2.out.handle = r->out.handle;
+	r2 = (struct lsa_OpenPolicy2) {
+		.in.attr = r->in.attr,
+		.in.access_mask = r->in.access_mask,
+		.out.handle = r->out.handle,
+	};
 
 	return dcesrv_lsa_OpenPolicy2(dce_call, mem_ctx, &r2);
 }
