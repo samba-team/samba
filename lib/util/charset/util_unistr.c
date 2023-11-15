@@ -243,6 +243,50 @@ size_t utf16_null_terminated_len_n(const void *src, size_t n)
 	return len;
 }
 
+uint16_t *talloc_utf16_strlendup(TALLOC_CTX *mem_ctx, const char *str, size_t len)
+{
+	uint16_t *new_str = NULL;
+
+	/* Check for overflow. */
+	if (len > SIZE_MAX - 2) {
+		return NULL;
+	}
+
+	/*
+	 * Allocate the new string, including space for the
+	 * UTF‐16 null terminator.
+	 */
+	new_str = talloc_size(mem_ctx, len + 2);
+	if (new_str == NULL) {
+		return NULL;
+	}
+
+	memcpy(new_str, str, len);
+
+	{
+		/*
+		 * Ensure that the UTF‐16 string is
+		 * null‐terminated.
+		 */
+
+		char *new_bytes = (char *)new_str;
+
+		new_bytes[len] = '\0';
+		new_bytes[len + 1] = '\0';
+	}
+
+	return new_str;
+}
+
+uint16_t *talloc_utf16_strdup(TALLOC_CTX *mem_ctx, const char *str)
+{
+	return talloc_utf16_strlendup(mem_ctx, str, utf16_len(str));
+}
+
+uint16_t *talloc_utf16_strndup(TALLOC_CTX *mem_ctx, const char *str, size_t n)
+{
+	return talloc_utf16_strlendup(mem_ctx, str, utf16_len_n(str, n));
+}
 
 /**
  * Determine the length and validity of a utf-8 string.

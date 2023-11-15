@@ -129,6 +129,10 @@ limited by 'n' bytes
 **/
 size_t utf16_null_terminated_len_n(const void *src, size_t n);
 
+uint16_t *talloc_utf16_strlendup(TALLOC_CTX *mem_ctx, const char *str, size_t len);
+uint16_t *talloc_utf16_strdup(TALLOC_CTX *mem_ctx, const char *str);
+uint16_t *talloc_utf16_strndup(TALLOC_CTX *mem_ctx, const char *str, size_t n);
+
 char *strchr_m(const char *s, char c);
 /**
  * Calculate the number of units (8 or 16-bit, depending on the
