@@ -539,11 +539,12 @@ It should be:
 Use these following macros instead of DEBUG:
 
 ```
-DBG_ERR         log level 0		error conditions
-DBG_WARNING     log level 1		warning conditions
-DBG_NOTICE      log level 3		normal, but significant, condition
-DBG_INFO        log level 5		informational message
-DBG_DEBUG       log level 10		debug-level message
+DBG_STARTUP_NOTICE  log level -1	startup like notice
+DBG_ERR             log level 0		error conditions
+DBG_WARNING         log level 1		warning conditions
+DBG_NOTICE          log level 3		normal, but significant, condition
+DBG_INFO            log level 5		informational message
+DBG_DEBUG           log level 10	debug-level message
 ```
 
 Example usage:
