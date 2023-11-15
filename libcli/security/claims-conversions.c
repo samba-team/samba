@@ -289,14 +289,25 @@ static bool claim_v1_offset_to_ace_token(
 }
 
 
+static bool claim_v1_copy(
+	TALLOC_CTX *mem_ctx,
+	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *dest,
+	const struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *src);
+
+
 bool claim_v1_to_ace_token(TALLOC_CTX *mem_ctx,
 			   const struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
 			   struct ace_condition_token *result)
 {
 	size_t i;
 	struct ace_condition_token *tokens = NULL;
+	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *sorted_claim = NULL;
+	NTSTATUS status;
+	bool ok;
 	if (claim->value_count < 1 ||
 	    claim->value_count >= CONDITIONAL_ACE_MAX_TOKENS) {
+		DBG_WARNING("rejecting claim with %"PRIu32" tokens\n",
+			    claim->value_count);
 		return false;
 	}
 	/*
@@ -310,6 +321,19 @@ bool claim_v1_to_ace_token(TALLOC_CTX *mem_ctx,
 						    0,
 						    result);
 	}
+
+	ok = claim_v1_copy(mem_ctx, sorted_claim, claim);
+	if (!ok) {
+		return false;
+	}
+
+	status = claim_v1_check_and_sort(mem_ctx, sorted_claim);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("resource attribute claim sort failed with %s\n",
+			    nt_errstr(status));
+		return false;
+	}
+
 	/*
 	 * The multiple values will get turned into a composite
 	 * literal in the conditional ACE. Each element of the
@@ -321,18 +345,19 @@ bool claim_v1_to_ace_token(TALLOC_CTX *mem_ctx,
 
 	result->flags = (
 		CONDITIONAL_ACE_FLAG_TOKEN_FROM_ATTR |
-		(claim->flags & CLAIM_SECURITY_ATTRIBUTE_VALUE_CASE_SENSITIVE));
+		CLAIM_SECURITY_ATTRIBUTE_UNIQUE_AND_SORTED |
+		(sorted_claim->flags & CLAIM_SECURITY_ATTRIBUTE_VALUE_CASE_SENSITIVE));
 
 	tokens = talloc_array(mem_ctx,
 			      struct ace_condition_token,
-			      claim->value_count);
+			      sorted_claim->value_count);
 	if (tokens == NULL) {
 		return false;
 	}
 
-	for (i = 0; i < claim->value_count; i++) {
+	for (i = 0; i < sorted_claim->value_count; i++) {
 		bool ok = claim_v1_offset_to_ace_token(tokens,
-						       claim,
+						       sorted_claim,
 						       i,
 						       &tokens[i]);
 		if (! ok) {
@@ -343,7 +368,7 @@ bool claim_v1_to_ace_token(TALLOC_CTX *mem_ctx,
 
 	result->type = CONDITIONAL_ACE_TOKEN_COMPOSITE;
 	result->data.composite.tokens = tokens;
-	result->data.composite.n_members = claim->value_count;
+	result->data.composite.n_members = sorted_claim->value_count;
 
 	return true;
 }
