@@ -138,7 +138,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, ndr_flags_type 
 
 	case LIBNDR_FLAG_STR_NULLTERM:
 		/*
-		 * We ensure that conv_str_len cannot return 0 by
+		 * We ensure that conv_src_len cannot equal 0 by
 		 * requiring that there be enough bytes for at least
 		 * the NULL terminator
 		 */
