@@ -34,7 +34,7 @@ endif
 help: 
 	@echo "Supported make targets:"
 	@echo " release - Build the docs needed for a Samba release"
-	@echo " all - Build all docs that can be build using the utilities found by configure"
+	@echo " all - Build all docs that can be built using the utilities found by configure"
 	@echo " everything - Build all of the above"
 	@echo " pdf,tex,ps,manpages,htmlhelp - Build specific output format"
 	@echo " html - Build multi-file HTML versions"
