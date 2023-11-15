@@ -868,6 +868,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_enable_node(ctdb);
 
+	case CTDB_CONTROL_TCP_CLIENT_DISCONNECTED:
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_connection));
+		return ctdb_control_tcp_client_disconnected(ctdb, client_id, indata);
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;
