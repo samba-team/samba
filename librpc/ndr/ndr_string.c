@@ -255,7 +255,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, ndr_flags_type 
 	int do_convert = 1, chset = CH_UTF16;
 	libndr_flags flags = ndr->flags;
 	unsigned byte_mul = 2;
-	uint8_t *dest = NULL;
+	const uint8_t *dest = NULL;
+	uint8_t *dest_to_free = NULL;
+	static const uint8_t null_byte[] = {0};
 	enum ndr_err_code ndr_err = NDR_ERR_SUCCESS;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
@@ -307,27 +309,21 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, ndr_flags_type 
 
 	if (s_len == 0) {
 		d_len = 0;
-		dest = (uint8_t *)talloc_strdup(ndr, "");
-		if (dest == NULL) {
-			return ndr_push_error(ndr, NDR_ERR_ALLOC,
-					      "Failed to talloc_strdup() in ndr_string_push()");
-		}
+		dest = null_byte;
 	} else if (!do_convert) {
 		d_len = s_len;
-		dest = (uint8_t *)talloc_strndup(ndr, s, s_len);
-		if (dest == NULL) {
-			return ndr_push_error(ndr, NDR_ERR_ALLOC,
-					      "Failed to talloc_strndup() in ndr_string_push()");
-		}
+		dest = (const uint8_t *)s;
 	} else {
 		bool ok;
 
 		ok = convert_string_talloc(ndr, CH_UNIX, chset, s, s_len,
-					   &dest, &d_len);
+					   &dest_to_free, &d_len);
 		if (!ok) {
 			return ndr_push_error(ndr, NDR_ERR_CHARCNV,
 					      "Bad character push conversion with flags 0x%"PRI_LIBNDR_FLAGS, flags);
 		}
+
+		dest = dest_to_free;
 	}
 
 	if (flags & LIBNDR_FLAG_STR_BYTESIZE) {
@@ -423,7 +419,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, ndr_flags_type 
 	}
 
 out:
-	talloc_free(dest);
+	talloc_free(dest_to_free);
 	return ndr_err;
 }
 
