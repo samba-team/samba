@@ -647,11 +647,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 
 		if (posix) {
 			/*
-			 * Posix always wants to see symlinks,
-			 * dangling or not. We've done the
-			 * openat_pathref_fsp() to fill in
-			 * smb_fname->fsp just in case it's not
-			 * dangling.
+			 * Posix always wants to see symlinks.
 			 */
 			ask_sharemode = false;
 			goto done;
