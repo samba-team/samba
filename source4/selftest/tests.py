@@ -2122,6 +2122,8 @@ plantestsuite("librpc.ndr.ndr_macros", "none",
               [os.path.join(bindir(), "test_ndr_macros")])
 plantestsuite("librpc.ndr.ndr_dns_nbt", "none",
               [os.path.join(bindir(), "test_ndr_dns_nbt")])
+plantestsuite("librpc.ndr.test_ndr_gmsa", "none",
+              [os.path.join(bindir(), "test_ndr_gmsa")])
 plantestsuite("libcli.ldap.ldap_message", "none",
               [os.path.join(bindir(), "test_ldap_message")])
 

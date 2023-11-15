@@ -782,3 +782,14 @@ bld.SAMBA_BINARY('test_ndr_dns_nbt',
                       ndr_nbt
                       ''',
                  for_selftest=True)
+
+bld.SAMBA_BINARY(
+    'test_ndr_gmsa',
+    source='tests/test_ndr_gmsa.c',
+    deps='''
+        cmocka
+        talloc
+        NDR_GMSA
+    ''',
+    for_selftest=True,
+)
