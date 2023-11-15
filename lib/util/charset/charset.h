@@ -26,6 +26,8 @@
 #define __CHARSET_H__
 
 #include <talloc.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 /* this defines the charset types used in samba */
 typedef enum {
