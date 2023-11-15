@@ -2108,6 +2108,11 @@ static int cacl_restore(struct cli_state *cli,
 			}
 		} else {
 			entries[index].sd = sddl_decode(lines, lines[i], sid);
+			if(entries[index].sd == NULL) {
+				DBG_ERR("could not decode '%s'\n", lines[i]);
+				result = EXIT_FAILED;
+				goto out;
+			}
 			entries[index].sd->type |=
 			    SEC_DESC_DACL_AUTO_INHERIT_REQ;
 			entries[index].sd->type |= SEC_DESC_SACL_AUTO_INHERITED;
