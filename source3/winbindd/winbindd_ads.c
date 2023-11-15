@@ -449,6 +449,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	rids = talloc_realloc(mem_ctx, rids, uint32_t, count);
 	if (prids != NULL) {
 		*prids = rids;
+	} else {
+		TALLOC_FREE(rids);
 	}
 
 	status = NT_STATUS_OK;
