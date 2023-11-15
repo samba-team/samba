@@ -307,6 +307,15 @@ void torture_result(struct torture_context *test,
 	} \
 	} while (0)
 
+#define torture_assert_werr_equal_goto(torture_ctx, got, expected, ret, label, cmt) \
+	do { WERROR __got = got, __expected = expected; \
+	if (!W_ERROR_EQUAL(__got, __expected)) { \
+		torture_result(torture_ctx, TORTURE_FAIL, __location__": "#got" was %s, expected %s: %s", win_errstr(__got), win_errstr(__expected), cmt); \
+		ret = false; \
+		goto label; \
+	} \
+	} while (0)
+
 #define torture_assert_ntstatus_equal(torture_ctx,got,expected,cmt) \
 	do { NTSTATUS __got = got, __expected = expected; \
 	if (!NT_STATUS_EQUAL(__got, __expected)) { \
@@ -801,6 +810,9 @@ static inline void torture_dump_data_str_cb(const char *buf, void *private_data)
 
 #define torture_assert_werr_ok(torture_ctx,expr,cmt) \
 		torture_assert_werr_equal(torture_ctx,expr,WERR_OK,cmt)
+
+#define torture_assert_werr_ok_goto(torture_ctx,expr,ret,label,cmt) \
+		torture_assert_werr_equal_goto(torture_ctx,expr,WERR_OK,ret,label,cmt)
 
 #define torture_assert_ndr_success(torture_ctx,expr,cmt) \
 		torture_assert_ndr_err_equal(torture_ctx,expr,NDR_ERR_SUCCESS,cmt)
