@@ -5260,8 +5260,8 @@ static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call,
 					     TALLOC_CTX *mem_ctx,
 					     struct samr_ValidatePassword *r)
 {
-	struct samr_GetDomPwInfo r2;
-	struct samr_PwInfo pwInfo;
+	struct samr_GetDomPwInfo r2 = {};
+	struct samr_PwInfo pwInfo = {};
 	const char *account = NULL;
 	DATA_BLOB password;
 	enum samr_ValidationStatus res;
