@@ -681,7 +681,24 @@ static int cacl_set(struct cli_state *cli, const char *filename,
 	struct security_descriptor *sd = NULL;
 
 	if (sddl) {
-		sd = sddl_decode(talloc_tos(), the_acl, get_domain_sid(cli));
+		const char *msg = NULL;
+		size_t msg_offset = 0;
+		enum ace_condition_flags flags =
+			ACE_CONDITION_FLAG_ALLOW_DEVICE;
+		sd = sddl_decode_err_msg(talloc_tos(),
+					the_acl,
+					get_domain_sid(cli),
+					flags,
+					&msg,
+					&msg_offset);
+		if (sd == NULL) {
+			DBG_ERR("could not decode '%s'\n", the_acl);
+			if (msg != NULL) {
+				DBG_ERR("                  %*c\n",
+					(int)msg_offset, '^');
+				DBG_ERR("error '%s'\n", msg);
+			}
+		}
 	} else {
 		sd = sec_desc_parse(talloc_tos(), cli, the_acl);
 	}
@@ -1102,8 +1119,25 @@ static NTSTATUS prepare_inheritance_propagation(TALLOC_CTX *ctx, char *filename,
 
 	/* parse acl passed on the command line */
 	if (sddl) {
-		cbstate->aclsd = sddl_decode(ctx, the_acl,
-					     get_domain_sid(cli));
+		const char *msg = NULL;
+		size_t msg_offset = 0;
+		enum ace_condition_flags flags =
+			ACE_CONDITION_FLAG_ALLOW_DEVICE;
+
+		cbstate->aclsd = sddl_decode_err_msg(ctx,
+						     the_acl,
+						     get_domain_sid(cli),
+						     flags,
+						     &msg,
+						     &msg_offset);
+		if (cbstate->aclsd == NULL) {
+			DBG_ERR("could not decode '%s'\n", the_acl);
+			if (msg != NULL) {
+				DBG_ERR("                  %*c\n",
+					(int)msg_offset, '^');
+				DBG_ERR("error '%s'\n", msg);
+			}
+		}
 	} else {
 		cbstate->aclsd = sec_desc_parse(ctx, cli, the_acl);
 	}
@@ -2107,9 +2141,23 @@ static int cacl_restore(struct cli_state *cli,
 				entries[index].path = lines[i];
 			}
 		} else {
-			entries[index].sd = sddl_decode(lines, lines[i], sid);
+			const char *msg = NULL;
+			size_t msg_offset = 0;
+			enum ace_condition_flags flags =
+				ACE_CONDITION_FLAG_ALLOW_DEVICE;
+			entries[index].sd = sddl_decode_err_msg(lines,
+								lines[i],
+								sid,
+								flags,
+								&msg,
+								&msg_offset);
 			if(entries[index].sd == NULL) {
 				DBG_ERR("could not decode '%s'\n", lines[i]);
+				if (msg != NULL) {
+					DBG_ERR("                  %*c\n",
+						(int)msg_offset, '^');
+					DBG_ERR("error '%s'\n", msg);
+				}
 				result = EXIT_FAILED;
 				goto out;
 			}
