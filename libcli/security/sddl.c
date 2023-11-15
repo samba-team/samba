@@ -995,11 +995,14 @@ struct security_descriptor *sddl_decode(TALLOC_CTX *mem_ctx, const char *sddl,
 							     ACE_CONDITION_FLAG_ALLOW_DEVICE,
 							     &msg,
 							     &msg_offset);
-	DBG_NOTICE("could not decode '%s'\n", sddl);
-	if (msg != NULL) {
-		DBG_NOTICE("                  %*c\n", (int)msg_offset, '^');
-		DBG_NOTICE("error '%s'\n", msg);
-		talloc_free(discard_const(msg));
+	if (sd == NULL) {
+		DBG_NOTICE("could not decode '%s'\n", sddl);
+		if (msg != NULL) {
+			DBG_NOTICE("                  %*c\n",
+				   (int)msg_offset, '^');
+			DBG_NOTICE("error '%s'\n", msg);
+			talloc_free(discard_const(msg));
+		}
 	}
 	return sd;
 }
