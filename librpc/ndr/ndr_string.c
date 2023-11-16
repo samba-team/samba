@@ -96,7 +96,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, ndr_flags_type 
 					      "Bad string lengths len1=%"PRIu32" ofs=%"PRIu32" len2=%"PRIu32"\n",
 					      len1, ofs, len2);
 		} else if (len1 != len2) {
-			DEBUG(6,("len1[%"PRIu32"] != len2[%"PRIu32"] '%s'\n", len1, len2, as));
+			DEBUG(6,("len1[%"PRIu32"] != len2[%"PRIu32"]\n", len1, len2));
 		}
 		conv_src_len = len2 + c_len_term;
 		break;
