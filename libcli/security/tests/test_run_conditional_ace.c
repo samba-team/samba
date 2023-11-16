@@ -663,7 +663,18 @@ int main(_UNUSED_ int argc, _UNUSED_ const char **argv)
 		cmocka_unit_test(test_composite_different_order_with_dupes),
 		cmocka_unit_test(test_more_values_not_equal),
 	};
-	if (!isatty(1)) {
+	if (isatty(1)) {
+		/*
+		 * interactive testers can set debug level
+		 * -- just give it a number.
+		 */
+		int debug_level = DBGLVL_WARNING;
+		if (argc > 1) {
+			debug_level = atoi(argv[1]);
+		}
+		debuglevel_set(debug_level);
+
+	} else {
 		cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
 	}
 	return cmocka_run_group_tests(tests, NULL, NULL);
