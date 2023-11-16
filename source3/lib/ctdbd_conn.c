@@ -131,19 +131,32 @@ int register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 				  void *private_data),
 			void *private_data)
 {
-
-	int ret;
-	int32_t cstatus;
-	size_t num_callbacks;
+	size_t num_callbacks = talloc_array_length(conn->callbacks);
 	struct ctdbd_srvid_cb *tmp;
+	bool need_register = true;
+	size_t i;
 
-	ret = ctdbd_control_local(conn, CTDB_CONTROL_REGISTER_SRVID, srvid, 0,
-				  tdb_null, NULL, NULL, &cstatus);
-	if (ret != 0) {
-		return ret;
+	for (i = 0; i < num_callbacks; i++) {
+		struct ctdbd_srvid_cb *c = &conn->callbacks[i];
+
+		if (c->srvid == srvid) {
+			need_register = false;
+			break;
+		}
 	}
 
-	num_callbacks = talloc_array_length(conn->callbacks);
+	if (need_register) {
+		int ret;
+		int32_t cstatus;
+
+		ret = ctdbd_control_local(conn, CTDB_CONTROL_REGISTER_SRVID,
+					  srvid, 0, tdb_null, NULL, NULL,
+					  &cstatus);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+
 
 	tmp = talloc_realloc(conn, conn->callbacks, struct ctdbd_srvid_cb,
 			     num_callbacks + 1);
