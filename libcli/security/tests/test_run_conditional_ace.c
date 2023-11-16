@@ -247,7 +247,16 @@ static void test_composite_different_order_with_dupes(void **state)
 	INIT()
 	SD("D:(XA;;0x1f;;;AA;(@Device.colour == {\"orange\", \"blue\", \"orange\"}))");
 	USER_SIDS("WD", "AA");
-	DEVICE_CLAIMS("colour", "{\"blue\", \"orange\", \"blue\"}");
+	DEVICE_CLAIMS("colour", "{\"orange\", \"blue\", \"orange\"}");
+	DENY_CHECK(0x10);
+}
+
+static void test_composite_different_order_with_dupes_in_composite(void **state)
+{
+	INIT()
+	SD("D:(XA;;0x1f;;;AA;(@Device.colour == {\"orange\", \"blue\", \"orange\"}))");
+	USER_SIDS("WD", "AA");
+	DEVICE_CLAIMS("colour", "{\"orange\", \"blue\"}");
 	ALLOW_CHECK(0x10);
 }
 
@@ -257,6 +266,15 @@ static void test_composite_different_order_with_SID_dupes(void **state)
 	SD("D:(XA;;0x1f;;;AA;(@Device.colour == {SID(WD), SID(AA), SID(WD)}))");
 	USER_SIDS("WD", "AA");
 	DEVICE_CLAIMS("colour", "{SID(AA), SID(AA), SID(WD)}");
+	DENY_CHECK(0x10);
+}
+
+static void test_composite_different_order_with_SID_dupes_in_composite(void **state)
+{
+	INIT()
+	SD("D:(XA;;0x1f;;;AA;(@Device.colour == {SID(WD), SID(AA), SID(WD)}))");
+	USER_SIDS("WD", "AA");
+	DEVICE_CLAIMS("colour", "{SID(AA), SID(WD)}");
 	ALLOW_CHECK(0x10);
 }
 
@@ -269,7 +287,34 @@ static void test_composite_mixed_types(void **state)
 	INIT()
 	SD("D:(XA;;0x1f;;;AA;(@Device.colour == {2, SID(WD), SID(AA), SID(WD)}))");
 	USER_SIDS("WD", "AA");
-	DEVICE_CLAIMS("colour", "{SID(AA), SID(AA), SID(WD)}");
+	DEVICE_CLAIMS("colour", "{SID(AA), SID(WD)}");
+	DENY_CHECK(0x10);
+}
+
+static void test_composite_mixed_types_different_last(void **state)
+{
+	/*
+	 * If the conditional ACE composite has mixed types, it can
+	 * never equal a claim, which only has one type.
+	 */
+	INIT()
+	SD("D:(XA;;0x1f;;;AA;(@Device.colour == {SID(WD), SID(AA), 2}))");
+	USER_SIDS("WD", "AA");
+	DEVICE_CLAIMS("colour", "{SID(AA), SID(WD)}");
+	DENY_CHECK(0x10);
+}
+
+static void test_composite_mixed_types_deny(void **state)
+{
+	/*
+	 * If the conditional ACE composite has mixed types, it can
+	 * never equal a claim, which only has one type.
+	 */
+	INIT()
+	SD("D:(XD;;0x1f;;;AA;(@Device.colour == {2, SID(WD), SID(AA), SID(WD)}))"
+		"(D;;;;;WD)");
+	USER_SIDS("WD", "AA");
+	DEVICE_CLAIMS("colour", "{SID(AA), SID(WD)}");
 	DENY_CHECK(0x10);
 }
 
@@ -625,7 +670,10 @@ int main(_UNUSED_ int argc, _UNUSED_ const char **argv)
 		cmocka_unit_test(test_user_attr_any_of_missing_resource_attr),
 		cmocka_unit_test(test_user_attr_any_of_missing_user_attr),
 		cmocka_unit_test(test_composite_mixed_types),
+		cmocka_unit_test(test_composite_mixed_types_different_last),
+		cmocka_unit_test(test_composite_mixed_types_deny),
 		cmocka_unit_test(test_composite_different_order_with_SID_dupes),
+		cmocka_unit_test(test_composite_different_order_with_SID_dupes_in_composite),
 		cmocka_unit_test(test_device_claim_eq_resource_claim_2),
 		cmocka_unit_test(test_not_Not_Any_of_1),
 		cmocka_unit_test(test_not_any_of_composite_1),
@@ -661,6 +709,7 @@ int main(_UNUSED_ int argc, _UNUSED_ const char **argv)
 		cmocka_unit_test(test_composite_different_order),
 		cmocka_unit_test(test_different_case),
 		cmocka_unit_test(test_composite_different_order_with_dupes),
+		cmocka_unit_test(test_composite_different_order_with_dupes_in_composite),
 		cmocka_unit_test(test_more_values_not_equal),
 	};
 	if (isatty(1)) {
