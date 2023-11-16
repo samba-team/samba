@@ -406,6 +406,7 @@ static void destroy_fsp_smb_fname_link(struct fsp_smb_fname_link **_link)
 static int smb_fname_fsp_destructor(struct smb_filename *smb_fname)
 {
 	struct files_struct *fsp = smb_fname->fsp;
+	struct files_struct *base_fsp = NULL;
 	NTSTATUS status;
 	int saved_errno = errno;
 
@@ -417,17 +418,7 @@ static int smb_fname_fsp_destructor(struct smb_filename *smb_fname)
 	}
 
 	if (fsp_is_alternate_stream(fsp)) {
-		struct files_struct *tmp_base_fsp = fsp->base_fsp;
-
-		fsp_set_base_fsp(fsp, NULL);
-
-		status = fd_close(tmp_base_fsp);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("Closing fd for fsp [%s] failed: %s. "
-				"Please check your filesystem!!!\n",
-				fsp_str_dbg(fsp), nt_errstr(status));
-		}
-		file_free(NULL, tmp_base_fsp);
+		base_fsp = fsp->base_fsp;
 	}
 
 	status = fd_close(fsp);
@@ -438,6 +429,17 @@ static int smb_fname_fsp_destructor(struct smb_filename *smb_fname)
 	}
 	file_free(NULL, fsp);
 	smb_fname->fsp = NULL;
+
+	if (base_fsp != NULL) {
+		base_fsp->stream_fsp = NULL;
+		status = fd_close(base_fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("Closing fd for base_fsp [%s] failed: %s. "
+				"Please check your filesystem!!!\n",
+				fsp_str_dbg(base_fsp), nt_errstr(status));
+		}
+		file_free(NULL, base_fsp);
+	}
 
 	errno = saved_errno;
 	return 0;
