@@ -1263,6 +1263,70 @@ int ctdbd_register_ips(struct ctdbd_connection *conn,
 	return 0;
 }
 
+void ctdbd_unregister_ips(struct ctdbd_connection *conn,
+			  const struct sockaddr_storage *_server,
+			  const struct sockaddr_storage *_client,
+			  int (*cb)(struct tevent_context *ev,
+				    uint32_t src_vnn,
+				    uint32_t dst_vnn,
+				    uint64_t dst_srvid,
+				    const uint8_t *msg,
+				    size_t msglen,
+				    void *private_data),
+			  void *private_data)
+{
+	struct ctdb_connection p;
+	TDB_DATA data = { .dptr = (uint8_t *)&p, .dsize = sizeof(p) };
+	int ret;
+	struct sockaddr_storage client;
+	struct sockaddr_storage server;
+
+	/*
+	 * Only one connection so far
+	 */
+
+	smbd_ctdb_canonicalize_ip(_client, &client);
+	smbd_ctdb_canonicalize_ip(_server, &server);
+
+	ZERO_STRUCT(p);
+	switch (client.ss_family) {
+	case AF_INET:
+		memcpy(&p.dst.ip, &server, sizeof(p.dst.ip));
+		memcpy(&p.src.ip, &client, sizeof(p.src.ip));
+		break;
+	case AF_INET6:
+		memcpy(&p.dst.ip6, &server, sizeof(p.dst.ip6));
+		memcpy(&p.src.ip6, &client, sizeof(p.src.ip6));
+		break;
+	default:
+		return;
+	}
+
+	/*
+	 * We no longer want to be told about IP releases
+	 * for the given callback/private_data combination
+	 */
+	deregister_from_ctdbd(conn, CTDB_SRVID_RELEASE_IP,
+			      cb, private_data);
+
+	/*
+	 * inform ctdb of our tcp connection is no longer active
+	 */
+	ret = ctdbd_control_local(conn,
+				  CTDB_CONTROL_TCP_CLIENT_DISCONNECTED, 0,
+				  CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL,
+				  NULL);
+	if (ret != 0) {
+		/*
+		 * We ignore errors here, as we'll just
+		 * no longer have a callback handler
+		 * registered and messages may just be ignored
+		 */
+	}
+
+	return;
+}
+
 static int ctdbd_control_get_public_ips(struct ctdbd_connection *conn,
 					uint32_t flags,
 					TALLOC_CTX *mem_ctx,
