@@ -379,7 +379,7 @@ interface msftewds
 
 	/* MS-WSP 2.2.1.10 CSort */
 	typedef [public] struct {
-		uint32 pidcolimn;
+		uint32 pidcolumn;
 		uint32 dworder;
 		uint32 dwindividual;
 		uint32 locale;
