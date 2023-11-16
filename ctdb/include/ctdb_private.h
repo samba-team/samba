@@ -296,7 +296,6 @@ struct ctdb_context {
 	struct ctdb_statistics statistics_history[MAX_STAT_HISTORY];
 	struct ctdb_vnn_map *vnn_map;
 	uint32_t num_clients;
-	struct ctdb_client_ip *client_ip_list;
 	bool do_checkpublicip;
 	bool do_setsched;
 	const char *event_script_dir;
