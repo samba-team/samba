@@ -280,11 +280,17 @@ uint16_t *talloc_utf16_strlendup(TALLOC_CTX *mem_ctx, const char *str, size_t le
 
 uint16_t *talloc_utf16_strdup(TALLOC_CTX *mem_ctx, const char *str)
 {
+	if (str == NULL) {
+		return NULL;
+	}
 	return talloc_utf16_strlendup(mem_ctx, str, utf16_len(str));
 }
 
 uint16_t *talloc_utf16_strndup(TALLOC_CTX *mem_ctx, const char *str, size_t n)
 {
+	if (str == NULL) {
+		return NULL;
+	}
 	return talloc_utf16_strlendup(mem_ctx, str, utf16_len_n(str, n));
 }
 
