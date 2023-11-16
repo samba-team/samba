@@ -447,6 +447,10 @@ uint16_t *PyUtf16String_FromBytes(TALLOC_CTX *mem_ctx, PyObject *value)
 		PyErr_SetString(PyExc_ValueError, "bytes length is negative");
 		return NULL;
 	}
+	if (len & 1) {
+		PyErr_SetString(PyExc_ValueError, "bytes length is odd");
+		return NULL;
+	}
 
 	/* Ensure that the bytes object contains no embedded null terminator. */
 	if ((size_t)len != utf16_len_n(bytes, len)) {
