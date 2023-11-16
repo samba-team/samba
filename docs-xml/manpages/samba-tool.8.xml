@@ -743,6 +743,18 @@
 			</listitem>
 		</varlistentry>
 		<varlistentry>
+			<term>--user-allowed-to-authenticate-from-silo</term>
+			<listitem>
+				<para>
+					User is allowed to authenticate from a given silo.
+				</para>
+				<para>
+					This attribute avoids the need to write SDDL by hand and
+					cannot be used with --user-allowed-to-authenticate-from
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
 			<term>--user-allowed-to-authenticate-to</term>
 			<listitem>
 				<para>
@@ -753,6 +765,18 @@
 				</para>
 				<para>
 					Example: O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AO)}))
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--user-allowed-to-authenticate-to-by-silo</term>
+			<listitem>
+				<para>
+					User is allowed to authenticate to by a given silo.
+				</para>
+				<para>
+					This attribute avoids the need to write SDDL by hand and
+					cannot be used with --user-allowed-to-authenticate-to
 				</para>
 			</listitem>
 		</varlistentry>
@@ -788,6 +812,18 @@
 			</listitem>
 		</varlistentry>
 		<varlistentry>
+			<term>--service-allowed-to-authenticate-from-silo</term>
+			<listitem>
+				<para>
+					Service is allowed to authenticate from a given silo.
+				</para>
+				<para>
+					This attribute avoids the need to write SDDL by hand and
+					cannot be used with --service-allowed-to-authenticate-from
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
 			<term>--service-allowed-to-authenticate-to</term>
 			<listitem>
 				<para>
@@ -798,6 +834,18 @@
 				</para>
 				<para>
 					Example: O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AO)}))
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--service-allowed-to-authenticate-to-by-silo</term>
+			<listitem>
+				<para>
+					Service is allowed to authenticate to by a given silo.
+				</para>
+				<para>
+					This attribute avoids the need to write SDDL by hand and
+					cannot be used with --service-allowed-to-authenticate-to
 				</para>
 			</listitem>
 		</varlistentry>
@@ -820,6 +868,18 @@
 				</para>
 				<para>
 					Example: O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AU)}))
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--computer-allowed-to-authenticate-to-by-silo</term>
+			<listitem>
+				<para>
+					Computer is allowed to authenticate to by a given silo.
+				</para>
+				<para>
+					This attribute avoids the need to write SDDL by hand and
+					cannot be used with --computer-allowed-to-authenticate-to
 				</para>
 			</listitem>
 		</varlistentry>
