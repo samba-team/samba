@@ -312,6 +312,10 @@ static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call,
 	}
 	*r->out.type = (enum winreg_Type) data_type;
 
+	if (r->in.size != NULL) {
+		r->out.size = talloc(mem_ctx, uint32_t);
+		*r->out.size = data.length;
+	}
 	/* check the client has enough room for the value */
 	if (r->in.value != NULL &&
 	    r->in.size != NULL &&
@@ -323,9 +327,7 @@ static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call,
 		r->out.value = data.data;
 	}
 
-	if (r->in.size != NULL) {
-		r->out.size = talloc(mem_ctx, uint32_t);
-		*r->out.size = data.length;
+	if (r->in.length != NULL) {
 		r->out.length = r->out.size;
 	}
 
