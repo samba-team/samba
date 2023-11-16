@@ -319,11 +319,15 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, ndr_flags_type 
 			return ndr_push_error(ndr, NDR_ERR_ALLOC,
 					      "Failed to talloc_strndup() in ndr_string_push()");
 		}
-	} else if (!convert_string_talloc(ndr, CH_UNIX, chset, s, s_len,
-					  &dest, &d_len))
-	{
-		return ndr_push_error(ndr, NDR_ERR_CHARCNV,
-				      "Bad character push conversion with flags 0x%"PRI_LIBNDR_FLAGS, flags);
+	} else {
+		bool ok;
+
+		ok = convert_string_talloc(ndr, CH_UNIX, chset, s, s_len,
+					   &dest, &d_len);
+		if (!ok) {
+			return ndr_push_error(ndr, NDR_ERR_CHARCNV,
+					      "Bad character push conversion with flags 0x%"PRI_LIBNDR_FLAGS, flags);
+		}
 	}
 
 	if (flags & LIBNDR_FLAG_STR_BYTESIZE) {
