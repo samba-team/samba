@@ -1144,6 +1144,7 @@ int ctdbd_register_ips(struct ctdbd_connection *conn,
 	smbd_ctdb_canonicalize_ip(_client, &client);
 	smbd_ctdb_canonicalize_ip(_server, &server);
 
+	ZERO_STRUCT(p);
 	switch (client.ss_family) {
 	case AF_INET:
 		memcpy(&p.dst.ip, &server, sizeof(p.dst.ip));
