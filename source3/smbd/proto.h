@@ -1219,7 +1219,7 @@ int vfs_set_blocking(files_struct *fsp, bool set);
 off_t vfs_transfer_file(files_struct *in, files_struct *out, off_t n);
 const char *vfs_readdirname(connection_struct *conn,
 			    struct files_struct *dirfsp,
-			    void *p,
+			    DIR *d,
 			    char **talloced);
 int vfs_ChDir(connection_struct *conn,
 			const struct smb_filename *smb_fname);
