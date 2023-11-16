@@ -348,19 +348,9 @@ struct ctdb_takeover_arp {
  */
 struct ctdb_tcp_list {
 	struct ctdb_tcp_list *prev, *next;
+	struct ctdb_client *client;
 	struct ctdb_connection connection;
 };
-
-/*
-  list of clients to kill on IP release
- */
-struct ctdb_client_ip {
-	struct ctdb_client_ip *prev, *next;
-	struct ctdb_context *ctdb;
-	ctdb_sock_addr addr;
-	uint32_t client_id;
-};
-
 
 /*
   send a gratuitous arp
@@ -1233,16 +1223,37 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses)
 }
 
 /*
-  destroy a ctdb_client_ip structure
+  destroy a ctdb_tcp_list structure
  */
-static int ctdb_client_ip_destructor(struct ctdb_client_ip *ip)
+static int ctdb_tcp_list_destructor(struct ctdb_tcp_list *tcp)
 {
-	DEBUG(DEBUG_DEBUG,("destroying client tcp for %s:%u (client_id %u)\n",
-		ctdb_addr_to_str(&ip->addr),
-		ntohs(ip->addr.ip.sin_port),
-		ip->client_id));
+	struct ctdb_client *client = tcp->client;
+	struct ctdb_connection *conn = &tcp->connection;
+	char conn_str[132] = { 0, };
+	int ret;
 
-	DLIST_REMOVE(ip->ctdb->client_ip_list, ip);
+	ret = ctdb_connection_to_buf(conn_str,
+				     sizeof(conn_str),
+				     conn,
+				     false,
+				     " -> ");
+	if (ret != 0) {
+		strlcpy(conn_str, "UNKNOWN", sizeof(conn_str));
+	}
+
+	D_DEBUG("removing client TCP connection %s "
+		"(client_id %u pid %d)\n",
+		conn_str, client->client_id, client->pid);
+
+	DLIST_REMOVE(client->tcp_list, tcp);
+
+	/*
+	 * We don't call ctdb_remove_connection(vnn, conn) here
+	 * as we want the caller to decide if it's called
+	 * directly (local only) or indirectly via a
+	 * CTDB_CONTROL_TCP_REMOVE broadcast
+	 */
+
 	return 0;
 }
 
@@ -1259,7 +1270,6 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	struct ctdb_connection t;
 	int ret;
 	TDB_DATA data;
-	struct ctdb_client_ip *ip;
 	struct ctdb_vnn *vnn;
 	ctdb_sock_addr src_addr;
 	ctdb_sock_addr dst_addr;
@@ -1324,22 +1334,15 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 		return -1;
 	}
 
-	ip = talloc(client, struct ctdb_client_ip);
-	CTDB_NO_MEMORY(ctdb, ip);
-
-	ip->ctdb      = ctdb;
-	ip->addr      = dst_addr;
-	ip->client_id = client_id;
-	talloc_set_destructor(ip, ctdb_client_ip_destructor);
-	DLIST_ADD(ctdb->client_ip_list, ip);
-
 	tcp = talloc(client, struct ctdb_tcp_list);
 	CTDB_NO_MEMORY(ctdb, tcp);
+	tcp->client = client;
 
 	tcp->connection.src = tcp_sock->src;
 	tcp->connection.dst = tcp_sock->dst;
 
 	DLIST_ADD(client->tcp_list, tcp);
+	talloc_set_destructor(tcp, ctdb_tcp_list_destructor);
 
 	t.src = tcp_sock->src;
 	t.dst = tcp_sock->dst;
@@ -1599,20 +1602,12 @@ void ctdb_takeover_client_destructor_hook(struct ctdb_client *client)
 		struct ctdb_tcp_list *tcp = client->tcp_list;
 		struct ctdb_connection *conn = &tcp->connection;
 
-		DLIST_REMOVE(client->tcp_list, tcp);
-
 		vnn = find_public_ip_vnn(client->ctdb,
 					 &conn->dst);
-		if (vnn == NULL) {
-			DEBUG(DEBUG_ERR,
-			      (__location__ " unable to find public address %s\n",
-			       ctdb_addr_to_str(&conn->dst)));
-			continue;
-		}
 
 		/* If the IP address is hosted on this node then
 		 * remove the connection. */
-		if (vnn->pnn == client->ctdb->pnn) {
+		if (vnn != NULL && vnn->pnn == client->ctdb->pnn) {
 			ctdb_remove_connection(vnn, conn);
 		}
 
@@ -1621,6 +1616,11 @@ void ctdb_takeover_client_destructor_hook(struct ctdb_client *client)
 		 * and the client has exited.  This means that we
 		 * should not delete the connection information.  The
 		 * takeover node processes connections too. */
+
+		/*
+		 * The destructor removes from the list
+		 */
+		TALLOC_FREE(tcp);
 	}
 }
 
