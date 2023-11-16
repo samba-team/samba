@@ -1289,7 +1289,10 @@ char *sddl_encode(TALLOC_CTX *mem_ctx, const struct security_descriptor *sd,
 	sddl = talloc_strdup(mem_ctx, "");
 	if (sddl == NULL) goto failed;
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_new(sddl);
+	if (tmp_ctx == NULL) {
+		goto failed;
+	}
 
 	if (sd->owner_sid != NULL) {
 		char *sid = sddl_transition_encode_sid(tmp_ctx, sd->owner_sid, &state);
