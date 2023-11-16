@@ -1414,11 +1414,32 @@ static const char *cephwrap_connectpath(
  Extended attribute operations.
 *****************************************************************/
 
-static ssize_t cephwrap_fgetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, void *value, size_t size)
+static ssize_t cephwrap_fgetxattr(struct vfs_handle_struct *handle,
+				  struct files_struct *fsp,
+				  const char *name,
+				  void *value,
+				  size_t size)
 {
 	int ret;
-	DBG_DEBUG("[CEPH] fgetxattr(%p, %p, %s, %p, %llu)\n", handle, fsp, name, value, llu(size));
-	ret = ceph_fgetxattr(handle->data, fsp_get_io_fd(fsp), name, value, size);
+	DBG_DEBUG("[CEPH] fgetxattr(%p, %p, %s, %p, %llu)\n",
+		  handle,
+		  fsp,
+		  name,
+		  value,
+		  llu(size));
+	if (!fsp->fsp_flags.is_pathref) {
+		ret = ceph_fgetxattr(handle->data,
+				     fsp_get_io_fd(fsp),
+				     name,
+				     value,
+				     size);
+	} else {
+		ret = ceph_getxattr(handle->data,
+				    fsp->fsp_name->base_name,
+				    name,
+				    value,
+				    size);
+	}
 	DBG_DEBUG("[CEPH] fgetxattr(...) = %d\n", ret);
 	if (ret < 0) {
 		WRAP_RETURN(ret);
