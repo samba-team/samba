@@ -327,7 +327,7 @@ static uint64_t cephwrap_disk_free(struct vfs_handle_struct *handle,
 				uint64_t *dfree,
 				uint64_t *dsize)
 {
-	struct statvfs statvfs_buf;
+	struct statvfs statvfs_buf = { 0 };
 	int ret;
 
 	if (!(ret = ceph_statfs(handle->data, smb_fname->base_name,
@@ -395,7 +395,7 @@ static int cephwrap_statvfs(struct vfs_handle_struct *handle,
 			    const struct smb_filename *smb_fname,
 			    struct vfs_statvfs_struct *statbuf)
 {
-	struct statvfs statvfs_buf;
+	struct statvfs statvfs_buf = { 0 };
 	int ret;
 
 	ret = ceph_statfs(handle->data, smb_fname->base_name, &statvfs_buf);
@@ -436,7 +436,7 @@ static DIR *cephwrap_fdopendir(struct vfs_handle_struct *handle,
 			       uint32_t attributes)
 {
 	int ret = 0;
-	struct ceph_dir_result *result;
+	struct ceph_dir_result *result = NULL;
 	DBG_DEBUG("[CEPH] fdopendir(%p, %p)\n", handle, fsp);
 
 	ret = ceph_opendir(handle->data, fsp->fsp_name->base_name, &result);
@@ -453,7 +453,7 @@ static struct dirent *cephwrap_readdir(struct vfs_handle_struct *handle,
 				       struct files_struct *dirfsp,
 				       DIR *dirp)
 {
-	struct dirent *result;
+	struct dirent *result = NULL;
 
 	DBG_DEBUG("[CEPH] readdir(%p, %p)\n", handle, dirp);
 	result = ceph_readdir(handle->data, (struct ceph_dir_result *) dirp);
@@ -872,7 +872,7 @@ static int cephwrap_stat(struct vfs_handle_struct *handle,
 			struct smb_filename *smb_fname)
 {
 	int result = -1;
-	struct ceph_statx stx;
+	struct ceph_statx stx = { 0 };
 
 	DBG_DEBUG("[CEPH] stat(%p, %s)\n", handle, smb_fname_str_dbg(smb_fname));
 
@@ -896,7 +896,7 @@ static int cephwrap_stat(struct vfs_handle_struct *handle,
 static int cephwrap_fstat(struct vfs_handle_struct *handle, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 {
 	int result = -1;
-	struct ceph_statx stx;
+	struct ceph_statx stx = { 0 };
 	int fd = fsp_get_pathref_fd(fsp);
 
 	DBG_DEBUG("[CEPH] fstat(%p, %d)\n", handle, fd);
@@ -916,7 +916,7 @@ static int cephwrap_lstat(struct vfs_handle_struct *handle,
 			 struct smb_filename *smb_fname)
 {
 	int result = -1;
-	struct ceph_statx stx;
+	struct ceph_statx stx = { 0 };
 
 	DBG_DEBUG("[CEPH] lstat(%p, %s)\n", handle, smb_fname_str_dbg(smb_fname));
 
@@ -1606,7 +1606,7 @@ static NTSTATUS cephwrap_read_dfs_pathat(struct vfs_handle_struct *handle,
 #else
 	char link_target_buf[7];
 #endif
-	struct ceph_statx stx;
+	struct ceph_statx stx = { 0 };
 	struct smb_filename *full_fname = NULL;
 	int ret;
 
