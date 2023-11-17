@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="smb_prometheus_endpoint.8">
+
+<refmeta>
+	<refentrytitle>smb_prometheus_endpoint</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">&doc.version;</refmiscinfo>
+</refmeta>
+
+<refnamediv>
+	<refname>smb_prometheus_endpoint</refname>
+	<refpurpose>Make Samba profiling information available to
+	prometheus.</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+  <cmdsynopsis>
+    <command>smb_prometheus_endpoint</command>
+    <arg choice="opt">-a ADDRESS</arg>
+    <arg choice="opt">-p PORT</arg>
+    <arg>smbprofile.tdb</arg>
+  </cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> suite.</para>
+
+	<para>Make the Samba profiling information available to prometheus via http.</para>
+</refsect1>
+
+<refsect1>
+  <title>OPTIONS</title>
+	<variablelist>
+	  <varlistentry>
+	    <term>-a ADDRESS</term>
+	    <listitem>
+	      <para>The address which
+	      <command>smb_prometheus_endpoint</command> shall listen
+	      on, default is 127.0.0.1.</para>
+	    </listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>-p PORT</term>
+	    <listitem>
+	      <para>The port which
+	      <command>smb_prometheus_endpoint</command> shall listen
+	      on, default is port 9922.</para>
+	    </listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>smbprofile.tdb</term>
+	    <listitem>
+	      <para>The full path to the system's smbprofile.tdb where
+	      Samba stores its statistics.</para>
+	    </listitem>
+	  </varlistentry>
+	</variablelist>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+</refsect1>
+
+</refentry>

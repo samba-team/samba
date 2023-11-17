@@ -48,6 +48,7 @@ manpages='''
          manpages/smbstatus.1
          manpages/smbtar.1
          manpages/smbtree.1
+         manpages/smb_prometheus_endpoint.8
          manpages/testparm.1
          manpages/traffic_learner.7
          manpages/traffic_replay.7

@@ -323,6 +323,16 @@ bld.SAMBA3_BINARY('smbstatus',
                       CONN_TDB
                       ''')
 
+bld.SAMBA_BINARY('smb_prometheus_endpoint',
+                 source='smb_prometheus_endpoint.c',
+                 deps='''
+                 replace
+                 event
+                 PROFILE_READ
+                 ''',
+                 install_path='${SBINDIR}',
+                 enabled=bld.CONFIG_SET("HAVE_EVHTTP_NEW") and bld.CONFIG_GET("WITH_PROFILE"))
+
 bld.SAMBA3_BINARY('mdsearch',
                  source='mdsearch.c',
                  deps='''
