@@ -1633,6 +1633,12 @@ plantestsuite("samba3.blackbox.smbXsrv_client_cross_node", "clusteredmember:loca
                configuration,
                '$CTDB_SERVER_NAME_NODE0', '$CTDB_SERVER_NAME_NODE1',
                "tmp"])
+plantestsuite("samba3.blackbox.smbXsrv_client_ctdb_registered_ips", "clusteredmember:local",
+              [os.path.join(samba3srcdir,
+                            "script/tests/test_smbXsrv_client_ctdb_registered_ips.sh"),
+               configuration,
+               '$CTDB_IFACE_IP',
+               "tmp"])
 plantestsuite("samba3.blackbox.registry_share", "clusteredmember",
               [os.path.join(samba3srcdir,
                             "script/tests/test_registry_share.sh"),
