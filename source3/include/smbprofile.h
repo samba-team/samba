@@ -290,6 +290,7 @@ struct smbprofile_stats_bytes_async {
 struct smbprofile_stats_iobytes {
 	uint64_t count;		/* number of events */
 	uint64_t time;		/* microseconds */
+	uint64_t buckets[10];	/* 1,2,4,...256,Inf msecs */
 	uint64_t idle;		/* idle time compared to 'time' microseconds */
 	uint64_t inbytes;	/* bytes read */
 	uint64_t outbytes;	/* bytes written */
@@ -457,6 +458,7 @@ struct profile_stats {
 	if ((_async).stats != NULL) { \
 		(_async).stats->outbytes += (_outbytes); \
 		_SMBPROFILE_TIMER_ASYNC_END(_async); \
+		smbprofile_update_hist((_async).stats, profile_timestamp() - (_async).start); \
 		(_async) = (struct smbprofile_stats_iobytes_async) {}; \
 		smbprofile_dump_schedule(); \
 	} \
@@ -502,6 +504,48 @@ static inline void smbprofile_dump_schedule(void)
 static inline bool smbprofile_active(void)
 {
 	return smbprofile_state.config.do_count;
+}
+
+static inline void smbprofile_update_hist(struct smbprofile_stats_iobytes *s,
+					  uint64_t microsecs)
+{
+	s->buckets[9]++;
+	if (microsecs >= 256000) {
+		return;
+	}
+	s->buckets[8]++;
+	if (microsecs >= 128000) {
+		return;
+	}
+	s->buckets[7]++;
+	if (microsecs >= 64000) {
+		return;
+	}
+	s->buckets[6]++;
+	if (microsecs >= 32000) {
+		return;
+	}
+	s->buckets[5]++;
+	if (microsecs >= 16000) {
+		return;
+	}
+	s->buckets[4]++;
+	if (microsecs >= 8000) {
+		return;
+	}
+	s->buckets[3]++;
+	if (microsecs >= 4000) {
+		return;
+	}
+	s->buckets[2]++;
+	if (microsecs >= 2000) {
+		return;
+	}
+	s->buckets[1]++;
+	if (microsecs >= 1000) {
+		return;
+	}
+	s->buckets[0]++;
 }
 
 static inline bool smbprofile_dump_pending(void)

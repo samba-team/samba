@@ -45,6 +45,37 @@ static void profile_separator(const char * title,
 	d_printf("%s\n", line);
 }
 
+static void print_buckets(struct traverse_state *state,
+			  const char *name,
+			  const struct smbprofile_stats_iobytes *s)
+{
+	if (state->json_output) {
+		return;
+	}
+	d_printf("%s_buckets: "
+		 "%"PRIu64","
+		 "%"PRIu64","
+		 "%"PRIu64","
+		 "%"PRIu64","
+		 "%"PRIu64","
+		 "%"PRIu64","
+		 "%"PRIu64","
+		 "%"PRIu64","
+		 "%"PRIu64","
+		 "%"PRIu64"\n",
+		 name,
+		 s->buckets[0],
+		 s->buckets[1],
+		 s->buckets[2],
+		 s->buckets[3],
+		 s->buckets[4],
+		 s->buckets[5],
+		 s->buckets[6],
+		 s->buckets[7],
+		 s->buckets[8],
+		 s->buckets[9]);
+}
+
 /*******************************************************************
  dump the elements of the profile structure
   ******************************************************************/
@@ -95,6 +126,7 @@ bool status_profile_dump(bool verbose,
 #define SMBPROFILE_STATS_IOBYTES(name) do { \
 	__PRINT_FIELD_LINE(#name, name##_stats,  count); \
 	__PRINT_FIELD_LINE(#name, name##_stats,  time); \
+	print_buckets(state, #name, &stats.values.name##_stats); \
 	__PRINT_FIELD_LINE(#name, name##_stats,  idle); \
 	__PRINT_FIELD_LINE(#name, name##_stats,  inbytes); \
 	__PRINT_FIELD_LINE(#name, name##_stats,  outbytes); \

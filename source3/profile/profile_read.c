@@ -65,6 +65,26 @@ void smbprofile_stats_accumulate(struct profile_stats *acc,
 			add->values.name##_stats.count;    \
 		acc->values.name##_stats.time +=           \
 			add->values.name##_stats.time;     \
+		acc->values.name##_stats.buckets[0] +=     \
+			add->values.name##_stats.buckets[0]; \
+		acc->values.name##_stats.buckets[1] +=     \
+			add->values.name##_stats.buckets[1]; \
+		acc->values.name##_stats.buckets[2] +=     \
+			add->values.name##_stats.buckets[2]; \
+		acc->values.name##_stats.buckets[3] +=     \
+			add->values.name##_stats.buckets[3]; \
+		acc->values.name##_stats.buckets[4] +=     \
+			add->values.name##_stats.buckets[4]; \
+		acc->values.name##_stats.buckets[5] +=     \
+			add->values.name##_stats.buckets[5]; \
+		acc->values.name##_stats.buckets[6] +=     \
+			add->values.name##_stats.buckets[6]; \
+		acc->values.name##_stats.buckets[7] +=     \
+			add->values.name##_stats.buckets[7]; \
+		acc->values.name##_stats.buckets[8] +=     \
+			add->values.name##_stats.buckets[8]; \
+		acc->values.name##_stats.buckets[9] +=     \
+			add->values.name##_stats.buckets[9]; \
 		acc->values.name##_stats.idle +=           \
 			add->values.name##_stats.idle;     \
 		acc->values.name##_stats.inbytes +=        \
