@@ -1464,6 +1464,55 @@ int32_t ctdb_control_tcp_client_disconnected(struct ctdb_context *ctdb,
 }
 
 /*
+  called by a client to inform us of a TCP connection was passed to a different
+  "client" (typically with multichannel to another smbd process).
+ */
+int32_t ctdb_control_tcp_client_passed(struct ctdb_context *ctdb,
+				       uint32_t client_id,
+				       TDB_DATA indata)
+{
+	struct ctdb_client *client = reqid_find(ctdb->idr, client_id, struct ctdb_client);
+	struct ctdb_connection *tcp_sock = NULL;
+	int ret;
+	char conn_str[132] = { 0, };
+	bool found = false;
+
+	tcp_sock = (struct ctdb_connection *)indata.dptr;
+
+	ctdb_canonicalize_ip_inplace(&tcp_sock->src);
+	ctdb_canonicalize_ip_inplace(&tcp_sock->dst);
+
+	ret = ctdb_connection_to_buf(conn_str,
+				     sizeof(conn_str),
+				     tcp_sock,
+				     false,
+				     " -> ");
+	if (ret != 0) {
+		strlcpy(conn_str, "UNKNOWN", sizeof(conn_str));
+	}
+
+	found = ctdb_client_remove_tcp(client, tcp_sock);
+	if (!found) {
+		DBG_DEBUG("TCP connection from %s not found "
+			  "(client_id %u pid %u).\n",
+			  conn_str, client_id, client->pid);
+		return 0;
+	}
+
+	D_INFO("TCP connection from %s "
+	       "(client_id %u pid %u) passed to another client\n",
+	       conn_str, client_id, client->pid);
+
+	/*
+	 * We don't call CTDB_CONTROL_TCP_REMOVE
+	 * nor ctdb_remove_connection() as the connection
+	 * is still alive, but handled by another client
+	 */
+
+	return 0;
+}
+
+/*
   find a tcp address on a list
  */
 static struct ctdb_connection *ctdb_tcp_find(struct ctdb_tcp_array *array,
