@@ -1125,7 +1125,7 @@ static int cli_credentials_shallow_ccache(struct cli_credentials *cred)
 _PUBLIC_ struct cli_credentials *cli_credentials_shallow_copy(TALLOC_CTX *mem_ctx,
 						struct cli_credentials *src)
 {
-	struct cli_credentials *dst;
+	struct cli_credentials *dst, *armor_credentials;
 	int ret;
 
 	dst = talloc(mem_ctx, struct cli_credentials);
@@ -1134,6 +1134,14 @@ _PUBLIC_ struct cli_credentials *cli_credentials_shallow_copy(TALLOC_CTX *mem_ct
 	}
 
 	*dst = *src;
+
+	if (dst->krb5_fast_armor_credentials != NULL) {
+		armor_credentials = talloc_reference(dst, dst->krb5_fast_armor_credentials);
+		if (armor_credentials == NULL) {
+			TALLOC_FREE(dst);
+			return NULL;
+		}
+	}
 
 	ret = cli_credentials_shallow_ccache(dst);
 	if (ret != 0) {
@@ -1531,4 +1539,36 @@ _PUBLIC_ int cli_credentials_get_aes256_key(struct cli_credentials *cred,
 	talloc_keep_secret(aes_256->data);
 
 	return 0;
+}
+
+/* This take a reference to the armor credentials to ensure the lifetime is appropriate */
+
+NTSTATUS cli_credentials_set_krb5_fast_armor_credentials(struct cli_credentials *creds,
+							 struct cli_credentials *armor_creds,
+							 bool require_fast_armor)
+{
+	talloc_unlink(creds, creds->krb5_fast_armor_credentials);
+	if (armor_creds == NULL) {
+		creds->krb5_fast_armor_credentials = NULL;
+		return NT_STATUS_OK;
+	}
+
+	creds->krb5_fast_armor_credentials = talloc_reference(creds, armor_creds);
+	if (creds->krb5_fast_armor_credentials == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	creds->krb5_require_fast_armor = require_fast_armor;
+
+	return NT_STATUS_OK;
+}
+
+struct cli_credentials *cli_credentials_get_krb5_fast_armor_credentials(struct cli_credentials *creds)
+{
+	return creds->krb5_fast_armor_credentials;
+}
+
+bool cli_credentials_get_krb5_require_fast_armor(struct cli_credentials *creds)
+{
+	return creds->krb5_require_fast_armor;
 }

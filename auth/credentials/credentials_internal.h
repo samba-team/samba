@@ -131,6 +131,12 @@ struct cli_credentials {
 	enum smb_signing_setting ipc_signing_state;
 
 	enum smb_encryption_setting encryption_state;
+
+	/* Credentials to use for FAST */
+	struct cli_credentials *krb5_fast_armor_credentials;
+
+	/* Should we require FAST? */
+	bool krb5_require_fast_armor;
 };
 
 #endif /* __CREDENTIALS_INTERNAL_H__ */
