@@ -688,20 +688,33 @@ NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
  */
 const char *smbXsrv_connection_dbg(const struct smbXsrv_connection *xconn)
 {
-	const char *ret;
-	char *addr;
+	const char *ret = NULL;
+	char *raddr = NULL;
+	char *laddr = NULL;
+	struct GUID_txt_buf guid_buf = {};
+
 	/*
-	 * TODO: this can be improved later
-	 * maybe including the client guid or more
+	 * TODO: this can be improved further later...
 	 */
-	addr = tsocket_address_string(xconn->remote_address, talloc_tos());
-	if (addr == NULL) {
+
+	raddr = tsocket_address_string(xconn->remote_address, talloc_tos());
+	if (raddr == NULL) {
+		return "<tsocket_address_string() failed>";
+	}
+	laddr = tsocket_address_string(xconn->local_address, talloc_tos());
+	if (laddr == NULL) {
 		return "<tsocket_address_string() failed>";
 	}
 
-	ret = talloc_asprintf(talloc_tos(), "ptr=%p,id=%llu,addr=%s",
-			      xconn, (unsigned long long)xconn->channel_id, addr);
-	TALLOC_FREE(addr);
+	ret = talloc_asprintf(talloc_tos(),
+			"PID=%d,CLIENT=%s,channel=%"PRIu64",remote=%s,local=%s",
+			getpid(),
+			GUID_buf_string(&xconn->smb2.client.guid, &guid_buf),
+			xconn->channel_id,
+			raddr,
+			laddr);
+	TALLOC_FREE(raddr);
+	TALLOC_FREE(laddr);
 	if (ret == NULL) {
 		return "<talloc_asprintf() failed>";
 	}
