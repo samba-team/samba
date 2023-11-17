@@ -580,6 +580,7 @@ struct ace_condition_script *parse_conditional_ace(TALLOC_CTX *mem_ctx,
 		size_t available;
 		bool ok;
 		tok->type = data.data[i];
+		tok->flags = 0;
 		i++;
 		tok_data = data.data + i;
 		available = data.length - i;
