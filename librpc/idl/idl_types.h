@@ -32,6 +32,11 @@
 #define raw8string	[flag(STR_RAW8|STR_NULLTERM)] string
 
 /*
+  a secret null terminated UTF‐16 string (null terminated word sequence)
+*/
+#define secret_u16string	[flag(NDR_SECRET|STR_NULLTERM)] u16string
+
+/*
   a null terminated UCS2 string
 */
 #define nstring_array	[flag(STR_NULLTERM|NDR_ALIGN2)] string_array

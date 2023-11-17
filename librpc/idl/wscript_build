@@ -131,6 +131,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     dns.idl
                     dnsp.idl
                     drsblobs.idl
+                    gmsa.idl
                     idmap.idl
                     krb5pac.idl
                     krb5ccache.idl

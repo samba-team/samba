@@ -390,6 +390,10 @@ bld.SAMBA_SUBSYSTEM('NDR_CLAIMS',
     source='gen_ndr/ndr_claims.c ndr/ndr_claims.c',
     deps='ndr NDR_COMPRESSION LZXPRESS')
 
+bld.SAMBA_SUBSYSTEM('NDR_GMSA',
+    source='gen_ndr/ndr_gmsa.c',
+    deps='ndr')
+
 bld.SAMBA_LIBRARY('ndr-standard',
     source='',
     vnum='0.0.1',
@@ -634,7 +638,7 @@ bld.SAMBA_LIBRARY('ndr-samba',
     NDR_DNSSERVER NDR_EPMAPPER NDR_XATTR NDR_UNIXINFO NDR_NAMED_PIPE_AUTH
     NDR_NTPRINTING NDR_FSRVP NDR_WITNESS NDR_MDSSVC NDR_OPEN_FILES NDR_SMBXSRV
     NDR_SMB3POSIX
-    NDR_KRB5CCACHE NDR_WSP''',
+    NDR_KRB5CCACHE NDR_WSP NDR_GMSA''',
     private_library=True,
     grouping_library=True
     )

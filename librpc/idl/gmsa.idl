@@ -1,0 +1,44 @@
+/*
+ * Type definitions for Group Managed Service Accounts
+ *
+ * Derived from [MS-ADTS] 2.2.19 MSDS-MANAGEDPASSWORD_BLOB.
+ */
+
+#include "idl_types.h"
+
+[
+  uuid("e43b8cf6-1ead-11ee-aed1-e3597136ce70"),
+  version(0.0),
+  pointer_default(unique),
+  helpstring("Active Directory Group Managed Service Accounts")
+]
+interface gmsa
+{
+	/* Public structures. */
+
+	typedef [gensize] struct {
+		[relative_short] secret_u16string *current;
+		[relative_short] secret_u16string *previous;
+		/*
+		 * MS-ADTS states that these fields must be placed on a 64‐bit
+		 * boundary, but samples obtained from Windows are found not to
+		 * be so. In practice, they’re offset by two bytes. That’s why
+		 * we need NOALIGN.
+		 */
+		[relative_short, flag(NDR_NOALIGN)] hyper *query_interval;
+		[relative_short, flag(NDR_NOALIGN)] hyper *unchanged_interval;
+	} MANAGEDPASSWORD_BLOB_PASSWORDS;
+
+	typedef [public] struct {
+		[value(1)] uint16 version;
+		[value(0)] uint16 reserved;
+		/*
+		 * The size of the entire blob. 8 bytes account for the
+		 * ‘version’ field, the ‘reserved’ field, and the ‘length’ field
+		 * itself.
+		 */
+		[value(8 + ndr_size_MANAGEDPASSWORD_BLOB_PASSWORDS(&passwords,
+								   ndr->flags))] uint32 length;
+		MANAGEDPASSWORD_BLOB_PASSWORDS passwords;
+	} MANAGEDPASSWORD_BLOB;
+}
