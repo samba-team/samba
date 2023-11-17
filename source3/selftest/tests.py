@@ -1631,7 +1631,7 @@ plantestsuite("samba3.blackbox.smbXsrv_client_cross_node", "clusteredmember:loca
               [os.path.join(samba3srcdir,
                             "script/tests/test_smbXsrv_client_cross_node.sh"),
                configuration,
-               'ctdb0', 'ctdb1',
+               '$CTDB_SERVER_NAME_NODE0', '$CTDB_SERVER_NAME_NODE1',
                "tmp"])
 plantestsuite("samba3.blackbox.registry_share", "clusteredmember",
               [os.path.join(samba3srcdir,
