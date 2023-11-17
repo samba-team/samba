@@ -895,6 +895,9 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 int32_t ctdb_control_tcp_client_disconnected(struct ctdb_context *ctdb,
 					     uint32_t client_id,
 					     TDB_DATA indata);
+int32_t ctdb_control_tcp_client_passed(struct ctdb_context *ctdb,
+				       uint32_t client_id,
+				       TDB_DATA indata);
 int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata,
 			     bool tcp_update_needed);
 int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata);
