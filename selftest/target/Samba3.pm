@@ -527,8 +527,8 @@ sub setup_clusteredmember
 		my $pub_iface = $node->{SOCKET_WRAPPER_DEFAULT_IFACE};
 		my $node_prefix = $node->{NODE_PREFIX};
 
-		print "NODE_PREFIX=${node_prefix}\n";
-		print "SOCKET=${socket}\n";
+		print "CTDB_BASE=${node_prefix}\n";
+		print "CTDB_SOCKET=${socket}\n";
 
 		my $require_mutexes = "dbwrap_tdb_require_mutexes:* = yes";
 		if ($ENV{SELFTEST_DONT_REQUIRE_TDB_MUTEX_SUPPORT} // '' eq "1") {
@@ -4167,6 +4167,24 @@ sub provision_ctdb($$$$)
 	$ret{NUM_NODES} = $num_nodes;
 	$ret{CTDB_NODES} = \@nodes;
 	$ret{CTDB_NODES_FILE} = $nodes_file;
+
+	for (my $i = 0; $i < $num_nodes; $i++) {
+		my $node = $nodes[$i];
+		my $socket = $node->{SOCKET_FILE};
+		my $server_name = $node->{SERVER_NAME};
+		my $node_prefix = $node->{NODE_PREFIX};
+		my $ip = $node->{IP};
+
+		$ret{"CTDB_BASE_NODE${i}"} = $node_prefix;
+		$ret{"CTDB_SOCKET_NODE${i}"} = $socket;
+		$ret{"CTDB_SERVER_NAME_NODE${i}"} = $server_name;
+		$ret{"CTDB_IFACE_IP_NODE${i}"} = $ip;
+	}
+
+	$ret{CTDB_BASE} = $ret{CTDB_BASE_NODE0};
+	$ret{CTDB_SOCKET} = $ret{CTDB_SOCKET_NODE0};
+	$ret{CTDB_SERVER_NAME} = $ret{CTDB_SERVER_NAME_NODE0};
+	$ret{CTDB_IFACE_IP} = $ret{CTDB_IFACE_IP_NODE0};
 
 	return \%ret;
 }
