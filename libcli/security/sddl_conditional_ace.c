@@ -3386,7 +3386,7 @@ char *sddl_resource_attr_from_claim(
 	}
 	ctx.mem_ctx = tmp_ctx;
 
-	ok = claim_v1_to_ace_token(tmp_ctx, claim, &tok);
+	ok = claim_v1_to_ace_composite_unchecked(tmp_ctx, claim, &tok);
 	if (!ok) {
 		TALLOC_FREE(tmp_ctx);
 		return NULL;

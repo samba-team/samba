@@ -295,12 +295,59 @@ static bool claim_v1_copy(
 	const struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *src);
 
 
+
+bool claim_v1_to_ace_composite_unchecked(
+	TALLOC_CTX *mem_ctx,
+	const struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
+	struct ace_condition_token *result)
+{
+	/*
+	 * This converts a claim object into a conditional ACE
+	 * composite without checking whether it is a valid and sorted
+	 * claim. It is called in two places:
+	 *
+	 * 1. claim_v1_to_ace_token() below (which does do those
+	 * checks, and is the function you want).
+	 *
+	 * 2. sddl_resource_attr_from_claim() in which a resource
+	 * attribute claim needs to pass through a conditional ACE
+	 * composite structure on its way to becoming SDDL. In that
+	 * case we don't want to check validity.
+	 */
+	size_t i;
+	struct ace_condition_token *tokens = NULL;
+	bool ok;
+
+	tokens = talloc_array(mem_ctx,
+			      struct ace_condition_token,
+			      claim->value_count);
+	if (tokens == NULL) {
+		return false;
+	}
+
+	for (i = 0; i < claim->value_count; i++) {
+		ok = claim_v1_offset_to_ace_token(tokens,
+						  claim,
+						  i,
+						  &tokens[i]);
+		if (! ok) {
+			TALLOC_FREE(tokens);
+			return false;
+		}
+	}
+
+	result->type = CONDITIONAL_ACE_TOKEN_COMPOSITE;
+	result->data.composite.tokens = tokens;
+	result->data.composite.n_members = claim->value_count;
+	result->flags = claim->flags & CLAIM_SECURITY_ATTRIBUTE_VALUE_CASE_SENSITIVE;
+	return true;
+}
+
+
 bool claim_v1_to_ace_token(TALLOC_CTX *mem_ctx,
 			   const struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
 			   struct ace_condition_token *result)
 {
-	size_t i;
-	struct ace_condition_token *tokens = NULL;
 	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim_copy = NULL;
 	const struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *sorted_claim = NULL;
 	NTSTATUS status;
@@ -366,6 +413,12 @@ bool claim_v1_to_ace_token(TALLOC_CTX *mem_ctx,
 		}
 		sorted_claim = claim_copy;
 	}
+	ok = claim_v1_to_ace_composite_unchecked(mem_ctx, sorted_claim, result);
+	if (! ok) {
+		TALLOC_FREE(claim_copy);
+		return false;
+	}
+
 	/*
 	 * The multiple values will get turned into a composite
 	 * literal in the conditional ACE. Each element of the
@@ -374,35 +427,9 @@ bool claim_v1_to_ace_token(TALLOC_CTX *mem_ctx,
 	 * set here (at least the _FROM_ATTR flag) or the child values
 	 * will not be reached.
 	 */
-
-	result->flags = (
+	result->flags |= (
 		CONDITIONAL_ACE_FLAG_TOKEN_FROM_ATTR |
-		CLAIM_SECURITY_ATTRIBUTE_UNIQUE_AND_SORTED |
-		(sorted_claim->flags & CLAIM_SECURITY_ATTRIBUTE_VALUE_CASE_SENSITIVE));
-
-	tokens = talloc_array(mem_ctx,
-			      struct ace_condition_token,
-			      sorted_claim->value_count);
-	if (tokens == NULL) {
-		TALLOC_FREE(claim_copy);
-		return false;
-	}
-
-	for (i = 0; i < sorted_claim->value_count; i++) {
-		ok = claim_v1_offset_to_ace_token(tokens,
-						  sorted_claim,
-						  i,
-						  &tokens[i]);
-		if (! ok) {
-			TALLOC_FREE(claim_copy);
-			TALLOC_FREE(tokens);
-			return false;
-		}
-	}
-
-	result->type = CONDITIONAL_ACE_TOKEN_COMPOSITE;
-	result->data.composite.tokens = tokens;
-	result->data.composite.n_members = sorted_claim->value_count;
+		CLAIM_SECURITY_ATTRIBUTE_UNIQUE_AND_SORTED);
 
 	return true;
 }

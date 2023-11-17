@@ -48,6 +48,10 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 				   struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 **out_claims,
 				   uint32_t *out_n_claims);
 
+bool claim_v1_to_ace_composite_unchecked(TALLOC_CTX *mem_ctx,
+					 const struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
+					 struct ace_condition_token *result);
+
 NTSTATUS claim_v1_check_and_sort(
 	TALLOC_CTX *mem_ctx,
 	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
