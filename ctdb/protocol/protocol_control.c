@@ -414,6 +414,10 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 	case CTDB_CONTROL_TCP_CLIENT_DISCONNECTED:
 		len = ctdb_connection_len(cd->data.conn);
 		break;
+
+	case CTDB_CONTROL_TCP_CLIENT_PASSED:
+		len = ctdb_connection_len(cd->data.conn);
+		break;
 	}
 
 	return len;
@@ -1028,6 +1032,14 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 					   &cd->data.conn,
 					   &np);
 		break;
+
+	case CTDB_CONTROL_TCP_CLIENT_PASSED:
+		ret = ctdb_connection_pull(buf,
+					   buflen,
+					   mem_ctx,
+					   &cd->data.conn,
+					   &np);
+		break;
 	}
 
 	if (ret != 0) {
@@ -1390,6 +1402,9 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_TCP_CLIENT_DISCONNECTED:
+		break;
+
+	case CTDB_CONTROL_TCP_CLIENT_PASSED:
 		break;
 	}
 
