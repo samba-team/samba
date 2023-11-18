@@ -216,7 +216,7 @@ NTSTATUS create_internal_fsp(connection_struct *conn,
  * Create an internal fsp for an *existing* directory.
  *
  * This should only be used by callers in the VFS that need to control the
- * opening of the directory. Otherwise use open_internal_dirfsp_at().
+ * opening of the directory. Otherwise use open_internal_dirfsp().
  */
 NTSTATUS create_internal_dirfsp(connection_struct *conn,
 				const struct smb_filename *smb_dname,
