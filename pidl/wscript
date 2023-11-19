@@ -54,7 +54,7 @@ $ git add lib/Parse/Pidl/IDL.pm lib/Parse/Pidl/Expr.pm
 $ git commit
 $ cd -
 
-If your 100% sure you haven't changed idl.yp and expr.yp
+If you're 100% sure you haven't changed idl.yp and expr.yp
 try this to avoid this message:
 
 $ touch ../pidl/lib/Parse/Pidl/IDL.pm ../pidl/lib/Parse/Pidl/Expr.pm
