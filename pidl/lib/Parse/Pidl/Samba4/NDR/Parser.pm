@@ -1119,7 +1119,7 @@ sub ParseMemCtxPullFlags($$$$)
 		my $nl = GetNextLevel($e, $l);
 		return undef if ($nl->{TYPE} eq "PIPE");
 		return undef if ($nl->{TYPE} eq "ARRAY");
-		return undef if (($nl->{TYPE} eq "DATA") and ($nl->{DATA_TYPE} eq "string"));
+		return undef if (($nl->{TYPE} eq "DATA") and (Parse::Pidl::Typelist::is_string_type($nl->{DATA_TYPE})));
 
 		if ($l->{LEVEL} eq "TOP") {
 			$mem_flags = "LIBNDR_FLAG_REF_ALLOC";
@@ -1358,7 +1358,7 @@ sub ParsePtrPull($$$$$)
 	my $nl = GetNextLevel($e, $l);
 	my $next_is_array = ($nl->{TYPE} eq "ARRAY");
 	my $next_is_string = (($nl->{TYPE} eq "DATA") and
-						 ($nl->{DATA_TYPE} eq "string"));
+						 (Parse::Pidl::Typelist::is_string_type($nl->{DATA_TYPE})));
 
 	if ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "TOP") {
 
@@ -2644,7 +2644,7 @@ sub ParseFunctionPull($$)
 		next unless ($e->{LEVELS}[0]->{TYPE} eq "POINTER" and
 		             $e->{LEVELS}[0]->{POINTER_TYPE} eq "ref");
 		next if (($e->{LEVELS}[1]->{TYPE} eq "DATA") and
-				 ($e->{LEVELS}[1]->{DATA_TYPE} eq "string"));
+				 (Parse::Pidl::Typelist::is_string_type($e->{LEVELS}[1]->{DATA_TYPE})));
 		next if ($e->{LEVELS}[1]->{TYPE} eq "PIPE");
 		next if (($e->{LEVELS}[1]->{TYPE} eq "ARRAY")
 			and   $e->{LEVELS}[1]->{IS_ZERO_TERMINATED});
@@ -2696,7 +2696,7 @@ sub ParseFunctionPull($$)
 		next unless ($e->{LEVELS}[0]->{TYPE} eq "POINTER" and
 		             $e->{LEVELS}[0]->{POINTER_TYPE} eq "ref");
 		next if (($e->{LEVELS}[1]->{TYPE} eq "DATA") and
-				 ($e->{LEVELS}[1]->{DATA_TYPE} eq "string"));
+				 (Parse::Pidl::Typelist::is_string_type($e->{LEVELS}[1]->{DATA_TYPE})));
 		next if ($e->{LEVELS}[1]->{TYPE} eq "PIPE");
 		next if ($e->{LEVELS}[1]->{TYPE} eq "ARRAY");
 

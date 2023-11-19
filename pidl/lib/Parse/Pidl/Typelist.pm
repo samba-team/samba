@@ -10,6 +10,7 @@ require Exporter;
 @EXPORT_OK = qw(hasType getType resolveType mapTypeName mapTypeSpecifier scalar_is_reference expandAlias
 	mapScalarType addType typeIs is_signed is_scalar enum_type_fn
 	bitmap_type_fn mapType typeHasBody is_fixed_size_scalar
+	is_string_type
 );
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -228,6 +229,13 @@ sub scalar_is_reference($)
 
 	return 1 if (grep(/^$name$/, @reference_scalars));
 	return 0;
+}
+
+sub is_string_type
+{
+	my ($t) = @_;
+
+	return ($t eq "string");
 }
 
 sub RegisterScalars()
