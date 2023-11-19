@@ -41,6 +41,11 @@ static PyObject *py_creds_new(PyTypeObject *type, PyObject *args, PyObject *kwar
 	return pytalloc_steal(type, cli_credentials_init(NULL));
 }
 
+static PyObject *PyCredentials_from_cli_credentials(struct cli_credentials *creds)
+{
+	return pytalloc_reference(&PyCredentials, creds);
+}
+
 static PyObject *py_creds_get_username(PyObject *self, PyObject *unused)
 {
 	struct cli_credentials *creds = PyCredentials_AsCliCredentials(self);
@@ -1219,6 +1224,74 @@ static PyObject *py_creds_set_smb_encryption(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_creds_get_krb5_fast_armor_credentials(PyObject *self, PyObject *unused)
+{
+	struct cli_credentials *creds = NULL;
+	struct cli_credentials *fast_creds = NULL;
+
+	creds = PyCredentials_AsCliCredentials(self);
+	if (creds == NULL) {
+		PyErr_Format(PyExc_TypeError, "Credentials expected");
+		return NULL;
+	}
+
+	fast_creds = cli_credentials_get_krb5_fast_armor_credentials(creds);
+	if (fast_creds == NULL) {
+		Py_RETURN_NONE;
+	}
+
+	return PyCredentials_from_cli_credentials(fast_creds);
+}
+
+static PyObject *py_creds_set_krb5_fast_armor_credentials(PyObject *self, PyObject *args)
+{
+	struct cli_credentials *creds = NULL;
+	PyObject *pyfast_creds;
+	struct cli_credentials *fast_creds = NULL;
+	int fast_armor_required = 0;
+	NTSTATUS status;
+
+	creds = PyCredentials_AsCliCredentials(self);
+	if (creds == NULL) {
+		PyErr_Format(PyExc_TypeError, "Credentials expected");
+		return NULL;
+	}
+	if (!PyArg_ParseTuple(args, "Op", &pyfast_creds, &fast_armor_required)) {
+		return NULL;
+	}
+	if (pyfast_creds == Py_None) {
+		fast_creds = NULL;
+	} else {
+		fast_creds = PyCredentials_AsCliCredentials(pyfast_creds);
+		if (fast_creds == NULL) {
+			PyErr_Format(PyExc_TypeError, "Credentials expected");
+			return NULL;
+		}
+	}
+
+	status = cli_credentials_set_krb5_fast_armor_credentials(creds,
+								 fast_creds,
+								 fast_armor_required);
+
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_creds_get_krb5_require_fast_armor(PyObject *self, PyObject *unused)
+{
+	bool krb5_fast_armor_required;
+	struct cli_credentials *creds = NULL;
+
+	creds = PyCredentials_AsCliCredentials(self);
+	if (creds == NULL) {
+		PyErr_Format(PyExc_TypeError, "Credentials expected");
+		return NULL;
+	}
+
+	krb5_fast_armor_required = cli_credentials_get_krb5_require_fast_armor(creds);
+	return PyBool_FromLong(krb5_fast_armor_required);
+}
+
 static PyMethodDef py_creds_methods[] = {
 	{
 		.ml_name  = "get_username",
@@ -1557,6 +1630,27 @@ static PyMethodDef py_creds_methods[] = {
 		.ml_name  = "set_smb_encryption",
 		.ml_meth  = py_creds_set_smb_encryption,
 		.ml_flags = METH_VARARGS,
+	},
+	{
+		.ml_name  = "get_krb5_fast_armor_credentials",
+		.ml_meth  = py_creds_get_krb5_fast_armor_credentials,
+		.ml_flags = METH_NOARGS,
+		.ml_doc   = "S.get_krb5_fast_armor_credentials() -> Credentials\n"
+			    "Get the Kerberos FAST credentials set on this credentials object"
+	},
+	{
+		.ml_name  = "set_krb5_fast_armor_credentials",
+		.ml_meth  = py_creds_set_krb5_fast_armor_credentials,
+		.ml_flags = METH_VARARGS,
+		.ml_doc   = "S.set_krb5_fast_armor_credentials(credentials, required) -> None\n"
+			    "Set Kerberos FAST credentials for this credentials object, and if FAST armoring must be used."
+	},
+	{
+		.ml_name  = "get_krb5_require_fast_armor",
+		.ml_meth  = py_creds_get_krb5_require_fast_armor,
+		.ml_flags = METH_NOARGS,
+		.ml_doc   = "S.get_krb5_fast_armor() -> bool\n"
+			    "Indicate if Kerberos FAST armor is required"
 	},
 	{ .ml_name = NULL }
 };
