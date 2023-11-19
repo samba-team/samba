@@ -47,7 +47,7 @@ class GensecTests(samba.tests.TestCase):
     def test_info_uninitialized(self):
         self.assertRaises(RuntimeError, self.gensec.session_info)
 
-    def _test_update(self, mech, client_mech=None, client_only_opt=None):
+    def _test_update(self, mech, *, client_mech=None, client_only_opt=None):
         """Test GENSEC by doing an exchange with ourselves using GSSAPI against a KDC"""
 
         # Start up a client and server GENSEC instance to test things with
@@ -138,10 +138,10 @@ class GensecTests(samba.tests.TestCase):
         self._test_update("GSS-SPNEGO")
 
     def test_update_spnego_downgrade(self):
-        self._test_update("GSS-SPNEGO", "spnego", "gensec:gssapi_krb5")
+        self._test_update("GSS-SPNEGO", client_mech="spnego", client_only_opt="gensec:gssapi_krb5")
 
     def test_update_no_optimistic_spnego(self):
-        self._test_update("GSS-SPNEGO", "spnego", "spnego:client_no_optimistic")
+        self._test_update("GSS-SPNEGO", client_mech="spnego", client_only_opt="spnego:client_no_optimistic")
 
     def test_update_w2k_spnego_client(self):
         self.lp_ctx.set("spnego:simulate_w2k", "yes")
@@ -172,10 +172,10 @@ class GensecTests(samba.tests.TestCase):
         self._test_update("GSS-SPNEGO")
 
     def test_update_gss_krb5_to_spnego(self):
-        self._test_update("GSS-SPNEGO", "gssapi_krb5")
+        self._test_update("GSS-SPNEGO", client_mech="gssapi_krb5")
 
     def test_update_ntlmssp_to_spnego(self):
-        self._test_update("GSS-SPNEGO", "ntlmssp")
+        self._test_update("GSS-SPNEGO", client_mech="ntlmssp")
 
     def test_max_update_size(self):
         """Test GENSEC by doing an exchange with ourselves using GSSAPI against a KDC"""
