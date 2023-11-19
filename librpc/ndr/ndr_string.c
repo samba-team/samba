@@ -476,6 +476,138 @@ _PUBLIC_ uint32_t ndr_size_string(int ret, const char * const* string, ndr_flags
 	return ret+strlen(*string)+1;
 }
 
+/**
+  pull a UTF‐16 string from the wire
+*/
+_PUBLIC_ enum ndr_err_code ndr_pull_u16string(struct ndr_pull *ndr,
+					      ndr_flags_type ndr_flags,
+					      const uint16_t **s)
+{
+	uint16_t *as = NULL;
+	const char *const src_str = (char *)ndr->data + ndr->offset;
+	size_t src_len = 0;
+
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NDR_ERR_SUCCESS;
+	}
+
+	if (ndr->flags & LIBNDR_ENCODING_FLAGS) {
+		return ndr_pull_error(
+			ndr,
+			NDR_ERR_STRING,
+			"Unsupported string flags 0x%" PRI_LIBNDR_FLAGS
+			"passed to ndr_pull_u16string()\n",
+			ndr->flags & LIBNDR_STRING_FLAGS);
+	}
+
+	switch (ndr->flags & LIBNDR_STRING_FLAGS) {
+	case LIBNDR_FLAG_STR_NULLTERM:
+		/*
+		 * We ensure that src_len cannot equal 0 by
+		 * requiring that there be enough bytes for at least
+		 * the NULL terminator
+		 */
+		NDR_PULL_NEED_BYTES(ndr, 2);
+		src_len = utf16_null_terminated_len_n(src_str,
+						      ndr->data_size -
+							      ndr->offset);
+		break;
+
+	default:
+		return ndr_pull_error(
+			ndr,
+			NDR_ERR_STRING,
+			"Unsupported string flags 0x%" PRI_LIBNDR_FLAGS
+			"passed to ndr_pull_u16string()\n",
+			ndr->flags & LIBNDR_STRING_FLAGS);
+	}
+
+	NDR_PULL_NEED_BYTES(ndr, src_len);
+	as = talloc_utf16_strlendup(ndr->current_mem_ctx,
+				    src_str,
+				    src_len);
+	if (as == NULL) {
+		return ndr_pull_error(ndr,
+				      NDR_ERR_ALLOC,
+				      "Failed to talloc_utf16_strlendup() in "
+				      "ndr_pull_u16string()");
+	}
+
+	NDR_CHECK(ndr_pull_advance(ndr, src_len));
+	*s = as;
+
+	return NDR_ERR_SUCCESS;
+}
+
+/**
+  push a UTF‐16 string onto the wire
+*/
+_PUBLIC_ enum ndr_err_code ndr_push_u16string(struct ndr_push *ndr,
+					      ndr_flags_type ndr_flags,
+					      const uint16_t *s)
+{
+	size_t s_len;
+
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NDR_ERR_SUCCESS;
+	}
+
+	if (s == NULL) {
+		return ndr_push_error(
+			ndr,
+			NDR_ERR_INVALID_POINTER,
+			"NULL pointer passed to ndr_push_u16string()");
+	}
+
+	s_len = utf16_null_terminated_len(s);
+	if (s_len > UINT32_MAX) {
+		return ndr_push_error(
+			ndr,
+			NDR_ERR_LENGTH,
+			"length overflow in ndr_push_u16string()");
+	}
+
+	if (ndr->flags & LIBNDR_ENCODING_FLAGS) {
+		return ndr_push_error(
+			ndr,
+			NDR_ERR_STRING,
+			"Unsupported string flags 0x%" PRI_LIBNDR_FLAGS
+			"passed to ndr_push_u16string()\n",
+			ndr->flags & LIBNDR_STRING_FLAGS);
+	}
+
+	switch (ndr->flags & LIBNDR_STRING_FLAGS) {
+	case LIBNDR_FLAG_STR_NULLTERM:
+		NDR_CHECK(ndr_push_bytes(ndr, (const uint8_t *)s, s_len));
+		break;
+
+	default:
+		if (ndr->flags & LIBNDR_FLAG_REMAINING) {
+			NDR_CHECK(ndr_push_bytes(ndr, (const uint8_t *)s, s_len));
+			break;
+		}
+
+		return ndr_push_error(
+			ndr,
+			NDR_ERR_STRING,
+			"Unsupported string flags 0x%" PRI_LIBNDR_FLAGS
+			"passed to ndr_push_u16string()\n",
+			ndr->flags & LIBNDR_STRING_FLAGS);
+	}
+
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_u16string(struct ndr_print *ndr,
+				  const char *name,
+				  const uint16_t *s)
+{
+	return ndr_print_array_uint8(ndr,
+				     name,
+				     (const uint8_t *)s,
+				     utf16_len(s));
+}
+
 static uint32_t guess_string_array_size(struct ndr_pull *ndr, ndr_flags_type ndr_flags)
 {
 	/*

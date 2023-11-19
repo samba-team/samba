@@ -806,6 +806,7 @@ NDR_SCALAR_PROTO(DATA_BLOB, DATA_BLOB)
 NDR_SCALAR_PROTO(ipv4address, const char *)
 NDR_SCALAR_PROTO(ipv6address, const char *)
 NDR_SCALAR_PROTO(string, const char *)
+NDR_SCALAR_PROTO(u16string, const uint16_t *)
 NDR_SCALAR_PROTO(double, double)
 
 enum ndr_err_code ndr_pull_policy_handle(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct policy_handle *r);
