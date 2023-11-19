@@ -67,9 +67,10 @@ class SDDLvsDescriptorBase(TestCase):
                 data = json.load(f)
 
         data = cls.filter_test_cases(data)
-
+        i = 0
         for sddl, sdl in data.items():
-            name = sddl
+            i += 1
+            name = f'{i:03}-{sddl}'
             if len(name) > 130:
                 tag = md5(sddl.encode()).hexdigest()[:10]
                 name = f"{name[:100]}+{len(name) - 100}-more-characters-{tag}"
