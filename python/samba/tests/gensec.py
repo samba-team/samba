@@ -47,10 +47,13 @@ class GensecTests(samba.tests.TestCase):
     def test_info_uninitialized(self):
         self.assertRaises(RuntimeError, self.gensec.session_info)
 
-    def _test_update(self, mech, *, client_mech=None, client_only_opt=None):
+    def _test_update(self, mech, *, creds=None, client_mech=None, client_only_opt=None):
         """Test GENSEC by doing an exchange with ourselves using GSSAPI against a KDC"""
 
         # Start up a client and server GENSEC instance to test things with
+
+        if creds is None:
+            creds = self.get_credentials()
 
         if client_only_opt:
             orig_client_opt = self.lp_ctx.get(client_only_opt)
@@ -59,7 +62,7 @@ class GensecTests(samba.tests.TestCase):
             self.lp_ctx.set(client_only_opt, "yes")
 
         self.gensec_client = gensec.Security.start_client(self.settings)
-        self.gensec_client.set_credentials(self.get_credentials())
+        self.gensec_client.set_credentials(creds)
         self.gensec_client.want_feature(gensec.FEATURE_SEAL)
         if client_mech is not None:
             self.gensec_client.start_mech_by_name(client_mech)
@@ -176,6 +179,30 @@ class GensecTests(samba.tests.TestCase):
 
     def test_update_ntlmssp_to_spnego(self):
         self._test_update("GSS-SPNEGO", client_mech="ntlmssp")
+
+    def test_update_fast(self):
+        """Test associating a machine account with the credentials
+           to protect the password from cracking and show
+           'log in from device' pattern.
+
+           (Note we can't tell if FAST armor was actually used with this test)"""
+        creds = self.insta_creds(template=self.get_credentials())
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp_ctx)
+        machine_creds.set_machine_account(self.lp_ctx)
+        creds.set_krb5_fast_armor_credentials(machine_creds, True)
+        self._test_update("GSSAPI", creds=creds)
+
+    def test_update_anon_fast(self):
+        """Test setting no FAST credentials, but requiring FAST.
+           Against a Heimdal KDC this will trigger the anonymous
+           PKINIT protection.
+
+           (Note we can't tell if FAST armor was actually used with this test)
+        """
+        creds = self.insta_creds(template=self.get_credentials())
+        creds.set_krb5_fast_armor_credentials(None, True)
+        self._test_update("GSSAPI", creds=creds)
 
     def test_max_update_size(self):
         """Test GENSEC by doing an exchange with ourselves using GSSAPI against a KDC"""
