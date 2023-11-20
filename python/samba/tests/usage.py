@@ -100,10 +100,12 @@ EXCLUDE_DIRS = {
     'bin/python/samba/tests',
     'bin/python/samba/tests/dcerpc',
     'bin/python/samba/tests/krb5',
+    'bin/python/samba/tests/ndr',
     'python/samba/tests',
     'python/samba/tests/bin',
     'python/samba/tests/dcerpc',
     'python/samba/tests/krb5',
+    'python/samba/tests/ndr',
 }
 
 
