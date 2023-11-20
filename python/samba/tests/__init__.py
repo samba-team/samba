@@ -26,13 +26,13 @@ import samba
 from samba import param
 from samba import credentials
 from samba.credentials import Credentials
-from samba import gensec
 import subprocess
 import sys
 import unittest
 import re
 from enum import IntEnum, unique
 import samba.auth
+import samba.gensec
 import samba.dcerpc.base
 from random import randint
 from random import SystemRandom
@@ -256,7 +256,7 @@ class TestCase(unittest.TestCase):
         c.set_realm(template.get_realm())
         c.set_workstation(template.get_workstation())
         c.set_gensec_features(c.get_gensec_features()
-                              | gensec.FEATURE_SEAL)
+                              | samba.gensec.FEATURE_SEAL)
         c.set_kerberos_state(kerberos_state)
         if simple_bind_dn:
             c.set_bind_dn(simple_bind_dn)
