@@ -23,6 +23,7 @@
 krb5_error_code kinit_to_ccache(TALLOC_CTX *parent_ctx,
 				struct cli_credentials *credentials,
 				struct smb_krb5_context *smb_krb5_context,
+				struct loadparm_context *lp_ctx,
 				struct tevent_context *event_ctx,
 				krb5_ccache ccache,
 				enum credentials_obtained *obtained,

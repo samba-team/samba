@@ -238,6 +238,7 @@ done:
  krb5_error_code kinit_to_ccache(TALLOC_CTX *parent_ctx,
 				 struct cli_credentials *credentials,
 				 struct smb_krb5_context *smb_krb5_context,
+				 struct loadparm_context *lp_ctx,
 				 struct tevent_context *event_ctx,
 				 krb5_ccache ccache,
 				 enum credentials_obtained *obtained,
@@ -253,6 +254,7 @@ done:
 	int tries;
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
 	krb5_get_init_creds_opt *krb_options;
+	struct cli_credentials *fast_creds;
 
 	if (!mem_ctx) {
 		(*error_string) = strerror(ENOMEM);
@@ -323,6 +325,50 @@ done:
 						 krb_options, true);
 #else /* MIT */
 	krb5_get_init_creds_opt_set_canonicalize(krb_options, true);
+#endif
+
+	fast_creds = cli_credentials_get_krb5_fast_armor_credentials(credentials);
+
+	if (fast_creds != NULL) {
+#ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_FAST_CCACHE
+		struct ccache_container *fast_ccc = NULL;
+		const char *fast_error_string = NULL;
+		ret = cli_credentials_get_ccache(fast_creds, event_ctx, lp_ctx, &fast_ccc, &fast_error_string);
+		if (ret != 0) {
+			(*error_string) = talloc_asprintf(credentials,
+							  "Obtaining the Kerberos FAST armor credentials failed: %s\n",
+							  fast_error_string);
+			return ret;
+		}
+		krb5_get_init_creds_opt_set_fast_ccache(smb_krb5_context->krb5_context,
+							krb_options,
+							fast_ccc->ccache);
+#else
+		*error_string = talloc_strdup(credentials,
+					      "Using Kerberos FAST "
+					      "armor credentials not possible "
+					      "with this Kerberos library.  "
+					      "Modern MIT or Samba's embedded "
+					      "Heimdal required");
+		return EINVAL;
+#endif
+	}
+
+#ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_FAST_FLAGS
+	{
+		bool require_fast;
+		/*
+		 * This ensures that if FAST was required, that we proceed
+		 * with no credentials cache, but with (eg) anonymous
+		 * PKINIT
+		 */
+		require_fast = cli_credentials_get_krb5_require_fast_armor(credentials);
+		if (require_fast) {
+			krb5_get_init_creds_opt_set_fast_flags(smb_krb5_context->krb5_context,
+							       krb_options,
+							       KRB5_FAST_REQUIRED);
+		}
+	}
 #endif
 
 	tries = 2;
@@ -437,6 +483,7 @@ done:
 		ret = kinit_to_ccache(parent_ctx,
 				      credentials,
 				      smb_krb5_context,
+				      lp_ctx,
 				      event_ctx,
 				      ccache, obtained,
 				      error_string);

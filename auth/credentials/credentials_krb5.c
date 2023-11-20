@@ -726,7 +726,14 @@ _PUBLIC_ int cli_credentials_get_named_ccache(struct cli_credentials *cred,
 		return ret;
 	}
 
-	ret = kinit_to_ccache(cred, cred, (*ccc)->smb_krb5_context, event_ctx, (*ccc)->ccache, &obtained, error_string);
+	ret = kinit_to_ccache(cred,
+			      cred,
+			      (*ccc)->smb_krb5_context,
+			      lp_ctx,
+			      event_ctx,
+			      (*ccc)->ccache,
+			      &obtained,
+			      error_string);
 	if (ret) {
 		return ret;
 	}
