@@ -312,6 +312,31 @@ class GUIDField(Field):
             return MessageElement(ndr_pack(GUID(value)), flags, self.name)
 
 
+class SIDField(Field):
+    """A SID field encodes and decodes SID data."""
+
+    def from_db_value(self, ldb, value):
+        """Convert MessageElement with a GUID into a str or list of str."""
+        if value is None:
+            return
+        elif len(value) > 1 or self.many:
+            return [str(ndr_unpack(security.dom_sid, item)) for item in value]
+        else:
+            return str(ndr_unpack(security.dom_sid, value[0]))
+
+    def to_db_value(self, ldb, value, flags):
+        """Convert str with GUID into MessageElement."""
+        if value is None:
+            return
+        elif isinstance(value, list):
+            return MessageElement(
+                [ndr_pack(security.dom_sid(item)) for item in value],
+                flags, self.name)
+        else:
+            return MessageElement(ndr_pack(security.dom_sid(value)),
+                                  flags, self.name)
+
+
 class SDDLField(Field):
     """A SDDL field encodes and decodes SDDL data."""
 
