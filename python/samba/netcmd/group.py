@@ -107,7 +107,7 @@ Example3 adds a new RFC2307 enabled group for NIS domain samdom and GID 12345 (b
                help="Group type (Security | Distribution)"),
         Option("--description", help="Group's description", type=str),
         Option("--mail-address", help="Group's email address", type=str),
-        Option("--notes", help="Groups's notes", type=str),
+        Option("--notes", help="Group's notes", type=str),
         Option("--gid-number", help="Group's Unix/RFC2307 GID number", type=int),
         Option("--nis-domain", help="SFU30 NIS Domain", type=str),
         Option("--special", help="Add a special predefined group", action="store_true", default=False),

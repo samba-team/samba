@@ -214,7 +214,7 @@ Example3 shows how to add a new computer in the OrgUnit organizational unit.
                      "counterpart) to default CN=Computers in which new "
                      "computer object will be created. E.g. 'OU=<OU name>'"),
                type=str),
-        Option("--description", help="Computers's description", type=str),
+        Option("--description", help="Computer's description", type=str),
         Option("--prepare-oldjoin",
                help="Prepare enabled machine account for oldjoin mechanism",
                action="store_true"),
