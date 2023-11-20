@@ -1035,9 +1035,9 @@ int file_set_dosmode(connection_struct *conn,
 		return -1;
 	}
 
-	become_root();
+	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 	ret = SMB_VFS_FCHMOD(smb_fname->fsp, unixmode);
-	unbecome_root();
+	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 
 done:
 	if (!newfile) {
@@ -1205,9 +1205,9 @@ int file_ntimes(connection_struct *conn,
 	/* Check if we have write access. */
 	if (can_write_to_fsp(fsp)) {
 		/* We are allowed to become root and change the filetime. */
-		become_root();
+		set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 		ret = SMB_VFS_FNTIMES(fsp, ft);
-		unbecome_root();
+		drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 	}
 
 	return ret;
