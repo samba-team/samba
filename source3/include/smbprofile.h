@@ -44,6 +44,9 @@ struct tevent_context;
 	SMBPROFILE_STATS_BASIC(set_sec_ctx) \
 	SMBPROFILE_STATS_BASIC(set_root_sec_ctx) \
 	SMBPROFILE_STATS_BASIC(pop_sec_ctx) \
+	SMBPROFILE_STATS_COUNT(num_sessions) \
+	SMBPROFILE_STATS_COUNT(num_tcons) \
+	SMBPROFILE_STATS_COUNT(num_files) \
 	SMBPROFILE_STATS_SECTION_END \
 	\
 	SMBPROFILE_STATS_SECTION_START(syscall, "System Calls") \

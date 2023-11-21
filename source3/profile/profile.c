@@ -27,6 +27,7 @@
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include <tevent.h>
 #include "../lib/crypto/crypto.h"
+#include "source3/smbd/globals.h"
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
@@ -257,6 +258,17 @@ void smbprofile_dump(struct smbd_server_connection *sconn)
 		rself.ru_stime.tv_usec;
 #endif /* HAVE_GETRUSAGE */
 
+	if (sconn != NULL) {
+		/*
+		 * Sessions, tcons and files don't add up, they are
+		 * transient counters
+		 */
+		profile_p->values.num_sessions_stats.count = sconn->num_users;
+		profile_p->values.num_tcons_stats.count =
+			sconn->num_connections;
+		profile_p->values.num_files_stats.count = sconn->num_files;
+	}
+
 	tdb_store(smbprofile_state.internal.db->tdb, key,
 		  (TDB_DATA) {
 			.dptr = (uint8_t *)profile_p,
@@ -309,6 +321,13 @@ void smbprofile_cleanup(pid_t pid, pid_t dst)
 	s.values.disconnect_stats.count = s.values.connect_stats.count;
 
 	smbprofile_stats_accumulate(&acc, &s);
+
+	/*
+	 * Sessions, tcons and files don't add up, they are transient.
+	 */
+	acc.values.num_sessions_stats.count = 0;
+	acc.values.num_tcons_stats.count = 0;
+	acc.values.num_files_stats.count = 0;
 
 	acc.magic = profile_p->magic;
 	acc.summary_record = true;
