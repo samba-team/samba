@@ -1856,7 +1856,7 @@ static void smbd_tevent_trace_callback_profile(enum tevent_trace_point point,
 			 * We need to flush our state after sleeping
 			 * (hopefully a long time).
 			 */
-			smbprofile_dump();
+			smbprofile_dump(NULL);
 			/*
 			 * future profiling events should trigger timers
 			 * on our main event context.

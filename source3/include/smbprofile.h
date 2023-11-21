@@ -25,6 +25,7 @@
 #include <tdb.h>
 #include "lib/util/time.h"
 
+struct smbd_server_connection;
 struct tevent_context;
 
 #ifdef WITH_PROFILE
@@ -558,7 +559,7 @@ static inline bool smbprofile_dump_pending(void)
 	return true;
 }
 
-void smbprofile_dump(void);
+void smbprofile_dump(struct smbd_server_connection *sconn);
 
 void smbprofile_cleanup(pid_t pid, pid_t dst);
 void smbprofile_stats_accumulate(struct profile_stats *acc,
@@ -645,7 +646,7 @@ static inline void smbprofile_dump_setup(struct tevent_context *ev)
 	return;
 }
 
-static inline void smbprofile_dump(void)
+static inline void smbprofile_dump(struct smbd_server_connection *sconn)
 {
 	return;
 }

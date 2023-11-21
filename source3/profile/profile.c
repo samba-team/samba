@@ -173,7 +173,7 @@ static void smbprofile_dump_timer(struct tevent_context *ev,
 				  struct timeval current_time,
 				  void *private_data)
 {
-	smbprofile_dump();
+	smbprofile_dump(NULL);
 }
 
 void smbprofile_dump_schedule_timer(void)
@@ -210,7 +210,7 @@ static int profile_stats_parser(TDB_DATA key, TDB_DATA value,
 	return 0;
 }
 
-void smbprofile_dump(void)
+void smbprofile_dump(struct smbd_server_connection *sconn)
 {
 	pid_t pid = 0;
 	TDB_DATA key = { .dptr = (uint8_t *)&pid, .dsize = sizeof(pid) };
