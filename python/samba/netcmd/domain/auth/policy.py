@@ -133,11 +133,11 @@ class ComputerOptions(options.OptionGroup):
                         type=str, dest="allowed_to_authenticate_to",
                         action="callback", callback=self.set_option)
         self.add_option("--computer-allowed-to-authenticate-to-by-group",
-                        help="Computer is allowed to authenticate to group.",
+                        help="Computer is allowed to authenticate to by group.",
                         type=str, dest="allowed_to_authenticate_to_by_group",
                         action="callback", callback=self.set_option)
         self.add_option("--computer-allowed-to-authenticate-to-by-silo",
-                        help="Computer is allowed to authenticate to silo.",
+                        help="Computer is allowed to authenticate to by silo.",
                         type=str, dest="allowed_to_authenticate_to_by_silo",
                         action="callback", callback=self.set_option)
 
