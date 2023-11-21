@@ -153,14 +153,14 @@ class AuthPolicyCmdTestCase(SiloTest):
         self.assertIn("--user-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
 
-    def test_create__user_allowed_to_authenticate_from_silo(self):
-        """Tests the --user-allowed-to-authenticate-from-silo shortcut."""
+    def test_create__user_allowed_to_authenticate_from_device_silo(self):
+        """Tests the --user-allowed-to-authenticate-from-device-silo shortcut."""
         name = self.unique_name()
 
         self.addCleanup(self.delete_authentication_policy, name=name, force=True)
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", name,
-                                       "--user-allowed-to-authenticate-from-silo",
+                                       "--user-allowed-to-authenticate-from-device-silo",
                                        "Developers")
         self.assertIsNone(result, msg=err)
 
@@ -229,14 +229,14 @@ class AuthPolicyCmdTestCase(SiloTest):
         self.assertIn("--service-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
 
-    def test_create__service_allowed_to_authenticate_from_silo(self):
-        """Tests the --service-allowed-to-authenticate-from-silo shortcut."""
+    def test_create__service_allowed_to_authenticate_from_device_silo(self):
+        """Tests the --service-allowed-to-authenticate-from-device-silo shortcut."""
         name = self.unique_name()
 
         self.addCleanup(self.delete_authentication_policy, name=name, force=True)
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
                                        "--name", name,
-                                       "--service-allowed-to-authenticate-from-silo",
+                                       "--service-allowed-to-authenticate-from-device-silo",
                                        "Managers")
         self.assertIsNone(result, msg=err)
 
@@ -567,7 +567,7 @@ class AuthPolicyCmdTestCase(SiloTest):
         """Test repeating similar arguments doesn't make sense to use together.
 
         --user-allowed-to-authenticate-from
-        --user-allowed-to-authenticate-from-silo
+        --user-allowed-to-authenticate-from-device-silo
         """
         sddl = 'O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo == "Developers"))'
         name = self.unique_name()
@@ -576,7 +576,7 @@ class AuthPolicyCmdTestCase(SiloTest):
                                        "--name", name,
                                        "--user-allowed-to-authenticate-from",
                                        sddl,
-                                       "--user-allowed-to-authenticate-from-silo",
+                                       "--user-allowed-to-authenticate-from-device-silo",
                                        "Managers")
 
         self.assertEqual(result, -1)
@@ -605,7 +605,7 @@ class AuthPolicyCmdTestCase(SiloTest):
         """Test repeating similar arguments doesn't make sense to use together.
 
         --service-allowed-to-authenticate-from
-        --service-allowed-to-authenticate-from-silo
+        --service-allowed-to-authenticate-from-device-silo
         """
         sddl = 'O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo == "Managers"))'
         name = self.unique_name()
@@ -614,7 +614,7 @@ class AuthPolicyCmdTestCase(SiloTest):
                                        "--name", name,
                                        "--service-allowed-to-authenticate-from",
                                        sddl,
-                                       "--service-allowed-to-authenticate-from-silo",
+                                       "--service-allowed-to-authenticate-from-device-silo",
                                        "QA")
 
         self.assertEqual(result, -1)
@@ -846,8 +846,8 @@ class AuthPolicyCmdTestCase(SiloTest):
         sddl = ndr_unpack(security.descriptor, desc).as_sddl()
         self.assertEqual(sddl, expected)
 
-    def test_modify__user_allowed_to_authenticate_from_silo(self):
-        """Test the --user-allowed-to-authenticate-from-silo shortcut."""
+    def test_modify__user_allowed_to_authenticate_from_device_silo(self):
+        """Test the --user-allowed-to-authenticate-from-device-silo shortcut."""
         name = self.unique_name()
 
         # Create a policy to modify for this test.
@@ -857,7 +857,7 @@ class AuthPolicyCmdTestCase(SiloTest):
         # Modify user allowed to authenticate from silo field
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
                                        "--name", name,
-                                       "--user-allowed-to-authenticate-from-silo",
+                                       "--user-allowed-to-authenticate-from-device-silo",
                                        "QA")
         self.assertIsNone(result, msg=err)
 
@@ -939,8 +939,8 @@ class AuthPolicyCmdTestCase(SiloTest):
         sddl = ndr_unpack(security.descriptor, desc).as_sddl()
         self.assertEqual(sddl, expected)
 
-    def test_modify__service_allowed_to_authenticate_from_silo(self):
-        """Test the --service-allowed-to-authenticate-from-silo shortcut."""
+    def test_modify__service_allowed_to_authenticate_from_device_silo(self):
+        """Test the --service-allowed-to-authenticate-from-device-silo shortcut."""
         name = self.unique_name()
 
         # Create a policy to modify for this test.
@@ -950,7 +950,7 @@ class AuthPolicyCmdTestCase(SiloTest):
         # Modify user allowed to authenticate from silo field
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
                                        "--name", name,
-                                       "--service-allowed-to-authenticate-from-silo",
+                                       "--service-allowed-to-authenticate-from-device-silo",
                                        "Developers")
         self.assertIsNone(result, msg=err)
 
