@@ -24,6 +24,8 @@ import os
 
 from ldb import SCOPE_ONELEVEL
 
+from samba.netcmd.domain.models import Group
+
 from .base import SambaToolCmdTest
 
 HOST = "ldap://{DC_SERVER}".format(**os.environ)
@@ -58,6 +60,10 @@ class SiloTest(SambaToolCmdTest):
             user_authentication_policy="User Policy",
             service_authentication_policy="Service Policy",
             computer_authentication_policy="Computer Policy")
+
+        cls.device_group = Group(name="device-group")
+        cls.device_group.save(cls.samdb)
+        cls.addClassCleanup(cls.device_group.delete, cls.samdb)
 
     def get_services_dn(self):
         """Returns Services DN."""
