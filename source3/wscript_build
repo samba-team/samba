@@ -1284,6 +1284,11 @@ bld.SAMBA3_PYTHON('pylibsmb',
                   realname='samba/samba3/libsmb_samba_cwrapper.so'
                   )
 
+bld.SAMBA3_PYTHON('python_wspcli',
+        source='rpc_client/py_wsp.c',
+        deps='%s %s %s LIBSAMBA_WSP NDR_WSP NDR_WSP_DATA RPCCLI_WSP WSP_UTIL libsmb msrpc3' % (pytalloc_util, pyrpc_util, pyparam_util),
+        realname='samba/samba3/wspcli.so')
+
 bld.SAMBA3_PYTHON('pymdscli',
                   source='rpc_client/py_mdscli.c',
                   deps=' '.join(['RPCCLI_MDSSVC', pytalloc_util, pyrpc_util]),
