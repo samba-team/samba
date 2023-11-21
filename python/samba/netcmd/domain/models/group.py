@@ -1,6 +1,6 @@
 # Unix SMB/CIFS implementation.
 #
-# Samba domain models.
+# Group model.
 #
 # Copyright (C) Catalyst.Net Ltd. 2023
 #
@@ -20,13 +20,23 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from .auth_policy import AuthenticationPolicy
-from .auth_silo import AuthenticationSilo
-from .claim_type import ClaimType
-from .group import Group
-from .model import MODELS
-from .schema import AttributeSchema, ClassSchema
-from .site import Site
-from .subnet import Subnet
-from .user import User
-from .value_type import ValueType
+from .fields import BooleanField, DnField, IntegerField, SIDField, StringField
+from .model import Model
+
+
+class Group(Model):
+    admin_count = IntegerField("adminCount")
+    description = StringField("description")
+    is_critical_system_object = BooleanField("isCriticalSystemObject",
+                                             default=False, readonly=True)
+    member = DnField("member", many=True)
+    object_sid = SIDField("objectSid")
+    system_flags = IntegerField("systemFlags")
+
+    @staticmethod
+    def get_object_class():
+        return "group"
+
+    def get_authentication_sddl(self):
+        return "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of_any {SID(%s)}))" % (
+            self.object_sid)
