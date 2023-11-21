@@ -703,6 +703,58 @@ bool add_claim_to_token(TALLOC_CTX *mem_ctx,
 	return true;
 }
 
+
+static NTSTATUS claim_v1_check_and_sort_boolean(
+	TALLOC_CTX *mem_ctx,
+	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim)
+{
+	/*
+	 * There are so few valid orders in a boolean claim that we can
+	 * enumerate them all.
+	 */
+	switch (claim->value_count) {
+	case 0:
+		return NT_STATUS_OK;
+	case 1:
+		if (*claim->values[0].uint_value == 0 ||
+		    *claim->values[0].uint_value == 1) {
+			return NT_STATUS_OK;
+		}
+		break;
+	case 2:
+		if (*claim->values[0].uint_value == 1) {
+			/* switch the order. */
+			*claim->values[0].uint_value = *claim->values[1].uint_value;
+			*claim->values[1].uint_value = 1;
+		}
+		if (*claim->values[0].uint_value == 0 &&
+		    *claim->values[1].uint_value == 1) {
+			return NT_STATUS_OK;
+		}
+		break;
+	default:
+		/* 3 or more must have duplicates. */
+		break;
+	}
+	return NT_STATUS_INVALID_PARAMETER;
+}
+
+
+NTSTATUS claim_v1_check_and_sort(TALLOC_CTX *mem_ctx,
+				 struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
+				 bool case_sensitive)
+{
+	if (claim->value_type == CLAIM_SECURITY_ATTRIBUTE_TYPE_BOOLEAN) {
+		NTSTATUS status = claim_v1_check_and_sort_boolean(mem_ctx, claim);
+		if (NT_STATUS_IS_OK(status)) {
+			claim->flags |= CLAIM_SECURITY_ATTRIBUTE_UNIQUE_AND_SORTED;
+		}
+		return status;
+	}
+	return NT_STATUS_OK;
+}
+
+
 NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 				   const struct CLAIMS_SET *claims_set,
 				   struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 **out_claims,

@@ -48,4 +48,9 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 				   struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 **out_claims,
 				   uint32_t *out_n_claims);
 
+NTSTATUS claim_v1_check_and_sort(
+	TALLOC_CTX *mem_ctx,
+	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
+	bool case_sensitive);
+
 #endif /* LIBCLI_SECURITY_CLAIMS_CONVERSIONS_H */
