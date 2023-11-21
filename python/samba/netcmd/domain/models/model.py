@@ -117,14 +117,13 @@ class Model(metaclass=ModelMeta):
             return str(self.dn)
 
     @staticmethod
-    @abstractmethod
     def get_base_dn(ldb):
         """Return the base DN for the container of this model.
 
         :param ldb: Ldb connection
         :return: Dn to use for new objects
         """
-        pass
+        return ldb.get_default_basedn()
 
     @classmethod
     def get_search_dn(cls, ldb):
