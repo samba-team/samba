@@ -153,6 +153,28 @@ class AuthPolicyCmdTestCase(SiloTest):
         self.assertIn("--user-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
 
+    def test_create__user_allowed_to_authenticate_from_device_group(self):
+        """Tests the --user-allowed-to-authenticate-from-device-group shortcut."""
+        name = self.unique_name()
+        expected = "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of_any {SID(%s)}))" % (
+            self.device_group.object_sid)
+
+        self.addCleanup(self.delete_authentication_policy, name=name, force=True)
+        result, out, err = self.runcmd("domain", "auth", "policy", "create",
+                                       "--name", name,
+                                       "--user-allowed-to-authenticate-from-device-group",
+                                       self.device_group.name)
+        self.assertIsNone(result, msg=err)
+
+        # Check policy fields.
+        policy = self.get_authentication_policy(name)
+        self.assertEqual(str(policy["cn"]), name)
+
+        # Check generated SDDL.
+        desc = policy["msDS-UserAllowedToAuthenticateFrom"][0]
+        sddl = ndr_unpack(security.descriptor, desc).as_sddl()
+        self.assertEqual(sddl, expected)
+
     def test_create__user_allowed_to_authenticate_from_device_silo(self):
         """Tests the --user-allowed-to-authenticate-from-device-silo shortcut."""
         name = self.unique_name()
@@ -249,6 +271,28 @@ class AuthPolicyCmdTestCase(SiloTest):
         self.assertEqual(result, -1)
         self.assertIn("--service-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
+
+    def test_create__service_allowed_to_authenticate_from_device_group(self):
+        """Tests the --service-allowed-to-authenticate-from-device-group shortcut."""
+        name = self.unique_name()
+        expected = "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of_any {SID(%s)}))" % (
+            self.device_group.object_sid)
+
+        self.addCleanup(self.delete_authentication_policy, name=name, force=True)
+        result, out, err = self.runcmd("domain", "auth", "policy", "create",
+                                       "--name", name,
+                                       "--service-allowed-to-authenticate-from-device-group",
+                                       self.device_group.name)
+        self.assertIsNone(result, msg=err)
+
+        # Check policy fields.
+        policy = self.get_authentication_policy(name)
+        self.assertEqual(str(policy["cn"]), name)
+
+        # Check generated SDDL.
+        desc = policy["msDS-ServiceAllowedToAuthenticateFrom"][0]
+        sddl = ndr_unpack(security.descriptor, desc).as_sddl()
+        self.assertEqual(sddl, expected)
 
     def test_create__service_allowed_to_authenticate_from_device_silo(self):
         """Tests the --service-allowed-to-authenticate-from-device-silo shortcut."""
@@ -909,6 +953,29 @@ class AuthPolicyCmdTestCase(SiloTest):
         sddl = ndr_unpack(security.descriptor, desc).as_sddl()
         self.assertEqual(sddl, expected)
 
+    def test_modify__user_allowed_to_authenticate_from_device_group(self):
+        """Test the --user-allowed-to-authenticate-from-device-group shortcut."""
+        name = self.unique_name()
+        expected = "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of_any {SID(%s)}))" % (
+            self.device_group.object_sid)
+
+        # Create a policy to modify for this test.
+        self.addCleanup(self.delete_authentication_policy, name=name, force=True)
+        self.runcmd("domain", "auth", "policy", "create", "--name", name)
+
+        # Modify user allowed to authenticate from silo field
+        result, out, err = self.runcmd("domain", "auth", "policy", "modify",
+                                       "--name", name,
+                                       "--user-allowed-to-authenticate-from-device-group",
+                                       self.device_group.name)
+        self.assertIsNone(result, msg=err)
+
+        # Check generated SDDL.
+        policy = self.get_authentication_policy(name)
+        desc = policy["msDS-UserAllowedToAuthenticateFrom"][0]
+        sddl = ndr_unpack(security.descriptor, desc).as_sddl()
+        self.assertEqual(sddl, expected)
+
     def test_modify__user_allowed_to_authenticate_from_device_silo(self):
         """Test the --user-allowed-to-authenticate-from-device-silo shortcut."""
         name = self.unique_name()
@@ -1022,6 +1089,29 @@ class AuthPolicyCmdTestCase(SiloTest):
         # Check service allowed to authenticate from field was modified.
         policy = self.get_authentication_policy(name)
         self.assertEqual(str(policy["cn"]), name)
+        desc = policy["msDS-ServiceAllowedToAuthenticateFrom"][0]
+        sddl = ndr_unpack(security.descriptor, desc).as_sddl()
+        self.assertEqual(sddl, expected)
+
+    def test_modify__service_allowed_to_authenticate_from_device_group(self):
+        """Test the --service-allowed-to-authenticate-from-device-group shortcut."""
+        name = self.unique_name()
+        expected = "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of_any {SID(%s)}))" % (
+            self.device_group.object_sid)
+
+        # Create a policy to modify for this test.
+        self.addCleanup(self.delete_authentication_policy, name=name, force=True)
+        self.runcmd("domain", "auth", "policy", "create", "--name", name)
+
+        # Modify user allowed to authenticate from silo field
+        result, out, err = self.runcmd("domain", "auth", "policy", "modify",
+                                       "--name", name,
+                                       "--service-allowed-to-authenticate-from-device-group",
+                                       self.device_group.name)
+        self.assertIsNone(result, msg=err)
+
+        # Check generated SDDL.
+        policy = self.get_authentication_policy(name)
         desc = policy["msDS-ServiceAllowedToAuthenticateFrom"][0]
         sddl = ndr_unpack(security.descriptor, desc).as_sddl()
         self.assertEqual(sddl, expected)
