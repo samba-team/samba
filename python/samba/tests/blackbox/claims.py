@@ -46,6 +46,164 @@ class ClaimsSupportTests(BlackboxTestCase):
     order after the tests finishes, they don't execute straight away.
     """
 
+    def test_device_group_restrictions(self):
+        client_password = "T3stPassword0nly"
+        target_password = "T3stC0mputerPassword"
+        device_password = "T3stD3vicePassword"
+
+        # Create target computer.
+        self.check_run("computer create claims-server")
+        self.addCleanup(self.run_command, "computer delete claims-server")
+        self.check_run(rf"user setpassword claims-server\$ --newpassword={target_password}")
+
+        # Create device computer.
+        self.check_run("computer create claims-device")
+        self.addCleanup(self.run_command, "computer delete claims-device")
+        self.check_run(rf"user setpassword claims-device\$ --newpassword={device_password}")
+
+        # Create a user.
+        self.check_run(f"user create claimstestuser {client_password}")
+        self.addCleanup(self.run_command, "user delete claimstestuser")
+
+        # Create an authentication policy.
+        self.check_run("domain auth policy create --enforce --name=device-restricted-users-pol")
+        self.addCleanup(self.run_command,
+                        "domain auth policy delete --name=device-restricted-users-pol")
+
+        self.check_run("group add allowed-devices")
+        self.addCleanup(self.run_command, "group delete allowed-devices")
+
+        # Set allowed to authenticate from.
+        self.check_run(f"domain auth policy modify --name=device-restricted-users-pol "
+                       "--user-allowed-to-authenticate-from-device-group=allowed-devices")
+
+        self.check_run("user auth policy assign claimstestuser --policy=device-restricted-users-pol")
+
+        with self.assertRaises(NTSTATUSError) as error:
+            self.verify_access(
+                client_username="claimstestuser",
+                client_password=client_password,
+                target_hostname="claims-server",
+                target_username="claims-server",
+                target_password=target_password,
+                device_username="claims-device",
+                device_password=device_password,
+            )
+
+            self.assertEqual(error.exception.args[0], 3221225581)
+            self.assertEqual(
+                error.exception.args[1],
+                "The attempted logon is invalid. This is either due to a "
+                "bad username or authentication information.")
+
+        self.check_run("group addmembers allowed-devices claims-device")
+
+        self.verify_access(
+            client_username="claimstestuser",
+            client_password=client_password,
+            target_hostname="claims-server",
+            target_username="claims-server",
+            target_password=target_password,
+            device_username="claims-device",
+            device_password=device_password,
+        )
+
+    def test_device_silo_restrictions(self):
+        client_password = "T3stPassword0nly"
+        target_password = "T3stC0mputerPassword"
+        device_password = "T3stD3vicePassword"
+
+        # Create target computer.
+        self.check_run("computer create claims-server")
+        self.addCleanup(self.run_command, "computer delete claims-server")
+        self.check_run(rf"user setpassword claims-server\$ --newpassword={target_password}")
+
+        # Create device computer.
+        self.check_run("computer create claims-device")
+        self.addCleanup(self.run_command, "computer delete claims-device")
+        self.check_run(rf"user setpassword claims-device\$ --newpassword={device_password}")
+
+        # Create a user.
+        self.check_run(f"user create claimstestuser {client_password}")
+        self.addCleanup(self.run_command, "user delete claimstestuser")
+
+        # Create an authentication policy.
+        self.check_run("domain auth policy create --enforce --name=allowed-devices-only-pol")
+        self.addCleanup(self.run_command,
+                        "domain auth policy delete --name=allowed-devices-only-pol")
+
+        # Create an authentication silo.
+        self.check_run("domain auth silo create --enforce --name=allowed-devices-only-silo "
+                       "--user-authentication-policy=allowed-devices-only-pol "
+                       "--computer-authentication-policy=allowed-devices-only-pol "
+                       "--service-authentication-policy=allowed-devices-only-pol")
+        self.addCleanup(self.run_command,
+                        "domain auth silo delete --name=allowed-devices-only-silo")
+
+        # Set allowed to authenticate from (where the login can happen) and to
+        # (server requires silo that in term has this rule, so knows the user
+        # was required to authenticate from).
+        self.check_run(f"domain auth policy modify --name=allowed-devices-only-pol "
+                       "--user-allowed-to-authenticate-from-device-silo=allowed-devices-only-silo")
+
+        # Grant access to silo.
+        self.check_run(r"domain auth silo member grant --name=allowed-devices-only-silo --member=claims-device\$")
+        self.check_run("domain auth silo member grant --name=allowed-devices-only-silo --member=claimstestuser")
+
+        # However with nothing assigned, allow-by-default still applies
+        self.verify_access(
+            client_username="claimstestuser",
+            client_password=client_password,
+            target_hostname="claims-server",
+            target_username="claims-server",
+            target_password=target_password,
+        )
+
+        # Show that adding a FAST armor from the device doesn't change
+        # things either way
+        self.verify_access(
+            client_username="claimstestuser",
+            client_password=client_password,
+            target_hostname="claims-server",
+            target_username="claims-server",
+            target_password=target_password,
+            device_username="claims-device",
+            device_password=device_password,
+        )
+
+        # Assign silo to the user.
+        self.check_run("user auth silo assign claimstestuser --silo=allowed-devices-only-silo")
+
+        # We fail, as the KDC now requires the silo but the client is not using an approved device
+        with self.assertRaises(NTSTATUSError) as error:
+            self.verify_access(
+                client_username="claimstestuser",
+                client_password=client_password,
+                target_hostname="claims-server",
+                target_username="claims-server",
+                target_password=target_password,
+                device_username="claims-device",
+                device_password=device_password,
+            )
+
+        self.assertEqual(error.exception.args[0], 3221225473)
+        self.assertIn(
+            "The requested operation was unsuccessful.",
+            error.exception.args[1])
+
+        # Assign silo to the device.
+        self.check_run(r"user auth silo assign claims-device\$ --silo=allowed-devices-only-silo")
+
+        self.verify_access(
+            client_username="claimstestuser",
+            client_password=client_password,
+            target_hostname="claims-server",
+            target_username="claims-server",
+            target_password=target_password,
+            device_username="claims-device",
+            device_password=device_password,
+        )
+
     def test_user_group_access(self):
         """An example use with groups."""
         client_password = "T3stPassword0nly"
@@ -185,7 +343,8 @@ class ClaimsSupportTests(BlackboxTestCase):
         return super()._make_cmdline(cmd)
 
     def verify_access(self, client_username, client_password,
-                      target_hostname, target_username, target_password):
+                      target_hostname, target_username, target_password, *,
+                      device_username=None, device_password=None):
 
         lp = self.get_loadparm()
 
@@ -193,6 +352,13 @@ class ClaimsSupportTests(BlackboxTestCase):
         client_creds.set_username(client_username)
         client_creds.set_password(client_password)
         client_creds.guess(lp)
+
+        if device_username:
+            device_creds = Credentials()
+            device_creds.set_username(device_username)
+            device_creds.set_password(device_password)
+            device_creds.guess(lp)
+            client_creds.set_krb5_fast_armor_credentials(device_creds, True)
 
         target_creds = Credentials()
         target_creds.set_username(target_username)
