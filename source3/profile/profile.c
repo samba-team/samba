@@ -311,6 +311,8 @@ void smbprofile_cleanup(pid_t pid, pid_t dst)
 	smbprofile_stats_accumulate(&acc, &s);
 
 	acc.magic = profile_p->magic;
+	acc.summary_record = true;
+
 	tdb_store(smbprofile_state.internal.db->tdb, key,
 		  (TDB_DATA) {
 			.dptr = (uint8_t *)&acc,

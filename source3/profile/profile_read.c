@@ -190,12 +190,18 @@ out:
 	return rc;
 }
 
+struct smbprofile_collect_state {
+	size_t num_workers;
+	struct profile_stats *acc;
+};
+
 static int smbprofile_collect_fn(struct tdb_context *tdb,
 				 TDB_DATA key,
 				 TDB_DATA value,
 				 void *private_data)
 {
-	struct profile_stats *acc = (struct profile_stats *)private_data;
+	struct smbprofile_collect_state *state = private_data;
+	struct profile_stats *acc = state->acc;
 	const struct profile_stats *v;
 
 	if (value.dsize != sizeof(struct profile_stats)) {
@@ -208,15 +214,29 @@ static int smbprofile_collect_fn(struct tdb_context *tdb,
 		return 0;
 	}
 
+	if (!v->summary_record) {
+		state->num_workers += 1;
+	}
+
 	smbprofile_stats_accumulate(acc, v);
 	return 0;
 }
 
-void smbprofile_collect_tdb(struct tdb_context *tdb,
-			    uint64_t magic,
-			    struct profile_stats *stats)
+/*
+ * return the number of tdb records, i.e. active smbds. Includes the
+ * parent, so if you want the number of worker smbd, subtract one.
+ */
+size_t smbprofile_collect_tdb(struct tdb_context *tdb,
+			      uint64_t magic,
+			      struct profile_stats *stats)
 {
+	struct smbprofile_collect_state state = {
+		.acc = stats,
+	};
+
 	*stats = (struct profile_stats){.magic = magic};
 
-	tdb_traverse_read(tdb, smbprofile_collect_fn, stats);
+	tdb_traverse_read(tdb, smbprofile_collect_fn, &state);
+
+	return state.num_workers;
 }
