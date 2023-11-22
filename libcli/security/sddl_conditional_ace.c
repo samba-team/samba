@@ -2085,6 +2085,31 @@ static bool parse_int(struct ace_condition_sddl_compiler_context *comp)
 }
 
 
+static bool parse_uint(struct ace_condition_sddl_compiler_context *comp)
+{
+	struct ace_condition_token *tok = NULL;
+	bool ok = parse_int(comp);
+	if (ok == false) {
+		return false;
+	}
+	/*
+	 * check that the token's value is positive.
+	 */
+	if (comp->target_len == 0) {
+		return false;
+	}
+	tok = &comp->target[*comp->target_len - 1];
+	if (tok->type != CONDITIONAL_ACE_TOKEN_INT64) {
+		return false;
+	}
+	if (tok->data.int64.value < 0) {
+		comp_error(comp, "invalid resource ACE value for unsigned TU claim");
+		return false;
+	}
+	return true;
+}
+
+
 static bool could_be_an_int(struct ace_condition_sddl_compiler_context *comp)
 {
 	const char *start = (const char*)(comp->sddl + comp->offset);
@@ -2992,6 +3017,8 @@ static bool parse_resource_attr_list(
 			ok = parse_unicode(comp);
 			break;
 		case 'U':
+			ok = parse_uint(comp);
+			break;
 		case 'B':
 		case 'I':
 			ok = parse_int(comp);
