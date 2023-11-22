@@ -27,7 +27,7 @@ from xml.etree import ElementTree
 from ldb import FLAG_MOD_ADD, MessageElement, SCOPE_ONELEVEL
 from samba.dcerpc import security
 from samba.dcerpc.misc import GUID
-from samba.netcmd.domain.models import User, fields
+from samba.netcmd.domain.models import Group, User, fields
 from samba.netcmd.domain.models.auth_policy import StrongNTLMPolicy
 from samba.ndr import ndr_pack, ndr_unpack
 
@@ -217,6 +217,48 @@ class DnFieldTest(FieldTestMixin, SambaToolCmdTest):
         return [
             (MessageElement(str(alice.dn)), alice.dn),
             (MessageElement([str(joe.dn), str(alice.dn)]), [joe.dn, alice.dn]),
+            (None, None),
+        ]
+
+
+class SIDFieldTest(FieldTestMixin, SambaToolCmdTest):
+    field = fields.SIDField("FieldName")
+
+    @property
+    def to_db_value(self):
+        # Create a group for testing
+        group = Group(name="group1")
+        group.save(self.samdb)
+        self.addCleanup(group.delete, self.samdb)
+
+        # Get raw value to compare against
+        group_rec = self.samdb.search(Group.get_base_dn(self.samdb),
+                                      scope=SCOPE_ONELEVEL,
+                                      expression="(name=group1)",
+                                      attrs=["objectSid"])[0]
+        raw_sid = group_rec["objectSid"]
+
+        return [
+            (group.object_sid, raw_sid),
+            (None, None),
+        ]
+
+    @property
+    def from_db_value(self):
+        # Create a group for testing
+        group = Group(name="group1")
+        group.save(self.samdb)
+        self.addCleanup(group.delete, self.samdb)
+
+        # Get raw value to compare against
+        group_rec = self.samdb.search(Group.get_base_dn(self.samdb),
+                                      scope=SCOPE_ONELEVEL,
+                                      expression="(name=group1)",
+                                      attrs=["objectSid"])[0]
+        raw_sid = group_rec["objectSid"]
+
+        return [
+            (raw_sid, group.object_sid),
             (None, None),
         ]
 
