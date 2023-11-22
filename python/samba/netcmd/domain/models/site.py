@@ -26,8 +26,10 @@ from .model import Model
 
 class Site(Model):
     show_in_advanced_view_only = BooleanField("showInAdvancedViewOnly")
-    site_object_bl = DnField("siteObjectBL")
     system_flags = IntegerField("systemFlags")
+
+    # Backlinks
+    site_object_bl = DnField("siteObjectBL", readonly=True)
 
     @staticmethod
     def get_base_dn(ldb):

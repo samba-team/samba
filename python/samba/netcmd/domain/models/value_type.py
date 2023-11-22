@@ -44,8 +44,11 @@ class ValueType(Model):
         "msDS-ClaimIsValueSpaceRestricted")
     claim_value_type = IntegerField("msDS-ClaimValueType")
     is_possible_values_present = BooleanField("msDS-IsPossibleValuesPresent")
-    value_type_reference_bl = DnField("msDS-ValueTypeReferenceBL")
     show_in_advanced_view_only = BooleanField("showInAdvancedViewOnly")
+
+    # Backlinks
+    value_type_reference_bl = DnField(
+        "msDS-ValueTypeReferenceBL", readonly=True)
 
     @staticmethod
     def get_base_dn(ldb):
