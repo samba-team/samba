@@ -458,8 +458,8 @@ static krb5_error_code fill_mem_keytab_from_system_keytab(krb5_context krbctx,
 
 			ret = krb5_kt_add_entry(krbctx, *mkeytab, &kt_entry);
 			if (ret) {
-				DEBUG(1, (__location__ ": smb_krb5_unparse_name "
-					  "failed (%s)\n", error_message(ret)));
+				DBG_WARNING("krb5_kt_add_entry failed (%s)\n",
+					    error_message(ret));
 				goto out;
 			}
 		}
