@@ -39,7 +39,7 @@ class ClassSchema(Model):
     poss_superiors = StringField("possSuperiors", many=True)
     rdn_att_id = StringField("rDNAttID")
     show_in_advanced_view_only = BooleanField("showInAdvancedViewOnly")
-    system_only = BooleanField("systemOnly")
+    system_only = BooleanField("systemOnly", readonly=True)
 
     @staticmethod
     def get_base_dn(ldb):
@@ -87,8 +87,8 @@ class AttributeSchema(Model):
     schema_flags_ex = IntegerField("schemaFlagsEx")
     search_flags = IntegerField("searchFlags")
     show_in_advanced_view_only = BooleanField("showInAdvancedViewOnly")
-    system_flags = IntegerField("systemFlags")
-    system_only = BooleanField("systemOnly")
+    system_flags = IntegerField("systemFlags", readonly=True)
+    system_only = BooleanField("systemOnly", readonly=True)
 
     @staticmethod
     def get_base_dn(ldb):

@@ -27,7 +27,7 @@ from .model import Model
 class Subnet(Model):
     show_in_advanced_view_only = BooleanField("showInAdvancedViewOnly")
     site_object = DnField("siteObject")
-    system_flags = IntegerField("systemFlags")
+    system_flags = IntegerField("systemFlags", readonly=True)
 
     @staticmethod
     def get_base_dn(ldb):

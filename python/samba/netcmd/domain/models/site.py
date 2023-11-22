@@ -26,7 +26,7 @@ from .model import Model
 
 class Site(Model):
     show_in_advanced_view_only = BooleanField("showInAdvancedViewOnly")
-    system_flags = IntegerField("systemFlags")
+    system_flags = IntegerField("systemFlags", readonly=True)
 
     # Backlinks
     site_object_bl = DnField("siteObjectBL", readonly=True)
