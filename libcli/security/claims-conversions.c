@@ -807,7 +807,7 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 						}
 					}
 
-					value = talloc(mem_ctx, int64_t);
+					value = talloc(claims, int64_t);
 					if (value == NULL) {
 						talloc_free(tmp_ctx);
 						return NT_STATUS_NO_MEMORY;
@@ -854,7 +854,7 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 						}
 					}
 
-					value = talloc(mem_ctx, uint64_t);
+					value = talloc(claims, uint64_t);
 					if (value == NULL) {
 						talloc_free(tmp_ctx);
 						return NT_STATUS_NO_MEMORY;
