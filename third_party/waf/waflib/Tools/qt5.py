@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # encoding: utf-8
 # Thomas Nagy, 2006-2018 (ita)
+# Rafaël Kooi, 2023 (RA-Kooi)
 
 """
-This tool helps with finding Qt5 tools and libraries,
-and also provides syntactic sugar for using Qt5 tools.
+This tool helps with finding Qt5 and Qt6 tools and libraries,
+and also provides syntactic sugar for using Qt5 and Qt6 tools.
 
 The following snippet illustrates the tool usage::
 
@@ -21,6 +22,23 @@ The following snippet illustrates the tool usage::
 			source   = 'main.cpp textures.qrc aboutDialog.ui',
 			target   = 'window',
 		)
+
+Alternatively the following snippet illustrates Qt6 tool usage::
+
+    def options(opt):
+        opt.load('compiler_cxx qt5')
+
+    def configure(conf):
+        conf.want_qt6 = True
+        conf.load('compiler_cxx qt5')
+
+    def build(bld):
+        bld(
+            features = 'qt6 cxx cxxprogram',
+            uselib   = 'QT6CORE QT6GUI QT6OPENGL QT6SVG',
+            source   = 'main.cpp textures.qrc aboutDialog.ui',
+            target   = 'window',
+        )
 
 Here, the UI description and resource files will be processed
 to generate code.
@@ -56,25 +74,32 @@ Note: another tool provides Qt processing that does not require
 A few options (--qt{dir,bin,...}) and environment variables
 (QT5_{ROOT,DIR,MOC,UIC,XCOMPILE}) allow finer tuning of the tool,
 tool path selection, etc; please read the source for more info.
+For Qt6 replace the QT5_ prefix with QT6_.
 
 The detection uses pkg-config on Linux by default. The list of
 libraries to be requested to pkg-config is formulated by scanning
 in the QTLIBS directory (that can be passed via --qtlibs or by
-setting the environment variable QT5_LIBDIR otherwise is derived
-by querying qmake for QT_INSTALL_LIBS directory) for shared/static
-libraries present.
+setting the environment variable QT5_LIBDIR or QT6_LIBDIR otherwise is
+derived by querying qmake for QT_INSTALL_LIBS directory) for
+shared/static libraries present.
 Alternatively the list of libraries to be requested via pkg-config
 can be set using the qt5_vars attribute, ie:
 
       conf.qt5_vars = ['Qt5Core', 'Qt5Gui', 'Qt5Widgets', 'Qt5Test'];
 
+For Qt6 use the qt6_vars attribute.
+
 This can speed up configuration phase if needed libraries are
 known beforehand, can improve detection on systems with a
-sparse QT5 libraries installation (ie. NIX) and can improve
+sparse QT5/Qt6 libraries installation (ie. NIX) and can improve
 detection of some header-only Qt modules (ie. Qt5UiPlugin).
 
 To force static library detection use:
 QT5_XCOMPILE=1 QT5_FORCE_STATIC=1 waf configure
+
+To use Qt6 set the want_qt6 attribute, ie:
+
+    conf.want_qt6 = True;
 """
 
 from __future__ import with_statement
@@ -282,8 +307,8 @@ def create_uic_task(self, node):
 
 	"""
 	If UIC file is used in more than one bld, we would have a conflict in parallel execution
-	It is not possible to change the file names (like .self.idx. as for objects) as they have 
-	to be referenced by the source file, but we can assume that the transformation will be identical 
+	It is not possible to change the file names (like .self.idx. as for objects) as they have
+	to be referenced by the source file, but we can assume that the transformation will be identical
 	and the tasks can be shared in a global cache.
 	"""
 	try:
@@ -300,7 +325,7 @@ def add_lang(self, node):
 	"""Adds all the .ts file into ``self.lang``"""
 	self.lang = self.to_list(getattr(self, 'lang', [])) + [node]
 
-@feature('qt5')
+@feature('qt5', 'qt6')
 @before_method('process_source')
 def process_mocs(self):
 	"""
@@ -322,7 +347,7 @@ def process_mocs(self):
 
 		self.create_task('moc', x, moc_node)
 
-@feature('qt5')
+@feature('qt5', 'qt6')
 @after_method('apply_link')
 def apply_qt5(self):
 	"""
@@ -485,6 +510,13 @@ def configure(self):
 	if 'COMPILER_CXX' not in self.env:
 		self.fatal('No CXX compiler defined: did you forget to configure compiler_cxx first?')
 
+	self.want_qt6 = getattr(self, 'want_qt6', False)
+
+	if self.want_qt6:
+		self.qt_vars = Utils.to_list(getattr(self, 'qt6_vars', []))
+	else:
+		self.qt_vars = Utils.to_list(getattr(self, 'qt5_vars', []))
+
 	self.find_qt5_binaries()
 	self.set_qt5_libs_dir()
 	self.set_qt5_libs_to_check()
@@ -497,15 +529,19 @@ def configure(self):
 	if not has_xml:
 		Logs.error('No xml.sax support was found, rcc dependencies will be incomplete!')
 
+	feature = 'qt6' if self.want_qt6 else 'qt5'
+	# Qt6 requires C++17 (https://www.qt.io/blog/qt-6.0-released)
+	stdflag = '-std=c++17' if self.want_qt6 else '-std=c++11'
+
 	# Qt5 may be compiled with '-reduce-relocations' which requires dependent programs to have -fPIE or -fPIC?
 	frag = '#include <QMap>\nint main(int argc, char **argv) {QMap<int,int> m;return m.keys().size();}\n'
-	uses = 'QT5CORE'
-	for flag in [[], '-fPIE', '-fPIC', '-std=c++11' , ['-std=c++11', '-fPIE'], ['-std=c++11', '-fPIC']]:
+	uses = 'QT6CORE' if self.want_qt6 else 'QT5CORE'
+	for flag in [[], '-fPIE', '-fPIC', stdflag, [stdflag, '-fPIE'], [stdflag, '-fPIC']]:
 		msg = 'See if Qt files compile '
 		if flag:
 			msg += 'with %s' % flag
 		try:
-			self.check(features='qt5 cxx', use=uses, uselib_store='qt5', cxxflags=flag, fragment=frag, msg=msg)
+			self.check(features=feature + ' cxx', use=uses, uselib_store=feature, cxxflags=flag, fragment=frag, msg=msg)
 		except self.errors.ConfigurationError:
 			pass
 		else:
@@ -517,9 +553,9 @@ def configure(self):
 	if Utils.unversioned_sys_platform() == 'freebsd':
 		frag = '#include <QMap>\nint main(int argc, char **argv) {QMap<int,int> m;return m.keys().size();}\n'
 		try:
-			self.check(features='qt5 cxx cxxprogram', use=uses, fragment=frag, msg='Can we link Qt programs on FreeBSD directly?')
+			self.check(features=feature + ' cxx cxxprogram', use=uses, fragment=frag, msg='Can we link Qt programs on FreeBSD directly?')
 		except self.errors.ConfigurationError:
-			self.check(features='qt5 cxx cxxprogram', use=uses, uselib_store='qt5', libpath='/usr/local/lib', fragment=frag, msg='Is /usr/local/lib required?')
+			self.check(features=feature + ' cxx cxxprogram', use=uses, uselib_store=feature, libpath='/usr/local/lib', fragment=frag, msg='Is /usr/local/lib required?')
 
 @conf
 def find_qt5_binaries(self):
@@ -531,6 +567,7 @@ def find_qt5_binaries(self):
 
 	qtdir = getattr(opt, 'qtdir', '')
 	qtbin = getattr(opt, 'qtbin', '')
+	qt_ver = '6' if self.want_qt6 else '5'
 
 	paths = []
 
@@ -539,8 +576,8 @@ def find_qt5_binaries(self):
 
 	# the qt directory has been given from QT5_ROOT - deduce the qt binary path
 	if not qtdir:
-		qtdir = self.environ.get('QT5_ROOT', '')
-		qtbin = self.environ.get('QT5_BIN') or os.path.join(qtdir, 'bin')
+		qtdir = self.environ.get('QT' + qt_ver + '_ROOT', '')
+		qtbin = self.environ.get('QT' + qt_ver + '_BIN') or os.path.join(qtdir, 'bin')
 
 	if qtbin:
 		paths = [qtbin]
@@ -548,7 +585,10 @@ def find_qt5_binaries(self):
 	# no qtdir, look in the path and in /usr/local/Trolltech
 	if not qtdir:
 		paths = self.environ.get('PATH', '').split(os.pathsep)
-		paths.extend(['/usr/share/qt5/bin', '/usr/local/lib/qt5/bin'])
+		paths.extend([
+			'/usr/share/qt' + qt_ver + '/bin',
+			'/usr/local/lib/qt' + qt_ver + '/bin'])
+
 		try:
 			lst = Utils.listdir('/usr/local/Trolltech/')
 		except OSError:
@@ -567,7 +607,9 @@ def find_qt5_binaries(self):
 	# keep the one with the highest version
 	cand = None
 	prev_ver = ['0', '0', '0']
-	for qmk in ('qmake-qt5', 'qmake5', 'qmake'):
+	qmake_vars = ['qmake-qt' + qt_ver, 'qmake' + qt_ver, 'qmake']
+
+	for qmk in qmake_vars:
 		try:
 			qmake = self.find_program(qmk, path_list=paths)
 		except self.errors.ConfigurationError:
@@ -580,7 +622,7 @@ def find_qt5_binaries(self):
 			else:
 				if version:
 					new_ver = version.split('.')
-					if new_ver[0] == '5' and new_ver > prev_ver:
+					if new_ver[0] == qt_ver and new_ver > prev_ver:
 						cand = qmake
 						prev_ver = new_ver
 
@@ -591,7 +633,7 @@ def find_qt5_binaries(self):
 		except self.errors.ConfigurationError:
 			pass
 		else:
-			cmd = self.env.QTCHOOSER + ['-qt=5', '-run-tool=qmake']
+			cmd = self.env.QTCHOOSER + ['-qt=' + qt_ver, '-run-tool=qmake']
 			try:
 				version = self.cmd_and_log(cmd + ['-query', 'QT_VERSION'])
 			except self.errors.WafError:
@@ -602,10 +644,17 @@ def find_qt5_binaries(self):
 	if cand:
 		self.env.QMAKE = cand
 	else:
-		self.fatal('Could not find qmake for qt5')
+		self.fatal('Could not find qmake for qt' + qt_ver)
+
+	# Once we have qmake, we want to query qmake for the paths where we want to look for tools instead
+	paths = []
 
 	self.env.QT_HOST_BINS = qtbin = self.cmd_and_log(self.env.QMAKE + ['-query', 'QT_HOST_BINS']).strip()
-	paths.insert(0, qtbin)
+	paths.append(qtbin)
+
+	if self.want_qt6:
+		self.env.QT_HOST_LIBEXECS = self.cmd_and_log(self.env.QMAKE + ['-query', 'QT_HOST_LIBEXECS']).strip()
+		paths.append(self.env.QT_HOST_LIBEXECS)
 
 	def find_bin(lst, var):
 		if var in env:
@@ -619,22 +668,25 @@ def find_qt5_binaries(self):
 				env[var]=ret
 				break
 
-	find_bin(['uic-qt5', 'uic'], 'QT_UIC')
+	find_bin(['uic-qt' + qt_ver, 'uic'], 'QT_UIC')
 	if not env.QT_UIC:
-		self.fatal('cannot find the uic compiler for qt5')
+		self.fatal('cannot find the uic compiler for qt' + qt_ver)
 
 	self.start_msg('Checking for uic version')
 	uicver = self.cmd_and_log(env.QT_UIC + ['-version'], output=Context.BOTH)
 	uicver = ''.join(uicver).strip()
 	uicver = uicver.replace('Qt User Interface Compiler ','').replace('User Interface Compiler for Qt', '')
 	self.end_msg(uicver)
-	if uicver.find(' 3.') != -1 or uicver.find(' 4.') != -1:
-		self.fatal('this uic compiler is for qt3 or qt4, add uic for qt5 to your path')
+	if uicver.find(' 3.') != -1 or uicver.find(' 4.') != -1 or (self.want_qt6 and uicver.find(' 5.') != -1):
+		if self.want_qt6:
+			self.fatal('this uic compiler is for qt3 or qt4 or qt5, add uic for qt6 to your path')
+		else:
+			self.fatal('this uic compiler is for qt3 or qt4, add uic for qt5 to your path')
 
-	find_bin(['moc-qt5', 'moc'], 'QT_MOC')
-	find_bin(['rcc-qt5', 'rcc'], 'QT_RCC')
-	find_bin(['lrelease-qt5', 'lrelease'], 'QT_LRELEASE')
-	find_bin(['lupdate-qt5', 'lupdate'], 'QT_LUPDATE')
+	find_bin(['moc-qt' + qt_ver, 'moc'], 'QT_MOC')
+	find_bin(['rcc-qt' + qt_ver, 'rcc'], 'QT_RCC')
+	find_bin(['lrelease-qt' + qt_ver, 'lrelease'], 'QT_LRELEASE')
+	find_bin(['lupdate-qt' + qt_ver, 'lupdate'], 'QT_LUPDATE')
 
 	env.UIC_ST = '%s -o %s'
 	env.MOC_ST = '-o'
@@ -646,19 +698,26 @@ def find_qt5_binaries(self):
 @conf
 def set_qt5_libs_dir(self):
 	env = self.env
-	qtlibs = getattr(Options.options, 'qtlibs', None) or self.environ.get('QT5_LIBDIR')
+	qt_ver = '6' if self.want_qt6 else '5'
+
+	qtlibs = getattr(Options.options, 'qtlibs', None) or self.environ.get('QT' + qt_ver + '_LIBDIR')
+
 	if not qtlibs:
 		try:
 			qtlibs = self.cmd_and_log(env.QMAKE + ['-query', 'QT_INSTALL_LIBS']).strip()
 		except Errors.WafError:
 			qtdir = self.cmd_and_log(env.QMAKE + ['-query', 'QT_INSTALL_PREFIX']).strip()
 			qtlibs = os.path.join(qtdir, 'lib')
-	self.msg('Found the Qt5 library path', qtlibs)
+
+	self.msg('Found the Qt' + qt_ver + ' library path', qtlibs)
+
 	env.QTLIBS = qtlibs
 
 @conf
 def find_single_qt5_lib(self, name, uselib, qtlibs, qtincludes, force_static):
 	env = self.env
+	qt_ver = '6' if self.want_qt6 else '5'
+
 	if force_static:
 		exts = ('.a', '.lib')
 		prefix = 'STLIB'
@@ -668,7 +727,7 @@ def find_single_qt5_lib(self, name, uselib, qtlibs, qtincludes, force_static):
 
 	def lib_names():
 		for x in exts:
-			for k in ('', '5') if Utils.is_win32 else ['']:
+			for k in ('', qt_ver) if Utils.is_win32 else ['']:
 				for p in ('lib', ''):
 					yield (p, name, k, x)
 
@@ -683,26 +742,28 @@ def find_single_qt5_lib(self, name, uselib, qtlibs, qtincludes, force_static):
 			env.append_unique(prefix + '_' + uselib, libval)
 			env.append_unique('%sPATH_%s' % (prefix, uselib), qtlibs)
 			env.append_unique('INCLUDES_' + uselib, qtincludes)
-			env.append_unique('INCLUDES_' + uselib, os.path.join(qtincludes, name.replace('Qt5', 'Qt')))
+			env.append_unique('INCLUDES_' + uselib, os.path.join(qtincludes, name.replace('Qt' + qt_ver, 'Qt')))
 			return k
 	return False
 
 @conf
 def find_qt5_libraries(self):
 	env = self.env
+	qt_ver = '6' if self.want_qt6 else '5'
 
-	qtincludes =  self.environ.get('QT5_INCLUDES') or self.cmd_and_log(env.QMAKE + ['-query', 'QT_INSTALL_HEADERS']).strip()
-	force_static = self.environ.get('QT5_FORCE_STATIC')
+	qtincludes =  self.environ.get('QT' + qt_ver + '_INCLUDES') or self.cmd_and_log(env.QMAKE + ['-query', 'QT_INSTALL_HEADERS']).strip()
+	force_static = self.environ.get('QT' + qt_ver + '_FORCE_STATIC')
+
 	try:
-		if self.environ.get('QT5_XCOMPILE'):
-			self.fatal('QT5_XCOMPILE Disables pkg-config detection')
+		if self.environ.get('QT' + qt_ver + '_XCOMPILE'):
+			self.fatal('QT' + qt_ver + '_XCOMPILE Disables pkg-config detection')
 		self.check_cfg(atleast_pkgconfig_version='0.1')
 	except self.errors.ConfigurationError:
-		for i in self.qt5_vars:
+		for i in self.qt_vars:
 			uselib = i.upper()
 			if Utils.unversioned_sys_platform() == 'darwin':
 				# Since at least qt 4.7.3 each library locates in separate directory
-				fwk = i.replace('Qt5', 'Qt')
+				fwk = i.replace('Qt' + qt_ver, 'Qt')
 				frameworkName = fwk + '.framework'
 
 				qtDynamicLib = os.path.join(env.QTLIBS, frameworkName, fwk)
@@ -719,9 +780,9 @@ def find_qt5_libraries(self):
 					ret = self.find_single_qt5_lib(i, uselib, env.QTLIBS, qtincludes, True)
 				self.msg('Checking for %s' % i, ret, 'GREEN' if ret else 'YELLOW')
 	else:
-		path = '%s:%s:%s/pkgconfig:/usr/lib/qt5/lib/pkgconfig:/opt/qt5/lib/pkgconfig:/usr/lib/qt5/lib:/opt/qt5/lib' % (
-			self.environ.get('PKG_CONFIG_PATH', ''), env.QTLIBS, env.QTLIBS)
-		for i in self.qt5_vars:
+		path = '%s:%s:%s/pkgconfig:/usr/lib/qt%s/lib/pkgconfig:/opt/qt%s/lib/pkgconfig:/usr/lib/qt%s/lib:/opt/qt%s/lib' % (
+			self.environ.get('PKG_CONFIG_PATH', ''), env.QTLIBS, env.QTLIBS, qt_ver, qt_ver, qt_ver, qt_ver)
+		for i in self.qt_vars:
 			self.check_cfg(package=i, args='--cflags --libs', mandatory=False, force_static=force_static, pkg_config_path=path)
 
 @conf
@@ -746,7 +807,7 @@ def simplify_qt5_libs(self):
 						continue
 					accu.append(lib)
 				env['LIBPATH_'+var] = accu
-	process_lib(self.qt5_vars,       'LIBPATH_QTCORE')
+	process_lib(self.qt_vars, 'LIBPATH_QTCORE')
 
 @conf
 def add_qt5_rpath(self):
@@ -768,39 +829,52 @@ def add_qt5_rpath(self):
 								continue
 						accu.append('-Wl,--rpath='+lib)
 					env['RPATH_' + var] = accu
-		process_rpath(self.qt5_vars,       'LIBPATH_QTCORE')
+		process_rpath(self.qt_vars, 'LIBPATH_QTCORE')
 
 @conf
 def set_qt5_libs_to_check(self):
-	self.qt5_vars = Utils.to_list(getattr(self, 'qt5_vars', []))
-	if not self.qt5_vars:
+	qt_ver = '6' if self.want_qt6 else '5'
+
+	if not self.qt_vars:
 		dirlst = Utils.listdir(self.env.QTLIBS)
 
 		pat = self.env.cxxshlib_PATTERN
 		if Utils.is_win32:
 			pat = pat.replace('.dll', '.lib')
-		if self.environ.get('QT5_FORCE_STATIC'):
+		if self.environ.get('QT' + qt_ver + '_FORCE_STATIC'):
 			pat = self.env.cxxstlib_PATTERN
 		if Utils.unversioned_sys_platform() == 'darwin':
 			pat = r"%s\.framework"
-		re_qt = re.compile(pat % 'Qt5?(?P<name>\\w+)' + '$')
+
+		# We only want to match Qt5 or Qt in the case of Qt5, in the case
+		# of Qt6 we want to match Qt6 or Qt. This speeds up configuration
+		# and reduces the chattiness of the configuration. Should also prevent
+		# possible misconfiguration.
+		if self.want_qt6:
+			re_qt = re.compile(pat % 'Qt6?(?!\\d)(?P<name>\\w+)' + '$')
+		else:
+			re_qt = re.compile(pat % 'Qt5?(?!\\d)(?P<name>\\w+)' + '$')
+
 		for x in sorted(dirlst):
 			m = re_qt.match(x)
 			if m:
-				self.qt5_vars.append("Qt5%s" % m.group('name'))
-		if not self.qt5_vars:
-			self.fatal('cannot find any Qt5 library (%r)' % self.env.QTLIBS)
+				self.qt_vars.append("Qt%s%s" % (qt_ver, m.group('name')))
+		if not self.qt_vars:
+			self.fatal('cannot find any Qt%s library (%r)' % (qt_ver, self.env.QTLIBS))
 
 	qtextralibs = getattr(Options.options, 'qtextralibs', None)
 	if qtextralibs:
-		self.qt5_vars.extend(qtextralibs.split(','))
+		self.qt_vars.extend(qtextralibs.split(','))
 
 @conf
 def set_qt5_defines(self):
+	qt_ver = '6' if self.want_qt6 else '5'
+
 	if sys.platform != 'win32':
 		return
-	for x in self.qt5_vars:
-		y=x.replace('Qt5', 'Qt')[2:].upper()
+
+	for x in self.qt_vars:
+		y=x.replace('Qt' + qt_ver, 'Qt')[2:].upper()
 		self.env.append_unique('DEFINES_%s' % x.upper(), 'QT_%s_LIB' % y)
 
 def options(opt):

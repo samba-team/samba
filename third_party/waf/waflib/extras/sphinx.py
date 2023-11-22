@@ -86,7 +86,7 @@ def get_install_path(object):
 
 class SphinxBuildingTask(Task.Task):
     color = 'BOLD'
-    run_str = '${SPHINX_BUILD} -M ${SPHINX_OUTPUT_FORMAT} ${SRC} ${TGT} ${SPHINX_OPTIONS}'
+    run_str = '${SPHINX_BUILD} -M ${SPHINX_OUTPUT_FORMAT} ${SRC} ${TGT} -d ${TGT[0].bld_dir()}/doctrees-${SPHINX_OUTPUT_FORMAT} ${SPHINX_OPTIONS}'
 
     def keyword(self):
         return 'Compiling (%s)' % self.env.SPHINX_OUTPUT_FORMAT
