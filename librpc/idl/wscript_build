@@ -82,7 +82,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     output_dir='../gen_ndr')
 
 # Non-DCE/RPC protocols encoded in IDL for Samba or helper IDLs for
-# DCE/RPC protocols (eg defining constands or structures but not
+# DCE/RPC protocols (eg defining constants or structures but not
 # functions)
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''
