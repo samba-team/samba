@@ -301,9 +301,13 @@ bool claim_v1_to_ace_token(TALLOC_CTX *mem_ctx,
 {
 	size_t i;
 	struct ace_condition_token *tokens = NULL;
-	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *sorted_claim = NULL;
+	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim_copy = NULL;
+	const struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *sorted_claim = NULL;
 	NTSTATUS status;
 	bool ok;
+	bool case_sensitive = claim->flags &			\
+		CLAIM_SECURITY_ATTRIBUTE_VALUE_CASE_SENSITIVE;
+
 	if (claim->value_count < 1 ||
 	    claim->value_count >= CONDITIONAL_ACE_MAX_TOKENS) {
 		DBG_WARNING("rejecting claim with %"PRIu32" tokens\n",
@@ -322,18 +326,46 @@ bool claim_v1_to_ace_token(TALLOC_CTX *mem_ctx,
 						    result);
 	}
 
-	ok = claim_v1_copy(mem_ctx, sorted_claim, claim);
-	if (!ok) {
-		return false;
-	}
+	if (claim->flags & CLAIM_SECURITY_ATTRIBUTE_UNIQUE_AND_SORTED) {
+		/*
+		 * We can avoid making a sorted copy.
+		 *
+		 * This is normal case for wire claims, where the
+		 * sorting and duplicate checking happens earlier in
+		 * token_claims_to_claims_v1().
+		*/
+		sorted_claim = claim;
+	} else {
+		/*
+		 * This is presumably a resource attribute ACE, which
+		 * is stored in the ACE as struct
+		 * CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1, and we don't
+		 * really want to mutate that copy -- even if there
+		 * aren't currently realistic pathways that read an
+		 * ACE, trigger this, and write it back (outside of
+		 * tests).
+		 */
+		claim_copy = talloc(mem_ctx, struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1);
+		if (claim_copy == NULL) {
+			return false;
+		}
 
-	status = claim_v1_check_and_sort(mem_ctx, sorted_claim);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("resource attribute claim sort failed with %s\n",
-			    nt_errstr(status));
-		return false;
-	}
+		ok = claim_v1_copy(claim_copy, claim_copy, claim);
+		if (!ok) {
+			TALLOC_FREE(claim_copy);
+			return false;
+		}
 
+		status = claim_v1_check_and_sort(claim_copy, claim_copy,
+						 case_sensitive);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("resource attribute claim sort failed with %s\n",
+				    nt_errstr(status));
+			TALLOC_FREE(claim_copy);
+			return false;
+		}
+		sorted_claim = claim_copy;
+	}
 	/*
 	 * The multiple values will get turned into a composite
 	 * literal in the conditional ACE. Each element of the
@@ -352,15 +384,17 @@ bool claim_v1_to_ace_token(TALLOC_CTX *mem_ctx,
 			      struct ace_condition_token,
 			      sorted_claim->value_count);
 	if (tokens == NULL) {
+		TALLOC_FREE(claim_copy);
 		return false;
 	}
 
 	for (i = 0; i < sorted_claim->value_count; i++) {
-		bool ok = claim_v1_offset_to_ace_token(tokens,
-						       sorted_claim,
-						       i,
-						       &tokens[i]);
+		ok = claim_v1_offset_to_ace_token(tokens,
+						  sorted_claim,
+						  i,
+						  &tokens[i]);
 		if (! ok) {
+			TALLOC_FREE(claim_copy);
 			TALLOC_FREE(tokens);
 			return false;
 		}

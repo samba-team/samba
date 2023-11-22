@@ -1,4 +1,1 @@
 ^samba.tests.conditional_ace_claims.+ConditionalAceLargeComposites.test_allow_002-0-vs-0
-^samba.tests.conditional_ace_claims.+ConditionalAceLargeComposites.test_deny_001-90-disorderly-strings-claim-vs-claim-case-sensitive-with-dupes
-^samba.tests.conditional_ace_claims.+ConditionalAceLargeComposites.test_deny_022-102+1-dupe-vs-102+1-dupe
-^samba.tests.conditional_ace_claims.+ConditionalAceLargeComposites.test_deny_024-2+1-dupe-vs-2+1-dupe
