@@ -25,6 +25,7 @@
 #include "lib/util/tsort.h"
 #include "lib/util/debug.h"
 #include "lib/util/bytearray.h"
+#include "lib/util/stable_sort.h"
 
 #include "librpc/gen_ndr/conditional_ace.h"
 #include "librpc/gen_ndr/claims.h"
@@ -740,10 +741,106 @@ static NTSTATUS claim_v1_check_and_sort_boolean(
 }
 
 
+struct claim_sort_context {
+	uint16_t value_type;
+	bool failed;
+	bool case_sensitive;
+};
+
+static int claim_sort_cmp(const union claim_values *lhs,
+			  const union claim_values *rhs,
+			  struct claim_sort_context *ctx)
+{
+	/*
+	 * These comparisons have to match those used in
+	 * conditional_ace.c.
+	 */
+	int cmp;
+
+	switch (ctx->value_type) {
+	case CLAIM_SECURITY_ATTRIBUTE_TYPE_INT64:
+	case CLAIM_SECURITY_ATTRIBUTE_TYPE_UINT64:
+	{
+		/*
+		 * We sort as signed integers, even for uint64,
+		 * because a) we don't actually care about the true
+		 * order, just uniqueness, and b) the conditional ACEs
+		 * only know of signed values.
+		 */
+		int64_t a, b;
+		if (ctx->value_type == CLAIM_SECURITY_ATTRIBUTE_TYPE_INT64) {
+			a = *lhs->int_value;
+			b = *rhs->int_value;
+		} else {
+			a = (int64_t)*lhs->uint_value;
+			b = (int64_t)*rhs->uint_value;
+		}
+		if (a < b) {
+			return -1;
+		}
+		if (a == b) {
+			return 0;
+		}
+		return 1;
+	}
+	case CLAIM_SECURITY_ATTRIBUTE_TYPE_STRING:
+	{
+		const char *a = lhs->string_value;
+		const char *b = rhs->string_value;
+		if (ctx->case_sensitive) {
+			return strcmp(a, b);
+		}
+		return strcasecmp_m(a, b);
+	}
+
+	case CLAIM_SECURITY_ATTRIBUTE_TYPE_SID:
+	{
+		/*
+		 * The blobs in a claim are "S-1-.." strings, not struct
+		 * dom_sid as used in conditional ACEs, and to sort them the
+		 * same as ACEs we need to make temporary structs.
+		 *
+		 * We don't accept SID claims over the wire -- these
+		 * are resource attribute ACEs only.
+		 */
+		struct dom_sid a, b;
+		bool lhs_ok, rhs_ok;
+
+		lhs_ok = blob_string_sid_to_sid(lhs->sid_value, &a);
+		rhs_ok = blob_string_sid_to_sid(rhs->sid_value, &b);
+		if (!(lhs_ok && rhs_ok)) {
+			ctx->failed = true;
+			return -1;
+		}
+		cmp = dom_sid_compare(&a, &b);
+		return cmp;
+	}
+	case CLAIM_SECURITY_ATTRIBUTE_TYPE_OCTET_STRING:
+	{
+		const DATA_BLOB *a = lhs->octet_value;
+		const DATA_BLOB *b = rhs->octet_value;
+		return data_blob_cmp(a, b);
+	}
+	default:
+		ctx->failed = true;
+		break;
+	}
+	return -1;
+}
+
+
 NTSTATUS claim_v1_check_and_sort(TALLOC_CTX *mem_ctx,
 				 struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
 				 bool case_sensitive)
 {
+	bool ok;
+	uint32_t i;
+	struct claim_sort_context sort_ctx = {
+		.failed = false,
+		.value_type = claim->value_type,
+		.case_sensitive = case_sensitive
+	};
+
 	if (claim->value_type == CLAIM_SECURITY_ATTRIBUTE_TYPE_BOOLEAN) {
 		NTSTATUS status = claim_v1_check_and_sort_boolean(mem_ctx, claim);
 		if (NT_STATUS_IS_OK(status)) {
@@ -751,6 +848,42 @@ NTSTATUS claim_v1_check_and_sort(TALLOC_CTX *mem_ctx,
 		}
 		return status;
 	}
+
+	ok =  stable_sort_talloc_r(mem_ctx,
+				   claim->values,
+				   claim->value_count,
+				   sizeof(union claim_values),
+				   (samba_compare_with_context_fn_t)claim_sort_cmp,
+				   &sort_ctx);
+	if (!ok) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (sort_ctx.failed) {
+		/* this failure probably means a bad SID string */
+		DBG_WARNING("claim sort of %"PRIu32" members, type %"PRIu16" failed\n",
+			    claim->value_count,
+			    claim->value_type);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	for (i = 1; i < claim->value_count; i++) {
+		int cmp = claim_sort_cmp(&claim->values[i - 1],
+					 &claim->values[i],
+					 &sort_ctx);
+		if (cmp == 0) {
+			DBG_WARNING("duplicate values in claim\n");
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		if (cmp > 0) {
+			DBG_ERR("claim sort failed!\n");
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+	if (case_sensitive) {
+		claim->flags |= CLAIM_SECURITY_ATTRIBUTE_VALUE_CASE_SENSITIVE;
+	}
+	claim->flags |= CLAIM_SECURITY_ATTRIBUTE_UNIQUE_AND_SORTED;
 	return NT_STATUS_OK;
 }
 
