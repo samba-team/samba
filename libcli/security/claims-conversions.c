@@ -836,7 +836,7 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 			case CLAIM_TYPE_STRING:
 			{
 				const struct CLAIM_STRING *values = &claim_entry->values.claim_string;
-				uint32_t k;
+				uint32_t k, m;
 
 				n_values = values->value_count;
 				value_type = CLAIM_SECURITY_ATTRIBUTE_TYPE_STRING;
@@ -849,29 +849,9 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 					return NT_STATUS_NO_MEMORY;
 				}
 
+				m = 0;
 				for (k = 0; k < n_values; ++k) {
 					const char *string_value = NULL;
-					uint32_t m;
-
-					/*
-					 * Ensure that there are no duplicate
-					 * values (very inefficiently, in
-					 * O(n²)).
-					 */
-					for (m = 0; m < k; ++m) {
-						if (values->values[m] == NULL && values->values[k] == NULL) {
-							talloc_free(claims);
-							return NT_STATUS_INVALID_PARAMETER;
-						}
-
-						if (values->values[m] != NULL &&
-						    values->values[k] != NULL &&
-						    strcasecmp_m(values->values[m], values->values[k]) == 0)
-						{
-							talloc_free(claims);
-							return NT_STATUS_INVALID_PARAMETER;
-						}
-					}
 
 					if (values->values[k] != NULL) {
 						string_value = talloc_strdup(claim_values, values->values[k]);
@@ -879,11 +859,11 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 							talloc_free(claims);
 							return NT_STATUS_NO_MEMORY;
 						}
+						claim_values[m].string_value = string_value;
+						m++;
 					}
-
-					claim_values[k].string_value = string_value;
 				}
-
+				n_values = m;
 				break;
 			}
 			default:
