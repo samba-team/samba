@@ -708,7 +708,6 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 				   struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 **out_claims,
 				   uint32_t *out_n_claims)
 {
-	TALLOC_CTX *tmp_ctx = NULL;
 	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claims = NULL;
 	uint32_t n_claims = 0;
 	uint32_t expected_n_claims = 0;
@@ -728,12 +727,6 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	tmp_ctx = talloc_new(mem_ctx);
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-
 	/*
 	 * The outgoing number of claims is (at most) the sum of the
 	 * claims_counts of each claims_array.
@@ -746,11 +739,10 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	claims = talloc_array(tmp_ctx,
+	claims = talloc_array(mem_ctx,
 			      struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1,
 			      expected_n_claims);
 	if (claims == NULL) {
-		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -787,7 +779,7 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 							    union claim_values,
 							    n_values);
 				if (claim_values == NULL) {
-					talloc_free(tmp_ctx);
+					talloc_free(claims);
 					return NT_STATUS_NO_MEMORY;
 				}
 
@@ -802,14 +794,14 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 					 */
 					for (m = 0; m < k; ++m) {
 						if (values->values[m] == values->values[k]) {
-							talloc_free(tmp_ctx);
+							talloc_free(claims);
 							return NT_STATUS_INVALID_PARAMETER;
 						}
 					}
 
 					value = talloc(claims, int64_t);
 					if (value == NULL) {
-						talloc_free(tmp_ctx);
+						talloc_free(claims);
 						return NT_STATUS_NO_MEMORY;
 					}
 
@@ -834,7 +826,7 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 							    union claim_values,
 							    n_values);
 				if (claim_values == NULL) {
-					talloc_free(tmp_ctx);
+					talloc_free(claims);
 					return NT_STATUS_NO_MEMORY;
 				}
 
@@ -849,14 +841,14 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 					 */
 					for (m = 0; m < k; ++m) {
 						if (values->values[m] == values->values[k]) {
-							talloc_free(tmp_ctx);
+							talloc_free(claims);
 							return NT_STATUS_INVALID_PARAMETER;
 						}
 					}
 
 					value = talloc(claims, uint64_t);
 					if (value == NULL) {
-						talloc_free(tmp_ctx);
+						talloc_free(claims);
 						return NT_STATUS_NO_MEMORY;
 					}
 
@@ -878,7 +870,7 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 							    union claim_values,
 							    n_values);
 				if (claim_values == NULL) {
-					talloc_free(tmp_ctx);
+					talloc_free(claims);
 					return NT_STATUS_NO_MEMORY;
 				}
 
@@ -893,7 +885,7 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 					 */
 					for (m = 0; m < k; ++m) {
 						if (values->values[m] == NULL && values->values[k] == NULL) {
-							talloc_free(tmp_ctx);
+							talloc_free(claims);
 							return NT_STATUS_INVALID_PARAMETER;
 						}
 
@@ -901,7 +893,7 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 						    values->values[k] != NULL &&
 						    strcasecmp_m(values->values[m], values->values[k]) == 0)
 						{
-							talloc_free(tmp_ctx);
+							talloc_free(claims);
 							return NT_STATUS_INVALID_PARAMETER;
 						}
 					}
@@ -909,7 +901,7 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 					if (values->values[k] != NULL) {
 						string_value = talloc_strdup(claim_values, values->values[k]);
 						if (string_value == NULL) {
-							talloc_free(tmp_ctx);
+							talloc_free(claims);
 							return NT_STATUS_NO_MEMORY;
 						}
 					}
@@ -930,7 +922,7 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 			if (claim_entry->id != NULL) {
 				name = talloc_strdup(claims, claim_entry->id);
 				if (name == NULL) {
-					talloc_free(tmp_ctx);
+					talloc_free(claims);
 					return NT_STATUS_NO_MEMORY;
 				}
 			}
@@ -945,10 +937,8 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 			n_claims++;
 		}
 	}
-
-	*out_claims = talloc_move(mem_ctx, &claims);
+	*out_claims = claims;
 	*out_n_claims = n_claims;
 
-	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
 }
