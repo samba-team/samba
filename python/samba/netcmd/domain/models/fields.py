@@ -45,17 +45,20 @@ class Field(metaclass=ABCMeta):
     but really any field can be a list or single value.
     """
 
-    def __init__(self, name, many=False, default=None, hidden=False):
+    def __init__(self, name, many=False, default=None, hidden=False,
+                 readonly=False):
         """Creates a new field, should be subclassed.
 
         :param name: Ldb field name.
         :param many: If true always convert field to a list when loaded.
         :param default: Default value or callback method (obj is first argument)
         :param hidden: If this is True, exclude the field when calling as_dict()
+        :param readonly: If true don't write this value when calling save.
         """
         self.name = name
         self.many = many
         self.hidden = hidden
+        self.readonly = readonly
 
         # This ensures that fields with many=True are always lists.
         # If this is inconsistent anywhere, it isn't so great to use.

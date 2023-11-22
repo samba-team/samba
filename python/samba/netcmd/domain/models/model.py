@@ -336,7 +336,7 @@ class Model(metaclass=ModelMeta):
 
             message = Message(dn=self.dn)
             for attr, field in self.fields.items():
-                if attr != "dn":
+                if attr != "dn" and not field.readonly:
                     value = getattr(self, attr)
                     try:
                         db_value = field.to_db_value(ldb, value, FLAG_MOD_ADD)
@@ -361,7 +361,7 @@ class Model(metaclass=ModelMeta):
             # Any fields that are set to None or an empty list get unset.
             message = Message(dn=self.dn)
             for attr, field in self.fields.items():
-                if attr != "dn":
+                if attr != "dn" and not field.readonly:
                     value = getattr(self, attr)
                     old_value = getattr(existing_obj, attr)
 
