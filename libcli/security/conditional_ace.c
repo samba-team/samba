@@ -1797,6 +1797,61 @@ static bool compare_composites(const struct ace_condition_token *op,
 		return true;
 	}
 
+	/*
+	 * LHS is a claim, and all members of a claim must be of the
+	 * same type. If a member of RHS is not of that type,
+	 * we know no match is possible.
+	 *
+	 * This is an error, not just a mismatch, so we need to check
+	 * it before the other shortcuts below. The difference matters
+	 * in expressions like (@User.pet_names != {"Minty", SID(AA)})
+	 * which should fail rather than returning true.
+	 */
+	for (i = 0; i < rc->n_members; i++) {
+		if (! tokens_are_comparable(NULL,
+					    &lc->tokens[0],
+					    &rc->tokens[i])) {
+			DBG_WARNING("LHS type %u != RHS type %u\n",
+				    lc->tokens[0].type, rc->tokens[0].type);
+			*cmp = -1;
+			return false;
+		}
+	}
+
+	/*
+	 * LHS must be a claim, so it must be unique, so if there are
+	 * fewer members on the RHS, we know they can't be equal.
+	 *
+	 * If you think about it too much, you might think this is
+	 * affected by case sensitivity, but it isn't. One side can be
+	 * infected by case-sensitivity by the other, but that can't
+	 * shrink the number of elements on the RHS -- it can only
+	 * make a literal {"a", "A"} have effective length 2 rather
+	 * than 1.
+	 *
+	 * On the other hand, if the RHS is case sensitive, it must be
+	 * a claim and unique in its own terms, and its finer-grained
+	 * distinctions can't collapse members of the case sensitive
+	 * LHS.
+	 */
+	if (lc->n_members > rc->n_members) {
+		*cmp = -1;
+		return true;
+	}
+
+	/*
+	 * It *could* be that RHS is also unique and we know it. In that
+	 * case we can short circuit if RHS has more members. This is
+	 * the case when both sides are claims.
+	 *
+	 * This is also not affected by case-senstivity.
+	 */
+	if (lc->n_members < rc->n_members &&
+	    (rhs->flags & CLAIM_SECURITY_ATTRIBUTE_UNIQUE_AND_SORTED)) {
+		*cmp = -1;
+		return true;
+	}
+
 	ok = compare_composites_via_sort(lhs, rhs, cmp);
 	if (! ok) {
 		return false;
