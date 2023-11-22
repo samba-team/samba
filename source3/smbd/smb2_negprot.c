@@ -129,6 +129,57 @@ enum protocol_types smbd_smb2_protocol_dialect_match(const uint8_t *indyn,
 	return PROTOCOL_NONE;
 }
 
+static NTSTATUS smb2_negotiate_context_process_posix(
+	const struct smb2_negotiate_contexts *in_c,
+	bool *posix)
+{
+	struct smb2_negotiate_context *in_posix = NULL;
+	const uint8_t *inbuf = NULL;
+	size_t inbuflen;
+	bool posix_found = false;
+	size_t ofs;
+	int cmp;
+
+	*posix = false;
+
+	in_posix = smb2_negotiate_context_find(in_c,
+					       SMB2_POSIX_EXTENSIONS_AVAILABLE);
+	if (in_posix == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	inbuf = in_posix->data.data;
+	inbuflen = in_posix->data.length;
+
+	/*
+	 * For now the server only supports one variant.
+	 * Check it's the right one.
+	 */
+	if ((inbuflen % 16) != 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	SMB_ASSERT(strlen(SMB2_CREATE_TAG_POSIX) == 16);
+
+	for (ofs = 0; ofs < inbuflen; ofs += 16) {
+		cmp = memcmp(inbuf+ofs, SMB2_CREATE_TAG_POSIX, 16);
+		if (cmp == 0) {
+			posix_found = true;
+			break;
+		}
+	}
+
+	if (!posix_found) {
+		DBG_DEBUG("Client requested unknown SMB3 Unix extensions:\n");
+		dump_data(10, inbuf, inbuflen);
+		return NT_STATUS_OK;
+	}
+
+	DBG_DEBUG("Client requested SMB3 Unix extensions\n");
+	*posix = true;
+	return NT_STATUS_OK;
+}
+
 struct smbd_smb2_request_process_negprot_state {
 	struct smbd_smb2_request *req;
 	DATA_BLOB outbody;
@@ -163,7 +214,6 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	struct smb2_negotiate_context *in_cipher = NULL;
 	struct smb2_negotiate_context *in_sign_algo = NULL;
 	struct smb2_negotiate_contexts out_c = { .num_contexts = 0, };
-	struct smb2_negotiate_context *in_posix = NULL;
 	const struct smb311_capabilities default_smb3_capabilities =
 		smb311_capabilities_parse("server",
 			lp_server_smb3_signing_algorithms(),
@@ -181,6 +231,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	uint32_t max_read = lp_smb2_max_read();
 	uint32_t max_write = lp_smb2_max_write();
 	NTTIME now = timeval_to_nttime(&req->request_time);
+	bool posix = false;
 	bool ok;
 
 	status = smbd_smb2_request_verify_sizes(req, 0x24);
@@ -276,41 +327,9 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 			return smbd_smb2_request_error(req, status);
 		}
 
-		in_posix = smb2_negotiate_context_find(
-			&in_c,
-			SMB2_POSIX_EXTENSIONS_AVAILABLE);
-
-		if (in_posix != NULL) {
-			const uint8_t *inbuf = in_posix->data.data;
-			size_t inbuflen = in_posix->data.length;
-			bool posix_found = false;
-			/*
-			 * For now the server only supports one variant.
-			 * Check it's the right one.
-			 */
-			if ((inbuflen % 16) != 0) {
-				return smbd_smb2_request_error(
-					req,
-					NT_STATUS_INVALID_PARAMETER);
-			}
-			SMB_ASSERT(strlen(SMB2_CREATE_TAG_POSIX) == 16);
-			for (ofs = 0; ofs < inbuflen; ofs += 16) {
-				if (memcmp(inbuf + ofs,
-					   SMB2_CREATE_TAG_POSIX,
-					   16) == 0) {
-					posix_found = true;
-					break;
-				}
-			}
-			if (posix_found) {
-				DBG_DEBUG("Client requested SMB2 unix "
-					  "extensions\n");
-			} else {
-				DBG_DEBUG("Client requested unknown "
-					  "SMB2 unix extensions:\n");
-				dump_data(10, inbuf, inbuflen);
-				in_posix = NULL;
-			}
+		status = smb2_negotiate_context_process_posix(&in_c, &posix);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
 		}
 	}
 
@@ -688,7 +707,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	security_buffer = data_blob_const(NULL, 0);
 #endif
 
-	if (in_posix != NULL) {
+	if (posix) {
 		/* Client correctly negotiated SMB2 unix extensions. */
 		const uint8_t *buf = (const uint8_t *)SMB2_CREATE_TAG_POSIX;
 		status = smb2_negotiate_context_add(
