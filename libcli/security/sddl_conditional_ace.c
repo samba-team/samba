@@ -2854,94 +2854,6 @@ struct ace_condition_script * ace_conditions_compile_sddl(
 
 
 
-static bool check_resource_attr_type(struct ace_condition_token *tok, char c)
-{
-	/*
-	 * Check that a token matches the expected resource ace type (TU, TS,
-	 * etc).
-	 *
-	 * We're sticking to the [IUSDXB] codes rather than using converting
-	 * earlier to tok->type (whereby this whole thing becomes "if (tok->type
-	 * == type)") to enable bounds checks on the various integer types.
-	 */
-	switch(c) {
-	case 'I':
-		/* signed int */
-		if (tok->type != CONDITIONAL_ACE_TOKEN_INT64) {
-			goto wrong_type;
-		}
-		return true;
-	case 'U':
-		/* unsigned int, let's check the range */
-		if (tok->type != CONDITIONAL_ACE_TOKEN_INT64) {
-			goto wrong_type;
-		}
-		if (tok->data.int64.value < 0) {
-			DBG_WARNING(
-				"invalid resource ACE value for unsigned TU\n");
-			goto error;
-		}
-		return true;
-	case 'S':
-		/* unicode string */
-		if (tok->type != CONDITIONAL_ACE_TOKEN_UNICODE) {
-			goto wrong_type;
-		}
-		return true;
-	case 'D':
-		/* SID */
-		if (tok->type != CONDITIONAL_ACE_TOKEN_SID) {
-			goto wrong_type;
-		}
-		return true;
-	case 'X':
-		/* Octet string */
-		if (tok->type != CONDITIONAL_ACE_TOKEN_OCTET_STRING) {
-			if (tok->type == CONDITIONAL_ACE_TOKEN_INT64)  {
-				/*
-				 * Windows 2022 will also accept even
-				 * numbers of digits, like "1234"
-				 * instead of "#1234". Samba does not.
-				 *
-				 * Fixing this is complicated by the
-				 * fact that a leading '0' will have
-				 * cast the integer to octal, while an
-				 * A-F character will have caused it
-				 * to not parse as a literal at all.
-				 *
-				 * This behaviour is not mentioned in
-				 * MS-DTYP or elsewhere.
-				 */
-				DBG_WARNING("Octet sequence uses bare digits, "
-					    "please prefix a '#'\n");
-			}
-			goto wrong_type;
-		}
-		return true;
-	case 'B':
-		/* Boolean, meaning an int that is 0 or 1 */
-		if (tok->type != CONDITIONAL_ACE_TOKEN_INT64) {
-			goto wrong_type;
-		}
-		if (tok->data.int64.value != 0 &&
-		    tok->data.int64.value != 1) {
-			DBG_WARNING("invalid resource ACE value for boolean TB "
-				    "(should be 0 or 1).\n");
-			goto error;
-		}
-		return true;
-	default:
-		DBG_WARNING("Unknown resource ACE type T%c\n", c);
-		goto error;
-	};
-  wrong_type:
-	DBG_WARNING("resource ace type T%c doesn't match value\n", c);
-  error:
-	return false;
-}
-
-
-
 static bool parse_resource_attr_list(
 	struct ace_condition_sddl_compiler_context *comp,
 	char attr_type_char)
@@ -3062,13 +2974,6 @@ static bool parse_resource_attr_list(
 		}
 
 		if (*comp->target_len == 0) {
-			goto fail;
-		}
-
-		ok = check_resource_attr_type(
-			&comp->target[*comp->target_len - 1],
-			attr_type_char);
-		if (! ok) {
 			goto fail;
 		}
 	}
