@@ -771,6 +771,7 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 			{
 				const struct CLAIM_INT64 *values = &claim_entry->values.claim_int64;
 				uint32_t k;
+				int64_t *claim_values_int64 = NULL;
 
 				n_values = values->value_count;
 				value_type = CLAIM_SECURITY_ATTRIBUTE_TYPE_INT64;
@@ -782,31 +783,17 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 					talloc_free(claims);
 					return NT_STATUS_NO_MEMORY;
 				}
+				claim_values_int64 = talloc_array(claims,
+								  int64_t,
+								  n_values);
+				if (claim_values_int64 == NULL) {
+					talloc_free(claims);
+					return NT_STATUS_NO_MEMORY;
+				}
 
 				for (k = 0; k < n_values; ++k) {
-					int64_t *value = NULL;
-					uint32_t m;
-
-					/*
-					 * Ensure that there are no duplicate
-					 * values (very inefficiently, in
-					 * O(n²)).
-					 */
-					for (m = 0; m < k; ++m) {
-						if (values->values[m] == values->values[k]) {
-							talloc_free(claims);
-							return NT_STATUS_INVALID_PARAMETER;
-						}
-					}
-
-					value = talloc(claims, int64_t);
-					if (value == NULL) {
-						talloc_free(claims);
-						return NT_STATUS_NO_MEMORY;
-					}
-
-					*value = values->values[k];
-					claim_values[k].int_value = value;
+					claim_values_int64[k] = values->values[k];
+					claim_values[k].int_value = &claim_values_int64[k];
 				}
 
 				break;
@@ -816,6 +803,7 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 			{
 				const struct CLAIM_UINT64 *values = &claim_entry->values.claim_uint64;
 				uint32_t k;
+				uint64_t *claim_values_uint64 = NULL;
 
 				n_values = values->value_count;
 				value_type = (claim_entry->type == CLAIM_TYPE_UINT64)
@@ -830,30 +818,17 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 					return NT_STATUS_NO_MEMORY;
 				}
 
+				claim_values_uint64 = talloc_array(claims,
+								   uint64_t,
+								   n_values);
+				if (claim_values_uint64 == NULL) {
+					talloc_free(claims);
+					return NT_STATUS_NO_MEMORY;
+				}
+
 				for (k = 0; k < n_values; ++k) {
-					uint64_t *value = NULL;
-					uint32_t m;
-
-					/*
-					 * Ensure that there are no duplicate
-					 * values (very inefficiently, in
-					 * O(n²)).
-					 */
-					for (m = 0; m < k; ++m) {
-						if (values->values[m] == values->values[k]) {
-							talloc_free(claims);
-							return NT_STATUS_INVALID_PARAMETER;
-						}
-					}
-
-					value = talloc(claims, uint64_t);
-					if (value == NULL) {
-						talloc_free(claims);
-						return NT_STATUS_NO_MEMORY;
-					}
-
-					*value = values->values[k];
-					claim_values[k].uint_value = value;
+					claim_values_uint64[k] = values->values[k];
+					claim_values[k].uint_value = &claim_values_uint64[k];
 				}
 
 				break;
