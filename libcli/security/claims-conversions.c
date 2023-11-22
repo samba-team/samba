@@ -693,6 +693,7 @@ bool add_claim_to_token(TALLOC_CTX *mem_ctx,
 			const char *claim_type)
 {
 	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *tmp = NULL;
+	NTSTATUS status;
 	uint32_t *n = NULL;
 	bool ok;
 	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 **list = NULL;
@@ -722,8 +723,19 @@ bool add_claim_to_token(TALLOC_CTX *mem_ctx,
 
 	ok = claim_v1_copy(mem_ctx, &tmp[*n], claim);
 	if (! ok ) {
+		TALLOC_FREE(tmp);
 		return false;
 	}
+
+	status = claim_v1_check_and_sort(tmp, &tmp[*n],
+					 claim->flags & CLAIM_SECURITY_ATTRIBUTE_VALUE_CASE_SENSITIVE);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("resource attribute claim sort failed with %s\n",
+			    nt_errstr(status));
+		TALLOC_FREE(tmp);
+		return false;
+	}
+
 	(*n)++;
 	*list = tmp;
 	return true;
