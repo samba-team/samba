@@ -381,7 +381,13 @@ static PyObject *PyLdbResult_FromResult(struct ldb_result *result)
 	}
 
 	for (i = 0; i < result->count; i++) {
-		PyList_SetItem(list, i, PyLdbMessage_FromMessage(result->msgs[i]));
+		PyObject *pymessage = PyLdbMessage_FromMessage(result->msgs[i]);
+		if (pymessage == NULL) {
+			Py_DECREF(ret);
+			Py_DECREF(list);
+			return NULL;
+		}
+		PyList_SetItem(list, i, pymessage);
 	}
 
 	ret->mem_ctx = talloc_new(NULL);
