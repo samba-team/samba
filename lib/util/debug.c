@@ -94,6 +94,7 @@ static struct {
 	char hostname[HOST_NAME_MAX+1];
 	bool reopening_logs;
 	bool schedule_reopen_logs;
+	int forced_log_priority;
 
 	struct debug_settings settings;
 	debug_callback_fn callback;
@@ -229,6 +230,10 @@ static int debug_level_to_priority(int level)
 		LOG_INFO,    /* 9 */
 	};
 	int priority;
+
+	if (state.forced_log_priority != -1) {
+		level = state.forced_log_priority;
+	}
 
 	if (level < 0 || (size_t)level >= ARRAY_SIZE(priority_map))
 		priority = LOG_DEBUG;
@@ -1131,6 +1136,11 @@ static void ensure_hostname(void)
 void debug_set_hostname(const char *name)
 {
 	strlcpy(state.hostname, name, sizeof(state.hostname));
+}
+
+void debug_set_forced_log_priority(int forced_log_priority)
+{
+	state.forced_log_priority = forced_log_priority;
 }
 
 /**
