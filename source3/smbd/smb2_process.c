@@ -1738,6 +1738,7 @@ static void smbd_id_cache_kill(struct messaging_context *msg_ctx,
 struct smbd_tevent_trace_state {
 	struct tevent_context *ev;
 	TALLOC_CTX *frame;
+	struct smbd_server_connection *sconn;
 	SMBPROFILE_BASIC_ASYNC_STATE(profile_idle);
 	struct timeval before_wait_tv;
 	struct timeval after_wait_tv;
@@ -1844,7 +1845,7 @@ static void smbd_tevent_trace_callback_profile(enum tevent_trace_point point,
 			 *
 			 * Instead we want to sleep as long as nothing happens.
 			 */
-			smbprofile_dump_setup(NULL);
+			smbprofile_dump_setup(NULL, NULL);
 		}
 		SMBPROFILE_BASIC_ASYNC_START(idle, profile_p, state->profile_idle);
 		break;
@@ -1856,12 +1857,12 @@ static void smbd_tevent_trace_callback_profile(enum tevent_trace_point point,
 			 * We need to flush our state after sleeping
 			 * (hopefully a long time).
 			 */
-			smbprofile_dump(NULL);
+			smbprofile_dump(state->sconn);
 			/*
 			 * future profiling events should trigger timers
 			 * on our main event context.
 			 */
-			smbprofile_dump_setup(state->ev);
+			smbprofile_dump_setup(state->ev, state->sconn);
 		}
 		break;
 	case TEVENT_TRACE_BEFORE_LOOP_ONCE:
@@ -1923,6 +1924,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 	if (sconn == NULL) {
 		exit_server("failed to create smbd_server_connection");
 	}
+	trace_state.sconn = sconn;
 
 	client->sconn = sconn;
 	sconn->client = client;
@@ -2138,7 +2140,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-	smbprofile_dump_setup(ev_ctx);
+	smbprofile_dump_setup(ev_ctx, sconn);
 
 	if (!init_dptrs(sconn)) {
 		exit_server("init_dptrs() failed");

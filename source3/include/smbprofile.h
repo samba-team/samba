@@ -476,6 +476,7 @@ struct smbprofile_global_state {
 		struct tdb_wrap *db;
 		struct tevent_context *ev;
 		struct tevent_timer *te;
+		struct smbd_server_connection *sconn;
 	} internal;
 
 	struct {
@@ -491,7 +492,8 @@ struct smbprofile_global_state {
 extern struct smbprofile_global_state smbprofile_state;
 
 void smbprofile_dump_schedule_timer(void);
-void smbprofile_dump_setup(struct tevent_context *ev);
+void smbprofile_dump_setup(struct tevent_context *ev,
+			   struct smbd_server_connection *sconn);
 
 static inline void smbprofile_dump_schedule(void)
 {
@@ -644,7 +646,8 @@ static inline bool smbprofile_dump_pending(void)
 	return false;
 }
 
-static inline void smbprofile_dump_setup(struct tevent_context *ev)
+static inline void smbprofile_dump_setup(struct tevent_context *ev,
+					 struct smbd_server_connection *sconn)
 {
 	return;
 }

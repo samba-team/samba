@@ -163,10 +163,12 @@ out:
 	return ok;
 }
 
-void smbprofile_dump_setup(struct tevent_context *ev)
+void smbprofile_dump_setup(struct tevent_context *ev,
+			   struct smbd_server_connection *sconn)
 {
 	TALLOC_FREE(smbprofile_state.internal.te);
 	smbprofile_state.internal.ev = ev;
+	smbprofile_state.internal.sconn = sconn;
 }
 
 static void smbprofile_dump_timer(struct tevent_context *ev,
@@ -174,7 +176,7 @@ static void smbprofile_dump_timer(struct tevent_context *ev,
 				  struct timeval current_time,
 				  void *private_data)
 {
-	smbprofile_dump(NULL);
+	smbprofile_dump(smbprofile_state.internal.sconn);
 }
 
 void smbprofile_dump_schedule_timer(void)
