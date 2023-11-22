@@ -45,7 +45,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     output_dir='../gen_ndr',
                     generate_fuzzers=False)
 
-# Services that we only have a server in the source4 style. 
+# Services that we only have a server in the source4 style.
 
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''unixinfo.idl''',
@@ -162,4 +162,3 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     'winbind.idl',
                     options='--header --ndr-parser --server-compat --client --python',
                     output_dir='../gen_ndr')
-
