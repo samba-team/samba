@@ -711,6 +711,7 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx = NULL;
 	struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claims = NULL;
 	uint32_t n_claims = 0;
+	uint32_t expected_n_claims = 0;
 	uint32_t i;
 
 	if (out_claims == NULL) {
@@ -729,6 +730,27 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+
+	/*
+	 * The outgoing number of claims is (at most) the sum of the
+	 * claims_counts of each claims_array.
+	 */
+	for (i = 0; i < claims_set->claims_array_count; ++i) {
+		uint32_t count = claims_set->claims_arrays[i].claims_count;
+		expected_n_claims += count;
+		if (expected_n_claims < count) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+
+	claims = talloc_array(tmp_ctx,
+			      struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1,
+			      expected_n_claims);
+	if (claims == NULL) {
+		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -905,15 +927,6 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 				continue;
 			}
 
-			claims = talloc_realloc(tmp_ctx,
-						claims,
-						struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1,
-						++n_claims);
-			if (claims == NULL) {
-				talloc_free(tmp_ctx);
-				return NT_STATUS_NO_MEMORY;
-			}
-
 			if (claim_entry->id != NULL) {
 				name = talloc_strdup(claims, claim_entry->id);
 				if (name == NULL) {
@@ -922,13 +935,14 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 				}
 			}
 
-			claims[n_claims - 1] = (struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1) {
+			claims[n_claims] = (struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1) {
 				.name = name,
 				.value_type = value_type,
 				.flags = 0,
 				.value_count = n_values,
 				.values = claim_values,
 			};
+			n_claims++;
 		}
 	}
 
