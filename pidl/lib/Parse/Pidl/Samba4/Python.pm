@@ -2015,9 +2015,9 @@ sub ConvertObjectFromPythonLevel($$$$$$$$$)
 			$self->pidl("for ($counter = 0; $counter < PyList_GET_SIZE($py_var); $counter++) {");
 			$self->indent;
 			if (ArrayDynamicallyAllocated($e, $l)) {
-				$self->ConvertObjectFromPythonLevel($env, $var_name, "PyList_GET_ITEM($py_var, $counter)", $e, $nl, $var_name."[$counter]", $fail, 0);
+				$self->ConvertObjectFromPythonLevel($env, $var_name, "PyList_GET_ITEM($py_var, $counter)", $e, $nl, "($var_name)"."[$counter]", $fail, 0);
 			} else {
-				$self->ConvertObjectFromPythonLevel($env, $mem_ctx, "PyList_GET_ITEM($py_var, $counter)", $e, $nl, $var_name."[$counter]", $fail, 0);
+				$self->ConvertObjectFromPythonLevel($env, $mem_ctx, "PyList_GET_ITEM($py_var, $counter)", $e, $nl, "($var_name)"."[$counter]", $fail, 0);
 			}
 			$self->deindent;
 			$self->pidl("}");
@@ -2272,9 +2272,9 @@ sub ConvertObjectToPythonLevel($$$$$$$)
 			my $member_var = "py_$e->{NAME}_$l->{LEVEL_INDEX}";
 			$self->pidl("PyObject *$member_var;");
 			if (ArrayDynamicallyAllocated($e, $l)) {
-				$self->ConvertObjectToPythonLevel($var_name, $env, $e, $nl, $var_name."[$counter]", $member_var, $fail, $recurse);
+				$self->ConvertObjectToPythonLevel($var_name, $env, $e, $nl, "($var_name)"."[$counter]", $member_var, $fail, $recurse);
 			} else {
-				$self->ConvertObjectToPythonLevel($mem_ctx, $env, $e, $nl, $var_name."[$counter]", $member_var, $fail, $recurse);
+				$self->ConvertObjectToPythonLevel($mem_ctx, $env, $e, $nl, "($var_name)"."[$counter]", $member_var, $fail, $recurse);
 			}
 			$self->pidl("PyList_SetItem($py_var, $counter, $member_var);");
 			$self->deindent;
