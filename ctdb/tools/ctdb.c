@@ -82,6 +82,12 @@ struct ctdb_context {
 
 static void usage(const char *command);
 
+static int disable_takeover_runs(TALLOC_CTX *mem_ctx,
+				 struct ctdb_context *ctdb,
+				 uint32_t timeout,
+				 uint32_t *pnn_list,
+				 int count);
+
 /*
  * Utility Functions
  */
@@ -3846,14 +3852,8 @@ static int moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	uint32_t *pnn_list;
 	unsigned int i;
 	int ret, count;
-
-	ret = ctdb_message_disable_ip_check(mem_ctx, ctdb->ev, ctdb->client,
-					    CTDB_BROADCAST_CONNECTED,
-					    2*options.timelimit);
-	if (ret != 0) {
-		fprintf(stderr, "Failed to disable IP check\n");
-		return ret;
-	}
+	uint32_t *connected_pnn = NULL;
+	int connected_count;
 
 	ret = ctdb_ctrl_get_public_ips(mem_ctx, ctdb->ev, ctdb->client,
 				       pnn, TIMEOUT(), false, &pubip_list);
@@ -3886,6 +3886,34 @@ static int moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
+	connected_count = list_of_connected_nodes(nodemap,
+						  CTDB_UNKNOWN_PNN,
+						  mem_ctx,
+						  &connected_pnn);
+	if (connected_count <= 0) {
+		fprintf(stderr, "Memory allocation error\n");
+		return 1;
+	}
+
+	/*
+	 * Disable takeover runs on all connected nodes.  A reply
+	 * indicating success is needed from each node so all nodes
+	 * will need to be active.
+	 *
+	 * A check could be added to not allow reloading of IPs when
+	 * there are disconnected nodes.  However, this should
+	 * probably be left up to the administrator.
+	 */
+	ret = disable_takeover_runs(mem_ctx,
+				    ctdb,
+				    2*options.timelimit,
+				    connected_pnn,
+				    connected_count);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to disable takeover runs\n");
+		return ret;
+	}
+
 	pubip.pnn = pnn;
 	pubip.addr = *addr;
 	ctdb_req_control_release_ip(&request, &pubip);
@@ -3902,6 +3930,20 @@ static int moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 				    pnn, TIMEOUT(), &pubip);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to takeover IP on node %u\n", pnn);
+		return ret;
+	}
+
+	/*
+	 * It isn't strictly necessary to wait until takeover runs are
+	 * re-enabled but doing so can't hurt.
+	 */
+	ret = disable_takeover_runs(mem_ctx,
+				    ctdb,
+				    0,
+				    connected_pnn,
+				    connected_count);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to enable takeover runs\n");
 		return ret;
 	}
 
