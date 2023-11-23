@@ -112,7 +112,8 @@ struct tevent_req *cli_full_connection_creds_send(
 NTSTATUS cli_full_connection_creds_recv(struct tevent_req *req,
 					TALLOC_CTX *mem_ctx,
 					struct cli_state **output_cli);
-NTSTATUS cli_full_connection_creds(struct cli_state **output_cli,
+NTSTATUS cli_full_connection_creds(TALLOC_CTX *mem_ctx,
+				   struct cli_state **output_cli,
 				   const char *my_name,
 				   const char *dest_host,
 				   const struct sockaddr_storage *dest_ss, int port,

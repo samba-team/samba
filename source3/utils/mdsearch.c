@@ -135,7 +135,8 @@ int main(int argc, char **argv)
 
 	creds = samba_cmdline_get_creds();
 
-	status = cli_full_connection_creds(&cli,
+	status = cli_full_connection_creds(frame,
+					   &cli,
 					   lp_netbios_name(),
 					   server,
 					   NULL,

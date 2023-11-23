@@ -720,15 +720,16 @@ int main(int argc, char **argv)
 			talloc_strdup(select_stmt->cols, default_column);
 	}
 
-	status =  cli_full_connection_creds(&c,
-				   lp_netbios_name(),
-				   server,
-				   NULL,
-				   0,
-				   "IPC$",
-				   "IPC",
-				   samba_cmdline_get_creds(),
-				   flags);
+	status = cli_full_connection_creds(talloc_tos(),
+					   &c,
+					   lp_netbios_name(),
+					   server,
+					   NULL,
+					   0,
+					   "IPC$",
+					   "IPC",
+					   samba_cmdline_get_creds(),
+					   flags);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("failed to connect to IPC$: %s\n",

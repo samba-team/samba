@@ -295,6 +295,7 @@ static NTSTATUS winexe_svc_upload(
 	const DATA_BLOB *binary = NULL;
 
 	status = cli_full_connection_creds(
+		talloc_tos(),
 		&cli,
 		NULL,
 		hostname,
@@ -1857,6 +1858,7 @@ int main(int argc, char *argv[])
 	}
 
 	status = cli_full_connection_creds(
+		talloc_tos(),
 		&cli,
 		lp_netbios_name(),
 		options.hostname,

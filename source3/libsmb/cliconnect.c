@@ -3806,7 +3806,8 @@ NTSTATUS cli_full_connection_creds_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_full_connection_creds(struct cli_state **output_cli,
+NTSTATUS cli_full_connection_creds(TALLOC_CTX *mem_ctx,
+				   struct cli_state **output_cli,
 				   const char *my_name,
 				   const char *dest_host,
 				   const struct sockaddr_storage *dest_ss, int port,
@@ -3818,7 +3819,7 @@ NTSTATUS cli_full_connection_creds(struct cli_state **output_cli,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	ev = samba_tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(mem_ctx);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -3832,7 +3833,7 @@ NTSTATUS cli_full_connection_creds(struct cli_state **output_cli,
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = cli_full_connection_creds_recv(req, NULL, output_cli);
+	status = cli_full_connection_creds_recv(req, mem_ctx, output_cli);
  fail:
 	TALLOC_FREE(ev);
 	return status;
@@ -3968,9 +3969,16 @@ struct cli_state *get_ipc_connect(char *server,
 	flags |= CLI_FULL_CONNECTION_FORCE_SMB1;
 	flags |= CLI_FULL_CONNECTION_IPC;
 
-	nt_status = cli_full_connection_creds(&cli, NULL, server, server_ss, 0, "IPC$", "IPC",
+	nt_status = cli_full_connection_creds(NULL,
+					      &cli,
+					      NULL,
+					      server,
+					      server_ss,
+					      0,
+					      "IPC$",
+					      "IPC",
 					      creds,
-					flags);
+					      flags);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return cli;

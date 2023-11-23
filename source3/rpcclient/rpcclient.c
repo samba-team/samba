@@ -1305,16 +1305,17 @@ out_free:
 	}
 
 	if (transport == NCACN_NP) {
-		nt_status = cli_full_connection_creds(
-			&cli,
-			lp_netbios_name(),
-			host,
-			opt_ipaddr ? &server_ss : NULL,
-			opt_port,
-			"IPC$",
-			"IPC",
-			creds,
-			flags);
+		nt_status = cli_full_connection_creds(frame,
+						      &cli,
+						      lp_netbios_name(),
+						      host,
+						      opt_ipaddr ? &server_ss
+								 : NULL,
+						      opt_port,
+						      "IPC$",
+						      "IPC",
+						      creds,
+						      flags);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(0, ("Cannot connect to server.  Error was %s\n",

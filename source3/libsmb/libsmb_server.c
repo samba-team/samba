@@ -844,12 +844,17 @@ SMBC_attr_server(TALLOC_CTX *ctx,
 			return NULL;
 		}
 
-		nt_status = cli_full_connection_creds(&ipc_cli,
-						lp_netbios_name(), server,
-						NULL, 0, "IPC$", "?????",
-						creds,
-						flags);
-                if (! NT_STATUS_IS_OK(nt_status)) {
+		nt_status = cli_full_connection_creds(NULL,
+						      &ipc_cli,
+						      lp_netbios_name(),
+						      server,
+						      NULL,
+						      0,
+						      "IPC$",
+						      "?????",
+						      creds,
+						      flags);
+		if (! NT_STATUS_IS_OK(nt_status)) {
 			TALLOC_FREE(creds);
                         DEBUG(1,("cli_full_connection failed! (%s)\n",
                                  nt_errstr(nt_status)));

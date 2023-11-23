@@ -2491,10 +2491,16 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe, struct c
 	}
 
 	/* setup the connection */
-	ret = cli_full_connection_creds( pp_cli, lp_netbios_name(), remote_machine,
-		&rm_addr, 0, "IPC$", "IPC",
-		anon_creds,
-		CLI_FULL_CONNECTION_IPC);
+	ret = cli_full_connection_creds(NULL,
+					pp_cli,
+					lp_netbios_name(),
+					remote_machine,
+					&rm_addr,
+					0,
+					"IPC$",
+					"IPC",
+					anon_creds,
+					CLI_FULL_CONNECTION_IPC);
 	TALLOC_FREE(anon_creds);
 	if ( !NT_STATUS_IS_OK( ret ) ) {
 		DEBUG(2,("spoolss_connect_to_client: connection to [%s] failed!\n",

@@ -846,11 +846,16 @@ static struct cli_state *connect_one(struct cli_credentials *creds,
 	NTSTATUS nt_status;
 	uint32_t flags = 0;
 
-	nt_status = cli_full_connection_creds(&c, lp_netbios_name(), server,
-				NULL, 0,
-				share, "?????",
-				creds,
-				flags);
+	nt_status = cli_full_connection_creds(talloc_tos(),
+					      &c,
+					      lp_netbios_name(),
+					      server,
+					      NULL,
+					      0,
+					      share,
+					      "?????",
+					      creds,
+					      flags);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("cli_full_connection failed! (%s)\n", nt_errstr(nt_status)));
 		return NULL;

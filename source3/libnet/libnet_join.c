@@ -1143,7 +1143,8 @@ static NTSTATUS libnet_join_connect_dc_ipc(const char *dc,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = cli_full_connection_creds(cli,
+	status = cli_full_connection_creds(NULL,
+					   cli,
 					   NULL,
 					   dc,
 					   NULL, 0,
@@ -1773,7 +1774,9 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 						   CRED_SPECIFIED);
 	}
 
-	status = cli_full_connection_creds(&cli, NULL,
+	status = cli_full_connection_creds(frame,
+					   &cli,
+					   NULL,
 					   dc_name,
 					   NULL, 0,
 					   "IPC$", "IPC",
@@ -1789,7 +1792,8 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		status = cli_full_connection_creds(&cli,
+		status = cli_full_connection_creds(frame,
+						   &cli,
 						   NULL,
 						   dc_name,
 						   NULL, 0,

@@ -116,11 +116,16 @@ NTSTATUS connect_to_service(struct net_context *c,
 		flags |= CLI_FULL_CONNECTION_IPC;
 	}
 
-	nt_status = cli_full_connection_creds(cli_ctx, NULL, server_name,
-					server_ss, c->opt_port,
-					service_name, service_type,
-					c->creds,
-					flags);
+	nt_status = cli_full_connection_creds(c,
+					      cli_ctx,
+					      NULL,
+					      server_name,
+					      server_ss,
+					      c->opt_port,
+					      service_name,
+					      service_type,
+					      c->creds,
+					      flags);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr, _("Could not connect to server %s\n"),
 			  server_name);
@@ -177,11 +182,16 @@ NTSTATUS connect_to_ipc_anonymous(struct net_context *c,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = cli_full_connection_creds(cli_ctx, c->opt_requester_name,
-					server_name, server_ss, c->opt_port,
-					"IPC$", "IPC",
-					anon_creds,
-					CLI_FULL_CONNECTION_IPC);
+	nt_status = cli_full_connection_creds(c,
+					      cli_ctx,
+					      c->opt_requester_name,
+					      server_name,
+					      server_ss,
+					      c->opt_port,
+					      "IPC$",
+					      "IPC",
+					      anon_creds,
+					      CLI_FULL_CONNECTION_IPC);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;

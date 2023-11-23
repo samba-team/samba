@@ -2393,11 +2393,16 @@ static int net_ads_printer_publish(struct net_context *c,
 					   CRED_USE_KERBEROS_REQUIRED,
 					   CRED_SPECIFIED);
 
-	nt_status = cli_full_connection_creds(&cli, lp_netbios_name(), servername,
-					&server_ss, 0,
-					"IPC$", "IPC",
-					c->creds,
-					CLI_FULL_CONNECTION_IPC);
+	nt_status = cli_full_connection_creds(c,
+					      &cli,
+					      lp_netbios_name(),
+					      servername,
+					      &server_ss,
+					      0,
+					      "IPC$",
+					      "IPC",
+					      c->creds,
+					      CLI_FULL_CONNECTION_IPC);
 
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		d_fprintf(stderr, _("Unable to open a connection to %s to "

@@ -349,7 +349,8 @@ static bool torture_open_connection_share(struct cli_state **c,
 {
 	NTSTATUS status;
 
-	status = cli_full_connection_creds(c,
+	status = cli_full_connection_creds(NULL,
+					   c,
 					   myname,
 					   hostname,
 					   NULL, /* dest_ss */
@@ -1708,7 +1709,8 @@ static bool run_tcon_devtype_test(int dummy)
 	NTSTATUS status;
 	bool ret = True;
 
-	status = cli_full_connection_creds(&cli1,
+	status = cli_full_connection_creds(NULL,
+					   &cli1,
 					   myname,
 					   host,
 					   NULL, /* dest_ss */
