@@ -2086,8 +2086,7 @@ def sanitize_server_role(role):
         raise ValueError(role)
 
 
-def provision_fake_ypserver(logger, samdb, domaindn, netbiosname, nisdomain,
-                            maxuid, maxgid):
+def provision_fake_ypserver(logger, samdb, domaindn, netbiosname, nisdomain):
     """Create AD entries for the fake ypserver.
 
     This is needed for being able to manipulate posix attrs via ADUC.
@@ -2468,7 +2467,7 @@ def provision(logger, session_info, smbconf=None,
     if use_rfc2307:
         provision_fake_ypserver(logger=logger, samdb=samdb,
                                 domaindn=names.domaindn, netbiosname=names.netbiosname,
-                                nisdomain=names.domain.lower(), maxuid=maxuid, maxgid=maxgid)
+                                nisdomain=names.domain.lower())
 
     return result
 
