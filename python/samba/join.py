@@ -1370,7 +1370,7 @@ class DCJoinContext(object):
 
         if ctx.dns_backend.startswith("BIND9_"):
             setup_bind9_dns(ctx.local_samdb, secrets_ldb,
-                            ctx.names, ctx.paths, ctx.lp, ctx.logger,
+                            ctx.names, ctx.paths, ctx.logger,
                             dns_backend=ctx.dns_backend,
                             dnspass=ctx.dnspass, os_level=ctx.behavior_version,
                             key_version_number=ctx.dns_key_version_number)

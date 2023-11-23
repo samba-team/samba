@@ -1259,12 +1259,12 @@ def setup_ad_dns(samdb, secretsdb, names, paths, lp, logger,
         samdb.transaction_commit()
 
     if dns_backend.startswith("BIND9_"):
-        setup_bind9_dns(samdb, secretsdb, names, paths, lp, logger,
+        setup_bind9_dns(samdb, secretsdb, names, paths, logger,
                         dns_backend, os_level, site=site, dnspass=dnspass, hostip=hostip,
                         hostip6=hostip6)
 
 
-def setup_bind9_dns(samdb, secretsdb, names, paths, lp, logger,
+def setup_bind9_dns(samdb, secretsdb, names, paths, logger,
                     dns_backend, os_level, site=None, dnspass=None, hostip=None,
                     hostip6=None, key_version_number=None):
     """Provision DNS information (assuming BIND9 backend in DC role)
@@ -1273,7 +1273,6 @@ def setup_bind9_dns(samdb, secretsdb, names, paths, lp, logger,
     :param secretsdb: LDB object connected to secrets.ldb file
     :param names: Names shortcut
     :param paths: Paths shortcut
-    :param lp: Loadparm object
     :param logger: Logger object
     :param dns_backend: Type of DNS backend
     :param os_level: Functional level (treated as os level)
