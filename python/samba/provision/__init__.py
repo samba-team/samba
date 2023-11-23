@@ -1275,7 +1275,7 @@ def create_default_gpo(sysvolpath, dnsdomain, policyguid, policyguid_dc):
 DEFAULT_BACKEND_SIZE = 8 * 1024 * 1024 *1024
 
 def setup_samdb(path, session_info, provision_backend, lp, names,
-                logger, fill, serverrole, schema, am_rodc=False,
+                logger, serverrole, schema, am_rodc=False,
                 plaintext_secrets=False, backend_store=None,
                 backend_store_size=None, batch_mode=False):
     """Setup a complete SAM Database.
@@ -2332,7 +2332,7 @@ def provision(logger, session_info, smbconf=None,
         samdb = setup_samdb(paths.samdb, session_info,
                             provision_backend, lp, names, logger=logger,
                             serverrole=serverrole,
-                            schema=schema, fill=samdb_fill, am_rodc=am_rodc,
+                            schema=schema, am_rodc=am_rodc,
                             plaintext_secrets=plaintext_secrets,
                             backend_store=backend_store,
                             backend_store_size=backend_store_size,
