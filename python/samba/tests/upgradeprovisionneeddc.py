@@ -139,7 +139,7 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
                             self.names.policyid)
         shutil.rmtree(dir)
         self.assertFalse(os.path.isdir(dir))
-        update_gpo(self.paths, self.ldbs.sam, self.names)
+        update_gpo(self.paths, self.names)
         self.assertTrue(os.path.isdir(dir))
 
     def test_update_gpo_acl(self):
@@ -150,7 +150,7 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
         os.mkdir(os.path.join(path, self.names.dnsdomain))
         os.mkdir(os.path.join(os.path.join(path, self.names.dnsdomain),
                               "Policies"))
-        update_gpo(self.paths, self.ldbs.sam, self.names)
+        update_gpo(self.paths, self.names)
         shutil.rmtree(path)
         self.paths.sysvol = save
 

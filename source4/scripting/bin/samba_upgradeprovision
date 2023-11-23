@@ -1819,7 +1819,7 @@ if __name__ == '__main__':
 
         if opts.full:
             try:
-                update_gpo(paths, ldbs.sam, names)
+                update_gpo(paths, names)
             except ProvisioningError as e:
                 message(ERROR, "The policy for domain controller is missing. "
                             "You should restart upgradeprovision with --full")

@@ -451,7 +451,7 @@ def updateOEMInfo(samdb, rootdn):
         samdb.modify(delta)
 
 
-def update_gpo(paths, samdb, names):
+def update_gpo(paths, names):
     """Create missing GPO file object if needed
     """
     dir = getpolicypath(paths.sysvol, names.dnsdomain, names.policyid)
