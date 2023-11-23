@@ -3958,7 +3958,8 @@ fail:
 
 /* Return a cli_state pointing at the IPC$ share for the given server */
 
-static struct cli_state *get_ipc_connect(char *server,
+static struct cli_state *get_ipc_connect(TALLOC_CTX *mem_ctx,
+					 char *server,
 					 struct sockaddr_storage *server_ss,
 					 struct cli_credentials *creds)
 {
@@ -3969,7 +3970,7 @@ static struct cli_state *get_ipc_connect(char *server,
 	flags |= CLI_FULL_CONNECTION_FORCE_SMB1;
 	flags |= CLI_FULL_CONNECTION_IPC;
 
-	nt_status = cli_full_connection_creds(NULL,
+	nt_status = cli_full_connection_creds(mem_ctx,
 					      &cli,
 					      NULL,
 					      server,
@@ -3988,7 +3989,7 @@ static struct cli_state *get_ipc_connect(char *server,
 	    fstring remote_name;
 
 	    if (name_status_find("*", 0, 0, server_ss, remote_name)) {
-		cli = get_ipc_connect(remote_name, server_ss, creds);
+		cli = get_ipc_connect(mem_ctx, remote_name, server_ss, creds);
 		if (cli)
 		    return cli;
 	    }
@@ -4053,7 +4054,7 @@ struct cli_state *get_ipc_connect_master_ip(TALLOC_CTX *ctx,
 	DEBUG(4, ("found master browser %s, %s\n", name, addr));
 
 	print_sockaddr(addr, sizeof(addr), &server_ss);
-	cli = get_ipc_connect(addr, &server_ss, creds);
+	cli = get_ipc_connect(ctx, addr, &server_ss, creds);
 
 	return cli;
 }
