@@ -765,7 +765,7 @@ def create_dns_dir_keytab_link(logger, paths):
                                 bind_dns_keytab_path, paths.bind_gid)
 
 
-def create_zone_file(lp, logger, paths, dnsdomain,
+def create_zone_file(logger, paths, dnsdomain,
                      hostip, hostip6, hostname, realm, domainguid,
                      ntdsguid, site):
     """Write out a DNS zone file, from the info in the current database.
@@ -1310,7 +1310,7 @@ def setup_bind9_dns(samdb, secretsdb, names, paths, lp, logger,
     create_dns_dir_keytab_link(logger, paths)
 
     if dns_backend == "BIND9_FLATFILE":
-        create_zone_file(lp, logger, paths, site=site,
+        create_zone_file(logger, paths, site=site,
                          dnsdomain=names.dnsdomain, hostip=hostip,
                          hostip6=hostip6, hostname=names.hostname,
                          realm=names.realm, domainguid=domainguid,
