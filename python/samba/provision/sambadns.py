@@ -963,7 +963,7 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
                 set permissions to sam.ldb* files manually""")
 
 
-def create_dns_update_list(lp, logger, paths):
+def create_dns_update_list(lp, paths):
     """Write out a dns_update_list file"""
     # note that we use no variable substitution on this file
     # the substitution is done at runtime by samba_dnsupdate, samba_spnupdate
