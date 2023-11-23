@@ -2433,7 +2433,7 @@ def provision(logger, session_info, smbconf=None,
                     "symlink!")
 
         if serverrole == "active directory domain controller":
-            create_dns_update_list(lp, paths)
+            create_dns_update_list(paths)
 
         backend_result = provision_backend.post_setup()
         provision_backend.shutdown()
