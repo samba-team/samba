@@ -829,7 +829,7 @@ def setup_name_mappings(idmap, sid, root_uid, nobody_uid,
 
 def setup_samdb_partitions(samdb_path, logger, lp, session_info,
                            provision_backend, names, serverrole,
-                           erase=False, plaintext_secrets=False,
+                           plaintext_secrets=False,
                            backend_store=None):
     """Setup the partitions for the SAM database.
 
