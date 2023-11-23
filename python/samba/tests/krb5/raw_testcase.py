@@ -1429,11 +1429,10 @@ class RawKerberosTest(TestCase):
     def PasswordKey_from_etype_info2(self, creds, etype_info2, kvno=None):
         e = etype_info2['etype']
         salt = etype_info2.get('salt')
-        params = etype_info2.get('s2kparams')
+        _params = etype_info2.get('s2kparams')
         return self.PasswordKey_from_etype(creds, e,
                                            kvno=kvno,
-                                           salt=salt,
-                                           params=params)
+                                           salt=salt)
 
     def PasswordKey_from_creds(self, creds, etype):
         kvno = creds.get_kvno()
@@ -1442,7 +1441,7 @@ class RawKerberosTest(TestCase):
                                            kvno=kvno,
                                            salt=salt)
 
-    def PasswordKey_from_etype(self, creds, etype, kvno=None, salt=None, params=None):
+    def PasswordKey_from_etype(self, creds, etype, kvno=None, salt=None):
         if etype == kcrypto.Enctype.RC4:
             nthash = creds.get_nt_hash()
             return self.SessionKey_create(etype=etype, contents=nthash, kvno=kvno)
