@@ -1165,7 +1165,7 @@ def fill_dns_data_partitions(samdb, domainsid, site, domaindn, forestdn,
                                  domainguid, ntdsguid)
 
 
-def setup_ad_dns(samdb, secretsdb, names, paths, lp, logger,
+def setup_ad_dns(samdb, secretsdb, names, paths, logger,
                  dns_backend, os_level, dnspass=None, hostip=None, hostip6=None,
                  fill_level=FILL_FULL, backend_store=None):
     """Provision DNS information (assuming GC role)
@@ -1174,7 +1174,6 @@ def setup_ad_dns(samdb, secretsdb, names, paths, lp, logger,
     :param secretsdb: LDB object connected to secrets.ldb file
     :param names: Names shortcut
     :param paths: Paths shortcut
-    :param lp: Loadparm object
     :param logger: Logger object
     :param dns_backend: Type of DNS backend
     :param os_level: Functional level (treated as os level)
