@@ -112,7 +112,7 @@ _PUBLIC_ DATA_BLOB data_blob_string_const(const char *str);
   useful for constructing data blobs in test suites, while
   avoiding const warnings
 
-  includes the terminating null character (as opposed to data_blo_string_const)
+  includes the terminating null character (as opposed to data_blob_string_const)
 **/
 _PUBLIC_ DATA_BLOB data_blob_string_const_null(const char *str);
 
