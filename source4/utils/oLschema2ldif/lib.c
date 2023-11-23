@@ -355,7 +355,7 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, struct conv_option
         char *c, *s;
         int n;
 
-	uint8_t digest[gnutls_hash_get_len(GNUTLS_MAC_SHA256)];
+	uint8_t digest[gnutls_hash_get_len(GNUTLS_DIG_SHA256)];
 	int rc;
 
 	struct GUID guid;
