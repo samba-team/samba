@@ -830,7 +830,7 @@ def setup_name_mappings(idmap, sid, root_uid, nobody_uid,
 def setup_samdb_partitions(samdb_path, logger, lp, session_info,
                            provision_backend, names, serverrole,
                            erase=False, plaintext_secrets=False,
-                           backend_store=None,backend_store_size=None):
+                           backend_store=None):
     """Setup the partitions for the SAM database.
 
     Alternatively, provision() may call this, and then populate the database.
@@ -1288,8 +1288,7 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
     setup_samdb_partitions(path, logger=logger, lp=lp,
                            provision_backend=provision_backend, session_info=session_info,
                            names=names, serverrole=serverrole, plaintext_secrets=plaintext_secrets,
-                           backend_store=backend_store,
-                           backend_store_size=backend_store_size)
+                           backend_store=backend_store)
 
     store_size = DEFAULT_BACKEND_SIZE
     if backend_store_size:
