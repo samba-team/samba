@@ -261,6 +261,7 @@ static NTSTATUS smb2_signing_key_create(TALLOC_CTX *mem_ctx,
 	status = smb2_key_derivation(key->blob.data, in_key_length,
 				     d->label.data, d->label.length,
 				     d->context.data, d->context.length,
+				     GNUTLS_MAC_SHA256,
 				     key->blob.data, out_key_length);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(key);
@@ -649,12 +650,13 @@ NTSTATUS smb2_signing_check_pdu(struct smb2_signing_key *signing_key,
 NTSTATUS smb2_key_derivation(const uint8_t *KI, size_t KI_len,
 			     const uint8_t *Label, size_t Label_len,
 			     const uint8_t *Context, size_t Context_len,
+			     const gnutls_mac_algorithm_t algorithm,
 			     uint8_t *KO, size_t KO_len)
 {
 	gnutls_hmac_hd_t hmac_hnd = NULL;
 	uint8_t buf[4];
 	static const uint8_t zero = 0;
-	const size_t digest_len = gnutls_hmac_get_len(GNUTLS_MAC_SHA256);
+	const size_t digest_len = gnutls_hmac_get_len(algorithm);
 	uint8_t digest[digest_len];
 	uint32_t i = 1;
 	uint32_t L = KO_len * 8;
@@ -676,11 +678,10 @@ NTSTATUS smb2_key_derivation(const uint8_t *KI, size_t KI_len,
 
 	/*
 	 * a simplified version of
-	 * "NIST Special Publication 800-108" section 5.1
-	 * using hmac-sha256.
+	 * "NIST Special Publication 800-108" section 5.1.
 	 */
 	rc = gnutls_hmac_init(&hmac_hnd,
-			      GNUTLS_MAC_SHA256,
+			      algorithm,
 			      KI,
 			      KI_len);
 	if (rc < 0) {

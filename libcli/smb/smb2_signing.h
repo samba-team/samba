@@ -21,6 +21,8 @@
 #ifndef _LIBCLI_SMB_SMB2_SIGNING_H_
 #define _LIBCLI_SMB_SMB2_SIGNING_H_
 
+#include <gnutls/gnutls.h>
+
 #include "lib/util/data_blob.h"
 
 #include "libcli/smb/smb_constants.h"
@@ -93,6 +95,7 @@ NTSTATUS smb2_signing_check_pdu(struct smb2_signing_key *signing_key,
 NTSTATUS smb2_key_derivation(const uint8_t *KI, size_t KI_len,
 			     const uint8_t *Label, size_t Label_len,
 			     const uint8_t *Context, size_t Context_len,
+			     const gnutls_mac_algorithm_t algorithm,
 			     uint8_t *KO, size_t KO_len);
 
 NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
