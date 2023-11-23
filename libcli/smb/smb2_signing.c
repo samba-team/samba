@@ -467,7 +467,7 @@ static NTSTATUS smb2_signing_calc_signature(struct smb2_signing_key *signing_key
 	}
 
 	if (hmac_algo != GNUTLS_MAC_UNKNOWN) {
-		uint8_t digest[gnutls_hash_get_len(hmac_algo)];
+		uint8_t digest[gnutls_hmac_get_len(hmac_algo)];
 		gnutls_datum_t key = {
 			.data = signing_key->blob.data,
 			.size = MIN(signing_key->blob.length, 16),
@@ -654,7 +654,7 @@ NTSTATUS smb2_key_derivation(const uint8_t *KI, size_t KI_len,
 	gnutls_hmac_hd_t hmac_hnd = NULL;
 	uint8_t buf[4];
 	static const uint8_t zero = 0;
-	const size_t digest_len = gnutls_hash_get_len(GNUTLS_DIG_SHA256);
+	const size_t digest_len = gnutls_hmac_get_len(GNUTLS_MAC_SHA256);
 	uint8_t digest[digest_len];
 	uint32_t i = 1;
 	uint32_t L = KO_len * 8;
