@@ -53,37 +53,37 @@ class UserOptions(options.OptionGroup):
                         callback=self.set_option,
                         validators=[Range(min=MIN_TGT_LIFETIME, max=MAX_TGT_LIFETIME)])
         self.add_option("--user-allow-ntlm-auth",
-                        help="Allow NTLM network authentication when user "
+                        help="Allow NTLM network authentication despite the fact that the user "
                              "is restricted to selected devices.",
                         dest="allow_ntlm_auth", default=False,
                         action="callback", callback=self.set_option)
         self.add_option("--user-allowed-to-authenticate-from",
-                        help="Conditions user is allowed to authenticate from.",
+                        help="SDDL Rules setting which device the user is allowed to authenticate from.",
                         type=str, dest="allowed_to_authenticate_from",
                         action="callback", callback=self.set_option,
                         metavar="SDDL")
         self.add_option("--user-allowed-to-authenticate-from-device-silo",
-                        help="User is allowed to authenticate from a device in a silo.",
+                        help="To authenticate, the user must log in from a device in SILO.",
                         type=str, dest="allowed_to_authenticate_from_device_silo",
                         action="callback", callback=self.set_option,
                         metavar="SILO")
         self.add_option("--user-allowed-to-authenticate-from-device-group",
-                        help="User is allowed to authenticate from a device in group.",
+                        help="To authenticate, the user must log in from a device in GROUP.",
                         type=str, dest="allowed_to_authenticate_from_device_group",
                         action="callback", callback=self.set_option,
                         metavar="GROUP")
         self.add_option("--user-allowed-to-authenticate-to",
-                        help="Conditions user is allowed to authenticate to.",
+                        help="A target service, on a user account, requires the connecting user to match SDDL",
                         type=str, dest="allowed_to_authenticate_to",
                         action="callback", callback=self.set_option,
                         metavar="SDDL")
         self.add_option("--user-allowed-to-authenticate-to-by-group",
-                        help="User is allowed to authenticate to by group.",
+                        help="A target service, on a user account, requires the connecting user to be in GROUP",
                         type=str, dest="allowed_to_authenticate_to_by_group",
                         action="callback", callback=self.set_option,
                         metavar="GROUP")
         self.add_option("--user-allowed-to-authenticate-to-by-silo",
-                        help="User is allowed to authenticate to by silo.",
+                        help="A target service, on a user account, requires the connecting user to be in SILO",
                         type=str, dest="allowed_to_authenticate_to_by_silo",
                         action="callback", callback=self.set_option,
                         metavar="SILO")
@@ -101,37 +101,39 @@ class ServiceOptions(options.OptionGroup):
                         callback=self.set_option,
                         validators=[Range(min=MIN_TGT_LIFETIME, max=MAX_TGT_LIFETIME)])
         self.add_option("--service-allow-ntlm-auth",
-                        help="Allow NTLM network authentication when service "
+                        help="Allow NTLM network authentication despite "
+                             "the fact that the service account "
                              "is restricted to selected devices.",
                         dest="allow_ntlm_auth", default=False,
                         action="callback", callback=self.set_option)
         self.add_option("--service-allowed-to-authenticate-from",
-                        help="Conditions service is allowed to authenticate from.",
+                        help="SDDL Rules setting which device the "
+                        "service account is allowed to authenticate from.",
                         type=str, dest="allowed_to_authenticate_from",
                         action="callback", callback=self.set_option,
                         metavar="SDDL")
         self.add_option("--service-allowed-to-authenticate-from-device-silo",
-                        help="Service is allowed to authenticate from a device in a silo.",
+                        help="To authenticate, the service must authenticate on a device in SILO.",
                         type=str, dest="allowed_to_authenticate_from_device_silo",
                         action="callback", callback=self.set_option,
                         metavar="SILO")
         self.add_option("--service-allowed-to-authenticate-from-device-group",
-                        help="Service is allowed to authenticate from a device in group.",
+                        help="To authenticate, the service must authenticate on a device in GROUP.",
                         type=str, dest="allowed_to_authenticate_from_device_group",
                         action="callback", callback=self.set_option,
                         metavar="GROUP")
         self.add_option("--service-allowed-to-authenticate-to",
-                        help="Conditions service is allowed to authenticate to.",
+                        help="The target service requires the connecting user to match SDDL",
                         type=str, dest="allowed_to_authenticate_to",
                         action="callback", callback=self.set_option,
                         metavar="SDDL")
         self.add_option("--service-allowed-to-authenticate-to-by-group",
-                        help="Service is allowed to authenticate to by group.",
+                        help="The target service requires the connecting user to be in GROUP",
                         type=str, dest="allowed_to_authenticate_to_by_group",
                         action="callback", callback=self.set_option,
                         metavar="GROUP")
         self.add_option("--service-allowed-to-authenticate-to-by-silo",
-                        help="Service is allowed to authenticate to by silo.",
+                        help="The target service requires the connecting user to be in SILO",
                         type=str, dest="allowed_to_authenticate_to_by_silo",
                         action="callback", callback=self.set_option,
                         metavar="SILO")
@@ -149,17 +151,17 @@ class ComputerOptions(options.OptionGroup):
                         callback=self.set_option,
                         validators=[Range(min=MIN_TGT_LIFETIME, max=MAX_TGT_LIFETIME)])
         self.add_option("--computer-allowed-to-authenticate-to",
-                        help="Conditions computer is allowed to authenticate to.",
+                        help="The computer account (server, workstation) service requires the connecting user to match SDDL",
                         type=str, dest="allowed_to_authenticate_to",
                         action="callback", callback=self.set_option,
                         metavar="SDDL")
         self.add_option("--computer-allowed-to-authenticate-to-by-group",
-                        help="Computer is allowed to authenticate to by group.",
+                        help="The computer account (server, workstation) service requires the connecting user to be in GROUP",
                         type=str, dest="allowed_to_authenticate_to_by_group",
                         action="callback", callback=self.set_option,
                         metavar="GROUP")
         self.add_option("--computer-allowed-to-authenticate-to-by-silo",
-                        help="Computer is allowed to authenticate to by silo.",
+                        help="The computer account (server, workstation) service requires the connecting user to be in SILO",
                         type=str, dest="allowed_to_authenticate_to_by_silo",
                         action="callback", callback=self.set_option,
                         metavar="SILO")
