@@ -1709,6 +1709,27 @@ error:
 }
 
 
+static bool composite_is_comparable(const struct ace_condition_token *tok,
+				    const struct ace_condition_token *comp)
+{
+	/*
+	 * Are all members of the composite comparable to the token?
+	 */
+	size_t i;
+	const struct ace_condition_composite *rc = &comp->data.composite;
+	for (i = 0; i < rc->n_members; i++) {
+		if (! tokens_are_comparable(NULL,
+					    tok,
+					    &rc->tokens[i])) {
+			DBG_NOTICE("token type %u !=  composite type %u\n",
+				   tok->type, rc->tokens[i].type);
+			return false;
+		}
+	}
+	return true;
+}
+
+
 static bool compare_composites(const struct ace_condition_token *op,
 			       const struct ace_condition_token *lhs,
 			       const struct ace_condition_token *rhs,
@@ -1772,7 +1793,6 @@ static bool compare_composites(const struct ace_condition_token *op,
 	const struct ace_condition_composite *lc = &lhs->data.composite;
 	const struct ace_condition_composite *rc = &rhs->data.composite;
 	bool ok;
-	size_t i;
 
 	if (!(lhs->flags & CLAIM_SECURITY_ATTRIBUTE_UNIQUE_AND_SORTED)) {
 		/*
@@ -1798,27 +1818,6 @@ static bool compare_composites(const struct ace_condition_token *op,
 	}
 
 	/*
-	 * LHS is a claim, and all members of a claim must be of the
-	 * same type. If a member of RHS is not of that type,
-	 * we know no match is possible.
-	 *
-	 * This is an error, not just a mismatch, so we need to check
-	 * it before the other shortcuts below. The difference matters
-	 * in expressions like (@User.pet_names != {"Minty", SID(AA)})
-	 * which should fail rather than returning true.
-	 */
-	for (i = 0; i < rc->n_members; i++) {
-		if (! tokens_are_comparable(NULL,
-					    &lc->tokens[0],
-					    &rc->tokens[i])) {
-			DBG_WARNING("LHS type %u != RHS type %u\n",
-				    lc->tokens[0].type, rc->tokens[0].type);
-			*cmp = -1;
-			return false;
-		}
-	}
-
-	/*
 	 * LHS must be a claim, so it must be unique, so if there are
 	 * fewer members on the RHS, we know they can't be equal.
 	 *
@@ -1836,7 +1835,7 @@ static bool compare_composites(const struct ace_condition_token *op,
 	 */
 	if (lc->n_members > rc->n_members) {
 		*cmp = -1;
-		return true;
+		return composite_is_comparable(&lc->tokens[0], rhs);
 	}
 
 	/*
@@ -1849,7 +1848,7 @@ static bool compare_composites(const struct ace_condition_token *op,
 	if (lc->n_members < rc->n_members &&
 	    (rhs->flags & CLAIM_SECURITY_ATTRIBUTE_UNIQUE_AND_SORTED)) {
 		*cmp = -1;
-		return true;
+		return composite_is_comparable(&lc->tokens[0], rhs);
 	}
 
 	ok = compare_composites_via_sort(lhs, rhs, cmp);
