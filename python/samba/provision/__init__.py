@@ -2012,8 +2012,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
         setup_ad_dns(samdb, secrets_ldb, names, paths, logger,
                      hostip=hostip, hostip6=hostip6, dns_backend=dns_backend,
                      dnspass=dnspass, os_level=dom_for_fun_level,
-                     fill_level=samdb_fill,
-                     backend_store=backend_store)
+                     fill_level=samdb_fill)
 
         domainguid = samdb.searchone(basedn=samdb.get_default_basedn(),
                                      attribute="objectGUID").decode('utf8')

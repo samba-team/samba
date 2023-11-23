@@ -1167,7 +1167,7 @@ def fill_dns_data_partitions(samdb, domainsid, site, domaindn, forestdn,
 
 def setup_ad_dns(samdb, secretsdb, names, paths, logger,
                  dns_backend, os_level, dnspass=None, hostip=None, hostip6=None,
-                 fill_level=FILL_FULL, backend_store=None):
+                 fill_level=FILL_FULL):
     """Provision DNS information (assuming GC role)
 
     :param samdb: LDB object connected to sam.ldb file
