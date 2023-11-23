@@ -3791,7 +3791,8 @@ static void cli_full_connection_creds_tcon_done(struct tevent_req *subreq)
 }
 
 NTSTATUS cli_full_connection_creds_recv(struct tevent_req *req,
-				  struct cli_state **output_cli)
+					TALLOC_CTX *mem_ctx,
+					struct cli_state **output_cli)
 {
 	struct cli_full_connection_creds_state *state = tevent_req_data(
 		req, struct cli_full_connection_creds_state);
@@ -3800,7 +3801,7 @@ NTSTATUS cli_full_connection_creds_recv(struct tevent_req *req,
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
-	*output_cli = talloc_move(NULL, &state->cli);
+	*output_cli = talloc_move(mem_ctx, &state->cli);
 	talloc_set_destructor(state, NULL);
 	return NT_STATUS_OK;
 }
@@ -3831,7 +3832,7 @@ NTSTATUS cli_full_connection_creds(struct cli_state **output_cli,
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = cli_full_connection_creds_recv(req, output_cli);
+	status = cli_full_connection_creds_recv(req, NULL, output_cli);
  fail:
 	TALLOC_FREE(ev);
 	return status;

@@ -646,7 +646,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	if (!py_tevent_req_wait_exc(self, req)) {
 		return -1;
 	}
-	status = cli_full_connection_creds_recv(req, &self->cli);
+	status = cli_full_connection_creds_recv(req, NULL, &self->cli);
 	TALLOC_FREE(req);
 
 	if (!NT_STATUS_IS_OK(status)) {
