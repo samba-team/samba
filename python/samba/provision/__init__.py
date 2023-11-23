@@ -1341,7 +1341,7 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
 
 def fill_samdb(samdb, lp, names, logger, policyguid,
                policyguid_dc, fill, adminpass, krbtgtpass, machinepass, dns_backend,
-               dnspass, invocationid, ntdsguid, serverrole, am_rodc=False,
+               dnspass, invocationid, ntdsguid, serverrole,
                dom_for_fun_level=None, schema=None, next_rid=None, dc_rid=None):
 
     if next_rid is None:
@@ -1952,7 +1952,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                            invocationid=invocationid, machinepass=machinepass,
                            dns_backend=dns_backend, dnspass=dnspass,
                            ntdsguid=ntdsguid, serverrole=serverrole,
-                           dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
+                           dom_for_fun_level=dom_for_fun_level,
                            next_rid=next_rid, dc_rid=dc_rid)
 
         # Set up group policies (domain policy and domain controller
