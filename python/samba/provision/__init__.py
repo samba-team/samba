@@ -903,7 +903,6 @@ def setup_samdb_partitions(samdb_path, logger, lp, session_info,
 def secretsdb_self_join(secretsdb, domain,
                         netbiosname, machinepass, domainsid=None,
                         realm=None, dnsdomain=None,
-                        keytab_path=None,
                         key_version_number=1,
                         secure_channel_type=SEC_CHAN_WKSTA):
     """Add domain join-specific bits to a secrets database.
