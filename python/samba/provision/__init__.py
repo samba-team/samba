@@ -1917,7 +1917,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                    invocationid=None, machinepass=None, ntdsguid=None,
                    dns_backend=None, dnspass=None,
                    serverrole=None, dom_for_fun_level=None,
-                   am_rodc=False, lp=None, use_ntvfs=False,
+                   lp=None, use_ntvfs=False,
                    skip_sysvolacl=False):
     # create/adapt the group policy GUIDs
     # Default GUID for default policy are described at
@@ -2361,7 +2361,7 @@ def provision(logger, session_info, smbconf=None,
                            invocationid=invocationid, machinepass=machinepass,
                            ntdsguid=ntdsguid, dns_backend=dns_backend,
                            dnspass=dnspass, serverrole=serverrole,
-                           dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
+                           dom_for_fun_level=dom_for_fun_level,
                            lp=lp, use_ntvfs=use_ntvfs,
                            skip_sysvolacl=skip_sysvolacl)
 
