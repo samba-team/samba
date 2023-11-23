@@ -1167,7 +1167,7 @@ def fill_dns_data_partitions(samdb, domainsid, site, domaindn, forestdn,
 
 def setup_ad_dns(samdb, secretsdb, names, paths, lp, logger,
                  dns_backend, os_level, dnspass=None, hostip=None, hostip6=None,
-                 targetdir=None, fill_level=FILL_FULL, backend_store=None):
+                 fill_level=FILL_FULL, backend_store=None):
     """Provision DNS information (assuming GC role)
 
     :param samdb: LDB object connected to sam.ldb file
@@ -1181,7 +1181,6 @@ def setup_ad_dns(samdb, secretsdb, names, paths, lp, logger,
     :param dnspass: Password for bind's DNS account
     :param hostip: IPv4 address
     :param hostip6: IPv6 address
-    :param targetdir: Target directory for creating DNS-related files for BIND9
     """
 
     if not is_valid_dns_backend(dns_backend):
