@@ -301,6 +301,8 @@ static void ctdb_srvid_print(uint64_t srvid, FILE *fp)
 		fprintf(fp, "RELEASE_IP");
 	} else if (srvid == CTDB_SRVID_TAKE_IP) {
 		fprintf(fp, "TAKE_IP");
+	} else if (srvid == CTDB_SRVID_IPREALLOCATED) {
+		fprintf(fp, "IPREALLOCATED");
 	} else if (srvid == CTDB_SRVID_SET_NODE_FLAGS) {
 		fprintf(fp, "SET_NODE_FLAGS");
 	} else if (srvid == CTDB_SRVID_RECD_UPDATE_IP) {

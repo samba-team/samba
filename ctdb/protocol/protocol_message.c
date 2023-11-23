@@ -57,6 +57,9 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 		len = ctdb_string_len(&mdata->ipaddr);
 		break;
 
+	case CTDB_SRVID_IPREALLOCATED:
+		break;
+
 	case CTDB_SRVID_SET_NODE_FLAGS:
 		len = ctdb_node_flag_change_len(mdata->flag_change);
 		break;
@@ -146,6 +149,9 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 
 	case CTDB_SRVID_TAKE_IP:
 		ctdb_string_push(&mdata->ipaddr, buf, &np);
+		break;
+
+	case CTDB_SRVID_IPREALLOCATED:
 		break;
 
 	case CTDB_SRVID_SET_NODE_FLAGS:
@@ -242,6 +248,9 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 	case CTDB_SRVID_TAKE_IP:
 		ret = ctdb_string_pull(buf, buflen, mem_ctx, &mdata->ipaddr,
 				       &np);
+		break;
+
+	case CTDB_SRVID_IPREALLOCATED:
 		break;
 
 	case CTDB_SRVID_SET_NODE_FLAGS:

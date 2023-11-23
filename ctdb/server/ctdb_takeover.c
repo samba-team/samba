@@ -2399,6 +2399,7 @@ static void ctdb_ipreallocated_callback(struct ctdb_context *ctdb,
 {
 	struct ipreallocated_callback_state *state =
 		talloc_get_type(p, struct ipreallocated_callback_state);
+	TDB_DATA data = { .dsize = 0, };
 
 	if (status != 0) {
 		DEBUG(DEBUG_ERR,
@@ -2408,6 +2409,9 @@ static void ctdb_ipreallocated_callback(struct ctdb_context *ctdb,
 			ctdb_ban_self(ctdb);
 		}
 	}
+
+	D_INFO("Sending IPREALLOCATED message\n");
+	ctdb_daemon_send_message(ctdb, ctdb->pnn, CTDB_SRVID_IPREALLOCATED, data);
 
 	ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
 	talloc_free(state);
