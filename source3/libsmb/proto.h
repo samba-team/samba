@@ -123,9 +123,6 @@ NTSTATUS cli_full_connection_creds(TALLOC_CTX *mem_ctx,
 NTSTATUS cli_raw_tcon(struct cli_state *cli,
 		      const char *service, const char *pass, const char *dev,
 		      uint16_t *max_xmit, uint16_t *tid);
-struct cli_state *get_ipc_connect(char *server,
-				struct sockaddr_storage *server_ss,
-				struct cli_credentials *creds);
 struct cli_state *get_ipc_connect_master_ip(TALLOC_CTX *ctx,
 				struct sockaddr_storage *mb_ip,
 				struct cli_credentials *creds,

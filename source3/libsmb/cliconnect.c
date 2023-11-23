@@ -3958,9 +3958,9 @@ fail:
 
 /* Return a cli_state pointing at the IPC$ share for the given server */
 
-struct cli_state *get_ipc_connect(char *server,
-				struct sockaddr_storage *server_ss,
-				struct cli_credentials *creds)
+static struct cli_state *get_ipc_connect(char *server,
+					 struct sockaddr_storage *server_ss,
+					 struct cli_credentials *creds)
 {
         struct cli_state *cli;
 	NTSTATUS nt_status;
