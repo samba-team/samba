@@ -1717,7 +1717,18 @@ static bool composite_is_comparable(const struct ace_condition_token *tok,
 	 */
 	size_t i;
 	const struct ace_condition_composite *rc = &comp->data.composite;
-	for (i = 0; i < rc->n_members; i++) {
+	size_t n = rc->n_members;
+
+	if ((comp->flags & CLAIM_SECURITY_ATTRIBUTE_UNIQUE_AND_SORTED) &&
+	    n > 1) {
+		/*
+		 * all members are known to be the same type, so we
+		 * can just check one.
+		 */
+		n = 1;
+	}
+
+	for (i = 0; i < n; i++) {
 		if (! tokens_are_comparable(NULL,
 					    tok,
 					    &rc->tokens[i])) {
