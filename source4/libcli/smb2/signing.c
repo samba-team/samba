@@ -33,7 +33,7 @@
  */
 NTSTATUS smb2_sign_message(struct smb2_request_buffer *buf, DATA_BLOB session_key)
 {
-	uint8_t digest[gnutls_hash_get_len(GNUTLS_MAC_SHA256)];
+	uint8_t digest[gnutls_hmac_get_len(GNUTLS_MAC_SHA256)];
 	uint64_t session_id;
 	size_t hdr_offset;
 	int rc;
@@ -85,7 +85,7 @@ NTSTATUS smb2_sign_message(struct smb2_request_buffer *buf, DATA_BLOB session_ke
 NTSTATUS smb2_check_signature(struct smb2_request_buffer *buf, DATA_BLOB session_key)
 {
 	uint64_t session_id;
-	uint8_t digest[gnutls_hash_get_len(GNUTLS_MAC_SHA256)];
+	uint8_t digest[gnutls_hmac_get_len(GNUTLS_MAC_SHA256)];
 	uint8_t sig[16];
 	size_t hdr_offset;
 	int rc;
