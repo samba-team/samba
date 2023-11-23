@@ -810,7 +810,7 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
 
 
 def setup_name_mappings(idmap, sid, root_uid, nobody_uid,
-                        users_gid, root_gid):
+                        users_gid):
     """setup reasonable name mappings for sam names to unix names.
 
     :param samdb: SamDB object.
@@ -820,7 +820,6 @@ def setup_name_mappings(idmap, sid, root_uid, nobody_uid,
     :param root_uid: uid of the UNIX root user.
     :param nobody_uid: uid of the UNIX nobody user.
     :param users_gid: gid of the UNIX users group.
-    :param root_gid: gid of the UNIX root group.
     """
     idmap.setup_name_mapping("S-1-5-7", idmap.TYPE_UID, nobody_uid)
 
@@ -2329,7 +2328,7 @@ def provision(logger, session_info, smbconf=None,
 
         setup_name_mappings(idmap, sid=str(domainsid),
                             root_uid=root_uid, nobody_uid=nobody_uid,
-                            users_gid=users_gid, root_gid=root_gid)
+                            users_gid=users_gid)
 
         logger.info("Setting up SAM db")
         samdb = setup_samdb(paths.samdb, session_info,
