@@ -662,7 +662,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     if serverrole != "active directory domain controller":
         #
         # This is the code path for a domain member
-        # where we provision the database as if we where
+        # where we provision the database as if we were
         # on a domain controller, so we should not use
         # the same dnsdomain as the domain controllers
         # of our primary domain.
