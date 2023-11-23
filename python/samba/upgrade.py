@@ -94,13 +94,12 @@ def import_sam_policy(samdb, policy, logger):
         logger.warn("Could not set account policy, (%s)", str(e))
 
 
-def add_posix_attrs(logger, samdb, sid, name, nisdomain, xid_type, home=None,
+def add_posix_attrs(logger, samdb, sid, nisdomain, xid_type, home=None,
                     shell=None, pgid=None):
     """Add posix attributes for the user/group
 
     :param samdb: Samba4 sam.ldb database
     :param sid: user/group sid
-    :param sid: user/group name
     :param nisdomain: name of the (fake) NIS domain
     :param xid_type: type of id (ID_TYPE_UID/ID_TYPE_GID)
     :param home: user homedir (Unix homepath)
@@ -777,7 +776,7 @@ Please fix this account before attempting to upgrade again
             if g.gid != -1:
                 add_group_from_mapping_entry(result.samdb, g, logger)
                 add_ad_posix_idmap_entry(result.samdb, g.sid, g.gid, "ID_TYPE_GID", logger)
-                add_posix_attrs(samdb=result.samdb, sid=g.sid, name=g.nt_name, nisdomain=domainname.lower(), xid_type="ID_TYPE_GID", logger=logger)
+                add_posix_attrs(samdb=result.samdb, sid=g.sid, nisdomain=domainname.lower(), xid_type="ID_TYPE_GID", logger=logger)
 
     except:
         # We need this, so that we do not give even more errors due to not cancelling the transaction
@@ -808,7 +807,7 @@ Please fix this account before attempting to upgrade again
             if (username in homes) and (homes[username] is not None) and \
                (username in shells) and (shells[username] is not None) and \
                (username in pgids) and (pgids[username] is not None):
-                add_posix_attrs(samdb=result.samdb, sid=userdata[username].user_sid, name=username, nisdomain=domainname.lower(), xid_type="ID_TYPE_UID", home=homes[username], shell=shells[username], pgid=pgids[username], logger=logger)
+                add_posix_attrs(samdb=result.samdb, sid=userdata[username].user_sid, nisdomain=domainname.lower(), xid_type="ID_TYPE_UID", home=homes[username], shell=shells[username], pgid=pgids[username], logger=logger)
 
     logger.info("Adding users to groups")
     # Start a new transaction (should speed this up a little, due to index churn)
