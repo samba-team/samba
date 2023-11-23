@@ -980,7 +980,7 @@ def secretsdb_self_join(secretsdb, domain,
     else:
         spn = ['HOST/%s' % shortname]
         if secure_channel_type == SEC_CHAN_BDC and dnsname is not None:
-            # we are a domain controller then we add servicePrincipalName
+            # if we are a domain controller then we add servicePrincipalName
             # entries for the keytab code to update.
             spn.extend(['HOST/%s' % dnsname])
         msg["servicePrincipalName"] = spn
