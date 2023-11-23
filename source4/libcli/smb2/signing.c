@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    SMB2 Signing Code
@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -49,7 +49,7 @@ NTSTATUS smb2_sign_message(struct smb2_request_buffer *buf, DATA_BLOB session_ke
 	if (session_id == 0) {
 		/* we don't sign messages with a zero session_id. See
 		   MS-SMB2 3.2.4.1.1 */
-		return NT_STATUS_OK;		
+		return NT_STATUS_OK;
 	}
 
 	if (session_key.length == 0) {
@@ -76,7 +76,7 @@ NTSTATUS smb2_sign_message(struct smb2_request_buffer *buf, DATA_BLOB session_ke
 
 	memcpy(buf->hdr + SMB2_HDR_SIGNATURE, digest, 16);
 
-	return NT_STATUS_OK;	
+	return NT_STATUS_OK;
 }
 
 /*
@@ -101,7 +101,7 @@ NTSTATUS smb2_check_signature(struct smb2_request_buffer *buf, DATA_BLOB session
 	if (session_id == 0) {
 		/* don't sign messages with a zero session_id. See
 		   MS-SMB2 3.2.4.1.1 */
-		return NT_STATUS_OK;		
+		return NT_STATUS_OK;
 	}
 
 	if (session_key.length == 0) {
@@ -126,7 +126,7 @@ NTSTATUS smb2_check_signature(struct smb2_request_buffer *buf, DATA_BLOB session
 	memcpy(buf->hdr + SMB2_HDR_SIGNATURE, digest, 16);
 
 	if (!mem_equal_const_time(digest, sig, 16)) {
-		DEBUG(0,("Bad SMB2 signature for message of size %u\n", 
+		DEBUG(0,("Bad SMB2 signature for message of size %u\n",
 			 (unsigned)buf->size-NBT_HDR_SIZE));
 		dump_data(0, sig, 16);
 		dump_data(0, digest, 16);
@@ -135,5 +135,5 @@ NTSTATUS smb2_check_signature(struct smb2_request_buffer *buf, DATA_BLOB session
 	}
 	ZERO_ARRAY(digest);
 
-	return NT_STATUS_OK;	
+	return NT_STATUS_OK;
 }
