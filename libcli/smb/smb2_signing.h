@@ -21,6 +21,11 @@
 #ifndef _LIBCLI_SMB_SMB2_SIGNING_H_
 #define _LIBCLI_SMB_SMB2_SIGNING_H_
 
+#include "lib/util/data_blob.h"
+
+#include "libcli/smb/smb_constants.h"
+#include "libcli/util/ntstatus.h"
+
 struct iovec;
 
 struct smb2_signing_derivation {
