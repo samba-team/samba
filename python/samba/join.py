@@ -1373,7 +1373,6 @@ class DCJoinContext(object):
                             ctx.names, ctx.paths, ctx.lp, ctx.logger,
                             dns_backend=ctx.dns_backend,
                             dnspass=ctx.dnspass, os_level=ctx.behavior_version,
-                            targetdir=ctx.targetdir,
                             key_version_number=ctx.dns_key_version_number)
 
     def join_setup_trusts(ctx):

@@ -1262,12 +1262,12 @@ def setup_ad_dns(samdb, secretsdb, names, paths, lp, logger,
     if dns_backend.startswith("BIND9_"):
         setup_bind9_dns(samdb, secretsdb, names, paths, lp, logger,
                         dns_backend, os_level, site=site, dnspass=dnspass, hostip=hostip,
-                        hostip6=hostip6, targetdir=targetdir)
+                        hostip6=hostip6)
 
 
 def setup_bind9_dns(samdb, secretsdb, names, paths, lp, logger,
                     dns_backend, os_level, site=None, dnspass=None, hostip=None,
-                    hostip6=None, targetdir=None, key_version_number=None):
+                    hostip6=None, key_version_number=None):
     """Provision DNS information (assuming BIND9 backend in DC role)
 
     :param samdb: LDB object connected to sam.ldb file
@@ -1282,7 +1282,6 @@ def setup_bind9_dns(samdb, secretsdb, names, paths, lp, logger,
     :param dnspass: Password for bind's DNS account
     :param hostip: IPv4 address
     :param hostip6: IPv6 address
-    :param targetdir: Target directory for creating DNS-related files for BIND9
     """
 
     if (not is_valid_dns_backend(dns_backend) or
