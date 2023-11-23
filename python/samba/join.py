@@ -919,7 +919,7 @@ class DCJoinContext(object):
         provision_fill(ctx.local_samdb, secrets_ldb,
                        ctx.logger, ctx.names, ctx.paths,
                        dom_for_fun_level=ctx.behavior_version,
-                       targetdir=ctx.targetdir, samdb_fill=FILL_SUBDOMAIN,
+                       samdb_fill=FILL_SUBDOMAIN,
                        machinepass=ctx.acct_pass, serverrole="active directory domain controller",
                        lp=ctx.lp, hostip=ctx.names.hostip, hostip6=ctx.names.hostip6,
                        dns_backend=ctx.dns_backend, adminpass=ctx.adminpass)

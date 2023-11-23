@@ -1916,7 +1916,7 @@ def interface_ips_v6(lp):
 
 def provision_fill(samdb, secrets_ldb, logger, names, paths,
                    schema=None,
-                   targetdir=None, samdb_fill=FILL_FULL,
+                   samdb_fill=FILL_FULL,
                    hostip=None, hostip6=None,
                    next_rid=1000, dc_rid=None, adminpass=None, krbtgtpass=None,
                    domainguid=None, policyguid=None, policyguid_dc=None,
@@ -2363,7 +2363,7 @@ def provision(logger, session_info, smbconf=None,
 
         if samdb_fill == FILL_FULL:
             provision_fill(samdb, secrets_ldb, logger, names, paths,
-                           schema=schema, targetdir=targetdir, samdb_fill=samdb_fill,
+                           schema=schema, samdb_fill=samdb_fill,
                            hostip=hostip, hostip6=hostip6,
                            next_rid=next_rid, dc_rid=dc_rid, adminpass=adminpass,
                            krbtgtpass=krbtgtpass,
