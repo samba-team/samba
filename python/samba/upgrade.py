@@ -498,9 +498,8 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None,
         machineacct = s3db.getsampwnam('%s$' % netbiosname)
     except passdb.error:
         machinerid = None
-        machinesid = None
     else:
-        machinesid, machinerid = machineacct.user_sid.split()
+        _, machinerid = machineacct.user_sid.split()
 
     # Export account policy
     logger.info("Exporting account policy")
