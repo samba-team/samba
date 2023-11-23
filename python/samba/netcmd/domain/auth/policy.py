@@ -60,27 +60,33 @@ class UserOptions(options.OptionGroup):
         self.add_option("--user-allowed-to-authenticate-from",
                         help="Conditions user is allowed to authenticate from.",
                         type=str, dest="allowed_to_authenticate_from",
-                        action="callback", callback=self.set_option)
+                        action="callback", callback=self.set_option,
+                        metavar="SDDL")
         self.add_option("--user-allowed-to-authenticate-from-device-silo",
                         help="User is allowed to authenticate from a device in a silo.",
                         type=str, dest="allowed_to_authenticate_from_device_silo",
-                        action="callback", callback=self.set_option)
+                        action="callback", callback=self.set_option,
+                        metavar="SILO")
         self.add_option("--user-allowed-to-authenticate-from-device-group",
                         help="User is allowed to authenticate from a device in group.",
                         type=str, dest="allowed_to_authenticate_from_device_group",
-                        action="callback", callback=self.set_option)
+                        action="callback", callback=self.set_option,
+                        metavar="GROUP")
         self.add_option("--user-allowed-to-authenticate-to",
                         help="Conditions user is allowed to authenticate to.",
                         type=str, dest="allowed_to_authenticate_to",
-                        action="callback", callback=self.set_option)
+                        action="callback", callback=self.set_option,
+                        metavar="SDDL")
         self.add_option("--user-allowed-to-authenticate-to-by-group",
                         help="User is allowed to authenticate to by group.",
                         type=str, dest="allowed_to_authenticate_to_by_group",
-                        action="callback", callback=self.set_option)
+                        action="callback", callback=self.set_option,
+                        metavar="GROUP")
         self.add_option("--user-allowed-to-authenticate-to-by-silo",
                         help="User is allowed to authenticate to by silo.",
                         type=str, dest="allowed_to_authenticate_to_by_silo",
-                        action="callback", callback=self.set_option)
+                        action="callback", callback=self.set_option,
+                        metavar="SILO")
 
 
 class ServiceOptions(options.OptionGroup):
@@ -102,27 +108,33 @@ class ServiceOptions(options.OptionGroup):
         self.add_option("--service-allowed-to-authenticate-from",
                         help="Conditions service is allowed to authenticate from.",
                         type=str, dest="allowed_to_authenticate_from",
-                        action="callback", callback=self.set_option)
+                        action="callback", callback=self.set_option,
+                        metavar="SDDL")
         self.add_option("--service-allowed-to-authenticate-from-device-silo",
                         help="Service is allowed to authenticate from a device in a silo.",
                         type=str, dest="allowed_to_authenticate_from_device_silo",
-                        action="callback", callback=self.set_option)
+                        action="callback", callback=self.set_option,
+                        metavar="SILO")
         self.add_option("--service-allowed-to-authenticate-from-device-group",
                         help="Service is allowed to authenticate from a device in group.",
                         type=str, dest="allowed_to_authenticate_from_device_group",
-                        action="callback", callback=self.set_option)
+                        action="callback", callback=self.set_option,
+                        metavar="GROUP")
         self.add_option("--service-allowed-to-authenticate-to",
                         help="Conditions service is allowed to authenticate to.",
                         type=str, dest="allowed_to_authenticate_to",
-                        action="callback", callback=self.set_option)
+                        action="callback", callback=self.set_option,
+                        metavar="SDDL")
         self.add_option("--service-allowed-to-authenticate-to-by-group",
                         help="Service is allowed to authenticate to by group.",
                         type=str, dest="allowed_to_authenticate_to_by_group",
-                        action="callback", callback=self.set_option)
+                        action="callback", callback=self.set_option,
+                        metavar="GROUP")
         self.add_option("--service-allowed-to-authenticate-to-by-silo",
                         help="Service is allowed to authenticate to by silo.",
                         type=str, dest="allowed_to_authenticate_to_by_silo",
-                        action="callback", callback=self.set_option)
+                        action="callback", callback=self.set_option,
+                        metavar="SILO")
 
 
 class ComputerOptions(options.OptionGroup):
@@ -139,15 +151,18 @@ class ComputerOptions(options.OptionGroup):
         self.add_option("--computer-allowed-to-authenticate-to",
                         help="Conditions computer is allowed to authenticate to.",
                         type=str, dest="allowed_to_authenticate_to",
-                        action="callback", callback=self.set_option)
+                        action="callback", callback=self.set_option,
+                        metavar="SDDL")
         self.add_option("--computer-allowed-to-authenticate-to-by-group",
                         help="Computer is allowed to authenticate to by group.",
                         type=str, dest="allowed_to_authenticate_to_by_group",
-                        action="callback", callback=self.set_option)
+                        action="callback", callback=self.set_option,
+                        metavar="GROUP")
         self.add_option("--computer-allowed-to-authenticate-to-by-silo",
                         help="Computer is allowed to authenticate to by silo.",
                         type=str, dest="allowed_to_authenticate_to_by_silo",
-                        action="callback", callback=self.set_option)
+                        action="callback", callback=self.set_option,
+                        metavar="SILO")
 
 
 class cmd_domain_auth_policy_list(Command):
