@@ -1,4 +1,4 @@
-/* 
+/*
    ctdb ltdb code - server side
 
    Copyright (C) Andrew Tridgell  2007
@@ -7,12 +7,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
@@ -287,7 +287,7 @@ static void lock_fetch_callback(void *p, bool locked)
       -1:    means that it failed to get the lock, and won't retry
       -2:    means that it failed to get the lock immediately, but will retry
  */
-int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db, 
+int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db,
 			   TDB_DATA key, struct ctdb_req_header *hdr,
 			   void (*recv_pkt)(void *, struct ctdb_req_header *),
 			   void *recv_context, bool ignore_generation)
@@ -296,7 +296,7 @@ int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db,
 	struct tdb_context *tdb = ctdb_db->ltdb->tdb;
 	struct lock_request *lreq;
 	struct lock_fetch_state *state;
-	
+
 	ret = tdb_chainlock_nonblock(tdb, key);
 
 	if (ret != 0 &&
@@ -343,15 +343,15 @@ int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db,
 /*
   a variant of ctdb_ltdb_lock_requeue that also fetches the record
  */
-int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db, 
-				 TDB_DATA key, struct ctdb_ltdb_header *header, 
+int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db,
+				 TDB_DATA key, struct ctdb_ltdb_header *header,
 				 struct ctdb_req_header *hdr, TDB_DATA *data,
 				 void (*recv_pkt)(void *, struct ctdb_req_header *),
 				 void *recv_context, bool ignore_generation)
 {
 	int ret;
 
-	ret = ctdb_ltdb_lock_requeue(ctdb_db, key, hdr, recv_pkt, 
+	ret = ctdb_ltdb_lock_requeue(ctdb_db, key, hdr, recv_pkt,
 				     recv_context, ignore_generation);
 	if (ret != 0) {
 		return ret;
@@ -718,8 +718,8 @@ int ctdb_set_db_readonly(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb
 		DEBUG(DEBUG_CRIT,("Failed to asprintf the tracking database\n"));
 		return -1;
 	}
-	ctdb_db->rottdb = tdb_open(ropath, 
-			      ctdb->tunable.database_hash_size, 
+	ctdb_db->rottdb = tdb_open(ropath,
+			      ctdb->tunable.database_hash_size,
 			      TDB_NOLOCK|TDB_CLEAR_IF_FIRST|TDB_NOSYNC,
 			      O_CREAT|O_RDWR, 0600);
 	if (ctdb_db->rottdb == NULL) {
@@ -842,8 +842,8 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 
 again:
 	ctdb_db->ltdb = tdb_wrap_open(ctdb_db, ctdb_db->db_path,
-				      ctdb->tunable.database_hash_size, 
-				      tdb_flags, 
+				      ctdb->tunable.database_hash_size,
+				      tdb_flags,
 				      O_CREAT|O_RDWR, mode);
 	if (ctdb_db->ltdb == NULL) {
 		struct stat st;
@@ -945,7 +945,7 @@ again:
 	tdb_add_flags(ctdb_db->ltdb->tdb, tdb_flags);
 
 
-	/* set up a rb tree we can use to track which records we have a 
+	/* set up a rb tree we can use to track which records we have a
 	   fetch-lock in-flight for so we can defer any additional calls
 	   for the same record.
 	 */
@@ -969,7 +969,7 @@ again:
 	/* setting this can help some high churn databases */
 	tdb_set_max_dead(ctdb_db->ltdb->tdb, ctdb->tunable.database_max_dead);
 
-	/* 
+	/*
 	   all databases support the "null" function. we need this in
 	   order to do forced migration of records
 	*/
@@ -980,7 +980,7 @@ again:
 		return -1;
 	}
 
-	/* 
+	/*
 	   all databases support the "fetch" function. we need this
 	   for efficient Samba3 ctdb fetch
 	*/
@@ -991,7 +991,7 @@ again:
 		return -1;
 	}
 
-	/* 
+	/*
 	   all databases support the "fetch_with_header" function. we need this
 	   for efficient readonly record fetches
 	*/
@@ -1080,7 +1080,7 @@ int ctdb_process_deferred_attach(struct ctdb_context *ctdb)
 {
 	struct ctdb_deferred_attach_context *da_ctx;
 
-	/* call it from the main event loop as soon as the current event 
+	/* call it from the main event loop as soon as the current event
 	   finishes.
 	 */
 	while ((da_ctx = ctdb->deferred_attach) != NULL) {
@@ -1325,7 +1325,7 @@ static int ctdb_attach_persistent(struct ctdb_context *ctdb,
 		size_t len = strlen(de->d_name);
 		uint32_t node;
 		int invalid_name = 0;
-		
+
 		s = talloc_strdup(ctdb, de->d_name);
 		if (s == NULL) {
 			closedir(d);
