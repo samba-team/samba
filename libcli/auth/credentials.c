@@ -181,7 +181,7 @@ static NTSTATUS netlogon_creds_init_hmac_sha256(struct netlogon_creds_Credential
 						const struct samr_Password *machine_password)
 {
 	gnutls_hmac_hd_t hmac_hnd = NULL;
-	uint8_t digest[gnutls_hash_get_len(GNUTLS_MAC_SHA256)];
+	uint8_t digest[gnutls_hmac_get_len(GNUTLS_MAC_SHA256)];
 	int rc;
 
 	ZERO_ARRAY(creds->session_key);
