@@ -1918,8 +1918,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                    dns_backend=None, dnspass=None,
                    serverrole=None, dom_for_fun_level=None,
                    am_rodc=False, lp=None, use_ntvfs=False,
-                   skip_sysvolacl=False, backend_store=None,
-                   backend_store_size=None):
+                   skip_sysvolacl=False):
     # create/adapt the group policy GUIDs
     # Default GUID for default policy are described at
     # "How Core Group Policy Works"
@@ -2364,9 +2363,7 @@ def provision(logger, session_info, smbconf=None,
                            dnspass=dnspass, serverrole=serverrole,
                            dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
                            lp=lp, use_ntvfs=use_ntvfs,
-                           skip_sysvolacl=skip_sysvolacl,
-                           backend_store=backend_store,
-                           backend_store_size=backend_store_size)
+                           skip_sysvolacl=skip_sysvolacl)
 
             if adprep_level is not None:
                 updates_allowed_overridden = False
