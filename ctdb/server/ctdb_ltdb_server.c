@@ -461,8 +461,8 @@ int ctdb_update_persistent_health(struct ctdb_context *ctdb,
 		}
 	} else if (old_reason && num_healthy_nodes == 0) {
 		/*
-		 * If the reason indicates ok, but there where no healthy nodes
-		 * available, that it means, we have not recovered valid content
+		 * If the reason indicates ok, but there were no healthy nodes
+		 * available, it means that we have not recovered valid content
 		 * of the db. So if there's an old reason, prefix it with
 		 * "NO-HEALTHY-NODES - "
 		 */
