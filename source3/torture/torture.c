@@ -10644,8 +10644,14 @@ static bool run_chain2(int dummy)
 	int flags = CLI_FULL_CONNECTION_FORCE_SMB1;
 
 	printf("starting chain2 test\n");
-	status = cli_start_connection(&cli1, lp_netbios_name(), host, NULL,
-				      port_to_use, SMB_SIGNING_DEFAULT, flags);
+	status = cli_start_connection(talloc_tos(),
+				      &cli1,
+				      lp_netbios_name(),
+				      host,
+				      NULL,
+				      port_to_use,
+				      SMB_SIGNING_DEFAULT,
+				      flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}

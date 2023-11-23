@@ -2961,7 +2961,8 @@ static NTSTATUS cli_start_connection_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_start_connection(struct cli_state **output_cli,
+NTSTATUS cli_start_connection(TALLOC_CTX *mem_ctx,
+			      struct cli_state **output_cli,
 			      const char *my_name,
 			      const char *dest_host,
 			      const struct sockaddr_storage *dest_ss, int port,
@@ -2971,7 +2972,7 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	ev = samba_tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(mem_ctx);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -2983,7 +2984,7 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = cli_start_connection_recv(req, NULL, output_cli);
+	status = cli_start_connection_recv(req, mem_ctx, output_cli);
 fail:
 	TALLOC_FREE(ev);
 	return status;

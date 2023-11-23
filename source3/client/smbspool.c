@@ -544,8 +544,14 @@ smb_complete_connection(struct cli_state **output_cli,
 	struct cli_credentials *creds = NULL;
 
 	/* Start the SMB connection */
-	nt_status = cli_start_connection(&cli, myname, server, NULL, port,
-					 SMB_SIGNING_DEFAULT, 0);
+	nt_status = cli_start_connection(talloc_tos(),
+					 &cli,
+					 myname,
+					 server,
+					 NULL,
+					 port,
+					 SMB_SIGNING_DEFAULT,
+					 0);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		fprintf(stderr, "ERROR: Connection failed: %s\n", nt_errstr(nt_status));
 		return nt_status;
