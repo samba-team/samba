@@ -371,7 +371,7 @@ NTSTATUS SMBsesskeygen_ntv2(const uint8_t kr[16],
 			      16,
 			      sess_key);
 	if (rc != 0) {
-		return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 
 #ifdef DEBUG_PASSWORD
