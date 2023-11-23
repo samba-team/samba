@@ -1660,12 +1660,11 @@ def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs, p
                     passdb=passdb)
 
 
-def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
+def setsysvolacl(samdb, sysvol, uid, gid, domainsid, dnsdomain,
                  domaindn, lp, use_ntvfs):
     """Set the ACL for the sysvol share and the subfolders
 
     :param samdb: An LDB object on the SAM db
-    :param netlogon: Physical path for the netlogon folder
     :param sysvol: Physical path for the sysvol folder
     :param uid: The UID of the "Administrator" user
     :param gid: The GID of the "Domain administrators" group
@@ -1979,7 +1978,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
         # Continue setting up sysvol for GPO. This appears to require being
         # outside a transaction.
         if not skip_sysvolacl:
-            setsysvolacl(samdb, paths.netlogon, paths.sysvol, paths.root_uid,
+            setsysvolacl(samdb, paths.sysvol, paths.root_uid,
                          paths.root_gid, names.domainsid, names.dnsdomain,
                          names.domaindn, lp, use_ntvfs)
         else:

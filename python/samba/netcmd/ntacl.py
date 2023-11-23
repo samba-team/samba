@@ -407,7 +407,6 @@ class cmd_ntacl_sysvolreset(Command):
         creds.set_kerberos_state(DONT_USE_KERBEROS)
         logger = self.get_logger()
 
-        netlogon = lp.get("path", "netlogon")
         sysvol = lp.get("path", "sysvol")
         try:
             samdb = SamDB(session_info=system_session(),
@@ -447,7 +446,7 @@ class cmd_ntacl_sysvolreset(Command):
             logger.warning("Please note that POSIX permissions have NOT been changed, only the stored NT ACL")
 
         try:
-            provision.setsysvolacl(samdb, netlogon, sysvol,
+            provision.setsysvolacl(samdb, sysvol,
                                    LA_uid, BA_gid, domain_sid,
                                    lp.get("realm").lower(), samdb.domain_dn(),
                                    lp, use_ntvfs=use_ntvfs)
