@@ -2159,7 +2159,7 @@ def provision(logger, session_info, smbconf=None,
               root=None, nobody=None, users=None, backup=None,
               sitename=None, serverrole=None, dom_for_fun_level=None,
               useeadb=False, am_rodc=False, lp=None, use_ntvfs=False,
-              use_rfc2307=False, maxuid=None, maxgid=None, skip_sysvolacl=True,
+              use_rfc2307=False, skip_sysvolacl=True,
               base_schema="2019", adprep_level=DS_DOMAIN_FUNCTION_2016,
               plaintext_secrets=False, backend_store=None,
               backend_store_size=None, batch_mode=False):
