@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    DATA BLOB
 
@@ -9,18 +9,18 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* This is a public header file that is installed as part of Samba. 
- * If you remove any functions or change their signature, update 
+/* This is a public header file that is installed as part of Samba.
+ * If you remove any functions or change their signature, update
  * the so version number. */
 
 #ifndef _SAMBA_DATABLOB_H_
@@ -60,7 +60,7 @@ _PUBLIC_ DATA_BLOB data_blob_named(const void *p, size_t length, const char *nam
 _PUBLIC_ DATA_BLOB data_blob_talloc_named(TALLOC_CTX *mem_ctx, const void *p, size_t length, const char *name);
 
 /**
- construct a zero data blob, using supplied TALLOC_CTX. 
+ construct a zero data blob, using supplied TALLOC_CTX.
  use this sparingly as it initialises data - better to initialise
  yourself if you want specific data in the blob
 **/
@@ -117,7 +117,7 @@ _PUBLIC_ DATA_BLOB data_blob_string_const(const char *str);
 _PUBLIC_ DATA_BLOB data_blob_string_const_null(const char *str);
 
 /**
- * Create a new data blob from const data 
+ * Create a new data blob from const data
  */
 _PUBLIC_ DATA_BLOB data_blob_const(const void *p, size_t length);
 
