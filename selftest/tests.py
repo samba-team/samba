@@ -494,3 +494,5 @@ plantestsuite("samba.unittests.sddl_conditional_ace", "none",
               [os.path.join(bindir(), "test_sddl_conditional_ace")])
 plantestsuite("samba.unittests.run_conditional_ace", "none",
               [os.path.join(bindir(), "test_run_conditional_ace")])
+plantestsuite("samba.unittests.claim_conversion", "none",
+              [os.path.join(bindir(), "test_claim_conversion")])

@@ -46,3 +46,18 @@ bld.SAMBA_BINARY(
     ''',
     for_selftest=True
 )
+
+bld.SAMBA_BINARY(
+    'test_claim_conversion',
+    source='tests/test_claim_conversion.c',
+    deps='''
+        cmocka
+        talloc
+        samba-util
+        asn1util
+        NDR_SECURITY
+        NDR_CLAIMS
+        samba-security
+    ''',
+    for_selftest=True
+)
