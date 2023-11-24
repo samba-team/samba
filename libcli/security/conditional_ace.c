@@ -1960,6 +1960,10 @@ static bool contains_operator(const struct ace_condition_token *lhs,
 	 *
 	 * Both the lhs or rhs can be solitary objects or composites.
 	 * This makes it a bit fiddlier.
+	 *
+	 * NOTE: this operator does not take advantage of the
+	 * CLAIM_SECURITY_ATTRIBUTE_UNIQUE_AND_SORTED flag. It could, but it
+	 * doesn't.
 	 */
 	if (lhs->type == CONDITIONAL_ACE_TOKEN_COMPOSITE) {
 		struct ace_condition_composite candidates = lhs->data.composite;
