@@ -233,6 +233,16 @@ void smbprofile_dump(void)
 
 	pid = tevent_cached_getpid();
 
+	ret = tdb_chainlock(smbprofile_state.internal.db->tdb, key);
+	if (ret != 0) {
+		return;
+	}
+
+	tdb_parse_record(smbprofile_state.internal.db->tdb,
+			 key, profile_stats_parser, &s);
+
+	smbprofile_stats_accumulate(profile_p, &s);
+
 #ifdef HAVE_GETRUSAGE
 	ret = getrusage(RUSAGE_SELF, &rself);
 	if (ret != 0) {
@@ -246,16 +256,6 @@ void smbprofile_dump(void)
 		(rself.ru_stime.tv_sec * 1000000) +
 		rself.ru_stime.tv_usec;
 #endif /* HAVE_GETRUSAGE */
-
-	ret = tdb_chainlock(smbprofile_state.internal.db->tdb, key);
-	if (ret != 0) {
-		return;
-	}
-
-	tdb_parse_record(smbprofile_state.internal.db->tdb,
-			 key, profile_stats_parser, &s);
-
-	smbprofile_stats_accumulate(profile_p, &s);
 
 	tdb_store(smbprofile_state.internal.db->tdb, key,
 		  (TDB_DATA) {
