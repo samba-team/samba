@@ -4080,6 +4080,17 @@ static int control_addip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
+	/*
+	 * CTDB_CONTROL_ADD_PUBLIC_IP will implicitly trigger
+	 * CTDB_SRVID_TAKEOVER_RUN broadcast to all connected nodes.
+	 *
+	 * That means CTDB_{CONTROL,EVENT,SRVID}_IPREALLOCATED is
+	 * triggered at the end of the takeover run...
+	 *
+	 * So we don't need to call ipreallocate() nor
+	 * send_ipreallocated_control_to_nodes() here...
+	 */
+
 	return 0;
 }
 
@@ -4134,6 +4145,21 @@ static int control_delip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			ctdb->cmd_pnn);
 		return ret;
 	}
+
+	/*
+	 * CTDB_CONTROL_DEL_PUBLIC_IP only marks the public ip
+	 * with pending_delete if it's still in use.
+	 *
+	 * Any later takeover run will really move the public ip
+	 * away from the local node and finally removes it.
+	 *
+	 * That means CTDB_{CONTROL,EVENT,SRVID}_IPREALLOCATED is
+	 * triggered at the end of the takeover run that actually
+	 * moves the public ip away.
+	 *
+	 * So we don't need to call ipreallocate() nor
+	 * send_ipreallocated_control_to_nodes() here...
+	 */
 
 	return 0;
 }
