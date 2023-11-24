@@ -837,7 +837,7 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 			{
 				const struct CLAIM_STRING *values = &claim_entry->values.claim_string;
 				uint32_t k, m;
-
+				bool seen_empty = false;
 				n_values = values->value_count;
 				value_type = CLAIM_SECURITY_ATTRIBUTE_TYPE_STRING;
 
@@ -861,6 +861,21 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 						}
 						claim_values[m].string_value = string_value;
 						m++;
+					} else {
+						/*
+						 * We allow one NULL string
+						 * per claim, but not two,
+						 * because two would be a
+						 * duplicate, and we don't
+						 * want those (duplicates in
+						 * actual values are checked
+						 * later).
+						 */
+						if (seen_empty) {
+							talloc_free(claims);
+							return NT_STATUS_INVALID_PARAMETER;
+						}
+						seen_empty = true;
 					}
 				}
 				n_values = m;
