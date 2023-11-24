@@ -75,7 +75,7 @@ class ClaimsSupportTests(BlackboxTestCase):
         self.addCleanup(self.run_command, "group delete allowed-devices")
 
         # Set allowed to authenticate from.
-        self.check_run(f"domain auth policy modify --name=device-restricted-users-pol "
+        self.check_run("domain auth policy modify --name=device-restricted-users-pol "
                        "--user-allowed-to-authenticate-from-device-group=allowed-devices")
 
         self.check_run("user auth policy assign claimstestuser --policy=device-restricted-users-pol")
@@ -144,7 +144,7 @@ class ClaimsSupportTests(BlackboxTestCase):
         # Set allowed to authenticate from (where the login can happen) and to
         # (server requires silo that in term has this rule, so knows the user
         # was required to authenticate from).
-        self.check_run(f"domain auth policy modify --name=allowed-devices-only-pol "
+        self.check_run("domain auth policy modify --name=allowed-devices-only-pol "
                        "--user-allowed-to-authenticate-from-device-silo=allowed-devices-only-silo")
 
         # Grant access to silo.
@@ -244,7 +244,7 @@ class ClaimsSupportTests(BlackboxTestCase):
         # --service-allowed-to-authenticate-to/from options as well.
         # Likewise, if there are services running in user accounts, we need
         # --user-allowed-to-authenticate-to
-        self.check_run(f"domain auth policy modify --name=allowed-devices-only-pol "
+        self.check_run("domain auth policy modify --name=allowed-devices-only-pol "
                        "--user-allowed-to-authenticate-from-device-silo=allowed-devices-only-silo "
                        "--computer-allowed-to-authenticate-to-by-silo=allowed-devices-only-silo")
 
@@ -350,7 +350,7 @@ class ClaimsSupportTests(BlackboxTestCase):
         self.addCleanup(self.run_command, "group delete server-access-group")
 
         # Set allowed to authenticate to.
-        self.check_run(f"domain auth policy modify --name=restricted-servers-pol "
+        self.check_run("domain auth policy modify --name=restricted-servers-pol "
                        "--computer-allowed-to-authenticate-to-by-group=server-access-group")
 
         self.check_run(r"user auth policy assign claims-server\$ --policy=restricted-servers-pol")

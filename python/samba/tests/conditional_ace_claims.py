@@ -695,27 +695,27 @@ class ConditionalAceLargeComposites(ConditionalAceClaimsBase):
             "9-orderly-strings-claim-vs-itself",
             True,
             {'user_claims': {"c": claim_str_range(9)}},
-            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.c))')
+            ('D:(XA;;FA;;;WD;(@USER.c == @USER.c))')
         ),
         (
             "300-orderly-strings-claim-vs-itself",
             True,
             {'user_claims': {"c": claim_str_range(300)}},
-            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.c))')
+            ('D:(XA;;FA;;;WD;(@USER.c == @USER.c))')
         ),
         (
             "900-disorderly-strings-claim-vs-claim",
             True,
             {'user_claims': {"c": claim_str_range(900, random_seed=1),
                              "d": claim_str_range(900, random_seed=1)}},
-            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
+            ('D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
         ),
         (
             "9-orderly-strings-claim-mixed-case-vs-claim-case-sensitive",
             False,
             {'user_claims': {"c": claim_str_range(9, mix_case=True),
                              "d": claim_str_range(9, case_sensitive=True)}},
-            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
+            ('D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
         ),
         (
             "9-disorderly-strings-claim-vs-claim-case-sensitive-mixed-case",
@@ -724,7 +724,7 @@ class ConditionalAceLargeComposites(ConditionalAceClaimsBase):
                              "d": claim_str_range(9,
                                                   mix_case=True,
                                                   case_sensitive=True)}},
-            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
+            ('D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
         ),
         (
             "9-disorderly-strings-claim-vs-claim-case-sensitive-both-mixed-case",
@@ -735,7 +735,7 @@ class ConditionalAceLargeComposites(ConditionalAceClaimsBase):
                              "d": claim_str_range(9,
                                                   mix_case=True,
                                                   case_sensitive=True)}},
-            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
+            ('D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
         ),
         (
             "9-disorderly-strings-claim-vs-claim-case-sensitive-ne",
@@ -744,7 +744,7 @@ class ConditionalAceLargeComposites(ConditionalAceClaimsBase):
                              "d": claim_str_range(9,
                                                   mix_case=True,
                                                   case_sensitive=True)}},
-            (f'D:(XA;;FA;;;WD;(@USER.c != @USER.d))')
+            ('D:(XA;;FA;;;WD;(@USER.c != @USER.d))')
         ),
 
         (
@@ -757,7 +757,7 @@ class ConditionalAceLargeComposites(ConditionalAceClaimsBase):
                                                   mix_case=True,
                                                   random_seed=3,
                                                   case_sensitive=True)}},
-            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
+            ('D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
         ),
         (
             "90-disorderly-strings-claim-vs-int-claim",
@@ -766,7 +766,7 @@ class ConditionalAceLargeComposites(ConditionalAceClaimsBase):
                                                   random_seed=2),
                              "d": claim_int_range(90,
                                                   random_seed=3)}},
-            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
+            ('D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
         ),
         (
             "90-disorderly-ints-claim-vs-string-claim",
@@ -775,7 +775,7 @@ class ConditionalAceLargeComposites(ConditionalAceClaimsBase):
                                                   random_seed=2),
                              "d": claim_str_range(90,
                                                   random_seed=3)}},
-            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
+            ('D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
         ),
         (
             "9-disorderly-strings-vs-9+90-dupes",
@@ -832,14 +832,14 @@ class ConditionalAceLargeComposites(ConditionalAceClaimsBase):
             False,
             {'user_claims': {"c": claim_str_range(90,
                                                   random_seed=2)}},
-            (f'D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
+            ('D:(XA;;FA;;;WD;(@USER.c == @USER.d))')
         ),
         (
             "missing-claim-vs-90-disorderly-strings",
             False,
             {'user_claims': {"c": claim_str_range(90,
                                                   random_seed=2)}},
-            (f'D:(XA;;FA;;;WD;(@USER.z == @USER.c))')
+            ('D:(XA;;FA;;;WD;(@USER.z == @USER.c))')
         ),
 
         (
