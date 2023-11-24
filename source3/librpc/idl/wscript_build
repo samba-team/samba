@@ -10,7 +10,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                        smbXsrv.idl
                        leases_db.idl
                     ''',
-                    options='--includedir=%s --header --ndr-parser' % topinclude,
+                    options='--includedir=%s --header --ndr-parser --client --python' % topinclude,
                     output_dir='../gen_ndr')
 
 bld.SAMBA_PIDL_LIST('PIDL',

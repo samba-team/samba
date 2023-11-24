@@ -533,6 +533,18 @@ bld.SAMBA_PYTHON('python_mdssvc',
         cflags_end=gen_cflags
         )
 
+bld.SAMBA_SUBSYSTEM('RPC_NDR_SMBXSRV',
+    source='../../source3/librpc/gen_ndr/ndr_smbXsrv_c.c',
+    public_deps='dcerpc-binding NDR_SMBXSRV'
+    )
+
+bld.SAMBA_PYTHON('python_smbXsrv',
+        source='../../source3/librpc/gen_ndr/py_smbXsrv.c',
+        deps='RPC_NDR_SMBXSRV %s %s' % (pytalloc_util, pyrpc_util),
+        realname='samba/dcerpc/smbXsrv.so',
+        cflags_end=gen_cflags
+        )
+
 if bld.PYTHON_BUILD_IS_ENABLED():
     bld.SAMBA_SCRIPT('python_dcerpc_init',
 		    pattern='rpc/dcerpc.py',
