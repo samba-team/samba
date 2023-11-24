@@ -174,24 +174,3 @@ int ctdb_message_disable_recoveries(TALLOC_CTX *mem_ctx,
 
 	return ret;
 }
-
-int ctdb_message_disable_ip_check(TALLOC_CTX *mem_ctx,
-				  struct tevent_context *ev,
-				  struct ctdb_client_context *client,
-				  int destnode, uint32_t timeout)
-{
-	struct ctdb_req_message message;
-	int ret;
-
-	message.srvid = CTDB_SRVID_DISABLE_IP_CHECK;
-	message.data.timeout = timeout;
-
-	ret = ctdb_client_message(mem_ctx, ev, client, destnode, &message);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Message DISABLE_IP_CHECK failed to node %u\n",
-		       destnode));
-	}
-
-	return ret;
-}
