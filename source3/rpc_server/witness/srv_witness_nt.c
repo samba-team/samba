@@ -39,6 +39,7 @@
 #include "librpc/gen_ndr/auth.h"
 #include "librpc/gen_ndr/ndr_witness.h"
 #include "librpc/gen_ndr/ndr_witness_scompat.h"
+#include "librpc/gen_ndr/ndr_rpcd_witness.h"
 #include "rpc_server/rpc_server.h"
 
 #define SWN_SERVICE_CONTEXT_HANDLE_REGISTRATION 0x01
@@ -63,6 +64,7 @@ struct swn_service_globals {
 	struct {
 		uint32_t unused_timeout_secs;
 		struct swn_service_registration *list;
+		struct db_context *db;
 	} registrations;
 };
 
@@ -161,10 +163,25 @@ static void swn_service_async_notify_reg_destroyed(struct swn_service_async_noti
 static int swn_service_registration_destructor(struct swn_service_registration *reg)
 {
 	struct swn_service_globals *swn = reg->swn;
+	struct GUID_txt_buf key_buf;
+	const char *key_str = GUID_buf_string(&reg->key.handle.uuid, &key_buf);
+	DATA_BLOB key_blob = data_blob_string_const(key_str);
+	TDB_DATA key = make_tdb_data(key_blob.data, key_blob.length);
+	NTSTATUS status;
 
 	tevent_queue_stop(reg->async_notify.queue);
 	while (reg->async_notify.list != NULL) {
 		swn_service_async_notify_reg_destroyed(reg->async_notify.list);
+	}
+
+	status = dbwrap_delete(reg->swn->registrations.db, key);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("rpcd_witness_registration: key '%s' delete - %s\n",
+			    tdb_data_dbg(key),
+			    nt_errstr(status));
+	} else if (DEBUGLVL(DBGLVL_DEBUG)) {
+		DBG_DEBUG("rpcd_witness_registration: key '%s' deleted\n",
+			  tdb_data_dbg(key));
 	}
 
 	DLIST_REMOVE(swn->registrations.list, reg);
@@ -261,6 +278,7 @@ static int swn_service_ctdb_ipreallocated(struct tevent_context *ev,
 static NTSTATUS swn_service_init_globals(struct dcesrv_context *dce_ctx)
 {
 	struct swn_service_globals *swn = NULL;
+	char *global_path = NULL;
 	const char *realm = NULL;
 	const char *nbname = NULL;
 	int ret;
@@ -282,6 +300,33 @@ static NTSTATUS swn_service_init_globals(struct dcesrv_context *dce_ctx)
 		TALLOC_FREE(swn);
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	/*
+	 * This contains secret information like client keys!
+	 */
+	global_path = lock_path(swn, "rpcd_witness_registration.tdb");
+	if (global_path == NULL) {
+		TALLOC_FREE(swn);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	swn->registrations.db = db_open(swn, global_path,
+					0, /* hash_size */
+					TDB_DEFAULT |
+					TDB_CLEAR_IF_FIRST |
+					TDB_INCOMPATIBLE_HASH,
+					O_RDWR | O_CREAT, 0600,
+					DBWRAP_LOCK_ORDER_1,
+					DBWRAP_FLAG_NONE);
+	if (swn->registrations.db == NULL) {
+		NTSTATUS status;
+
+		status = map_nt_error_from_unix_common(errno);
+		TALLOC_FREE(swn);
+
+		return status;
+	}
+	TALLOC_FREE(global_path);
 
 	nbname = lpcfg_netbios_name(dce_ctx->lp_ctx);
 	realm = lpcfg_realm(dce_ctx->lp_ctx);
@@ -928,6 +973,21 @@ static WERROR swn_server_registration_create(struct swn_service_globals *swn,
 					     struct swn_service_registration **preg)
 {
 	struct swn_service_registration *reg = NULL;
+	const struct tsocket_address *client_address =
+		dcesrv_connection_get_remote_address(p->dce_call->conn);
+	const struct tsocket_address *server_address =
+		dcesrv_connection_get_local_address(p->dce_call->conn);
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(p->dce_call);
+	struct rpcd_witness_registration rg = { .version = 0, };
+	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+	struct GUID_txt_buf key_buf = {};
+	const char *key_str = NULL;
+	DATA_BLOB key_blob = { .length = 0, };
+	TDB_DATA key = { .dsize = 0, };
+	DATA_BLOB val_blob = { .length = 0, };
+	TDB_DATA val = { .dsize = 0, };
 
 	/*
 	 * [MS-SWN] 3.1.4.5
@@ -1008,6 +1068,55 @@ static WERROR swn_server_registration_create(struct swn_service_globals *swn,
 
 	DLIST_ADD_END(swn_globals->registrations.list, reg);
 	talloc_set_destructor(reg, swn_service_registration_destructor);
+
+	key_str = GUID_buf_string(&reg->key.handle.uuid, &key_buf);
+	key_blob = data_blob_string_const(key_str);
+	key = make_tdb_data(key_blob.data, key_blob.length);
+
+	rg = (struct rpcd_witness_registration) {
+		.version = r->in.version,
+		.net_name = r->in.net_name,
+		.share_name = r->in.share_name,
+		.ip_address = r->in.ip_address,
+		.client_computer_name = reg->client.computer_name,
+		.flags = r->in.flags,
+		.timeout = r->in.timeout,
+		.context_handle = reg->key.handle,
+		.server_id = messaging_server_id(p->msg_ctx),
+		.account_name = session_info->info->account_name,
+		.domain_name = session_info->info->domain_name,
+		.account_sid = session_info->security_token->sids[PRIMARY_USER_SID_INDEX],
+		.local_address = tsocket_address_string(server_address, p->mem_ctx),
+		.remote_address = tsocket_address_string(client_address, p->mem_ctx),
+		.registration_time = timeval_to_nttime(&p->dce_call->time),
+	};
+
+	ndr_err = ndr_push_struct_blob(&val_blob, p->mem_ctx, &rg,
+			(ndr_push_flags_fn_t)ndr_push_rpcd_witness_registration);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DBG_WARNING("rpcd_witness_registration: key '%s' ndr_push - %s\n",
+			 tdb_data_dbg(key),
+			 nt_errstr(status));
+		TALLOC_FREE(reg);
+		return WERR_NO_SYSTEM_RESOURCES;
+	}
+	val = make_tdb_data(val_blob.data, val_blob.length);
+
+	status = dbwrap_store(reg->swn->registrations.db, key, val, TDB_INSERT);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("rpcd_witness_registration: key '%s' store - %s\n",
+			 tdb_data_dbg(key),
+			 nt_errstr(status));
+		TALLOC_FREE(reg);
+		return WERR_NO_SYSTEM_RESOURCES;
+	}
+
+	if (DEBUGLVL(DBGLVL_DEBUG)) {
+		DBG_DEBUG("rpcd_witness_registration: key '%s' stored\n",
+			  tdb_data_dbg(key));
+		NDR_PRINT_DEBUG(rpcd_witness_registration, &rg);
+	}
 
 	*preg = reg;
 	return WERR_OK;
