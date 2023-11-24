@@ -3461,6 +3461,12 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		access_mask |= FILE_APPEND_DATA;
 	}
 	if (wire_open_mode & SMB_O_DIRECT) {
+		/*
+		 * BUG: this doesn't work anymore since
+		 * e0814dc5082dd4ecca8a155e0ce24b073158fd92. But since
+		 * FILE_FLAG_NO_BUFFERING isn't used at all in the IO codepath,
+		 * it doesn't really matter.
+		 */
 		attributes |= FILE_FLAG_NO_BUFFERING;
 	}
 
