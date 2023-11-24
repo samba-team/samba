@@ -876,6 +876,22 @@ static bool sddl_write_octet_string(struct sddl_write_context *ctx,
 	return ok;
 }
 
+/*
+ * For octet strings, the Resource attribute ACE SDDL differs from conditional
+ * ACE SDDL, lacking the leading '#'.
+ */
+static bool sddl_write_ra_octet_string(struct sddl_write_context *ctx,
+				       const struct ace_condition_token *tok)
+{
+	bool ok;
+	char *hex  = hex_encode_talloc(ctx->mem_ctx,
+				       tok->data.bytes.data,
+				       tok->data.bytes.length);
+	ok = sddl_write(ctx, hex);
+	talloc_free(hex);
+	return ok;
+}
+
 
 static bool sddl_write_sid(struct sddl_write_context *ctx,
 			   struct ace_condition_token *tok)
@@ -3286,7 +3302,7 @@ static bool write_resource_attr_from_token(struct sddl_write_context *ctx,
 		return sddl_write(ctx, sid);
 
 	case CONDITIONAL_ACE_TOKEN_OCTET_STRING:
-		return sddl_write_octet_string(ctx, tok);
+		return sddl_write_ra_octet_string(ctx, tok);
 
 	case CONDITIONAL_ACE_TOKEN_COMPOSITE:
 		/*
