@@ -520,8 +520,6 @@ class ClaimsSupportTests(BlackboxTestCase):
                 server_finished, server_to_client = gensec_target.update(
                     client_to_server)
 
-        print("Got ticket to server we were set not to get a ticket to, and decrypted it")
-
 
 if __name__ == "__main__":
     import unittest
