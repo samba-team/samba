@@ -13,7 +13,7 @@ import "misc.idl";
 ]
 interface witness
 {
-	typedef [v1_enum] enum {
+	typedef [v1_enum,public] enum {
 		WITNESS_V1 = 0x00010001,
 		WITNESS_V2 = 0x00020000,
 		WITNESS_UNSPECIFIED_VERSION = 0xFFFFFFFF
@@ -135,7 +135,7 @@ interface witness
 	/*****************/
 	/* Function 0x04 */
 
-	typedef [bitmap32bit] bitmap {
+	typedef [bitmap32bit,public] bitmap {
 		WITNESS_REGISTER_NONE            = 0x00,
 		WITNESS_REGISTER_IP_NOTIFICATION = 0x01
 	} witness_RegisterEx_flags;
