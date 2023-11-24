@@ -87,6 +87,10 @@ static int disable_takeover_runs(TALLOC_CTX *mem_ctx,
 				 uint32_t timeout,
 				 uint32_t *pnn_list,
 				 int count);
+static int send_ipreallocated_control_to_nodes(TALLOC_CTX *mem_ctx,
+					       struct ctdb_context *ctdb,
+					       uint32_t *pnn_list,
+					       int count);
 
 /*
  * Utility Functions
@@ -3947,7 +3951,10 @@ static int moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	return 0;
+	return send_ipreallocated_control_to_nodes(mem_ctx,
+						   ctdb,
+						   connected_pnn,
+						   connected_count);
 }
 
 static int control_moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
@@ -5955,6 +5962,32 @@ fail:
 	ctdb_client_remove_message_handler(ctdb->ev, ctdb->client,
 					   disable.srvid, &state);
 	return ret;
+}
+
+static int send_ipreallocated_control_to_nodes(TALLOC_CTX *mem_ctx,
+					       struct ctdb_context *ctdb,
+					       uint32_t *pnn_list,
+					       int count)
+{
+	struct ctdb_req_control request;
+	int ret;
+
+	ctdb_req_control_ipreallocated(&request);
+	ret = ctdb_client_control_multi(mem_ctx,
+					ctdb->ev,
+					ctdb->client,
+					pnn_list,
+					count,
+					TIMEOUT(),
+					&request,
+					NULL,  /* perr_list */
+					NULL); /* preply */
+	if (ret != 0) {
+		fprintf(stderr, "Failed to send ipreallocated\n");
+		return ret;
+	}
+
+	return 0;
 }
 
 static int control_reloadips(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
