@@ -176,7 +176,7 @@ class SDDLvsDescriptorOverSizeAcls(SDDLvsDescriptorBase):
     an ACL (namely, it assumes an ACL will be just big enough for its
     ACEs), these cannot currently be parsed by Samba.
     """
-    json_file = TEST_DIR / 'oversize-acls.json.gz'
+    json_file = TEST_DIR / 'oversize-acls.json'
 
 
 @DynamicTestCase
