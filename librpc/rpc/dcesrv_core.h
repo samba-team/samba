@@ -158,6 +158,18 @@ struct dcesrv_call_state {
 	struct dcerpc_auth in_auth_info;
 	struct dcerpc_auth _out_auth_info;
 	struct dcerpc_auth *out_auth_info;
+
+	/*
+	 * Optional subreq for pending calls,
+	 * will be used to call tevent_req_cancel()
+	 * if the connection terminates,
+	 * we got an ORPHANED PDU
+	 * or got a CO_CANCEL PDU
+	 */
+	bool got_disconnect;
+	bool got_orphaned;
+	bool got_co_cancel;
+	struct tevent_req *subreq;
 };
 
 /*

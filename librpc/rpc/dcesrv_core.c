@@ -166,6 +166,24 @@ static struct dcesrv_call_state *dcesrv_find_fragmented_call(struct dcesrv_conne
 }
 
 /*
+  find a pending request
+*/
+static struct dcesrv_call_state *dcesrv_find_pending_call(
+					struct dcesrv_connection *dce_conn,
+					uint32_t call_id)
+{
+	struct dcesrv_call_state *c = NULL;
+
+	for (c = dce_conn->pending_call_list; c != NULL; c = c->next) {
+		if (c->pkt.call_id == call_id) {
+			return c;
+		}
+	}
+
+	return NULL;
+}
+
+/*
  * register a principal for an auth_type
  *
  * In order to get used in dcesrv_mgmt_inq_princ_name()
@@ -2508,11 +2526,68 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 		status = dcesrv_request(call);
 		break;
 	case DCERPC_PKT_CO_CANCEL:
+		existing = dcesrv_find_fragmented_call(dce_conn,
+						       call->pkt.call_id);
+		if (existing != NULL) {
+			/*
+			 * If the call is still waiting for
+			 * more fragments, it's not pending yet,
+			 * for now we just remember we got CO_CANCEL,
+			 * but ignore it otherwise.
+			 *
+			 * This matches what windows is doing...
+			 */
+			existing->got_co_cancel = true;
+			SMB_ASSERT(existing->subreq == NULL);
+			existing = NULL;
+		}
+		existing = dcesrv_find_pending_call(dce_conn,
+						    call->pkt.call_id);
+		if (existing != NULL) {
+			/*
+			 * Give the backend a chance to react
+			 * on CO_CANCEL, but note it's ignored
+			 * by default.
+			 */
+			existing->got_co_cancel = true;
+			if (existing->subreq != NULL) {
+				tevent_req_cancel(existing->subreq);
+			}
+			existing = NULL;
+		}
+		status = NT_STATUS_OK;
+		TALLOC_FREE(call);
+		break;
 	case DCERPC_PKT_ORPHANED:
-		/*
-		 * Window just ignores CO_CANCEL and ORPHANED,
-		 * so we do...
-		 */
+		existing = dcesrv_find_fragmented_call(dce_conn,
+						       call->pkt.call_id);
+		if (existing != NULL) {
+			/*
+			 * If the call is still waiting for
+			 * more fragments, it's not pending yet,
+			 * for now we just remember we got ORPHANED,
+			 * but ignore it otherwise.
+			 *
+			 * This matches what windows is doing...
+			 */
+			existing->got_orphaned = true;
+			SMB_ASSERT(existing->subreq == NULL);
+			existing = NULL;
+		}
+		existing = dcesrv_find_pending_call(dce_conn,
+						    call->pkt.call_id);
+		if (existing != NULL) {
+			/*
+			 * Give the backend a chance to react
+			 * on ORPHANED, but note it's ignored
+			 * by default.
+			 */
+			existing->got_orphaned = true;
+			if (existing->subreq != NULL) {
+				tevent_req_cancel(existing->subreq);
+			}
+			existing = NULL;
+		}
 		status = NT_STATUS_OK;
 		TALLOC_FREE(call);
 		break;
@@ -2796,6 +2871,7 @@ const struct dcesrv_critical_sizes *dcerpc_module_version(void)
 _PUBLIC_ void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, const char *reason)
 {
 	struct dcesrv_context *dce_ctx = dce_conn->dce_ctx;
+	struct dcesrv_call_state *c = NULL, *n = NULL;
 	struct dcesrv_auth *a = NULL;
 
 	dce_conn->wait_send = NULL;
@@ -2811,6 +2887,7 @@ _PUBLIC_ void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, co
 		a->auth_invalid = true;
 	}
 
+no_pending:
 	if (dce_conn->pending_call_list == NULL) {
 		char *full_reason = talloc_asprintf(dce_conn, "dcesrv: %s", reason);
 
@@ -2831,6 +2908,23 @@ _PUBLIC_ void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, co
 		dce_conn->terminate = "dcesrv: deferred terminating connection - no memory";
 	}
 	DLIST_ADD_END(dce_ctx->broken_connections, dce_conn);
+
+	for (c = dce_conn->pending_call_list; c != NULL; c = n) {
+		n = c->next;
+
+		c->got_disconnect = true;
+		if (c->subreq != NULL) {
+			tevent_req_cancel(c->subreq);
+		}
+	}
+
+	if (dce_conn->pending_call_list == NULL) {
+		/*
+		 * tevent_req_cancel() was able to made progress
+		 * and we don't have pending calls anymore.
+		 */
+		goto no_pending;
+	}
 }
 
 _PUBLIC_ void dcesrv_cleanup_broken_connections(struct dcesrv_context *dce_ctx)
