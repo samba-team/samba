@@ -229,9 +229,6 @@ void register_msg_pool_usage(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from lib/time.c  */
 
-void push_dos_date(uint8_t *buf, int offset, time_t unixdate, int zone_offset);
-void push_dos_date2(uint8_t *buf,int offset,time_t unixdate, int zone_offset);
-void push_dos_date3(uint8_t *buf,int offset,time_t unixdate, int zone_offset);
 uint32_t convert_time_t_to_uint32_t(time_t t);
 time_t convert_uint32_t_to_time_t(uint32_t u);
 bool nt_time_is_zero(const NTTIME *nt);
