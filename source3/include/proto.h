@@ -238,7 +238,6 @@ int set_server_zone_offset(time_t t);
 char *timeval_string(TALLOC_CTX *ctx, const struct timeval *tp, bool hires);
 char *current_timestring(TALLOC_CTX *ctx, bool hires);
 void srv_put_dos_date(char *buf,int offset,time_t unixdate);
-void srv_put_dos_date2(char *buf,int offset, time_t unixdate);
 void srv_put_dos_date2_ts(char *buf, int offset, struct timespec unix_ts);
 void srv_put_dos_date3(char *buf,int offset,time_t unixdate);
 void round_timespec(enum timestamp_set_resolution res, struct timespec *ts);
