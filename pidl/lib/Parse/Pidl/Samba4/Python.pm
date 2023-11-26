@@ -2082,11 +2082,11 @@ sub ConvertScalarToPython($$$$)
 	# possibly 64 bit unsigned long.  (enums are signed in C,
 	# unsigned in NDR)
 	if ($ctypename =~ /^(uint32|uint3264)$/) {
-		return "PyLong_FromUnsignedLongLong((uint32_t)$cvar)";
+		return "PyLong_FromUnsignedLongLong((uint32_t)($cvar))";
 	}
 
 	if ($ctypename =~ /^(uint|uint8|uint16|uint1632)$/) {
-		return "PyLong_FromLong((uint16_t)$cvar)";
+		return "PyLong_FromLong((uint16_t)($cvar))";
 	}
 
 	if ($ctypename eq "DATA_BLOB") {
