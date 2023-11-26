@@ -6022,7 +6022,10 @@ void reply_printqueue(struct smb_request *req)
 		for (i = first; i < num_to_get; i++) {
 			char blob[28];
 			char *p = blob;
-			time_t qtime = spoolss_Time_to_time_t(&info[i].info2.submitted);
+			struct timespec qtime = {
+				.tv_sec = spoolss_Time_to_time_t(
+					&info[i].info2.submitted),
+			};
 			int qstatus;
 			size_t len = 0;
 			uint16_t qrapjobid = pjobid_to_rap(sharename,
@@ -6034,7 +6037,7 @@ void reply_printqueue(struct smb_request *req)
 				qstatus = 3;
 			}
 
-			srv_put_dos_date2(p, 0, qtime);
+			srv_put_dos_date2_ts(p, 0, qtime);
 			SCVAL(p, 4, qstatus);
 			SSVAL(p, 5, qrapjobid);
 			SIVAL(p, 7, info[i].info2.size);
