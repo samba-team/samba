@@ -1047,7 +1047,6 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	struct timespec adate_ts = {0};
 	struct timespec cdate_ts = {0};
 	struct timespec create_date_ts = {0};
-	time_t mdate = (time_t)0, adate = (time_t)0, create_date = (time_t)0;
 	char *nameptr;
 	char *last_entry_ptr;
 	bool was_8_3;
@@ -1093,10 +1092,6 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		dos_filetime_timespec(&cdate_ts);
 	}
 
-	create_date = convert_timespec_to_time_t(create_date_ts);
-	mdate = convert_timespec_to_time_t(mdate_ts);
-	adate = convert_timespec_to_time_t(adate_ts);
-
 	/* align the record */
 	SMB_ASSERT(align >= 1);
 
@@ -1136,9 +1131,9 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 			SIVAL(p,0,reskey);
 			p += 4;
 		}
-		srv_put_dos_date2(p,0,create_date);
-		srv_put_dos_date2(p,4,adate);
-		srv_put_dos_date2(p,8,mdate);
+		srv_put_dos_date2_ts(p, 0, create_date_ts);
+		srv_put_dos_date2_ts(p, 4, adate_ts);
+		srv_put_dos_date2_ts(p, 8, mdate_ts);
 		SIVAL(p,12,(uint32_t)file_size);
 		SIVAL(p,16,(uint32_t)allocation_size);
 		SSVAL(p,20,mode);
@@ -1175,9 +1170,9 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 			SIVAL(p,0,reskey);
 			p += 4;
 		}
-		srv_put_dos_date2(p,0,create_date);
-		srv_put_dos_date2(p,4,adate);
-		srv_put_dos_date2(p,8,mdate);
+		srv_put_dos_date2_ts(p, 0, create_date_ts);
+		srv_put_dos_date2_ts(p, 4, adate_ts);
+		srv_put_dos_date2_ts(p, 8, mdate_ts);
 		SIVAL(p,12,(uint32_t)file_size);
 		SIVAL(p,16,(uint32_t)allocation_size);
 		SSVAL(p,20,mode);
@@ -1224,9 +1219,9 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 			SIVAL(p,0,reskey);
 			p += 4;
 		}
-		srv_put_dos_date2(p,0,create_date);
-		srv_put_dos_date2(p,4,adate);
-		srv_put_dos_date2(p,8,mdate);
+		srv_put_dos_date2_ts(p, 0, create_date_ts);
+		srv_put_dos_date2_ts(p, 4, adate_ts);
+		srv_put_dos_date2_ts(p, 8, mdate_ts);
 		SIVAL(p,12,(uint32_t)file_size);
 		SIVAL(p,16,(uint32_t)allocation_size);
 		SSVAL(p,20,mode);
@@ -2976,7 +2971,6 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	char *dstart, *dend;
 	unsigned int data_size;
 	struct timespec create_time_ts, mtime_ts, atime_ts, ctime_ts;
-	time_t create_time, mtime, atime, c_time;
 	SMB_STRUCT_STAT *psbuf = NULL;
 	SMB_STRUCT_STAT *base_sp = NULL;
 	char *p;
@@ -3076,11 +3070,6 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		dos_filetime_timespec(&ctime_ts);
 	}
 
-	create_time = convert_timespec_to_time_t(create_time_ts);
-	mtime = convert_timespec_to_time_t(mtime_ts);
-	atime = convert_timespec_to_time_t(atime_ts);
-	c_time = convert_timespec_to_time_t(ctime_ts);
-
 	p = strrchr_m(smb_fname->base_name,'/');
 	if (!p)
 		base_name = smb_fname->base_name;
@@ -3152,9 +3141,15 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		case SMB_INFO_STANDARD:
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_INFO_STANDARD\n"));
 			data_size = 22;
-			srv_put_dos_date2(pdata,l1_fdateCreation,create_time);
-			srv_put_dos_date2(pdata,l1_fdateLastAccess,atime);
-			srv_put_dos_date2(pdata,l1_fdateLastWrite,mtime); /* write time */
+			srv_put_dos_date2_ts(pdata,
+					     l1_fdateCreation,
+					     create_time_ts);
+			srv_put_dos_date2_ts(pdata,
+					     l1_fdateLastAccess,
+					     atime_ts);
+			srv_put_dos_date2_ts(pdata,
+					     l1_fdateLastWrite,
+					     mtime_ts); /* write time */
 			SIVAL(pdata,l1_cbFile,(uint32_t)file_size);
 			SIVAL(pdata,l1_cbFileAlloc,(uint32_t)allocation_size);
 			SSVAL(pdata,l1_attrFile,mode);
@@ -3166,9 +3161,11 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			    estimate_ea_size(smb_fname->fsp);
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_INFO_QUERY_EA_SIZE\n"));
 			data_size = 26;
-			srv_put_dos_date2(pdata,0,create_time);
-			srv_put_dos_date2(pdata,4,atime);
-			srv_put_dos_date2(pdata,8,mtime); /* write time */
+			srv_put_dos_date2_ts(pdata, 0, create_time_ts);
+			srv_put_dos_date2_ts(pdata, 4, atime_ts);
+			srv_put_dos_date2_ts(pdata,
+					     8,
+					     mtime_ts); /* write time */
 			SIVAL(pdata,12,(uint32_t)file_size);
 			SIVAL(pdata,16,(uint32_t)allocation_size);
 			SSVAL(pdata,20,mode);
@@ -3285,10 +3282,10 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			SIVAL(pdata,32,mode);
 
 			DEBUG(5,("SMB_QFBI - "));
-			DEBUG(5,("create: %s ", ctime(&create_time)));
-			DEBUG(5,("access: %s ", ctime(&atime)));
-			DEBUG(5,("write: %s ", ctime(&mtime)));
-			DEBUG(5,("change: %s ", ctime(&c_time)));
+			DEBUG(5,("create: %s ", ctime(&create_time_ts.tv_sec)));
+			DEBUG(5,("access: %s ", ctime(&atime_ts.tv_sec)));
+			DEBUG(5,("write: %s ", ctime(&mtime_ts.tv_sec)));
+			DEBUG(5,("change: %s ", ctime(&ctime_ts.tv_sec)));
 			DEBUG(5,("mode: %x\n", mode));
 			*fixed_portion = data_size;
 			break;

@@ -512,7 +512,7 @@ static void call_trans2open(connection_struct *conn,
 	char *pname;
 	char *fname = NULL;
 	off_t size=0;
-	int fattr=0,mtime=0;
+	int fattr = 0;
 	SMB_INO_T inode = 0;
 	int smb_action = 0;
 	struct files_struct *dirfsp = NULL;
@@ -722,7 +722,6 @@ static void call_trans2open(connection_struct *conn,
 
 	size = get_file_size_stat(&smb_fname->st);
 	fattr = fdos_mode(fsp);
-	mtime = convert_timespec_to_time_t(smb_fname->st.st_ex_mtime);
 	inode = smb_fname->st.st_ex_ino;
 	if (fattr & FILE_ATTRIBUTE_DIRECTORY) {
 		close_file_free(req, &fsp, ERROR_CLOSE);
@@ -740,7 +739,7 @@ static void call_trans2open(connection_struct *conn,
 
 	SSVAL(params,0,fsp->fnum);
 	SSVAL(params,2,fattr);
-	srv_put_dos_date2(params,4, mtime);
+	srv_put_dos_date2_ts(params, 4, smb_fname->st.st_ex_mtime);
 	SIVAL(params,8, (uint32_t)size);
 	SSVAL(params,12,deny_mode);
 	SSVAL(params,14,0); /* open_type - file or directory. */

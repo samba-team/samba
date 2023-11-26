@@ -7063,12 +7063,14 @@ void reply_getattrE(struct smb_request *req)
 	reply_smb1_outbuf(req, 11, 0);
 
 	create_ts = get_create_timespec(conn, fsp, fsp->fsp_name);
-	srv_put_dos_date2((char *)req->outbuf, smb_vwv0, create_ts.tv_sec);
-	srv_put_dos_date2((char *)req->outbuf, smb_vwv2,
-			  convert_timespec_to_time_t(fsp->fsp_name->st.st_ex_atime));
+	srv_put_dos_date2_ts((char *)req->outbuf, smb_vwv0, create_ts);
+	srv_put_dos_date2_ts((char *)req->outbuf,
+			     smb_vwv2,
+			     fsp->fsp_name->st.st_ex_atime);
 	/* Should we check pending modtime here ? JRA */
-	srv_put_dos_date2((char *)req->outbuf, smb_vwv4,
-			  convert_timespec_to_time_t(fsp->fsp_name->st.st_ex_mtime));
+	srv_put_dos_date2_ts((char *)req->outbuf,
+			     smb_vwv4,
+			     fsp->fsp_name->st.st_ex_mtime);
 
 	if (mode & FILE_ATTRIBUTE_DIRECTORY) {
 		SIVAL(req->outbuf, smb_vwv6, 0);
