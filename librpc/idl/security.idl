@@ -49,12 +49,12 @@ interface security
 	/*
 	  access masks are divided up like this:
                 0xabccdddd
-		where 
+		where
 		   a = generic rights bits        SEC_GENERIC_
 		   b = flags                      SEC_FLAG_
 		   c = standard rights bits       SEC_STD_
 		   d = object type specific bits  SEC_{FILE,DIR,REG,xxx}_
-		   
+
           common combinations of bits are prefixed with SEC_RIGHTS_
 	*/
 	const int SEC_MASK_GENERIC         = 0xF0000000;
@@ -126,22 +126,22 @@ interface security
 	const int SEC_MASK_INVALID         = 0x0ce0fe00;
 
 	/* generic->specific mappings for files */
-	const int SEC_RIGHTS_FILE_READ    = SEC_STD_READ_CONTROL | 
-	                                    SEC_STD_SYNCHRONIZE | 
-					    SEC_FILE_READ_DATA | 
-                                            SEC_FILE_READ_ATTRIBUTE | 
+	const int SEC_RIGHTS_FILE_READ    = SEC_STD_READ_CONTROL |
+	                                    SEC_STD_SYNCHRONIZE |
+					    SEC_FILE_READ_DATA |
+                                            SEC_FILE_READ_ATTRIBUTE |
                                             SEC_FILE_READ_EA;
 
-	const int SEC_RIGHTS_FILE_WRITE   = SEC_STD_READ_CONTROL | 
-	                                    SEC_STD_SYNCHRONIZE | 
-					    SEC_FILE_WRITE_DATA | 
-                                            SEC_FILE_WRITE_ATTRIBUTE | 
+	const int SEC_RIGHTS_FILE_WRITE   = SEC_STD_READ_CONTROL |
+	                                    SEC_STD_SYNCHRONIZE |
+					    SEC_FILE_WRITE_DATA |
+                                            SEC_FILE_WRITE_ATTRIBUTE |
                                             SEC_FILE_WRITE_EA |
                                             SEC_FILE_APPEND_DATA;
-	
-	const int SEC_RIGHTS_FILE_EXECUTE = SEC_STD_SYNCHRONIZE | 
-	                                    SEC_STD_READ_CONTROL | 
-	                                    SEC_FILE_READ_ATTRIBUTE | 
+
+	const int SEC_RIGHTS_FILE_EXECUTE = SEC_STD_SYNCHRONIZE |
+	                                    SEC_STD_READ_CONTROL |
+	                                    SEC_FILE_READ_ATTRIBUTE |
                                             SEC_FILE_EXECUTE;
 
 	const int SEC_RIGHTS_FILE_ALL     = SEC_STD_ALL | SEC_FILE_ALL;
@@ -769,7 +769,7 @@ interface security
 	typedef [gensize,nosize,public,flag(NDR_LITTLE_ENDIAN)] struct {
 		security_descriptor_revision revision;
 		security_descriptor_type type;     /* SEC_DESC_xxxx flags */
-		[relative] dom_sid *owner_sid; 
+		[relative] dom_sid *owner_sid;
 		[relative] dom_sid *group_sid;
 		[relative] security_acl *sacl; /* system ACL */
 		[relative] security_acl *dacl; /* user (discretionary) ACL */
