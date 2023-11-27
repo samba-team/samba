@@ -63,7 +63,7 @@ uint32_t ndr_size_spoolss_EnumPrintProcessorDataTypes_info(TALLOC_CTX *mem_ctx,
 						      uint32_t level, uint32_t count, union spoolss_PrintProcDataTypesInfo *info);
 enum ndr_err_code ndr_push_spoolss_EnumPrinterDataEx(struct ndr_push *ndr, ndr_flags_type flags, const struct spoolss_EnumPrinterDataEx *r);
 enum ndr_err_code ndr_pull_spoolss_EnumPrinterDataEx(struct ndr_pull *ndr, ndr_flags_type flags, struct spoolss_EnumPrinterDataEx *r);
-uint32_t ndr_size_spoolss_EnumPrinterDataEx_info(TALLOC_CTX *mem_ctx, 
+uint32_t ndr_size_spoolss_EnumPrinterDataEx_info(TALLOC_CTX *mem_ctx,
 						 uint32_t count, struct spoolss_PrinterEnumValues *info);
 uint32_t _ndr_size_spoolss_DeviceMode(struct spoolss_DeviceMode *devmode, ndr_flags_type flags);
 size_t ndr_size_spoolss_StringArray(const struct spoolss_StringArray *r, libndr_flags flags);
@@ -82,4 +82,3 @@ uint32_t ndr_size_spoolss_EnumPerMachineConnections_info(TALLOC_CTX *mem_ctx, ui
 #define _PRINTF_ATTRIBUTE(a1, a2)
 
 #endif /* ___SPACE_SRC_SAMBA_SOURCES_SAMBA_GIT_SOURCE3____SOURCE4_LIBRPC_NDR_NDR_SPOOLSS_BUF_H__ */
-
