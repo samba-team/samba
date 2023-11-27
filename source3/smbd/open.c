@@ -41,6 +41,7 @@
 #include "locking/leases_db.h"
 #include "librpc/gen_ndr/ndr_leases_db.h"
 #include "lib/util/time_basic.h"
+#include "source3/smbd/dir.h"
 
 extern const struct generic_mapping file_generic_mapping;
 

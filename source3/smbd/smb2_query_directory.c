@@ -27,6 +27,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "system/filesys.h"
 #include "lib/pthreadpool/pthreadpool_tevent.h"
+#include "source3/smbd/dir.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2

@@ -35,6 +35,7 @@
 #include "hash_inode.h"
 #include "lib/adouble.h"
 #include "lib/util_macstreams.h"
+#include "source3/smbd/dir.h"
 
 /*
  * Enhanced OS X and Netatalk compatibility

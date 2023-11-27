@@ -27,6 +27,7 @@
 #include "../lib/util/util_pw.h"
 #include "libcli/security/security.h"
 #include "passdb/machine_sid.h"
+#include "source3/smbd/dir.h"
 
 static const char *null_string = "";
 

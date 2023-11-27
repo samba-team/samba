@@ -47,6 +47,7 @@
 #include "libcli/smb/smbXcli_base.h"
 #include "lib/util/time_basic.h"
 #include "source3/lib/substitute.h"
+#include "source3/smbd/dir.h"
 
 /* Internal message queue for deferred opens. */
 struct pending_message_list {

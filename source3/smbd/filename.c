@@ -30,6 +30,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "libcli/smb/reparse.h"
+#include "source3/smbd/dir.h"
 
 uint32_t ucf_flags_from_smb_request(struct smb_request *req)
 {

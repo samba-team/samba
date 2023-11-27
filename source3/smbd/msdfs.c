@@ -35,6 +35,7 @@
 #include "lib/tsocket/tsocket.h"
 #include "lib/global_contexts.h"
 #include "source3/lib/substitute.h"
+#include "source3/smbd/dir.h"
 
 /**********************************************************************
  Parse a DFS pathname of the form(s)

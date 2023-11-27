@@ -748,7 +748,6 @@ void unbecome_root(void);
 int find_service(TALLOC_CTX *ctx, const char *service_in, char **p_service_out);
 bool lp_allow_local_address(
 	int snum, const struct tsocket_address *local_address);
-NTSTATUS can_delete_directory_fsp(files_struct *fsp);
 bool change_to_root_user(void);
 bool become_authenticated_pipe_user(struct auth_session_info *session_info);
 bool unbecome_authenticated_pipe_user(void);

@@ -160,30 +160,6 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 			 char **ppdata,
 			 int *ret_data_len);
 
-bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
-			   struct dptr_struct *dirptr,
-			   const char *mask,
-			   uint32_t dirtype,
-			   bool dont_descend,
-			   bool ask_sharemode,
-			   bool get_dosmode,
-			   bool (*match_fn)(TALLOC_CTX *ctx,
-					    void *private_data,
-					    const char *dname,
-					    const char *mask,
-					    char **_fname),
-			   void *private_data,
-			   char **_fname,
-			   struct smb_filename **_smb_fname,
-			   uint32_t *_mode);
-void smbd_dirptr_push_overflow(struct dptr_struct *dirptr,
-			       char **_fname,
-			       struct smb_filename **_smb_fname,
-			       uint32_t mode);
-void smbd_dirptr_set_last_name_sent(struct dptr_struct *dirptr,
-				    char **_fname);
-char *smbd_dirptr_get_last_name_sent(struct dptr_struct *dirptr);
-
 NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 			       connection_struct *conn,
 			       struct dptr_struct *dirptr,

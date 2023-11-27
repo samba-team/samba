@@ -34,6 +34,7 @@
 #include "messages.h"
 #include "../librpc/gen_ndr/open_files.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "source3/smbd/dir.h"
 
 /****************************************************************************
  Run a file if it is a magic script.

@@ -51,6 +51,7 @@
 #include "lib/util/string_wrappers.h"
 #include "source3/printing/rap_jobid.h"
 #include "source3/lib/substitute.h"
+#include "source3/smbd/dir.h"
 
 /****************************************************************************
  Ensure we check the path in *exactly* the same way as W2K for a findfirst/findnext

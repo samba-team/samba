@@ -29,6 +29,7 @@
 #include "../librpc/gen_ndr/open_files.h"
 #include "lib/util/string_wrappers.h"
 #include "libcli/smb/reparse.h"
+#include "source3/smbd/dir.h"
 
 /*
    This module implements directory related functions for Samba.

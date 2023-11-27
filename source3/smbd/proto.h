@@ -177,50 +177,8 @@ void flush_dfree_cache(void);
 
 /* The following definitions come from smbd/dir.c  */
 
-bool init_dptrs(struct smbd_server_connection *sconn);
-const char *dptr_path(struct smbd_server_connection *sconn, int key);
-const char *dptr_wcard(struct smbd_server_connection *sconn, int key);
-uint16_t dptr_attr(struct smbd_server_connection *sconn, int key);
-void dptr_closecnum(connection_struct *conn);
-NTSTATUS dptr_create(connection_struct *conn,
-		struct smb_request *req,
-		files_struct *fsp,
-		bool old_handle,
-		const char *wcard,
-		uint32_t attr,
-		struct dptr_struct **dptr_ret);
-void dptr_CloseDir(files_struct *fsp);
-void dptr_RewindDir(struct dptr_struct *dptr);
-unsigned int dptr_FileNumber(struct dptr_struct *dptr);
-bool dptr_has_wild(struct dptr_struct *dptr);
-int dptr_dnum(struct dptr_struct *dptr);
-bool dptr_get_priv(struct dptr_struct *dptr);
-void dptr_set_priv(struct dptr_struct *dptr);
-bool dptr_case_sensitive(struct dptr_struct *dptr);
-char *dptr_ReadDirName(TALLOC_CTX *ctx, struct dptr_struct *dptr);
-struct smb_Dir;
-struct files_struct *dir_hnd_fetch_fsp(struct smb_Dir *dir_hnd);
-files_struct *dptr_fetch_lanman2_fsp(struct smbd_server_connection *sconn,
-				       int dptr_num);
-struct smb_Dir;
-bool is_visible_fsp(files_struct *fsp);
-NTSTATUS OpenDir(TALLOC_CTX *mem_ctx,
-		 connection_struct *conn,
-		 const struct smb_filename *smb_dname,
-		 const char *mask,
-		 uint32_t attr,
-		 struct smb_Dir **_dir_hnd);
-NTSTATUS OpenDir_from_pathref(TALLOC_CTX *mem_ctx,
-			      struct files_struct *dirfsp,
-			      const char *mask,
-			      uint32_t attr,
-			      struct smb_Dir **_dir_hnd);
-const char *ReadDirName(struct smb_Dir *dir_hnd, char **talloced);
-void RewindDir(struct smb_Dir *dir_hnd);
 NTSTATUS can_delete_directory(struct connection_struct *conn,
 				const char *dirname);
-bool have_file_open_below(connection_struct *conn,
-			const struct smb_filename *name);
 
 /* The following definitions come from smbd/dmapi.c  */
 
