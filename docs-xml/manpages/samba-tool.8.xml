@@ -892,7 +892,7 @@
 				<para>
 					The service account (eg a Managed
 					Service Account, Group Managed
-					Service Account is allowed to
+					Service Account) is allowed to
 					authenticate, if the device it
 					authenticates from is a member
 					of the given <constant>group</constant>.
