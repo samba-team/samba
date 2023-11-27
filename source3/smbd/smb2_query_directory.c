@@ -471,10 +471,11 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 		"in_output_buffer_length = %u\n",
 		 fsp->fsp_name->base_name, lp_dont_descend(talloc_tos(), lp_sub, SNUM(conn)),
 		(unsigned int)in_output_buffer_length ));
-	if (in_list(fsp->fsp_name->base_name,lp_dont_descend(talloc_tos(), lp_sub, SNUM(conn)),
-			posix_dir_handle ? true : conn->case_sensitive)) {
-		state->dont_descend = true;
-	}
+
+	state->dont_descend = in_list(
+		fsp->fsp_name->base_name,
+		lp_dont_descend(talloc_tos(), lp_sub, SNUM(conn)),
+		posix_dir_handle ? true : conn->case_sensitive);
 
 	/*
 	 * SMB_FIND_FILE_NAMES_INFO doesn't need stat information
