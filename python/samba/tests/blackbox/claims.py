@@ -212,7 +212,7 @@ class ClaimsSupportTests(BlackboxTestCase):
         # Create a computer.
         self.check_run("computer create claims-server")
         self.addCleanup(self.run_command, "computer delete claims-server")
-        self.check_run(f"user setpassword claims-server\\$ --newpassword={target_password}")
+        self.check_run(rf"user setpassword claims-server\$ --newpassword={target_password}")
 
         # Create a user.
         self.check_run(f"user create claimstestuser {client_password}")
@@ -230,7 +230,7 @@ class ClaimsSupportTests(BlackboxTestCase):
         self.check_run(f"domain auth policy modify --name=restricted-servers-pol "
                        "--computer-allowed-to-authenticate-to-by-group=server-access-group")
 
-        self.check_run("user auth policy assign claims-server\\$ --policy=restricted-servers-pol")
+        self.check_run(r"user auth policy assign claims-server\$ --policy=restricted-servers-pol")
 
         with self.assertRaises(NTSTATUSError) as error:
             self.verify_access(
@@ -266,7 +266,7 @@ class ClaimsSupportTests(BlackboxTestCase):
         # Create a computer.
         self.check_run("computer create claims-server")
         self.addCleanup(self.run_command, "computer delete claims-server")
-        self.check_run(f"user setpassword claims-server\\$ --newpassword={target_password}")
+        self.check_run(rf"user setpassword claims-server\$ --newpassword={target_password}")
 
         # Create a user.
         self.check_run(f"user create claimstestuser {client_password}")
@@ -290,7 +290,7 @@ class ClaimsSupportTests(BlackboxTestCase):
                        "--computer-allowed-to-authenticate-to-by-silo=restricted-servers-silo")
 
         # Grant access to silo.
-        self.check_run("domain auth silo member grant --name=restricted-servers-silo --member=claims-server\\$")
+        self.check_run(r"domain auth silo member grant --name=restricted-servers-silo --member=claims-server\$")
         self.check_run("domain auth silo member grant --name=restricted-servers-silo --member=claimstestuser")
 
         self.verify_access(
@@ -301,7 +301,7 @@ class ClaimsSupportTests(BlackboxTestCase):
             target_password=target_password,
         )
 
-        self.check_run("user auth silo assign claims-server\\$ --silo=restricted-servers-silo")
+        self.check_run(r"user auth silo assign claims-server\$ --silo=restricted-servers-silo")
 
         with self.assertRaises(NTSTATUSError) as error:
             self.verify_access(
