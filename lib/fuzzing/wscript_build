@@ -206,7 +206,7 @@ def SAMBA_NDR_FUZZ(bld, interface, auto_deps=False,
 
 Build.BuildContext.SAMBA_NDR_FUZZ = SAMBA_NDR_FUZZ
 
-# fuzz_ndr_X is generated from the list if IDL fed to PIDL
+# fuzz_ndr_X is generated from the list of IDL fed to PIDL
 # however there are exceptions to the normal pattern
 bld.SAMBA_NDR_FUZZ('iremotewinspool') # winspool.idl
 bld.SAMBA_NDR_FUZZ('FileServerVssAgent') # fsvrp.idl

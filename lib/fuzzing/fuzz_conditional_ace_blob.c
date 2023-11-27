@@ -123,7 +123,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *input, size_t len)
 	 *       abort();
 	 * }
 	 *
-	 * but that isn't really fair. The docompilation into SDDL
+	 * but that isn't really fair. The decompilation into SDDL
 	 * does not make thorough sanity checks because that is not
 	 * its job -- it is just trying to depict what is there -- and
 	 * there are many ambiguous decompilations.
