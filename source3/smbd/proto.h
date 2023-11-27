@@ -175,11 +175,6 @@ uint64_t get_dfree_info(connection_struct *conn, struct smb_filename *fname,
 			uint64_t *bsize, uint64_t *dfree, uint64_t *dsize);
 void flush_dfree_cache(void);
 
-/* The following definitions come from smbd/dir.c  */
-
-NTSTATUS can_delete_directory(struct connection_struct *conn,
-				const char *dirname);
-
 /* The following definitions come from smbd/dmapi.c  */
 
 const void *dmapi_get_current_session(void);
