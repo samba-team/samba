@@ -99,8 +99,52 @@ static bool claim_v1_octet_string_to_ace_octet_string(
 }
 
 
+static bool blob_string_sid_to_sid(DATA_BLOB *blob,
+				   struct dom_sid *sid)
+{
+	/*
+	 * Resource ACE claim SIDs are stored as SID strings in
+	 * CLAIM_SECURITY_ATTRIBUTE_OCTET_STRING_RELATIVE blobs. These are in
+	 * ACEs, which means we don't quite know who wrote them, and it is
+	 * unspecified whether the blob should contain a terminating NUL byte.
+	 * Therefore we accept either form, copying into a temporary buffer if
+	 * there is no '\0'. Apart from this special case, we don't accept
+	 * SIDs that are shorter than the blob.
+	 *
+	 * It doesn't seem like SDDL short SIDs ("WD") are accepted here. This
+	 * isn't SDDL.
+	 */
+	bool ok;
+	size_t len = blob->length;
+	char buf[DOM_SID_STR_BUFLEN + 1];   /* 191 + 1 */
+	const char *end = NULL;
+	char *str = NULL;
+
+	if (len < 5 || len >= DOM_SID_STR_BUFLEN) {
+		return false;
+	}
+	if (blob->data[len - 1] == '\0') {
+		str = (char *)blob->data;
+		len--;
+	} else {
+		memcpy(buf, blob->data, len);
+		buf[len] = 0;
+		str = buf;
+	}
+
+	ok = dom_sid_parse_endp(str, sid, &end);
+	if (!ok) {
+		return false;
+	}
+
+	if (end - str != len) {
+		return false;
+	}
+	return true;
+}
+
+
 static bool claim_v1_sid_to_ace_sid(
-	TALLOC_CTX *mem_ctx,
 	const struct CLAIM_SECURITY_ATTRIBUTE_RELATIVE_V1 *claim,
 	size_t offset,
 	struct ace_condition_token *result)
@@ -114,8 +158,8 @@ static bool claim_v1_sid_to_ace_sid(
 	 * There are no SIDs in ADTS claims, but there can be in
 	 * resource ACEs.
 	 */
-	struct dom_sid *sid = NULL;
 	DATA_BLOB *v = NULL;
+	bool ok;
 
 	v = claim->values[offset].sid_value;
 
@@ -126,15 +170,14 @@ static bool claim_v1_sid_to_ace_sid(
 		return false;
 	}
 
-	sid = dom_sid_parse_length(mem_ctx, v);
-	if (sid == NULL) {
+	ok = blob_string_sid_to_sid(v, &result->data.sid.sid);
+	if (! ok) {
 		DBG_WARNING("claim has invalid SID string of length %zu.\n",
 			    v->length);
 		return false;
 	}
 
 	result->type = CONDITIONAL_ACE_TOKEN_SID;
-	result->data.sid.sid = *sid;
 	return true;
 }
 
@@ -238,7 +281,7 @@ static bool claim_v1_offset_to_ace_token(
 		return claim_v1_string_to_ace_string(mem_ctx, claim, offset,
 						     result);
 	case CLAIM_SECURITY_ATTRIBUTE_TYPE_SID:
-		return claim_v1_sid_to_ace_sid(mem_ctx, claim, offset, result);
+		return claim_v1_sid_to_ace_sid(claim, offset, result);
 	case CLAIM_SECURITY_ATTRIBUTE_TYPE_BOOLEAN:
 		return claim_v1_bool_to_ace_int(claim, offset, result);
 	case CLAIM_SECURITY_ATTRIBUTE_TYPE_OCTET_STRING:
