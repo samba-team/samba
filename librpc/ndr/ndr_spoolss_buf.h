@@ -65,7 +65,7 @@ enum ndr_err_code ndr_push_spoolss_EnumPrinterDataEx(struct ndr_push *ndr, ndr_f
 enum ndr_err_code ndr_pull_spoolss_EnumPrinterDataEx(struct ndr_pull *ndr, ndr_flags_type flags, struct spoolss_EnumPrinterDataEx *r);
 uint32_t ndr_size_spoolss_EnumPrinterDataEx_info(TALLOC_CTX *mem_ctx,
 						 uint32_t count, struct spoolss_PrinterEnumValues *info);
-uint32_t _ndr_size_spoolss_DeviceMode(struct spoolss_DeviceMode *devmode, ndr_flags_type flags);
+uint32_t _ndr_size_spoolss_DeviceMode(struct spoolss_DeviceMode *devmode, libndr_flags flags);
 size_t ndr_size_spoolss_StringArray(const struct spoolss_StringArray *r, libndr_flags flags);
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverInfo101(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct spoolss_DriverInfo101 *r);
 _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverInfo101(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct spoolss_DriverInfo101 *r);

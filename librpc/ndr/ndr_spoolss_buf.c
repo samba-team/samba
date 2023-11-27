@@ -697,7 +697,7 @@ uint32_t ndr_size_spoolss_EnumPrinterDataEx_info(TALLOC_CTX *mem_ctx,
 	NDR_SPOOLSS_SIZE_ENUM(spoolss_EnumPrinterDataEx);
 }
 
-uint32_t _ndr_size_spoolss_DeviceMode(struct spoolss_DeviceMode *devmode, ndr_flags_type flags)
+uint32_t _ndr_size_spoolss_DeviceMode(struct spoolss_DeviceMode *devmode, libndr_flags flags)
 {
 	if (!devmode) return 0;
 	return ndr_size_spoolss_DeviceMode(devmode, flags);
