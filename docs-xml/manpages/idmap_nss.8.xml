@@ -28,6 +28,25 @@
 </refsynopsisdiv>
 
 <refsect1>
+	<title>IDMAP OPTIONS</title>
+
+	<variablelist>
+		<varlistentry>
+		<term>range = low - high</term>
+		<listitem><para>
+			Defines the available matching UID and GID range for which the
+			backend is authoritative. Note that the range acts as a filter.
+			Returned UIDs or GIDs by NSS modules that fall outside the range
+			are ignored and the corresponding maps discarded. It is intended
+			as a way to avoid accidental UID/GID overlaps between local and
+			remotely defined IDs.
+		</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect1>
+
+
+<refsect1>
 	<title>EXAMPLES</title>
 
 	<para>
