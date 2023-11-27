@@ -163,13 +163,6 @@ static bool claim_v1_sid_to_ace_sid(
 
 	v = claim->values[offset].sid_value;
 
-	if (v->length == 0 || v->length > CONDITIONAL_ACE_MAX_LENGTH) {
-		DBG_WARNING("claim has SID string of unexpected length %zu, "
-			    "(expected range 1 - %u)\n",
-			    v->length, CONDITIONAL_ACE_MAX_LENGTH);
-		return false;
-	}
-
 	ok = blob_string_sid_to_sid(v, &result->data.sid.sid);
 	if (! ok) {
 		DBG_WARNING("claim has invalid SID string of length %zu.\n",
