@@ -42,6 +42,25 @@
 			remotely defined IDs.
 		</para></listitem>
 		</varlistentry>
+
+		<varlistentry>
+		<term>use_upn = &lt;yes | no&gt;</term>
+		<listitem>
+		<para>
+			Some NSS modules can return and handle UPNs and/or down-level
+			logon names (e.g., DOMAIN\user or user@REALM).
+		</para>
+		<para>
+			If this parameter is enabled the returned names from NSS will be
+			parsed and the resulting namespace will be used as the authoritative
+			namespace instead of the IDMAP domain name. Also, down-level logon
+			names will be sent to NSS instead of the plain username to give NSS
+			modules a hint about the user's correct domain.
+		</para>
+		<para>Default: no</para>
+		</listitem>
+		</varlistentry>
+
 	</variablelist>
 </refsect1>
 
