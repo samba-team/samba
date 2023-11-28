@@ -28,7 +28,7 @@ from samba import dsdb_dns
 
 class DnsCmdTestCase(SambaToolCmdTest):
     def setUp(self):
-        super(DnsCmdTestCase, self).setUp()
+        super().setUp()
 
         self.dburl = "ldap://%s" % os.environ["SERVER"]
         self.creds_string = "-U%s%%%s" % (os.environ["DC_USERNAME"],

@@ -157,11 +157,11 @@ def contact_real_server(host, port):
 
 class TestDnsForwarding(DNSTest):
     def __init__(self, *args, **kwargs):
-        super(TestDnsForwarding, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.subprocesses = []
 
     def setUp(self):
-        super(TestDnsForwarding, self).setUp()
+        super().setUp()
         self.server = server_name
         self.server_ip = server_ip
         self.lp = lp
@@ -194,7 +194,7 @@ class TestDnsForwarding(DNSTest):
             return s
 
     def tearDown(self):
-        super(TestDnsForwarding, self).tearDown()
+        super().tearDown()
         for p in self.subprocesses:
             p.kill()
 

@@ -33,7 +33,7 @@ class ComputerCmdTestCase(SambaToolCmdTest):
     samdb = None
 
     def setUp(self):
-        super(ComputerCmdTestCase, self).setUp()
+        super().setUp()
         self.creds = "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"])
         self.samdb = self.getSamDB("-H", "ldap://%s" % os.environ["DC_SERVER"], self.creds)
         # ips used to test --ip-address option
@@ -91,7 +91,7 @@ class ComputerCmdTestCase(SambaToolCmdTest):
                               computer["description"])
 
     def tearDown(self):
-        super(ComputerCmdTestCase, self).tearDown()
+        super().tearDown()
         # clean up all the left over computers, just in case
         for computer in self.computers:
             if self._find_computer(computer["name"]):

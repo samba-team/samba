@@ -123,7 +123,7 @@ class UpgradeProvisionTestCase(TestCaseInTempDir):
 class UpdateSecretsTests(samba.tests.TestCaseInTempDir):
 
     def setUp(self):
-        super(UpdateSecretsTests, self).setUp()
+        super().setUp()
         self.referencedb = create_dummy_secretsdb(
             os.path.join(self.tempdir, "ref.ldb"))
 
@@ -152,4 +152,4 @@ class UpdateSecretsTests(samba.tests.TestCaseInTempDir):
             path = os.path.join(self.tempdir, name)
             if os.path.exists(path):
                 os.unlink(path)
-        super(UpdateSecretsTests, self).tearDown()
+        super().tearDown()

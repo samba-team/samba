@@ -65,7 +65,7 @@ class MapBaseTestCase(TestCaseInTempDir):
         self.lp = env_loadparm()
         self.lp.set("workgroup", "TESTS")
         self.lp.set("netbios name", "TESTS")
-        super(MapBaseTestCase, self).setUp()
+        super().setUp()
 
         def make_dn(basedn, rdn):
             return "%s,sambaDomainName=TESTS,%s" % (rdn, basedn)
@@ -125,7 +125,7 @@ class MapBaseTestCase(TestCaseInTempDir):
         if os.path.exists(mdata):
             os.unlink(mdata)
             os.rmdir(pdir)
-        super(MapBaseTestCase, self).tearDown()
+        super().tearDown()
 
     def assertSidEquals(self, text, ndr_sid):
         sid_obj1 = samba.ndr.ndr_unpack(samba.dcerpc.security.dom_sid,
@@ -137,7 +137,7 @@ class MapBaseTestCase(TestCaseInTempDir):
 class Samba3SamTestCase(MapBaseTestCase):
 
     def setUp(self):
-        super(Samba3SamTestCase, self).setUp()
+        super().setUp()
         ldb = Ldb(self.ldburl, lp=self.lp, session_info=system_session())
         ldb.set_opaque("skip_allocate_sids", "true")
         self.samba3.setup_data("samba3.ldif")
@@ -306,7 +306,7 @@ delete: description
 class MapTestCase(MapBaseTestCase):
 
     def setUp(self):
-        super(MapTestCase, self).setUp()
+        super().setUp()
         ldb = Ldb(self.ldburl, lp=self.lp, session_info=system_session())
         ldb.set_opaque("skip_allocate_sids", "true")
         ldif = read_datafile("provision_samba3sam.ldif")

@@ -76,7 +76,7 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
         return os.path.join(self.tempdir, "sam.ldb")
 
     def setUp(self):
-        super(UpgradeProvisionWithLdbTestCase, self).setUp()
+        super().setUp()
         paths = get_paths(param, None, smb_conf_path)
         self.creds = Credentials()
         self.lp = env_loadparm()
@@ -178,4 +178,4 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
             path = os.path.join(self.tempdir, name)
             if os.path.exists(path):
                 os.unlink(path)
-        super(UpgradeProvisionWithLdbTestCase, self).tearDown()
+        super().tearDown()

@@ -71,7 +71,7 @@ MULTISITE_LDIF_DSAS = (
 
 class LdifImportExportTests(samba.tests.TestCaseInTempDir):
     def setUp(self):
-        super(LdifImportExportTests, self).setUp()
+        super().setUp()
         self.lp = LoadParm()
         self.creds = Credentials()
         self.creds.guess(self.lp)
@@ -156,7 +156,7 @@ class LdifImportExportTests(samba.tests.TestCaseInTempDir):
 
 class KCCMultisiteLdifTests(samba.tests.TestCaseInTempDir):
     def setUp(self):
-        super(KCCMultisiteLdifTests, self).setUp()
+        super().setUp()
         self.lp = LoadParm()
         self.creds = Credentials()
         self.creds.guess(self.lp)

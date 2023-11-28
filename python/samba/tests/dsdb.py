@@ -1167,7 +1167,7 @@ class DsdbRemoteNCRootTests(DsdbNCRootTests):
 class DsdbFullScanTests(TestCase):
 
     def setUp(self):
-        super(DsdbFullScanTests, self).setUp()
+        super().setUp()
         self.lp = samba.tests.env_loadparm()
         self.creds = Credentials()
         self.creds.guess(self.lp)

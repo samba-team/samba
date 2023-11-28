@@ -31,7 +31,7 @@ Tests whether the netlogon service is running
 class NetlogonServiceTests(TestCase):
 
     def setUp(self):
-        super(NetlogonServiceTests, self).setUp()
+        super().setUp()
 
         self.server      = os.environ["SERVER"]
         self.lp          = self.get_loadparm()

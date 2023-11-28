@@ -55,7 +55,7 @@ def make_tree(vertices):
 class UndirectedGraphTests(samba.tests.TestCase):
 
     def setUp(self):
-        super(UndirectedGraphTests, self).setUp()
+        super().setUp()
         vertices = tuple('abcdefgh')
         vertices2 = tuple('ijk')
         edges = tuple(itertools.combinations(vertices, 2))

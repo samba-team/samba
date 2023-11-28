@@ -53,7 +53,7 @@ class TestDNSUpdates(DNSTKeyTest):
     def setUp(self):
         self.server = server_name
         self.server_ip = server_ip
-        super(TestDNSUpdates, self).setUp()
+        super().setUp()
 
     def test_tkey(self):
         "test DNS TKEY handshake"

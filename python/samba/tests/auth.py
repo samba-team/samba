@@ -28,7 +28,7 @@ import samba.tests
 class AuthSystemSessionTests(samba.tests.TestCase):
 
     def setUp(self):
-        super(AuthSystemSessionTests, self).setUp()
+        super().setUp()
         self.system_session = auth.system_session()
         self.lp = samba.tests.env_loadparm()
 
@@ -62,7 +62,7 @@ class AuthSystemSessionTests(samba.tests.TestCase):
 class AuthAdminSessionTests(samba.tests.TestCase):
 
     def setUp(self):
-        super(AuthAdminSessionTests, self).setUp()
+        super().setUp()
         self.lp = samba.tests.env_loadparm()
         self.admin_session = auth.admin_session(self.lp,
                                                 "S-1-5-21-2212615479-2695158682-2101375467")

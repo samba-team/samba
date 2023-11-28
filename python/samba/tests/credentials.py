@@ -31,7 +31,7 @@ from samba.dcerpc import misc
 class CredentialsTests(samba.tests.TestCaseInTempDir):
 
     def setUp(self):
-        super(CredentialsTests, self).setUp()
+        super().setUp()
         self.creds = credentials.Credentials()
 
     def test_set_username(self):

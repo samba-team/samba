@@ -30,7 +30,7 @@ for p in ["../../../../../testdata/samba3", "../../../../testdata/samba3"]:
 class IdmapDbTestCase(TestCase):
 
     def setUp(self):
-        super(IdmapDbTestCase, self).setUp()
+        super().setUp()
         self.idmapdb = IdmapDatabase(os.path.join(DATADIR,
                                                   "winbindd_idmap"))
 
@@ -54,4 +54,4 @@ class IdmapDbTestCase(TestCase):
 
     def tearDown(self):
         self.idmapdb.close()
-        super(IdmapDbTestCase, self).tearDown()
+        super().tearDown()

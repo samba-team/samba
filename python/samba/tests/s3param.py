@@ -31,7 +31,7 @@ for p in ["../../../../../testdata/samba3", "../../../../testdata/samba3"]:
 class ParamTestCase(TestCaseInTempDir):
 
     def setUp(self):
-        super(ParamTestCase, self).setUp()
+        super().setUp()
         os.system("cp -r %s %s" % (DATADIR, self.tempdir))
         datadir = os.path.join(self.tempdir, "samba3")
 
@@ -41,7 +41,7 @@ class ParamTestCase(TestCaseInTempDir):
     def tearDown(self):
         self.lp = []
         os.system("rm -rf %s" % os.path.join(self.tempdir, "samba3"))
-        super(ParamTestCase, self).tearDown()
+        super().tearDown()
 
     def test_param(self):
         self.assertEqual("BEDWYR", self.lp.get("netbios name"))

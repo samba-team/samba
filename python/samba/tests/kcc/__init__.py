@@ -51,7 +51,7 @@ ENV_DSAS = {
 
 class KCCTests(samba.tests.TestCase):
     def setUp(self):
-        super(KCCTests, self).setUp()
+        super().setUp()
         self.lp = LoadParm()
         self.creds = Credentials()
         self.creds.guess(self.lp)

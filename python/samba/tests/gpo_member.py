@@ -22,7 +22,7 @@ from samba.gp.gp_sec_ext import gp_access_ext
 
 class GPOTests(tests.TestCase):
     def setUp(self):
-        super(GPOTests, self).setUp()
+        super().setUp()
         self.server = os.environ["SERVER"]
         self.dc_account = self.server.upper() + '$'
         self.lp = LoadParm()

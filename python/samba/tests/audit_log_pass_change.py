@@ -45,7 +45,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
     def setUp(self):
         self.message_type = MSG_DSDB_PWD_LOG
         self.event_type = DSDB_PWD_EVENT_NAME
-        super(AuditLogPassChangeTests, self).setUp()
+        super().setUp()
 
         self.server_ip = os.environ["SERVER_IP"]
 

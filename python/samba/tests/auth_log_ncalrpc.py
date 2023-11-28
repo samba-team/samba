@@ -32,7 +32,7 @@ from samba.dcerpc.windows_event_ids import (
 class AuthLogTestsNcalrpc(samba.tests.auth_log_base.AuthLogTestBase):
 
     def setUp(self):
-        super(AuthLogTestsNcalrpc, self).setUp()
+        super().setUp()
         self.remoteAddress = AS_SYSTEM_MAGIC_PATH_TOKEN
 
     def _test_rpc_ncaclrpc(self, authTypes, binding, creds,

@@ -29,7 +29,7 @@ from samba import sites, subnets
 class BaseSitesCmdTestCase(SambaToolCmdTest):
     """Tests for samba-tool sites subnets"""
     def setUp(self):
-        super(BaseSitesCmdTestCase, self).setUp()
+        super().setUp()
         self.dburl = "ldap://%s" % os.environ["DC_SERVER"]
         self.creds_string = "-U%s%%%s" % (os.environ["DC_USERNAME"],
                                           os.environ["DC_PASSWORD"])
@@ -87,7 +87,7 @@ class SitesCmdTestCase(BaseSitesCmdTestCase):
 
 class SitesSubnetCmdTestCase(BaseSitesCmdTestCase):
     def setUp(self):
-        super(SitesSubnetCmdTestCase, self).setUp()
+        super().setUp()
         self.sitename = "testsite"
         self.sitename2 = "testsite2"
         self.samdb.transaction_start()
@@ -100,7 +100,7 @@ class SitesSubnetCmdTestCase(BaseSitesCmdTestCase):
         sites.delete_site(self.samdb, self.config_dn, self.sitename)
         sites.delete_site(self.samdb, self.config_dn, self.sitename2)
         self.samdb.transaction_commit()
-        super(SitesSubnetCmdTestCase, self).tearDown()
+        super().tearDown()
 
     def test_site_subnet_create(self):
         cidrs = (("10.9.8.0/24", self.sitename),

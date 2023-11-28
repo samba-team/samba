@@ -44,7 +44,7 @@ from samba.dcerpc.windows_event_ids import (
 class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
 
     def setUp(self):
-        super(AuthLogTestsSamLogon, self).setUp()
+        super().setUp()
         self.lp = samba.tests.env_loadparm()
         self.session = system_session()
         self.ldb = SamDB(
@@ -60,7 +60,7 @@ class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
                            (self.netbios_name, self.base_dn))
 
     def tearDown(self):
-        super(AuthLogTestsSamLogon, self).tearDown()
+        super().tearDown()
         delete_force(self.ldb, self.samlogon_dn)
 
     def _test_samlogon(self, binding, creds, checkFunction):

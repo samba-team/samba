@@ -120,7 +120,7 @@ class AuthLogTestsWinbind(AuthLogTestBase, BlackboxTestCase):
         return list(filter(keep, messages))
 
     def setUp(self):
-        super(AuthLogTestsWinbind, self).setUp()
+        super().setUp()
         self.domain = os.environ["DOMAIN"]
         self.host = os.environ["SERVER"]
         self.dc = os.environ["DC_SERVER"]
@@ -138,7 +138,7 @@ class AuthLogTestsWinbind(AuthLogTestBase, BlackboxTestCase):
         self.remoteAddress = ''
 
     def tearDown(self):
-        super(AuthLogTestsWinbind, self).tearDown()
+        super().tearDown()
         delete_force(self.ldb, self.user_dn)
 
     #

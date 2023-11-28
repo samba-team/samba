@@ -26,7 +26,7 @@ USAGE   = "pool-usage"
 class SmbcontrolBlackboxTests(BlackboxTestCase):
 
     def setUp(self):
-        super(SmbcontrolBlackboxTests, self).setUp()
+        super().setUp()
         lp_ctx = self.get_loadparm()
         self.msg_ctx = Messaging(lp_ctx=lp_ctx)
 

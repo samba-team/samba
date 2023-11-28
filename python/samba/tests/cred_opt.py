@@ -73,7 +73,7 @@ class CredentialsOptionsTests(samba.tests.TestCase):
 class AuthenticationFileTests(samba.tests.TestCaseInTempDir):
 
     def setUp(self):
-        super(AuthenticationFileTests, self).setUp()
+        super().setUp()
 
         self.parser = optparse.OptionParser()
         self.credopts = CredentialsOptions(self.parser)
@@ -94,7 +94,7 @@ class AuthenticationFileTests(samba.tests.TestCaseInTempDir):
         auth_file_fd.close()
 
     def tearDown(self):
-        super(AuthenticationFileTests, self).tearDown()
+        super().tearDown()
 
         os.unlink(self.auth_file_name)
 

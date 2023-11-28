@@ -22,7 +22,7 @@ from samba import netbios
 
 class NetBiosTests(samba.tests.TestCase):
     def setUp(self):
-        super(NetBiosTests, self).setUp()
+        super().setUp()
         self.n = netbios.Node()
         self.ifc = os.environ["SERVER_IP"]
         self.dc = os.environ["DC_NETBIOSNAME"]

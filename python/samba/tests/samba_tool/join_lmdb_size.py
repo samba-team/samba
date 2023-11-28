@@ -24,7 +24,7 @@ class JoinLmdbSizeTestCase(SambaToolCmdTest):
     """Test setting of the lmdb map size during join"""
 
     def setUp(self):
-        super(JoinLmdbSizeTestCase, self).setUp()
+        super().setUp()
         self.tempsambadir = os.path.join(self.tempdir, "samba")
         os.mkdir(self.tempsambadir)
         (_, name) = os.path.split(self.tempdir)
@@ -148,5 +148,5 @@ class JoinLmdbSizeTestCase(SambaToolCmdTest):
             " optional unit suffix")
 
     def tearDown(self):
-        super(JoinLmdbSizeTestCase, self).tearDown()
+        super().tearDown()
         shutil.rmtree(self.tempsambadir)

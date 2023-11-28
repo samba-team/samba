@@ -32,7 +32,7 @@ from samba.tests import RpcInterfaceTestCase
 
 class SamrPasswordTests(RpcInterfaceTestCase):
     def setUp(self):
-        super(SamrPasswordTests, self).setUp()
+        super().setUp()
         self.open_samdb()
 
         self.create_user_account(10000)
@@ -49,7 +49,7 @@ class SamrPasswordTests(RpcInterfaceTestCase):
         self.remote_creds.set_password(self.remote_password)
 
     def tearDown(self):
-        super(SamrPasswordTests, self).tearDown()
+        super().tearDown()
 
         samr.Close(self.user_handle)
         samr.Close(self.domain_handle)

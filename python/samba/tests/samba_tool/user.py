@@ -39,7 +39,7 @@ class UserCmdTestCase(SambaToolCmdTest):
     samdb = None
 
     def setUp(self):
-        super(UserCmdTestCase, self).setUp()
+        super().setUp()
         self.samdb = self.getSamDB("-H", "ldap://%s" % os.environ["DC_SERVER"],
                                    "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
 
@@ -83,7 +83,7 @@ class UserCmdTestCase(SambaToolCmdTest):
             user["checkUserFn"](user)
 
     def tearDown(self):
-        super(UserCmdTestCase, self).tearDown()
+        super().tearDown()
         # clean up all the left over users, just in case
         for user in self.users:
             if self._find_user(user["name"]):

@@ -73,7 +73,7 @@ class MdssvcHTTPRequestHandler(BaseHTTPRequestHandler):
 class MdssvcTests(RpcInterfaceTestCase):
 
     def setUp(self):
-        super(MdssvcTests, self).setUp()
+        super().setUp()
 
         self.pipe = mdssvc.mdssvc('ncacn_np:fileserver[/pipe/mdssvc]', self.get_loadparm())
 

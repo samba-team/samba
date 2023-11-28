@@ -24,7 +24,7 @@ class DemoteCmdTestCase(SambaToolCmdTest):
     """Test for samba-tool domain demote subcommand"""
 
     def setUp(self):
-        super(DemoteCmdTestCase, self).setUp()
+        super().setUp()
         self.creds_string = "-U{0}%{1}".format(
             os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"])
 

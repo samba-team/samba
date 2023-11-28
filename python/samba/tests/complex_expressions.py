@@ -60,7 +60,7 @@ class ComplexExpressionTests(TestCase):
     # records in the tests
     @classmethod
     def setUpClass(cls):
-        super(ComplexExpressionTests, cls).setUpClass()
+        super().setUpClass()
         cls.samdb = samba.samdb.SamDB(host, lp=lp,
                                       session_info=system_session(),
                                       credentials=creds)

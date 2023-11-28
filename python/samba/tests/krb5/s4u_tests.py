@@ -68,7 +68,7 @@ class S4UKerberosTests(KDCBaseTest):
     default_attrs = security.SE_GROUP_DEFAULT_FLAGS
 
     def setUp(self):
-        super(S4UKerberosTests, self).setUp()
+        super().setUp()
         self.do_asn1_print = global_asn1_print
         self.do_hexdump = global_hexdump
 

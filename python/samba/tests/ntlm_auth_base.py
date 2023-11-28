@@ -29,7 +29,7 @@ from samba.tests import BlackboxTestCase
 class NTLMAuthTestCase(BlackboxTestCase):
 
     def setUp(self):
-        super(NTLMAuthTestCase, self).setUp()
+        super().setUp()
         bindir = os.path.normpath(os.getenv("BINDIR", "./bin"))
         self.ntlm_auth_path = os.path.join(bindir, 'ntlm_auth')
         self.lp = samba.tests.env_loadparm()

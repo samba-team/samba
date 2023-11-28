@@ -34,7 +34,7 @@ Tests behaviour when NTLM is disabled
 class NtlmDisabledTests(TestCase):
 
     def setUp(self):
-        super(NtlmDisabledTests, self).setUp()
+        super().setUp()
 
         self.lp          = self.get_loadparm()
         self.server      = os.getenv("SERVER")

@@ -46,7 +46,7 @@ class GroupAuditTests(AuditLogTestBase):
     def setUp(self):
         self.message_type = MSG_GROUP_LOG
         self.event_type = DSDB_GROUP_EVENT_NAME
-        super(GroupAuditTests, self).setUp()
+        super().setUp()
 
         self.server_ip = os.environ["SERVER_IP"]
 
@@ -91,7 +91,7 @@ class GroupAuditTests(AuditLogTestBase):
         self.ldb.newgroup(GROUP_NAME_02)
 
     def tearDown(self):
-        super(GroupAuditTests, self).tearDown()
+        super().tearDown()
         delete_force(self.ldb, "cn=" + USER_NAME + ",cn=users," + self.base_dn)
         self.ldb.deletegroup(GROUP_NAME_01)
         self.ldb.deletegroup(GROUP_NAME_02)

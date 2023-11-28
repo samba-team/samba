@@ -25,7 +25,7 @@ from samba.common import get_string
 class NTLMAuthHelpersTests(NTLMAuthTestCase):
 
     def setUp(self):
-        super(NTLMAuthHelpersTests, self).setUp()
+        super().setUp()
         self.username = os.environ["DC_USERNAME"]
         self.password = os.environ["DC_PASSWORD"]
         self.domain = os.environ["DOMAIN"]

@@ -185,7 +185,7 @@ class TestCase(unittest.TestCase):
         return "".join([name[0].lower(), name[1:]])
 
     def setUp(self):
-        super(TestCase, self).setUp()
+        super().setUp()
         test_debug_level = os.getenv("TEST_DEBUG_LEVEL")
         if test_debug_level is not None:
             test_debug_level = int(test_debug_level)
@@ -326,7 +326,7 @@ class LdbTestCase(TestCase):
     """Trivial test case for running tests against a LDB."""
 
     def setUp(self):
-        super(LdbTestCase, self).setUp()
+        super().setUp()
         self.tempfile = tempfile.NamedTemporaryFile(delete=False)
         self.filename = self.tempfile.name
         self.ldb = samba.Ldb(self.filename)
@@ -345,7 +345,7 @@ class LdbTestCase(TestCase):
 class TestCaseInTempDir(TestCase):
 
     def setUp(self):
-        super(TestCaseInTempDir, self).setUp()
+        super().setUp()
         self.tempdir = tempfile.mkdtemp()
         self.addCleanup(self._remove_tempdir)
 

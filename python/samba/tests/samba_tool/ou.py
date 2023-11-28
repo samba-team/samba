@@ -30,7 +30,7 @@ class OUCmdTestCase(SambaToolCmdTest):
     samdb = None
 
     def setUp(self):
-        super(OUCmdTestCase, self).setUp()
+        super().setUp()
         self.samdb = self.getSamDB("-H", "ldap://%s" % os.environ["DC_SERVER"],
                                    "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
         self.ous = []
@@ -57,7 +57,7 @@ class OUCmdTestCase(SambaToolCmdTest):
                               ou["description"])
 
     def tearDown(self):
-        super(OUCmdTestCase, self).tearDown()
+        super().tearDown()
         # clean up all the left over ous, just in case
         for ou in self.ous:
             if self._find_ou(ou["name"]):

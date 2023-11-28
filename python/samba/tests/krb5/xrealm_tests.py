@@ -38,7 +38,7 @@ global_hexdump = False
 class XrealmKerberosTests(RawKerberosTest):
 
     def setUp(self):
-        super(XrealmKerberosTests, self).setUp()
+        super().setUp()
         self.do_asn1_print = global_asn1_print
         self.do_hexdump = global_hexdump
 

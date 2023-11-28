@@ -101,7 +101,7 @@ class DotFileTests(samba.tests.TestCaseInTempDir):
 class DistanceTests(samba.tests.TestCase):
 
     def setUp(self):
-        super(DistanceTests, self).setUp()
+        super().setUp()
         # a sorted list of colour set names.
         self.sorted_colour_sets = sorted(
             graph.COLOUR_SETS,

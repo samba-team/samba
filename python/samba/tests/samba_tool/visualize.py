@@ -89,7 +89,7 @@ def collapse_space(s, keep_empty_lines=False):
 
 class SambaToolVisualizeLdif(SambaToolCmdTest):
     def setUp(self):
-        super(SambaToolVisualizeLdif, self).setUp()
+        super().setUp()
         self.lp = LoadParm()
         self.samdb, self.dbfile = samdb_from_ldif(MULTISITE_LDIF,
                                                   self.tempdir,
@@ -98,7 +98,7 @@ class SambaToolVisualizeLdif(SambaToolCmdTest):
 
     def tearDown(self):
         self.remove_files(self.dbfile)
-        super(SambaToolVisualizeLdif, self).tearDown()
+        super().tearDown()
 
     def remove_files(self, *files):
         for f in files:

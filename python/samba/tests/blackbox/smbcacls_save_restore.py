@@ -22,7 +22,7 @@ import os
 class SaveRestoreSmbCaclsTests(SmbCaclsBlockboxTestBase):
 
     def setUp(self):
-        super(SaveRestoreSmbCaclsTests, self).setUp()
+        super().setUp()
 
         # create toplevel testdir structure with desired ACL(s)
         #
@@ -62,7 +62,7 @@ class SaveRestoreSmbCaclsTests(SmbCaclsBlockboxTestBase):
         if self.share != "tmp":
             self.dirpath = os.path.join(os.environ["LOCAL_PATH"],self.share)
             self.dirpath = os.path.join(self.dirpath,self.testdir)
-        super(SaveRestoreSmbCaclsTests, self).tearDown()
+        super().tearDown()
 
     def test_simple_save_dir(self):
         try:

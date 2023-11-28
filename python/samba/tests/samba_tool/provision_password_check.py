@@ -24,7 +24,7 @@ class ProvisionPasswordTestCase(SambaToolCmdTest):
     """Test for password validation in domain provision subcommand"""
 
     def setUp(self):
-        super(ProvisionPasswordTestCase, self).setUp()
+        super().setUp()
         self.tempsambadir = os.path.join(self.tempdir, "samba")
         os.mkdir(self.tempsambadir)
 
@@ -53,5 +53,5 @@ class ProvisionPasswordTestCase(SambaToolCmdTest):
         self.assertCmdSuccess(result, out, err)
 
     def tearDown(self):
-        super(ProvisionPasswordTestCase, self).tearDown()
+        super().tearDown()
         shutil.rmtree(self.tempsambadir)

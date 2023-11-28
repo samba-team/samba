@@ -116,7 +116,7 @@ class DnsserverTests(RpcInterfaceTestCase):
         }
 
     def setUp(self):
-        super(DnsserverTests, self).setUp()
+        super().setUp()
         self.server = os.environ["DC_SERVER"]
         self.zone = env_get_var_value("REALM").lower()
         self.conn = dnsserver.dnsserver("ncacn_ip_tcp:%s[sign]" % (self.server),
@@ -155,7 +155,7 @@ class DnsserverTests(RpcInterfaceTestCase):
                                    'DeleteZoneFromDs',
                                    dnsserver.DNSSRV_TYPEID_NULL,
                                    None)
-        super(DnsserverTests, self).tearDown()
+        super().tearDown()
 
     def test_enum_is_sorted(self):
         """

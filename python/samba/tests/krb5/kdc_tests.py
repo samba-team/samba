@@ -50,7 +50,7 @@ class KdcTests(RawKerberosTest):
     """
 
     def setUp(self):
-        super(KdcTests, self).setUp()
+        super().setUp()
         self.do_asn1_print = global_asn1_print
         self.do_hexdump = global_hexdump
 

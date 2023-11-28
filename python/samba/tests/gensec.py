@@ -29,7 +29,7 @@ import samba.tests
 class GensecTests(samba.tests.TestCase):
 
     def setUp(self):
-        super(GensecTests, self).setUp()
+        super().setUp()
         self.settings = {}
         self.settings["lp_ctx"] = self.lp_ctx = samba.tests.env_loadparm()
         self.settings["target_hostname"] = self.lp_ctx.get("netbios name")

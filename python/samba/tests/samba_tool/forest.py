@@ -25,13 +25,13 @@ class ForestCmdTestCase(SambaToolCmdTest):
     samdb = None
 
     def setUp(self):
-        super(ForestCmdTestCase, self).setUp()
+        super().setUp()
         self.samdb = self.getSamDB("-H", "ldap://%s" % os.environ["DC_SERVER"],
                                    "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
         self.domain_dn = self.samdb.domain_dn()
 
     def tearDown(self):
-        super(ForestCmdTestCase, self).tearDown()
+        super().tearDown()
         # Reset the values we might have changed.
         ds_dn = "CN=Directory Service,CN=Windows NT,CN=Services,CN=Configuration"
         m = ldb.Message()

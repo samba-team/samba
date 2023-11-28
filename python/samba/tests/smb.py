@@ -39,7 +39,7 @@ test_file = os.path.join(test_dir, 'testing').replace('/', '\\')
 
 class SMBTests(samba.tests.TestCase):
     def setUp(self):
-        super(SMBTests, self).setUp()
+        super().setUp()
         self.server = os.environ["SERVER"]
         creds = self.insta_creds(template=self.get_credentials())
 
@@ -51,7 +51,7 @@ class SMBTests(samba.tests.TestCase):
         self.smb_conn.mkdir(test_dir)
 
     def tearDown(self):
-        super(SMBTests, self).tearDown()
+        super().tearDown()
         try:
             self.smb_conn.deltree(test_dir)
         except:

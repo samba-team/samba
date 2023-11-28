@@ -27,7 +27,7 @@ from samba import NTSTATUSError
 class SecurityTokenTests(samba.tests.TestCase):
 
     def setUp(self):
-        super(SecurityTokenTests, self).setUp()
+        super().setUp()
         self.token = security.token()
 
     def test_is_system(self):
@@ -54,7 +54,7 @@ class SecurityTokenTests(samba.tests.TestCase):
 class SecurityDescriptorTests(samba.tests.TestCase):
 
     def setUp(self):
-        super(SecurityDescriptorTests, self).setUp()
+        super().setUp()
         self.descriptor = security.descriptor()
 
     def test_from_sddl(self):
@@ -183,7 +183,7 @@ class SecurityAceTests(samba.tests.TestCase):
     sddl_sid   = "(OA;CIIO;RPWP;aaaaaaaa-1111-bbbb-2222-dddddddddddd;33333333-eeee-4444-ffff-555555555555;S-1-5-10)"
 
     def setUp(self):
-        super(SecurityAceTests, self).setUp()
+        super().setUp()
         self.dom = security.dom_sid("S-1-2-3")
 
     def test_equality(self):

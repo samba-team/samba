@@ -1822,7 +1822,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
 
     def setUp(self):
         """set up a temporary GPO to work with"""
-        super(GpoCmdTestCase, self).setUp()
+        super().setUp()
         (result, out, err) = self.runsubcmd("gpo", "create", self.gpo_name,
                                             "-H", "ldap://%s" % os.environ["SERVER"],
                                             "-U%s%%%s" % (os.environ["USERNAME"], os.environ["PASSWORD"]),
@@ -1844,4 +1844,4 @@ class GpoCmdTestCase(SambaToolCmdTest):
         """remove the temporary GPO to work with"""
         (result, out, err) = self.runsubcmd("gpo", "del", self.gpo_guid, "-H", "ldap://%s" % os.environ["SERVER"], "-U%s%%%s" % (os.environ["USERNAME"], os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err, "Ensuring gpo deleted successfully")
-        super(GpoCmdTestCase, self).tearDown()
+        super().tearDown()

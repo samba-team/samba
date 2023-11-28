@@ -24,7 +24,7 @@ from samba.tests.ntlm_auth_base import NTLMAuthTestCase
 class NTLMAuthKerberosTests(NTLMAuthTestCase):
 
     def setUp(self):
-        super(NTLMAuthKerberosTests, self).setUp()
+        super().setUp()
         self.old_ccache = os.path.join(os.environ["SELFTEST_PREFIX"],
                                        "ktest", "krb5_ccache-2")
         self.ccache = os.path.join(os.environ["SELFTEST_PREFIX"],

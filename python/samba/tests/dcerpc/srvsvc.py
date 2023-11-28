@@ -27,7 +27,7 @@ from samba.tests import RpcInterfaceTestCase
 class SrvsvcTests(RpcInterfaceTestCase):
 
     def setUp(self):
-        super(SrvsvcTests, self).setUp()
+        super().setUp()
         self.conn = srvsvc.srvsvc("ncalrpc:", self.get_loadparm())
         self.server_unc = "\\\\."
 

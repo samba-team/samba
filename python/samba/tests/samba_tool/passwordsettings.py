@@ -26,7 +26,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
     """Tests for 'samba-tool domain passwordsettings' subcommands"""
 
     def setUp(self):
-        super(PwdSettingsCmdTestCase, self).setUp()
+        super().setUp()
         self.server = "ldap://%s" % os.environ["DC_SERVER"]
         self.user_auth = "-U%s%%%s" % (os.environ["DC_USERNAME"],
                                        os.environ["DC_PASSWORD"])
@@ -36,7 +36,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
         self.obj_cleanup = []
 
     def tearDown(self):
-        super(PwdSettingsCmdTestCase, self).tearDown()
+        super().tearDown()
         # clean-up any objects the test has created
         for dn in self.obj_cleanup:
             self.ldb.delete(dn)

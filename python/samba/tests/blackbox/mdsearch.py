@@ -65,7 +65,7 @@ class MdssvcHTTPRequestHandler(BaseHTTPRequestHandler):
 class MdfindBlackboxTests(BlackboxTestCase):
 
     def setUp(self):
-        super(MdfindBlackboxTests, self).setUp()
+        super().setUp()
 
         self.server = HTTPServer(('10.53.57.35', 8080),
                                  MdssvcHTTPRequestHandler,

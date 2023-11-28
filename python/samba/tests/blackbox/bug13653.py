@@ -128,7 +128,7 @@ class Bug13653Tests(BlackboxTestCase):
     # Open a local connection to the SamDB
     # and load configuration from the OS environment.
     def setUp(self):
-        super(Bug13653Tests, self).setUp()
+        super().setUp()
         self.env = os.environ["TEST_ENV"]
         self.server = os.environ["SERVER"]
         self.prefix = os.environ["PREFIX_ABS"]
@@ -143,7 +143,7 @@ class Bug13653Tests(BlackboxTestCase):
     # Delete the user account created by the test case.
     # The user name is in self.user
     def tearDown(self):
-        super(Bug13653Tests, self).tearDown()
+        super().tearDown()
         try:
             dn = "CN=%s,CN=Users,%s" % (self.user, self.ldb.domain_dn())
             delete_force(self.ldb, dn)

@@ -63,7 +63,7 @@ def calc_max_size(num_entries):
 class SamrTests(RpcInterfaceTestCase):
 
     def setUp(self):
-        super(SamrTests, self).setUp()
+        super().setUp()
         self.conn = samr.samr("ncalrpc:", self.get_loadparm())
         self.open_samdb()
         self.open_domain_handle()

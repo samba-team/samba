@@ -32,7 +32,7 @@ class SambaDnsUpdateTests(samba.tests.BlackboxTestCase):
 
     def setUp(self):
         self.server_ip = samba.tests.env_get_var_value("DNS_SERVER_IP")
-        super(SambaDnsUpdateTests, self).setUp()
+        super().setUp()
         try:
             out = self.check_output("samba_dnsupdate --verbose")
             self.assertTrue(b"Looking for DNS entry" in out, out)

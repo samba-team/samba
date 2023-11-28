@@ -75,7 +75,7 @@ class PassWordHashTests(TestCase):
 
     def setUp(self):
         self.lp = samba.tests.env_loadparm()
-        super(PassWordHashTests, self).setUp()
+        super().setUp()
 
     def set_store_cleartext(self, cleartext):
         # get the current pwdProperties

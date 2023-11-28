@@ -174,7 +174,7 @@ class AsReqKerberosTests(AsReqBaseTest):
                 cls.generate_dynamic_test("test_as_req_no_preauth", tname, *targs)
 
     def setUp(self):
-        super(AsReqKerberosTests, self).setUp()
+        super().setUp()
         self.do_asn1_print = global_asn1_print
         self.do_hexdump = global_hexdump
 

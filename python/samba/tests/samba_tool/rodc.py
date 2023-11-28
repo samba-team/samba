@@ -27,7 +27,7 @@ from samba.auth import system_session
 
 class RodcCmdTestCase(SambaToolCmdTest):
     def setUp(self):
-        super(RodcCmdTestCase, self).setUp()
+        super().setUp()
         self.lp = samba.param.LoadParm()
         self.lp.load(os.environ["SMB_CONF_PATH"])
         self.creds = Credentials()
@@ -53,7 +53,7 @@ class RodcCmdTestCase(SambaToolCmdTest):
                                           add_members_operation=True)
 
     def tearDown(self):
-        super(RodcCmdTestCase, self).tearDown()
+        super().tearDown()
         self.ldb.deleteuser("sambatool1")
         self.ldb.deleteuser("sambatool2")
         self.ldb.deleteuser("sambatool3")

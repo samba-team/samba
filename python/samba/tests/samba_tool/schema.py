@@ -25,7 +25,7 @@ class SchemaCmdTestCase(SambaToolCmdTest):
     samdb = None
 
     def setUp(self):
-        super(SchemaCmdTestCase, self).setUp()
+        super().setUp()
         self.samdb = self.getSamDB("-H", "ldap://%s" % os.environ["DC_SERVER"],
                                    "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
 

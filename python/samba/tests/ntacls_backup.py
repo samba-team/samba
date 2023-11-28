@@ -37,7 +37,7 @@ class NtaclsBackupRestoreTests(SmbdBaseTests):
     """
 
     def setUp(self):
-        super(NtaclsBackupRestoreTests, self).setUp()
+        super().setUp()
 
         self.server = os.environ["SERVER"]  # addc
         samdb_url = 'ldap://' + self.server
@@ -90,7 +90,7 @@ class NtaclsBackupRestoreTests(SmbdBaseTests):
     def tearDown(self):
         self._delete_tarfile()
         self.smb_helper.delete_tree()
-        super(NtaclsBackupRestoreTests, self).tearDown()
+        super().tearDown()
 
     def _delete_tarfile(self):
         try:

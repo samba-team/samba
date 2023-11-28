@@ -30,7 +30,7 @@ PING = "ping"
 class SmbcontrolProcessBlockboxTests(BlackboxTestCase):
 
     def setUp(self):
-        super(SmbcontrolProcessBlockboxTests, self).setUp()
+        super().setUp()
         lp_ctx = self.get_loadparm()
         self.msg_ctx = Messaging(lp_ctx=lp_ctx)
 

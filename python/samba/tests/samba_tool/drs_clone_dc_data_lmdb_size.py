@@ -24,7 +24,7 @@ class DrsCloneDcDataLmdbSizeTestCase(SambaToolCmdTest):
     """Test setting of the lmdb map size during drs clone-dc-data"""
 
     def setUp(self):
-        super(DrsCloneDcDataLmdbSizeTestCase, self).setUp()
+        super().setUp()
         self.tempsambadir = os.path.join(self.tempdir, "samba")
         os.mkdir(self.tempsambadir)
 
@@ -115,5 +115,5 @@ class DrsCloneDcDataLmdbSizeTestCase(SambaToolCmdTest):
             " optional unit suffix")
 
     def tearDown(self):
-        super(DrsCloneDcDataLmdbSizeTestCase, self).tearDown()
+        super().tearDown()
         shutil.rmtree(self.tempsambadir)

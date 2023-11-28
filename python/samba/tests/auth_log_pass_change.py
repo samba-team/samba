@@ -41,7 +41,7 @@ USER_PASS = samba.generate_random_password(32, 32)
 class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
 
     def setUp(self):
-        super(AuthLogPassChangeTests, self).setUp()
+        super().setUp()
 
         self.server_ip = os.environ["SERVER_IP"]
 

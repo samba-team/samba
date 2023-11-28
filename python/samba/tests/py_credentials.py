@@ -57,7 +57,7 @@ USER_NAME    = "PCTU"
 class PyCredentialsTests(TestCase):
 
     def setUp(self):
-        super(PyCredentialsTests, self).setUp()
+        super().setUp()
 
         self.server      = os.environ["SERVER"]
         self.domain      = os.environ["DOMAIN"]
@@ -76,7 +76,7 @@ class PyCredentialsTests(TestCase):
         self.create_user_account()
 
     def tearDown(self):
-        super(PyCredentialsTests, self).tearDown()
+        super().tearDown()
         delete_force(self.ldb, self.machine_dn)
         delete_force(self.ldb, self.user_dn)
 

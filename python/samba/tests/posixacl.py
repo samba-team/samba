@@ -37,7 +37,7 @@ ACL = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695
 class PosixAclMappingTests(SmbdBaseTests):
 
     def setUp(self):
-        super(PosixAclMappingTests, self).setUp()
+        super().setUp()
         s3conf = s3param.get_context()
         s3conf.load(self.get_loadparm().configfile)
         s3conf.set("xattr_tdb:file", os.path.join(self.tempdir, "xattr.tdb"))
@@ -49,7 +49,7 @@ class PosixAclMappingTests(SmbdBaseTests):
     def tearDown(self):
         smbd.unlink(self.tempf, self.get_session_info())
         os.unlink(os.path.join(self.tempdir, "xattr.tdb"))
-        super(PosixAclMappingTests, self).tearDown()
+        super().tearDown()
 
     def get_session_info(self, domsid=DOM_SID):
         """

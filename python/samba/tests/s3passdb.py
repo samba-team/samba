@@ -33,7 +33,7 @@ for p in ["../../../../../testdata/samba3", "../../../../testdata/samba3"]:
 class PassdbTestCase(TestCaseInTempDir):
 
     def setUp(self):
-        super(PassdbTestCase, self).setUp()
+        super().setUp()
         os.system("cp -r %s %s" % (DATADIR, self.tempdir))
         datadir = os.path.join(self.tempdir, "samba3")
 
@@ -50,7 +50,7 @@ class PassdbTestCase(TestCaseInTempDir):
         self.lp = []
         self.pdb = []
         os.system("rm -rf %s" % os.path.join(self.tempdir, "samba3"))
-        super(PassdbTestCase, self).tearDown()
+        super().tearDown()
 
     def test_policy(self):
         policy = self.pdb.get_account_policy()

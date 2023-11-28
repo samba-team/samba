@@ -24,7 +24,7 @@ from samba.tests import RpcInterfaceTestCase
 class WinregTests(RpcInterfaceTestCase):
 
     def setUp(self):
-        super(WinregTests, self).setUp()
+        super().setUp()
         self.conn = winreg.winreg("ncalrpc:", self.get_loadparm(),
                                   self.get_credentials())
 

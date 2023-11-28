@@ -22,7 +22,7 @@ import os
 class InheritanceSmbCaclsTests(SmbCaclsBlockboxTestBase):
 
     def setUp(self):
-        super(InheritanceSmbCaclsTests, self).setUp()
+        super().setUp()
 
         # create toplevel testdir structure with desired ACL(s)
         #
@@ -62,7 +62,7 @@ class InheritanceSmbCaclsTests(SmbCaclsBlockboxTestBase):
         if self.share != "tmp":
             self.dirpath = os.path.join(os.environ["LOCAL_PATH"],self.share)
             self.dirpath = os.path.join(self.dirpath,self.testdir)
-        super(InheritanceSmbCaclsTests, self).tearDown()
+        super().tearDown()
 
     def test_simple_oi_add(self):
         """test smbcacls '--propagate-inheritance --add' which attempts to add the ACL

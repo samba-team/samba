@@ -31,7 +31,7 @@ import time
 class DNSTest(TestCaseInTempDir):
 
     def setUp(self):
-        super(DNSTest, self).setUp()
+        super().setUp()
         self.timeout = None
 
     def errstr(self, errcode):
@@ -207,7 +207,7 @@ class DNSTest(TestCaseInTempDir):
 
 class DNSTKeyTest(DNSTest):
     def setUp(self):
-        super(DNSTKeyTest, self).setUp()
+        super().setUp()
         self.settings = {}
         self.settings["lp_ctx"] = self.lp_ctx = tests.env_loadparm()
         self.settings["target_hostname"] = self.server

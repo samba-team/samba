@@ -36,7 +36,7 @@ test_dir = os.path.join('notify_test_%d' % random.randint(0, 0xFFFF))
 
 class SMBNotifyTests(TestCase):
     def setUp(self):
-        super(SMBNotifyTests, self).setUp()
+        super().setUp()
         self.server = samba.tests.env_get_var_value("SERVER")
 
         # create an SMB connection to the server
@@ -73,7 +73,7 @@ class SMBNotifyTests(TestCase):
         self.smb_conn_unpriv = libsmb.Conn(self.server, self.share, self.lp, creds_unpriv)
 
     def tearDown(self):
-        super(SMBNotifyTests, self).tearDown()
+        super().tearDown()
         try:
             self.smb_conn.deltree(test_dir)
         except:

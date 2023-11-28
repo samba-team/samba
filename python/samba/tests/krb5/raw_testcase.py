@@ -417,7 +417,7 @@ class KerberosCredentials(Credentials):
         security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK)
 
     def __init__(self):
-        super(KerberosCredentials, self).__init__()
+        super().__init__()
         all_enc_types = 0
         all_enc_types |= security.KERB_ENCTYPE_RC4_HMAC_MD5
         all_enc_types |= security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96

@@ -34,7 +34,7 @@ from samba import sd_utils
 
 class TrafficEmulatorPacketTests(samba.tests.TestCase):
     def setUp(self):
-        super(TrafficEmulatorPacketTests, self).setUp()
+        super().setUp()
         self.server      = os.environ["SERVER"]
         self.domain      = os.environ["DOMAIN"]
         self.host        = os.environ["SERVER_IP"]
@@ -89,7 +89,7 @@ class TrafficEmulatorPacketTests(samba.tests.TestCase):
         sdutils.dacl_add_ace(self.context.user_dn, mod)
 
     def tearDown(self):
-        super(TrafficEmulatorPacketTests, self).tearDown()
+        super().tearDown()
         traffic.clean_up_accounts(self.ldb, 1)
         del self.ldb
         shutil.rmtree(self.tempdir)

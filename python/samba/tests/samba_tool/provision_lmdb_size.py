@@ -24,7 +24,7 @@ class ProvisionLmdbSizeTestCase(SambaToolCmdTest):
     """Test setting of the lmdb map size during provision"""
 
     def setUp(self):
-        super(ProvisionLmdbSizeTestCase, self).setUp()
+        super().setUp()
         self.tempsambadir = os.path.join(self.tempdir, "samba")
         os.mkdir(self.tempsambadir)
 
@@ -128,5 +128,5 @@ class ProvisionLmdbSizeTestCase(SambaToolCmdTest):
             " optional unit suffix")
 
     def tearDown(self):
-        super(ProvisionLmdbSizeTestCase, self).tearDown()
+        super().tearDown()
         shutil.rmtree(self.tempsambadir)

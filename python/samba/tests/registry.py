@@ -37,14 +37,14 @@ class HelperTests(samba.tests.TestCase):
 class HiveTests(samba.tests.TestCaseInTempDir):
 
     def setUp(self):
-        super(HiveTests, self).setUp()
+        super().setUp()
         self.hive_path = os.path.join(self.tempdir, "ldb_new.ldb")
         self.hive = registry.open_ldb(self.hive_path)
 
     def tearDown(self):
         del self.hive
         os.unlink(self.hive_path)
-        super(HiveTests, self).tearDown()
+        super().tearDown()
 
     def test_ldb_new(self):
         self.assertTrue(self.hive is not None)

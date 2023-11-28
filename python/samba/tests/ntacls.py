@@ -33,14 +33,14 @@ DOMAIN_SID = "S-1-5-21-2212615479-2695158682-2101375467"
 class NtaclsTests(TestCaseInTempDir):
 
     def setUp(self):
-        super(NtaclsTests, self).setUp()
+        super().setUp()
         self.tempf = os.path.join(self.tempdir, "test")
         open(self.tempf, 'w').write("empty")
         self.session_info = system_session_unix()
 
     def tearDown(self):
         os.unlink(self.tempf)
-        super(NtaclsTests, self).tearDown()
+        super().tearDown()
 
     def test_setntacl(self):
         lp = LoadParm()

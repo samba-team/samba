@@ -39,7 +39,7 @@ def getAudit(message):
 class AuditLogTestBase(samba.tests.TestCase):
 
     def setUp(self):
-        super(AuditLogTestBase, self).setUp()
+        super().setUp()
 
         # connect to the server's messaging bus (we need to explicitly load a
         # different smb.conf here, because in all other respects this test

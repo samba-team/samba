@@ -48,7 +48,7 @@ def get_prim_dom(secrets_path, lp):
 class DomainBackupBase(BlackboxTestCase):
 
     def setUp(self):
-        super(DomainBackupBase, self).setUp()
+        super().setUp()
 
         server = os.environ["DC_SERVER"]
         self.user_auth = "-U%s%%%s" % (os.environ["DC_USERNAME"],
@@ -432,7 +432,7 @@ class DomainBackupBase(BlackboxTestCase):
 class DomainBackupOnline(DomainBackupBase):
 
     def setUp(self):
-        super(DomainBackupOnline, self).setUp()
+        super().setUp()
         self.base_cmd = ["domain", "backup", "online",
                          "--server=" + self.server, self.user_auth]
 
@@ -461,7 +461,7 @@ class DomainBackupRename(DomainBackupBase):
 
     # run the above test cases using a rename backup
     def setUp(self):
-        super(DomainBackupRename, self).setUp()
+        super().setUp()
         self.new_server = "RENAMESERV"
         self.restore_domain = "NEWDOMAIN"
         self.restore_realm = "rename.test.net"
@@ -563,7 +563,7 @@ class DomainBackupRename(DomainBackupBase):
     # extra checks we run on the restored DB in the rename case
     def check_restored_database(self, lp, expect_secrets=True):
         # run the common checks over the restored DB
-        common_test = super(DomainBackupRename, self)
+        common_test = super()
         samdb = common_test.check_restored_database(lp, expect_secrets)
 
         # check we have actually renamed the DNs
@@ -608,7 +608,7 @@ class DomainBackupRename(DomainBackupBase):
 class DomainBackupOffline(DomainBackupBase):
 
     def setUp(self):
-        super(DomainBackupOffline, self).setUp()
+        super().setUp()
         self.base_cmd = ["domain", "backup", "offline"]
 
     def test_backup_untar(self):

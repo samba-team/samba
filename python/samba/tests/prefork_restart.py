@@ -45,7 +45,7 @@ MACHINE_NAME = "PFRS"
 class PreforkProcessRestartTests(TestCase):
 
     def setUp(self):
-        super(PreforkProcessRestartTests, self).setUp()
+        super().setUp()
         lp_ctx = self.get_loadparm()
         self.msg_ctx = Messaging(lp_ctx=lp_ctx)
 

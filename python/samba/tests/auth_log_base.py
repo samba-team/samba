@@ -100,7 +100,7 @@ class AuthLogTestBase(samba.tests.TestCase):
         super().tearDownClass()
 
     def setUp(self):
-        super(AuthLogTestBase, self).setUp()
+        super().setUp()
         type(self).discardMessages()
 
     def isRemote(self, message):

@@ -31,7 +31,7 @@ import ctypes
 class NetJoinNoSpnegoTests(samba.tests.TestCaseInTempDir):
 
     def setUp(self):
-        super(NetJoinNoSpnegoTests, self).setUp()
+        super().setUp()
         self.domain = os.environ["DOMAIN"]
         self.server = os.environ["SERVER"]
         self.lp = self.get_loadparm()

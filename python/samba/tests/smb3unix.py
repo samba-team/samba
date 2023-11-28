@@ -31,7 +31,7 @@ def posix_context(mode):
 class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
 
     def setUp(self):
-        super(Smb3UnixTests, self).setUp()
+        super().setUp()
 
         self.samsid = os.environ["SAMSID"]
 

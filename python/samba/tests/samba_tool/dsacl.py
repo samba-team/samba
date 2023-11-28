@@ -28,13 +28,13 @@ class DSaclSetSddlTestCase(SambaToolCmdTest):
     sddl_multi = "(OA;CIIO;RPWP;aaaaaaaa-1111-bbbb-2222-dddddddddddd;33333333-eeee-4444-ffff-555555555555;PS)(OA;CIIO;RPWP;cccccccc-9999-ffff-8888-eeeeeeeeeeee;77777777-dddd-6666-bbbb-555555555555;PS)"
 
     def setUp(self):
-        super(DSaclSetSddlTestCase, self).setUp()
+        super().setUp()
         self.samdb = self.getSamDB("-H", "ldap://%s" % os.environ["DC_SERVER"],"-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
         self.dn="OU=DSaclSetSddlTestCase,%s" % self.samdb.domain_dn()
         self.samdb.create_ou(self.dn)
 
     def tearDown(self):
-        super(DSaclSetSddlTestCase, self).tearDown()
+        super().tearDown()
         # clean-up the created test ou
         self.samdb.delete(self.dn)
 

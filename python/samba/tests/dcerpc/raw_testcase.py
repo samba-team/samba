@@ -146,7 +146,7 @@ class RawDCERPCTest(TestCase):
         return
 
     def setUp(self):
-        super(RawDCERPCTest, self).setUp()
+        super().setUp()
         self.do_ndr_print = False
         self.do_hexdump = False
 

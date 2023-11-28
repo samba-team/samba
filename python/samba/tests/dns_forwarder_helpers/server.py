@@ -92,7 +92,7 @@ class TestUDPServer(SocketServer.UDPServer):
             self.address_family = socket.AF_INET6
         else:
             self.address_family = socket.AF_INET
-        super(SocketServer.UDPServer, self).__init__(server_address, RequestHandlerClass)
+        super().__init__(server_address, RequestHandlerClass)
 
 def main():
     global SERVER_ID

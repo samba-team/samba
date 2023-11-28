@@ -31,7 +31,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
     samdb = None
 
     def setUp(self):
-        super(GroupCmdTestCase, self).setUp()
+        super().setUp()
         self.samdb = self.getSamDB("-H", "ldap://%s" % os.environ["DC_SERVER"],
                                    "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
         self.groups = []
@@ -74,7 +74,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
             self.assertEqual("%s" % found.get("description"), group["description"])
 
     def tearDown(self):
-        super(GroupCmdTestCase, self).tearDown()
+        super().tearDown()
         # clean up all the left over groups, just in case
         for group in self.groups:
             if self._find_group(group["name"]):

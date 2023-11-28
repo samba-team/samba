@@ -26,7 +26,7 @@ class UpgradeDnsLmdbTestCase(SambaToolCmdTest):
     """
 
     def setUp(self):
-        super(UpgradeDnsLmdbTestCase, self).setUp()
+        super().setUp()
         self.tempsambadir = os.path.join(self.tempdir, "samba")
         os.mkdir(self.tempsambadir)
 
@@ -55,7 +55,7 @@ class UpgradeDnsLmdbTestCase(SambaToolCmdTest):
         return self.run_command(command)
 
     def tearDown(self):
-        super(UpgradeDnsLmdbTestCase, self).tearDown()
+        super().tearDown()
         shutil.rmtree(self.tempsambadir)
 
     def test_lmdb_lock_files_linked_on_upgrade_to_bind9_dlz(self):

@@ -39,7 +39,7 @@ def rm(rmdir):
 class NetS3JoinTests(samba.tests.TestCaseInTempDir):
 
     def setUp(self):
-        super(NetS3JoinTests, self).setUp()
+        super().setUp()
         self.realm = os.environ["REALM"]
         self.domain = os.environ["DOMAIN"]
         self.server = os.environ["SERVER"]

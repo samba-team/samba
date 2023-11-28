@@ -34,7 +34,7 @@ from ldb import SCOPE_BASE, LdbError
 class SchemaAttributesTestCase(samba.tests.TestCase):
 
     def setUp(self):
-        super(SchemaAttributesTestCase, self).setUp()
+        super().setUp()
 
         self.lp = samba.tests.env_loadparm()
         self.samdb = samba.tests.connect_samdb(self.lp.samdb_url())

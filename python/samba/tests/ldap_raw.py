@@ -154,7 +154,7 @@ class RawLdapTest(TestCase):
     """
 
     def setUp(self):
-        super(RawLdapTest, self).setUp()
+        super().setUp()
 
         self.host = samba.tests.env_get_var_value('SERVER')
         self.port = 636
@@ -166,7 +166,7 @@ class RawLdapTest(TestCase):
 
     def tearDown(self):
         self.disconnect()
-        super(RawLdapTest, self).tearDown()
+        super().tearDown()
 
     def disconnect(self):
         """ Disconnect from and clean up the connection to the server """
@@ -751,7 +751,7 @@ class RawCldapTest(TestCase):
     """
 
     def setUp(self):
-        super(RawCldapTest, self).setUp()
+        super().setUp()
 
         self.host = samba.tests.env_get_var_value('SERVER')
         self.port = 389
@@ -760,7 +760,7 @@ class RawCldapTest(TestCase):
 
     def tearDown(self):
         self.disconnect()
-        super(RawCldapTest, self).tearDown()
+        super().tearDown()
 
     def disconnect(self):
         """ Disconnect from and clean up the connection to the server """
