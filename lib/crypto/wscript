@@ -2,8 +2,6 @@
 
 
 def build(bld):
-    extra_deps = ""
-
     bld.SAMBA_SUBSYSTEM("GNUTLS_HELPERS",
                         source='''
                         gnutls_error.c
