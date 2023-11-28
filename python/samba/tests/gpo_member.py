@@ -29,9 +29,6 @@ class GPOTests(tests.TestCase):
         self.lp.load_default()
         self.creds = self.insta_creds(template=self.get_credentials())
 
-    def tearDown(self):
-        super(GPOTests, self).tearDown()
-
     def test_sec_ext_load_on_member(self):
         cache_dir = self.lp.get('cache directory')
         store = GPOStorage(os.path.join(cache_dir, 'gpo.tdb'))

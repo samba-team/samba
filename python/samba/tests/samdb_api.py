@@ -24,9 +24,6 @@ import errno
 
 class SamDBApiTestCase(TestCaseInTempDir):
 
-    def setUp(self):
-        super(SamDBApiTestCase, self).setUp()
-
     def tearDown(self):
         self.rm_files("test.db", "existing.db", allow_missing=True)
 

@@ -20,9 +20,6 @@ from samba.tests import BlackboxProcessError
 
 class BasicSmbCaclsTests(SmbCaclsBlockboxTestBase):
 
-    def setUp(self):
-        super(BasicSmbCaclsTests, self).setUp()
-
     def test_simple_single_set(self):
         """test smbcacls '--set' attempts to overwrite the ACL for the file
 

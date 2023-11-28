@@ -98,9 +98,6 @@ class AuditLogPassChangeTests(AuditLogTestBase):
         self.waitForMessages(1, dn=dn)
         self.discardMessages()
 
-    def tearDown(self):
-        super(AuditLogPassChangeTests, self).tearDown()
-
     def test_net_change_password(self):
 
         dn = "CN=" + USER_NAME + ",CN=Users," + self.base_dn

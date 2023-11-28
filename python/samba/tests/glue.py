@@ -24,9 +24,6 @@ import samba.tests
 
 class GlueTests(samba.tests.TestCase):
 
-    def setUp(self):
-        super(GlueTests, self).setUp()
-
     def test_generate_random_str(self):
         string = _glue.generate_random_str(10)
         self.assertEqual(type(string), str)

@@ -48,9 +48,6 @@ creds = credopts.get_credentials(lp)
 
 class LdapReferralTest(samba.tests.TestCase):
 
-    def setUp(self):
-        super(LdapReferralTest, self).setUp()
-
     # The referral entries for an ldap request should have the ldap scheme
     # i.e. then should all start with "ldap://"
     def test_ldap_search(self):

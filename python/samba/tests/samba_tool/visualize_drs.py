@@ -107,8 +107,6 @@ def get_utf8_matrix(s):
 
 
 class SambaToolVisualizeDrsTest(SambaToolCmdTest):
-    def setUp(self):
-        super(SambaToolVisualizeDrsTest, self).setUp()
 
     def test_ntdsconn(self):
         server = "ldap://%s" % os.environ["SERVER"]

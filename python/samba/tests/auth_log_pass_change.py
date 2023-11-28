@@ -71,9 +71,6 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
     def _authDescription(self):
         return "samr_ChangePasswordUser4"
 
-    def tearDown(self):
-        super(AuthLogPassChangeTests, self).tearDown()
-
     def test_admin_change_password(self):
         def isLastExpectedMessage(msg):
             return ((msg["type"] == "Authentication") and

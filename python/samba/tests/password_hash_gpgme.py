@@ -40,9 +40,6 @@ import samba
 
 class PassWordHashGpgmeTests(PassWordHashTests):
 
-    def setUp(self):
-        super(PassWordHashGpgmeTests, self).setUp()
-
     def test_default_supplementalCredentials(self):
         self.add_user()
         if not self.lp.get("password hash gpg key ids"):

@@ -35,9 +35,6 @@ class BaseWrapper (object):
         """Blackbox tests for JSON output of the net ads suite of commands."""
         subcmd = None
 
-        def setUp(self):
-            super(BaseWrapper.NetAdsJSONTests_Base, self).setUp()
-
         def test_json_wellformed (self):
             """The output of ``--json`` commands must parse as JSON."""
             argv = "%s %s --json" % (COMMAND, self.subcmd)

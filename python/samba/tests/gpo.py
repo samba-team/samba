@@ -5098,9 +5098,6 @@ class GPOTests(tests.TestCase):
         self.lp.load_default()
         self.creds = self.insta_creds(template=self.get_credentials())
 
-    def tearDown(self):
-        super(GPOTests, self).tearDown()
-
     def test_gpo_list(self):
         global poldir, dspath
         gpos = get_gpo_list(self.server, self.creds, self.lp,

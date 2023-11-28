@@ -30,12 +30,6 @@ from ldb import LdbError, ERR_OPERATIONS_ERROR
 
 class StandardModelProcessLimitTests(TestCase):
 
-    def setUp(self):
-        super(StandardModelProcessLimitTests, self).setUp()
-
-    def tearDown(self):
-        super(StandardModelProcessLimitTests, self).tearDown()
-
     def simple_bind(self):
         creds = self.insta_creds(template=self.get_credentials())
         creds.set_bind_dn("%s\\%s" % (creds.get_domain(),

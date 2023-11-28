@@ -55,9 +55,6 @@ def attid_equal(a1, a2):
 
 class PassWordHashLDAPTests(PassWordHashTests):
 
-    def setUp(self):
-        super(PassWordHashLDAPTests, self).setUp()
-
     # Get the supplemental credentials for the user under test
     def get_supplemental_creds_drs(self):
         binding_str = "ncacn_ip_tcp:%s[seal]" % os.environ["SERVER"]

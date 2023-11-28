@@ -23,9 +23,6 @@ import os
 
 class TDBUtilTests(samba.tests.TestCaseInTempDir):
 
-    def setUp(self):
-        super(TDBUtilTests, self).setUp()
-
     def test_tdb_copy(self):
         src_ldb_file = os.path.join(self.tempdir, "source.ldb")
         dst_ldb_file = os.path.join(self.tempdir, "destination.ldb")

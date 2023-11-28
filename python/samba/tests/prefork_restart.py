@@ -49,9 +49,6 @@ class PreforkProcessRestartTests(TestCase):
         lp_ctx = self.get_loadparm()
         self.msg_ctx = Messaging(lp_ctx=lp_ctx)
 
-    def tearDown(self):
-        super(PreforkProcessRestartTests, self).tearDown()
-
     def get_process_data(self):
         services = self.msg_ctx.irpc_all_servers()
 

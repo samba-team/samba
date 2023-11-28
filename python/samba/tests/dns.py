@@ -1772,9 +1772,6 @@ class TestRPCRoundtrip(DNSTest):
                                             self.lp,
                                             self.creds)
 
-    def tearDown(self):
-        super(TestRPCRoundtrip, self).tearDown()
-
     def rpc_update(self, fqn=None, data=None, wType=None, delete=False):
         fqn = fqn or ("rpctestrec." + self.get_dns_domain())
 

@@ -27,8 +27,6 @@ from samba.credentials import Credentials, SMB_ENCRYPTION_REQUIRED, SMB_ENCRYPTI
 from samba.trust_utils import CreateTrustedDomainRelax
 
 class CreateTrustedDomainRelaxTest(TestCase):
-    def setUp(self):
-        super(CreateTrustedDomainRelaxTest, self).setUp()
 
     def get_user_creds(self):
         c = Credentials()

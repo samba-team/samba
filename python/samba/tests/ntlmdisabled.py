@@ -46,9 +46,6 @@ class NtlmDisabledTests(TestCase):
         self.creds.set_password(os.getenv("PASSWORD"))
         self.creds.set_kerberos_state(DONT_USE_KERBEROS)
 
-    def tearDown(self):
-        super(NtlmDisabledTests, self).tearDown()
-
     def test_ntlm_connection(self):
         try:
             conn = srvsvc.srvsvc("ncacn_np:%s[smb2,ntlm]" % self.server, self.lp, self.creds)

@@ -39,9 +39,6 @@ class NetJoinTests(samba.tests.TestCaseInTempDir):
         self.lp.set("lock dir", self.tempdir)
         self.lp.set("state directory", self.tempdir)
 
-    def tearDown(self):
-        super(NetJoinTests, self).tearDown()
-
     def test_net_join(self):
         netbios_name = "NetJoinTest"
         machinepass  = "abcdefghij"

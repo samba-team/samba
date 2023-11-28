@@ -47,9 +47,6 @@ class NetlogonServiceTests(TestCase):
 
         self.creds.guess(self.lp)
 
-    def tearDown(self):
-        super(NetlogonServiceTests, self).tearDown()
-
     def test_have_netlogon_connection(self):
         try:
             c = self.get_netlogon_connection()

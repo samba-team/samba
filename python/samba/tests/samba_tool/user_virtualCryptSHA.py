@@ -55,9 +55,6 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
     users = []
     samdb = None
 
-    def setUp(self):
-        super(UserCmdCryptShaTestCase, self).setUp()
-
     def add_user(self, hashes=""):
         self.lp = samba.tests.env_loadparm()
 

@@ -46,9 +46,6 @@ class SchemaAttributesTestCase(samba.tests.TestCase):
         self.base_dn = res[0]["defaultNamingContext"][0]
         self.forest_level = int(res[0]["forestFunctionality"][0])
 
-    def tearDown(self):
-        super(SchemaAttributesTestCase, self).tearDown()
-
     def _ldap_schemaUpdateNow(self):
         ldif = """
 dn:

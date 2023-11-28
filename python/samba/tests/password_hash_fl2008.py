@@ -37,9 +37,6 @@ import binascii
 
 class PassWordHashFl2008Tests(PassWordHashTests):
 
-    def setUp(self):
-        super(PassWordHashFl2008Tests, self).setUp()
-
     def test_default_supplementalCredentials(self):
         self.add_user()
 

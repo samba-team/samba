@@ -39,9 +39,6 @@ class NetJoinNoSpnegoTests(samba.tests.TestCaseInTempDir):
         self.lp.set("lock dir", self.tempdir)
         self.lp.set("state directory", self.tempdir)
 
-    def tearDown(self):
-        super(NetJoinNoSpnegoTests, self).tearDown()
-
     def test_net_join_no_spnego(self):
         self.lp.set("client ipc max protocol", "NT1")
         self.lp.set("client use spnego", "no")

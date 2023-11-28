@@ -29,9 +29,6 @@ class SchemaCmdTestCase(SambaToolCmdTest):
         self.samdb = self.getSamDB("-H", "ldap://%s" % os.environ["DC_SERVER"],
                                    "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
 
-    def tearDown(self):
-        super(SchemaCmdTestCase, self).tearDown()
-
     def test_display_attribute(self):
         """Tests that we can display schema attributes"""
         (result, out, err) = self.runsublevelcmd("schema", ("attribute",
