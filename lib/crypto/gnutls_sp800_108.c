@@ -72,6 +72,11 @@ static NTSTATUS samba_gnutls_sp800_108_derive_key_part(
 	return NT_STATUS_OK;
 }
 
+static size_t ceiling_div(const size_t a, const size_t b)
+{
+	return a / b + (a % b != 0);
+}
+
 /**
  * @brief Derive a key using the NIST SP 800‐108 algorithm.
  *
@@ -113,24 +118,31 @@ NTSTATUS samba_gnutls_sp800_108_derive_key(
 {
 	gnutls_hmac_hd_t hmac_hnd = NULL;
 	const size_t digest_len = gnutls_hmac_get_len(algorithm);
-	uint8_t digest[digest_len];
-	uint32_t i = 1;
+	uint32_t i;
 	uint32_t L = KO_len * 8;
+	size_t KO_idx;
 	NTSTATUS status = NT_STATUS_OK;
 	int rc;
 
-	if (KO_len > digest_len) {
-		DBG_ERR("KO_len[%zu] > digest_len[%zu]\n", KO_len, digest_len);
+	if (KO_len > UINT32_MAX / 8) {
+		/* The calculation of L has overflowed. */
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	switch (KO_len) {
-	case 16:
-	case 32:
-		break;
-	default:
-		DBG_ERR("KO_len[%zu] not supported\n", KO_len);
-		return NT_STATUS_INTERNAL_ERROR;
+	if (digest_len == 0) {
+		return NT_STATUS_HMAC_NOT_SUPPORTED;
+	}
+
+	{
+		const size_t n_iterations = ceiling_div(KO_len, digest_len);
+		/*
+		 * To ensure that the counter values are distinct, n shall not
+		 * be larger than 2ʳ−1, where r = 32. We have made sure that
+		 * |KO| × 8 < 2³², and we know that n ≤ |KO| from its
+		 * definition. Thus n ≤ |KO| ≤ |KO| × 8 < 2³², and so the
+		 * requirement n ≤ 2³² − 1 must always hold.
+		 */
+		SMB_ASSERT(n_iterations <= UINT32_MAX);
 	}
 
 	/*
@@ -146,25 +158,52 @@ NTSTATUS samba_gnutls_sp800_108_derive_key(
 						NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 
-	status = samba_gnutls_sp800_108_derive_key_part(hmac_hnd,
-							Label,
-							Label_len,
-							Context,
-							Context_len,
-							L,
-							i,
-							digest);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
+	/* (This loop would make an excellent candidate for parallelization.) */
+
+	for (KO_idx = 0, i = 1; KO_len - KO_idx >= digest_len;
+	     KO_idx += digest_len, ++i)
+	{
+		status = samba_gnutls_sp800_108_derive_key_part(hmac_hnd,
+								Label,
+								Label_len,
+								Context,
+								Context_len,
+								L,
+								i,
+								KO + KO_idx);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
 	}
 
-	memcpy(KO, digest, KO_len);
+	if (KO_idx < KO_len) {
+		/* Get the last little bit. */
+		uint8_t digest[digest_len];
+		status = samba_gnutls_sp800_108_derive_key_part(hmac_hnd,
+								Label,
+								Label_len,
+								Context,
+								Context_len,
+								L,
+								i,
+								digest);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
 
-	ZERO_ARRAY(digest);
+		memcpy(KO + KO_idx, digest, KO_len - KO_idx);
+
+		ZERO_ARRAY(digest);
+	}
 
 out:
 	if (hmac_hnd != NULL) {
 		gnutls_hmac_deinit(hmac_hnd, NULL);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		/* Hide the evidence. */
+		memset_s(KO, KO_len, 0, KO_idx);
+		ZERO_ARRAY_LEN(KO, KO_idx);
 	}
 
 	return status;
