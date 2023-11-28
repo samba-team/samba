@@ -42,6 +42,7 @@ static NTSTATUS samba_gnutls_sp800_108_derive_key_part(
 	RSIVAL(buf, 0, i);
 	rc = gnutls_hmac(hmac_hnd, buf, sizeof(buf));
 	if (rc < 0) {
+		gnutls_hmac_deinit(hmac_hnd, NULL);
 		return gnutls_error_to_ntstatus(rc,
 						NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
