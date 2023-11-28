@@ -25,6 +25,57 @@
 #include <gnutls/crypto.h>
 #include "gnutls_helpers.h"
 
+static NTSTATUS samba_gnutls_sp800_108_derive_key_part(
+	const gnutls_hmac_hd_t hmac_hnd,
+	const uint8_t *Label,
+	const size_t Label_len,
+	const uint8_t *Context,
+	const size_t Context_len,
+	const uint32_t L,
+	const uint32_t i,
+	uint8_t *digest)
+{
+	uint8_t buf[4];
+	static const uint8_t zero = 0;
+	int rc;
+
+	RSIVAL(buf, 0, i);
+	rc = gnutls_hmac(hmac_hnd, buf, sizeof(buf));
+	if (rc < 0) {
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_HMAC_NOT_SUPPORTED);
+	}
+	rc = gnutls_hmac(hmac_hnd, Label, Label_len);
+	if (rc < 0) {
+		gnutls_hmac_deinit(hmac_hnd, NULL);
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_HMAC_NOT_SUPPORTED);
+	}
+	rc = gnutls_hmac(hmac_hnd, &zero, 1);
+	if (rc < 0) {
+		gnutls_hmac_deinit(hmac_hnd, NULL);
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_HMAC_NOT_SUPPORTED);
+	}
+	rc = gnutls_hmac(hmac_hnd, Context, Context_len);
+	if (rc < 0) {
+		gnutls_hmac_deinit(hmac_hnd, NULL);
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_HMAC_NOT_SUPPORTED);
+	}
+	RSIVAL(buf, 0, L);
+	rc = gnutls_hmac(hmac_hnd, buf, sizeof(buf));
+	if (rc < 0) {
+		gnutls_hmac_deinit(hmac_hnd, NULL);
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_HMAC_NOT_SUPPORTED);
+	}
+
+	gnutls_hmac_deinit(hmac_hnd, digest);
+
+	return NT_STATUS_OK;
+}
+
 /**
  * @brief Derive a key using the NIST SP 800‐108 algorithm.
  *
@@ -65,12 +116,11 @@ NTSTATUS samba_gnutls_sp800_108_derive_key(
 	size_t KO_len)
 {
 	gnutls_hmac_hd_t hmac_hnd = NULL;
-	uint8_t buf[4];
-	static const uint8_t zero = 0;
 	const size_t digest_len = gnutls_hmac_get_len(algorithm);
 	uint8_t digest[digest_len];
 	uint32_t i = 1;
 	uint32_t L = KO_len * 8;
+	NTSTATUS status;
 	int rc;
 
 	if (KO_len > digest_len) {
@@ -100,39 +150,17 @@ NTSTATUS samba_gnutls_sp800_108_derive_key(
 						NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 
-	RSIVAL(buf, 0, i);
-	rc = gnutls_hmac(hmac_hnd, buf, sizeof(buf));
-	if (rc < 0) {
-		return gnutls_error_to_ntstatus(rc,
-						NT_STATUS_HMAC_NOT_SUPPORTED);
+	status = samba_gnutls_sp800_108_derive_key_part(hmac_hnd,
+							Label,
+							Label_len,
+							Context,
+							Context_len,
+							L,
+							i,
+							digest);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-	rc = gnutls_hmac(hmac_hnd, Label, Label_len);
-	if (rc < 0) {
-		gnutls_hmac_deinit(hmac_hnd, NULL);
-		return gnutls_error_to_ntstatus(rc,
-						NT_STATUS_HMAC_NOT_SUPPORTED);
-	}
-	rc = gnutls_hmac(hmac_hnd, &zero, 1);
-	if (rc < 0) {
-		gnutls_hmac_deinit(hmac_hnd, NULL);
-		return gnutls_error_to_ntstatus(rc,
-						NT_STATUS_HMAC_NOT_SUPPORTED);
-	}
-	rc = gnutls_hmac(hmac_hnd, Context, Context_len);
-	if (rc < 0) {
-		gnutls_hmac_deinit(hmac_hnd, NULL);
-		return gnutls_error_to_ntstatus(rc,
-						NT_STATUS_HMAC_NOT_SUPPORTED);
-	}
-	RSIVAL(buf, 0, L);
-	rc = gnutls_hmac(hmac_hnd, buf, sizeof(buf));
-	if (rc < 0) {
-		gnutls_hmac_deinit(hmac_hnd, NULL);
-		return gnutls_error_to_ntstatus(rc,
-						NT_STATUS_HMAC_NOT_SUPPORTED);
-	}
-
-	gnutls_hmac_deinit(hmac_hnd, digest);
 
 	memcpy(KO, digest, KO_len);
 
