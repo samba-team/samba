@@ -120,7 +120,7 @@ NTSTATUS samba_gnutls_sp800_108_derive_key(
 	uint8_t digest[digest_len];
 	uint32_t i = 1;
 	uint32_t L = KO_len * 8;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 	int rc;
 
 	if (KO_len > digest_len) {
@@ -159,12 +159,13 @@ NTSTATUS samba_gnutls_sp800_108_derive_key(
 							i,
 							digest);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
 	}
 
 	memcpy(KO, digest, KO_len);
 
 	ZERO_ARRAY(digest);
 
-	return NT_STATUS_OK;
+out:
+	return status;
 }
