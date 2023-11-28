@@ -212,6 +212,8 @@ if conf.CONFIG_SET('USING_EMBEDDED_HEIMDAL'):
     conf.define('HAVE_KRB5_CONST_PAC', 1)
     conf.define('KRB5_CONST_PAC_GET_BUFFER', 1)
     conf.define('HAVE_KRB5_PAC_IS_TRUSTED', 1)
+    conf.define('HAVE_KRB5_GET_INIT_CREDS_OPT_SET_FAST_CCACHE', 1)
+    conf.define('HAVE_KRB5_GET_INIT_CREDS_OPT_SET_FAST_FLAGS', 1)
 else:
     pass # TODO
 

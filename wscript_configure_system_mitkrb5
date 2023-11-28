@@ -168,6 +168,8 @@ conf.CHECK_FUNCS('''
        krb5_mk_req_extended krb5_kt_compare
        krb5_free_enctypes
        krb5_free_string
+       krb5_get_init_creds_opt_set_fast_ccache
+       krb5_get_init_creds_opt_set_fast_flags
        ''',
      lib='krb5 k5crypto',
      headers='krb5.h')
