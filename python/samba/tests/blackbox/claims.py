@@ -27,6 +27,7 @@ from samba import NTSTATUSError
 from samba.auth import AuthContext
 from samba.credentials import Credentials
 from samba.gensec import FEATURE_SEAL, Security
+from samba.ntstatus import NT_STATUS_LOGON_FAILURE, NT_STATUS_UNSUCCESSFUL
 from samba.tests import BlackboxTestCase
 
 SERVER = os.environ["SERVER"]
@@ -90,7 +91,7 @@ class ClaimsSupportTests(BlackboxTestCase):
                 device_password=device_password,
             )
 
-            self.assertEqual(error.exception.args[0], 3221225581)
+            self.assertEqual(error.exception.args[0], NT_STATUS_LOGON_FAILURE)
             self.assertEqual(
                 error.exception.args[1],
                 "The attempted logon is invalid. This is either due to a "
@@ -186,7 +187,7 @@ class ClaimsSupportTests(BlackboxTestCase):
                 device_password=device_password,
             )
 
-        self.assertEqual(error.exception.args[0], 3221225473)
+        self.assertEqual(error.exception.args[0], NT_STATUS_UNSUCCESSFUL)
         self.assertIn(
             "The requested operation was unsuccessful.",
             error.exception.args[1])
