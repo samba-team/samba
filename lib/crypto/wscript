@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from waflib import Errors, Logs
 
 
 def build(bld):
