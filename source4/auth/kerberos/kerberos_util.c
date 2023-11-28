@@ -358,9 +358,9 @@ done:
 	{
 		bool require_fast;
 		/*
-		 * This ensures that if FAST was required, that we proceed
-		 * with no credentials cache, but with (eg) anonymous
-		 * PKINIT
+		 * This ensures that if FAST was required, but no armor
+		 * credentials cache was specified, we proceed with (eg)
+		 * anonymous PKINIT
 		 */
 		require_fast = cli_credentials_get_krb5_require_fast_armor(credentials);
 		if (require_fast) {
