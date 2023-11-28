@@ -148,7 +148,7 @@ class KerberosASCanonicalizationTests(KDCBaseTest):
     def setUpDynamicTestCases(cls):
 
         def skip(ct, options):
-            ''' Filter out any mutually exclusive test options '''
+            """ Filter out any mutually exclusive test options """
             if ct != CredentialsType.Machine and\
                     TestOptions.RemoveDollar.is_set(options):
                 return True

@@ -67,14 +67,14 @@ SET = b'\x31'
 # ASN.1 Helper functions.
 #
 def encode_element(ber_type, data):
-    ''' Encode an ASN.1 BER element. '''
+    """ Encode an ASN.1 BER element. """
     if data is None:
         return ber_type + encode_length(0)
     return ber_type + encode_length(len(data)) + data
 
 
 def encode_length(length):
-    ''' Encode the length of an ASN.1 BER element.  '''
+    """ Encode the length of an ASN.1 BER element.  """
 
     if length > 0xFFFFFF:
         return b'\x84' + length.to_bytes(4, "big")
@@ -88,38 +88,38 @@ def encode_length(length):
 
 
 def encode_string(string):
-    ''' Encode an octet string '''
+    """ Encode an octet string """
     return encode_element(OCTET_STRING, string)
 
 
 def encode_boolean(boolean):
-    ''' Encode a boolean value '''
+    """ Encode a boolean value """
     if boolean:
         return encode_element(BOOLEAN, b'\xFF')
     return encode_element(BOOLEAN, b'\x00')
 
 
 def encode_integer(integer):
-    ''' Encode an integer value '''
+    """ Encode an integer value """
     bit_len = integer.bit_length()
     byte_len = (bit_len // 8) + 1
     return encode_element(INTEGER, integer.to_bytes(byte_len, "big"))
 
 
 def encode_enumerated(enum):
-    ''' Encode an enumerated value '''
+    """ Encode an enumerated value """
     return encode_element(ENUMERATED, enum.to_bytes(1, "big"))
 
 
 def encode_sequence(sequence):
-    ''' Encode a sequence '''
+    """ Encode a sequence """
     return encode_element(SEQUENCE, sequence)
 
 
 def decode_element(data):
-    '''
+    """
     decode an ASN.1 element
-    '''
+    """
     if data is None:
         return None
 
@@ -169,14 +169,14 @@ class RawLdapTest(TestCase):
         super(RawLdapTest, self).tearDown()
 
     def disconnect(self):
-        ''' Disconnect from and clean up the connection to the server '''
+        """ Disconnect from and clean up the connection to the server """
         if self.socket is None:
             return
         self.socket.close()
         self.socket = None
 
     def connect(self):
-        ''' Establish an ldaps connection to the test server '''
+        """ Establish an ldaps connection to the test server """
         #
         # Disable host name and certificate verification
         context = ssl.create_default_context()
@@ -196,7 +196,7 @@ class RawLdapTest(TestCase):
             raise
 
     def send(self, req):
-        ''' Send the request to the server '''
+        """ Send the request to the server """
         try:
             self.socket.sendall(req)
         except socket.error:
@@ -204,7 +204,7 @@ class RawLdapTest(TestCase):
             raise
 
     def recv(self, num_recv=0xffff, timeout=None):
-        ''' receive an array of bytes from the server '''
+        """ receive an array of bytes from the server """
         data = None
         try:
             if timeout is not None:
@@ -225,9 +225,9 @@ class RawLdapTest(TestCase):
         return data
 
     def bind(self):
-        '''
+        """
             Perform a simple bind
-        '''
+        """
 
         user = self.user.encode('UTF8')
         ou = self.dns_name.replace('.', ',dc=').encode('UTF8')
@@ -277,7 +277,7 @@ class RawLdapTest(TestCase):
         self.assertGreater(len(rest), 0)
 
     def test_decode_element(self):
-        ''' Tests for the decode_element method '''
+        """ Tests for the decode_element method """
 
         # Boolean true value
         data = b'\x01\x01\xff'
@@ -338,11 +338,11 @@ class RawLdapTest(TestCase):
         self.assertEqual(b'\x05\x00'.hex(), rest.hex())
 
     def test_search_equals_maximum_permitted_size(self):
-        '''
+        """
         Check that an LDAP search request equal to the maximum size is accepted
         This test is done on a authenticated connection so that the maximum
         non search request is 16MiB.
-        '''
+        """
         self.bind()
 
         # Lets build an ldap search packet to query the RootDSE
@@ -428,12 +428,12 @@ class RawLdapTest(TestCase):
         self.assertEqual(0, len(rest))
 
     def test_search_exceeds_maximum_permitted_size(self):
-        '''
+        """
         Test that a search query longer than the maximum permitted
         size is rejected.
         This test is done on a authenticated connection so that the maximum
         non search request is 16MiB.
-        '''
+        """
 
         self.bind()
 
@@ -470,9 +470,9 @@ class RawLdapTest(TestCase):
         self.assertIsNone(data)
 
     def test_simple_anonymous_bind(self):
-        '''
+        """
             Test a simple anonymous bind
-        '''
+        """
 
         # Lets build an anonymous simple bind request
         bind = encode_integer(3)                  # ldap version
@@ -516,12 +516,12 @@ class RawLdapTest(TestCase):
         self.assertGreater(len(rest), 0)
 
     def test_simple_bind_at_limit(self):
-        '''
+        """
             Test a simple bind, with a large invalid
             user name. As the resulting packet is equal
             to the maximum unauthenticated packet size we should see
             an INVALID_CREDENTIALS response
-        '''
+        """
 
         # Lets build a simple bind request
         bind = encode_integer(3)                  # ldap version
@@ -569,12 +569,12 @@ class RawLdapTest(TestCase):
         self.assertGreater(len(rest), 0)
 
     def test_simple_bind_gt_limit(self):
-        '''
+        """
             Test a simple bind, with a large invalid
             user name. As the resulting packet is one greater than
             the maximum unauthenticated packet size we should see
             the connection reset.
-        '''
+        """
 
         # Lets build a simple bind request
         bind = encode_integer(3)                  # ldap version
@@ -595,11 +595,11 @@ class RawLdapTest(TestCase):
         self.assertIsNone(data)
 
     def test_unauthenticated_delete_at_limit(self):
-        '''
+        """
             Test a delete, with a large invalid DN
             As the resulting packet is equal to the maximum unauthenticated
             packet size we should see an INVALID_DN_SYNTAX response
-        '''
+        """
 
         # Lets build a delete request, with a large invalid DN
         dn = b' ' * 255987
@@ -644,11 +644,11 @@ class RawLdapTest(TestCase):
         self.assertGreater(len(rest), 0)
 
     def test_unauthenticated_delete_gt_limit(self):
-        '''
+        """
             Test a delete, with a large invalid DN
             As the resulting packet is greater than the maximum unauthenticated
             packet size we should see a connection reset
-        '''
+        """
 
         # Lets build a delete request, with a large invalid DN
         dn = b' ' * 255988
@@ -666,11 +666,11 @@ class RawLdapTest(TestCase):
         self.assertIsNone(data)
 
     def test_authenticated_delete_at_limit(self):
-        '''
+        """
             Test a delete, with a large invalid DN
             As the resulting packet is equal to the maximum authenticated
             packet size we should see an INVALID_DN_SYNTAX response
-        '''
+        """
 
         # Lets build a delete request, with a large invalid DN
         dn = b' ' * 16777203
@@ -717,11 +717,11 @@ class RawLdapTest(TestCase):
         self.assertGreater(len(rest), 0)
 
     def test_authenticated_delete_gt_limit(self):
-        '''
+        """
             Test a delete, with a large invalid DN
             As the resulting packet is one greater than the maximum
             authenticated packet size we should see a connection reset
-        '''
+        """
 
         # Lets build a delete request, with a large invalid DN
         dn = b' ' * 16777204
@@ -763,14 +763,14 @@ class RawCldapTest(TestCase):
         super(RawCldapTest, self).tearDown()
 
     def disconnect(self):
-        ''' Disconnect from and clean up the connection to the server '''
+        """ Disconnect from and clean up the connection to the server """
         if self.socket is None:
             return
         self.socket.close()
         self.socket = None
 
     def connect(self):
-        ''' Establish an UDP connection to the test server '''
+        """ Establish an UDP connection to the test server """
 
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -782,7 +782,7 @@ class RawCldapTest(TestCase):
             raise
 
     def send(self, req):
-        ''' Send the request to the server '''
+        """ Send the request to the server """
         try:
             self.socket.sendall(req)
         except socket.error:
@@ -790,7 +790,7 @@ class RawCldapTest(TestCase):
             raise
 
     def recv(self, num_recv=0xffff, timeout=None):
-        ''' receive an array of bytes from the server '''
+        """ receive an array of bytes from the server """
         data = None
         try:
             if timeout is not None:
@@ -811,10 +811,10 @@ class RawCldapTest(TestCase):
         return data
 
     def test_search_equals_maximum_permitted_size(self):
-        '''
+        """
         Check that an CLDAP search request equal to the maximum size is
         accepted
-        '''
+        """
 
         # Lets build an ldap search packet to query the RootDSE
         header = encode_string(None)        # Base DN, ""
@@ -901,10 +901,10 @@ class RawCldapTest(TestCase):
         self.assertEqual(0, len(rest))
 
     def test_search_exceeds_maximum_permitted_size(self):
-        '''
+        """
         Test that a cldap request longer than the maximum permitted
         size is rejected.
-        '''
+        """
 
         # Lets build an ldap search packet to query the RootDSE
         header = encode_string(None)        # Base DN, ""

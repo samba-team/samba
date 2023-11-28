@@ -38,17 +38,17 @@ talloc.enable_null_tracking()
 
 
 class TallocTests(samba.tests.TestCase):
-    '''test talloc behaviour of pidl generated python code'''
+    """test talloc behaviour of pidl generated python code"""
 
     def check_blocks(self, object, num_expected):
-        '''check that the number of allocated blocks is correct'''
+        """check that the number of allocated blocks is correct"""
         nblocks = talloc.total_blocks(object)
         if object is None:
             nblocks -= self.initial_blocks
         self.assertEqual(nblocks, num_expected)
 
     def get_rodc_partial_attribute_set(self):
-        '''get a list of attributes for RODC replication'''
+        """get a list of attributes for RODC replication"""
         partial_attribute_set = drsuapi.DsPartialAttributeSet()
 
         # we expect one block for the object

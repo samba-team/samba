@@ -40,10 +40,10 @@ global_hexdump = False
 
 
 class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
-    ''' Tests for MS-KILE client principal look-up
+    """ Tests for MS-KILE client principal look-up
         See [MS-KILE]: Kerberos Protocol Extensions
             section 3.3.5.6.1 Client Principal Lookup
-    '''
+    """
 
     def setUp(self):
         super().setUp()
@@ -80,12 +80,12 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             "pac_data = {%s}" % str(pac_data))
 
     def test_nt_principal_step_1(self):
-        ''' Step 1
+        """ Step 1
             For an NT_PRINCIPAL cname with no realm or the realm matches the
             DC's domain
                 search for an account with the
                     sAMAccountName matching the cname.
-        '''
+        """
 
         # Create user and machine accounts for the test.
         #
@@ -142,11 +142,11 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.assertEqual(realm.upper().encode('UTF8'), enc_part['crealm'])
 
     def test_nt_principal_step_2(self):
-        ''' Step 2
+        """ Step 2
             If not found
                 search for sAMAccountName equal to the cname + "$"
 
-        '''
+        """
 
         # Create a machine account for the test.
         #
@@ -200,13 +200,13 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.assertEqual(realm.upper().encode('UTF8'), enc_part['crealm'])
 
     def test_nt_principal_step_3(self):
-        ''' Step 3
+        """ Step 3
 
             If not found
                 search for a matching UPN name where the UPN is set to
                     cname@realm or cname@DC's domain name
 
-        '''
+        """
         # Create a user account for the test.
         #
         samdb = self.get_samdb()
@@ -264,10 +264,10 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.assertEqual(realm.upper().encode('UTF8'), enc_part['crealm'])
 
     def test_nt_principal_step_4_a(self):
-        ''' Step 4, no pre-authentication
+        """ Step 4, no pre-authentication
             If not found and no pre-authentication
                 search for a matching altSecurityIdentity
-        '''
+        """
         # Create a user account for the test.
         # with an altSecurityIdentity, and with UF_DONT_REQUIRE_PREAUTH
         # set.
@@ -328,10 +328,10 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.check_error_rep(rep, KDC_ERR_TGT_REVOKED)
 
     def test_nt_principal_step_4_b(self):
-        ''' Step 4, pre-authentication
+        """ Step 4, pre-authentication
             If not found and pre-authentication
                 search for a matching user principal name
-        '''
+        """
 
         # Create user and machine accounts for the test.
         #
@@ -396,12 +396,12 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.assertEqual(realm.upper().encode('UTF8'), enc_part['crealm'])
 
     def test_nt_principal_step_4_c(self):
-        ''' Step 4, pre-authentication
+        """ Step 4, pre-authentication
             If not found and pre-authentication
                 search for a matching user principal name
 
             This test uses the altsecid, so the AS-REQ should fail.
-        '''
+        """
 
         # Create user and machine accounts for the test.
         #
@@ -438,11 +438,11 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.check_error_rep(rep, KDC_ERR_C_PRINCIPAL_UNKNOWN)
 
     def test_enterprise_principal_step_1_3(self):
-        ''' Steps 1-3
+        """ Steps 1-3
             For an NT_ENTERPRISE_PRINCIPAL cname
                 search for a user principal name matching the cname
 
-        '''
+        """
 
         # Create a user account for the test.
         #
@@ -502,13 +502,13 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.assertEqual(realm.upper().encode('UTF8'), crealm)
 
     def test_enterprise_principal_step_4(self):
-        ''' Step 4
+        """ Step 4
 
             If that fails
                 search for an account where the sAMAccountName matches
                 the name before the @
 
-        '''
+        """
 
         # Create a user account for the test.
         #
@@ -567,13 +567,13 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.assertEqual(realm.upper().encode('UTF8'), crealm)
 
     def test_enterprise_principal_step_5(self):
-        ''' Step 5
+        """ Step 5
 
             If that fails
                 search for an account where the sAMAccountName matches
                 the name before the @ with a $ appended.
 
-        '''
+        """
 
         # Create a user account for the test.
         #
@@ -633,10 +633,10 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.assertEqual(realm.upper().encode('UTF8'), crealm)
 
     def test_enterprise_principal_step_6_a(self):
-        ''' Step 6, no pre-authentication
+        """ Step 6, no pre-authentication
             If not found and no pre-authentication
                 search for a matching altSecurityIdentity
-        '''
+        """
         # Create a user account for the test.
         # with an altSecurityIdentity, and with UF_DONT_REQUIRE_PREAUTH
         # set.
@@ -698,10 +698,10 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.check_error_rep(rep, KDC_ERR_TGT_REVOKED)
 
     def test_nt_enterprise_principal_step_6_b(self):
-        ''' Step 4, pre-authentication
+        """ Step 4, pre-authentication
             If not found and pre-authentication
                 search for a matching user principal name
-        '''
+        """
 
         # Create user and machine accounts for the test.
         #
@@ -768,12 +768,12 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         self.assertEqual(realm.upper().encode('UTF8'), enc_part['crealm'])
 
     def test_nt_principal_step_6_c(self):
-        ''' Step 4, pre-authentication
+        """ Step 4, pre-authentication
             If not found and pre-authentication
                 search for a matching user principal name
 
             This test uses the altsecid, so the AS-REQ should fail.
-        '''
+        """
 
         # Create user and machine accounts for the test.
         #

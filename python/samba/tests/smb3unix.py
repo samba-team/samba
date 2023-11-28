@@ -332,9 +332,9 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
         self.assertEqual(0, dotdot['dev'], 'The dev for .. was not 0')
 
     def test_create_context_basic1(self):
-        '''
+        """
         Check basic CreateContexts response
-        '''
+        """
         try:
             c = libsmb.Conn(
                 self.server_ip,

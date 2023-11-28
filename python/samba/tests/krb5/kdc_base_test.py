@@ -792,10 +792,10 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                        ou=None, account_control=0, add_dollar=None,
                        expired_password=False, force_nt4_hash=False,
                        preserve=True):
-        '''Create an account for testing.
+        """Create an account for testing.
            The dn of the created account is added to self.accounts,
            which is used by tearDownClass to clean up the created accounts.
-        '''
+        """
         if add_dollar is None and account_type is not self.AccountType.USER:
             add_dollar = True
 
@@ -2592,8 +2592,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         return creds, sname
 
     def as_req(self, cname, sname, realm, etypes, padata=None, kdc_options=0):
-        '''Send a Kerberos AS_REQ, returns the undecoded response
-        '''
+        """Send a Kerberos AS_REQ, returns the undecoded response
+        """
 
         till = self.get_KerberosTime(offset=36000)
 
@@ -2613,8 +2613,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         return rep
 
     def get_as_rep_key(self, creds, rep):
-        '''Extract the session key from an AS-REP
-        '''
+        """Extract the session key from an AS-REP
+        """
         rep_padata = self.der_decode(
             rep['e-data'],
             asn1Spec=krb5_asn1.METHOD_DATA())
@@ -2634,8 +2634,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         return key
 
     def get_enc_timestamp_pa_data(self, creds, rep, skew=0):
-        '''generate the pa_data data element for an AS-REQ
-        '''
+        """generate the pa_data data element for an AS-REQ
+        """
 
         key = self.get_as_rep_key(creds, rep)
 
@@ -2671,8 +2671,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         return padata
 
     def get_as_rep_enc_data(self, key, rep):
-        ''' Decrypt and Decode the encrypted data in an AS-REP
-        '''
+        """ Decrypt and Decode the encrypted data in an AS-REP
+        """
         enc_part = key.decrypt(KU_AS_REP_ENC_PART, rep['enc-part']['cipher'])
         # MIT KDC encodes both EncASRepPart and EncTGSRepPart with
         # application tag 26
@@ -2749,9 +2749,9 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                 expected_error_mode=0, padata=None, kdc_options=0,
                 to_rodc=False, creds=None, service_creds=None, expect_pac=True,
                 expect_edata=None, expected_flags=None, unexpected_flags=None):
-        '''Send a TGS-REQ, returns the response and the decrypted and
+        """Send a TGS-REQ, returns the response and the decrypted and
            decoded enc-part
-        '''
+        """
 
         subkey = self.RandomKey(key.etype)
 
@@ -3226,8 +3226,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         "account_name account_sid logon_name upn domain_name")
 
     def get_pac_data(self, authorization_data):
-        '''Decode the PAC element contained in the authorization-data element
-        '''
+        """Decode the PAC element contained in the authorization-data element
+        """
         account_name = None
         user_sid = None
         logon_name = None
@@ -3264,8 +3264,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             domain_name)
 
     def decode_service_ticket(self, creds, ticket):
-        '''Decrypt and decode a service ticket
-        '''
+        """Decrypt and decode a service ticket
+        """
 
         enc_part = ticket['enc-part']
 
@@ -3295,9 +3295,9 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         return enc_part
 
     def get_objectSid(self, samdb, dn):
-        ''' Get the objectSID for a DN
+        """ Get the objectSID for a DN
             Note: performs an Ldb query.
-        '''
+        """
         res = samdb.search(dn, scope=SCOPE_BASE, attrs=["objectSID"])
         self.assertTrue(len(res) == 1, "did not get objectSid for %s" % dn)
         sid = samdb.schema_format_value("objectSID", res[0]["objectSID"][0])

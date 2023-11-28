@@ -474,9 +474,9 @@ class KdcTgsTests(KdcTgsBaseTests):
         self.do_hexdump = global_hexdump
 
     def test_tgs_req_cname_does_not_not_match_authenticator_cname(self):
-        ''' Try and obtain a ticket from the TGS, but supply a cname
+        """ Try and obtain a ticket from the TGS, but supply a cname
             that differs from that provided to the krbtgt
-        '''
+        """
         # Create the user account
         samdb = self.get_samdb()
         user_name = "tsttktusr"
@@ -528,8 +528,8 @@ class KdcTgsTests(KdcTgsBaseTests):
             "rep = {%s}" % rep)
 
     def test_ldap_service_ticket(self):
-        '''Get a ticket to the ldap service
-        '''
+        """Get a ticket to the ldap service
+        """
         # Create the user account
         samdb = self.get_samdb()
         user_name = "tsttktusr"

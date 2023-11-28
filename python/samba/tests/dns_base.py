@@ -363,8 +363,8 @@ class DNSTKeyTest(DNSTest):
         return mac
 
     def bad_sign_packet(self, packet, key_name):
-        '''Add bad signature for a packet by bitflipping
-        the final byte in the MAC'''
+        """Add bad signature for a packet by bitflipping
+        the final byte in the MAC"""
 
         mac_list = [x if isinstance(x, int) else ord(x) for x in list("badmac")]
 

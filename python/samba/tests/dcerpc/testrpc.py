@@ -27,10 +27,10 @@ talloc.enable_null_tracking()
 
 
 class RpcTests(object):
-    '''test type behaviour of pidl generated python RPC code'''
+    """test type behaviour of pidl generated python RPC code"""
 
     def check_blocks(self, object, num_expected):
-        '''check that the number of allocated blocks is correct'''
+        """check that the number of allocated blocks is correct"""
         nblocks = talloc.total_blocks(object)
         if object is None:
             nblocks -= self.initial_blocks

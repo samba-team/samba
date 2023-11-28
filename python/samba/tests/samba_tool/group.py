@@ -575,10 +575,10 @@ template """
                         "Total groups not reported correctly")
 
     def _random_user(self, base=None):
-        '''
+        """
         create a user with random attribute values, you can specify
         base attributes
-        '''
+        """
         if base is None:
             base = {}
         user = {
