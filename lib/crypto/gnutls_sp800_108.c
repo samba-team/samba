@@ -42,37 +42,32 @@ static NTSTATUS samba_gnutls_sp800_108_derive_key_part(
 	RSIVAL(buf, 0, i);
 	rc = gnutls_hmac(hmac_hnd, buf, sizeof(buf));
 	if (rc < 0) {
-		gnutls_hmac_deinit(hmac_hnd, NULL);
 		return gnutls_error_to_ntstatus(rc,
 						NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 	rc = gnutls_hmac(hmac_hnd, Label, Label_len);
 	if (rc < 0) {
-		gnutls_hmac_deinit(hmac_hnd, NULL);
 		return gnutls_error_to_ntstatus(rc,
 						NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 	rc = gnutls_hmac(hmac_hnd, &zero, 1);
 	if (rc < 0) {
-		gnutls_hmac_deinit(hmac_hnd, NULL);
 		return gnutls_error_to_ntstatus(rc,
 						NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 	rc = gnutls_hmac(hmac_hnd, Context, Context_len);
 	if (rc < 0) {
-		gnutls_hmac_deinit(hmac_hnd, NULL);
 		return gnutls_error_to_ntstatus(rc,
 						NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 	RSIVAL(buf, 0, L);
 	rc = gnutls_hmac(hmac_hnd, buf, sizeof(buf));
 	if (rc < 0) {
-		gnutls_hmac_deinit(hmac_hnd, NULL);
 		return gnutls_error_to_ntstatus(rc,
 						NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 
-	gnutls_hmac_deinit(hmac_hnd, digest);
+	gnutls_hmac_output(hmac_hnd, digest);
 
 	return NT_STATUS_OK;
 }
@@ -168,5 +163,9 @@ NTSTATUS samba_gnutls_sp800_108_derive_key(
 	ZERO_ARRAY(digest);
 
 out:
+	if (hmac_hnd != NULL) {
+		gnutls_hmac_deinit(hmac_hnd, NULL);
+	}
+
 	return status;
 }
