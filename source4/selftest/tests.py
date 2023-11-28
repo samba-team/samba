@@ -1092,7 +1092,11 @@ tdb_testenv = "ad_dc_ntvfs"
 for testenv in [mdb_testenv, tdb_testenv]:
     planoldpythontestsuite(testenv, "samba.tests.complex_expressions", extra_args=['-U"$USERNAME%$PASSWORD"'])
 
-planoldpythontestsuite("ad_dc_default:local", "samba.tests.gensec", extra_args=['-U"$USERNAME%$PASSWORD"'])
+# samba.tests.gensec is only run in ad_dc to ensure it runs with and
+# MIT and Heimdal build, it can run against any environment that
+# supports FAST
+planoldpythontestsuite("ad_dc:local", "samba.tests.gensec", extra_args=['-U"$USERNAME%$PASSWORD"'])
+
 planoldpythontestsuite("none", "simple", extra_path=["%s/lib/tdb/python/tests" % srcdir()], name="tdb.python")
 planpythontestsuite("ad_dc_default:local", "samba.tests.dcerpc.sam")
 planpythontestsuite("ad_dc_default:local", "samba.tests.dsdb")
