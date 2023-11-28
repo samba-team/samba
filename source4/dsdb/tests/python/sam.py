@@ -9,6 +9,7 @@ import time
 
 sys.path.insert(0, "bin/python")
 import samba
+from samba import HRES_SEC_E_INVALID_TOKEN, HRES_SEC_E_LOGON_DENIED
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 
 import samba.getopt as options
@@ -1722,9 +1723,6 @@ class SamTests(samba.tests.TestCase):
             #
             return "%08X: LdapErr: DSID-%08X, comment: AcceptSecurityContext error, data %x, v" % (
                     hresult_v, dsid_v, werror_v)
-
-        HRES_SEC_E_LOGON_DENIED = 0x8009030C
-        HRES_SEC_E_INVALID_TOKEN = 0x80090308
 
         sasl_bind_dsid = 0x0C0904DC
         simple_bind_dsid = 0x0C0903A9

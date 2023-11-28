@@ -38,6 +38,7 @@ from samba.netcmd.domain.models import AuthenticationPolicy, AuthenticationSilo
 
 import samba.tests
 import samba.tests.krb5.kcrypto as kcrypto
+from samba import HRES_SEC_E_INVALID_TOKEN, HRES_SEC_E_LOGON_DENIED
 from samba.tests.krb5.kdc_base_test import GroupType
 from samba.tests.krb5.kdc_tgs_tests import KdcTgsBaseTests
 from samba.tests.auth_log_base import AuthLogTestBase, NoMessageException
@@ -58,9 +59,6 @@ SidType = RawKerberosTest.SidType
 
 global_asn1_print = False
 global_hexdump = False
-
-HRES_SEC_E_INVALID_TOKEN = 0x80090308
-HRES_SEC_E_LOGON_DENIED = 0x8009030C
 
 
 AUTHN_VERSION = {'major': 1, 'minor': 3}

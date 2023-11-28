@@ -398,3 +398,6 @@ NTSTATUSError = _glue.NTSTATUSError
 HRESULTError = _glue.HRESULTError
 WERRORError = _glue.WERRORError
 DsExtendedError = _glue.DsExtendedError
+
+HRES_SEC_E_LOGON_DENIED = 0x8009030C
+HRES_SEC_E_INVALID_TOKEN = 0x80090308

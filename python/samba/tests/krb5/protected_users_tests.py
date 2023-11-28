@@ -26,7 +26,7 @@ from functools import partial
 
 import ldb
 
-from samba import generate_random_password, ntstatus
+from samba import generate_random_password, ntstatus, HRES_SEC_E_LOGON_DENIED
 from samba.dcerpc import netlogon, security
 
 import samba.tests.krb5.kcrypto as kcrypto
@@ -50,8 +50,6 @@ import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 
 global_asn1_print = False
 global_hexdump = False
-
-HRES_SEC_E_LOGON_DENIED = 0x8009030C
 
 
 class ProtectedUsersTests(KDCBaseTest):

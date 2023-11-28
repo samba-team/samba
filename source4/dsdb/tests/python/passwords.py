@@ -21,6 +21,7 @@ from samba.tests.password_test import PasswordTestCase
 
 import samba.getopt as options
 
+from samba import HRES_SEC_E_INVALID_TOKEN
 from samba.auth import system_session
 from samba.credentials import Credentials
 from samba.dcerpc import security
@@ -267,8 +268,6 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).
             SamDB(url=host_ldaps,
                   credentials=self.creds, lp=lp)
         except LdbError as err:
-            HRES_SEC_E_INVALID_TOKEN = 0x80090308
-
             num, estr = err.args
             self.assertEqual(ERR_INVALID_CREDENTIALS, num)
             self.assertIn(f"{HRES_SEC_E_INVALID_TOKEN:08X}", estr)
