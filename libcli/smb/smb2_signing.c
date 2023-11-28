@@ -258,11 +258,15 @@ static NTSTATUS smb2_signing_key_create(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	status = smb2_key_derivation(key->blob.data, in_key_length,
-				     d->label.data, d->label.length,
-				     d->context.data, d->context.length,
-				     GNUTLS_MAC_SHA256,
-				     key->blob.data, out_key_length);
+	status = samba_gnutls_sp800_108_derive_key(key->blob.data,
+						   in_key_length,
+						   d->label.data,
+						   d->label.length,
+						   d->context.data,
+						   d->context.length,
+						   GNUTLS_MAC_SHA256,
+						   key->blob.data,
+						   out_key_length);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(key);
 		return status;
@@ -643,89 +647,6 @@ NTSTATUS smb2_signing_check_pdu(struct smb2_signing_key *signing_key,
 		dump_data(0, res, 16);
 		return NT_STATUS_ACCESS_DENIED;
 	}
-
-	return NT_STATUS_OK;
-}
-
-NTSTATUS smb2_key_derivation(const uint8_t *KI, size_t KI_len,
-			     const uint8_t *Label, size_t Label_len,
-			     const uint8_t *Context, size_t Context_len,
-			     const gnutls_mac_algorithm_t algorithm,
-			     uint8_t *KO, size_t KO_len)
-{
-	gnutls_hmac_hd_t hmac_hnd = NULL;
-	uint8_t buf[4];
-	static const uint8_t zero = 0;
-	const size_t digest_len = gnutls_hmac_get_len(algorithm);
-	uint8_t digest[digest_len];
-	uint32_t i = 1;
-	uint32_t L = KO_len * 8;
-	int rc;
-
-	if (KO_len > digest_len) {
-		DBG_ERR("KO_len[%zu] > digest_len[%zu]\n", KO_len, digest_len);
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	switch (KO_len) {
-	case 16:
-	case 32:
-		break;
-	default:
-		DBG_ERR("KO_len[%zu] not supported\n", KO_len);
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	/*
-	 * a simplified version of
-	 * "NIST Special Publication 800-108" section 5.1.
-	 */
-	rc = gnutls_hmac_init(&hmac_hnd,
-			      algorithm,
-			      KI,
-			      KI_len);
-	if (rc < 0) {
-		return gnutls_error_to_ntstatus(rc,
-						NT_STATUS_HMAC_NOT_SUPPORTED);
-	}
-
-	RSIVAL(buf, 0, i);
-	rc = gnutls_hmac(hmac_hnd, buf, sizeof(buf));
-	if (rc < 0) {
-		return gnutls_error_to_ntstatus(rc,
-						NT_STATUS_HMAC_NOT_SUPPORTED);
-	}
-	rc = gnutls_hmac(hmac_hnd, Label, Label_len);
-	if (rc < 0) {
-		gnutls_hmac_deinit(hmac_hnd, NULL);
-		return gnutls_error_to_ntstatus(rc,
-						NT_STATUS_HMAC_NOT_SUPPORTED);
-	}
-	rc = gnutls_hmac(hmac_hnd, &zero, 1);
-	if (rc < 0) {
-		gnutls_hmac_deinit(hmac_hnd, NULL);
-		return gnutls_error_to_ntstatus(rc,
-						NT_STATUS_HMAC_NOT_SUPPORTED);
-	}
-	rc = gnutls_hmac(hmac_hnd, Context, Context_len);
-	if (rc < 0) {
-		gnutls_hmac_deinit(hmac_hnd, NULL);
-		return gnutls_error_to_ntstatus(rc,
-						NT_STATUS_HMAC_NOT_SUPPORTED);
-	}
-	RSIVAL(buf, 0, L);
-	rc = gnutls_hmac(hmac_hnd, buf, sizeof(buf));
-	if (rc < 0) {
-		gnutls_hmac_deinit(hmac_hnd, NULL);
-		return gnutls_error_to_ntstatus(rc,
-						NT_STATUS_HMAC_NOT_SUPPORTED);
-	}
-
-	gnutls_hmac_deinit(hmac_hnd, digest);
-
-	memcpy(KO, digest, KO_len);
-
-	ZERO_ARRAY(digest);
 
 	return NT_STATUS_OK;
 }

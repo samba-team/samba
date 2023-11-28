@@ -6669,12 +6669,16 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 	if (conn->protocol >= PROTOCOL_SMB3_00) {
 		struct _derivation *d = &derivation.signing;
 
-		status = smb2_key_derivation(channel_key, sizeof(channel_key),
-					     d->label.data, d->label.length,
-					     d->context.data, d->context.length,
-					     GNUTLS_MAC_SHA256,
-					     session->smb2_channel.signing_key->blob.data,
-					     session->smb2_channel.signing_key->blob.length);
+		status = samba_gnutls_sp800_108_derive_key(
+			channel_key,
+			sizeof(channel_key),
+			d->label.data,
+			d->label.length,
+			d->context.data,
+			d->context.length,
+			GNUTLS_MAC_SHA256,
+			session->smb2_channel.signing_key->blob.data,
+			session->smb2_channel.signing_key->blob.length);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}

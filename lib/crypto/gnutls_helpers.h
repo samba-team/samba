@@ -187,4 +187,43 @@ samba_gnutls_aead_aes_256_cbc_hmac_sha512_decrypt(TALLOC_CTX *mem_ctx,
  */
 bool samba_gnutls_weak_crypto_allowed(void);
 
+/**
+ * @brief Derive a key using the NIST SP 800‐108 algorithm.
+ *
+ * The details of the algorithm can be found at
+ * https://csrc.nist.gov/pubs/sp/800/108/r1/final.
+ *
+ * @param KI            The key‐derivation key used as input.
+ *
+ * @param KI_len        The length of the key‐derivation key.
+ *
+ * @param Label         A label that identifies the purpose for the derived key.
+ *                      Ignored if FixedData is non‐NULL.
+ *
+ * @param Label_len     The length of the label.
+ *
+ * @param Context       Information related to the derived key. Ignored if
+ *                      FixedData is non‐NULL.
+ *
+ * @param Context_len   The length of the context data.
+ *
+ * @param algorithm     The HMAC algorithm to use.
+ *
+ * @param KO            A buffer to receive the derived key.
+ *
+ * @param KO_len        The length of the key to be derived.
+ *
+ * @return NT_STATUS_OK on success, an NT status error code otherwise.
+ */
+NTSTATUS samba_gnutls_sp800_108_derive_key(
+	const uint8_t *KI,
+	size_t KI_len,
+	const uint8_t *Label,
+	size_t Label_len,
+	const uint8_t *Context,
+	size_t Context_len,
+	const gnutls_mac_algorithm_t algorithm,
+	uint8_t *KO,
+	size_t KO_len);
+
 #endif /* _GNUTLS_HELPERS_H */

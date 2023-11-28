@@ -8,6 +8,7 @@ def build(bld):
                         gnutls_aead_aes_256_cbc_hmac_sha512.c
                         gnutls_arcfour_confounded_md5.c
                         gnutls_weak_crypto.c
+                        gnutls_sp800_108.c
                         ''',
                         deps="gnutls samba-errors")
 
