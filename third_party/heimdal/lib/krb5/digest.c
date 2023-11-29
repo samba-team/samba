@@ -347,7 +347,7 @@ digest_request(krb5_context context,
 	if (key == NULL) {
 	    ret = EINVAL;
 	    krb5_set_error_message(context, ret,
-				   N_("Digest reply have no remote subkey", ""));
+				   N_("Digest reply has no remote subkey", ""));
 	    goto out;
 	}
 

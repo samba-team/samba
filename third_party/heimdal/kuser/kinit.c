@@ -221,7 +221,7 @@ static struct getargs args[] = {
       NP_("use this credential cache as FAST armor cache", ""), "cache" },
 
     { "use-referrals",	0,  arg_flag, &use_referrals_flag,
-      NP_("only use referrals, no dns canalisation", ""), NULL },
+      NP_("only use referrals, no dns canonicalisation", ""), NULL },
 
     { "windows",	0,  arg_flag, &windows_flag,
       NP_("get windows behavior", ""), NULL },

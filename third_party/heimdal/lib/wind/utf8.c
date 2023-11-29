@@ -116,7 +116,7 @@ utf8toutf32(const unsigned char **pp, uint32_t *out)
  * Convert an UTF-8 string to an UCS4 string.
  *
  * @param in an UTF-8 string to convert.
- * @param out the resulting UCS4 strint, must be at least
+ * @param out the resulting UCS4 string, must be at least
  * wind_utf8ucs4_length() long.  If out is NULL, the function will
  * calculate the needed space for the out variable (just like
  * wind_utf8ucs4_length()).
@@ -179,7 +179,7 @@ static const char first_char[4] =
  * @param in an UCS4 string to convert.
  * @param in_len the length input array.
 
- * @param out the resulting UTF-8 strint, must be at least
+ * @param out the resulting UTF-8 string, must be at least
  * wind_ucs4utf8_length() + 1 long (the extra char for the NUL).  If
  * out is NULL, the function will calculate the needed space for the
  * out variable (just like wind_ucs4utf8_length()).
@@ -403,7 +403,7 @@ wind_ucs2write(const uint16_t *in, size_t in_len, unsigned int *flags,
  * Convert an UTF-8 string to an UCS2 string.
  *
  * @param in an UTF-8 string to convert.
- * @param out the resulting UCS2 strint, must be at least
+ * @param out the resulting UCS2 string, must be at least
  * wind_utf8ucs2_length() long.  If out is NULL, the function will
  * calculate the needed space for the out variable (just like
  * wind_utf8ucs2_length()).
@@ -480,7 +480,7 @@ wind_utf8ucs2_length(const char *in, size_t *out_len)
  *
  * @param in an UCS2 string to convert.
  * @param in_len the length of the in UCS2 string.
- * @param out the resulting UTF-8 strint, must be at least
+ * @param out the resulting UTF-8 string, must be at least
  * wind_ucs2utf8_length() long.  If out is NULL, the function will
  * calculate the needed space for the out variable (just like
  * wind_ucs2utf8_length()).

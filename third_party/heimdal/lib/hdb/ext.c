@@ -43,7 +43,7 @@ hdb_entry_check_mandatory(krb5_context context, const hdb_entry *ent)
 	return 0;
 
     /*
-     * check for unknown extensions and if they where tagged mandatory
+     * check for unknown extensions and if they were tagged mandatory
      */
 
     for (i = 0; i < ent->extensions->len; i++) {
@@ -52,7 +52,7 @@ hdb_entry_check_mandatory(krb5_context context, const hdb_entry *ent)
 	    continue;
 	if (ent->extensions->val[i].mandatory) {
 	    krb5_set_error_message(context, HDB_ERR_MANDATORY_OPTION,
-				   "Principal have unknown "
+				   "Principal has unknown "
 				   "mandatory extension");
 	    return HDB_ERR_MANDATORY_OPTION;
 	}
@@ -592,7 +592,7 @@ hdb_validate_key_rotation(krb5_context context,
     if (new_kr->base_kvno <= last_kvno) {
         krb5_set_error_message(context, EINVAL,
                                "New key rotation base kvno must be larger "
-                               "the last kvno for the current key "
+                               "than the last kvno for the current key "
                                "rotation (%u)", last_kvno);
         return EINVAL;
     }
@@ -751,7 +751,7 @@ hdb_entry_add_key_rotation(krb5_context context,
                  ((kr->epoch - prev_kr->epoch) / prev_kr->period))) {
             krb5_set_error_message(context, EINVAL,
                                    "New key rotation base kvno must be larger "
-                                   "the last kvno for the current key "
+                                   "than the last kvno for the current key "
                                    "rotation (%u)", last_kvno);
             return EINVAL;
         }

@@ -462,7 +462,7 @@ ecdsa_create_signature(hx509_context context,
         goto error;
     }
     if (siglen > sig->length)
-        _hx509_abort("ECDSA signature prelen longer the output len");
+        _hx509_abort("ECDSA signature prelen longer than output len");
 
     sig->length = siglen;
 

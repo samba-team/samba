@@ -391,7 +391,7 @@ rsa_create_signature(hx509_context context,
 	memmove((uint8_t *)sig->data + size, sig->data, ret);
 	memset(sig->data, 0, size);
     } else if (sig->length < (size_t)ret)
-	_hx509_abort("RSA signature prelen longer the output len");
+	_hx509_abort("RSA signature prelen longer than output len");
 
     return 0;
 }
@@ -738,7 +738,7 @@ evp_md_verify_signature(hx509_context context,
 
     if (sig->length != sigsize || sigsize > sizeof(digest)) {
 	hx509_set_error_string(context, 0, HX509_CRYPTO_SIG_INVALID_FORMAT,
-			       "SHA256 sigature have wrong length");
+			       "SHA256 sigature has wrong length");
 	return HX509_CRYPTO_SIG_INVALID_FORMAT;
     }
 

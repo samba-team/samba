@@ -99,7 +99,7 @@ ${hxtool} cms-verify-sd \
 	--missing-revoke \
 	--anchors=FILE:$srcdir/data/ca.crt \
 	sd.data sd.data.out 2> signer.tmp && exit 1
-grep "No signers where found" signer.tmp > /dev/null || exit 1
+grep "No signers were found" signer.tmp > /dev/null || exit 1
 
 echo "create signed data (id-by-name)"
 ${hxtool} cms-create-sd \

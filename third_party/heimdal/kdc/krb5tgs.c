@@ -1789,7 +1789,7 @@ server_lookup:
 		    break;
 	    if(i == b->etype.len) {
 		kdc_log(context, config, 4,
-			"Addition ticket have not matching etypes");
+			"Addition ticket has no matching etypes");
 		krb5_clear_error_message(context);
 		ret = KRB5KDC_ERR_ETYPE_NOSUPP;
                 kdc_audit_addreason((kdc_request_t)priv,

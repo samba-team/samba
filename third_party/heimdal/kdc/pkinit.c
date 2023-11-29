@@ -534,8 +534,8 @@ _kdc_pk_rd_padata(astgs_request_t priv,
 
 	    }
 	    /*
-	     * If the client sent more then 10 EDI, don't bother
-	     * looking more then 10 of performance reasons.
+	     * If the client sent more than 10 EDIs, don't bother
+	     * looking at more than 10 for performance reasons.
 	     */
 	    maxedi = edi->len;
 	    if (maxedi > 10)
@@ -873,7 +873,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
     *kdc_cert = NULL;
 
     /*
-     * If the message client is a win2k-type but it send pa data
+     * If the message client is a win2k-type but it sends pa data
      * 09-binding it expects a IETF (checksum) reply so there can be
      * no replay attacks.
      */
@@ -1533,7 +1533,7 @@ _kdc_pk_mk_pa_reply(astgs_request_t r, pk_client_params *cp)
 		krb5_data_free(&ocsp.data);
 		ocsp.expire = 0;
 	    } else if (ocsp.expire > 180) {
-		ocsp.expire -= 180; /* refetch the ocsp before it expire */
+		ocsp.expire -= 180; /* refetch the ocsp before it expires */
 		ocsp.next_update = ocsp.expire;
 	    } else {
 		ocsp.next_update = kdc_time;
@@ -1808,7 +1808,7 @@ _kdc_pk_check_client(astgs_request_t r,
 	    if (strcmp(*subject_name, acl->val[0].subject) != 0)
 		continue;
 
-	    /* Don't support isser and anchor checking right now */
+	    /* Don't support issuer and anchor checking right now */
 	    if (acl->val[0].issuer)
 		continue;
 	    if (acl->val[0].anchor)

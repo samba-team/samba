@@ -193,7 +193,7 @@ hx509_request_get_name(hx509_context context,
 			hx509_name *name)
 {
     if (req->name == NULL) {
-	hx509_set_error_string(context, 0, EINVAL, "Request have no name");
+	hx509_set_error_string(context, 0, EINVAL, "Request has no name");
 	return EINVAL;
     }
     return hx509_name_copy(context, req->name, name);

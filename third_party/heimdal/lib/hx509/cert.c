@@ -237,13 +237,13 @@ hx509_set_warn_dest(hx509_context context, heim_log_facility *fac)
 
 /**
  * Selects if the hx509_revoke_verify() function is going to require
- * the existans of a revokation method (OCSP, CRL) or not. Note that
- * hx509_verify_path(), hx509_cms_verify_signed(), and other function
+ * the existence of a revocation method (OCSP, CRL) or not. Note that
+ * hx509_verify_path(), hx509_cms_verify_signed(), and other functions
  * call hx509_revoke_verify().
  *
  * @param context hx509 context to change the flag for.
- * @param flag zero, revokation method required, non zero missing
- * revokation method ok
+ * @param flag zero, revocation method required, non zero missing
+ * revocation method ok
  *
  * @ingroup hx509_verify
  */
@@ -555,7 +555,7 @@ hx509_cert_ref(hx509_cert cert)
 }
 
 /**
- * Allocate an verification context that is used fo control the
+ * Allocate an verification context that is used to control the
  * verification process.
  *
  * @param context A hx509 context.
@@ -952,7 +952,7 @@ hx509_cert_find_subjectAltName_otherName(hx509_context context,
 		ret = add_to_list(list, &sa.val[j].u.otherName.value);
 		if (ret) {
 		    hx509_set_error_string(context, 0, ret,
-					   "Error adding an exra SAN to "
+					   "Error adding an extra SAN to "
 					   "return list");
 		    hx509_free_octet_string_list(list);
 		    free_GeneralNames(&sa);
@@ -2436,7 +2436,7 @@ hx509_verify_path(hx509_context context,
 
 		/*
 		 * The subject name of the proxy certificate should be
-		 * CN=XXX,<proxy issuer>, prune of CN and check if its
+		 * CN=XXX,<proxy issuer>. Prune off CN and check if it's
 		 * the same over the whole chain of proxy certs and
 		 * then check with the EE cert when we get to it.
 		 */
@@ -2496,7 +2496,7 @@ hx509_verify_path(hx509_context context,
 	    } else {
 		/*
 		 * Now we are done with the proxy certificates, this
-		 * cert was an EE cert and we we will fall though to
+		 * cert was an EE cert and we will fall though to
 		 * EE checking below.
 		 */
 		type = EE_CERT;
@@ -2505,9 +2505,9 @@ hx509_verify_path(hx509_context context,
         HEIM_FALLTHROUGH;
 	case EE_CERT:
 	    /*
-	     * If there where any proxy certificates in the chain
+	     * If there were any proxy certificates in the chain
 	     * (proxy_cert_depth > 0), check that the proxy issuer
-	     * matched proxy certificates "base" subject.
+	     * matched the proxy certificate's "base" subject.
 	     */
 	    if (proxy_cert_depth) {
 
@@ -2598,7 +2598,7 @@ hx509_verify_path(hx509_context context,
     }
 
     /*
-     * Verify that no certificates has been revoked.
+     * Verify that no certificates have been revoked.
      */
 
     if (ctx->revoke_ctx) {
@@ -2681,7 +2681,7 @@ hx509_verify_path(hx509_context context,
 	    goto out;
 	}
 	/*
-	 * Verify that the sigature algorithm is not weak. Ignore
+	 * Verify that the signature algorithm is not weak. Ignore
 	 * trust anchors since they are provisioned by the user.
 	 */
 
@@ -2708,7 +2708,7 @@ out:
  * @param signer the certificate that made the signature.
  * @param alg algorthm that was used to sign the data.
  * @param data the data that was signed.
- * @param sig the sigature to verify.
+ * @param sig the signature to verify.
  *
  * @return An hx509 error code, see hx509_get_error_string().
  *

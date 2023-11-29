@@ -1125,7 +1125,7 @@ pa_enc_ts_validate(astgs_request_t r, const PA_DATA *pa)
     ret = pa_enc_ts_decrypt_kvno(r, kvno, &enc_data, &ts_data, &pa_key);
     if (ret == KRB5KDC_ERR_ETYPE_NOSUPP) {
 	char *estr;
-	_kdc_set_e_text(r, "No key matching entype");
+	_kdc_set_e_text(r, "No key matching enctype");
 	if(krb5_enctype_to_string(r->context, enc_data.etype, &estr))
 	    estr = NULL;
 	if(estr == NULL)
@@ -1143,6 +1143,7 @@ pa_enc_ts_validate(astgs_request_t r, const PA_DATA *pa)
 			       kvno);
 	goto out;
     }
+
     if (ret == KRB5KDC_ERR_PREAUTH_FAILED) {
 	krb5_error_code ret2;
 	const char *msg = krb5_get_error_message(r->context, ret);
@@ -1211,7 +1212,7 @@ pa_enc_ts_validate(astgs_request_t r, const PA_DATA *pa)
     krb5_data_free(&ts_data);
     if(ret){
 	ret = KRB5KDC_ERR_PREAUTH_FAILED;
-	_kdc_r_log(r, 4, "Failed to decode PA-ENC-TS_ENC -- %s",
+	_kdc_r_log(r, 4, "Failed to decode PA-ENC-TS-ENC -- %s",
 		   r->cname);
 	goto out;
     }
@@ -1846,7 +1847,7 @@ get_pa_etype_info2(krb5_context context,
 }
 
 /*
- * Return 0 if the client have only older enctypes, this is for
+ * Return 0 if the client has only older enctypes, this is for
  * determining if the server should send ETYPE_INFO2 or not.
  */
 
@@ -2895,7 +2896,7 @@ _kdc_as_rep(astgs_request_t r)
     if(r->client->flags.postdate && r->server->flags.postdate)
 	r->et.flags.may_postdate = f.allow_postdate;
     else if (f.allow_postdate){
-	_kdc_set_e_text(r, "Ticket may not be postdate");
+	_kdc_set_e_text(r, "Ticket may not be postdateable");
 	ret = KRB5KDC_ERR_POLICY;
 	goto out;
     }
@@ -2936,7 +2937,7 @@ _kdc_as_rep(astgs_request_t r)
 	_kdc_fix_time(&b->till);
 	t = *b->till;
 
-	/* be careful not overflowing */
+	/* be careful not to overflow */
 
         /*
          * Pre-auth can override r->client->max_life if configured.
@@ -3075,7 +3076,7 @@ _kdc_as_rep(astgs_request_t r)
     }
 
     /*
-     * Check and session and reply keys
+     * Check session and reply keys
      */
 
     if (r->session_key.keytype == ETYPE_NULL) {
@@ -3085,7 +3086,7 @@ _kdc_as_rep(astgs_request_t r)
     }
 
     if (r->reply_key.keytype == ETYPE_NULL) {
-	_kdc_set_e_text(r, "Client have no reply key");
+	_kdc_set_e_text(r, "Client has no reply key");
 	ret = KRB5KDC_ERR_CLIENT_NOTYET;
 	goto out;
     }
@@ -3169,7 +3170,7 @@ _kdc_as_rep(astgs_request_t r)
 	goto out;
 
     /*
-     * Check if message too large
+     * Check if message is too large
      */
     if (r->datagram_reply && r->reply->length > config->max_datagram_reply_length) {
 	krb5_data_free(r->reply);

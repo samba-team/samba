@@ -1623,9 +1623,9 @@ enc_chal_step(krb5_context context, krb5_init_creds_context ctx, void *pa_ctx, P
     ppaid = process_pa_info(context, ctx->cred.client, a, &paid, in_md);
 
     /*
-     * If we don't have ppaid, ts because the KDC have not sent any
-     * salt info, lets to the first roundtrip so the KDC have a chance
-     * to send any.
+     * If we don't have ppaid, it's because the KDC has not sent any
+     * salt info. Let's do the first roundtrip so the KDC has a chance
+     * to send some.
      */
     if (ppaid == NULL) {
 	_krb5_debug(context, 5, "no ppaid found");
@@ -1781,7 +1781,7 @@ enc_ts_step(krb5_context context, krb5_init_creds_context ctx, void *pa_ctx, PA_
     if (rep) {
 	/*
 	 * Some KDC's don't send salt info in the reply when there is
-	 * success pre-auth happned before, so use cached copy (or
+	 * success pre-auth happened before, so use cached copy (or
 	 * even better, if there is just one pre-auth, save reply-key).
 	 */
 	if (ppaid == NULL && ctx->paid.etype != KRB5_ENCTYPE_NULL) {
@@ -1800,15 +1800,15 @@ enc_ts_step(krb5_context context, krb5_init_creds_context ctx, void *pa_ctx, PA_
     }
 
     /*
-     * If we don't have ppaid, ts because the KDC have not sent any
-     * salt info, lets to the first roundtrip so the KDC have a chance
-     * to send any.
+     * If we don't have ppaid, it's because the KDC has not sent any
+     * salt info. Let's do the first roundtrip so the KDC has a chance
+     * to send some.
      *
      * Don't bother guessing, it sounds like a good idea until you run
      * into KDCs that are doing failed auth counting based on the
      * ENC_TS tries.
      *
-     * Stashing the salt for the next run is a diffrent issue and
+     * Stashing the salt for the next run is a different issue and
      * could be considered in the future.
      */
 
@@ -1826,10 +1826,10 @@ enc_ts_step(krb5_context context, krb5_init_creds_context ctx, void *pa_ctx, PA_
 
     /*
      * We have to allow the KDC to re-negotiate the PA-TS data
-     * once, this is since the in the case of a windows read only
+     * once, this is since a windows read only
      * KDC that doesn't have the keys simply guesses what the
-     * master is supposed to support. In the case where this
-     * breaks in when the RO-KDC is a newer version the the RW-KDC
+     * master is supposed to support. The case where this
+     * breaks is when the RO-KDC is a newer version than the RW-KDC
      * and the RO-KDC announced a enctype that the older doesn't
      * support.
      */
@@ -1979,7 +1979,7 @@ static const struct patype {
      */
     pa_restart_f restart;
     /**
-     * Return 0 if the when complete, HEIM_ERR_PA_CONTINUE_NEEDED if more steps are require
+     * Return 0 when complete, HEIM_ERR_PA_CONTINUE_NEEDED if more steps are required
      */
     pa_step_f step;
     pa_release_f release;
@@ -2543,7 +2543,7 @@ krb5_init_creds_init(krb5_context context,
     /* FIXME should generate a new nonce for each AS-REQ */
     krb5_generate_random_block (&ctx->nonce, sizeof(ctx->nonce));
     ctx->nonce &= 0x7fffffff;
-    /* XXX these just needs to be the same when using Windows PK-INIT */
+    /* XXX these just need to be the same when using Windows PK-INIT */
     ctx->pk_nonce = ctx->nonce;
 
     ctx->prompter = prompter;
@@ -2769,8 +2769,8 @@ krb5_init_creds_set_keytab(krb5_context context,
     ctx->keyproc = keytab_key_proc;
 
     /*
-     * We need to the KDC what enctypes we support for this keytab,
-     * esp if the keytab is really a password based entry, then the
+     * We need to tell the KDC what enctypes we support for this keytab,
+     * especially if the keytab is really a password based entry, then the
      * KDC might have more enctypes in the database then what we have
      * in the keytab.
      */
@@ -2787,7 +2787,7 @@ krb5_init_creds_set_keytab(krb5_context context,
 
 	found = 1;
 
-	/* check if we ahve this kvno already */
+	/* check if we have this kvno already */
 	if (entry.vno > kvno) {
 	    /* remove old list of etype */
 	    if (etypes)
@@ -3277,7 +3277,7 @@ init_creds_step(krb5_context context,
 			    ref_realm);
 
 		/*
-		 * If its a krbtgt, lets updat the requested krbtgt too
+		 * If its a krbtgt, lets update the requested krbtgt too
 		 */
 		if (krb5_principal_is_krbtgt(context, ctx->cred.server)) {
 

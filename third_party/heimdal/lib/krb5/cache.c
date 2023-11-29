@@ -558,14 +558,14 @@ krb5_cc_get_full_name(krb5_context context,
     type = krb5_cc_get_type(context, id);
     if (type == NULL) {
 	krb5_set_error_message(context, KRB5_CC_UNKNOWN_TYPE,
-			       "cache have no name of type");
+			       "cache has no name of type");
 	return KRB5_CC_UNKNOWN_TYPE;
     }
 
     name = krb5_cc_get_name(context, id);
     if (name == NULL) {
 	krb5_set_error_message(context, KRB5_CC_BADNAME,
-			       "cache of type %s have no name", type);
+			       "cache of type %s has no name", type);
 	return KRB5_CC_BADNAME;
     }
 

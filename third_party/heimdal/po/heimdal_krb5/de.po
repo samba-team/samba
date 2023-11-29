@@ -391,7 +391,7 @@ msgstr "Auswerten der Digest-Antwort fehlgeschlagen"
 
 # FIXME s/have/has/ or s/reply/replys/
 #: lib/krb5/digest.c:365
-msgid "Digest reply have no remote subkey"
+msgid "Digest reply has no remote subkey"
 msgstr "Digest-Antwort hat keinen fernen Unterschlüssel."
 
 #: lib/krb5/digest.c:385

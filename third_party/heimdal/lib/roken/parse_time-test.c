@@ -51,6 +51,7 @@ static struct testcase {
     { 15, 3601,	 	"1 hour 1 second" },
     { 16, 3602,	 	"1 hour 2 seconds" },
     { 9, 300,	 	"5 minutes" },
+    { 1, 0,	 	"0" },
 };
 
 int

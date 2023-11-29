@@ -178,7 +178,7 @@ krb5_storage_seek(krb5_storage *sp, off_t offset, int whence)
  * Truncate the storage buffer in sp to offset.
  *
  * @param sp the storage buffer to truncate.
- * @param offset the offset to truncate too.
+ * @param offset the offset to truncate to.
  *
  * @return An Kerberos 5 error code.
  *
@@ -440,7 +440,7 @@ krb5_store_int(krb5_storage *sp,
  * Store a int32 to storage, byte order is controlled by the settings
  * on the storage, see krb5_storage_set_byteorder().
  *
- * @param sp the storage to write too
+ * @param sp the storage to write to
  * @param value the value to store
  *
  * @return 0 for success, or a Kerberos 5 error code on failure.
@@ -463,7 +463,7 @@ krb5_store_int32(krb5_storage *sp,
  * Store a int64 to storage, byte order is controlled by the settings
  * on the storage, see krb5_storage_set_byteorder().
  *
- * @param sp the storage to write too
+ * @param sp the storage to write to
  * @param value the value to store
  *
  * @return 0 for success, or a Kerberos 5 error code on failure.
@@ -490,7 +490,7 @@ krb5_store_int64(krb5_storage *sp,
  * Store a uint32 to storage, byte order is controlled by the settings
  * on the storage, see krb5_storage_set_byteorder().
  *
- * @param sp the storage to write too
+ * @param sp the storage to write to
  * @param value the value to store
  *
  * @return 0 for success, or a Kerberos 5 error code on failure.
@@ -509,7 +509,7 @@ krb5_store_uint32(krb5_storage *sp,
  * Store a uint64 to storage, byte order is controlled by the settings
  * on the storage, see krb5_storage_set_byteorder().
  *
- * @param sp the storage to write too
+ * @param sp the storage to write to
  * @param value the value to store
  *
  * @return 0 for success, or a Kerberos 5 error code on failure.
@@ -570,7 +570,7 @@ krb5_ret_int(krb5_storage *sp,
  * Read a int64 from storage, byte order is controlled by the settings
  * on the storage, see krb5_storage_set_byteorder().
  *
- * @param sp the storage to write too
+ * @param sp the storage to write to
  * @param value the value read from the buffer
  *
  * @return 0 for success, or a Kerberos 5 error code on failure.
@@ -600,7 +600,7 @@ krb5_ret_int64(krb5_storage *sp,
  * Read a uint64 from storage, byte order is controlled by the settings
  * on the storage, see krb5_storage_set_byteorder().
  *
- * @param sp the storage to write too
+ * @param sp the storage to write to
  * @param value the value read from the buffer
  *
  * @return 0 for success, or a Kerberos 5 error code on failure.
@@ -626,7 +626,7 @@ krb5_ret_uint64(krb5_storage *sp,
  * Read a int32 from storage, byte order is controlled by the settings
  * on the storage, see krb5_storage_set_byteorder().
  *
- * @param sp the storage to write too
+ * @param sp the storage to write to
  * @param value the value read from the buffer
  *
  * @return 0 for success, or a Kerberos 5 error code on failure.
@@ -655,7 +655,7 @@ krb5_ret_int32(krb5_storage *sp,
  * Read a uint32 from storage, byte order is controlled by the settings
  * on the storage, see krb5_storage_set_byteorder().
  *
- * @param sp the storage to write too
+ * @param sp the storage to write to
  * @param value the value read from the buffer
  *
  * @return 0 for success, or a Kerberos 5 error code on failure.
@@ -680,7 +680,7 @@ krb5_ret_uint32(krb5_storage *sp, uint32_t *value)
  * Store a int16 to storage, byte order is controlled by the settings
  * on the storage, see krb5_storage_set_byteorder().
  *
- * @param sp the storage to write too
+ * @param sp the storage to write to
  * @param value the value to store
  *
  * @return 0 for success, or a Kerberos 5 error code on failure.
@@ -703,7 +703,7 @@ krb5_store_int16(krb5_storage *sp,
  * Store a uint16 to storage, byte order is controlled by the settings
  * on the storage, see krb5_storage_set_byteorder().
  *
- * @param sp the storage to write too
+ * @param sp the storage to write to
  * @param value the value to store
  *
  * @return 0 for success, or a Kerberos 5 error code on failure.
@@ -722,7 +722,7 @@ krb5_store_uint16(krb5_storage *sp,
  * Read a int16 from storage, byte order is controlled by the settings
  * on the storage, see krb5_storage_set_byteorder().
  *
- * @param sp the storage to write too
+ * @param sp the storage to write to
  * @param value the value read from the buffer
  *
  * @return 0 for success, or a Kerberos 5 error code on failure.
@@ -751,7 +751,7 @@ krb5_ret_int16(krb5_storage *sp,
  * Read a int16 from storage, byte order is controlled by the settings
  * on the storage, see krb5_storage_set_byteorder().
  *
- * @param sp the storage to write too
+ * @param sp the storage to write to
  * @param value the value read from the buffer
  *
  * @return 0 for success, or a Kerberos 5 error code on failure.
@@ -776,7 +776,7 @@ krb5_ret_uint16(krb5_storage *sp,
 /**
  * Store a int8 to storage.
  *
- * @param sp the storage to write too
+ * @param sp the storage to write to
  * @param value the value to store
  *
  * @return 0 for success, or a Kerberos 5 error code on failure.
@@ -799,7 +799,7 @@ krb5_store_int8(krb5_storage *sp,
 /**
  * Store a uint8 to storage.
  *
- * @param sp the storage to write too
+ * @param sp the storage to write to
  * @param value the value to store
  *
  * @return 0 for success, or a Kerberos 5 error code on failure.
@@ -817,7 +817,7 @@ krb5_store_uint8(krb5_storage *sp,
 /**
  * Read a int8 from storage
  *
- * @param sp the storage to write too
+ * @param sp the storage to write to
  * @param value the value read from the buffer
  *
  * @return 0 for success, or a Kerberos 5 error code on failure.
@@ -840,7 +840,7 @@ krb5_ret_int8(krb5_storage *sp,
 /**
  * Read a uint8 from storage
  *
- * @param sp the storage to write too
+ * @param sp the storage to write to
  * @param value the value read from the buffer
  *
  * @return 0 for success, or a Kerberos 5 error code on failure.

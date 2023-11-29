@@ -155,7 +155,7 @@ static const struct heim_type_data pac_object = {
 /*
  * Returns the size of the PACTYPE header + the PAC_INFO_BUFFER array.  This is
  * also the end of the whole thing, and any offsets to buffers from
- * thePAC_INFO_BUFFER[] entries have to be beyond it.
+ * the PAC_INFO_BUFFER[] entries have to be beyond it.
  */
 static krb5_error_code
 pac_header_size(krb5_context context, uint32_t num_buffers, uint32_t *result)
@@ -760,7 +760,7 @@ verify_checksum(krb5_context context,
      * http://comments.gmane.org/gmane.comp.encryption.kerberos.devel/8743
      * for the same issue in MIT, and
      * http://blogs.msdn.com/b/openspecification/archive/2010/01/01/verifying-the-server-signature-in-kerberos-privilege-account-certificate.aspx
-     * for Microsoft's explaination */
+     * for Microsoft's explanation */
 
     if (cksum.cksumtype == CKSUMTYPE_HMAC_MD5 && !strict_cksumtype_match) {
 	Checksum local_checksum;

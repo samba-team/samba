@@ -81,10 +81,10 @@ struct hx509_revoke_ctx_data {
 };
 
 /**
- * Allocate a revokation context. Free with hx509_revoke_free().
+ * Allocate a revocation context. Free with hx509_revoke_free().
  *
  * @param context A hx509 context.
- * @param ctx returns a newly allocated revokation context.
+ * @param ctx returns a newly allocated revocation context.
  *
  * @return An hx509 error code, see hx509_get_error_string().
  *
@@ -130,7 +130,7 @@ free_ocsp(struct revoke_ocsp *ocsp)
 }
 
 /**
- * Free a hx509 revokation context.
+ * Free a hx509 revocation context.
  *
  * @param ctx context to be freed
  *
@@ -208,8 +208,8 @@ verify_ocsp(hx509_context context,
 	goto out;
 
     /*
-     * If signer certificate isn't the CA certificate, lets check the
-     * it is the CA that signed the signer certificate and the OCSP EKU
+     * If signer certificate isn't the CA certificate, let's check that
+     * it is the CA that signed the signer certificate and that the OCSP EKU
      * is set.
      */
     if (hx509_cert_cmp(signer, parent) != 0) {
@@ -390,10 +390,10 @@ load_ocsp(hx509_context context, struct revoke_ocsp *ocsp)
 }
 
 /**
- * Add a OCSP file to the revokation context.
+ * Add a OCSP file to the revocation context.
  *
  * @param context hx509 context
- * @param ctx hx509 revokation context
+ * @param ctx hx509 revocation context
  * @param path path to file that is going to be added to the context.
  *
  * @return An hx509 error code, see hx509_get_error_string().
@@ -412,7 +412,7 @@ hx509_revoke_add_ocsp(hx509_context context,
 
     if (strncmp(path, "FILE:", 5) != 0) {
 	hx509_set_error_string(context, 0, HX509_UNSUPPORTED_OPERATION,
-			       "unsupport type in %s", path);
+			       "unsupported type in %s", path);
 	return HX509_UNSUPPORTED_OPERATION;
     }
 
@@ -525,7 +525,7 @@ verify_crl(hx509_context context,
     /*
      * If signer is not CA cert, need to check revoke status of this
      * CRL signing cert too, this include all parent CRL signer cert
-     * up to the root *sigh*, assume root at least hve CERTSIGN flag
+     * up to the root *sigh*, assume root at least has CERTSIGN flag
      * set.
      */
     while (_hx509_check_key_usage(context, signer, 1 << 5, TRUE)) {
@@ -626,10 +626,10 @@ load_crl(hx509_context context, const char *path, time_t *t, CRLCertificateList 
 }
 
 /**
- * Add a CRL file to the revokation context.
+ * Add a CRL file to the revocation context.
  *
  * @param context hx509 context
- * @param ctx hx509 revokation context
+ * @param ctx hx509 revocation context
  * @param path path to file that is going to be added to the context.
  *
  * @return An hx509 error code, see hx509_get_error_string().
@@ -691,12 +691,12 @@ hx509_revoke_add_crl(hx509_context context,
 }
 
 /**
- * Check that a certificate is not expired according to a revokation
- * context. Also need the parent certificte to the check OCSP
+ * Check that a certificate is not expired according to a revocation
+ * context. Also need the parent certificate to check the OCSP
  * parent identifier.
  *
  * @param context hx509 context
- * @param ctx hx509 revokation context
+ * @param ctx hx509 revocation context
  * @param certs
  * @param now
  * @param cert
@@ -726,7 +726,7 @@ hx509_revoke_verify(hx509_context context,
 	struct revoke_ocsp *ocsp = &ctx->ocsps.val[i];
 	struct stat sb;
 
-	/* check this ocsp apply to this cert */
+	/* check if this ocsp applies to this cert */
 
 	/* check if there is a newer version of the file */
 	ret = stat(ocsp->path, &sb);
@@ -926,7 +926,7 @@ add_to_req(hx509_context context, void *ptr, hx509_cert cert)
 	if (hx509_cert_cmp(ctx->parent, parent) != 0) {
 	    ret = HX509_REVOKE_NOT_SAME_PARENT;
 	    hx509_set_error_string(context, 0, ret,
-				   "Not same parent certifate as "
+				   "Not same parent certificate as "
 				   "last certificate in request");
 	    goto out;
 	}

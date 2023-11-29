@@ -976,7 +976,7 @@ parse_string(struct parse_ctx *ctx)
     /* NUL-terminate for rk_base64_decode() and plain paranoia */
     if (p0 != NULL && p == pend) {
         /*
-	 * Work out how far p is into p0 to re-esablish p after
+	 * Work out how far p is into p0 to re-establish p after
 	 * the realloc()
 	 */
         size_t p0_to_pend_len = (pend - p0);
