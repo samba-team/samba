@@ -1189,7 +1189,7 @@ NTSTATUS token_claims_to_claims_v1(TALLOC_CTX *mem_ctx,
 							 false);
 			if (!NT_STATUS_IS_OK(status)) {
 				talloc_free(claims);
-				DBG_WARNING("claim sort and uniquess test failed with %s\n",
+				DBG_WARNING("claim sort and uniqueness test failed with %s\n",
 					    nt_errstr(status));
 				return status;
 			}

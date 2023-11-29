@@ -837,7 +837,7 @@ static bool sddl_write_unicode(struct sddl_write_context *ctx,
 		 *
 		 * The only thing to do is fail.
 		 *
-		 * THis cannot happen with an ACE created from SDDL,
+		 * This cannot happen with an ACE created from SDDL,
 		 * because the same no-escapes rule applies on the way
 		 * in.
 		 */
