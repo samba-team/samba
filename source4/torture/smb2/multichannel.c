@@ -2412,7 +2412,7 @@ static void test_multichannel_bug_15346_ndone(struct tevent_req *subreq)
 	conn->ereq = smb2cli_echo_send(conn->smbXcli,
 				       tctx->ev,
 				       conn->smbXcli,
-				       state->num_conns * 3 * 1000);
+				       state->num_conns * 2 * 1000);
 	torture_assert_goto(tctx, conn->ereq != NULL, ok, asserted,
 			    "smb2cli_echo_send");
 	tevent_req_set_callback(conn->ereq,
