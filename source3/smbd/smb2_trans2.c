@@ -3007,10 +3007,10 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		}
 	}
 
-	DEBUG(5,("smbd_do_qfilepathinfo: %s (%s) level=%d max_data=%u\n",
+	DBG_INFO("%s (%s) level=%d max_data=%u\n",
 		 smb_fname_str_dbg(smb_fname),
 		 fsp_fnum_dbg(fsp),
-		 info_level, max_data_bytes));
+		 info_level, max_data_bytes);
 
 	/*
 	 * In case of querying a symlink in POSIX context,
@@ -3140,7 +3140,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 	switch (info_level) {
 		case SMB_INFO_STANDARD:
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_INFO_STANDARD\n"));
+			DBG_DEBUG("SMB_INFO_STANDARD\n");
 			data_size = 22;
 			srv_put_dos_date2_ts(pdata,
 					     l1_fdateCreation,
@@ -3160,7 +3160,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		{
 			unsigned int ea_size =
 			    estimate_ea_size(smb_fname->fsp);
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_INFO_QUERY_EA_SIZE\n"));
+			DBG_DEBUG("SMB_INFO_QUERY_EA_SIZE\n");
 			data_size = 26;
 			srv_put_dos_date2_ts(pdata, 0, create_time_ts);
 			srv_put_dos_date2_ts(pdata, 4, atime_ts);
@@ -3175,7 +3175,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		}
 
 		case SMB_INFO_IS_NAME_VALID:
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_INFO_IS_NAME_VALID\n"));
+			DBG_DEBUG("SMB_INFO_IS_NAME_VALID\n");
 			if (fsp) {
 				/* os/2 needs this ? really ?*/
 				return NT_STATUS_DOS(ERRDOS, ERRbadfunc);
@@ -3188,7 +3188,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		{
 			size_t total_ea_len = 0;
 			struct ea_list *ea_file_list = NULL;
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_INFO_QUERY_EAS_FROM_LIST\n"));
+			DBG_DEBUG("SMB_INFO_QUERY_EAS_FROM_LIST\n");
 
 			status =
 			    get_ea_list_from_fsp(mem_ctx,
@@ -3214,7 +3214,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		{
 			/* We have data_size bytes to put EA's into. */
 			size_t total_ea_len = 0;
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_INFO_QUERY_ALL_EAS\n"));
+			DBG_DEBUG(" SMB_INFO_QUERY_ALL_EAS\n");
 
 			status = get_ea_list_from_fsp(mem_ctx,
 							smb_fname->fsp,
@@ -3239,7 +3239,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			size_t total_ea_len = 0;
 			struct ea_list *ea_file_list = NULL;
 
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB2_INFO_QUERY_ALL_EAS\n"));
+			DBG_DEBUG("SMB2_INFO_QUERY_ALL_EAS\n");
 
 			/*TODO: add filtering and index handling */
 
@@ -3269,10 +3269,10 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		case SMB_QUERY_FILE_BASIC_INFO:
 
 			if (info_level == SMB_QUERY_FILE_BASIC_INFO) {
-				DEBUG(10,("smbd_do_qfilepathinfo: SMB_QUERY_FILE_BASIC_INFO\n"));
+				DBG_DEBUG("SMB_QUERY_FILE_BASIC_INFO\n");
 				data_size = 36; /* w95 returns 40 bytes not 36 - why ?. */
 			} else {
-				DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_BASIC_INFORMATION\n"));
+				DBG_DEBUG("SMB_FILE_BASIC_INFORMATION\n");
 				data_size = 40;
 				SIVAL(pdata,36,0);
 			}
@@ -3282,19 +3282,20 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			put_long_date_full_timespec(conn->ts_res,pdata+24,&ctime_ts); /* change time */
 			SIVAL(pdata,32,mode);
 
-			DEBUG(5,("SMB_QFBI - "));
-			DEBUG(5,("create: %s ", ctime(&create_time_ts.tv_sec)));
-			DEBUG(5,("access: %s ", ctime(&atime_ts.tv_sec)));
-			DEBUG(5,("write: %s ", ctime(&mtime_ts.tv_sec)));
-			DEBUG(5,("change: %s ", ctime(&ctime_ts.tv_sec)));
-			DEBUG(5,("mode: %x\n", mode));
+			DBG_INFO("SMB_QFBI - create: %s access: %s "
+				 "write: %s change: %s mode: %x\n",
+				 ctime(&create_time_ts.tv_sec),
+				 ctime(&atime_ts.tv_sec),
+				 ctime(&mtime_ts.tv_sec),
+				 ctime(&ctime_ts.tv_sec),
+				 mode);
 			*fixed_portion = data_size;
 			break;
 
 		case SMB_FILE_STANDARD_INFORMATION:
 		case SMB_QUERY_FILE_STANDARD_INFO:
 
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_STANDARD_INFORMATION\n"));
+			DBG_DEBUG("SMB_FILE_STANDARD_INFORMATION\n");
 			data_size = 24;
 			SOFF_T(pdata,0,allocation_size);
 			SOFF_T(pdata,8,file_size);
@@ -3310,7 +3311,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		{
 			unsigned int ea_size =
 			    estimate_ea_size(smb_fname->fsp);
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_EA_INFORMATION\n"));
+			DBG_DEBUG("SMB_FILE_EA_INFORMATION\n");
 			data_size = 4;
 			*fixed_portion = 4;
 			SIVAL(pdata,0,ea_size);
@@ -3322,7 +3323,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		case SMB_FILE_ALTERNATE_NAME_INFORMATION:
 		{
 			char mangled_name[13];
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_ALTERNATE_NAME_INFORMATION\n"));
+			DBG_DEBUG("SMB_FILE_ALTERNATE_NAME_INFORMATION\n");
 			if (!name_to_8_3(base_name,mangled_name,
 						True,conn->params)) {
 				return NT_STATUS_NO_MEMORY;
@@ -3352,7 +3353,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
 			}
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_QUERY_FILE_NAME_INFO\n"));
+			DBG_DEBUG("SMB_QUERY_FILE_NAME_INFO\n");
 			data_size = 4 + len;
 			SIVAL(pdata,0,len);
 			break;
@@ -3408,7 +3409,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
 			}
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_NORMALIZED_NAME_INFORMATION\n"));
+			DBG_DEBUG("SMB_FILE_NORMALIZED_NAME_INFORMATION\n");
 			data_size = 4 + len;
 			SIVAL(pdata,0,len);
 			*fixed_portion = 8;
@@ -3417,14 +3418,14 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 		case SMB_FILE_ALLOCATION_INFORMATION:
 		case SMB_QUERY_FILE_ALLOCATION_INFO:
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_ALLOCATION_INFORMATION\n"));
+			DBG_DEBUG("SMB_FILE_ALLOCATION_INFORMATION\n");
 			data_size = 8;
 			SOFF_T(pdata,0,allocation_size);
 			break;
 
 		case SMB_FILE_END_OF_FILE_INFORMATION:
 		case SMB_QUERY_FILE_END_OF_FILEINFO:
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_END_OF_FILE_INFORMATION\n"));
+			DBG_DEBUG("SMB_FILE_END_OF_FILE_INFORMATION\n");
 			data_size = 8;
 			SOFF_T(pdata,0,file_size);
 			break;
@@ -3434,7 +3435,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		{
 			unsigned int ea_size =
 			    estimate_ea_size(smb_fname->fsp);
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_ALL_INFORMATION\n"));
+			DBG_DEBUG("SMB_FILE_ALL_INFORMATION\n");
 			put_long_date_full_timespec(conn->ts_res,pdata,&create_time_ts);
 			put_long_date_full_timespec(conn->ts_res,pdata+8,&atime_ts);
 			put_long_date_full_timespec(conn->ts_res,pdata+16,&mtime_ts); /* write time */
@@ -3469,7 +3470,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		{
 			unsigned int ea_size =
 			    estimate_ea_size(smb_fname->fsp);
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB2_FILE_ALL_INFORMATION\n"));
+			DBG_DEBUG("SMB2_FILE_ALL_INFORMATION\n");
 			put_long_date_full_timespec(conn->ts_res,pdata+0x00,&create_time_ts);
 			put_long_date_full_timespec(conn->ts_res,pdata+0x08,&atime_ts);
 			put_long_date_full_timespec(conn->ts_res,pdata+0x10,&mtime_ts); /* write time */
@@ -3506,14 +3507,14 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		}
 		case SMB_FILE_INTERNAL_INFORMATION:
 
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_INTERNAL_INFORMATION\n"));
+			DBG_DEBUG("SMB_FILE_INTERNAL_INFORMATION\n");
 			SBVAL(pdata, 0, file_id);
 			data_size = 8;
 			*fixed_portion = 8;
 			break;
 
 		case SMB_FILE_ACCESS_INFORMATION:
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_ACCESS_INFORMATION\n"));
+			DBG_DEBUG("SMB_FILE_ACCESS_INFORMATION\n");
 			SIVAL(pdata, 0, access_mask);
 			data_size = 4;
 			*fixed_portion = 4;
@@ -3524,35 +3525,35 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			{
 				size_t byte_len;
 				byte_len = dos_PutUniCode(pdata+4,dos_fname,(size_t)max_data_bytes,False);
-				DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_NAME_INFORMATION\n"));
+				DBG_DEBUG("SMB_FILE_NAME_INFORMATION\n");
 				SIVAL(pdata,0,byte_len);
 				data_size = 4 + byte_len;
 				break;
 			}
 
 		case SMB_FILE_DISPOSITION_INFORMATION:
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_DISPOSITION_INFORMATION\n"));
+			DBG_DEBUG("SMB_FILE_DISPOSITION_INFORMATION\n");
 			data_size = 1;
 			SCVAL(pdata,0,delete_pending);
 			*fixed_portion = 1;
 			break;
 
 		case SMB_FILE_POSITION_INFORMATION:
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_POSITION_INFORMATION\n"));
+			DBG_DEBUG("SMB_FILE_POSITION_INFORMATION\n");
 			data_size = 8;
 			SOFF_T(pdata,0,pos);
 			*fixed_portion = 8;
 			break;
 
 		case SMB_FILE_MODE_INFORMATION:
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_MODE_INFORMATION\n"));
+			DBG_DEBUG("SMB_FILE_MODE_INFORMATION\n");
 			SIVAL(pdata,0,mode);
 			data_size = 4;
 			*fixed_portion = 4;
 			break;
 
 		case SMB_FILE_ALIGNMENT_INFORMATION:
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_ALIGNMENT_INFORMATION\n"));
+			DBG_DEBUG("SMB_FILE_ALIGNMENT_INFORMATION\n");
 			SIVAL(pdata,0,0); /* No alignment needed. */
 			data_size = 4;
 			*fixed_portion = 4;
@@ -3571,8 +3572,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			unsigned int num_streams = 0;
 			struct stream_struct *streams = NULL;
 
-			DEBUG(10,("smbd_do_qfilepathinfo: "
-				  "SMB_FILE_STREAM_INFORMATION\n"));
+			DBG_DEBUG("SMB_FILE_STREAM_INFORMATION\n");
 
 			if (is_ntfs_stream_smb_fname(smb_fname)) {
 				return NT_STATUS_INVALID_PARAMETER;
@@ -3584,8 +3584,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 						&streams);
 
 			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(10, ("could not get stream info: %s\n",
-					   nt_errstr(status)));
+				DBG_DEBUG("could not get stream info: %s\n",
+					  nt_errstr(status));
 				return status;
 			}
 
@@ -3594,8 +3594,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 						      &data_size);
 
 			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(10, ("marshall_stream_info failed: %s\n",
-					   nt_errstr(status)));
+				DBG_DEBUG("marshall_stream_info failed: %s\n",
+					  nt_errstr(status));
 				TALLOC_FREE(streams);
 				return status;
 			}
@@ -3608,7 +3608,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		}
 		case SMB_QUERY_COMPRESSION_INFO:
 		case SMB_FILE_COMPRESSION_INFORMATION:
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_COMPRESSION_INFORMATION\n"));
+			DBG_DEBUG("SMB_FILE_COMPRESSION_INFORMATION\n");
 			SOFF_T(pdata,0,file_size);
 			SIVAL(pdata,8,0); /* ??? */
 			SIVAL(pdata,12,0); /* ??? */
@@ -3617,7 +3617,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			break;
 
 		case SMB_FILE_NETWORK_OPEN_INFORMATION:
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_NETWORK_OPEN_INFORMATION\n"));
+			DBG_DEBUG("SMB_FILE_NETWORK_OPEN_INFORMATION\n");
 			put_long_date_full_timespec(conn->ts_res,pdata,&create_time_ts);
 			put_long_date_full_timespec(conn->ts_res,pdata+8,&atime_ts);
 			put_long_date_full_timespec(conn->ts_res,pdata+16,&mtime_ts); /* write time */
@@ -3631,7 +3631,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			break;
 
 		case SMB_FILE_ATTRIBUTE_TAG_INFORMATION:
-			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_ATTRIBUTE_TAG_INFORMATION\n"));
+			DBG_DEBUG(" SMB_FILE_ATTRIBUTE_TAG_INFORMATION\n");
 			SIVAL(pdata,0,mode);
 			SIVAL(pdata,4,0);
 			data_size = 8;
