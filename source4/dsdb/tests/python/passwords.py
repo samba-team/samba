@@ -267,11 +267,11 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).
             SamDB(url=host_ldaps,
                   credentials=self.creds, lp=lp)
         except LdbError as err:
-            HRES_SEC_E_INVALID_TOKEN = '80090308'
+            HRES_SEC_E_INVALID_TOKEN = 0x80090308
 
             num, estr = err.args
             self.assertEqual(ERR_INVALID_CREDENTIALS, num)
-            self.assertIn(HRES_SEC_E_INVALID_TOKEN, estr)
+            self.assertIn(f"{HRES_SEC_E_INVALID_TOKEN:08X}", estr)
         else:
             self.fail('should have failed to login with previous password!')
 
