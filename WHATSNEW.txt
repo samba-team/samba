@@ -1,4 +1,125 @@
                    ==============================
+                   Release Notes for Samba 4.18.9
+                         November 29, 2023
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.18 release series.
+It contains the security-relevant bugfix CVE-2018-14628:
+
+    Wrong ntSecurityDescriptor values for "CN=Deleted Objects"
+    allow read of object tombstones over LDAP
+    (Administrator action required!)
+    https://www.samba.org/samba/security/CVE-2018-14628.html
+
+
+Description of CVE-2018-14628
+-----------------------------
+
+All versions of Samba from 4.0.0 onwards are vulnerable to an
+information leak (compared with the established behaviour of
+Microsoft's Active Directory) when Samba is an Active Directory Domain
+Controller.
+
+When a domain was provisioned with an unpatched Samba version,
+the ntSecurityDescriptor is simply inherited from Domain/Partition-HEAD-Object
+instead of being very strict (as on a Windows provisioned domain).
+
+This means also non privileged users can use the
+LDAP_SERVER_SHOW_DELETED_OID control in order to view,
+the names and preserved attributes of deleted objects.
+
+No information that was hidden before the deletion is visible, but in
+with the correct ntSecurityDescriptor value in place the whole object
+is also not visible without administrative rights.
+
+There is no further vulnerability associated with this error, merely an
+information disclosure.
+
+Action required in order to resolve CVE-2018-14628!
+---------------------------------------------------
+
+The patched Samba does NOT protect existing domains!
+
+The administrator needs to run the following command
+(on only one domain controller)
+in order to apply the protection to an existing domain:
+
+  samba-tool dbcheck --cross-ncs --attrs=nTSecurityDescriptor --fix
+
+The above requires manual interaction in order to review the
+changes before they are applied. Typicall question look like this:
+
+  Reset nTSecurityDescriptor on CN=Deleted Objects,DC=samba,DC=org back to provision default?
+        Owner mismatch: SY (in ref) DA(in current)
+        Group mismatch: SY (in ref) DA(in current)
+        Part dacl is different between reference and current here is the detail:
+                (A;;LCRPLORC;;;AU) ACE is not present in the reference
+                (A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;SY) ACE is not present in the reference
+                (A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;DA) ACE is not present in the reference
+                (A;;CCDCLCSWRPWPSDRCWDWO;;;SY) ACE is not present in the current
+                (A;;LCRP;;;BA) ACE is not present in the current
+   [y/N/all/none] y
+  Fixed attribute 'nTSecurityDescriptor' of 'CN=Deleted Objects,DC=samba,DC=org'
+
+The change should be confirmed with 'y' for all objects starting with
+'CN=Deleted Objects'.
+
+
+Changes since 4.18.8
+--------------------
+
+o  Michael Adam <obnox@samba.org>
+   * BUG 15497: Add make command for querying Samba version.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15487: smbd crashes if asked to return full information on close of a
+     stream handle with delete on close disposition set.
+   * BUG 15521: smbd: fix close order of base_fsp and stream_fsp in
+     smb_fname_fsp_destructor().
+
+o  Björn Jacke <bj@sernet.de>
+   * BUG 15093: Files without "read attributes" NFS4 ACL permission are not
+     listed in directories.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13595: CVE-2018-14628 [SECURITY] Deleted Object tombstones visible in
+     AD LDAP to normal users.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 15507: vfs_gpfs stat calls fail due to file system permissions.
+
+o  Christof Schmitt <christof.schmitt@us.ibm.com>
+   * BUG 15497: Add make command for querying Samba version.
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15479: ctdbd: setproctitle not initialized messages flooding logs.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.18.8
                           October 10, 2023
                    ==============================
@@ -74,8 +195,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.18.7
                          September 27, 2023
