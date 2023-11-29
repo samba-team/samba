@@ -59,4 +59,3 @@ try this to avoid this message:
 
 $ touch ../pidl/lib/Parse/Pidl/IDL.pm ../pidl/lib/Parse/Pidl/Expr.pm
 ''')
-
