@@ -27,6 +27,8 @@
 
 static NTSTATUS samba_gnutls_sp800_108_derive_key_part(
 	const gnutls_hmac_hd_t hmac_hnd,
+	const uint8_t *FixedData,
+	const size_t FixedData_len,
 	const uint8_t *Label,
 	const size_t Label_len,
 	const uint8_t *Context,
@@ -45,26 +47,34 @@ static NTSTATUS samba_gnutls_sp800_108_derive_key_part(
 		return gnutls_error_to_ntstatus(rc,
 						NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
-	rc = gnutls_hmac(hmac_hnd, Label, Label_len);
-	if (rc < 0) {
-		return gnutls_error_to_ntstatus(rc,
-						NT_STATUS_HMAC_NOT_SUPPORTED);
-	}
-	rc = gnutls_hmac(hmac_hnd, &zero, 1);
-	if (rc < 0) {
-		return gnutls_error_to_ntstatus(rc,
-						NT_STATUS_HMAC_NOT_SUPPORTED);
-	}
-	rc = gnutls_hmac(hmac_hnd, Context, Context_len);
-	if (rc < 0) {
-		return gnutls_error_to_ntstatus(rc,
-						NT_STATUS_HMAC_NOT_SUPPORTED);
-	}
-	RSIVAL(buf, 0, L);
-	rc = gnutls_hmac(hmac_hnd, buf, sizeof(buf));
-	if (rc < 0) {
-		return gnutls_error_to_ntstatus(rc,
-						NT_STATUS_HMAC_NOT_SUPPORTED);
+	if (FixedData != NULL) {
+		rc = gnutls_hmac(hmac_hnd, FixedData, FixedData_len);
+		if (rc < 0) {
+			return gnutls_error_to_ntstatus(
+				rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+		}
+	} else {
+		rc = gnutls_hmac(hmac_hnd, Label, Label_len);
+		if (rc < 0) {
+			return gnutls_error_to_ntstatus(
+				rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+		}
+		rc = gnutls_hmac(hmac_hnd, &zero, 1);
+		if (rc < 0) {
+			return gnutls_error_to_ntstatus(
+				rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+		}
+		rc = gnutls_hmac(hmac_hnd, Context, Context_len);
+		if (rc < 0) {
+			return gnutls_error_to_ntstatus(
+				rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+		}
+		RSIVAL(buf, 0, L);
+		rc = gnutls_hmac(hmac_hnd, buf, sizeof(buf));
+		if (rc < 0) {
+			return gnutls_error_to_ntstatus(
+				rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+		}
 	}
 
 	gnutls_hmac_output(hmac_hnd, digest);
@@ -87,6 +97,11 @@ static size_t ceiling_div(const size_t a, const size_t b)
  *
  * @param KI_len        The length of the key‐derivation key.
  *
+ * @param FixedData     If non‐NULL, specifies fixed data to be used in place of
+ *                      that constructed from the Label and Context parameters.
+ *
+ * @param FixedData_len The length of the fixed data, if it is present.
+ *
  * @param Label         A label that identifies the purpose for the derived key.
  *                      Ignored if FixedData is non‐NULL.
  *
@@ -108,6 +123,8 @@ static size_t ceiling_div(const size_t a, const size_t b)
 NTSTATUS samba_gnutls_sp800_108_derive_key(
 	const uint8_t *KI,
 	size_t KI_len,
+	const uint8_t *FixedData,
+	size_t FixedData_len,
 	const uint8_t *Label,
 	size_t Label_len,
 	const uint8_t *Context,
@@ -164,6 +181,8 @@ NTSTATUS samba_gnutls_sp800_108_derive_key(
 	     KO_idx += digest_len, ++i)
 	{
 		status = samba_gnutls_sp800_108_derive_key_part(hmac_hnd,
+								FixedData,
+								FixedData_len,
 								Label,
 								Label_len,
 								Context,
@@ -180,6 +199,8 @@ NTSTATUS samba_gnutls_sp800_108_derive_key(
 		/* Get the last little bit. */
 		uint8_t digest[digest_len];
 		status = samba_gnutls_sp800_108_derive_key_part(hmac_hnd,
+								FixedData,
+								FixedData_len,
 								Label,
 								Label_len,
 								Context,

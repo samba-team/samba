@@ -6672,6 +6672,8 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 		status = samba_gnutls_sp800_108_derive_key(
 			channel_key,
 			sizeof(channel_key),
+			NULL,
+			0,
 			d->label.data,
 			d->label.length,
 			d->context.data,

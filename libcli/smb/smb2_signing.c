@@ -260,6 +260,8 @@ static NTSTATUS smb2_signing_key_create(TALLOC_CTX *mem_ctx,
 
 	status = samba_gnutls_sp800_108_derive_key(key->blob.data,
 						   in_key_length,
+						   NULL,
+						   0,
 						   d->label.data,
 						   d->label.length,
 						   d->context.data,

@@ -61,6 +61,8 @@ static void test_sp800_108_sha256(void **state)
 
 	status = samba_gnutls_sp800_108_derive_key(key,
 						   sizeof key,
+						   NULL,
+						   0,
 						   label,
 						   sizeof label,
 						   context,
@@ -100,6 +102,8 @@ static void test_sp800_108_sha512(void **state)
 
 	status = samba_gnutls_sp800_108_derive_key(key,
 						   sizeof key,
+						   NULL,
+						   0,
 						   label,
 						   sizeof label,
 						   context,

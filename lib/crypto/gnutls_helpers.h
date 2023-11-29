@@ -197,6 +197,11 @@ bool samba_gnutls_weak_crypto_allowed(void);
  *
  * @param KI_len        The length of the key‐derivation key.
  *
+ * @param FixedData     If non‐NULL, specifies fixed data to be used in place of
+ *                      that constructed from the Label and Context parameters.
+ *
+ * @param FixedData_len The length of the fixed data, if it is present.
+ *
  * @param Label         A label that identifies the purpose for the derived key.
  *                      Ignored if FixedData is non‐NULL.
  *
@@ -218,6 +223,8 @@ bool samba_gnutls_weak_crypto_allowed(void);
 NTSTATUS samba_gnutls_sp800_108_derive_key(
 	const uint8_t *KI,
 	size_t KI_len,
+	const uint8_t *FixedData,
+	size_t FixedData_len,
 	const uint8_t *Label,
 	size_t Label_len,
 	const uint8_t *Context,
