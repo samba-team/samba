@@ -40,3 +40,11 @@ def build(bld):
                      deps='cmocka gnutls samba-util samba-errors',
                      local_include=False,
                      for_selftest=True)
+
+    bld.SAMBA_BINARY('test_gnutls_sp800_108',
+                     source='''
+                            tests/test_gnutls_sp800_108.c
+                            ''',
+                     deps='cmocka GNUTLS_HELPERS samba-util',
+                     local_include=False,
+                     for_selftest=True)
