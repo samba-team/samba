@@ -374,6 +374,9 @@ EXPORTS
 	krb5_get_init_creds_opt_set_salt
 	krb5_get_init_creds_opt_set_tkt_life
 	krb5_get_init_creds_opt_set_win2k
+	krb5_get_init_creds_opt_set_fast_ccache
+	krb5_get_init_creds_opt_set_fast_ccache_name
+	krb5_get_init_creds_opt_set_fast_flags
 	krb5_get_init_creds_password
 	krb5_get_instance
 	krb5_get_kdc_cred

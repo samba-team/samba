@@ -89,6 +89,7 @@ krb5_get_init_creds_opt_free(krb5_context context,
 	return;
     if (--opt->opt_private->refcount == 0) {
 	_krb5_get_init_creds_opt_free_pkinit(opt);
+	free(opt->opt_private->fast_armor_ccache_name);
 	free(opt->opt_private);
     }
     memset(opt, 0, sizeof(*opt));
@@ -392,6 +393,51 @@ krb5_get_init_creds_opt_set_process_last_req(krb5_context context,
 
     return 0;
 }
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_get_init_creds_opt_set_fast_ccache(krb5_context context,
+				    krb5_get_init_creds_opt *opt,
+				    krb5_ccache fast_ccache)
+{
+    char *fast_ccache_name;
+    int ret = krb5_cc_get_full_name(context,
+				    fast_ccache,
+				    &fast_ccache_name);
+    if (ret)
+	    return ret;
+
+    ret = krb5_get_init_creds_opt_set_fast_ccache_name(context,
+						       opt,
+						       fast_ccache_name);
+    krb5_xfree(fast_ccache_name);
+    return ret;
+}
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_get_init_creds_opt_set_fast_ccache_name(krb5_context context,
+					     krb5_get_init_creds_opt *opt,
+					     const char *fast_ccache_name)
+{
+    if (opt->opt_private->fast_armor_ccache_name)
+	free(opt->opt_private->fast_armor_ccache_name);
+
+    opt->opt_private->fast_armor_ccache_name = strdup(fast_ccache_name);
+    if (opt->opt_private->fast_armor_ccache_name == NULL)
+	return krb5_enomem(context);
+
+    return 0;
+}
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_get_init_creds_opt_set_fast_flags(krb5_context context,
+				   krb5_get_init_creds_opt *opt,
+				   krb5_flags flags)
+{
+    heim_assert((flags & ~KRB5_FAST_PUBLIC_FLAGS) == 0, "invalid flags passed to krb5_get_init_creds_opt_set_fast_flags()");
+    opt->opt_private->fast_flags = flags;
+    return 0;
+}
+
 
 
 #ifndef HEIMDAL_SMALLER

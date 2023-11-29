@@ -872,8 +872,12 @@ check_ticket_signature(krb5_context context,
 					      &ticket.sname) == !!signedticket,
 		"ticket-signature");
 
+    /*
+     * We have to not verify the KDC checksum as the saved PAC has no
+     * full checksum, and krb5_pac_verify requires this now
+     */
     ret = krb5_pac_verify(context, pac, et.authtime, client,
-			  tkt->key, tkt->kdc_key);
+			  tkt->key, NULL);
     if (ret)
 	t_err(context, tkt->name, "krb5_pac_verify ticket-sig", ret);
 
@@ -894,9 +898,13 @@ check_ticket_signature(krb5_context context,
     if (ret)
 	t_err(context, tkt->name, "remove_AuthorizationData", ret);
 
+    /*
+     * While we should do a full PAC signature in the same case as
+     * signedticket, the saved examples do not have one
+     */
     ret = _krb5_kdc_pac_sign_ticket(context, pac, client, tkt->key,
 				    tkt->kdc_key, tkt->rodc_id,
-				    NULL, NULL, signedticket, &et, NULL);
+				    NULL, NULL, signedticket, FALSE, &et, NULL);
     if (ret)
 	t_err(context, tkt->name, "_krb5_kdc_pac_sign_ticket", ret);
 
@@ -915,9 +923,14 @@ check_ticket_signature(krb5_context context,
     if (ret)
 	t_err(context, tkt->name, "remove_AuthorizationData 2", ret);
 
+    /*
+     * This time we will not be doing a krb5_data_cmp() so we add the
+     * full signature so that we can run that check in
+     * krb5_pac_verify()
+     */
     ret = _krb5_kdc_pac_sign_ticket(context, pac, client, tkt->key,
 				    tkt->kdc_key, tkt->rodc_id,
-				    NULL, NULL, signedticket, &et, NULL);
+				    NULL, NULL, signedticket, TRUE, &et, NULL);
     if (ret)
 	t_err(context, tkt->name, "_krb5_kdcsignedticketsign_ticket 2", ret);
 
@@ -1015,13 +1028,18 @@ main(int argc, char **argv)
     if (ret)
 	krb5_err(context, 1, ret, "krb5_pac_parse");
 
+    /*
+     * We have to not verify the KDC checksum as the saved PAC has no
+     * full checksum, and krb5_pac_verify requires this now
+     */
     ret = krb5_pac_verify(context, pac, authtime, p,
-			   &member_keyblock, &kdc_keyblock);
+			  &member_keyblock, NULL);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_pac_verify");
 
     ret = _krb5_pac_sign(context, pac, authtime, p,
 			 &member_keyblock, &kdc_keyblock, 0, NULL, NULL,
+			 TRUE,
 			 NULL, &data);
     if (ret)
 	krb5_err(context, 1, ret, "_krb5_pac_sign");
@@ -1048,14 +1066,14 @@ main(int argc, char **argv)
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_pac_init");
 
-	/* our two user buffer plus the three "system" buffers */
+	/* our two user buffer plus the four "system" buffers */
 	ret = krb5_pac_get_types(context, pac, &len, &list);
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_pac_get_types");
 
 	for (i = 0; i < len; i++) {
 	    /* skip server_cksum, privsvr_cksum, and logon_name */
-	    if (list[i] == 6 || list[i] == 7 || list[i] == 10)
+	    if (list[i] == 6 || list[i] == 7 || list[i] == 10 || list[i] == 19)
 		continue;
 
 	    ret = krb5_pac_get_buffer(context, pac, list[i], &data);
@@ -1079,7 +1097,7 @@ main(int argc, char **argv)
 
 	ret = _krb5_pac_sign(context, pac2, authtime, p,
 			     &member_keyblock, &kdc_keyblock, 0,
-			     NULL, NULL, NULL, &data);
+			     NULL, NULL, TRUE, NULL, &data);
 	if (ret)
 	    krb5_err(context, 1, ret, "_krb5_pac_sign 4");
 
@@ -1179,7 +1197,7 @@ main(int argc, char **argv)
 
     ret = _krb5_pac_sign(context, pac, authtime, p,
 			 &member_keyblock, &kdc_keyblock, 0,
-			 NULL, NULL, NULL, &data);
+			 NULL, NULL, TRUE, NULL, &data);
     if (ret)
 	krb5_err(context, 1, ret, "_krb5_pac_sign");
 
@@ -1199,11 +1217,11 @@ main(int argc, char **argv)
 	uint32_t *list;
 	size_t len;
 
-	/* our two user buffer plus the three "system" buffers */
+	/* our two user buffer plus the four "system" buffers */
 	ret = krb5_pac_get_types(context, pac, &len, &list);
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_pac_get_types");
-	if (len != 5)
+	if (len != 6)
 	    krb5_errx(context, 1, "list wrong length");
 	free(list);
     }

@@ -258,10 +258,6 @@ eval_kinit(heim_dict_t o)
 	    krb5_err(kdc_context, 1, ret, "krb5_get_init_creds_opt_set_pkinit");
     }
 
-    ret = krb5_init_creds_init(kdc_context, client, NULL, NULL, 0, opt, &ctx);
-    if (ret)
-	krb5_err(kdc_context, 1, ret, "krb5_init_creds_init");
-
     fast_armor_cc = heim_dict_get_value(o, HSTR("fast-armor-cc"));
     if (fast_armor_cc) {
 
@@ -269,13 +265,21 @@ eval_kinit(heim_dict_t o)
 	if (ret)
 	    krb5_err(kdc_context, 1, ret, "krb5_cc_resolve");
 
-	ret = krb5_init_creds_set_fast_ccache(kdc_context, ctx, fast_cc);
+	ret = krb5_get_init_creds_opt_set_fast_ccache(kdc_context, opt, fast_cc);
 	if (ret)
-	    krb5_err(kdc_context, 1, ret, "krb5_init_creds_set_fast_ccache");
+	    krb5_err(kdc_context, 1, ret, "krb5_get_init_creds_set_fast_ccache");
+
+	ret = krb5_get_init_creds_opt_set_fast_flags(kdc_context, opt, KRB5_FAST_REQUIRED|KRB5_FAST_KDC_VERIFIED);
+	if (ret)
+	    krb5_err(kdc_context, 1, ret, "krb5_get_init_creds_set_fast_ccache");
 
 	fast_cc = NULL;
     }
     
+    ret = krb5_init_creds_init(kdc_context, client, NULL, NULL, 0, opt, &ctx);
+    if (ret)
+	krb5_err(kdc_context, 1, ret, "krb5_init_creds_init");
+
     if (password) {
 	ret = krb5_init_creds_set_password(kdc_context, ctx, 
 					   heim_string_get_utf8(password));

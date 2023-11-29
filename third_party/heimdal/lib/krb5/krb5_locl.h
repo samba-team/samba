@@ -263,6 +263,9 @@ struct _krb5_get_init_creds_opt_private {
         krb5_gic_process_last_req func;
         void *ctx;
     } lr;
+
+    krb5_flags fast_flags;
+    char *fast_armor_ccache_name;
 };
 
 typedef uint32_t krb5_enctype_set;
@@ -433,22 +436,24 @@ struct krb5_pk_init_ctx_data {
 struct krb5_fast_state {
     enum PA_FX_FAST_REQUEST_enum type;
     unsigned int flags;
-#define KRB5_FAST_REPLY_KEY_USE_TO_ENCRYPT_THE_REPLY	0x0001
-#define KRB5_FAST_REPLY_KEY_USE_IN_TRANSACTION		0x0002
-#define KRB5_FAST_KDC_REPLY_KEY_REPLACED		0x0004
-#define KRB5_FAST_REPLY_REPLY_VERIFIED			0x0008
-#define KRB5_FAST_STRONG				0x0010
-#define KRB5_FAST_EXPECTED				0x0020 /* in exchange with KDC, fast was discovered */
-#define KRB5_FAST_REQUIRED				0x0040 /* fast required by action of caller */
-#define KRB5_FAST_DISABLED				0x0080
+#define KRB5_FAST_PUBLIC_FLAGS				0x0000ff
+/* #define KRB5_FAST_REQUIRED				0x000001 - fast required by action of caller defined in krb5.h*/
 
-#define KRB5_FAST_AP_ARMOR_SERVICE			0x0100
-#define KRB5_FAST_OPTIMISTIC				0x0200 /* Optimistic try, like Anon + PKINIT or service fast bit */
-#define KRB5_FAST_REQUIRE_ENC_PA			0x0400
+#define KRB5_FAST_REPLY_KEY_USE_TO_ENCRYPT_THE_REPLY	0x000100
+#define KRB5_FAST_REPLY_KEY_USE_IN_TRANSACTION		0x000200
+#define KRB5_FAST_KDC_REPLY_KEY_REPLACED		0x000400
+#define KRB5_FAST_REPLY_REPLY_VERIFIED			0x000800
+#define KRB5_FAST_STRONG				0x001000
+#define KRB5_FAST_EXPECTED				0x002000 /* in exchange with KDC, fast was discovered */
+#define KRB5_FAST_DISABLED				0x008000
 
-#define KRB5_FAST_AS_REQ				0x1000
-#define KRB5_FAST_ANON_PKINIT_ARMOR			0x2000
-#define KRB5_FAST_KDC_VERIFIED				0x4000
+#define KRB5_FAST_AP_ARMOR_SERVICE			0x010000
+#define KRB5_FAST_OPTIMISTIC				0x020000 /* Optimistic try, like Anon + PKINIT or service fast bit */
+#define KRB5_FAST_REQUIRE_ENC_PA			0x040000
+
+#define KRB5_FAST_AS_REQ				0x100000
+#define KRB5_FAST_ANON_PKINIT_ARMOR			0x200000
+#define KRB5_FAST_KDC_VERIFIED				0x400000
 
     krb5_keyblock *reply_key;
     krb5_ccache armor_ccache;

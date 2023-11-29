@@ -804,6 +804,8 @@ typedef struct _krb5_get_init_creds_opt krb5_get_init_creds_opt;
 #define KRB5_GET_INIT_CREDS_OPT_DISABLE_TRANSITED_CHECK	0x0200
 #define KRB5_GET_INIT_CREDS_OPT_CHANGE_PASSWORD_PROMPT	0x0400
 
+#define KRB5_FAST_REQUIRED				0x0001 /* fast required by action of caller */
+
 /* krb5_init_creds_step flags argument */
 #define KRB5_INIT_CREDS_STEP_FLAG_CONTINUE	0x0001
 

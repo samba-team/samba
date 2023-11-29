@@ -579,6 +579,25 @@ get_init_creds_common(krb5_context context,
     else
 	ctx->runflags.change_password_prompt = ctx->prompter != NULL;
 
+    if (options->opt_private->fast_armor_ccache_name) {
+	/* Open the caller-supplied FAST ccache and set the caller flags */
+	ret = krb5_cc_resolve(context, options->opt_private->fast_armor_ccache_name,
+			      &ctx->fast_state.armor_ccache);
+	if (ret)
+	    goto out;
+    }
+
+    ctx->fast_state.flags = options->opt_private->fast_flags;
+
+    /*
+     * If FAST is required with a real credential cache, then the KDC
+     * will be verified.  This allows the
+     * krb5_get_init_creds_opt_set_fast API to work like MIT without
+     * exposing KRB5_FAST_KDC_VERIFIED to callers
+     */
+    if (ctx->fast_state.flags & KRB5_FAST_REQUIRED)
+        ctx->fast_state.flags |= KRB5_FAST_KDC_VERIFIED;
+
  out:
     if (default_opt)
 	krb5_get_init_creds_opt_free(context, default_opt);

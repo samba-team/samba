@@ -742,6 +742,7 @@ get_new_tickets(krb5_context context,
     gss_cred_id_t gss_cred = GSS_C_NO_CREDENTIAL;
     gss_OID gss_mech = GSS_C_NO_OID;
     krb5_principal federated_name = NULL;
+    krb5_ccache fastid = NULL;
 
 #ifndef NO_NTLM
     struct ntlm_buf ntlmkey;
@@ -970,6 +971,33 @@ get_new_tickets(krb5_context context,
 	}
     }
 
+    if (fast_armor_cache_string) {
+	if (pk_anon_fast_armor > 0)
+	    krb5_errx(context, 1,
+		N_("cannot specify FAST armor cache with FAST "
+		     "anonymous PKINIT option", ""));
+        pk_anon_fast_armor = 0;
+
+	ret = krb5_cc_resolve(context, fast_armor_cache_string, &fastid);
+	if (ret) {
+	    krb5_warn(context, ret, "krb5_cc_resolve(FAST cache)");
+	    goto out;
+	}
+
+	ret = krb5_get_init_creds_opt_set_fast_ccache(context, opt, fastid);
+	if (ret) {
+	    krb5_warn(context, ret, "krb5_init_creds_set_fast_ccache");
+	    goto out;
+	}
+
+	ret = krb5_get_init_creds_opt_set_fast_flags(context, opt,
+						 KRB5_FAST_REQUIRED);
+	if (ret) {
+	    krb5_warn(context, ret, "krb5_init_creds_set_fast_flags");
+	    goto out;
+	}
+    }
+
     ret = krb5_init_creds_init(context, principal, prompter, NULL, start_time, opt, &ctx);
     if (ret) {
 	krb5_warn(context, ret, "krb5_init_creds_init");
@@ -1001,25 +1029,7 @@ get_new_tickets(krb5_context context,
     }
 
     if (fast_armor_cache_string) {
-	krb5_ccache fastid = NULL;
-
-	if (pk_anon_fast_armor > 0)
-	    krb5_errx(context, 1,
-		N_("cannot specify FAST armor cache with FAST "
-		     "anonymous PKINIT option", ""));
-        pk_anon_fast_armor = 0;
-
-	ret = krb5_cc_resolve(context, fast_armor_cache_string, &fastid);
-	if (ret) {
-	    krb5_warn(context, ret, "krb5_cc_resolve(FAST cache)");
-	    goto out;
-	}
-
-	ret = krb5_init_creds_set_fast_ccache(context, ctx, fastid);
-	if (ret) {
-	    krb5_warn(context, ret, "krb5_init_creds_set_fast_ccache");
-	    goto out;
-	}
+	/* handled above */
     } else if (pk_anon_fast_armor == -1) {
 	ret = _krb5_init_creds_set_fast_anon_pkinit_optimistic(context, ctx);
 	if (ret) {
@@ -1227,6 +1237,8 @@ out:
 	krb5_cc_destroy(context, tempccache);
     if (enctype)
 	free(enctype);
+    if (fastid)
+	krb5_cc_close(context, fastid);
 
     return ret;
 }
