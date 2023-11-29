@@ -19,12 +19,8 @@
 #include "replace.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_conditional_ace.h"
-#include "libcli/security/security.h"
-#include "libcli/security/conditional_ace.h"
 #include "libcli/security/claims-conversions.h"
-#include "lib/util/tsort.h"
 #include "lib/util/debug.h"
-#include "lib/util/bytearray.h"
 #include "lib/util/stable_sort.h"
 
 #include "librpc/gen_ndr/conditional_ace.h"
