@@ -62,24 +62,36 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 
 		switch (ids[i]->xid.type) {
 		case ID_TYPE_UID:
+			errno = 0;
 			pw = getpwuid((uid_t)ids[i]->xid.id);
-
 			if (!pw) {
+				DBG_DEBUG("getpwuid(%lu) failed: %s\n",
+					  (unsigned long)ids[i]->xid.id,
+					  errno != 0
+					  ? strerror(errno)
+					  : "not found");
 				ids[i]->status = ID_UNMAPPED;
 				continue;
 			}
 			name = pw->pw_name;
 			break;
 		case ID_TYPE_GID:
+			errno = 0;
 			gr = getgrgid((gid_t)ids[i]->xid.id);
-
 			if (!gr) {
+				DBG_DEBUG("getgrgid(%lu) failed: %s\n",
+					  (unsigned long)ids[i]->xid.id,
+					  errno != 0
+					  ? strerror(errno)
+					  : "not found");
 				ids[i]->status = ID_UNMAPPED;
 				continue;
 			}
 			name = gr->gr_name;
 			break;
 		default: /* ?? */
+			DBG_WARNING("Unexpected xid type %d\n",
+				    ids[i]->xid.type);
 			ids[i]->status = ID_UNKNOWN;
 			continue;
 		}
