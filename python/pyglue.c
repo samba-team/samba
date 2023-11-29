@@ -27,6 +27,7 @@
 #include "lib/util/debug.h"
 #include "librpc/ndr/ndr_private.h"
 #include "lib/cmdline/cmdline.h"
+#include "libcli/util/hresult.h"
 
 void init_glue(void);
 static PyObject *PyExc_NTSTATUSError;
@@ -632,5 +633,9 @@ MODULE_INIT_FUNC(_glue)
 		PyModule_AddObject(m, "DsExtendedError", PyExc_DsExtendedError);
 	}
 
+	PyModule_AddObject(m, "HRES_SEC_E_INVALID_TOKEN",
+			   PyLong_FromUnsignedLongLong(HRES_ERROR_V(HRES_SEC_E_INVALID_TOKEN)));
+	PyModule_AddObject(m, "HRES_SEC_E_LOGON_DENIED",
+			   PyLong_FromUnsignedLongLong(HRES_ERROR_V(HRES_SEC_E_LOGON_DENIED)));
 	return m;
 }
