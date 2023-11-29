@@ -54,7 +54,6 @@ struct smb_Dir {
 struct dptr_struct {
 	struct dptr_struct *next, *prev;
 	int dnum;
-	struct connection_struct *conn;
 	struct smb_Dir *dir_hnd;
 	char *wcard;
 	uint32_t attr;
@@ -174,7 +173,7 @@ void dptr_closecnum(connection_struct *conn)
 
 	for(dptr = sconn->searches.dirptrs; dptr; dptr = next) {
 		next = dptr->next;
-		if (dptr->conn == conn) {
+		if (dptr->dir_hnd->conn == conn) {
 			/*
 			 * Need to make a copy, "dptr" will be gone
 			 * after close_file_free() returns
@@ -236,7 +235,6 @@ NTSTATUS dptr_create(connection_struct *conn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	dptr->conn = conn;
 	dptr->dir_hnd = dir_hnd;
 	dptr->wcard = talloc_strdup(dptr, wcard);
 	if (!dptr->wcard) {
@@ -319,7 +317,7 @@ void dptr_CloseDir(files_struct *fsp)
 	if (fsp->dptr == NULL) {
 		return;
 	}
-	sconn = fsp->dptr->conn->sconn;
+	sconn = fsp->conn->sconn;
 
 	/*
 	 * The destructor for the struct smb_Dir (fsp->dptr->dir_hnd)
@@ -439,7 +437,8 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx, struct dptr_struct *dptr)
 		flags |= AT_SYMLINK_NOFOLLOW;
 	}
 
-	ret = SMB_VFS_FSTATAT(dptr->conn, dir_fsp, &smb_fname_base, &st, flags);
+	ret = SMB_VFS_FSTATAT(
+		dir_hnd->conn, dir_fsp, &smb_fname_base, &st, flags);
 	if (ret == 0) {
 		return talloc_strdup(ctx, dptr->wcard);
 	}
@@ -456,16 +455,17 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx, struct dptr_struct *dptr)
 	 * A scan will find the long version of a mangled name as
 	 * wildcard.
 	 */
-	retry_scanning |= mangle_is_mangled(dptr->wcard, dptr->conn->params);
+	retry_scanning |= mangle_is_mangled(dptr->wcard,
+					    dir_hnd->conn->params);
 
 	/*
 	 * Also retry scanning if the client requested case
 	 * insensitive semantics and the file system does not provide
 	 * it.
 	 */
-	retry_scanning |=
-		(!dir_hnd->case_sensitive &&
-		 (dptr->conn->fs_capabilities & FILE_CASE_SENSITIVE_SEARCH));
+	retry_scanning |= (!dir_hnd->case_sensitive &&
+			   (dir_hnd->conn->fs_capabilities &
+			    FILE_CASE_SENSITIVE_SEARCH));
 
 	if (retry_scanning) {
 		char *found_name = NULL;
@@ -522,8 +522,8 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			   struct smb_filename **_smb_fname,
 			   uint32_t *_mode)
 {
-	connection_struct *conn = dirptr->conn;
 	struct smb_Dir *dir_hnd = dirptr->dir_hnd;
+	connection_struct *conn = dir_hnd->conn;
 	struct smb_filename *dir_fname = dir_hnd->dir_smb_fname;
 	bool posix = (dir_fname->flags & SMB_FILENAME_POSIX_PATH);
 	const bool toplevel = ISDOT(dir_fname->base_name);
