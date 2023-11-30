@@ -686,6 +686,10 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     if sitename is None:
         sitename = DEFAULTSITE
 
+    if serverdn is None:
+        serverdn = "CN=%s,CN=Servers,CN=%s,CN=Sites,%s" % (
+            netbiosname, sitename, configdn)
+
     names = ProvisionNames()
     names.rootdn = rootdn
     names.domaindn = domaindn
@@ -698,8 +702,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     names.netbiosname = netbiosname
     names.hostname = hostname
     names.sitename = sitename
-    names.serverdn = "CN=%s,CN=Servers,CN=%s,CN=Sites,%s" % (
-        netbiosname, sitename, configdn)
+    names.serverdn = serverdn
 
     return names
 
