@@ -109,8 +109,8 @@ it also defines lots of intermediate macros, just ignore those :-)
 
 #define SVAL(buf,pos) (uint32_t)PULL_LE_U16(buf, pos)
 #define IVAL(buf,pos) PULL_LE_U32(buf, pos)
-#define SSVALX(buf,pos,val) (CVAL_NC(buf,pos)=(uint8_t)((val)&0xFF),CVAL_NC(buf,pos+1)=(uint8_t)((val)>>8))
-#define SIVALX(buf,pos,val) (SSVALX(buf,pos,val&0xFFFF),SSVALX(buf,pos+2,val>>16))
+#define SSVALX(buf,pos,val) (CVAL_NC(buf,pos)=(uint8_t)((val)&0xFF),CVAL_NC(buf,(pos)+1)=(uint8_t)((val)>>8))
+#define SIVALX(buf,pos,val) (SSVALX(buf,pos,(val)&0xFFFF),SSVALX(buf,(pos)+2,(val)>>16))
 #define SVALS(buf,pos) ((int16_t)SVAL(buf,pos))
 #define IVALS(buf,pos) ((int32_t)IVAL(buf,pos))
 #define SSVAL(buf,pos,val) PUSH_LE_U16(buf, pos, val)
@@ -128,7 +128,7 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define BVAL(p, ofs) PULL_LE_U64(p, ofs)
 #define BVALS(p, ofs) ((int64_t)BVAL(p,ofs))
 #define SBVAL(p, ofs, v) PUSH_LE_U64(p, ofs, v)
-#define SBVALS(p, ofs, v) (SBVAL(p,ofs,(uint64_t)v))
+#define SBVALS(p, ofs, v) (SBVAL(p,ofs,(uint64_t)(v)))
 
 /****************************************************************************
  *
@@ -138,8 +138,8 @@ it also defines lots of intermediate macros, just ignore those :-)
 
 /* now the reverse routines - these are used in nmb packets (mostly) */
 #define SREV(x) ((((x)&0xFF)<<8) | (((x)>>8)&0xFF))
-#define IREV(x) ((SREV((uint32_t)x)<<16) | (SREV(((uint32_t)x)>>16)))
-#define BREV(x) ((IREV((uint64_t)x)<<32) | (IREV(((uint64_t)x)>>32)))
+#define IREV(x) ((SREV((uint32_t)(x))<<16) | (SREV(((uint32_t)(x))>>16)))
+#define BREV(x) ((IREV((uint64_t)(x))<<32) | (IREV(((uint64_t)(x))>>32)))
 
 /****************************************************************************
  *
