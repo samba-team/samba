@@ -66,7 +66,7 @@ class CredentialsOptionsTests(samba.tests.TestCase):
         self.assertIn(clear_password_opt, setproctitle.getproctitle())
 
     def tearDown(self):
-        super(samba.tests.TestCase, self).tearDown()
+        super().tearDown()
         setproctitle.setproctitle(self.old_proctitle)
         sys.argv.pop()
 

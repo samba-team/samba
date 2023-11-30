@@ -96,7 +96,7 @@ class MdssvcTests(RpcInterfaceTestCase):
             f.close()
 
     def tearDown(self):
-        super(RpcInterfaceTestCase, self).tearDown()
+        super().tearDown()
         for file in testfiles:
             os.remove("%s/%s" % (self.sharepath, file))
 

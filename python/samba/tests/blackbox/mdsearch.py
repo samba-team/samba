@@ -83,7 +83,7 @@ class MdfindBlackboxTests(BlackboxTestCase):
             f.close()
 
     def tearDown(self):
-        super(BlackboxTestCase, self).tearDown()
+        super().tearDown()
         for file in testfiles:
             os.remove("%s/%s" % (self.sharepath, file))
 

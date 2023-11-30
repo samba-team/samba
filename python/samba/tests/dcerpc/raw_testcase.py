@@ -170,7 +170,7 @@ class RawDCERPCTest(TestCase):
 
     def tearDown(self):
         self._disconnect("tearDown")
-        super(TestCase, self).tearDown()
+        super().tearDown()
 
     def noop(self):
         return
