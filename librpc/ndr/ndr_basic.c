@@ -37,7 +37,7 @@
 	(int32_t)(NDR_BE(ndr) ? PULL_BE_U32(ndr->data,ofs) : PULL_LE_U32(ndr->data,ofs))
 
 #define NDR_PULL_I64(ndr, ofs) \
-	(NDR_BE(ndr) ? PULL_BE_I64((ndr)->data, (ofs)) : PULL_LE_I64((ndr)->data, (ofs)))
+	(NDR_BE(ndr) ? PULL_BE_I64((ndr)->data, ofs) : PULL_LE_I64((ndr)->data, ofs))
 
 #define NDR_PUSH_U16(ndr, ofs, v) \
 	do { \
@@ -69,9 +69,9 @@
 #define NDR_PUSH_I64(ndr, ofs, v) \
 	do { \
 		if (NDR_BE(ndr)) { \
-			PUSH_BE_I64((ndr)->data, (ofs), (v));	\
+			PUSH_BE_I64((ndr)->data, ofs, v);	\
 		} else { \
-			PUSH_LE_I64((ndr)->data, (ofs), (v));	\
+			PUSH_LE_I64((ndr)->data, ofs, v);	\
 		} \
 	} while (0)
 
