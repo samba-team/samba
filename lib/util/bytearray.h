@@ -107,17 +107,17 @@
     PUSH_BE_U8(data, pos, val)
 
 #define PUSH_BE_U16(data, pos, val) \
-    (PUSH_BE_U8((data), (pos), (uint8_t)(((uint16_t)(val)) >> 8)), PUSH_BE_U8((data), (pos) + 1, (uint8_t)((val) & 0xff)))
+    (PUSH_BE_U8((data), (pos), (uint8_t)(((uint16_t)(val)) >> 8)), PUSH_BE_U8((data), (pos) + 1, (uint8_t)((uint16_t)(val) & 0xff)))
 #define PUSH_BE_I16(data, pos, val) \
     PUSH_BE_U16(data, pos, val)
 
 #define PUSH_BE_U32(data, pos, val) \
-    (PUSH_BE_U16((data), (pos), (uint16_t)(((uint32_t)(val)) >> 16)), PUSH_BE_U16((data), (pos) + 2, (uint16_t)((val) & 0xffff)))
+    (PUSH_BE_U16((data), (pos), (uint16_t)(((uint32_t)(val)) >> 16)), PUSH_BE_U16((data), (pos) + 2, (uint16_t)((uint32_t)(val) & 0xffff)))
 #define PUSH_BE_I32(data, pos, val) \
     PUSH_BE_U32(data, pos, val)
 
 #define PUSH_BE_U64(data, pos, val) \
-    (PUSH_BE_U32((data), (pos), (uint32_t)(((uint64_t)(val)) >> 32)), PUSH_BE_U32((data), (pos) + 4, (uint32_t)((val) & 0xffffffff)))
+    (PUSH_BE_U32((data), (pos), (uint32_t)(((uint64_t)(val)) >> 32)), PUSH_BE_U32((data), (pos) + 4, (uint32_t)((uint64_t)(val) & 0xffffffff)))
 #define PUSH_BE_I64(data, pos, val) \
     PUSH_BE_U64(data, pos, val)
 
