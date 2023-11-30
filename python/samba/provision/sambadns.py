@@ -425,7 +425,7 @@ def add_at_record(samdb, container_dn, prefix, hostname, dnsdomain, hostip, host
         at_aaaa_record = AAAARecord(hostip6)
         at_records.append(ndr_pack(at_aaaa_record))
 
-    msg = ldb.Message(ldb.Dn(samdb, "DC=@,%s" % container_dn))
+    msg = ldb.Message(ldb.Dn(samdb, "%s,%s" % (prefix, container_dn)))
     msg["objectClass"] = ["top", "dnsNode"]
     msg["dnsRecord"] = ldb.MessageElement(at_records, ldb.FLAG_MOD_ADD, "dnsRecord")
     samdb.add(msg)
