@@ -46,7 +46,7 @@ def auth_fle_opt(auth_file_path, long_opt=True):
 class CredentialsOptionsTests(samba.tests.TestCase):
 
     def setUp(self):
-        super(samba.tests.TestCase, self).setUp()
+        super().setUp()
         self.old_proctitle = setproctitle.getproctitle()
 
         # We must append two options to get the " " we look for in the
