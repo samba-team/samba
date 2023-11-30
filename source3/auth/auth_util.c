@@ -21,6 +21,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "dom_sid.h"
 #include "includes.h"
 #include "auth.h"
 #include "lib/util_unixsids.h"
@@ -478,6 +479,7 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	struct dom_sid tmp_sid;
 	struct auth_session_info *session_info = NULL;
 	struct unixid *ids;
+	bool is_allowed = false;
 
 	/* Ensure we can't possible take a code path leading to a
 	 * null deref. */
@@ -485,7 +487,20 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	if (!is_allowed_domain(server_info->info3->base.logon_domain.string)) {
+	if (is_allowed_domain(server_info->info3->base.logon_domain.string)) {
+		is_allowed = true;
+	}
+
+	/* Check if we have extra info about the user. */
+	if (dom_sid_in_domain(&global_sid_Unix_Users,
+			      &server_info->extra.user_sid) ||
+	    dom_sid_in_domain(&global_sid_Unix_Groups,
+			      &server_info->extra.pgid_sid))
+	{
+		is_allowed = true;
+	}
+
+	if (!is_allowed) {
 		DBG_NOTICE("Authentication failed for user [%s] "
 			   "from firewalled domain [%s]\n",
 			   server_info->info3->base.account_name.string,
