@@ -41,7 +41,7 @@ static NTSTATUS samba_gnutls_sp800_108_derive_key_part(
 	static const uint8_t zero = 0;
 	int rc;
 
-	RSIVAL(buf, 0, i);
+	PUSH_BE_U32(buf, 0, i);
 	rc = gnutls_hmac(hmac_hnd, buf, sizeof(buf));
 	if (rc < 0) {
 		return gnutls_error_to_ntstatus(rc,
@@ -69,7 +69,7 @@ static NTSTATUS samba_gnutls_sp800_108_derive_key_part(
 			return gnutls_error_to_ntstatus(
 				rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 		}
-		RSIVAL(buf, 0, L);
+		PUSH_BE_U32(buf, 0, L);
 		rc = gnutls_hmac(hmac_hnd, buf, sizeof(buf));
 		if (rc < 0) {
 			return gnutls_error_to_ntstatus(
