@@ -997,7 +997,6 @@ def setup_secretsdb(paths, session_info, lp):
 
     :param path: Path to the secrets database.
     :param session_info: Session info.
-    :param credentials: Credentials
     :param lp: Loadparm context
     :return: LDB handle for the created secrets database
     """
@@ -1036,7 +1035,6 @@ def setup_privileges(path, session_info, lp):
 
     :param path: Path to the privileges database.
     :param session_info: Session info.
-    :param credentials: Credentials
     :param lp: Loadparm context
     :return: LDB handle for the created secrets database
     """
@@ -1077,7 +1075,6 @@ def setup_registry(path, session_info, lp):
 
     :param path: Path to the registry database
     :param session_info: Session information
-    :param credentials: Credentials
     :param lp: Loadparm context
     """
     reg = samba.registry.Registry()
@@ -1093,7 +1090,6 @@ def setup_idmapdb(path, session_info, lp):
 
     :param path: path to the idmap database
     :param session_info: Session information
-    :param credentials: Credentials
     :param lp: Loadparm context
     """
     if os.path.exists(path):
