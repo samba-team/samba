@@ -30,7 +30,7 @@ import ldb
 from samba import credentials, nttime2float
 from samba.auth import system_session
 from samba.common import get_bytes, get_string
-from samba.dcerpc import drsblobs, security
+from samba.dcerpc import drsblobs, security, gmsa
 from samba.ndr import ndr_unpack
 from samba.netcmd import Command, CommandError
 from samba.samdb import SamDB
@@ -323,6 +323,7 @@ class GetPasswordCommand(Command):
                 required_attrs = [
                     "supplementalCredentials",
                     "unicodePwd",
+                    "msDS-ManagedPassword",
                 ]
                 for required_attr in required_attrs:
                     a = parse_raw_attr(required_attr, is_hidden=True)
@@ -350,6 +351,8 @@ class GetPasswordCommand(Command):
             raise CommandError("Failed to get password for user '%s': %s" % (username or filter, msg))
         obj = res[0]
 
+        calculated = {}
+
         sc = None
         unicodePwd = None
         if "supplementalCredentials" in obj:
@@ -357,14 +360,21 @@ class GetPasswordCommand(Command):
             sc = ndr_unpack(drsblobs.supplementalCredentialsBlob, sc_blob)
         if "unicodePwd" in obj:
             unicodePwd = obj["unicodePwd"][0]
+        if "msDS-ManagedPassword" in obj:
+            # unpack a GMSA managed password as if we could read the
+            # hidden password attributes.
+            managed_password = obj["msDS-ManagedPassword"][0]
+            unpacked_managed_password = ndr_unpack(gmsa.MANAGEDPASSWORD_BLOB,
+                                                   managed_password)
+            calculated["Primary:CLEARTEXT"] = \
+                unpacked_managed_password.passwords.current
+
         account_name = str(obj["sAMAccountName"][0])
         if "userPrincipalName" in obj:
             account_upn = str(obj["userPrincipalName"][0])
         else:
             realm = samdb.domain_dns_name()
             account_upn = "%s@%s" % (account_name, realm.lower())
-
-        calculated = {}
 
         def get_package(name, min_idx=0):
             if name in calculated:
