@@ -1377,7 +1377,8 @@ planoldpythontestsuite("ad_dc",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("ad_dc",
                        "samba.tests.segfault",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+                       extra_args=['-U"$USERNAME%$PASSWORD"'],
+                       environ={"TALLOC_FREE_FILL": "0xab"})
 # Need to test the password hashing in multiple environments to ensure that
 # all the possible options are covered
 #
