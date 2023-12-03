@@ -1,0 +1,11 @@
+^samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_ldb_use_after_free_concat
+^samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_ldb_use_after_free_dn_assign
+^samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_ldb_use_after_free_get_default_basedn
+^samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_ldb_use_after_free_get_ncroot_existing
+^samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_ldb_use_after_free_get_ncroot_not_existing
+^samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_ldb_use_after_free_get_parent
+^samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_ldb_use_after_free_get_wellknown_dn
+^samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_ldb_use_after_free_msg_diff
+^samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_ldb_use_after_free_msg_from_dict
+^samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_ldb_use_after_free_search_result
+^samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_ldb_use_after_ldif_parse

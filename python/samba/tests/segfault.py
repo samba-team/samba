@@ -31,6 +31,7 @@ from samba import netbios
 from samba import registry
 from samba import ldb
 from samba import messaging
+from samba import dsdb
 
 import traceback
 
@@ -243,3 +244,174 @@ class SegfaultTests(samba.tests.TestCase):
         # memory error from SIZE_MAX -1 allocation.
         from samba import generate_random_bytes
         generate_random_bytes(-1)
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_free_get_default_basedn(self):
+        samdb = self.get_samdb()
+
+        dn = samdb.get_default_basedn()
+        dn.add_child("CN=TEST")
+        dn.set_component(0, "CN", "Test2")
+        del samdb
+        dn.get_casefold()
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_free_get_ncroot_existing(self):
+        samdb = self.get_samdb()
+
+        base_dn = samdb.get_default_basedn()
+        dn = samdb.get_nc_root(base_dn)
+        dn.add_child("CN=TEST")
+        dn.set_component(0, "CN", "Test2")
+        del samdb
+        dn.get_casefold()
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_free_get_ncroot_not_existing(self):
+        samdb = self.get_samdb()
+
+        base_dn = samdb.get_default_basedn()
+        base_dn.add_child("CN=TEST")
+        dn = samdb.get_nc_root(base_dn)
+        dn.add_child("CN=TEST")
+        dn.set_component(0, "CN", "Test2")
+        del samdb
+        dn.get_casefold()
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_free_get_wellknown_dn(self):
+        samdb = self.get_samdb()
+
+        base_dn = samdb.get_default_basedn()
+        wk_dn = samdb.get_wellknown_dn(base_dn, dsdb.DS_GUID_LOSTANDFOUND_CONTAINER)
+        wk_dn.add_child("CN=TEST")
+        wk_dn.set_component(0, "CN", "Test2")
+        del samdb
+        del base_dn
+        wk_dn.get_casefold()
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_free_concat(self):
+        samdb = self.get_samdb()
+
+        dn1 = ldb.Dn(samdb, "CN=foo")
+        dn2 = ldb.Dn(samdb, "CN=bar")
+        dn = dn1 + dn2
+        dn.add_child("CN=TEST")
+        dn.set_component(0, "CN", "Test2")
+        del samdb
+        dn.get_casefold()
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_free_get_parent(self):
+        samdb = self.get_samdb()
+
+        dn1 = ldb.Dn(samdb, "CN=foo,CN=bar")
+        dn = dn1.parent()
+        dn.add_child("CN=TEST")
+        dn.set_component(0, "CN", "Test2")
+        del samdb
+        dn.get_casefold()
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_free_search_result(self):
+        samdb = self.get_samdb()
+        base_dn = samdb.get_default_basedn()
+        res = samdb.search(base=base_dn,
+                           scope=ldb.SCOPE_SUBTREE,
+                           attrs=[],
+                           expression="(cn=administrator)")
+        msg = res[0]
+        dn1 = msg.dn
+        dn = dn1.parent()
+        dn.add_child("CN=TEST")
+        dn.set_component(0, "CN", "Test2")
+        del samdb
+        del msg
+        del dn1
+        dn.get_casefold()
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_free_dn_assign(self):
+
+        msg = ldb.Message()
+
+        samdb = self.get_samdb()
+        msg.dn = ldb.Dn(samdb, "CN=Test")
+
+        dn = msg.dn
+        dn.add_child("CN=TEST")
+        dn.set_component(0, "CN", "Test2")
+
+        del samdb
+        del msg
+        dn.get_casefold()
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_ldif_parse(self):
+
+        ldif = """dn: cn=test
+        changetype: add
+        -
+        cn: test
+        -
+        """
+        samdb = self.get_samdb()
+        for changetype, msg in samdb.parse_ldif(ldif):
+            dn = msg.dn
+            dn.add_child("CN=TEST")
+            dn.set_component(0, "CN", "Test2")
+
+            del samdb
+            del msg
+            dn.get_casefold()
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_free_msg_diff(self):
+        samdb = self.get_samdb()
+        msg = ldb.Message()
+        msg.dn = ldb.Dn(samdb, "CN=foo")
+        msg["foo"] = ["bar"]
+
+        msg2 = ldb.Message()
+        msg2.dn = ldb.Dn(samdb, "CN=foo")
+        msg2["foo"] = ["bar2"]
+
+        msg3 = samdb.msg_diff(msg, msg2)
+        dn = msg3.dn
+        dn.add_child("CN=TEST")
+        dn.set_component(0, "CN", "Test2")
+
+        del samdb
+        del msg3
+        del msg2
+        del msg
+        dn.get_casefold()
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_free_msg_from_dict(self):
+        samdb = self.get_samdb()
+        msg = ldb.Message.from_dict(samdb,
+                                    {
+                                        "dn": "CN=foo",
+                                        "foo": ["bar"]},
+                                    ldb.FLAG_MOD_REPLACE)
+
+        dn = msg.dn
+        dn.add_child("CN=TEST")
+        dn.set_component(0, "CN", "Test2")
+
+        del samdb
+        del msg
+        dn.get_casefold()
