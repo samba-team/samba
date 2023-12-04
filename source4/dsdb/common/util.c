@@ -465,7 +465,7 @@ NTTIME samdb_result_nttime(const struct ldb_message *msg, const char *attr,
 /*
  * Windows stores 0 for lastLogoff.
  * But when a MS DC return the lastLogoff (as Logoff Time)
- * it returns 0x7FFFFFFFFFFFFFFF, not returning this value in this case
+ * it returns INT64_MAX, not returning this value in this case
  * cause windows 2008 and newer version to fail for SMB requests
  */
 NTTIME samdb_result_last_logoff(const struct ldb_message *msg)
@@ -473,17 +473,17 @@ NTTIME samdb_result_last_logoff(const struct ldb_message *msg)
 	NTTIME ret = ldb_msg_find_attr_as_uint64(msg, "lastLogoff",0);
 
 	if (ret == 0)
-		ret = 0x7FFFFFFFFFFFFFFFULL;
+		ret = INT64_MAX;
 
 	return ret;
 }
 
 /*
- * Windows uses both 0 and 9223372036854775807 (0x7FFFFFFFFFFFFFFFULL) to
+ * Windows uses both 0 and 9223372036854775807 (INT64_MAX) to
  * indicate an account doesn't expire.
  *
  * When Windows initially creates an account, it sets
- * accountExpires = 9223372036854775807 (0x7FFFFFFFFFFFFFFF).  However,
+ * accountExpires = 9223372036854775807 (INT64_MAX).  However,
  * when changing from an account having a specific expiration date to
  * that account never expiring, it sets accountExpires = 0.
  *
@@ -496,7 +496,7 @@ NTTIME samdb_result_account_expires(const struct ldb_message *msg)
 						 0);
 
 	if (ret == 0)
-		ret = 0x7FFFFFFFFFFFFFFFULL;
+		ret = INT64_MAX;
 
 	return ret;
 }
