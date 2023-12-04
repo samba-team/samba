@@ -756,7 +756,7 @@ static NTTIME get_msds_user_password_expiry_time_computed(struct ldb_module *mod
 					"userAccountControl",
 					0);
 	if (userAccountControl & _UF_NO_EXPIRY_ACCOUNTS) {
-		return 0x7FFFFFFFFFFFFFFFULL;
+		return INT64_MAX;
 	}
 
 	pwdLastSet = ldb_msg_find_attr_as_int64(msg, "pwdLastSet", 0);
@@ -768,14 +768,14 @@ static NTTIME get_msds_user_password_expiry_time_computed(struct ldb_module *mod
 		/*
 		 * This can't really happen...
 		 */
-		return 0x7FFFFFFFFFFFFFFFULL;
+		return INT64_MAX;
 	}
 
-	if (pwdLastSet >= 0x7FFFFFFFFFFFFFFFLL) {
+	if (pwdLastSet >= INT64_MAX) {
 		/*
 		 * Somethings wrong with the clock...
 		 */
-		return 0x7FFFFFFFFFFFFFFFULL;
+		return INT64_MAX;
 	}
 
 	/*
@@ -793,21 +793,21 @@ static NTTIME get_msds_user_password_expiry_time_computed(struct ldb_module *mod
 		/*
 		 * This is not really possible...
 		 */
-		return 0x7FFFFFFFFFFFFFFFULL;
+		return INT64_MAX;
 	}
 
 	if (maxPwdAge == INT64_MIN) {
-		return 0x7FFFFFFFFFFFFFFFULL;
+		return INT64_MAX;
 	}
 
 	/*
 	 * Note we already caught maxPwdAge == INT64_MIN
-	 * and pwdLastSet >= 0x7FFFFFFFFFFFFFFFULL above.
+	 * and pwdLastSet >= INT64_MAX above.
 	 *
 	 * Remember maxPwdAge is a negative number,
 	 * so it results in the following.
 	 *
-	 * 0x7FFFFFFFFFFFFFFEULL + 0x7FFFFFFFFFFFFFFFULL
+	 * 0x7FFFFFFFFFFFFFFEULL + INT64_MAX
 	 * =
 	 * 0xFFFFFFFFFFFFFFFDULL
 	 *
@@ -815,8 +815,8 @@ static NTTIME get_msds_user_password_expiry_time_computed(struct ldb_module *mod
 	 * ever be more than 1<<64, therefore this result can't wrap.
 	 */
 	ret = (NTTIME)pwdLastSet - (NTTIME)maxPwdAge;
-	if (ret >= 0x7FFFFFFFFFFFFFFFULL) {
-		return 0x7FFFFFFFFFFFFFFFULL;
+	if (ret >= INT64_MAX) {
+		return INT64_MAX;
 	}
 
 	return ret;
