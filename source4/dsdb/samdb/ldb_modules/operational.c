@@ -10,12 +10,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -54,7 +54,7 @@
   primaryGroupToken: HIDDEN, CONSTRUCTED, SEARCHABLE
 
      contains the RID of a certain group object
-    
+
 
   attributeTypes: in schema only
   objectClasses: in schema only
@@ -130,7 +130,7 @@ static int construct_primary_group_token(struct ldb_module *module,
 {
 	struct ldb_context *ldb;
 	uint32_t primary_group_token;
-	
+
 	ldb = ldb_module_get_ctx(module);
 	if (ldb_match_msg_objectclass(msg, "group") == 1) {
 		primary_group_token
@@ -398,7 +398,7 @@ static int construct_parent_guid(struct ldb_module *module,
 	                            DSDB_SEARCH_SHOW_RECYCLED, parent);
 	/* not NC, so the object should have a parent*/
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		ret = ldb_error(ldb_module_get_ctx(module), LDB_ERR_OPERATIONS_ERROR, 
+		ret = ldb_error(ldb_module_get_ctx(module), LDB_ERR_OPERATIONS_ERROR,
 				 talloc_asprintf(msg, "Parent dn %s for %s does not exist",
 						 ldb_dn_get_linearized(parent_dn),
 						 ldb_dn_get_linearized(msg->dn)));
@@ -1840,7 +1840,7 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 				for (j = 0; search_sub[i].extra_attrs[j]; j++) {
 					search_attrs2 = ldb_attr_list_copy_add(req, search_attrs
 									       ? search_attrs
-									       : ac->attrs, 
+									       : ac->attrs,
 									       search_sub[i].extra_attrs[j]);
 					if (search_attrs2 == NULL) {
 						return ldb_operr(ldb);
