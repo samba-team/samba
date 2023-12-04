@@ -37,21 +37,6 @@
 
 #undef strcasecmp
 
-/* FIXME: These should be in a header file somewhere */
-#define PyErr_LDB_OR_RAISE(py_ldb, ldb) \
-	ldb = pyldb_Ldb_AsLdbContext(py_ldb); \
-	if (!ldb) { \
-		PyErr_SetString(PyExc_TypeError, "Ldb connection object required"); \
-		return NULL; \
-	}
-
-#define PyErr_LDB_DN_OR_RAISE(py_ldb_dn, dn) \
-	if (!pyldb_check_type(py_ldb_dn, "Dn")) { \
-		PyErr_SetString(PyExc_TypeError, "ldb Dn object required"); \
-		return NULL; \
-	} \
-	dn = pyldb_Dn_AS_DN(py_ldb_dn);
-
 static PyObject *py_ldb_get_exception(void)
 {
 	PyObject *mod = PyImport_ImportModule("ldb");
