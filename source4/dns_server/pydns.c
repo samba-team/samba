@@ -40,7 +40,7 @@
 	}
 
 #define PyErr_LDB_DN_OR_RAISE(py_ldb_dn, dn) \
-	if (!py_check_dcerpc_type(py_ldb_dn, "ldb", "Dn")) { \
+	if (!pyldb_check_type(py_ldb_dn, "Dn")) { \
 		PyErr_SetString(PyExc_TypeError, "ldb Dn object required"); \
 		return NULL; \
 	} \
