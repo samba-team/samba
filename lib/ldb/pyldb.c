@@ -1013,15 +1013,11 @@ static PyObject *py_ldb_dn_new(PyTypeObject *type, PyObject *args, PyObject *kwa
 	PyLdbDnObject *py_ret = NULL;
 	const char * const kwnames[] = { "ldb", "dn", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O"PYARG_STR_UNI,
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O!"PYARG_STR_UNI,
 					 discard_const_p(char *, kwnames),
-					 &py_ldb, "utf8", &str))
+					 &PyLdb, &py_ldb, "utf8", &str))
 		goto out;
 
-	if (!PyLdb_Check(py_ldb)) {
-		PyErr_SetString(PyExc_TypeError, "Expected Ldb");
-		goto out;
-	}
 	ldb_ctx = pyldb_Ldb_AS_LDBCONTEXT(py_ldb);
 
 	mem_ctx = talloc_new(NULL);
