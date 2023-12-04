@@ -785,7 +785,7 @@ static NTTIME get_msds_user_password_expiry_time_computed(struct ldb_module *mod
 	 *
 	 * maxPwdAge: -864000000001
 	 * to
-	 * maxPwdAge: -9223372036854775808 (-0x8000000000000000ULL)
+	 * maxPwdAge: -9223372036854775808 (INT64_MIN)
 	 *
 	 */
 	maxPwdAge = get_user_max_pwd_age(module, msg, parent, domain_dn);
@@ -796,12 +796,12 @@ static NTTIME get_msds_user_password_expiry_time_computed(struct ldb_module *mod
 		return 0x7FFFFFFFFFFFFFFFULL;
 	}
 
-	if (maxPwdAge == -0x8000000000000000LL) {
+	if (maxPwdAge == INT64_MIN) {
 		return 0x7FFFFFFFFFFFFFFFULL;
 	}
 
 	/*
-	 * Note we already caught maxPwdAge == -0x8000000000000000ULL
+	 * Note we already caught maxPwdAge == INT64_MIN
 	 * and pwdLastSet >= 0x7FFFFFFFFFFFFFFFULL above.
 	 *
 	 * Remember maxPwdAge is a negative number,
