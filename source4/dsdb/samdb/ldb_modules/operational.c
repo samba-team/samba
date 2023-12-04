@@ -70,11 +70,8 @@
 
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
-#include "param/param.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
-
-#include "libcli/security/security.h"
 
 #include "auth/auth.h"
 
