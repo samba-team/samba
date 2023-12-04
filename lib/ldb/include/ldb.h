@@ -1864,7 +1864,7 @@ struct ldb_dn *ldb_dn_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, const ch
   Allocate a new DN from a printf style format string and arguments
 
   \param mem_ctx TALLOC context to return resulting ldb_dn structure on
-  \param new_fms The new DN as a format string (plus arguments)
+  \param new_fmt The new DN as a format string (plus arguments)
 
   \note The DN will not be parsed at this time.  Use ldb_dn_validate to tell if the DN is syntactically correct
 */
@@ -2093,7 +2093,7 @@ struct ldb_message *ldb_msg_copy(TALLOC_CTX *mem_ctx,
 				 const struct ldb_message *msg);
 
 /*
- * ldb_msg_canonicalize() is now depreciated
+ * ldb_msg_canonicalize() is now deprecated
  * Please use ldb_msg_normalize() instead
  *
  * NOTE: Returned ldb_message object is allocated
@@ -2111,7 +2111,7 @@ int ldb_msg_normalize(struct ldb_context *ldb,
 
 
 /*
- * ldb_msg_diff() is now depreciated
+ * ldb_msg_diff() is now deprecated
  * Please use ldb_msg_difference() instead
  *
  * NOTE: Returned ldb_message object is allocated
