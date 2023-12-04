@@ -70,7 +70,6 @@ static PyTypeObject PyLdbModule;
 static PyTypeObject PyLdbDn;
 #define pyldb_Dn_Check(ob) PyObject_TypeCheck(ob, &PyLdbDn)
 static PyTypeObject PyLdb;
-#define PyLdb_Check(ob) PyObject_TypeCheck(ob, &PyLdb)
 static PyTypeObject PyLdbMessageElement;
 #define pyldb_MessageElement_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessageElement)
 
@@ -3755,11 +3754,6 @@ static PyObject *py_ldb_msg_from_dict(PyTypeObject *type, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O!O!|I",
 			      &PyLdb, &py_ldb, &PyDict_Type, &py_dict,
 			      &mod_flags)) {
-		return NULL;
-	}
-
-	if (!PyLdb_Check(py_ldb)) {
-		PyErr_SetString(PyExc_TypeError, "Expected Ldb");
 		return NULL;
 	}
 
