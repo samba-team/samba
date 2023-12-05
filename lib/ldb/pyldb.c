@@ -2574,6 +2574,73 @@ static PyObject *py_ldb_whoami(PyLdbObject *self, PyObject *args)
 	return PyUnicode_FromStringAndSize(ext_res->data, len);
 }
 
+static PyObject *py_ldb_disconnect(PyLdbObject *self, PyObject *args)
+{
+	size_t ref_count;
+	void *parent = NULL;
+	TALLOC_CTX *mem_ctx = NULL;
+	struct ldb_context *ldb = NULL;
+
+	if (self->ldb_ctx == NULL) {
+		/* It is hard to see how we'd get here. */
+		PyErr_SetLdbError(PyExc_LdbError, LDB_ERR_OPERATIONS_ERROR, NULL);
+		return NULL;
+	}
+
+	ref_count = talloc_reference_count(self->ldb_ctx);
+
+	if (ref_count != 0) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"ldb.disconnect() not possible as "
+				"object still has C (or second "
+				"python object) references");
+		return NULL;
+	}
+
+	parent = talloc_parent(self->ldb_ctx);
+
+	if (parent != self->mem_ctx) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"ldb.disconnect() not possible as "
+				"object is not talloc owned by this "
+				"python object!");
+		return NULL;
+	}
+
+	/*
+	 * This recapitulates py_ldb_new(), cleaning out all the
+	 * connections and state, but leaving the python object in a
+	 * workable condition.
+	 */
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
+
+	ldb = ldb_init(mem_ctx, NULL);
+	if (ldb == NULL) {
+		talloc_free(mem_ctx);
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	/*
+	 * Notice we allocate the new mem_ctx and ldb before freeing
+	 * the old one. This has two purposes: 1, the python object
+	 * will still be consistent if an exception happens, and 2, it
+	 * ensures the new ldb can't have the same memory address as
+	 * the old one, and ldb address equality is a guard we use in
+	 * Python DNs and such. Repeated calls to disconnect() *can* make
+	 * this happen, so we don't advise doing that.
+	 */
+	TALLOC_FREE(self->mem_ctx);
+
+	self->mem_ctx = mem_ctx;
+	self->ldb_ctx = ldb;
+
+	Py_RETURN_NONE;
+}
+
 
 static const struct ldb_dn_extended_syntax test_dn_syntax = {
 	.name             = "TEST",
@@ -2707,6 +2774,13 @@ static PyMethodDef py_ldb_methods[] = {
 	  METH_NOARGS,
 	  "S.whoami() -> value\n"
 	  "Return the RFC4532 whoami string",
+	},
+	{ "disconnect",
+	  (PyCFunction)py_ldb_disconnect,
+	  METH_NOARGS,
+	  "S.disconnect() -> None\n"
+	  "Make this Ldb object unusable, disconnect and free the "
+	  "underlying LDB, releasing any file handles and sockets.",
 	},
 	{ "_register_test_extensions", (PyCFunction)py_ldb_register_test_extensions, METH_NOARGS,
 		"S._register_test_extensions() -> None\n"
