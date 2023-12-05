@@ -460,7 +460,7 @@ const char *dsdb_audit_get_modification_action(unsigned int flags)
  *           value is not encoded.
  *
  * truncated Indicates that the length of the value exceeded MAX_LENGTH and was
- *           truncated.  Note that vales are truncated and then base64 encoded.
+ *           truncated.  Note that values are truncated and then base64 encoded.
  *           so an encoded value can be longer than MAX_LENGTH.
  *
  * @param array the JSON array to append the value to.

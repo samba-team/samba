@@ -150,7 +150,7 @@ struct dsdb_control_password_change {
 
 /*
  * passed from the descriptor module in order to
- * store the recalucated nTSecurityDescriptor without
+ * store the recalculated nTSecurityDescriptor without
  * modifying the replPropertyMetaData.
  */
 #define DSDB_CONTROL_SEC_DESC_PROPAGATION_OID "1.3.6.1.4.1.7165.4.3.21"
@@ -313,7 +313,7 @@ struct dsdb_fsmo_extended_op {
 
 /*
  * passed from the descriptor module in order to
- * store the recalucated nTSecurityDescriptor without
+ * store the recalculated nTSecurityDescriptor without
  * modifying the replPropertyMetaData.
  */
 #define DSDB_EXTENDED_SEC_DESC_PROPAGATION_OID "1.3.6.1.4.1.7165.4.4.7"

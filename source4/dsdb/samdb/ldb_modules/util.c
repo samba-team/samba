@@ -1862,7 +1862,7 @@ int dsdb_fix_dn_rdncase(struct ldb_context *ldb, struct ldb_dn *dn)
  * @param ldb	ldb context
  * @param schema cached schema for ldb. We may get it, but it is very time consuming.
  * 			Hence leave the responsibility to the caller.
- * @param obj	AD object to determint objectCategory for
+ * @param obj	AD object to determine objectCategory for
  * @param mem_ctx Memory context - usually it is obj actually
  * @param pobjectcategory location to store found objectCategory
  *
