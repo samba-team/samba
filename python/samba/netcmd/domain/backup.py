@@ -1172,6 +1172,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
         # Close the original samdb, to avoid any confusion, we will
         # not use this any more as the data has all been copied under
         # the transaction
+        samdb.disconnect()
         samdb = None
 
         # Open the new backed up samdb, flag it as backed up, and write
@@ -1189,6 +1190,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
         add_backup_marker(samdb, "backupType", "offline")
 
         # Close the backed up samdb
+        samdb.disconnect()
         samdb = None
 
         # Now handle all the LDB and TDB files that are not linked to
