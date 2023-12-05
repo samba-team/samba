@@ -145,6 +145,22 @@ test_singlefile_smburl()
 	return 0
 }
 
+test_singlefile_smburl2()
+{
+	clear_download_area
+	$SMBGET "smb://$DOMAIN;$USERNAME:$PASSWORD@$SERVER_IP/smbget/testfile"
+	if [ $? -ne 0 ]; then
+		echo 'ERROR: RC does not match, expected: 0'
+		return 1
+	fi
+	cmp --silent $WORKDIR/testfile ./testfile
+	if [ $? -ne 0 ]; then
+		echo 'ERROR: file content does not match'
+		return 1
+	fi
+	return 0
+}
+
 test_singlefile_authfile()
 {
 	clear_download_area
@@ -497,6 +513,10 @@ testit "download single file with --update and UPN" test_singlefile_U_UPN ||
 	failed=$((failed + 1))
 
 testit "download single file with smb URL" test_singlefile_smburl ||
+	failed=$(expr $failed + 1)
+
+testit "download single file with smb URL including domain" \
+	test_singlefile_smburl2 ||
 	failed=$(expr $failed + 1)
 
 testit "download single file with authfile" test_singlefile_authfile ||
