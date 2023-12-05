@@ -2697,7 +2697,7 @@ static PyMethodDef py_ldb_methods[] = {
 	{ "whoami",
 	  (PyCFunction)py_ldb_whoami,
 	  METH_NOARGS,
-	  "S.whoami(type) -> value\n"
+	  "S.whoami() -> value\n"
 	  "Return the RFC4532 whoami string",
 	},
 	{ "_register_test_extensions", (PyCFunction)py_ldb_register_test_extensions, METH_NOARGS,
