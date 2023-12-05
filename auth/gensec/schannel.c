@@ -208,11 +208,10 @@ static NTSTATUS netsec_do_seq_num(struct schannel_state *state,
 				      checksum,
 				      checksum_length,
 				      _sequence_key);
+		ZERO_ARRAY(digest1);
 		if (rc < 0) {
 			return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 		}
-
-		ZERO_ARRAY(digest1);
 
 		rc = gnutls_cipher_init(&cipher_hnd,
 					GNUTLS_CIPHER_ARCFOUR_128,
