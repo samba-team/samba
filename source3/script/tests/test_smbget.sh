@@ -29,6 +29,7 @@ incdir=$(dirname $0)/../../../testprogs/blackbox
 . "${incdir}/common_test_fns.inc"
 
 samba_kinit=$(system_or_builddir_binary kinit "${BINDIR}" samba4kinit)
+samba_texpect="${BINDIR}/texpect"
 
 create_test_data()
 {
@@ -157,6 +158,33 @@ test_singlefile_smburl2()
 	fi
 	cmp --silent $WORKDIR/testfile ./testfile
 	if [ $? -ne 0 ]; then
+		echo 'ERROR: file content does not match'
+		return 1
+	fi
+	return 0
+}
+
+test_singlefile_smburl_interactive()
+{
+	clear_download_area
+
+	tmpfile="$(mktemp --tmpdir="${TMPDIR}" expect_XXXXXXXXXX)"
+
+	cat >"${tmpfile}" <<EOF
+expect Password for
+send ${DOMAIN_USER_PASSWORD}\n
+EOF
+
+	USER="hanswurst" ${samba_texpect} "${tmpfile}" ${SMBGET} "smb://${DOMAIN};${DOMAIN_USER}@${SERVER_IP}/smbget/testfile"
+	ret=$?
+	rm -f "${tmpfile}"
+	if [ ${ret} -ne 0 ]; then
+		echo 'ERROR: RC does not match, expected: 0'
+		return 1
+	fi
+	cmp --silent $WORKDIR/testfile ./testfile
+	ret=$?
+	if [ ${ret} -ne 0 ]; then
 		echo 'ERROR: file content does not match'
 		return 1
 	fi
@@ -531,6 +559,10 @@ testit "download single file with smb URL" test_singlefile_smburl ||
 
 testit "download single file with smb URL including domain" \
 	test_singlefile_smburl2 ||
+	failed=$(expr $failed + 1)
+
+testit "download single file with smb URL interactive" \
+	test_singlefile_smburl_interactive ||
 	failed=$(expr $failed + 1)
 
 testit "download single file with authfile" test_singlefile_authfile ||
