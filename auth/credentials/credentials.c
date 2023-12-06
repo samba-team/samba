@@ -738,6 +738,28 @@ _PUBLIC_ const char *cli_credentials_get_domain(struct cli_credentials *cred)
 	return cred->domain;
 }
 
+/**
+ * @brief Obtain the domain for this credential context.
+ *
+ * @param[in] cred  The credential context.
+ *
+ * @param[out] obtained A pointer to store the obtained information.
+ *
+ * @return The domain name or NULL if an error occurred.
+ */
+_PUBLIC_ const char *cli_credentials_get_domain_and_obtained(
+	struct cli_credentials *cred,
+	enum credentials_obtained *obtained)
+{
+	const char *domain = cli_credentials_get_domain(cred);
+
+	if (obtained != NULL) {
+		*obtained = cred->domain_obtained;
+	}
+
+	return domain;
+}
+
 
 _PUBLIC_ bool cli_credentials_set_domain(struct cli_credentials *cred,
 				const char *val,

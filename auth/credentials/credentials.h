@@ -127,6 +127,9 @@ int cli_credentials_get_keytab(struct cli_credentials *cred,
 			       struct loadparm_context *lp_ctx,
 			       struct keytab_container **_ktc);
 const char *cli_credentials_get_domain(struct cli_credentials *cred);
+const char *cli_credentials_get_domain_and_obtained(
+	struct cli_credentials *cred,
+	enum credentials_obtained *obtained);
 struct netlogon_creds_CredentialState *cli_credentials_get_netlogon_creds(struct cli_credentials *cred);
 void cli_credentials_set_machine_account_pending(struct cli_credentials *cred,
 						 struct loadparm_context *lp_ctx);
