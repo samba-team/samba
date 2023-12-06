@@ -849,6 +849,7 @@ int main(int argc, char **argv)
 	uint32_t gensec_features;
 	bool use_wbccache = false;
 	SMBCCTX *smb_ctx = NULL;
+	int dbg_lvl = -1;
 	int rc;
 
 	smb_init_locale();
@@ -922,13 +923,16 @@ int main(int argc, char **argv)
 
 	samba_cmdline_burn(argc, argv);
 
+	/* smbc_new_context() will set the log level to 0 */
+	dbg_lvl = debuglevel_get();
+
 	smb_ctx = smbc_new_context();
 	if (smb_ctx == NULL) {
 		fprintf(stderr, "Unable to initialize libsmbclient\n");
 		ok = false;
 		goto done;
 	}
-	smbc_setDebug(smb_ctx, debuglevel_get());
+	smbc_setDebug(smb_ctx, dbg_lvl);
 
 	rc = smbc_setConfiguration(smb_ctx, lp_default_path());
 	if (rc < 0) {
