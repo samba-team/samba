@@ -114,20 +114,48 @@ static void get_auth_data_with_context_fn(SMBCCTX *ctx,
 	const char *username = NULL;
 	const char *password = NULL;
 	const char *domain = NULL;
+	enum credentials_obtained obtained = CRED_UNINITIALISED;
 
-	username = cli_credentials_get_username(creds);
+	username = cli_credentials_get_username_and_obtained(creds, &obtained);
 	if (username != NULL) {
-		strncpy(usr, username, usr_len - 1);
+		bool overwrite = false;
+		if (usr[0] == '\0') {
+			overwrite = true;
+		}
+		if (obtained >= CRED_CALLBACK_RESULT) {
+			overwrite = true;
+		}
+		if (overwrite) {
+			strncpy(usr, username, usr_len - 1);
+		}
 	}
 
-	password = cli_credentials_get_password(creds);
+	password = cli_credentials_get_password_and_obtained(creds, &obtained);
 	if (password != NULL) {
-		strncpy(pwd, password, pwd_len - 1);
+		bool overwrite = false;
+		if (usr[0] == '\0') {
+			overwrite = true;
+		}
+		if (obtained >= CRED_CALLBACK_RESULT) {
+			overwrite = true;
+		}
+		if (overwrite) {
+			strncpy(pwd, password, pwd_len - 1);
+		}
 	}
 
-	domain = cli_credentials_get_domain(creds);
+	domain = cli_credentials_get_domain_and_obtained(creds, &obtained);
 	if (domain != NULL) {
-		strncpy(dom, domain, dom_len - 1);
+		bool overwrite = false;
+		if (usr[0] == '\0') {
+			overwrite = true;
+		}
+		if (obtained >= CRED_CALLBACK_RESULT) {
+			overwrite = true;
+		}
+		if (overwrite) {
+			strncpy(dom, domain, dom_len - 1);
+		}
 	}
 
 	smbc_set_credentials_with_fallback(ctx, domain, username, password);
