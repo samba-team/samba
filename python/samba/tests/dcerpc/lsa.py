@@ -20,7 +20,7 @@
 
 """Tests for samba.dcerpc.lsa."""
 
-from samba.dcerpc import samr, security, lsa
+from samba.dcerpc import lsa
 from samba.credentials import Credentials
 from samba.tests import TestCase
 from samba.dcerpc.security import dom_sid
