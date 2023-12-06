@@ -465,11 +465,13 @@ _PUBLIC_ const char *
 cli_credentials_get_password_and_obtained(struct cli_credentials *cred,
 					  enum credentials_obtained *obtained)
 {
+	const char *password = cli_credentials_get_password(cred);
+
 	if (obtained != NULL) {
 		*obtained = cred->password_obtained;
 	}
 
-	return cli_credentials_get_password(cred);
+	return password;
 }
 
 /* Set a password on the credentials context, including an indication
