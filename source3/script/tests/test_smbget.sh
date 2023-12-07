@@ -429,13 +429,17 @@ test_kerberos()
 {
 	clear_download_area
 
-	KRB5CCNAME_PATH="$PREFIX/smget_krb5ccache"
+	KRB5CCNAME_PATH="${TMPDIR}/smget_krb5ccache"
 	rm -f "${KRB5CCNAME_PATH}"
 
 	KRB5CCNAME="FILE:${KRB5CCNAME_PATH}"
 	export KRB5CCNAME
 	kerberos_kinit "${samba_kinit}" \
 		"${DOMAIN_USER}@${REALM}" "${DOMAIN_USER_PASSWORD}"
+	if [ $? -ne 0 ]; then
+		echo 'Failed to get Kerberos ticket'
+		return 1
+	fi
 
 	$SMBGET --verbose --use-krb5-ccache="${KRB5CCNAME}" \
 		smb://$SERVER/smbget/testfile
