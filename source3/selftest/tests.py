@@ -932,6 +932,8 @@ plantestsuite("samba3.blackbox.smbget",
                   '$REALM',
                   'smbget_user',
                   '$PASSWORD',
+                  '$DOMAIN_USER',
+                  '$DOMAIN_USER_PASSWORD',
                   '$LOCAL_PATH/smbget',
                   smbget
               ])
