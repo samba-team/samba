@@ -568,6 +568,11 @@ static PyObject *py_creds_set_nt_hash(PyObject *self, PyObject *args)
 	}
 	obt = _obt;
 
+	if (!py_check_dcerpc_type(py_cp, "samba.dcerpc.samr", "Password")) {
+		/* py_check_dcerpc_type sets TypeError */
+		return NULL;
+	}
+
 	pwd = pytalloc_get_type(py_cp, struct samr_Password);
 	if (pwd == NULL) {
 		/* pytalloc_get_type sets TypeError */
@@ -1070,6 +1075,11 @@ static PyObject *py_creds_encrypt_samr_password(PyObject *self,
 	}
 
 	if (!PyArg_ParseTuple(args, "O", &py_cp)) {
+		return NULL;
+	}
+
+	if (!py_check_dcerpc_type(py_cp, "samba.dcerpc.samr", "Password")) {
+		/* py_check_dcerpc_type sets TypeError */
 		return NULL;
 	}
 
