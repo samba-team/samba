@@ -3587,6 +3587,10 @@ sub provision($$)
 [smbget]
 	path = $smbget_sharedir
 	comment = smb username is [%U]
+
+[smbget_guest]
+	path = $smbget_sharedir
+	comment = smb username is [%U]
 	guest ok = yes
 
 include = $aliceconfdir/%U.conf

@@ -57,8 +57,8 @@ clear_download_area()
 test_singlefile_guest()
 {
 	clear_download_area
-	echo "$SMBGET --verbose --guest smb://$SERVER_IP/smbget/testfile"
-	$SMBGET --verbose --guest smb://$SERVER_IP/smbget/testfile
+	echo "$SMBGET --verbose --guest smb://$SERVER_IP/smbget_guest/testfile"
+	$SMBGET --verbose --guest smb://$SERVER_IP/smbget_guest/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -376,9 +376,9 @@ test_msdfs_link_upn()
 test_limit_rate()
 {
 	clear_download_area
-	echo "$SMBGET --verbose --guest --limit-rate 100 smb://$SERVER_IP/smbget/testfile"
+	echo "$SMBGET --verbose --guest --limit-rate 100 smb://$SERVER_IP/smbget_guest/testfile"
 	time_begin=$(date +%s)
-	$SMBGET --verbose --guest --limit-rate 100 smb://$SERVER_IP/smbget/testfile
+	$SMBGET --verbose --guest --limit-rate 100 smb://$SERVER_IP/smbget_guest/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
