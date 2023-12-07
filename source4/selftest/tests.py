@@ -1124,6 +1124,9 @@ planpythontestsuite("none", "samba.tests.samba_tool.visualize")
 for env in all_fl_envs:
     planpythontestsuite(env + ":local", "samba.tests.samba_tool.fsmo")
 
+# test getpassword for group managed service accounts
+planpythontestsuite("ad_dc_default", "samba.tests.samba_tool.user_getpassword_gmsa")
+
 # test samba-tool user, group, contact and computer edit command
 for env in all_fl_envs:
     env += ":local"
