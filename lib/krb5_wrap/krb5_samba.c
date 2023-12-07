@@ -1808,7 +1808,7 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 	}
 
 	DEBUG(3, (__location__ ": Will try to delete old keytab entries\n"));
-	while (!krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) {
+	while (!samba_krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) {
 		bool name_ok = false;
 		krb5_enctype kt_entry_enctype =
 			smb_krb5_kt_get_enctype_from_entry(&kt_entry);
@@ -1898,7 +1898,7 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 				  "failed (%s)\n", error_message(ret)));
 			goto out;
 		}
-		ret = krb5_kt_remove_entry(context, keytab, &kt_entry);
+		ret = samba_krb5_kt_remove_entry(context, keytab, &kt_entry);
 		if (ret) {
 			DEBUG(1, (__location__ ": krb5_kt_remove_entry() "
 				  "failed (%s)\n", error_message(ret)));
@@ -2029,7 +2029,7 @@ krb5_error_code smb_krb5_kt_add_password(krb5_context context,
 	DEBUG(3, (__location__ ": adding keytab entry for (%s) with "
 		  "encryption type (%d) and version (%d)\n",
 		  princ_s, enctype, kt_entry.vno));
-	ret = krb5_kt_add_entry(context, keytab, &kt_entry);
+	ret = samba_krb5_kt_add_entry(context, keytab, &kt_entry);
 	krb5_free_keyblock_contents(context, keyp);
 	ZERO_STRUCT(kt_entry);
 	if (ret) {

@@ -805,8 +805,9 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 
 	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
 	if (ret != KRB5_KT_END && ret != ENOENT ) {
-		while ((ret = krb5_kt_next_entry(context, keytab,
-						 &kt_entry, &cursor)) == 0) {
+		while ((ret = samba_krb5_kt_next_entry(
+				context, keytab, &kt_entry, &cursor)) == 0)
+		{
 			smb_krb5_kt_free_entry(context, &kt_entry);
 			ZERO_STRUCT(kt_entry);
 			found++;
@@ -840,13 +841,16 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 		goto done;
 	}
 
-	while (krb5_kt_next_entry(context, keytab, &kt_entry, &cursor) == 0) {
+	while (samba_krb5_kt_next_entry(context, keytab, &kt_entry, &cursor) ==
+	       0)
+	{
 		if (kt_entry.vno != kvno) {
 			char *ktprinc = NULL;
 			char *p;
 
 			/* This returns a malloc'ed string in ktprinc. */
-			ret = smb_krb5_unparse_name(oldEntries, context,
+			ret = smb_krb5_unparse_name(oldEntries,
+						    context,
 						    kt_entry.principal,
 						    &ktprinc);
 			if (ret) {
@@ -963,7 +967,9 @@ int ads_keytab_list(const char *keytab_name)
 
 	printf("Vno  Type                                        Principal\n");
 
-	while (krb5_kt_next_entry(context, keytab, &kt_entry, &cursor) == 0) {
+	while (samba_krb5_kt_next_entry(context, keytab, &kt_entry, &cursor) ==
+	       0)
+	{
 
 		char *princ_s = NULL;
 		char *etype_s = NULL;
