@@ -506,7 +506,7 @@ class BlackboxTestCase(TestCaseInTempDir):
 
         if os.path.exists(exe):
             parts[0] = exe
-        if cmd in python_cmds and os.getenv("PYTHON", None):
+        if cmd in python_cmds and os.getenv("PYTHON", False):
             parts.insert(0, os.environ["PYTHON"])
 
         if not isinstance(line, list):
