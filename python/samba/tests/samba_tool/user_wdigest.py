@@ -89,10 +89,7 @@ class UserCmdWdigestTestCase(SambaToolCmdTest):
                               out,
                               err,
                               "Ensure getpassword runs")
-        self.assertEqual(err, "", "getpassword")
-        self.assertMatch(out,
-                         "Got password OK",
-                         "getpassword out[%s]" % out)
+        self.assertEqual(err, "Got password OK\n", "getpassword")
 
         if missing:
             self.assertTrue(attribute not in out)

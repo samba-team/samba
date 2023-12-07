@@ -346,8 +346,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 "--attributes=%s" % attributes,
                                                 "--decrypt-samba-gpg")
             self.assertCmdSuccess(result, out, err, "Ensure getpassword runs")
-            self.assertEqual(err, "", "getpassword without url")
-            self.assertMatch(out, "Got password OK", "getpassword without url")
+            self.assertEqual(err, "Got password OK\n", "getpassword without url")
             self.assertMatch(out, "sAMAccountName: %s" % (user["name"]),
                              "getpassword: 'sAMAccountName': %s out[%s]" % (user["name"], out))
             if expect_nt_hash:
@@ -357,7 +356,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                 self.assertNotIn("unicodePwd:: %s" % unicodePwd, out)
             self.assertMatch(out, "supplementalCredentials:: ",
                              "getpassword supplementalCredentials: out[%s]" % out)
-            self._verify_supplementalCredentials(out.replace("\nGot password OK\n", ""))
+            self._verify_supplementalCredentials(out)
             if "virtualSambaGPG:: " in out:
                 self.assertMatch(out, "virtualClearTextUTF8:: %s" % virtualClearTextUTF8,
                                  "getpassword virtualClearTextUTF8: out[%s]" % out)

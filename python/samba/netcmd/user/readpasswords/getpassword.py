@@ -197,4 +197,4 @@ samba-tool user getpassword --filter=samaccountname=TestUser3 --attributes=msDS-
 
         ldif = samdb.write_ldif(obj, ldb.CHANGETYPE_NONE)
         self.outf.write("%s" % ldif)
-        self.outf.write("Got password OK\n")
+        self.errf.write("Got password OK\n")
