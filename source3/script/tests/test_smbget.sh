@@ -72,7 +72,7 @@ test_singlefile_guest()
 test_singlefile_U()
 {
 	clear_download_area
-	$SMBGET --verbose -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
+	$SMBGET --verbose -U${SERVER}/${USERNAME}%$PASSWORD smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -132,7 +132,7 @@ test_singlefile_U_domain()
 test_singlefile_smburl()
 {
 	clear_download_area
-	$SMBGET --workgroup $DOMAIN smb://$USERNAME:$PASSWORD@$SERVER_IP/smbget/testfile
+	$SMBGET --workgroup $DOMAIN smb://${USERNAME}:$PASSWORD@$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -148,7 +148,7 @@ test_singlefile_smburl()
 test_singlefile_smburl2()
 {
 	clear_download_area
-	$SMBGET "smb://$DOMAIN;$USERNAME:$PASSWORD@$SERVER_IP/smbget/testfile"
+	$SMBGET "smb://$DOMAIN;${USERNAME}:$PASSWORD@$SERVER_IP/smbget/testfile"
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -165,7 +165,7 @@ test_singlefile_authfile()
 {
 	clear_download_area
 	cat >"${TMPDIR}/authfile" << EOF
-username = $USERNAME
+username = ${SERVER}/${USERNAME}
 password = $PASSWORD
 EOF
 	$SMBGET --verbose --authentication-file="${TMPDIR}/authfile" smb://$SERVER_IP/smbget/testfile
@@ -186,7 +186,7 @@ EOF
 test_recursive_U()
 {
 	clear_download_area
-	$SMBGET --verbose --recursive -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/
+	$SMBGET --verbose --recursive -U${SERVER}/${USERNAME}%$PASSWORD smb://$SERVER_IP/smbget/
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -207,7 +207,7 @@ test_recursive_existing_dir()
 {
 	clear_download_area
 	mkdir dir1
-	$SMBGET --verbose --recursive -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/
+	$SMBGET --verbose --recursive -U${SERVER}/${USERNAME}%$PASSWORD smb://$SERVER_IP/smbget/
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -230,7 +230,7 @@ test_recursive_with_empty()
 	# create some additional empty directories
 	mkdir -p $WORKDIR/dir001/dir002/dir003
 	mkdir -p $WORKDIR/dir004/dir005/dir006
-	$SMBGET --verbose --recursive -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/
+	$SMBGET --verbose --recursive -U${SERVER}/${USERNAME}%$PASSWORD smb://$SERVER_IP/smbget/
 	rc=$?
 	rm -rf $WORKDIR/dir001
 	rm -rf $WORKDIR/dir004
@@ -260,7 +260,7 @@ test_resume()
 	clear_download_area
 	cp $WORKDIR/testfile .
 	truncate -s 1024 testfile
-	$SMBGET --verbose --resume -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
+	$SMBGET --verbose --resume -U${SERVER}/${USERNAME}%$PASSWORD smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -279,7 +279,7 @@ test_resume_modified()
 {
 	clear_download_area
 	dd if=/dev/urandom bs=1024 count=2 of=testfile
-	$SMBGET --verbose --resume -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
+	$SMBGET --verbose --resume -U${SERVER}/${USERNAME}%$PASSWORD smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 1 ]; then
 		echo 'ERROR: RC does not match, expected: 1'
 		return 1
@@ -291,14 +291,14 @@ test_resume_modified()
 test_update()
 {
 	clear_download_area
-	$SMBGET --verbose -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
+	$SMBGET --verbose -U${SERVER}/${USERNAME}%$PASSWORD smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
 	fi
 
 	# secondary download should pass
-	$SMBGET --verbose --update -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
+	$SMBGET --verbose --update -U${SERVER}/${USERNAME}%$PASSWORD smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -308,7 +308,7 @@ test_update()
 	# touch source to trigger new download
 	sleep 2
 	touch -m $WORKDIR/testfile
-	$SMBGET --verbose --update -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
+	$SMBGET --verbose --update -U${SERVER}/${USERNAME}%$PASSWORD smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -397,7 +397,7 @@ test_limit_rate()
 test_encrypt()
 {
 	clear_download_area
-	$SMBGET --verbose --encrypt -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
+	$SMBGET --verbose --encrypt -U${SERVER}/${USERNAME}%$PASSWORD smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -409,7 +409,7 @@ test_encrypt()
 	fi
 
 	clear_download_area
-	$SMBGET --verbose --client-protection=encrypt -U$USERNAME%$PASSWORD smb://$SERVER_IP/smbget/testfile
+	$SMBGET --verbose --client-protection=encrypt -U${SERVER}/${USERNAME}%$PASSWORD smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
