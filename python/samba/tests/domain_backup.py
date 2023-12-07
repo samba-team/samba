@@ -561,10 +561,10 @@ class DomainBackupRename(DomainBackupBase):
         self.assertTrue(new_server_dn in link_values)
 
     # extra checks we run on the restored DB in the rename case
-    def check_restored_database(self, lp, expect_secrets=True):
+    def check_restored_database(self, bkp_lp, expect_secrets=True):
         # run the common checks over the restored DB
         common_test = super()
-        samdb = common_test.check_restored_database(lp, expect_secrets)
+        samdb = common_test.check_restored_database(bkp_lp, expect_secrets)
 
         # check we have actually renamed the DNs
         basedn = str(samdb.get_default_basedn())
