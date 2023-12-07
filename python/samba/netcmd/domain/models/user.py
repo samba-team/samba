@@ -24,7 +24,7 @@ from ldb import Dn
 
 from samba.dsdb import DS_GUID_USERS_CONTAINER
 
-from .fields import DnField, StringField
+from .fields import DnField, SIDField, StringField
 from .model import Model
 
 
@@ -32,6 +32,7 @@ class User(Model):
     username = StringField("sAMAccountName")
     assigned_policy = DnField("msDS-AssignedAuthNPolicy")
     assigned_silo = DnField("msDS-AssignedAuthNPolicySilo")
+    object_sid = SIDField("objectSid")
 
     def __str__(self):
         """Return username rather than cn for User model."""
