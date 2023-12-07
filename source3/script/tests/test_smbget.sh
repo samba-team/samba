@@ -16,9 +16,11 @@ DOMAIN=${3}
 REALM=${4}
 USERNAME=${5}
 PASSWORD=${6}
-WORKDIR=${7}
-SMBGET="$VALGRIND ${8}"
-shift 8
+DOMAIN_USER=${7}
+DOMAIN_USER_PASSWORD=${8}
+WORKDIR=${9}
+SMBGET="$VALGRIND ${10}"
+shift 10
 
 TMPDIR="$SELFTEST_TMPDIR"
 
@@ -89,7 +91,7 @@ test_singlefile_U_UPN()
 {
 	clear_download_area
 
-	${SMBGET} --verbose -U"${DC_USERNAME}@${REALM}%${DC_PASSWORD}" \
+	${SMBGET} --verbose -U"${DOMAIN_USER}@${REALM}%${DOMAIN_USER_PASSWORD}" \
 		"smb://${SERVER_IP}/smbget/testfile"
 	ret=${?}
 	if [ ${ret} -ne 0 ]; then
@@ -111,7 +113,7 @@ test_singlefile_U_domain()
 {
 	clear_download_area
 
-	${SMBGET} --verbose -U"${DOMAIN}/${DC_USERNAME}%${DC_PASSWORD}" \
+	${SMBGET} --verbose -U"${DOMAIN}/${DOMAIN_USER}%${DOMAIN_USER_PASSWORD}" \
 		"smb://${SERVER_IP}/smbget/testfile"
 	ret=${?}
 	if [ ${ret} -ne 0 ]; then
@@ -132,7 +134,7 @@ test_singlefile_U_domain()
 test_singlefile_smburl()
 {
 	clear_download_area
-	$SMBGET --workgroup $DOMAIN smb://${USERNAME}:$PASSWORD@$SERVER_IP/smbget/testfile
+	$SMBGET --workgroup $DOMAIN smb://${DOMAIN_USER}:$DOMAIN_USER_PASSWORD@$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -148,7 +150,7 @@ test_singlefile_smburl()
 test_singlefile_smburl2()
 {
 	clear_download_area
-	$SMBGET "smb://$DOMAIN;${USERNAME}:$PASSWORD@$SERVER_IP/smbget/testfile"
+	$SMBGET "smb://$DOMAIN;${DOMAIN_USER}:$DOMAIN_USER_PASSWORD@$SERVER_IP/smbget/testfile"
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
@@ -343,7 +345,7 @@ test_msdfs_link_domain()
 {
 	clear_download_area
 
-	${SMBGET} --verbose "-U${DOMAIN}/${DC_USERNAME}%${DC_PASSWORD}" \
+	${SMBGET} --verbose "-U${DOMAIN}/${DOMAIN_USER}%${DOMAIN_USER_PASSWORD}" \
 		"smb://${SERVER}/msdfs-share/deeppath/msdfs-src2/readable_file"
 	ret=$?
 	if [ ${ret} -ne 0 ]; then
@@ -358,7 +360,7 @@ test_msdfs_link_upn()
 {
 	clear_download_area
 
-	${SMBGET} --verbose "-U${DC_USERNAME}@${REALM}%${DC_PASSWORD}" \
+	${SMBGET} --verbose "-U${DOMAIN_USER}@${REALM}%${DOMAIN_USER_PASSWORD}" \
 		"smb://${SERVER}/msdfs-share/deeppath/msdfs-src2/readable_file"
 	ret=$?
 	if [ ${ret} -ne 0 ]; then
@@ -433,7 +435,7 @@ test_kerberos()
 	KRB5CCNAME="FILE:${KRB5CCNAME_PATH}"
 	export KRB5CCNAME
 	kerberos_kinit "${samba_kinit}" \
-		"${DC_USERNAME}@${REALM}" "${DC_PASSWORD}"
+		"${DOMAIN_USER}@${REALM}" "${DOMAIN_USER_PASSWORD}"
 
 	$SMBGET --verbose --use-krb5-ccache="${KRB5CCNAME}" \
 		smb://$SERVER/smbget/testfile
