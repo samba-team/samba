@@ -465,7 +465,7 @@ test_kerberos_trust()
 
 	$SMBGET --verbose --use-kerberos=required \
 		-U"${TRUST_F_BOTH_USERNAME}@${TRUST_F_BOTH_REALM}%${TRUST_F_BOTH_PASSWORD}" \
-		smb://$SERVER/smbget/testfile
+		smb://$SERVER.${REALM}/smbget/testfile
 	if [ $? -ne 0 ]; then
 		echo 'ERROR: RC does not match, expected: 0'
 		return 1
