@@ -30,6 +30,7 @@ from functools import partial
 import numbers
 import secrets
 import tempfile
+from typing import Optional
 
 from collections import namedtuple
 import ldb
@@ -91,6 +92,7 @@ from samba.join import DCJoinContext
 from samba.ndr import ndr_pack, ndr_unpack
 from samba import net
 from samba.netcmd.domain.models import AuthenticationPolicy, AuthenticationSilo
+from samba.param import LoadParm
 from samba.samdb import SamDB, dsdb_Dn
 
 rc4_bit = security.KERB_ENCTYPE_RC4_HMAC_MD5
@@ -356,13 +358,13 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         # current test finishes.
         self.test_accounts = []
 
-    def get_lp(self):
+    def get_lp(self) -> LoadParm:
         if self._lp is None:
             type(self)._lp = self.get_loadparm()
 
         return self._lp
 
-    def get_samdb(self):
+    def get_samdb(self) -> SamDB:
         if self._ldb is None:
             creds = self.get_admin_creds()
             lp = self.get_lp()
@@ -375,7 +377,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
         return self._ldb
 
-    def get_rodc_samdb(self):
+    def get_rodc_samdb(self) -> SamDB:
         if self._rodc_ldb is None:
             creds = self.get_admin_creds()
             lp = self.get_lp()
@@ -1967,9 +1969,9 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         return pac
 
     def get_cached_creds(self, *,
-                         account_type,
-                         opts=None,
-                         use_cache=True):
+                         account_type: AccountType,
+                         opts: Optional[dict]=None,
+                         use_cache=True) -> KerberosCredentials:
         if opts is None:
             opts = {}
 
