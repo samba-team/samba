@@ -1,0 +1,6 @@
+# NTLM authentication is (intentionally) disabled in ktest
+^samba.tests.ntlmdisabled.python\(ktest\).ntlmdisabled.NtlmDisabledTests.test_ntlm_connection\(ktest\)
+^samba.tests.ntlmdisabled.python\(ad_dc_no_ntlm\).ntlmdisabled.NtlmDisabledTests.test_samr_change_password\(ad_dc_no_ntlm\)
+# Disabling NTLM means you can't use samr to change the password
+^samba.tests.ntlmdisabled.python\(ktest\).ntlmdisabled.NtlmDisabledTests.test_samr_change_password\(ktest\)
+^samba.tests.ntlmdisabled.python\(ad_dc_no_ntlm\).ntlmdisabled.NtlmDisabledTests.test_ntlm_connection\(ad_dc_no_ntlm\)
