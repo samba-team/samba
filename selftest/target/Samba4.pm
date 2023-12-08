@@ -559,7 +559,7 @@ sub provision_raw_prepare($$$$$$$$$$$$$$)
 		warn("Unable to clean up");
 	}
 
-	
+
 	my $swiface = Samba::get_interface($hostname);
 
 	$ctx->{prefix} = $prefix;
@@ -1034,7 +1034,7 @@ replace: userPrincipalName
 userPrincipalName: testallowed upn\@$ctx->{realm}
 replace: servicePrincipalName
 servicePrincipalName: host/testallowed
--	    
+-
 ";
 	close($ldif);
 	unless ($? == 0) {
@@ -1057,7 +1057,7 @@ servicePrincipalName: host/testallowed
 changetype: modify
 replace: userPrincipalName
 userPrincipalName: testdenied_upn\@$ctx->{realm}.upn
--	    
+-
 ";
 	close($ldif);
 	unless ($? == 0) {
@@ -2225,7 +2225,7 @@ sub provision_chgdcpass($$)
 		warn("Unable to add wins configuration");
 		return undef;
 	}
-	
+
 	# Remove secrets.tdb from this environment to test that we
 	# still start up on systems without the new matching
 	# secrets.tdb records.
