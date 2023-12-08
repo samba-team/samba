@@ -349,23 +349,6 @@
 ^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_no_auth_presentation_ctx_invalid4
 ^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_spnego_change_auth_type2
 ^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_spnego_change_transfer
-# NETLOGON is disabled in any non-DC environments
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_2nd_cancel_requests\(ad_member\)
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_first_08_requests\(ad_member\)
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_first_cancel_requests\(ad_member\)
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_first_cmpx_requests\(ad_member\)
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_first_didnot_requests\(ad_member\)
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_first_maybe_requests\(ad_member\)
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_first_only_requests\(ad_member\)
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_fragmented_requests01\(ad_member\)
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_fragmented_requests02\(ad_member\)
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_fragmented_requests03\(ad_member\)
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_fragmented_requests04\(ad_member\)
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_fragmented_requests05\(ad_member\)
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_last_cancel_requests\(ad_member\)
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_last_only_requests\(ad_member\)
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_mix_requests\(ad_member\)
-^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_none_only_requests\(ad_member\)
 
 ^samba4.rpc.echo.*on.*with.object.echo.doublepointer.*nt4_dc
 ^samba4.rpc.echo.*on.*with.object.echo.surrounding.*nt4_dc
@@ -380,10 +363,6 @@
 
 # We currently don't send referrals for LDAP modify of non-replicated attrs
 ^samba4.ldap.rodc.python\(rodc\).__main__.RodcTests.test_modify_nonreplicated.*
-# NETLOGON is disabled in any non-DC environments
-^samba.tests.netlogonsvc.python\(ad_member\)
-^samba.tests.netlogonsvc.python\(simpleserver\)
-^samba.tests.netlogonsvc.python\(fileserver\)
 # NTLM authentication is (intentionally) disabled in ktest
 ^samba.tests.ntlmdisabled.python\(ktest\).ntlmdisabled.NtlmDisabledTests.test_ntlm_connection\(ktest\)
 ^samba.tests.ntlmdisabled.python\(ad_dc_no_ntlm\).ntlmdisabled.NtlmDisabledTests.test_samr_change_password\(ad_dc_no_ntlm\)
