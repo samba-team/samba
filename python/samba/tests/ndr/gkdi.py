@@ -30,6 +30,9 @@ import samba.tests
 def utf16_encoded_len(s: str) -> int:
     """Return the number of bytes required to encode a string as null‐terminated
     UTF‐16."""
+    if "\x00" in s:
+        raise ValueError("string contains an embedded null")
+
     return len(s.encode("utf-16-le")) + 2
 
 
