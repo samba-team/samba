@@ -20,13 +20,13 @@
 #ifndef __PYERRORS_H__
 #define __PYERRORS_H__
 
-#define PyErr_FromWERROR(err) Py_BuildValue("(k,s)", (unsigned long)(W_ERROR_V(err)), discard_const_p(char, win_errstr(err)))
+#define PyErr_FromWERROR(err) Py_BuildValue("(k,s)", (unsigned long)(W_ERROR_V(err)), win_errstr(err))
 
-#define PyErr_FromHRESULT(err) Py_BuildValue("(k,s)", (unsigned long)(HRES_ERROR_V(err)), discard_const_p(char, hresult_errstr_const(err)))
+#define PyErr_FromHRESULT(err) Py_BuildValue("(k,s)", (unsigned long)(HRES_ERROR_V(err)), hresult_errstr_const(err))
 
-#define PyErr_FromNTSTATUS(status) Py_BuildValue("(k,s)", (unsigned long)(NT_STATUS_V(status)), discard_const_p(char, get_friendly_nt_error_msg(status)))
+#define PyErr_FromNTSTATUS(status) Py_BuildValue("(k,s)", (unsigned long)(NT_STATUS_V(status)), get_friendly_nt_error_msg(status))
 
-#define PyErr_FromString(str) Py_BuildValue("(s)", discard_const_p(char, str))
+#define PyErr_FromString(str) Py_BuildValue("(s)", str)
 
 #define PyErr_SetWERROR(werr) \
         PyErr_SetObject(PyObject_GetAttrString(PyImport_ImportModule("samba"),\
