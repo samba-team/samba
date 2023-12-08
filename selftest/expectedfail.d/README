@@ -1,0 +1,22 @@
+# Files in this directory contain lists of regular expressions
+# matching the names of tests that are *necessarily* expected to fail.
+#
+# "make test" will not report failures for tests listed here and will
+# consider a successful run for any of these tests an error.
+#
+# They differ from the knownfail tests (selftest/knownfail.d) in that
+# the lack of failure here is definitely a problem. The knownfail
+# tests might be fixed one day, even accidentally, but these ones will
+# not.
+#
+# Before adding tests here, consider rewriting the test so that the
+# expected result is a failure. The tests in here are typically
+# testing the use of some protocol or feature on a server that has
+# that feature turned off. The same tests will also be run against
+# another server where they do not fail. The downside of this method
+# is we don't know that these expected fail tests are failing in the
+# right way.
+#
+# Empty lines and lines beginning with '#' are ignored.
+#
+# Please don't add tests to this README!
