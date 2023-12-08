@@ -949,6 +949,10 @@ my @exported_envvars = (
 	"PASSWORD",
 	"DC_USERNAME",
 	"DC_PASSWORD",
+	"DOMAIN_ADMIN",
+	"DOMAIN_ADMIN_PASSWORD",
+	"DOMAIN_USER",
+	"DOMAIN_USER_PASSWORD",
 
 	# UID/GID for rfc2307 mapping tests
 	"UID_RFC2307TEST",
