@@ -1006,6 +1006,10 @@ sub provision_ad_member
 	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
+	$ret->{DOMAIN_ADMIN} = $dcvars->{DOMAIN_ADMIN};
+	$ret->{DOMAIN_ADMIN_PASSWORD} = $dcvars->{DOMAIN_ADMIN_PASSWORD};
+	$ret->{DOMAIN_USER} = $dcvars->{DOMAIN_USER};
+	$ret->{DOMAIN_USER_PASSWORD} = $dcvars->{DOMAIN_USER_PASSWORD};
 
 	# forest trust
 	$ret->{TRUST_F_BOTH_SERVER} = $trustvars_f->{SERVER};
@@ -1171,6 +1175,10 @@ sub setup_ad_member_rfc2307
 	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
+	$ret->{DOMAIN_ADMIN} = $dcvars->{DOMAIN_ADMIN};
+	$ret->{DOMAIN_ADMIN_PASSWORD} = $dcvars->{DOMAIN_ADMIN_PASSWORD};
+	$ret->{DOMAIN_USER} = $dcvars->{DOMAIN_USER};
+	$ret->{DOMAIN_USER_PASSWORD} = $dcvars->{DOMAIN_USER_PASSWORD};
 
 	return $ret;
 }
@@ -1267,6 +1275,10 @@ sub setup_admem_idmap_autorid
 	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
+	$ret->{DOMAIN_ADMIN} = $dcvars->{DOMAIN_ADMIN};
+	$ret->{DOMAIN_ADMIN_PASSWORD} = $dcvars->{DOMAIN_ADMIN_PASSWORD};
+	$ret->{DOMAIN_USER} = $dcvars->{DOMAIN_USER};
+	$ret->{DOMAIN_USER_PASSWORD} = $dcvars->{DOMAIN_USER_PASSWORD};
 
 	return $ret;
 }
@@ -1366,6 +1378,10 @@ sub setup_ad_member_idmap_rid
 	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
+	$ret->{DOMAIN_ADMIN} = $dcvars->{DOMAIN_ADMIN};
+	$ret->{DOMAIN_ADMIN_PASSWORD} = $dcvars->{DOMAIN_ADMIN_PASSWORD};
+	$ret->{DOMAIN_USER} = $dcvars->{DOMAIN_USER};
+	$ret->{DOMAIN_USER_PASSWORD} = $dcvars->{DOMAIN_USER_PASSWORD};
 
 	return $ret;
 }
@@ -1466,6 +1482,10 @@ sub setup_ad_member_idmap_ad
 	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
+	$ret->{DOMAIN_ADMIN} = $dcvars->{DOMAIN_ADMIN};
+	$ret->{DOMAIN_ADMIN_PASSWORD} = $dcvars->{DOMAIN_ADMIN_PASSWORD};
+	$ret->{DOMAIN_USER} = $dcvars->{DOMAIN_USER};
+	$ret->{DOMAIN_USER_PASSWORD} = $dcvars->{DOMAIN_USER_PASSWORD};
 
 	$ret->{TRUST_SERVER} = $dcvars->{TRUST_SERVER};
 	$ret->{TRUST_USERNAME} = $dcvars->{TRUST_USERNAME};
@@ -1558,6 +1578,10 @@ sub setup_ad_member_oneway
 	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
+	$ret->{DOMAIN_ADMIN} = $dcvars->{DOMAIN_ADMIN};
+	$ret->{DOMAIN_ADMIN_PASSWORD} = $dcvars->{DOMAIN_ADMIN_PASSWORD};
+	$ret->{DOMAIN_USER} = $dcvars->{DOMAIN_USER};
+	$ret->{DOMAIN_USER_PASSWORD} = $dcvars->{DOMAIN_USER_PASSWORD};
 
 	$ret->{TRUST_SERVER} = $dcvars->{TRUST_SERVER};
 	$ret->{TRUST_USERNAME} = $dcvars->{TRUST_USERNAME};

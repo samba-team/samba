@@ -587,6 +587,10 @@ sub provision_raw_prepare($$$$$$$$$$$$$$)
 	$ctx->{realm} = uc($realm);
 	$ctx->{dnsname} = lc($realm);
 	$ctx->{samsid} = $samsid;
+	$ctx->{domain_admin} = "Administrator";
+	$ctx->{domain_admin_password} = $password;
+	$ctx->{domain_user} = "alice";
+	$ctx->{domain_user_password} = "Secret007";
 
 	$ctx->{functional_level} = $functional_level;
 
@@ -906,6 +910,10 @@ nogroup:x:65534:nobody
 		DOMAIN => $ctx->{domain},
 		USERNAME => $ctx->{username},
 		DC_USERNAME => $ctx->{username},
+		DOMAIN_ADMIN => $ctx->{domain_admin},
+		DOMAIN_ADMIN_PASSWORD => $ctx->{domain_admin_password},
+		DOMAIN_USER => $ctx->{domain_user},
+		DOMAIN_USER_PASSWORD => $ctx->{domain_user_password},
 		REALM => $ctx->{realm},
 		DNSNAME => $ctx->{dnsname},
 		SAMSID => $ctx->{samsid},
