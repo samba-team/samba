@@ -25,7 +25,7 @@
 #include "param/s3_param.h"
 #include <pytalloc.h>
 
-#define PyErr_FromString(str) Py_BuildValue("(s)", discard_const_p(char, str))
+#define PyErr_FromString(str) Py_BuildValue("(s)", (str))
 #define PyLoadparmContext_AsLoadparmContext(obj) pytalloc_get_type(obj, struct loadparm_context)
 
 _PUBLIC_ struct loadparm_context *lpcfg_from_py_object(TALLOC_CTX *mem_ctx, PyObject *py_obj)
