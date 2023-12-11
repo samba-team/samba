@@ -751,7 +751,7 @@ class GetPasswordCommand(Command):
                     continue
             else:
                 continue
-            obj[a] = ldb.MessageElement(v, ldb.FLAG_MOD_REPLACE, a)
+            obj[a] = ldb.MessageElement(v, ldb.FLAG_MOD_REPLACE, vattr["raw_attr"])
 
         def get_src_attrname(srcattrg):
             srcattrl = srcattrg.lower()

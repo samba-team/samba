@@ -38,6 +38,28 @@ source tree.  While there will be some differences - due to features
 chosen by packagers - comparing these lists with the build dependencies
 in a package may locate other dependencies we no longer require.
 
+samba-tool user getpassword / syncpasswords ;rounds= change
+-----------------------------------------------------------
+
+The password access tool "samba-tool user getpassword" and the
+password sync tool "samba-tool user syncpasswords" allow attributes to
+be chosen for output, and accept parameters like
+pwdLastSet;format=GeneralizedTime
+
+These attributes then appear, in the same format, as the attributes in
+the LDIF output.  This was not the case for the ;rounds= parameter of
+virtualCryptSHA256 and virtualCryptSHA512, for example as
+--attributes="virtualCryptSHA256;rounds=50000"
+
+This release makes the behaviour consistent between these two
+features.  Installations using GPG-encrypted passwords (or plaintext
+storage) and the rounds= option, will find the output has changed
+
+from:
+virtualCryptSHA256: {CRYPT}$5$rounds=2561$hXem.M9onhM9Vuix$dFdSBwF
+
+to:
+virtualCryptSHA256;rounds=2561: {CRYPT}$5$rounds=2561$hXem.M9onhM9Vuix$dFdSBwF
 
 REMOVED FEATURES
 ================
