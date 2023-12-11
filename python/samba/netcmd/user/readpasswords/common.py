@@ -99,6 +99,9 @@ virtual_attributes = {
     "virtualSambaGPG": {
         "flags": ldb.ATTR_FLAG_FORCE_BASE64_LDIF,
     },
+    "unicodePwd": {
+        "flags": ldb.ATTR_FLAG_FORCE_BASE64_LDIF,
+    },
 }
 
 
@@ -725,6 +728,13 @@ class GetPasswordCommand(Command):
                 v = kerberos_salt
                 if v is None:
                     continue
+            elif a == "unicodePwd" and "Primary:CLEARTEXT" in calculated and unicodePwd is None:
+                # We can't read unicodePwd directly, but we can regenerate
+                # it from msDS-ManagedPassword
+                tmp = credentials.Credentials()
+                tmp.set_anonymous()
+                tmp.set_utf16_password(calculated["Primary:CLEARTEXT"])
+                v = tmp.get_nt_hash()
             elif a.startswith("virtualWDigest"):
                 primary_wdigest = get_package("Primary:WDigest")
                 if primary_wdigest is None:
