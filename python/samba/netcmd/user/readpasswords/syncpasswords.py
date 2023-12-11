@@ -792,8 +792,8 @@ samba-tool user syncpasswords --terminate \\
 
         if cache_ldb_initialize:
             self.samdb_url = H
-            self.samdb = self.connect_system_samdb(url=self.samdb_url,
-                                                   verbose=True)
+            self.samdb = self.connect_for_passwords(url=self.samdb_url,
+                                                    verbose=True)
             load_cache()
             return
 
@@ -860,7 +860,7 @@ samba-tool user syncpasswords --terminate \\
                     retry_sleep = retry_sleep_max
                 log_msg("Connecting to '%s'\n" % self.samdb_url)
                 try:
-                    self.samdb = self.connect_system_samdb(url=self.samdb_url)
+                    self.samdb = self.connect_for_passwords(url=self.samdb_url)
                 except Exception as msg:
                     self.samdb = None
                     log_msg("Connect to samdb Exception => (%s)\n" % msg)

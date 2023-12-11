@@ -151,11 +151,11 @@ samba-tool user getpassword --filter=samaccountname=TestUser3 --attributes=msDS-
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
     }
 
     takes_options = [
-        Option("-H", "--URL", help="LDB URL for sam.ldb database or local ldapi server", type=str,
-               metavar="URL", dest="H"),
         Option("--filter", help="LDAP Filter to set password on", type=str),
         Option("--attributes", type=str,
                help=virtual_attributes_help,
@@ -169,7 +169,8 @@ samba-tool user getpassword --filter=samaccountname=TestUser3 --attributes=msDS-
 
     def run(self, username=None, H=None, filter=None,
             attributes=None, decrypt_samba_gpg=None,
-            sambaopts=None, versionopts=None):
+            sambaopts=None, versionopts=None, hostopts=None,
+            credopts=None):
         self.lp = sambaopts.get_loadparm()
 
         if decrypt_samba_gpg and not gpg_decrypt:
@@ -186,7 +187,8 @@ samba-tool user getpassword --filter=samaccountname=TestUser3 --attributes=msDS-
 
         password_attrs = self.parse_attributes(attributes)
 
-        samdb = self.connect_system_samdb(url=H, allow_local=True)
+        creds = credopts.get_credentials(self.lp)
+        samdb = self.connect_for_passwords(url=hostopts.H, require_ldapi=False, creds=creds)
 
         obj = self.get_account_attributes(samdb, username,
                                           basedn=None,

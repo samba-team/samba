@@ -188,23 +188,23 @@ class GetPasswordCommand(Command):
             flags = ldb.ATTR_FLAG_HIDDEN | virtual_attributes[a].get("flags", 0)
             samdb.schema_attribute_add(a, flags, ldb.SYNTAX_OCTET_STRING)
 
-    def connect_system_samdb(self, url, allow_local=False, verbose=False):
+    def connect_for_passwords(self, url,
+                              creds=None,
+                              require_ldapi=True,
+                              verbose=False):
 
         # using anonymous here, results in no authentication
         # which means we can get system privileges via
         # the privileged ldapi socket
-        creds = credentials.Credentials()
-        creds.set_anonymous()
+        anon_creds = credentials.Credentials()
+        anon_creds.set_anonymous()
 
-        if url is None and allow_local:
+        if url is None and not require_ldapi:
             pass
         elif url.lower().startswith("ldapi://"):
+            creds = anon_creds
             pass
-        elif url.lower().startswith("ldap://"):
-            raise CommandError("--url ldap:// is not supported for this command")
-        elif url.lower().startswith("ldaps://"):
-            raise CommandError("--url ldaps:// is not supported for this command")
-        elif not allow_local:
+        elif require_ldapi:
             raise CommandError("--url requires an ldapi:// url for this command")
 
         if verbose:
@@ -213,19 +213,20 @@ class GetPasswordCommand(Command):
         samdb = SamDB(url=url, session_info=system_session(),
                       credentials=creds, lp=self.lp)
 
-        try:
-            #
-            # Make sure we're connected as SYSTEM
-            #
-            res = samdb.search(base='', scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
-            assert len(res) == 1
-            sids = res[0].get("tokenGroups")
-            assert len(sids) == 1
-            sid = ndr_unpack(security.dom_sid, sids[0])
-            assert str(sid) == security.SID_NT_SYSTEM
-        except Exception as msg:
-            raise CommandError("You need to specify an URL that gives privileges as SID_NT_SYSTEM(%s)" %
-                               (security.SID_NT_SYSTEM))
+        if require_ldapi or url is None:
+            try:
+                #
+                # Make sure we're connected as SYSTEM
+                #
+                res = samdb.search(base='', scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
+                assert len(res) == 1
+                sids = res[0].get("tokenGroups")
+                assert len(sids) == 1
+                sid = ndr_unpack(security.dom_sid, sids[0])
+                assert str(sid) == security.SID_NT_SYSTEM
+            except Exception as msg:
+                raise CommandError("You need to specify an URL that gives privileges as SID_NT_SYSTEM(%s)" %
+                                   (security.SID_NT_SYSTEM))
 
         self.inject_virtual_attributes(samdb)
 
