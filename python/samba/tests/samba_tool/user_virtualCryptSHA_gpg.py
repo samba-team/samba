@@ -33,9 +33,9 @@ class UserCmdCryptShaTestCaseGPG(UserCmdCryptShaTestCase):
         self.add_user()
         out = self._get_password("virtualCryptSHA256,virtualCryptSHA512", True)
 
-        self.assertTrue("virtualCryptSHA256:" in out)
-        self.assertTrue("virtualCryptSHA512:" in out)
-        self.assertTrue("rounds=" not in out)
+        self.assertIn("virtualCryptSHA256:", out)
+        self.assertIn("virtualCryptSHA512:", out)
+        self.assertNotIn("rounds=", out)
 
     # gpg decryption enabled.
     # SHA256 specified
@@ -47,9 +47,9 @@ class UserCmdCryptShaTestCaseGPG(UserCmdCryptShaTestCase):
         self.add_user()
         out = self._get_password("virtualCryptSHA256", True)
 
-        self.assertTrue("virtualCryptSHA256:" in out)
-        self.assertTrue("virtualCryptSHA512:" not in out)
-        self.assertTrue("rounds=" not in out)
+        self.assertIn("virtualCryptSHA256:", out)
+        self.assertNotIn("virtualCryptSHA512:", out)
+        self.assertNotIn("rounds=", out)
 
     # gpg decryption enabled.
     # SHA512 specified
@@ -61,9 +61,9 @@ class UserCmdCryptShaTestCaseGPG(UserCmdCryptShaTestCase):
         self.add_user()
         out = self._get_password("virtualCryptSHA512", True)
 
-        self.assertTrue("virtualCryptSHA256:" not in out)
-        self.assertTrue("virtualCryptSHA512:" in out)
-        self.assertTrue("rounds=" not in out)
+        self.assertNotIn("virtualCryptSHA256:", out)
+        self.assertIn("virtualCryptSHA512:",out)
+        self.assertNotIn("rounds=", out)
 
     # gpg decryption enabled.
     # SHA128 specified, i.e. invalid/unknown algorithm
@@ -75,9 +75,9 @@ class UserCmdCryptShaTestCaseGPG(UserCmdCryptShaTestCase):
         self.add_user()
         out = self._get_password("virtualCryptSHA128", True)
 
-        self.assertTrue("virtualCryptSHA256:" not in out)
-        self.assertTrue("virtualCryptSHA512:" not in out)
-        self.assertTrue("rounds=" not in out)
+        self.assertNotIn("virtualCryptSHA256:", out)
+        self.assertNotIn("virtualCryptSHA512:", out)
+        self.assertNotIn("rounds=", out)
 
     # gpg decryption enabled.
     # both virtual attributes specified, no rounds option
@@ -90,9 +90,9 @@ class UserCmdCryptShaTestCaseGPG(UserCmdCryptShaTestCase):
         self._change_nt_hash()
         out = self._get_password("virtualCryptSHA256,virtualCryptSHA512", True)
 
-        self.assertTrue("virtualCryptSHA256:" not in out)
-        self.assertTrue("virtualCryptSHA512:" not in out)
-        self.assertTrue("rounds=" not in out)
+        self.assertNotIn("virtualCryptSHA256:", out)
+        self.assertNotIn("virtualCryptSHA512:", out)
+        self.assertNotIn("rounds=", out)
 
     # gpg decryption enabled.
     # SHA256 specified, no rounds option
@@ -105,9 +105,9 @@ class UserCmdCryptShaTestCaseGPG(UserCmdCryptShaTestCase):
         self._change_nt_hash()
         out = self._get_password("virtualCryptSHA256", True)
 
-        self.assertTrue("virtualCryptSHA256:" not in out)
-        self.assertTrue("virtualCryptSHA512:" not in out)
-        self.assertTrue("rounds=" not in out)
+        self.assertNotIn("virtualCryptSHA256:", out)
+        self.assertNotIn("virtualCryptSHA512:", out)
+        self.assertNotIn("rounds=", out)
 
     # gpg decryption enabled.
     # SHA512 specified, no rounds option
@@ -120,9 +120,9 @@ class UserCmdCryptShaTestCaseGPG(UserCmdCryptShaTestCase):
         self._change_nt_hash()
         out = self._get_password("virtualCryptSHA256", True)
 
-        self.assertTrue("virtualCryptSHA256:" not in out)
-        self.assertTrue("virtualCryptSHA512:" not in out)
-        self.assertTrue("rounds=" not in out)
+        self.assertNotIn("virtualCryptSHA256:", out)
+        self.assertNotIn("virtualCryptSHA512:", out)
+        self.assertNotIn("rounds=", out)
 
     # gpg decryption enabled.
     # both virtual attributes specified, rounds specified
@@ -134,8 +134,8 @@ class UserCmdCryptShaTestCaseGPG(UserCmdCryptShaTestCase):
             "virtualCryptSHA256;rounds=10123,virtualCryptSHA512;rounds=10456",
             True)
 
-        self.assertTrue("virtualCryptSHA256:" in out)
-        self.assertTrue("virtualCryptSHA512:" in out)
+        self.assertIn("virtualCryptSHA256:", out)
+        self.assertIn("virtualCryptSHA512:", out)
 
         sha256 = self._get_attribute(out, "virtualCryptSHA256")
         self.assertTrue(sha256.startswith("{CRYPT}$5$rounds=10123$"))
@@ -154,12 +154,12 @@ class UserCmdCryptShaTestCaseGPG(UserCmdCryptShaTestCase):
             "virtualCryptSHA256;rounds=invalid,virtualCryptSHA512;rounds=3125",
             True)
 
-        self.assertTrue("virtualCryptSHA256:" in out)
-        self.assertTrue("virtualCryptSHA512:" in out)
+        self.assertIn("virtualCryptSHA256:", out)
+        self.assertIn("virtualCryptSHA512:", out)
 
         sha256 = self._get_attribute(out, "virtualCryptSHA256")
         self.assertTrue(sha256.startswith("{CRYPT}$5$"))
-        self.assertTrue("rounds" not in sha256)
+        self.assertNotIn("rounds", sha256)
 
         sha512 = self._get_attribute(out, "virtualCryptSHA512")
         self.assertTrue(sha512.startswith("{CRYPT}$6$rounds=3125$"))
@@ -175,9 +175,9 @@ class UserCmdCryptShaTestCaseGPG(UserCmdCryptShaTestCase):
                                  "virtualCryptSHA512;rounds=5129",
                                  True)
 
-        self.assertTrue("virtualCryptSHA256:" in out)
-        self.assertTrue("virtualCryptSHA512:" in out)
-        self.assertTrue("rounds=" in out)
+        self.assertIn("virtualCryptSHA256:", out)
+        self.assertIn("virtualCryptSHA512:", out)
+        self.assertIn("rounds=", out)
 
         # Should be calculating the hashes
         # so they should change between calls.
@@ -187,8 +187,8 @@ class UserCmdCryptShaTestCaseGPG(UserCmdCryptShaTestCase):
         out = self._get_password("virtualCryptSHA256;rounds=2561," +
                                  "virtualCryptSHA512;rounds=5129",
                                  True)
-        self.assertFalse(sha256 == self._get_attribute(out, "virtualCryptSHA256"))
-        self.assertFalse(sha512 == self._get_attribute(out, "virtualCryptSHA512"))
+        self.assertNotEqual(sha256, self._get_attribute(out, "virtualCryptSHA256"))
+        self.assertNotEqual(sha512, self._get_attribute(out, "virtualCryptSHA512"))
 
         # The returned hashes should specify the correct number of rounds
         self.assertTrue(sha256.startswith("{CRYPT}$5$rounds=2561"))
@@ -208,9 +208,9 @@ class UserCmdCryptShaTestCaseGPG(UserCmdCryptShaTestCase):
                                  "virtualCryptSHA512;rounds=5129",
                                  True)
 
-        self.assertTrue("virtualCryptSHA256:" in out)
-        self.assertTrue("virtualCryptSHA512:" in out)
-        self.assertTrue("rounds=" in out)
+        self.assertIn("virtualCryptSHA256:", out)
+        self.assertIn("virtualCryptSHA512:", out)
+        self.assertIn("rounds=", out)
 
         # Should be using the pre computed hash in supplementalCredentials
         # so it should not change between calls.
@@ -242,9 +242,9 @@ class UserCmdCryptShaTestCaseGPG(UserCmdCryptShaTestCase):
                                  "virtualCryptSHA512;rounds=5000",
                                  True)
 
-        self.assertTrue("virtualCryptSHA256:" in out)
-        self.assertTrue("virtualCryptSHA512:" in out)
-        self.assertTrue("rounds=" in out)
+        self.assertIn("virtualCryptSHA256:", out)
+        self.assertIn("virtualCryptSHA512:", out)
+        self.assertIn("rounds=", out)
 
         # Should be calculating the hashes
         # so they should change between calls.
@@ -254,8 +254,8 @@ class UserCmdCryptShaTestCaseGPG(UserCmdCryptShaTestCase):
         out = self._get_password("virtualCryptSHA256;rounds=4000," +
                                  "virtualCryptSHA512;rounds=5000",
                                  True)
-        self.assertFalse(sha256 == self._get_attribute(out, "virtualCryptSHA256"))
-        self.assertFalse(sha512 == self._get_attribute(out, "virtualCryptSHA512"))
+        self.assertNotEqual(sha256, self._get_attribute(out, "virtualCryptSHA256"))
+        self.assertNotEqual(sha512, self._get_attribute(out, "virtualCryptSHA512"))
 
         # The calculated hashes should specify the correct number of rounds
         self.assertTrue(sha256.startswith("{CRYPT}$5$rounds=4000"))
