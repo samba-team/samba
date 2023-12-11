@@ -371,6 +371,8 @@ class GetPasswordCommand(Command):
                                                    managed_password)
             calculated["Primary:CLEARTEXT"] = \
                 unpacked_managed_password.passwords.current
+            calculated["OLDCLEARTEXT"] = \
+                unpacked_managed_password.passwords.previous
 
         account_name = str(obj["sAMAccountName"][0])
         if "userPrincipalName" in obj:
@@ -396,6 +398,17 @@ class GetPasswordCommand(Command):
 
                 return binascii.a2b_hex(p.data)
             return None
+
+        def get_cleartext(attr_opts):
+            param = get_option(attr_opts, "previous")
+            if param:
+                if param != "1":
+                    raise CommandError(
+                        f"Invalid attribute parameter ;previous={param}, "
+                        "only supported value is previous=1")
+                return calculated.get("OLDCLEARTEXT")
+            else:
+                return get_package("Primary:CLEARTEXT")
 
         def get_kerberos_ctr():
             primary_krb5 = get_package("Primary:Kerberos-Newer-Keys")
@@ -596,7 +609,7 @@ class GetPasswordCommand(Command):
             if sv is None:
                 # No exact match on algorithm and number of rounds
                 # try and calculate one from the Primary:CLEARTEXT
-                b = get_package("Primary:CLEARTEXT")
+                b = get_cleartext(attr_opts)
                 if b is not None:
                     u8 = get_utf8(a, b, username or account_name)
                     if u8 is not None:
@@ -664,6 +677,14 @@ class GetPasswordCommand(Command):
             except ValueError:
                 return 0
 
+        def get_unicode_pwd_hash(pwd):
+            # We can't read unicodePwd directly, but we can regenerate
+            # it from msDS-ManagedPassword
+            tmp = credentials.Credentials()
+            tmp.set_anonymous()
+            tmp.set_utf16_password(pwd)
+            return tmp.get_nt_hash()
+
         # We use sort here in order to have a predictable processing order
         for a in sorted(virtual_attributes.keys()):
             vattr = None
@@ -679,7 +700,7 @@ class GetPasswordCommand(Command):
             attr_opts = vattr["opts"]
 
             if a == "virtualClearTextUTF8":
-                b = get_package("Primary:CLEARTEXT")
+                b = get_cleartext(attr_opts)
                 if b is None:
                     continue
                 u8 = get_utf8(a, b, username or account_name)
@@ -687,11 +708,11 @@ class GetPasswordCommand(Command):
                     continue
                 v = u8
             elif a == "virtualClearTextUTF16":
-                v = get_package("Primary:CLEARTEXT")
+                v = get_cleartext(attr_opts)
                 if v is None:
                     continue
             elif a == "virtualSSHA":
-                b = get_package("Primary:CLEARTEXT")
+                b = get_cleartext(attr_opts)
                 if b is None:
                     continue
                 u8 = get_utf8(a, b, username or account_name)
@@ -728,13 +749,13 @@ class GetPasswordCommand(Command):
                 v = kerberos_salt
                 if v is None:
                     continue
-            elif a == "unicodePwd" and "Primary:CLEARTEXT" in calculated and unicodePwd is None:
-                # We can't read unicodePwd directly, but we can regenerate
-                # it from msDS-ManagedPassword
-                tmp = credentials.Credentials()
-                tmp.set_anonymous()
-                tmp.set_utf16_password(calculated["Primary:CLEARTEXT"])
-                v = tmp.get_nt_hash()
+            elif a == "unicodePwd" and unicodePwd is None:
+                if "Primary:CLEARTEXT" in calculated and not get_option(attr_opts, "previous"):
+                    v = get_unicode_pwd_hash(calculated["Primary:CLEARTEXT"])
+                elif "OLDCLEARTEXT" in calculated and get_option(attr_opts, "previous"):
+                    v = get_unicode_pwd_hash(calculated["OLDCLEARTEXT"])
+                else:
+                    continue
             elif a.startswith("virtualWDigest"):
                 primary_wdigest = get_package("Primary:WDigest")
                 if primary_wdigest is None:
