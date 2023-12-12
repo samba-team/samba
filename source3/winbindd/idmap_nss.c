@@ -26,6 +26,8 @@
 #include "idmap.h"
 #include "lib/winbind_util.h"
 #include "libcli/security/dom_sid.h"
+#include "lib/global_contexts.h"
+#include "messages.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
@@ -87,6 +89,34 @@ static NTSTATUS idmap_nss_get_context(struct idmap_domain *dom,
 	return NT_STATUS_OK;
 }
 
+static bool idmap_nss_msg_filter(struct messaging_rec *rec, void *private_data)
+{
+	struct idmap_domain *dom = talloc_get_type_abort(private_data,
+		       struct idmap_domain);
+	struct idmap_nss_context *ctx = NULL;
+	NTSTATUS status;
+	bool ret;
+
+	if (rec->msg_type == MSG_SMB_CONF_UPDATED) {
+		ret = lp_load_global(get_dyn_CONFIGFILE());
+		if (!ret) {
+			DBG_WARNING("Failed to reload configuration\n");
+			return false;
+		}
+
+		status = idmap_nss_get_context(dom, &ctx);
+		if (NT_STATUS_IS_ERR(status)) {
+			DBG_WARNING("Failed to get idmap nss context: %s\n",
+					nt_errstr(status));
+			return false;
+		}
+
+		ctx->use_upn = idmap_config_bool(dom->name, "use_upn", false);
+	}
+
+	return false;
+}
+
 /*****************************
  Initialise idmap database.
 *****************************/
@@ -95,6 +125,8 @@ static NTSTATUS idmap_nss_int_init(struct idmap_domain *dom)
 {
 	struct idmap_nss_context *ctx = NULL;
 	NTSTATUS status;
+	struct messaging_context *msg_ctx = global_messaging_context();
+	struct tevent_req *req = NULL;
 
 	status = idmap_nss_context_create(dom, dom, &ctx);
 	if (NT_STATUS_IS_ERR(status)) {
@@ -102,6 +134,17 @@ static NTSTATUS idmap_nss_int_init(struct idmap_domain *dom)
 	}
 
 	dom->private_data = ctx;
+
+	req = messaging_filtered_read_send(
+			dom,
+			messaging_tevent_context(msg_ctx),
+			msg_ctx,
+			idmap_nss_msg_filter,
+			dom);
+	if (req == NULL) {
+		DBG_WARNING("messaging_filtered_read_send failed\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	return status;
 }
