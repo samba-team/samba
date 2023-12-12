@@ -1271,8 +1271,8 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	int ret;
 	TDB_DATA data;
 	struct ctdb_vnn *vnn;
-	ctdb_sock_addr src_addr;
 	ctdb_sock_addr dst_addr;
+	char conn_str[132] = { 0, };
 
 	/* If we don't have public IPs, tickles are useless */
 	if (ctdb->vnn == NULL) {
@@ -1282,43 +1282,23 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	tcp_sock = (struct ctdb_connection *)indata.dptr;
 
 	ctdb_canonicalize_ip_inplace(&tcp_sock->src);
-	src_addr = tcp_sock->src;
-
 	ctdb_canonicalize_ip_inplace(&tcp_sock->dst);
 	dst_addr = tcp_sock->dst;
 
+	ret = ctdb_connection_to_buf(conn_str,
+				     sizeof(conn_str),
+				     tcp_sock,
+				     false,
+				     " -> ");
+	if (ret != 0) {
+		strlcpy(conn_str, "UNKNOWN", sizeof(conn_str));
+	}
+
 	vnn = find_public_ip_vnn(ctdb, &dst_addr);
 	if (vnn == NULL) {
-		char *src_addr_str = NULL;
-		char *dst_addr_str = NULL;
-
-		switch (dst_addr.sa.sa_family) {
-		case AF_INET:
-			if (ntohl(dst_addr.ip.sin_addr.s_addr) == INADDR_LOOPBACK) {
-				/* ignore ... */
-				return 0;
-			}
-			break;
-		case AF_INET6:
-			break;
-		default:
-			DEBUG(DEBUG_ERR,(__location__ " Unknown family type %d\n",
-			      dst_addr.sa.sa_family));
-			return 0;
-		}
-
-		src_addr_str = ctdb_sock_addr_to_string(client, &src_addr, false);
-		dst_addr_str = ctdb_sock_addr_to_string(client, &dst_addr, false);
-		DEBUG(DEBUG_ERR,(
-		      "Could not register TCP connection from "
-		      "%s to %s (not a public address) (port %u) "
-		      "(client_id %u pid %u).\n",
-		      src_addr_str,
-		      dst_addr_str,
-		      ctdb_sock_addr_port(&dst_addr),
-		      client_id, client->pid));
-		TALLOC_FREE(src_addr_str);
-		TALLOC_FREE(dst_addr_str);
+		D_ERR("Could not register TCP connection %s - "
+		      "not a public address (client_id %u pid %u)\n",
+			conn_str, client_id, client->pid);
 		return 0;
 	}
 
@@ -1346,24 +1326,8 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	data.dptr = (uint8_t *)&t;
 	data.dsize = sizeof(t);
 
-	switch (dst_addr.sa.sa_family) {
-	case AF_INET:
-		DEBUG(DEBUG_INFO,("registered tcp client for %u->%s:%u (client_id %u pid %u)\n",
-			(unsigned)ntohs(tcp_sock->dst.ip.sin_port),
-			ctdb_addr_to_str(&tcp_sock->src),
-			(unsigned)ntohs(tcp_sock->src.ip.sin_port), client_id, client->pid));
-		break;
-	case AF_INET6:
-		DEBUG(DEBUG_INFO,("registered tcp client for %u->%s:%u (client_id %u pid %u)\n",
-			(unsigned)ntohs(tcp_sock->dst.ip6.sin6_port),
-			ctdb_addr_to_str(&tcp_sock->src),
-			(unsigned)ntohs(tcp_sock->src.ip6.sin6_port), client_id, client->pid));
-		break;
-	default:
-		DEBUG(DEBUG_ERR,(__location__ " Unknown family %d\n",
-		      dst_addr.sa.sa_family));
-	}
-
+	D_INFO("Registered TCP connection %s (client_id %u pid %u)\n",
+	       conn_str, client_id, client->pid);
 
 	/* tell all nodes about this tcp connection */
 	ret = ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_CONNECTED, 0, 
