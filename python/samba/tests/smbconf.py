@@ -340,7 +340,7 @@ class SMBConfTests(samba.tests.TestCase):
     def test_error_no_such_service(self):
         sconf = self.smbconf.init_txt(self.example_conf_default)
         with self.assertRaises(self.smbconf.SMBConfError) as raised:
-            sconf.get_share("zilch"),
+            sconf.get_share("zilch")
         self.assertEqual(
             self.smbconf.SBC_ERR_NO_SUCH_SERVICE, raised.exception.error_code)
 
