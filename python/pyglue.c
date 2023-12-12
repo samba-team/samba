@@ -28,6 +28,7 @@
 #include "librpc/ndr/ndr_private.h"
 #include "lib/cmdline/cmdline.h"
 #include "libcli/util/hresult.h"
+#include "lib/crypto/gkdi.h"
 
 void init_glue(void);
 static PyObject *PyExc_NTSTATUSError;
@@ -600,6 +601,8 @@ static struct PyModuleDef moduledef = {
 MODULE_INIT_FUNC(_glue)
 {
 	PyObject *m;
+	PyObject *py_obj = NULL;
+	int ret;
 
 	debug_setup_talloc_log();
 
@@ -643,5 +646,39 @@ MODULE_INIT_FUNC(_glue)
 			   PyLong_FromUnsignedLongLong(HRES_ERROR_V(HRES_SEC_E_INVALID_TOKEN)));
 	PyModule_AddObject(m, "HRES_SEC_E_LOGON_DENIED",
 			   PyLong_FromUnsignedLongLong(HRES_ERROR_V(HRES_SEC_E_LOGON_DENIED)));
+
+	ret = PyModule_AddIntConstant(m, "GKDI_L1_KEY_ITERATION", gkdi_l1_key_iteration);
+	if (ret) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	ret = PyModule_AddIntConstant(m, "GKDI_L2_KEY_ITERATION", gkdi_l2_key_iteration);
+	if (ret) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	py_obj = PyLong_FromLongLong(gkdi_key_cycle_duration);
+	if (py_obj == NULL) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	ret = PyModule_AddObject(m, "GKDI_KEY_CYCLE_DURATION", py_obj);
+	if (ret) {
+		Py_DECREF(py_obj);
+		Py_DECREF(m);
+		return NULL;
+	}
+	py_obj = PyLong_FromLongLong(gkdi_max_clock_skew);
+	if (py_obj == NULL) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	ret = PyModule_AddObject(m, "GKDI_MAX_CLOCK_SKEW", py_obj);
+	if (ret) {
+		Py_DECREF(py_obj);
+		Py_DECREF(m);
+		return NULL;
+	}
+
 	return m;
 }
