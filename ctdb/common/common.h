@@ -132,6 +132,7 @@ struct ctdb_rec_data_old *ctdb_marshall_loop_next(
 					TDB_DATA *key, TDB_DATA *data);
 
 void ctdb_canonicalize_ip(const ctdb_sock_addr *ip, ctdb_sock_addr *cip);
+void ctdb_canonicalize_ip_inplace(ctdb_sock_addr *ip);
 
 bool ctdb_same_ip(const ctdb_sock_addr *tip1, const ctdb_sock_addr *tip2);
 
