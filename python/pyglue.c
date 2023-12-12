@@ -430,8 +430,8 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 
 static PyObject *py_strcasecmp_m(PyObject *self, PyObject *args)
 {
-	const char *s1 = NULL;
-	const char *s2 = NULL;
+	char *s1 = NULL;
+	char *s2 = NULL;
 	long cmp_result = 0;
 	if (!PyArg_ParseTuple(args, PYARG_STR_UNI
 			      PYARG_STR_UNI,
@@ -440,15 +440,15 @@ static PyObject *py_strcasecmp_m(PyObject *self, PyObject *args)
 	}
 
 	cmp_result = strcasecmp_m(s1, s2);
-	PyMem_Free(discard_const_p(char, s1));
-	PyMem_Free(discard_const_p(char, s2));
+	PyMem_Free(s1);
+	PyMem_Free(s2);
 	return PyLong_FromLong(cmp_result);
 }
 
 static PyObject *py_strstr_m(PyObject *self, PyObject *args)
 {
-	const char *s1 = NULL;
-	const char *s2 = NULL;
+	char *s1 = NULL;
+	char *s2 = NULL;
 	char *strstr_ret = NULL;
 	PyObject *result = NULL;
 	if (!PyArg_ParseTuple(args, PYARG_STR_UNI
@@ -458,13 +458,13 @@ static PyObject *py_strstr_m(PyObject *self, PyObject *args)
 
 	strstr_ret = strstr_m(s1, s2);
 	if (!strstr_ret) {
-		PyMem_Free(discard_const_p(char, s1));
-		PyMem_Free(discard_const_p(char, s2));
+		PyMem_Free(s1);
+		PyMem_Free(s2);
 		Py_RETURN_NONE;
 	}
 	result = PyUnicode_FromString(strstr_ret);
-	PyMem_Free(discard_const_p(char, s1));
-	PyMem_Free(discard_const_p(char, s2));
+	PyMem_Free(s1);
+	PyMem_Free(s2);
 	return result;
 }
 
@@ -609,25 +609,25 @@ MODULE_INIT_FUNC(_glue)
 
 	PyModule_AddObject(m, "version",
 					   PyUnicode_FromString(SAMBA_VERSION_STRING));
-	PyExc_NTSTATUSError = PyErr_NewException(discard_const_p(char, "samba.NTSTATUSError"), PyExc_RuntimeError, NULL);
+	PyExc_NTSTATUSError = PyErr_NewException("samba.NTSTATUSError", PyExc_RuntimeError, NULL);
 	if (PyExc_NTSTATUSError != NULL) {
 		Py_INCREF(PyExc_NTSTATUSError);
 		PyModule_AddObject(m, "NTSTATUSError", PyExc_NTSTATUSError);
 	}
 
-	PyExc_WERRORError = PyErr_NewException(discard_const_p(char, "samba.WERRORError"), PyExc_RuntimeError, NULL);
+	PyExc_WERRORError = PyErr_NewException("samba.WERRORError", PyExc_RuntimeError, NULL);
 	if (PyExc_WERRORError != NULL) {
 		Py_INCREF(PyExc_WERRORError);
 		PyModule_AddObject(m, "WERRORError", PyExc_WERRORError);
 	}
 
-	PyExc_HRESULTError = PyErr_NewException(discard_const_p(char, "samba.HRESULTError"), PyExc_RuntimeError, NULL);
+	PyExc_HRESULTError = PyErr_NewException("samba.HRESULTError", PyExc_RuntimeError, NULL);
 	if (PyExc_HRESULTError != NULL) {
 		Py_INCREF(PyExc_HRESULTError);
 		PyModule_AddObject(m, "HRESULTError", PyExc_HRESULTError);
 	}
 
-	PyExc_DsExtendedError = PyErr_NewException(discard_const_p(char, "samba.DsExtendedError"), PyExc_RuntimeError, NULL);
+	PyExc_DsExtendedError = PyErr_NewException("samba.DsExtendedError", PyExc_RuntimeError, NULL);
 	if (PyExc_DsExtendedError != NULL) {
 		Py_INCREF(PyExc_DsExtendedError);
 		PyModule_AddObject(m, "DsExtendedError", PyExc_DsExtendedError);
