@@ -30,7 +30,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-static struct winbindd_child static_idmap_child;
+static struct winbindd_child *static_idmap_child = NULL;
 
 /*
  * Map idmap ranges to domain names, taken from smb.conf. This is
@@ -41,12 +41,12 @@ static struct wb_parent_idmap_config static_parent_idmap_config;
 
 struct winbindd_child *idmap_child(void)
 {
-	return &static_idmap_child;
+	return static_idmap_child;
 }
 
 bool is_idmap_child(const struct winbindd_child *child)
 {
-	if (child == &static_idmap_child) {
+	if (child == static_idmap_child) {
 		return true;
 	}
 
@@ -55,7 +55,7 @@ bool is_idmap_child(const struct winbindd_child *child)
 
 pid_t idmap_child_pid(void)
 {
-	return static_idmap_child.pid;
+	return static_idmap_child->pid;
 }
 
 struct dcerpc_binding_handle *idmap_child_handle(void)
@@ -65,16 +65,26 @@ struct dcerpc_binding_handle *idmap_child_handle(void)
 	 * before talking to the idmap child!
 	 */
 	SMB_ASSERT(static_parent_idmap_config.num_doms > 0);
-	return static_idmap_child.binding_handle;
+	return static_idmap_child->binding_handle;
 }
 
 static void init_idmap_child_done(struct tevent_req *subreq);
 
-void init_idmap_child(void)
+NTSTATUS init_idmap_child(TALLOC_CTX *mem_ctx)
 {
 	struct tevent_req *subreq = NULL;
 
-	subreq = wb_parent_idmap_setup_send(global_event_context(),
+	if (static_idmap_child != NULL) {
+		DBG_ERR("idmap child already allocated\n");
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	static_idmap_child = talloc_zero(mem_ctx, struct winbindd_child);
+	if (static_idmap_child == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	subreq = wb_parent_idmap_setup_send(static_idmap_child,
 					    global_event_context());
 	if (subreq == NULL) {
 		/*
@@ -82,10 +92,11 @@ void init_idmap_child(void)
 		 * to ignore errors
 		 */
 		DBG_ERR("wb_parent_idmap_setup_send() failed\n");
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 	tevent_req_set_callback(subreq, init_idmap_child_done, NULL);
 	DBG_DEBUG("wb_parent_idmap_setup_send() started\n");
+	return NT_STATUS_OK;
 }
 
 static void init_idmap_child_done(struct tevent_req *subreq)
@@ -335,7 +346,7 @@ static void wb_parent_idmap_setup_lookupname_next(struct tevent_req *req)
 		/*
 		 * We're done, so start the idmap child
 		 */
-		setup_child(NULL, &static_idmap_child, "log.winbindd", "idmap");
+		setup_child(NULL, static_idmap_child, "log.winbindd", "idmap");
 		static_parent_idmap_config.initialized = true;
 		tevent_req_done(req);
 		return;
