@@ -853,6 +853,16 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 
 	while (*sddl_copy == '(') {
 		bool ok;
+		if (acl->num_aces > UINT16_MAX / 16) {
+			/*
+			 * We can't fit this many ACEs in a wire ACL
+			 * which has a 16 bit size field (and 16 is
+			 * the minimal size of an ACE with no subauths).
+			 */
+			talloc_free(acl);
+			return NULL;
+		}
+
 		acl->aces = talloc_realloc(acl, acl->aces, struct security_ace,
 					   acl->num_aces+1);
 		if (acl->aces == NULL) {
