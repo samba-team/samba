@@ -29,11 +29,6 @@
 #include "lib/cmdline/cmdline.h"
 #include "lib/crypto/gkdi.h"
 
-static PyObject *PyExc_NTSTATUSError;
-static PyObject *PyExc_WERRORError;
-static PyObject *PyExc_HRESULTError;
-static PyObject *PyExc_DsExtendedError;
-
 static PyObject *py_generate_random_str(PyObject *self, PyObject *args)
 {
 	Py_ssize_t len;
@@ -610,28 +605,24 @@ MODULE_INIT_FUNC(_glue)
 
 	PyModule_AddObject(m, "version",
 					   PyUnicode_FromString(SAMBA_VERSION_STRING));
-	PyExc_NTSTATUSError = PyErr_NewException("samba.NTSTATUSError", PyExc_RuntimeError, NULL);
-	if (PyExc_NTSTATUSError != NULL) {
-		Py_INCREF(PyExc_NTSTATUSError);
-		PyModule_AddObject(m, "NTSTATUSError", PyExc_NTSTATUSError);
+	py_obj = PyErr_NewException("samba.NTSTATUSError", PyExc_RuntimeError, NULL);
+	if (py_obj != NULL) {
+		PyModule_AddObject(m, "NTSTATUSError", py_obj);
 	}
 
-	PyExc_WERRORError = PyErr_NewException("samba.WERRORError", PyExc_RuntimeError, NULL);
-	if (PyExc_WERRORError != NULL) {
-		Py_INCREF(PyExc_WERRORError);
-		PyModule_AddObject(m, "WERRORError", PyExc_WERRORError);
+	py_obj = PyErr_NewException("samba.WERRORError", PyExc_RuntimeError, NULL);
+	if (py_obj != NULL) {
+		PyModule_AddObject(m, "WERRORError", py_obj);
 	}
 
-	PyExc_HRESULTError = PyErr_NewException("samba.HRESULTError", PyExc_RuntimeError, NULL);
-	if (PyExc_HRESULTError != NULL) {
-		Py_INCREF(PyExc_HRESULTError);
-		PyModule_AddObject(m, "HRESULTError", PyExc_HRESULTError);
+	py_obj = PyErr_NewException("samba.HRESULTError", PyExc_RuntimeError, NULL);
+	if (py_obj != NULL) {
+		PyModule_AddObject(m, "HRESULTError", py_obj);
 	}
 
-	PyExc_DsExtendedError = PyErr_NewException("samba.DsExtendedError", PyExc_RuntimeError, NULL);
-	if (PyExc_DsExtendedError != NULL) {
-		Py_INCREF(PyExc_DsExtendedError);
-		PyModule_AddObject(m, "DsExtendedError", PyExc_DsExtendedError);
+	py_obj = PyErr_NewException("samba.DsExtendedError", PyExc_RuntimeError, NULL);
+	if (py_obj != NULL) {
+		PyModule_AddObject(m, "DsExtendedError", py_obj);
 	}
 
 	ret = PyModule_AddIntConstant(m, "GKDI_L1_KEY_ITERATION", gkdi_l1_key_iteration);
