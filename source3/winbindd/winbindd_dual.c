@@ -922,14 +922,18 @@ void winbind_disconnect_dc_parent(struct messaging_context *msg_ctx,
 	forall_children(winbind_msg_relay_fn, &state);
 }
 
-static void winbindd_msg_reload_services_child(struct messaging_context *msg,
-					       void *private_data,
-					       uint32_t msg_type,
-					       struct server_id server_id,
-					       DATA_BLOB *data)
+static bool winbindd_child_msg_filter(struct messaging_rec *rec,
+				      void *private_data)
 {
-	DBG_DEBUG("Got reload-config message\n");
-	winbindd_reload_services_file((const char *)private_data);
+	struct winbindd_child *child = talloc_get_type_abort(private_data,
+			struct winbindd_child);
+
+	if (rec->msg_type == MSG_SMB_CONF_UPDATED) {
+		DBG_DEBUG("Got reload-config message\n");
+		winbindd_reload_services_file(child->logfilename);
+	}
+
+	return false;
 }
 
 /* React on 'smbcontrol winbindd reload-config' in the same way as on SIGHUP*/
@@ -1667,6 +1671,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 	NTSTATUS status;
 	ssize_t nwritten;
 	struct tevent_fd *fde;
+	struct tevent_req *req = NULL;
 
 	if (child->domain) {
 		DEBUG(10, ("fork_domain_child called for domain '%s'\n",
@@ -1794,11 +1799,16 @@ static bool fork_domain_child(struct winbindd_child *child)
 	messaging_register(global_messaging_context(), NULL,
 			   MSG_WINBIND_DISCONNECT_DC,
 			   winbind_msg_disconnect_dc);
-	messaging_register(
-		global_messaging_context(),
-		child->logfilename,
-		MSG_SMB_CONF_UPDATED,
-		winbindd_msg_reload_services_child);
+
+	req = messaging_filtered_read_send(global_event_context(),
+					   global_event_context(),
+					   global_messaging_context(),
+					   winbindd_child_msg_filter,
+					   child);
+	if (req == NULL) {
+		DBG_ERR("messaging_filtered_read_send failed\n");
+		_exit(1);
+	}
 
 	primary_domain = find_our_domain();
 
