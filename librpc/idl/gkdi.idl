@@ -36,7 +36,7 @@ interface gkdi
 	 */
 	typedef [public] struct {
 		uint32 version;
-		[value(0x4b53444b)] uint32 magic; /* ‘KDSK’ */
+		[value(0x4b53444b), range(0x4b53444b, 0x4b53444b)] uint32 magic; /* ‘KDSK’ */
 		EnvelopeFlags flags;
 		uint32 l0_index;
 		[range(0, 31)] uint32 l1_index;
@@ -57,7 +57,7 @@ interface gkdi
 
 	typedef [public] struct {
 		uint32 version; /* The version (msKds-Version) of the root key ADM element. */
-		[value(0x4b53444b)] uint32 magic; /* ‘KDSK’ */
+		[value(0x4b53444b), range(0x4b53444b, 0x4b53444b)] uint32 magic; /* ‘KDSK’ */
 		EnvelopeFlags flags;
 		uint32 l0_index;
 		[range(0, 31)] uint32 l1_index;
@@ -98,7 +98,7 @@ interface gkdi
 		 * ‘key_length’ bytes each.
 		 */
 		[value(12 + 2 * key_length)] uint32 length;
-		[value(0x4d504844)] uint32 magic; /* ‘DHPM’ */
+		[value(0x4d504844), range(0x4d504844, 0x4d504844)] uint32 magic; /* ‘DHPM’ */
 		uint32 key_length;
 		uint8 field_order[key_length];
 		uint8 generator[key_length];
