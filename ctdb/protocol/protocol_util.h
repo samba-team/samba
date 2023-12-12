@@ -55,6 +55,9 @@ bool ctdb_sock_addr_same_ip(const ctdb_sock_addr *addr1,
 bool ctdb_sock_addr_same(const ctdb_sock_addr *addr1,
 			 const ctdb_sock_addr *addr2);
 
+bool ctdb_connection_same(const struct ctdb_connection *conn1,
+			  const struct ctdb_connection *conn2);
+
 int ctdb_connection_to_buf(char *buf,
 			   size_t buflen,
 			   struct ctdb_connection * conn,

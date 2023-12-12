@@ -497,6 +497,24 @@ bool ctdb_sock_addr_same(const ctdb_sock_addr *addr1,
 	return (ctdb_sock_addr_cmp(addr1, addr2) == 0);
 }
 
+bool ctdb_connection_same(const struct ctdb_connection *conn1,
+			  const struct ctdb_connection *conn2)
+{
+	bool same;
+
+	same = ctdb_sock_addr_same(&conn1->src, &conn2->src);
+	if (!same) {
+		return false;
+	}
+
+	same = ctdb_sock_addr_same(&conn1->dst, &conn2->dst);
+	if (!same) {
+		return false;
+	}
+
+	return true;
+}
+
 int ctdb_connection_to_buf(char *buf,
 			   size_t buflen,
 			   struct ctdb_connection *conn,
