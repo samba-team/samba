@@ -454,14 +454,14 @@ class GetPasswordCommand(Command):
                             username or account_name, e))
 
         def get_utf8(a, b, username):
-            try:
-                u = str(get_bytes(b), 'utf-16-le')
-            except UnicodeDecodeError as e:
-                self.outf.write("WARNING: '%s': CLEARTEXT is invalid UTF-16-LE unable to generate %s\n" % (
-                                username, a))
-                return None
-            u8 = u.encode('utf-8')
-            return u8
+            creds_for_charcnv = credentials.Credentials()
+            creds_for_charcnv.set_anonymous()
+            creds_for_charcnv.set_utf16_password(get_bytes(b))
+
+            # This can't fail due to character conversion issues as it
+            # includes a built-in fallback (UTF16_MUNGED) matching
+            # exactly what we need.
+            return creds_for_charcnv.get_password().encode()
 
         # Extract the WDigest hash for the value specified by i.
         # Builds an htdigest compatible value

@@ -55,10 +55,11 @@ for which virtual attributes are supported in your environment):
                           with '--decrypt-samba-gpg') buffer inside of the
                           supplementalCredentials attribute. This typically
                           contains valid UTF-16-LE, but may contain random
-                          bytes, e.g. for computer accounts.
+                          bytes, e.g. for computer and gMSA accounts.
 
    virtualClearTextUTF8:  As virtualClearTextUTF16, but converted to UTF-8
-                          (only from valid UTF-16-LE).
+                          (invalid UTF-16-LE is mapped in the same way as
+                          Windows).
 
    virtualSSHA:           As virtualClearTextUTF8, but a salted SHA-1
                           checksum, useful for OpenLDAP's '{SSHA}' algorithm.
