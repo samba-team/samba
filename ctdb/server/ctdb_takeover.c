@@ -1281,15 +1281,11 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 
 	tcp_sock = (struct ctdb_connection *)indata.dptr;
 
+	ctdb_canonicalize_ip_inplace(&tcp_sock->src);
 	src_addr = tcp_sock->src;
-	ctdb_canonicalize_ip(&src_addr,  &tcp_sock->src);
-	ZERO_STRUCT(src_addr);
-	memcpy(&src_addr, &tcp_sock->src, sizeof(src_addr));
 
+	ctdb_canonicalize_ip_inplace(&tcp_sock->dst);
 	dst_addr = tcp_sock->dst;
-	ctdb_canonicalize_ip(&dst_addr, &tcp_sock->dst);
-	ZERO_STRUCT(dst_addr);
-	memcpy(&dst_addr, &tcp_sock->dst, sizeof(dst_addr));
 
 	vnn = find_public_ip_vnn(ctdb, &dst_addr);
 	if (vnn == NULL) {
