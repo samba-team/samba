@@ -388,6 +388,13 @@ void ctdb_canonicalize_ip(const ctdb_sock_addr *ip, ctdb_sock_addr *cip)
 	}
 }
 
+void ctdb_canonicalize_ip_inplace(ctdb_sock_addr *ip)
+{
+	ctdb_sock_addr tmp;
+	ctdb_canonicalize_ip(ip, &tmp);
+	memcpy(ip, &tmp, sizeof(tmp));
+}
+
 bool ctdb_same_ip(const ctdb_sock_addr *tip1, const ctdb_sock_addr *tip2)
 {
 	ctdb_sock_addr ip1, ip2;
