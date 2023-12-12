@@ -572,7 +572,7 @@ static PyMethodDef py_misc_methods[] = {
 	{ "is_ntvfs_fileserver_built", (PyCFunction)py_is_ntvfs_fileserver_built, METH_NOARGS,
 		"is the NTVFS file server built in this installation?" },
 	{ "is_heimdal_built", (PyCFunction)py_is_heimdal_built, METH_NOARGS,
-		"is Samba built with Heimdal Kerberbos?" },
+		"is Samba built with Heimdal Kerberos?" },
 	{ "generate_random_bytes",
 		(PyCFunction)py_generate_random_bytes,
 		METH_VARARGS,
