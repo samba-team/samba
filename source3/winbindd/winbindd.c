@@ -1184,7 +1184,12 @@ static void winbindd_register_handlers(struct messaging_context *msg_ctx,
 		DBG_ERR("Unable to start idmap child: %s\n", nt_errstr(status));
 		exit(1);
 	}
-	init_locator_child();
+
+	status = init_locator_child(global_event_context());
+	if (NT_STATUS_IS_ERR(status)) {
+		DBG_ERR("Unable to start locator child: %s\n", nt_errstr(status));
+		exit(1);
+	}
 
 	smb_nscd_flush_user_cache();
 	smb_nscd_flush_group_cache();

@@ -27,19 +27,30 @@
 #define DBGC_CLASS DBGC_WINBIND
 
 
-static struct winbindd_child static_locator_child;
+static struct winbindd_child *static_locator_child = NULL;
 
 struct winbindd_child *locator_child(void)
 {
-	return &static_locator_child;
+	return static_locator_child;
 }
 
 struct dcerpc_binding_handle *locator_child_handle(void)
 {
-	return static_locator_child.binding_handle;
+	return static_locator_child->binding_handle;
 }
 
-void init_locator_child(void)
+NTSTATUS init_locator_child(TALLOC_CTX *mem_ctx)
 {
-	setup_child(NULL, &static_locator_child, "log.winbindd", "locator");
+	if (static_locator_child != NULL) {
+		DBG_ERR("locator child already allocated\n");
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	static_locator_child = talloc_zero(mem_ctx, struct winbindd_child);
+	if (static_locator_child == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	setup_child(NULL, static_locator_child, "log.winbindd", "locator");
+	return NT_STATUS_OK;
 }
