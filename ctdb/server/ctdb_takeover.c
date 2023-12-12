@@ -1271,7 +1271,6 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	int ret;
 	TDB_DATA data;
 	struct ctdb_vnn *vnn;
-	ctdb_sock_addr dst_addr;
 	char conn_str[132] = { 0, };
 
 	/* If we don't have public IPs, tickles are useless */
@@ -1283,7 +1282,6 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 
 	ctdb_canonicalize_ip_inplace(&tcp_sock->src);
 	ctdb_canonicalize_ip_inplace(&tcp_sock->dst);
-	dst_addr = tcp_sock->dst;
 
 	ret = ctdb_connection_to_buf(conn_str,
 				     sizeof(conn_str),
@@ -1294,7 +1292,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 		strlcpy(conn_str, "UNKNOWN", sizeof(conn_str));
 	}
 
-	vnn = find_public_ip_vnn(ctdb, &dst_addr);
+	vnn = find_public_ip_vnn(ctdb, &tcp_sock->dst);
 	if (vnn == NULL) {
 		D_ERR("Could not register TCP connection %s - "
 		      "not a public address (client_id %u pid %u)\n",
@@ -1303,9 +1301,10 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	}
 
 	if (vnn->pnn != ctdb->pnn) {
-		DEBUG(DEBUG_ERR,("Attempt to register tcp client for IP %s we don't hold - failing (client_id %u pid %u)\n",
-			ctdb_addr_to_str(&dst_addr),
-			client_id, client->pid));
+		D_ERR("Attempt to register tcp client for IP %s we don't hold - "
+		      "failing (client_id %u pid %u)\n",
+		      ctdb_addr_to_str(&tcp_sock->dst),
+		      client_id, client->pid);
 		/* failing this call will tell smbd to die */
 		return -1;
 	}
