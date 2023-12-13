@@ -254,6 +254,8 @@ static ssize_t pull_sid(TALLOC_CTX *mem_ctx,
 	if (ndr == NULL) {
 		return -1;
 	}
+	ndr->flags |= LIBNDR_FLAG_SUBCONTEXT_NO_UNREAD_BYTES;
+
 	ndr_err = ndr_pull_ace_condition_sid(ndr, NDR_SCALARS|NDR_BUFFERS, tok);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		TALLOC_FREE(ndr);
