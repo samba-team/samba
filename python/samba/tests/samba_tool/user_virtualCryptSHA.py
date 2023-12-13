@@ -22,6 +22,7 @@ import base64
 import ldb
 import samba
 from samba.tests.samba_tool.base import SambaToolCmdTest
+from samba.tests.samba_tool.user_virtualCryptSHA_base import _get_attribute
 from samba.credentials import Credentials
 from samba.samdb import SamDB
 from samba.auth import system_session
@@ -32,19 +33,6 @@ import re
 
 USER_NAME = "CryptSHATestUser"
 HASH_OPTION = "password hash userPassword schemes"
-
-# Get the value of an attribute from the output string
-# Note: Does not correctly handle values spanning multiple lines,
-#       which is acceptable for it's usage in these tests.
-
-
-def _get_attribute(out, name):
-    p = re.compile("^" + name + r":\s+(\S+)")
-    for line in out.split("\n"):
-        m = p.match(line)
-        if m:
-            return m.group(1)
-    return ""
 
 
 class UserCmdCryptShaTestCase(SambaToolCmdTest):
