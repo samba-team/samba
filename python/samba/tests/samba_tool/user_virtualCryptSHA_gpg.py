@@ -18,6 +18,7 @@
 
 from samba.tests.samba_tool.user_virtualCryptSHA_base import UserCmdCryptShaTestCase, _get_attribute
 
+
 class UserCmdCryptShaTestCaseGPG(UserCmdCryptShaTestCase):
     """
     Tests for samba-tool user subcommands generation of the virtualCryptSHA256

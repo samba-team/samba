@@ -18,6 +18,7 @@
 
 from samba.tests.samba_tool.user_virtualCryptSHA_base import UserCmdCryptShaTestCase, _get_attribute
 
+
 class UserCmdCryptShaTestCaseUserPassword(UserCmdCryptShaTestCase):
     # gpg decryption not enabled.
     # both virtual attributes specified, no rounds option
