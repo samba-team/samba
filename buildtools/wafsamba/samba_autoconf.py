@@ -625,7 +625,7 @@ int foo()
 
         if not res:
             if mandatory:
-                Logs.error("Mandatory library '%s' not found for functions '%s'" % (lib, list))
+                Logs.error("Mandatory library '%s' not found for functions '%s'" % (lib, libs))
                 sys.exit(1)
             if empty_decl:
                 # if it isn't a mandatory library, then remove it from dependency lists
