@@ -639,7 +639,7 @@ static bool sddl_write_int(struct sddl_write_context *ctx,
 		} else if (base == CONDITIONAL_ACE_INT_BASE_10) {
 			snprintf(buf, sizeof(buf), "%"PRId64, v);
 		} else {
-			snprintf(buf, sizeof(buf), "%#"PRIx64, v);
+			snprintf(buf, sizeof(buf), "0x%"PRIx64, v);
 		}
 		return sddl_write(ctx, buf);
 	}
@@ -675,7 +675,7 @@ static bool sddl_write_int(struct sddl_write_context *ctx,
 	if (base == CONDITIONAL_ACE_INT_BASE_8) {
 		snprintf(buf + 1, sizeof(buf) - 1, "0%llo", llabs(v));
 	} else {
-		snprintf(buf + 1, sizeof(buf) - 1, "%#llx", llabs(v));
+		snprintf(buf + 1, sizeof(buf) - 1, "0x%llx", llabs(v));
 	}
 	return sddl_write(ctx, buf);
 }
