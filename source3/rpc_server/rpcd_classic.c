@@ -115,6 +115,12 @@ static NTSTATUS classic_servers(
 		exit(1);
 	}
 
+	status = share_info_db_init();
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("share_info_db_init failed: %s\n", nt_errstr(status));
+		exit(1);
+	}
+
 	lp_load_with_shares(get_dyn_CONFIGFILE());
 
 	mangle_reset_cache();
