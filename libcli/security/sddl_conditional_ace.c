@@ -670,7 +670,7 @@ static bool sddl_write_int(struct sddl_write_context *ctx,
 		return sddl_write(ctx, "-0x8000000000000000");
 	}
 
-	buf[0] = (v < 0) ? '-' : '+';
+	buf[0] = (sign == CONDITIONAL_ACE_INT_SIGN_NEGATIVE) ? '-' : '+';
 
 	if (base == CONDITIONAL_ACE_INT_BASE_8) {
 		snprintf(buf + 1, sizeof(buf) - 1, "0%llo", llabs(v));
