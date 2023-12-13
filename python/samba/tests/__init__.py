@@ -200,6 +200,25 @@ class TestCase(unittest.TestCase):
     def get_credentials(self):
         return cmdline_credentials
 
+    @classmethod
+    def get_env_credentials(cls, *, lp, env_username, env_password,
+                            env_realm=None, env_domain=None):
+        creds = credentials.Credentials()
+
+        # guess Credentials parameters here. Otherwise, workstation
+        # and domain fields are NULL and gencache code segfaults
+        creds.guess(lp)
+        creds.set_username(env_get_var_value(env_username))
+        creds.set_password(env_get_var_value(env_password))
+
+        if env_realm is not None:
+            creds.set_realm(env_get_var_value(env_realm))
+
+        if env_domain is not None:
+            creds.set_domain(env_get_var_value(env_domain))
+
+        return creds
+
     def get_creds_ccache_name(self):
         creds = self.get_credentials()
         ccache = creds.get_named_ccache(self.get_loadparm())
