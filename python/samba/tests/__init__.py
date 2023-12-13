@@ -580,7 +580,7 @@ class BlackboxTestCase(TestCaseInTempDir):
         return password
 
 
-def connect_samdb(samdb_url, lp=None, session_info=None, credentials=None,
+def connect_samdb(samdb_url, *, lp=None, session_info=None, credentials=None,
                   flags=0, ldb_options=None, ldap_only=False, global_schema=True):
     """Create SamDB instance and connects to samdb_url database.
 
@@ -625,7 +625,7 @@ def connect_samdb(samdb_url, lp=None, session_info=None, credentials=None,
                  global_schema=global_schema)
 
 
-def connect_samdb_ex(samdb_url, lp=None, session_info=None, credentials=None,
+def connect_samdb_ex(samdb_url, *, lp=None, session_info=None, credentials=None,
                      flags=0, ldb_options=None, ldap_only=False):
     """Connects to samdb_url database
 
@@ -637,8 +637,9 @@ def connect_samdb_ex(samdb_url, lp=None, session_info=None, credentials=None,
     :param ldap_only: If set, only remote LDAP connection will be created.
     :return: (sam_db_connection, rootDse_record) tuple
     """
-    sam_db = connect_samdb(samdb_url, lp, session_info, credentials,
-                           flags, ldb_options, ldap_only)
+    sam_db = connect_samdb(samdb_url, lp=lp, session_info=session_info,
+                           credentials=credentials, flags=flags,
+                           ldb_options=ldb_options, ldap_only=ldap_only)
     # fetch RootDse
     res = sam_db.search(base="", expression="", scope=ldb.SCOPE_BASE,
                         attrs=["*"])
