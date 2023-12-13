@@ -635,7 +635,7 @@ static bool sddl_write_int(struct sddl_write_context *ctx,
 	if (sign == CONDITIONAL_ACE_INT_SIGN_NONE) {
 		/* octal and hex will end up unsigned! */
 		if (base == CONDITIONAL_ACE_INT_BASE_8) {
-			snprintf(buf, sizeof(buf), "%#"PRIo64, v);
+			snprintf(buf, sizeof(buf), "0%"PRIo64, v);
 		} else if (base == CONDITIONAL_ACE_INT_BASE_10) {
 			snprintf(buf, sizeof(buf), "%"PRId64, v);
 		} else {
@@ -673,7 +673,7 @@ static bool sddl_write_int(struct sddl_write_context *ctx,
 	buf[0] = (v < 0) ? '-' : '+';
 
 	if (base == CONDITIONAL_ACE_INT_BASE_8) {
-		snprintf(buf + 1, sizeof(buf) - 1, "%#llo", llabs(v));
+		snprintf(buf + 1, sizeof(buf) - 1, "0%llo", llabs(v));
 	} else {
 		snprintf(buf + 1, sizeof(buf) - 1, "%#llx", llabs(v));
 	}
