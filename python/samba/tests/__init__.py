@@ -193,7 +193,8 @@ class TestCase(unittest.TestCase):
             samba.set_debug_level(test_debug_level)
             self.addCleanup(samba.set_debug_level, test_debug_level)
 
-    def get_loadparm(self):
+    @classmethod
+    def get_loadparm(cls):
         return env_loadparm()
 
     def get_credentials(self):
