@@ -16,9 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
-import time
-import base64
 import ldb
 import samba
 from samba.tests.samba_tool.base import SambaToolCmdTest
@@ -26,10 +23,7 @@ from samba.tests.samba_tool.user_virtualCryptSHA_base import _get_attribute
 from samba.credentials import Credentials
 from samba.samdb import SamDB
 from samba.auth import system_session
-from samba.ndr import ndr_unpack
-from samba.dcerpc import drsblobs
 from samba import dsdb
-import re
 
 USER_NAME = "CryptSHATestUser"
 HASH_OPTION = "password hash userPassword schemes"
