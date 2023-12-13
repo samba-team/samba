@@ -51,7 +51,7 @@ typedef bool (*samba_cmdline_load_config)(void);
  * initializes:
  *
  *   - Crash setup
- *   - logging system sening logs to stdout
+ *   - logging system sending logs to stdout
  *   - talloc leak reporting
  *
  * @param[in]  mem_ctx  The talloc memory context to use for allocating memory.
