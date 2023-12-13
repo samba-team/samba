@@ -317,6 +317,7 @@ char *gidtoname(gid_t gid);
 uid_t nametouid(const char *name);
 gid_t nametogid(const char *name);
 void smb_panic_s3(const char *why);
+void log_panic_action(const char *msg);
 const char *readdirname(DIR *p);
 bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensitive);
 void set_namearray(name_compare_entry **ppname_array, const char *namelist);

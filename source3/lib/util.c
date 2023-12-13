@@ -720,6 +720,12 @@ void smb_panic_s3(const char *why)
 	dump_core();
 }
 
+void log_panic_action(const char *msg)
+{
+	DBG_ERR("%s", msg);
+	call_panic_action(msg, true);
+}
+
 /*******************************************************************
   A readdir wrapper which just returns the file name.
  ********************************************************************/
