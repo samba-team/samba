@@ -706,7 +706,7 @@ static void test_round_trips(void **state)
 			debug_fail("%s could not encode\n", resddl1);
 			continue;
 		}
-		if (data_blob_cmp(&e1, &e2) != 0) {
+		if (data_blob_cmp(&e1, &e3) != 0) {
 			debug_fail("'%s' and '%s' compiled differently\n", sddl[i], resddl1);
 			failed = true;
 		}
