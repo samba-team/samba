@@ -28,19 +28,6 @@ import re
 USER_NAME = "CryptSHATestUser"
 HASH_OPTION = "password hash userPassword schemes"
 
-# Get the value of an attribute from the output string
-# Note: Does not correctly handle values spanning multiple lines,
-#       which is acceptable for it's usage in these tests.
-
-
-def _get_attribute(out, name):
-    p = re.compile("^" + name + r":\s+(\S+)")
-    for line in out.split("\n"):
-        m = p.match(line)
-        if m:
-            return m.group(1)
-    return ""
-
 
 class UserCmdCryptShaTestCase(SambaToolCmdTest):
     """
@@ -49,6 +36,14 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
     """
     users = []
     samdb = None
+
+    def _get_attribute(self, out, name):
+        p = re.compile("^" + name + r":\s+(\S+)")
+        for line in out.split("\n"):
+            m = p.match(line)
+            if m:
+                return m.group(1)
+        return ""
 
     def add_user(self, hashes=""):
         self.lp = samba.tests.env_loadparm()

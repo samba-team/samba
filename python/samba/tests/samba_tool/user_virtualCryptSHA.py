@@ -19,7 +19,6 @@
 import ldb
 import samba
 from samba.tests.samba_tool.base import SambaToolCmdTest
-from samba.tests.samba_tool.user_virtualCryptSHA_base import _get_attribute
 from samba.credentials import Credentials
 from samba.samdb import SamDB
 from samba.auth import system_session
@@ -262,10 +261,10 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
         self.assertTrue("virtualCryptSHA256:" in out)
         self.assertTrue("virtualCryptSHA512:" in out)
 
-        sha256 = _get_attribute(out, "virtualCryptSHA256")
+        sha256 = self._get_attribute(out, "virtualCryptSHA256")
         self.assertTrue(sha256.startswith("{CRYPT}$5$rounds=10123$"))
 
-        sha512 = _get_attribute(out, "virtualCryptSHA512")
+        sha512 = self._get_attribute(out, "virtualCryptSHA512")
         self.assertTrue(sha512.startswith("{CRYPT}$6$rounds=10456$"))
 
     # gpg decryption enabled.
@@ -282,11 +281,11 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
         self.assertTrue("virtualCryptSHA256:" in out)
         self.assertTrue("virtualCryptSHA512:" in out)
 
-        sha256 = _get_attribute(out, "virtualCryptSHA256")
+        sha256 = self._get_attribute(out, "virtualCryptSHA256")
         self.assertTrue(sha256.startswith("{CRYPT}$5$"))
         self.assertTrue("rounds" not in sha256)
 
-        sha512 = _get_attribute(out, "virtualCryptSHA512")
+        sha512 = self._get_attribute(out, "virtualCryptSHA512")
         self.assertTrue(sha512.startswith("{CRYPT}$6$rounds=3125$"))
 
     # gpg decryption not enabled.
@@ -304,12 +303,12 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
 
         # Should be using the pre computed hash in supplementalCredentials
         # so it should not change between calls.
-        sha256 = _get_attribute(out, "virtualCryptSHA256")
-        sha512 = _get_attribute(out, "virtualCryptSHA512")
+        sha256 = self._get_attribute(out, "virtualCryptSHA256")
+        sha512 = self._get_attribute(out, "virtualCryptSHA512")
 
         out = self._get_password("virtualCryptSHA256,virtualCryptSHA512")
-        self.assertEqual(sha256, _get_attribute(out, "virtualCryptSHA256"))
-        self.assertEqual(sha512, _get_attribute(out, "virtualCryptSHA512"))
+        self.assertEqual(sha256, self._get_attribute(out, "virtualCryptSHA256"))
+        self.assertEqual(sha512, self._get_attribute(out, "virtualCryptSHA512"))
 
     # gpg decryption not enabled.
     # both virtual attributes specified, rounds specified
@@ -327,12 +326,12 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
 
         # Should be using the pre computed hash in supplementalCredentials
         # so it should not change between calls.
-        sha256 = _get_attribute(out, "virtualCryptSHA256")
-        sha512 = _get_attribute(out, "virtualCryptSHA512")
+        sha256 = self._get_attribute(out, "virtualCryptSHA256")
+        sha512 = self._get_attribute(out, "virtualCryptSHA512")
 
         out = self._get_password("virtualCryptSHA256,virtualCryptSHA512")
-        self.assertEqual(sha256, _get_attribute(out, "virtualCryptSHA256"))
-        self.assertEqual(sha512, _get_attribute(out, "virtualCryptSHA512"))
+        self.assertEqual(sha256, self._get_attribute(out, "virtualCryptSHA256"))
+        self.assertEqual(sha512, self._get_attribute(out, "virtualCryptSHA512"))
 
     # gpg decryption not enabled.
     # both virtual attributes specified, rounds specified
@@ -353,13 +352,13 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
 
         # Should be using the pre computed hash in supplementalCredentials
         # so it should not change between calls.
-        sha256 = _get_attribute(out, "virtualCryptSHA256")
-        sha512 = _get_attribute(out, "virtualCryptSHA512")
+        sha256 = self._get_attribute(out, "virtualCryptSHA256")
+        sha512 = self._get_attribute(out, "virtualCryptSHA512")
 
         out = self._get_password("virtualCryptSHA256;rounds=2561," +
                                  "virtualCryptSHA512;rounds=5129")
-        self.assertEqual(sha256, _get_attribute(out, "virtualCryptSHA256"))
-        self.assertEqual(sha512, _get_attribute(out, "virtualCryptSHA512"))
+        self.assertEqual(sha256, self._get_attribute(out, "virtualCryptSHA256"))
+        self.assertEqual(sha512, self._get_attribute(out, "virtualCryptSHA512"))
 
         # Number of rounds should match that specified
         self.assertTrue(sha256.startswith("{CRYPT}$5$rounds=2561"))
@@ -385,20 +384,20 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
 
         # Should be using the pre computed hash in supplementalCredentials
         # so it should not change between calls.
-        sha256 = _get_attribute(out, "virtualCryptSHA256")
-        sha512 = _get_attribute(out, "virtualCryptSHA512")
+        sha256 = self._get_attribute(out, "virtualCryptSHA256")
+        sha512 = self._get_attribute(out, "virtualCryptSHA512")
 
         out = self._get_password("virtualCryptSHA256;rounds=4000," +
                                  "virtualCryptSHA512;rounds=5000")
-        self.assertEqual(sha256, _get_attribute(out, "virtualCryptSHA256"))
-        self.assertEqual(sha512, _get_attribute(out, "virtualCryptSHA512"))
+        self.assertEqual(sha256, self._get_attribute(out, "virtualCryptSHA256"))
+        self.assertEqual(sha512, self._get_attribute(out, "virtualCryptSHA512"))
 
         # As the number of rounds did not match, should have returned the
         # first hash of the corresponding scheme
         out = self._get_password("virtualCryptSHA256," +
                                  "virtualCryptSHA512")
-        self.assertEqual(sha256, _get_attribute(out, "virtualCryptSHA256"))
-        self.assertEqual(sha512, _get_attribute(out, "virtualCryptSHA512"))
+        self.assertEqual(sha256, self._get_attribute(out, "virtualCryptSHA256"))
+        self.assertEqual(sha512, self._get_attribute(out, "virtualCryptSHA512"))
 
     # gpg decryption enabled.
     # both virtual attributes specified, no rounds option
@@ -415,12 +414,12 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
 
         # Should be using the pre computed hash in supplementalCredentials
         # so it should not change between calls.
-        sha256 = _get_attribute(out, "virtualCryptSHA256")
-        sha512 = _get_attribute(out, "virtualCryptSHA512")
+        sha256 = self._get_attribute(out, "virtualCryptSHA256")
+        sha512 = self._get_attribute(out, "virtualCryptSHA512")
 
         out = self._get_password("virtualCryptSHA256,virtualCryptSHA512", True)
-        self.assertEqual(sha256, _get_attribute(out, "virtualCryptSHA256"))
-        self.assertEqual(sha512, _get_attribute(out, "virtualCryptSHA512"))
+        self.assertEqual(sha256, self._get_attribute(out, "virtualCryptSHA256"))
+        self.assertEqual(sha512, self._get_attribute(out, "virtualCryptSHA512"))
 
     # gpg decryption enabled.
     # both virtual attributes specified, rounds specified
@@ -439,14 +438,14 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
 
         # Should be calculating the hashes
         # so they should change between calls.
-        sha256 = _get_attribute(out, "virtualCryptSHA256")
-        sha512 = _get_attribute(out, "virtualCryptSHA512")
+        sha256 = self._get_attribute(out, "virtualCryptSHA256")
+        sha512 = self._get_attribute(out, "virtualCryptSHA512")
 
         out = self._get_password("virtualCryptSHA256;rounds=2561," +
                                  "virtualCryptSHA512;rounds=5129",
                                  True)
-        self.assertFalse(sha256 == _get_attribute(out, "virtualCryptSHA256"))
-        self.assertFalse(sha512 == _get_attribute(out, "virtualCryptSHA512"))
+        self.assertFalse(sha256 == self._get_attribute(out, "virtualCryptSHA256"))
+        self.assertFalse(sha512 == self._get_attribute(out, "virtualCryptSHA512"))
 
         # The returned hashes should specify the correct number of rounds
         self.assertTrue(sha256.startswith("{CRYPT}$5$rounds=2561"))
@@ -472,14 +471,14 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
 
         # Should be using the pre computed hash in supplementalCredentials
         # so it should not change between calls.
-        sha256 = _get_attribute(out, "virtualCryptSHA256")
-        sha512 = _get_attribute(out, "virtualCryptSHA512")
+        sha256 = self._get_attribute(out, "virtualCryptSHA256")
+        sha512 = self._get_attribute(out, "virtualCryptSHA512")
 
         out = self._get_password("virtualCryptSHA256;rounds=2561," +
                                  "virtualCryptSHA512;rounds=5129",
                                  True)
-        self.assertEqual(sha256, _get_attribute(out, "virtualCryptSHA256"))
-        self.assertEqual(sha512, _get_attribute(out, "virtualCryptSHA512"))
+        self.assertEqual(sha256, self._get_attribute(out, "virtualCryptSHA256"))
+        self.assertEqual(sha512, self._get_attribute(out, "virtualCryptSHA512"))
 
         # The returned hashes should specify the correct number of rounds
         self.assertTrue(sha256.startswith("{CRYPT}$5$rounds=2561"))
@@ -506,14 +505,14 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
 
         # Should be calculating the hashes
         # so they should change between calls.
-        sha256 = _get_attribute(out, "virtualCryptSHA256")
-        sha512 = _get_attribute(out, "virtualCryptSHA512")
+        sha256 = self._get_attribute(out, "virtualCryptSHA256")
+        sha512 = self._get_attribute(out, "virtualCryptSHA512")
 
         out = self._get_password("virtualCryptSHA256;rounds=4000," +
                                  "virtualCryptSHA512;rounds=5000",
                                  True)
-        self.assertFalse(sha256 == _get_attribute(out, "virtualCryptSHA256"))
-        self.assertFalse(sha512 == _get_attribute(out, "virtualCryptSHA512"))
+        self.assertFalse(sha256 == self._get_attribute(out, "virtualCryptSHA256"))
+        self.assertFalse(sha512 == self._get_attribute(out, "virtualCryptSHA512"))
 
         # The calculated hashes should specify the correct number of rounds
         self.assertTrue(sha256.startswith("{CRYPT}$5$rounds=4000"))
