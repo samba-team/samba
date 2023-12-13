@@ -23,7 +23,6 @@ from samba.credentials import Credentials
 from samba.samdb import SamDB
 from samba.auth import system_session
 from samba import dsdb
-import re
 
 USER_NAME = "CryptSHATestUser"
 HASH_OPTION = "password hash userPassword schemes"
@@ -38,12 +37,10 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
     samdb = None
 
     def _get_attribute(self, out, name):
-        p = re.compile("^" + name + r":\s+(\S+)")
-        for line in out.split("\n"):
-            m = p.match(line)
-            if m:
-                return m.group(1)
-        return ""
+        parsed = list(self.ldb.parse_ldif(out))
+        self.assertEqual(len(parsed), 1)
+        changetype, msg = parsed[0]
+        return str(msg.get(name, ""))
 
     def add_user(self, hashes=""):
         self.lp = samba.tests.env_loadparm()
