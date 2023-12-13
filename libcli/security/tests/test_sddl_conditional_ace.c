@@ -617,6 +617,14 @@ static void test_round_trips(void **state)
 		"( x == SID(BA))",
 		"((x) == SID(BA))",
 		"(OctetStringType==#1#2#3###))",
+		"(@user.x == 00)",
+		"(@user.x == 01)",
+		"(@user.x == -00)",
+		"(@user.x == -01)",
+		"(@user.x == 0x0)",
+		"(@user.x == 0x1)",
+		"(@user.x == -0x0)",
+		"(@user.x == -0x1)",
 	};
 	size_t i, length;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
