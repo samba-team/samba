@@ -583,7 +583,8 @@ static void test_round_trips(void **state)
 {
 	/*
 	 * These expressions should parse into proper conditional
-	 * ACEs, which then decode into the same string.
+	 * ACEs, which then encode into an equivalent SDDL string,
+	 * which then parses again into the same conditional ACE.
 	 */
 	static const char *sddl[] = {
 		("(Member_of{SID(AA)})"),
@@ -667,7 +668,7 @@ static void test_round_trips(void **state)
 			continue;
 		}
 		if (data_blob_cmp(&e1, &e2) != 0) {
-			failed = failed || ok;
+			failed = true;
 		}
 
 		resddl1 = sddl_from_conditional_ace(mem_ctx, s1);
@@ -684,9 +685,9 @@ static void test_round_trips(void **state)
 		}
 		if (strcmp(resddl1, resddl2) != 0) {
 			print_message("SDDL 2: %s\n", resddl2);
-			failed = failed || ok;
+			failed = true;
 		}
-		print_message("SDDL: %s\n", resddl1);
+		print_message("SDDL: '%s' -> '%s'\n", sddl[i], resddl1);
 		s3 = ace_conditions_compile_sddl(mem_ctx,
 						 ACE_CONDITION_FLAG_ALLOW_DEVICE,
 						 resddl1,
@@ -706,8 +707,8 @@ static void test_round_trips(void **state)
 			continue;
 		}
 		if (data_blob_cmp(&e1, &e2) != 0) {
-			debug_fail("'%s' compiled differently\n", resddl1);
-			failed = failed || ok;
+			debug_fail("'%s' and '%s' compiled differently\n", sddl[i], resddl1);
+			failed = true;
 		}
 	}
 	assert_false(failed);
