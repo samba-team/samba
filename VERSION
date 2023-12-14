@@ -13,6 +13,8 @@
 #                                                      #
 ########################################################
 
+SAMBA_COPYRIGHT_STRING="Copyright Andrew Tridgell and the Samba Team 1992-2023"
+
 ########################################################
 # This are the main SAMBA version numbers              #
 #                                                      #

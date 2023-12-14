@@ -1438,9 +1438,9 @@ int main(int argc, const char **argv)
 
 	reopen_logs();
 
-	DBG_STARTUP_NOTICE("winbindd version %s started.\n"
-			COPYRIGHT_STARTUP_MESSAGE "\n",
-		samba_version_string());
+	DBG_STARTUP_NOTICE("winbindd version %s started.\n%s\n",
+			   samba_version_string(),
+			   samba_copyright_string());
 
 	/* After parsing the configuration file we setup the core path one more time
 	 * as the log file might have been set in the configuration and cores's

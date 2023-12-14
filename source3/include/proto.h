@@ -564,6 +564,7 @@ ssize_t full_path_tos(const char *dir, const char *name,
 /* The following definitions come from lib/version.c  */
 
 const char *samba_version_string(void);
+const char *samba_copyright_string(void);
 
 /* The following definitions come from lib/wins_srv.c  */
 

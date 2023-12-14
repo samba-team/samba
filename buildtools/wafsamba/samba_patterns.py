@@ -15,7 +15,7 @@ def write_version_header(task):
     return 0
 
 
-def SAMBA_MKVERSION(bld, target, source='VERSION'):
+def SAMBA_MKVERSION(bld, target, source='VERSION buildtools/wafsamba/samba_version.py'):
     '''generate the version.h header for Samba'''
 
     # We only force waf to re-generate this file if we are installing,

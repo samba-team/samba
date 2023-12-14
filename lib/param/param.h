@@ -276,6 +276,7 @@ int lpcfg_rpc_port_high(struct loadparm_context *lp_ctx);
 /* The following definitions come from lib/version.c  */
 
 const char *samba_version_string(void);
+const char *samba_copyright_string(void);
 
 
 #endif /* _PARAM_H */
