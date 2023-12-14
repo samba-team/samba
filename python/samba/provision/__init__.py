@@ -2511,14 +2511,14 @@ class InvalidNetbiosName(Exception):
     """A specified name was not a valid NetBIOS name."""
 
     def __init__(self, name):
-        super(InvalidNetbiosName, self).__init__(
+        super().__init__(
             "The name '%r' is not a valid NetBIOS name" % name)
 
 
 class MissingShareError(ProvisioningError):
 
     def __init__(self, name, smbconf):
-        super(MissingShareError, self).__init__(
+        super().__init__(
             "Existing smb.conf does not have a [%s] share, but you are "
             "configuring a DC. Please remove %s or add the share manually." %
             (name, smbconf))

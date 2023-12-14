@@ -86,7 +86,7 @@ def get_dnsadmins_sid(samdb, domaindn):
 class ARecord(dnsp.DnssrvRpcRecord):
 
     def __init__(self, ip_addr, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE):
-        super(ARecord, self).__init__()
+        super().__init__()
         self.wType = dnsp.DNS_TYPE_A
         self.rank = rank
         self.dwSerial = serial
@@ -97,7 +97,7 @@ class ARecord(dnsp.DnssrvRpcRecord):
 class AAAARecord(dnsp.DnssrvRpcRecord):
 
     def __init__(self, ip6_addr, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE):
-        super(AAAARecord, self).__init__()
+        super().__init__()
         self.wType = dnsp.DNS_TYPE_AAAA
         self.rank = rank
         self.dwSerial = serial
@@ -119,7 +119,7 @@ class CNAMERecord(dnsp.DnssrvRpcRecord):
 class NSRecord(dnsp.DnssrvRpcRecord):
 
     def __init__(self, dns_server, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE):
-        super(NSRecord, self).__init__()
+        super().__init__()
         self.wType = dnsp.DNS_TYPE_NS
         self.rank = rank
         self.dwSerial = serial
@@ -131,7 +131,7 @@ class SOARecord(dnsp.DnssrvRpcRecord):
 
     def __init__(self, mname, rname, serial=1, refresh=900, retry=600,
                  expire=86400, minimum=3600, ttl=3600, rank=dnsp.DNS_RANK_ZONE):
-        super(SOARecord, self).__init__()
+        super().__init__()
         self.wType = dnsp.DNS_TYPE_SOA
         self.rank = rank
         self.dwSerial = serial
@@ -151,7 +151,7 @@ class SRVRecord(dnsp.DnssrvRpcRecord):
 
     def __init__(self, target, port, priority=0, weight=100, serial=1, ttl=900,
                  rank=dnsp.DNS_RANK_ZONE):
-        super(SRVRecord, self).__init__()
+        super().__init__()
         self.wType = dnsp.DNS_TYPE_SRV
         self.rank = rank
         self.dwSerial = serial
@@ -167,7 +167,7 @@ class SRVRecord(dnsp.DnssrvRpcRecord):
 class TXTRecord(dnsp.DnssrvRpcRecord):
 
     def __init__(self, slist, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE):
-        super(TXTRecord, self).__init__()
+        super().__init__()
         self.wType = dnsp.DNS_TYPE_TXT
         self.rank = rank
         self.dwSerial = serial
@@ -181,7 +181,7 @@ class TXTRecord(dnsp.DnssrvRpcRecord):
 class TypeProperty(dnsp.DnsProperty):
 
     def __init__(self, zone_type=dnsp.DNS_ZONE_TYPE_PRIMARY):
-        super(TypeProperty, self).__init__()
+        super().__init__()
         self.wDataLength = 1
         self.version = 1
         self.id = dnsp.DSPROPERTY_ZONE_TYPE
@@ -191,7 +191,7 @@ class TypeProperty(dnsp.DnsProperty):
 class AllowUpdateProperty(dnsp.DnsProperty):
 
     def __init__(self, allow_update=dnsp.DNS_ZONE_UPDATE_SECURE):
-        super(AllowUpdateProperty, self).__init__()
+        super().__init__()
         self.wDataLength = 1
         self.version = 1
         self.id = dnsp.DSPROPERTY_ZONE_ALLOW_UPDATE
@@ -201,7 +201,7 @@ class AllowUpdateProperty(dnsp.DnsProperty):
 class SecureTimeProperty(dnsp.DnsProperty):
 
     def __init__(self, secure_time=0):
-        super(SecureTimeProperty, self).__init__()
+        super().__init__()
         self.wDataLength = 1
         self.version = 1
         self.id = dnsp.DSPROPERTY_ZONE_SECURE_TIME
@@ -211,7 +211,7 @@ class SecureTimeProperty(dnsp.DnsProperty):
 class NorefreshIntervalProperty(dnsp.DnsProperty):
 
     def __init__(self, norefresh_interval=0):
-        super(NorefreshIntervalProperty, self).__init__()
+        super().__init__()
         self.wDataLength = 1
         self.version = 1
         self.id = dnsp.DSPROPERTY_ZONE_NOREFRESH_INTERVAL
@@ -221,7 +221,7 @@ class NorefreshIntervalProperty(dnsp.DnsProperty):
 class RefreshIntervalProperty(dnsp.DnsProperty):
 
     def __init__(self, refresh_interval=0):
-        super(RefreshIntervalProperty, self).__init__()
+        super().__init__()
         self.wDataLength = 1
         self.version = 1
         self.id = dnsp.DSPROPERTY_ZONE_REFRESH_INTERVAL
@@ -231,7 +231,7 @@ class RefreshIntervalProperty(dnsp.DnsProperty):
 class AgingStateProperty(dnsp.DnsProperty):
 
     def __init__(self, aging_enabled=0):
-        super(AgingStateProperty, self).__init__()
+        super().__init__()
         self.wDataLength = 1
         self.version = 1
         self.id = dnsp.DSPROPERTY_ZONE_AGING_STATE
@@ -241,7 +241,7 @@ class AgingStateProperty(dnsp.DnsProperty):
 class AgingEnabledTimeProperty(dnsp.DnsProperty):
 
     def __init__(self, next_cycle_hours=0):
-        super(AgingEnabledTimeProperty, self).__init__()
+        super().__init__()
         self.wDataLength = 1
         self.version = 1
         self.id = dnsp.DSPROPERTY_ZONE_AGING_ENABLED_TIME

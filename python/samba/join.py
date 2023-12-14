@@ -54,7 +54,7 @@ from samba import dsdb, functional_level
 class DCJoinException(Exception):
 
     def __init__(self, msg):
-        super(DCJoinException, self).__init__("Can't join, error: %s" % msg)
+        super().__init__("Can't join, error: %s" % msg)
 
 
 class DCJoinContext(object):
@@ -1651,11 +1651,11 @@ class DCCloneContext(DCJoinContext):
                  targetdir=None, domain=None, dns_backend=None,
                  include_secrets=False, backend_store=None,
                  backend_store_size=None):
-        super(DCCloneContext, ctx).__init__(logger, server, creds, lp,
-                                            targetdir=targetdir, domain=domain,
-                                            dns_backend=dns_backend,
-                                            backend_store=backend_store,
-                                            backend_store_size=backend_store_size)
+        super().__init__(logger, server, creds, lp,
+                         targetdir=targetdir, domain=domain,
+                         dns_backend=dns_backend,
+                         backend_store=backend_store,
+                         backend_store_size=backend_store_size)
 
         # As we don't want to create or delete these DNs, we set them to None
         ctx.server_dn = None
@@ -1706,12 +1706,12 @@ class DCCloneAndRenameContext(DCCloneContext):
     def __init__(ctx, new_base_dn, new_domain_name, new_realm, logger=None,
                  server=None, creds=None, lp=None, targetdir=None, domain=None,
                  dns_backend=None, include_secrets=True, backend_store=None):
-        super(DCCloneAndRenameContext, ctx).__init__(logger, server, creds, lp,
-                                                     targetdir=targetdir,
-                                                     domain=domain,
-                                                     dns_backend=dns_backend,
-                                                     include_secrets=include_secrets,
-                                                     backend_store=backend_store)
+        super().__init__(logger, server, creds, lp,
+                         targetdir=targetdir,
+                         domain=domain,
+                         dns_backend=dns_backend,
+                         include_secrets=include_secrets,
+                         backend_store=backend_store)
         # store the new DN (etc) that we want the cloned DB to use
         ctx.new_base_dn = new_base_dn
         ctx.new_domain_name = new_domain_name

@@ -77,13 +77,13 @@ class TestProtocolClient(unittest.TestResult):
 
     def startTest(self, test):
         """Mark a test as starting its test run."""
-        super(TestProtocolClient, self).startTest(test)
+        super().startTest(test)
         self._stream.write("test: " + test.id() + "\n")
         self._stream.flush()
 
     def stopTest(self, test):
         """Mark a test as having finished its test run."""
-        super(TestProtocolClient, self).stopTest(test)
+        super().stopTest(test)
         self.writeOutcome(test)
 
     def writeOutcome(self, test):
@@ -359,7 +359,7 @@ class HookedTestResultDecorator(TestResultDecorator):
     """A TestResult which calls a hook on every event."""
 
     def __init__(self, decorated):
-        self.super = super(HookedTestResultDecorator, self)
+        self.super = super()
         self.super.__init__(decorated)
 
     def startTest(self, test):
@@ -430,7 +430,7 @@ class AutoTimingTestResultDecorator(HookedTestResultDecorator):
 
     def __init__(self, decorated):
         self._time = None
-        super(AutoTimingTestResultDecorator, self).__init__(decorated)
+        super().__init__(decorated)
 
     def _before_event(self):
         time = self._time

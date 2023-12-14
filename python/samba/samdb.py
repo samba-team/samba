@@ -87,9 +87,9 @@ class SamDB(samba.Ldb):
 
         self.url = url
 
-        super(SamDB, self).__init__(url=url, lp=lp, modules_dir=modules_dir,
-                                    session_info=session_info, credentials=credentials, flags=flags,
-                                    options=options)
+        super().__init__(url=url, lp=lp, modules_dir=modules_dir,
+                         session_info=session_info, credentials=credentials, flags=flags,
+                         options=options)
 
         if global_schema:
             dsdb._dsdb_set_global_schema(self)
@@ -103,8 +103,7 @@ class SamDB(samba.Ldb):
             url = self.lp.private_path(url)
         self.url = url
 
-        super(SamDB, self).connect(url=url, flags=flags,
-                                   options=options)
+        super().connect(url=url, flags=flags, options=options)
 
     def am_rodc(self):
         """return True if we are an RODC"""
@@ -1357,7 +1356,7 @@ schemaUpdateNow: 1
          """
         self.transaction_start()
         try:
-            seq = super(SamDB, self).sequence_number(seq_type)
+            seq = super().sequence_number(seq_type)
         except:
             self.transaction_cancel()
             raise

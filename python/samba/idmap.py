@@ -42,13 +42,13 @@ class IDmapDB(samba.Ldb):
         if url is None:
             url = lp.private_path("idmap.ldb")
 
-        super(IDmapDB, self).__init__(url=url, lp=lp, modules_dir=modules_dir,
-                                      session_info=session_info, credentials=credentials, flags=flags,
-                                      options=options)
+        super().__init__(url=url, lp=lp, modules_dir=modules_dir,
+                         session_info=session_info, credentials=credentials, flags=flags,
+                         options=options)
 
     def connect(self, url=None, flags=0, options=None):
-        super(IDmapDB, self).connect(url=self.lp.private_path(url), flags=flags,
-                                     options=options)
+        super().connect(url=self.lp.private_path(url), flags=flags,
+                        options=options)
 
     def increment_xid(self):
         """Increment xidNumber, if not present it create and assign it to the lowerBound

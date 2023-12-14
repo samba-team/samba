@@ -405,8 +405,7 @@ class drs_ReplicateRenamer(drs_Replicate):
 
     def __init__(self, binding_string, lp, creds, samdb, invocation_id,
                  old_base_dn, new_base_dn):
-        super(drs_ReplicateRenamer, self).__init__(binding_string, lp, creds,
-                                                   samdb, invocation_id)
+        super().__init__(binding_string, lp, creds, samdb, invocation_id)
         self.old_base_dn = old_base_dn
         self.new_base_dn = new_base_dn
 
@@ -454,6 +453,4 @@ class drs_ReplicateRenamer(drs_Replicate):
             self.rename_top_level_object(ctr.first_object.object)
 
         # then do the normal repl processing to apply this chunk to our DB
-        super(drs_ReplicateRenamer, self).process_chunk(level, ctr, schema,
-                                                        req_level, req,
-                                                        first_chunk)
+        super().process_chunk(level, ctr, schema, req_level, req, first_chunk)

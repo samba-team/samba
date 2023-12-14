@@ -178,7 +178,7 @@ if len(disabled_virtual_attributes) != 0:
 class GetPasswordCommand(Command):
 
     def __init__(self):
-        super(GetPasswordCommand, self).__init__()
+        super().__init__()
         self.lp = None
 
     def inject_virtual_attributes(self, samdb):

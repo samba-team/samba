@@ -49,7 +49,7 @@ class DNSParseError(ValueError):
 class ARecord(dnsserver.DNS_RPC_RECORD):
     def __init__(self, ip_addr, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE,
                  node_flag=0):
-        super(ARecord, self).__init__()
+        super().__init__()
         self.wType = dnsp.DNS_TYPE_A
         self.dwFlags = rank | node_flag
         self.dwSerial = serial
@@ -65,7 +65,7 @@ class AAAARecord(dnsserver.DNS_RPC_RECORD):
 
     def __init__(self, ip6_addr, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE,
                  node_flag=0):
-        super(AAAARecord, self).__init__()
+        super().__init__()
         self.wType = dnsp.DNS_TYPE_AAAA
         self.dwFlags = rank | node_flag
         self.dwSerial = serial
@@ -81,7 +81,7 @@ class PTRRecord(dnsserver.DNS_RPC_RECORD):
 
     def __init__(self, ptr, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE,
                  node_flag=0):
-        super(PTRRecord, self).__init__()
+        super().__init__()
         self.wType = dnsp.DNS_TYPE_PTR
         self.dwFlags = rank | node_flag
         self.dwSerial = serial
@@ -119,7 +119,7 @@ class NSRecord(dnsserver.DNS_RPC_RECORD):
 
     def __init__(self, dns_server, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE,
                  node_flag=0):
-        super(NSRecord, self).__init__()
+        super().__init__()
         self.wType = dnsp.DNS_TYPE_NS
         self.dwFlags = rank | node_flag
         self.dwSerial = serial
@@ -138,7 +138,7 @@ class MXRecord(dnsserver.DNS_RPC_RECORD):
 
     def __init__(self, mail_server, preference, serial=1, ttl=900,
                  rank=dnsp.DNS_RANK_ZONE, node_flag=0):
-        super(MXRecord, self).__init__()
+        super().__init__()
         self.wType = dnsp.DNS_TYPE_MX
         self.dwFlags = rank | node_flag
         self.dwSerial = serial
@@ -165,7 +165,7 @@ class SOARecord(dnsserver.DNS_RPC_RECORD):
     def __init__(self, mname, rname, serial=1, refresh=900, retry=600,
                  expire=86400, minimum=3600, ttl=3600, rank=dnsp.DNS_RANK_ZONE,
                  node_flag=dnsp.DNS_RPC_FLAG_AUTH_ZONE_ROOT):
-        super(SOARecord, self).__init__()
+        super().__init__()
         self.wType = dnsp.DNS_TYPE_SOA
         self.dwFlags = rank | node_flag
         self.dwSerial = serial
@@ -202,7 +202,7 @@ class SRVRecord(dnsserver.DNS_RPC_RECORD):
 
     def __init__(self, target, port, priority=0, weight=100, serial=1, ttl=900,
                  rank=dnsp.DNS_RANK_ZONE, node_flag=0):
-        super(SRVRecord, self).__init__()
+        super().__init__()
         self.wType = dnsp.DNS_TYPE_SRV
         self.dwFlags = rank | node_flag
         self.dwSerial = serial
@@ -237,7 +237,7 @@ class TXTRecord(dnsserver.DNS_RPC_RECORD):
 
     def __init__(self, slist, serial=1, ttl=900, rank=dnsp.DNS_RANK_ZONE,
                  node_flag=0):
-        super(TXTRecord, self).__init__()
+        super().__init__()
         self.wType = dnsp.DNS_TYPE_TXT
         self.dwFlags = rank | node_flag
         self.dwSerial = serial

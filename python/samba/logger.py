@@ -34,7 +34,7 @@ class ColoredFormatter(logging.Formatter):
     """Add color to log according to level"""
 
     def format(self, record):
-        log = super(ColoredFormatter, self).format(record)
+        log = super().format(record)
         color = LEVEL_COLORS.get(record.levelno, GREY)
         return color + log + C_NORMAL
 

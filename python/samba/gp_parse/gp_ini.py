@@ -109,7 +109,7 @@ class GPTIniParser(GPIniParser):
 
     def parse(self, contents):
         try:
-            super(GPTIniParser, self).parse(contents)
+            super().parse(contents)
         except UnicodeDecodeError:
             # Required dict_type in Python 2.7
             self.ini_conf = ConfigParser(dict_type=collections.OrderedDict,
@@ -122,9 +122,8 @@ class GPTIniParser(GPIniParser):
 
 class GPScriptsIniParser(GPIniParser):
     def build_xml_parameter(self, section_xml, section, key_ini, val_ini):
-        parent_return = super(GPScriptsIniParser,
-                              self).build_xml_parameter(section_xml, section,
-                                                        key_ini, val_ini)
+        parent_return = super().build_xml_parameter(section_xml, section,
+                                                    key_ini, val_ini)
 
         cmdline = re.match('\\d+CmdLine$', key_ini)
         if cmdline is not None:
@@ -136,9 +135,8 @@ class GPScriptsIniParser(GPIniParser):
 
 class GPFDeploy1IniParser(GPIniParser):
     def build_xml_parameter(self, section_xml, section, key_ini, val_ini):
-        parent_return = super(GPFDeploy1IniParser,
-                              self).build_xml_parameter(section_xml, section,
-                                                        key_ini, val_ini)
+        parent_return = super().build_xml_parameter(section_xml, section,
+                                                    key_ini, val_ini)
         # Add generalization metadata and parse out SID list
         if section.lower() == 'folder_redirection':
             # Process the header section
@@ -182,8 +180,7 @@ class GPFDeploy1IniParser(GPIniParser):
             return (key, value)
 
         # Do the normal ini code for other sections
-        return super(GPFDeploy1IniParser,
-                     self).load_xml_parameter(param_xml, section)
+        return super().load_xml_parameter(param_xml, section)
 
     def build_xml_section(self, root_xml, sec_ini):
         section = SubElement(root_xml, 'Section')

@@ -1660,8 +1660,7 @@ class cmd_restore(cmd_create):
 
             dtd_header += '\n]>\n'
 
-        super(cmd_restore, self).run(displayname, H, tmpdir, sambaopts,
-                                     credopts, versionopts)
+        super().run(displayname, H, tmpdir, sambaopts, credopts, versionopts)
 
         try:
             if tmpdir is None:
