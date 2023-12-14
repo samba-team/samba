@@ -145,8 +145,6 @@ Example2:
 samba-tool user getpassword --filter=samaccountname=TestUser3 --attributes=msDS-KeyVersionNumber,unicodePwd,virtualClearTextUTF16
 
 """
-    def __init__(self):
-        super(cmd_user_getpassword, self).__init__()
 
     synopsis = "%prog (<username>|--filter <filter>) [options]"
 

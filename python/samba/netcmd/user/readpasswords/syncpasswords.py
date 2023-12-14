@@ -232,8 +232,6 @@ samba-tool user syncpasswords --terminate \\
     --logfile=/var/log/samba/user-syncpasswords.log
 
 """
-    def __init__(self):
-        super(cmd_user_syncpasswords, self).__init__()
 
     synopsis = "%prog [--cache-ldb-initialize] [options]"
 
