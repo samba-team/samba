@@ -62,7 +62,7 @@ class cmd_rodc_preload(Command):
     takes_args = ["account*"]
 
     def get_dn(self, samdb, account):
-        '''work out what DN they meant'''
+        """work out what DN they meant"""
 
         # we accept the account in SID, accountname or DN form
         if account[0:2] == 'S-':

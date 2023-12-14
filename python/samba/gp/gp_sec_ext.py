@@ -112,10 +112,10 @@ class gp_krb_ext(gp_inf_ext):
 
 
 class gp_access_ext(gp_inf_ext):
-    '''This class takes the .inf file parameter (essentially a GPO file mapped
+    """This class takes the .inf file parameter (essentially a GPO file mapped
     to a GUID), hashmaps it to the Samba parameter, which then uses an ldb
     object to update the parameter to Samba4. Not registry oriented whatsoever.
-    '''
+    """
 
     def load_ldb(self):
         try:
@@ -191,7 +191,7 @@ class gp_access_ext(gp_inf_ext):
         self.ldb.set_pwdProperties(val)
 
     def mapper(self):
-        '''ldap value : samba setter'''
+        """ldap value : samba setter"""
         return {"minPwdAge": (self.ch_minPwdAge, days2rel_nttime),
                 "maxPwdAge": (self.ch_maxPwdAge, days2rel_nttime),
                 # Could be none, but I like the method assignment in

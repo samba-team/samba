@@ -69,15 +69,15 @@ def _get_user_realm_domain(user, sam=None):
 
 
 def netcmd_dnsname(lp):
-    '''return the full DNS name of our own host. Used as a default
-       for hostname when running status queries'''
+    """return the full DNS name of our own host. Used as a default
+       for hostname when running status queries"""
     return lp.get('netbios name').lower() + "." + lp.get('realm').lower()
 
 
 def netcmd_finddc(lp, creds, realm=None):
-    '''Return domain-name of a writable/ldap-capable DC for the default
+    """Return domain-name of a writable/ldap-capable DC for the default
        domain (parameter "realm" in smb.conf) unless another realm has been
-       specified as argument'''
+       specified as argument"""
     net = Net(creds=creds, lp=lp)
     if realm is None:
         realm = lp.get('realm')
@@ -87,8 +87,8 @@ def netcmd_finddc(lp, creds, realm=None):
 
 
 def netcmd_get_domain_infos_via_cldap(lp, creds, address=None):
-    '''Return domain information (CLDAP record) of the ldap-capable
-       DC with the specified address'''
+    """Return domain information (CLDAP record) of the ldap-capable
+       DC with the specified address"""
     net = Net(creds=creds, lp=lp)
     cldap_ret = net.finddc(address=address,
                            flags=nbt.NBT_SERVER_LDAP | nbt.NBT_SERVER_DS)
@@ -155,7 +155,7 @@ def timestamp_to_days(timestamp_str):
 
 
 def attr_default(msg, attrname, default):
-    '''get an attribute from a ldap msg with a default'''
+    """get an attribute from a ldap msg with a default"""
     if attrname in msg:
         return msg[attrname][0]
     return default

@@ -53,7 +53,7 @@ class XattrBackendError(Exception):
 
 
 def checkset_backend(lp, backend, eadbfile):
-    '''return the path to the eadb, or None'''
+    """return the path to the eadb, or None"""
     if backend is None:
         xattr_tdb = lp.get("xattr_tdb:file")
         if xattr_tdb is not None:

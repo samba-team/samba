@@ -50,7 +50,7 @@ from samba.common import get_string
 from samba.samdb import get_default_backend_store
 
 def drsuapi_connect(ctx):
-    '''make a DRSUAPI connection to the server'''
+    """make a DRSUAPI connection to the server"""
     try:
         (ctx.drsuapi, ctx.drsuapi_handle, ctx.bind_supported_extensions) = drs_utils.drsuapi_connect(ctx.server, ctx.lp, ctx.creds)
     except Exception as e:
@@ -58,7 +58,7 @@ def drsuapi_connect(ctx):
 
 
 def samdb_connect(ctx):
-    '''make a ldap connection to the server'''
+    """make a ldap connection to the server"""
     try:
         ctx.samdb = SamDB(url="ldap://%s" % ctx.server,
                           session_info=system_session(),
@@ -68,7 +68,7 @@ def samdb_connect(ctx):
 
 
 def drs_errmsg(werr):
-    '''return "was successful" or an error string'''
+    """return "was successful" or an error string"""
     (ecode, estring) = werr
     if ecode == 0:
         return "was successful"
@@ -76,7 +76,7 @@ def drs_errmsg(werr):
 
 
 def drs_parse_ntds_dn(ntds_dn):
-    '''parse a NTDS DN returning a site and server'''
+    """parse a NTDS DN returning a site and server"""
     a = ntds_dn.split(',')
     if a[0] != "CN=NTDS Settings" or a[2] != "CN=Servers" or a[4] != 'CN=Sites':
         raise RuntimeError("bad NTDS DN %s" % ntds_dn)
@@ -153,7 +153,7 @@ class cmd_drs_showrepl(Command):
         return d
 
     def print_neighbour(self, d):
-        '''print one set of neighbour information'''
+        """print one set of neighbour information"""
         self.message("%s" % d['NC dn'])
         if 'DSA' in d:
             self.message("\t%s via RPC" % d['DSA'])
@@ -434,7 +434,7 @@ class cmd_drs_replicate(Command):
     def drs_local_replicate(self, SOURCE_DC, NC, full_sync=False,
                             single_object=False,
                             sync_forced=False):
-        '''replicate from a source DC to the local SAM'''
+        """replicate from a source DC to the local SAM"""
 
         self.server = SOURCE_DC
         drsuapi_connect(self)

@@ -38,9 +38,9 @@ def logger_init(name, log_level):
         logger.setLevel(logging.DEBUG)
 
 class slogm(object):
-    '''
+    """
     Structured log message class
-    '''
+    """
     def __init__(self, message, kwargs=None):
         if kwargs is None:
             kwargs = {}

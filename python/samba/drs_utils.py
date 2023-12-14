@@ -101,7 +101,7 @@ def sendDsReplicaSync(drsuapiBind, drsuapi_handle, source_dsa_guid,
 
 
 def drs_DsBind(drs):
-    '''make a DsBind call, returning the binding handle'''
+    """make a DsBind call, returning the binding handle"""
     bind_info = drsuapi.DsBindInfoCtr()
     bind_info.length = 28
     bind_info.info = drsuapi.DsBindInfo28()
@@ -139,7 +139,7 @@ def drs_DsBind(drs):
 
 
 def drs_get_rodc_partial_attribute_set(samdb):
-    '''get a list of attributes for RODC replication'''
+    """get a list of attributes for RODC replication"""
     partial_attribute_set = drsuapi.DsPartialAttributeSet()
     partial_attribute_set.version = 1
 
@@ -187,7 +187,7 @@ def drs_copy_highwater_mark(hwm, new_hwm):
 
 
 class drs_Replicate(object):
-    '''DRS replication calls'''
+    """DRS replication calls"""
 
     def __init__(self, binding_string, lp, creds, samdb, invocation_id):
         self.drs = drsuapi.drsuapi(binding_string, lp, creds)
@@ -251,7 +251,7 @@ class drs_Replicate(object):
 
 
     def process_chunk(self, level, ctr, schema, req_level, req, first_chunk):
-        '''Processes a single chunk of received replication data'''
+        """Processes a single chunk of received replication data"""
         # pass the replication into the py_net.c python bindings for processing
         self.net.replicate_chunk(self.replication_state, level, ctr,
                                  schema=schema, req_level=req_level, req=req)
@@ -259,7 +259,7 @@ class drs_Replicate(object):
     def replicate(self, dn, source_dsa_invocation_id, destination_dsa_guid,
                   schema=False, exop=drsuapi.DRSUAPI_EXOP_NONE, rodc=False,
                   replica_flags=None, full_sync=True, sync_forced=False, more_flags=0):
-        '''replicate a single DN'''
+        """replicate a single DN"""
 
         # setup for a GetNCChanges call
         if self.supports_ext & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10:
@@ -401,7 +401,7 @@ class drs_Replicate(object):
 # Handles the special case of creating a new clone of a DB, while also renaming
 # the entire DB's objects on the way through
 class drs_ReplicateRenamer(drs_Replicate):
-    '''Uses DRS replication to rename the entire DB'''
+    """Uses DRS replication to rename the entire DB"""
 
     def __init__(self, binding_string, lp, creds, samdb, invocation_id,
                  old_base_dn, new_base_dn):
@@ -417,11 +417,11 @@ class drs_ReplicateRenamer(drs_Replicate):
         self.more_flags = drsuapi.DRSUAPI_DRS_GET_TGT
 
     def rename_dn(self, dn_str):
-        '''Uses string substitution to replace the base DN'''
+        """Uses string substitution to replace the base DN"""
         return re.sub('%s$' % self.old_base_dn, self.new_base_dn, dn_str)
 
     def update_name_attr(self, base_obj):
-        '''Updates the 'name' attribute for the base DN object'''
+        """Updates the 'name' attribute for the base DN object"""
         for attr in base_obj.attribute_ctr.attributes:
             if attr.attid == DRSUAPI_ATTID_name:
                 base_dn = ldb.Dn(self.samdb, base_obj.identifier.dn)
@@ -429,7 +429,7 @@ class drs_ReplicateRenamer(drs_Replicate):
                 attr.value_ctr.values[0].blob = new_name.encode('utf-16-le')
 
     def rename_top_level_object(self, first_obj):
-        '''Renames the first/top-level object in a partition'''
+        """Renames the first/top-level object in a partition"""
         old_dn = first_obj.identifier.dn
         first_obj.identifier.dn = self.rename_dn(first_obj.identifier.dn)
         print("Renaming partition %s --> %s" % (old_dn,
@@ -441,7 +441,7 @@ class drs_ReplicateRenamer(drs_Replicate):
             self.update_name_attr(first_obj)
 
     def process_chunk(self, level, ctr, schema, req_level, req, first_chunk):
-        '''Processes a single chunk of received replication data'''
+        """Processes a single chunk of received replication data"""
 
         # we need to rename the NC in every chunk - this gets used in searches
         # when applying the chunk

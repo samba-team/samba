@@ -245,7 +245,7 @@ class dbcheck(object):
 
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=None,
                        attrs=None):
-        '''perform a database check, returning the number of errors found'''
+        """perform a database check, returning the number of errors found"""
         res = self.samdb.search(base=DN, scope=scope, attrs=['dn'], controls=controls)
         self.report('Checking %u objects' % len(res))
         error_count = 0
@@ -390,7 +390,7 @@ systemFlags: -1946157056%s""" % (dn, sec_desc_b64, guid_suffix),
         return error_count
 
     def report(self, msg):
-        '''print a message unless quiet is set'''
+        """print a message unless quiet is set"""
         if self.quiet:
             return
         if self.colour:
@@ -410,7 +410,7 @@ systemFlags: -1946157056%s""" % (dn, sec_desc_b64, guid_suffix),
         print(msg)
 
     def confirm(self, msg, allow_all=False, forced=False):
-        '''confirm a change'''
+        """confirm a change"""
         if not self.fix:
             return False
         if self.quiet:
@@ -422,7 +422,7 @@ systemFlags: -1946157056%s""" % (dn, sec_desc_b64, guid_suffix),
     ################################################################
     # a local confirm function with support for 'all'
     def confirm_all(self, msg, all_attr):
-        '''confirm a change with support for "all" '''
+        """confirm a change with support for "all" """
         if not self.fix:
             return False
         if getattr(self, all_attr) == 'NONE':
@@ -443,7 +443,7 @@ systemFlags: -1946157056%s""" % (dn, sec_desc_b64, guid_suffix),
         return c
 
     def do_delete(self, dn, controls, msg):
-        '''delete dn with optional verbose output'''
+        """delete dn with optional verbose output"""
         if self.verbose:
             self.report("delete DN %s" % dn)
         try:
@@ -457,7 +457,7 @@ systemFlags: -1946157056%s""" % (dn, sec_desc_b64, guid_suffix),
         return True
 
     def do_modify(self, m, controls, msg, validate=True):
-        '''perform a modify with optional verbose output'''
+        """perform a modify with optional verbose output"""
         controls = controls + ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK]
         if self.verbose:
             self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
@@ -472,7 +472,7 @@ systemFlags: -1946157056%s""" % (dn, sec_desc_b64, guid_suffix),
         return True
 
     def do_rename(self, from_dn, to_rdn, to_base, controls, msg):
-        '''perform a rename with optional verbose output'''
+        """perform a rename with optional verbose output"""
         if self.verbose:
             self.report("""dn: %s
 changeType: modrdn
@@ -502,7 +502,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         return linkID, revname
 
     def err_empty_attribute(self, dn, attrname):
-        '''fix empty attributes'''
+        """fix empty attributes"""
         self.report("ERROR: Empty attribute %s in %s" % (attrname, dn))
         if not self.confirm_all('Remove empty attribute %s from %s?' % (attrname, dn), 'remove_all_empty_attributes'):
             self.report("Not fixing empty attribute %s" % attrname)
@@ -516,7 +516,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Removed empty attribute %s" % attrname)
 
     def err_normalise_mismatch(self, dn, attrname, values):
-        '''fix attribute normalisation errors, without altering sort order'''
+        """fix attribute normalisation errors, without altering sort order"""
         self.report("ERROR: Normalisation error for attribute %s in %s" % (attrname, dn))
         mod_list = []
         for val in values:
@@ -547,7 +547,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Normalised attribute %s" % attrname)
 
     def err_normalise_mismatch_replace(self, dn, attrname, values):
-        '''fix attribute normalisation and/or sort errors'''
+        """fix attribute normalisation and/or sort errors"""
         normalised = self.samdb.dsdb_normalise_attributes(self.samdb_schema, attrname, values)
         if list(normalised) == values:
             # how we got here is a mystery.
@@ -568,7 +568,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Normalised attribute %s" % attrname)
 
     def err_duplicate_values(self, dn, attrname, dup_values, values):
-        '''fix duplicate attribute values'''
+        """fix duplicate attribute values"""
         self.report("ERROR: Duplicate values for attribute '%s' in '%s'" % (attrname, dn))
         self.report("Values contain a duplicate: [%s]/[%s]!" %
                     (dump_attr_values(dup_values), dump_attr_values(values)))
@@ -586,7 +586,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Removed duplicate value on attribute %s" % attrname)
 
     def is_deleted_objects_dn(self, dsdb_dn):
-        '''see if a dsdb_Dn is the special Deleted Objects DN'''
+        """see if a dsdb_Dn is the special Deleted Objects DN"""
         return dsdb_dn.prefix == "B:32:%s:" % dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER
 
     def err_missing_objectclass(self, dn):
@@ -823,7 +823,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Fixed missing DN SID on attribute %s" % (attrname))
 
     def err_unknown_attribute(self, obj, attrname):
-        '''handle an unknown attribute error'''
+        """handle an unknown attribute error"""
         self.report("ERROR: unknown attribute '%s' in %s" % (attrname, obj.dn))
         if not self.confirm_all('Remove unknown attribute %s' % attrname, 'remove_all_unknown_attributes'):
             self.report("Not removing %s" % attrname)
@@ -836,7 +836,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Removed unknown attribute %s" % (attrname))
 
     def err_undead_linked_attribute(self, obj, attrname, val):
-        '''handle a link that should not be there on a deleted object'''
+        """handle a link that should not be there on a deleted object"""
         self.report("ERROR: linked attribute '%s' to '%s' is present on "
                     "deleted object %s" % (attrname, val, obj.dn))
         if not self.confirm_all('Remove linked attribute %s' % attrname, 'fix_undead_linked_attributes'):
@@ -852,7 +852,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Fixed undead forward link %s" % (attrname))
 
     def err_missing_backlink(self, obj, attrname, val, backlink_name, target_dn):
-        '''handle a missing backlink value'''
+        """handle a missing backlink value"""
         self.report("ERROR: missing backlink attribute '%s' in %s for link %s in %s" % (backlink_name, target_dn, attrname, obj.dn))
         if not self.confirm_all('Fix missing backlink %s' % backlink_name, 'fix_all_missing_backlinks'):
             self.report("Not fixing missing backlink %s" % backlink_name)
@@ -865,7 +865,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Fixed missing backlink %s" % (backlink_name))
 
     def err_incorrect_rmd_flags(self, obj, attrname, revealed_dn):
-        '''handle a incorrect RMD_FLAGS value'''
+        """handle a incorrect RMD_FLAGS value"""
         rmd_flags = int(revealed_dn.dn.get_extended_component("RMD_FLAGS"))
         self.report("ERROR: incorrect RMD_FLAGS value %u for attribute '%s' in %s for link %s" % (rmd_flags, attrname, obj.dn, revealed_dn.dn.extended_str()))
         if not self.confirm_all('Fix incorrect RMD_FLAGS %u' % rmd_flags, 'fix_rmd_flags'):
@@ -881,7 +881,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
     def err_orphaned_backlink(self, obj_dn, backlink_attr, backlink_val,
                               target_dn, forward_attr, forward_syntax,
                               check_duplicates=True):
-        '''handle a orphaned backlink value'''
+        """handle a orphaned backlink value"""
         if check_duplicates is True and self.has_duplicate_links(target_dn, forward_attr, forward_syntax):
             self.report("WARNING: Keep orphaned backlink attribute " +
                         "'%s' in '%s' for link '%s' in '%s'" % (
@@ -899,7 +899,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Fixed orphaned backlink %s" % (backlink_attr))
 
     def err_recover_forward_links(self, obj, forward_attr, forward_vals):
-        '''handle a duplicate links value'''
+        """handle a duplicate links value"""
 
         self.report("RECHECK: 'Missing/Duplicate/Correct link' lines above for attribute '%s' in '%s'" % (forward_attr, obj.dn))
 
@@ -918,7 +918,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.duplicate_link_cache[duplicate_cache_key] = False
 
     def err_no_fsmoRoleOwner(self, obj):
-        '''handle a missing fSMORoleOwner'''
+        """handle a missing fSMORoleOwner"""
         self.report("ERROR: fSMORoleOwner not found for role %s" % (obj.dn))
         res = self.samdb.search("",
                                 scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
@@ -935,7 +935,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Seized role %s onto current DC by adding fSMORoleOwner=%s" % (obj.dn, serviceName))
 
     def err_missing_parent(self, obj):
-        '''handle a missing parent'''
+        """handle a missing parent"""
         self.report("ERROR: parent object not found for %s" % (obj.dn))
         if not self.confirm_all('Move object %s into LostAndFound?' % (obj.dn), 'move_to_lost_and_found'):
             self.report('Not moving object %s into LostAndFound' % (obj.dn))
@@ -970,7 +970,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.samdb.transaction_cancel()
 
     def err_wrong_dn(self, obj, new_dn, rdn_attr, rdn_val, name_val, controls):
-        '''handle a wrong dn'''
+        """handle a wrong dn"""
 
         new_rdn = ldb.Dn(self.samdb, str(new_dn))
         new_rdn.remove_base_components(len(new_rdn) - 1)
@@ -991,7 +991,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Renamed %s into %s" % (obj.dn, new_dn))
 
     def err_wrong_instancetype(self, obj, calculated_instancetype):
-        '''handle a wrong instanceType'''
+        """handle a wrong instanceType"""
         self.report("ERROR: wrong instanceType %s on %s, should be %d" % (obj["instanceType"], obj.dn, calculated_instancetype))
         if not self.confirm_all('Change instanceType from %s to %d on %s?' % (obj["instanceType"], calculated_instancetype, obj.dn), 'fix_instancetype'):
             self.report('Not changing instanceType from %s to %d on %s' % (obj["instanceType"], calculated_instancetype, obj.dn))
@@ -1009,7 +1009,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         self.report("ERROR: incorrect userParameters value on object %s.  If you have another working DC that does not give this warning, please run 'samba-tool drs replicate --full-sync --local <destinationDC> <sourceDC> %s'" % (obj.dn, self.samdb.get_nc_root(obj.dn)))
 
     def err_base64_userParameters(self, obj, attrname, value):
-        '''handle a userParameters that is wrongly base64 encoded'''
+        """handle a userParameters that is wrongly base64 encoded"""
         self.report("ERROR: wrongly formatted userParameters %s on %s, should not be base64-encoded" % (value, obj.dn))
         if not self.confirm_all('Convert userParameters from base64 encoding on %s?' % (obj.dn), 'fix_base64_userparameters'):
             self.report('Not changing userParameters from base64 encoding on %s' % (obj.dn))
@@ -1023,7 +1023,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Corrected base64-encoded userParameters on %s by converting from base64" % (obj.dn))
 
     def err_utf8_userParameters(self, obj, attrname, value):
-        '''handle a userParameters that is wrongly utf-8 encoded'''
+        """handle a userParameters that is wrongly utf-8 encoded"""
         self.report("ERROR: wrongly formatted userParameters on %s, "
                     "should not be pseudo-UTF8 encoded" % (obj.dn))
         if not self.confirm_all('Convert userParameters from UTF8 encoding on %s?' % (obj.dn), 'fix_utf8_userparameters'):
@@ -1039,7 +1039,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Corrected psudo-UTF8 encoded userParameters on %s by converting from UTF8" % (obj.dn))
 
     def err_doubled_userParameters(self, obj, attrname, value):
-        '''handle a userParameters that has been utf-16 encoded twice'''
+        """handle a userParameters that has been utf-16 encoded twice"""
         self.report("ERROR: wrongly formatted userParameters on %s, should not be double UTF16 encoded" % (obj.dn))
         if not self.confirm_all('Convert userParameters from doubled UTF-16 encoding on %s?' % (obj.dn), 'fix_doubled_userparameters'):
             self.report('Not changing userParameters from doubled UTF-16 encoding on %s' % (obj.dn))
@@ -1069,7 +1069,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         self.report("ERROR: incorrect userParameters value on object %s (odd length).  If you have another working DC that does not give this warning, please run 'samba-tool drs replicate --full-sync --local <destinationDC> <sourceDC> %s'" % (obj.dn, self.samdb.get_nc_root(obj.dn)))
 
     def find_revealed_link(self, dn, attrname, guid):
-        '''return a revealed link in an object'''
+        """return a revealed link in an object"""
         res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=[attrname],
                                 controls=["show_deleted:0", "extended_dn:0", "reveal_internals:0"])
         syntax_oid = self.samdb_schema.get_syntax_oid_from_lDAPDisplayName(attrname)
@@ -1081,7 +1081,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         return None
 
     def check_duplicate_links(self, obj, forward_attr, forward_syntax, forward_linkID, backlink_attr):
-        '''check a linked values for duplicate forward links'''
+        """check a linked values for duplicate forward links"""
         error_count = 0
 
         duplicate_dict = dict()
@@ -1146,7 +1146,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         return (error_count, duplicate_dict, unique_dict)
 
     def has_duplicate_links(self, dn, forward_attr, forward_syntax):
-        '''check a linked values for duplicate forward links'''
+        """check a linked values for duplicate forward links"""
         error_count = 0
 
         duplicate_cache_key = "%s:%s" % (str(dn), forward_attr)
@@ -1183,7 +1183,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                                   forward_syntax,
                                                   backlink_attr,
                                                   forward_unique_dict):
-        '''Find all backlinks linking to obj_guid_str not already in forward_unique_dict'''
+        """Find all backlinks linking to obj_guid_str not already in forward_unique_dict"""
         missing_forward_links = []
         error_count = 0
 
@@ -1281,7 +1281,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         return (missing_forward_links, error_count)
 
     def check_dn(self, obj, attrname, syntax_oid):
-        '''check a DN attribute for correctness'''
+        """check a DN attribute for correctness"""
         error_count = 0
         obj_guid = obj['objectGUID'][0]
 
@@ -1586,11 +1586,11 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         return None
 
     def get_originating_time(self, val, attid):
-        '''Read metadata properties and return the originating time for
+        """Read metadata properties and return the originating time for
            a given attributeId.
 
            :return: the originating time or 0 if not found
-        '''
+        """
 
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, val)
         o = self.find_repl_attid(repl, attid)
@@ -1599,8 +1599,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         return 0
 
     def process_metadata(self, dn, val):
-        '''Read metadata properties and list attributes in it.
-           raises KeyError if the attid is unknown.'''
+        """Read metadata properties and list attributes in it.
+           raises KeyError if the attid is unknown."""
 
         set_att = set()
         wrong_attids = set()
@@ -1621,8 +1621,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         return (set_att, list_attid, wrong_attids)
 
     def fix_metadata(self, obj, attr):
-        '''re-write replPropertyMetaData elements for a single attribute for a
-        object. This is used to fix missing replPropertyMetaData elements'''
+        """re-write replPropertyMetaData elements for a single attribute for a
+        object. This is used to fix missing replPropertyMetaData elements"""
         guid_str = str(ndr_unpack(misc.GUID, obj['objectGUID'][0]))
         dn = ldb.Dn(self.samdb, "<GUID=%s>" % guid_str)
         res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=[attr],
@@ -1777,7 +1777,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         return (sd, None)
 
     def err_wrong_sd(self, dn, sd, sd_broken):
-        '''re-write the SD due to incorrect inherited ACEs'''
+        """re-write the SD due to incorrect inherited ACEs"""
         sd_attr = "nTSecurityDescriptor"
         sd_val = ndr_pack(sd)
         sd_flags = security.SECINFO_DACL | security.SECINFO_SACL
@@ -1794,7 +1794,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Fixed attribute '%s' of '%s'\n" % (sd_attr, dn))
 
     def err_wrong_default_sd(self, dn, sd, diff):
-        '''re-write the SD due to not matching the default (optional mode for fixing an incorrect provision)'''
+        """re-write the SD due to not matching the default (optional mode for fixing an incorrect provision)"""
         sd_attr = "nTSecurityDescriptor"
         sd_val = ndr_pack(sd)
         sd_flags = security.SECINFO_DACL | security.SECINFO_SACL
@@ -1815,7 +1815,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Fixed attribute '%s' of '%s'\n" % (sd_attr, dn))
 
     def err_missing_sd_owner(self, dn, sd):
-        '''re-write the SD due to a missing owner or group'''
+        """re-write the SD due to a missing owner or group"""
         sd_attr = "nTSecurityDescriptor"
         sd_val = ndr_pack(sd)
         sd_flags = security.SECINFO_OWNER | security.SECINFO_GROUP
@@ -2005,9 +2005,9 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 continue
 
             found = True
-            self.report('''ERROR: on replPropertyMetaData of %s, the instanceType on attribute 0x%08x,
+            self.report("""ERROR: on replPropertyMetaData of %s, the instanceType on attribute 0x%08x,
                            version %d changed at %s is 00000000-0000-0000-0000-000000000000,
-                           but should be non-zero.  Proposed fix is to set to our invocationID (%s).'''
+                           but should be non-zero.  Proposed fix is to set to our invocationID (%s)."""
                         % (dn, o.attid, o.version,
                            time.ctime(samba.nttime2unix(o.originating_change_time)),
                            self.samdb.get_invocation_id()))
@@ -2326,7 +2326,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         return attrs, lc_attrs
 
     def check_object(self, dn, requested_attrs=None):
-        '''check one object'''
+        """check one object"""
         if self.verbose:
             self.report("Checking object %s" % dn)
 
@@ -2882,7 +2882,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
     ################################################################
     # check special @ROOTDSE attributes
     def check_rootdse(self):
-        '''check the @ROOTDSE special object'''
+        """check the @ROOTDSE special object"""
         dn = ldb.Dn(self.samdb, '@ROOTDSE')
         if self.verbose:
             self.report("Checking object %s" % dn)
@@ -2918,7 +2918,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
     # re-index the database
 
     def reindex_database(self):
-        '''re-index the whole database'''
+        """re-index the whole database"""
         m = ldb.Message()
         m.dn = ldb.Dn(self.samdb, "@ATTRIBUTES")
         m['add']    = ldb.MessageElement('NONE', ldb.FLAG_MOD_ADD, 'force_reindex')
@@ -2928,7 +2928,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
     ###############################################
     # reset @MODULES
     def reset_modules(self):
-        '''reset @MODULES to that needed for current sam.ldb (to read a very old database)'''
+        """reset @MODULES to that needed for current sam.ldb (to read a very old database)"""
         m = ldb.Message()
         m.dn = ldb.Dn(self.samdb, "@MODULES")
         m['@LIST'] = ldb.MessageElement('samba_dsdb', ldb.FLAG_MOD_REPLACE, '@LIST')

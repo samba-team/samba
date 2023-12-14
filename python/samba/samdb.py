@@ -98,7 +98,7 @@ class SamDB(samba.Ldb):
             dsdb._dsdb_set_am_rodc(self, am_rodc)
 
     def connect(self, url=None, flags=0, options=None):
-        '''connect to the database'''
+        """connect to the database"""
         if self.lp is not None and not os.path.exists(url):
             url = self.lp.private_path(url)
         self.url = url
@@ -107,19 +107,19 @@ class SamDB(samba.Ldb):
                                    options=options)
 
     def am_rodc(self):
-        '''return True if we are an RODC'''
+        """return True if we are an RODC"""
         return dsdb._am_rodc(self)
 
     def am_pdc(self):
-        '''return True if we are an PDC emulator'''
+        """return True if we are an PDC emulator"""
         return dsdb._am_pdc(self)
 
     def domain_dn(self):
-        '''return the domain DN'''
+        """return the domain DN"""
         return str(self.get_default_basedn())
 
     def schema_dn(self):
-        '''return the schema partition dn'''
+        """return the schema partition dn"""
         return str(self.get_schema_basedn())
 
     def disable_account(self, search_filter):
@@ -983,29 +983,29 @@ accountExpires: %u
 
     def get_attid_from_lDAPDisplayName(self, ldap_display_name,
                                        is_schema_nc=False):
-        '''return the attribute ID for a LDAP attribute as an integer as found in DRSUAPI'''
+        """return the attribute ID for a LDAP attribute as an integer as found in DRSUAPI"""
         return dsdb._dsdb_get_attid_from_lDAPDisplayName(self,
                                                          ldap_display_name, is_schema_nc)
 
     def get_syntax_oid_from_lDAPDisplayName(self, ldap_display_name):
-        '''return the syntax OID for a LDAP attribute as a string'''
+        """return the syntax OID for a LDAP attribute as a string"""
         return dsdb._dsdb_get_syntax_oid_from_lDAPDisplayName(self, ldap_display_name)
 
     def get_systemFlags_from_lDAPDisplayName(self, ldap_display_name):
-        '''return the systemFlags for a LDAP attribute as a integer'''
+        """return the systemFlags for a LDAP attribute as a integer"""
         return dsdb._dsdb_get_systemFlags_from_lDAPDisplayName(self, ldap_display_name)
 
     def get_linkId_from_lDAPDisplayName(self, ldap_display_name):
-        '''return the linkID for a LDAP attribute as a integer'''
+        """return the linkID for a LDAP attribute as a integer"""
         return dsdb._dsdb_get_linkId_from_lDAPDisplayName(self, ldap_display_name)
 
     def get_lDAPDisplayName_by_attid(self, attid):
-        '''return the lDAPDisplayName from an integer DRS attribute ID'''
+        """return the lDAPDisplayName from an integer DRS attribute ID"""
         return dsdb._dsdb_get_lDAPDisplayName_by_attid(self, attid)
 
     def get_backlink_from_lDAPDisplayName(self, ldap_display_name):
-        '''return the attribute name of the corresponding backlink from the name
-        of a forward link attribute. If there is no backlink return None'''
+        """return the attribute name of the corresponding backlink from the name
+        of a forward link attribute. If there is no backlink return None"""
         return dsdb._dsdb_get_backlink_from_lDAPDisplayName(self, ldap_display_name)
 
     def set_ntds_settings_dn(self, ntds_settings_dn):
@@ -1090,11 +1090,11 @@ schemaUpdateNow: 1
         self.modify_ldif(ldif)
 
     def dsdb_DsReplicaAttribute(self, ldb, ldap_display_name, ldif_elements):
-        '''convert a list of attribute values to a DRSUAPI DsReplicaAttribute'''
+        """convert a list of attribute values to a DRSUAPI DsReplicaAttribute"""
         return dsdb._dsdb_DsReplicaAttribute(ldb, ldap_display_name, ldif_elements)
 
     def dsdb_normalise_attributes(self, ldb, ldap_display_name, ldif_elements):
-        '''normalise a list of attribute values'''
+        """normalise a list of attribute values"""
         return dsdb._dsdb_normalise_attributes(ldb, ldap_display_name, ldif_elements)
 
     def get_attribute_from_attid(self, attid):
@@ -1366,17 +1366,17 @@ schemaUpdateNow: 1
         return seq
 
     def get_dsServiceName(self):
-        '''get the NTDS DN from the rootDSE'''
+        """get the NTDS DN from the rootDSE"""
         res = self.search(base="", scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
         return str(res[0]["dsServiceName"][0])
 
     def get_serverName(self):
-        '''get the server DN from the rootDSE'''
+        """get the server DN from the rootDSE"""
         res = self.search(base="", scope=ldb.SCOPE_BASE, attrs=["serverName"])
         return str(res[0]["serverName"][0])
 
     def dns_lookup(self, dns_name, dns_partition=None):
-        '''Do a DNS lookup in the database, returns the NDR database structures'''
+        """Do a DNS lookup in the database, returns the NDR database structures"""
         if dns_partition is None:
             return dsdb_dns.lookup(self, dns_name)
         else:
@@ -1384,28 +1384,28 @@ schemaUpdateNow: 1
                                    dns_partition=dns_partition)
 
     def dns_extract(self, el):
-        '''Return the NDR database structures from a dnsRecord element'''
+        """Return the NDR database structures from a dnsRecord element"""
         return dsdb_dns.extract(self, el)
 
     def dns_replace(self, dns_name, new_records):
-        '''Do a DNS modification on the database, sets the NDR database
+        """Do a DNS modification on the database, sets the NDR database
         structures on a DNS name
-        '''
+        """
         return dsdb_dns.replace(self, dns_name, new_records)
 
     def dns_replace_by_dn(self, dn, new_records):
-        '''Do a DNS modification on the database, sets the NDR database
+        """Do a DNS modification on the database, sets the NDR database
         structures on a LDB DN
 
         This routine is important because if the last record on the DN
         is removed, this routine will put a tombstone in the record.
-        '''
+        """
         return dsdb_dns.replace_by_dn(self, dn, new_records)
 
     def garbage_collect_tombstones(self, dn, current_time,
                                    tombstone_lifetime=None):
-        '''garbage_collect_tombstones(lp, samdb, [dn], current_time, tombstone_lifetime)
-        -> (num_objects_expunged, num_links_expunged)'''
+        """garbage_collect_tombstones(lp, samdb, [dn], current_time, tombstone_lifetime)
+        -> (num_objects_expunged, num_links_expunged)"""
 
         if not is_ad_dc_built():
             raise SamDBError('Cannot garbage collect tombstones: '
@@ -1420,33 +1420,33 @@ schemaUpdateNow: 1
                                                          tombstone_lifetime)
 
     def create_own_rid_set(self):
-        '''create a RID set for this DSA'''
+        """create a RID set for this DSA"""
         return dsdb._dsdb_create_own_rid_set(self)
 
     def allocate_rid(self):
-        '''return a new RID from the RID Pool on this DSA'''
+        """return a new RID from the RID Pool on this DSA"""
         return dsdb._dsdb_allocate_rid(self)
 
     def next_free_rid(self):
-        '''return the next free RID from the RID Pool on this DSA.
+        """return the next free RID from the RID Pool on this DSA.
 
         :note: This function is not intended for general use, and care must be
             taken if it is used to generate objectSIDs. The returned RID is not
             formally reserved for use, creating the possibility of duplicate
             objectSIDs.
-        '''
+        """
         rid, _ = self.free_rid_bounds()
         return rid
 
     def free_rid_bounds(self):
-        '''return the low and high bounds (inclusive) of RIDs that are
+        """return the low and high bounds (inclusive) of RIDs that are
             available for use in this DSA's current RID pool.
 
         :note: This function is not intended for general use, and care must be
             taken if it is used to generate objectSIDs. The returned range of
             RIDs is not formally reserved for use, creating the possibility of
             duplicate objectSIDs.
-        '''
+        """
         # Get DN of this server's RID Set
         server_name_dn = ldb.Dn(self, self.get_serverName())
         res = self.search(base=server_name_dn,
@@ -1533,13 +1533,13 @@ schemaUpdateNow: 1
         return next_rid, prev_pool_hi
 
     def normalize_dn_in_domain(self, dn):
-        '''return a new DN expanded by adding the domain DN
+        """return a new DN expanded by adding the domain DN
 
         If the dn is already a child of the domain DN, just
         return it as-is.
 
         :param dn: relative dn
-        '''
+        """
         domain_dn = ldb.Dn(self, self.domain_dn())
 
         if isinstance(dn, ldb.Dn):
@@ -1551,10 +1551,10 @@ schemaUpdateNow: 1
         return full_dn
 
 class dsdb_Dn(object):
-    '''a class for binary DN'''
+    """a class for binary DN"""
 
     def __init__(self, samdb, dnstring, syntax_oid=None):
-        '''create a dsdb_Dn'''
+        """create a dsdb_Dn"""
         if syntax_oid is None:
             # auto-detect based on string
             if dnstring.startswith("B:"):
@@ -1582,7 +1582,7 @@ class dsdb_Dn(object):
         return self.prefix + str(self.dn.extended_str(mode=1))
 
     def __cmp__(self, other):
-        ''' compare dsdb_Dn values similar to parsed_dn_compare()'''
+        """ compare dsdb_Dn values similar to parsed_dn_compare()"""
         dn1 = self
         dn2 = other
         guid1 = dn1.dn.get_extended_component("GUID")
@@ -1614,11 +1614,11 @@ class dsdb_Dn(object):
         return self.__cmp__(other) >= 0
 
     def get_binary_integer(self):
-        '''return binary part of a dsdb_Dn as an integer, or None'''
+        """return binary part of a dsdb_Dn as an integer, or None"""
         if self.prefix == '':
             return None
         return int(self.binary, 16)
 
     def get_bytes(self):
-        '''return binary as a byte string'''
+        """return binary as a byte string"""
         return binascii.unhexlify(self.binary)

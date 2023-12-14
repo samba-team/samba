@@ -256,7 +256,7 @@ class RegistryGroupPolicies(object):
         self.samdb.modify(m)
 
     def remove_s(self, json_input):
-        '''remove_s
+        """remove_s
         json_input: JSON list of entries to remove from GPO
 
         Example json_input:
@@ -272,7 +272,7 @@ class RegistryGroupPolicies(object):
                 "class": "USER",
             },
         ]
-        '''
+        """
         self.__validate_json(json_input, remove=True)
         user_pol_data = self.__load_registry_pol(self.pol_file % 'User')
         machine_pol_data = self.__load_registry_pol(self.pol_file % 'Machine')
@@ -298,7 +298,7 @@ class RegistryGroupPolicies(object):
         self.increment_gpt_ini(machine_changed, user_changed)
 
     def merge_s(self, json_input):
-        '''merge_s
+        """merge_s
         json_input: JSON list of entries to merge into GPO
 
         Example json_input:
@@ -318,7 +318,7 @@ class RegistryGroupPolicies(object):
                 "data": "google.com"
             },
         ]
-        '''
+        """
         self.__validate_json(json_input)
         user_pol_data = self.__load_registry_pol(self.pol_file % 'User')
         machine_pol_data = self.__load_registry_pol(self.pol_file % 'Machine')
@@ -344,7 +344,7 @@ class RegistryGroupPolicies(object):
         self.increment_gpt_ini(machine_changed, user_changed)
 
     def replace_s(self, json_input):
-        '''replace_s
+        """replace_s
         json_input: JSON list of entries to replace entries in GPO
 
         Example json_input:
@@ -362,7 +362,7 @@ class RegistryGroupPolicies(object):
                 "data": "google.com"
             },
         ]
-        '''
+        """
         self.__validate_json(json_input)
         user_pol_data = preg.file()
         machine_pol_data = preg.file()

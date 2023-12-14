@@ -64,7 +64,7 @@ def confirm(msg, forced=False, allow_all=False):
 
 
 def normalise_int32(ivalue):
-    '''normalise a ldap integer to signed 32 bit'''
+    """normalise a ldap integer to signed 32 bit"""
     if int(ivalue) & 0x80000000 and int(ivalue) > 0:
         return str(int(ivalue) - 0x100000000)
     return str(ivalue)

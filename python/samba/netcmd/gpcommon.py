@@ -23,7 +23,7 @@ from samba.samba3 import libsmb_samba_internal as libsmb
 from samba.netcmd import CommandError
 
 def get_gpo_dn(samdb, gpo):
-    '''Construct the DN for gpo'''
+    """Construct the DN for gpo"""
 
     dn = samdb.get_default_basedn()
     dn.add_child(ldb.Dn(samdb, "CN=Policies,CN=System"))

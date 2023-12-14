@@ -89,7 +89,7 @@ from samba.gp.gpclass import register_gp_extension, list_gp_extensions, \
 
 
 def gpo_flags_string(value):
-    '''return gpo flags string'''
+    """return gpo flags string"""
     flags = policy.get_gpo_flags(value)
     if not flags:
         ret = 'NONE'
@@ -99,7 +99,7 @@ def gpo_flags_string(value):
 
 
 def gplink_options_string(value):
-    '''return gplink options string'''
+    """return gplink options string"""
     options = policy.get_gplink_options(value)
     if not options:
         ret = 'NONE'
@@ -109,7 +109,7 @@ def gplink_options_string(value):
 
 
 def parse_gplink(gplink):
-    '''parse a gPLink into an array of dn and options'''
+    """parse a gPLink into an array of dn and options"""
     ret = []
 
     if gplink.strip() == '':
@@ -127,14 +127,14 @@ def parse_gplink(gplink):
 
 
 def encode_gplink(gplist):
-    '''Encode an array of dn and options into gPLink string'''
+    """Encode an array of dn and options into gPLink string"""
     ret = "".join("[LDAP://%s;%d]" % (g['dn'], g['options']) for g in gplist)
     return ret
 
 
 def dc_url(lp, creds, url=None, dc=None):
-    '''If URL is not specified, return URL for writable DC.
-    If dc is provided, use that to construct ldap URL'''
+    """If URL is not specified, return URL for writable DC.
+    If dc is provided, use that to construct ldap URL"""
 
     if url is None:
         if dc is None:
@@ -151,7 +151,7 @@ def get_gpo_info(samdb, gpo=None, displayname=None, dn=None,
                            security.SECINFO_GROUP |
                            security.SECINFO_DACL |
                            security.SECINFO_SACL)):
-    '''Get GPO information using gpo, displayname or dn'''
+    """Get GPO information using gpo, displayname or dn"""
 
     policies_dn = samdb.get_default_basedn()
     policies_dn.add_child(ldb.Dn(samdb, "CN=Policies,CN=System"))
@@ -193,7 +193,7 @@ def get_gpo_info(samdb, gpo=None, displayname=None, dn=None,
 
 
 def get_gpo_containers(samdb, gpo):
-    '''lists dn of containers for a GPO'''
+    """lists dn of containers for a GPO"""
 
     search_expr = "(&(objectClass=*)(gPLink=*%s*))" % gpo
     try:
@@ -205,7 +205,7 @@ def get_gpo_containers(samdb, gpo):
 
 
 def del_gpo_link(samdb, container_dn, gpo):
-    '''delete GPO link for the container'''
+    """delete GPO link for the container"""
     # Check if valid Container DN and get existing GPlinks
     try:
         msg = samdb.search(base=container_dn, scope=ldb.SCOPE_BASE,
@@ -243,7 +243,7 @@ def del_gpo_link(samdb, container_dn, gpo):
 
 
 def parse_unc(unc):
-    '''Parse UNC string into a hostname, a service, and a filepath'''
+    """Parse UNC string into a hostname, a service, and a filepath"""
     tmp = []
     if unc.startswith('\\\\'):
         tmp = unc[2:].split('\\', 2)
@@ -419,7 +419,7 @@ class GPOCommand(Command):
         return tmpdir, gpodir
 
     def samdb_connect(self):
-        '''make a ldap connection to the server'''
+        """make a ldap connection to the server"""
         try:
             self.samdb = SamDB(url=self.url,
                                session_info=system_session(),

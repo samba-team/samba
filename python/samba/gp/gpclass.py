@@ -64,7 +64,7 @@ except ImportError:
 
 
 class gp_log:
-    ''' Log settings overwritten by gpo apply
+    """ Log settings overwritten by gpo apply
     The gp_log is an xml file that stores a history of gpo changes (and the
     original setting value).
 
@@ -100,15 +100,15 @@ class gp_log:
     The applylog keeps track of the order in which the GPOs were applied, so
     that they can be rolled back in reverse, returning the machine to the state
     prior to policy application.
-    '''
+    """
     def __init__(self, user, gpostore, db_log=None):
-        ''' Initialize the gp_log
+        """ Initialize the gp_log
         param user          - the username (or machine name) that policies are
                               being applied to
         param gpostore      - the GPOStorage obj which references the tdb which
                               contains gp_logs
         param db_log        - (optional) a string to initialize the gp_log
-        '''
+        """
         self._state = GPOSTATE.APPLY
         self.gpostore = gpostore
         self.username = user
@@ -123,7 +123,7 @@ class gp_log:
             user_obj.attrib['name'] = user
 
     def state(self, value):
-        ''' Policy application state
+        """ Policy application state
         param value         - APPLY, ENFORCE, or UNAPPLY
 
         The behavior of the gp_log depends on whether we are applying policy,
@@ -132,7 +132,7 @@ class gp_log:
         but the gp_log does not change. During an unapply, additions to the log
         should be ignored (since function calls to apply settings are actually
         reverting policy), but removals from the log are allowed.
-        '''
+        """
         # If we're enforcing, but we've unapplied, apply instead
         if value == GPOSTATE.ENFORCE:
             user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
@@ -145,15 +145,15 @@ class gp_log:
             self._state = value
 
     def get_state(self):
-        '''Check the GPOSTATE
-        '''
+        """Check the GPOSTATE
+        """
         return self._state
 
     def set_guid(self, guid):
-        ''' Log to a different GPO guid
+        """ Log to a different GPO guid
         param guid          - guid value of the GPO from which we're applying
                               policy
-        '''
+        """
         self.guid = guid
         user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
         obj = user_obj.find('guid[@value="%s"]' % guid)
@@ -171,12 +171,12 @@ class gp_log:
                 item.attrib['value'] = guid
 
     def store(self, gp_ext_name, attribute, old_val):
-        ''' Store an attribute in the gp_log
+        """ Store an attribute in the gp_log
         param gp_ext_name   - Name of the extension applying policy
         param attribute     - The attribute being modified
         param old_val       - The value of the attribute prior to policy
                               application
-        '''
+        """
         if self._state == GPOSTATE.UNAPPLY or self._state == GPOSTATE.ENFORCE:
             return None
         user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
@@ -193,12 +193,12 @@ class gp_log:
             attr.text = old_val
 
     def retrieve(self, gp_ext_name, attribute):
-        ''' Retrieve a stored attribute from the gp_log
+        """ Retrieve a stored attribute from the gp_log
         param gp_ext_name   - Name of the extension which applied policy
         param attribute     - The attribute being retrieved
         return              - The value of the attribute prior to policy
                               application
-        '''
+        """
         user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
         guid_obj = user_obj.find('guid[@value="%s"]' % self.guid)
         assert guid_obj is not None, "gpo guid was not set"
@@ -210,11 +210,11 @@ class gp_log:
         return None
 
     def retrieve_all(self, gp_ext_name):
-        ''' Retrieve all stored attributes for this user, GPO guid, and CSE
+        """ Retrieve all stored attributes for this user, GPO guid, and CSE
         param gp_ext_name   - Name of the extension which applied policy
         return              - The values of the attributes prior to policy
                               application
-        '''
+        """
         user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
         guid_obj = user_obj.find('guid[@value="%s"]' % self.guid)
         assert guid_obj is not None, "gpo guid was not set"
@@ -225,10 +225,10 @@ class gp_log:
         return {}
 
     def get_applied_guids(self):
-        ''' Return a list of applied ext guids
+        """ Return a list of applied ext guids
         return              - List of guids for gpos that have applied settings
                               to the system.
-        '''
+        """
         guids = []
         user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
         if user_obj is not None:
@@ -242,12 +242,12 @@ class gp_log:
         return guids
 
     def get_applied_settings(self, guids):
-        ''' Return a list of applied ext guids
+        """ Return a list of applied ext guids
         return              - List of tuples containing the guid of a gpo, then
                               a dictionary of policies and their values prior
                               policy application. These are sorted so that the
                               most recently applied settings are removed first.
-        '''
+        """
         ret = []
         user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
         for guid in guids:
@@ -264,11 +264,11 @@ class gp_log:
         return ret
 
     def delete(self, gp_ext_name, attribute):
-        ''' Remove an attribute from the gp_log
+        """ Remove an attribute from the gp_log
         param gp_ext_name   - name of extension from which to remove the
                               attribute
         param attribute     - attribute to remove
-        '''
+        """
         user_obj = self.gpdb.find('user[@name="%s"]' % self.user)
         guid_obj = user_obj.find('guid[@value="%s"]' % self.guid)
         assert guid_obj is not None, "gpo guid was not set"
@@ -281,7 +281,7 @@ class gp_log:
                     guid_obj.remove(ext)
 
     def commit(self):
-        ''' Write gp_log changes to disk '''
+        """ Write gp_log changes to disk """
         self.gpostore.store(self.username, etree.tostring(self.gpdb, 'utf-8'))
 
 
@@ -387,60 +387,60 @@ class gp_xml_ext(gp_ext):
 
 
 class gp_applier(object):
-    '''Group Policy Applier/Unapplier/Modifier
+    """Group Policy Applier/Unapplier/Modifier
     The applier defines functions for monitoring policy application,
     removal, and modification. It must be a multi-derived class paired
     with a subclass of gp_ext.
-    '''
+    """
     __metaclass__ = ABCMeta
 
     def cache_add_attribute(self, guid, attribute, value):
-        '''Add an attribute and value to the Group Policy cache
+        """Add an attribute and value to the Group Policy cache
         guid        - The GPO guid which applies this policy
         attribute   - The attribute name of the policy being applied
         value       - The value of the policy being applied
 
         Normally called by the subclass apply() function after applying policy.
-        '''
+        """
         self.gp_db.set_guid(guid)
         self.gp_db.store(str(self), attribute, value)
         self.gp_db.commit()
 
     def cache_remove_attribute(self, guid, attribute):
-        '''Remove an attribute from the Group Policy cache
+        """Remove an attribute from the Group Policy cache
         guid        - The GPO guid which applies this policy
         attribute   - The attribute name of the policy being unapplied
 
         Normally called by the subclass unapply() function when removing old
         policy.
-        '''
+        """
         self.gp_db.set_guid(guid)
         self.gp_db.delete(str(self), attribute)
         self.gp_db.commit()
 
     def cache_get_attribute_value(self, guid, attribute):
-        '''Retrieve the value stored in the cache for the given attribute
+        """Retrieve the value stored in the cache for the given attribute
         guid        - The GPO guid which applies this policy
         attribute   - The attribute name of the policy
-        '''
+        """
         self.gp_db.set_guid(guid)
         return self.gp_db.retrieve(str(self), attribute)
 
     def cache_get_all_attribute_values(self, guid):
-        '''Retrieve all attribute/values currently stored for this gpo+policy
+        """Retrieve all attribute/values currently stored for this gpo+policy
         guid        - The GPO guid which applies this policy
-        '''
+        """
         self.gp_db.set_guid(guid)
         return self.gp_db.retrieve_all(str(self))
 
     def cache_get_apply_state(self):
-        '''Return the current apply state
+        """Return the current apply state
         return      - APPLY|ENFORCE|UNAPPLY
-        '''
+        """
         return self.gp_db.get_state()
 
     def generate_attribute(self, name, *args):
-        '''Generate an attribute name from arbitrary data
+        """Generate an attribute name from arbitrary data
         name            - A name to ensure uniqueness
         args            - Any arbitrary set of args, str or bytes
         return          - A blake2b digest of the data, the attribute
@@ -449,30 +449,30 @@ class gp_applier(object):
         reproducible and uniquely identifies it. Hashing the name with
         the data ensures we don't falsely identify a match which is the same
         text in a different file. Using this attribute generator is optional.
-        '''
+        """
         data = b''.join([get_bytes(arg) for arg in [*args]])
         return blake2b(get_bytes(name)+data).hexdigest()
 
     def generate_value_hash(self, *args):
-        '''Generate a unique value which identifies value changes
+        """Generate a unique value which identifies value changes
         args            - Any arbitrary set of args, str or bytes
         return          - A blake2b digest of the data, the value represented
-        '''
+        """
         data = b''.join([get_bytes(arg) for arg in [*args]])
         return blake2b(data).hexdigest()
 
     @abstractmethod
     def unapply(self, guid, attribute, value):
-        '''Group Policy Unapply
+        """Group Policy Unapply
         guid            - The GPO guid which applies this policy
         attribute       - The attribute name of the policy being unapplied
         value           - The value of the policy being unapplied
-        '''
+        """
         pass
 
     @abstractmethod
     def apply(self, guid, attribute, applier_func, *args):
-        '''Group Policy Apply
+        """Group Policy Apply
         guid            - The GPO guid which applies this policy
         attribute       - The attribute name of the policy being applied
         applier_func    - An applier function which takes variable args
@@ -483,11 +483,11 @@ class gp_applier(object):
         first unapply any changed policy. See for example calls to
         `cache_get_all_attribute_values()` which searches for all policies
         applied by this GPO for this Client Side Extension (CSE).
-        '''
+        """
         pass
 
     def clean(self, guid, keep=None, remove=None, **kwargs):
-        '''Cleanup old removed attributes
+        """Cleanup old removed attributes
         keep    - A list of attributes to keep
         remove  - A single attribute to remove, or a list of attributes to
                   remove
@@ -495,7 +495,7 @@ class gp_applier(object):
                   function
 
         This is only necessary for CSEs which provide multiple attributes.
-        '''
+        """
         # Clean syntax is, either provide a single remove attribute,
         # or a list of either removal attributes or keep attributes.
         if keep is None:
@@ -516,8 +516,8 @@ class gp_applier(object):
 
 
 class gp_misc_applier(gp_applier):
-    '''Group Policy Miscellaneous Applier/Unapplier/Modifier
-    '''
+    """Group Policy Miscellaneous Applier/Unapplier/Modifier
+    """
 
     def generate_value(self, **kwargs):
         data = etree.Element('data')
@@ -543,10 +543,10 @@ class gp_misc_applier(gp_applier):
 
 
 class gp_file_applier(gp_applier):
-    '''Group Policy File Applier/Unapplier/Modifier
+    """Group Policy File Applier/Unapplier/Modifier
     Subclass of abstract class gp_applier for monitoring policy applied
     via a file.
-    '''
+    """
 
     def __generate_value(self, value_hash, files, sep):
         data = [value_hash]
@@ -554,9 +554,9 @@ class gp_file_applier(gp_applier):
         return sep.join(data)
 
     def __parse_value(self, value, sep):
-        '''Parse a value
+        """Parse a value
         return          - A unique HASH, followed by the file list
-        '''
+        """
         if value is None:
             return None, []
         data = value.split(sep)
@@ -577,13 +577,13 @@ class gp_file_applier(gp_applier):
         self.cache_remove_attribute(guid, attribute)
 
     def apply(self, guid, attribute, value_hash, applier_func, *args, sep=':'):
-        '''
+        """
         applier_func MUST return a list of files created by the applier.
 
         This applier is for policies which only apply to a single file (with
         a couple small exceptions). This applier will remove any policy applied
         by this GPO which doesn't match the new policy.
-        '''
+        """
         # If the policy has changed, unapply, then apply new policy
         old_val = self.cache_get_attribute_value(guid, attribute)
         # Ignore removal if this policy is applied and hasn't changed
@@ -602,7 +602,7 @@ class gp_file_applier(gp_applier):
         self.cache_add_attribute(guid, attribute, new_value)
 
 
-''' Fetch the hostname of a writable DC '''
+""" Fetch the hostname of a writable DC """
 
 
 def get_dc_hostname(creds, lp):
@@ -618,7 +618,7 @@ def get_dc_netbios_hostname(creds, lp):
     return cldap_ret.pdc_name
 
 
-''' Fetch a list of GUIDs for applicable GPOs '''
+""" Fetch a list of GUIDs for applicable GPOs """
 
 
 def get_gpo(samdb, gpo_dn):
@@ -807,7 +807,7 @@ def site_dn_for_machine(samdb, dc_hostname, lp, creds, hostname):
         return site_dn
 
 def get_gpo_list(dc_hostname, creds, lp, username):
-    '''Get the full list of GROUP_POLICY_OBJECTs for a given username.
+    """Get the full list of GROUP_POLICY_OBJECTs for a given username.
     Push GPOs to gpo_list so that the traversal order of the list matches
     the order of application:
     (L)ocal (S)ite (D)omain (O)rganizational(U)nit
@@ -817,7 +817,7 @@ def get_gpo_list(dc_hostname, creds, lp, username):
     pushed in the opposite order of application (OUs first, local last,
     child-to-parent).
     Forced GPOs are appended in the end since they override all others.
-    '''
+    """
     gpo_list = []
     forced_gpo_list = []
     url = 'ldap://' + dc_hostname
@@ -1177,18 +1177,18 @@ def unregister_gp_extension(guid, smb_conf=None):
 
 
 def set_privileges(username, uid, gid):
-    '''
+    """
     Set current process privileges
-    '''
+    """
 
     os.setegid(gid)
     os.seteuid(uid)
 
 
 def drop_privileges(username, func, *args):
-    '''
+    """
     Run supplied function with privileges for specified username.
-    '''
+    """
     current_uid = os.getuid()
 
     if not current_uid == 0:

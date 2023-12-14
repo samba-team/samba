@@ -64,7 +64,7 @@ class NamingContext(object):
         self.nc_type = NCType.unknown
 
     def __str__(self):
-        '''Debug dump string output of class'''
+        """Debug dump string output of class"""
         text = "%s:" % (self.__class__.__name__,) +\
                "\n\tnc_dnstr=%s" % self.nc_dnstr +\
                "\n\tnc_guid=%s" % str(self.nc_guid)
@@ -99,7 +99,7 @@ class NamingContext(object):
         assert self.nc_guid is not None
 
     def is_config(self):
-        '''Return True if NC is config'''
+        """Return True if NC is config"""
         assert self.nc_type != NCType.unknown
         return self.nc_type == NCType.config
 
@@ -198,7 +198,7 @@ class NCReplica(NamingContext):
         NamingContext.__init__(self, nc_dnstr)
 
     def __str__(self):
-        '''Debug dump string output of class'''
+        """Debug dump string output of class"""
         text = "%s:" % self.__class__.__name__ +\
                "\n\tdsa_dnstr=%s" % self.rep_dsa_dnstr +\
                "\n\tdsa_guid=%s" % self.rep_dsa_guid +\
@@ -213,7 +213,7 @@ class NCReplica(NamingContext):
         return "%s\n%s" % (NamingContext.__str__(self), text)
 
     def set_instantiated_flags(self, flags=0):
-        '''Set or clear NC replica instantiated flags'''
+        """Set or clear NC replica instantiated flags"""
         self.rep_instantiated_flags = flags
 
     def identify_by_dsa_attr(self, samdb, attr):
@@ -271,11 +271,11 @@ class NCReplica(NamingContext):
         return self.rep_default
 
     def is_ro(self):
-        '''Return True if NC replica is read only'''
+        """Return True if NC replica is read only"""
         return self.rep_ro
 
     def is_partial(self):
-        '''Return True if NC replica is partial'''
+        """Return True if NC replica is partial"""
         return self.rep_partial
 
     def is_present(self):
@@ -574,7 +574,7 @@ class DirectoryServiceAgent(object):
         self.connect_table = {}
 
     def __str__(self):
-        '''Debug dump string output of class'''
+        """Debug dump string output of class"""
 
         text = "%s:" % self.__class__.__name__
         if self.dsa_dnstr is not None:
@@ -600,16 +600,16 @@ class DirectoryServiceAgent(object):
         return self.current_rep_table.get(nc_dnstr)
 
     def is_istg(self):
-        '''Returns True if dsa is intersite topology generator for it's site'''
+        """Returns True if dsa is intersite topology generator for it's site"""
         # The KCC on an RODC always acts as an ISTG for itself
         return self.dsa_is_istg or self.dsa_is_ro
 
     def is_ro(self):
-        '''Returns True if dsa a read only domain controller'''
+        """Returns True if dsa a read only domain controller"""
         return self.dsa_is_ro
 
     def is_gc(self):
-        '''Returns True if dsa hosts a global catalog'''
+        """Returns True if dsa hosts a global catalog"""
         if (self.options & dsdb.DS_NTDSDSA_OPT_IS_GC) != 0:
             return True
         return False
@@ -850,15 +850,15 @@ class DirectoryServiceAgent(object):
         return answer
 
     def dumpstr_current_replica_table(self):
-        '''Debug dump string output of current replica table'''
+        """Debug dump string output of current replica table"""
         return '\n'.join(str(x) for x in self.current_rep_table)
 
     def dumpstr_needed_replica_table(self):
-        '''Debug dump string output of needed replica table'''
+        """Debug dump string output of needed replica table"""
         return '\n'.join(str(x) for x in self.needed_rep_table)
 
     def dumpstr_connect_table(self):
-        '''Debug dump string output of connect table'''
+        """Debug dump string output of connect table"""
         return '\n'.join(str(x) for x in self.connect_table)
 
     def new_connection(self, options, system_flags, transport, from_dnstr,
@@ -911,7 +911,7 @@ class NTDSConnection(object):
         self.schedule = None
 
     def __str__(self):
-        '''Debug dump string output of NTDSConnection object'''
+        """Debug dump string output of NTDSConnection object"""
 
         text = "%s:\n\tdn=%s" % (self.__class__.__name__, self.dnstr) +\
                "\n\tenabled=%s" % self.enabled +\
@@ -1306,7 +1306,7 @@ class NTDSConnection(object):
         return self.enabled
 
     def get_from_dnstr(self):
-        '''Return fromServer dn string attribute'''
+        """Return fromServer dn string attribute"""
         return self.from_dnstr
 
 
@@ -1450,7 +1450,7 @@ class Partition(NamingContext):
         return needed, ro, partial
 
     def __str__(self):
-        '''Debug dump string output of class'''
+        """Debug dump string output of class"""
         text = "%s" % NamingContext.__str__(self) +\
                "\n\tpartdn=%s" % self.partstr +\
                "".join("\n\tmsDS-NC-Replica-Locations=%s" % k for k in self.rw_location_list) +\
@@ -1717,33 +1717,33 @@ class Site(object):
         return True
 
     def is_intrasite_topology_disabled(self):
-        '''Returns True if intra-site topology is disabled for site'''
+        """Returns True if intra-site topology is disabled for site"""
         return (self.site_options &
                 dsdb.DS_NTDSSETTINGS_OPT_IS_AUTO_TOPOLOGY_DISABLED) != 0
 
     def is_intersite_topology_disabled(self):
-        '''Returns True if inter-site topology is disabled for site'''
+        """Returns True if inter-site topology is disabled for site"""
         return ((self.site_options &
                  dsdb.DS_NTDSSETTINGS_OPT_IS_INTER_SITE_AUTO_TOPOLOGY_DISABLED)
                 != 0)
 
     def is_random_bridgehead_disabled(self):
-        '''Returns True if selection of random bridgehead is disabled'''
+        """Returns True if selection of random bridgehead is disabled"""
         return (self.site_options &
                 dsdb.DS_NTDSSETTINGS_OPT_IS_RAND_BH_SELECTION_DISABLED) != 0
 
     def is_detect_stale_disabled(self):
-        '''Returns True if detect stale is disabled for site'''
+        """Returns True if detect stale is disabled for site"""
         return (self.site_options &
                 dsdb.DS_NTDSSETTINGS_OPT_IS_TOPL_DETECT_STALE_DISABLED) != 0
 
     def is_cleanup_ntdsconn_disabled(self):
-        '''Returns True if NTDS Connection cleanup is disabled for site'''
+        """Returns True if NTDS Connection cleanup is disabled for site"""
         return (self.site_options &
                 dsdb.DS_NTDSSETTINGS_OPT_IS_TOPL_CLEANUP_DISABLED) != 0
 
     def same_site(self, dsa):
-        '''Return True if dsa is in this site'''
+        """Return True if dsa is in this site"""
         if self.get_dsa(dsa.dsa_dnstr):
             return True
         return False
@@ -1754,7 +1754,7 @@ class Site(object):
         return False
 
     def __str__(self):
-        '''Debug dump string output of class'''
+        """Debug dump string output of class"""
         text = "%s:" % self.__class__.__name__ +\
                "\n\tdn=%s" % self.site_dnstr +\
                "\n\toptions=0x%X" % self.site_options +\
@@ -1864,7 +1864,7 @@ class GraphNode(object):
             dsa.new_connection(opt, flags, transport, edge_dnstr, None)
 
     def has_sufficient_edges(self):
-        '''Return True if we have met the maximum "from edges" criteria'''
+        """Return True if we have met the maximum "from edges" criteria"""
         if len(self.edge_from) >= self.max_edges:
             return True
         return False
@@ -1883,7 +1883,7 @@ class Transport(object):
         self.bridgehead_list = []
 
     def __str__(self):
-        '''Debug dump string output of Transport object'''
+        """Debug dump string output of Transport object"""
 
         text = "%s:\n\tdn=%s" % (self.__class__.__name__, self.dnstr) +\
                "\n\tguid=%s" % str(self.guid) +\
@@ -1994,7 +1994,7 @@ class RepsFromTo(object):
                 self.__dict__['dns_name2'] = ndr_blob.ctr.other_info.dns_name2
 
     def __str__(self):
-        '''Debug dump string output of class'''
+        """Debug dump string output of class"""
 
         text = "%s:" % self.__class__.__name__ +\
                "\n\tdnstr=%s" % self.nc_dnstr +\
@@ -2125,7 +2125,7 @@ class SiteLink(object):
         self.site_list = []
 
     def __str__(self):
-        '''Debug dump string output of Transport object'''
+        """Debug dump string output of Transport object"""
 
         text = "%s:\n\tdn=%s" % (self.__class__.__name__, self.dnstr) +\
                "\n\toptions=%d" % self.options +\
