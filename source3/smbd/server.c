@@ -1743,9 +1743,9 @@ extern void build_options(bool screen);
 
 	reopen_logs();
 
-	DBG_STARTUP_NOTICE("smbd version %s started.\n"
-			COPYRIGHT_STARTUP_MESSAGE "\n",
-		samba_version_string());
+	DBG_STARTUP_NOTICE("smbd version %s started.\n%s\n",
+			   samba_version_string(),
+			   samba_copyright_string());
 
 	DEBUG(2,("uid=%d gid=%d euid=%d egid=%d\n",
 		 (int)getuid(),(int)getgid(),(int)geteuid(),(int)getegid()));

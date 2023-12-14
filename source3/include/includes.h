@@ -242,9 +242,6 @@ enum timestamp_set_resolution {
 typedef char fstring[FSTRING_LEN];
 #endif
 
-/* copyright define */
-#include "../lib/util/copyright.h"
-
 /* debug.h need to be included before samba_util.h for the macro SMB_ASSERT */
 #include "../lib/util/debug.h"
 

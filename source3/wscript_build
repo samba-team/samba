@@ -938,8 +938,7 @@ bld.SAMBA3_SUBSYSTEM('PASSCHANGE',
                          ''')
 
 bld.SAMBA3_SUBSYSTEM('SAMBA_VERSION',
-                    source='lib/version.c',
-                    deps='samba-util')
+                    source='lib/version.c')
 
 bld.SAMBA3_SUBSYSTEM('SLCACHE',
                     source='libsmb/samlogon_cache.c',

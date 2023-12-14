@@ -630,10 +630,10 @@ static int binary_smbd_main(TALLOC_CTX *mem_ctx,
 	   so set our umask to 0 */
 	umask(0);
 
-	DBG_STARTUP_NOTICE("%s version %s started.\n"
-			COPYRIGHT_STARTUP_MESSAGE "\n",
-		binary_name,
-		SAMBA_VERSION_STRING);
+	DBG_STARTUP_NOTICE("%s version %s started.\n%s\n",
+			   binary_name,
+			   SAMBA_VERSION_STRING,
+			   SAMBA_COPYRIGHT_STRING);
 
 	if (sizeof(uint16_t) < 2 ||
 			sizeof(uint32_t) < 4 ||

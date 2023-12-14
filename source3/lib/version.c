@@ -25,3 +25,8 @@ const char *samba_version_string(void)
 {
 	return SAMBA_VERSION_STRING;
 }
+
+const char *samba_copyright_string(void)
+{
+	return SAMBA_COPYRIGHT_STRING;
+}
