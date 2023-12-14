@@ -22,3 +22,4 @@
 from .getpassword import cmd_user_getpassword
 from .show import cmd_user_show
 from .syncpasswords import cmd_user_syncpasswords
+from .get_kerberos_ticket import cmd_user_get_kerberos_ticket

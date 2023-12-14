@@ -2744,6 +2744,11 @@
 </refsect3>
 
 <refsect3>
+	<title>user get-kerberos-ticket <replaceable>username</replaceable> [options]</title>
+	<para>Gets a Kerberos Ticket Granting Ticket as the account.</para>
+</refsect3>
+
+<refsect3>
 	<title>user syncpasswords <replaceable>--cache-ldb-initialize</replaceable> [options]</title>
 	<para>Syncs the passwords of all user accounts, using an optional script.</para>
 	<para>Note that this command should run on a single domain controller only

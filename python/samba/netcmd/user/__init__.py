@@ -30,8 +30,10 @@ from .getgroups import cmd_user_getgroups
 from .list import cmd_user_list
 from .move import cmd_user_move
 from .password import cmd_user_password
-from .readpasswords import (cmd_user_getpassword, cmd_user_show,
-                            cmd_user_syncpasswords)
+from .readpasswords import (cmd_user_getpassword,
+                            cmd_user_show,
+                            cmd_user_syncpasswords,
+                            cmd_user_get_kerberos_ticket)
 from .rename import cmd_user_rename
 from .sensitive import cmd_user_sensitive
 from .setexpiry import cmd_user_setexpiry
@@ -57,6 +59,7 @@ class cmd_user(SuperCommand):
     subcommands["setprimarygroup"] = cmd_user_setprimarygroup()
     subcommands["setpassword"] = cmd_user_setpassword()
     subcommands["getpassword"] = cmd_user_getpassword()
+    subcommands["get-kerberos-ticket"] = cmd_user_get_kerberos_ticket()
     subcommands["syncpasswords"] = cmd_user_syncpasswords()
     subcommands["edit"] = cmd_user_edit()
     subcommands["show"] = cmd_user_show()

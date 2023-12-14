@@ -46,7 +46,7 @@ sudo samba-tool user setexpiry User2 --noexpiry
 Example2 shows how to set the account expiration of user User2 so it will never expire.  The user in this example resides on the  local server.   sudo is used so a user may run the command as root.
 
 Example3:
-samba-tool user setexpiry --days=20 --filter=samaccountname=User3
+samba-tool user setexpiry --days=20 --filter='(samaccountname=User3)'
 
 Example3 shows how to set the account expiration date to end of day 20 days from the current day.  The username or sAMAccountName is specified using the --filter= parameter and the username in this example is User3.
 
