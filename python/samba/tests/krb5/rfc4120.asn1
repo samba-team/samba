@@ -1225,13 +1225,6 @@ SignedAttributes ::= SET SIZE (1..256) OF Attribute
 -- UnsignedAttributes ::= SET SIZE (1..MAX) OF Attribute
 UnsignedAttributes ::= SET SIZE (1..256) OF Attribute
 
-Attribute ::= SEQUENCE {
-  attrType OBJECT IDENTIFIER,
-  attrValues SET OF AttributeValue
-}
-
-AttributeValue ::= ANY
-
 SignatureValue ::= OCTET STRING
 
 SignedData ::= SEQUENCE {
@@ -1343,8 +1336,6 @@ RecipientKeyIdentifier ::= SEQUENCE {
   date GeneralizedTime OPTIONAL,
   other OtherKeyAttribute OPTIONAL
 }
-
-SubjectKeyIdentifier ::= OCTET STRING
 
 KEKRecipientInfo ::= SEQUENCE {
   version CMSVersion,  -- always set to 4

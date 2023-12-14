@@ -3717,8 +3717,8 @@ class RawKerberosTest(TestCase):
 
             signed_attr0 = signed_attrs[0]
             self.assertEqual(str(krb5_asn1.id_contentType),
-                             signed_attr0['attrType'])
-            signed_attr0_values = signed_attr0['attrValues']
+                             signed_attr0['type'])
+            signed_attr0_values = signed_attr0['values']
             self.assertEqual(1, len(signed_attr0_values))
             signed_attr0_value = self.der_decode(
                 signed_attr0_values[0],
@@ -3732,8 +3732,8 @@ class RawKerberosTest(TestCase):
 
             signed_attr1 = signed_attrs[1]
             self.assertEqual(str(krb5_asn1.id_messageDigest),
-                             signed_attr1['attrType'])
-            signed_attr1_values = signed_attr1['attrValues']
+                             signed_attr1['type'])
+            signed_attr1_values = signed_attr1['values']
             self.assertEqual(1, len(signed_attr1_values))
             message_digest = self.der_decode(signed_attr1_values[0],
                                              krb5_asn1.MessageDigest())
