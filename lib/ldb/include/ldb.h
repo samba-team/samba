@@ -2054,7 +2054,7 @@ int ldb_msg_element_compare_name(struct ldb_message_element *el1,
    Find elements in a message.
 
    This function finds elements and converts to a specific type, with
-   a give default value if not found. Assumes that elements are
+   a given default value if not found. Assumes that elements are
    single valued.
 */
 const struct ldb_val *ldb_msg_find_ldb_val(const struct ldb_message *msg, const char *attr_name);
