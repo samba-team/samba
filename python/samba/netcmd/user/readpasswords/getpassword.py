@@ -164,7 +164,7 @@ samba-tool user getpassword --filter=samaccountname=TestUser3 --attributes=msDS-
     }
 
     takes_options = [
-        Option("--filter", help="LDAP Filter to set password on", type=str),
+        Option("--filter", help="LDAP Filter to get password for (must match single account)", type=str),
         Option("--attributes", type=str,
                help=virtual_attributes_help,
                metavar="ATTRIBUTELIST", dest="attributes"),
