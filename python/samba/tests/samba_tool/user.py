@@ -324,7 +324,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                              "syncpasswords --no-wait: 'sAMAccountName': %s out[%s]" % (user["name"], out))
             self.assertMatch(out, "# unicodePwd::: REDACTED SECRET ATTRIBUTE",
                              "getpassword '# unicodePwd::: REDACTED SECRET ATTRIBUTE': out[%s]" % out)
-            if expect_nt_hash:
+            if expect_nt_hash or "virtualSambaGPG:: " in out:
                 self.assertMatch(out, "unicodePwd:: %s" % unicodePwd,
                                  "getpassword unicodePwd: out[%s]" % out)
             else:
@@ -349,7 +349,7 @@ class UserCmdTestCase(SambaToolCmdTest):
             self.assertEqual(err, "Got password OK\n", "getpassword without url")
             self.assertMatch(out, "sAMAccountName: %s" % (user["name"]),
                              "getpassword: 'sAMAccountName': %s out[%s]" % (user["name"], out))
-            if expect_nt_hash:
+            if expect_nt_hash or "virtualSambaGPG:: " in out:
                 self.assertMatch(out, "unicodePwd:: %s" % unicodePwd,
                                  "getpassword unicodePwd: out[%s]" % out)
             else:
