@@ -229,6 +229,7 @@ bld.SAMBA3_BINARY('net',
                  net_afs.c
                  net_notify.c
                  net_tdb.c
+                 net_witness.c
                  net_vfs.c
                  ../registry/reg_format.c
                  ../registry/reg_import.c
