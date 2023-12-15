@@ -1556,7 +1556,6 @@ static int shadow_copy2_openat(vfs_handle_struct *handle,
 	struct smb_filename *smb_fname = NULL;
 	time_t timestamp = 0;
 	char *stripped = NULL;
-	bool is_converted = false;
 	int saved_errno = 0;
 	int ret;
 	bool ok;
@@ -1573,26 +1572,15 @@ static int shadow_copy2_openat(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ok = shadow_copy2_strip_snapshot_converted(talloc_tos(),
-						   handle,
-						   smb_fname,
-						   &timestamp,
-						   &stripped,
-						   &is_converted);
+	ok = shadow_copy2_strip_snapshot(talloc_tos(),
+					 handle,
+					 smb_fname,
+					 &timestamp,
+					 &stripped);
 	if (!ok) {
 		return -1;
 	}
 	if (timestamp == 0) {
-		if (is_converted) {
-			/*
-			 * Just pave over the user requested mode and use
-			 * O_RDONLY. Later attempts by the client to write on
-			 * the handle will fail in the pwrite() syscall with
-			 * EINVAL which we carefully map to EROFS. In sum, this
-			 * matches Windows behaviour.
-			 */
-			how.flags &= ~(O_WRONLY | O_RDWR | O_CREAT);
-		}
 		return SMB_VFS_NEXT_OPENAT(handle,
 					   dirfsp,
 					   smb_fname_in,
@@ -1612,14 +1600,6 @@ static int shadow_copy2_openat(vfs_handle_struct *handle,
 		return -1;
 	}
 	TALLOC_FREE(stripped);
-
-	/*
-	 * Just pave over the user requested mode and use O_RDONLY. Later
-	 * attempts by the client to write on the handle will fail in the
-	 * pwrite() syscall with EINVAL which we carefully map to EROFS. In sum,
-	 * this matches Windows behaviour.
-	 */
-	how.flags &= ~(O_WRONLY | O_RDWR | O_CREAT);
 
 	ret = SMB_VFS_NEXT_OPENAT(handle,
 				  dirfsp,
