@@ -1,6 +1,6 @@
 /* need access mask/acl implementation */
 
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    endpoint server for the lsarpc pipe
@@ -5292,8 +5292,8 @@ static WERROR dcesrv_dssetup_DsRoleGetDcOperationProgress(struct dcesrv_call_sta
 }
 
 
-/* 
-  dssetup_DsRoleGetDcOperationResults 
+/*
+  dssetup_DsRoleGetDcOperationResults
 */
 static WERROR dcesrv_dssetup_DsRoleGetDcOperationResults(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					    struct dssetup_DsRoleGetDcOperationResults *r)
@@ -5302,8 +5302,8 @@ static WERROR dcesrv_dssetup_DsRoleGetDcOperationResults(struct dcesrv_call_stat
 }
 
 
-/* 
-  dssetup_DsRoleCancel 
+/*
+  dssetup_DsRoleCancel
 */
 static WERROR dcesrv_dssetup_DsRoleCancel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			     struct dssetup_DsRoleCancel *r)
