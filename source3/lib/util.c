@@ -675,12 +675,19 @@ gid_t nametogid(const char *name)
  Something really nasty happened - panic !
 ********************************************************************/
 
-void smb_panic_s3(const char *why)
+static void call_panic_action(const char *why, bool as_root)
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	char *cmd;
 	int result;
+
+	cmd = lp_panic_action(talloc_tos(), lp_sub);
+	if (cmd == NULL || cmd[0] == '\0') {
+		return;
+	}
+
+	DBG_ERR("Calling panic action [%s]\n", cmd);
 
 #if defined(HAVE_PRCTL) && defined(PR_SET_PTRACER)
 	/*
@@ -689,19 +696,27 @@ void smb_panic_s3(const char *why)
 	prctl(PR_SET_PTRACER, getpid(), 0, 0, 0);
 #endif
 
-	cmd = lp_panic_action(talloc_tos(), lp_sub);
-	if (cmd && *cmd) {
-		DEBUG(0, ("smb_panic(): calling panic action [%s]\n", cmd));
-		result = system(cmd);
-
-		if (result == -1)
-			DEBUG(0, ("smb_panic(): fork failed in panic action: %s\n",
-					  strerror(errno)));
-		else
-			DEBUG(0, ("smb_panic(): action returned status %d\n",
-					  WEXITSTATUS(result)));
+	if (as_root) {
+		become_root();
 	}
 
+	result = system(cmd);
+
+	if (as_root) {
+		unbecome_root();
+	}
+
+	if (result == -1)
+		DBG_ERR("fork failed in panic action: %s\n",
+			strerror(errno));
+	else
+		DBG_ERR("action returned status %d\n",
+			WEXITSTATUS(result));
+}
+
+void smb_panic_s3(const char *why)
+{
+	call_panic_action(why, false);
 	dump_core();
 }
 
