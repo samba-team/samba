@@ -1,0 +1,5 @@
+# These tests will pass once gMSA support appears
+^samba.tests.samba_tool.user_get_kerberos_ticket.samba.tests.samba_tool.user_get_kerberos_ticket.GetKerberosTiketTest.test_gmsa_ticket.ad_dc:local
+^samba.tests.samba_tool.user_get_kerberos_ticket.samba.tests.samba_tool.user_get_kerberos_ticket.GetKerberosTiketTest.test_gmsa_ticket.ad_dc_no_ntlm:local
+# This test could be fixed by reading the AES keys in supplementalCrednetials, not just the unicodePwd
+^samba.tests.samba_tool.user_get_kerberos_ticket.samba.tests.samba_tool.user_get_kerberos_ticket.GetKerberosTiketTest.test_user_ticket.ad_dc_no_ntlm:local

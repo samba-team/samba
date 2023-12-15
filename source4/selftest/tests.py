@@ -1156,6 +1156,8 @@ for env, nt_hash in [("ad_dc:local", True),
                      ("ad_dc_no_ntlm:local", False)]:
     planpythontestsuite(env, "samba.tests.samba_tool.user",
                         environ={"EXPECT_NT_HASH": int(nt_hash)})
+    # test get-kerberos-ticket for locally accessible and group managed service accounts
+    planpythontestsuite(env, "samba.tests.samba_tool.user_get_kerberos_ticket")
     planpythontestsuite(env, "samba.tests.samba_tool.user_virtualCryptSHA_userPassword")
     planpythontestsuite(env, "samba.tests.samba_tool.user_virtualCryptSHA_gpg")
 planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.user_check_password_script")
