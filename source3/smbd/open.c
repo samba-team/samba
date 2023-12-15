@@ -3629,7 +3629,8 @@ static int disposition_to_open_flags(uint32_t create_disposition)
 }
 
 static int calculate_open_access_flags(uint32_t access_mask,
-				       uint32_t private_flags)
+				       uint32_t private_flags,
+				       NTTIME twrp)
 {
 	bool need_write, need_read;
 
@@ -3637,6 +3638,15 @@ static int calculate_open_access_flags(uint32_t access_mask,
 	 * Note that we ignore the append flag as append does not
 	 * mean the same thing under DOS and Unix.
 	 */
+
+	if (twrp != 0) {
+		/*
+		 * Pave over the user requested mode and force O_RDONLY for the
+		 * file handle. Windows allows opening a VSS file with O_RDWR,
+		 * even though actual writes on the handle will fail.
+		 */
+		return O_RDONLY;
+	}
 
 	need_write = (access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA));
 	if (!need_write) {
@@ -3803,6 +3813,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	bool posix_open = False;
 	bool new_file_created = False;
 	bool first_open_attempt = true;
+	bool is_twrp = (smb_fname_atname->twrp != 0);
 	NTSTATUS fsp_open = NT_STATUS_ACCESS_DENIED;
 	mode_t new_unx_mode = (mode_t)0;
 	mode_t unx_mode = (mode_t)0;
@@ -3962,6 +3973,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					 smb_fname_str_dbg(smb_fname) ));
 				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			}
+			if (is_twrp) {
+				return NT_STATUS_MEDIA_WRITE_PROTECTED;
+			}
 			break;
 
 		case FILE_CREATE:
@@ -3977,11 +3991,24 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				}
 				return NT_STATUS_OBJECT_NAME_COLLISION;
 			}
+			if (is_twrp) {
+				return NT_STATUS_MEDIA_WRITE_PROTECTED;
+			}
 			break;
 
 		case FILE_SUPERSEDE:
 		case FILE_OVERWRITE_IF:
+			if (is_twrp) {
+				return NT_STATUS_MEDIA_WRITE_PROTECTED;
+			}
+			break;
 		case FILE_OPEN_IF:
+			if (is_twrp) {
+				if (!file_existed) {
+					return NT_STATUS_MEDIA_WRITE_PROTECTED;
+				}
+				create_disposition = FILE_OPEN;
+			}
 			break;
 		default:
 			return NT_STATUS_INVALID_PARAMETER;
@@ -4054,7 +4081,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * mean the same thing under DOS and Unix.
 	 */
 
-	flags |= calculate_open_access_flags(access_mask, private_flags);
+	flags |= calculate_open_access_flags(access_mask,
+					     private_flags,
+					     smb_fname->twrp);
 
 	/*
 	 * Currently we only look at FILE_WRITE_THROUGH for create options.
@@ -4785,6 +4814,10 @@ static NTSTATUS open_directory(connection_struct *conn,
 				return status;
 			}
 
+			if (smb_fname_atname->twrp != 0) {
+				return NT_STATUS_MEDIA_WRITE_PROTECTED;
+			}
+
 			status = mkdir_internal(conn,
 						parent_dir_fname,
 						smb_fname_atname,
@@ -4813,6 +4846,9 @@ static NTSTATUS open_directory(connection_struct *conn,
 				status = NT_STATUS_OK;
 				info = FILE_WAS_OPENED;
 			} else {
+				if (smb_fname_atname->twrp != 0) {
+					return NT_STATUS_MEDIA_WRITE_PROTECTED;
+				}
 				status = mkdir_internal(conn,
 							parent_dir_fname,
 							smb_fname_atname,
