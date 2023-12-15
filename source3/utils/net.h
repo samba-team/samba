@@ -99,6 +99,7 @@ struct net_context {
 	int opt_witness_apply_to_all;
 	const char *opt_witness_new_ip;
 	int opt_witness_new_node;
+	const char *opt_witness_forced_response;
 
 	int opt_have_ip;
 	struct sockaddr_storage opt_dest_ip;

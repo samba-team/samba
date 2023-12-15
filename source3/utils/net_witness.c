@@ -1698,6 +1698,610 @@ out:
 	return ret;
 }
 
+struct net_witness_force_response_state {
+	struct net_context *c;
+	struct rpcd_witness_registration_updateB m;
+#ifdef HAVE_JANSSON
+	struct json_object json_root;
+#endif /* HAVE_JANSSON */
+	char *headline;
+};
+
+#ifdef HAVE_JANSSON
+static NTSTATUS net_witness_force_response_parse_rc(
+	struct net_witness_force_response_state *state,
+	json_t *jsmsg,
+	TALLOC_CTX *mem_ctx,
+	size_t mi,
+	union witness_notifyResponse_message *message)
+{
+	struct witness_ResourceChange *rc = &message->resource_change;
+	json_t *jsctype = NULL;
+	json_int_t ctype;
+	json_t *jscname = NULL;
+	const char *cname = NULL;
+
+	if (!json_is_object(jsmsg)) {
+		DBG_ERR("'message[%zu]' needs to be an object\n", mi);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	jsctype = json_object_get(jsmsg, "type");
+	if (jsctype == NULL) {
+		DBG_ERR("%s: INVALID_PARAMETER\n", __location__);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	if (!json_is_integer(jsctype)) {
+		DBG_ERR("%s: INVALID_PARAMETER\n", __location__);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	ctype = json_integer_value(jsctype);
+
+	jscname = json_object_get(jsmsg, "name");
+	if (jscname == NULL) {
+		DBG_ERR("%s: INVALID_PARAMETER\n", __location__);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	if (!json_is_string(jscname)) {
+		DBG_ERR("%s: INVALID_PARAMETER\n", __location__);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	cname = json_string_value(jscname);
+
+	rc->type = ctype;
+	rc->name = talloc_strdup(mem_ctx, cname);
+	if (rc->name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS net_witness_force_response_parse_ipl(
+	struct net_witness_force_response_state *state,
+	json_t *jsmsg,
+	TALLOC_CTX *mem_ctx,
+	size_t mi,
+	union witness_notifyResponse_message *message)
+{
+	struct witness_IPaddrInfoList *ipl =
+		&message->client_move;
+	size_t ai, num_addrs = 0;
+	struct witness_IPaddrInfo *addrs = NULL;
+
+	if (!json_is_array(jsmsg)) {
+		DBG_ERR("'messages[%zu]' needs to be an array\n", mi);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	num_addrs = json_array_size(jsmsg);
+	if (num_addrs > UINT32_MAX) {
+		DBG_ERR("Too many elements in 'messages[%zu]': %zu\n",
+			mi, num_addrs);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	addrs = talloc_zero_array(mem_ctx,
+				  struct witness_IPaddrInfo,
+				  num_addrs);
+	if (addrs == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (ai = 0; ai < num_addrs; ai++) {
+		struct witness_IPaddrInfo *info =
+			&addrs[ai];
+		json_t *jsaddr = json_array_get(jsmsg, ai);
+		json_t *jsflags = NULL;
+		json_int_t flags;
+		json_t *jsipv4 = NULL;
+		const char *ipv4 = NULL;
+		json_t *jsipv6 = NULL;
+		const char *ipv6 = NULL;
+
+		if (!json_is_object(jsaddr)) {
+			DBG_ERR("'messages[%zu][%zu]' needs to be an object\n",
+				mi, ai);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		jsflags = json_object_get(jsaddr, "flags");
+		if (jsflags == NULL) {
+			DBG_ERR("'messages[%zu][%zu]['flags']' missing\n",
+				mi, ai);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		if (!json_is_integer(jsflags)) {
+			DBG_ERR("'messages[%zu][%zu]['flags']' "
+				"needs to be an integer\n",
+				mi, ai);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		flags = json_integer_value(jsflags);
+
+		jsipv4 = json_object_get(jsaddr, "ipv4");
+		if (jsipv4 != NULL) {
+			if (!json_is_string(jsipv4)) {
+				DBG_ERR("'messages[%zu][%zu]['ipv4']' "
+					"needs to be a string\n",
+					mi, ai);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			ipv4 = json_string_value(jsipv4);
+			if (!is_ipaddress_v4(ipv4)) {
+				DBG_ERR("'messages[%zu][%zu]['ipv4']' "
+					"needs to be a valid ipv4 address\n",
+					mi, ai);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+		} else {
+			ipv4 = "0.0.0.0";
+		}
+
+		jsipv6 = json_object_get(jsaddr, "ipv6");
+		if (jsipv6 != NULL) {
+			if (!json_is_string(jsipv6)) {
+				DBG_ERR("'messages[%zu][%zu]['ipv6']' "
+					"needs to be a string\n",
+					mi, ai);
+				DBG_ERR("%s: INVALID_PARAMETER\n", __location__);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			ipv6 = json_string_value(jsipv6);
+			if (!is_ipaddress_v6(ipv6)) {
+				DBG_ERR("'messages[%zu][%zu]['ipv4']' "
+					"needs to be a valid ipv6 address\n",
+					mi, ai);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+		} else {
+			ipv6 = "::";
+		}
+
+		info->flags = flags;
+		info->ipv4 = talloc_strdup(addrs, ipv4);
+		if (info->ipv4 == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		info->ipv6 = talloc_strdup(addrs, ipv6);
+		if (info->ipv6 == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	ipl->num = num_addrs;
+	ipl->addr = addrs;
+
+	return NT_STATUS_OK;
+}
+#endif /* HAVE_JANSSON */
+
+static NTSTATUS net_witness_force_response_parse(struct net_witness_force_response_state *state)
+{
+#ifdef HAVE_JANSSON
+	struct net_context *c = state->c;
+	struct rpcd_witness_registration_update_force_response *force = NULL;
+	struct witness_notifyResponse *response = NULL;
+	size_t mi, num_messages = 0;
+	union witness_notifyResponse_message *messages = NULL;
+	json_t *jsroot = NULL;
+	json_t *jsresult = NULL;
+	json_t *jsresponse = NULL;
+	json_t *jstype = NULL;
+	json_t *jsmessages = NULL;
+
+	if (c->opt_witness_forced_response != NULL) {
+		const char *str = c->opt_witness_forced_response;
+		size_t flags = JSON_REJECT_DUPLICATES;
+		json_error_t jserror;
+
+		jsroot = json_loads(str, flags, &jserror);
+		if (jsroot == NULL) {
+			DBG_ERR("Invalid JSON in "
+				"--witness-forced-response='%s'\n",
+				str);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		state->json_root = (struct json_object) {
+			.root = jsroot,
+			.valid = true,
+		};
+	}
+
+	state->m.type = RPCD_WITNESS_REGISTRATION_UPDATE_FORCE_RESPONSE;
+	force = &state->m.update.force_response;
+	force->response = NULL;
+	force->result = WERR_OK;
+
+	if (jsroot == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	jsresult = json_object_get(jsroot, "result");
+	if (jsresult != NULL) {
+		int val_type = json_typeof(jsresult);
+
+		switch (val_type) {
+		case JSON_INTEGER: {
+			json_int_t val = json_integer_value(jsresult);
+
+			if (val > UINT32_MAX) {
+				DBG_ERR("Invalid 'result' value: %d\n",
+					(int) val);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			if (val < 0) {
+				DBG_ERR("invalid 'result' value: %d\n",
+					(int) val);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			force->result = W_ERROR(val);
+			}; break;
+		default:
+			DBG_ERR("Invalid json type for 'result' - needs integer\n");
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+
+	jsresponse = json_object_get(jsroot, "response");
+	if (jsresponse == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	if (!json_is_object(jsresponse)) {
+		DBG_ERR("Invalid json type 'response' needs object\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	response = talloc_zero(talloc_tos(), struct witness_notifyResponse);
+	if (response == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	jstype = json_object_get(jsresponse, "type");
+	if (jstype == NULL) {
+		DBG_ERR("Missing 'type' element in 'response'\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	{
+		int val_type = json_typeof(jstype);
+
+		switch (val_type) {
+		case JSON_INTEGER: {
+			json_int_t val = json_integer_value(jstype);
+
+			if (val > WITNESS_NOTIFY_IP_CHANGE) {
+				DBG_ERR("invalid 'type' value in 'response': "
+					"%d\n", (int) val);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			if (val < WITNESS_NOTIFY_RESOURCE_CHANGE) {
+				DBG_ERR("invalid 'type' value in 'response': "
+					"%d\n", (int) val);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			response->type = val;
+			}; break;
+		default:
+			DBG_ERR("Invalid json type for 'type' in 'response' "
+				"- needs integer\n");
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+
+	force->response = response;
+
+	jsmessages = json_object_get(jsresponse, "messages");
+	if (jsmessages == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	if (!json_is_array(jsmessages)) {
+		DBG_ERR("'messages' in 'response' needs to be an array\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	num_messages = json_array_size(jsmessages);
+	if (num_messages > UINT32_MAX) {
+		DBG_ERR("Too many elements in 'messages': %zu\n",
+			num_messages);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	messages = talloc_zero_array(response,
+				     union witness_notifyResponse_message,
+				     num_messages);
+	if (messages == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (mi = 0; mi < num_messages; mi++) {
+		json_t *jsmsg = json_array_get(jsmessages, mi);
+		union witness_notifyResponse_message *message = &messages[mi];
+		NTSTATUS status;
+
+		switch (response->type) {
+		case WITNESS_NOTIFY_RESOURCE_CHANGE:
+			status = net_witness_force_response_parse_rc(state,
+								     jsmsg,
+								     messages,
+								     mi,
+								     message);
+			if (!NT_STATUS_IS_OK(status)) {
+				const char *fn =
+					"net_witness_force_response_parse_rc";
+				DBG_ERR("%s failed: %s\n",
+					fn, nt_errstr(status));
+				return status;
+			}
+
+			break;
+		case WITNESS_NOTIFY_CLIENT_MOVE:
+		case WITNESS_NOTIFY_SHARE_MOVE:
+		case WITNESS_NOTIFY_IP_CHANGE:
+			status = net_witness_force_response_parse_ipl(state,
+								      jsmsg,
+								      messages,
+								      mi,
+								      message);
+			if (!NT_STATUS_IS_OK(status)) {
+				const char *fn =
+					"net_witness_force_response_parse_ipl";
+				DBG_ERR("%s failed: %s\n",
+					fn, nt_errstr(status));
+				return status;
+			}
+
+			break;
+		}
+	}
+
+	response->num = num_messages;
+	response->messages = messages;
+
+	return NT_STATUS_OK;
+#else /* not HAVE_JANSSON */
+	d_fprintf(stderr, _("JSON support not available\n"));
+	return NT_STATUS_NOT_IMPLEMENTED;
+#endif /* not HAVE_JANSSON */
+}
+
+static bool net_witness_force_response_prepare_fn(void *private_data)
+{
+	struct net_witness_force_response_state *state =
+		(struct net_witness_force_response_state *)private_data;
+
+	if (state->headline != NULL) {
+		d_printf("%s\n", state->headline);
+		TALLOC_FREE(state->headline);
+	}
+
+	return true;
+}
+
+static bool net_witness_force_response_match_fn(void *private_data,
+			const struct rpcd_witness_registration *rg)
+{
+	return true;
+}
+
+static NTSTATUS net_witness_force_response_process_fn(void *private_data,
+			const struct rpcd_witness_registration *rg)
+{
+	struct net_witness_force_response_state *state =
+		(struct net_witness_force_response_state *)private_data;
+	struct net_context *c = state->c;
+	struct rpcd_witness_registration_updateB update = {
+		.context_handle = rg->context_handle,
+		.type = state->m.type,
+		.update = state->m.update,
+	};
+	DATA_BLOB blob = { .length = 0, };
+	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+
+	SMB_ASSERT(update.type != 0);
+
+	if (DEBUGLVL(DBGLVL_DEBUG)) {
+		NDR_PRINT_DEBUG(rpcd_witness_registration_updateB, &update);
+	}
+
+	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), &update,
+			(ndr_push_flags_fn_t)ndr_push_rpcd_witness_registration_updateB);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DBG_ERR("ndr_push_struct_blob - %s\n", nt_errstr(status));
+		return status;
+	}
+
+	status = messaging_send(c->msg_ctx,
+				rg->server_id,
+				MSG_RPCD_WITNESS_REGISTRATION_UPDATE,
+				&blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("messaging_send() - %s\n", nt_errstr(status));
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static void net_witness_force_response_usage(void)
+{
+	d_printf("%s\n"
+		 "net witness force-response\n"
+		 "    %s\n\n",
+		 _("Usage:"),
+		 _("Force an AsyncNotify response based on "
+		   "json input (mostly for testing)"));
+	net_witness_filter_usage();
+	net_witness_update_usage();
+	d_printf("    Note this is designed for testing and debugging!\n"
+		 "\n"
+		 "    In short it is not designed to be used by "
+		     "administrators,\n"
+		 "    but developers and automated tests.\n"
+		 "\n"
+		 "    By default an empty response with WERR_OK is generated,\n"
+		 "    but basically any valid response can be specified by a\n"
+		 "    specifying a JSON string:\n"
+		 "\n"
+		 "        --witness-forced-response=JSON\n"
+		 "          This allows the generation of very complex\n"
+		 "          witness_notifyResponse structures.\n"
+		 "\n"
+		 "    As this is for developers, please read the code\n"
+		 "    in order to understand all possible values\n"
+		 "    of the JSON string format...\n"
+		 "\n"
+		 "    Simple examples are:\n"
+		 "\n"
+		 "# Resource Change:\n%s\n"
+		 "\n"
+		 "# Client Move:\n%s\n"
+		 "\n"
+		 "# Share Move:\n%s\n"
+		 "\n"
+		 "# IP Change:\n%s\n"
+		 "\n",
+			"'{ \"result\": 0, \"response\": { \"type\": 1, "
+				"\"messages\": [ { "
+					"\"type\": 255 , "
+					"\"name\": \"some-resource-name\" "
+				"} ]"
+			"}}'",
+			"'{ \"result\": 0, \"response\": { \"type\": 2, "
+				"\"messages\": ["
+					"[{ "
+						"\"flags\": 9, "
+						"\"ipv4\": \"10.0.10.1\" "
+					"}]"
+				"]"
+			"}}'",
+			"'{ \"result\": 0, \"response\": { \"type\": 3, "
+				"\"messages\": ["
+					"[{ "
+						"\"flags\": 9, "
+						"\"ipv4\": \"10.0.10.1\" "
+					"}]"
+				"]"
+			"}}'",
+			"'{ \"result\": 0, \"response\": { \"type\": 4, "
+				"\"messages\": ["
+					"[{ "
+						"\"flags\": 9, "
+						"\"ipv4\": \"10.0.10.1\" "
+					"}]"
+				"]"
+			"}}'");
+}
+
+static int net_witness_force_response(struct net_context *c, int argc, const char **argv)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct net_witness_force_response_state state = { .c = c, };
+#ifdef HAVE_JANSSON
+	struct json_object _message_json = json_empty_object;
+#endif /* HAVE_JANSSON */
+	struct json_object *message_json = NULL;
+	struct net_witness_scan_registrations_action_state action = {
+		.prepare_fn = net_witness_force_response_prepare_fn,
+		.match_fn = net_witness_force_response_match_fn,
+		.process_fn = net_witness_force_response_process_fn,
+		.private_data = &state,
+	};
+	NTSTATUS status;
+	int ret = -1;
+	bool ok;
+
+	if (c->display_usage) {
+		net_witness_force_response_usage();
+		goto out;
+	}
+
+	if (argc != 0) {
+		net_witness_force_response_usage();
+		goto out;
+	}
+
+	if (!lp_clustering()) {
+		d_printf("ERROR: Only supported with clustering=yes!\n\n");
+		goto out;
+	}
+
+	ok = net_witness_verify_update_options(c);
+	if (!ok) {
+		goto out;
+	}
+
+	status = net_witness_force_response_parse(&state);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("net_witness_force_response_parse failed: %s\n",
+			nt_errstr(status));
+		goto out;
+	}
+
+	state.headline = talloc_asprintf(frame, "FORCE_RESPONSE:%s%s",
+					 c->opt_witness_forced_response != NULL ?
+					 " " : "",
+					 c->opt_witness_forced_response != NULL ?
+					 c->opt_witness_forced_response : "");
+
+	if (state.headline == NULL) {
+		goto out;
+	}
+
+#ifdef HAVE_JANSSON
+	if (c->opt_json) {
+		TALLOC_FREE(state.headline);
+
+		_message_json = json_new_object();
+		if (json_is_invalid(&_message_json)) {
+			goto out;
+		}
+
+		ret = json_add_string(&_message_json,
+				      "type",
+				      "FORCE_RESPONSE");
+		if (ret != 0) {
+			goto out;
+		}
+
+		if (!json_is_invalid(&state.json_root)) {
+			ret = json_add_object(&_message_json,
+					      "json",
+					      &state.json_root);
+			if (ret != 0) {
+				goto out;
+			}
+			state.json_root = json_empty_object;
+		}
+		message_json = &_message_json;
+	}
+#endif /* HAVE_JANSSON */
+
+	ret = net_witness_scan_registrations(c, message_json, &action);
+	if (ret != 0) {
+		d_printf("net_witness_scan_registrations() failed\n");
+		goto out;
+	}
+
+	ret = 0;
+out:
+#ifdef HAVE_JANSSON
+	if (!json_is_invalid(&_message_json)) {
+		json_free(&_message_json);
+	}
+	if (!json_is_invalid(&state.json_root)) {
+		json_free(&state.json_root);
+	}
+#endif /* HAVE_JANSSON */
+	TALLOC_FREE(frame);
+	return ret;
+}
+
 int net_witness(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
@@ -1739,6 +2343,16 @@ int net_witness(struct net_context *c, int argc, const char **argv)
 			N_("net witness force-unregister\n"
 			   "    Force unregistrations for "
 			       "witness registrations"),
+		},
+		{
+			"force-response",
+			net_witness_force_response,
+			NET_TRANSPORT_LOCAL,
+			N_("Force an AsyncNotify response based on "
+			   "json input (mostly for testing)"),
+			N_("net witness force-reponse\n"
+			   "    Force an AsyncNotify response based on "
+			       "json input (mostly for testing)"),
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};

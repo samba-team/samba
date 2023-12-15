@@ -1290,6 +1290,12 @@ static struct functable net_func[] = {
 			.argInfo    = POPT_ARG_INT,
 			.arg        = &c->opt_witness_new_node,
 		},
+		{
+			.longName   = "witness-forced-response",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &c->opt_witness_forced_response,
+		},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
