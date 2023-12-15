@@ -288,6 +288,93 @@ failure:
 	return -1;
 }
 
+static int add_channel_to_json(struct json_object *parent_json,
+			       const struct smbXsrv_channel_global0 *channel)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct json_object sub_json;
+	char *id_str = NULL;
+	struct timeval tv;
+	struct timeval_buf tv_buf;
+	char *time_str = NULL;
+	int result;
+
+	sub_json = json_new_object();
+	if (json_is_invalid(&sub_json)) {
+		goto failure;
+	}
+
+	id_str = talloc_asprintf(frame, "%"PRIu64"", channel->channel_id);
+	if (id_str == NULL) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "channel_id", id_str);
+	if (result < 0) {
+		goto failure;
+	}
+	nttime_to_timeval(&tv, channel->creation_time);
+	time_str = timeval_str_buf(&tv, true, true, &tv_buf);
+	if (time_str == NULL) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "creation_time", time_str);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "local_address", channel->local_address);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "remote_address", channel->remote_address);
+	if (result < 0) {
+		goto failure;
+	}
+
+	result = json_add_object(parent_json, id_str, &sub_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	TALLOC_FREE(frame);
+	return 0;
+failure:
+	json_free(&sub_json);
+	TALLOC_FREE(frame);
+	return -1;
+}
+
+static int add_channels_to_json(struct json_object *parent_json,
+				const struct smbXsrv_session_global0 *global)
+{
+	struct json_object sub_json;
+	uint32_t i;
+	int result;
+
+	sub_json = json_new_object();
+	if (json_is_invalid(&sub_json)) {
+		goto failure;
+	}
+
+	for (i = 0; i < global->num_channels; i++) {
+		const struct smbXsrv_channel_global0 *c = &global->channels[i];
+
+		result = add_channel_to_json(&sub_json, c);
+		if (result < 0) {
+			goto failure;
+		}
+	}
+
+	result = json_add_object(parent_json, "channels", &sub_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	return 0;
+failure:
+	json_free(&sub_json);
+	return -1;
+}
+
 int traverse_connections_json(struct traverse_state *state,
 			      const struct connections_data *crec,
 			      const char *encryption_cipher,
@@ -464,6 +551,11 @@ int traverse_sessionid_json(struct traverse_state *state,
 	}
 	result = add_crypto_to_json(&sub_json, "signing",
 				    signing_cipher, signing_degree);
+	if (result < 0) {
+		goto failure;
+	}
+
+	result = add_channels_to_json(&sub_json, session->global);
 	if (result < 0) {
 		goto failure;
 	}
