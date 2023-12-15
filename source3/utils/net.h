@@ -96,6 +96,9 @@ struct net_context {
 	const char *opt_witness_share_name;
 	const char *opt_witness_ip_address;
 	const char *opt_witness_client_computer_name;
+	int opt_witness_apply_to_all;
+	const char *opt_witness_new_ip;
+	int opt_witness_new_node;
 
 	int opt_have_ip;
 	struct sockaddr_storage opt_dest_ip;

@@ -264,6 +264,17 @@ static bool net_witness_scan_registrations_init(
 			}
 		}
 
+		if (c->opt_witness_apply_to_all != 0) {
+			int ret;
+
+			ret = json_add_bool(&state->filters_json,
+					    "--witness-apply-to-all",
+					    c->opt_witness_apply_to_all != 0);
+			if (ret != 0) {
+				return false;
+			}
+		}
+
 		state->registrations_json = json_new_object();
 		if (json_is_invalid(&state->registrations_json)) {
 			return false;
@@ -940,6 +951,586 @@ out:
 	return ret;
 }
 
+struct net_witness_client_move_state {
+	struct net_context *c;
+	struct rpcd_witness_registration_updateB m;
+	char *headline;
+};
+
+static bool net_witness_client_move_prepare_fn(void *private_data)
+{
+	struct net_witness_client_move_state *state =
+		(struct net_witness_client_move_state *)private_data;
+
+	if (state->headline != NULL) {
+		d_printf("%s\n", state->headline);
+		TALLOC_FREE(state->headline);
+	}
+
+	return true;
+}
+
+static bool net_witness_client_move_match_fn(void *private_data,
+			const struct rpcd_witness_registration *rg)
+{
+	return true;
+}
+
+static NTSTATUS net_witness_client_move_process_fn(void *private_data,
+			const struct rpcd_witness_registration *rg)
+{
+	struct net_witness_client_move_state *state =
+		(struct net_witness_client_move_state *)private_data;
+	struct net_context *c = state->c;
+	struct rpcd_witness_registration_updateB update = {
+		.context_handle = rg->context_handle,
+		.type = state->m.type,
+		.update = state->m.update,
+	};
+	DATA_BLOB blob = { .length = 0, };
+	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+
+	if (state->headline != NULL) {
+		d_printf("%s\n", state->headline);
+		TALLOC_FREE(state->headline);
+	}
+
+	SMB_ASSERT(update.type != 0);
+
+	if (DEBUGLVL(DBGLVL_DEBUG)) {
+		NDR_PRINT_DEBUG(rpcd_witness_registration_updateB, &update);
+	}
+
+	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), &update,
+			(ndr_push_flags_fn_t)ndr_push_rpcd_witness_registration_updateB);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DBG_ERR("ndr_push_struct_blob - %s\n", nt_errstr(status));
+		return status;
+	}
+
+	status = messaging_send(c->msg_ctx,
+				rg->server_id,
+				MSG_RPCD_WITNESS_REGISTRATION_UPDATE,
+				&blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("messaging_send() - %s\n", nt_errstr(status));
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static void net_witness_update_usage(void)
+{
+	d_printf("    If the update should be applied to all registrations\n"
+		 "    it needs to be explicitly specified:\n"
+		 "\n"
+		 "        --witness-apply-to-all\n"
+		 "          This selects all registrations.\n"
+		 "          Note: This is mutual exclusive to "
+		           "the above options.\n"
+		 "\n");
+}
+
+static bool net_witness_verify_update_options(struct net_context *c)
+{
+	if (c->opt_witness_registration == NULL &&
+	    c->opt_witness_net_name == NULL &&
+	    c->opt_witness_share_name == NULL &&
+	    c->opt_witness_ip_address == NULL &&
+	    c->opt_witness_client_computer_name == NULL &&
+	    c->opt_witness_apply_to_all == 0)
+	{
+		d_printf("--witness-apply-to-all or "
+			 "at least one of following requires:\n"
+			 "--witness-registration\n"
+			 "--witness-net-name\n"
+			 "--witness-share-name\n"
+			 "--witness-ip-address\n"
+			 "--witness-client-computer-name\n");
+		return false;
+	}
+
+	if (c->opt_witness_apply_to_all == 0) {
+		return true;
+	}
+
+	if (c->opt_witness_registration != NULL ||
+	    c->opt_witness_net_name != NULL ||
+	    c->opt_witness_share_name != NULL ||
+	    c->opt_witness_ip_address != NULL ||
+	    c->opt_witness_client_computer_name != NULL)
+	{
+		d_printf("--witness-apply-to-all not allowed "
+			 "together with the following options:\n"
+			 "--witness-registration\n"
+			 "--witness-net-name\n"
+			 "--witness-share-name\n"
+			 "--witness-ip-address\n"
+			 "--witness-client-computer-name\n");
+		return false;
+	}
+
+	return true;
+}
+
+static void net_witness_move_usage(const char *name)
+{
+	d_printf("    The content of the %s notification contains ip addresses\n"
+		 "    specified by (exactly one) of the following options:\n"
+		 "\n"
+		 "        --witness-new-node=NODEID\n"
+		 "          By specifying a NODEID all ip addresses\n"
+		 "          currently available on the given node are\n"
+		 "          included in the response.\n"
+		 "          By specifying '-1' as NODEID all ip addresses\n"
+		 "          of the cluster are included in the response.\n"
+		 "\n"
+		 "        --witness-new-ip=IPADDRESS\n"
+		 "          By specifying an IPADDRESS only the specified\n"
+		 "          ip address is included in the response.\n"
+		 "\n",
+		 name);
+}
+
+static bool net_witness_verify_move_options(struct net_context *c,
+					    uint32_t *new_node,
+					    bool *is_ipv4,
+					    bool *is_ipv6)
+{
+	bool ok;
+
+	*new_node = NONCLUSTER_VNN;
+	*is_ipv4 = false;
+	*is_ipv6 = false;
+
+	ok = net_witness_verify_update_options(c);
+	if (!ok) {
+		return false;
+	}
+
+	if (c->opt_witness_new_ip != NULL &&
+	    c->opt_witness_new_node != -2)
+	{
+		d_printf("--witness-new-ip and "
+			 "--witness-new-node are not allowed together\n");
+		return false;
+	}
+
+	if (c->opt_witness_new_ip == NULL &&
+	    c->opt_witness_new_node == -2)
+	{
+		d_printf("--witness-new-ip or --witness-new-node required\n");
+		return false;
+	}
+
+	if (c->opt_witness_new_node != -2) {
+		*new_node = c->opt_witness_new_node;
+		return true;
+	}
+
+	if (is_ipaddress_v4(c->opt_witness_new_ip)) {
+		*is_ipv4 = true;
+		return true;
+	}
+
+	if (is_ipaddress_v6(c->opt_witness_new_ip)) {
+		*is_ipv6 = true;
+		return true;
+	}
+
+	d_printf("Invalid ip address for --witness-new-ip=%s\n",
+		 c->opt_witness_new_ip);
+	return false;
+}
+
+#ifdef HAVE_JANSSON
+static bool net_witness_move_message_json(struct net_context *c,
+					  const char *msg_type,
+					  struct json_object *pmessage_json)
+{
+	struct json_object message_json = json_empty_object;
+	int ret;
+
+	message_json = json_new_object();
+	if (json_is_invalid(&message_json)) {
+		return false;
+	}
+
+	ret = json_add_string(&message_json,
+			      "type",
+			      msg_type);
+	if (ret != 0) {
+		json_free(&message_json);
+		return false;
+	}
+
+	if (c->opt_witness_new_ip != NULL) {
+		ret = json_add_string(&message_json,
+				      "new_ip",
+				      c->opt_witness_new_ip);
+		if (ret != 0) {
+			return false;
+		}
+	} else if (c->opt_witness_new_node != -1) {
+		ret = json_add_int(&message_json,
+				   "new_node",
+				   c->opt_witness_new_node);
+		if (ret != 0) {
+			return false;
+		}
+	} else {
+		ret = json_add_bool(&message_json,
+				    "all_nodes",
+				    true);
+		if (ret != 0) {
+			return false;
+		}
+	}
+
+	*pmessage_json = message_json;
+	return true;
+}
+#endif /* HAVE_JANSSON */
+
+static void net_witness_client_move_usage(void)
+{
+	d_printf("%s\n"
+		 "net witness client-move\n"
+		 "    %s\n\n",
+		 _("Usage:"),
+		 _("Generate client move notifications for "
+		   "witness registrations to a new ip or node"));
+	net_witness_filter_usage();
+	net_witness_update_usage();
+	net_witness_move_usage("CLIENT_MOVE");
+}
+
+static int net_witness_client_move(struct net_context *c, int argc, const char **argv)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct net_witness_client_move_state state = { .c = c, };
+	struct rpcd_witness_registration_updateB *m = &state.m;
+#ifdef HAVE_JANSSON
+	struct json_object _message_json = json_empty_object;
+#endif /* HAVE_JANSSON */
+	struct json_object *message_json = NULL;
+	struct net_witness_scan_registrations_action_state action = {
+		.prepare_fn = net_witness_client_move_prepare_fn,
+		.match_fn = net_witness_client_move_match_fn,
+		.process_fn = net_witness_client_move_process_fn,
+		.private_data = &state,
+	};
+	int ret = -1;
+	const char *msg_type = NULL;
+	uint32_t new_node = NONCLUSTER_VNN;
+	bool is_ipv4 = false;
+	bool is_ipv6 = false;
+	bool ok;
+
+	if (c->display_usage) {
+		net_witness_client_move_usage();
+		goto out;
+	}
+
+	if (argc != 0) {
+		net_witness_client_move_usage();
+		goto out;
+	}
+
+	if (!lp_clustering()) {
+		d_printf("ERROR: Only supported with clustering=yes!\n\n");
+		goto out;
+	}
+
+	ok = net_witness_verify_move_options(c, &new_node, &is_ipv4, &is_ipv6);
+	if (!ok) {
+		goto out;
+	}
+
+	if (is_ipv4) {
+		m->type = RPCD_WITNESS_REGISTRATION_UPDATE_CLIENT_MOVE_TO_IPV4;
+		m->update.client_move_to_ipv4.new_ipv4 = c->opt_witness_new_ip;
+		msg_type = "CLIENT_MOVE_TO_IPV4";
+		state.headline = talloc_asprintf(frame,
+						 "CLIENT_MOVE_TO_IPV4: %s",
+						 c->opt_witness_new_ip);
+		if (state.headline == NULL) {
+			goto out;
+		}
+	} else if (is_ipv6) {
+		m->type = RPCD_WITNESS_REGISTRATION_UPDATE_CLIENT_MOVE_TO_IPV6;
+		m->update.client_move_to_ipv6.new_ipv6 = c->opt_witness_new_ip;
+		msg_type = "CLIENT_MOVE_TO_IPV6";
+		state.headline = talloc_asprintf(frame,
+						 "CLIENT_MOVE_TO_IPV6: %s",
+						 c->opt_witness_new_ip);
+		if (state.headline == NULL) {
+			goto out;
+		}
+	} else if (new_node != NONCLUSTER_VNN) {
+		m->type = RPCD_WITNESS_REGISTRATION_UPDATE_CLIENT_MOVE_TO_NODE;
+		m->update.client_move_to_node.new_node = new_node;
+		msg_type = "CLIENT_MOVE_TO_NODE";
+		state.headline = talloc_asprintf(frame,
+						 "CLIENT_MOVE_TO_NODE: %u",
+						 new_node);
+		if (state.headline == NULL) {
+			goto out;
+		}
+	} else {
+		m->type = RPCD_WITNESS_REGISTRATION_UPDATE_CLIENT_MOVE_TO_NODE;
+		m->update.client_move_to_node.new_node = NONCLUSTER_VNN;
+		msg_type = "CLIENT_MOVE_TO_NODE";
+		state.headline = talloc_asprintf(frame,
+						 "CLIENT_MOVE_TO_NODE: ALL");
+		if (state.headline == NULL) {
+			goto out;
+		}
+	}
+
+#ifdef HAVE_JANSSON
+	if (c->opt_json) {
+		TALLOC_FREE(state.headline);
+
+		ok = net_witness_move_message_json(c,
+						   msg_type,
+						   &_message_json);
+		if (!ok) {
+			d_printf("net_witness_move_message_json(%s) failed\n",
+				 msg_type);
+			goto out;
+		}
+
+		message_json = &_message_json;
+	}
+#else /* not HAVE_JANSSON */
+	(void)msg_type;
+#endif /* not HAVE_JANSSON */
+
+	ret = net_witness_scan_registrations(c, message_json, &action);
+	if (ret != 0) {
+		d_printf("net_witness_scan_registrations() failed\n");
+		goto out;
+	}
+
+	ret = 0;
+out:
+#ifdef HAVE_JANSSON
+	if (!json_is_invalid(&_message_json)) {
+		json_free(&_message_json);
+	}
+#endif /* HAVE_JANSSON */
+	TALLOC_FREE(frame);
+	return ret;
+}
+
+struct net_witness_share_move_state {
+	struct net_context *c;
+	struct rpcd_witness_registration_updateB m;
+	char *headline;
+};
+
+static bool net_witness_share_move_prepare_fn(void *private_data)
+{
+	struct net_witness_share_move_state *state =
+		(struct net_witness_share_move_state *)private_data;
+
+	if (state->headline != NULL) {
+		d_printf("%s\n", state->headline);
+		TALLOC_FREE(state->headline);
+	}
+
+	return true;
+}
+
+static bool net_witness_share_move_match_fn(void *private_data,
+			const struct rpcd_witness_registration *rg)
+{
+	if (rg->share_name == NULL) {
+		return false;
+	}
+
+	return true;
+}
+
+static NTSTATUS net_witness_share_move_process_fn(void *private_data,
+			const struct rpcd_witness_registration *rg)
+{
+	struct net_witness_share_move_state *state =
+		(struct net_witness_share_move_state *)private_data;
+	struct net_context *c = state->c;
+	struct rpcd_witness_registration_updateB update = {
+		.context_handle = rg->context_handle,
+		.type = state->m.type,
+		.update = state->m.update,
+	};
+	DATA_BLOB blob = { .length = 0, };
+	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+
+	SMB_ASSERT(update.type != 0);
+
+	if (DEBUGLVL(DBGLVL_DEBUG)) {
+		NDR_PRINT_DEBUG(rpcd_witness_registration_updateB, &update);
+	}
+
+	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), &update,
+			(ndr_push_flags_fn_t)ndr_push_rpcd_witness_registration_updateB);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DBG_ERR("ndr_push_struct_blob - %s\n", nt_errstr(status));
+		return status;
+	}
+
+	status = messaging_send(c->msg_ctx,
+				rg->server_id,
+				MSG_RPCD_WITNESS_REGISTRATION_UPDATE,
+				&blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("messaging_send() - %s\n", nt_errstr(status));
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static void net_witness_share_move_usage(void)
+{
+	d_printf("%s\n"
+		 "net witness share-move\n"
+		 "    %s\n\n",
+		 _("Usage:"),
+		 _("Generate share move notifications for "
+		   "witness registrations to a new ip or node"));
+	net_witness_filter_usage();
+	net_witness_update_usage();
+	d_printf("    Note: This only applies to registrations with "
+		     "a non empty share name!\n\n");
+	net_witness_move_usage("SHARE_MOVE");
+}
+
+static int net_witness_share_move(struct net_context *c, int argc, const char **argv)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct net_witness_share_move_state state = { .c = c, };
+	struct rpcd_witness_registration_updateB *m = &state.m;
+#ifdef HAVE_JANSSON
+	struct json_object _message_json = json_empty_object;
+#endif /* HAVE_JANSSON */
+	struct json_object *message_json = NULL;
+	struct net_witness_scan_registrations_action_state action = {
+		.prepare_fn = net_witness_share_move_prepare_fn,
+		.match_fn = net_witness_share_move_match_fn,
+		.process_fn = net_witness_share_move_process_fn,
+		.private_data = &state,
+	};
+	int ret = -1;
+	const char *msg_type = NULL;
+	uint32_t new_node = NONCLUSTER_VNN;
+	bool is_ipv4 = false;
+	bool is_ipv6 = false;
+	bool ok;
+
+	if (c->display_usage) {
+		net_witness_share_move_usage();
+		goto out;
+	}
+
+	if (argc != 0) {
+		net_witness_share_move_usage();
+		goto out;
+	}
+
+	if (!lp_clustering()) {
+		d_printf("ERROR: Only supported with clustering=yes!\n\n");
+		goto out;
+	}
+
+	ok = net_witness_verify_move_options(c, &new_node, &is_ipv4, &is_ipv6);
+	if (!ok) {
+		goto out;
+	}
+
+	if (is_ipv4) {
+		m->type = RPCD_WITNESS_REGISTRATION_UPDATE_SHARE_MOVE_TO_IPV4;
+		m->update.share_move_to_ipv4.new_ipv4 = c->opt_witness_new_ip;
+		msg_type = "SHARE_MOVE_TO_IPV4";
+		state.headline = talloc_asprintf(frame,
+						 "SHARE_MOVE_TO_IPV4: %s",
+						 c->opt_witness_new_ip);
+		if (state.headline == NULL) {
+			goto out;
+		}
+	} else if (is_ipv6) {
+		m->type = RPCD_WITNESS_REGISTRATION_UPDATE_SHARE_MOVE_TO_IPV6;
+		m->update.share_move_to_ipv6.new_ipv6 = c->opt_witness_new_ip;
+		msg_type = "SHARE_MOVE_TO_IPV6";
+		state.headline = talloc_asprintf(frame,
+						 "SHARE_MOVE_TO_IPV6: %s",
+						 c->opt_witness_new_ip);
+		if (state.headline == NULL) {
+			goto out;
+		}
+	} else if (new_node != NONCLUSTER_VNN) {
+		m->type = RPCD_WITNESS_REGISTRATION_UPDATE_SHARE_MOVE_TO_NODE;
+		m->update.share_move_to_node.new_node = new_node;
+		msg_type = "SHARE_MOVE_TO_NODE";
+		state.headline = talloc_asprintf(frame,
+						 "SHARE_MOVE_TO_NODE: %u",
+						 new_node);
+		if (state.headline == NULL) {
+			goto out;
+		}
+	} else {
+		m->type = RPCD_WITNESS_REGISTRATION_UPDATE_SHARE_MOVE_TO_NODE;
+		m->update.share_move_to_node.new_node = NONCLUSTER_VNN;
+		msg_type = "SHARE_MOVE_TO_NODE";
+		state.headline = talloc_asprintf(frame,
+						 "SHARE_MOVE_TO_NODE: ALL");
+		if (state.headline == NULL) {
+			goto out;
+		}
+	}
+
+#ifdef HAVE_JANSSON
+	if (c->opt_json) {
+		TALLOC_FREE(state.headline);
+
+		ok = net_witness_move_message_json(c,
+						   msg_type,
+						   &_message_json);
+		if (!ok) {
+			d_printf("net_witness_move_message_json(%s) failed\n",
+				 msg_type);
+			goto out;
+		}
+
+		message_json = &_message_json;
+	}
+#else /* not HAVE_JANSSON */
+	(void)msg_type;
+#endif /* not HAVE_JANSSON */
+
+	ret = net_witness_scan_registrations(c, message_json, &action);
+	if (ret != 0) {
+		d_printf("net_witness_scan_registrations() failed\n");
+		goto out;
+	}
+
+	ret = 0;
+out:
+#ifdef HAVE_JANSSON
+	if (!json_is_invalid(&_message_json)) {
+		json_free(&_message_json);
+	}
+#endif /* HAVE_JANSSON */
+	TALLOC_FREE(frame);
+	return ret;
+}
+
 int net_witness(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
@@ -952,6 +1543,26 @@ int net_witness(struct net_context *c, int argc, const char **argv)
 			N_("net witness list\n"
 			   "    List witness registrations "
 			   "from rpcd_witness_registration.tdb"),
+		},
+		{
+			"client-move",
+			net_witness_client_move,
+			NET_TRANSPORT_LOCAL,
+			N_("Generate client move notifications for "
+			   "witness registrations to a new ip or node"),
+			N_("net witness client-move\n"
+			   "    Generate client move notifications for "
+			       "witness registrations to a new ip or node"),
+		},
+		{
+			"share-move",
+			net_witness_share_move,
+			NET_TRANSPORT_LOCAL,
+			N_("Generate share move notifications for "
+			   "witness registrations to a new ip or node"),
+			N_("net witness share-move\n"
+			   "    Generate share move notifications for "
+			       "witness registrations to a new ip or node"),
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};

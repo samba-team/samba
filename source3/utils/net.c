@@ -1272,6 +1272,24 @@ static struct functable net_func[] = {
 			.argInfo    = POPT_ARG_STRING,
 			.arg        = &c->opt_witness_client_computer_name,
 		},
+		{
+			.longName   = "witness-apply-to-all",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = &c->opt_witness_apply_to_all,
+		},
+		{
+			.longName   = "witness-new-ip",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &c->opt_witness_new_ip,
+		},
+		{
+			.longName   = "witness-new-node",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_INT,
+			.arg        = &c->opt_witness_new_node,
+		},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
@@ -1284,6 +1302,7 @@ static struct functable net_func[] = {
 	BlockSignals(True, SIGPIPE);
 
 	zero_sockaddr(&c->opt_dest_ip);
+	c->opt_witness_new_node = -2;
 
 	smb_init_locale();
 
