@@ -41,7 +41,7 @@ The username may also be specified using the --filter option.
 
 The command must be run from the root user id or another authorized user id.
 The '-H' or '--URL' option only supports ldapi:// or [tdb://] and can be
-used to adjust the local path. By default tdb:// is used by default.
+used to adjust the local path. By default, tdb:// is used.
 
 The '--attributes' parameter takes a comma separated list of attributes,
 which will be printed or given to the script specified by '--script'. If a
@@ -52,7 +52,7 @@ for which virtual attributes are supported in your environment):
 
    virtualClearTextUTF16: The raw cleartext as stored in the
                           'Primary:CLEARTEXT' (or 'Primary:SambaGPG'
-                          with '--decrypt-samba-gpg') buffer inside of the
+                          with '--decrypt-samba-gpg') buffer inside the
                           supplementalCredentials attribute. This typically
                           contains valid UTF-16-LE, but may contain random
                           bytes, e.g. for computer and gMSA accounts.
@@ -71,7 +71,7 @@ for which virtual attributes are supported in your environment):
                           also be specified. By appending ";rounds=x" to the
                           attribute name i.e. virtualCryptSHA256;rounds=10000
                           will calculate a SHA256 hash with 10,000 rounds.
-                          Non numeric values for rounds are silently ignored.
+                          Non-numeric values for rounds are silently ignored.
                           The value is calculated as follows:
                           1) If a value exists in 'Primary:userPassword' with
                              the specified number of rounds it is returned.
@@ -89,7 +89,7 @@ for which virtual attributes are supported in your environment):
                           also be specified. By appending ";rounds=x" to the
                           attribute name i.e. virtualCryptSHA512;rounds=10000
                           will calculate a SHA512 hash with 10,000 rounds.
-                          Non numeric values for rounds are silently ignored.
+                          Non-numeric values for rounds are silently ignored.
                           The value is calculated as follows:
                           1) If a value exists in 'Primary:userPassword' with
                              the specified number of rounds it is returned.
@@ -111,7 +111,7 @@ for which virtual attributes are supported in your environment):
                           Kerberos keys from a UTF-8 cleartext password.
 
    virtualSambaGPG:       The raw cleartext as stored in the
-                          'Primary:SambaGPG' buffer inside of the
+                          'Primary:SambaGPG' buffer inside the
                           supplementalCredentials attribute.
                           See the 'password hash gpg key ids' option in
                           smb.conf.
