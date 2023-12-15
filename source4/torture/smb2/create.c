@@ -1753,6 +1753,18 @@ static bool test_twrp_write(struct torture_context *tctx, struct smb2_tree *tree
 	uint64_t nttime;
 	const char *file = NULL;
 	const char *snapshot = NULL;
+	uint32_t expected_access;
+	union smb_fileinfo getinfo;
+	union smb_setfileinfo setinfo;
+	struct security_descriptor *sd = NULL, *sd_orig = NULL;
+	const char *owner_sid = NULL;
+	struct create_disps_tests {
+		const char *file;
+		uint32_t create_disposition;
+		uint32_t create_options;
+		NTSTATUS expected_status;
+	};
+	struct create_disps_tests *cd_test = NULL;
 
 	file = torture_setting_string(tctx, "twrp_file", NULL);
 	if (file == NULL) {
@@ -1794,11 +1806,102 @@ static bool test_twrp_write(struct torture_context *tctx, struct smb2_tree *tree
 					"smb2_create\n");
 	smb2_util_close(tree, io.out.file.handle);
 
-	ret = io.out.maximal_access & (SEC_FILE_READ_DATA | SEC_FILE_WRITE_DATA);
-	torture_assert_goto(tctx, ret, ret, done, "Bad access\n");
+	expected_access = SEC_RIGHTS_FILE_ALL &
+				~(SEC_FILE_EXECUTE | SEC_DIR_DELETE_CHILD);
+
+	torture_assert_int_equal_goto(tctx,
+				      io.out.maximal_access & expected_access,
+				      expected_access,
+				      ret, done, "Bad access\n");
+
+	{
+		/*
+		 * Test create dispositions
+		 */
+		struct create_disps_tests cd_tests[] = {
+			{
+				.file = file,
+				.create_disposition = NTCREATEX_DISP_OPEN,
+				.expected_status = NT_STATUS_OK,
+			},
+			{
+				.file = file,
+				.create_disposition = NTCREATEX_DISP_OPEN_IF,
+				.expected_status = NT_STATUS_OK,
+			},
+			{
+				.file = file,
+				.create_disposition = NTCREATEX_DISP_OVERWRITE,
+				.expected_status = NT_STATUS_MEDIA_WRITE_PROTECTED,
+			},
+			{
+				.file = file,
+				.create_disposition = NTCREATEX_DISP_OVERWRITE_IF,
+				.expected_status = NT_STATUS_MEDIA_WRITE_PROTECTED,
+			},
+			{
+				.file = file,
+				.create_disposition = NTCREATEX_DISP_SUPERSEDE,
+				.expected_status = NT_STATUS_MEDIA_WRITE_PROTECTED,
+			},
+			{
+				.file = "newfile",
+				.create_disposition = NTCREATEX_DISP_OPEN_IF,
+				.expected_status = NT_STATUS_MEDIA_WRITE_PROTECTED,
+			},
+			{
+				.file = "newfile",
+				.create_disposition = NTCREATEX_DISP_OVERWRITE_IF,
+				.expected_status = NT_STATUS_MEDIA_WRITE_PROTECTED,
+			},
+			{
+				.file = "newfile",
+				.create_disposition = NTCREATEX_DISP_CREATE,
+				.expected_status = NT_STATUS_MEDIA_WRITE_PROTECTED,
+			},
+			{
+				.file = "newfile",
+				.create_disposition = NTCREATEX_DISP_SUPERSEDE,
+				.expected_status = NT_STATUS_MEDIA_WRITE_PROTECTED,
+			},
+			{
+				.file = "newdir",
+				.create_disposition = NTCREATEX_DISP_OPEN_IF,
+				.create_options = NTCREATEX_OPTIONS_DIRECTORY,
+				.expected_status = NT_STATUS_MEDIA_WRITE_PROTECTED,
+			},
+			{
+				.file = "newdir",
+				.create_disposition = NTCREATEX_DISP_CREATE,
+				.create_options = NTCREATEX_OPTIONS_DIRECTORY,
+				.expected_status = NT_STATUS_MEDIA_WRITE_PROTECTED,
+			},
+			{
+				.file = NULL,
+			},
+		};
+
+		for (cd_test = &cd_tests[0]; cd_test->file != NULL; cd_test++) {
+			io = (struct smb2_create) {
+				.in.fname = cd_test->file,
+				.in.create_disposition = cd_test->create_disposition,
+				.in.create_options = cd_test->create_options,
+
+				.in.desired_access = SEC_FILE_READ_DATA,
+				.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+				.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+				.in.timewarp = nttime,
+			};
+
+			status = smb2_create(tree, tctx, &io);
+			torture_assert_ntstatus_equal_goto(
+				tctx, status, cd_test->expected_status, ret, done,
+				"Bad status\n");
+		}
+	}
 
 	io = (struct smb2_create) {
-		.in.desired_access = SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA,
+		.in.desired_access = expected_access,
 		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
 		.in.create_disposition = NTCREATEX_DISP_OPEN,
 		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
@@ -1816,9 +1919,145 @@ static bool test_twrp_write(struct torture_context *tctx, struct smb2_tree *tree
 					   NT_STATUS_MEDIA_WRITE_PROTECTED,
 					   ret, done, "smb2_create\n");
 
+	/*
+	 * Verify access mask
+	 */
+
+	ZERO_STRUCT(getinfo);
+	getinfo.generic.level = RAW_FILEINFO_ACCESS_INFORMATION;
+	getinfo.generic.in.file.handle = h1;
+
+	status = smb2_getinfo_file(tree, tree, &getinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file\n");
+
+	torture_assert_int_equal_goto(
+		tctx,
+		getinfo.access_information.out.access_flags,
+		expected_access,
+		ret, done,
+		"Bad access mask\n");
+
+	/*
+	 * Check we can't set various things
+	 */
+
+	ZERO_STRUCT(getinfo);
+	getinfo.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	getinfo.query_secdesc.in.file.handle = h1;
+	getinfo.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+
+	status = smb2_getinfo_file(tree, tctx, &getinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file\n");
+
+	sd_orig = getinfo.query_secdesc.out.sd;
+	owner_sid = dom_sid_string(tctx, sd_orig->owner_sid);
+
+	sd = security_descriptor_dacl_create(tctx,
+					     0, NULL, NULL,
+					     owner_sid,
+					     SEC_ACE_TYPE_ACCESS_ALLOWED,
+					     SEC_FILE_WRITE_DATA,
+					     0,
+					     NULL);
+
+	/* Try to set ACL */
+
+	ZERO_STRUCT(setinfo);
+	setinfo.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	setinfo.set_secdesc.in.file.handle = h1;
+	setinfo.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	setinfo.set_secdesc.in.sd = sd;
+
+	status = smb2_setinfo_file(tree, &setinfo);
+	torture_assert_ntstatus_equal_goto(
+		tctx,
+		status,
+		NT_STATUS_MEDIA_WRITE_PROTECTED,
+		ret, done,
+		"smb2_setinfo_file\n");
+
+	/* Try to delete */
+
+	ZERO_STRUCT(setinfo);
+	setinfo.generic.level = RAW_SFILEINFO_DISPOSITION_INFORMATION;
+	setinfo.disposition_info.in.delete_on_close = 1;
+	setinfo.generic.in.file.handle = h1;
+
+	status = smb2_setinfo_file(tree, &setinfo);
+	torture_assert_ntstatus_equal_goto(
+		tctx,
+		status,
+		NT_STATUS_MEDIA_WRITE_PROTECTED,
+		ret, done,
+		"smb2_setinfo_file\n");
+
+	ZERO_STRUCT(setinfo);
+	setinfo.basic_info.in.attrib = FILE_ATTRIBUTE_HIDDEN;
+	setinfo.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
+	setinfo.generic.in.file.handle = h1;
+
+	status = smb2_setinfo_file(tree, &setinfo);
+	torture_assert_ntstatus_equal_goto(
+		tctx,
+		status,
+		NT_STATUS_MEDIA_WRITE_PROTECTED,
+		ret, done,
+		"smb2_setinfo_file\n");
+
+	/* Try to truncate */
+
+	ZERO_STRUCT(setinfo);
+	setinfo.generic.level = SMB_SFILEINFO_END_OF_FILE_INFORMATION;
+	setinfo.generic.in.file.handle = h1;
+	setinfo.end_of_file_info.in.size = 0x100000;
+
+	status = smb2_setinfo_file(tree, &setinfo);
+	torture_assert_ntstatus_equal_goto(
+		tctx,
+		status,
+		NT_STATUS_MEDIA_WRITE_PROTECTED,
+		ret, done,
+		"smb2_setinfo_file\n");
+
+	/* Try to set a hardlink */
+
+	ZERO_STRUCT(setinfo);
+	setinfo.generic.level = RAW_SFILEINFO_LINK_INFORMATION;
+	setinfo.generic.in.file.handle = h1;
+	setinfo.link_information.in.new_name = "hardlink";
+
+	status = smb2_setinfo_file(tree, &setinfo);
+	torture_assert_ntstatus_equal_goto(
+		tctx,
+		status,
+		NT_STATUS_NOT_SAME_DEVICE,
+		ret, done,
+		"smb2_setinfo_file\n");
+
+	/* Try to rename */
+
+	ZERO_STRUCT(setinfo);
+	setinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	setinfo.rename_information.in.file.handle = h1;
+	setinfo.rename_information.in.new_name = "renamed";
+
+	status = smb2_setinfo_file(tree, &setinfo);
+	torture_assert_ntstatus_equal_goto(
+		tctx,
+		status,
+		NT_STATUS_NOT_SAME_DEVICE,
+		ret, done,
+		"smb2_setinfo_file\n");
+
 	smb2_util_close(tree, h1);
+	ZERO_STRUCT(h1);
 
 done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
 	return ret;
 }
 
