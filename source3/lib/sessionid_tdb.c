@@ -44,6 +44,7 @@ static int sessionid_traverse_read_fn(struct smbXsrv_session_global0 *global,
 		.connect_start = nt_time_to_unix(global->creation_time),
 		.pid = global->channels[0].server_id,
 		.connection_dialect = global->connection_dialect,
+		.global = global,
 	};
 
 	if (session_info != NULL) {
