@@ -1096,57 +1096,27 @@ static NTSTATUS add_trust_user(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-/*
-  lsa_CreateTrustedDomainEx2
-*/
-static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dce_call,
-						    TALLOC_CTX *mem_ctx,
-						    struct lsa_CreateTrustedDomainEx2 *r,
-						    int op,
-						    struct lsa_TrustDomainInfoAuthInfo *unencrypted_auth_info)
+static NTSTATUS dcesrv_lsa_CreateTrustedDomain_precheck(
+	TALLOC_CTX *mem_ctx,
+	struct dcesrv_handle *policy_handle,
+	struct lsa_TrustDomainInfoInfoEx *info)
 {
-	struct dcesrv_handle *policy_handle;
-	struct lsa_policy_state *policy_state;
-	struct lsa_trusted_domain_state *trusted_domain_state;
-	struct dcesrv_handle *handle;
-	struct ldb_message **msgs, *msg;
-	const char *attrs[] = {
-		NULL
-	};
-	const char *netbios_name;
-	const char *dns_name;
-	DATA_BLOB trustAuthIncoming, trustAuthOutgoing, auth_blob;
-	struct trustDomainPasswords auth_struct;
-	int ret;
-	NTSTATUS nt_status;
-	struct ldb_context *sam_ldb;
-	struct server_id *server_ids = NULL;
-	uint32_t num_server_ids = 0;
-	NTSTATUS status;
+	struct lsa_policy_state *policy_state = policy_handle->data;
+	const char *netbios_name = NULL;
+	const char *dns_name = NULL;
 	bool ok;
-	char *dns_encoded = NULL;
-	char *netbios_encoded = NULL;
-	char *sid_encoded = NULL;
-	struct imessaging_context *imsg_ctx =
-		dcesrv_imessaging_context(dce_call->conn);
 
-	DCESRV_PULL_HANDLE(policy_handle, r->in.policy_handle, LSA_HANDLE_POLICY);
-	ZERO_STRUCTP(r->out.trustdom_handle);
-
-	policy_state = policy_handle->data;
-	sam_ldb = policy_state->sam_ldb;
-
-	netbios_name = r->in.info->netbios_name.string;
-	if (!netbios_name) {
+	netbios_name = info->netbios_name.string;
+	if (netbios_name == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	dns_name = r->in.info->domain_name.string;
+	dns_name = info->domain_name.string;
 	if (dns_name == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (r->in.info->sid == NULL) {
+	if (info->sid == NULL) {
 		return NT_STATUS_INVALID_SID;
 	}
 
@@ -1155,43 +1125,62 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	 * allow S-1-5-21-0-0-0 as this is used
 	 * for claims and compound identities.
 	 */
-	ok = dom_sid_is_valid_account_domain(r->in.info->sid);
+	ok = dom_sid_is_valid_account_domain(info->sid);
 	if (!ok) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	dns_encoded = ldb_binary_encode_string(mem_ctx, dns_name);
-	if (dns_encoded == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	netbios_encoded = ldb_binary_encode_string(mem_ctx, netbios_name);
-	if (netbios_encoded == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	sid_encoded = ldap_encode_ndr_dom_sid(mem_ctx, r->in.info->sid);
-	if (sid_encoded == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	trusted_domain_state = talloc_zero(mem_ctx, struct lsa_trusted_domain_state);
-	if (!trusted_domain_state) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	trusted_domain_state->policy = policy_state;
-
-	if (strcasecmp(netbios_name, "BUILTIN") == 0
-	    || (strcasecmp(dns_name, "BUILTIN") == 0)
-	    || (dom_sid_in_domain(policy_state->builtin_sid, r->in.info->sid))) {
+	if (strcasecmp(netbios_name, "BUILTIN") == 0 ||
+	    strcasecmp(dns_name, "BUILTIN") == 0 ||
+	    dom_sid_in_domain(policy_state->builtin_sid, info->sid))
+	{
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (strcasecmp(netbios_name, policy_state->domain_name) == 0
-	    || strcasecmp(netbios_name, policy_state->domain_dns) == 0
-	    || strcasecmp(dns_name, policy_state->domain_dns) == 0
-	    || strcasecmp(dns_name, policy_state->domain_name) == 0
-	    || (dom_sid_equal(policy_state->domain_sid, r->in.info->sid))) {
+	if (strcasecmp(netbios_name, policy_state->domain_name) == 0 ||
+	    strcasecmp(netbios_name, policy_state->domain_dns) == 0 ||
+	    strcasecmp(dns_name, policy_state->domain_dns) == 0 ||
+	    strcasecmp(dns_name, policy_state->domain_name) == 0 ||
+	    dom_sid_equal(policy_state->domain_sid, info->sid))
+	{
 		return NT_STATUS_CURRENT_DOMAIN_NOT_ALLOWED;
 	}
+
+	return NT_STATUS_OK;
+}
+
+/*
+  lsa_CreateTrustedDomainEx2
+*/
+static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dce_call,
+						    TALLOC_CTX *mem_ctx,
+						    struct dcesrv_handle *policy_handle,
+						    struct lsa_CreateTrustedDomainEx2 *r,
+						    int op,
+						    struct lsa_TrustDomainInfoAuthInfo *unencrypted_auth_info)
+{
+	struct lsa_policy_state *policy_state = policy_handle->data;
+	struct ldb_context *sam_ldb = policy_state->sam_ldb;
+	struct lsa_trusted_domain_state *trusted_domain_state;
+	struct dcesrv_handle *handle;
+	struct ldb_message **msgs, *msg;
+	const char *attrs[] = {
+		NULL
+	};
+	const char *netbios_name = r->in.info->netbios_name.string;
+	const char *dns_name = r->in.info->domain_name.string;
+	DATA_BLOB trustAuthIncoming, trustAuthOutgoing, auth_blob;
+	struct trustDomainPasswords auth_struct;
+	int ret;
+	NTSTATUS nt_status;
+	struct server_id *server_ids = NULL;
+	uint32_t num_server_ids = 0;
+	NTSTATUS status;
+	char *dns_encoded = NULL;
+	char *netbios_encoded = NULL;
+	char *sid_encoded = NULL;
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(dce_call->conn);
 
 	/* While this is a REF pointer, some of the functions that wrap this don't provide this */
 	if (op == NDR_LSA_CREATETRUSTEDDOMAIN) {
@@ -1241,6 +1230,25 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	} else {
 		trustAuthOutgoing = data_blob(NULL, 0);
 	}
+
+	dns_encoded = ldb_binary_encode_string(mem_ctx, dns_name);
+	if (dns_encoded == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	netbios_encoded = ldb_binary_encode_string(mem_ctx, netbios_name);
+	if (netbios_encoded == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	sid_encoded = ldap_encode_ndr_dom_sid(mem_ctx, r->in.info->sid);
+	if (sid_encoded == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	trusted_domain_state = talloc_zero(mem_ctx, struct lsa_trusted_domain_state);
+	if (!trusted_domain_state) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	trusted_domain_state->policy = policy_state;
 
 	ret = ldb_transaction_start(sam_ldb);
 	if (ret != LDB_SUCCESS) {
@@ -1423,7 +1431,28 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomainEx2(struct dcesrv_call_state *dce_
 					   TALLOC_CTX *mem_ctx,
 					   struct lsa_CreateTrustedDomainEx2 *r)
 {
-	return dcesrv_lsa_CreateTrustedDomain_base(dce_call, mem_ctx, r, NDR_LSA_CREATETRUSTEDDOMAINEX2, NULL);
+	struct dcesrv_handle *policy_handle = NULL;
+	NTSTATUS status;
+
+	ZERO_STRUCTP(r->out.trustdom_handle);
+	DCESRV_PULL_HANDLE(policy_handle,
+			   r->in.policy_handle,
+			   LSA_HANDLE_POLICY);
+
+	status = dcesrv_lsa_CreateTrustedDomain_precheck(mem_ctx,
+							 policy_handle,
+							 r->in.info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return dcesrv_lsa_CreateTrustedDomain_base(
+		dce_call,
+		mem_ctx,
+		policy_handle,
+		r,
+		NDR_LSA_CREATETRUSTEDDOMAINEX2,
+		NULL);
 }
 /*
   lsa_CreateTrustedDomainEx
@@ -1433,11 +1462,32 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomainEx(struct dcesrv_call_state *dce_c
 					  struct lsa_CreateTrustedDomainEx *r)
 {
 	struct lsa_CreateTrustedDomainEx2 r2 = {};
+	struct dcesrv_handle *policy_handle = NULL;
+	NTSTATUS status;
+
+	ZERO_STRUCTP(r->out.trustdom_handle);
+	DCESRV_PULL_HANDLE(policy_handle,
+			   r->in.policy_handle,
+			   LSA_HANDLE_POLICY);
+
+	status = dcesrv_lsa_CreateTrustedDomain_precheck(mem_ctx,
+							 policy_handle,
+							 r->in.info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	r2.in.policy_handle = r->in.policy_handle;
 	r2.in.info = r->in.info;
 	r2.out.trustdom_handle = r->out.trustdom_handle;
-	return dcesrv_lsa_CreateTrustedDomain_base(dce_call, mem_ctx, &r2, NDR_LSA_CREATETRUSTEDDOMAINEX, r->in.auth_info);
+
+	return dcesrv_lsa_CreateTrustedDomain_base(
+		dce_call,
+		mem_ctx,
+		policy_handle,
+		&r2,
+		NDR_LSA_CREATETRUSTEDDOMAINEX,
+		r->in.auth_info);
 }
 
 /*
@@ -1447,6 +1497,13 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain(struct dcesrv_call_state *dce_cal
 					struct lsa_CreateTrustedDomain *r)
 {
 	struct lsa_CreateTrustedDomainEx2 r2 = {};
+	struct dcesrv_handle *policy_handle = NULL;
+	NTSTATUS status;
+
+	ZERO_STRUCTP(r->out.trustdom_handle);
+	DCESRV_PULL_HANDLE(policy_handle,
+			   r->in.policy_handle,
+			   LSA_HANDLE_POLICY);
 
 	r2.in.policy_handle = r->in.policy_handle;
 	r2.in.info = talloc_zero(mem_ctx, struct lsa_TrustDomainInfoInfoEx);
@@ -1461,10 +1518,23 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain(struct dcesrv_call_state *dce_cal
 	r2.in.info->trust_type = LSA_TRUST_TYPE_DOWNLEVEL;
 	r2.in.info->trust_attributes = 0;
 
+	status = dcesrv_lsa_CreateTrustedDomain_precheck(mem_ctx,
+							 policy_handle,
+							 r2.in.info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	r2.in.access_mask = r->in.access_mask;
 	r2.out.trustdom_handle = r->out.trustdom_handle;
 
-	return dcesrv_lsa_CreateTrustedDomain_base(dce_call, mem_ctx, &r2, NDR_LSA_CREATETRUSTEDDOMAIN, NULL);
+	return dcesrv_lsa_CreateTrustedDomain_base(
+		dce_call,
+		mem_ctx,
+		policy_handle,
+		&r2,
+		NDR_LSA_CREATETRUSTEDDOMAIN,
+		NULL);
 }
 
 static NTSTATUS dcesrv_lsa_OpenTrustedDomain_common(
