@@ -40,8 +40,10 @@ The username specified on the command is the sAMAccountName.
 The username may also be specified using the --filter option.
 
 The command must be run from the root user id or another authorized user id.
-The '-H' or '--URL' option only supports ldapi:// or [tdb://] and can be
-used to adjust the local path. By default, tdb:// is used.
+The '-H' or '--URL' option normally only supports ldapi:// or [tdb://] and
+can be used to adjust the local path. By default, tdb:// is used.
+if the target account is a group managed service account, then in this
+case the -H can point to a remote AD DC LDAP server.
 
 The '--attributes' parameter takes a comma separated list of attributes,
 which will be printed or given to the script specified by '--script'. If a
@@ -56,6 +58,11 @@ for which virtual attributes are supported in your environment):
                           supplementalCredentials attribute. This typically
                           contains valid UTF-16-LE, but may contain random
                           bytes, e.g. for computer and gMSA accounts.
+                          When the account is a group managed service account,
+                          and the user is permitted to access
+                          msDS-ManagedPassword then the current and previous
+                          password can be read over LDAP. Add ;previous=1
+                          to read the previous password.
 
    virtualClearTextUTF8:  As virtualClearTextUTF16, but converted to UTF-8
                           (invalid UTF-16-LE is mapped in the same way as
