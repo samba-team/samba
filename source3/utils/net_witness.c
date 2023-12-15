@@ -1531,6 +1531,173 @@ out:
 	return ret;
 }
 
+struct net_witness_force_unregister_state {
+	struct net_context *c;
+	struct rpcd_witness_registration_updateB m;
+	char *headline;
+};
+
+static bool net_witness_force_unregister_prepare_fn(void *private_data)
+{
+	struct net_witness_force_unregister_state *state =
+		(struct net_witness_force_unregister_state *)private_data;
+
+	if (state->headline != NULL) {
+		d_printf("%s\n", state->headline);
+		TALLOC_FREE(state->headline);
+	}
+
+	return true;
+}
+
+static bool net_witness_force_unregister_match_fn(void *private_data,
+			const struct rpcd_witness_registration *rg)
+{
+	return true;
+}
+
+static NTSTATUS net_witness_force_unregister_process_fn(void *private_data,
+			const struct rpcd_witness_registration *rg)
+{
+	struct net_witness_force_unregister_state *state =
+		(struct net_witness_force_unregister_state *)private_data;
+	struct net_context *c = state->c;
+	struct rpcd_witness_registration_updateB update = {
+		.context_handle = rg->context_handle,
+		.type = state->m.type,
+		.update = state->m.update,
+	};
+	DATA_BLOB blob = { .length = 0, };
+	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+
+	SMB_ASSERT(update.type != 0);
+
+	if (DEBUGLVL(DBGLVL_DEBUG)) {
+		NDR_PRINT_DEBUG(rpcd_witness_registration_updateB, &update);
+	}
+
+	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), &update,
+			(ndr_push_flags_fn_t)ndr_push_rpcd_witness_registration_updateB);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DBG_ERR("ndr_push_struct_blob - %s\n", nt_errstr(status));
+		return status;
+	}
+
+	status = messaging_send(c->msg_ctx,
+				rg->server_id,
+				MSG_RPCD_WITNESS_REGISTRATION_UPDATE,
+				&blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("messaging_send() - %s\n", nt_errstr(status));
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static void net_witness_force_unregister_usage(void)
+{
+	d_printf("%s\n"
+		 "net witness force-unregister\n"
+		 "    %s\n\n",
+		 _("Usage:"),
+		 _("Force unregistrations for witness registrations"));
+	net_witness_filter_usage();
+	net_witness_update_usage();
+	d_printf("    The selected registrations are removed on "
+		     "the server and\n"
+		 "    any pending AsyncNotify request will get "
+		     "a NOT_FOUND error.\n"
+		 "\n"
+		 "    Typically this triggers a clean re-registration "
+		     "on the client.\n"
+		 "\n");
+}
+
+static int net_witness_force_unregister(struct net_context *c, int argc, const char **argv)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct net_witness_force_unregister_state state = { .c = c, };
+	struct rpcd_witness_registration_updateB *m = &state.m;
+#ifdef HAVE_JANSSON
+	struct json_object _message_json = json_empty_object;
+#endif /* HAVE_JANSSON */
+	struct json_object *message_json = NULL;
+	struct net_witness_scan_registrations_action_state action = {
+		.prepare_fn = net_witness_force_unregister_prepare_fn,
+		.match_fn = net_witness_force_unregister_match_fn,
+		.process_fn = net_witness_force_unregister_process_fn,
+		.private_data = &state,
+	};
+	int ret = -1;
+	bool ok;
+
+	if (c->display_usage) {
+		net_witness_force_unregister_usage();
+		goto out;
+	}
+
+	if (argc != 0) {
+		net_witness_force_unregister_usage();
+		goto out;
+	}
+
+	if (!lp_clustering()) {
+		d_printf("ERROR: Only supported with clustering=yes!\n\n");
+		goto out;
+	}
+
+	ok = net_witness_verify_update_options(c);
+	if (!ok) {
+		goto out;
+	}
+
+	m->type = RPCD_WITNESS_REGISTRATION_UPDATE_FORCE_UNREGISTER;
+
+	state.headline = talloc_asprintf(frame, "FORCE_UNREGISTER:");
+	if (state.headline == NULL) {
+		goto out;
+	}
+
+#ifdef HAVE_JANSSON
+	if (c->opt_json) {
+		TALLOC_FREE(state.headline);
+
+		_message_json = json_new_object();
+		if (json_is_invalid(&_message_json)) {
+			goto out;
+		}
+
+		ret = json_add_string(&_message_json,
+				      "type",
+				      "FORCE_UNREGISTER");
+		if (ret != 0) {
+			goto out;
+		}
+
+		message_json = &_message_json;
+	}
+#endif /* HAVE_JANSSON */
+
+	ret = net_witness_scan_registrations(c, message_json, &action);
+	if (ret != 0) {
+		d_printf("net_witness_scan_registrations() failed\n");
+		goto out;
+	}
+
+	ret = 0;
+out:
+#ifdef HAVE_JANSSON
+	if (!json_is_invalid(&_message_json)) {
+		json_free(&_message_json);
+	}
+#endif /* HAVE_JANSSON */
+	TALLOC_FREE(frame);
+	return ret;
+}
+
 int net_witness(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
@@ -1563,6 +1730,15 @@ int net_witness(struct net_context *c, int argc, const char **argv)
 			N_("net witness share-move\n"
 			   "    Generate share move notifications for "
 			       "witness registrations to a new ip or node"),
+		},
+		{
+			"force-unregister",
+			net_witness_force_unregister,
+			NET_TRANSPORT_LOCAL,
+			N_("Force unregistrations for witness registrations"),
+			N_("net witness force-unregister\n"
+			   "    Force unregistrations for "
+			       "witness registrations"),
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
