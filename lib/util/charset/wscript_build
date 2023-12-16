@@ -6,7 +6,8 @@ bld.SAMBA_SUBSYSTEM('ICONV_WRAPPER',
                     weird.c
                     charset_macosxfs.c
                     ''',
-                    public_deps='iconv replace talloc ' +  bld.env['icu-libs'])
+                    deps=bld.env['icu-libs'],
+                    public_deps='iconv replace talloc')
 
 bld.SAMBA_SUBSYSTEM('charset',
                     public_headers='charset.h',
