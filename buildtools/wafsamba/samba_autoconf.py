@@ -623,7 +623,12 @@ int foo()
 
         (ccflags, ldflags, cpppath, libs) = library_flags(conf, lib)
         if shlib:
-            res = conf.check(features='c cshlib', fragment=fragment, lib=lib, uselib_store=lib, cflags=ccflags, ldflags=ldflags, uselib=lib.upper(), mandatory=False)
+            # Avoid repeating the library if it is already named by
+            # pkg-config --libs.
+            kw = {}
+            if lib not in libs:
+                kw['lib'] = lib
+            res = conf.check(features='c cshlib', fragment=fragment, uselib_store=lib, cflags=ccflags, ldflags=ldflags, uselib=lib.upper(), mandatory=False, **kw)
         else:
             res = conf.check(lib=lib, uselib_store=lib, cflags=ccflags, ldflags=ldflags, uselib=lib.upper(), mandatory=False)
 
@@ -637,7 +642,10 @@ int foo()
                     SET_TARGET_TYPE(conf, lib, 'EMPTY')
         else:
             conf.define('HAVE_LIB%s' % lib.upper().replace('-','_').replace('.','_'), 1)
-            conf.env['LIB_' + lib.upper()] = lib
+            # To avoid losing information from pkg-config, append the library
+            # only it is not already present.
+            if lib not in libs:
+                conf.env.append_value('LIB_' + lib.upper(), lib)
             if set_target:
                 conf.SET_TARGET_TYPE(lib, 'SYSLIB')
             ret.append(lib)
