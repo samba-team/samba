@@ -2028,7 +2028,7 @@ static int cacl_dump_dacl(struct cli_state *cli,
 		dump_ctx->stats->success, dump_ctx->stats->failure);
 	result = EXIT_OK;
 out:
-	if (dump_ctx && dump_ctx->save_fd) {
+	if (dump_ctx && dump_ctx->save_fd > 0) {
 		close(dump_ctx->save_fd);
 	}
 	TALLOC_FREE(ctx);
