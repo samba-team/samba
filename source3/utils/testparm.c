@@ -270,6 +270,82 @@ done:
 	return ok;
 }
 
+static int pw2kt_check_line(const char *line)
+{
+	char *keytabname = NULL;
+	char *spn_spec = NULL;
+	char *spn_val = NULL;
+	char *option = NULL;
+	bool machine_password = false;
+
+	keytabname = talloc_strdup(talloc_tos(), line);
+	if (keytabname == NULL) {
+		return 1;
+	}
+
+	spn_spec = strchr_m(keytabname, ':');
+	if (spn_spec == NULL) {
+		fprintf(stderr, "ERROR: ':' is expected in line:\n%s\n\n", line);
+		return 1;
+	}
+	*spn_spec++ = 0;
+
+	/* reverse match with strrchr_m() */
+	while ((option = strrchr_m(spn_spec, ':')) != NULL) {
+		*option++ = 0;
+		if (!strequal(option, "sync_kvno") &&
+		    !strequal(option, "sync_etypes") &&
+		    !strequal(option, "additional_dns_hostnames") &&
+		    !strequal(option, "netbios_aliases") &&
+		    !strequal(option, "machine_password"))
+		{
+			fprintf(stderr,
+				"ERROR: unknown option '%s' in line:\n%s\n\n",
+				option,
+				line);
+			return 1;
+		}
+		if (strequal(option, "machine_password")) {
+			machine_password = true;
+		}
+	}
+	if (!machine_password) {
+		fprintf(stderr,
+			"WARNING: option 'machine_password' is missing in "
+			"line:\n%s\n\n",
+			line);
+	}
+
+	spn_val = strchr_m(spn_spec, '=');
+	if (spn_val != NULL) {
+		*spn_val++ = 0;
+		if (!strequal(spn_spec, "spns") &&
+		    !strequal(spn_spec, "spn_prefixes"))
+		{
+			fprintf(stderr,
+				"ERROR: only SPN specifier 'spns' and "
+				"'spn_prefixes' can contain '=' and comma "
+				"separated list of values in line:\n%s\n\n",
+				line);
+			return 1;
+		}
+	}
+
+	if (!strequal(spn_spec, "account_name") &&
+	    !strequal(spn_spec, "sync_spns") &&
+	    !strequal(spn_spec, "spns") &&
+	    !strequal(spn_spec, "spn_prefixes"))
+	{
+		fprintf(stderr,
+			"ERROR: unknown SPN specifier '%s' in line:\n%s\n\n",
+			spn_spec,
+			line);
+		return 1;
+	}
+
+	return 0;
+}
+
 /***********************************************
  Here we do a set of 'hard coded' checks for bad
  configuration settings.
@@ -280,6 +356,7 @@ static int do_global_checks(void)
 	int ret = 0;
 	SMB_STRUCT_STAT st;
 	const char *socket_options;
+	const char **lp_ptr = NULL;
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 
@@ -715,6 +792,21 @@ static int do_global_checks(void)
 			"'kerberos encryption types = legacy'. "
 			"Your server is vulnerable to "
 			"CVE-2022-37966\n\n");
+	}
+
+	lp_ptr = lp_sync_machine_password_to_keytab();
+
+	if (lp_ptr == NULL && USE_KERBEROS_KEYTAB) {
+		fprintf(stderr,
+			"SUGGESTION: You may want to use "
+			"'sync machine password to keytab' parameter "
+			"instead of 'kerberos method'.\n\n");
+	}
+
+	if (lp_ptr != NULL) {
+		while (*lp_ptr) {
+			ret |= pw2kt_check_line(*lp_ptr++);
+		}
 	}
 
 	return ret;
