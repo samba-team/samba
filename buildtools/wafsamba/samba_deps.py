@@ -83,9 +83,8 @@ def build_dependencies(self):
         self.add_objects   = list(self.final_objects)
 
         # extra link flags from pkg_config
-        libs = self.final_syslibs.copy()
-
-        (cflags, ldflags, cpppath) = library_flags(self, list(libs))
+        (cflags, ldflags, cpppath, libs) = library_flags(
+            self, list(self.final_syslibs.copy()))
         new_ldflags        = getattr(self, 'samba_ldflags', [])[:]
         new_ldflags.extend(ldflags)
         self.ldflags       = new_ldflags

@@ -8,7 +8,7 @@
 # managed to link when specifying -liconv a executable even if there is no
 # libiconv.so or libiconv.a
 
-conf.CHECK_LIB(libs="iconv", shlib=True)
+conf.CHECK_LIB("iconv", shlib=True)
 
 #HP-UX can use libiconv as an add-on package, which has #define iconv_open libiconv_open
 if (conf.CHECK_FUNCS_IN('iconv_open', 'iconv', checklibc=False, headers='iconv.h') or

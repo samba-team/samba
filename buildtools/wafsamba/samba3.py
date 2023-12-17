@@ -45,25 +45,25 @@ def s3_fix_kwargs(bld, kwargs):
                             '../bin/default/third_party/heimdal/lib/asn1' ]
 
     if bld.CONFIG_SET('USING_SYSTEM_TDB'):
-        (tdb_includes, tdb_ldflags, tdb_cpppath) = library_flags(bld, 'tdb')
+        (tdb_includes, tdb_ldflags, tdb_cpppath, tdb_libs) = library_flags(bld, 'tdb')
         extra_includes += tdb_cpppath
     else:
         extra_includes += [ '../lib/tdb/include' ]
 
     if bld.CONFIG_SET('USING_SYSTEM_TEVENT'):
-        (tevent_includes, tevent_ldflags, tevent_cpppath) = library_flags(bld, 'tevent')
+        (tevent_includes, tevent_ldflags, tevent_cpppath, tevent_libs) = library_flags(bld, 'tevent')
         extra_includes += tevent_cpppath
     else:
         extra_includes += [ '../lib/tevent' ]
 
     if bld.CONFIG_SET('USING_SYSTEM_TALLOC'):
-        (talloc_includes, talloc_ldflags, talloc_cpppath) = library_flags(bld, 'talloc')
+        (talloc_includes, talloc_ldflags, talloc_cpppath, talloc_libs) = library_flags(bld, 'talloc')
         extra_includes += talloc_cpppath
     else:
         extra_includes += [ '../lib/talloc' ]
 
     if bld.CONFIG_SET('USING_SYSTEM_POPT'):
-        (popt_includes, popt_ldflags, popt_cpppath) = library_flags(bld, 'popt')
+        (popt_includes, popt_ldflags, popt_cpppath, popt_libs) = library_flags(bld, 'popt')
         extra_includes += popt_cpppath
     else:
         extra_includes += [ '../lib/popt' ]

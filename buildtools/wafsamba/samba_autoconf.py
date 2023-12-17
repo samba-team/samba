@@ -91,7 +91,7 @@ def CHECK_HEADER(conf, h, add_headers=False, lib=None):
                 conf.env.hlist.append(h)
         return True
 
-    (ccflags, ldflags, cpppath) = library_flags(conf, lib)
+    (ccflags, ldflags, cpppath, libs) = library_flags(conf, lib)
 
     hdrs = hlist_to_string(conf, headers=h)
     if lib is None:
@@ -435,7 +435,7 @@ def CHECK_CODE(conf, code, define,
 
     uselib = TO_LIST(lib)
 
-    (ccflags, ldflags, cpppath) = library_flags(conf, uselib)
+    (ccflags, ldflags, cpppath, libs) = library_flags(conf, uselib)
 
     includes = TO_LIST(includes)
     includes.extend(cpppath)
@@ -569,21 +569,24 @@ Build.BuildContext.CONFIG_SET = CONFIG_SET
 Build.BuildContext.CONFIG_GET = CONFIG_GET
 
 
-def library_flags(self, libs):
+def library_flags(self, library):
     '''work out flags from pkg_config'''
     ccflags = []
     ldflags = []
     cpppath = []
-    for lib in TO_LIST(libs):
+    libs = []
+    for lib in TO_LIST(library):
         # note that we do not add the -I and -L in here, as that is added by the waf
         # core. Adding it here would just change the order that it is put on the link line
         # which can cause system paths to be added before internal libraries
         extra_ccflags = TO_LIST(getattr(self.env, 'CFLAGS_%s' % lib.upper(), []))
         extra_ldflags = TO_LIST(getattr(self.env, 'LDFLAGS_%s' % lib.upper(), []))
         extra_cpppath = TO_LIST(getattr(self.env, 'CPPPATH_%s' % lib.upper(), []))
+        extra_libs = TO_LIST(getattr(self.env, 'LIB_%s' % lib.upper(), []))
         ccflags.extend(extra_ccflags)
         ldflags.extend(extra_ldflags)
         cpppath.extend(extra_cpppath)
+        libs.extend(extra_libs)
 
         extra_cpppath = TO_LIST(getattr(self.env, 'INCLUDES_%s' % lib.upper(), []))
         cpppath.extend(extra_cpppath)
@@ -593,11 +596,12 @@ def library_flags(self, libs):
     ccflags = unique_list(ccflags)
     ldflags = unique_list(ldflags)
     cpppath = unique_list(cpppath)
-    return (ccflags, ldflags, cpppath)
+    libs = unique_list(libs)
+    return (ccflags, ldflags, cpppath, libs)
 
 
 @conf
-def CHECK_LIB(conf, libs, mandatory=False, empty_decl=True, set_target=True, shlib=False):
+def CHECK_LIB(conf, library, mandatory=False, empty_decl=True, set_target=True, shlib=False):
     '''check if a set of libraries exist as system libraries
 
     returns the sublist of libs that do exist as a syslib or []
@@ -611,13 +615,13 @@ int foo()
 }
 '''
     ret = []
-    liblist  = TO_LIST(libs)
-    for lib in liblist[:]:
+    liblist  = TO_LIST(library)
+    for lib in liblist:
         if GET_TARGET_TYPE(conf, lib) == 'SYSLIB':
             ret.append(lib)
             continue
 
-        (ccflags, ldflags, cpppath) = library_flags(conf, lib)
+        (ccflags, ldflags, cpppath, libs) = library_flags(conf, lib)
         if shlib:
             res = conf.check(features='c cshlib', fragment=fragment, lib=lib, uselib_store=lib, cflags=ccflags, ldflags=ldflags, uselib=lib.upper(), mandatory=False)
         else:
