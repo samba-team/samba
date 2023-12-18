@@ -4921,8 +4921,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 		};
 		bool file_created;
 
-		status = reopen_from_fsp(fsp->conn->cwd_fsp,
-					 fsp->fsp_name,
+		status = reopen_from_fsp(parent_dir_fname->fsp,
+					 smb_fname_atname,
 					 fsp,
 					 &how,
 					 &file_created);
