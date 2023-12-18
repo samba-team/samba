@@ -30,11 +30,7 @@
 
 #define NTTIME_INFINITY (NTTIME)0x8000000000000000LL
 
-#if (SIZEOF_LONG == 8)
-#define TIME_FIXUP_CONSTANT_INT 11644473600L
-#elif (SIZEOF_LONG_LONG == 8)
-#define TIME_FIXUP_CONSTANT_INT 11644473600LL
-#endif
+#define TIME_FIXUP_CONSTANT_INT INT64_C(11644473600)
 
 /**************************************************************
  Handle conversions between time_t and uint32, taking care to
