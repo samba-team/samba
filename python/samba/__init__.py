@@ -395,8 +395,8 @@ def enable_net_export_keytab():
     #
     # The dckeytab modules contains nothing, but the act of importing
     # it pushes a method into samba.net.Net. It ended up this way
-    # because Net.export_keytab() only works on Heimdal builds, and
-    # people sometimes want to compile Samba without Heimdal while
+    # because Net.export_keytab() only works on AD DC builds, and
+    # people sometimes want to compile Samba without the AD DC while
     # still having a working samba-tool.
     #
     # There is probably a better way to do this than a magic module
