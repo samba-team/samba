@@ -77,6 +77,9 @@ with authenticated access to "-H ldap://$DCNAME"
 Supported operations include:
  - reading the current and previous gMSA password via
    "samba-tool user getpassword"
+ - writing a Kerberos Ticket Granting Ticket (TGT) to a local
+   credentials cache with a new command
+   "samba-tool user get-kerberos-ticket"
 
 REMOVED FEATURES
 ================
