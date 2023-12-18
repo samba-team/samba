@@ -44,28 +44,6 @@ from samba.tests.krb5.kdc_base_test import KDCBaseTest
 
 
 class GkdiKdcBaseTest(GkdiBaseTest, KDCBaseTest):
-    _root_key: ClassVar[misc.GUID]
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-
-        cls._root_key = None
-
-    def setUp(self) -> None:
-        super().setUp()
-
-        if self._root_key is None:
-            # GKDI requires a root key to operate. Creating a root key here
-            # saves creating one before every test.
-            #
-            # We cannot delete this key after the tests have run, as Windows
-            # might have decided to cache it to be used in subsequent runs. It
-            # will keep a root key cached even if the corresponding AD object
-            # has been deleted, leading to various problems later.
-            cls = type(self)
-            cls._root_key = self.new_root_key(use_start_time=ROOT_KEY_START_TIME)
-
     def new_root_key(self, *args, **kwargs) -> misc.GUID:
         samdb = self.get_samdb()
         domain_dn = self.get_server_dn(samdb)
@@ -311,6 +289,28 @@ class GkdiExplicitRootKeyTests(GkdiKdcBaseTest):
 
 
 class GkdiImplicitRootKeyTests(GkdiKdcBaseTest):
+    _root_key: ClassVar[misc.GUID]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+
+        cls._root_key = None
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        if self._root_key is None:
+            # GKDI requires a root key to operate. Creating a root key here
+            # saves creating one before every test.
+            #
+            # We cannot delete this key after the tests have run, as Windows
+            # might have decided to cache it to be used in subsequent runs. It
+            # will keep a root key cached even if the corresponding AD object
+            # has been deleted, leading to various problems later.
+            cls = type(self)
+            cls._root_key = self.new_root_key(use_start_time=ROOT_KEY_START_TIME)
+
     def test_l1_seed_key(self):
         """Request a key and expect to receive an L1 seed key."""
         gkid = Gkid(300, 0, 31)
