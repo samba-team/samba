@@ -55,6 +55,10 @@ DocThumbnail,{f29f85e0-4ff9-1068-ab91-08002b27b3d9},17,FALSE,FALSE,,Buffer,,,
 RankVector,{49691c90-7e17-101a-a91c-08002b2ecda9},2,FALSE,FALSE,,UInt32,,TRUE,
 All,{49691c90-7e17-101a-a91c-08002b2ecda9},6,FALSE,FALSE,,String,,,
 System.Search.RowID,{49691c90-7e17-101a-a91c-08002b2ecda9},15,FALSE,FALSE,,Int32,,,
+#ParentDir isn't the real name of this prop (but we need a name), this prop
+#seems like Scope except it should only match the directory specified by
+#the property but not any subfolders (e.g. doesn't match subdirs)
+ParentDir,{49691c90-7e17-101a-a91c-08002b2ecda9},19,FALSE,FALSE,,String,,,
 #PercivedType, FileCount &  TotalFileSize are defined by gregors wireshark wip
 PercivedType,{28636aa6-953d-11d2-b5d6-00c04fd918d0},9,FALSE,FALSE,,Int32,,,
 FileCount,{28636aa6-953d-11d2-b5d6-00c04fd918d0},12,FALSE,FALSE,,UInt64,,,
