@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    client security descriptor functions
    Copyright (C) Andrew Tridgell 2000

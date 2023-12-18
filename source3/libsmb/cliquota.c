@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    client quota functions
    Copyright (C) Stefan (metze) Metzmacher	2003
@@ -45,7 +45,7 @@ void free_ntquota_list(SMB_NTQUOTA_LIST **qt_list)
 
 	(*qt_list) = NULL;
 
-	return;	
+	return;
 }
 
 bool add_record_to_ntquota_list(TALLOC_CTX *mem_ctx,

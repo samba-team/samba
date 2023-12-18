@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    client connect/disconnect routines
    Copyright (C) Andrew Tridgell 1994-1998
@@ -2776,7 +2776,7 @@ static void cli_start_connection_connected(struct tevent_req *subreq);
 static void cli_start_connection_done(struct tevent_req *subreq);
 
 /**
-   establishes a connection to after the negprot. 
+   establishes a connection to after the negprot.
    @param output_cli A fully initialised cli structure, non-null only on success
    @param dest_host The netbios name of the remote host
    @param dest_ss (optional) The destination IP, NULL for name based lookup
@@ -2938,9 +2938,9 @@ static NTSTATUS cli_start_connection_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_start_connection(struct cli_state **output_cli, 
-			      const char *my_name, 
-			      const char *dest_host, 
+NTSTATUS cli_start_connection(struct cli_state **output_cli,
+			      const char *my_name,
+			      const char *dest_host,
 			      const struct sockaddr_storage *dest_ss, int port,
 			      enum smb_signing_setting signing_state, int flags)
 {
@@ -3387,7 +3387,7 @@ NTSTATUS cli_smb1_setup_encryption(struct cli_state *cli,
    @param dest_ip (optional) The the destination IP, NULL for name based lookup
    @param port (optional) The destination port (0 for default)
    @param service (optional) The share to make the connection to.  Should be 'unqualified' in any way.
-   @param service_type The 'type' of serivice. 
+   @param service_type The 'type' of service.
    @param creds The used user credentials
 */
 

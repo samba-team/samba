@@ -1,10 +1,10 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
    SMB client library implementation
    Copyright (C) Andrew Tridgell 1998
    Copyright (C) Richard Sharpe 2000, 2002
    Copyright (C) John Terpstra 2000
-   Copyright (C) Tom Jansen (Ninja ISD) 2002 
+   Copyright (C) Tom Jansen (Ninja ISD) 2002
    Copyright (C) Derrell Lipman 2003-2008
    Copyright (C) Jeremy Allison 2007, 2008
 
@@ -1060,9 +1060,9 @@ cacl_get(SMBCCTX *context,
                                 if (all || all_nt) {
                                         if (determine_size) {
                                                 p = talloc_asprintf(
-                                                        ctx, 
+                                                        ctx,
                                                         ",ACL:"
-                                                        "%s:%d/%d/0x%08x", 
+                                                        "%s:%d/%d/0x%08x",
                                                         sidstr,
                                                         ace->type,
                                                         ace->flags,
@@ -1075,7 +1075,7 @@ cacl_get(SMBCCTX *context,
                                         } else {
                                                 n = snprintf(
                                                         buf, bufsize,
-                                                        ",ACL:%s:%d/%d/0x%08x", 
+                                                        ",ACL:%s:%d/%d/0x%08x",
                                                         sidstr,
                                                         ace->type,
                                                         ace->flags,
@@ -1087,8 +1087,8 @@ cacl_get(SMBCCTX *context,
                                             strcasecmp_m(name+4, sidstr) == 0)) {
                                         if (determine_size) {
                                                 p = talloc_asprintf(
-                                                        ctx, 
-                                                        "%d/%d/0x%08x", 
+                                                        ctx,
+                                                        "%d/%d/0x%08x",
                                                         ace->type,
                                                         ace->flags,
                                                         ace->access_mask);
@@ -1099,7 +1099,7 @@ cacl_get(SMBCCTX *context,
                                                 n = strlen(p);
                                         } else {
                                                 n = snprintf(buf, bufsize,
-                                                             "%d/%d/0x%08x", 
+                                                             "%d/%d/0x%08x",
                                                              ace->type,
                                                              ace->flags,
                                                              ace->access_mask);
@@ -1107,7 +1107,7 @@ cacl_get(SMBCCTX *context,
                                 } else if (all_nt_acls) {
                                         if (determine_size) {
                                                 p = talloc_asprintf(
-                                                        ctx, 
+                                                        ctx,
                                                         "%s%s:%d/%d/0x%08x",
                                                         i ? "," : "",
                                                         sidstr,
@@ -1848,7 +1848,7 @@ SMBC_setxattr_ctx(SMBCCTX *context,
 				dad->mode);
 			if (!ok) {
                                 /* cause failure if NT failed too */
-                                dad = NULL; 
+                                dad = NULL;
                         }
                 }
 
@@ -2171,7 +2171,7 @@ SMBC_getxattr_ctx(SMBCCTX *context,
                 /* Yup. */
                 const char *filename = name;
                 ret = cacl_get(context, talloc_tos(), srv,
-                               ipc_srv == NULL ? NULL : ipc_srv->cli, 
+                               ipc_srv == NULL ? NULL : ipc_srv->cli,
                                &ipc_srv->pol, path,
                                filename,
                                discard_const_p(char, value),

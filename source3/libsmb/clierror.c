@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    client error handling routines
    Copyright (C) Andrew Tridgell 1994-1998

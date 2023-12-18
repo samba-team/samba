@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Copyright (C) Andrew Tridgell 1998
 
@@ -142,7 +142,7 @@ static const struct
   int code;
   const char *e_class;
   err_code_struct *err_msgs;
-} err_classes[] = { 
+} err_classes[] = {
   {0,"SUCCESS",NULL},
   {0x01,"ERRDOS",dos_msgs},
   {0x02,"ERRSRV",server_msgs},
