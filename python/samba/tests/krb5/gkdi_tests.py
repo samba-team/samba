@@ -113,7 +113,11 @@ class GkdiExplicitRootKeyTests(GkdiKdcBaseTest):
         # It actually doesn’t matter what we specify for the L1 and L2 indices.
         # We’ll get the same result regardless — they just cannot specify a key
         # from the future.
-        self.check_rpc_get_key(root_key_id, self.current_gkid())
+        current_gkid = self.current_gkid()
+        key = self.check_rpc_get_key(root_key_id, current_gkid)
+
+        self.assertEqual(current_gkid, key.gkid)
+        self.assertEqual(root_key_id, key.root_key_id)
 
     def test_previous_l0_idx(self):
         """Request a key with a previous L0 index."""
