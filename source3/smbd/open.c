@@ -4915,8 +4915,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 
 	if (access_mask & need_fd_access) {
 		status = reopen_from_fsp(
-			fsp->conn->cwd_fsp,
-			fsp->fsp_name,
+			parent_dir_fname->fsp,
+			smb_fname_atname,
 			fsp,
 			O_RDONLY | O_DIRECTORY,
 			0,
