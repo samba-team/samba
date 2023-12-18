@@ -62,7 +62,8 @@ class KeyEnvelopeTests(samba.tests.TestCase):
 
         self.assertEqual(self.root_key_id, envelope.root_key_id)
 
-        self.assertEqual(0, envelope.unknown)
+        self.assertEqual(0, envelope.additional_info_len)
+        self.assertFalse(envelope.additional_info)
 
         self.assertEqual(self.domain_name, envelope.domain_name)
         self.assertEqual(utf16_encoded_len(self.domain_name), envelope.domain_name_len)
@@ -84,7 +85,8 @@ class KeyEnvelopeTests(samba.tests.TestCase):
 
         envelope.root_key_id = self.root_key_id
 
-        envelope.unknown = 0
+        envelope.additional_info = []
+        envelope.additional_info_len = 0
 
         envelope.domain_name = self.domain_name
         envelope.forest_name = self.forest_name

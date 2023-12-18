@@ -42,9 +42,15 @@ interface gkdi
 		[range(0, 31)] uint32 l1_index;
 		[range(0, 31)] uint32 l2_index;
 		GUID root_key_id;
-		uint32 unknown; /* This might be the length of a key that is rarely or never present. */
+		uint32 additional_info_len;
 		[value(2 * ndr_charset_length(domain_name, CH_UTF16))] uint32 domain_name_len;
 		[value(2 * ndr_charset_length(forest_name, CH_UTF16))] uint32 forest_name_len;
+		/*
+		 * https://lists.samba.org/archive/cifs-protocol/2023-December/004170.html
+		 * This is the public key blob of an ephemeral public key used in secret
+		 * agreement, or a random number used in deriving a symmetric key.
+		 */
+		[flag(NDR_SECRET)] uint8 additional_info[additional_info_len];
 		nstring domain_name; /* DNS name of the domain which generated the key. */
 		nstring forest_name; /* DNS name of the forest which generated the key. */
 	} KeyEnvelope;
