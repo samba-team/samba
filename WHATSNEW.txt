@@ -61,6 +61,23 @@ virtualCryptSHA256: {CRYPT}$5$rounds=2561$hXem.M9onhM9Vuix$dFdSBwF
 to:
 virtualCryptSHA256;rounds=2561: {CRYPT}$5$rounds=2561$hXem.M9onhM9Vuix$dFdSBwF
 
+Group Managed service account client-side features
+--------------------------------------------------
+
+samba-tool has been extended to provide client-side support for Group
+Managed Service accounts.  These accounts have passwords that change
+automatically, giving the advantages of service isolation without risk
+of poor, unchanging passwords.
+
+Where possible, Samba's existing samba-tool password handling
+commands, which in the past have only operated against the local
+sam.ldb have been extended to permit operation against a remote server
+with authenticated access to "-H ldap://$DCNAME"
+
+Supported operations include:
+ - reading the current and previous gMSA password via
+   "samba-tool user getpassword"
+
 REMOVED FEATURES
 ================
 
