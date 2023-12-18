@@ -45,8 +45,8 @@ interface gkdi
 		uint32 unknown; /* This might be the length of a key that is rarely or never present. */
 		[value(2 * ndr_charset_length(domain_name, CH_UTF16))] uint32 domain_name_len;
 		[value(2 * ndr_charset_length(forest_name, CH_UTF16))] uint32 forest_name_len;
-		nstring domain_name;
-		nstring forest_name;
+		nstring domain_name; /* DNS name of the domain which generated the key. */
+		nstring forest_name; /* DNS name of the forest which generated the key. */
 	} KeyEnvelope;
 
 	typedef [public] struct {
@@ -71,8 +71,8 @@ interface gkdi
 		uint8 kdf_parameters[kdf_parameters_len];
 		nstring secret_agreement_algorithm;
 		uint8 secret_agreement_parameters[secret_agreement_parameters_len];
-		nstring domain_name;
-		nstring forest_name;
+		nstring domain_name; /* DNS name of the domain which generated the key. */
+		nstring forest_name; /* DNS name of the forest which generated the key. */
 		[flag(NDR_SECRET)] uint8 l1_key[l1_key_len];
 		[flag(NDR_SECRET)] uint8 l2_key[l2_key_len];
 	} GroupKeyEnvelope;
