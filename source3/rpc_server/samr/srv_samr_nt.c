@@ -7046,11 +7046,12 @@ NTSTATUS _samr_RemoveMemberFromForeignDomain(struct pipes_struct *p,
 
 	if (!sid_check_is_builtin(&dinfo->sid)) {
 		struct dom_sid_buf buf2;
-		DEBUG(1,("_samr_RemoveMemberFromForeignDomain: domain_sid = %s, "
-			 "global_sam_sid() = %s\n",
-			 dom_sid_str_buf(&dinfo->sid, &buf),
-			 dom_sid_str_buf(get_global_sam_sid(), &buf2)));
-		DEBUGADD(1,("please report to samba-technical@lists.samba.org!\n"));
+		DBG_WARNING("domain_sid = %s, "
+			    "global_sam_sid() = %s\n"
+			    "please report to "
+			    "samba-technical@lists.samba.org!\n",
+			    dom_sid_str_buf(&dinfo->sid, &buf),
+			    dom_sid_str_buf(get_global_sam_sid(), &buf2));
 		return NT_STATUS_OK;
 	}
 
