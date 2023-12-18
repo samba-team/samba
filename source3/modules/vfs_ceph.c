@@ -55,7 +55,7 @@
 
 /*
  * Note, libcephfs's return code model is to return -errno! So we have to
- * convert to what Samba expects, with is set errno to -return and return -1
+ * convert to what Samba expects, which is to set errno to -return and return -1
  */
 #define WRAP_RETURN(_res) \
 	errno = 0; \
