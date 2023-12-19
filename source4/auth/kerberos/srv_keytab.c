@@ -114,18 +114,22 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 	return 0;
 }
 
-static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
-				     const char *saltPrincipal,
-				     int kvno,
-				     const char *new_secret,
-				     const char *old_secret,
-				     uint32_t supp_enctypes,
-				     uint32_t num_principals,
-				     krb5_principal *principals,
-				     krb5_context context,
-				     krb5_keytab keytab,
-				     bool add_old,
-				     const char **perror_string)
+/*
+ * This is the inner part of smb_krb5_update_keytab on an open keytab
+ * and without the deletion
+ */
+static krb5_error_code smb_krb5_fill_keytab(TALLOC_CTX *parent_ctx,
+					    const char *saltPrincipal,
+					    int kvno,
+					    const char *new_secret,
+					    const char *old_secret,
+					    uint32_t supp_enctypes,
+					    uint32_t num_principals,
+					    krb5_principal *principals,
+					    krb5_context context,
+					    krb5_keytab keytab,
+					    bool add_old,
+					    const char **perror_string)
 {
 	krb5_error_code ret;
 	krb5_principal salt_princ = NULL;
@@ -314,7 +318,7 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 			goto done;
 		}
 
-		ret = create_keytab(tmp_ctx,
+		ret = smb_krb5_fill_keytab(tmp_ctx,
 				    saltPrincipal,
 				    kvno, new_secret, old_secret,
 				    supp_enctypes,
