@@ -115,8 +115,6 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 }
 
 static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
-				     const char *samAccountName,
-				     const char *realm,
 				     const char *saltPrincipal,
 				     int kvno,
 				     const char *new_secret,
@@ -317,7 +315,7 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 		}
 
 		ret = create_keytab(tmp_ctx,
-				    samAccountName, upper_realm, saltPrincipal,
+				    saltPrincipal,
 				    kvno, new_secret, old_secret,
 				    supp_enctypes,
 				    num_principals,
