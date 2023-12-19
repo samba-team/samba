@@ -402,16 +402,19 @@ static void debug_systemd_log(int msg_level, const char *msg, size_t msg_len)
 static void debug_lttng_log(int msg_level, const char *msg, size_t msg_len)
 {
 	if (state.hs_len > 0) {
-		ensure_copy_no_nl(state.header_str_no_nl,
-				  sizeof(state.header_str_no_nl),
-				  state.header_str,
-				  state.hs_len);
-		tracef(state.header_str_no_nl);
+		size_t len = state.hs_len;
+
+		if (state.header_str[len - 1] == '\n') {
+			len -= 1;
+		}
+
+		tracef("%.*s", (int)len, state.header_str);
 	}
-	ensure_copy_no_nl(state.msg_no_nl,
-			  sizeof(state.msg_no_nl),
-			  msg, msg_len);
-	tracef(state.msg_no_nl);
+
+	if ((msg_len > 0) && (msg[msg_len - 1] == '\n')) {
+		msg_len -= 1;
+	}
+	tracef("%.*s", (int)msg_len, msg);
 }
 #endif /* WITH_LTTNG_TRACEF */
 
