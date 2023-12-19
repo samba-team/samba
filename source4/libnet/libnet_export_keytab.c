@@ -44,6 +44,7 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 	char *entry_principal = NULL;
 	bool copy_one_principal = (principal != NULL);
 	krb5_data password;
+	bool keys_exported = false;
 
 	code = smb_krb5_kt_open_relative(context,
 					 keytab_name,
@@ -144,6 +145,7 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 					  code, *error_string));
 				goto done;
 			}
+			keys_exported = true;
 		}
 
 		if (copy_one_principal) {
@@ -162,7 +164,18 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	status = NT_STATUS_OK;
+	if (keys_exported == false) {
+		*error_string = talloc_asprintf(mem_ctx,
+						"No keys found while exporting %s.  "
+						"Consider connecting to a local sam.ldb, "
+						"only gMSA accounts can be exported over "
+						"LDAP and connecting user needs to be authorized",
+						principal ? principal : "all users in domain");
+		status = NT_STATUS_NO_USER_KEYS;
+	} else {
+		status = NT_STATUS_OK;
+	}
+
 done:
 	SAFE_FREE(entry_principal);
 	sdb_entry_free(&sentry);
