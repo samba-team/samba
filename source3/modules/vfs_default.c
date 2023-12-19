@@ -52,6 +52,9 @@ static int vfswrap_connect(vfs_handle_struct *handle, const char *service, const
 	bool bval;
 
 	handle->conn->have_proc_fds = sys_have_proc_fds();
+#ifdef DISABLE_PROC_FDS
+	handle->conn->have_proc_fds = false;
+#endif
 
 	/*
 	 * assume the kernel will support openat2(),
@@ -70,6 +73,9 @@ static int vfswrap_connect(vfs_handle_struct *handle, const char *service, const
 		handle->conn->open_how_resolve |=
 			VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS;
 	}
+#ifdef DISABLE_VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS
+	handle->conn->open_how_resolve &= ~VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS;
+#endif
 
 	return 0;    /* Return >= 0 for success */
 }
