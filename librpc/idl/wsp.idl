@@ -1284,18 +1284,13 @@ interface msftewds
 		uint32 prgirownext[cdepthnext];
 	} wsp_findindicesout;
 
-	typedef [public] struct {
-		uint32 hcursor;
-		uint32 chapt;
-	} wsp_cpmsresetstartpos;
-
 	typedef [public, nodiscriminant, switch_type(uint32)] union {
 		[case(CPMCONNECT)] wsp_cpmconnectin cpmconnect;
 		[case(CPMCREATEQUERY)] wsp_cpmcreatequeryin cpmcreatequery;
 		[case(CPMFREECURSOR)] wsp_cpmfreecursorin cpmfreecursor;
 		[case(CPMGETROWS)] wsp_cpmgetrowsin cpmgetrows;
 		[case(CPMSETBINDINGSIN)] wsp_cpmsetbindingsin cpmsetbindings;
-		[case(CPMRESTARTPOSITIONIN)] wsp_cpmsresetstartpos cpmresetstartpos;
+		[case(CPMRESTARTPOSITIONIN)] wsp_cpmrestartpositionin cpmrrestartpos;
 		[case(CPMGETQUERYSTATUS)] wsp_cpmgetquerystatusin cpmgetquerystatus;
 		[case(CPMGETQUERYSTATUSEX)] wsp_cpmgetquerystatusexin cpmgetquerystatusex;
 		[case(CPMSETSCOPEPRIORITIZATION)]  wsp_cpmsetscopeprioritizationin cpmsetscopeprioritizationin;
