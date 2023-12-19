@@ -26,21 +26,30 @@
 #include "python/modules.h"
 #include "py_net.h"
 #include "libnet_export_keytab.h"
+#include "pyldb.h"
 
 void initdckeytab(void);
 
 static PyObject *py_net_export_keytab(py_net_Object *self, PyObject *args, PyObject *kwargs)
 {
 	struct libnet_export_keytab r;
+	PyObject *py_samdb = NULL;
 	TALLOC_CTX *mem_ctx;
-	const char *kwnames[] = { "keytab", "principal", NULL };
+	const char *kwnames[] = { "keytab", "samdb", "principal", NULL };
 	NTSTATUS status;
 	r.in.principal = NULL;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|z:export_keytab", discard_const_p(char *, kwnames),
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|Oz:export_keytab", discard_const_p(char *, kwnames),
 					 &r.in.keytab_name,
+					 &py_samdb,
 					 &r.in.principal)) {
 		return NULL;
+	}
+
+	if (py_samdb == NULL) {
+		r.in.samdb = NULL;
+	} else {
+		PyErr_LDB_OR_RAISE(py_samdb, r.in.samdb);
 	}
 
 	mem_ctx = talloc_new(self->mem_ctx);

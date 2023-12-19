@@ -40,6 +40,7 @@ else:
         takes_optiongroups = {
             "sambaopts": options.SambaOptions,
             "credopts": options.CredentialsOptions,
+            "hostopts": options.HostOptions,
             "versionopts": options.VersionOptions,
         }
 
@@ -49,7 +50,14 @@ else:
 
         takes_args = ["keytab"]
 
-        def run(self, keytab, credopts=None, sambaopts=None, versionopts=None, principal=None):
+        def run(self,
+                keytab,
+                credopts=None,
+                sambaopts=None,
+                versionopts=None,
+                hostopts=None,
+                principal=None):
             lp = sambaopts.get_loadparm()
             net = Net(None, lp)
-            net.export_keytab(keytab=keytab, principal=principal)
+            samdb = self.ldb_connect(hostopts, sambaopts, credopts)
+            net.export_keytab(samdb=samdb, keytab=keytab, principal=principal)
