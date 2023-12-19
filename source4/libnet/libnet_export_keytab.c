@@ -170,6 +170,7 @@ NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, s
 
 	base_ctx->ev_ctx = ctx->event_ctx;
 	base_ctx->lp_ctx = ctx->lp_ctx;
+	base_ctx->samdb = r->in.samdb;
 
 	status = samba_kdc_setup_db_ctx(mem_ctx, base_ctx, &db_ctx);
 	if (!NT_STATUS_IS_OK(status)) {

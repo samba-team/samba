@@ -78,7 +78,7 @@ krb5_error_code mit_samba_context_init(struct mit_samba_context **_ctx)
 	struct mit_samba_context *ctx;
 	const char *s4_conf_file;
 	krb5_error_code ret;
-	struct samba_kdc_base_context base_ctx;
+	struct samba_kdc_base_context base_ctx = {};
 
 	ctx = talloc_zero(NULL, struct mit_samba_context);
 	if (!ctx) {

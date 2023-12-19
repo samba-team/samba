@@ -23,6 +23,7 @@ struct libnet_export_keytab {
 	struct {
 		const char *keytab_name;
 		const char *principal;
+		struct ldb_context *samdb;
 	} in;
 	struct {
 		const char *error_string;

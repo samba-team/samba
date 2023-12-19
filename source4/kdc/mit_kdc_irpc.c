@@ -160,7 +160,7 @@ static NTSTATUS netr_samlogon_generic_logon(struct irpc_message *msg,
 
 NTSTATUS samba_setup_mit_kdc_irpc(struct task_server *task)
 {
-	struct samba_kdc_base_context base_ctx;
+	struct samba_kdc_base_context base_ctx = {};
 	struct mit_kdc_irpc_context *mki_ctx;
 	NTSTATUS status;
 	int code;

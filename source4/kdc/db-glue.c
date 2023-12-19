@@ -3643,7 +3643,6 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 {
 	int ldb_ret;
 	struct ldb_message *msg = NULL;
-	struct auth_session_info *session_info = NULL;
 	struct samba_kdc_db_context *kdc_db_ctx = NULL;
 	/* The idea here is very simple.  Using Kerberos to
 	 * authenticate the KDC to the LDAP server is highly likely to
@@ -3668,23 +3667,34 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 				 &kdc_db_ctx->policy.usr_tkt_lifetime,
 				 &kdc_db_ctx->policy.renewal_lifetime);
 
-	session_info = system_session(kdc_db_ctx->lp_ctx);
-	if (session_info == NULL) {
-		talloc_free(kdc_db_ctx);
-		return NT_STATUS_INTERNAL_ERROR;
-	}
+	/* This is to allow "samba-tool domain exportkeytab to take a -H */
+	if (base_ctx->samdb != NULL) {
+		/*
+		 * Caller is responsible for lifetimes.  In reality
+		 * the whole thing is destroyed before leaving the
+		 * function the samdb was passed into
+		 */
+		kdc_db_ctx->samdb = base_ctx->samdb;
+	} else {
+		struct auth_session_info *session_info = NULL;
+		session_info = system_session(kdc_db_ctx->lp_ctx);
+		if (session_info == NULL) {
+			talloc_free(kdc_db_ctx);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 
-	/* Setup the link to LDB */
-	kdc_db_ctx->samdb = samdb_connect(kdc_db_ctx,
-					  base_ctx->ev_ctx,
-					  base_ctx->lp_ctx,
-					  session_info,
-					  NULL,
-					  0);
-	if (kdc_db_ctx->samdb == NULL) {
-		DBG_WARNING("Cannot open samdb for KDC backend!\n");
-		talloc_free(kdc_db_ctx);
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		/* Setup the link to LDB */
+		kdc_db_ctx->samdb = samdb_connect(kdc_db_ctx,
+						  base_ctx->ev_ctx,
+						  base_ctx->lp_ctx,
+						  session_info,
+						  NULL,
+						  0);
+		if (kdc_db_ctx->samdb == NULL) {
+			DBG_WARNING("Cannot open samdb for KDC backend!\n");
+			talloc_free(kdc_db_ctx);
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		}
 	}
 
 	/* Find out our own krbtgt kvno */
