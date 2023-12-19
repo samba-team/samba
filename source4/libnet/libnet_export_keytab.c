@@ -20,7 +20,10 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
+#include "auth/credentials/credentials.h"
 #include "auth/kerberos/kerberos.h"
+#include "auth/kerberos/kerberos_credentials.h"
+#include "auth/kerberos/kerberos_util.h"
 #include "kdc/samba_kdc.h"
 #include "libnet/libnet_export_keytab.h"
 
@@ -77,6 +80,7 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 
 	for (; code == 0; code = samba_kdc_nextkey(context, db_ctx, &sentry)) {
 		int i;
+		bool found_previous = false;
 
 		code = krb5_unparse_name(context,
 					 sentry.principal,
@@ -87,6 +91,23 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 								   mem_ctx);
 			status = NT_STATUS_UNSUCCESSFUL;
 			goto done;
+		}
+
+		if (copy_one_principal) {
+			code = smb_krb5_remove_obsolete_keytab_entries(mem_ctx,
+								       context,
+								       keytab,
+								       1, &sentry.principal,
+								       sentry.kvno,
+								       &found_previous,
+								       error_string);
+			if (code != 0) {
+				*error_string = talloc_asprintf(mem_ctx,
+								"Failed to remove old principals from keytab: %s\n",
+								*error_string);
+				status = NT_STATUS_UNSUCCESSFUL;
+				goto done;
+			}
 		}
 
 		if (sentry.keys.len == 0) {
