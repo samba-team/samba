@@ -1142,6 +1142,11 @@ ssize_t sendfile_short_send(struct smbXsrv_connection *xconn,
 static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 			uint16_t dirtype)
 {
+	if (fsp->fsp_name->twrp != 0) {
+		/* Get the error right, this is what Windows returns. */
+		return NT_STATUS_NOT_SAME_DEVICE;
+	}
+
 	if (!CAN_WRITE(conn)) {
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
