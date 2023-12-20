@@ -82,6 +82,8 @@ NTSTATUS refuse_symlink_fsp(const files_struct *fsp)
 NTSTATUS check_any_access_fsp(struct files_struct *fsp,
 			      uint32_t access_requested)
 {
+	const uint32_t ro_access = SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE;
+	uint32_t ro_access_granted = 0;
 	uint32_t access_granted = 0;
 	NTSTATUS status;
 
@@ -102,15 +104,31 @@ NTSTATUS check_any_access_fsp(struct files_struct *fsp,
 							false,
 							mask);
 			if (NT_STATUS_IS_OK(status)) {
-				break;
+				access_granted |= mask;
+				if (fsp->fsp_name->twrp == 0) {
+					/*
+					 * We can only optimize
+					 * the non-snapshot case
+					 */
+					break;
+				}
 			}
 			mask <<= 1;
 		}
-		access_granted = mask;
 	}
 	if ((access_granted & access_requested) == 0) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	if (fsp->fsp_name->twrp == 0) {
+		return NT_STATUS_OK;
+	}
+
+	ro_access_granted = access_granted & ro_access;
+	if ((ro_access_granted & access_requested) == 0) {
+		return NT_STATUS_MEDIA_WRITE_PROTECTED;
+	}
+
 	return NT_STATUS_OK;
 }
 
