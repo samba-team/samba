@@ -243,9 +243,9 @@ size_t utf16_null_terminated_len_n(const void *src, size_t n)
 	return len;
 }
 
-uint16_t *talloc_utf16_strlendup(TALLOC_CTX *mem_ctx, const char *str, size_t len)
+unsigned char *talloc_utf16_strlendup(TALLOC_CTX *mem_ctx, const char *str, size_t len)
 {
-	uint16_t *new_str = NULL;
+	unsigned char *new_str = NULL;
 
 	/* Check for overflow. */
 	if (len > SIZE_MAX - 2) {
@@ -263,22 +263,17 @@ uint16_t *talloc_utf16_strlendup(TALLOC_CTX *mem_ctx, const char *str, size_t le
 
 	memcpy(new_str, str, len);
 
-	{
-		/*
-		 * Ensure that the UTF‐16 string is
-		 * null‐terminated.
-		 */
-
-		char *new_bytes = (char *)new_str;
-
-		new_bytes[len] = '\0';
-		new_bytes[len + 1] = '\0';
-	}
+	/*
+	 * Ensure that the UTF‐16 string is
+	 * null‐terminated.
+	 */
+	new_str[len] = '\0';
+	new_str[len + 1] = '\0';
 
 	return new_str;
 }
 
-uint16_t *talloc_utf16_strdup(TALLOC_CTX *mem_ctx, const char *str)
+unsigned char *talloc_utf16_strdup(TALLOC_CTX *mem_ctx, const char *str)
 {
 	if (str == NULL) {
 		return NULL;
@@ -286,7 +281,7 @@ uint16_t *talloc_utf16_strdup(TALLOC_CTX *mem_ctx, const char *str)
 	return talloc_utf16_strlendup(mem_ctx, str, utf16_len(str));
 }
 
-uint16_t *talloc_utf16_strndup(TALLOC_CTX *mem_ctx, const char *str, size_t n)
+unsigned char *talloc_utf16_strndup(TALLOC_CTX *mem_ctx, const char *str, size_t n)
 {
 	if (str == NULL) {
 		return NULL;

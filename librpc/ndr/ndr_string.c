@@ -481,9 +481,9 @@ _PUBLIC_ uint32_t ndr_size_string(int ret, const char * const* string, ndr_flags
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_u16string(struct ndr_pull *ndr,
 					      ndr_flags_type ndr_flags,
-					      const uint16_t **s)
+					      const unsigned char **s)
 {
-	uint16_t *as = NULL;
+	unsigned char *as = NULL;
 	const char *const src_str = (char *)ndr->data + ndr->offset;
 	size_t src_len = 0;
 
@@ -544,7 +544,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_u16string(struct ndr_pull *ndr,
 */
 _PUBLIC_ enum ndr_err_code ndr_push_u16string(struct ndr_push *ndr,
 					      ndr_flags_type ndr_flags,
-					      const uint16_t *s)
+					      const unsigned char *s)
 {
 	size_t s_len;
 
@@ -578,12 +578,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_u16string(struct ndr_push *ndr,
 
 	switch (ndr->flags & LIBNDR_STRING_FLAGS) {
 	case LIBNDR_FLAG_STR_NULLTERM:
-		NDR_CHECK(ndr_push_bytes(ndr, (const uint8_t *)s, s_len));
+		NDR_CHECK(ndr_push_bytes(ndr, s, s_len));
 		break;
 
 	default:
 		if (ndr->flags & LIBNDR_FLAG_REMAINING) {
-			NDR_CHECK(ndr_push_bytes(ndr, (const uint8_t *)s, s_len));
+			NDR_CHECK(ndr_push_bytes(ndr, s, s_len));
 			break;
 		}
 
@@ -600,11 +600,11 @@ _PUBLIC_ enum ndr_err_code ndr_push_u16string(struct ndr_push *ndr,
 
 _PUBLIC_ void ndr_print_u16string(struct ndr_print *ndr,
 				  const char *name,
-				  const uint16_t *s)
+				  const unsigned char *s)
 {
 	return ndr_print_array_uint8(ndr,
 				     name,
-				     (const uint8_t *)s,
+				     s,
 				     utf16_len(s));
 }
 

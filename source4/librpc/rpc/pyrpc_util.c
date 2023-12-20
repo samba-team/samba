@@ -419,7 +419,7 @@ PyObject *PyString_FromStringOrNULL(const char *str)
 	return PyUnicode_FromString(str);
 }
 
-PyObject *PyBytes_FromUtf16StringOrNULL(const uint16_t *str)
+PyObject *PyBytes_FromUtf16StringOrNULL(const unsigned char *str)
 {
 	size_t len;
 
@@ -431,11 +431,11 @@ PyObject *PyBytes_FromUtf16StringOrNULL(const uint16_t *str)
 	return PyBytes_FromStringAndSize((const char *)str, len);
 }
 
-uint16_t *PyUtf16String_FromBytes(TALLOC_CTX *mem_ctx, PyObject *value)
+unsigned char *PyUtf16String_FromBytes(TALLOC_CTX *mem_ctx, PyObject *value)
 {
 	char *bytes = NULL;
 	Py_ssize_t len = 0;
-	uint16_t *utf16_string = NULL;
+	unsigned char *utf16_string = NULL;
 	int ret;
 
 	ret = PyBytes_AsStringAndSize(value, &bytes, &len);
