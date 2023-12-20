@@ -24,6 +24,7 @@
 #include "../libcli/smb/smb_common.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "rpc_server/srv_pipe_hnd.h"
+#include "libcli/security/security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
@@ -339,8 +340,9 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 		return req;
 	}
 
-	if (!CHECK_WRITE(fsp)) {
-		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+	status = check_any_access_fsp(fsp, FILE_WRITE_DATA|FILE_APPEND_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
 	}
 

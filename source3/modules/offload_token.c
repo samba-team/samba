@@ -259,6 +259,8 @@ NTSTATUS vfs_offload_token_check_handles(uint32_t fsctl,
 					 files_struct *src_fsp,
 					 files_struct *dst_fsp)
 {
+	NTSTATUS status;
+
 	if (src_fsp->vuid != dst_fsp->vuid) {
 		DBG_INFO("copy chunk handles not in the same session.\n");
 		return NT_STATUS_ACCESS_DENIED;
@@ -317,10 +319,11 @@ NTSTATUS vfs_offload_token_check_handles(uint32_t fsctl,
 	 *
 	 * A non writable dst handle also doesn't make sense for other fsctls.
 	 */
-	if (!CHECK_WRITE(dst_fsp)) {
+	status = check_any_access_fsp(dst_fsp, FILE_WRITE_DATA|FILE_APPEND_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
 		DBG_INFO("dest handle not writable (%s).\n",
 			smb_fname_str_dbg(dst_fsp->fsp_name));
-		return NT_STATUS_ACCESS_DENIED;
+		return status;
 	}
 	/*
 	 * - The Open.GrantedAccess of the destination file does not include
