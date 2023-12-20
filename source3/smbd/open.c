@@ -1635,6 +1635,9 @@ static NTSTATUS open_file(
 	fsp->fsp_flags.can_write =
 		CAN_WRITE(conn) &&
 		((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) != 0);
+	if (fsp->fsp_name->twrp != 0) {
+		fsp->fsp_flags.can_write = false;
+	}
 	fsp->print_file = NULL;
 	fsp->fsp_flags.modified = false;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
