@@ -1142,6 +1142,8 @@ ssize_t sendfile_short_send(struct smbXsrv_connection *xconn,
 static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 			uint16_t dirtype)
 {
+	NTSTATUS status;
+
 	if (fsp->fsp_name->twrp != 0) {
 		/* Get the error right, this is what Windows returns. */
 		return NT_STATUS_NOT_SAME_DEVICE;
@@ -1185,11 +1187,11 @@ static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 		return NT_STATUS_OK;
 	}
 
-	if (fsp->access_mask & (DELETE_ACCESS|FILE_WRITE_ATTRIBUTES)) {
-		return NT_STATUS_OK;
+	status = check_any_access_fsp(fsp, DELETE_ACCESS | FILE_WRITE_ATTRIBUTES);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-
-	return NT_STATUS_ACCESS_DENIED;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************

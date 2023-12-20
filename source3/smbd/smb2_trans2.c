@@ -4018,8 +4018,9 @@ NTSTATUS smb_set_file_size(connection_struct *conn,
 	    fsp_get_io_fd(fsp) != -1)
 	{
 		/* Handle based call. */
-		if (!(fsp->access_mask & FILE_WRITE_DATA)) {
-			return NT_STATUS_ACCESS_DENIED;
+		status = check_any_access_fsp(fsp, FILE_WRITE_DATA);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 
 		if (vfs_set_filelen(fsp, size) == -1) {
@@ -4922,8 +4923,9 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	    fsp_get_io_fd(fsp) != -1)
 	{
 		/* Open file handle. */
-		if (!(fsp->access_mask & FILE_WRITE_DATA)) {
-			return NT_STATUS_ACCESS_DENIED;
+		status = check_any_access_fsp(fsp, FILE_WRITE_DATA);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 
 		/* Only change if needed. */

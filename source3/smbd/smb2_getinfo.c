@@ -315,15 +315,15 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		case FSCC_FILE_ALL_INFORMATION:
 		case FSCC_FILE_NETWORK_OPEN_INFORMATION:
 		case FSCC_FILE_ATTRIBUTE_TAG_INFORMATION:
-			if (!(fsp->access_mask & SEC_FILE_READ_ATTRIBUTE)) {
-				tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			status = check_any_access_fsp(fsp, SEC_FILE_READ_ATTRIBUTE);
+			if (tevent_req_nterror(req, status)) {
 				return tevent_req_post(req, ev);
 			}
 			break;
 
 		case FSCC_FILE_FULL_EA_INFORMATION:
-			if (!(fsp->access_mask & SEC_FILE_READ_EA)) {
-				tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			status = check_any_access_fsp(fsp, SEC_FILE_READ_EA);
+			if (tevent_req_nterror(req, status)) {
 				return tevent_req_post(req, ev);
 			}
 			break;

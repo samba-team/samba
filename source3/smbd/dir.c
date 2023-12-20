@@ -218,11 +218,12 @@ NTSTATUS dptr_create(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!(fsp->access_mask & SEC_DIR_LIST)) {
+	status = check_any_access_fsp(fsp, SEC_DIR_LIST);
+	if (!NT_STATUS_IS_OK(status)) {
 		DBG_INFO("dptr_create: directory %s "
 			"not open for LIST access\n",
 			fsp_str_dbg(fsp));
-		return NT_STATUS_ACCESS_DENIED;
+		return status;
 	}
 	status = OpenDir_fsp(NULL, conn, fsp, wcard, attr, &dir_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
