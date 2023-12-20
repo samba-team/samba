@@ -587,6 +587,8 @@ static void test_round_trips(void **state)
 	 * which then parses again into the same conditional ACE.
 	 */
 	static const char *sddl[] = {
+		"(0>-0)",
+		"(0>+0)",
 		("(Member_of{SID(AA)})"),
 		("(a Contains @USER.b == @device.c)"),
 		("(a == @user.b == @resource.c)"),
