@@ -31,7 +31,7 @@
 #include "kdc/sdb.h"
 
 static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
-			    krb5_context context,
+			    struct smb_krb5_context *smb_krb5_context,
 			    struct samba_kdc_db_context *db_ctx,
 			    const char *keytab_name,
 			    const char *principal,
@@ -45,6 +45,7 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 	bool copy_one_principal = (principal != NULL);
 	krb5_data password;
 	bool keys_exported = false;
+	krb5_context context = smb_krb5_context->krb5_context;
 
 	code = smb_krb5_kt_open_relative(context,
 					 keytab_name,
@@ -214,7 +215,7 @@ NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, s
 	if (r->in.principal != NULL) {
 		DEBUG(0, ("Export one principal to %s\n", r->in.keytab_name));
 		status = sdb_kt_copy(mem_ctx,
-				     smb_krb5_context->krb5_context,
+				     smb_krb5_context,
 				     db_ctx,
 				     r->in.keytab_name,
 				     r->in.principal,
@@ -223,7 +224,7 @@ NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, s
 		unlink(r->in.keytab_name);
 		DEBUG(0, ("Export complete keytab to %s\n", r->in.keytab_name));
 		status = sdb_kt_copy(mem_ctx,
-				     smb_krb5_context->krb5_context,
+				     smb_krb5_context,
 				     db_ctx,
 				     r->in.keytab_name,
 				     NULL,
