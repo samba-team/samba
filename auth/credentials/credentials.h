@@ -262,7 +262,7 @@ void cli_credentials_set_impersonate_principal(struct cli_credentials *cred,
 					       const char *principal,
 					       const char *self_service);
 void cli_credentials_set_target_service(struct cli_credentials *cred, const char *principal);
-const char *cli_credentials_get_salt_principal(struct cli_credentials *cred);
+char *cli_credentials_get_salt_principal(struct cli_credentials *cred, TALLOC_CTX *mem_ctx);
 const char *cli_credentials_get_impersonate_principal(struct cli_credentials *cred);
 const char *cli_credentials_get_self_service(struct cli_credentials *cred);
 const char *cli_credentials_get_target_service(struct cli_credentials *cred);

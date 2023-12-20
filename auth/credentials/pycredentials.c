@@ -994,12 +994,24 @@ static PyObject *py_creds_set_kerberos_salt_principal(PyObject *self, PyObject *
 
 static PyObject *py_creds_get_kerberos_salt_principal(PyObject *self, PyObject *unused)
 {
+	TALLOC_CTX *mem_ctx;
+	PyObject *ret = NULL;
 	struct cli_credentials *creds = PyCredentials_AsCliCredentials(self);
 	if (creds == NULL) {
 		PyErr_Format(PyExc_TypeError, "Credentials expected");
 		return NULL;
 	}
-	return PyString_FromStringOrNULL(cli_credentials_get_salt_principal(creds));
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	ret = PyString_FromStringOrNULL(cli_credentials_get_salt_principal(creds, mem_ctx));
+
+	TALLOC_FREE(mem_ctx);
+
+	return ret;
 }
 
 static PyObject *py_creds_get_aes256_key(PyObject *self, PyObject *args)

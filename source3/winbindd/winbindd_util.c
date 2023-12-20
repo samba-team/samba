@@ -835,7 +835,7 @@ static bool migrate_secrets_tdb_to_ldb(struct winbindd_domain *domain)
 		   NULL /* oldpass */,
 		   cli_credentials_get_domain(creds),
 		   cli_credentials_get_realm(creds),
-		   cli_credentials_get_salt_principal(creds),
+		   cli_credentials_get_salt_principal(creds, creds),
 		   0, /* Supported enc types, unused */
 		   &domain->sid,
 		   cli_credentials_get_password_last_changed_time(creds),
