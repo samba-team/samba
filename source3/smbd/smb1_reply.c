@@ -3926,8 +3926,9 @@ void reply_writebraw(struct smb_request *req)
 		return;
 	}
 
-	if (!CHECK_WRITE(fsp)) {
-		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+	status = check_any_access_fsp(fsp, FILE_WRITE_DATA|FILE_APPEND_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		error_to_writebrawerr(req);
 		END_PROFILE(SMBwritebraw);
 		return;
@@ -4157,8 +4158,9 @@ void reply_writeunlock(struct smb_request *req)
 		return;
 	}
 
-	if (!CHECK_WRITE(fsp)) {
-		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+	status = check_any_access_fsp(fsp, FILE_WRITE_DATA|FILE_APPEND_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBwriteunlock);
 		return;
 	}
@@ -4292,8 +4294,9 @@ void reply_write(struct smb_request *req)
 		return;
 	}
 
-	if (!CHECK_WRITE(fsp)) {
-		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+	status = check_any_access_fsp(fsp, FILE_WRITE_DATA|FILE_APPEND_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBwrite);
 		return;
 	}
@@ -4571,8 +4574,9 @@ void reply_write_and_X(struct smb_request *req)
 		goto out;
 	}
 
-	if (!CHECK_WRITE(fsp)) {
-		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+	status = check_any_access_fsp(fsp, FILE_WRITE_DATA|FILE_APPEND_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		goto out;
 	}
 
@@ -5283,6 +5287,7 @@ void reply_writeclose(struct smb_request *req)
 	struct timespec mtime;
 	files_struct *fsp;
 	struct lock_struct lock;
+	NTSTATUS status;
 
 	START_PROFILE(SMBwriteclose);
 
@@ -5298,8 +5303,9 @@ void reply_writeclose(struct smb_request *req)
 		END_PROFILE(SMBwriteclose);
 		return;
 	}
-	if (!CHECK_WRITE(fsp)) {
-		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+	status = check_any_access_fsp(fsp, FILE_WRITE_DATA|FILE_APPEND_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBwriteclose);
 		return;
 	}
@@ -6086,6 +6092,7 @@ void reply_printwrite(struct smb_request *req)
 	int numtowrite;
 	const char *data;
 	files_struct *fsp;
+	NTSTATUS status;
 
 	START_PROFILE(SMBsplwr);
 
@@ -6108,8 +6115,9 @@ void reply_printwrite(struct smb_request *req)
 		return;
 	}
 
-	if (!CHECK_WRITE(fsp)) {
-		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+	status = check_any_access_fsp(fsp, FILE_WRITE_DATA|FILE_APPEND_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBsplwr);
 		return;
 	}
