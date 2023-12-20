@@ -295,8 +295,9 @@ NTSTATUS change_notify_create(struct files_struct *fsp,
 	 * Setting a changenotify needs READ/LIST access
 	 * on the directory handle.
 	 */
-	if (!(fsp->access_mask & SEC_DIR_LIST)) {
-		return NT_STATUS_ACCESS_DENIED;
+	status = check_any_access_fsp(fsp, SEC_DIR_LIST);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (fsp->notify != NULL) {

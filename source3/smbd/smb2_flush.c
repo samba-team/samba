@@ -128,6 +128,7 @@ static struct tevent_req *smbd_smb2_flush_send(TALLOC_CTX *mem_ctx,
 	struct smb_request *smbreq;
 	bool is_compound = false;
 	bool is_last_in_compound = false;
+	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_flush_state);
@@ -167,7 +168,8 @@ static struct tevent_req *smbd_smb2_flush_send(TALLOC_CTX *mem_ctx,
 		 * they can be flushed.
 		 */
 
-		if ((fsp->access_mask & flush_access) != 0) {
+		status = check_any_access_fsp(fsp, flush_access);
+		if (NT_STATUS_IS_OK(status)) {
 			allow_dir_flush = true;
 		}
 

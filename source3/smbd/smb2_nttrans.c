@@ -114,20 +114,23 @@ NTSTATUS set_sd(files_struct *fsp, struct security_descriptor *psd,
 
 	/* Ensure we have the rights to do this. */
 	if (security_info_sent & SECINFO_OWNER) {
-		if (!(fsp->access_mask & SEC_STD_WRITE_OWNER)) {
-			return NT_STATUS_ACCESS_DENIED;
+		status = check_any_access_fsp(fsp, SEC_STD_WRITE_OWNER);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 	}
 
 	if (security_info_sent & SECINFO_GROUP) {
-		if (!(fsp->access_mask & SEC_STD_WRITE_OWNER)) {
-			return NT_STATUS_ACCESS_DENIED;
+		status = check_any_access_fsp(fsp, SEC_STD_WRITE_OWNER);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 	}
 
 	if (security_info_sent & SECINFO_DACL) {
-		if (!(fsp->access_mask & SEC_STD_WRITE_DAC)) {
-			return NT_STATUS_ACCESS_DENIED;
+		status = check_any_access_fsp(fsp, SEC_STD_WRITE_DAC);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 		/* Convert all the generic bits. */
 		if (psd->dacl) {
@@ -136,15 +139,17 @@ NTSTATUS set_sd(files_struct *fsp, struct security_descriptor *psd,
 	}
 
 	if (security_info_sent & SECINFO_SACL) {
-		if (!(fsp->access_mask & SEC_FLAG_SYSTEM_SECURITY)) {
-			return NT_STATUS_ACCESS_DENIED;
+		status = check_any_access_fsp(fsp, SEC_FLAG_SYSTEM_SECURITY);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 		/*
 		 * Setting a SACL also requires WRITE_DAC.
 		 * See the smbtorture3 SMB2-SACL test.
 		 */
-		if (!(fsp->access_mask & SEC_STD_WRITE_DAC)) {
-			return NT_STATUS_ACCESS_DENIED;
+		status = check_any_access_fsp(fsp, SEC_STD_WRITE_DAC);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 		/* Convert all the generic bits. */
 		if (psd->sacl) {
@@ -407,16 +412,20 @@ static NTSTATUS smbd_fetch_security_desc(connection_struct *conn,
 	 * Get the permissions to return.
 	 */
 
-	if ((security_info_wanted & SECINFO_SACL) &&
-			!(fsp->access_mask & SEC_FLAG_SYSTEM_SECURITY)) {
-		DEBUG(10, ("Access to SACL denied.\n"));
-		return NT_STATUS_ACCESS_DENIED;
+	if (security_info_wanted & SECINFO_SACL) {
+		status = check_any_access_fsp(fsp, SEC_FLAG_SYSTEM_SECURITY);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("Access to SACL denied.\n");
+			return status;
+		}
 	}
 
-	if ((security_info_wanted & (SECINFO_DACL|SECINFO_OWNER|SECINFO_GROUP)) &&
-			!(fsp->access_mask & SEC_STD_READ_CONTROL)) {
-		DEBUG(10, ("Access to DACL, OWNER, or GROUP denied.\n"));
-		return NT_STATUS_ACCESS_DENIED;
+	if (security_info_wanted & (SECINFO_DACL|SECINFO_OWNER|SECINFO_GROUP)) {
+		status = check_any_access_fsp(fsp, SEC_STD_READ_CONTROL);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("Access to DACL, OWNER, or GROUP denied.\n");
+			return status;
+		}
 	}
 
 	status = refuse_symlink_fsp(fsp);

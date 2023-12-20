@@ -6657,8 +6657,9 @@ void reply_setattrE(struct smb_request *req)
 		goto out;
 	}
 
-	if (!(fsp->access_mask & FILE_WRITE_ATTRIBUTES)) {
-		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+	status = check_any_access_fsp(fsp, FILE_WRITE_ATTRIBUTES);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		goto out;
 	}
 
