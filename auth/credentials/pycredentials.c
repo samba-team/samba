@@ -1007,7 +1007,6 @@ static PyObject *py_creds_get_aes256_key(PyObject *self, PyObject *args)
 	struct loadparm_context *lp_ctx = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 	PyObject *py_lp_ctx = Py_None;
-	const char *salt = NULL;
 	DATA_BLOB aes_256;
 	int code;
 	PyObject *ret = NULL;
@@ -1017,7 +1016,7 @@ static PyObject *py_creds_get_aes256_key(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	if (!PyArg_ParseTuple(args, "s|O", &salt, &py_lp_ctx))
+	if (!PyArg_ParseTuple(args, "|O", &py_lp_ctx))
 		return NULL;
 
 	mem_ctx = talloc_new(NULL);
@@ -1035,7 +1034,6 @@ static PyObject *py_creds_get_aes256_key(PyObject *self, PyObject *args)
 	code = cli_credentials_get_aes256_key(creds,
 					      mem_ctx,
 					      lp_ctx,
-					      salt,
 					      &aes_256);
 	if (code != 0) {
 		PyErr_SetString(PyExc_RuntimeError,
@@ -1629,9 +1627,9 @@ static PyMethodDef py_creds_methods[] = {
 		.ml_name  = "get_aes256_key",
 		.ml_meth  = py_creds_get_aes256_key,
 		.ml_flags = METH_VARARGS,
-		.ml_doc   = "S.get_aes256_key(salt[, lp]) -> bytes\n"
+		.ml_doc   = "S.get_aes256_key([lp]) -> bytes\n"
 			    "Generate an AES256 key using the current password and\n"
-			    "the specified salt",
+			    "the salt on this credentials object",
 	},
 	{
 		.ml_name  = "encrypt_netr_crypt_password",
