@@ -218,6 +218,13 @@ class GkdiBaseTest(TestCase):
             self.assertIsNotNone(root_key_cn)
             root_key_id = misc.GUID(root_key_cn)
 
+        data = root_key_object.get("msKds-RootKeyData", idx=0)
+        self.assertIsNotNone(data)
+        if len(data) != KEY_LEN_BYTES:
+            raise GetKeyError(
+                HRES_NTE_BAD_KEY, f"root key data must be {KEY_LEN_BYTES} bytes"
+            )
+
         use_start_nt_time = NtTime(
             int(root_key_object.get("msKds-UseStartTime", idx=0))
         )
