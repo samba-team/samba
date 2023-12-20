@@ -150,7 +150,8 @@ static struct tevent_req *smbd_smb2_flush_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (!CHECK_WRITE(fsp)) {
+	status = check_any_access_fsp(fsp, FILE_WRITE_DATA|FILE_APPEND_DATA);
+	if (!NT_STATUS_IS_OK(status)) {
 		bool allow_dir_flush = false;
 		uint32_t flush_access = FILE_ADD_FILE | FILE_ADD_SUBDIRECTORY;
 

@@ -74,11 +74,6 @@
 	 (fsp_get_io_fd(fsp) != -1) && \
 	 (((fsp)->fsp_flags.can_read)))
 
-#define CHECK_WRITE(fsp) \
-	((fsp)->fsp_flags.can_write && \
-	(!(fsp)->fsp_flags.is_pathref) && \
-	 (fsp_get_io_fd(fsp) != -1))
-
 #define ERROR_WAS_LOCK_DENIED(status) (NT_STATUS_EQUAL((status), NT_STATUS_LOCK_NOT_GRANTED) || \
 				NT_STATUS_EQUAL((status), NT_STATUS_FILE_LOCK_CONFLICT) )
 
