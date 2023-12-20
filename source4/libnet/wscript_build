@@ -24,7 +24,7 @@ bld.SAMBA_PYTHON('python_net',
 
 bld.SAMBA_PYTHON('python_dckeytab',
         source='py_net_dckeytab.c libnet_export_keytab.c',
-        deps='%s %s db-glue krb5 com_err' % (pyrpc_util, pyldb_util),
+        deps='KERBEROS_SRV_KEYTAB KERBEROS_UTIL %s %s db-glue krb5 com_err' % (pyrpc_util, pyldb_util),
         realname='samba/dckeytab.so',
         enabled=bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED')
         )

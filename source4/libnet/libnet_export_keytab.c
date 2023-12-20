@@ -24,9 +24,9 @@
 #include "auth/kerberos/kerberos.h"
 #include "auth/kerberos/kerberos_credentials.h"
 #include "auth/kerberos/kerberos_util.h"
+#include "auth/kerberos/kerberos_srv_keytab.h"
 #include "kdc/samba_kdc.h"
 #include "libnet/libnet_export_keytab.h"
-
 #include "kdc/db-glue.h"
 #include "kdc/sdb.h"
 
@@ -46,6 +46,7 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 	krb5_data password;
 	bool keys_exported = false;
 	krb5_context context = smb_krb5_context->krb5_context;
+	TALLOC_CTX *tmp_ctx = NULL;
 
 	code = smb_krb5_kt_open_relative(context,
 					 keytab_name,
@@ -83,7 +84,12 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 	for (; code == 0; code = samba_kdc_nextkey(context, db_ctx, &sentry)) {
 		int i;
 		bool found_previous = false;
-
+		tmp_ctx = talloc_new(mem_ctx);
+		if (tmp_ctx == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+		
 		code = krb5_unparse_name(context,
 					 sentry.principal,
 					 &entry_principal);
@@ -112,47 +118,90 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		if (sentry.keys.len == 0) {
-			SAFE_FREE(entry_principal);
-			sdb_entry_free(&sentry);
+		/*
+		 * If this was a gMSA and we did not just read the
+		 * keys directly, then generate them
+		 */
+		if (sentry.skdc_entry->group_managed_service_account
+		    && sentry.keys.len == 0) {
+			struct ldb_dn *dn = sentry.skdc_entry->msg->dn;
+			/*
+			 * for error message only, but we are about to
+			 * destroy the string name, so write this out
+			 * now
+			 */
+			const char *extended_dn =
+				ldb_dn_get_extended_linearized(mem_ctx,
+							       dn,
+							       1);
 
-			continue;
-		}
+			/*
+			 * Modify the DN in the entry (not needed by
+			 * the KDC code any longer) to be minimal, so
+			 * we can search on it over LDAP.
+			 */
+			ldb_dn_minimise(dn);
 
-		for (i = 0; i < sentry.keys.len; i++) {
-			struct sdb_key *s = &(sentry.keys.val[i]);
-			krb5_enctype enctype;
-
-			enctype = KRB5_KEY_TYPE(&(s->key));
-			password.length = KRB5_KEY_LENGTH(&s->key);
-			password.data = (char *)KRB5_KEY_DATA(&s->key);
-
-			DBG_INFO("smb_krb5_kt_add_entry for enctype=0x%04x\n",
-				  (int)enctype);
-			code = smb_krb5_kt_add_entry(context,
-						     keytab,
-						     sentry.kvno,
-						     entry_principal,
-						     NULL,
-						     enctype,
-						     &password,
-						     true);    /* no_salt */
-			if (code != 0) {
-				status = NT_STATUS_UNSUCCESSFUL;
-				*error_string = smb_get_krb5_error_message(context,
-									   code,
-									   mem_ctx);
-				DEBUG(0, ("smb_krb5_kt_add_entry failed code=%d, error = %s\n",
-					  code, *error_string));
+			status = smb_krb5_fill_keytab_gmsa_keys(tmp_ctx,
+								smb_krb5_context,
+								keytab,
+								sentry.principal,
+								db_ctx->samdb,
+								dn,
+								found_previous ? false : true,
+								error_string);
+			if (NT_STATUS_IS_OK(status)) {
+				keys_exported = true;
+			} else if (copy_one_principal) {
+				*error_string = talloc_asprintf(mem_ctx,
+								"Failed to write gMSA password for %s to keytab: %s\n",
+								principal,
+								*error_string);
+				goto done;
+			} else if (!NT_STATUS_EQUAL(status, NT_STATUS_NO_USER_KEYS)) {
+				*error_string = talloc_asprintf(mem_ctx,
+								"Failed to write gMSA password for %s to keytab: %s\n",
+								extended_dn,
+								*error_string);
 				goto done;
 			}
-			keys_exported = true;
+		} else {
+			for (i = 0; i < sentry.keys.len; i++) {
+				struct sdb_key *s = &(sentry.keys.val[i]);
+				krb5_enctype enctype;
+
+				enctype = KRB5_KEY_TYPE(&(s->key));
+				password.length = KRB5_KEY_LENGTH(&s->key);
+				password.data = (char *)KRB5_KEY_DATA(&s->key);
+
+				DBG_INFO("smb_krb5_kt_add_entry for enctype=0x%04x\n",
+					 (int)enctype);
+				code = smb_krb5_kt_add_entry(context,
+							     keytab,
+							     sentry.kvno,
+							     entry_principal,
+							     NULL,
+							     enctype,
+							     &password,
+							     true);    /* no_salt */
+				if (code != 0) {
+					status = NT_STATUS_UNSUCCESSFUL;
+					*error_string = smb_get_krb5_error_message(context,
+										   code,
+										   mem_ctx);
+					DEBUG(0, ("smb_krb5_kt_add_entry failed code=%d, error = %s\n",
+						  code, *error_string));
+					goto done;
+				}
+				keys_exported = true;
+			}
 		}
 
 		if (copy_one_principal) {
 			break;
 		}
 
+		TALLOC_FREE(tmp_ctx);
 		SAFE_FREE(entry_principal);
 		sdb_entry_free(&sentry);
 	}
@@ -178,6 +227,7 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 	}
 
 done:
+	TALLOC_FREE(tmp_ctx);
 	SAFE_FREE(entry_principal);
 	sdb_entry_free(&sentry);
 

@@ -30,9 +30,12 @@
 #include "includes.h"
 #include "system/kerberos.h"
 #include "auth/credentials/credentials.h"
+#include "auth/credentials/credentials_krb5.h"
 #include "auth/kerberos/kerberos.h"
 #include "auth/kerberos/kerberos_util.h"
 #include "auth/kerberos/kerberos_srv_keytab.h"
+#include "librpc/gen_ndr/ndr_gmsa.h"
+#include "dsdb/samdb/samdb.h"
 
 static void keytab_principals_free(krb5_context context,
 				   uint32_t num_principals,
@@ -195,6 +198,194 @@ done:
 	krb5_free_principal(context, salt_princ);
 	talloc_free(mem_ctx);
 	return ret;
+}
+
+NTSTATUS smb_krb5_fill_keytab_gmsa_keys(TALLOC_CTX *mem_ctx,
+					struct smb_krb5_context *smb_krb5_context,
+					krb5_keytab keytab,
+					krb5_principal principal,
+					struct ldb_context *samdb,
+					struct ldb_dn *dn,
+					bool include_previous,
+					const char **error_string)
+{
+	const char *gmsa_attrs[] = {
+		"msDS-ManagedPassword",
+		"msDS-KeyVersionNumber",
+		"sAMAccountName",
+		"msDS-SupportedEncryptionTypes",
+		NULL
+	};
+
+	NTSTATUS status;
+	struct ldb_message *msg;
+	const struct ldb_val *managed_password_blob;
+	const char *managed_pw_utf8;
+	const char *previous_managed_pw_utf8;
+	const char *username;
+	const char *salt_principal;
+	uint32_t kvno = 0;
+	uint32_t supported_enctypes = 0;
+	krb5_context context = smb_krb5_context->krb5_context;
+	struct cli_credentials *cred = NULL;
+	const char *realm = NULL;
+
+	/*
+	 * Search for msDS-ManagedPassword (and other attributes to
+	 * avoid a race) as this was not in the original search.
+	 */
+	int ret;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = dsdb_search_one(samdb,
+			      tmp_ctx,
+			      &msg,
+			      dn,
+			      LDB_SCOPE_BASE,
+			      gmsa_attrs, 0,
+			      "(objectClass=msDS-GroupManagedServiceAccount)");
+
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		/*
+		 * Race condition, object has gone, or just wasn't a
+		 * gMSA
+		 */
+		*error_string = talloc_asprintf(mem_ctx,
+						"Did not find gMSA at %s",
+						ldb_dn_get_linearized(dn));
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (ret != LDB_SUCCESS) {
+		*error_string = talloc_asprintf(mem_ctx,
+						"Error looking for gMSA at %s: %s",
+						ldb_dn_get_linearized(dn), ldb_errstring(samdb));
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Extract out passwords */
+	managed_password_blob = ldb_msg_find_ldb_val(msg, "msDS-ManagedPassword");
+
+	if (managed_password_blob == NULL) {
+		/*
+		 * No password set on this yet or not readable by this user
+		 */
+		*error_string = talloc_asprintf(mem_ctx,
+						"Did not find msDS-ManagedPassword at %s",
+						ldb_dn_get_extended_linearized(mem_ctx, msg->dn, 1));
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_USER_KEYS;
+	}
+
+	cred = cli_credentials_init(tmp_ctx);
+	if (cred == NULL) {
+		*error_string = talloc_asprintf(mem_ctx,
+						"Could not allocate cli_credentials for %s",
+						ldb_dn_get_linearized(msg->dn));
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	realm = smb_krb5_principal_get_realm(tmp_ctx,
+					     context,
+					     principal);
+	if (realm == NULL) {
+		*error_string = talloc_asprintf(mem_ctx,
+						"Could not allocate copy of realm for %s",
+						ldb_dn_get_linearized(msg->dn));
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	cli_credentials_set_realm(cred, realm, CRED_SPECIFIED);
+
+	username = ldb_msg_find_attr_as_string(msg, "sAMAccountName", NULL);
+	if (username == NULL) {
+		*error_string = talloc_asprintf(mem_ctx,
+						"No sAMAccountName on %s",
+						ldb_dn_get_linearized(msg->dn));
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_INVALID_ACCOUNT_NAME;
+	}
+
+	cli_credentials_set_username(cred, username, CRED_SPECIFIED);
+
+	kvno = ldb_msg_find_attr_as_uint(msg, "msDS-KeyVersionNumber", 0);
+
+	cli_credentials_set_kvno(cred, kvno);
+
+	supported_enctypes = ldb_msg_find_attr_as_uint(msg,
+						       "msDS-SupportedEncryptionTypes",
+						       ENC_HMAC_SHA1_96_AES256);
+	/*
+	 * We trim this down to just the salted AES types, as the
+	 * passwords are now wrong for rc4-hmac due to the mapping of
+	 * invalid sequences in UTF16_MUNGED -> UTF8 string conversion
+	 * within cli_credentials_get_password(). Users using this new
+	 * feature won't be using such weak crypto anyway.  If
+	 * required we could also set the NT Hash as a key directly,
+	 * this is just a limitation of smb_krb5_fill_keytab() taking
+	 * a simple string as input.
+	 */
+	supported_enctypes &= ENC_STRONG_SALTED_TYPES;
+
+	/* Update the keytab */
+
+	status = cli_credentials_set_gmsa_passwords(cred,
+						    managed_password_blob,
+						    error_string);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		*error_string = talloc_asprintf(mem_ctx,
+						"Could not parse gMSA passwords on %s: %s",
+						ldb_dn_get_linearized(msg->dn),
+						*error_string);
+		TALLOC_FREE(tmp_ctx);
+		return status;
+	}
+
+	managed_pw_utf8 = cli_credentials_get_password(cred);
+
+	previous_managed_pw_utf8 = cli_credentials_get_old_password(cred);
+
+	salt_principal = cli_credentials_get_salt_principal(cred, tmp_ctx);
+	if (salt_principal == NULL) {
+		*error_string = talloc_asprintf(mem_ctx,
+						"Failed to generated salt principal for %s",
+						ldb_dn_get_linearized(msg->dn));
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = smb_krb5_fill_keytab(tmp_ctx,
+				   salt_principal,
+				   kvno,
+				   managed_pw_utf8,
+				   previous_managed_pw_utf8,
+				   supported_enctypes,
+				   1,
+				   &principal,
+				   context,
+				   keytab,
+				   include_previous,
+				   error_string);
+	if (ret) {
+		*error_string = talloc_asprintf(mem_ctx,
+						"Failed to add keys from %s to keytab: %s",
+						ldb_dn_get_linearized(msg->dn),
+						*error_string);
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return NT_STATUS_OK;
 }
 
 /**
