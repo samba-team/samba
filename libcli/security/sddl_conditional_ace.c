@@ -653,11 +653,16 @@ static bool sddl_write_int(struct sddl_write_context *ctx,
 	}
 	sign_char = (sign == CONDITIONAL_ACE_INT_SIGN_NEGATIVE) ? '-' : '+';
 	/*
-	 * We can use "%+ld" for the decimal sign, but "%+lx" and "%+lo" are
-	 * invalid because %o and %x are unsigned.
+	 * We can use "%+ld" for the decimal sign (except -0), but
+	 * "%+lx" and "%+lo" are invalid because %o and %x are
+	 * unsigned.
 	 */
 	if (base == CONDITIONAL_ACE_INT_BASE_10) {
-		snprintf(buf, sizeof(buf), "%+"PRId64, v);
+		if (v == 0) {
+			snprintf(buf, sizeof(buf), "%c0", sign_char);
+		} else {
+			snprintf(buf, sizeof(buf), "%+"PRId64, v);
+		}
 		return sddl_write(ctx, buf);
 	}
 
