@@ -32,6 +32,7 @@ from samba.gkdi import (
     Algorithm,
     Gkid,
     KEY_CYCLE_DURATION,
+    KEY_LEN_BYTES,
     MAX_CLOCK_SKEW,
     NtTime,
     NtTimeDelta,
@@ -285,6 +286,30 @@ class GkdiExplicitRootKeyTests(GkdiKdcBaseTest):
             HRES_NTE_NO_KEY,
             rpc_err.exception.args[0],
             "using a non‐existent root key should fail with NO_KEY",
+        )
+
+    def test_root_key_wrong_length(self):
+        """Attempt to use a root key that is the wrong length."""
+        root_key_id = self.new_root_key(data=bytes(KEY_LEN_BYTES // 2))
+
+        gkid = self.current_gkid()
+
+        with self.assertRaises(GetKeyError) as err:
+            self.get_key(self.get_samdb(), self.gmsa_sd, root_key_id, gkid)
+
+        self.assertEqual(
+            HRES_NTE_BAD_KEY,
+            err.exception.args[0],
+            "using a root key that is the wrong length should fail with BAD_KEY",
+        )
+
+        with self.assertRaises(GetKeyError) as rpc_err:
+            self.rpc_get_key(self.gkdi_conn(), self.gmsa_sd, root_key_id, gkid)
+
+        self.assertEqual(
+            HRES_NTE_BAD_KEY,
+            rpc_err.exception.args[0],
+            "using a root key that is the wrong length should fail with BAD_KEY",
         )
 
 

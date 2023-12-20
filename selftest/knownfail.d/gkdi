@@ -10,6 +10,7 @@
 ^samba\.tests\.krb5\.gkdi_tests\.samba\.tests\.krb5\.gkdi_tests\.GkdiExplicitRootKeyTests\.test_previous_l0_idx\(ad_dc\)$
 ^samba\.tests\.krb5\.gkdi_tests\.samba\.tests\.krb5\.gkdi_tests\.GkdiExplicitRootKeyTests\.test_root_key_use_start_time_too_low\(ad_dc\)$
 ^samba\.tests\.krb5\.gkdi_tests\.samba\.tests\.krb5\.gkdi_tests\.GkdiExplicitRootKeyTests\.test_root_key_use_start_time_zero\(ad_dc\)$
+^samba\.tests\.krb5\.gkdi_tests\.samba\.tests\.krb5\.gkdi_tests\.GkdiExplicitRootKeyTests\.test_root_key_wrong_length\(ad_dc\)$
 ^samba\.tests\.krb5\.gkdi_tests\.samba\.tests\.krb5\.gkdi_tests\.GkdiImplicitRootKeyTests\.test_both_seed_keys\(ad_dc\)$
 ^samba\.tests\.krb5\.gkdi_tests\.samba\.tests\.krb5\.gkdi_tests\.GkdiImplicitRootKeyTests\.test_l1_seed_key\(ad_dc\)$
 ^samba\.tests\.krb5\.gkdi_tests\.samba\.tests\.krb5\.gkdi_tests\.GkdiImplicitRootKeyTests\.test_l2_seed_key\(ad_dc\)$

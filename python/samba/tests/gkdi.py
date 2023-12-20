@@ -514,12 +514,6 @@ class GkdiBaseTest(TestCase):
 
         if data is None:
             data = secrets.token_bytes(KEY_LEN_BYTES)
-        else:
-            self.assertEqual(
-                KEY_LEN_BYTES,
-                len(data),
-                f"root key data must be {KEY_LEN_BYTES} bytes",
-            )
 
         create_time = current_nt_time = self.current_nt_time()
 
