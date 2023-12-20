@@ -191,6 +191,7 @@ bool directory_has_default_acl_fsp(struct files_struct *fsp)
 
 NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32_t dosmode)
 {
+	NTSTATUS status;
 	/*
 	 * Only allow delete on close for writable files.
 	 */
@@ -219,11 +220,12 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32_t dosmode)
 	 * intent.
 	 */
 
-	if (!(fsp->access_mask & DELETE_ACCESS)) {
-		DEBUG(10,("can_set_delete_on_close: file %s delete on "
+	status = check_any_access_fsp(fsp, DELETE_ACCESS);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("file %s delete on "
 			  "close flag set but delete access denied.\n",
-			  fsp_str_dbg(fsp)));
-		return NT_STATUS_ACCESS_DENIED;
+			  fsp_str_dbg(fsp));
+		return status;
 	}
 
 	/* Don't allow delete on close for non-empty directories. */

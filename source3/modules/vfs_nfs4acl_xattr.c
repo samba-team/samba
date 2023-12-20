@@ -368,10 +368,13 @@ static NTSTATUS nfs4acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 	}
 
 	if (get_current_uid(handle->conn) == 0 ||
-	    chown_needed == false ||
-	    !(fsp->access_mask & SEC_STD_WRITE_OWNER))
+	    chown_needed == false)
 	{
 		return NT_STATUS_ACCESS_DENIED;
+	}
+	status = check_any_access_fsp(fsp, SEC_STD_WRITE_OWNER);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/*
