@@ -244,6 +244,7 @@ NTSTATUS print_spool_open(files_struct *fsp,
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->fsp_flags.is_directory = false;
 	fsp->fsp_flags.delete_on_close = false;
+	fsp->fsp_flags.is_fsa = true;
 
 	fsp->print_file = pf;
 
