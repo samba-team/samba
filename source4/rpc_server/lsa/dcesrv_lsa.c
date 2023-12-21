@@ -5336,8 +5336,45 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomainEx3(struct dcesrv_call_state *dce_
 						  TALLOC_CTX *mem_ctx,
 						  struct lsa_CreateTrustedDomainEx3 *r)
 {
-	/* TODO */
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *policy_handle = NULL;
+	struct trustDomainPasswords auth_struct = {
+		.incoming_size = 0,
+	};
+	NTSTATUS status;
+
+	ZERO_STRUCTP(r->out.trustdom_handle);
+
+	DCESRV_PULL_HANDLE(policy_handle,
+			   r->in.policy_handle,
+			   LSA_HANDLE_POLICY);
+
+	status = dcesrv_lsa_CreateTrustedDomain_precheck(mem_ctx,
+							 policy_handle,
+							 r->in.info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = get_trustdom_auth_blob_aes(dce_call,
+					    mem_ctx,
+					    r->in.auth_info_internal,
+					    &auth_struct);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = dcesrv_lsa_CreateTrustedDomain_common(dce_call,
+						       mem_ctx,
+						       policy_handle,
+						       r->in.access_mask,
+						       r->in.info,
+						       &auth_struct,
+						       &r->out.trustdom_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /*
