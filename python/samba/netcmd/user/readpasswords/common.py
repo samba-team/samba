@@ -490,7 +490,7 @@ class GetPasswordCommand(Command):
                         current_hash = unicodePwd
                     elif aes256_key is not None and kerberos_salt is not None:
                         tmp.set_kerberos_salt_principal(kerberos_salt)
-                        decrypted = tmp.get_aes256_key()
+                        decrypted = tmp.get_kerberos_key(credentials.ENCTYPE_AES256_CTS_HMAC_SHA1_96)
                         current_hash = aes256_key.value
 
                     if current_hash is not None and current_hash == decrypted:
