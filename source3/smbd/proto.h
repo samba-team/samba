@@ -1114,8 +1114,8 @@ NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
 				       files_struct *fsp,
 				       struct smb_filename *smb_fname);
 NTSTATUS refuse_symlink_fsp(const struct files_struct *fsp);
-NTSTATUS check_access_fsp(struct files_struct *fsp,
-			  uint32_t access_mask);
+NTSTATUS check_any_access_fsp(struct files_struct *fsp,
+			      uint32_t access_mask);
 uint64_t smb_roundup(connection_struct *conn, uint64_t val);
 bool samba_private_attr_name(const char *unix_ea_name);
 NTSTATUS get_ea_value_fsp(TALLOC_CTX *mem_ctx,
