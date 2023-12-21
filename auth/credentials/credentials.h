@@ -365,4 +365,12 @@ struct cli_credentials *cli_credentials_get_krb5_fast_armor_credentials(struct c
 
 bool cli_credentials_get_krb5_require_fast_armor(struct cli_credentials *creds);
 
+/**
+ * Group Managed Service Account helper
+ */
+
+NTSTATUS cli_credentials_set_gmsa_passwords(struct cli_credentials *creds,
+					    const DATA_BLOB *managed_password_blob,
+					    const char **error_string);
+
 #endif /* __CREDENTIALS_H__ */
