@@ -72,8 +72,13 @@ NTSTATUS refuse_symlink_fsp(const files_struct *fsp)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS check_access_fsp(struct files_struct *fsp,
-			  uint32_t access_mask)
+/**
+ * Check that one or more of the rights in access_mask are
+ * allowed. Iow, access_mask can contain more then one right and
+ * it is sufficient having only one of those granted to pass.
+ **/
+NTSTATUS check_any_access_fsp(struct files_struct *fsp,
+			      uint32_t access_mask)
 {
 	if (!fsp->fsp_flags.is_fsa) {
 		return smbd_check_access_rights_fsp(fsp->conn->cwd_fsp,
@@ -677,7 +682,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		return status;
 	}
 
-	status = check_access_fsp(fsp, FILE_WRITE_EA);
+	status = check_any_access_fsp(fsp, FILE_WRITE_EA);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4803,7 +4808,7 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	status = check_access_fsp(fsp, FILE_WRITE_ATTRIBUTES);
+	status = check_any_access_fsp(fsp, FILE_WRITE_ATTRIBUTES);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4874,7 +4879,7 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 	DEBUG(10,("smb_set_info_standard: file %s\n",
 		smb_fname_str_dbg(smb_fname)));
 
-	status = check_access_fsp(fsp, FILE_WRITE_ATTRIBUTES);
+	status = check_any_access_fsp(fsp, FILE_WRITE_ATTRIBUTES);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
