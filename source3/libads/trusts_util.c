@@ -26,6 +26,7 @@
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/secrets.h"
 #include "secrets.h"
+#include "ads.h"
 #include "passdb.h"
 #include "libsmb/libsmb.h"
 #include "source3/include/messages.h"
@@ -317,9 +318,17 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 
 	case SEC_CHAN_WKSTA:
 	case SEC_CHAN_BDC:
-		status = secrets_prepare_password_change(domain, dcname,
+		status = secrets_prepare_password_change(domain,
+							 dcname,
 							 new_trust_pw_str,
-							 frame, &info, &prev);
+							 frame,
+							 &info,
+							 &prev,
+#ifdef HAVE_ADS
+							 sync_pw2keytabs);
+#else
+							 NULL);
+#endif
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("secrets_prepare_password_change() failed for domain %s!\n",
 				  domain));
@@ -415,9 +424,15 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 			 current_timestring(talloc_tos(), false),
 			 __func__, domain, context_name));
 
-		status = secrets_finish_password_change(prev->password->change_server,
-							prev->password->change_time,
-							info);
+		status = secrets_finish_password_change(
+			prev->password->change_server,
+			prev->password->change_time,
+			info,
+#ifdef HAVE_ADS
+			sync_pw2keytabs);
+#else
+			NULL);
+#endif
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("secrets_prepare_password_change() failed for domain %s!\n",
 				  domain));
@@ -559,9 +574,14 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	case SEC_CHAN_WKSTA:
 	case SEC_CHAN_BDC:
 		status = secrets_finish_password_change(
-					info->next_change->change_server,
-					info->next_change->change_time,
-					info);
+			info->next_change->change_server,
+			info->next_change->change_time,
+			info,
+#ifdef HAVE_ADS
+			sync_pw2keytabs);
+#else
+			NULL);
+#endif
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("secrets_finish_password_change() failed for domain %s!\n",
 				  domain));

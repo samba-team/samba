@@ -224,7 +224,13 @@ static int net_changesecretpw(struct net_context *c, int argc,
 							 "localhost",
 							 trust_pw,
 							 talloc_tos(),
-							 &info, &prev);
+							 &info,
+							 &prev,
+#ifdef HAVE_ADS
+							 sync_pw2keytabs);
+#else
+							 NULL);
+#endif
 		if (!NT_STATUS_IS_OK(status)) {
 			d_fprintf(stderr,
 			        _("Unable to write the machine account password in the secrets database"));
@@ -243,7 +249,14 @@ static int net_changesecretpw(struct net_context *c, int argc,
 			}
 			return 1;
 		}
-		status = secrets_finish_password_change("localhost", now, info);
+		status = secrets_finish_password_change("localhost",
+							now,
+							info,
+#ifdef HAVE_ADS
+							sync_pw2keytabs);
+#else
+							NULL);
+#endif
 		if (!NT_STATUS_IS_OK(status)) {
 			d_fprintf(stderr,
 			        _("Unable to write the machine account password in the secrets database"));
