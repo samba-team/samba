@@ -2691,13 +2691,6 @@ int net_ads_changetrustpw(struct net_context *c, int argc, const char **argv)
 
 	d_printf(_("Password change for principal %s succeeded.\n"), host_principal);
 
-	if (USE_SYSTEM_KEYTAB) {
-		d_printf(_("Attempting to update system keytab with new password.\n"));
-		if (ads_keytab_create_default(ads)) {
-			d_printf(_("Failed to update system keytab.\n"));
-		}
-	}
-
 	ret = 0;
 out:
 	TALLOC_FREE(tmp_ctx);
