@@ -642,6 +642,9 @@ bool is_zero_addr(const struct sockaddr_storage *pss)
 		const struct in_addr *pin = &((const struct sockaddr_in *)pss)->sin_addr;
 		return is_zero_ip_v4(*pin);
 	}
+	if (pss->ss_family == AF_UNSPEC) {
+		return true;
+	}
 	return false;
 }
 
