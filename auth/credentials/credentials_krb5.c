@@ -1508,6 +1508,7 @@ _PUBLIC_ int cli_credentials_get_kerberos_key(struct cli_credentials *cred,
 					      TALLOC_CTX *mem_ctx,
 					      struct loadparm_context *lp_ctx,
 					      krb5_enctype enctype,
+					      bool previous,
 					      DATA_BLOB *key_blob)
 {
 	struct smb_krb5_context *smb_krb5_context = NULL;
@@ -1524,8 +1525,14 @@ _PUBLIC_ int cli_credentials_get_kerberos_key(struct cli_credentials *cred,
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if ((int)enctype == (int)ENCTYPE_ARCFOUR_HMAC) {
-		struct samr_Password *nt_hash
-			= cli_credentials_get_nt_hash(cred, frame);
+		struct samr_Password *nt_hash;
+
+		if (previous) {
+			nt_hash = cli_credentials_get_old_nt_hash(cred, frame);
+		} else {
+			nt_hash = cli_credentials_get_nt_hash(cred, frame);
+		}
+
 		if (nt_hash == NULL) {
 			TALLOC_FREE(frame);
 			return EINVAL;
@@ -1553,7 +1560,11 @@ _PUBLIC_ int cli_credentials_get_kerberos_key(struct cli_credentials *cred,
 		return EINVAL;
 	}
 
-	password = cli_credentials_get_password(cred);
+	if (previous) {
+		password = cli_credentials_get_old_password(cred);
+	} else {
+		password = cli_credentials_get_password(cred);
+	}
 	if (password == NULL) {
 		TALLOC_FREE(frame);
 		return EINVAL;

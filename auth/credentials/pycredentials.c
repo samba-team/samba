@@ -1015,7 +1015,7 @@ static PyObject *py_creds_get_kerberos_salt_principal(PyObject *self, PyObject *
 	return ret;
 }
 
-static PyObject *py_creds_get_kerberos_key(PyObject *self, PyObject *args)
+static PyObject *py_creds_get_kerberos_key_current_or_old(PyObject *self, PyObject *args, bool old)
 {
 	struct loadparm_context *lp_ctx = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
@@ -1049,6 +1049,7 @@ static PyObject *py_creds_get_kerberos_key(PyObject *self, PyObject *args)
 						mem_ctx,
 						lp_ctx,
 						enctype,
+						old,
 						&key);
 	if (code != 0) {
 		PyErr_SetString(PyExc_RuntimeError,
@@ -1061,6 +1062,16 @@ static PyObject *py_creds_get_kerberos_key(PyObject *self, PyObject *args)
 					key.length);
 	talloc_free(mem_ctx);
 	return ret;
+}
+
+static PyObject *py_creds_get_kerberos_key(PyObject *self, PyObject *args)
+{
+	return py_creds_get_kerberos_key_current_or_old(self, args, false);
+}
+
+static PyObject *py_creds_get_old_kerberos_key(PyObject *self, PyObject *args)
+{
+	return py_creds_get_kerberos_key_current_or_old(self, args, true);
 }
 
 static PyObject *py_creds_encrypt_netr_crypt_password(PyObject *self,
@@ -1644,6 +1655,14 @@ static PyMethodDef py_creds_methods[] = {
 		.ml_flags = METH_VARARGS,
 		.ml_doc   = "S.get_kerberos_key(enctype, [lp]) -> bytes\n"
 			    "Generate a Kerberos key using the current password and\n"
+			    "the salt on this credentials object",
+	},
+	{
+		.ml_name  = "get_old_kerberos_key",
+		.ml_meth  = py_creds_get_old_kerberos_key,
+		.ml_flags = METH_VARARGS,
+		.ml_doc   = "S.get_old_kerberos_key(enctype, [lp]) -> bytes\n"
+			    "Generate a Kerberos key using the old (previous) password and\n"
 			    "the salt on this credentials object",
 	},
 	{

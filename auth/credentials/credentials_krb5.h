@@ -45,6 +45,7 @@ int cli_credentials_get_kerberos_key(struct cli_credentials *cred,
 				     TALLOC_CTX *mem_ctx,
 				     struct loadparm_context *lp_ctx,
 				     krb5_enctype enctype,
+				     bool previous,
 				     DATA_BLOB *key_blob);
 
 
