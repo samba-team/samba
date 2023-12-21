@@ -73,20 +73,40 @@ NTSTATUS refuse_symlink_fsp(const files_struct *fsp)
 }
 
 /**
- * Check that one or more of the rights in access_mask are
- * allowed. Iow, access_mask can contain more then one right and
+ * Check that one or more of the rights in access mask are
+ * allowed. Iow, access_requested can contain more then one right and
  * it is sufficient having only one of those granted to pass.
  **/
 NTSTATUS check_any_access_fsp(struct files_struct *fsp,
-			      uint32_t access_mask)
+			      uint32_t access_requested)
 {
-	if (!fsp->fsp_flags.is_fsa) {
-		return smbd_check_access_rights_fsp(fsp->conn->cwd_fsp,
-						    fsp,
-						    false,
-						    access_mask);
+	uint32_t access_granted = 0;
+	NTSTATUS status;
+
+	if (fsp->fsp_flags.is_fsa) {
+		access_granted = fsp->access_mask;
+	} else {
+		uint32_t mask = 1;
+
+		while (mask != 0) {
+			if (!(mask & access_requested)) {
+				mask <<= 1;
+				continue;
+			}
+
+			status = smbd_check_access_rights_fsp(
+							fsp->conn->cwd_fsp,
+							fsp,
+							false,
+							mask);
+			if (NT_STATUS_IS_OK(status)) {
+				break;
+			}
+			mask <<= 1;
+		}
+		access_granted = mask;
 	}
-	if (!(fsp->access_mask & access_mask)) {
+	if ((access_granted & access_requested) == 0) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	return NT_STATUS_OK;
