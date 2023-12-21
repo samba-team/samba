@@ -3437,9 +3437,7 @@ sub provision($$)
 [shadow_write]
 	path = $shadow_tstdir
 	comment = previous versions snapshots under mount point
-	vfs objects = shadow_copy2 streams_xattr error_inject
-	aio write size = 0
-	error_inject:pwrite = EBADF
+	vfs objects = shadow_copy2 streams_xattr
 	shadow:mountpoint = $shadow_tstdir
 	shadow:fixinodes = yes
 	smbd async dosmode = yes
