@@ -491,6 +491,17 @@ _PUBLIC_ enum ndr_err_code ndr_pull_u16string(struct ndr_pull *ndr,
 		return NDR_ERR_SUCCESS;
 	}
 
+	if (NDR_BE(ndr)) {
+		/*
+		 * It isn’t clear how this type should be encoded in a
+		 * big‐endian context.
+		 */
+		return ndr_pull_error(
+			ndr,
+			NDR_ERR_STRING,
+			"u16string does not support big‐endian encoding\n");
+	}
+
 	if (ndr->flags & LIBNDR_ENCODING_FLAGS) {
 		return ndr_pull_error(
 			ndr,
@@ -550,6 +561,17 @@ _PUBLIC_ enum ndr_err_code ndr_push_u16string(struct ndr_push *ndr,
 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NDR_ERR_SUCCESS;
+	}
+
+	if (NDR_BE(ndr)) {
+		/*
+		 * It isn’t clear how this type should be encoded in a
+		 * big‐endian context.
+		 */
+		return ndr_push_error(
+			ndr,
+			NDR_ERR_STRING,
+			"u16string does not support big‐endian encoding\n");
 	}
 
 	if (s == NULL) {
