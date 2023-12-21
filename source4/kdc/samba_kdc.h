@@ -75,6 +75,7 @@ struct samba_kdc_entry {
 	bool is_trust : 1;
 	bool claims_from_pac_are_initialized : 1;
 	bool claims_from_db_are_initialized : 1;
+	bool group_managed_service_account : 1;
 };
 
 extern struct hdb_method hdb_samba4_interface;
