@@ -56,3 +56,8 @@ def build(bld):
                      deps='cmocka GNUTLS_HELPERS samba-util',
                      local_include=False,
                      for_selftest=True)
+
+    bld.SAMBA_BINARY('test_gkdi_key_derivation',
+                     source='test_gkdi_key_derivation.c',
+                     deps='cmocka gkdi talloc NDR_GKDI samba-util samba-security',
+                     for_selftest=True)
