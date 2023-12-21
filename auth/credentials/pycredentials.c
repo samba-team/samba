@@ -973,6 +973,35 @@ static PyObject *py_creds_get_secure_channel_type(PyObject *self, PyObject *args
 	return PyLong_FromLong(channel_type);
 }
 
+static PyObject *py_creds_set_kerberos_salt_principal(PyObject *self, PyObject *args)
+{
+	char *salt_principal = NULL;
+	struct cli_credentials *creds = PyCredentials_AsCliCredentials(self);
+	if (creds == NULL) {
+		PyErr_Format(PyExc_TypeError, "Credentials expected");
+		return NULL;
+	}
+
+	if (!PyArg_ParseTuple(args, "s", &salt_principal))
+		return NULL;
+
+	cli_credentials_set_salt_principal(
+		creds,
+		salt_principal);
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_creds_get_kerberos_salt_principal(PyObject *self, PyObject *unused)
+{
+	struct cli_credentials *creds = PyCredentials_AsCliCredentials(self);
+	if (creds == NULL) {
+		PyErr_Format(PyExc_TypeError, "Credentials expected");
+		return NULL;
+	}
+	return PyString_FromStringOrNULL(cli_credentials_get_salt_principal(creds));
+}
+
 static PyObject *py_creds_get_aes256_key(PyObject *self, PyObject *args)
 {
 	struct loadparm_context *lp_ctx = NULL;
@@ -1584,6 +1613,16 @@ static PyMethodDef py_creds_methods[] = {
 	{
 		.ml_name  = "get_secure_channel_type",
 		.ml_meth  = py_creds_get_secure_channel_type,
+		.ml_flags = METH_VARARGS,
+	},
+	{
+		.ml_name  = "set_kerberos_salt_principal",
+		.ml_meth  = py_creds_set_kerberos_salt_principal,
+		.ml_flags = METH_VARARGS,
+	},
+	{
+		.ml_name  = "get_kerberos_salt_principal",
+		.ml_meth  = py_creds_get_kerberos_salt_principal,
 		.ml_flags = METH_VARARGS,
 	},
 	{
