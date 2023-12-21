@@ -36,6 +36,7 @@
 #include "lib/util/smb_strtox.h"
 #include "lib/param/loadparm.h"
 #include "librpc/rpc/dcerpc_helper.h"
+#include "librpc/rpc/dcerpc_lsa.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
@@ -860,6 +861,58 @@ static NTSTATUS dcesrv_lsa_EnumAccounts(struct dcesrv_call_state *dce_call, TALL
 
 	r->out.sids->num_sids = count;
 	*r->out.resume_handle = count + *r->in.resume_handle;
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS get_trustdom_auth_blob_aes(
+	struct dcesrv_call_state *dce_call,
+	TALLOC_CTX *mem_ctx,
+	struct lsa_TrustDomainInfoAuthInfoInternalAES *auth_info,
+	struct trustDomainPasswords *auth_struct)
+{
+	DATA_BLOB session_key = data_blob_null;
+	DATA_BLOB salt = data_blob(auth_info->salt, sizeof(auth_info->salt));
+	DATA_BLOB auth_blob = data_blob(auth_info->cipher.data,
+					auth_info->cipher.size);
+	DATA_BLOB ciphertext = data_blob_null;
+	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+
+	/*
+	 * The data blob starts with 512 bytes of random data and has two 32bit
+	 * size parameters.
+	 */
+	if (auth_blob.length < 520) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = dcesrv_transport_session_key(dce_call, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = samba_gnutls_aead_aes_256_cbc_hmac_sha512_decrypt(
+		mem_ctx,
+		&auth_blob,
+		&session_key,
+		&lsa_aes256_enc_key_salt,
+		&lsa_aes256_mac_key_salt,
+		&salt,
+		auth_info->auth_data,
+		&ciphertext);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	ndr_err = ndr_pull_struct_blob(
+			&ciphertext,
+			mem_ctx,
+			auth_struct,
+			(ndr_pull_flags_fn_t)ndr_pull_trustDomainPasswords);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	return NT_STATUS_OK;
 }
