@@ -251,11 +251,8 @@ NTSTATUS dcesrv_lsa_OpenPolicy3(struct dcesrv_call_state *dce_call,
 		*r->out.out_version = 1;
 
 		r->out.out_revision_info->info1.revision = 1;
-		/* TODO: Enable as soon as we support it */
-#if 0
 		r->out.out_revision_info->info1.supported_features =
 				LSA_FEATURE_TDO_AUTH_INFO_AES_CIPHER;
-#endif
 
 		break;
 	default:
