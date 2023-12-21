@@ -1,0 +1,41 @@
+#include "idl_types.h"
+
+import "misc.idl";
+import "server_id.idl";
+import "security.idl";
+import "witness.idl";
+
+[
+	uuid("d320d080-a007-11ee-9cb4-37fa942d84d2"),
+	version(0.0),
+	pointer_default(unique),
+	helpstring("rpcd_witness structures")
+]
+interface rpcd_witness
+{
+	/*
+	 * This the content of records stored in
+	 * rpcd_witness_registration.tdb.
+	 */
+	typedef [public] struct {
+		witness_version version;
+		[string,charset(UTF8)] char net_name[];
+		[string,charset(UTF8)] char *share_name;
+		[string,charset(UTF8)] char ip_address[];
+		[string,charset(UTF8)] char client_computer_name[];
+		witness_RegisterEx_flags flags;
+		uint32 timeout;
+		policy_handle context_handle;
+		server_id server_id;
+		[charset(UTF8),string] char account_name[];
+		[charset(UTF8),string] char domain_name[];
+		dom_sid account_sid;
+		[charset(UTF8),string] char local_address[];
+		[charset(UTF8),string] char remote_address[];
+		NTTIME registration_time;
+	} rpcd_witness_registration;
+
+	void rpcd_witness_registration_decode(
+		[in] rpcd_witness_registration reg
+		);
+}

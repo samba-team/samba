@@ -31,6 +31,11 @@ bld.SAMBA3_SUBSYSTEM('NDR_LEASES_DB',
 	public_deps='ndr NDR_SMB2_LEASE_STRUCT NDR_FILE_ID'
 	)
 
+bld.SAMBA3_SUBSYSTEM('NDR_RPCD_WITNESS',
+	source='gen_ndr/ndr_rpcd_witness.c',
+	public_deps='ndr NDR_SERVER_ID NDR_SECURITY NDR_WITNESS'
+	)
+
 bld.SAMBA3_SUBSYSTEM('NDR_SECRETS',
 	source='gen_ndr/ndr_secrets.c',
 	public_deps='ndr NDR_SAMR NDR_LSA NDR_NETLOGON NDR_SECURITY'

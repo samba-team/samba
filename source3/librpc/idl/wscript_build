@@ -9,6 +9,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                        perfcount.idl secrets.idl
                        smbXsrv.idl
                        leases_db.idl
+                       rpcd_witness.idl
                     ''',
                     options='--includedir=%s --header --ndr-parser --client --python' % topinclude,
                     output_dir='../gen_ndr')
