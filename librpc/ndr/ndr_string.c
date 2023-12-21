@@ -496,7 +496,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_u16string(struct ndr_pull *ndr,
 			ndr,
 			NDR_ERR_STRING,
 			"Unsupported string flags 0x%" PRI_LIBNDR_FLAGS
-			"passed to ndr_pull_u16string()\n",
+			" passed to ndr_pull_u16string()\n",
 			ndr->flags & LIBNDR_STRING_FLAGS);
 	}
 
@@ -518,7 +518,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_u16string(struct ndr_pull *ndr,
 			ndr,
 			NDR_ERR_STRING,
 			"Unsupported string flags 0x%" PRI_LIBNDR_FLAGS
-			"passed to ndr_pull_u16string()\n",
+			" passed to ndr_pull_u16string()\n",
 			ndr->flags & LIBNDR_STRING_FLAGS);
 	}
 
@@ -572,7 +572,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_u16string(struct ndr_push *ndr,
 			ndr,
 			NDR_ERR_STRING,
 			"Unsupported string flags 0x%" PRI_LIBNDR_FLAGS
-			"passed to ndr_push_u16string()\n",
+			" passed to ndr_push_u16string()\n",
 			ndr->flags & LIBNDR_STRING_FLAGS);
 	}
 
@@ -591,7 +591,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_u16string(struct ndr_push *ndr,
 			ndr,
 			NDR_ERR_STRING,
 			"Unsupported string flags 0x%" PRI_LIBNDR_FLAGS
-			"passed to ndr_push_u16string()\n",
+			" passed to ndr_push_u16string()\n",
 			ndr->flags & LIBNDR_STRING_FLAGS);
 	}
 
