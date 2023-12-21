@@ -141,6 +141,9 @@ interface messaging
 		MSG_SMBXSRV_CONNECTION_PASSED	= 0x0602,
 		MSG_SMBXSRV_CONNECTION_DROP	= 0x0603,
 
+		/* rpcd_witness messages */
+		MSG_RPCD_WITNESS_REGISTRATION_UPDATE = 0x0680,
+
 		/* source4 and NTVFS smb server messages */
 		MSG_BRL_RETRY                   = 0x0700,
 		MSG_PVFS_RETRY_OPEN             = 0x0701,
