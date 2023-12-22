@@ -3788,6 +3788,11 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		goto out;
 	}
 
+	if (smb_fname_old->twrp != 0) {
+		status = NT_STATUS_NOT_SAME_DEVICE;
+		goto out;
+	}
+
 	status = parent_pathref(talloc_tos(),
 				conn->cwd_fsp,
 				smb_fname_old,
