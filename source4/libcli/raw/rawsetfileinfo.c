@@ -119,6 +119,20 @@ bool smb_raw_setfileinfo_passthru(TALLOC_CTX *mem_ctx,
 				    parms->full_ea_information.in.eas.eas, 4);
 		return true;
 
+	case RAW_SFILEINFO_LINK_INFORMATION:
+		NEED_BLOB(20);
+		memset(blob->data, 0, blob->length);
+
+		PUSH_LE_U8(blob->data, 0, parms->link_information.in.overwrite);
+		PUSH_LE_U64(blob->data, 8, parms->link_information.in.root_fid);
+
+		len = smbcli_blob_append_string(
+			NULL, mem_ctx, blob,
+			parms->link_information.in.new_name,
+			STR_UNICODE | STR_TERMINATE);
+		PUSH_LE_U32(blob->data, 16, len - 2);
+		return true;
+
 		/* Unhandled levels */
 	case RAW_SFILEINFO_PIPE_INFORMATION:
 	case RAW_SFILEINFO_VALID_DATA_INFORMATION:
