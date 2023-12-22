@@ -201,7 +201,9 @@
 #define SMB2_SHAREFLAG_ENABLE_HASH_V1                    0x2000
 #define SMB2_SHAREFLAG_ENABLE_HASH_V2                    0x4000
 #define SMB2_SHAREFLAG_ENCRYPT_DATA                      0x8000
-#define SMB2_SHAREFLAG_ALL                               0xFF33
+#define SMB2_SHAREFLAG_IDENTITY_REMOTING             0x00040000
+#define SMB2_SHAREFLAG_COMPRESS_DATA                 0x00100000
+#define SMB2_SHAREFLAG_ISOLATED_TRANSPORT            0x00200000
 
 /* SMB2 share capabilities */
 #define SMB2_SHARE_CAP_DFS			0x8
