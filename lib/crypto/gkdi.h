@@ -89,11 +89,10 @@ static const int64_t gkdi_max_clock_skew = 3000000000;
 gnutls_mac_algorithm_t get_sp800_108_mac_algorithm(
 	const struct KdfAlgorithm kdf_algorithm);
 
-NTSTATUS compute_seed_key(
-	TALLOC_CTX *mem_ctx,
-	const DATA_BLOB target_security_descriptor,
-	const struct ProvRootKey *const root_key,
-	const struct Gkid gkid,
-	uint8_t out[static const GKDI_KEY_LEN]);
+NTSTATUS compute_seed_key(TALLOC_CTX *mem_ctx,
+			  const DATA_BLOB target_security_descriptor,
+			  const struct ProvRootKey *const root_key,
+			  const struct Gkid gkid,
+			  uint8_t out[static const GKDI_KEY_LEN]);
 
 #endif /* LIB_CRYPTO_GKDI_H */

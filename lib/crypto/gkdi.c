@@ -164,13 +164,12 @@ out:
 	return status;
 }
 
-static NTSTATUS compute_l1_seed_key(
-	TALLOC_CTX *mem_ctx,
-	struct GkdiContext *ctx,
-	const DATA_BLOB security_descriptor,
-	const struct ProvRootKey *const root_key,
-	const struct Gkid gkid,
-	uint8_t key[static const GKDI_KEY_LEN])
+static NTSTATUS compute_l1_seed_key(TALLOC_CTX *mem_ctx,
+				    struct GkdiContext *ctx,
+				    const DATA_BLOB security_descriptor,
+				    const struct ProvRootKey *const root_key,
+				    const struct Gkid gkid,
+				    uint8_t key[static const GKDI_KEY_LEN])
 {
 	NTSTATUS status = NT_STATUS_OK;
 	struct GkdiContextShort short_ctx;
@@ -350,12 +349,11 @@ static bool gkid_is_valid(const struct Gkid gkid)
 	return true;
 }
 
-NTSTATUS compute_seed_key(
-	TALLOC_CTX *mem_ctx,
-	const DATA_BLOB target_security_descriptor,
-	const struct ProvRootKey *const root_key,
-	const struct Gkid gkid,
-	uint8_t key[static const GKDI_KEY_LEN])
+NTSTATUS compute_seed_key(TALLOC_CTX *mem_ctx,
+			  const DATA_BLOB target_security_descriptor,
+			  const struct ProvRootKey *const root_key,
+			  const struct Gkid gkid,
+			  uint8_t key[static const GKDI_KEY_LEN])
 {
 	NTSTATUS status = NT_STATUS_OK;
 	enum GkidType gkid_type;

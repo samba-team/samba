@@ -464,7 +464,7 @@ static void test_gkdi_key_derivation(void **state)
 		status = compute_seed_key(
 			mem_ctx,
 			DATA_BLOB_CONST(gmsa_security_descriptor,
-				       sizeof gmsa_security_descriptor),
+					sizeof gmsa_security_descriptor),
 			&test_vector->root_key,
 			test_vector->gkid,
 			out);
