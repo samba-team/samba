@@ -1755,7 +1755,12 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomainEx(struct dcesrv_call_state *dce_c
 					  TALLOC_CTX *mem_ctx,
 					  struct lsa_CreateTrustedDomainEx *r)
 {
-	struct lsa_CreateTrustedDomainEx2 r2 = {};
+	/*
+	 * More investigation required here, do not create secrets for now.
+	 */
+	struct trustDomainPasswords auth_struct = {
+		.incoming_size = 0,
+	};
 	struct dcesrv_handle *policy_handle = NULL;
 	NTSTATUS status;
 
@@ -1771,17 +1776,18 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomainEx(struct dcesrv_call_state *dce_c
 		return status;
 	}
 
-	r2.in.policy_handle = r->in.policy_handle;
-	r2.in.info = r->in.info;
-	r2.out.trustdom_handle = r->out.trustdom_handle;
+	if (r->in.auth_info->incoming_count > 1) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
-	return dcesrv_lsa_CreateTrustedDomain_base(
+	return dcesrv_lsa_CreateTrustedDomain_common(
 		dce_call,
 		mem_ctx,
 		policy_handle,
-		&r2,
-		NDR_LSA_CREATETRUSTEDDOMAINEX,
-		r->in.auth_info);
+		r->in.access_mask,
+		r->in.info,
+		&auth_struct,
+		&r->out.trustdom_handle);
 }
 
 /*
