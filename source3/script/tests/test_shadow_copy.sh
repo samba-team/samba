@@ -221,7 +221,7 @@ test_fetch_snap_file()
         -c "get ${SNAPSHOTS[$snapidx]}/$path $WORKDIR/foo"
 }
 
-# Test fetching a previous version of a file
+# Test listing the previous version of a dir
 test_fetch_snap_dir()
 {
     local share
