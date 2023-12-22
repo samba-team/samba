@@ -66,9 +66,9 @@
 	time_t tval;
 }
 
-%name-prefix "mdsyy"
+%define api.prefix {mdsyy}
 %expect 5
-%error-verbose
+%define parse.error verbose
 
 %type <sval> match expr line function
 %type <tval> date

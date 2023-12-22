@@ -95,9 +95,9 @@
 	struct es_attr_map *attr_map;
 }
 
-%name-prefix "mdsyyl"
+%define api.prefix {mdsyyl}
 %expect 1
-%error-verbose
+%define parse.error verbose
 
 %type <sval> match expr line function value isodate
 %type <attr_map> attribute
