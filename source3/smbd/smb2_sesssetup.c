@@ -754,8 +754,14 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 		if (NT_STATUS_EQUAL(status, NT_STATUS_BAD_LOGON_SESSION_STATE)) {
 			/*
 			 * This comes from smb2srv_session_lookup_global().
+			 * And it's a cross node/cross smbd session bind,
+			 * which can't work in our architecture.
+			 *
+			 * Returning NT_STATUS_REQUEST_NOT_ACCEPTED is better
+			 * than NT_STATUS_USER_SESSION_DELETED in order to
+			 * avoid a completely new session.
 			 */
-			tevent_req_nterror(req, NT_STATUS_USER_SESSION_DELETED);
+			tevent_req_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
 			return tevent_req_post(req, ev);
 		}
 
