@@ -1711,6 +1711,10 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomainEx2(struct dcesrv_call_state *dce_
 					   struct lsa_CreateTrustedDomainEx2 *r)
 {
 	struct dcesrv_handle *policy_handle = NULL;
+	struct trustDomainPasswords auth_struct = {
+		.incoming_size = 0,
+	};
+	DATA_BLOB auth_blob = data_blob_null;
 	NTSTATUS status;
 
 	ZERO_STRUCTP(r->out.trustdom_handle);
@@ -1725,13 +1729,24 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomainEx2(struct dcesrv_call_state *dce_
 		return status;
 	}
 
-	return dcesrv_lsa_CreateTrustedDomain_base(
-		dce_call,
-		mem_ctx,
-		policy_handle,
-		r,
-		NDR_LSA_CREATETRUSTEDDOMAINEX2,
-		NULL);
+	auth_blob = data_blob_const(r->in.auth_info_internal->auth_blob.data,
+				    r->in.auth_info_internal->auth_blob.size);
+
+	status = get_trustdom_auth_blob(dce_call,
+					mem_ctx,
+					&auth_blob,
+					&auth_struct);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return dcesrv_lsa_CreateTrustedDomain_common(dce_call,
+						     mem_ctx,
+						     policy_handle,
+						     r->in.access_mask,
+						     r->in.info,
+						     &auth_struct,
+						     &r->out.trustdom_handle);
 }
 /*
   lsa_CreateTrustedDomainEx
