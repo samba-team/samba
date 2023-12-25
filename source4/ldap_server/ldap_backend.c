@@ -1451,7 +1451,7 @@ static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
 			map_ldb_error(local_ctx, LDB_ERR_OTHER, NULL, &errstr);
 			errstr = talloc_asprintf(local_ctx,
 				"%s. Too many objects match!", errstr);
-			DEBUG(10,("CompareRequest: %d results: %s\n", res->count, errstr));
+			DEBUG(10,("CompareRequest: %u results: %s\n", res->count, errstr));
 		}
 	}
 
