@@ -1246,8 +1246,7 @@ static NTSTATUS ldapsrv_DelRequest(struct ldapsrv_call *call)
 	int ldb_ret;
 	struct ldb_result *res = NULL;
 
-	DEBUG(10, ("DelRequest"));
-	DEBUGADD(10, (" dn: %s\n", req->dn));
+	DBG_DEBUG("dn: %s\n", req->dn);
 
 	local_ctx = talloc_named(call, 0, "DelRequest local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
@@ -1255,7 +1254,7 @@ static NTSTATUS ldapsrv_DelRequest(struct ldapsrv_call *call)
 	dn = ldb_dn_new(local_ctx, samdb, req->dn);
 	NT_STATUS_HAVE_NO_MEMORY(dn);
 
-	DEBUG(10, ("DelRequest: dn: [%s]\n", req->dn));
+	DBG_DEBUG("dn: [%s]\n", req->dn);
 
 	del_reply = ldapsrv_init_reply(call, LDAP_TAG_DelResponse);
 	NT_STATUS_HAVE_NO_MEMORY(del_reply);
