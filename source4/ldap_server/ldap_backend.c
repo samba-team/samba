@@ -790,21 +790,21 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	}
 	scope_str = dsdb_search_scope_as_string(scope);
 
-	DEBUG(10,("SearchRequest: scope: [%s]\n", scope_str));
+	DBG_DEBUG("scope: [%s]\n", scope_str);
 
 	if (req->num_attributes >= 1) {
 		attrs = talloc_array(local_ctx, const char *, req->num_attributes+1);
 		NT_STATUS_HAVE_NO_MEMORY(attrs);
 
 		for (i=0; i < req->num_attributes; i++) {
-			DEBUG(10,("SearchRequest: attrs: [%s]\n",req->attributes[i]));
+			DBG_DEBUG("attrs: [%s]\n",req->attributes[i]);
 			attrs[i] = req->attributes[i];
 		}
 		attrs[i] = NULL;
 	}
 
-	DEBUG(5,("ldb_request %s dn=%s filter=%s\n", 
-		 scope_str, req->basedn, ldb_filter_from_tree(call, req->tree)));
+	DBG_INFO("ldb_request %s dn=%s filter=%s\n",
+		 scope_str, req->basedn, ldb_filter_from_tree(call, req->tree));
 
 	callback_ctx = talloc_zero(local_ctx, struct ldapsrv_context);
 	NT_STATUS_HAVE_NO_MEMORY(callback_ctx);
@@ -863,7 +863,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 		}
 
 		if (count >= call->conn->limits.max_notifications) {
-			DEBUG(10,("SearchRequest: error MaxNotificationPerConn\n"));
+			DBG_DEBUG("error MaxNotificationPerConn\n");
 			result = map_ldb_error(local_ctx,
 					       LDB_ERR_ADMIN_LIMIT_EXCEEDED,
 					       "MaxNotificationPerConn reached",
@@ -1029,7 +1029,7 @@ reply:
 		}
 		result = LDB_SUCCESS;
 	} else {
-		DEBUG(10,("SearchRequest: error\n"));
+		DBG_DEBUG("error\n");
 		result = map_ldb_error(local_ctx, ldb_ret, ldb_errstring(samdb),
 				       &errstr);
 	}
