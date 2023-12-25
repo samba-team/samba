@@ -1406,8 +1406,7 @@ static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
 	int result = LDAP_SUCCESS;
 	int ldb_ret;
 
-	DEBUG(10, ("CompareRequest"));
-	DEBUGADD(10, (" dn: %s\n", req->dn));
+	DBG_DEBUG("dn: %s\n", req->dn);
 
 	local_ctx = talloc_named(call, 0, "CompareRequest local_memory_context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
@@ -1415,12 +1414,12 @@ static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
 	dn = ldb_dn_new(local_ctx, samdb, req->dn);
 	NT_STATUS_HAVE_NO_MEMORY(dn);
 
-	DEBUG(10, ("CompareRequest: dn: [%s]\n", req->dn));
+	DBG_DEBUG("dn: [%s]\n", req->dn);
 	filter = talloc_asprintf(local_ctx, "(%s=%*s)", req->attribute, 
 				 (int)req->value.length, req->value.data);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
 
-	DEBUGADD(10, ("CompareRequest: attribute: [%s]\n", filter));
+	DBG_DEBUG("attribute: [%s]\n", filter);
 
 	attrs[0] = NULL;
 
@@ -1433,13 +1432,13 @@ static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
 		if (ldb_ret != LDB_SUCCESS) {
 			result = map_ldb_error(local_ctx, ldb_ret,
 					       ldb_errstring(samdb), &errstr);
-			DEBUG(10,("CompareRequest: error: %s\n", errstr));
+			DBG_DEBUG("error: %s\n", errstr);
 		} else if (res->count == 0) {
-			DEBUG(10,("CompareRequest: doesn't matched\n"));
+			DBG_DEBUG("didn't match\n");
 			result = LDAP_COMPARE_FALSE;
 			errstr = NULL;
 		} else if (res->count == 1) {
-			DEBUG(10,("CompareRequest: matched\n"));
+			DBG_DEBUG("matched\n");
 			result = LDAP_COMPARE_TRUE;
 			errstr = NULL;
 		} else if (res->count > 1) {
@@ -1447,7 +1446,7 @@ static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
 			map_ldb_error(local_ctx, LDB_ERR_OTHER, NULL, &errstr);
 			errstr = talloc_asprintf(local_ctx,
 				"%s. Too many objects match!", errstr);
-			DEBUG(10,("CompareRequest: %u results: %s\n", res->count, errstr));
+			DBG_DEBUG("%u results: %s\n", res->count, errstr);
 		}
 	}
 
