@@ -3,7 +3,7 @@
 <refentry id="vfs_linux_xfs_sgid.8">
 
 <refmeta>
-	<refentrytitle>vfs_syncops</refentrytitle>
+	<refentrytitle>vfs_linux_xfs_sgid</refentrytitle>
 	<manvolnum>8</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
@@ -49,7 +49,7 @@
 <refsect1>
 	<title>EXAMPLES</title>
 
-	<para>Add syncops functionality for [share]:</para>
+	<para>Add linux_xfs_sgid functionality for [share]:</para>
 <programlisting>
         <smbconfsection name="[share]"/>
 	<smbconfoption name="vfs objects">linux_xfs_sgid</smbconfoption>
