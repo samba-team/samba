@@ -288,14 +288,15 @@ static NTSTATUS ldapsrv_encode(TALLOC_CTX *mem_ctx,
 				samba_ldap_control_handlers(),
 				&reply->blob,
 				mem_ctx);
-	TALLOC_FREE(reply->msg);
 	if (!bret) {
 		DEBUG(0,("Failed to encode ldap reply of type %d: "
 			 "ldap_encode() failed\n",
 			 reply->msg->type));
+		TALLOC_FREE(reply->msg);
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	TALLOC_FREE(reply->msg);
 	talloc_set_name_const(reply->blob.data,
 			      "Outgoing, encoded single LDAP reply");
 
