@@ -1530,8 +1530,8 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 	for (i=0; msg->controls && msg->controls[i]; i++) {
 		if (!msg->controls_decoded[i] && 
 		    msg->controls[i]->critical) {
-			DEBUG(3, ("ldapsrv_do_call: Critical extension %s is not known to this server\n",
-				  msg->controls[i]->oid));
+			DBG_NOTICE("Critical extension %s is not known to this server\n",
+				  msg->controls[i]->oid);
 			return ldapsrv_unwilling(call, LDAP_UNAVAILABLE_CRITICAL_EXTENSION);
 		}
 	}
