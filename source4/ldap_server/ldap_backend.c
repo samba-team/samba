@@ -1300,9 +1300,8 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 	int ldb_ret;
 	struct ldb_result *res = NULL;
 
-	DEBUG(10, ("ModifyDNRequest"));
-	DEBUGADD(10, (" dn: %s", req->dn));
-	DEBUGADD(10, (" newrdn: %s\n", req->newrdn));
+	DBG_DEBUG("dn: %s newrdn: %s\n",
+		  req->dn, req->newrdn);
 
 	local_ctx = talloc_named(call, 0, "ModifyDNRequest local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
@@ -1313,8 +1312,8 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 	newrdn = ldb_dn_new(local_ctx, samdb, req->newrdn);
 	NT_STATUS_HAVE_NO_MEMORY(newrdn);
 
-	DEBUG(10, ("ModifyDNRequest: olddn: [%s]\n", req->dn));
-	DEBUG(10, ("ModifyDNRequest: newrdn: [%s]\n", req->newrdn));
+	DBG_DEBUG("olddn: [%s] newrdn: [%s]\n",
+		  req->dn, req->newrdn);
 
 	if (ldb_dn_get_comp_num(newrdn) == 0) {
 		result = LDAP_PROTOCOL_ERROR;
@@ -1341,7 +1340,7 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 	}
 
 	if (req->newsuperior) {
-		DEBUG(10, ("ModifyDNRequest: newsuperior: [%s]\n", req->newsuperior));
+		DBG_DEBUG("newsuperior: [%s]\n", req->newsuperior);
 		parentdn = ldb_dn_new(local_ctx, samdb, req->newsuperior);
 	}
 
