@@ -1057,8 +1057,7 @@ static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 	unsigned int i,j;
 	struct ldb_result *res = NULL;
 
-	DEBUG(10, ("ModifyRequest"));
-	DEBUGADD(10, (" dn: %s\n", req->dn));
+	DBG_DEBUG("dn: %s\n", req->dn);
 
 	local_ctx = talloc_named(call, 0, "ModifyRequest local memory context");
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
@@ -1066,7 +1065,7 @@ static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 	dn = ldb_dn_new(local_ctx, samdb, req->dn);
 	NT_STATUS_HAVE_NO_MEMORY(dn);
 
-	DEBUG(10, ("ModifyRequest: dn: [%s]\n", req->dn));
+	DBG_DEBUG("dn: [%s]\n", req->dn);
 
 	msg = ldb_msg_new(local_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(msg);
