@@ -1467,7 +1467,7 @@ static NTSTATUS ldapsrv_AbandonRequest(struct ldapsrv_call *call)
 	struct ldapsrv_call *c = NULL;
 	struct ldapsrv_call *n = NULL;
 
-	DEBUG(10, ("AbandonRequest\n"));
+	DBG_DEBUG("abandoned\n");
 
 	for (c = call->conn->pending_calls; c != NULL; c = n) {
 		n = c->next;
