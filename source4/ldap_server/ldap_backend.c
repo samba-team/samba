@@ -289,9 +289,9 @@ static NTSTATUS ldapsrv_encode(TALLOC_CTX *mem_ctx,
 				&reply->blob,
 				mem_ctx);
 	if (!bret) {
-		DEBUG(0,("Failed to encode ldap reply of type %d: "
+		DBG_ERR("Failed to encode ldap reply of type %d: "
 			 "ldap_encode() failed\n",
-			 reply->msg->type));
+			 reply->msg->type);
 		TALLOC_FREE(reply->msg);
 		return NT_STATUS_NO_MEMORY;
 	}
