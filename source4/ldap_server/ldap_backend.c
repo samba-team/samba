@@ -353,7 +353,7 @@ static NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 	struct ldapsrv_reply *reply;
 	struct ldap_ExtendedResponse *r;
 
-	DEBUG(10,("Unwilling type[%d] id[%d]\n", call->request->type, call->request->messageid));
+	DBG_DEBUG("type[%d] id[%d]\n", call->request->type, call->request->messageid);
 
 	reply = ldapsrv_init_reply(call, LDAP_TAG_ExtendedResponse);
 	if (!reply) {
