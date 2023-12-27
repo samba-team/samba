@@ -74,6 +74,11 @@ static int ldb_eval_transitive_filter_helper(TALLOC_CTX *mem_ctx,
 			     attrs,
 			     DSDB_MARK_REQ_UNTRUSTED);
 	if (ret != LDB_SUCCESS) {
+		DBG_NOTICE("search failure (%d: %s) looking for '%s' on '%s'\n",
+			   ret,
+			   ldb_strerror(ret),
+			   attr,
+			   ldb_dn_get_linearized(to_visit->dn));
 		talloc_free(tmp_ctx);
 		return ret;
 	}
