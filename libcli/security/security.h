@@ -25,9 +25,6 @@
 
 #include "librpc/gen_ndr/security.h"
 
-#define PRIMARY_USER_SID_INDEX 0
-#define PRIMARY_GROUP_SID_INDEX 1
-
 /* File Specific access rights */
 #define FILE_READ_DATA        SEC_FILE_READ_DATA
 #define FILE_WRITE_DATA       SEC_FILE_WRITE_DATA
