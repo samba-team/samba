@@ -58,7 +58,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *input, size_t len)
 	 * need a security token.
 	 */
 
-	e1.data = input;
+	e1.data = discard_const(input);
 	e1.length = len;
 
 	mem_ctx = talloc_new(NULL);
