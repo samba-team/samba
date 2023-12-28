@@ -839,7 +839,7 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 						      conn,
 						      conn->cwd_fsp,
 						      dirname,
-						      0,
+						      twrp,
 						      posix,
 						      &smb_dirname,
 						      &symlink_err);
