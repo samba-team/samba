@@ -1322,6 +1322,7 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 		uint64_t id = global->session_global_id;
 
 		global->connection_dialect = conn->smb2.server.dialect;
+		global->client_guid = conn->smb2.client.guid;
 
 		global->session_wire_id = id;
 
