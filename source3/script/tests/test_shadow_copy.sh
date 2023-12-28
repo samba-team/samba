@@ -389,6 +389,32 @@ test_shadow_copy_format()
         failed=`expr $failed + 1`
 }
 
+# Test fetching a file where there's no current version of it
+test_missing_basedir()
+{
+    local share
+    local where
+    local prefix
+    local snapidx
+
+    share=$1
+    where=$2
+    prefix=$3
+    snapidx=$4
+
+    #delete snapshots from previous tests
+    find $WORKDIR -name ".snapshots" -exec rm -rf {} \; 1>/dev/null 2>&1
+    build_snapshots $WORKDIR/$where "$prefix" "$snapidx" "$snapidx"
+
+    (cd "$WORKDIR/$where"/share; mv bar _bar)
+
+    testit "fetch a file without a latest version" \
+	test_fetch_snap_file "$share" "bar/baz" "$snapidx" || \
+	failed=`expr $failed + 1`
+
+    (cd "$WORKDIR/$where"/share; mv _bar bar)
+}
+
 #build "latest" files
 build_files $WORKDIR/mount base/share "latest" "latest"
 
@@ -423,5 +449,6 @@ test_shadow_copy_format shadow_fmt2 mount/base share 2 "shadow:format with some 
 test_shadow_copy_format shadow_fmt3 mount/base share 2 "shadow:format with modified format"
 test_shadow_copy_format shadow_fmt4 mount/base share 3 "shadow:format with snapprefix"
 test_shadow_copy_format shadow_fmt5 mount/base share 6 "shadow:format with delimiter"
+test_missing_basedir shadow3 "mount/base" "share" 6
 
 exit $failed
