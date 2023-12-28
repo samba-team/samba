@@ -100,7 +100,7 @@ build_snapshots()
     local prefix    #prefix from snapshot dir to share root
     local start     #timestamp index of first snapshot
     local end       #timestamp index of last snapshot
-    local sub       #creat a snapshot of subtree of share
+    local sub       #create a snapshot of subtree of share
     local snapdir
     local snapname
     local i
