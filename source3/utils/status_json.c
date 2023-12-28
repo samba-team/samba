@@ -22,6 +22,7 @@
 #include "lib/util/time_basic.h"
 #include "conn_tdb.h"
 #include "session.h"
+#include "librpc/gen_ndr/smbXsrv.h"
 #include "librpc/gen_ndr/open_files.h"
 #include "status_json.h"
 #include "../libcli/security/security.h"
@@ -447,6 +448,12 @@ int traverse_sessionid_json(struct traverse_state *state,
 		goto failure;
 	}
 	result = json_add_string(&sub_json, "session_dialect", connection_dialect);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_guid(&sub_json,
+			       "client_guid",
+			       &session->global->client_guid);
 	if (result < 0) {
 		goto failure;
 	}
