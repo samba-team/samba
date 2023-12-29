@@ -87,10 +87,11 @@ def configure(conf):
 def build(bld):
     if bld.CONFIG_SET("HAVE_NSS_H") and not bld.CONFIG_SET("USING_SYSTEM_NSS_WRAPPER"):
         # We need to do it this way or the library wont work.
-        # Using private_library=True will add symbol version which
+        # We need force_unversioned=True as symbol versioning
         # breaks preloading!
         bld.SAMBA_LIBRARY('nss_wrapper',
                           source='nss_wrapper.c nss_utils.c',
                           deps='dl pthread',
                           install=False,
+                          force_unversioned=True,
                           realname='libnss-wrapper.so')

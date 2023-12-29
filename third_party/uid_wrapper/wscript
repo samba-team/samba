@@ -115,10 +115,11 @@ syscall(SYS_setgroups32, 0, NULL);
 def build(bld):
     if not bld.CONFIG_SET("USING_SYSTEM_UID_WRAPPER"):
         # We need to do it this way or the library wont work.
-        # Using private_library=True will add symbol version which
+        # We need force_unversioned=True as symbol versioning
         # breaks preloading!
         bld.SAMBA_LIBRARY('uid_wrapper',
                           source='uid_wrapper.c',
                           deps='dl pthread',
                           install=False,
+                          force_unversioned=True,
                           realname='libuid-wrapper.so')

@@ -85,10 +85,11 @@ def configure(conf):
 def build(bld):
     if bld.CONFIG_SET("HAVE_RESOLV_H") and not bld.CONFIG_SET("USING_SYSTEM_RESOLV_WRAPPER"):
         # We need to do it this way or the library wont work.
-        # Using private_library=True will add symbol version which
+        # We need force_unversioned=True as symbol versioning
         # breaks preloading!
         bld.SAMBA_LIBRARY('resolv_wrapper',
                           source='resolv_wrapper.c',
                           deps='dl resolv',
                           install=False,
+                          force_unversioned=True,
                           realname='libresolv-wrapper.so')
