@@ -43,6 +43,10 @@
 #include "lib/util/time_basic.h"
 #include "source3/smbd/dir.h"
 
+#if defined(HAVE_LINUX_MAGIC_H)
+#include <linux/magic.h>
+#endif
+
 extern const struct generic_mapping file_generic_mapping;
 
 struct deferred_open_record {
@@ -1180,6 +1184,27 @@ static NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 					fsp,
 					how);
 		if (new_fd == -1) {
+#if defined(HAVE_FSTATFS) && defined(HAVE_LINUX_MAGIC_H)
+			if (S_ISDIR(fsp->fsp_name->st.st_ex_mode) &&
+			    (errno == ENOENT)) {
+				struct statfs sbuf = {};
+				int ret = fstatfs(old_fd, &sbuf);
+				if (ret == -1) {
+					int saved_errno = errno;
+					DBG_ERR("fstatfs failed: %s\n",
+						strerror(errno));
+					errno = saved_errno;
+				} else if (sbuf.f_type == AUTOFS_SUPER_MAGIC) {
+					/*
+					 * When reopening an as-yet
+					 * unmounted autofs mount
+					 * point we get ENOENT. We
+					 * have to retry pathbased.
+					 */
+					goto namebased_open;
+				}
+			}
+#endif
 			status = map_nt_error_from_unix(errno);
 			fd_close(fsp);
 			return status;
@@ -1194,6 +1219,7 @@ static NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 		return NT_STATUS_OK;
 	}
 
+namebased_open:
 	/*
 	 * Close the existing pathref fd and set the fsp flag
 	 * is_pathref to false so we get a "normal" fd this time.

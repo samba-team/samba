@@ -118,6 +118,7 @@ def configure(conf):
 
     conf.CHECK_HEADERS('netdb.h')
     conf.CHECK_HEADERS('linux/falloc.h linux/ioctl.h')
+    conf.CHECK_HEADERS('linux/magic.h')
 
     conf.CHECK_FUNCS('getcwd fchown chmod fchmod mknod mknodat')
     conf.CHECK_FUNCS('strtol strchr strupr chflags fchflags')
@@ -531,6 +532,10 @@ return acl_get_perm_np(permset_d, perm);
     if conf.CHECK_FUNCS('dirfd'):
         conf.DEFINE('HAVE_DIRFD_DECL', 1)
 
+    conf.CHECK_CODE('struct statfs fsd; int r = fstatfs(AT_FDCWD, &fsd);',
+                    'HAVE_FSTATFS',
+                    msg='Checking for fstatfs',
+                    headers='sys/statfs.h fcntl.h')
     conf.CHECK_CODE('struct statfs fsd; fsid_t fsid = fsd.f_fsid; return statfs(".", &fsd);',
                     'HAVE_STATFS_F_FSID',
                     msg="vfs_fileid checking for statfs() and struct statfs.f_fsid",
