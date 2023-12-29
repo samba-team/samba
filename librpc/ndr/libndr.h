@@ -367,7 +367,7 @@ enum ndr_compression_alg {
 };
 
 #define NDR_PULL_CHECK_FLAGS(ndr, ndr_flags) do { \
-	if ((ndr_flags) & ~(NDR_SCALARS|NDR_BUFFERS)) { \
+	if (unlikely((ndr_flags) & ~(NDR_SCALARS|NDR_BUFFERS))) { \
 		return ndr_pull_error(ndr, NDR_ERR_FLAGS, "Invalid pull struct ndr_flags 0x%"PRI_NDR_FLAGS_TYPE, ndr_flags); \
 	} \
 } while (0)
