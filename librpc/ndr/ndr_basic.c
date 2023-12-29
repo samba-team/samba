@@ -1453,6 +1453,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_DATA_BLOB(struct ndr_pull *ndr, ndr_flags_ty
 	} else {
 		NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &length));
 	}
+	if (length == 0) {
+		/* skip the talloc for an empty blob */
+		blob->data = NULL;
+		blob->length = 0;
+		return NDR_ERR_SUCCESS;
+	}
 	NDR_PULL_NEED_BYTES(ndr, length);
 	*blob = data_blob_talloc(ndr->current_mem_ctx, ndr->data+ndr->offset, length);
 	ndr->offset += length;
