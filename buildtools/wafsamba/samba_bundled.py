@@ -10,6 +10,9 @@ def PRIVATE_NAME(bld, name):
 
     extension = bld.env.PRIVATE_EXTENSION
 
+    if name in bld.env.PRIVATE_EXTENSION_EXCEPTION:
+        return name
+
     if extension and name.startswith('%s' % extension):
         return name
 
