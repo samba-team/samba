@@ -13,7 +13,7 @@ import "misc.idl";
 ]
 interface witness
 {
-	typedef [v1_enum,public] enum {
+	typedef [flag(NDR_PAHEX),v1_enum,public] enum {
 		WITNESS_V1 = 0x00010001,
 		WITNESS_V2 = 0x00020000,
 		WITNESS_UNSPECIFIED_VERSION = 0xFFFFFFFF
@@ -22,7 +22,7 @@ interface witness
 	/*****************/
 	/* Function 0x00 */
 
-	typedef [enum16bit] enum {
+	typedef [flag(NDR_PAHEX),enum16bit] enum {
 		WITNESS_STATE_UNKNOWN     = 0x00,
 		WITNESS_STATE_AVAILABLE   = 0x01,
 		WITNESS_STATE_UNAVAILABLE = 0xff
@@ -80,7 +80,7 @@ interface witness
 		WITNESS_NOTIFY_IP_CHANGE       = 4
 	} witness_notifyResponse_type;
 
-	typedef [v1_enum] enum {
+	typedef [flag(NDR_PAHEX),v1_enum] enum {
 		WITNESS_RESOURCE_STATE_UNKNOWN     = 0x00,
 		WITNESS_RESOURCE_STATE_AVAILABLE   = 0x01,
 		WITNESS_RESOURCE_STATE_UNAVAILABLE = 0xff
