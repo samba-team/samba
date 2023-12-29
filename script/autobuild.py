@@ -996,11 +996,10 @@ tasks = {
             ("nonshared-distclean", "make distclean"),
             ("nonshared-configure", "./configure.developer " + samba_configure_params + " --bundled-libraries=ALL --with-static-modules=ALL --nonshared-binary=smbtorture,smbd/smbd"),
             ("nonshared-make", "make -j"),
-            # TODO ("nonshared-test", make_test(TESTS="samba3.smb2.create.*nt4_dc")),
-            # TODO ("nonshared-lcov", LCOV_CMD),
-
-            ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
-            ("clean", "make clean"),
+            ("nonshared-test", make_test(TESTS="samba3.smb2.create.*nt4_dc")),
+            ("nonshared-lcov", LCOV_CMD),
+            ("nonshared-check-clean-tree", CLEAN_SOURCE_TREE_CMD),
+            ("nonshared-clean", "make clean"),
         ],
     },
 
