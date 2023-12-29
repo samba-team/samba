@@ -134,6 +134,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   require_builtin_deps=False,
                   provide_builtin_linking=False,
                   builtin_cflags='',
+                  force_unversioned=False,
                   allow_undefined_symbols=False,
                   allow_warnings=False,
                   enabled=True):
@@ -171,8 +172,19 @@ def SAMBA_LIBRARY(bld, libname, source,
         raise Errors.WafError("private library '%s' with orig_vscript_map must not have abi_match" %
                              libname)
 
+    if force_unversioned and private_library:
+        raise Errors.WafError("private library '%s': can't have force_unversioned=True" %
+                             libname)
+
+    if force_unversioned and realname is None:
+        raise Errors.WafError("library '%s': force_unversioned=True needs realname too" %
+                             libname)
+
     if LIB_MUST_BE_PRIVATE(bld, libname) and target_type not in ['PLUGIN']:
         private_library = True
+
+    if force_unversioned:
+        private_library = False
 
     if not enabled:
         SET_TARGET_TYPE(bld, libname, 'DISABLED')
@@ -327,7 +339,9 @@ def SAMBA_LIBRARY(bld, libname, source,
 
     vscript = None
     if bld.env.HAVE_LD_VERSION_SCRIPT:
-        if private_library:
+        if force_unversioned:
+            version = None
+        elif private_library:
             version = bld.env.PRIVATE_VERSION
         elif vnum:
             version = "%s_%s" % (libname, vnum)
