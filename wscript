@@ -35,7 +35,7 @@ def system_mitkrb5_callback(option, opt, value, parser):
 
 def options(opt):
     opt.BUILTIN_DEFAULT('NONE')
-    opt.PRIVATE_EXTENSION_DEFAULT('samba4')
+    opt.PRIVATE_EXTENSION_DEFAULT('private-samba')
     opt.RECURSE('lib/replace')
     opt.RECURSE('dynconfig')
     opt.RECURSE('packaging')
