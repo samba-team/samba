@@ -22,6 +22,41 @@
 #include "system/filesys.h"
 #include "libcli/security/security.h"
 
+struct worm_config_data {
+	double grace_period;
+};
+
+static int vfs_worm_connect(struct vfs_handle_struct *handle,
+			    const char *service, const char *user)
+{
+	struct worm_config_data *config = NULL;
+	int ret;
+
+	ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+	if (ret < 0) {
+		return ret;
+	}
+
+	if (IS_IPC(handle->conn) || IS_PRINT(handle->conn)) {
+		return 0;
+	}
+
+	config = talloc_zero(handle->conn, struct worm_config_data);
+	if (config == NULL) {
+		DBG_ERR("talloc_zero() failed\n");
+		errno = ENOMEM;
+		return -1;
+	}
+	config->grace_period = lp_parm_int(SNUM(handle->conn), "worm",
+						"grace_period", 3600);
+
+	SMB_VFS_HANDLE_SET_DATA(handle, config,
+				NULL, struct worm_config_data,
+				return -1);
+	return 0;
+
+}
+
 static NTSTATUS vfs_worm_create_file(vfs_handle_struct *handle,
 				     struct smb_request *req,
 				     struct files_struct *dirfsp,
@@ -48,12 +83,16 @@ static NTSTATUS vfs_worm_create_file(vfs_handle_struct *handle,
 		FILE_WRITE_ATTRIBUTES | DELETE_ACCESS |
 		WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS;
 	NTSTATUS status;
+	struct worm_config_data *config = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct worm_config_data,
+				return NT_STATUS_INTERNAL_ERROR);
 
 	if (VALID_STAT(smb_fname->st)) {
 		double age;
 		age = timespec_elapsed(&smb_fname->st.st_ex_ctime);
-		if (age > lp_parm_int(SNUM(handle->conn), "worm",
-				      "grace_period", 3600)) {
+		if (age > config->grace_period) {
 			readonly = true;
 		}
 	}
@@ -83,6 +122,7 @@ static NTSTATUS vfs_worm_create_file(vfs_handle_struct *handle,
 }
 
 static struct vfs_fn_pointers vfs_worm_fns = {
+	.connect_fn = vfs_worm_connect,
 	.create_file_fn = vfs_worm_create_file,
 };
 
