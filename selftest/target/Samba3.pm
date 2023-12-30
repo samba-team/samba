@@ -2681,6 +2681,9 @@ sub provision($$)
 	my $local_symlinks_shrdir="$shrdir/local_symlinks";
 	push(@dirs,$local_symlinks_shrdir);
 
+	my $worm_shrdir="$shrdir/worm";
+	push(@dirs,$worm_shrdir);
+
 	my $fruit_resource_stream_shrdir="$shrdir/fruit_resource_stream";
 	push(@dirs,$fruit_resource_stream_shrdir);
 
@@ -3505,6 +3508,13 @@ sub provision($$)
 	copy = tmp
 	path = $local_symlinks_shrdir
 	follow symlinks = yes
+
+[worm]
+	copy = tmp
+	path = $worm_shrdir
+	vfs objects = worm
+	worm:grace_period = 1
+	comment = vfs_worm with 1s grace_period
 
 [kernel_oplocks]
 	copy = tmp
