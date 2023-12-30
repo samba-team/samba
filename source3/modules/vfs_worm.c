@@ -57,6 +57,31 @@ static int vfs_worm_connect(struct vfs_handle_struct *handle,
 
 }
 
+static bool is_readonly(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
+{
+	double age;
+	struct worm_config_data *config = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct worm_config_data,
+				return true);
+
+	if (!VALID_STAT(smb_fname->st)) {
+		goto out;
+	}
+
+	age = timespec_elapsed(&smb_fname->st.st_ex_ctime);
+
+	if (age > config->grace_period) {
+		return true;
+	}
+
+out:
+	return false;
+}
+
 static NTSTATUS vfs_worm_create_file(vfs_handle_struct *handle,
 				     struct smb_request *req,
 				     struct files_struct *dirfsp,
@@ -77,25 +102,14 @@ static NTSTATUS vfs_worm_create_file(vfs_handle_struct *handle,
 				     const struct smb2_create_blobs *in_context_blobs,
 				     struct smb2_create_blobs *out_context_blobs)
 {
-	bool readonly = false;
 	const uint32_t write_access_flags =
 		FILE_WRITE_DATA | FILE_APPEND_DATA |
 		FILE_WRITE_ATTRIBUTES | DELETE_ACCESS |
 		WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS;
 	NTSTATUS status;
-	struct worm_config_data *config = NULL;
+	bool readonly;
 
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct worm_config_data,
-				return NT_STATUS_INTERNAL_ERROR);
-
-	if (VALID_STAT(smb_fname->st)) {
-		double age;
-		age = timespec_elapsed(&smb_fname->st.st_ex_ctime);
-		if (age > config->grace_period) {
-			readonly = true;
-		}
-	}
+	readonly = is_readonly(handle, smb_fname);
 
 	if (readonly && (access_mask & write_access_flags)) {
 		return NT_STATUS_ACCESS_DENIED;
