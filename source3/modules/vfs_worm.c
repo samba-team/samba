@@ -25,6 +25,10 @@
 struct worm_config_data {
 	double grace_period;
 };
+static const uint32_t write_access_flags = FILE_WRITE_DATA | FILE_APPEND_DATA |
+					   FILE_WRITE_ATTRIBUTES |
+					   DELETE_ACCESS | WRITE_DAC_ACCESS |
+					   WRITE_OWNER_ACCESS;
 
 static int vfs_worm_connect(struct vfs_handle_struct *handle,
 			    const char *service, const char *user)
@@ -102,10 +106,6 @@ static NTSTATUS vfs_worm_create_file(vfs_handle_struct *handle,
 				     const struct smb2_create_blobs *in_context_blobs,
 				     struct smb2_create_blobs *out_context_blobs)
 {
-	const uint32_t write_access_flags =
-		FILE_WRITE_DATA | FILE_APPEND_DATA |
-		FILE_WRITE_ATTRIBUTES | DELETE_ACCESS |
-		WRITE_DAC_ACCESS | WRITE_OWNER_ACCESS;
 	NTSTATUS status;
 	bool readonly;
 
