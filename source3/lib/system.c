@@ -627,11 +627,12 @@ static bool set_process_capability(enum smbd_capability capability,
 	cap_set_flag(cap, CAP_INHERITABLE, num_cap_vals, cap_vals, CAP_CLEAR);
 
 	if (cap_set_proc(cap) == -1) {
-		DEBUG(0, ("set_process_capability: cap_set_proc failed: %s\n",
-			strerror(errno)));
+		DBG_ERR("adding capability %d: cap_set_proc failed: %s\n",
+			capability, strerror(errno));
 		cap_free(cap);
 		return False;
 	}
+	DBG_INFO("added capability %d\n", capability);
 
 	cap_free(cap);
 	return True;
