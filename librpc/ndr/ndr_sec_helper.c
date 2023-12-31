@@ -64,7 +64,11 @@ size_t ndr_size_security_ace(const struct security_ace *ace, libndr_flags flags)
 	} else if (ace->type == SEC_ACE_TYPE_SYSTEM_RESOURCE_ATTRIBUTE) {
 		ret += ndr_size_security_ace_coda(&ace->coda, ace->type, flags);
 	} else {
-		ret += ace->coda.ignored.length;
+		/*
+		 * Normal ACEs have a coda.ignored blob that is always or
+		 * almost always empty. We aren't going to push it (it is
+		 * ignored), so we don't add that length to the size.
+		 */
 	}
 	/* round up to a multiple of 4  (MS-DTYP 2.4.4.1) */
 	ret = (ret + 3ULL) & ~3ULL;
@@ -120,7 +124,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_ace(struct ndr_push *ndr, ndr_flags
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->object, sec_ace_object(r->type)));
 		NDR_CHECK(ndr_push_security_ace_object_ctr(ndr, NDR_SCALARS, &r->object));
 		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, &r->trustee));
-		if (sec_ace_has_extra_blob(r->type) || r->coda.ignored.length != 0) {
+		if (sec_ace_has_extra_blob(r->type)) {
 			struct ndr_push *_ndr_coda;
 			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_coda, 0, ndr_subcontext_size_of_ace_coda(r, ndr_size_security_ace(r, ndr->flags), ndr->flags)));
 			NDR_CHECK(ndr_push_set_switch_value(_ndr_coda, &r->coda, r->type));
