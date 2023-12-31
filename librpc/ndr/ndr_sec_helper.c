@@ -108,6 +108,34 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_ace(struct ndr_pull *ndr, ndr_flags
 	return NDR_ERR_SUCCESS;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_security_ace(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct security_ace *r)
+{
+	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 5));
+		NDR_CHECK(ndr_push_security_ace_type(ndr, NDR_SCALARS, r->type));
+		NDR_CHECK(ndr_push_security_ace_flags(ndr, NDR_SCALARS, r->flags));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, ndr_size_security_ace(r, ndr->flags)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->access_mask));
+		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->object, sec_ace_object(r->type)));
+		NDR_CHECK(ndr_push_security_ace_object_ctr(ndr, NDR_SCALARS, &r->object));
+		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, &r->trustee));
+		{
+			struct ndr_push *_ndr_coda;
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_coda, 0, ndr_subcontext_size_of_ace_coda(r, ndr_size_security_ace(r, ndr->flags), ndr->flags)));
+			NDR_CHECK(ndr_push_set_switch_value(_ndr_coda, &r->coda, r->type));
+			NDR_CHECK(ndr_push_security_ace_coda(_ndr_coda, NDR_SCALARS|NDR_BUFFERS, &r->coda));
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_coda, 0, ndr_subcontext_size_of_ace_coda(r, ndr_size_security_ace(r, ndr->flags), ndr->flags)));
+		}
+		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->object, sec_ace_object(r->type)));
+		NDR_CHECK(ndr_push_security_ace_object_ctr(ndr, NDR_BUFFERS, &r->object));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
 
 /*
  * An ACE coda can't be bigger than the space allowed for by
