@@ -75,6 +75,36 @@ size_t ndr_size_security_ace(const struct security_ace *ace, libndr_flags flags)
 	return ret;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_pull_security_ace(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct security_ace *r)
+{
+	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 5));
+		NDR_CHECK(ndr_pull_security_ace_type(ndr, NDR_SCALARS, &r->type));
+		NDR_CHECK(ndr_pull_security_ace_flags(ndr, NDR_SCALARS, &r->flags));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->size));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->access_mask));
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->object, sec_ace_object(r->type)));
+		NDR_CHECK(ndr_pull_security_ace_object_ctr(ndr, NDR_SCALARS, &r->object));
+		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, &r->trustee));
+		{
+			struct ndr_pull *_ndr_coda;
+			ssize_t sub_size = ndr_subcontext_size_of_ace_coda(r, r->size, ndr->flags);
+			NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_coda, 0, sub_size));
+			NDR_CHECK(ndr_pull_set_switch_value(_ndr_coda, &r->coda, r->type));
+			NDR_CHECK(ndr_pull_security_ace_coda(_ndr_coda, NDR_SCALARS|NDR_BUFFERS, &r->coda));
+			NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_coda, 0, sub_size));
+		}
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->object, sec_ace_object(r->type)));
+		NDR_CHECK(ndr_pull_security_ace_object_ctr(ndr, NDR_BUFFERS, &r->object));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+
 /*
  * An ACE coda can't be bigger than the space allowed for by
  * ace->size, so we need to check this from the context of the ACE.
