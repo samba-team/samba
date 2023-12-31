@@ -715,7 +715,7 @@ interface security
 		[default][flag(NDR_REMAINING)] DATA_BLOB ignored;
 	} security_ace_coda;
 
-	typedef [public,gensize,nosize,nopull] struct {
+	typedef [public,gensize,nosize,nopush,nopull] struct {
 		security_ace_type type;  /* SEC_ACE_TYPE_* */
 		security_ace_flags flags; /* SEC_ACE_FLAG_* */
 		[value(ndr_size_security_ace(r,ndr->flags))] uint16 size;
