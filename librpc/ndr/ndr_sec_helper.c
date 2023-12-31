@@ -79,6 +79,27 @@ size_t ndr_size_security_ace(const struct security_ace *ace, libndr_flags flags)
 	return ret;
 }
 
+
+static inline enum ndr_err_code ndr_maybe_pull_security_ace_object_ctr(struct ndr_pull *ndr,
+								       ndr_flags_type ndr_flags,
+								       struct security_ace *r)
+{
+	/*
+	 * If this is not an object ACE (as is usually common),
+	 * ndr_pull_security_ace_object_ctr() will do nothing.
+	 *
+	 * By avoiding calling the function in that case, we avoid some
+	 * tallocing and ndr token busywork.
+	 */
+	bool is_object = sec_ace_object(r->type);
+	if (is_object) {
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->object, is_object));
+		NDR_CHECK(ndr_pull_security_ace_object_ctr(ndr, ndr_flags, &r->object));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+
 _PUBLIC_ enum ndr_err_code ndr_pull_security_ace(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct security_ace *r)
 {
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
@@ -89,8 +110,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_ace(struct ndr_pull *ndr, ndr_flags
 		NDR_CHECK(ndr_pull_security_ace_flags(ndr, NDR_SCALARS, &r->flags));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->size));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->access_mask));
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->object, sec_ace_object(r->type)));
-		NDR_CHECK(ndr_pull_security_ace_object_ctr(ndr, NDR_SCALARS, &r->object));
+		NDR_CHECK(ndr_maybe_pull_security_ace_object_ctr(ndr, NDR_SCALARS, r));
 		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, &r->trustee));
 		sub_size = ndr_subcontext_size_of_ace_coda(r, r->size, ndr->flags);
 		if (sub_size == 0) {
@@ -106,8 +126,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_ace(struct ndr_pull *ndr, ndr_flags
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->object, sec_ace_object(r->type)));
-		NDR_CHECK(ndr_pull_security_ace_object_ctr(ndr, NDR_BUFFERS, &r->object));
+		NDR_CHECK(ndr_maybe_pull_security_ace_object_ctr(ndr, NDR_BUFFERS, r));
 	}
 	return NDR_ERR_SUCCESS;
 }
