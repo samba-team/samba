@@ -130,6 +130,23 @@ IOID;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;bf967aba-0de6-11d0-a285-00aa0030
 0aa003049e2;RU)(OA;CIIOID;RP;b7c69e6d-2cc7-11d2-854e-00a0c983f608;bf967a86-0d
 e6-11d0-a285-00aa003049e2;ED)""".split())
 
+
+CONDITIONAL_ACE_SDDL = ('O:SYG:SYD:(XA;OICI;CR;;;WD;'
+                        '(@USER.ad://ext/AuthenticationSilo == "siloname"))')
+
+NON_OBJECT_SDDL = (
+    "O:S-1-5-21-2212615479-2695158682-2101375468-512"
+    "G:S-1-5-21-2212615479-2695158682-2101375468-513"
+    "D:P(A;OICI;FA;;;S-1-5-21-2212615479-2695158682-2101375468-512)"
+    "(A;OICI;FA;;;S-1-5-21-2212615479-2695158682-2101375468-519)"
+    "(A;OICIIO;FA;;;CO)"
+    "(A;OICI;FA;;;S-1-5-21-2212615479-2695158682-2101375468-512)"
+    "(A;OICI;FA;;;SY)"
+    "(A;OICI;0x1200a9;;;AU)"
+    "(A;OICI;0x1200a9;;;ED)")
+
+
+
 # set SCALE = 100 for normal test, or 1 for testing the test.
 SCALE = 100
 
@@ -193,6 +210,30 @@ class UserTests(samba.tests.TestCase):
 
     def test_pack_unpack_little_sd_with_object_aces(self):
         unpacked = self.get_desc(LITTLE_SD_SDDL)
+        self._test_pack_unpack(unpacked)
+
+    def test_pack_conditional_ace_sd(self):
+        unpacked = self.get_desc(CONDITIONAL_ACE_SDDL)
+        self._test_pack(unpacked)
+
+    def test_unpack_conditional_ace_sd(self):
+        blob = self.get_blob(CONDITIONAL_ACE_SDDL)
+        self._test_unpack(blob)
+
+    def test_pack_unpack_conditional_ace_sd(self):
+        unpacked = self.get_desc(CONDITIONAL_ACE_SDDL)
+        self._test_pack_unpack(unpacked)
+
+    def test_pack_non_object_sd(self):
+        unpacked = self.get_desc(NON_OBJECT_SDDL)
+        self._test_pack(unpacked)
+
+    def test_unpack_non_object_sd(self):
+        blob = self.get_blob(NON_OBJECT_SDDL)
+        self._test_unpack(blob)
+
+    def test_pack_unpack_non_object_sd(self):
+        unpacked = self.get_desc(NON_OBJECT_SDDL)
         self._test_pack_unpack(unpacked)
 
     def test_unpack_repl_sample(self):
