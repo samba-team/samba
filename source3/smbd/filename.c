@@ -945,6 +945,7 @@ static char *symlink_target_path(
 
 NTSTATUS safe_symlink_target_path(TALLOC_CTX *mem_ctx,
 				  const char *connectpath,
+				  const char *dir,
 				  const char *target,
 				  size_t unparsed,
 				  char **_relative)
@@ -960,10 +961,21 @@ NTSTATUS safe_symlink_target_path(TALLOC_CTX *mem_ctx,
 
 	if (target[0] == '/') {
 		abs_target = talloc_strdup(mem_ctx, target);
-	} else {
+	} else if (dir == NULL) {
 		abs_target = talloc_asprintf(mem_ctx,
 					     "%s/%s",
 					     connectpath,
+					     target);
+	} else if (dir[0] == '/') {
+		abs_target = talloc_asprintf(mem_ctx,
+					     "%s/%s",
+					     dir,
+					     target);
+	} else {
+		abs_target = talloc_asprintf(mem_ctx,
+					     "%s/%s/%s",
+					     connectpath,
+					     dir,
 					     target);
 	}
 	if (abs_target == NULL) {
@@ -1491,6 +1503,7 @@ next:
 
 	status = safe_symlink_target_path(mem_ctx,
 					  conn->connectpath,
+					  NULL,
 					  target,
 					  unparsed,
 					  &safe_target);
