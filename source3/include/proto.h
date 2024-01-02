@@ -706,6 +706,7 @@ struct smb_filename *synthetic_smb_fname(TALLOC_CTX *mem_ctx,
 					 uint32_t flags);
 NTSTATUS safe_symlink_target_path(TALLOC_CTX *mem_ctx,
 				  const char *connectpath,
+				  const char *dir,
 				  const char *target,
 				  size_t unparsed,
 				  char **_relative);
