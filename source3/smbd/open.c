@@ -572,7 +572,6 @@ out:
 static NTSTATUS symlink_target_below_conn(
 	TALLOC_CTX *mem_ctx,
 	const char *connection_path,
-	size_t connection_path_len,
 	struct files_struct *fsp,
 	struct files_struct *dirfsp,
 	struct smb_filename *symlink_name,
@@ -580,9 +579,7 @@ static NTSTATUS symlink_target_below_conn(
 {
 	char *target = NULL;
 	char *absolute = NULL;
-	const char *relative = NULL;
 	NTSTATUS status;
-	bool ok;
 
 	if (fsp_get_pathref_fd(fsp) != -1) {
 		/*
@@ -595,69 +592,28 @@ static NTSTATUS symlink_target_below_conn(
 			talloc_tos(), dirfsp, symlink_name, &target);
 	}
 
+	status = safe_symlink_target_path(talloc_tos(),
+					  connection_path,
+					  dirfsp->fsp_name->base_name,
+					  target,
+					  0,
+					  &absolute);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("readlink_talloc failed: %s\n", nt_errstr(status));
+		DBG_DEBUG("safe_symlink_target_path() failed: %s\n",
+			  nt_errstr(status));
 		return status;
 	}
 
-	if (target[0] != '/') {
-		char *tmp = talloc_asprintf(
-			talloc_tos(),
-			"%s/%s/%s",
-			connection_path,
-			dirfsp->fsp_name->base_name,
-			target);
-
-		TALLOC_FREE(target);
-
-		if (tmp == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		target = tmp;
-	}
-
-	DBG_DEBUG("redirecting to %s\n", target);
-
-	absolute = canonicalize_absolute_path(talloc_tos(), target);
-	TALLOC_FREE(target);
-
-	if (absolute == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/*
-	 * We're doing the "below connection_path" here because it's
-	 * cheap. It might be that we get a symlink out of the share,
-	 * pointing to yet another symlink getting us back into the
-	 * share. If we need that, we would have to remove the check
-	 * here.
-	 */
-	ok = subdir_of(
-		connection_path,
-		connection_path_len,
-		absolute,
-		&relative);
-	if (!ok) {
-		DBG_NOTICE("Bad access attempt: %s is a symlink "
-			   "outside the share path\n"
-			   "conn_rootdir =%s\n"
-			   "resolved_name=%s\n",
-			   symlink_name->base_name,
-			   connection_path,
-			   absolute);
-		TALLOC_FREE(absolute);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (relative[0] == '\0') {
+	if (absolute[0] == '\0') {
 		/*
 		 * special case symlink to share root: "." is our
 		 * share root filename
 		 */
-		absolute[0] = '.';
-		absolute[1] = '\0';
-	} else {
-		memmove(absolute, relative, strlen(relative)+1);
+		TALLOC_FREE(absolute);
+		absolute = talloc_strdup(talloc_tos(), ".");
+		if (absolute == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	*_target = absolute;
@@ -835,7 +791,6 @@ again:
 	status = symlink_target_below_conn(
 		talloc_tos(),
 		connpath,
-		connpath_len,
 		fsp,
 		discard_const_p(files_struct, dirfsp),
 		smb_fname_rel,
