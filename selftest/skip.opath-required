@@ -9,7 +9,5 @@
 ^samba3.raw.samba3hide.*
 
 # These don't work without /proc/fd support
-^samba3.blackbox.test_symlink_traversal.*\(fileserver\)
 ^samba3.blackbox.shadow_copy_torture.*\(fileserver\)
 ^samba3.blackbox.virus_scanner.*\(fileserver:local\)
-^samba3.blackbox.shadow_copy2.*\(fileserver.*\)
