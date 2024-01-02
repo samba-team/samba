@@ -659,44 +659,34 @@ static char *symlink_target_path(
 	return ret;
 }
 
-static NTSTATUS safe_symlink_target_path(
-	TALLOC_CTX *mem_ctx,
-	const char *connectpath,
-	const char *name_in,
-	const char *substitute,
-	size_t unparsed,
-	char **_name_out)
+NTSTATUS safe_symlink_target_path(TALLOC_CTX *mem_ctx,
+				  const char *connectpath,
+				  const char *target,
+				  size_t unparsed,
+				  char **_relative)
 {
-	char *target = NULL;
 	char *abs_target = NULL;
 	char *abs_target_canon = NULL;
 	const char *relative = NULL;
-	char *name_out = NULL;
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	bool in_share;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	target = symlink_target_path(mem_ctx, name_in, substitute, unparsed);
-	if (target == NULL) {
+	DBG_DEBUG("connectpath [%s] target [%s] unparsed [%zu]\n",
+		  connectpath, target, unparsed);
+
+	if (target[0] == '/') {
+		abs_target = talloc_strdup(mem_ctx, target);
+	} else {
+		abs_target = talloc_asprintf(mem_ctx,
+					     "%s/%s",
+					     connectpath,
+					     target);
+	}
+	if (abs_target == NULL) {
 		goto fail;
 	}
 
-	DBG_DEBUG("name_in: %s, substitute: %s, unparsed: %zu, target=%s\n",
-		  name_in,
-		  substitute,
-		  unparsed,
-		  target);
-
-	if (target[0] == '/') {
-		abs_target = target;
-	} else {
-		abs_target = talloc_asprintf(
-			target, "%s/%s", connectpath, target);
-		if (abs_target == NULL) {
-			goto fail;
-		}
-	}
-
-	abs_target_canon = canonicalize_absolute_path(target, abs_target);
+	abs_target_canon = canonicalize_absolute_path(abs_target, abs_target);
 	if (abs_target_canon == NULL) {
 		goto fail;
 	}
@@ -712,15 +702,14 @@ static NTSTATUS safe_symlink_target_path(
 		goto fail;
 	}
 
-	name_out = talloc_strdup(mem_ctx, relative);
-	if (name_out == NULL) {
+	*_relative = talloc_strdup(mem_ctx, relative);
+	if (*_relative == NULL) {
 		goto fail;
 	}
 
 	status = NT_STATUS_OK;
-	*_name_out = name_out;
 fail:
-	TALLOC_FREE(target);
+	TALLOC_FREE(abs_target);
 	return status;
 }
 
@@ -1127,8 +1116,8 @@ NTSTATUS filename_convert_dirfsp(
 {
 	struct open_symlink_err *symlink_err = NULL;
 	NTSTATUS status;
-	char *substitute = NULL;
 	char *target = NULL;
+	char *safe_target = NULL;
 	size_t symlink_redirects = 0;
 
 next:
@@ -1193,19 +1182,24 @@ next:
 	 * resolve all symlinks locally.
 	 */
 
-	substitute = symlink_err->reparse->substitute_name;
+	target = symlink_target_path(mem_ctx,
+				     name_in,
+				     symlink_err->reparse->substitute_name,
+				     symlink_err->unparsed);
+	if (target == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	status = safe_symlink_target_path(mem_ctx,
 					  conn->connectpath,
-					  name_in,
-					  substitute,
+					  target,
 					  symlink_err->unparsed,
-					  &target);
+					  &safe_target);
 	TALLOC_FREE(symlink_err);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	name_in = target;
+	name_in = safe_target;
 
 	symlink_redirects += 1;
 

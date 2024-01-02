@@ -704,6 +704,11 @@ struct smb_filename *synthetic_smb_fname(TALLOC_CTX *mem_ctx,
 					 const SMB_STRUCT_STAT *psbuf,
 					 NTTIME twrp,
 					 uint32_t flags);
+NTSTATUS safe_symlink_target_path(TALLOC_CTX *mem_ctx,
+				  const char *connectpath,
+				  const char *target,
+				  size_t unparsed,
+				  char **_relative);
 NTSTATUS filename_convert_dirfsp(
 	TALLOC_CTX *ctx,
 	connection_struct *conn,
