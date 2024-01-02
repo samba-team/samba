@@ -172,16 +172,16 @@ class UserTests(samba.tests.TestCase):
         pass
 
     def _test_pack(self, unpacked, cycles=10000):
+        pack = unpacked.__ndr_pack__
         for i in range(SCALE * cycles):
-            ndr_pack(unpacked)
+            pack()
 
     def _test_unpack(self, blob, cycles=10000, cls=security.descriptor):
         for i in range(SCALE * cycles):
-            ndr_unpack(cls, blob)
+            cls().__ndr_unpack__(blob)
 
     def _test_pack_unpack(self, desc, cycles=5000, cls=security.descriptor):
         blob2 = ndr_pack(desc)
-
         for i in range(SCALE * cycles):
             blob = ndr_pack(desc)
             desc = ndr_unpack(cls, blob)
