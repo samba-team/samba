@@ -132,9 +132,10 @@ class UserTests(samba.tests.TestCase):
     def get_blob(self, sddl):
         return ndr_pack(self.get_desc(sddl))
 
-    def test_00_00_do_nothing(self):
+    def test_00_00_do_nothing(self, cycles=10000):
         # this gives us an idea of the overhead
-        pass
+        for i in range(SCALE * cycles):
+            pass
 
     def _test_pack(self, unpacked, cycles=10000):
         pack = unpacked.__ndr_pack__
