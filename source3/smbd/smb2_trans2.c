@@ -3115,10 +3115,11 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	}
 
 	p = strrchr_m(smb_fname->base_name,'/');
-	if (!p)
+	if (p == NULL) {
 		base_name = smb_fname->base_name;
-	else
+	} else {
 		base_name = p+1;
+	}
 
 	/* NT expects the name to be in an exact form of the *full*
 	   filename. See the trans2 torture test */
