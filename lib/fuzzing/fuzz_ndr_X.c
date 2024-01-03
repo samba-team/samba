@@ -136,17 +136,23 @@ static NTSTATUS pull_chunks(struct ndr_pull *ndr_pull,
 	return NT_STATUS_OK;
 }
 
-static void ndr_print_nothing(struct ndr_print *ndr, const char *format, ...)
+static void ndr_print_and_forget(struct ndr_print *ndr, const char *format, ...) PRINTF_ATTRIBUTE(2,3);
+
+static char print_buffer[1000000];
+
+static void ndr_print_and_forget(struct ndr_print *ndr, const char *format, ...)
 {
 	/*
 	 * This is here so that we walk the tree but don't output anything.
-	 * This helps find buggy ndr_print routines
+	 * This helps find buggy ndr_print routines.
+	 *
+	 * We call snprinf() to find e.g. strings without NULL terminators.
 	 */
+	va_list list;
 
-	/*
-	 * TODO: consider calling snprinf() to find strings without NULL
-	 * terminators (for example)
-	 */
+	va_start(list, format);
+	vsnprintf(print_buffer, sizeof(print_buffer), format, list);
+	va_end(list);
 }
 
 
@@ -312,7 +318,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
 		{
 			struct ndr_print *ndr_print = talloc_zero(mem_ctx, struct ndr_print);
-			ndr_print->print = ndr_print_nothing;
+			ndr_print->print = ndr_print_and_forget;
 			ndr_print->depth = 1;
 
 			/*
