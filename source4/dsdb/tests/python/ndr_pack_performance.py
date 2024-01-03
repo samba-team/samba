@@ -126,7 +126,7 @@ class UserTests(samba.tests.TestCase):
         return f.read()
 
     def get_desc(self, sddl):
-        dummy_sid = security.dom_sid("S-2-0-0")
+        dummy_sid = security.dom_sid("S-1-2-3")
         return security.descriptor.from_sddl(sddl, dummy_sid)
 
     def get_blob(self, sddl):
