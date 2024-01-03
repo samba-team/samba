@@ -4,10 +4,7 @@ import optparse
 import sys
 sys.path.insert(0, 'bin/python')
 
-import os
 import samba
-import samba.getopt as options
-import random
 import gzip
 
 # We try to use the test infrastructure of Samba 4.3+, but if it
@@ -16,44 +13,12 @@ import gzip
 #
 # Don't copy this horror into ordinary tests -- it is special for
 # performance tests that want to apply to old versions.
-try:
-    from samba.tests.subunitrun import SubunitOptions, TestProgram
-    ANCIENT_SAMBA = False
-except ImportError:
-    ANCIENT_SAMBA = True
-    samba.ensure_external_module("testtools", "testtools")
-    samba.ensure_external_module("subunit", "subunit/python")
-    from subunit.run import SubunitTestRunner
-    import unittest
+
+from samba.tests.subunitrun import TestProgram
 
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 from samba.dcerpc import drsuapi
-
-parser = optparse.OptionParser("ndr_pack_performance.py [options] <host>")
-sambaopts = options.SambaOptions(parser)
-parser.add_option_group(sambaopts)
-parser.add_option_group(options.VersionOptions(parser))
-
-if not ANCIENT_SAMBA:
-    subunitopts = SubunitOptions(parser)
-    parser.add_option_group(subunitopts)
-
-# use command line creds if available
-credopts = options.CredentialsOptions(parser)
-parser.add_option_group(credopts)
-opts, args = parser.parse_args()
-
-if len(args) < 1:
-    parser.print_usage()
-    sys.exit(1)
-
-host = args[0]
-
-lp = sambaopts.get_loadparm()
-creds = credopts.get_credentials(lp)
-
-random.seed(1)
 
 
 BIG_SD_SDDL = ''.join(
@@ -246,18 +211,4 @@ class UserTests(samba.tests.TestCase):
         self._test_pack(desc, cycles=20)
 
 
-if "://" not in host:
-    if os.path.isfile(host):
-        host = "tdb://%s" % host
-    else:
-        host = "ldap://%s" % host
-
-
-if ANCIENT_SAMBA:
-    runner = SubunitTestRunner()
-    if not runner.run(unittest.TestLoader().loadTestsFromTestCase(
-            UserTests)).wasSuccessful():
-        sys.exit(1)
-    sys.exit(0)
-else:
-    TestProgram(module=__name__, opts=subunitopts)
+TestProgram(module=__name__)
