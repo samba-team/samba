@@ -826,7 +826,7 @@ for env in ["fileserver"]:
                   '$USERNAME',
                   '$PASSWORD',
                   smbclient3,
-                  "-mSMB3"])
+                  "-mNT1"])
     plantestsuite("samba3.blackbox.test_list_servers.SMB2",
                   env,
                   [os.path.join(samba3srcdir, "script/tests/test_smbclient_list_servers.sh"),
