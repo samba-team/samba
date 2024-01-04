@@ -366,7 +366,7 @@ static NTSTATUS fsctl_network_iface_info(TALLOC_CTX *mem_ctx,
 	struct fsctl_net_iface_info *first = NULL;
 	struct fsctl_net_iface_info *last = NULL;
 	size_t i;
-	size_t num_ifaces = iface_count();
+	size_t num_ifaces;
 	enum ndr_err_code ndr_err;
 	struct cluster_movable_ips *cluster_movable_ips = NULL;
 	int ret;
@@ -374,6 +374,16 @@ static NTSTATUS fsctl_network_iface_info(TALLOC_CTX *mem_ctx,
 	if (in_input->length != 0) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	/*
+	 * The list of probed interfaces might have changed, we might need to
+	 * refresh local_interfaces to get up-to-date network information, and
+	 * respond to clients which sent FSCTL_QUERY_NETWORK_INTERFACE_INFO.
+	 * For example, network speed is changed, interfaces count is changed
+	 * (some link down or link up), and etc.
+	 */
+	load_interfaces();
+	num_ifaces = iface_count();
 
 	*out_output = data_blob_null;
 
