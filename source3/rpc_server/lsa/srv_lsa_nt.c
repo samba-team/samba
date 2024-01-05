@@ -59,6 +59,8 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
+#undef strcasecmp
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
@@ -1847,6 +1849,67 @@ static NTSTATUS get_trustauth_inout_blob(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS lsa_CreateTrustedDomain_precheck(
+	TALLOC_CTX *mem_ctx,
+	struct lsa_info *policy,
+	struct auth_session_info *session_info,
+	struct lsa_TrustDomainInfoInfoEx *info)
+{
+	const char *netbios_name = NULL;
+	const char *dns_name = NULL;
+	bool ok;
+
+	netbios_name = info->netbios_name.string;
+	if (netbios_name == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	dns_name = info->domain_name.string;
+	if (dns_name == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (info->sid == NULL) {
+		return NT_STATUS_INVALID_SID;
+	}
+
+	if (!(policy->access & LSA_POLICY_TRUST_ADMIN)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/*
+	 * We expect S-1-5-21-A-B-C, but we don't
+	 * allow S-1-5-21-0-0-0 as this is used
+	 * for claims and compound identities.
+	 */
+	ok = dom_sid_is_valid_account_domain(info->sid);
+	if (!ok) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (strcasecmp(netbios_name, "BUILTIN") == 0 ||
+	    strcasecmp(dns_name, "BUILTIN") == 0)
+	{
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (policy->name != NULL &&
+	    (strcasecmp(netbios_name, policy->name) == 0 ||
+	     strcasecmp(dns_name, policy->name) == 0))
+	{
+		return NT_STATUS_CURRENT_DOMAIN_NOT_ALLOWED;
+	}
+
+	if (session_info->unix_token->uid != sec_initial_uid() &&
+	    !nt_token_check_domain_rid(session_info->security_token,
+				       DOMAIN_RID_ADMINS))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /***************************************************************************
  _lsa_CreateTrustedDomainEx2
  ***************************************************************************/
@@ -1879,14 +1942,12 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (!(policy->access & LSA_POLICY_TRUST_ADMIN)) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (session_info->unix_token->uid != sec_initial_uid() &&
-	    !nt_token_check_domain_rid(
-		    session_info->security_token, DOMAIN_RID_ADMINS)) {
-		return NT_STATUS_ACCESS_DENIED;
+	status = lsa_CreateTrustedDomain_precheck(p->mem_ctx,
+						  policy,
+						  session_info,
+						  r->in.info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/* Work out max allowed. */
