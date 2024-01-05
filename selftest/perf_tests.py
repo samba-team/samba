@@ -26,8 +26,8 @@ plantestsuite_loadlist("samba4.ldap.ad_dc_performance.python(ad_dc_ntvfs)",
                         '--workgroup=$DOMAIN',
                         '$LOADLIST', '$LISTOPT'])
 
-plantestsuite_loadlist("samba4.ndr_pack_performance.python(ad_dc_ntvfs)",
-                       "ad_dc_ntvfs",
+plantestsuite_loadlist("samba4.ndr_pack_performance.python",
+                       "none",
                        [python, os.path.join(samba4srcdir,
                                              "dsdb/tests/python/ndr_pack_performance.py"),
                         '$SERVER', '-U"$USERNAME%$PASSWORD"',
