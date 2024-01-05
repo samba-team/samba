@@ -866,19 +866,25 @@ def get_gpo_list(dc_hostname, creds, lp, username):
 
     # (S)ite
     if gpo_list_machine:
-        site_dn = site_dn_for_machine(samdb, dc_hostname, lp, creds, username)
-
         try:
-            log.debug("get_gpo_list: query SITE: [%s] for GPOs" % site_dn)
-            gp_link = get_gpo_link(samdb, site_dn)
-        except ldb.LdbError as e:
-            (enum, estr) = e.args
-            log.debug(estr)
-        else:
-            add_gplink_to_gpo_list(samdb, gpo_list, forced_gpo_list,
-                                   site_dn, gp_link,
-                                   gpo.GP_LINK_SITE,
-                                   add_only_forced_gpos, token)
+            site_dn = site_dn_for_machine(samdb, dc_hostname, lp, creds, username)
+
+            try:
+                log.debug("get_gpo_list: query SITE: [%s] for GPOs" % site_dn)
+                gp_link = get_gpo_link(samdb, site_dn)
+            except ldb.LdbError as e:
+                (enum, estr) = e.args
+                log.debug(estr)
+            else:
+                add_gplink_to_gpo_list(samdb, gpo_list, forced_gpo_list,
+                                       site_dn, gp_link,
+                                       gpo.GP_LINK_SITE,
+                                       add_only_forced_gpos, token)
+        except ldb.LdbError:
+            # [MS-GPOL] 3.2.5.1.4 Site Search: If the method returns
+            # ERROR_NO_SITENAME, the remainder of this message MUST be skipped
+            # and the protocol sequence MUST continue at GPO Search
+            pass
 
     # (L)ocal
     gpo_list.insert(0, gpo.GROUP_POLICY_OBJECT("Local Policy",
