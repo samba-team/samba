@@ -285,6 +285,7 @@ static int cephwrap_connect(struct vfs_handle_struct *handle,
 
       connect_ok:
 	handle->data = cmount;
+	DBG_WARNING("Connection established with the server: %s\n", cookie);
 	/*
 	 * Unless we have an async implementation of getxattrat turn this off.
 	 */
