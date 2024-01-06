@@ -35,151 +35,108 @@ static int vfs_recycle_debug_level = DBGC_VFS;
 
 #undef DBGC_CLASS
 #define DBGC_CLASS vfs_recycle_debug_level
- 
-static const char *recycle_repository(vfs_handle_struct *handle)
-{
-	const char *tmp_str = NULL;
 
-	tmp_str = lp_parm_const_string(SNUM(handle->conn), "recycle", "repository",".recycle");
-
-	DEBUG(10, ("recycle: repository = %s\n", tmp_str));
-
-	return tmp_str;
-}
-
-static bool recycle_keep_dir_tree(vfs_handle_struct *handle)
-{
-	bool ret;
-
-	ret = lp_parm_bool(SNUM(handle->conn), "recycle", "keeptree", False);
-
-	DEBUG(10, ("recycle_bin: keeptree = %s\n", ret?"True":"False"));
-
-	return ret;
-}
-
-static bool recycle_versions(vfs_handle_struct *handle)
-{
-	bool ret;
-
-	ret = lp_parm_bool(SNUM(handle->conn), "recycle", "versions", False);
-
-	DEBUG(10, ("recycle: versions = %s\n", ret?"True":"False"));
-
-	return ret;
-}
-
-static bool recycle_touch(vfs_handle_struct *handle)
-{
-	bool ret;
-
-	ret = lp_parm_bool(SNUM(handle->conn), "recycle", "touch", False);
-
-	DEBUG(10, ("recycle: touch = %s\n", ret?"True":"False"));
-
-	return ret;
-}
-
-static bool recycle_touch_mtime(vfs_handle_struct *handle)
-{
-	bool ret;
-
-	ret = lp_parm_bool(SNUM(handle->conn), "recycle", "touch_mtime", False);
-
-	DEBUG(10, ("recycle: touch_mtime = %s\n", ret?"True":"False"));
-
-	return ret;
-}
-
-static const char **recycle_exclude(vfs_handle_struct *handle)
-{
-	const char **tmp_lp;
-
-	tmp_lp = lp_parm_string_list(SNUM(handle->conn), "recycle", "exclude", NULL);
-
-	DEBUG(10, ("recycle: exclude = %s ...\n", tmp_lp?*tmp_lp:""));
-
-	return tmp_lp;
-}
-
-static const char **recycle_exclude_dir(vfs_handle_struct *handle)
-{
-	const char **tmp_lp;
-
-	tmp_lp = lp_parm_string_list(SNUM(handle->conn), "recycle", "exclude_dir", NULL);
-
-	DEBUG(10, ("recycle: exclude_dir = %s ...\n", tmp_lp?*tmp_lp:""));
-
-	return tmp_lp;
-}
-
-static const char **recycle_noversions(vfs_handle_struct *handle)
-{
-	const char **tmp_lp;
-
-	tmp_lp = lp_parm_string_list(SNUM(handle->conn), "recycle", "noversions", NULL);
-
-	DEBUG(10, ("recycle: noversions = %s\n", tmp_lp?*tmp_lp:""));
-
-	return tmp_lp;
-}
-
-static off_t recycle_maxsize(vfs_handle_struct *handle)
-{
-	off_t maxsize;
-
-	maxsize = conv_str_size(lp_parm_const_string(SNUM(handle->conn),
-					    "recycle", "maxsize", NULL));
-
-	DEBUG(10, ("recycle: maxsize = %lu\n", (long unsigned int)maxsize));
-
-	return maxsize;
-}
-
-static off_t recycle_minsize(vfs_handle_struct *handle)
-{
+struct recycle_config_data {
+	const char *repository;
+	bool keeptree;
+	bool versions;
+	bool touch;
+	bool touch_mtime;
+	const char **exclude;
+	const char **exclude_dir;
+	const char **noversions;
+	mode_t directory_mode;
+	mode_t subdir_mode;
 	off_t minsize;
+	off_t maxsize;
+};
 
-	minsize = conv_str_size(lp_parm_const_string(SNUM(handle->conn),
-					    "recycle", "minsize", NULL));
-
-	DEBUG(10, ("recycle: minsize = %lu\n", (long unsigned int)minsize));
-
-	return minsize;
-}
-
-static mode_t recycle_directory_mode(vfs_handle_struct *handle)
+static int vfs_recycle_connect(struct vfs_handle_struct *handle,
+			       const char *service,
+			       const char *user)
 {
-	int dirmode;
+	struct recycle_config_data *config = NULL;
+	int ret;
+	int t;
 	const char *buff;
 
-	buff = lp_parm_const_string(SNUM(handle->conn), "recycle", "directory_mode", NULL);
-
-	if (buff != NULL ) {
-		sscanf(buff, "%o", &dirmode);
-	} else {
-		dirmode=S_IRUSR | S_IWUSR | S_IXUSR;
+	ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+	if (ret < 0) {
+		return ret;
 	}
 
-	DEBUG(10, ("recycle: directory_mode = %o\n", dirmode));
-	return (mode_t)dirmode;
-}
-
-static mode_t recycle_subdir_mode(vfs_handle_struct *handle)
-{
-	int dirmode;
-	const char *buff;
-
-	buff = lp_parm_const_string(SNUM(handle->conn), "recycle", "subdir_mode", NULL);
-
-	if (buff != NULL ) {
-		sscanf(buff, "%o", &dirmode);
-	} else {
-		dirmode=recycle_directory_mode(handle);
+	if (IS_IPC(handle->conn) || IS_PRINT(handle->conn)) {
+		return 0;
 	}
 
-	DEBUG(10, ("recycle: subdir_mode = %o\n", dirmode));
-	return (mode_t)dirmode;
+	config = talloc_zero(handle->conn, struct recycle_config_data);
+	if (config == NULL) {
+		DBG_ERR("talloc_zero() failed\n");
+		errno = ENOMEM;
+		return -1;
+	}
+	config->repository = lp_parm_const_string(SNUM(handle->conn),
+						  "recycle",
+						  "repository",
+						  ".recycle");
+	config->keeptree = lp_parm_bool(SNUM(handle->conn),
+					"recycle",
+					"keeptree",
+					False);
+	config->versions = lp_parm_bool(SNUM(handle->conn),
+					"recycle",
+					"versions",
+					False);
+	config->touch = lp_parm_bool(SNUM(handle->conn),
+				     "recycle",
+				     "touch",
+				     False);
+	config->touch_mtime = lp_parm_bool(SNUM(handle->conn),
+					   "recycle",
+					   "touch_mtime",
+					   False);
+	config->exclude = lp_parm_string_list(SNUM(handle->conn),
+					      "recycle",
+					      "exclude",
+					      NULL);
+	config->exclude_dir = lp_parm_string_list(SNUM(handle->conn),
+						  "recycle",
+						  "exclude_dir",
+						  NULL);
+	config->noversions = lp_parm_string_list(SNUM(handle->conn),
+						 "recycle",
+						 "noversions",
+						 NULL);
+	config->minsize = conv_str_size(lp_parm_const_string(
+		SNUM(handle->conn), "recycle", "minsize", NULL));
+	config->maxsize = conv_str_size(lp_parm_const_string(
+		SNUM(handle->conn), "recycle", "maxsize", NULL));
+
+	buff = lp_parm_const_string(SNUM(handle->conn),
+				    "recycle",
+				    "directory_mode",
+				    NULL);
+	if (buff != NULL ) {
+		sscanf(buff, "%o", &t);
+	} else {
+		t = S_IRUSR | S_IWUSR | S_IXUSR;
+	}
+	config->directory_mode = (mode_t)t;
+
+	buff = lp_parm_const_string(SNUM(handle->conn),
+				    "recycle",
+				    "subdir_mode",
+				    NULL);
+	if (buff != NULL ) {
+		sscanf(buff, "%o", &t);
+	} else {
+		t = config->directory_mode;
+	}
+	config->subdir_mode = (mode_t)t;
+
+	SMB_VFS_HANDLE_SET_DATA(
+		handle, config, NULL, struct recycle_config_data, return -1);
+	return 0;
 }
 
 static bool recycle_directory_exist(vfs_handle_struct *handle, const char *dname)
@@ -253,20 +210,23 @@ static off_t recycle_get_file_size(vfs_handle_struct *handle,
  * Create directory tree
  * @param conn connection
  * @param dname Directory tree to be created
+ * @param directory mode
+ * @param subdirectory mode
  * @return Returns True for success
  **/
-static bool recycle_create_dir(vfs_handle_struct *handle, const char *dname)
+static bool recycle_create_dir(vfs_handle_struct *handle,
+			       const char *dname,
+			       mode_t dir_mode,
+			       mode_t subdir_mode)
 {
 	size_t len;
-	mode_t mode;
+	mode_t mode = dir_mode;
 	char *new_dir = NULL;
 	char *tmp_str = NULL;
 	char *token;
 	char *tok_str;
 	bool ret = False;
 	char *saveptr;
-
-	mode = recycle_directory_mode(handle);
 
 	tmp_str = SMB_STRDUP(dname);
 	ALLOC_CHECK(tmp_str, done);
@@ -325,7 +285,7 @@ static bool recycle_create_dir(vfs_handle_struct *handle, const char *dname)
 		if (strlcat(new_dir, "/", len+1) >= len+1) {
 			goto done;
 		}
-		mode = recycle_subdir_mode(handle);
+		mode = subdir_mode;
 	}
 
 	ret = True;
@@ -472,18 +432,25 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 	const char *base;
 	char *repository = NULL;
 	int i = 1;
-	off_t maxsize, minsize;
 	off_t file_size; /* space_avail;	*/
 	bool exist;
 	int rc = -1;
+	struct recycle_config_data *config;
 
-	repository = talloc_sub_full(NULL, lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
-					conn->session_info->unix_info->unix_name,
-					conn->connectpath,
-					conn->session_info->unix_token->gid,
-					conn->session_info->unix_info->sanitized_username,
-					conn->session_info->info->domain_name,
-					recycle_repository(handle));
+	SMB_VFS_HANDLE_GET_DATA(handle,
+				config,
+				struct recycle_config_data,
+				return true);
+
+	repository = talloc_sub_full(
+		NULL,
+		lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
+		conn->session_info->unix_info->unix_name,
+		conn->connectpath,
+		conn->session_info->unix_token->gid,
+		conn->session_info->unix_info->sanitized_username,
+		conn->session_info->info->domain_name,
+		config->repository);
 	ALLOC_CHECK(repository, done);
 	/* shouldn't we allow absolute path names here? --metze */
 	/* Yes :-). JRA. */
@@ -535,20 +502,20 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 	 * not greater then maxsize, not the size of the single file, also it is better
 	 * to remove older files
 	 */
-	maxsize = recycle_maxsize(handle);
-	if(maxsize > 0 && file_size > maxsize) {
-		DEBUG(3, ("recycle: File %s exceeds maximum recycle size, "
-			  "purging... \n", smb_fname_str_dbg(full_fname)));
+	if (config->maxsize > 0 && file_size > config->maxsize) {
+		DBG_NOTICE("File %s exceeds maximum recycle size, "
+			   "purging... \n",
+			   smb_fname_str_dbg(full_fname));
 		rc = SMB_VFS_NEXT_UNLINKAT(handle,
 					dirfsp,
 					smb_fname,
 					flags);
 		goto done;
 	}
-	minsize = recycle_minsize(handle);
-	if(minsize > 0 && file_size < minsize) {
-		DEBUG(3, ("recycle: File %s lowers minimum recycle size, "
-			  "purging... \n", smb_fname_str_dbg(full_fname)));
+	if (config->minsize > 0 && file_size < config->minsize) {
+		DBG_NOTICE("File %s lowers minimum recycle size, "
+			   "purging... \n",
+			   smb_fname_str_dbg(full_fname));
 		rc = SMB_VFS_NEXT_UNLINKAT(handle,
 					dirfsp,
 					smb_fname,
@@ -585,7 +552,7 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 	/* filename without path */
 	DEBUG(10, ("recycle: base = %s\n", base));
 
-	if (matchparam(recycle_exclude(handle), base)) {
+	if (matchparam(config->exclude, base)) {
 		DEBUG(3, ("recycle: file %s is excluded \n", base));
 		rc = SMB_VFS_NEXT_UNLINKAT(handle,
 					dirfsp,
@@ -594,7 +561,7 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 		goto done;
 	}
 
-	if (matchdirparam(recycle_exclude_dir(handle), path_name)) {
+	if (matchdirparam(config->exclude_dir, path_name)) {
 		DEBUG(3, ("recycle: directory %s is excluded \n", path_name));
 		rc = SMB_VFS_NEXT_UNLINKAT(handle,
 					dirfsp,
@@ -603,7 +570,7 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 		goto done;
 	}
 
-	if (recycle_keep_dir_tree(handle) == True) {
+	if (config->keeptree) {
 		if (asprintf(&temp_name, "%s/%s", repository, path_name) == -1) {
 			ALLOC_CHECK(temp_name, done);
 		}
@@ -617,7 +584,11 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 		DEBUG(10, ("recycle: Directory already exists\n"));
 	} else {
 		DEBUG(10, ("recycle: Creating directory %s\n", temp_name));
-		if (recycle_create_dir(handle, temp_name) == False) {
+		if (recycle_create_dir(handle,
+				       temp_name,
+				       config->directory_mode,
+				       config->subdir_mode) == False)
+		{
 			DEBUG(3, ("recycle: Could not create directory, "
 				  "purging %s...\n",
 				  smb_fname_str_dbg(full_fname)));
@@ -654,7 +625,8 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 
 	/* check if we should delete file from recycle bin */
 	if (recycle_file_exist(handle, smb_fname_final)) {
-		if (recycle_versions(handle) == False || matchparam(recycle_noversions(handle), base) == True) {
+		if (config->versions == False ||
+		    matchparam(config->noversions, base) == True) {
 			DEBUG(3, ("recycle: Removing old file %s from recycle "
 				  "bin\n", smb_fname_str_dbg(smb_fname_final)));
 			if (SMB_VFS_NEXT_UNLINKAT(handle,
@@ -705,9 +677,8 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 	}
 
 	/* touch access date of moved file */
-	if (recycle_touch(handle) == True || recycle_touch_mtime(handle))
-		recycle_do_touch(handle, smb_fname_final,
-				 recycle_touch_mtime(handle));
+	if (config->touch || config->touch_mtime)
+		recycle_do_touch(handle, smb_fname_final, config->touch_mtime);
 
 done:
 	TALLOC_FREE(path_name);
@@ -741,7 +712,8 @@ static int recycle_unlinkat(vfs_handle_struct *handle,
 }
 
 static struct vfs_fn_pointers vfs_recycle_fns = {
-	.unlinkat_fn = recycle_unlinkat
+	.connect_fn = vfs_recycle_connect,
+	.unlinkat_fn = recycle_unlinkat,
 };
 
 static_decl_vfs;
