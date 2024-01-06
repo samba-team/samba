@@ -2687,6 +2687,9 @@ sub provision($$)
 	my $smbget_sharedir="$shrdir/smbget";
 	push(@dirs, $smbget_sharedir);
 
+	my $recycle_shrdir="$shrdir/recycle";
+	push(@dirs,$recycle_shrdir);
+
 	# this gets autocreated by winbindd
 	my $wbsockdir="$prefix_abs/wbsock";
 
@@ -3595,6 +3598,14 @@ sub provision($$)
 [smbget]
 	path = $smbget_sharedir
 	comment = smb username is [%U]
+
+[recycle]
+	copy = tmp
+	path = $recycle_shrdir
+	vfs objects = recycle
+	recycle : repository = .trash
+	recycle : exclude = *.tmp
+	recycle : directory_mode = 755
 
 [smbget_guest]
 	path = $smbget_sharedir
