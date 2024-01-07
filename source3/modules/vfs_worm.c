@@ -29,7 +29,7 @@ struct worm_config_data {
 static const uint32_t write_access_flags = FILE_WRITE_DATA | FILE_APPEND_DATA |
 					   FILE_WRITE_ATTRIBUTES |
 					   DELETE_ACCESS | WRITE_DAC_ACCESS |
-					   WRITE_OWNER_ACCESS;
+					   WRITE_OWNER_ACCESS | FILE_WRITE_EA;
 
 static int vfs_worm_connect(struct vfs_handle_struct *handle,
 			    const char *service, const char *user)
