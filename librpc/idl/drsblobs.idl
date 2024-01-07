@@ -278,7 +278,7 @@ interface drsblobs {
 		 *
 		 * 'Packages':
 		 *   data contains the list of packages
-		 *   as non termiated UTF16 strings with
+		 *   as non terminated UTF16 strings with
 		 *   a UTF16 NULL byte as separator
 		 *
 		 * 'Primary:Kerberos-Newer-Keys':
@@ -408,7 +408,7 @@ interface drsblobs {
 		[value(0x01)] uint8  unknown2;
 		uint8  num_hashes;
 		[value(0)] uint32 unknown3;
-		[value(0)] udlong uuknown4;
+		[value(0)] udlong unknown4;
 		package_PrimaryWDigestHash hashes[num_hashes];
 	} package_PrimaryWDigestBlob;
 
@@ -422,7 +422,7 @@ interface drsblobs {
 	 * Primary:userPassword each calculated hash,
 	 * which is typically calculated via crypt(), the scheme is stored.
 	 * The scheme name and the {scheme} format is re-used from OpenLDAP's
-	 * use for userPassword to aid interopability when exported.
+	 * use for userPassword to aid interoperability when exported.
 	 *
 	 * The currently supported scheme so far is {CRYPT}, which may
 	 * be specified multiple times if both CryptSHA256 ($5$) and
@@ -458,7 +458,7 @@ interface drsblobs {
 	/*
 	 * the secret value is encoded as UTF16 if it's a string
 	 * but depending the AuthType, it might also be krb5 trusts have random bytes here, so converting to UTF16
-	 * mayfail...
+	 * may fail...
 	 *
 	 * TODO: We should try handle the case of a random buffer in all places
 	 *       we deal with cleartext passwords from windows
