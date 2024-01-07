@@ -71,7 +71,7 @@ static NTSTATUS make_gkdi_context_security_descriptor(
 	enum ndr_err_code ndr_err;
 	struct GkdiDerivationCtx ctx_with_sd = *ctx;
 
-	if (ctx_with_sd.target_security_descriptor.length) {
+	if (ctx_with_sd.target_security_descriptor.length != 0) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
