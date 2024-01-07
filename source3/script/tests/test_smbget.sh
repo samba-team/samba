@@ -336,7 +336,7 @@ test_update()
 
 	echo "modified" >>testfile
 	# touch source to trigger new download
-	sleep 2
+	sleep 1
 	touch -m $WORKDIR/testfile
 	$SMBGET --verbose --update -U${SERVER}/${USERNAME}%$PASSWORD smb://$SERVER_IP/smbget/testfile
 	if [ $? -ne 0 ]; then
