@@ -1450,7 +1450,7 @@ struct timespec get_ctimespec(const struct stat *pst)
 {
 	struct timespec ret;
 
-	ret.tv_sec = pst->st_mtime;
+	ret.tv_sec = pst->st_ctime;
 	ret.tv_nsec = get_ctimensec(pst);
 	return ret;
 }
