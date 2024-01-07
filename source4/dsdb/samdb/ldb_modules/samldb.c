@@ -2362,11 +2362,6 @@ static int samldb_check_user_account_control_invariants(struct samldb_ctx *ac,
 			.not_with = UF_ACCOUNT_TYPE_MASK & ~UF_SERVER_TRUST_ACCOUNT,
 			.error_string = "Setting more than one account type not permitted"
 		},
-		{
-			.uac = UF_TRUSTED_FOR_DELEGATION,
-			.not_with = UF_PARTIAL_SECRETS_ACCOUNT,
-			.error_string = "Setting UF_TRUSTED_FOR_DELEGATION not allowed with UF_PARTIAL_SECRETS_ACCOUNT"
-		}
 	};
 
 	for (i = 0; i < ARRAY_SIZE(map); i++) {
