@@ -2,6 +2,7 @@
  * VFS module to disallow writes for older files
  *
  * Copyright (C) 2013, Volker Lendecke
+ * Copyright (C) 2023-2024, Björn Jacke
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
