@@ -186,6 +186,7 @@ static void make_create_timespec(const struct stat *pst, struct stat_ex *dst,
 	if (S_ISDIR(pst->st_mode) && fake_dir_create_times) {
 		dst->st_ex_btime.tv_sec = 315493200L;          /* 1/1/1980 */
 		dst->st_ex_btime.tv_nsec = 0;
+		return;
 	}
 
 	dst->st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_BTIME;
