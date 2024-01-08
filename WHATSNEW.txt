@@ -1,4 +1,86 @@
                    ==============================
+                   Release Notes for Samba 4.19.4
+                          January 08, 2024
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.19 release series.
+
+
+Changes since 4.19.3
+--------------------
+
+o  Samuel Cabrero <scabrero@samba.org>
+   * BUG 13577: net changesecretpw cannot set the machine account password if
+     secrets.tdb is empty.
+
+o  Björn Jacke <bjacke@samba.org>
+   * BUG 15540: For generating doc, take, if defined, env XML_CATALOG_FILES.
+   * BUG 15541: Trivial C typo in nsswitch/winbind_nss_netbsd.c.
+   * BUG 15542: vfs_linux_xfs is incorrectly named.
+
+o  Björn Jacke <bj@sernet.de>
+   * BUG 15377: systemd stumbled over copyright-message at smbd startup.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15505: Following intermediate abolute share-local symlinks is broken.
+   * BUG 15523: ctdb RELEASE_IP causes a crash in release_ip if a connection to
+     a non-public address disconnects first.
+   * BUG 15544: shadow_copy2 broken when current fileset's directories are
+     removed.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15377: systemd stumbled over copyright-message at smbd startup.
+   * BUG 15523: ctdb RELEASE_IP causes a crash in release_ip if a connection to
+     a non-public address disconnects first.
+   * BUG 15534: smbd does not detect ctdb public ipv6 addresses for multichannel
+     exclusion.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15469: 'force user = localunixuser' doesn't work if 'allow trusted
+     domains = no' is set.
+   * BUG 15525: smbget debug logging doesn't work.
+   * BUG 15532: smget: username in the smburl and interactive password entry
+     doesn't work.
+   * BUG 15538: smbget auth function doesn't set values for password prompt
+     correctly.
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15523: ctdb RELEASE_IP causes a crash in release_ip if a connection to
+     a non-public address disconnects first.
+
+o  Shachar Sharon <ssharon@redhat.com>
+   * BUG 15440: Unable to copy and write files from clients to Ceph cluster via
+     SMB Linux gateway with Ceph VFS module.
+
+o  Jones Syue <jonessyue@qnap.com>
+   * BUG 15547: Multichannel refresh network information.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.19.3
                          November 27, 2023
                    ==============================
@@ -119,8 +201,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.19.2
                           October 16, 2023
