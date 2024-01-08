@@ -100,7 +100,7 @@ def options(opt):
 
     # default = None means autodetection
     opt.samba_add_onoff_option('spotlight', with_name="enable", without_name="disable", default=None)
-    opt.samba_add_onoff_option('wsp', with_name="enable", without_name="disable", default=False)
+    opt.samba_add_onoff_option('wsp', with_name="enable", without_name="disable", default=True)
 
 def configure(conf):
     default_static_modules = []
