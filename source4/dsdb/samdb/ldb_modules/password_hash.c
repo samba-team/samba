@@ -663,7 +663,7 @@ static int password_hash_bypass(struct ldb_module *module, struct ldb_request *r
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			talloc_free(scb);
 			return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
-					 "ndr_pull_struct_blob_all");
+					 "ndr_push_struct_blob");
 		}
 
 		if (sce->values[0].length != blob.length) {
