@@ -539,13 +539,13 @@ static int password_hash_bypass(struct ldb_module *module, struct ldb_request *r
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				talloc_free(scb);
 				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
-						 "ndr_pull_struct_blob PrimaryKerberosNeverKeys");
+						 "ndr_pull_struct_blob PrimaryKerberosNewerKeys");
 			}
 
 			if (k->version != 4) {
 				talloc_free(scb);
 				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
-						 "KerberosNerverKeys version != 4");
+						 "KerberosNewerKeys version != 4");
 			}
 
 			if (k->ctr.ctr4.salt.string == NULL) {
@@ -1012,7 +1012,7 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 		old_pkb3 = &_old_pkb.ctr.ctr3;
 	}
 
-	/* if we didn't found the old keys we're done */
+	/* if we didn't find the old keys we're done */
 	if (!old_pkb3) {
 		return LDB_SUCCESS;
 	}
@@ -1127,7 +1127,7 @@ static int setup_primary_kerberos_newer(struct setup_password_fields_io *io,
 		old_pkb4 = &_old_pkb.ctr.ctr4;
 	}
 
-	/* if we didn't found the old keys we're done */
+	/* if we didn't find the old keys we're done */
 	if (!old_pkb4) {
 		return LDB_SUCCESS;
 	}
