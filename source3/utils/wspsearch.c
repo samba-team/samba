@@ -350,6 +350,10 @@ static NTSTATUS create_getrows(TALLOC_CTX *ctx,
 	uint32_t INITIAL_ROWS = 32;
 	uint32_t requested_rows = INITIAL_ROWS;
 	uint32_t rows_printed;
+	uint64_t baseaddress;
+	uint32_t offset_lowbits = 0xdeabd860;
+	uint32_t offset_hibits  = 0xfeeddeaf;
+
 	TALLOC_CTX *row_ctx;
 	bool loop_again;
 
@@ -377,9 +381,23 @@ static NTSTATUS create_getrows(TALLOC_CTX *ctx,
 					skip,
 					requested_rows,
 					40,
-					0xDEAbd860,
+					offset_lowbits,
 					bindings->brow,
 					0);
+
+		if (is_64bit) {
+			/*
+			 * MS-WSP 2.2.2
+			 * ulreservered holds the high 32-bits part of
+			 * a 64-bit offset if 64-bit offsets are being used.
+			 */
+			request->header.ulreserved2 = offset_hibits;
+			baseaddress = request->header.ulreserved2;
+			baseaddress <<= 32;
+			baseaddress += offset_lowbits;
+		} else {
+			baseaddress = offset_lowbits;
+		}
 
 		status = wsp_request_response(request,
 				wsp_ctx,
@@ -419,7 +437,7 @@ static NTSTATUS create_getrows(TALLOC_CTX *ctx,
 				is_64bit,
 				disp_all_cols,
 				bindings, 40,
-				0xDEAbd860,
+				baseaddress,
 				response->message.cpmgetrows.rowsreturned,
 				&rows_printed);
 			if (!NT_STATUS_IS_OK(status)) {
