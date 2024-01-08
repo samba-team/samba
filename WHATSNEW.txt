@@ -81,6 +81,18 @@ Supported operations include:
    credentials cache with a new command
    "samba-tool user get-kerberos-ticket"
 
+New Windows Search Protocol Client
+----------------------------------
+
+Samba now by default builds new experimental Windows Search Protocol (WSP)
+command line client "wspsearch"
+
+The "wspsearch" cmd-line utility allows a WSP search request to be sent
+to a server (such as a windows server) that has the (WSP)
+Windows Search Protocol service configured and enabled.
+
+For more details see the wspsearch man page.
+
 REMOVED FEATURES
 ================
 
