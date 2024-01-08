@@ -1981,18 +1981,8 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 NTSTATUS _lsa_CreateTrustedDomainEx(struct pipes_struct *p,
 				    struct lsa_CreateTrustedDomainEx *r)
 {
-	struct lsa_CreateTrustedDomainEx2 q;
-	struct lsa_TrustDomainInfoAuthInfoInternal auth_info;
-
-	ZERO_STRUCT(auth_info);
-
-	q.in.policy_handle	= r->in.policy_handle;
-	q.in.info		= r->in.info;
-	q.in.auth_info_internal	= &auth_info;
-	q.in.access_mask	= r->in.access_mask;
-	q.out.trustdom_handle	= r->out.trustdom_handle;
-
-	return _lsa_CreateTrustedDomainEx2(p, &q);
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /***************************************************************************
