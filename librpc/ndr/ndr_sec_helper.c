@@ -113,7 +113,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_ace(struct ndr_pull *ndr, ndr_flags
 		NDR_CHECK(ndr_maybe_pull_security_ace_object_ctr(ndr, NDR_SCALARS, r));
 		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, &r->trustee));
 		sub_size = ndr_subcontext_size_of_ace_coda(r, r->size, ndr->flags);
-		if (sub_size == 0) {
+		if (!sec_ace_has_extra_blob(r->type) || sub_size == 0) {
 			r->coda.ignored.data = NULL;
 			r->coda.ignored.length = 0;
 		} else {
