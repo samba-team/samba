@@ -162,10 +162,14 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_ace(struct ndr_push *ndr, ndr_flags
 		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, &r->trustee));
 		if (sec_ace_has_extra_blob(r->type)) {
 			struct ndr_push *_ndr_coda;
-			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_coda, 0, ndr_subcontext_size_of_ace_coda(r, ndr_size_security_ace(r, ndr->flags), ndr->flags)));
+			size_t coda_size = ndr_subcontext_size_of_ace_coda(
+				r,
+				ndr_size_security_ace(r, ndr->flags),
+				ndr->flags);
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_coda, 0, coda_size));
 			NDR_CHECK(ndr_push_set_switch_value(_ndr_coda, &r->coda, r->type));
 			NDR_CHECK(ndr_push_security_ace_coda(_ndr_coda, NDR_SCALARS|NDR_BUFFERS, &r->coda));
-			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_coda, 0, ndr_subcontext_size_of_ace_coda(r, ndr_size_security_ace(r, ndr->flags), ndr->flags)));
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_coda, 0, coda_size));
 		}
 		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
