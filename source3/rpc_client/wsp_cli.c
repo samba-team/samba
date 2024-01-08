@@ -761,7 +761,7 @@ void create_seekat_getrows_request(TALLOC_CTX * ctx,
 
 static bool extract_rowbuf_variable_type(TALLOC_CTX *ctx,
 		uint16_t type,
-		uint32_t offset,
+		uint64_t offset,
 		DATA_BLOB *rows_buf, uint32_t len,
 		struct wsp_cbasestoragevariant  *val)
 {
@@ -770,7 +770,7 @@ static bool extract_rowbuf_variable_type(TALLOC_CTX *ctx,
 	ndr_flags_type ndr_flags = NDR_SCALARS | NDR_BUFFERS;
 	DATA_BLOB variant_blob = data_blob_null;
 	if (offset >= rows_buf->length) {
-		DBG_ERR("offset %d outside buffer range (buf len - %zu)",
+		DBG_ERR("offset %"PRIu64" outside buffer range (buf len - %zu)",
 			offset,
 			rows_buf->length);
 		return false;
@@ -902,7 +902,7 @@ static enum ndr_err_code extract_variant_addresses(TALLOC_CTX *ctx,
 			       bool is_64bit,
 			       struct ndr_pull *ndr_pull,
 			       ndr_flags_type flags,
-			       uint32_t offset,
+			       uint64_t offset,
 			       DATA_BLOB *rows_buf,
 			       uint64_t *pcount,
 			       uint64_t **pvec_address/*,
@@ -1010,7 +1010,7 @@ static enum ndr_err_code extract_crowvariant_variable(TALLOC_CTX *ctx,
 	bool is_64bit,
 	struct ndr_pull *ndr_pull,
 	ndr_flags_type flags,
-	uint32_t offset,
+	uint64_t offset,
 	DATA_BLOB *rows_buf,
 	uint32_t len,
 	struct wsp_cbasestoragevariant *val)
@@ -1116,7 +1116,7 @@ static enum ndr_err_code extract_crowvariant(TALLOC_CTX *ctx,
 			       bool is_64bit,
 			       struct ndr_pull *ndr_pull,
 			       ndr_flags_type flags,
-			       uint32_t offset,
+			       uint64_t offset,
 			       DATA_BLOB *rows_buf, uint32_t len,
 			       struct wsp_cbasestoragevariant *val)
 {
