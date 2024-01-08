@@ -2002,26 +2002,8 @@ NTSTATUS _lsa_CreateTrustedDomainEx(struct pipes_struct *p,
 NTSTATUS _lsa_CreateTrustedDomain(struct pipes_struct *p,
 				  struct lsa_CreateTrustedDomain *r)
 {
-	struct lsa_CreateTrustedDomainEx2 c;
-	struct lsa_TrustDomainInfoInfoEx info;
-	struct lsa_TrustDomainInfoAuthInfoInternal auth_info;
-
-	ZERO_STRUCT(auth_info);
-
-	info.domain_name	= r->in.info->name;
-	info.netbios_name	= r->in.info->name;
-	info.sid		= r->in.info->sid;
-	info.trust_direction	= LSA_TRUST_DIRECTION_OUTBOUND;
-	info.trust_type		= LSA_TRUST_TYPE_DOWNLEVEL;
-	info.trust_attributes	= 0;
-
-	c.in.policy_handle	= r->in.policy_handle;
-	c.in.info		= &info;
-	c.in.auth_info_internal	= &auth_info;
-	c.in.access_mask	= r->in.access_mask;
-	c.out.trustdom_handle	= r->out.trustdom_handle;
-
-	return _lsa_CreateTrustedDomainEx2(p, &c);
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /***************************************************************************
