@@ -6,13 +6,6 @@ sys.path.insert(0, 'bin/python')
 import samba
 import gzip
 
-# We try to use the test infrastructure of Samba 4.3+, but if it
-# doesn't work, we are probably in a back-ported patch and trying to
-# run on 4.1 or something.
-#
-# Don't copy this horror into ordinary tests -- it is special for
-# performance tests that want to apply to old versions.
-
 from samba.tests.subunitrun import TestProgram
 
 from samba.ndr import ndr_pack, ndr_unpack
