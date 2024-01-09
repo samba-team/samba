@@ -2693,6 +2693,9 @@ sub provision($$)
 	my $recycle_shrdir="$shrdir/recycle";
 	push(@dirs,$recycle_shrdir);
 
+	my $fakedircreatetimes_shrdir="$shrdir/fakedircreatetimes";
+	push(@dirs,$fakedircreatetimes_shrdir);
+
 	# this gets autocreated by winbindd
 	my $wbsockdir="$prefix_abs/wbsock";
 
@@ -3616,6 +3619,11 @@ sub provision($$)
 	recycle : repository = .trash
 	recycle : exclude = *.tmp
 	recycle : directory_mode = 755
+
+[fakedircreatetimes]
+	copy = tmp
+	path = $fakedircreatetimes_shrdir
+	fake directory create times = yes
 
 [smbget_guest]
 	path = $smbget_sharedir
