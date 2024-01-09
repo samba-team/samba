@@ -93,6 +93,21 @@ Windows Search Protocol service configured and enabled.
 
 For more details see the wspsearch man page.
 
+Allow 'smbcacls' to save/restore DACLs to file
+--------------------------------------------
+
+'smbcacls' has been extended to allow DACLs to be saved and restored
+to/from a file. This feature mimics the functionality that windows cmd
+line tool 'icacls.exe' provides. Additionally files created either
+by 'smbcalcs' or 'icacls.exe' are interchangeable and can be used by
+either tool as the same file format is used.
+
+New options added are:
+ - '--save savefile'    Saves DACLs in sddl format to file
+ - '--recurse'          Performs the '--save' operation above on directory
+                        and all files/directories below.
+ - '--restore savefile' Restores the stored DACLS to files in directory
+
 REMOVED FEATURES
 ================
 
