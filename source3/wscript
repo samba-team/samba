@@ -1681,7 +1681,7 @@ int main(void) {
                                 headers='cephfs/libcephfs.h')
             conf.DEFINE('HAVE_MANDATORY_CEPH_API', '1')
             for api in ['ceph_mkdirat', 'ceph_openat', 'ceph_unlinkat',
-                        'ceph_symlinkat', 'ceph_readlinkat']:
+                        'ceph_symlinkat', 'ceph_readlinkat', 'ceph_statxat']:
                 if not conf.CHECK_FUNCS_IN(api, 'cephfs',
                                            headers='cephfs/libcephfs.h'):
                     conf.undefine('HAVE_MANDATORY_CEPH_API')

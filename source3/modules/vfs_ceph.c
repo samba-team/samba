@@ -945,6 +945,51 @@ static int cephwrap_fstat(struct vfs_handle_struct *handle, files_struct *fsp, S
 	return result;
 }
 
+static int cephwrap_fstatat(struct vfs_handle_struct *handle,
+			    const struct files_struct *dirfsp,
+			    const struct smb_filename *smb_fname,
+			    SMB_STRUCT_STAT *sbuf,
+			    int flags)
+{
+	int result = -1;
+	struct ceph_statx stx = { 0 };
+#ifdef HAVE_CEPH_STATXAT
+	int dirfd = fsp_get_pathref_fd(dirfsp);
+
+	DBG_DEBUG("[CEPH] fstatat(%p, %d, %s)\n",
+		  handle, dirfd, smb_fname->base_name);
+	result = ceph_statxat(handle->data, dirfd, smb_fname->base_name,
+			      &stx, SAMBA_STATX_ATTR_MASK, 0);
+#else
+	struct smb_filename *full_fname = NULL;
+
+	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						  dirfsp,
+						  smb_fname);
+	if (full_fname == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	DBG_DEBUG("[CEPH] fstatat(%p, %s)\n",
+		  handle, smb_fname_str_dbg(full_fname));
+	result = ceph_statx(handle->data, full_fname->base_name,
+			    &stx, SAMBA_STATX_ATTR_MASK, 0);
+
+	TALLOC_FREE(full_fname);
+#endif
+
+	DBG_DEBUG("[CEPH] fstatat(...) = %d\n", result);
+	if (result < 0) {
+		WRAP_RETURN(result);
+	}
+
+	init_stat_ex_from_ceph_statx(sbuf, &stx);
+	DBG_DEBUG("[CEPH] mode = 0x%x\n", sbuf->st_ex_mode);
+
+	return 0;
+}
+
 static int cephwrap_lstat(struct vfs_handle_struct *handle,
 			 struct smb_filename *smb_fname)
 {
@@ -1859,6 +1904,7 @@ static struct vfs_fn_pointers ceph_fns = {
 	.stat_fn = cephwrap_stat,
 	.fstat_fn = cephwrap_fstat,
 	.lstat_fn = cephwrap_lstat,
+	.fstatat_fn = cephwrap_fstatat,
 	.unlinkat_fn = cephwrap_unlinkat,
 	.fchmod_fn = cephwrap_fchmod,
 	.fchown_fn = cephwrap_fchown,
