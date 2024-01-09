@@ -63,6 +63,8 @@ void smbprofile_stats_accumulate(struct profile_stats *acc,
 	do {                                               \
 		acc->values.name##_stats.count +=          \
 			add->values.name##_stats.count;    \
+		acc->values.name##_stats.failed_count +=   \
+			add->values.name##_stats.failed_count; \
 		acc->values.name##_stats.time +=           \
 			add->values.name##_stats.time;     \
 		acc->values.name##_stats.buckets[0] +=     \

@@ -3561,7 +3561,10 @@ skipped_signing:
 		SMBPROFILE_IOBYTES_ASYNC_START(smb2_cancel, profile_p,
 					       req->profile, _INBYTES(req));
 		return_value = smbd_smb2_request_process_cancel(req);
-		SMBPROFILE_IOBYTES_ASYNC_END(req->profile, 0);
+		SMBPROFILE_IOBYTES_ASYNC_END(req->profile,
+					     0,
+					     SMB2_OP_CANCEL,
+					     NT_STATUS_OK);
 
 		/*
 		 * We don't need the request anymore cancel requests never
@@ -3746,8 +3749,11 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	}
 	TALLOC_FREE(req->last_sign_key);
 
-	SMBPROFILE_IOBYTES_ASYNC_END(req->profile,
-		iov_buflen(outhdr, SMBD_SMB2_NUM_IOV_PER_REQ-1));
+	SMBPROFILE_IOBYTES_ASYNC_END(
+		req->profile,
+		iov_buflen(outhdr, SMBD_SMB2_NUM_IOV_PER_REQ - 1),
+		PULL_LE_U16(outhdr->iov_base, SMB2_HDR_OPCODE),
+		NT_STATUS(IVAL(outhdr->iov_base, SMB2_HDR_STATUS)));
 
 	req->current_idx += SMBD_SMB2_NUM_IOV_PER_REQ;
 

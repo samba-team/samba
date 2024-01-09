@@ -28,10 +28,10 @@ struct export_state {
 	struct evbuffer *buf;
 	bool sent_help_cpu_seconds : 1;
 	bool sent_help_smb1_request_total : 1;
-	bool sent_help_smb2_request_total : 1;
 	bool sent_help_smb2_request_inbytes : 1;
 	bool sent_help_smb2_request_outbytes : 1;
 	bool sent_help_smb2_request_hist : 1;
+	bool sent_help_smb2_request_failed : 1;
 };
 
 static void export_count(const char *name,
@@ -199,6 +199,32 @@ static void export_iobytes_buckets(const char *name,
 			"%" PRIu64 "\n",
 			name + 5,
 			val->count);
+	}
+}
+
+static void export_iobytes_failed(const char *name,
+				  const struct smbprofile_stats_iobytes *val,
+				  struct export_state *state)
+{
+	bool is_smb2;
+
+	is_smb2 = (strncmp(name, "smb2_", 5) == 0);
+	if (is_smb2) {
+		if (!state->sent_help_smb2_request_failed) {
+			evbuffer_add_printf(
+				state->buf,
+				"# HELP smb_smb2_request_failed Number "
+				"of failed SMB2 requests\n"
+				"# TYPE smb_smb2_request_failed counter\n");
+			state->sent_help_smb2_request_failed = true;
+		}
+
+		evbuffer_add_printf(
+			state->buf,
+			"smb_smb2_request_failed { operation=\"%s\" } "
+			"%" PRIu64 "\n",
+			name + 5,
+			val->failed_count);
 	}
 }
 
@@ -377,6 +403,31 @@ static void metrics_handler(struct evhttp_request *req, void *arg)
 	do {                                                               \
 		export_iobytes_buckets(                                    \
 	           #name, &stats.values.name##_stats, &state);             \
+	} while (0);
+#define SMBPROFILE_STATS_SECTION_END
+#define SMBPROFILE_STATS_END
+	SMBPROFILE_STATS_ALL_SECTIONS
+#undef SMBPROFILE_STATS_START
+#undef SMBPROFILE_STATS_SECTION_START
+#undef SMBPROFILE_STATS_COUNT
+#undef SMBPROFILE_STATS_TIME
+#undef SMBPROFILE_STATS_BASIC
+#undef SMBPROFILE_STATS_BYTES
+#undef SMBPROFILE_STATS_IOBYTES
+#undef SMBPROFILE_STATS_SECTION_END
+#undef SMBPROFILE_STATS_END
+
+#define SMBPROFILE_STATS_START
+#define SMBPROFILE_STATS_SECTION_START(name, display)
+#define SMBPROFILE_STATS_COUNT(name)
+#define SMBPROFILE_STATS_TIME(name)
+#define SMBPROFILE_STATS_BASIC(name)
+#define SMBPROFILE_STATS_BYTES(name)
+#define SMBPROFILE_STATS_IOBYTES(name)                            \
+	do {                                                      \
+		export_iobytes_failed(#name,                      \
+				      &stats.values.name##_stats, \
+				      &state);                    \
 	} while (0);
 #define SMBPROFILE_STATS_SECTION_END
 #define SMBPROFILE_STATS_END

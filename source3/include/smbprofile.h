@@ -24,6 +24,8 @@
 #include "replace.h"
 #include <tdb.h>
 #include "lib/util/time.h"
+#include "libcli/smb/smb2_constants.h"
+#include "libcli/util/ntstatus.h"
 
 struct smbd_server_connection;
 struct tevent_context;
@@ -293,6 +295,7 @@ struct smbprofile_stats_bytes_async {
 
 struct smbprofile_stats_iobytes {
 	uint64_t count;		/* number of events */
+	uint64_t failed_count;	/* number of unsuccessful events */
 	uint64_t time;		/* microseconds */
 	uint64_t buckets[10];	/* 1,2,4,...256,Inf msecs */
 	uint64_t idle;		/* idle time compared to 'time' microseconds */
@@ -459,10 +462,11 @@ struct profile_stats {
 	_SMBPROFILE_TIMER_ASYNC_SET_IDLE(_async)
 #define SMBPROFILE_IOBYTES_ASYNC_SET_BUSY(_async) \
 	_SMBPROFILE_TIMER_ASYNC_SET_BUSY(_async)
-#define SMBPROFILE_IOBYTES_ASYNC_END(_async, _outbytes) do { \
+#define SMBPROFILE_IOBYTES_ASYNC_END(_async, _outbytes, _opcode, _status) do { \
 	if ((_async).stats != NULL) { \
 		(_async).stats->outbytes += (_outbytes); \
 		_SMBPROFILE_TIMER_ASYNC_END(_async); \
+		smbprofile_update_failed_count((_async.stats), (_opcode), (_status)); \
 		smbprofile_update_hist((_async).stats, profile_timestamp() - (_async).start); \
 		(_async) = (struct smbprofile_stats_iobytes_async) {}; \
 		smbprofile_dump_schedule(); \
@@ -511,6 +515,37 @@ static inline void smbprofile_dump_schedule(void)
 static inline bool smbprofile_active(void)
 {
 	return smbprofile_state.config.do_count;
+}
+
+static inline void smbprofile_update_failed_count(
+	struct smbprofile_stats_iobytes *s,
+	uint16_t opcode,
+	NTSTATUS status)
+{
+	bool ok = NT_STATUS_IS_OK(status);
+
+	switch (opcode) {
+	case SMB2_OP_SESSSETUP:
+		if (NT_STATUS_EQUAL(status,
+				    NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			ok = true;
+		}
+		break;
+	case SMB2_OP_QUERY_DIRECTORY:
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_FILES)) {
+			ok = true;
+		}
+		break;
+	case SMB2_OP_NOTIFY:
+		if (NT_STATUS_EQUAL(status, NT_STATUS_CANCELLED)) {
+			ok = true;
+		}
+		break;
+	}
+
+	if (!ok) {
+		s->failed_count += 1;
+	}
 }
 
 static inline void smbprofile_update_hist(struct smbprofile_stats_iobytes *s,
@@ -626,7 +661,7 @@ static inline uint64_t profile_timestamp(void)
 #define SMBPROFILE_IOBYTES_ASYNC_START(_name, _area, _async, _inbytes)
 #define SMBPROFILE_IOBYTES_ASYNC_SET_IDLE(_async)
 #define SMBPROFILE_IOBYTES_ASYNC_SET_BUSY(_async)
-#define SMBPROFILE_IOBYTES_ASYNC_END(_async, _outbytes)
+#define SMBPROFILE_IOBYTES_ASYNC_END(_async, _outbytes, _opcode, _status)
 
 #define DO_PROFILE_INC(x)
 #define START_PROFILE(x)

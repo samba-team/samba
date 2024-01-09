@@ -125,6 +125,7 @@ bool status_profile_dump(bool verbose,
 } while(0);
 #define SMBPROFILE_STATS_IOBYTES(name) do { \
 	__PRINT_FIELD_LINE(#name, name##_stats,  count); \
+	__PRINT_FIELD_LINE(#name, name##_stats,  failed_count); \
 	__PRINT_FIELD_LINE(#name, name##_stats,  time); \
 	print_buckets(state, #name, &stats.values.name##_stats); \
 	__PRINT_FIELD_LINE(#name, name##_stats,  idle); \
