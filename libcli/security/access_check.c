@@ -946,7 +946,7 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
 			     uint32_t access_desired,
 			     uint32_t *access_granted,
 			     struct object_tree *tree,
-			     struct dom_sid *replace_sid)
+			     const struct dom_sid *replace_sid)
 {
 	return sec_access_check_ds_implicit_owner(sd,
 						  token,
