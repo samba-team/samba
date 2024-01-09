@@ -485,6 +485,9 @@ int traverse_sessionid_json(struct traverse_state *state,
 	struct json_object session_json;
 	int result = 0;
 	char *id_str = NULL;
+	struct timeval tv;
+	struct timeval_buf tv_buf;
+	char *time_str = NULL;
 
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -526,6 +529,37 @@ int traverse_sessionid_json(struct traverse_state *state,
 	if (result < 0) {
 		goto failure;
 	}
+
+	nttime_to_timeval(&tv, session->global->creation_time);
+	time_str = timeval_str_buf(&tv, true, true, &tv_buf);
+	if (time_str == NULL) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "creation_time", time_str);
+	if (result < 0) {
+		goto failure;
+	}
+
+	nttime_to_timeval(&tv, session->global->expiration_time);
+	time_str = timeval_str_buf(&tv, true, true, &tv_buf);
+	if (time_str == NULL) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "expiration_time", time_str);
+	if (result < 0) {
+		goto failure;
+	}
+
+	nttime_to_timeval(&tv, session->global->auth_time);
+	time_str = timeval_str_buf(&tv, true, true, &tv_buf);
+	if (time_str == NULL) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "auth_time", time_str);
+	if (result < 0) {
+		goto failure;
+	}
+
 	result = json_add_string(&sub_json, "remote_machine", session->remote_machine);
 	if (result < 0) {
 		goto failure;
