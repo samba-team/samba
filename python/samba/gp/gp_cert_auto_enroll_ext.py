@@ -185,17 +185,19 @@ def find_cepces_submit():
 
 def get_supported_templates(server):
     cepces_submit = find_cepces_submit()
-    if os.path.exists(cepces_submit):
-        env = os.environ
-        env['CERTMONGER_OPERATION'] = 'GET-SUPPORTED-TEMPLATES'
-        p = Popen([cepces_submit, '--server=%s' % server, '--auth=Kerberos'],
-                       env=env, stdout=PIPE, stderr=PIPE)
-        out, err = p.communicate()
-        if p.returncode != 0:
-            data = { 'Error': err.decode() }
-            log.error('Failed to fetch the list of supported templates.', data)
-        return out.strip().split()
-    return []
+    if not cepces_submit or not os.path.exists(cepces_submit):
+        log.error('Failed to find cepces-submit')
+        return []
+
+    env = os.environ
+    env['CERTMONGER_OPERATION'] = 'GET-SUPPORTED-TEMPLATES'
+    p = Popen([cepces_submit, '--server=%s' % server, '--auth=Kerberos'],
+              env=env, stdout=PIPE, stderr=PIPE)
+    out, err = p.communicate()
+    if p.returncode != 0:
+        data = {'Error': err.decode()}
+        log.error('Failed to fetch the list of supported templates.', data)
+    return out.strip().split()
 
 
 def getca(ca, url, trust_dir):
