@@ -1160,8 +1160,8 @@ struct ldb_dn *ldb_get_default_basedn(struct ldb_context *ldb);
   from the ares reply passed on by the async core so that in the end all the
   messages will be in the context (ldb_result)  memory tree.
   Freeing the passed context (ldb_result tree) will free all the resources
-  (the request need to be freed separately and the result doe not depend on the
-  request that can be freed as sson as the search request is finished)
+  (the request need to be freed separately and the result does not depend on the
+  request that can be freed as soon as the search request is finished)
 */
 
 int ldb_search_default_callback(struct ldb_request *req, struct ldb_reply *ares);
@@ -1457,8 +1457,8 @@ int ldb_delete(struct ldb_context *ldb, struct ldb_dn *dn);
   from the ares reply passed on by the async core so that in the end all the
   messages will be in the context (ldb_result)  memory tree.
   Freeing the passed context (ldb_result tree) will free all the resources
-  (the request need to be freed separately and the result doe not depend on the
-  request that can be freed as sson as the search request is finished)
+  (the request need to be freed separately and the result does not depend on the
+  request that can be freed as soon as the search request is finished)
 */
 
 int ldb_extended_default_callback(struct ldb_request *req, struct ldb_reply *ares);
@@ -1559,7 +1559,7 @@ void ldb_set_utf8_default(struct ldb_context *ldb);
    \brief Casefold a string
 
    Note that the callback needs to be ASCII compatible. So first ASCII needs
-   to be handle before any UTF-8. This is needed to avoid issues with dotted
+   to be handled before any UTF-8. This is needed to avoid issues with dotted
    languages.
 
    \param ldb the ldb context
@@ -1637,7 +1637,7 @@ void ldb_ldif_read_free(struct ldb_context *ldb, struct ldb_ldif *msg);
    integer corresponding to the next byte read (or EOF if there is no
    more data to be read).
    \param private_data pointer that will be provided back to the read
-   function. This is udeful for maintaining state or context.
+   function. This is useful for maintaining state or context.
 
    \return the LDIF message that has been read in
 
