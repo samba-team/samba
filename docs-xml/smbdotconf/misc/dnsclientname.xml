@@ -1,0 +1,17 @@
+<samba:parameter name="dns hostname"
+                 context="G"
+                 type="string"
+                 function="_dns_hostname"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    This value is used either register with AD during a join or by calling
+    <programlisting>
+        net ads dns register
+    </programlisting>
+    or during Kerberos authentication to create service principal names. This
+    is not supported in samba-tool yet.
+</description>
+
+<value type="default">[netbios name].[realm]</value>
+<value type="example">client-hostname.example.com</value>
+</samba:parameter>

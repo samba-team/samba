@@ -3763,3 +3763,40 @@ int32_t lpcfg_parse_enum_vals(const char *param_name,
 
 	return ret;
 }
+
+const char *lpcfg_dns_hostname(struct loadparm_context *lp_ctx)
+{
+	const char *dns_hostname = lpcfg__dns_hostname(lp_ctx);
+	const char *dns_domain = lpcfg_dnsdomain(lp_ctx);
+	char *netbios_name = NULL;
+	char *hostname = NULL;
+
+	if (dns_hostname != NULL && dns_hostname[0] != '\0') {
+		return dns_hostname;
+	}
+
+	netbios_name = strlower_talloc(lp_ctx, lpcfg_netbios_name(lp_ctx));
+	if (netbios_name == NULL) {
+		return NULL;
+	}
+
+	/* If it isn't set, try to initialize with [netbios name].[realm] */
+	if (dns_domain != NULL && dns_domain[0] != '\0') {
+		hostname = talloc_asprintf(lp_ctx,
+					   "%s.%s",
+					   netbios_name,
+					   dns_domain);
+	} else {
+		hostname = talloc_strdup(lp_ctx, netbios_name);
+	}
+	TALLOC_FREE(netbios_name);
+	if (hostname == NULL) {
+		return NULL;
+	}
+
+	lpcfg_string_set(lp_ctx->globals->ctx,
+			 &lp_ctx->globals->_dns_hostname,
+			 hostname);
+
+	return hostname;
+}

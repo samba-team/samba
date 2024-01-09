@@ -217,6 +217,7 @@ class SmbDotConfTests(TestCase):
         'max open files',
         'include system krb5 conf',
         'smbd max async dosmode',
+        'dns hostname',
     ])
 
     def setUp(self):

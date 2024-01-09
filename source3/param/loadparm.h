@@ -66,6 +66,7 @@ int lp_cups_encrypt(void);
 bool lp_widelinks(int );
 int lp_rpc_low_port(void);
 int lp_rpc_high_port(void);
+const char *lp_dns_hostname(void);
 bool lp_lanman_auth(void);
 enum samba_weak_crypto lp_weak_crypto(void);
 

@@ -4785,6 +4785,41 @@ int lp_rpc_high_port(void)
 	return Globals.rpc_high_port;
 }
 
+const char *lp_dns_hostname(void)
+{
+	const char *dns_hostname = lp__dns_hostname();
+	const char *dns_domain = lp_dnsdomain();
+	char *netbios_name = NULL;
+
+	if (dns_hostname != NULL && dns_hostname[0] != '\0') {
+		return dns_hostname;
+	}
+
+	netbios_name = talloc_strdup(talloc_tos(), lp_netbios_name());
+	if (netbios_name == NULL) {
+		return NULL;
+	}
+	strlower_m(netbios_name);
+
+	/* If it isn't set, try to initialize with [netbios name].[realm] */
+	if (dns_domain != NULL && dns_domain[0] != '\0') {
+		Globals._dns_hostname = talloc_asprintf(Globals.ctx,
+							"%s.%s",
+							netbios_name,
+							dns_domain);
+	} else {
+		Globals._dns_hostname = talloc_strdup(Globals.ctx,
+						      netbios_name);
+	}
+	TALLOC_FREE(netbios_name);
+	if (Globals._dns_hostname == NULL) {
+		return NULL;
+	}
+	dns_hostname = Globals._dns_hostname;
+
+	return dns_hostname;
+}
+
 /*
  * Do not allow LanMan auth if unless NTLMv1 is also allowed
  *
