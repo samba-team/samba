@@ -78,6 +78,10 @@ enum GkidType {
 	GKID_L2_SEED_KEY = 2,
 };
 
+enum GkidType gkid_key_type(const struct Gkid gkid);
+
+bool gkid_is_valid(const struct Gkid gkid);
+
 static const int gkdi_l1_key_iteration = 32;
 static const int gkdi_l2_key_iteration = 32;
 

@@ -307,7 +307,7 @@ out:
 	return status;
 }
 
-static enum GkidType gkid_key_type(const struct Gkid gkid)
+enum GkidType gkid_key_type(const struct Gkid gkid)
 {
 	if (gkid.l0_idx == -1) {
 		return GKID_DEFAULT;
@@ -324,7 +324,7 @@ static enum GkidType gkid_key_type(const struct Gkid gkid)
 	return GKID_L2_SEED_KEY;
 }
 
-static bool gkid_is_valid(const struct Gkid gkid)
+bool gkid_is_valid(const struct Gkid gkid)
 {
 	if (gkid.l0_idx < -1) {
 		return false;
