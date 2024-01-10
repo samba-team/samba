@@ -29,7 +29,7 @@ class ErrorDef:
         self.err_define = None
         self.err_string = ""
         self.isWinError = False
-        self.linenum = ""
+        self.linenum = None
 
 def escapeString( input ):
     output = input.replace('"','\\"')
