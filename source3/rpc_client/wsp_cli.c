@@ -905,8 +905,7 @@ static enum ndr_err_code extract_variant_addresses(TALLOC_CTX *ctx,
 			       uint64_t offset,
 			       DATA_BLOB *rows_buf,
 			       uint64_t *pcount,
-			       uint64_t **pvec_address/*,
-			       struct wsp_cbasestoragevariant ***variant_array*/)
+			       uint64_t **pvec_address)
 {
 	bool is_vector = tablevar->vtype & VT_VECTOR;
 	uint64_t count;
