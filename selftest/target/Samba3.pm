@@ -541,6 +541,7 @@ sub setup_clusteredmember
        server signing = on
        clustering = yes
        rpc start on demand helpers = false
+       rpcd witness:include node ips = yes
        ctdbd socket = ${socket}
        include = registry
        dbwrap_tdb_mutexes:* = yes

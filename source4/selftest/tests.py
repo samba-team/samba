@@ -2168,3 +2168,15 @@ planoldpythontestsuite("none", "samba.tests.usage")
 planpythontestsuite("fileserver", "samba.tests.dcerpc.mdssvc")
 planoldpythontestsuite("none", "samba.tests.compression")
 planpythontestsuite("none", "samba.tests.security_descriptors")
+
+if have_cluster_support:
+    cluster_environ = {
+        "SERVER_HOSTNAME": "$NETBIOSNAME",
+        "INTERFACE_GROUP_NAME": "$NETBIOSNAME",
+        "CLUSTER_SHARE": "registry_share",
+        "USERNAME": "$DC_USERNAME",
+        "PASSWORD": "$DC_PASSWORD",
+    }
+    planpythontestsuite("clusteredmember:local",
+                        "samba.tests.blackbox.rpcd_witness_samba_only",
+                        environ=cluster_environ)
