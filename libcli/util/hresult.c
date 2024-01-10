@@ -4914,7 +4914,7 @@ static const struct {
 	{
 		HRES_CERT_E_REVOKED,
 		"HRES_CERT_E_REVOKED",
-		"A certificate was explicitly revoked by its issuer."
+		"A certificate was explicitly revoked by its issuer. If the certificate is Microsoft Windows PCA 2010, then the driver was signed by a certificate no longer recognized by Windows."
 	},
 	{
 		HRES_CERT_E_UNTRUSTEDTESTROOT,
