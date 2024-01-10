@@ -23,62 +23,10 @@
 
 
 import sys
+from gen_error_common import parseErrorDescriptions
 
 # parsed error data
 Errors = []
-
-# error data model
-class ErrorDef:
-
-    def __init__(self):
-        self.err_code = ""
-        self.err_define = None
-        self.err_string = ""
-        self.isWinError = False
-        self.linenum = ""
-
-def escapeString( input ):
-    output = input.replace('"','\\"')
-    output = output.replace("\\<","\\\\<")
-    output = output.replace('\t',"")
-    return output
-
-def parseErrorDescriptions( input_file, isWinError ):
-    # read in the data
-    fileContents = open(input_file,"r")
-    count = 0
-    for line in fileContents:
-        content = line.strip().split(None,1)
-        # start new error definition ?
-        if len(content) == 0:
-            continue
-        if line.startswith("0x"):
-            newError = ErrorDef()
-            newError.err_code = content[0]
-            # escape the usual suspects
-            if len(content) > 1:
-                newError.err_string = escapeString(content[1])
-            newError.linenum = count
-            newError.isWinError = isWinError
-            Errors.append(newError)
-        else:
-            if len(Errors) == 0:
-                print("Error parsing file as line %d"%count)
-                sys.exit()
-            err = Errors[-1]
-            if err.err_define is None:
-                err.err_define = "HRES_" + content[0]
-            else:
-                if len(content) > 0:
-                    desc =  escapeString(line.strip())
-                    if len(desc):
-                        if err.err_string == "":
-                            err.err_string = desc
-                        else:
-                            err.err_string = err.err_string + " " + desc
-        count = count + 1
-    fileContents.close()
-    print("parsed %d lines generated %d error definitions"%(count,len(Errors)))
 
 def write_license(out_file):
     out_file.write("/*\n")
@@ -129,7 +77,7 @@ def generateHeaderFile(out_file):
     out_file.write("\n")
 
     for err in Errors:
-        line = "#define {0:49} HRES_ERROR({1})\n".format(err.err_define ,err.err_code)
+        line = "#define {0:49} HRES_ERROR(0x{1:08X})\n".format(err.err_define ,err.err_code)
         out_file.write(line)
     out_file.write("\nconst char *hresult_errstr_const(HRESULT err_code);\n")
     out_file.write("\nconst char *hresult_errstr(HRESULT err_code);\n")
@@ -199,6 +147,9 @@ def generateSourceFile(out_file):
     out_file.write("	return msg;\n")
     out_file.write("};\n")
 
+def transformErrorName(error_name):
+    return "HRES_" + error_name
+
 # Very simple script to generate files hresult.c & hresult.h
 # The script simply takes a text file as input, format of input file is
 # very simple and is just the content of a html table ( such as that found
@@ -216,7 +167,11 @@ def main ():
         print("usage: %s winerrorfile"%(sys.argv[0]))
         sys.exit()
 
-    parseErrorDescriptions(input_file1, False)
+    # read in the data
+    with open(input_file1) as file_contents:
+        global Errors
+        Errors = parseErrorDescriptions(file_contents, False, transformErrorName)
+
     out_file = open(headerfile_name,"w")
     generateHeaderFile(out_file)
     out_file.close()
