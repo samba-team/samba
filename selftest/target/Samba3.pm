@@ -262,7 +262,7 @@ sub check_env($$)
 
 sub setup_nt4_dc
 {
-	my ($self, $path, $more_conf, $server) = @_;
+	my ($self, $path, $more_conf, $domain, $server) = @_;
 
 	print "PROVISIONING NT4 DC...";
 
@@ -312,12 +312,15 @@ sub setup_nt4_dc
 	if (defined($more_conf)) {
 		$nt4_dc_options = $nt4_dc_options . $more_conf;
 	}
+	if (!defined($domain)) {
+		$domain = "SAMBA-TEST";
+	}
 	if (!defined($server)) {
 		$server = "LOCALNT4DC2";
 	}
 	my $vars = $self->provision(
 	    prefix => $path,
-	    domain => "SAMBA-TEST",
+	    domain => $domain,
 	    server => $server,
 	    password => "localntdc2pass",
 	    extra_options => $nt4_dc_options);
@@ -352,7 +355,7 @@ sub setup_nt4_dc_smb1
 	client min protocol = CORE
 	server min protocol = LANMAN1
 ";
-	return $self->setup_nt4_dc($path, $conf, "LCLNT4DC2SMB1");
+	return $self->setup_nt4_dc($path, $conf, "NT4SMB1", "LCLNT4DC2SMB1");
 }
 
 sub setup_nt4_dc_smb1_done
