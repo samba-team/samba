@@ -3502,7 +3502,7 @@ The time at the primary domain controller is different from the time at the back
 STATUS_SYNCHRONIZATION_REQUIRED
 	
 
-The SAM database on a Windows Server operating system is significantly out of synchronization with the copy on the domain controller. A complete synchronization is required.
+On applicable Windows Server releases, the SAM database is significantly out of synchronization with the copy on the domain controller. A complete synchronization is required.
 
 0xC0000135
 
@@ -3796,7 +3796,7 @@ An attempt was made to change a user password in the security account manager wi
 STATUS_DOMAIN_CTRLR_CONFIG_ERROR
 	
 
-A Windows Server has an incorrect configuration.
+A domain server has an incorrect configuration.
 
 0xC000015F
 
@@ -4083,7 +4083,7 @@ The workstation does not have a trust secret for the primary domain in the local
 STATUS_NO_TRUST_SAM_ACCOUNT
 	
 
-The SAM database on the Windows Server does not have a computer account for this workstation trust relationship.
+On applicable Windows Server releases, the SAM database does not have a computer account for this workstation trust relationship.
 
 0xC000018C
 
