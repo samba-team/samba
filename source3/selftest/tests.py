@@ -1857,6 +1857,10 @@ plansmbtorture4testsuite(
     "vfs.fruit_validate_afpinfo", "fileserver",
     '//$SERVER_IP/vfs_fruit_zero_fileid -U$USERNAME%$PASSWORD --option=torture:validate_afpinfo=no')
 
+plantestsuite("samba3.blackbox.nt4_trusts",
+              "fl2008r2dc",
+              [os.path.join(samba3srcdir, "script/tests/test_nt4_trust.sh")])
+
 def planclusteredmembertestsuite(tname, prefix):
     '''Define a clustered test for the clusteredmember environment'''
 
