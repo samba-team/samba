@@ -25,9 +25,6 @@
 import sys
 from gen_error_common import parseErrorDescriptions
 
-# parsed error data
-Errors = []
-
 def write_license(out_file):
     out_file.write("/*\n")
     out_file.write(" * Unix SMB/CIFS implementation.\n")
@@ -51,7 +48,7 @@ def write_license(out_file):
     out_file.write(" */\n")
     out_file.write("\n")
 
-def generateHeaderFile(out_file):
+def generateHeaderFile(out_file, errors):
     write_license(out_file)
     out_file.write("#ifndef _HRESULT_H_\n")
     out_file.write("#define _HRESULT_H_\n\n")
@@ -76,7 +73,7 @@ def generateHeaderFile(out_file):
     out_file.write(" */\n")
     out_file.write("\n")
 
-    for err in Errors:
+    for err in errors:
         line = "#define {0:49} HRES_ERROR(0x{1:08X})\n".format(err.err_define ,err.err_code)
         out_file.write(line)
     out_file.write("\nconst char *hresult_errstr_const(HRESULT err_code);\n")
@@ -88,7 +85,7 @@ def generateHeaderFile(out_file):
     out_file.write("\n\n\n#endif /*_HRESULT_H_*/")
 
 
-def generateSourceFile(out_file):
+def generateSourceFile(out_file, errors):
     write_license(out_file)
     out_file.write("#include \"includes.h\"\n")
     out_file.write("#include \"hresult.h\"\n")
@@ -103,7 +100,7 @@ def generateSourceFile(out_file):
     out_file.write("	const char *error_message;\n")
     out_file.write("} hresult_errs[] = {\n")
 
-    for err in Errors:
+    for err in errors:
         out_file.write("	{\n")
         if err.isWinError:
             out_file.write("		HRESULT_FROM_WIN32(%s),\n"%err.err_define)
@@ -169,14 +166,13 @@ def main ():
 
     # read in the data
     with open(input_file1) as file_contents:
-        global Errors
-        Errors = parseErrorDescriptions(file_contents, False, transformErrorName)
+        errors = parseErrorDescriptions(file_contents, False, transformErrorName)
 
     out_file = open(headerfile_name,"w")
-    generateHeaderFile(out_file)
+    generateHeaderFile(out_file, errors)
     out_file.close()
     out_file = open(sourcefile_name,"w")
-    generateSourceFile(out_file)
+    generateSourceFile(out_file, errors)
 
 if __name__ == '__main__':
 
