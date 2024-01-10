@@ -168,11 +168,10 @@ def main ():
     with open(input_file1) as file_contents:
         errors = parseErrorDescriptions(file_contents, False, transformErrorName)
 
-    out_file = open(headerfile_name,"w")
-    generateHeaderFile(out_file, errors)
-    out_file.close()
-    out_file = open(sourcefile_name,"w")
-    generateSourceFile(out_file, errors)
+    with open(headerfile_name,"w") as out_file:
+        generateHeaderFile(out_file, errors)
+    with open(sourcefile_name,"w") as out_file:
+        generateSourceFile(out_file, errors)
 
 if __name__ == '__main__':
 
