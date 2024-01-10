@@ -6542,7 +6542,6 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS nt_status, result;
 	struct dom_sid *domain_sid;
-
 	char* domain_name;
 	char* acct_name;
 	fstring pdc_name;
