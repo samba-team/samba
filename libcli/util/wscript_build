@@ -13,6 +13,13 @@ bld.SAMBA_LIBRARY('samba-errors',
                   vnum='1.0.0',
                   )
 
+bld.SAMBA_GENERATOR('hresult_generated',
+                    source='../../source4/scripting/bin/gen_hresult.py hresult_err_table.txt ../../source4/scripting/bin/gen_error_common.py',
+                    target='hresult.h hresult.c',
+                    group='build_source',
+                    rule='${PYTHON} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${TGT[0].abspath(env)} ${TGT[1].abspath(env)}'
+                   )
+
 bld.SAMBA_GENERATOR('ntstatus_generated',
                     source='../../source4/scripting/bin/gen_ntstatus.py ntstatus_err_table.txt ../../source4/scripting/bin/gen_error_common.py',
                     target='ntstatus_gen.h nterr_gen.c py_ntstatus.c',

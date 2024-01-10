@@ -148,29 +148,33 @@ def transformErrorName(error_name):
     return "HRES_" + error_name
 
 # Very simple script to generate files hresult.c & hresult.h
-# The script simply takes a text file as input, format of input file is
-# very simple and is just the content of a html table ( such as that found
-# in http://msdn.microsoft.com/en-us/library/cc704587.aspx ) copied and
-# pasted into a text file
+# This script takes three inputs:
+# [1]: The name of the text file which is the content of an HTML table
+#      (such as that found at https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/705fb797-2175-4a90-b5a3-3918024b10b8)
+#      copied and pasted.
+# [2]: The name of the output generated header file with HResult #defines
+# [3]: The name of the output generated source file with C arrays
 
 def main ():
     input_file1 = None
-    filename = "hresult"
-    headerfile_name = filename + ".h"
-    sourcefile_name = filename + ".c"
-    if len(sys.argv) > 1:
+
+    if len(sys.argv) == 4:
         input_file1 =  sys.argv[1]
+        gen_headerfile_name = sys.argv[2]
+        gen_sourcefile_name = sys.argv[3]
     else:
-        print("usage: %s winerrorfile"%(sys.argv[0]))
+        print("usage: %s winerrorfile headerfile sourcefile"%(sys.argv[0]))
         sys.exit()
 
     # read in the data
     with open(input_file1) as file_contents:
         errors = parseErrorDescriptions(file_contents, False, transformErrorName)
 
-    with open(headerfile_name,"w") as out_file:
+    print(f"writing new header file: {gen_headerfile_name}")
+    with open(gen_headerfile_name,"w") as out_file:
         generateHeaderFile(out_file, errors)
-    with open(sourcefile_name,"w") as out_file:
+    print(f"writing new source file: {gen_sourcefile_name}")
+    with open(gen_sourcefile_name,"w") as out_file:
         generateSourceFile(out_file, errors)
 
 if __name__ == '__main__':
