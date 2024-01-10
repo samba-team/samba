@@ -6544,6 +6544,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	struct dom_sid *domain_sid;
 	char* domain_name;
 	char* acct_name;
+	const char *pwd = NULL;
 	fstring pdc_name;
 	union lsa_PolicyInformation *info = NULL;
 	struct dcerpc_binding_handle *b;
@@ -6580,6 +6581,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 		SAFE_FREE(acct_name);
 		return -1;
 	}
+	cli_credentials_set_username(c->creds, acct_name, CRED_SPECIFIED);
 
 	/*
 	 * opt_workgroup will be used by connection functions further,
@@ -6588,9 +6590,6 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	if (c->opt_workgroup) {
 		c->opt_workgroup = smb_xstrdup(domain_name);
 	};
-
-	c->opt_user_name = acct_name;
-	c->opt_user_specified = true;
 
 	/* find the domain controller */
 	if (!net_find_pdc(&server_ss, pdc_name, domain_name)) {
@@ -6704,7 +6703,9 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	 * Store the password in secrets db
 	 */
 
-	if (!pdb_set_trusteddom_pw(domain_name, c->opt_password, domain_sid)) {
+	pwd = cli_credentials_get_password(c->creds);
+
+	if (!pdb_set_trusteddom_pw(domain_name, pwd, domain_sid)) {
 		DEBUG(0, ("Storing password for trusted domain failed.\n"));
 		cli_shutdown(cli);
 		talloc_destroy(mem_ctx);
