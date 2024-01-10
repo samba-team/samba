@@ -79,7 +79,7 @@ def parseErrorDescriptions( file_contents, isWinError, transformErrorFunction ):
                             err.err_string = desc
                         else:
                             err.err_string = err.err_string + " " + desc
-            count = count + 1
+        count = count + 1
     print("parsed %d lines generated %d error definitions"%(count,len(errors)))
     return errors
 
