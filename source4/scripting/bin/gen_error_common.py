@@ -28,6 +28,7 @@ class ErrorDef:
         self.err_code = None
         self.err_define = None
         self.err_string = ""
+        self.isWinError = False
         self.linenum = ""
 
 def escapeString( input ):
