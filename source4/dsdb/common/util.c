@@ -558,6 +558,13 @@ unsigned int samdb_result_hashes(TALLOC_CTX *mem_ctx, const struct ldb_message *
 	if (!val) {
 		return 0;
 	}
+	if (val->length % 16 != 0) {
+		/*
+		 * The length is wrong. Don’t try to read beyond the end of the
+		 * buffer.
+		 */
+		return 0;
+	}
 	count = val->length / 16;
 	if (count == 0) {
 		return 0;
