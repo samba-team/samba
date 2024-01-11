@@ -70,9 +70,6 @@ def generatePythonFile(out_file, errors):
     out_file.write("#include \"lib/replace/system/python.h\"\n")
     out_file.write("#include \"python/py3compat.h\"\n")
     out_file.write("#include \"includes.h\"\n\n")
-    # This is needed to avoid a missing prototype error from the C
-    # compiler. There is never a prototype for this function, it is a
-    # module loaded by python with dlopen() and found with dlsym().
     out_file.write("static struct PyModuleDef moduledef = {\n")
     out_file.write("\tPyModuleDef_HEAD_INIT,\n")
     out_file.write("\t.m_name = \"werror\",\n")
