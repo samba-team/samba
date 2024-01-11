@@ -947,7 +947,7 @@ static int acl_check_dns_host_name(TALLOC_CTX *mem_ctx,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-        /* Check if the account has objectclass 'computer' or 'server'. */
+	/* Check if the account has objectclass 'computer' or 'server'. */
 
 	schema = dsdb_get_schema(ldb, req);
 	if (schema == NULL) {
