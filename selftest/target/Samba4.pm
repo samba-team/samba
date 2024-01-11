@@ -2575,22 +2575,22 @@ sub setup_fl2008r2dc
 
 	my $env = $self->provision_fl2008r2dc($path);
 
-	if (defined $env) {
-	        if (not defined($self->check_or_start($env, "standard"))) {
-		        return undef;
-		}
-
-		my $upn_array = ["$env->{REALM}.upn"];
-		my $spn_array = ["$env->{REALM}.spn"];
-
-		if ($self->setup_namespaces($env, $upn_array, $spn_array) != 0) {
-			return undef;
-		}
-
-		$env = $self->setup_trust($env, $dc_vars, "forest", "");
+	if (!defined $env) {
+	    return $env;
 	}
 
-	return $env;
+	if (not defined($self->check_or_start($env, "standard"))) {
+	    return undef;
+	}
+
+	my $upn_array = ["$env->{REALM}.upn"];
+	my $spn_array = ["$env->{REALM}.spn"];
+
+	if ($self->setup_namespaces($env, $upn_array, $spn_array) != 0) {
+	    return undef;
+	}
+
+	return $self->setup_trust($env, $dc_vars, "forest", "");
 }
 
 sub setup_vampire_dc
