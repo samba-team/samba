@@ -539,6 +539,7 @@ struct samr_Password *samdb_result_hash(TALLOC_CTX *mem_ctx, const struct ldb_me
 		if (hash == NULL) {
 			return NULL;
 		}
+		talloc_keep_secret(hash);
 		memcpy(hash->hash, val->data, MIN(val->length, sizeof(hash->hash)));
 	}
 	return hash;
