@@ -246,7 +246,8 @@ class GkdiBaseTest(TestCase):
     ) -> None:
         if gkid > current_gkid:
             raise GetKeyError(
-                HRES_E_INVALIDARG, "invalid request for a key from the future"
+                HRES_E_INVALIDARG,
+                f"invalid request for a key from the future: {gkid} > {current_gkid}",
             )
 
         gkid_type = gkid.gkid_type()
