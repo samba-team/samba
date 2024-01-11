@@ -88,7 +88,7 @@ def generatePythonFile(out_file, errors):
     out_file.write("\tif (m == NULL)\n")
     out_file.write("\t\treturn NULL;\n\n")
     for err in errors:
-        line = """\tPyModule_AddObject(m, \"%s\", 
+        line = """\tPyModule_AddObject(m, \"%s\",
                   \t\tPyLong_FromUnsignedLongLong(NT_STATUS_V(%s)));\n""" % (err.err_define, err.err_define)
         out_file.write(line)
     out_file.write("\n")
