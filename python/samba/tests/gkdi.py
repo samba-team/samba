@@ -34,9 +34,6 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.kbkdf import CounterLocation, KBKDFHMAC, Mode
 
 from samba import (
-    HRES_E_INVALIDARG,
-    HRES_NTE_BAD_KEY,
-    HRES_NTE_NO_KEY,
     ntstatus,
     NTSTATUSError,
     werror,
@@ -52,6 +49,11 @@ from samba.gkdi import (
     KEY_LEN_BYTES,
     MAX_CLOCK_SKEW,
     SeedKeyPair,
+)
+from samba.hresult import (
+    HRES_E_INVALIDARG,
+    HRES_NTE_BAD_KEY,
+    HRES_NTE_NO_KEY,
 )
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.nt_time import (

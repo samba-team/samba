@@ -15,9 +15,9 @@ bld.SAMBA_LIBRARY('samba-errors',
 
 bld.SAMBA_GENERATOR('hresult_generated',
                     source='../../source4/scripting/bin/gen_hresult.py hresult_err_table.txt ../../source4/scripting/bin/gen_error_common.py',
-                    target='hresult.h hresult.c',
+                    target='hresult.h hresult.c py_hresult.c',
                     group='build_source',
-                    rule='${PYTHON} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${TGT[0].abspath(env)} ${TGT[1].abspath(env)}'
+                    rule='${PYTHON} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${TGT[0].abspath(env)} ${TGT[1].abspath(env)} ${TGT[2].abspath(env)}'
                    )
 
 bld.SAMBA_GENERATOR('ntstatus_generated',
@@ -38,6 +38,12 @@ bld.SAMBA_GENERATOR('werror_generated',
                     group='build_source',
                     rule='${PYTHON} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${TGT[0].abspath(env)} ${TGT[1].abspath(env)} ${TGT[2].abspath(env)} ${TGT[3].abspath(env)}'
                    )
+
+bld.SAMBA_PYTHON('python_hresult',
+		source='py_hresult.c',
+		deps='samba-errors',
+		realname='samba/hresult.so'
+		)
 
 bld.SAMBA_PYTHON('python_ntstatus',
 		source='py_ntstatus.c',

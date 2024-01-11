@@ -9,7 +9,7 @@ import time
 
 sys.path.insert(0, "bin/python")
 import samba
-from samba import HRES_SEC_E_INVALID_TOKEN, HRES_SEC_E_LOGON_DENIED
+from samba.hresult import HRES_SEC_E_INVALID_TOKEN, HRES_SEC_E_LOGON_DENIED
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 
 import samba.getopt as options

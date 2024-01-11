@@ -26,8 +26,9 @@ from functools import partial
 
 import ldb
 
-from samba import generate_random_password, ntstatus, HRES_SEC_E_LOGON_DENIED
+from samba import generate_random_password, ntstatus
 from samba.dcerpc import netlogon, security
+from samba.hresult import HRES_SEC_E_LOGON_DENIED
 
 import samba.tests.krb5.kcrypto as kcrypto
 from samba.tests.krb5.kdc_base_test import KDCBaseTest

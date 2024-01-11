@@ -21,10 +21,10 @@ from samba.tests.password_test import PasswordTestCase
 
 import samba.getopt as options
 
-from samba import HRES_SEC_E_INVALID_TOKEN
 from samba.auth import system_session
 from samba.credentials import Credentials
 from samba.dcerpc import security
+from samba.hresult import HRES_SEC_E_INVALID_TOKEN
 from ldb import SCOPE_BASE, LdbError
 from ldb import ERR_ATTRIBUTE_OR_VALUE_EXISTS
 from ldb import ERR_UNWILLING_TO_PERFORM, ERR_INSUFFICIENT_ACCESS_RIGHTS

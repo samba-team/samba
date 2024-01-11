@@ -27,7 +27,6 @@
 #include "lib/util/debug.h"
 #include "librpc/ndr/ndr_private.h"
 #include "lib/cmdline/cmdline.h"
-#include "libcli/util/hresult.h"
 #include "lib/crypto/gkdi.h"
 
 void init_glue(void);
@@ -635,17 +634,6 @@ MODULE_INIT_FUNC(_glue)
 		Py_INCREF(PyExc_DsExtendedError);
 		PyModule_AddObject(m, "DsExtendedError", PyExc_DsExtendedError);
 	}
-
-	PyModule_AddObject(m, "HRES_E_INVALIDARG",
-			   PyLong_FromUnsignedLongLong(HRES_ERROR_V(HRES_E_INVALIDARG)));
-	PyModule_AddObject(m, "HRES_NTE_BAD_KEY",
-			   PyLong_FromUnsignedLongLong(HRES_ERROR_V(HRES_NTE_BAD_KEY)));
-	PyModule_AddObject(m, "HRES_NTE_NO_KEY",
-			   PyLong_FromUnsignedLongLong(HRES_ERROR_V(HRES_NTE_NO_KEY)));
-	PyModule_AddObject(m, "HRES_SEC_E_INVALID_TOKEN",
-			   PyLong_FromUnsignedLongLong(HRES_ERROR_V(HRES_SEC_E_INVALID_TOKEN)));
-	PyModule_AddObject(m, "HRES_SEC_E_LOGON_DENIED",
-			   PyLong_FromUnsignedLongLong(HRES_ERROR_V(HRES_SEC_E_LOGON_DENIED)));
 
 	ret = PyModule_AddIntConstant(m, "GKDI_L1_KEY_ITERATION", gkdi_l1_key_iteration);
 	if (ret) {

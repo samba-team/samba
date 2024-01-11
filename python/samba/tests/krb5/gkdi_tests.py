@@ -26,7 +26,6 @@ import secrets
 
 from typing import ClassVar, Optional
 
-from samba import HRES_E_INVALIDARG, HRES_NTE_BAD_KEY, HRES_NTE_NO_KEY
 from samba.dcerpc import gkdi, misc
 from samba.gkdi import (
     Algorithm,
@@ -38,6 +37,7 @@ from samba.gkdi import (
     NtTimeDelta,
     SeedKeyPair,
 )
+from samba.hresult import HRES_E_INVALIDARG, HRES_NTE_BAD_KEY, HRES_NTE_NO_KEY
 from samba.nt_time import timedelta_from_nt_time_delta
 
 from samba.tests.gkdi import GetKeyError, GkdiBaseTest, ROOT_KEY_START_TIME

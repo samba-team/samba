@@ -144,26 +144,63 @@ def generateSourceFile(out_file, errors):
     out_file.write("	return msg;\n")
     out_file.write("};\n")
 
+def generatePythonFile(out_file, errors):
+    out_file.write("/*\n")
+    out_file.write(" * Errors generated from\n")
+    out_file.write(" * [MS-ERREF] http://msdn.microsoft.com/en-us/library/cc704587.aspx\n")
+    out_file.write(" */\n")
+    out_file.write("#include \"lib/replace/system/python.h\"\n")
+    out_file.write("#include \"python/py3compat.h\"\n")
+    out_file.write("#include \"includes.h\"\n\n")
+    out_file.write("static struct PyModuleDef moduledef = {\n")
+    out_file.write("\tPyModuleDef_HEAD_INIT,\n")
+    out_file.write("\t.m_name = \"hresult\",\n")
+    out_file.write("\t.m_doc = \"HRESULT defines\",\n")
+    out_file.write("\t.m_size = -1,\n")
+    out_file.write("\t};\n\n")
+    out_file.write("MODULE_INIT_FUNC(hresult)\n")
+    out_file.write("{\n")
+    out_file.write("\tPyObject *m = NULL;\n")
+    out_file.write("\tPyObject *py_obj = NULL;\n")
+    out_file.write("\tint ret;\n\n")
+    out_file.write("\tm = PyModule_Create(&moduledef);\n")
+    out_file.write("\tif (m == NULL) {\n")
+    out_file.write("\t\treturn NULL;\n")
+    out_file.write("\t}\n\n")
+    for err in errors:
+        out_file.write(f"\tpy_obj = PyLong_FromUnsignedLongLong(HRES_ERROR_V({err.err_define}));\n")
+        out_file.write(f"\tret = PyModule_AddObject(m, \"{err.err_define}\", py_obj);\n")
+        out_file.write("\tif (ret) {\n")
+        out_file.write("\t\tPy_XDECREF(py_obj);\n")
+        out_file.write("\t\tPy_DECREF(m);\n")
+        out_file.write("\t\treturn NULL;\n")
+        out_file.write("\t}\n")
+    out_file.write("\n")
+    out_file.write("\treturn m;\n")
+    out_file.write("}\n")
+
 def transformErrorName(error_name):
     return "HRES_" + error_name
 
 # Very simple script to generate files hresult.c & hresult.h
-# This script takes three inputs:
+# This script takes four inputs:
 # [1]: The name of the text file which is the content of an HTML table
 #      (such as that found at https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/705fb797-2175-4a90-b5a3-3918024b10b8)
 #      copied and pasted.
 # [2]: The name of the output generated header file with HResult #defines
 # [3]: The name of the output generated source file with C arrays
+# [4]: The name of the output generated python file
 
 def main ():
     input_file1 = None
 
-    if len(sys.argv) == 4:
+    if len(sys.argv) == 5:
         input_file1 =  sys.argv[1]
         gen_headerfile_name = sys.argv[2]
         gen_sourcefile_name = sys.argv[3]
+        gen_pythonfile_name = sys.argv[4]
     else:
-        print("usage: %s winerrorfile headerfile sourcefile"%(sys.argv[0]))
+        print("usage: %s winerrorfile headerfile sourcefile pythonfile"%(sys.argv[0]))
         sys.exit()
 
     # read in the data
@@ -176,6 +213,9 @@ def main ():
     print(f"writing new source file: {gen_sourcefile_name}")
     with open(gen_sourcefile_name,"w") as out_file:
         generateSourceFile(out_file, errors)
+    print(f"writing new python file: {gen_pythonfile_name}")
+    with open(gen_pythonfile_name,"w") as out_file:
+        generatePythonFile(out_file, errors)
 
 if __name__ == '__main__':
 
