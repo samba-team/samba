@@ -1327,6 +1327,89 @@ struct ldb_dn *samdb_extended_rights_dn(struct ldb_context *sam_ctx, TALLOC_CTX 
 	}
 	return new_dn;
 }
+
+static struct ldb_dn *samdb_configuration_dn(struct ldb_context *sam_ctx,
+					     TALLOC_CTX *mem_ctx,
+					     const char *dn_str)
+{
+	struct ldb_dn *config_dn = NULL;
+	struct ldb_dn *child_dn = NULL;
+	bool ok;
+
+	config_dn = ldb_dn_copy(mem_ctx, ldb_get_config_basedn(sam_ctx));
+	if (config_dn == NULL) {
+		return NULL;
+	}
+
+	child_dn = ldb_dn_new(mem_ctx, sam_ctx, dn_str);
+	if (child_dn == NULL) {
+		talloc_free(config_dn);
+		return NULL;
+	}
+
+	ok = ldb_dn_add_child(config_dn, child_dn);
+	talloc_free(child_dn);
+	if (!ok) {
+		talloc_free(config_dn);
+		return NULL;
+	}
+
+	return config_dn;
+}
+
+struct ldb_dn *samdb_gkdi_root_key_container_dn(struct ldb_context *sam_ctx,
+						TALLOC_CTX *mem_ctx)
+{
+	/*
+	 * [MS-GKDI] says the root key container is to be found in “CN=Sid Key
+	 * Service,CN=Services”, but that is not correct.
+	 */
+	return samdb_configuration_dn(sam_ctx,
+				      mem_ctx,
+				      "CN=Master Root Keys,"
+				      "CN=Group Key Distribution Service,"
+				      "CN=Services");
+}
+
+struct ldb_dn *samdb_gkdi_root_key_dn(struct ldb_context *sam_ctx,
+				      TALLOC_CTX *mem_ctx,
+				      const struct GUID *root_key_id)
+{
+	struct ldb_dn *root_key_dn = NULL;
+	struct ldb_dn *child_dn = NULL;
+	struct GUID_txt_buf guid_buf;
+	char *root_key_id_string = NULL;
+	bool ok;
+
+	root_key_id_string = GUID_buf_string(root_key_id, &guid_buf);
+	if (root_key_id_string == NULL) {
+		return NULL;
+	}
+
+	root_key_dn = samdb_gkdi_root_key_container_dn(sam_ctx, mem_ctx);
+	if (root_key_dn == NULL) {
+		return NULL;
+	}
+
+	child_dn = ldb_dn_new_fmt(mem_ctx,
+				  sam_ctx,
+				  "CN=%s",
+				  root_key_id_string);
+	if (child_dn == NULL) {
+		talloc_free(root_key_dn);
+		return NULL;
+	}
+
+	ok = ldb_dn_add_child(root_key_dn, child_dn);
+	talloc_free(child_dn);
+	if (!ok) {
+		talloc_free(root_key_dn);
+		return NULL;
+	}
+
+	return root_key_dn;
+}
+
 /*
   work out the domain sid for the current open ldb
 */
