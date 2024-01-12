@@ -993,6 +993,7 @@ my @exported_envvars = (
 	"RESOLV_WRAPPER_HOSTS",
 
 	# ctdb stuff
+	"CTDB_PREFIX",
 	"NUM_NODES",
 	"CTDB_BASE",
 	"CTDB_SOCKET",
