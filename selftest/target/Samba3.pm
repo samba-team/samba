@@ -3808,7 +3808,7 @@ jacknomappergroup:x:$gid_jacknomapper:jacknomapper
 	$ret{USERID} = $unix_uid;
 	$ret{DOMAIN} = $domain;
 	$ret{SAMSID} = $samsid;
-	$ret{NETBIOSNAME} = $server;
+	$ret{NETBIOSNAME} = $netbios_name;
 	$ret{PASSWORD} = $password;
 	$ret{PIDDIR} = $piddir;
 	$ret{SELFTEST_WINBINDD_SOCKET_DIR} = $wbsockdir;
