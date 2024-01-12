@@ -43,7 +43,7 @@ interface witness
 		witness_interfaceInfo_flags flags;
 	} witness_interfaceInfo;
 
-	typedef struct {
+	typedef [public] struct {
 		uint32 num_interfaces;
 		[size_is(num_interfaces)] witness_interfaceInfo *interfaces;
 	} witness_interfaceList;
