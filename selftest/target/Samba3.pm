@@ -540,6 +540,7 @@ sub setup_clusteredmember
        security = domain
        server signing = on
        clustering = yes
+       rpc start on demand helpers = false
        ctdbd socket = ${socket}
        include = registry
        dbwrap_tdb_mutexes:* = yes
@@ -633,6 +634,7 @@ sub setup_clusteredmember
 		my $ok;
 		$ok = $self->check_or_start(
 		    env_vars => $node_provision,
+		    samba_dcerpcd => "yes",
 		    winbindd => "yes",
 		    smbd => "yes",
 		    child_cleanup => sub {
@@ -3855,7 +3857,7 @@ sub wait_for_start($$$$$)
 	    print "checking for samba_dcerpcd\n";
 
 	    do {
-		$ret = system("$rpcclient $envvars->{CONFIGURATION} ncalrpc: -c epmmap");
+		$ret = system("UID_WRAPPER_ROOT=1 $rpcclient $envvars->{CONFIGURATION} ncalrpc: -c epmmap");
 
 		if ($ret != 0) {
 		    sleep(1);
