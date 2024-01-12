@@ -192,6 +192,7 @@ static FILE *startsmbfilepwent(const char *pfile, enum pwf_access_type type, int
 	const char *open_mode = NULL;
 	int race_loop = 0;
 	int lock_type = F_RDLCK;
+	struct stat st;
 
 	if (!*pfile) {
 		DEBUG(0, ("startsmbfilepwent: No SMB password file set\n"));
@@ -324,17 +325,36 @@ Error was %s\n", pfile, strerror(errno)));
 	/* Set a buffer to do more efficient reads */
 	setvbuf(fp, (char *)NULL, _IOFBF, 1024);
 
-	/* Make sure it is only rw by the owner */
-#ifdef HAVE_FCHMOD
-	if(fchmod(fileno(fp), S_IRUSR|S_IWUSR) == -1) {
-#else
-	if(chmod(pfile, S_IRUSR|S_IWUSR) == -1) {
-#endif
-		DEBUG(0, ("startsmbfilepwent_internal: failed to set 0600 permissions on password file %s. \
-Error was %s\n.", pfile, strerror(errno) ));
+	/* Ensure we have a valid stat. */
+	if (fstat(fileno(fp), &st) != 0) {
+		DBG_ERR("Unable to fstat file %s. Error was %s\n",
+			pfile,
+			strerror(errno));
 		pw_file_unlock(fileno(fp), lock_depth);
 		fclose(fp);
 		return NULL;
+	}
+
+	/* If file has invalid permissions != 0600, then [f]chmod(). */
+	if ((st.st_mode & 0777) != (S_IRUSR|S_IWUSR)) {
+		DBG_WARNING("file %s has invalid permissions 0%o should "
+			    "be 0600.\n",
+			    pfile,
+			    (unsigned int)st.st_mode & 0777);
+		/* Make sure it is only rw by the owner */
+#ifdef HAVE_FCHMOD
+		if (fchmod(fileno(fp), S_IRUSR|S_IWUSR) == -1) {
+#else
+		if (chmod(pfile, S_IRUSR|S_IWUSR) == -1) {
+#endif
+			DBG_ERR("Failed to set 0600 permissions on password file %s. "
+				"Error was %s\n.",
+				pfile,
+				strerror(errno));
+			pw_file_unlock(fileno(fp), lock_depth);
+			fclose(fp);
+			return NULL;
+		}
 	}
 
 	/* We have a lock on the file. */
