@@ -506,8 +506,6 @@ sub setup_clusteredmember
 	my $prefix_abs = abs_path($prefix);
 	mkdir($prefix_abs, 0777);
 
-	my $server_name = "CLUSTEREDMEMBER";
-
 	my $ctdb_data = $self->setup_ctdb($prefix);
 
 	if (not $ctdb_data) {
