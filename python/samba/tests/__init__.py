@@ -194,8 +194,8 @@ class TestCase(unittest.TestCase):
             self.addCleanup(samba.set_debug_level, test_debug_level)
 
     @classmethod
-    def get_loadparm(cls):
-        return env_loadparm()
+    def get_loadparm(cls, s3=False):
+        return env_loadparm(s3=s3)
 
     def get_credentials(self):
         return cmdline_credentials
@@ -424,14 +424,18 @@ class TestCaseInTempDir(TestCase):
         self.rm_files(*dirs, allow_missing=allow_missing, _rm=shutil.rmtree)
 
 
-def env_loadparm():
-    lp = param.LoadParm()
+def env_loadparm(s3=False):
+    if s3:
+        from samba.samba3 import param as s3param
+        lp = s3param.get_context()
+    else:
+        lp = param.LoadParm()
+
     try:
         lp.load(os.environ["SMB_CONF_PATH"])
     except KeyError:
         raise KeyError("SMB_CONF_PATH not set")
     return lp
-
 
 def env_get_var_value(var_name, allow_missing=False):
     """Returns value for variable in os.environ
