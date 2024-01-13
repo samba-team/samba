@@ -2055,10 +2055,11 @@ NTSTATUS _wbint_ListTrustedDomains(struct pipes_struct *p,
 				   struct wbint_ListTrustedDomains *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
-	uint32_t i, n;
+	uint32_t i;
 	NTSTATUS result;
 	struct netr_DomainTrustList trusts;
-	struct netr_DomainTrustList *out = NULL;
+	uint32_t count = 0;
+	struct netr_DomainTrust *array = NULL;
 	pid_t client_pid;
 
 	if (domain == NULL) {
@@ -2082,53 +2083,44 @@ NTSTATUS _wbint_ListTrustedDomains(struct pipes_struct *p,
 		return result;
 	}
 
-	out = talloc_zero(p->mem_ctx, struct netr_DomainTrustList);
-	if (out == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	r->out.domains = out;
-
 	for (i=0; i<trusts.count; i++) {
-		if (trusts.array[i].sid == NULL) {
+		struct netr_DomainTrust *st = &trusts.array[i];
+		struct netr_DomainTrust *dt = NULL;
+
+		if (st->sid == NULL) {
 			continue;
 		}
-		if (dom_sid_equal(trusts.array[i].sid, &global_sid_NULL)) {
+		if (dom_sid_equal(st->sid, &global_sid_NULL)) {
 			continue;
 		}
 
-		n = out->count;
-		out->array = talloc_realloc(out, out->array,
-					    struct netr_DomainTrust,
-					    n + 1);
-		if (out->array == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		out->count = n + 1;
-
-		out->array[n].netbios_name = talloc_steal(
-				out->array, trusts.array[i].netbios_name);
-		if (out->array[n].netbios_name == NULL) {
+		array = talloc_realloc(r->out.domains, array,
+				       struct netr_DomainTrust,
+				       count + 1);
+		if (array == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		out->array[n].dns_name = talloc_steal(
-				out->array, trusts.array[i].dns_name);
-		if (out->array[n].dns_name == NULL) {
+		dt = &array[count];
+
+		*dt = (struct netr_DomainTrust) {
+			.trust_flags = st->trust_flags,
+			.trust_type = st->trust_type,
+			.trust_attributes = st->trust_attributes,
+			.netbios_name = talloc_move(array, &st->netbios_name),
+			.dns_name = talloc_move(array, &st->dns_name),
+		};
+
+		dt->sid = dom_sid_dup(array, st->sid);
+		if (dt->sid == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		out->array[n].sid = dom_sid_dup(out->array,
-				trusts.array[i].sid);
-		if (out->array[n].sid == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		out->array[n].trust_flags = trusts.array[i].trust_flags;
-		out->array[n].trust_type = trusts.array[i].trust_type;
-		out->array[n].trust_attributes = trusts.array[i].trust_attributes;
+		count++;
 	}
 
+	r->out.domains->array = array;
+	r->out.domains->count = count;
 	return NT_STATUS_OK;
 }
 
