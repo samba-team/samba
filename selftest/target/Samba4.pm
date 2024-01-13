@@ -2376,7 +2376,7 @@ sub check_env($$)
 	ad_dc_no_nss         => ["dns_hub"],
 	ad_dc_no_ntlm        => ["dns_hub"],
 
-	fl2008r2dc           => ["ad_dc"],
+	fl2008r2dc           => ["ad_dc", "nt4_dc"],
 	fl2003dc             => ["ad_dc"],
 	fl2000dc             => ["ad_dc"],
 
@@ -2571,7 +2571,7 @@ sub setup_fl2003dc
 
 sub setup_fl2008r2dc
 {
-	my ($self, $path, $ad_dc_vars) = @_;
+	my ($self, $path, $ad_dc_vars, $nt4_dc_vars) = @_;
 
 	my $env = $self->provision_fl2008r2dc($path);
 
@@ -2590,7 +2590,58 @@ sub setup_fl2008r2dc
 	    return undef;
 	}
 
-	return $self->setup_trust($env, $ad_dc_vars, "forest", "");
+	$env = $self->setup_trust($env, $ad_dc_vars, "forest", "");
+	if (!defined $env) {
+	    return undef;
+	}
+
+	my $net = Samba::bindir_path($self, "net");
+	my $smbcontrol = Samba::bindir_path($self, "smbcontrol");
+
+	my $trustpw = "TrUsTpW";
+	$trustpw .= "$env->{SOCKET_WRAPPER_DEFAULT_IFACE}";
+	$trustpw .= "$nt4_dc_vars->{SOCKET_WRAPPER_DEFAULT_IFACE}";
+
+	my $cmd = "";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$env->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
+	$cmd .= "$net rpc trust create ";
+	$cmd .= "otherdomainsid=$nt4_dc_vars->{SAMSID} ";
+	$cmd .= "otherdomain=$nt4_dc_vars->{DOMAIN} ";
+	$cmd .= "other_netbios_domain=$nt4_dc_vars->{DOMAIN} ";
+	$cmd .= "trustpw=$trustpw ";
+	$cmd .= "$env->{CONFIGURATION} ";
+	$cmd .= "-U $env->{DOMAIN}/$env->{USERNAME}\%$env->{PASSWORD} ";
+
+	if (system($cmd) != 0) {
+		warn("net rpc trust create failed\n$cmd");
+		return undef;
+	}
+
+	$cmd = "";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$nt4_dc_vars->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$nt4_dc_vars->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
+	$cmd .= "$net rpc trustdom establish $env->{DOMAIN} -U/%$trustpw $nt4_dc_vars->{CONFIGURATION}";
+
+	if (system($cmd) != 0) {
+		warn("add failed\n$cmd");
+		return undef;
+	}
+
+	# Reload trusts
+	$cmd = "$smbcontrol winbindd reload-config $nt4_dc_vars->{CONFIGURATION}";
+
+	if (system($cmd) != 0) {
+		warn("add failed\n$cmd");
+		return undef;
+	}
+
+	$env->{NT4_TRUST_SERVER} = $nt4_dc_vars->{SERVER};
+	$env->{NT4_TRUST_SERVER_IP} = $nt4_dc_vars->{SERVER_IP};
+	$env->{NT4_TRUST_DOMAIN} = $nt4_dc_vars->{DOMAIN};
+	$env->{NT4_TRUST_DOMSID} = $nt4_dc_vars->{DOMSID};
+
+	return $env;
 }
 
 sub setup_vampire_dc

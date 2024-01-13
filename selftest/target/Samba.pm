@@ -921,6 +921,13 @@ my @exported_envvars = (
 	"TRUST_E_BOTH_DOMAIN",
 	"TRUST_E_BOTH_REALM",
 
+	# stuff related to a trusted NT4 domain,
+	# used for one-way trust fl2008r2dc <- nt4_dc
+	"NT4_TRUST_SERVER",
+	"NT4_TRUST_SERVER_IP",
+	"NT4_TRUST_DOMAIN",
+	"NT4_TRUST_DOMSID",
+
 	# domain controller stuff
 	"DC_SERVER",
 	"DC_SERVER_IP",
