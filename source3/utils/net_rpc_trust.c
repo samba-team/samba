@@ -116,6 +116,18 @@ static NTSTATUS create_trust(TALLOC_CTX *mem_ctx,
 	struct lsa_CreateTrustedDomainEx2 r;
 	struct lsa_TrustDomainInfoInfoEx trustinfo;
 	struct policy_handle trustdom_handle;
+	bool is_nt4 = trust_name_dns == NULL;
+
+	if (!is_nt4) {
+		fprintf(stdout, "Creating AD trust\n");
+		trustinfo.trust_type = LSA_TRUST_TYPE_UPLEVEL;
+		trustinfo.trust_attributes = LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE;
+	} else {
+		fprintf(stdout, "Creating NT4 trust\n");
+		trustinfo.trust_type = LSA_TRUST_TYPE_DOWNLEVEL;
+		trustinfo.trust_attributes = 0;
+		trust_name_dns = trust_name;
+	}
 
 	trustinfo.sid = domsid;
 	trustinfo.netbios_name.string = trust_name;
@@ -123,10 +135,6 @@ static NTSTATUS create_trust(TALLOC_CTX *mem_ctx,
 
 	trustinfo.trust_direction = LSA_TRUST_DIRECTION_INBOUND |
 				    LSA_TRUST_DIRECTION_OUTBOUND;
-
-	trustinfo.trust_type = LSA_TRUST_TYPE_UPLEVEL;
-
-	trustinfo.trust_attributes = LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE;
 
 	r.in.policy_handle = pol_hnd;
 	r.in.info = &trustinfo;
@@ -408,7 +416,7 @@ static void print_trust_usage(void)
 		   "\totheruser=Admin user in other domain\n"
 		   "\totherdomainsid=SID of other domain\n"
 		   "\tother_netbios_domain=NetBIOS/short name of other domain\n"
-		   "\totherdomain=Full/DNS name of other domain\n"
+		   "\totherdomain=Full/DNS name of other domain (if not used, create an NT4 trust)\n"
 		   "\ttrustpw=Trust password\n"
 		   "\nExamples:\n"
 		   "\tnet rpc trust create otherserver=oname otheruser=ouser -S lname -U luser\n"
@@ -488,10 +496,14 @@ static int rpc_trust_common(struct net_context *net_ctx, int argc,
 		dom_data[1].domain_name = other_dom_data->domain_name;
 		dom_data[1].dns_domain_name = other_dom_data->dns_domain_name;
 
+		if (dom_data[1].dns_domain_name == NULL) {
+			fprintf(stdout, "No DNS domain name passed, "
+				"assuming NT4 trust!\n");
+		}
+
 		if (dom_data[1].domsid == NULL ||
 		    (op == TRUST_CREATE &&
-		     (dom_data[1].domain_name == NULL ||
-		      dom_data[1].dns_domain_name == NULL))) {
+		     (dom_data[1].domain_name == NULL))) {
 			DEBUG(0, ("Missing required argument.\n"));
 			usage();
 			goto done;
