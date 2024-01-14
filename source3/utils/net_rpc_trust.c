@@ -488,8 +488,10 @@ static int rpc_trust_common(struct net_context *net_ctx, int argc,
 		}
 
 		other_net_ctx->opt_host = other_dom_data->host;
-		other_net_ctx->opt_user_name = other_dom_data->user_name;
-		other_net_ctx->opt_user_specified = true;
+		other_net_ctx->creds = cli_credentials_init(other_net_ctx);
+		cli_credentials_parse_string(other_net_ctx->creds,
+					     other_dom_data->user_name,
+					     CRED_SPECIFIED);
 	} else {
 		dom_data[1].domsid = dom_sid_parse_talloc(mem_ctx,
 						other_dom_data->domain_sid_str);
