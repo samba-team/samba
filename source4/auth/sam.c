@@ -1588,7 +1588,7 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 	 * And the user data needs to be re-read, and the account re-checked
 	 * for lockout.
 	 *
-	 * Howevver we have long-running transactions like replication
+	 * However we have long-running transactions like replication
 	 * that could otherwise grind the system to a halt so we first
 	 * determine if *this* account has seen a bad password,
 	 * otherwise we only start a transaction if there was a need
