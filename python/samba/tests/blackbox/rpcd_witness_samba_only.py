@@ -1138,6 +1138,40 @@ class RpcdWitnessSambaTests(BlackboxTestCase):
                                             'SHARE_MOVE_TO',
                                             witness.WITNESS_NOTIFY_SHARE_MOVE)
 
+    def test_net_witness_force_unregister(self):
+        def check_force_unregister(regs,
+                                   apply_to_all=False,
+                                   registration_idx=None,
+                                   net_name=None,
+                                   share_name=None,
+                                   ip_address=None,
+                                   client_computer=None):
+            def check_force_unregister_happened(reg):
+                conn = reg['conn']
+                reg_context = reg['context']
+                self.assertIsNotNone(reg_context)
+                try:
+                    conn.UnRegister(reg_context)
+                    self.fail()
+                except WERRORError as e:
+                    (num, string) = e.args
+                    if num != werror.WERR_NOT_FOUND:
+                        raise
+                reg['context'] = None
+
+            return self.check_net_witness_output("force-unregister",
+                                                 regs,
+                                                 apply_to_all=apply_to_all,
+                                                 registration_idx=registration_idx,
+                                                 net_name=net_name,
+                                                 share_name=share_name,
+                                                 ip_address=ip_address,
+                                                 client_computer=client_computer,
+                                                 expected_msg_type="FORCE_UNREGISTER",
+                                                 callback=check_force_unregister_happened)
+
+        self.check_combinations(check_force_unregister)
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
