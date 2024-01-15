@@ -108,6 +108,30 @@ New options added are:
                         and all files/directories below.
  - '--restore savefile' Restores the stored DACLS to files in directory
 
+Conditional ACEs and Resource Attribute ACEs
+--------------------------------------------
+
+Ordinary Access Control Entries (ACEs) unconditionally allow or deny
+access to a given user or group. Conditional ACEs have an additional
+section that describes conditions under which the ACE applies. If the
+conditional expression is true, the ACE works like an ordinary ACE,
+otherwise it is ignored. The condition terms can refer to claims,
+group memberships, and attributes on the object itself. These
+attributes are described in Resource Attribute ACEs that occur in the
+object's System Access Control List (SACL). Conditional ACEs are
+described in Microsoft documentation.
+
+Conditional ACE evaluation is controlled by the "acl claims
+evaluation" smb.conf option. The default value is "AD DC only" which
+enables them in AD DC settings. The other option is "never", which
+disables them altogether. There is currently no option to enable them
+on the file server (this is likely to change in future releases).
+
+The Security Descriptor Definition Language has extensions for
+conditional ACEs and resource attribute ACEs; these are now supported
+by Samba.
+
+
 REMOVED FEATURES
 ================
 
