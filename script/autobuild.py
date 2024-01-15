@@ -861,7 +861,7 @@ tasks = {
             ("ctdb-check", "test -e ${PREFIX_DIR}/sbin/ctdbd"),
 
             ("test", make_test(
-                cmd='make test',
+                cmd='PYTHONPATH=${PYTHON_PREFIX}:$PYTHONPATH make test',
                 INJECT_SELFTEST_PREFIX=0,
                 include_envs=["clusteredmember"])
             ),
