@@ -435,7 +435,7 @@ static void swn_service_interface_changed(struct swn_service_globals *swn,
 		{
 			/*
 			 * Remember the current state unless we already
-			 * hit WITNESS_STATE_UNAVAILAVLE before we notified
+			 * hit WITNESS_STATE_UNAVAILABLE before we notified
 			 * the client
 			 */
 			reg->change_notification.last_ip_state = iface->state;
