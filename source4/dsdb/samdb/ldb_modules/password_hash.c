@@ -3753,7 +3753,7 @@ static int setup_io(struct ph_context *ac,
 
 		if (io->n.cleartext_utf16) {
 			/* refuse the change if someone wants to change with
-			   with both UTF16 possibilities at the same time... */
+			   both UTF16 possibilities at the same time... */
 			ldb_asprintf_errstring(ldb,
 				"setup_io: "
 				"it's only allowed to set the cleartext password as 'unicodePwd' or as 'clearTextPassword'");
