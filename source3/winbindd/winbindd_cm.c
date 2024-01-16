@@ -701,7 +701,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 
 	enum smb_signing_setting smb_sign_client_connections = lp_client_ipc_signing();
 
-	if (IS_AD_DC) {
+	if (IS_DC) {
 		if (domain->secure_channel_type == SEC_CHAN_NULL) {
 			/*
 			 * Make sure we don't even try to
@@ -809,7 +809,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 		try_ipc_auth = true;
 	}
 
-	if (IS_AD_DC) {
+	if (IS_DC) {
 		/*
 		 * As AD DC we only use netlogon and lsa
 		 * using schannel over an anonymous transport
@@ -2924,7 +2924,7 @@ retry:
 
 	TALLOC_FREE(conn->lsa_pipe);
 
-	if (IS_AD_DC) {
+	if (IS_DC) {
 		/*
 		 * Make sure we only use schannel as AD DC.
 		 */
@@ -3050,7 +3050,7 @@ retry:
 		goto done;
 	}
 
-	if (IS_AD_DC) {
+	if (IS_DC) {
 		/*
 		 * Make sure we only use schannel as AD DC.
 		 */
@@ -3064,7 +3064,7 @@ retry:
 
  anonymous:
 
-	if (IS_AD_DC) {
+	if (IS_DC) {
 		/*
 		 * Make sure we only use schannel as AD DC.
 		 */
@@ -3183,7 +3183,7 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 
 	*cli = NULL;
 
-	if (IS_AD_DC) {
+	if (IS_DC) {
 		if (domain->secure_channel_type == SEC_CHAN_NULL) {
 			/*
 			 * Make sure we don't even try to
