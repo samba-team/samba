@@ -275,6 +275,10 @@ test_shadow_copy_fixed()
         test_count_versions $share bar/baz $ncopies_allowed || \
         failed=`expr $failed + 1`
 
+    testit "$msg - regular file in case insensitive subdir" \
+        test_count_versions $share bar/bAz $ncopies_allowed || \
+        failed=`expr $failed + 1`
+
     testit "$msg - local symlink" \
         test_count_versions $share bar/lfoo $ncopies_allowed || \
         failed=`expr $failed + 1`
