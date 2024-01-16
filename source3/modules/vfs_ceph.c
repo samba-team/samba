@@ -438,9 +438,15 @@ static DIR *cephwrap_fdopendir(struct vfs_handle_struct *handle,
 {
 	int ret = 0;
 	struct ceph_dir_result *result = NULL;
-	DBG_DEBUG("[CEPH] fdopendir(%p, %p)\n", handle, fsp);
 
+#ifdef HAVE_CEPH_FDOPENDIR
+	int dirfd = fsp_get_io_fd(fsp);
+	DBG_DEBUG("[CEPH] fdopendir(%p, %d)\n", handle, dirfd);
+	ret = ceph_fdopendir(handle->data, dirfd, &result);
+#else
+	DBG_DEBUG("[CEPH] fdopendir(%p, %p)\n", handle, fsp);
 	ret = ceph_opendir(handle->data, fsp->fsp_name->base_name, &result);
+#endif
 	if (ret < 0) {
 		result = NULL;
 		errno = -ret; /* We return result which is NULL in this case */
