@@ -432,8 +432,8 @@ NTSTATUS smb_krb5_fill_keytab_gmsa_keys(TALLOC_CTX *mem_ctx,
  * @param[in] num_SPNs		Length of SPNs
  * @param[in] saltPrincipal	Salt used for AES encryption.
  * 				Required, unless delete_all_kvno is set.
- * @param[in] old_secret	Old password
  * @param[in] new_secret	New password
+ * @param[in] old_secret	Old password
  * @param[in] kvno		Current key version number
  * @param[in] supp_enctypes	msDS-SupportedEncryptionTypes bit-field
  * @param[in] delete_all_kvno	Removes all obsolete entries, without
