@@ -136,7 +136,7 @@ class GetKerberosTicketTest(BlackboxTestCase):
         output_ccache = self.get_ticket(self.gmsa_username)
         creds = self.insta_creds(template=self.env_creds)
         creds.set_kerberos_state(MUST_USE_KERBEROS)
-        creds.set_named_ccache(self.lp, output_ccache)
+        creds.set_named_ccache(output_ccache, credentials.SPECIFIED, self.lp)
         db = connect_samdb(PW_CHECK_URL, credentials=creds, lp=self.lp)
         msg = db.search(base="", scope=SCOPE_BASE, attrs=["tokenGroups"])[0]
         connecting_user_sid = str(ndr_unpack(security.dom_sid, msg["tokenGroups"][0]))
