@@ -2645,7 +2645,6 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 					       TALLOC_CTX *mem_ctx,
 					       krb5_const_principal principal,
 					       unsigned flags,
-					       const char **attrs,
 					       struct ldb_dn **realm_dn,
 					       struct ldb_message **msg)
 {
@@ -2680,7 +2679,7 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 		ldb_ret = dsdb_search_one(kdc_db_ctx->samdb,
 					  mem_ctx,
 					  msg, user_dn, LDB_SCOPE_BASE,
-					  attrs,
+					  server_attrs,
 					  DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG,
 					  "(objectClass=*)");
 		if (ldb_ret != LDB_SUCCESS) {
@@ -2696,7 +2695,7 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 		 * not AS-REQ packets.
 		 */
 		return samba_kdc_lookup_client(context, kdc_db_ctx,
-					       mem_ctx, principal, attrs,
+					       mem_ctx, principal, server_attrs,
 					       realm_dn, msg);
 	} else {
 		/*
@@ -2785,7 +2784,7 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 
 		lret = dsdb_search_one(kdc_db_ctx->samdb, mem_ctx, msg,
 				       *realm_dn, LDB_SCOPE_SUBTREE,
-				       attrs,
+				       server_attrs,
 				       DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG,
 				       "%s", filter);
 		if (lret == LDB_ERR_NO_SUCH_OBJECT) {
@@ -2823,7 +2822,7 @@ static krb5_error_code samba_kdc_fetch_server(krb5_context context,
 	struct ldb_message *msg;
 
 	ret = samba_kdc_lookup_server(context, kdc_db_ctx, mem_ctx, principal,
-				      flags, server_attrs, &realm_dn, &msg);
+				      flags, &realm_dn, &msg);
 	if (ret != 0) {
 		return ret;
 	}
