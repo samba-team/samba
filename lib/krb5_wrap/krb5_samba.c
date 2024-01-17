@@ -2245,7 +2245,7 @@ krb5_error_code smb_krb5_keyblock_init_contents(krb5_context context,
  *
  * @param[in]  cc       The credential cache to put the tgt in.
  *
- * @param[in]  principal The client princial
+ * @param[in]  principal The client principal
  *
  * @param[in]  keyblock  The keyblock to use.
  *
@@ -2358,7 +2358,7 @@ done:
  *
  * @param[in]  cc       The credential cache to put the tgt in.
  *
- * @param[in]  principal The client princial
+ * @param[in]  principal The client principal
  *
  * @param[in]  password  The password (or NULL).
  *
@@ -2431,7 +2431,7 @@ done:
  *
  * @param[in]  cc       The credential cache to store the tgt in.
  *
- * @param[in]  principal The initial client princial.
+ * @param[in]  principal The initial client principal.
  *
  * @param[in]  password  The password (or NULL).
  *
