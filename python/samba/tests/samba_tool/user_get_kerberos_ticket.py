@@ -55,7 +55,7 @@ SERVER_PASSWORD = os.environ["PASSWORD"]
 CREDS = f"-U{SERVER_USERNAME}%{SERVER_PASSWORD}"
 
 
-class GetKerberosTiketTest(BlackboxTestCase):
+class GetKerberosTicketTest(BlackboxTestCase):
     """Blackbox tests for GMSA getpassword and connecting as that user."""
 
     @classmethod
