@@ -205,7 +205,7 @@ class Model(metaclass=ModelMeta):
     def build_expression(cls, **kwargs):
         """Build LDAP search expression from kwargs.
 
-        :kwargs: fields to use for expression using model field names
+        :param kwargs: fields to use for expression using model field names
         """
         # Take a copy, never modify the original if it can be avoided.
         # Then always add the object_class to the search criteria.
