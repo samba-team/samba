@@ -119,23 +119,15 @@ samba-tool user get-kerberos-ticket --filter='(samAccountName=TestUser3)' --outp
         creds.set_username(str(obj["samAccountName"][0]))
         creds.set_realm(samdb.domain_dns_name())
 
-        utf16_pw = None
-        nt_pass = None
-        try:
-            utf16_pw = obj["virtualClearTextUTF16"][0]
+        utf16_pw = obj.get("virtualClearTextUTF16", idx=0)
+        nt_pass = obj.get("unicodePwd", idx=0)
+        if utf16_pw is not None:
             creds.set_utf16_password(utf16_pw)
-        except KeyError:
-            pass
-
-        if utf16_pw is None:
-            try:
-                nt_pass = samr.Password()
-                nt_pass.hash = list(obj["unicodePwd"][0])
-                creds.set_nt_hash(nt_pass)
-            except KeyError:
-                pass
-
-        if nt_pass is None and utf16_pw is None:
+        elif nt_pass is not None:
+            nt_hash = samr.Password()
+            nt_hash.hash = list(nt_pass)
+            creds.set_nt_hash(nt_hash)
+        else:
             if samdb.url.startswith("ldap://") or samdb.url.startswith("ldaps://"):
                 raise CommandError("No password was available for this user.  "
                                    "Only Group Managed Service accounts allow access to passwords over LDAP, "
