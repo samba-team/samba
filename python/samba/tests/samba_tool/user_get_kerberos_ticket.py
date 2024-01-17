@@ -30,12 +30,12 @@ os.environ["PYTHONUNBUFFERED"] = "1"
 
 from ldb import SCOPE_BASE
 from samba import credentials
-from samba.credentials import Credentials, MUST_USE_KERBEROS
-from samba.dcerpc import security, samr
+from samba.credentials import MUST_USE_KERBEROS
+from samba.dcerpc import security
 from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT, UF_NORMAL_ACCOUNT
 from samba.netcmd.domain.models import User
 from samba.ndr import ndr_pack, ndr_unpack
-from samba.tests import connect_samdb, connect_samdb_env, delete_force
+from samba.tests import connect_samdb, delete_force
 
 from samba.tests import BlackboxTestCase, BlackboxProcessError
 
