@@ -217,10 +217,11 @@ def getca(ca, url, trust_dir):
                  ' installed or not configured.')
         if 'cACertificate' in ca:
             log.warn('Installing the server certificate only.')
+            der_certificate = base64.b64decode(ca['cACertificate'])
             try:
-                cert = load_der_x509_certificate(ca['cACertificate'])
+                cert = load_der_x509_certificate(der_certificate)
             except TypeError:
-                cert = load_der_x509_certificate(ca['cACertificate'],
+                cert = load_der_x509_certificate(der_certificate,
                                                  default_backend())
             cert_data = cert.public_bytes(Encoding.PEM)
             with open(root_cert, 'wb') as w:
