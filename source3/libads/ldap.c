@@ -1687,7 +1687,6 @@ char *ads_parent_dn(const char *dn)
 		"DnsHostName",
 		"ServicePrincipalName",
 		"userPrincipalName",
-		"unicodePwd",
 
 		/* Additional attributes Samba checks */
 		"msDS-AdditionalDnsHostName",
