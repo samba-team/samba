@@ -219,7 +219,7 @@ class Model(metaclass=ModelMeta):
 
         for field_name, value in criteria.items():
             field = cls.fields.get(field_name)
-            if not field:
+            if field is None:
                 raise ValueError(f"Unknown field '{field_name}'")
             expression += f"({field.name}={binary_encode(value)})"
 
