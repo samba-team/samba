@@ -20,7 +20,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from .auth_policy import AuthenticationPolicy
+from .auth_policy import (AuthenticationPolicy, StrongNTLMPolicy,
+                          MIN_TGT_LIFETIME, MAX_TGT_LIFETIME)
 from .auth_silo import AuthenticationSilo
 from .claim_type import ClaimType
 from .group import Group

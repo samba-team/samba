@@ -27,8 +27,8 @@ from xml.etree import ElementTree
 from ldb import FLAG_MOD_ADD, MessageElement, SCOPE_ONELEVEL
 from samba.dcerpc import security
 from samba.dcerpc.misc import GUID
-from samba.netcmd.domain.models import Group, User, fields
-from samba.netcmd.domain.models.auth_policy import StrongNTLMPolicy
+from samba.netcmd.domain.models import (Group, Site, User, StrongNTLMPolicy,
+                                        fields)
 from samba.ndr import ndr_pack, ndr_unpack
 
 from .base import SambaToolCmdTest

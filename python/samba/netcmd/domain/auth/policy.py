@@ -22,10 +22,10 @@
 
 import samba.getopt as options
 from samba.netcmd import Command, CommandError, Option, SuperCommand
-from samba.netcmd.domain.models import AuthenticationPolicy,\
-    AuthenticationSilo, Group
-from samba.netcmd.domain.models.auth_policy import MIN_TGT_LIFETIME,\
-    MAX_TGT_LIFETIME, StrongNTLMPolicy
+from samba.netcmd.domain.models import (AuthenticationPolicy,
+                                        AuthenticationSilo, Group,
+                                        MAX_TGT_LIFETIME, MIN_TGT_LIFETIME,
+                                        StrongNTLMPolicy)
 from samba.netcmd.domain.models.exceptions import ModelError
 from samba.netcmd.validators import Range
 
