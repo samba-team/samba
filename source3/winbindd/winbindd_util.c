@@ -47,8 +47,6 @@
  * Winbind daemon for NT domain authentication nss module.
  **/
 
-static bool add_trusted_domains_dc(void);
-
 /* The list of trusted domains.  Note that the list can be deleted and
    recreated using the init_domain_list() function so pointers to
    individual winbindd_domain structures cannot be made.  Keep a copy of
@@ -853,7 +851,7 @@ static bool migrate_secrets_tdb_to_ldb(struct winbindd_domain *domain)
 	return true;
 }
 
-static bool add_trusted_domains_dc(void)
+bool add_trusted_domains_dc(void)
 {
 	struct winbindd_domain *domain =  NULL;
 	struct pdb_trusted_domain **domains = NULL;
