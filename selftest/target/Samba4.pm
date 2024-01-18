@@ -2571,7 +2571,7 @@ sub setup_fl2003dc
 
 sub setup_fl2008r2dc
 {
-	my ($self, $path, $dc_vars) = @_;
+	my ($self, $path, $ad_dc_vars) = @_;
 
 	my $env = $self->provision_fl2008r2dc($path);
 
@@ -2590,7 +2590,7 @@ sub setup_fl2008r2dc
 	    return undef;
 	}
 
-	return $self->setup_trust($env, $dc_vars, "forest", "");
+	return $self->setup_trust($env, $ad_dc_vars, "forest", "");
 }
 
 sub setup_vampire_dc
