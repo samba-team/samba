@@ -21,6 +21,7 @@
 #ifndef __SECURITY_DESCRIPTOR_H__
 #define __SECURITY_DESCRIPTOR_H__
 
+#include "lib/util/data_blob.h"
 #include "librpc/gen_ndr/security.h"
 
 struct security_descriptor *security_descriptor_initialise(TALLOC_CTX *mem_ctx);
