@@ -23,14 +23,15 @@
 import inspect
 from abc import ABCMeta, abstractmethod
 
-from ldb import ERR_NO_SUCH_OBJECT, FLAG_MOD_ADD, FLAG_MOD_REPLACE, LdbError,\
-    Message, MessageElement, SCOPE_BASE, SCOPE_SUBTREE, binary_encode
+from ldb import (ERR_NO_SUCH_OBJECT, FLAG_MOD_ADD, FLAG_MOD_REPLACE,
+                 LdbError, Message, MessageElement, SCOPE_BASE,
+                 SCOPE_SUBTREE, binary_encode)
 from samba.sd_utils import SDUtils
 
-from .exceptions import DeleteError, DoesNotExist, FieldError,\
-    ProtectError, UnprotectError
-from .fields import DateTimeField, DnField, Field, GUIDField, IntegerField,\
-    StringField
+from .exceptions import (DeleteError, DoesNotExist, FieldError,
+                         ProtectError, UnprotectError)
+from .fields import (DateTimeField, DnField, Field, GUIDField, IntegerField,
+                     StringField)
 from .query import Query
 
 # Keeps track of registered models.
