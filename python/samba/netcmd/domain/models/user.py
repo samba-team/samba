@@ -24,12 +24,14 @@ from ldb import Dn
 
 from samba.dsdb import DS_GUID_USERS_CONTAINER
 
-from .fields import DnField, SIDField, StringField
+from .fields import DnField, EnumField, SIDField, StringField
 from .model import Model
+from .types import AccountType
 
 
 class User(Model):
     username = StringField("sAMAccountName")
+    account_type = EnumField("sAMAccountType", AccountType)
     assigned_policy = DnField("msDS-AssignedAuthNPolicy")
     assigned_silo = DnField("msDS-AssignedAuthNPolicySilo")
     object_sid = SIDField("objectSid")
