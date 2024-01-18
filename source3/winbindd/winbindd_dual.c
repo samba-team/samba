@@ -948,6 +948,7 @@ void winbindd_msg_reload_services_parent(struct messaging_context *msg,
 		.msg_type = msg_type,
 		.data = data,
 	};
+	bool ok;
 
 	DBG_DEBUG("Got reload-config message\n");
 
@@ -961,6 +962,11 @@ void winbindd_msg_reload_services_parent(struct messaging_context *msg,
 		tevent_thread_call_depth_set_callback(winbind_call_flow, NULL);
 	} else {
 		tevent_thread_call_depth_set_callback(NULL, NULL);
+	}
+
+	ok = add_trusted_domains_dc();
+	if (!ok) {
+		DBG_ERR("add_trusted_domains_dc() failed\n");
 	}
 
 	forall_children(winbind_msg_relay_fn, &state);
