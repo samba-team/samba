@@ -209,6 +209,10 @@ class EnumField(Field):
         else:
             return MessageElement(str(value.value), flags, self.name)
 
+    def expression(self, value):
+        """Returns the ldb search expression for this field."""
+        return f"({self.name}={binary_encode(str(value.value))})"
+
 
 class DateTimeField(Field):
     """A field for parsing ldb timestamps into Python datetime."""

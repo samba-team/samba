@@ -27,14 +27,49 @@ from xml.etree import ElementTree
 from ldb import FLAG_MOD_ADD, MessageElement, SCOPE_ONELEVEL
 from samba.dcerpc import security
 from samba.dcerpc.misc import GUID
-from samba.netcmd.domain.models import (Group, Site, User, StrongNTLMPolicy,
-                                        fields)
+from samba.netcmd.domain.models import (AccountType, Group, Site, User,
+                                        StrongNTLMPolicy, fields)
 from samba.ndr import ndr_pack, ndr_unpack
 
 from .base import SambaToolCmdTest
 
 HOST = "ldap://{DC_SERVER}".format(**os.environ)
 CREDS = "-U{DC_USERNAME}%{DC_PASSWORD}".format(**os.environ)
+
+
+class ModelTests(SambaToolCmdTest):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.samdb = cls.getSamDB("-H", HOST, CREDS)
+        super().setUpClass()
+
+    def test_query_count(self):
+        """Test count property on Query object without converting to a list."""
+        groups = Group.query(self.samdb)
+        self.assertEqual(groups.count, len(list(groups)))
+
+    def test_query_filter_bool(self):
+        """Tests filtering by a BooleanField."""
+        total = Group.query(self.samdb).count
+        system_groups = Group.query(self.samdb,
+                                    is_critical_system_object=True).count
+        user_groups = Group.query(self.samdb,
+                                  is_critical_system_object=False).count
+        self.assertNotEqual(system_groups, 0)
+        self.assertNotEqual(user_groups, 0)
+        self.assertEqual(system_groups + user_groups, total)
+
+    def test_query_filter_enum(self):
+        """Tests filtering by an EnumField."""
+        robots_vs_humans = User.query(self.samdb).count
+        robots = User.query(self.samdb,
+                            account_type=AccountType.WORKSTATION_TRUST).count
+        humans = User.query(self.samdb,
+                            account_type=AccountType.NORMAL_ACCOUNT).count
+        self.assertNotEqual(robots, 0)
+        self.assertNotEqual(humans, 0)
+        self.assertEqual(robots + humans, robots_vs_humans)
 
 
 class FieldTestMixin:
