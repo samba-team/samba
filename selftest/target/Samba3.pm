@@ -1418,6 +1418,7 @@ sub setup_ad_member_idmap_ad
 	idmap config $dcvars->{TRUST_DOMAIN} : backend = ad
 	idmap config $dcvars->{TRUST_DOMAIN} : range = 2000000-2999999
 	gensec_gssapi:requested_life_time = 5
+	winbind scan trusted domains = yes
 ";
 
 	my $ret = $self->provision(

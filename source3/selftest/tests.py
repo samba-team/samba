@@ -1861,6 +1861,10 @@ plantestsuite("samba3.blackbox.nt4_trusts",
               "fl2008r2dc",
               [os.path.join(samba3srcdir, "script/tests/test_nt4_trust.sh")])
 
+plantestsuite("samba3.blackbox.list_nt4_trusts",
+              "ad_member_idmap_ad",
+              [os.path.join(samba3srcdir, "script/tests/test_list_nt4_trust.sh")])
+
 def planclusteredmembertestsuite(tname, prefix):
     '''Define a clustered test for the clusteredmember environment'''
 
