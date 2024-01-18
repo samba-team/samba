@@ -3991,8 +3991,6 @@ static WERROR fill_trusted_domains_array(TALLOC_CTX *mem_ctx,
 				  ldb_dn_get_linearized(dom_res[i]->dn)));
 		}
 
-		trusts->array[n].dns_name = talloc_steal(trusts->array, ldb_msg_find_attr_as_string(dom_res[i], "trustPartner", NULL));
-
 		trusts->array[n].trust_flags = flags;
 		if ((trust_flags & NETR_TRUST_FLAG_IN_FOREST) &&
 		    !(flags & NETR_TRUST_FLAG_TREEROOT)) {
@@ -4006,6 +4004,16 @@ static WERROR fill_trusted_domains_array(TALLOC_CTX *mem_ctx,
 		trusts->array[n].trust_attributes =
 				ldb_msg_find_attr_as_uint(dom_res[i],
 						  "trustAttributes", 0);
+
+		if (trusts->array[n].trust_type != LSA_TRUST_TYPE_DOWNLEVEL) {
+			trusts->array[n].dns_name = talloc_steal(
+				trusts->array,
+				ldb_msg_find_attr_as_string(dom_res[i],
+							    "trustPartner",
+							    NULL));
+		} else {
+			trusts->array[n].dns_name = NULL;
+		}
 
 		if ((trusts->array[n].trust_type == LSA_TRUST_TYPE_MIT) ||
 		    (trusts->array[n].trust_type == LSA_TRUST_TYPE_DCE)) {
