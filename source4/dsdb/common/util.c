@@ -2521,6 +2521,8 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+#undef CHECK_RET
+
 	/* build modify request */
 	ret = ldb_build_mod_req(&req, ldb, mem_ctx, msg, NULL, NULL,
 				samdb_set_password_callback, NULL);
