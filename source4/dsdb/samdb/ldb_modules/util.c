@@ -48,6 +48,9 @@ int dsdb_module_search_dn(struct ldb_module *module,
 	struct ldb_result *res;
 
 	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb_module_get_ctx(module));
+	}
 
 	res = talloc_zero(tmp_ctx, struct ldb_result);
 	if (!res) {
@@ -128,6 +131,9 @@ int dsdb_module_search_tree(struct ldb_module *module,
 	struct ldb_result *res;
 
 	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb_module_get_ctx(module));
+	}
 
 	/* cross-partitions searches with a basedn break multi-domain support */
 	SMB_ASSERT(basedn == NULL || (dsdb_flags & DSDB_SEARCH_SEARCH_ALL_PARTITIONS) == 0);
@@ -218,6 +224,9 @@ int dsdb_module_search(struct ldb_module *module,
 	SMB_ASSERT(basedn == NULL || (dsdb_flags & DSDB_SEARCH_SEARCH_ALL_PARTITIONS) == 0);
 
 	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb_module_get_ctx(module));
+	}
 
 	if (format) {
 		va_start(ap, format);
