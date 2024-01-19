@@ -2459,33 +2459,21 @@ int samdb_set_password_callback(struct ldb_request *req, struct ldb_reply *ares)
 	return ldb_request_done(req, LDB_SUCCESS);
 }
 
-/*
- * Sets the user password using plaintext UTF16 (attribute "new_password") or
- * LM (attribute "lmNewHash") or NT (attribute "ntNewHash") hash. Also pass
- * the old LM and/or NT hash (attributes "lmOldHash"/"ntOldHash") if it is a
- * user change or not. The "rejectReason" gives some more information if the
- * change failed.
- *
- * Results: NT_STATUS_OK, NT_STATUS_INVALID_PARAMETER, NT_STATUS_UNSUCCESSFUL,
- *   NT_STATUS_WRONG_PASSWORD, NT_STATUS_PASSWORD_RESTRICTION,
- *   NT_STATUS_ACCESS_DENIED, NT_STATUS_ACCOUNT_LOCKED_OUT, NT_STATUS_NO_MEMORY
- */
-static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
-			    struct ldb_dn *user_dn, struct ldb_dn *domain_dn,
+static NTSTATUS samdb_set_password_request(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
+			    struct ldb_dn *user_dn,
 			    const DATA_BLOB *new_password,
 			    const struct samr_Password *ntNewHash,
 			    enum dsdb_password_checked old_password_checked,
-			    enum samPwdChangeReason *reject_reason,
-			    struct samr_DomInfo1 **_dominfo,
-			    bool permit_interdomain_trust)
+			    bool permit_interdomain_trust,
+			    struct ldb_request **req_out)
 {
 	struct ldb_message *msg;
 	struct ldb_message_element *el;
 	struct ldb_request *req;
-	struct dsdb_control_password_change_status *pwd_stat = NULL;
 	int ret;
 	bool hash_values = false;
-	NTSTATUS status = NT_STATUS_OK;
+
+	*req_out = NULL;
 
 #define CHECK_RET(x) \
 	if (x != LDB_SUCCESS) { \
@@ -2531,6 +2519,9 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 		return NT_STATUS_NO_MEMORY;
         }
 
+	/* Tie the lifetime of the message to that of the request. */
+	talloc_steal(req, msg);
+
 	/* A password change operation */
 	if (old_password_checked == DSDB_PASSWORD_CHECKED_AND_CORRECT) {
 		struct dsdb_control_password_change *change;
@@ -2538,7 +2529,6 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 		change = talloc(req, struct dsdb_control_password_change);
 		if (change == NULL) {
 			talloc_free(req);
-			talloc_free(msg);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -2549,7 +2539,6 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 					      true, change);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(req);
-			talloc_free(msg);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
@@ -2559,7 +2548,6 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 					      true, NULL);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(req);
-			talloc_free(msg);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
@@ -2569,7 +2557,6 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 					      false, NULL);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(req);
-			talloc_free(msg);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
@@ -2578,8 +2565,49 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 				      true, NULL);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(req);
-		talloc_free(msg);
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	*req_out = req;
+
+	return NT_STATUS_OK;
+}
+
+/*
+ * Sets the user password using plaintext UTF16 (attribute "new_password") or
+ * LM (attribute "lmNewHash") or NT (attribute "ntNewHash") hash. Also pass
+ * the old LM and/or NT hash (attributes "lmOldHash"/"ntOldHash") if it is a
+ * user change or not. The "rejectReason" gives some more information if the
+ * change failed.
+ *
+ * Results: NT_STATUS_OK, NT_STATUS_INVALID_PARAMETER, NT_STATUS_UNSUCCESSFUL,
+ *   NT_STATUS_WRONG_PASSWORD, NT_STATUS_PASSWORD_RESTRICTION,
+ *   NT_STATUS_ACCESS_DENIED, NT_STATUS_ACCOUNT_LOCKED_OUT, NT_STATUS_NO_MEMORY
+ */
+static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
+			    struct ldb_dn *user_dn, struct ldb_dn *domain_dn,
+			    const DATA_BLOB *new_password,
+			    const struct samr_Password *ntNewHash,
+			    enum dsdb_password_checked old_password_checked,
+			    enum samPwdChangeReason *reject_reason,
+			    struct samr_DomInfo1 **_dominfo,
+			    bool permit_interdomain_trust)
+{
+	struct ldb_request *req;
+	struct dsdb_control_password_change_status *pwd_stat = NULL;
+	int ret;
+	NTSTATUS status = NT_STATUS_OK;
+
+	status = samdb_set_password_request(ldb,
+					    mem_ctx,
+					    user_dn,
+					    new_password,
+					    ntNewHash,
+					    old_password_checked,
+					    permit_interdomain_trust,
+					    &req);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	ret = ldb_request(ldb, req);
@@ -2596,7 +2624,6 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 	}
 
 	talloc_free(req);
-	talloc_free(msg);
 
 	/* Sets the domain info (if requested) */
 	if (_dominfo != NULL) {
