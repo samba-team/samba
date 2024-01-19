@@ -349,15 +349,7 @@ char *timeval_string(TALLOC_CTX *ctx, const struct timeval *tp, bool hires)
 		return NULL;
 	}
 
-	/*
-	 * beautify the talloc_report output
-	 *
-	 * This is not just cosmetics. A C compiler might in theory make the
-	 * talloc_strdup call above a tail call with the tail call
-	 * optimization. This would render "tmp" invalid while talloc_strdup
-	 * tries to duplicate it. The talloc_set_name_const call below puts
-	 * the talloc_strdup call into non-tail position.
-	 */
+	/* beautify the talloc_report output */
 	talloc_set_name_const(result, result);
 	return result;
 }
