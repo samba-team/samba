@@ -2584,7 +2584,7 @@ static NTSTATUS samdb_set_password_request(struct ldb_context *ldb, TALLOC_CTX *
  *   NT_STATUS_ACCESS_DENIED, NT_STATUS_ACCOUNT_LOCKED_OUT, NT_STATUS_NO_MEMORY
  */
 static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
-			    struct ldb_dn *user_dn, struct ldb_dn *domain_dn,
+			    struct ldb_dn *user_dn,
 			    const DATA_BLOB *new_password,
 			    const struct samr_Password *ntNewHash,
 			    enum dsdb_password_checked old_password_checked,
@@ -2692,7 +2692,7 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 }
 
 NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
-			    struct ldb_dn *user_dn, struct ldb_dn *domain_dn,
+			    struct ldb_dn *user_dn,
 			    const DATA_BLOB *new_password,
 			    const struct samr_Password *ntNewHash,
 			    enum dsdb_password_checked old_password_checked,
@@ -2700,7 +2700,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			    struct samr_DomInfo1 **_dominfo)
 {
 	return samdb_set_password_internal(ldb, mem_ctx,
-			    user_dn, domain_dn,
+			    user_dn,
 			    new_password,
 			    ntNewHash,
 			    old_password_checked,
@@ -3087,7 +3087,7 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	}
 
 	nt_status = samdb_set_password_internal(ldb, mem_ctx,
-						user_msg->dn, NULL,
+						user_msg->dn,
 						new_password,
 						ntNewHash,
 						old_password_checked,

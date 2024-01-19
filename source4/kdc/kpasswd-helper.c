@@ -221,7 +221,6 @@ NTSTATUS kpasswd_samdb_set_password(TALLOC_CTX *mem_ctx,
 	status = samdb_set_password(samdb,
 				    mem_ctx,
 				    target_dn,
-				    NULL, /* domain_dn */
 				    password,
 				    NULL, /* ntNewHash */
 				    DSDB_PASSWORD_RESET,

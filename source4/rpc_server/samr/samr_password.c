@@ -239,7 +239,6 @@ NTSTATUS dcesrv_samr_ChangePasswordUser4(struct dcesrv_call_state *dce_call,
 				       &cdk,
 				       sam_ctx,
 				       dn,
-				       NULL,
 				       r->in.password,
 				       DSDB_PASSWORD_CHECKED_AND_CORRECT);
 	BURN_DATA(cdk_data);
@@ -459,7 +458,7 @@ static NTSTATUS dcesrv_samr_ChangePasswordUser_impl(struct dcesrv_call_state *dc
 	 * from the database since they were already checked against the user-
 	 * provided ones. */
 	status = samdb_set_password(sam_ctx, mem_ctx,
-				    user_dn, NULL,
+				    user_dn,
 				    &new_password,
 				    NULL,
 				    DSDB_PASSWORD_CHECKED_AND_CORRECT,
@@ -575,7 +574,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser2(struct dcesrv_call_state *dce_call,
 */
 NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 			   struct ldb_context *sam_ctx,
-			   struct ldb_dn *account_dn, struct ldb_dn *domain_dn,
+			   struct ldb_dn *account_dn,
 			   TALLOC_CTX *mem_ctx,
 			   struct samr_CryptPassword *pwbuf)
 {
@@ -643,7 +642,6 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 	nt_status = samdb_set_password(sam_ctx,
 				       mem_ctx,
 				       account_dn,
-				       domain_dn,
 				       &new_password,
 				       NULL,
 				       DSDB_PASSWORD_RESET,
@@ -660,7 +658,6 @@ out:
 NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 			      struct ldb_context *sam_ctx,
 			      struct ldb_dn *account_dn,
-			      struct ldb_dn *domain_dn,
 			      TALLOC_CTX *mem_ctx,
 			      struct samr_CryptPasswordEx *pwbuf)
 {
@@ -713,7 +710,6 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 	nt_status = samdb_set_password(sam_ctx,
 				       mem_ctx,
 				       account_dn,
-				       domain_dn,
 				       &new_password,
 				       NULL,
 				       DSDB_PASSWORD_RESET,
@@ -732,7 +728,6 @@ out:
 NTSTATUS samr_set_password_buffers(struct dcesrv_call_state *dce_call,
 				   struct ldb_context *sam_ctx,
 				   struct ldb_dn *account_dn,
-				   struct ldb_dn *domain_dn,
 				   TALLOC_CTX *mem_ctx,
 				   const uint8_t *lm_pwd_hash,
 				   const uint8_t *nt_pwd_hash)
@@ -778,7 +773,7 @@ NTSTATUS samr_set_password_buffers(struct dcesrv_call_state *dce_call,
 
 	if ((d_lm_pwd_hash != NULL) || (d_nt_pwd_hash != NULL)) {
 		nt_status = samdb_set_password(sam_ctx, mem_ctx, account_dn,
-					       domain_dn, NULL,
+					       NULL,
 					       d_nt_pwd_hash,
 					       DSDB_PASSWORD_RESET,
 					       NULL, NULL);
@@ -792,7 +787,6 @@ NTSTATUS samr_set_password_aes(struct dcesrv_call_state *dce_call,
 			       const DATA_BLOB *cdk,
 			       struct ldb_context *sam_ctx,
 			       struct ldb_dn *account_dn,
-			       struct ldb_dn *domain_dn,
 			       struct samr_EncryptedPasswordAES *pwbuf,
 			       enum dsdb_password_checked old_password_checked)
 {
@@ -829,7 +823,6 @@ NTSTATUS samr_set_password_aes(struct dcesrv_call_state *dce_call,
 	nt_status = samdb_set_password(sam_ctx,
 				       mem_ctx,
 				       account_dn,
-				       domain_dn,
 				       &new_password,
 				       NULL,
 				       old_password_checked,
