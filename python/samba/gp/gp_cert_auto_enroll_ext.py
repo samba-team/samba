@@ -359,7 +359,8 @@ class gp_cert_auto_enroll_ext(gp_pol_ext, gp_applier):
         # If the policy has changed, unapply, then apply new policy
         old_val = self.cache_get_attribute_value(guid, attribute)
         old_data = json.loads(old_val) if old_val is not None else {}
-        templates = ['%s.%s' % (ca['name'], t.decode()) for t in get_supported_templates(ca['hostname'])]
+        templates = ['%s.%s' % (ca['name'], t.decode()) for t in get_supported_templates(ca['hostname'])] \
+            if old_val is not None else []
         new_data = { 'templates': templates, **ca }
         if changed(new_data, old_data) or self.cache_get_apply_state() == GPOSTATE.ENFORCE:
             self.unapply(guid, attribute, old_val)
