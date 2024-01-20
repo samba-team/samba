@@ -747,7 +747,9 @@ const char *readdirname(DIR *p)
  of a path matches a (possibly wildcarded) entry in a namelist.
 ********************************************************************/
 
-bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensitive)
+bool is_in_path(const char *name,
+		struct name_compare_entry *namelist,
+		bool case_sensitive)
 {
 	const char *last_component;
 
@@ -800,7 +802,7 @@ bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensit
  if possible.
 ********************************************************************/
 
-void set_namearray(name_compare_entry **ppname_array, const char *namelist_in)
+void set_namearray(struct name_compare_entry **ppname_array, const char *namelist_in)
 {
 	char *name_end;
 	char *namelist;
@@ -855,7 +857,7 @@ void set_namearray(name_compare_entry **ppname_array, const char *namelist_in)
 		return;
 	}
 
-	if(( (*ppname_array) = SMB_MALLOC_ARRAY(name_compare_entry, num_entries + 1)) == NULL) {
+	if(( (*ppname_array) = SMB_MALLOC_ARRAY(struct name_compare_entry, num_entries + 1)) == NULL) {
 		DEBUG(0,("set_namearray: malloc fail\n"));
 		talloc_free(namelist);
 		return;

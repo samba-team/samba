@@ -24,7 +24,7 @@
 bool run_str_match_mswild(int dummy)
 {
 	const char *namelist = "/abc*.txt/xyz*.dat/a0123456789Z/";
-	name_compare_entry *name_entries = NULL;
+	struct name_compare_entry *name_entries = NULL;
 	struct samba_path_matching *pmcs = NULL;
 	struct samba_path_matching *pmci = NULL;
 	const struct str_match_mswild_name {

@@ -315,9 +315,12 @@ gid_t nametogid(const char *name);
 void smb_panic_s3(const char *why);
 void log_panic_action(const char *msg);
 const char *readdirname(DIR *p);
-bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensitive);
-void set_namearray(name_compare_entry **ppname_array, const char *namelist);
-void free_namearray(name_compare_entry *name_array);
+bool is_in_path(const char *name,
+		struct name_compare_entry *namelist,
+		bool case_sensitive);
+void set_namearray(struct name_compare_entry **ppname_array,
+		   const char *namelist);
+void free_namearray(struct name_compare_entry *name_array);
 bool fcntl_lock(int fd, int op, off_t offset, off_t count, int type);
 bool fcntl_getlock(int fd, int op, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid);
 int map_process_lock_to_ofd_lock(int op);

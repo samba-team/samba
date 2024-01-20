@@ -702,10 +702,10 @@ struct vuid_cache {
 	struct vuid_cache_entry array[VUID_CACHE_SIZE];
 };
 
-typedef struct {
+struct name_compare_entry {
 	char *name;
 	bool is_wild;
-} name_compare_entry;
+};
 
 struct share_params {
 	int service;
@@ -767,10 +767,10 @@ typedef struct connection_struct {
 	   Used to ensure unique FileIndex returns. */
 	SMB_DEV_T base_share_dev;
 
-	name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
-	name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
-	name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */
-	name_compare_entry *aio_write_behind_list; /* Per-share list of files to use aio write behind on. */
+	struct name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
+	struct name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
+	struct name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */
+	struct name_compare_entry *aio_write_behind_list; /* Per-share list of files to use aio write behind on. */
 	struct trans_state *pending_trans;
 
 	struct rpc_pipe_client *spoolss_pipe;

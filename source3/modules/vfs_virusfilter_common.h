@@ -78,10 +78,10 @@ struct virusfilter_config {
 	size_t				min_file_size;
 
 	/* Exclude files */
-	name_compare_entry		*exclude_files;
+	struct name_compare_entry	*exclude_files;
 
 	/* Infected files */
-	name_compare_entry		*infected_files;
+	struct name_compare_entry	*infected_files;
 
 	/* Scan result cache */
 	struct virusfilter_cache	*cache;

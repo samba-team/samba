@@ -26,7 +26,7 @@
  Routine to free a namearray.
 ****************************************************************************/
 
-void free_namearray(name_compare_entry *name_array)
+void free_namearray(struct name_compare_entry *name_array)
 {
 	int i;
 
