@@ -703,7 +703,7 @@ struct vuid_cache {
 };
 
 struct name_compare_entry {
-	char *name;
+	const char *name;
 	bool is_wild;
 };
 

@@ -44,6 +44,7 @@
 #include "lib/dbwrap/dbwrap_ctdb.h"
 #include "lib/gencache.h"
 #include "lib/util/string_wrappers.h"
+#include "lib/util/strv.h"
 
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
@@ -802,106 +803,55 @@ bool is_in_path(const char *name,
  if possible.
 ********************************************************************/
 
-void set_namearray(struct name_compare_entry **ppname_array, const char *namelist_in)
+void set_namearray(TALLOC_CTX *mem_ctx,
+		   const char *namelist_in,
+		   struct name_compare_entry **_name_array)
 {
-	char *name_end;
-	char *namelist;
-	char *namelist_end;
-	char *nameptr;
-	int num_entries = 0;
-	int i;
+	struct name_compare_entry *name_array = NULL;
+	struct name_compare_entry *e = NULL;
+	char *namelist = NULL;
+	const char *p = NULL;
+	size_t num_entries;
 
-	(*ppname_array) = NULL;
+	*_name_array = NULL;
 
-	if((namelist_in == NULL ) || ((namelist_in != NULL) && (*namelist_in == '\0')))
+	if ((namelist_in == NULL) || (namelist_in[0] == '\0')) {
 		return;
+	}
 
-	namelist = talloc_strdup(talloc_tos(), namelist_in);
+	namelist = path_to_strv(mem_ctx, namelist_in);
 	if (namelist == NULL) {
-		DEBUG(0,("set_namearray: talloc fail\n"));
+		DBG_ERR("path_to_strv failed\n");
 		return;
 	}
-	nameptr = namelist;
 
-	namelist_end = &namelist[strlen(namelist)];
+	num_entries = strv_count(namelist);
 
-	/* We need to make two passes over the string. The
-		first to count the number of elements, the second
-		to split it.
-	*/
+	name_array = talloc_zero_array(mem_ctx,
+				       struct name_compare_entry,
+				       num_entries + 1);
+	if (name_array == NULL) {
+		DBG_ERR("talloc failed\n");
+		TALLOC_FREE(namelist);
+		return;
+	}
 
-	while(nameptr <= namelist_end) {
-		if ( *nameptr == '/' ) {
+	namelist = talloc_reparent(mem_ctx, name_array, namelist);
+
+	e = &name_array[0];
+
+	while ((p = strv_next(namelist, p)) != NULL) {
+		if (*p == '\0') {
 			/* cope with multiple (useless) /s) */
-			nameptr++;
 			continue;
 		}
-		/* anything left? */
-		if ( *nameptr == '\0' )
-			break;
 
-		/* find the next '/' or consume remaining */
-		name_end = strchr_m(nameptr, '/');
-		if (name_end == NULL) {
-			/* Point nameptr at the terminating '\0' */
-			nameptr += strlen(nameptr);
-		} else {
-			/* next segment please */
-			nameptr = name_end + 1;
-		}
-		num_entries++;
+		e->name = p;
+		e->is_wild = ms_has_wild(e->name);
+		e++;
 	}
 
-	if(num_entries == 0) {
-		talloc_free(namelist);
-		return;
-	}
-
-	if(( (*ppname_array) = SMB_MALLOC_ARRAY(struct name_compare_entry, num_entries + 1)) == NULL) {
-		DEBUG(0,("set_namearray: malloc fail\n"));
-		talloc_free(namelist);
-		return;
-	}
-
-	/* Now copy out the names */
-	nameptr = namelist;
-	i = 0;
-	while(nameptr <= namelist_end) {
-		if ( *nameptr == '/' ) {
-			/* cope with multiple (useless) /s) */
-			nameptr++;
-			continue;
-		}
-		/* anything left? */
-		if ( *nameptr == '\0' )
-			break;
-
-		/* find the next '/' or consume remaining */
-		name_end = strchr_m(nameptr, '/');
-		if (name_end != NULL) {
-			*name_end = '\0';
-		}
-
-		(*ppname_array)[i].is_wild = ms_has_wild(nameptr);
-		if(((*ppname_array)[i].name = SMB_STRDUP(nameptr)) == NULL) {
-			DEBUG(0,("set_namearray: malloc fail (1)\n"));
-			talloc_free(namelist);
-			return;
-		}
-
-		if (name_end == NULL) {
-			/* Point nameptr at the terminating '\0' */
-			nameptr += strlen(nameptr);
-		} else {
-			/* next segment please */
-			nameptr = name_end + 1;
-		}
-		i++;
-	}
-
-	(*ppname_array)[i].name = NULL;
-
-	talloc_free(namelist);
+	*_name_array = name_array;
 	return;
 }
 

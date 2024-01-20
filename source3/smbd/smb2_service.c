@@ -753,14 +753,18 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 
 	/* Add veto/hide lists */
 	if (!IS_IPC(conn) && !IS_PRINT(conn)) {
-		set_namearray( &conn->veto_list,
-			       lp_veto_files(talloc_tos(), lp_sub, snum));
-		set_namearray( &conn->hide_list,
-			       lp_hide_files(talloc_tos(), lp_sub, snum));
-		set_namearray( &conn->veto_oplock_list,
-			       lp_veto_oplock_files(talloc_tos(), lp_sub, snum));
-		set_namearray( &conn->aio_write_behind_list,
-				lp_aio_write_behind(talloc_tos(), lp_sub, snum));
+		set_namearray(conn,
+			      lp_veto_oplock_files(talloc_tos(), lp_sub, snum),
+			      &conn->veto_oplock_list);
+		set_namearray(conn,
+			      lp_aio_write_behind(talloc_tos(), lp_sub, snum),
+			      &conn->aio_write_behind_list);
+		set_namearray(conn,
+			      lp_veto_oplock_files(talloc_tos(), lp_sub, snum),
+			      &conn->veto_oplock_list);
+		set_namearray(conn,
+			      lp_aio_write_behind(talloc_tos(), lp_sub, snum),
+			      &conn->aio_write_behind_list);
 	}
 	smb_fname_cpath = synthetic_smb_fname(talloc_tos(),
 					conn->connectpath,

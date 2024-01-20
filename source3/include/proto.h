@@ -318,9 +318,9 @@ const char *readdirname(DIR *p);
 bool is_in_path(const char *name,
 		struct name_compare_entry *namelist,
 		bool case_sensitive);
-void set_namearray(struct name_compare_entry **ppname_array,
-		   const char *namelist);
-void free_namearray(struct name_compare_entry *name_array);
+void set_namearray(TALLOC_CTX *mem_ctx,
+		   const char *namelist,
+		   struct name_compare_entry **_name_array);
 bool fcntl_lock(int fd, int op, off_t offset, off_t count, int type);
 bool fcntl_getlock(int fd, int op, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid);
 int map_process_lock_to_ofd_lock(int op);

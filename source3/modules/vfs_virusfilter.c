@@ -255,13 +255,17 @@ static int virusfilter_vfs_connect(
 	exclude_files = lp_parm_const_string(
 		snum, "virusfilter", "exclude files", NULL);
 	if (exclude_files != NULL) {
-		set_namearray(&config->exclude_files, exclude_files);
+		set_namearray(config,
+			      exclude_files,
+			      &config->exclude_files);
 	}
 
 	infected_files = lp_parm_const_string(
 		snum, "virusfilter", "infected files", NULL);
 	if (infected_files != NULL) {
-		set_namearray(&config->infected_files, infected_files);
+		set_namearray(config,
+			      infected_files,
+			      &config->infected_files);
 	}
 
 	config->cache_entry_limit = lp_parm_int(
@@ -579,7 +583,6 @@ static void virusfilter_vfs_disconnect(struct vfs_handle_struct *handle)
 		config->backend->fns->disconnect(handle);
 	}
 
-	free_namearray(config->exclude_files);
 	virusfilter_io_disconnect(config->io_h);
 
 	SMB_VFS_NEXT_DISCONNECT(handle);

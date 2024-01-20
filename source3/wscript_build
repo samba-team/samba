@@ -990,7 +990,6 @@ bld.SAMBA3_LIBRARY('samba3-util',
                           lib/util_str.c
                           lib/adt_tree.c
                           lib/util_malloc.c
-                          lib/namearray.c
                           lib/file_id.c
                           lib/cbuf.c
                           lib/per_thread_cwd.c

@@ -250,11 +250,6 @@ static void conn_free_internal(connection_struct *conn)
 		SAFE_FREE(state->data);
 	}
 
-	free_namearray(conn->veto_list);
-	free_namearray(conn->hide_list);
-	free_namearray(conn->veto_oplock_list);
-	free_namearray(conn->aio_write_behind_list);
-
 	ZERO_STRUCTP(conn);
 }
 
