@@ -209,12 +209,10 @@ def getca(ca, url, trust_dir):
         r = requests.get(url=url, params={'operation': 'GetCACert',
                                           'message': 'CAIdentifier'})
     except requests.exceptions.ConnectionError:
-        log.warn('Failed to establish a new connection')
+        log.warn('Could not connect to Network Device Enrollment Service.')
         r = None
     if r is None or r.content == b'' or r.headers['Content-Type'] == 'text/html':
-        log.warn('Failed to fetch the root certificate chain.')
-        log.warn('The Network Device Enrollment Service is either not' +
-                 ' installed or not configured.')
+        log.warn('Unable to fetch root certificates (requires NDES).')
         if 'cACertificate' in ca:
             log.warn('Installing the server certificate only.')
             der_certificate = base64.b64decode(ca['cACertificate'])
