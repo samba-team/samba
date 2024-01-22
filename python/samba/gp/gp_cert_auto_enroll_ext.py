@@ -274,6 +274,9 @@ def cert_enroll(ca, ldb, trust_dir, private_dir, auth='Kerberos'):
     """Install the root certificate chain."""
     data = dict({'files': [], 'templates': []}, **ca)
     url = 'http://%s/CertSrv/mscep/mscep.dll/pkiclient.exe?' % ca['hostname']
+
+    log.info("Try to get root or server certificates")
+
     root_certs = getca(ca, url, trust_dir)
     data['files'].extend(root_certs)
     global_trust_dir = find_global_trust_dir()
@@ -283,6 +286,7 @@ def cert_enroll(ca, ldb, trust_dir, private_dir, auth='Kerberos'):
         try:
             os.symlink(src, dst)
             data['files'].append(dst)
+            log.info("Created symlink: %s -> %s" % (src, dst))
         except PermissionError:
             log.warn('Failed to symlink root certificate to the'
                      ' admin trust anchors')
@@ -295,9 +299,14 @@ def cert_enroll(ca, ldb, trust_dir, private_dir, auth='Kerberos'):
             # already exists. Ignore the FileExistsError. Preserve the
             # existing symlink in the unapply data.
             data['files'].append(dst)
+
     update = update_ca_command()
+    log.info("Running %s" % (update))
     if update is not None:
-        Popen([update]).wait()
+        ret = Popen([update]).wait()
+        if ret != 0:
+            log.error('Failed to run %s' % (update))
+
     # Setup Certificate Auto Enrollment
     getcert = which('getcert')
     cepces_submit = find_cepces_submit()
