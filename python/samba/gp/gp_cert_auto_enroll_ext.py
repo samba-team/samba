@@ -347,7 +347,9 @@ def cert_enroll(ca, ldb, trust_dir, private_dir, auth='Kerberos'):
             data['files'].extend([keyfile, certfile])
             data['templates'].append(nickname)
         if update is not None:
-            Popen([update]).wait()
+            ret = Popen([update]).wait()
+            if ret != 0:
+                log.error('Failed to run %s' % (update))
     else:
         log.warn('certmonger and cepces must be installed for ' +
                  'certificate auto enrollment to work')
