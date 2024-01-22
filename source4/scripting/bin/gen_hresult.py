@@ -128,7 +128,7 @@ def generateSourceFile(out_file, errors):
     out_file.write("		result = get_friendly_werror_msg(wErr);\n")
     out_file.write("	}\n")
     out_file.write("	return result;\n")
-    out_file.write("};\n")
+    out_file.write("}\n")
     out_file.write("\n")
     out_file.write("const char *hresult_errstr(HRESULT err_code)\n")
     out_file.write("{\n")
@@ -142,7 +142,7 @@ def generateSourceFile(out_file, errors):
     out_file.write("	}\n")
     out_file.write("	snprintf(msg, sizeof(msg), \"HRES code 0x%08x\", HRES_ERROR_V(err_code));\n")
     out_file.write("	return msg;\n")
-    out_file.write("};\n")
+    out_file.write("}\n")
 
 def generatePythonFile(out_file, errors):
     out_file.write("/*\n")
