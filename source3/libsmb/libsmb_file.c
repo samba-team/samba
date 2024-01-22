@@ -470,7 +470,7 @@ SMBC_getatr(SMBCCTX * context,
 	mode_t mode = S_IFREG;
 	struct cli_credentials *creds = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_ACCESS_DENIED;
 
 	if (!context || !context->internal->initialized) {
 		TALLOC_FREE(frame);

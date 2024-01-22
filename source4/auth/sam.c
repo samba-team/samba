@@ -1581,7 +1581,7 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 	NTTIME sync_interval_nt = 0;
 	bool am_rodc = false;
 	bool txn_active = false;
-	bool need_db_reread;
+	bool need_db_reread = false;
 
 	mem_ctx = talloc_new(msg);
 	if (mem_ctx == NULL) {
