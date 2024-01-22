@@ -338,8 +338,12 @@ def cert_enroll(ca, ldb, trust_dir, private_dir, auth='Kerberos'):
             out, err = p.communicate()
             log.debug(out.decode())
             if p.returncode != 0:
-                data = { 'Error': err.decode(), 'Certificate': nickname }
-                log.error('Failed to request certificate', data)
+                if p.returncode == 2:
+                    log.info('The template [%s] already exists' % (nickname))
+                else:
+                    data = {'Error': err.decode(), 'Certificate': nickname}
+                    log.error('Failed to request certificate', data)
+
             data['files'].extend([keyfile, certfile])
             data['templates'].append(nickname)
         if update is not None:
