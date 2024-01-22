@@ -185,7 +185,7 @@ def find_cepces_submit():
 
 def get_supported_templates(server):
     cepces_submit = find_cepces_submit()
-    if not cepces_submit or not os.path.exists(cepces_submit):
+    if not cepces_submit:
         log.error('Failed to find cepces-submit')
         return []
 
@@ -301,7 +301,7 @@ def cert_enroll(ca, ldb, trust_dir, private_dir, auth='Kerberos'):
     # Setup Certificate Auto Enrollment
     getcert = which('getcert')
     cepces_submit = find_cepces_submit()
-    if getcert is not None and os.path.exists(cepces_submit):
+    if getcert is not None and cepces_submit is not None:
         p = Popen([getcert, 'add-ca', '-c', ca['name'], '-e',
                   '%s --server=%s --auth=%s' % (cepces_submit,
                   ca['hostname'], auth)],
