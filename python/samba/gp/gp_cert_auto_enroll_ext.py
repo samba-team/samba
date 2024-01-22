@@ -318,8 +318,12 @@ def cert_enroll(ca, ldb, trust_dir, private_dir, auth='Kerberos'):
         out, err = p.communicate()
         log.debug(out.decode())
         if p.returncode != 0:
-            data = { 'Error': err.decode(), 'CA': ca['name'] }
-            log.error('Failed to add Certificate Authority', data)
+            if p.returncode == 2:
+                log.info('The CA [%s] already exists' % ca['name'])
+            else:
+                data = {'Error': err.decode(), 'CA': ca['name']}
+                log.error('Failed to add Certificate Authority', data)
+
         supported_templates = get_supported_templates(ca['hostname'])
         for template in supported_templates:
             attrs = fetch_template_attrs(ldb, template)
