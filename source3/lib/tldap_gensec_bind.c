@@ -59,6 +59,7 @@ struct tevent_req *tldap_gensec_bind_send(
 {
 	struct tevent_req *req = NULL;
 	struct tldap_gensec_bind_state *state = NULL;
+	const DATA_BLOB *tls_cb = NULL;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -121,6 +122,37 @@ struct tevent_req *tldap_gensec_bind_send(
 						     state->target_principal);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("gensec_set_target_principal failed: %s\n",
+				  nt_errstr(status));
+			tevent_req_ldap_error(req, TLDAP_OPERATIONS_ERROR);
+			return tevent_req_post(req, ev);
+		}
+	}
+
+	if (tldap_has_tls_tstream(state->ctx)) {
+		if (gensec_features & (GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL)) {
+			DBG_WARNING("sign or seal not allowed over tls\n");
+			tevent_req_ldap_error(req, TLDAP_OPERATIONS_ERROR);
+			return tevent_req_post(req, ev);
+		}
+
+		tls_cb = tldap_tls_channel_bindings(state->ctx);
+	}
+
+	if (tls_cb != NULL) {
+		uint32_t initiator_addrtype = 0;
+		const DATA_BLOB *initiator_address = NULL;
+		uint32_t acceptor_addrtype = 0;
+		const DATA_BLOB *acceptor_address = NULL;
+		const DATA_BLOB *application_data = tls_cb;
+
+		status = gensec_set_channel_bindings(state->gensec,
+						     initiator_addrtype,
+						     initiator_address,
+						     acceptor_addrtype,
+						     acceptor_address,
+						     application_data);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("gensec_set_channel_bindings: %s\n",
 				  nt_errstr(status));
 			tevent_req_ldap_error(req, TLDAP_OPERATIONS_ERROR);
 			return tevent_req_post(req, ev);

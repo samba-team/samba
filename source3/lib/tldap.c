@@ -27,6 +27,8 @@
 #include "../lib/util/asn1.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/util/tevent_unix.h"
+#include "../libcli/util/ntstatus.h"
+#include "../source4/lib/tls/tls.h"
 
 static TLDAPRC tldap_simple_recv(struct tevent_req *req);
 static bool tldap_msg_set_pending(struct tevent_req *req);
@@ -84,6 +86,8 @@ struct tldap_ctx_attribute {
 struct tldap_context {
 	int ld_version;
 	struct tstream_context *plain;
+	bool starttls_needed;
+	struct tstream_context *tls;
 	struct tstream_context *gensec;
 	struct tstream_context *active;
 	int msgid;
@@ -224,6 +228,48 @@ static size_t tldap_pending_reqs(struct tldap_context *ld)
 struct tstream_context *tldap_get_plain_tstream(struct tldap_context *ld)
 {
 	return ld->plain;
+}
+
+void tldap_set_starttls_needed(struct tldap_context *ld, bool needed)
+{
+	if (ld == NULL) {
+		return;
+	}
+
+	ld->starttls_needed = needed;
+}
+
+bool tldap_get_starttls_needed(struct tldap_context *ld)
+{
+	if (ld == NULL) {
+		return false;
+	}
+
+	return ld->starttls_needed;
+}
+
+bool tldap_has_tls_tstream(struct tldap_context *ld)
+{
+	return ld->tls != NULL && ld->active == ld->tls;
+}
+
+const DATA_BLOB *tldap_tls_channel_bindings(struct tldap_context *ld)
+{
+	return tstream_tls_channel_bindings(ld->tls);
+}
+
+void tldap_set_tls_tstream(struct tldap_context *ld,
+			   struct tstream_context **stream)
+{
+	TALLOC_FREE(ld->tls);
+	if (stream != NULL) {
+		ld->tls = talloc_move(ld, stream);
+	}
+	if (ld->tls != NULL) {
+		ld->active = ld->tls;
+	} else {
+		ld->active = ld->plain;
+	}
 }
 
 bool tldap_has_gensec_tstream(struct tldap_context *ld)
@@ -468,6 +514,7 @@ static void _tldap_context_disconnect(struct tldap_context *ld,
 	TALLOC_FREE(ld->read_req);
 	ld->active = NULL;
 	TALLOC_FREE(ld->gensec);
+	TALLOC_FREE(ld->tls);
 	TALLOC_FREE(ld->plain);
 
 	while (talloc_array_length(ld->pending) > 0) {

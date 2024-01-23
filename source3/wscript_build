@@ -98,11 +98,13 @@ bld.SAMBA3_SUBSYSTEM('TLDAP',
                            lib/tldap.c
                            lib/tldap_util.c
                            lib/tldap_gensec_bind.c
+                           lib/tldap_tls_connect.c
                            ''',
                     deps='''
                          asn1util
                          LIBTSOCKET
                          samba3util
+                         LIBTLS
                          ''')
 
 bld.SAMBA3_BINARY('test_tldap',
@@ -111,6 +113,7 @@ bld.SAMBA3_BINARY('test_tldap',
                        asn1util
                        LIBTSOCKET
                        samba3util
+                       LIBTLS
                        smbconf
                        cmocka
                        ''',
