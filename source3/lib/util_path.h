@@ -51,5 +51,6 @@ bool subdir_of(const char *parent,
 	       size_t parent_len,
 	       const char *subdir,
 	       const char **_relative);
+char *path_to_strv(TALLOC_CTX *mem_ctx, const char *path);
 
 #endif

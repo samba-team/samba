@@ -672,17 +672,6 @@ NTSTATUS open_stream_pathref_fsp(
 	return status;
 }
 
-static char *path_to_strv(TALLOC_CTX *mem_ctx, const char *path)
-{
-	char *result = talloc_strdup(mem_ctx, path);
-
-	if (result == NULL) {
-		return NULL;
-	}
-	string_replace(result, '/', '\0');
-	return result;
-}
-
 NTSTATUS readlink_talloc(
 	TALLOC_CTX *mem_ctx,
 	struct files_struct *dirfsp,

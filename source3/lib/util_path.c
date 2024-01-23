@@ -348,3 +348,14 @@ bool subdir_of(const char *parent,
 
 	return false;
 }
+
+char *path_to_strv(TALLOC_CTX *mem_ctx, const char *path)
+{
+	char *result = talloc_strdup(mem_ctx, path);
+
+	if (result == NULL) {
+		return NULL;
+	}
+	string_replace(result, '/', '\0');
+	return result;
+}
