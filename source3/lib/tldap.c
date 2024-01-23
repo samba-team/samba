@@ -118,6 +118,10 @@ struct tldap_message {
 	char *res_diagnosticmessage;
 	char *res_referral;
 	DATA_BLOB res_serverSaslCreds;
+	struct {
+		char *oid;
+		DATA_BLOB blob;
+	} res_extended;
 	struct tldap_control *res_sctrls;
 
 	/* Controls sent by the server */
@@ -2533,6 +2537,201 @@ TLDAPRC tldap_delete(struct tldap_context *ld, const char *dn,
 		goto fail;
 	}
 	rc = tldap_delete_recv(req);
+	tldap_save_msg(ld, req);
+ fail:
+	TALLOC_FREE(frame);
+	return rc;
+}
+
+static void tldap_extended_done(struct tevent_req *subreq);
+
+struct tevent_req *tldap_extended_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       struct tldap_context *ld,
+				       const char *in_oid,
+				       const DATA_BLOB *in_blob,
+				       struct tldap_control *sctrls,
+				       int num_sctrls,
+				       struct tldap_control *cctrls,
+				       int num_cctrls)
+{
+	struct tevent_req *req, *subreq;
+	struct tldap_req_state *state;
+
+	req = tldap_req_create(mem_ctx, ld, &state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (!asn1_push_tag(state->out, TLDAP_REQ_EXTENDED)) goto err;
+
+	if (!asn1_push_tag(state->out, ASN1_CONTEXT_SIMPLE(0))) goto err;
+	if (!asn1_write(state->out, in_oid, strlen(in_oid))) goto err;
+	if (!asn1_pop_tag(state->out)) goto err;
+
+	if (in_blob != NULL) {
+		if (!asn1_push_tag(state->out, ASN1_CONTEXT_SIMPLE(1))) goto err;
+		if (!asn1_write_OctetString(state->out, in_blob->data, in_blob->length)) goto err;
+		if (!asn1_pop_tag(state->out)) goto err;
+	}
+
+	if (!asn1_pop_tag(state->out)) goto err;
+
+	subreq = tldap_msg_send(state, ev, ld, state->id, state->out,
+				sctrls, num_sctrls);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, tldap_extended_done, req);
+	return req;
+
+  err:
+
+	tevent_req_ldap_error(req, TLDAP_ENCODING_ERROR);
+	return tevent_req_post(req, ev);
+}
+
+static void tldap_extended_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct tldap_req_state *state = tevent_req_data(
+		req, struct tldap_req_state);
+	TLDAPRC rc;
+	bool ok;
+
+	rc = tldap_msg_recv(subreq, state, &state->result);
+	TALLOC_FREE(subreq);
+	if (tevent_req_ldap_error(req, rc)) {
+		return;
+	}
+	if (state->result->type != TLDAP_RES_EXTENDED) {
+		tevent_req_ldap_error(req, TLDAP_PROTOCOL_ERROR);
+		return;
+	}
+
+	ok = asn1_start_tag(state->result->data, TLDAP_RES_EXTENDED);
+	ok &= tldap_decode_response(state);
+
+	if (asn1_peek_tag(state->result->data, ASN1_CONTEXT_SIMPLE(10))) {
+		ok &= asn1_start_tag(state->result->data,
+				     ASN1_CONTEXT_SIMPLE(10));
+		if (!ok) {
+			goto decode_error;
+		}
+
+		ok &= asn1_read_LDAPString(state->result->data,
+					   state->result,
+					   &state->result->res_extended.oid);
+
+		ok &= asn1_end_tag(state->result->data);
+	}
+
+	if (asn1_peek_tag(state->result->data, ASN1_CONTEXT_SIMPLE(11))) {
+		int len;
+
+		ok &= asn1_start_tag(state->result->data,
+				     ASN1_CONTEXT_SIMPLE(11));
+		if (!ok) {
+			goto decode_error;
+		}
+
+		len = asn1_tag_remaining(state->result->data);
+		if (len == -1) {
+			goto decode_error;
+		}
+
+		state->result->res_extended.blob =
+			data_blob_talloc(state->result, NULL, len);
+		if (state->result->res_extended.blob.data == NULL) {
+			goto decode_error;
+		}
+
+		ok = asn1_read(state->result->data,
+			       state->result->res_extended.blob.data,
+			       state->result->res_extended.blob.length);
+
+		ok &= asn1_end_tag(state->result->data);
+	}
+
+	ok &= asn1_end_tag(state->result->data);
+
+	if (!ok) {
+		goto decode_error;
+	}
+
+	if (!TLDAP_RC_IS_SUCCESS(state->result->lderr)) {
+		tevent_req_ldap_error(req, state->result->lderr);
+		return;
+	}
+	tevent_req_done(req);
+	return;
+
+decode_error:
+	tevent_req_ldap_error(req, TLDAP_DECODING_ERROR);
+	return;
+}
+
+TLDAPRC tldap_extended_recv(struct tevent_req *req,
+			    TALLOC_CTX *mem_ctx,
+			    char **out_oid,
+			    DATA_BLOB *out_blob)
+{
+	struct tldap_req_state *state = tevent_req_data(
+		req, struct tldap_req_state);
+	TLDAPRC rc;
+
+	if (tevent_req_is_ldap_error(req, &rc)) {
+		return rc;
+	}
+
+	if (out_oid != NULL) {
+		*out_oid = talloc_move(mem_ctx,
+				&state->result->res_extended.oid);
+	}
+
+	if (out_blob != NULL) {
+		out_blob->data = talloc_move(mem_ctx,
+				&state->result->res_extended.blob.data);
+		out_blob->length =
+				state->result->res_extended.blob.length;
+	}
+
+	return state->result->lderr;
+}
+
+TLDAPRC tldap_extended(struct tldap_context *ld,
+			const char *in_oid,
+			const DATA_BLOB *in_blob,
+			struct tldap_control *sctrls,
+			int num_sctrls,
+			struct tldap_control *cctrls,
+			int num_cctrls,
+			TALLOC_CTX *mem_ctx,
+			char **out_oid,
+			DATA_BLOB *out_blob)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	TLDAPRC rc = TLDAP_NO_MEMORY;
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = tldap_extended_send(frame, ev, ld,
+				  in_oid, in_blob,
+				  sctrls, num_sctrls,
+				  cctrls, num_cctrls);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll(req, ev)) {
+		rc = TLDAP_OPERATIONS_ERROR;
+		goto fail;
+	}
+	rc = tldap_extended_recv(req, mem_ctx, out_oid, out_blob);
 	tldap_save_msg(ld, req);
  fail:
 	TALLOC_FREE(frame);

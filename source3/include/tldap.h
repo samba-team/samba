@@ -251,6 +251,30 @@ TLDAPRC tldap_delete(struct tldap_context *ld, const char *dn,
 		     struct tldap_control *sctrls, int num_sctrls,
 		     struct tldap_control *cctrls, int num_cctrls);
 
+struct tevent_req *tldap_extended_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       struct tldap_context *ld,
+				       const char *in_oid,
+				       const DATA_BLOB *in_blob,
+				       struct tldap_control *sctrls,
+				       int num_sctrls,
+				       struct tldap_control *cctrls,
+				       int num_cctrls);
+TLDAPRC tldap_extended_recv(struct tevent_req *req,
+			    TALLOC_CTX *mem_ctx,
+			    char **out_oid,
+			    DATA_BLOB *out_blob);
+TLDAPRC tldap_extended(struct tldap_context *ld,
+			const char *in_oid,
+			const DATA_BLOB *in_blob,
+			struct tldap_control *sctrls,
+			int num_sctrls,
+			struct tldap_control *cctrls,
+			int num_cctrls,
+			TALLOC_CTX *mem_ctx,
+			char **out_oid,
+			DATA_BLOB *out_blob);
+
 int tldap_msg_id(const struct tldap_message *msg);
 int tldap_msg_type(const struct tldap_message *msg);
 const char *tldap_msg_matcheddn(struct tldap_message *msg);
