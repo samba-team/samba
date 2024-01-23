@@ -50,7 +50,7 @@ static void tldap_gensec_update_next(struct tevent_req *req);
 static void tldap_gensec_update_done(struct tevent_req *subreq);
 static void tldap_gensec_bind_done(struct tevent_req *subreq);
 
-static struct tevent_req *tldap_gensec_bind_send(
+struct tevent_req *tldap_gensec_bind_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	struct tldap_context *ctx, struct cli_credentials *creds,
 	const char *target_service, const char *target_hostname,
@@ -238,7 +238,7 @@ static void tldap_gensec_bind_done(struct tevent_req *subreq)
 	tldap_gensec_update_next(req);
 }
 
-static TLDAPRC tldap_gensec_bind_recv(struct tevent_req *req)
+TLDAPRC tldap_gensec_bind_recv(struct tevent_req *req)
 {
 	struct tldap_gensec_bind_state *state = tevent_req_data(
 		req, struct tldap_gensec_bind_state);

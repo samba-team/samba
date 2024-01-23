@@ -20,10 +20,18 @@
 #ifndef __TLDAP_GENSEC_BIND_H__
 #define __TLDAP_GENSEC_BIND_H__
 
+struct tevent_context;
 struct tldap_context;
 struct cli_credentials;
 struct loadparm_context;
 
+struct tevent_req *tldap_gensec_bind_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct tldap_context *ctx, struct cli_credentials *creds,
+	const char *target_service, const char *target_hostname,
+	const char *target_principal, struct loadparm_context *lp_ctx,
+	uint32_t gensec_features);
+TLDAPRC tldap_gensec_bind_recv(struct tevent_req *req);
 TLDAPRC tldap_gensec_bind(
 	struct tldap_context *ctx, struct cli_credentials *creds,
 	const char *target_service, const char *target_hostname,
