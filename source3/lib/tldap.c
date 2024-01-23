@@ -83,7 +83,9 @@ struct tldap_ctx_attribute {
 
 struct tldap_context {
 	int ld_version;
-	struct tstream_context *conn;
+	struct tstream_context *plain;
+	struct tstream_context *gensec;
+	struct tstream_context *active;
 	int msgid;
 	struct tevent_queue *outgoing;
 	struct tevent_req **pending;
@@ -174,11 +176,12 @@ struct tldap_context *tldap_context_create(TALLOC_CTX *mem_ctx, int fd)
 	if (ctx == NULL) {
 		return NULL;
 	}
-	ret = tstream_bsd_existing_socket(ctx, fd, &ctx->conn);
+	ret = tstream_bsd_existing_socket(ctx, fd, &ctx->plain);
 	if (ret == -1) {
 		TALLOC_FREE(ctx);
 		return NULL;
 	}
+	ctx->active = ctx->plain;
 	ctx->msgid = 1;
 	ctx->ld_version = 3;
 	ctx->outgoing = tevent_queue_create(ctx, "tldap_outgoing");
@@ -197,11 +200,11 @@ bool tldap_connection_ok(struct tldap_context *ld)
 		return false;
 	}
 
-	if (ld->conn == NULL) {
+	if (ld->active == NULL) {
 		return false;
 	}
 
-	ret = tstream_pending_bytes(ld->conn);
+	ret = tstream_pending_bytes(ld->active);
 	if (ret == -1) {
 		return false;
 	}
@@ -214,15 +217,28 @@ static size_t tldap_pending_reqs(struct tldap_context *ld)
 	return talloc_array_length(ld->pending);
 }
 
-struct tstream_context *tldap_get_tstream(struct tldap_context *ld)
+struct tstream_context *tldap_get_plain_tstream(struct tldap_context *ld)
 {
-	return ld->conn;
+	return ld->plain;
 }
 
-void tldap_set_tstream(struct tldap_context *ld,
-		       struct tstream_context *stream)
+bool tldap_has_gensec_tstream(struct tldap_context *ld)
 {
-	ld->conn = stream;
+	return ld->gensec != NULL && ld->active == ld->gensec;
+}
+
+void tldap_set_gensec_tstream(struct tldap_context *ld,
+			      struct tstream_context **stream)
+{
+	TALLOC_FREE(ld->gensec);
+	if (stream != NULL) {
+		ld->gensec = talloc_move(ld, stream);
+	}
+	if (ld->gensec != NULL) {
+		ld->active = ld->gensec;
+	} else {
+		ld->active = ld->plain;
+	}
 }
 
 static struct tldap_ctx_attribute *tldap_context_findattr(
@@ -429,7 +445,7 @@ static void _tldap_context_disconnect(struct tldap_context *ld,
 				      TLDAPRC status,
 				      const char *location)
 {
-	if (ld->conn == NULL) {
+	if (ld->active == NULL) {
 		/*
 		 * We don't need to tldap_debug() on
 		 * a potential 2nd run.
@@ -446,7 +462,9 @@ static void _tldap_context_disconnect(struct tldap_context *ld,
 		    location);
 	tevent_queue_stop(ld->outgoing);
 	TALLOC_FREE(ld->read_req);
-	TALLOC_FREE(ld->conn);
+	ld->active = NULL;
+	TALLOC_FREE(ld->gensec);
+	TALLOC_FREE(ld->plain);
 
 	while (talloc_array_length(ld->pending) > 0) {
 		struct tevent_req *req = NULL;
@@ -515,7 +533,7 @@ static struct tevent_req *tldap_msg_send(TALLOC_CTX *mem_ctx,
 	state->iov.iov_base = (void *)blob.data;
 	state->iov.iov_len = blob.length;
 
-	subreq = tstream_writev_queue_send(state, ev, ld->conn, ld->outgoing,
+	subreq = tstream_writev_queue_send(state, ev, ld->active, ld->outgoing,
 					   &state->iov, 1);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -602,7 +620,7 @@ static bool tldap_msg_set_pending(struct tevent_req *req)
 	 * We're the first one, add the read_ldap request that waits for the
 	 * answer from the server
 	 */
-	ld->read_req = read_ldap_send(ld->pending, state->ev, ld->conn);
+	ld->read_req = read_ldap_send(ld->pending, state->ev, ld->active);
 	if (ld->read_req == NULL) {
 		tldap_msg_unset_pending(req);
 		return false;
@@ -730,7 +748,7 @@ static void tldap_msg_received(struct tevent_req *subreq)
 	}
 
 	state = tevent_req_data(ld->pending[0],	struct tldap_msg_state);
-	ld->read_req = read_ldap_send(ld->pending, state->ev, ld->conn);
+	ld->read_req = read_ldap_send(ld->pending, state->ev, ld->active);
 	if (ld->read_req == NULL) {
 		status = TLDAP_NO_MEMORY;
 		goto fail;

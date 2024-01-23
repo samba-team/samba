@@ -270,7 +270,7 @@ static TLDAPRC tldap_gensec_bind_recv(struct tevent_req *req)
 	 */
 	talloc_steal(state->ctx, state->gensec);
 
-	plain = tldap_get_tstream(state->ctx);
+	plain = tldap_get_plain_tstream(state->ctx);
 
 	status = gensec_create_tstream(state->ctx, state->gensec,
 				       plain, &sec);
@@ -280,7 +280,7 @@ static TLDAPRC tldap_gensec_bind_recv(struct tevent_req *req)
 		return TLDAP_OPERATIONS_ERROR;
 	}
 
-	tldap_set_tstream(state->ctx, sec);
+	tldap_set_gensec_tstream(state->ctx, &sec);
 
 	return TLDAP_SUCCESS;
 }
