@@ -378,6 +378,17 @@ static void ldapsrv_accept(struct stream_connection *c,
 		conn->require_strong_auth = lpcfg_ldap_server_require_strong_auth(conn->lp_ctx);
 	}
 
+	if (conn->require_strong_auth ==
+	    LDAP_SERVER_REQUIRE_STRONG_AUTH_ALLOW_SASL_OVER_TLS)
+	{
+		D_ERR("WARNING: You have not configured "
+		      "'ldap server require strong auth = "
+		      "allow_sasl_over_tls'.\n"
+		      "Please change to 'yes' (preferred and default) or "
+		      "'allow_sasl_without_tls_channel_bindings' "
+		      "(if really needed)\n\n");
+	}
+
 	ret = ldapsrv_backend_Init(conn, &errstring);
 	if (ret != LDB_SUCCESS) {
 		char *reason = talloc_asprintf(conn,

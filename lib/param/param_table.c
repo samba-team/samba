@@ -318,6 +318,8 @@ static const struct enum_list enum_ldap_server_require_strong_auth_vals[] = {
 	{ LDAP_SERVER_REQUIRE_STRONG_AUTH_NO, "0" },
 	{ LDAP_SERVER_REQUIRE_STRONG_AUTH_ALLOW_SASL_OVER_TLS,
 	  "allow_sasl_over_tls" },
+	{ LDAP_SERVER_REQUIRE_STRONG_AUTH_ALLOW_SASL_WITHOUT_TLS_CB,
+	  "allow_sasl_without_tls_channel_bindings" },
 	{ LDAP_SERVER_REQUIRE_STRONG_AUTH_YES, "Yes" },
 	{ LDAP_SERVER_REQUIRE_STRONG_AUTH_YES, "True" },
 	{ LDAP_SERVER_REQUIRE_STRONG_AUTH_YES, "1" },

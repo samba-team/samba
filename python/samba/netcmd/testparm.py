@@ -183,6 +183,16 @@ class cmd_testparm(Command):
                             "When acting as Active Directory domain controller, " +
                             entry + " should be in vfs objects.")
 
+        strong_auth = lp.get("ldap server require strong auth")
+        if strong_auth == "allow_sasl_over_tls":
+            logger.warning(
+                "WARNING: You have not configured "
+                "'ldap server require strong auth = "
+                "allow_sasl_over_tls'.\n"
+                "Please change to 'yes' (preferred) or "
+                "'allow_sasl_without_tls_channel_bindings' "
+                "(if really needed).")
+
         return valid
 
     def allow_access(self, deny_list, allow_list, cname, caddr):

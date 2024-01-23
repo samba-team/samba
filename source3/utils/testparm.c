@@ -615,6 +615,18 @@ static int do_global_checks(void)
 		ret = 1;
 	}
 
+	if (lp_ldap_server_require_strong_auth() ==
+	    LDAP_SERVER_REQUIRE_STRONG_AUTH_ALLOW_SASL_OVER_TLS)
+	{
+		fprintf(stderr,
+			"WARNING: You have not configured "
+			"'ldap server require strong auth = "
+			"allow_sasl_over_tls'.\n"
+			"Please change to 'yes' (preferred) or "
+			"'allow_sasl_without_tls_channel_bindings' "
+			"(if really needed)\n\n");
+	}
+
 	if (lp_server_schannel() != true) { /* can be 'auto' */
 		fprintf(stderr,
 			"WARNING: You have not configured "
