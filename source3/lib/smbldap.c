@@ -113,7 +113,7 @@ void smbldap_set_bind_callback(struct smbldap_state *state,
 	}
 
 	ldap_value_free(values);
-#ifdef DEBUG_PASSWORDS
+#ifdef DEBUG_PASSWORD
 	DEBUG (100, ("smbldap_get_single_attribute: [%s] = [%s]\n", attribute, value));
 #endif
 	return True;
@@ -153,7 +153,7 @@ void smbldap_set_bind_callback(struct smbldap_state *state,
 
 	ldap_value_free(values);
 
-#ifdef DEBUG_PASSWORDS
+#ifdef DEBUG_PASSWORD
 	DEBUG (100, ("smbldap_get_single_attribute: [%s] = [%s]\n",
 		     attribute, result));
 #endif
@@ -187,7 +187,7 @@ void smbldap_set_bind_callback(struct smbldap_state *state,
 
 	ldap_value_free(values);
 
-#ifdef DEBUG_PASSWORDS
+#ifdef DEBUG_PASSWORD
 	DEBUG (100, ("smbldap_get_first_attribute: [%s] = [%s]\n",
 		     attribute, result));
 #endif
@@ -243,7 +243,7 @@ void smbldap_set_bind_callback(struct smbldap_state *state,
 
 	ldap_value_free(values);
 
-#ifdef DEBUG_PASSWORDS
+#ifdef DEBUG_PASSWORD
 	DEBUG (100, ("smbldap_get_single_attribute: [%s] = [%s]\n",
 		     attribute, result));
 #endif
