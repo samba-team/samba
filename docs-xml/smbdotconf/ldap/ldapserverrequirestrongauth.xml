@@ -7,20 +7,44 @@
 	<para>
 	The <smbconfoption name="ldap server require strong auth"/> defines whether
 	the ldap server requires ldap traffic to be signed or signed and encrypted (sealed).
-	Possible values are <emphasis>no</emphasis>, <emphasis>allow_sasl_over_tls</emphasis>
+	Possible values are <emphasis>no</emphasis>,
+	<emphasis>allow_sasl_without_tls_channel_bindings</emphasis>
 	and <emphasis>yes</emphasis>.
 	</para>
 
-	<para>A value of <emphasis>no</emphasis> allows simple and sasl binds over
-	all transports.</para>
+	<para>Windows has <emphasis>LdapEnforceChannelBinding</emphasis> under
+	<emphasis>HKLM\SYSTEM\CurrentControlSet\Services\NTDS\Parameters\</emphasis>.
+	</para>
 
-	<para>A value of <emphasis>allow_sasl_over_tls</emphasis> allows simple and sasl binds
-	(without sign or seal) over TLS encrypted connections. Unencrypted connections only
-	allow sasl binds with sign or seal.</para>
+	<para>A value of <emphasis>no</emphasis> allows simple and sasl binds over
+	all transports. This matches LdapEnforceChannelBinding=0.</para>
+
+	<para>A value of <emphasis>allow_sasl_without_tls_channel_bindings</emphasis>
+	allows simple and sasl binds (without sign or seal) over TLS encrypted connections.
+	Missing tls channel bindings are ignored, so only use this if a value of
+	<emphasis>yes</emphasis> is not possible.
+	Unencrypted connections only allow sasl binds with sign or seal.
+	This matches LdapEnforceChannelBinding=1.
+	</para>
+
+	<para>Before support for tls channel bindings existed in Samba,
+	a value of <emphasis>allow_sasl_over_tls</emphasis> was possible in order
+	to allow sasl binds without tls channel bindings. This now misleading
+	as a value of <emphasis>yes</emphasis> will now allow sasl binds
+	with tls channel bindings. Configurations should be changed to
+	<emphasis>yes</emphasis> instead or
+	<emphasis>allow_sasl_without_tls_channel_bindings</emphasis>
+	if really required. Currently <emphasis>allow_sasl_over_tls</emphasis>
+	is just an alias of <emphasis>allow_sasl_without_tls_channel_bindings</emphasis>,
+	but it will be removed in future versions.
+	</para>
 
 	<para>A value of <emphasis>yes</emphasis> allows only simple binds
-	over TLS encrypted connections. Unencrypted connections only
-	allow sasl binds with sign or seal.</para>
+	and sasl binds with correct tls channel bindings
+	over TLS encrypted connections. sasl binds without tls channel bindings
+	are not allowed. Unencrypted connections only
+	allow sasl binds with sign or seal. This matches LdapEnforceChannelBinding=2.
+	</para>
 </description>
 <value type="default">yes</value>
 </samba:parameter>

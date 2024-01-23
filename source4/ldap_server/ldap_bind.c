@@ -27,6 +27,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_tstream.h"
+#include "lib/tls/tls.h"
 #include "param/param.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "lib/util/time_basic.h"
@@ -359,6 +360,49 @@ static NTSTATUS ldapsrv_setup_gensec(struct ldapsrv_connection *conn,
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_LDAP_STYLE);
 
 	if (conn->sockets.active == conn->sockets.tls) {
+		uint32_t initiator_addrtype = 0;
+		const DATA_BLOB *initiator_address = NULL;
+		uint32_t acceptor_addrtype = 0;
+		const DATA_BLOB *acceptor_address = NULL;
+		const DATA_BLOB *application_data =
+			tstream_tls_channel_bindings(conn->sockets.tls);
+
+		status = gensec_set_channel_bindings(gensec_security,
+						     initiator_addrtype,
+						     initiator_address,
+						     acceptor_addrtype,
+						     acceptor_address,
+						     application_data);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		/*
+		 * By default channel bindings are required,
+		 * so we only set GENSEC_FEATURE_CB_OPTIONAL
+		 * for the legacy option:
+		 *
+		 * ldap server require strong auth = no
+		 * or
+		 * ldap server require strong auth =
+		 *    allow_sasl_without_tls_channel_bindings
+		 *
+		 * And this as an alias to cope with existing smb.conf
+		 * files:
+		 *
+		 * ldap server require strong auth = allow_sasl_over_tls
+		 */
+		switch (conn->require_strong_auth) {
+		case LDAP_SERVER_REQUIRE_STRONG_AUTH_NO:
+		case LDAP_SERVER_REQUIRE_STRONG_AUTH_ALLOW_SASL_OVER_TLS:
+		case LDAP_SERVER_REQUIRE_STRONG_AUTH_ALLOW_SASL_WITHOUT_TLS_CB:
+			gensec_want_feature(gensec_security,
+					    GENSEC_FEATURE_CB_OPTIONAL);
+			break;
+		default:
+			break;
+		}
+
 		gensec_want_feature(gensec_security, GENSEC_FEATURE_LDAPS_TRANSPORT);
 	}
 
@@ -496,6 +540,14 @@ static void ldapsrv_BindSASL_done(struct tevent_req *subreq)
 		goto do_reply;
 	}
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_BAD_BINDINGS)) {
+		result = LDAP_INVALID_CREDENTIALS;
+		errstr = ldapsrv_bind_error_msg(reply,
+						HRES_SEC_E_BAD_BINDINGS,
+						0x0C090711,
+						status);
+		goto do_reply;
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		status = nt_status_squash(status);
 		result = LDAP_INVALID_CREDENTIALS;
@@ -539,17 +591,11 @@ static void ldapsrv_BindSASL_done(struct tevent_req *subreq)
 		case LDAP_SERVER_REQUIRE_STRONG_AUTH_NO:
 			break;
 		case LDAP_SERVER_REQUIRE_STRONG_AUTH_ALLOW_SASL_OVER_TLS:
+		case LDAP_SERVER_REQUIRE_STRONG_AUTH_ALLOW_SASL_WITHOUT_TLS_CB:
+		case LDAP_SERVER_REQUIRE_STRONG_AUTH_YES:
 			if (call->conn->sockets.active == call->conn->sockets.tls) {
 				break;
 			}
-			status = NT_STATUS_NETWORK_ACCESS_DENIED;
-			result = LDAP_STRONG_AUTH_REQUIRED;
-			errstr = talloc_asprintf(reply,
-					"SASL:[%s]: not allowed if TLS is used.",
-					 req->creds.SASL.mechanism);
-			goto do_reply;
-
-		case LDAP_SERVER_REQUIRE_STRONG_AUTH_YES:
 			status = NT_STATUS_NETWORK_ACCESS_DENIED;
 			result = LDAP_STRONG_AUTH_REQUIRED;
 			errstr = talloc_asprintf(reply,

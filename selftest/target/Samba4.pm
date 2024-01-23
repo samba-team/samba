@@ -1625,7 +1625,7 @@ sub provision_ad_dc_ntvfs($$$)
 	print "PROVISIONING AD DC (NTVFS)...\n";
         my $extra_conf_options = "netbios aliases = localDC1-a
         server services = +winbind -winbindd
-	ldap server require strong auth = allow_sasl_over_tls
+	ldap server require strong auth = allow_sasl_without_tls_channel_bindings
 	raw NTLMv2 auth = yes
 	lsa over netlogon = yes
         rpc server port = 1027
