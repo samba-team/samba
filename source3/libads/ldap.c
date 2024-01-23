@@ -1863,6 +1863,7 @@ char *ads_parent_dn(const char *dn)
 		"userPrincipalName",
 
 		/* Additional attributes Samba checks */
+		"msDS-KeyVersionNumber",
 		"msDS-AdditionalDnsHostName",
 		"msDS-SupportedEncryptionTypes",
 		"nTSecurityDescriptor",
