@@ -65,7 +65,7 @@ bool change_to_guest(void)
  talloc free the conn->session_info if not used in the vuid cache.
 ****************************************************************************/
 
-static void free_conn_session_info_if_unused(connection_struct *conn)
+static void free_conn_state_if_unused(connection_struct *conn)
 {
 	unsigned int i;
 
@@ -74,11 +74,13 @@ static void free_conn_session_info_if_unused(connection_struct *conn)
 		ent = &conn->vuid_cache->array[i];
 		if (ent->vuid != UID_FIELD_INVALID &&
 				conn->session_info == ent->session_info) {
-			return;
+			break;
 		}
 	}
-	/* Not used, safe to free. */
-	TALLOC_FREE(conn->session_info);
+	if (i == VUID_CACHE_SIZE) {
+		/* Not used, safe to free. */
+		TALLOC_FREE(conn->session_info);
+	}
 }
 
 /****************************************************************************
@@ -201,7 +203,7 @@ static bool check_user_ok(connection_struct *conn,
 				*/
 				continue;
 			}
-			free_conn_session_info_if_unused(conn);
+			free_conn_state_if_unused(conn);
 			conn->session_info = ent->session_info;
 			conn->read_only = ent->read_only;
 			conn->share_access = ent->share_access;
@@ -260,7 +262,7 @@ static bool check_user_ok(connection_struct *conn,
 	ent->vuid = vuid;
 	ent->read_only = readonly_share;
 	ent->share_access = share_access;
-	free_conn_session_info_if_unused(conn);
+	free_conn_state_if_unused(conn);
 	conn->session_info = ent->session_info;
 	conn->vuid = ent->vuid;
 	if (vuid == UID_FIELD_INVALID) {
