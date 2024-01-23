@@ -20,9 +20,9 @@
 #ifndef __TLDAP_GENSEC_BIND_H__
 #define __TLDAP_GENSEC_BIND_H__
 
-#include "replace.h"
-#include "tldap.h"
-#include "auth/credentials/credentials.h"
+struct tldap_context;
+struct cli_credentials;
+struct loadparm_context;
 
 TLDAPRC tldap_gensec_bind(
 	struct tldap_context *ctx, struct cli_credentials *creds,

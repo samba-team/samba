@@ -17,8 +17,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "tldap_gensec_bind.h"
+#include "replace.h"
+#include "tldap.h"
 #include "tldap_util.h"
+#include "tldap_gensec_bind.h"
+#include "auth/credentials/credentials.h"
 #include "lib/util/tevent_unix.h"
 #include "lib/util/talloc_stack.h"
 #include "lib/util/samba_util.h"
