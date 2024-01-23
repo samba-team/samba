@@ -168,42 +168,46 @@ connection_struct *conn_new(struct smbd_server_connection *sconn)
 
 static void conn_clear_vuid_cache(connection_struct *conn, uint64_t vuid)
 {
+	struct vuid_cache_entry *ent = NULL;
 	int i;
 
 	for (i=0; i<VUID_CACHE_SIZE; i++) {
-		struct vuid_cache_entry *ent;
-
 		ent = &conn->vuid_cache->array[i];
-
-		if (ent->vuid == vuid) {
-			ent->vuid = UID_FIELD_INVALID;
-			/*
-			 * We need to keep conn->session_info around
-			 * if it's equal to ent->session_info as a SMBulogoff
-			 * is often followed by a SMBtdis (with an invalid
-			 * vuid). The debug code (or regular code in
-			 * vfs_full_audit) wants to refer to the
-			 * conn->session_info pointer to print debug
-			 * statements. Theoretically this is a bug,
-			 * as once the vuid is gone the session_info
-			 * on the conn struct isn't valid any more,
-			 * but there's enough code that assumes
-			 * conn->session_info is never null that
-			 * it's easier to hold onto the old pointer
-			 * until we get a new sessionsetupX.
-			 * As everything is hung off the
-			 * conn pointer as a talloc context we're not
-			 * leaking memory here. See bug #6315. JRA.
-			 */
-			if (conn->session_info == ent->session_info) {
-				ent->session_info = NULL;
-			} else {
-				TALLOC_FREE(ent->session_info);
-			}
-			ent->read_only = False;
-			ent->share_access = 0;
+		if (ent->vuid != vuid) {
+			continue;
 		}
 	}
+	if (i == VUID_CACHE_SIZE) {
+		return;
+	}
+
+	ent->vuid = UID_FIELD_INVALID;
+
+	/*
+	 * We need to keep conn->session_info around
+	 * if it's equal to ent->session_info as a SMBulogoff
+	 * is often followed by a SMBtdis (with an invalid
+	 * vuid). The debug code (or regular code in
+	 * vfs_full_audit) wants to refer to the
+	 * conn->session_info pointer to print debug
+	 * statements. Theoretically this is a bug,
+	 * as once the vuid is gone the session_info
+	 * on the conn struct isn't valid any more,
+	 * but there's enough code that assumes
+	 * conn->session_info is never null that
+	 * it's easier to hold onto the old pointer
+	 * until we get a new sessionsetupX.
+	 * As everything is hung off the
+	 * conn pointer as a talloc context we're not
+	 * leaking memory here. See bug #6315. JRA.
+	 */
+	if (conn->session_info == ent->session_info) {
+		ent->session_info = NULL;
+	} else {
+		TALLOC_FREE(ent->session_info);
+	}
+	ent->read_only = False;
+	ent->share_access = 0;
 }
 
 /****************************************************************************
