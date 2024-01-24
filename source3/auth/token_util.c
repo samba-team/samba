@@ -699,7 +699,7 @@ NTSTATUS finalize_local_nt_token(struct security_token *result,
 
 	/* Add in BUILTIN sids */
 
-	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
+	become_root();
 	ok = secrets_fetch_domain_sid(lp_workgroup(), &_dom_sid);
 	if (ok) {
 		domain_sid = &_dom_sid;
@@ -707,7 +707,7 @@ NTSTATUS finalize_local_nt_token(struct security_token *result,
 		DEBUG(3, ("Failed to fetch domain sid for %s\n",
 			  lp_workgroup()));
 	}
-	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
+	unbecome_root();
 
 	info = talloc_zero(talloc_tos(), struct acct_info);
 	if (info == NULL) {
