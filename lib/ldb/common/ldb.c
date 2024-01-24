@@ -304,7 +304,7 @@ void ldb_asprintf_errstring(struct ldb_context *ldb, const char *format, ...)
 	va_end(ap);
 
 	TALLOC_FREE(old_err_string);
-	
+
 	if (ldb->flags & LDB_FLG_ENABLE_TRACING) {
 		ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_asprintf/set_errstring: %s",
 			  ldb->err_string);
@@ -859,11 +859,11 @@ static void ldb_trace_request(struct ldb_context *ldb, struct ldb_request *req)
 		ldb_debug_add(ldb, " dn: %s\n",
 			      ldb_dn_is_null(req->op.search.base)?"<rootDSE>":
 			      ldb_dn_get_linearized(req->op.search.base));
-		ldb_debug_add(ldb, " scope: %s\n", 
+		ldb_debug_add(ldb, " scope: %s\n",
 			  req->op.search.scope==LDB_SCOPE_BASE?"base":
 			  req->op.search.scope==LDB_SCOPE_ONELEVEL?"one":
 			  req->op.search.scope==LDB_SCOPE_SUBTREE?"sub":"UNKNOWN");
-		ldb_debug_add(ldb, " expr: %s\n", 
+		ldb_debug_add(ldb, " expr: %s\n",
 			  ldb_filter_from_tree(tmp_ctx, req->op.search.tree));
 		if (req->op.search.attrs == NULL) {
 			ldb_debug_add(ldb, " attr: <ALL>\n");
@@ -875,14 +875,14 @@ static void ldb_trace_request(struct ldb_context *ldb, struct ldb_request *req)
 		break;
 	case LDB_DELETE:
 		ldb_debug_add(ldb, "ldb_trace_request: DELETE\n");
-		ldb_debug_add(ldb, " dn: %s\n", 
+		ldb_debug_add(ldb, " dn: %s\n",
 			      ldb_dn_get_linearized(req->op.del.dn));
 		break;
 	case LDB_RENAME:
 		ldb_debug_add(ldb, "ldb_trace_request: RENAME\n");
-		ldb_debug_add(ldb, " olddn: %s\n", 
+		ldb_debug_add(ldb, " olddn: %s\n",
 			      ldb_dn_get_linearized(req->op.rename.olddn));
-		ldb_debug_add(ldb, " newdn: %s\n", 
+		ldb_debug_add(ldb, " newdn: %s\n",
 			      ldb_dn_get_linearized(req->op.rename.newdn));
 		break;
 	case LDB_EXTENDED:
@@ -896,14 +896,14 @@ static void ldb_trace_request(struct ldb_context *ldb, struct ldb_request *req)
 
 		ldb_debug_add(ldb, "ldb_trace_request: ADD\n");
 
-		/* 
+		/*
 		 * The choice to call
 		 * ldb_ldif_write_redacted_trace_string() is CRITICAL
 		 * for security.  It ensures that we do not output
-		 * passwords into debug logs 
+		 * passwords into debug logs
 		 */
 
-		ldb_debug_add(req->handle->ldb, "%s\n", 
+		ldb_debug_add(req->handle->ldb, "%s\n",
 			      ldb_ldif_write_redacted_trace_string(req->handle->ldb, tmp_ctx, &ldif));
 		break;
 	case LDB_MODIFY:
@@ -912,28 +912,28 @@ static void ldb_trace_request(struct ldb_context *ldb, struct ldb_request *req)
 
 		ldb_debug_add(ldb, "ldb_trace_request: MODIFY\n");
 
-		/* 
+		/*
 		 * The choice to call
 		 * ldb_ldif_write_redacted_trace_string() is CRITICAL
 		 * for security.  It ensures that we do not output
-		 * passwords into debug logs 
+		 * passwords into debug logs
 		 */
 
-		ldb_debug_add(req->handle->ldb, "%s\n", 
+		ldb_debug_add(req->handle->ldb, "%s\n",
 			      ldb_ldif_write_redacted_trace_string(req->handle->ldb, tmp_ctx, &ldif));
 		break;
 	case LDB_REQ_REGISTER_CONTROL:
 		ldb_debug_add(ldb, "ldb_trace_request: REGISTER_CONTROL\n");
-		ldb_debug_add(req->handle->ldb, "%s\n", 
+		ldb_debug_add(req->handle->ldb, "%s\n",
 			      req->op.reg_control.oid);
 		break;
 	case LDB_REQ_REGISTER_PARTITION:
 		ldb_debug_add(ldb, "ldb_trace_request: REGISTER_PARTITION\n");
-		ldb_debug_add(req->handle->ldb, "%s\n", 
+		ldb_debug_add(req->handle->ldb, "%s\n",
 			      ldb_dn_get_linearized(req->op.reg_partition.dn));
 		break;
 	default:
-		ldb_debug_add(ldb, "ldb_trace_request: UNKNOWN(%u)\n", 
+		ldb_debug_add(ldb, "ldb_trace_request: UNKNOWN(%u)\n",
 			      req->operation);
 		break;
 	}
@@ -950,7 +950,7 @@ static void ldb_trace_request(struct ldb_context *ldb, struct ldb_request *req)
 			}
 		}
 	}
-	
+
 	ldb_debug_end(ldb, LDB_DEBUG_TRACE);
 
 	talloc_free(tmp_ctx);
