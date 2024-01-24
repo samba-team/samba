@@ -38,6 +38,7 @@
 #include "system/time.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
+#include "librpc/gen_ndr/ads.h"
 
 static void ldap_connection_dead(struct ldap_connection *conn, NTSTATUS status);
 
@@ -503,8 +504,29 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 	}
 
 	if ((proto == LDAP_PROTO_LDAP) || (proto == LDAP_PROTO_LDAPS)) {
+		int wrap_flags = lpcfg_client_ldap_sasl_wrapping(conn->lp_ctx);
 
 		conn->ldaps = (proto == LDAP_PROTO_LDAPS);
+
+		if (wrap_flags & ADS_AUTH_SASL_LDAPS) {
+			if (proto == LDAP_PROTO_LDAP) {
+				if (port == 389) {
+					port = 636;
+					proto = LDAP_PROTO_LDAPS;
+				} else if (port == 3268) {
+					port = 3269;
+					proto = LDAP_PROTO_LDAPS;
+				} else {
+					conn->starttls = true;
+				}
+			}
+			conn->ldaps = true;
+		} else if (wrap_flags & ADS_AUTH_SASL_STARTTLS) {
+			if (proto == LDAP_PROTO_LDAP) {
+				conn->starttls = true;
+			}
+			conn->ldaps = true;
+		}
 
 		conn->host = talloc_move(conn, &dest);
 		conn->port = port;
@@ -538,6 +560,7 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 	return NULL;
 }
 
+static void ldap_connect_starttls_done(struct ldap_request *ldap_req);
 static void ldap_connect_got_tls(struct tevent_req *subreq);
 
 static void ldap_connect_got_sock(struct composite_context *ctx, 
@@ -570,15 +593,77 @@ static void ldap_connect_got_sock(struct composite_context *ctx,
 		return;
 	}
 
+	conn->sockets.raw = talloc_move(conn, &state->raw);
+	conn->sockets.active = conn->sockets.raw;
+
 	if (!conn->ldaps) {
-		conn->sockets.raw = talloc_move(conn, &state->raw);
-		conn->sockets.active = conn->sockets.raw;
 		composite_done(state->ctx);
 		return;
 	}
 
+	if (conn->starttls) {
+		struct ldap_message msg = {
+			.type = LDAP_TAG_ExtendedRequest,
+			.r.ExtendedRequest.oid = LDB_EXTENDED_START_TLS_OID,
+		};
+		struct ldap_request *ldap_req = NULL;
+
+		ldap_req = ldap_request_send(conn, &msg);
+		if (composite_nomem(ldap_req, state->ctx)) {
+			return;
+		}
+		ldap_req->async.fn = ldap_connect_starttls_done;
+		ldap_req->async.private_data = state;
+		return;
+	}
+
 	subreq = tstream_tls_connect_send(state, state->ctx->event_ctx,
-					  state->raw, state->tls_params);
+					  conn->sockets.raw, state->tls_params);
+	if (composite_nomem(subreq, state->ctx)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, ldap_connect_got_tls, state);
+}
+
+static void ldap_connect_starttls_done(struct ldap_request *ldap_req)
+{
+	struct ldap_connect_state *state =
+		talloc_get_type_abort(ldap_req->async.private_data,
+		struct ldap_connect_state);
+	struct ldap_connection *conn = state->conn;
+	NTSTATUS status = ldap_req->status;
+	struct tevent_req *subreq = NULL;
+
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(ldap_req);
+		composite_error(state->ctx, status);
+		return;
+	}
+
+	if (ldap_req->num_replies != 1) {
+		TALLOC_FREE(ldap_req);
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		composite_error(state->ctx, status);
+		return;
+	}
+
+	if (ldap_req->replies[0]->type != LDAP_TAG_ExtendedResponse) {
+		TALLOC_FREE(ldap_req);
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		composite_error(state->ctx, status);
+		return;
+	}
+
+	status = ldap_check_response(conn,
+				     &ldap_req->replies[0]->r.GeneralResult);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(ldap_req);
+		composite_error(state->ctx, status);
+		return;
+	}
+
+	subreq = tstream_tls_connect_send(state, state->ctx->event_ctx,
+					  conn->sockets.raw, state->tls_params);
 	if (composite_nomem(subreq, state->ctx)) {
 		return;
 	}
@@ -603,7 +688,6 @@ static void ldap_connect_got_tls(struct tevent_req *subreq)
 
 	talloc_steal(state->tls, state->tls_params);
 
-	state->conn->sockets.raw = talloc_move(state->conn, &state->raw);
 	state->conn->sockets.tls = talloc_move(state->conn->sockets.raw,
 					       &state->tls);
 	state->conn->sockets.active = state->conn->sockets.tls;

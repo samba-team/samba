@@ -68,6 +68,7 @@ struct ldap_connection {
 	char *host;
 	uint16_t port;
 	bool ldaps;
+	bool starttls;
 
 	const char *auth_dn;
 	const char *simple_pw;
