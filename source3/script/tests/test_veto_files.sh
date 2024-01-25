@@ -44,7 +44,7 @@ do_cleanup()
 {
 	(
 		#subshell.
-		rm -rf "$SHAREPATH/dir_1"
+		rm -rf "$SHAREPATH/dir1"
 		rm -rf "$SHAREPATH/veto_name_dir"
 		rm -rf "$SHAREPATH/veto_name_dir\"mangle"
 		rm -f "$SHAREPATH/veto_name_file"
