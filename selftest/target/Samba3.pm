@@ -2034,7 +2034,7 @@ sub setup_fileserver
 
 [veto_files]
 	path = $veto_sharedir
-	veto files = /veto_name*/
+	veto files = /veto_name*/../user1/user1file/../user2/user2file/../+group1/group1file/../+group2/group2file
 
 [delete_yes_unwrite]
 	read only = no

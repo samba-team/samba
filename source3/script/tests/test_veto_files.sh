@@ -189,6 +189,23 @@ test_create_veto_file()
 	return 0
 }
 
+test_per_user()
+{
+	USERNAME=user1
+	smbclient_get_expect_error "dir1/user1file" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_get_expect_error "dir1/user2file" "NT_STATUS_OK" || return 1
+	smbclient_get_expect_error "dir1/group1file" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_get_expect_error "dir1/group2file" "NT_STATUS_OK" || return 1
+
+	USERNAME=user2
+	smbclient_get_expect_error "dir1/user1file" "NT_STATUS_OK" || return 1
+	smbclient_get_expect_error "dir1/user2file" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+	smbclient_get_expect_error "dir1/group1file" "NT_STATUS_OK" || return 1
+	smbclient_get_expect_error "dir1/group2file" "NT_STATUS_OBJECT_NAME_NOT_FOUND" || return 1
+
+	return 0
+}
+
 do_cleanup
 
 echo "regular_file" > "${SHAREPATH}/regular_file"
@@ -269,8 +286,15 @@ touch "$SHAREPATH/dir1/dir2/dir3/veto_name_dir\"mangle/file_inside_dir"
 mkdir "$SHAREPATH/dir1/dir2/dir3/veto_name_dir\"mangle/testdir"
 touch "$SHAREPATH/dir1/dir2/dir3/veto_name_dir\"mangle/testdir/file_inside_dir"
 
+# testfiles for per-user feature
+touch "$SHAREPATH/dir1/user1file"
+touch "$SHAREPATH/dir1/user2file"
+touch "$SHAREPATH/dir1/group1file"
+touch "$SHAREPATH/dir1/group2file"
+
 testit "create_veto_file" test_create_veto_file || failed=$((failed + 1))
 testit "get_veto_file" test_get_veto_file || failed=$(("$failed" + 1))
+testit "per-user" test_per_user || failed=$(("$failed" + 1))
 
 do_cleanup
 
