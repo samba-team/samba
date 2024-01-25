@@ -2850,6 +2850,8 @@ sub provision($$)
 	my ($gid_force_user);
 	my ($gid_jackthemapper);
 	my ($gid_jacknomapper);
+	my ($gid_group1);
+	my ($gid_group2);
 	my ($uid_user1);
 	my ($uid_user2);
 	my ($uid_gooduser);
@@ -2900,6 +2902,8 @@ sub provision($$)
 	$gid_force_user = $max_gid - 8;
 	$gid_jackthemapper = $max_gid - 9;
 	$gid_jacknomapper = $max_gid - 10;
+	$gid_group1 = $max_gid - 11;
+	$gid_group2 = $max_gid - 12;
 
 	##
 	## create conffile
@@ -3767,6 +3771,8 @@ everyone:x:$gid_everyone:
 force_user:x:$gid_force_user:
 jackthemappergroup:x:$gid_jackthemapper:jackthemapper
 jacknomappergroup:x:$gid_jacknomapper:jacknomapper
+group1:x:$gid_group1:user1
+group2:x:$gid_group2:user2
 ";
 	if ($unix_gids[0] != 0) {
 		print GROUP "root:x:$gid_root:
@@ -4017,6 +4023,20 @@ sub wait_for_start($$$$$)
 	}
 
 	$cmd = $netcmd . "groupmap add sid=S-1-1-0 unixgroup=everyone type=builtin";
+	$ret = system($cmd);
+	if ($ret != 0) {
+		print("\"$cmd\" failed\n");
+		return 1;
+	}
+
+	$cmd = $netcmd . "groupmap add unixgroup=group1 type=domain";
+	$ret = system($cmd);
+	if ($ret != 0) {
+		print("\"$cmd\" failed\n");
+		return 1;
+	}
+
+	$cmd = $netcmd . "groupmap add unixgroup=group2 type=domain";
 	$ret = system($cmd);
 	if ($ret != 0) {
 		print("\"$cmd\" failed\n");
