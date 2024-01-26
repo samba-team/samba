@@ -413,6 +413,12 @@ static struct tevent_req *tstream_tls_readv_send(TALLOC_CTX *mem_ctx,
 	struct tstream_tls_readv_state *state;
 
 	tlss->read.req = NULL;
+
+	if (tlss->current_ev != ev) {
+		SMB_ASSERT(tlss->push.subreq == NULL);
+		SMB_ASSERT(tlss->pull.subreq == NULL);
+	}
+
 	tlss->current_ev = ev;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -577,6 +583,12 @@ static struct tevent_req *tstream_tls_writev_send(TALLOC_CTX *mem_ctx,
 	struct tstream_tls_writev_state *state;
 
 	tlss->write.req = NULL;
+
+	if (tlss->current_ev != ev) {
+		SMB_ASSERT(tlss->push.subreq == NULL);
+		SMB_ASSERT(tlss->pull.subreq == NULL);
+	}
+
 	tlss->current_ev = ev;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -743,6 +755,12 @@ static struct tevent_req *tstream_tls_disconnect_send(TALLOC_CTX *mem_ctx,
 	struct tstream_tls_disconnect_state *state;
 
 	tlss->disconnect.req = NULL;
+
+	if (tlss->current_ev != ev) {
+		SMB_ASSERT(tlss->push.subreq == NULL);
+		SMB_ASSERT(tlss->pull.subreq == NULL);
+	}
+
 	tlss->current_ev = ev;
 
 	req = tevent_req_create(mem_ctx, &state,
