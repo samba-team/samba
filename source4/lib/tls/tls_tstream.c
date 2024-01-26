@@ -75,7 +75,6 @@ struct tstream_tls {
 		off_t ofs;
 		struct iovec iov;
 		struct tevent_req *subreq;
-		struct tevent_immediate *im;
 	} push;
 
 	struct {
@@ -160,9 +159,7 @@ static void tstream_tls_retry_trigger(struct tevent_context *ctx,
 	tstream_tls_retry(stream, true);
 }
 
-static void tstream_tls_push_trigger_write(struct tevent_context *ev,
-					   struct tevent_immediate *im,
-					   void *private_data);
+static void tstream_tls_push_done(struct tevent_req *subreq);
 
 static ssize_t tstream_tls_push_function(gnutls_transport_ptr_t ptr,
 					 const void *buf, size_t size)
@@ -173,6 +170,7 @@ static ssize_t tstream_tls_push_function(gnutls_transport_ptr_t ptr,
 	struct tstream_tls *tlss =
 		tstream_context_data(stream,
 		struct tstream_tls);
+	struct tevent_req *subreq = NULL;
 	uint8_t *nbuf;
 	size_t len;
 
@@ -206,56 +204,7 @@ static ssize_t tstream_tls_push_function(gnutls_transport_ptr_t ptr,
 	tlss->push.buf = nbuf;
 
 	memcpy(tlss->push.buf + tlss->push.ofs, buf, len);
-
-	if (tlss->push.im == NULL) {
-		tlss->push.im = tevent_create_immediate(tlss);
-		if (tlss->push.im == NULL) {
-			errno = ENOMEM;
-			return -1;
-		}
-	}
-
-	if (tlss->push.ofs == 0) {
-		/*
-		 * We'll do start the tstream_writev
-		 * in the next event cycle.
-		 *
-		 * This way we can batch all push requests,
-		 * if they fit into a UINT16_MAX buffer.
-		 *
-		 * This is important as gnutls_handshake()
-		 * had a bug in some versions e.g. 2.4.1
-		 * and others (See bug #7218) and it doesn't
-		 * handle EAGAIN.
-		 */
-		tevent_schedule_immediate(tlss->push.im,
-					  tlss->current_ev,
-					  tstream_tls_push_trigger_write,
-					  stream);
-	}
-
 	tlss->push.ofs += len;
-	return len;
-}
-
-static void tstream_tls_push_done(struct tevent_req *subreq);
-
-static void tstream_tls_push_trigger_write(struct tevent_context *ev,
-					   struct tevent_immediate *im,
-					   void *private_data)
-{
-	struct tstream_context *stream =
-		talloc_get_type_abort(private_data,
-		struct tstream_context);
-	struct tstream_tls *tlss =
-		tstream_context_data(stream,
-		struct tstream_tls);
-	struct tevent_req *subreq;
-
-	if (tlss->push.subreq) {
-		/* nothing todo */
-		return;
-	}
 
 	tlss->push.iov.iov_base = (char *)tlss->push.buf;
 	tlss->push.iov.iov_len = tlss->push.ofs;
@@ -265,13 +214,13 @@ static void tstream_tls_push_trigger_write(struct tevent_context *ev,
 				     tlss->plain_stream,
 				     &tlss->push.iov, 1);
 	if (subreq == NULL) {
-		tlss->error = ENOMEM;
-		tstream_tls_retry(stream, false);
-		return;
+		errno = ENOMEM;
+		return -1;
 	}
 	tevent_req_set_callback(subreq, tstream_tls_push_done, stream);
 
 	tlss->push.subreq = subreq;
+	return len;
 }
 
 static void tstream_tls_push_done(struct tevent_req *subreq)
