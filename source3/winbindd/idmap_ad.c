@@ -23,6 +23,7 @@
 #include "idmap.h"
 #include "tldap.h"
 #include "tldap_util.h"
+#include "tldap_tls_connect.h"
 #include "tldap_gensec_bind.h"
 #include "passdb.h"
 #include "lib/param/param.h"
@@ -292,16 +293,35 @@ static void PRINTF_ATTRIBUTE(3, 0) idmap_ad_tldap_debug(
        }
 }
 
-static uint32_t gensec_features_from_ldap_sasl_wrapping(void)
+static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
+				       const char *domname,
+				       struct tldap_context **pld)
 {
-	int wrap_flags;
+	struct netr_DsRGetDCNameInfo *dcinfo;
+	struct sockaddr_storage dcaddr;
+	struct cli_credentials *creds;
+	struct loadparm_context *lp_ctx;
+	struct tldap_context *ld;
+	int tcp_port = 389;
+	bool use_tls = false;
+	bool use_starttls = false;
+	int wrap_flags = -1;
 	uint32_t gensec_features = 0;
+	char *sitename = NULL;
+	int fd;
+	NTSTATUS status;
+	bool ok;
+	TLDAPRC rc;
 
 	wrap_flags = lp_client_ldap_sasl_wrapping();
-	if (wrap_flags == -1) {
-		wrap_flags = 0;
-	}
 
+	if (wrap_flags & ADS_AUTH_SASL_LDAPS) {
+		use_tls = true;
+		tcp_port = 636;
+	} else if (wrap_flags & ADS_AUTH_SASL_STARTTLS) {
+		use_tls = true;
+		use_starttls = true;
+	}
 	if (wrap_flags & ADS_AUTH_SASL_SEAL) {
 		gensec_features |= GENSEC_FEATURE_SEAL;
 	}
@@ -312,25 +332,6 @@ static uint32_t gensec_features_from_ldap_sasl_wrapping(void)
 	if (gensec_features != 0) {
 		gensec_features |= GENSEC_FEATURE_LDAP_STYLE;
 	}
-
-	return gensec_features;
-}
-
-static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
-				       const char *domname,
-				       struct tldap_context **pld)
-{
-	struct netr_DsRGetDCNameInfo *dcinfo;
-	struct sockaddr_storage dcaddr;
-	struct cli_credentials *creds;
-	struct loadparm_context *lp_ctx;
-	struct tldap_context *ld;
-	uint32_t gensec_features = gensec_features_from_ldap_sasl_wrapping();
-	char *sitename = NULL;
-	int fd;
-	NTSTATUS status;
-	bool ok;
-	TLDAPRC rc;
 
 	status = wb_dsgetdcname_gencache_get(mem_ctx, domname, &dcinfo);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -373,7 +374,7 @@ static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
 
-	status = open_socket_out(&dcaddr, 389, 10000, &fd);
+	status = open_socket_out(&dcaddr, tcp_port, 10000, &fd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("open_socket_out failed: %s\n", nt_errstr(status));
 		TALLOC_FREE(dcinfo);
@@ -409,6 +410,19 @@ static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 		DBG_DEBUG("loadparm_init_s3 failed\n");
 		TALLOC_FREE(dcinfo);
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (use_tls && !tldap_has_tls_tstream(ld)) {
+		tldap_set_starttls_needed(ld, use_starttls);
+
+		rc = tldap_tls_connect(ld, lp_ctx, dcinfo->dc_unc);
+		if (!TLDAP_RC_IS_SUCCESS(rc)) {
+			DBG_ERR("tldap_gensec_bind(%s) failed: %s\n",
+				dcinfo->dc_unc,
+				tldap_errstr(dcinfo, ld, rc));
+			TALLOC_FREE(dcinfo);
+			return NT_STATUS_LDAP(TLDAP_RC_V(rc));
+		}
 	}
 
 	rc = tldap_gensec_bind(ld, creds, "ldap", dcinfo->dc_unc, NULL, lp_ctx,
