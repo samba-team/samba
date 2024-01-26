@@ -24,7 +24,6 @@
 #include "libsmb/libsmb.h"
 #include "libsmb/namequery.h"
 #include "../libcli/auth/libcli_auth.h"
-#include "../libcli/auth/spnego.h"
 #include "smb_krb5.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
