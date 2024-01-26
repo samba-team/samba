@@ -1264,7 +1264,7 @@ static bool tdbsam_search_next_entry(struct pdb_search *search,
 
 	if ((entry->account_name == NULL) || (entry->fullname == NULL)
 	    || (entry->description == NULL)) {
-		DEBUG(0, ("talloc_strdup failed\n"));
+		DBG_ERR("talloc_strdup failed\n");
 		return false;
 	}
 
