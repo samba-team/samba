@@ -540,7 +540,8 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 			tmp = talloc_strdup(
 				mem_ctx, domain_info->dc_unc);
 			if (tmp == NULL) {
-				DEBUG(0, ("talloc_strdup failed\n"));
+				DBG_ERR("talloc_strdup failed for dc_unc[%s]\n",
+					domain_info->dc_unc);
 				talloc_destroy(mem_ctx);
 				return false;
 			}
@@ -548,7 +549,9 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 				domain->alt_name = talloc_strdup(domain,
 								 domain_info->domain_name);
 				if (domain->alt_name == NULL) {
-					DEBUG(0, ("talloc_strdup failed\n"));
+					DBG_ERR("talloc_strdup failed for "
+						"domain_info->domain_name[%s]\n",
+						domain_info->domain_name);
 					talloc_destroy(mem_ctx);
 					return false;
 				}
@@ -557,7 +560,9 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 				domain->forest_name = talloc_strdup(domain,
 								    domain_info->forest_name);
 				if (domain->forest_name == NULL) {
-					DEBUG(0, ("talloc_strdup failed\n"));
+					DBG_ERR("talloc_strdup failed for "
+						"domain_info->forest_name[%s]\n",
+						domain_info->forest_name);
 					talloc_destroy(mem_ctx);
 					return false;
 				}
