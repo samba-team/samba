@@ -18,7 +18,6 @@
 */
 
 #include "includes.h"
-#include "../libcli/auth/spnego.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth_generic.h"
@@ -498,196 +497,15 @@ static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
 #endif /* HAVE_KRB5 */
 
 /*
-  parse a negTokenInit packet giving a GUID, a list of supported
-  OIDs (the mechanisms) and a principal name string
-*/
-static bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
-				      DATA_BLOB blob,
-				      char *OIDs[ASN1_MAX_OIDS],
-				      char **principal,
-				      DATA_BLOB *secblob)
-{
-	int i;
-	bool ret = false;
-	ASN1_DATA *data;
-
-	for (i = 0; i < ASN1_MAX_OIDS; i++) {
-		OIDs[i] = NULL;
-	}
-
-	if (principal) {
-		*principal = NULL;
-	}
-	if (secblob) {
-		*secblob = data_blob_null;
-	}
-
-	data = asn1_init(talloc_tos(), ASN1_MAX_TREE_DEPTH);
-	if (data == NULL) {
-		return false;
-	}
-
-	if (!asn1_load(data, blob)) goto err;
-
-	if (!asn1_start_tag(data,ASN1_APPLICATION(0))) goto err;
-
-	if (!asn1_check_OID(data,OID_SPNEGO)) goto err;
-
-	/* negTokenInit  [0]  NegTokenInit */
-	if (!asn1_start_tag(data,ASN1_CONTEXT(0))) goto err;
-	if (!asn1_start_tag(data,ASN1_SEQUENCE(0))) goto err;
-
-	/* mechTypes [0] MechTypeList  OPTIONAL */
-
-	/* Not really optional, we depend on this to decide
-	 * what mechanisms we have to work with. */
-
-	if (!asn1_start_tag(data,ASN1_CONTEXT(0))) goto err;
-	if (!asn1_start_tag(data,ASN1_SEQUENCE(0))) goto err;
-	for (i=0; asn1_tag_remaining(data) > 0 && i < ASN1_MAX_OIDS-1; i++) {
-		if (!asn1_read_OID(data,ctx, &OIDs[i])) {
-			goto err;
-		}
-		if (asn1_has_error(data)) {
-			goto err;
-		}
-	}
-	OIDs[i] = NULL;
-	if (!asn1_end_tag(data)) goto err;
-	if (!asn1_end_tag(data)) goto err;
-
-	/*
-	  Win7 + Live Sign-in Assistant attaches a mechToken
-	  ASN1_CONTEXT(2) to the negTokenInit packet
-	  which breaks our negotiation if we just assume
-	  the next tag is ASN1_CONTEXT(3).
-	*/
-
-	if (asn1_peek_tag(data, ASN1_CONTEXT(1))) {
-		uint8_t flags;
-
-		/* reqFlags [1] ContextFlags  OPTIONAL */
-		if (!asn1_start_tag(data, ASN1_CONTEXT(1))) goto err;
-		if (!asn1_start_tag(data, ASN1_BIT_STRING)) goto err;
-		while (asn1_tag_remaining(data) > 0) {
-			if (!asn1_read_uint8(data, &flags)) goto err;
-		}
-		if (!asn1_end_tag(data)) goto err;
-		if (!asn1_end_tag(data)) goto err;
-	}
-
-	if (asn1_peek_tag(data, ASN1_CONTEXT(2))) {
-		DATA_BLOB sblob = data_blob_null;
-		/* mechToken [2] OCTET STRING  OPTIONAL */
-		if (!asn1_start_tag(data, ASN1_CONTEXT(2))) goto err;
-		if (!asn1_read_OctetString(data, ctx, &sblob)) goto err;
-		if (!asn1_end_tag(data)) {
-			data_blob_free(&sblob);
-			goto err;
-		}
-		if (secblob) {
-			*secblob = sblob;
-		} else {
-			data_blob_free(&sblob);
-		}
-	}
-
-	if (asn1_peek_tag(data, ASN1_CONTEXT(3))) {
-		char *princ = NULL;
-		/* mechListMIC [3] OCTET STRING  OPTIONAL */
-		if (!asn1_start_tag(data, ASN1_CONTEXT(3))) goto err;
-		if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) goto err;
-		if (!asn1_start_tag(data, ASN1_CONTEXT(0))) goto err;
-		if (!asn1_read_GeneralString(data, ctx, &princ)) goto err;
-		if (!asn1_end_tag(data)) goto err;
-		if (!asn1_end_tag(data)) goto err;
-		if (!asn1_end_tag(data)) goto err;
-		if (principal) {
-			*principal = princ;
-		} else {
-			TALLOC_FREE(princ);
-		}
-	}
-
-	if (!asn1_end_tag(data)) goto err;
-	if (!asn1_end_tag(data)) goto err;
-
-	if (!asn1_end_tag(data)) goto err;
-
-	ret = !asn1_has_error(data);
-
-  err:
-
-	if (asn1_has_error(data)) {
-		int j;
-		if (principal) {
-			TALLOC_FREE(*principal);
-		}
-		if (secblob) {
-			data_blob_free(secblob);
-		}
-		for(j = 0; j < i && j < ASN1_MAX_OIDS-1; j++) {
-			TALLOC_FREE(OIDs[j]);
-		}
-	}
-
-	asn1_free(data);
-	return ret;
-}
-
-/*
    this performs a SASL/SPNEGO bind
 */
 static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct ads_service_principal p = {0};
-	struct berval *scred=NULL;
-	int rc, i;
 	ADS_STATUS status;
 	DATA_BLOB blob = data_blob_null;
-	char *given_principal = NULL;
-	char *OIDs[ASN1_MAX_OIDS];
-#ifdef HAVE_KRB5
-	bool got_kerberos_mechanism = False;
-#endif
 	const char *mech = NULL;
-
-	rc = ldap_sasl_bind_s(ads->ldap.ld, NULL, "GSS-SPNEGO", NULL, NULL, NULL, &scred);
-
-	if (rc != LDAP_SASL_BIND_IN_PROGRESS) {
-		status = ADS_ERROR(rc);
-		goto done;
-	}
-
-	blob = data_blob(scred->bv_val, scred->bv_len);
-
-	ber_bvfree(scred);
-
-#if 0
-	file_save("sasl_spnego.dat", blob.data, blob.length);
-#endif
-
-	/* the server sent us the first part of the SPNEGO exchange in the negprot
-	   reply */
-	if (!spnego_parse_negTokenInit(talloc_tos(), blob, OIDs, &given_principal, NULL) ||
-			OIDs[0] == NULL) {
-		status = ADS_ERROR(LDAP_OPERATIONS_ERROR);
-		goto done;
-	}
-	TALLOC_FREE(given_principal);
-
-	/* make sure the server understands kerberos */
-	for (i=0;OIDs[i];i++) {
-		DEBUG(3,("ads_sasl_spnego_bind: got OID=%s\n", OIDs[i]));
-#ifdef HAVE_KRB5
-		if (strcmp(OIDs[i], OID_KERBEROS5_OLD) == 0 ||
-		    strcmp(OIDs[i], OID_KERBEROS5) == 0) {
-			got_kerberos_mechanism = True;
-		}
-#endif
-		talloc_free(OIDs[i]);
-	}
 
 	status = ads_generate_service_principal(ads, &p);
 	if (!ADS_ERR_OK(status)) {
@@ -696,7 +514,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 
 #ifdef HAVE_KRB5
 	if (!(ads->auth.flags & ADS_AUTH_DISABLE_KERBEROS) &&
-	    got_kerberos_mechanism)
+	    !is_ipaddress(p.hostname))
 	{
 		mech = "KRB5";
 
