@@ -264,7 +264,10 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 	}
 
 	tmp_ctx = talloc_new(conn);
-	if (tmp_ctx == NULL) goto failed;
+	if (tmp_ctx == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
 
 	search = &sasl_mechs_msgs[0]->r.SearchResultEntry;
 	if (search->num_attributes != 1) {
