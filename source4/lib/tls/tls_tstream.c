@@ -70,6 +70,10 @@ struct tstream_tls {
 	struct tevent_immediate *retry_im;
 
 	struct {
+		struct tevent_req *mgmt_req;
+	} waiting_flush;
+
+	struct {
 		uint8_t *buf;
 		off_t ofs;
 		struct iovec iov;
@@ -119,6 +123,17 @@ static void tstream_tls_retry(struct tstream_context *stream, bool deferred)
 	struct tstream_tls *tlss =
 		tstream_context_data(stream,
 		struct tstream_tls);
+
+	if (tlss->push.subreq == NULL && tlss->pull.subreq == NULL) {
+		if (tlss->waiting_flush.mgmt_req != NULL) {
+			struct tevent_req *req = tlss->waiting_flush.mgmt_req;
+
+			tlss->waiting_flush.mgmt_req = NULL;
+
+			tevent_req_done(req);
+			return;
+		}
+	}
 
 	if (tlss->disconnect.req) {
 		tstream_tls_retry_disconnect(stream);
@@ -781,6 +796,11 @@ static void tstream_tls_retry_disconnect(struct tstream_context *stream)
 		DEBUG(1,("TLS %s - %s\n", __location__, gnutls_strerror(ret)));
 		tlss->error = EIO;
 		tevent_req_error(req, tlss->error);
+		return;
+	}
+
+	if (tlss->push.subreq != NULL || tlss->pull.subreq != NULL) {
+		tlss->waiting_flush.mgmt_req = req;
 		return;
 	}
 
@@ -1474,6 +1494,11 @@ static void tstream_tls_retry_handshake(struct tstream_context *stream)
 			tevent_req_error(req, tlss->error);
 			return;
 		}
+	}
+
+	if (tlss->push.subreq != NULL || tlss->pull.subreq != NULL) {
+		tlss->waiting_flush.mgmt_req = req;
+		return;
 	}
 
 	tevent_req_done(req);
