@@ -27,7 +27,6 @@
 #include "libcli/ldap/ldap_client.h"
 #include "lib/tls/tls.h"
 #include "auth/gensec/gensec.h"
-#include "auth/gensec/gensec_internal.h" /* TODO: remove this */
 #include "source4/auth/gensec/gensec_tstream.h"
 #include "auth/credentials/credentials.h"
 #include "lib/stream/packet.h"
@@ -208,23 +207,14 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 			struct cli_credentials *creds,
 			struct loadparm_context *lp_ctx)
 {
+	const char *sasl_mech = "GSS-SPNEGO";
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = NULL;
-
 	DATA_BLOB input = data_blob(NULL, 0);
 	DATA_BLOB output = data_blob(NULL, 0);
-
-	struct ldap_message **sasl_mechs_msgs;
-	struct ldap_SearchResEntry *search;
-	int count, i;
 	bool first = true;
 	int wrap_flags = 0;
-	const char **sasl_names;
 	uint32_t old_gensec_features;
-	static const char *supported_sasl_mech_attrs[] = {
-		"supportedSASLMechanisms", 
-		NULL 
-	};
 	unsigned int logon_retries = 0;
 	size_t queue_length;
 
@@ -248,45 +238,11 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 		goto failed;
 	}
 
-	status = ildap_search(conn, "", LDAP_SEARCH_SCOPE_BASE, "", supported_sasl_mech_attrs,
-			      false, NULL, NULL, &sasl_mechs_msgs);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to inquire of target's available sasl mechs in rootdse search: %s\n",
-			  nt_errstr(status)));
-		goto failed;
-	}
-
-	count = ildap_count_entries(conn, sasl_mechs_msgs);
-	if (count != 1) {
-		DEBUG(1, ("Failed to inquire of target's available sasl mechs in rootdse search: wrong number of replies: %d\n",
-			  count));
-		goto failed;
-	}
-
 	tmp_ctx = talloc_new(conn);
 	if (tmp_ctx == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto failed;
 	}
-
-	search = &sasl_mechs_msgs[0]->r.SearchResultEntry;
-	if (search->num_attributes != 1) {
-		DEBUG(1, ("Failed to inquire of target's available sasl mechs in rootdse search: wrong number of attributes: %d != 1\n",
-			  search->num_attributes));
-		goto failed;
-	}
-
-	sasl_names = talloc_array(tmp_ctx, const char *, search->attributes[0].num_values + 1);
-	if (!sasl_names) {
-		DEBUG(1, ("talloc_arry(char *, %d) failed\n",
-			  count));
-		goto failed;
-	}
-
-	for (i=0; i<search->attributes[0].num_values; i++) {
-		sasl_names[i] = (const char *)search->attributes[0].values[i].data;
-	}
-	sasl_names[i] = NULL;
 
 	gensec_init();
 
@@ -373,10 +329,10 @@ try_logon_again:
 		goto failed;
 	}
 
-	status = gensec_start_mech_by_sasl_list(conn->gensec, sasl_names);
+	status = gensec_start_mech_by_sasl_name(conn->gensec, sasl_mech);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("None of the %d proposed SASL mechs were acceptable: %s\n",
-			  count, nt_errstr(status)));
+		DBG_WARNING("gensec_start_mech_by_sasl_name(%s): %s\n",
+			    sasl_mech, nt_errstr(status));
 		goto failed;
 	}
 
@@ -418,8 +374,9 @@ try_logon_again:
 		}
 		first = false;
 
-		/* Perhaps we should make gensec_start_mech_by_sasl_list() return the name we got? */
-		msg = new_ldap_sasl_bind_msg(tmp_ctx, conn->gensec->ops->sasl_name, (output.data?&output:NULL));
+		msg = new_ldap_sasl_bind_msg(tmp_ctx,
+					     sasl_mech,
+					     output.data != NULL ? &output : NULL);
 		if (msg == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto failed;
