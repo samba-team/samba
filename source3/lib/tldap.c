@@ -298,7 +298,6 @@ void *tldap_context_getattr(struct tldap_context *ld, const char *name)
 
 struct read_ldap_state {
 	uint8_t *buf;
-	bool done;
 };
 
 static ssize_t read_ldap_more(uint8_t *buf, size_t buflen, void *private_data);
@@ -315,9 +314,8 @@ static struct tevent_req *read_ldap_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	state->done = false;
 
-	subreq = tstream_read_packet_send(state, ev, conn, 2, read_ldap_more,
+	subreq = tstream_read_packet_send(state, ev, conn, 7, read_ldap_more,
 					  state);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -328,48 +326,30 @@ static struct tevent_req *read_ldap_send(TALLOC_CTX *mem_ctx,
 
 static ssize_t read_ldap_more(uint8_t *buf, size_t buflen, void *private_data)
 {
-	struct read_ldap_state *state = talloc_get_type_abort(
-		private_data, struct read_ldap_state);
-	size_t len;
-	int i, lensize;
+	const DATA_BLOB blob = data_blob_const(buf, buflen);
+	size_t pdu_len = 0;
+	int ret;
 
-	if (state->done) {
-		/* We've been here, we're done */
-		return 0;
-	}
-
-	/*
-	 * From ldap.h: LDAP_TAG_MESSAGE is 0x30
-	 */
-	if (buf[0] != 0x30) {
+	if (buflen < 7) {
+		/*
+		 * We need at least 6 bytes to workout the length
+		 * of the pdu.
+		 *
+		 * And we have asked for 7 because the that's
+		 * the size of the smallest possible LDAP pdu.
+		 */
 		return -1;
 	}
 
-	len = buf[1];
-	if ((len & 0x80) == 0) {
-		state->done = true;
-		return len;
-	}
-
-	lensize = (len & 0x7f);
-	len = 0;
-
-	if (buflen == 2) {
-		/* Please get us the full length */
-		return lensize;
-	}
-	if (buflen > 2 + lensize) {
-		state->done = true;
+	ret = asn1_peek_full_tag(blob, ASN1_SEQUENCE(0), &pdu_len);
+	if (ret == 0) {
 		return 0;
 	}
-	if (buflen != 2 + lensize) {
-		return -1;
+	if (ret == EAGAIN) {
+		return pdu_len - buflen;
 	}
 
-	for (i=0; i<lensize; i++) {
-		len = (len << 8) | buf[2+i];
-	}
-	return len;
+	return -1;
 }
 
 static void read_ldap_done(struct tevent_req *subreq)
