@@ -63,7 +63,6 @@
 static bool client_is_idle(struct winbindd_cli_state *state);
 static void remove_client(struct winbindd_cli_state *state);
 
-static bool interactive = False;
 
 /* Reload configuration */
 
@@ -1420,13 +1419,6 @@ int main(int argc, const char **argv)
 
 	log_stdout = (debug_get_log_type() == DEBUG_STDOUT);
 	if (cmdline_daemon_cfg->interactive) {
-		/*
-		 * libcmdline POPT_DAEMON callback sets "fork" to false if "-i"
-		 * for interactive is passed on the commandline. Set it back to
-		 * true. TODO: check if this is correct, smbd and nmbd don't do
-		 * this.
-		 */
-		cmdline_daemon_cfg->fork = true;
 		log_stdout = true;
 	}
 
@@ -1603,7 +1595,7 @@ int main(int argc, const char **argv)
 	BlockSignals(False, SIGHUP);
 	BlockSignals(False, SIGCHLD);
 
-	if (!interactive) {
+	if (!cmdline_daemon_cfg->interactive) {
 		become_daemon(cmdline_daemon_cfg->fork,
 			      cmdline_daemon_cfg->no_process_group,
 			      log_stdout);
@@ -1714,7 +1706,7 @@ int main(int argc, const char **argv)
 
 	TALLOC_FREE(frame);
 
-	if (!interactive) {
+	if (!cmdline_daemon_cfg->interactive) {
 		daemon_ready("winbindd");
 	}
 
