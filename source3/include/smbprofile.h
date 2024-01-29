@@ -541,6 +541,11 @@ static inline void smbprofile_update_failed_count(
 			ok = true;
 		}
 		break;
+	case SMB2_OP_READ:
+		if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+			ok = true;
+		}
+		break;
 	}
 
 	if (!ok) {
