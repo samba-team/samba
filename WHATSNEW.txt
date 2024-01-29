@@ -1,12 +1,12 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.20.  This is *not*
+This is the first pre release of Samba 4.21.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.20 will be the next version of the Samba suite.
+Samba 4.21 will be the next version of the Samba suite.
 
 
 UPGRADING
@@ -16,109 +16,9 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
-New Minimum MIT Krb5 version for Samba AD Domain Controller
------------------------------------------------------------
-
-Samba now requires MIT 1.21 when built against a system MIT Krb5 and
-acting as an Active Directory DC.  This addresses the issues that were
-fixed in CVE-2022-37967 (KrbtgtFullPacSignature) and ensures that
-Samba builds against the MIT version that allows us to avoid that
-attack.
-
-Removed dependency on Perl JSON module
---------------------------------------
-
-Distributions are advised that the Perl JSON package is no longer
-required by Samba builds that use the imported Heimdal.  The build
-instead uses Perl's JSON::PP built into recent perl5 versions.
-
-Current lists of packages required by Samba for major distributions
-are found in the bootstrap/generated-dists/ directory of a Samba
-source tree.  While there will be some differences - due to features
-chosen by packagers - comparing these lists with the build dependencies
-in a package may locate other dependencies we no longer require.
-
-samba-tool user getpassword / syncpasswords ;rounds= change
------------------------------------------------------------
-
-The password access tool "samba-tool user getpassword" and the
-password sync tool "samba-tool user syncpasswords" allow attributes to
-be chosen for output, and accept parameters like
-pwdLastSet;format=GeneralizedTime
-
-These attributes then appear, in the same format, as the attributes in
-the LDIF output.  This was not the case for the ;rounds= parameter of
-virtualCryptSHA256 and virtualCryptSHA512, for example as
---attributes="virtualCryptSHA256;rounds=50000"
-
-This release makes the behaviour consistent between these two
-features.  Installations using GPG-encrypted passwords (or plaintext
-storage) and the rounds= option, will find the output has changed
-
-from:
-virtualCryptSHA256: {CRYPT}$5$rounds=2561$hXem.M9onhM9Vuix$dFdSBwF
-
-to:
-virtualCryptSHA256;rounds=2561: {CRYPT}$5$rounds=2561$hXem.M9onhM9Vuix$dFdSBwF
-
-Group Managed service account client-side features
---------------------------------------------------
-
-samba-tool has been extended to provide client-side support for Group
-Managed Service accounts.  These accounts have passwords that change
-automatically, giving the advantages of service isolation without risk
-of poor, unchanging passwords.
-
-Where possible, Samba's existing samba-tool password handling
-commands, which in the past have only operated against the local
-sam.ldb have been extended to permit operation against a remote server
-with authenticated access to "-H ldap://$DCNAME"
-
-Supported operations include:
- - reading the current and previous gMSA password via
-   "samba-tool user getpassword"
- - writing a Kerberos Ticket Granting Ticket (TGT) to a local
-   credentials cache with a new command
-   "samba-tool user get-kerberos-ticket"
-
-New Windows Search Protocol Client
-----------------------------------
-
-Samba now by default builds new experimental Windows Search Protocol (WSP)
-command line client "wspsearch"
-
-The "wspsearch" cmd-line utility allows a WSP search request to be sent
-to a server (such as a windows server) that has the (WSP)
-Windows Search Protocol service configured and enabled.
-
-For more details see the wspsearch man page.
-
-Allow 'smbcacls' to save/restore DACLs to file
---------------------------------------------
-
-'smbcacls' has been extended to allow DACLs to be saved and restored
-to/from a file. This feature mimics the functionality that windows cmd
-line tool 'icacls.exe' provides. Additionally files created either
-by 'smbcalcs' or 'icacls.exe' are interchangeable and can be used by
-either tool as the same file format is used.
-
-New options added are:
- - '--save savefile'    Saves DACLs in sddl format to file
- - '--recurse'          Performs the '--save' operation above on directory
-                        and all files/directories below.
- - '--restore savefile' Restores the stored DACLS to files in directory
 
 REMOVED FEATURES
 ================
-
-Get locally logged on users from utmp
--------------------------------------
-
-The Workstation Service Remote Protocol [MS-WKST] calls NetWkstaGetInfo
-level 102 and NetWkstaEnumUsers level 0 and 1 return the list of locally
-logged on users. Samba was getting the list from utmp, which is not
-Y2038 safe. This feature has been completely removed and Samba will
-always return an empty list.
 
 
 smb.conf changes
@@ -126,13 +26,12 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
-  smb3 unix extensions                    Per share       -
 
 
 KNOWN ISSUES
 ============
 
-https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.20#Release_blocking_bugs
+https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.21#Release_blocking_bugs
 
 
 #######################################
