@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 APPNAME = 'talloc'
-VERSION = '2.4.1'
+VERSION = '2.4.2'
 
 import os
 import sys
