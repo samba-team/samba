@@ -24,9 +24,10 @@ import gettext
 import random
 import sys
 
-logger = logging.getLogger()
+logger = logging.getLogger("gp")
+
+
 def logger_init(name, log_level):
-    logger = logging.getLogger(name)
     logger.addHandler(logging.StreamHandler(sys.stdout))
     logger.setLevel(logging.CRITICAL)
     if log_level == 1:
