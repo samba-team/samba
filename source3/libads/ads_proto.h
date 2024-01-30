@@ -212,6 +212,16 @@ void ndr_print_ads_saslwrap_struct(struct ndr_print *ndr,
 				   const char *name,
 				   const struct ads_saslwrap *r);
 
+/* The following definitions come from libads/tls_wrapping.c  */
+
+void ndr_print_ads_tlswrap_struct(struct ndr_print *ndr,
+				   const char *name,
+				   const struct ads_tlswrap *r);
+ADS_STATUS ads_setup_tls_wrapping(struct ads_tlswrap *wrap,
+				  LDAP *ld,
+				  const char *server_name);
+const DATA_BLOB *ads_tls_channel_bindings(struct ads_tlswrap *wrap);
+
 /* The following definitions come from libads/util.c  */
 
 ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_principal);

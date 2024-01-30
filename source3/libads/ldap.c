@@ -849,6 +849,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	}
 
 	ads_zero_ldap(ads);
+	ZERO_STRUCT(ads->ldap_tls_data);
 	ZERO_STRUCT(ads->ldap_wrap_data);
 	ads->ldap.last_attempt	= time_mono(NULL);
 	ads->ldap_wrap_data.wrap_type	= ADS_SASLWRAP_TYPE_PLAIN;
@@ -967,6 +968,12 @@ got_connection:
 		goto out;
 	}
 
+	ads->ldap_tls_data.mem_ctx = talloc_init("ads LDAP TLS connection memory");
+	if (!ads->ldap_tls_data.mem_ctx) {
+		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		goto out;
+	}
+
 	ads->ldap_wrap_data.mem_ctx = talloc_init("ads LDAP connection memory");
 	if (!ads->ldap_wrap_data.mem_ctx) {
 		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
@@ -1061,6 +1068,9 @@ void ads_disconnect(ADS_STRUCT *ads)
 		ldap_unbind(ads->ldap.ld);
 		ads->ldap.ld = NULL;
 	}
+	if (ads->ldap_tls_data.mem_ctx) {
+		talloc_free(ads->ldap_tls_data.mem_ctx);
+	}
 	if (ads->ldap_wrap_data.wrap_ops &&
 		ads->ldap_wrap_data.wrap_ops->disconnect) {
 		ads->ldap_wrap_data.wrap_ops->disconnect(&ads->ldap_wrap_data);
@@ -1069,6 +1079,7 @@ void ads_disconnect(ADS_STRUCT *ads)
 		talloc_free(ads->ldap_wrap_data.mem_ctx);
 	}
 	ads_zero_ldap(ads);
+	ZERO_STRUCT(ads->ldap_tls_data);
 	ZERO_STRUCT(ads->ldap_wrap_data);
 }
 

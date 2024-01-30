@@ -102,6 +102,16 @@ interface ads
 	} ads_saslwrap;
 
 	typedef [nopull,nopush] struct {
+		[ignore] TALLOC_CTX *mem_ctx;
+		[ignore] timeval endtime;
+#ifdef HAVE_ADS
+		[ignore] struct sockbuf_io_desc *sbiod; /* lowlevel state for LDAP wrapping */
+		[ignore] struct tstream_tls_params *tls_params;
+		[ignore] struct tstream_tls_sync *tls_sync;
+#endif /* HAVE_ADS */
+	} ads_tlswrap;
+
+	typedef [nopull,nopush] struct {
 		[ignore] ldap *ld;
 		sockaddr_storage ss; /* the ip of the active connection, if any */
 		time_t last_attempt; /* last attempt to reconnect, monotonic clock */
@@ -120,6 +130,7 @@ interface ads
 
 #ifdef HAVE_ADS
 		ads_saslwrap ldap_wrap_data;
+		ads_tlswrap ldap_tls_data;
 		/* info about the current LDAP connection */
 		ads_ldap ldap;
 #endif /* HAVE_ADS */
