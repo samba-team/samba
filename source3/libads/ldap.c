@@ -991,13 +991,13 @@ got_connection:
 	}
 	DEBUG(3,("Connected to LDAP server %s\n", ads->config.ldap_server_name));
 
+	ldap_set_option(ads->ldap.ld, LDAP_OPT_PROTOCOL_VERSION, &version);
+
 	/* cache the successful connection for workgroup and realm */
 	if (ads_closest_dc(ads)) {
 		saf_store( ads->server.workgroup, ads->config.ldap_server_name);
 		saf_store( ads->server.realm, ads->config.ldap_server_name);
 	}
-
-	ldap_set_option(ads->ldap.ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 
 	/* fill in the current time and offsets */
 
