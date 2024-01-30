@@ -691,6 +691,51 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	  </listitem>
 	</varlistentry>
 
+	<varlistentry>
+	  <term>
+	    CTDB_SAMBA_INTERFACES_FILE=<parameter>FILENAME</parameter>
+	  </term>
+	  <listitem>
+	    <para>
+	      Generates FILENAME, containing an smb.conf snippet with
+	      an interfaces setting that includes interfaces for
+	      configured CTDB public IP addresses.  This file then
+	      needs to be explicitly included in smb.conf.
+	    </para>
+	    <para>
+	      For example, if public IP addresses are defined on
+	      interfaces eth0 and eth1, and this is set to
+	      <filename>/etc/samba/interfaces.conf</filename>, then
+	      that file will contain the following before smbd is
+	      started:
+	    </para>
+	    <screen>
+     bind interfaces only = yes
+     interfaces = lo eth0 eth1
+	    </screen>
+	    <para>
+	      This can be useful for limiting the interfaces used by
+	      SMB multichannel.
+	    </para>
+	    <para>
+	      Default is to not generate a file.
+	    </para>
+	  </listitem>
+	</varlistentry>
+
+	<varlistentry>
+	  <term>
+	    CTDB_SAMBA_INTERFACES_EXTRA=<parameter>INTERFACE-LIST</parameter>
+	  </term>
+	  <listitem>
+	    <para>
+	      A space separated list to provide additional interfaces to bind.
+	    </para>
+	    <para>
+	      Default is empty - no extra interfaces are added.
+	    </para>
+	  </listitem>
+	</varlistentry>
       </variablelist>
 
     </refsect2>

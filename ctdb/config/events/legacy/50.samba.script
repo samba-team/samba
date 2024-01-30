@@ -27,6 +27,27 @@ load_script_options
 
 ctdb_setup_state_dir "service" "$service_name"
 
+generate_smb_interfaces_config()
+{
+	get_public_ifaces
+	pub_iface_list=$public_ifaces
+	public_ifaces=""
+	for iface in $pub_iface_list;
+	do
+		public_ifaces="$public_ifaces \"$iface;options=dynamic\""
+	done
+
+	if [ -n "$CTDB_SAMBA_INTERFACES_EXTRA" ]; then
+		public_ifaces="$public_ifaces $CTDB_SAMBA_INTERFACES_EXTRA"
+	fi
+	public_ifaces=$(echo "$public_ifaces" | xargs -n 1 | sort -u)
+
+cat <<EOT > "$CTDB_SAMBA_INTERFACES_FILE"
+    bind interfaces only = yes
+    interfaces = lo $public_ifaces
+EOT
+}
+
 service_start()
 {
 	# make sure samba is not already started
@@ -36,6 +57,9 @@ service_start()
 		# make absolutely sure samba is dead
 		killall -q -9 smbd
 	}
+	if [ -n "$CTDB_SAMBA_INTERFACES_FILE" ]; then
+		generate_smb_interfaces_config
+	fi
 	# start Samba service. Start it reniced, as under very heavy load
 	# the number of smbd processes will mean that it leaves few cycles
 	# for anything else
