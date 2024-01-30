@@ -822,6 +822,8 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	NTSTATUS ntstatus;
 	char addr[INET6_ADDRSTRLEN];
 	struct sockaddr_storage existing_ss;
+	bool tls = false;
+	bool start_tls = false;
 
 	zero_sockaddr(&existing_ss);
 
@@ -982,6 +984,17 @@ got_connection:
 
 	/* Otherwise setup the TCP LDAP session */
 
+	if (ads->auth.flags & ADS_AUTH_SASL_LDAPS) {
+		tls = true;
+		ads->ldap.port = 636;
+	} else if (ads->auth.flags & ADS_AUTH_SASL_STARTTLS) {
+		tls = true;
+		start_tls = true;
+		ads->ldap.port = 389;
+	} else {
+		ads->ldap.port = 389;
+	}
+
 	ads->ldap.ld = ldap_open_with_timeout(ads->config.ldap_server_name,
 					      &ads->ldap.ss,
 					      ads->ldap.port, lp_ldap_timeout());
@@ -992,6 +1005,77 @@ got_connection:
 	DEBUG(3,("Connected to LDAP server %s\n", ads->config.ldap_server_name));
 
 	ldap_set_option(ads->ldap.ld, LDAP_OPT_PROTOCOL_VERSION, &version);
+
+	if (start_tls) {
+		unsigned int to = lp_ldap_connection_timeout();
+		struct berval *rspdata = NULL;
+		char *rspoid = NULL;
+		int rc;
+
+		if (to) {
+			/* Setup timeout */
+			gotalarm = 0;
+			CatchSignal(SIGALRM, gotalarm_sig);
+			alarm(to);
+			/* End setup timeout. */
+		}
+
+		rc = ldap_extended_operation_s(ads->ldap.ld,
+					       LDAP_EXOP_START_TLS,
+					       NULL,
+					       NULL,
+					       NULL,
+					       &rspoid,
+					       &rspdata);
+		if (gotalarm != 0 && rc == LDAP_SUCCESS) {
+			rc = LDAP_TIMEOUT;
+		}
+
+		if (to) {
+			/* Teardown timeout. */
+			alarm(0);
+			CatchSignal(SIGALRM, SIG_IGN);
+		}
+
+		if (rspoid != NULL) {
+			ldap_memfree(rspoid);
+		}
+
+		if (rspdata != NULL) {
+			ber_bvfree(rspdata);
+		}
+
+		if (rc != LDAP_SUCCESS) {
+			status = ADS_ERROR_LDAP(rc);
+			goto out;
+		}
+	}
+
+	if (tls) {
+		unsigned int to = lp_ldap_connection_timeout();
+
+		if (to) {
+			/* Setup timeout */
+			gotalarm = 0;
+			CatchSignal(SIGALRM, gotalarm_sig);
+			alarm(to);
+			/* End setup timeout. */
+		}
+
+		status = ads_setup_tls_wrapping(&ads->ldap_tls_data,
+						ads->ldap.ld,
+						ads->config.ldap_server_name);
+
+		if (to) {
+			/* Teardown timeout. */
+			alarm(0);
+			CatchSignal(SIGALRM, SIG_IGN);
+		}
+
+		if ( !ADS_ERR_OK(status) ) {
+			goto out;
+		}
+	}
 
 	/* cache the successful connection for workgroup and realm */
 	if (ads_closest_dc(ads)) {

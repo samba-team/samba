@@ -196,8 +196,11 @@ ADS_STRUCT *ads_init(TALLOC_CTX *mem_ctx,
 	}
 
 	wrap_flags = lp_client_ldap_sasl_wrapping();
-	if (wrap_flags == -1) {
-		wrap_flags = 0;
+
+	if (wrap_flags & ADS_AUTH_SASL_LDAPS) {
+		sasl_state = ADS_SASL_PLAIN;
+	} else if (wrap_flags & ADS_AUTH_SASL_STARTTLS) {
+		sasl_state = ADS_SASL_PLAIN;
 	}
 
 	switch (sasl_state) {
@@ -225,13 +228,19 @@ ADS_STRUCT *ads_init(TALLOC_CTX *mem_ctx,
 
 bool ads_set_sasl_wrap_flags(ADS_STRUCT *ads, unsigned flags)
 {
+	unsigned reset_flags;
 	unsigned other_flags;
 
 	if (!ads) {
 		return false;
 	}
 
-	other_flags = ads->auth.flags & ~(ADS_AUTH_SASL_SIGN|ADS_AUTH_SASL_SEAL);
+	reset_flags = ADS_AUTH_SASL_SIGN |
+		      ADS_AUTH_SASL_SEAL |
+		      ADS_AUTH_SASL_LDAPS |
+		      ADS_AUTH_SASL_STARTTLS;
+
+	other_flags = ads->auth.flags & ~reset_flags;
 
 	ads->auth.flags = flags | other_flags;
 

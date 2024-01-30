@@ -194,8 +194,6 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 				    nt_errstr(nt_status));
 			return ADS_ERROR_NT(nt_status);
 		}
-
-		wrap->wrap_type = ADS_SASLWRAP_TYPE_PLAIN;
 	}
 
 	switch (wrap->wrap_type) {
@@ -607,8 +605,15 @@ ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads)
 {
 	ADS_STATUS status;
 	struct ads_saslwrap *wrap = &ads->ldap_wrap_data;
+	bool tls = false;
 
-	if (ads->auth.flags & ADS_AUTH_SASL_SEAL) {
+	if (ads->auth.flags & ADS_AUTH_SASL_LDAPS) {
+		tls = true;
+		wrap->wrap_type = ADS_SASLWRAP_TYPE_PLAIN;
+	} else if (ads->auth.flags & ADS_AUTH_SASL_STARTTLS) {
+		tls = true;
+		wrap->wrap_type = ADS_SASLWRAP_TYPE_PLAIN;
+	} else if (ads->auth.flags & ADS_AUTH_SASL_SEAL) {
 		wrap->wrap_type = ADS_SASLWRAP_TYPE_SEAL;
 	} else if (ads->auth.flags & ADS_AUTH_SASL_SIGN) {
 		wrap->wrap_type = ADS_SASLWRAP_TYPE_SIGN;
@@ -616,10 +621,21 @@ ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads)
 		wrap->wrap_type = ADS_SASLWRAP_TYPE_PLAIN;
 	}
 
+	if (tls) {
+		const DATA_BLOB *tls_cb = NULL;
+
+		tls_cb = ads_tls_channel_bindings(&ads->ldap_tls_data);
+		if (tls_cb == NULL) {
+			DBG_ERR("No TLS channel bindings available\n");
+			return ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
+		}
+	}
+
 retry:
 	status = ads_sasl_spnego_bind(ads);
 	if (status.error_type == ENUM_ADS_ERROR_LDAP &&
 	    status.err.rc == LDAP_STRONG_AUTH_REQUIRED &&
+	    !tls &&
 	    wrap->wrap_type == ADS_SASLWRAP_TYPE_PLAIN)
 	{
 		DEBUG(3,("SASL bin got LDAP_STRONG_AUTH_REQUIRED "
