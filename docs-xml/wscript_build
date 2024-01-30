@@ -54,6 +54,7 @@ manpages='''
          manpages/wbinfo.1
          manpages/winbindd.8
          manpages/samba-log-parser.1
+         manpages/wspsearch.1
          '''
 
 pam_winbind_manpages = '''
