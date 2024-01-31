@@ -1848,10 +1848,6 @@ sub setup_fileserver
 
 	my $usershare_dir="$prefix_abs/lib/usershare";
 
-	mkdir("$prefix_abs/lib", 0755);
-	remove_tree($usershare_dir);
-	mkdir($usershare_dir, 01770);
-
 	my $share_dir="$prefix_abs/share";
 
 	# Create share directory structure
@@ -2099,6 +2095,10 @@ sub setup_fileserver
 	    no_delete_prefix => 1);
 
 	$vars or return undef;
+
+	mkdir("$prefix_abs/lib", 0755);
+	remove_tree($usershare_dir);
+	mkdir($usershare_dir, 01770);
 
 	if (not $self->check_or_start(
 		env_vars => $vars,
