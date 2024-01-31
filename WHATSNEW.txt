@@ -1,3 +1,82 @@
+                   ===============================
+                   Release Notes for Samba 4.18.10
+                          January 31, 2024
+                   ===============================
+
+
+This is the latest stable release of the Samba 4.18 release series.
+
+
+Changes since 4.18.9
+--------------------
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13688: Windows 2016 fails to restore previous version of a file from a
+     shadow_copy2 snapshot.
+   * BUG 15549: Symlinks on AIX are broken in 4.19 (and a few version before
+     that).
+
+o  Samuel Cabrero <scabrero@samba.org>
+   * BUG 13577: net changesecretpw cannot set the machine account password if
+     secrets.tdb is empty.
+
+o  Bjoern Jacke <bj@sernet.de>
+   * BUG 12421: Fake directory create times has no effect.
+
+o  Björn Jacke <bjacke@samba.org>
+   * BUG 15540: For generating doc, take, if defined, env XML_CATALOG_FILES.
+   * BUG 15541: Trivial C typo in nsswitch/winbind_nss_netbsd.c.
+   * BUG 15542: vfs_linux_xfs is incorrectly named.
+   * BUG 15550: ctime mixed up with mtime by smbd.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15523: ctdb RELEASE_IP causes a crash in release_ip if a connection to
+     a non-public address disconnects first.
+   * BUG 15544: shadow_copy2 broken when current fileset's directories are
+     removed.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15523: ctdb RELEASE_IP causes a crash in release_ip if a connection to
+     a non-public address disconnects first.
+   * BUG 15534: smbd does not detect ctdb public ipv6 addresses for multichannel
+     exclusion.
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15523: ctdb RELEASE_IP causes a crash in release_ip if a connection to
+     a non-public address disconnects first.
+
+o  Shachar Sharon <ssharon@redhat.com>
+   * BUG 15440: Unable to copy and write files from clients to Ceph cluster via
+     SMB Linux gateway with Ceph VFS module.
+
+o  Jones Syue <jonessyue@qnap.com>
+   * BUG 15547: Multichannel refresh network information.
+   * BUG 15555: smbpasswd reset permissions only if not 0600.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
                    ==============================
                    Release Notes for Samba 4.18.9
                          November 29, 2023
@@ -117,8 +196,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.18.8
                           October 10, 2023
