@@ -224,7 +224,7 @@ bool run_posix_ls_wildcard_test(int dummy)
 					   entries[i].name);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("POSIX symlink of %s failed (%s)\n",
-			       symlnk_dangling, nt_errstr(status));
+			       entries[i].name, nt_errstr(status));
 			goto out;
 		}
 	}
