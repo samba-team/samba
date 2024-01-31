@@ -2091,8 +2091,7 @@ sub setup_fileserver
 	    domain => "WORKGROUP",
 	    server => $server,
 	    password => "fileserver",
-	    extra_options => $fileserver_options,
-	    no_delete_prefix => 1);
+	    extra_options => $fileserver_options);
 
 	$vars or return undef;
 
