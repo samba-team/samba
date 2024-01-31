@@ -1712,11 +1712,8 @@ sub setup_simpleserver
 	print "PROVISIONING simple server...";
 
 	my $prefix_abs = abs_path($path);
-	mkdir($prefix_abs, 0777);
 
 	my $external_streams_depot="$prefix_abs/external_streams_depot";
-	remove_tree($external_streams_depot);
-	mkdir($external_streams_depot, 0777);
 
 	my $simpleserver_options_globals = "
 	lanman auth = yes
@@ -1789,6 +1786,9 @@ sub setup_simpleserver
 	    extra_options => $simpleserver_options);
 
 	$vars or return undef;
+
+	remove_tree($external_streams_depot);
+	mkdir($external_streams_depot, 0777);
 
 	my $pam_service_dir = "$prefix_abs/pam_services";
 	remove_tree($pam_service_dir);
