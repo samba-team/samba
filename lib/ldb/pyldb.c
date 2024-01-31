@@ -408,6 +408,7 @@ static PyObject *PyLdbResult_FromResult(struct ldb_result *result)
 		controls = PyList_New(i);
 		if (controls == NULL) {
 			Py_DECREF(ret);
+			Py_DECREF(list);
 			PyErr_NoMemory();
 			return NULL;
 		}
@@ -415,6 +416,7 @@ static PyObject *PyLdbResult_FromResult(struct ldb_result *result)
 			PyObject *ctrl = (PyObject*) PyLdbControl_FromControl(result->controls[i]);
 			if (ctrl == NULL) {
 				Py_DECREF(ret);
+				Py_DECREF(list);
 				Py_DECREF(controls);
 				PyErr_NoMemory();
 				return NULL;
@@ -428,6 +430,7 @@ static PyObject *PyLdbResult_FromResult(struct ldb_result *result)
 		controls = PyList_New(0);
 		if (controls == NULL) {
 			Py_DECREF(ret);
+			Py_DECREF(list);
 			PyErr_NoMemory();
 			return NULL;
 		}
@@ -444,6 +447,7 @@ static PyObject *PyLdbResult_FromResult(struct ldb_result *result)
 	referals = PyList_New(i);
 	if (referals == NULL) {
 		Py_DECREF(ret);
+		Py_DECREF(list);
 		PyErr_NoMemory();
 		return NULL;
 	}
