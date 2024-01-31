@@ -108,6 +108,66 @@ New options added are:
                         and all files/directories below.
  - '--restore savefile' Restores the stored DACLS to files in directory
 
+Samba-tool extensions for AD Claims, Authentication Policies and Silos
+----------------------------------------------------------------------
+
+samba-tool now allows users to be associated with claims.  In the
+Samba AD DC, claims derive from Active Directory attributes mapped
+into specific names.  These claims can be used in rules, which are
+conditional ACEs in a security descriptor, that decide if a user is
+restricted by an authentication policy.
+
+samba-tool also allows the creation and management of authentication
+policies, which are rules about where a user may authenticate from,
+if NTLM is permitted, and what services a user may authenticate to.
+
+Finally, support is added for the creation and management of
+authentication silos, which are helpful in defining network boundaries
+by grouping users and the services they connect to.
+
+Please note: The command line syntax for these tools is not final, and
+may change before the next release, as we gain user feedback.  The
+syntax will be locked in once Samba offers 2016 AD Functional Level as
+a default.
+
+AD DC support for Authentication Silos and Authentication Policies
+------------------------------------------------------------------
+
+The Samba AD DC now also honours any existing claims, authentication
+policy and authentication silo configuration previously created (eg
+from an import of a Microsoft AD), as well as new configurations
+created with samba-tool.  The use of Microsoft's Powershell based
+client tools is not expected to work.
+
+To use this feature, the functional level must be set to 2012_R2 or
+later with:
+
+ ad dc functional level = 2016
+
+in the smb.conf.
+
+The smb.conf file on each DC must have 'ad dc functional level = 2016'
+set to have the partially complete feature available.  This will also,
+at first startup, update the server's own AD entry with the configured
+functional level.
+
+For new domains, add these parameters to 'samba-tool provision'
+
+--option="ad dc functional level = 2016" --function-level=2016
+
+The second option, setting the overall domain functional level
+indicates that all DCs should be at this functional level.
+
+To raise the domain functional level of an existing domain, after
+updating the smb.conf and restarting Samba run
+samba-tool domain schemaupgrade --schema=2019
+samba-tool domain functionalprep --function-level=2016
+samba-tool domain level raise --domain-level=2016 --forest-level=2016
+
+This support is still new, so is not enabled by default in this
+release.  The above instructions are set at 2016, which while not
+complete, matches what our testing environment validates.
+
 Conditional ACEs and Resource Attribute ACEs
 --------------------------------------------
 
