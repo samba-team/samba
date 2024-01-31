@@ -4116,7 +4116,7 @@ sub setup_ctdb($$)
 
 sub provision_ctdb($$$$)
 {
-	my ($self, $prefix, $num_nodes, $no_delete_prefix) = @_;
+	my ($self, $prefix, $num_nodes) = @_;
 	my $rc;
 
 	print "PROVISIONING CTDB...\n";
@@ -4132,10 +4132,7 @@ sub provision_ctdb($$$$)
 	mkdir ($prefix_abs, 0777);
 
 	print "CREATE CTDB TEST ENVIRONMENT in '$prefix_abs'...\n";
-
-	if (not defined($no_delete_prefix) or not $no_delete_prefix) {
-		system("rm -rf $prefix_abs/*");
-	}
+	system("rm -rf $prefix_abs/*");
 
 	#
 	# Per-node data
