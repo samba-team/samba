@@ -1645,6 +1645,8 @@ NTSTATUS openat_pathref_fsp_lcomp(struct files_struct *dirfsp,
 	}
 
 	fsp->fsp_flags.is_directory = S_ISDIR(fsp->fsp_name->st.st_ex_mode);
+	fsp->fsp_flags.posix_open =
+		((smb_fname_rel->flags & SMB_FILENAME_POSIX_PATH) != 0);
 	fsp->file_id = vfs_file_id_from_sbuf(conn, &fsp->fsp_name->st);
 
 	smb_fname_rel->st = fsp->fsp_name->st;
