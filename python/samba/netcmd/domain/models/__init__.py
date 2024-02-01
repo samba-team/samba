@@ -29,5 +29,6 @@ from .model import MODELS
 from .schema import AttributeSchema, ClassSchema
 from .site import Site
 from .subnet import Subnet
+from .types import AccountType
 from .user import User
 from .value_type import ValueType
