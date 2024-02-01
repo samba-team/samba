@@ -20,7 +20,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from enum import IntEnum
+from enum import IntEnum, IntFlag
 
 import io
 from abc import ABCMeta, abstractmethod
@@ -181,7 +181,7 @@ class EnumField(Field):
 
         Has a special case for IntEnum as the constructor only accepts int.
         """
-        if issubclass(self.enum, IntEnum):
+        if issubclass(self.enum, (IntEnum, IntFlag)):
             return self.enum(int(str(value)))
         else:
             return self.enum(str(value))
