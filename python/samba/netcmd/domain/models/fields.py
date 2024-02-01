@@ -412,6 +412,14 @@ class BooleanField(Field):
         else:
             return MessageElement(str(bool(value)).upper(), flags, self.name)
 
+    def expression(self, value):
+        """Returns the ldb search expression for this field."""
+        # BooleanField edge case: query by TRUE works but not by FALSE.
+        if value is False:
+            return f"(!({self.name}=TRUE))"
+        else:
+            return super().expression(str(value))
+
 
 class PossibleClaimValuesField(Field):
     """Field for parsing possible values XML for claim types.
