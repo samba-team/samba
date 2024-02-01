@@ -212,6 +212,28 @@ class DateTimeFieldTest(FieldTestMixin, SambaToolCmdTest):
     ]
 
 
+class NtTimeFieldTest(FieldTestMixin, SambaToolCmdTest):
+    field = fields.NtTimeField("FieldName")
+
+    to_db_value = [
+        (datetime(2023, 1, 27, 22, 36, 41, tzinfo=timezone.utc),
+         MessageElement("133193326010000000")),
+        ([datetime(2023, 1, 27, 22, 36, 41, tzinfo=timezone.utc),
+          datetime(2023, 1, 27, 22, 47, 50, tzinfo=timezone.utc)],
+         MessageElement(["133193326010000000", "133193332700000000"])),
+        (None, None),
+    ]
+
+    from_db_value = [
+        (MessageElement("133193326010000000"),
+         datetime(2023, 1, 27, 22, 36, 41, tzinfo=timezone.utc)),
+        (MessageElement(["133193326010000000", "133193332700000000"]),
+         [datetime(2023, 1, 27, 22, 36, 41, tzinfo=timezone.utc),
+          datetime(2023, 1, 27, 22, 47, 50, tzinfo=timezone.utc)]),
+        (None, None),
+    ]
+
+
 class RelatedFieldTest(FieldTestMixin, SambaToolCmdTest):
     field = fields.RelatedField("FieldName", User)
 
