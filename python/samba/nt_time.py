@@ -18,18 +18,18 @@
 #
 
 import datetime
-from typing import Final, NewType
+from typing import NewType
 
 
 NtTime = NewType("NtTime", int)
 NtTimeDelta = NewType("NtTimeDelta", int)
 
 
-NT_EPOCH: Final = datetime.datetime(
+NT_EPOCH = datetime.datetime(
     1601, 1, 1, 0, 0, 0, 0, tzinfo=datetime.timezone.utc
 )
-NT_TICKS_PER_μSEC: Final = 10
-NT_TICKS_PER_SEC: Final = NT_TICKS_PER_μSEC * 10**6
+NT_TICKS_PER_μSEC = 10
+NT_TICKS_PER_SEC = NT_TICKS_PER_μSEC * 10**6
 
 
 def _validate_nt_time(nt_time: NtTime) -> None:
