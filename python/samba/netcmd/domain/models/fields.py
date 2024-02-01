@@ -20,11 +20,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from enum import IntEnum, IntFlag
-
 import io
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
+from enum import IntEnum, IntFlag
 from xml.etree import ElementTree
 
 from ldb import Dn, MessageElement, binary_encode, string_to_time, timestring
