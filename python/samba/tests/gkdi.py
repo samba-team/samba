@@ -25,7 +25,7 @@ os.environ["PYTHONUNBUFFERED"] = "1"
 
 import datetime
 import secrets
-from typing import Final, NewType, Optional, Tuple, Union
+from typing import NewType, Optional, Tuple, Union
 
 import ldb
 
@@ -72,7 +72,7 @@ HResult = NewType("HResult", int)
 RootKey = NewType("RootKey", ldb.Message)
 
 
-ROOT_KEY_START_TIME: Final = NtTime(KEY_CYCLE_DURATION + MAX_CLOCK_SKEW)
+ROOT_KEY_START_TIME = NtTime(KEY_CYCLE_DURATION + MAX_CLOCK_SKEW)
 
 
 class GetKeyError(Exception):

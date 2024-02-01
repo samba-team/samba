@@ -20,7 +20,7 @@
 
 from enum import Enum
 from functools import total_ordering
-from typing import Final, Optional, Tuple
+from typing import Optional, Tuple
 
 from cryptography.hazmat.primitives import hashes
 
@@ -30,14 +30,14 @@ from samba.ndr import ndr_pack, ndr_unpack
 from samba.nt_time import NtTime, NtTimeDelta
 
 
-uint64_max: Final[int] = 2**64 - 1
+uint64_max: int = 2**64 - 1
 
-L1_KEY_ITERATION: Final[int] = _glue.GKDI_L1_KEY_ITERATION
-L2_KEY_ITERATION: Final[int] = _glue.GKDI_L2_KEY_ITERATION
-KEY_CYCLE_DURATION: Final[NtTimeDelta] = _glue.GKDI_KEY_CYCLE_DURATION
-MAX_CLOCK_SKEW: Final[NtTimeDelta] = _glue.GKDI_MAX_CLOCK_SKEW
+L1_KEY_ITERATION: int = _glue.GKDI_L1_KEY_ITERATION
+L2_KEY_ITERATION: int = _glue.GKDI_L2_KEY_ITERATION
+KEY_CYCLE_DURATION: NtTimeDelta = _glue.GKDI_KEY_CYCLE_DURATION
+MAX_CLOCK_SKEW: NtTimeDelta = _glue.GKDI_MAX_CLOCK_SKEW
 
-KEY_LEN_BYTES: Final = 64
+KEY_LEN_BYTES = 64
 
 
 class Algorithm(Enum):
@@ -107,7 +107,7 @@ class UndefinedStartTime(Exception):
 class Gkid:
     __slots__ = ["_l0_idx", "_l1_idx", "_l2_idx"]
 
-    max_l0_idx: Final = 0x7FFF_FFFF
+    max_l0_idx = 0x7FFF_FFFF
 
     def __init__(self, l0_idx: int, l1_idx: int, l2_idx: int) -> None:
         if not -1 <= l0_idx <= Gkid.max_l0_idx:
