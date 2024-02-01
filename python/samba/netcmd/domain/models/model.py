@@ -25,7 +25,7 @@ from abc import ABCMeta, abstractmethod
 
 from ldb import (ERR_NO_SUCH_OBJECT, FLAG_MOD_ADD, FLAG_MOD_REPLACE,
                  LdbError, Message, MessageElement, SCOPE_BASE,
-                 SCOPE_SUBTREE, binary_encode)
+                 SCOPE_SUBTREE)
 from samba.sd_utils import SDUtils
 
 from .exceptions import (DeleteError, DoesNotExist, FieldError,
@@ -221,7 +221,7 @@ class Model(metaclass=ModelMeta):
             field = cls.fields.get(field_name)
             if field is None:
                 raise ValueError(f"Unknown field '{field_name}'")
-            expression += f"({field.name}={binary_encode(value)})"
+            expression += field.expression(value)
 
         if num_fields > 1:
             expression += ")"

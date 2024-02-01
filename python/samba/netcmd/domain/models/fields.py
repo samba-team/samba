@@ -27,7 +27,7 @@ from abc import ABCMeta, abstractmethod
 from datetime import datetime
 from xml.etree import ElementTree
 
-from ldb import Dn, MessageElement, string_to_time, timestring
+from ldb import Dn, MessageElement, binary_encode, string_to_time, timestring
 from samba.dcerpc import security
 from samba.dcerpc.misc import GUID
 from samba.ndr import ndr_pack, ndr_unpack
@@ -90,6 +90,10 @@ class Field(metaclass=ABCMeta):
         :returns: MessageElement or None
         """
         pass
+
+    def expression(self, value):
+        """Returns the ldb search expression for this field."""
+        return f"({self.name}={binary_encode(value)})"
 
 
 class IntegerField(Field):
