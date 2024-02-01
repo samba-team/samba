@@ -30,6 +30,7 @@ from ldb import Dn, MessageElement, binary_encode, string_to_time, timestring
 from samba.dcerpc import security
 from samba.dcerpc.misc import GUID
 from samba.ndr import ndr_pack, ndr_unpack
+from samba.nt_time import datetime_from_nt_time, nt_time_from_datetime
 
 
 class Field(metaclass=ABCMeta):
@@ -237,6 +238,31 @@ class DateTimeField(Field):
                 flags, self.name)
         else:
             return MessageElement(timestring(int(datetime.timestamp(value))),
+                                  flags, self.name)
+
+
+class NtTimeField(Field):
+    """18-digit Active Directory timestamps."""
+
+    def from_db_value(self, ldb, value):
+        """Convert MessageElement to datetime or list of datetime."""
+        if value is None:
+            return
+        elif len(value) > 1 or self.many:
+            return [datetime_from_nt_time(int(item)) for item in value]
+        else:
+            return datetime_from_nt_time(int(value[0]))
+
+    def to_db_value(self, ldb, value, flags):
+        """Convert datetime or list of datetime to MessageElement."""
+        if value is None:
+            return
+        elif isinstance(value, list):
+            return MessageElement(
+                [str(nt_time_from_datetime(item)) for item in value],
+                flags, self.name)
+        else:
+            return MessageElement(str(nt_time_from_datetime(value)),
                                   flags, self.name)
 
 
