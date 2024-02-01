@@ -22,7 +22,7 @@
 
 import io
 from abc import ABCMeta, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import IntEnum, IntFlag
 from xml.etree import ElementTree
 
@@ -221,10 +221,11 @@ class DateTimeField(Field):
         if value is None:
             return
         elif len(value) > 1 or self.many:
-            return [datetime.fromtimestamp(string_to_time(str(item)))
-                    for item in value]
+            return [datetime.fromtimestamp(string_to_time(str(item)),
+                                           tz=timezone.utc) for item in value]
         else:
-            return datetime.fromtimestamp(string_to_time(str(value)))
+            return datetime.fromtimestamp(string_to_time(str(value)),
+                                          tz=timezone.utc)
 
     def to_db_value(self, ldb, value, flags):
         """Convert datetime or list of datetime to MessageElement."""

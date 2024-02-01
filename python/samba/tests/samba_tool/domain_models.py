@@ -21,7 +21,7 @@
 #
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from xml.etree import ElementTree
 
 from ldb import FLAG_MOD_ADD, MessageElement, SCOPE_ONELEVEL
@@ -194,16 +194,20 @@ class DateTimeFieldTest(FieldTestMixin, SambaToolCmdTest):
     field = fields.DateTimeField("FieldName")
 
     to_db_value = [
-        (datetime(2023, 1, 27, 22, 36, 41), MessageElement("20230127223641.0Z")),
-        ([datetime(2023, 1, 27, 22, 36, 41), datetime(2023, 1, 27, 22, 47, 50)],
+        (datetime(2023, 1, 27, 22, 36, 41, tzinfo=timezone.utc),
+         MessageElement("20230127223641.0Z")),
+        ([datetime(2023, 1, 27, 22, 36, 41, tzinfo=timezone.utc),
+          datetime(2023, 1, 27, 22, 47, 50, tzinfo=timezone.utc)],
          MessageElement(["20230127223641.0Z", "20230127224750.0Z"])),
         (None, None),
     ]
 
     from_db_value = [
-        (MessageElement("20230127223641.0Z"), datetime(2023, 1, 27, 22, 36, 41)),
+        (MessageElement("20230127223641.0Z"),
+         datetime(2023, 1, 27, 22, 36, 41, tzinfo=timezone.utc)),
         (MessageElement(["20230127223641.0Z", "20230127224750.0Z"]),
-         [datetime(2023, 1, 27, 22, 36, 41), datetime(2023, 1, 27, 22, 47, 50)]),
+         [datetime(2023, 1, 27, 22, 36, 41, tzinfo=timezone.utc),
+          datetime(2023, 1, 27, 22, 47, 50, tzinfo=timezone.utc)]),
         (None, None),
     ]
 
