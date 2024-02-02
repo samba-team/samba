@@ -369,10 +369,26 @@ class GetPasswordCommand(Command):
             managed_password = obj["msDS-ManagedPassword"][0]
             unpacked_managed_password = ndr_unpack(gmsa.MANAGEDPASSWORD_BLOB,
                                                    managed_password)
-            calculated["Primary:CLEARTEXT"] = \
-                unpacked_managed_password.passwords.current
             calculated["OLDCLEARTEXT"] = \
                 unpacked_managed_password.passwords.previous
+            calculated["GMSA:query_interval"] = \
+                unpacked_managed_password.passwords.query_interval
+
+            calculated["GMSA:unchanged_interval"] = \
+                unpacked_managed_password.passwords.unchanged_interval
+
+            # This password is useful for a keytab, but not for
+            # authentication, so don't show or provide it as the new password
+            # just yet
+            if calculated["GMSA:query_interval"] <= MAX_CLOCK_SKEW:
+                calculated["Primary:CLEARTEXT"] = \
+                    unpacked_managed_password.passwords.previous
+            else:
+                calculated["Primary:CLEARTEXT"] = \
+                    unpacked_managed_password.passwords.current
+
+            calculated["GMSA:unchanged_interval"] = \
+                unpacked_managed_password.passwords.unchanged_interval
 
         account_name = str(obj["sAMAccountName"][0])
         if "userPrincipalName" in obj:
