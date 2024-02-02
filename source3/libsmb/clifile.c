@@ -3509,7 +3509,7 @@ NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags,
 	}
 
 #if defined(O_SYNC)
-	if ((flags & O_SYNC) == O_SYNC) {
+	if (flags & O_SYNC) {
 		dos_deny |= (1<<14);
 	}
 #endif /* O_SYNC */
