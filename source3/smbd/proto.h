@@ -288,7 +288,9 @@ NTSTATUS sync_file(connection_struct *conn, files_struct *fsp, bool write_throug
 /* The following definitions come from smbd/filename.c  */
 
 uint32_t ucf_flags_from_smb_request(struct smb_request *req);
-uint32_t filename_create_ucf_flags(struct smb_request *req, uint32_t create_disposition);
+uint32_t filename_create_ucf_flags(struct smb_request *req,
+				   uint32_t create_disposition,
+				   uint32_t create_options);
 NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname,
 				    uint32_t ucf_flags,
 				    NTTIME twrp);

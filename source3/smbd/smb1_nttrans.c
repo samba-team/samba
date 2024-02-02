@@ -626,7 +626,9 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		fname = new_fname;
 	}
 
-	ucf_flags = filename_create_ucf_flags(req, create_disposition);
+	ucf_flags = filename_create_ucf_flags(req,
+					      create_disposition,
+					      create_options);
 	if (ucf_flags & UCF_GMT_PATHNAME) {
 		extract_snapshot_token(fname, &twrp);
 	}
@@ -1087,7 +1089,9 @@ static void call_nt_transact_create(connection_struct *conn,
 		fname = new_fname;
 	}
 
-	ucf_flags = filename_create_ucf_flags(req, create_disposition);
+	ucf_flags = filename_create_ucf_flags(req,
+					      create_disposition,
+					      create_options);
 	if (ucf_flags & UCF_GMT_PATHNAME) {
 		extract_snapshot_token(fname, &twrp);
 	}

@@ -57,7 +57,9 @@ uint32_t ucf_flags_from_smb_request(struct smb_request *req)
 	return ucf_flags;
 }
 
-uint32_t filename_create_ucf_flags(struct smb_request *req, uint32_t create_disposition)
+uint32_t filename_create_ucf_flags(struct smb_request *req,
+				   uint32_t create_disposition,
+				   uint32_t create_options)
 {
 	uint32_t ucf_flags = 0;
 
