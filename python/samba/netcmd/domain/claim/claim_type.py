@@ -20,8 +20,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import binascii
-import os
+import secrets
 
 import samba.getopt as options
 from samba.netcmd import Command, CommandError, Option, SuperCommand
@@ -97,8 +96,7 @@ class cmd_domain_claim_claim_type_create(Command):
 
         # Generate the new Claim Type cn.
         # Windows creates a random number here containing 16 hex digits.
-        # We can achieve something similar using urandom(8)
-        instance = binascii.hexlify(os.urandom(8)).decode()
+        instance = secrets.token_hex(8)
         cn = f"ad://ext/{display_name}:{instance}"
 
         # adminDescription should be present but still have a fallback.
