@@ -48,6 +48,13 @@ service_stop ()
     service "$CTDB_SERVICE_NMB" stop
 }
 
+service_status ()
+{
+    service "$CTDB_SERVICE_NMB" status > /dev/null
+    test $? = 0 && return 0
+    service "$CTDB_SERVICE_NMB" status
+}
+
 ###########################
 
 case "$1" in
@@ -57,6 +64,10 @@ startup)
 
 shutdown)
 	service_stop
+	;;
+
+monitor)
+	service_status
 	;;
 
 esac
