@@ -125,8 +125,7 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 				const char *sasl,
 				enum credentials_use_kerberos krb5_state,
 				const char *target_service,
-				const char *target_hostname,
-				const DATA_BLOB server_blob)
+				const char *target_hostname)
 {
 	DATA_BLOB blob_in = data_blob_null;
 	DATA_BLOB blob_out = data_blob_null;
@@ -134,7 +133,6 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 	NTSTATUS nt_status;
 	ADS_STATUS status;
 	struct auth_generic_state *auth_generic_state;
-	bool use_spnego_principal = lp_client_use_spnego_principal();
 	const char *sasl_list[] = { sasl, NULL };
 	NTTIME end_nt_time;
 	struct ads_saslwrap *wrap = &ads->ldap_wrap_data;
@@ -152,14 +150,6 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 	}
 	if (!NT_STATUS_IS_OK(nt_status = auth_generic_set_password(auth_generic_state, ads->auth.password))) {
 		return ADS_ERROR_NT(nt_status);
-	}
-
-	if (server_blob.length == 0) {
-		use_spnego_principal = false;
-	}
-
-	if (krb5_state == CRED_USE_KERBEROS_DISABLED) {
-		use_spnego_principal = false;
 	}
 
 	cli_credentials_set_kerberos_state(auth_generic_state->credentials,
@@ -182,10 +172,6 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return ADS_ERROR_NT(nt_status);
 		}
-	}
-
-	if (target_service != NULL && target_hostname != NULL) {
-		use_spnego_principal = false;
 	}
 
 	switch (wrap->wrap_type) {
@@ -217,15 +203,7 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 	}
 
 	rc = LDAP_SASL_BIND_IN_PROGRESS;
-	if (use_spnego_principal) {
-		blob_in = data_blob_dup_talloc(talloc_tos(), server_blob);
-		if (blob_in.length == 0) {
-			TALLOC_FREE(auth_generic_state);
-			return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-		}
-	} else {
-		blob_in = data_blob_null;
-	}
+	blob_in = data_blob_null;
 	blob_out = data_blob_null;
 
 	while (true) {
@@ -504,7 +482,6 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct ads_service_principal p = {0};
 	ADS_STATUS status;
-	DATA_BLOB blob = data_blob_null;
 	const char *mech = NULL;
 
 	status = ads_generate_service_principal(ads, &p);
@@ -524,8 +501,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 
 			status = ads_sasl_spnego_gensec_bind(ads, "GSS-SPNEGO",
 							     CRED_USE_KERBEROS_REQUIRED,
-							     p.service, p.hostname,
-							     blob);
+							     p.service, p.hostname);
 			if (ADS_ERR_OK(status)) {
 				ads_free_service_principal(&p);
 				goto done;
@@ -540,8 +516,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 		if (ADS_ERR_OK(status)) {
 			status = ads_sasl_spnego_gensec_bind(ads, "GSS-SPNEGO",
 							CRED_USE_KERBEROS_REQUIRED,
-							p.service, p.hostname,
-							blob);
+							p.service, p.hostname);
 			if (!ADS_ERR_OK(status)) {
 				DBG_ERR("kinit succeeded but "
 					"SPNEGO bind with Kerberos failed "
@@ -589,8 +564,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 
 	status = ads_sasl_spnego_gensec_bind(ads, "GSS-SPNEGO",
 					     CRED_USE_KERBEROS_DISABLED,
-					     p.service, p.hostname,
-					     data_blob_null);
+					     p.service, p.hostname);
 done:
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(1,("ads_sasl_spnego_gensec_bind(%s) failed "
@@ -602,9 +576,6 @@ done:
 	}
 	ads_free_service_principal(&p);
 	TALLOC_FREE(frame);
-	if (blob.data != NULL) {
-		data_blob_free(&blob);
-	}
 	return status;
 }
 
