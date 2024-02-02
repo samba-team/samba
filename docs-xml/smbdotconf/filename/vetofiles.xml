@@ -11,7 +11,18 @@
 	</para>
 
 	<para>
-	Each entry must be a unix path, not a DOS path and must <emphasis>not</emphasis> include the  
+	If a file or directory name is prefixed by &quot;../USERNAME/&quot;
+	or &quot;../GROUPNAME/&quot;, then the subsequent filename is only hidden for the
+	given user or group. Instead of specifying users or groups by name, they
+	can also be specified by SID.
+	</para>
+
+	<para>User and group names use the same format as <smbconfoption
+	name="valid users"/>.</para>
+
+	<para>
+	Each filename must be a unix path, not a DOS path and must
+	<emphasis>not</emphasis> include the
 	unix directory 	separator '/'.
 	</para>
 
@@ -38,6 +49,11 @@
 ; any ending in .tmp, and any directory containing the
 ; word root.
 veto files = /*Security*/*.tmp/*root*/
+
+; Veto some files for anyone and some files for specific users and groups
+veto files = /vetoforall1/../USER/vetoforuser/vetoforall2/../GROUP/vetoforgroup/vetoforall3/
+veto files = ../UNIVERSITY\Alumnis/somefile.txt/../john@university.org/anotherfile.txt
+veto files = ../S-1-5-21-123-456-789-1000/secretfile.txt
 
 ; Veto the Apple specific files that a NetAtalk server
 ; creates.

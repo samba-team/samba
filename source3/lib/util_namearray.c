@@ -172,6 +172,7 @@ bool token_contains_name(TALLOC_CTX *mem_ctx,
 
 void set_namearray(TALLOC_CTX *mem_ctx,
 		   const char *namelist_in,
+		   const struct security_token *token,
 		   struct name_compare_entry **_name_array)
 {
 	struct name_compare_entry *name_array = NULL;
@@ -211,6 +212,39 @@ void set_namearray(TALLOC_CTX *mem_ctx,
 		if (*p == '\0') {
 			/* cope with multiple (useless) /s) */
 			continue;
+		}
+
+		if (ISDOTDOT(p) && token != NULL) {
+			const char *username = NULL;
+			bool match;
+
+			/* Get the username */
+			p = strv_next(namelist, p);
+			if (p == NULL) {
+				DBG_ERR("Missing username\n");
+				TALLOC_FREE(namelist);
+				return;
+			}
+			username = p;
+
+			/* Get the filename */
+			p = strv_next(namelist, p);
+			if (p == NULL) {
+				DBG_ERR("Missing filename after username '%s'\n",
+					username);
+				TALLOC_FREE(namelist);
+				return;
+			}
+
+			match = token_contains_name(talloc_tos(),
+						    NULL,
+						    NULL,
+						    NULL,
+						    token,
+						    username);
+			if (!match) {
+				continue;
+			}
 		}
 
 		e->name = p;

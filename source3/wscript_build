@@ -318,6 +318,7 @@ bld.SAMBA3_SUBSYSTEM('samba3-namearray',
                           lib/util_namearray.c
                           ''',
                    deps='''
+                        samba-passdb
                         ''')
 
 if bld.env.with_ctdb:

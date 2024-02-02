@@ -257,6 +257,7 @@ static int virusfilter_vfs_connect(
 	if (exclude_files != NULL) {
 		set_namearray(config,
 			      exclude_files,
+			      NULL,
 			      &config->exclude_files);
 	}
 
@@ -265,6 +266,7 @@ static int virusfilter_vfs_connect(
 	if (infected_files != NULL) {
 		set_namearray(config,
 			      infected_files,
+			      NULL,
 			      &config->infected_files);
 	}
 

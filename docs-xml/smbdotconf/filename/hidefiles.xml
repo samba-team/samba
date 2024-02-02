@@ -13,6 +13,16 @@
 	and '?' can be used to specify multiple files or directories 
 	as in DOS wildcards.</para>
 
+	<para>
+	If a file or directory name is prefixed by &quot;../USERNAME/&quot;
+	or &quot;../GROUPNAME/&quot;, then the subsequent filename is only hidden for the
+	given user or group. Instead of specifying users or groups by name, they
+	can also be specified by SID.
+	</para>
+
+	<para>User and group names use the same format as <smbconfoption
+	name="valid users"/>.</para>
+
 	<para>Each entry must be a Unix path, not a DOS path and must 
 	not include the Unix directory separator '/'.</para>
 
@@ -34,6 +44,12 @@
 	An example of us of this parameter is:
 <programlisting>
 hide files = /.*/DesktopFolderDB/TrashFor%m/resource.frk/
+
+; Hide some files for anyone and some files for specific users and groups
+hide files = hideforall1/../joe/hideforuserjoe/hideforall2/../students/hideforstudents/hideforall3
+hide files = ../UNIVERSITY\Alumnis/somefile.txt/../john@university.org/anotherfile.txt
+hide files = ../S-1-5-21-123-456-789-1000/secretfile.txt
+
 </programlisting>
 	</para>
 </description>

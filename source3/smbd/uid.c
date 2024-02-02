@@ -273,9 +273,11 @@ static bool check_user_ok(connection_struct *conn,
 	if (!IS_IPC(conn) && !IS_PRINT(conn)) {
 		set_namearray(conn,
 			      lp_veto_files(talloc_tos(), lp_sub, snum),
+			      session_info->security_token,
 			      &ent->veto_list);
 		set_namearray(conn,
 			      lp_hide_files(talloc_tos(), lp_sub, snum),
+			      session_info->security_token,
 			      &ent->hide_list);
 	}
 
