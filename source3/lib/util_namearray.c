@@ -72,12 +72,15 @@ bool token_contains_name(TALLOC_CTX *mem_ctx,
 			 const char *domain,
 			 const char *sharename,
 			 const struct security_token *token,
-			 const char *name)
+			 const char *name,
+			 bool *match)
 {
 	const char *prefix;
 	struct dom_sid sid;
 	enum lsa_SidType type;
 	NTSTATUS status;
+
+	*match = false;
 
 	if (username != NULL) {
 		size_t domain_len = domain != NULL ? strlen(domain) : 0;
@@ -103,14 +106,13 @@ bool token_contains_name(TALLOC_CTX *mem_ctx,
 	}
 
 	if (name == NULL) {
-		/* This is too security sensitive, better panic than return a
-		 * result that might be interpreted in a wrong way. */
-		smb_panic("substitutions failed");
+		return false;
 	}
 
 	if ( string_to_sid( &sid, name ) ) {
 		DEBUG(5,("token_contains_name: Checking for SID [%s] in token\n", name));
-		return nt_token_check_sid( &sid, token );
+		*match = nt_token_check_sid( &sid, token );
+		return true;
 	}
 
 	if (!do_group_checks(&name, &prefix)) {
@@ -122,15 +124,17 @@ bool token_contains_name(TALLOC_CTX *mem_ctx,
 						&sid,
 						&type);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(5, ("lookup_name %s failed\n", name));
-			return False;
+			DBG_ERR("lookup_name '%s' failed %s\n",
+				name, nt_errstr(status));
+			return false;
 		}
 		if (type != SID_NAME_USER) {
-			DEBUG(5, ("%s is a %s, expected a user\n",
-				  name, sid_type_lookup(type)));
-			return False;
+			DBG_WARNING("%s is a %s, expected a user\n",
+				    name, sid_type_lookup(type));
+			return true;
 		}
-		return nt_token_check_sid(&sid, token);
+		*match = nt_token_check_sid(&sid, token);
+		return true;
 	}
 
 	for (/* initialized above */ ; *prefix != '\0'; prefix++) {
@@ -144,17 +148,19 @@ bool token_contains_name(TALLOC_CTX *mem_ctx,
 					&sid,
 					&type);
 			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(5, ("lookup_name %s failed\n", name));
-				return False;
+				DBG_ERR("lookup_name '%s' failed %s\n",
+					name, nt_errstr(status));
+				return false;
 			}
 			if ((type != SID_NAME_DOM_GRP) &&
 			    (type != SID_NAME_ALIAS) &&
 			    (type != SID_NAME_WKN_GRP)) {
-				DEBUG(5, ("%s is a %s, expected a group\n",
-					  name, sid_type_lookup(type)));
-				return False;
+				DBG_WARNING("%s is a %s, expected a group\n",
+					    name, sid_type_lookup(type));
+				return true;
 			}
 			if (nt_token_check_sid(&sid, token)) {
+				*match = true;
 				return True;
 			}
 			continue;
@@ -162,6 +168,7 @@ bool token_contains_name(TALLOC_CTX *mem_ctx,
 		if (*prefix == '&') {
 			if (username) {
 				if (user_in_netgroup(mem_ctx, username, name)) {
+					*match = true;
 					return True;
 				}
 			}
@@ -169,7 +176,7 @@ bool token_contains_name(TALLOC_CTX *mem_ctx,
 		}
 		smb_panic("got invalid prefix from do_groups_check");
 	}
-	return False;
+	return true;
 }
 
 /*******************************************************************
@@ -193,6 +200,7 @@ void set_namearray(TALLOC_CTX *mem_ctx,
 	char *namelist = NULL;
 	const char *p = NULL;
 	size_t num_entries;
+	bool ok;
 
 	*_name_array = NULL;
 
@@ -249,12 +257,16 @@ void set_namearray(TALLOC_CTX *mem_ctx,
 				return;
 			}
 
-			match = token_contains_name(talloc_tos(),
-						    NULL,
-						    NULL,
-						    NULL,
-						    token,
-						    username);
+			ok = token_contains_name(talloc_tos(),
+						 NULL,
+						 NULL,
+						 NULL,
+						 token,
+						 username,
+						 &match);
+			if (!ok) {
+				continue;
+			}
 			if (!match) {
 				continue;
 			}

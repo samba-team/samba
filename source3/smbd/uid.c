@@ -133,6 +133,7 @@ NTSTATUS check_user_share_access(connection_struct *conn,
 	int snum = SNUM(conn);
 	uint32_t share_access = 0;
 	bool readonly_share = false;
+	bool ok;
 
 	if (!user_ok_token(session_info->unix_info->unix_name,
 			   session_info->info->domain_name,
@@ -140,11 +141,15 @@ NTSTATUS check_user_share_access(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	readonly_share = is_share_read_only_for_token(
+	ok = is_share_read_only_for_token(
 		session_info->unix_info->unix_name,
 		session_info->info->domain_name,
 		session_info->security_token,
-		conn);
+		conn,
+		&readonly_share);
+	if (!ok) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	share_access = create_share_access_mask(snum,
 					readonly_share,
@@ -194,6 +199,7 @@ static bool check_user_ok(connection_struct *conn,
 	struct vuid_cache_entry *ent = NULL;
 	uint32_t share_access = 0;
 	NTSTATUS status;
+	bool ok;
 
 	for (i=0; i<VUID_CACHE_SIZE; i++) {
 		ent = &conn->vuid_cache->array[i];
@@ -224,10 +230,17 @@ static bool check_user_ok(connection_struct *conn,
 		return false;
 	}
 
-	admin_user = token_contains_name_in_list(
+	ok = token_contains_name_in_list(
 		session_info->unix_info->unix_name,
 		session_info->info->domain_name,
-		NULL, session_info->security_token, lp_admin_users(snum));
+		NULL,
+		session_info->security_token,
+		lp_admin_users(snum),
+		&admin_user);
+	if (!ok) {
+		/* Log, but move on */
+		DBG_ERR("Couldn't apply 'admin users'\n");
+	}
 
 	ent = &conn->vuid_cache->array[conn->vuid_cache->next_entry];
 

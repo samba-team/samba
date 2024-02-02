@@ -1011,13 +1011,15 @@ bool token_contains_name_in_list(const char *username,
 				 const char *domain,
 				 const char *sharename,
 				 const struct security_token *token,
-				 const char **list);
+				 const char **list,
+				 bool *match);
 bool user_ok_token(const char *username, const char *domain,
 		   const struct security_token *token, int snum);
 bool is_share_read_only_for_token(const char *username,
 				  const char *domain,
 				  const struct security_token *token,
-				  connection_struct *conn);
+				  connection_struct *conn,
+				  bool *_read_only);
 
 /* The following definitions come from smbd/srvstr.c  */
 

@@ -37,24 +37,29 @@ bool token_contains_name_in_list(const char *username,
 				 const char *domain,
 				 const char *sharename,
 				 const struct security_token *token,
-				 const char **list)
+				 const char **list,
+				 bool *match)
 {
+	*match = false;
 	if (list == NULL) {
-		return False;
+		return true;
 	}
 	while (*list != NULL) {
 		TALLOC_CTX *frame = talloc_stackframe();
-		bool ret;
+		bool ok;
 
-		ret = token_contains_name(frame, username, domain, sharename,
-					  token, *list);
+	        ok = token_contains_name(frame, username, domain, sharename,
+					 token, *list, match);
 		TALLOC_FREE(frame);
-		if (ret) {
+		if (!ok) {
+			return false;
+		}
+		if (*match) {
 			return true;
 		}
 		list += 1;
 	}
-	return False;
+	return true;
 }
 
 /*
@@ -75,22 +80,34 @@ bool user_ok_token(const char *username, const char *domain,
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
+	bool match;
+	bool ok;
 
 	if (lp_invalid_users(snum) != NULL) {
-		if (token_contains_name_in_list(username, domain,
-						lp_servicename(talloc_tos(), lp_sub, snum),
-						token,
-						lp_invalid_users(snum))) {
+		ok = token_contains_name_in_list(username, domain,
+						 lp_servicename(talloc_tos(), lp_sub, snum),
+						 token,
+						 lp_invalid_users(snum),
+						 &match);
+		if (!ok) {
+			return false;
+		}
+		if (match) {
 			DEBUG(10, ("User %s in 'invalid users'\n", username));
 			return False;
 		}
 	}
 
 	if (lp_valid_users(snum) != NULL) {
-		if (!token_contains_name_in_list(username, domain,
+		ok = token_contains_name_in_list(username, domain,
 						 lp_servicename(talloc_tos(), lp_sub, snum),
 						 token,
-						 lp_valid_users(snum))) {
+						 lp_valid_users(snum),
+						 &match);
+		if (!ok) {
+			return false;
+		}
+		if (!match) {
 			DEBUG(10, ("User %s not in 'valid users'\n",
 				   username));
 			return False;
@@ -120,34 +137,48 @@ bool user_ok_token(const char *username, const char *domain,
 bool is_share_read_only_for_token(const char *username,
 				  const char *domain,
 				  const struct security_token *token,
-				  connection_struct *conn)
+				  connection_struct *conn,
+				  bool *_read_only)
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	int snum = SNUM(conn);
-	bool result = conn->read_only;
+	bool read_only = conn->read_only;
+	bool match;
+	bool ok;
 
 	if (lp_read_list(snum) != NULL) {
-		if (token_contains_name_in_list(username, domain,
-						lp_servicename(talloc_tos(), lp_sub, snum),
-						token,
-						lp_read_list(snum))) {
-			result = True;
+		ok = token_contains_name_in_list(username, domain,
+						 lp_servicename(talloc_tos(), lp_sub, snum),
+						 token,
+						 lp_read_list(snum),
+						 &match);
+		if (!ok) {
+			return false;
+		}
+		if (match) {
+			read_only = true;
 		}
 	}
 
 	if (lp_write_list(snum) != NULL) {
-		if (token_contains_name_in_list(username, domain,
-						lp_servicename(talloc_tos(), lp_sub, snum),
-						token,
-						lp_write_list(snum))) {
-			result = False;
+		ok = token_contains_name_in_list(username, domain,
+						 lp_servicename(talloc_tos(), lp_sub, snum),
+						 token,
+						 lp_write_list(snum),
+						 &match);
+		if (!ok) {
+			return false;
+		}
+		if (match) {
+			read_only = false;
 		}
 	}
 
 	DEBUG(10,("is_share_read_only_for_user: share %s is %s for unix user "
 		  "%s\n", lp_servicename(talloc_tos(), lp_sub, snum),
-		  result ? "read-only" : "read-write", username));
+		  read_only ? "read-only" : "read-write", username));
 
-	return result;
+	*_read_only = read_only;
+	return true;
 }
