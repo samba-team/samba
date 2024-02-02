@@ -316,6 +316,10 @@ NTSTATUS smb_krb5_fill_keytab_gmsa_keys(TALLOC_CTX *mem_ctx,
 
 	cli_credentials_set_username(cred, username, CRED_SPECIFIED);
 
+	/*
+	 * Note that this value may not be correct, it is updated
+	 * after the query that gives us the passwords
+	 */
 	kvno = ldb_msg_find_attr_as_uint(msg, "msDS-KeyVersionNumber", 0);
 
 	cli_credentials_set_kvno(cred, kvno);
