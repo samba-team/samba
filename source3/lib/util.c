@@ -1902,9 +1902,12 @@ struct security_unix_token *copy_unix_token(TALLOC_CTX *ctx, const struct securi
 		return NULL;
 	}
 
-	cpy->uid = tok->uid;
-	cpy->gid = tok->gid;
-	cpy->ngroups = tok->ngroups;
+	*cpy = (struct security_unix_token){
+		.uid = tok->uid,
+		.gid = tok->gid,
+		.ngroups = tok->ngroups,
+	};
+
 	if (tok->ngroups) {
 		/* Make this a talloc child of cpy. */
 		cpy->groups = (gid_t *)talloc_memdup(
@@ -1913,8 +1916,6 @@ struct security_unix_token *copy_unix_token(TALLOC_CTX *ctx, const struct securi
 			TALLOC_FREE(cpy);
 			return NULL;
 		}
-	} else {
-		cpy->groups = NULL;
 	}
 	return cpy;
 }
