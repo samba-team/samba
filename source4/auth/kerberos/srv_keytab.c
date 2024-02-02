@@ -339,6 +339,7 @@ NTSTATUS smb_krb5_fill_keytab_gmsa_keys(TALLOC_CTX *mem_ctx,
 
 	status = cli_credentials_set_gmsa_passwords(cred,
 						    managed_password_blob,
+						    true /* for keytab */,
 						    error_string);
 
 	if (!NT_STATUS_IS_OK(status)) {

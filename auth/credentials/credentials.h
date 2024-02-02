@@ -364,8 +364,14 @@ bool cli_credentials_get_krb5_require_fast_armor(struct cli_credentials *creds);
  * Group Managed Service Account helper
  */
 
+/*
+ * All current callers set "for_keytab = true", but if we start using
+ * this for getting a TGT we need the logic to ignore a very new
+ * key
+ */
 NTSTATUS cli_credentials_set_gmsa_passwords(struct cli_credentials *creds,
 					    const DATA_BLOB *managed_password_blob,
+					    bool for_keytab,
 					    const char **error_string);
 
 #endif /* __CREDENTIALS_H__ */
