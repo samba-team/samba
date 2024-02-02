@@ -58,7 +58,7 @@ static int ads_saslwrap_setup(Sockbuf_IO_Desc *sbiod, void *arg)
 {
 	struct ads_saslwrap *wrap = (struct ads_saslwrap *)arg;
 
-	wrap->sbiod	= (struct Sockbuf_IO_Desc *)sbiod;
+	wrap->sbiod = sbiod;
 
 	sbiod->sbiod_pvt = wrap;
 

@@ -93,7 +93,7 @@ interface ads
 		ads_saslwrap_type wrap_type;
 		[ignore] ads_saslwrap_ops *wrap_ops;
 #ifdef HAVE_LDAP_SASL_WRAPPING
-		[ignore] Sockbuf_IO_Desc *sbiod; /* lowlevel state for LDAP wrapping */
+		[ignore] struct sockbuf_io_desc *sbiod; /* lowlevel state for LDAP wrapping */
 #endif /* HAVE_LDAP_SASL_WRAPPING */
 		[ignore] TALLOC_CTX *mem_ctx;
 		[ignore] void *wrap_private_data;
