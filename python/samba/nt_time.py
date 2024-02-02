@@ -25,9 +25,7 @@ NtTime = NewType("NtTime", int)
 NtTimeDelta = NewType("NtTimeDelta", int)
 
 
-NT_EPOCH = datetime.datetime(
-    1601, 1, 1, 0, 0, 0, 0, tzinfo=datetime.timezone.utc
-)
+NT_EPOCH = datetime.datetime(1601, 1, 1, 0, 0, 0, 0, tzinfo=datetime.timezone.utc)
 NT_TICKS_PER_μSEC = 10
 NT_TICKS_PER_SEC = NT_TICKS_PER_μSEC * 10**6
 
