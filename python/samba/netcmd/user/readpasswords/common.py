@@ -114,7 +114,10 @@ def get_crypt_value(alg, utf8pw, rounds=0):
         "5": {"length": 43},
         "6": {"length": 86},
     }
-    assert alg in algs
+    if alg not in algs:
+        raise ValueError(f"invalid algorithm code: {alg}"
+                         f"(expected one of {','.join(algs.keys())})")
+
     salt = os.urandom(16)
     # The salt needs to be in [A-Za-z0-9./]
     # base64 is close enough and as we had 16
