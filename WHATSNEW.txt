@@ -12,6 +12,17 @@ Samba 4.21 will be the next version of the Samba suite.
 UPGRADING
 =========
 
+Hardening of "valid users", "invalid users", "read list" and "write list"
+-------------------------------------------------------------------------
+
+In previous versions of Samba, if a user or group name in either of the
+mentioned options could not be resolved to a valid SID, the user (or group)
+would be skipped without any notification. This could result in unexpected and
+insecure behaviour. Starting with this version of Samba, if any user or group
+name in any of the options cannot be resolved due to a communication error with
+a domain controller, Samba will log an error and the tree connect will fail.
+Non existing users (or groups) are ignored.
+
 LDAP TLS/SASL channel binding support
 -------------------------------------
 
@@ -164,6 +175,15 @@ NOTE: Domains upgraded from older Samba versions will not have this
 set, even after the functional level preparation, matching the
 behaviour of upgraded Windows AD domains.
 
+Per-user and group "veto files" and "hide files"
+------------------------------------------------
+
+"veto files" and "hide files" can optionally be restricted to certain users and
+groups. To apply a veto or hide directive to a filename for a specific user or
+group, prefix the filename with "../USERNAME/" or "../GROUPNAME/". For details
+consult the updated smb.conf manpage.
+
+
 REMOVED FEATURES
 ================
 
@@ -179,6 +199,12 @@ smb.conf changes
   tls trust system cas                    new
   tls ca directories                      new
   dns hostname                            client dns name [netbios name].[realm]
+  valid users                             Hardening
+  invalid users                           Hardening
+  read list                               Hardening
+  write list                              Hardening
+  veto files                              Added per-user and per-group vetos
+  hide files                              Added per-user and per-group hides
 
 
 KNOWN ISSUES
