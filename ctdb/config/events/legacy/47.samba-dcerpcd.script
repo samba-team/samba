@@ -1,0 +1,66 @@
+#!/bin/sh
+# ctdb event script for SAMBA DCERPCD Services
+
+[ -n "$CTDB_BASE" ] || \
+	CTDB_BASE=$(d=$(dirname "$0") && cd -P "$d" && dirname "$PWD")
+
+. "${CTDB_BASE}/functions"
+
+detect_init_style
+
+case $CTDB_INIT_STYLE in
+	*)
+		# distributions don't have this yet,
+		# but assume samba-dcerpcd as service name
+		CTDB_SERVICE_SAMBA_DCERPCD=${CTDB_SERVICE_SAMBA_DCERPCD:-samba-dcerpcd}
+		;;
+esac
+
+load_script_options
+
+service_start ()
+{
+    # make sure samba-dcerpcd is not already started
+    service "$CTDB_SERVICE_SAMBA_DCERPCD" stop > /dev/null 2>&1
+    killall -0 -q samba-dcerpcd && {
+	sleep 1
+	# make absolutely sure samba-dcerpcd is dead
+	killall -q -9 samba-dcerpcd
+    }
+
+    # start Samba dcerpcd service. Start it reniced, as under very heavy load
+    # the number of smbd processes will mean that it leaves few cycles
+    # for anything else
+    nice_service "$CTDB_SERVICE_SAMBA_DCERPCD" start || die "Failed to start samba-dcerpcd"
+}
+
+service_stop ()
+{
+    service "$CTDB_SERVICE_SAMBA_DCERPCD" stop
+}
+
+service_status ()
+{
+    service "$CTDB_SERVICE_SAMBA_DCERPCD" status > /dev/null
+    test $? = 0 && return 0
+    service "$CTDB_SERVICE_SAMBA_DCERPCD" status
+}
+
+###########################
+
+case "$1" in
+startup)
+	service_start
+	;;
+
+shutdown)
+	service_stop
+	;;
+
+monitor)
+	service_status
+	;;
+
+esac
+
+exit 0
