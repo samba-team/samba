@@ -16,6 +16,16 @@ interface constants
 	 * see MS-WSP 2.2.3.11
 	 */
 	const uint32_t MAX_ROW_BUFF_SIZE = 0x0004000;
+	/*
+	 * Priority - see CPMSetScopePrioritizationIn MS-WSP 2.2.3.31
+	 */
+	typedef enum {
+		PRIORITY_LEVEL_FOREGROUND = 0,
+		PRIORITY_LEVEL_HIGH = 1,
+		PRIORITY_LEVEL_LOW = 2,
+		PRIORITY_LEVEL_DEFAULT = 3
+	} priority;
+
 	typedef enum {
 		BACKEND_NULL = 0,
 		BACKEND_STRING = 1,
