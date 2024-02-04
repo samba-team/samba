@@ -733,28 +733,34 @@ NTSTATUS readlink_talloc(
 	return NT_STATUS_OK;
 }
 
-NTSTATUS read_symlink_reparse(
-	TALLOC_CTX *mem_ctx,
-	struct files_struct *dirfsp,
-	struct smb_filename *smb_relname,
-	struct symlink_reparse_struct **_symlink)
+NTSTATUS read_symlink_reparse(TALLOC_CTX *mem_ctx,
+			      struct files_struct *dirfsp,
+			      struct smb_filename *smb_relname,
+			      struct reparse_data_buffer **_reparse)
 {
-	struct symlink_reparse_struct *symlink = NULL;
+	struct reparse_data_buffer *reparse = NULL;
+	struct symlink_reparse_struct *lnk = NULL;
 	NTSTATUS status;
 
-	symlink = talloc_zero(mem_ctx, struct symlink_reparse_struct);
-	if (symlink == NULL) {
+	reparse = talloc_zero(mem_ctx, struct reparse_data_buffer);
+	if (reparse == NULL) {
 		goto nomem;
 	}
+	*reparse = (struct reparse_data_buffer){
+		.tag = IO_REPARSE_TAG_SYMLINK,
+	};
+	lnk = &reparse->parsed.lnk;
 
-	status = readlink_talloc(
-		symlink, dirfsp, smb_relname, &symlink->substitute_name);
+	status = readlink_talloc(reparse,
+				 dirfsp,
+				 smb_relname,
+				 &lnk->substitute_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("readlink_talloc failed: %s\n", nt_errstr(status));
 		goto fail;
 	}
 
-	if (symlink->substitute_name[0] == '/') {
+	if (lnk->substitute_name[0] == '/') {
 		char *subdir_path = NULL;
 		char *abs_target_canon = NULL;
 		const char *relative = NULL;
@@ -768,9 +774,8 @@ NTSTATUS read_symlink_reparse(
 			goto nomem;
 		}
 
-		abs_target_canon =
-			canonicalize_absolute_path(talloc_tos(),
-						   symlink->substitute_name);
+		abs_target_canon = canonicalize_absolute_path(
+			talloc_tos(), lnk->substitute_name);
 		if (abs_target_canon == NULL) {
 			goto nomem;
 		}
@@ -780,25 +785,25 @@ NTSTATUS read_symlink_reparse(
 				     abs_target_canon,
 				     &relative);
 		if (in_share) {
-			TALLOC_FREE(symlink->substitute_name);
-			symlink->substitute_name =
-				talloc_strdup(symlink, relative);
-			if (symlink->substitute_name == NULL) {
+			TALLOC_FREE(lnk->substitute_name);
+			lnk->substitute_name = talloc_strdup(reparse,
+							     relative);
+			if (lnk->substitute_name == NULL) {
 				goto nomem;
 			}
 		}
 	}
 
-	if (!IS_DIRECTORY_SEP(symlink->substitute_name[0])) {
-		symlink->flags |= SYMLINK_FLAG_RELATIVE;
+	if (!IS_DIRECTORY_SEP(lnk->substitute_name[0])) {
+		lnk->flags |= SYMLINK_FLAG_RELATIVE;
 	}
 
-	*_symlink = symlink;
+	*_reparse = reparse;
 	return NT_STATUS_OK;
 nomem:
 	status = NT_STATUS_NO_MEMORY;
 fail:
-	TALLOC_FREE(symlink);
+	TALLOC_FREE(reparse);
 	return status;
 }
 

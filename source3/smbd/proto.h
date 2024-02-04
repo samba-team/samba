@@ -377,12 +377,10 @@ NTSTATUS open_stream_pathref_fsp(
 	struct files_struct **_base_fsp,
 	struct smb_filename *smb_fname);
 
-struct symlink_reparse_struct;
-
 struct open_symlink_err {
 	struct stat_ex st;
 	size_t unparsed;
-	struct symlink_reparse_struct *reparse;
+	struct reparse_data_buffer *reparse;
 };
 
 NTSTATUS create_open_symlink_err(TALLOC_CTX *mem_ctx,
@@ -407,13 +405,12 @@ NTSTATUS readlink_talloc(
 	struct smb_filename *smb_relname,
 	char **_substitute);
 
-struct symlink_reparse_struct;
+struct reparse_data_buffer;
 
-NTSTATUS read_symlink_reparse(
-	TALLOC_CTX *mem_ctx,
-	struct files_struct *dirfsp,
-	struct smb_filename *smb_relname,
-	struct symlink_reparse_struct **_symlink);
+NTSTATUS read_symlink_reparse(TALLOC_CTX *mem_ctx,
+			      struct files_struct *dirfsp,
+			      struct smb_filename *smb_relname,
+			      struct reparse_data_buffer **_reparse);
 
 void smb_fname_fsp_unlink(struct smb_filename *smb_fname);
 

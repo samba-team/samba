@@ -1127,6 +1127,7 @@ NTSTATUS filename_convert_dirfsp(
 	struct smb_filename **_smb_fname)
 {
 	struct open_symlink_err *symlink_err = NULL;
+	struct symlink_reparse_struct *lnk = NULL;
 	NTSTATUS status;
 	char *target = NULL;
 	char *safe_target = NULL;
@@ -1161,13 +1162,14 @@ next:
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
 		return status;
 	}
+	lnk = &symlink_err->reparse->parsed.lnk;
 
 	/*
 	 * If we're on an MSDFS share, see if this is
 	 * an MSDFS link.
 	 */
 	if (lp_host_msdfs() && lp_msdfs_root(SNUM(conn)) &&
-	    strnequal(symlink_err->reparse->substitute_name, "msdfs:", 6))
+	    strnequal(lnk->substitute_name, "msdfs:", 6))
 	{
 		TALLOC_FREE(*_smb_fname);
 		TALLOC_FREE(symlink_err);
@@ -1196,7 +1198,7 @@ next:
 
 	target = symlink_target_path(mem_ctx,
 				     name_in,
-				     symlink_err->reparse->substitute_name,
+				     lnk->substitute_name,
 				     symlink_err->unparsed);
 	if (target == NULL) {
 		return NT_STATUS_NO_MEMORY;
