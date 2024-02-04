@@ -808,18 +808,13 @@ NTSTATUS read_symlink_reparse(TALLOC_CTX *mem_ctx,
 	}
 
 	if (lnk->substitute_name[0] == '/') {
-		char *subdir_path = NULL;
+		size_t len = fsp_fullbasepath(dirfsp, NULL, 0);
+		char subdir_path[len + 1];
 		char *abs_target_canon = NULL;
 		const char *relative = NULL;
 		bool in_share;
 
-		subdir_path = talloc_asprintf(talloc_tos(),
-					      "%s/%s",
-					      dirfsp->conn->connectpath,
-					      dirfsp->fsp_name->base_name);
-		if (subdir_path == NULL) {
-			goto nomem;
-		}
+		fsp_fullbasepath(dirfsp, subdir_path, sizeof(subdir_path));
 
 		abs_target_canon = canonicalize_absolute_path(
 			talloc_tos(), lnk->substitute_name);
@@ -828,7 +823,7 @@ NTSTATUS read_symlink_reparse(TALLOC_CTX *mem_ctx,
 		}
 
 		in_share = subdir_of(subdir_path,
-				     strlen(subdir_path),
+				     len,
 				     abs_target_canon,
 				     &relative);
 		if (in_share) {
