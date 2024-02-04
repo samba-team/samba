@@ -737,12 +737,12 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 	NTTIME twrp,
 	struct files_struct **_dirfsp,
 	struct smb_filename **_smb_fname,
-	struct open_symlink_err **_symlink_err)
+	struct reparse_data_buffer **_symlink_err)
 {
 	struct smb_filename *smb_dirname = NULL;
 	struct smb_filename *smb_fname_rel = NULL;
 	struct smb_filename *smb_fname = NULL;
-	struct open_symlink_err *symlink_err = NULL;
+	struct reparse_data_buffer *symlink_err = NULL;
 	const bool posix = (ucf_flags & UCF_POSIX_PATHNAMES);
 	char *dirname = NULL;
 	const char *fname_rel = NULL;
@@ -847,7 +847,7 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
 			struct symlink_reparse_struct
-				*lnk = &symlink_err->reparse->parsed.lnk;
+				*lnk = &symlink_err->parsed.lnk;
 			size_t unparsed = lnk->unparsed_path_length;
 			size_t name_in_len, dirname_len;
 
@@ -960,10 +960,10 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 		 * Upper layers might need the link target. Here we
 		 * still have the relname around, get the symlink err.
 		 */
-		status = create_open_symlink_err(mem_ctx,
-						 smb_dirname->fsp,
-						 smb_fname_rel,
-						 &symlink_err);
+		status = read_symlink_reparse(mem_ctx,
+					      smb_dirname->fsp,
+					      smb_fname_rel,
+					      &symlink_err);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("Could not read symlink for %s: %s\n",
 				  smb_fname_str_dbg(
@@ -1136,7 +1136,7 @@ NTSTATUS filename_convert_dirfsp(
 	struct files_struct **_dirfsp,
 	struct smb_filename **_smb_fname)
 {
-	struct open_symlink_err *symlink_err = NULL;
+	struct reparse_data_buffer *symlink_err = NULL;
 	struct symlink_reparse_struct *lnk = NULL;
 	NTSTATUS status;
 	char *target = NULL;
@@ -1172,7 +1172,7 @@ next:
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
 		return status;
 	}
-	lnk = &symlink_err->reparse->parsed.lnk;
+	lnk = &symlink_err->parsed.lnk;
 
 	/*
 	 * If we're on an MSDFS share, see if this is
