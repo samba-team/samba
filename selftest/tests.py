@@ -49,6 +49,7 @@ pam_wrapper_so_path = config_hash.get("LIBPAM_WRAPPER_SO_PATH")
 pam_set_items_so_path = config_hash.get("PAM_SET_ITEMS_SO_PATH")
 have_heimdal_support = "SAMBA4_USES_HEIMDAL" in config_hash
 using_system_gssapi = "USING_SYSTEM_GSSAPI" in config_hash
+have_lmdb = "HAVE_LMDB" in config_hash
 
 planpythontestsuite("none", "samba.tests.source")
 planpythontestsuite("none", "samba.tests.source_chars")
@@ -64,7 +65,45 @@ else:
     planpythontestsuite("none", "subunit.tests.test_suite")
 planpythontestsuite("none", "samba.tests.blackbox.ndrdump")
 planpythontestsuite("none", "samba.tests.blackbox.check_output")
-planpythontestsuite("none", "api", name="ldb.python", extra_path=['lib/ldb/tests/python'])
+
+# LDB tests for standalone operation
+planpythontestsuite("none", "api",
+                    name="ldb.python.api",
+                    extra_path=['lib/ldb/tests/python'],
+                    environ={'HAVE_LMDB': str(int(have_lmdb))})
+planpythontestsuite("none", "crash",
+                    name="ldb.python.crash",
+                    extra_path=['lib/ldb/tests/python'],
+                    environ={'HAVE_LMDB': str(int(have_lmdb))})
+planpythontestsuite("none", "index",
+                    name="ldb.python.index",
+                    extra_path=['lib/ldb/tests/python'],
+                    environ={'HAVE_LMDB': str(int(have_lmdb))})
+planpythontestsuite("none", "repack",
+                    name="ldb.python.repack",
+                    extra_path=['lib/ldb/tests/python'],
+                    environ={'HAVE_LMDB': str(int(have_lmdb))})
+
+# LDB tests for standalone operation, in the tr_TR.UTF-8 to cover
+# dotless i locales, see
+# https://bugzilla.samba.org/show_bug.cgi?id=15248
+planpythontestsuite("none", "api",
+                    name="ldb.python.api.tr",
+                    extra_path=['lib/ldb/tests/python'],
+                    environ={'LC_ALL': 'tr_TR.UTF-8'})
+planpythontestsuite("none", "crash",
+                    name="ldb.python.crash.tr",
+                    extra_path=['lib/ldb/tests/python'],
+                    environ={'LC_ALL': 'tr_TR.UTF-8'})
+planpythontestsuite("none", "index",
+                    name="ldb.python.index.tr",
+                    extra_path=['lib/ldb/tests/python'],
+                    environ={'LC_ALL': 'tr_TR.UTF-8'})
+planpythontestsuite("none", "repack",
+                    name="ldb.python.repack.tr",
+                    extra_path=['lib/ldb/tests/python'],
+                    environ={'LC_ALL': 'tr_TR.UTF-8'})
+
 planpythontestsuite("none", "samba.tests.credentials")
 planpythontestsuite("none", "samba.tests.registry")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth")

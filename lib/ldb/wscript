@@ -603,34 +603,12 @@ def test(ctx):
     os.makedirs(test_prefix)
     os.environ['TEST_DATA_PREFIX'] = test_prefix
     os.environ['LDB_MODULES_PATH'] = Context.g_module.out + "/modules/ldb"
-    if env.HAVE_LMDB:
-        os.environ['HAVE_LMDB'] = '1'
-    else:
-        os.environ['HAVE_LMDB'] = '0'
     samba_utils.ADD_LD_LIBRARY_PATH('bin/shared')
     samba_utils.ADD_LD_LIBRARY_PATH('bin/shared/private')
 
     cmd = 'tests/test-tdb.sh %s' % Context.g_module.out
     ret = samba_utils.RUN_COMMAND(cmd)
     print("testsuite returned %d" % ret)
-
-    tmp_dir = os.path.join(test_prefix, 'tmp')
-    if not os.path.exists(tmp_dir):
-        os.mkdir(tmp_dir)
-    pyret = samba_utils.RUN_PYTHON_TESTS(
-        ['tests/python/api.py',
-         'tests/python/crash.py',
-         'tests/python/index.py',
-         'tests/python/repack.py'],
-        extra_env={'SELFTEST_PREFIX': test_prefix})
-    pyret = samba_utils.RUN_PYTHON_TESTS(
-        ['tests/python/api.py',
-         'tests/python/crash.py',
-         'tests/python/index.py',
-         'tests/python/repack.py'],
-        extra_env={'SELFTEST_PREFIX': test_prefix,
-                   'LC_ALL': 'tr_TR.UTF-8'}) or pyret
-    print("Python testsuite returned %d" % pyret)
 
     cmocka_ret = 0
     test_exes = ['test_ldb_qsort',
@@ -673,7 +651,7 @@ def test(ctx):
             cmd = os.path.join(Context.g_module.out, test_exe)
             cmocka_ret = cmocka_ret or samba_utils.RUN_COMMAND(cmd)
 
-    sys.exit(ret or pyret or cmocka_ret)
+    sys.exit(ret or cmocka_ret)
 
 def dist():
     '''makes a tarball for distribution'''
