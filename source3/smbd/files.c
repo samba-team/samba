@@ -2574,9 +2574,11 @@ size_t fsp_fullbasepath(struct files_struct *fsp, char *buf, size_t buflen)
 {
 	int len = 0;
 
-	if ((buf == NULL) || (buflen == 0)) {
-		return strlen(fsp->conn->connectpath) + 1 +
-		       strlen(fsp->fsp_name->base_name);
+	if (buf == NULL) {
+		/*
+		 * susv4 allows buf==NULL if buflen==0 for snprintf.
+		 */
+		SMB_ASSERT(buflen == 0);
 	}
 
 	len = snprintf(buf, buflen, "%s/%s", fsp->conn->connectpath,
