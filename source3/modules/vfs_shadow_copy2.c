@@ -1974,7 +1974,7 @@ static const char *shadow_copy2_find_snapdir(TALLOC_CTX *mem_ctx,
 	config = priv->config;
 
 	/*
-	 * If the non-snapdisrseverywhere mode, we should not search!
+	 * If the non-snapdirseverywhere mode, we should not search!
 	 */
 	if (!config->snapdirseverywhere) {
 		return config->snapshot_basepath;
