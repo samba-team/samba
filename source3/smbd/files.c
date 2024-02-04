@@ -1258,7 +1258,7 @@ next:
 		ret = SMB_VFS_FSTATAT(conn,
 				      dirfsp,
 				      &rel_fname,
-				      &symlink_err->st,
+				      &full_fname.st,
 				      AT_SYMLINK_NOFOLLOW);
 		if (ret == -1) {
 			status = map_nt_error_from_unix(errno);
@@ -1270,7 +1270,7 @@ next:
 			goto fail;
 		}
 
-		if (!S_ISLNK(symlink_err->st.st_ex_mode)) {
+		if (!S_ISLNK(full_fname.st.st_ex_mode)) {
 			/*
 			 * Hit a race: readlink_talloc() worked before
 			 * the fstatat(), but rel_fname changed to
