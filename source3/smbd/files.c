@@ -1310,8 +1310,6 @@ next:
 		len = talloc_get_size(path);
 		symlink_err->unparsed = len - parsed;
 
-		symlink_err->st = dirfsp->fsp_name->st;
-
 		status = NT_STATUS_STOPPED_ON_SYMLINK;
 		goto fail;
 	}
@@ -1395,7 +1393,6 @@ done:
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		symlink_err->st = fsp->fsp_name->st;
 
 		status = NT_STATUS_STOPPED_ON_SYMLINK;
 		goto fail;

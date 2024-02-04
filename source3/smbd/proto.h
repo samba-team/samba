@@ -378,7 +378,6 @@ NTSTATUS open_stream_pathref_fsp(
 	struct smb_filename *smb_fname);
 
 struct open_symlink_err {
-	struct stat_ex st;
 	size_t unparsed;
 	struct reparse_data_buffer *reparse;
 };
