@@ -2238,15 +2238,6 @@ void fsp_unbind_smb(struct smb_request *req, files_struct *fsp)
 
 		fsp_fullbasepath(fsp, fullpath, sizeof(fullpath));
 
-		/*
-		 * Avoid /. at the end of the path name. notify can't
-		 * deal with it.
-		 */
-		if (len > 1 && fullpath[len-1] == '.' &&
-		    fullpath[len-2] == '/') {
-			fullpath[len-2] = '\0';
-		}
-
 		notify_remove(fsp->conn->sconn->notify_ctx, fsp, fullpath);
 		TALLOC_FREE(fsp->notify);
 	}
@@ -2581,9 +2572,16 @@ size_t fsp_fullbasepath(struct files_struct *fsp, char *buf, size_t buflen)
 		SMB_ASSERT(buflen == 0);
 	}
 
-	len = snprintf(buf, buflen, "%s/%s", fsp->conn->connectpath,
-		       fsp->fsp_name->base_name);
-	SMB_ASSERT(len>0);
+	if (ISDOT(fsp->fsp_name->base_name)) {
+		len = snprintf(buf, buflen, "%s", fsp->conn->connectpath);
+	} else {
+		len = snprintf(buf,
+			       buflen,
+			       "%s/%s",
+			       fsp->conn->connectpath,
+			       fsp->fsp_name->base_name);
+	}
+	SMB_ASSERT(len > 0);
 
 	return len;
 }

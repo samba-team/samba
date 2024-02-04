@@ -316,13 +316,6 @@ NTSTATUS change_notify_create(struct files_struct *fsp,
 
 	fsp_fullbasepath(fsp, fullpath, sizeof(fullpath));
 
-	/*
-	 * Avoid /. at the end of the path name. notify can't deal with it.
-	 */
-	if (len > 1 && fullpath[len-1] == '.' && fullpath[len-2] == '/') {
-		fullpath[len-2] = '\0';
-	}
-
 	if ((fsp->notify->filter != 0) ||
 	    (fsp->notify->subdir_filter != 0)) {
 		status = notify_add(fsp->conn->sconn->notify_ctx,
@@ -533,10 +526,6 @@ static struct files_struct *smbd_notifyd_reregister(struct files_struct *fsp,
 		NTSTATUS status;
 
 		fsp_fullbasepath(fsp, fullpath, sizeof(fullpath));
-		if (len > 1 && fullpath[len-1] == '.' &&
-		    fullpath[len-2] == '/') {
-			fullpath[len-2] = '\0';
-		}
 
 		status = notify_add(fsp->conn->sconn->notify_ctx,
 				    fullpath, fsp->notify->filter,
