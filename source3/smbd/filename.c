@@ -846,6 +846,9 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 						      &symlink_err);
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+			struct symlink_reparse_struct
+				*lnk = &symlink_err->reparse->parsed.lnk;
+			size_t unparsed = lnk->unparsed_path_length;
 			size_t name_in_len, dirname_len;
 
 			name_in_len = strlen(name_in);
@@ -853,7 +856,14 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 
 			SMB_ASSERT(name_in_len >= dirname_len);
 
-			symlink_err->unparsed += (name_in_len - dirname_len);
+			unparsed += (name_in_len - dirname_len);
+
+			if (unparsed > UINT16_MAX) {
+				status = NT_STATUS_BUFFER_OVERFLOW;
+				goto fail;
+			}
+
+			lnk->unparsed_path_length = unparsed;
 			*_symlink_err = symlink_err;
 
 			goto fail;
@@ -1177,7 +1187,7 @@ next:
 	}
 
 	if (!lp_follow_symlinks(SNUM(conn))) {
-		status = (symlink_err->unparsed == 0)
+		status = (lnk->unparsed_path_length == 0)
 				 ? NT_STATUS_OBJECT_NAME_NOT_FOUND
 				 : NT_STATUS_OBJECT_PATH_NOT_FOUND;
 		TALLOC_FREE(symlink_err);
@@ -1199,7 +1209,7 @@ next:
 	target = symlink_target_path(mem_ctx,
 				     name_in,
 				     lnk->substitute_name,
-				     symlink_err->unparsed);
+				     lnk->unparsed_path_length);
 	if (target == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1208,7 +1218,7 @@ next:
 					  conn->connectpath,
 					  NULL,
 					  target,
-					  symlink_err->unparsed,
+					  lnk->unparsed_path_length,
 					  &safe_target);
 	TALLOC_FREE(symlink_err);
 	if (!NT_STATUS_IS_OK(status)) {

@@ -1247,7 +1247,14 @@ next:
 		if (next != NULL) {
 			size_t parsed = next - path;
 			size_t len = talloc_get_size(path);
-			symlink_err->unparsed = len - parsed;
+			size_t unparsed = len - parsed;
+
+			if (unparsed > UINT16_MAX) {
+				status = NT_STATUS_BUFFER_OVERFLOW;
+				goto fail;
+			}
+			symlink_err->parsed.lnk
+				.unparsed_path_length = unparsed;
 		}
 
 		/*
@@ -1287,7 +1294,7 @@ next:
 #endif
 
 	if ((fd == -1) && (errno == ENOTDIR)) {
-		size_t parsed, len;
+		size_t parsed, len, unparsed;
 
 		/*
 		 * dirfsp does not point at a directory, try a
@@ -1308,7 +1315,15 @@ next:
 
 		parsed = rel_fname.base_name - path;
 		len = talloc_get_size(path);
-		symlink_err->unparsed = len - parsed;
+		unparsed = len - parsed;
+
+		if (unparsed > UINT16_MAX) {
+			status = NT_STATUS_BUFFER_OVERFLOW;
+			goto fail;
+		}
+
+		symlink_err->reparse->parsed.lnk
+			.unparsed_path_length = unparsed;
 
 		status = NT_STATUS_STOPPED_ON_SYMLINK;
 		goto fail;
