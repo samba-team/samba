@@ -149,11 +149,6 @@ def configure(conf):
         if conf.CHECK_FUNCS_IN('ber_flush ldap_open ldap_initialize', 'lber ldap', headers='lber.h ldap.h'):
             conf.env.ENABLE_LDAP_BACKEND = True
 
-        # we don't want any libraries or modules to rely on runtime
-        # resolution of symbols
-        if not sys.platform.startswith("openbsd"):
-            conf.ADD_LDFLAGS('-Wl,-no-undefined', testflags=True)
-
     # if lmdb support is enabled then we require lmdb
     # is present, build the mdb back end and enable lmdb support in
     # the tools.
