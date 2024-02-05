@@ -603,6 +603,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
  	 */
 
 	fsp->fsp_flags.delete_on_close = false;
+	fsp->fsp_flags.fstat_before_close = false;
 	lck_state.reset_delete_on_close = true;
 
  done:
