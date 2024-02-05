@@ -50,6 +50,8 @@ pam_set_items_so_path = config_hash.get("PAM_SET_ITEMS_SO_PATH")
 have_heimdal_support = "SAMBA4_USES_HEIMDAL" in config_hash
 using_system_gssapi = "USING_SYSTEM_GSSAPI" in config_hash
 have_lmdb = "HAVE_LMDB" in config_hash
+have_libldap = "HAVE_LIBLDAP" in config_hash
+have_liblber = "HAVE_LIBLBER" in config_hash
 
 planpythontestsuite("none", "samba.tests.source")
 planpythontestsuite("none", "samba.tests.source_chars")
@@ -97,6 +99,47 @@ planpythontestsuite("none", "index",
                     extra_path=['lib/ldb/tests/python'],
                     environ={'LC_ALL': 'tr_TR.UTF-8',
                              'HAVE_LMDB': str(int(have_lmdb))})
+
+# LDB cmocka tests
+
+ldb_test_exes = ['test_ldb_qsort',
+                 'test_ldb_dn',
+                 'ldb_msg_test',
+                 'ldb_tdb_mod_op_test',
+                 'ldb_tdb_guid_mod_op_test',
+                 'ldb_tdb_kv_ops_test',
+                 'ldb_tdb_test',
+                 'ldb_match_test',
+                 'ldb_key_value_test',
+                 # we currently don't run ldb_key_value_sub_txn_tdb_test as it
+                 # tests the nested/sub transaction handling
+                 # on operations which the TDB backend does not currently
+                 # support
+                 # 'ldb_key_value_sub_txn_tdb_test'
+                 'ldb_parse_test',
+                 'ldb_filter_attrs_test',
+                 'ldb_filter_attrs_in_place_test',
+                 ]
+# if LIB_LDAP and LIB_LBER defined, then we can test ldb_ldap backend
+# behavior regression for bz#14413
+if have_libldap and have_liblber:
+    ldb_test_exes += ["lldb_ldap_test"]
+
+if have_lmdb:
+    ldb_test_exes += ['ldb_mdb_mod_op_test',
+                      'ldb_lmdb_test',
+                      # we don't want to run ldb_lmdb_size_test (which proves
+                      # we can fit > 4G of data into the DB), it would fill up
+                      # the disk on many of our test instances
+                      'ldb_mdb_kv_ops_test',
+                      'ldb_key_value_sub_txn_mdb_test',
+                      'ldb_lmdb_free_list_test']
+else:
+    ldb_test_exes += ['ldb_no_lmdb_test']
+
+for ldb_test_exe in ldb_test_exes:
+    plantestsuite(f"ldb.unittests.{ldb_test_exe}", "none",
+                  [os.path.join(bindir(), f"default/lib/ldb/{ldb_test_exe}")])
 
 planpythontestsuite("none", "samba.tests.credentials")
 planpythontestsuite("none", "samba.tests.registry")
