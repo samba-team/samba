@@ -657,5 +657,7 @@ int main(int argc, const char **argv)
 		test_free_list_stale_reader, setup, teardown),
 	};
 
+	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
+
 	return cmocka_run_group_tests(tests, NULL, NULL);
 }

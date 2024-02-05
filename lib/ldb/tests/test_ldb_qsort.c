@@ -61,5 +61,6 @@ int main(void) {
 		cmocka_unit_test(test_ldb_qsort),
 	};
 
+	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
 	return cmocka_run_group_tests(tests, NULL, NULL);
 }

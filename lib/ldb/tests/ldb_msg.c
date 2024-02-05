@@ -376,5 +376,7 @@ int main(int argc, const char **argv)
 			ldb_msg_teardown),
 	};
 
+	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
+
 	return cmocka_run_group_tests(tests, NULL, NULL);
 }

@@ -208,7 +208,7 @@ static void test_ldb_dn_explode(void **state)
 
 		/* comp nums are set by explode */
 		result = ldb_dn_validate(dn);
-		print_error("test %zu «%s»: res %i lin «%s» ext «%s»\n",
+		print_error("string under test (%zu) «%s»: res %i lin «%s» ext «%s»\n",
 			    i, tests[i].strdn, result, linear, ext_linear);
 		
 		assert_true(result == tests[i].explode_result);
@@ -227,6 +227,8 @@ int main(void) {
 		cmocka_unit_test(test_ldb_dn_add_child_val2),
 		cmocka_unit_test(test_ldb_dn_explode),
 	};
+
+	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
 
 	return cmocka_run_group_tests(tests, NULL, NULL);
 }

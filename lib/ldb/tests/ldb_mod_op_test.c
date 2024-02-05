@@ -4720,5 +4720,7 @@ int main(int argc, const char **argv)
 		cmocka_set_test_filter(argv[1]);
 	}
 
+	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
+
 	return cmocka_run_group_tests(tests, NULL, NULL);
 }
