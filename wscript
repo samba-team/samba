@@ -179,7 +179,7 @@ def configure(conf):
     conf.RECURSE('examples/winexe')
 
     conf.SAMBA_CHECK_PERL(mandatory=True)
-    conf.find_program('xsltproc', var='XSLTPROC')
+    conf.CHECK_XSLTPROC_MANPAGES()
 
     if conf.env.disable_python:
         if not (Options.options.without_ad_dc):
