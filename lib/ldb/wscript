@@ -593,25 +593,6 @@ def build(bld):
                              deps='cmocka ldb',
                              install=False)
 
-def test(ctx):
-    '''run ldb testsuite'''
-    env = samba_utils.LOAD_ENVIRONMENT()
-    ctx.env = env
-
-    test_prefix = "%s/st" % (Context.g_module.out)
-    shutil.rmtree(test_prefix, ignore_errors=True)
-    os.makedirs(test_prefix)
-    os.environ['TEST_DATA_PREFIX'] = test_prefix
-    os.environ['LDB_MODULES_PATH'] = Context.g_module.out + "/modules/ldb"
-    samba_utils.ADD_LD_LIBRARY_PATH('bin/shared')
-    samba_utils.ADD_LD_LIBRARY_PATH('bin/shared/private')
-
-    cmd = 'tests/test-tdb.sh %s' % Context.g_module.out
-    ret = samba_utils.RUN_COMMAND(cmd)
-    print("testsuite returned %d" % ret)
-
-    sys.exit(ret)
-
 def dist():
     '''makes a tarball for distribution'''
     samba_dist.dist()

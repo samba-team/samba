@@ -203,11 +203,7 @@ for t in smbtorture4_testsuites("dsdb."):
     plansmbtorture4testsuite(t, "ad_dc:local", "localhost")
 
 ldbdir = os.path.join(srcdir(), "lib/ldb")
-# Don't run LDB tests when using system ldb, as we won't have ldbtest installed
-if os.path.exists(os.path.join(samba4bindir, "ldbtest")):
-    plantestsuite("ldb.base", "none", "%s/tests/test-tdb-subunit.sh %s" % (ldbdir, samba4bindir))
-else:
-    skiptestsuite("ldb.base", "Using system LDB, ldbtest not available")
+plantestsuite("ldb.base", "none", "%s/tests/test-tdb-subunit.sh %s" % (ldbdir, samba4bindir))
 
 plantestsuite_loadlist("samba4.tests.attr_from_server.python(ad_dc_ntvfs)",
                        "ad_dc_ntvfs:local",
