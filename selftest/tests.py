@@ -25,10 +25,10 @@ from selftesthelpers import plantestsuite, bbdir
 from selftesthelpers import configuration, valgrindify
 from selftesthelpers import skiptestsuite
 
+samba4bindir = bindir()
 try:
     config_h = os.environ["CONFIG_H"]
 except KeyError:
-    samba4bindir = bindir()
     config_h = os.path.join(samba4bindir, "default/include/config.h")
 
 # check available features
@@ -140,6 +140,10 @@ else:
 for ldb_test_exe in ldb_test_exes:
     plantestsuite(f"ldb.unittests.{ldb_test_exe}", "none",
                   [os.path.join(bindir(), f"default/lib/ldb/{ldb_test_exe}")])
+
+# Shell based LDB blackbox tests and the older ldbtest C tests
+ldbdir = os.path.join(srcdir(), "lib/ldb")
+plantestsuite("ldb.base", "none", "%s/tests/test-tdb-subunit.sh %s" % (ldbdir, samba4bindir))
 
 planpythontestsuite("none", "samba.tests.credentials")
 planpythontestsuite("none", "samba.tests.registry")
