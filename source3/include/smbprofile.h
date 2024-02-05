@@ -51,6 +51,11 @@ struct tevent_context;
 	SMBPROFILE_STATS_COUNT(num_files) \
 	SMBPROFILE_STATS_SECTION_END \
 	\
+	SMBPROFILE_STATS_SECTION_START(global, "Authentication") \
+	SMBPROFILE_STATS_COUNT(authentication) \
+	SMBPROFILE_STATS_COUNT(authentication_failed) \
+	SMBPROFILE_STATS_SECTION_END \
+	\
 	SMBPROFILE_STATS_SECTION_START(syscall, "System Calls") \
 	SMBPROFILE_STATS_BASIC(syscall_opendir) \
 	SMBPROFILE_STATS_BASIC(syscall_fdopendir) \
@@ -473,6 +478,13 @@ struct profile_stats {
 	} \
 } while(0)
 
+#define DO_PROFILE_INC_AUTH_SUCCESS() \
+	DO_PROFILE_INC(authentication); \
+
+#define DO_PROFILE_INC_AUTH_FAILED() \
+	DO_PROFILE_INC(authentication); \
+	DO_PROFILE_INC(authentication_failed); \
+
 extern struct profile_stats *profile_p;
 
 struct smbprofile_global_state {
@@ -675,6 +687,9 @@ static inline uint64_t profile_timestamp(void)
 #define END_PROFILE_BYTES(x)
 
 #define PROFILE_TIMESTAMP(x) (*(x)=(struct timespec){0})
+
+#define DO_PROFILE_INC_AUTH_SUCCESS()
+#define DO_PROFILE_INC_AUTH_FAILED()
 
 static inline bool smbprofile_active(void)
 {

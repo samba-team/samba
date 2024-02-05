@@ -120,6 +120,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	if (data_blob_len == 0) {
 		/* an invalid request */
 		reply_nterror(req, nt_status_squash(NT_STATUS_LOGON_FAILURE));
+		DO_PROFILE_INC_AUTH_FAILED();
 		return;
 	}
 
@@ -173,6 +174,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 						vuid, now,
 						&session);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
+			DO_PROFILE_INC_AUTH_FAILED();
 			reply_force_doserror(req, ERRSRV, ERRbaduid);
 			return;
 		}
@@ -185,6 +187,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			TALLOC_FREE(session->pending_auth);
 		}
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			DO_PROFILE_INC_AUTH_FAILED();
 			reply_nterror(req, nt_status_squash(status));
 			return;
 		}
@@ -195,6 +198,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		status = smbXsrv_session_create(xconn,
 					        now, &session);
 		if (!NT_STATUS_IS_OK(status)) {
+			DO_PROFILE_INC_AUTH_FAILED();
 			reply_nterror(req, nt_status_squash(status));
 			return;
 		}
@@ -207,6 +211,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 						     0, /* security */
 						     &auth);
 		if (!NT_STATUS_IS_OK(status)) {
+			DO_PROFILE_INC_AUTH_FAILED();
 			reply_nterror(req, nt_status_squash(status));
 			return;
 		}
@@ -220,6 +225,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 					      &auth->gensec);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(session);
+			DO_PROFILE_INC_AUTH_FAILED();
 			reply_nterror(req, nt_status_squash(status));
 			return;
 		}
@@ -233,6 +239,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Failed to start SPNEGO handler!\n"));
 			TALLOC_FREE(session);;
+			DO_PROFILE_INC_AUTH_FAILED();
 			reply_nterror(req, nt_status_squash(status));
 			return;
 		}
@@ -246,6 +253,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		TALLOC_FREE(session);
+		DO_PROFILE_INC_AUTH_FAILED();
 		reply_nterror(req, nt_status_squash(status));
 		return;
 	}
@@ -262,6 +270,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 				 nt_errstr(status)));
 			data_blob_free(&out_blob);
 			TALLOC_FREE(session);
+			DO_PROFILE_INC_AUTH_FAILED();
 			reply_nterror(req, nt_status_squash(status));
 			return;
 		}
@@ -288,6 +297,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			if (!NT_STATUS_IS_OK(status)) {
 				data_blob_free(&out_blob);
 				TALLOC_FREE(session);
+				DO_PROFILE_INC_AUTH_FAILED();
 				reply_nterror(req, status);
 				return;
 			}
@@ -345,6 +355,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 				  (unsigned long long)session->global->session_wire_id));
 			data_blob_free(&out_blob);
 			TALLOC_FREE(session);
+			DO_PROFILE_INC_AUTH_FAILED();
 			reply_nterror(req, NT_STATUS_LOGON_FAILURE);
 			return;
 		}
@@ -356,6 +367,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 				  nt_errstr(status)));
 			data_blob_free(&out_blob);
 			TALLOC_FREE(session);
+			DO_PROFILE_INC_AUTH_FAILED();
 			reply_nterror(req, NT_STATUS_LOGON_FAILURE);
 			return;
 		}
@@ -383,6 +395,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 				 nt_errstr(status)));
 			data_blob_free(&out_blob);
 			TALLOC_FREE(session);
+			DO_PROFILE_INC_AUTH_FAILED();
 			reply_nterror(req, nt_status_squash(status));
 			return;
 		}
@@ -431,6 +444,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 				  nt_errstr(status)));
 			data_blob_free(&out_blob);
 			TALLOC_FREE(session);
+			DO_PROFILE_INC_AUTH_FAILED();
 			reply_nterror(req, NT_STATUS_LOGON_FAILURE);
 			return;
 		}
@@ -454,6 +468,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	if (message_push_blob(&req->outbuf, out_blob) == -1) {
 		data_blob_free(&out_blob);
 		TALLOC_FREE(session);
+		DO_PROFILE_INC_AUTH_FAILED();
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
@@ -461,8 +476,13 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 	if (push_signature(&req->outbuf) == -1) {
 		TALLOC_FREE(session);
+		DO_PROFILE_INC_AUTH_FAILED();
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
+	}
+
+	if (NT_STATUS_IS_OK(status)) {
+		DO_PROFILE_INC_AUTH_SUCCESS();
 	}
 }
 
@@ -608,6 +628,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	state = talloc_zero(req, struct reply_sesssetup_and_X_state);
 	if (state == NULL) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		DO_PROFILE_INC_AUTH_FAILED();
 		END_PROFILE(SMBsesssetupX);
 		return;
 	}
@@ -641,6 +662,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 				 "negotiated.\n"));
 			reply_nterror(req, nt_status_squash(
 					      NT_STATUS_LOGON_FAILURE));
+			DO_PROFILE_INC_AUTH_FAILED();
 			END_PROFILE(SMBsesssetupX);
 			return;
 		}
@@ -666,6 +688,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		if ((passlen1 > MAX_PASS_LEN) || (passlen1 > req->buflen)) {
 			reply_nterror(req, nt_status_squash(
 					      NT_STATUS_INVALID_PARAMETER));
+			DO_PROFILE_INC_AUTH_FAILED();
 			END_PROFILE(SMBsesssetupX);
 			return;
 		}
@@ -742,6 +765,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		    || passlen1 > smbreq_bufrem(req, p)) {
 			reply_nterror(req, nt_status_squash(
 					      NT_STATUS_INVALID_PARAMETER));
+			DO_PROFILE_INC_AUTH_FAILED();
 			END_PROFILE(SMBsesssetupX);
 			return;
 		}
@@ -750,6 +774,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		    || passlen2 > smbreq_bufrem(req, p+passlen1)) {
 			reply_nterror(req, nt_status_squash(
 					      NT_STATUS_INVALID_PARAMETER));
+			DO_PROFILE_INC_AUTH_FAILED();
 			END_PROFILE(SMBsesssetupX);
 			return;
 		}
@@ -788,6 +813,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			if (!pass) {
 				reply_nterror(req, nt_status_squash(
 					      NT_STATUS_INVALID_PARAMETER));
+				DO_PROFILE_INC_AUTH_FAILED();
 				END_PROFILE(SMBsesssetupX);
 				return;
 			}
@@ -861,6 +887,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 				"negotiating spnego.\n"));
 			reply_nterror(req, nt_status_squash(
 					      NT_STATUS_LOGON_FAILURE));
+			DO_PROFILE_INC_AUTH_FAILED();
 			END_PROFILE(SMBsesssetupX);
 			return;
 		}
@@ -897,6 +924,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 				"session setup without negprot denied!\n"));
 			reply_nterror(req, nt_status_squash(
 					      NT_STATUS_LOGON_FAILURE));
+			DO_PROFILE_INC_AUTH_FAILED();
 			END_PROFILE(SMBsesssetupX);
 			return;
 		}
@@ -941,6 +969,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		reply_nterror(req, nt_status_squash(nt_status));
+		DO_PROFILE_INC_AUTH_FAILED();
 		END_PROFILE(SMBsesssetupX);
 		return;
 	}
@@ -951,6 +980,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	TALLOC_FREE(state->user_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		reply_nterror(req, nt_status_squash(nt_status));
+		DO_PROFILE_INC_AUTH_FAILED();
 		END_PROFILE(SMBsesssetupX);
 		return;
 	}
@@ -976,6 +1006,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 					   now, &session);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		reply_nterror(req, nt_status_squash(nt_status));
+		DO_PROFILE_INC_AUTH_FAILED();
 		END_PROFILE(SMBsesssetupX);
 		return;
 	}
@@ -1000,6 +1031,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(session);
 			reply_nterror(req, status);
+			DO_PROFILE_INC_AUTH_FAILED();
 			END_PROFILE(SMBsesssetupX);
 			return;
 		}
@@ -1020,6 +1052,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		if (session->global->application_key_blob.data == NULL) {
 			TALLOC_FREE(session);
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			DO_PROFILE_INC_AUTH_FAILED();
 			END_PROFILE(SMBsesssetupX);
 			return;
 		}
@@ -1034,6 +1067,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		if (session_info->session_key.data == NULL) {
 			TALLOC_FREE(session);
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			DO_PROFILE_INC_AUTH_FAILED();
 			END_PROFILE(SMBsesssetupX);
 			return;
 		}
@@ -1081,6 +1115,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			  nt_errstr(nt_status)));
 		TALLOC_FREE(session);
 		reply_nterror(req, nt_status_squash(nt_status));
+		DO_PROFILE_INC_AUTH_FAILED();
 		END_PROFILE(SMBsesssetupX);
 		return;
 	}
@@ -1090,6 +1125,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			  (unsigned long long)session->global->session_wire_id));
 		TALLOC_FREE(session);
 		reply_nterror(req, NT_STATUS_LOGON_FAILURE);
+		DO_PROFILE_INC_AUTH_FAILED();
 		END_PROFILE(SMBsesssetupX);
 		return;
 	}
@@ -1107,6 +1143,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	if (!xconn->smb1.sessions.done_sesssetup) {
 		if (smb_bufsize < SMB_BUFFER_SIZE_MIN) {
 			reply_force_doserror(req, ERRSRV, ERRerror);
+			DO_PROFILE_INC_AUTH_FAILED();
 			END_PROFILE(SMBsesssetupX);
 			return;
 		}
@@ -1115,5 +1152,6 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	}
 
 	TALLOC_FREE(state);
+	DO_PROFILE_INC_AUTH_SUCCESS();
 	END_PROFILE(SMBsesssetupX);
 }

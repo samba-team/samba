@@ -1139,6 +1139,7 @@ static void smbd_smb2_session_setup_wrap_setup_done(struct tevent_req *subreq)
 					      &state->out_session_id);
 	TALLOC_FREE(subreq);
 	if (NT_STATUS_IS_OK(status)) {
+		DO_PROFILE_INC_AUTH_SUCCESS();
 		tevent_req_done(req);
 		return;
 	}
@@ -1146,6 +1147,8 @@ static void smbd_smb2_session_setup_wrap_setup_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, status);
 		return;
 	}
+
+	DO_PROFILE_INC_AUTH_FAILED();
 
 	if (state->smb2req->session == NULL) {
 		tevent_req_nterror(req, status);

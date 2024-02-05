@@ -422,7 +422,7 @@ EOF
 	fi
 
 	# keys in --json --profile
-	expected='["ACL Calls","NT Transact Calls","SMB Calls","SMB2 Calls","SMBD loop","Stat Cache","System Calls","Trans2 Calls","smb_conf","timestamp","version"]'
+	expected='["ACL Calls","Authentication","NT Transact Calls","SMB Calls","SMB2 Calls","SMBD loop","Stat Cache","System Calls","Trans2 Calls","smb_conf","timestamp","version"]'
 	out=$(cat $PREFIX/$status_json | jq keys -c)
 	if [ "$expected" != "$out" ]; then
 		echo "Failed: Unexpected keys in smbstatus -jP"
