@@ -90,19 +90,13 @@ planpythontestsuite("none", "repack",
 planpythontestsuite("none", "api",
                     name="ldb.python.api.tr",
                     extra_path=['lib/ldb/tests/python'],
-                    environ={'LC_ALL': 'tr_TR.UTF-8'})
-planpythontestsuite("none", "crash",
-                    name="ldb.python.crash.tr",
-                    extra_path=['lib/ldb/tests/python'],
-                    environ={'LC_ALL': 'tr_TR.UTF-8'})
+                    environ={'LC_ALL': 'tr_TR.UTF-8',
+                             'HAVE_LMDB': str(int(have_lmdb))})
 planpythontestsuite("none", "index",
                     name="ldb.python.index.tr",
                     extra_path=['lib/ldb/tests/python'],
-                    environ={'LC_ALL': 'tr_TR.UTF-8'})
-planpythontestsuite("none", "repack",
-                    name="ldb.python.repack.tr",
-                    extra_path=['lib/ldb/tests/python'],
-                    environ={'LC_ALL': 'tr_TR.UTF-8'})
+                    environ={'LC_ALL': 'tr_TR.UTF-8',
+                             'HAVE_LMDB': str(int(have_lmdb))})
 
 planpythontestsuite("none", "samba.tests.credentials")
 planpythontestsuite("none", "samba.tests.registry")
