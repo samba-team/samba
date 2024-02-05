@@ -26,6 +26,8 @@
 
 struct export_state {
 	struct evbuffer *buf;
+	bool sent_help_authentication : 1;
+	bool sent_help_authentication_failed : 1;
 	bool sent_help_cpu_seconds : 1;
 	bool sent_help_smb1_request_total : 1;
 	bool sent_help_smb2_request_inbytes : 1;
@@ -38,7 +40,41 @@ static void export_count(const char *name,
 			 const struct smbprofile_stats_count *val,
 			 struct export_state *state)
 {
-	return;
+	int cmp;
+
+	cmp = strcmp(name, "authentication");
+	if (cmp == 0) {
+		if (!state->sent_help_authentication) {
+			evbuffer_add_printf(
+				state->buf,
+				"# HELP smb_authentications Total number "
+				"of authentication requests\n"
+				"# TYPE smb_authentications counter\n");
+			state->sent_help_authentication = true;
+		}
+
+		evbuffer_add_printf(
+			state->buf,
+			"smb_authentications %" PRIu64"\n",
+			val->count);
+	}
+
+	cmp = strcmp(name, "authentication_failed");
+	if (cmp == 0) {
+		if (!state->sent_help_authentication_failed) {
+			evbuffer_add_printf(
+				state->buf,
+				"# HELP smb_authentications_failed Total "
+				"number of failed authentication requests\n"
+				"# TYPE smb_authentications_failed counter\n");
+			state->sent_help_authentication_failed = true;
+		}
+
+		evbuffer_add_printf(
+			state->buf,
+			"smb_authentications_failed %" PRIu64"\n",
+			val->count);
+	}
 }
 
 static void export_time(const char *name,
