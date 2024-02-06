@@ -1043,7 +1043,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 
 	if (W_ERROR_EQUAL(status, WERR_DS_DRA_SCHEMA_MISMATCH)) {
 		struct dreplsrv_partition *p;
-		bool ok;
+		struct tevent_req *subreq = NULL;
 
 		if (was_schema) {
 			nt_status = werror_to_ntstatus(WERR_BAD_NET_RESP);
@@ -1141,12 +1141,15 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 
 		state->retry_started = true;
 
-		ok = dreplsrv_op_pull_source_detect_schema_cycle(req);
-		if (!ok) {
+		subreq = dreplsrv_out_drsuapi_send(state,
+						   state->ev,
+						   state->op->source_dsa->conn);
+		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
-
-		dreplsrv_op_pull_source_get_changes_trigger(req);
+		tevent_req_set_callback(subreq,
+					dreplsrv_op_pull_source_connect_done,
+					req);
 		return;
 
 	} else if (!W_ERROR_IS_OK(status)) {
@@ -1205,10 +1208,21 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	 * operation once we are done.
 	 */
 	if (state->source_dsa_retry != NULL) {
+		struct tevent_req *subreq = NULL;
+
 		state->op->source_dsa = state->source_dsa_retry;
 		state->op->extended_op = state->extended_op_retry;
 		state->source_dsa_retry = NULL;
-		dreplsrv_op_pull_source_get_changes_trigger(req);
+
+		subreq = dreplsrv_out_drsuapi_send(state,
+						   state->ev,
+						   state->op->source_dsa->conn);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq,
+					dreplsrv_op_pull_source_connect_done,
+					req);
 		return;
 	}
 
