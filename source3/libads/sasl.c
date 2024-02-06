@@ -136,6 +136,7 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 	const char *sasl_list[] = { sasl, NULL };
 	NTTIME end_nt_time;
 	struct ads_saslwrap *wrap = &ads->ldap_wrap_data;
+	const DATA_BLOB *tls_cb = NULL;
 
 	nt_status = auth_generic_client_prepare(NULL, &auth_generic_state);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -172,6 +173,29 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return ADS_ERROR_NT(nt_status);
 		}
+	}
+
+	tls_cb = ads_tls_channel_bindings(&ads->ldap_tls_data);
+	if (tls_cb != NULL) {
+		uint32_t initiator_addrtype = 0;
+		const DATA_BLOB *initiator_address = NULL;
+		uint32_t acceptor_addrtype = 0;
+		const DATA_BLOB *acceptor_address = NULL;
+		const DATA_BLOB *application_data = tls_cb;
+
+		nt_status = gensec_set_channel_bindings(auth_generic_state->gensec_security,
+							initiator_addrtype,
+							initiator_address,
+							acceptor_addrtype,
+							acceptor_address,
+							application_data);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DBG_WARNING("Failed to set GENSEC channel bindings: %s\n",
+				    nt_errstr(nt_status));
+			return ADS_ERROR_NT(nt_status);
+		}
+
+		wrap->wrap_type = ADS_SASLWRAP_TYPE_PLAIN;
 	}
 
 	switch (wrap->wrap_type) {
