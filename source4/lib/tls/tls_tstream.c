@@ -1717,3 +1717,179 @@ int tstream_tls_accept_recv(struct tevent_req *req,
 	tevent_req_received(req);
 	return 0;
 }
+
+struct tstream_tls_sync {
+	struct tstream_tls *tlss;
+	void *io_private;
+	ssize_t (*io_send_fn)(void *io_private,
+			      const uint8_t *buf,
+			      size_t len);
+	ssize_t (*io_recv_fn)(void *io_private,
+			      uint8_t *buf,
+			      size_t len);
+};
+
+const DATA_BLOB *tstream_tls_sync_channel_bindings(struct tstream_tls_sync *tlsss)
+{
+	return &tlsss->tlss->channel_bindings;
+}
+
+static ssize_t tstream_tls_sync_push_function(gnutls_transport_ptr_t ptr,
+					      const void *buf, size_t size)
+{
+	struct tstream_tls_sync *tlsss =
+		talloc_get_type_abort(ptr,
+		struct tstream_tls_sync);
+
+	return tlsss->io_send_fn(tlsss->io_private, buf, size);
+}
+
+static ssize_t tstream_tls_sync_pull_function(gnutls_transport_ptr_t ptr,
+					      void *buf, size_t size)
+{
+	struct tstream_tls_sync *tlsss =
+		talloc_get_type_abort(ptr,
+		struct tstream_tls_sync);
+
+	return tlsss->io_recv_fn(tlsss->io_private, buf, size);
+}
+
+ssize_t tstream_tls_sync_read(struct tstream_tls_sync *tlsss,
+			      void *buf, size_t len)
+{
+	int ret;
+
+	ret = gnutls_record_recv(tlsss->tlss->tls_session, buf, len);
+	if (ret == GNUTLS_E_INTERRUPTED) {
+		errno = EINTR;
+		return -1;
+	}
+	if (ret == GNUTLS_E_AGAIN) {
+		errno = EAGAIN;
+		return -1;
+	}
+
+	if (ret < 0) {
+		DBG_WARNING("TLS gnutls_record_recv(%zu) - %s\n",
+			    (size_t)len, gnutls_strerror(ret));
+		errno = EIO;
+		return -1;
+	}
+
+	return ret;
+}
+
+ssize_t tstream_tls_sync_write(struct tstream_tls_sync *tlsss,
+			       const void *buf, size_t len)
+{
+	int ret;
+
+	ret = gnutls_record_send(tlsss->tlss->tls_session, buf, len);
+	if (ret == GNUTLS_E_INTERRUPTED) {
+		errno = EINTR;
+		return -1;
+	}
+	if (ret == GNUTLS_E_AGAIN) {
+		errno = EAGAIN;
+		return -1;
+	}
+
+	if (ret < 0) {
+		DBG_WARNING("TLS gnutls_record_send(%zu) - %s\n",
+			    (size_t)len, gnutls_strerror(ret));
+		errno = EIO;
+		return -1;
+	}
+
+	return ret;
+}
+
+size_t tstream_tls_sync_pending(struct tstream_tls_sync *tlsss)
+{
+	return gnutls_record_check_pending(tlsss->tlss->tls_session);
+}
+
+NTSTATUS tstream_tls_sync_setup(struct tstream_tls_params *_tls_params,
+				void *io_private,
+				ssize_t (*io_send_fn)(void *io_private,
+						      const uint8_t *buf,
+						      size_t len),
+				ssize_t (*io_recv_fn)(void *io_private,
+						      uint8_t *buf,
+						      size_t len),
+				TALLOC_CTX *mem_ctx,
+				struct tstream_tls_sync **_tlsss)
+{
+	struct tstream_tls_sync *tlsss = NULL;
+	struct tstream_tls *tlss = NULL;
+	NTSTATUS status;
+	int ret;
+
+	tlsss = talloc_zero(mem_ctx, struct tstream_tls_sync);
+	if (tlsss == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	tlsss->io_private = io_private;
+	tlsss->io_send_fn = io_send_fn;
+	tlsss->io_recv_fn = io_recv_fn;
+
+	tlss = talloc_zero(tlsss, struct tstream_tls);
+	if (tlss == NULL) {
+		TALLOC_FREE(tlsss);
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(tlss, tstream_tls_destructor);
+	tlss->is_server = false;
+
+	tlsss->tlss = tlss;
+
+	status = tstream_tls_prepare_gnutls(_tls_params, tlss);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(tlsss);
+		return status;
+	}
+
+	gnutls_transport_set_ptr(tlss->tls_session,
+				 (gnutls_transport_ptr_t)tlsss);
+	gnutls_transport_set_pull_function(tlss->tls_session,
+					   (gnutls_pull_func)tstream_tls_sync_pull_function);
+	gnutls_transport_set_push_function(tlss->tls_session,
+					   (gnutls_push_func)tstream_tls_sync_push_function);
+
+	do {
+		/*
+		 * The caller should have the socket blocking
+		 * and do the timeout handling in the
+		 * io_send/recv_fn
+		 */
+		ret = gnutls_handshake(tlss->tls_session);
+	} while (ret == GNUTLS_E_INTERRUPTED || ret == GNUTLS_E_AGAIN);
+
+	if (gnutls_error_is_fatal(ret) != 0) {
+		TALLOC_FREE(tlsss);
+		return gnutls_error_to_ntstatus(ret,
+				NT_STATUS_CRYPTO_SYSTEM_INVALID);
+	}
+
+	if (ret != GNUTLS_E_SUCCESS) {
+		TALLOC_FREE(tlsss);
+		return gnutls_error_to_ntstatus(ret,
+				NT_STATUS_CRYPTO_SYSTEM_INVALID);
+	}
+
+	status = tstream_tls_verify_peer(tlss);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(tlsss);
+		return status;
+	}
+
+	status = tstream_tls_setup_channel_bindings(tlss);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(tlsss);
+		return status;
+	}
+
+	*_tlsss = tlsss;
+	return NT_STATUS_OK;
+}

@@ -33,6 +33,7 @@ void tls_cert_generate(TALLOC_CTX *mem_ctx,
 
 struct tstream_context;
 struct tstream_tls_params;
+struct tstream_tls_sync;
 
 enum tls_verify_peer_state {
 	TLS_VERIFY_PEER_NO_CHECK = 0,
@@ -110,5 +111,23 @@ int tstream_tls_accept_recv(struct tevent_req *req,
 			    int *perrno,
 			    TALLOC_CTX *mem_ctx,
 			    struct tstream_context **tls_stream);
+
+ssize_t tstream_tls_sync_read(struct tstream_tls_sync *tlsss,
+			      void *buf, size_t len);
+ssize_t tstream_tls_sync_write(struct tstream_tls_sync *tlsss,
+			       const void *buf, size_t len);
+size_t tstream_tls_sync_pending(struct tstream_tls_sync *tlsss);
+NTSTATUS tstream_tls_sync_setup(struct tstream_tls_params *_tls_params,
+				void *io_private,
+				ssize_t (*io_send_fn)(void *io_private,
+						      const uint8_t *buf,
+						      size_t len),
+				ssize_t (*io_recv_fn)(void *io_private,
+						      uint8_t *buf,
+						      size_t len),
+				TALLOC_CTX *mem_ctx,
+				struct tstream_tls_sync **_tlsss);
+
+const DATA_BLOB *tstream_tls_sync_channel_bindings(struct tstream_tls_sync *tlsss);
 
 #endif /* _TLS_H_ */
