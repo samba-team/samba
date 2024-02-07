@@ -57,17 +57,17 @@ class Model(metaclass=ModelMeta):
     distinguished_name = DnField("distinguishedName")
     dn = DnField("dn")
     ds_core_propagation_data = DateTimeField("dsCorePropagationData",
-                                             hidden=True)
+                                             hidden=True, readonly=True)
     instance_type = IntegerField("instanceType")
     name = StringField("name")
     object_category = DnField("objectCategory")
     object_class = StringField("objectClass",
                                default=lambda obj: obj.get_object_class())
     object_guid = GUIDField("objectGUID")
-    usn_changed = IntegerField("uSNChanged", hidden=True)
-    usn_created = IntegerField("uSNCreated", hidden=True)
-    when_changed = DateTimeField("whenChanged", hidden=True)
-    when_created = DateTimeField("whenCreated", hidden=True)
+    usn_changed = IntegerField("uSNChanged", hidden=True, readonly=True)
+    usn_created = IntegerField("uSNCreated", hidden=True, readonly=True)
+    when_changed = DateTimeField("whenChanged", hidden=True, readonly=True)
+    when_created = DateTimeField("whenCreated", hidden=True, readonly=True)
 
     def __init__(self, **kwargs):
         """Create a new model instance and optionally populate fields.
