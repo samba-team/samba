@@ -190,7 +190,7 @@ bool token_contains_name(TALLOC_CTX *mem_ctx,
  if possible.
 ********************************************************************/
 
-void set_namearray(TALLOC_CTX *mem_ctx,
+bool set_namearray(TALLOC_CTX *mem_ctx,
 		   const char *namelist_in,
 		   const struct security_token *token,
 		   struct name_compare_entry **_name_array)
@@ -205,13 +205,13 @@ void set_namearray(TALLOC_CTX *mem_ctx,
 	*_name_array = NULL;
 
 	if ((namelist_in == NULL) || (namelist_in[0] == '\0')) {
-		return;
+		return true;
 	}
 
 	namelist = path_to_strv(mem_ctx, namelist_in);
 	if (namelist == NULL) {
 		DBG_ERR("path_to_strv failed\n");
-		return;
+		return false;
 	}
 
 	num_entries = strv_count(namelist);
@@ -222,7 +222,7 @@ void set_namearray(TALLOC_CTX *mem_ctx,
 	if (name_array == NULL) {
 		DBG_ERR("talloc failed\n");
 		TALLOC_FREE(namelist);
-		return;
+		return false;
 	}
 
 	namelist = talloc_reparent(mem_ctx, name_array, namelist);
@@ -244,7 +244,7 @@ void set_namearray(TALLOC_CTX *mem_ctx,
 			if (p == NULL) {
 				DBG_ERR("Missing username\n");
 				TALLOC_FREE(namelist);
-				return;
+				return false;
 			}
 			username = p;
 
@@ -254,7 +254,7 @@ void set_namearray(TALLOC_CTX *mem_ctx,
 				DBG_ERR("Missing filename after username '%s'\n",
 					username);
 				TALLOC_FREE(namelist);
-				return;
+				return false;
 			}
 
 			ok = token_contains_name(talloc_tos(),
@@ -265,7 +265,8 @@ void set_namearray(TALLOC_CTX *mem_ctx,
 						 username,
 						 &match);
 			if (!ok) {
-				continue;
+				TALLOC_FREE(namelist);
+				return false;
 			}
 			if (!match) {
 				continue;
@@ -278,5 +279,5 @@ void set_namearray(TALLOC_CTX *mem_ctx,
 	}
 
 	*_name_array = name_array;
-	return;
+	return true;
 }

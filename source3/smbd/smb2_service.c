@@ -753,14 +753,22 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 
 	/* Add veto/hide lists */
 	if (!IS_IPC(conn) && !IS_PRINT(conn)) {
-		set_namearray(conn,
-			      lp_veto_oplock_files(talloc_tos(), lp_sub, snum),
-			      NULL,
-			      &conn->veto_oplock_list);
-		set_namearray(conn,
-			      lp_aio_write_behind(talloc_tos(), lp_sub, snum),
-			      NULL,
-			      &conn->aio_write_behind_list);
+		ok = set_namearray(conn,
+				   lp_veto_oplock_files(talloc_tos(), lp_sub, snum),
+				   NULL,
+				   &conn->veto_oplock_list);
+		if (!ok) {
+			status = NT_STATUS_NO_MEMORY;
+			goto err_root_exit;
+		}
+		ok = set_namearray(conn,
+				   lp_aio_write_behind(talloc_tos(), lp_sub, snum),
+				   NULL,
+				   &conn->aio_write_behind_list);
+		if (!ok) {
+			status = NT_STATUS_NO_MEMORY;
+			goto err_root_exit;
+		}
 	}
 	smb_fname_cpath = synthetic_smb_fname(talloc_tos(),
 					conn->connectpath,

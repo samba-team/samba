@@ -284,14 +284,20 @@ static bool check_user_ok(connection_struct *conn,
 
 	/* Add veto/hide lists */
 	if (!IS_IPC(conn) && !IS_PRINT(conn)) {
-		set_namearray(conn,
-			      lp_veto_files(talloc_tos(), lp_sub, snum),
-			      session_info->security_token,
-			      &ent->veto_list);
-		set_namearray(conn,
-			      lp_hide_files(talloc_tos(), lp_sub, snum),
-			      session_info->security_token,
-			      &ent->hide_list);
+		ok = set_namearray(conn,
+				   lp_veto_files(talloc_tos(), lp_sub, snum),
+				   session_info->security_token,
+				   &ent->veto_list);
+		if (!ok) {
+			return false;
+		}
+		ok = set_namearray(conn,
+				   lp_hide_files(talloc_tos(), lp_sub, snum),
+				   session_info->security_token,
+				   &ent->hide_list);
+		if (!ok) {
+			return false;
+		}
 	}
 
 	free_conn_state_if_unused(conn);
