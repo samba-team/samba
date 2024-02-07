@@ -347,6 +347,11 @@ class SIDField(Field):
             return MessageElement(ndr_pack(security.dom_sid(value)),
                                   flags, self.name)
 
+    def expression(self, value):
+        """Returns the ldb search expression for this field."""
+        # NOTE: value can be str or `security.dom_sid` so convert to str first.
+        return f"({self.name}={binary_encode(str(value))})"
+
 
 class SDDLField(Field):
     """A SDDL field encodes and decodes SDDL data."""
