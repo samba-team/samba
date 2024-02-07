@@ -692,6 +692,8 @@ typedef struct files_struct {
 
 struct vuid_cache_entry {
 	struct auth_session_info *session_info;
+	struct name_compare_entry *hide_list;
+	struct name_compare_entry *veto_list;
 	uint64_t vuid; /* SMB2 compat */
 	bool read_only;
 	uint32_t share_access;

@@ -208,6 +208,8 @@ static void conn_clear_vuid_cache(connection_struct *conn, uint64_t vuid)
 	}
 	ent->read_only = False;
 	ent->share_access = 0;
+	TALLOC_FREE(ent->veto_list);
+	TALLOC_FREE(ent->hide_list);
 }
 
 /****************************************************************************

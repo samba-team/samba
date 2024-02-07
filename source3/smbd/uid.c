@@ -186,6 +186,8 @@ static bool check_user_ok(connection_struct *conn,
 			const struct auth_session_info *session_info,
 			int snum)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	unsigned int i;
 	bool readonly_share = false;
 	bool admin_user = false;
@@ -208,6 +210,8 @@ static bool check_user_ok(connection_struct *conn,
 			conn->read_only = ent->read_only;
 			conn->share_access = ent->share_access;
 			conn->vuid = ent->vuid;
+			conn->veto_list = ent->veto_list;
+			conn->hide_list = ent->hide_list;
 			return(True);
 		}
 	}
@@ -231,6 +235,8 @@ static bool check_user_ok(connection_struct *conn,
 		(conn->vuid_cache->next_entry + 1) % VUID_CACHE_SIZE;
 
 	TALLOC_FREE(ent->session_info);
+	TALLOC_FREE(ent->veto_list);
+	TALLOC_FREE(ent->hide_list);
 
 	/*
 	 * If force_user was set, all session_info's are based on the same
@@ -262,8 +268,21 @@ static bool check_user_ok(connection_struct *conn,
 	ent->vuid = vuid;
 	ent->read_only = readonly_share;
 	ent->share_access = share_access;
+
+	/* Add veto/hide lists */
+	if (!IS_IPC(conn) && !IS_PRINT(conn)) {
+		set_namearray(conn,
+			      lp_veto_files(talloc_tos(), lp_sub, snum),
+			      &ent->veto_list);
+		set_namearray(conn,
+			      lp_hide_files(talloc_tos(), lp_sub, snum),
+			      &ent->hide_list);
+	}
+
 	free_conn_state_if_unused(conn);
 	conn->session_info = ent->session_info;
+	conn->veto_list = ent->veto_list;
+	conn->hide_list = ent->hide_list;
 	conn->vuid = ent->vuid;
 	if (vuid == UID_FIELD_INVALID) {
 		/*
