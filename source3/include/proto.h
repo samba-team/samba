@@ -318,6 +318,12 @@ const char *readdirname(DIR *p);
 bool is_in_path(const char *name,
 		struct name_compare_entry *namelist,
 		bool case_sensitive);
+bool token_contains_name(TALLOC_CTX *mem_ctx,
+			 const char *username,
+			 const char *domain,
+			 const char *sharename,
+			 const struct security_token *token,
+			 const char *name);
 void set_namearray(TALLOC_CTX *mem_ctx,
 		   const char *namelist,
 		   struct name_compare_entry **_name_array);
