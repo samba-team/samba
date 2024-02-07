@@ -313,6 +313,13 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
                         iov_buf
                         ''')
 
+bld.SAMBA3_SUBSYSTEM('samba3-namearray',
+                   source='''
+                          lib/util_namearray.c
+                          ''',
+                   deps='''
+                        ''')
+
 if bld.env.with_ctdb:
     SAMBA_CLUSTER_SUPPORT_SOURCES='''
                      lib/cluster_support.c
@@ -742,6 +749,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                         GNUTLS_HELPERS
                         fd_handle
                         cli_spoolss
+                        samba3-namearray
                    ''' +
                    bld.env['dmapi_lib'] +
                    bld.env['legacy_quota_libs'] +

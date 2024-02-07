@@ -792,69 +792,6 @@ bool is_in_path(const char *name,
 	return False;
 }
 
-/*******************************************************************
- Strip a '/' separated list into an array of
- name_compare_enties structures suitable for
- passing to is_in_path(). We do this for
- speed so we can pre-parse all the names in the list
- and don't do it for each call to is_in_path().
- We also check if the entry contains a wildcard to
- remove a potentially expensive call to mask_match
- if possible.
-********************************************************************/
-
-void set_namearray(TALLOC_CTX *mem_ctx,
-		   const char *namelist_in,
-		   struct name_compare_entry **_name_array)
-{
-	struct name_compare_entry *name_array = NULL;
-	struct name_compare_entry *e = NULL;
-	char *namelist = NULL;
-	const char *p = NULL;
-	size_t num_entries;
-
-	*_name_array = NULL;
-
-	if ((namelist_in == NULL) || (namelist_in[0] == '\0')) {
-		return;
-	}
-
-	namelist = path_to_strv(mem_ctx, namelist_in);
-	if (namelist == NULL) {
-		DBG_ERR("path_to_strv failed\n");
-		return;
-	}
-
-	num_entries = strv_count(namelist);
-
-	name_array = talloc_zero_array(mem_ctx,
-				       struct name_compare_entry,
-				       num_entries + 1);
-	if (name_array == NULL) {
-		DBG_ERR("talloc failed\n");
-		TALLOC_FREE(namelist);
-		return;
-	}
-
-	namelist = talloc_reparent(mem_ctx, name_array, namelist);
-
-	e = &name_array[0];
-
-	while ((p = strv_next(namelist, p)) != NULL) {
-		if (*p == '\0') {
-			/* cope with multiple (useless) /s) */
-			continue;
-		}
-
-		e->name = p;
-		e->is_wild = ms_has_wild(e->name);
-		e++;
-	}
-
-	*_name_array = name_array;
-	return;
-}
-
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
 
