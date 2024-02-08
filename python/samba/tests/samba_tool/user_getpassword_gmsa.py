@@ -26,6 +26,8 @@ import os
 sys.path.insert(0, "bin/python")
 os.environ["PYTHONUNBUFFERED"] = "1"
 
+import datetime, shlex
+
 from ldb import SCOPE_BASE
 
 from samba.credentials import MUST_USE_KERBEROS
@@ -33,7 +35,8 @@ from samba.dcerpc import security, samr
 from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT
 from samba.netcmd.domain.models import User
 from samba.ndr import ndr_pack, ndr_unpack
-from samba.tests import connect_samdb, delete_force
+from samba.nt_time import nt_time_from_datetime
+from samba.tests import connect_samdb, connect_samdb_env, delete_force
 
 from samba.tests import BlackboxTestCase
 
@@ -88,7 +91,8 @@ class GMSAPasswordTest(BlackboxTestCase):
         cls.user = User.get(cls.samdb, username=cls.username)
 
     def getpassword(self, attrs):
-        cmd = f"user getpassword --attributes={attrs} {self.username}"
+        shattrs = shlex.quote(attrs)
+        cmd = f"user getpassword --attributes={shattrs} {self.username}"
 
         ldif = self.check_output(cmd).decode()
         res = self.samdb.parse_ldif(ldif)
@@ -151,6 +155,22 @@ class GMSAPasswordTest(BlackboxTestCase):
         connecting_user_sid = str(ndr_unpack(security.dom_sid, msg["tokenGroups"][0]))
 
         self.assertEqual(self.user.object_sid, connecting_user_sid)
+
+    def test_querytime(self):
+        user_msg = self.getpassword("virtualManagedPasswordQueryTime")
+        querytime = int(user_msg["virtualManagedPasswordQueryTime"][0])
+
+        # Just assert the number makes sense
+        self.assertGreater(querytime, nt_time_from_datetime(datetime.datetime.now(tz=datetime.timezone.utc)))
+        self.assertLess(querytime, nt_time_from_datetime(datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(hours = 21)))
+
+    def test_querytime_unixtime(self):
+        user_msg = self.getpassword("virtualManagedPasswordQueryTime;format=UnixTime")
+        querytime = int(user_msg["virtualManagedPasswordQueryTime;format=UnixTime"][0])
+
+        # Just assert the number makes sense
+        self.assertGreater(querytime, datetime.datetime.now(tz=datetime.timezone.utc).timestamp())
+        self.assertLess(querytime, (datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(hours = 21)).timestamp())
 
     @classmethod
     def _make_cmdline(cls, line):
