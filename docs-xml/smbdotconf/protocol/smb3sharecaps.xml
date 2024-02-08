@@ -1,0 +1,202 @@
+<samba:parameter name="smb3 share cap:CONTINUOUS AVAILABILITY"
+                 context="S"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	The SMB3 protocol introduced the SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY
+	flag. It means clients can have different expectations from the
+	server (or cluster of servers).
+	</para>
+
+	<para>
+	Note: this option only applies to disk shares.
+	</para>
+
+	<para>In a ctdb cluster shares are continuously available,
+	but windows clients mix this with the global persistent
+	handles support.
+	</para>
+
+	<para>Persistent handles are requested if
+	SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY is present
+	even without SMB2_CAP_PERSISTENT_HANDLES.
+	</para>
+
+	<para>And SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY is
+	required for SMB2_SHARE_CAP_CLUSTER to have
+	an effect.
+	</para>
+
+	<para>So we better don't announce this by default
+	until we support persistent handles.
+	</para>
+
+	<para>The <smbconfoption name="smb3 share cap:CONTINUOUS AVAILABILITY"/> option
+	can be used to force the announcement of SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY.
+	</para>
+
+	<para>
+	Warning: only use this if you know what you are doing!
+	</para>
+
+	<programlisting>
+	smb3 share cap:CONTINUOUS AVAILABILITY = yes
+	</programlisting>
+</description>
+<related>smb3 share cap:CLUSTER</related>
+</samba:parameter>
+
+<samba:parameter name="smb3 share cap:SCALE OUT"
+                 context="S"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	The SMB3 protocol introduced the SMB2_SHARE_CAP_SCALEOUT
+	flag. It means clients can have different expectations from
+	cluster of multiple servers and alters the retry/reconnect
+	behavior.
+	</para>
+
+	<para>
+	Note: this option only applies to disk shares.
+	</para>
+
+	<para>In a ctdb cluster we have multiple active nodes,
+	so we announce SMB2_SHARE_CAP_SCALEOUT in a cluster.
+	</para>
+
+	<para>The <smbconfoption name="smb3 share cap:SCALE OUT"/> option
+	can be used to disable the announcement of SMB2_SHARE_CAP_SCALEOUT,
+	even if <smbconfoption name="clustering"/> is yes.
+	</para>
+
+	<programlisting>
+	clustering = yes
+	smb3 share cap: SCALE OUT = no
+	</programlisting>
+</description>
+<related>clustering</related>
+</samba:parameter>
+
+<samba:parameter name="smb3 share cap:CLUSTER"
+                 context="S"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	The SMB3 protocol introduced the SMB2_SHARE_CAP_CLUSTER
+	flag. It means clients can expect that all cluster nodes
+	provide a witness service in order to use the [MS-SWN]
+	protocol to monitor the server cluster.
+	</para>
+
+	<para>
+	Note: this option only applies to disk shares.
+	</para>
+
+	<para>rpcd_witness is only active if
+	<citerefentry><refentrytitle>samba-dcerpcd</refentrytitle><manvolnum>8</manvolnum></citerefentry>
+	is not started as on demand helper and only in a ctdb cluster.
+	</para>
+
+	<para>So we announce SMB2_SHARE_CAP_CLUSTER only if
+	<smbconfoption name="clustering"/> is yes and
+	<smbconfoption name="rpc start on demand helpers"/> is no.
+	</para>
+
+	<para>The <smbconfoption name="smb3 share cap:SCALE OUT"/> option
+	can be used to control the announcement of SMB2_SHARE_CAP_CLUSTER
+	independent of
+	<smbconfoption name="clustering"/> and
+	<smbconfoption name="rpc start on demand helpers"/>.
+	</para>
+
+	<para>Example to disable the announcement of SMB2_SHARE_CAP_CLUSTER:
+	</para>
+	<programlisting>
+	clustering = yes
+	rpc start on demand helpers = no
+	smb3 share cap: CLUSTER = no
+	</programlisting>
+
+	<para>Example to force the announcement of SMB2_SHARE_CAP_CLUSTER:
+	</para>
+	<programlisting>
+	smb3 share cap: CLUSTER = yes
+	</programlisting>
+
+	<para>Example to let Windows clients use the witness service,
+	see <smbconfoption name="smb3 share cap:CONTINUOUS AVAILABILITY"/> option
+	and USE AT YOUR OWN RISK!:
+	</para>
+
+	<programlisting>
+	clustering = yes
+	rpc start on demand helpers = no
+	# This is the default with the above:
+	# smb3 share cap: CLUSTER = yes
+	#
+	# Use at you own risk!
+	smb3 share cap: CONTINUOUS AVAILABILITY = yes
+	</programlisting>
+</description>
+<related>clustering</related>
+<related>rpc start on demand helpers</related>
+<related>smb3 share cap:CONTINUOUS AVAILABILITY</related>
+<related>smb3 share cap:ASYMMETRIC</related>
+</samba:parameter>
+
+<samba:parameter name="smb3 share cap:ASYMMETRIC"
+                 context="S"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	The SMB3_02 protocol introduced the SMB2_SHARE_CAP_ASYMMETRIC
+	flag. It means clients alters its behavior and uses
+	isolated transport connections and witness registrations for
+	the share. It means a client may connect to different
+	cluster nodes for individual shares and
+	<command>net witness share-move</command> can be used
+	to control the node usage.
+	</para>
+
+	<para>
+	Note: this option only applies to disk shares.
+	</para>
+
+	<para>Shares in a ctdb cluster are symmetric by design,
+	so we don't announce SMB2_SHARE_CAP_ASYMMETRIC by default.
+	</para>
+
+	<para>The <smbconfoption name="smb3 share cap:ASYMMETRIC"/> option
+	can be used to force the announcement of SMB2_SHARE_CAP_ASYMMETRIC.
+	</para>
+
+	<para>Example to force the announcement of SMB2_SHARE_CAP_ASYMMETRIC:
+	</para>
+
+	<programlisting>
+	smb3 share cap: ASYMMETRIC = yes
+	</programlisting>
+
+	<para>Example to let Windows clients use the witness service,
+	see <smbconfoption name="smb3 share cap:CONTINUOUS AVAILABILITY"/> option
+	and USE AT YOUR OWN RISK!:
+	</para>
+
+	<programlisting>
+	clustering = yes
+	rpc start on demand helpers = no
+	# This is the default with the above:
+	# smb3 share cap: CLUSTER = yes
+	#
+	# Use at you own risk!
+	smb3 share cap: CONTINUOUS AVAILABILITY = yes
+	smb3 share cap: ASYMMETRIC = yes
+	</programlisting>
+</description>
+<related>smb3 share cap:CLUSTER</related>
+</samba:parameter>
