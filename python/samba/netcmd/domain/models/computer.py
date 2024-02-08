@@ -1,6 +1,6 @@
 # Unix SMB/CIFS implementation.
 #
-# Samba domain models.
+# Computer model.
 #
 # Copyright (C) Catalyst.Net Ltd. 2023
 #
@@ -20,16 +20,24 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from .auth_policy import (AuthenticationPolicy, StrongNTLMPolicy,
-                          MIN_TGT_LIFETIME, MAX_TGT_LIFETIME)
-from .auth_silo import AuthenticationSilo
-from .claim_type import ClaimType
-from .computer import Computer
-from .group import Group
-from .model import MODELS
-from .schema import AttributeSchema, ClassSchema
-from .site import Site
-from .subnet import Subnet
-from .types import AccountType
+from samba.dsdb import DS_GUID_COMPUTERS_CONTAINER
+
 from .user import User
-from .value_type import ValueType
+
+
+class Computer(User):
+    """A Computer is a type of User."""
+
+    @staticmethod
+    def get_base_dn(ldb):
+        """Return base Dn for Computers.
+
+        :param ldb: Ldb connection
+        :return: Dn to use for searching
+        """
+        return ldb.get_wellknown_dn(ldb.get_default_basedn(),
+                                    DS_GUID_COMPUTERS_CONTAINER)
+
+    @staticmethod
+    def get_object_class():
+        return "computer"
