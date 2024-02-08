@@ -933,13 +933,15 @@ static NTSTATUS smbXsrv_session_global_store(struct smbXsrv_session_global0 *glo
 	key = dbwrap_record_get_key(global->db_rec);
 	val = dbwrap_record_get_value(global->db_rec);
 
-	ZERO_STRUCT(global_blob);
-	global_blob.version = smbXsrv_version_global_current();
+	global_blob = (struct smbXsrv_session_globalB){
+		.version = smbXsrv_version_global_current(),
+		.info.info0 = global,
+	};
+
 	if (val.dsize >= 8) {
 		global_blob.seqnum = IVAL(val.dptr, 4);
 	}
 	global_blob.seqnum += 1;
-	global_blob.info.info0 = global;
 
 	ndr_err = ndr_push_struct_blob(&blob, global->db_rec, &global_blob,
 			(ndr_push_flags_fn_t)ndr_push_smbXsrv_session_globalB);
@@ -1142,14 +1144,17 @@ static void smb2srv_session_close_previous_check(struct tevent_req *req)
 				smb2srv_session_close_previous_modified,
 				req);
 
-	close_info0.old_session_global_id = global->session_global_id;
-	close_info0.old_session_wire_id = global->session_wire_id;
-	close_info0.old_creation_time = global->creation_time;
-	close_info0.new_session_wire_id = state->current_session_id;
+	close_info0 = (struct smbXsrv_session_close0){
+		.old_session_global_id = global->session_global_id,
+		.old_session_wire_id = global->session_wire_id,
+		.old_creation_time = global->creation_time,
+		.new_session_wire_id = state->current_session_id,
+	};
 
-	ZERO_STRUCT(close_blob);
-	close_blob.version = smbXsrv_version_global_current();
-	close_blob.info.info0 = &close_info0;
+	close_blob = (struct smbXsrv_session_closeB){
+		.version = smbXsrv_version_global_current(),
+		.info.info0 = &close_info0,
+	};
 
 	ndr_err = ndr_push_struct_blob(&blob, state, &close_blob,
 			(ndr_push_flags_fn_t)ndr_push_smbXsrv_session_closeB);
@@ -1424,11 +1429,14 @@ NTSTATUS smbXsrv_session_add_channel(struct smbXsrv_session *session,
 	global->channels = c;
 
 	c = &global->channels[global->num_channels];
-	ZERO_STRUCTP(c);
 
-	c->server_id = messaging_server_id(conn->client->msg_ctx);
-	c->channel_id = conn->channel_id;
-	c->creation_time = now;
+	*c = (struct smbXsrv_channel_global0){
+		.server_id = messaging_server_id(conn->client->msg_ctx),
+		.channel_id = conn->channel_id,
+		.creation_time = now,
+		.connection = conn,
+	};
+
 	c->local_address = tsocket_address_string(conn->local_address,
 						  global->channels);
 	if (c->local_address == NULL) {
@@ -1444,7 +1452,6 @@ NTSTATUS smbXsrv_session_add_channel(struct smbXsrv_session *session,
 	if (c->remote_name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	c->connection = conn;
 
 	global->num_channels += 1;
 
@@ -1575,17 +1582,20 @@ NTSTATUS smbXsrv_session_create_auth(struct smbXsrv_session *session,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	a = talloc_zero(session, struct smbXsrv_session_auth0);
+	a = talloc(session, struct smbXsrv_session_auth0);
 	if (a == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	a->session = session;
-	a->connection = conn;
-	a->in_flags = in_flags;
-	a->in_security_mode = in_security_mode;
-	a->creation_time = now;
-	a->idle_time = now;
-	a->channel_id = conn->channel_id;
+
+	*a = (struct smbXsrv_session_auth0){
+		.session = session,
+		.connection = conn,
+		.in_flags = in_flags,
+		.in_security_mode = in_security_mode,
+		.creation_time = now,
+		.idle_time = now,
+		.channel_id = conn->channel_id,
+	};
 
 	if (conn->protocol >= PROTOCOL_SMB3_11) {
 		a->preauth = talloc(a, struct smbXsrv_preauth);
@@ -1942,7 +1952,7 @@ static int smbXsrv_session_logoff_all_callback(struct db_record *local_rec,
 NTSTATUS smbXsrv_session_logoff_all(struct smbXsrv_client *client)
 {
 	struct smbXsrv_session_table *table = client->session_table;
-	struct smbXsrv_session_logoff_all_state state;
+	struct smbXsrv_session_logoff_all_state state = {};
 	NTSTATUS status;
 	int count = 0;
 
@@ -1950,8 +1960,6 @@ NTSTATUS smbXsrv_session_logoff_all(struct smbXsrv_client *client)
 		DBG_DEBUG("empty session_table, nothing to do.\n");
 		return NT_STATUS_OK;
 	}
-
-	ZERO_STRUCT(state);
 
 	status = dbwrap_traverse(table->local.db_ctx,
 				 smbXsrv_session_logoff_all_callback,
@@ -2097,7 +2105,9 @@ NTSTATUS smbXsrv_session_disconnect_xconn(struct smbXsrv_connection *xconn)
 {
 	struct smbXsrv_client *client = xconn->client;
 	struct smbXsrv_session_table *table = client->session_table;
-	struct smbXsrv_session_disconnect_xconn_state state;
+	struct smbXsrv_session_disconnect_xconn_state state = {
+		.xconn = xconn,
+	};
 	NTSTATUS status;
 	int count = 0;
 
@@ -2105,9 +2115,6 @@ NTSTATUS smbXsrv_session_disconnect_xconn(struct smbXsrv_connection *xconn)
 		DBG_ERR("empty session_table, nothing to do.\n");
 		return NT_STATUS_OK;
 	}
-
-	ZERO_STRUCT(state);
-	state.xconn = xconn;
 
 	status = dbwrap_traverse(table->local.db_ctx,
 				 smbXsrv_session_disconnect_xconn_callback,
