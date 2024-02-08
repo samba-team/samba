@@ -86,11 +86,11 @@ class AuthenticationPolicy(Model):
 
     @staticmethod
     def lookup(ldb, name):
-        """Helper function to return auth policy or raise LookupError.
+        """Helper function to return auth policy or raise NotFound.
 
         :param ldb: Ldb connection
         :param name: Either DN or name of Authentication Policy
-        :raises: LookupError if not found
+        :raises: NotFound if not found
         :raises: ValueError if name is not set
         """
         if not name:

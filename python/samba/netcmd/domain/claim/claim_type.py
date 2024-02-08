@@ -92,7 +92,7 @@ class cmd_domain_claim_claim_type_create(Command):
             applies_to = [ClassSchema.lookup(ldb, name) for name in class_names]
             attribute = AttributeSchema.lookup(ldb, attribute_name)
             value_type = ValueType.lookup(ldb, attribute)
-        except (LookupError, ModelError, ValueError) as e:
+        except (ModelError, ValueError) as e:
             raise CommandError(e)
 
         # Generate the new Claim Type cn.
@@ -211,7 +211,7 @@ class cmd_domain_claim_claim_type_modify(Command):
             try:
                 applies_to = [ClassSchema.lookup(ldb, name)
                               for name in class_names]
-            except (LookupError, ValueError) as e:
+            except (ModelError, ValueError) as e:
                 raise CommandError(e)
 
             claim_type.claim_type_applies_to_class = [obj.dn for obj in applies_to]

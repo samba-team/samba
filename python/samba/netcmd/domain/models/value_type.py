@@ -20,6 +20,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from .exceptions import NotFound
 from .fields import BooleanField, DnField, IntegerField, StringField
 from .model import Model
 
@@ -67,11 +68,11 @@ class ValueType(Model):
 
     @classmethod
     def lookup(cls, ldb, attribute):
-        """Helper function to get ValueType by attribute or raise LookupError.
+        """Helper function to get ValueType by attribute or raise NotFound.
 
         :param ldb: Ldb connection
         :param attribute: AttributeSchema object
-        :raises: LookupError if not found
+        :raises: NotFound if not found
         :raises: ValueError for unknown attribute syntax
         """
         # If attribute is None.
@@ -87,8 +88,7 @@ class ValueType(Model):
         # This should always return something but should still be handled.
         value_type = cls.get(ldb, cn=cn)
         if value_type is None:
-            raise LookupError(
-                f"Could not find claim value type for {attribute}.")
+            raise NotFound(f"Could not find claim value type for {attribute}.")
 
         return value_type
 

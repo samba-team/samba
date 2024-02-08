@@ -150,7 +150,7 @@ class cmd_domain_auth_silo_create(Command):
         """
         try:
             return AuthenticationPolicy.lookup(ldb, name)
-        except (LookupError, ValueError) as e:
+        except (ModelError, ValueError) as e:
             raise CommandError(e)
 
     def run(self, hostopts=None, sambaopts=None, credopts=None,
@@ -267,7 +267,7 @@ class cmd_domain_auth_silo_modify(Command):
         """
         try:
             return AuthenticationPolicy.lookup(ldb, name)
-        except (LookupError, ModelError, ValueError) as e:
+        except (ModelError, ValueError) as e:
             raise CommandError(e)
 
     def run(self, hostopts=None, sambaopts=None, credopts=None,

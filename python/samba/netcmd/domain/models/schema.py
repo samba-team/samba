@@ -20,6 +20,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from .exceptions import NotFound
 from .fields import BinaryField, BooleanField, DnField, GUIDField,\
     IntegerField, StringField
 from .model import Model
@@ -58,11 +59,11 @@ class ClassSchema(Model):
 
     @classmethod
     def lookup(cls, ldb, name):
-        """Helper function to lookup class or raise LookupError.
+        """Helper function to lookup class or raise NotFound.
 
         :param ldb: Ldb connection
         :param name: Class name
-        :raises: LookupError if not found
+        :raises: NotFound if not found
         :raises: ValueError if name is not provided
         """
         if not name:
@@ -70,7 +71,7 @@ class ClassSchema(Model):
 
         attr = cls.get(ldb, ldap_display_name=name)
         if attr is None:
-            raise LookupError(f"Could not locate {name} in class schema.")
+            raise NotFound(f"Could not locate {name} in class schema.")
 
         return attr
 
@@ -107,11 +108,11 @@ class AttributeSchema(Model):
 
     @classmethod
     def lookup(cls, ldb, name):
-        """Helper function to lookup attribute or raise LookupError.
+        """Helper function to lookup attribute or raise NotFound.
 
         :param ldb: Ldb connection
         :param name: Attribute name
-        :raises: LookupError if not found
+        :raises: NotFound if not found
         :raises: ValueError if name is not provided
         """
         if not name:
@@ -119,6 +120,6 @@ class AttributeSchema(Model):
 
         attr = cls.get(ldb, ldap_display_name=name)
         if attr is None:
-            raise LookupError(f"Could not locate {name} in attribute schema.")
+            raise NotFound(f"Could not locate {name} in attribute schema.")
 
         return attr
