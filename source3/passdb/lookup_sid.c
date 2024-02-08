@@ -87,6 +87,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 	struct dom_sid sid;
 	enum lsa_SidType type;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	NTSTATUS status;
 
 	if (tmp_ctx == NULL) {
 		DEBUG(0, ("talloc_new failed\n"));
@@ -181,9 +182,15 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 	 * domain yet at this point yet. This comes later. */
 
 	if ((domain[0] != '\0') &&
-	    (flags & ~(LOOKUP_NAME_DOMAIN|LOOKUP_NAME_ISOLATED)) &&
-	    (winbind_lookup_name(domain, name, &sid, &type))) {
+	    (flags & ~(LOOKUP_NAME_DOMAIN|LOOKUP_NAME_ISOLATED)))
+	{
+		status = winbind_lookup_name_ex(domain, name, &sid, &type);
+		if (NT_STATUS_IS_OK(status) && type == SID_NAME_UNKNOWN) {
+			status = NT_STATUS_NONE_MAPPED;
+		}
+		if (NT_STATUS_IS_OK(status)) {
 			goto ok;
+		}
 	}
 
 	if (((flags & (LOOKUP_NAME_NO_NSS|LOOKUP_NAME_GROUP)) == 0)
@@ -344,10 +351,15 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 	/* If we are not a DC, we have to ask in our primary domain. Let
 	 * winbind do that. */
 
-	if (!IS_DC &&
-	    (winbind_lookup_name(lp_workgroup(), name, &sid, &type))) {
-		domain = talloc_strdup(tmp_ctx, lp_workgroup());
-		goto ok;
+	if (!IS_DC) {
+		status = winbind_lookup_name_ex(lp_workgroup(), name, &sid, &type);
+		if (NT_STATUS_IS_OK(status) && type == SID_NAME_UNKNOWN) {
+			status = NT_STATUS_NONE_MAPPED;
+		}
+		if (NT_STATUS_IS_OK(status)) {
+			domain = talloc_strdup(tmp_ctx, lp_workgroup());
+			goto ok;
+		}
 	}
 
 	/* 9. Trusted domains */
@@ -355,32 +367,40 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 	/* If we're a DC we have to ask all trusted DC's. Winbind does not do
 	 * that (yet), but give it a chance. */
 
-	if (IS_DC && winbind_lookup_name("", name, &sid, &type)) {
+	if (IS_DC) {
 		struct dom_sid dom_sid;
 		enum lsa_SidType domain_type;
 
-		if (type == SID_NAME_DOMAIN) {
-			/* Swap name and type */
-			tmp = name; name = domain; domain = tmp;
+		status = winbind_lookup_name_ex("", name, &sid, &type);
+		if (NT_STATUS_IS_OK(status) && type == SID_NAME_UNKNOWN) {
+			status = NT_STATUS_NONE_MAPPED;
+		}
+		if (NT_STATUS_IS_OK(status)) {
+			if (type == SID_NAME_DOMAIN) {
+				/* Swap name and type */
+				tmp = name; name = domain; domain = tmp;
+				goto ok;
+			}
+
+			/* Here we have to cope with a little deficiency in the
+			 * winbind API: We have to ask it again for the name of
+			 * the domain it figured out itself. Maybe fix that
+			 * later... */
+
+			sid_copy(&dom_sid, &sid);
+			sid_split_rid(&dom_sid, NULL);
+
+			if (!winbind_lookup_sid(tmp_ctx, &dom_sid, &domain, NULL,
+						&domain_type) ||
+			    (domain_type != SID_NAME_DOMAIN))
+			{
+				DEBUG(2, ("winbind could not find the domain's name "
+					  "it just looked up for us\n"));
+				TALLOC_FREE(tmp_ctx);
+				return false;
+			}
 			goto ok;
 		}
-
-		/* Here we have to cope with a little deficiency in the
-		 * winbind API: We have to ask it again for the name of the
-		 * domain it figured out itself. Maybe fix that later... */
-
-		sid_copy(&dom_sid, &sid);
-		sid_split_rid(&dom_sid, NULL);
-
-		if (!winbind_lookup_sid(tmp_ctx, &dom_sid, &domain, NULL,
-					&domain_type) ||
-		    (domain_type != SID_NAME_DOMAIN)) {
-			DEBUG(2, ("winbind could not find the domain's name "
-				  "it just looked up for us\n"));
-			TALLOC_FREE(tmp_ctx);
-			return false;
-		}
-		goto ok;
 	}
 
 	/* 10. Don't translate */
