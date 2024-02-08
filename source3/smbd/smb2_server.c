@@ -522,9 +522,9 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *xconn,
 								       uid, req, &s);
 			}
 			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(1, ("invalid session[%llu] in "
-					  "SMB2_TRANSFORM header\n",
-					   (unsigned long long)uid));
+				DBG_WARNING("invalid session[%" PRIu64 "] in "
+					    "SMB2_TRANSFORM header\n",
+					    uid);
 				TALLOC_FREE(iov_alloc);
 				return NT_STATUS_USER_SESSION_DELETED;
 			}
@@ -3102,10 +3102,11 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		uint64_t tf_session_id = BVAL(intf, SMB2_TF_SESSION_ID);
 
 		if (x != NULL && x->global->session_wire_id != tf_session_id) {
-			DEBUG(0,("smbd_smb2_request_dispatch: invalid session_id"
-				 "in SMB2_HDR[%llu], SMB2_TF[%llu]\n",
-				 (unsigned long long)x->global->session_wire_id,
-				 (unsigned long long)tf_session_id));
+			DBG_ERR("invalid session_id "
+				"in SMB2_HDR[%" PRIu64 "], SMB2_TF[%" PRIu64
+				"]\n",
+				x->global->session_wire_id,
+				tf_session_id);
 			/*
 			 * TODO: windows allows this...
 			 * should we drop the connection?
