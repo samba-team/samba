@@ -61,6 +61,16 @@
 		<arg choice="opt">-t|--timeout seconds</arg>
 		<arg choice="opt">--dns-ttl TTL-IN-SECONDS</arg>
 		<arg choice="opt">-i|--stdin</arg>
+		<arg choice="opt">--witness-registration=REGISTRATION_UUID</arg>
+		<arg choice="opt">--witness-net-name=REGEX</arg>
+		<arg choice="opt">--witness-share-name=REGEX</arg>
+		<arg choice="opt">--witness-ip-address=REGEX</arg>
+		<arg choice="opt">--witness-client-computer-name=REGEX</arg>
+		<arg choice="opt">--witness-apply-to-all</arg>
+		<arg choice="opt">--witness-new-node=NODEID</arg>
+		<arg choice="opt">--witness-new-ip=IPADDRESS</arg>
+		<arg choice="opt">--witness-forced-response=JSON</arg>
+
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -399,6 +409,86 @@
 		The TTL is specified in seconds. Can be used with "net ads dns
 		register" and "net ads join".
 		The default is 3600 seconds.
+		</para></listitem>
+		</varlistentry>
+
+		<!-- Options for net witness subcommands -->
+
+		<varlistentry>
+		<term>--witness-registration=REGISTRATION_UUID</term>
+		<listitem><para>
+		This does a direct lookup for REGISTRATION_UUID
+		instead of doing a database traversal.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--witness-net-name=REGEX</term>
+		<listitem><para>
+		This specifies the 'server name' the client
+		registered for monitoring.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--witness-share-name=REGEX</term>
+		<listitem><para>
+		This specifies the 'share name' the client
+		registered for monitoring.
+		Note that the share name is optional in the
+		registration, otherwise an empty string is
+		matched.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--witness-ip-address=REGEX</term>
+		<listitem><para>
+		This specifies the ip address the client
+		registered for monitoring.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--witness-client-computer-name=REGEX</term>
+		<listitem><para>
+		This specifies the client computer name the client
+		specified in the registration.
+		Note it is just a string chosen by the client itself.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--witness-apply-to-all</term>
+		<listitem><para>
+		This selects all registrations.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--witness-new-node=NODEID</term>
+		<listitem><para>
+		By specifying a NODEID all ip addresses
+		currently available on the given node are
+		included in the response.
+		By specifying '-1' as NODEID all ip addresses
+		of the cluster are included in the response.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--witness-new-ip=IPADDRESS</term>
+		<listitem><para>
+		By specifying an IPADDRESS only the specified
+		ip address is included in the response.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--witness-forced-response=JSON</term>
+		<listitem><para>
+		This allows the generation of very complex
+		witness_notifyResponse structures.
 		</para></listitem>
 		</varlistentry>
 
@@ -3090,6 +3180,483 @@ Requests an offline domain join by providing file-based provisioning data. This 
 <para>
 	Example:
 	net offlinejoin requestodj -U administrator%secret loadfile=provisioning.txt
+</para>
+
+</refsect3>
+
+</refsect2>
+
+<refsect2>
+<title>WITNESS</title>
+
+<para>Starting with version 4.20 Samba has support for the SMB Witness service in a cluster.
+</para>
+
+<para>The following witness commands are implemented:
+<simplelist>
+<member>
+net witness list             List witness registrations from rpcd_witness_registration.tdb.
+</member>
+<member>
+net witness client-move      Generate client move notifications for witness registrations to a new ip or node.
+</member>
+<member>
+net witness share-move       Generate share move notifications for witness registrations to a new ip or node.
+</member>
+<member>
+net witness force-unregister Force unregistrations for witness registrations.
+</member>
+<member>
+net witness force-response   Force an AsyncNotify response based on json input (mostly for testing).
+</member>
+
+</simplelist>
+</para>
+
+<refsect3>
+<title>WITNESS LIST</title>
+<para>
+    List witness registrations from rpcd_witness_registration.tdb
+</para>
+<para>
+    Note: Only supported with clustering=yes!
+</para>
+<para>
+    Machine readable output can be generated with the following option:
+</para>
+<para>
+        --json
+</para>
+<para>
+    The selection of registrations can be limited by the following options:
+</para>
+<para>
+        --witness-registration=REGISTRATION_UUID
+</para>
+<para>
+          This does a direct lookup for REGISTRATION_UUID
+          instead of doing a database traversal.
+</para>
+<para>
+    The following options all take a POSIX Extended Regular Expression,
+    which can further filter the selection of registrations.
+    These options are applied as logical AND, but each REGEX
+    allows specifying multiple strings using the pipe symbol.
+</para>
+<para>
+        --witness-net-name=REGEX
+</para>
+<para>
+          This specifies the 'server name' the client
+          registered for monitoring.
+</para>
+<para>
+        --witness-share-name=REGEX
+</para>
+<para>
+          This specifies the 'share name' the client
+          registered for monitoring.
+          Note that the share name is optional in the
+          registration, otherwise an empty string is
+          matched.
+</para>
+<para>
+        --witness-ip-address=REGEX
+</para>
+<para>
+          This specifies the ip address the client
+          registered for monitoring.
+</para>
+<para>
+        --witness-client-computer-name=REGEX
+</para>
+<para>
+          This specifies the client computer name the client
+          specified in the registration.
+          Note it is just a string chosen by the client itself.
+</para>
+
+</refsect3>
+
+<refsect3>
+<title>WITNESS CLIENT-MOVE</title>
+<para>
+    Generate client move notifications for witness registrations to a new ip or node
+</para>
+<para>
+    Note: Only supported with clustering=yes!
+</para>
+<para>
+    Machine readable output can be generated with the following option:
+</para>
+<para>
+        --json
+</para>
+<para>
+    The selection of registrations can be limited by the following options:
+</para>
+<para>
+        --witness-registration=REGISTRATION_UUID
+</para>
+<para>
+          This does a direct lookup for REGISTRATION_UUID
+          instead of doing a database traversal.
+</para>
+<para>
+    The following options all take a POSIX Extended Regular Expression,
+    which can further filter the selection of registrations.
+    These options are applied as logical AND, but each REGEX
+    allows specifying multiple strings using the pipe symbol.
+</para>
+<para>
+        --witness-net-name=REGEX
+</para>
+<para>
+          This specifies the 'server name' the client
+          registered for monitoring.
+</para>
+<para>
+        --witness-share-name=REGEX
+</para>
+<para>
+          This specifies the 'share name' the client
+          registered for monitoring.
+          Note that the share name is optional in the
+          registration, otherwise an empty string is
+          matched.
+</para>
+<para>
+        --witness-ip-address=REGEX
+</para>
+<para>
+          This specifies the ip address the client
+          registered for monitoring.
+</para>
+<para>
+        --witness-client-computer-name=REGEX
+</para>
+<para>
+          This specifies the client computer name the client
+          specified in the registration.
+          Note it is just a string chosen by the client itself.
+</para>
+<para>
+    If the update should be applied to all registrations
+    it needs to be explicitly specified:
+</para>
+<para>
+        --witness-apply-to-all
+</para>
+<para>
+          This selects all registrations.
+          Note: This is mutual exclusive to the above options.
+</para>
+<para>
+    The content of the CLIENT_MOVE notification contains ip addresses
+    specified by (exactly one) of the following options:
+</para>
+<para>
+        --witness-new-node=NODEID
+</para>
+<para>
+          By specifying a NODEID all ip addresses
+          currently available on the given node are
+          included in the response.
+          By specifying '-1' as NODEID all ip addresses
+          of the cluster are included in the response.
+</para>
+<para>
+        --witness-new-ip=IPADDRESS
+</para>
+<para>
+          By specifying an IPADDRESS only the specified
+          ip address is included in the response.
+</para>
+
+</refsect3>
+
+<refsect3>
+<title>WITNESS SHARE-MOVE</title>
+<para>
+    Generate share move notifications for witness registrations to a new ip or node
+</para>
+<para>
+    Note: Only supported with clustering=yes!
+</para>
+<para>
+    Machine readable output can be generated with the following option:
+</para>
+<para>
+        --json
+</para>
+<para>
+    The selection of registrations can be limited by the following options:
+</para>
+<para>
+        --witness-registration=REGISTRATION_UUID
+</para>
+<para>
+          This does a direct lookup for REGISTRATION_UUID
+          instead of doing a database traversal.
+</para>
+<para>
+    The following options all take a POSIX Extended Regular Expression,
+    which can further filter the selection of registrations.
+    These options are applied as logical AND, but each REGEX
+    allows specifying multiple strings using the pipe symbol.
+</para>
+<para>
+        --witness-net-name=REGEX
+</para>
+<para>
+          This specifies the 'server name' the client
+          registered for monitoring.
+</para>
+<para>
+        --witness-share-name=REGEX
+</para>
+<para>
+          This specifies the 'share name' the client
+          registered for monitoring.
+          Note that the share name is optional in the
+          registration, otherwise an empty string is
+          matched.
+</para>
+<para>
+        --witness-ip-address=REGEX
+</para>
+<para>
+          This specifies the ip address the client
+          registered for monitoring.
+</para>
+<para>
+        --witness-client-computer-name=REGEX
+</para>
+<para>
+          This specifies the client computer name the client
+          specified in the registration.
+          Note it is just a string chosen by the client itself.
+</para>
+<para>
+    If the update should be applied to all registrations
+    it needs to be explicitly specified:
+</para>
+<para>
+        --witness-apply-to-all
+</para>
+<para>
+          This selects all registrations.
+          Note: This is mutual exclusive to the above options.
+</para>
+<para>
+    Note: This only applies to registrations with a non empty share name!
+</para>
+<para>
+    The content of the SHARE_MOVE notification contains ip addresses
+    specified by (exactly one) of the following options:
+</para>
+<para>
+        --witness-new-node=NODEID
+</para>
+<para>
+          By specifying a NODEID all ip addresses
+          currently available on the given node are
+          included in the response.
+          By specifying '-1' as NODEID all ip addresses
+          of the cluster are included in the response.
+</para>
+<para>
+        --witness-new-ip=IPADDRESS
+</para>
+<para>
+          By specifying an IPADDRESS only the specified
+          ip address is included in the response.
+</para>
+
+</refsect3>
+
+<refsect3>
+<title>WITNESS FORCE-UNREGISTER</title>
+<para>
+    Force unregistrations for witness registrations
+</para>
+<para>
+    Note: Only supported with clustering=yes!
+</para>
+<para>
+    Machine readable output can be generated with the following option:
+</para>
+<para>
+        --json
+</para>
+<para>
+    The selection of registrations can be limited by the following options:
+</para>
+<para>
+        --witness-registration=REGISTRATION_UUID
+</para>
+<para>
+          This does a direct lookup for REGISTRATION_UUID
+          instead of doing a database traversal.
+</para>
+<para>
+    The following options all take a POSIX Extended Regular Expression,
+    which can further filter the selection of registrations.
+    These options are applied as logical AND, but each REGEX
+    allows specifying multiple strings using the pipe symbol.
+</para>
+<para>
+        --witness-net-name=REGEX
+</para>
+<para>
+          This specifies the 'server name' the client
+          registered for monitoring.
+</para>
+<para>
+        --witness-share-name=REGEX
+</para>
+<para>
+          This specifies the 'share name' the client
+          registered for monitoring.
+          Note that the share name is optional in the
+          registration, otherwise an empty string is
+          matched.
+</para>
+<para>
+        --witness-ip-address=REGEX
+</para>
+<para>
+          This specifies the ip address the client
+          registered for monitoring.
+</para>
+<para>
+        --witness-client-computer-name=REGEX
+</para>
+<para>
+          This specifies the client computer name the client
+          specified in the registration.
+          Note it is just a string chosen by the client itself.
+</para>
+<para>
+    If the update should be applied to all registrations
+    it needs to be explicitly specified:
+</para>
+<para>
+        --witness-apply-to-all
+</para>
+<para>
+          This selects all registrations.
+          Note: This is mutual exclusive to the above options.
+</para>
+<para>
+    The selected registrations are removed on the server and
+    any pending AsyncNotify request will get a NOT_FOUND error.
+</para>
+<para>
+    Typically this triggers a clean re-registration on the client.
+</para>
+
+</refsect3>
+
+<refsect3>
+<title>WITNESS FORCE-RESPONSE</title>
+<para>
+    Force an AsyncNotify response based on json input (mostly for testing)
+</para>
+<para>
+    Note: Only supported with clustering=yes!
+</para>
+<para>
+    Machine readable output can be generated with the following option:
+</para>
+<para>
+        --json
+</para>
+<para>
+    The selection of registrations can be limited by the following options:
+</para>
+<para>
+        --witness-registration=REGISTRATION_UUID
+</para>
+<para>
+          This does a direct lookup for REGISTRATION_UUID
+          instead of doing a database traversal.
+</para>
+<para>
+    The following options all take a POSIX Extended Regular Expression,
+    which can further filter the selection of registrations.
+    These options are applied as logical AND, but each REGEX
+    allows specifying multiple strings using the pipe symbol.
+</para>
+<para>
+        --witness-net-name=REGEX
+</para>
+<para>
+          This specifies the 'server name' the client
+          registered for monitoring.
+</para>
+<para>
+        --witness-share-name=REGEX
+</para>
+<para>
+          This specifies the 'share name' the client
+          registered for monitoring.
+          Note that the share name is optional in the
+          registration, otherwise an empty string is
+          matched.
+</para>
+<para>
+        --witness-ip-address=REGEX
+</para>
+<para>
+          This specifies the ip address the client
+          registered for monitoring.
+</para>
+<para>
+        --witness-client-computer-name=REGEX
+</para>
+<para>
+          This specifies the client computer name the client
+          specified in the registration.
+          Note it is just a string chosen by the client itself.
+</para>
+<para>
+    If the update should be applied to all registrations
+    it needs to be explicitly specified:
+</para>
+<para>
+        --witness-apply-to-all
+</para>
+<para>
+          This selects all registrations.
+          Note: This is mutual exclusive to the above options.
+</para>
+<para>
+    Note this is designed for testing and debugging!
+</para>
+<para>
+    In short it is not designed to be used by administrators,
+    but developers and automated tests.
+</para>
+<para>
+    By default an empty response with WERR_OK is generated,
+    but basically any valid response can be specified by a
+    specifying a JSON string:
+</para>
+<para>
+        --witness-forced-response=JSON
+</para>
+<para>
+          This allows the generation of very complex
+          witness_notifyResponse structures.
+</para>
+<para>
+    As this is for developers, please read the code
+    in order to understand all possible values
+    of the JSON string format...
+</para>
+<para>
+    See 'net help witness force-response' for further details.
 </para>
 
 </refsect3>
