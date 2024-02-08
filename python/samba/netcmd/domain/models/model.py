@@ -28,8 +28,8 @@ from ldb import (ERR_NO_SUCH_OBJECT, FLAG_MOD_ADD, FLAG_MOD_REPLACE,
                  SCOPE_SUBTREE)
 from samba.sd_utils import SDUtils
 
-from .exceptions import (DeleteError, DoesNotExist, FieldError,
-                         ProtectError, UnprotectError)
+from .exceptions import (DeleteError, FieldError, NotFound, ProtectError,
+                         UnprotectError)
 from .fields import (DateTimeField, DnField, Field, GUIDField, IntegerField,
                      StringField)
 from .query import Query
@@ -181,7 +181,7 @@ class Model(metaclass=ModelMeta):
             res = ldb.search(self.dn, scope=SCOPE_BASE, attrs=attrs)
         except LdbError as e:
             if e.args[0] == ERR_NO_SUCH_OBJECT:
-                raise DoesNotExist(f"Refresh failed, object gone: {self.dn}")
+                raise NotFound(f"Refresh failed, object gone: {self.dn}")
             raise
 
         self._apply(ldb, res[0])
@@ -244,7 +244,7 @@ class Model(metaclass=ModelMeta):
                                 expression=cls.build_expression(**kwargs))
         except LdbError as e:
             if e.args[0] == ERR_NO_SUCH_OBJECT:
-                raise DoesNotExist(f"Container does not exist: {base_dn}")
+                raise NotFound(f"Container does not exist: {base_dn}")
             raise
 
         return Query(cls, ldb, result)

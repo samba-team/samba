@@ -40,7 +40,7 @@ class MultipleObjectsReturned(ModelError):
     pass
 
 
-class DoesNotExist(ModelError):
+class NotFound(ModelError):
     pass
 
 

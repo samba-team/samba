@@ -22,7 +22,7 @@
 
 import re
 
-from .exceptions import DoesNotExist, MultipleObjectsReturned
+from .exceptions import NotFound, MultipleObjectsReturned
 
 RE_SPLIT_CAMELCASE = re.compile(r"[A-Z](?:[a-z]+|[A-Z]*(?=[A-Z]|$))")
 
@@ -68,11 +68,11 @@ class Query:
         """Must return EXACTLY one item or raise an exception.
 
         :returns: Model instance
-        :raises DoesNotExist: if no results were returned
+        :raises NotFound: if no results were returned
         :raises MultipleObjectsReturned: if more than one results were returned
         """
         if self.count < 1:
-            raise DoesNotExist(
+            raise NotFound(
                 f"{self.name.capitalize()} matching query not found")
         elif self.count > 1:
             raise MultipleObjectsReturned(
