@@ -23,10 +23,12 @@
 from .fields import (BooleanField, DnField, EnumField, IntegerField, SIDField,
                      StringField)
 from .model import Model
-from .types import SystemFlags
+from .types import AccountType, GroupType, SystemFlags
 
 
 class Group(Model):
+    account_type = EnumField("sAMAccountType", AccountType)
+    group_type = EnumField("groupType", GroupType)
     admin_count = IntegerField("adminCount")
     description = StringField("description")
     is_critical_system_object = BooleanField("isCriticalSystemObject",
