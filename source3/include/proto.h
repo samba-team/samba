@@ -27,6 +27,7 @@
 #include <regex.h>
 
 #include "lib/util/access.h"
+#include "nsswitch/libwbclient/wbclient.h"
 
 /* The following definitions come from lib/adt_tree.c  */
 
@@ -581,6 +582,7 @@ void flush_negative_conn_cache_for_domain(const char *domain);
 /* The following definitions come from libsmb/errormap.c  */
 
 NTSTATUS dos_to_ntstatus(uint8_t eclass, uint32_t ecode);
+NTSTATUS map_nt_error_from_wbcErr(wbcErr wbc_err);
 
 /* The following definitions come from libsmb/namecache.c  */
 
