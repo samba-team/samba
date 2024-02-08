@@ -926,10 +926,6 @@ static NTSTATUS smbXsrv_session_global_store(struct smbXsrv_session_global0 *glo
 	 * store the information in the old format.
 	 */
 
-	if (global->db_rec == NULL) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
 	key = dbwrap_record_get_key(global->db_rec);
 	val = dbwrap_record_get_value(global->db_rec);
 
