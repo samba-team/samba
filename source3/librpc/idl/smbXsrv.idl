@@ -73,10 +73,6 @@ interface smbXsrv
 		[switch_is(version)] smbXsrv_version_globalU info;
 	} smbXsrv_version_globalB;
 
-	void smbXsrv_version_global_decode(
-		[in] smbXsrv_version_globalB blob
-		);
-
 	/* client */
 
 	typedef struct {
@@ -100,10 +96,6 @@ interface smbXsrv
 		uint32					seqnum;
 		[switch_is(version)] smbXsrv_client_globalU info;
 	} smbXsrv_client_globalB;
-
-	void smbXsrv_client_global_decode(
-		[in] smbXsrv_client_globalB blob
-		);
 
 	typedef [public] struct {
 		[ignore] smbXsrv_client_table		*table;
@@ -162,10 +154,6 @@ interface smbXsrv
 		[switch_is(version)] smbXsrv_clientU	info;
 	} smbXsrv_clientB;
 
-	void smbXsrv_client_decode(
-		[in] smbXsrv_clientB blob
-		);
-
 	/*
 	 * smbXsrv_connection_pass is used in the MSG_SMBXSRV_CONNECTION_PASS
 	 * message and echo'ed as MSG_SMBXSRV_CONNECTION_PASSED message with
@@ -191,10 +179,6 @@ interface smbXsrv
 		[switch_is(version)] smbXsrv_connection_passU	info;
 	} smbXsrv_connection_passB;
 
-	void smbXsrv_connection_pass_decode(
-		[in] smbXsrv_connection_passB blob
-		);
-
 	/*
 	 * smbXsrv_connection_drop is used in the MSG_SMBXSRV_CONNECTION_DROP
 	 * message as reaction the record is deleted.
@@ -217,10 +201,6 @@ interface smbXsrv
 		[value(0)] uint32			reserved;
 		[switch_is(version)] smbXsrv_connection_dropU	info;
 	} smbXsrv_connection_dropB;
-
-	void smbXsrv_connection_drop_decode(
-		[in] smbXsrv_connection_dropB blob
-		);
 
 	/* sessions */
 
@@ -294,10 +274,6 @@ interface smbXsrv
 		[switch_is(version)] smbXsrv_session_globalU info;
 	} smbXsrv_session_globalB;
 
-	void smbXsrv_session_global_decode(
-		[in] smbXsrv_session_globalB blob
-		);
-
 	/*
 	 * The main server code should just work with
 	 * 'struct smbXsrv_session' and never use
@@ -353,10 +329,6 @@ interface smbXsrv
 		[switch_is(version)] smbXsrv_sessionU	info;
 	} smbXsrv_sessionB;
 
-	void smbXsrv_session_decode(
-		[in] smbXsrv_sessionB blob
-		);
-
 	/*
 	 * smbXsrv_session_close is use in the MSG_SMBXSRV_SESSION_CLOSE
 	 * message
@@ -378,10 +350,6 @@ interface smbXsrv
 		[value(0)] uint32			reserved;
 		[switch_is(version)] smbXsrv_session_closeU	info;
 	} smbXsrv_session_closeB;
-
-	void smbXsrv_session_close_decode(
-		[in] smbXsrv_session_closeB blob
-		);
 
 	/* tree connects */
 
@@ -410,10 +378,6 @@ interface smbXsrv
 		uint32					seqnum;
 		[switch_is(version)] smbXsrv_tcon_globalU info;
 	} smbXsrv_tcon_globalB;
-
-	void smbXsrv_tcon_global_decode(
-		[in] smbXsrv_tcon_globalB blob
-		);
 
 	/*
 	 * The main server code should just work with
@@ -447,10 +411,6 @@ interface smbXsrv
 		[value(0)] uint32			reserved;
 		[switch_is(version)] smbXsrv_tconU	info;
 	} smbXsrv_tconB;
-
-	void smbXsrv_tcon_decode(
-		[in] smbXsrv_tconB blob
-		);
 
 	/* open files */
 
@@ -496,10 +456,6 @@ interface smbXsrv
 		[switch_is(version)] smbXsrv_open_globalU info;
 	} smbXsrv_open_globalB;
 
-	void smbXsrv_open_global_decode(
-		[in] smbXsrv_open_globalB blob
-		);
-
 	/*
 	 * The main server code should just work with
 	 * 'struct smbXsrv_open' and never use
@@ -535,10 +491,6 @@ interface smbXsrv
 		[value(0)] uint32			reserved;
 		[switch_is(version)] smbXsrv_openU	info;
 	} smbXsrv_openB;
-
-	void smbXsrv_open_decode(
-		[in] smbXsrv_openB blob
-		);
 
 	const uint32 SMBXSRV_OPEN_REPLAY_CACHE_FIXED_SIZE = 28;
 	typedef [public] struct {
