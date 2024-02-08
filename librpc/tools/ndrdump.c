@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB torture tester
    Copyright (C) Andrew Tridgell 2003
    Copyright (C) Jelmer Vernooij 2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -180,7 +180,7 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 	}
 
 	talloc_free(symbol);
-	
+
 	return p;
 }
 
@@ -311,8 +311,8 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"context-file", 'c', POPT_ARG_STRING, NULL, OPT_CONTEXT_FILE, "In-filename to parse first", "CTX-FILE" },
-		{"validate", 0, POPT_ARG_NONE, NULL, OPT_VALIDATE, "try to validate the data", NULL },	
-		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMP_DATA, "dump the hex data", NULL },	
+		{"validate", 0, POPT_ARG_NONE, NULL, OPT_VALIDATE, "try to validate the data", NULL },
+		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMP_DATA, "dump the hex data", NULL },
 		{"load-dso", 0, POPT_ARG_STRING, NULL, OPT_LOAD_DSO, "load from shared object file", NULL },
 		{"ndr64", 0, POPT_ARG_NONE, NULL, OPT_NDR64, "Assume NDR64 data", NULL },
 		{"quiet", 0, POPT_ARG_NONE, NULL, OPT_QUIET, "Don't actually dump anything", NULL },
@@ -409,7 +409,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 
 	if (plugin != NULL) {
 		p = load_iface_from_plugin(plugin, pipe_name);
-	} 
+	}
 	if (!p) {
 		p = ndr_table_by_name(pipe_name);
 	}
@@ -481,7 +481,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 			TALLOC_FREE(mem_ctx);
 			exit(1);
 		}
-			
+
 		data = (uint8_t *)file_load(ctx_filename, &size, 0, mem_ctx);
 		if (!data) {
 			perror(ctx_filename);
@@ -543,7 +543,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 			perror("stdin");
 		exit(1);
 	}
-	
+
 	if (hex_input && base64_input) {
 		printf("cannot combine --hex-input with --base64-input\n");
 		TALLOC_FREE(mem_ctx);
@@ -790,6 +790,6 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	TALLOC_FREE(mem_ctx);
 
 	poptFreeContext(pc);
-	
+
 	return 0;
 }
