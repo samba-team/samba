@@ -938,6 +938,15 @@ static enum ndr_err_code extract_variant_addresses(TALLOC_CTX *ctx,
 		count = 1;
 	}
 
+	/* ensure count is at least within buffer range */
+	if (count >= MAX_ROW_BUFF_SIZE || count >= rows_buf->length) {
+		DBG_ERR("count %"PRIu64" either exceeds max buffer size "
+			"or buffer size (%zu)",
+			count,  rows_buf->length);
+		err = NDR_ERR_VALIDATE;
+		goto out;
+	}
+
 	/* read address */
 	if (is_64bit) {
 		err = ndr_pull_udlong(ndr_pull,
@@ -974,30 +983,64 @@ static enum ndr_err_code extract_variant_addresses(TALLOC_CTX *ctx,
 		goto out;
 	}
 
+	/*
+	 * non vector case addr points to value
+	 * otherwise addr points to list of addresses
+	 * for the values in vector
+	 */
 	if (is_vector == false) {
 		vec_address[0] = addr;
 	} else {
 		uint64_t array_offset = addr - baseaddress;
 		uint64_t i;
+		uint32_t intsize;
+
+		if (is_64bit) {
+			intsize = 8;
+		} else {
+			intsize = 4;
+		}
+
+		if (array_offset >= MAX_ROW_BUFF_SIZE
+		    || array_offset >= rows_buf->length) {
+			DBG_ERR("offset %"PRIu64" either exceeds max buf size "
+				"or buffer size (%zu)",
+				array_offset,  rows_buf->length);
+			err = NDR_ERR_VALIDATE;
+			goto out;
+		}
+
+		/* addr points to a list of int32 or int64 addresses */
 		for (i = 0; i < count; i++) {
+			/*
+			 * read the addresses of the vector elements
+			 * note: we can safely convert the uint64_t
+			 *       values here to uint32_t values as
+			 *       we are sure they are within range
+			 *       due to previous checks above.
+			 */
+			if (smb_buffer_oob((uint32_t)rows_buf->length,
+					   (uint32_t)array_offset,
+					   intsize)) {
+				DBG_ERR("offset %"PRIu64" will be outside "
+					"buffer range (buf len - %zu) after "
+					"reading %s address\n",
+					array_offset,
+					rows_buf->length,
+					is_64bit ? "64 bit" : "32 bit");
+				err = NDR_ERR_VALIDATE;
+				goto out;
+			}
 			if (is_64bit) {
 				vec_address[i] =
 					PULL_LE_I64(rows_buf->data,
 						array_offset);
-				array_offset = array_offset + 8;
 			} else {
 				vec_address[i] =
 					(uint32_t)PULL_LE_I32(rows_buf->data,
 							array_offset);
-				array_offset = array_offset + 4;
 			}
-			if (array_offset >= rows_buf->length) {
-				DBG_ERR("offset %"PRIu64" outside buffer range "
-					"(buf len - %zu)\n",
-					array_offset,
-					rows_buf->length);
-				err = NDR_ERR_VALIDATE;
-			}
+			array_offset += intsize;
 		}
 	}
 	err  = NDR_ERR_SUCCESS;
