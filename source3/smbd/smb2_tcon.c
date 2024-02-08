@@ -428,6 +428,8 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	if (*out_share_type == SMB2_SHARE_TYPE_DISK) {
 		bool persistent = false; /* persistent handles not implemented yet */
 		bool cluster = lp_clustering();
+		bool scaleout = cluster;
+		bool witness = cluster && !lp_rpc_start_on_demand_helpers();
 		bool asymmetric = false; /* shares are symmetric by default */
 		bool announce;
 
@@ -461,7 +463,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		announce = lp_parm_bool(SNUM(tcon->compat),
 					"smb3 share cap",
 					"SCALE OUT",
-					cluster);
+					scaleout);
 		if (announce) {
 			*out_capabilities |= SMB2_SHARE_CAP_SCALEOUT;
 		}
@@ -472,7 +474,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		announce = lp_parm_bool(SNUM(tcon->compat),
 					"smb3 share cap",
 					"CLUSTER",
-					cluster);
+					witness);
 		if (announce) {
 			*out_capabilities |= SMB2_SHARE_CAP_CLUSTER;
 		}
