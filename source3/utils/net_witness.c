@@ -2350,7 +2350,7 @@ int net_witness(struct net_context *c, int argc, const char **argv)
 			NET_TRANSPORT_LOCAL,
 			N_("Force an AsyncNotify response based on "
 			   "json input (mostly for testing)"),
-			N_("net witness force-reponse\n"
+			N_("net witness force-response\n"
 			   "    Force an AsyncNotify response based on "
 			       "json input (mostly for testing)"),
 		},
