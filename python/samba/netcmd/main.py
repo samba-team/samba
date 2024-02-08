@@ -31,10 +31,11 @@ class cache_loader(dict):
     def __getitem__(self, attr):
         item = dict.__getitem__(self, attr)
         if item is None:
+            cmd = 'cmd_%s' % attr.replace('-', '_')
             package = 'nettime' if attr == 'time' else attr
+            package = package.replace('-', '_')
             self[attr] = getattr(__import__('samba.netcmd.%s' % package,
-                                            fromlist=['cmd_%s' % attr]),
-                                 'cmd_%s' % attr)()
+                                            fromlist=[cmd]), cmd)()
         return dict.__getitem__(self, attr)
 
     def get(self, attr, default=None):
