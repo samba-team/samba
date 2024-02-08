@@ -98,15 +98,6 @@ NTSTATUS smbXsrv_client_global_init(void)
 	return NT_STATUS_OK;
 }
 
-/*
- * NOTE:
- * We need to store the keys in big endian so that dbwrap_rbt's memcmp
- * has the same result as integer comparison between the uint32_t
- * values.
- *
- * TODO: implement string based key
- */
-
 #define SMBXSRV_CLIENT_GLOBAL_TDB_KEY_SIZE 16
 
 static TDB_DATA smbXsrv_client_global_id_to_key(const struct GUID *client_guid,
