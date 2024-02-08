@@ -20,15 +20,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from ldb import Dn
+from ldb import FLAG_MOD_ADD, Dn
 
+from samba.dcerpc import security
 from samba.dsdb import (DS_GUID_MANAGED_SERVICE_ACCOUNTS_CONTAINER,
                         DS_GUID_USERS_CONTAINER)
+from samba.ndr import ndr_unpack
 
-from .fields import (DnField, EnumField, IntegerField, SIDField, StringField,
-                     NtTimeField)
+from .fields import (BinaryField, DnField, EnumField, IntegerField, SDDLField,
+                     SIDField, StringField, NtTimeField)
 from .model import Model
-from .types import AccountType, UserAccountControl
+from .types import AccountType, SupportedEncryptionTypes, UserAccountControl
 
 
 class User(Model):
@@ -91,3 +93,66 @@ class User(Model):
             query = {"username": name}
 
         return cls.get(ldb, **query)
+
+
+class GroupManagedServiceAccount(User):
+    """A GroupManagedServiceAccount is a type of User with additional fields."""
+    managed_password_interval = IntegerField("msDS-ManagedPasswordInterval")
+    dns_host_name = StringField("dNSHostName")
+    group_msa_membership = SDDLField("msDS-GroupMSAMembership")
+    managed_password_id = BinaryField("msDS-ManagedPasswordId",
+                                      readonly=True, hidden=True)
+    managed_password_previous_id = BinaryField("msDS-ManagedPasswordPreviousId",
+                                               readonly=True, hidden=True)
+    supported_encryption_types = EnumField("msDS-SupportedEncryptionTypes",
+                                           SupportedEncryptionTypes)
+
+    @staticmethod
+    def get_base_dn(ldb):
+        """Return base Dn for Managed Service Accounts.
+
+        :param ldb: Ldb connection
+        :return: Dn to use for searching
+        """
+        return ldb.get_wellknown_dn(ldb.get_default_basedn(),
+                                    DS_GUID_MANAGED_SERVICE_ACCOUNTS_CONTAINER)
+
+    @staticmethod
+    def get_object_class():
+        return "msDS-GroupManagedServiceAccount"
+
+    def trustees(self, ldb):
+        """Returns list of trustees from the msDS-GroupMSAMembership SDDL.
+
+        :return: list of User objects
+        """
+        users = []
+        field = self.fields["group_msa_membership"]
+        sddl = self.group_msa_membership
+        message = field.to_db_value(ldb, sddl, FLAG_MOD_ADD)
+        desc = ndr_unpack(security.descriptor, message[0])
+
+        for ace in desc.dacl.aces:
+            users.append(User.get(ldb, object_sid=ace.trustee))
+
+        return users
+
+    @classmethod
+    def find(cls, ldb, name):
+        """Helper function to find a service account first by Dn then username.
+
+        If the Dn can't be parsed use sAMAccountName, automatically add the $.
+        """
+        try:
+            query = {"dn": Dn(ldb, name)}
+        except ValueError:
+            if name.endswith("$"):
+                query = {"username": name}
+            else:
+                query = {"username": name + "$"}
+
+        return cls.get(ldb, **query)
+
+    @staticmethod
+    def group_sddl(group):
+        return f"O:BAD:(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;{group.object_sid})"
