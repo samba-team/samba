@@ -943,8 +943,11 @@ static NTSTATUS smbXsrv_session_global_store(struct smbXsrv_session_global0 *glo
 	}
 	global_blob.seqnum += 1;
 
-	ndr_err = ndr_push_struct_blob(&blob, global->db_rec, &global_blob,
-			(ndr_push_flags_fn_t)ndr_push_smbXsrv_session_globalB);
+	ndr_err = ndr_push_struct_blob(
+		&blob,
+		talloc_tos(),
+		&global_blob,
+		(ndr_push_flags_fn_t)ndr_push_smbXsrv_session_globalB);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
 		DBG_WARNING("key '%s' ndr_push - %s\n",
@@ -956,6 +959,7 @@ static NTSTATUS smbXsrv_session_global_store(struct smbXsrv_session_global0 *glo
 
 	val = make_tdb_data(blob.data, blob.length);
 	status = dbwrap_record_store(global->db_rec, val, TDB_REPLACE);
+	TALLOC_FREE(blob.data);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("key '%s' store - %s\n",
 			    tdb_data_dbg(key),
