@@ -329,7 +329,7 @@ interface smbXsrv
 	} smbXsrv_sessionB;
 
 	/*
-	 * smbXsrv_session_close is use in the MSG_SMBXSRV_SESSION_CLOSE
+	 * smbXsrv_session_close is used in the MSG_SMBXSRV_SESSION_CLOSE
 	 * message
 	 */
 	typedef struct {
