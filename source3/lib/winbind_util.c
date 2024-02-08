@@ -83,6 +83,46 @@ bool winbind_lookup_name(const char *dom_name, const char *name, struct dom_sid 
 	return true;
 }
 
+/* Same as winbind_lookup_name(), but returning NTSTATUS instead of bool */
+
+_PRIVATE_
+NTSTATUS winbind_lookup_name_ex(const char *dom_name,
+				const char *name,
+				struct dom_sid *sid,
+				enum lsa_SidType *name_type)
+{
+	struct wbcDomainSid dom_sid;
+	wbcErr result;
+	enum wbcSidType type;
+	NTSTATUS status;
+
+	result = wbcLookupName(dom_name, name, &dom_sid, &type);
+
+	status = map_nt_error_from_wbcErr(result);
+	if (!NT_STATUS_IS_OK(status)) {
+		if ((lp_security() < SEC_DOMAIN) &&
+		    NT_STATUS_EQUAL(status, NT_STATUS_SERVER_DISABLED))
+		{
+			/*
+			 * If we're not a domain member and winbind is not
+			 * running, treat this as not mapped.
+			 */
+			status = NT_STATUS_NONE_MAPPED;
+		}
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+			return status;
+		}
+		*name_type = SID_NAME_UNKNOWN;
+		ZERO_STRUCTP(sid);
+		return NT_STATUS_OK;
+	}
+
+	memcpy(sid, &dom_sid, sizeof(struct dom_sid));
+	*name_type = (enum lsa_SidType)type;
+
+	return NT_STATUS_OK;
+}
+
 /* Call winbindd to convert sid to name */
 
 bool winbind_lookup_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,

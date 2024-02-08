@@ -31,6 +31,10 @@
 
 bool winbind_lookup_name(const char *dom_name, const char *name, struct dom_sid *sid,
                          enum lsa_SidType *name_type);
+NTSTATUS winbind_lookup_name_ex(const char *dom_name,
+				const char *name,
+				struct dom_sid *sid,
+				enum lsa_SidType *name_type);
 bool winbind_lookup_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 			const char **domain, const char **name,
                         enum lsa_SidType *name_type);
