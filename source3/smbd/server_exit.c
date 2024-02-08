@@ -26,6 +26,7 @@
 #include "locking/share_mode_lock.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "source3/smbd/smbXsrv_session.h"
 #include "ntdomain.h"
 #include "librpc/rpc/dcesrv_core.h"
 #include "printing/notify.h"

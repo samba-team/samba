@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "source3/smbd/smbXsrv_session.h"
 #include "../libcli/smb/smb_common.h"
 #include "../auth/gensec/gensec.h"
 #include "auth.h"

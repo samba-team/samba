@@ -23,6 +23,7 @@
 #include "system/network.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "source3/smbd/smbXsrv_session.h"
 #include "smbd/smbXsrv_open.h"
 #include "lib/param/param.h"
 #include "../libcli/smb/smb_common.h"

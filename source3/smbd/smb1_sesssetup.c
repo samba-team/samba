@@ -27,6 +27,7 @@
 #include "lib/util/server_id.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "source3/smbd/smbXsrv_session.h"
 #include "auth.h"
 #include "messages.h"
 #include "smbprofile.h"

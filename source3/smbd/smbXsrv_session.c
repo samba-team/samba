@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "smbXsrv_session.h"
 #include "system/filesys.h"
 #include <tevent.h>
 #include "lib/util/server_id.h"

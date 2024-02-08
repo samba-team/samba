@@ -22,6 +22,7 @@
 #include "system/passwd.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "source3/smbd/smbXsrv_session.h"
 #include "../librpc/gen_ndr/netlogon.h"
 #include "auth.h"
 #include "../libcli/security/security.h"
