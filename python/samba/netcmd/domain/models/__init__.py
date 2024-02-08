@@ -30,6 +30,6 @@ from .model import MODELS
 from .schema import AttributeSchema, ClassSchema
 from .site import Site
 from .subnet import Subnet
-from .types import AccountType, GroupType, SystemFlags
+from .types import AccountType, GroupType, SystemFlags, UserAccountControl
 from .user import User
 from .value_type import ValueType

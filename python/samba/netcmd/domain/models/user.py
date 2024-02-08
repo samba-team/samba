@@ -22,11 +22,13 @@
 
 from ldb import Dn
 
-from samba.dsdb import DS_GUID_USERS_CONTAINER
+from samba.dsdb import (DS_GUID_MANAGED_SERVICE_ACCOUNTS_CONTAINER,
+                        DS_GUID_USERS_CONTAINER)
 
-from .fields import DnField, EnumField, SIDField, StringField
+from .fields import (DnField, EnumField, IntegerField, SIDField, StringField,
+                     NtTimeField)
 from .model import Model
-from .types import AccountType
+from .types import AccountType, UserAccountControl
 
 
 class User(Model):
@@ -35,6 +37,20 @@ class User(Model):
     assigned_policy = DnField("msDS-AssignedAuthNPolicy")
     assigned_silo = DnField("msDS-AssignedAuthNPolicySilo")
     object_sid = SIDField("objectSid")
+    bad_password_time = NtTimeField("badPasswordTime", readonly=True)
+    bad_pwd_count = IntegerField("badPwdCount", readonly=True)
+    code_page = IntegerField("codePage")
+    country_code = IntegerField("countryCode")
+    display_name = StringField("displayName")
+    given_name = StringField("givenName")
+    sn = StringField("sn")
+    last_logoff = NtTimeField("lastLogoff", readonly=True)
+    last_logon = NtTimeField("lastLogon", readonly=True)
+    logon_count = IntegerField("logonCount", readonly=True)
+    primary_group_id = IntegerField("primaryGroupID")
+    pwd_last_set = NtTimeField("pwdLastSet", readonly=True)
+    user_account_control = EnumField("userAccountControl", UserAccountControl)
+    user_principal_name = StringField("userPrincipalName")
 
     def __str__(self):
         """Return username rather than cn for User model."""
