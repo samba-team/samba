@@ -173,92 +173,64 @@ const char *dsdb_user_account_control_flag_bit_to_string(uint32_t uf)
 	switch (uf) {
 	case UF_SCRIPT:
 		return "UF_SCRIPT";
-		break;
 	case UF_ACCOUNTDISABLE:
 		return "UF_ACCOUNTDISABLE";
-		break;
 	case UF_00000004:
 		return "UF_00000004";
-		break;
 	case UF_HOMEDIR_REQUIRED:
 		return "UF_HOMEDIR_REQUIRED";
-		break;
 	case UF_LOCKOUT:
 		return "UF_LOCKOUT";
-		break;
 	case UF_PASSWD_NOTREQD:
 		return "UF_PASSWD_NOTREQD";
-		break;
 	case UF_PASSWD_CANT_CHANGE:
 		return "UF_PASSWD_CANT_CHANGE";
-		break;
 	case UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED:
 		return "UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED";
-		break;
 
 	case UF_TEMP_DUPLICATE_ACCOUNT:
 		return "UF_TEMP_DUPLICATE_ACCOUNT";
-		break;
 	case UF_NORMAL_ACCOUNT:
 		return "UF_NORMAL_ACCOUNT";
-		break;
 	case UF_00000400:
 		return "UF_00000400";
-		break;
 	case UF_INTERDOMAIN_TRUST_ACCOUNT:
 		return "UF_INTERDOMAIN_TRUST_ACCOUNT";
-		break;
 
 	case UF_WORKSTATION_TRUST_ACCOUNT:
 		return "UF_WORKSTATION_TRUST_ACCOUNT";
-		break;
 	case UF_SERVER_TRUST_ACCOUNT:
 		return "UF_SERVER_TRUST_ACCOUNT";
-		break;
 	case UF_00004000:
 		return "UF_00004000";
-		break;
 	case UF_00008000:
 		return "UF_00008000";
-		break;
 
 	case UF_DONT_EXPIRE_PASSWD:
 		return "UF_DONT_EXPIRE_PASSWD";
-		break;
 	case UF_MNS_LOGON_ACCOUNT:
 		return "UF_MNS_LOGON_ACCOUNT";
-		break;
 	case UF_SMARTCARD_REQUIRED:
 		return "UF_SMARTCARD_REQUIRED";
-		break;
 	case UF_TRUSTED_FOR_DELEGATION:
 		return "UF_TRUSTED_FOR_DELEGATION";
-		break;
 
 	case UF_NOT_DELEGATED:
 		return "UF_NOT_DELEGATED";
-		break;
 	case UF_USE_DES_KEY_ONLY:
 		return "UF_USE_DES_KEY_ONLY";
-		break;
 	case UF_DONT_REQUIRE_PREAUTH:
 		return "UF_DONT_REQUIRE_PREAUTH";
-		break;
 	case UF_PASSWORD_EXPIRED:
 		return "UF_PASSWORD_EXPIRED";
-		break;
 	case UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION:
 		return "UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION";
-		break;
 	case UF_NO_AUTH_DATA_REQUIRED:
 		return "UF_NO_AUTH_DATA_REQUIRED";
-		break;
 	case UF_PARTIAL_SECRETS_ACCOUNT:
 		return "UF_PARTIAL_SECRETS_ACCOUNT";
-		break;
 	case UF_USE_AES_KEYS:
 		return "UF_USE_AES_KEYS";
-		break;
 	default:
 		break;
 	}
