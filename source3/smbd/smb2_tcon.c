@@ -425,7 +425,9 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	 * For disk shares we can change the client
 	 * behavior on a cluster...
 	 */
-	if (*out_share_type == SMB2_SHARE_TYPE_DISK) {
+	if (conn->protocol >= PROTOCOL_SMB3_00 &&
+	    *out_share_type == SMB2_SHARE_TYPE_DISK)
+	{
 		bool persistent = false; /* persistent handles not implemented yet */
 		bool cluster = lp_clustering();
 		bool scaleout = cluster;
@@ -486,10 +488,12 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		 * an isolated transport and witness registration for the
 		 * specific share.
 		 */
-		announce = lp_parm_bool(SNUM(tcon->compat),
-					"smb3 share cap",
-					"ASYMMETRIC",
-					asymmetric);
+		if (conn->protocol >= PROTOCOL_SMB3_02) {
+			announce = lp_parm_bool(SNUM(tcon->compat),
+						"smb3 share cap",
+						"ASYMMETRIC",
+						asymmetric);
+		}
 		if (announce) {
 			*out_capabilities |= SMB2_SHARE_CAP_ASYMMETRIC;
 		}
