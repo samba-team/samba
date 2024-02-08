@@ -2198,7 +2198,6 @@ NTSTATUS smbXsrv_session_info_lookup(struct smbXsrv_client *client,
 	struct smbXsrv_session_table *table = client->session_table;
 	uint8_t key_buf[SMBXSRV_SESSION_LOCAL_TDB_KEY_SIZE];
 	struct smbXsrv_session_local_fetch_state state = {
-		.session = NULL,
 		.status = NT_STATUS_INTERNAL_ERROR,
 	};
 	TDB_DATA key;
@@ -2252,7 +2251,6 @@ NTSTATUS get_valid_smbXsrv_session(struct smbXsrv_client *client,
 	struct smbXsrv_session_table *table = client->session_table;
 	uint8_t key_buf[SMBXSRV_SESSION_LOCAL_TDB_KEY_SIZE];
 	struct smbXsrv_session_local_fetch_state state = {
-		.session = NULL,
 		.status = NT_STATUS_INTERNAL_ERROR,
 	};
 	TDB_DATA key;
