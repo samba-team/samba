@@ -50,4 +50,4 @@ class JSONEncoder(json.JSONEncoder):
             return obj.as_sddl()
         elif getattr(obj, "__json__", None) and callable(obj.__json__):
             return obj.__json__()
-        return obj
+        return super().default(obj)
