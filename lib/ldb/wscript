@@ -69,38 +69,6 @@ def configure(conf):
 
     conf.env.standalone_ldb = conf.IN_LAUNCH_DIR()
 
-    if not conf.env.standalone_ldb:
-        max_ldb_version = [int(x) for x in VERSION.split(".")]
-        max_ldb_version[2] = 999
-        max_ldb_version_dots = "%d.%d.%d" % tuple(max_ldb_version)
-
-        if conf.env.disable_python:
-            if conf.CHECK_BUNDLED_SYSTEM_PKG('ldb',
-                                             minversion=VERSION,
-                                             maxversion=max_ldb_version_dots,
-                                             onlyif='talloc tdb tevent',
-                                             implied_deps='replace talloc tdb tevent'):
-                conf.define('USING_SYSTEM_LDB', 1)
-        else:
-            using_system_pyldb_util = True
-            dflt_name = 'pyldb-util' + conf.all_envs['default']['PYTHON_SO_ABI_FLAG']
-            if not conf.CHECK_BUNDLED_SYSTEM_PKG(dflt_name,
-                                                 minversion=VERSION,
-                                                 maxversion=max_ldb_version_dots,
-                                                 onlyif='talloc tdb tevent',
-                                                 implied_deps='replace talloc tdb tevent ldb'):
-                using_system_pyldb_util = False
-
-            if using_system_pyldb_util:
-                conf.define('USING_SYSTEM_PYLDB_UTIL', 1)
-
-            if conf.CHECK_BUNDLED_SYSTEM_PKG('ldb',
-                                             minversion=VERSION,
-                                             maxversion=max_ldb_version_dots,
-                                             onlyif='talloc tdb tevent %s' % dflt_name,
-                                             implied_deps='replace talloc tdb tevent'):
-                conf.define('USING_SYSTEM_LDB', 1)
-
     if not conf.CHECK_CODE('return !(sizeof(size_t) >= 8)',
                            "HAVE_64_BIT_SIZE_T_FOR_LMDB",
                            execute=True,
