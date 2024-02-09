@@ -182,6 +182,7 @@ def SAMBA_LIBRARY(bld, libname, source,
 
     if LIB_MUST_BE_PRIVATE(bld, libname) and target_type not in ['PLUGIN']:
         private_library = True
+        public_headers_install = False
 
     if force_unversioned:
         private_library = False
