@@ -88,7 +88,14 @@ def LIB_MAY_BE_BUNDLED(conf, libname):
         return False
     return True
 
-def __LIB_MUST_BE(liblist, libname):
+def __LIB_MUST_BE(liblist_in, defaults, libname):
+    liblist = []
+    for lib in liblist_in:
+        if lib == "DEFAULT":
+            liblist += defaults
+        else:
+            liblist += [lib]
+
     if libname in liblist:
         return True
     if '!%s' % libname in liblist:
@@ -99,11 +106,11 @@ def __LIB_MUST_BE(liblist, libname):
 
 @conf
 def LIB_MUST_BE_BUNDLED(conf, libname):
-    return __LIB_MUST_BE(conf.env.BUNDLED_LIBS, libname)
+    return __LIB_MUST_BE(conf.env.BUNDLED_LIBS, [], libname)
 
 @conf
 def LIB_MUST_BE_PRIVATE(conf, libname):
-    return __LIB_MUST_BE(conf.env.PRIVATE_LIBS, libname)
+    return __LIB_MUST_BE(conf.env.PRIVATE_LIBS, conf.env.DEFAULT_PRIVATE_LIBS, libname)
 
 @conf
 def CHECK_BUNDLED_SYSTEM_PKG(conf, libname, minversion='0.0.0',
