@@ -33,6 +33,7 @@ import symbols
 import pkgconfig
 import configure_file
 import samba_waf18
+import samba_bundled
 
 LIB_PATH="shared"
 

@@ -16,6 +16,8 @@ from waflib.Tools import bison
 samba_dist.DIST_DIRS('.')
 samba_dist.DIST_BLACKLIST('.gitignore .bzrignore source4/selftest/provisions')
 
+DEFAULT_PRIVATE_LIBS = ["ldb"]
+
 # install in /usr/local/samba by default
 default_prefix = Options.default_prefix = '/usr/local/samba'
 

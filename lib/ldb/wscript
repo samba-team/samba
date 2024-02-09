@@ -14,7 +14,7 @@ sys.path.insert(0, top + '/buildtools/wafsamba')
 
 out = 'bin'
 
-from wafsamba import samba_dist, samba_utils
+from wafsamba import samba_dist, samba_utils, samba_bundled
 from waflib import Errors, Options, Logs, Context
 import shutil
 
@@ -194,6 +194,9 @@ def configure(conf):
 
     conf.SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS()
 
+    conf.env.ldb_is_public_library \
+        = not samba_bundled.LIB_MUST_BE_PRIVATE(conf, 'ldb')
+
 def build(bld):
     bld.RECURSE('lib/tevent')
 
@@ -208,9 +211,9 @@ def build(bld):
         if not 'PACKAGE_VERSION' in bld.env:
             bld.env.PACKAGE_VERSION = VERSION
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
-        private_library = False
-    else:
-        private_library = True
+
+    private_library = not bld.env.ldb_is_public_library
+
     # we're not currently linking against the ldap libs, but ldb.pc.in
     # has @LDAP_LIBS@
     bld.env.LDAP_LIBS = ''
@@ -273,11 +276,11 @@ def build(bld):
                           COMMON_SRC + ' ' + LDB_MAP_SRC,
                           deps='tevent LIBLDB_MAIN replace',
                           includes='include',
-                          public_headers=('' if private_library else ldb_headers),
-                          public_headers_install=not private_library,
+                          public_headers=ldb_headers,
+                          public_headers_install=True,
                           pc_files='ldb.pc',
                           vnum=VERSION,
-                          private_library=private_library,
+                          private_library=False,
                           manpages='man/ldb.3',
                           abi_directory='ABI',
                           abi_match = abi_match)
