@@ -339,12 +339,16 @@ int main(int argc, const char *argv[])
 			http_info->server_addr, http_info->server_port,
 			use_tls ? " with tls" : " without tls");
 		if (use_tls) {
+			bool system_cas = false;
+			const char * const *ca_dirs = NULL;
 			const char *crl_file = NULL;
 			const char *tls_priority = "NORMAL:-VERS-SSL3.0";
 			enum tls_verify_peer_state verify_peer =
 				TLS_VERIFY_PEER_CA_ONLY;
 
 			status = tstream_tls_params_client(mem_ctx,
+						   system_cas,
+						   ca_dirs,
 						   ca_file,
 						   crl_file,
 						   tls_priority,

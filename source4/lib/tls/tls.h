@@ -56,6 +56,8 @@ enum tls_verify_peer_state {
 const char *tls_verify_peer_string(enum tls_verify_peer_state verify_peer);
 
 NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
+				   bool system_cas,
+				   const char * const *ca_dirs,
 				   const char *ca_file,
 				   const char *crl_file,
 				   const char *tls_priority,

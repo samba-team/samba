@@ -950,6 +950,8 @@ const DATA_BLOB *tstream_tls_channel_bindings(struct tstream_context *tls_tstrea
 }
 
 NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
+				   bool system_cas,
+				   const char * const *ca_dirs,
 				   const char *ca_file,
 				   const char *crl_file,
 				   const char *tls_priority,
@@ -959,6 +961,8 @@ NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 {
 	struct tstream_tls_params *__tlsp = NULL;
 	struct tstream_tls_params_internal *tlsp = NULL;
+	bool got_ca = false;
+	size_t i;
 	int ret;
 
 	__tlsp = talloc_zero(mem_ctx, struct tstream_tls_params);
@@ -996,6 +1000,40 @@ NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if (system_cas) {
+		ret = gnutls_certificate_set_x509_system_trust(tlsp->x509_cred);
+		if (ret < 0) {
+			DBG_ERR("gnutls_certificate_set_x509_system_trust() - %s\n",
+				gnutls_strerror(ret));
+			TALLOC_FREE(__tlsp);
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		}
+		if (ret > 0) {
+			got_ca = true;
+		}
+	}
+
+	for (i = 0; ca_dirs != NULL && ca_dirs[i] != NULL; i++) {
+		const char *ca_dir = ca_dirs[i];
+
+		if (!directory_exist(ca_dir)) {
+			continue;
+		}
+
+		ret = gnutls_certificate_set_x509_trust_dir(tlsp->x509_cred,
+							    ca_dir,
+							    GNUTLS_X509_FMT_PEM);
+		if (ret < 0) {
+			DBG_ERR("gnutls_certificate_set_x509_trust_dir(%s) - %s\n",
+				ca_dir, gnutls_strerror(ret));
+			TALLOC_FREE(__tlsp);
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		}
+		if (ret > 0) {
+			got_ca = true;
+		}
+	}
+
 	if (ca_file && *ca_file && file_exist(ca_file)) {
 		ret = gnutls_certificate_set_x509_trust_file(tlsp->x509_cred,
 							     ca_file,
@@ -1006,11 +1044,17 @@ NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(__tlsp);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
-	} else if (tlsp->verify_peer >= TLS_VERIFY_PEER_CA_ONLY) {
-		DEBUG(0,("TLS failed to missing cafile %s - "
-			 "with 'tls verify peer = %s'\n",
-			 ca_file,
-			 tls_verify_peer_string(tlsp->verify_peer)));
+		if (ret > 0) {
+			got_ca = true;
+		}
+	}
+
+	if (!got_ca && tlsp->verify_peer >= TLS_VERIFY_PEER_CA_ONLY) {
+		D_ERR("TLS: 'tls verify peer = %s' requires "
+		      "'tls trust system cas', "
+		      "'tls ca directories' or "
+		      "'tls cafile'\n",
+		      tls_verify_peer_string(tlsp->verify_peer));
 		TALLOC_FREE(__tlsp);
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
@@ -1052,6 +1096,8 @@ NTSTATUS tstream_tls_params_client_lpcfg(TALLOC_CTX *mem_ctx,
 					 struct tstream_tls_params **tlsp)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	bool system_cas = false;
+	const char * const *ca_dirs = NULL;
 	const char *ptr = NULL;
 	char *ca_file = NULL;
 	char *crl_file = NULL;
@@ -1059,6 +1105,9 @@ NTSTATUS tstream_tls_params_client_lpcfg(TALLOC_CTX *mem_ctx,
 	enum tls_verify_peer_state verify_peer =
 		TLS_VERIFY_PEER_AS_STRICT_AS_POSSIBLE;
 	NTSTATUS status;
+
+	system_cas = lpcfg_tls_trust_system_cas(lp_ctx);
+	ca_dirs = lpcfg_tls_ca_directories(lp_ctx);
 
 	ptr = lpcfg__tls_cafile(lp_ctx);
 	if (ptr != NULL) {
@@ -1082,6 +1131,8 @@ NTSTATUS tstream_tls_params_client_lpcfg(TALLOC_CTX *mem_ctx,
 	verify_peer = lpcfg_tls_verify_peer(lp_ctx);
 
 	status = tstream_tls_params_client(mem_ctx,
+					   system_cas,
+					   ca_dirs,
 					   ca_file,
 					   crl_file,
 					   tls_priority,
