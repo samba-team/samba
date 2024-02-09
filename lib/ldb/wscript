@@ -67,7 +67,7 @@ def configure(conf):
     #
     conf.CONFIG_PATH('LDB_MODULESDIR', conf.SUBST_ENV_VAR('MODULESDIR') + '/ldb')
 
-    conf.env.standalone_ldb = conf.IN_LAUNCH_DIR()
+    conf.env.standalone_ldb = True
 
     if not conf.CHECK_CODE('return !(sizeof(size_t) >= 8)',
                            "HAVE_64_BIT_SIZE_T_FOR_LMDB",
