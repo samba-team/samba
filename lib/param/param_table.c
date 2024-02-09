@@ -309,6 +309,8 @@ static const struct enum_list enum_ldap_sasl_wrapping[] = {
 	{0, "plain"},
 	{ADS_AUTH_SASL_SIGN, "sign"},
 	{ADS_AUTH_SASL_SEAL, "seal"},
+	{ADS_AUTH_SASL_STARTTLS, "starttls"},
+	{ADS_AUTH_SASL_LDAPS, "ldaps"},
 	{-1, NULL}
 };
 

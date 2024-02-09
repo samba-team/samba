@@ -36,6 +36,13 @@
 	The default value is <emphasis>seal</emphasis>. That implies synchronizing the time
 	with the KDC in the case of using <emphasis>Kerberos</emphasis>.
 	</para>
+
+	<para>In order to force using LDAP (on port 389) with STARTTLS
+	or LDAPS (on port 636), it is possible to use <emphasis>starttls</emphasis>
+	or <emphasis>ldaps</emphasis>. In that case the NTLMSSP or Kerberos
+	authentication using the TLS channel bindings in order to glue
+	it to the connection.</para>
+
 </description>
 <value type="default">seal</value>
 </samba:parameter>
