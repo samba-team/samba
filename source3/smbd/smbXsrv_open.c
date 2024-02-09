@@ -74,10 +74,7 @@ NTSTATUS smbXsrv_open_global_init(void)
 			 DBWRAP_FLAG_NONE);
 	TALLOC_FREE(global_path);
 	if (db_ctx == NULL) {
-		NTSTATUS status;
-
-		status = map_nt_error_from_unix_common(errno);
-
+		NTSTATUS status = map_nt_error_from_unix_common(errno);
 		return status;
 	}
 
