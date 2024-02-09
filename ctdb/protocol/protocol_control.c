@@ -693,6 +693,14 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 	case CTDB_CONTROL_ECHO_DATA:
 		ctdb_echo_data_push(cd->data.echo_data, buf, &np);
 		break;
+
+	case CTDB_CONTROL_TCP_CLIENT_DISCONNECTED:
+		ctdb_connection_push(cd->data.conn, buf, &np);
+		break;
+
+	case CTDB_CONTROL_TCP_CLIENT_PASSED:
+		ctdb_connection_push(cd->data.conn, buf, &np);
+		break;
 	}
 
 	*npush = np;
