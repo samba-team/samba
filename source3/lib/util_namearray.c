@@ -77,6 +77,7 @@ bool token_contains_name(TALLOC_CTX *mem_ctx,
 	const char *prefix;
 	struct dom_sid sid;
 	enum lsa_SidType type;
+	NTSTATUS status;
 
 	if (username != NULL) {
 		size_t domain_len = domain != NULL ? strlen(domain) : 0;
@@ -113,8 +114,14 @@ bool token_contains_name(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!do_group_checks(&name, &prefix)) {
-		if (!lookup_name_smbconf(mem_ctx, name, LOOKUP_NAME_ALL,
-				 NULL, NULL, &sid, &type)) {
+		status = lookup_name_smbconf_ex(mem_ctx,
+						name,
+						LOOKUP_NAME_ALL,
+						NULL,
+						NULL,
+						&sid,
+						&type);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(5, ("lookup_name %s failed\n", name));
 			return False;
 		}
@@ -128,9 +135,15 @@ bool token_contains_name(TALLOC_CTX *mem_ctx,
 
 	for (/* initialized above */ ; *prefix != '\0'; prefix++) {
 		if (*prefix == '+') {
-			if (!lookup_name_smbconf(mem_ctx, name,
-					 LOOKUP_NAME_ALL|LOOKUP_NAME_GROUP,
-					 NULL, NULL, &sid, &type)) {
+			status = lookup_name_smbconf_ex(
+					mem_ctx,
+					name,
+					LOOKUP_NAME_ALL|LOOKUP_NAME_GROUP,
+					NULL,
+					NULL,
+					&sid,
+					&type);
+			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(5, ("lookup_name %s failed\n", name));
 				return False;
 			}
