@@ -74,10 +74,13 @@ static bool lookup_unix_group_name(const char *name, struct dom_sid *sid)
  to do guesswork.
 *****************************************************************/
 
-bool lookup_name(TALLOC_CTX *mem_ctx,
-		 const char *full_name, int flags,
-		 const char **ret_domain, const char **ret_name,
-		 struct dom_sid *ret_sid, enum lsa_SidType *ret_type)
+static NTSTATUS lookup_name_internal(TALLOC_CTX *mem_ctx,
+				     const char *full_name,
+				     int flags,
+				     const char **ret_domain,
+				     const char **ret_name,
+				     struct dom_sid *ret_sid,
+				     enum lsa_SidType *ret_type)
 {
 	char *p;
 	const char *tmp;
@@ -91,7 +94,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 
 	if (tmp_ctx == NULL) {
 		DEBUG(0, ("talloc_new failed\n"));
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	p = strchr_m(full_name, '\\');
@@ -118,7 +121,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 	if ((domain == NULL) || (name == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(tmp_ctx);
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	DEBUG(10,("lookup_name: %s => domain=[%s], name=[%s]\n",
@@ -153,7 +156,8 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 				goto ok;
 			}
 			TALLOC_FREE(tmp_ctx);
-			return false;
+			*ret_type = SID_NAME_UNKNOWN;
+			return NT_STATUS_OK;
 		}
 	}
 
@@ -175,7 +179,8 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 			goto ok;
 		}
 		TALLOC_FREE(tmp_ctx);
-		return false;
+		*ret_type = SID_NAME_UNKNOWN;
+		return NT_STATUS_OK;
 	}
 
 	/* Try the explicit winbind lookup first, don't let it guess the
@@ -185,10 +190,10 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 	    (flags & ~(LOOKUP_NAME_DOMAIN|LOOKUP_NAME_ISOLATED)))
 	{
 		status = winbind_lookup_name_ex(domain, name, &sid, &type);
-		if (NT_STATUS_IS_OK(status) && type == SID_NAME_UNKNOWN) {
-			status = NT_STATUS_NONE_MAPPED;
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
-		if (NT_STATUS_IS_OK(status)) {
+		if (type != SID_NAME_UNKNOWN) {
 			goto ok;
 		}
 	}
@@ -200,7 +205,8 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 			goto ok;
 		}
 		TALLOC_FREE(tmp_ctx);
-		return false;
+		*ret_type = SID_NAME_UNKNOWN;
+		return NT_STATUS_OK;
 	}
 
 	if (((flags & LOOKUP_NAME_NO_NSS) == 0)
@@ -210,7 +216,8 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 			goto ok;
 		}
 		TALLOC_FREE(tmp_ctx);
-		return false;
+		*ret_type = SID_NAME_UNKNOWN;
+		return NT_STATUS_OK;
 	}
 
 	/*
@@ -231,7 +238,8 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 	 */
 	if (!(flags & LOOKUP_NAME_ISOLATED)) {
 		TALLOC_FREE(tmp_ctx);
-		return false;
+		*ret_type = SID_NAME_UNKNOWN;
+		return NT_STATUS_OK;
 	}
 
 	/*
@@ -239,7 +247,8 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 	 */
 	if (domain[0] != '\0') {
 		TALLOC_FREE(tmp_ctx);
-		return false;
+		*ret_type = SID_NAME_UNKNOWN;
+		return NT_STATUS_OK;
 	}
 
 	/* Now the guesswork begins, we haven't been given an explicit
@@ -281,7 +290,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 		if (!secrets_fetch_domain_sid(name, &sid)) {
 			DEBUG(3, ("Could not fetch my SID\n"));
 			TALLOC_FREE(tmp_ctx);
-			return false;
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 		/* Swap domain and name */
 		tmp = name; name = domain; domain = tmp;
@@ -297,7 +306,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 		if (!secrets_fetch_domain_sid(name, &sid)) {
 			DEBUG(3, ("Could not fetch the domain SID\n"));
 			TALLOC_FREE(tmp_ctx);
-			return false;
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 		/* Swap domain and name */
 		tmp = name; name = domain; domain = tmp;
@@ -345,7 +354,8 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 
 	if (!(flags & LOOKUP_NAME_REMOTE)) {
 		TALLOC_FREE(tmp_ctx);
-		return false;
+		*ret_type = SID_NAME_UNKNOWN;
+		return NT_STATUS_OK;
 	}
 
 	/* If we are not a DC, we have to ask in our primary domain. Let
@@ -353,11 +363,10 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 
 	if (!IS_DC) {
 		status = winbind_lookup_name_ex(lp_workgroup(), name, &sid, &type);
-		if (NT_STATUS_IS_OK(status) && type == SID_NAME_UNKNOWN) {
-			status = NT_STATUS_NONE_MAPPED;
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
-		if (NT_STATUS_IS_OK(status)) {
-			domain = talloc_strdup(tmp_ctx, lp_workgroup());
+		if (type != SID_NAME_UNKNOWN) {
 			goto ok;
 		}
 	}
@@ -372,32 +381,35 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 		enum lsa_SidType domain_type;
 
 		status = winbind_lookup_name_ex("", name, &sid, &type);
-		if (NT_STATUS_IS_OK(status) && type == SID_NAME_UNKNOWN) {
-			status = NT_STATUS_NONE_MAPPED;
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
-		if (NT_STATUS_IS_OK(status)) {
+		if (type != SID_NAME_UNKNOWN) {
 			if (type == SID_NAME_DOMAIN) {
 				/* Swap name and type */
 				tmp = name; name = domain; domain = tmp;
 				goto ok;
 			}
 
-			/* Here we have to cope with a little deficiency in the
-			 * winbind API: We have to ask it again for the name of
-			 * the domain it figured out itself. Maybe fix that
-			 * later... */
+			/* Here we have to cope with a little deficiency
+			 * in the winbind API: We have to ask it again
+			 * for the name of the domain it figured out
+			 * itself. Maybe fix that later... */
 
 			sid_copy(&dom_sid, &sid);
 			sid_split_rid(&dom_sid, NULL);
 
-			if (!winbind_lookup_sid(tmp_ctx, &dom_sid, &domain, NULL,
+			if (!winbind_lookup_sid(tmp_ctx, &dom_sid,
+						&domain, NULL,
 						&domain_type) ||
 			    (domain_type != SID_NAME_DOMAIN))
 			{
-				DEBUG(2, ("winbind could not find the domain's name "
-					  "it just looked up for us\n"));
+				DBG_INFO("winbind could not find the "
+					 "domain's name it just looked "
+					 "up for us\n");
 				TALLOC_FREE(tmp_ctx);
-				return false;
+				*ret_type = SID_NAME_UNKNOWN;
+				return NT_STATUS_OK;
 			}
 			goto ok;
 		}
@@ -427,13 +439,14 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 	 */
 
 	TALLOC_FREE(tmp_ctx);
-	return false;
+	*ret_type = SID_NAME_UNKNOWN;
+	return NT_STATUS_OK;
 
  ok:
 	if ((domain == NULL) || (name == NULL)) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(tmp_ctx);
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/*
@@ -444,7 +457,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 	    !(*ret_name = talloc_strdup(mem_ctx, name))) {
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(tmp_ctx);
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (ret_domain != NULL) {
@@ -452,11 +465,11 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 		if (!(tmp_dom = talloc_strdup(mem_ctx, domain))) {
 			DEBUG(0, ("talloc failed\n"));
 			TALLOC_FREE(tmp_ctx);
-			return false;
+			return NT_STATUS_NO_MEMORY;
 		}
 		if (!strupper_m(tmp_dom)) {
 			TALLOC_FREE(tmp_ctx);
-			return false;
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 		*ret_domain = tmp_dom;
 	}
@@ -465,11 +478,39 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 		sid_copy(ret_sid, &sid);
 	}
 
+	*ret_type = type;
+
+	TALLOC_FREE(tmp_ctx);
+	return NT_STATUS_OK;
+}
+
+bool lookup_name(TALLOC_CTX *mem_ctx,
+		 const char *full_name,
+		 int flags,
+		 const char **ret_domain,
+		 const char **ret_name,
+		 struct dom_sid *ret_sid,
+		 enum lsa_SidType *ret_type)
+{
+	enum lsa_SidType type;
+	NTSTATUS status;
+
+	status = lookup_name_internal(mem_ctx,
+				      full_name,
+				      flags,
+				      ret_domain,
+				      ret_name,
+				      ret_sid,
+				      &type);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
 	if (ret_type != NULL) {
 		*ret_type = type;
 	}
-
-	TALLOC_FREE(tmp_ctx);
+	if (type == SID_NAME_UNKNOWN) {
+		return false;
+	}
 	return true;
 }
 
