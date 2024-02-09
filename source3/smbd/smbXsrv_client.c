@@ -55,7 +55,7 @@ static struct db_context *smbXsrv_client_global_db_ctx = NULL;
 
 NTSTATUS smbXsrv_client_global_init(void)
 {
-	const char *global_path = NULL;
+	char *global_path = NULL;
 	struct db_context *backend = NULL;
 	struct db_context *db_ctx = NULL;
 
@@ -79,6 +79,7 @@ NTSTATUS smbXsrv_client_global_init(void)
 			  O_RDWR | O_CREAT, 0600,
 			  DBWRAP_LOCK_ORDER_1,
 			  DBWRAP_FLAG_NONE);
+	TALLOC_FREE(global_path);
 	if (backend == NULL) {
 		NTSTATUS status;
 
