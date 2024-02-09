@@ -165,10 +165,8 @@ def build(bld):
     bld.RECURSE('lib/replace')
     bld.RECURSE('lib/tdb')
 
-    if bld.env.standalone_ldb:
-        if not 'PACKAGE_VERSION' in bld.env:
-            bld.env.PACKAGE_VERSION = VERSION
-        bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
+    if not 'LDB_PACKAGE_VERSION' in bld.env:
+        bld.env.LDB_PACKAGE_VERSION = VERSION
 
     private_library = not bld.env.ldb_is_public_library
 
