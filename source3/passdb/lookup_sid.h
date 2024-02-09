@@ -74,6 +74,13 @@ bool lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 		 const char *full_name, int flags,
 		 const char **ret_domain, const char **ret_name,
 		 struct dom_sid *ret_sid, enum lsa_SidType *ret_type);
+NTSTATUS lookup_name_smbconf_ex(TALLOC_CTX *mem_ctx,
+				const char *full_name,
+				int flags,
+				const char **ret_domain,
+				const char **ret_name,
+				struct dom_sid *ret_sid,
+				enum lsa_SidType *ret_type);
 NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 		     const struct dom_sid **sids, int level,
 		     struct lsa_dom_info **ret_domains,

@@ -520,14 +520,18 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
  and then "Unix Users"\foo (or "Unix Groups"\foo).
 ************************************************************************/
 
-bool lookup_name_smbconf(TALLOC_CTX *mem_ctx,
-		 const char *full_name, int flags,
-		 const char **ret_domain, const char **ret_name,
-		 struct dom_sid *ret_sid, enum lsa_SidType *ret_type)
+NTSTATUS lookup_name_smbconf_ex(TALLOC_CTX *mem_ctx,
+				const char *full_name,
+				int flags,
+				const char **ret_domain,
+				const char **ret_name,
+				struct dom_sid *ret_sid,
+				enum lsa_SidType *ret_type)
 {
 	char *qualified_name = NULL;
 	const char *p = strchr_m(full_name, *lp_winbind_separator());
 	bool is_qualified = p != NULL || strchr_m(full_name, '@') != NULL;
+	NTSTATUS status;
 
 	/* For DOMAIN\user or user@REALM directly call lookup_name(). */
 	if (is_qualified) {
@@ -539,38 +543,42 @@ bool lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 
 			qualified_name = talloc_strdup(mem_ctx, full_name);
 			if (qualified_name == NULL) {
-				return false;
+				return NT_STATUS_NO_MEMORY;
 			}
 			qualified_name[p - full_name] = '\\';
 			full_name = qualified_name;
 		}
 
-		return lookup_name(mem_ctx, full_name, flags,
-				ret_domain, ret_name,
-				ret_sid, ret_type);
+		return lookup_name_internal(mem_ctx,
+					    full_name,
+					    flags,
+					    ret_domain,
+					    ret_name,
+					    ret_sid,
+					    ret_type);
 	}
 
 	/* Try with winbind default domain name. */
 	if (lp_winbind_use_default_domain()) {
-		bool ok;
-
 		qualified_name = talloc_asprintf(mem_ctx,
 						 "%s\\%s",
 						 lp_workgroup(),
 						 full_name);
 		if (qualified_name == NULL) {
-			return false;
+			return NT_STATUS_NO_MEMORY;
 		}
 
-		ok = lookup_name(mem_ctx,
-				 qualified_name,
-				 flags,
-				 ret_domain,
-				 ret_name,
-				 ret_sid,
-				 ret_type);
-		if (ok) {
-			return true;
+		status= lookup_name_internal(mem_ctx,
+					     qualified_name,
+					     flags,
+					     ret_domain,
+					     ret_name,
+					     ret_sid,
+					     ret_type);
+		if (NT_STATUS_IS_OK(status) &&
+		    *ret_type != SID_NAME_UNKNOWN)
+		{
+			return NT_STATUS_OK;
 		}
 	}
 
@@ -579,13 +587,20 @@ bool lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 				get_global_sam_name(),
 				full_name );
 	if (!qualified_name) {
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (lookup_name(mem_ctx, qualified_name, flags,
-				ret_domain, ret_name,
-				ret_sid, ret_type)) {
-		return true;
+	status = lookup_name_internal(mem_ctx,
+				      qualified_name,
+				      flags,
+				      ret_domain,
+				      ret_name,
+				      ret_sid,
+				      ret_type);
+	if (NT_STATUS_IS_OK(status) &&
+	    *ret_type != SID_NAME_UNKNOWN)
+	{
+		return NT_STATUS_OK;
 	}
 
 	/* Finally try with "Unix Users" or "Unix Group" */
@@ -595,12 +610,43 @@ bool lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 					unix_users_domain_name(),
 				full_name );
 	if (!qualified_name) {
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	return lookup_name(mem_ctx, qualified_name, flags,
-				ret_domain, ret_name,
-				ret_sid, ret_type);
+	return lookup_name_internal(mem_ctx,
+				    qualified_name,
+				    flags,
+				    ret_domain,
+				    ret_name,
+				    ret_sid,
+				    ret_type);
+}
+
+bool lookup_name_smbconf(TALLOC_CTX *mem_ctx,
+		 const char *full_name, int flags,
+		 const char **ret_domain, const char **ret_name,
+		 struct dom_sid *ret_sid, enum lsa_SidType *ret_type)
+{
+	enum lsa_SidType type;
+	NTSTATUS status;
+
+	status = lookup_name_smbconf_ex(mem_ctx,
+					full_name,
+					flags,
+					ret_domain,
+					ret_name,
+					ret_sid,
+					&type);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+	if (ret_type != NULL) {
+		*ret_type = type;
+	}
+	if (type == SID_NAME_UNKNOWN) {
+		return false;
+	}
+	return true;
 }
 
 static bool wb_lookup_rids(TALLOC_CTX *mem_ctx,
