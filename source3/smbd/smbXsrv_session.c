@@ -1040,14 +1040,11 @@ struct tevent_req *smb2srv_session_close_previous_send(TALLOC_CTX *mem_ctx,
 	}
 	current_token = session_info->security_token;
 
-	if (current_token->num_sids > PRIMARY_USER_SID_INDEX) {
-		state->current_sid = &current_token->sids[PRIMARY_USER_SID_INDEX];
-	}
-
-	if (state->current_sid == NULL) {
+	if (current_token->num_sids <= PRIMARY_USER_SID_INDEX) {
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
+	state->current_sid = &current_token->sids[PRIMARY_USER_SID_INDEX];
 
 	if (!security_token_has_nt_authenticated_users(current_token)) {
 		/* TODO */
