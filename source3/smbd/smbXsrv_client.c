@@ -425,13 +425,14 @@ static NTSTATUS smbXsrv_client_global_store(struct smbXsrv_client_global0 *globa
 	key = dbwrap_record_get_key(global->db_rec);
 	val = dbwrap_record_get_value(global->db_rec);
 
-	ZERO_STRUCT(global_blob);
-	global_blob.version = smbXsrv_version_global_current();
+	global_blob = (struct smbXsrv_client_globalB) {
+		.version = smbXsrv_version_global_current(),
+		.info.info0 = global,
+	};
 	if (val.dsize >= 8) {
 		global_blob.seqnum = IVAL(val.dptr, 4);
 	}
 	global_blob.seqnum += 1;
-	global_blob.info.info0 = global;
 
 	global->stored = true;
 	ndr_err = ndr_push_struct_blob(&blob, global->db_rec, &global_blob,
