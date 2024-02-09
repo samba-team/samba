@@ -65,12 +65,8 @@ char *ldap_encode_ndr_GUID(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 {
 	struct GUID_ndr_buf buf = { .buf = {0}, };
 	DATA_BLOB blob = { .data = buf.buf, .length = sizeof(buf.buf), };
-	NTSTATUS status;
 	char *ret;
-	status = GUID_to_ndr_buf(guid, &buf);
-	if (!NT_STATUS_IS_OK(status)) {
-		return NULL;
-	}
+	GUID_to_ndr_buf(guid, &buf);
 	ret = ldb_binary_encode(mem_ctx, blob);
 	return ret;
 }

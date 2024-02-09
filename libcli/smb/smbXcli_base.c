@@ -4858,14 +4858,9 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 		SIVAL(buf, 8, 0); 	/* Capabilities */
 	}
 	if (state->conn->max_protocol >= PROTOCOL_SMB2_10) {
-		NTSTATUS status;
 		struct GUID_ndr_buf guid_buf = { .buf = {0}, };
 
-		status = GUID_to_ndr_buf(&state->conn->smb2.client.guid,
-					 &guid_buf);
-		if (!NT_STATUS_IS_OK(status)) {
-			return NULL;
-		}
+		GUID_to_ndr_buf(&state->conn->smb2.client.guid, &guid_buf);
 		memcpy(buf+12, guid_buf.buf, 16); /* ClientGuid */
 	} else {
 		memset(buf+12, 0, 16);	/* ClientGuid */
@@ -5678,14 +5673,9 @@ struct tevent_req *smb2cli_validate_negotiate_info_send(TALLOC_CTX *mem_ctx,
 		SIVAL(buf, 0, 0); /* Capabilities */
 	}
 	if (state->conn->max_protocol >= PROTOCOL_SMB2_10) {
-		NTSTATUS status;
 		struct GUID_ndr_buf guid_buf = { .buf = {0}, };
 
-		status = GUID_to_ndr_buf(&conn->smb2.client.guid,
-					 &guid_buf);
-		if (!NT_STATUS_IS_OK(status)) {
-			return NULL;
-		}
+		GUID_to_ndr_buf(&conn->smb2.client.guid, &guid_buf);
 		memcpy(buf+4, guid_buf.buf, 16); /* ClientGuid */
 	} else {
 		memset(buf+4, 0, 16);	/* ClientGuid */

@@ -22,21 +22,22 @@
 */
 
 #include "replace.h"
+#include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
 #include "lib/util/genrand.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "lib/util/util_str_hex.h"
 
-_PUBLIC_ NTSTATUS GUID_to_ndr_buf(
-	const struct GUID *guid, struct GUID_ndr_buf *buf)
+_PUBLIC_ void GUID_to_ndr_buf(const struct GUID *guid,
+			      struct GUID_ndr_buf *buf)
 {
 	DATA_BLOB b = { .data = buf->buf, .length = sizeof(buf->buf), };
 	enum ndr_err_code ndr_err;
 
 	ndr_err = ndr_push_struct_into_fixed_blob(
 		&b, guid, (ndr_push_flags_fn_t)ndr_push_GUID);
-	return ndr_map_error2ntstatus(ndr_err);
+	SMB_ASSERT(NDR_ERR_CODE_IS_SUCCESS(ndr_err));
 }
 
 /**
@@ -45,12 +46,8 @@ _PUBLIC_ NTSTATUS GUID_to_ndr_buf(
 _PUBLIC_ NTSTATUS GUID_to_ndr_blob(const struct GUID *guid, TALLOC_CTX *mem_ctx, DATA_BLOB *b)
 {
 	struct GUID_ndr_buf buf = { .buf = {0}, };
-	NTSTATUS status;
 
-	status = GUID_to_ndr_buf(guid, &buf);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	GUID_to_ndr_buf(guid, &buf);
 
 	*b = data_blob_talloc(mem_ctx, buf.buf, sizeof(buf.buf));
 	if (b->data == NULL) {

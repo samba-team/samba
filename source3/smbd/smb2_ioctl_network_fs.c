@@ -621,10 +621,7 @@ static NTSTATUS fsctl_validate_neg_info(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = GUID_to_ndr_buf(&conn->smb2.server.guid, &out_guid_buf);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	GUID_to_ndr_buf(&conn->smb2.server.guid, &out_guid_buf);
 
 	*out_output = data_blob_talloc(mem_ctx, NULL, 0x18);
 	if (out_output->data == NULL) {

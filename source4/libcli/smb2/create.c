@@ -117,11 +117,7 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 		}
 		SIVAL(data, 4, flags);
 		SBVAL(data, 8, 0x0); /* reserved */
-		status = GUID_to_ndr_buf(&io->in.create_guid, &guid_buf);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(req);
-			return NULL;
-		}
+		GUID_to_ndr_buf(&io->in.create_guid, &guid_buf);
 		memcpy(data+16, guid_buf.buf, sizeof(guid_buf.buf));
 
 		status = smb2_create_blob_add(req, &blobs,
@@ -150,11 +146,7 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 		uint32_t flags = 0;
 
 		smb2_push_handle(data, io->in.durable_handle_v2);
-		status = GUID_to_ndr_buf(&io->in.create_guid, &guid_buf);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(req);
-			return NULL;
-		}
+		GUID_to_ndr_buf(&io->in.create_guid, &guid_buf);
 		memcpy(data+16, guid_buf.buf, sizeof(guid_buf.buf));
 		if (io->in.persistent_open) {
 			flags = SMB2_DHANDLE_FLAG_PERSISTENT;
@@ -250,11 +242,7 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 		SSVAL(data, 0, 20); /* structure size */
 		SSVAL(data, 2, 0);  /* reserved */
 
-		status = GUID_to_ndr_buf(io->in.app_instance_id, &guid_buf);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(req);
-			return NULL;
-		}
+		GUID_to_ndr_buf(io->in.app_instance_id, &guid_buf);
 		memcpy(data+4, guid_buf.buf, sizeof(guid_buf.buf));
 
 		status = smb2_create_blob_add(req, &blobs,

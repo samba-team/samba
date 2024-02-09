@@ -113,13 +113,9 @@ static TDB_DATA smbXsrv_client_global_id_to_key(const struct GUID *client_guid,
 						uint8_t *key_buf)
 {
 	TDB_DATA key = { .dsize = 0, };
-	NTSTATUS status;
 	struct GUID_ndr_buf buf = { .buf = {0}, };
 
-	status = GUID_to_ndr_buf(client_guid, &buf);
-	if (!NT_STATUS_IS_OK(status)) {
-		return key;
-	}
+	GUID_to_ndr_buf(client_guid, &buf);
 	memcpy(key_buf, buf.buf, SMBXSRV_CLIENT_GLOBAL_TDB_KEY_SIZE);
 
 	key = make_tdb_data(key_buf, SMBXSRV_CLIENT_GLOBAL_TDB_KEY_SIZE);
