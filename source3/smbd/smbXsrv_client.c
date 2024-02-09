@@ -1435,7 +1435,7 @@ NTSTATUS smbXsrv_client_remove(struct smbXsrv_client *client)
 		};
 		struct GUID_txt_buf buf;
 
-		DBG_DEBUG("client_guid[%s] stored\n",
+		DBG_DEBUG("client_guid[%s] removed\n",
 			  GUID_buf_string(&client->global->client_guid, &buf));
 		NDR_PRINT_DEBUG(smbXsrv_clientB, &client_blob);
 	}
