@@ -529,17 +529,11 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 	}
 	current_token = session_info->security_token;
 
-	if (current_token == NULL) {
+	if ((current_token == NULL) ||
+	    (current_token->num_sids <= PRIMARY_USER_SID_INDEX)) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
-
-	if (current_token->num_sids > PRIMARY_USER_SID_INDEX) {
-		current_sid = &current_token->sids[PRIMARY_USER_SID_INDEX];
-	}
-
-	if (current_sid == NULL) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
+	current_sid = &current_token->sids[PRIMARY_USER_SID_INDEX];
 
 	if (table->local.num_opens >= table->local.max_opens) {
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
