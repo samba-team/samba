@@ -660,21 +660,16 @@ NTSTATUS smbXsrv_open_purge_replay_cache(struct smbXsrv_client *client,
 					 const struct GUID *create_guid)
 {
 	struct GUID_txt_buf buf;
-	char *guid_string;
-	struct db_context *db;
+	NTSTATUS status;
 
 	if (client->open_table == NULL) {
 		return NT_STATUS_OK;
 	}
 
-	db = client->open_table->local.replay_cache_db_ctx;
-
-	guid_string = GUID_buf_string(create_guid, &buf);
-	if (guid_string == NULL) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return dbwrap_purge_bystring(db, guid_string);
+	status = dbwrap_purge_bystring(
+		client->open_table->local.replay_cache_db_ctx,
+		GUID_buf_string(create_guid, &buf));
+	return status;
 }
 
 static NTSTATUS smbXsrv_open_clear_replay_cache(struct smbXsrv_open *op)
