@@ -122,7 +122,6 @@ static const struct ads_saslwrap_ops ads_sasl_gensec_ops = {
    we fit on one socket??)
 */
 static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
-				const char *sasl,
 				enum credentials_use_kerberos krb5_state,
 				const char *target_service,
 				const char *target_hostname)
@@ -133,6 +132,7 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 	NTSTATUS nt_status;
 	ADS_STATUS status;
 	struct auth_generic_state *auth_generic_state;
+	const char *sasl = "GSS-SPNEGO";
 	const char *sasl_list[] = { sasl, NULL };
 	NTTIME end_nt_time;
 	struct ads_saslwrap *wrap = &ads->ldap_wrap_data;
@@ -499,7 +499,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 		    ads->auth.password[0] == '\0')
 		{
 
-			status = ads_sasl_spnego_gensec_bind(ads, "GSS-SPNEGO",
+			status = ads_sasl_spnego_gensec_bind(ads,
 							     CRED_USE_KERBEROS_REQUIRED,
 							     p.service, p.hostname);
 			if (ADS_ERR_OK(status)) {
@@ -514,7 +514,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 		status = ADS_ERROR_KRB5(ads_kinit_password(ads));
 
 		if (ADS_ERR_OK(status)) {
-			status = ads_sasl_spnego_gensec_bind(ads, "GSS-SPNEGO",
+			status = ads_sasl_spnego_gensec_bind(ads,
 							CRED_USE_KERBEROS_REQUIRED,
 							p.service, p.hostname);
 			if (!ADS_ERR_OK(status)) {
@@ -562,7 +562,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 		goto done;
 	}
 
-	status = ads_sasl_spnego_gensec_bind(ads, "GSS-SPNEGO",
+	status = ads_sasl_spnego_gensec_bind(ads,
 					     CRED_USE_KERBEROS_DISABLED,
 					     p.service, p.hostname);
 done:
