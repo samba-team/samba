@@ -676,7 +676,6 @@ static NTSTATUS smbXsrv_open_clear_replay_cache(struct smbXsrv_open *op)
 {
 	struct GUID *create_guid;
 	struct GUID_txt_buf buf;
-	char *guid_string;
 	struct db_context *db;
 	NTSTATUS status;
 
@@ -695,12 +694,7 @@ static NTSTATUS smbXsrv_open_clear_replay_cache(struct smbXsrv_open *op)
 		return NT_STATUS_OK;
 	}
 
-	guid_string = GUID_buf_string(create_guid, &buf);
-	if (guid_string == NULL) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	status = dbwrap_purge_bystring(db, guid_string);
+	status = dbwrap_purge_bystring(db, GUID_buf_string(create_guid, &buf));
 
 	if (NT_STATUS_IS_OK(status)) {
 		op->flags &= ~SMBXSRV_OPEN_HAVE_REPLAY_CACHE;
