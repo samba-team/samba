@@ -58,7 +58,8 @@ static bool g_lock_parse(uint8_t *buf, size_t buflen, struct g_lock *lck)
 	uint64_t unique_data_epoch;
 
 	if (buflen < (SERVER_ID_BUF_LENGTH + /* exclusive */
-		      sizeof(uint64_t) +     /* seqnum */
+		      sizeof(uint64_t) +     /* unique_lock_epoch */
+		      sizeof(uint64_t) +     /* unique_data_epoch */
 		      sizeof(uint32_t))) {   /* num_shared */
 		struct g_lock ret = {
 			.exclusive.pid = 0,
