@@ -2715,11 +2715,6 @@ static void call_trans2qpathinfo(
 		return;
 	}
 
-	/*
-	 * smb_fname->fsp may be NULL if smb_fname points at a symlink
-	 * and we're in POSIX context, so be careful when using fsp
-	 * below, it can still be NULL.
-	 */
 	fsp = smb_fname->fsp;
 
 	/* If this is a stream, check if there is a delete_pending. */
