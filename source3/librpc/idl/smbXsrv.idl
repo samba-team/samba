@@ -57,7 +57,6 @@ interface smbXsrv
 	} smbXsrv_version_node0;
 
 	typedef struct {
-		[ignore] db_record 			*db_rec;
 		[range(1, 1024)] uint32			num_nodes;
 		smbXsrv_version_node0			nodes[num_nodes];
 	} smbXsrv_version_global0;
