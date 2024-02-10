@@ -609,7 +609,7 @@ int ctdb_event_script_run(struct ctdb_context *ctdb,
 	     (! event_allowed_during_recovery(event)) ) {
 		DEBUG(DEBUG_ERR,
 		      ("Refusing to run event '%s' while in recovery\n",
-		       ctdb_eventscript_call_names[event]));
+		       ctdb_event_to_string(event)));
 		return -1;
 	}
 
@@ -636,7 +636,7 @@ int ctdb_event_script_run(struct ctdb_context *ctdb,
 	if (! check_options(event, arg_str)) {
 		DEBUG(DEBUG_ERR,
 		      ("Bad event script arguments '%s' for '%s'\n",
-		       arg_str, ctdb_eventscript_call_names[event]));
+		       arg_str, ctdb_event_to_string(event)));
 		talloc_free(arg_str);
 		return -1;
 	}
@@ -651,7 +651,7 @@ int ctdb_event_script_run(struct ctdb_context *ctdb,
 
 	DEBUG(DEBUG_INFO,
 	      (__location__ " Running event %s with arguments %s\n",
-	       ctdb_eventscript_call_names[event], arg_str));
+	       ctdb_event_to_string(event), arg_str));
 
 	talloc_free(arg_str);
 	return 0;
@@ -670,7 +670,7 @@ static void ctdb_event_script_run_done(int result, void *private_data)
 		case CTDB_EVENT_RELEASE_IP:
 			DEBUG(DEBUG_ERR,
 			      ("Ignoring hung script for %s event\n",
-			       ctdb_eventscript_call_names[state->event]));
+			       ctdb_event_to_string(state->event)));
 			result = 0;
 			break;
 
@@ -822,7 +822,7 @@ int ctdb_event_script_args(struct ctdb_context *ctdb, enum ctdb_event call,
 			DEBUG(DEBUG_ERR,
 			      (__location__ " eventscript for '%s' timed out."
 			       " Immediately banning ourself for %d seconds\n",
-			       ctdb_eventscript_call_names[call],
+			       ctdb_event_to_string(call),
 			       ctdb->tunable.recovery_ban_period));
 			ctdb_ban_self(ctdb);
 		}
