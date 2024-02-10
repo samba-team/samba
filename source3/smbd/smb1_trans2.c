@@ -2618,14 +2618,11 @@ static void call_trans2qpathinfo(
 	struct timespec write_time_ts = { .tv_sec = 0, };
 	struct files_struct *dirfsp = NULL;
 	files_struct *fsp = NULL;
-	struct file_id fileid;
-	uint32_t name_hash;
 	char *fname = NULL;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
 	NTTIME twrp = 0;
 	bool info_level_handled;
 	NTSTATUS status = NT_STATUS_OK;
-	int ret;
 
 	if (!params) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -2718,65 +2715,24 @@ static void call_trans2qpathinfo(
 	fsp = smb_fname->fsp;
 
 	/* If this is a stream, check if there is a delete_pending. */
-	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
-	    && is_ntfs_stream_smb_fname(smb_fname)) {
-		struct smb_filename *smb_fname_base;
+	if (fsp_is_alternate_stream(fsp)) {
 
-		/* Create an smb_filename with stream_name == NULL. */
-		smb_fname_base = synthetic_smb_fname(
-			talloc_tos(),
-			smb_fname->base_name,
-			NULL,
-			NULL,
-			smb_fname->twrp,
-			smb_fname->flags);
-		if (smb_fname_base == NULL) {
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
+		struct files_struct *base_fsp = fsp->base_fsp;
 
-		ret = vfs_stat(conn, smb_fname_base);
-		if (ret != 0) {
-			DBG_NOTICE("vfs_stat of %s failed "
-				   "(%s)\n",
-				   smb_fname_str_dbg(smb_fname_base),
-				   strerror(errno));
-			TALLOC_FREE(smb_fname_base);
-			reply_nterror(req,
-				      map_nt_error_from_unix(errno));
-			return;
-		}
-
-		status = file_name_hash(conn,
-					smb_fname_str_dbg(smb_fname_base),
-					&name_hash);
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(smb_fname_base);
-			reply_nterror(req, status);
-			return;
-		}
-
-		fileid = vfs_file_id_from_sbuf(conn,
-					       &smb_fname_base->st);
-		TALLOC_FREE(smb_fname_base);
-		get_file_infos(fileid, name_hash, &delete_pending, NULL);
+		get_file_infos(base_fsp->file_id,
+			       base_fsp->name_hash,
+			       &delete_pending,
+			       NULL);
 		if (delete_pending) {
 			reply_nterror(req, NT_STATUS_DELETE_PENDING);
 			return;
 		}
 	}
 
-	status = file_name_hash(conn,
-				smb_fname_str_dbg(smb_fname),
-				&name_hash);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		return;
-	}
-
 	if (fsp_getinfo_ask_sharemode(fsp)) {
-		fileid = vfs_file_id_from_sbuf(conn, &smb_fname->st);
-		get_file_infos(fileid, name_hash, &delete_pending,
+		get_file_infos(fsp->file_id,
+			       fsp->name_hash,
+			       &delete_pending,
 			       &write_time_ts);
 	}
 
