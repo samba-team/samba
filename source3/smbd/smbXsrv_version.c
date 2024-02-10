@@ -116,9 +116,10 @@ NTSTATUS smbXsrv_version_global_init(const struct server_id *server_id)
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
-		ZERO_STRUCT(global_blob);
-		global_blob.version = SMBXSRV_VERSION_CURRENT;
-		global_blob.info.info0 = global;
+		global_blob = (struct smbXsrv_version_globalB) {
+			.version = SMBXSRV_VERSION_CURRENT,
+			.info.info0 = global,
+		};
 	} else {
 		blob = data_blob_const(val.dptr, val.dsize);
 
