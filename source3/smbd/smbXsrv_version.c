@@ -209,10 +209,12 @@ NTSTATUS smbXsrv_version_global_init(const struct server_id *server_id)
 		num_valid++;
 	}
 
-	local_node->server_id = *server_id;
-	local_node->min_version = SMBXSRV_VERSION_0;
-	local_node->max_version = SMBXSRV_VERSION_CURRENT;
-	local_node->current_version = global_blob.version;
+	*local_node = (struct smbXsrv_version_node0){
+		.server_id = *server_id,
+		.min_version = SMBXSRV_VERSION_0,
+		.max_version = SMBXSRV_VERSION_CURRENT,
+		.current_version = global_blob.version,
+	};
 
 	global->num_nodes = num_valid;
 	global->nodes = valid;
