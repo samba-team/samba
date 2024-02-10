@@ -594,23 +594,6 @@ ctdb_node_list_to_map(struct ctdb_node **nodes, uint32_t num_nodes,
 	return node_map;
 }
 
-const char *ctdb_eventscript_call_names[] = {
-	"init",
-	"setup",
-	"startup",
-	"startrecovery",
-	"recovered",
-	"takeip",
-	"releaseip",
-	"stopped",
-	"monitor",
-	"status",
-	"shutdown",
-	"reload",
-	"updateip",
-	"ipreallocated"
-};
-
 /* Runstate handling */
 static struct {
 	enum ctdb_runstate runstate;

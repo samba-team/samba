@@ -52,9 +52,6 @@ struct ctdb_script_list_old {
 	struct ctdb_script scripts[1];
 };
 
-/* Mapping from enum to names. */
-extern const char *ctdb_eventscript_call_names[];
-
 /*
   packet structures
 */
