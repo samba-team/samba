@@ -149,10 +149,6 @@ struct ctdb_node_map_old *ctdb_node_list_to_map(struct ctdb_node **nodes,
 						uint32_t num_nodes,
 						TALLOC_CTX *mem_ctx);
 
-const char *runstate_to_string(enum ctdb_runstate runstate);
-
-enum ctdb_runstate runstate_from_string(const char *label);
-
 void ctdb_set_runstate(struct ctdb_context *ctdb, enum ctdb_runstate runstate);
 
 uint32_t *ctdb_key_to_idkey(TALLOC_CTX *mem_ctx, TDB_DATA key);

@@ -595,48 +595,10 @@ ctdb_node_list_to_map(struct ctdb_node **nodes, uint32_t num_nodes,
 }
 
 /* Runstate handling */
-static struct {
-	enum ctdb_runstate runstate;
-	const char * label;
-} runstate_map[] = {
-	{ CTDB_RUNSTATE_UNKNOWN, "UNKNOWN" },
-	{ CTDB_RUNSTATE_INIT, "INIT" },
-	{ CTDB_RUNSTATE_SETUP, "SETUP" },
-	{ CTDB_RUNSTATE_FIRST_RECOVERY, "FIRST_RECOVERY" },
-	{ CTDB_RUNSTATE_STARTUP, "STARTUP" },
-	{ CTDB_RUNSTATE_RUNNING, "RUNNING" },
-	{ CTDB_RUNSTATE_SHUTDOWN, "SHUTDOWN" },
-	{ -1, NULL },
-};
-
-const char *runstate_to_string(enum ctdb_runstate runstate)
-{
-	int i;
-	for (i=0; runstate_map[i].label != NULL ; i++) {
-		if (runstate_map[i].runstate == runstate) {
-			return runstate_map[i].label;
-		}
-	}
-
-	return runstate_map[0].label;
-}
-
-enum ctdb_runstate runstate_from_string(const char *label)
-{
-	int i;
-	for (i=0; runstate_map[i].label != NULL; i++) {
-		if (strcasecmp(runstate_map[i].label, label) == 0) {
-			return runstate_map[i].runstate;
-		}
-	}
-
-	return CTDB_RUNSTATE_UNKNOWN;
-}
-
 void ctdb_set_runstate(struct ctdb_context *ctdb, enum ctdb_runstate runstate)
 {
 	DEBUG(DEBUG_NOTICE,("Set runstate to %s (%d)\n",
-			    runstate_to_string(runstate), runstate));
+			    ctdb_runstate_to_string(runstate), runstate));
 
 	if (runstate <= ctdb->runstate) {
 		ctdb_fatal(ctdb, "runstate must always increase");

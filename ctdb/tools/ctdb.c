@@ -1121,9 +1121,6 @@ static int control_ping(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-const char *runstate_to_string(enum ctdb_runstate runstate);
-enum ctdb_runstate runstate_from_string(const char *runstate_str);
-
 static int control_runstate(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			    int argc, const char **argv)
 {
