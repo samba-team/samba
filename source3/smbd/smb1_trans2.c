@@ -2529,16 +2529,14 @@ static NTSTATUS smb_q_posix_acl(
 static NTSTATUS smb_q_posix_symlink(
 	struct connection_struct *conn,
 	struct smb_request *req,
+	struct files_struct *dirfsp,
 	struct smb_filename *smb_fname,
 	char **ppdata,
 	int *ptotal_data)
 {
-	char buffer[PATH_MAX+1];
+	char *target = NULL;
 	size_t needed, len;
-	int link_len;
 	char *pdata = NULL;
-	struct smb_filename *parent_fname = NULL;
-	struct smb_filename *base_name = NULL;
 	NTSTATUS status;
 
 	DBG_DEBUG("SMB_QUERY_FILE_UNIX_LINK for file %s\n",
@@ -2548,40 +2546,39 @@ static NTSTATUS smb_q_posix_symlink(
 		return NT_STATUS_DOS(ERRSRV, ERRbadlink);
 	}
 
-	status = parent_pathref(
-		talloc_tos(),
-		conn->cwd_fsp,
-		smb_fname,
-		&parent_fname,
-		&base_name);
+	if (fsp_get_pathref_fd(smb_fname->fsp) != -1) {
+		/*
+		 * fsp is an O_PATH open, Linux does a "freadlink"
+		 * with an empty name argument to readlinkat
+		 */
+		status = readlink_talloc(talloc_tos(),
+					 smb_fname->fsp,
+					 NULL,
+					 &target);
+	} else {
+		struct smb_filename smb_fname_rel = *smb_fname;
+		char *slash = NULL;
+
+		slash = strrchr_m(smb_fname->base_name, '/');
+		if (slash != NULL) {
+			smb_fname_rel.base_name = slash + 1;
+		}
+		status = readlink_talloc(talloc_tos(),
+					 dirfsp,
+					 &smb_fname_rel,
+					 &target);
+	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("parent_pathref failed: %s\n", nt_errstr(status));
+		DBG_DEBUG("readlink_talloc() failed: %s\n", nt_errstr(status));
 		return status;
 	}
 
-	link_len = SMB_VFS_READLINKAT(
-		conn,
-		parent_fname->fsp,
-		base_name,
-		buffer,
-		sizeof(buffer)-1);
-	TALLOC_FREE(parent_fname);
-
-	if (link_len == -1) {
-		status = map_nt_error_from_unix(errno);
-		DBG_DEBUG("READLINKAT failed: %s\n", nt_errstr(status));
-		return status;
-	}
-	if (link_len >= sizeof(buffer)) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	buffer[link_len] = 0;
-
-	needed = (link_len+1)*2;
+	needed = talloc_get_size(target) * 2;
 
 	*ppdata = SMB_REALLOC(*ppdata, needed);
 	if (*ppdata == NULL) {
+		TALLOC_FREE(target);
 		return NT_STATUS_NO_MEMORY;
 	}
 	pdata = *ppdata;
@@ -2590,10 +2587,11 @@ static NTSTATUS smb_q_posix_symlink(
 		pdata,
 		req->flags2,
 		pdata,
-		buffer,
+		target,
 		needed,
 		STR_TERMINATE,
 		&len);
+	TALLOC_FREE(target);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2783,6 +2781,7 @@ static void call_trans2qpathinfo(
 		status = smb_q_posix_symlink(
 			conn,
 			req,
+			dirfsp,
 			smb_fname,
 			ppdata,
 			&total_data);
