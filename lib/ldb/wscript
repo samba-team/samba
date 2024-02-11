@@ -10,12 +10,6 @@ from waflib import Errors, Options, Logs, Context
 import shutil
 
 def options(opt):
-    opt.BUILTIN_DEFAULT('replace')
-    opt.PRIVATE_EXTENSION_DEFAULT('ldb', noextension='ldb')
-    opt.RECURSE('lib/tdb')
-    opt.RECURSE('lib/tevent')
-    opt.RECURSE('lib/replace')
-    opt.load('python') # options for disabling pyc or pyo compilation
 
     opt.add_option('--without-ldb-lmdb',
                    help='disable new LMDB backend for LDB',
@@ -23,28 +17,6 @@ def options(opt):
 
 
 def configure(conf):
-    conf.RECURSE('lib/tdb')
-    conf.RECURSE('lib/tevent')
-
-    if conf.CHECK_FOR_THIRD_PARTY():
-        conf.RECURSE('third_party/popt')
-        conf.RECURSE('third_party/cmocka')
-    else:
-        if not conf.CHECK_POPT():
-            raise Errors.WafError('popt development packages have not been found.\nIf third_party is installed, check that it is in the proper place.')
-        else:
-            conf.define('USING_SYSTEM_POPT', 1)
-
-        if not conf.CHECK_CMOCKA():
-            raise Errors.WafError('cmocka development package have not been found.\nIf third_party is installed, check that it is in the proper place.')
-        else:
-            conf.define('USING_SYSTEM_CMOCKA', 1)
-
-    conf.RECURSE('lib/replace')
-    conf.find_program('xsltproc', var='XSLTPROC')
-    conf.SAMBA_CHECK_PYTHON()
-    conf.SAMBA_CHECK_PYTHON_HEADERS()
-
     # where does the default LIBDIR end up? in conf.env somewhere?
     #
     conf.CONFIG_PATH('LDB_MODULESDIR', conf.SUBST_ENV_VAR('MODULESDIR') + '/ldb')
@@ -109,26 +81,10 @@ def configure(conf):
             conf.DEFINE('HAVE_LMDB', '1')
             conf.env.HAVE_LMDB = True
 
-
-    conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
-
-    conf.SAMBA_CONFIG_H()
-
-    conf.SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS()
-
     conf.env.ldb_is_public_library \
         = not samba_bundled.LIB_MUST_BE_PRIVATE(conf, 'ldb')
 
 def build(bld):
-    bld.RECURSE('lib/tevent')
-
-    if bld.CHECK_FOR_THIRD_PARTY():
-        bld.RECURSE('third_party/popt')
-        bld.RECURSE('third_party/cmocka')
-
-    bld.RECURSE('lib/replace')
-    bld.RECURSE('lib/tdb')
-
     if not 'LDB_PACKAGE_VERSION' in bld.env:
         bld.env.LDB_PACKAGE_VERSION = VERSION
 
