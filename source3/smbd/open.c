@@ -694,7 +694,7 @@ again:
 	} else {
 		/*
 		 * fsp->fsp_name is unchanged as it is already correctly
-		 * relative to conn->cwd.
+		 * relative to dirfsp.
 		 */
 		smb_fname_rel = smb_fname;
 	}
