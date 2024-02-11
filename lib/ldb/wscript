@@ -67,8 +67,6 @@ def configure(conf):
     #
     conf.CONFIG_PATH('LDB_MODULESDIR', conf.SUBST_ENV_VAR('MODULESDIR') + '/ldb')
 
-    conf.env.standalone_ldb = True
-
     if not conf.CHECK_CODE('return !(sizeof(size_t) >= 8)',
                            "HAVE_64_BIT_SIZE_T_FOR_LMDB",
                            execute=True,
@@ -77,19 +75,13 @@ def configure(conf):
         Logs.warn("--without-ldb-lmdb implied as this "
                   "host is not 64-bit")
 
-        if not conf.env.standalone_ldb and \
-           not Options.options.without_ad_dc and \
+        if not Options.options.without_ad_dc and \
            conf.CONFIG_GET('ENABLE_SELFTEST'):
             Logs.warn("NOTE: Some AD DC parts of selftest will fail")
 
         conf.env.REQUIRE_LMDB = False
     else:
-        if conf.env.standalone_ldb:
-            if Options.options.without_ldb_lmdb:
-                conf.env.REQUIRE_LMDB = False
-            else:
-                conf.env.REQUIRE_LMDB = True
-        elif Options.options.without_ad_dc:
+        if Options.options.without_ad_dc:
             conf.env.REQUIRE_LMDB = False
         else:
             if Options.options.without_ldb_lmdb:
@@ -102,9 +94,6 @@ def configure(conf):
                 conf.env.REQUIRE_LMDB = False
             else:
                 conf.env.REQUIRE_LMDB = True
-
-    if conf.env.standalone_ldb:
-        conf.CHECK_XSLTPROC_MANPAGES()
 
     # if lmdb support is enabled then we require lmdb
     # is present, build the mdb back end and enable lmdb support in
@@ -125,12 +114,12 @@ def configure(conf):
                     headers='lmdb.h',
                     msg='Checking for lmdb >= 0.9.16 via header check'):
 
-                if conf.env.standalone_ldb:
-                    raise Errors.WafError('ldb build (unless --without-ldb-lmdb) '
+                if not Options.options.without_ad_dc:
+                    raise Errors.WafError('Samba AD DC and --enable-selftest '
                                          'requires '
                                          'lmdb 0.9.16 or later')
-                elif not Options.options.without_ad_dc:
-                    raise Errors.WafError('Samba AD DC and --enable-selftest '
+                else:
+                    raise Errors.WafError('ldb build (unless --without-ldb-lmdb) '
                                          'requires '
                                          'lmdb 0.9.16 or later')
 
