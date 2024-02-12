@@ -108,7 +108,7 @@ static int get_pso_for_user(struct ldb_module *module,
 */
 static int construct_canonical_name(struct ldb_module *module,
 				    struct ldb_message *msg, enum ldb_scope scope,
-				    struct ldb_request *parent)
+				    struct ldb_request *parent, struct ldb_reply *ares)
 {
 	char *canonicalName;
 	canonicalName = ldb_dn_canonical_string(msg, msg->dn);
@@ -123,7 +123,7 @@ static int construct_canonical_name(struct ldb_module *module,
 */
 static int construct_primary_group_token(struct ldb_module *module,
 					 struct ldb_message *msg, enum ldb_scope scope,
-					 struct ldb_request *parent)
+					 struct ldb_request *parent, struct ldb_reply *ares)
 {
 	struct ldb_context *ldb;
 	uint32_t primary_group_token;
@@ -319,7 +319,7 @@ static int construct_generic_token_groups(struct ldb_module *module,
 
 static int construct_token_groups(struct ldb_module *module,
 				  struct ldb_message *msg, enum ldb_scope scope,
-				  struct ldb_request *parent)
+				  struct ldb_request *parent, struct ldb_reply *ares)
 {
 	/**
 	 * TODO: Add in a limiting domain when we start to support
@@ -332,7 +332,7 @@ static int construct_token_groups(struct ldb_module *module,
 
 static int construct_token_groups_no_gc(struct ldb_module *module,
 					struct ldb_message *msg, enum ldb_scope scope,
-					struct ldb_request *parent)
+					struct ldb_request *parent, struct ldb_reply *ares)
 {
 	/**
 	 * TODO: Add in a limiting domain when we start to support
@@ -345,7 +345,7 @@ static int construct_token_groups_no_gc(struct ldb_module *module,
 
 static int construct_global_universal_token_groups(struct ldb_module *module,
 						   struct ldb_message *msg, enum ldb_scope scope,
-						   struct ldb_request *parent)
+						   struct ldb_request *parent, struct ldb_reply *ares)
 {
 	return construct_generic_token_groups(module, msg, scope, parent,
 					      "tokenGroupsGlobalAndUniversal",
@@ -356,7 +356,7 @@ static int construct_global_universal_token_groups(struct ldb_module *module,
 */
 static int construct_parent_guid(struct ldb_module *module,
 				 struct ldb_message *msg, enum ldb_scope scope,
-				 struct ldb_request *parent)
+				 struct ldb_request *parent, struct ldb_reply *ares)
 {
 	struct ldb_result *res, *parent_res;
 	const struct ldb_val *parent_guid;
@@ -425,7 +425,7 @@ static int construct_parent_guid(struct ldb_module *module,
 
 static int construct_modifyTimeStamp(struct ldb_module *module,
 					struct ldb_message *msg, enum ldb_scope scope,
-					struct ldb_request *parent)
+					struct ldb_request *parent, struct ldb_reply *ares)
 {
 	struct operational_data *data = talloc_get_type(ldb_module_get_private(module), struct operational_data);
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
@@ -468,7 +468,7 @@ static int construct_modifyTimeStamp(struct ldb_module *module,
 */
 static int construct_subschema_subentry(struct ldb_module *module,
 					struct ldb_message *msg, enum ldb_scope scope,
-					struct ldb_request *parent)
+					struct ldb_request *parent, struct ldb_reply *ares)
 {
 	struct operational_data *data = talloc_get_type(ldb_module_get_private(module), struct operational_data);
 	char *subSchemaSubEntry;
@@ -593,7 +593,7 @@ static int construct_msds_isrodc_with_computer_dn(struct ldb_module *module,
 */
 static int construct_msds_isrodc(struct ldb_module *module,
 				 struct ldb_message *msg, enum ldb_scope scope,
-				 struct ldb_request *parent)
+				 struct ldb_request *parent, struct ldb_reply *ares)
 {
 	struct ldb_message_element * object_class;
 	struct ldb_message_element * object_category;
@@ -647,7 +647,8 @@ static int construct_msds_isrodc(struct ldb_module *module,
 static int construct_msds_keyversionnumber(struct ldb_module *module,
 					   struct ldb_message *msg,
 					   enum ldb_scope scope,
-					   struct ldb_request *parent)
+					   struct ldb_request *parent,
+					   struct ldb_reply *ares)
 {
 	uint32_t i;
 	enum ndr_err_code ndr_err;
@@ -858,7 +859,7 @@ static int64_t get_user_lockout_duration(struct ldb_module *module,
 */
 static int construct_msds_user_account_control_computed(struct ldb_module *module,
 							struct ldb_message *msg, enum ldb_scope scope,
-							struct ldb_request *parent)
+							struct ldb_request *parent, struct ldb_reply *ares)
 {
 	uint32_t userAccountControl;
 	uint32_t msDS_User_Account_Control_Computed = 0;
@@ -927,7 +928,7 @@ static int construct_msds_user_account_control_computed(struct ldb_module *modul
 */
 static int construct_msds_user_password_expiry_time_computed(struct ldb_module *module,
 							     struct ldb_message *msg, enum ldb_scope scope,
-							     struct ldb_request *parent)
+							     struct ldb_request *parent, struct ldb_reply *ares)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_dn *nc_root;
@@ -1300,7 +1301,8 @@ static int get_pso_for_user(struct ldb_module *module,
 static int construct_resultant_pso(struct ldb_module *module,
                                    struct ldb_message *msg,
 				   enum ldb_scope scope,
-                                   struct ldb_request *parent)
+                                   struct ldb_request *parent,
+				   struct ldb_reply *ares)
 {
 	struct ldb_message *pso = NULL;
 	int ret;
@@ -1354,7 +1356,7 @@ struct op_attributes_replace {
 	const char *attr;
 	const char *replace;
 	const char * const *extra_attrs;
-	int (*constructor)(struct ldb_module *, struct ldb_message *, enum ldb_scope, struct ldb_request *);
+	int (*constructor)(struct ldb_module *, struct ldb_message *, enum ldb_scope, struct ldb_request *, struct ldb_reply *);
 };
 
 /* the 'extra_attrs' required for msDS-ResultantPSO */
@@ -1479,7 +1481,8 @@ static int operational_search_post_process(struct ldb_module *module,
 					   unsigned int list_size,
 					   struct op_attributes_replace *list_replace,
 					   unsigned int list_replace_size,
-					   struct ldb_request *parent)
+					   struct ldb_request *parent,
+					   struct ldb_reply *ares)
 {
 	struct ldb_context *ldb;
 	unsigned int i, a = 0;
@@ -1502,7 +1505,7 @@ static int operational_search_post_process(struct ldb_module *module,
 			constructor or a simple copy */
 		constructed_attributes = true;
 		if (list_replace[a].constructor != NULL) {
-			if (list_replace[a].constructor(module, msg, scope, parent) != LDB_SUCCESS) {
+			if (list_replace[a].constructor(module, msg, scope, parent, ares) != LDB_SUCCESS) {
 				goto failed;
 			}
 		} else if (ldb_msg_copy_attr(msg,
@@ -1591,7 +1594,8 @@ static int operational_callback(struct ldb_request *req, struct ldb_reply *ares)
 						      ac->list_operations_size,
 						      ac->attrs_to_replace,
 						      ac->attrs_to_replace_size,
-						      req);
+						      req,
+						      ares);
 		if (ret != 0) {
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
