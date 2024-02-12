@@ -8,6 +8,7 @@ bld.SAMBA_SUBSYSTEM('LIBTLS',
                     public_deps='''
                                 talloc
                                 gnutls
+                                GNUTLS_HELPERS
                                 samba-hostconfig
                                 LIBTSOCKET
                                 tevent
