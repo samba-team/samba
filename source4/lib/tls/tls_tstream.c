@@ -29,6 +29,7 @@
 
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
+#include "lib/crypto/gnutls_helpers.h"
 
 #define DH_BITS 2048
 
@@ -61,6 +62,8 @@ struct tstream_tls {
 	int error;
 
 	gnutls_session_t tls_session;
+
+	bool is_server;
 
 	enum tls_verify_peer_state verify_peer;
 	const char *peer_name;
@@ -982,6 +985,101 @@ NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS tstream_tls_prepare_gnutls(struct tstream_tls_params *_tlsp,
+					   struct tstream_tls *tlss)
+{
+	struct tstream_tls_params_internal *tlsp = NULL;
+	int ret;
+	unsigned int flags;
+
+	if (tlss->is_server) {
+		flags = GNUTLS_SERVER;
+	} else {
+		flags = GNUTLS_CLIENT;
+#ifdef GNUTLS_NO_TICKETS
+		/*
+		 * tls_tstream can't properly handle 'New Session Ticket'
+		 * messages sent 'after' the client sends the 'Finished'
+		 * message.  GNUTLS_NO_TICKETS was introduced in GnuTLS 3.5.6.
+		 * This flag is to indicate the session Flag session should not
+		 * use resumption with session tickets.
+		 */
+		flags |= GNUTLS_NO_TICKETS;
+#endif
+	}
+
+	/*
+	 * Note we need to make sure x509_cred and dh_params
+	 * from tstream_tls_params_internal stay alive for
+	 * the whole lifetime of this session!
+	 *
+	 * See 'man gnutls_credentials_set' and
+	 * 'man gnutls_certificate_set_dh_params'.
+	 *
+	 * Note: here we use talloc_reference() in a way
+	 *       that does not expose it to the caller.
+	 */
+	tlsp = talloc_reference(tlss, _tlsp->internal);
+	if (tlsp == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	tlss->verify_peer = tlsp->verify_peer;
+	if (tlsp->peer_name != NULL) {
+		tlss->peer_name = talloc_strdup(tlss, tlsp->peer_name);
+		if (tlss->peer_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (tlss->current_ev != NULL) {
+		tlss->retry_im = tevent_create_immediate(tlss);
+		if (tlss->retry_im == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	ret = gnutls_init(&tlss->tls_session, flags);
+	if (ret != GNUTLS_E_SUCCESS) {
+		return gnutls_error_to_ntstatus(ret,
+			NT_STATUS_CRYPTO_SYSTEM_INVALID);
+	}
+
+	ret = gnutls_set_default_priority(tlss->tls_session);
+	if (ret != GNUTLS_E_SUCCESS) {
+		return gnutls_error_to_ntstatus(ret,
+			NT_STATUS_CRYPTO_SYSTEM_INVALID);
+	}
+
+	if (strlen(tlsp->tls_priority) > 0) {
+		const char *error_pos = NULL;
+
+		ret = gnutls_priority_set_direct(tlss->tls_session,
+						 tlsp->tls_priority,
+						 &error_pos);
+		if (ret != GNUTLS_E_SUCCESS) {
+			return gnutls_error_to_ntstatus(ret,
+				NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		}
+	}
+
+	ret = gnutls_credentials_set(tlss->tls_session,
+				     GNUTLS_CRD_CERTIFICATE,
+				     tlsp->x509_cred);
+	if (ret != GNUTLS_E_SUCCESS) {
+		return gnutls_error_to_ntstatus(ret,
+				NT_STATUS_CRYPTO_SYSTEM_INVALID);
+	}
+
+	if (tlss->is_server) {
+		gnutls_certificate_server_set_request(tlss->tls_session,
+						      GNUTLS_CERT_REQUEST);
+		gnutls_dh_set_prime_bits(tlss->tls_session, DH_BITS);
+	}
+
+	return NT_STATUS_OK;
+}
+
 struct tstream_tls_connect_state {
 	struct tstream_context *tls_stream;
 };
@@ -994,11 +1092,8 @@ struct tevent_req *_tstream_tls_connect_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct tstream_tls_connect_state *state;
-	const char *error_pos;
 	struct tstream_tls *tlss;
-	struct tstream_tls_params_internal *tls_params = NULL;
-	int ret;
-	unsigned int flags = GNUTLS_CLIENT;
+	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct tstream_tls_connect_state);
@@ -1016,82 +1111,16 @@ struct tevent_req *_tstream_tls_connect_send(TALLOC_CTX *mem_ctx,
 	}
 	ZERO_STRUCTP(tlss);
 	talloc_set_destructor(tlss, tstream_tls_destructor);
-
-	/*
-	 * Note we need to make sure x509_cred and dh_params
-	 * from tstream_tls_params_internal stay alive for
-	 * the whole lifetime of this session!
-	 *
-	 * See 'man gnutls_credentials_set' and
-	 * 'man gnutls_certificate_set_dh_params'.
-	 *
-	 * Note: here we use talloc_reference() in a way
-	 *       that does not expose it to the caller.
-	 *
-	 */
-	tls_params = talloc_reference(tlss, _tls_params->internal);
-	if (tevent_req_nomem(tls_params, req)) {
-		return tevent_req_post(req, ev);
-	}
-
 	tlss->plain_stream = plain_stream;
-	tlss->verify_peer = tls_params->verify_peer;
-	if (tls_params->peer_name != NULL) {
-		tlss->peer_name = talloc_strdup(tlss, tls_params->peer_name);
-		if (tevent_req_nomem(tlss->peer_name, req)) {
-			return tevent_req_post(req, ev);
-		}
-	}
-
+	tlss->is_server = false;
 	tlss->current_ev = ev;
-	tlss->retry_im = tevent_create_immediate(tlss);
-	if (tevent_req_nomem(tlss->retry_im, req)) {
+
+	status = tstream_tls_prepare_gnutls(_tls_params, tlss);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
+		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
-
-#ifdef GNUTLS_NO_TICKETS
-	/*
-	 * tls_tstream can't properly handle 'New Session Ticket' messages
-	 * sent 'after' the client sends the 'Finished' message.
-	 * GNUTLS_NO_TICKETS was introduced in GnuTLS 3.5.6.  This flag is to
-	 * indicate the session Flag session should not use resumption with
-	 * session tickets.
-	 */
-	flags |= GNUTLS_NO_TICKETS;
-#endif
-
-	ret = gnutls_init(&tlss->tls_session, flags);
-	if (ret != GNUTLS_E_SUCCESS) {
-		DEBUG(0,("TLS %s - %s\n", __location__, gnutls_strerror(ret)));
-		tevent_req_error(req, EINVAL);
-		return tevent_req_post(req, ev);
-	}
-
-	ret = gnutls_set_default_priority(tlss->tls_session);
-	if (ret != GNUTLS_E_SUCCESS) {
-		DBG_ERR("TLS %s - %s. Failed to set default priorities\n",
-			__location__, gnutls_strerror(ret));
-		tevent_req_error(req, EINVAL);
-		return tevent_req_post(req, ev);
-	}
-
-	if (strlen(tls_params->tls_priority) > 0) {
-		ret = gnutls_priority_set_direct(tlss->tls_session,
-						 tls_params->tls_priority,
-						 &error_pos);
-		if (ret != GNUTLS_E_SUCCESS) {
-			DEBUG(0,("TLS %s - %s.  Check 'tls priority' option at '%s'\n",
-				 __location__, gnutls_strerror(ret), error_pos));
-			tevent_req_error(req, EINVAL);
-			return tevent_req_post(req, ev);
-		}
-	}
-
-	ret = gnutls_credentials_set(tlss->tls_session,
-				     GNUTLS_CRD_CERTIFICATE,
-				     tls_params->x509_cred);
-	if (ret != GNUTLS_E_SUCCESS) {
-		DEBUG(0,("TLS %s - %s\n", __location__, gnutls_strerror(ret)));
+	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_error(req, EINVAL);
 		return tevent_req_post(req, ev);
 	}
@@ -1312,9 +1341,7 @@ struct tevent_req *_tstream_tls_accept_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct tstream_tls_accept_state *state;
 	struct tstream_tls *tlss;
-	const char *error_pos;
-	struct tstream_tls_params_internal *tlsp = NULL;
-	int ret;
+	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct tstream_tls_accept_state);
@@ -1332,69 +1359,19 @@ struct tevent_req *_tstream_tls_accept_send(TALLOC_CTX *mem_ctx,
 	}
 	ZERO_STRUCTP(tlss);
 	talloc_set_destructor(tlss, tstream_tls_destructor);
-
-	/*
-	 * Note we need to make sure x509_cred and dh_params
-	 * from tstream_tls_params_internal stay alive for
-	 * the whole lifetime of this session!
-	 *
-	 * See 'man gnutls_credentials_set' and
-	 * 'man gnutls_certificate_set_dh_params'.
-	 *
-	 * Note: here we use talloc_reference() in a way
-	 *       that does not expose it to the caller.
-	 */
-	tlsp = talloc_reference(tlss, _tlsp->internal);
-	if (tevent_req_nomem(tlsp, req)) {
-		return tevent_req_post(req, ev);
-	}
-
 	tlss->plain_stream = plain_stream;
-
+	tlss->is_server = true;
 	tlss->current_ev = ev;
-	tlss->retry_im = tevent_create_immediate(tlss);
-	if (tevent_req_nomem(tlss->retry_im, req)) {
+
+	status = tstream_tls_prepare_gnutls(_tlsp, tlss);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
+		tevent_req_oom(req);
 		return tevent_req_post(req, ev);
 	}
-
-	ret = gnutls_init(&tlss->tls_session, GNUTLS_SERVER);
-	if (ret != GNUTLS_E_SUCCESS) {
-		DEBUG(0,("TLS %s - %s\n", __location__, gnutls_strerror(ret)));
+	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_error(req, EINVAL);
 		return tevent_req_post(req, ev);
 	}
-
-	ret = gnutls_set_default_priority(tlss->tls_session);
-	if (ret != GNUTLS_E_SUCCESS) {
-		DBG_ERR("TLS %s - %s. Failed to set default priorities\n",
-			__location__, gnutls_strerror(ret));
-		tevent_req_error(req, EINVAL);
-		return tevent_req_post(req, ev);
-	}
-
-	if (strlen(tlsp->tls_priority) > 0) {
-		ret = gnutls_priority_set_direct(tlss->tls_session,
-						 tlsp->tls_priority,
-						 &error_pos);
-		if (ret != GNUTLS_E_SUCCESS) {
-			DEBUG(0,("TLS %s - %s.  Check 'tls priority' option at '%s'\n",
-				 __location__, gnutls_strerror(ret), error_pos));
-			tevent_req_error(req, EINVAL);
-			return tevent_req_post(req, ev);
-		}
-	}
-
-	ret = gnutls_credentials_set(tlss->tls_session, GNUTLS_CRD_CERTIFICATE,
-				     tlsp->x509_cred);
-	if (ret != GNUTLS_E_SUCCESS) {
-		DEBUG(0,("TLS %s - %s\n", __location__, gnutls_strerror(ret)));
-		tevent_req_error(req, EINVAL);
-		return tevent_req_post(req, ev);
-	}
-
-	gnutls_certificate_server_set_request(tlss->tls_session,
-					      GNUTLS_CERT_REQUEST);
-	gnutls_dh_set_prime_bits(tlss->tls_session, DH_BITS);
 
 	gnutls_transport_set_ptr(tlss->tls_session,
 				 (gnutls_transport_ptr_t)state->tls_stream);
