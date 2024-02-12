@@ -402,4 +402,3 @@ systemFlags: 16
 defaultHidingValue: TRUE
 objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Samba4Top,${SCHEMADN}
-
