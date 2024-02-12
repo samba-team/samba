@@ -85,8 +85,7 @@ def configure(conf):
         = not samba_bundled.LIB_MUST_BE_PRIVATE(conf, 'ldb')
 
 def build(bld):
-    if not 'LDB_PACKAGE_VERSION' in bld.env:
-        bld.env.LDB_PACKAGE_VERSION = LDB_VERSION
+    bld.env.LDB_PACKAGE_VERSION = LDB_VERSION
 
     # we're not currently linking against the ldap libs, but ldb.pc.in
     # has @LDAP_LIBS@
