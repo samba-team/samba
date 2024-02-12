@@ -1344,6 +1344,15 @@ int ldb_request_replace_control(struct ldb_request *req, const char *oid, bool c
 
 /**
    check if a control with the specified "oid" exist and return it
+  \param controls the array of controls
+  \param oid the object identifier of the control as string
+
+  \return the control, NULL if not found
+*/
+struct ldb_control *ldb_controls_get_control(struct ldb_control **controls, const char *oid);
+
+/**
+   check if a control with the specified "oid" exist and return it
   \param req the request struct to search for the control
   \param oid the object identifier of the control as string
 

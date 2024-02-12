@@ -35,18 +35,18 @@
 
 /* check if a control with the specified "oid" exist and return it */
 /* returns NULL if not found */
-struct ldb_control *ldb_request_get_control(struct ldb_request *req, const char *oid)
+struct ldb_control *ldb_controls_get_control(struct ldb_control **controls, const char *oid)
 {
 	unsigned int i;
 
-	if (req->controls != NULL) {
-		for (i = 0; req->controls[i]; i++) {
-			if (req->controls[i]->oid && strcmp(oid, req->controls[i]->oid) == 0) {
+	if (controls != NULL) {
+		for (i = 0; controls[i]; i++) {
+			if (controls[i]->oid && strcmp(oid, controls[i]->oid) == 0) {
 				break;
 			}
 		}
 
-		return req->controls[i];
+		return controls[i];
 	}
 
 	return NULL;
@@ -54,21 +54,16 @@ struct ldb_control *ldb_request_get_control(struct ldb_request *req, const char 
 
 /* check if a control with the specified "oid" exist and return it */
 /* returns NULL if not found */
+struct ldb_control *ldb_request_get_control(struct ldb_request *req, const char *oid)
+{
+	return ldb_controls_get_control(req->controls, oid);
+}
+
+/* check if a control with the specified "oid" exist and return it */
+/* returns NULL if not found */
 struct ldb_control *ldb_reply_get_control(struct ldb_reply *rep, const char *oid)
 {
-	unsigned int i;
-
-	if (rep->controls != NULL) {
-		for (i = 0; rep->controls[i]; i++) {
-			if (rep->controls[i]->oid && strcmp(oid, rep->controls[i]->oid) == 0) {
-				break;
-			}
-		}
-
-		return rep->controls[i];
-	}
-
-	return NULL;
+	return ldb_controls_get_control(rep->controls, oid);
 }
 
 /*
