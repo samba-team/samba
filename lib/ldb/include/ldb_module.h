@@ -146,7 +146,7 @@ struct ldb_module_ops {
 
 /* The following definitions come from lib/ldb/common/ldb_debug.c  */
 void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
-void ldb_debug_set(struct ldb_context *ldb, enum ldb_debug_level level, 
+void ldb_debug_set(struct ldb_context *ldb, enum ldb_debug_level level,
 		   const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
 void ldb_debug_add(struct ldb_context *ldb, const char *fmt, ...) PRINTF_ATTRIBUTE(2, 3);
 void ldb_debug_end(struct ldb_context *ldb, enum ldb_debug_level level);
@@ -176,7 +176,7 @@ int ldb_schema_attribute_add_with_syntax(struct ldb_context *ldb,
 					 const char *name,
 					 unsigned flags,
 					 const struct ldb_schema_syntax *syntax);
-int ldb_schema_attribute_add(struct ldb_context *ldb, 
+int ldb_schema_attribute_add(struct ldb_context *ldb,
 			     const char *name,
 			     unsigned flags,
 			     const char *syntax);
@@ -226,8 +226,8 @@ void ldb_schema_set_override_GUID_index(struct ldb_context *ldb,
 					const char *GUID_index_dn_component);
 
 /* A useful function to build comparison functions with */
-int ldb_any_comparison(struct ldb_context *ldb, void *mem_ctx, 
-		       ldb_attr_handler_t canonicalise_fn, 
+int ldb_any_comparison(struct ldb_context *ldb, void *mem_ctx,
+		       ldb_attr_handler_t canonicalise_fn,
 		       const struct ldb_val *v1,
 		       const struct ldb_val *v2);
 
@@ -236,8 +236,8 @@ int ldb_save_controls(struct ldb_control *exclude, struct ldb_request *req, stru
 /* Returns a list of controls, except the one specified.  Included
  * controls become a child of returned list if they were children of
  * controls_in */
-struct ldb_control **ldb_controls_except_specified(struct ldb_control **controls_in, 
-					       TALLOC_CTX *mem_ctx, 
+struct ldb_control **ldb_controls_except_specified(struct ldb_control **controls_in,
+					       TALLOC_CTX *mem_ctx,
 					       struct ldb_control *exclude);
 int ldb_check_critical_controls(struct ldb_control **controls);
 
