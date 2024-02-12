@@ -226,8 +226,8 @@ static int attr_handler(struct oc_context *ac)
 		    !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) &&
 		    !ldb_request_get_control(ac->req, DSDB_CONTROL_DBCHECK)) {
 			/* Odd is for the target.  Illegal to modify */
-			ldb_asprintf_errstring(ldb, 
-					       "objectclass_attrs: attribute '%s' on entry '%s' must not be modified directly, it is a linked attribute", 
+			ldb_asprintf_errstring(ldb,
+					       "objectclass_attrs: attribute '%s' on entry '%s' must not be modified directly, it is a linked attribute",
 					       msg->elements[i].name,
 					       ldb_dn_get_linearized(msg->dn));
 			return LDB_ERR_UNWILLING_TO_PERFORM;
@@ -474,7 +474,7 @@ static int attr_handler2(struct oc_context *ac)
 		}
 		if (!found) {
 			/* we allow this for dbcheck to fix the rest of this broken entry */
-			if (!ldb_request_get_control(ac->req, DSDB_CONTROL_DBCHECK) || 
+			if (!ldb_request_get_control(ac->req, DSDB_CONTROL_DBCHECK) ||
 			    ac->req->operation == LDB_ADD) {
 				ldb_asprintf_errstring(ldb, "objectclass_attrs: attribute '%s' on entry '%s' does not exist in the specified objectclasses!",
 						       msg->elements[i].name,
