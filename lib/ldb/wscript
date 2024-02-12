@@ -103,20 +103,13 @@ def configure(conf):
             else:
                 conf.env.REQUIRE_LMDB = True
 
-    if conf.CONFIG_SET('USING_SYSTEM_LDB'):
-        v = VERSION.split('.')
-        conf.DEFINE('EXPECTED_SYSTEM_LDB_VERSION_MAJOR', int(v[0]))
-        conf.DEFINE('EXPECTED_SYSTEM_LDB_VERSION_MINOR', int(v[1]))
-        conf.DEFINE('EXPECTED_SYSTEM_LDB_VERSION_RELEASE', int(v[2]))
-
     if conf.env.standalone_ldb:
         conf.CHECK_XSLTPROC_MANPAGES()
 
     # if lmdb support is enabled then we require lmdb
     # is present, build the mdb back end and enable lmdb support in
     # the tools.
-    if conf.env.REQUIRE_LMDB and \
-       not conf.CONFIG_SET('USING_SYSTEM_LDB'):
+    if conf.env.REQUIRE_LMDB:
         if not conf.CHECK_CFG(package='lmdb',
                               args='"lmdb >= 0.9.16" --cflags --libs',
                               msg='Checking for lmdb >= 0.9.16',
@@ -191,360 +184,354 @@ def build(bld):
                      subsystem='ldb')
 
     if bld.PYTHON_BUILD_IS_ENABLED():
-        if not bld.CONFIG_SET('USING_SYSTEM_PYLDB_UTIL'):
-            name = bld.pyembed_libname('pyldb-util')
-            bld.SAMBA_LIBRARY(name,
-                              deps='replace ldb',
-                              source='pyldb_util.c',
-                              private_library=True,
-                              pyembed=True,
-                              enabled=bld.PYTHON_BUILD_IS_ENABLED())
-
-            if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
-                bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
-                                 deps='replace ldb ' + name,
-                                 realname='ldb.so',
-                                 cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
-
-        # Do only install this file as part of the Samba build if we do not
-        # use the system libldb!
-        if not bld.CONFIG_SET('USING_SYSTEM_PYLDB_UTIL'):
-            bld.SAMBA_SCRIPT('_ldb_text.py',
-                             pattern='_ldb_text.py',
-                             installdir='python')
-
-            bld.INSTALL_FILES('${PYTHONARCHDIR}', '_ldb_text.py')
-
-    if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
-        if bld.is_install:
-            modules_dir = bld.EXPAND_VARIABLES('${LDB_MODULESDIR}')
-        else:
-            # when we run from the source directory, we want to use
-            # the current modules, not the installed ones
-            modules_dir = os.path.join(os.getcwd(), 'bin/modules/ldb')
-
-        abi_match = '!ldb_*module_ops !ldb_*backend_ops ldb_*'
-
-        ldb_headers = ('include/ldb.h include/ldb_errors.h '
-                       'include/ldb_module.h include/ldb_handlers.h')
-
-        bld.SAMBA_LIBRARY('ldb',
-                          COMMON_SRC + ' ' + LDB_MAP_SRC,
-                          deps='tevent LIBLDB_MAIN replace',
-                          includes='include',
-                          public_headers=ldb_headers,
-                          public_headers_install=True,
-                          pc_files='ldb.pc',
-                          vnum=VERSION,
-                          private_library=False,
-                          manpages='man/ldb.3',
-                          abi_directory='ABI',
-                          abi_match = abi_match)
-
-        # generate a include/ldb_version.h
-        def generate_ldb_version_h(t):
-            '''generate a vscript file for our public libraries'''
-
-            tgt = t.outputs[0].bldpath(t.env)
-
-            v = t.env.LDB_VERSION.split('.')
-
-            f = open(tgt, mode='w')
-            try:
-                f.write('#define LDB_VERSION "%s"\n' % t.env.LDB_VERSION)
-                f.write('#define LDB_VERSION_MAJOR %d\n' % int(v[0]))
-                f.write('#define LDB_VERSION_MINOR %d\n' % int(v[1]))
-                f.write('#define LDB_VERSION_RELEASE %d\n' % int(v[2]))
-            finally:
-                f.close()
-            return
-        t = bld.SAMBA_GENERATOR('ldb_version.h',
-                                rule=generate_ldb_version_h,
-                                dep_vars=['LDB_VERSION'],
-                                target='include/ldb_version.h',
-                                public_headers='include/ldb_version.h',
-                                public_headers_install=not private_library)
-        t.env.LDB_VERSION = VERSION
-
-        bld.SAMBA_MODULE('ldb_asq',
-                         'modules/asq.c',
-                         init_function='ldb_asq_init',
-                         module_init_name='ldb_init_module',
-                         internal_module=False,
-                         deps='ldb',
-                         subsystem='ldb')
-
-        bld.SAMBA_MODULE('ldb_server_sort',
-                         'modules/sort.c',
-                         init_function='ldb_server_sort_init',
-                         internal_module=False,
-                         module_init_name='ldb_init_module',
-                         deps='ldb',
-                         subsystem='ldb')
-
-        bld.SAMBA_MODULE('ldb_paged_searches',
-                         'modules/paged_searches.c',
-                         init_function='ldb_paged_searches_init',
-                         internal_module=False,
-                         module_init_name='ldb_init_module',
-                         deps='ldb',
-                         subsystem='ldb')
-
-        bld.SAMBA_MODULE('ldb_rdn_name',
-                         'modules/rdn_name.c',
-                         init_function='ldb_rdn_name_init',
-                         internal_module=False,
-                         module_init_name='ldb_init_module',
-                         deps='ldb',
-                         subsystem='ldb')
-
-        bld.SAMBA_MODULE('ldb_sample',
-                         'tests/sample_module.c',
-                         init_function='ldb_sample_init',
-                         internal_module=False,
-                         module_init_name='ldb_init_module',
-                         deps='ldb',
-                         subsystem='ldb')
-
-        bld.SAMBA_MODULE('ldb_skel',
-                         'modules/skel.c',
-                         init_function='ldb_skel_init',
-                         internal_module=False,
-                         module_init_name='ldb_init_module',
-                         deps='ldb',
-                         subsystem='ldb')
-
-        bld.SAMBA_MODULE('ldb_sqlite3',
-                         'sqlite3/ldb_sqlite3.c',
-                         init_function='ldb_sqlite3_init',
-                         internal_module=False,
-                         module_init_name='ldb_init_module',
-                         enabled=False,
-                         deps='ldb',
-                         subsystem='ldb')
-
-        bld.SAMBA_MODULE('ldb_tdb',
-                         bld.SUBDIR('ldb_tdb',
-                                    '''ldb_tdb_init.c'''),
-                         init_function='ldb_tdb_init',
-                         module_init_name='ldb_init_module',
-                         internal_module=False,
-                         deps='ldb ldb_tdb_int ldb_key_value',
-                         subsystem='ldb')
-
-        bld.SAMBA_LIBRARY('ldb_tdb_int',
-                          bld.SUBDIR('ldb_tdb',
-                                     '''ldb_tdb_wrap.c ldb_tdb.c'''),
+        name = bld.pyembed_libname('pyldb-util')
+        bld.SAMBA_LIBRARY(name,
+                          deps='replace ldb',
+                          source='pyldb_util.c',
                           private_library=True,
-                          deps='ldb tdb ldb_key_value ldb_tdb_err_map')
+                          pyembed=True,
+                          enabled=bld.PYTHON_BUILD_IS_ENABLED())
 
-        bld.SAMBA_LIBRARY('ldb_tdb_err_map',
-                          bld.SUBDIR('ldb_tdb',
-                                     '''ldb_tdb_err_map.c '''),
-                          private_library=True,
-                          deps='ldb tdb')
+        bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
+                         deps='replace ldb ' + name,
+                         realname='ldb.so',
+                         cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
 
-        bld.SAMBA_LIBRARY('ldb_key_value',
-                          bld.SUBDIR('ldb_key_value',
-                                    '''ldb_kv.c ldb_kv_search.c ldb_kv_index.c
-                                    ldb_kv_cache.c'''),
-                          private_library=True,
-                          deps='tdb ldb ldb_tdb_err_map')
+        bld.SAMBA_SCRIPT('_ldb_text.py',
+                         pattern='_ldb_text.py',
+                         installdir='python')
 
-        if bld.CONFIG_SET('HAVE_LMDB'):
-            bld.SAMBA_MODULE('ldb_mdb',
-                             bld.SUBDIR('ldb_mdb',
-                                        '''ldb_mdb_init.c'''),
-                             init_function='ldb_mdb_init',
-                             module_init_name='ldb_init_module',
-                             internal_module=False,
-                             deps='ldb ldb_key_value ldb_mdb_int',
-                             subsystem='ldb')
+        bld.INSTALL_FILES('${PYTHONARCHDIR}', '_ldb_text.py')
 
-            bld.SAMBA_LIBRARY('ldb_mdb_int',
-                              bld.SUBDIR('ldb_mdb',
-                                         '''ldb_mdb.c '''),
-                              private_library=True,
-                              deps='ldb lmdb ldb_key_value')
-            lmdb_deps = ' ldb_mdb_int'
-        else:
-            lmdb_deps = ''
+    if bld.is_install:
+        modules_dir = bld.EXPAND_VARIABLES('${LDB_MODULESDIR}')
+    else:
+        # when we run from the source directory, we want to use
+        # the current modules, not the installed ones
+        modules_dir = os.path.join(os.getcwd(), 'bin/modules/ldb')
 
+    abi_match = '!ldb_*module_ops !ldb_*backend_ops ldb_*'
 
-        bld.SAMBA_MODULE('ldb_ldb',
-                         bld.SUBDIR('ldb_ldb',
-                                    '''ldb_ldb.c'''),
-                         init_function='ldb_ldb_init',
+    ldb_headers = ('include/ldb.h include/ldb_errors.h '
+                   'include/ldb_module.h include/ldb_handlers.h')
+
+    bld.SAMBA_LIBRARY('ldb',
+                      COMMON_SRC + ' ' + LDB_MAP_SRC,
+                      deps='tevent LIBLDB_MAIN replace',
+                      includes='include',
+                      public_headers=ldb_headers,
+                      public_headers_install=True,
+                      pc_files='ldb.pc',
+                      vnum=VERSION,
+                      private_library=False,
+                      manpages='man/ldb.3',
+                      abi_directory='ABI',
+                      abi_match = abi_match)
+
+    # generate a include/ldb_version.h
+    def generate_ldb_version_h(t):
+        '''generate a vscript file for our public libraries'''
+
+        tgt = t.outputs[0].bldpath(t.env)
+
+        v = t.env.LDB_VERSION.split('.')
+
+        f = open(tgt, mode='w')
+        try:
+            f.write('#define LDB_VERSION "%s"\n' % t.env.LDB_VERSION)
+            f.write('#define LDB_VERSION_MAJOR %d\n' % int(v[0]))
+            f.write('#define LDB_VERSION_MINOR %d\n' % int(v[1]))
+            f.write('#define LDB_VERSION_RELEASE %d\n' % int(v[2]))
+        finally:
+            f.close()
+        return
+    t = bld.SAMBA_GENERATOR('ldb_version.h',
+                            rule=generate_ldb_version_h,
+                            dep_vars=['LDB_VERSION'],
+                            target='include/ldb_version.h',
+                            public_headers='include/ldb_version.h',
+                            public_headers_install=not private_library)
+    t.env.LDB_VERSION = VERSION
+
+    bld.SAMBA_MODULE('ldb_asq',
+                     'modules/asq.c',
+                     init_function='ldb_asq_init',
+                     module_init_name='ldb_init_module',
+                     internal_module=False,
+                     deps='ldb',
+                     subsystem='ldb')
+
+    bld.SAMBA_MODULE('ldb_server_sort',
+                     'modules/sort.c',
+                     init_function='ldb_server_sort_init',
+                     internal_module=False,
+                     module_init_name='ldb_init_module',
+                     deps='ldb',
+                     subsystem='ldb')
+
+    bld.SAMBA_MODULE('ldb_paged_searches',
+                     'modules/paged_searches.c',
+                     init_function='ldb_paged_searches_init',
+                     internal_module=False,
+                     module_init_name='ldb_init_module',
+                     deps='ldb',
+                     subsystem='ldb')
+
+    bld.SAMBA_MODULE('ldb_rdn_name',
+                     'modules/rdn_name.c',
+                     init_function='ldb_rdn_name_init',
+                     internal_module=False,
+                     module_init_name='ldb_init_module',
+                     deps='ldb',
+                     subsystem='ldb')
+
+    bld.SAMBA_MODULE('ldb_sample',
+                     'tests/sample_module.c',
+                     init_function='ldb_sample_init',
+                     internal_module=False,
+                     module_init_name='ldb_init_module',
+                     deps='ldb',
+                     subsystem='ldb')
+
+    bld.SAMBA_MODULE('ldb_skel',
+                     'modules/skel.c',
+                     init_function='ldb_skel_init',
+                     internal_module=False,
+                     module_init_name='ldb_init_module',
+                     deps='ldb',
+                     subsystem='ldb')
+
+    bld.SAMBA_MODULE('ldb_sqlite3',
+                     'sqlite3/ldb_sqlite3.c',
+                     init_function='ldb_sqlite3_init',
+                     internal_module=False,
+                     module_init_name='ldb_init_module',
+                     enabled=False,
+                     deps='ldb',
+                     subsystem='ldb')
+
+    bld.SAMBA_MODULE('ldb_tdb',
+                     bld.SUBDIR('ldb_tdb',
+                                '''ldb_tdb_init.c'''),
+                     init_function='ldb_tdb_init',
+                     module_init_name='ldb_init_module',
+                     internal_module=False,
+                     deps='ldb ldb_tdb_int ldb_key_value',
+                     subsystem='ldb')
+
+    bld.SAMBA_LIBRARY('ldb_tdb_int',
+                      bld.SUBDIR('ldb_tdb',
+                                 '''ldb_tdb_wrap.c ldb_tdb.c'''),
+                      private_library=True,
+                      deps='ldb tdb ldb_key_value ldb_tdb_err_map')
+
+    bld.SAMBA_LIBRARY('ldb_tdb_err_map',
+                      bld.SUBDIR('ldb_tdb',
+                                 '''ldb_tdb_err_map.c '''),
+                      private_library=True,
+                      deps='ldb tdb')
+
+    bld.SAMBA_LIBRARY('ldb_key_value',
+                      bld.SUBDIR('ldb_key_value',
+                                '''ldb_kv.c ldb_kv_search.c ldb_kv_index.c
+                                ldb_kv_cache.c'''),
+                      private_library=True,
+                      deps='tdb ldb ldb_tdb_err_map')
+
+    if bld.CONFIG_SET('HAVE_LMDB'):
+        bld.SAMBA_MODULE('ldb_mdb',
+                         bld.SUBDIR('ldb_mdb',
+                                    '''ldb_mdb_init.c'''),
+                         init_function='ldb_mdb_init',
                          module_init_name='ldb_init_module',
                          internal_module=False,
-                         deps='ldb ldb_tdb_int ldb_key_value' + lmdb_deps,
+                         deps='ldb ldb_key_value ldb_mdb_int',
                          subsystem='ldb')
 
-        # have a separate subsystem for common/ldb.c, so it can rebuild
-        # for install with a different -DLDB_MODULESDIR=
-        bld.SAMBA_SUBSYSTEM('LIBLDB_MAIN',
-                            'common/ldb.c',
-                            deps='tevent tdb',
-                            includes='include',
-                            cflags=['-DLDB_MODULESDIR=\"%s\"' % modules_dir])
+        bld.SAMBA_LIBRARY('ldb_mdb_int',
+                          bld.SUBDIR('ldb_mdb',
+                                     '''ldb_mdb.c '''),
+                          private_library=True,
+                          deps='ldb lmdb ldb_key_value')
+        lmdb_deps = ' ldb_mdb_int'
+    else:
+        lmdb_deps = ''
 
-        LDB_TOOLS='ldbadd ldbsearch ldbdel ldbmodify ldbedit ldbrename'
-        for t in LDB_TOOLS.split():
-            bld.SAMBA_BINARY(t, 'tools/%s.c' % t, deps='ldb-cmdline ldb',
-                             manpages='man/%s.1' % t)
 
-        # ldbtest doesn't get installed
-        bld.SAMBA_BINARY('ldbtest', 'tools/ldbtest.c', deps='ldb-cmdline ldb',
+    bld.SAMBA_MODULE('ldb_ldb',
+                     bld.SUBDIR('ldb_ldb',
+                                '''ldb_ldb.c'''),
+                     init_function='ldb_ldb_init',
+                     module_init_name='ldb_init_module',
+                     internal_module=False,
+                     deps='ldb ldb_tdb_int ldb_key_value' + lmdb_deps,
+                     subsystem='ldb')
+
+    # have a separate subsystem for common/ldb.c, so it can rebuild
+    # for install with a different -DLDB_MODULESDIR=
+    bld.SAMBA_SUBSYSTEM('LIBLDB_MAIN',
+                        'common/ldb.c',
+                        deps='tevent tdb',
+                        includes='include',
+                        cflags=['-DLDB_MODULESDIR=\"%s\"' % modules_dir])
+
+    LDB_TOOLS='ldbadd ldbsearch ldbdel ldbmodify ldbedit ldbrename'
+    for t in LDB_TOOLS.split():
+        bld.SAMBA_BINARY(t, 'tools/%s.c' % t, deps='ldb-cmdline ldb',
+                         manpages='man/%s.1' % t)
+
+    # ldbtest doesn't get installed
+    bld.SAMBA_BINARY('ldbtest', 'tools/ldbtest.c', deps='ldb-cmdline ldb',
+                     install=False)
+
+    if bld.CONFIG_SET('HAVE_LMDB'):
+        lmdb_deps = ' lmdb'
+    else:
+        lmdb_deps = ''
+    # ldbdump doesn't get installed
+    bld.SAMBA_BINARY('ldbdump',
+                     'tools/ldbdump.c',
+                     deps='ldb-cmdline ldb' + lmdb_deps,
+                     install=False)
+
+    bld.SAMBA_LIBRARY('ldb-cmdline',
+                      source='tools/ldbutil.c tools/cmdline.c',
+                      deps='ldb dl popt',
+                      private_library=True)
+
+    bld.SAMBA_BINARY('ldb_tdb_mod_op_test',
+                     source='tests/ldb_mod_op_test.c',
+                     cflags='-DTEST_BE=\"tdb\"',
+                     deps='cmocka ldb',
+                     install=False)
+
+    bld.SAMBA_BINARY('ldb_tdb_guid_mod_op_test',
+                     source='tests/ldb_mod_op_test.c',
+                     cflags='-DTEST_BE=\"tdb\" -DGUID_IDX=1',
+                     deps='cmocka ldb',
+                     install=False)
+
+    bld.SAMBA_BINARY('ldb_tdb_kv_ops_test',
+                     source='tests/ldb_kv_ops_test.c',
+                     cflags='-DTEST_BE=\"tdb\"',
+                     deps='cmocka ldb',
+                     install=False)
+
+    bld.SAMBA_BINARY('ldb_tdb_test',
+                     source='tests/ldb_tdb_test.c',
+                     deps='cmocka ldb',
+                     install=False)
+
+    bld.SAMBA_BINARY('ldb_msg_test',
+                     source='tests/ldb_msg.c',
+                     deps='cmocka ldb',
+                     install=False)
+
+    bld.SAMBA_BINARY('test_ldb_qsort',
+                     source='tests/test_ldb_qsort.c',
+                     deps='cmocka ldb',
+                     install=False)
+
+    bld.SAMBA_BINARY('test_ldb_dn',
+                     source='tests/test_ldb_dn.c',
+                     deps='cmocka ldb',
+                     install=False)
+
+    bld.SAMBA_BINARY('ldb_match_test',
+                     source='tests/ldb_match_test.c',
+                     deps='cmocka ldb',
+                     install=False)
+
+    bld.SAMBA_BINARY('ldb_key_value_test',
+                     source='tests/ldb_key_value_test.c',
+                     deps='cmocka ldb ldb_tdb_err_map',
+                     install=False)
+
+    bld.SAMBA_BINARY('ldb_parse_test',
+                     source='tests/ldb_parse_test.c',
+                     deps='cmocka ldb ldb_tdb_err_map',
+                     install=False)
+
+    bld.SAMBA_BINARY('ldb_filter_attrs_test',
+                     source='tests/ldb_filter_attrs_test.c',
+                     deps='cmocka ldb ldb_tdb_err_map',
+                     install=False)
+
+    bld.SAMBA_BINARY('ldb_filter_attrs_in_place_test',
+                     source='tests/ldb_filter_attrs_in_place_test.c',
+                     deps='cmocka ldb ldb_tdb_err_map',
+                     install=False)
+
+    bld.SAMBA_BINARY('ldb_key_value_sub_txn_tdb_test',
+                     bld.SUBDIR('ldb_key_value',
+                         '''ldb_kv_search.c
+                            ldb_kv_index.c
+                            ldb_kv_cache.c''') +
+                     'tests/ldb_key_value_sub_txn_test.c',
+                     cflags='-DTEST_BE=\"tdb\"',
+                     deps='cmocka ldb ldb_tdb_err_map',
+                     install=False)
+
+    # If both libldap and liblber are available, test ldb_ldap
+    # code for a regression of bz#14413 -- even if we don't build
+    # it ourselves and simply using the system version
+    if bld.env.LIB_LDAP and bld.env.LIB_LBER:
+        bld.SAMBA_BINARY('lldb_ldap_test',
+                         source='tests/lldb_ldap.c',
+                         deps='cmocka talloc lber ldap ldb',
                          install=False)
 
-        if bld.CONFIG_SET('HAVE_LMDB'):
-            lmdb_deps = ' lmdb'
-        else:
-            lmdb_deps = ''
-        # ldbdump doesn't get installed
-        bld.SAMBA_BINARY('ldbdump',
-                         'tools/ldbdump.c',
-                         deps='ldb-cmdline ldb' + lmdb_deps,
-                         install=False)
-
-        bld.SAMBA_LIBRARY('ldb-cmdline',
-                          source='tools/ldbutil.c tools/cmdline.c',
-                          deps='ldb dl popt',
-                          private_library=True)
-
-        bld.SAMBA_BINARY('ldb_tdb_mod_op_test',
+    if bld.CONFIG_SET('HAVE_LMDB'):
+        bld.SAMBA_BINARY('ldb_mdb_mod_op_test',
                          source='tests/ldb_mod_op_test.c',
-                         cflags='-DTEST_BE=\"tdb\"',
+                         cflags='-DTEST_BE=\"mdb\" -DGUID_IDX=1 '
+                              + '-DTEST_LMDB=1',
+                         deps='cmocka ldb lmdb',
+                         install=False)
+
+        bld.SAMBA_BINARY('ldb_lmdb_test',
+                         source='tests/ldb_lmdb_test.c',
                          deps='cmocka ldb',
                          install=False)
 
-        bld.SAMBA_BINARY('ldb_tdb_guid_mod_op_test',
-                         source='tests/ldb_mod_op_test.c',
-                         cflags='-DTEST_BE=\"tdb\" -DGUID_IDX=1',
+        bld.SAMBA_BINARY('ldb_lmdb_size_test',
+                         source='tests/ldb_lmdb_size_test.c',
                          deps='cmocka ldb',
                          install=False)
 
-        bld.SAMBA_BINARY('ldb_tdb_kv_ops_test',
+        bld.SAMBA_BINARY('ldb_mdb_kv_ops_test',
                          source='tests/ldb_kv_ops_test.c',
-                         cflags='-DTEST_BE=\"tdb\"',
+                         cflags='-DTEST_BE=\"mdb\" -DTEST_LMDB=1',
                          deps='cmocka ldb',
                          install=False)
 
-        bld.SAMBA_BINARY('ldb_tdb_test',
-                         source='tests/ldb_tdb_test.c',
+        bld.SAMBA_BINARY('ldb_lmdb_free_list_test',
+                         source='tests/ldb_lmdb_free_list_test.c',
+                         cflags='-DTEST_BE=\"mdb\" -DTEST_LMDB=1',
                          deps='cmocka ldb',
                          install=False)
-
-        bld.SAMBA_BINARY('ldb_msg_test',
-                         source='tests/ldb_msg.c',
-                         deps='cmocka ldb',
-                         install=False)
-
-        bld.SAMBA_BINARY('test_ldb_qsort',
-                         source='tests/test_ldb_qsort.c',
-                         deps='cmocka ldb',
-                         install=False)
-
-        bld.SAMBA_BINARY('test_ldb_dn',
-                         source='tests/test_ldb_dn.c',
-                         deps='cmocka ldb',
-                         install=False)
-
-        bld.SAMBA_BINARY('ldb_match_test',
-                         source='tests/ldb_match_test.c',
-                         deps='cmocka ldb',
-                         install=False)
-
-        bld.SAMBA_BINARY('ldb_key_value_test',
-                         source='tests/ldb_key_value_test.c',
-                         deps='cmocka ldb ldb_tdb_err_map',
-                         install=False)
-
-        bld.SAMBA_BINARY('ldb_parse_test',
-                         source='tests/ldb_parse_test.c',
-                         deps='cmocka ldb ldb_tdb_err_map',
-                         install=False)
-
-        bld.SAMBA_BINARY('ldb_filter_attrs_test',
-                         source='tests/ldb_filter_attrs_test.c',
-                         deps='cmocka ldb ldb_tdb_err_map',
-                         install=False)
-
-        bld.SAMBA_BINARY('ldb_filter_attrs_in_place_test',
-                         source='tests/ldb_filter_attrs_in_place_test.c',
-                         deps='cmocka ldb ldb_tdb_err_map',
-                         install=False)
-
-        bld.SAMBA_BINARY('ldb_key_value_sub_txn_tdb_test',
+        #
+        # We rely on the versions of the ldb_key_value functions included
+        # in ldb_key_value_sub_txn_test.c taking priority over the versions
+        # in the ldb_key_value shared library.
+        # If this turns out to not be the case, the dependencies will
+        # need to be unrolled, and all the source files included and the
+        # ldb_tdb module initialization code will need to be called
+        # manually.
+        bld.SAMBA_BINARY('ldb_key_value_sub_txn_mdb_test',
                          bld.SUBDIR('ldb_key_value',
                              '''ldb_kv_search.c
                                 ldb_kv_index.c
                                 ldb_kv_cache.c''') +
                          'tests/ldb_key_value_sub_txn_test.c',
-                         cflags='-DTEST_BE=\"tdb\"',
+                         cflags='-DTEST_BE=\"mdb\"',
                          deps='cmocka ldb ldb_tdb_err_map',
                          install=False)
-
-        # If both libldap and liblber are available, test ldb_ldap
-        # code for a regression of bz#14413 -- even if we don't build
-        # it ourselves and simply using the system version
-        if bld.env.LIB_LDAP and bld.env.LIB_LBER:
-            bld.SAMBA_BINARY('lldb_ldap_test',
-                             source='tests/lldb_ldap.c',
-                             deps='cmocka talloc lber ldap ldb',
-                             install=False)
-
-        if bld.CONFIG_SET('HAVE_LMDB'):
-            bld.SAMBA_BINARY('ldb_mdb_mod_op_test',
-                             source='tests/ldb_mod_op_test.c',
-                             cflags='-DTEST_BE=\"mdb\" -DGUID_IDX=1 '
-                                  + '-DTEST_LMDB=1',
-                             deps='cmocka ldb lmdb',
-                             install=False)
-
-            bld.SAMBA_BINARY('ldb_lmdb_test',
-                             source='tests/ldb_lmdb_test.c',
-                             deps='cmocka ldb',
-                             install=False)
-
-            bld.SAMBA_BINARY('ldb_lmdb_size_test',
-                             source='tests/ldb_lmdb_size_test.c',
-                             deps='cmocka ldb',
-                             install=False)
-
-            bld.SAMBA_BINARY('ldb_mdb_kv_ops_test',
-                             source='tests/ldb_kv_ops_test.c',
-                             cflags='-DTEST_BE=\"mdb\" -DTEST_LMDB=1',
-                             deps='cmocka ldb',
-                             install=False)
-
-            bld.SAMBA_BINARY('ldb_lmdb_free_list_test',
-                             source='tests/ldb_lmdb_free_list_test.c',
-                             cflags='-DTEST_BE=\"mdb\" -DTEST_LMDB=1',
-                             deps='cmocka ldb',
-                             install=False)
-            #
-            # We rely on the versions of the ldb_key_value functions included
-            # in ldb_key_value_sub_txn_test.c taking priority over the versions
-            # in the ldb_key_value shared library.
-            # If this turns out to not be the case, the dependencies will
-            # need to be unrolled, and all the source files included and the
-            # ldb_tdb module initialization code will need to be called
-            # manually.
-            bld.SAMBA_BINARY('ldb_key_value_sub_txn_mdb_test',
-                             bld.SUBDIR('ldb_key_value',
-                                 '''ldb_kv_search.c
-                                    ldb_kv_index.c
-                                    ldb_kv_cache.c''') +
-                             'tests/ldb_key_value_sub_txn_test.c',
-                             cflags='-DTEST_BE=\"mdb\"',
-                             deps='cmocka ldb ldb_tdb_err_map',
-                             install=False)
-        else:
-            bld.SAMBA_BINARY('ldb_no_lmdb_test',
-                             source='tests/ldb_no_lmdb_test.c',
-                             deps='cmocka ldb',
-                             install=False)
+    else:
+        bld.SAMBA_BINARY('ldb_no_lmdb_test',
+                         source='tests/ldb_no_lmdb_test.c',
+                         deps='cmocka ldb',
+                         install=False)
 
 def dist():
     '''makes a tarball for distribution'''
