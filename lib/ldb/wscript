@@ -88,8 +88,6 @@ def build(bld):
     if not 'LDB_PACKAGE_VERSION' in bld.env:
         bld.env.LDB_PACKAGE_VERSION = LDB_VERSION
 
-    private_library = not bld.env.ldb_is_public_library
-
     # we're not currently linking against the ldap libs, but ldb.pc.in
     # has @LDAP_LIBS@
     bld.env.LDAP_LIBS = ''
@@ -177,7 +175,7 @@ def build(bld):
                             dep_vars=['LDB_VERSION'],
                             target='include/ldb_version.h',
                             public_headers='include/ldb_version.h',
-                            public_headers_install=not private_library)
+                            public_headers_install=not bld.env.ldb_is_public_library)
     t.env.LDB_VERSION = LDB_VERSION
 
     bld.SAMBA_MODULE('ldb_asq',
