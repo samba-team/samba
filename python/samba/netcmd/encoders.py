@@ -27,6 +27,8 @@ from enum import Enum
 
 from ldb import Dn
 
+from samba.dcerpc.security import descriptor
+
 
 class JSONEncoder(json.JSONEncoder):
     """Custom JSON encoder class to help out with some data types.
@@ -44,6 +46,8 @@ class JSONEncoder(json.JSONEncoder):
             return str(obj.value)
         elif isinstance(obj, datetime):
             return obj.isoformat()
+        elif isinstance(obj, descriptor):
+            return obj.as_sddl()
         elif getattr(obj, "__json__", None) and callable(obj.__json__):
             return obj.__json__()
         return obj
