@@ -183,9 +183,26 @@ groups. To apply a veto or hide directive to a filename for a specific user or
 group, prefix the filename with "../USERNAME/" or "../GROUPNAME/". For details
 consult the updated smb.conf manpage.
 
+Automatic keytab update after machine password change
+-----------------------------------------------------
+
+When machine account password is updated, either by winbind doing regular
+updates or manually (e.g. net ads changetrustpw), now winbind will also support
+update of keytab entries in case you use newly added option
+'sync machine password to keytab'.
+The new parameter allows you to describe what keytabs and how should be updated.
+A new parameter 'sync machine password script' allows to specify external script
+that will be triggered after the automatic keytab update. For detailed
+information check the smb.conf manpage.
 
 REMOVED FEATURES
 ================
+
+Following commands are removed:
+
+net ads keytab add <principal>
+net ads keytab delete <principal>
+net ads keytab add_update_ads
 
 
 smb.conf changes
@@ -205,6 +222,8 @@ smb.conf changes
   write list                              Hardening
   veto files                              Added per-user and per-group vetos
   hide files                              Added per-user and per-group hides
+  sync machine password to keytab         keytabs
+  sync machine password script            script
 
 
 KNOWN ISSUES
