@@ -207,7 +207,6 @@ class cmd_delegation_for_any_service(Command):
     def run(self, accountname, onoff, H=None, credopts=None, sambaopts=None,
             versionopts=None):
 
-        on = False
         if onoff == "on":
             on = True
         elif onoff == "off":
