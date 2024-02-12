@@ -1,31 +1,13 @@
 #!/usr/bin/env python
 
-APPNAME = 'ldb'
 # For Samba 4.21.x
 VERSION = '2.10.0'
 
 import sys, os
 
-# find the buildtools directory
-top = '.'
-while not os.path.exists(top+'/buildtools') and len(top.split('/')) < 5:
-    top = top + '/..'
-sys.path.insert(0, top + '/buildtools/wafsamba')
-
-out = 'bin'
-
 from wafsamba import samba_dist, samba_utils, samba_bundled
 from waflib import Errors, Options, Logs, Context
 import shutil
-
-samba_dist.DIST_DIRS('''lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
-                        lib/tdb:lib/tdb lib/tdb:lib/tdb lib/tevent:lib/tevent
-                        third_party/popt:third_party/popt
-                        third_party/cmocka:third_party/cmocka
-                        buildtools:buildtools third_party/waf:third_party/waf''')
-
-samba_dist.DIST_FILES('''lib/util/binsearch.h:lib/util/binsearch.h
-                         lib/util/attr.h:lib/util/attr.h''')
 
 def options(opt):
     opt.BUILTIN_DEFAULT('replace')
@@ -522,11 +504,3 @@ def build(bld):
                          deps='cmocka ldb',
                          install=False)
 
-def dist():
-    '''makes a tarball for distribution'''
-    samba_dist.dist()
-
-def reconfigure(ctx):
-    '''reconfigure if config scripts have changed'''
-    import samba_utils
-    samba_utils.reconfigure(ctx)
