@@ -2509,7 +2509,7 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 			&& ((ntNewHash != NULL))) {
 		/* we have a password as NT hash */
 		if (ntNewHash != NULL) {
-			CHECK_RET(samdb_msg_add_hash(ldb, mem_ctx, msg,
+			CHECK_RET(samdb_msg_add_hash(ldb, msg, msg,
 				"unicodePwd", ntNewHash));
 			el = ldb_msg_find_element(msg, "unicodePwd");
 			el->flags = LDB_FLAG_MOD_REPLACE;
