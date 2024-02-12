@@ -1299,9 +1299,9 @@ static int get_pso_for_user(struct ldb_module *module,
  * Settings Object (PSO) that applies to that user.
  */
 static int construct_resultant_pso(struct ldb_module *module,
-                                   struct ldb_message *msg,
+				   struct ldb_message *msg,
 				   enum ldb_scope scope,
-                                   struct ldb_request *parent,
+				   struct ldb_request *parent,
 				   struct ldb_reply *ares)
 {
 	struct ldb_message *pso = NULL;
