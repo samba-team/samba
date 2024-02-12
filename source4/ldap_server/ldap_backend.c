@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    LDAP server
    Copyright (C) Stefan Metzmacher 2004
    Copyright (C) Matthias Dieter Wallnöfer 2009
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -1109,7 +1109,7 @@ static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 
 				for (j=0; j < msg->elements[i].num_values; j++) {
 					msg->elements[i].values[j].length = req->mods[i].attrib.values[j].length;
-					msg->elements[i].values[j].data = req->mods[i].attrib.values[j].data;			
+					msg->elements[i].values[j].data = req->mods[i].attrib.values[j].data;
 				}
 			}
 		}
@@ -1188,7 +1188,7 @@ static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
 			msg->elements[i].flags = 0;
 			msg->elements[i].num_values = 0;
 			msg->elements[i].values = NULL;
-			
+
 			if (req->attributes[i].num_values > 0) {
 				msg->elements[i].num_values = req->attributes[i].num_values;
 				msg->elements[i].values = talloc_array(msg->elements, struct ldb_val,
@@ -1197,7 +1197,7 @@ static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
 
 				for (j=0; j < msg->elements[i].num_values; j++) {
 					msg->elements[i].values[j].length = req->attributes[i].values[j].length;
-					msg->elements[i].values[j].data = req->attributes[i].values[j].data;			
+					msg->elements[i].values[j].data = req->attributes[i].values[j].data;
 				}
 			}
 		}
@@ -1415,7 +1415,7 @@ static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
 	NT_STATUS_HAVE_NO_MEMORY(dn);
 
 	DBG_DEBUG("dn: [%s]\n", req->dn);
-	filter = talloc_asprintf(local_ctx, "(%s=%*s)", req->attribute, 
+	filter = talloc_asprintf(local_ctx, "(%s=%*s)", req->attribute,
 				 (int)req->value.length, req->value.data);
 	NT_STATUS_HAVE_NO_MEMORY(filter);
 
@@ -1528,7 +1528,7 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 
 	/* Check for undecoded critical extensions */
 	for (i=0; msg->controls && msg->controls[i]; i++) {
-		if (!msg->controls_decoded[i] && 
+		if (!msg->controls_decoded[i] &&
 		    msg->controls[i]->critical) {
 			DBG_NOTICE("Critical extension %s is not known to this server\n",
 				  msg->controls[i]->oid);
