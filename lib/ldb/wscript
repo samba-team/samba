@@ -237,15 +237,9 @@ def build(bld):
             bld.SAMBA_LIBRARY(name,
                               deps='replace ldb',
                               source='pyldb_util.c',
-                              public_headers=('' if private_library else 'pyldb.h'),
-                              public_headers_install=not private_library,
-                              vnum=VERSION,
-                              private_library=private_library,
-                              pc_files='pyldb-util.pc',
+                              private_library=True,
                               pyembed=True,
-                              enabled=bld.PYTHON_BUILD_IS_ENABLED(),
-                              abi_directory='ABI',
-                              abi_match='pyldb_*')
+                              enabled=bld.PYTHON_BUILD_IS_ENABLED())
 
             if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
                 bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
