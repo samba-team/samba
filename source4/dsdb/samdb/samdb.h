@@ -248,6 +248,13 @@ struct dsdb_control_calculated_default_sd {
 
 #define DSDB_CONTROL_ACL_READ_OID "1.3.6.1.4.1.7165.4.3.37"
 
+/*
+ * Used by the operational module to indicate to the LDAP server that the keys
+ * and Managed Password ID of a Group Managed Service Account are to be updated.
+ */
+#define DSDB_CONTROL_GMSA_UPDATE_OID "1.3.6.1.4.1.7165.4.3.38"
+/* struct gmsa_update */
+
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;
