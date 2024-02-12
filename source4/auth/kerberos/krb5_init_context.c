@@ -492,16 +492,12 @@ struct smb_krb5_send_to_kdc_state {
 static int smb_krb5_send_to_kdc_state_destructor(struct smb_krb5_send_to_kdc_state *state)
 {
 	TDB_DATA key = make_tdb_data((uint8_t *)&state->key_ptr, sizeof(state->key_ptr));
-	struct db_record *rec = NULL;
 	NTSTATUS status;
 
-	rec = dbwrap_fetch_locked(smb_krb5_plugin_db, state, key);
-	if (rec == NULL) {
-		return 0;
+	status = dbwrap_delete(smb_krb5_plugin_db, key);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		status = NT_STATUS_OK;
 	}
-
-	status = dbwrap_record_delete(rec);
-	TALLOC_FREE(rec);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
