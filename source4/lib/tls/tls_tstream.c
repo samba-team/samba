@@ -1100,6 +1100,76 @@ static NTSTATUS tstream_tls_prepare_gnutls(struct tstream_tls_params *_tlsp,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS tstream_tls_verify_peer(struct tstream_tls *tlss)
+{
+	unsigned int status = UINT32_MAX;
+	bool ip = true;
+	const char *hostname = NULL;
+	int ret;
+
+	if (tlss->verify_peer == TLS_VERIFY_PEER_NO_CHECK) {
+		return NT_STATUS_OK;
+	}
+
+	if (tlss->peer_name != NULL) {
+		ip = is_ipaddress(tlss->peer_name);
+	}
+
+	if (!ip) {
+		hostname = tlss->peer_name;
+	}
+
+	if (tlss->verify_peer == TLS_VERIFY_PEER_CA_ONLY) {
+		hostname = NULL;
+	}
+
+	if (tlss->verify_peer >= TLS_VERIFY_PEER_CA_AND_NAME) {
+		if (hostname == NULL) {
+			DEBUG(1,("TLS %s - no hostname available for "
+				 "verify_peer[%s] and peer_name[%s]\n",
+				 __location__,
+				 tls_verify_peer_string(tlss->verify_peer),
+				 tlss->peer_name));
+			return NT_STATUS_IMAGE_CERT_REVOKED;
+		}
+	}
+
+	ret = gnutls_certificate_verify_peers3(tlss->tls_session,
+					       hostname,
+					       &status);
+	if (ret != GNUTLS_E_SUCCESS) {
+		return gnutls_error_to_ntstatus(ret,
+			NT_STATUS_CRYPTO_SYSTEM_INVALID);
+	}
+
+	if (status != 0) {
+		DEBUG(1,("TLS %s - check failed for "
+			 "verify_peer[%s] and peer_name[%s] "
+			 "status 0x%x (%s%s%s%s%s%s%s%s)\n",
+			 __location__,
+			 tls_verify_peer_string(tlss->verify_peer),
+			 tlss->peer_name,
+			 status,
+			 status & GNUTLS_CERT_INVALID ? "invalid " : "",
+			 status & GNUTLS_CERT_REVOKED ? "revoked " : "",
+			 status & GNUTLS_CERT_SIGNER_NOT_FOUND ?
+				"signer_not_found " : "",
+			 status & GNUTLS_CERT_SIGNER_NOT_CA ?
+				"signer_not_ca " : "",
+			 status & GNUTLS_CERT_INSECURE_ALGORITHM ?
+				"insecure_algorithm " : "",
+			 status & GNUTLS_CERT_NOT_ACTIVATED ?
+				"not_activated " : "",
+			 status & GNUTLS_CERT_EXPIRED ?
+				"expired " : "",
+			 status & GNUTLS_CERT_UNEXPECTED_OWNER ?
+				"unexpected_owner " : ""));
+		return NT_STATUS_IMAGE_CERT_REVOKED;
+	}
+
+	return NT_STATUS_OK;
+}
+
 struct tstream_tls_connect_state {
 	struct tstream_context *tls_stream;
 };
@@ -1415,6 +1485,7 @@ static void tstream_tls_retry_handshake(struct tstream_context *stream)
 		tstream_context_data(stream,
 		struct tstream_tls);
 	struct tevent_req *req = tlss->handshake.req;
+	NTSTATUS status;
 	int ret;
 
 	if (tlss->error != 0) {
@@ -1443,72 +1514,16 @@ static void tstream_tls_retry_handshake(struct tstream_context *stream)
 		return;
 	}
 
-	if (tlss->verify_peer >= TLS_VERIFY_PEER_CA_ONLY) {
-		unsigned int status = UINT32_MAX;
-		bool ip = true;
-		const char *hostname = NULL;
-
-		if (tlss->peer_name != NULL) {
-			ip = is_ipaddress(tlss->peer_name);
-		}
-
-		if (!ip) {
-			hostname = tlss->peer_name;
-		}
-
-		if (tlss->verify_peer == TLS_VERIFY_PEER_CA_ONLY) {
-			hostname = NULL;
-		}
-
-		if (tlss->verify_peer >= TLS_VERIFY_PEER_CA_AND_NAME) {
-			if (hostname == NULL) {
-				DEBUG(1,("TLS %s - no hostname available for "
-					 "verify_peer[%s] and peer_name[%s]\n",
-					 __location__,
-					 tls_verify_peer_string(tlss->verify_peer),
-					 tlss->peer_name));
-				tlss->error = EINVAL;
-				tevent_req_error(req, tlss->error);
-				return;
-			}
-		}
-
-		ret = gnutls_certificate_verify_peers3(tlss->tls_session,
-						       hostname,
-						       &status);
-		if (ret != GNUTLS_E_SUCCESS) {
-			DEBUG(1,("TLS %s - %s\n", __location__, gnutls_strerror(ret)));
-			tlss->error = EIO;
-			tevent_req_error(req, tlss->error);
-			return;
-		}
-
-		if (status != 0) {
-			DEBUG(1,("TLS %s - check failed for "
-				 "verify_peer[%s] and peer_name[%s] "
-				 "status 0x%x (%s%s%s%s%s%s%s%s)\n",
-				 __location__,
-				 tls_verify_peer_string(tlss->verify_peer),
-				 tlss->peer_name,
-				 status,
-				 status & GNUTLS_CERT_INVALID ? "invalid " : "",
-				 status & GNUTLS_CERT_REVOKED ? "revoked " : "",
-				 status & GNUTLS_CERT_SIGNER_NOT_FOUND ?
-					"signer_not_found " : "",
-				 status & GNUTLS_CERT_SIGNER_NOT_CA ?
-					"signer_not_ca " : "",
-				 status & GNUTLS_CERT_INSECURE_ALGORITHM ?
-					"insecure_algorithm " : "",
-				 status & GNUTLS_CERT_NOT_ACTIVATED ?
-					"not_activated " : "",
-				 status & GNUTLS_CERT_EXPIRED ?
-					"expired " : "",
-				 status & GNUTLS_CERT_UNEXPECTED_OWNER ?
-					"unexpected_owner " : ""));
-			tlss->error = EINVAL;
-			tevent_req_error(req, tlss->error);
-			return;
-		}
+	status = tstream_tls_verify_peer(tlss);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IMAGE_CERT_REVOKED)) {
+		tlss->error = EINVAL;
+		tevent_req_error(req, tlss->error);
+		return;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		tlss->error = EIO;
+		tevent_req_error(req, tlss->error);
+		return;
 	}
 
 	if (tlss->push.subreq != NULL || tlss->pull.subreq != NULL) {
