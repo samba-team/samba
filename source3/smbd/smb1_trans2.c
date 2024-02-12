@@ -3767,8 +3767,8 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 		return status;
 	}
 
-	DEBUG(10,("smb_set_file_unix_link: SMB_SET_FILE_UNIX_LINK doing symlink %s -> %s\n",
-			new_smb_fname->base_name, link_target ));
+	DBG_DEBUG("SMB_SET_FILE_UNIX_LINK doing symlink %s -> %s\n",
+		  new_smb_fname->base_name, link_target);
 
 	status = parent_pathref(talloc_tos(),
 				conn->cwd_fsp,
