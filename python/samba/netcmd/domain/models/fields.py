@@ -397,32 +397,29 @@ class SDDLField(Field):
         if value is None:
             return
         elif len(value) > 1 or self.many:
-            return [ndr_unpack(security.descriptor, item).as_sddl()
-                    for item in value]
+            return [ndr_unpack(security.descriptor, item) for item in value]
         else:
-            return ndr_unpack(security.descriptor, value[0]).as_sddl()
+            return ndr_unpack(security.descriptor, value[0])
 
     def to_db_value(self, ldb, value, flags):
         domain_sid = security.dom_sid(ldb.get_domain_sid())
         if value is None:
             return
         elif isinstance(value, list):
-            return MessageElement([ndr_pack(security.descriptor.from_sddl(
-                item,
-                domain_sid,
-                allow_device_in_sddl=self.allow_device_in_sddl))
-                                   for item in value],
+            return MessageElement(
+                [self.to_db_value(ldb, item, flags)[0] for item in value],
                 flags,
                 self.name)
         else:
-            return MessageElement(
-                ndr_pack(security.descriptor.from_sddl(
-                    value,
-                    domain_sid,
-                    allow_device_in_sddl=self.allow_device_in_sddl)),
-                flags,
-                self.name
-            )
+            # If this is a SDDL string convert it to a descriptor.
+            if isinstance(value, str):
+                desc = security.descriptor.from_sddl(
+                    value, domain_sid,
+                    allow_device_in_sddl=self.allow_device_in_sddl)
+            else:
+                desc = value
+
+            return MessageElement(ndr_pack(desc), flags, self.name)
 
 
 class BooleanField(Field):

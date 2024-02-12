@@ -387,8 +387,8 @@ class SDDLFieldTest(FieldTestMixin, SambaToolCmdTest):
         super().setUp()
         self.domain_sid = security.dom_sid(self.samdb.get_domain_sid())
 
-    def encode(self, value):
-        return ndr_pack(security.descriptor.from_sddl(value, self.domain_sid))
+    def security_descriptor(self, sddl):
+        return security.descriptor.from_sddl(sddl, self.domain_sid)
 
     @property
     def to_db_value(self):
@@ -398,9 +398,20 @@ class SDDLFieldTest(FieldTestMixin, SambaToolCmdTest):
             "O:SYG:SYD:(XA;OICI;CR;;;WD;((Member_of {SID(AO)}) || (Member_of {SID(BO)})))",
             "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(%s)}))" % self.domain_sid,
         ]
+
+        # Values coming in are SDDL strings
         expected = [
-            (value, MessageElement(self.encode(value))) for value in values
+            (value, MessageElement(ndr_pack(self.security_descriptor(value))))
+            for value in values
         ]
+
+        # Values coming in are already security descriptors
+        expected.extend([
+            (self.security_descriptor(value),
+             MessageElement(ndr_pack(self.security_descriptor(value))))
+            for value in values
+        ])
+
         expected.append((None, None))
         return expected
 
@@ -413,7 +424,9 @@ class SDDLFieldTest(FieldTestMixin, SambaToolCmdTest):
             "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(%s)}))" % self.domain_sid,
         ]
         expected = [
-            (MessageElement(self.encode(value)), value) for value in values
+            (MessageElement(ndr_pack(self.security_descriptor(value))),
+             self.security_descriptor(value))
+            for value in values
         ]
         expected.append((None, None))
         return expected
