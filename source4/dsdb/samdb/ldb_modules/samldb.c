@@ -2560,7 +2560,7 @@ static int samldb_check_user_account_control_acl(struct samldb_ctx *ac,
 	struct security_token *user_token;
 	struct security_descriptor *domain_sd;
 	const struct dsdb_class *objectclass = NULL;
-	const struct uac_to_guid {
+	static const struct uac_to_guid {
 		uint32_t uac;
 		uint32_t priv_to_change_from;
 		const char *oid;
