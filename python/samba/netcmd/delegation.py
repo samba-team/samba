@@ -135,7 +135,6 @@ class cmd_delegation_show(Command):
                 self.outf.write(f'msDS-AllowedToActOnBehalfOfOtherIdentity: '
                                 f'{trustee}\n')
 
-
     def run(self, accountname, H=None, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
