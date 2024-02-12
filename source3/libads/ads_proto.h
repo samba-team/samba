@@ -62,11 +62,7 @@ void ads_disp_sd(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, struct security_descripto
 
 /* The following definitions come from libads/kerberos_keytab.c  */
 
-int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc,
-			 bool update_ads);
-int ads_keytab_delete_entry(ADS_STRUCT *ads, const char *srvPrinc);
 int ads_keytab_flush(ADS_STRUCT *ads);
-int ads_keytab_create_default(ADS_STRUCT *ads);
 int ads_keytab_list(const char *keytab_name);
 
 /* The following definitions come from libads/net_ads_setspn.c  */
@@ -107,8 +103,6 @@ char *ads_ou_string(ADS_STRUCT *ads, const char *org_unit);
 char *ads_default_ou_string(ADS_STRUCT *ads, const char *wknguid);
 ADS_STATUS ads_add_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 				const char *name, const char **vals);
-uint32_t ads_get_kvno(ADS_STRUCT *ads, const char *account_name);
-uint32_t ads_get_machine_kvno(ADS_STRUCT *ads, const char *machine_name);
 
 bool ads_element_in_array(const char **el_array, size_t num_el, const char *el);
 
@@ -144,14 +138,7 @@ ADS_STATUS ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 					const char *extended_dn,
 					enum ads_extended_dn_flags flags,
 					struct dom_sid *sid);
-char* ads_get_dnshostname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name );
-ADS_STATUS ads_get_additional_dns_hostnames(TALLOC_CTX *mem_ctx,
-                                            ADS_STRUCT *ads,
-                                            const char *machine_name,
-                                            char ***hostnames_array,
-                                            size_t *num_hostnames);
 char* ads_get_upn( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name );
-bool ads_has_samaccountname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name );
 ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *machine_name,
 			uint32_t account_type, const char *org_unit);
 ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname);

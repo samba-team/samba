@@ -392,13 +392,6 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 							const char *princ_s,
 							krb5_principal princ,
 							bool flush);
-krb5_error_code smb_krb5_kt_add_password(krb5_context context,
-					 krb5_keytab keytab,
-					 krb5_kvno kvno,
-					 const char *princ_s,
-					 const char *salt_principal,
-					 krb5_enctype enctype,
-					 krb5_data *password);
 
 krb5_error_code smb_krb5_get_credentials(krb5_context context,
 					 krb5_ccache ccache,
