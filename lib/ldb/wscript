@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # For Samba 4.21.x
-VERSION = '2.10.0'
+LDB_VERSION = '2.10.0'
 
 import sys, os
 
@@ -86,7 +86,7 @@ def configure(conf):
 
 def build(bld):
     if not 'LDB_PACKAGE_VERSION' in bld.env:
-        bld.env.LDB_PACKAGE_VERSION = VERSION
+        bld.env.LDB_PACKAGE_VERSION = LDB_VERSION
 
     private_library = not bld.env.ldb_is_public_library
 
@@ -122,7 +122,7 @@ def build(bld):
         bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
                          deps='replace ldb ' + name,
                          realname='ldb.so',
-                         cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
+                         cflags='-DPACKAGE_VERSION=\"%s\"' % LDB_VERSION)
 
         bld.SAMBA_SCRIPT('_ldb_text.py',
                          pattern='_ldb_text.py',
@@ -149,7 +149,7 @@ def build(bld):
                       public_headers=ldb_headers,
                       public_headers_install=True,
                       pc_files='ldb.pc',
-                      vnum=VERSION,
+                      vnum=LDB_VERSION,
                       private_library=False,
                       manpages='man/ldb.3',
                       abi_directory='ABI',
@@ -178,7 +178,7 @@ def build(bld):
                             target='include/ldb_version.h',
                             public_headers='include/ldb_version.h',
                             public_headers_install=not private_library)
-    t.env.LDB_VERSION = VERSION
+    t.env.LDB_VERSION = LDB_VERSION
 
     bld.SAMBA_MODULE('ldb_asq',
                      'modules/asq.c',
