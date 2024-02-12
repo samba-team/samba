@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.20.  This is *not*
+This is the second release candidate of Samba 4.20.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -212,6 +212,19 @@ smb.conf changes
   --------------                          -----------     -------
   smb3 unix extensions                    Per share       -
   acl claims evaluation                   new             AD DC only
+
+
+CHANGES SINCE 4.20.0rc1
+=======================
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15574: Performance regression for NDR parsing of security descriptors.
+
+o  Anoop C S <anoopcs@samba.org>
+   * BUG 15565: Build and install man page for wspsearch client utility.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15558: samba-gpupdate logging doesn't work.
 
 
 KNOWN ISSUES
