@@ -138,9 +138,9 @@ class cmd_delegation_show(Command):
     def run(self, accountname, H=None, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
-        paths = provision.provision_paths_from_lp(lp, lp.get("realm"))
 
         if H is None:
+            paths = provision.provision_paths_from_lp(lp, lp.get("realm"))
             path = paths.samdb
         else:
             path = H
