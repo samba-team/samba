@@ -402,7 +402,6 @@ class SDDLField(Field):
             return ndr_unpack(security.descriptor, value[0])
 
     def to_db_value(self, ldb, value, flags):
-        domain_sid = security.dom_sid(ldb.get_domain_sid())
         if value is None:
             return
         elif isinstance(value, list):
@@ -411,6 +410,8 @@ class SDDLField(Field):
                 flags,
                 self.name)
         else:
+            domain_sid = security.dom_sid(ldb.get_domain_sid())
+
             # If this is a SDDL string convert it to a descriptor.
             if isinstance(value, str):
                 desc = security.descriptor.from_sddl(
