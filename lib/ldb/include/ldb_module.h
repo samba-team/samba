@@ -378,12 +378,12 @@ void ldb_req_mark_untrusted(struct ldb_request *req);
 void ldb_req_mark_trusted(struct ldb_request *req);
 
 /**
-   return true is a request is untrusted
+   return true if a request is untrusted
 
    This indicates the request came across a trust boundary
    for example over LDAP
 
-  \param req the request check
+  \param req the request to check
   \return is req trusted
 */
 bool ldb_req_is_untrusted(struct ldb_request *req);
