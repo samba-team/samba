@@ -3675,15 +3675,16 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 				       struct smb_request *req,
 				       const char *pdata,
 				       int total_data,
+				       struct files_struct *dirfsp,
 				       struct smb_filename *new_smb_fname)
 {
 	char *link_target = NULL;
 	struct smb_filename target_fname;
 	TALLOC_CTX *ctx = talloc_tos();
+	struct smb_filename new_smb_fname_rel = {};
+	char *slash = NULL;
 	NTSTATUS status;
 	int ret;
-	struct smb_filename *parent_fname = NULL;
-	struct smb_filename *base_name = NULL;
 
 	if (!CAN_WRITE(conn)) {
 		return NT_STATUS_DOS(ERRSRV, ERRaccess);
@@ -3720,25 +3721,20 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 	DBG_DEBUG("SMB_SET_FILE_UNIX_LINK doing symlink %s -> %s\n",
 		  new_smb_fname->base_name, link_target);
 
-	status = parent_pathref(talloc_tos(),
-				conn->cwd_fsp,
-				new_smb_fname,
-				&parent_fname,
-				&base_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	new_smb_fname_rel = *new_smb_fname;
+	slash = strrchr_m(new_smb_fname_rel.base_name, '/');
+	if (slash != NULL) {
+		new_smb_fname_rel.base_name = slash + 1;
 	}
 
 	ret = SMB_VFS_SYMLINKAT(conn,
-			&target_fname,
-			parent_fname->fsp,
-			base_name);
+				&target_fname,
+				dirfsp,
+				&new_smb_fname_rel);
 	if (ret != 0) {
-		TALLOC_FREE(parent_fname);
 		return map_nt_error_from_unix(errno);
 	}
 
-	TALLOC_FREE(parent_fname);
 	return NT_STATUS_OK;
 }
 
@@ -4538,7 +4534,7 @@ static void call_trans2setpathinfo(
 
 	case SMB_SET_FILE_UNIX_LINK:
 		status = smb_set_file_unix_link(
-			conn, req, *ppdata, total_data, smb_fname);
+			conn, req, *ppdata, total_data, dirfsp, smb_fname);
 		break;
 
 	case SMB_SET_FILE_UNIX_HLINK:
