@@ -22,6 +22,8 @@
 #ifndef __DSDB_COMMON_UTIL_H__
 #define __DSDB_COMMON_UTIL_H__
 
+#include "libcli/util/werror.h"
+
 /*
    flags for dsdb_request_add_controls(). For the module functions,
    the upper 16 bits are in dsdb/samdb/ldb_modules/util.h
