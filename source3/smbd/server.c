@@ -59,6 +59,7 @@
 #include "g_lock.h"
 #include "lib/global_contexts.h"
 #include "source3/lib/substitute.h"
+#include "lib/addrchange.h"
 
 #ifdef CLUSTER_SUPPORT
 #include "ctdb_protocol.h"
@@ -1540,6 +1541,100 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
 	return NT_STATUS_OK;
 }
 
+struct smbd_addrchanged_state {
+	struct addrchange_context *ctx;
+	struct tevent_context *ev;
+	struct messaging_context *msg_ctx;
+	struct smbd_parent_context *parent;
+	char *ports;
+};
+
+static void smbd_addr_changed(struct tevent_req *req);
+
+static void smbd_init_addrchange(TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct messaging_context *msg_ctx,
+				struct smbd_parent_context *parent,
+				char *ports)
+{
+	struct smbd_addrchanged_state *state;
+	struct tevent_req *req;
+	NTSTATUS status;
+
+	state = talloc(mem_ctx, struct smbd_addrchanged_state);
+	if (state == NULL) {
+		DBG_DEBUG("talloc failed\n");
+		return;
+	}
+	*state = (struct smbd_addrchanged_state) {
+		.ev = ev,
+		.msg_ctx = msg_ctx,
+		.parent = parent,
+		.ports = ports
+	};
+
+	status = addrchange_context_create(state, &state->ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("addrchange_context_create failed: %s\n",
+			  nt_errstr(status));
+		TALLOC_FREE(state);
+		return;
+	}
+	req = addrchange_send(state, ev, state->ctx);
+	if (req == NULL) {
+		DBG_ERR("addrchange_send failed\n");
+		TALLOC_FREE(state);
+		return;
+	}
+	tevent_req_set_callback(req, smbd_addr_changed, state);
+}
+
+static void smbd_addr_changed(struct tevent_req *req)
+{
+	struct smbd_addrchanged_state *state = tevent_req_callback_data(
+		req, struct smbd_addrchanged_state);
+	enum addrchange_type type;
+	struct sockaddr_storage addr;
+	NTSTATUS status;
+
+	status = addrchange_recv(req, &type, &addr);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("addrchange_recv failed: %s, stop listening\n",
+			  nt_errstr(status));
+		TALLOC_FREE(state);
+		return;
+	}
+
+	if (type == ADDRCHANGE_DEL) {
+		char addrstr[INET6_ADDRSTRLEN];
+
+		print_sockaddr(addrstr, sizeof(addrstr), &addr);
+
+		DBG_NOTICE("smbd: kernel (AF_NETLINK) dropped ip %s\n",
+			   addrstr);
+
+		goto rearm;
+	}
+
+	if (type == ADDRCHANGE_ADD) {
+		char addrstr[INET6_ADDRSTRLEN];
+
+		print_sockaddr(addrstr, sizeof(addrstr), &addr);
+
+		DBG_NOTICE("smbd: kernel (AF_NETLINK) added ip %s\n",
+			   addrstr);
+	}
+rearm:
+	req = addrchange_send(state, state->ev, state->ctx);
+	if (req == NULL) {
+		DBG_ERR("addrchange_send failed\n");
+		TALLOC_FREE(state);
+		return;
+	}
+	tevent_req_set_callback(req, smbd_addr_changed, state);
+}
+
 /****************************************************************************
  main program.
 ****************************************************************************/
@@ -2100,6 +2195,10 @@ extern void build_options(bool screen);
 
 		exit_server_cleanly(NULL);
 		return(0);
+	}
+
+	if (lp_interfaces() && lp_bind_interfaces_only()) {
+		smbd_init_addrchange(NULL, ev_ctx, msg_ctx, parent, ports);
 	}
 
 	if (!open_sockets_smbd(parent, ev_ctx, msg_ctx, ports))
