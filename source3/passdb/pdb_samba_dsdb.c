@@ -2023,13 +2023,13 @@ static bool pdb_samba_dsdb_search_aliases(struct pdb_methods *m,
 	return true;
 }
 
-/* 
- * Instead of taking a gid or uid, this function takes a pointer to a 
- * unixid. 
+/*
+ * Instead of taking a gid or uid, this function takes a pointer to a
+ * unixid.
  *
  * This acts as an in-out variable so that the idmap functions can correctly
  * receive ID_TYPE_BOTH, and this function ensures cache details are filled
- * correctly rather than forcing the cache to store ID_TYPE_UID or ID_TYPE_GID. 
+ * correctly rather than forcing the cache to store ID_TYPE_UID or ID_TYPE_GID.
  */
 static bool pdb_samba_dsdb_id_to_sid(struct pdb_methods *m, struct unixid *id,
 				     struct dom_sid *sid)
