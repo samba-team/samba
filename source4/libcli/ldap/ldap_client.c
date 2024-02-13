@@ -510,20 +510,12 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 		conn->port = port;
 
 		if (conn->ldaps) {
-			char *ca_file = lpcfg_tls_cafile(state, conn->lp_ctx);
-			char *crl_file = lpcfg_tls_crlfile(state, conn->lp_ctx);
-			const char *tls_priority = lpcfg_tls_priority(conn->lp_ctx);
-			enum tls_verify_peer_state verify_peer =
-				lpcfg_tls_verify_peer(conn->lp_ctx);
 			NTSTATUS status;
 
-			status = tstream_tls_params_client(state,
-							   ca_file,
-							   crl_file,
-							   tls_priority,
-							   verify_peer,
-							   conn->host,
-							   &state->tls_params);
+			status = tstream_tls_params_client_lpcfg(state,
+								 conn->lp_ctx,
+								 conn->host,
+								 &state->tls_params);
 			if (!NT_STATUS_IS_OK(status)) {
 				composite_error(result, status);
 				return result;
