@@ -274,6 +274,10 @@ def cmd_testonly(opt):
         env.FILTER_XFAIL += " --expected-failures=${srcdir}/selftest/"\
                             "knownfail_heimdal_kdc"
 
+    if CONFIG_SET(opt, 'USING_EMBEDDED_HEIMDAL'):
+        env.FILTER_XFAIL += " --expected-failures=${srcdir}/selftest/"\
+                            "expectedfail_heimdal"
+
     if CONFIG_GET(opt, 'SIZEOF_VOID_P') == 4:
         env.FILTER_XFAIL += " --expected-failures=${srcdir}/selftest/knownfail-32bit"
         env.OPTIONS += " --default-ldb-backend=tdb --exclude=${srcdir}/selftest/skip-32bit"
