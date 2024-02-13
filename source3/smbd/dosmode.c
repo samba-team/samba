@@ -69,9 +69,10 @@ static void dos_mode_debug_print(const char *func, uint32_t mode)
 		 modestr);
 }
 
-static uint32_t filter_mode_by_protocol(uint32_t mode)
+static uint32_t filter_mode_by_protocol(enum protocol_types protocol,
+					uint32_t mode)
 {
-	if (get_Protocol() <= PROTOCOL_LANMAN2) {
+	if (protocol <= PROTOCOL_LANMAN2) {
 		DEBUG(10,("filter_mode_by_protocol: "
 			"filtering result 0x%x to 0x%x\n",
 			(unsigned int)mode,
@@ -588,7 +589,7 @@ uint32_t dos_mode_msdfs(connection_struct *conn,
 		result = FILE_ATTRIBUTE_NORMAL;
 	}
 
-	result = filter_mode_by_protocol(result);
+	result = filter_mode_by_protocol(conn_protocol(conn->sconn), result);
 
 	/*
 	 * Add in that it is a reparse point
@@ -669,7 +670,8 @@ static uint32_t dos_mode_post(uint32_t dosmode,
 		dosmode = FILE_ATTRIBUTE_NORMAL;
 	}
 
-	dosmode = filter_mode_by_protocol(dosmode);
+	dosmode = filter_mode_by_protocol(conn_protocol(fsp->conn->sconn),
+					  dosmode);
 
 	dos_mode_debug_print(func, dosmode);
 	return dosmode;
