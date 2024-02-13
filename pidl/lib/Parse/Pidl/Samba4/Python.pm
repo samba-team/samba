@@ -1925,8 +1925,7 @@ sub ConvertObjectFromPythonLevel($$$$$$$$$)
 	if ($recurse == 0) {
 	        $self->pidl("if ($py_var == NULL) {");
 		$self->indent;
-		$self->pidl("PyErr_Format(PyExc_AttributeError, \"Cannot delete NDR object: " .
-                    mapTypeName($var_name) . "\");");
+		$self->pidl("PyErr_Format(PyExc_AttributeError, \"Cannot delete NDR object: $var_name\");");
 		$self->pidl($fail);
 		$self->deindent;
 		$self->pidl("}");
