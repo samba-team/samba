@@ -1033,7 +1033,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	}
 
 #if defined(WITH_SMB1SERVER)
-	if (sconn->using_smb2) {
+	if (conn_using_smb2(sconn)) {
 #endif
 		send_break_message_smb2(fsp, break_from, break_to);
 #if defined(WITH_SMB1SERVER)
@@ -1119,7 +1119,7 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	}
 
 #if defined(WITH_SMB1SERVER)
-	if (sconn->using_smb2) {
+	if (conn_using_smb2(sconn)) {
 #endif
 		send_break_message_smb2(fsp, 0, OPLOCKLEVEL_NONE);
 #if defined(WITH_SMB1SERVER)

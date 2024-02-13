@@ -648,7 +648,7 @@ unsigned int estimate_ea_size(files_struct *fsp)
 				   &total_ea_len,
 				   &ea_list);
 
-	if(fsp->conn->sconn->using_smb2) {
+	if(conn_using_smb2(fsp->conn->sconn)) {
 		unsigned int ret_data_size;
 		/*
 		 * We're going to be using fill_ea_chained_buffer() to
@@ -1741,7 +1741,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 
 			DBG_DEBUG("SMB2_FILE_POSIX_INFORMATION\n");
 
-			if (!(conn->sconn->using_smb2)) {
+			if (!conn_using_smb2(conn->sconn)) {
 				return NT_STATUS_INVALID_LEVEL;
 			}
 
@@ -1990,7 +1990,7 @@ static bool fsinfo_unix_valid_level(connection_struct *conn,
 				    struct files_struct *fsp,
 				    uint16_t info_level)
 {
-	if (conn->sconn->using_smb2 &&
+	if (conn_using_smb2(conn->sconn) &&
 	    fsp->posix_flags == FSP_POSIX_FLAGS_OPEN &&
 	    info_level == SMB2_FS_POSIX_INFORMATION_INTERNAL)
 	{
@@ -3038,7 +3038,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			ok = true;
 		}
 
-		if (conn->sconn->using_smb2 &&
+		if (conn_using_smb2(conn->sconn) &&
 		    (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN))
 		{
 			DBG_DEBUG("SMB2 posix open\n");
@@ -3407,7 +3407,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		{
 			char *nfname = NULL;
 
-			if (fsp == NULL || !fsp->conn->sconn->using_smb2) {
+			if (fsp == NULL ||
+			    !conn_using_smb2(fsp->conn->sconn)) {
 				return NT_STATUS_INVALID_LEVEL;
 			}
 
@@ -3696,7 +3697,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			};
 			enum ndr_err_code ndr_err;
 
-			if (!(conn->sconn->using_smb2)) {
+			if (!conn_using_smb2(conn->sconn)) {
 				return NT_STATUS_INVALID_LEVEL;
 			}
 			if (fsp == NULL) {
@@ -5202,7 +5203,7 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 
 		case SMB_FILE_LINK_INFORMATION:
 		{
-			if (conn->sconn->using_smb2) {
+			if (conn_using_smb2(conn->sconn)) {
 				status = smb2_file_link_information(conn,
 							req,
 							pdata,

@@ -238,7 +238,7 @@ static void conn_force_tdis_done(struct tevent_req *req)
 		return;
 	}
 
-	if (conn->sconn->using_smb2) {
+	if (conn_using_smb2(conn->sconn)) {
 		vuid = conn->vuid;
 	}
 

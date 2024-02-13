@@ -252,7 +252,7 @@ NTSTATUS dptr_create(connection_struct *conn,
 
 	dptr->attr = attr;
 
-	if (sconn->using_smb2) {
+	if (conn_using_smb2(sconn)) {
 		goto done;
 	}
 
@@ -328,7 +328,7 @@ void dptr_CloseDir(files_struct *fsp)
 
 	DBG_INFO("closing dptr key %d\n", fsp->dptr->dnum);
 
-	if (sconn != NULL && !sconn->using_smb2) {
+	if (sconn != NULL && !conn_using_smb2(sconn)) {
 		DLIST_REMOVE(sconn->searches.dirptrs, fsp->dptr);
 
 		/*

@@ -781,7 +781,6 @@ struct smbd_server_connection {
 	struct messaging_context *msg_ctx;
 	struct dcesrv_context *dce_ctx;
 	struct notify_context *notify_ctx;
-	bool using_smb2;
 	int trans_num;
 
 	size_t num_users;

@@ -222,7 +222,7 @@ void remove_deferred_open_message_smb(struct smbXsrv_connection *xconn,
 	struct smbd_server_connection *sconn = xconn->client->sconn;
 	struct pending_message_list *pml;
 
-	if (sconn->using_smb2) {
+	if (conn_using_smb2(sconn)) {
 		remove_deferred_open_message_smb2(xconn, mid);
 		return;
 	}
@@ -295,7 +295,7 @@ bool schedule_deferred_open_message_smb(struct smbXsrv_connection *xconn,
 	struct pending_message_list *pml;
 	int i = 0;
 
-	if (sconn->using_smb2) {
+	if (conn_using_smb2(sconn)) {
 		return schedule_deferred_open_message_smb2(xconn, mid);
 	}
 
@@ -365,7 +365,7 @@ bool open_was_deferred(struct smbXsrv_connection *xconn, uint64_t mid)
 	struct smbd_server_connection *sconn = xconn->client->sconn;
 	struct pending_message_list *pml;
 
-	if (sconn->using_smb2) {
+	if (conn_using_smb2(sconn)) {
 		return open_was_deferred_smb2(xconn, mid);
 	}
 
@@ -404,7 +404,7 @@ bool get_deferred_open_message_state(struct smb_request *smbreq,
 {
 	struct pending_message_list *pml;
 
-	if (smbreq->sconn->using_smb2) {
+	if (conn_using_smb2(smbreq->sconn)) {
 		return get_deferred_open_message_state_smb2(smbreq->smb2req,
 					p_request_time,
 					open_rec);

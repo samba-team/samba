@@ -1017,7 +1017,7 @@ static void set_current_case_sensitive(connection_struct *conn, uint16_t flags)
 	enum remote_arch_types ra_type;
 
 	SMB_ASSERT(conn != NULL);
-	SMB_ASSERT(!conn->sconn->using_smb2);
+	SMB_ASSERT(!conn_using_smb2(conn->sconn));
 
 	snum = SNUM(conn);
 
@@ -2119,7 +2119,7 @@ bool keepalive_fn(const struct timeval *now, void *private_data)
 	struct smbXsrv_connection *xconn = NULL;
 	bool ret;
 
-	if (sconn->using_smb2) {
+	if (conn_using_smb2(sconn)) {
 		/* Don't do keepalives on an SMB2 connection. */
 		return false;
 	}

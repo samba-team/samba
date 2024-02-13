@@ -43,7 +43,7 @@ uint32_t ucf_flags_from_smb_request(struct smb_request *req)
 	if (req->posix_pathnames) {
 		ucf_flags |= UCF_POSIX_PATHNAMES;
 
-		if (!req->sconn->using_smb2) {
+		if (!conn_using_smb2(req->sconn)) {
 			ucf_flags |= UCF_LCOMP_LNK_OK;
 		}
 	}

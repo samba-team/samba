@@ -184,7 +184,7 @@ static bool check_smb2_posix_chmod_ace(const struct files_struct *fsp,
 	 * MS NFS style mode entry coming in on a POSIX
 	 * handle over SMB2+.
 	 */
-	if (!fsp->conn->sconn->using_smb2) {
+	if (!conn_using_smb2(fsp->conn->sconn)) {
 		return false;
 	}
 

@@ -4399,7 +4399,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * According to Samba4, SEC_FILE_READ_ATTRIBUTE is always granted,
 	 * but we don't have to store this - just ignore it on access check.
 	 */
-	if (conn->sconn->using_smb2) {
+	if (conn_using_smb2(conn->sconn)) {
 		/*
 		 * SMB2 doesn't return it (according to Microsoft tests).
 		 * Test Case: TestSuite_ScenarioNo009GrantedAccessTestS0
@@ -6033,7 +6033,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			goto fail;
 		}
 
-		if (conn->sconn->using_smb2 &&
+		if (conn_using_smb2(conn->sconn) &&
 		    (access_mask == SEC_FLAG_SYSTEM_SECURITY))
 		{
 			/*

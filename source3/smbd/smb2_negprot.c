@@ -805,8 +805,6 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	SIVAL(outbody.data, 0x3C,
 	      out_negotiate_context_offset);	/* reserved/NegotiateContextOffset */
 
-	req->sconn->using_smb2 = true;
-
 	if (dialect == SMB2_DIALECT_REVISION_2FF) {
 		return smbd_smb2_request_done(req, outbody, &outdyn);
 	}
