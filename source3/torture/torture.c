@@ -27,6 +27,7 @@
 #include "tldap.h"
 #include "tldap_util.h"
 #include "tldap_gensec_bind.h"
+#include "tldap_tls_connect.h"
 #include "../librpc/gen_ndr/svcctl.h"
 #include "../lib/util/memcache.h"
 #include "nsswitch/winbind_client.h"
@@ -53,6 +54,7 @@
 #include "auth/gensec/gensec.h"
 #include "lib/util/string_wrappers.h"
 #include "source3/lib/substitute.h"
+#include "ads.h"
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
@@ -12346,12 +12348,40 @@ static bool run_tldap(int dummy)
 	struct tevent_req *req;
 	char *basedn;
 	const char *filter;
+	struct loadparm_context *lp_ctx = NULL;
+	int tcp_port = 389;
+	bool use_tls = false;
+	bool use_starttls = false;
+	int wrap_flags = -1;
+	uint32_t gensec_features = 0;
+
+	lp_ctx = loadparm_init_s3(talloc_tos(), loadparm_s3_helpers());
+
+	wrap_flags = lpcfg_client_ldap_sasl_wrapping(lp_ctx);
+
+	if (wrap_flags & ADS_AUTH_SASL_LDAPS) {
+		use_tls = true;
+		tcp_port = 636;
+	} else if (wrap_flags & ADS_AUTH_SASL_STARTTLS) {
+		use_tls = true;
+		use_starttls = true;
+	}
+	if (wrap_flags & ADS_AUTH_SASL_SEAL) {
+		gensec_features |= GENSEC_FEATURE_SEAL;
+	}
+	if (wrap_flags & ADS_AUTH_SASL_SIGN) {
+		gensec_features |= GENSEC_FEATURE_SIGN;
+	}
+
+	if (gensec_features != 0) {
+		gensec_features |= GENSEC_FEATURE_LDAP_STYLE;
+	}
 
 	if (!resolve_name(host, &addr, 0, false)) {
 		d_printf("could not find host %s\n", host);
 		return false;
 	}
-	status = open_socket_out(&addr, 389, 9999, &fd);
+	status = open_socket_out(&addr, tcp_port, 9999, &fd);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("open_socket_out failed: %s\n", nt_errstr(status));
 		return false;
@@ -12362,6 +12392,17 @@ static bool run_tldap(int dummy)
 		close(fd);
 		d_printf("tldap_context_create failed\n");
 		return false;
+	}
+
+	if (use_tls && !tldap_has_tls_tstream(ld)) {
+		tldap_set_starttls_needed(ld, use_starttls);
+
+		rc = tldap_tls_connect(ld, lp_ctx, host);
+		if (!TLDAP_RC_IS_SUCCESS(rc)) {
+			DBG_ERR("tldap_tls_connect(%s) failed: %s\n",
+				host, tldap_errstr(talloc_tos(), ld, rc));
+			return false;
+		}
 	}
 
 	rc = tldap_fetch_rootdse(ld);
@@ -12386,10 +12427,7 @@ static bool run_tldap(int dummy)
 	}
 
 	rc = tldap_gensec_bind(ld, torture_creds, "ldap", host, NULL,
-			       loadparm_init_s3(talloc_tos(),
-						loadparm_s3_helpers()),
-			       GENSEC_FEATURE_SIGN | GENSEC_FEATURE_SEAL);
-
+			       lp_ctx, gensec_features);
 	if (!TLDAP_RC_IS_SUCCESS(rc)) {
 		d_printf("tldap_gensec_bind failed\n");
 		return false;
