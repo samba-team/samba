@@ -93,7 +93,7 @@ def build(bld):
                           public_headers=[],
                           enabled=bld.env.TALLOC_COMPAT1)
 
-        testsuite_deps = 'talloc'
+        testsuite_deps = 'talloc replace'
         if bld.CONFIG_SET('HAVE_PTHREAD'):
             testsuite_deps += ' pthread'
 

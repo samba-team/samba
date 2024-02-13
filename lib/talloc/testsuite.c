@@ -2097,7 +2097,7 @@ static bool test_magic_protection(void)
 		 *
 		 * Real attacks would attempt to set a real destructor.
 		 */
-		memset(p1, '\0', 32);
+		memset_s(p1, 32, '\0', 32);
 
 		/* Then the attack takes effect when the memory's freed. */
 		talloc_free(pool);
