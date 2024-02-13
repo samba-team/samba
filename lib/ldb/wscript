@@ -103,7 +103,6 @@ def configure(conf):
             else:
                 conf.env.REQUIRE_LMDB = True
 
-
     if conf.CONFIG_SET('USING_SYSTEM_LDB'):
         v = VERSION.split('.')
         conf.DEFINE('EXPECTED_SYSTEM_LDB_VERSION_MAJOR', int(v[0]))
@@ -112,10 +111,6 @@ def configure(conf):
 
     if conf.env.standalone_ldb:
         conf.CHECK_XSLTPROC_MANPAGES()
-
-        # we need this for the ldap backend
-        if conf.CHECK_FUNCS_IN('ber_flush ldap_open ldap_initialize', 'lber ldap', headers='lber.h ldap.h'):
-            conf.env.ENABLE_LDAP_BACKEND = True
 
     # if lmdb support is enabled then we require lmdb
     # is present, build the mdb back end and enable lmdb support in

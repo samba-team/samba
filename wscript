@@ -125,6 +125,8 @@ def options(opt):
                   help=('Disable kernely keyring support for credential storage'),
                   action='store_false', dest='enable_keyring')
 
+    opt.samba_add_onoff_option('ldap')
+
     opt.option_group('developer options')
 
     opt.load('python') # options for disabling pyc or pyo compilation
@@ -256,6 +258,56 @@ def configure(conf):
             else:
                 conf.define('USING_SYSTEM_PAM_WRAPPER', 1)
 
+    # Check for LDAP
+    if Options.options.with_ldap:
+        conf.CHECK_HEADERS('ldap.h lber.h ldap_pvt.h')
+        conf.CHECK_TYPE('ber_tag_t', 'unsigned int', headers='ldap.h lber.h')
+        conf.CHECK_FUNCS_IN('ber_scanf ber_sockbuf_add_io', 'lber')
+        conf.CHECK_VARIABLE('LDAP_OPT_SOCKBUF', headers='ldap.h')
+
+        # if we LBER_OPT_LOG_PRINT_FN we can intercept ldap logging and print it out
+        # for the samba logs
+        conf.CHECK_VARIABLE('LBER_OPT_LOG_PRINT_FN',
+                            define='HAVE_LBER_LOG_PRINT_FN', headers='lber.h')
+
+        conf.CHECK_FUNCS_IN('ldap_init ldap_init_fd ldap_initialize ldap_set_rebind_proc', 'ldap')
+        conf.CHECK_FUNCS_IN('ldap_add_result_entry', 'ldap')
+
+        # Check if ldap_set_rebind_proc() takes three arguments
+        if conf.CHECK_CODE('ldap_set_rebind_proc(0, 0, 0)',
+                           'LDAP_SET_REBIND_PROC_ARGS',
+                           msg="Checking whether ldap_set_rebind_proc takes 3 arguments",
+                           headers='ldap.h lber.h', link=False):
+            conf.DEFINE('LDAP_SET_REBIND_PROC_ARGS', '3')
+        else:
+            conf.DEFINE('LDAP_SET_REBIND_PROC_ARGS', '2')
+
+        # last but not least, if ldap_init() exists, we want to use ldap
+        if conf.CONFIG_SET('HAVE_LDAP_INIT') and conf.CONFIG_SET('HAVE_LDAP_H'):
+            conf.DEFINE('HAVE_LDAP', '1')
+            conf.DEFINE('LDAP_DEPRECATED', '1')
+            conf.env['HAVE_LDAP'] = '1'
+            # if ber_sockbuf_add_io() and LDAP_OPT_SOCKBUF are available, we can add
+            # SASL wrapping hooks
+            if conf.CONFIG_SET('HAVE_BER_SOCKBUF_ADD_IO') and \
+                    conf.CONFIG_SET('HAVE_LDAP_OPT_SOCKBUF'):
+                conf.DEFINE('HAVE_LDAP_SASL_WRAPPING', '1')
+            conf.env.ENABLE_LDAP_BACKEND = True
+        else:
+            conf.fatal("LDAP support not found. "
+                       "Try installing libldap2-dev or openldap-devel. "
+                       "Otherwise, use --without-ldap to build without "
+                       "LDAP support. "
+                       "LDAP support is required for the LDAP passdb backend, "
+                       "LDAP idmap backends and ADS. "
+                       "ADS support improves communication with "
+                       "Active Directory domain controllers.")
+    else:
+        conf.SET_TARGET_TYPE('ldap', 'EMPTY')
+        conf.SET_TARGET_TYPE('lber', 'EMPTY')
+
+    conf.RECURSE('lib/tdb')
+    conf.RECURSE('lib/tevent')
     conf.RECURSE('lib/ldb')
 
     if conf.CHECK_LDFLAGS(['-Wl,--wrap=test']):
