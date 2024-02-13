@@ -52,7 +52,7 @@
 #undef strcasecmp
 
 /*
- * This included to allow us to handle DSDB_FLAG_REPLICATED_UPDATE in
+ * This is included to allow us to handle DSDB_FLAG_REPLICATED_UPDATE in
  * dsdb_request_add_controls()
  */
 #include "dsdb/samdb/ldb_modules/util.h"
