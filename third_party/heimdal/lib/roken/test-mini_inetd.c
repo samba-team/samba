@@ -49,7 +49,7 @@ get_address(int flags, struct addrinfo ** ret)
 
     memset(&ai, 0, sizeof(ai));
 
-    ai.ai_flags = flags | AI_NUMERICHOST;
+    ai.ai_flags = flags | AI_NUMERICHOST | AI_NUMERICSERV;
     ai.ai_family = AF_INET;
     ai.ai_socktype = SOCK_STREAM;
     ai.ai_protocol = PF_UNSPEC;

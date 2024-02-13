@@ -73,26 +73,23 @@ rm -f messages.log
 > messages.log
 
 echo Creating database
-${kadmin} -l \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R} || exit 1
-
-${kadmin} -l add -p "$foopassword" --use-defaults foo/admin@${R} || exit 1
-${kadmin} -l add -p "$foopassword" --use-defaults bar@${R} || exit 1
-${kadmin} -l add -p "$foopassword" --use-defaults baz@${R} || exit 1
-${kadmin} -l add -p "$foopassword" --use-defaults bez@${R} || exit 1
-${kadmin} -l add -p "$foopassword" --use-defaults fez@${R} || exit 1
-${kadmin} -l add -p "$foopassword" --use-defaults hasalias@${R} || exit 1
-${kadmin} -l add -p "$foopassword" --use-defaults pkinit@${R} || exit 1
-${kadmin} -l modify --pkinit-acl="CN=baz,DC=test,DC=h5l,DC=se" pkinit@${R} || exit 1
-${kadmin} -l add -p "$foopassword" --use-defaults prune@${R} || exit 1
-${kadmin} -l cpw --keepold --random-key prune@${R} || exit 1
-${kadmin} -l cpw --keepold --random-key prune@${R} || exit 1
-${kadmin} -l add -p "$foopassword" --use-defaults pruneall@${R} || exit 1
-${kadmin} -l cpw --pruneall --random-key pruneall@${R} || exit 1
-${kadmin} -l cpw --pruneall --random-key pruneall@${R} || exit 1
+${kadmin} -l <<EOF || exit 1
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R}
+add -p "$foopassword" --use-defaults foo/admin@${R}
+add -p "$foopassword" --use-defaults bar@${R}
+add -p "$foopassword" --use-defaults baz@${R}
+add -p "$foopassword" --use-defaults bez@${R}
+add -p "$foopassword" --use-defaults fez@${R}
+add -p "$foopassword" --use-defaults hasalias@${R}
+add -p "$foopassword" --use-defaults pkinit@${R}
+modify --pkinit-acl="CN=baz,DC=test,DC=h5l,DC=se" pkinit@${R}
+add -p "$foopassword" --use-defaults prune@${R}
+cpw --keepold --random-key prune@${R}
+cpw --keepold --random-key prune@${R}
+add -p "$foopassword" --use-defaults pruneall@${R}
+cpw --pruneall --random-key pruneall@${R}
+cpw --pruneall --random-key pruneall@${R}
+EOF
 
 echo "$foopassword" > ${objdir}/foopassword
 
@@ -105,7 +102,14 @@ ${kadmind} --detach --list-chunk-size=1 \
     || { echo "kadmind failed to start"; cat messages.log; exit 1; }
 kadmpid=`getpid kadmind`
 
-trap "kill -9 ${kdcpid} ${kadmpid}" EXIT
+cleanup() {
+    echo signal killing kdc
+    kill -9 ${kdcpid} ${kadmpid} 2>/dev/null
+    trap '' EXIT INT TERM
+    cat messages.log
+    exit 1
+}
+trap cleanup EXIT INT TERM
 
 #----------------------------------
 echo "kinit (no admin); test mod --alias authorization"

@@ -89,58 +89,42 @@ rm -f mkey.file*
 > messages.log
 
 echo Creating database
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R} || exit 1
-
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R2} || exit 1
-
-${kadmin} add -r --use-defaults WELLKNOWN/REFERRALS/TARGET@${R} || exit 1
-${kadmin} add -r --use-defaults WELLKNOWN/REFERRALS/TARGET@${R2} || exit 1
-
 # User 'foo' gets two aliases in the same realm, and one in the other
-${kadmin} add -p foo --use-defaults foo@${R} || exit 1
-${kadmin} add_alias foo@${R} foo@${R2} alias1 alias2 || exit 1
+# service1 is an alias of service2, in different realms
+# service3 and service4 get soft aliases in each other's realms
+# service6 is a hard alias of service5
+# service8 is a hard alias of service7, but in the opposite direction
+${kadmin} <<EOF || exit 1
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R}
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R2}
+add -r --use-defaults WELLKNOWN/REFERRALS/TARGET@${R}
+add -r --use-defaults WELLKNOWN/REFERRALS/TARGET@${R2}
+add -p foo --use-defaults foo@${R}
+add_alias foo@${R} foo@${R2} alias1 alias2
+add -p foo --use-defaults    ${service2}@${R2}
+add_alias ${service2}@${R2}  ${service1}@${R} 
+add -p foo --use-defaults  ${service3}@${R} 
+add -p foo --use-defaults  ${service4}@${R2}
+add_alias WELLKNOWN/REFERRALS/TARGET@${R2} ${service4}@${R}
+add_alias WELLKNOWN/REFERRALS/TARGET@${R}  ${service3}@${R2}
+add -p foo --use-defaults  ${service5}@${R} 
+add_alias ${service5}@${R} ${service6}@${R2}
+add -p foo --use-defaults  ${service7}@${R2}
+add_alias ${service5}@${R} ${service8}@${R} 
+add -p foo --use-defaults bar@${R}
+add -p cross1 --use-defaults krbtgt/${R2}@${R}
+add -p cross2 --use-defaults krbtgt/${R}@${R2}
+ext -k ${keytab} krbtgt/${R}@${R}
+check ${R}
+check ${R2}
+EOF
+
+${kadmin} add -p foo --use-defaults baz\\@realm.foo@${R} || exit 1
+
 ${kadmin} get foo@${R} | grep alias1@${R} >/dev/null || exit 1
 ${kadmin} get foo@${R} | grep alias2@${R} >/dev/null || exit 1
 ${kadmin} get foo@${R} | grep foo@${R2} >/dev/null || exit 1
-
-# service1 is an alias of service2, in different realms
-${kadmin} add -p foo --use-defaults    ${service2}@${R2} || exit 1
-${kadmin} add_alias ${service2}@${R2}  ${service1}@${R}  || exit 1
 ${kadmin} get ${service2}@${R2} | grep ${service1}@${R} >/dev/null || exit 1
-
-# service3 and service4 get soft aliases in each other's realms
-${kadmin} add -p foo --use-defaults  ${service3}@${R}  || exit 1
-${kadmin} add -p foo --use-defaults  ${service4}@${R2} || exit 1
-${kadmin} add_alias WELLKNOWN/REFERRALS/TARGET@${R2} ${service4}@${R} || exit 1
-${kadmin} add_alias WELLKNOWN/REFERRALS/TARGET@${R}  ${service3}@${R2} || exit 1
-
-# service6 is a hard alias of service5
-${kadmin} add -p foo --use-defaults  ${service5}@${R}  || exit 1
-${kadmin} add_alias ${service5}@${R} ${service6}@${R2} || exit 1
-
-# service8 is a hard alias of service7, but in the opposite direction
-${kadmin} add -p foo --use-defaults  ${service7}@${R2} || exit 1
-${kadmin} add_alias ${service5}@${R} ${service8}@${R}  || exit 1
-
-${kadmin} add -p foo --use-defaults bar@${R} || exit 1
-${kadmin} add -p foo --use-defaults 'baz\@realm.foo@'${R} || exit 1
-
-${kadmin} add -p cross1 --use-defaults krbtgt/${R2}@${R} || exit 1
-${kadmin} add -p cross2 --use-defaults krbtgt/${R}@${R2} || exit 1
-
-${kadmin} ext -k ${keytab} krbtgt/${R}@${R} || exit 1
-
-echo "Doing database check"
-${kadmin} check ${R} || exit 1
-${kadmin} check ${R2} || exit 1
 
 echo foo > ${objdir}/foopassword
 
@@ -148,7 +132,14 @@ echo Starting kdc ; > messages.log
 ${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 
-trap "kill -9 ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
+cleanup() {
+    echo signal killing kdc
+    kill -9 ${kdcpid}
+    trap '' EXIT INT TERM
+    cat messages.log
+    exit 1
+}
+trap cleanup EXIT INT TERM
 
 ec=0
 

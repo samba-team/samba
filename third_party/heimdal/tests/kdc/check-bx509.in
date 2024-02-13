@@ -118,7 +118,14 @@ mkdir -p authz_dir
 kdcpid=
 bx509pid=
 test_csr_authorizer_pid=
-trap 'kill -9 ${kdcpid} ${bx509pid} ${test_csr_authorizer_pid}; echo signal killing kdc, bx509d, and test_csr_authorizer; exit 1;' EXIT
+cleanup() {
+    echo signal killing kdc, bx509d, and test_csr_authorizer
+    kill -9 ${kdcpid} ${bx509pid} ${test_csr_authorizer_pid} 2>/dev/null
+    trap '' EXIT INT TERM
+    cat messages.log
+    exit 1
+}
+trap cleanup EXIT INT TERM
 
 # csr_grant ext-type value grantee_principal
 csr_grant() {

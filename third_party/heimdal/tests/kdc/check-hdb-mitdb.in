@@ -44,7 +44,8 @@ testfailed="echo test failed; cat messages.log; exit 1"
 
 # If there is no ldap support compiled in, disable test
 if ${kdc} --builtin-hdb | grep mit-db > /dev/null ; then
-    :
+    echo "Testing MIT KDB support"
+    ${kdc} --builtin-hdb
 else
     echo "no MIT KDB support"
     exit 77
@@ -88,7 +89,14 @@ env MallocStackLogging=1 MallocStackLoggingNoCompact=1 MallocErrorAbort=1 Malloc
 ${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 
-trap "kill -9 ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
+cleanup() {
+    echo signal killing kdc
+    kill -9 ${kdcpid}
+    trap '' EXIT INT TERM
+    cat messages.log
+    exit 1
+}
+trap cleanup EXIT INT TERM
 
 ec=0
 

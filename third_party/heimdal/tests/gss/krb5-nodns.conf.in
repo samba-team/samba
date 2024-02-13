@@ -1,0 +1,55 @@
+include @srcdirabs@/include-krb5.conf
+
+[libdefaults]
+	default_keytab_name = @objdir@/server.keytab
+        enable-kx509 = yes
+        kx509_store = PEM-FILE:/tmp/cert_%{euid}.pem
+	default_realm = TEST.H5L.SE
+	kuserok = SYSTEM-K5LOGIN:@srcdir@/../kdc/k5login
+	kuserok = USER-K5LOGIN
+	kuserok = SIMPLE
+	block_dns = yes
+
+[realms]
+	TEST.H5L.SE = {
+		kdc = 127.0.0.1:@port@
+                auth_to_local_names = {
+                        user1 = mapped_user1
+                }
+	}
+
+[kdc]
+	enable-digest = true
+	allow-anonymous = true
+	digests_allowed = chap-md5,digest-md5,ntlm-v1,ntlm-v1-session,ntlm-v2,ms-chap-v2
+        strict-nametypes = true
+        synthetic_clients = true
+	enable_gss_preauth = true
+	gss_mechanisms_allowed = sanon-x25519
+	enable-pkinit = true
+	pkinit_identity = FILE:@srcdir@/../../lib/hx509/data/kdc.crt,@srcdir@/../../lib/hx509/data/kdc.key
+	pkinit_anchors = FILE:@srcdir@/../../lib/hx509/data/ca.crt
+	pkinit_pool = FILE:@srcdir@/../../lib/hx509/data/sub-ca.crt
+#	pkinit_revoke = CRL:@srcdir@/../../lib/hx509/data/crl1.crl
+	pkinit_mappings_file = @srcdir@/pki-mapping
+	pkinit_allow_proxy_certificate = true
+
+	database = {
+		dbname = @objdir@/current-db
+		realm = TEST.H5L.SE
+		mkey_file = @objdir@/mkey.file
+                log_file = @objdir@/current.log
+	}
+
+[hdb]
+	db-dir = @objdir@
+        enable_virtual_hostbased_princs = true
+        virtual_hostbased_princ_mindots = 1
+        virtual_hostbased_princ_maxdots = 3
+        same_realm_aliases_are_soft = true
+
+[logging]
+	kdc = 0-/FILE:@objdir@/messages.log
+	default = 0-/FILE:@objdir@/messages.log
+
+include @srcdirabs@/missing-krb5.conf

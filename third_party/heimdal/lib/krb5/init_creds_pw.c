@@ -579,15 +579,17 @@ get_init_creds_common(krb5_context context,
     else
 	ctx->runflags.change_password_prompt = ctx->prompter != NULL;
 
-    if (options->opt_private->fast_armor_ccache_name) {
-	/* Open the caller-supplied FAST ccache and set the caller flags */
-	ret = krb5_cc_resolve(context, options->opt_private->fast_armor_ccache_name,
-			      &ctx->fast_state.armor_ccache);
-	if (ret)
-	    goto out;
-    }
+    if (options->opt_private) {
+	if (options->opt_private->fast_armor_ccache_name) {
+	    /* Open the caller-supplied FAST ccache and set the caller flags */
+	    ret = krb5_cc_resolve(context, options->opt_private->fast_armor_ccache_name,
+				  &ctx->fast_state.armor_ccache);
+	    if (ret)
+		goto out;
+	}
 
-    ctx->fast_state.flags = options->opt_private->fast_flags;
+	ctx->fast_state.flags = options->opt_private->fast_flags;
+    }
 
     /*
      * If FAST is required with a real credential cache, then the KDC
@@ -3165,15 +3167,15 @@ init_creds_step(krb5_context context,
 	    memset(&ctx->md, 0, sizeof(ctx->md));
 
 	    if (ctx->error.e_data) {
-		KERB_ERROR_DATA kerb_error_data;
+		KERB_ERROR_DATA error_data;
 		krb5_error_code ret2;
 
-		memset(&kerb_error_data, 0, sizeof(kerb_error_data));
+		memset(&error_data, 0, sizeof(error_data));
 
 		/* First try to decode the e-data as KERB-ERROR-DATA. */
 		ret2 = decode_KERB_ERROR_DATA(ctx->error.e_data->data,
 					      ctx->error.e_data->length,
-					      &kerb_error_data,
+					      &error_data,
 					      &len);
 		if (ret2) {
 		    /* That failed, so try to decode it as METHOD-DATA. */
@@ -3191,10 +3193,10 @@ init_creds_step(krb5_context context,
 		    }
 		} else if (len != ctx->error.e_data->length) {
 		    /* Trailing data — just ignore the error. */
-		    free_KERB_ERROR_DATA(&kerb_error_data);
+		    free_KERB_ERROR_DATA(&error_data);
 		} else {
 		    /* OK. */
-		    free_KERB_ERROR_DATA(&kerb_error_data);
+		    free_KERB_ERROR_DATA(&error_data);
 		}
 	    }
 

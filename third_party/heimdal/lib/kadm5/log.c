@@ -2720,7 +2720,7 @@ kadm5_log_signal_socket_info(krb5_context context,
 
     memset(&hints, 0, sizeof(hints));
 
-    hints.ai_flags = AI_NUMERICHOST;
+    hints.ai_flags = AI_NUMERICHOST|AI_NUMERICSERV;
     if (server_end)
 	hints.ai_flags |= AI_PASSIVE;
     hints.ai_family = AF_INET;

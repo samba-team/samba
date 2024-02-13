@@ -267,11 +267,11 @@ eval_kinit(heim_dict_t o)
 
 	ret = krb5_get_init_creds_opt_set_fast_ccache(kdc_context, opt, fast_cc);
 	if (ret)
-	    krb5_err(kdc_context, 1, ret, "krb5_get_init_creds_set_fast_ccache");
+	    krb5_err(kdc_context, 1, ret, "krb5_get_init_creds_opt_set_fast_ccache");
 
 	ret = krb5_get_init_creds_opt_set_fast_flags(kdc_context, opt, KRB5_FAST_REQUIRED|KRB5_FAST_KDC_VERIFIED);
 	if (ret)
-	    krb5_err(kdc_context, 1, ret, "krb5_get_init_creds_set_fast_ccache");
+	    krb5_err(kdc_context, 1, ret, "krb5_get_init_creds_opt_set_fast_flags");
 
 	fast_cc = NULL;
     }

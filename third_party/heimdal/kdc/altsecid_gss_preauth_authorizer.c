@@ -167,6 +167,13 @@ ad_connect(krb5_context context,
     } *s, *servers = NULL;
     size_t i, num_servers = 0;
 
+    if (krb5_config_get_bool(context, NULL, "libdefaults", "block_dns",
+	    NULL)) {
+	ret = KRB5KDC_ERR_SVC_UNAVAILABLE;
+        krb5_set_error_message(context, ret, "DNS blocked when finding AD DC");
+	return ret;
+    }
+
     {
         struct rk_dns_reply *r;
         struct rk_resource_record *rr;

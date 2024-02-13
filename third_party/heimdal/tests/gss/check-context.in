@@ -76,41 +76,33 @@ rm -f mkey.file*
 > messages.log
 
 echo Creating database
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R} || exit 1
-
 # add both lucid and lucid.test.h5l.se to simulate aliases
-${kadmin} add -p p1 --use-defaults host/lucid.test.h5l.se@${R} || exit 1
-${kadmin} ext -k ${keytab} host/lucid.test.h5l.se@${R} || exit 1
-
-${kadmin} add -p p1 --use-defaults host/ok-delegate.test.h5l.se@${R} || exit 1
-${kadmin} mod --attributes=+ok-as-delegate host/ok-delegate.test.h5l.se@${R} || exit 1
-${kadmin} ext -k ${keytab} host/ok-delegate.test.h5l.se@${R} || exit 1
-
-
-${kadmin} add -p p1 --use-defaults host/short@${R} || exit 1
-${kadmin} mod --alias=host/long.test.h5l.se@${R} host/short@${R} || exit 1
 # XXX ext should ext aliases too
-${kadmin} ext -k ${keytab} host/short@${R} || exit 1
+${kadmin} <<EOF || exit 1
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R}
+add -p p1 --use-defaults host/lucid.test.h5l.se@${R}
+ext -k ${keytab} host/lucid.test.h5l.se@${R}
+add -p p1 --use-defaults host/ok-delegate.test.h5l.se@${R}
+mod --attributes=+ok-as-delegate host/ok-delegate.test.h5l.se@${R}
+ext -k ${keytab} host/ok-delegate.test.h5l.se@${R}
+add -p p1 --use-defaults host/short@${R}
+mod --alias=host/long.test.h5l.se@${R} host/short@${R}
+ext -k ${keytab} host/short@${R}
+EOF
 ${ktutil} -k ${keytab} rename --no-delete host/short@${R} host/long.test.h5l.se@${R} || exit 1
 
-${kadmin} add -p kaka --use-defaults digest/${R}@${R} || exit 1
-
-${kadmin} add -p u1 --use-defaults user1@${R} || exit 1
-${kadmin} mod --alias=user1.alias user1@${R} || exit 1
-
 # Create a server principal with no AES
-${kadmin} add -p p1 --use-defaults host/no-aes.test.h5l.se@${R} || exit 1
-${kadmin} get host/no-aes.test.h5l.se@${R} > tempfile || exit 1
-${kadmin} del_enctype host/no-aes.test.h5l.se@${R} \
-    aes256-cts-hmac-sha1-96 aes128-cts-hmac-sha1-96 || exit 1
-${kadmin} ext -k ${keytab} host/no-aes.test.h5l.se@${R} || exit 1
+${kadmin} <<EOF || exit 1
+add -p kaka --use-defaults digest/${R}@${R}
+add -p u1 --use-defaults user1@${R}
+mod --alias=user1.alias user1@${R}
+add -p p1 --use-defaults host/no-aes.test.h5l.se@${R}
+del_enctype host/no-aes.test.h5l.se@${R} aes256-cts-hmac-sha1-96 aes128-cts-hmac-sha1-96
+ext -k ${keytab} host/no-aes.test.h5l.se@${R}
+check ${R}
+EOF
 
-echo "Doing database check"
-${kadmin} check ${R} || exit 1
+${kadmin} get host/no-aes.test.h5l.se@${R} > tempfile || exit 1
 
 echo u1 > ${objdir}/foopassword
 
@@ -118,7 +110,14 @@ echo Starting kdc
 ${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 
-trap "kill -9 ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
+cleanup() {
+    echo signal killing kdc
+    kill -9 ${kdcpid} 2>/dev/null
+    trap '' EXIT INT TERM
+    cat messages.log
+    exit 1
+}
+trap cleanup EXIT INT TERM
 
 testfailed="echo test failed; cat messages.log; exit 1"
 

@@ -986,14 +986,14 @@ get_new_tickets(krb5_context context,
 
 	ret = krb5_get_init_creds_opt_set_fast_ccache(context, opt, fastid);
 	if (ret) {
-	    krb5_warn(context, ret, "krb5_init_creds_set_fast_ccache");
+	    krb5_warn(context, ret, "krb5_get_init_creds_opt_set_fast_ccache");
 	    goto out;
 	}
 
 	ret = krb5_get_init_creds_opt_set_fast_flags(context, opt,
 						 KRB5_FAST_REQUIRED);
 	if (ret) {
-	    krb5_warn(context, ret, "krb5_init_creds_set_fast_flags");
+	    krb5_warn(context, ret, "krb5_get_init_creds_opt_set_fast_flags");
 	    goto out;
 	}
     }

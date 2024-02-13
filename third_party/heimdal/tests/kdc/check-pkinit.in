@@ -96,24 +96,18 @@ rm -f mkey.file*
 > messages.log
 
 echo Creating database
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R} || exit 1
-
-${kadmin} modify --max-ticket-life=5d krbtgt/${R}@${R} || exit 1
-${kadmin} add -p foo --use-defaults foo@${R} || exit 1
-${kadmin} add -p bar --use-defaults bar@${R} || exit 1
-${kadmin} add -p baz --use-defaults baz@${R} || exit 1
-${kadmin} add -p foo --use-defaults host/server.test.h5l.se@${R} || exit 1
+${kadmin} <<EOF || exit 1
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R}
+modify --max-ticket-life=5d krbtgt/${R}@${R}
+add -p foo --use-defaults foo@${R}
+add -p bar --use-defaults bar@${R}
+add -p baz --use-defaults baz@${R}
+add -p foo --use-defaults host/server.test.h5l.se@${R}
+modify --pkinit-acl="CN=baz,DC=test,DC=h5l,DC=se" baz@${R}
+add -p kaka --use-defaults ${server}@${R}
+check ${R}
+EOF
 ${kadmin} modify --alias=baz2\\@test.h5l.se@${R} baz@${R} || exit 1
-${kadmin} modify --pkinit-acl="CN=baz,DC=test,DC=h5l,DC=se" baz@${R} || exit 1
-
-${kadmin} add -p kaka --use-defaults ${server}@${R} || exit 1
-
-echo "Doing database check"
-${kadmin} check ${R} || exit 1
 
 # XXX Do not use committed, in-tree private keys or certificates!
 # XXX Add hxtool command to generate a private key w/o generating a CSR
@@ -207,7 +201,15 @@ KRB5_CONFIG="${objdir}/krb5-pkinit2.conf"
 ${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 
-trap 'kill -9 ${kdcpid}; echo signal killing kdc; cat ca.crt kdc.crt pkinit.crt pkinit-synthetic.crt; exit 1;' EXIT
+cleanup() {
+    echo signal killing kdc
+    kill -9 ${kdcpid}
+    trap '' EXIT INT TERM
+    cat messages.log
+    cat ca.crt kdc.crt pkinit.crt pkinit-synthetic.crt
+    exit 1
+}
+trap cleanup EXIT INT TERM
 
 ec=0
 

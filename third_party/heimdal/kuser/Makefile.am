@@ -26,6 +26,7 @@ libexec_PROGRAMS = kdigest kimpersonate
 
 noinst_PROGRAMS = kverify kdecode_ticket generate-requests
 
+# sync with kinit_auditdns_LDADD in appl/test/Makefile.am
 kinit_LDADD = \
 	$(afs_lib) \
 	$(top_builddir)/lib/krb5/libkrb5.la \

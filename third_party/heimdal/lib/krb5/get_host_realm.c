@@ -116,6 +116,14 @@ dns_find_realm(krb5_context context,
     char **config_labels;
     int i, ret = 0;
 
+    if (krb5_config_get_bool(context, NULL, "libdefaults", "block_dns",
+	    NULL)) {
+	ret = KRB5_KDC_UNREACH;
+        krb5_set_error_message(context, ret,
+	    "Realm lookup failed: DNS blocked");
+	return ret;
+    }
+
     config_labels = krb5_config_get_strings(context, NULL, "libdefaults",
 					    "dns_lookup_realm_labels", NULL);
     if(config_labels != NULL)

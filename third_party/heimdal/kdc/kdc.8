@@ -89,7 +89,24 @@ Makes the kdc listen on port 80 and handle requests encapsulated in HTTP.
 .It Fl P Ar portspec , Fl Fl ports= Ns Ar portspec
 Specifies the set of ports the KDC should listen on.
 It is given as a
-white-space separated list of services or port numbers.
+white-space separated list of ports.
+A port value of
+.Sq +
+indicates that the standard ports should be used.
+Other values should be service names or port numbers as resolved by
+.Xr getservbyname 3 
+(e.g.,
+.Dq kerberos/udp ,
+.Dq kerberos/tcp ,
+.Dq 8088/udp ,
+etc.), or plain numeric port numbers (e.g.,
+.Dq 9088
+).
+Plain numeric port numbers will be used with both UDP and TCP.
+See also the
+.Dq [kdc] ports
+configuration parameter discussion in
+.Xr krb5.conf 5 .
 .It Fl Fl addresses= Ns Ar list of addresses
 The list of addresses to listen for requests on.
 By default, the kdc will listen on all the locally configured
@@ -214,4 +231,5 @@ There should be a way to specify protocol, port, and address triplets,
 not just addresses and protocol, port tuples.
 .Sh SEE ALSO
 .Xr kinit 1 ,
-.Xr krb5.conf 5
+.Xr krb5.conf 5,
+.Xr getservbyname 3

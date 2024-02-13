@@ -50,7 +50,7 @@ static SOCKADDR_IN syslog_hostaddr;
 static SOCKET      syslog_socket = INVALID_SOCKET;
 static char        local_hostname[ MAX_COMPUTERNAME_LENGTH + 1 ];
 
-static char        syslog_hostname[ MAX_COMPUTERNAME_LENGTH + 1 ] = "localhost";
+static char        syslog_hostname[ MAX_COMPUTERNAME_LENGTH + 1 ];
 static unsigned short syslog_port = SYSLOG_PORT;
 
 static int   datagramm_size;

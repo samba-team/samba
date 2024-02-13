@@ -86,16 +86,13 @@ rm -f mkey.file*
 > messages.log
 
 echo Creating database
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R} || exit 1
-
-${kadmin} add -p foo --use-defaults ${server}@${R} || exit 1
-${kadmin} add -p foo --use-defaults foo@${R} || exit 1
-${kadmin} ext -k ${keytab} foo@${R} || exit 1
-${kadmin} ext -k ${keytab} ${server}@${R} || exit 1
+${kadmin} <<EOF || exit 1
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R}
+add -p foo --use-defaults ${server}@${R}
+add -p foo --use-defaults foo@${R}
+ext -k ${keytab} foo@${R}
+ext -k ${keytab} ${server}@${R}
+EOF
 
 echo "password"
 ${kdc_tester} ${srcdir}/kdc-tester1.json > out-log 2>&1 || exit 1

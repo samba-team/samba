@@ -1670,7 +1670,7 @@ hx509_request_print(hx509_context context, hx509_request req, FILE *f)
         fprintf(f, "  unsupported_critical_extensions_count: %u\n",
                 (unsigned)req->nunsupported_crit);
     }
-    if (req->nunsupported_crit) {
+    if (req->nunsupported_opt) {
         fprintf(f, "  unsupported_optional_extensions_count: %u\n",
                 (unsigned)req->nunsupported_opt);
     }

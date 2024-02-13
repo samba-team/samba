@@ -61,6 +61,11 @@ open_socket(krb5_context context, const char *hostname, const char *port)
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
+    if (krb5_config_get_bool(context, NULL, "libdefaults", "block_dns",
+	    NULL)) {
+	hints.ai_flags &= ~AI_CANONNAME;
+	hints.ai_flags |= AI_NUMERICHOST|AI_NUMERICSERV;
+    }
     error = getaddrinfo (hostname, port, &hints, &ai);
     if (error) {
 	warnx ("%s: %s", hostname, gai_strerror(error));

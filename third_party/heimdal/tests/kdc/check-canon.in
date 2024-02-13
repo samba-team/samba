@@ -68,33 +68,29 @@ rm -f mkey.file*
 echo "Creating database"
 initflags="init --realm-max-ticket-life=1day --realm-max-renewable-life=1month"
 
-${kadmin} ${initflags} ${R1} || exit 1
-${kadmin} ${initflags} ${R2} || exit 1
-${kadmin} ${initflags} ${R3} || exit 1
-
-${kadmin} add -p foo --use-defaults foo@${R1} || exit 1
-
-${kadmin} add -p cross1 --use-defaults krbtgt/${R1}@${R2} || exit 1
-${kadmin} add -p cross2 --use-defaults krbtgt/${R2}@${R1} || exit 1
-${kadmin} add -p cross3 --use-defaults krbtgt/${R3}@${R1} || exit 1
-${kadmin} add -p cross4 --use-defaults krbtgt/${R1}@${R3} || exit 1
-${kadmin} add -p cross5 --use-defaults krbtgt/${R3}@${R2} || exit 1
-${kadmin} add -p cross6 --use-defaults krbtgt/${R2}@${R3} || exit 1
-
-${kadmin} add -p foo --use-defaults host/t1@${R1} || exit 1
-${kadmin} add -p foo --use-defaults host/t2@${R2} || exit 1
-${kadmin} add -p foo --use-defaults host/t3@${R3} || exit 1
-${kadmin} add -p foo --use-defaults host/t11.test1.h5l.se@${R1} || exit 1
-${kadmin} add -p foo --use-defaults host/t12.test1.h5l.se@${R2} || exit 1
-${kadmin} add -p foo --use-defaults host/t22.test2.h5l.se@${R2} || exit 1
-${kadmin} add -p foo --use-defaults host/t23.test2.h5l.se@${R3} || exit 1
-${kadmin} add -p foo --use-defaults host/t33.test3.h5l.se@${R3} || exit 1
-
-
-echo "Doing database check"
-${kadmin} check ${R1} || exit 1
-${kadmin} check ${R2} || exit 1
-${kadmin} check ${R3} || exit 1
+${kadmin} <<EOF || exit 1
+${initflags} ${R1}
+${initflags} ${R2}
+${initflags} ${R3}
+add -p foo --use-defaults foo@${R1}
+add -p cross1 --use-defaults krbtgt/${R1}@${R2}
+add -p cross2 --use-defaults krbtgt/${R2}@${R1}
+add -p cross3 --use-defaults krbtgt/${R3}@${R1}
+add -p cross4 --use-defaults krbtgt/${R1}@${R3}
+add -p cross5 --use-defaults krbtgt/${R3}@${R2}
+add -p cross6 --use-defaults krbtgt/${R2}@${R3}
+add -p foo --use-defaults host/t1@${R1}
+add -p foo --use-defaults host/t2@${R2}
+add -p foo --use-defaults host/t3@${R3}
+add -p foo --use-defaults host/t11.test1.h5l.se@${R1}
+add -p foo --use-defaults host/t12.test1.h5l.se@${R2}
+add -p foo --use-defaults host/t22.test2.h5l.se@${R2}
+add -p foo --use-defaults host/t23.test2.h5l.se@${R3}
+add -p foo --use-defaults host/t33.test3.h5l.se@${R3}
+check ${R1}
+check ${R2}
+check ${R3}
+EOF
 
 echo foo > ${objdir}/foopassword
 
@@ -102,7 +98,14 @@ echo "Starting kdc" ; > messages.log
 ${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 
-trap "kill -9 ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
+cleanup() {
+    echo signal killing kdc
+    kill -9 ${kdcpid}
+    trap '' EXIT INT TERM
+    cat messages.log
+    exit 1
+}
+trap cleanup EXIT INT TERM
 
 ec=0
 

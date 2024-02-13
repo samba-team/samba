@@ -50,6 +50,14 @@ gethostname_fallback (krb5_context context, krb5_addresses *res)
     char hostname[MAXHOSTNAMELEN];
     struct hostent *hostent;
 
+    if (krb5_config_get_bool(context, NULL, "libdefaults", "block_dns",
+	    NULL)) {
+	ret = ENXIO;
+	krb5_set_error_message(context, ret,
+	    "DNS blocked in gethostname fallback");
+	return ret;
+    }
+
     if (gethostname (hostname, sizeof(hostname))) {
 	ret = errno;
 	krb5_set_error_message(context, ret, "gethostname: %s", strerror(ret));

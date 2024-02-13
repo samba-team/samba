@@ -1117,7 +1117,7 @@ create_client(krb5_socket_t sock, int port, const char *moniker)
 
 	getnameinfo((struct sockaddr *)&c->sa, c->salen,
 		    c->servername, sizeof(c->servername),
-		    NULL, 0, NI_NUMERICHOST);
+		    NULL, 0, NI_NUMERICHOST|NI_NUMERICSERV|NI_NUMERICSCOPE);
     }
 
     c->sock = krb5_storage_from_socket(sock);

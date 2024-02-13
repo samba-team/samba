@@ -70,33 +70,33 @@ rm -f mkey.file*
 > messages.log
 
 echo Creating database
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R} || exit 1
-
 # Test virtual principals, why not
-${kadmin} add_ns --key-rotation-epoch=now       \
-                 --key-rotation-period=15m      \
-                 --max-ticket-life=10d          \
-                 --max-renewable-life=20d       \
-                 --attributes=                  \
-                 "_/test.h5l.se@${R}" || exit 1
-${kadmin} ext -k ${keytab} host/n1.test.h5l.se@${R} || exit 1
-${kadmin} ext -k ${keytab} host/n2.test.h5l.se@${R} || exit 1
-${kadmin} ext -k ${keytab} host/n3.test.h5l.se@${R} || exit 1
+${kadmin} <<EOF || exit 1
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R}
+add_ns --key-rotation-epoch=now      --key-rotation-period=15m     --max-ticket-life=10d         --max-renewable-life=20d      --attributes=                 "_/test.h5l.se@${R}"
+ext -k ${keytab} host/n1.test.h5l.se@${R}
+ext -k ${keytab} host/n2.test.h5l.se@${R}
+ext -k ${keytab} host/n3.test.h5l.se@${R}
+add -p u1 --use-defaults user1@${R}
+check ${R}
+EOF
 
-${kadmin} add -p u1 --use-defaults user1@${R} || exit 1
-
-echo "Doing database check"
-${kadmin} check ${R} || exit 1
+kdcpid=
+n1pid=
+n2pid=
+n3pid=
+cleanup() {
+    echo signal killing kdcs
+    kill -9 ${kdcpid} ${n1pid} ${n2pid} ${n3pid} 2>/dev/null
+    trap '' EXIT INT TERM
+    cat messages.log
+    exit 1
+}
+trap cleanup EXIT INT TERM
 
 echo Starting kdc
 ${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
-
-trap "kill -9 ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
 
 exitcode=0
 
@@ -111,20 +111,19 @@ echo "Starting client 2"
 ${gssmaskn2} --moniker=n2 &
 n2pid=$!
 
-echo "Starting client 3"
-${gssmaskn3} --moniker=n3 &
-n3pid=$!
-
-trap "kill ${kdcpid} ${n1pid} ${n2pid} ${n3pid} 2> /dev/null; echo signal killing kdc and maskar; exit 1;" EXIT
+#echo "Starting client 3"
+#${gssmaskn3} --moniker=n3 &
+#n3pid=$!
 
 sleep 10
 
-#    --wrap-ext
+# XXX Make --wrap-ext work (seems to fail)
+#
+# Add --slaves=localhost:8891 if re-enabling client 3
 
 ${gssmaestro} \
     --slaves=localhost:8889 \
     --slaves=localhost:8890 \
-    --slaves=localhost:8891 \
     --principals=user1@${R}:u1 || exitcode=1
 
 trap "" EXIT

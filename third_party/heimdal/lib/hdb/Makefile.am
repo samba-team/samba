@@ -84,6 +84,11 @@ if versionscript
 libhdb_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
 endif
 
+if HAVE_MITDB
+libhdb_la_LDFLAGS += -L$(MITDB)/lib -Wl,-rpath,$(MITDB)/lib -ldb
+AM_CPPFLAGS += -I$(MITDB)/include
+endif
+
 # test_hdbkeys and test_mkey are not tests -- they are manual test utils
 noinst_PROGRAMS = test_dbinfo test_hdbkeys test_mkey test_namespace test_concurrency
 TESTS = test_dbinfo test_namespace test_concurrency

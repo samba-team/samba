@@ -76,28 +76,16 @@ rm -f mkey.file*
 > messages.log
 
 echo "Creating database for $R"
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R} || exit 1
-
-${kadmin} add -p foo --use-defaults foo@${R} || exit 1
-${kadmin} add -p kaka --use-defaults ${server}@${R} || exit 1
-${kadmin} ext -k ${keytab} ${server}@${R} || exit 1
-
-echo "Creating database for ${R2}"
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R2} || exit 1
-
-${kadmin} add -p foo --use-defaults bar@${R2} || exit 1
-
-echo "Doing database check for ${R} ${R2}"
-${kadmin} check ${R} || exit 1
-${kadmin} check ${R2} || exit 1
+${kadmin} <<EOF || exit 1
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R}
+add -p foo --use-defaults foo@${R}
+add -p kaka --use-defaults ${server}@${R}
+ext -k ${keytab} ${server}@${R}
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R2}
+add -p foo --use-defaults bar@${R2}
+check ${R}
+check ${R2}
+EOF
 
 echo foo > ${objdir}/foopassword
 
@@ -111,7 +99,14 @@ env ${HEIM_MALLOC_DEBUG} ${kpasswdd} --detach ||
     { echo "kpasswdd failed to start"; exit 1; }
 kpasswddpid=`getpid kpasswdd`
 
-trap "kill -9 ${kdcpid} ${kpasswddpid}; echo signal killing kdc; exit \$ec;" EXIT
+cleanup() {
+    echo signal killing kdc and kpasswdd
+    kill -9 ${kdcpid} ${kpasswddpid} 2>/dev/null
+    trap '' EXIT INT TERM
+    cat messages.log
+    exit 1
+}
+trap cleanup EXIT INT TERM
 
 ec=0
 

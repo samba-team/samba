@@ -199,6 +199,9 @@ The default is the result of
 .It Li allow_weak_crypto = Va boolean
 are weak crypto algorithms allowed to be used, among others, DES is
 considered weak.
+.It Li block_dns = Va boolean
+If true, prevent Heimdal from doing any DNS resolution.
+Default is false.
 .It Li clockskew = Va time
 Maximum time differential (in seconds) allowed when comparing
 times.
@@ -795,6 +798,27 @@ Maximum size of a kdc request.
 If set pre-authentication is required.
 .It Li ports = Va "list of ports"
 List of ports the kdc should listen to.
+The list should be double-quoted if it contains more than one
+port specification, and the ports should be separated by space
+or tab characters.
+A port value of
+.Dq +
+means "all the standard ports" for the service, otherwise
+each port value should be of a form resolvable by
+.Xr getservbyname 3
+such as
+.Dq someservicename/tcp ,
+.Dq 12345/udp ,
+or
+.Dq 12345/tcp .
+If a numeric value is given with the
+.Sq /
+and protocol name are missing then that port will be used on
+both, UDP and TCP.
+For example,
+.Dq + 8088/tcp
+means
+.Dq serve on the standard ports and also on port 8088 with TCP .
 .It Li addresses = Va "list of interfaces"
 List of addresses the kdc should bind to.
 .It Li enable-http = Va BOOL
@@ -1472,4 +1496,5 @@ ones.
 .Xr kinit 1 ,
 .Xr krb5_openlog 3 ,
 .Xr strftime 3 ,
+.Xr getservbyname 3 ,
 .Xr verify_krb5_conf 8

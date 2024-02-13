@@ -2,6 +2,8 @@
 
 include $(top_srcdir)/Makefile.am.common
 
+.NOTPARALLEL:
+
 noinst_DATA = krb5.conf krb5.conf-sqlite krb5.conf-db3 krb5.conf-db1 krb5.conf-lmdb
 
 noinst_SCRIPTS = have-db

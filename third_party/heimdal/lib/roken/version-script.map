@@ -76,6 +76,7 @@ HEIMDAL_ROKEN_2.0 {
 		rk_getipnodebyname;
 		rk_getnameinfo;
 		rk_getprogname;
+		rk_getpwnam_r;
 		rk_glob;
 		rk_globfree;
 		rk_hex_decode;

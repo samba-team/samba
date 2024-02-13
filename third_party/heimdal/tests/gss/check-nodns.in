@@ -55,13 +55,13 @@ cache2="FILE:krb5ccfile2"
 nocache="FILE:no-such-cache"
 
 kadmin="${kadmin} -l -r $R"
-kdc="${kdc} --addresses=localhost -P $port"
+kdc="${kdc} --addresses=127.0.0.1 -P $port"
 
-acquire_cred="${TESTS_ENVIRONMENT} ../../lib/gssapi/test_acquire_cred"
+acquire_cred="${TESTS_ENVIRONMENT} ../../lib/gssapi/test_acquire_cred_auditdns"
 test_kcred="${TESTS_ENVIRONMENT} ../../lib/gssapi/test_kcred"
 test_add_store_cred="${TESTS_ENVIRONMENT} ../../lib/gssapi/test_add_store_cred"
 
-KRB5_CONFIG="${objdir}/krb5.conf"
+KRB5_CONFIG="${objdir}/krb5-nodns.conf"
 export KRB5_CONFIG
 
 KRB5_KTNAME="${keytab}"
@@ -76,9 +76,8 @@ rm -f mkey.file*
 
 > messages.log
 
-echo upw > ${objdir}/foopassword
-
 echo Creating database
+echo upw > ${objdir}/foopassword
 ${kadmin} <<EOF || exit 1
 init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R}
 add -p upw --use-defaults user@${R}
@@ -104,7 +103,7 @@ trap cleanup EXIT INT TERM
 exitcode=0
 
 echo "initial ticket"
-${kinit} -c ${cache} --password-file=${objdir}/foopassword user@${R} || exitcode=1
+${kinit_auditdns} -c ${cache} --password-file=${objdir}/foopassword user@${R} || exitcode=1
 
 echo "copy ccache with gss_store_cred"
 # Note we test that the ccache used for storing is token-expanded

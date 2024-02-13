@@ -78,22 +78,26 @@ javac -d "${objdir}" "${srcdir}/../../appl/test/jgssapi_server.java" || \
 echo foo > ${objdir}/foopassword
 
 echo Creating database
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R} || exit 1
-
-${kadmin} add -p foo --use-defaults lha@${R} || exit 1
-${kadmin} modify --attributes=+requires-pre-auth lha@${R} || exit 1
-${kadmin} add -p kaka --use-defaults ${server}@${R} || exit 1
-${kadmin} ext -k ${keytab} ${server}@${R} || exit 1
+${kadmin} <<EOF || exit 1
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R}
+add -p foo --use-defaults lha@${R}
+modify --attributes=+requires-pre-auth lha@${R}
+add -p kaka --use-defaults ${server}@${R}
+ext -k ${keytab} ${server}@${R}
+EOF
 
 echo Starting kdc
 ${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 
-trap "kill -9 ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
+cleanup() {
+    echo signal killing kdc
+    kill -9 ${kdcpid}
+    trap '' EXIT INT TERM
+    cat messages.log
+    exit 1
+}
+trap cleanup EXIT INT TERM
 
 echo "Run init"
 java \

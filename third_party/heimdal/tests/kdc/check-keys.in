@@ -65,15 +65,11 @@ sed -e 's/@keys@/v5/' \
 	${sedvars} < ${CIN} > ${COUT}
 
 echo Creating database
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R} || exit 1
-
-${kadmin} add -p foo --use-defaults ${principal} || exit 1
-
-${kadmin} cpw -p foo ${principal} || exit 1
+${kadmin} <<EOF || exit 1
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R}
+add -p foo --use-defaults ${principal}
+cpw -p foo ${principal}
+EOF
 
 sed -e 's/@keys@/v4/' \
 	${sedvars} < ${CIN} > ${COUT}

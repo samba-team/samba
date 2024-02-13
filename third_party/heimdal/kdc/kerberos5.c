@@ -1061,7 +1061,7 @@ pa_enc_ts_decrypt_kvno(astgs_request_t r,
     krb5_crypto_destroy(r->context, crypto);
     /*
      * Since the user might have several keys with the same
-     * enctype but with diffrent salting, we need to try all
+     * enctype but with different salting, we need to try all
      * the keys with the same enctype.
      */
     if (ret) {
@@ -1143,7 +1143,6 @@ pa_enc_ts_validate(astgs_request_t r, const PA_DATA *pa)
 			       kvno);
 	goto out;
     }
-
     if (ret == KRB5KDC_ERR_PREAUTH_FAILED) {
 	krb5_error_code ret2;
 	const char *msg = krb5_get_error_message(r->context, ret);

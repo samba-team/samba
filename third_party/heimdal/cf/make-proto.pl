@@ -4,8 +4,6 @@
 use Getopt::Std;
 use File::Compare;
 
-use JSON::PP
-
 my $comment = 0;
 my $doxygen = 0;
 my $funcdoc = 0;
@@ -67,6 +65,8 @@ if($opt_m) {
 }
 
 if($opt_x) {
+    require JSON::PP;
+
     my $EXP;
     local $/;
     open(EXP, '<', $opt_x) || die "open ${opt_x}";

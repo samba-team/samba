@@ -202,6 +202,11 @@ check_host(krb5_context context, const char *path, char *data)
 	defport = tmp;
 	snprintf(service, sizeof(service), "%u", defport);
     }
+    if (krb5_config_get_bool(context, NULL, "libdefaults", "block_dns",
+	    NULL)) {
+	hints.ai_flags &= ~AI_CANONNAME;
+	hints.ai_flags |= AI_NUMERICHOST|AI_NUMERICSERV;
+    }
     ret = getaddrinfo(hostname, service, &hints, &ai);
     if (ret == EAI_SERVICE && !isdigit((unsigned char)service[0])) {
 	snprintf(service, sizeof(service), "%u", defport);
@@ -395,6 +400,7 @@ struct entry v4_name_convert_entries[] = {
 struct entry libdefaults_entries[] = {
     { "accept_null_addresses", krb5_config_string, check_boolean, 0 },
     { "allow_weak_crypto", krb5_config_string, check_boolean, 0 },
+    { "block_dns", krb5_config_string, check_boolean, 0 },
     { "capath", krb5_config_list, all_strings, 1 },
     { "ccapi_library", krb5_config_string, NULL, 0 },
     { "check_pac", krb5_config_string, check_boolean, 0 },

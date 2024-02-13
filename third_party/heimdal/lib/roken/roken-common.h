@@ -252,6 +252,14 @@
 #endif
 
 /*
+ * NI_NUMERICSCOPE is still missing from glibc as of 2024:
+ * https://sourceware.org/bugzilla/show_bug.cgi?id=14102
+ */
+#ifndef	NI_NUMERICSCOPE
+#define	NI_NUMERICSCOPE		0
+#endif
+
+/*
  * constants for getnameinfo
  */
 

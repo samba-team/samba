@@ -273,6 +273,4 @@ for mech in spnego spnegoiov; do
 
 done
 
-trap "" EXIT
-
 exit $exitcode

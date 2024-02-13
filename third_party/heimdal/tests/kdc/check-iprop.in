@@ -225,18 +225,14 @@ rm -f messages.log messages.log
 > messages.log2
 
 echo Creating database
-${kadmin} -l \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R} || exit 1
-
-${kadmin} -l add -p foo --use-defaults user@${R} || exit 1
-
-${kadmin} -l add --random-key --use-defaults iprop/localhost@${R} || exit 1
-${kadmin} -l ext -k ${keytab} iprop/localhost@${R} || exit 1
-${kadmin} -l add --random-key --use-defaults iprop/slave.test.h5l.se@${R} || exit 1
-${kadmin} -l ext -k ${keytab} iprop/slave.test.h5l.se@${R} || exit 1
+${kadmin} -l <<EOF || exit 1
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R}
+add -p foo --use-defaults user@${R}
+add --random-key --use-defaults iprop/localhost@${R}
+ext -k ${keytab} iprop/localhost@${R}
+add --random-key --use-defaults iprop/slave.test.h5l.se@${R}
+ext -k ${keytab} iprop/slave.test.h5l.se@${R}
+EOF
 
 echo foo > ${objdir}/foopassword
 
@@ -307,11 +303,12 @@ cleanup() {
     test -n "$ipds" && kill -9 $ipds        >/dev/null 2>/dev/null
     test -n "$ipds2" && kill -9 $ipds2      >/dev/null 2>/dev/null
     test -n "$kdcpid" && kill -9 $kdcpid    >/dev/null 2>/dev/null
+    trap '' EXIT INT TERM
     tail messages.log
     tail iprop-stats
     exit 1
 }
-trap cleanup EXIT
+trap cleanup EXIT INT TERM
 
 echo Starting kdc ; > messages.log
 ${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }

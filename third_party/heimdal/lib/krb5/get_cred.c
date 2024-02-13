@@ -719,14 +719,14 @@ get_cred_kdc(krb5_context context,
 	memset(&md, 0, sizeof(md));
 
 	if (rep.error.e_data) {
-	    KERB_ERROR_DATA kerb_error_data;
+	    KERB_ERROR_DATA error_data;
 
-	    memset(&kerb_error_data, 0, sizeof(kerb_error_data));
+	    memset(&error_data, 0, sizeof(error_data));
 
 	    /* First try to decode the e-data as KERB-ERROR-DATA. */
 	    ret = decode_KERB_ERROR_DATA(rep.error.e_data->data,
 					 rep.error.e_data->length,
-					 &kerb_error_data,
+					 &error_data,
 					 &len);
 	    if (ret) {
 		/* That failed, so try to decode it as METHOD-DATA. */
@@ -740,10 +740,10 @@ get_cred_kdc(krb5_context context,
 		}
 	    } else if (len != rep.error.e_data->length) {
 		/* Trailing data — just ignore the error. */
-		free_KERB_ERROR_DATA(&kerb_error_data);
+		free_KERB_ERROR_DATA(&error_data);
 	    } else {
 		/* OK. */
-		free_KERB_ERROR_DATA(&kerb_error_data);
+		free_KERB_ERROR_DATA(&error_data);
 	    }
 	}
 

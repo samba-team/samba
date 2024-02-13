@@ -439,6 +439,11 @@ krb5_krbhst_get_addrinfo(krb5_context context, krb5_krbhst_info *host,
 	snprintf (portstr, sizeof(portstr), "%d", host->port);
 	make_hints(&hints, host->proto);
 
+	if (krb5_config_get_bool(context, NULL, "libdefaults", "block_dns",
+		NULL)) {
+	    hints.ai_flags &= ~AI_CANONNAME;
+	    hints.ai_flags |= AI_NUMERICHOST|AI_NUMERICSERV;
+	}
 	ret = getaddrinfo(host->hostname, portstr, &hints, &host->ai);
 	if (ret) {
 	    ret = krb5_eai_to_heim_errno(ret, errno);
@@ -559,6 +564,11 @@ fallback_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
 
     make_hints(&hints, proto);
     snprintf(portstr, sizeof(portstr), "%d", port);
+    if (krb5_config_get_bool(context, NULL, "libdefaults", "block_dns",
+	    NULL)) {
+	hints.ai_flags &= ~AI_CANONNAME;
+	hints.ai_flags |= AI_NUMERICHOST|AI_NUMERICSERV;
+    }
     ret = getaddrinfo(host, portstr, &hints, &ai);
     if (ret) {
 	/* no more hosts, so we're done here */
@@ -655,7 +665,7 @@ add_locate(void *ctx, int type, struct sockaddr *addr)
     portnum = socket_get_port(addr);
 
     ret = getnameinfo(addr, socklen, host, sizeof(host), port, sizeof(port),
-		      NI_NUMERICHOST|NI_NUMERICSERV);
+		      NI_NUMERICHOST|NI_NUMERICSERV|NI_NUMERICSCOPE);
     if (ret != 0)
 	return 0;
 
@@ -727,6 +737,13 @@ plugin_get_hosts(krb5_context context,
 {
     struct plctx ctx = { type, kd, 0 };
 
+    /*
+     * XXX Need a way to pass this through -- unsure if any of this is
+     * useful without DNS, though.
+     */
+    if (krb5_config_get_bool(context, NULL, "libdefaults", "block_dns", NULL))
+	return;
+
     if (_krb5_homedir_access(context))
 	ctx.flags |= KRB5_PLF_ALLOW_HOMEDIR;
 
@@ -787,7 +804,9 @@ kdc_get_next(krb5_context context,
 	return KRB5_KDC_UNREACH;
     }
 
-    if(context->srv_lookup) {
+    if (!krb5_config_get_bool(context, NULL, "libdefaults", "block_dns",
+	    NULL) &&
+	context->srv_lookup) {
 	if(kd->sitename && (kd->flags & KD_SITE_SRV_TCP) == 0) {
 	    srv_get_hosts(context, kd, kd->sitename, "tcp", "kerberos");
 	    kd->flags |= KD_SITE_SRV_TCP;
@@ -859,7 +878,9 @@ admin_get_next(krb5_context context,
 	return KRB5_KDC_UNREACH;
     }
 
-    if(context->srv_lookup) {
+    if (!krb5_config_get_bool(context, NULL, "libdefaults", "block_dns",
+	    NULL) &&
+	context->srv_lookup) {
 	if((kd->flags & KD_SRV_TCP) == 0) {
 	    srv_get_hosts(context, kd, NULL, "tcp", kd->srv_label);
 	    kd->flags |= KD_SRV_TCP;
@@ -913,7 +934,9 @@ kpasswd_get_next(krb5_context context,
 	return KRB5_KDC_UNREACH;
     }
 
-    if(context->srv_lookup) {
+    if (!krb5_config_get_bool(context, NULL, "libdefaults", "block_dns",
+	    NULL) &&
+	context->srv_lookup) {
 	if((kd->flags & KD_SRV_UDP) == 0) {
 	    srv_get_hosts(context, kd, NULL, "udp", kd->srv_label);
 	    kd->flags |= KD_SRV_UDP;

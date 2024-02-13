@@ -224,8 +224,9 @@ cleanup() {
         { echo signal killing kadmind; kill -9 "$kadmindpid"; }
     test -n "$kadmind2pid" &&
         { echo signal killing kadmind; kill -9 "$kadmind2pid"; }
+    trap '' EXIT INT TERM
 }
-trap cleanup EXIT
+trap cleanup EXIT INT TERM
 
 rm -f extracted_keytab
 

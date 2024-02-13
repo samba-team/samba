@@ -84,24 +84,16 @@ rm -f mkey.file*
 > messages.log
 
 echo Creating database
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R} || exit 1
-
-${kadmin} add -p p1 --use-defaults host/host.test.h5l.se@${R} || exit 1
-${kadmin} ext -k ${keytab} host/host.test.h5l.se@${R} || exit 1
-
-${kadmin} add -p kaka --use-defaults digest/${R}@${R} || exit 1
-
-${kadmin} add -p ds --use-defaults digestserver@${R} || exit 1
-${kadmin} modify --attributes=+allow-digest digestserver@${R} || exit 1
-
-${kadmin} add -p u1 --use-defaults user1@${R} || exit 1
-
-echo "Doing database check"
-${kadmin} check ${R} || exit 1
+${kadmin} <<EOF || exit 1
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R}
+add -p p1 --use-defaults host/host.test.h5l.se@${R}
+ext -k ${keytab} host/host.test.h5l.se@${R}
+add -p kaka --use-defaults digest/${R}@${R}
+add -p ds --use-defaults digestserver@${R}
+modify --attributes=+allow-digest digestserver@${R}
+add -p u1 --use-defaults user1@${R}
+check ${R}
+EOF
 
 echo u1 > ${objdir}/foopassword
 echo ds > ${objdir}/barpassword
@@ -110,7 +102,14 @@ echo Starting kdc
 ${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
 
-trap "kill -9 ${kdcpid}; echo signal killing kdc; exit 1;" EXIT
+cleanup() {
+    echo signal killing kdc
+    kill -9 ${kdcpid}
+    trap '' EXIT INT TERM
+    cat messages.log
+    exit 1
+}
+trap cleanup EXIT INT TERM
 
 exitcode=0
 

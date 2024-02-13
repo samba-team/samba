@@ -91,7 +91,19 @@ done
 
 sh ${objdir}/slapd-init || exit 1
 
-trap "sh ${srcdir}/slapd-stop ; exit 1;" EXIT
+kdcpid=
+cleanup() {
+    if test -n "$kdcpid"; then
+        echo signal killing kdc
+        kill -9 ${kdcpid} 2>/dev/null
+    fi
+    echo Stopping slapd
+    sh ${srcdir}/slapd-stop
+    trap '' EXIT INT TERM
+    cat messages.log
+    exit 1
+}
+trap cleanup EXIT INT TERM
 
 rm -f current-db*
 
@@ -122,8 +134,6 @@ echo "$foopassword" > ${objdir}/foopassword
 echo Starting kdc
 ${kdc} --detach --testing || { echo "kdc failed to start"; cat messages.log; exit 1; }
 kdcpid=`getpid kdc`
-
-trap "kill ${kdcpid}; echo signal killing kdc; sh ${srcdir}/slapd-stop ; exit 1;" EXIT
 
 ec=0
 

@@ -70,6 +70,11 @@ connect_to_master (krb5_context context, const char *master,
 	port_str = port;
     }
 
+    if (krb5_config_get_bool(context, NULL, "libdefaults", "block_dns",
+	    NULL)) {
+	hints.ai_flags &= ~AI_CANONNAME;
+	hints.ai_flags |= AI_NUMERICHOST|AI_NUMERICSERV;
+    }
     error = getaddrinfo(master, port_str, &hints, &ai);
     if (error) {
 	krb5_warnx(context, "Failed to get address of to %s: %s",
@@ -80,7 +85,8 @@ connect_to_master (krb5_context context, const char *master,
     for (a = ai; a != NULL; a = a->ai_next) {
 	char node[NI_MAXHOST];
 	error = getnameinfo(a->ai_addr, a->ai_addrlen,
-			    node, sizeof(node), NULL, 0, NI_NUMERICHOST);
+			    node, sizeof(node), NULL, 0,
+			    NI_NUMERICHOST|NI_NUMERICSERV|NI_NUMERICSCOPE);
 	if (error)
 	    strlcpy(node, "[unknown-addr]", sizeof(node));
 

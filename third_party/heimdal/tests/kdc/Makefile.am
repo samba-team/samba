@@ -1,5 +1,7 @@
 include $(top_srcdir)/Makefile.am.common
 
+.NOTPARALLEL:
+
 noinst_DATA = \
 	an2ln-db.txt \
 	kdc-tester4.json \

@@ -1210,6 +1210,11 @@ krb5_parse_address(krb5_context context,
     /* if not parsed as numeric address, do a name lookup */
     memset(&hint, 0, sizeof(hint));
     hint.ai_family = AF_UNSPEC;
+    if (krb5_config_get_bool(context, NULL, "libdefaults", "block_dns",
+	    NULL)) {
+	hint.ai_flags &= ~AI_CANONNAME;
+	hint.ai_flags |= AI_NUMERICHOST|AI_NUMERICSERV;
+    }
     error = getaddrinfo (string, NULL, &hint, &ai);
     if (error) {
 	krb5_error_code ret2;

@@ -113,218 +113,143 @@ rm -f mkey.file*
 > messages.log
 
 echo Creating database
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R} || exit 1
+${kadmin} <<EOF || exit 1
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R}
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R2}
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R3}
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R4}
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R6}
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R7}
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R8}
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${H1}
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${H2}
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${H3}
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${H4}
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${RH}
+cpw -r krbtgt/${R}@${R}
+cpw -r krbtgt/${R}@${R}
+cpw -r krbtgt/${R}@${R}
+cpw -r krbtgt/${R}@${R}
+add -p foo --use-defaults foo@${R}
+add -p foo --use-defaults foo/host.${r}@${R}
+add -p foo --use-defaults foo@${R2}
+add -p foo --use-defaults foo@${R3}
+add -p foo --use-defaults foo@${R4}
+add -p foo --use-defaults foo@${R6}
+add -p foo --use-defaults foo@${R7}
+add -p foo --use-defaults foo@${R8}
+add -p foo --use-defaults foo@${H1}
+add -p foo --use-defaults foo/host.${h1}@${H1}
+add -p foo --use-defaults foo@${H2}
+add -p foo --use-defaults foo/host.${h2}@${H2}
+add -p foo --use-defaults foo@${H3}
+add -p foo --use-defaults foo/host.${h3}@${H3}
+add -p foo --use-defaults foo@${H4}
+add -p foo --use-defaults foo/host.${h4}@${H4}
+add -p bar --use-defaults bar@${R}
+add -p foo --use-defaults remove@${R}
+add -p nop --use-defaults ${server}@${R}
+cpw -p bla --keepold ${server}@${R}
+cpw -p kaka --keepold ${server}@${R}
+add -p kaka --use-defaults ${server}-des3@${R}
+add -p kaka --use-defaults kt-des3@${R}
+add -p kaka --use-defaults foo/des3-only@${R}
+add -p kaka --use-defaults bar/des3-only@${R}
+add -p kaka --use-defaults foo/aes-only@${R}
+add -p sens --use-defaults --attributes=disallow-forwardable sensitive@${R}
+add -p foo --use-defaults ${ps}
+modify --attributes=+trusted-for-delegation ${ps}
+modify --constrained-delegation=${server} ${ps}
+ext -k ${keytab} ${server}@${R}
+ext -k ${keytab} ${ps}
+add -p kaka --use-defaults ${server2}@${R2}
+ext -k ${keytab} ${server2}@${R2}
+add -p foo  --use-defaults WELLKNOWN/REFERRALS/TARGET@${R5}
+add_alias WELLKNOWN/REFERRALS/TARGET@${R5} ${server3}@${R}
+add_alias WELLKNOWN/REFERRALS/TARGET@${R5} ${namespace}@${R}
+add -p kaka --use-defaults ${serverip}@${R}
+ext -k ${keytab} ${serverip}@${R}
+add -p kaka --use-defaults ${serveripname}@${R}
+ext -k ${keytab} ${serveripname}@${R}
+modify --alias=${serveripname2}@${R} ${serveripname}@${R}
+add -p foo --use-defaults remove2@${R2}
+add -p nopac --use-defaults ${server4}@${R2}
+modify --attributes=+no-auth-data-reqd ${server4}@${R2}
+ext -k ${keytab} ${server4}@${R2}
+add -p kaka --use-defaults ${alias1}@${R}
+ext -k ${keytab} ${alias1}@${R}
+modify --alias=${alias2}@${R} ${alias1}@${R}
+add -p cross1 --use-defaults krbtgt/${R2}@${R}
+modify --attributes=+no-auth-data-reqd krbtgt/${R2}@${R}
+add -p cross2 --use-defaults krbtgt/${R}@${R2}
+add -p cross1 --use-defaults krbtgt/${R3}@${R2}
+add -p cross2 --use-defaults krbtgt/${R2}@${R3}
+add -p cross1 --use-defaults krbtgt/${R4}@${R2}
+add -p cross2 --use-defaults krbtgt/${R2}@${R4}
+add -p cross1 --use-defaults krbtgt/${R4}@${R3}
+add -p cross2 --use-defaults krbtgt/${R3}@${R4}
+add -p cross1 --use-defaults krbtgt/${R7}@${R6}
+add -p cross2 --use-defaults krbtgt/${R6}@${R7}
+add -p cross1 --use-defaults krbtgt/${R8}@${R6}
+add -p cross2 --use-defaults krbtgt/${R6}@${R8}
+add -p cross1 --use-defaults krbtgt/${H1}@${R}
+add -p cross2 --use-defaults krbtgt/${R}@${H1}
+add -p cross1 --use-defaults krbtgt/${H2}@${R}
+add -p cross2 --use-defaults krbtgt/${R}@${H2}
+add -p cross1 --use-defaults krbtgt/${H3}@${H2}
+add -p cross2 --use-defaults krbtgt/${H2}@${H3}
+add -p cross1 --use-defaults krbtgt/${H3}@${H4}
+add -p cross2 --use-defaults krbtgt/${H4}@${H3}
+add -p foo --use-defaults pw-expire@${R}
+modify --pw-expiration-time=+1day  pw-expire@${R}
+add -p foo --use-defaults pw-expired@${R}
+modify --pw-expiration-time=2012-06-12  pw-expired@${R}
+add -p foo --use-defaults account-expired@${R}
+modify --expiration-time=2012-06-12  account-expired@${R}
+add -p foo --use-defaults foo@${RH}
+EOF
 
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R2} || exit 1
-
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R3} || exit 1
-
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R4} || exit 1
-
-${kadmin5} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R5} || exit 1
-
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R6} || exit 1
-
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R7} || exit 1
-
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${R8} || exit 1
-
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${H1} || exit 1
-
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${H2} || exit 1
-
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${H3} || exit 1
-
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${H4} || exit 1
-
-${kadmin} \
-    init \
-    --realm-max-ticket-life=1day \
-    --realm-max-renewable-life=1month \
-    ${RH} || exit 1
-
-${kadmin} cpw -r krbtgt/${R}@${R} || exit 1
-${kadmin} cpw -r krbtgt/${R}@${R} || exit 1
-${kadmin} cpw -r krbtgt/${R}@${R} || exit 1
-${kadmin} cpw -r krbtgt/${R}@${R} || exit 1
-
-${kadmin} add -p foo --use-defaults foo@${R} || exit 1
-${kadmin} add -p foo --use-defaults foo/host.${r}@${R} || exit 1
-${kadmin} add -p foo --use-defaults foo@${R2} || exit 1
-${kadmin} add -p foo --use-defaults foo@${R3} || exit 1
-${kadmin} add -p foo --use-defaults foo@${R4} || exit 1
-${kadmin5} add -p foo --use-defaults foo@${R5} || exit 1
-${kadmin} add -p foo --use-defaults foo@${R6} || exit 1
-${kadmin} add -p foo --use-defaults foo@${R7} || exit 1
-${kadmin} add -p foo --use-defaults foo@${R8} || exit 1
-${kadmin} add -p foo --use-defaults foo@${H1} || exit 1
-${kadmin} add -p foo --use-defaults foo/host.${h1}@${H1} || exit 1
-${kadmin} add -p foo --use-defaults foo@${H2} || exit 1
-${kadmin} add -p foo --use-defaults foo/host.${h2}@${H2} || exit 1
-${kadmin} add -p foo --use-defaults foo@${H3} || exit 1
-${kadmin} add -p foo --use-defaults foo/host.${h3}@${H3} || exit 1
-${kadmin} add -p foo --use-defaults foo@${H4} || exit 1
-${kadmin} add -p foo --use-defaults foo/host.${h4}@${H4} || exit 1
-${kadmin} add -p bar --use-defaults bar@${R} || exit 1
-${kadmin} add -p foo --use-defaults remove@${R} || exit 1
-${kadmin} add -p nop --use-defaults ${server}@${R} || exit 1
-${kadmin} cpw -p bla --keepold ${server}@${R} || exit 1
-${kadmin} cpw -p kaka --keepold ${server}@${R} || exit 1
-${kadmin} add -p kaka --use-defaults ${server}-des3@${R} || exit 1
-${kadmin} add -p kaka --use-defaults kt-des3@${R} || exit 1
-${kadmin} add -p kaka --use-defaults foo/des3-only@${R} || exit 1
-${kadmin} add -p kaka --use-defaults bar/des3-only@${R} || exit 1
-${kadmin} add -p kaka --use-defaults foo/aes-only@${R} || exit 1
-
-${kadmin} add -p sens --use-defaults --attributes=disallow-forwardable sensitive@${R} || exit 1
-${kadmin} add -p foo --use-defaults ${ps} || exit 1
-${kadmin} modify --attributes=+trusted-for-delegation ${ps} || exit 1
-${kadmin} modify --constrained-delegation=${server} ${ps} || exit 1
-${kadmin} ext -k ${keytab} ${server}@${R} || exit 1
-${kadmin} ext -k ${keytab} ${ps} || exit 1
+${kadmin5} <<EOF || exit 1
+init --realm-max-ticket-life=1day --realm-max-renewable-life=1month ${R5}
+add -p foo --use-defaults foo@${R5}
+add -p kaka --use-defaults ${server3}@${R5}
+ext -k ${keytab} ${server3}@${R5}
+add -p kaka --use-defaults ${server5}@${R5}
+ext -k ${keytab} ${server5}@${R5}
+EOF
 
 # Note: rps is not trusted-for-delegation
-${kadmin} add -p foo --use-defaults ${rps} || exit 1
-${kadmin} modify --constrained-delegation=${server} ${rps} || exit 1
-${kadmin} ext -k ${keytab} ${rps} || exit 1
-
-${kadmin} add -p kaka --use-defaults ${server2}@${R2} || exit 1
-${kadmin} ext -k ${keytab} ${server2}@${R2} || exit 1
-${kadmin} add -p foo  --use-defaults WELLKNOWN/REFERRALS/TARGET@${R5} || exit 1
-${kadmin} add_alias WELLKNOWN/REFERRALS/TARGET@${R5} ${server3}@${R} || exit 1
-${kadmin5} add -p kaka --use-defaults ${server3}@${R5} || exit 1
-${kadmin5} ext -k ${keytab} ${server3}@${R5} || exit 1
-${kadmin} add_alias WELLKNOWN/REFERRALS/TARGET@${R5} ${namespace}@${R} || exit 1
-${kadmin5} add -p kaka --use-defaults ${server5}@${R5} || exit 1
-${kadmin5} ext -k ${keytab} ${server5}@${R5} || exit 1
-${kadmin} add -p kaka --use-defaults ${serverip}@${R} || exit 1
-${kadmin} ext -k ${keytab} ${serverip}@${R} || exit 1
-${kadmin} add -p kaka --use-defaults ${serveripname}@${R} || exit 1
-${kadmin} ext -k ${keytab} ${serveripname}@${R} || exit 1
-${kadmin} modify --alias=${serveripname2}@${R} ${serveripname}@${R}
-${kadmin} add -p foo --use-defaults remove2@${R2} || exit 1
-
-${kadmin} add -p nopac --use-defaults ${server4}@${R2} || exit 1
-${kadmin} modify --attributes=+no-auth-data-reqd ${server4}@${R2} || exit 1
-${kadmin} ext -k ${keytab} ${server4}@${R2} || exit 1
-
-${kadmin} add -p kaka --use-defaults ${alias1}@${R} || exit 1
-${kadmin} ext -k ${keytab} ${alias1}@${R} || exit 1
-${kadmin} modify --alias=${alias2}@${R} ${alias1}@${R}
-
-${kadmin} add -p cross1 --use-defaults krbtgt/${R2}@${R} || exit 1
-${kadmin} modify --attributes=+no-auth-data-reqd krbtgt/${R2}@${R} || exit 1
-${kadmin} add -p cross2 --use-defaults krbtgt/${R}@${R2} || exit 1
-
-${kadmin} add -p cross1 --use-defaults krbtgt/${R3}@${R2} || exit 1
-${kadmin} add -p cross2 --use-defaults krbtgt/${R2}@${R3} || exit 1
-
-${kadmin} add -p cross1 --use-defaults krbtgt/${R4}@${R2} || exit 1
-${kadmin} add -p cross2 --use-defaults krbtgt/${R2}@${R4} || exit 1
-
-${kadmin} add -p cross1 --use-defaults krbtgt/${R4}@${R3} || exit 1
-${kadmin} add -p cross2 --use-defaults krbtgt/${R3}@${R4} || exit 1
+${kadmin} <<EOF || exit 1
+add -p foo --use-defaults ${rps}
+modify --constrained-delegation=${server} ${rps}
+ext -k ${keytab} ${rps}
+EOF
 
 ${kadmin} add -p cross1 --use-defaults krbtgt/${R5}@${R} || exit 1
 ${kadmin5} add -p cross2 --use-defaults krbtgt/${R}@${R5} || exit 1
-
 ${kadmin5} add -p cross1 --use-defaults krbtgt/${R6}@${R5} || exit 1
 ${kadmin} add -p cross2 --use-defaults krbtgt/${R5}@${R6} || exit 1
-
-${kadmin} add -p cross1 --use-defaults krbtgt/${R7}@${R6} || exit 1
-${kadmin} add -p cross2 --use-defaults krbtgt/${R6}@${R7} || exit 1
-
-${kadmin} add -p cross1 --use-defaults krbtgt/${R8}@${R6} || exit 1
-${kadmin} add -p cross2 --use-defaults krbtgt/${R6}@${R8} || exit 1
-
-${kadmin} add -p cross1 --use-defaults krbtgt/${H1}@${R} || exit 1
-${kadmin} add -p cross2 --use-defaults krbtgt/${R}@${H1} || exit 1
-
-${kadmin} add -p cross1 --use-defaults krbtgt/${H2}@${R} || exit 1
-${kadmin} add -p cross2 --use-defaults krbtgt/${R}@${H2} || exit 1
-
-${kadmin} add -p cross1 --use-defaults krbtgt/${H3}@${H2} || exit 1
-${kadmin} add -p cross2 --use-defaults krbtgt/${H2}@${H3} || exit 1
-
-${kadmin} add -p cross1 --use-defaults krbtgt/${H3}@${H4} || exit 1
-${kadmin} add -p cross2 --use-defaults krbtgt/${H4}@${H3} || exit 1
-
-${kadmin} add -p foo --use-defaults pw-expire@${R} || exit 1
-${kadmin} modify --pw-expiration-time=+1day  pw-expire@${R} || exit 1
-
-${kadmin} add -p foo --use-defaults pw-expired@${R} || exit 1
-${kadmin} modify --pw-expiration-time=2012-06-12  pw-expired@${R} || exit 1
-
-${kadmin} add -p foo --use-defaults account-expired@${R} || exit 1
-${kadmin} modify --expiration-time=2012-06-12  account-expired@${R} || exit 1
-
-${kadmin} add -p foo --use-defaults foo@${RH} || exit 1
 
 echo "Check parser"
 ${kadmin} add -p foo --use-defaults -- -p || exit 1
 ${kadmin} delete -- -p || exit 1
 
 echo "Doing database check"
-${kadmin} check ${R} || exit 1
-${kadmin} check ${R2} || exit 1
-${kadmin} check ${R3} || exit 1
-${kadmin} check ${R4} || exit 1
+${kadmin} <<EOF
+check ${R}
+check ${R2}
+check ${R3}
+check ${R4}
+check ${R6}
+check ${R7}
+check ${R8}
+check ${H1}
+check ${H2}
+check ${H3}
+check ${H4}
+EOF
+
 ${kadmin5} check ${R5} || exit 1
-${kadmin} check ${R6} || exit 1
-${kadmin} check ${R7} || exit 1
-${kadmin} check ${R8} || exit 1
-${kadmin} check ${H1} || exit 1
-${kadmin} check ${H2} || exit 1
-${kadmin} check ${H3} || exit 1
-${kadmin} check ${H4} || exit 1
 
 echo "Extracting enctypes"
 ${ktutil} -k ${keytab} list > tempfile || exit 1
@@ -378,8 +303,14 @@ env ${HEIM_MALLOC_DEBUG} ${kpasswdd} --detach ||
     { echo "kpasswdd failed to start"; exit 1; }
 kpasswddpid=`getpid kpasswdd`
 
-
-trap "kill -9 ${kdcpid} ${kpasswddpid}; echo signal killing kdc kpasswdd; exit 1;" EXIT
+cleanup() {
+    echo signal killing kdc
+    kill -9 ${kdcpid} ${kpasswddpid} 2>/dev/null
+    trap '' EXIT INT TERM
+    cat messages.log
+    exit 1
+}
+trap cleanup EXIT INT TERM
 
 ec=0
 

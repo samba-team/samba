@@ -118,7 +118,7 @@ attr_to_flags(unsigned attr, HDBFlags *flags)
 
 #define CHECK(x) do { if ((x)) goto out; } while(0)
 
-#ifdef HAVE_DB1
+#ifdef HAVE_MITDB
 static krb5_error_code
 mdb_principal2key(krb5_context context,
 		  krb5_const_principal principal,
@@ -134,7 +134,7 @@ mdb_principal2key(krb5_context context,
     key->length = strlen(str) + 1;
     return 0;
 }
-#endif /* HAVE_DB1 */
+#endif /* HAVE_MITDB */
 
 #define KRB5_KDB_SALTTYPE_NORMAL	0
 #define KRB5_KDB_SALTTYPE_V4		1
@@ -675,11 +675,11 @@ mdb_entry2value(krb5_context context, hdb_entry *entry, krb5_data *data)
 }
 #endif
 
-#if HAVE_DB1
+#ifdef HAVE_MITDB
 
 #if defined(HAVE_DB_185_H)
 #include <db_185.h>
-#elif defined(HAVE_DB_H)
+#else
 #include <db.h>
 #endif
 
@@ -1154,7 +1154,7 @@ hdb_mitdb_create(krb5_context context, HDB **db,
     return 0;
 }
 
-#endif /* HAVE_DB1 */
+#endif /* HAVE_MITDB */
 
 /*
 can have any number of princ stanzas.

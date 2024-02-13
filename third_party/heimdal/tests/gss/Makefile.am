@@ -2,9 +2,11 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-noinst_DATA = krb5.conf new_clients_k5.conf mech
+.NOTPARALLEL:
 
-SCRIPT_TESTS = check-basic check-gss check-gssmask check-context check-spnego check-ntlm check-negoex
+noinst_DATA = krb5.conf krb5-nodns.conf new_clients_k5.conf mech
+
+SCRIPT_TESTS = check-basic check-nodns check-gss check-gssmask check-context check-spnego check-ntlm check-negoex
 
 TESTS = $(SCRIPT_TESTS)
 
@@ -45,6 +47,11 @@ check-basic: check-basic.in Makefile
 	chmod +x check-basic.tmp && \
 	mv check-basic.tmp check-basic
 
+check-nodns: check-nodns.in Makefile
+	$(do_subst) < $(srcdir)/check-nodns.in > check-nodns.tmp && \
+	chmod +x check-nodns.tmp && \
+	mv check-nodns.tmp check-nodns
+
 check-ntlm: check-ntlm.in Makefile
 	$(do_subst) < $(srcdir)/check-ntlm.in > check-ntlm.tmp && \
 	chmod +x check-ntlm.tmp && \
@@ -58,6 +65,10 @@ check-negoex: check-negoex.in Makefile
 krb5.conf: krb5.conf.in Makefile
 	$(do_subst) < $(srcdir)/krb5.conf.in > krb5.conf.tmp && \
 	mv krb5.conf.tmp krb5.conf
+
+krb5-nodns.conf: krb5-nodns.conf.in Makefile
+	$(do_subst) < $(srcdir)/krb5-nodns.conf.in > krb5-nodns.conf.tmp && \
+	mv krb5-nodns.conf.tmp krb5-nodns.conf
 
 new_clients_k5.conf: new_clients_k5.conf.in Makefile
 	$(do_subst) < $(srcdir)/new_clients_k5.conf.in > new_clients_k5.conf.tmp && \
@@ -75,12 +86,14 @@ CLEANFILES= \
 	krb5ccfile-ds \
 	server.keytab \
 	krb5.conf \
+	krb5-nodns.conf \
 	new_clients_k5.conf \
 	mech \
 	current-db* \
 	*.log \
 	tempfile \
 	check-basic.tmp \
+	check-nodns.tmp \
 	check-gss.tmp \
 	check-gssmask.tmp \
 	check-spnego.tmp \
@@ -90,6 +103,7 @@ CLEANFILES= \
 EXTRA_DIST = \
 	NTMakefile \
 	check-basic.in \
+	check-nodns.in \
 	check-gss.in \
 	check-gssmask.in \
 	check-spnego.in \
