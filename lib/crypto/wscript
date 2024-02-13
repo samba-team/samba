@@ -35,6 +35,12 @@ def build(bld):
                         NDR_GKDI
                         ''')
 
+    bld.SAMBA_SUBSYSTEM('gmsa',
+                        source='gmsa.c',
+                        deps='''
+                        gkdi
+                        ''')
+
     bld.SAMBA_PYTHON('python_crypto',
                      source='py_crypto.c',
                      deps='gnutls talloc LIBCLI_AUTH',
