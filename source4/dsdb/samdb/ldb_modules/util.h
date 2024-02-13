@@ -30,6 +30,11 @@ struct security_descriptor;
 struct dom_sid;
 struct netlogon_samlogon_response;
 
+enum system_control_strip_critical {
+	SYSTEM_CONTROL_KEEP_CRITICAL,
+	SYSTEM_CONTROL_STRIP_CRITICAL,
+};
+
 #include "librpc/gen_ndr/misc.h"
 #include "librpc/gen_ndr/security.h"
 #include "dsdb/samdb/ldb_modules/util_proto.h"
