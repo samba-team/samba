@@ -62,7 +62,12 @@
 	"accountExpires",			\
 						\
 	/* Needed for RODC rule processing */	\
-	"msDS-KrbTgtLinkBL"
+	"msDS-KrbTgtLinkBL",			\
+						\
+	/* Required for Group Managed Service Accounts. */ \
+	"msDS-ManagedPasswordId",		\
+	"msDS-ManagedPasswordInterval",		\
+	"whenCreated"
 
 #define AUTHN_POLICY_ATTRS                     \
 	/* Required for authentication policies / silos */ \
