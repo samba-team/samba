@@ -636,15 +636,33 @@ static NTSTATUS pdb_samba_dsdb_getsamupriv(struct pdb_samba_dsdb_state *state,
 				    TALLOC_CTX *mem_ctx,
 				    struct ldb_message **msg)
 {
-	static const char * attrs[] = {
-		"lastLogon", "lastLogoff", "pwdLastSet", "accountExpires",
-		"sAMAccountName", "displayName", "homeDirectory",
-		"homeDrive", "scriptPath", "profilePath", "description",
-		"userWorkstations", "comment", "userParameters", "objectSid",
-		"primaryGroupID", "userAccountControl",
-		"msDS-User-Account-Control-Computed", "logonHours",
-		"badPwdCount", "logonCount", "countryCode", "codePage",
-		"unicodePwd", "dBCSPwd", NULL };
+	static const char *attrs[] = {
+		"lastLogon",
+		"lastLogoff",
+		"pwdLastSet",
+		"accountExpires",
+		"sAMAccountName",
+		"displayName",
+		"homeDirectory",
+		"homeDrive",
+		"scriptPath",
+		"profilePath",
+		"description",
+		"userWorkstations",
+		"comment",
+		"userParameters",
+		"objectSid",
+		"primaryGroupID",
+		"userAccountControl",
+		"msDS-User-Account-Control-Computed",
+		"logonHours",
+		"badPwdCount",
+		"logonCount",
+		"countryCode",
+		"codePage",
+		"unicodePwd",
+		"dBCSPwd",
+		NULL};
 
 	int rc = dsdb_search_one(state->ldb, mem_ctx, msg, ldb_get_default_basedn(state->ldb), LDB_SCOPE_SUBTREE, attrs, 0, "%s", filter);
 	if (rc != LDB_SUCCESS) {
