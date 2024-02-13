@@ -28,6 +28,19 @@
 #include "librpc/gen_ndr/misc.h"
 
 struct ldb_message;
+struct ProvRootKey;
+NTSTATUS gkdi_root_key_from_msg(TALLOC_CTX *mem_ctx,
+				const struct GUID root_key_id,
+				const struct ldb_message *const msg,
+				const struct ProvRootKey **const root_key_out);
+
+/*
+ * Calculate an appropriate useStartTime for a root key created at
+ * ‘current_time’.
+ *
+ * This function goes unused.
+ */
+NTTIME gkdi_root_key_use_start_time(const NTTIME current_time);
 
 /*
  * Create and return a new GKDI root key.
@@ -42,5 +55,17 @@ int gkdi_new_root_key(TALLOC_CTX *mem_ctx,
 		      struct GUID *const root_key_id_out,
 		      const struct ldb_message **const root_key_out);
 
+int gkdi_root_key_from_id(TALLOC_CTX *mem_ctx,
+			  struct ldb_context *const ldb,
+			  const struct GUID *const root_key_id,
+			  const struct ldb_message **const root_key_out);
+
+int gkdi_most_recently_created_root_key(
+	TALLOC_CTX *mem_ctx,
+	struct ldb_context *const ldb,
+	const NTTIME current_time,
+	const NTTIME not_after,
+	struct GUID *const root_key_id_out,
+	const struct ldb_message **const root_key_out);
 
 #endif /* DSDB_GMSA_GKDI_H */

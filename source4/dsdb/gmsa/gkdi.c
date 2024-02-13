@@ -34,6 +34,77 @@
 #include "librpc/gen_ndr/gkdi.h"
 #include "librpc/gen_ndr/ndr_gkdi.h"
 
+NTSTATUS gkdi_root_key_from_msg(TALLOC_CTX *mem_ctx,
+				const struct GUID root_key_id,
+				const struct ldb_message *const msg,
+				const struct ProvRootKey **const root_key_out)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	struct ldb_val root_key_data = {};
+	struct KdfAlgorithm kdf_algorithm = {};
+
+	const int version = ldb_msg_find_attr_as_int(msg, "msKds-Version", 0);
+	const NTTIME create_time = samdb_result_nttime(msg,
+						       "msKds-CreateTime",
+						       0);
+	const NTTIME use_start_time = samdb_result_nttime(msg,
+							  "msKds-UseStartTime",
+							  0);
+	const char *domain_id = ldb_msg_find_attr_as_string(msg,
+							    "msKds-DomainID",
+							    NULL);
+
+	{
+		const struct ldb_val *root_key_val = ldb_msg_find_ldb_val(
+			msg, "msKds-RootKeyData");
+		if (root_key_val != NULL) {
+			root_key_data = *root_key_val;
+		}
+	}
+
+	{
+		const char *algorithm_id = ldb_msg_find_attr_as_string(
+			msg, "msKds-KDFAlgorithmID", NULL);
+		const struct ldb_val *kdf_param_val = ldb_msg_find_ldb_val(
+			msg, "msKds-KDFParam");
+		status = kdf_algorithm_from_params(algorithm_id,
+						   kdf_param_val,
+						   &kdf_algorithm);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+	}
+
+	status = ProvRootKey(mem_ctx,
+			     root_key_id,
+			     version,
+			     root_key_data,
+			     create_time,
+			     use_start_time,
+			     domain_id,
+			     kdf_algorithm,
+			     root_key_out);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+out:
+	return status;
+}
+
+/*
+ * Calculate an appropriate useStartTime for a root key created at
+ * ‘current_time’.
+ *
+ * This function goes unused.
+ */
+NTTIME gkdi_root_key_use_start_time(const NTTIME current_time)
+{
+	const NTTIME start_time = gkdi_get_interval_start_time(current_time);
+
+	return start_time + gkdi_key_cycle_duration + gkdi_max_clock_skew;
+}
+
 static int gkdi_create_root_key(TALLOC_CTX *mem_ctx,
 				struct ldb_context *const ldb,
 				const NTTIME current_time,
@@ -499,6 +570,183 @@ int gkdi_new_root_key(TALLOC_CTX *mem_ctx,
 	}
 
 	*root_key_out = talloc_steal(mem_ctx, res->msgs[0]);
+
+out:
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+int gkdi_root_key_from_id(TALLOC_CTX *mem_ctx,
+			  struct ldb_context *const ldb,
+			  const struct GUID *const root_key_id,
+			  const struct ldb_message **const root_key_out)
+{
+	TALLOC_CTX *tmp_ctx = NULL;
+	struct ldb_dn *root_key_dn = NULL;
+	struct ldb_result *res = NULL;
+	int ret = LDB_SUCCESS;
+
+	*root_key_out = NULL;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		ret = ldb_oom(ldb);
+		goto out;
+	}
+
+	root_key_dn = samdb_gkdi_root_key_dn(ldb, tmp_ctx, root_key_id);
+	if (root_key_dn == NULL) {
+		ret = ldb_operr(ldb);
+		goto out;
+	}
+
+	ret = dsdb_search_dn(
+		ldb, tmp_ctx, &res, root_key_dn, root_key_attrs, 0);
+	if (ret) {
+		goto out;
+	}
+
+	if (res->count != 1) {
+		ret = dsdb_werror(ldb,
+				  LDB_ERR_NO_SUCH_OBJECT,
+				  W_ERROR(HRES_ERROR_V(HRES_NTE_NO_KEY)),
+				  "failed to find root key");
+		goto out;
+	}
+
+	*root_key_out = talloc_steal(mem_ctx, res->msgs[0]);
+
+out:
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+int gkdi_most_recently_created_root_key(
+	TALLOC_CTX *mem_ctx,
+	struct ldb_context *const ldb,
+	_UNUSED_ const NTTIME current_time,
+	const NTTIME not_after,
+	struct GUID *const root_key_id_out,
+	const struct ldb_message **const root_key_out)
+{
+	TALLOC_CTX *tmp_ctx = NULL;
+	struct ldb_result *res = NULL;
+	int ret = LDB_SUCCESS;
+
+	*root_key_out = NULL;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		ret = ldb_oom(ldb);
+		goto out;
+	}
+
+	{
+		struct ldb_dn *root_key_container_dn = NULL;
+
+		root_key_container_dn = samdb_gkdi_root_key_container_dn(
+			ldb, tmp_ctx);
+		if (root_key_container_dn == NULL) {
+			ret = ldb_operr(ldb);
+			goto out;
+		}
+
+		ret = dsdb_search(ldb,
+				  tmp_ctx,
+				  &res,
+				  root_key_container_dn,
+				  LDB_SCOPE_ONELEVEL,
+				  root_key_attrs,
+				  0,
+				  "(msKds-UseStartTime<=%" PRIu64 ")",
+				  not_after);
+		if (ret) {
+			goto out;
+		}
+	}
+
+	/*
+	 * Windows just gives up if there are more than 1000 root keys in the
+	 * container.
+	 */
+
+	{
+		struct root_key_candidate {
+			struct GUID id;
+			const struct ldb_message *key;
+			NTTIME create_time;
+		} most_recent_key = {
+			.key = NULL,
+		};
+		unsigned i;
+
+		for (i = 0; i < res->count; ++i) {
+			struct root_key_candidate key = {
+				.key = res->msgs[i],
+			};
+			const struct ldb_val *rdn_val = NULL;
+			bool ok;
+
+			key.create_time = samdb_result_nttime(
+				key.key, "msKds-CreateTime", 0);
+			if (key.create_time < most_recent_key.create_time) {
+				/* We already have a more recent key. */
+				continue;
+			}
+
+			rdn_val = ldb_dn_get_rdn_val(key.key->dn);
+			if (rdn_val == NULL) {
+				continue;
+			}
+
+			if (rdn_val->length != 36) {
+				/*
+				 * Check the RDN is the right length — 36 is the
+				 * length of a UUID.
+				 */
+				continue;
+			}
+
+			ok = parse_guid_string((const char *)rdn_val->data,
+					       &key.id);
+			if (!ok) {
+				/* The RDN is not a correctly formatted GUID. */
+				continue;
+			}
+
+			/*
+			 * We’ve found a new candidate for the most recent root
+			 * key.
+			 */
+			most_recent_key = key;
+		}
+
+		if (most_recent_key.key == NULL) {
+			/*
+			 * We were not able to find a suitable root key, but
+			 * there is a possibility that a key we create now will
+			 * do: if gkdi_root_key_use_start_time(current_time) ≤
+			 * not_after, then a newly‐created key will satisfy our
+			 * caller’s requirements.
+			 *
+			 * Unfortunately, with gMSAs this (I believe) will never
+			 * be the case. It’s too late to call
+			 * gkdi_new_root_key() — the new key will be a bit *too*
+			 * new to be usable for a gMSA.
+			 */
+
+			ret = dsdb_werror(ldb,
+					  LDB_ERR_NO_SUCH_OBJECT,
+					  W_ERROR(HRES_ERROR_V(
+						  HRES_NTE_NO_KEY)),
+					  "failed to find a suitable root key");
+			goto out;
+		}
+
+		/* Return the root key that we found. */
+		*root_key_id_out = most_recent_key.id;
+		*root_key_out = talloc_steal(mem_ctx, most_recent_key.key);
+	}
 
 out:
 	talloc_free(tmp_ctx);
