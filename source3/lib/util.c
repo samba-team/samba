@@ -54,11 +54,6 @@
 
 static enum protocol_types Protocol = PROTOCOL_COREPLUS;
 
-enum protocol_types get_Protocol(void)
-{
-	return Protocol;
-}
-
 void set_Protocol(enum protocol_types  p)
 {
 	Protocol = p;

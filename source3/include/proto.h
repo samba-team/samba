@@ -277,7 +277,6 @@ bool is_allowed_domain(const char *domain_name);
 
 /* The following definitions come from lib/util.c  */
 
-enum protocol_types get_Protocol(void);
 void set_Protocol(enum protocol_types  p);
 void gfree_all( void );
 bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf,
