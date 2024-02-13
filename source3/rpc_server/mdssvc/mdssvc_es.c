@@ -29,6 +29,7 @@
 #include "mdssvc.h"
 #include "mdssvc_es.h"
 #include "rpc_server/mdssvc/es_parser.tab.h"
+#include "lib/param/param.h"
 
 #include <jansson.h>
 
@@ -246,18 +247,18 @@ static struct tevent_req *mds_es_connect_send(
 		  use_tls ? "S" : "", state->server_addr, state->server_port);
 
 	if (use_tls) {
-		const char *ca_file = lp__tls_cafile();
-		const char *crl_file = lp__tls_crlfile();
-		const char *tls_priority = lp_tls_priority();
-		enum tls_verify_peer_state verify_peer = lp_tls_verify_peer();
+		struct loadparm_context *lp_ctx = NULL;
 
-		status = tstream_tls_params_client(state,
-						   ca_file,
-						   crl_file,
-						   tls_priority,
-						   verify_peer,
-						   state->server_addr,
-						   &state->tls_params);
+		lp_ctx = loadparm_init_s3(state, loadparm_s3_helpers());
+		if (tevent_req_nomem(lp_ctx, req)) {
+			return tevent_req_post(req, ev);
+		}
+
+		status = tstream_tls_params_client_lpcfg(state,
+							 lp_ctx,
+							 state->server_addr,
+							 &state->tls_params);
+		TALLOC_FREE(lp_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("Failed tstream_tls_params_client - %s\n",
 				nt_errstr(status));
