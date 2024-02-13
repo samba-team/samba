@@ -1,0 +1,17 @@
+<samba:parameter name="tls trust system cas"
+                 type="boolean"
+                 context="G"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+ <description>
+	<para>With this option the system's default trusted CAs are
+	used to trust SSL/TLS connections.</para>
+
+	<para>Please use this with care, as it really means
+	trusting all CAs installed on the system!</para>
+ </description>
+
+ <related>tls ca directories</related>
+ <related>tls cafile</related>
+ <related>tls crlfile</related>
+ <value type="default">no</value>
+</samba:parameter>

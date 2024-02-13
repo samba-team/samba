@@ -19,7 +19,9 @@
 
 	<para>When set to <constant>ca_only</constant> the certificate is verified to
 	be signed from a ca specified in the <smbconfoption name="tls ca file"/> option.
-	Setting <smbconfoption name="tls ca file"/> to a valid file is required.
+	As alternative <smbconfoption name="tls ca directories"/> or
+	<smbconfoption name="tls trust system cas"/> can be used.
+	Providing at least one valid CA certificate is required.
 	The certificate lifetime is also verified. If the <smbconfoption name="tls crl file"/>
 	option is configured, the certificate is also verified against the ca crl.
 	</para>
@@ -43,5 +45,9 @@
 	</para>
 </description>
 
+ <related>tls trust system cas</related>
+ <related>tls ca directories</related>
+ <related>tls cafile</related>
+ <related>tls crlfile</related>
 <value type="default">as_strict_as_possible</value>
 </samba:parameter>

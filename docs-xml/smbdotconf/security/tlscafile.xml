@@ -11,6 +11,8 @@
 	 does not start with a /.</para>
  </description>
 
+ <related>tls trust system cas</related>
+ <related>tls ca directories</related>
  <related>tls certfile</related>
  <related>tls crlfile</related>
  <related>tls dh params file</related>

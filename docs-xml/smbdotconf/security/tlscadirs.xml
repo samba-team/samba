@@ -1,0 +1,14 @@
+<samba:parameter name="tls ca directories"
+                 type="list"
+                 context="G"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+ <description>
+	<para>This option can be set to a list of directories with files (in PEM format)
+	containing CA certificates of root CAs to trust to sign
+	certificates or intermediate CA certificates.</para>
+ </description>
+
+ <related>tls trust system cas</related>
+ <related>tls cafile</related>
+ <related>tls crlfile</related>
+</samba:parameter>
