@@ -15,11 +15,11 @@ def options(opt):
                    help='disable new LMDB backend for LDB',
                    action='store_true', dest='without_ldb_lmdb', default=False)
 
-
 def configure(conf):
     # where does the default LIBDIR end up? in conf.env somewhere?
     #
-    conf.CONFIG_PATH('LDB_MODULESDIR', conf.SUBST_ENV_VAR('MODULESDIR') + '/ldb')
+    conf.env.ldb_modules_install_dir = conf.SUBST_ENV_VAR('LDBMODULESDIR')
+    conf.CONFIG_PATH('LDB_MODULESDIR', conf.env.ldb_modules_install_dir)
 
     if not conf.CHECK_CODE('return !(sizeof(size_t) >= 8)',
                            "HAVE_64_BIT_SIZE_T_FOR_LMDB",
