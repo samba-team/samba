@@ -31,6 +31,12 @@ struct loadparm_context;
 struct tevent_context;
 struct tsocket_address;
 struct dsdb_trust_routing_table;
+struct gmsa_update_pwd;
+struct gmsa_update_pwd_part;
+struct gmsa_update;
+struct gmsa_return_pwd;
+struct RootKey;
+struct KeyEnvelope;
 
 enum dsdb_password_checked {
 	DSDB_PASSWORD_NOT_CHECKED = 0, /* unused */
