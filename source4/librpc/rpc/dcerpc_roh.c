@@ -287,21 +287,13 @@ struct tevent_req *dcerpc_pipe_open_roh_send(struct dcecli_connection *conn,
 
 	/* Initialize TLS */
 	if (use_tls) {
-		char *ca_file = lpcfg_tls_cafile(state, lp_ctx);
-		char *crl_file = lpcfg_tls_crlfile(state, lp_ctx);
-		const char *tls_priority = lpcfg_tls_priority(lp_ctx);
-		enum tls_verify_peer_state verify_peer =
-			lpcfg_tls_verify_peer(lp_ctx);
-
-		status = tstream_tls_params_client(state->roh,
-						   ca_file, crl_file,
-						   tls_priority,
-						   verify_peer,
-						   state->rpc_proxy,
-						   &state->tls_params);
+		status = tstream_tls_params_client_lpcfg(state->roh,
+							 lp_ctx,
+							 state->rpc_proxy,
+							 &state->tls_params);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("%s: Failed tstream_tls_params_client - %s\n",
-				 __func__, nt_errstr(status)));
+			DBG_ERR("Failed tstream_tls_params_client_lpcfg - %s\n",
+				nt_errstr(status));
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, conn->event_ctx);
 		}
