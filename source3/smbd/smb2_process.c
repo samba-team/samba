@@ -587,7 +587,7 @@ void process_smb(struct smbXsrv_connection *xconn,
 	}
 
 #if defined(WITH_SMB1SERVER)
-	if (sconn->using_smb2) {
+	if (lp_server_max_protocol() >= PROTOCOL_SMB2_02) {
 		/* At this point we're not really using smb2,
 		 * we make the decision here.. */
 		if (smbd_is_smb2_header(inbuf, nread)) {
@@ -605,7 +605,7 @@ void process_smb(struct smbXsrv_connection *xconn,
 				&& CVAL(inbuf, smb_com) != 0x72) {
 			/* This is a non-negprot SMB1 packet.
 			   Disable SMB2 from now on. */
-			sconn->using_smb2 = false;
+			lp_do_parameter(-1, "server max protocol", "NT1");
 		}
 	}
 	process_smb1(xconn, inbuf, nread, unread_bytes, seqnum, encrypted);
@@ -1875,21 +1875,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 	if (ret != 0) {
 		exit_server("pthreadpool_tevent_init() failed.");
 	}
-
-#if defined(WITH_SMB1SERVER)
-	if (lp_server_max_protocol() >= PROTOCOL_SMB2_02) {
-#endif
-		/*
-		 * We're not making the decision here,
-		 * we're just allowing the client
-		 * to decide between SMB1 and SMB2
-		 * with the first negprot
-		 * packet.
-		 */
-		sconn->using_smb2 = true;
-#if defined(WITH_SMB1SERVER)
-	}
-#endif
 
 	if (!interactive) {
 		smbd_setup_sig_term_handler(sconn);
