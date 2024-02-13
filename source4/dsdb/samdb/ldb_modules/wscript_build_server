@@ -360,12 +360,12 @@ bld.SAMBA_MODULE('ldb_instancetype',
 
 
 bld.SAMBA_MODULE('ldb_operational',
-	source='operational.c',
+	source='operational.c managed_pwd.c',
 	subsystem='ldb',
 	init_function='ldb_operational_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc samba-util samdb-common DSDB_MODULE_HELPERS samdb'
+	deps='talloc samba-util samdb-common DSDB_MODULE_HELPERS samdb gkdi gmsa NDR_GKDI NDR_GMSA'
 	)
 
 

@@ -31,11 +31,9 @@ struct loadparm_context;
 struct tevent_context;
 struct tsocket_address;
 struct dsdb_trust_routing_table;
-struct gmsa_update_pwd;
 struct gmsa_update_pwd_part;
 struct gmsa_update;
 struct gmsa_return_pwd;
-struct RootKey;
 struct KeyEnvelope;
 
 enum dsdb_password_checked {
@@ -44,10 +42,13 @@ enum dsdb_password_checked {
 	DSDB_PASSWORD_CHECKED_AND_CORRECT
 };
 
+#include "lib/util/data_blob.h"
 #include "librpc/gen_ndr/security.h"
 #include <ldb.h>
 #include "lib/ldb-samba/ldif_handlers.h"
+#include "lib/util/time.h"
 #include "librpc/gen_ndr/samr.h"
+#include "libcli/util/werror.h"
 #include "librpc/gen_ndr/drsuapi.h"
 #include "librpc/gen_ndr/drsblobs.h"
 #include "dsdb/schema/schema.h"

@@ -71,6 +71,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/samdb/ldb_modules/managed_pwd.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
 #include "auth/auth.h"
@@ -1411,6 +1412,17 @@ static const char *resultant_pso_computed_attrs[] =
 	NULL
 };
 
+static const char *managed_password_computed_attrs[] = {
+	"msDS-GroupMSAMembership",
+	"msDS-ManagedPasswordId",
+	"msDS-ManagedPasswordInterval",
+	"msDS-ManagedPasswordPreviousId",
+	"objectClass",
+	"objectSid",
+	"whenCreated",
+	NULL,
+};
+
 /*
   a list of attribute names that are hidden, but can be searched for
   using another (non-hidden) name to produce the correct result
@@ -1433,7 +1445,11 @@ static const struct op_attributes_replace search_sub[] = {
 	{ "msDS-UserPasswordExpiryTimeComputed", "userAccountControl", user_password_expiry_time_computed_attrs,
 	  construct_msds_user_password_expiry_time_computed },
 	{ "msDS-ResultantPSO", "objectClass", resultant_pso_computed_attrs,
-	  construct_resultant_pso }
+	  construct_resultant_pso },
+	{"msDS-ManagedPassword",
+	 NULL,
+	 managed_password_computed_attrs,
+	 constructed_msds_managed_password},
 };
 
 

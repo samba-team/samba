@@ -1,10 +1,1 @@
 ^samba.tests.dckeytab.samba.tests.dckeytab.DCKeytabTests.test_export_keytab_gmsa
-^samba.tests.blackbox.gmsa.samba.tests.blackbox.gmsa.GMSABlackboxTest.test_gmsa_password_access
-^samba.tests.krb5.gmsa_tests.samba.tests.krb5.gmsa_tests.GmsaTests.test_retrieved_password\(ad_dc:local\)$
-^samba.tests.krb5.gmsa_tests.samba.tests.krb5.gmsa_tests.GmsaTests.test_retrieved_password_allowed\(ad_dc:local\)$
-^samba.tests.krb5.gmsa_tests.samba.tests.krb5.gmsa_tests.GmsaTests.test_retrieved_password_during_clock_skew_window_when_current_key_is_expired\(ad_dc:local\)$
-^samba.tests.krb5.gmsa_tests.samba.tests.krb5.gmsa_tests.GmsaTests.test_retrieved_password_during_clock_skew_window_when_current_key_is_valid\(ad_dc:local\)$
-^samba.tests.krb5.gmsa_tests.samba.tests.krb5.gmsa_tests.GmsaTests.test_retrieved_password_during_clock_skew_window_when_next_key_is_expired\(ad_dc:local\)$
-^samba.tests.krb5.gmsa_tests.samba.tests.krb5.gmsa_tests.GmsaTests.test_retrieved_password_when_current_key_is_expired\(ad_dc:local\)$
-^samba.tests.krb5.gmsa_tests.samba.tests.krb5.gmsa_tests.GmsaTests.test_retrieved_password_when_current_key_is_valid\(ad_dc:local\)$
-^samba.tests.krb5.gmsa_tests.samba.tests.krb5.gmsa_tests.GmsaTests.test_retrieved_password_when_next_key_is_expired\(ad_dc:local\)$
