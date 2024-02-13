@@ -26,6 +26,7 @@
 #include "../lib/tsocket/tsocket_internal.h"
 #include "../lib/util/util_net.h"
 #include "lib/tls/tls.h"
+#include "lib/param/param.h"
 
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
@@ -983,6 +984,52 @@ NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 
 	*_tlsp = __tlsp;
 	return NT_STATUS_OK;
+}
+
+NTSTATUS tstream_tls_params_client_lpcfg(TALLOC_CTX *mem_ctx,
+					 struct loadparm_context *lp_ctx,
+					 const char *peer_name,
+					 struct tstream_tls_params **tlsp)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	const char *ptr = NULL;
+	char *ca_file = NULL;
+	char *crl_file = NULL;
+	const char *tls_priority = NULL;
+	enum tls_verify_peer_state verify_peer =
+		TLS_VERIFY_PEER_AS_STRICT_AS_POSSIBLE;
+	NTSTATUS status;
+
+	ptr = lpcfg__tls_cafile(lp_ctx);
+	if (ptr != NULL) {
+		ca_file = lpcfg_tls_cafile(frame, lp_ctx);
+		if (ca_file == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	ptr = lpcfg__tls_crlfile(lp_ctx);
+	if (ptr != NULL) {
+		crl_file = lpcfg_tls_crlfile(frame, lp_ctx);
+		if (crl_file == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	tls_priority = lpcfg_tls_priority(lp_ctx);
+	verify_peer = lpcfg_tls_verify_peer(lp_ctx);
+
+	status = tstream_tls_params_client(mem_ctx,
+					   ca_file,
+					   crl_file,
+					   tls_priority,
+					   verify_peer,
+					   peer_name,
+					   tlsp);
+	TALLOC_FREE(frame);
+	return status;
 }
 
 static NTSTATUS tstream_tls_prepare_gnutls(struct tstream_tls_params *_tlsp,
