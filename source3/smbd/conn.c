@@ -70,6 +70,20 @@ bool conn_snum_used(struct smbd_server_connection *sconn,
 	return false;
 }
 
+enum protocol_types conn_protocol(struct smbd_server_connection *sconn)
+{
+	if ((sconn != NULL) &&
+	    (sconn->client != NULL) &&
+	    (sconn->client->connections != NULL)) {
+		return sconn->client->connections->protocol;
+	}
+	/*
+	 * Default to what source3/lib/util.c has as default for the
+	 * static Protocol variable to not change behaviour.
+	 */
+	return PROTOCOL_COREPLUS;
+}
+
 /****************************************************************************
  Find first available connection slot, starting from a random position.
  The randomisation stops problems with the server dying and clients
