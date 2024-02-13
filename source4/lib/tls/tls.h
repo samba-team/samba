@@ -63,6 +63,11 @@ NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 				   const char *peer_name,
 				   struct tstream_tls_params **_tlsp);
 
+NTSTATUS tstream_tls_params_client_lpcfg(TALLOC_CTX *mem_ctx,
+					 struct loadparm_context *lp_ctx,
+					 const char *peer_name,
+					 struct tstream_tls_params **tlsp);
+
 NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 				   const char *dns_host_name,
 				   bool enabled,
