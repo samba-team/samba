@@ -24,7 +24,7 @@
 #include "libcli/util/werror.h"
 #include "librpc/gen_ndr/auth.h"
 
-enum security_user_level security_session_user_level(struct auth_session_info *session_info,
+enum security_user_level security_session_user_level(const struct auth_session_info *session_info,
 						     const struct dom_sid *domain_sid)
 {
 	struct security_token *token = NULL;

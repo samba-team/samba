@@ -38,7 +38,7 @@ struct auth_user_info;
 struct auth_user_info_torture;
 struct auth_session_info;
 
-enum security_user_level security_session_user_level(struct auth_session_info *session_info,
+enum security_user_level security_session_user_level(const struct auth_session_info *session_info,
 						     const struct dom_sid *domain_sid);
 
 #endif
