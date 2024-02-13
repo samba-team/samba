@@ -859,15 +859,9 @@ static ADS_STATUS libnet_join_set_etypes(TALLOC_CTX *mem_ctx,
 static bool libnet_join_create_keytab(TALLOC_CTX *mem_ctx,
 				      struct libnet_JoinCtx *r)
 {
-	if (!USE_SYSTEM_KEYTAB) {
-		return true;
-	}
+	NTSTATUS ntstatus = sync_pw2keytabs();
 
-	if (ads_keytab_create_default(r->in.ads) != 0) {
-		return false;
-	}
-
-	return true;
+	return NT_STATUS_IS_OK(ntstatus);
 }
 
 /****************************************************************
