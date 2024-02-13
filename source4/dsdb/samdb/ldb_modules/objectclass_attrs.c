@@ -259,9 +259,11 @@ static int attr_handler(struct oc_context *ac)
 				 * fschemaUpgradeInProgress and other specific schema checks.
 				 */
 				if (ldb_dn_compare_base(ldb_get_schema_basedn(ldb), msg->dn) != 0) {
-					struct ldb_control *as_system = ldb_request_get_control(ac->req,
-												LDB_CONTROL_AS_SYSTEM_OID);
-					if (!dsdb_module_am_system(ac->module) && !as_system) {
+					if (!dsdb_have_system_access(
+						    ac->module,
+						    ac->req,
+						    SYSTEM_CONTROL_KEEP_CRITICAL))
+					{
 						ldb_asprintf_errstring(ldb,
 								       "objectclass_attrs: attribute '%s' on entry '%s' can only be modified as system",
 								       msg->elements[i].name,

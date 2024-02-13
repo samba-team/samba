@@ -1188,7 +1188,6 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 	const struct dsdb_class *computer_objectclass = NULL;
 	const struct ldb_message_element *oc_el = NULL;
 	struct ldb_message_element sorted_oc_el;
-	struct ldb_control *as_system;
 	struct ldb_control *sd_ctrl = NULL;
 	struct ldb_message_element *el;
 	unsigned int instanceType = 0;
@@ -1205,12 +1204,8 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
-	if (as_system != NULL) {
-		as_system->critical = 0;
-	}
-
-	if (dsdb_module_am_system(module) || as_system) {
+	if (dsdb_have_system_access(module, req, SYSTEM_CONTROL_STRIP_CRITICAL))
+	{
 		return ldb_next_request(module, req);
 	}
 
@@ -1879,7 +1874,6 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_result *acl_res;
 	struct security_descriptor *sd;
 	struct dom_sid *sid = NULL;
-	struct ldb_control *as_system;
 	struct ldb_control *is_undelete;
 	struct ldb_control *implicit_validated_write_control = NULL;
 	bool userPassword;
@@ -1901,11 +1895,6 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
-	if (as_system != NULL) {
-		as_system->critical = 0;
-	}
-
 	is_undelete = ldb_request_get_control(req, DSDB_CONTROL_RESTORE_TOMBSTONE_OID);
 
 	implicit_validated_write_control = ldb_request_get_control(
@@ -1918,7 +1907,8 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	if (msg->num_elements > 0) {
 		DEBUG(10, ("ldb:acl_modify: %s\n", msg->elements[0].name));
 	}
-	if (dsdb_module_am_system(module) || as_system) {
+	if (dsdb_have_system_access(module, req, SYSTEM_CONTROL_STRIP_CRITICAL))
+	{
 		return ldb_next_request(module, req);
 	}
 
@@ -2207,7 +2197,6 @@ static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_dn *parent;
 	struct ldb_context *ldb;
 	struct ldb_dn *nc_root;
-	struct ldb_control *as_system;
 	const struct dsdb_schema *schema;
 	const struct dsdb_class *objectclass;
 	struct security_descriptor *sd = NULL;
@@ -2224,12 +2213,8 @@ static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
-	if (as_system != NULL) {
-		as_system->critical = 0;
-	}
-
-	if (dsdb_module_am_system(module) || as_system) {
+	if (dsdb_have_system_access(module, req, SYSTEM_CONTROL_STRIP_CRITICAL))
+	{
 		return ldb_next_request(module, req);
 	}
 
@@ -2384,7 +2369,6 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	struct dom_sid *sid = NULL;
 	struct ldb_result *acl_res;
 	struct ldb_dn *nc_root;
-	struct ldb_control *as_system;
 	struct ldb_control *is_undelete;
 	TALLOC_CTX *tmp_ctx;
 	const char *rdn_name;
@@ -2399,13 +2383,9 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
-	if (as_system != NULL) {
-		as_system->critical = 0;
-	}
-
 	DEBUG(10, ("ldb:acl_rename: %s\n", ldb_dn_get_linearized(req->op.rename.olddn)));
-	if (dsdb_module_am_system(module) || as_system) {
+	if (dsdb_have_system_access(module, req, SYSTEM_CONTROL_STRIP_CRITICAL))
+	{
 		return ldb_next_request(module, req);
 	}
 
@@ -2853,7 +2833,6 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 static int acl_extended(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
 
 	/* allow everybody to read the sequence number */
 	if (strcmp(req->op.extended.oid,
@@ -2861,8 +2840,11 @@ static int acl_extended(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	if (dsdb_module_am_system(module) ||
-	    dsdb_module_am_administrator(module) || as_system) {
+	if (dsdb_have_system_access(module,
+				    req,
+				    SYSTEM_CONTROL_KEEP_CRITICAL) ||
+	    dsdb_module_am_administrator(module))
+	{
 		return ldb_next_request(module, req);
 	} else {
 		ldb_asprintf_errstring(ldb,

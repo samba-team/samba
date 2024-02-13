@@ -883,10 +883,9 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	ldb = ldb_module_get_ctx(module);
 	p = talloc_get_type(ldb_module_get_private(module), struct aclread_private);
 
-	am_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID) != NULL;
-	if (!am_system) {
-		am_system = dsdb_module_am_system(module);
-	}
+	am_system = dsdb_have_system_access(module,
+					    req,
+					    SYSTEM_CONTROL_KEEP_CRITICAL);
 
 	/* skip access checks if we are system or system control is supplied
 	 * or this is not LDAP server request */
