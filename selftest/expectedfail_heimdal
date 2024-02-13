@@ -9,4 +9,6 @@
 # https://github.com/heimdal/heimdal/pull/1234
 # https://github.com/krb5/krb5/pull/1329
 ^samba4.ldb.simple.ldaps.with.SASL-BIND.*use-kerberos=required.*ldap_testing:channel_bound=yes.*ldap_testing:tls_channel_bindings=no.*ad_dc_ntvfs
+^samba4.ldb.simple.ldap.starttls.*SASL-BIND.*use-kerberos=required.*ldap_testing:channel_bound=yes.*ldap_testing:tls_channel_bindings=no.*ad_dc_ntvfs
 ^samba4.ldb.simple.ldaps.with.SASL-BIND.*use-kerberos=required.*ldap_testing:channel_bound=yes.*ldap_testing:tls_channel_bindings=no.*fl2008r2dc
+^samba4.ldb.simple.ldap.starttls.*SASL-BIND.*use-kerberos=required.*ldap_testing:channel_bound=yes.*ldap_testing:tls_channel_bindings=no.*fl2008r2dc

@@ -200,6 +200,9 @@ for env in ["ad_dc_ntvfs", "fl2008r2dc", "fl2003dc"]:
         options = '-U"$USERNAME%$PASSWORD" --option="tlsverifypeer=no_check" ' + auth_option
         plantestsuite("samba4.ldb.simple.ldaps with SASL-BIND %s(%s)" % (options, env),
                       env, "%s/test_ldb_simple.sh ldaps $SERVER %s" % (bbdir, options))
+        options += ' --option="clientldapsaslwrapping=starttls"'
+        plantestsuite("samba4.ldb.simple.ldap starttls with SASL-BIND %s(%s)" % (options, env),
+                      env, "%s/test_ldb_simple.sh ldap $SERVER %s" % (bbdir, options))
 
 
 envraw = "fl2008r2dc"
