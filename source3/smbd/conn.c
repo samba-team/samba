@@ -84,6 +84,12 @@ enum protocol_types conn_protocol(struct smbd_server_connection *sconn)
 	return PROTOCOL_COREPLUS;
 }
 
+bool conn_using_smb2(struct smbd_server_connection *sconn)
+{
+	enum protocol_types proto = conn_protocol(sconn);
+	return (proto >= PROTOCOL_SMB2_02);
+}
+
 /****************************************************************************
  Find first available connection slot, starting from a random position.
  The randomisation stops problems with the server dying and clients
