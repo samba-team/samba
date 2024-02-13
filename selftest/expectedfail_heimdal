@@ -1,0 +1,12 @@
+# ad_dc_ntvfs and fl2008r2dc have
+# ldap server require strong auth = allow_sasl_without_tls_channel_bindings
+# it means correct channel bindings are required, if the client indicated
+# explicit (even null) channel bindings are provided
+#
+# Note currently only embedded_heimdal supports
+# GSS_C_CHANNEL_BOUND_FLAG as client.
+# See also:
+# https://github.com/heimdal/heimdal/pull/1234
+# https://github.com/krb5/krb5/pull/1329
+^samba4.ldb.simple.ldaps.with.SASL-BIND.*use-kerberos=required.*ldap_testing:channel_bound=yes.*ldap_testing:tls_channel_bindings=no.*ad_dc_ntvfs
+^samba4.ldb.simple.ldaps.with.SASL-BIND.*use-kerberos=required.*ldap_testing:channel_bound=yes.*ldap_testing:tls_channel_bindings=no.*fl2008r2dc

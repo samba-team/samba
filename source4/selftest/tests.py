@@ -163,19 +163,44 @@ for env in ["ad_dc_ntvfs", "fl2008r2dc", "fl2003dc"]:
         '--use-kerberos=required --option=clientldapsaslwrapping=plain',
         '--use-kerberos=required --client-protection=sign',
         '--use-kerberos=required --client-protection=encrypt',
+        '--use-kerberos=required --client-protection=sign --option="ldap_testing:channel_bound=yes"',
+        '--use-kerberos=required --client-protection=sign --option="ldap_testing:channel_bound=no"',
+        '--use-kerberos=required --client-protection=sign --option="ldap_testing:channel_bound=yes" --option="ldap_testing:forced_channel_binding=wRoNg"',
+        '--use-kerberos=required --client-protection=sign --option="ldap_testing:channel_bound=no" --option="ldap_testing:forced_channel_binding=wRoNg"',
         '--use-kerberos=disabled --option=clientldapsaslwrapping=plain',
         '--use-kerberos=disabled --client-protection=sign --option=ntlmssp_client:ldap_style_send_seal=no',
         '--use-kerberos=disabled --client-protection=sign',
         '--use-kerberos=disabled --client-protection=encrypt',
+        '--use-kerberos=disabled --client-protection=sign --option="ldap_testing:channel_bound=yes"',
+        '--use-kerberos=disabled --client-protection=sign --option="ldap_testing:channel_bound=no"',
+        '--use-kerberos=disabled --client-protection=sign --option="ldap_testing:channel_bound=yes" --option="ldap_testing:forced_channel_binding=wRoNg"',
+        '--use-kerberos=disabled --client-protection=sign --option="ldap_testing:channel_bound=no" --option="ldap_testing:forced_channel_binding=wRoNg"',
     ]
 
     for auth_option in auth_options:
         options = '-U"$USERNAME%$PASSWORD"' + ' ' + auth_option
         plantestsuite("samba4.ldb.simple.ldap with SASL-BIND %s(%s)" % (options, env),
                       env, "%s/test_ldb_simple.sh ldap $SERVER %s" % (bbdir, options))
-    options = '-U"$USERNAME%$PASSWORD" --option="tlsverifypeer=no_check"'
-    plantestsuite("samba4.ldb.simple.ldaps with SASL-BIND %s(%s)" % (options, env),
-                  env, "%s/test_ldb_simple.sh ldaps $SERVER %s" % (bbdir, options))
+
+    auth_options = [
+        '--use-kerberos=required --option="ldap_testing:channel_bound=yes" --option="ldap_testing:tls_channel_bindings=yes"',
+        '--use-kerberos=required --option="ldap_testing:channel_bound=yes" --option="ldap_testing:tls_channel_bindings=no"',
+        '--use-kerberos=required --option="ldap_testing:channel_bound=yes" --option="ldap_testing:forced_channel_binding=wRoNg"',
+        '--use-kerberos=required --option="ldap_testing:channel_bound=no"  --option="ldap_testing:tls_channel_bindings=no"',
+        '--use-kerberos=required --option="ldap_testing:channel_bound=no"  --option="ldap_testing:tls_channel_bindings=yes"',
+        '--use-kerberos=required --option="ldap_testing:channel_bound=no"  --option="ldap_testing:forced_channel_binding=wRoNg"',
+        '--use-kerberos=disabled --option="ldap_testing:channel_bound=yes" --option="ldap_testing:tls_channel_bindings=yes"',
+        '--use-kerberos=disabled --option="ldap_testing:channel_bound=yes" --option="ldap_testing:tls_channel_bindings=no"',
+        '--use-kerberos=disabled --option="ldap_testing:channel_bound=yes" --option="ldap_testing:forced_channel_binding=wRoNg"',
+        '--use-kerberos=disabled --option="ldap_testing:channel_bound=no"  --option="ldap_testing:tls_channel_bindings=no"',
+        '--use-kerberos=disabled --option="ldap_testing:channel_bound=no"  --option="ldap_testing:tls_channel_bindings=yes"',
+        '--use-kerberos=disabled --option="ldap_testing:channel_bound=no"  --option="ldap_testing:forced_channel_binding=wRoNg"',
+    ]
+    for auth_option in auth_options:
+        options = '-U"$USERNAME%$PASSWORD" --option="tlsverifypeer=no_check" ' + auth_option
+        plantestsuite("samba4.ldb.simple.ldaps with SASL-BIND %s(%s)" % (options, env),
+                      env, "%s/test_ldb_simple.sh ldaps $SERVER %s" % (bbdir, options))
+
 
 envraw = "fl2008r2dc"
 env = "%s:local" % envraw
