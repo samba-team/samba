@@ -26,17 +26,195 @@
 
 #include "lib/util/bytearray.h"
 
+#include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/gkdi.h"
 #include "librpc/gen_ndr/ndr_gkdi.h"
 
 #include "lib/crypto/gkdi.h"
+#include "lib/util/data_blob.h"
 
 static const uint8_t kds_service[] = {
 	/* “KDS service” as a NULL‐terminated UTF‐16LE string. */
 	'K', 0, 'D', 0, 'S', 0, ' ', 0, 's', 0, 'e', 0,
 	'r', 0, 'v', 0, 'i', 0, 'c', 0, 'e', 0, 0,   0,
 };
+
+static struct Gkid gkid_from_u32_indices(const uint32_t l0_idx,
+					 const uint32_t l1_idx,
+					 const uint32_t l2_idx)
+{
+	/* Catch out‐of‐range indices. */
+	if (l0_idx > INT32_MAX || l1_idx > INT8_MAX || l2_idx > INT8_MAX) {
+		return invalid_gkid;
+	}
+
+	return Gkid(l0_idx, l1_idx, l2_idx);
+}
+
+NTSTATUS gkdi_pull_KeyEnvelope(TALLOC_CTX *mem_ctx,
+			       const DATA_BLOB *key_env_blob,
+			       struct KeyEnvelope *key_env_out)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	enum ndr_err_code err;
+
+	if (key_env_blob == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (key_env_out == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	err = ndr_pull_struct_blob(key_env_blob,
+				   mem_ctx,
+				   key_env_out,
+				   (ndr_pull_flags_fn_t)ndr_pull_KeyEnvelope);
+	status = ndr_map_error2ntstatus(err);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* If we felt so inclined, we could check the version field here. */
+
+	return status;
+}
+
+/*
+ * Retrieve the GKID and root key ID from a KeyEnvelope blob. The returned
+ * structure is guaranteed to have a valid GKID.
+ */
+const struct KeyEnvelopeId *gkdi_pull_KeyEnvelopeId(
+	const DATA_BLOB key_env_blob,
+	struct KeyEnvelopeId *key_env_out)
+{
+	TALLOC_CTX *tmp_ctx = NULL;
+	struct KeyEnvelope key_env;
+	const struct KeyEnvelopeId *key_env_ret = NULL;
+	NTSTATUS status;
+
+	if (key_env_out == NULL) {
+		goto out;
+	}
+
+	tmp_ctx = talloc_new(NULL);
+	if (tmp_ctx == NULL) {
+		goto out;
+	}
+
+	status = gkdi_pull_KeyEnvelope(tmp_ctx, &key_env_blob, &key_env);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	{
+		const struct Gkid gkid = gkid_from_u32_indices(
+			key_env.l0_index, key_env.l1_index, key_env.l2_index);
+		if (!gkid_is_valid(gkid)) {
+			/* The KeyId is not valid: we can’t use it. */
+			goto out;
+		}
+
+		*key_env_out = (struct KeyEnvelopeId){
+			.root_key_id = key_env.root_key_id, .gkid = gkid};
+	}
+
+	/* Return a pointer to the buffer passed in by the caller. */
+	key_env_ret = key_env_out;
+
+out:
+	TALLOC_FREE(tmp_ctx);
+	return key_env_ret;
+}
+
+NTSTATUS ProvRootKey(TALLOC_CTX *mem_ctx,
+		     const struct GUID root_key_id,
+		     const int32_t version,
+		     const DATA_BLOB root_key_data,
+		     const NTTIME create_time,
+		     const NTTIME use_start_time,
+		     const char *const domain_id,
+		     const struct KdfAlgorithm kdf_algorithm,
+		     const struct ProvRootKey **const root_key_out)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	struct ProvRootKey *root_key = NULL;
+
+	if (root_key_out == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	*root_key_out = NULL;
+
+	root_key = talloc(mem_ctx, struct ProvRootKey);
+	if (root_key == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*root_key = (struct ProvRootKey){
+		.id = root_key_id,
+		.data = {.data = talloc_steal(root_key, root_key_data.data),
+			 .length = root_key_data.length},
+		.create_time = create_time,
+		.use_start_time = use_start_time,
+		.domain_id = talloc_steal(root_key, domain_id),
+		.kdf_algorithm = kdf_algorithm,
+		.version = version,
+	};
+
+	*root_key_out = root_key;
+	return status;
+}
+
+struct Gkid gkdi_get_interval_id(const NTTIME time)
+{
+	return Gkid(time / (gkdi_l1_key_iteration * gkdi_l2_key_iteration *
+			    gkdi_key_cycle_duration),
+		    time / (gkdi_l2_key_iteration * gkdi_key_cycle_duration) %
+			    gkdi_l1_key_iteration,
+		    time / gkdi_key_cycle_duration % gkdi_l2_key_iteration);
+}
+
+NTTIME gkdi_get_key_start_time(const struct Gkid gkid)
+{
+	return (gkid.l0_idx * gkdi_l1_key_iteration * gkdi_l2_key_iteration +
+		gkid.l1_idx * gkdi_l2_key_iteration + gkid.l2_idx) *
+	       gkdi_key_cycle_duration;
+}
+
+/*
+ * This returns the equivalent of
+ * gkdi_get_key_start_time(gkdi_get_interval_id(time)).
+ */
+NTTIME gkdi_get_interval_start_time(const NTTIME time)
+{
+	return time % gkdi_key_cycle_duration;
+}
+
+bool gkid_less_than_or_equal_to(const struct Gkid g1, const struct Gkid g2)
+{
+	if (g1.l0_idx != g2.l0_idx) {
+		return g1.l0_idx < g2.l0_idx;
+	}
+
+	if (g1.l1_idx != g2.l1_idx) {
+		return g1.l1_idx < g2.l1_idx;
+	}
+
+	return g1.l2_idx <= g2.l2_idx;
+}
+
+bool gkdi_rollover_interval(const int64_t managed_password_interval,
+			    NTTIME *result)
+{
+	if (managed_password_interval < 0) {
+		return false;
+	}
+
+	*result = (uint64_t)managed_password_interval * 24 / 10 *
+		  gkdi_key_cycle_duration;
+	return true;
+}
 
 struct GkdiContextShort {
 	uint8_t buf[sizeof((struct GUID_ndr_buf){}.buf) + sizeof(int32_t) +
@@ -391,4 +569,82 @@ NTSTATUS compute_seed_key(TALLOC_CTX *mem_ctx,
 
 out:
 	return status;
+}
+
+NTSTATUS kdf_sp_800_108_from_params(
+	const DATA_BLOB *const kdf_param,
+	struct KdfAlgorithm *const kdf_algorithm_out)
+{
+	TALLOC_CTX *tmp_ctx = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+	enum ndr_err_code err;
+	enum KdfSp800_108Param sp800_108_param = KDF_PARAM_SHA256;
+	struct KdfParameters kdf_parameters;
+
+	if (kdf_param != NULL) {
+		tmp_ctx = talloc_new(NULL);
+		if (tmp_ctx == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
+		err = ndr_pull_struct_blob(kdf_param,
+					   tmp_ctx,
+					   &kdf_parameters,
+					   (ndr_pull_flags_fn_t)
+						   ndr_pull_KdfParameters);
+		if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+			status = ndr_map_error2ntstatus(err);
+			DBG_WARNING("KdfParameters pull failed: %s\n",
+				    nt_errstr(status));
+			goto out;
+		}
+
+		if (kdf_parameters.hash_algorithm == NULL) {
+			status = NT_STATUS_NOT_SUPPORTED;
+			goto out;
+		}
+
+		/* These string comparisons are case‐sensitive. */
+		if (strcmp(kdf_parameters.hash_algorithm, "SHA1") == 0) {
+			sp800_108_param = KDF_PARAM_SHA1;
+		} else if (strcmp(kdf_parameters.hash_algorithm, "SHA256") == 0)
+		{
+			sp800_108_param = KDF_PARAM_SHA256;
+		} else if (strcmp(kdf_parameters.hash_algorithm, "SHA384") == 0)
+		{
+			sp800_108_param = KDF_PARAM_SHA384;
+		} else if (strcmp(kdf_parameters.hash_algorithm, "SHA512") == 0)
+		{
+			sp800_108_param = KDF_PARAM_SHA512;
+		} else {
+			status = NT_STATUS_NOT_SUPPORTED;
+			goto out;
+		}
+	}
+
+	*kdf_algorithm_out = (struct KdfAlgorithm){
+		.id = KDF_ALGORITHM_SP800_108_CTR_HMAC,
+		.param.sp800_108 = sp800_108_param,
+	};
+out:
+	talloc_free(tmp_ctx);
+	return status;
+}
+
+NTSTATUS kdf_algorithm_from_params(const char *const kdf_algorithm_id,
+				   const DATA_BLOB *const kdf_param,
+				   struct KdfAlgorithm *const kdf_algorithm_out)
+{
+	if (kdf_algorithm_id == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* This string comparison is case‐sensitive. */
+	if (strcmp(kdf_algorithm_id, "SP800_108_CTR_HMAC") == 0) {
+		return kdf_sp_800_108_from_params(kdf_param, kdf_algorithm_out);
+	}
+
+	/* Unknown algorithm. */
+	return NT_STATUS_NOT_SUPPORTED;
 }

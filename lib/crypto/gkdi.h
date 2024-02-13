@@ -65,6 +65,16 @@ struct ProvRootKey {
 	int32_t version;
 };
 
+NTSTATUS ProvRootKey(TALLOC_CTX *mem_ctx,
+		     const struct GUID root_key_id,
+		     const int32_t version,
+		     const DATA_BLOB root_key_data,
+		     const NTTIME create_time,
+		     const NTTIME use_start_time,
+		     const char *const domain_id,
+		     const struct KdfAlgorithm kdf_algorithm,
+		     const struct ProvRootKey **const root_key_out);
+
 struct Gkid {
 	int32_t l0_idx;
 	int8_t l1_idx; /* [range(0, 31)] */
@@ -78,6 +88,37 @@ enum GkidType {
 	GKID_L2_SEED_KEY = 2,
 };
 
+/*
+ * Construct a GKID. The caller must check the returned GKID is valid before
+ * using it!
+ */
+static inline struct Gkid Gkid(int32_t l0_idx, int8_t l1_idx, int8_t l2_idx)
+{
+	return (struct Gkid){l0_idx, l1_idx, l2_idx};
+}
+
+static const struct Gkid invalid_gkid = {
+	INT32_MIN,
+	INT8_MIN,
+	INT8_MIN,
+};
+
+static const uint32_t key_envelope_magic = 0x4b53444b; /* ‘KDSK’ */
+
+struct KeyEnvelopeId {
+	struct GUID root_key_id;
+	struct Gkid gkid;
+};
+
+struct KeyEnvelope;
+NTSTATUS gkdi_pull_KeyEnvelope(TALLOC_CTX *mem_ctx,
+			       const DATA_BLOB *pwd_id_blob,
+			       struct KeyEnvelope *pwd_id_out);
+
+const struct KeyEnvelopeId *gkdi_pull_KeyEnvelopeId(
+	const DATA_BLOB key_env,
+	struct KeyEnvelopeId *key_env_out);
+
 enum GkidType gkid_key_type(const struct Gkid gkid);
 
 bool gkid_is_valid(const struct Gkid gkid);
@@ -90,6 +131,17 @@ static const int64_t gkdi_max_clock_skew = 3000000000;	     /* five minutes */
 
 #define GKDI_KEY_LEN 64
 
+struct Gkid gkdi_get_interval_id(const NTTIME time);
+
+NTTIME gkdi_get_key_start_time(const struct Gkid gkid);
+
+NTTIME gkdi_get_interval_start_time(const NTTIME time);
+
+bool gkid_less_than_or_equal_to(const struct Gkid g1, const struct Gkid g2);
+
+bool gkdi_rollover_interval(const int64_t managed_password_interval,
+			    NTTIME *result);
+
 gnutls_mac_algorithm_t get_sp800_108_mac_algorithm(
 	const struct KdfAlgorithm kdf_algorithm);
 
@@ -98,5 +150,14 @@ NTSTATUS compute_seed_key(TALLOC_CTX *mem_ctx,
 			  const struct ProvRootKey *const root_key,
 			  const struct Gkid gkid,
 			  uint8_t out[static const GKDI_KEY_LEN]);
+
+NTSTATUS kdf_sp_800_108_from_params(
+	const DATA_BLOB *const kdf_param,
+	struct KdfAlgorithm *const kdf_algorithm_out);
+
+NTSTATUS kdf_algorithm_from_params(
+	const char *const kdf_algorithm_id,
+	const DATA_BLOB *const kdf_param,
+	struct KdfAlgorithm *const kdf_algorithm_out);
 
 #endif /* LIB_CRYPTO_GKDI_H */
