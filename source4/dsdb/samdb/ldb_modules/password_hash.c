@@ -3962,7 +3962,10 @@ static int setup_io(struct ph_context *ac,
 			 * If the DSDB_CONTROL_PASSWORD_ACL_VALIDATION_OID
 			 * control is missing, we require system access!
 			 */
-			ok = dsdb_module_am_system(ac->module);
+			ok = dsdb_have_system_access(
+				ac->module,
+				ac->req,
+				SYSTEM_CONTROL_KEEP_CRITICAL);
 			if (!ok) {
 				return ldb_module_operr(ac->module);
 			}
