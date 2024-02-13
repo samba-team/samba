@@ -664,7 +664,15 @@ static NTSTATUS pdb_samba_dsdb_getsamupriv(struct pdb_samba_dsdb_state *state,
 		"dBCSPwd",
 		NULL};
 
-	int rc = dsdb_search_one(state->ldb, mem_ctx, msg, ldb_get_default_basedn(state->ldb), LDB_SCOPE_SUBTREE, attrs, 0, "%s", filter);
+	int rc = dsdb_search_one(state->ldb,
+				 mem_ctx,
+				 msg,
+				 ldb_get_default_basedn(state->ldb),
+				 LDB_SCOPE_SUBTREE,
+				 attrs,
+				 0,
+				 "%s",
+				 filter);
 	if (rc != LDB_SUCCESS) {
 		DEBUG(10, ("ldap_search failed %s\n",
 			   ldb_errstring(state->ldb)));
