@@ -636,7 +636,7 @@ static NTSTATUS pdb_samba_dsdb_getsamupriv(struct pdb_samba_dsdb_state *state,
 				    TALLOC_CTX *mem_ctx,
 				    struct ldb_message **msg)
 {
-	const char * attrs[] = {
+	static const char * attrs[] = {
 		"lastLogon", "lastLogoff", "pwdLastSet", "accountExpires",
 		"sAMAccountName", "displayName", "homeDirectory",
 		"homeDrive", "scriptPath", "profilePath", "description",
