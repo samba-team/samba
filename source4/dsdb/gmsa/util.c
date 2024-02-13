@@ -1448,6 +1448,286 @@ out:
 	return ret;
 }
 
+static void gmsa_update_debug(const struct gmsa_update *gmsa_update)
+{
+	struct ldb_dn *dn = NULL;
+	const char *account_dn = "<unknown>";
+
+	if (!CHECK_DEBUGLVL(DBGLVL_NOTICE)) {
+		return;
+	}
+
+	dn = gmsa_update->dn;
+	if (dn != NULL) {
+		const char *dn_str = NULL;
+
+		dn_str = ldb_dn_get_linearized(dn);
+		if (dn_str != NULL) {
+			account_dn = dn_str;
+		}
+	}
+
+	DBG_NOTICE("Updating keys for Group Managed Service Account %s\n",
+		   account_dn);
+}
+
+static int gmsa_perform_request(struct ldb_context *ldb,
+				struct ldb_request *req)
+{
+	int ret = LDB_SUCCESS;
+
+	if (req == NULL) {
+		return LDB_SUCCESS;
+	}
+
+	ret = ldb_request(ldb, req);
+	if (ret) {
+		return ret;
+	}
+
+	return ldb_wait(req->handle, LDB_WAIT_ALL);
+}
+
+static bool dsdb_data_blobs_equal(const DATA_BLOB *d1, const DATA_BLOB *d2)
+{
+	if (d1 == NULL && d2 == NULL) {
+		return true;
+	}
+
+	if (d1 == NULL || d2 == NULL) {
+		return false;
+	}
+
+	{
+		const int cmp = data_blob_cmp(d1, d2);
+		return cmp == 0;
+	}
+}
+
+int dsdb_update_gmsa_entry_keys(struct ldb_context *ldb,
+				TALLOC_CTX *mem_ctx,
+				const struct gmsa_update *gmsa_update)
+{
+	TALLOC_CTX *tmp_ctx = NULL;
+	int ret = LDB_SUCCESS;
+	bool in_transaction = false;
+
+	if (gmsa_update == NULL) {
+		ret = ldb_operr(ldb);
+		goto out;
+	}
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		ret = ldb_oom(ldb);
+		goto out;
+	}
+
+	gmsa_update_debug(gmsa_update);
+
+	/* The following must take place in a single transaction. */
+	ret = ldb_transaction_start(ldb);
+	if (ret) {
+		goto out;
+	}
+	in_transaction = true;
+
+	{
+		/*
+		 * Before performing the update, ensure that the managed
+		 * password ID in the database has the value we expect.
+		 */
+
+		struct ldb_result *res = NULL;
+		const struct ldb_val *pwd_id_blob = NULL;
+		static const char *const managed_pwd_id_attr[] = {
+			"msDS-ManagedPasswordId",
+			NULL,
+		};
+
+		if (gmsa_update->dn == NULL) {
+			ret = ldb_operr(ldb);
+			goto out;
+		}
+
+		ret = dsdb_search_dn(ldb,
+				     tmp_ctx,
+				     &res,
+				     gmsa_update->dn,
+				     managed_pwd_id_attr,
+				     0);
+		if (ret) {
+			goto out;
+		}
+
+		if (res->count != 1) {
+			ret = ldb_error(
+				ldb,
+				LDB_ERR_NO_SUCH_OBJECT,
+				"failed to find Group Managed Service Account "
+				"to verify managed password ID");
+			goto out;
+		}
+
+		pwd_id_blob = ldb_msg_find_ldb_val(res->msgs[0],
+						   "msDS-ManagedPasswordId");
+		if (!dsdb_data_blobs_equal(pwd_id_blob,
+					   gmsa_update->found_pwd_id))
+		{
+			/*
+			 * The account’s managed password ID doesn’t match what
+			 * we thought it was — cancel the update. If the caller
+			 * needs the latest values, it will retry the search,
+			 * performing the update again if necessary.
+			 */
+			ret = LDB_SUCCESS;
+			goto out;
+		}
+	}
+
+	/*
+	 * First update the previous password (if the request is not NULL,
+	 * indicating that the previous password already matches the password of
+	 * the account).
+	 */
+	ret = gmsa_perform_request(ldb, gmsa_update->old_pw_req);
+	if (ret) {
+		goto out;
+	}
+
+	/* Then update the current password. */
+	ret = gmsa_perform_request(ldb, gmsa_update->new_pw_req);
+	if (ret) {
+		goto out;
+	}
+
+	/* Finally, update the msDS-ManagedPasswordId attribute. */
+	ret = gmsa_perform_request(ldb, gmsa_update->pwd_id_req);
+	if (ret) {
+		goto out;
+	}
+
+	/* Commit the transaction. */
+	ret = ldb_transaction_commit(ldb);
+	in_transaction = false;
+	if (ret) {
+		goto out;
+	}
+
+out:
+	if (in_transaction) {
+		int ret2 = ldb_transaction_cancel(ldb);
+		if (ret2) {
+			ret = ret2;
+		}
+	}
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+int dsdb_update_gmsa_keys(struct ldb_context *ldb,
+			  TALLOC_CTX *mem_ctx,
+			  const struct ldb_result *res,
+			  bool *retry_out)
+{
+	TALLOC_CTX *tmp_ctx = NULL;
+	int ret = LDB_SUCCESS;
+	bool retry = false;
+	unsigned i;
+	NTTIME current_time;
+	bool am_rodc = true;
+
+	{
+		/* Calculate the current time, as reckoned for gMSAs. */
+		bool ok = dsdb_gmsa_current_time(ldb, &current_time);
+		if (!ok) {
+			ret = ldb_operr(ldb);
+			goto out;
+		}
+	}
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		ret = ldb_oom(ldb);
+		goto out;
+	}
+
+	/* Are we operating as an RODC? */
+	ret = samdb_rodc(ldb, &am_rodc);
+	if (ret != LDB_SUCCESS) {
+		DBG_WARNING("unable to tell if we are an RODC\n");
+		goto out;
+	}
+
+	/* Loop through each entry in the results. */
+	for (i = 0; i < res->count; ++i) {
+		struct ldb_message *msg = res->msgs[i];
+		struct gmsa_update *gmsa_update = NULL;
+		const bool is_gmsa = dsdb_account_is_gmsa(ldb, msg);
+
+		/* Is the account a Group Managed Service Account? */
+		if (!is_gmsa) {
+			/*
+			 * It’s not a gMSA, and there’s nothing more to do for
+			 * this result.
+			 */
+			continue;
+		}
+
+		if (am_rodc) {
+			static const char *const secret_attributes[] = {
+				DSDB_SECRET_ATTRIBUTES};
+			size_t j;
+
+			/*
+			 * If we’re an RODC, we won’t be able to update the
+			 * database entry with the new gMSA keys. The simplest
+			 * thing to do is redact all the password attributes in
+			 * the message. If our caller is the KDC, it will
+			 * recognize the missing keys and dispatch a referral to
+			 * a writable DC. */
+			for (j = 0; j < ARRAY_SIZE(secret_attributes); ++j) {
+				ldb_msg_remove_attr(msg, secret_attributes[j]);
+			}
+
+			/* Proceed to the next search result. */
+			continue;
+		}
+
+		/* Update any old gMSA state. */
+		ret = gmsa_recalculate_managed_pwd(
+			tmp_ctx, ldb, msg, current_time, &gmsa_update, NULL);
+		if (ret) {
+			goto out;
+		}
+
+		if (gmsa_update == NULL) {
+			/*
+			 * The usual case; the keys are up‐to‐date, and there’s
+			 * nothing more to do for this result.
+			 */
+			continue;
+		}
+
+		ret = dsdb_update_gmsa_entry_keys(ldb, tmp_ctx, gmsa_update);
+		if (ret) {
+			goto out;
+		}
+
+		/*
+		 * Since the database entry has been updated, the caller will
+		 * need to perform the search again.
+		 */
+		retry = true;
+	}
+
+	*retry_out = retry;
+
+out:
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
 bool dsdb_gmsa_current_time(struct ldb_context *ldb, NTTIME *current_time_out)
 {
 	const unsigned long long *gmsa_time = talloc_get_type(

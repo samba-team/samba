@@ -115,6 +115,15 @@ int gmsa_recalculate_managed_pwd(TALLOC_CTX *mem_ctx,
 				 struct gmsa_update **update_out,
 				 struct gmsa_return_pwd *return_out);
 
+int dsdb_update_gmsa_entry_keys(struct ldb_context *ldb,
+				TALLOC_CTX *mem_ctx,
+				const struct gmsa_update *gmsa_update);
+
+int dsdb_update_gmsa_keys(struct ldb_context *ldb,
+			  TALLOC_CTX *mem_ctx,
+			  const struct ldb_result *res,
+			  bool *retry_out);
+
 #define DSDB_GMSA_TIME_OPAQUE ("dsdb_gmsa_time_opaque")
 
 bool dsdb_gmsa_current_time(struct ldb_context *ldb, NTTIME *current_time_out);
