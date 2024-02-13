@@ -20,8 +20,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from .fields import BooleanField, DnField, IntegerField, SIDField, StringField
+from .fields import (BooleanField, DnField, EnumField, IntegerField, SIDField,
+                     StringField)
 from .model import Model
+from .types import SystemFlags
 
 
 class Group(Model):
@@ -31,7 +33,7 @@ class Group(Model):
                                              default=False, readonly=True)
     member = DnField("member", many=True)
     object_sid = SIDField("objectSid")
-    system_flags = IntegerField("systemFlags")
+    system_flags = EnumField("systemFlags", SystemFlags)
 
     @staticmethod
     def get_object_class():
