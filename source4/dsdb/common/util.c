@@ -26,6 +26,7 @@
 #include "ldb_module.h"
 #include "ldb_errors.h"
 #include "../lib/util/util_ldb.h"
+#include "lib/crypto/gmsa.h"
 #include "dsdb/samdb/samdb.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
@@ -39,6 +40,9 @@
 #include "librpc/gen_ndr/irpc.h"
 #include "libds/common/flag_mapping.h"
 #include "lib/util/access.h"
+#include "lib/util/data_blob.h"
+#include "lib/util/debug.h"
+#include "lib/util/fault.h"
 #include "lib/util/sys_rw_data.h"
 #include "libcli/util/ntstatus.h"
 #include "lib/util/smb_strtox.h"
@@ -5552,6 +5556,64 @@ int dsdb_search_by_dn_guid(struct ldb_context *ldb,
 	ret = dsdb_search_dn(ldb, mem_ctx, _result, dn, attrs, dsdb_flags);
 	talloc_free(tmp_ctx);
 	return ret;
+}
+
+NTSTATUS gmsa_system_password_update_request(
+	struct ldb_context *ldb,
+	TALLOC_CTX *mem_ctx,
+	struct ldb_dn *dn,
+	const uint8_t
+		password_buf[static const GMSA_PASSWORD_NULL_TERMINATED_LEN],
+	struct ldb_request **request_out)
+{
+	DATA_BLOB password_blob = {};
+	struct ldb_request *request = NULL;
+	NTSTATUS status;
+	int ret;
+
+	dn = ldb_dn_copy(mem_ctx, dn);
+	if (dn == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	/* Make a copy of the password. */
+	password_blob = data_blob_talloc(mem_ctx,
+					 password_buf,
+					 GMSA_PASSWORD_LEN);
+	if (password_blob.data == NULL) {
+		talloc_free(dn);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = samdb_set_password_request(ldb,
+					    mem_ctx,
+					    dn,
+					    &password_blob,
+					    NULL,
+					    DSDB_PASSWORD_RESET,
+					    false /* reject trusts */,
+					    &request);
+	if (!NT_STATUS_IS_OK(status)) {
+		data_blob_free(&password_blob);
+		talloc_free(dn);
+		return status;
+	}
+
+	/* Tie the lifetime of the password to that of the request. */
+	talloc_steal(request, password_blob.data);
+
+	/* Tie the lifetime of the DN to that of the request. */
+	talloc_steal(request, dn);
+
+	/* Make sure the password update happens as System. */
+	ret = dsdb_request_add_controls(request, DSDB_FLAG_AS_SYSTEM);
+	if (ret) {
+		talloc_free(request);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*request_out = request;
+	return NT_STATUS_OK;
 }
 
 /*

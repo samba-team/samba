@@ -49,6 +49,7 @@ enum dsdb_password_checked {
 #include "dsdb/samdb/samdb_proto.h"
 #include "dsdb/common/dsdb_dn.h"
 #include "dsdb/common/util_links.h"
+#include "lib/crypto/gmsa.h"
 #include "dsdb/common/proto.h"
 #include "../libds/common/flags.h"
 
