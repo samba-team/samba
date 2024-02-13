@@ -175,11 +175,45 @@ struct Gkid gkdi_get_interval_id(const NTTIME time)
 		    time / gkdi_key_cycle_duration % gkdi_l2_key_iteration);
 }
 
-NTTIME gkdi_get_key_start_time(const struct Gkid gkid)
+bool gkdi_get_key_start_time(const struct Gkid gkid, NTTIME *start_time_out)
 {
-	return (gkid.l0_idx * gkdi_l1_key_iteration * gkdi_l2_key_iteration +
-		gkid.l1_idx * gkdi_l2_key_iteration + gkid.l2_idx) *
-	       gkdi_key_cycle_duration;
+	if (!gkid_is_valid(gkid)) {
+		return false;
+	}
+
+	{
+		enum GkidType key_type = gkid_key_type(gkid);
+		if (key_type != GKID_L2_SEED_KEY) {
+			return false;
+		}
+	}
+
+	{
+		/*
+		 * Make sure that the GKID is not so large its start time can’t
+		 * be represented in NTTIME.
+		 */
+		static const struct Gkid max_gkid = {
+			UINT64_MAX /
+				(gkdi_l1_key_iteration * gkdi_l2_key_iteration *
+				 gkdi_key_cycle_duration),
+			UINT64_MAX /
+				(gkdi_l2_key_iteration *
+				 gkdi_key_cycle_duration) %
+				gkdi_l1_key_iteration,
+			UINT64_MAX / gkdi_key_cycle_duration %
+				gkdi_l2_key_iteration};
+		if (!gkid_less_than_or_equal_to(gkid, max_gkid)) {
+			return false;
+		}
+	}
+
+	*start_time_out = ((uint64_t)gkid.l0_idx * gkdi_l1_key_iteration *
+				   gkdi_l2_key_iteration +
+			   (uint64_t)gkid.l1_idx * gkdi_l2_key_iteration +
+			   (uint64_t)gkid.l2_idx) *
+			  gkdi_key_cycle_duration;
+	return true;
 }
 
 /*

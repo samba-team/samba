@@ -133,7 +133,7 @@ static const int64_t gkdi_max_clock_skew = 3000000000;	     /* five minutes */
 
 struct Gkid gkdi_get_interval_id(const NTTIME time);
 
-NTTIME gkdi_get_key_start_time(const struct Gkid gkid);
+bool gkdi_get_key_start_time(const struct Gkid gkid, NTTIME *start_time_out);
 
 NTTIME gkdi_get_interval_start_time(const NTTIME time);
 
