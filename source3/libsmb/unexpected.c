@@ -248,7 +248,7 @@ static void nb_packet_got_query(struct tevent_req *req)
 	ssize_t nread;
 	int err;
 
-	nread = tstream_read_packet_recv(req, talloc_tos(), &buf, &err);
+	nread = tstream_read_packet_recv(req, client, &buf, &err);
 	TALLOC_FREE(req);
 	if (nread < (ssize_t)sizeof(struct nb_packet_query)) {
 		DEBUG(10, ("read_packet_recv returned %d (%s)\n",
@@ -279,6 +279,8 @@ static void nb_packet_got_query(struct tevent_req *req)
 			return;
 		}
 	}
+
+	TALLOC_FREE(buf);
 
 	client->ack.byte = 0;
 	client->ack.iov[0].iov_base = &client->ack.byte;
@@ -333,7 +335,7 @@ static void nb_packet_client_read_done(struct tevent_req *req)
 	uint8_t *buf;
 	int err;
 
-	nread = tstream_read_packet_recv(req, talloc_tos(), &buf, &err);
+	nread = tstream_read_packet_recv(req, client, &buf, &err);
 	TALLOC_FREE(req);
 	if (nread == 1) {
 		DEBUG(10, ("Protocol error, received data on write-only "
