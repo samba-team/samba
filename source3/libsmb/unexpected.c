@@ -26,12 +26,6 @@
 #include "lib/tsocket/tsocket.h"
 #include "lib/util/sys_rw.h"
 
-static const char *nmbd_socket_dir(void)
-{
-	return lp_parm_const_string(-1, "nmbd", "socket dir",
-				    get_dyn_NMBDSOCKETDIR());
-}
-
 struct nb_packet_query {
 	enum packet_type type;
 	size_t mailslot_namelen;
@@ -74,6 +68,7 @@ static void nb_packet_server_listener(struct tevent_context *ev,
 
 NTSTATUS nb_packet_server_create(TALLOC_CTX *mem_ctx,
 				 struct tevent_context *ev,
+				 const char *nmbd_socket_dir,
 				 int max_clients,
 				 struct nb_packet_server **presult)
 {
@@ -90,7 +85,7 @@ NTSTATUS nb_packet_server_create(TALLOC_CTX *mem_ctx,
 	result->max_clients = max_clients;
 
 	result->listen_sock = create_pipe_sock(
-		nmbd_socket_dir(), "unexpected", 0755);
+		nmbd_socket_dir, "unexpected", 0755);
 	if (result->listen_sock == -1) {
 		status = map_nt_error_from_unix(errno);
 		goto fail;
@@ -495,6 +490,7 @@ static void nb_packet_reader_got_ack(struct tevent_req *subreq);
 
 struct tevent_req *nb_packet_reader_send(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,
+					 const char *nmbd_socket_dir,
 					 enum packet_type type,
 					 int trn_id,
 					 const char *mailslot_name)
@@ -530,7 +526,7 @@ struct tevent_req *nb_packet_reader_send(TALLOC_CTX *mem_ctx,
 		tevent_req_nterror(req, map_nt_error_from_unix(errno));
 		return tevent_req_post(req, ev);
 	}
-	rpath = talloc_asprintf(state, "%s/%s", nmbd_socket_dir(),
+	rpath = talloc_asprintf(state, "%s/%s", nmbd_socket_dir,
 			       "unexpected");
 	if (tevent_req_nomem(rpath, req)) {
 		return tevent_req_post(req, ev);

@@ -23,6 +23,12 @@
 #include "libsmb/nmblib.h"
 #include "lib/util/string_wrappers.h"
 
+const char *global_nmbd_socket_dir(void)
+{
+	return lp_parm_const_string(-1, "nmbd", "socket dir",
+				    get_dyn_NMBDSOCKETDIR());
+}
+
 static const struct opcode_names {
 	const char *nmb_opcode_name;
 	int opcode;
