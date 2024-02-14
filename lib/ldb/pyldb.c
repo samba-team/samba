@@ -4779,10 +4779,17 @@ static PyObject *py_timestring(PyObject *module, PyObject *args)
 static PyObject *py_string_to_time(PyObject *module, PyObject *args)
 {
 	char *str;
-	if (!PyArg_ParseTuple(args, "s", &str))
+	time_t t;
+	if (!PyArg_ParseTuple(args, "s", &str)) {
 		return NULL;
+	}
+	t = ldb_string_to_time(str);
 
-	return PyLong_FromLong(ldb_string_to_time(str));
+	if (t == 0 && errno != 0) {
+		PyErr_SetFromErrno(PyExc_ValueError);
+		return NULL;
+	}
+	return PyLong_FromLong(t);
 }
 
 static PyObject *py_valid_attr_name(PyObject *self, PyObject *args)
