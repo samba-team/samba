@@ -38,7 +38,7 @@ bld.SAMBA_SUBSYSTEM('NBTD_DGRAM',
 bld.SAMBA_SUBSYSTEM('NBT_SERVER',
 	source='interfaces.c register.c query.c nodestatus.c defense.c packet.c irpc.c',
 	autoproto='nbt_server_proto.h',
-	deps='cli-nbt NBTD_WINS NBTD_DGRAM service',
+	deps='cli-nbt NBTD_WINS NBTD_DGRAM service LIBNMB',
 	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 

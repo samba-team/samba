@@ -618,6 +618,7 @@ sub provision_raw_prepare($$$$$$$$$$$$$$)
 	$ctx->{statedir} = "$prefix_abs/statedir";
 	$ctx->{cachedir} = "$prefix_abs/cachedir";
 	$ctx->{winbindd_socket_dir} = "$prefix_abs/wbsock";
+	$ctx->{nmbd_socket_dir} = "$prefix_abs/nmbsock";
 	$ctx->{ntp_signd_socket_dir} = "$prefix_abs/ntp_signd_socket";
 	$ctx->{nsswrap_passwd} = "$ctx->{etcdir}/passwd";
 	$ctx->{nsswrap_group} = "$ctx->{etcdir}/group";
@@ -774,6 +775,7 @@ sub provision_raw_step1($$)
 	state directory = $ctx->{statedir}
 	cache directory = $ctx->{cachedir}
 	winbindd socket directory = $ctx->{winbindd_socket_dir}
+	nmbd:socket dir = $ctx->{nmbd_socket_dir}
 	ntp signd socket directory = $ctx->{ntp_signd_socket_dir}
 	winbind separator = /
 	interfaces = $interfaces
