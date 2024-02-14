@@ -209,6 +209,38 @@ NTSTATUS dgram_set_incoming_handler(struct nbt_dgram_socket *dgmsock,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS nbt_dgram_send_raw(struct nbt_dgram_socket *dgmsock,
+			    struct socket_address *dest,
+			    const DATA_BLOB pkt_blob)
+{
+	struct nbt_dgram_request *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	req = talloc(dgmsock, struct nbt_dgram_request);
+	if (req == NULL) {
+		goto failed;
+	}
+
+	req->dest = socket_address_copy(req, dest);
+	if (req->dest == NULL) {
+		goto failed;
+	}
+
+	req->encoded = data_blob_dup_talloc(req, pkt_blob);
+	if (req->encoded.length != pkt_blob.length) {
+		goto failed;
+	}
+
+	DLIST_ADD_END(dgmsock->send_queue, req);
+
+	TEVENT_FD_WRITEABLE(dgmsock->fde);
+
+	return NT_STATUS_OK;
+
+failed:
+	talloc_free(req);
+	return status;
+}
 
 /*
   queue a datagram for send
