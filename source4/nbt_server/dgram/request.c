@@ -27,6 +27,11 @@
 #include "nbt_server/dgram/proto.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
+#include "lib/util/util_str_escape.h"
+#include "lib/util/util_net.h"
+#include "../source3/include/fstring.h"
+#include "../source3/libsmb/nmblib.h"
+#include "../source3/libsmb/unexpected.h"
 
 /*
   a list of mailslots that we have static handlers for
@@ -51,8 +56,55 @@ void dgram_request_handler(struct nbt_dgram_socket *dgmsock,
 			   struct nbt_dgram_packet *packet,
 			   struct socket_address *src)
 {
-	DEBUG(0,("General datagram request from %s:%d\n", src->addr, src->port));
-	NDR_PRINT_DEBUG(nbt_dgram_packet, packet);
+	struct nbtd_interface *iface =
+		talloc_get_type_abort(dgmsock->incoming.private_data,
+		struct nbtd_interface);
+	struct nbtd_server *nbtsrv = iface->nbtsrv;
+	const char *mailslot_name = NULL;
+	struct packet_struct *pstruct = NULL;
+	DATA_BLOB blob = { .length = 0, };
+	enum ndr_err_code ndr_err;
+
+	mailslot_name = dgram_mailslot_name(packet);
+	if (mailslot_name != NULL) {
+		DBG_DEBUG("Unexpected mailslot[%s] datagram request from %s:%d\n",
+			  log_escape(packet, mailslot_name),
+			  src->addr, src->port);
+	} else {
+		DBG_DEBUG("Unexpected general datagram request from %s:%d\n",
+			  src->addr, src->port);
+	}
+
+	if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
+		NDR_PRINT_DEBUG(nbt_dgram_packet, packet);
+	}
+
+	/*
+	 * For now we only pass DGRAM_DIRECT_UNIQUE
+	 * messages via nb_packet_dispatch() to
+	 * nbtsrv->unexpected_server
+	 */
+	if (packet->msg_type != DGRAM_DIRECT_UNIQUE) {
+		return;
+	}
+
+	ndr_err = ndr_push_struct_blob(&blob, packet, packet,
+			(ndr_push_flags_fn_t)ndr_push_nbt_dgram_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_ERR("ndr_push_nbt_dgram_packet - %s\n",
+			ndr_errstr(ndr_err));
+		return;
+	}
+
+	pstruct = parse_packet((char *)blob.data,
+			       blob.length,
+			       DGRAM_PACKET,
+			       interpret_addr2(src->addr),
+			       src->port);
+	if (pstruct != NULL) {
+		nb_packet_dispatch(nbtsrv->unexpected_server, pstruct);
+		free_packet(pstruct);
+	}
 }
 
 

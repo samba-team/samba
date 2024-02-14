@@ -31,6 +31,9 @@
 #include "param/param.h"
 #include "lib/util/util_net.h"
 #include "lib/util/idtree.h"
+#include "../source3/include/fstring.h"
+#include "../source3/libsmb/nmblib.h"
+#include "../source3/libsmb/unexpected.h"
 
 /*
   receive an incoming request and dispatch it to the right place
@@ -115,7 +118,33 @@ static void nbtd_unexpected_handler(struct nbt_name_socket *nbtsock,
 	}
 
 	if (!req) {
+		struct packet_struct *pstruct = NULL;
+		DATA_BLOB blob = { .length = 0, };
+		enum ndr_err_code ndr_err;
+
+		/*
+		 * Here we have NBT_FLAG_REPLY
+		 */
 		DEBUG(10,("unexpected from src[%s] unable to redirected\n", src->addr));
+
+		ndr_err = ndr_push_struct_blob(&blob, packet, packet,
+				(ndr_push_flags_fn_t)ndr_push_nbt_name_packet);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DBG_ERR("ndr_push_nbt_name_packet - %s\n",
+				ndr_errstr(ndr_err));
+			return;
+		}
+
+		pstruct = parse_packet((char *)blob.data,
+				       blob.length,
+				       NMB_PACKET,
+				       interpret_addr2(src->addr),
+				       src->port);
+		if (pstruct != NULL) {
+			nb_packet_dispatch(nbtsrv->unexpected_server, pstruct);
+			free_packet(pstruct);
+		}
+
 		return;
 	}
 
