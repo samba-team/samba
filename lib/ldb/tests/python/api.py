@@ -59,6 +59,7 @@ class NoContextTests(TestCase):
 
     def test_string_to_time(self):
         self.assertEqual(0, ldb.string_to_time("19700101000000.0Z"))
+        self.assertEqual(-1, ldb.string_to_time("19691231235959.0Z"))
         self.assertEqual(1195499412, ldb.string_to_time("20071119191012.0Z"))
 
         self.assertEqual(-62167219200, ldb.string_to_time("00000101000000.0Z"))

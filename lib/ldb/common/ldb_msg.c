@@ -1597,6 +1597,7 @@ char *ldb_timestring(TALLOC_CTX *mem_ctx, time_t t)
 time_t ldb_string_to_time(const char *s)
 {
 	struct tm tm;
+	time_t t;
 
 	if (s == NULL) return 0;
 
@@ -1609,7 +1610,15 @@ time_t ldb_string_to_time(const char *s)
 	tm.tm_year -= 1900;
 	tm.tm_mon -= 1;
 
-	return timegm(&tm);
+	t = timegm(&tm);
+
+	if (t == (time_t)-1 && errno != 0) {
+		/*
+		 * timegm() returns -1 on error, but also for '19691231235959.0Z'.
+		 */
+		return 0;
+	}
+	return t;
 }
 
 /*
