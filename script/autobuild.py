@@ -151,7 +151,6 @@ cleanup_list = []
 
 builddirs = {
     "ctdb": "ctdb",
-    "ldb": "lib/ldb",
     "tdb": "lib/tdb",
     "talloc": "lib/talloc",
     "replace": "lib/replace",
@@ -168,7 +167,7 @@ samba_libs_envvars += " PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgco
 samba_libs_envvars += " ADDITIONAL_CFLAGS='-Wmissing-prototypes'"
 samba_libs_configure_base = samba_libs_envvars + " ./configure --abi-check ${ENABLE_COVERAGE} --enable-debug -C ${PREFIX}"
 samba_libs_configure_libs = samba_libs_configure_base + " --bundled-libraries=cmocka,popt,NONE"
-samba_libs_configure_bundled_libs = " --bundled-libraries=!talloc,!pytalloc-util,!tdb,!pytdb,!ldb,!pyldb,!pyldb-util,!tevent,!pytevent,!popt"
+samba_libs_configure_bundled_libs = " --bundled-libraries=!talloc,!pytalloc-util,!tdb,!pytdb,!tevent,!pytevent,!popt"
 samba_libs_configure_samba = samba_libs_configure_base + samba_libs_configure_bundled_libs
 
 
@@ -888,17 +887,12 @@ tasks = {
             ("tevent-make", "cd lib/tevent && make"),
             ("tevent-install", "cd lib/tevent && make install"),
 
-            ("ldb-configure", "cd lib/ldb && " + samba_libs_configure_libs),
-            ("ldb-make", "cd lib/ldb && make"),
-            ("ldb-install", "cd lib/ldb && make install"),
-
-            ("nondevel-configure", samba_libs_envvars + " ./configure ${PREFIX}"),
+            ("nondevel-configure", samba_libs_envvars + " ./configure --private-libraries='!ldb' ${PREFIX}"),
             ("nondevel-make", "make -j"),
             ("nondevel-check", "./bin/smbd -b | grep WITH_NTVFS_FILESERVER && exit 1; exit 0"),
             ("nondevel-no-libtalloc", "find ./bin | grep -v 'libtalloc-report' | grep 'libtalloc' && exit 1; exit 0"),
             ("nondevel-no-libtdb", "find ./bin | grep -v 'libtdb-wrap' | grep 'libtdb' && exit 1; exit 0"),
             ("nondevel-no-libtevent", "find ./bin | grep -v 'libtevent-util' | grep 'libtevent' && exit 1; exit 0"),
-            ("nondevel-no-libldb", "find ./bin | grep -v 'module' | grep -v 'libldbsamba' | grep 'libldb' && exit 1; exit 0"),
             ("nondevel-no-samba-nss_winbind", "ldd ./bin/plugins/libnss_winbind.so.2 | grep 'samba' && exit 1; exit 0"),
             ("nondevel-no-samba-nss_wins", "ldd ./bin/plugins/libnss_wins.so.2 | grep 'samba' && exit 1; exit 0"),
             ("nondevel-no-samba-libwbclient", "ldd ./bin/shared/libwbclient.so.0 | grep 'samba' && exit 1; exit 0"),
@@ -921,7 +915,8 @@ tasks = {
             ("prefix-no-private-libtalloc", "find ${PREFIX_DIR} | grep -v 'libtalloc-report' | grep 'private.*libtalloc' && exit 1; exit 0"),
             ("prefix-no-private-libtdb", "find ${PREFIX_DIR} | grep -v 'libtdb-wrap' | grep 'private.*libtdb' && exit 1; exit 0"),
             ("prefix-no-private-libtevent", "find ${PREFIX_DIR} | grep -v 'libtevent-util' | grep 'private.*libtevent' && exit 1; exit 0"),
-            ("prefix-no-private-libldb", "find ${PREFIX_DIR} | grep -v 'module' | grep -v 'libldbsamba' | grep 'private.*libldb' && exit 1; exit 0"),
+            ("prefix-no-private-libldb", "find ${PREFIX_DIR} | grep -v 'module' | grep -v 'libldbsamba' | grep 'private.*libldb.so' && exit 1; exit 0"),
+            ("prefix-public-libldb", "find ${PREFIX_DIR} | grep 'lib/libldb.so' && exit 0; exit 1"),
             ("prefix-no-samba-nss_winbind", "ldd ${PREFIX_DIR}/lib/libnss_winbind.so.2 | grep 'samba' && exit 1; exit 0"),
             ("prefix-no-samba-nss_wins", "ldd ${PREFIX_DIR}/lib/libnss_wins.so.2 | grep 'samba' && exit 1; exit 0"),
             ("prefix-no-samba-libwbclient", "ldd ${PREFIX_DIR}/lib/libwbclient.so.0 | grep 'samba' && exit 1; exit 0"),
@@ -948,7 +943,6 @@ tasks = {
             ("allshared-no-libtalloc", "find ./bin | grep -v 'libtalloc-report' | grep 'libtalloc' && exit 1; exit 0"),
             ("allshared-no-libtdb", "find ./bin | grep -v 'libtdb-wrap' | grep 'libtdb' && exit 1; exit 0"),
             ("allshared-no-libtevent", "find ./bin | grep -v 'libtevent-util' | grep 'libtevent' && exit 1; exit 0"),
-            ("allshared-no-libldb", "find ./bin | grep -v 'module' | grep -v 'libldbsamba' | grep 'libldb' && exit 1; exit 0"),
             ("allshared-no-samba-nss_winbind", "ldd ./bin/plugins/libnss_winbind.so.2 | grep 'samba' && exit 1; exit 0"),
             ("allshared-no-samba-nss_wins", "ldd ./bin/plugins/libnss_wins.so.2 | grep 'samba' && exit 1; exit 0"),
             ("allshared-no-samba-libwbclient", "ldd ./bin/shared/libwbclient.so.0 | grep 'samba' && exit 1; exit 0"),
@@ -1062,10 +1056,6 @@ tasks = {
             ("tevent-make", "cd lib/tevent && make"),
             ("tevent-install", "cd lib/tevent && make install"),
 
-            ("ldb-configure", "cd lib/ldb && " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python"),
-            ("ldb-make", "cd lib/ldb && make"),
-            ("ldb-install", "cd lib/ldb && make install"),
-
         # retry against installed library packages, but no required modules
             ("libs-configure", samba_libs_configure_base + samba_libs_configure_bundled_libs + " --disable-python --without-ad-dc  --with-static-modules=!FORCED,!DEFAULT --with-shared-modules=!FORCED,!DEFAULT"),
             ("libs-make", "make -j"),
@@ -1080,26 +1070,6 @@ tasks = {
         "sequence": [
             ("run", "script/check-shell-scripts.sh ."),
             ("run", "script/codespell.sh ."),
-        ],
-    },
-
-    "ldb": {
-        "sequence": [
-            ("random-sleep", random_sleep(60, 600)),
-            ("configure", "./configure ${ENABLE_COVERAGE} --enable-developer -C ${PREFIX}"),
-            ("make", "make"),
-            ("install", "make install"),
-            ("test", "make test"),
-            ("lcov", LCOV_CMD),
-            ("clean", "make clean"),
-            ("configure-no-lmdb", "./configure ${ENABLE_COVERAGE} --enable-developer --without-ldb-lmdb -C ${PREFIX}"),
-            ("make-no-lmdb", "make"),
-            ("test-no-lmdb", "make test"),
-            ("lcov-no-lmdb", LCOV_CMD),
-            ("install-no-lmdb", "make install"),
-            ("check-clean-tree", CLEAN_SOURCE_TREE_CMD),
-            ("distcheck", "make distcheck"),
-            ("clean", "make clean"),
         ],
     },
 

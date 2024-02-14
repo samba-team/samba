@@ -179,7 +179,6 @@ include:
 others:
   extends: .shared_template
   script:
-    - script/autobuild.py ldb      $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /builds/samba-testbase/ldb
     - script/autobuild.py pidl     $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /builds/samba-testbase/pidl
     - script/autobuild.py replace  $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /builds/samba-testbase/replace
     - script/autobuild.py talloc   $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --full-testbase /builds/samba-testbase/talloc
