@@ -83,6 +83,9 @@ struct dgram_mailslot_handler {
 
 
 /* prototypes */
+NTSTATUS nbt_dgram_send_raw(struct nbt_dgram_socket *dgmsock,
+			    struct socket_address *dest,
+			    const DATA_BLOB pkt_blob);
 NTSTATUS nbt_dgram_send(struct nbt_dgram_socket *dgmsock,
 			struct nbt_dgram_packet *packet,
 			struct socket_address *dest);
