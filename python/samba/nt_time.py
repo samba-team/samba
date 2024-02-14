@@ -19,6 +19,7 @@
 
 import datetime
 from typing import NewType
+import re
 
 
 NtTime = NewType("NtTime", int)
@@ -56,3 +57,46 @@ def nt_time_delta_from_datetime(dt: datetime.timedelta) -> NtTimeDelta:
 
 def timedelta_from_nt_time_delta(nt_time_delta: NtTimeDelta) -> datetime.timedelta:
     return datetime.timedelta(microseconds=nt_time_delta / NT_TICKS_PER_μSEC)
+
+
+def nt_time_from_string(s: str) -> NtTime:
+    """Convert a subset of ISO 8601 date/time strings, ldap timestamps,
+    and the string 'now' into NT time.
+
+    The ldap format is
+
+       YYYYmmddHHMMSS.0Z
+
+    which is 14 digits followed by the fixed string '.0Z'. This is
+    used in LDIF and internally by ldb.
+
+    The ISO format is
+
+    YYYY-mm-dd[*HH[:MM[:SS[.fff[fff]]]][+HH:MM[:SS[.ffffff]]]]
+
+    where the '*' can be any character, and the optional last
+    '[+HH:MM[:SS[.ffffff]]]' is a timezone offset (use '+00:00' for
+    UTC).
+    """
+    try:
+        if s == 'now':
+            dt = datetime.datetime.now(datetime.timezone.utc)
+        elif re.match(r'^\d{14}\.0Z$', s):
+            # "20230127223641.0Z"
+            dt = datetime.strptime(s, '%Y%m%d%H%M%S.0Z')
+        else:
+            dt = datetime.datetime.fromisoformat(s)
+    except ValueError:
+        raise ValueError("Expected a date in either "
+                         "ISO8601 'YYYY-MM-DD HH:MM:SS' format, "
+                         "LDAP timestamp 'YYYYmmddHHMMSS.0Z', "
+                         "or the literal string 'now'. "
+                         f" Got '{s}'.")
+
+    if dt.tzinfo is None:
+        # This is a cursed timestamp with no timezone info. We have to
+        # guess or nt_time_from_datetime() will fail. The best guess
+        # is the system timezone, which we can get this way:
+        dt = dt.astimezone()
+
+    return nt_time_from_datetime(dt)
