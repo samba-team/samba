@@ -436,7 +436,7 @@ class SuperCommand(Command):
             epilog += "  %*s  - %s\n" % (
                 -max_length, cmd_name, cmd.short_description)
 
-        epilog += ("For more help on a specific subcommand, please type: "
+        epilog += ("\nFor more help on a specific subcommand, please type: "
                    f"{self.command_name} <subcommand> (-h|--help)\n")
 
         parser, optiongroups = self._create_parser(self.command_name, epilog=epilog)
