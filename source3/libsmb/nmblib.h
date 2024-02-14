@@ -29,6 +29,8 @@
 
 /* The following definitions come from libsmb/nmblib.c  */
 
+const char *global_nmbd_socket_dir(void);
+
 void debug_nmb_packet(struct packet_struct *p);
 void put_name(char *dest, const char *name, int pad, unsigned int name_type);
 char *nmb_namestr(const struct nmb_name *n);

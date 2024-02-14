@@ -644,7 +644,12 @@ static struct tevent_req *nb_trans_send(
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = nb_packet_reader_send(state, ev, type, state->trn_id, NULL);
+	subreq = nb_packet_reader_send(state,
+				       ev,
+				       global_nmbd_socket_dir(),
+				       type,
+				       state->trn_id,
+				       NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

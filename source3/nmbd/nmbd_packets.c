@@ -43,6 +43,7 @@ bool nmbd_init_packet_server(void)
 
 	status = nb_packet_server_create(
 		NULL, nmbd_event_context(),
+		global_nmbd_socket_dir(),
 		lp_parm_int(-1, "nmbd", "unexpected_clients", 200),
 		&packet_server);
 	if (!NT_STATUS_IS_OK(status)) {
