@@ -81,22 +81,26 @@ class cmd_domain_level(Command):
         try:
             res_forest = samdb.search("CN=Partitions,%s" % samdb.get_config_basedn(),
                                       scope=ldb.SCOPE_BASE, attrs=["msDS-Behavior-Version"])
-            assert len(res_forest) == 1
+            if len(res_forest) != 1:
+                raise CommandError("Forest not found")
 
             res_domain = samdb.search(domain_dn, scope=ldb.SCOPE_BASE,
                                       attrs=["msDS-Behavior-Version", "nTMixedDomain"])
-            assert len(res_domain) == 1
+            if len(res_domain) != 1:
+                raise CommandError("domain not found")
 
             res_domain_cross = samdb.search("CN=Partitions,%s" % samdb.get_config_basedn(),
                                             scope=ldb.SCOPE_SUBTREE,
                                             expression="(&(objectClass=crossRef)(nCName=%s))" % domain_dn,
                                             attrs=["msDS-Behavior-Version"])
-            assert len(res_domain_cross) == 1
+            if len(res_domain_cross) != 1:
+                raise CommandError("no crossRef objects found")
 
             res_dc_s = samdb.search("CN=Sites,%s" % samdb.get_config_basedn(),
                                     scope=ldb.SCOPE_SUBTREE, expression="(objectClass=nTDSDSA)",
                                     attrs=["msDS-Behavior-Version"])
-            assert len(res_dc_s) >= 1
+            if len(res_dc_s) == 0:
+                raise CommandError("no nTDSDSA objects found")
 
             # default values, since "msDS-Behavior-Version" does not exist on Windows 2000 AD
             level_forest = DS_DOMAIN_FUNCTION_2000
