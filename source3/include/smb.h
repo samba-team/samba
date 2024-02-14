@@ -625,31 +625,7 @@ struct kernel_oplocks_ops {
 
 #include "smb_macros.h"
 
-#define MAX_NETBIOSNAME_LEN 16
-/* DOS character, NetBIOS namestring. Type used on the wire. */
-typedef char nstring[MAX_NETBIOSNAME_LEN];
-/* Unix character, NetBIOS namestring. Type used to manipulate name in nmbd. */
-typedef char unstring[MAX_NETBIOSNAME_LEN*4];
-
-/* A netbios name structure. */
-struct nmb_name {
-	nstring      name;
-	char         scope[64];
-	unsigned int name_type;
-};
-
-/* A netbios node status array element. */
-struct node_status {
-	nstring name;
-	unsigned char type;
-	unsigned char flags;
-};
-
-/* The extra info from a NetBIOS node status query */
-struct node_status_extra {
-	unsigned char mac_addr[6];
-	/* There really is more here ... */ 
-};
+#include "nameserv.h"
 
 #define SAFE_NETBIOS_CHARS ". -_"
 
