@@ -11,6 +11,11 @@ interface constants
 	 * for details of this and other language id(s)
 	 */
 	const uint32_t WSP_DEFAULT_LCID = 0x00000409;
+	/*
+	 * Max size of rows buffer in getrowsout response
+	 * see MS-WSP 2.2.3.11
+	 */
+	const uint32_t MAX_ROW_BUFF_SIZE = 0x0004000;
 
 	/* values for guidPropertySet */
 	const char* DBPROPSET_FSCIFRMWRK_EXT = "A9BD1526-6A80-11D0-8C9D-0020AF1D740E";
