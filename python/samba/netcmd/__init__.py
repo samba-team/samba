@@ -105,7 +105,7 @@ class Command(object):
         self._set_files(outf, errf)
 
     def usage(self, prog=None):
-        parser, _ = self._create_parser(prog)
+        parser, _ = self._create_parser(prog or self.command_name)
         parser.print_usage()
 
     def _print_error(self, msg, evalue=None, klass=None):
