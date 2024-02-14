@@ -1311,6 +1311,19 @@ enum ndr_err_code extract_rowsarray(
 {
 	uint32_t i;
 	enum ndr_err_code err  = NDR_ERR_SUCCESS;
+	/*
+	 * limit check the size of rows_buf
+	 * see MS-WSP 2.2.3.11 which describes the size
+	 * of the rows buffer MUST not exceed 0x0004000 bytes.
+	 * This limit will ensure we can safely check
+	 * limits based on uint32_t offsets
+	 */
+
+	if (rows_buf->length > MAX_ROW_BUFF_SIZE) {
+		DBG_ERR("Buffer size 0x%zx exceeds 0x%x max buffer size\n",
+			rows_buf->length, MAX_ROW_BUFF_SIZE);
+		return NDR_ERR_BUFSIZE;
+	}
 
 	for (i = 0; i < rows; i++ ) {
 		struct wsp_cbasestoragevariant *cols =
