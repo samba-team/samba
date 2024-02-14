@@ -349,7 +349,11 @@ struct tevent_req *nbt_getdc_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = nb_packet_reader_send(state, ev, DGRAM_PACKET, -1,
+	subreq = nb_packet_reader_send(state,
+				       ev,
+				       global_nmbd_socket_dir(),
+				       DGRAM_PACKET,
+				       -1,
 				       state->my_mailslot);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);

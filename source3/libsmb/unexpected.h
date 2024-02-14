@@ -29,12 +29,14 @@ struct nb_packet_reader;
 
 NTSTATUS nb_packet_server_create(TALLOC_CTX *mem_ctx,
 				 struct tevent_context *ev,
+				 const char *nmbd_socket_dir,
 				 int max_clients,
 				 struct nb_packet_server **presult);
 void nb_packet_dispatch(struct nb_packet_server *server,
 			struct packet_struct *p);
 struct tevent_req *nb_packet_reader_send(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,
+					 const char *nmbd_socket_dir,
 					 enum packet_type type,
 					 int trn_id,
 					 const char *mailslot_name);
