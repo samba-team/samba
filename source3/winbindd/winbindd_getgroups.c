@@ -259,7 +259,7 @@ NTSTATUS winbindd_getgroups_recv(struct tevent_req *req,
 
 	if (tevent_req_is_nterror(req, &status)) {
 		struct dom_sid_buf buf;
-		D_WARNING("Could not convert sid %s: %s\n",
+		D_DEBUG("Could not convert sid %s: %s\n",
 			  dom_sid_str_buf(&state->sid, &buf),
 			  nt_errstr(status));
 		return status;
