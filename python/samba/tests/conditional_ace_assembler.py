@@ -219,7 +219,7 @@ def assemble_sd(base_sddl='D:',
         # If the compiled ACE is a deny ACE, we won't know if it
         # worked unless there is a wide ranging allow ACE following
         # it.
-        allow_ace = assemble_ace(type='A',
+        allow_ace = assemble_ace(type=security.SEC_ACE_TYPE_ACCESS_ALLOWED,
                                  trustee=security.dom_sid(security.SID_WORLD),
                                  access_mask=security.SEC_FILE_ALL)
         sd.dacl_add(allow_ace)
