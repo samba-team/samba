@@ -224,8 +224,8 @@ NTSTATUS nbt_dgram_send(struct nbt_dgram_socket *dgmsock,
 	req = talloc(dgmsock, struct nbt_dgram_request);
 	if (req == NULL) goto failed;
 
-	req->dest = dest;
-	if (talloc_reference(req, dest) == NULL) goto failed;
+	req->dest = socket_address_copy(req, dest);
+	if (req->dest == NULL) goto failed;
 
 	ndr_err = ndr_push_struct_blob(&req->encoded, req, packet,
 				      (ndr_push_flags_fn_t)ndr_push_nbt_dgram_packet);
