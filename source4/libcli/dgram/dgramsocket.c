@@ -90,6 +90,10 @@ static void dgm_socket_recv(struct nbt_dgram_socket *dgmsock)
 			dgmslot->handler(dgmslot, packet, src);
 		} else {
 			DEBUG(2,("No mailslot handler for '%s'\n", mailslot_name));
+			/* dispatch if there is a general handler */
+			if (dgmsock->incoming.handler) {
+				dgmsock->incoming.handler(dgmsock, packet, src);
+			}
 		}
 	} else {
 		/* dispatch if there is a general handler */
