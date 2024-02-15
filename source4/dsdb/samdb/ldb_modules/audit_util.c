@@ -32,7 +32,6 @@
 #include "libcli/security/security_token.h"
 #include "auth/common_auth.h"
 #include "param/param.h"
-#include "dsdb/samdb/ldb_modules/util.h"
 #include "dsdb/samdb/ldb_modules/audit_util_proto.h"
 
 #define MAX_LENGTH 1024
