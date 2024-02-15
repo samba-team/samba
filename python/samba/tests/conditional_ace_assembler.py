@@ -171,12 +171,15 @@ def assemble(*tokens):
     return program
 
 
-def assemble_ace(tokens=[],
+def assemble_ace(tokens=None,
                  type=security.SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK,
                  trustee=None,
                  flags=None,
                  object=None,
                  access_mask=None):
+    if tokens is None:
+        tokens = []
+
     type_strings = {
         'XA': security.SEC_ACE_TYPE_ACCESS_ALLOWED_CALLBACK,
         'XD': security.SEC_ACE_TYPE_ACCESS_DENIED_CALLBACK,
