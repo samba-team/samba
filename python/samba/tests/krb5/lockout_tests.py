@@ -584,14 +584,6 @@ class LockoutTests(KDCBaseTest):
         # Set it temporarily to '0'.
         samdb.set_minPwdAge('0')
 
-    def assertLocalSamDB(self, samdb):
-        if samdb.url.startswith('tdb://'):
-            return
-        if samdb.url.startswith('mdb://'):
-            return
-
-        self.fail(f'connection to {samdb.url} is not local!')
-
     def wait_for_ready(self, pipe, future):
         if pipe.poll(timeout=5):
             return

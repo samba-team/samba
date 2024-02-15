@@ -1374,6 +1374,14 @@ class RawKerberosTest(TestCase):
 
             self.assertCountEqual(expected, got, fail_msg)
 
+    def assertLocalSamDB(self, samdb):
+        if samdb.url.startswith('tdb://'):
+            return
+        if samdb.url.startswith('mdb://'):
+            return
+
+        self.fail(f'connection to {samdb.url} is not local!')
+
     def get_KerberosTimeWithUsec(self, epoch=None, offset=None):
         if epoch is None:
             epoch = time.time()
