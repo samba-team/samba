@@ -3037,6 +3037,7 @@ static int net_ads_keytab_create(struct net_context *c, int argc, const char **a
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
+	NTSTATUS ntstatus;
 	int ret = -1;
 
 	if (c->display_usage) {
@@ -3044,7 +3045,7 @@ static int net_ads_keytab_create(struct net_context *c, int argc, const char **a
 			   "net ads keytab create\n"
 			   "    %s\n",
 			 _("Usage:"),
-			 _("Create new default keytab"));
+			 _("Create (sync) new default keytab"));
 		TALLOC_FREE(tmp_ctx);
 		return -1;
 	}
@@ -3060,7 +3061,8 @@ static int net_ads_keytab_create(struct net_context *c, int argc, const char **a
 		goto out;
 	}
 
-	ret = ads_keytab_create_default(ads);
+	ntstatus = sync_pw2keytabs();
+	ret = NT_STATUS_IS_OK(ntstatus) ? 0 : 1;
 out:
 	TALLOC_FREE(tmp_ctx);
 	return ret;
@@ -3085,7 +3087,6 @@ static int net_ads_keytab_list(struct net_context *c, int argc, const char **arg
 
 	return ads_keytab_list(keytab);
 }
-
 
 int net_ads_keytab(struct net_context *c, int argc, const char **argv)
 {
@@ -3118,9 +3119,9 @@ int net_ads_keytab(struct net_context *c, int argc, const char **argv)
 			"create",
 			net_ads_keytab_create,
 			NET_TRANSPORT_ADS,
-			N_("Create a fresh keytab"),
+			N_("Create (sync) a fresh keytab"),
 			N_("net ads keytab create\n"
-			   "    Create a fresh keytab or update existing one.")
+			   "    Create (sync) a fresh keytab or update existing one (see also smb.conf 'sync machine password to keytab'.")
 		},
 		{
 			"flush",
