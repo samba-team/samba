@@ -2933,105 +2933,6 @@ out:
 	return ret;
 }
 
-static int net_ads_keytab_add(struct net_context *c,
-			      int argc,
-			      const char **argv,
-			      bool update_ads)
-{
-	TALLOC_CTX *tmp_ctx = talloc_stackframe();
-	ADS_STRUCT *ads = NULL;
-	ADS_STATUS status;
-	int i;
-	int ret = -1;
-
-	if (c->display_usage) {
-		d_printf("%s\n%s",
-			 _("Usage:"),
-			 _("net ads keytab add <principal> [principal ...]\n"
-			   "  Add principals to local keytab\n"
-			   "    principal\tKerberos principal to add to "
-			   "keytab\n"));
-		TALLOC_FREE(tmp_ctx);
-		return -1;
-	}
-
-	net_warn_member_options();
-
-	d_printf(_("Processing principals to add...\n"));
-
-	if (!c->explicit_credentials) {
-		net_use_krb_machine_account(c);
-	}
-
-	status = ads_startup(c, true, tmp_ctx, &ads);
-	if (!ADS_ERR_OK(status)) {
-		goto out;
-	}
-
-	for (ret = 0, i = 0; i < argc; i++) {
-		ret |= ads_keytab_add_entry(ads, argv[i], update_ads);
-	}
-out:
-	TALLOC_FREE(tmp_ctx);
-	return ret;
-}
-
-static int net_ads_keytab_add_default(struct net_context *c,
-				      int argc,
-				      const char **argv)
-{
-	return net_ads_keytab_add(c, argc, argv, false);
-}
-
-static int net_ads_keytab_add_update_ads(struct net_context *c,
-					 int argc,
-					 const char **argv)
-{
-	return net_ads_keytab_add(c, argc, argv, true);
-}
-
-static int net_ads_keytab_delete(struct net_context *c,
-				 int argc,
-				 const char **argv)
-{
-	TALLOC_CTX *tmp_ctx = talloc_stackframe();
-	ADS_STRUCT *ads = NULL;
-	ADS_STATUS status;
-	int i;
-	int ret = -1;
-
-	if (c->display_usage) {
-		d_printf("%s\n%s",
-			 _("Usage:"),
-			 _("net ads keytab delete <principal> [principal ...]\n"
-			   "  Remove entries for service principal, "
-			   "  from the keytab file only."
-			   "  Remove principals from local keytab\n"
-			   "    principal\tKerberos principal to remove from "
-			   "keytab\n"));
-		TALLOC_FREE(tmp_ctx);
-		return -1;
-	}
-
-	d_printf(_("Processing principals to delete...\n"));
-
-	if (!c->explicit_credentials) {
-		net_use_krb_machine_account(c);
-	}
-
-	status = ads_startup(c, true, tmp_ctx, &ads);
-	if (!ADS_ERR_OK(status)) {
-		goto out;
-	}
-
-	for (ret = 0, i = 0; i < argc; i++) {
-		ret |= ads_keytab_delete_entry(ads, argv[i]);
-	}
-out:
-	TALLOC_FREE(tmp_ctx);
-	return ret;
-}
-
 static int net_ads_keytab_create(struct net_context *c, int argc, const char **argv)
 {
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
@@ -3091,30 +2992,6 @@ static int net_ads_keytab_list(struct net_context *c, int argc, const char **arg
 int net_ads_keytab(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
-		{
-			"add",
-			net_ads_keytab_add_default,
-			NET_TRANSPORT_ADS,
-			N_("Add a service principal"),
-			N_("net ads keytab add\n"
-			   "    Add a service principal, updates keytab file only.")
-		},
-		{
-			"delete",
-			net_ads_keytab_delete,
-			NET_TRANSPORT_ADS,
-			N_("Delete a service principal"),
-			N_("net ads keytab delete\n"
-			   "    Remove entries for service principal, from the keytab file only.")
-		},
-		{
-			"add_update_ads",
-			net_ads_keytab_add_update_ads,
-			NET_TRANSPORT_ADS,
-			N_("Add a service principal"),
-			N_("net ads keytab add_update_ads\n"
-			   "    Add a service principal, depending on the param passed may update ADS computer object in addition to the keytab file.")
-		},
 		{
 			"create",
 			net_ads_keytab_create,
