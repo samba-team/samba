@@ -5019,6 +5019,7 @@ static PyObject* module_init(void)
 	PyModule_AddObject(m, "MessageElement", (PyObject *)&PyLdbMessageElement);
 	PyModule_AddObject(m, "Module", (PyObject *)&PyLdbModule);
 	PyModule_AddObject(m, "Tree", (PyObject *)&PyLdbTree);
+	PyModule_AddObject(m, "Result", (PyObject *)&PyLdbResult);
 	PyModule_AddObject(m, "Control", (PyObject *)&PyLdbControl);
 
 	PyModule_AddStringConstant(m, "__version__", PACKAGE_VERSION);
