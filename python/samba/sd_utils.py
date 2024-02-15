@@ -18,14 +18,12 @@
 
 """Utility methods for security descriptor manipulation."""
 
+from ldb import FLAG_MOD_REPLACE, SCOPE_BASE, Dn, Message, MessageElement
+
 import samba
-from ldb import Message, MessageElement, Dn
-from ldb import FLAG_MOD_REPLACE, SCOPE_BASE
-from samba.ndr import ndr_pack, ndr_unpack, ndr_deepcopy
 from samba.dcerpc import security
-from samba.ntstatus import (
-    NT_STATUS_OBJECT_NAME_NOT_FOUND,
-)
+from samba.ndr import ndr_deepcopy, ndr_pack, ndr_unpack
+from samba.ntstatus import NT_STATUS_OBJECT_NAME_NOT_FOUND
 
 
 def escaped_claim_id(claim_id):
