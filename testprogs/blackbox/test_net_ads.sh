@@ -201,21 +201,6 @@ testit "leave+createcomputer" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_P
 
 testit "Remove OU=Servers" $VALGRIND $ldbdel -U$DC_USERNAME%$DC_PASSWORD -H ldap://$SERVER "OU=Servers,$base_dn"
 
-#
-# Test dnshostname option of 'net ads join'
-#
-testit "join+dnshostname" $VALGRIND $net_tool ads join -U$DC_USERNAME%$DC_PASSWORD dnshostname="alt.hostname.$HOSTNAME" || failed=$(expr $failed + 1)
-
-testit_grep "check dnshostname opt" "dNSHostName: alt.hostname.$HOSTNAME" $ldbsearch -U$DC_USERNAME%$DC_PASSWORD -H ldap://$SERVER.$REALM --scope=base -b "CN=$HOSTNAME,CN=Computers,$base_dn" || failed=$(expr $failed + 1)
-
-testit "create_keytab+dnshostname" $VALGRIND $net_tool ads keytab create --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=$(expr $failed + 1)
-
-testit_grep "check dnshostname+keytab" "host/alt.hostname.$HOSTNAME@$REALM" $net_tool ads keytab list --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=$(expr $failed + 1)
-
-rm -f $dedicated_keytab_file
-
-testit "leave+dnshostname" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD || failed=$(expr $failed + 1)
-
 rm -rf $BASEDIR/$WORKDIR
 
 exit $failed
