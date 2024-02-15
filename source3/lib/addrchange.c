@@ -101,6 +101,7 @@ struct addrchange_state {
 
 	enum addrchange_type type;
 	struct sockaddr_storage addr;
+	uint32_t if_index;
 };
 
 static void addrchange_done(struct tevent_req *subreq);
@@ -213,6 +214,7 @@ static void addrchange_done(struct tevent_req *subreq)
 	ifa = (struct ifaddrmsg *)NLMSG_DATA(h);
 
 	state->addr.ss_family = ifa->ifa_family;
+	state->if_index = ifa->ifa_index;
 
 	len = h->nlmsg_len - sizeof(struct nlmsghdr) + sizeof(struct ifaddrmsg);
 
@@ -272,8 +274,10 @@ retry:
 	tevent_req_set_callback(subreq, addrchange_done, req);
 }
 
-NTSTATUS addrchange_recv(struct tevent_req *req, enum addrchange_type *type,
-			 struct sockaddr_storage *addr)
+NTSTATUS addrchange_recv(struct tevent_req *req,
+			 enum addrchange_type *type,
+			 struct sockaddr_storage *addr,
+			 uint32_t *if_index)
 {
 	struct addrchange_state *state = tevent_req_data(
 		req, struct addrchange_state);
@@ -286,6 +290,9 @@ NTSTATUS addrchange_recv(struct tevent_req *req, enum addrchange_type *type,
 
 	*type = state->type;
 	*addr = state->addr;
+	if (if_index != NULL) {
+		*if_index = state->if_index;
+	}
 	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
@@ -306,7 +313,7 @@ struct tevent_req *addrchange_send(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS addrchange_recv(struct tevent_req *req, enum addrchange_type *type,
-			 struct sockaddr_storage *addr)
+			 struct sockaddr_storage *addr, uint32_t *if_index)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }

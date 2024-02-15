@@ -1596,8 +1596,9 @@ static void smbd_addr_changed(struct tevent_req *req)
 	enum addrchange_type type;
 	struct sockaddr_storage addr;
 	NTSTATUS status;
+	uint32_t if_index;
 
-	status = addrchange_recv(req, &type, &addr);
+	status = addrchange_recv(req, &type, &addr, &if_index);
 	TALLOC_FREE(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("addrchange_recv failed: %s, stop listening\n",
@@ -1611,8 +1612,9 @@ static void smbd_addr_changed(struct tevent_req *req)
 
 		print_sockaddr(addrstr, sizeof(addrstr), &addr);
 
-		DBG_NOTICE("smbd: kernel (AF_NETLINK) dropped ip %s\n",
-			   addrstr);
+		DBG_NOTICE("smbd: kernel (AF_NETLINK) dropped ip %s "
+			   "on if_index %u\n",
+			   addrstr, if_index);
 
 		goto rearm;
 	}
@@ -1622,8 +1624,9 @@ static void smbd_addr_changed(struct tevent_req *req)
 
 		print_sockaddr(addrstr, sizeof(addrstr), &addr);
 
-		DBG_NOTICE("smbd: kernel (AF_NETLINK) added ip %s\n",
-			   addrstr);
+		DBG_NOTICE("smbd: kernel (AF_NETLINK) added ip %s "
+			   "on if_index %u\n",
+			   addrstr, if_index);
 	}
 rearm:
 	req = addrchange_send(state, state->ev, state->ctx);

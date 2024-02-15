@@ -64,7 +64,7 @@ bool run_addrchange(int dummy)
 			return false;
 		}
 
-		status = addrchange_recv(req, &type, &addr);
+		status = addrchange_recv(req, &type, &addr, NULL);
 		TALLOC_FREE(req);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_fprintf(stderr, "addrchange_recv failed: %s\n",

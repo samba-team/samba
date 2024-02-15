@@ -39,7 +39,9 @@ enum addrchange_type {
 	ADDRCHANGE_DEL
 };
 
-NTSTATUS addrchange_recv(struct tevent_req *req, enum addrchange_type *type,
-			 struct sockaddr_storage *addr);
+NTSTATUS addrchange_recv(struct tevent_req *req,
+			 enum addrchange_type *type,
+			 struct sockaddr_storage *addr,
+			 uint32_t *if_index);
 
 #endif

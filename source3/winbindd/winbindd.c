@@ -1280,7 +1280,7 @@ static void winbindd_addr_changed(struct tevent_req *req)
 	struct sockaddr_storage addr;
 	NTSTATUS status;
 
-	status = addrchange_recv(req, &type, &addr);
+	status = addrchange_recv(req, &type, &addr, NULL);
 	TALLOC_FREE(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("addrchange_recv failed: %s, stop listening\n",
