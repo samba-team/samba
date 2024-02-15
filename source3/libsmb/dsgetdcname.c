@@ -930,6 +930,11 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 		name_type = NBT_NAME_PDC;
 	}
 
+	/*
+	 * It's 2024 we always want an AD style response!
+	 */
+	nt_version |= NETLOGON_NT_VERSION_AVOID_NT4EMUL;
+
 	nt_version |= map_ds_flags_to_nt_version(flags);
 
 	snprintf(my_acct_name,
