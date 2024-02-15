@@ -448,6 +448,50 @@ failed:
 	return NULL;
 }
 
+/*
+  send off a nbt name packet
+*/
+_PUBLIC_ NTSTATUS nbt_name_send_raw(struct nbt_name_socket *nbtsock,
+				    struct socket_address *dest,
+				    const DATA_BLOB pkt_blob)
+{
+	struct nbt_name_request *req;
+
+	req = talloc_zero(nbtsock, struct nbt_name_request);
+	NT_STATUS_HAVE_NO_MEMORY(req);
+
+	req->nbtsock = nbtsock;
+	req->dest = socket_address_copy(req, dest);
+	if (req->dest == NULL) {
+		goto failed;
+	}
+	req->state = NBT_REQUEST_SEND;
+	/*
+	 * We don't expect a response so
+	 * just pretent it is a request,
+	 * but we really don't care about the
+	 * content.
+	 */
+	req->is_reply = true;
+
+	req->encoded = data_blob_dup_talloc(req, pkt_blob);
+	if (req->encoded.length != pkt_blob.length) {
+		goto failed;
+	}
+
+	talloc_set_destructor(req, nbt_name_request_destructor);
+
+	DLIST_ADD_END(nbtsock->send_queue, req);
+
+	TEVENT_FD_WRITEABLE(nbtsock->fde);
+
+	return NT_STATUS_OK;
+
+failed:
+	talloc_free(req);
+	return NT_STATUS_NO_MEMORY;
+}
+
 
 /*
   send off a nbt name reply
