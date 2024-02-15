@@ -2574,11 +2574,10 @@ static NTSTATUS samdb_set_password_request(struct ldb_context *ldb, TALLOC_CTX *
 }
 
 /*
- * Sets the user password using plaintext UTF16 (attribute "new_password") or
- * LM (attribute "lmNewHash") or NT (attribute "ntNewHash") hash. Also pass
- * the old LM and/or NT hash (attributes "lmOldHash"/"ntOldHash") if it is a
- * user change or not. The "rejectReason" gives some more information if the
- * change failed.
+ * Sets the user password using plaintext UTF16 (attribute "new_password") or NT
+ * (attribute "ntNewHash") hash. Also pass the old LM and/or NT hash (attributes
+ * "lmOldHash"/"ntOldHash") if it is a user change or not. The "rejectReason"
+ * gives some more information if the change failed.
  *
  * Results: NT_STATUS_OK, NT_STATUS_INVALID_PARAMETER, NT_STATUS_UNSUCCESSFUL,
  *   NT_STATUS_WRONG_PASSWORD, NT_STATUS_PASSWORD_RESTRICTION,
@@ -2710,11 +2709,10 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 }
 
 /*
- * Sets the user password using plaintext UTF16 (attribute "new_password") or
- * LM (attribute "lmNewHash") or NT (attribute "ntNewHash") hash. Also pass
- * the old LM and/or NT hash (attributes "lmOldHash"/"ntOldHash") if it is a
- * user change or not. The "rejectReason" gives some more information if the
- * change failed.
+ * Sets the user password using plaintext UTF16 (attribute "new_password") or NT
+ * (attribute "ntNewHash") hash. Also pass the old LM and/or NT hash (attributes
+ * "lmOldHash"/"ntOldHash") if it is a user change or not. The "rejectReason"
+ * gives some more information if the change failed.
  *
  * This wrapper function for "samdb_set_password" takes a SID as input rather
  * than a user DN.
