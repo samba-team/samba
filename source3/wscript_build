@@ -902,6 +902,7 @@ bld.SAMBA3_SUBSYSTEM('LIBNMB',
                           LIBTSOCKET
                           LIBCLI_NETLOGON
                           samba3util
+                          smbconf
                           addns
                           lmhosts
                           resolv
