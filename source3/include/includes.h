@@ -237,10 +237,7 @@ enum timestamp_set_resolution {
    _________)/\\_//(\/(/\)/\//\/\///|_)_______
 */
 
-#ifndef FSTRING_LEN
-#define FSTRING_LEN 256
-typedef char fstring[FSTRING_LEN];
-#endif
+#include "fstring.h"
 
 /* debug.h need to be included before samba_util.h for the macro SMB_ASSERT */
 #include "../lib/util/debug.h"
