@@ -331,6 +331,9 @@ NTSTATUS nbt_set_unexpected_handler(struct nbt_name_socket *nbtsock,
 				    void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *,
 						    struct socket_address *),
 				    void *private_data);
+NTSTATUS nbt_name_send_raw(struct nbt_name_socket *nbtsock,
+			   struct socket_address *dest,
+			   const DATA_BLOB pkt_blob);
 NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock,
 			     struct socket_address *dest,
 			     struct nbt_name_packet *request);
