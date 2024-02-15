@@ -91,7 +91,7 @@ class SDUtils(object):
 
         def ace_from_sddl(ace_sddl):
             ace_sd = security.descriptor.from_sddl("D:" + ace_sddl, self.domain_sid)
-            assert (len(ace_sd.dacl.aces) == 1)
+            assert len(ace_sd.dacl.aces) == 1
             return ace_sd.dacl.aces[0]
 
         if sddl_attr is None:
@@ -131,7 +131,7 @@ class SDUtils(object):
         for ace in del_aces:
             if isinstance(ace, str):
                 ace = ace_from_sddl(ace)
-            assert (isinstance(ace, security.ace))
+            assert isinstance(ace, security.ace)
 
             if ace.flags & security.SEC_ACE_FLAG_INHERITED_ACE:
                 inherited_ignored.append(ace)
@@ -152,7 +152,7 @@ class SDUtils(object):
                 ace = ace["ace"]
             if isinstance(ace, str):
                 ace = ace_from_sddl(ace)
-            assert (isinstance(ace, security.ace))
+            assert isinstance(ace, security.ace)
 
             if ace.flags & security.SEC_ACE_FLAG_INHERITED_ACE:
                 inherited_ignored.append(ace)
