@@ -1819,10 +1819,10 @@ NTSTATUS wb_cache_name_to_sid(struct winbindd_domain *domain,
 			      enum lsa_SidType *type)
 {
 	NTSTATUS status;
-	bool old_status;
+	bool was_online;
 	const char *dom_name;
 
-	old_status = domain->online;
+	was_online = domain->online;
 
 	status = wcache_name_to_sid(domain, domain_name, name, sid, type);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
@@ -1840,12 +1840,12 @@ NTSTATUS wb_cache_name_to_sid(struct winbindd_domain *domain,
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
 		NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
-		if (!domain->internal && old_status) {
+		if (!domain->internal && was_online) {
 			set_domain_offline(domain);
 		}
 		if (!domain->internal &&
 			!domain->online &&
-			old_status) {
+			was_online) {
 			NTSTATUS cache_status;
 			cache_status = wcache_name_to_sid(domain, domain_name, name, sid, type);
 			return cache_status;
