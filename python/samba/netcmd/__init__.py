@@ -155,6 +155,50 @@ class Command(object):
         json.dump(data, self.outf, cls=JSONEncoder, indent=2, sort_keys=True)
         self.outf.write("\n")
 
+    def print_json_status(self, error=None, message=None, **kwargs):
+        """For commands that really have nothing to say when they succeed
+        (`samba-tool foo delete --json`), we can still emit
+        '{"status": "OK"}\n'. And if they fail they can say:
+        '{"status": "error"}\n'.
+        This function hopes to keep things consistent.
+
+        If error is true-ish but not True, it is stringified and added
+        as a message. For example, if error is an LdbError with an
+        OBJECT_NOT_FOUND code, self.print_json_status(error) results
+        in this:
+
+            '{"status": "error", "message": "object not found"}\n'
+
+        unless an explicit message is added, in which case that is
+        used. A message can be provided on success, like this:
+
+            '{"status": "OK", "message": "thanks for asking!"}\n'
+
+        Extra keywords can be added too.
+
+        In summary, you might go:
+
+            try:
+                samdb.delete(dn)
+            except Exception as e:
+                print_json_status(e)
+                return
+            print_json_status()
+        """
+        data = {}
+        if error:
+            data['status'] = 'error'
+            if error is not True:
+                data['message'] = str(error)
+        else:
+            data['status'] = 'OK'
+
+        if message is not None:
+            data['message'] = message
+
+        data.update(kwargs)
+        self.print_json(data)
+
     def show_command_error(self, e):
         """display a command error"""
         if isinstance(e, CommandError):
