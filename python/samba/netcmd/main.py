@@ -82,6 +82,7 @@ class cmd_sambatool(SuperCommand):
     subcommands["user"] = None
     subcommands["ou"] = None
     subcommands["processes"] = None
+    subcommands["service-account"] = None
     subcommands["visualize"] = None
 
 
