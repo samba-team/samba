@@ -1839,7 +1839,8 @@ NTSTATUS wb_cache_name_to_sid(struct winbindd_domain *domain,
 					      name, flags, &dom_name, sid, type);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
-		NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+	    NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND))
+	{
 		if (!domain->internal && was_online) {
 			set_domain_offline(domain);
 		}
