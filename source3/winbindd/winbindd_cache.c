@@ -1824,12 +1824,13 @@ NTSTATUS wb_cache_name_to_sid(struct winbindd_domain *domain,
 
 	was_online = domain->online;
 
+	ZERO_STRUCTP(sid);
+	*type = SID_NAME_UNKNOWN;
+
 	status = wcache_name_to_sid(domain, domain_name, name, sid, type);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		return status;
 	}
-
-	ZERO_STRUCTP(sid);
 
 	DBG_DEBUG("name_to_sid: [Cached] - doing backend query for name for domain %s\n",
 		domain->name );
