@@ -122,6 +122,9 @@ static void winbindd_getgrnam_lookupname_done(struct tevent_req *subreq)
 
 	status = wb_lookupname_recv(subreq, &state->sid, &type);
 	TALLOC_FREE(subreq);
+	if (NT_STATUS_IS_OK(status) && type == SID_NAME_UNKNOWN) {
+		status = NT_STATUS_NONE_MAPPED;
+	}
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}

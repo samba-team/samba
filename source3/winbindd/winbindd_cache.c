@@ -1802,9 +1802,6 @@ static NTSTATUS wcache_name_to_sid(struct winbindd_domain *domain,
 		DBG_DEBUG("cache entry not found\n");
 		return NT_STATUS_NOT_FOUND;
 	}
-	if (*type == SID_NAME_UNKNOWN) {
-		return NT_STATUS_NONE_MAPPED;
-	}
 
 	return NT_STATUS_OK;
 }
@@ -1854,16 +1851,9 @@ NTSTATUS wb_cache_name_to_sid(struct winbindd_domain *domain,
 	}
 	/* and save it */
 
-	if (domain->online &&
-	    (NT_STATUS_IS_OK(status) || NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED))) {
-		enum lsa_SidType save_type = *type;
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
-			save_type = SID_NAME_UNKNOWN;
-		}
-
+	if (domain->online && NT_STATUS_IS_OK(status)) {
 		wcache_save_name_to_sid(domain, status, domain_name, name, sid,
-					save_type);
+					*type);
 
 		/* Only save the reverse mapping if this was not a UPN */
 		if (!strchr(name, '@')) {
@@ -1872,7 +1862,7 @@ NTSTATUS wb_cache_name_to_sid(struct winbindd_domain *domain,
 			}
 			(void)strlower_m(discard_const_p(char, name));
 			wcache_save_sid_to_name(domain, status, sid,
-						dom_name, name, save_type);
+						dom_name, name, *type);
 		}
 	}
 

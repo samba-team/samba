@@ -652,6 +652,9 @@ static void wb_irpc_lsa_LookupNames4_done(struct tevent_req *subreq)
 	state->num_pending--;
 	status = wb_lookupname_recv(subreq, &nstate->sid, &nstate->type);
 	TALLOC_FREE(subreq);
+	if (NT_STATUS_IS_OK(status) && nstate->type == SID_NAME_UNKNOWN) {
+		status = NT_STATUS_NONE_MAPPED;
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("RPC callback failed for %s - %s\n",
 			 __func__, nt_errstr(status)));

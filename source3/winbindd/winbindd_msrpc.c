@@ -226,8 +226,8 @@ static NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 	struct dom_sid *sids = NULL;
 	enum lsa_SidType *types = NULL;
 	char *full_name = NULL;
-	const char *names[1];
-	const char **domains;
+	const char *names[1] = { NULL, };
+	const char **domains = NULL;
 	NTSTATUS name_map_status = NT_STATUS_UNSUCCESSFUL;
 	char *mapped_name = NULL;
 
@@ -270,13 +270,14 @@ static NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 	/* Return rid and type if lookup successful */
 
 	if (pdom_name != NULL) {
-		const char *dom_name;
+		const char *dom_name = NULL;
 
-		dom_name = talloc_strdup(mem_ctx, domains[0]);
-		if (dom_name == NULL) {
-			return NT_STATUS_NO_MEMORY;
+		if (domains[0] != NULL) {
+			dom_name = talloc_strdup(mem_ctx, domains[0]);
+			if (dom_name == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
-
 		*pdom_name = dom_name;
 	}
 
@@ -1049,6 +1050,12 @@ static NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 	enum lsa_LookupNamesLevel level = LSA_LOOKUP_NAMES_ALL;
 
  connect:
+	if (domains == NULL) {
+		*domains = NULL;
+	}
+	*sids = NULL;
+	*types = NULL;
+
 	status = cm_connect_lsat(domain, mem_ctx, &cli, &lsa_policy);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1096,6 +1103,52 @@ static NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 			goto connect;
 		}
 		status = NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_NONE_MAPPED)) {
+		if (num_names > 0) {
+			uint32_t i;
+
+			*sids = talloc_zero_array(mem_ctx, struct dom_sid, num_names);
+			if (*sids == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			*types = talloc_zero_array(mem_ctx, enum lsa_SidType, num_names);
+			if (*types == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			for (i = 0; i < num_names; i++) {
+				(*types)[i] = SID_NAME_UNKNOWN;
+			}
+
+			if (domains != NULL) {
+				*domains = talloc_zero_array(mem_ctx, const char *, num_names);
+				if (*domains == NULL) {
+					return NT_STATUS_NO_MEMORY;
+				}
+			}
+		}
+
+		result = NT_STATUS_OK;
+	} else if (NT_STATUS_EQUAL(result, NT_STATUS_SOME_NOT_MAPPED)) {
+		if (talloc_array_length(*sids) != num_names) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		if (talloc_array_length(*types) != num_names) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		if (domains != NULL) {
+			if (talloc_array_length(*domains) != num_names) {
+				return NT_STATUS_INVALID_NETWORK_RESPONSE;
+			}
+		}
+		result = NT_STATUS_OK;
 	}
 
 	if (any_nt_status_not_ok(status, result, &status)) {

@@ -679,6 +679,8 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 
 	DBG_NOTICE("%s\\%s\n", domain_name, name);
 
+	*ptype = SID_NAME_UNKNOWN;
+
 	if (strequal(domain_name, unix_users_domain_name())) {
 		struct passwd *pwd = NULL;
 
@@ -794,6 +796,11 @@ done:
 
 	status = NT_STATUS_OK;
 fail:
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_SOME_NOT_MAPPED))
+	{
+		status = NT_STATUS_OK;
+	}
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }

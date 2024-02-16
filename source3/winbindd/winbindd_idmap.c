@@ -386,6 +386,9 @@ static void wb_parent_idmap_setup_lookupname_done(struct tevent_req *subreq)
 
 	status = wb_lookupname_recv(subreq, &dom->sid, &type);
 	TALLOC_FREE(subreq);
+	if (NT_STATUS_IS_OK(status) && type == SID_NAME_UNKNOWN) {
+		status = NT_STATUS_NONE_MAPPED;
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Lookup domain name '%s' failed '%s'\n",
 			dom->name,
