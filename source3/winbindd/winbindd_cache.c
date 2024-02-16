@@ -1842,14 +1842,13 @@ NTSTATUS wb_cache_name_to_sid(struct winbindd_domain *domain,
 	    NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND))
 	{
 		if (!domain->internal && was_online) {
+			/* Set the domain offline and query the cache again */
 			set_domain_offline(domain);
-		}
-		if (!domain->internal &&
-			!domain->online &&
-			was_online) {
-			NTSTATUS cache_status;
-			cache_status = wcache_name_to_sid(domain, domain_name, name, sid, type);
-			return cache_status;
+			return wcache_name_to_sid(domain,
+						  domain_name,
+						  name,
+						  sid,
+						  type);
 		}
 	}
 	/* and save it */
