@@ -24,6 +24,7 @@ from samba import ldb
 from samba.auth import system_session
 from samba.netcmd import Command, CommandError, Option
 from samba.samdb import SamDB
+from samba.dsdb import ATYPE_NORMAL_ACCOUNT
 
 
 class cmd_user_delete(Command):
@@ -68,8 +69,8 @@ Example2 shows how to delete a user in the domain against the local server.   su
         samdb = SamDB(url=H, session_info=system_session(),
                       credentials=creds, lp=lp)
 
-        filter = ("(&(sAMAccountName=%s)(sAMAccountType=805306368))" %
-                  ldb.binary_encode(username))
+        filter = (f"(&(sAMAccountName={ldb.binary_encode(username)})"
+                  f"(sAMAccountType={ATYPE_NORMAL_ACCOUNT}))")
 
         try:
             res = samdb.search(base=samdb.domain_dn(),
