@@ -47,7 +47,8 @@ enum _wbcErrType {
 	WBC_ERR_AUTH_ERROR,        /**< Authentication failed **/
 	WBC_ERR_UNKNOWN_USER,      /**< User account cannot be found */
 	WBC_ERR_UNKNOWN_GROUP,     /**< Group account cannot be found */
-	WBC_ERR_PWD_CHANGE_FAILED  /**< Password Change has failed */
+	WBC_ERR_PWD_CHANGE_FAILED, /**< Password Change has failed */
+	WBC_ERR_NOT_MAPPED         /**< Translation function failed on some element **/
 };
 
 typedef enum _wbcErrType wbcErr;

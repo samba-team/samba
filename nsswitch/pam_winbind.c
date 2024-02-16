@@ -40,6 +40,7 @@ static int wbc_error_to_pam_error(wbcErr status)
 		case WBC_ERR_WINBIND_NOT_AVAILABLE:
 			return PAM_AUTHINFO_UNAVAIL;
 		case WBC_ERR_DOMAIN_NOT_FOUND:
+		case WBC_ERR_NOT_MAPPED:
 			return PAM_AUTHINFO_UNAVAIL;
 		case WBC_ERR_INVALID_RESPONSE:
 			return PAM_BUF_ERR;
@@ -2143,6 +2144,7 @@ static int valid_user(struct pwb_context *ctx,
 		/* match other insane libwbclient return codes */
 		case WBC_ERR_WINBIND_NOT_AVAILABLE:
 		case WBC_ERR_DOMAIN_NOT_FOUND:
+		case WBC_ERR_NOT_MAPPED:
 			return 1;
 		case WBC_ERR_SUCCESS:
 			return 0;

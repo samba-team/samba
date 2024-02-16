@@ -176,6 +176,8 @@ const char *wbcErrorString(wbcErr error)
 		return "WBC_ERR_AUTH_ERROR";
 	case WBC_ERR_PWD_CHANGE_FAILED:
 		return "WBC_ERR_PWD_CHANGE_FAILED";
+	case WBC_ERR_NOT_MAPPED:
+		return "WBC_ERR_NOT_MAPPED";
 	}
 
 	return "unknown wbcErr value";
