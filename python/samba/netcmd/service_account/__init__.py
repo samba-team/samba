@@ -22,6 +22,7 @@
 
 from samba.netcmd import SuperCommand
 
+from .group_msa_membership import cmd_service_account_group_msa_membership
 from .service_account import (cmd_service_account_create,
                               cmd_service_account_delete,
                               cmd_service_account_list,
@@ -38,4 +39,5 @@ class cmd_service_account(SuperCommand):
         "list": cmd_service_account_list(),
         "view": cmd_service_account_view(),
         "modify": cmd_service_account_modify(),
+        "group-msa-membership": cmd_service_account_group_msa_membership(),
     }
