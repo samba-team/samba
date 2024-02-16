@@ -218,10 +218,13 @@ wbcErr wbcCtxLookupName(struct wbcContext *ctx,
 					&response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
+	*name_type = (enum wbcSidType)response.data.sid.type;
+	if (*name_type == WBC_SID_NAME_UNKNOWN) {
+		return WBC_ERR_NOT_MAPPED;
+	}
+
 	wbc_status = wbcStringToSid(response.data.sid.sid, sid);
 	BAIL_ON_WBC_ERROR(wbc_status);
-
-	*name_type = (enum wbcSidType)response.data.sid.type;
 
 	wbc_status = WBC_ERR_SUCCESS;
 
