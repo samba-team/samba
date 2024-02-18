@@ -241,7 +241,18 @@ bool gkid_less_than_or_equal_to(const struct Gkid g1, const struct Gkid g2)
 bool gkdi_rollover_interval(const int64_t managed_password_interval,
 			    NTTIME *result)
 {
-	if (managed_password_interval < 0) {
+	/*
+	 * This is actually a conservative reckoning. The interval could be one
+	 * higher than this maximum and not overflow. But there’s no reason to
+	 * support intervals that high (and Windows will start producing strange
+	 * results for intervals beyond that).
+	 */
+	const int64_t maximum_interval = UINT64_MAX / gkdi_key_cycle_duration *
+					 10 / 24;
+
+	if (managed_password_interval < 0 ||
+	    managed_password_interval > maximum_interval)
+	{
 		return false;
 	}
 
