@@ -222,7 +222,7 @@ bool gkdi_get_key_start_time(const struct Gkid gkid, NTTIME *start_time_out)
  */
 NTTIME gkdi_get_interval_start_time(const NTTIME time)
 {
-	return time % gkdi_key_cycle_duration;
+	return time / gkdi_key_cycle_duration * gkdi_key_cycle_duration;
 }
 
 bool gkid_less_than_or_equal_to(const struct Gkid g1, const struct Gkid g2)
