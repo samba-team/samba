@@ -16,6 +16,26 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+LDB no longer a standalone tarball
+----------------------------------
+
+LDB, Samba's LDAP-like local database and the power behind the Samba
+AD DC, is no longer available to build as a distinct tarball, but is
+instead provided as an optional public library.
+
+If you need ldb as a public library, say to build sssd, then use
+ ./configure --private-libraries='!ldb'
+
+This re-integration allows LDB tests to use the Samba's full selftest
+system, including our knownfail infrastructure, and decreases the work
+required during security releases as a coordinated release of the ldb
+tarball is not also required.
+
+This approach has been demonstrated already in Debian, which is already
+building Samba and LDB is this way.
+
+As part of this work, the pyldb-util public library, not known to be
+used by any other software, is made private to Samba.
 
 REMOVED FEATURES
 ================
