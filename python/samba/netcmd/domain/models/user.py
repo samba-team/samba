@@ -22,9 +22,11 @@
 
 from ldb import Dn
 
+from samba.dcerpc import security
 from samba.dsdb import (DS_GUID_MANAGED_SERVICE_ACCOUNTS_CONTAINER,
                         DS_GUID_USERS_CONTAINER)
 
+from .exceptions import FieldError
 from .fields import (BinaryField, DnField, EnumField, IntegerField, SDDLField,
                      SIDField, StringField, NtTimeField)
 from .model import Model
@@ -126,7 +128,19 @@ class GroupManagedServiceAccount(User):
 
         :return: list of User objects
         """
-        return [str(ace.trustee) for ace in self.group_msa_membership.dacl.aces]
+        allowed = []
+
+        # Make sure to exclude DENY aces.
+        for ace in self.group_msa_membership.dacl.aces:
+            if ((ace.access_mask & security.SEC_ADS_READ_PROP)
+                    and ace.type == security.SEC_ACE_TYPE_ACCESS_ALLOWED):
+                allowed.append(str(ace.trustee))
+            else:
+                raise FieldError(
+                    "Cannot be represented as a simple list (try viewing as SDDL)",
+                    field=GroupManagedServiceAccount.group_msa_membership)
+
+        return allowed
 
     @classmethod
     def find(cls, ldb, name):
