@@ -80,6 +80,13 @@ nfs_check_services()
 #                        traces of threads that have not exited, since
 #                        they may be stuck doing I/O;
 #                        no default, see also function program_stack_traces()
+# * service_stats_cmd  - command to retrieve statistics for  given service;
+#                        if this is set and RPC checks fail (or
+#                        $service_check_cmd fails), then statistics are
+#                        compared (using cmp) to see if the service is
+#                        making progress or is truly hung;
+#                        no default, failed service does not double-check
+#                        failure using statistics
 #
 # Quoting in values is not preserved
 #
@@ -103,6 +110,7 @@ nfs_check_service()
 		service_start_cmd=""
 		service_check_cmd=""
 		service_debug_cmd=""
+		service_stats_cmd=""
 
 		# Eval line-by-line.  Expands variable references in values.
 		# Also allows variable name checking, which seems useful.
@@ -113,7 +121,8 @@ nfs_check_service()
 			family=* | version=* | \
 				unhealthy_after=* | restart_every=* | \
 				service_stop_cmd=* | service_start_cmd=* | \
-				service_check_cmd=* | service_debug_cmd=*)
+				service_check_cmd=* | service_debug_cmd=* | \
+				service_stats_cmd=*)
 
 				eval "$_line"
 				;;
@@ -141,6 +150,30 @@ nfs_check_service()
 				_ok=true
 			else
 				_err="$ctdb_check_rpc_out"
+			fi
+		fi
+
+		if [ -n "$service_stats_cmd" ]; then
+			# If configured, always update stats,
+			# regardless of RPC status...
+
+			# shellcheck disable=SC2154
+			# script_state_dir set by ctdb_setup_state_dir
+			_curr="${script_state_dir}/stats_${_progname}.out"
+			_prev="${_curr}.prev"
+
+			if [ -f "$_curr" ]; then
+				mv -f "$_curr" "$_prev"
+			fi
+			eval "$service_stats_cmd" >"$_curr" 2>&1
+
+			if ! $_ok &&
+				! cmp "$_prev" "$_curr" >/dev/null 2>&1; then
+				# Stats always implicitly change on
+				# the first monitor event, since
+				# previous stats don't exists...
+				echo "WARNING: statistics changed but ${_err}"
+				_ok=true
 			fi
 		fi
 
