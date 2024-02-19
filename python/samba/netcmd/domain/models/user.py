@@ -120,6 +120,7 @@ class GroupManagedServiceAccount(User):
     def get_object_class():
         return "msDS-GroupManagedServiceAccount"
 
+    @property
     def trustees(self):
         """Returns list of trustees from the msDS-GroupMSAMembership SDDL.
 
