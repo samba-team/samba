@@ -20,12 +20,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from ldb import FLAG_MOD_ADD, Dn
+from ldb import Dn
 
-from samba.dcerpc import security
 from samba.dsdb import (DS_GUID_MANAGED_SERVICE_ACCOUNTS_CONTAINER,
                         DS_GUID_USERS_CONTAINER)
-from samba.ndr import ndr_unpack
 
 from .fields import (BinaryField, DnField, EnumField, IntegerField, SDDLField,
                      SIDField, StringField, NtTimeField)
@@ -122,21 +120,12 @@ class GroupManagedServiceAccount(User):
     def get_object_class():
         return "msDS-GroupManagedServiceAccount"
 
-    def trustees(self, ldb):
+    def trustees(self):
         """Returns list of trustees from the msDS-GroupMSAMembership SDDL.
 
         :return: list of User objects
         """
-        users = []
-        field = self.fields["group_msa_membership"]
-        sddl = self.group_msa_membership
-        message = field.to_db_value(ldb, sddl, FLAG_MOD_ADD)
-        desc = ndr_unpack(security.descriptor, message[0])
-
-        for ace in desc.dacl.aces:
-            users.append(User.get(ldb, object_sid=ace.trustee))
-
-        return users
+        return [str(ace.trustee) for ace in self.group_msa_membership.dacl.aces]
 
     @classmethod
     def find(cls, ldb, name):
