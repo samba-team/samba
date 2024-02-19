@@ -1291,7 +1291,7 @@ void ctdbd_unregister_ips(struct ctdbd_connection *conn,
 				    void *private_data),
 			  void *private_data)
 {
-	struct ctdb_connection p;
+	struct ctdb_connection p = {};
 	TDB_DATA data = { .dptr = (uint8_t *)&p, .dsize = sizeof(p) };
 	int ret;
 	struct sockaddr_storage client;
@@ -1304,7 +1304,6 @@ void ctdbd_unregister_ips(struct ctdbd_connection *conn,
 	smbd_ctdb_canonicalize_ip(_client, &client);
 	smbd_ctdb_canonicalize_ip(_server, &server);
 
-	ZERO_STRUCT(p);
 	switch (client.ss_family) {
 	case AF_INET:
 		memcpy(&p.dst.ip, &server, sizeof(p.dst.ip));
