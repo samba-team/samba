@@ -159,6 +159,8 @@ class AuthLogTestsNetLogonBadCreds(samba.tests.auth_log_base.AuthLogTestBase):
                                        0)
         except NTSTATUSError:
             pass
+        else:
+            self.fail()
         self.waitForMessages(isLastExpectedMessage)
 
     def test_netlogon_password_HMAC_MD5(self):
@@ -187,4 +189,6 @@ class AuthLogTestsNetLogonBadCreds(samba.tests.auth_log_base.AuthLogTestBase):
                                        NETLOGON_NEG_STRONG_KEYS)
         except NTSTATUSError:
             pass
+        else:
+            self.fail()
         self.waitForMessages(isLastExpectedMessage)
