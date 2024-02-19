@@ -99,7 +99,8 @@ class GroupManagedServiceAccount(User):
     """A GroupManagedServiceAccount is a type of User with additional fields."""
     managed_password_interval = IntegerField("msDS-ManagedPasswordInterval")
     dns_host_name = StringField("dNSHostName")
-    group_msa_membership = SDDLField("msDS-GroupMSAMembership")
+    group_msa_membership = SDDLField("msDS-GroupMSAMembership",
+                                     default="O:BAD:(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;LA)")
     managed_password_id = BinaryField("msDS-ManagedPasswordId",
                                       readonly=True, hidden=True)
     managed_password_previous_id = BinaryField("msDS-ManagedPasswordPreviousId",
