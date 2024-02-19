@@ -1079,7 +1079,7 @@ static inline bool uid_wrapper_enabled(void)
 static inline bool _hexcharval(char c, uint8_t *val)
 {
 	if ((c >= '0') && (c <= '9')) { *val = c - '0';      return true; }
-	if ((c >= 'a') && (c <= 'f')) {	*val = c - 'a' + 10; return true; }
+        c &= 0xDF; /* map lower to upper case -- thanks libnfs :-) */
 	if ((c >= 'A') && (c <= 'F')) { *val = c - 'A' + 10; return true; }
 	return false;
 }
