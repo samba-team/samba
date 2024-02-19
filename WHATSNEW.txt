@@ -1,4 +1,67 @@
                    ==============================
+                   Release Notes for Samba 4.19.5
+                         February 19, 2024
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.19 release series.
+
+
+Changes since 4.19.4
+--------------------
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13688: Windows 2016 fails to restore previous version of a file from a
+     shadow_copy2 snapshot.
+   * BUG 15549: Symlinks on AIX are broken in 4.19 (and a few version before
+     that).
+
+o  Bjoern Jacke <bj@sernet.de>
+   * BUG 12421: Fake directory create times has no effect.
+
+o  Björn Jacke <bjacke@samba.org>
+   * BUG 15550: ctime mixed up with mtime by smbd.
+
+o  David Mulder <dmulder@samba.org>
+   * BUG 15548: samba-gpupdate --rsop fails if machine is not in a site.
+
+o  Gabriel Nagy <gabriel.nagy@canonical.com>
+   * BUG 15557: gpupdate: The root cert import when NDES is not available is
+     broken.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15552: samba-gpupdate should print a useful message if cepces-submit
+     can't be found.
+   * BUG 15558: samba-gpupdate logging doesn't work.
+
+o  Jones Syue <jonessyue@qnap.com>
+   * BUG 15555: smbpasswd reset permissions only if not 0600.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.19.4
                           January 08, 2024
                    ==============================
@@ -78,8 +141,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.19.3
                          November 27, 2023
