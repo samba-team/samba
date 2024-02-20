@@ -719,3 +719,20 @@ bool interfaces_changed(void)
 	TALLOC_FREE(ifaces);
 	return ret;
 }
+
+/****************************************************************************
+ Return True if interface exists for given interface index
+**************************************************************************/
+
+bool interface_ifindex_exists(int if_index)
+{
+	struct interface *i;
+
+	for (i = local_interfaces; i != NULL; i = i->next) {
+		if (i->if_index == if_index) {
+			return true;
+		}
+	}
+
+	return false;
+}
