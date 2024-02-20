@@ -943,7 +943,7 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 
 NTSTATUS fd_close(files_struct *fsp)
 {
-	NTSTATUS status;
+	NTSTATUS stat_status = NT_STATUS_OK;
 	int ret;
 
 	if (fsp == fsp->conn->cwd_fsp) {
@@ -951,10 +951,12 @@ NTSTATUS fd_close(files_struct *fsp)
 	}
 
 	if (fsp->fsp_flags.fstat_before_close) {
-		status = vfs_stat_fsp(fsp);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		/*
+		 * capture status, if failure
+		 * continue close processing
+		 * and return status
+		 */
+		stat_status = vfs_stat_fsp(fsp);
 	}
 
 	if (fsp->dptr) {
@@ -976,7 +978,7 @@ NTSTATUS fd_close(files_struct *fsp)
 	if (ret == -1) {
 		return map_nt_error_from_unix(errno);
 	}
-	return NT_STATUS_OK;
+	return stat_status;
 }
 
 /****************************************************************************
