@@ -28,15 +28,12 @@ from ldb import (ERR_NO_SUCH_OBJECT, FLAG_MOD_ADD, FLAG_MOD_REPLACE,
                  SCOPE_SUBTREE)
 from samba.sd_utils import SDUtils
 
+from .constants import MODELS
 from .exceptions import (DeleteError, FieldError, NotFound, ProtectError,
                          UnprotectError)
 from .fields import (DateTimeField, DnField, Field, GUIDField, IntegerField,
                      StringField)
 from .query import Query
-
-# Keeps track of registered models.
-# This gets populated by the ModelMeta class.
-MODELS = {}
 
 
 class ModelMeta(ABCMeta):

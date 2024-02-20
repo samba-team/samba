@@ -1,6 +1,6 @@
 # Unix SMB/CIFS implementation.
 #
-# Samba domain models.
+# Model constants
 #
 # Copyright (C) Catalyst.Net Ltd. 2023
 #
@@ -20,18 +20,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from .auth_policy import (AuthenticationPolicy, StrongNTLMPolicy,
-                          MIN_TGT_LIFETIME, MAX_TGT_LIFETIME)
-from .auth_silo import AuthenticationSilo
-from .claim_type import ClaimType
-from .computer import Computer
-from .constants import MODELS
-from .gmsa import GroupManagedServiceAccount
-from .group import Group
-from .schema import AttributeSchema, ClassSchema
-from .site import Site
-from .subnet import Subnet
-from .types import (AccountType, GroupType, SupportedEncryptionTypes,
-                    SystemFlags, UserAccountControl)
-from .user import User
-from .value_type import ValueType
+# Keeps track of registered models.
+# This gets populated by the ModelMeta class.
+MODELS = {}
