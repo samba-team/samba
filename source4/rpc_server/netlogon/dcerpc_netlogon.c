@@ -410,8 +410,11 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 	int num_records;
 	struct ldb_message **msgs;
 	NTSTATUS nt_status;
-	const char *attrs[] = {"unicodePwd", "userAccountControl",
-			       "objectSid", "samAccountName", NULL};
+	static const char *attrs[] = {"unicodePwd",
+				      "userAccountControl",
+				      "objectSid",
+				      "samAccountName",
+				      NULL};
 	uint32_t server_flags = 0;
 	uint32_t negotiate_flags = 0;
 
@@ -536,12 +539,10 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 	    r->in.secure_channel_type == SEC_CHAN_DNS_DOMAIN)
 	{
 		struct ldb_message *tdo_msg = NULL;
-		const char * const tdo_attrs[] = {
-			"trustAuthIncoming",
-			"trustAttributes",
-			"flatName",
-			NULL
-		};
+		static const char *const tdo_attrs[] = {"trustAuthIncoming",
+							"trustAttributes",
+							"flatName",
+							NULL};
 		char *encoded_name = NULL;
 		size_t len;
 		const char *flatname = NULL;
@@ -2618,17 +2619,17 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	TALLOC_CTX *mem_ctx, struct netr_LogonGetDomainInfo *r)
 {
 	struct netlogon_creds_CredentialState *creds;
-	const char * const trusts_attrs[] = {
-		"securityIdentifier",
-		"flatName",
-		"trustPartner",
-		"trustAttributes",
-		"trustDirection",
-		"trustType",
-		NULL
-	};
-	const char * const attrs2[] = { "sAMAccountName", "dNSHostName",
-		"msDS-SupportedEncryptionTypes", NULL };
+	static const char *const trusts_attrs[] = {"securityIdentifier",
+						   "flatName",
+						   "trustPartner",
+						   "trustAttributes",
+						   "trustDirection",
+						   "trustType",
+						   NULL};
+	static const char *const attrs2[] = {"sAMAccountName",
+					     "dNSHostName",
+					     "msDS-SupportedEncryptionTypes",
+					     NULL};
 	const char *sam_account_name, *old_dns_hostname;
 	struct ldb_context *sam_ctx;
 	const struct GUID *our_domain_guid = NULL;
@@ -2994,11 +2995,15 @@ static bool sam_rodc_access_check(struct ldb_context *sam_ctx,
 				  struct dom_sid *user_sid,
 				  struct ldb_dn *obj_dn)
 {
-	const char *rodc_attrs[] = { "msDS-NeverRevealGroup",
-				     "msDS-RevealOnDemandGroup",
-				     "userAccountControl",
-				     NULL };
-	const char *obj_attrs[] = { "tokenGroups", "objectSid", "UserAccountControl", "msDS-KrbTgtLinkBL", NULL };
+	static const char *rodc_attrs[] = {"msDS-NeverRevealGroup",
+					   "msDS-RevealOnDemandGroup",
+					   "userAccountControl",
+					   NULL};
+	static const char *obj_attrs[] = {"tokenGroups",
+					  "objectSid",
+					  "UserAccountControl",
+					  "msDS-KrbTgtLinkBL",
+					  NULL};
 	struct ldb_dn *rodc_dn;
 	int ret;
 	struct ldb_result *rodc_res = NULL, *obj_res = NULL;
@@ -3938,9 +3943,13 @@ static WERROR fill_trusted_domains_array(TALLOC_CTX *mem_ctx,
 {
 	struct ldb_dn *system_dn;
 	struct ldb_message **dom_res = NULL;
-	const char *trust_attrs[] = { "flatname", "trustPartner",
-				      "securityIdentifier", "trustDirection",
-				      "trustType", "trustAttributes", NULL };
+	static const char *trust_attrs[] = {"flatname",
+					    "trustPartner",
+					    "securityIdentifier",
+					    "trustDirection",
+					    "trustType",
+					    "trustAttributes",
+					    NULL};
 	uint32_t n;
 	int i;
 	int ret;
