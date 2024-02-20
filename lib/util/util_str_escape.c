@@ -116,7 +116,7 @@ char *log_escape(TALLOC_CTX *frame, const char *in)
 				*e++ = '\\';
 				break;
 			default:
-				snprintf(e, 5, "\\x%02X", *c);
+				snprintf(e, 5, "\\x%02hhX", (unsigned char)(*c));
 				e += 4;
 			}
 			c++;
