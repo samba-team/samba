@@ -26,7 +26,7 @@
  * Calculate the encoded length of a character for log_escape
  *
  */
-static size_t encoded_length(char c)
+static size_t encoded_length(unsigned char c)
 {
 	if (c != '\\' &&  c > 0x1F) {
 		return 1;
@@ -79,7 +79,7 @@ char *log_escape(TALLOC_CTX *frame, const char *in)
 	c = in;
 	e = encoded;
 	while (*c) {
-		if (*c != '\\' && *c > 0x1F) {
+		if (*c != '\\' && (unsigned char)(*c) > 0x1F) {
 			*e++ = *c++;
 		} else {
 			switch (*c) {
