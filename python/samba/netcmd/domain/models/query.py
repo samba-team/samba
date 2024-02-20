@@ -44,12 +44,12 @@ class Query:
 
     def first(self):
         """Returns the first item in the Query or None for no results."""
-        if self.result.count:
+        if self.count:
             return self.model.from_message(self.ldb, self.result[0])
 
     def last(self):
         """Returns the last item in the Query or None for no results."""
-        if self.result.count:
+        if self.count:
             return self.model.from_message(self.ldb, self.result[-1])
 
     def get(self):
