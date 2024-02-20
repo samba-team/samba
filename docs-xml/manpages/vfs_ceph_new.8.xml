@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="vfs_ceph_new.8">
+
+<refmeta>
+	<refentrytitle>vfs_ceph_new</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">&doc.version;</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>vfs_ceph_new</refname>
+	<refpurpose>
+		Utilize features provided by libcephfs low-level APIs
+	</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>vfs objects = ceph_new</command>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> suite.</para>
+
+	<para>
+		The <command>vfs_ceph_new</command> VFS module exposes
+		CephFS specific features for use by Samba.
+	</para>
+
+	<para>
+		Ceph is a distributed network file system designed to provide
+		excellent performance, reliability, and scalability. This is a
+		shared library allowing applications to access a Ceph
+		distributed file system via a POSIX-like interface.
+	</para>
+
+	<para>
+		This module can be combined with other modules, but it
+		should be the last module in the <command>vfs objects</command>
+		list. Modules added to this list to the right of the ceph
+		entry may not have any effect at all.
+	</para>
+
+	<para>
+		<command>vfs_ceph_new</command> performs mapping between Windows
+		and POSIX Access Control Lists (ACLs). To ensure correct
+		processing and enforcement of POSIX ACLs, the following Ceph
+		configuration parameters are automatically applied:
+	</para>
+	<programlisting>
+		<command>client acl type = posix_acl</command>
+		<command>fuse default permissions = false</command>
+	</programlisting>
+
+	<para>
+	<emphasis role="strong">NOTE</emphasis>:
+	This is a second implementation of a ceph module which uses libcephfs
+	low-level APIs (compared to the original
+	<citerefentry><refentrytitle>vfs_ceph</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> module which uses path-based
+	APIs). Using the low-level API allows more optimized and fine-grained
+	access to the Ceph storage layer.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>CONFIGURATION</title>
+
+	<para>
+		<command>vfs_ceph_new</command> requires that the underlying
+		share path is a Ceph filesystem.
+	</para>
+
+	<programlisting>
+		<smbconfsection name="[share]"/>
+		<smbconfoption name="vfs objects">ceph_new</smbconfoption>
+		<smbconfoption name="path">/non-mounted/cephfs/path</smbconfoption>
+		<smbconfoption name="kernel share modes">no</smbconfoption>
+	</programlisting>
+
+	<para>
+		Since <command>vfs_ceph_new</command> does not require a
+		filesystem mount, the share <command>path</command> is treated
+		differently: it is interpreted as an absolute path within the
+		Ceph filesystem on the attached Ceph cluster.
+		In a ctdb cluster environment where ctdb manages Samba,
+		<command>CTDB_SAMBA_SKIP_SHARE_CHECK=yes</command> must be
+		configured to disable local share path checks, otherwise ctdb
+		will not reach a healthy state.
+	</para>
+
+	<para>
+		Note that currently <command>kernel share modes</command> have
+		to be disabled in a share running with the CephFS vfs module for
+		file serving to work properly.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+
+		<varlistentry>
+		<term>ceph:config_file = path</term>
+		<listitem>
+		<para>
+			Allows one to define a ceph configfile to use. Empty by default.
+		</para>
+		<para>
+			Example: ceph:config_file =
+			/etc/ceph/ceph.conf
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>ceph:user_id = name</term>
+		<listitem>
+		<para>
+			Allows one to explicitly set the client ID used for the
+			CephFS mount handle. Empty by default (use the libcephfs
+			client default).
+		</para>
+		<para>
+			Example: ceph:user_id = samba
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>ceph:filesystem = fs_name</term>
+		<listitem>
+		<para>
+			Allows one to explicitly select the CephFS file system
+			to use when the Ceph cluster supports more than one
+			file system. Empty by default (use the default file
+			system of the Ceph cluster).
+		</para>
+		<para>
+			Example: ceph:filesystem = myfs2
+		</para>
+		</listitem>
+		</varlistentry>
+
+	</variablelist>
+
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>
+		This man page is part of version &doc.version; of the Samba suite.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+</refsect1>
+
+</refentry>
