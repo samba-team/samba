@@ -561,3 +561,21 @@ dump OK
             self.fail(e)
 
         self.assertEqual(actual, expected)
+
+    def test_ndrdump_keyetab(self):
+        with open(self.data_path(
+                'secrets.keytab.txt')) as f:
+            expected = f.read()
+        data_path = self.data_path(
+            'secrets.keytab')
+
+        # We don't do a validate on this as the parser deliberately
+        # ignores some extra data written by Heimdal, but not MIT.
+        try:
+            actual = self.check_output(
+                'ndrdump krb5ccache KEYTAB struct '
+                + data_path)
+        except BlackboxProcessError as e:
+            self.fail(e)
+
+        self.assertEqual(actual, expected.encode('utf-8'))
