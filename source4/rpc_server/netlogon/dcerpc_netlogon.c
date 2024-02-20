@@ -3987,7 +3987,7 @@ static WERROR fill_trusted_domains_array(TALLOC_CTX *mem_ctx,
 		trusts->array[n].netbios_name = talloc_steal(trusts->array, ldb_msg_find_attr_as_string(dom_res[i], "flatname", NULL));
 		if (!trusts->array[n].netbios_name) {
 			DEBUG(0, ("DB Error, TrustedDomain entry (%s) "
-				  "without flatname\n", 
+				  "without flatname\n",
 				  ldb_dn_get_linearized(dom_res[i]->dn)));
 		}
 
