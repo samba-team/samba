@@ -65,6 +65,9 @@ class cmd_shell(Command):
 Variables:
 
 samdb = {samdb}
+
+Models:
+
 """
         for name, model in MODELS.items():
             banner += f"{model.__name__}: {name}\n"
