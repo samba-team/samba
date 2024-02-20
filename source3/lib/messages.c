@@ -62,6 +62,7 @@
 #include "cluster_support.h"
 #include "ctdbd_conn.h"
 #include "ctdb_srvids.h"
+#include "source3/lib/tallocmsg.h"
 
 #ifdef CLUSTER_SUPPORT
 #include "ctdb_protocol.h"

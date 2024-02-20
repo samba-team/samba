@@ -16,9 +16,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "messages.h"
+#include "replace.h"
+#include "source3/include/messages.h"
+#include "source3/lib/tallocmsg.h"
 #include "lib/util/talloc_report_printf.h"
+#include "lib/util/debug.h"
 
 static bool pool_usage_filter(struct messaging_rec *rec, void *private_data)
 {

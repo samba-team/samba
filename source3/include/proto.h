@@ -222,11 +222,6 @@ bool getgroups_unix_user(TALLOC_CTX *mem_ctx, const char *user,
 			 gid_t primary_gid,
 			 gid_t **ret_groups, uint32_t *p_ngroups);
 
-/* The following definitions come from lib/tallocmsg.c  */
-
-void register_msg_pool_usage(TALLOC_CTX *mem_ctx,
-			     struct messaging_context *msg_ctx);
-
 /* The following definitions come from lib/time.c  */
 
 uint32_t convert_time_t_to_uint32_t(time_t t);
