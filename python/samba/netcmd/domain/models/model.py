@@ -226,10 +226,18 @@ class Model(metaclass=ModelMeta):
         return expression
 
     @classmethod
-    def query(cls, ldb, **kwargs):
+    def query(cls, ldb, polymorphic=False, **kwargs):
         """Returns a search query for this model.
 
+        NOTE: If polymorphic is enabled then querying will return instances
+        of that specific model, for example querying User can return Computer
+        and ManagedServiceAccount instances.
+
+        By default, polymorphic querying is disabled, and querying User
+        will only return User instances.
+
         :param ldb: Ldb connection
+        :param polymorphic: If true enables polymorphic querying (see note)
         :param kwargs: Search criteria as keyword args
         """
         base_dn = cls.get_search_dn(ldb)
@@ -244,7 +252,7 @@ class Model(metaclass=ModelMeta):
                 raise NotFound(f"Container does not exist: {base_dn}")
             raise
 
-        return Query(cls, ldb, result)
+        return Query(cls, ldb, result, polymorphic)
 
     @classmethod
     def get(cls, ldb, **kwargs):
