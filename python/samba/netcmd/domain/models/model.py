@@ -40,11 +40,12 @@ class ModelMeta(ABCMeta):
 
     def __new__(mcls, name, bases, namespace, **kwargs):
         cls = super().__new__(mcls, name, bases, namespace, **kwargs)
+        object_class = cls.get_object_class()
 
         if cls.__name__ != "Model":
             cls.fields = dict(inspect.getmembers(cls, lambda f: isinstance(f, Field)))
             cls.meta = mcls
-            MODELS[name] = cls
+            MODELS[object_class] = cls
 
         return cls
 

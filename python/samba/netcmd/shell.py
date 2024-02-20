@@ -51,7 +51,7 @@ class cmd_shell(Command):
             "samdb": samdb,
             "ldb": ldb,
         })
-        context.update(MODELS)
+        context.update({model.__name__: model for model in MODELS.values()})
 
         banner = rf"""
    _____         __  __ ____
@@ -67,7 +67,7 @@ Variables:
 samdb = {samdb}
 """
         for name, model in MODELS.items():
-            banner += f"{name} = {model}\n"
+            banner += f"{model.__name__}: {name}\n"
 
         readline.parse_and_bind("tab: complete")
         readline.set_completer(rlcompleter.Completer(context).complete)
