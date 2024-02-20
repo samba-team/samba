@@ -228,7 +228,7 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 	ret = server_id_db_set_exclusive(names_db, "notify-daemon");
 	if (ret != 0) {
-		DBG_DEBUG("server_id_db_add failed: %s\n",
+		DBG_DEBUG("server_id_db_set_exclusive() failed: %s\n",
 			  strerror(ret));
 		tevent_req_error(req, ret);
 		goto deregister_get_db;
