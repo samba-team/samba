@@ -23,17 +23,11 @@ from samba.net import Net
 from samba import enable_net_export_keytab
 
 from samba import tests
+from samba.dcerpc import krb5ccache
+from samba.ndr import ndr_unpack
 from samba.param import LoadParm
 
-
 enable_net_export_keytab()
-
-
-def open_bytes(filename):
-    if sys.version_info[0] == 3:
-        return open(filename, errors='ignore')
-    else:
-        return open(filename, 'rb')
 
 
 class DCKeytabTests(tests.TestCase):
@@ -52,13 +46,18 @@ class DCKeytabTests(tests.TestCase):
     def test_export_keytab(self):
         net = Net(None, self.lp)
         net.export_keytab(keytab=self.ktfile, principal=self.principal)
-        assert os.path.exists(self.ktfile), 'keytab was not created'
-        with open_bytes(self.ktfile) as bytes_kt:
-            result = ''
-            for c in bytes_kt.read():
-                if c in string.printable:
-                    result += c
-            principal_parts = self.principal.split('@')
-            assert principal_parts[0] in result and \
-                principal_parts[1] in result, \
-                'Principal not found in generated keytab'
+        self.assertTrue(os.path.exists(self.ktfile), 'keytab was not created')
+
+        # Parse the first entry in the keytab
+        with open(self.ktfile, 'rb') as bytes_kt:
+            keytab_bytes = bytes_kt.read()
+
+        keytab = ndr_unpack(krb5ccache.KEYTAB, keytab_bytes)
+
+        # Confirm that the principal is as expected
+
+        principal_parts = self.principal.split('@')
+
+        self.assertEqual(keytab.entry.principal.component_count, 1)
+        self.assertEqual(keytab.entry.principal.realm, principal_parts[1])
+        self.assertEqual(keytab.entry.principal.components[0], principal_parts[0])
