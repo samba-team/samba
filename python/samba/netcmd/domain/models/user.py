@@ -24,8 +24,7 @@ from ldb import Dn
 
 from samba.dsdb import DS_GUID_USERS_CONTAINER
 
-from .fields import (DnField, EnumField, IntegerField, SIDField, StringField,
-                     NtTimeField)
+from .fields import DnField, EnumField, IntegerField, NtTimeField, StringField
 from .model import Model
 from .types import AccountType, UserAccountControl
 
@@ -35,7 +34,6 @@ class User(Model):
     account_type = EnumField("sAMAccountType", AccountType)
     assigned_policy = DnField("msDS-AssignedAuthNPolicy")
     assigned_silo = DnField("msDS-AssignedAuthNPolicySilo")
-    object_sid = SIDField("objectSid")
     bad_password_time = NtTimeField("badPasswordTime", readonly=True)
     bad_pwd_count = IntegerField("badPwdCount", readonly=True)
     code_page = IntegerField("codePage")

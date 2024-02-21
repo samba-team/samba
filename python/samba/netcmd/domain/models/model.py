@@ -31,7 +31,7 @@ from .constants import MODELS
 from .exceptions import (DeleteError, FieldError, NotFound, ProtectError,
                          UnprotectError)
 from .fields import (DateTimeField, DnField, Field, GUIDField, IntegerField,
-                     StringField)
+                     SIDField, StringField)
 from .query import Query
 
 
@@ -61,6 +61,7 @@ class Model(metaclass=ModelMeta):
     object_class = StringField("objectClass",
                                default=lambda obj: obj.get_object_class())
     object_guid = GUIDField("objectGUID")
+    object_sid = SIDField("objectSid")
     usn_changed = IntegerField("uSNChanged", hidden=True, readonly=True)
     usn_created = IntegerField("uSNCreated", hidden=True, readonly=True)
     when_changed = DateTimeField("whenChanged", hidden=True, readonly=True)
