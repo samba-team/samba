@@ -28,6 +28,7 @@ from .computer import Computer
 from .constants import MODELS
 from .gmsa import GroupManagedServiceAccount
 from .group import Group
+from .model import Model
 from .schema import AttributeSchema, ClassSchema
 from .site import Site
 from .subnet import Subnet
