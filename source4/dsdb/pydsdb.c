@@ -1168,6 +1168,18 @@ static PyObject *py_dsdb_allocate_rid(PyObject *self, PyObject *args)
 }
 
 #ifdef AD_DC_BUILD_IS_ENABLED
+/*
+ * These functions will not work correctly on non-AD_DC builds.
+ *
+ * The only real principal in deciding whether to put something within
+ * these guards is whether it will compile and work when
+ * bld.AD_DC_BUILD_IS_ENABLED() says no.
+ *
+ * Most of DSDB is built and samba-tool will work fine with remote
+ * servers (using -H ldap://), but some DNS and periodic service
+ * functions are not built.
+ */
+
 static PyObject *py_dns_delete_tombstones(PyObject *self, PyObject *args)
 {
 	PyObject *py_ldb;
@@ -1333,7 +1345,18 @@ static PyObject *py_dsdb_garbage_collect_tombstones(PyObject *self, PyObject *ar
 	return Py_BuildValue("(II)", num_objects_removed,
 			    num_links_removed);
 }
-#endif
+
+#else
+
+static PyObject *py_dsdb_not_implemented(PyObject *self, PyObject *args)
+{
+	PyErr_SetString(PyExc_NotImplementedError,
+			"Library built without AD DC support");
+	return NULL;
+}
+
+#endif /* AD_DC_BUILD_IS_ENABLED */
+
 
 static PyObject *py_dsdb_load_udv_v2(PyObject *self, PyObject *args)
 {
@@ -1481,7 +1504,7 @@ static PyMethodDef py_dsdb_methods[] = {
 	{ "_samdb_server_site_name", (PyCFunction)py_samdb_server_site_name,
 		METH_VARARGS, "Get the server site name as a string"},
 	{ "_dsdb_convert_schema_to_openldap",
-		(PyCFunction)py_dsdb_convert_schema_to_openldap, METH_VARARGS, 
+		(PyCFunction)py_dsdb_convert_schema_to_openldap, METH_VARARGS,
 		"dsdb_convert_schema_to_openldap(ldb, target_str, mapping) -> str\n"
 		"Create an OpenLDAP schema from a schema." },
 	{ "_samdb_set_domain_sid", (PyCFunction)py_samdb_set_domain_sid,
@@ -1549,6 +1572,13 @@ static PyMethodDef py_dsdb_methods[] = {
 	{ "_scavenge_dns_records", (PyCFunction)py_scavenge_dns_records,
 		METH_VARARGS, NULL},
 	{ "_dns_delete_tombstones", (PyCFunction)py_dns_delete_tombstones,
+		METH_VARARGS, NULL},
+#else
+	{ "_dsdb_garbage_collect_tombstones", (PyCFunction)py_dsdb_not_implemented,
+		METH_VARARGS, NULL},
+	{ "_scavenge_dns_records", (PyCFunction)py_dsdb_not_implemented,
+		METH_VARARGS, NULL},
+	{ "_dns_delete_tombstones", (PyCFunction)py_dsdb_not_implemented,
 		METH_VARARGS, NULL},
 #endif
 	{ "_dsdb_create_own_rid_set", (PyCFunction)py_dsdb_create_own_rid_set, METH_VARARGS,
