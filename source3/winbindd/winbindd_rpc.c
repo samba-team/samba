@@ -323,7 +323,6 @@ NTSTATUS rpc_lookup_useraliases(TALLOC_CTX *mem_ctx,
 				uint32_t **palias_rids)
 {
 #define MAX_SAM_ENTRIES_W2K 0x400 /* 1024 */
-	uint32_t num_query_sids = 0;
 	uint32_t num_queries = 1;
 	uint32_t num_aliases = 0;
 	uint32_t total_sids = 0;
@@ -337,6 +336,7 @@ NTSTATUS rpc_lookup_useraliases(TALLOC_CTX *mem_ctx,
 	do {
 		/* prepare query */
 		struct lsa_SidArray sid_array;
+		uint32_t num_query_sids = 0;
 
 		ZERO_STRUCT(sid_array);
 
