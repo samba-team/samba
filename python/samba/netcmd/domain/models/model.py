@@ -21,7 +21,7 @@
 #
 
 import inspect
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 
 from ldb import (ERR_NO_SUCH_OBJECT, FLAG_MOD_ADD, FLAG_MOD_REPLACE,
                  LdbError, Message, MessageElement, SCOPE_BASE,
@@ -137,10 +137,9 @@ class Model(metaclass=ModelMeta):
         return cls.get_base_dn(ldb)
 
     @staticmethod
-    @abstractmethod
     def get_object_class():
         """Returns the objectClass for this model."""
-        pass
+        return "top"
 
     @classmethod
     def from_message(cls, ldb, message):
