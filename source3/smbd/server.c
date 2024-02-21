@@ -1541,6 +1541,56 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
 	return NT_STATUS_OK;
 }
 
+/****************************************************************************
+ Open socket communication on given ip address
+****************************************************************************/
+
+static bool smbd_open_socket_for_ip(struct smbd_parent_context *parent,
+				    struct tevent_context *ev_ctx,
+				    struct messaging_context *msg_ctx,
+				    const char *smb_ports,
+				    const struct sockaddr_storage *ifss)
+{
+	int j;
+	const char **ports;
+	unsigned dns_port = 0;
+	TALLOC_CTX *ctx;
+	bool status = true;
+
+	ports = lp_smb_ports();
+	ctx = talloc_stackframe();
+
+	/* use a reasonable default set of ports - listing on 445 and 139 */
+	if (smb_ports) {
+		char **l;
+		l = str_list_make_v3(ctx, smb_ports, NULL);
+		ports = discard_const_p(const char *, l);
+	}
+
+	for (j = 0; ports && ports[j]; j++) {
+		unsigned port = atoi(ports[j]);
+
+		/* Keep the first port for mDNS service
+		 * registration.
+		 */
+		if (dns_port == 0) {
+			dns_port = port;
+		}
+
+		if (!smbd_open_one_socket(parent,
+					  ev_ctx,
+					  ifss,
+					  port)) {
+			status = false;
+			goto out_free;
+		}
+	}
+
+out_free:
+	TALLOC_FREE(ctx);
+	return status;
+}
+
 struct smbd_addrchanged_state {
 	struct addrchange_context *ctx;
 	struct tevent_context *ev;
@@ -1627,6 +1677,23 @@ static void smbd_addr_changed(struct tevent_req *req)
 		DBG_NOTICE("smbd: kernel (AF_NETLINK) added ip %s "
 			   "on if_index %u\n",
 			   addrstr, if_index);
+
+		if (!interface_ifindex_exists(if_index)) {
+			DBG_NOTICE(
+				"smbd: No interface present for if_index %u\n",
+				if_index
+				);
+			goto rearm;
+		}
+
+		if (!smbd_open_socket_for_ip(state->parent,
+					     state->ev,
+					     state->msg_ctx,
+					     state->ports,
+					     &addr)) {
+			DBG_NOTICE("smbd: Unable to open socket on %s\n",
+				   addrstr);
+		}
 	}
 rearm:
 	req = addrchange_send(state, state->ev, state->ctx);
