@@ -3137,13 +3137,13 @@ static PyObject *py_ldb_module_search(PyLdbModuleObject *self, PyObject *args, P
 
 	talloc_steal(req, attrs);
 
-	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, mod->ldb);
+	PyErr_LDB_ERROR_IS_ERR_RAISE_FREE(PyExc_LdbError, ret, mod->ldb, req);
 
 	req->op.search.res = NULL;
 
 	ret = mod->ops->search(mod, req);
 
-	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, mod->ldb);
+	PyErr_LDB_ERROR_IS_ERR_RAISE_FREE(PyExc_LdbError, ret, mod->ldb, req);
 
 	py_ret = PyLdbResult_FromResult(req->op.search.res);
 
@@ -3170,7 +3170,7 @@ static PyObject *py_ldb_module_add(PyLdbModuleObject *self, PyObject *args)
 	mod = pyldb_Module_AsModule(self);
 	ret = mod->ops->add(mod, req);
 
-	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, mod->ldb);
+	PyErr_LDB_ERROR_IS_ERR_RAISE_FREE(PyExc_LdbError, ret, mod->ldb, req);
 
 	Py_RETURN_NONE;
 }
@@ -3192,7 +3192,7 @@ static PyObject *py_ldb_module_modify(PyLdbModuleObject *self, PyObject *args)
 	mod = pyldb_Module_AsModule(self);
 	ret = mod->ops->modify(mod, req);
 
-	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, mod->ldb);
+	PyErr_LDB_ERROR_IS_ERR_RAISE_FREE(PyExc_LdbError, ret, mod->ldb, req);
 
 	Py_RETURN_NONE;
 }
@@ -3212,7 +3212,7 @@ static PyObject *py_ldb_module_delete(PyLdbModuleObject *self, PyObject *args)
 
 	ret = pyldb_Module_AsModule(self)->ops->del(pyldb_Module_AsModule(self), req);
 
-	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, NULL);
+	PyErr_LDB_ERROR_IS_ERR_RAISE_FREE(PyExc_LdbError, ret, NULL, req);
 
 	Py_RETURN_NONE;
 }
@@ -3234,7 +3234,7 @@ static PyObject *py_ldb_module_rename(PyLdbModuleObject *self, PyObject *args)
 
 	ret = pyldb_Module_AsModule(self)->ops->rename(pyldb_Module_AsModule(self), req);
 
-	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, NULL);
+	PyErr_LDB_ERROR_IS_ERR_RAISE_FREE(PyExc_LdbError, ret, NULL, req);
 
 	Py_RETURN_NONE;
 }
@@ -4726,7 +4726,7 @@ static PyObject *py_register_module(PyObject *module, PyObject *args)
 		TALLOC_FREE(ops);
 	}
 
-	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, NULL);
+	PyErr_LDB_ERROR_IS_ERR_RAISE_FREE(PyExc_LdbError, ret, NULL, ops);
 
 	Py_RETURN_NONE;
 }
