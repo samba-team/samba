@@ -97,7 +97,6 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 	ctx = (struct idmap_autorid_addrange_ctx *)private_data;
 	range = ctx->range;
 	acquire = ctx->acquire;
-	requested_rangenum = range->rangenum;
 
 	if (db == NULL) {
 		DEBUG(3, ("Invalid database argument: NULL\n"));
@@ -108,6 +107,8 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 		DEBUG(3, ("Invalid range argument: NULL\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	requested_rangenum = range->rangenum;
 
 	DEBUG(10, ("Adding new range for domain %s "
 		   "(domain_range_index=%"PRIu32")\n",
