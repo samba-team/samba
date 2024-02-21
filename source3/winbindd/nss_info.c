@@ -32,7 +32,7 @@ static struct nss_domain_entry *nss_domain_list = NULL;
 
 static struct nss_function_entry *nss_get_backend(const char *name )
 {
-	struct nss_function_entry *entry = backends;
+	struct nss_function_entry *entry = NULL;
 
 	for(entry = backends; entry; entry = entry->next) {
 		if ( strequal(entry->name, name) )
