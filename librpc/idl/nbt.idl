@@ -490,7 +490,7 @@ interface nbt
 		[case(NETLOGON_NT_VERSION_5EX)] NETLOGON_SAM_LOGON_RESPONSE_EX nt5_ex;
 	} netlogon_samlogon_response_union;
 
-	typedef [nopush,nopull] struct {
+	typedef [nopush,nopull,noprint,public] struct {
 		uint32 ntver;
 		[switch_is(ntver)] netlogon_samlogon_response_union data;
 	} netlogon_samlogon_response;
