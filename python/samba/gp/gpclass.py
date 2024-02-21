@@ -49,7 +49,7 @@ from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT, UF_SERVER_TRUST_ACCOUNT, GP
 from samba.auth import AUTH_SESSION_INFO_DEFAULT_GROUPS, AUTH_SESSION_INFO_AUTHENTICATED, AUTH_SESSION_INFO_SIMPLE_PRIVILEGES
 from samba.dcerpc import security
 import samba.security
-from samba.dcerpc import netlogon
+from samba.dcerpc import nbt
 from datetime import datetime
 
 
@@ -611,12 +611,6 @@ def get_dc_hostname(creds, lp):
                                                           nbt.NBT_SERVER_DS))
     return cldap_ret.pdc_dns_name
 
-def get_dc_netbios_hostname(creds, lp):
-    net = Net(creds=creds, lp=lp)
-    cldap_ret = net.finddc(domain=lp.get('realm'), flags=(nbt.NBT_SERVER_LDAP |
-                                                          nbt.NBT_SERVER_DS))
-    return cldap_ret.pdc_name
-
 
 """ Fetch a list of GUIDs for applicable GPOs """
 
@@ -787,24 +781,52 @@ def merge_with_system_token(token_1):
     # There are no claims in the system token, so it is safe not to merge the claims
     return token_1
 
+
 def site_dn_for_machine(samdb, dc_hostname, lp, creds, hostname):
     # [MS-GPOL] 3.2.5.1.4 Site Search
-    config_context = samdb.get_config_basedn()
-    try:
-        c = netlogon.netlogon("ncacn_np:%s[seal]" % dc_hostname, lp, creds)
-        site_name = c.netr_DsRGetSiteName(hostname)
-        return 'CN={},CN=Sites,{}'.format(site_name, config_context)
-    except WERRORError:
-        # Fallback to the old method found in ads_site_dn_for_machine
-        nb_hostname = get_dc_netbios_hostname(creds, lp)
-        res = samdb.search(config_context, ldb.SCOPE_SUBTREE,
-                           "(cn=%s)" % nb_hostname, ['dn'])
-        if res.count != 1:
-            raise ldb.LdbError(ldb.ERR_NO_SUCH_OBJECT,
-                               'site_dn_for_machine: no result')
-        dn = res.msgs[0]['dn']
-        site_dn = dn.parent().parent()
-        return site_dn
+
+    # The netr_DsRGetSiteName() needs to run over local rpc, however we do not
+    # have the call implemented in our rpc_server.
+    # What netr_DsRGetSiteName() actually does is an ldap query to get
+    # the sitename, we can do the same.
+
+    # NtVer=(NETLOGON_NT_VERSION_IP|NETLOGON_NT_VERSION_WITH_CLOSEST_SITE|
+    #        NETLOGON_NT_VERSION_5EX) [0x20000014]
+    expr = "(&(DnsDomain=%s.)(User=%s)(NtVer=\\14\\00\\00\\20))" % (
+        samdb.domain_dns_name(),
+        hostname)
+    res = samdb.search(
+        base='',
+        scope=ldb.SCOPE_BASE,
+        expression=expr,
+        attrs=["Netlogon"])
+    if res.count != 1:
+        raise RuntimeError('site_dn_for_machine: No result')
+
+    samlogon_response = ndr_unpack(nbt.netlogon_samlogon_response,
+                                   bytes(res.msgs[0]['Netlogon'][0]))
+    if samlogon_response.ntver not in [nbt.NETLOGON_NT_VERSION_5EX,
+                                       (nbt.NETLOGON_NT_VERSION_1
+                                        | nbt.NETLOGON_NT_VERSION_5EX)]:
+        raise RuntimeError('site_dn_for_machine: Invalid NtVer in '
+                           + 'netlogon_samlogon_response')
+
+    # We want NETLOGON_NT_VERSION_5EX out of the union!
+    samlogon_response.ntver = nbt.NETLOGON_NT_VERSION_5EX
+    samlogon_response_ex = samlogon_response.data
+
+    client_site = "Default-First-Site-Name"
+    if (samlogon_response_ex.client_site
+            and len(samlogon_response_ex.client_site) > 1):
+        client_site = samlogon_response_ex.client_site
+
+    site_dn = samdb.get_config_basedn()
+    site_dn.add_child("CN=Sites")
+    site_dn.add_child("CN=%s" % (client_site))
+
+    return site_dn
+
+
 
 def get_gpo_list(dc_hostname, creds, lp, username):
     """Get the full list of GROUP_POLICY_OBJECTs for a given username.
