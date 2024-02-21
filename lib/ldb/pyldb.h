@@ -110,7 +110,15 @@ typedef struct {
 	} \
 } while(0)
 
-/* Picked out of thin air. To do this properly, we should probably have some part of the 
+#define PyErr_LDB_ERROR_IS_ERR_RAISE_FREE(err,ret,ldb,mem_ctx) do {	\
+	if (ret != LDB_SUCCESS) { \
+		PyErr_SetLdbError(err, ret, ldb); \
+		TALLOC_FREE(mem_ctx);		  \
+		return NULL; \
+	} \
+} while(0)
+
+/* Picked out of thin air. To do this properly, we should probably have some part of the
  * errors in LDB be allocated to bindings ? */
 #define LDB_ERR_PYTHON_EXCEPTION	142
 
