@@ -21,7 +21,6 @@
 #
 
 import inspect
-from abc import ABCMeta
 
 from ldb import (ERR_NO_SUCH_OBJECT, FLAG_MOD_ADD, FLAG_MOD_REPLACE,
                  LdbError, Message, MessageElement, SCOPE_BASE,
@@ -36,7 +35,7 @@ from .fields import (DateTimeField, DnField, Field, GUIDField, IntegerField,
 from .query import Query
 
 
-class ModelMeta(ABCMeta):
+class ModelMeta(type):
 
     def __new__(mcls, name, bases, namespace, **kwargs):
         cls = super().__new__(mcls, name, bases, namespace, **kwargs)
