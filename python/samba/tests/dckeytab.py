@@ -26,22 +26,22 @@ from samba import tests
 from samba.dcerpc import krb5ccache
 from samba.ndr import ndr_unpack
 from samba.param import LoadParm
+from samba.tests import TestCaseInTempDir
 
 enable_net_export_keytab()
 
 
-class DCKeytabTests(tests.TestCase):
+class DCKeytabTests(TestCaseInTempDir):
     def setUp(self):
         super().setUp()
         self.lp = LoadParm()
         self.lp.load_default()
         self.creds = self.insta_creds(template=self.get_credentials())
-        self.ktfile = os.path.join(self.lp.get('private dir'), 'test.keytab')
+        self.ktfile = os.path.join(self.tempdir, 'test.keytab')
         self.principal = self.creds.get_principal()
 
     def tearDown(self):
         super().tearDown()
-        os.remove(self.ktfile)
 
     def test_export_keytab(self):
         net = Net(None, self.lp)
@@ -51,6 +51,8 @@ class DCKeytabTests(tests.TestCase):
         # Parse the first entry in the keytab
         with open(self.ktfile, 'rb') as bytes_kt:
             keytab_bytes = bytes_kt.read()
+
+        self.rm_files('test.keytab')
 
         keytab = ndr_unpack(krb5ccache.KEYTAB, keytab_bytes)
 
