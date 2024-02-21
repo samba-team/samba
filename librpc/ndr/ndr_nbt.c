@@ -392,7 +392,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netlogon_samlogon_response(struct ndr_pull *
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_netlogon_samlogon_response(struct ndr_print *ndr, const char *name, struct netlogon_samlogon_response *r)
+_PUBLIC_ void ndr_print_netlogon_samlogon_response(struct ndr_print *ndr, const char *name, const struct netlogon_samlogon_response *r)
 {
 	ndr_print_struct(ndr, name, "netlogon_samlogon_response");
 	if (r == NULL) { ndr_print_null(ndr); return; }
