@@ -25,6 +25,7 @@ from .auth_policy import (AuthenticationPolicy, StrongNTLMPolicy,
 from .auth_silo import AuthenticationSilo
 from .claim_type import ClaimType
 from .computer import Computer
+from .gmsa import GroupManagedServiceAccount
 from .group import Group
 from .model import MODELS
 from .schema import AttributeSchema, ClassSchema
@@ -32,5 +33,5 @@ from .site import Site
 from .subnet import Subnet
 from .types import (AccountType, GroupType, SupportedEncryptionTypes,
                     SystemFlags, UserAccountControl)
-from .user import User, GroupManagedServiceAccount
+from .user import User
 from .value_type import ValueType
