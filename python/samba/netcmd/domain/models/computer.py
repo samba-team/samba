@@ -46,7 +46,7 @@ class Computer(User):
 
     @classmethod
     def find(cls, ldb, name):
-        """Helper function to find a service account first by Dn then username.
+        """Helper function to find a computer, first by Dn then username.
 
         If the Dn can't be parsed use sAMAccountName, automatically add the $.
         """
