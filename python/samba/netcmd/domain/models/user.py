@@ -124,9 +124,9 @@ class GroupManagedServiceAccount(User):
 
     @property
     def trustees(self):
-        """Returns list of trustees from the msDS-GroupMSAMembership SDDL.
+        """Returns list of trustees from the msDS-GroupMSAMembership field.
 
-        :return: list of User objects
+        :return: list of SID strings
         """
         allowed = []
 
