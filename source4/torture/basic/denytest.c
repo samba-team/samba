@@ -2680,10 +2680,11 @@ bool torture_maximum_allowed(struct torture_context *tctx,
 	struct security_descriptor *sd, *sd_orig;
 	union smb_open io;
 	static TALLOC_CTX *mem_ctx;
-	int fnum, i;
+	int fnum, fnum1 = -1, i;
 	bool ret = true;
 	NTSTATUS status;
 	union smb_fileinfo q;
+	union smb_setfileinfo set;
 	const char *owner_sid;
 	bool has_restore_privilege, has_backup_privilege, has_system_security_privilege;
 
@@ -2813,7 +2814,34 @@ bool torture_maximum_allowed(struct torture_context *tctx,
 		smbcli_close(cli->tree, fnum);
 	}
 
+	io.generic.level = RAW_OPEN_NTTRANS_CREATE;
+	io.ntcreatex.in.access_mask = SEC_STD_WRITE_DAC;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.fname = MAXIMUM_ALLOWED_FILE;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum1 = io.ntcreatex.out.file.fnum;
+
+	sd = security_descriptor_dacl_create(tctx,
+					0, NULL, NULL,
+					SID_NT_AUTHENTICATED_USERS,
+					SEC_ACE_TYPE_ACCESS_ALLOWED,
+					SEC_STD_DELETE,
+					0,
+					NULL);
+	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	set.set_secdesc.in.file.fnum = fnum1;
+	set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	set.set_secdesc.in.sd = sd;
+
+	status = smb_raw_setfileinfo(cli->tree, &set);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
  done:
+	smbcli_close(cli->tree, fnum1);
 	smbcli_unlink(cli->tree, MAXIMUM_ALLOWED_FILE);
 	return ret;
 }

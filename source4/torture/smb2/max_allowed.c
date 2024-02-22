@@ -33,11 +33,12 @@ static bool torture_smb2_maximum_allowed(struct torture_context *tctx,
 	struct security_descriptor *sd = NULL, *sd_orig = NULL;
 	struct smb2_create io = {0};
 	TALLOC_CTX *mem_ctx = NULL;
-	struct smb2_handle fnum = {{0}};
+	struct smb2_handle fnum = {{0}}, fnum1 = {{0}};
 	int i;
 	bool ret = true;
 	NTSTATUS status;
 	union smb_fileinfo q;
+	union smb_setfileinfo set;
 	const char *owner_sid = NULL;
 	bool has_restore_privilege, has_backup_privilege, has_system_security_privilege;
 
@@ -82,7 +83,7 @@ static bool torture_smb2_maximum_allowed(struct torture_context *tctx,
 	q.query_secdesc.in.file.handle = fnum;
 	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
 	status = smb2_getinfo_file(tree, tctx, &q);
-	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, set_sd,
 		talloc_asprintf(tctx, "Incorrect status %s - should be %s\n",
 				nt_errstr(status), nt_errstr(NT_STATUS_OK)));
 	sd_orig = q.query_secdesc.out.sd;
@@ -159,21 +160,21 @@ static bool torture_smb2_maximum_allowed(struct torture_context *tctx,
 		if (mask & ok_mask ||
 		    mask == SEC_FLAG_MAXIMUM_ALLOWED) {
 			torture_assert_ntstatus_ok_goto(tctx, status, ret,
-				done, talloc_asprintf(tctx,
+				set_sd, talloc_asprintf(tctx,
 				"Incorrect status %s - should be %s\n",
 				nt_errstr(status), nt_errstr(NT_STATUS_OK)));
 		} else {
 			if (mask & SEC_FLAG_SYSTEM_SECURITY) {
 				torture_assert_ntstatus_equal_goto(tctx,
 					status, NT_STATUS_PRIVILEGE_NOT_HELD,
-					ret, done, talloc_asprintf(tctx,
+					ret, set_sd, talloc_asprintf(tctx,
 					"Incorrect status %s - should be %s\n",
 					nt_errstr(status),
 					nt_errstr(NT_STATUS_PRIVILEGE_NOT_HELD)));
 			} else {
 				torture_assert_ntstatus_equal_goto(tctx,
 					status, NT_STATUS_ACCESS_DENIED,
-					ret, done, talloc_asprintf(tctx,
+					ret, set_sd, talloc_asprintf(tctx,
 					"Incorrect status %s - should be %s\n",
 					nt_errstr(status),
 					nt_errstr(NT_STATUS_ACCESS_DENIED)));
@@ -185,7 +186,38 @@ static bool torture_smb2_maximum_allowed(struct torture_context *tctx,
 		smb2_util_close(tree, fnum);
 	}
 
+set_sd:
+	io.in.desired_access = SEC_STD_WRITE_DAC;
+	io.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.in.impersonation_level = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.in.fname = MAXIMUM_ALLOWED_FILE;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+		talloc_asprintf(tctx, "Incorrect status %s - should be %s\n",
+				nt_errstr(status), nt_errstr(NT_STATUS_OK)));
+	fnum1 = io.out.file.handle;
+
+	sd = security_descriptor_dacl_create(tctx,
+					0, NULL, NULL,
+					SID_NT_AUTHENTICATED_USERS,
+					SEC_ACE_TYPE_ACCESS_ALLOWED,
+					SEC_STD_DELETE,
+					0,
+					NULL);
+	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	set.set_secdesc.in.file.handle = fnum1;
+	set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	set.set_secdesc.in.sd = sd;
+
+	status = smb2_setinfo_file(tree, &set);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+		talloc_asprintf(tctx, "Incorrect status %s - should be %s\n",
+				nt_errstr(status), nt_errstr(NT_STATUS_OK)));
+
  done:
+	smb2_util_close(tree, fnum1);
 	smb2_util_unlink(tree, MAXIMUM_ALLOWED_FILE);
 	talloc_free(mem_ctx);
 	return ret;
