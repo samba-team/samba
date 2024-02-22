@@ -20,6 +20,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from ldb import Dn
+
 from samba.dsdb import DS_GUID_COMPUTERS_CONTAINER
 
 from .user import User
@@ -41,3 +43,19 @@ class Computer(User):
     @staticmethod
     def get_object_class():
         return "computer"
+
+    @classmethod
+    def find(cls, ldb, name):
+        """Helper function to find a service account first by Dn then username.
+
+        If the Dn can't be parsed use sAMAccountName, automatically add the $.
+        """
+        try:
+            query = {"dn": Dn(ldb, name)}
+        except ValueError:
+            if name.endswith("$"):
+                query = {"username": name}
+            else:
+                query = {"username": name + "$"}
+
+        return cls.get(ldb, **query)

@@ -20,8 +20,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from ldb import Dn
-
 from samba.dcerpc import security
 from samba.dsdb import DS_GUID_MANAGED_SERVICE_ACCOUNTS_CONTAINER
 
@@ -77,19 +75,3 @@ class GroupManagedServiceAccount(Computer):
                     field=GroupManagedServiceAccount.group_msa_membership)
 
         return allowed
-
-    @classmethod
-    def find(cls, ldb, name):
-        """Helper function to find a service account first by Dn then username.
-
-        If the Dn can't be parsed use sAMAccountName, automatically add the $.
-        """
-        try:
-            query = {"dn": Dn(ldb, name)}
-        except ValueError:
-            if name.endswith("$"):
-                query = {"username": name}
-            else:
-                query = {"username": name + "$"}
-
-        return cls.get(ldb, **query)
