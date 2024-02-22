@@ -36,6 +36,7 @@ from .demote import cmd_domain_demote
 from .functional_prep import cmd_domain_functional_prep
 from .info import cmd_domain_info
 from .join import cmd_domain_join
+from .kds import cmd_domain_kds
 from .keytab import cmd_domain_export_keytab
 from .leave import cmd_domain_leave
 from .level import cmd_domain_level
@@ -62,6 +63,7 @@ class cmd_domain(SuperCommand):
         subcommands["demote"] = cmd_domain_demote()
         subcommands["provision"] = cmd_domain_provision()
         subcommands["dcpromo"] = cmd_domain_dcpromo()
+        subcommands["kds"] = cmd_domain_kds()
         subcommands["level"] = cmd_domain_level()
         subcommands["passwordsettings"] = cmd_domain_passwordsettings()
         subcommands["classicupgrade"] = cmd_domain_classicupgrade()
