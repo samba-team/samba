@@ -153,7 +153,3 @@ class GroupManagedServiceAccount(User):
                 query = {"username": name + "$"}
 
         return cls.get(ldb, **query)
-
-    @staticmethod
-    def group_sddl(group):
-        return f"O:BAD:(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;{group.object_sid})"
