@@ -22,6 +22,7 @@
 # These can all be accessed via os.environ["VARIABLENAME"] when needed
 
 import os
+import sys
 import random
 import string
 from io import StringIO
@@ -62,13 +63,28 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
                      credentials=creds, lp=lp)
 
     @classmethod
-    def _run(cls, *argv):
-        """run a samba-tool command"""
+    def _run(cls, *argv, verbose=False):
+        """run a samba-tool command.
+
+        positional arguments are effectively what gets passed to
+        bin/samba-tool.
+
+        Add verbose=True during development to see the expanded
+        command and results.
+        """
         cmd, args = cmd_sambatool()._resolve('samba-tool', *argv,
                                              outf=cls.stringIO(),
                                              errf=cls.stringIO())
         result = cmd._run(*args)
-        return (result, cmd.outf.getvalue(), cmd.errf.getvalue())
+        out = cmd.outf.getvalue()
+        err = cmd.errf.getvalue()
+
+        if verbose:
+            print(f"bin/samba-tool {' '.join(argv)}\n\nstdout:\n"
+                  f"{out}\n\nstderr:\n{err}\nresult: {result}\n",
+                  file=sys.stderr)
+
+        return (result, out, err)
 
     runcmd = _run
     runsubcmd = _run
