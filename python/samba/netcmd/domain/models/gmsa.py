@@ -24,6 +24,7 @@ from samba.dcerpc import security
 from samba.dsdb import DS_GUID_MANAGED_SERVICE_ACCOUNTS_CONTAINER
 
 from .computer import Computer
+from .constants import GROUP_MSA_MEMBERSHIP_DEFAULT
 from .exceptions import FieldError
 from .fields import BinaryField, EnumField, IntegerField, SDDLField, StringField
 from .types import SupportedEncryptionTypes
@@ -34,7 +35,7 @@ class GroupManagedServiceAccount(Computer):
     managed_password_interval = IntegerField("msDS-ManagedPasswordInterval")
     dns_host_name = StringField("dNSHostName")
     group_msa_membership = SDDLField("msDS-GroupMSAMembership",
-                                     default="O:BAD:(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;LA)")
+                                     default=GROUP_MSA_MEMBERSHIP_DEFAULT)
     managed_password_id = BinaryField("msDS-ManagedPasswordId",
                                       readonly=True, hidden=True)
     managed_password_previous_id = BinaryField("msDS-ManagedPasswordPreviousId",

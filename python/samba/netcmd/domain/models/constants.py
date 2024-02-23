@@ -23,3 +23,6 @@
 # Keeps track of registered models.
 # This gets populated by the ModelMeta class.
 MODELS = {}
+
+# Default SDDL for GroupManagedServiceAccount msDS-GroupMSAMembership field.
+GROUP_MSA_MEMBERSHIP_DEFAULT = "O:BAD:(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;LA)"
