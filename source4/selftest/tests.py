@@ -1170,6 +1170,7 @@ planpythontestsuite("ad_dc_default", "samba.tests.samba_tool.domain_auth_policy"
 planpythontestsuite("ad_dc_default", "samba.tests.samba_tool.domain_auth_silo")
 planpythontestsuite("ad_dc_default", "samba.tests.samba_tool.domain_kds_root_key")
 planpythontestsuite("ad_dc_default", "samba.tests.samba_tool.domain_models")
+planpythontestsuite("ad_dc_default", "samba.tests.samba_tool.service_account")
 planpythontestsuite("schema_dc:local", "samba.tests.samba_tool.schema")
 planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.ntacl")
 planpythontestsuite("none", "samba.tests.samba_tool.provision_password_check")
