@@ -53,7 +53,6 @@ class SamDB(samba.Ldb):
     """The SAM database."""
 
     hash_oid_name = {}
-    hash_well_known = {}
 
     class _CleanUpOnError:
         def __init__(self, samdb, dn):
@@ -1220,19 +1219,7 @@ schemaUpdateNow: 1
         return dsdb._dsdb_get_nc_root(self, dn)
 
     def get_wellknown_dn(self, nc_root, wkguid):
-        h_nc = self.hash_well_known.get(str(nc_root))
-        dn = None
-        if h_nc is not None:
-            dn = h_nc.get(wkguid)
-        if dn is None:
-            dn = dsdb._dsdb_get_wellknown_dn(self, nc_root, wkguid)
-            if dn is None:
-                return dn
-            if h_nc is None:
-                self.hash_well_known[str(nc_root)] = {}
-                h_nc = self.hash_well_known[str(nc_root)]
-            h_nc[wkguid] = dn
-        return dn
+        return dsdb._dsdb_get_wellknown_dn(self, nc_root, wkguid)
 
     def set_minPwdAge(self, value):
         if not isinstance(value, bytes):

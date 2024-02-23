@@ -56,6 +56,8 @@ def dump_attr_values(vals):
 class dbcheck(object):
     """check a SAM database for errors"""
 
+    hash_well_known = {}
+
     def __init__(self, samdb, samdb_schema=None, verbose=False, fix=False,
                  yes=False, quiet=False, in_transaction=False,
                  quick_membership_checks=False,
@@ -130,9 +132,9 @@ class dbcheck(object):
         self.link_id_cache = {}
         self.name_map = {}
         try:
-            base_dn = "CN=DnsAdmins,%s" % samdb.get_wellknown_dn(
-                                                samdb.get_default_basedn(),
-                                                dsdb.DS_GUID_USERS_CONTAINER)
+            base_dn = "CN=DnsAdmins,%s" % self.get_wellknown_dn_cached(
+                samdb.get_default_basedn(),
+                dsdb.DS_GUID_USERS_CONTAINER)
             res = samdb.search(base=base_dn, scope=ldb.SCOPE_BASE,
                                attrs=["objectSid"])
             dnsadmins_sid = ndr_unpack(security.dom_sid, res[0]["objectSid"][0])
@@ -171,8 +173,8 @@ class dbcheck(object):
 
         for nc in self.ncs:
             try:
-                dn = self.samdb.get_wellknown_dn(ldb.Dn(self.samdb, nc.decode('utf8')),
-                                                 dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER)
+                dn = self.get_wellknown_dn_cached(ldb.Dn(self.samdb, nc.decode('utf8')),
+                                                  dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER)
                 self.deleted_objects_containers.append(dn)
             except KeyError:
                 self.ncs_lacking_deleted_containers.append(ldb.Dn(self.samdb, nc.decode('utf8')))
@@ -242,6 +244,21 @@ class dbcheck(object):
             (enum, estr) = e6.args
             if enum != ldb.ERR_NO_SUCH_OBJECT:
                 raise
+
+    def get_wellknown_dn_cached(self, nc_root, wkguid):
+        h_nc = self.hash_well_known.get(str(nc_root))
+        dn = None
+        if h_nc is not None:
+            dn = h_nc.get(wkguid)
+        if dn is None:
+            dn = self.samdb.get_wellknown_dn(nc_root, wkguid)
+            if dn is None:
+                return dn
+            if h_nc is None:
+                self.hash_well_known[str(nc_root)] = {}
+                h_nc = self.hash_well_known[str(nc_root)]
+            h_nc[wkguid] = dn
+        return dn
 
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=None,
                        attrs=None):
@@ -945,7 +962,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         self.samdb.transaction_start()
         try:
             nc_root = self.samdb.get_nc_root(obj.dn)
-            lost_and_found = self.samdb.get_wellknown_dn(nc_root, dsdb.DS_GUID_LOSTANDFOUND_CONTAINER)
+            lost_and_found = self.get_wellknown_dn_cached(nc_root, dsdb.DS_GUID_LOSTANDFOUND_CONTAINER)
             new_dn = ldb.Dn(self.samdb, str(obj.dn))
             new_dn.remove_base_components(len(new_dn) - 1)
             if self.do_rename(obj.dn, new_dn, lost_and_found, ["show_deleted:0", "relax:0"],
@@ -2369,8 +2386,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         nc_dn = self.samdb.get_nc_root(obj.dn)
         try:
-            deleted_objects_dn = self.samdb.get_wellknown_dn(nc_dn,
-                                                             samba.dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER)
+            deleted_objects_dn = self.get_wellknown_dn_cached(nc_dn,
+                                                              samba.dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER)
         except KeyError:
             # We have no deleted objects DN for schema, and we check for this above for the other
             # NCs
