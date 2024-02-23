@@ -30,6 +30,23 @@ from .user import User
 class Computer(User):
     """A Computer is a type of User."""
 
+    def __init__(self, **kwargs):
+        """Computer constructor automatically adds "$" to username.
+
+        Also applies to GroupManagedServiceAccount subclass.
+        """
+        name = kwargs.get("name", kwargs.get("cn"))
+        username = kwargs.get("username")
+
+        # If the username is missing, use name or cn and add a "$".
+        # If the username is present but lacking "$", add it automatically.
+        if name and not username:
+            kwargs["username"] = name + "$"
+        elif username and not username.endswith("$"):
+            kwargs["username"] = username + "$"
+
+        super().__init__(**kwargs)
+
     @staticmethod
     def get_base_dn(ldb):
         """Return base Dn for Computers.

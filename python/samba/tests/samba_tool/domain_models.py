@@ -27,8 +27,8 @@ from xml.etree import ElementTree
 from ldb import FLAG_MOD_ADD, MessageElement, SCOPE_ONELEVEL
 from samba.dcerpc import security
 from samba.dcerpc.misc import GUID
-from samba.netcmd.domain.models import (AccountType, Group, Site, User,
-                                        StrongNTLMPolicy, fields)
+from samba.netcmd.domain.models import (AccountType, Computer, Group, Site,
+                                        User, StrongNTLMPolicy, fields)
 from samba.ndr import ndr_pack, ndr_unpack
 
 from .base import SambaToolCmdTest
@@ -70,6 +70,28 @@ class ModelTests(SambaToolCmdTest):
         self.assertNotEqual(robots, 0)
         self.assertNotEqual(humans, 0)
         self.assertEqual(robots + humans, robots_vs_humans)
+
+
+class ComputerModelTests(SambaToolCmdTest):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.samdb = cls.getSamDB("-H", HOST, CREDS)
+        super().setUpClass()
+
+    def test_computer_constructor(self):
+        comp1 = Computer(name="comp1")
+        self.assertEqual(comp1.username, "comp1$")
+
+        comp2 = Computer(cn="comp2")
+        self.assertEqual(comp2.username, "comp2$")
+
+        # User accidentally left out '$' in username.
+        comp3 = Computer(name="comp3", username="comp3")
+        self.assertEqual(comp3.username, "comp3$")
+
+        comp4 = Computer(cn="comp4", username="comp4$")
+        self.assertEqual(comp4.username, "comp4$")
 
 
 class FieldTestMixin:
