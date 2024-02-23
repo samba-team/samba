@@ -32,7 +32,8 @@ from .types import SupportedEncryptionTypes
 
 class GroupManagedServiceAccount(Computer):
     """A GroupManagedServiceAccount is a type of Computer which is also a User."""
-    managed_password_interval = IntegerField("msDS-ManagedPasswordInterval")
+    managed_password_interval = IntegerField("msDS-ManagedPasswordInterval",
+                                             default=30)
     dns_host_name = StringField("dNSHostName")
     group_msa_membership = SDDLField("msDS-GroupMSAMembership",
                                      default=GROUP_MSA_MEMBERSHIP_DEFAULT)
