@@ -82,8 +82,8 @@ class Command(object):
     # synopsis must be defined in all subclasses in order to provide the
     # command usage
     synopsis = None
-    takes_args = []
-    takes_options = []
+    takes_args = ()
+    takes_options = ()
     takes_optiongroups = {}
 
     hidden = False
