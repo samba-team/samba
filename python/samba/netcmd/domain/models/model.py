@@ -79,8 +79,12 @@ class Model(metaclass=ModelMeta):
         self._message = None
 
         for field_name, field in self.fields.items():
-            if field_name in kwargs:
-                default = kwargs[field_name]
+            field_value = kwargs.get(field_name)
+
+            # Set fields from values provided in kwargs dict.
+            # If field is set to None we use the field default (if any)
+            if field_value is not None:
+                default = field_value
             elif callable(field.default):
                 default = field.default(self)
             else:
