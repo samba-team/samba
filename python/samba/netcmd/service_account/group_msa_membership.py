@@ -19,7 +19,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from samba.dcerpc import security
 from samba.getopt import CredentialsOptions, HostOptions, Option, SambaOptions
 from samba.netcmd import Command, CommandError, SuperCommand
 from samba.netcmd.domain.models import (Group, GroupManagedServiceAccount,
@@ -131,17 +130,7 @@ class cmd_service_account_group_msa_membership_add(Command):
             print(f"Trustee '{trustee}' is already allowed to show managed passwords for: {gmsa}",
                   file=self.outf)
         else:
-            aces = gmsa.group_msa_membership.dacl.aces
-
-            ace = security.ace()
-            ace.type = security.SEC_ACE_TYPE_ACCESS_ALLOWED
-            ace.trustee = security.dom_sid(trustee.object_sid)
-            ace.access_mask = security.SEC_ADS_GENERIC_ALL
-            aces.append(ace)
-
-            # aces is a copy so this is necessary including the len
-            gmsa.group_msa_membership.dacl.aces = aces
-            gmsa.group_msa_membership.dacl.num_aces = len(aces)
+            gmsa.add_trustee(trustee)
 
             try:
                 gmsa.save(ldb)

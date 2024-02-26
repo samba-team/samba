@@ -28,6 +28,7 @@ from .constants import GROUP_MSA_MEMBERSHIP_DEFAULT
 from .exceptions import FieldError
 from .fields import BinaryField, EnumField, IntegerField, SDDLField, StringField
 from .types import SupportedEncryptionTypes
+from .user import User
 
 
 class GroupManagedServiceAccount(Computer):
@@ -77,3 +78,21 @@ class GroupManagedServiceAccount(Computer):
                     field=GroupManagedServiceAccount.group_msa_membership)
 
         return allowed
+
+    def add_trustee(self, trustee: User):
+        """Adds the User `trustee` to group_msa_membership.
+
+        Checking if the trustee already has access is the responsibility
+        of the caller.
+        """
+        aces = self.group_msa_membership.dacl.aces
+
+        ace = security.ace()
+        ace.type = security.SEC_ACE_TYPE_ACCESS_ALLOWED
+        ace.trustee = security.dom_sid(trustee.object_sid)
+        ace.access_mask = security.SEC_ADS_GENERIC_ALL
+        aces.append(ace)
+
+        # Because aces is a copy this is necessary, also setting num_aces.
+        self.group_msa_membership.dacl.aces = aces
+        self.group_msa_membership.dacl.num_aces = len(aces)
