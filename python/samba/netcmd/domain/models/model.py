@@ -111,13 +111,8 @@ class Model(metaclass=ModelMeta):
             return self.dn == other.dn
 
     def __json__(self):
-        """Automatically called by custom JSONEncoder class.
-
-        When turning an object into json any fields of type RelatedField
-        will also end up calling this method.
-        """
-        if self.dn is not None:
-            return str(self.dn)
+        """Automatically called by custom JSONEncoder class."""
+        return self.as_dict()
 
     @staticmethod
     def get_base_dn(ldb):
