@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.20.  This is *not*
+This is the third release candidate of Samba 4.20.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -212,6 +212,27 @@ smb.conf changes
   --------------                          -----------     -------
   smb3 unix extensions                    Per share       -
   acl claims evaluation                   new             AD DC only
+
+
+CHANGES SINCE 4.20.0rc2
+=======================
+
+o  Rob van der Linde <rob@catalyst.net.nz>
+   * BUG 15575: Remove unsupported "Final" keyword missing from Python 3.6.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15577: Additional witness backports for 4.20.0.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15579: Error output with wspsearch.
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15580: Packet marshalling push support missing for
+     CTDB_CONTROL_TCP_CLIENT_DISCONNECTED and
+     CTDB_CONTROL_TCP_CLIENT_PASSED.
+
+o  Jo Sutton <josutton@catalyst.net.nz>
+   * BUG 15575: Remove unsupported "Final" keyword missing from Python 3.6.
 
 
 CHANGES SINCE 4.20.0rc1
