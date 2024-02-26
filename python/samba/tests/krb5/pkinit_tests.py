@@ -35,9 +35,10 @@ from cryptography.hazmat.primitives.asymmetric import dh, padding
 from cryptography.x509.oid import NameOID
 
 import samba.tests
+from samba.dcerpc import security
 from samba.tests.krb5 import kcrypto
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
-from samba.tests.krb5.raw_testcase import PkInit
+from samba.tests.krb5.raw_testcase import PkInit, RawKerberosTest
 from samba.tests.krb5.rfc4120_constants import (
     DES_EDE3_CBC,
     KDC_ERR_CLIENT_NOT_TRUSTED,
@@ -54,6 +55,8 @@ from samba.tests.krb5.rfc4120_constants import (
     PADATA_PK_AS_REQ,
 )
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
+
+SidType = RawKerberosTest.SidType
 
 global_asn1_print = False
 global_hexdump = False
@@ -1159,6 +1162,13 @@ class PkInitTests(KDCBaseTest):
         ticket_decryption_key = self.TicketDecryptionKey_from_creds(
             target_creds)
 
+        if freshness_token is None:
+            expected_groups = None
+            unexpected_groups = {(security.SID_FRESH_PUBLIC_KEY_IDENTITY, SidType.EXTRA_SID, security.SE_GROUP_DEFAULT_FLAGS)}
+        else:
+            expected_groups = {(security.SID_FRESH_PUBLIC_KEY_IDENTITY, SidType.EXTRA_SID, security.SE_GROUP_DEFAULT_FLAGS), ...}
+            unexpected_groups = None
+
         kdc_exchange_dict = self.as_exchange_dict(
             creds=creds,
             client_cert=certificate,
@@ -1167,6 +1177,8 @@ class PkInitTests(KDCBaseTest):
             expected_srealm=target_realm,
             expected_sname=expected_sname,
             expected_supported_etypes=target_creds.tgs_supported_enctypes,
+            expected_groups=expected_groups,
+            unexpected_groups=unexpected_groups,
             ticket_decryption_key=ticket_decryption_key,
             generate_padata_fn=generate_pk_padata,
             check_error_fn=check_error_fn,
