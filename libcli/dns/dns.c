@@ -422,6 +422,7 @@ struct tevent_req *dns_cli_request_send(TALLOC_CTX *mem_ctx,
 	struct dns_cli_request_state *state;
 	struct dns_name_question question;
 	struct dns_name_packet out_packet;
+	struct dns_res_rec edns0_opt;
 	enum ndr_err_code ndr_err;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -443,11 +444,19 @@ struct tevent_req *dns_cli_request_send(TALLOC_CTX *mem_ctx,
 		.question_type = qtype, .question_class = qclass
 	};
 
+	edns0_opt = (struct dns_res_rec) {
+		.name = "",
+		.rr_type = DNS_QTYPE_OPT,
+		.rr_class = 4096 /* 4096 bytes UDP buffer size */
+	};
+
 	out_packet = (struct dns_name_packet) {
 		.id = state->req_id,
 		.operation = DNS_OPCODE_QUERY | DNS_FLAG_RECURSION_DESIRED,
 		.qdcount = 1,
-		.questions = &question
+		.questions = &question,
+		.arcount = 1,
+		.additional = &edns0_opt
 	};
 
 	ndr_err = ndr_push_struct_blob(
