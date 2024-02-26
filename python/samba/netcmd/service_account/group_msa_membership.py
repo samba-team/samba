@@ -193,12 +193,7 @@ class cmd_service_account_group_msa_membership_remove(Command):
             print(f"Trustee '{trustee}' cannot currently show managed passwords for: {gmsa}",
                   file=self.outf)
         else:
-            aces = gmsa.group_msa_membership.dacl.aces
-
-            for ace in aces:
-                if trustee.object_sid == str(ace.trustee):
-                    gmsa.group_msa_membership.dacl_del_ace(ace)
-                    break
+            gmsa.remove_trustee(trustee)
 
             try:
                 gmsa.save(ldb)

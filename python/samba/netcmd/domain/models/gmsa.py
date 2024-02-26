@@ -96,3 +96,15 @@ class GroupManagedServiceAccount(Computer):
         # Because aces is a copy this is necessary, also setting num_aces.
         self.group_msa_membership.dacl.aces = aces
         self.group_msa_membership.dacl.num_aces = len(aces)
+
+    def remove_trustee(self, trustee: User):
+        """Removes the User 'trustee' from group_msa_membership.
+
+        If the trustee doesn't have access already then do nothing.
+        """
+        aces = self.group_msa_membership.dacl.aces
+
+        for ace in aces:
+            if trustee.object_sid == str(ace.trustee):
+                self.group_msa_membership.dacl_del_ace(ace)
+                break
