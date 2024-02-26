@@ -154,6 +154,11 @@ static int ldap_search_with_timeout(LDAP *ld,
 	struct timeval *timeout_ptr = NULL;
 	int result;
 
+	DBG_DEBUG("ldap_search: base => [%s], filter => [%s], scope => [%d]\n",
+		 base,
+		 filter,
+		 scope);
+
 	/* Setup timeout for the ldap_search_ext_s call - local and remote. */
 	gotalarm = 0;
 
