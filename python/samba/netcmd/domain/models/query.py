@@ -58,7 +58,7 @@ class Query:
         else:
             model = self.model
 
-        return model.from_message(self.ldb, message)
+        return model._from_message(self.ldb, message)
 
     def first(self):
         """Returns the first item in the Query or None for no results."""

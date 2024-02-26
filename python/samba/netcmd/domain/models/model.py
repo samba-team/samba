@@ -141,7 +141,7 @@ class Model(metaclass=ModelMeta):
         return "top"
 
     @classmethod
-    def from_message(cls, ldb, message):
+    def _from_message(cls, ldb, message):
         """Create a new model instance from the Ldb Message object.
 
         :param ldb: Ldb connection
@@ -280,7 +280,7 @@ class Model(metaclass=ModelMeta):
                 else:
                     raise
 
-            return cls.from_message(ldb, res[0])
+            return cls._from_message(ldb, res[0])
         else:
             return cls.query(ldb, **kwargs).get()
 
@@ -360,7 +360,7 @@ class Model(metaclass=ModelMeta):
             self._apply(ldb, res[0])
         else:
             # Existing Message was stored to work out what fields changed.
-            existing_obj = self.from_message(ldb, self._message)
+            existing_obj = self._from_message(ldb, self._message)
 
             # Only modify replace or modify fields that have changed.
             # Any fields that are set to None or an empty list get unset.
