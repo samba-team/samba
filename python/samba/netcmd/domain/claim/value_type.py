@@ -59,7 +59,7 @@ class cmd_domain_claim_value_type_list(Command):
             self.print_json(value_types)
         else:
             for value_type in value_types.keys():
-                self.outf.write(f"{value_type}\n")
+                print(value_type, file=self.outf)
 
 
 class cmd_domain_claim_value_type_view(Command):

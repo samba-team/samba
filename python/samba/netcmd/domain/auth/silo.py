@@ -61,7 +61,7 @@ class cmd_domain_auth_silo_list(Command):
             self.print_json(silos)
         else:
             for silo in silos.keys():
-                self.outf.write(f"{silo}\n")
+                print(silo, file=self.outf)
 
 
 class cmd_domain_auth_silo_view(Command):
@@ -212,7 +212,7 @@ class cmd_domain_auth_silo_create(Command):
             raise CommandError(e)
 
         # Authentication silo created successfully.
-        self.outf.write(f"Created authentication silo: {name}\n")
+        print(f"Created authentication silo: {name}", file=self.outf)
 
 
 class cmd_domain_auth_silo_modify(Command):
@@ -337,7 +337,7 @@ class cmd_domain_auth_silo_modify(Command):
             raise CommandError(e)
 
         # Silo updated successfully.
-        self.outf.write(f"Updated authentication silo: {name}\n")
+        print(f"Updated authentication silo: {name}", file=self.outf)
 
 
 class cmd_domain_auth_silo_delete(Command):
@@ -386,7 +386,7 @@ class cmd_domain_auth_silo_delete(Command):
                 raise CommandError(e)
 
         # Authentication silo deleted successfully.
-        self.outf.write(f"Deleted authentication silo: {name}\n")
+        print(f"Deleted authentication silo: {name}", file=self.outf)
 
 
 class cmd_domain_auth_silo(SuperCommand):

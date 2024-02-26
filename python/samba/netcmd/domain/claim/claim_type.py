@@ -135,11 +135,10 @@ class cmd_domain_claim_claim_type_create(Command):
             raise CommandError(e)
 
         # Claim type created successfully.
-        self.outf.write(f"Created claim type: {display_name}")
+        message = f"Created claim type: {display_name}"
         if attribute_name != display_name:
-            self.outf.write(f" ({attribute_name})\n")
-        else:
-            self.outf.write("\n")
+            message += f" ({attribute_name})"
+        print(message, file=self.outf)
 
 
 class cmd_domain_claim_claim_type_modify(Command):
@@ -226,7 +225,7 @@ class cmd_domain_claim_claim_type_modify(Command):
             raise CommandError(e)
 
         # Claim type updated successfully.
-        self.outf.write(f"Updated claim type: {name}\n")
+        print(f"Updated claim type: {name}", file=self.outf)
 
 
 class cmd_domain_claim_claim_type_delete(Command):
@@ -275,7 +274,7 @@ class cmd_domain_claim_claim_type_delete(Command):
                 raise CommandError(e)
 
         # Claim type deleted successfully.
-        self.outf.write(f"Deleted claim type: {name}\n")
+        print(f"Deleted claim type: {name}", file=self.outf)
 
 
 class cmd_domain_claim_claim_type_list(Command):
@@ -311,7 +310,7 @@ class cmd_domain_claim_claim_type_list(Command):
             self.print_json(claim_types)
         else:
             for claim_type in claim_types.keys():
-                self.outf.write(f"{claim_type}\n")
+                print(claim_type, file=self.outf)
 
 
 class cmd_domain_claim_claim_type_view(Command):
