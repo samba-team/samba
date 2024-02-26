@@ -83,6 +83,10 @@ const struct dom_sid global_sid_Asserted_Identity_Authentication_Authority =	/* 
 const struct dom_sid global_sid_Asserted_Identity_Service =	/* Asserted Identity Service */
 { 1, 1, {0,0,0,0,0,18}, {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 
+/* S-1-18-3 */
+const struct dom_sid global_sid_Fresh_Public_Key_Identity =	/* Fresh Public Key Identity */
+{ 1, 1, {0,0,0,0,0,18}, {3,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+
 /* S-1-5-2 */
 const struct dom_sid global_sid_Network =			/* Network rids */
 { 1, 1, {0,0,0,0,0,5}, {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};

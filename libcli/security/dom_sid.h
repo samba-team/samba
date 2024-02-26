@@ -43,6 +43,7 @@ extern const struct dom_sid global_sid_Network;
 extern const struct dom_sid global_sid_Asserted_Identity;
 extern const struct dom_sid global_sid_Asserted_Identity_Service;
 extern const struct dom_sid global_sid_Asserted_Identity_Authentication_Authority;
+extern const struct dom_sid global_sid_Fresh_Public_Key_Identity;
 extern const struct dom_sid global_sid_Creator_Owner;
 extern const struct dom_sid global_sid_Creator_Group;
 extern const struct dom_sid global_sid_Owner_Rights;
