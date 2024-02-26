@@ -298,19 +298,18 @@ class cmd_domain_claim_claim_type_list(Command):
 
         ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
-        # Claim types grouped by displayName.
         try:
-            claim_types = {claim_type.display_name: claim_type.as_dict()
-                           for claim_type in ClaimType.query(ldb)}
+            claim_types = ClaimType.query(ldb)
         except ModelError as e:
             raise CommandError(e)
 
         # Using json output format gives more detail.
         if output_format == "json":
-            self.print_json(claim_types)
+            self.print_json({claim_type.display_name: claim_type
+                             for claim_type in claim_types})
         else:
-            for claim_type in claim_types.keys():
-                print(claim_type, file=self.outf)
+            for claim_type in claim_types:
+                print(claim_type.display_name, file=self.outf)
 
 
 class cmd_domain_claim_claim_type_view(Command):

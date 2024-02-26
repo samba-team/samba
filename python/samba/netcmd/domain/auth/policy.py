@@ -188,19 +188,17 @@ class cmd_domain_auth_policy_list(Command):
 
         ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
-        # Authentication policies grouped by cn.
         try:
-            policies = {policy.cn: policy.as_dict()
-                        for policy in AuthenticationPolicy.query(ldb)}
+            policies = AuthenticationPolicy.query(ldb)
         except ModelError as e:
             raise CommandError(e)
 
         # Using json output format gives more detail.
         if output_format == "json":
-            self.print_json(policies)
+            self.print_json({policy.name: policy for policy in policies})
         else:
-            for policy in policies.keys():
-                print(policy, file=self.outf)
+            for policy in policies:
+                print(policy.name, file=self.outf)
 
 
 class cmd_domain_auth_policy_view(Command):

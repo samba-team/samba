@@ -49,19 +49,17 @@ class cmd_domain_auth_silo_list(Command):
 
         ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
-        # Authentication silos grouped by cn.
         try:
-            silos = {silo.cn: silo.as_dict()
-                     for silo in AuthenticationSilo.query(ldb)}
+            silos = AuthenticationSilo.query(ldb)
         except ModelError as e:
             raise CommandError(e)
 
         # Using json output format gives more detail.
         if output_format == "json":
-            self.print_json(silos)
+            self.print_json({silo.name: silo for silo in silos})
         else:
-            for silo in silos.keys():
-                print(silo, file=self.outf)
+            for silo in silos:
+                print(silo.name, file=self.outf)
 
 
 class cmd_domain_auth_silo_view(Command):

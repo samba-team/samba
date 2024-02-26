@@ -47,19 +47,18 @@ class cmd_domain_claim_value_type_list(Command):
 
         ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
-        # Value types grouped by display name.
         try:
-            value_types = {value_type.display_name: value_type.as_dict()
-                           for value_type in ValueType.query(ldb)}
+            value_types = ValueType.query(ldb)
         except ModelError as e:
             raise CommandError(e)
 
         # Using json output format gives more detail.
         if output_format == "json":
-            self.print_json(value_types)
+            self.print_json({value_type.display_name: value_type
+                             for value_type in value_types})
         else:
-            for value_type in value_types.keys():
-                print(value_type, file=self.outf)
+            for value_type in value_types:
+                print(value_type.display_name, file=self.outf)
 
 
 class cmd_domain_claim_value_type_view(Command):
