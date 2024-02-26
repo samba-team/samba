@@ -1978,7 +1978,7 @@ static ADS_STATUS ads_mod_ber(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	if (!val)
 		return ads_modlist_add(ctx, mods, LDAP_MOD_DELETE, name, NULL);
 	return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE|LDAP_MOD_BVALUES,
-			       name, (const void **) values);
+			       name, (const void *) values);
 }
 
 static void ads_print_error(int ret, LDAP *ld)
