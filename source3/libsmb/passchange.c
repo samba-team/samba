@@ -236,8 +236,8 @@ NTSTATUS remote_password_change(const char *remote_machine,
 		if (!NT_STATUS_IS_OK(result)) {
 			int rc = asprintf(
 				err_str,
-				"machine %s rejected to change the password"
-				"with error: %s",
+				"machine %s rejected to change the password "
+				"with error: %s\n",
 				remote_machine,
 				get_friendly_nt_error_msg(result));
 			if (rc <= 0) {
