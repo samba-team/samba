@@ -824,6 +824,16 @@ NTSTATUS samba_kdc_add_claims_valid(struct auth_user_info_dc *user_info_dc)
 		&user_info_dc->num_sids);
 }
 
+NTSTATUS samba_kdc_add_fresh_public_key_identity(struct auth_user_info_dc *user_info_dc)
+{
+	return add_sid_to_array_attrs_unique(
+		user_info_dc,
+		&global_sid_Fresh_Public_Key_Identity,
+		SE_GROUP_DEFAULT_FLAGS,
+		&user_info_dc->sids,
+		&user_info_dc->num_sids);
+}
+
 static NTSTATUS samba_kdc_add_compounded_auth(struct auth_user_info_dc *user_info_dc)
 {
 	return add_sid_to_array_attrs_unique(

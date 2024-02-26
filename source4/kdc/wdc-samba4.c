@@ -165,6 +165,16 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 		return map_errno_from_nt_status(nt_status);
 	}
 
+	if (kdc_request_get_pkinit_freshness_used(r)) {
+		nt_status = samba_kdc_add_fresh_public_key_identity(user_info_dc_shallow_copy);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DBG_ERR("Failed to add Fresh Public Key Identity: %s\n",
+				nt_errstr(nt_status));
+			talloc_free(mem_ctx);
+			return map_errno_from_nt_status(nt_status);
+		}
+	}
+
 	ret = samba_kdc_get_claims_data_from_db(server_entry->kdc_db_ctx->samdb,
 						skdc_entry,
 						&auth_claims.user_claims);
