@@ -66,7 +66,7 @@ int ads_kinit_password(ADS_STRUCT *ads)
 					  ads->auth.time_offset,
 					  &ads->auth.tgt_expire, NULL,
 					  ads->auth.ccache_name, false, false,
-					  ads->auth.renewable,
+					  0,
 					  NULL, NULL, NULL, NULL);
 
 	if (ret) {

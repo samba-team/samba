@@ -56,7 +56,6 @@ interface ads
 		string ccache_name;
 		time_t tgt_expire;
 		time_t tgs_expire;
-		time_t renewable;
 	} ads_auth;
 
 	typedef [nopull,nopush] struct {
