@@ -2502,7 +2502,7 @@ krb5_error_code smb_krb5_kinit_s4u2_ccache(krb5_context ctx,
 	 * We need to avoid that and use a temporary krb5_ccache
 	 * in order to pass our TGT to the krb5_get_creds() function.
 	 */
-	code = krb5_cc_new_unique(ctx, NULL, NULL, &tmp_cc);
+	code = smb_krb5_cc_new_unique_memory(ctx, NULL, NULL, &tmp_cc);
 	if (code != 0) {
 		krb5_free_cred_contents(ctx, &store_creds);
 		return code;
@@ -2896,7 +2896,7 @@ krb5_error_code smb_krb5_kinit_s4u2_ccache(krb5_context ctx,
 	bool s4u2proxy = false;
 	bool ok;
 
-	code = krb5_cc_new_unique(ctx, "MEMORY", NULL, &tmp_cc);
+	code = smb_krb5_cc_new_unique_memory(ctx, NULL, NULL, &tmp_cc);
 	if (code != 0) {
 		return code;
 	}
