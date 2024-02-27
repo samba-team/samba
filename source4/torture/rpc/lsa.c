@@ -2816,115 +2816,6 @@ static bool test_CreateTrustedDomain(struct dcerpc_binding_handle *b,
 	return ret;
 }
 
-static bool gen_authinfo_internal(TALLOC_CTX *mem_ctx,
-				  const char *incoming_old, const char *incoming_new,
-				  const char *outgoing_old, const char *outgoing_new,
-				  DATA_BLOB session_key,
-				  struct lsa_TrustDomainInfoAuthInfoInternal **_authinfo_internal)
-{
-	struct lsa_TrustDomainInfoAuthInfoInternal *authinfo_internal;
-	struct trustDomainPasswords auth_struct;
-	struct AuthenticationInformation in_info;
-	struct AuthenticationInformation io_info;
-	struct AuthenticationInformation on_info;
-	struct AuthenticationInformation oo_info;
-	size_t converted_size;
-	DATA_BLOB auth_blob;
-	enum ndr_err_code ndr_err;
-	bool ok;
-	gnutls_cipher_hd_t cipher_hnd = NULL;
-	gnutls_datum_t _session_key;
-
-	authinfo_internal = talloc_zero(mem_ctx, struct lsa_TrustDomainInfoAuthInfoInternal);
-	if (authinfo_internal == NULL) {
-		return false;
-	}
-
-	in_info.AuthType = TRUST_AUTH_TYPE_CLEAR;
-	ok = convert_string_talloc(mem_ctx, CH_UNIX, CH_UTF16,
-				   incoming_new,
-				   strlen(incoming_new),
-				   &in_info.AuthInfo.clear.password,
-				   &converted_size);
-	if (!ok) {
-		return false;
-	}
-	in_info.AuthInfo.clear.size = converted_size;
-
-	io_info.AuthType = TRUST_AUTH_TYPE_CLEAR;
-	ok = convert_string_talloc(mem_ctx, CH_UNIX, CH_UTF16,
-				   incoming_old,
-				   strlen(incoming_old),
-				   &io_info.AuthInfo.clear.password,
-				   &converted_size);
-	if (!ok) {
-		return false;
-	}
-	io_info.AuthInfo.clear.size = converted_size;
-
-	on_info.AuthType = TRUST_AUTH_TYPE_CLEAR;
-	ok = convert_string_talloc(mem_ctx, CH_UNIX, CH_UTF16,
-				   outgoing_new,
-				   strlen(outgoing_new),
-				   &on_info.AuthInfo.clear.password,
-				   &converted_size);
-	if (!ok) {
-		return false;
-	}
-	on_info.AuthInfo.clear.size = converted_size;
-
-	oo_info.AuthType = TRUST_AUTH_TYPE_CLEAR;
-	ok = convert_string_talloc(mem_ctx, CH_UNIX, CH_UTF16,
-				   outgoing_old,
-				   strlen(outgoing_old),
-				   &oo_info.AuthInfo.clear.password,
-				   &converted_size);
-	if (!ok) {
-		return false;
-	}
-	oo_info.AuthInfo.clear.size = converted_size;
-
-	generate_random_buffer(auth_struct.confounder, sizeof(auth_struct.confounder));
-	auth_struct.outgoing.count = 1;
-	auth_struct.outgoing.current.count = 1;
-	auth_struct.outgoing.current.array = &on_info;
-	auth_struct.outgoing.previous.count = 1;
-	auth_struct.outgoing.previous.array = &oo_info;
-
-	auth_struct.incoming.count = 1;
-	auth_struct.incoming.current.count = 1;
-	auth_struct.incoming.current.array = &in_info;
-	auth_struct.incoming.previous.count = 1;
-	auth_struct.incoming.previous.array = &io_info;
-
-	ndr_err = ndr_push_struct_blob(&auth_blob, mem_ctx, &auth_struct,
-				       (ndr_push_flags_fn_t)ndr_push_trustDomainPasswords);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return false;
-	}
-
-	_session_key = (gnutls_datum_t) {
-		.data = session_key.data,
-		.size = session_key.length,
-	};
-
-	gnutls_cipher_init(&cipher_hnd,
-			   GNUTLS_CIPHER_ARCFOUR_128,
-			   &_session_key,
-			   NULL);
-	gnutls_cipher_encrypt(cipher_hnd,
-			      auth_blob.data,
-			      auth_blob.length);
-	gnutls_cipher_deinit(cipher_hnd);
-
-	authinfo_internal->auth_blob.size = auth_blob.length;
-	authinfo_internal->auth_blob.data = auth_blob.data;
-
-	*_authinfo_internal = authinfo_internal;
-
-	return true;
-}
-
 static bool gen_authinfo(TALLOC_CTX *mem_ctx,
 			 const char *incoming_old, const char *incoming_new,
 			 const char *outgoing_old, const char *outgoing_new,
@@ -4776,11 +4667,16 @@ static bool test_CreateTrustedDomainEx_common(struct dcerpc_pipe *p,
 
 		trustinfo.trust_attributes = LSA_TRUST_ATTRIBUTE_USES_RC4_ENCRYPTION;
 
-		ok = gen_authinfo_internal(tctx, incoming_v00, incoming_v0,
-				  outgoing_v00, outgoing_v0,
-				  session_key, &authinfo_internal);
+		ok = rpc_lsa_encrypt_trustdom_info(tctx,
+						   incoming_v00,
+						   incoming_v0,
+						   outgoing_v00,
+						   outgoing_v0,
+						   session_key,
+						   &authinfo_internal);
 		if (!ok) {
-			torture_comment(tctx, "gen_authinfo_internal failed");
+			torture_comment(tctx,
+					"rpc_lsa_encrypt_trustdom_info failed");
 			ret = false;
 		}
 
