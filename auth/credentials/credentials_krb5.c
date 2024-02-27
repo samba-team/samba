@@ -79,16 +79,7 @@ static uint32_t smb_gss_krb5_copy_ccache(uint32_t *min_stat,
 	krb5_cc_cursor cursor = NULL;
 	krb5_principal princ = NULL;
 	krb5_error_code code;
-	char *dummy_name;
 	uint32_t maj_stat = GSS_S_FAILURE;
-
-	dummy_name = talloc_asprintf(ccc,
-				     "MEMORY:gss_krb5_copy_ccache-%p",
-				     &ccc->ccache);
-	if (dummy_name == NULL) {
-		*min_stat = ENOMEM;
-		return GSS_S_FAILURE;
-	}
 
 	/*
 	 * Create a dummy ccache, so we can iterate over the credentials
@@ -96,8 +87,7 @@ static uint32_t smb_gss_krb5_copy_ccache(uint32_t *min_stat,
 	 * copy. The new ccache needs to be initialized with this
 	 * principal.
 	 */
-	code = krb5_cc_resolve(context, dummy_name, &dummy_ccache);
-	TALLOC_FREE(dummy_name);
+	code = smb_krb5_cc_new_unique_memory(context, NULL, NULL, &dummy_ccache);
 	if (code != 0) {
 		*min_stat = code;
 		return GSS_S_FAILURE;
