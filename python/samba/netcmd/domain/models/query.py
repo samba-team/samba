@@ -44,6 +44,10 @@ class Query:
         for message in self.result:
             yield self._from_message(message)
 
+    def __repr__(self):
+        """Provide repr method that provides more useful output in the shell."""
+        return f"<Query {list(self)}>"
+
     def _from_message(self, message):
         """Returns the model class to use to construct instances.
 
