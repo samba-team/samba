@@ -382,28 +382,17 @@ static krb5_error_code krb5_cc_remove_cred_wrap(struct ccache_container *ccc,
 	krb5_creds cached_creds = {0};
 	krb5_cc_cursor cursor = NULL;
 	krb5_error_code code;
-	char *dummy_name;
 
-	dummy_name = talloc_asprintf(ccc,
-				     "MEMORY:copy_ccache-%p",
-				     &ccc->ccache);
-	if (dummy_name == NULL) {
-		return KRB5_CC_NOMEM;
-	}
-
-	code = krb5_cc_resolve(ccc->smb_krb5_context->krb5_context,
-			       dummy_name,
-			       &dummy_ccache);
+	code = smb_krb5_cc_new_unique_memory(ccc->smb_krb5_context->krb5_context,
+					     NULL, NULL,
+					     &dummy_ccache);
 	if (code != 0) {
 		DBG_ERR("krb5_cc_resolve failed: %s\n",
 			smb_get_krb5_error_message(
 				ccc->smb_krb5_context->krb5_context,
 				code, ccc));
-		TALLOC_FREE(dummy_name);
 		return code;
 	}
-
-	TALLOC_FREE(dummy_name);
 
 	code = krb5_cc_start_seq_get(ccc->smb_krb5_context->krb5_context,
 				     ccc->ccache,
