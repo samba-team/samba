@@ -44,8 +44,6 @@
 extern struct winbindd_methods reconnect_methods;
 extern struct winbindd_methods msrpc_methods;
 
-#define WINBIND_CCACHE_NAME "MEMORY:winbind_ccache"
-
 /**
  * Check if cached connection can be reused. If the connection cannot
  * be reused the ADS_STRUCT is freed and the pointer is set to NULL.
@@ -69,48 +67,76 @@ static void ads_cached_connection_reuse(ADS_STRUCT **adsp)
 			return;
 		} else {
 			/* we own this ADS_STRUCT so make sure it goes away */
-			DEBUG(7,("Deleting expired krb5 credential cache\n"));
+			DEBUG(7,("Deleting expired ads struct\n"));
 			TALLOC_FREE(ads);
-			ads_kdestroy(WINBIND_CCACHE_NAME);
 			*adsp = NULL;
 		}
 	}
+}
+
+
+static NTSTATUS ads_cached_connection_reconnect_creds(struct ads_struct *ads,
+						      void *private_data,
+						      TALLOC_CTX *mem_ctx,
+						      struct cli_credentials **creds)
+{
+	struct winbindd_domain *target_domain = NULL;
+
+	if (ads->server.realm != NULL) {
+		target_domain = find_domain_from_name_noinit(ads->server.realm);
+	}
+	if (target_domain == NULL && ads->server.workgroup != NULL) {
+		target_domain = find_domain_from_name_noinit(ads->server.workgroup);
+	}
+
+	if (target_domain == NULL) {
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	return winbindd_get_trust_credentials(target_domain,
+					      mem_ctx,
+					      false, /* netlogon */
+					      false, /* ipc_fallback */
+					      creds);
 }
 
 /**
  * @brief Establish a connection to a DC
  *
  * @param[out]   adsp             ADS_STRUCT that will be created
- * @param[in]    target_realm     Realm of domain to connect to
- * @param[in]    target_dom_name  'workgroup' name of domain to connect to
+ * @param[in]    target_domain    target domain
  * @param[in]    ldap_server      DNS name of server to connect to
- * @param[in]    password         Our machine account secret
+ * @param[in]    creds            credentials to use
  * @param[in]    auth_realm       Realm of local domain for creating krb token
  *
  * @return ADS_STATUS
  */
-static ADS_STATUS ads_cached_connection_connect(const char *target_realm,
-						const char *target_dom_name,
+static ADS_STATUS ads_cached_connection_connect(struct winbindd_domain *target_domain,
 						const char *ldap_server,
-						char *password,
-						char *auth_realm,
 						TALLOC_CTX *mem_ctx,
 						ADS_STRUCT **adsp)
 {
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	const char *target_realm = target_domain->alt_name;
+	const char *target_dom_name = target_domain->name;
+	struct cli_credentials *creds = NULL;
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
+	NTSTATUS ntstatus;
 	struct sockaddr_storage dc_ss;
 	fstring dc_name;
-	enum credentials_use_kerberos krb5_state;
 
-	if (auth_realm == NULL) {
-		TALLOC_FREE(tmp_ctx);
-		return ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+	/* the machine acct password might have change - fetch it every time */
+
+	ntstatus = winbindd_get_trust_credentials(target_domain,
+						  tmp_ctx,
+						  false, /* netlogon */
+						  false, /* ipc_fallback */
+						  &creds);
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		status = ADS_ERROR_NT(ntstatus);
+		goto out;
 	}
-
-	/* we don't want this to affect the users ccache */
-	setenv("KRB5CCNAME", WINBIND_CCACHE_NAME, 1);
 
 	ads = ads_init(tmp_ctx,
 		       target_realm,
@@ -123,44 +149,14 @@ static ADS_STATUS ads_cached_connection_connect(const char *target_realm,
 		goto out;
 	}
 
-	ADS_TALLOC_CONST_FREE(ads->auth.password);
-	ADS_TALLOC_CONST_FREE(ads->auth.realm);
-
-	ads->auth.password = talloc_strdup(ads, password);
-	if (ads->auth.password == NULL) {
-		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-		goto out;
-	}
-
-	/* In FIPS mode, client use kerberos is forced to required. */
-	krb5_state = lp_client_use_kerberos();
-	switch (krb5_state) {
-	case CRED_USE_KERBEROS_REQUIRED:
-		ads->auth.flags &= ~ADS_AUTH_DISABLE_KERBEROS;
-		ads->auth.flags &= ~ADS_AUTH_ALLOW_NTLMSSP;
-		break;
-	case CRED_USE_KERBEROS_DESIRED:
-		ads->auth.flags &= ~ADS_AUTH_DISABLE_KERBEROS;
-		ads->auth.flags |= ADS_AUTH_ALLOW_NTLMSSP;
-		break;
-	case CRED_USE_KERBEROS_DISABLED:
-		ads->auth.flags |= ADS_AUTH_DISABLE_KERBEROS;
-		ads->auth.flags |= ADS_AUTH_ALLOW_NTLMSSP;
-		break;
-	}
-
-	ads->auth.realm = talloc_asprintf_strupper_m(ads, "%s", auth_realm);
-	if (ads->auth.realm == NULL) {
-		status = ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
-		goto out;
-	}
+	ads_set_reconnect_fn(ads, ads_cached_connection_reconnect_creds, NULL);
 
 	/* Setup the server affinity cache.  We don't reaally care
 	   about the name.  Just setup affinity and the KRB5_CONFIG
 	   file. */
 	get_dc_name(ads->server.workgroup, ads->server.realm, dc_name, &dc_ss);
 
-	status = ads_connect(ads);
+	status = ads_connect_creds(ads, creds);
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(1,("ads_connect for domain %s failed: %s\n",
 			 target_dom_name, ads_errstr(status)));
@@ -179,8 +175,6 @@ ADS_STATUS ads_idmap_cached_connection(const char *dom_name,
 {
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	char *ldap_server = NULL;
-	char *realm = NULL;
-	char *password = NULL;
 	struct winbindd_domain *wb_dom = NULL;
 	ADS_STATUS status;
 
@@ -212,55 +206,20 @@ ADS_STATUS ads_idmap_cached_connection(const char *dom_name,
 	wb_dom = find_domain_from_name(dom_name);
 	if (wb_dom == NULL) {
 		DBG_DEBUG("could not find domain '%s'\n", dom_name);
-		status = ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
-		goto out;
+		TALLOC_FREE(tmp_ctx);
+		return ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	}
 
 	DBG_DEBUG("find_domain_from_name found realm '%s' for "
 		  " domain '%s'\n", wb_dom->alt_name, dom_name);
 
-	if (!get_trust_pw_clear(dom_name, &password, NULL, NULL)) {
-		status = ADS_ERROR_NT(NT_STATUS_CANT_ACCESS_DOMAIN_INFO);
-		goto out;
-	}
-
-	if (IS_DC) {
-		SMB_ASSERT(wb_dom->alt_name != NULL);
-		realm = talloc_strdup(tmp_ctx, wb_dom->alt_name);
-	} else {
-		struct winbindd_domain *our_domain = wb_dom;
-
-		/* always give preference to the alt_name in our
-		   primary domain if possible */
-
-		if (!wb_dom->primary) {
-			our_domain = find_our_domain();
-		}
-
-		if (our_domain->alt_name != NULL) {
-			realm = talloc_strdup(tmp_ctx, our_domain->alt_name);
-		} else {
-			realm = talloc_strdup(tmp_ctx, lp_realm());
-		}
-	}
-
-	if (realm == NULL) {
-		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-		goto out;
-	}
-
 	status = ads_cached_connection_connect(
-		wb_dom->alt_name,	/* realm to connect to. */
-		dom_name,		/* 'workgroup' name for ads_init */
+		wb_dom,
 		ldap_server,		/* DNS name to connect to. */
-		password,		/* password for auth realm. */
-		realm,			/* realm used for krb5 ticket. */
 		mem_ctx,		/* memory context for ads struct */
 		adsp);			/* Returns ads struct. */
 
-out:
 	TALLOC_FREE(tmp_ctx);
-	SAFE_FREE(password);
 
 	return status;
 }
@@ -274,8 +233,6 @@ static ADS_STATUS ads_cached_connection(struct winbindd_domain *domain,
 {
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	ADS_STATUS status;
-	char *password = NULL;
-	char *realm = NULL;
 
 	if (IS_AD_DC) {
 		/*
@@ -295,43 +252,9 @@ static ADS_STATUS ads_cached_connection(struct winbindd_domain *domain,
 		return ADS_SUCCESS;
 	}
 
-	/* the machine acct password might have change - fetch it every time */
-
-	if (!get_trust_pw_clear(domain->name, &password, NULL, NULL)) {
-		status = ADS_ERROR_NT(NT_STATUS_CANT_ACCESS_DOMAIN_INFO);
-		goto out;
-	}
-
-	if ( IS_DC ) {
-		SMB_ASSERT(domain->alt_name != NULL);
-		realm = talloc_strdup(tmp_ctx, domain->alt_name);
-	} else {
-		struct winbindd_domain *our_domain = domain;
-
-
-		/* always give preference to the alt_name in our
-		   primary domain if possible */
-
-		if ( !domain->primary )
-			our_domain = find_our_domain();
-
-		if (our_domain->alt_name != NULL) {
-			realm = talloc_strdup(tmp_ctx, our_domain->alt_name );
-		} else {
-			realm = talloc_strdup(tmp_ctx, lp_realm() );
-		}
-	}
-
-	if (realm == NULL) {
-		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-		goto out;
-	}
-
 	status = ads_cached_connection_connect(
-					domain->alt_name,
-					domain->name, NULL,
-					password,
-					realm,
+					domain,
+					NULL,
 					domain,
 					&domain->backend_data.ads_conn);
 	if (!ADS_ERR_OK(status)) {
@@ -344,15 +267,13 @@ static ADS_STATUS ads_cached_connection(struct winbindd_domain *domain,
 				   domain->name);
 			domain->backend = &reconnect_methods;
 		}
-		goto out;
+		TALLOC_FREE(tmp_ctx);
+		return status;
 	}
 
 	*adsp = domain->backend_data.ads_conn;
-out:
 	TALLOC_FREE(tmp_ctx);
-	SAFE_FREE(password);
-
-	return status;
+	return ADS_SUCCESS;
 }
 
 /* Query display info for a realm. This is the basic user list fn */
