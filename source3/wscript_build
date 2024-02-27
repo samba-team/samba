@@ -1088,7 +1088,7 @@ bld.SAMBA3_SUBSYSTEM('RPCCLI_WSP',
 
 bld.SAMBA3_SUBSYSTEM('INIT_LSA',
                     source='rpc_client/init_lsa.c',
-                    deps='samba-util')
+                    deps='samba-util GNUTLS_HELPERS')
 
 bld.SAMBA3_SUBSYSTEM('INIT_SAMR',
                     source='rpc_client/init_samr.c',

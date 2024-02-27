@@ -41,4 +41,13 @@ bool rpc_lsa_encrypt_trustdom_info(
 	DATA_BLOB session_key,
 	struct lsa_TrustDomainInfoAuthInfoInternal **_authinfo_internal);
 
+bool rpc_lsa_encrypt_trustdom_info_aes(
+	TALLOC_CTX *mem_ctx,
+	const char *incoming_old,
+	const char *incoming_new,
+	const char *outgoing_old,
+	const char *outgoing_new,
+	DATA_BLOB session_key,
+	struct lsa_TrustDomainInfoAuthInfoInternalAES **pauthinfo_internal);
+
 #endif /* _RPC_CLIENT_INIT_LSA_H_ */
