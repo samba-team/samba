@@ -450,6 +450,11 @@ krb5_error_code krb5_warnx(krb5_context context, const char *fmt, ...)
 	PRINTF_ATTRIBUTE(2, 0);
 #endif
 
+krb5_error_code smb_krb5_cc_new_unique_memory(krb5_context context,
+					      TALLOC_CTX *mem_ctx,
+					      char **ccache_name,
+					      krb5_ccache *id);
+
 krb5_error_code smb_krb5_cc_copy_creds(krb5_context context,
 				       krb5_ccache incc, krb5_ccache outcc);
 
