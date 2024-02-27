@@ -54,8 +54,7 @@ interface ads
 		ads_auth_flags flags;
 		int time_offset;
 		string ccache_name;
-		time_t tgt_expire;
-		time_t tgs_expire;
+		NTTIME expire_time;
 	} ads_auth;
 
 	typedef [nopull,nopush] struct {

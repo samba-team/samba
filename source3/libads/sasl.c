@@ -321,7 +321,6 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 	struct auth_generic_state *auth_generic_state;
 	const char *sasl = "GSS-SPNEGO";
 	const char *sasl_list[] = { sasl, NULL };
-	NTTIME end_nt_time;
 	struct ads_saslwrap *wrap = &ads->ldap_wrap_data;
 	const DATA_BLOB *tls_cb = NULL;
 
@@ -488,13 +487,7 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 		}
 	}
 
-	ads->auth.tgs_expire = LONG_MAX;
-	end_nt_time = gensec_expire_time(auth_generic_state->gensec_security);
-	if (end_nt_time != GENSEC_EXPIRE_TIME_INFINITY) {
-		struct timeval tv;
-		nttime_to_timeval(&tv, end_nt_time);
-		ads->auth.tgs_expire = tv.tv_sec;
-	}
+	ads->auth.expire_time = gensec_expire_time(auth_generic_state->gensec_security);
 
 	if (wrap->wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
 		size_t max_wrapped =

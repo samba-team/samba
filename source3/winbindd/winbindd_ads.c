@@ -59,7 +59,7 @@ static void ads_cached_connection_reuse(ADS_STRUCT **adsp)
 		time_t expire;
 		time_t now = time(NULL);
 
-		expire = MIN(ads->auth.tgt_expire, ads->auth.tgs_expire);
+		expire = nt_time_to_unix(ads->auth.expire_time);
 
 		DEBUG(7, ("Current tickets expire in %d seconds (at %d, time "
 			  "is now %d)\n", (uint32_t)expire - (uint32_t)now,
