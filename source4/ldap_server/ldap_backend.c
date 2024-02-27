@@ -24,7 +24,6 @@
 #include "../lib/util/dlinklist.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
-#include "auth/gensec/gensec_internal.h" /* TODO: remove this */
 #include "auth/common_auth.h"
 #include "param/param.h"
 #include "samba/service_stream.h"
