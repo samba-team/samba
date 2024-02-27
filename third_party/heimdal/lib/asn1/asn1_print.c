@@ -566,7 +566,7 @@ dotype(unsigned char *buf, size_t len, char **argv, size_t *size)
                  "BER indefinte encoding overun", typename);
         case ASN1_INDEF_UNDERRUN:
             errx(1, "Could not decode and print data as type %s: "
-                 "BER indefinte encoding underun", typename);
+                 "BER indefinte encoding underrun", typename);
         case ASN1_GOT_BER:
             errx(1, "Could not decode and print data as type %s: "
                  "BER encoding when DER expected", typename);

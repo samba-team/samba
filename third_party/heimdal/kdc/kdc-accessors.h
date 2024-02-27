@@ -340,6 +340,13 @@ ASTGS_REQUEST_SET_ACCESSOR_PTR(struct krb5_pac_data *, pac, pac)
 ASTGS_REQUEST_GET_ACCESSOR(uint64_t, pac_attributes)
 
 /*
+ * unsigned int
+ * kdc_request_get_pkinit_freshness_used(astgs_request_t);
+ */
+
+ASTGS_REQUEST_GET_ACCESSOR(unsigned int, pkinit_freshness_used)
+
+/*
  * void
  * kdc_request_set_pac_attributes(astgs_request_t, uint64_t);
  */

@@ -267,7 +267,7 @@ msgstr ""
 #. 073
 #. 074
 #: ../lib/hx509/hx509_err.c:84 ../lib/hx509/hx509_err.c:85
-msgid "RSA public encyption failed"
+msgid "RSA public encryption failed"
 msgstr ""
 
 #. 075

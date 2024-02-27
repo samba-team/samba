@@ -549,7 +549,7 @@ msgid "checksum type %s is disabled"
 msgstr ""
 
 #: lib/krb5/crypto.c:2958
-msgid "Encrypted data shorter then checksum + confunder"
+msgid "Encrypted data shorter then checksum + confounder"
 msgstr ""
 
 #: lib/krb5/crypto.c:3585

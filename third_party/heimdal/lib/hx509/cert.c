@@ -1506,7 +1506,7 @@ _hx509_calculate_path(hx509_context context,
 	if (path->len > max_depth) {
 	    hx509_cert_free(current);
 	    hx509_set_error_string(context, 0, HX509_PATH_TOO_LONG,
-				   "Path too long while bulding "
+				   "Path too long while building "
 				   "certificate chain");
 	    return HX509_PATH_TOO_LONG;
 	}

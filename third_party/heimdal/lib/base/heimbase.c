@@ -701,7 +701,7 @@ heim_auto_release(heim_object_t ptr)
     }
 
     if (tls == NULL || (ar = tls->current) == NULL)
-	heim_abort("no auto relase pool in place, would leak");
+	heim_abort("no auto release pool in place, would leak");
 
     HEIMDAL_MUTEX_lock(&ar->pool_mutex);
     HEIM_TAILQ_INSERT_HEAD(&ar->pool, p, autorel);

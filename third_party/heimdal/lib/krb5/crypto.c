@@ -1226,7 +1226,7 @@ decrypt_internal_derived(krb5_context context,
     if (len < checksum_sz + et->confoundersize) {
 	krb5_set_error_message(context, KRB5_BAD_MSIZE,
 			       N_("Encrypted data shorter then "
-				  "checksum + confunder", ""));
+				  "checksum + confounder", ""));
 	return KRB5_BAD_MSIZE;
     }
 
@@ -1301,7 +1301,7 @@ decrypt_internal_enc_then_cksum(krb5_context context,
     if (len < checksum_sz + et->confoundersize) {
 	krb5_set_error_message(context, KRB5_BAD_MSIZE,
 			       N_("Encrypted data shorter then "
-				  "checksum + confunder", ""));
+				  "checksum + confounder", ""));
 	return KRB5_BAD_MSIZE;
     }
 
@@ -1383,7 +1383,7 @@ decrypt_internal(krb5_context context,
     if (len < checksum_sz + et->confoundersize) {
 	krb5_set_error_message(context, KRB5_BAD_MSIZE,
 			       N_("Encrypted data shorter then "
-				  "checksum + confunder", ""));
+				  "checksum + confounder", ""));
 	return KRB5_BAD_MSIZE;
     }
 
@@ -1445,7 +1445,7 @@ decrypt_internal_special(krb5_context context,
     if (len < cksum_sz + et->confoundersize) {
 	krb5_set_error_message(context, KRB5_BAD_MSIZE,
 			       N_("Encrypted data shorter then "
-				  "checksum + confunder", ""));
+				  "checksum + confounder", ""));
 	return KRB5_BAD_MSIZE;
     }
 

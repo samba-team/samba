@@ -155,6 +155,7 @@ struct astgs_request_desc {
 
     /* Only AS */
     const struct kdc_patypes *pa_used;
+    unsigned int pkinit_freshness_used : 1;
 
     /* PA methods can affect both the reply key and the session key (pkinit) */
     krb5_enctype sessionetype;

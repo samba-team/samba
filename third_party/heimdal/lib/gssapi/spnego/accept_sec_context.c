@@ -747,7 +747,7 @@ acceptor_start
 	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 	return gss_mg_set_error_string(GSS_C_NO_OID, GSS_S_NO_CONTEXT,
 				       *minor_status,
-				       "SPNEGO acceptor didn't find a prefered mechanism");
+				       "SPNEGO acceptor didn't find a preferred mechanism");
     }
 
     /*

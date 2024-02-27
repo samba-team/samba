@@ -1996,6 +1996,8 @@ _kdc_pk_validate_freshness_token(astgs_request_t r,
 	return KRB5_KDC_ERR_PREAUTH_EXPIRED;
     }
 
+    r->pkinit_freshness_used = TRUE;
+
     free_PA_ENC_TS_ENC(&ts_enc);
     return 0;
 }

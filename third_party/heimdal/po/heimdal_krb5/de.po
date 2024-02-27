@@ -325,9 +325,8 @@ msgstr "Verschlüsselungstyp %s ist deaktiviert."
 msgid "checksum type %s is disabled"
 msgstr "Prüfsummentyp %s ist deaktiviert."
 
-# FIXME: s/confunder/confounder/
 #: lib/krb5/crypto.c:2958
-msgid "Encrypted data shorter then checksum + confunder"
+msgid "Encrypted data shorter then checksum + confounder"
 msgstr "verschlüsselte Daten kürzer als Prüfsumme + Störfaktor"
 
 #: lib/krb5/crypto.c:3585

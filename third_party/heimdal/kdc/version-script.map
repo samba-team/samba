@@ -52,6 +52,7 @@ HEIMDAL_KDC_1.0 {
 		kdc_request_get_krbtgt_princ;
 		kdc_request_get_pac;
 		kdc_request_get_pac_attributes;
+		kdc_request_get_pkinit_freshness_used;
 		kdc_request_get_rep;
 		kdc_request_get_reply_key;
 		kdc_request_get_req;
