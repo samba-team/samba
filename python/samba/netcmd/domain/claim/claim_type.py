@@ -86,6 +86,13 @@ class cmd_domain_claim_claim_type_create(Command):
             raise CommandError(f"Claim type {display_name} already exists, "
                                "but you can use --name to use another name.")
 
+        # Either --enable will be set or --disable but never both.
+        # The default if both are missing is enabled=True.
+        if enable is not None:
+            enabled = enable
+        else:
+            enabled = not disable
+
         # Lookup attribute and class names in schema.
         try:
             applies_to = [ClassSchema.find(ldb, name) for name in class_names]
@@ -109,7 +116,7 @@ class cmd_domain_claim_claim_type_create(Command):
             cn=cn,
             description=description,
             display_name=display_name,
-            enabled=not disable,
+            enabled=enabled,
             claim_attribute_source=attribute.dn,
             claim_is_single_valued=attribute.is_single_valued,
             claim_is_value_space_restricted=False,
@@ -117,13 +124,6 @@ class cmd_domain_claim_claim_type_create(Command):
             claim_type_applies_to_class=[obj.dn for obj in applies_to],
             claim_value_type=value_type.claim_value_type,
         )
-
-        # Either --enable will be set or --disable but never both.
-        # The default if both are missing is enabled=True.
-        if enable is not None:
-            claim_type.enabled = enable
-        else:
-            claim_type.enabled = not disable
 
         # Create claim type
         try:
