@@ -109,13 +109,13 @@ static uint32_t smb_gss_krb5_copy_ccache(uint32_t *min_stat,
 	 */
 	maj_stat = gss_krb5_copy_ccache(min_stat, cred, dummy_ccache);
 	if (maj_stat != 0) {
-		krb5_cc_close(context, dummy_ccache);
+		krb5_cc_destroy(context, dummy_ccache);
 		return maj_stat;
 	}
 
 	code = krb5_cc_start_seq_get(context, dummy_ccache, &cursor);
 	if (code != 0) {
-		krb5_cc_close(context, dummy_ccache);
+		krb5_cc_destroy(context, dummy_ccache);
 		*min_stat = EINVAL;
 		return GSS_S_FAILURE;
 	}
@@ -125,7 +125,7 @@ static uint32_t smb_gss_krb5_copy_ccache(uint32_t *min_stat,
 				 &cursor,
 				 &creds);
 	if (code != 0) {
-		krb5_cc_close(context, dummy_ccache);
+		krb5_cc_destroy(context, dummy_ccache);
 		*min_stat = EINVAL;
 		return GSS_S_FAILURE;
 	}
@@ -163,7 +163,7 @@ static uint32_t smb_gss_krb5_copy_ccache(uint32_t *min_stat,
 		krb5_cc_end_seq_get(context, dummy_ccache, &cursor);
 		code = 0;
 	}
-	krb5_cc_close(context, dummy_ccache);
+	krb5_cc_destroy(context, dummy_ccache);
 
 	if (code != 0 || princ == NULL) {
 		krb5_free_cred_contents(context, &creds);
