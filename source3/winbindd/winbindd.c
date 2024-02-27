@@ -654,18 +654,15 @@ static void winbind_client_processed(struct tevent_req *req);
 
 static void new_connection(int listen_sock, bool privileged)
 {
-	struct sockaddr_un sunaddr;
+	struct samba_sockaddr saddr = { .sa_socklen = 0, };
 	struct winbindd_cli_state *state;
 	struct tevent_req *req;
-	socklen_t len;
 	int sock;
 
 	/* Accept connection */
 
-	len = sizeof(sunaddr);
-
-	sock = accept(listen_sock, (struct sockaddr *)(void *)&sunaddr, &len);
-
+	saddr.sa_socklen = sizeof(saddr.u.un);
+	sock = accept(listen_sock, &saddr.u.sa, &saddr.sa_socklen);
 	if (sock == -1) {
 		if (errno != EINTR) {
 			D_ERR("Failed to accept socket: %s\n", strerror(errno));
