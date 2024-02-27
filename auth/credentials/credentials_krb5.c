@@ -576,10 +576,11 @@ _PUBLIC_ bool cli_credentials_failed_kerberos_login(struct cli_credentials *cred
 
 static int cli_credentials_new_ccache(struct cli_credentials *cred,
 				      struct loadparm_context *lp_ctx,
-				      char *ccache_name,
+				      char *given_ccache_name,
 				      struct ccache_container **_ccc,
 				      const char **error_string)
 {
+	char *ccache_name = given_ccache_name;
 	bool must_free_cc_name = false;
 	krb5_error_code ret;
 	struct ccache_container *ccc = talloc(cred, struct ccache_container);
@@ -602,25 +603,27 @@ static int cli_credentials_new_ccache(struct cli_credentials *cred,
 	}
 
 	if (!ccache_name) {
-		must_free_cc_name = true;
-
 		if (lpcfg_parm_bool(lp_ctx, NULL, "credentials", "krb5_cc_file", false)) {
 			ccache_name = talloc_asprintf(ccc, "FILE:/tmp/krb5_cc_samba_%u_%p",
 						      (unsigned int)getpid(), ccc);
-		} else {
-			ccache_name = talloc_asprintf(ccc, "MEMORY:%p",
-						      ccc);
-		}
-
-		if (!ccache_name) {
-			talloc_free(ccc);
-			(*error_string) = strerror(ENOMEM);
-			return ENOMEM;
+			if (ccache_name == NULL) {
+				talloc_free(ccc);
+				(*error_string) = strerror(ENOMEM);
+				return ENOMEM;
+			}
+			must_free_cc_name = true;
 		}
 	}
 
-	ret = krb5_cc_resolve(ccc->smb_krb5_context->krb5_context, ccache_name,
-			      &ccc->ccache);
+	if (ccache_name != NULL) {
+		ret = krb5_cc_resolve(ccc->smb_krb5_context->krb5_context, ccache_name,
+				      &ccc->ccache);
+	} else {
+		ret = smb_krb5_cc_new_unique_memory(ccc->smb_krb5_context->krb5_context,
+						    ccc, &ccache_name,
+						    &ccc->ccache);
+		must_free_cc_name = true;
+	}
 	if (ret) {
 		(*error_string) = talloc_asprintf(cred, "failed to resolve a krb5 ccache (%s): %s\n",
 						  ccache_name,
