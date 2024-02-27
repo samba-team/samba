@@ -36,17 +36,13 @@
 #include "source4/auth/kerberos/kerberos_util.h"
 #include "lib/util/util_net.h"
 #include "libcli/resolve/resolve.h"
+#include "source3/rpc_client/init_lsa.h"
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
 #define TEST_MACHINENAME "lsatestmach"
 #define TRUSTPW "12345678"
-
-static void init_lsa_String(struct lsa_String *name, const char *s)
-{
-	name->string = s;
-}
 
 static bool test_OpenPolicy(struct dcerpc_binding_handle *b,
 			    struct torture_context *tctx)
