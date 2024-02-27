@@ -1138,7 +1138,6 @@ static int cli_credentials_shallow_ccache(struct cli_credentials *cred)
 	const struct ccache_container *old_ccc = NULL;
 	enum credentials_obtained old_obtained;
 	struct ccache_container *ccc = NULL;
-	char *ccache_name = NULL;
 	krb5_principal princ;
 
 	old_obtained = cred->ccache_obtained;
@@ -1171,18 +1170,16 @@ static int cli_credentials_shallow_ccache(struct cli_credentials *cred)
 	*ccc = *old_ccc;
 	ccc->ccache = NULL;
 
-	ccache_name = talloc_asprintf(ccc, "MEMORY:%p", ccc);
-
-	ret = krb5_cc_resolve(ccc->smb_krb5_context->krb5_context,
-			      ccache_name, &ccc->ccache);
+	ret = smb_krb5_cc_new_unique_memory(ccc->smb_krb5_context->krb5_context,
+					    NULL,
+					    NULL,
+					    &ccc->ccache);
 	if (ret != 0) {
 		TALLOC_FREE(ccc);
 		return ret;
 	}
 
 	talloc_set_destructor(ccc, free_mccache);
-
-	TALLOC_FREE(ccache_name);
 
 	ret = smb_krb5_cc_copy_creds(ccc->smb_krb5_context->krb5_context,
 				     old_ccc->ccache, ccc->ccache);
