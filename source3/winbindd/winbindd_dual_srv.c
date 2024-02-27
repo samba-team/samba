@@ -1384,15 +1384,6 @@ static WERROR _winbind_LogonControl_TC_VERIFY(struct pipes_struct *p,
 		goto check_return;
 	}
 
-	status = pdb_get_trust_credentials(domain->name,
-					   domain->alt_name,
-					   frame,
-					   &creds);
-	if (NT_STATUS_IS_OK(status)) {
-		cur_nt_hash = cli_credentials_get_nt_hash(creds, frame);
-		TALLOC_FREE(creds);
-	}
-
 	if (!domain->primary) {
 		union lsa_TrustedDomainInfo *tdi = NULL;
 
@@ -1489,6 +1480,15 @@ reconnect:
 	check_result = WERR_OK;
 	b = netlogon_pipe->binding_handle;
 
+	status = winbindd_get_trust_credentials(domain,
+						frame,
+						true, /* netlogon */
+						false, /* ipc_fallback */
+						&creds);
+	if (NT_STATUS_IS_OK(status)) {
+		cur_nt_hash = cli_credentials_get_nt_hash(creds, frame);
+		TALLOC_FREE(creds);
+	}
 	if (cur_nt_hash == NULL) {
 		verify_result = WERR_NO_TRUST_LSA_SECRET;
 		goto verify_return;
