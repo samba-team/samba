@@ -58,8 +58,8 @@ class ClassSchema(Model):
         return "classSchema"
 
     @classmethod
-    def lookup(cls, ldb, name):
-        """Helper function to lookup class or raise NotFound.
+    def find(cls, ldb, name):
+        """Helper function to find class by name or raise NotFound.
 
         :param ldb: Ldb connection
         :param name: Class name
@@ -107,8 +107,8 @@ class AttributeSchema(Model):
         return "attributeSchema"
 
     @classmethod
-    def lookup(cls, ldb, name):
-        """Helper function to lookup attribute or raise NotFound.
+    def find(cls, ldb, name):
+        """Helper function to find attribute by name or raise NotFound.
 
         :param ldb: Ldb connection
         :param name: Attribute name

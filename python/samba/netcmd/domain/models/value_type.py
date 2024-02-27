@@ -67,7 +67,7 @@ class ValueType(Model):
         return "msDS-ValueType"
 
     @classmethod
-    def lookup(cls, ldb, attribute):
+    def find(cls, ldb, attribute):
         """Helper function to get ValueType by attribute or raise NotFound.
 
         :param ldb: Ldb connection
@@ -91,6 +91,3 @@ class ValueType(Model):
             raise NotFound(f"Could not find claim value type for {attribute}.")
 
         return value_type
-
-    def __str__(self):
-        return str(self.display_name)

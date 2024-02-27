@@ -85,7 +85,7 @@ class AuthenticationPolicy(Model):
         return "msDS-AuthNPolicy"
 
     @staticmethod
-    def lookup(ldb, name):
+    def find(ldb, name):
         """Helper function to return auth policy or raise NotFound.
 
         :param ldb: Ldb connection

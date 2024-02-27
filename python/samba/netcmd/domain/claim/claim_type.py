@@ -88,9 +88,9 @@ class cmd_domain_claim_claim_type_create(Command):
 
         # Lookup attribute and class names in schema.
         try:
-            applies_to = [ClassSchema.lookup(ldb, name) for name in class_names]
-            attribute = AttributeSchema.lookup(ldb, attribute_name)
-            value_type = ValueType.lookup(ldb, attribute)
+            applies_to = [ClassSchema.find(ldb, name) for name in class_names]
+            attribute = AttributeSchema.find(ldb, attribute_name)
+            value_type = ValueType.find(ldb, attribute)
         except (ModelError, ValueError) as e:
             raise CommandError(e)
 
@@ -206,8 +206,7 @@ class cmd_domain_claim_claim_type_modify(Command):
         # Change class names for claim type.
         if class_names is not None:
             try:
-                applies_to = [ClassSchema.lookup(ldb, name)
-                              for name in class_names]
+                applies_to = [ClassSchema.find(ldb, name) for name in class_names]
             except (ModelError, ValueError) as e:
                 raise CommandError(e)
 

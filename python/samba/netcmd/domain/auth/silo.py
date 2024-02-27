@@ -147,7 +147,7 @@ class cmd_domain_auth_silo_create(Command):
         :param name: Either the DN or name of authentication policy
         """
         try:
-            return AuthenticationPolicy.lookup(ldb, name)
+            return AuthenticationPolicy.find(ldb, name)
         except (ModelError, ValueError) as e:
             raise CommandError(e)
 
@@ -264,7 +264,7 @@ class cmd_domain_auth_silo_modify(Command):
         :param name: Either the DN or name of authentication policy
         """
         try:
-            return AuthenticationPolicy.lookup(ldb, name)
+            return AuthenticationPolicy.find(ldb, name)
         except (ModelError, ValueError) as e:
             raise CommandError(e)
 
