@@ -124,9 +124,9 @@ class ServiceAccountTests(SambaToolCmdTest):
 
         # Group Managed Service count exists.
         # Since GroupManagedServiceAccount is also a Computer it ends in '$'
-        gmsa = GroupManagedServiceAccount.get(self.samdb, username=name + "$")
+        gmsa = GroupManagedServiceAccount.get(self.samdb, account_name=name + "$")
         self.assertIsNotNone(gmsa)
-        self.assertEqual(gmsa.username, name + "$")
+        self.assertEqual(gmsa.account_name, name + "$")
         self.assertEqual(gmsa.dns_host_name, "test.com")
         self.assertEqual(gmsa.managed_password_interval, 60)
 
@@ -150,7 +150,7 @@ class ServiceAccountTests(SambaToolCmdTest):
                                           dns_host_name="example.com"),
 
         # The group managed service account exists.
-        gmsa = GroupManagedServiceAccount.get(self.samdb, username=name + "$")
+        gmsa = GroupManagedServiceAccount.get(self.samdb, account_name=name + "$")
         self.assertIsNotNone(gmsa)
 
         # Now delete the gmsa.
@@ -159,7 +159,7 @@ class ServiceAccountTests(SambaToolCmdTest):
         self.assertIsNone(result, msg=err)
 
         # Service account is gone.
-        gmsa = GroupManagedServiceAccount.get(self.samdb, username=name + "$")
+        gmsa = GroupManagedServiceAccount.get(self.samdb, account_name=name + "$")
         self.assertIsNone(gmsa, msg="Group Managed Service Account not deleted.")
 
     def test_modify(self):
@@ -170,7 +170,7 @@ class ServiceAccountTests(SambaToolCmdTest):
         self.addCleanup(gmsa.delete, self.samdb)
 
         # Build some SDDL for adding a user manually.
-        bob = User.get(self.samdb, username="bob")
+        bob = User.get(self.samdb, account_name="bob")
         sddl = gmsa.group_msa_membership.as_sddl()
         sddl += f"(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;{bob.object_sid})"
 
@@ -181,7 +181,7 @@ class ServiceAccountTests(SambaToolCmdTest):
         self.assertIsNone(result, msg=err)
 
         # Check field changes and see if the new user is in there.
-        gmsa = GroupManagedServiceAccount.get(self.samdb, username=name + "$")
+        gmsa = GroupManagedServiceAccount.get(self.samdb, account_name=name + "$")
         self.assertEqual(gmsa.dns_host_name, "new.example.com")
         self.assertIn(bob.object_sid, gmsa.trustees)
 
@@ -197,7 +197,7 @@ class ServiceAccountGroupMSAMembershipTests(SambaToolCmdTest):
     def setUpTestData(cls):
         """Setup initial data without the samba-tool command."""
         # Add a user other than the Administrator to the default SDDL.
-        jane = User.get(cls.samdb, username="jane")
+        jane = User.get(cls.samdb, account_name="jane")
         sddl = f"{GROUP_MSA_MEMBERSHIP_DEFAULT}(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;{jane.object_sid})"
         cls.gmsa = GroupManagedServiceAccount.create(cls.samdb, name="gmsa",
                                                      dns_host_name="example.com",
@@ -219,7 +219,7 @@ class ServiceAccountGroupMSAMembershipTests(SambaToolCmdTest):
         """Show password viewers on a Group Managed Service Account."""
         result, out, err = self.runcmd("service-account",
                                        "group-msa-membership", "show",
-                                       "--name", self.gmsa.username)
+                                       "--name", self.gmsa.account_name)
         self.assertIsNone(result, msg=err)
 
         # Plain text output.
@@ -234,7 +234,7 @@ class ServiceAccountGroupMSAMembershipTests(SambaToolCmdTest):
         """Show password viewers on a Group Managed Service Account as JSON."""
         result, out, err = self.runcmd("service-account",
                                        "group-msa-membership", "show",
-                                       "--name", self.gmsa.username,
+                                       "--name", self.gmsa.account_name,
                                        "--json")
         self.assertIsNone(result, msg=err)
 
@@ -248,7 +248,7 @@ class ServiceAccountGroupMSAMembershipTests(SambaToolCmdTest):
 
     def test_add__username(self):
         """Add principal to a Group Managed Service Account by username."""
-        alice = User.get(self.samdb, username="alice")
+        alice = User.get(self.samdb, account_name="alice")
         name = self.unique_name()
         gmsa = GroupManagedServiceAccount.create(self.samdb, name=name,
                                                  dns_host_name="example.com")
@@ -257,8 +257,8 @@ class ServiceAccountGroupMSAMembershipTests(SambaToolCmdTest):
         # Add user 'alice' by username.
         result, out, err = self.runcmd("service-account",
                                        "group-msa-membership", "add",
-                                       "--name", gmsa.username,
-                                       "--principal", alice.username)
+                                       "--name", gmsa.account_name,
+                                       "--principal", alice.account_name)
         self.assertIsNone(result, msg=err)
 
         # See if user was added.
@@ -276,7 +276,7 @@ class ServiceAccountGroupMSAMembershipTests(SambaToolCmdTest):
         # Add group 'DnsAdmins' by dn.
         result, out, err = self.runcmd("service-account",
                                        "group-msa-membership", "add",
-                                       "--name", gmsa.username,
+                                       "--name", gmsa.account_name,
                                        "--principal", str(admins.dn))
         self.assertIsNone(result, msg=err)
 
@@ -287,7 +287,7 @@ class ServiceAccountGroupMSAMembershipTests(SambaToolCmdTest):
     def test_remove__username(self):
         """Remove principal from a Group Managed Service Account by username."""
         # Create a GMSA with custom SDDL and add extra user.
-        bob = User.get(self.samdb, username="bob")
+        bob = User.get(self.samdb, account_name="bob")
         sddl = f"{GROUP_MSA_MEMBERSHIP_DEFAULT}(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;{bob.object_sid})"
         name = self.unique_name()
         gmsa = GroupManagedServiceAccount.create(self.samdb, name=name,
@@ -300,8 +300,8 @@ class ServiceAccountGroupMSAMembershipTests(SambaToolCmdTest):
         # Remove user 'bob' by username.
         result, out, err = self.runcmd("service-account",
                                        "group-msa-membership", "remove",
-                                       "--name", gmsa.username,
-                                       "--principal", bob.username)
+                                       "--name", gmsa.account_name,
+                                       "--principal", bob.account_name)
         self.assertIsNone(result, msg=err)
 
         # See if user was removed.
@@ -324,7 +324,7 @@ class ServiceAccountGroupMSAMembershipTests(SambaToolCmdTest):
         # Remove group 'DnsAdmins' by dn.
         result, out, err = self.runcmd("service-account",
                                        "group-msa-membership", "remove",
-                                       "--name", gmsa.username,
+                                       "--name", gmsa.account_name,
                                        "--principal", str(admins.dn))
         self.assertIsNone(result, msg=err)
 

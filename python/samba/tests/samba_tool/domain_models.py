@@ -81,17 +81,17 @@ class ComputerModelTests(SambaToolCmdTest):
 
     def test_computer_constructor(self):
         comp1 = Computer(name="comp1")
-        self.assertEqual(comp1.username, "comp1$")
+        self.assertEqual(comp1.account_name, "comp1$")
 
         comp2 = Computer(cn="comp2")
-        self.assertEqual(comp2.username, "comp2$")
+        self.assertEqual(comp2.account_name, "comp2$")
 
         # User accidentally left out '$' in username.
         comp3 = Computer(name="comp3", username="comp3")
-        self.assertEqual(comp3.username, "comp3$")
+        self.assertEqual(comp3.account_name, "comp3$")
 
         comp4 = Computer(cn="comp4", username="comp4$")
-        self.assertEqual(comp4.username, "comp4$")
+        self.assertEqual(comp4.account_name, "comp4$")
 
 
 class FieldTestMixin:
@@ -261,8 +261,8 @@ class RelatedFieldTest(FieldTestMixin, SambaToolCmdTest):
 
     @property
     def to_db_value(self):
-        alice = User.get(self.samdb, username="alice")
-        joe = User.get(self.samdb, username="joe")
+        alice = User.get(self.samdb, account_name="alice")
+        joe = User.get(self.samdb, account_name="joe")
         return [
             (alice, MessageElement(str(alice.dn))),
             ([joe, alice], MessageElement([str(joe.dn), str(alice.dn)])),
@@ -271,8 +271,8 @@ class RelatedFieldTest(FieldTestMixin, SambaToolCmdTest):
 
     @property
     def from_db_value(self):
-        alice = User.get(self.samdb, username="alice")
-        joe = User.get(self.samdb, username="joe")
+        alice = User.get(self.samdb, account_name="alice")
+        joe = User.get(self.samdb, account_name="joe")
         return [
             (MessageElement(str(alice.dn)), alice),
             (MessageElement([str(joe.dn), str(alice.dn)]), [joe, alice]),
@@ -285,8 +285,8 @@ class DnFieldTest(FieldTestMixin, SambaToolCmdTest):
 
     @property
     def to_db_value(self):
-        alice = User.get(self.samdb, username="alice")
-        joe = User.get(self.samdb, username="joe")
+        alice = User.get(self.samdb, account_name="alice")
+        joe = User.get(self.samdb, account_name="joe")
         return [
             (alice.dn, MessageElement(str(alice.dn))),
             ([joe.dn, alice.dn], MessageElement([str(joe.dn), str(alice.dn)])),
@@ -295,8 +295,8 @@ class DnFieldTest(FieldTestMixin, SambaToolCmdTest):
 
     @property
     def from_db_value(self):
-        alice = User.get(self.samdb, username="alice")
-        joe = User.get(self.samdb, username="joe")
+        alice = User.get(self.samdb, account_name="alice")
+        joe = User.get(self.samdb, account_name="joe")
         return [
             (MessageElement(str(alice.dn)), alice.dn),
             (MessageElement([str(joe.dn), str(alice.dn)]), [joe.dn, alice.dn]),

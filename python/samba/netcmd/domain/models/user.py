@@ -30,7 +30,7 @@ from .types import AccountType, UserAccountControl
 
 
 class User(OrganizationalPerson):
-    username = StringField("sAMAccountName")
+    account_name = StringField("sAMAccountName")
     account_type = EnumField("sAMAccountType", AccountType)
     assigned_policy = DnField("msDS-AssignedAuthNPolicy")
     assigned_silo = DnField("msDS-AssignedAuthNPolicySilo")
@@ -47,8 +47,8 @@ class User(OrganizationalPerson):
     user_principal_name = StringField("userPrincipalName")
 
     def __str__(self):
-        """Return username rather than cn for User model."""
-        return self.username
+        """Return sAMAccountName rather than cn for User model."""
+        return self.account_name
 
     @staticmethod
     def get_base_dn(ldb):
@@ -75,13 +75,13 @@ class User(OrganizationalPerson):
 
     @classmethod
     def find(cls, ldb, name):
-        """Helper function to find a user first by Dn then username.
+        """Helper function to find a user first by Dn then sAMAccountName.
 
         If the Dn can't be parsed, use sAMAccountName instead.
         """
         try:
             query = {"dn": Dn(ldb, name)}
         except ValueError:
-            query = {"username": name}
+            query = {"account_name": name}
 
         return cls.get(ldb, **query)

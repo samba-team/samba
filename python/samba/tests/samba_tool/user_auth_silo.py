@@ -34,7 +34,7 @@ class AuthPolicyCmdTestCase(SiloTest):
         self.assertIsNone(result, msg=err)
 
         # Assigned silo should be 'Developers'
-        user = User.get(self.samdb, username="alice")
+        user = User.get(self.samdb, account_name="alice")
         silo = AuthenticationSilo.get(self.samdb, dn=user.assigned_silo)
         self.assertEqual(silo.name, "Developers")
 
@@ -51,7 +51,7 @@ class AuthPolicyCmdTestCase(SiloTest):
         self.runcmd("user", "auth", "silo", "assign", "bob", "--silo", "QA")
 
         # Assigned silo should be set
-        user = User.get(self.samdb, username="bob")
+        user = User.get(self.samdb, account_name="bob")
         self.assertIsNotNone(user.assigned_silo)
 
         # Now try removing it
@@ -60,7 +60,7 @@ class AuthPolicyCmdTestCase(SiloTest):
         self.assertIsNone(result, msg=err)
 
         # Assigned silo should be None
-        user = User.get(self.samdb, username="bob")
+        user = User.get(self.samdb, account_name="bob")
         self.assertIsNone(user.assigned_silo)
 
     def test_view(self):

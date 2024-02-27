@@ -34,7 +34,7 @@ class AuthPolicyCmdTestCase(SiloTest):
         self.assertIsNone(result, msg=err)
 
         # Assigned policy should be 'Developers'
-        user = User.get(self.samdb, username="alice")
+        user = User.get(self.samdb, account_name="alice")
         policy = AuthenticationPolicy.get(self.samdb, dn=user.assigned_policy)
         self.assertEqual(policy.name, "User Policy")
 
@@ -52,7 +52,7 @@ class AuthPolicyCmdTestCase(SiloTest):
                     "User Policy")
 
         # Assigned policy should be set
-        user = User.get(self.samdb, username="bob")
+        user = User.get(self.samdb, account_name="bob")
         self.assertIsNotNone(user.assigned_policy)
 
         # Now try removing it
@@ -61,7 +61,7 @@ class AuthPolicyCmdTestCase(SiloTest):
         self.assertIsNone(result, msg=err)
 
         # Assigned policy should be None
-        user = User.get(self.samdb, username="bob")
+        user = User.get(self.samdb, account_name="bob")
         self.assertIsNone(user.assigned_policy)
 
     def test_view(self):

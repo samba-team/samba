@@ -55,10 +55,10 @@ class cmd_service_account_list(Command):
             raise CommandError(e)
 
         if output_format == "json":
-            self.print_json({account.username: account for account in accounts})
+            self.print_json({account.account_name: account for account in accounts})
         else:
             for account in accounts:
-                print(account.username, file=self.outf)
+                print(account.account_name, file=self.outf)
 
 
 class cmd_service_account_view(Command):

@@ -31,19 +31,19 @@ class Computer(User):
     """A Computer is a type of User."""
 
     def __init__(self, **kwargs):
-        """Computer constructor automatically adds "$" to username.
+        """Computer constructor automatically adds "$" to account_name.
 
         Also applies to GroupManagedServiceAccount subclass.
         """
         name = kwargs.get("name", kwargs.get("cn"))
-        username = kwargs.get("username")
+        account_name = kwargs.get("account_name")
 
-        # If the username is missing, use name or cn and add a "$".
-        # If the username is present but lacking "$", add it automatically.
-        if name and not username:
-            kwargs["username"] = name + "$"
-        elif username and not username.endswith("$"):
-            kwargs["username"] = username + "$"
+        # If account_name is missing, use name or cn and add a "$".
+        # If account_name is present but lacking "$", add it automatically.
+        if name and not account_name:
+            kwargs["account_name"] = name + "$"
+        elif account_name and not account_name.endswith("$"):
+            kwargs["account_name"] = account_name + "$"
 
         super().__init__(**kwargs)
 
@@ -63,7 +63,7 @@ class Computer(User):
 
     @classmethod
     def find(cls, ldb, name):
-        """Helper function to find a computer, first by Dn then username.
+        """Helper function to find a computer, first by Dn then sAMAccountName.
 
         If the Dn can't be parsed use sAMAccountName, automatically add the $.
         """
@@ -71,8 +71,8 @@ class Computer(User):
             query = {"dn": Dn(ldb, name)}
         except ValueError:
             if name.endswith("$"):
-                query = {"username": name}
+                query = {"account_name": name}
             else:
-                query = {"username": name + "$"}
+                query = {"account_name": name + "$"}
 
         return cls.get(ldb, **query)

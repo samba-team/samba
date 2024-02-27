@@ -88,7 +88,7 @@ class GMSAPasswordTest(BlackboxTestCase):
         cls.samdb.add(details)
         cls.addClassCleanup(delete_force, cls.samdb, cls.user_dn)
 
-        cls.user = User.get(cls.samdb, username=cls.username)
+        cls.user = User.get(cls.samdb, account_name=cls.username)
 
     def getpassword(self, attrs):
         shattrs = shlex.quote(attrs)

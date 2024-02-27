@@ -114,8 +114,8 @@ class GetKerberosTicketTest(BlackboxTestCase):
         cls.samdb.add(user_details)
         cls.addClassCleanup(delete_force, cls.samdb, cls.user_dn)
 
-        cls.gmsa_user = User.get(cls.samdb, username=cls.gmsa_username)
-        cls.user = User.get(cls.samdb, username=cls.username)
+        cls.gmsa_user = User.get(cls.samdb, account_name=cls.gmsa_username)
+        cls.user = User.get(cls.samdb, account_name=cls.username)
 
     def get_ticket(self, username, options=None):
         if options is None:
