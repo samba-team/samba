@@ -30,7 +30,6 @@
 #include "lib/param/param.h"
 #include "librpc/crypto/gse.h"
 #include "auth/gensec/gensec.h"
-#include "auth/gensec/gensec_internal.h" /* TODO: remove this */
 #include "../libcli/auth/spnego.h"
 #include "lib/util/asn1.h"
 
