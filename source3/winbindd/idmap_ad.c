@@ -299,6 +299,7 @@ static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 {
 	struct netr_DsRGetDCNameInfo *dcinfo;
 	struct sockaddr_storage dcaddr;
+	struct winbindd_domain *creds_domain = NULL;
 	struct cli_credentials *creds;
 	struct loadparm_context *lp_ctx;
 	struct tldap_context *ld;
@@ -394,13 +395,20 @@ static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 	 * Here we use or own machine account as
 	 * we run as domain member.
 	 */
-	status = pdb_get_trust_credentials(lp_workgroup(),
-					   lp_realm(),
-					   dcinfo,
-					   &creds);
+	creds_domain = find_our_domain();
+	if (creds_domain == NULL) {
+		DBG_ERR("find_our_domain() returned NULL\n");
+		TALLOC_FREE(dcinfo);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	status = winbindd_get_trust_credentials(creds_domain,
+						dcinfo,
+						false, /* netlogon */
+						false, /* ipc_fallback */
+						&creds);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("pdb_get_trust_credentials() failed - %s\n",
-			  nt_errstr(status));
+		DBG_ERR("winbindd_get_trust_credentials(%s) failed - %s\n",
+			creds_domain->name, nt_errstr(status));
 		TALLOC_FREE(dcinfo);
 		return status;
 	}
