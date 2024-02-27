@@ -647,7 +647,6 @@ static int cli_credentials_new_ccache(struct cli_credentials *cred,
 						  ccache_name,
 						  smb_get_krb5_error_message(ccc->smb_krb5_context->krb5_context,
 									     ret, ccc));
-		talloc_free(ccache_name);
 		talloc_free(ccc);
 		return ret;
 	}
