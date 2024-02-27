@@ -207,6 +207,13 @@ void winbind_msg_domain_online(struct messaging_context *msg_ctx,
 void set_domain_offline(struct winbindd_domain *domain);
 void set_domain_online_request(struct winbindd_domain *domain);
 
+struct cli_credentials;
+NTSTATUS winbindd_get_trust_credentials(struct winbindd_domain *domain,
+					TALLOC_CTX *mem_ctx,
+					bool netlogon,
+					bool allow_ipc_fallback,
+					struct cli_credentials **_creds);
+
 struct ndr_interface_table;
 NTSTATUS wb_open_internal_pipe(TALLOC_CTX *mem_ctx,
 			       const struct ndr_interface_table *table,
