@@ -143,6 +143,9 @@ struct ctdb_call {
 /* SRVID to inform clients that CTDB_EVENT_IPREALLOCATED finished */
 #define CTDB_SRVID_IPREALLOCATED 0xF302000000000000LL
 
+/* SRVID to inform clients that CTDB_EVENT_START_IPREALLOCATE finished */
+#define CTDB_SRVID_START_IPREALLOCATE 0xF303000000000000LL
+
 /* SRVID to inform recovery daemon of the node flags - OBSOLETE */
 #define CTDB_SRVID_SET_NODE_FLAGS 0xF400000000000000LL
 

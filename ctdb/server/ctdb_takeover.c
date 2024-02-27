@@ -2458,6 +2458,7 @@ static void ctdb_start_ipreallocate_callback(struct ctdb_context *ctdb,
 {
 	struct start_ipreallocate_callback_state *state = talloc_get_type_abort(
 		p, struct start_ipreallocate_callback_state);
+	TDB_DATA data = { .dsize = 0, };
 
 	if (status != 0) {
 		D_ERR("\"startipreallocate\" event failed (status %d)\n",
@@ -2466,6 +2467,12 @@ static void ctdb_start_ipreallocate_callback(struct ctdb_context *ctdb,
 			ctdb_ban_self(ctdb);
 		}
 	}
+
+	D_INFO("Sending START_IPREALLOCATE message\n");
+	ctdb_daemon_send_message(ctdb,
+				 ctdb->pnn,
+				 CTDB_SRVID_START_IPREALLOCATE,
+				 data);
 
 	ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
 	talloc_free(state);

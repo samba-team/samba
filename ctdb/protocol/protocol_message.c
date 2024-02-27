@@ -60,6 +60,9 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 	case CTDB_SRVID_IPREALLOCATED:
 		break;
 
+	case CTDB_SRVID_START_IPREALLOCATE:
+		break;
+
 	case CTDB_SRVID_SET_NODE_FLAGS:
 		len = ctdb_node_flag_change_len(mdata->flag_change);
 		break;
@@ -152,6 +155,9 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 		break;
 
 	case CTDB_SRVID_IPREALLOCATED:
+		break;
+
+	case CTDB_SRVID_START_IPREALLOCATE:
 		break;
 
 	case CTDB_SRVID_SET_NODE_FLAGS:
@@ -251,6 +257,9 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_SRVID_IPREALLOCATED:
+		break;
+
+	case CTDB_SRVID_START_IPREALLOCATE:
 		break;
 
 	case CTDB_SRVID_SET_NODE_FLAGS:
