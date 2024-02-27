@@ -823,14 +823,14 @@ struct imessaging_context *imessaging_client_init(TALLOC_CTX *mem_ctx,
 						  struct loadparm_context *lp_ctx,
 						struct tevent_context *ev)
 {
-	struct server_id id;
-	ZERO_STRUCT(id);
-	id.pid = getpid();
-	id.task_id = generate_random();
-	id.vnn = NONCLUSTER_VNN;
+	struct server_id id = {
+		.pid = getpid(),
+		.task_id = generate_random(),
+		.vnn = NONCLUSTER_VNN,
 
-	/* This is because we are not in the s3 serverid database */
-	id.unique_id = SERVERID_UNIQUE_ID_NOT_TO_VERIFY;
+		/* This is because we are not in the s3 serverid database */
+		.unique_id = SERVERID_UNIQUE_ID_NOT_TO_VERIFY,
+	};
 
 	return imessaging_init_discard_incoming(mem_ctx, lp_ctx, id, ev);
 }
