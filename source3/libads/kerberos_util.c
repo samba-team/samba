@@ -63,7 +63,7 @@ int ads_kinit_password(ADS_STRUCT *ads)
 	}
 
 	ret = kerberos_kinit_password_ext(s, ads->auth.password,
-					  ads->auth.time_offset,
+					  0,
 					  NULL, NULL,
 					  ads->auth.ccache_name, false, false,
 					  0,

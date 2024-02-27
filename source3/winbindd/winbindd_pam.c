@@ -747,7 +747,6 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 	char *name_user = NULL;
 	time_t ticket_lifetime = 0;
 	time_t renewal_until = 0;
-	time_t time_offset = 0;
 	const char *user_ccache_file;
 	struct PAC_LOGON_INFO *logon_info = NULL;
 	struct PAC_UPN_DNS_INFO *upn_dns_info = NULL;
@@ -788,10 +787,6 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 
 	/* 2nd step:
 	 * get kerberos properties */
-
-	if (domain->backend_data.ads_conn != NULL) {
-		time_offset = domain->backend_data.ads_conn->auth.time_offset;
-	}
 
 
 	/* 3rd step:
@@ -858,7 +853,7 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 	result = kerberos_return_pac(mem_ctx,
 				     principal_s,
 				     pass,
-				     time_offset,
+				     0, /* time_offset */
 				     &ticket_lifetime,
 				     &renewal_until,
 				     cc,

@@ -553,7 +553,7 @@ static int net_ads_info_json(ADS_STRUCT *ads)
 	}
 
 	ret = json_add_int (&jsobj, "Server time offset",
-			    ads->auth.time_offset);
+			    ads->config.time_offset);
 	if (ret != 0) {
 		goto failure;
 	}
@@ -641,7 +641,7 @@ static int net_ads_info(struct net_context *c, int argc, const char **argv)
 			 http_timestring(tmp_ctx, ads->config.current_time));
 
 	d_printf(_("KDC server: %s\n"), ads->auth.kdc_server );
-	d_printf(_("Server time offset: %d\n"), ads->auth.time_offset );
+	d_printf(_("Server time offset: %d\n"), ads->config.time_offset );
 
 	d_printf(_("Last machine account password change: %s\n"),
 		 http_timestring(tmp_ctx, pass_time));
@@ -1023,8 +1023,7 @@ static int ads_user_add(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
-	status = ads_krb5_set_password(ads->auth.kdc_server, upn, argv[1],
-				       ads->auth.time_offset);
+	status = ads_krb5_set_password(ads->auth.kdc_server, upn, argv[1], 0);
 	if (ADS_ERR_OK(status)) {
 		d_printf(_("User %s added\n"), argv[0]);
 		rc = 0;
@@ -2691,7 +2690,7 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 				       auth_password,
 				       user,
 				       new_password,
-				       ads->auth.time_offset);
+				       0);
 	memset(new_password, '\0', strlen(new_password));
 	if (!ADS_ERR_OK(status)) {
 		d_fprintf(stderr, _("Password change failed: %s\n"),

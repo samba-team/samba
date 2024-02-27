@@ -52,7 +52,6 @@ interface ads
 		string user_name;
 		string kdc_server;
 		ads_auth_flags flags;
-		int time_offset;
 		string ccache_name;
 		NTTIME expire_time;
 	} ads_auth;
@@ -66,6 +65,7 @@ interface ads
 		string server_site_name;
 		string client_site_name;
 		time_t current_time;
+		int time_offset;
 		string schema_path;
 		string config_path;
 		int ldap_page_size;
