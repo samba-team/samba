@@ -18,8 +18,12 @@
  */
 
 #include "includes.h"
+#include "librpc/gen_ndr/lsa.h"
+#include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "rpc_client/init_lsa.h"
-#include "../librpc/gen_ndr/lsa.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 /*******************************************************************
  inits a structure.
@@ -57,4 +61,160 @@ void init_lsa_AsciiString(struct lsa_AsciiString *name, const char *s)
 void init_lsa_AsciiStringLarge(struct lsa_AsciiStringLarge *name, const char *s)
 {
 	name->string = s;
+}
+
+bool rpc_lsa_encrypt_trustdom_info(
+	TALLOC_CTX *mem_ctx,
+	const char *incoming_old,
+	const char *incoming_new,
+	const char *outgoing_old,
+	const char *outgoing_new,
+	DATA_BLOB session_key,
+	struct lsa_TrustDomainInfoAuthInfoInternal **_authinfo_internal)
+{
+	struct timeval tv_now = timeval_current();
+	NTTIME now = timeval_to_nttime(&tv_now);
+
+	struct lsa_TrustDomainInfoAuthInfoInternal *authinfo_internal = NULL;
+	struct AuthenticationInformation in_cur_td_info = {
+		.AuthType = TRUST_AUTH_TYPE_CLEAR,
+		.LastUpdateTime = now,
+	};
+	struct AuthenticationInformation in_prev_td_buf = {
+		.AuthType = TRUST_AUTH_TYPE_CLEAR,
+		.LastUpdateTime = now,
+	};
+	struct AuthenticationInformation out_cur_td_info = {
+		.AuthType = TRUST_AUTH_TYPE_CLEAR,
+		.LastUpdateTime = now,
+	};
+	struct AuthenticationInformation out_prev_td_buf = {
+		.AuthType = TRUST_AUTH_TYPE_CLEAR,
+		.LastUpdateTime = now,
+	};
+
+	/*
+	 * This corresponds to MS-LSAD 2.2.7.16 LSAPR_TRUSTED_DOMAIN_AUTH_BLOB.
+	 */
+	struct trustDomainPasswords dom_auth_info = {
+		.incoming = {
+			.count = 1,
+			.previous = {
+				.count = 1,
+				.array = &in_prev_td_buf,
+
+			},
+			.current = {
+				.count = 1,
+				.array = &in_cur_td_info,
+			},
+		},
+
+		.outgoing = {
+			.count = 1,
+			.previous = {
+				.count = 1,
+				.array = &out_prev_td_buf,
+
+			},
+			.current = {
+				.count = 1,
+				.array = &out_cur_td_info,
+			},
+		}
+	};
+
+	size_t converted_size = 0;
+	DATA_BLOB dom_auth_blob = data_blob_null;
+	enum ndr_err_code ndr_err;
+	bool ok;
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t _session_key = {
+		.data = session_key.data,
+		.size = session_key.length,
+	};
+
+	authinfo_internal = talloc_zero(
+		mem_ctx, struct lsa_TrustDomainInfoAuthInfoInternal);
+	if (authinfo_internal == NULL) {
+		return false;
+	}
+
+	ok = convert_string_talloc(mem_ctx,
+				   CH_UNIX,
+				   CH_UTF16,
+				   incoming_new,
+				   strlen(incoming_new),
+				   &in_cur_td_info.AuthInfo.clear.password,
+				   &converted_size);
+	if (!ok) {
+		return false;
+	}
+	in_cur_td_info.AuthInfo.clear.size = converted_size;
+
+	ok = convert_string_talloc(mem_ctx,
+				   CH_UNIX,
+				   CH_UTF16,
+				   incoming_old,
+				   strlen(incoming_old),
+				   &in_prev_td_buf.AuthInfo.clear.password,
+				   &converted_size);
+	if (!ok) {
+		return false;
+	}
+	in_prev_td_buf.AuthInfo.clear.size = converted_size;
+
+	ok = convert_string_talloc(mem_ctx,
+				   CH_UNIX,
+				   CH_UTF16,
+				   outgoing_new,
+				   strlen(outgoing_new),
+				   &out_cur_td_info.AuthInfo.clear.password,
+				   &converted_size);
+	if (!ok) {
+		return false;
+	}
+	out_cur_td_info.AuthInfo.clear.size = converted_size;
+
+	ok = convert_string_talloc(mem_ctx,
+				   CH_UNIX,
+				   CH_UTF16,
+				   outgoing_old,
+				   strlen(outgoing_old),
+				   &out_prev_td_buf.AuthInfo.clear.password,
+				   &converted_size);
+	if (!ok) {
+		return false;
+	}
+	out_prev_td_buf.AuthInfo.clear.size = converted_size;
+
+	generate_random_buffer(dom_auth_info.confounder,
+			       sizeof(dom_auth_info.confounder));
+
+	ndr_err = ndr_push_struct_blob(
+		&dom_auth_blob,
+		authinfo_internal,
+		&dom_auth_info,
+		(ndr_push_flags_fn_t)ndr_push_trustDomainPasswords);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return false;
+	}
+	generate_random_buffer(dom_auth_info.confounder,
+			       sizeof(dom_auth_info.confounder));
+
+	gnutls_cipher_init(&cipher_hnd,
+			   GNUTLS_CIPHER_ARCFOUR_128,
+			   &_session_key,
+			   NULL);
+	gnutls_cipher_encrypt(cipher_hnd,
+			      dom_auth_blob.data,
+			      dom_auth_blob.length);
+	gnutls_cipher_deinit(cipher_hnd);
+
+	authinfo_internal->auth_blob.size = dom_auth_blob.length;
+	authinfo_internal->auth_blob.data = dom_auth_blob.data;
+
+	*_authinfo_internal = authinfo_internal;
+
+	return true;
 }

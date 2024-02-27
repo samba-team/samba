@@ -32,4 +32,13 @@ void init_lsa_StringLarge(struct lsa_StringLarge *name, const char *s);
 void init_lsa_AsciiString(struct lsa_AsciiString *name, const char *s);
 void init_lsa_AsciiStringLarge(struct lsa_AsciiStringLarge *name, const char *s);
 
+bool rpc_lsa_encrypt_trustdom_info(
+	TALLOC_CTX *mem_ctx,
+	const char *incoming_old,
+	const char *incoming_new,
+	const char *outgoing_old,
+	const char *outgoing_new,
+	DATA_BLOB session_key,
+	struct lsa_TrustDomainInfoAuthInfoInternal **_authinfo_internal);
+
 #endif /* _RPC_CLIENT_INIT_LSA_H_ */
