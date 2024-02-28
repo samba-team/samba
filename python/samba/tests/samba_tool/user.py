@@ -600,7 +600,9 @@ sAMAccountName: %s
                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
                 "-U%s%%%s" % (os.environ["DC_USERNAME"],
                               os.environ["DC_PASSWORD"]))
-            self.assertCmdSuccess(result, out, err, "Error running show")
+            self.assertCmdSuccess(result, out, err,
+                                  "Error running show --attributes=%s"
+                                  % ",".join(attrs))
 
             self.assertIn(";format=GeneralizedTime", out)
             self.assertIn(";format=UnixTime", out)
