@@ -2401,6 +2401,10 @@ def provision(logger, session_info, smbconf=None,
                 if updates_allowed_overridden:
                     lp.set("dsdb:schema update allowed", "no")
 
+                gkdi_root_key_dn = samdb.new_gkdi_root_key()
+                logger.info("gkdi/gmsa root key added with guid "
+                            f"{gkdi_root_key_dn.get_rdn_value()}")
+
         if not is_heimdal_built():
             create_kdc_conf(paths.kdcconf, realm, domain, os.path.dirname(lp.get("log file")))
             logger.info("The Kerberos KDC configuration for Samba AD is "
