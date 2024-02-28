@@ -100,3 +100,16 @@ def nt_time_from_string(s: str) -> NtTime:
         dt = dt.astimezone()
 
     return nt_time_from_datetime(dt)
+
+
+def string_from_nt_time(nttime: NtTime, format:str=None) -> str:
+    """Format an NtTime date as a string.
+
+    If format is not provided, an ISO 8601 string is used.
+    """
+    dt = datetime_from_nt_time(nttime)
+
+    if format is not None:
+        return dt.strftime(format)
+
+    return dt.isoformat()
