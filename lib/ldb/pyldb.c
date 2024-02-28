@@ -3172,6 +3172,7 @@ static PyObject *py_ldb_module_add(PyLdbModuleObject *self, PyObject *args)
 
 	PyErr_LDB_ERROR_IS_ERR_RAISE_FREE(PyExc_LdbError, ret, mod->ldb, req);
 
+	TALLOC_FREE(req);
 	Py_RETURN_NONE;
 }
 
@@ -3194,6 +3195,7 @@ static PyObject *py_ldb_module_modify(PyLdbModuleObject *self, PyObject *args)
 
 	PyErr_LDB_ERROR_IS_ERR_RAISE_FREE(PyExc_LdbError, ret, mod->ldb, req);
 
+	TALLOC_FREE(req);
 	Py_RETURN_NONE;
 }
 
@@ -3213,6 +3215,8 @@ static PyObject *py_ldb_module_delete(PyLdbModuleObject *self, PyObject *args)
 	ret = pyldb_Module_AsModule(self)->ops->del(pyldb_Module_AsModule(self), req);
 
 	PyErr_LDB_ERROR_IS_ERR_RAISE_FREE(PyExc_LdbError, ret, NULL, req);
+
+	TALLOC_FREE(req);
 
 	Py_RETURN_NONE;
 }
@@ -3235,6 +3239,8 @@ static PyObject *py_ldb_module_rename(PyLdbModuleObject *self, PyObject *args)
 	ret = pyldb_Module_AsModule(self)->ops->rename(pyldb_Module_AsModule(self), req);
 
 	PyErr_LDB_ERROR_IS_ERR_RAISE_FREE(PyExc_LdbError, ret, NULL, req);
+
+	TALLOC_FREE(req);
 
 	Py_RETURN_NONE;
 }
