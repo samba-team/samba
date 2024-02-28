@@ -1956,6 +1956,8 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 
 	status = pdb_set_trusted_domain(r->in.info->domain_name.string, &td);
 	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("pdb_set_trusted_domain failed: %s\n",
+			nt_errstr(status));
 		return status;
 	}
 
