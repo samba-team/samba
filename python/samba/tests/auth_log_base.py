@@ -22,10 +22,10 @@ import samba.tests
 from samba.messaging import Messaging
 from samba.dcerpc.messaging import MSG_AUTH_LOG, AUTH_EVENT_NAME
 from samba.param import LoadParm
+from samba import string_is_guid
 import time
 import json
 import os
-import re
 
 
 def default_msg_filter(msg):
@@ -211,11 +211,6 @@ class AuthLogTestBase(samba.tests.TestCase):
 
         return list(filter(is_not_netlogon, messages))
 
-    GUID_RE = re.compile(
-        "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
-
-    #
-    # Is the supplied GUID string correctly formatted
-    #
     def is_guid(self, guid):
-        return self.GUID_RE.fullmatch(guid)
+        """Is the supplied GUID string correctly formatted"""
+        return string_is_guid(guid)
