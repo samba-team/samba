@@ -39,6 +39,9 @@ class ClaimType(Model):
         "msDS-ClaimTypeAppliesToClass", many=True)
     claim_value_type = IntegerField("msDS-ClaimValueType")
 
+    def __str__(self):
+        return str(self.display_name)
+
     @staticmethod
     def get_base_dn(ldb):
         """Return the base DN for the ClaimType model.
@@ -53,6 +56,3 @@ class ClaimType(Model):
     @staticmethod
     def get_object_class():
         return "msDS-ClaimType"
-
-    def __str__(self):
-        return str(self.display_name)
