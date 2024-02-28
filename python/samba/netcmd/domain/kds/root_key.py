@@ -222,6 +222,60 @@ class RootKeyCommand(Command):
         self.message('')
 
 
+class cmd_domain_kds_root_key_create(RootKeyCommand):
+    """Create a KDS root key object."""
+
+    synopsis = "%prog [-H <URL>] [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
+    }
+
+    takes_options = [
+        Option("--json", help="Output results in JSON format.",
+               dest="output_format", action="store_const", const="json"),
+        Option("--use-start-time", help="Use of the key begins at this time."),
+        Option("-v", "--verbose", help="Be verbose", action="store_true"),
+    ]
+
+    def run(self, hostopts=None, sambaopts=None, credopts=None,
+            output_format=None, use_start_time=None, verbose=None):
+        kwargs = {}
+        if use_start_time is not None:
+            try:
+                nt_use = nt_time_from_string(use_start_time)
+                kwargs['use_start_time'] = nt_use
+            except ValueError as e:
+                raise CommandError(e) from None
+
+        ldb = self.ldb_connect(hostopts, sambaopts, credopts)
+        dn = ldb.new_gkdi_root_key(**kwargs)
+        guid = dn.get_rdn_value()
+
+        attrs = BASE_ATTRS[:]
+        if verbose:
+            attrs += VERBOSE_ATTRS
+
+        msg = get_root_key_by_name_or_dn(ldb, guid, attrs=attrs)
+        start_time = int(msg['msKds-UseStartTime'][0])
+        used_from_string = (f"usable from {string_from_nt_time(start_time)} "
+                            f"({delta_string(start_time - nt_now())})")
+
+        message = f"created root key {guid}, {used_from_string}"
+
+        if verbose:
+            self.show_root_key_message(msg,
+                                       output_format,
+                                       preamble=f"{message}\n")
+
+        elif output_format == 'json':
+            kwargs = {k: msg[k] for k in attrs}
+            self.print_json_status(message=message, dn=str(dn), **kwargs)
+        else:
+            self.message(message)
+
 class cmd_domain_kds_root_key_list(RootKeyCommand):
     """List KDS root keys."""
 
@@ -343,6 +397,7 @@ class cmd_domain_kds_root_key(SuperCommand):
     """Manage key distribution service root keys."""
 
     subcommands = {
+        "create": cmd_domain_kds_root_key_create(),
         "list": cmd_domain_kds_root_key_list(),
         "view": cmd_domain_kds_root_key_view(),
     }
