@@ -20,8 +20,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import secrets
-
 import samba.getopt as options
 from samba.netcmd import Command, CommandError, Option, SuperCommand
 from samba.netcmd.domain.models import AttributeSchema, ClassSchema,\
@@ -97,33 +95,11 @@ class cmd_domain_claim_claim_type_create(Command):
         try:
             applies_to = [ClassSchema.find(ldb, name) for name in class_names]
             attribute = AttributeSchema.find(ldb, attribute_name)
-            value_type = ValueType.find(ldb, attribute)
+            claim_type = ClaimType.new_claim_type(
+                ldb, attribute, applies_to, display_name,
+                description, enabled)
         except (ModelError, ValueError) as e:
             raise CommandError(e)
-
-        # Generate the new Claim Type cn.
-        # Windows creates a random number here containing 16 hex digits.
-        instance = secrets.token_hex(8)
-        cn = f"ad://ext/{display_name}:{instance}"
-
-        # adminDescription should be present but still have a fallback.
-        if description is None:
-            description = attribute.admin_description or display_name
-
-        # claim_is_value_space_restricted is always False because we don't
-        # yet support creating claims with a restricted possible values list.
-        claim_type = ClaimType(
-            cn=cn,
-            description=description,
-            display_name=display_name,
-            enabled=enabled,
-            claim_attribute_source=attribute.dn,
-            claim_is_single_valued=attribute.is_single_valued,
-            claim_is_value_space_restricted=False,
-            claim_source_type="AD",
-            claim_type_applies_to_class=[obj.dn for obj in applies_to],
-            claim_value_type=value_type.claim_value_type,
-        )
 
         # Create claim type
         try:

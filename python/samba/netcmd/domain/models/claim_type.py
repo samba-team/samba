@@ -20,9 +20,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import binascii
+import os
+
 from .fields import BooleanField, DnField, IntegerField,\
     PossibleClaimValuesField, StringField
 from .model import Model
+from .value_type import ValueType
 
 
 class ClaimType(Model):
@@ -56,3 +60,47 @@ class ClaimType(Model):
     @staticmethod
     def get_object_class():
         return "msDS-ClaimType"
+
+    @staticmethod
+    def new_claim_type(ldb, attribute, applies_to, display_name=None,
+                       description=None, enabled=True):
+        """Creates a ClaimType but does not save the instance.
+
+        :param ldb: SamDB database connection
+        :param attribute: AttributeSchema object to use for creating ClaimType
+        :param applies_to: List of ClassSchema objects ClaimType applies to
+        :param display_name: Optional display name to use or use attribute name
+        :param description: Optional description or fall back to display_name
+        :param enabled: Create an enabled or disabled claim type (default True)
+        :raises NotFound: if the ValueType for this attribute doesn't exist
+        """
+        value_type = ValueType.find(ldb, attribute)
+
+        # Generate the new Claim Type cn.
+        # Windows creates a random number here containing 16 hex digits.
+        # We can achieve something similar using urandom(8)
+        instance = binascii.hexlify(os.urandom(8)).decode()
+        cn = f"ad://ext/{display_name}:{instance}"
+
+        # if displayName is missing use attribute name.
+        if display_name is None:
+            display_name = attribute.name
+
+        # adminDescription should be present but still have a fallback.
+        if description is None:
+            description = attribute.admin_description or display_name
+
+        # claim_is_value_space_restricted is always False because we don't
+        # yet support creating claims with a restricted possible values list.
+        return ClaimType(
+            cn=cn,
+            description=description,
+            display_name=display_name,
+            enabled=enabled,
+            claim_attribute_source=attribute.dn,
+            claim_is_single_valued=attribute.is_single_valued,
+            claim_is_value_space_restricted=False,
+            claim_source_type="AD",
+            claim_type_applies_to_class=[obj.dn for obj in applies_to],
+            claim_value_type=value_type.claim_value_type,
+        )
