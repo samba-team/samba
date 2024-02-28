@@ -20,10 +20,12 @@
 
 from samba.netcmd import SuperCommand
 
+from .root_key import cmd_domain_kds_root_key
+
 
 class cmd_domain_kds(SuperCommand):
     """Key Distribution Service management."""
 
     subcommands = {
-
+        "root-key": cmd_domain_kds_root_key(),
     }
