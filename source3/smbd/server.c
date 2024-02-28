@@ -1639,6 +1639,33 @@ static void smbd_init_addrchange(TALLOC_CTX *mem_ctx,
 	tevent_req_set_callback(req, smbd_addr_changed, state);
 }
 
+static void smbd_close_socket_for_ip(struct smbd_parent_context *parent,
+				     struct sockaddr_storage *addr)
+{
+	struct smbd_open_socket *s = NULL;
+
+	for (s = parent->sockets; s != NULL; s = s->next) {
+		struct sockaddr_storage a;
+		socklen_t addr_len = sizeof(a);
+
+		if (getsockname(s->fd, (struct sockaddr *)&a, &addr_len) < 0) {
+			DBG_NOTICE("smbd: Unable to get address - skip\n");
+			continue;
+		}
+		if (sockaddr_equal((struct sockaddr *)&a,
+				   (struct sockaddr *)addr)) {
+			char addrstr[INET6_ADDRSTRLEN];
+
+			DLIST_REMOVE(parent->sockets, s);
+			TALLOC_FREE(s);
+			print_sockaddr(addrstr, sizeof(addrstr), addr);
+			DBG_NOTICE("smbd: Closed listening socket for %s\n",
+				   addrstr);
+			return;
+		}
+	}
+}
+
 static void smbd_addr_changed(struct tevent_req *req)
 {
 	struct smbd_addrchanged_state *state = tevent_req_callback_data(
@@ -1665,6 +1692,8 @@ static void smbd_addr_changed(struct tevent_req *req)
 		DBG_NOTICE("smbd: kernel (AF_NETLINK) dropped ip %s "
 			   "on if_index %u\n",
 			   addrstr, if_index);
+
+		smbd_close_socket_for_ip(state->parent, &addr);
 
 		goto rearm;
 	}
