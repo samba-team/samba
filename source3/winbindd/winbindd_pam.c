@@ -623,10 +623,10 @@ static NTSTATUS get_pwd_properties(struct winbindd_domain *domain,
 
 #ifdef HAVE_KRB5
 
-static const char *generate_krb5_ccache(TALLOC_CTX *mem_ctx,
-					const char *type,
-					uid_t uid,
-					const char **user_ccache_file)
+static bool generate_krb5_ccache(TALLOC_CTX *mem_ctx,
+				 const char *type,
+				 uid_t uid,
+				 const char **user_ccache_file)
 {
 	/* accept FILE and WRFILE as krb5_cc_type from the client and then
 	 * build the full ccname string based on the user's uid here -
@@ -638,19 +638,31 @@ static const char *generate_krb5_ccache(TALLOC_CTX *mem_ctx,
 		if (strequal(type, "FILE")) {
 			gen_cc = talloc_asprintf(
 				mem_ctx, "FILE:/tmp/krb5cc_%d", uid);
+			if (gen_cc == NULL) {
+				return false;
+			}
 		}
 		if (strequal(type, "WRFILE")) {
 			gen_cc = talloc_asprintf(
 				mem_ctx, "WRFILE:/tmp/krb5cc_%d", uid);
+			if (gen_cc == NULL) {
+				return false;
+			}
 		}
 		if (strequal(type, "KEYRING")) {
 			gen_cc = talloc_asprintf(
 				mem_ctx, "KEYRING:persistent:%d", uid);
+			if (gen_cc == NULL) {
+				return false;
+			}
 		}
 		if (strequal(type, "KCM")) {
 			gen_cc = talloc_asprintf(mem_ctx,
 						 "KCM:%d",
 						 uid);
+			if (gen_cc == NULL) {
+				return false;
+			}
 		}
 
 		if (strnequal(type, "FILE:/", 6) ||
@@ -681,6 +693,9 @@ static const char *generate_krb5_ccache(TALLOC_CTX *mem_ctx,
 							true,
 							/* allow_trailing_dollar */
 							false);
+					if (gen_cc == NULL) {
+						return false;
+					}
 				}
 			}
 		}
@@ -688,18 +703,9 @@ static const char *generate_krb5_ccache(TALLOC_CTX *mem_ctx,
 
 	*user_ccache_file = gen_cc;
 
-	if (gen_cc == NULL) {
-		gen_cc = talloc_strdup(mem_ctx, "MEMORY:winbindd_pam_ccache");
-	}
-  	if (gen_cc == NULL) {
-		DEBUG(0,("out of memory\n"));
-		return NULL;
-	}
+	DBG_DEBUG("using ccache: %s\n", gen_cc != NULL ? gen_cc : "(internal)");
 
-	DEBUG(10, ("using ccache: %s%s\n", gen_cc,
-		   (*user_ccache_file == NULL) ? " (internal)":""));
-
-	return gen_cc;
+	return true;
 }
 
 #endif
@@ -772,14 +778,14 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 		DEBUG(0,("no valid uid\n"));
 	}
 
-	cc = generate_krb5_ccache(mem_ctx,
+	ok = generate_krb5_ccache(mem_ctx,
 				  krb5_cc_type,
 				  uid,
 				  &user_ccache_file);
-	if (cc == NULL) {
+	if (!ok) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
+	cc = user_ccache_file;
 
 	/* 2nd step:
 	 * get kerberos properties */
@@ -1309,14 +1315,15 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 				goto out;
 			}
 
-			cc = generate_krb5_ccache(tmp_ctx,
+			ok = generate_krb5_ccache(tmp_ctx,
 						  krb5_cc_type,
 						  uid,
 						  &user_ccache_file);
-			if (cc == NULL) {
+			if (!ok) {
 				result = NT_STATUS_NO_MEMORY;
 				goto out;
 			}
+			cc = user_ccache_file;
 
 			realm = talloc_strdup(tmp_ctx, domain->alt_name);
 			if (realm == NULL) {
