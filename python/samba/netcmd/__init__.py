@@ -93,6 +93,7 @@ class Command(object):
     raw_argv = None
     raw_args = None
     raw_kwargs = None
+    preferred_output_format = None
 
     def _set_files(self, outf=None, errf=None):
         if outf is not None:
@@ -299,6 +300,13 @@ class Command(object):
                 if option.dest is not None and option.dest in kwargs:
                     del kwargs[option.dest]
         kwargs.update(optiongroups)
+
+        if kwargs.get('output_format') == 'json':
+            self.preferred_output_format = 'json'
+        else:
+            # we need to reset this for the tests that reuse the
+            # samba-tool object.
+            self.preferred_output_format = None
 
         if self.use_colour:
             self.apply_colour_choice(kwargs.pop('color', 'auto'))
