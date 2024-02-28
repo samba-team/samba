@@ -69,7 +69,7 @@ class GMSAPasswordTest(BlackboxTestCase):
         cls.base_dn = f"CN=Managed Service Accounts,{cls.samdb.domain_dn()}"
         cls.user_dn = f"CN={cls.username},{cls.base_dn}"
 
-        connecting_user_sid = cls.samdb.get_connecting_user_sid()
+        connecting_user_sid = cls.samdb.connecting_user_sid
 
         domain_sid = security.dom_sid(cls.samdb.get_domain_sid())
         allow_sddl = f"O:SYD:(A;;RP;;;{connecting_user_sid})"

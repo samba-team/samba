@@ -967,6 +967,9 @@ accountExpires: %u
         msg = self.search(base="", scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])[0]
         return str(ndr_unpack(security.dom_sid, msg["tokenGroups"][0]))
 
+    connecting_user_sid = property(get_connecting_user_sid,
+                                   doc="SID of the connecting user")
+
     def set_invocation_id(self, invocation_id):
         """Set the invocation id for this SamDB handle.
 
