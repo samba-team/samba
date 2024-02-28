@@ -45,6 +45,11 @@ def nt_time_from_datetime(tm: datetime.datetime) -> NtTime:
     return nt_time
 
 
+def nt_now() -> NtTime:
+    dt = datetime.datetime.now(datetime.timezone.utc)
+    return nt_time_from_datetime(dt)
+
+
 def datetime_from_nt_time(nt_time: NtTime) -> datetime.datetime:
     _validate_nt_time(nt_time)
     time_since_epoch = datetime.timedelta(microseconds=nt_time / NT_TICKS_PER_μSEC)
