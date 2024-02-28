@@ -276,6 +276,42 @@ class cmd_domain_kds_root_key_create(RootKeyCommand):
         else:
             self.message(message)
 
+
+class cmd_domain_kds_root_key_delete(RootKeyCommand):
+    """Delete a KDS root key."""
+
+    synopsis = "%prog [-H <URL>] [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
+    }
+
+    takes_options = [
+        Option("--name", help="The key to delete"),
+        Option("--json", help="Output results in JSON format.",
+               dest="output_format", action="store_const", const="json"),
+    ]
+
+    def run(self, hostopts=None, sambaopts=None, credopts=None, name=None, output_format=None):
+        ldb = self.ldb_connect(hostopts, sambaopts, credopts)
+        try:
+            root_key = get_root_key_by_name_or_dn(ldb, name)
+        except LdbError as e:
+            raise CommandError(e)
+
+        ldb.delete(root_key.dn)
+
+        guid = root_key.dn.get_rdn_value()
+        message = f"deleted root key {guid}"
+
+        if output_format == 'json':
+            self.print_json_status(message)
+        else:
+            self.message(message)
+
+
 class cmd_domain_kds_root_key_list(RootKeyCommand):
     """List KDS root keys."""
 
@@ -398,6 +434,7 @@ class cmd_domain_kds_root_key(SuperCommand):
 
     subcommands = {
         "create": cmd_domain_kds_root_key_create(),
+        "delete": cmd_domain_kds_root_key_delete(),
         "list": cmd_domain_kds_root_key_list(),
         "view": cmd_domain_kds_root_key_view(),
     }
