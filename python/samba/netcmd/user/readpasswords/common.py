@@ -856,10 +856,14 @@ class GetPasswordCommand(Command):
                     continue
                 if ra["vformat"] != fm:
                     continue
+
                 srcattr = get_src_attrname(ra["attr"])
+                if srcattr is not None:
+                    an = "%s;format=%s" % (srcattr, fm)
+                else:
+                    srcattr = an = get_src_attrname(ra["raw_attr"])
                 if srcattr is None:
                     continue
-                an = "%s;format=%s" % (srcattr, fm)
                 if an in generated_formats:
                     continue
                 generated_formats[an] = fm
