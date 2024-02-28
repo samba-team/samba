@@ -71,7 +71,7 @@ class GMSAPasswordTest(BlackboxTestCase):
 
         connecting_user_sid = cls.samdb.connecting_user_sid
 
-        domain_sid = security.dom_sid(cls.samdb.get_domain_sid())
+        domain_sid = security.dom_sid(cls.samdb.domain_sid)
         allow_sddl = f"O:SYD:(A;;RP;;;{connecting_user_sid})"
         allow_sd = ndr_pack(security.descriptor.from_sddl(allow_sddl, domain_sid))
 
