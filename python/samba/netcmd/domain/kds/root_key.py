@@ -280,10 +280,69 @@ class cmd_domain_kds_root_key_list(RootKeyCommand):
             self.message('')
 
 
+class cmd_domain_kds_root_key_view(RootKeyCommand):
+    """View a root key object."""
+
+    synopsis = "%prog [-H <URL>] [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "hostopts": options.HostOptions,
+    }
+
+    takes_options = [
+        Option("--name", help="Choose thhe key to view (by GUID)"),
+        Option("--latest", help="View the latest key", action="store_true"),
+        Option("-v", "--verbose", help="Be verbose", action="store_true"),
+        Option("--show-secrets", help="Show root key hash", action="store_true"),
+        Option("--json", help="Output results in JSON format.",
+               dest="output_format", action="store_const", const="json"),
+    ]
+
+    def run(self, hostopts=None, sambaopts=None, credopts=None,
+            name=None, output_format=None, show_secrets=None, verbose=None,
+            latest=None):
+        ldb = self.ldb_connect(hostopts, sambaopts, credopts)
+
+        # The default behaviour is to show quite a lot of information,
+        # equal to that seen with `list --verbose`, but leaving out
+        # uninteresting attributes like "showInAdvancedViewOnly" and
+        # tautological ones like "objectClass".
+        #
+        #  <no extra flags>          -> selected attributes
+        #  --show-secrets            -> selected attributes and secrets
+        #  --verbose                 -> all attributes EXCEPT secrets
+        #  --verbose --show-secrets  -> all attributes
+        attrs = BASE_ATTRS + VERBOSE_ATTRS
+        if show_secrets:
+            attrs += SECRET_ATTRS
+        if verbose:
+            attrs += ["*"]
+
+        if latest:
+            if name is not None:
+                raise CommandError("It makes no sense to combine --name and --latest")
+            res = get_sorted_root_keys(ldb, attrs)
+            if len(res) == 0:
+                raise CommandError("no root keys found")
+            msg = res[0]
+
+        elif name is not None:
+            msg = get_root_key_by_name_or_dn(ldb, name, attrs)
+        else:
+            raise CommandError("PLease use '--name <GUID>' or '--latest' "
+                               " (try the 'list' command to find names)")
+
+        self.show_root_key_message(msg,
+                                   output_format,
+                                   show_secrets=show_secrets)
+
 
 class cmd_domain_kds_root_key(SuperCommand):
     """Manage key distribution service root keys."""
 
     subcommands = {
         "list": cmd_domain_kds_root_key_list(),
+        "view": cmd_domain_kds_root_key_view(),
     }
