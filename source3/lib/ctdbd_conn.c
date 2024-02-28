@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba internal messaging functions
    Copyright (C) 2007 by Volker Lendecke
