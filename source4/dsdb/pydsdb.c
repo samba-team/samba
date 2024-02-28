@@ -1358,6 +1358,85 @@ static PyObject *py_dsdb_not_implemented(PyObject *self, PyObject *args)
 #endif /* AD_DC_BUILD_IS_ENABLED */
 
 
+static PyObject *py_dsdb_create_gkdi_root_key(PyObject *self, PyObject *args, PyObject *kwargs)
+{
+	int ret;
+	PyObject *py_ldb = NULL;
+	PyObject *py_dn = NULL;
+	struct ldb_context *samdb;
+	/* long long time for Python conversions, NTTIME for Samba libs */
+	unsigned long long ll_current_time = 0;
+	unsigned long long ll_use_start_time = 0;
+	NTTIME current_time, use_start_time;
+	struct GUID root_key_id = {0};
+	const struct ldb_message * root_key_msg = NULL;
+
+	TALLOC_CTX *tmp_ctx = NULL;
+	const char * const kwnames[] = {
+		"ldb",
+		"current_time",
+		"use_start_time",
+		NULL
+	};
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|KK",
+					 discard_const_p(char *, kwnames),
+					 &py_ldb,
+					 &ll_current_time,
+					 &ll_use_start_time)) {
+		return NULL;
+	}
+
+	PyErr_LDB_OR_RAISE(py_ldb, samdb);
+
+	current_time = ll_current_time;
+	use_start_time = ll_use_start_time;
+	/*
+	 * If current_time or use_start_time are not provided, we use
+	 * now. FIXME? should use_start_time be +10 hours or something?
+	 */
+	if (current_time == 0 || use_start_time == 0) {
+		struct timeval now = timeval_current();
+		NTTIME nt_now = timeval_to_nttime(&now);
+		if (current_time == 0) {
+			current_time = nt_now;
+		}
+		if (use_start_time == 0) {
+			use_start_time = nt_now;
+		}
+	}
+
+	tmp_ctx = talloc_new(samdb);
+	if (tmp_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
+	ret = gkdi_new_root_key(tmp_ctx,
+				samdb,
+				current_time,
+				use_start_time,
+				&root_key_id,
+				&root_key_msg);
+
+	PyErr_LDB_ERROR_IS_ERR_RAISE_FREE(py_ldb_get_exception(), ret,
+					  samdb, tmp_ctx);
+
+
+	py_dn = pyldb_Dn_FromDn(root_key_msg->dn);
+	if (py_dn == NULL) {
+		PyErr_LDB_ERROR_IS_ERR_RAISE_FREE(py_ldb_get_exception(),
+						  LDB_ERR_OPERATIONS_ERROR,
+						  samdb, tmp_ctx);
+	}
+
+	/*
+	 * py_dn keeps a talloc_reference to it's own dn, and the
+	 * root_key is in the database.
+	 */
+	TALLOC_FREE(tmp_ctx);
+	return py_dn;
+}
+
+
 static PyObject *py_dsdb_load_udv_v2(PyObject *self, PyObject *args)
 {
 	uint32_t count;
@@ -1581,6 +1660,11 @@ static PyMethodDef py_dsdb_methods[] = {
 	{ "_dns_delete_tombstones", (PyCFunction)py_dsdb_not_implemented,
 		METH_VARARGS, NULL},
 #endif
+	{ "_dsdb_create_gkdi_root_key",
+	  (PyCFunction)py_dsdb_create_gkdi_root_key,
+	  METH_VARARGS | METH_KEYWORDS,
+	  PyDoc_STR("_dsdb_create_gkdi_root_key(samdb)"
+		    " -> Dn of the new root key") },
 	{ "_dsdb_create_own_rid_set", (PyCFunction)py_dsdb_create_own_rid_set, METH_VARARGS,
 		"_dsdb_create_own_rid_set(samdb)"
 		" -> None" },
