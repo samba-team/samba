@@ -1536,6 +1536,12 @@ schemaUpdateNow: 1
             full_dn.add_base(domain_dn)
         return full_dn
 
+    def new_gkdi_root_key(self, *args, **kwargs):
+        """ """
+        dn = dsdb._dsdb_create_gkdi_root_key(self, *args, **kwargs)
+        return dn
+
+
 class dsdb_Dn(object):
     """a class for binary DN"""
 
