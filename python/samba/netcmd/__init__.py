@@ -109,6 +109,19 @@ class Command(object):
         parser.print_usage()
 
     def _print_error(self, msg, evalue=None, klass=None):
+        if self.preferred_output_format == 'json':
+            if evalue is None:
+                evalue = 1
+            else:
+                msg = f"{msg} - {evalue}"
+            if klass is not None:
+                kwargs = {'error class': klass}
+            else:
+                kwargs = {}
+
+            self.print_json_status(evalue, msg, **kwargs)
+            return
+
         err = colour.c_DARK_RED("ERROR")
         klass = '' if klass is None else f'({klass})'
 
