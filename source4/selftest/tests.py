@@ -566,6 +566,10 @@ plantestsuite_loadlist("samba.tests.sddl_conditional_ace",
 for t in smbtorture4_testsuites("dns_internal."):
     plansmbtorture4testsuite(t, "ad_dc_default:local", '//$SERVER/whavever')
 
+# These tests want to run on a barely changed fresh provision, before
+# too much happens to this environment.
+planpythontestsuite("chgdcpass:local", "samba.tests.dsdb_quiet_provision_tests")
+
 # Local tests
 for t in smbtorture4_testsuites("dlz_bind9."):
     # The dlz_bind9 tests needs to look at the DNS database
