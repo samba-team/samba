@@ -3164,6 +3164,10 @@ static PyObject *py_ldb_module_add(PyLdbModuleObject *self, PyObject *args)
 		return NULL;
 
 	req = talloc_zero(NULL, struct ldb_request);
+	if (req == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 	req->operation = LDB_ADD;
 	req->op.add.message = pyldb_Message_AsMessage(py_message);
 
@@ -3187,6 +3191,11 @@ static PyObject *py_ldb_module_modify(PyLdbModuleObject *self, PyObject *args)
 		return NULL;
 
 	req = talloc_zero(NULL, struct ldb_request);
+	if (req == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
 	req->operation = LDB_MODIFY;
 	req->op.mod.message = pyldb_Message_AsMessage(py_message);
 
@@ -3209,6 +3218,10 @@ static PyObject *py_ldb_module_delete(PyLdbModuleObject *self, PyObject *args)
 		return NULL;
 
 	req = talloc_zero(NULL, struct ldb_request);
+	if (req == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 	req->operation = LDB_DELETE;
 	req->op.del.dn = pyldb_Dn_AS_DN(py_dn);
 
@@ -3231,6 +3244,10 @@ static PyObject *py_ldb_module_rename(PyLdbModuleObject *self, PyObject *args)
 		return NULL;
 
 	req = talloc_zero(NULL, struct ldb_request);
+	if (req == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 
 	req->operation = LDB_RENAME;
 	req->op.rename.olddn = pyldb_Dn_AS_DN(py_dn1);
