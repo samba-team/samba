@@ -861,9 +861,12 @@ static bool pw2kt_default_keytab_name(char *name_str, size_t name_size)
 NTSTATUS sync_pw2keytabs(void)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct pw2kt_state *state = NULL;
 	const char **line = NULL;
 	const char **lp_ptr = NULL;
+	const char *pwsync_script = NULL;
 	NTSTATUS status_nt;
 	ADS_STATUS status_ads;
 	int i;
@@ -945,6 +948,21 @@ params_ready:
 	for (i = 0; i < state->num_keytabs; i++) {
 		status_ads = pw2kt_process_keytab(state, &state->keytabs[i]);
 		if (!ADS_ERR_OK(status_ads)) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+	}
+
+	pwsync_script = lp_sync_machine_password_script(frame, lp_sub);
+	if (pwsync_script != NULL && pwsync_script[0] != '\0') {
+		int ret;
+
+		DBG_DEBUG("Running script: '%s'\n.", pwsync_script);
+		ret = smbrun(pwsync_script, NULL, NULL);
+		if (ret != 0) {
+			DBG_ERR("Script '%s' failed with: %d.\n",
+				pwsync_script,
+				ret);
 			TALLOC_FREE(frame);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
