@@ -34,8 +34,6 @@
 
 #ifdef HAVE_KRB5
 
-#define LIBADS_CCACHE_NAME "MEMORY:libads"
-
 /*
   we use a prompter to avoid a crash bug in the kerberos libs when
   dealing with empty passwords
