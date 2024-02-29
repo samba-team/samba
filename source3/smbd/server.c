@@ -1284,6 +1284,13 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	messaging_register(msg_ctx, NULL, MSG_SMB_NOTIFY_STARTED,
 			   smb_parent_send_to_children);
 
+	if (lp_interfaces() && lp_bind_interfaces_only()) {
+		messaging_register(msg_ctx,
+				   NULL,
+				   MSG_SMB_IP_DROPPED,
+				   smb_parent_send_to_children);
+	}
+
 #ifdef DEVELOPER
 	messaging_register(msg_ctx, NULL, MSG_SMB_INJECT_FAULT,
 			   msg_inject_fault);
@@ -1640,6 +1647,7 @@ static void smbd_init_addrchange(TALLOC_CTX *mem_ctx,
 }
 
 static void smbd_close_socket_for_ip(struct smbd_parent_context *parent,
+				     struct messaging_context *msg_ctx,
 				     struct sockaddr_storage *addr)
 {
 	struct smbd_open_socket *s = NULL;
@@ -1655,12 +1663,25 @@ static void smbd_close_socket_for_ip(struct smbd_parent_context *parent,
 		if (sockaddr_equal((struct sockaddr *)&a,
 				   (struct sockaddr *)addr)) {
 			char addrstr[INET6_ADDRSTRLEN];
+			DATA_BLOB blob;
+			NTSTATUS status;
 
 			DLIST_REMOVE(parent->sockets, s);
 			TALLOC_FREE(s);
 			print_sockaddr(addrstr, sizeof(addrstr), addr);
 			DBG_NOTICE("smbd: Closed listening socket for %s\n",
 				   addrstr);
+
+			blob = data_blob_const(addrstr, strlen(addrstr)+1);
+			status = messaging_send(msg_ctx,
+						messaging_server_id(msg_ctx),
+						MSG_SMB_IP_DROPPED,
+						&blob);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_NOTICE(
+					"messaging_send failed: %s - ignoring\n",
+					nt_errstr(status));
+			}
 			return;
 		}
 	}
@@ -1693,7 +1714,7 @@ static void smbd_addr_changed(struct tevent_req *req)
 			   "on if_index %u\n",
 			   addrstr, if_index);
 
-		smbd_close_socket_for_ip(state->parent, &addr);
+		smbd_close_socket_for_ip(state->parent, state->msg_ctx, &addr);
 
 		goto rearm;
 	}

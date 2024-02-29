@@ -1565,6 +1565,38 @@ static void msg_kill_client_ip(struct messaging_context *msg_ctx,
 	TALLOC_FREE(client_ip);
 }
 
+static void msg_kill_client_with_server_ip(struct messaging_context *msg_ctx,
+				      void *private_data,
+				      uint32_t msg_type,
+				      struct server_id server_id,
+				      DATA_BLOB *data)
+{
+	struct smbd_server_connection *sconn = talloc_get_type_abort(
+		private_data, struct smbd_server_connection);
+	const char *ip = (char *) data->data;
+	char *server_ip = NULL;
+	TALLOC_CTX *ctx = NULL;
+
+	DBG_NOTICE("Got kill request for source IP %s\n", ip);
+	ctx = talloc_stackframe();
+
+	server_ip = tsocket_address_inet_addr_string(sconn->local_address, ctx);
+	if (server_ip == NULL) {
+		goto out_free;
+	}
+
+	if (strequal(ip, server_ip)) {
+		DBG_NOTICE(
+			"Got ip dropped message for %s - exiting immediately\n",
+			ip);
+		TALLOC_FREE(ctx);
+		exit_server_cleanly("Forced disconnect for client");
+	}
+
+out_free:
+	TALLOC_FREE(ctx);
+}
+
 /*
  * Do the recurring check if we're idle
  */
@@ -2018,6 +2050,12 @@ void smbd_process(struct tevent_context *ev_ctx,
 			     MSG_DEBUG, NULL);
 	messaging_register(sconn->msg_ctx, NULL,
 			   MSG_DEBUG, debug_message);
+
+	messaging_deregister(sconn->msg_ctx, MSG_SMB_IP_DROPPED, NULL);
+	messaging_register(sconn->msg_ctx,
+			   sconn,
+			   MSG_SMB_IP_DROPPED,
+			   msg_kill_client_with_server_ip);
 
 #if defined(WITH_SMB1SERVER)
 	if ((lp_keepalive() != 0) &&
