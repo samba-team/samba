@@ -24,13 +24,10 @@
 #include "libsmb/libsmb.h"
 #include "libsmb/namequery.h"
 #include "../libcli/auth/libcli_auth.h"
-#include "smb_krb5.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "auth_generic.h"
-#include "libads/kerberos_proto.h"
-#include "krb5_env.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
 #include "libsmb/nmblib.h"
@@ -39,8 +36,6 @@
 #include "../libcli/smb/smb_seal.h"
 #include "lib/param/param.h"
 #include "../libcli/smb/smb2_negotiate_context.h"
-
-#define STAR_SMBSERVER "*SMBSERVER"
 
 static char *cli_session_setup_get_account(TALLOC_CTX *mem_ctx,
 					   const char *principal);
@@ -245,152 +240,6 @@ struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
 fail:
 	TALLOC_FREE(creds);
 	return NULL;
-}
-
-NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
-					struct cli_credentials *creds)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	const char *user_principal = NULL;
-	const char *user_account = NULL;
-	const char *user_domain = NULL;
-	const char *pass = NULL;
-	char *canon_principal = NULL;
-	char *canon_realm = NULL;
-	const char *target_hostname = NULL;
-	enum credentials_use_kerberos krb5_state;
-	bool try_kerberos = false;
-	bool need_kinit = false;
-	bool auth_requested = true;
-	int ret;
-	bool ok;
-
-	target_hostname = smbXcli_conn_remote_name(cli->conn);
-
-	auth_requested = cli_credentials_authentication_requested(creds);
-	if (auth_requested) {
-		errno = 0;
-		user_principal = cli_credentials_get_principal(creds, frame);
-		if (errno != 0) {
-			TALLOC_FREE(frame);
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-	user_account = cli_credentials_get_username(creds);
-	user_domain = cli_credentials_get_domain(creds);
-	pass = cli_credentials_get_password(creds);
-
-	krb5_state = cli_credentials_get_kerberos_state(creds);
-
-	if (krb5_state != CRED_USE_KERBEROS_DISABLED) {
-		try_kerberos = true;
-	}
-
-	if (user_principal == NULL) {
-		try_kerberos = false;
-	}
-
-	if (target_hostname == NULL) {
-		try_kerberos = false;
-	} else if (is_ipaddress(target_hostname)) {
-		try_kerberos = false;
-	} else if (strequal(target_hostname, "localhost")) {
-		try_kerberos = false;
-	} else if (strequal(target_hostname, STAR_SMBSERVER)) {
-		try_kerberos = false;
-	} else if (!auth_requested) {
-		try_kerberos = false;
-	}
-
-	if (krb5_state == CRED_USE_KERBEROS_REQUIRED && !try_kerberos) {
-		DEBUG(0, ("Kerberos auth with '%s' (%s\\%s) to access "
-			  "'%s' not possible\n",
-			  user_principal, user_domain, user_account,
-			  target_hostname));
-		TALLOC_FREE(frame);
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (pass == NULL || strlen(pass) == 0) {
-		need_kinit = false;
-	} else if (krb5_state == CRED_USE_KERBEROS_REQUIRED) {
-		need_kinit = try_kerberos;
-	} else {
-		need_kinit = try_kerberos;
-	}
-
-	if (!need_kinit) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_OK;
-	}
-
-	DBG_INFO("Doing kinit for %s to access %s\n",
-		 user_principal, target_hostname);
-
-	/*
-	 * TODO: This should be done within the gensec layer
-	 * only if required!
-	 */
-	setenv(KRB5_ENV_CCNAME, "MEMORY:cliconnect", 1);
-	ret = kerberos_kinit_password_ext(user_principal,
-					  pass,
-					  0,
-					  0,
-					  0,
-					  NULL,
-					  false,
-					  false,
-					  0,
-					  frame,
-					  &canon_principal,
-					  &canon_realm,
-					  NULL);
-	if (ret != 0) {
-		int dbglvl = DBGLVL_NOTICE;
-
-		if (krb5_state == CRED_USE_KERBEROS_REQUIRED) {
-			dbglvl = DBGLVL_ERR;
-		}
-
-		DEBUG(dbglvl, ("Kinit for %s to access %s failed: %s\n",
-			       user_principal, target_hostname,
-			       error_message(ret)));
-		if (krb5_state == CRED_USE_KERBEROS_REQUIRED) {
-			TALLOC_FREE(frame);
-			return krb5_to_nt_status(ret);
-		}
-
-		/*
-		 * Ignore the error and hope that NTLM will work
-		 */
-		TALLOC_FREE(frame);
-		return NT_STATUS_OK;
-	}
-
-	ok = cli_credentials_set_principal(creds,
-					   canon_principal,
-					   CRED_SPECIFIED);
-	if (!ok) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ok = cli_credentials_set_realm(creds,
-				       canon_realm,
-				       CRED_SPECIFIED);
-	if (!ok) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	DBG_DEBUG("Successfully authenticated as %s (%s) to access %s using "
-		  "Kerberos\n",
-		  user_principal,
-		  canon_principal,
-		  target_hostname);
-
-	TALLOC_FREE(frame);
-	return NT_STATUS_OK;
 }
 
 static NTSTATUS cli_state_update_after_sesssetup(struct cli_state *cli,
@@ -1348,7 +1197,6 @@ static struct tevent_req *cli_session_setup_spnego_send(
 	struct cli_session_setup_spnego_state *state;
 	const char *target_service = NULL;
 	const char *target_hostname = NULL;
-	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_session_setup_spnego_state);
@@ -1358,11 +1206,6 @@ static struct tevent_req *cli_session_setup_spnego_send(
 
 	target_service = "cifs";
 	target_hostname = smbXcli_conn_remote_name(cli->conn);
-
-	status = cli_session_creds_prepare_krb5(cli, creds);
-	if (tevent_req_nterror(req, status)) {
-		return tevent_req_post(req, ev);
-	}
 
 	DBG_INFO("Connect to %s as %s using SPNEGO\n",
 		 target_hostname,
@@ -3178,11 +3021,6 @@ static struct tevent_req *cli_smb1_setup_encryption_send(TALLOC_CTX *mem_ctx,
 
 	target_service = "cifs";
 	target_hostname = smbXcli_conn_remote_name(cli->conn);
-
-	status = cli_session_creds_prepare_krb5(cli, creds);
-	if (tevent_req_nterror(req, status)) {
-		return tevent_req_post(req, ev);
-	}
 
 	state->es = talloc_zero(state, struct smb_trans_enc_state);
 	if (tevent_req_nomem(state->es, req)) {
