@@ -428,7 +428,7 @@ class SuperCommand(Command):
         epilog = "\nAvailable subcommands:\n"
 
         subcmds = sorted(self.subcommands.keys())
-        max_length = max([len(c) for c in subcmds])
+        max_length = max([len(c) for c in subcmds], default=0)
         for cmd_name in subcmds:
             cmd = self.subcommands[cmd_name]
             if cmd.hidden:
