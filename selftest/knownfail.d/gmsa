@@ -1,1 +1,2 @@
 ^samba.tests.dckeytab.samba.tests.dckeytab.DCKeytabTests.test_export_keytab_gmsa
+^samba.tests.blackbox.gmsa.samba.tests.blackbox.gmsa.GMSABlackboxTest.test_gmsa_password_access
