@@ -660,13 +660,9 @@ static ADS_STATUS ads_startup_int(struct net_context *c,
 {
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
-	bool need_password = false;
-	bool second_time = false;
-	char *cp;
 	const char *realm = NULL;
+	const char *workgroup = NULL;
 	bool tried_closest_dc = false;
-	enum credentials_use_kerberos krb5_state =
-		CRED_USE_KERBEROS_DISABLED;
 
 	/* lp_realm() should be handled by a command line param,
 	   However, the join requires that realm be set in smb.conf
@@ -678,113 +674,36 @@ static ADS_STATUS ads_startup_int(struct net_context *c,
 retry_connect:
  	if (only_own_domain) {
 		realm = lp_realm();
+		workgroup = lp_workgroup();
 	} else {
 		realm = assume_own_realm(c);
+		workgroup = c->opt_target_workgroup;
 	}
 
 	ads = ads_init(mem_ctx,
 		       realm,
-		       c->opt_target_workgroup,
+		       workgroup,
 		       c->opt_host,
 		       ADS_SASL_SEAL);
 	if (ads == NULL) {
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
-	if (!c->opt_user_name) {
-		c->opt_user_name = "administrator";
-	}
-
-	if (c->opt_user_specified) {
-		need_password = true;
-	}
-
-retry:
-	if (!c->opt_password && need_password && !c->opt_machine_pass) {
-		c->opt_password = cli_credentials_get_password(c->creds);
-		if (!c->opt_password) {
-			TALLOC_FREE(ads);
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		}
-	}
-
-	if (c->opt_password) {
-		use_in_memory_ccache();
-		ADS_TALLOC_CONST_FREE(ads->auth.password);
-		ads->auth.password = talloc_strdup(ads, c->opt_password);
-		if (ads->auth.password == NULL) {
-			TALLOC_FREE(ads);
-			return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-		}
-	}
-
-	ADS_TALLOC_CONST_FREE(ads->auth.user_name);
-	ads->auth.user_name = talloc_strdup(ads, c->opt_user_name);
-	if (ads->auth.user_name == NULL) {
-		TALLOC_FREE(ads);
-		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-	}
-
 	ads->auth.flags |= auth_flags;
 
-	/* The ADS code will handle FIPS mode */
-	krb5_state = cli_credentials_get_kerberos_state(c->creds);
-	switch (krb5_state) {
-	case CRED_USE_KERBEROS_REQUIRED:
-		ads->auth.flags &= ~ADS_AUTH_DISABLE_KERBEROS;
-		ads->auth.flags &= ~ADS_AUTH_ALLOW_NTLMSSP;
-		break;
-	case CRED_USE_KERBEROS_DESIRED:
-		ads->auth.flags &= ~ADS_AUTH_DISABLE_KERBEROS;
-		ads->auth.flags |= ADS_AUTH_ALLOW_NTLMSSP;
-		break;
-	case CRED_USE_KERBEROS_DISABLED:
-		ads->auth.flags |= ADS_AUTH_DISABLE_KERBEROS;
-		ads->auth.flags |= ADS_AUTH_ALLOW_NTLMSSP;
-		break;
-	}
-
-       /*
-        * If the username is of the form "name@realm",
-        * extract the realm and convert to upper case.
-        * This is only used to establish the connection.
-        */
-       if ((cp = strchr_m(ads->auth.user_name, '@'))!=0) {
-		*cp++ = '\0';
-		ADS_TALLOC_CONST_FREE(ads->auth.realm);
-		ads->auth.realm = talloc_asprintf_strupper_m(ads, "%s", cp);
-		if (ads->auth.realm == NULL) {
-			TALLOC_FREE(ads);
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		}
-	} else if (ads->auth.realm == NULL) {
-		const char *c_realm = cli_credentials_get_realm(c->creds);
-
-		if (c_realm != NULL) {
-			ads->auth.realm = talloc_strdup(ads, c_realm);
-			if (ads->auth.realm == NULL) {
-				TALLOC_FREE(ads);
-				return ADS_ERROR(LDAP_NO_MEMORY);
-			}
-		}
-	}
-
-	status = ads_connect(ads);
-
-	if (!ADS_ERR_OK(status)) {
-
-		if (NT_STATUS_EQUAL(ads_ntstatus(status),
-				    NT_STATUS_NO_LOGON_SERVERS)) {
-			DEBUG(0,("ads_connect: %s\n", ads_errstr(status)));
+	if (auth_flags & ADS_AUTH_NO_BIND) {
+		status = ads_connect_cldap_only(ads);
+		if (!ADS_ERR_OK(status)) {
+			DBG_ERR("ads_connect_cldap_only: %s\n",
+				ads_errstr(status));
 			TALLOC_FREE(ads);
 			return status;
 		}
-
-		if (!need_password && !second_time && !(auth_flags & ADS_AUTH_NO_BIND)) {
-			need_password = true;
-			second_time = true;
-			goto retry;
-		} else {
+	} else {
+		status = ads_connect_creds(ads, c->creds);
+		if (!ADS_ERR_OK(status)) {
+			DBG_ERR("ads_connect_creds: %s\n",
+				ads_errstr(status));
 			TALLOC_FREE(ads);
 			return status;
 		}
@@ -969,9 +888,10 @@ static int ads_user_add(struct net_context *c, int argc, const char **argv)
 	ADS_STATUS status;
 	char *upn, *userdn;
 	LDAPMessage *res=NULL;
-	const char *creds_ccname = NULL;
+	char *creds_ccname = NULL;
 	int rc = -1;
 	char *ou_str = NULL;
+	bool ok;
 
 	if (argc < 1 || c->display_usage) {
 		TALLOC_FREE(tmp_ctx);
@@ -1038,11 +958,15 @@ static int ads_user_add(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
-	/*
-	 * For this commit we still rely on use_in_memory_ccache()
-	 * being used, but that will change in the next one...
-	 */
-	creds_ccname = "MEMORY:net_ads";
+	ok = cli_credentials_get_ccache_name_obtained(c->creds,
+						      tmp_ctx,
+						      &creds_ccname,
+						      NULL);
+	if (!ok) {
+		d_printf(_("No valid krb5 ccache for: %s\n"),
+			 cli_credentials_get_unparsed_name(c->creds, tmp_ctx));
+		goto done;
+	}
 
 	status = ads_krb5_set_password(upn, argv[1], creds_ccname);
 	if (ADS_ERR_OK(status)) {
