@@ -478,7 +478,7 @@ static PyObject *py_ldb_dn_is_null(PyLdbDnObject *self,
 {
 	return PyBool_FromLong(ldb_dn_is_null(self->dn));
 }
- 
+
 static PyObject *py_ldb_dn_get_casefold(PyLdbDnObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
@@ -802,7 +802,7 @@ static PyObject *py_ldb_dn_get_rdn_value(PyLdbDnObject *self,
 }
 
 static PyMethodDef py_ldb_dn_methods[] = {
-	{ "validate", (PyCFunction)py_ldb_dn_validate, METH_NOARGS, 
+	{ "validate", (PyCFunction)py_ldb_dn_validate, METH_NOARGS,
 		"S.validate() -> bool\n"
 		"Validate DN is correct." },
 	{ "is_valid", (PyCFunction)py_ldb_dn_is_valid, METH_NOARGS,
@@ -834,7 +834,7 @@ static PyMethodDef py_ldb_dn_methods[] = {
 	{ "parent", (PyCFunction)py_ldb_dn_get_parent, METH_NOARGS,
    		"S.parent() -> dn\n"
 		"Get the parent for this DN." },
-	{ "add_child", (PyCFunction)py_ldb_dn_add_child, METH_VARARGS, 
+	{ "add_child", (PyCFunction)py_ldb_dn_add_child, METH_VARARGS,
 		"S.add_child(dn) -> bool\n"
 		"Add a child DN to this DN." },
 	{ "add_base", (PyCFunction)py_ldb_dn_add_base, METH_VARARGS,
@@ -2505,29 +2505,29 @@ static PyObject *py_ldb_register_test_extensions(PyLdbObject *self,
 
 
 static PyMethodDef py_ldb_methods[] = {
-	{ "set_debug", (PyCFunction)py_ldb_set_debug, METH_VARARGS, 
+	{ "set_debug", (PyCFunction)py_ldb_set_debug, METH_VARARGS,
 		"S.set_debug(callback) -> None\n"
 		"Set callback for LDB debug messages.\n"
 		"The callback should accept a debug level and debug text." },
-	{ "set_create_perms", (PyCFunction)py_ldb_set_create_perms, METH_VARARGS, 
+	{ "set_create_perms", (PyCFunction)py_ldb_set_create_perms, METH_VARARGS,
 		"S.set_create_perms(mode) -> None\n"
 		"Set mode to use when creating new LDB files." },
 	{ "set_modules_dir", (PyCFunction)py_ldb_set_modules_dir, METH_VARARGS,
 		"S.set_modules_dir(path) -> None\n"
 		"Set path LDB should search for modules" },
-	{ "transaction_start", (PyCFunction)py_ldb_transaction_start, METH_NOARGS, 
+	{ "transaction_start", (PyCFunction)py_ldb_transaction_start, METH_NOARGS,
 		"S.transaction_start() -> None\n"
 		"Start a new transaction." },
 	{ "transaction_prepare_commit", (PyCFunction)py_ldb_transaction_prepare_commit, METH_NOARGS,
 		"S.transaction_prepare_commit() -> None\n"
 		"prepare to commit a new transaction (2-stage commit)." },
-	{ "transaction_commit", (PyCFunction)py_ldb_transaction_commit, METH_NOARGS, 
+	{ "transaction_commit", (PyCFunction)py_ldb_transaction_commit, METH_NOARGS,
 		"S.transaction_commit() -> None\n"
 		"commit a new transaction." },
-	{ "transaction_cancel", (PyCFunction)py_ldb_transaction_cancel, METH_NOARGS, 
+	{ "transaction_cancel", (PyCFunction)py_ldb_transaction_cancel, METH_NOARGS,
 		"S.transaction_cancel() -> None\n"
 		"cancel a new transaction." },
-	{ "setup_wellknown_attributes", (PyCFunction)py_ldb_setup_wellknown_attributes, METH_NOARGS, 
+	{ "setup_wellknown_attributes", (PyCFunction)py_ldb_setup_wellknown_attributes, METH_NOARGS,
 		NULL },
 	{ "get_root_basedn", (PyCFunction)py_ldb_get_root_basedn, METH_NOARGS,
 		NULL },
@@ -2924,7 +2924,7 @@ static PyTypeObject PyLdbSearchIterator = {
 /**
  * Create a ldb_message_element from a Python object.
  *
- * This will accept any sequence objects that contains strings, or 
+ * This will accept any sequence objects that contains strings, or
  * a string object.
  *
  * A reference to set_obj might be borrowed.
@@ -3223,7 +3223,7 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 				talloc_free(mem_ctx);
 				return NULL;
 			}
-			el->values[0].data = talloc_memdup(el->values, 
+			el->values[0].data = talloc_memdup(el->values,
 				(const uint8_t *)msg, size + 1);
 			el->values[0].length = size;
 		} else if (PySequence_Check(py_elements)) {
@@ -3248,7 +3248,7 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 					msg = PyUnicode_AsUTF8AndSize(item, &size);
 					result = (msg == NULL) ? -1 : 0;
 				} else {
-					PyErr_Format(PyExc_TypeError, 
+					PyErr_Format(PyExc_TypeError,
 						     "Expected string as element %zd in list", i);
 					result = -1;
 				}
@@ -3261,7 +3261,7 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 				el->values[i].length = size;
 			}
 		} else {
-			PyErr_SetString(PyExc_TypeError, 
+			PyErr_SetString(PyExc_TypeError,
 					"Expected string or list");
 			talloc_free(mem_ctx);
 			return NULL;
@@ -3663,7 +3663,7 @@ static PyMethodDef py_ldb_msg_methods[] = {
 	{ "keys", (PyCFunction)py_ldb_msg_keys, METH_NOARGS,
 		"S.keys() -> list\n\n"
 		"Return sequence of all attribute names." },
-	{ "remove", (PyCFunction)py_ldb_msg_remove_attr, METH_VARARGS, 
+	{ "remove", (PyCFunction)py_ldb_msg_remove_attr, METH_VARARGS,
 		"S.remove(name)\n\n"
 		"Remove all entries for attributes with the specified name."},
 	{ "get", PY_DISCARD_FUNC_SIG(PyCFunction, py_ldb_msg_get),
@@ -4081,7 +4081,7 @@ static PyObject *py_binary_decode(PyObject *self, PyObject *args)
 }
 
 static PyMethodDef py_ldb_global_methods[] = {
-	{ "timestring", py_timestring, METH_VARARGS, 
+	{ "timestring", py_timestring, METH_VARARGS,
 		"S.timestring(int) -> string\n\n"
 		"Generate a LDAP time string from a UNIX timestamp" },
 	{ "string_to_time", py_string_to_time, METH_VARARGS,
