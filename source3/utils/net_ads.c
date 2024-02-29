@@ -2654,7 +2654,8 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 
 	/* we don't actually need a full connect, but it's the easy way to
 		fill in the KDC's address */
-	ads_connect(ads);
+	ads->auth.flags |= ADS_AUTH_GENERATE_KRB5_CONFIG;
+	ads_connect_cldap_only(ads);
 
 	if (!ads->config.realm) {
 		d_fprintf(stderr, _("Didn't find the kerberos server!\n"));
