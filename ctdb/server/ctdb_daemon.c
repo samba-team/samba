@@ -2016,7 +2016,10 @@ static int ctdb_client_notify_destructor(struct ctdb_client_notify_list *nl)
 
 	DEBUG(DEBUG_ERR,("Sending client notify message for srvid:%llu\n", (unsigned long long)nl->srvid));
 
-	ret = ctdb_daemon_send_message(nl->ctdb, CTDB_BROADCAST_CONNECTED, (unsigned long long)nl->srvid, nl->data);
+	ret = ctdb_daemon_send_message(nl->ctdb,
+				       CTDB_BROADCAST_CONNECTED,
+				       nl->srvid,
+				       nl->data);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to send client notify message\n"));
 	}
