@@ -73,7 +73,7 @@ class UserCmdCryptShaTestCase(SambaToolCmdTest):
                               out,
                               err,
                               "Ensure getpassword runs")
-        self.assertEqual(err, "Got password OK\n", "getpassword")
+        self.assertEqual(err, "Any available password returned OK\n", "getpassword")
         return out
 
     # Change the just the NT password hash, as would happen if the password

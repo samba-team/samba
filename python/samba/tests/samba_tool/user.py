@@ -346,7 +346,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 "--attributes=%s" % attributes,
                                                 "--decrypt-samba-gpg")
             self.assertCmdSuccess(result, out, err, "Ensure getpassword runs")
-            self.assertEqual(err, "Got password OK\n", "getpassword without url")
+            self.assertEqual(err, "Any available password returned OK\n", "getpassword without url")
             self.assertMatch(out, "sAMAccountName: %s" % (user["name"]),
                              "getpassword: 'sAMAccountName': %s out[%s]" % (user["name"], out))
             if expect_nt_hash or "virtualSambaGPG:: " in out:
