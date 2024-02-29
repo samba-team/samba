@@ -117,6 +117,9 @@ interface messaging
 		/* smbd message */
 		MSG_SMB_FORCE_TDIS_DENIED	= 0x0321,
 
+		/* smbd ip dropped message */
+		MSG_SMB_IP_DROPPED		= 0x0322,
+
 		/* winbind messages */
 		MSG_WINBIND_FINISHED		= 0x0401,
 		MSG_WINBIND_FORGET_STATE	= 0x0402,
