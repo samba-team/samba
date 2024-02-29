@@ -256,6 +256,48 @@ NTSTATUS ads_legacy_creds(ADS_STRUCT *ads,
 	}
 	cli_credentials_set_gensec_features(creds, gensec_features, CRED_SPECIFIED);
 
+#ifdef HAVE_KRB5
+	if (krb5_state != CRED_USE_KERBEROS_DISABLED &&
+	    ads->auth.password != NULL &&
+	    ads->auth.password[0] != '\0')
+	{
+		ADS_STATUS ads_status;
+		const char *error_string = NULL;
+		int rc;
+
+		ads->auth.flags |= ADS_AUTH_GENERATE_KRB5_CONFIG;
+		ads_status = ads_connect_cldap_only(ads);
+		ads->auth.flags &= ~ADS_AUTH_NO_BIND;
+		if (!ADS_ERR_OK(ads_status)) {
+			TALLOC_FREE(frame);
+			return ads_ntstatus(ads_status);
+		}
+
+		rc = ads_kinit_password(ads);
+		if (rc == 0) {
+			rc = cli_credentials_set_ccache(creds,
+							lp_ctx,
+							ads->auth.ccache_name,
+							CRED_SPECIFIED,
+							&error_string);
+			if (rc != 0) {
+				ads_status = ADS_ERROR_KRB5(rc);
+				TALLOC_FREE(frame);
+				return ads_ntstatus(ads_status);
+			}
+		} else if (krb5_state == CRED_USE_KERBEROS_REQUIRED) {
+			/*
+			 * Only fail if kerberos is required,
+			 * otherwise we ignore the kinit failure
+			 * and assume NTLMSSP will make it
+			 */
+			ads_status = ADS_ERROR_KRB5(rc);
+			TALLOC_FREE(frame);
+			return ads_ntstatus(ads_status);
+		}
+	}
+#endif /* HAVE_KRB5 */
+
 done:
 	*_creds = talloc_move(mem_ctx, &creds);
 	TALLOC_FREE(frame);
@@ -640,11 +682,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct ads_service_principal p = {0};
 	ADS_STATUS status;
-	const char *mech = NULL;
 	const char *debug_username = NULL;
-	enum credentials_use_kerberos krb5_state;
-
-	krb5_state = cli_credentials_get_kerberos_state(creds);
 
 	status = ads_generate_service_principal(ads, &p);
 	if (!ADS_ERR_OK(status)) {
@@ -657,98 +695,21 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads,
 		goto done;
 	}
 
-#ifdef HAVE_KRB5
-	if (krb5_state != CRED_USE_KERBEROS_DISABLED &&
-	    !is_ipaddress(p.hostname))
-	{
-		mech = "KRB5";
-
-		cli_credentials_set_kerberos_state(creds,
-						   CRED_USE_KERBEROS_REQUIRED,
-						   CRED_SPECIFIED);
-
-		if (ads->auth.password == NULL ||
-		    ads->auth.password[0] == '\0')
-		{
-
-			status = ads_sasl_spnego_gensec_bind(ads,
-							     creds,
-							     p.service, p.hostname);
-			if (ADS_ERR_OK(status)) {
-				ads_free_service_principal(&p);
-				goto done;
-			}
-
-			DEBUG(10,("ads_sasl_spnego_gensec_bind(KRB5) failed with: %s, "
-				  "calling kinit\n", ads_errstr(status)));
-		}
-
-		status = ADS_ERROR_KRB5(ads_kinit_password(ads));
-
-		if (ADS_ERR_OK(status)) {
-			status = ads_sasl_spnego_gensec_bind(ads,
-							creds,
-							p.service, p.hostname);
-			if (!ADS_ERR_OK(status)) {
-				DBG_ERR("kinit succeeded but "
-					"SPNEGO bind with Kerberos failed "
-					"for %s/%s - user[%s]: %s\n",
-					p.service, p.hostname,
-					debug_username,
-					ads_errstr(status));
-			}
-		}
-
-		/* only fallback to NTLMSSP if allowed */
-		if (ADS_ERR_OK(status) ||
-		    !(ads->auth.flags & ADS_AUTH_ALLOW_NTLMSSP)) {
-			goto done;
-		}
-
-		DBG_WARNING("SASL bind with Kerberos failed "
-			    "for %s/%s - user[%s]: %s, "
-			    "try to fallback to NTLMSSP\n",
+	status = ads_sasl_spnego_gensec_bind(ads,
+					     creds,
+					     p.service,
+					     p.hostname);
+	if (!ADS_ERR_OK(status)) {
+		DBG_WARNING("ads_sasl_spnego_gensec_bind() failed "
+			    "for %s/%s with user[%s]: %s\n",
 			    p.service, p.hostname,
 			    debug_username,
 			    ads_errstr(status));
-	}
-#endif
-
-	/* lets do NTLMSSP ... this has the big advantage that we don't need
-	   to sync clocks, and we don't rely on special versions of the krb5
-	   library for HMAC_MD4 encryption */
-	mech = "NTLMSSP";
-
-	if (krb5_state == CRED_USE_KERBEROS_REQUIRED) {
-		DBG_WARNING("We can't use NTLMSSP, it is not allowed.\n");
-		status = ADS_ERROR_NT(NT_STATUS_NETWORK_CREDENTIAL_CONFLICT);
 		goto done;
 	}
 
-	if (lp_weak_crypto() == SAMBA_WEAK_CRYPTO_DISALLOWED) {
-		DBG_WARNING("We can't fallback to NTLMSSP, weak crypto is"
-			    " disallowed.\n");
-		status = ADS_ERROR_NT(NT_STATUS_NETWORK_CREDENTIAL_CONFLICT);
-		goto done;
-	}
-
-	cli_credentials_set_kerberos_state(creds,
-					   CRED_USE_KERBEROS_DISABLED,
-					   CRED_SPECIFIED);
-
-	status = ads_sasl_spnego_gensec_bind(ads,
-					     creds,
-					     p.service, p.hostname);
 done:
-	if (!ADS_ERR_OK(status)) {
-		DEBUG(1,("ads_sasl_spnego_gensec_bind(%s) failed "
-			 "for %s/%s with user[%s]: %s\n", mech,
-			  p.service, p.hostname,
-			  debug_username,
-			  ads_errstr(status)));
-	}
 	ads_free_service_principal(&p);
-	cli_credentials_set_kerberos_state(creds, krb5_state, CRED_SPECIFIED);
 	TALLOC_FREE(frame);
 	return status;
 }

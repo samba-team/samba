@@ -36,7 +36,7 @@ testit_grep "testparm.without-weak" "Weak crypto is disallowed" $samba_testparm 
 # We should not be allowed to use NTLM for connecting
 testit_expect_failure_grep \
 	"net_ads_search.ntlm.without-weak" \
-	"We can't fallback to NTLMSSP, weak crypto is disallowed." \
+	"ads_sasl_spnego_gensec_bind.*failed.for.ldap/.*user.*${USERNAME}.:.An.invalid.parameter." \
 	$samba_net ads search -d10 --use-kerberos=off '(objectCategory=group)' sAMAccountName -U${USERNAME}%${PASSWORD} || failed=$(expr $failed + 1)
 
 unset GNUTLS_FORCE_FIPS_MODE
