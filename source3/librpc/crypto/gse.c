@@ -176,7 +176,6 @@ static NTSTATUS gse_setup_server_principal(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS gse_context_init(struct gensec_security *gensec_security,
 				 bool do_sign, bool do_seal,
-				 const char *ccache_name,
 				 uint32_t add_gss_c_flags,
 				 struct gse_context **_gse_ctx)
 {
@@ -254,18 +253,6 @@ static NTSTATUS gse_context_init(struct gensec_security *gensec_security,
 	}
 #endif
 
-	if (!ccache_name) {
-		ccache_name = krb5_cc_default_name(gse_ctx->k5ctx);
-	}
-	k5ret = krb5_cc_resolve(gse_ctx->k5ctx, ccache_name,
-				&gse_ctx->ccache);
-	if (k5ret) {
-		DEBUG(1, ("Failed to resolve credential cache '%s'! (%s)\n",
-			  ccache_name, error_message(k5ret)));
-		status = NT_STATUS_INTERNAL_ERROR;
-		goto err_out;
-	}
-
 	/* TODO: Should we enforce a enc_types list ?
 	ret = krb5_set_default_tgs_ktypes(gse_ctx->k5ctx, enc_types);
 	*/
@@ -290,13 +277,27 @@ static NTSTATUS gse_init_client(struct gensec_security *gensec_security,
 	gss_buffer_desc empty_buffer = GSS_C_EMPTY_BUFFER;
 	gss_OID oid = discard_const(GSS_KRB5_CRED_NO_CI_FLAGS_X);
 #endif
+	krb5_error_code k5ret;
 	NTSTATUS status;
 
 	status = gse_context_init(gensec_security, do_sign, do_seal,
-				  ccache_name, add_gss_c_flags,
+				  add_gss_c_flags,
 				  &gse_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (ccache_name == NULL) {
+		ccache_name = krb5_cc_default_name(gse_ctx->k5ctx);
+	}
+
+	k5ret = krb5_cc_resolve(gse_ctx->k5ctx,
+				ccache_name,
+				&gse_ctx->ccache);
+	if (k5ret) {
+		DBG_WARNING("Failed to resolve credential cache '%s'! (%s)\n",
+			    ccache_name, error_message(k5ret));
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 #ifdef SAMBA4_USES_HEIMDAL
@@ -652,7 +653,7 @@ static NTSTATUS gse_init_server(struct gensec_security *gensec_security,
 	NTSTATUS status;
 
 	status = gse_context_init(gensec_security, do_sign, do_seal,
-				  NULL, add_gss_c_flags, &gse_ctx);
+				  add_gss_c_flags, &gse_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_NO_MEMORY;
 	}
