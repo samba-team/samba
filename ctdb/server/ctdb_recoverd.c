@@ -1311,13 +1311,13 @@ static int do_recovery(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 	int ret;
 	bool self_ban;
 
-	DEBUG(DEBUG_NOTICE, (__location__ " Starting do_recovery\n"));
+	DBG_NOTICE("Starting do_recovery\n");
 
 	/* Check if the current node is still the leader.  It's possible that
 	 * re-election has changed the leader.
 	 */
 	if (!this_node_is_leader(rec)) {
-		D_NOTICE("Leader changed to %u, aborting recovery\n",
+		D_NOTICE("Leader changed to %" PRIu32 ", aborting recovery\n",
 			 rec->leader);
 		return -1;
 	}
@@ -1331,20 +1331,22 @@ static int do_recovery(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 
 	if (rec->election_in_progress) {
 		/* an election is in progress */
-		DEBUG(DEBUG_ERR, ("do_recovery called while election in progress - try again later\n"));
+		DBG_ERR("do_recovery called while election in progress - try "
+			"again later\n");
 		goto fail;
 	}
 
 	ban_misbehaving_nodes(rec, &self_ban);
 	if (self_ban) {
-		DEBUG(DEBUG_NOTICE, ("This node was banned, aborting recovery\n"));
+		DBG_NOTICE("This node was banned, aborting recovery\n");
 		goto fail;
 	}
 
 	if (cluster_lock_enabled(rec) && !cluster_lock_held(rec)) {
 		/* Leader can change in ban_misbehaving_nodes() */
 		if (!this_node_is_leader(rec)) {
-			D_NOTICE("Leader changed to %u, aborting recovery\n",
+			D_NOTICE("Leader changed to %" PRIu32
+				 ", aborting recovery\n",
 				 rec->leader);
 			rec->need_recovery = false;
 			goto fail;
@@ -1355,12 +1357,13 @@ static int do_recovery(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 		goto fail;
 	}
 
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery initiated due to problem with node %u\n", rec->last_culprit_node));
+	DBG_NOTICE("Recovery initiated due to problem with node %" PRIu32 "\n",
+		   rec->last_culprit_node);
 
 	/* Retrieve capabilities from all connected nodes */
 	ret = update_capabilities(rec, nodemap);
 	if (ret!=0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to update node capabilities.\n"));
+		DBG_ERR("Unable to update node capabilities.\n");
 		return -1;
 	}
 
@@ -1377,15 +1380,19 @@ static int do_recovery(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 						nodemap->nodes[i].flags);
 		if (ret != 0) {
 			if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
-				DEBUG(DEBUG_WARNING, (__location__ "Unable to update flags on inactive node %d\n", i));
+				DBG_WARNING("Unable to update flags on "
+					    "inactive node %d\n",
+					    i);
 			} else {
-				DEBUG(DEBUG_ERR, (__location__ " Unable to update flags on all nodes for node %d\n", i));
+				DBG_ERR("Unable to update flags on all nodes "
+					"for node %d\n",
+					i);
 				return -1;
 			}
 		}
 	}
 
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated flags\n"));
+	DBG_NOTICE("Recovery - updated flags\n");
 
 	ret = db_recovery_parallel(rec, mem_ctx);
 	if (ret != 0) {
@@ -1399,11 +1406,11 @@ static int do_recovery(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 	ret = ctdb_client_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
 				       CTDB_SRVID_RECONFIGURE, tdb_null);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Failed to send reconfigure message\n"));
+		DBG_ERR("Failed to send reconfigure message\n");
 		goto fail;
 	}
 
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery complete\n"));
+	DBG_NOTICE("Recovery complete\n");
 
 	rec->need_recovery = false;
 	ctdb_op_end(rec->recovery);
@@ -1417,7 +1424,10 @@ static int do_recovery(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 	   We now wait for rerecovery_timeout before we allow
 	   another recovery to take place.
 	*/
-	DEBUG(DEBUG_NOTICE, ("Just finished a recovery. New recoveries will now be suppressed for the rerecovery timeout (%d seconds)\n", ctdb->tunable.rerecovery_timeout));
+	D_NOTICE("Just finished a recovery. New recoveries will now be "
+		 "suppressed for the rerecovery timeout (%" PRIu32
+		 " seconds)\n",
+		 ctdb->tunable.rerecovery_timeout);
 	ctdb_op_disable(rec->recovery, ctdb->ev,
 			ctdb->tunable.rerecovery_timeout);
 	return 0;
