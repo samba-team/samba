@@ -2540,6 +2540,120 @@ static NTSTATUS cmd_lsa_create_trusted_domain(struct rpc_pipe_client *cli,
 	return status;
 }
 
+static NTSTATUS cmd_lsa_create_trusted_domain_ex3(struct rpc_pipe_client *cli,
+						  TALLOC_CTX *mem_ctx,
+						  int argc,
+						  const char **argv)
+{
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	struct policy_handle handle = {
+		.handle_type = 0,
+	};
+	struct policy_handle trustdom_handle = {
+		.handle_type = 0,
+	};
+	struct dom_sid sid = {
+		.num_auths = 0,
+	};
+	union lsa_revision_info out_revision_info = {
+		.info1 = {
+			.revision = 0,
+		},
+	};
+	struct lsa_TrustDomainInfoAuthInfoInternalAES *authinfo_internal = NULL;
+	struct lsa_TrustDomainInfoInfoEx trustinfo = {
+		.trust_attributes = 0,
+	};
+	uint32_t out_version = 0;
+	NTSTATUS status;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	DATA_BLOB session_key = {
+		.length = 0,
+	};
+	bool ok;
+
+	if (argc < 7) {
+		printf("Usage: %s trust_name trust_dns_name trust_sid "
+		       "trust_directrion trust_type "
+		       "incoming_trustpw outgoing_trustpw\n",
+		       argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	status = cli_get_session_key(mem_ctx, cli, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Could not retrieve session key: %s\n",
+			nt_errstr(status));
+		goto done;
+	}
+
+	status = dcerpc_lsa_open_policy_fallback(b,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 true,
+						 SEC_FLAG_MAXIMUM_ALLOWED,
+						 &out_version,
+						 &out_revision_info,
+						 &handle,
+						 &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
+		DBG_ERR("Could not open LSA connection: %s\n",
+			nt_errstr(status));
+		return status;
+	}
+
+	init_lsa_StringLarge(&trustinfo.netbios_name, argv[1]);
+	init_lsa_StringLarge(&trustinfo.domain_name, argv[2]);
+
+	ok = string_to_sid(&sid, argv[3]);
+	if (!ok) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		DBG_ERR("Could not convert SID: %s\n", nt_errstr(status));
+		goto done;
+	}
+	trustinfo.sid = &sid;
+
+	trustinfo.trust_direction = atoi(argv[4]);
+	trustinfo.trust_type = atoi(argv[5]);
+
+	ok = rpc_lsa_encrypt_trustdom_info_aes(mem_ctx,
+					       argv[6],
+					       argv[6],
+					       argv[7],
+					       argv[7],
+					       session_key,
+					       &authinfo_internal);
+	if (!ok) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		DBG_ERR("Could not encrypt trust information: %s\n",
+			nt_errstr(status));
+		goto done;
+	}
+
+	status = dcerpc_lsa_CreateTrustedDomainEx3(b,
+						   mem_ctx,
+						   &handle,
+						   &trustinfo,
+						   authinfo_internal,
+						   SEC_FLAG_MAXIMUM_ALLOWED,
+						   &trustdom_handle,
+						   &result);
+	if (any_nt_status_not_ok(status, result, &status)) {
+		goto done;
+	}
+
+done:
+	if (is_valid_policy_hnd(&trustdom_handle)) {
+		dcerpc_lsa_Close(b, mem_ctx, &trustdom_handle, &result);
+	}
+
+	if (is_valid_policy_hnd(&handle)) {
+		dcerpc_lsa_Close(b, mem_ctx, &handle, &result);
+	}
+
+	return status;
+}
+
 static NTSTATUS cmd_lsa_create_trusted_domain_ex2(struct rpc_pipe_client *cli,
 						  TALLOC_CTX *mem_ctx,
 						  int argc,
@@ -3106,6 +3220,16 @@ struct cmd_set lsarpc_commands[] = {
 		.table              = &ndr_table_lsarpc,
 		.rpc_pipe           = NULL,
 		.description        = "Create Trusted Domain (Ex2 Variant)",
+		.usage              = "",
+	},
+	{
+		.name               = "createtrustdomex3",
+		.returntype         = RPC_RTYPE_NTSTATUS,
+		.ntfn               = cmd_lsa_create_trusted_domain_ex3,
+		.wfn                = NULL,
+		.table              = &ndr_table_lsarpc,
+		.rpc_pipe           = NULL,
+		.description        = "Create Trusted Domain (Ex3 Variant)",
 		.usage              = "",
 	},
 	{
