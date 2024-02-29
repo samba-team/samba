@@ -63,6 +63,12 @@ ldapcmp_with_orig()
 	# the restored DC may use a different side compared to the original DC
 	IGNORE_ATTRS="$IGNORE_ATTRS,serverReferenceBL,msDS-IsDomainFor"
 
+	# Like serverReferenceBL etc, this will point to a DC that
+	# created the object, and as part of the backup and restore,
+	# this DC will be deleted.  It is just for tracking the object
+	# creation, so this is fine.
+	IGNORE_ATTRS="$IGNORE_ATTRS,msKds-DomainID"
+
 	LDAPCMP_CMD="$PYTHON $BINDIR/samba-tool ldapcmp"
 	$LDAPCMP_CMD $DB1_PATH $DB2_PATH --two --skip-missing-dn --filter=$IGNORE_ATTRS $BASE_DN_OPTS
 }

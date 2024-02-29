@@ -133,7 +133,7 @@ class DomainBackupOfflineCmp(BlackboxTestCase):
                         "localPolicyFlags", "operatingSystem", "displayName",
                         "dnsRecord", "dNSTombstoned",
                         "msDS-NC-Replica-Locations", "msDS-HasInstantiatedNCs",
-                        "interSiteTopologyGenerator"]
+                        "interSiteTopologyGenerator", "msKds-DomainID"]
         filter_arg = "--filter=" + ",".join(ignore_attrs)
         args = ["--two", filter_arg]
         self.ldapcmp(self.prov_dir, self.extract_dir, args)
