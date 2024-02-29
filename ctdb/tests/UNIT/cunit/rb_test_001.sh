@@ -1,5 +1,7 @@
 #!/bin/sh
 
+timeout=5
+
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
 output="\
@@ -22,10 +24,10 @@ traverse data:3
 
 deleting key1
 
-run random insert and delete for 60 seconds
+run random insert and delete for ${timeout} seconds
 
 deleting all entries"
 
 ok "$output"
 
-unit_test rb_test
+unit_test rb_test "$timeout"

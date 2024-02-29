@@ -105,6 +105,7 @@ static int count_traverse_abort(void *p, void *d)
 */
 int main(int argc, const char *argv[])
 {
+	unsigned int timeout = 0;
 	int traverse_count;
 	int i,j,k;
 	trbt_tree_t *tree;
@@ -117,6 +118,13 @@ int main(int argc, const char *argv[])
 	TALLOC_CTX *memctx;
 	uint32_t **u32array;
 	uint32_t checksum;
+
+	if (argc >= 2) {
+		timeout = atoi(argv[1]);
+	}
+	if (timeout == 0) {
+		timeout = 60;
+	}
 
 	/* testing trbt_insert32_callback for num_records */
 	memctx   = talloc_new(NULL);
@@ -252,7 +260,7 @@ int main(int argc, const char *argv[])
 	talloc_free(memctx);
 
 
-	printf("\nrun random insert and delete for 60 seconds\n");
+	printf("\nrun random insert and delete for %u seconds\n", timeout);
 	memctx   = talloc_new(NULL);
 	assert(memctx != NULL);
 
@@ -262,12 +270,12 @@ int main(int argc, const char *argv[])
 	i=0;
 	start_timer();
 	checksum = 0;
-	/* Add and delete nodes from a 3 level tree for 60 seconds.
+	/* Add and delete nodes from a 3 level tree for <timeout> seconds.
 	   Each time a node is added or deleted, traverse the tree and
 	   compute a checksum over the data stored in the tree and compare this
 	   with a checksum we keep which contains what the checksum should be
 	 */
-	while(end_timer() < 60.0){
+	while(end_timer() < (double)timeout){
 		char *str;
 
 		i++;
