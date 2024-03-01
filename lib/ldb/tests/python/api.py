@@ -171,7 +171,7 @@ class SimpleLdb(LdbBaseTest):
 
     def test_opaque(self):
         l = ldb.Ldb(self.url(), flags=self.flags())
-        l.set_opaque("my_opaque", l)
+        l.set_opaque("my_opaque", True)
         self.assertTrue(l.get_opaque("my_opaque") is not None)
         self.assertEqual(None, l.get_opaque("unknown"))
 
