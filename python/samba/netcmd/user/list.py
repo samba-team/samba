@@ -42,6 +42,10 @@ class cmd_user_list(Command):
                default=False,
                action='store_true',
                help="Do not list disabled user accounts"),
+        Option("--locked-only",
+               help="Only list locked user accounts",
+               default=False,
+               action='store_true'),
         Option("-b", "--base-dn",
                help="Specify base DN to use",
                type=str),
@@ -64,6 +68,7 @@ class cmd_user_list(Command):
             H=None,
             hide_expired=False,
             hide_disabled=False,
+            locked_only=False,
             base_dn=None,
             full_dn=False):
         lp = sambaopts.get_loadparm()
@@ -87,10 +92,16 @@ class cmd_user_list(Command):
             filter_disabled = "(!(userAccountControl:%s:=%u))" % (
                 ldb.OID_COMPARATOR_AND, dsdb.UF_ACCOUNTDISABLE)
 
-        filter = "(&(objectClass=user)(userAccountControl:%s:=%u)%s%s)" % (
+        filter_locked = ""
+        if locked_only is True:
+            # use lockoutTime=* to filter out accounts without a set lockoutTime
+            filter_locked = "(&(lockoutTime=*)(!(lockoutTime=0)))"
+
+        filter = "(&(objectClass=user)(userAccountControl:%s:=%u)%s%s%s)" % (
             ldb.OID_COMPARATOR_AND,
             dsdb.UF_NORMAL_ACCOUNT,
             filter_disabled,
+            filter_locked,
             filter_expires)
 
         res = samdb.search(search_dn,

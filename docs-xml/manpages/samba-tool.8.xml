@@ -2598,6 +2598,12 @@
 	Do not list disabled user accounts.
 	</para></listitem>
 	</varlistentry>
+	<varlistentry>
+	<term>--locked-only</term>
+	<listitem><para>
+	Only list locked user accounts.
+	</para></listitem>
+	</varlistentry>
 	</variablelist>
 </refsect3>
 
