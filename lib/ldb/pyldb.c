@@ -2414,9 +2414,42 @@ static PyObject *py_ldb_get_opaque(PyLdbObject *self, PyObject *args)
 	if (data == NULL)
 		Py_RETURN_NONE;
 
-	/* FIXME: More interpretation */
+	if (data == (void *)1) {
+		/*
+		 * This value is sometimes used to indicate that a opaque is
+		 * set.
+		 */
+		Py_RETURN_TRUE;
+	}
 
-	Py_RETURN_TRUE;
+	{
+		/*
+		 * Let’s hope the opaque data is actually a talloc pointer,
+		 * otherwise calling this would be Very Bad.
+		 */
+		const bool *opaque = talloc_get_type(data, bool);
+		if (opaque != NULL) {
+			return PyBool_FromLong(*opaque);
+		}
+	}
+
+	{
+		const unsigned long long *opaque = talloc_get_type(
+			data, unsigned long long);
+		if (opaque != NULL) {
+			return PyLong_FromUnsignedLongLong(*opaque);
+		}
+	}
+
+	{
+		const char *opaque = talloc_get_type(data, char);
+		if (opaque != NULL) {
+			return PyUnicode_FromString(opaque);
+		}
+	}
+
+	PyErr_SetString(PyExc_ValueError, "Unsupported type for opaque");
+	return NULL;
 }
 
 static PyObject *py_ldb_set_opaque(PyLdbObject *self, PyObject *args)

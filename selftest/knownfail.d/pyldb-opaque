@@ -1,8 +1,0 @@
-^ldb\.python\.api\.SimpleLdb\.test_opaque_bool\(none\)$
-^ldb\.python\.api\.SimpleLdb\.test_opaque_int\(none\)$
-^ldb\.python\.api\.SimpleLdb\.test_opaque_none\(none\)$
-^ldb\.python\.api\.SimpleLdb\.test_opaque_string\(none\)$
-^ldb\.python\.api\.SimpleLdbLmdb\.test_opaque_bool\(none\)$
-^ldb\.python\.api\.SimpleLdbLmdb\.test_opaque_int\(none\)$
-^ldb\.python\.api\.SimpleLdbLmdb\.test_opaque_none\(none\)$
-^ldb\.python\.api\.SimpleLdbLmdb\.test_opaque_string\(none\)$
