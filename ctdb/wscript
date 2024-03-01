@@ -441,7 +441,6 @@ def build(bld):
                                              db_hash.c
                                              event_script.c
                                              hash_count.c
-                                             line.c
                                              logging.c
                                              path.c
                                              pidfile.c
@@ -940,7 +939,6 @@ def build(bld):
         'db_hash_test',
         'event_script_test',
         'hash_count_test',
-        'line_test',
         'pidfile_test',
         'pkt_read_test',
         'pkt_write_test',
