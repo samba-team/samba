@@ -175,6 +175,74 @@ class SimpleLdb(LdbBaseTest):
         self.assertTrue(l.get_opaque("my_opaque") is not None)
         self.assertEqual(None, l.get_opaque("unknown"))
 
+    def test_opaque_bool(self):
+        """Test that we can set boolean opaque values."""
+
+        db = ldb.Ldb(self.url(), flags=self.flags())
+        name = "my_opaque"
+
+        db.set_opaque(name, False)
+        self.assertEqual(False, db.get_opaque(name))
+
+        db.set_opaque(name, True)
+        self.assertEqual(True, db.get_opaque(name))
+
+    def test_opaque_int(self):
+        """Test that we can set (positive) integer opaque values."""
+
+        db = ldb.Ldb(self.url(), flags=self.flags())
+        name = "my_opaque"
+
+        db.set_opaque(name, 0)
+        self.assertEqual(0, db.get_opaque(name))
+
+        db.set_opaque(name, 12345678)
+        self.assertEqual(12345678, db.get_opaque(name))
+
+        # Negative values can’t be set.
+        self.assertRaises(OverflowError, db.set_opaque, name, -99999)
+
+    def test_opaque_string(self):
+        """Test that we can set string opaque values."""
+
+        db = ldb.Ldb(self.url(), flags=self.flags())
+        name = "my_opaque"
+
+        db.set_opaque(name, "")
+        self.assertEqual("", db.get_opaque(name))
+
+        db.set_opaque(name, "foo bar")
+        self.assertEqual("foo bar", db.get_opaque(name))
+
+    def test_opaque_none(self):
+        """Test that we can set an opaque to None to effectively unset it."""
+
+        db = ldb.Ldb(self.url(), flags=self.flags())
+        name = "my_opaque"
+
+        # An opaque that has not been set is the same as None.
+        self.assertIsNone(db.get_opaque(name))
+
+        # Give the opaque a value.
+        db.set_opaque(name, 3)
+        self.assertEqual(3, db.get_opaque(name))
+
+        # Test that we can set the opaque to None to unset it.
+        db.set_opaque(name, None)
+        self.assertIsNone(db.get_opaque(name))
+
+    def test_opaque_unsupported(self):
+        """Test that trying to set unsupported values raises an error."""
+
+        db = ldb.Ldb(self.url(), flags=self.flags())
+        name = "my_opaque"
+
+        self.assertRaises(ValueError, db.set_opaque, name, [])
+        self.assertRaises(ValueError, db.set_opaque, name, ())
+        self.assertRaises(ValueError, db.set_opaque, name, 3.14)
+        self.assertRaises(ValueError, db.set_opaque, name, 3+2j)
+        self.assertRaises(ValueError, db.set_opaque, name, b'foo')
+
     def test_search_scope_base_empty_db(self):
         l = ldb.Ldb(self.url(), flags=self.flags())
         self.assertEqual(len(l.search(ldb.Dn(l, "dc=foo1"),
