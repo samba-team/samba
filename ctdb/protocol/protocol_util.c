@@ -22,12 +22,11 @@
 
 #include <talloc.h>
 
-#include "common/line.h"
-
 #include "protocol.h"
 #include "protocol_util.h"
 #include "lib/util/util.h"
 #include "lib/util/smb_strtox.h"
+#include "lib/util/util_file.h"
 
 static struct {
 	enum ctdb_runstate runstate;
@@ -712,10 +711,10 @@ struct ctdb_connection_list_read_state {
 	bool client_first;
 };
 
-static int ctdb_connection_list_read_line(char *line, void *private_data)
+static int ctdb_connection_list_read_line(
+	char *line,
+	struct ctdb_connection_list_read_state *state)
 {
-	struct ctdb_connection_list_read_state *state =
-		(struct ctdb_connection_list_read_state *)private_data;
 	struct ctdb_connection conn;
 	int ret;
 
@@ -748,7 +747,11 @@ int ctdb_connection_list_read(TALLOC_CTX *mem_ctx,
 			      struct ctdb_connection_list **conn_list)
 {
 	struct ctdb_connection_list_read_state state;
+	char *line = NULL;
+	FILE *f = NULL;
 	int ret;
+	size_t len = 0;
+	ssize_t nread;
 
 	if (conn_list == NULL) {
 		return EINVAL;
@@ -761,12 +764,23 @@ int ctdb_connection_list_read(TALLOC_CTX *mem_ctx,
 
 	state.client_first = client_first;
 
-	ret = line_read(fd,
-			128,
-			mem_ctx,
-			ctdb_connection_list_read_line,
-			&state,
-			NULL);
+	f = fdopen_keepfd(fd, "r");
+	if (f == NULL) {
+		return errno;
+	}
+
+	while ((nread = getline(&line, &len, f)) != -1) {
+		if ((nread > 0) && (line[nread-1] == '\n')) {
+			line[nread-1] = '\0';
+		}
+		ret = ctdb_connection_list_read_line(line, &state);
+		if (ret != 0) {
+			break;
+		}
+	}
+
+	free(line);
+	fclose(f);
 
 	*conn_list = state.list;
 
