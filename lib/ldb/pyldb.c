@@ -2423,13 +2423,76 @@ static PyObject *py_ldb_set_opaque(PyLdbObject *self, PyObject *args)
 {
 	char *name;
 	PyObject *data;
+	void *value = NULL;
+	int ret;
 
 	if (!PyArg_ParseTuple(args, "sO", &name, &data))
 		return NULL;
 
-	/* FIXME: More interpretation */
+	if (data == Py_None) {
+		value = NULL;
+	} else if (PyBool_Check(data)) {
+		bool *opaque = NULL;
+		bool b;
+		{
+			const int is_true = PyObject_IsTrue(data);
+			if (is_true == -1) {
+				return NULL;
+			}
+			b = is_true;
+		}
 
-	ldb_set_opaque(pyldb_Ldb_AS_LDBCONTEXT(self), name, data);
+		opaque = talloc(self->mem_ctx, bool);
+		if (opaque == NULL) {
+			return PyErr_NoMemory();
+		}
+		*opaque = b;
+		value = opaque;
+	} else if (PyLong_Check(data)) {
+		unsigned long long *opaque = NULL;
+		const unsigned long long n = PyLong_AsUnsignedLongLong(data);
+		if (n == -1 && PyErr_Occurred()) {
+			return NULL;
+		}
+
+		opaque = talloc(self->mem_ctx, unsigned long long);
+		if (opaque == NULL) {
+			return PyErr_NoMemory();
+		}
+		*opaque = n;
+		value = opaque;
+	} else if (PyUnicode_Check(data)) {
+		char *opaque = NULL;
+		const char *s = PyUnicode_AsUTF8(data);
+		if (s == NULL) {
+			return NULL;
+		}
+
+		opaque = talloc_strdup(self->mem_ctx, s);
+		if (opaque == NULL) {
+			return PyErr_NoMemory();
+		}
+
+		/*
+		 * Assign the right type to the talloc pointer, so that
+		 * py_ldb_get_opaque() can recognize it.
+		 */
+		talloc_set_name_const(opaque, "char");
+
+		value = opaque;
+	} else {
+		PyErr_SetString(PyExc_ValueError,
+				"Unsupported type for opaque");
+		return NULL;
+	}
+
+	ret = ldb_set_opaque(pyldb_Ldb_AS_LDBCONTEXT(self), name, value);
+	if (ret) {
+		PyErr_SetLdbError(PyExc_LdbError,
+				  ret,
+				  pyldb_Ldb_AS_LDBCONTEXT(self));
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
