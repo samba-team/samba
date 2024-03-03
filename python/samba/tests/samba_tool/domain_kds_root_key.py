@@ -39,6 +39,9 @@ HOST = "ldap://{DC_SERVER}".format(**os.environ)
 CREDS = "-U{DC_USERNAME}%{DC_PASSWORD}".format(**os.environ)
 SMBCONF = os.environ['SERVERCONFFILE']
 
+# alice%Secret007
+NON_ADMIN_CREDS = "-U{DOMAIN_USER}%{DOMAIN_USER_PASSWORD}".format(**os.environ)
+
 TIMESTAMP_RE = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}\+00:00'
 
 NOWISH = 'about now'
@@ -500,6 +503,22 @@ class KdsRootKeyTests(KdsRootKeyTestsBase):
                          f"created root key {new_guids[0]}, usable from {TIMESTAMP_RE}")
         self._delete_root_key(new_guids[0])
 
+    def test_create_json_non_admin(self):
+        """can you create a root-key without being admin?"""
+        pre_create = self._get_root_key_guids()
+
+        result, out, err = self.runcmd("domain", "kds", "root-key", "create",
+                                       "-H", HOST, NON_ADMIN_CREDS, "--json")
+        self.assertCmdFail(result)
+
+        post_create = self._get_root_key_guids()
+
+        self.assertEqual(set(pre_create), set(post_create))
+        data = json.loads(out)
+        self.assertEqual(data['status'], 'error')
+        self.assertEqual(data['message'], 'User has insufficient access rights')
+        self.assertEqual(err, "", "not expecting stderr messages")
+
     def test_create_json_1997(self):
         """does create work?"""
         pre_create = self._get_root_key_guids()
@@ -640,6 +659,81 @@ class KdsRootKeyTests(KdsRootKeyTestsBase):
         self.assertIn(guid, pre_names)
         self.assertNotIn(guid, post_names)
 
+    def test_delete_non_admin(self):
+        """does delete as non-admin fail?"""
+        # make one to delete, and get the list as JSON
+        _guid, dn, _created, _used = self._create_root_key_timediff()
+        guid = str(_guid)
+
+        result, out, err = self.runcmd("domain", "kds", "root-key", "list", "--json",
+                                       "-H", HOST, CREDS)
+        pre_delete = json.loads(out)
+
+        result, out, err = self.runcmd("domain", "kds", "root-key", "delete",
+                                       "-H", HOST, NON_ADMIN_CREDS,
+                                       "--name", guid)
+        self.assertCmdFail(result)
+        self.assertIn(f"ERROR: no such root key: {guid}", err)
+
+        # a bad guid should be just like a good guid
+        guid2 = 'eeeeeeee-1111-eeee-1111-000000000000'
+        result, out2, err2 = self.runcmd("domain", "kds", "root-key", "delete",
+                                         "-H", HOST, NON_ADMIN_CREDS,
+                                         "--name", guid2)
+        self.assertCmdFail(result)
+        self.assertIn(f"ERROR: no such root key: {guid2}", err2)
+
+        result, out, err = self.runcmd("domain", "kds", "root-key", "list", "--json",
+                                       "-H", HOST, CREDS)
+        post_delete = json.loads(out)
+
+        self.assertEqual(len(pre_delete), len(post_delete))
+
+        post_names = [x['name'] for x in post_delete]
+        pre_names = [x['name'] for x in pre_delete]
+
+        self.assertIn(guid, pre_names)
+        self.assertIn(guid, post_names)
+
+    def test_list_non_admin(self):
+        """There are root keys, but non-admins can't see them"""
+        result, out, err = self.runcmd("domain", "kds", "root-key", "list",
+                                       "-H", HOST, NON_ADMIN_CREDS)
+        self.assertCmdSuccess(result, out, err)
+        self.assertEqual(err, "", "not expecting error messages")
+        self.assertEqual(out, "no root keys found.\n")
+
+    def test_list_json_non_admin(self):
+        """Insufficient rights should look like an empty list."""
+        # this is a copy of the KdsNoRootKeyTests test below --
+        # non-admin should look exactly like an empty list.
+        for extra in ([], ["-v"]):
+            result, out, err = self.runcmd("domain", "kds", "root-key", "list",
+                                           "-H", HOST, NON_ADMIN_CREDS, "--json", *extra)
+            self.assertCmdSuccess(result, out, err)
+            self.assertEqual(err, "", "not expecting error messages")
+            data = json.loads(out)
+            self.assertEqual(data, [])
+
+    def test_view_key_non_admin(self):
+        """should not appear to non-admin"""
+        guid, dn, _created, _used = self._create_root_key_timediff_cleanup()
+
+        result, out, err = self.runcmd("domain", "kds", "root-key", "view",
+                                       "--json",
+                                       "--name", str(guid),
+                                       "-H", HOST, NON_ADMIN_CREDS)
+        self.assertCmdFail(result)
+        self.assertEqual(err, "", "not expecting error messages")
+        data = json.loads(out)
+        data = json.loads(out)
+        self.assertEqual(
+            data,
+            {
+                "message": f"no such root key: {guid}",
+                "status": "error"
+            })
+
 
 class KdsNoRootKeyTests(KdsRootKeyTestsBase):
     """Here we test the case were there are no root keys, which we need to
@@ -674,6 +768,17 @@ class KdsNoRootKeyTests(KdsRootKeyTestsBase):
         for extra in ([], ["-v"]):
             result, out, err = self.runcmd("domain", "kds", "root-key", "list",
                                            "-H", HOST, CREDS, "--json", *extra)
+            self.assertCmdSuccess(result, out, err)
+            self.assertEqual(err, "", "not expecting error messages")
+            data = json.loads(out)
+            self.assertEqual(data, [])
+
+    def test_list_empty_json_non_admin(self):
+        """Insufficient rights should look like an empty list."""
+        # verbose flag makes no difference here.
+        for extra in ([], ["-v"]):
+            result, out, err = self.runcmd("domain", "kds", "root-key", "list",
+                                           "-H", HOST, NON_ADMIN_CREDS, "--json", *extra)
             self.assertCmdSuccess(result, out, err)
             self.assertEqual(err, "", "not expecting error messages")
             data = json.loads(out)
