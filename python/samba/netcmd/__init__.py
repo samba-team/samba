@@ -23,7 +23,7 @@ import textwrap
 import traceback
 
 import samba
-from ldb import ERR_INVALID_CREDENTIALS, LdbError
+from ldb import ERR_INVALID_CREDENTIALS, ERR_INSUFFICIENT_ACCESS_RIGHTS, LdbError
 from samba import colour
 from samba.auth import system_session
 from samba.getopt import Option, OptionParser
@@ -241,6 +241,9 @@ class Command(object):
                 force_traceback = False
             elif ldb_emsg.startswith("Unable to open tdb "):
                 self._print_error(message, ldb_emsg, 'ldb')
+                force_traceback = False
+            elif ldb_ecode == ERR_INSUFFICIENT_ACCESS_RIGHTS:
+                self._print_error("User has insufficient access rights")
                 force_traceback = False
             else:
                 self._print_error(message, ldb_emsg, 'ldb')
