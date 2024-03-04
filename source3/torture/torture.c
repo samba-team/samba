@@ -16294,6 +16294,7 @@ static void usage(void)
 	printf("\t-b unclist_filename   specify multiple shares for multiple connections\n");
 	printf("\t-f filename           filename to test\n");
 	printf("\t-e                    encrypt\n");
+	printf("\t-T 'OPTION=VALUE'     smb.conf option line\n");
 	printf("\n\n");
 
 	printf("tests are:");
@@ -16380,7 +16381,7 @@ static void usage(void)
 
 	fstrcpy(workgroup, lp_workgroup());
 
-	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:m:Ll:d:Aec:ks:b:B:f:"))
+	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:m:Ll:d:Aec:ks:b:B:f:T:"))
 	       != EOF) {
 		switch (opt) {
 		case 'p':
@@ -16452,6 +16453,9 @@ static void usage(void)
 			break;
 		case 'f':
 			test_filename = SMB_STRDUP(optarg);
+			break;
+		case 'T':
+			lpcfg_set_option(lp_ctx, optarg);
 			break;
 		default:
 			printf("Unknown option %c (%d)\n", (char)opt, opt);
