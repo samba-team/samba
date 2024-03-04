@@ -117,6 +117,7 @@ _krb5_mk_req_internal(krb5_context context,
 				    ac->keyblock->keytype,
 				    in_creds,
 				    c_opt,
+				    FALSE, /* channel_bound */
 				    &authenticator,
 				    encrypt_usage);
     if (c_opt)

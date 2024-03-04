@@ -86,6 +86,7 @@ add_etypelist(krb5_context context,
 
 static krb5_error_code
 add_ap_options(krb5_context context,
+	       krb5_boolean channel_bound,
 	       krb5_authdata *auth_data)
 {
     krb5_error_code ret;
@@ -97,6 +98,9 @@ add_ap_options(krb5_context context,
 					      "libdefaults",
 					      "client_aware_channel_bindings",
 					      NULL);
+
+    if (channel_bound)
+	require_cb = TRUE;
 
     if (!require_cb)
 	return 0;
@@ -116,7 +120,89 @@ add_ap_options(krb5_context context,
 }
 
 static krb5_error_code
+add_target_principal(krb5_context context,
+		     krb5_const_principal server,
+		     krb5_authdata *auth_data)
+{
+    krb5_error_code ret;
+    AuthorizationDataElement ade;
+    char *s, *s2 = NULL;
+    size_t s2_len;
+
+    if (server == NULL) {
+	return 0;
+    }
+
+    ret = krb5_unparse_name_flags(context, server,
+				  KRB5_PRINCIPAL_UNPARSE_DISPLAY,
+				  &s);
+    if (ret)
+	return ret;
+
+    {
+	size_t ucs2_len;
+	uint16_t *ucs2;
+	unsigned int flags;
+
+	ret = wind_utf8ucs2_length(s, &ucs2_len);
+	if (ret) {
+	    krb5_set_error_message(context, ret, "Principal %s is not valid UTF-8", s);
+	    free(s);
+	    return ret;
+	}
+
+	ucs2 = malloc(sizeof(ucs2[0]) * ucs2_len);
+	if (ucs2 == NULL) {
+	    free(s);
+	    return krb5_enomem(context);
+	}
+
+	ret = wind_utf8ucs2(s, ucs2, &ucs2_len);
+	if (ret) {
+	    free(ucs2);
+	    krb5_set_error_message(context, ret, "Principal %s is not valid UTF-8", s);
+	    free(s);
+	    return ret;
+	} else
+	    free(s);
+
+	s2_len = (ucs2_len + 1) * 2;
+	s2 = malloc(s2_len);
+	if (s2 == NULL) {
+	    free(ucs2);
+	    return krb5_enomem(context);
+	}
+
+	flags = WIND_RW_LE;
+	ret = wind_ucs2write(ucs2, ucs2_len,
+			     &flags, s2, &s2_len);
+	free(ucs2);
+	if (ret) {
+	    free(s2);
+	    krb5_set_error_message(context, ret, "Failed to write to UCS-2 buffer");
+	    return ret;
+	}
+
+	/*
+	 * we do not want zero termination
+	 */
+	s2_len = ucs2_len * 2;
+    }
+
+    ade.ad_type = KRB5_AUTHDATA_TARGET_PRINCIPAL;
+    ade.ad_data.length = s2_len;
+    ade.ad_data.data = s2;
+
+    ret = add_AuthorizationData(auth_data, &ade);
+    free(s2);
+
+    return ret;
+}
+
+static krb5_error_code
 make_ap_authdata(krb5_context context,
+                 krb5_boolean channel_bound,
+                 krb5_const_principal server,
                  krb5_authdata **auth_data)
 {
     krb5_error_code ret;
@@ -136,7 +222,13 @@ make_ap_authdata(krb5_context context,
      * in the AP authenticator when looking for AD-AP-OPTIONS. Make sure to
      * bundle it together with etypes.
      */
-    ret = add_ap_options(context, &ad);
+    ret = add_ap_options(context, channel_bound, &ad);
+    if (ret) {
+	free_AuthorizationData(&ad);
+	return ret;
+    }
+
+    ret = add_target_principal(context, server, &ad);
     if (ret) {
 	free_AuthorizationData(&ad);
 	return ret;
@@ -165,6 +257,7 @@ _krb5_build_authenticator (krb5_context context,
 			   krb5_enctype enctype,
 			   krb5_creds *cred,
 			   Checksum *cksum,
+			   krb5_boolean channel_bound,
 			   krb5_data *result,
 			   krb5_key_usage usage)
 {
@@ -221,7 +314,10 @@ _krb5_build_authenticator (krb5_context context,
 	     * This is not GSS-API specific, we only enable it for
 	     * GSS for now
 	     */
-	    ret = make_ap_authdata(context, &auth.authorization_data);
+	    ret = make_ap_authdata(context,
+				   channel_bound,
+				   cred->server,
+				   &auth.authorization_data);
 	    if (ret)
 		goto fail;
 	}

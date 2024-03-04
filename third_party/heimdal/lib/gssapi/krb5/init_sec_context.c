@@ -498,6 +498,7 @@ init_auth_restart
     krb5_data fwd_data, timedata;
     int32_t offset = 0, oldoffset = 0;
     uint32_t flagmask;
+    krb5_boolean channel_bound = FALSE;
 
     krb5_data_zero(&outbuf);
     krb5_data_zero(&fwd_data);
@@ -587,6 +588,11 @@ init_auth_restart
     }
     flags |= GSS_C_TRANS_FLAG;
 
+    if (req_flags & GSS_C_CHANNEL_BOUND_FLAG) {
+	flags |= GSS_C_CHANNEL_BOUND_FLAG;
+	channel_bound = TRUE;
+    }
+
     if (ret_flags)
 	*ret_flags = flags;
     ctx->flags = flags;
@@ -626,6 +632,7 @@ init_auth_restart
 				     enctype,
 				     ctx->kcred,
 				     &cksum,
+				     channel_bound,
 				     &authenticator,
 				     KRB5_KU_AP_REQ_AUTH);
 
@@ -786,6 +793,9 @@ repl_mutual
 		*minor_status = handle_error_packet(context, ctx, indata);
 		return GSS_S_FAILURE;
 	    }
+	}
+	if (ret != GSS_S_COMPLETE) {
+		return ret;
 	}
 	kret = krb5_rd_rep (context,
 			    ctx->auth_context,
