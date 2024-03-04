@@ -12,6 +12,29 @@ Samba 4.21 will be the next version of the Samba suite.
 UPGRADING
 =========
 
+LDAP TLS/SASL channel binding support
+-------------------------------------
+
+The ldap server supports SASL binds with
+kerberos or NTLMSSP over TLS connections
+now (either ldaps or starttls).
+
+Setups where 'ldap server require strong auth = allow_sasl_over_tls'
+was required before, can now most likely move to the
+default of 'ldap server require strong auth = yes'.
+
+If SASL binds without correct tls channel bindings are required
+'ldap server require strong auth = allow_sasl_without_tls_channel_bindings'
+should be used now, as 'allow_sasl_over_tls' will generate a
+warning in every start of 'samba', as well as '[samba-tool ]testparm'.
+
+This is similar to LdapEnforceChannelBinding under
+HKLM\SYSTEM\CurrentControlSet\Services\NTDS\Parameters
+on Windows.
+
+All client tools using ldaps also include the correct
+channel bindings now.
+
 
 NEW FEATURES/CHANGES
 ====================
@@ -55,6 +78,7 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
+  ldap server require strong auth         new values
 
 
 KNOWN ISSUES
