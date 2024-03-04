@@ -34,4 +34,46 @@ testit_grep_count \
 	'(objectClass=domain)' distinguishedName || \
 	failed=$((failed + 1))
 
+testit_grep_count \
+	"net_ads_search.ntlmssp.ldaps" \
+	"distinguishedName: ${DN}" \
+	1 \
+	$samba_net ads search --use-kerberos=off -P \
+	--option="tlsverifypeer=no_check" \
+	--option="clientldapsaslwrapping=ldaps" \
+	--server "${SERVER}.${REALM}" \
+	'(objectClass=domain)' distinguishedName || \
+	failed=$((failed + 1))
+testit_grep_count \
+	"net_ads_search.krb5.ldaps" \
+	"distinguishedName: ${DN}" \
+	1 \
+	$samba_net ads search --use-kerberos=required -P \
+	--option="tlsverifypeer=no_check" \
+	--option="clientldapsaslwrapping=ldaps" \
+	--server "${SERVER}.${REALM}" \
+	'(objectClass=domain)' distinguishedName || \
+	failed=$((failed + 1))
+
+testit_grep_count \
+	"net_ads_search.ntlmssp.starttls" \
+	"distinguishedName: ${DN}" \
+	1 \
+	$samba_net ads search --use-kerberos=off -P \
+	--option="tlsverifypeer=no_check" \
+	--option="clientldapsaslwrapping=starttls" \
+	--server "${SERVER}.${REALM}" \
+	'(objectClass=domain)' distinguishedName || \
+	failed=$((failed + 1))
+testit_grep_count \
+	"net_ads_search.krb5.starttls" \
+	"distinguishedName: ${DN}" \
+	1 \
+	$samba_net ads search --use-kerberos=required -P \
+	--option="tlsverifypeer=no_check" \
+	--option="clientldapsaslwrapping=starttls" \
+	--server "${SERVER}.${REALM}" \
+	'(objectClass=domain)' distinguishedName || \
+	failed=$((failed + 1))
+
 exit $failed
