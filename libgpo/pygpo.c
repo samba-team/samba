@@ -371,7 +371,7 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 				 workgroup,
 				 ldap_server,
 				 ADS_SASL_PLAIN);
-	
+
 	return 0;
 }
 
