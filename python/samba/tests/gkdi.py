@@ -589,7 +589,7 @@ def create_root_key(
     elif isinstance(use_start_time, int):
         use_start_nt_time = use_start_time
     else:
-        raise ValueError("use_start_time should be a datatime or int")
+        raise ValueError("use_start_time should be a datetime or int")
 
     kdf_parameters = None
     if hash_algorithm is not None:
