@@ -88,7 +88,7 @@ def nt_time_from_string(s: str) -> NtTime:
             dt = datetime.datetime.now(datetime.timezone.utc)
         elif re.match(r'^\d{14}\.0Z$', s):
             # "20230127223641.0Z"
-            dt = datetime.strptime(s, '%Y%m%d%H%M%S.0Z')
+            dt = datetime.datetime.strptime(s, '%Y%m%d%H%M%S.0Z')
         else:
             dt = datetime.datetime.fromisoformat(s)
     except ValueError:
