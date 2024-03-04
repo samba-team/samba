@@ -93,7 +93,7 @@
  *		ldapServiceName:	<domain_dns_name>:<netbios_name>$@<REALM>
  *		serverName:		CN=Servers,CN=<site_name>,CN=Sites,CN=Configuration,<domain_partition>
  *		supportedCapabilities:	...
- *		isSyncronized:		TRUE
+ *		isSynchronized:		TRUE
  *		isGlobalCatalogReady:	TRUE
  *		domainFunctionality:	0
  *		forestFunctionality:	0
@@ -361,7 +361,7 @@
  * Result:
  *      CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
  *		distinguishedName:	CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
- *		userAccoountControl:	4096 <0x1000>
+ *		userAccountControl:	4096 <0x1000>
  */
 
 /*
@@ -549,7 +549,7 @@
  * Result:
  *      CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
  *		distinguishedName:	CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
- *		userAccoountControl:	4096 <0x00001000>
+ *		userAccountControl:	4096 <0x00001000>
  */
 
 /*
@@ -565,7 +565,7 @@
  *	attrs:	userAccountControl
  * Result:
  *      CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
- *		userAccoountControl:	4096 <0x00001000>
+ *		userAccountControl:	4096 <0x00001000>
  */
 
 /*
@@ -575,7 +575,7 @@
  *
  * Request (replace):
  *	CN=<new_dc_netbios_name>,CN=Computers,<domain_partition>
- *	userAccoountControl:	532480 <0x82000>
+ *	userAccountControl:	532480 <0x82000>
  * Result:
  *	<success>
  */
