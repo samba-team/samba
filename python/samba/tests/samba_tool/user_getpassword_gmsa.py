@@ -78,6 +78,7 @@ class GMSAPasswordTest(BlackboxTestCase):
         details = {
             "dn": str(cls.user_dn),
             "objectClass": "msDS-GroupManagedServiceAccount",
+            "dNSHostName": "samba.example.com",
             "msDS-ManagedPasswordInterval": "1",
             "msDS-GroupMSAMembership": allow_sd,
             "sAMAccountName": cls.username,
