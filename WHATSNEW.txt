@@ -69,6 +69,42 @@ never took into account later changes, and so has not worked for a
 number of years.  Samba 4.21 and LDB 2.10 removes this unused and
 broken feature.
 
+Using ldaps from 'winbindd' and 'net ads'
+-----------------------------------------
+
+Beginning with Samba 3.0.22 the 'ldap ssl = start tls' option also
+impacted LDAP connections to active directory domain controllers.
+Using the STARTTLS operation on LDAP port 389 connections. Starting
+with Samba 3.5.0 'ldap ssl ads = yes' was required in addition in
+order let to 'ldap ssl = start tls' have any effect on those
+connections.
+
+'ldap ssl ads' was deprecated with Samba 4.8.0 and removed together
+with the whole functionality in Samba 4.14.0, because it didn't support
+tls channel bindings required for the sasl authentication.
+
+The functionality is now re-added using the correct channel bindings
+based on the gnutls based tls implementation we already have, instead
+of using the tls layer provided by openldap. This makes it available
+and consistent with all LDAP client libraries we use and implement on
+our own.
+
+The 'client ldap sasl wrapping' option gained the two new possible values:
+'starttls' (using STARTTLS on tcp port 389)
+and
+'ldaps' (using TLS directly on tcp port 636).
+
+If you had 'ldap ssl = start tls' and 'ldap ssl ads = yes'
+before, you can now use 'client ldap sasl wrapping = starttls'
+in order to get STARTTLS on tcp port 389.
+
+As we no longer use the openldap tls layer it is required to configure the
+correct certificate trusts with at least one of the following options:
+'tls trust system cas', 'tls ca directories' or 'tls cafile'.
+While 'tls verify peer' and 'tls crlfile' are also relevant,
+see 'man smb.conf' for further details.
+
+
 REMOVED FEATURES
 ================
 
@@ -78,7 +114,11 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
+  client ldap sasl wrapping               new values
+  client use spnego principal             removed
   ldap server require strong auth         new values
+  tls trust system cas                    new
+  tls ca directories                      new
 
 
 KNOWN ISSUES
