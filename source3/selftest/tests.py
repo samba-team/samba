@@ -154,7 +154,10 @@ for t in fileserver_tests:
     plantestsuite("samba3.smbtorture_s3.plain.%s" % t, "ad_dc_ntvfs", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
 
 t = "TLDAP"
-plantestsuite("samba3.smbtorture_s3.plain.%s" % t, "ad_dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER/tmp', '$DC_USERNAME', '$DC_PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
+plantestsuite("samba3.smbtorture_s3.%s.sasl-sign" % t, "ad_dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER/tmp', '$DC_USERNAME', '$DC_PASSWORD', smbtorture3, "-T 'clientldapsaslwrapping=sign'", "", "-l $LOCAL_PATH"])
+plantestsuite("samba3.smbtorture_s3.%s.sasl-seal" % t, "ad_dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER/tmp', '$DC_USERNAME', '$DC_PASSWORD', smbtorture3, "-T 'clientldapsaslwrapping=seal'", "", "-l $LOCAL_PATH"])
+plantestsuite("samba3.smbtorture_s3.%s.ldaps" % t, "ad_dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER/tmp', '$DC_USERNAME', '$DC_PASSWORD', smbtorture3,  "-T 'clientldapsaslwrapping=ldaps'", "", "-l $LOCAL_PATH"])
+plantestsuite("samba3.smbtorture_s3.%s.starttls" % t, "ad_dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER/tmp', '$DC_USERNAME', '$DC_PASSWORD', smbtorture3, "-T 'clientldapsaslwrapping=starttls'", "", "-l $LOCAL_PATH"])
 
 if have_linux_kernel_oplocks:
     t = "OPLOCK5"
