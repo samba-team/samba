@@ -234,7 +234,7 @@ static int rootdse_add_dynamic(struct rootdse_context *ac, struct ldb_message *m
 	const char * const *attrs = ac->req->op.search.attrs;
 	const char **server_sasl = NULL;
 	const struct dsdb_schema *schema;
-	int *val;
+	unsigned long long *val;
 	struct ldb_control *edn_control;
 	const char *dn_attrs[] = {
 		"configurationNamingContext",
@@ -452,7 +452,7 @@ static int rootdse_add_dynamic(struct rootdse_context *ac, struct ldb_message *m
 	}
 
 	if (do_attribute(attrs, "domainControllerFunctionality")
-	    && (val = talloc_get_type(ldb_get_opaque(ldb, "domainControllerFunctionality"), int))) {
+	    && (val = talloc_get_type(ldb_get_opaque(ldb, "domainControllerFunctionality"), unsigned long long))) {
 		if (samdb_msg_add_int(ldb, msg, msg,
 				      "domainControllerFunctionality",
 				      *val) != LDB_SUCCESS) {
@@ -1039,7 +1039,8 @@ static int rootdse_init(struct ldb_module *module)
 			= ldb_msg_find_attr_as_int(res->msgs[0],
 						   "msDS-Behavior-Version", -1);
 		if (domain_behaviour_version != -1) {
-			int *val = talloc(ldb, int);
+			unsigned long long *val
+				= talloc(ldb, unsigned long long);
 			if (!val) {
 				talloc_free(mem_ctx);
 				return ldb_oom(ldb);
@@ -1064,7 +1065,8 @@ static int rootdse_init(struct ldb_module *module)
 			= ldb_msg_find_attr_as_int(res->msgs[0],
 						   "msDS-Behavior-Version", -1);
 		if (forest_behaviour_version != -1) {
-			int *val = talloc(ldb, int);
+			unsigned long long *val
+				= talloc(ldb, unsigned long long);
 			if (!val) {
 				talloc_free(mem_ctx);
 				return ldb_oom(ldb);
@@ -1107,7 +1109,8 @@ static int rootdse_init(struct ldb_module *module)
 					= ldb_msg_find_attr_as_int(res->msgs[0],
 								   "msDS-Behavior-Version", -1);
 				if (domain_controller_behaviour_version != -1) {
-					int *val = talloc(ldb, int);
+					unsigned long long *val
+						= talloc(ldb, unsigned long long);
 					if (!val) {
 						talloc_free(mem_ctx);
 						return ldb_oom(ldb);

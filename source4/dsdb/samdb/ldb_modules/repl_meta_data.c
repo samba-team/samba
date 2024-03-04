@@ -7644,10 +7644,10 @@ static int replmd_allow_missing_target(struct ldb_module *module,
 		 * replication is completed, so failing now would just
 		 * trigger errors, rather than trigger a GET_TGT
 		 */
-		int *finished_full_join_ptr =
+		unsigned long long *finished_full_join_ptr =
 			talloc_get_type(ldb_get_opaque(ldb,
 						       DSDB_FULL_JOIN_REPLICATION_COMPLETED_OPAQUE_NAME),
-					int);
+					unsigned long long);
 		bool finished_full_join = finished_full_join_ptr && *finished_full_join_ptr;
 
 		/*

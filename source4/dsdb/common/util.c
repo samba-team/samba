@@ -4122,8 +4122,8 @@ const char *samdb_cn_to_lDAPDisplayName(TALLOC_CTX *mem_ctx, const char *cn)
  */
 int dsdb_functional_level(struct ldb_context *ldb)
 {
-	int *domainFunctionality =
-		talloc_get_type(ldb_get_opaque(ldb, "domainFunctionality"), int);
+	unsigned long long *domainFunctionality =
+		talloc_get_type(ldb_get_opaque(ldb, "domainFunctionality"), unsigned long long);
 	if (!domainFunctionality) {
 		/* this is expected during initial provision */
 		DEBUG(4,(__location__ ": WARNING: domainFunctionality not setup\n"));
@@ -4137,8 +4137,8 @@ int dsdb_functional_level(struct ldb_context *ldb)
  */
 int dsdb_forest_functional_level(struct ldb_context *ldb)
 {
-	int *forestFunctionality =
-		talloc_get_type(ldb_get_opaque(ldb, "forestFunctionality"), int);
+	unsigned long long *forestFunctionality =
+		talloc_get_type(ldb_get_opaque(ldb, "forestFunctionality"), unsigned long long);
 	if (!forestFunctionality) {
 		DEBUG(0,(__location__ ": WARNING: forestFunctionality not setup\n"));
 		return DS_DOMAIN_FUNCTION_2000;
@@ -4151,8 +4151,8 @@ int dsdb_forest_functional_level(struct ldb_context *ldb)
  */
 int dsdb_dc_functional_level(struct ldb_context *ldb)
 {
-	int *dcFunctionality =
-		talloc_get_type(ldb_get_opaque(ldb, "domainControllerFunctionality"), int);
+	unsigned long long *dcFunctionality =
+		talloc_get_type(ldb_get_opaque(ldb, "domainControllerFunctionality"), unsigned long long);
 	if (!dcFunctionality) {
 		/* this is expected during initial provision */
 		DEBUG(4,(__location__ ": WARNING: domainControllerFunctionality not setup\n"));
@@ -4296,7 +4296,7 @@ int dsdb_check_and_update_fl(struct ldb_context *ldb_ctx, struct loadparm_contex
 	 * will not re-read the DB
 	 */
 	{
-		int *val = talloc(ldb_ctx, int);
+		unsigned long long *val = talloc(ldb_ctx, unsigned long long);
 		if (!val) {
 			TALLOC_FREE(frame);
 			return LDB_ERR_OPERATIONS_ERROR;

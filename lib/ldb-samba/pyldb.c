@@ -95,7 +95,7 @@ static PyObject *py_ldb_set_credentials(PyObject *self, PyObject *args)
 static PyObject *py_ldb_set_opaque_integer(PyObject *self, PyObject *args)
 {
 	int value;
-	int *old_val, *new_val;
+	unsigned long long *old_val, *new_val;
 	char *py_opaque_name, *opaque_name_talloc;
 	struct ldb_context *ldb;
 	int ret;
@@ -107,7 +107,7 @@ static PyObject *py_ldb_set_opaque_integer(PyObject *self, PyObject *args)
 	ldb = pyldb_Ldb_AS_LDBCONTEXT(self);
 
 	/* see if we have a cached copy */
-	old_val = (int *)ldb_get_opaque(ldb, py_opaque_name);
+	old_val = (unsigned long long *)ldb_get_opaque(ldb, py_opaque_name);
 	/* XXX: We shouldn't just blindly assume that the value that is 
 	 * already present has the size of an int and is not shared 
 	 * with other code that may rely on it not changing. 
@@ -124,7 +124,7 @@ static PyObject *py_ldb_set_opaque_integer(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	new_val = talloc(tmp_ctx, int);
+	new_val = talloc(tmp_ctx, unsigned long long);
 	if (new_val == NULL) {
 		talloc_free(tmp_ctx);
 		PyErr_NoMemory();
