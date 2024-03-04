@@ -17,4 +17,3 @@
 ^samba\.tests\.krb5\.gkdi_tests\.samba\.tests\.krb5\.gkdi_tests\.GkdiImplicitRootKeyTests\.test_request_default_seed_key\(ad_dc\)$
 ^samba\.tests\.krb5\.gkdi_tests\.samba\.tests\.krb5\.gkdi_tests\.GkdiImplicitRootKeyTests\.test_request_l0_seed_key\(ad_dc\)$
 ^samba\.tests\.krb5\.gkdi_tests\.samba\.tests\.krb5\.gkdi_tests\.GkdiImplicitRootKeyTests\.test_request_l1_seed_key\(ad_dc\)$
-^samba.tests.dsdb_quiet_provision_tests.samba.tests.dsdb_quiet_provision_tests.DsdbQuietProvisionTests.test_dsdb_dn_gkdi_gmsa_root_keys_exist

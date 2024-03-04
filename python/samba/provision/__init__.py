@@ -73,9 +73,14 @@ from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2016,
     ENC_ALL_TYPES,
 )
+from samba.gkdi import (
+    KEY_CYCLE_DURATION,
+    MAX_CLOCK_SKEW
+)
 from samba.idmap import IDmapDB
 from samba.ms_display_specifiers import read_ms_ldif
 from samba.ntacls import setntacl, getntacl, dsacl2fsacl
+from samba.nt_time import nt_now
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.provision.backend import (
     LDBBackend,
@@ -2401,7 +2406,12 @@ def provision(logger, session_info, smbconf=None,
                 if updates_allowed_overridden:
                     lp.set("dsdb:schema update allowed", "no")
 
-                gkdi_root_key_dn = samdb.new_gkdi_root_key()
+                current_time = nt_now()
+                # We want the GKDI key to be instantly available for use
+                use_start_time = current_time \
+                    - KEY_CYCLE_DURATION - MAX_CLOCK_SKEW
+                gkdi_root_key_dn = samdb.new_gkdi_root_key(current_time=current_time,
+                                                           use_start_time=use_start_time)
                 logger.info("gkdi/gmsa root key added with guid "
                             f"{gkdi_root_key_dn.get_rdn_value()}")
 
