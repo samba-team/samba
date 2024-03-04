@@ -91,17 +91,21 @@ class GkdiBaseTest(TestCase):
 
     @staticmethod
     def current_time(offset: Optional[datetime.timedelta] = None) -> datetime.datetime:
-        if offset is None:
-            # Allow for clock skew.
-            offset = timedelta_from_nt_time_delta(MAX_CLOCK_SKEW)
-
         current_time = datetime.datetime.now(tz=datetime.timezone.utc)
-        return current_time + offset
+
+        if offset is not None:
+            current_time += offset
+
+        return current_time
 
     def current_nt_time(self, offset: Optional[datetime.timedelta] = None) -> NtTime:
         return nt_time_from_datetime(self.current_time(offset))
 
     def current_gkid(self, offset: Optional[datetime.timedelta] = None) -> Gkid:
+        if offset is None:
+            # Allow for clock skew.
+            offset = timedelta_from_nt_time_delta(MAX_CLOCK_SKEW)
+
         return Gkid.from_nt_time(self.current_nt_time(offset))
 
     def gkdi_connect(
@@ -515,13 +519,18 @@ class GkdiBaseTest(TestCase):
         # which exists so that the samba-tool tests can borrow that
         # function.
 
-        root_key_guid, root_key_dn = create_root_key(samdb,
-                                                     domain_dn,
-                                                     current_nt_time=self.current_nt_time(),
-                                                     use_start_time=use_start_time,
-                                                     hash_algorithm=hash_algorithm,
-                                                     guid=guid,
-                                                     data=data)
+        root_key_guid, root_key_dn = create_root_key(
+            samdb,
+            domain_dn,
+            current_nt_time=self.current_nt_time(
+                # Allow for clock skew.
+                timedelta_from_nt_time_delta(MAX_CLOCK_SKEW)
+            ),
+            use_start_time=use_start_time,
+            hash_algorithm=hash_algorithm,
+            guid=guid,
+            data=data,
+        )
 
         if guid is not None:
             # A test may request that a root key have a specific GUID so that
