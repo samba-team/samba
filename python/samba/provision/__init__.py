@@ -1381,10 +1381,10 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
 
     # These will be fixed into the database via the database
     # modifictions below, but we need them set from the start.
-    samdb.set_opaque_integer("domainFunctionality", domainFunctionality)
-    samdb.set_opaque_integer("forestFunctionality", forestFunctionality)
-    samdb.set_opaque_integer("domainControllerFunctionality",
-                             domainControllerFunctionality)
+    samdb.set_opaque("domainFunctionality", domainFunctionality)
+    samdb.set_opaque("forestFunctionality", forestFunctionality)
+    samdb.set_opaque("domainControllerFunctionality",
+                     domainControllerFunctionality)
 
     samdb.set_domain_sid(str(names.domainsid))
     samdb.set_invocation_id(invocationid)

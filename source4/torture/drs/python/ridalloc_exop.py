@@ -736,8 +736,8 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             # simulates getting the delete in the replciation stream.
             new_ldb.deleteuser(test_user4)
 
-            new_ldb.set_opaque_integer(dsdb.DSDB_FULL_JOIN_REPLICATION_COMPLETED_OPAQUE_NAME,
-                                       1)
+            new_ldb.set_opaque(dsdb.DSDB_FULL_JOIN_REPLICATION_COMPLETED_OPAQUE_NAME,
+                               1)
 
             # This should now work
             try:

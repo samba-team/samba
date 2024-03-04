@@ -1096,11 +1096,11 @@ class DCJoinContext(object):
             # was sent, as we are processing all links in the
             # transaction_commit().
             if not ctx.domain_replica_flags & drsuapi.DRSUAPI_DRS_CRITICAL_ONLY:
-                ctx.local_samdb.set_opaque_integer(dsdb.DSDB_FULL_JOIN_REPLICATION_COMPLETED_OPAQUE_NAME,
-                                                   1)
+                ctx.local_samdb.set_opaque(dsdb.DSDB_FULL_JOIN_REPLICATION_COMPLETED_OPAQUE_NAME,
+                                           1)
             ctx.local_samdb.transaction_commit()
-            ctx.local_samdb.set_opaque_integer(dsdb.DSDB_FULL_JOIN_REPLICATION_COMPLETED_OPAQUE_NAME,
-                                               0)
+            ctx.local_samdb.set_opaque(dsdb.DSDB_FULL_JOIN_REPLICATION_COMPLETED_OPAQUE_NAME,
+                                       0)
             ctx.logger.info("Committed SAM database")
 
         # A large replication may have caused our LDB connection to the
@@ -1320,8 +1320,8 @@ class DCJoinContext(object):
         if ctx.RODC:
             print("Setting RODC invocationId")
             ctx.local_samdb.set_invocation_id(str(ctx.invocation_id))
-            ctx.local_samdb.set_opaque_integer("domainFunctionality",
-                                               ctx.behavior_version)
+            ctx.local_samdb.set_opaque("domainFunctionality",
+                                       ctx.behavior_version)
             m = ldb.Message()
             m.dn = ldb.Dn(ctx.local_samdb, "%s" % ctx.ntds_dn)
             m["invocationId"] = ldb.MessageElement(ndr_pack(ctx.invocation_id),
