@@ -2475,7 +2475,7 @@ static PyObject *py_ldb_set_opaque(PyLdbObject *self, PyObject *args)
 			b = is_true;
 		}
 
-		opaque = talloc(self->mem_ctx, bool);
+		opaque = talloc(self->ldb_ctx, bool);
 		if (opaque == NULL) {
 			return PyErr_NoMemory();
 		}
@@ -2488,7 +2488,7 @@ static PyObject *py_ldb_set_opaque(PyLdbObject *self, PyObject *args)
 			return NULL;
 		}
 
-		opaque = talloc(self->mem_ctx, unsigned long long);
+		opaque = talloc(self->ldb_ctx, unsigned long long);
 		if (opaque == NULL) {
 			return PyErr_NoMemory();
 		}
@@ -2501,7 +2501,7 @@ static PyObject *py_ldb_set_opaque(PyLdbObject *self, PyObject *args)
 			return NULL;
 		}
 
-		opaque = talloc_strdup(self->mem_ctx, s);
+		opaque = talloc_strdup(self->ldb_ctx, s);
 		if (opaque == NULL) {
 			return PyErr_NoMemory();
 		}
