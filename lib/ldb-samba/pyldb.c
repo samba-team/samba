@@ -91,71 +91,6 @@ static PyObject *py_ldb_set_credentials(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-/* XXX: This function really should be in libldb's pyldb.c */
-static PyObject *py_ldb_set_opaque_integer(PyObject *self, PyObject *args)
-{
-	int value;
-	unsigned long long *old_val, *new_val;
-	char *py_opaque_name, *opaque_name_talloc;
-	struct ldb_context *ldb;
-	int ret;
-	TALLOC_CTX *tmp_ctx;
-
-	if (!PyArg_ParseTuple(args, "si", &py_opaque_name, &value))
-		return NULL;
-
-	ldb = pyldb_Ldb_AS_LDBCONTEXT(self);
-
-	/* see if we have a cached copy */
-	old_val = (unsigned long long *)ldb_get_opaque(ldb, py_opaque_name);
-	/* XXX: We shouldn't just blindly assume that the value that is 
-	 * already present has the size of an int and is not shared 
-	 * with other code that may rely on it not changing. 
-	 * JRV 20100403 */
-
-	if (old_val) {
-		*old_val = value;
-		Py_RETURN_NONE;
-	}
-
-	tmp_ctx = talloc_new(ldb);
-	if (tmp_ctx == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-
-	new_val = talloc(tmp_ctx, unsigned long long);
-	if (new_val == NULL) {
-		talloc_free(tmp_ctx);
-		PyErr_NoMemory();
-		return NULL;
-	}
-
-	opaque_name_talloc = talloc_strdup(tmp_ctx, py_opaque_name);
-	if (opaque_name_talloc == NULL) {
-		talloc_free(tmp_ctx);
-		PyErr_NoMemory();
-		return NULL;
-	}
-
-	*new_val = value;
-
-	/* cache the domain_sid in the ldb */
-	ret = ldb_set_opaque(ldb, opaque_name_talloc, new_val);
-
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		PyErr_SetLdbError(py_ldb_error, ret, ldb);
-		return NULL;
-	}
-
-	talloc_steal(ldb, new_val);
-	talloc_steal(ldb, opaque_name_talloc);
-	talloc_free(tmp_ctx);
-
-	Py_RETURN_NONE;
-}
-
 static PyObject *py_ldb_set_utf8_casefold(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
@@ -250,8 +185,6 @@ static PyMethodDef py_samba_ldb_methods[] = {
 	{ "set_credentials", (PyCFunction)py_ldb_set_credentials, METH_VARARGS,
 		"set_credentials(credentials)\n"
 		"Set credentials to use when connecting." },
-	{ "set_opaque_integer", (PyCFunction)py_ldb_set_opaque_integer,
-		METH_VARARGS, NULL },
 	{ "set_utf8_casefold", (PyCFunction)py_ldb_set_utf8_casefold, 
 		METH_NOARGS,
 		"set_utf8_casefold()\n"
