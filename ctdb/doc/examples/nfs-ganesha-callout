@@ -73,7 +73,7 @@ usage()
 	_c=$(basename "$0")
 	cat <<EOF
 usage: $_c { shutdown | startup }
-       $_c { stop | start | check } nfs
+       $_c { stop | start | check | stats } nfs
        $_c { releaseip | takeip } <iface> <ip> <maskbits>
        $_c { monitor-list-shares }
 EOF
@@ -266,6 +266,22 @@ service_check()
 	return 0
 }
 
+nfs_stats()
+{
+	_service="$1"
+
+	case "$_service" in
+	nfs)
+		timeout -v 5 ganesha_stats | grep '^Total NFSv.* ops:'
+		;;
+	*)
+		# This will never change, so is intentionally
+		# unhelpful for avoiding an unhealthy service
+		echo "Not implemented" >&2
+		exit 1
+	esac
+}
+
 #-------------------------------------------------
 
 grace_period()
@@ -411,6 +427,7 @@ startup
 stop
 start
 check
+stats
 startipreallocate
 releaseip
 takeip
@@ -429,6 +446,7 @@ startup) nfs_startup ;;
 stop) service_stop "$1" ;;
 start) service_start "$1" ;;
 check) service_check "$1" ;;
+stats) nfs_stats "$1" ;;
 startipreallocate) nfs_startipreallocate ;;
 releaseip) nfs_releaseip "$@" ;;
 takeip) nfs_takeip "$@" ;;
