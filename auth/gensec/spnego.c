@@ -503,17 +503,7 @@ static NTSTATUS gensec_spnego_client_negTokenInit_start(
 					TALLOC_CTX *in_mem_ctx,
 					DATA_BLOB *in_next)
 {
-	const char *tp = NULL;
-
 	/* The server offers a list of mechanisms */
-
-	tp = spnego_in->negTokenInit.targetPrincipal;
-	if (tp != NULL && strcmp(tp, ADS_IGNORE_PRINCIPAL) != 0) {
-		DBG_INFO("Server claims it's principal name is %s\n", tp);
-		if (lpcfg_client_use_spnego_principal(gensec_security->settings->lp_ctx)) {
-			gensec_set_target_principal(gensec_security, tp);
-		}
-	}
 
 	n->mech_idx = 0;
 
