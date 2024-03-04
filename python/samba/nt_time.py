@@ -18,7 +18,7 @@
 #
 
 import datetime
-from typing import NewType
+from typing import NewType, Optional
 import re
 
 
@@ -107,7 +107,7 @@ def nt_time_from_string(s: str) -> NtTime:
     return nt_time_from_datetime(dt)
 
 
-def string_from_nt_time(nttime: NtTime, format:str=None) -> str:
+def string_from_nt_time(nttime: NtTime, format: Optional[str] = None) -> str:
     """Format an NtTime date as a string.
 
     If format is not provided, an ISO 8601 string is used.
