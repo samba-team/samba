@@ -2796,7 +2796,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "NTLMAuth", "ntlmv2-only");
 	lpcfg_do_global_parameter(lp_ctx, "NT hash store", "always");
 	lpcfg_do_global_parameter(lp_ctx, "RawNTLMv2Auth", "False");
-	lpcfg_do_global_parameter(lp_ctx, "client use spnego principal", "False");
 
 	lpcfg_do_global_parameter(lp_ctx, "allow dcerpc auth level connect", "False");
 
