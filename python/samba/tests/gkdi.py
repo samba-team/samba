@@ -647,7 +647,8 @@ def create_root_key(
 
     root_key_dn = samdb.get_config_basedn()
     root_key_dn.add_child(
-        "CN=Master Root Keys,CN=Group Key Distribution Service,CN=Services")
+        "CN=Master Root Keys,CN=Group Key Distribution Service,CN=Services"
+    )
 
     root_key_dn.add_child(f"CN={guid}")
 
@@ -667,9 +668,7 @@ def create_root_key(
         "msKds-KDFAlgorithmID": (
             "SP800_108_CTR_HMAC"
         ),  # comes from Server Configuration.
-        "msKds-SecretAgreementAlgorithmID": (
-            "DH"
-        ),  # comes from Server Configuration.
+        "msKds-SecretAgreementAlgorithmID": "DH",  # comes from Server Configuration.
         "msKds-SecretAgreementParam": (
             ffc_dh_parameters
         ),  # comes from Server Configuration.
@@ -679,9 +678,7 @@ def create_root_key(
         ),  # comes from Server Configuration. [MS-GKDI] claims this defaults to ‘256’.
     }
     if kdf_parameters is not None:
-        details["msKds-KDFParam"] = (
-            kdf_parameters  # comes from Server Configuration.
-        )
+        details["msKds-KDFParam"] = kdf_parameters  # comes from Server Configuration.
 
     samdb.add(details)
 
