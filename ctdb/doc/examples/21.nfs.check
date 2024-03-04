@@ -1,0 +1,7 @@
+# nfs_ganesha RPC
+restart_every=6
+unhealthy_after=2
+service_stop_cmd="$CTDB_NFS_CALLOUT stop nfs"
+service_start_cmd="$CTDB_NFS_CALLOUT start nfs"
+service_stats_cmd="$CTDB_NFS_CALLOUT stats nfs"
+service_debug_cmd="program_stack_traces ganesha.nfsd"

@@ -7,9 +7,10 @@ Sample CTDB configuration files:
   o 91.lvs.options   - Options for the 91.lvs event script
 
 Sample 60.nfs configuration for NFS ganesha - callout script and
-.check file
+.check files
 
   o nfs-ganesha-callout
   o 20.nfs_ganesha.check
+  o 21.nfs.check
 
 See the comment at the top of nfs-ganesha-callout for instructions.

@@ -15,9 +15,9 @@
 #   copy of) this script, making sure it is executable.
 #
 # * Create a new directory alongside the nfs-checks.d directory, for
-#   example nfs-checks-ganesha.d.  Install 20.nfs-ganesha.check in
-#   this directory.  Symlink to any other check files from
-#   nfs-checks.d that should still be used, such as
+#   example nfs-checks-ganesha.d.  Install 20.nfs_ganesha.check and
+#   21.nfs.check in this directory.  Symlink to any other check files
+#   from nfs-checks.d that should still be used, such as
 #   00.portmapper.check.  Set CTDB_NFS_CHECKS_DIR to point to this new
 #   directory of check files.
 #
