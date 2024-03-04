@@ -54,6 +54,7 @@
 #include "librpc/rpc/dcerpc_helper.h"
 #include "lib/param/loadparm.h"
 #include "source3/lib/substitute.h"
+#include "librpc/rpc/dcerpc_lsa.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
@@ -1720,6 +1721,58 @@ NTSTATUS _lsa_OpenTrustedDomainByName(struct pipes_struct *p,
 
 	return _lsa_OpenTrustedDomain_base(p, r->in.access_mask, info,
 					   r->out.trustdom_handle);
+}
+
+static NTSTATUS get_trustdom_auth_blob_aes(
+	struct dcesrv_call_state *dce_call,
+	TALLOC_CTX *mem_ctx,
+	struct lsa_TrustDomainInfoAuthInfoInternalAES *auth_info,
+	struct trustDomainPasswords *auth_struct)
+{
+	DATA_BLOB session_key = data_blob_null;
+	DATA_BLOB salt = data_blob(auth_info->salt, sizeof(auth_info->salt));
+	DATA_BLOB auth_blob = data_blob(auth_info->cipher.data,
+					auth_info->cipher.size);
+	DATA_BLOB ciphertext = data_blob_null;
+	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+
+	/*
+	 * The data blob starts with 512 bytes of random data and has two 32bit
+	 * size parameters.
+	 */
+	if (auth_blob.length < 520) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = dcesrv_transport_session_key(dce_call, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = samba_gnutls_aead_aes_256_cbc_hmac_sha512_decrypt(
+		mem_ctx,
+		&auth_blob,
+		&session_key,
+		&lsa_aes256_enc_key_salt,
+		&lsa_aes256_mac_key_salt,
+		&salt,
+		auth_info->auth_data,
+		&ciphertext);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	ndr_err = ndr_pull_struct_blob(
+			&ciphertext,
+			mem_ctx,
+			auth_struct,
+			(ndr_pull_flags_fn_t)ndr_pull_trustDomainPasswords);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS get_trustdom_auth_blob(struct pipes_struct *p,
@@ -5169,8 +5222,58 @@ void _lsa_Opnum128NotUsedOnWire(struct pipes_struct *p,
 NTSTATUS _lsa_CreateTrustedDomainEx3(struct pipes_struct *p,
 				     struct lsa_CreateTrustedDomainEx3 *r)
 {
-	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct dcesrv_call_state *dce_call = p->dce_call;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
+	struct lsa_info *policy;
+	NTSTATUS status;
+	struct trustDomainPasswords auth_struct = {
+		.incoming_size = 0,
+	};
+
+	if (!IS_DC) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	policy = find_policy_by_hnd(p,
+				    r->in.policy_handle,
+				    LSA_HANDLE_POLICY_TYPE,
+				    struct lsa_info,
+				    &status);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	status = lsa_CreateTrustedDomain_precheck(p->mem_ctx,
+						  policy,
+						  session_info,
+						  r->in.info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+
+	status = get_trustdom_auth_blob_aes(dce_call,
+					    p->mem_ctx,
+					    r->in.auth_info_internal,
+					    &auth_struct);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	status = lsa_CreateTrustedDomain_common(p,
+						p->mem_ctx,
+						session_info,
+						policy,
+						r->in.access_mask,
+						r->in.info,
+						&auth_struct,
+						&r->out.trustdom_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
