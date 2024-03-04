@@ -28,6 +28,11 @@ from samba.credentials import Credentials
 from samba.samdb import SamDB
 from samba.auth import system_session
 from samba.tests import TestCase
+from samba.gkdi import (
+    KEY_CYCLE_DURATION,
+    MAX_CLOCK_SKEW
+)
+from samba.nt_time import nt_now
 import ldb
 import samba
 
@@ -48,12 +53,17 @@ class DsdbQuietProvisionTests(TestCase):
     def test_dsdb_dn_gkdi_gmsa_root_keys_exist(self):
         """In provision we set up a GKDI root key.
 
-        There should always be at least one.
+        There should always be at least one that is already valid
         """
+        current_time = nt_now()
+        # We need the GKDI key to be already available for use
+        min_use_start_time = current_time \
+            - KEY_CYCLE_DURATION - MAX_CLOCK_SKEW
+
         dn = self.samdb.get_config_basedn()
         dn.add_child("CN=Master Root Keys,CN=Group Key Distribution Service,CN=Services")
         res = self.samdb.search(dn,
                                 scope=ldb.SCOPE_SUBTREE,
-                                expression="(objectClass = msKds-ProvRootKey)")
+                                expression=f"(&(objectClass = msKds-ProvRootKey)(msKds-UseStartTime<={min_use_start_time}))")
 
         self.assertGreater(len(res), 0)
