@@ -85,19 +85,21 @@ def nt_time_from_string(s: str) -> NtTime:
     UTC).
     """
     try:
-        if s == 'now':
+        if s == "now":
             dt = datetime.datetime.now(datetime.timezone.utc)
-        elif re.match(r'^\d{14}\.0Z$', s):
+        elif re.match(r"^\d{14}\.0Z$", s):
             # "20230127223641.0Z"
-            dt = datetime.datetime.strptime(s, '%Y%m%d%H%M%S.0Z')
+            dt = datetime.datetime.strptime(s, "%Y%m%d%H%M%S.0Z")
         else:
             dt = datetime.datetime.fromisoformat(s)
     except ValueError:
-        raise ValueError("Expected a date in either "
-                         "ISO8601 'YYYY-MM-DD HH:MM:SS' format, "
-                         "LDAP timestamp 'YYYYmmddHHMMSS.0Z', "
-                         "or the literal string 'now'. "
-                         f" Got '{s}'.")
+        raise ValueError(
+            "Expected a date in either "
+            "ISO8601 'YYYY-MM-DD HH:MM:SS' format, "
+            "LDAP timestamp 'YYYYmmddHHMMSS.0Z', "
+            "or the literal string 'now'. "
+            f" Got '{s}'."
+        )
 
     if dt.tzinfo is None:
         # This is a cursed timestamp with no timezone info. We have to
