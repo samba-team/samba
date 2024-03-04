@@ -87,6 +87,11 @@ _gsskrb5_create_8003_checksum (
 {
     u_char *p;
 
+#define _GSS_C_NON_8003_WIRE_FLAGS \
+	GSS_C_CHANNEL_BOUND_FLAG
+
+    flags &= ~_GSS_C_NON_8003_WIRE_FLAGS;
+
     /*
      * see rfc1964 (section 1.1.1 (Initial Token), and the checksum value
      * field's format) */

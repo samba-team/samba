@@ -82,6 +82,7 @@ static int token_split  = 0;
 static int version_flag = 0;
 static int verbose_flag = 0;
 static int help_flag	= 0;
+static int i_channel_bound = 0;
 static char *i_channel_bindings = NULL;
 static char *a_channel_bindings = NULL;
 
@@ -287,6 +288,8 @@ loop(gss_OID mechoid,
 	flags |= GSS_C_DELEG_FLAG;
     if (policy_deleg_flag)
 	flags |= GSS_C_DELEG_POLICY_FLAG;
+    if (i_channel_bound)
+	flags |= GSS_C_CHANNEL_BOUND_FLAG;
 
     input_token.value = rk_UNCONST(target);
     input_token.length = strlen(target);
@@ -904,6 +907,7 @@ static struct getargs args[] = {
     {"client-name", 0,  arg_string,     &client_name, "client name", NULL },
     {"client-password", 0,  arg_string, &client_password, "client password", NULL },
     {"anonymous", 0,	arg_flag,	&anon_flag, "anonymous auth", NULL },
+    {"i-channel-bound",0, arg_flag,	&i_channel_bound, "initiator channel bound", NULL },
     {"i-channel-bindings", 0, arg_string, &i_channel_bindings, "initiator channel binding data", NULL },
     {"a-channel-bindings", 0, arg_string, &a_channel_bindings, "acceptor channel binding data", NULL },
     {"limit-enctype",0,	arg_string,	&limit_enctype_string, "enctype", NULL },
