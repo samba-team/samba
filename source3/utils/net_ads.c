@@ -853,12 +853,10 @@ static int net_ads_check_int(struct net_context *c,
 		goto out;
 	}
 
-	ads->auth.flags |= ADS_AUTH_NO_BIND;
-
-        status = ads_connect(ads);
-        if ( !ADS_ERR_OK(status) ) {
-                goto out;
-        }
+	status = ads_connect_cldap_only(ads);
+	if (!ADS_ERR_OK(status)) {
+		goto out;
+	}
 
 	ret = 0;
 out:
