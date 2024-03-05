@@ -116,6 +116,11 @@ static PyObject *GPO_marshall_get_sec_desc_buf(PyObject *self, PyObject *args,
 	uint8_t *data = NULL;
 	size_t len = 0;
 
+	if (gpo_ptr->security_descriptor == NULL) {
+		PyErr_SetString(PyExc_RuntimeError, "Uninitialized");
+		return NULL;
+	}
+
 	status = marshall_sec_desc(gpo_ptr, gpo_ptr->security_descriptor,
 				   &data, &len);
 	if (!NT_STATUS_IS_OK(status)) {
