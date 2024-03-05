@@ -1205,43 +1205,33 @@ static const char **PyList_AsStrList(TALLOC_CTX *mem_ctx, PyObject *list,
 	return ret;
 }
 
+static PyObject *py_ldb_connect(PyLdbObject *self, PyObject *args, PyObject *kwargs);
+
 static int py_ldb_init(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 {
 	const char * const kwnames[] = { "url", "flags", "options", NULL };
 	char *url = NULL;
-	PyObject *py_options = Py_None;
-	const char **options;
+	PyObject *py_options = NULL;
 	unsigned int flags = 0;
-	int ret;
-	struct ldb_context *ldb;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|zIO:Ldb.__init__",
 					 discard_const_p(char *, kwnames),
-					 &url, &flags, &py_options))
+					 &url, &flags, &py_options)) {
 		return -1;
-
-	ldb = pyldb_Ldb_AS_LDBCONTEXT(self);
-
-	if (py_options == Py_None) {
-		options = NULL;
-	} else {
-		options = PyList_AsStrList(ldb, py_options, "options");
-		if (options == NULL)
-			return -1;
 	}
 
 	if (url != NULL) {
-		ret = ldb_connect(ldb, url, flags, options);
-		if (ret != LDB_SUCCESS) {
-			PyErr_SetLdbError(PyExc_LdbError, ret, ldb);
-			talloc_free(options);
+		/* py_ldb_connect returns py_None on success, NULL on error */
+		PyObject *result = py_ldb_connect(self, args, kwargs);
+		if (result == NULL) {
 			return -1;
 		}
+		Py_DECREF(result);
 	} else {
+		struct ldb_context *ldb = pyldb_Ldb_AS_LDBCONTEXT(self);
 		ldb_set_flags(ldb, flags);
 	}
 
-	talloc_free(options);
 	return 0;
 }
 
