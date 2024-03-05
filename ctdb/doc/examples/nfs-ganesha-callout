@@ -64,10 +64,9 @@ glusterfs)
 	;;
 esac
 
-
 ##################################################
 
-usage ()
+usage()
 {
 	_c=$(basename "$0")
 	cat <<EOF
@@ -76,14 +75,13 @@ usage: $_c { shutdown | startup }
        $_c { releaseip | takeip }
        $_c { monitor-list-shares }
 EOF
-    exit 1
+	exit 1
 }
-
 
 ##################################################
 # Basic service stop and start
 
-basic_stop ()
+basic_stop()
 {
 	case "$1" in
 	nfs)
@@ -91,10 +89,11 @@ basic_stop ()
 		;;
 	*)
 		usage
+		;;
 	esac
 }
 
-basic_start ()
+basic_start()
 {
 	case "$1" in
 	nfs)
@@ -102,28 +101,30 @@ basic_start ()
 		;;
 	*)
 		usage
+		;;
 	esac
 }
 
 ##################################################
 # "stop" and "start" options for restarting
 
-service_stop ()
+service_stop()
 {
-    case "$1" in
+	case "$1" in
 	nfs)
-	    basic_stop "nfs"
-	    ;;
+		basic_stop "nfs"
+		;;
 	nlockmgr)
-	    # Do nothing - used by statd-callout
-	    :
-	    ;;
+		# Do nothing - used by statd-callout
+		:
+		;;
 	*)
-	    usage
-    esac
+		usage
+		;;
+	esac
 }
 
-service_start ()
+service_start()
 {
 	case "$1" in
 	nfs)
@@ -135,6 +136,7 @@ service_start ()
 		;;
 	*)
 		usage
+		;;
 	esac
 }
 
@@ -143,13 +145,13 @@ service_start ()
 
 # Check that a symlink exists, create it otherwise.
 # Usage: check_ln <TARGET> <LINK>
-check_ln ()
+check_ln()
 {
-	if [ ! -L "${2}" ] ; then
+	if [ ! -L "${2}" ]; then
 		rm -vrf "${2}"
 	else
 		_t=$(readlink "${2}")
-		if [ "$_t" != "${1}" ] ; then
+		if [ "$_t" != "${1}" ]; then
 			rm -v "${2}"
 		fi
 	fi
@@ -161,7 +163,7 @@ check_ln ()
 }
 
 # Return 'active' if the shared filesystem is accessible.
-get_cluster_fs_state ()
+get_cluster_fs_state()
 {
 	case $state_fs in
 	gpfs)
@@ -178,7 +180,7 @@ get_cluster_fs_state ()
 	esac
 }
 
-create_ganesha_recdirs ()
+create_ganesha_recdirs()
 {
 	if ! _mounts=$(mount | grep "$state_fs"); then
 		echo "Failed to find mounts of type $state_fs"
@@ -197,7 +199,7 @@ create_ganesha_recdirs ()
 		check_ln "$_link_dst" "$GANRECDIR"
 		;;
 	glusterfs)
-		[ -d /var/lib/nfs.backup ] || \
+		[ -d /var/lib/nfs.backup ] ||
 			mv /var/lib/nfs /var/lib/nfs.backup
 		check_ln "$NODESTATEDIR" /var/lib/nfs
 
@@ -210,40 +212,41 @@ create_ganesha_recdirs ()
 
 		mkdir -p "$GANSTATEDIR"
 		check_ln "$NODESTATEDIR" "$NODESTATELN"
-		for _dir in "${GANSTATEDIR}/"* ; do
+		for _dir in "${GANSTATEDIR}/"*; do
 			# Handle no directories case
-			if [ ! -d "$_dir" ] ; then
+			if [ ! -d "$_dir" ]; then
 				break
 			fi
 
 			_node="${_dir##*/}" # basename
 			if [ "${_node}" != "${host}" ]; then
 				check_ln "${GANSTATEDIR}/${_node}/ganesha" \
-					 "${NODESTATEDIR}/ganesha/${_node}"
+					"${NODESTATEDIR}/ganesha/${_node}"
 				check_ln "${GANSTATEDIR}/${_node}/statd" \
-					 "${NODESTATEDIR}/statd/${_node}"
+					"${NODESTATEDIR}/statd/${_node}"
 			fi
 		done
 		;;
 	esac
 }
 
-service_check ()
+service_check()
 {
 	create_ganesha_recdirs
 
 	# Always succeed if cluster filesystem is not active
 	_cluster_fs_state=$(get_cluster_fs_state)
-	if [ "$_cluster_fs_state" != "active" ] ; then
+	if [ "$_cluster_fs_state" != "active" ]; then
 		return 0
 	fi
 
 	# Check that NFS Ganesha is running, according to PID file
 	_pidfile="/var/run/ganesha.pid"
 	_ganesha="/usr/bin/ganesha.nfsd"
-	if ! { read -r _pid < "$_pidfile" && \
-		grep "$_ganesha" "${procfs}/${_pid}/cmdline" ; } >/dev/null 2>&1
-	then
+	if ! {
+		read -r _pid <"$_pidfile" &&
+			grep "$_ganesha" "${procfs}/${_pid}/cmdline"
+	} >/dev/null 2>&1; then
 
 		echo "ERROR: NFS Ganesha not running according to PID file"
 		return 1
@@ -280,11 +283,11 @@ nfs_releaseip()
 	grace_period "2:${_ip}"
 }
 
-nfs_takeip ()
+nfs_takeip()
 {
 	_ip="$2"
 
-	case  $state_fs in
+	case $state_fs in
 	glusterfs)
 		check_ln "$NODESTATEDIR" "${GANSTATEDIR}/${_ip}"
 		;;
@@ -296,12 +299,12 @@ nfs_takeip ()
 ##################################################
 # service init startup and final shutdown
 
-nfs_shutdown ()
+nfs_shutdown()
 {
 	basic_stop "nfs"
 }
 
-nfs_startup ()
+nfs_startup()
 {
 	basic_stop "nfs" || true
 
@@ -309,7 +312,7 @@ nfs_startup ()
 
 	basic_start "nfs"
 	_f="${procfs}/sys/net/ipv4/tcp_tw_recycle"
-	if [ -f "$_f" ] ; then
+	if [ -f "$_f" ]; then
 		echo 1 >"$_f"
 	fi
 }
@@ -317,7 +320,7 @@ nfs_startup ()
 ##################################################
 # list share directories
 
-nfs_monitor_list_shares ()
+nfs_monitor_list_shares()
 {
 	grep Path "$nfs_exports_file" |
 		cut -f2 -d\" |
@@ -326,7 +329,7 @@ nfs_monitor_list_shares ()
 
 ##################################################
 
-nfs_register ()
+nfs_register()
 {
 	cat <<EOF
 shutdown
@@ -347,20 +350,21 @@ action="$1"
 shift
 
 case "$action" in
-shutdown)            nfs_shutdown            ;;
-startup)             nfs_startup             ;;
-stop)                service_stop "$1"       ;;
-start)               service_start "$1"      ;;
-check)               service_check "$1"      ;;
-startipreallocate)   nfs_startipreallocate   ;;
-releaseip)           nfs_releaseip "$@"      ;;
-takeip)              nfs_takeip "$@"         ;;
+shutdown) nfs_shutdown ;;
+startup) nfs_startup ;;
+stop) service_stop "$1" ;;
+start) service_start "$1" ;;
+check) service_check "$1" ;;
+startipreallocate) nfs_startipreallocate ;;
+releaseip) nfs_releaseip "$@" ;;
+takeip) nfs_takeip "$@" ;;
 monitor-list-shares) nfs_monitor_list_shares ;;
-register)            nfs_register            ;;
-monitor-pre|monitor-post)
+register) nfs_register ;;
+monitor-pre | monitor-post)
 	# Not required/implemented
 	:
 	;;
 *)
 	usage
+	;;
 esac
