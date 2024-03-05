@@ -23,10 +23,14 @@
 #include "includes.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_internal.h"
+#include "auth/credentials/credentials.h"
 #include "auth/common_auth.h"
 #include "../lib/util/asn1.h"
 #include "param/param.h"
 #include "libds/common/roles.h"
+#include "lib/util/util_net.h"
+
+#undef strcasecmp
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -335,4 +339,63 @@ const char *gensec_child_final_auth_type(struct gensec_security *gensec_security
 	}
 
 	return gensec_final_auth_type(gensec_security->child_security);
+}
+
+NTSTATUS gensec_kerberos_possible(struct gensec_security *gensec_security)
+{
+	struct cli_credentials *creds = gensec_get_credentials(gensec_security);
+	bool auth_requested = cli_credentials_authentication_requested(creds);
+	enum credentials_use_kerberos krb5_state =
+		cli_credentials_get_kerberos_state(creds);
+	char *user_principal = NULL;
+	const char *client_realm = cli_credentials_get_realm(creds);
+	const char *target_principal = gensec_get_target_principal(gensec_security);
+	const char *hostname = gensec_get_target_hostname(gensec_security);
+
+	if (!auth_requested) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (krb5_state == CRED_USE_KERBEROS_DISABLED) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	errno = 0;
+	user_principal = cli_credentials_get_principal(creds, gensec_security);
+	if (errno != 0) {
+		TALLOC_FREE(user_principal);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (user_principal == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	TALLOC_FREE(user_principal);
+
+	if (target_principal != NULL) {
+		return NT_STATUS_OK;
+	}
+
+	if (client_realm == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (hostname == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (strcasecmp(hostname, "localhost") == 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+#define STAR_SMBSERVER "*SMBSERVER"
+	if (strcmp(hostname, STAR_SMBSERVER) == 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (is_ipaddress(hostname)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return NT_STATUS_OK;
 }
