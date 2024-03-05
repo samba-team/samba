@@ -162,7 +162,7 @@ class GMSAPasswordTest(BlackboxTestCase):
 
         # Just assert the number makes sense
         self.assertGreater(querytime, nt_time_from_datetime(datetime.datetime.now(tz=datetime.timezone.utc)))
-        self.assertLess(querytime, nt_time_from_datetime(datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(hours = 21)))
+        self.assertLess(querytime, nt_time_from_datetime(datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(hours=21)))
 
     def test_querytime_unixtime(self):
         user_msg = self.getpassword("virtualManagedPasswordQueryTime;format=UnixTime")
@@ -170,7 +170,7 @@ class GMSAPasswordTest(BlackboxTestCase):
 
         # Just assert the number makes sense
         self.assertGreater(querytime, datetime.datetime.now(tz=datetime.timezone.utc).timestamp())
-        self.assertLess(querytime, (datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(hours = 21)).timestamp())
+        self.assertLess(querytime, (datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(hours=21)).timestamp())
 
     @classmethod
     def _make_cmdline(cls, line):
