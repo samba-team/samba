@@ -338,6 +338,7 @@ static void add_interface(const struct iface_struct *ifs)
 	iface->linkspeed = ifs->linkspeed;
 	iface->capability = ifs->capability;
 	iface->if_index = ifs->if_index;
+	iface->options = ifs->options;
 
 	DLIST_ADD(local_interfaces, iface);
 
@@ -353,8 +354,11 @@ static void add_interface(const struct iface_struct *ifs)
 }
 
 
-static void parse_extra_info(char *key, uint64_t *speed, uint32_t *cap,
-			     uint32_t *if_index)
+static void parse_extra_info(char *key,
+			     uint64_t *speed,
+			     uint32_t *cap,
+			     uint32_t *if_index,
+			     uint32_t *options)
 {
 	while (key != NULL && *key != '\0') {
 		char *next_key;
@@ -396,6 +400,15 @@ static void parse_extra_info(char *key, uint64_t *speed, uint32_t *cap,
 								  SMB_STR_STANDARD);
 				if (error != 0) {
 					DBG_DEBUG("Invalid key value (%s)\n", val);
+				}
+			} else if (strequal_m(key, "options")) {
+				if (strequal_m(val, "dynamic")) {
+					*options |= IFACE_DYNAMIC_OPTION;
+				} else if (strequal_m(val, "nodynamic")) {
+					*options &= ~IFACE_DYNAMIC_OPTION;
+				} else {
+					DBG_WARNING("Options unknown: "
+						    "'%s'\n", val);
 				}
 			} else {
 				DBG_DEBUG("Key unknown: '%s'\n", key);
@@ -455,6 +468,8 @@ static void interpret_interface(char *token)
 	bool speed_set = false;
 	bool cap_set = false;
 	bool if_index_set = false;
+	uint32_t options = IFACE_NONE_OPTION;
+	bool options_set = false;
 
 	/*
 	 * extract speed / capability information if present
@@ -462,7 +477,7 @@ static void interpret_interface(char *token)
 	p = strchr_m(token, ';');
 	if (p != NULL) {
 		*p++ = 0;
-		parse_extra_info(p, &speed, &cap, &if_index);
+		parse_extra_info(p, &speed, &cap, &if_index, &options);
 		if (speed != 0) {
 			speed_set = true;
 		}
@@ -471,6 +486,9 @@ static void interpret_interface(char *token)
 		}
 		if (if_index != 0) {
 			if_index_set = true;
+		}
+		if (options != IFACE_NONE_OPTION) {
+			options_set = true;
 		}
 	}
 
@@ -485,6 +503,9 @@ static void interpret_interface(char *token)
 			}
 			if (if_index_set) {
 				probed_ifaces[i].if_index = if_index;
+			}
+			if (options_set) {
+				 probed_ifaces[i].options = options;
 			}
 			add_interface(&probed_ifaces[i]);
 			added = true;
@@ -514,6 +535,9 @@ static void interpret_interface(char *token)
 				}
 				if (if_index_set) {
 					probed_ifaces[i].if_index = if_index;
+				}
+				if (options_set) {
+					probed_ifaces[i].options = options;
 				}
 				add_interface(&probed_ifaces[i]);
 				return;
@@ -595,6 +619,9 @@ static void interpret_interface(char *token)
 				if (if_index_set) {
 					probed_ifaces[i].if_index = if_index;
 				}
+				if (options_set) {
+					probed_ifaces[i].options = options;
+				}
 				add_interface(&probed_ifaces[i]);
 				probed_ifaces[i].netmask = saved_mask;
 				return;
@@ -626,6 +653,7 @@ static void interpret_interface(char *token)
 		ifs.linkspeed = 1000 * 1000 * 1000;
 	}
 	ifs.capability = cap;
+	ifs.options = options;
 	add_interface(&ifs);
 }
 

@@ -24,6 +24,9 @@
 
 #include <system/network.h>
 
+#define IFACE_NONE_OPTION	0x00000000U
+#define IFACE_DYNAMIC_OPTION	0x00000001U
+
 bool ismyaddr(const struct sockaddr *ip);
 bool ismyip_v4(struct in_addr ip);
 bool is_local_net(const struct sockaddr *from);
