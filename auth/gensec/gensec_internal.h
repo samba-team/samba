@@ -198,6 +198,8 @@ NTSTATUS gensec_child_session_info(struct gensec_security *gensec_security,
 NTTIME gensec_child_expire_time(struct gensec_security *gensec_security);
 const char *gensec_child_final_auth_type(struct gensec_security *gensec_security);
 
+char *gensec_get_unparsed_target_principal(struct gensec_security *gensec_security,
+					   TALLOC_CTX *mem_ctx);
 NTSTATUS gensec_kerberos_possible(struct gensec_security *gensec_security);
 
 #endif /* __GENSEC_H__ */

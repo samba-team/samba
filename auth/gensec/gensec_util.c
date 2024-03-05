@@ -341,6 +341,24 @@ const char *gensec_child_final_auth_type(struct gensec_security *gensec_security
 	return gensec_final_auth_type(gensec_security->child_security);
 }
 
+char *gensec_get_unparsed_target_principal(struct gensec_security *gensec_security,
+					   TALLOC_CTX *mem_ctx)
+{
+	const char *target_principal = gensec_get_target_principal(gensec_security);
+	const char *service = gensec_get_target_service(gensec_security);
+	const char *hostname = gensec_get_target_hostname(gensec_security);
+
+	if (target_principal != NULL) {
+		return talloc_strdup(mem_ctx, target_principal);
+	} else if (service != NULL && hostname != NULL) {
+		return talloc_asprintf(mem_ctx, "%s/%s", service, hostname);
+	} else if (hostname != NULL) {
+		return talloc_strdup(mem_ctx, target_principal);
+	}
+
+	return NULL;
+}
+
 NTSTATUS gensec_kerberos_possible(struct gensec_security *gensec_security)
 {
 	struct cli_credentials *creds = gensec_get_credentials(gensec_security);
