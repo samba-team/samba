@@ -86,6 +86,7 @@ int ads_kinit_password(ADS_STRUCT *ads);
 
 bool ads_sitename_match(ADS_STRUCT *ads);
 bool ads_closest_dc(ADS_STRUCT *ads);
+ADS_STATUS ads_connect_cldap_only(ADS_STRUCT *ads);
 ADS_STATUS ads_connect(ADS_STRUCT *ads);
 ADS_STATUS ads_connect_user_creds(ADS_STRUCT *ads);
 void ads_zero_ldap(ADS_STRUCT *ads);

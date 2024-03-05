@@ -1109,6 +1109,19 @@ got_connection:
 	return status;
 }
 
+/**
+ * Connect to the LDAP server using without a bind
+ * and without a tcp connection at all
+ *
+ * @param ads Pointer to an existing ADS_STRUCT
+ * @return status of connection
+ **/
+ADS_STATUS ads_connect_cldap_only(ADS_STRUCT *ads)
+{
+	ads->auth.flags |= ADS_AUTH_NO_BIND;
+	return ads_connect_internal(ads, NULL);
+}
+
 /*
  * Connect to the LDAP server
  * @param ads Pointer to an existing ADS_STRUCT
