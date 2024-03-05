@@ -1637,6 +1637,22 @@ int dsdb_update_gmsa_keys(struct ldb_context *ldb,
 	NTTIME current_time;
 	bool am_rodc = true;
 
+	/*
+	 * This is non-zero if we are local to the sam.ldb, this is an
+	 * opaque set by the samba_dsdb module
+	 */
+	void *samba_dsdb_opaque = ldb_get_opaque(
+		ldb, DSDB_OPAQUE_PARTITION_MODULE_MSG_OPAQUE_NAME);
+
+	if (samba_dsdb_opaque == NULL) {
+		/*
+		 * We are not connected locally, so no point trying to
+		 * set passwords
+		 */
+		*retry_out = false;
+		return LDB_SUCCESS;
+	}
+
 	{
 		/* Calculate the current time, as reckoned for gMSAs. */
 		bool ok = dsdb_gmsa_current_time(ldb, &current_time);

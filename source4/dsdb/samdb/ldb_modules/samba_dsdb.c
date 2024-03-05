@@ -452,6 +452,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 				   NULL, backend_modules);
 	CHECK_LDB_RET(ret);
 
+	/* This opaque is also used by the gMSA code to confirm that it has local DB access */
 	ret = ldb_set_opaque(ldb, DSDB_OPAQUE_PARTITION_MODULE_MSG_OPAQUE_NAME, partition_msg);
 	CHECK_LDB_RET(ret);
 
