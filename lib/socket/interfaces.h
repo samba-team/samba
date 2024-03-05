@@ -30,6 +30,7 @@ struct iface_struct {
 	uint32_t if_index;
 	uint64_t linkspeed;
 	uint32_t capability;
+	uint32_t options;
 };
 
 struct interface;

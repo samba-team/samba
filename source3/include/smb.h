@@ -165,6 +165,7 @@ struct interface {
 	uint32_t if_index;
 	uint64_t linkspeed;
 	uint32_t capability;
+	uint32_t options;
 };
 
 #define SHARE_MODE_FLAG_POSIX_OPEN	0x1
