@@ -1695,6 +1695,7 @@ static void smbd_addr_changed(struct tevent_req *req)
 	struct sockaddr_storage addr;
 	NTSTATUS status;
 	uint32_t if_index;
+	bool match;
 
 	status = addrchange_recv(req, &type, &addr, &if_index);
 	TALLOC_FREE(req);
@@ -1703,6 +1704,16 @@ static void smbd_addr_changed(struct tevent_req *req)
 			  nt_errstr(status));
 		TALLOC_FREE(state);
 		return;
+	}
+
+	match = interface_ifindex_exists_with_options(if_index,
+						      IFACE_DYNAMIC_OPTION);
+	if (!match) {
+		DBG_NOTICE(
+			"smbd: No interface present for if_index %u "
+			"with dynamic option\n",
+			if_index);
+		goto rearm;
 	}
 
 	if (type == ADDRCHANGE_DEL) {
@@ -1727,14 +1738,6 @@ static void smbd_addr_changed(struct tevent_req *req)
 		DBG_NOTICE("smbd: kernel (AF_NETLINK) added ip %s "
 			   "on if_index %u\n",
 			   addrstr, if_index);
-
-		if (!interface_ifindex_exists(if_index)) {
-			DBG_NOTICE(
-				"smbd: No interface present for if_index %u\n",
-				if_index
-				);
-			goto rearm;
-		}
 
 		if (!smbd_open_socket_for_ip(state->parent,
 					     state->ev,
