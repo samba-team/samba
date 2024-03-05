@@ -1123,11 +1123,10 @@ static bool dcip_check_name_ads(const struct winbindd_domain *domain,
 		ads_status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 		goto out;
 	}
-	ads->auth.flags |= ADS_AUTH_NO_BIND;
 	ads->config.flags |= request_flags;
 	ads->server.no_fallback = true;
 
-	ads_status = ads_connect(ads);
+	ads_status = ads_connect_cldap_only(ads);
 	if (!ADS_ERR_OK(ads_status)) {
 		goto out;
 	}
