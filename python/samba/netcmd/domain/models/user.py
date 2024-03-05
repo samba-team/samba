@@ -22,6 +22,7 @@
 
 from ldb import Dn
 
+from samba.dcerpc.security import dom_sid
 from samba.dsdb import DS_GUID_USERS_CONTAINER
 
 from .fields import DnField, EnumField, IntegerField, NtTimeField, StringField
@@ -75,13 +76,16 @@ class User(OrganizationalPerson):
 
     @classmethod
     def find(cls, ldb, name):
-        """Helper function to find a user first by Dn then sAMAccountName.
+        """Helper function to find a user by Dn, objectSid, or sAMAccountName.
 
-        If the Dn can't be parsed, use sAMAccountName instead.
+        If the Dn or Sid can't be parsed, use sAMAccountName instead.
         """
         try:
             query = {"dn": Dn(ldb, name)}
         except ValueError:
-            query = {"account_name": name}
+            try:
+                query = {"object_sid": dom_sid(name)}
+            except ValueError:
+                query = {"account_name": name}
 
         return cls.get(ldb, **query)
