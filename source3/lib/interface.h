@@ -45,6 +45,6 @@ bool iface_local(const struct sockaddr *ip);
 void load_interfaces(void);
 void gfree_interfaces(void);
 bool interfaces_changed(void);
-bool interface_ifindex_exists(int if_index);
+bool interface_ifindex_exists_with_options(int if_index, uint32_t options);
 
 #endif /* _INTERFACE_H */

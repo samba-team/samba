@@ -749,15 +749,15 @@ bool interfaces_changed(void)
 }
 
 /****************************************************************************
- Return True if interface exists for given interface index
+ Return True if interface exists for given interface index and options
 **************************************************************************/
 
-bool interface_ifindex_exists(int if_index)
+bool interface_ifindex_exists_with_options(int if_index, uint32_t options)
 {
-	struct interface *i;
+	struct interface *i = NULL;
 
 	for (i = local_interfaces; i != NULL; i = i->next) {
-		if (i->if_index == if_index) {
+		if ((i->if_index == if_index) && (i->options & options)) {
 			return true;
 		}
 	}
