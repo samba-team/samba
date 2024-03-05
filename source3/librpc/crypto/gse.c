@@ -281,8 +281,6 @@ err_out:
 static NTSTATUS gse_init_client(struct gensec_security *gensec_security,
 				bool do_sign, bool do_seal,
 				const char *ccache_name,
-				const char *server,
-				const char *service,
 				const char *realm,
 				const char *username,
 				const char *password,
@@ -296,10 +294,6 @@ static NTSTATUS gse_init_client(struct gensec_security *gensec_security,
 	gss_OID oid = discard_const(GSS_KRB5_CRED_NO_CI_FLAGS_X);
 #endif
 	NTSTATUS status;
-
-	if (!server || !service) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 
 	status = gse_context_init(gensec_security, do_sign, do_seal,
 				  ccache_name, add_gss_c_flags,
@@ -871,23 +865,26 @@ static NTSTATUS gensec_gse_client_start(struct gensec_security *gensec_security)
 	NTSTATUS nt_status;
 	OM_uint32 want_flags = 0;
 	bool do_sign = false, do_seal = false;
-	const char *hostname = gensec_get_target_hostname(gensec_security);
-	const char *service = gensec_get_target_service(gensec_security);
 	const char *username = cli_credentials_get_username(creds);
 	const char *password = cli_credentials_get_password(creds);
 	const char *realm = cli_credentials_get_realm(creds);
 
-	if (!hostname) {
-		DEBUG(1, ("Could not determine hostname for target computer, cannot use kerberos\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	if (is_ipaddress(hostname)) {
-		DEBUG(2, ("Cannot do GSE to an IP address\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	if (strcmp(hostname, "localhost") == 0) {
-		DEBUG(2, ("GSE to 'localhost' does not make sense\n"));
-		return NT_STATUS_INVALID_PARAMETER;
+	nt_status = gensec_kerberos_possible(gensec_security);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		char *target_name = NULL;
+		char *cred_name = NULL;
+
+		target_name = gensec_get_unparsed_target_principal(gensec_security,
+								   gensec_security);
+		cred_name = cli_credentials_get_unparsed_name(creds,
+							      gensec_security);
+
+		DBG_NOTICE("Not using kerberos to %s as %s: %s\n",
+			   target_name, cred_name, nt_errstr(nt_status));
+
+		TALLOC_FREE(target_name);
+		TALLOC_FREE(cred_name);
+		return nt_status;
 	}
 
 	if (gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {
@@ -918,9 +915,8 @@ static NTSTATUS gensec_gse_client_start(struct gensec_security *gensec_security)
 #endif
 
 	nt_status = gse_init_client(gensec_security, do_sign, do_seal, NULL,
-				    hostname, service, realm,
-				    username, password, want_flags,
-				    &gse_ctx);
+				    realm, username, password,
+				    want_flags, &gse_ctx);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
