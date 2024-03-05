@@ -11,6 +11,7 @@ import optparse
 import sys
 import base64
 import time
+import subprocess
 
 sys.path.insert(0, "bin/python")
 import samba
@@ -489,7 +490,22 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
                                   userAccountControl=dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
+        username = res[0]["sAMAccountName"][0]
+        cmd = ["bin/samba-tool", "user", "list", "--locked-only",
+               "-H%s" % self.host_url,
+               "-U%s%%%s" % (global_creds.get_username(),
+                             global_creds.get_password())]
+        out = subprocess.check_output(cmd)
+        self.assertIn(username, out)
+
         self._reset_by_method(res, method)
+
+        cmd = ["bin/samba-tool", "user", "list", "--locked-only",
+               "-H%s" % self.host_url,
+               "-U%s%%%s" % (global_creds.get_username(),
+                             global_creds.get_password())]
+        out = subprocess.check_output(cmd)
+        self.assertNotIn(username, out)
 
         # Here bad password counts are reset without logon success.
         res = self._check_account(userdn,

@@ -437,6 +437,31 @@ class UserCmdTestCase(SambaToolCmdTest):
             self.assertMatch(out, name,
                              "user '%s' not found" % name)
 
+    # Test: samba-tool user list --locked-only
+    # This test does not verify that the command lists the locked user, it just
+    # tests that it does not list unlocked users. The funcional test, which
+    # lists locked users, is located in the 'samba4.ldap.password_lockout' test
+    # in source8/dsdb/tests/python/password_lockout.py
+    def test_list_locked(self):
+        (result, out, err) = self.runsubcmd("user", "list",
+                                            "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                                            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                                                          os.environ["DC_PASSWORD"]),
+                                            "--locked-only")
+        self.assertCmdSuccess(result, out, err, "Error running list")
+
+        search_filter = ("(&(objectClass=user)(userAccountControl:%s:=%u))" %
+                         (ldb.OID_COMPARATOR_AND, dsdb.UF_NORMAL_ACCOUNT))
+
+        userlist = self.samdb.search(base=self.samdb.domain_dn(),
+                                     scope=ldb.SCOPE_SUBTREE,
+                                     expression=search_filter,
+                                     attrs=["samaccountname"])
+
+        for userobj in userlist:
+            name = str(userobj.get("samaccountname", idx=0))
+            self.assertNotIn(name, out,
+                             "user '%s' is incorrectly listed as locked" % name)
 
     def test_list_base_dn(self):
         base_dn = "CN=Users"
