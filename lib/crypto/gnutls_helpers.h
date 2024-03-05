@@ -233,4 +233,10 @@ NTSTATUS samba_gnutls_sp800_108_derive_key(
 	uint8_t *KO,
 	size_t KO_len);
 
+#ifndef HAVE_GNUTLS_CB_TLS_SERVER_END_POINT
+int legacy_gnutls_server_end_point_cb(gnutls_session_t session,
+				      bool is_server,
+				      gnutls_datum_t * cb);
+#endif /* HAVE_GNUTLS_CB_TLS_SERVER_END_POINT */
+
 #endif /* _GNUTLS_HELPERS_H */
