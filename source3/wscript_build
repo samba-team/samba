@@ -499,7 +499,6 @@ bld.SAMBA3_LIBRARY('ads',
                           libads/sasl_wrapping.c
                           libads/tls_wrapping.c
                           libads/krb5_setpw.c
-                          libads/kerberos_util.c
                           libads/ldap_user.c
                           libads/ads_struct.c
                           libads/kerberos_keytab.c

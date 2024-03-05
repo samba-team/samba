@@ -22,14 +22,11 @@ interface ads
 
 	/* ads auth control flags */
 	typedef [public] bitmap {
-		ADS_AUTH_DISABLE_KERBEROS	= 0x0001,
 		ADS_AUTH_NO_BIND		= 0x0002,
 		ADS_AUTH_ANON_BIND		= 0x0004,
-		ADS_AUTH_ALLOW_NTLMSSP		= 0x0010,
 		ADS_AUTH_SASL_SIGN		= 0x0020,
 		ADS_AUTH_SASL_SEAL		= 0x0040,
 		ADS_AUTH_SASL_FORCE		= 0x0080,
-		ADS_AUTH_USER_CREDS		= 0x0100,
 		ADS_AUTH_SASL_STARTTLS		= 0x0200,
 		ADS_AUTH_SASL_LDAPS		= 0x0400,
 		ADS_AUTH_GENERATE_KRB5_CONFIG	= 0x0800
@@ -47,12 +44,8 @@ interface ads
 	} ads_server;
 
 	typedef [nopull,nopush] struct {
-		string realm;
-		string password;
-		string user_name;
 		string kdc_server;
 		ads_auth_flags flags;
-		string ccache_name;
 		NTTIME expire_time;
 		[ignore] struct ads_reconnect_state *reconnect_state;
 	} ads_auth;

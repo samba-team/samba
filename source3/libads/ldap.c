@@ -1203,41 +1203,6 @@ ADS_STATUS ads_connect_machine(ADS_STRUCT *ads)
 }
 
 /*
- * Connect to the LDAP server
- * @param ads Pointer to an existing ADS_STRUCT
- * @return status of connection
- **/
-ADS_STATUS ads_connect(ADS_STRUCT *ads)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct cli_credentials *creds = NULL;
-	ADS_STATUS status;
-	NTSTATUS ntstatus;
-
-	ntstatus = ads_legacy_creds(ads, frame, &creds);
-	if (!NT_STATUS_IS_OK(ntstatus)) {
-		TALLOC_FREE(frame);
-		return ADS_ERROR_NT(ntstatus);
-	}
-
-	status = ads_connect_internal(ads, creds);
-	TALLOC_FREE(frame);
-	return status;
-}
-
-/**
- * Connect to the LDAP server using given credentials
- * @param ads Pointer to an existing ADS_STRUCT
- * @return status of connection
- **/
-ADS_STATUS ads_connect_user_creds(ADS_STRUCT *ads)
-{
-	ads->auth.flags |= ADS_AUTH_USER_CREDS;
-
-	return ads_connect(ads);
-}
-
-/**
  * Zero out the internal ads->ldap struct and initialize the address to zero IP.
  * @param ads Pointer to an existing ADS_STRUCT
  *

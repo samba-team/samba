@@ -78,10 +78,6 @@ bool ads_setspn_delete(ADS_STRUCT *ads, const char *machine_name,
 
 /* The following definitions come from libads/krb5_errs.c  */
 
-/* The following definitions come from libads/kerberos_util.c  */
-
-int ads_kinit_password(ADS_STRUCT *ads);
-
 /* The following definitions come from libads/ldap.c  */
 
 bool ads_sitename_match(ADS_STRUCT *ads);
@@ -211,9 +207,6 @@ NTSTATUS ads_simple_creds(TALLOC_CTX *mem_ctx,
 			  const char *account_domain,
 			  const char *account_name,
 			  const char *password,
-			  struct cli_credentials **_creds);
-NTSTATUS ads_legacy_creds(ADS_STRUCT *ads,
-			  TALLOC_CTX *mem_ctx,
 			  struct cli_credentials **_creds);
 ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads, struct cli_credentials *creds);
 
