@@ -82,8 +82,7 @@ static bool ads_dc_name(const char *domain,
 
 #ifdef HAVE_ADS
 		/* we don't need to bind, just connect */
-		ads->auth.flags |= ADS_AUTH_NO_BIND;
-		ads_connect(ads);
+		ads_connect_cldap_only(ads);
 #endif
 
 		if (!ads->config.realm) {
