@@ -86,7 +86,6 @@ static void ads_cached_connection_reuse(ADS_STRUCT **adsp)
  * @param[in]    ldap_server      DNS name of server to connect to
  * @param[in]    password         Our machine account secret
  * @param[in]    auth_realm       Realm of local domain for creating krb token
- * @param[in]    renewable        Renewable ticket time
  *
  * @return ADS_STATUS
  */
@@ -95,7 +94,6 @@ static ADS_STATUS ads_cached_connection_connect(const char *target_realm,
 						const char *ldap_server,
 						char *password,
 						char *auth_realm,
-						time_t renewable,
 						TALLOC_CTX *mem_ctx,
 						ADS_STRUCT **adsp)
 {
@@ -128,7 +126,6 @@ static ADS_STATUS ads_cached_connection_connect(const char *target_realm,
 	ADS_TALLOC_CONST_FREE(ads->auth.password);
 	ADS_TALLOC_CONST_FREE(ads->auth.realm);
 
-	ads->auth.renewable = renewable;
 	ads->auth.password = talloc_strdup(ads, password);
 	if (ads->auth.password == NULL) {
 		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
@@ -258,7 +255,6 @@ ADS_STATUS ads_idmap_cached_connection(const char *dom_name,
 		ldap_server,		/* DNS name to connect to. */
 		password,		/* password for auth realm. */
 		realm,			/* realm used for krb5 ticket. */
-		0,			/* renewable ticket time. */
 		mem_ctx,		/* memory context for ads struct */
 		adsp);			/* Returns ads struct. */
 
@@ -336,7 +332,6 @@ static ADS_STATUS ads_cached_connection(struct winbindd_domain *domain,
 					domain->name, NULL,
 					password,
 					realm,
-					WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
 					domain,
 					&domain->backend_data.ads_conn);
 	if (!ADS_ERR_OK(status)) {
