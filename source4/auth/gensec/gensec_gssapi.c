@@ -383,40 +383,24 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	struct gensec_gssapi_state *gensec_gssapi_state;
 	struct cli_credentials *creds = gensec_get_credentials(gensec_security);
 	NTSTATUS nt_status;
-	const char *target_principal = NULL;
-	const char *hostname = gensec_get_target_hostname(gensec_security);
-	const char *service = gensec_get_target_service(gensec_security);
-	const char *realm = cli_credentials_get_realm(creds);
 
-	target_principal = gensec_get_target_principal(gensec_security);
-	if (target_principal != NULL) {
-		goto do_start;
-	}
+	nt_status = gensec_kerberos_possible(gensec_security);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		char *target_name = NULL;
+		char *cred_name = NULL;
 
-	if (!hostname) {
-		DEBUG(3, ("No hostname for target computer passed in, cannot use kerberos for this connection\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	if (is_ipaddress(hostname)) {
-		DEBUG(2, ("Cannot do GSSAPI to an IP address\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	if (strcmp(hostname, "localhost") == 0) {
-		DEBUG(2, ("GSSAPI to 'localhost' does not make sense\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+		target_name = gensec_get_unparsed_target_principal(gensec_security,
+								   gensec_security);
+		cred_name = cli_credentials_get_unparsed_name(creds,
+							      gensec_security);
 
-	if (realm == NULL) {
-		char *cred_name = cli_credentials_get_unparsed_name(creds,
-								gensec_security);
-		DEBUG(3, ("cli_credentials(%s) without realm, "
-			  "cannot use kerberos for this connection %s/%s\n",
-			  cred_name, service, hostname));
+		DBG_NOTICE("Not using kerberos to %s as %s: %s\n",
+			   target_name, cred_name, nt_errstr(nt_status));
+
+		TALLOC_FREE(target_name);
 		TALLOC_FREE(cred_name);
-		return NT_STATUS_INVALID_PARAMETER;
+		return nt_status;
 	}
-
-do_start:
 
 	nt_status = gensec_gssapi_start(gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
