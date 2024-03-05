@@ -51,8 +51,8 @@
 	</para>
 
 	<para>
-	Known keys are speed, capability, and if_index. Speed is specified in
-	bits per second. Known capabilities are RSS and RDMA. The
+	Known keys are speed, capability, if_index and options. Speed
+	is specified in bits per second. Known capabilities are RSS and RDMA. The
 	if_index should be used with care: the values must not coincide with
 	indexes used by the kernel.
 	Note that these options are mainly intended for testing and
@@ -60,6 +60,24 @@
 	these values should be auto-detected, but the settings can serve
 	as last a resort when autodetection is not working or is not available.
 	The specified values overwrite the auto-detected values.
+	</para>
+
+	<para>
+	The possible values for options are
+	&quot;dynamic&quot; and &quot;nodynamic&quot;.
+	Use this option in combination with setting
+	<smbconfoption name="bind interfaces only"/>
+	Use the &quot;dynamic&quot; to have smbd open/close listening sockets on the
+	interface, when IP addresses are added to or removed from the interface.
+	Use the &quot;nodynamic&quot; option to ignore any ip add/remove events for
+	interface.
+	Please note that when an IP address is removed, connections to that IP address
+	are also terminated (traditional behaviour has been to keep the TCP flow alive).
+	</para>
+
+	<para>
+	Note that dynamically opening/closing listening sockets is only available on some
+	operating systems (currently Linux).
 	</para>
 
 	<para>
@@ -82,6 +100,7 @@
 <value type="example">&quot;lo;speed=1000000000&quot; &quot;eth0;capability=RSS&quot;</value>
 <value type="example">&quot;lo;speed=1000000000&quot; , &quot;eth0;capability=RSS&quot;</value>
 <value type="example">&quot;eth0;capability=RSS&quot; , &quot;rdma1;capability=RDMA&quot; ; &quot;rdma2;capability=RSS,capability=RDMA&quot;</value>
+<value type="example">&quot;eth0;options=dynamic&quot;</value>
 
 <value type="default"/>
 </samba:parameter>
