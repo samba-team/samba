@@ -2,6 +2,10 @@
 
 
 def build(bld):
+    legacy_gnutls_helpers = ''
+    if not bld.CONFIG_SET('HAVE_GNUTLS_CB_TLS_SERVER_END_POINT'):
+        legacy_gnutls_helpers += ' gnutls_server_end_point_cb.c'
+
     bld.SAMBA_SUBSYSTEM("GNUTLS_HELPERS",
                         source='''
                         gnutls_error.c
@@ -9,7 +13,7 @@ def build(bld):
                         gnutls_arcfour_confounded_md5.c
                         gnutls_weak_crypto.c
                         gnutls_sp800_108.c
-                        ''',
+                        ''' + legacy_gnutls_helpers,
                         deps="gnutls samba-errors")
 
     bld.SAMBA_SUBSYSTEM('LIBCRYPTO',

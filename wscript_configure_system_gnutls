@@ -34,6 +34,11 @@ conf.SET_TARGET_TYPE('gnutls', 'SYSLIB')
 if (gnutls_version > parse_version('3.6.14')):
       conf.DEFINE('ALLOW_GNUTLS_AEAD_CIPHER_ENCRYPTV2_AES_CCM', 1)
 
+# GNUTLS_CB_TLS_SERVER_END_POINT is available with
+# 3.7.2
+if (gnutls_version >= parse_version('3.7.2')):
+      conf.DEFINE('HAVE_GNUTLS_CB_TLS_SERVER_END_POINT', 1)
+
 # Check if gnutls has fips mode support
 # gnutls_fips140_mode_enabled() is available since 3.3.0
 fragment = '''
