@@ -751,12 +751,23 @@ NTSTATUS dcerpc_lsa_lookup_names_generic(struct dcerpc_binding_handle *h,
 		}
 
 		if (use_lookupnames4) {
-			sid_copy(sid, sid_array3.sids[i].sid);
+			if (sid_array3.sids[i].sid != NULL) {
+				sid_copy(sid, sid_array3.sids[i].sid);
+			} else {
+				ZERO_STRUCTP(sid);
+				(*types)[i] = SID_NAME_UNKNOWN;
+			}
 		} else {
-			sid_copy(sid, domains->domains[dom_idx].sid);
+			if (domains->domains[dom_idx].sid != NULL) {
+				sid_copy(sid, domains->domains[dom_idx].sid);
 
-			if (sid_array.sids[i].rid != 0xffffffff) {
-				sid_append_rid(sid, sid_array.sids[i].rid);
+				if (sid_array.sids[i].rid != 0xffffffff) {
+					sid_append_rid(sid,
+						       sid_array.sids[i].rid);
+				}
+			} else {
+				ZERO_STRUCTP(sid);
+				(*types)[i] = SID_NAME_UNKNOWN;
 			}
 		}
 
