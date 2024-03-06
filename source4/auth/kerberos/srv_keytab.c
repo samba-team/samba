@@ -84,11 +84,36 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 			return ret;
 		}
 
-                entry.vno = kvno;
+		entry.vno = kvno;
 
 		for (p = 0; p < num_principals; p++) {
+			bool found = false;
+
 			unparsed = NULL;
 			entry.principal = principals[p];
+
+			ret = smb_krb5_is_exact_entry_in_keytab(parent_ctx,
+								context,
+								keytab,
+								&entry,
+								&found,
+								error_string);
+			if (ret != 0) {
+				krb5_free_keyblock_contents(context,
+							    KRB5_KT_KEY(&entry));
+				return ret;
+			}
+
+			/*
+			 * Do not add the exact same key twice, this
+			 * will allow "samba-tool domain exportkeytab"
+			 * to refresh a keytab rather than infinitely
+			 * extend it
+			 */
+			if (found) {
+				continue;
+			}
+
 			ret = krb5_kt_add_entry(context, keytab, &entry);
 			if (ret != 0) {
 				char *k5_error_string =
@@ -206,7 +231,6 @@ NTSTATUS smb_krb5_fill_keytab_gmsa_keys(TALLOC_CTX *mem_ctx,
 					krb5_principal principal,
 					struct ldb_context *samdb,
 					struct ldb_dn *dn,
-					bool include_previous,
 					const char **error_string)
 {
 	const char *gmsa_attrs[] = {
@@ -378,7 +402,7 @@ NTSTATUS smb_krb5_fill_keytab_gmsa_keys(TALLOC_CTX *mem_ctx,
 				   &principal,
 				   context,
 				   keytab,
-				   include_previous,
+				   true,
 				   error_string);
 	if (ret) {
 		*error_string = talloc_asprintf(mem_ctx,

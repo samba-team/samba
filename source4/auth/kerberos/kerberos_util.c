@@ -719,3 +719,106 @@ done:
 	talloc_free(tmp_ctx);
 	return code;
 }
+
+/*
+ * Walk the keytab, looking for entries of this principal name,
+ * with KVNO and key equal
+ *
+ * These entries do not need to be replaced, so we want to tell the caller not to add them again
+ *
+ * Inspired by the code in Samba3 for 'use kerberos keytab'.
+ */
+krb5_error_code smb_krb5_is_exact_entry_in_keytab(TALLOC_CTX *mem_ctx,
+						  krb5_context context,
+						  krb5_keytab keytab,
+						  krb5_keytab_entry *to_match,
+						  bool *found,
+						  const char **error_string)
+{
+	TALLOC_CTX *tmp_ctx;
+	krb5_error_code code;
+	krb5_kt_cursor cursor;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		*error_string = "Cannot allocate tmp_ctx";
+		return ENOMEM;
+	}
+
+	*found = false;
+
+	code = krb5_kt_start_seq_get(context, keytab, &cursor);
+	switch (code) {
+	case 0:
+		break;
+#ifdef HEIM_ERR_OPNOTSUPP
+	case HEIM_ERR_OPNOTSUPP:
+#endif
+	case ENOENT:
+	case KRB5_KT_END:
+		/* no point enumerating if there isn't anything here */
+		code = 0;
+		goto done;
+	default:
+		*error_string = talloc_asprintf(mem_ctx,
+						"failed to open keytab for read of existing entries: %s\n",
+						smb_get_krb5_error_message(context, code, mem_ctx));
+		goto done;
+	}
+
+	do {
+		krb5_keytab_entry entry;
+		bool matched = false;
+		krb5_boolean ok;
+
+		code = krb5_kt_next_entry(context, keytab, &entry, &cursor);
+		if (code) {
+			break;
+		}
+
+		ok = smb_krb5_kt_compare(context,
+					 &entry,
+					 to_match->principal,
+					 to_match->vno,
+					 KRB5_KEY_TYPE(KRB5_KT_KEY(to_match)));
+		if (ok) {
+			/* This is not a security check, constant time is not required */
+			if ((KRB5_KEY_LENGTH(KRB5_KT_KEY(&entry)) == KRB5_KEY_LENGTH(KRB5_KT_KEY(to_match)))
+			    && memcmp(KRB5_KEY_DATA(KRB5_KT_KEY(&entry)), KRB5_KEY_DATA(KRB5_KT_KEY(to_match)),
+				      KRB5_KEY_LENGTH(KRB5_KT_KEY(&entry))) == 0) {
+				matched = true;
+			}
+		}
+
+		/* Free the entry, we don't need it any more */
+		krb5_kt_free_entry(context, &entry);
+		/* Make sure we do not double free */
+		ZERO_STRUCT(entry);
+		if (matched) {
+			*found = true;
+			break;
+		}
+	} while (code == 0);
+
+	krb5_kt_end_seq_get(context, keytab, &cursor);
+
+	switch (code) {
+	case 0:
+		break;
+	case ENOENT:
+	case KRB5_KT_END:
+		break;
+	default:
+		*error_string = talloc_asprintf(mem_ctx,
+						"failed in checking old entries for principal: %s\n",
+						smb_get_krb5_error_message(context,
+									   code,
+									   mem_ctx));
+		goto done;
+	}
+
+	code = 0;
+done:
+	talloc_free(tmp_ctx);
+	return code;
+}

@@ -148,7 +148,6 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 								sentry.principal,
 								db_ctx->samdb,
 								dn,
-								found_previous ? false : true,
 								error_string);
 			if (NT_STATUS_IS_OK(status)) {
 				keys_exported = true;
