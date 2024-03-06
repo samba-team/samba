@@ -173,10 +173,31 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 			for (i = 0; i < sentry.keys.len; i++) {
 				struct sdb_key *s = &(sentry.keys.val[i]);
 				krb5_keyblock *keyp;
+				bool found;
 
 				keyp = KRB5_KT_KEY(&kt_entry);
 
 				*keyp = s->key;
+
+				code = smb_krb5_is_exact_entry_in_keytab(mem_ctx,
+									 context,
+									 keytab,
+									 &kt_entry,
+									 &found,
+									 error_string);
+				if (code != 0) {
+					status = NT_STATUS_UNSUCCESSFUL;
+					*error_string = smb_get_krb5_error_message(context,
+										   code,
+										   mem_ctx);
+					DEBUG(0, ("smb_krb5_is_exact_entry_in_keytab failed code=%d, error = %s\n",
+						  code, *error_string));
+					goto done;
+				}
+
+				if (found) {
+					continue;
+				}
 
 				code = krb5_kt_add_entry(context, keytab, &kt_entry);
 				if (code != 0) {
@@ -210,13 +231,22 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 	}
 
 	if (keys_exported == false) {
-		*error_string = talloc_asprintf(mem_ctx,
-						"No keys found while exporting %s.  "
-						"Consider connecting to a local sam.ldb, "
-						"only gMSA accounts can be exported over "
-						"LDAP and connecting user needs to be authorized",
-						principal ? principal : "all users in domain");
-		status = NT_STATUS_NO_USER_KEYS;
+		if (keep_stale_entries == false) {
+			*error_string = talloc_asprintf(mem_ctx,
+							"No keys found while exporting %s.  "
+							"Consider connecting to a local sam.ldb, "
+							"only gMSA accounts can be exported over "
+							"LDAP and connecting user needs to be authorized",
+							principal ? principal : "all users in domain");
+			status = NT_STATUS_NO_USER_KEYS;
+		} else {
+			DBG_NOTICE("No new keys found while exporting %s.  "
+				   "If new keys were expected, consider connecting "
+				   "to a local sam.ldb, only gMSA accounts can be exported over "
+				   "LDAP and connecting user needs to be authorized\n",
+				   principal ? principal : "all users in domain");
+			status = NT_STATUS_OK;
+		}
 	} else {
 		status = NT_STATUS_OK;
 	}
