@@ -33,18 +33,39 @@ class Computer(User):
     def __init__(self, **kwargs):
         """Computer constructor automatically adds "$" to account_name.
 
-        Also applies to GroupManagedServiceAccount subclass.
-        """
-        name = kwargs.get("name", kwargs.get("cn"))
+        The various ways a Computer can be constructed:
+
+        >>> Computer(name="pc")
+        >>> Computer(account_name="pc$")
+        >>> Computer(cn="pc")
+        >>> Computer(account_name="pc$", name="pc")
+
+        In each case the constructor does its best to ensure the
+        account name ends with a "$" and the name doesn't.
+
+        Also applies to GroupManagedServiceAccount subclass."""
+        name = kwargs.get("name", kwargs.pop("cn", None))
         account_name = kwargs.get("account_name")
 
-        # If account_name is missing, use name or cn and add a "$".
-        # If account_name is present but lacking "$", add it automatically.
-        if name and not account_name:
-            kwargs["account_name"] = name + "$"
-        elif account_name and not account_name.endswith("$"):
-            kwargs["account_name"] = account_name + "$"
+        # First make sure the account_name always has a "$".
+        if account_name and not account_name.endswith("$"):
+            account_name += "$"
 
+        # The name is present but not account name.
+        # If the name already has a "$" don't add two.
+        if name and not account_name:
+            if name.endswith("$"):
+                account_name = name
+            else:
+                account_name = name + "$"
+
+        # The account name is present but not the name.
+        # Use the account name, stripping the "$" character.
+        elif account_name and not name:
+            name = account_name.rstrip("$")
+
+        kwargs["name"] = name
+        kwargs["account_name"] = account_name
         super().__init__(**kwargs)
 
     @staticmethod
