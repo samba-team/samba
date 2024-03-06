@@ -224,6 +224,21 @@ struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
 				goto fail;
 			}
 		}
+	} else if (use_kerberos && !fallback_after_kerberos) {
+		const char *error_string = NULL;
+		int rc;
+
+		rc = cli_credentials_set_ccache(creds,
+						lp_ctx,
+						NULL,
+						CRED_SPECIFIED,
+						&error_string);
+		if (rc != 0) {
+			fprintf(stderr,
+				"Warning reading default "
+				"krb5 credentials cache: %s\n",
+				error_string);
+		}
 	}
 
 	return creds;
