@@ -1511,65 +1511,6 @@ bool mask_match_list(const char *string, char **list, int listLen, bool is_case_
        return False;
 }
 
-/**********************************************************************
-  Converts a name to a fully qualified domain name.
-  Returns true if lookup succeeded, false if not (then fqdn is set to name)
-  Uses getaddrinfo() with AI_CANONNAME flag to obtain the official
-  canonical name of the host. getaddrinfo() may use a variety of sources
-  including /etc/hosts to obtain the domainname. It expects aliases in
-  /etc/hosts to NOT be the FQDN. The FQDN should come first.
-************************************************************************/
-
-bool name_to_fqdn(fstring fqdn, const char *name)
-{
-	char *full = NULL;
-	struct addrinfo hints;
-	struct addrinfo *result;
-	int s;
-
-	/* Configure hints to obtain canonical name */
-
-	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
-	hints.ai_socktype = SOCK_DGRAM; /* Datagram socket */
-	hints.ai_flags = AI_CANONNAME;  /* Get host's FQDN */
-	hints.ai_protocol = 0;          /* Any protocol */
-
-	s = getaddrinfo(name, NULL, &hints, &result);
-	if (s != 0) {
-		DBG_WARNING("getaddrinfo lookup for %s failed: %s\n",
-			name,
-			gai_strerror(s));
-		fstrcpy(fqdn, name);
-		return false;
-	}
-	full = result->ai_canonname;
-
-	/* Find out if the FQDN is returned as an alias
-	 * to cope with /etc/hosts files where the first
-	 * name is not the FQDN but the short name.
-	 * getaddrinfo provides no easy way of handling aliases
-	 * in /etc/hosts. Users should make sure the FQDN
-	 * comes first in /etc/hosts. */
-	if (full && (! strchr_m(full, '.'))) {
-		DEBUG(1, ("WARNING: your /etc/hosts file may be broken!\n"));
-		DEBUGADD(1, ("    Full qualified domain names (FQDNs) should not be specified\n"));
-		DEBUGADD(1, ("    as an alias in /etc/hosts. FQDN should be the first name\n"));
-		DEBUGADD(1, ("    prior to any aliases.\n"));
-	}
-	if (full && (strcasecmp_m(full, "localhost.localdomain") == 0)) {
-		DEBUG(1, ("WARNING: your /etc/hosts file may be broken!\n"));
-		DEBUGADD(1, ("    Specifying the machine hostname for address 127.0.0.1 may lead\n"));
-		DEBUGADD(1, ("    to Kerberos authentication problems as localhost.localdomain\n"));
-		DEBUGADD(1, ("    may end up being used instead of the real machine FQDN.\n"));
-	}
-
-	DEBUG(10,("name_to_fqdn: lookup for %s -> %s.\n", name, full));
-	fstrcpy(fqdn, full);
-	freeaddrinfo(result);           /* No longer needed */
-	return true;
-}
-
 struct server_id interpret_pid(const char *pid_string)
 {
 	return server_id_from_string(get_my_vnn(), pid_string);

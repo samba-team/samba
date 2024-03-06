@@ -342,7 +342,6 @@ bool ms_has_wild_w(const smb_ucs2_t *s);
 bool mask_match(const char *string, const char *pattern, bool is_case_sensitive);
 bool mask_match_list(const char *string, char **list, int listLen, bool is_case_sensitive);
 #include "lib/util/unix_match.h"
-bool name_to_fqdn(fstring fqdn, const char *name);
 
 #include "lib/util_procid.h"
 
