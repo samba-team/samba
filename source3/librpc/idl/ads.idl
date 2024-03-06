@@ -54,6 +54,7 @@ interface ads
 		ads_auth_flags flags;
 		string ccache_name;
 		NTTIME expire_time;
+		[ignore] struct ads_reconnect_state *reconnect_state;
 	} ads_auth;
 
 	typedef [nopull,nopush] struct {

@@ -6,6 +6,9 @@
   basically this is a wrapper around ldap
 */
 
+struct cli_credentials;
+struct ads_reconnect_state;
+
 #include "libads/ads_status.h"
 #include "smb_ldap.h"
 #include "librpc/gen_ndr/ads.h"
@@ -17,6 +20,14 @@ struct ads_saslwrap_ops {
 	ADS_STATUS (*wrap)(struct ads_saslwrap *, uint8_t *buf, uint32_t len);
 	ADS_STATUS (*unwrap)(struct ads_saslwrap *);
 	void (*disconnect)(struct ads_saslwrap *);
+};
+
+struct ads_reconnect_state {
+	NTSTATUS (*fn)(struct ads_struct *ads,
+		       void *private_data,
+		       TALLOC_CTX *mem_ctx,
+		       struct cli_credentials **creds);
+	void *private_data;
 };
 
 typedef struct ads_struct ADS_STRUCT;

@@ -23,8 +23,20 @@
 #include "includes.h"
 #include "ads.h"
 #include "lib/param/loadparm.h"
+#include "auth/credentials/credentials.h"
 
 #ifdef HAVE_LDAP
+
+void ads_set_reconnect_fn(ADS_STRUCT *ads,
+			  NTSTATUS (*fn)(struct ads_struct *ads,
+					 void *private_data,
+					 TALLOC_CTX *mem_ctx,
+					 struct cli_credentials **creds),
+			  void *private_data)
+{
+	ads->auth.reconnect_state->fn = fn;
+	ads->auth.reconnect_state->private_data = private_data;
+}
 
 static ADS_STATUS ads_ranged_search_internal(ADS_STRUCT *ads,
 					     TALLOC_CTX *mem_ctx,
@@ -84,6 +96,9 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 	}
 
 	while (--count) {
+		struct cli_credentials *creds = NULL;
+		char *cred_name = NULL;
+		NTSTATUS ntstatus;
 
 		if (NT_STATUS_EQUAL(ads_ntstatus(status), NT_STATUS_IO_TIMEOUT) &&
 		    ads->config.ldap_page_size >= (lp_ldap_page_size() / 4) &&
@@ -98,24 +113,49 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 			ads_msgfree(ads, *res);
 		*res = NULL;
 
-		DEBUG(3,("Reopening ads connection to realm '%s' after error %s\n", 
-			 ads->config.realm, ads_errstr(status)));
-
 		ads_disconnect(ads);
-		status = ads_connect(ads);
 
+		if (ads->auth.reconnect_state->fn == NULL) {
+			DBG_NOTICE("Search for %s in <%s> failed: %s\n",
+				   expr, bp, ads_errstr(status));
+			SAFE_FREE(bp);
+			return status;
+		}
+
+		ntstatus = ads->auth.reconnect_state->fn(ads,
+				ads->auth.reconnect_state->private_data,
+				ads, &creds);
+		if (!NT_STATUS_IS_OK(ntstatus)) {
+			DBG_WARNING("Failed to get creds for realm(%s): %s\n",
+				    ads->server.realm, nt_errstr(ntstatus));
+			DBG_WARNING("Search for %s in <%s> failed: %s\n",
+				   expr, bp, ads_errstr(status));
+			SAFE_FREE(bp);
+			return status;
+		}
+
+		cred_name = cli_credentials_get_unparsed_name(creds, creds);
+		DBG_NOTICE("Reopening ads connection as %s to "
+			   "realm '%s' after error %s\n",
+			   cred_name, ads->server.realm, ads_errstr(status));
+
+		status = ads_connect_creds(ads, creds);
 		if (!ADS_ERR_OK(status)) {
-			DEBUG(1,("ads_search_retry: failed to reconnect (%s)\n",
-				 ads_errstr(status)));
+			DBG_WARNING("Reconnect ads connection as %s to "
+				    "realm '%s' failed: %s\n",
+				    cred_name, ads->server.realm,
+				    ads_errstr(status));
 			/*
 			 * We need to keep the ads pointer
 			 * from being freed here as we don't own it and
 			 * callers depend on it being around.
 			 */
 			ads_disconnect(ads);
+			TALLOC_FREE(creds);
 			SAFE_FREE(bp);
 			return status;
 		}
+		TALLOC_FREE(creds);
 
 		*res = NULL;
 

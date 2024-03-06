@@ -216,6 +216,13 @@ ADS_STRUCT *ads_init(TALLOC_CTX *mem_ctx,
 
 	ads->auth.flags = wrap_flags;
 
+	ads->auth.reconnect_state = talloc_zero(ads,
+						struct ads_reconnect_state);
+	if (ads->auth.reconnect_state == NULL) {
+		TALLOC_FREE(ads);
+		return NULL;
+	}
+
 	/* Start with the configured page size when the connection is new,
 	 * we will drop it by half we get a timeout.   */
 	ads->config.ldap_page_size     = lp_ldap_page_size();

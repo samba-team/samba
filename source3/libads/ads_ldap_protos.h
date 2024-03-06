@@ -77,6 +77,12 @@ ADS_STATUS ads_search(ADS_STRUCT *ads, LDAPMessage **res,
 		      const char *expr, const char **attrs);
 ADS_STATUS ads_search_dn(ADS_STRUCT *ads, LDAPMessage **res,
 			 const char *dn, const char **attrs);
+void ads_set_reconnect_fn(ADS_STRUCT *ads,
+			  NTSTATUS (*fn)(struct ads_struct *ads,
+					 void *private_data,
+					 TALLOC_CTX *mem_ctx,
+					 struct cli_credentials **creds),
+			  void *private_data);
 ADS_STATUS ads_do_search_all_args(ADS_STRUCT *ads, const char *bind_path,
 				  int scope, const char *expr,
 				  const char **attrs, void *args,
