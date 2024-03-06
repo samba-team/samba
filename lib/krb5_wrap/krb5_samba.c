@@ -1877,9 +1877,7 @@ out:
  *
  * @param[in]  password       The password of the keytab entry.
  *
- * @param[in]  no_salt        If the password should not be salted. Normally
- *                            this is only set to false for encryption types
- *                            which do not support salting like RC4.
+ * @param[in]  already_hashed The password is a key, not a password
  *
  * @retval 0 on Success
  *
@@ -1894,7 +1892,7 @@ krb5_error_code smb_krb5_kt_add_entry(krb5_context context,
 				      const char *salt_principal,
 				      krb5_enctype enctype,
 				      krb5_data *password,
-				      bool no_salt)
+				      bool already_hashed)
 {
 	krb5_error_code ret;
 	krb5_keytab_entry kt_entry;
@@ -1929,7 +1927,7 @@ krb5_error_code smb_krb5_kt_add_entry(krb5_context context,
 
 	keyp = KRB5_KT_KEY(&kt_entry);
 
-	if (no_salt) {
+	if (already_hashed) {
 		KRB5_KEY_DATA(keyp) = (KRB5_KEY_DATA_CAST *)SMB_MALLOC(password->length);
 		if (KRB5_KEY_DATA(keyp) == NULL) {
 			ret = ENOMEM;

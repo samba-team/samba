@@ -249,7 +249,7 @@ krb5_error_code smb_krb5_kt_add_entry(krb5_context context,
 				      const char *salt_principal,
 				      krb5_enctype enctype,
 				      krb5_data *password,
-				      bool no_salt);
+				      bool already_hashed);
 
 krb5_error_code smb_krb5_get_credentials(krb5_context context,
 					 krb5_ccache ccache,
