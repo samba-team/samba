@@ -46,6 +46,7 @@ else:
 
         takes_options = [
             Option("--principal", help="extract only this principal", type=str),
+            Option("--keep-stale-entries", help="keep stale keys in keytab (useful for collecting keys for Wireshark)", action="store_true"),
         ]
 
         takes_args = ["keytab"]
@@ -56,8 +57,12 @@ else:
                 sambaopts=None,
                 versionopts=None,
                 hostopts=None,
-                principal=None):
+                principal=None,
+                keep_stale_entries=None):
             lp = sambaopts.get_loadparm()
             net = Net(None, lp)
             samdb = self.ldb_connect(hostopts, sambaopts, credopts)
-            net.export_keytab(samdb=samdb, keytab=keytab, principal=principal)
+            net.export_keytab(samdb=samdb,
+                              keytab=keytab,
+                              principal=principal,
+                              keep_stale_entries=keep_stale_entries)

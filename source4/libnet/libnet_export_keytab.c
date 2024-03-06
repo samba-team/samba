@@ -35,6 +35,7 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 			    struct samba_kdc_db_context *db_ctx,
 			    const char *keytab_name,
 			    const char *principal,
+			    bool keep_stale_entries,
 			    const char **error_string)
 {
 	struct sdb_entry sentry = {};
@@ -100,7 +101,7 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		if (copy_one_principal) {
+		if (!keep_stale_entries) {
 			code = smb_krb5_remove_obsolete_keytab_entries(mem_ctx,
 								       context,
 								       keytab,
@@ -238,9 +239,11 @@ NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, s
 	const char *error_string = NULL;
 	NTSTATUS status;
 
+	bool keep_stale_entries = r->in.keep_stale_entries;
+
 	ret = smb_krb5_init_context(ctx, ctx->lp_ctx, &smb_krb5_context);
 	if (ret) {
-		return NT_STATUS_NO_MEMORY; 
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	base_ctx = talloc_zero(mem_ctx, struct samba_kdc_base_context);
@@ -259,22 +262,26 @@ NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, s
 
 	if (r->in.principal != NULL) {
 		DEBUG(0, ("Export one principal to %s\n", r->in.keytab_name));
-		status = sdb_kt_copy(mem_ctx,
-				     smb_krb5_context,
-				     db_ctx,
-				     r->in.keytab_name,
-				     r->in.principal,
-				     &error_string);
 	} else {
-		unlink(r->in.keytab_name);
 		DEBUG(0, ("Export complete keytab to %s\n", r->in.keytab_name));
-		status = sdb_kt_copy(mem_ctx,
-				     smb_krb5_context,
-				     db_ctx,
-				     r->in.keytab_name,
-				     NULL,
-				     &error_string);
+		if (!keep_stale_entries) {
+			unlink(r->in.keytab_name);
+			/*
+			 * No point looking for old
+			 * keys in a empty file
+			 */
+			keep_stale_entries = true;
+		}
 	}
+
+
+	status = sdb_kt_copy(mem_ctx,
+			     smb_krb5_context,
+			     db_ctx,
+			     r->in.keytab_name,
+			     r->in.principal,
+			     keep_stale_entries,
+			     &error_string);
 
 	talloc_free(db_ctx);
 	talloc_free(base_ctx);
