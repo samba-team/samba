@@ -295,14 +295,13 @@ static int add_kt_entry_etypes(krb5_context context, TALLOC_CTX *tmpctx,
 	for (i = 0; enctypes[i]; i++) {
 
 		/* add the fqdn principal to the keytab */
-		ret = smb_krb5_kt_add_entry(context,
-					    keytab,
-					    kvno,
-					    princ_s,
-					    salt_princ_s,
-					    enctypes[i],
-					    password,
-					    false); /* needs string2key (hashing) */
+		ret = smb_krb5_kt_add_password(context,
+					       keytab,
+					       kvno,
+					       princ_s,
+					       salt_princ_s,
+					       enctypes[i],
+					       password);
 		if (ret) {
 			DBG_WARNING("Failed to add entry to keytab\n");
 			goto out;
@@ -310,14 +309,13 @@ static int add_kt_entry_etypes(krb5_context context, TALLOC_CTX *tmpctx,
 
 		/* add the short principal name if we have one */
 		if (short_princ_s) {
-			ret = smb_krb5_kt_add_entry(context,
-						    keytab,
-						    kvno,
-						    short_princ_s,
-						    salt_princ_s,
-						    enctypes[i],
-						    password,
-						    false); /* needs string2key (hashing) */
+			ret = smb_krb5_kt_add_password(context,
+						       keytab,
+						       kvno,
+						       short_princ_s,
+						       salt_princ_s,
+						       enctypes[i],
+						       password);
 			if (ret) {
 				DBG_WARNING("Failed to add short entry to keytab\n");
 				goto out;

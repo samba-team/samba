@@ -43,7 +43,6 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *entry_principal = NULL;
 	bool copy_one_principal = (principal != NULL);
-	krb5_data password;
 	bool keys_exported = false;
 	krb5_context context = smb_krb5_context->krb5_context;
 	TALLOC_CTX *tmp_ctx = NULL;
@@ -166,24 +165,20 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 				goto done;
 			}
 		} else {
+			krb5_keytab_entry kt_entry;
+			ZERO_STRUCT(kt_entry);
+			kt_entry.principal = sentry.principal;
+			kt_entry.vno       = sentry.kvno;
+
 			for (i = 0; i < sentry.keys.len; i++) {
 				struct sdb_key *s = &(sentry.keys.val[i]);
-				krb5_enctype enctype;
+				krb5_keyblock *keyp;
 
-				enctype = KRB5_KEY_TYPE(&(s->key));
-				password.length = KRB5_KEY_LENGTH(&s->key);
-				password.data = (char *)KRB5_KEY_DATA(&s->key);
+				keyp = KRB5_KT_KEY(&kt_entry);
 
-				DBG_INFO("smb_krb5_kt_add_entry for enctype=0x%04x\n",
-					 (int)enctype);
-				code = smb_krb5_kt_add_entry(context,
-							     keytab,
-							     sentry.kvno,
-							     entry_principal,
-							     NULL,
-							     enctype,
-							     &password,
-							     true);    /* no_salt */
+				*keyp = s->key;
+
+				code = krb5_kt_add_entry(context, keytab, &kt_entry);
 				if (code != 0) {
 					status = NT_STATUS_UNSUCCESSFUL;
 					*error_string = smb_get_krb5_error_message(context,

@@ -1877,27 +1877,25 @@ out:
  *
  * @param[in]  password       The password of the keytab entry.
  *
- * @param[in]  already_hashed The password is a key, not a password
- *
  * @retval 0 on Success
  *
  * @return A corresponding KRB5 error code.
  *
  * @see smb_krb5_kt_open()
  */
-krb5_error_code smb_krb5_kt_add_entry(krb5_context context,
-				      krb5_keytab keytab,
-				      krb5_kvno kvno,
-				      const char *princ_s,
-				      const char *salt_principal,
-				      krb5_enctype enctype,
-				      krb5_data *password,
-				      bool already_hashed)
+krb5_error_code smb_krb5_kt_add_password(krb5_context context,
+					 krb5_keytab keytab,
+					 krb5_kvno kvno,
+					 const char *princ_s,
+					 const char *salt_principal,
+					 krb5_enctype enctype,
+					 krb5_data *password)
 {
 	krb5_error_code ret;
 	krb5_keytab_entry kt_entry;
 	krb5_principal princ = NULL;
 	krb5_keyblock *keyp;
+	krb5_principal salt_princ = NULL;
 
 	ZERO_STRUCT(kt_entry);
 
@@ -1927,36 +1925,23 @@ krb5_error_code smb_krb5_kt_add_entry(krb5_context context,
 
 	keyp = KRB5_KT_KEY(&kt_entry);
 
-	if (already_hashed) {
-		KRB5_KEY_DATA(keyp) = (KRB5_KEY_DATA_CAST *)SMB_MALLOC(password->length);
-		if (KRB5_KEY_DATA(keyp) == NULL) {
-			ret = ENOMEM;
-			goto out;
-		}
-		memcpy(KRB5_KEY_DATA(keyp), password->data, password->length);
-		KRB5_KEY_LENGTH(keyp) = password->length;
-		KRB5_KEY_TYPE(keyp) = enctype;
-	} else {
-		krb5_principal salt_princ = NULL;
+	/* Now add keytab entries for all encryption types */
+	ret = smb_krb5_parse_name(context, salt_principal, &salt_princ);
+	if (ret) {
+		DBG_WARNING("krb5_parse_name(%s) failed (%s)\n",
+			    salt_principal, error_message(ret));
+		goto out;
+	}
 
-		/* Now add keytab entries for all encryption types */
-		ret = smb_krb5_parse_name(context, salt_principal, &salt_princ);
-		if (ret) {
-			DBG_WARNING("krb5_parse_name(%s) failed (%s)\n",
-				    salt_principal, error_message(ret));
-			goto out;
-		}
-
-		ret = smb_krb5_create_key_from_string(context,
-						      salt_princ,
-						      NULL,
-						      password,
-						      enctype,
-						      keyp);
-		krb5_free_principal(context, salt_princ);
-		if (ret != 0) {
-			goto out;
-		}
+	ret = smb_krb5_create_key_from_string(context,
+					      salt_princ,
+					      NULL,
+					      password,
+					      enctype,
+					      keyp);
+	krb5_free_principal(context, salt_princ);
+	if (ret != 0) {
+		goto out;
 	}
 
 	kt_entry.principal = princ;
