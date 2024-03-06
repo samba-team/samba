@@ -1,0 +1,4 @@
+^ldb.python.api.*api.SimpleLdb.test_connect_twice
+^ldb.python.api.*api.SimpleLdb.test_connect_twice_later
+^ldb.python.api.*api.SimpleLdbLmdb.test_connect_twice
+^ldb.python.api.*api.SimpleLdbLmdb.test_connect_twice_later
