@@ -51,7 +51,7 @@ NTSTATUS auth_generic_set_password(struct auth_generic_state *ans,
 NTSTATUS auth_generic_set_creds(struct auth_generic_state *ans,
 				struct cli_credentials *creds)
 {
-	talloc_unlink(ans->credentials, creds);
+	talloc_unlink(ans, ans->credentials);
 	ans->credentials = creds;
 	return NT_STATUS_OK;
 }
