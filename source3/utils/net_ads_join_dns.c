@@ -205,7 +205,11 @@ NTSTATUS net_update_dns_ext(struct net_context *c,
 	if (hostname) {
 		fstrcpy(machine_name, hostname);
 	} else {
-		name_to_fqdn( machine_name, lp_netbios_name() );
+		const char *dns_hostname = lp_dns_hostname();
+		if (dns_hostname == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		fstrcpy(machine_name, lp_dns_hostname());
 	}
 	if (!strlower_m( machine_name )) {
 		return NT_STATUS_INVALID_PARAMETER;
