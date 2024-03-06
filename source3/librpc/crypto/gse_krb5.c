@@ -354,15 +354,19 @@ static krb5_error_code fill_mem_keytab_from_system_keytab(krb5_context krbctx,
 	fstring my_name, my_fqdn;
 	unsigned i;
 	int err;
+	const char *dns_hostname = NULL;
 
 	/* Generate the list of principal names which we expect
 	 * clients might want to use for authenticating to the file
 	 * service.  We allow name$,{host,cifs}/{name,fqdn,name.REALM}. */
 
 	fstrcpy(my_name, lp_netbios_name());
-
-	my_fqdn[0] = '\0';
-	name_to_fqdn(my_fqdn, lp_netbios_name());
+	dns_hostname = lp_dns_hostname();
+	if (dns_hostname == NULL) {
+		ret = ENOMEM;
+		goto out;
+	}
+	fstrcpy(my_fqdn, dns_hostname);
 
 	err = asprintf(&valid_princ_formats[0],
 			"%s$@%s", my_name, lp_realm());
