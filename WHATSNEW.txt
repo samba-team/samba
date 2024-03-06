@@ -104,6 +104,19 @@ correct certificate trusts with at least one of the following options:
 While 'tls verify peer' and 'tls crlfile' are also relevant,
 see 'man smb.conf' for further details.
 
+New DNS hostname config option
+------------------------------
+
+To get `net ads dns register` working correctly running manually or during a
+domain join a special entry in /etc/hosts was required. This not really
+documented and thus the DNS registration mostly didn't work. With the new option
+the default is [netbios name].[realm] which should be correct in the majority of
+use cases.
+
+We will also use the value to create service principal names during a Kerberos
+authentication and DNS functions.
+
+This is not supported in samba-tool yet.
 
 REMOVED FEATURES
 ================
@@ -119,6 +132,7 @@ smb.conf changes
   ldap server require strong auth         new values
   tls trust system cas                    new
   tls ca directories                      new
+  dns hostname                            client dns name [netbios name].[realm]
 
 
 KNOWN ISSUES
