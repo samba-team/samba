@@ -352,7 +352,7 @@ int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx,
 	const char *base_url =
 		(const char *)ldb_get_opaque(ldb, "ldb_url");
 	char *path, *p, *full_name;
-	if (name == NULL) {
+	if (name == NULL || base_url == NULL) {
 		return NULL;
 	}
 	if (strncmp("tdb://", base_url, 6) == 0) {
