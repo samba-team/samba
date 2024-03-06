@@ -88,10 +88,10 @@ class ComputerModelTests(SambaToolCmdTest):
         self.assertEqual(comp2.account_name, "comp2$")
 
         # User accidentally left out '$' in username.
-        comp3 = Computer(name="comp3", username="comp3")
+        comp3 = Computer(name="comp3", account_name="comp3")
         self.assertEqual(comp3.account_name, "comp3$")
 
-        comp4 = Computer(cn="comp4", username="comp4$")
+        comp4 = Computer(cn="comp4", account_name="comp4$")
         self.assertEqual(comp4.account_name, "comp4$")
 
 
