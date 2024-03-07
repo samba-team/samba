@@ -51,6 +51,7 @@ class NTLMAuthTestCase(BlackboxTestCase):
                    client_password=None,
                    client_domain=None,
                    client_use_cached_creds=False,
+                   client_use_global_krb5_ccache=False,
                    server_username=None,
                    server_password=None,
                    server_domain=None,
@@ -62,19 +63,28 @@ class NTLMAuthTestCase(BlackboxTestCase):
                    target_service=None):
         self.assertTrue(os.access(self.ntlm_auth_path, os.X_OK))
 
-        if client_username is None:
-            raise Exception("client_username required")
-
         # Client helper args
         client_args = []
         client_args.append(self.ntlm_auth_path)
         client_args.append("--helper-protocol=%s" % client_helper)
-        client_args.append("--username=%s" % client_username)
+        if client_username:
+            client_args.append("--username=%s" % client_username)
         if client_domain:
             client_args.append("--domain=%s" % client_domain)
         if client_use_cached_creds:
+            if client_username is None:
+                raise Exception("client_username required")
+            if client_password is not None:
+                raise Exception("client_password not allowed")
             client_args.append("--use-cached-creds")
+        elif client_use_global_krb5_ccache:
+            if client_username is not None:
+                raise Exception("client_username not allowed")
+            if client_password is not None:
+                raise Exception("client_password not allowed")
         else:
+            if client_username is None:
+                raise Exception("client_username required")
             if client_password is None:
                 raise Exception("client_password required")
             client_args.append("--password=%s" % client_password)

@@ -34,9 +34,7 @@ class NTLMAuthKerberosTests(NTLMAuthTestCase):
         """ ntlm_auth with krb5 gss-spnego-client and gss-spnego server """
 
         os.environ["KRB5CCNAME"] = self.old_ccache
-        ret = self.run_helper(client_username="foo",
-                              client_password="secret",
-                              client_domain="FOO",
+        ret = self.run_helper(client_use_global_krb5_ccache=True,
                               target_hostname=os.environ["SERVER"],
                               target_service="host",
                               client_helper="gss-spnego-client",
@@ -45,9 +43,7 @@ class NTLMAuthKerberosTests(NTLMAuthTestCase):
         self.assertTrue(ret)
 
         os.environ["KRB5CCNAME"] = self.ccache
-        ret = self.run_helper(client_username="foo",
-                              client_password="secret",
-                              client_domain="FOO",
+        ret = self.run_helper(client_use_global_krb5_ccache=True,
                               target_hostname=os.environ["SERVER"],
                               target_service="host",
                               client_helper="gss-spnego-client",
