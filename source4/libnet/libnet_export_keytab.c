@@ -294,7 +294,26 @@ NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, s
 	} else {
 		DEBUG(0, ("Export complete keytab to %s\n", r->in.keytab_name));
 		if (!keep_stale_entries) {
-			unlink(r->in.keytab_name);
+			struct stat st;
+			int stat_ret = stat(r->in.keytab_name, &st);
+			if (stat_ret == -1 && errno == ENOENT) {
+				/* continue */
+			} else if (stat_ret == -1) {
+				int errno_save = errno;
+				r->out.error_string
+					= talloc_asprintf(mem_ctx,
+							  "Failure checking if keytab export location %s is an existing file: %s",
+							  r->in.keytab_name,
+							  strerror(errno_save));
+				return map_nt_error_from_unix_common(errno_save);
+			} else {
+				r->out.error_string
+					= talloc_asprintf(mem_ctx,
+							  "Refusing to export keytab to existing file %s",
+							  r->in.keytab_name);
+				return NT_STATUS_OBJECT_NAME_EXISTS;
+			}
+
 			/*
 			 * No point looking for old
 			 * keys in a empty file

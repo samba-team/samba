@@ -131,6 +131,7 @@ test_keytab "read keytab from domain" \
 
 testit "dump keytab from domain (2nd time)" \
 	"${VALGRIND}" "${PYTHON}" "${samba_tool}" domain exportkeytab \
+	--keep-stale-entries \
 	"${PREFIX}/tmpkeytab-all" "${CONFIGURATION}" "$@" || \
 	failed=$((failed + 1))
 
