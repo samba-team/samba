@@ -731,7 +731,7 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 	 * In case of LDAP we use get_dc_name() as that
 	 * creates the custom krb5.conf file
 	 */
-	if (!(ads->auth.flags & ADS_AUTH_NO_BIND)) {
+	if (ads->auth.flags & ADS_AUTH_GENERATE_KRB5_CONFIG) {
 		fstring srv_name;
 		struct sockaddr_storage ip_out;
 
@@ -840,6 +840,10 @@ static ADS_STATUS ads_connect_internal(ADS_STRUCT *ads,
 		 * allowed for anonymous credentials
 		 */
 		SMB_ASSERT(cli_credentials_is_anonymous(creds));
+	}
+
+	if (!(ads->auth.flags & ADS_AUTH_NO_BIND)) {
+		ads->auth.flags |= ADS_AUTH_GENERATE_KRB5_CONFIG;
 	}
 
 	/*
