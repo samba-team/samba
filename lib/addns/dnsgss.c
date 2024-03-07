@@ -22,110 +22,51 @@
   License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "replace.h"
+#include <talloc.h>
+#include "lib/util/talloc_stack.h"
+#include "lib/util/data_blob.h"
+#include "lib/util/time.h"
+#include "lib/util/charset/charset.h"
+#include "libcli/util/ntstatus.h"
+#include "auth/gensec/gensec.h"
+
 #include "dns.h"
-#include <ctype.h>
 
-
-#ifdef HAVE_GSSAPI
-
-/*********************************************************************
-*********************************************************************/
-
-#ifndef HAVE_STRUPR
-static int strupr( char *szDomainName )
+static DNS_ERROR dns_negotiate_gss_ctx_int(struct dns_connection *conn,
+					   const char *keyname,
+					   struct gensec_security *gensec,
+					   enum dns_ServerType srv_type)
 {
-	if ( !szDomainName ) {
-		return ( 0 );
-	}
-	while ( *szDomainName != '\0' ) {
-		*szDomainName = toupper( *szDomainName );
-		szDomainName++;
-	}
-	return ( 0 );
-}
-#endif
-
-#if 0
-/*********************************************************************
-*********************************************************************/
-
-static void display_status_1( const char *m, OM_uint32 code, int type )
-{
-	OM_uint32 maj_stat, min_stat;
-	gss_buffer_desc msg;
-	OM_uint32 msg_ctx;
-
-	msg_ctx = 0;
-	while ( 1 ) {
-		maj_stat = gss_display_status( &min_stat, code,
-					       type, GSS_C_NULL_OID,
-					       &msg_ctx, &msg );
-		fprintf( stdout, "GSS-API error %s: %s\n", m,
-			 ( char * ) msg.value );
-		( void ) gss_release_buffer( &min_stat, &msg );
-
-		if ( !msg_ctx )
-			break;
-	}
-}
-
-/*********************************************************************
-*********************************************************************/
-
-void display_status( const char *msg, OM_uint32 maj_stat, OM_uint32 min_stat )
-{
-	display_status_1( msg, maj_stat, GSS_C_GSS_CODE );
-	display_status_1( msg, min_stat, GSS_C_MECH_CODE );
-}
-#endif
-
-static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
-					    struct dns_connection *conn,
-					    const char *keyname,
-					    const gss_name_t target_name,
-					    gss_ctx_id_t *ctx, 
-					    enum dns_ServerType srv_type )
-{
-	struct gss_buffer_desc_struct input_desc, *input_ptr, output_desc;
-	OM_uint32 major, minor;
-	OM_uint32 ret_flags;
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct dns_request *req = NULL;
 	struct dns_buffer *buf = NULL;
+	DATA_BLOB in = { .length = 0, };
+	DATA_BLOB out = { .length = 0, };
+	NTSTATUS status;
 	DNS_ERROR err;
 
-	gss_OID_desc krb5_oid_desc =
-		{ 9, discard_const("\x2a\x86\x48\x86\xf7\x12\x01\x02\x02") };
-
-	*ctx = GSS_C_NO_CONTEXT;
-	input_ptr = NULL;
-
 	do {
-		major = gss_init_sec_context(
-			&minor, NULL, ctx, target_name, &krb5_oid_desc,
-			GSS_C_REPLAY_FLAG | GSS_C_MUTUAL_FLAG |
-			GSS_C_CONF_FLAG |
-			GSS_C_INTEG_FLAG,
-			0, NULL, input_ptr, NULL, &output_desc,
-			&ret_flags, NULL );
-
-		if (input_ptr != NULL) {
-			TALLOC_FREE(input_desc.value);
+		status = gensec_update(gensec, frame, in, &out);
+		data_blob_free(&in);
+		if (GENSEC_UPDATE_IS_NTERROR(status)) {
+			err = ERROR_DNS_GSS_ERROR;
+			goto error;
 		}
 
-		if (output_desc.length != 0) {
-
+		if (out.length != 0) {
 			struct dns_rrec *rec;
 
 			time_t t = time(NULL);
 
-			err = dns_create_query(mem_ctx, keyname, QTYPE_TKEY,
+			err = dns_create_query(frame, keyname, QTYPE_TKEY,
 					       DNS_CLASS_IN, &req);
 			if (!ERR_DNS_IS_OK(err)) goto error;
 
 			err = dns_create_tkey_record(
 				req, keyname, "gss.microsoft.com", t,
 				t + 86400, DNS_TKEY_MODE_GSSAPI, 0,
-				output_desc.length, (uint8_t *)output_desc.value,
+				out.length, out.data,
 				&rec );
 			if (!ERR_DNS_IS_OK(err)) goto error;
 
@@ -143,7 +84,7 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 			
 			if (!ERR_DNS_IS_OK(err)) goto error;
 
-			err = dns_marshall_request(mem_ctx, req, &buf);
+			err = dns_marshall_request(frame, req, &buf);
 			if (!ERR_DNS_IS_OK(err)) goto error;
 
 			err = dns_send(conn, buf);
@@ -151,24 +92,21 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 
 			TALLOC_FREE(buf);
 			TALLOC_FREE(req);
+
+			err = dns_receive(frame, conn, &buf);
+			if (!ERR_DNS_IS_OK(err)) goto error;
 		}
 
-		gss_release_buffer(&minor, &output_desc);
-
-		if ((major != GSS_S_COMPLETE) &&
-		    (major != GSS_S_CONTINUE_NEEDED)) {
-			return ERROR_DNS_GSS_ERROR;
-		}
-
-		if (major == GSS_S_CONTINUE_NEEDED) {
-
+		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			struct dns_request *resp;
 			struct dns_tkey_record *tkey;
 			struct dns_rrec *tkey_answer = NULL;
 			uint16_t i;
 
-			err = dns_receive(mem_ctx, conn, &buf);
-			if (!ERR_DNS_IS_OK(err)) goto error;
+			if (buf == NULL) {
+				err = ERROR_DNS_BAD_RESPONSE;
+				goto error;
+			}
 
 			err = dns_unmarshall_request(buf, buf, &resp);
 			if (!ERR_DNS_IS_OK(err)) goto error;
@@ -191,18 +129,15 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 			}
 
 			err = dns_unmarshall_tkey_record(
-				mem_ctx, resp->answers[0], &tkey);
+				frame, resp->answers[0], &tkey);
 			if (!ERR_DNS_IS_OK(err)) goto error;
 
-			input_desc.length = tkey->key_length;
-			input_desc.value = talloc_move(mem_ctx, &tkey->key);
-
-			input_ptr = &input_desc;
+			in = data_blob_const(tkey->key, tkey->key_length);
 
 			TALLOC_FREE(buf);
 		}
 
-	} while ( major == GSS_S_CONTINUE_NEEDED );
+	} while (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED));
 
 	/* If we arrive here, we have a valid security context */
 
@@ -210,94 +145,54 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 
       error:
 
-	TALLOC_FREE(buf);
-	TALLOC_FREE(req);
+	TALLOC_FREE(frame);
 	return err;
 }
 
-DNS_ERROR dns_negotiate_sec_ctx( const char *target_realm,
-				 const char *servername,
-				 const char *keyname,
-				 gss_ctx_id_t *gss_ctx,
-				 enum dns_ServerType srv_type )
+DNS_ERROR dns_negotiate_sec_ctx(const char *servername,
+				const char *keyname,
+				struct gensec_security *gensec,
+				enum dns_ServerType srv_type)
 {
-	OM_uint32 major, minor;
-
-	char *upcaserealm, *targetname;
+	TALLOC_CTX *frame = talloc_stackframe();
 	DNS_ERROR err;
+	struct dns_connection *conn = NULL;
 
-	gss_buffer_desc input_name;
-	struct dns_connection *conn;
-
-	gss_name_t targ_name;
-
-	gss_OID_desc nt_host_oid_desc =
-		{10, discard_const("\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01")};
-
-	TALLOC_CTX *mem_ctx;
-
-	if (!(mem_ctx = talloc_init("dns_negotiate_sec_ctx"))) {
-		return ERROR_DNS_NO_MEMORY;
-	}
-
-	err = dns_open_connection( servername, DNS_TCP, mem_ctx, &conn );
+	err = dns_open_connection( servername, DNS_TCP, frame, &conn );
 	if (!ERR_DNS_IS_OK(err)) goto error;
 
-	if (!(upcaserealm = talloc_strdup(mem_ctx, target_realm))) {
-		err = ERROR_DNS_NO_MEMORY;
-		goto error;
-	}
-
-	strupr(upcaserealm);
-
-	if (!(targetname = talloc_asprintf(mem_ctx, "dns/%s@%s",
-					   servername, upcaserealm))) {
-		err = ERROR_DNS_NO_MEMORY;
-		goto error;
-	}
-
-	input_name.value = targetname;
-	input_name.length = strlen(targetname);
-
-	major = gss_import_name( &minor, &input_name,
-				 &nt_host_oid_desc, &targ_name );
-
-	if (major) {
-		err = ERROR_DNS_GSS_ERROR;
-		goto error;
-	}
-
-	err = dns_negotiate_gss_ctx_int(mem_ctx, conn, keyname, 
-					targ_name, gss_ctx, srv_type );
-	
-	gss_release_name( &minor, &targ_name );
+	err = dns_negotiate_gss_ctx_int(conn, keyname,
+					gensec,
+					srv_type);
+	if (!ERR_DNS_IS_OK(err)) goto error;
 
  error:
-	TALLOC_FREE(mem_ctx);
+	TALLOC_FREE(frame);
 
 	return err;
 }
 
 DNS_ERROR dns_sign_update(struct dns_update_request *req,
-			  gss_ctx_id_t gss_ctx,
+			  struct gensec_security *gensec,
 			  const char *keyname,
 			  const char *algorithmname,
 			  time_t time_signed, uint16_t fudge)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct dns_buffer *buf;
 	DNS_ERROR err;
 	struct dns_domain_name *key, *algorithm;
-	struct gss_buffer_desc_struct msg, mic;
-	OM_uint32 major, minor;
 	struct dns_rrec *rec;
+	DATA_BLOB mic = { .length = 0, };
+	NTSTATUS status;
 
-	err = dns_marshall_update_request(req, req, &buf);
+	err = dns_marshall_update_request(frame, req, &buf);
 	if (!ERR_DNS_IS_OK(err)) return err;
 
-	err = dns_domain_name_from_string(buf, keyname, &key);
+	err = dns_domain_name_from_string(frame, keyname, &key);
 	if (!ERR_DNS_IS_OK(err)) goto error;
 
-	err = dns_domain_name_from_string(buf, algorithmname, &algorithm);
+	err = dns_domain_name_from_string(frame, algorithmname, &algorithm);
 	if (!ERR_DNS_IS_OK(err)) goto error;
 
 	dns_marshall_domain_name(buf, key);
@@ -313,32 +208,31 @@ DNS_ERROR dns_sign_update(struct dns_update_request *req,
 	err = buf->error;
 	if (!ERR_DNS_IS_OK(buf->error)) goto error;
 
-	msg.value = (void *)buf->data;
-	msg.length = buf->offset;
-
-	major = gss_get_mic(&minor, gss_ctx, 0, &msg, &mic);
-	if (major != 0) {
+	status = gensec_sign_packet(gensec,
+				    frame,
+				    buf->data,
+				    buf->offset,
+				    buf->data,
+				    buf->offset,
+				    &mic);
+	if (!NT_STATUS_IS_OK(status)) {
 		err = ERROR_DNS_GSS_ERROR;
 		goto error;
 	}
 
 	if (mic.length > 0xffff) {
-		gss_release_buffer(&minor, &mic);
 		err = ERROR_DNS_GSS_ERROR;
 		goto error;
 	}
 
-	err = dns_create_tsig_record(buf, keyname, algorithmname, time_signed,
-				     fudge, mic.length, (uint8_t *)mic.value,
+	err = dns_create_tsig_record(frame, keyname, algorithmname, time_signed,
+				     fudge, mic.length, mic.data,
 				     req->id, 0, &rec);
-	gss_release_buffer(&minor, &mic);
 	if (!ERR_DNS_IS_OK(err)) goto error;
 
 	err = dns_add_rrec(req, rec, &req->num_additionals, &req->additional);
 
  error:
-	TALLOC_FREE(buf);
+	TALLOC_FREE(frame);
 	return err;
 }
-
-#endif	/* HAVE_GSSAPI */

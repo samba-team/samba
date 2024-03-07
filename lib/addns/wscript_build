@@ -11,6 +11,6 @@ bld.SAMBA_LIBRARY('addns',
                        error.c
                        dnsquery_srv.c
                    ''',
-                   public_deps='samba-util gssapi ndr resolv dns_lookup',
+                   public_deps='samba-util gensec ndr resolv dns_lookup',
                    private_library=True,
                    vars=locals())

@@ -32,9 +32,12 @@
 
 #include "../lib/addns/dns.h"
 
+struct cli_credentials;
+
 DNS_ERROR DoDNSUpdate(char *pszServerName,
 		      const char *pszDomainName,
 		      const char *pszHostName,
+		      struct cli_credentials *creds,
 		      const struct sockaddr_storage *sslist,
 		      size_t num_addrs,
 		      uint32_t flags,

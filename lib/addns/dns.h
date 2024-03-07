@@ -347,20 +347,16 @@ const char *dns_errstr(DNS_ERROR err);
 
 /* from dnsgss.c */
 
-#ifdef HAVE_GSSAPI
+struct gensec_security;
 
-void display_status( const char *msg, OM_uint32 maj_stat, OM_uint32 min_stat ); 
-DNS_ERROR dns_negotiate_sec_ctx( const char *target_realm,
-				 const char *servername,
-				 const char *keyname,
-				 gss_ctx_id_t *gss_ctx,
-				 enum dns_ServerType srv_type );
+DNS_ERROR dns_negotiate_sec_ctx(const char *servername,
+				const char *keyname,
+				struct gensec_security *gensec,
+				enum dns_ServerType srv_type);
 DNS_ERROR dns_sign_update(struct dns_update_request *req,
-			  gss_ctx_id_t gss_ctx,
+			  struct gensec_security *gensec,
 			  const char *keyname,
 			  const char *algorithmname,
 			  time_t time_signed, uint16_t fudge);
-
-#endif	/* HAVE_GSSAPI */
 
 #endif	/* _DNS_H */
