@@ -1377,8 +1377,6 @@ static struct functable net_func[] = {
 			CRED_UNINITIALISED;
 		enum smb_encryption_setting encrypt_state =
 			cli_credentials_get_smb_encryption(c->creds);
-		enum credentials_use_kerberos krb5_state =
-			cli_credentials_get_kerberos_state(c->creds);
 		uint32_t gensec_features;
 
 		if (principal_obtained == CRED_SPECIFIED) {
@@ -1396,8 +1394,6 @@ static struct functable net_func[] = {
 		c->opt_workgroup = cli_credentials_get_domain(c->creds);
 
 		c->smb_encrypt = (encrypt_state == SMB_ENCRYPTION_REQUIRED);
-
-		c->opt_kerberos = (krb5_state > CRED_USE_KERBEROS_DESIRED);
 
 		gensec_features = cli_credentials_get_gensec_features(c->creds);
 		if (c->legacy_opt_ccache) {
