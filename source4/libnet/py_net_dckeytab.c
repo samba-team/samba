@@ -27,6 +27,7 @@
 #include "py_net.h"
 #include "libnet_export_keytab.h"
 #include "pyldb.h"
+#include "libcli/util/pyerrors.h"
 
 void initdckeytab(void);
 
@@ -72,9 +73,12 @@ static PyObject *py_net_export_keytab(py_net_Object *self, PyObject *args, PyObj
 	}
 
 	status = libnet_export_keytab(self->libnet_ctx, mem_ctx, &r);
-	if (NT_STATUS_IS_ERR(status)) {
-		PyErr_SetString(PyExc_RuntimeError,
-				r.out.error_string?r.out.error_string:nt_errstr(status));
+
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS_and_string(status,
+					     r.out.error_string
+					     ? r.out.error_string
+					     : nt_errstr(status));
 		talloc_free(mem_ctx);
 		return NULL;
 	}
