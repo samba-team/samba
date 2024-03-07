@@ -132,7 +132,10 @@ gdb)
 	cat <<EOF >${BATCHFILE_MAIN}
 set height 0
 bt full
-thread apply all bt full
+init-if-undefined \$_inferior_thread_count = 0
+if \$_inferior_thread_count != 1
+  thread apply all bt full
+end
 info locals
 if PyList_New
   echo \\n### Python traceback\\n\\n
