@@ -842,7 +842,7 @@ static ADS_STATUS ads_connect_internal(ADS_STRUCT *ads,
 		SMB_ASSERT(cli_credentials_is_anonymous(creds));
 	}
 
-	if (!(ads->auth.flags & ADS_AUTH_NO_BIND)) {
+	if (!(ads->auth.flags & (ADS_AUTH_NO_BIND|ADS_AUTH_ANON_BIND))) {
 		ads->auth.flags |= ADS_AUTH_GENERATE_KRB5_CONFIG;
 	}
 
