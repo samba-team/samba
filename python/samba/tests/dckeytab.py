@@ -22,7 +22,7 @@ import string
 from samba.net import Net
 from samba import enable_net_export_keytab
 
-from samba import credentials, tests
+from samba import credentials, ntstatus, NTSTATUSError, tests
 from samba.dcerpc import krb5ccache, security
 from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT
 from samba.ndr import ndr_unpack, ndr_pack
@@ -51,8 +51,39 @@ class DCKeytabTests(TestCaseInTempDir):
     def tearDown(self):
         super().tearDown()
 
+    def keytab_as_set(self, keytab_bytes):
+        def entry_to_tuple(entry):
+            principal = '/'.join(entry.principal.components) + f"@{entry.principal.realm}"
+            enctype = entry.enctype
+            kvno = entry.key_version
+            key = tuple(entry.key.data)
+            return (principal, enctype, kvno, key)
+
+        keytab = ndr_unpack(krb5ccache.KEYTAB, keytab_bytes)
+        entry = keytab.entry
+
+        keytab_as_set = set()
+
+        entry_as_tuple = entry_to_tuple(entry)
+        keytab_as_set.add(entry_as_tuple)
+
+        keytab_bytes = keytab.further_entry
+        while True:
+            multiple_entry = ndr_unpack(krb5ccache.MULTIPLE_KEYTAB_ENTRIES, keytab_bytes)
+            entry = multiple_entry.entry
+            entry_as_tuple = entry_to_tuple(entry)
+            self.assertNotIn(entry_as_tuple, keytab_as_set)
+            keytab_as_set.add(entry_as_tuple)
+
+            keytab_bytes = multiple_entry.further_entry
+            if keytab_bytes is None or len(keytab_bytes) == 0:
+                break
+
+        return keytab_as_set
+
     def test_export_keytab(self):
         net = Net(None, self.lp)
+        self.addCleanup(self.rm_files, self.ktfile)
         net.export_keytab(keytab=self.ktfile, principal=self.principal)
         self.assertTrue(os.path.exists(self.ktfile), 'keytab was not created')
 
@@ -60,17 +91,53 @@ class DCKeytabTests(TestCaseInTempDir):
         with open(self.ktfile, 'rb') as bytes_kt:
             keytab_bytes = bytes_kt.read()
 
-        self.rm_files('test.keytab')
+        # confirm only this principal was exported
+        for entry in self.keytab_as_set(keytab_bytes):
+            (principal, enctype, kvno, key) = entry
+            self.assertEqual(principal, self.principal)
 
-        keytab = ndr_unpack(krb5ccache.KEYTAB, keytab_bytes)
+    def test_export_keytab_all(self):
+        net = Net(None, self.lp)
+        self.addCleanup(self.rm_files, self.ktfile)
+        net.export_keytab(keytab=self.ktfile)
+        self.assertTrue(os.path.exists(self.ktfile), 'keytab was not created')
 
-        # Confirm that the principal is as expected
+        with open(self.ktfile, 'rb') as bytes_kt:
+            keytab_bytes = bytes_kt.read()
 
-        principal_parts = self.principal.split('@')
+        # Parse the keytab
+        keytab_as_set = self.keytab_as_set(keytab_bytes)
 
-        self.assertEqual(keytab.entry.principal.component_count, 1)
-        self.assertEqual(keytab.entry.principal.realm, principal_parts[1])
-        self.assertEqual(keytab.entry.principal.components[0], principal_parts[0])
+        # confirm many principals were exported
+        self.assertGreater(len(keytab_as_set), 10)
+
+
+
+    def test_export_keytab_not_a_dir(self):
+        net = Net(None, self.lp)
+        with open(self.ktfile, mode='w') as f:
+            f.write("NOT A KEYTAB")
+        self.addCleanup(self.rm_files, self.ktfile)
+
+        try:
+            net.export_keytab(keytab=self.ktfile + "/f")
+            self.fail("Expected failure to write to an existing file")
+        except NTSTATUSError as err:
+            num, _ = err.args
+            self.assertEqual(num, ntstatus.NT_STATUS_NOT_A_DIRECTORY)
+
+    def test_export_keytab_existing(self):
+        net = Net(None, self.lp)
+        with open(self.ktfile, mode='w') as f:
+            f.write("NOT A KEYTAB")
+        self.addCleanup(self.rm_files, self.ktfile)
+
+        try:
+            net.export_keytab(keytab=self.ktfile)
+            self.fail(f"Expected failure to write to an existing file {self.ktfile}")
+        except NTSTATUSError as err:
+            num, _ = err.args
+            self.assertEqual(num, ntstatus.NT_STATUS_OBJECT_NAME_EXISTS)
 
     def test_export_keytab_gmsa(self):
 
