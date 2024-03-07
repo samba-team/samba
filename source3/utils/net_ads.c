@@ -1474,10 +1474,6 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	if (!c->opt_kerberos) {
-		use_in_memory_ccache();
-	}
-
 	if (!c->msg_ctx) {
 		d_fprintf(stderr, _("Could not initialise message context. "
 			"Try running as root\n"));
@@ -1580,7 +1576,6 @@ out:
 int net_ads_testjoin(struct net_context *c, int argc, const char **argv)
 {
 	ADS_STATUS status;
-	use_in_memory_ccache();
 
 	if (c->display_usage) {
 		d_printf(  "%s\n"
@@ -1698,10 +1693,6 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 			d_fprintf(stderr, _("Invalid configuration.  Exiting....\n"));
 			goto fail;
 		}
-	}
-
-	if (!c->opt_kerberos) {
-		use_in_memory_ccache();
 	}
 
 	werr = libnet_init_JoinCtx(tmp_ctx, &r);
@@ -2575,7 +2566,6 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 		goto out;
 	}
 
-	use_in_memory_ccache();
 	chr = strchr_m(auth_principal, '@');
 	if (chr) {
 		realm = ++chr;
@@ -2674,8 +2664,6 @@ int net_ads_changetrustpw(struct net_context *c, int argc, const char **argv)
 	net_warn_member_options();
 
 	net_use_krb_machine_account(c);
-
-	use_in_memory_ccache();
 
 	status = ads_startup(c, true, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {

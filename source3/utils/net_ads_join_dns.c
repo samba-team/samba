@@ -24,7 +24,6 @@
 #include "utils/net.h"
 #include "../lib/addns/dnsquery.h"
 #include "passdb.h"
-#include "krb5_env.h"
 #include "utils/net_dns.h"
 #include "lib/util/string_wrappers.h"
 
@@ -36,12 +35,6 @@
 
 #if defined(HAVE_KRB5)
 #include "../lib/addns/dns.h"
-
-void use_in_memory_ccache(void) {
-	/* Use in-memory credentials cache so we do not interfere with
-	 * existing credentials */
-	setenv(KRB5_ENV_CCNAME, "MEMORY:net_ads", 1);
-}
 
 static NTSTATUS net_update_dns_internal(struct net_context *c,
 					TALLOC_CTX *ctx,

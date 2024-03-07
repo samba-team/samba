@@ -55,7 +55,6 @@ int net_ads_setspn(struct net_context *c, int argc, const char **argv);
 int net_ads(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_ads_join_dns.c  */
-void use_in_memory_ccache(void);
 NTSTATUS net_update_dns_ext(struct net_context *c,
 			    TALLOC_CTX *mem_ctx,
 			    ADS_STRUCT *ads,
