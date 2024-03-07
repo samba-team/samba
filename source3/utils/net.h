@@ -42,9 +42,6 @@ struct cli_state;
 struct net_context {
 	const char *opt_requester_name;
 	const char *opt_host;
-	const char *opt_password;
-	const char *opt_user_name;
-	bool opt_user_specified;
 	bool explicit_credentials;
 	const char *opt_workgroup;
 	int opt_long_list_entries;

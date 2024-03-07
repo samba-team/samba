@@ -1373,8 +1373,6 @@ static struct functable net_func[] = {
 			cli_credentials_get_principal_obtained(c->creds);
 		enum credentials_obtained password_obtained =
 			cli_credentials_get_password_obtained(c->creds);
-		enum credentials_obtained username_obtained =
-			CRED_UNINITIALISED;
 		uint32_t gensec_features;
 
 		if (principal_obtained == CRED_SPECIFIED) {
@@ -1383,11 +1381,6 @@ static struct functable net_func[] = {
 		if (password_obtained == CRED_SPECIFIED) {
 			c->explicit_credentials = true;
 		}
-
-		c->opt_user_name = cli_credentials_get_username_and_obtained(
-				c->creds,
-				&username_obtained);
-		c->opt_user_specified = (username_obtained == CRED_SPECIFIED);
 
 		c->opt_workgroup = cli_credentials_get_domain(c->creds);
 

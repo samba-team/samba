@@ -128,8 +128,6 @@ static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObjec
 
 	c->creds = self->creds;
 	c->explicit_credentials = true;
-	c->opt_user_name = cli_credentials_get_username(self->creds);
-	c->opt_password = cli_credentials_get_password(self->creds);
 
 	werr = libnet_Join(mem_ctx, r);
 	if (W_ERROR_EQUAL(werr, WERR_NERR_DCNOTFOUND)) {

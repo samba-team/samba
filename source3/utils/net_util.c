@@ -259,20 +259,10 @@ NTSTATUS connect_dst_pipe(struct net_context *c, struct cli_state **cli_dst,
 
 int net_use_krb_machine_account(struct net_context *c)
 {
-	char *user_name = NULL;
-
 	if (!secrets_init()) {
 		d_fprintf(stderr,_("ERROR: Unable to open secrets database\n"));
 		exit(1);
 	}
-
-	c->opt_password = secrets_fetch_machine_password(
-				c->opt_target_workgroup, NULL, NULL);
-	if (asprintf(&user_name, "%s$@%s", lp_netbios_name(), lp_realm()) == -1) {
-		return -1;
-	}
-	c->opt_user_name = user_name;
-	c->opt_user_specified = true;
 
 	cli_credentials_set_machine_account(c->creds, c->lp_ctx);
 	c->explicit_credentials = true;
