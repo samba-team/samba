@@ -60,10 +60,6 @@ int net_offlinejoin(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	if (c->opt_kerberos) {
-		libnetapi_set_use_kerberos(c->netapi_ctx);
-	}
-
 	if (strcasecmp_m(argv[0], "provision") == 0) {
 		ret = net_offlinejoin_provision(c, argc, argv);
 		if (ret != 0) {
