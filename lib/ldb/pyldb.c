@@ -482,7 +482,12 @@ static PyObject *py_ldb_dn_is_null(PyLdbDnObject *self,
 static PyObject *py_ldb_dn_get_casefold(PyLdbDnObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	return PyUnicode_FromString(ldb_dn_get_casefold(self->dn));
+	const char *s = ldb_dn_get_casefold(self->dn);
+	if (s == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	return PyUnicode_FromString(s);
 }
 
 static PyObject *py_ldb_dn_get_linearized(PyLdbDnObject *self,
