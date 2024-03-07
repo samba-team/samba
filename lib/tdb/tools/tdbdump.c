@@ -24,12 +24,19 @@
 #include "system/wait.h"
 #include "tdb.h"
 
-static void print_data(TDB_DATA d)
+struct traverse_state {
+	bool hex_output;
+	const char *keyname;
+};
+
+static void print_data(TDB_DATA d, bool hex_output)
 {
 	unsigned char *p = (unsigned char *)d.dptr;
 	int len = d.dsize;
 	while (len--) {
-		if (isprint(*p) && !strchr("\"\\", *p)) {
+		if (hex_output) {
+			printf("%02X", *p);
+		} else if(isprint(*p) && !strchr("\"\\", *p)) {
 			fputc(*p, stdout);
 		} else {
 			printf("\\%02X", *p);
@@ -40,12 +47,14 @@ static void print_data(TDB_DATA d)
 
 static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
+	struct traverse_state *traverse = state;
+
 	printf("{\n");
 	printf("key(%zu) = \"", key.dsize);
-	print_data(key);
+	print_data(key, traverse->hex_output);
 	printf("\"\n");
 	printf("data(%zu) = \"", dbuf.dsize);
-	print_data(dbuf);
+	print_data(dbuf, traverse->hex_output);
 	printf("\"\n");
 	printf("}\n");
 	return 0;
@@ -86,18 +95,21 @@ static void log_stderr(struct tdb_context *tdb, enum tdb_debug_level level,
 	va_end(ap);
 }
 
-static void emergency_walk(TDB_DATA key, TDB_DATA dbuf, void *keyname)
+static void emergency_walk(TDB_DATA key, TDB_DATA dbuf, void *state)
 {
-	if (keyname) {
-		if (key.dsize != strlen(keyname))
+	struct traverse_state *traverse = state;
+
+	if (traverse->keyname) {
+		if (key.dsize != strlen(traverse->keyname))
 			return;
-		if (memcmp(key.dptr, keyname, key.dsize) != 0)
+		if (memcmp(key.dptr, traverse->keyname, key.dsize) != 0)
 			return;
 	}
-	traverse_fn(NULL, key, dbuf, NULL);
+	traverse_fn(NULL, key, dbuf, traverse);
 }
 
-static int dump_tdb(const char *fname, const char *keyname, bool emergency)
+static int dump_tdb(const char *fname, const char *keyname,
+		    bool emergency, bool hex_output)
 {
 	TDB_CONTEXT *tdb;
 	TDB_DATA key, value;
@@ -120,10 +132,14 @@ static int dump_tdb(const char *fname, const char *keyname, bool emergency)
 	}
 
 	if (emergency) {
-		return tdb_rescue(tdb, emergency_walk, discard_const(keyname)) == 0;
+		struct traverse_state traverse =
+			{ .hex_output = hex_output,
+			  .keyname = keyname };
+		return tdb_rescue(tdb, emergency_walk, &traverse) == 0;
 	}
 	if (!keyname) {
-		return tdb_traverse(tdb, traverse_fn, NULL) == -1 ? 1 : 0;
+		struct traverse_state traverse = { .hex_output = hex_output };
+		return tdb_traverse(tdb, traverse_fn, &traverse) == -1 ? 1 : 0;
 	} else {
 		key.dptr = discard_const_p(uint8_t, keyname);
 		key.dsize = strlen(keyname);
@@ -131,7 +147,7 @@ static int dump_tdb(const char *fname, const char *keyname, bool emergency)
 		if (!value.dptr) {
 			return 1;
 		} else {
-			print_data(value);
+			print_data(value, hex_output);
 			free(value.dptr);
 		}
 	}
@@ -150,7 +166,7 @@ static void usage( void)
  int main(int argc, char *argv[])
 {
 	char *fname, *keyname=NULL;
-	bool emergency = false;
+	bool emergency = false, hex_output = false;
 	int c;
 
 	if (argc < 2) {
@@ -158,7 +174,7 @@ static void usage( void)
 		exit(1);
 	}
 
-	while ((c = getopt( argc, argv, "hk:e")) != -1) {
+	while ((c = getopt( argc, argv, "hk:ex")) != -1) {
 		switch (c) {
 		case 'h':
 			usage();
@@ -169,6 +185,9 @@ static void usage( void)
 		case 'e':
 			emergency = true;
 			break;
+		case 'x':
+			hex_output = true;
+			break;
 		default:
 			usage();
 			exit( 1);
@@ -177,5 +196,5 @@ static void usage( void)
 
 	fname = argv[optind];
 
-	return dump_tdb(fname, keyname, emergency);
+	return dump_tdb(fname, keyname, emergency, hex_output);
 }
