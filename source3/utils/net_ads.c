@@ -701,7 +701,7 @@ retry_connect:
 
 retry:
 	if (!c->opt_password && need_password && !c->opt_machine_pass) {
-		c->opt_password = net_prompt_pass(c, c->opt_user_name);
+		c->opt_password = cli_credentials_get_password(c->creds);
 		if (!c->opt_password) {
 			TALLOC_FREE(ads);
 			return ADS_ERROR(LDAP_NO_MEMORY);
@@ -3254,6 +3254,7 @@ static int net_ads_kerberos_pac_common(struct net_context *c, int argc, const ch
 	int ret = -1;
 	const char *impersonate_princ_s = NULL;
 	const char *local_service = NULL;
+	const char *password = NULL;
 	int i;
 
 	for (i=0; i<argc; i++) {
@@ -3279,11 +3280,11 @@ static int net_ads_kerberos_pac_common(struct net_context *c, int argc, const ch
 		}
 	}
 
-	c->opt_password = net_prompt_pass(c, c->opt_user_name);
+	password = cli_credentials_get_password(c->creds);
 
 	status = kerberos_return_pac(c,
 				     c->opt_user_name,
-				     c->opt_password,
+				     password,
 				     0,
 				     NULL,
 				     NULL,
@@ -3444,6 +3445,7 @@ static int net_ads_kerberos_kinit(struct net_context *c, int argc, const char **
 {
 	int ret = -1;
 	NTSTATUS status;
+	const char *password = NULL;
 
 	if (c->display_usage) {
 		d_printf(  "%s\n"
@@ -3454,10 +3456,10 @@ static int net_ads_kerberos_kinit(struct net_context *c, int argc, const char **
 		return -1;
 	}
 
-	c->opt_password = net_prompt_pass(c, c->opt_user_name);
+	password = cli_credentials_get_password(c->creds);
 
 	ret = kerberos_kinit_password_ext(c->opt_user_name,
-					  c->opt_password,
+					  password,
 					  0,
 					  NULL,
 					  NULL,

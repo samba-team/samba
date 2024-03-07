@@ -442,18 +442,6 @@ done:
 /****************************************************************************
 ****************************************************************************/
 
-/* TODO FIXME: Pass cli_creds via net_context and get rid of this function. */
-const char *net_prompt_pass(struct net_context *c, const char *user)
-{
-	struct cli_credentials *creds = samba_cmdline_get_creds();
-
-	if (c->opt_password == NULL) {
-		c->opt_password = cli_credentials_get_password(creds);
-	}
-
-	return c->opt_password;
-}
-
 int net_run_function(struct net_context *c, int argc, const char **argv,
 		      const char *whoami, struct functable *table)
 {

@@ -447,7 +447,6 @@ NTSTATUS net_make_ipc_connection_ex(struct net_context *c ,const char *domain,
 				    const char *server,
 				    const struct sockaddr_storage *pss,
 				    unsigned flags, struct cli_state **pcli);
-const char *net_prompt_pass(struct net_context *c, const char *user);
 int net_run_function(struct net_context *c, int argc, const char **argv,
 		      const char *whoami, struct functable *table);
 void net_display_usage_from_functable(struct functable *table);
