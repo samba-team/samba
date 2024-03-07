@@ -25,7 +25,6 @@
 #include "smb_krb5.h"
 #include "system/gssapi.h"
 #include "lib/param/param.h"
-#include "krb5_env.h"
 #include "lib/util/asn1.h"
 
 NTSTATUS ads_simple_creds(TALLOC_CTX *mem_ctx,

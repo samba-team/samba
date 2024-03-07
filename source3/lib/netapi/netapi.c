@@ -22,7 +22,6 @@
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_private.h"
 #include "secrets.h"
-#include "krb5_env.h"
 #include "source3/param/loadparm.h"
 #include "lib/param/param.h"
 #include "auth/gensec/gensec.h"

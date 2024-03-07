@@ -25,7 +25,6 @@
 #include "nt_printing.h"
 #include "ads.h"
 #include "secrets.h"
-#include "krb5_env.h"
 #include "../libcli/registry/util_reg.h"
 #include "auth.h"
 #include "../librpc/ndr/libndr.h"

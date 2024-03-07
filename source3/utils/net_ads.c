@@ -35,7 +35,6 @@
 #include "libnet/libnet_join.h"
 #include "smb_krb5.h"
 #include "secrets.h"
-#include "krb5_env.h"
 #include "../libcli/security/security.h"
 #include "libsmb/libsmb.h"
 #include "lib/param/loadparm.h"

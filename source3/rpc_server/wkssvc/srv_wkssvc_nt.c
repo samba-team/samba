@@ -34,7 +34,6 @@
 #include "session.h"
 #include "smbd/smbd.h"
 #include "auth.h"
-#include "krb5_env.h"
 #include "ads.h"
 
 #undef DBGC_CLASS
