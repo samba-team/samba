@@ -134,6 +134,14 @@ set height 0
 bt full
 thread apply all bt full
 info locals
+if PyList_New
+  echo \\n### Python traceback\\n\\n
+  py-bt
+  echo \\n### Python locals\\n\\n
+  py-locals
+  echo \\n### Python full traceback\\n\\n
+  py-bt-full
+end
 quit
 EOF
 	${DB_BIN} -batch -x "${BATCHFILE_MAIN}" --pid "${PID}" </dev/null
