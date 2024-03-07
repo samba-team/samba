@@ -2995,7 +2995,7 @@ static int net_ads_keytab_flush(struct net_context *c,
 		return -1;
 	}
 
-	if (!c->opt_user_specified && c->opt_password == NULL) {
+	if (!c->explicit_credentials) {
 		net_use_krb_machine_account(c);
 	}
 
@@ -3036,7 +3036,7 @@ static int net_ads_keytab_add(struct net_context *c,
 
 	d_printf(_("Processing principals to add...\n"));
 
-	if (!c->opt_user_specified && c->opt_password == NULL) {
+	if (!c->explicit_credentials) {
 		net_use_krb_machine_account(c);
 	}
 
@@ -3092,7 +3092,7 @@ static int net_ads_keytab_delete(struct net_context *c,
 
 	d_printf(_("Processing principals to delete...\n"));
 
-	if (!c->opt_user_specified && c->opt_password == NULL) {
+	if (!c->explicit_credentials) {
 		net_use_krb_machine_account(c);
 	}
 
@@ -3128,7 +3128,7 @@ static int net_ads_keytab_create(struct net_context *c, int argc, const char **a
 
 	net_warn_member_options();
 
-	if (!c->opt_user_specified && c->opt_password == NULL) {
+	if (!c->explicit_credentials) {
 		net_use_krb_machine_account(c);
 	}
 

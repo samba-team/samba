@@ -295,7 +295,7 @@ static int net_setauthuser(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	if (!c->opt_user_specified) {
+	if (!c->explicit_credentials) {
 		d_fprintf(stderr, _("Usage:\n"));
 		d_fprintf(stderr,
 			  _("    net setauthuser -U user[%%password]\n"
