@@ -56,7 +56,7 @@ def datetime_from_nt_time(nt_time: NtTime) -> datetime.datetime:
     return NT_EPOCH + time_since_epoch
 
 
-def nt_time_delta_from_datetime(dt: datetime.timedelta) -> NtTimeDelta:
+def nt_time_delta_from_timedelta(dt: datetime.timedelta) -> NtTimeDelta:
     return NtTimeDelta(round(dt.total_seconds() * NT_TICKS_PER_SEC))
 
 
