@@ -23,6 +23,7 @@
 		<arg choice="opt">-k <replaceable>keyname</replaceable></arg>
 		<arg choice="opt">-e</arg>
 		<arg choice="opt">-h</arg>
+		<arg choice="opt">-x</arg>
 		<arg choice="req">filename</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
@@ -66,6 +67,13 @@
 		<term>-e</term>
 		<listitem><para>
 		The <command>-e</command> tries to dump out from a corrupt database.  Naturally, such a dump is unreliable, at best.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-x</term>
+		<listitem><para>
+		The <command>-x</command> changes the output data to a hex dump, from the default mix of ASCII and hex dump.
 		</para></listitem>
 		</varlistentry>
 
