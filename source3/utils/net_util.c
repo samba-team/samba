@@ -275,6 +275,7 @@ int net_use_krb_machine_account(struct net_context *c)
 	c->opt_user_specified = true;
 
 	cli_credentials_set_machine_account(c->creds, c->lp_ctx);
+	c->explicit_credentials = true;
 	return 0;
 }
 

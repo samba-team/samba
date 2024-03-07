@@ -127,6 +127,7 @@ static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObjec
 	r->in.debug		= debug;
 
 	c->creds = self->creds;
+	c->explicit_credentials = true;
 	c->opt_user_name = cli_credentials_get_username(self->creds);
 	c->opt_password = cli_credentials_get_password(self->creds);
 	c->opt_kerberos = cli_credentials_get_kerberos_state(self->creds);

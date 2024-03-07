@@ -1369,6 +1369,10 @@ static struct functable net_func[] = {
 	c->creds = samba_cmdline_get_creds();
 
 	{
+		enum credentials_obtained principal_obtained =
+			cli_credentials_get_principal_obtained(c->creds);
+		enum credentials_obtained password_obtained =
+			cli_credentials_get_password_obtained(c->creds);
 		enum credentials_obtained username_obtained =
 			CRED_UNINITIALISED;
 		enum smb_encryption_setting encrypt_state =
@@ -1376,6 +1380,13 @@ static struct functable net_func[] = {
 		enum credentials_use_kerberos krb5_state =
 			cli_credentials_get_kerberos_state(c->creds);
 		uint32_t gensec_features;
+
+		if (principal_obtained == CRED_SPECIFIED) {
+			c->explicit_credentials = true;
+		}
+		if (password_obtained == CRED_SPECIFIED) {
+			c->explicit_credentials = true;
+		}
 
 		c->opt_user_name = cli_credentials_get_username_and_obtained(
 				c->creds,
