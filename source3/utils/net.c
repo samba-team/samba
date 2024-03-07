@@ -1047,10 +1047,11 @@ static struct functable net_func[] = {
 			.arg        = &c->opt_request_timeout,
 		},
 		{
+			/* legacy for --use-winbind-ccache */
 			.longName   = "use-ccache",
 			.shortName  = 0,
 			.argInfo    = POPT_ARG_NONE,
-			.arg        = &c->opt_ccache,
+			.arg        = &c->legacy_opt_ccache,
 		},
 		{
 			.longName   = "verbose",
@@ -1388,7 +1389,12 @@ static struct functable net_func[] = {
 		c->opt_kerberos = (krb5_state > CRED_USE_KERBEROS_DESIRED);
 
 		gensec_features = cli_credentials_get_gensec_features(c->creds);
-		c->opt_ccache = (gensec_features & GENSEC_FEATURE_NTLM_CCACHE);
+		if (c->legacy_opt_ccache) {
+			gensec_features |= GENSEC_FEATURE_NTLM_CCACHE;
+			cli_credentials_set_gensec_features(c->creds,
+							    gensec_features,
+							    CRED_SPECIFIED);
+		}
 	}
 
 	c->msg_ctx = cmdline_messaging_context(get_dyn_CONFIGFILE());
