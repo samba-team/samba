@@ -319,7 +319,7 @@ int net_rpc_changetrustpw(struct net_context *c, int argc, const char **argv)
 {
 	int conn_flags = NET_FLAGS_PDC;
 
-	if (!c->opt_user_specified && !c->opt_kerberos) {
+	if (!c->explicit_credentials) {
 		conn_flags |= NET_FLAGS_ANONYMOUS;
 	}
 
@@ -879,7 +879,7 @@ int net_rpc_getsid(struct net_context *c, int argc, const char **argv)
 {
 	int conn_flags = NET_FLAGS_PDC;
 
-	if (!c->opt_user_specified && !c->opt_kerberos) {
+	if (!c->explicit_credentials) {
 		conn_flags |= NET_FLAGS_ANONYMOUS;
 	}
 
