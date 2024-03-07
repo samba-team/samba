@@ -103,7 +103,6 @@ struct net_context {
 
 	int opt_have_ip;
 	struct sockaddr_storage opt_dest_ip;
-	bool smb_encrypt;
 	struct libnetapi_ctx *netapi_ctx;
 	struct messaging_context *msg_ctx;
 	struct netlogon_creds_cli_context *netlogon_creds;

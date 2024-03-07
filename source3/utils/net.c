@@ -1375,8 +1375,6 @@ static struct functable net_func[] = {
 			cli_credentials_get_password_obtained(c->creds);
 		enum credentials_obtained username_obtained =
 			CRED_UNINITIALISED;
-		enum smb_encryption_setting encrypt_state =
-			cli_credentials_get_smb_encryption(c->creds);
 		uint32_t gensec_features;
 
 		if (principal_obtained == CRED_SPECIFIED) {
@@ -1392,8 +1390,6 @@ static struct functable net_func[] = {
 		c->opt_user_specified = (username_obtained == CRED_SPECIFIED);
 
 		c->opt_workgroup = cli_credentials_get_domain(c->creds);
-
-		c->smb_encrypt = (encrypt_state == SMB_ENCRYPTION_REQUIRED);
 
 		gensec_features = cli_credentials_get_gensec_features(c->creds);
 		if (c->legacy_opt_ccache) {
