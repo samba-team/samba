@@ -124,8 +124,14 @@ struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
 	}
 
 	if (use_kerberos && fallback_after_kerberos) {
+		/*
+		 * Keep what we learned from the
+		 * "client use kerberos" option.
+		 */
+		enum credentials_use_kerberos current_krb5 =
+			cli_credentials_get_kerberos_state(creds);
 		cli_credentials_set_kerberos_state(creds,
-						   CRED_USE_KERBEROS_DESIRED,
+						   current_krb5,
 						   CRED_SPECIFIED);
 	} else if (use_kerberos) {
 		cli_credentials_set_kerberos_state(creds,
