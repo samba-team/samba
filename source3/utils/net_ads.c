@@ -3254,6 +3254,7 @@ static int net_ads_kerberos_pac_common(struct net_context *c, int argc, const ch
 	int ret = -1;
 	const char *impersonate_princ_s = NULL;
 	const char *local_service = NULL;
+	const char *principal = NULL;
 	const char *password = NULL;
 	int i;
 
@@ -3280,10 +3281,15 @@ static int net_ads_kerberos_pac_common(struct net_context *c, int argc, const ch
 		}
 	}
 
+	principal = cli_credentials_get_principal(c->creds, c);
+	if (principal == NULL) {
+		d_printf("cli_credentials_get_principal() failed\n");
+		goto out;
+	}
 	password = cli_credentials_get_password(c->creds);
 
 	status = kerberos_return_pac(c,
-				     c->opt_user_name,
+				     principal,
 				     password,
 				     0,
 				     NULL,
@@ -3445,6 +3451,7 @@ static int net_ads_kerberos_kinit(struct net_context *c, int argc, const char **
 {
 	int ret = -1;
 	NTSTATUS status;
+	const char *principal = NULL;
 	const char *password = NULL;
 
 	if (c->display_usage) {
@@ -3456,9 +3463,14 @@ static int net_ads_kerberos_kinit(struct net_context *c, int argc, const char **
 		return -1;
 	}
 
+	principal = cli_credentials_get_principal(c->creds, c);
+	if (principal == NULL) {
+		d_printf("cli_credentials_get_principal() failed\n");
+		return -1;
+	}
 	password = cli_credentials_get_password(c->creds);
 
-	ret = kerberos_kinit_password_ext(c->opt_user_name,
+	ret = kerberos_kinit_password_ext(principal,
 					  password,
 					  0,
 					  NULL,
