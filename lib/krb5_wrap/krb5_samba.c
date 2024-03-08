@@ -3028,6 +3028,7 @@ krb5_error_code smb_krb5_cc_get_lifetime(krb5_context context,
 	krb5_cc_cursor cursor;
 	krb5_error_code kerr;
 	krb5_creds cred;
+	krb5_timestamp endtime = 0;
 	krb5_timestamp now;
 
 	*t = 0;
@@ -3043,18 +3044,43 @@ krb5_error_code smb_krb5_cc_get_lifetime(krb5_context context,
 	}
 
 	while ((kerr = krb5_cc_next_cred(context, id, &cursor, &cred)) == 0) {
+		if (krb5_is_config_principal(context, cred.server)) {
+			krb5_free_cred_contents(context, &cred);
+			continue;
+		}
+
 #ifndef HAVE_FLAGS_IN_KRB5_CREDS
 		if (cred.ticket_flags & TKT_FLG_INITIAL) {
 #else
 		if (cred.flags.b.initial) {
 #endif
 			if (now < cred.times.endtime) {
-				*t = (time_t) (cred.times.endtime - now);
+				endtime = cred.times.endtime;
 			}
 			krb5_free_cred_contents(context, &cred);
 			break;
 		}
+
+		if (cred.times.endtime <= now) {
+			/* already expired */
+			krb5_free_cred_contents(context, &cred);
+			continue;
+		}
+
+		/**
+		 * If there was no krbtgt, use the shortest lifetime of
+		 * service tickets that have yet to expire.  If all
+		 * credentials are expired, krb5_cc_get_lifetime() will fail.
+		 */
+		if (endtime == 0 || cred.times.endtime < endtime) {
+			endtime = cred.times.endtime;
+		}
 		krb5_free_cred_contents(context, &cred);
+	}
+
+	if (now < endtime) {
+		*t = (time_t) (endtime - now);
+		kerr = 0;
 	}
 
 	krb5_cc_end_seq_get(context, id, &cursor);
