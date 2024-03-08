@@ -1968,6 +1968,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
     def get_cached_creds(self, *,
                          account_type: AccountType,
                          opts: Optional[dict]=None,
+                         samdb: Optional[SamDB]=None,
                          use_cache=True) -> KerberosCredentials:
         if opts is None:
             opts = {}
@@ -2013,18 +2014,22 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         }
 
         if use_cache:
+            self.assertIsNone(samdb)
             cache_key = tuple(sorted(account_opts.items()))
             creds = self.account_cache.get(cache_key)
             if creds is not None:
                 return creds
 
-        creds = self.create_account_opts(use_cache, **account_opts)
+        creds = self.create_account_opts(samdb, use_cache, **account_opts)
         if use_cache:
             self.account_cache[cache_key] = creds
 
         return creds
 
-    def create_account_opts(self, use_cache, *,
+    def create_account_opts(self,
+                            samdb: Optional[SamDB],
+                            use_cache,
+                            *,
                             account_type,
                             name_prefix,
                             name_suffix,
@@ -2064,7 +2069,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         else:
             self.assertFalse(not_delegated)
 
-        samdb = self.get_samdb()
+        if samdb is None:
+            samdb = self.get_samdb()
 
         user_name = self.get_new_username()
         if name_prefix is not None:
