@@ -439,6 +439,7 @@ class CredentialsOptions(OptionGroup):
         self.creds.set_bind_dn(arg)
 
     def _set_krb5_ccache(self, option, opt_str, arg, parser):
+        self.ask_for_password = False
         self.creds.set_kerberos_state(MUST_USE_KERBEROS)
         self.creds.set_named_ccache(arg)
 
