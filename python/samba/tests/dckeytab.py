@@ -111,7 +111,208 @@ class DCKeytabTests(TestCaseInTempDir):
         # confirm many principals were exported
         self.assertGreater(len(keytab_as_set), 10)
 
+    def test_export_keytab_all_keep_stale(self):
+        net = Net(None, self.lp)
+        self.addCleanup(self.rm_files, self.ktfile)
+        net.export_keytab(keytab=self.ktfile)
 
+        new_principal=f"keytab_testuser@{self.creds.get_realm()}"
+        self.samdb.newuser("keytab_testuser", "4rfvBGT%")
+        self.addCleanup(self.samdb.deleteuser, "keytab_testuser")
+
+        net.export_keytab(keytab=self.ktfile, keep_stale_entries=True)
+
+        self.assertTrue(os.path.exists(self.ktfile), 'keytab was not created')
+
+        with open(self.ktfile, 'rb') as bytes_kt:
+            keytab_bytes = bytes_kt.read()
+
+        # confirm many principals were exported
+        # self.keytab_as_set() will also check we only got it
+        # each entry once
+        keytab_as_set = self.keytab_as_set(keytab_bytes)
+
+        self.assertGreater(len(keytab_as_set), 10)
+
+        # Look for the new principal, showing this was updated
+        found = False
+        for entry in keytab_as_set:
+            (principal, enctype, kvno, key) = entry
+            if principal == new_principal:
+                found = True
+
+        self.assertTrue(found)
+
+    def test_export_keytab_nochange_update(self):
+        new_principal=f"keytab_testuser@{self.creds.get_realm()}"
+        self.samdb.newuser("keytab_testuser", "4rfvBGT%")
+        self.addCleanup(self.samdb.deleteuser, "keytab_testuser")
+
+        net = Net(None, self.lp)
+        self.addCleanup(self.rm_files, self.ktfile)
+        net.export_keytab(keytab=self.ktfile, principal=new_principal)
+        self.assertTrue(os.path.exists(self.ktfile), 'keytab was not created')
+
+        with open(self.ktfile, 'rb') as bytes_kt:
+            keytab_orig_bytes = bytes_kt.read()
+
+        net.export_keytab(keytab=self.ktfile, principal=new_principal)
+
+        # Parse the first entry in the keytab
+        with open(self.ktfile, 'rb') as bytes_kt:
+            keytab_bytes = bytes_kt.read()
+
+        self.assertEqual(keytab_orig_bytes, keytab_bytes)
+
+        # confirm only this principal was exported.
+        # self.keytab_as_set() will also check we only got it
+        # once
+        for entry in self.keytab_as_set(keytab_bytes):
+            (principal, enctype, kvno, key) = entry
+            self.assertEqual(principal, new_principal)
+
+    def test_export_keytab_change_update(self):
+        new_principal=f"keytab_testuser@{self.creds.get_realm()}"
+        self.samdb.newuser("keytab_testuser", "4rfvBGT%")
+        self.addCleanup(self.samdb.deleteuser, "keytab_testuser")
+
+        net = Net(None, self.lp)
+        self.addCleanup(self.rm_files, self.ktfile)
+        net.export_keytab(keytab=self.ktfile, principal=new_principal)
+        self.assertTrue(os.path.exists(self.ktfile), 'keytab was not created')
+
+        # Parse the first entry in the keytab
+        with open(self.ktfile, 'rb') as bytes_kt:
+            keytab_orig_bytes = bytes_kt.read()
+
+        self.samdb.setpassword(f"(userPrincipalName={new_principal})", "5rfvBGT%")
+
+        net.export_keytab(keytab=self.ktfile, principal=new_principal)
+
+        with open(self.ktfile, 'rb') as bytes_kt:
+            keytab_change_bytes = bytes_kt.read()
+
+        self.assertNotEqual(keytab_orig_bytes, keytab_change_bytes)
+
+        # We can't parse it as the parser is simple and doesn't
+        # understand holes in the file.
+
+    def test_export_keytab_change2_update(self):
+        new_principal=f"keytab_testuser@{self.creds.get_realm()}"
+        self.samdb.newuser("keytab_testuser", "4rfvBGT%")
+        self.addCleanup(self.samdb.deleteuser, "keytab_testuser")
+
+        net = Net(None, self.lp)
+        self.addCleanup(self.rm_files, self.ktfile)
+        net.export_keytab(keytab=self.ktfile, principal=new_principal)
+        self.assertTrue(os.path.exists(self.ktfile), 'keytab was not created')
+
+        # Parse the first entry in the keytab
+        with open(self.ktfile, 'rb') as bytes_kt:
+            keytab_orig_bytes = bytes_kt.read()
+
+        # intended to trigger the pruning code for old keys
+        self.samdb.setpassword(f"(userPrincipalName={new_principal})", "5rfvBGT%")
+        self.samdb.setpassword(f"(userPrincipalName={new_principal})", "6rfvBGT%")
+
+        net.export_keytab(keytab=self.ktfile, principal=new_principal)
+
+        with open(self.ktfile, 'rb') as bytes_kt:
+            keytab_change_bytes = bytes_kt.read()
+
+        self.assertNotEqual(keytab_orig_bytes, keytab_change_bytes)
+
+        # We can't parse it as the parser is simple and doesn't
+        # understand holes in the file.
+
+    def test_export_keytab_change3_update_keep(self):
+        new_principal=f"keytab_testuser@{self.creds.get_realm()}"
+        self.samdb.newuser("keytab_testuser", "4rfvBGT%")
+        self.addCleanup(self.samdb.deleteuser, "keytab_testuser")
+        net = Net(None, self.lp)
+        self.addCleanup(self.rm_files, self.ktfile)
+        net.export_keytab(keytab=self.ktfile, principal=new_principal)
+        self.assertTrue(os.path.exists(self.ktfile), 'keytab was not created')
+
+        # Parse the first entry in the keytab
+        with open(self.ktfile, 'rb') as bytes_kt:
+            keytab_orig_bytes = bytes_kt.read()
+
+        # By changing the password three times, we allow Samba to fill
+        # out current, old, older from supplementalCredentials and
+        # still have one password that must still be from the original
+        # keytab
+        self.samdb.setpassword(f"(userPrincipalName={new_principal})", "5rfvBGT%")
+        self.samdb.setpassword(f"(userPrincipalName={new_principal})", "6rfvBGT%")
+        self.samdb.setpassword(f"(userPrincipalName={new_principal})", "6rfvBGT%")
+
+        net.export_keytab(keytab=self.ktfile, principal=new_principal, keep_stale_entries=True)
+
+        with open(self.ktfile, 'rb') as bytes_kt:
+            keytab_change_bytes = bytes_kt.read()
+
+        self.assertNotEqual(keytab_orig_bytes, keytab_change_bytes)
+
+        # self.keytab_as_set() will also check we got each entry
+        # exactly once
+        keytab_as_set = self.keytab_as_set(keytab_change_bytes)
+
+        # Look for the new principal, showing this was updated but the old kept
+        found = 0
+        for entry in keytab_as_set:
+            (principal, enctype, kvno, key) = entry
+            if principal == new_principal and enctype == credentials.ENCTYPE_AES128_CTS_HMAC_SHA1_96:
+                found += 1
+
+        # Samba currently does not export the previous keys into the keytab, but could.
+        self.assertEqual(found, 4)
+
+        # confirm at least 12 keys (4 changes, 1 in orig export and 3
+        # history in 2nd export, 3 enctypes) were exported
+        self.assertGreaterEqual(len(keytab_as_set), 12)
+
+    def test_export_keytab_change2_export2_update_keep(self):
+        new_principal=f"keytab_testuser@{self.creds.get_realm()}"
+        self.samdb.newuser("keytab_testuser", "4rfvBGT%")
+        self.addCleanup(self.samdb.deleteuser, "keytab_testuser")
+        net = Net(None, self.lp)
+        self.addCleanup(self.rm_files, self.ktfile)
+        net.export_keytab(keytab=self.ktfile, principal=new_principal)
+        self.assertTrue(os.path.exists(self.ktfile), 'keytab was not created')
+
+        # Parse the first entry in the keytab
+        with open(self.ktfile, 'rb') as bytes_kt:
+            keytab_orig_bytes = bytes_kt.read()
+
+        self.samdb.setpassword(f"(userPrincipalName={new_principal})", "5rfvBGT%")
+
+        net.export_keytab(keytab=self.ktfile, principal=new_principal, keep_stale_entries=True)
+
+        self.samdb.setpassword(f"(userPrincipalName={new_principal})", "6rfvBGT%")
+
+        net.export_keytab(keytab=self.ktfile, principal=new_principal, keep_stale_entries=True)
+
+        with open(self.ktfile, 'rb') as bytes_kt:
+            keytab_change_bytes = bytes_kt.read()
+
+        self.assertNotEqual(keytab_orig_bytes, keytab_change_bytes)
+
+        # self.keytab_as_set() will also check we got each entry
+        # exactly once
+        keytab_as_set = self.keytab_as_set(keytab_change_bytes)
+
+        # Look for the new principal, showing this was updated but the old kept
+        found = 0
+        for entry in keytab_as_set:
+            (principal, enctype, kvno, key) = entry
+            if principal == new_principal and enctype == credentials.ENCTYPE_AES128_CTS_HMAC_SHA1_96:
+                found += 1
+
+        # This covers the simple case, one export per password change
+        self.assertEqual(found, 3)
+
+        # confirm at least 9 keys (3 exports, 3 enctypes) were exported
+        self.assertGreaterEqual(len(keytab_as_set), 9)
 
     def test_export_keytab_not_a_dir(self):
         net = Net(None, self.lp)

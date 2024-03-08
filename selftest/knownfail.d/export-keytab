@@ -1,2 +1,4 @@
 ^samba.tests.dckeytab.samba.tests.dckeytab.DCKeytabTests.test_export_keytab_existing
 ^samba.tests.dckeytab.samba.tests.dckeytab.DCKeytabTests.test_export_keytab_not_a_dir
+^samba.tests.dckeytab.samba.tests.dckeytab.DCKeytabTests.test_export_keytab_change3_update_keep
+^samba.tests.dckeytab.samba.tests.dckeytab.DCKeytabTests.test_export_keytab_all_keep_stale
