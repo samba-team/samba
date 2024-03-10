@@ -23,9 +23,9 @@
 #
 
 import samba.getopt as options
-from samba import enable_net_export_keytab
+from samba import enable_net_export_keytab, NTSTATUSError
 from samba.net import Net
-from samba.netcmd import Command, Option
+from samba.netcmd import Command, CommandError, Option
 
 try:
     enable_net_export_keytab()
@@ -62,7 +62,10 @@ else:
             lp = sambaopts.get_loadparm()
             net = Net(None, lp)
             samdb = self.ldb_connect(hostopts, sambaopts, credopts)
-            net.export_keytab(samdb=samdb,
-                              keytab=keytab,
-                              principal=principal,
-                              keep_stale_entries=keep_stale_entries)
+            try:
+                net.export_keytab(samdb=samdb,
+                                  keytab=keytab,
+                                  principal=principal,
+                                  keep_stale_entries=keep_stale_entries)
+            except NTSTATUSError as error:
+                raise CommandError(f"Failed to export domain keys into keytab {keytab}: {error.args[1]}")
