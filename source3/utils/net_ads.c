@@ -977,6 +977,20 @@ static int ads_user_add(struct net_context *c, int argc, const char **argv)
 		return net_ads_user_usage(c, argc, argv);
 	}
 
+	if (argc > 1) {
+		/*
+		 * We rely on ads_krb5_set_password() to
+		 * set the password below.
+		 *
+		 * We could pass the password to
+		 * ads_add_user_acct()
+		 * and set the unicodePwd attribute there...
+		 */
+		cli_credentials_set_kerberos_state(c->creds,
+						   CRED_USE_KERBEROS_REQUIRED,
+						   CRED_SPECIFIED);
+	}
+
 	status = ads_startup(c, false, tmp_ctx, &ads);
 	if (!ADS_ERR_OK(status)) {
 		goto done;
