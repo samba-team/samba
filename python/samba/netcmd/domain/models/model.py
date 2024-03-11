@@ -225,7 +225,8 @@ class Model(metaclass=ModelMeta):
         return expression
 
     @classmethod
-    def query(cls, ldb, polymorphic=False, base_dn=None, **kwargs):
+    def query(cls, ldb, polymorphic=False, base_dn=None, scope=SCOPE_SUBTREE,
+              **kwargs):
         """Returns a search query for this model.
 
         NOTE: If polymorphic is enabled then querying will return instances
@@ -238,6 +239,7 @@ class Model(metaclass=ModelMeta):
         :param ldb: Ldb connection
         :param polymorphic: If true enables polymorphic querying (see note)
         :param base_dn: Optional provide base dn for searching or use the model
+        :param scope: Ldb search scope (default SCOPE_SUBTREE)
         :param kwargs: Search criteria as keyword args
         """
         if base_dn is None:
@@ -246,7 +248,7 @@ class Model(metaclass=ModelMeta):
         # If the container does not exist produce a friendly error message.
         try:
             result = ldb.search(base_dn,
-                                scope=SCOPE_SUBTREE,
+                                scope=scope,
                                 expression=cls.build_expression(**kwargs))
         except LdbError as e:
             if e.args[0] == ERR_NO_SUCH_OBJECT:
