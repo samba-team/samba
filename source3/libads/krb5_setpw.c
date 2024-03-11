@@ -154,11 +154,9 @@ kerb_prompter(krb5_context ctx, void *data,
 	return 0;
 }
 
-static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
-					const char *principal,
+static ADS_STATUS ads_krb5_chg_password(const char *principal,
 					const char *oldpw,
-					const char *newpw,
-					int time_offset)
+					const char *newpw)
 {
 	ADS_STATUS aret;
 	krb5_error_code ret;
@@ -313,9 +311,8 @@ ADS_STATUS kerberos_set_password(const char *kpasswd_server,
 	}
 
 	if (!strcmp(auth_principal, target_principal)) {
-		return ads_krb5_chg_password(kpasswd_server, target_principal,
-					     auth_password, new_password,
-					     time_offset);
+		return ads_krb5_chg_password(target_principal,
+					     auth_password, new_password);
 	} else {
 		return ads_krb5_set_password(target_principal,
 					     new_password);
