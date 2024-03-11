@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/samr.h" /* for struct samrPassword */
 #include "librpc/gen_ndr/ndr_gmsa.h" /* for struct MANAGEDPASSWORD_BLOB */
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_internal.h"
