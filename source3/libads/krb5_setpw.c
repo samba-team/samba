@@ -297,12 +297,12 @@ static ADS_STATUS ads_krb5_chg_password(const char *principal,
 	return aret;
 }
 
-ADS_STATUS kerberos_set_password(const char *kpasswd_server,
-				 const char *auth_principal,
+ADS_STATUS kerberos_set_password(const char *auth_principal,
 				 const char *auth_password,
 				 const char *target_principal,
-				 const char *new_password, int time_offset)
+				 const char *new_password)
 {
+	const int time_offset = 0;
 	int ret;
 
 	if ((ret = kerberos_kinit_password(auth_principal, auth_password, time_offset, NULL))) {

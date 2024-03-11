@@ -2697,12 +2697,10 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 		goto out;
 	}
 
-	status = kerberos_set_password(ads->auth.kdc_server,
-				       auth_principal,
+	status = kerberos_set_password(auth_principal,
 				       auth_password,
 				       user,
-				       new_password,
-				       0);
+				       new_password);
 	memset(new_password, '\0', strlen(new_password));
 	if (!ADS_ERR_OK(status)) {
 		d_fprintf(stderr, _("Password change failed: %s\n"),
