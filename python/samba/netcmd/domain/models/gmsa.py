@@ -28,7 +28,6 @@ from .constants import GROUP_MSA_MEMBERSHIP_DEFAULT
 from .exceptions import FieldError
 from .fields import BinaryField, EnumField, IntegerField, SDDLField, StringField
 from .types import SupportedEncryptionTypes
-from .user import User
 
 
 class GroupManagedServiceAccount(Computer):
@@ -79,17 +78,19 @@ class GroupManagedServiceAccount(Computer):
 
         return allowed
 
-    def add_trustee(self, trustee: User):
+    def add_trustee(self, trustee: str):
         """Adds the User `trustee` to group_msa_membership.
 
         Checking if the trustee already has access is the responsibility
         of the caller.
+
+        :param trustee: SID of trustee to add
         """
         aces = self.group_msa_membership.dacl.aces
 
         ace = security.ace()
         ace.type = security.SEC_ACE_TYPE_ACCESS_ALLOWED
-        ace.trustee = security.dom_sid(trustee.object_sid)
+        ace.trustee = security.dom_sid(trustee)
         ace.access_mask = security.SEC_ADS_GENERIC_ALL
         aces.append(ace)
 
@@ -97,14 +98,16 @@ class GroupManagedServiceAccount(Computer):
         self.group_msa_membership.dacl.aces = aces
         self.group_msa_membership.dacl.num_aces = len(aces)
 
-    def remove_trustee(self, trustee: User):
+    def remove_trustee(self, trustee: str):
         """Removes the User 'trustee' from group_msa_membership.
 
         If the trustee doesn't have access already then do nothing.
+
+        :param trustee: SID of trustee to remove
         """
         aces = self.group_msa_membership.dacl.aces
 
         for ace in aces:
-            if trustee.object_sid == str(ace.trustee):
+            if trustee == str(ace.trustee):
                 self.group_msa_membership.dacl_del_ace(ace)
                 break

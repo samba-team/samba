@@ -130,7 +130,7 @@ class cmd_service_account_group_msa_membership_add(Command):
             print(f"Trustee '{trustee}' is already allowed to show managed passwords for: {gmsa}",
                   file=self.outf)
         else:
-            gmsa.add_trustee(trustee)
+            gmsa.add_trustee(trustee.object_sid)
 
             try:
                 gmsa.save(ldb)
@@ -193,7 +193,7 @@ class cmd_service_account_group_msa_membership_remove(Command):
             print(f"Trustee '{trustee}' cannot currently show managed passwords for: {gmsa}",
                   file=self.outf)
         else:
-            gmsa.remove_trustee(trustee)
+            gmsa.remove_trustee(trustee.object_sid)
 
             try:
                 gmsa.save(ldb)
