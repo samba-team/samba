@@ -114,7 +114,7 @@ class cmd_service_account_group_msa_membership_add(Command):
         # Note that principal can be a user or group (by passing in a Dn).
         # If the Dn is a group it will see it as a User but this doesn't matter.
         try:
-            trustee = User.find(ldb, principal)
+            trustee = User.get_sid_for_principal(ldb, principal)
         except ModelError as e:
             raise CommandError(e)
 
@@ -126,18 +126,18 @@ class cmd_service_account_group_msa_membership_add(Command):
         except ModelError as e:
             raise CommandError(e)
 
-        if trustee.object_sid in trustees:
-            print(f"Trustee '{trustee}' is already allowed to show managed passwords for: {gmsa}",
+        if trustee in trustees:
+            print(f"Trustee '{principal}' is already allowed to show managed passwords for: {gmsa}",
                   file=self.outf)
         else:
-            gmsa.add_trustee(trustee.object_sid)
+            gmsa.add_trustee(trustee)
 
             try:
                 gmsa.save(ldb)
             except ModelError as e:
                 raise CommandError(e)
 
-            print(f"Trustee '{trustee}' is now allowed to show managed passwords for: {gmsa}",
+            print(f"Trustee '{principal}' is now allowed to show managed passwords for: {gmsa}",
                   file=self.outf)
 
 
@@ -177,7 +177,7 @@ class cmd_service_account_group_msa_membership_remove(Command):
         # Note that principal can be a user or group (by passing in a Dn).
         # If the Dn is a group it will see it as a User but this doesn't matter.
         try:
-            trustee = User.find(ldb, principal)
+            trustee = User.get_sid_for_principal(ldb, principal)
         except ModelError as e:
             raise CommandError(e)
 
@@ -189,18 +189,18 @@ class cmd_service_account_group_msa_membership_remove(Command):
         except ModelError as e:
             raise CommandError(e)
 
-        if trustee.object_sid not in trustees:
-            print(f"Trustee '{trustee}' cannot currently show managed passwords for: {gmsa}",
+        if trustee not in trustees:
+            print(f"Trustee '{principal}' cannot currently show managed passwords for: {gmsa}",
                   file=self.outf)
         else:
-            gmsa.remove_trustee(trustee.object_sid)
+            gmsa.remove_trustee(trustee)
 
             try:
                 gmsa.save(ldb)
             except ModelError as e:
                 raise CommandError(e)
 
-            print(f"Trustee '{trustee}' removed access to show managed passwords for: {gmsa}",
+            print(f"Trustee '{principal}' removed access to show managed passwords for: {gmsa}",
                   file=self.outf)
 
 
