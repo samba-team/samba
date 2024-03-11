@@ -3985,6 +3985,14 @@ int ads_krb5_cli_get_ticket(TALLOC_CTX *mem_ctx,
 		ENCTYPE_NULL};
 	bool ok;
 
+	if (ccname == NULL) {
+		DBG_ERR("No explicit ccache given for service [%s], "
+			"impersonating [%s]\n",
+			principal, impersonate_princ_s);
+		retval = EINVAL;
+		goto failed;
+	}
+
 	DBG_DEBUG("Getting ticket for service [%s] using creds from [%s] "
 		  "and impersonating [%s]\n",
 		  principal, ccname, impersonate_princ_s);
@@ -4000,12 +4008,10 @@ int ads_krb5_cli_get_ticket(TALLOC_CTX *mem_ctx,
 		krb5_set_real_time(context, time(NULL) + time_offset, 0);
 	}
 
-	retval = krb5_cc_resolve(context,
-				 ccname ? ccname : krb5_cc_default_name(context),
-				 &ccdef);
+	retval = krb5_cc_resolve(context, ccname, &ccdef);
 	if (retval != 0) {
-		DBG_WARNING("krb5_cc_default failed (%s)\n",
-			    error_message(retval));
+		DBG_WARNING("krb5_cc_resolve(%s) failed (%s)\n",
+			    ccname, error_message(retval));
 		goto failed;
 	}
 
