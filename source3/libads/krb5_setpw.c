@@ -57,7 +57,7 @@ static krb5_error_code kpasswd_err_to_krb5_err(krb5_error_code res_code)
 }
 
 ADS_STATUS ads_krb5_set_password(const char *principal,
-				 const char *newpw, int time_offset)
+				 const char *newpw)
 {
 
 	ADS_STATUS aret;
@@ -84,10 +84,6 @@ ADS_STATUS ads_krb5_set_password(const char *principal,
 				  error_message(ret)));
 			return ADS_ERROR_KRB5(ret);
 		}
-	}
-
-	if (time_offset != 0) {
-		krb5_set_real_time(context, time(NULL) + time_offset, 0);
 	}
 
 	ret = krb5_cc_default(context, &ccache);
@@ -322,7 +318,7 @@ ADS_STATUS kerberos_set_password(const char *kpasswd_server,
 					     time_offset);
 	} else {
 		return ads_krb5_set_password(target_principal,
-					     new_password, time_offset);
+					     new_password);
 	}
 }
 

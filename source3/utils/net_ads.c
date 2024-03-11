@@ -1037,7 +1037,7 @@ static int ads_user_add(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
-	status = ads_krb5_set_password(upn, argv[1], 0);
+	status = ads_krb5_set_password(upn, argv[1]);
 	if (ADS_ERR_OK(status)) {
 		d_printf(_("User %s added\n"), argv[0]);
 		rc = 0;
