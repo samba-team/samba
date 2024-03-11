@@ -127,4 +127,3 @@ NTSTATUS cli_credentials_set_gmsa_passwords(struct cli_credentials *creds,
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
-
