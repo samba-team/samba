@@ -119,7 +119,7 @@ class cmd_service_account_group_msa_membership_add(Command):
             raise CommandError(e)
 
         if trustee is None:
-            raise CommandError(f"Trust {principal} not found.")
+            raise CommandError(f"Trustee {principal} not found.")
 
         try:
             trustees = gmsa.trustees
@@ -182,7 +182,7 @@ class cmd_service_account_group_msa_membership_remove(Command):
             raise CommandError(e)
 
         if trustee is None:
-            raise CommandError(f"User {principal} not found.")
+            raise CommandError(f"Trustee {principal} not found.")
 
         try:
             trustees = gmsa.trustees
