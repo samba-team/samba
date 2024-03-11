@@ -686,7 +686,7 @@ retry_connect:
 		       realm,
 		       c->opt_target_workgroup,
 		       c->opt_host,
-		       ADS_SASL_PLAIN);
+		       ADS_SASL_SEAL);
 	if (ads == NULL) {
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
