@@ -131,6 +131,14 @@ int kerberos_kinit_password_ext(const char *given_principal,
 
 	ZERO_STRUCT(my_creds);
 
+	if (cache_name == NULL) {
+		DBG_DEBUG("Missing ccache for [%s] and config [%s]\n",
+			  given_principal,
+			  getenv("KRB5_CONFIG"));
+		TALLOC_FREE(frame);
+		return EINVAL;
+	}
+
 	code = smb_krb5_init_context_common(&ctx);
 	if (code != 0) {
 		DBG_ERR("kerberos init context failed (%s)\n",
@@ -145,10 +153,10 @@ int kerberos_kinit_password_ext(const char *given_principal,
 
 	DBG_DEBUG("as %s using [%s] as ccache and config [%s]\n",
 		  given_principal,
-		  cache_name ? cache_name: krb5_cc_default_name(ctx),
+		  cache_name,
 		  getenv("KRB5_CONFIG"));
 
-	if ((code = krb5_cc_resolve(ctx, cache_name ? cache_name : krb5_cc_default_name(ctx), &cc))) {
+	if ((code = krb5_cc_resolve(ctx, cache_name, &cc))) {
 		goto out;
 	}
 
