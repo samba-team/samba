@@ -173,7 +173,7 @@ static krb5_error_code smb_krb5_fill_keytab(TALLOC_CTX *parent_ctx,
 	mem_ctx = talloc_new(parent_ctx);
 	if (!mem_ctx) {
 		*perror_string = talloc_strdup(parent_ctx,
-			"unable to allocate tmp_ctx for create_keytab");
+			"unable to allocate tmp_ctx for smb_krb5_fill_keytab");
 		return ENOMEM;
 	}
 
@@ -191,7 +191,7 @@ static krb5_error_code smb_krb5_fill_keytab(TALLOC_CTX *parent_ctx,
 	ret = ms_suptypes_to_ietf_enctypes(mem_ctx, supp_enctypes, &enctypes);
 	if (ret) {
 		*perror_string = talloc_asprintf(parent_ctx,
-					"create_keytab: generating list of "
+					"smb_krb5_fill_keytab: generating list of "
 					"encryption types failed (%s)\n",
 					smb_get_krb5_error_message(context,
 								ret, mem_ctx));
