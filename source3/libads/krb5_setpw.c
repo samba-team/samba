@@ -57,7 +57,8 @@ static krb5_error_code kpasswd_err_to_krb5_err(krb5_error_code res_code)
 }
 
 ADS_STATUS ads_krb5_set_password(const char *principal,
-				 const char *newpw)
+				 const char *newpw,
+				 const char *ccname)
 {
 
 	ADS_STATUS aret;
@@ -68,6 +69,12 @@ ADS_STATUS ads_krb5_set_password(const char *principal,
 	int result_code;
 	krb5_data result_code_string = { 0 };
 	krb5_data result_string = { 0 };
+
+	if (ccname == NULL) {
+		DBG_ERR("Missing ccache for [%s] and config [%s]\n",
+			principal, getenv("KRB5_CONFIG"));
+		return ADS_ERROR_NT(NT_STATUS_WRONG_CREDENTIAL_HANDLE);
+	}
 
 	ret = smb_krb5_init_context_common(&context);
 	if (ret) {
@@ -86,11 +93,12 @@ ADS_STATUS ads_krb5_set_password(const char *principal,
 		}
 	}
 
-	ret = krb5_cc_default(context, &ccache);
+	ret = krb5_cc_resolve(context, ccname, &ccache);
 	if (ret) {
 		krb5_free_principal(context, princ);
 		krb5_free_context(context);
-		DEBUG(1,("Failed to get default creds (%s)\n", error_message(ret)));
+		DBG_WARNING("Failed to get creds from [%s] (%s)\n",
+			    ccname, error_message(ret));
 		return ADS_ERROR_KRB5(ret);
 	}
 
@@ -302,7 +310,11 @@ ADS_STATUS kerberos_set_password(const char *auth_principal,
 				 const char *target_principal,
 				 const char *new_password)
 {
-	const int time_offset = 0;
+	TALLOC_CTX *frame = NULL;
+	krb5_context ctx = NULL;
+	krb5_ccache ccid = NULL;
+	char *ccname = NULL;
+	ADS_STATUS status;
 	int ret;
 
 	if (strcmp(auth_principal, target_principal) == 0) {
@@ -315,13 +327,56 @@ ADS_STATUS kerberos_set_password(const char *auth_principal,
 					     new_password);
 	}
 
-	if ((ret = kerberos_kinit_password(auth_principal, auth_password, time_offset, NULL))) {
-		DEBUG(1,("Failed kinit for principal %s (%s)\n", auth_principal, error_message(ret)));
-		return ADS_ERROR_KRB5(ret);
+	frame = talloc_stackframe();
+
+	ret = smb_krb5_init_context_common(&ctx);
+	if (ret != 0) {
+		status = ADS_ERROR_KRB5(ret);
+		goto done;
 	}
 
-	return ads_krb5_set_password(target_principal,
-				     new_password);
+	ret = smb_krb5_cc_new_unique_memory(ctx,
+					    frame,
+					    &ccname,
+					    &ccid);
+	if (ret != 0) {
+		status = ADS_ERROR_KRB5(ret);
+		goto done;
+	}
+
+	ret = kerberos_kinit_password(auth_principal,
+				      auth_password,
+				      0, /* timeoutset */
+				      ccname);
+	if (ret != 0) {
+		DBG_ERR("Failed kinit for principal %s (%s)\n",
+			auth_principal, error_message(ret));
+		status = ADS_ERROR_KRB5(ret);
+		goto done;
+	}
+
+	status = ads_krb5_set_password(target_principal,
+				       new_password,
+				       ccname);
+	if (!ADS_ERR_OK(status)) {
+		DBG_ERR("Failed to set password for %s as %s: %s\n",
+			target_principal,
+			auth_principal,
+			ads_errstr(status));
+		goto done;
+	}
+
+done:
+	if (ccid != NULL) {
+		krb5_cc_destroy(ctx, ccid);
+		ccid = NULL;
+	}
+	if (ctx != NULL) {
+		krb5_free_context(ctx);
+		ctx = NULL;
+	}
+	TALLOC_FREE(frame);
+	return status;
 }
 
 #endif

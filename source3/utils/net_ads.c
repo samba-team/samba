@@ -969,6 +969,7 @@ static int ads_user_add(struct net_context *c, int argc, const char **argv)
 	ADS_STATUS status;
 	char *upn, *userdn;
 	LDAPMessage *res=NULL;
+	const char *creds_ccname = NULL;
 	int rc = -1;
 	char *ou_str = NULL;
 
@@ -1037,7 +1038,13 @@ static int ads_user_add(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
-	status = ads_krb5_set_password(upn, argv[1]);
+	/*
+	 * For this commit we still rely on use_in_memory_ccache()
+	 * being used, but that will change in the next one...
+	 */
+	creds_ccname = "MEMORY:net_ads";
+
+	status = ads_krb5_set_password(upn, argv[1], creds_ccname);
 	if (ADS_ERR_OK(status)) {
 		d_printf(_("User %s added\n"), argv[0]);
 		rc = 0;

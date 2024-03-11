@@ -85,7 +85,8 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 /* The following definitions come from libads/krb5_setpw.c  */
 
 ADS_STATUS ads_krb5_set_password(const char *princ,
-				 const char *newpw);
+				 const char *newpw,
+				 const char *ccname);
 ADS_STATUS kerberos_set_password(const char *auth_principal,
 				 const char *auth_password,
 				 const char *target_principal,
