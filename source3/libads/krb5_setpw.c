@@ -305,18 +305,23 @@ ADS_STATUS kerberos_set_password(const char *auth_principal,
 	const int time_offset = 0;
 	int ret;
 
+	if (strcmp(auth_principal, target_principal) == 0) {
+		/*
+		 * kinit is done inside of ads_krb5_chg_password()
+		 * without any ccache, just with raw krb5_creds.
+		 */
+		return ads_krb5_chg_password(target_principal,
+					     auth_password,
+					     new_password);
+	}
+
 	if ((ret = kerberos_kinit_password(auth_principal, auth_password, time_offset, NULL))) {
 		DEBUG(1,("Failed kinit for principal %s (%s)\n", auth_principal, error_message(ret)));
 		return ADS_ERROR_KRB5(ret);
 	}
 
-	if (!strcmp(auth_principal, target_principal)) {
-		return ads_krb5_chg_password(target_principal,
-					     auth_password, new_password);
-	} else {
-		return ads_krb5_set_password(target_principal,
-					     new_password);
-	}
+	return ads_krb5_set_password(target_principal,
+				     new_password);
 }
 
 #endif
