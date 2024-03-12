@@ -80,7 +80,7 @@ NTSTATUS auth_generic_client_prepare(TALLOC_CTX *mem_ctx, struct auth_generic_st
 	}
 
 	gensec_settings = lpcfg_gensec_settings(ans, lp_ctx);
-	if (lp_ctx == NULL) {
+	if (gensec_settings == NULL) {
 		DEBUG(10, ("lpcfg_gensec_settings failed\n"));
 		TALLOC_FREE(ans);
 		return NT_STATUS_NO_MEMORY;
