@@ -386,7 +386,7 @@ NTSTATUS smb_krb5_fill_keytab_gmsa_keys(TALLOC_CTX *mem_ctx,
 	salt_principal = cli_credentials_get_salt_principal(cred, tmp_ctx);
 	if (salt_principal == NULL) {
 		*error_string = talloc_asprintf(mem_ctx,
-						"Failed to generated salt principal for %s",
+						"Failed to generate salt principal for %s",
 						ldb_dn_get_linearized(msg->dn));
 		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
