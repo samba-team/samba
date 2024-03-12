@@ -91,7 +91,7 @@ from samba.dcerpc.misc import (
 from samba.join import DCJoinContext
 from samba.ndr import ndr_pack, ndr_unpack
 from samba import net
-from samba.netcmd.domain.models import AuthenticationPolicy, AuthenticationSilo
+from samba.domain.models import AuthenticationPolicy, AuthenticationSilo
 from samba.param import LoadParm
 from samba.samdb import SamDB, dsdb_Dn
 

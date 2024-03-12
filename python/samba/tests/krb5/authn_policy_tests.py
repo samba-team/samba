@@ -34,7 +34,7 @@ from samba import dsdb, ntstatus
 from samba.dcerpc import netlogon, security
 from samba.dcerpc import windows_event_ids as win_event
 from samba.ndr import ndr_pack
-from samba.netcmd.domain.models import AuthenticationPolicy, AuthenticationSilo
+from samba.domain.models import AuthenticationPolicy, AuthenticationSilo
 
 import samba.tests
 import samba.tests.krb5.kcrypto as kcrypto

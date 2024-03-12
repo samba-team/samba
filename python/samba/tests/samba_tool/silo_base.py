@@ -24,7 +24,7 @@ import os
 
 from ldb import SCOPE_ONELEVEL
 
-from samba.netcmd.domain.models import Group
+from samba.domain.models import Group
 
 from .base import SambaToolCmdTest
 

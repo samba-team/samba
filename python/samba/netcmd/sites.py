@@ -24,8 +24,8 @@ from samba.netcmd import (
     SuperCommand,
     Option,
 )
-from samba.netcmd.domain.models import Site, Subnet
-from samba.netcmd.domain.models.exceptions import ModelError
+from samba.domain.models import Site, Subnet
+from samba.domain.models.exceptions import ModelError
 
 
 class cmd_sites_list(Command):

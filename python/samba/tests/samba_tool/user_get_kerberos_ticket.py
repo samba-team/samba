@@ -33,7 +33,7 @@ from samba import credentials
 from samba.credentials import MUST_USE_KERBEROS
 from samba.dcerpc import security
 from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT, UF_NORMAL_ACCOUNT
-from samba.netcmd.domain.models import User
+from samba.domain.models import User
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.tests import connect_samdb, delete_force
 

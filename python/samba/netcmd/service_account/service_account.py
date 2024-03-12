@@ -22,10 +22,10 @@
 
 from samba.getopt import CredentialsOptions, HostOptions, Option, SambaOptions
 from samba.netcmd import Command, CommandError
-from samba.netcmd.domain.models import (AccountType, Computer, Group,
-                                        GroupManagedServiceAccount,
-                                        SupportedEncryptionTypes, User)
-from samba.netcmd.domain.models.exceptions import ModelError
+from samba.domain.models import (AccountType, Computer, Group,
+                                 GroupManagedServiceAccount,
+                                 SupportedEncryptionTypes, User)
+from samba.domain.models.exceptions import ModelError
 
 
 class cmd_service_account_list(Command):

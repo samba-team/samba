@@ -22,8 +22,8 @@
 
 import samba.getopt as options
 from samba.netcmd import Command, CommandError, Option, SuperCommand
-from samba.netcmd.domain.models import AuthenticationSilo, User
-from samba.netcmd.domain.models.exceptions import ModelError
+from samba.domain.models import AuthenticationSilo, User
+from samba.domain.models.exceptions import ModelError
 
 
 class cmd_domain_auth_silo_member_grant(Command):

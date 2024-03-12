@@ -33,7 +33,7 @@ from ldb import SCOPE_BASE
 from samba.credentials import MUST_USE_KERBEROS
 from samba.dcerpc import security, samr
 from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT
-from samba.netcmd.domain.models import User
+from samba.domain.models import User
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.nt_time import nt_time_from_datetime
 from samba.tests import connect_samdb, connect_samdb_env, delete_force

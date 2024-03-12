@@ -20,7 +20,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from samba.netcmd.domain.models import AuthenticationSilo, User
+from samba.domain.models import AuthenticationSilo, User
 
 from .silo_base import SiloTest
 

@@ -23,8 +23,8 @@
 import json
 import os
 
-from samba.netcmd.domain.models import Group, GroupManagedServiceAccount, User
-from samba.netcmd.domain.models.constants import GROUP_MSA_MEMBERSHIP_DEFAULT
+from samba.domain.models import Group, GroupManagedServiceAccount, User
+from samba.domain.models.constants import GROUP_MSA_MEMBERSHIP_DEFAULT
 
 from .base import SambaToolCmdTest
 

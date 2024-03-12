@@ -21,9 +21,8 @@
 
 from samba.getopt import CredentialsOptions, HostOptions, Option, SambaOptions
 from samba.netcmd import Command, CommandError, SuperCommand
-from samba.netcmd.domain.models import (Group, GroupManagedServiceAccount,
-                                        Model, User)
-from samba.netcmd.domain.models.exceptions import ModelError
+from samba.domain.models import Group, GroupManagedServiceAccount, Model, User
+from samba.domain.models.exceptions import ModelError
 
 
 class cmd_service_account_group_msa_membership_show(Command):

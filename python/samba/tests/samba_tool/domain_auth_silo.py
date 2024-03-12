@@ -23,7 +23,7 @@
 import json
 from unittest.mock import patch
 
-from samba.netcmd.domain.models.exceptions import ModelError
+from samba.domain.models.exceptions import ModelError
 from samba.samdb import SamDB
 from samba.sd_utils import SDUtils
 
