@@ -59,14 +59,14 @@ class cmd_service_account_group_msa_membership_show(Command):
             raise CommandError(f"Group managed service account {name} not found.")
 
         try:
-            trustees = [Model.get(ldb, object_sid=sid, polymorphic=True) for sid in gmsa.trustees]
+            trustees = {sid: Model.get(ldb, object_sid=sid, polymorphic=True) for sid in gmsa.trustees}
         except ModelError as e:
             raise CommandError(e)
 
         if output_format == "json":
             self.print_json({
                 "dn": gmsa.dn,
-                "trustees": [trustee.dn for trustee in trustees]
+                "trustees": [trustee.dn if trustee else f"<SID={sid}>" for sid, trustee in trustees.items()]
             })
         else:
             print(f"Account-DN: {gmsa.dn}", file=self.outf)
@@ -74,8 +74,9 @@ class cmd_service_account_group_msa_membership_show(Command):
             print("Accounts or groups that are able to retrieve this group managed service account password:",
                   file=self.outf)
 
-            for trustee in trustees:
-                print(f"  {trustee.dn}", file=self.outf)
+            for sid, trustee in trustees.items():
+                dn = trustee.dn if trustee else f"<SID={sid}>"
+                print(f"  {dn}", file=self.outf)
 
 
 class cmd_service_account_group_msa_membership_add(Command):
