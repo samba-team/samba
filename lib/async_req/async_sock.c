@@ -144,13 +144,6 @@ struct tevent_req *async_connect_send(
 		return tevent_req_post(req, ev);
 	}
 
-	/*
-	 * Note for historic reasons TEVENT_FD_WRITE is not enough
-	 * to get notified for POLLERR or EPOLLHUP even if they
-	 * come together with POLLOUT. That means we need to
-	 * use TEVENT_FD_READ in addition until we have
-	 * TEVENT_FD_ERROR.
-	 */
 	state->fde = tevent_add_fd(ev, state, fd,
 				   TEVENT_FD_ERROR|TEVENT_FD_WRITE,
 				   async_connect_connected, req);
