@@ -22,7 +22,7 @@ import string
 from samba.net import Net
 from samba import enable_net_export_keytab
 
-from samba import credentials, ntstatus, NTSTATUSError, tests
+from samba import credentials, dsdb, ntstatus, NTSTATUSError, tests
 from samba.dcerpc import krb5ccache, security
 from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT
 from samba.ndr import ndr_unpack, ndr_pack
@@ -345,7 +345,10 @@ class DCKeytabTests(TestCaseInTempDir):
         # Create gMSA account
         gmsa_username = "GMSA_K5KeytabTest$"
         gmsa_principal = f"{gmsa_username}@{self.samdb.domain_dns_name().upper()}"
-        gmsa_base_dn = f"CN=Managed Service Accounts,{self.samdb.domain_dn()}"
+        gmsa_base_dn = self.samdb.get_wellknown_dn(
+            self.samdb.get_default_basedn(),
+            dsdb.DS_GUID_MANAGED_SERVICE_ACCOUNTS_CONTAINER,
+        )
         gmsa_user_dn = f"CN={gmsa_username},{gmsa_base_dn}"
 
         msg = self.samdb.search(base="", scope=SCOPE_BASE, attrs=["tokenGroups"])[0]
