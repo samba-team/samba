@@ -131,11 +131,16 @@ EOF
 gdb)
 	cat <<EOF >${BATCHFILE_MAIN}
 set height 0
+echo \\n### detailed backtrace\\n\\n
 bt full
 init-if-undefined \$_inferior_thread_count = 0
 if \$_inferior_thread_count != 1
+  echo \\n### info threads\\n\\n
+  info threads
+  echo \\n### backtrace for all threads\\n\\n
   thread apply all bt full
 end
+echo \\n### info locals\\n\\n
 info locals
 if PyList_New
   echo \\n### Python traceback\\n\\n
