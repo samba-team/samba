@@ -110,9 +110,9 @@ class Model(metaclass=ModelMeta):
         else:
             return self.dn == other.dn
 
-    def __json__(self):
+    def __json__(self, **kwargs):
         """Automatically called by custom JSONEncoder class."""
-        return self.as_dict()
+        return self.as_dict(**kwargs)
 
     @staticmethod
     def get_base_dn(ldb):
@@ -182,7 +182,7 @@ class Model(metaclass=ModelMeta):
 
         self._apply(ldb, res[0])
 
-    def as_dict(self, include_hidden=False):
+    def as_dict(self, include_hidden=False, **kwargs):
         """Returns a dict representation of the model.
 
         :param include_hidden: Include fields with hidden=True when set
