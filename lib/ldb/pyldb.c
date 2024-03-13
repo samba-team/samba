@@ -65,7 +65,7 @@ static PyTypeObject PyLdbControl;
 static PyTypeObject PyLdbResult;
 static PyTypeObject PyLdbSearchIterator;
 static PyTypeObject PyLdbMessage;
-#define PyLdbMessage_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessage)
+#define pyldb_Message_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessage)
 static PyTypeObject PyLdbDn;
 #define pyldb_Dn_Check(ob) PyObject_TypeCheck(ob, &PyLdbDn)
 static PyTypeObject PyLdb;
@@ -1423,7 +1423,7 @@ static PyObject *py_ldb_modify(PyLdbObject *self, PyObject *args, PyObject *kwar
 		talloc_free(controls);
 	}
 
-	if (!PyLdbMessage_Check(py_msg)) {
+	if (!pyldb_Message_Check(py_msg)) {
 		PyErr_SetString(PyExc_TypeError, "Expected Ldb Message");
 		talloc_free(mem_ctx);
 		return NULL;
@@ -1615,7 +1615,7 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 		talloc_free(controls);
 	}
 
-	if (PyLdbMessage_Check(py_obj)) {
+	if (pyldb_Message_Check(py_obj)) {
 		msg = pyldb_Message_AsMessage(py_obj);
 	} else if (PyDict_Check(py_obj)) {
 		msg = PyDict_AsMessage(mem_ctx, py_obj, ldb_ctx, LDB_FLAG_MOD_ADD);
@@ -1978,7 +1978,7 @@ static PyObject *py_ldb_write_ldif(PyLdbObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "Oi", &py_msg, &changetype))
 		return NULL;
 
-	if (!PyLdbMessage_Check(py_msg)) {
+	if (!pyldb_Message_Check(py_msg)) {
 		PyErr_SetString(PyExc_TypeError, "Expected Ldb Message for msg");
 		return NULL;
 	}
@@ -2097,12 +2097,12 @@ static PyObject *py_ldb_msg_diff(PyLdbObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "OO", &py_msg_old, &py_msg_new))
 		return NULL;
 
-	if (!PyLdbMessage_Check(py_msg_old)) {
+	if (!pyldb_Message_Check(py_msg_old)) {
 		PyErr_SetString(PyExc_TypeError, "Expected Ldb Message for old message");
 		return NULL;
 	}
 
-	if (!PyLdbMessage_Check(py_msg_new)) {
+	if (!pyldb_Message_Check(py_msg_new)) {
 		PyErr_SetString(PyExc_TypeError, "Expected Ldb Message for new message");
 		return NULL;
 	}
@@ -3679,7 +3679,7 @@ static PyObject *py_ldb_msg_from_dict(PyTypeObject *type, PyObject *args)
 #define PyErr_LDB_MESSAGE_OR_RAISE(_py_obj, message) do {		\
 	PyLdbMessageObject *_py_message = NULL;			\
 	struct ldb_dn *_dn = NULL;					\
-	if (_py_obj == NULL || !PyLdbMessage_Check(_py_obj)) {		\
+	if (_py_obj == NULL || !pyldb_Message_Check(_py_obj)) {		\
 		PyErr_SetString(PyExc_TypeError,			\
 				"ldb Message object required");	\
 		return NULL;						\
@@ -4283,7 +4283,7 @@ static PyObject *py_ldb_msg_richcmp(PyLdbMessageObject *py_msg1,
 	unsigned int i;
 	int ret;
 
-	if (!PyLdbMessage_Check(py_msg2)) {
+	if (!pyldb_Message_Check(py_msg2)) {
 		Py_INCREF(Py_NotImplemented);
 		return Py_NotImplemented;
 	}
