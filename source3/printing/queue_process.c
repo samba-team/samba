@@ -186,10 +186,13 @@ static bool printing_subsystem_queue_tasks(struct bq_state *state)
 		return true;
 	}
 
-	state->housekeep = event_add_idle(state->ev, NULL,
-					  timeval_set(housekeeping_period, 0),
-					  "print_queue_housekeeping",
-					  print_queue_housekeeping, state);
+	state->housekeep = event_add_idle(
+		state->ev,
+		NULL,
+		tevent_timeval_set(housekeeping_period, 0),
+		"print_queue_housekeeping",
+		print_queue_housekeeping,
+		state);
 	if (state->housekeep == NULL) {
 		DEBUG(0,("Could not add print_queue_housekeeping event\n"));
 		return false;

@@ -174,8 +174,10 @@ rekinit:
 					new_start = time(NULL) +
 						    MAX(30, lp_winbind_cache_time());
 #endif
-					add_krb5_ticket_gain_handler_event(entry,
-							timeval_set(new_start, 0));
+					add_krb5_ticket_gain_handler_event(
+						entry,
+						tevent_timeval_set(new_start,
+								   0));
 					return;
 				}
 				TALLOC_FREE(entry->event);
@@ -250,8 +252,8 @@ rekinit:
 #endif
 			/* ticket is destroyed here, we have to regain it
 			 * if it is possible */
-			add_krb5_ticket_gain_handler_event(entry,
-						timeval_set(new_start, 0));
+			add_krb5_ticket_gain_handler_event(
+				entry, tevent_timeval_set(new_start, 0));
 			return;
 		}
 
@@ -280,18 +282,19 @@ done:
 	     && (entry->renew_until <= expire_time)) {
 		/* try to regain ticket 10 seconds before expiration */
 		expire_time -= 10;
-		add_krb5_ticket_gain_handler_event(entry,
-					timeval_set(expire_time, 0));
+		add_krb5_ticket_gain_handler_event(
+			entry, tevent_timeval_set(expire_time, 0));
 		return;
 	}
 
 	if (entry->refresh_time == 0) {
 		entry->refresh_time = new_start;
 	}
-	entry->event = tevent_add_timer(global_event_context(), entry,
-				       timeval_set(new_start, 0),
-				       krb5_ticket_refresh_handler,
-				       entry);
+	entry->event = tevent_add_timer(global_event_context(),
+					entry,
+					tevent_timeval_set(new_start, 0),
+					krb5_ticket_refresh_handler,
+					entry);
 
 #endif
 }
@@ -371,7 +374,7 @@ static void krb5_ticket_gain_handler(struct tevent_context *event_ctx,
   retry_later:
 
 #if defined(DEBUG_KRB5_TKT_RENEWAL)
-	t = timeval_set(time(NULL) + 30, 0);
+	t = tevent_timeval_set(time(NULL) + 30, 0);
 #else
 	t = timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0);
 #endif
@@ -382,9 +385,9 @@ static void krb5_ticket_gain_handler(struct tevent_context *event_ctx,
   got_ticket:
 
 #if defined(DEBUG_KRB5_TKT_RENEWAL)
-	t = timeval_set(time(NULL) + 30, 0);
+	t = tevent_timeval_set(time(NULL) + 30, 0);
 #else
-	t = timeval_set(krb5_event_refresh_time(entry->refresh_time), 0);
+	t = tevent_timeval_set(krb5_event_refresh_time(entry->refresh_time), 0);
 #endif
 
 	if (entry->refresh_time == 0) {
@@ -545,10 +548,11 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 			} else {
 				/* Renew at 1/2 the ticket expiration time */
 #if defined(DEBUG_KRB5_TKT_RENEWAL)
-				t = timeval_set(time(NULL)+30, 0);
+				t = tevent_timeval_set(time(NULL) + 30, 0);
 #else
-				t = timeval_set(krb5_event_refresh_time(ticket_end),
-						0);
+				t = tevent_timeval_set(krb5_event_refresh_time(
+							       ticket_end),
+						       0);
 #endif
 				if (!entry->refresh_time) {
 					entry->refresh_time = t.tv_sec;
@@ -659,9 +663,9 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 	} else {
 		/* Renew at 1/2 the ticket expiration time */
 #if defined(DEBUG_KRB5_TKT_RENEWAL)
-		t = timeval_set(time(NULL)+30, 0);
+		t = tevent_timeval_set(time(NULL) + 30, 0);
 #else
-		t = timeval_set(krb5_event_refresh_time(ticket_end), 0);
+		t = tevent_timeval_set(krb5_event_refresh_time(ticket_end), 0);
 #endif
 		if (entry->refresh_time == 0) {
 			entry->refresh_time = t.tv_sec;

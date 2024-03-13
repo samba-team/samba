@@ -3206,7 +3206,7 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 	 * measure here in case the other smbd is stuck
 	 * somewhere else. */
 
-	timeout = timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0);
+	timeout = tevent_timeval_set(OPLOCK_BREAK_TIMEOUT * 2, 0);
 
 	if (request_timed_out(req, timeout)) {
 		return;
@@ -3230,7 +3230,7 @@ static void schedule_async_open_timer(struct tevent_context *ev,
 static void schedule_async_open(struct smb_request *req)
 {
 	struct deferred_open_record *open_rec = NULL;
-	struct timeval timeout = timeval_set(20, 0);
+	struct timeval timeout = tevent_timeval_set(20, 0);
 	bool ok;
 
 	if (request_timed_out(req, timeout)) {
@@ -4184,11 +4184,11 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * the oplock got removed.
 		 */
 
-		setup_poll_open(
-			req,
-			&fsp->file_id,
-			timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0),
-			timeval_set(1, 0));
+		setup_poll_open(req,
+				&fsp->file_id,
+				tevent_timeval_set(OPLOCK_BREAK_TIMEOUT * 2,
+						   0),
+				tevent_timeval_set(1, 0));
 
 		return NT_STATUS_SHARING_VIOLATION;
 	}

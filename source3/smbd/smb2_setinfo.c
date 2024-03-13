@@ -279,7 +279,7 @@ static struct tevent_req *delay_rename_for_lease_break(struct tevent_req *req,
 
 	tevent_req_set_callback(subreq, defer_rename_done, rename_state);
 
-	timeout = timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0);
+	timeout = tevent_timeval_set(OPLOCK_BREAK_TIMEOUT * 2, 0);
 	if (!tevent_req_set_endtime(subreq,
 			ev,
 			timeval_sum(&smb2req->request_time, &timeout))) {

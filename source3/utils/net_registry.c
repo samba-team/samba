@@ -616,7 +616,7 @@ static int net_registry_increment(struct net_context *c, int argc,
 	status = g_lock_lock(ctx,
 			     lock_key,
 			     G_LOCK_WRITE,
-			     timeval_set(600, 0),
+			     tevent_timeval_set(600, 0),
 			     NULL,
 			     NULL);
 	if (!NT_STATUS_IS_OK(status)) {

@@ -2020,26 +2020,37 @@ void smbd_process(struct tevent_context *ev_ctx,
 			   MSG_DEBUG, debug_message);
 
 #if defined(WITH_SMB1SERVER)
-	if ((lp_keepalive() != 0)
-	    && !(event_add_idle(ev_ctx, NULL,
-				timeval_set(lp_keepalive(), 0),
-				"keepalive", keepalive_fn,
-				sconn))) {
+	if ((lp_keepalive() != 0) &&
+	    !(event_add_idle(ev_ctx,
+			     NULL,
+			     tevent_timeval_set(lp_keepalive(), 0),
+			     "keepalive",
+			     keepalive_fn,
+			     sconn)))
+	{
 		DEBUG(0, ("Could not add keepalive event\n"));
 		exit(1);
 	}
 #endif
 
-	if (!(event_add_idle(ev_ctx, NULL,
-			     timeval_set(IDLE_CLOSED_TIMEOUT, 0),
-			     "deadtime", deadtime_fn, sconn))) {
+	if (!(event_add_idle(ev_ctx,
+			     NULL,
+			     tevent_timeval_set(IDLE_CLOSED_TIMEOUT, 0),
+			     "deadtime",
+			     deadtime_fn,
+			     sconn)))
+	{
 		DEBUG(0, ("Could not add deadtime event\n"));
 		exit(1);
 	}
 
-	if (!(event_add_idle(ev_ctx, NULL,
-			     timeval_set(SMBD_HOUSEKEEPING_INTERVAL, 0),
-			     "housekeeping", housekeeping_fn, sconn))) {
+	if (!(event_add_idle(ev_ctx,
+			     NULL,
+			     tevent_timeval_set(SMBD_HOUSEKEEPING_INTERVAL, 0),
+			     "housekeeping",
+			     housekeeping_fn,
+			     sconn)))
+	{
 		DEBUG(0, ("Could not add housekeeping event\n"));
 		exit(1);
 	}

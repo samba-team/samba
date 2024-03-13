@@ -618,18 +618,6 @@ _PUBLIC_ struct timeval timeval_current(void)
 }
 
 /**
-  return a timeval struct with the given elements
-*/
-_PUBLIC_ struct timeval timeval_set(uint32_t secs, uint32_t usecs)
-{
-	struct timeval tv;
-	tv.tv_sec = secs;
-	tv.tv_usec = usecs;
-	return tv;
-}
-
-
-/**
   return a timeval ofs microseconds after tv
 */
 _PUBLIC_ struct timeval timeval_add(const struct timeval *tv,

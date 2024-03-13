@@ -266,8 +266,8 @@ int main(void)
 
 	printf("server_id: %s\n", server_id_str_buf(id, &tmp));
 
-	req = msgcount_send(ev, ev, msg_ctx, MSG_SMB_NOTIFY,
-			    timeval_set(1, 0));
+	req = msgcount_send(
+		ev, ev, msg_ctx, MSG_SMB_NOTIFY, tevent_timeval_set(1, 0));
 	if (req == NULL) {
 		perror("msgcount_send failed");
 		return -1;

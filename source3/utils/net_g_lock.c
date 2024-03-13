@@ -83,13 +83,13 @@ static int net_g_lock_do(struct net_context *c, int argc, const char **argv)
 		d_fprintf(stderr, _("g_lock_ctx_init failed\n"));
 		return -1;
 	}
-	status = g_lock_lock(
-		ctx,
-		key,
-		G_LOCK_WRITE,
-		timeval_set(timeout / 1000, timeout % 1000),
-		NULL,
-		NULL);
+	status = g_lock_lock(ctx,
+			     key,
+			     G_LOCK_WRITE,
+			     tevent_timeval_set(timeout / 1000,
+						timeout % 1000),
+			     NULL,
+			     NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr,
 			  _("g_lock_lock failed: %s\n"),

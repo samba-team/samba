@@ -139,8 +139,12 @@ int main(int argc, const char *argv[])
 		return -1;
 	}
 
-	req = source_send(ev, ev, msg_ctx, MSG_SMB_NOTIFY,
-			  timeval_set(0, 10000), id);
+	req = source_send(ev,
+			  ev,
+			  msg_ctx,
+			  MSG_SMB_NOTIFY,
+			  tevent_timeval_set(0, 10000),
+			  id);
 	if (req == NULL) {
 		perror("source_send failed");
 		return -1;

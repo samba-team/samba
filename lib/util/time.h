@@ -241,11 +241,6 @@ bool timeval_is_zero(const struct timeval *tv);
 struct timeval timeval_current(void);
 
 /**
-  return a timeval struct with the given elements
-*/
-struct timeval timeval_set(uint32_t secs, uint32_t usecs);
-
-/**
   return a timeval ofs microseconds after tv
 */
 struct timeval timeval_add(const struct timeval *tv,
