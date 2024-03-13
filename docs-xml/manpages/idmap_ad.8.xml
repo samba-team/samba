@@ -105,6 +105,16 @@
 		</listitem>
 		</varlistentry>
 		<varlistentry>
+		<term>all_groupmem = yes/no</term>
+		<listitem><para>
+		  If set to <parameter>yes</parameter> winbind will retrieve all
+		  group members for getgrnam(3), getgrgid(3) and getgrent(3) calls,
+		  including those with missing uidNumber.
+		</para>
+		<para>Default: no</para>
+		</listitem>
+		</varlistentry>
+		<varlistentry>
 		<term>deny ous</term>
 		<listitem><para>This parameter is a list of OUs from
 		which objects will not be mapped via the ad idmap
