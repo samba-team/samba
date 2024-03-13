@@ -437,11 +437,35 @@ static PyObject *PyLdbResult_FromResult(struct ldb_result *result, PyLdbObject *
 	return (PyObject *)ret;
 }
 
+
+/*
+ * PyErr_interal_LDB_DN_OR_RAISE does exactly what
+ * PyErr__LDB_DN_OR_RAISE does, but rather than going through the
+ * Python layer to import the Dn object, it directly uses the the
+ * address of the PyTypeObject. This is faster, but can only be done
+ * in pyldb.c.
+ */
+#define PyErr_internal_LDB_DN_OR_RAISE(_py_obj, dn) do {		\
+		PyLdbDnObject *_py_dn = NULL;				\
+	if (_py_obj == NULL || !pyldb_Dn_Check(_py_obj)) {		\
+		PyErr_SetString(PyExc_TypeError, "ldb Dn object required"); \
+		return NULL;						\
+	}								\
+	_py_dn = (PyLdbDnObject *)_py_obj;				\
+	dn = pyldb_Dn_AS_DN(_py_dn);					\
+	if (_py_dn->pyldb->ldb_ctx != ldb_dn_get_ldb_context(dn)) {	\
+		PyErr_SetString(PyExc_RuntimeError,			\
+				"Dn has a stale LDB connection");	\
+		return NULL;					       \
+	}							       \
+} while(0)
+
+
 static PyObject *py_ldb_dn_validate(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
 	struct ldb_dn *dn = NULL;
-	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
 	return PyBool_FromLong(ldb_dn_validate(dn));
 }
 
@@ -461,7 +485,7 @@ static PyObject *py_ldb_dn_is_null(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
 	struct ldb_dn *dn = NULL;
-	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
 	return PyBool_FromLong(ldb_dn_is_null(dn));
 }
 
@@ -470,7 +494,7 @@ static PyObject *py_ldb_dn_get_casefold(PyObject *self,
 {
 	const char *s = NULL;
 	struct ldb_dn *dn = NULL;
-	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
 	s = ldb_dn_get_casefold(dn);
 	if (s == NULL) {
 		PyErr_NoMemory();
@@ -483,7 +507,7 @@ static PyObject *py_ldb_dn_get_linearized(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
 	struct ldb_dn *dn = NULL;
-	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
 	return PyUnicode_FromString(ldb_dn_get_linearized(dn));
 }
 
@@ -491,7 +515,7 @@ static PyObject *py_ldb_dn_canonical_str(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
 	struct ldb_dn *dn = NULL;
-	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
 	return PyUnicode_FromString(ldb_dn_canonical_string(dn, dn));
 }
 
@@ -499,7 +523,7 @@ static PyObject *py_ldb_dn_canonical_ex_str(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
 	struct ldb_dn *dn = NULL;
-	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
 	return PyUnicode_FromString(ldb_dn_canonical_ex_string(dn, dn));
 }
 
@@ -508,7 +532,7 @@ static PyObject *py_ldb_dn_extended_str(PyObject *self, PyObject *args, PyObject
 	const char * const kwnames[] = { "mode", NULL };
 	int mode = 1;
 	struct ldb_dn *dn = NULL;
-	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|i",
 					 discard_const_p(char *, kwnames),
 					 &mode)) {
@@ -522,7 +546,7 @@ static PyObject *py_ldb_dn_get_extended_component(PyObject *self, PyObject *args
 	char *name;
 	const struct ldb_val *val = NULL;
 	struct ldb_dn *dn = NULL;
-	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
 
 	if (!PyArg_ParseTuple(args, "s", &name)) {
 		return NULL;
@@ -542,7 +566,7 @@ static PyObject *py_ldb_dn_set_extended_component(PyObject *self, PyObject *args
 	uint8_t *value = NULL;
 	Py_ssize_t size = 0;
 	struct ldb_dn *dn = NULL;
-	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
 
 	if (!PyArg_ParseTuple(args, "sz#", &name, (char **)&value, &size))
 		return NULL;
@@ -600,8 +624,8 @@ static PyObject *py_ldb_dn_richcmp(PyObject *pydn1, PyObject *pydn2, int op)
 		Py_INCREF(Py_NotImplemented);
 		return Py_NotImplemented;
 	}
-	PyErr_LDB_DN_OR_RAISE(pydn1, dn1);
-	PyErr_LDB_DN_OR_RAISE(pydn2, dn2);
+	PyErr_internal_LDB_DN_OR_RAISE(pydn1, dn1);
+	PyErr_internal_LDB_DN_OR_RAISE(pydn2, dn2);
 
 	ret = ldb_dn_compare(dn1, dn2);
 	return richcmp(ret, op);
@@ -616,7 +640,7 @@ static PyObject *py_ldb_dn_get_parent(PyObject *self,
 	PyLdbDnObject *dn_self = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 
-	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
 
 	if (ldb_dn_get_comp_num(dn) < 1) {
 		Py_RETURN_NONE;
@@ -658,7 +682,7 @@ static PyObject *py_ldb_dn_add_child(PyObject *self, PyObject *args)
 	TALLOC_CTX *tmp_ctx = NULL;
 	bool ok;
 
-	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
 
 	if (!PyArg_ParseTuple(args, "O", &py_other)) {
 		return NULL;
@@ -705,7 +729,7 @@ static PyObject *py_ldb_dn_add_base(PyObject *self, PyObject *args)
 	TALLOC_CTX *tmp_ctx = NULL;
 	bool ok;
 
-	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
 
 	if (!PyArg_ParseTuple(args, "O", &py_other)) {
 		return NULL;
@@ -748,7 +772,7 @@ static PyObject *py_ldb_dn_remove_base_components(PyObject *self, PyObject *args
 		return NULL;
 	}
 
-	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
 
 	ok = ldb_dn_remove_base_components(dn, i);
 	if (!ok) {
@@ -767,7 +791,7 @@ static PyObject *py_ldb_dn_is_child_of(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
 
 	if (!pyldb_Object_AsDn(NULL, py_base, ldb_dn_get_ldb_context(dn), &base))
 		return NULL;
@@ -785,7 +809,7 @@ static PyObject *py_ldb_dn_get_component_name(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
 
 	name = ldb_dn_get_component_name(dn, num);
 	if (name == NULL) {
@@ -805,7 +829,7 @@ static PyObject *py_ldb_dn_get_component_value(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
 
 	val = ldb_dn_get_component_val(dn, num);
 	if (val == NULL) {
@@ -824,7 +848,7 @@ static PyObject *py_ldb_dn_set_component(PyObject *self, PyObject *args)
 	Py_ssize_t size = 0;
 	struct ldb_dn *dn = NULL;
 
-	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
 
 	if (!PyArg_ParseTuple(args, "Iss#", &num, &name, &value, &size)) {
 		return NULL;
@@ -848,7 +872,7 @@ static PyObject *py_ldb_dn_get_rdn_name(PyObject *self,
 	struct ldb_dn *dn = NULL;
 	const char *name;
 
-	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
 
 	name = ldb_dn_get_rdn_name(dn);
 	if (name == NULL) {
@@ -864,7 +888,7 @@ static PyObject *py_ldb_dn_get_rdn_value(PyObject *self,
 	struct ldb_dn *dn = NULL;
 	const struct ldb_val *val;
 
-	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
 
 	val = ldb_dn_get_rdn_val(dn);
 	if (val == NULL) {
@@ -997,8 +1021,8 @@ static PyObject *py_ldb_dn_concat(PyObject *self, PyObject *py_other)
 	PyLdbDnObject *py_ret = NULL;
 
 
-	PyErr_LDB_DN_OR_RAISE(self, dn);
-	PyErr_LDB_DN_OR_RAISE(py_other, other);
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
+	PyErr_internal_LDB_DN_OR_RAISE(py_other, other);
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
