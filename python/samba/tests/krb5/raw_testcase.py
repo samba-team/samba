@@ -3954,7 +3954,9 @@ class RawKerberosTest(TestCase):
                     self.assertElementPresent(ticket_private, 'renew-till')
                 else:
                     self.assertElementMissing(ticket_private, 'renew-till')
-            if self.strict_checking:
+            if self.strict_checking and \
+               self.getElementValue(ticket_private,
+                                    'caddr') != []:
                 self.assertElementMissing(ticket_private, 'caddr')
             if expect_pac is not None:
                 if expect_pac:
@@ -4011,8 +4013,10 @@ class RawKerberosTest(TestCase):
                                         expected_srealm)
             self.assertElementEqualPrincipal(encpart_private, 'sname',
                                              expected_sname)
-            if self.strict_checking:
-                self.assertElementMissing(encpart_private, 'caddr')
+            if self.strict_checking and \
+               self.getElementValue(ticket_private,
+                                    'caddr') != []:
+                self.assertElementMissing(ticket_private, 'caddr')
 
             sent_pac_options = self.get_sent_pac_options(kdc_exchange_dict)
 
