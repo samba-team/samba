@@ -1331,7 +1331,7 @@ static void ctdb_tevent_trace(enum tevent_trace_point tp,
 
 	switch (tp) {
 	case TEVENT_TRACE_BEFORE_WAIT:
-		diff = timeval_until(&tevent_after_wait_ts, &now);
+		diff = tevent_timeval_until(&tevent_after_wait_ts, &now);
 		if (diff.tv_sec > 3) {
 			DEBUG(DEBUG_ERR,
 			      ("Handling event took %ld seconds!\n",
@@ -1341,7 +1341,7 @@ static void ctdb_tevent_trace(enum tevent_trace_point tp,
 		break;
 
 	case TEVENT_TRACE_AFTER_WAIT:
-		diff = timeval_until(&tevent_before_wait_ts, &now);
+		diff = tevent_timeval_until(&tevent_before_wait_ts, &now);
 		if (diff.tv_sec > 3) {
 			DEBUG(DEBUG_ERR,
 			      ("No event for %ld seconds!\n",

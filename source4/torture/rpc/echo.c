@@ -281,7 +281,8 @@ static bool test_sleep(struct torture_context *tctx,
 				total_done++;
 				done2[i] = true;
 				rcv[i]	= timeval_current();
-				diff[i]	= timeval_until(&snd[i], &rcv[i]);
+				diff[i]	= tevent_timeval_until(
+					&snd[i], &rcv[i]);
 				rounded_tdiff = (int)(0.5 + diff[i].tv_sec + (1.0e-6*diff[i].tv_usec));
 				torture_comment(tctx, "rounded_tdiff=%d\n", rounded_tdiff);
 				torture_assert_ntstatus_ok(tctx,

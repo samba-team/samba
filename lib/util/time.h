@@ -318,14 +318,6 @@ struct timeval timeval_max(const struct timeval *tv1,
 			   const struct timeval *tv2);
 
 /**
-  return the difference between two timevals as a timeval
-  if tv1 comes after tv2, then return a zero timeval
-  (this is *tv2 - *tv1)
-*/
-struct timeval timeval_until(const struct timeval *tv1,
-			     const struct timeval *tv2);
-
-/**
   convert a timeval to a NTTIME
 */
 NTTIME timeval_to_nttime(const struct timeval *tv);
