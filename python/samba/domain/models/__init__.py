@@ -26,6 +26,7 @@ from .auth_silo import AuthenticationSilo
 from .claim_type import ClaimType
 from .computer import Computer
 from .constants import MODELS
+from .container import Container
 from .gmsa import GroupManagedServiceAccount
 from .group import Group
 from .model import Model
