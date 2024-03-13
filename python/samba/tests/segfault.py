@@ -415,3 +415,137 @@ class SegfaultTests(samba.tests.TestCase):
         del samdb
         del msg
         dn.get_casefold()
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_free_dn_assign_disconnecting_connection(self):
+
+        msg = ldb.Message()
+
+        samdb = self.get_samdb()
+        msg.dn = ldb.Dn(samdb, "CN=Test")
+        samdb.disconnect()
+        dn = msg.dn
+        dn.add_child("CN=TEST")
+        dn.set_component(0, "CN", "Test2")
+
+        del samdb
+        del msg
+        dn.get_casefold()
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_free_dn_assign_disconnecting_connection_no_del(self):
+
+        msg = ldb.Message()
+
+        samdb = self.get_samdb()
+        msg.dn = ldb.Dn(samdb, "CN=Test")
+        samdb.disconnect()
+        dn = msg.dn
+        dn.add_child("CN=TEST")
+        dn.set_component(0, "CN", "Test2")
+        dn.get_casefold()
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_free_dn_assign_disconnecting_connection_later__no_del(self):
+
+        msg = ldb.Message()
+
+        samdb = self.get_samdb()
+        msg.dn = ldb.Dn(samdb, "CN=Test")
+        dn = msg.dn
+        dn.add_child("CN=TEST")
+        dn.set_component(0, "CN", "Test2")
+        samdb.disconnect()
+        dn.get_casefold()
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_free_dn_assign_disconnecting_connection_add_child_later(self):
+
+        msg = ldb.Message()
+
+        samdb = self.get_samdb()
+        msg.dn = ldb.Dn(samdb, "CN=Test")
+        dn = msg.dn
+        dn.add_child("CN=TEST")
+        dn.set_component(0, "CN", "Test2")
+        samdb.disconnect()
+        dn.add_child("CN=TeSt")
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_free_dn_assign_disconnecting_connection_later(self):
+
+        msg = ldb.Message()
+
+        samdb = self.get_samdb()
+        msg.dn = ldb.Dn(samdb, "CN=Test")
+        dn = msg.dn
+        dn.add_child("CN=TEST")
+        dn.set_component(0, "CN", "Test2")
+        samdb.disconnect()
+        del samdb
+        dn.get_casefold()
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_free_dn_assign_disconnecting_connection_reconnecting_later(self):
+
+        msg = ldb.Message()
+
+        samdb = self.get_samdb()
+        msg.dn = ldb.Dn(samdb, "CN=Test")
+        dn = msg.dn
+        dn.add_child("CN=TEST")
+        dn.set_component(0, "CN", "Test2")
+        samdb.disconnect()
+        lp, creds, server = self.get_lp_et_al()
+        url = 'ldap://' + server
+        samdb.connect(url)
+        dn.get_casefold()
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_free_dn_assign_switching_out_connection(self):
+
+        msg = ldb.Message()
+
+        samdb = self.get_samdb()
+        msg.dn = ldb.Dn(samdb, "CN=Test")
+        lp, creds, server = self.get_lp_et_al()
+        url = 'ldap://' + server
+        samdb.disconnect()
+        samdb.connect(url)
+
+        dn = msg.dn
+        dn.add_child("CN=TEST")
+        dn.set_component(0, "CN", "Test2")
+        samdb.disconnect()
+        samdb.connect(url)
+        del samdb
+        del msg
+        dn.get_casefold()
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_free_dn_assign_disconnecting_and_switching_out_connection(self):
+
+        msg = ldb.Message()
+
+        samdb = self.get_samdb()
+        msg.dn = ldb.Dn(samdb, "CN=Test")
+        samdb.disconnect()
+        lp, creds, server = self.get_lp_et_al()
+        url = 'ldap://' + server
+        samdb.connect(url)
+
+        dn = msg.dn
+        dn.add_child("CN=TEST")
+        dn.set_component(0, "CN", "Test2")
+
+        del samdb
+        del msg
+        dn.get_casefold()
