@@ -24,11 +24,12 @@ import os
 from datetime import datetime, timezone
 from xml.etree import ElementTree
 
-from ldb import FLAG_MOD_ADD, MessageElement, SCOPE_ONELEVEL
+from ldb import FLAG_MOD_ADD, SCOPE_ONELEVEL, MessageElement
+
 from samba.dcerpc import security
 from samba.dcerpc.misc import GUID
 from samba.domain.models import (AccountType, Computer, Group, Site,
-                                        User, StrongNTLMPolicy, fields)
+                                 StrongNTLMPolicy, User, fields)
 from samba.ndr import ndr_pack, ndr_unpack
 
 from .base import SambaToolCmdTest

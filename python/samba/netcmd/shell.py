@@ -28,8 +28,8 @@ import ldb
 
 import samba.getopt as options
 from samba import version
-from samba.netcmd import Command
 from samba.domain.models import MODELS
+from samba.netcmd import Command
 
 
 class cmd_shell(Command):

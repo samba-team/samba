@@ -19,10 +19,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from samba.getopt import CredentialsOptions, HostOptions, Option, SambaOptions
-from samba.netcmd import Command, CommandError, SuperCommand
 from samba.domain.models import Group, GroupManagedServiceAccount, Model, User
 from samba.domain.models.exceptions import ModelError
+from samba.getopt import CredentialsOptions, HostOptions, Option, SambaOptions
+from samba.netcmd import Command, CommandError, SuperCommand
 
 
 class cmd_service_account_group_msa_membership_show(Command):

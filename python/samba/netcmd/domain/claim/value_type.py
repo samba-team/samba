@@ -21,9 +21,9 @@
 #
 
 import samba.getopt as options
-from samba.netcmd import Command, CommandError, Option, SuperCommand
 from samba.domain.models import ValueType
 from samba.domain.models.exceptions import ModelError
+from samba.netcmd import Command, CommandError, Option, SuperCommand
 
 
 class cmd_domain_claim_value_type_list(Command):

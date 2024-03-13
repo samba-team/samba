@@ -21,9 +21,9 @@
 #
 
 import samba.getopt as options
-from samba.netcmd import Command, CommandError, Option, SuperCommand
 from samba.domain.models import AuthenticationPolicy, User
 from samba.domain.models.exceptions import ModelError
+from samba.netcmd import Command, CommandError, Option, SuperCommand
 
 
 class cmd_user_auth_policy_assign(Command):

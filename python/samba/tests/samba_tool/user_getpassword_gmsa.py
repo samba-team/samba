@@ -20,25 +20,25 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, "bin/python")
 os.environ["PYTHONUNBUFFERED"] = "1"
 
-import datetime, shlex
+import datetime
+import shlex
 
 from ldb import SCOPE_BASE
 
 from samba.credentials import MUST_USE_KERBEROS
-from samba.dcerpc import security, samr
-from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT
+from samba.dcerpc import samr, security
 from samba.domain.models import User
+from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.nt_time import nt_time_from_datetime
-from samba.tests import connect_samdb, connect_samdb_env, delete_force
-
-from samba.tests import BlackboxTestCase
+from samba.tests import (BlackboxTestCase, connect_samdb, connect_samdb_env,
+                         delete_force)
 
 DC_SERVER = os.environ["SERVER"]
 SERVER = os.environ["SERVER"]

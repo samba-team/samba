@@ -22,23 +22,22 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, "bin/python")
 os.environ["PYTHONUNBUFFERED"] = "1"
 
 from ldb import SCOPE_BASE
+
 from samba import credentials
 from samba.credentials import MUST_USE_KERBEROS
 from samba.dcerpc import security
-from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT, UF_NORMAL_ACCOUNT
 from samba.domain.models import User
+from samba.dsdb import UF_NORMAL_ACCOUNT, UF_WORKSTATION_TRUST_ACCOUNT
 from samba.ndr import ndr_pack, ndr_unpack
-from samba.tests import connect_samdb, delete_force
-
-from samba.tests import BlackboxTestCase, BlackboxProcessError
-
+from samba.tests import (BlackboxProcessError, BlackboxTestCase, connect_samdb,
+                         delete_force)
 
 # If not specified, this is None, meaning local sam.ldb
 PW_READ_URL = os.environ.get("PW_READ_URL")

@@ -16,38 +16,40 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, "bin/python")
 os.environ["PYTHONUNBUFFERED"] = "1"
 
 import binascii
 import collections
-from datetime import datetime, timezone
-from enum import Enum
-from functools import partial
 import numbers
 import secrets
 import tempfile
+from collections import namedtuple
+from datetime import datetime, timezone
+from enum import Enum
+from functools import partial
 from typing import Optional
 
-from collections import namedtuple
 import ldb
 from ldb import SCOPE_BASE
+
 from samba import (
     NTSTATUSError,
     arcfour_encrypt,
     common,
     generate_random_password,
+    net,
     ntstatus,
 )
 from samba.auth import system_session
 from samba.credentials import (
-    Credentials,
     DONT_USE_KERBEROS,
     MUST_USE_KERBEROS,
     SPECIFIED,
+    Credentials,
 )
 from samba.crypto import des_crypt_blob_16, md4_hash_blob
 from samba.dcerpc import (
@@ -63,49 +65,44 @@ from samba.dcerpc import (
     samr,
     security,
 )
+from samba.dcerpc.misc import SEC_CHAN_BDC, SEC_CHAN_NULL, SEC_CHAN_WKSTA
+from samba.domain.models import AuthenticationPolicy, AuthenticationSilo
 from samba.drs_utils import drs_Replicate, drsuapi_connect
 from samba.dsdb import (
-    DSDB_SYNTAX_BINARY_DN,
     DS_DOMAIN_FUNCTION_2000,
     DS_DOMAIN_FUNCTION_2008,
     DS_GUID_COMPUTERS_CONTAINER,
     DS_GUID_DOMAIN_CONTROLLERS_CONTAINER,
     DS_GUID_MANAGED_SERVICE_ACCOUNTS_CONTAINER,
     DS_GUID_USERS_CONTAINER,
+    DSDB_SYNTAX_BINARY_DN,
     GTYPE_SECURITY_DOMAIN_LOCAL_GROUP,
     GTYPE_SECURITY_GLOBAL_GROUP,
     GTYPE_SECURITY_UNIVERSAL_GROUP,
+    UF_NO_AUTH_DATA_REQUIRED,
     UF_NORMAL_ACCOUNT,
     UF_NOT_DELEGATED,
-    UF_NO_AUTH_DATA_REQUIRED,
     UF_PARTIAL_SECRETS_ACCOUNT,
     UF_SERVER_TRUST_ACCOUNT,
     UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION,
     UF_WORKSTATION_TRUST_ACCOUNT,
 )
-from samba.dcerpc.misc import (
-    SEC_CHAN_BDC,
-    SEC_CHAN_NULL,
-    SEC_CHAN_WKSTA,
-)
 from samba.join import DCJoinContext
 from samba.ndr import ndr_pack, ndr_unpack
-from samba import net
-from samba.domain.models import AuthenticationPolicy, AuthenticationSilo
 from samba.param import LoadParm
 from samba.samdb import SamDB, dsdb_Dn
 
 rc4_bit = security.KERB_ENCTYPE_RC4_HMAC_MD5
 aes256_sk_bit = security.KERB_ENCTYPE_AES256_CTS_HMAC_SHA1_96_SK
 
-from samba.tests import TestCaseInTempDir, delete_force
 import samba.tests.krb5.kcrypto as kcrypto
+import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
+from samba.tests import TestCaseInTempDir, delete_force
 from samba.tests.krb5.raw_testcase import (
     KerberosCredentials,
     KerberosTicketCreds,
     RawKerberosTest,
 )
-import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba.tests.krb5.rfc4120_constants import (
     AD_IF_RELEVANT,
     AD_WIN2K_PAC,
@@ -122,8 +119,8 @@ from samba.tests.krb5.rfc4120_constants import (
     KU_TICKET,
     NT_PRINCIPAL,
     NT_SRV_INST,
-    PADATA_ENCRYPTED_CHALLENGE,
     PADATA_ENC_TIMESTAMP,
+    PADATA_ENCRYPTED_CHALLENGE,
     PADATA_ETYPE_INFO2,
 )
 

@@ -16,16 +16,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from samba import sites, subnets
 import samba.getopt as options
-from samba.netcmd import (
-    Command,
-    CommandError,
-    SuperCommand,
-    Option,
-)
+from samba import sites, subnets
 from samba.domain.models import Site, Subnet
 from samba.domain.models.exceptions import ModelError
+from samba.netcmd import Command, CommandError, Option, SuperCommand
 
 
 class cmd_sites_list(Command):

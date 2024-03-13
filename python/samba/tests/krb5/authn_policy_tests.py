@@ -17,31 +17,31 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, 'bin/python')
 os.environ['PYTHONUNBUFFERED'] = '1'
 
-from datetime import datetime
-from enum import Enum
 import random
 import re
+from datetime import datetime
+from enum import Enum
 
 import ldb
 
+import samba.tests
+import samba.tests.krb5.kcrypto as kcrypto
+import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba import dsdb, ntstatus
 from samba.dcerpc import netlogon, security
 from samba.dcerpc import windows_event_ids as win_event
-from samba.ndr import ndr_pack
 from samba.domain.models import AuthenticationPolicy, AuthenticationSilo
-
-import samba.tests
-import samba.tests.krb5.kcrypto as kcrypto
 from samba.hresult import HRES_SEC_E_INVALID_TOKEN, HRES_SEC_E_LOGON_DENIED
+from samba.ndr import ndr_pack
+from samba.tests.auth_log_base import AuthLogTestBase, NoMessageException
 from samba.tests.krb5.kdc_base_test import GroupType
 from samba.tests.krb5.kdc_tgs_tests import KdcTgsBaseTests
-from samba.tests.auth_log_base import AuthLogTestBase, NoMessageException
 from samba.tests.krb5.raw_testcase import RawKerberosTest
 from samba.tests.krb5.rfc4120_constants import (
     FX_FAST_ARMOR_AP_REQUEST,
@@ -53,7 +53,6 @@ from samba.tests.krb5.rfc4120_constants import (
     NT_SRV_INST,
     PADATA_FX_FAST,
 )
-import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 
 SidType = RawKerberosTest.SidType
 

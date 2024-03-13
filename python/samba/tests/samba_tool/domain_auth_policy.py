@@ -25,8 +25,8 @@ from optparse import OptionValueError
 from unittest.mock import patch
 
 from samba.dcerpc import security
-from samba.ndr import ndr_pack, ndr_unpack
 from samba.domain.models.exceptions import ModelError
+from samba.ndr import ndr_pack, ndr_unpack
 from samba.samdb import SamDB
 from samba.sd_utils import SDUtils
 
