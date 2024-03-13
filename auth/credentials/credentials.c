@@ -176,6 +176,18 @@ _PUBLIC_ uint32_t cli_credentials_get_gensec_features(struct cli_credentials *cr
 	return creds->gensec_features;
 }
 
+/**
+ * @brief Find out how the username was obtained.
+ *
+ * @param cred A credentials context.
+ *
+ * @return The obtained information for the username.
+ */
+_PUBLIC_ enum credentials_obtained
+cli_credentials_get_username_obtained(struct cli_credentials *cred)
+{
+	return cred->username_obtained;
+}
 
 /**
  * Obtain the username for this credentials context.
