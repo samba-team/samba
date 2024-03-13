@@ -280,6 +280,8 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 bool cli_credentials_set_username_callback(struct cli_credentials *cred,
 				  const char *(*username_cb) (struct cli_credentials *));
 
+enum credentials_obtained cli_credentials_get_principal_obtained(struct cli_credentials *cred);
+
 /**
  * Obtain the client principal for this credentials context.
  * @param cred credentials context

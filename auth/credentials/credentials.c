@@ -269,6 +269,64 @@ _PUBLIC_ const char *cli_credentials_get_bind_dn(struct cli_credentials *cred)
 
 
 /**
+ * @brief Find out how the principal was obtained.
+ *
+ * @param cred A credentials context.
+ *
+ * @return The obtained information for the principal.
+ */
+_PUBLIC_ enum credentials_obtained
+cli_credentials_get_principal_obtained(struct cli_credentials *cred)
+{
+	if (cred->machine_account_pending) {
+		cli_credentials_set_machine_account(cred,
+					cred->machine_account_pending_lp_ctx);
+	}
+
+	if (cred->principal_obtained < cred->username_obtained
+	    || cred->principal_obtained < MAX(cred->domain_obtained, cred->realm_obtained)) {
+		const char *effective_username = NULL;
+		const char *effective_realm = NULL;
+		enum credentials_obtained effective_obtained;
+
+		/*
+		 * We don't want to trigger a callbacks in
+		 * cli_credentials_get_username()
+		 * cli_credentials_get_domain()
+		 * nor
+		 * cli_credentials_get_realm()
+		 */
+
+		effective_username = cred->username;
+		if (effective_username == NULL || strlen(effective_username) == 0) {
+			return cred->username_obtained;
+		}
+
+		if (cred->domain_obtained > cred->realm_obtained) {
+			effective_realm = cred->domain;
+			effective_obtained = MIN(cred->domain_obtained,
+						 cred->username_obtained);
+		} else {
+			effective_realm = cred->realm;
+			effective_obtained = MIN(cred->realm_obtained,
+						 cred->username_obtained);
+		}
+
+		if (effective_realm == NULL || strlen(effective_realm) == 0) {
+			effective_realm = cred->domain;
+			effective_obtained = MIN(cred->domain_obtained,
+						 cred->username_obtained);
+		}
+
+		if (effective_realm != NULL && strlen(effective_realm) != 0) {
+			return effective_obtained;
+		}
+	}
+
+	return cred->principal_obtained;
+}
+
+/**
  * Obtain the client principal for this credentials context.
  * @param cred credentials context
  * @retval The username set on this context.
