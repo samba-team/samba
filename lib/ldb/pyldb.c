@@ -653,22 +653,45 @@ static PyObject *py_ldb_dn_add_child(PyObject *self, PyObject *args)
 	PyObject *py_other = NULL;
 	struct ldb_dn *dn = NULL;
 	struct ldb_dn *other = NULL;
+	TALLOC_CTX *tmp_ctx = NULL;
 	bool ok;
 
 	PyErr_LDB_DN_OR_RAISE(self, dn);
 
-	if (!PyArg_ParseTuple(args, "O", &py_other))
+	if (!PyArg_ParseTuple(args, "O", &py_other)) {
 		return NULL;
+	}
 
-	if (!pyldb_Object_AsDn(NULL, py_other, ldb_dn_get_ldb_context(dn), &other))
+	/*
+	 * pyldb_Object_AsDn only uses tmp_ctx if py_other is str/bytes, in
+	 * which case it allocates a struct ldb_dn. If py_other is a PyLdbDn,
+	 * tmp_ctx is unused and the underlying dn is borrowed.
+	 *
+	 * The pieces of other are reassembled onto dn using dn itself as a
+	 * talloc context (ldb_dn_add_child assumes all dns are talloc
+	 * contexts), after which we don't need any temporary DN we made.
+	 */
+	tmp_ctx = talloc_new(NULL);
+	if (tmp_ctx == NULL) {
+		PyErr_NoMemory();
 		return NULL;
+	}
+
+	ok = pyldb_Object_AsDn(tmp_ctx,
+			       py_other,
+			       ldb_dn_get_ldb_context(dn),
+			       &other);
+	if (!ok) {
+		TALLOC_FREE(tmp_ctx);
+		return NULL;
+	}
 
 	ok = ldb_dn_add_child(dn, other);
+	TALLOC_FREE(tmp_ctx);
 	if (!ok) {
 		PyErr_SetLdbError(PyExc_LdbError, LDB_ERR_OPERATIONS_ERROR, NULL);
 		return NULL;
 	}
-
 	Py_RETURN_TRUE;
 }
 
