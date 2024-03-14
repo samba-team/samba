@@ -589,14 +589,19 @@ static PyObject *py_ldb_dn_check_special(PyLdbDnObject *self, PyObject *args)
 	return PyBool_FromLong(ldb_dn_check_special(self->dn, name));
 }
 
-static PyObject *py_ldb_dn_richcmp(PyObject *dn1, PyObject *dn2, int op)
+static PyObject *py_ldb_dn_richcmp(PyObject *pydn1, PyObject *pydn2, int op)
 {
 	int ret;
-	if (!pyldb_Dn_Check(dn2)) {
+	struct ldb_dn *dn1 = NULL;
+	struct ldb_dn *dn2 = NULL;
+	if (!pyldb_Dn_Check(pydn2)) {
 		Py_INCREF(Py_NotImplemented);
 		return Py_NotImplemented;
 	}
-	ret = ldb_dn_compare(pyldb_Dn_AS_DN(dn1), pyldb_Dn_AS_DN(dn2));
+	PyErr_LDB_DN_OR_RAISE(pydn1, dn1);
+	PyErr_LDB_DN_OR_RAISE(pydn2, dn2);
+
+	ret = ldb_dn_compare(dn1, dn2);
 	return richcmp(ret, op);
 }
 
