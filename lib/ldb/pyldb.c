@@ -526,23 +526,25 @@ static PyObject *py_ldb_dn_get_extended_component(PyLdbDnObject *self, PyObject 
 	return PyBytes_FromStringAndSize((const char *)val->data, val->length);
 }
 
-static PyObject *py_ldb_dn_set_extended_component(PyLdbDnObject *self, PyObject *args)
+static PyObject *py_ldb_dn_set_extended_component(PyObject *self, PyObject *args)
 {
 	char *name;
 	int err;
 	uint8_t *value = NULL;
 	Py_ssize_t size = 0;
+	struct ldb_dn *dn = NULL;
+	PyErr_LDB_DN_OR_RAISE(self, dn);
 
 	if (!PyArg_ParseTuple(args, "sz#", &name, (char **)&value, &size))
 		return NULL;
 
 	if (value == NULL) {
-		err = ldb_dn_set_extended_component(self->dn, name, NULL);
+		err = ldb_dn_set_extended_component(dn, name, NULL);
 	} else {
 		struct ldb_val val;
 		val.data = (uint8_t *)value;
 		val.length = size;
-		err = ldb_dn_set_extended_component(self->dn, name, &val);
+		err = ldb_dn_set_extended_component(dn, name, &val);
 	}
 
 	if (err != LDB_SUCCESS) {
