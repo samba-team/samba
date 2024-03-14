@@ -605,13 +605,16 @@ static PyObject *py_ldb_dn_richcmp(PyObject *pydn1, PyObject *pydn2, int op)
 	return richcmp(ret, op);
 }
 
-static PyObject *py_ldb_dn_get_parent(PyLdbDnObject *self,
+static PyObject *py_ldb_dn_get_parent(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	struct ldb_dn *dn = pyldb_Dn_AS_DN((PyObject *)self);
+	struct ldb_dn *dn = NULL;
 	struct ldb_dn *parent;
-	PyLdbDnObject *py_ret;
+	PyLdbDnObject *py_ret = NULL;
+	PyLdbDnObject *dn_self = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
+
+	PyErr_LDB_DN_OR_RAISE(self, dn);
 
 	if (ldb_dn_get_comp_num(dn) < 1) {
 		Py_RETURN_NONE;
@@ -636,9 +639,11 @@ static PyObject *py_ldb_dn_get_parent(PyLdbDnObject *self,
 		talloc_free(mem_ctx);
 		return NULL;
 	}
+	dn_self = (PyLdbDnObject *)self;
+
 	py_ret->mem_ctx = mem_ctx;
 	py_ret->dn = parent;
-	py_ret->pyldb = self->pyldb;
+	py_ret->pyldb = dn_self->pyldb;
 	Py_INCREF(py_ret->pyldb);
 	return (PyObject *)py_ret;
 }
