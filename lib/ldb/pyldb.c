@@ -516,14 +516,16 @@ static PyObject *py_ldb_dn_extended_str(PyObject *self, PyObject *args, PyObject
 	return PyUnicode_FromString(ldb_dn_get_extended_linearized(dn, dn, mode));
 }
 
-static PyObject *py_ldb_dn_get_extended_component(PyLdbDnObject *self, PyObject *args)
+static PyObject *py_ldb_dn_get_extended_component(PyObject *self, PyObject *args)
 {
 	char *name;
-	const struct ldb_val *val;
+	const struct ldb_val *val = NULL;
+	struct ldb_dn *dn = NULL;
+	PyErr_LDB_DN_OR_RAISE(self, dn);
 
 	if (!PyArg_ParseTuple(args, "s", &name))
 		return NULL;
-	val = ldb_dn_get_extended_component(self->dn, name);
+	val = ldb_dn_get_extended_component(dn, name);
 	if (val == NULL) {
 		Py_RETURN_NONE;
 	}
