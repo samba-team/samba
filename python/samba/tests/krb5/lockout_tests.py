@@ -722,8 +722,6 @@ class LockoutTests(KDCBaseTest):
         # Create the user account for testing.
         user_creds = self.get_cached_creds(account_type=self.AccountType.USER,
                                            use_cache=False)
-        user_dn = user_creds.get_dn()
-
         admin_creds = self.get_admin_creds()
         lp = self.get_lp()
 
@@ -731,6 +729,7 @@ class LockoutTests(KDCBaseTest):
         samdb = connect_samdb(samdb_url=lp.samdb_url(), lp=lp,
                               credentials=admin_creds)
         self.assertLocalSamDB(samdb)
+        user_dn = ldb.Dn(samdb, str(user_creds.get_dn()))
 
         password = user_creds.get_password()
 
@@ -764,7 +763,6 @@ class LockoutTests(KDCBaseTest):
         # Create the user account for testing.
         user_creds = self.get_cached_creds(account_type=self.AccountType.USER,
                                            use_cache=False)
-        user_dn = user_creds.get_dn()
 
         admin_creds = self.get_admin_creds()
         lp = self.get_lp()
@@ -773,6 +771,8 @@ class LockoutTests(KDCBaseTest):
         samdb = connect_samdb(samdb_url=lp.samdb_url(), lp=lp,
                               credentials=admin_creds)
         self.assertLocalSamDB(samdb)
+
+        user_dn = ldb.Dn(samdb, str(user_creds.get_dn()))
 
         password = user_creds.get_password()
         if not correct_pw:
@@ -881,7 +881,6 @@ class LockoutTests(KDCBaseTest):
         # Create the user account for testing.
         user_creds = self.get_cached_creds(account_type=self.AccountType.USER,
                                            use_cache=False)
-        user_dn = user_creds.get_dn()
 
         admin_creds = self.get_admin_creds()
         lp = self.get_lp()
@@ -890,6 +889,7 @@ class LockoutTests(KDCBaseTest):
         samdb = connect_samdb(samdb_url=lp.samdb_url(), lp=lp,
                               credentials=admin_creds)
         self.assertLocalSamDB(samdb)
+        user_dn = ldb.Dn(samdb, str(user_creds.get_dn()))
 
         # Prepare to connect to the server with an invalid password.
         with futures.ProcessPoolExecutor(max_workers=1) as executor:
@@ -979,7 +979,6 @@ class LockoutTests(KDCBaseTest):
         # Create the user account for testing.
         user_creds = self.get_cached_creds(account_type=self.AccountType.USER,
                                            use_cache=False)
-        user_dn = user_creds.get_dn()
 
         admin_creds = self.get_admin_creds()
         lp = self.get_lp()
@@ -988,6 +987,7 @@ class LockoutTests(KDCBaseTest):
         samdb = connect_samdb(samdb_url=lp.samdb_url(), lp=lp,
                               credentials=admin_creds)
         self.assertLocalSamDB(samdb)
+        user_dn = ldb.Dn(samdb, str(user_creds.get_dn()))
 
         # Prepare to connect to the server with an invalid password, using four
         # simultaneous requests. Only three of those attempts should get
@@ -1074,7 +1074,6 @@ class LockoutTests(KDCBaseTest):
         # Create the user account for testing.
         user_creds = self.get_cached_creds(account_type=self.AccountType.USER,
                                            use_cache=False)
-        user_dn = user_creds.get_dn()
 
         admin_creds = self.get_admin_creds()
         lp = self.get_lp()
@@ -1083,7 +1082,7 @@ class LockoutTests(KDCBaseTest):
         samdb = connect_samdb(samdb_url=lp.samdb_url(), lp=lp,
                               credentials=admin_creds)
         self.assertLocalSamDB(samdb)
-
+        user_dn = ldb.Dn(samdb, str(user_creds.get_dn()))
         password = user_creds.get_password()
 
         # Prepare to connect to the server with a valid password.
