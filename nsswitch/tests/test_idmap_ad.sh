@@ -94,6 +94,14 @@ gidNumber: 2000001
 unixHomeDirectory: /home/forbidden
 loginShell: /bin/tcsh
 gecos: User in forbidden OU
+
+dn: CN=no_posix_id,CN=Users,$BASE_DN
+changetype: add
+objectClass: user
+samaccountName: no_posix_id
+unixHomeDirectory: /home/no_posix_id
+loginShell: /bin/sh
+gecos: User without uidNumber and gidNumber
 EOF
 
 #
@@ -172,6 +180,17 @@ then
 fi
 
 #
+# Test 6: Make sure that with the default "all_groups=no"
+# the group "domain users" will not show user "no_posix_id"
+# but will show "SAMBA2008R2/administrator"
+#
+
+dom_users="$DOMAIN/domain users"  # Extra step to make sure that all is one word
+out="$($wbinfo --group-info "$dom_users")"
+testit_grep_count "no_posix_id1" "no_posix_id" 0 echo "$out" || failed=$(expr $failed + 1)
+testit_grep "no_posix_id2" "SAMBA2008R2/administrator" echo "$out" || failed=$(expr $failed + 1)
+
+#
 # Trusted domain test 1: Test uid of Administrator, should be 2500000
 #
 
@@ -239,6 +258,9 @@ delete: gidNumber
 gidNumber: 2000002
 
 dn: cn=forbidden,ou=sub,$BASE_DN
+changetype: delete
+
+dn: CN=no_posix_id,CN=Users,$BASE_DN
 changetype: delete
 
 dn: ou=sub,$BASE_DN
