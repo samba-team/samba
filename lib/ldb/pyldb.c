@@ -938,7 +938,12 @@ static PyMethodDef py_ldb_dn_methods[] = {
 
 static Py_ssize_t py_ldb_dn_len(PyLdbDnObject *self)
 {
-	return ldb_dn_get_comp_num(pyldb_Dn_AS_DN((PyObject *)self));
+	struct ldb_dn *dn = pyldb_Dn_AS_DN(self);
+	if (dn == NULL || self->pyldb->ldb_ctx != ldb_dn_get_ldb_context(dn)) {
+		return -1;
+	}
+
+	return ldb_dn_get_comp_num(dn);
 }
 
 /*
