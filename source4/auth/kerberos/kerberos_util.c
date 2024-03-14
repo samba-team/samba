@@ -712,6 +712,7 @@ krb5_error_code smb_krb5_remove_obsolete_keytab_entries(TALLOC_CTX *mem_ctx,
 						smb_get_krb5_error_message(context,
 									   code,
 									   mem_ctx));
+		goto done;
 	}
 
 	code = 0;
