@@ -66,12 +66,31 @@ PyObject *pyldb_Dn_FromDn(struct ldb_dn *dn, PyLdbObject *pyldb);
 bool pyldb_Object_AsDn(TALLOC_CTX *mem_ctx, PyObject *object, struct ldb_context *ldb_ctx, struct ldb_dn **dn);
 #define pyldb_Dn_AS_DN(pyobj) ((PyLdbDnObject *)pyobj)->dn
 
-#define PyErr_LDB_DN_OR_RAISE(py_ldb_dn, dn) \
-	if (!pyldb_check_type(py_ldb_dn, "Dn")) { \
+
+/*
+ * PyErr_LDB_DN_OR_RAISE does 3 things:
+ * 1. checks that a PyObject is really a PyLdbDnObject.
+ * 2. checks that the ldb that the PyLdbDnObject knows is the ldb that its dn
+ *    knows.
+ * 3. sets the (struct ldb_dn *) dn argument to the dn the pyobject refers to.
+ *
+ * why so much? because we almost always need it.
+ */
+#define PyErr_LDB_DN_OR_RAISE(_py_obj, dn) do {				\
+	PyLdbDnObject *_py_dn = NULL;					\
+	if (!pyldb_check_type(_py_obj, "Dn")) {				\
 		PyErr_SetString(PyExc_TypeError, "ldb Dn object required"); \
-		return NULL; \
-	} \
-	dn = pyldb_Dn_AS_DN(py_ldb_dn);
+		return NULL;						\
+	}								\
+	_py_dn = (PyLdbDnObject *)_py_obj;				\
+	dn = pyldb_Dn_AS_DN(_py_dn);					\
+	if (_py_dn->pyldb->ldb_ctx != ldb_dn_get_ldb_context(dn)) {	\
+		PyErr_SetString(PyExc_RuntimeError,			\
+				"Dn has a stale LDB connection");	\
+		return NULL;					       \
+	}							       \
+} while(0)
+
 
 bool pyldb_check_type(PyObject *obj, const char *type_name);
 
