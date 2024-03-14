@@ -511,8 +511,9 @@ static PyObject *py_ldb_dn_extended_str(PyObject *self, PyObject *args, PyObject
 	PyErr_LDB_DN_OR_RAISE(self, dn);
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|i",
 					 discard_const_p(char *, kwnames),
-					 &mode))
+					 &mode)) {
 		return NULL;
+	}
 	return PyUnicode_FromString(ldb_dn_get_extended_linearized(dn, dn, mode));
 }
 
@@ -523,8 +524,9 @@ static PyObject *py_ldb_dn_get_extended_component(PyObject *self, PyObject *args
 	struct ldb_dn *dn = NULL;
 	PyErr_LDB_DN_OR_RAISE(self, dn);
 
-	if (!PyArg_ParseTuple(args, "s", &name))
+	if (!PyArg_ParseTuple(args, "s", &name)) {
 		return NULL;
+	}
 	val = ldb_dn_get_extended_component(dn, name);
 	if (val == NULL) {
 		Py_RETURN_NONE;
@@ -742,8 +744,9 @@ static PyObject *py_ldb_dn_remove_base_components(PyObject *self, PyObject *args
 	struct ldb_dn *dn = NULL;
 	int i;
 	bool ok;
-	if (!PyArg_ParseTuple(args, "i", &i))
+	if (!PyArg_ParseTuple(args, "i", &i)) {
 		return NULL;
+	}
 
 	PyErr_LDB_DN_OR_RAISE(self, dn);
 
@@ -760,8 +763,9 @@ static PyObject *py_ldb_dn_is_child_of(PyObject *self, PyObject *args)
 {
 	PyObject *py_base;
 	struct ldb_dn *dn, *base;
-	if (!PyArg_ParseTuple(args, "O", &py_base))
+	if (!PyArg_ParseTuple(args, "O", &py_base)) {
 		return NULL;
+	}
 
 	PyErr_LDB_DN_OR_RAISE(self, dn);
 
@@ -777,8 +781,9 @@ static PyObject *py_ldb_dn_get_component_name(PyObject *self, PyObject *args)
 	const char *name;
 	unsigned int num = 0;
 
-	if (!PyArg_ParseTuple(args, "I", &num))
+	if (!PyArg_ParseTuple(args, "I", &num)) {
 		return NULL;
+	}
 
 	PyErr_LDB_DN_OR_RAISE(self, dn);
 
@@ -796,8 +801,9 @@ static PyObject *py_ldb_dn_get_component_value(PyObject *self, PyObject *args)
 	const struct ldb_val *val;
 	unsigned int num = 0;
 
-	if (!PyArg_ParseTuple(args, "I", &num))
+	if (!PyArg_ParseTuple(args, "I", &num)) {
 		return NULL;
+	}
 
 	PyErr_LDB_DN_OR_RAISE(self, dn);
 
@@ -820,8 +826,9 @@ static PyObject *py_ldb_dn_set_component(PyObject *self, PyObject *args)
 
 	PyErr_LDB_DN_OR_RAISE(self, dn);
 
-	if (!PyArg_ParseTuple(args, "Iss#", &num, &name, &value, &size))
+	if (!PyArg_ParseTuple(args, "Iss#", &num, &name, &value, &size)) {
 		return NULL;
+	}
 
 	val.data = (unsigned char*) value;
 	val.length = size;
