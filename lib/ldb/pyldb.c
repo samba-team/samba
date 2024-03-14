@@ -3661,6 +3661,41 @@ static PyObject *py_ldb_msg_from_dict(PyTypeObject *type, PyObject *args)
 	return py_ret;
 }
 
+
+#define pyldb_Message_as_message(pyobj) ((PyLdbMessageObject *)pyobj)->msg
+
+#define pyldb_Message_get_pyldb(pyobj) ((PyLdbMessageObject *)pyobj)->pyldb
+
+/*
+ * PyErr_LDB_MESSAGE_OR_RAISE does 3 things:
+ * 1. checks that a PyObject is really a PyLdbMessageObject.
+ * 2. checks that the ldb that the PyLdbMessageObject knows is the ldb that
+ *    its dn knows -- but only if the underlying message has a DN.
+ * 3. sets message to the relevant struct ldb_message *.
+ *
+ * We need to do all this to ensure the message belongs to the right
+ * ldb, lest it be freed before we are ready.
+ */
+#define PyErr_LDB_MESSAGE_OR_RAISE(_py_obj, message) do {		\
+	PyLdbMessageObject *_py_message = NULL;			\
+	struct ldb_dn *_dn = NULL;					\
+	if (_py_obj == NULL || !PyLdbMessage_Check(_py_obj)) {		\
+		PyErr_SetString(PyExc_TypeError,			\
+				"ldb Message object required");	\
+		return NULL;						\
+	}								\
+	_py_message = (PyLdbMessageObject *)_py_obj;			\
+	message = pyldb_Message_as_message(_py_message);		\
+	_dn = message->dn;						\
+	if (_dn != NULL &&						\
+	    (_py_message->pyldb->ldb_ctx != ldb_dn_get_ldb_context(_dn))) { \
+		PyErr_SetString(PyExc_RuntimeError,			\
+				"Message has a stale LDB connection");	\
+		return NULL;						\
+	}								\
+} while(0)
+
+
 static PyObject *py_ldb_msg_remove_attr(PyLdbMessageObject *self, PyObject *args)
 {
 	char *name;
