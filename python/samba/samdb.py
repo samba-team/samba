@@ -104,6 +104,14 @@ class SamDB(samba.Ldb):
 
         super().connect(url=url, flags=flags, options=options)
 
+    def __repr__(self):
+        if self.url:
+            return f"<SamDB {id(self):x} ({self.url})>"
+
+        return f"<SamDB {id(self):x} (no connection)>"
+
+    __str__ = __repr__
+
     def am_rodc(self):
         """return True if we are an RODC"""
         return dsdb._am_rodc(self)
