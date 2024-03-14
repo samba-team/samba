@@ -130,6 +130,7 @@ bool pyldb_Object_AsDn(TALLOC_CTX *mem_ctx, PyObject *object,
 
 	PyLdb_Dn_Type = PyLdb_GetPyType("Dn");
 	if (PyLdb_Dn_Type == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Expected DN");
 		return false;
 	}
 
