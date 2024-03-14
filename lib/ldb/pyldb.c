@@ -980,16 +980,18 @@ static PyObject *py_ldb_dn_copy(struct ldb_dn *dn, PyLdbObject *pyldb)
 	return (PyObject *)py_ret;
 }
 
-static PyObject *py_ldb_dn_concat(PyLdbDnObject *self, PyObject *py_other)
+static PyObject *py_ldb_dn_concat(PyObject *self, PyObject *py_other)
 {
 	TALLOC_CTX *mem_ctx = NULL;
-	struct ldb_dn *dn = pyldb_Dn_AS_DN((PyObject *)self),
-				  *other;
-	struct ldb_dn *new_dn = NULL;
-	PyLdbDnObject *py_ret;
+	struct ldb_dn *dn = NULL;
+	struct ldb_dn *other = NULL;
 
-	if (!pyldb_Object_AsDn(NULL, py_other, NULL, &other))
-		return NULL;
+	struct ldb_dn *new_dn = NULL;
+	PyLdbDnObject *py_ret = NULL;
+
+
+	PyErr_LDB_DN_OR_RAISE(self, dn);
+	PyErr_LDB_DN_OR_RAISE(py_other, other);
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -1017,7 +1019,7 @@ static PyObject *py_ldb_dn_concat(PyLdbDnObject *self, PyObject *py_other)
 	py_ret->mem_ctx = mem_ctx;
 	py_ret->dn = new_dn;
 
-	py_ret->pyldb = self->pyldb;
+	py_ret->pyldb = ((PyLdbDnObject *)self)->pyldb;
 	Py_INCREF(py_ret->pyldb);
 
 	return (PyObject *)py_ret;
