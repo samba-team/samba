@@ -437,10 +437,12 @@ static PyObject *PyLdbResult_FromResult(struct ldb_result *result, PyLdbObject *
 	return (PyObject *)ret;
 }
 
-static PyObject *py_ldb_dn_validate(PyLdbDnObject *self,
+static PyObject *py_ldb_dn_validate(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	return PyBool_FromLong(ldb_dn_validate(self->dn));
+	struct ldb_dn *dn = NULL;
+	PyErr_LDB_DN_OR_RAISE(self, dn);
+	return PyBool_FromLong(ldb_dn_validate(dn));
 }
 
 static PyObject *py_ldb_dn_is_valid(PyLdbDnObject *self,
@@ -455,10 +457,12 @@ static PyObject *py_ldb_dn_is_special(PyLdbDnObject *self,
 	return PyBool_FromLong(ldb_dn_is_special(self->dn));
 }
 
-static PyObject *py_ldb_dn_is_null(PyLdbDnObject *self,
+static PyObject *py_ldb_dn_is_null(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	return PyBool_FromLong(ldb_dn_is_null(self->dn));
+	struct ldb_dn *dn = NULL;
+	PyErr_LDB_DN_OR_RAISE(self, dn);
+	return PyBool_FromLong(ldb_dn_is_null(dn));
 }
 
 static PyObject *py_ldb_dn_get_casefold(PyLdbDnObject *self,
@@ -472,22 +476,28 @@ static PyObject *py_ldb_dn_get_casefold(PyLdbDnObject *self,
 	return PyUnicode_FromString(s);
 }
 
-static PyObject *py_ldb_dn_get_linearized(PyLdbDnObject *self,
+static PyObject *py_ldb_dn_get_linearized(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	return PyUnicode_FromString(ldb_dn_get_linearized(self->dn));
+	struct ldb_dn *dn = NULL;
+	PyErr_LDB_DN_OR_RAISE(self, dn);
+	return PyUnicode_FromString(ldb_dn_get_linearized(dn));
 }
 
-static PyObject *py_ldb_dn_canonical_str(PyLdbDnObject *self,
+static PyObject *py_ldb_dn_canonical_str(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	return PyUnicode_FromString(ldb_dn_canonical_string(self->dn, self->dn));
+	struct ldb_dn *dn = NULL;
+	PyErr_LDB_DN_OR_RAISE(self, dn);
+	return PyUnicode_FromString(ldb_dn_canonical_string(dn, dn));
 }
 
-static PyObject *py_ldb_dn_canonical_ex_str(PyLdbDnObject *self,
+static PyObject *py_ldb_dn_canonical_ex_str(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	return PyUnicode_FromString(ldb_dn_canonical_ex_string(self->dn, self->dn));
+	struct ldb_dn *dn = NULL;
+	PyErr_LDB_DN_OR_RAISE(self, dn);
+	return PyUnicode_FromString(ldb_dn_canonical_ex_string(dn, dn));
 }
 
 static PyObject *py_ldb_dn_extended_str(PyLdbDnObject *self, PyObject *args, PyObject *kwargs)
@@ -663,15 +673,15 @@ static PyObject *py_ldb_dn_add_base(PyLdbDnObject *self, PyObject *args)
 	Py_RETURN_TRUE;
 }
 
-static PyObject *py_ldb_dn_remove_base_components(PyLdbDnObject *self, PyObject *args)
+static PyObject *py_ldb_dn_remove_base_components(PyObject *self, PyObject *args)
 {
-	struct ldb_dn *dn;
+	struct ldb_dn *dn = NULL;
 	int i;
 	bool ok;
 	if (!PyArg_ParseTuple(args, "i", &i))
 		return NULL;
 
-	dn = pyldb_Dn_AS_DN((PyObject *)self);
+	PyErr_LDB_DN_OR_RAISE(self, dn);
 
 	ok = ldb_dn_remove_base_components(dn, i);
 	if (!ok) {
@@ -682,14 +692,14 @@ static PyObject *py_ldb_dn_remove_base_components(PyLdbDnObject *self, PyObject 
 	Py_RETURN_TRUE;
 }
 
-static PyObject *py_ldb_dn_is_child_of(PyLdbDnObject *self, PyObject *args)
+static PyObject *py_ldb_dn_is_child_of(PyObject *self, PyObject *args)
 {
 	PyObject *py_base;
 	struct ldb_dn *dn, *base;
 	if (!PyArg_ParseTuple(args, "O", &py_base))
 		return NULL;
 
-	dn = pyldb_Dn_AS_DN((PyObject *)self);
+	PyErr_LDB_DN_OR_RAISE(self, dn);
 
 	if (!pyldb_Object_AsDn(NULL, py_base, ldb_dn_get_ldb_context(dn), &base))
 		return NULL;
@@ -697,16 +707,16 @@ static PyObject *py_ldb_dn_is_child_of(PyLdbDnObject *self, PyObject *args)
 	return PyBool_FromLong(ldb_dn_compare_base(base, dn) == 0);
 }
 
-static PyObject *py_ldb_dn_get_component_name(PyLdbDnObject *self, PyObject *args)
+static PyObject *py_ldb_dn_get_component_name(PyObject *self, PyObject *args)
 {
-	struct ldb_dn *dn;
+	struct ldb_dn *dn = NULL;
 	const char *name;
 	unsigned int num = 0;
 
 	if (!PyArg_ParseTuple(args, "I", &num))
 		return NULL;
 
-	dn = pyldb_Dn_AS_DN((PyObject *)self);
+	PyErr_LDB_DN_OR_RAISE(self, dn);
 
 	name = ldb_dn_get_component_name(dn, num);
 	if (name == NULL) {
@@ -716,16 +726,16 @@ static PyObject *py_ldb_dn_get_component_name(PyLdbDnObject *self, PyObject *arg
 	return PyUnicode_FromString(name);
 }
 
-static PyObject *py_ldb_dn_get_component_value(PyLdbDnObject *self, PyObject *args)
+static PyObject *py_ldb_dn_get_component_value(PyObject *self, PyObject *args)
 {
-	struct ldb_dn *dn;
+	struct ldb_dn *dn = NULL;
 	const struct ldb_val *val;
 	unsigned int num = 0;
 
 	if (!PyArg_ParseTuple(args, "I", &num))
 		return NULL;
 
-	dn = pyldb_Dn_AS_DN((PyObject *)self);
+	PyErr_LDB_DN_OR_RAISE(self, dn);
 
 	val = ldb_dn_get_component_val(dn, num);
 	if (val == NULL) {
@@ -735,13 +745,16 @@ static PyObject *py_ldb_dn_get_component_value(PyLdbDnObject *self, PyObject *ar
 	return PyStr_FromLdbValue(val);
 }
 
-static PyObject *py_ldb_dn_set_component(PyLdbDnObject *self, PyObject *args)
+static PyObject *py_ldb_dn_set_component(PyObject *self, PyObject *args)
 {
 	unsigned int num = 0;
 	char *name = NULL, *value = NULL;
 	struct ldb_val val = { 0 };
 	int err;
 	Py_ssize_t size = 0;
+	struct ldb_dn *dn = NULL;
+
+	PyErr_LDB_DN_OR_RAISE(self, dn);
 
 	if (!PyArg_ParseTuple(args, "Iss#", &num, &name, &value, &size))
 		return NULL;
@@ -749,7 +762,7 @@ static PyObject *py_ldb_dn_set_component(PyLdbDnObject *self, PyObject *args)
 	val.data = (unsigned char*) value;
 	val.length = size;
 
-	err = ldb_dn_set_component(self->dn, num, name, val);
+	err = ldb_dn_set_component(dn, num, name, val);
 	if (err != LDB_SUCCESS) {
 		PyErr_SetString(PyExc_TypeError, "Failed to set component");
 		return NULL;
@@ -758,13 +771,13 @@ static PyObject *py_ldb_dn_set_component(PyLdbDnObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_ldb_dn_get_rdn_name(PyLdbDnObject *self,
+static PyObject *py_ldb_dn_get_rdn_name(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	struct ldb_dn *dn;
+	struct ldb_dn *dn = NULL;
 	const char *name;
 
-	dn = pyldb_Dn_AS_DN((PyObject *)self);
+	PyErr_LDB_DN_OR_RAISE(self, dn);
 
 	name = ldb_dn_get_rdn_name(dn);
 	if (name == NULL) {
@@ -774,13 +787,13 @@ static PyObject *py_ldb_dn_get_rdn_name(PyLdbDnObject *self,
 	return PyUnicode_FromString(name);
 }
 
-static PyObject *py_ldb_dn_get_rdn_value(PyLdbDnObject *self,
+static PyObject *py_ldb_dn_get_rdn_value(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	struct ldb_dn *dn;
+	struct ldb_dn *dn = NULL;
 	const struct ldb_val *val;
 
-	dn = pyldb_Dn_AS_DN((PyObject *)self);
+	PyErr_LDB_DN_OR_RAISE(self, dn);
 
 	val = ldb_dn_get_rdn_val(dn);
 	if (val == NULL) {
