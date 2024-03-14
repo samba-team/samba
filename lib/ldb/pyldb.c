@@ -503,15 +503,17 @@ static PyObject *py_ldb_dn_canonical_ex_str(PyObject *self,
 	return PyUnicode_FromString(ldb_dn_canonical_ex_string(dn, dn));
 }
 
-static PyObject *py_ldb_dn_extended_str(PyLdbDnObject *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_ldb_dn_extended_str(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	const char * const kwnames[] = { "mode", NULL };
 	int mode = 1;
+	struct ldb_dn *dn = NULL;
+	PyErr_LDB_DN_OR_RAISE(self, dn);
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|i",
 					 discard_const_p(char *, kwnames),
 					 &mode))
 		return NULL;
-	return PyUnicode_FromString(ldb_dn_get_extended_linearized(self->dn, self->dn, mode));
+	return PyUnicode_FromString(ldb_dn_get_extended_linearized(dn, dn, mode));
 }
 
 static PyObject *py_ldb_dn_get_extended_component(PyLdbDnObject *self, PyObject *args)
