@@ -602,7 +602,7 @@ krb5_error_code smb_krb5_remove_obsolete_keytab_entries(TALLOC_CTX *mem_ctx,
 	default:
 		*error_string = talloc_asprintf(mem_ctx,
 						"failed to open keytab for read of old entries: %s\n",
-						smb_get_krb5_error_message(context, code, mem_ctx));
+						smb_get_krb5_error_message(context, code, tmp_ctx));
 		goto done;
 	}
 
@@ -711,7 +711,7 @@ krb5_error_code smb_krb5_remove_obsolete_keytab_entries(TALLOC_CTX *mem_ctx,
 						"failed in deleting old entries for principal: %s\n",
 						smb_get_krb5_error_message(context,
 									   code,
-									   mem_ctx));
+									   tmp_ctx));
 		goto done;
 	}
 
@@ -763,7 +763,7 @@ krb5_error_code smb_krb5_is_exact_entry_in_keytab(TALLOC_CTX *mem_ctx,
 	default:
 		*error_string = talloc_asprintf(mem_ctx,
 						"failed to open keytab for read of existing entries: %s\n",
-						smb_get_krb5_error_message(context, code, mem_ctx));
+						smb_get_krb5_error_message(context, code, tmp_ctx));
 		goto done;
 	}
 
@@ -814,7 +814,7 @@ krb5_error_code smb_krb5_is_exact_entry_in_keytab(TALLOC_CTX *mem_ctx,
 						"failed in checking old entries for principal: %s\n",
 						smb_get_krb5_error_message(context,
 									   code,
-									   mem_ctx));
+									   tmp_ctx));
 		goto done;
 	}
 
