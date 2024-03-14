@@ -639,6 +639,7 @@ sub write_clientconf($$$)
 	tls verify peer = no_check
 	include system krb5 conf = no
 	elasticsearch:mappings = $srcdir_abs/source3/rpc_server/mdssvc/elasticsearch_mappings.json
+	elasticsearch:wsp_mappings = $srcdir_abs/source3/rpc_server/wsp/elasticsearch_mappings.json
 ";
 	close(CF);
 }
