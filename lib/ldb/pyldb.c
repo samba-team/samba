@@ -697,25 +697,43 @@ static PyObject *py_ldb_dn_add_child(PyObject *self, PyObject *args)
 
 static PyObject *py_ldb_dn_add_base(PyObject *self, PyObject *args)
 {
-	PyObject *py_other;
+	PyObject *py_other = NULL;
 	struct ldb_dn *other = NULL;
 	struct ldb_dn *dn = NULL;
+	TALLOC_CTX *tmp_ctx = NULL;
 	bool ok;
 
 	PyErr_LDB_DN_OR_RAISE(self, dn);
 
-	if (!PyArg_ParseTuple(args, "O", &py_other))
+	if (!PyArg_ParseTuple(args, "O", &py_other)) {
 		return NULL;
+	}
 
-	if (!pyldb_Object_AsDn(NULL, py_other, ldb_dn_get_ldb_context(dn), &other))
+	/*
+	 * As noted in py_ldb_dn_add_child() comments, if py_other is a
+	 * string, other is an ephemeral struct ldb_dn, but if py_other is a
+	 * python DN, other points to the corresponding long-lived DN.
+	 */
+	tmp_ctx = talloc_new(NULL);
+	if (tmp_ctx == NULL) {
+		PyErr_NoMemory();
 		return NULL;
+	}
+	ok = pyldb_Object_AsDn(tmp_ctx,
+			       py_other,
+			       ldb_dn_get_ldb_context(dn),
+			       &other);
+	if (!ok) {
+		TALLOC_FREE(tmp_ctx);
+		return NULL;
+	}
 
 	ok = ldb_dn_add_base(dn, other);
+	TALLOC_FREE(tmp_ctx);
 	if (!ok) {
 		PyErr_SetLdbError(PyExc_LdbError, LDB_ERR_OPERATIONS_ERROR, NULL);
 		return NULL;
 	}
-
 	Py_RETURN_TRUE;
 }
 
