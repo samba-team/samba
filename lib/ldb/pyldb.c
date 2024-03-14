@@ -695,15 +695,17 @@ static PyObject *py_ldb_dn_add_child(PyObject *self, PyObject *args)
 	Py_RETURN_TRUE;
 }
 
-static PyObject *py_ldb_dn_add_base(PyLdbDnObject *self, PyObject *args)
+static PyObject *py_ldb_dn_add_base(PyObject *self, PyObject *args)
 {
 	PyObject *py_other;
-	struct ldb_dn *other, *dn;
+	struct ldb_dn *other = NULL;
+	struct ldb_dn *dn = NULL;
 	bool ok;
+
+	PyErr_LDB_DN_OR_RAISE(self, dn);
+
 	if (!PyArg_ParseTuple(args, "O", &py_other))
 		return NULL;
-
-	dn = pyldb_Dn_AS_DN((PyObject *)self);
 
 	if (!pyldb_Object_AsDn(NULL, py_other, ldb_dn_get_ldb_context(dn), &other))
 		return NULL;
