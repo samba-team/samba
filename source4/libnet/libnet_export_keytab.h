@@ -25,6 +25,7 @@ struct libnet_export_keytab {
 		const char *principal;
 		struct ldb_context *samdb;
 		bool keep_stale_entries;
+		bool only_current_keys;
 	} in;
 	struct {
 		const char *error_string;

@@ -259,7 +259,7 @@ class DCKeytabTests(TestCaseInTempDir):
         # keytab
         self.samdb.setpassword(f"(userPrincipalName={new_principal})", "5rfvBGT%")
         self.samdb.setpassword(f"(userPrincipalName={new_principal})", "6rfvBGT%")
-        self.samdb.setpassword(f"(userPrincipalName={new_principal})", "6rfvBGT%")
+        self.samdb.setpassword(f"(userPrincipalName={new_principal})", "7rfvBGT%")
 
         net.export_keytab(keytab=self.ktfile, principal=new_principal, keep_stale_entries=True)
 
@@ -279,7 +279,7 @@ class DCKeytabTests(TestCaseInTempDir):
             if principal == new_principal and enctype == credentials.ENCTYPE_AES128_CTS_HMAC_SHA1_96:
                 found += 1
 
-        # Samba currently does not export the previous keys into the keytab, but could.
+        # We exported the previous keys into the keytab...
         self.assertEqual(found, 4)
 
         # confirm at least 12 keys (4 changes, 1 in orig export and 3

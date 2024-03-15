@@ -31,13 +31,14 @@
 
 static PyObject *py_net_export_keytab(py_net_Object *self, PyObject *args, PyObject *kwargs)
 {
-	struct libnet_export_keytab r;
+	struct libnet_export_keytab r = { .in = { .principal = NULL, }};
 	PyObject *py_samdb = NULL;
 	TALLOC_CTX *mem_ctx;
 	const char *kwnames[] = { "keytab",
 				  "samdb",
 				  "principal",
 				  "keep_stale_entries",
+				  "only_current_keys",
 				  NULL };
 	NTSTATUS status;
 	/*
@@ -45,18 +46,19 @@ static PyObject *py_net_export_keytab(py_net_Object *self, PyObject *args, PyObj
 	 * PyArg_ParseTupleAndKeywords()
 	 */
 	int keep_stale_entries = false;
+	int only_current_keys = false;
 
-	r.in.principal = NULL;
-
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|Ozp:export_keytab", discard_const_p(char *, kwnames),
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|Ozpp:export_keytab", discard_const_p(char *, kwnames),
 					 &r.in.keytab_name,
 					 &py_samdb,
 					 &r.in.principal,
-					 &keep_stale_entries)) {
+					 &keep_stale_entries,
+					 &only_current_keys)) {
 		return NULL;
 	}
 
 	r.in.keep_stale_entries = keep_stale_entries;
+	r.in.only_current_keys = only_current_keys;
 
 	if (py_samdb == NULL) {
 		r.in.samdb = NULL;

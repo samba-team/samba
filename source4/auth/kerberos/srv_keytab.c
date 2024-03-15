@@ -231,6 +231,7 @@ NTSTATUS smb_krb5_fill_keytab_gmsa_keys(TALLOC_CTX *mem_ctx,
 					krb5_principal principal,
 					struct ldb_context *samdb,
 					struct ldb_dn *dn,
+					bool include_historic_keys,
 					const char **error_string)
 {
 	const char *gmsa_attrs[] = {
@@ -402,7 +403,7 @@ NTSTATUS smb_krb5_fill_keytab_gmsa_keys(TALLOC_CTX *mem_ctx,
 				   &principal,
 				   context,
 				   keytab,
-				   true,
+				   include_historic_keys,
 				   error_string);
 	if (ret) {
 		*error_string = talloc_asprintf(mem_ctx,
