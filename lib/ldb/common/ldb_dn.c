@@ -38,7 +38,7 @@
 
 #define LDB_DN_NULL_FAILED(x) if (!(x)) goto failed
 
-#define LDB_FREE(x) do { talloc_free(x); x = NULL; } while(0)
+#define LDB_FREE(x) TALLOC_FREE(x)
 
 /**
    internal ldb exploded dn structures
