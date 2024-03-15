@@ -3905,12 +3905,15 @@ static PyObject *py_ldb_msg_items(PyObject *self,
 	return l;
 }
 
-static PyObject *py_ldb_msg_elements(PyLdbMessageObject *self,
+static PyObject *py_ldb_msg_elements(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	struct ldb_message *msg = pyldb_Message_AsMessage(self);
 	Py_ssize_t i = 0;
-	PyObject *l = PyList_New(msg->num_elements);
+	PyObject *l = NULL;
+	struct ldb_message *msg = NULL;
+	PyErr_LDB_MESSAGE_OR_RAISE(self, msg);
+
+	l = PyList_New(msg->num_elements);
 	if (l == NULL) {
 		return NULL;
 	}
