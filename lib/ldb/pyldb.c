@@ -4248,8 +4248,8 @@ static PyObject *py_ldb_msg_richcmp(PyLdbMessageObject *py_msg1,
 		return Py_NotImplemented;
 	}
 
-	msg1 = pyldb_Message_AsMessage(py_msg1),
-	msg2 = pyldb_Message_AsMessage(py_msg2);
+	PyErr_LDB_MESSAGE_OR_RAISE(py_msg1, msg1);
+	PyErr_LDB_MESSAGE_OR_RAISE(py_msg2, msg2);
 	/*
 	 * FIXME: this can be a non-transitive compare, unsuitable for
 	 * sorting.
