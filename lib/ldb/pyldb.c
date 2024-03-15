@@ -4037,9 +4037,11 @@ static PyObject *py_ldb_msg_richcmp(PyLdbMessageObject *py_msg1,
 		}
 	}
 
-	ret = msg1->num_elements - msg2->num_elements;
-	if (ret != 0) {
-		return richcmp(ret, op);
+	if (msg1->num_elements > msg2->num_elements) {
+		return richcmp(1, op);
+	}
+	if (msg1->num_elements < msg2->num_elements) {
+		return richcmp(-1, op);
 	}
 
 	for (i = 0; i < msg1->num_elements; i++) {
