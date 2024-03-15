@@ -3862,8 +3862,12 @@ static PyObject *py_ldb_msg_items(PyObject *self,
 	}
 	if (msg->dn != NULL) {
 		PyObject *value = NULL;
-		PyObject *obj = pyldb_Dn_FromDn(msg->dn, pyldb_Message_get_pyldb(self));
 		int res = 0;
+		PyObject *obj = pyldb_Dn_FromDn(msg->dn, pyldb_Message_get_pyldb(self));
+		if (obj == NULL) {
+			Py_CLEAR(l);
+			return NULL;
+		}
 		value = Py_BuildValue("(sO)", "dn", obj);
 		Py_CLEAR(obj);
 		if (value == NULL) {
@@ -3879,8 +3883,13 @@ static PyObject *py_ldb_msg_items(PyObject *self,
 	}
 	for (i = 0; i < msg->num_elements; i++, j++) {
 		PyObject *value = NULL;
-		PyObject *py_el = PyLdbMessageElement_FromMessageElement(&msg->elements[i], msg->elements);
 		int res = 0;
+		PyObject *py_el = PyLdbMessageElement_FromMessageElement(&msg->elements[i],
+									 msg->elements);
+		if (py_el == NULL) {
+			Py_CLEAR(l);
+			return NULL;
+		}
 		value = Py_BuildValue("(sO)", msg->elements[i].name, py_el);
 		Py_CLEAR(py_el);
 		if (value == NULL ) {
