@@ -3847,18 +3847,22 @@ static PyObject *py_ldb_msg_get(PyObject *self, PyObject *args, PyObject *kwargs
 	return PyObject_FromLdbValue(&el->values[idx]);
 }
 
-static PyObject *py_ldb_msg_items(PyLdbMessageObject *self,
+static PyObject *py_ldb_msg_items(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	struct ldb_message *msg = pyldb_Message_AsMessage(self);
+	struct ldb_message *msg = NULL;
 	Py_ssize_t i, j = 0;
-	PyObject *l = PyList_New(msg->num_elements + (msg->dn == NULL?0:1));
+	PyObject *l = NULL;
+
+	PyErr_LDB_MESSAGE_OR_RAISE(self, msg);
+
+	l = PyList_New(msg->num_elements + (msg->dn == NULL?0:1));
 	if (l == NULL) {
 		return PyErr_NoMemory();
 	}
 	if (msg->dn != NULL) {
 		PyObject *value = NULL;
-		PyObject *obj = pyldb_Dn_FromDn(msg->dn, self->pyldb);
+		PyObject *obj = pyldb_Dn_FromDn(msg->dn, pyldb_Message_get_pyldb(self));
 		int res = 0;
 		value = Py_BuildValue("(sO)", "dn", obj);
 		Py_CLEAR(obj);
