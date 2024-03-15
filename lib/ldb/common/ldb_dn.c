@@ -1156,8 +1156,15 @@ int ldb_dn_compare(struct ldb_dn *dn0, struct ldb_dn *dn1)
 
 	}
 
-	if (dn0->comp_num != dn1->comp_num) {
-		return (dn1->comp_num - dn0->comp_num);
+	/*
+	 * Notice that for comp_num, Samba reverses the usual order of
+	 * comparison. A DN with fewer components is greater than one
+	 * with more.
+	 */
+	if (dn0->comp_num > dn1->comp_num) {
+		return -1;
+	} else if (dn0->comp_num < dn1->comp_num) {
+		return 1;
 	}
 
 	if (dn0->comp_num == 0) {
