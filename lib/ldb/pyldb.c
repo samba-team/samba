@@ -3770,7 +3770,13 @@ static int py_ldb_msg_contains(PyLdbMessageObject *self, PyObject *py_name)
 {
 	struct ldb_message_element *el = NULL;
 	const char *name = NULL;
-	struct ldb_message *msg = pyldb_Message_AsMessage(self);
+	struct ldb_message *msg = pyldb_Message_as_message(self);
+	struct ldb_dn *dn = msg->dn;
+
+	if (dn != NULL && (self->pyldb->ldb_ctx != ldb_dn_get_ldb_context(dn))) {
+		return -1;
+	}
+
 	name = PyUnicode_AsUTF8(py_name);
 	if (name == NULL) {
 		return -1;
