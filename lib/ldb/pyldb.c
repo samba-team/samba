@@ -4175,10 +4175,19 @@ static PyObject *py_ldb_msg_get_dn(PyObject *self, void *closure)
 	return pyldb_Dn_FromDn(msg->dn, pyldb_Message_get_pyldb(self));
 }
 
-static int py_ldb_msg_set_dn(PyLdbMessageObject *self, PyObject *value, void *closure)
+static int py_ldb_msg_set_dn(PyObject *self, PyObject *value, void *closure)
 {
-	struct ldb_message *msg = pyldb_Message_AsMessage(self);
+	/*
+	 * no PyErr_LDB_MESSAGE_OR_RAISE here, because this returns int.
+	 *
+	 * Also, since this is trying to replace the dn, we don't need to
+	 * check the old one.
+	 */
+	struct ldb_message *msg = pyldb_Message_as_message(self);
 	struct ldb_dn *dn = NULL;
+	PyLdbObject *pyldb = pyldb_Message_get_pyldb(self);
+	PyLdbMessageObject *self_as_msg = (PyLdbMessageObject *)self;
+
 	if (value == NULL) {
 		PyErr_SetString(PyExc_AttributeError, "cannot delete dn");
 		return -1;
@@ -4194,14 +4203,19 @@ static int py_ldb_msg_set_dn(PyLdbMessageObject *self, PyObject *value, void *cl
 		return -1;
 	}
 
-	msg->dn = dn;
-
-	if (self->pyldb) {
-		Py_DECREF(self->pyldb);
+	if (pyldb != NULL) {
+		if (pyldb->ldb_ctx != ldb_dn_get_ldb_context(dn)) {
+			PyErr_SetString(PyExc_RuntimeError,
+					"DN is from the wrong LDB");
+			return -1;
+		}
+		Py_DECREF(pyldb);
 	}
 
-	self->pyldb = ((PyLdbDnObject *)value)->pyldb;
-	Py_INCREF(self->pyldb);
+	msg->dn = dn;
+
+	self_as_msg->pyldb = ((PyLdbDnObject *)value)->pyldb;
+	Py_INCREF(self_as_msg->pyldb);
 
 	return 0;
 }
