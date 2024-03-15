@@ -2179,6 +2179,25 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		}
 
 		if (supported_enctypes & ENC_HMAC_SHA1_96_AES256) {
+			key.salt = calloc(1, sizeof(*key.salt));
+			if (key.salt == NULL) {
+				smb_krb5_free_data_contents(context, &salt);
+				ret = ENOMEM;
+				goto out;
+			}
+
+			key.salt->type = KRB5_PW_SALT;
+
+			ret = smb_krb5_copy_data_contents(&key.salt->salt,
+							  salt.data,
+							  salt.length);
+			if (ret) {
+				*key.salt = (struct sdb_salt) {};
+				sdb_key_free(&key);
+				smb_krb5_free_data_contents(context, &salt);
+				goto out;
+			}
+
 			ret = smb_krb5_create_key_from_string(context,
 							      salt_principal,
 							      &salt,
@@ -2186,6 +2205,8 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 							      ENCTYPE_AES256_CTS_HMAC_SHA1_96,
 							      &key.key);
 			if (ret != 0) {
+				ZERO_STRUCT(key.key);
+				sdb_key_free(&key);
 				smb_krb5_free_data_contents(context, &salt);
 				goto out;
 			}
@@ -2195,6 +2216,25 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		}
 
 		if (supported_enctypes & ENC_HMAC_SHA1_96_AES128) {
+			key.salt = calloc(1, sizeof(*key.salt));
+			if (key.salt == NULL) {
+				smb_krb5_free_data_contents(context, &salt);
+				ret = ENOMEM;
+				goto out;
+			}
+
+			key.salt->type = KRB5_PW_SALT;
+
+			ret = smb_krb5_copy_data_contents(&key.salt->salt,
+							  salt.data,
+							  salt.length);
+			if (ret) {
+				*key.salt = (struct sdb_salt) {};
+				sdb_key_free(&key);
+				smb_krb5_free_data_contents(context, &salt);
+				goto out;
+			}
+
 			ret = smb_krb5_create_key_from_string(context,
 							      salt_principal,
 							      &salt,
@@ -2202,6 +2242,8 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 							      ENCTYPE_AES128_CTS_HMAC_SHA1_96,
 							      &key.key);
 			if (ret != 0) {
+				ZERO_STRUCT(key.key);
+				sdb_key_free(&key);
 				smb_krb5_free_data_contents(context, &salt);
 				goto out;
 			}
