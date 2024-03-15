@@ -1811,6 +1811,257 @@ out:
 	return ret;
 }
 
+struct samba_kdc_trust_keys {
+	struct sdb_keys *skeys;
+	uint32_t kvno;
+	uint32_t *returned_kvno;
+	uint32_t supported_enctypes;
+	uint32_t *available_enctypes;
+	krb5_const_principal salt_principal;
+	const struct AuthenticationInformationArray *auth_array;
+};
+
+static krb5_error_code samba_kdc_fill_trust_keys(krb5_context context,
+						 struct samba_kdc_trust_keys *p)
+{
+	/*
+	 * Make sure we'll never reveal DES keys
+	 */
+	uint32_t supported_enctypes = p->supported_enctypes &= ~(ENC_CRC32 | ENC_RSA_MD5);
+	uint32_t _available_enctypes = 0;
+	uint32_t *available_enctypes = p->available_enctypes;
+	uint32_t _returned_kvno = 0;
+	uint32_t *returned_kvno = p->returned_kvno;
+	TALLOC_CTX *frame = talloc_stackframe();
+	const struct AuthenticationInformationArray *aa = p->auth_array;
+	DATA_BLOB password_utf16 = { .length = 0, };
+	DATA_BLOB password_utf8 = { .length = 0, };
+	struct samr_Password _password_hash = { .hash = { 0,}, };
+	const struct samr_Password *password_hash = NULL;
+	uint32_t allocated_keys = 0;
+	uint32_t i;
+	int ret;
+
+	if (available_enctypes == NULL) {
+		available_enctypes = &_available_enctypes;
+	}
+
+	*available_enctypes = 0;
+
+	if (returned_kvno == NULL) {
+		returned_kvno = &_returned_kvno;
+	}
+
+	*returned_kvno = p->kvno;
+
+	for (i=0; i < aa->count; i++) {
+		if (aa->array[i].AuthType == TRUST_AUTH_TYPE_CLEAR) {
+			const struct AuthInfoClear *clear =
+				&aa->array[i].AuthInfo.clear;
+			bool ok;
+
+			password_utf16 = data_blob_const(clear->password,
+							 clear->size);
+			if (password_utf16.length == 0) {
+				break;
+			}
+
+			if (supported_enctypes & ENC_RC4_HMAC_MD5) {
+				mdfour(_password_hash.hash,
+				       password_utf16.data,
+				       password_utf16.length);
+				if (password_hash == NULL) {
+					allocated_keys += 1;
+				}
+				password_hash = &_password_hash;
+			}
+
+			if (!(supported_enctypes & (ENC_HMAC_SHA1_96_AES128|ENC_HMAC_SHA1_96_AES256))) {
+				break;
+			}
+
+			ok = convert_string_talloc(frame,
+						   CH_UTF16MUNGED, CH_UTF8,
+						   password_utf16.data,
+						   password_utf16.length,
+						   &password_utf8.data,
+						   &password_utf8.length);
+			if (!ok) {
+				krb5_clear_error_message(context);
+				ret = ENOMEM;
+				goto fail;
+			}
+
+			if (supported_enctypes & ENC_HMAC_SHA1_96_AES128) {
+				allocated_keys += 1;
+			}
+			if (supported_enctypes & ENC_HMAC_SHA1_96_AES256) {
+				allocated_keys += 1;
+			}
+			break;
+		} else if (aa->array[i].AuthType == TRUST_AUTH_TYPE_NT4OWF) {
+			const struct AuthInfoNT4Owf *nt4owf =
+				&aa->array[i].AuthInfo.nt4owf;
+
+			if (supported_enctypes & ENC_RC4_HMAC_MD5) {
+				password_hash = &nt4owf->password;
+				allocated_keys += 1;
+			}
+		}
+	}
+
+	allocated_keys = MAX(1, allocated_keys);
+
+	/* allocate space to decode into */
+	p->skeys->len = 0;
+	p->skeys->val = calloc(allocated_keys, sizeof(struct sdb_key));
+	if (p->skeys->val == NULL) {
+		krb5_clear_error_message(context);
+		ret = ENOMEM;
+		goto fail;
+	}
+
+	if (password_utf8.length != 0) {
+		struct sdb_key key = {};
+		krb5_data salt;
+		krb5_data cleartext_data;
+
+		cleartext_data.data = discard_const_p(char, password_utf8.data);
+		cleartext_data.length = password_utf8.length;
+
+		ret = smb_krb5_get_pw_salt(context,
+					   p->salt_principal,
+					   &salt);
+		if (ret != 0) {
+			goto fail;
+		}
+
+		if (supported_enctypes & ENC_HMAC_SHA1_96_AES256) {
+			key.salt = calloc(1, sizeof(*key.salt));
+			if (key.salt == NULL) {
+				smb_krb5_free_data_contents(context, &salt);
+				ret = ENOMEM;
+				goto fail;
+			}
+
+			key.salt->type = KRB5_PW_SALT;
+
+			ret = smb_krb5_copy_data_contents(&key.salt->salt,
+							  salt.data,
+							  salt.length);
+			if (ret) {
+				*key.salt = (struct sdb_salt) {};
+				sdb_key_free(&key);
+				smb_krb5_free_data_contents(context, &salt);
+				goto fail;
+			}
+
+			ret = smb_krb5_create_key_from_string(context,
+							      p->salt_principal,
+							      &salt,
+							      &cleartext_data,
+							      ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+							      &key.key);
+			if (ret == 0) {
+				p->skeys->val[p->skeys->len++] = key;
+				*available_enctypes |= ENC_HMAC_SHA1_96_AES256;
+			} else if (ret == KRB5_PROG_ETYPE_NOSUPP) {
+				DBG_NOTICE("Unsupported keytype ignored - type %u\n",
+					   ENCTYPE_AES256_CTS_HMAC_SHA1_96);
+				ZERO_STRUCT(key.key);
+				sdb_key_free(&key);
+				ret = 0;
+			}
+			if (ret != 0) {
+				ZERO_STRUCT(key.key);
+				sdb_key_free(&key);
+				smb_krb5_free_data_contents(context, &salt);
+				goto fail;
+			}
+		}
+
+		if (supported_enctypes & ENC_HMAC_SHA1_96_AES128) {
+			key.salt = calloc(1, sizeof(*key.salt));
+			if (key.salt == NULL) {
+				smb_krb5_free_data_contents(context, &salt);
+				ret = ENOMEM;
+				goto fail;
+			}
+
+			key.salt->type = KRB5_PW_SALT;
+
+			ret = smb_krb5_copy_data_contents(&key.salt->salt,
+							  salt.data,
+							  salt.length);
+			if (ret) {
+				*key.salt = (struct sdb_salt) {};
+				sdb_key_free(&key);
+				smb_krb5_free_data_contents(context, &salt);
+				goto fail;
+			}
+
+			ret = smb_krb5_create_key_from_string(context,
+							      p->salt_principal,
+							      &salt,
+							      &cleartext_data,
+							      ENCTYPE_AES128_CTS_HMAC_SHA1_96,
+							      &key.key);
+			if (ret == 0) {
+				p->skeys->val[p->skeys->len++] = key;
+				*available_enctypes |= ENC_HMAC_SHA1_96_AES128;
+			} else if (ret == KRB5_PROG_ETYPE_NOSUPP) {
+				DBG_NOTICE("Unsupported keytype ignored - type %u\n",
+					   ENCTYPE_AES128_CTS_HMAC_SHA1_96);
+				ZERO_STRUCT(key.key);
+				sdb_key_free(&key);
+				ret = 0;
+			}
+			if (ret != 0) {
+				ZERO_STRUCT(key.key);
+				sdb_key_free(&key);
+				smb_krb5_free_data_contents(context, &salt);
+				goto fail;
+			}
+		}
+
+		smb_krb5_free_data_contents(context, &salt);
+	}
+
+	if (password_hash != NULL) {
+		struct sdb_key key = {};
+
+		ret = smb_krb5_keyblock_init_contents(context,
+						      ENCTYPE_ARCFOUR_HMAC,
+						      password_hash->hash,
+						      sizeof(password_hash->hash),
+						      &key.key);
+		if (ret == 0) {
+			p->skeys->val[p->skeys->len++] = key;
+
+			*available_enctypes |= ENC_RC4_HMAC_MD5;
+		} else if (ret == KRB5_PROG_ETYPE_NOSUPP) {
+			DEBUG(2,("Unsupported keytype ignored - type %u\n",
+				 ENCTYPE_ARCFOUR_HMAC));
+			ZERO_STRUCT(key.key);
+			sdb_key_free(&key);
+			ret = 0;
+		}
+		if (ret != 0) {
+			ZERO_STRUCT(key.key);
+			sdb_key_free(&key);
+			goto fail;
+		}
+	}
+
+	samba_kdc_sort_keys(p->skeys);
+
+	return 0;
+fail:
+	sdb_keys_free(p->skeys);
+	TALLOC_FREE(frame);
+	return ret;
+}
+
 /*
  * Construct an hdb_entry from a directory entry.
  * The kvno is what the remote client asked for
@@ -1831,24 +2082,19 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	char *partner_realm = NULL;
 	const char *realm = NULL;
 	const char *krbtgt_realm = NULL;
-	DATA_BLOB password_utf16 = data_blob_null;
-	DATA_BLOB password_utf8 = data_blob_null;
-	struct samr_Password _password_hash;
-	const struct samr_Password *password_hash = NULL;
 	const struct ldb_val *password_val;
 	struct trustAuthInOutBlob password_blob;
 	struct samba_kdc_entry *p;
 	bool use_previous = false;
 	uint32_t current_kvno;
 	uint32_t previous_kvno;
-	uint32_t num_keys = 0;
+	struct samba_kdc_trust_keys current_keys = {};
+	struct samba_kdc_trust_keys previous_keys = {};
 	enum ndr_err_code ndr_err;
 	int ret;
 	unsigned int i;
-	struct AuthenticationInformationArray *auth_array;
 	struct timeval tv;
 	NTTIME an_hour_ago;
-	uint32_t *auth_kvno;
 	bool prefer_current = false;
 	bool force_rc4 = lpcfg_kdc_force_enable_rc4_weak_session_keys(lp_ctx);
 	uint32_t supported_enctypes = ENC_RC4_HMAC_MD5;
@@ -2085,215 +2331,63 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		use_previous = false;
 	}
 
+	current_keys = (struct samba_kdc_trust_keys) {
+		.kvno = current_kvno,
+		.supported_enctypes = supported_enctypes,
+		.salt_principal = entry->principal,
+		.auth_array = &password_blob.current,
+	};
+
+	previous_keys = (struct samba_kdc_trust_keys) {
+		.kvno = previous_kvno,
+		.supported_enctypes = supported_enctypes,
+		.salt_principal = entry->principal,
+		.auth_array = &password_blob.previous,
+	};
+
 	if (use_previous) {
-		auth_array = &password_blob.previous;
-		auth_kvno = &previous_kvno;
+		/*
+		 * return the old keys as default keys
+		 * with the requested kvno.
+		 */
+		previous_keys.skeys = &entry->keys;
+		previous_keys.available_enctypes = &available_enctypes;
+		previous_keys.returned_kvno = &returned_kvno;
 	} else {
-		auth_array = &password_blob.current;
-		auth_kvno = &current_kvno;
+		/*
+		 * return the current keys as default keys
+		 * with the requested kvno.
+		 */
+		current_keys.skeys = &entry->keys;
+		current_keys.available_enctypes = &available_enctypes;
+		current_keys.returned_kvno = &returned_kvno;
+	}
+
+	if (current_keys.skeys != NULL) {
+		ret = samba_kdc_fill_trust_keys(context, &current_keys);
+		if (ret != 0) {
+			goto out;
+		}
+	}
+
+	if (previous_keys.skeys != NULL) {
+		ret = samba_kdc_fill_trust_keys(context, &previous_keys);
+		if (ret != 0) {
+			goto out;
+		}
 	}
 
 	/* use the kvno the client specified, if available */
 	if (flags & SDB_F_KVNO_SPECIFIED) {
 		returned_kvno = kvno;
-	} else {
-		returned_kvno = *auth_kvno;
-	}
-
-	for (i=0; i < auth_array->count; i++) {
-		if (auth_array->array[i].AuthType == TRUST_AUTH_TYPE_CLEAR) {
-			bool ok;
-
-			password_utf16 = data_blob_const(auth_array->array[i].AuthInfo.clear.password,
-							 auth_array->array[i].AuthInfo.clear.size);
-			if (password_utf16.length == 0) {
-				break;
-			}
-
-			if (supported_enctypes & ENC_RC4_HMAC_MD5) {
-				mdfour(_password_hash.hash, password_utf16.data, password_utf16.length);
-				if (password_hash == NULL) {
-					num_keys += 1;
-				}
-				password_hash = &_password_hash;
-			}
-
-			if (!(supported_enctypes & (ENC_HMAC_SHA1_96_AES128|ENC_HMAC_SHA1_96_AES256))) {
-				break;
-			}
-
-			ok = convert_string_talloc(tmp_ctx,
-						   CH_UTF16MUNGED, CH_UTF8,
-						   password_utf16.data,
-						   password_utf16.length,
-						   &password_utf8.data,
-						   &password_utf8.length);
-			if (!ok) {
-				krb5_clear_error_message(context);
-				ret = ENOMEM;
-				goto out;
-			}
-
-			if (supported_enctypes & ENC_HMAC_SHA1_96_AES128) {
-				num_keys += 1;
-			}
-			if (supported_enctypes & ENC_HMAC_SHA1_96_AES256) {
-				num_keys += 1;
-			}
-			break;
-		} else if (auth_array->array[i].AuthType == TRUST_AUTH_TYPE_NT4OWF) {
-			if (supported_enctypes & ENC_RC4_HMAC_MD5) {
-				password_hash = &auth_array->array[i].AuthInfo.nt4owf.password;
-				num_keys += 1;
-			}
-		}
 	}
 
 	/* Must have found a cleartext or MD4 password */
-	if (num_keys == 0) {
+	if (entry->keys.len == 0) {
 		DBG_WARNING("no usable key found\n");
 		krb5_clear_error_message(context);
 		ret = SDB_ERR_NOENTRY;
 		goto out;
-	}
-
-	entry->keys.val = calloc(num_keys, sizeof(struct sdb_key));
-	if (entry->keys.val == NULL) {
-		krb5_clear_error_message(context);
-		ret = ENOMEM;
-		goto out;
-	}
-
-	if (password_utf8.length != 0) {
-		struct sdb_key key = {};
-		krb5_const_principal salt_principal = entry->principal;
-		krb5_data salt;
-		krb5_data cleartext_data;
-
-		cleartext_data.data = discard_const_p(char, password_utf8.data);
-		cleartext_data.length = password_utf8.length;
-
-		ret = smb_krb5_get_pw_salt(context,
-					   salt_principal,
-					   &salt);
-		if (ret != 0) {
-			goto out;
-		}
-
-		if (supported_enctypes & ENC_HMAC_SHA1_96_AES256) {
-			key.salt = calloc(1, sizeof(*key.salt));
-			if (key.salt == NULL) {
-				smb_krb5_free_data_contents(context, &salt);
-				ret = ENOMEM;
-				goto out;
-			}
-
-			key.salt->type = KRB5_PW_SALT;
-
-			ret = smb_krb5_copy_data_contents(&key.salt->salt,
-							  salt.data,
-							  salt.length);
-			if (ret) {
-				*key.salt = (struct sdb_salt) {};
-				sdb_key_free(&key);
-				smb_krb5_free_data_contents(context, &salt);
-				goto out;
-			}
-
-			ret = smb_krb5_create_key_from_string(context,
-							      salt_principal,
-							      &salt,
-							      &cleartext_data,
-							      ENCTYPE_AES256_CTS_HMAC_SHA1_96,
-							      &key.key);
-			if (ret == 0) {
-				entry->keys.val[entry->keys.len++] = key;
-				available_enctypes |= ENC_HMAC_SHA1_96_AES256;
-			} else if (ret == KRB5_PROG_ETYPE_NOSUPP) {
-				DBG_NOTICE("Unsupported keytype ignored - type %u\n",
-					   ENCTYPE_AES256_CTS_HMAC_SHA1_96);
-				ZERO_STRUCT(key.key);
-				sdb_key_free(&key);
-				ret = 0;
-			}
-			if (ret != 0) {
-				ZERO_STRUCT(key.key);
-				sdb_key_free(&key);
-				smb_krb5_free_data_contents(context, &salt);
-				goto out;
-			}
-		}
-
-		if (supported_enctypes & ENC_HMAC_SHA1_96_AES128) {
-			key.salt = calloc(1, sizeof(*key.salt));
-			if (key.salt == NULL) {
-				smb_krb5_free_data_contents(context, &salt);
-				ret = ENOMEM;
-				goto out;
-			}
-
-			key.salt->type = KRB5_PW_SALT;
-
-			ret = smb_krb5_copy_data_contents(&key.salt->salt,
-							  salt.data,
-							  salt.length);
-			if (ret) {
-				*key.salt = (struct sdb_salt) {};
-				sdb_key_free(&key);
-				smb_krb5_free_data_contents(context, &salt);
-				goto out;
-			}
-
-			ret = smb_krb5_create_key_from_string(context,
-							      salt_principal,
-							      &salt,
-							      &cleartext_data,
-							      ENCTYPE_AES128_CTS_HMAC_SHA1_96,
-							      &key.key);
-			if (ret == 0) {
-				entry->keys.val[entry->keys.len++] = key;
-				available_enctypes |= ENC_HMAC_SHA1_96_AES128;
-			} else if (ret == KRB5_PROG_ETYPE_NOSUPP) {
-				DBG_NOTICE("Unsupported keytype ignored - type %u\n",
-					   ENCTYPE_AES128_CTS_HMAC_SHA1_96);
-				ZERO_STRUCT(key.key);
-				sdb_key_free(&key);
-				ret = 0;
-			}
-			if (ret != 0) {
-				ZERO_STRUCT(key.key);
-				sdb_key_free(&key);
-				smb_krb5_free_data_contents(context, &salt);
-				goto out;
-			}
-		}
-
-		smb_krb5_free_data_contents(context, &salt);
-	}
-
-	if (password_hash != NULL) {
-		struct sdb_key key = {};
-
-		ret = smb_krb5_keyblock_init_contents(context,
-						      ENCTYPE_ARCFOUR_HMAC,
-						      password_hash->hash,
-						      sizeof(password_hash->hash),
-						      &key.key);
-		if (ret == 0) {
-			entry->keys.val[entry->keys.len++] = key;
-			available_enctypes |= ENC_RC4_HMAC_MD5;
-		} else if (ret == KRB5_PROG_ETYPE_NOSUPP) {
-			DBG_NOTICE("Unsupported keytype ignored - type %u\n",
-				   ENCTYPE_ARCFOUR_HMAC);
-			ZERO_STRUCT(key.key);
-			sdb_key_free(&key);
-			ret = 0;
-		}
-		if (ret != 0) {
-			ZERO_STRUCT(key.key);
-			sdb_key_free(&key);
-			goto out;
-		}
 	}
 
 	entry->flags = (struct SDBFlags) {};
@@ -2310,8 +2404,6 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 
 	/* Match Windows behavior and allow forwardable flag in cross-realm. */
 	entry->flags.forwardable = 1;
-
-	samba_kdc_sort_keys(&entry->keys);
 
 	entry->kvno = returned_kvno;
 
