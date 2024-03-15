@@ -47,6 +47,9 @@ else:
         takes_options = [
             Option("--principal", help="extract only this principal", type=str),
             Option("--keep-stale-entries", help="keep stale keys in keytab (useful for collecting keys for Wireshark)", action="store_true"),
+            Option("--only-current-keys",
+                   help="This avoids exporting old and older keys (useful for keytabs used by kinit)",
+                   action="store_true"),
         ]
 
         takes_args = ["keytab"]
@@ -58,7 +61,8 @@ else:
                 versionopts=None,
                 hostopts=None,
                 principal=None,
-                keep_stale_entries=None):
+                keep_stale_entries=None,
+                only_current_keys=None):
             lp = sambaopts.get_loadparm()
             net = Net(None, lp)
             samdb = self.ldb_connect(hostopts, sambaopts, credopts)
@@ -66,6 +70,7 @@ else:
                 net.export_keytab(samdb=samdb,
                                   keytab=keytab,
                                   principal=principal,
-                                  keep_stale_entries=keep_stale_entries)
+                                  keep_stale_entries=keep_stale_entries,
+                                  only_current_keys=only_current_keys)
             except NTSTATUSError as error:
                 raise CommandError(f"Failed to export domain keys into keytab {keytab}: {error.args[1]}")
