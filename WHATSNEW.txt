@@ -191,6 +191,68 @@ The Security Descriptor Definition Language has extensions for
 conditional ACEs and resource attribute ACEs; these are now supported
 by Samba.
 
+Service Witness Protocol [MS-SWN]
+---------------------------------
+
+In a ctdb cluster it is now possible to provide
+the SMB witness service that allows clients to
+monitor their current smb connection to cluster
+node A by asking cluster node B to notify the
+client if the ip address from node A or the
+whole node A becomes unavailable.
+
+For disk shares in a ctdb cluster
+SMB2_SHARE_CAP_SCALEOUT is now always returned
+for SMB3 tree connect responses.
+
+If the witness service is active
+SMB2_SHARE_CAP_CLUSTER is now also returned.
+
+In order to activate the witness service
+"rpc start on demand helpers = no" needs to
+be configured in the global section.
+At the same time the 'samba-dcerpcd' service
+needs to be started explicitly, typically
+with the '--libexec-rpcds' option in order
+to make all available services usable.
+One important aspect is that tcp ports
+135 (for the endpoint mapper) and various
+ports in the 'rpc server dynamic port range'
+will be used to provide the witness service
+(rpcd_witness).
+
+ctdb provides a '47.samba-dcerpcd.script' in order
+to manage the samba-dcerpcd.service.
+Typically as systemd service, but that's up
+to the packager and/or admin.
+
+Please note that current windows client
+requires SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY
+in addition to SMB2_SHARE_CAP_CLUSTER in order
+to make use of the witness service.
+But SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY implies
+the windows clients always ask for persistent handle
+(which are not implemented in samba yet), so
+that every open generates a warning in the
+windows smb client event log.
+That's why SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY
+is not returned by default.
+An explicit 'smb3 share cap:CONTINUOUS AVAILABILITY = yes'
+is needed.
+
+There are also new 'net witness' commands in order
+to let the admin list active client registrations
+or ask specific clients to move their smb connection
+to another cluster node. These are available:
+
+ net witness list
+ net witness client-move
+ net witness share-move
+ net witness force-unregister
+ net witness force-response
+
+Consult 'man net' or 'net witness help' for further details.
+
 
 REMOVED FEATURES
 ================
@@ -210,8 +272,12 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
-  smb3 unix extensions                    Per share       -
   acl claims evaluation                   new             AD DC only
+  smb3 unix extensions                    Per share       -
+  smb3 share cap:ASYMMETRIC               new             no
+  smb3 share cap:CLUSTER                  new             see 'man smb.conf'
+  smb3 share cap:CONTINUOUS AVAILABILITY  new             no
+  smb3 share cap:SCALE OUT                new             see 'man smb.conf'
 
 
 CHANGES SINCE 4.20.0rc3
