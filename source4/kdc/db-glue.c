@@ -2086,6 +2086,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	struct trustAuthInOutBlob password_blob;
 	struct samba_kdc_entry *p;
 	bool use_previous = false;
+	bool include_previous = false;
 	uint32_t current_kvno;
 	uint32_t previous_kvno;
 	struct samba_kdc_trust_keys current_keys = {};
@@ -2314,6 +2315,15 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		} else {
 			use_previous = false;
 		}
+
+		if (flags & SDB_F_ADMIN_DATA) {
+			/*
+			 * let admin tool
+			 * get to all keys
+			 */
+			use_previous = false;
+			include_previous = true;
+		}
 	} else if (kvno == current_kvno) {
 		/*
 		 * Exact match ...
@@ -2361,6 +2371,13 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		current_keys.skeys = &entry->keys;
 		current_keys.available_enctypes = &available_enctypes;
 		current_keys.returned_kvno = &returned_kvno;
+
+		if (include_previous) {
+			/*
+			 * return the old keys in addition.
+			 */
+			previous_keys.skeys = &entry->old_keys;
+		}
 	}
 
 	if (current_keys.skeys != NULL) {
