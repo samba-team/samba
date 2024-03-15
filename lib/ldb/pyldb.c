@@ -3696,13 +3696,17 @@ static PyObject *py_ldb_msg_from_dict(PyTypeObject *type, PyObject *args)
 } while(0)
 
 
-static PyObject *py_ldb_msg_remove_attr(PyLdbMessageObject *self, PyObject *args)
+static PyObject *py_ldb_msg_remove_attr(PyObject *self, PyObject *args)
 {
 	char *name;
-	if (!PyArg_ParseTuple(args, "s", &name))
-		return NULL;
+	struct ldb_message *msg = NULL;
+	PyErr_LDB_MESSAGE_OR_RAISE(self, msg);
 
-	ldb_msg_remove_attr(self->msg, name);
+	if (!PyArg_ParseTuple(args, "s", &name)) {
+		return NULL;
+	}
+
+	ldb_msg_remove_attr(msg, name);
 
 	Py_RETURN_NONE;
 }
@@ -3774,17 +3778,19 @@ static int py_ldb_msg_contains(PyLdbMessageObject *self, PyObject *py_name)
 	return el != NULL ? 1 : 0;
 }
 
-static PyObject *py_ldb_msg_getitem(PyLdbMessageObject *self, PyObject *py_name)
+static PyObject *py_ldb_msg_getitem(PyObject *self, PyObject *py_name)
 {
 	struct ldb_message_element *el = NULL;
 	const char *name = NULL;
-	struct ldb_message *msg = pyldb_Message_AsMessage(self);
+	struct ldb_message *msg = NULL;
+	PyErr_LDB_MESSAGE_OR_RAISE(self, msg);
+
 	name = PyUnicode_AsUTF8(py_name);
 	if (name == NULL) {
 		return NULL;
 	}
 	if (!ldb_attr_cmp(name, "dn")) {
-		return pyldb_Dn_FromDn(msg->dn, self->pyldb);
+		return pyldb_Dn_FromDn(msg->dn, pyldb_Message_get_pyldb(self));
 	}
 	el = ldb_msg_find_element(msg, name);
 	if (el == NULL) {
@@ -3795,14 +3801,15 @@ static PyObject *py_ldb_msg_getitem(PyLdbMessageObject *self, PyObject *py_name)
 	return PyLdbMessageElement_FromMessageElement(el, msg->elements);
 }
 
-static PyObject *py_ldb_msg_get(PyLdbMessageObject *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_ldb_msg_get(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	PyObject *def = NULL;
 	const char *kwnames[] = { "name", "default", "idx", NULL };
 	const char *name = NULL;
 	int idx = -1;
-	struct ldb_message *msg = pyldb_Message_AsMessage(self);
 	struct ldb_message_element *el;
+	struct ldb_message *msg = NULL;
+	PyErr_LDB_MESSAGE_OR_RAISE(self, msg);
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|Oi:msg",
 					 discard_const_p(char *, kwnames), &name, &def, &idx)) {
@@ -3810,7 +3817,7 @@ static PyObject *py_ldb_msg_get(PyLdbMessageObject *self, PyObject *args, PyObje
 	}
 
 	if (strcasecmp(name, "dn") == 0) {
-		return pyldb_Dn_FromDn(msg->dn, self->pyldb);
+		return pyldb_Dn_FromDn(msg->dn, pyldb_Message_get_pyldb(self));
 	}
 
 	el = ldb_msg_find_element(msg, name);
@@ -3904,16 +3911,18 @@ static PyObject *py_ldb_msg_elements(PyLdbMessageObject *self,
 	return l;
 }
 
-static PyObject *py_ldb_msg_add(PyLdbMessageObject *self, PyObject *args)
+static PyObject *py_ldb_msg_add(PyObject *self, PyObject *args)
 {
-	struct ldb_message *msg = pyldb_Message_AsMessage(self);
 	PyLdbMessageElementObject *py_element;
 	int i, ret;
 	struct ldb_message_element *el;
 	struct ldb_message_element *el_new;
+	struct ldb_message *msg = NULL;
+	PyErr_LDB_MESSAGE_OR_RAISE(self, msg);
 
-	if (!PyArg_ParseTuple(args, "O!", &PyLdbMessageElement, &py_element))
+	if (!PyArg_ParseTuple(args, "O!", &PyLdbMessageElement, &py_element)) {
 		return NULL;
+	}
 
 	el = py_element->el;
 	if (el == NULL) {
@@ -4133,10 +4142,11 @@ static PyObject *PyLdbMessage_FromMessage(struct ldb_message *msg, PyLdbObject *
 	return (PyObject *)ret;
 }
 
-static PyObject *py_ldb_msg_get_dn(PyLdbMessageObject *self, void *closure)
+static PyObject *py_ldb_msg_get_dn(PyObject *self, void *closure)
 {
-	struct ldb_message *msg = pyldb_Message_AsMessage(self);
-	return pyldb_Dn_FromDn(msg->dn, self->pyldb);
+	struct ldb_message *msg = NULL;
+	PyErr_LDB_MESSAGE_OR_RAISE(self, msg);
+	return pyldb_Dn_FromDn(msg->dn, pyldb_Message_get_pyldb(self));
 }
 
 static int py_ldb_msg_set_dn(PyLdbMessageObject *self, PyObject *value, void *closure)
