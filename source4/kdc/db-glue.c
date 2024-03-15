@@ -1862,6 +1862,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
 	NTSTATUS status;
 	uint32_t returned_kvno = 0;
+	uint32_t available_enctypes = 0;
 
 	*entry = (struct sdb_entry) {};
 
@@ -2207,6 +2208,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 							      &key.key);
 			if (ret == 0) {
 				entry->keys.val[entry->keys.len++] = key;
+				available_enctypes |= ENC_HMAC_SHA1_96_AES256;
 			} else if (ret == KRB5_PROG_ETYPE_NOSUPP) {
 				DBG_NOTICE("Unsupported keytype ignored - type %u\n",
 					   ENCTYPE_AES256_CTS_HMAC_SHA1_96);
@@ -2250,6 +2252,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 							      &key.key);
 			if (ret == 0) {
 				entry->keys.val[entry->keys.len++] = key;
+				available_enctypes |= ENC_HMAC_SHA1_96_AES128;
 			} else if (ret == KRB5_PROG_ETYPE_NOSUPP) {
 				DBG_NOTICE("Unsupported keytype ignored - type %u\n",
 					   ENCTYPE_AES128_CTS_HMAC_SHA1_96);
@@ -2278,6 +2281,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 						      &key.key);
 		if (ret == 0) {
 			entry->keys.val[entry->keys.len++] = key;
+			available_enctypes |= ENC_RC4_HMAC_MD5;
 		} else if (ret == KRB5_PROG_ETYPE_NOSUPP) {
 			DBG_NOTICE("Unsupported keytype ignored - type %u\n",
 				   ENCTYPE_ARCFOUR_HMAC);
@@ -2310,6 +2314,12 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	samba_kdc_sort_keys(&entry->keys);
 
 	entry->kvno = returned_kvno;
+
+	/*
+	 * We need to support all session keys enctypes for
+	 * all keys we provide
+	 */
+	supported_session_etypes |= available_enctypes;
 
 	ret = sdb_entry_set_etypes(entry);
 	if (ret) {
