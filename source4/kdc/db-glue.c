@@ -1861,6 +1861,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		ENC_ALL_TYPES;
 	struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
 	NTSTATUS status;
+	uint32_t returned_kvno = 0;
 
 	*entry = (struct sdb_entry) {};
 
@@ -2093,9 +2094,9 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 
 	/* use the kvno the client specified, if available */
 	if (flags & SDB_F_KVNO_SPECIFIED) {
-		entry->kvno = kvno;
+		returned_kvno = kvno;
 	} else {
-		entry->kvno = *auth_kvno;
+		returned_kvno = *auth_kvno;
 	}
 
 	for (i=0; i < auth_array->count; i++) {
@@ -2307,6 +2308,8 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	entry->flags.forwardable = 1;
 
 	samba_kdc_sort_keys(&entry->keys);
+
+	entry->kvno = returned_kvno;
 
 	ret = sdb_entry_set_etypes(entry);
 	if (ret) {
