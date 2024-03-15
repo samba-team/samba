@@ -2204,15 +2204,21 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 							      &cleartext_data,
 							      ENCTYPE_AES256_CTS_HMAC_SHA1_96,
 							      &key.key);
+			if (ret == 0) {
+				entry->keys.val[entry->keys.len++] = key;
+			} else if (ret == KRB5_PROG_ETYPE_NOSUPP) {
+				DBG_NOTICE("Unsupported keytype ignored - type %u\n",
+					   ENCTYPE_AES256_CTS_HMAC_SHA1_96);
+				ZERO_STRUCT(key.key);
+				sdb_key_free(&key);
+				ret = 0;
+			}
 			if (ret != 0) {
 				ZERO_STRUCT(key.key);
 				sdb_key_free(&key);
 				smb_krb5_free_data_contents(context, &salt);
 				goto out;
 			}
-
-			entry->keys.val[entry->keys.len] = key;
-			entry->keys.len++;
 		}
 
 		if (supported_enctypes & ENC_HMAC_SHA1_96_AES128) {
@@ -2241,15 +2247,21 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 							      &cleartext_data,
 							      ENCTYPE_AES128_CTS_HMAC_SHA1_96,
 							      &key.key);
+			if (ret == 0) {
+				entry->keys.val[entry->keys.len++] = key;
+			} else if (ret == KRB5_PROG_ETYPE_NOSUPP) {
+				DBG_NOTICE("Unsupported keytype ignored - type %u\n",
+					   ENCTYPE_AES128_CTS_HMAC_SHA1_96);
+				ZERO_STRUCT(key.key);
+				sdb_key_free(&key);
+				ret = 0;
+			}
 			if (ret != 0) {
 				ZERO_STRUCT(key.key);
 				sdb_key_free(&key);
 				smb_krb5_free_data_contents(context, &salt);
 				goto out;
 			}
-
-			entry->keys.val[entry->keys.len] = key;
-			entry->keys.len++;
 		}
 
 		smb_krb5_free_data_contents(context, &salt);
@@ -2263,12 +2275,20 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 						      password_hash->hash,
 						      sizeof(password_hash->hash),
 						      &key.key);
+		if (ret == 0) {
+			entry->keys.val[entry->keys.len++] = key;
+		} else if (ret == KRB5_PROG_ETYPE_NOSUPP) {
+			DBG_NOTICE("Unsupported keytype ignored - type %u\n",
+				   ENCTYPE_ARCFOUR_HMAC);
+			ZERO_STRUCT(key.key);
+			sdb_key_free(&key);
+			ret = 0;
+		}
 		if (ret != 0) {
+			ZERO_STRUCT(key.key);
+			sdb_key_free(&key);
 			goto out;
 		}
-
-		entry->keys.val[entry->keys.len] = key;
-		entry->keys.len++;
 	}
 
 	entry->flags = (struct SDBFlags) {};
