@@ -992,6 +992,7 @@ static NTSTATUS tstream_tls_prepare_gnutls(struct tstream_tls_params *_tlsp,
 	struct tstream_tls_params_internal *tlsp = NULL;
 	int ret;
 	unsigned int flags;
+	const char *hostname = NULL;
 
 	if (tlss->is_server) {
 		flags = GNUTLS_SERVER;
@@ -1025,9 +1026,19 @@ static NTSTATUS tstream_tls_prepare_gnutls(struct tstream_tls_params *_tlsp,
 
 	tlss->verify_peer = tlsp->verify_peer;
 	if (tlsp->peer_name != NULL) {
+		bool ip = is_ipaddress(tlsp->peer_name);
+
 		tlss->peer_name = talloc_strdup(tlss, tlsp->peer_name);
 		if (tlss->peer_name == NULL) {
 			return NT_STATUS_NO_MEMORY;
+		}
+
+		if (!ip) {
+			hostname = tlss->peer_name;
+		}
+
+		if (tlss->verify_peer < TLS_VERIFY_PEER_CA_AND_NAME) {
+			hostname = NULL;
 		}
 	}
 
@@ -1068,6 +1079,17 @@ static NTSTATUS tstream_tls_prepare_gnutls(struct tstream_tls_params *_tlsp,
 	if (ret != GNUTLS_E_SUCCESS) {
 		return gnutls_error_to_ntstatus(ret,
 				NT_STATUS_CRYPTO_SYSTEM_INVALID);
+	}
+
+	if (hostname != NULL) {
+		ret = gnutls_server_name_set(tlss->tls_session,
+					     GNUTLS_NAME_DNS,
+					     hostname,
+					     strlen(hostname));
+		if (ret != GNUTLS_E_SUCCESS) {
+			return gnutls_error_to_ntstatus(ret,
+					NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		}
 	}
 
 	if (tlss->is_server) {
