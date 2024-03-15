@@ -3711,12 +3711,16 @@ static PyObject *py_ldb_msg_remove_attr(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_ldb_msg_keys(PyLdbMessageObject *self,
+static PyObject *py_ldb_msg_keys(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	struct ldb_message *msg = pyldb_Message_AsMessage(self);
+	struct ldb_message *msg = NULL;
 	Py_ssize_t i, j = 0;
-	PyObject *obj = PyList_New(msg->num_elements+(msg->dn != NULL?1:0));
+	PyObject *obj = NULL;
+
+	PyErr_LDB_MESSAGE_OR_RAISE(self, msg);
+
+	obj = PyList_New(msg->num_elements+(msg->dn != NULL?1:0));
 	if (obj == NULL) {
 		return NULL;
 	}
@@ -3983,7 +3987,7 @@ static PyMethodDef py_ldb_msg_methods[] = {
 	{0},
 };
 
-static PyObject *py_ldb_msg_iter(PyLdbMessageObject *self)
+static PyObject *py_ldb_msg_iter(PyObject *self)
 {
 	PyObject *list, *iter;
 
