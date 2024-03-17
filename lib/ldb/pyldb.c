@@ -4272,6 +4272,18 @@ static PyObject *py_ldb_msg_get_text(PyObject *self, void *closure)
 	return wrap_text("MessageTextWrapper", self);
 }
 
+
+
+static PyObject *py_ldb_msg_get_ldb(PyLdbMessageObject *self, void *closure)
+{
+	if (self->pyldb == NULL) {
+		Py_RETURN_NONE;
+	}
+	Py_INCREF(self->pyldb);
+	return (PyObject *)self->pyldb;
+}
+
+
 static PyGetSetDef py_ldb_msg_getset[] = {
 	{
 		.name = discard_const_p(char, "dn"),
@@ -4281,6 +4293,12 @@ static PyGetSetDef py_ldb_msg_getset[] = {
 	{
 		.name = discard_const_p(char, "text"),
 		.get  = (getter)py_ldb_msg_get_text,
+	},
+	{
+		.name = discard_const_p(char, "ldb"),
+		.get  = (getter)py_ldb_msg_get_ldb,
+		.doc = discard_const_p(
+			char, "returns the associated ldb object (or None)")
 	},
 	{ .name = NULL },
 };
