@@ -262,6 +262,9 @@ static bool claim_v1_offset_to_ace_token(
 	uint8_t f = claim->flags & CLAIM_SECURITY_ATTRIBUTE_VALUE_CASE_SENSITIVE;
 	result->flags = f | CONDITIONAL_ACE_FLAG_TOKEN_FROM_ATTR;
 
+	if (claim->values[offset].int_value == NULL) {
+		return false;
+	}
 	switch (claim->value_type) {
 	case CLAIM_SECURITY_ATTRIBUTE_TYPE_INT64:
 		return claim_v1_int_to_ace_int(claim, offset, result);
