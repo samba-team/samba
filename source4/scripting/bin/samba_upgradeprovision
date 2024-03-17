@@ -1031,7 +1031,7 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns):
                                                current, hash_attr_usn,
                                                basedn, usns, samdb)
 
-        delta.dn = dn
+        delta.dn = dn.copy(delta.ldb)
 
 
         if len(delta) >1:
@@ -1216,7 +1216,7 @@ def fix_wellknown_sd(samdb, names):
         list_wellknown_dns.append(dn)
         if dn in dnToRecalculate:
             delta = Message()
-            delta.dn = dn
+            delta.dn = dn.copy(samdb)
             descr = descriptor_fn(names.domainsid, name_map=names.name_map)
             delta["nTSecurityDescriptor"] = MessageElement(descr, FLAG_MOD_REPLACE,
                                                             "nTSecurityDescriptor" )
@@ -1250,7 +1250,7 @@ def rebuild_sd(samdb, names):
         if dn in listWellknown:
             continue
         delta = Message()
-        delta.dn = dn
+        delta.dn = dn.copy(samdb)
         sd_flags = SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL | SECINFO_SACL
         try:
             descr = get_empty_descriptor(names.domainsid)

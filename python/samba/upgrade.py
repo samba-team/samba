@@ -178,7 +178,7 @@ def add_idmap_entry(idmapdb, sid, xid, xid_type, logger):
     if found:
         try:
             m = ldb.Message()
-            m.dn = msg[0]['dn']
+            m.dn = msg[0]['dn'].copy(m.ldb)
             m['xidNumber'] = ldb.MessageElement(
                 str(xid), ldb.FLAG_MOD_REPLACE, 'xidNumber')
             m['type'] = ldb.MessageElement(

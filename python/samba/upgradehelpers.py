@@ -325,7 +325,7 @@ def update_secrets(newsecrets_ldb, secrets_ldb, messagefunc):
     if len(current) == 0:
         # No modules present
         delta = secrets_ldb.msg_diff(ldb.Message(), reference[0])
-        delta.dn = reference[0].dn
+        delta.dn = reference[0].dn.copy(delta.ldb)
         secrets_ldb.add(reference[0])
     else:
         delta = secrets_ldb.msg_diff(current[0], reference[0])
@@ -366,7 +366,7 @@ def update_secrets(newsecrets_ldb, secrets_ldb, messagefunc):
                     reference[0].dn)
         for att in delta:
             messagefunc(CHANGE, " Adding attribute %s" % att)
-        delta.dn = reference[0].dn
+        delta.dn = reference[0].dn.copy(delta.ldb)
         secrets_ldb.add(delta)
 
     for entry in listPresent:
@@ -531,7 +531,7 @@ def delta_update_basesamdb(refsampath, sampath, creds, session, lp, message):
             if str(refentry.dn) == "@PROVISION" and\
                     delta.get(samba.provision.LAST_PROVISION_USN_ATTRIBUTE):
                 delta.remove(samba.provision.LAST_PROVISION_USN_ATTRIBUTE)
-            delta.dn = refentry.dn
+            delta.dn = refentry.dn.copy(delta.ldb)
             sam.add(delta)
         else:
             delta = sam.msg_diff(entry[0], refentry)
@@ -541,7 +541,7 @@ def delta_update_basesamdb(refsampath, sampath, creds, session, lp, message):
                     delta.get(samba.provision.LAST_PROVISION_USN_ATTRIBUTE):
                 delta.remove(samba.provision.LAST_PROVISION_USN_ATTRIBUTE)
             if len(delta.items()) > 1:
-                delta.dn = refentry.dn
+                delta.dn = refentry.dn.copy(delta.ldb)
                 sam.modify(delta)
 
     return deltaattr
