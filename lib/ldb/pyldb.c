@@ -967,6 +967,28 @@ static PyMethodDef py_ldb_dn_methods[] = {
 	{0}
 };
 
+
+static PyObject *py_ldb_dn_get_ldb(PyLdbDnObject *self, void *closure)
+{
+	if (self->pyldb == NULL) {
+		Py_RETURN_NONE;
+	}
+	Py_INCREF(self->pyldb);
+	return (PyObject *)self->pyldb;
+}
+
+
+static PyGetSetDef py_ldb_dn_getset[] = {
+	{
+		.name = discard_const_p(char, "ldb"),
+		.get  = (getter)py_ldb_dn_get_ldb,
+		.doc = discard_const_p( /* for Py 3.6; 3.7+ have const char* */
+			char, "returns the associated ldb object (or None)")
+	},
+	{ .name = NULL },
+};
+
+
 static Py_ssize_t py_ldb_dn_len(PyLdbDnObject *self)
 {
 	struct ldb_dn *dn = pyldb_Dn_AS_DN(self);
@@ -1122,6 +1144,7 @@ static PyTypeObject PyLdbDn = {
 	.tp_repr = (reprfunc)py_ldb_dn_repr,
 	.tp_richcompare = (richcmpfunc)py_ldb_dn_richcmp,
 	.tp_as_sequence = &py_ldb_dn_seq,
+	.tp_getset = py_ldb_dn_getset,
 	.tp_doc = "A LDB distinguished name.",
 	.tp_new = py_ldb_dn_new,
 	.tp_dealloc = (destructor)py_ldb_dn_dealloc,
