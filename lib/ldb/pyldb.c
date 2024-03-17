@@ -763,6 +763,72 @@ static PyObject *py_ldb_dn_add_base(PyObject *self, PyObject *args)
 	Py_RETURN_TRUE;
 }
 
+static PyObject *py_ldb_dn_copy(struct ldb_dn *dn, PyLdbObject *pyldb);
+
+static PyObject *py_ldb_dn_copy_method(PyObject *self, PyObject *args)
+{
+	struct ldb_dn *dn = NULL;
+	PyLdbObject *pyldb = NULL;
+	PyObject *obj = Py_None;
+	PyErr_internal_LDB_DN_OR_RAISE(self, dn);
+
+	if (!PyArg_ParseTuple(args, "|O", &obj)) {
+		return NULL;
+	}
+
+	if (obj == Py_None) {
+		/*
+		 * With no argument, or None, dn.copy() uses its own ldb.
+		 *
+		 * There is not much reason to do this, other than as a
+		 * convenience in this situation:
+		 *
+		 * >>> msg.dn = dn.copy(msg.ldb)
+		 *
+		 * when you don't know whether msg has a dn or not (if msg.ldb
+		 * is None, msg will now belong to this dn's ldb).
+		 */
+		pyldb = ((PyLdbDnObject *)self)->pyldb;
+	} else if (PyObject_TypeCheck(obj, &PyLdb)) {
+		pyldb = (PyLdbObject *)obj;
+	} else {
+		PyErr_Format(PyExc_TypeError,
+			     "Expected Ldb or None");
+		return NULL;
+	}
+	if (pyldb != ((PyLdbDnObject *)self)->pyldb) {
+		/*
+		 * This is unfortunate, but we can't make a copy of the dn directly,
+		 * since the opaque struct ldb_dn has a pointer to the ldb it knows,
+		 * and it is the WRONG ONE.
+		 *
+		 * Instead we go via string serialisation.
+		 */
+		char *dn_str = NULL;
+		struct ldb_dn *new_dn = NULL;
+		dn_str = ldb_dn_get_extended_linearized(pyldb->mem_ctx, dn, 1);
+		if (dn_str == NULL) {
+			PyErr_Format(PyExc_RuntimeError,
+				     "Could not linearize DN");
+			return NULL;
+		}
+		new_dn = ldb_dn_new(pyldb->mem_ctx,
+				    pyldb->ldb_ctx,
+				    dn_str);
+
+		if (new_dn == NULL) {
+			PyErr_Format(PyExc_RuntimeError,
+				     "Could not re-parse DN '%s'",
+				dn_str);
+			TALLOC_FREE(dn_str);
+			return NULL;
+		}
+		TALLOC_FREE(dn_str);
+		dn = new_dn;
+	}
+	return py_ldb_dn_copy(dn, pyldb);
+}
+
 static PyObject *py_ldb_dn_remove_base_components(PyObject *self, PyObject *args)
 {
 	struct ldb_dn *dn = NULL;
@@ -937,6 +1003,9 @@ static PyMethodDef py_ldb_dn_methods[] = {
 	{ "add_base", (PyCFunction)py_ldb_dn_add_base, METH_VARARGS,
 		"S.add_base(dn) -> bool\n"
 		"Add a base DN to this DN." },
+	{ "copy", (PyCFunction)py_ldb_dn_copy_method, METH_VARARGS,
+		"dn.copy(ldb) -> dn\n"
+		"Make a copy of this DN, attached to the given ldb object." },
 	{ "remove_base_components", (PyCFunction)py_ldb_dn_remove_base_components, METH_VARARGS,
 		"S.remove_base_components(int) -> bool\n"
 		"Remove a number of DN components from the base of this DN." },
