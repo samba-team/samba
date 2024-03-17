@@ -621,7 +621,6 @@ def add_missing_object(ref_samdb, samdb, dn, names, basedn, hash, index):
                                  controls=["search_options:1:2"])
     empty = Message()
     delta = samdb.msg_diff(empty, reference[0])
-    delta.dn
     skip = False
     try:
         if str(reference[0].get("cn"))  == "RID Set":
@@ -647,7 +646,7 @@ def add_missing_object(ref_samdb, samdb, dn, names, basedn, hash, index):
                                           depend_on_yet_tobecreated, att))
                 return False
 
-        delta.dn = dn
+        delta.dn = ldb.Dn(samdb, str(dn))
         if not skip:
             message(CHANGE,"Object %s will be added" % dn)
             samdb.add(delta, ["relax:0", "provision:0"])
