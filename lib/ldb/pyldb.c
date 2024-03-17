@@ -1077,6 +1077,19 @@ static PyObject *py_ldb_dn_copy(struct ldb_dn *dn, PyLdbObject *pyldb)
 	struct ldb_dn *new_dn = NULL;
 	PyLdbDnObject *py_ret;
 
+	if (ldb_dn_get_ldb_context(dn) != pyldb->ldb_ctx) {
+		/*
+		 * We can't do this, because we can't (for now) change the ldb
+		 * pointer of the underlying dn returned by ldb_dn_copy().
+		 *
+		 * This error means someone editing this file got confused,
+		 * which is quite understandable.
+		 */
+		PyErr_SetString(PyExc_RuntimeError,
+				"py_ldb_dn_copy can't copy to a new LDB");
+		return NULL;
+	}
+
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 		return PyErr_NoMemory();
