@@ -47,29 +47,57 @@ static bool test_get_policy_handle(struct torture_context *tctx,
 				   uint32_t access_mask,
 				   struct policy_handle **handle  )
 {
-	struct policy_handle *h;
-	struct lsa_OpenPolicy2 pr;
-	struct lsa_ObjectAttribute attr;
+	struct policy_handle *h = NULL;
+	struct lsa_ObjectAttribute attr = {
+		.len = 0,
+	};
+	union lsa_revision_info in_rinfo = {
+		.info1 = {
+			.revision = 1,
+			.supported_features = LSA_FEATURE_TDO_AUTH_INFO_AES_CIPHER,
+		},
+	};
+	union lsa_revision_info out_rinfo = {
+		.info1.revision = 0,
+	};
+	uint32_t out_version = 0;
+	struct lsa_OpenPolicy3 r = {
+		.in = {
+			.system_name = "\\",
+			.attr = &attr,
+			.access_mask = access_mask,
+			.in_version = 1,
+			.in_revision_info = &in_rinfo,
+		},
+		.out = {
+			.out_version = &out_version,
+			.out_revision_info = &out_rinfo,
+		}
+	};
 	NTSTATUS status;
 
-	h = talloc(tctx, struct policy_handle);
-	torture_assert(tctx, h != NULL, "talloc(tctx, struct policy_handle)");
+	*handle = NULL;
 
-	attr.len = 0;
-	attr.root_dir = NULL;
-	attr.object_name = NULL;
-	attr.attributes = 0;
-	attr.sec_desc = NULL;
-	attr.sec_qos = NULL;
+	h = talloc_zero(tctx, struct policy_handle);
+	torture_assert_not_null(tctx, h, "talloc_zero(tctx, struct policy_handle)");
+	r.out.handle = h;
 
-	pr.in.system_name = "\\";
-	pr.in.attr = &attr;
-	pr.in.access_mask = access_mask;
-	pr.out.handle = h;
+	status = dcerpc_lsa_OpenPolicy3_r(p->binding_handle, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "OpenPolicy3 failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result, "OpenPolicy3 failed");
 
-	status = dcerpc_lsa_OpenPolicy2_r(p->binding_handle, tctx, &pr);
-	torture_assert_ntstatus_ok(tctx, status, "OpenPolicy2 failed");
-	torture_assert_ntstatus_ok(tctx, pr.out.result, "OpenPolicy2 failed");
+	torture_assert_int_equal(tctx,
+				 out_version,
+				 1,
+				 "Invalid version");
+	torture_assert_int_equal(tctx,
+				 out_rinfo.info1.revision,
+				 1,
+				 "Invalid revision");
+	torture_assert_int_equal(tctx,
+				 out_rinfo.info1.supported_features,
+				 LSA_FEATURE_TDO_AUTH_INFO_AES_CIPHER,
+				 "Invalid supported feature set");
 
 	*handle = h;
 	return true;
