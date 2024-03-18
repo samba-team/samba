@@ -474,11 +474,18 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 
 bool smbXcli_conn_is_connected(struct smbXcli_conn *conn)
 {
+	int ret;
+
 	if (conn == NULL) {
 		return false;
 	}
 
 	if (conn->sock_fd == -1) {
+		return false;
+	}
+
+	ret = samba_socket_poll_or_sock_error(conn->sock_fd);
+	if ( ret < 0) {
 		return false;
 	}
 

@@ -6124,42 +6124,11 @@ cleanup:
 
 static bool finished;
 
-/****************************************************************************
- Make sure we swallow keepalives during idle time.
-****************************************************************************/
-
-static void readline_callback(void)
+static void cli_status_check(void)
 {
-	static time_t last_t;
-	struct timespec now;
-	time_t t;
-	NTSTATUS status;
-	unsigned char garbage[16];
-
-	clock_gettime_mono(&now);
-	t = now.tv_sec;
-
-	if (t - last_t < 5)
-		return;
-
-	last_t = t;
-
-	/* Ping the server to keep the connection alive using SMBecho. */
-	memset(garbage, 0xf0, sizeof(garbage));
-	status = cli_echo(cli, 1, data_blob_const(garbage, sizeof(garbage)));
-	if (NT_STATUS_IS_OK(status) ||
-			NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
-		/*
-		 * Even if server returns NT_STATUS_INVALID_PARAMETER
-		 * it still responded.
-		 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=13007
-		 */
-		return;
-	}
-
 	if (!cli_state_is_connected(cli)) {
-		DEBUG(0,("SMBecho failed (%s). The connection is "
-			 "disconnected now\n", nt_errstr(status)));
+		DEBUG(0,("SMB echo failed (%s). The connection is "
+			 "disconnected now\n", nt_errstr(NT_STATUS_CONNECTION_DISCONNECTED)));
 		finished = true;
 		smb_readline_done();
 	}
@@ -6192,7 +6161,7 @@ static int process_stdin(void)
 			TALLOC_FREE(frame);
 			break;
 		}
-		line = smb_readline(the_prompt, readline_callback, completion_fn);
+		line = smb_readline(the_prompt, cli_status_check, completion_fn);
 		if (!line) {
 			TALLOC_FREE(frame);
 			break;
