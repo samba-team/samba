@@ -243,6 +243,17 @@ int ldb_connect(struct ldb_context *ldb, const char *url,
 {
 	int ret;
 	char *url2;
+
+	const char *existing_url = ldb_get_opaque(ldb, "ldb_url");
+	if (existing_url != NULL) {
+		ldb_asprintf_errstring(
+			ldb,
+			"This LDB has already connected to '%s', and "
+			"cannot also connect to '%s'",
+			existing_url, url);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	/* We seem to need to do this here, or else some utilities don't
 	 * get ldb backends */
 
