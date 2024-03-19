@@ -30,6 +30,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "torture/rpc/torture_rpc.h"
 #include "param/param.h"
+#include "source3/rpc_client/init_lsa.h"
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
@@ -164,6 +165,61 @@ static bool test_set_forest_trust_info(struct dcerpc_pipe *p,
 	return true;
 }
 
+static bool test_query_forest_trust_info(struct dcerpc_pipe *p,
+					 struct torture_context *tctx,
+					 struct policy_handle *handle,
+					 const char *trust_name_dns)
+{
+	struct lsa_String trusted_domain_name = {
+		.size = 0,
+	};
+	struct lsa_ForestTrustInformation *fti = NULL;
+	struct lsa_lsaRQueryForestTrustInformation r = {
+		.in = {
+			.handle = handle,
+			.highest_record_type = 2,
+			.trusted_domain_name = &trusted_domain_name,
+		},
+		.out = {
+			.forest_trust_info = &fti,
+		}
+	};
+	struct lsa_ForestTrustRecord *rec = NULL;
+
+	init_lsa_String(&trusted_domain_name, trust_name_dns);
+
+	torture_comment(tctx, "\nTesting lsaRQueryForestTrustInformation\n");
+
+
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_lsa_lsaRQueryForestTrustInformation_r(
+					   p->binding_handle, tctx, &r),
+				   "lsaRQueryForestTrustInformation failed");
+	torture_assert_ntstatus_ok(tctx,
+				   r.out.result,
+				   "lsaRQueryForestTrustInformation failed");
+
+	torture_assert_not_null(tctx,
+				r.out.forest_trust_info,
+				"forest_trust_info is not set");
+	torture_assert_int_equal(tctx,
+				 fti->count,
+				 2,
+				 "Unexpected forest_trust_info count");
+
+	rec = fti->entries[0];
+	torture_assert_int_equal(tctx,
+				 rec->type,
+				 LSA_FOREST_TRUST_TOP_LEVEL_NAME,
+				 "Unexpedted type");
+	torture_assert_str_equal(tctx,
+				 rec->forest_trust_data.top_level_name.string,
+				 trust_name_dns,
+				 "Unexpected top level name");
+
+	return true;
+}
+
 static bool test_create_trust_and_set_info(struct dcerpc_pipe *p,
 					   struct torture_context *tctx,
 					   const char *trust_name,
@@ -245,6 +301,11 @@ static bool test_create_trust_and_set_info(struct dcerpc_pipe *p,
 
 	ok = test_set_forest_trust_info(
 		p, tctx, handle, domsid, trust_name, trust_name_dns);
+	if (!ok) {
+		return false;
+	}
+
+	ok = test_query_forest_trust_info(p, tctx, handle, trust_name_dns);
 	if (!ok) {
 		return false;
 	}
