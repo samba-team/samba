@@ -138,6 +138,15 @@ class SimpleLdb(LdbBaseTest):
         with self.assertRaises(ldb.LdbError):
             x.connect(url, flags)
 
+    def test_connect_and_disconnect(self):
+        url = self.url()
+        flags = self.flags()
+        x = ldb.Ldb()
+        x.connect(url, flags)
+        x.disconnect()
+        x.connect(url, flags)
+        x.disconnect()
+
     def test_repr(self):
         x = ldb.Ldb()
         self.assertTrue(repr(x).startswith("<ldb connection"))
