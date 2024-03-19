@@ -35,7 +35,8 @@ from cryptography.hazmat.primitives.asymmetric import dh, padding
 from cryptography.x509.oid import NameOID
 
 import samba.tests
-from samba.dcerpc import security
+from samba import credentials, generate_random_password, ntstatus
+from samba.dcerpc import security, netlogon
 from samba.tests.krb5 import kcrypto
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
 from samba.tests.krb5.raw_testcase import PkInit, RawKerberosTest
@@ -44,6 +45,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_CLIENT_NOT_TRUSTED,
     KDC_ERR_ETYPE_NOSUPP,
     KDC_ERR_MODIFIED,
+    KDC_ERR_POLICY,
     KDC_ERR_PREAUTH_EXPIRED,
     KDC_ERR_PREAUTH_FAILED,
     KDC_ERR_PREAUTH_REQUIRED,
@@ -72,7 +74,7 @@ class PkInitTests(KDCBaseTest):
         self.do_asn1_print = global_asn1_print
         self.do_hexdump = global_hexdump
 
-    def _get_creds(self, account_type=KDCBaseTest.AccountType.USER):
+    def _get_creds(self, account_type=KDCBaseTest.AccountType.USER, use_cache=False, smartcard_required=False):
         """Return credentials with an account having a UPN for performing
         PK-INIT."""
         samdb = self.get_samdb()
@@ -80,7 +82,9 @@ class PkInitTests(KDCBaseTest):
 
         return self.get_cached_creds(
             account_type=account_type,
-            opts={'upn': f'{{account}}.{realm}@{realm}'})
+            opts={'upn': f'{{account}}.{realm}@{realm}',
+                  'smartcard_required': smartcard_required},
+            use_cache=use_cache)
 
     def test_pkinit_no_des3(self):
         """Test public-key PK-INIT without specifying the DES3 encryption
@@ -571,6 +575,8 @@ class PkInitTests(KDCBaseTest):
                 target_creds,
                 *,
                 expect_error=0,
+                expect_status=False,
+                expected_status=None,
                 expect_edata=False,
                 etypes=None,
                 freshness=None,
@@ -659,7 +665,9 @@ class PkInitTests(KDCBaseTest):
             expected_salt=creds.get_salt(),
             preauth_key=preauth_key,
             kdc_options=str(kdc_options),
-            expect_edata=expect_edata)
+            expect_edata=expect_edata,
+            expect_status=expect_status,
+            expected_status=expected_status)
 
         till = self.get_KerberosTime(offset=36000)
 

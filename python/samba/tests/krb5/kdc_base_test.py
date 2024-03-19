@@ -86,6 +86,7 @@ from samba.dsdb import (
     UF_SERVER_TRUST_ACCOUNT,
     UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION,
     UF_WORKSTATION_TRUST_ACCOUNT,
+    UF_SMARTCARD_REQUIRED
 )
 from samba.join import DCJoinContext
 from samba.ndr import ndr_pack, ndr_unpack
@@ -920,6 +921,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         creds.set_upn(upn)
         creds.set_spn(spn)
         creds.set_type(account_type)
+        creds.set_user_account_control(account_control)
 
         self.creds_set_enctypes(creds)
 
@@ -2005,6 +2007,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             'assigned_policy': None,
             'assigned_silo': None,
             'logon_hours': None,
+            'smartcard_required': False
         }
 
         account_opts = {
@@ -2061,7 +2064,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                             force_nt4_hash,
                             assigned_policy,
                             assigned_silo,
-                            logon_hours):
+                            logon_hours,
+                            smartcard_required):
         if account_type is self.AccountType.USER:
             self.assertIsNone(delegation_to_spn)
             self.assertIsNone(delegation_from_dn)
@@ -2085,6 +2089,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             user_account_control |= UF_NOT_DELEGATED
         if no_auth_data_required:
             user_account_control |= UF_NO_AUTH_DATA_REQUIRED
+        if smartcard_required:
+            user_account_control |= UF_SMARTCARD_REQUIRED
 
         if additional_details:
             details = {k: v for k, v in additional_details}
@@ -2142,7 +2148,16 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                                         preserve=use_cache)
 
         expected_etypes = None
-        if force_nt4_hash:
+
+        # We don't force fetching the keys other than the NT hash as
+        # how the server stores the unused KDC keys for the
+        # smartcard_required case is not important and makes unrelated
+        # tests break because of differences between Samba and
+        # Windows.
+        #
+        # The NT hash is different, as it is returned to the client in
+        # the PAC so is visible in the network behaviour.
+        if force_nt4_hash or smartcard_required:
             expected_etypes = {kcrypto.Enctype.RC4}
         keys = self.get_keys(creds, expected_etypes=expected_etypes)
         self.creds_set_keys(creds, keys)
