@@ -83,7 +83,7 @@ $pad"."struct $fname *r)
 	}
 $res .=
 "/* include the generated boilerplate */
-#include \"librpc/gen_ndr/ndr_$name\_scompat.c\
+#include \"librpc/gen_ndr/ndr_$name\_scompat.c\"\
 ";
 }
 
