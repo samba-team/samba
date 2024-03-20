@@ -28,6 +28,9 @@ from .computer_allowed_to_authenticate_to import (
 from .service_allowed_to_authenticate_to import (
     cmd_domain_auth_policy_service_allowed_to_authenticate_to,
 )
+from .user_allowed_to_authenticate_from import (
+    cmd_domain_auth_policy_user_allowed_to_authenticate_from,
+)
 from .user_allowed_to_authenticate_to import (
     cmd_domain_auth_policy_user_allowed_to_authenticate_to,
 )
@@ -53,6 +56,8 @@ class cmd_domain_auth_policy(SuperCommand):
             cmd_domain_auth_policy_computer_allowed_to_authenticate_to(),
         "service-allowed-to-authenticate-to":
             cmd_domain_auth_policy_service_allowed_to_authenticate_to(),
+        "user-allowed-to-authenticate-from":
+            cmd_domain_auth_policy_user_allowed_to_authenticate_from(),
         "user-allowed-to-authenticate-to":
             cmd_domain_auth_policy_user_allowed_to_authenticate_to(),
     }
