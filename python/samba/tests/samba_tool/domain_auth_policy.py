@@ -391,47 +391,6 @@ class AuthPolicyCmdTestCase(SiloTest):
         self.assertIn("--computer-tgt-lifetime-mins must be between 45 and 2147483647",
                       err)
 
-    def test_create__computer_allowed_to_authenticate_to_by_group(self):
-        """Tests the --computer-allowed-to-authenticate-to-by-group shortcut."""
-        name = self.unique_name()
-        expected = "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of_any {SID(%s)}))" % (
-            self.device_group.object_sid)
-
-        # Create a user with authenticate to by group attribute.
-        self.addCleanup(self.delete_authentication_policy, name=name, force=True)
-        result, out, err = self.runcmd(
-            "domain", "auth", "policy", "create", "--name", name,
-            "--computer-allowed-to-authenticate-to-by-group",
-            self.device_group.name)
-        self.assertIsNone(result, msg=err)
-
-        # Check user allowed to authenticate to field was modified.
-        policy = self.get_authentication_policy(name)
-        self.assertEqual(str(policy["cn"]), name)
-        desc = policy["msDS-ComputerAllowedToAuthenticateTo"][0]
-        sddl = ndr_unpack(security.descriptor, desc).as_sddl()
-        self.assertEqual(sddl, expected)
-
-    def test_create__computer_allowed_to_authenticate_to_by_silo(self):
-        """Tests the --computer-allowed-to-authenticate-to-by-silo shortcut."""
-        name = self.unique_name()
-        expected = ('O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/'
-                    'AuthenticationSilo == "QA"))')
-
-        # Create a user with authenticate to by silo attribute.
-        self.addCleanup(self.delete_authentication_policy, name=name, force=True)
-        result, out, err = self.runcmd(
-            "domain", "auth", "policy", "create", "--name", name,
-            "--computer-allowed-to-authenticate-to-by-silo", "QA")
-        self.assertIsNone(result, msg=err)
-
-        # Check user allowed to authenticate to field was modified.
-        policy = self.get_authentication_policy(name)
-        self.assertEqual(str(policy["cn"]), name)
-        desc = policy["msDS-ComputerAllowedToAuthenticateTo"][0]
-        sddl = ndr_unpack(security.descriptor, desc).as_sddl()
-        self.assertEqual(sddl, expected)
-
     def test_create__valid_sddl(self):
         """Test creating a new authentication policy with valid SDDL in a field."""
         name = self.unique_name()
@@ -746,24 +705,27 @@ class AuthPolicyCmdTestCase(SiloTest):
         self.assertEqual(result, -1)
         self.assertIn("--service-allowed-to-authenticate-to argument repeated 2 times.", err)
 
-    def test_create__computer_allowed_to_authenticate_to_repeated(self):
+    def test_computer_allowed_to_authenticate_to__set_repeated(self):
         """Test repeating similar arguments doesn't make sense to use together.
 
-        --computer-allowed-to-authenticate-to
-        --computer-allowed-to-authenticate-to-by-silo
+        computer-allowed-to-authenticate-to set --by-group
+        computer-allowed-to-authenticate-to set --by-silo
         """
-        sddl = 'O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo == "Managers"))'
         name = self.unique_name()
 
-        result, out, err = self.runcmd("domain", "auth", "policy", "create",
-                                       "--name", name,
-                                       "--computer-allowed-to-authenticate-to",
-                                       sddl,
-                                       "--computer-allowed-to-authenticate-to-by-silo",
+        self.runcmd("domain", "auth", "policy", "create", "--name", name)
+        self.addCleanup(self.delete_authentication_policy, name=name, force=True)
+
+        result, out, err = self.runcmd("domain", "auth", "policy",
+                                       "computer-allowed-to-authenticate-to",
+                                       "set", "--name", name,
+                                       "--by-group",
+                                       self.device_group.name,
+                                       "--by-silo",
                                        "QA")
 
         self.assertEqual(result, -1)
-        self.assertIn("--computer-allowed-to-authenticate-to argument repeated 2 times.", err)
+        self.assertIn("Cannot have both --by-group and --by-silo options.", err)
 
     def test_create__fails(self):
         """Test creating an authentication policy, but it fails."""
@@ -1233,8 +1195,8 @@ class AuthPolicyCmdTestCase(SiloTest):
         sddl = ndr_unpack(security.descriptor, desc).as_sddl()
         self.assertEqual(sddl, expected)
 
-    def test_modify__computer_allowed_to_authenticate_to_by_group(self):
-        """Tests the --computer-allowed-to-authenticate-to-by-group shortcut."""
+    def test_computer_allowed_to_authenticate_to__set_by_group(self):
+        """Tests the computer-allowed-to-authenticate-to set --by-group shortcut."""
         name = self.unique_name()
         expected = "O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of_any {SID(%s)}))" % (
             self.device_group.object_sid)
@@ -1244,9 +1206,9 @@ class AuthPolicyCmdTestCase(SiloTest):
         self.runcmd("domain", "auth", "policy", "create", "--name", name)
 
         # Modify user allowed to authenticate to field
-        result, out, err = self.runcmd("domain", "auth", "policy", "modify",
-                                       "--name", name,
-                                       "--computer-allowed-to-authenticate-to-by-group",
+        result, out, err = self.runcmd("domain", "auth", "policy",
+                                       "computer-allowed-to-authenticate-to",
+                                       "set", "--name", name, "--by-group",
                                        self.device_group.name)
         self.assertIsNone(result, msg=err)
 
@@ -1257,8 +1219,8 @@ class AuthPolicyCmdTestCase(SiloTest):
         sddl = ndr_unpack(security.descriptor, desc).as_sddl()
         self.assertEqual(sddl, expected)
 
-    def test_modify__computer_allowed_to_authenticate_to_by_silo(self):
-        """Tests the --computer-allowed-to-authenticate-to-by-silo shortcut."""
+    def test_computer_allowed_to_authenticate_to__set_by_silo(self):
+        """Tests the computer-allowed-to-authenticate-to set --by-silo shortcut."""
         name = self.unique_name()
         expected = ('O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/'
                     'AuthenticationSilo == "QA"))')
@@ -1268,9 +1230,9 @@ class AuthPolicyCmdTestCase(SiloTest):
         self.runcmd("domain", "auth", "policy", "create", "--name", name)
 
         # Modify user allowed to authenticate to field
-        result, out, err = self.runcmd("domain", "auth", "policy", "modify",
-                                       "--name", name,
-                                       "--computer-allowed-to-authenticate-to-by-silo",
+        result, out, err = self.runcmd("domain", "auth", "policy",
+                                       "computer-allowed-to-authenticate-to",
+                                       "set", "--name", name, "--by-silo",
                                        "QA")
         self.assertIsNone(result, msg=err)
 
