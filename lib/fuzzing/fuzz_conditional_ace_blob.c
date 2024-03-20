@@ -124,7 +124,18 @@ int LLVMFuzzerTestOneInput(const uint8_t *input, size_t len)
 
 	ok = conditional_ace_encode_binary(mem_ctx, s2, &e2);
 	if (! ok) {
-		abort();
+		if (len < CONDITIONAL_ACE_MAX_LENGTH / 4) {
+			/*
+			 * long invalid ACEs can easily result in SDDL that
+			 * would compile to an over-long ACE, which fail
+			 * accordingly.
+			 *
+			 * But if the original ACE less than a few thousand
+			 * bytes, and it has been serialised into SDDL, that
+			 * SDDL should be parsable.
+			 */
+			abort();
+		}
 	}
 
 	/*
