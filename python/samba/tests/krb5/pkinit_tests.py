@@ -34,6 +34,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import dh, padding
 from cryptography.x509.oid import NameOID
 
+import ldb
 import samba.tests
 from samba import credentials, generate_random_password, ntstatus
 from samba.dcerpc import security, netlogon
@@ -44,6 +45,7 @@ from samba.tests.krb5.rfc4120_constants import (
     DES_EDE3_CBC,
     KDC_ERR_CLIENT_NOT_TRUSTED,
     KDC_ERR_ETYPE_NOSUPP,
+    KDC_ERR_KEY_EXPIRED,
     KDC_ERR_MODIFIED,
     KDC_ERR_POLICY,
     KDC_ERR_PREAUTH_EXPIRED,
@@ -571,6 +573,205 @@ class PkInitTests(KDCBaseTest):
                          using_pkinit=PkInit.DIFFIE_HELLMAN,
                          expect_error=KDC_ERR_CLIENT_NOT_TRUSTED)
 
+    def test_samlogon_smartcard_required(self):
+        """Test SamLogon with an account set to smartcard login required.  No actual PK-INIT in this test."""
+        client_creds = self._get_creds(smartcard_required=True)
+
+        client_creds.set_kerberos_state(credentials.AUTO_USE_KERBEROS)
+
+        self._test_samlogon(
+            creds=client_creds,
+            logon_type=netlogon.NetlogonInteractiveInformation,
+            expect_error=ntstatus.NT_STATUS_SMARTCARD_LOGON_REQUIRED)
+
+        self._test_samlogon(creds=client_creds,
+                            logon_type=netlogon.NetlogonNetworkInformation,
+                            expect_error=ntstatus.NT_STATUS_WRONG_PASSWORD)
+
+    def test_pkinit_ntlm_from_pac(self):
+        """Test public-key PK-INIT to get an NT has and confirm NTLM
+           authentication is possible with it."""
+        client_creds = self._get_creds()
+        client_creds.set_kerberos_state(credentials.AUTO_USE_KERBEROS)
+
+        krbtgt_creds = self.get_krbtgt_creds()
+
+        freshness_token = self.create_freshness_token()
+
+        kdc_exchange_dict = self._pkinit_req(client_creds, krbtgt_creds,
+                                             freshness_token=freshness_token)
+        nt_hash_from_pac = kdc_exchange_dict['nt_hash_from_pac']
+
+        client_creds.set_nt_hash(nt_hash_from_pac,
+                                 credentials.SPECIFIED)
+
+        # AS-REQ will succeed
+        self._as_req(client_creds,
+                     krbtgt_creds,
+                     send_enc_ts=True)
+
+        # Try NTLM
+
+        self._test_samlogon(
+            creds=client_creds,
+            logon_type=netlogon.NetlogonInteractiveInformation)
+
+        self._test_samlogon(creds=client_creds,
+                            logon_type=netlogon.NetlogonNetworkInformation)
+
+    def test_pkinit_ntlm_from_pac_smartcard_required(self):
+        """Test public-key PK-INIT to get the user's NT hash for an account
+           that is restricted by UF_SMARTCARD_REQUIRED."""
+        client_creds = self._get_creds(smartcard_required=True)
+        client_creds.set_kerberos_state(credentials.AUTO_USE_KERBEROS)
+
+        krbtgt_creds = self.get_krbtgt_creds()
+
+        freshness_token = self.create_freshness_token()
+
+        kdc_exchange_dict = self._pkinit_req(client_creds, krbtgt_creds,
+                                             freshness_token=freshness_token)
+        nt_hash_from_pac = kdc_exchange_dict['nt_hash_from_pac']
+
+        client_creds.set_nt_hash(nt_hash_from_pac,
+                                 credentials.SPECIFIED)
+
+        # password-based AS-REQ will fail
+        self._as_req(client_creds,
+                     krbtgt_creds,
+                     expect_error=KDC_ERR_POLICY,
+                     expect_edata=True,
+                     expect_status=True,
+                     expected_status=ntstatus.NT_STATUS_SMARTCARD_LOGON_REQUIRED,
+                     send_enc_ts=True)
+
+        # Try NTLM
+
+        self._test_samlogon(
+            creds=client_creds,
+            logon_type=netlogon.NetlogonInteractiveInformation,
+            expect_error=ntstatus.NT_STATUS_SMARTCARD_LOGON_REQUIRED)
+
+        self._test_samlogon(creds=client_creds,
+                            logon_type=netlogon.NetlogonNetworkInformation)
+
+    def test_pkinit_ntlm_from_pac_must_change_now(self):
+        """Test public-key PK-INIT to get an NT has and confirm NTLM
+           authentication is possible with it."""
+        client_creds = self._get_creds()
+        client_creds.set_kerberos_state(credentials.AUTO_USE_KERBEROS)
+
+        msg = ldb.Message()
+        msg.dn = client_creds.get_dn()
+
+        # Ideally we would set this to a time just long enough for the
+        # password to expire, but we are unable to do that.
+        #
+        # 0 means "must change on first login"
+        msg["pwdLastSet"] = \
+            ldb.MessageElement(str(0),
+                               ldb.FLAG_MOD_REPLACE,
+                               "pwdLastSet")
+        samdb = self.get_samdb()
+        samdb.modify(msg)
+
+        krbtgt_creds = self.get_krbtgt_creds()
+
+        freshness_token = self.create_freshness_token()
+
+        kdc_exchange_dict = self._pkinit_req(client_creds, krbtgt_creds,
+                                             freshness_token=freshness_token,
+                                             expect_error=KDC_ERR_KEY_EXPIRED,
+                                             expect_edata=True
+        )
+
+        # AS-REQ will not succeed, password is still expired
+        self._as_req(client_creds,
+                     krbtgt_creds,
+                     send_enc_ts=True,
+                     expect_error=KDC_ERR_KEY_EXPIRED,
+                     expect_edata=True,
+                     expect_status=True,
+                     expected_status=ntstatus.NT_STATUS_PASSWORD_MUST_CHANGE,
+        )
+
+        # Try NTLM
+
+        self._test_samlogon(
+            creds=client_creds,
+            logon_type=netlogon.NetlogonInteractiveInformation,
+            expect_error=ntstatus.NT_STATUS_PASSWORD_MUST_CHANGE)
+
+        self._test_samlogon(creds=client_creds,
+                            logon_type=netlogon.NetlogonNetworkInformation,
+                            expect_error=ntstatus.NT_STATUS_PASSWORD_MUST_CHANGE)
+
+    def test_pkinit_ntlm_from_pac_smartcard_required_must_change_now(self):
+        """Test public-key PK-INIT to get the user's NT hash for an account
+           that is restricted by UF_SMARTCARD_REQUIRED."""
+        client_creds = self._get_creds(smartcard_required=True)
+        client_creds.set_kerberos_state(credentials.AUTO_USE_KERBEROS)
+
+        krbtgt_creds = self.get_krbtgt_creds()
+
+        freshness_token = self.create_freshness_token()
+
+        samdb = self.get_samdb()
+
+        kdc_exchange_dict = self._pkinit_req(client_creds, krbtgt_creds,
+                                             freshness_token=freshness_token)
+        nt_hash_from_pac = kdc_exchange_dict['nt_hash_from_pac']
+
+        msg = ldb.Message()
+        msg.dn = client_creds.get_dn()
+
+        # Ideally we would set this to a time just long enough for the
+        # password to expire, but we are unable to do that.
+        #
+        # 0 means "must change on first login"
+        msg["pwdLastSet"] = \
+            ldb.MessageElement(str(0),
+                               ldb.FLAG_MOD_REPLACE,
+                               "pwdLastSet")
+        samdb.modify(msg)
+
+        kdc_exchange_dict = self._pkinit_req(client_creds, krbtgt_creds,
+                                             freshness_token=freshness_token)
+        nt_hash_from_pac2 = kdc_exchange_dict['nt_hash_from_pac']
+
+        self.assertNotEqual(nt_hash_from_pac.hash, nt_hash_from_pac2.hash)
+
+        # The password should have changed as it was expired and the
+        # DC is set up to change expired passwords to keep the
+        # smart-card logins working and the keys fresh
+        res = samdb.search(base=client_creds.get_dn(),
+                           scope=ldb.SCOPE_BASE,
+                           attrs=["pwdLastSet"])
+        self.assertNotEqual(res[0]["pwdLastSet"], 0)
+
+        client_creds.set_nt_hash(nt_hash_from_pac2,
+                                 credentials.SPECIFIED)
+
+        # password-based AS-REQ will fail
+        self._as_req(client_creds,
+                     krbtgt_creds,
+                     expect_error=KDC_ERR_POLICY,
+                     expect_edata=True,
+                     expect_status=True,
+                     expected_status=ntstatus.NT_STATUS_SMARTCARD_LOGON_REQUIRED,
+                     send_enc_ts=True)
+
+        # Try NTLM, it works because the expired password was
+        # internally changed and became a real one
+
+        self._test_samlogon(
+            creds=client_creds,
+            logon_type=netlogon.NetlogonInteractiveInformation,
+            expect_error=ntstatus.NT_STATUS_SMARTCARD_LOGON_REQUIRED)
+
+        self._test_samlogon(creds=client_creds,
+                            logon_type=netlogon.NetlogonNetworkInformation)
+
     def _as_req(self,
                 creds,
                 target_creds,
@@ -950,6 +1151,7 @@ class PkInitTests(KDCBaseTest):
                     *,
                     certificate=None,
                     expect_error=0,
+                    expect_edata=False,
                     using_pkinit=PkInit.PUBLIC_KEY,
                     etypes=None,
                     pk_nonce=None,
@@ -1216,7 +1418,7 @@ class PkInitTests(KDCBaseTest):
             kdc_options=str(kdc_options),
             using_pkinit=using_pkinit,
             pk_nonce=pk_nonce,
-            expect_edata=False)
+            expect_edata=expect_edata)
 
         till = self.get_KerberosTime(offset=36000)
 
