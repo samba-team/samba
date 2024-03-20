@@ -75,8 +75,8 @@ class ClaimsSupportTests(BlackboxTestCase):
         self.addCleanup(self.run_command, "group delete allowed-devices")
 
         # Set allowed to authenticate from.
-        self.check_run("domain auth policy modify --name=device-restricted-users-pol "
-                       "--user-allowed-to-authenticate-from-device-group=allowed-devices")
+        self.check_run("domain auth policy user-allowed-to-authenticate-from set "
+                       "--name=device-restricted-users-pol --device-group=allowed-devices")
 
         self.check_run("user auth policy assign claimstestuser --policy=device-restricted-users-pol")
 
@@ -144,8 +144,8 @@ class ClaimsSupportTests(BlackboxTestCase):
         # Set allowed to authenticate from (where the login can happen) and to
         # (server requires silo that in term has this rule, so knows the user
         # was required to authenticate from).
-        self.check_run("domain auth policy modify --name=allowed-devices-only-pol "
-                       "--user-allowed-to-authenticate-from-device-silo=allowed-devices-only-silo")
+        self.check_run("domain auth policy user-allowed-to-authenticate-from set "
+                       "--name=allowed-devices-only-pol --device-silo=allowed-devices-only-silo")
 
         # Grant access to silo.
         self.check_run(r"domain auth silo member grant --name=allowed-devices-only-silo --member=claims-device\$")
@@ -244,8 +244,8 @@ class ClaimsSupportTests(BlackboxTestCase):
         # --service-allowed-to-authenticate-to/from options as well.
         # Likewise, if there are services running in user accounts, we need
         # --user-allowed-to-authenticate-to
-        self.check_run("domain auth policy modify --name=allowed-devices-only-pol "
-                       "--user-allowed-to-authenticate-from-device-silo=allowed-devices-only-silo")
+        self.check_run("domain auth policy user-allowed-to-authenticate-from set "
+                       "--name=allowed-devices-only-pol --device-silo=allowed-devices-only-silo")
         self.check_run("domain auth policy computer-allowed-to-authenticate-to set "
                        "--name=allowed-devices-only-pol --by-silo=allowed-devices-only-silo")
 
