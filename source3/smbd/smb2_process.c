@@ -1692,7 +1692,35 @@ struct smbd_tevent_trace_state {
 	struct tevent_context *ev;
 	TALLOC_CTX *frame;
 	SMBPROFILE_BASIC_ASYNC_STATE(profile_idle);
+	struct timeval before_wait_tv;
+	struct timeval after_wait_tv;
 };
+
+static inline void smbd_tevent_trace_callback_before_wait(
+	struct smbd_tevent_trace_state *state)
+{
+	struct timeval now = timeval_current();
+	struct timeval diff;
+
+	diff = tevent_timeval_until(&state->after_wait_tv, &now);
+	if (diff.tv_sec > 3) {
+		DBG_ERR("Handling event took %ld seconds!\n", (long)diff.tv_sec);
+	}
+	state->before_wait_tv = now;
+}
+
+static inline void smbd_tevent_trace_callback_after_wait(
+	struct smbd_tevent_trace_state *state)
+{
+	struct timeval now = timeval_current();
+	struct timeval diff;
+
+	diff = tevent_timeval_until(&state->before_wait_tv, &now);
+	if (diff.tv_sec > 30) {
+		DBG_NOTICE("No event for %ld seconds!\n", (long)diff.tv_sec);
+	}
+	state->after_wait_tv = now;
+}
 
 static inline void smbd_tevent_trace_callback_before_loop_once(
 	struct smbd_tevent_trace_state *state)
@@ -1729,6 +1757,30 @@ static void smbd_tevent_trace_callback(enum tevent_trace_point point,
 	errno = 0;
 }
 
+static void smbd_tevent_trace_callback_debug(enum tevent_trace_point point,
+					     void *private_data)
+{
+	struct smbd_tevent_trace_state *state =
+		(struct smbd_tevent_trace_state *)private_data;
+
+	switch (point) {
+	case TEVENT_TRACE_BEFORE_WAIT:
+		smbd_tevent_trace_callback_before_wait(state);
+		break;
+	case TEVENT_TRACE_AFTER_WAIT:
+		smbd_tevent_trace_callback_after_wait(state);
+		break;
+	case TEVENT_TRACE_BEFORE_LOOP_ONCE:
+		smbd_tevent_trace_callback_before_loop_once(state);
+		break;
+	case TEVENT_TRACE_AFTER_LOOP_ONCE:
+		smbd_tevent_trace_callback_after_loop_once(state);
+		break;
+	}
+
+	errno = 0;
+}
+
 static void smbd_tevent_trace_callback_profile(enum tevent_trace_point point,
 					       void *private_data)
 {
@@ -1737,6 +1789,7 @@ static void smbd_tevent_trace_callback_profile(enum tevent_trace_point point,
 
 	switch (point) {
 	case TEVENT_TRACE_BEFORE_WAIT:
+		smbd_tevent_trace_callback_before_wait(state);
 		if (!smbprofile_dump_pending()) {
 			/*
 			 * If there's no dump pending
@@ -1749,6 +1802,7 @@ static void smbd_tevent_trace_callback_profile(enum tevent_trace_point point,
 		SMBPROFILE_BASIC_ASYNC_START(idle, profile_p, state->profile_idle);
 		break;
 	case TEVENT_TRACE_AFTER_WAIT:
+		smbd_tevent_trace_callback_after_wait(state);
 		SMBPROFILE_BASIC_ASYNC_END(state->profile_idle);
 		if (!smbprofile_dump_pending()) {
 			/*
@@ -1796,7 +1850,13 @@ void smbd_process(struct tevent_context *ev_ctx,
 	struct smbd_tevent_trace_state trace_state = {
 		.ev = ev_ctx,
 		.frame = talloc_stackframe(),
+		.before_wait_tv = tv,
+		.after_wait_tv = tv,
 	};
+	bool debug = lp_parm_bool(GLOBAL_SECTION_SNUM,
+				  "smbd",
+				  "debug events",
+				  CHECK_DEBUGLVL(DBGLVL_DEBUG));
 	NTTIME now = timeval_to_nttime(&tv);
 	char *chroot_dir = NULL;
 	int rc;
@@ -2040,6 +2100,10 @@ void smbd_process(struct tevent_context *ev_ctx,
 	if (smbprofile_active()) {
 		tevent_set_trace_callback(ev_ctx,
 					  smbd_tevent_trace_callback_profile,
+					  &trace_state);
+	} else if (debug) {
+		tevent_set_trace_callback(ev_ctx,
+					  smbd_tevent_trace_callback_debug,
 					  &trace_state);
 	} else {
 		tevent_set_trace_callback(ev_ctx,
