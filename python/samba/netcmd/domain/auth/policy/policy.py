@@ -116,16 +116,6 @@ class ServiceOptions(options.OptionGroup):
                         type=str, dest="allowed_to_authenticate_to",
                         action="callback", callback=self.set_option,
                         metavar="SDDL")
-        self.add_option("--service-allowed-to-authenticate-to-by-group",
-                        help="The target service requires the connecting user to be in GROUP",
-                        type=str, dest="allowed_to_authenticate_to_by_group",
-                        action="callback", callback=self.set_option,
-                        metavar="GROUP")
-        self.add_option("--service-allowed-to-authenticate-to-by-silo",
-                        help="The target service requires the connecting user to be in SILO",
-                        type=str, dest="allowed_to_authenticate_to_by_silo",
-                        action="callback", callback=self.set_option,
-                        metavar="SILO")
 
 
 class ComputerOptions(options.OptionGroup):
@@ -272,10 +262,6 @@ class cmd_domain_auth_policy_create(Command):
                            [serviceopts.allowed_to_authenticate_from,
                             serviceopts.allowed_to_authenticate_from_device_group,
                             serviceopts.allowed_to_authenticate_from_device_silo])
-        check_similar_args("--service-allowed-to-authenticate-to",
-                           [serviceopts.allowed_to_authenticate_to,
-                            serviceopts.allowed_to_authenticate_to_by_group,
-                            serviceopts.allowed_to_authenticate_to_by_silo])
 
         ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
@@ -302,18 +288,6 @@ class cmd_domain_auth_policy_create(Command):
             silo = AuthenticationSilo.get(
                 ldb, cn=serviceopts.allowed_to_authenticate_from_device_silo)
             serviceopts.allowed_to_authenticate_from = silo.get_authentication_sddl()
-
-        # Generate SDDL for authenticating service accounts to a group
-        if serviceopts.allowed_to_authenticate_to_by_group:
-            group = Group.get(
-                ldb, cn=serviceopts.allowed_to_authenticate_to_by_group)
-            serviceopts.allowed_to_authenticate_to = group.get_authentication_sddl()
-
-        # Generate SDDL for authenticating service accounts to a silo
-        if serviceopts.allowed_to_authenticate_to_by_silo:
-            silo = AuthenticationSilo.get(
-                ldb, cn=serviceopts.allowed_to_authenticate_to_by_silo)
-            serviceopts.allowed_to_authenticate_to = silo.get_authentication_sddl()
 
         try:
             policy = AuthenticationPolicy.get(ldb, cn=name)
@@ -418,10 +392,6 @@ class cmd_domain_auth_policy_modify(Command):
                            [serviceopts.allowed_to_authenticate_from,
                             serviceopts.allowed_to_authenticate_from_device_group,
                             serviceopts.allowed_to_authenticate_from_device_silo])
-        check_similar_args("--service-allowed-to-authenticate-to",
-                           [serviceopts.allowed_to_authenticate_to,
-                            serviceopts.allowed_to_authenticate_to_by_group,
-                            serviceopts.allowed_to_authenticate_to_by_silo])
 
         ldb = self.ldb_connect(hostopts, sambaopts, credopts)
 
@@ -448,18 +418,6 @@ class cmd_domain_auth_policy_modify(Command):
             silo = AuthenticationSilo.get(
                 ldb, cn=serviceopts.allowed_to_authenticate_from_device_silo)
             serviceopts.allowed_to_authenticate_from = silo.get_authentication_sddl()
-
-        # Generate SDDL for authenticating service accounts to a group
-        if serviceopts.allowed_to_authenticate_to_by_group:
-            group = Group.get(
-                ldb, cn=serviceopts.allowed_to_authenticate_to_by_group)
-            serviceopts.allowed_to_authenticate_to = group.get_authentication_sddl()
-
-        # Generate SDDL for authenticating service accounts to a silo
-        if serviceopts.allowed_to_authenticate_to_by_silo:
-            silo = AuthenticationSilo.get(
-                ldb, cn=serviceopts.allowed_to_authenticate_to_by_silo)
-            serviceopts.allowed_to_authenticate_to = silo.get_authentication_sddl()
 
         try:
             policy = AuthenticationPolicy.get(ldb, cn=name)
