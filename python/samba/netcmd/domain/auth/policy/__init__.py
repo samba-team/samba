@@ -25,6 +25,9 @@ from samba.netcmd import SuperCommand
 from .computer_allowed_to_authenticate_to import (
     cmd_domain_auth_policy_computer_allowed_to_authenticate_to,
 )
+from .user_allowed_to_authenticate_to import (
+    cmd_domain_auth_policy_user_allowed_to_authenticate_to,
+)
 from .policy import (
     cmd_domain_auth_policy_create,
     cmd_domain_auth_policy_delete,
@@ -45,4 +48,6 @@ class cmd_domain_auth_policy(SuperCommand):
         "delete": cmd_domain_auth_policy_delete(),
         "computer-allowed-to-authenticate-to":
             cmd_domain_auth_policy_computer_allowed_to_authenticate_to(),
+        "user-allowed-to-authenticate-to":
+            cmd_domain_auth_policy_user_allowed_to_authenticate_to(),
     }
