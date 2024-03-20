@@ -1830,10 +1830,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 		  int sock_fd,
 		  bool interactive)
 {
-	struct smbd_tevent_trace_state trace_state = {
-		.ev = ev_ctx,
-		.frame = talloc_stackframe(),
-	};
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	struct smbXsrv_client *client = NULL;
@@ -1844,6 +1840,10 @@ void smbd_process(struct tevent_context *ev_ctx,
 	int ret;
 	NTSTATUS status;
 	struct timeval tv = timeval_current();
+	struct smbd_tevent_trace_state trace_state = {
+		.ev = ev_ctx,
+		.frame = talloc_stackframe(),
+	};
 	NTTIME now = timeval_to_nttime(&tv);
 	char *chroot_dir = NULL;
 	int rc;
