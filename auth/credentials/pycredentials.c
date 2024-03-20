@@ -574,11 +574,7 @@ static PyObject *py_creds_set_nt_hash(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	pwd = pytalloc_get_type(py_cp, struct samr_Password);
-	if (pwd == NULL) {
-		/* pytalloc_get_type sets TypeError */
-		return NULL;
-	}
+	pwd = pytalloc_get_ptr(py_cp);
 
 	return PyBool_FromLong(cli_credentials_set_nt_hash(creds, pwd, obt));
 }
@@ -1093,7 +1089,12 @@ static PyObject *py_creds_encrypt_netr_crypt_password(PyObject *self,
 		return NULL;
 	}
 
-	pwd = pytalloc_get_type(py_cp, struct netr_CryptPassword);
+	if (!py_check_dcerpc_type(py_cp, "samba.dcerpc.netlogon", "netr_CryptPassword")) {
+		/* py_check_dcerpc_type sets TypeError */
+		return NULL;
+	}
+
+	pwd = pytalloc_get_ptr(py_cp);
 	if (pwd == NULL) {
 		/* pytalloc_get_type sets TypeError */
 		return NULL;
