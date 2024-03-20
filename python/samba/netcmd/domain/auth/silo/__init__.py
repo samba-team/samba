@@ -25,7 +25,7 @@ from samba.domain.models import AuthenticationPolicy, AuthenticationSilo
 from samba.domain.models.exceptions import ModelError
 from samba.netcmd import Command, CommandError, Option, SuperCommand
 
-from .silo_member import cmd_domain_auth_silo_member
+from .member import cmd_domain_auth_silo_member
 
 
 class cmd_domain_auth_silo_list(Command):
