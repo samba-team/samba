@@ -29,17 +29,6 @@ from samba.netcmd import Command, CommandError, Option
 from samba.netcmd.validators import Range
 
 
-def check_similar_args(option, args):
-    """Helper method for checking similar mutually exclusive args.
-
-    Example: --user-allowed-to-authenticate-from and
-             --user-allowed-to-authenticate-from-device-silo
-    """
-    num = sum(arg is not None for arg in args)
-    if num > 1:
-        raise CommandError(f"{option} argument repeated {num} times.")
-
-
 class UserOptions(options.OptionGroup):
     """User options used by policy create and policy modify commands."""
 
@@ -91,16 +80,6 @@ class ServiceOptions(options.OptionGroup):
                         type=str, dest="allowed_to_authenticate_from",
                         action="callback", callback=self.set_option,
                         metavar="SDDL")
-        self.add_option("--service-allowed-to-authenticate-from-device-silo",
-                        help="To authenticate, the service must authenticate on a device in SILO.",
-                        type=str, dest="allowed_to_authenticate_from_device_silo",
-                        action="callback", callback=self.set_option,
-                        metavar="SILO")
-        self.add_option("--service-allowed-to-authenticate-from-device-group",
-                        help="To authenticate, the service must authenticate on a device in GROUP.",
-                        type=str, dest="allowed_to_authenticate_from_device_group",
-                        action="callback", callback=self.set_option,
-                        metavar="GROUP")
         self.add_option("--service-allowed-to-authenticate-to",
                         help="The target service requires the connecting user to match SDDL",
                         type=str, dest="allowed_to_authenticate_to",
@@ -243,25 +222,7 @@ class cmd_domain_auth_policy_create(Command):
         if audit and enforce:
             raise CommandError("--audit and --enforce cannot be used together.")
 
-        # Check for repeated, similar arguments.
-        check_similar_args("--service-allowed-to-authenticate-from",
-                           [serviceopts.allowed_to_authenticate_from,
-                            serviceopts.allowed_to_authenticate_from_device_group,
-                            serviceopts.allowed_to_authenticate_from_device_silo])
-
         ldb = self.ldb_connect(hostopts, sambaopts, credopts)
-
-        # Generate SDDL for authenticating service accounts from a device in a group
-        if serviceopts.allowed_to_authenticate_from_device_group:
-            group = Group.get(
-                ldb, cn=serviceopts.allowed_to_authenticate_from_device_group)
-            serviceopts.allowed_to_authenticate_from = group.get_authentication_sddl()
-
-        # Generate SDDL for authenticating service accounts from a device in a silo
-        if serviceopts.allowed_to_authenticate_from_device_silo:
-            silo = AuthenticationSilo.get(
-                ldb, cn=serviceopts.allowed_to_authenticate_from_device_silo)
-            serviceopts.allowed_to_authenticate_from = silo.get_authentication_sddl()
 
         try:
             policy = AuthenticationPolicy.get(ldb, cn=name)
@@ -357,25 +318,7 @@ class cmd_domain_auth_policy_modify(Command):
         if audit and enforce:
             raise CommandError("--audit and --enforce cannot be used together.")
 
-        # Check for repeated, similar arguments.
-        check_similar_args("--service-allowed-to-authenticate-from",
-                           [serviceopts.allowed_to_authenticate_from,
-                            serviceopts.allowed_to_authenticate_from_device_group,
-                            serviceopts.allowed_to_authenticate_from_device_silo])
-
         ldb = self.ldb_connect(hostopts, sambaopts, credopts)
-
-        # Generate SDDL for authenticating users from a device a device in a group
-        if serviceopts.allowed_to_authenticate_from_device_group:
-            group = Group.get(
-                ldb, cn=serviceopts.allowed_to_authenticate_from_device_group)
-            serviceopts.allowed_to_authenticate_from = group.get_authentication_sddl()
-
-        # Generate SDDL for authenticating service accounts from a device in a silo
-        if serviceopts.allowed_to_authenticate_from_device_silo:
-            silo = AuthenticationSilo.get(
-                ldb, cn=serviceopts.allowed_to_authenticate_from_device_silo)
-            serviceopts.allowed_to_authenticate_from = silo.get_authentication_sddl()
 
         try:
             policy = AuthenticationPolicy.get(ldb, cn=name)
