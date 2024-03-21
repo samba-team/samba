@@ -21,6 +21,7 @@
 #
 
 from .fields import IntegerField, StringField
+from .model import Model
 from .person import Person
 
 
@@ -31,3 +32,14 @@ class OrganizationalPerson(Person):
     @staticmethod
     def get_object_class():
         return "organizationalPerson"
+
+
+class OrganizationalUnit(Model):
+    ou = StringField("ou")
+
+    def __str__(self):
+        return str(self.ou)
+
+    @staticmethod
+    def get_object_class():
+        return "organizationalUnit"
