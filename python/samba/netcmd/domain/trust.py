@@ -34,7 +34,7 @@ from samba.dcerpc import drsblobs, lsa, nbt, netlogon, security
 from samba.net import Net
 from samba.netcmd import Command, CommandError, Option, SuperCommand
 from samba.samdb import SamDB
-from samba.trust_utils import CreateTrustedDomainRelax
+from samba.lsa_utils import CreateTrustedDomainRelax
 
 
 class LocalDCCredentialsOptions(options.CredentialsOptions):

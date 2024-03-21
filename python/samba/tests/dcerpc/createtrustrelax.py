@@ -24,7 +24,7 @@ import samba
 from samba.tests import TestCase
 from samba.dcerpc import lsa, security, drsblobs
 from samba.credentials import Credentials, SMB_ENCRYPTION_REQUIRED, SMB_ENCRYPTION_OFF
-from samba.trust_utils import CreateTrustedDomainRelax
+from samba.lsa_utils import CreateTrustedDomainRelax
 
 class CreateTrustedDomainRelaxTest(TestCase):
 
