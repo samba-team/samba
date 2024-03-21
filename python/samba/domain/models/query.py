@@ -22,8 +22,8 @@
 
 import re
 
-from .constants import MODELS
 from .exceptions import NotFound, MultipleObjectsReturned
+from .registry import MODELS
 
 RE_SPLIT_CAMELCASE = re.compile(r"[A-Z](?:[a-z]+|[A-Z]*(?=[A-Z]|$))")
 

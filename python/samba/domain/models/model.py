@@ -27,12 +27,12 @@ from ldb import (ERR_NO_SUCH_OBJECT, FLAG_MOD_ADD, FLAG_MOD_REPLACE,
                  SCOPE_ONELEVEL, SCOPE_SUBTREE)
 from samba.sd_utils import SDUtils
 
-from .constants import MODELS
 from .exceptions import (DeleteError, FieldError, NotFound, ProtectError,
                          UnprotectError)
 from .fields import (DateTimeField, DnField, Field, GUIDField, IntegerField,
                      SIDField, StringField)
 from .query import Query
+from .registry import MODELS
 
 
 class ModelMeta(type):
