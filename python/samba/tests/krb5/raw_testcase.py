@@ -65,6 +65,7 @@ from samba.tests.krb5.rfc4120_constants import (
     FX_FAST_ARMOR_AP_REQUEST,
     KDC_ERR_CLIENT_REVOKED,
     KDC_ERR_GENERIC,
+    KDC_ERR_KEY_EXPIRED,
     KDC_ERR_POLICY,
     KDC_ERR_PREAUTH_FAILED,
     KDC_ERR_SKEW,
@@ -5058,6 +5059,8 @@ class RawKerberosTest(TestCase):
                 if ('1' in sent_pac_options
                         and error_code not in (0, KDC_ERR_GENERIC)):
                     expected_patypes += (PADATA_PAC_OPTIONS,)
+            elif error_code == KDC_ERR_KEY_EXPIRED:
+                expected_patypes += (PADATA_PK_AS_REP,)
             elif error_code != KDC_ERR_GENERIC:
                 if expect_etype_info:
                     expected_patypes += (PADATA_ETYPE_INFO,)
