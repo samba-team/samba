@@ -312,8 +312,14 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 				      pull_push_print_flags,
 				      st);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			TALLOC_FREE(mem_ctx);
-			return 0;
+			/*
+			 * Note we aren't bailing here.
+			 *
+			 * It is good that ndr_push returned an error, because
+			 * the structure is no doubt rubbish. But that doesn't
+			 * mean we don't also want to see if ndr_print can
+			 * handle it.
+			 */
 		}
 
 		{
