@@ -679,10 +679,10 @@ class PkInitTests(KDCBaseTest):
 
         freshness_token = self.create_freshness_token()
 
-        kdc_exchange_dict = self._pkinit_req(client_creds, krbtgt_creds,
-                                             freshness_token=freshness_token,
-                                             expect_error=KDC_ERR_KEY_EXPIRED,
-                                             expect_edata=True
+        self._pkinit_req(client_creds, krbtgt_creds,
+                         freshness_token=freshness_token,
+                         expect_error=KDC_ERR_KEY_EXPIRED,
+                         expect_edata=True
         )
 
         # AS-REQ will not succeed, password is still expired
