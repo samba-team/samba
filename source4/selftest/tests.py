@@ -1076,11 +1076,11 @@ for env in ["ad_dc:local", "s4member:local", "nt4_dc:local", "ad_member:local", 
 
 if have_gnutls_fips_mode_support:
     planoldpythontestsuite("ad_dc",
-                           "samba.tests.dcerpc.createtrustrelax",
+                           "samba.tests.dcerpc.lsa_utils",
                            environ={'GNUTLS_FORCE_FIPS_MODE': '1',
                                     'OPENSSL_FORCE_FIPS_MODE': '1'})
     planoldpythontestsuite("ad_dc_fips",
-                           "samba.tests.dcerpc.createtrustrelax",
+                           "samba.tests.dcerpc.lsa_utils",
                            environ={'GNUTLS_FORCE_FIPS_MODE': '1',
                                     'OPENSSL_FORCE_FIPS_MODE': '1'})
 
