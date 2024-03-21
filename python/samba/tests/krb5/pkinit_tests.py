@@ -36,7 +36,7 @@ from cryptography.x509.oid import NameOID
 
 import ldb
 import samba.tests
-from samba import credentials, generate_random_password, ntstatus
+from samba import credentials, ntstatus
 from samba.dcerpc import security, netlogon
 from samba.tests.krb5 import kcrypto
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
