@@ -27,7 +27,7 @@ from samba.dsdb import DS_GUID_USERS_CONTAINER
 
 from .exceptions import NotFound
 from .fields import DnField, EnumField, IntegerField, NtTimeField, StringField
-from .person import OrganizationalPerson
+from .org import OrganizationalPerson
 from .types import AccountType, UserAccountControl
 
 

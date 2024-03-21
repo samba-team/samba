@@ -29,7 +29,8 @@ from .container import Container
 from .gmsa import GroupManagedServiceAccount
 from .group import Group
 from .model import Model
-from .person import OrganizationalPerson, Person
+from .org import OrganizationalPerson
+from .person import Person
 from .registry import MODELS
 from .schema import AttributeSchema, ClassSchema
 from .site import Site
