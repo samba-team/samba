@@ -19,14 +19,18 @@
 
 """Tests for the CreateTrustedDomainRelax wrapper"""
 
-import os
 import samba
 from samba.tests import TestCase
 from samba.dcerpc import lsa, security, drsblobs
-from samba.credentials import Credentials, SMB_ENCRYPTION_REQUIRED, SMB_ENCRYPTION_OFF
+from samba.credentials import (
+    Credentials,
+    SMB_ENCRYPTION_REQUIRED,
+    SMB_ENCRYPTION_OFF
+)
 from samba.lsa_utils import OpenPolicyFallback, CreateTrustedDomainRelax
 
-class CreateTrustedDomainRelaxTest(TestCase):
+
+class CreateTrustedDomain(TestCase):
 
     def get_user_creds(self):
         c = Credentials()
@@ -49,7 +53,9 @@ class CreateTrustedDomainRelaxTest(TestCase):
 
         lp = self.get_loadparm()
 
-        binding_string = ("ncacn_np:%s" % (samba.tests.env_get_var_value('SERVER')))
+        binding_string = (
+            "ncacn_np:%s" % (samba.tests.env_get_var_value('SERVER'))
+        )
         lsa_conn = lsa.lsarpc(binding_string, lp, creds)
 
         if smbencrypt:
@@ -76,8 +82,11 @@ class CreateTrustedDomainRelaxTest(TestCase):
         name = lsa.String()
         name.string = "tests.samba.example.com"
         try:
-            info = lsa_conn.QueryTrustedDomainInfoByName(pol_handle, name,
-                                                         lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
+            info = lsa_conn.QueryTrustedDomainInfoByName(
+                pol_handle,
+                name,
+                lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO
+            )
 
             lsa_conn.DeleteTrustedDomain(pol_handle, info.info_ex.sid)
         except RuntimeError:
@@ -87,11 +96,16 @@ class CreateTrustedDomainRelaxTest(TestCase):
         info.domain_name.string = name.string
         info.netbios_name.string = "createtrustrelax"
         info.sid = security.dom_sid("S-1-5-21-538490383-3740119673-95748416")
-        info.trust_direction = lsa.LSA_TRUST_DIRECTION_INBOUND | lsa.LSA_TRUST_DIRECTION_OUTBOUND
+        info.trust_direction = (
+            lsa.LSA_TRUST_DIRECTION_INBOUND
+            | lsa.LSA_TRUST_DIRECTION_OUTBOUND
+        )
         info.trust_type = lsa.LSA_TRUST_TYPE_UPLEVEL
         info.trust_attributes = lsa.LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE
 
-        password_blob = samba.string_to_byte_array("password".encode('utf-16-le'))
+        password_blob = samba.string_to_byte_array(
+            "password".encode('utf-16-le')
+        )
 
         clear_value = drsblobs.AuthInfoClear()
         clear_value.size = len(password_blob)
@@ -102,13 +116,13 @@ class CreateTrustedDomainRelaxTest(TestCase):
         clear_authentication_information.AuthType = lsa.TRUST_AUTH_TYPE_CLEAR
         clear_authentication_information.AuthInfo = clear_value
 
-        authentication_information_array = drsblobs.AuthenticationInformationArray()
-        authentication_information_array.count = 1
-        authentication_information_array.array = [clear_authentication_information]
+        auth_info_array = drsblobs.AuthenticationInformationArray()
+        auth_info_array.count = 1
+        auth_info_array.array = [clear_authentication_information]
 
         outgoing = drsblobs.trustAuthInOutBlob()
         outgoing.count = 1
-        outgoing.current = authentication_information_array
+        outgoing.current = auth_info_array
 
         trustdom_handle = None
         try:
