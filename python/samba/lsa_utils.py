@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from samba.dcerpc import lsa, drsblobs
+from samba.dcerpc import lsa, drsblobs, misc
 from samba.ndr import ndr_pack
 from samba import NTSTATUSError, arcfour_encrypt, string_to_byte_array
 from samba.ntstatus import (
@@ -66,7 +66,14 @@ def OpenPolicyFallback(
     return out_version, out_rev_info, policy
 
 
-def CreateTrustedDomainRelax(lsaconn, policy, trust_info, mask, in_blob, out_blob):
+def CreateTrustedDomainRelax(
+    lsaconn: lsa.lsarpc,
+    policy: misc.policy_handle,
+    trust_info: lsa.TrustDomainInfoInfoEx,
+    mask: int,
+    in_blob: drsblobs.trustAuthInOutBlob,
+    out_blob: drsblobs.trustAuthInOutBlob
+):
 
     def generate_AuthInfoInternal(session_key, incoming=None, outgoing=None):
         confounder = [0] * 512
