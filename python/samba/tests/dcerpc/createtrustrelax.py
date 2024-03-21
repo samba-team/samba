@@ -24,7 +24,7 @@ import samba
 from samba.tests import TestCase
 from samba.dcerpc import lsa, security, drsblobs
 from samba.credentials import Credentials, SMB_ENCRYPTION_REQUIRED, SMB_ENCRYPTION_OFF
-from samba.lsa_utils import CreateTrustedDomainRelax
+from samba.lsa_utils import OpenPolicyFallback, CreateTrustedDomainRelax
 
 class CreateTrustedDomainRelaxTest(TestCase):
 
@@ -57,12 +57,20 @@ class CreateTrustedDomainRelaxTest(TestCase):
         else:
             self.assertFalse(lsa_conn.transport_encrypted())
 
-        objectAttr = lsa.ObjectAttribute()
-        objectAttr.sec_qos = lsa.QosInfo()
+        in_version = 1
+        in_revision_info1 = lsa.revision_info1()
+        in_revision_info1.revision = 1
+        in_revision_info1.supported_features = (
+            lsa.LSA_FEATURE_TDO_AUTH_INFO_AES_CIPHER
+        )
 
-        pol_handle = lsa_conn.OpenPolicy2('',
-                                          objectAttr,
-                                          security.SEC_FLAG_MAXIMUM_ALLOWED)
+        out_version, out_revision_info1, pol_handle = OpenPolicyFallback(
+            lsa_conn,
+            '',
+            in_version,
+            in_revision_info1,
+            access_mask=security.SEC_FLAG_MAXIMUM_ALLOWED
+        )
         self.assertIsNotNone(pol_handle)
 
         name = lsa.String()

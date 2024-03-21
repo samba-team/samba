@@ -18,9 +18,53 @@
 
 from samba.dcerpc import lsa, drsblobs
 from samba.ndr import ndr_pack
-from samba import arcfour_encrypt, string_to_byte_array
+from samba import NTSTATUSError, arcfour_encrypt, string_to_byte_array
+from samba.ntstatus import (
+    NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE
+)
 import random
 from samba import crypto
+
+
+def OpenPolicyFallback(
+    conn: lsa.lsarpc,
+    system_name: str,
+    in_version: int,
+    in_revision_info: lsa.revision_info1,
+    sec_qos: bool = False,
+    access_mask: int = 0,
+):
+    attr = lsa.ObjectAttribute()
+    if sec_qos:
+        qos = lsa.QosInfo()
+        qos.len = 0xc
+        qos.impersonation_level = 2
+        qos.context_mode = 1
+        qos.effective_only = 0
+
+        attr.sec_qos = qos
+
+    try:
+        out_version, out_rev_info, policy = conn.OpenPolicy3(
+            system_name,
+            attr,
+            access_mask,
+            in_version,
+            in_revision_info
+        )
+    except NTSTATUSError as e:
+        if e.args[0] == NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE:
+            out_version = 1
+            out_rev_info = lsa.revision_info1()
+            out_rev_info.revision = 1
+            out_rev_info.supported_features = 0
+
+            policy = conn.OpenPolicy2(system_name, attr, access_mask)
+        else:
+            raise
+
+    return out_version, out_rev_info, policy
+
 
 def CreateTrustedDomainRelax(lsaconn, policy, trust_info, mask, in_blob, out_blob):
 
