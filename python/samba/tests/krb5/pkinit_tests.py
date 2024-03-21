@@ -589,7 +589,7 @@ class PkInitTests(KDCBaseTest):
                             expect_error=ntstatus.NT_STATUS_WRONG_PASSWORD)
 
     def test_pkinit_ntlm_from_pac(self):
-        """Test public-key PK-INIT to get an NT has and confirm NTLM
+        """Test public-key PK-INIT to get an NT hash and confirm NTLM
            authentication is possible with it."""
         client_creds = self._get_creds()
         client_creds.set_kerberos_state(credentials.AUTO_USE_KERBEROS)
@@ -656,7 +656,7 @@ class PkInitTests(KDCBaseTest):
                             logon_type=netlogon.NetlogonNetworkInformation)
 
     def test_pkinit_ntlm_from_pac_must_change_now(self):
-        """Test public-key PK-INIT to get an NT has and confirm NTLM
+        """Test public-key PK-INIT to get an NT hash and confirm NTLM
            authentication is possible with it."""
         client_creds = self._get_creds()
         client_creds.set_kerberos_state(credentials.AUTO_USE_KERBEROS)
