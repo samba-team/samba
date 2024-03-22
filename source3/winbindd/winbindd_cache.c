@@ -68,7 +68,9 @@ static bool opt_nocache = False;
  */
 
 static const char *non_centry_keys[] = {
+	"NDR/",
 	"SEQNUM/",
+	"TRUSTDOMCACHE/",
 	"WINBINDD_OFFLINE",
 	WINBINDD_CACHE_VERSION_KEYSTR,
 	NULL
