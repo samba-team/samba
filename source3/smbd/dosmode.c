@@ -1189,7 +1189,8 @@ int file_ntimes(connection_struct *conn,
 	}
 
 	if (SMB_VFS_FNTIMES(fsp, ft) == 0) {
-		return 0;
+		ret = 0;
+		goto done;
 	}
 
 	if((errno != EPERM) && (errno != EACCES)) {
@@ -1212,6 +1213,11 @@ int file_ntimes(connection_struct *conn,
 		become_root();
 		ret = SMB_VFS_FNTIMES(fsp, ft);
 		unbecome_root();
+	}
+
+done:
+	if (ret == 0) {
+		copy_stat_ex_timestamps(fsp, ft);
 	}
 
 	return ret;

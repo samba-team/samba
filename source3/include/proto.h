@@ -173,6 +173,7 @@ void update_stat_ex_mtime(struct stat_ex *dst, struct timespec write_ts);
 void update_stat_ex_create_time(struct stat_ex *dst, struct timespec create_time);
 void update_stat_ex_from_saved_stat(struct stat_ex *dst,
 				    const struct stat_ex *src);
+void copy_stat_ex_timestamps(files_struct *fsp, const struct smb_file_time *ft);
 int sys_stat(const char *fname, SMB_STRUCT_STAT *sbuf,
 	     bool fake_dir_create_times);
 int sys_fstat(int fd, SMB_STRUCT_STAT *sbuf,
