@@ -527,20 +527,59 @@ static int http_read_response_next_vector(struct tstream_context *stream,
 				*_count = 1;
 			}
 			break;
-		case HTTP_MORE_DATA_EXPECTED:
-			/* TODO Optimize, allocating byte by byte */
-			state->buffer.data = talloc_realloc(state, state->buffer.data,
-							    uint8_t, state->buffer.length + 1);
+		case HTTP_MORE_DATA_EXPECTED: {
+			size_t toread = 1;
+			size_t total;
+			if (state->parser_state == HTTP_READING_BODY) {
+				struct http_request *resp = state->response;
+				toread = resp->remaining_content_length -
+					 state->buffer.length;
+			}
+
+			total = toread + state->buffer.length;
+
+			if (total < state->buffer.length)  {
+				DBG_ERR("adding %zu to buf len %zu "
+					"will overflow\n",
+					toread,
+					state->buffer.length);
+					return -1;
+			}
+
+			/*
+			 * test if content-length message exceeds the
+			 * specified max_content_length
+			 * Note: This check wont be hit at the moment
+			 *       due to an existing check in parse_headers
+			 *       which will skip the body. Check is here
+			 *       for completeness and to cater for future
+			 *       code changes.
+			 */
+			if (state->parser_state == HTTP_READING_BODY) {
+				if (total > state->max_content_length)  {
+					DBG_ERR("content size %zu exceeds "
+						"max content len %zu\n",
+						total,
+						state->max_content_length);
+					return -1;
+				}
+			}
+
+			state->buffer.data =
+				talloc_realloc(state, state->buffer.data,
+					       uint8_t,
+					       state->buffer.length + toread);
 			if (!state->buffer.data) {
 				return -1;
 			}
-			state->buffer.length++;
+			state->buffer.length += toread;
 			vector[0].iov_base = (void *)(state->buffer.data +
-						      state->buffer.length - 1);
-			vector[0].iov_len = 1;
+					     state->buffer.length - toread);
+			vector[0].iov_len = toread;
 			*_vector = vector;
 			*_count = 1;
 			break;
+		}
 		case HTTP_DATA_CORRUPTED:
 		case HTTP_REQUEST_CANCELED:
 		case HTTP_DATA_TOO_LONG:
