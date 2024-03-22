@@ -31,6 +31,8 @@
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/proto.h"
+#include "librpc/gen_ndr/gkdi.h"
+#include "librpc/gen_ndr/ndr_gkdi.h"
 
 static int gkdi_create_root_key(TALLOC_CTX *mem_ctx,
 				struct ldb_context *const ldb,
@@ -53,6 +55,7 @@ static int gkdi_create_root_key(TALLOC_CTX *mem_ctx,
 	uint64_t server_config_PublicKeyLength;
 	uint64_t server_config_PrivateKeyLength;
 	struct KdfAlgorithm kdf_algorithm;
+	DATA_BLOB kdf_parameters_blob = data_blob_null;
 	struct ldb_message *add_msg = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	int ret = LDB_SUCCESS;
@@ -149,14 +152,26 @@ static int gkdi_create_root_key(TALLOC_CTX *mem_ctx,
 		= ldb_msg_find_ldb_val(server_config_msg,
 				       "msKds-KDFParam");
 	if (server_config_KDFParam == NULL) {
-		static const uint8_t kdf_parameters[] = {
-			0,   0, 0,   0, 1,   0, 0,   0, 14,  0,
-			0,   0, 0,   0, 0,   0, 'S', 0, 'H', 0,
-			'A', 0, '5', 0, '1', 0, '2', 0, 0,   0,
+		struct KdfParameters kdf_parameters = {
+			.hash_algorithm = "SHA512"
 		};
-		static const DATA_BLOB kdf_parameters_blob = {
-			discard_const_p(uint8_t, kdf_parameters),
-			sizeof kdf_parameters};
+		enum ndr_err_code err;
+
+		err = ndr_push_struct_blob(&kdf_parameters_blob,
+					   tmp_ctx,
+					   &kdf_parameters,
+					   (ndr_push_flags_fn_t)
+					   ndr_push_KdfParameters);
+
+		if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+			status = ndr_map_error2ntstatus(err);
+			ldb_asprintf_errstring(ldb,
+					       "KdfParameters pull failed: %s\n",
+					       nt_errstr(status));
+			ret = LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE;
+			goto out;
+		}
+
 		server_config_KDFParam = &kdf_parameters_blob;
 	}
 
