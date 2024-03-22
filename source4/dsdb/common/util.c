@@ -1325,9 +1325,9 @@ struct ldb_dn *samdb_extended_rights_dn(struct ldb_context *sam_ctx, TALLOC_CTX 
 	return new_dn;
 }
 
-static struct ldb_dn *samdb_configuration_dn(struct ldb_context *sam_ctx,
-					     TALLOC_CTX *mem_ctx,
-					     const char *dn_str)
+struct ldb_dn *samdb_configuration_dn(struct ldb_context *sam_ctx,
+				      TALLOC_CTX *mem_ctx,
+				      const char *dn_str)
 {
 	struct ldb_dn *config_dn = NULL;
 	struct ldb_dn *child_dn = NULL;
