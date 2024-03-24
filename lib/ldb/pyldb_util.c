@@ -184,3 +184,24 @@ PyObject *pyldb_Dn_FromDn(struct ldb_dn *dn)
 	py_ret->dn = dn;
 	return (PyObject *)py_ret;
 }
+
+void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_ctx)
+{
+	PyObject *exc = NULL;
+	if (ret == LDB_ERR_PYTHON_EXCEPTION) {
+		return; /* Python exception should already be set, just keep that */
+	}
+	exc = Py_BuildValue("(i,s)", ret,
+			    ldb_ctx == NULL?ldb_strerror(ret):ldb_errstring(ldb_ctx));
+	if (exc == NULL) {
+		/*
+		 * Py_BuildValue failed, and will have set its own exception.
+		 * It isn't the one we wanted, but it will have to do.
+		 * This is all very unexpected.
+		 */
+		fprintf(stderr, "could not make LdbError %d!\n", ret);
+		return;
+	}
+	PyErr_SetObject(error, exc);
+	Py_DECREF(exc);
+}

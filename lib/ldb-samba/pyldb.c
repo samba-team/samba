@@ -37,16 +37,6 @@ static PyObject *pyldb_module;
 static PyObject *py_ldb_error;
 static PyTypeObject PySambaLdb;
 
-static void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_ctx)
-{
-	if (ret == LDB_ERR_PYTHON_EXCEPTION)
-		return; /* Python exception should already be set, just keep that */
-
-	PyErr_SetObject(error, 
-			Py_BuildValue(discard_const_p(char, "(i,s)"), ret,
-			ldb_ctx == NULL?ldb_strerror(ret):ldb_errstring(ldb_ctx)));
-}
-
 static PyObject *py_ldb_set_loadparm(PyObject *self, PyObject *args)
 {
 	PyObject *py_lp_ctx;

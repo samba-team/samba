@@ -112,6 +112,8 @@ typedef struct {
 	struct ldb_control *data;
 } PyLdbControlObject;
 
+void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_ctx);
+
 #define PyErr_LDB_ERROR_IS_ERR_RAISE(err,ret,ldb) do { \
 	if (ret != LDB_SUCCESS) { \
 		PyErr_SetLdbError(err, ret, ldb); \
