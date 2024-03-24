@@ -193,7 +193,7 @@ class Model(metaclass=ModelMeta):
         for attr, field in self.fields.items():
             if not field.hidden or include_hidden:
                 value = getattr(self, attr)
-                if value is not None:
+                if value not in (None, []):
                     obj_dict[field.name] = value
 
         return obj_dict
