@@ -599,6 +599,11 @@
 	<para>Restore the domain's DB from a backup-file.</para>
 </refsect3>
 
+<refsect2>
+	<title>domain auth policy</title>
+	<para>Manage authentication policies.</para>
+</refsect2>
+
 <refsect3>
 	<title>domain auth policy list</title>
 	<para>List authentication policies on the domain.</para>
@@ -1071,6 +1076,11 @@
 		</varlistentry>
 	</variablelist>
 </refsect3>
+
+<refsect2>
+	<title>domain auth silo</title>
+	<para>Manage authentication silos.</para>
+</refsect2>
 
 <refsect3>
 	<title>domain auth silo list</title>
