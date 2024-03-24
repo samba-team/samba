@@ -188,11 +188,21 @@ PyObject *pyldb_Dn_FromDn(struct ldb_dn *dn)
 void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_ctx)
 {
 	PyObject *exc = NULL;
+	const char *ldb_error_string = NULL;
+
 	if (ret == LDB_ERR_PYTHON_EXCEPTION) {
 		return; /* Python exception should already be set, just keep that */
 	}
-	exc = Py_BuildValue("(i,s)", ret,
-			    ldb_ctx == NULL?ldb_strerror(ret):ldb_errstring(ldb_ctx));
+
+	if (ldb_ctx != NULL) {
+		ldb_error_string = ldb_errstring(ldb_ctx);
+	}
+	/* either no LDB context, no string stored or string reset */
+	if (ldb_error_string == NULL) {
+		ldb_error_string = ldb_strerror(ret);
+	}
+
+	exc = Py_BuildValue("(i,s)", ret, ldb_error_string);
 	if (exc == NULL) {
 		/*
 		 * Py_BuildValue failed, and will have set its own exception.
