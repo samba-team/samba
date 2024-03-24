@@ -1083,6 +1083,34 @@ ssize_t rep_copy_file_range(int fd_in,
 }
 #endif /* HAVE_COPY_FILE_RANGE */
 
+#ifdef HAVE_LINUX_IOCTL
+# include <linux/fs.h>
+# include <sys/ioctl.h>
+#endif
+
+ssize_t rep_copy_reflink(int src_fd,
+			 off_t src_off,
+			 int dst_fd,
+			 off_t dst_off,
+			 off_t to_copy)
+{
+#ifdef HAVE_LINUX_IOCTL
+	struct file_clone_range cr;
+
+	cr = (struct file_clone_range) {
+		.src_fd = src_fd,
+		.src_offset = (uint64_t)src_off,
+		.dest_offset = (uint64_t)dst_off,
+		.src_length = (uint64_t)to_copy,
+	};
+
+	return ioctl(dst_fd, FICLONERANGE, &cr);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
 #ifndef HAVE_OPENAT2
 
 /* fallback known wellknown __NR_openat2 values */

@@ -1014,6 +1014,15 @@ ssize_t rep_copy_file_range(int fd_in,
 			    unsigned int flags);
 #endif /* HAVE_COPY_FILE_RANGE */
 
+
+#define copy_reflink rep_copy_reflink
+
+ssize_t rep_copy_reflink(int src_fd,
+			 off_t src_off,
+			 int dst_fd,
+			 off_t dst_off,
+			 off_t to_copy);
+
 #ifndef FALL_THROUGH
 # ifdef HAVE_FALLTHROUGH_ATTRIBUTE
 #  define FALL_THROUGH __attribute__ ((fallthrough))
