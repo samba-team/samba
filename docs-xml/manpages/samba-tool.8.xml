@@ -780,7 +780,7 @@
 					authenticate, if the device they
 					authenticate from is assigned
 					and granted membership of a
-					given silo.
+					given <constant>SILO</constant>.
 				</para>
 				<para>
 					This attribute avoids the need to write SDDL by hand and
@@ -836,7 +836,7 @@
 					that are assigned to,
 					granted membership of (and
 					meet any authentication
-					conditions of) the given SILO.
+					conditions of) the given <constant>SILO</constant>.
 				</para>
 				<para>
 					This attribute avoids the need to write SDDL by hand and
@@ -911,7 +911,7 @@
 					Service Account) is allowed to
 					authenticate, if the device it
 					authenticates from is a member
-					of the given <constant>group</constant>.
+					of the given <constant>GROUP</constant>.
 				</para>
 				<para>
 					This attribute avoids the need to write SDDL by hand and
@@ -967,7 +967,7 @@
 					accounts that are assigned
 					to, granted membership of (and
 					meet any authentication
-					conditions of) the given SILO.
+					conditions of) the given <constant>SILO</constant>.
 				</para>
 				<para>
 					This attribute avoids the need to write SDDL by hand and
@@ -1029,7 +1029,7 @@
 					assigned to, granted
 					membership of (and meet any
 					authentication conditions of)
-					the given SILO.
+					the given <constant>SILO</constant>.
 				</para>
 				<para>
 					This attribute avoids the need to write SDDL by hand and
