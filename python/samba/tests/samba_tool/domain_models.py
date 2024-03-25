@@ -28,7 +28,8 @@ from ldb import FLAG_MOD_ADD, SCOPE_ONELEVEL, MessageElement
 
 from samba.dcerpc import security
 from samba.dcerpc.misc import GUID
-from samba.domain.models import (AccountType, Computer, Group, Site,
+from samba.domain.models import (AccountType, AuthenticationPolicy,
+                                 AuthenticationSilo, Computer, Group, Site,
                                  StrongNTLMPolicy, User, fields)
 from samba.ndr import ndr_pack, ndr_unpack
 
@@ -71,6 +72,48 @@ class ModelTests(SambaToolCmdTest):
         self.assertNotEqual(robots, 0)
         self.assertNotEqual(humans, 0)
         self.assertEqual(robots + humans, robots_vs_humans)
+
+    def test_as_dict(self):
+        """Test the as_dict method for serializing to dict then JSON."""
+        policy = AuthenticationPolicy.create(self.samdb, name="as_dict_pol")
+        self.addCleanup(policy.delete, self.samdb)
+        silo = AuthenticationSilo.create(self.samdb,
+                                         name="test_as_dict_silo",
+                                         description="test as_dict silo",
+                                         enforced=True,
+                                         user_authentication_policy=None,
+                                         service_authentication_policy=policy.dn,
+                                         computer_authentication_policy=None,
+                                         members=[])
+        self.addCleanup(silo.delete, self.samdb)
+        silo_dict = silo.as_dict()
+
+        # Test various fields with different datatypes.
+        self.assertEqual(silo_dict["name"], "test_as_dict_silo")
+        self.assertEqual(silo_dict["description"], "test as_dict silo")
+        self.assertEqual(silo_dict["msDS-AuthNPolicySiloEnforced"], True)
+
+        # Fields that are None are excluded as that means unsetting a field.
+        self.assertNotIn("msDS-UserAuthNPolicy", silo_dict)
+        self.assertIn("msDS-ServiceAuthNPolicy", silo_dict)
+
+        # Fields with many=True are represented by an empty list,
+        # but should still be excluded by as_dict().
+        self.assertNotIn("msDS-AuthNPolicySiloMembers", silo_dict)
+
+        # Now add a member and see if silo members appears as a key.
+        jane = User.get(self.samdb, account_name="jane")
+        silo.members.append(jane.dn)
+        silo.save(self.samdb)
+        silo_dict = silo.as_dict()
+        self.assertIn("msDS-AuthNPolicySiloMembers", silo_dict)
+
+        # Hidden fields are excluded by default.
+        self.assertNotIn("whenCreated", silo_dict)
+
+        # Unless include_hidden=True is used.
+        silo_dict = silo.as_dict(include_hidden=True)
+        self.assertIn("whenCreated", silo_dict)
 
 
 class ComputerModelTests(SambaToolCmdTest):
