@@ -213,12 +213,12 @@ static bool posix_eadb_init(int snum, struct tdb_wrap **p_db)
 
 	lp_ctx = loadparm_init_s3(NULL, loadparm_s3_helpers());
 
-	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
+	become_root();
 	db = tdb_wrap_open(NULL, eadb, 50000,
 			   lpcfg_tdb_flags(lp_ctx, TDB_DEFAULT),
 			   O_RDWR|O_CREAT, 0600);
 
-	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
+	unbecome_root();
 	talloc_unlink(NULL, lp_ctx);
 	/* now we know dbname is not NULL */
 
