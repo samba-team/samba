@@ -762,38 +762,6 @@
 			</listitem>
 		</varlistentry>
 		<varlistentry>
-			<term>--user-allowed-to-authenticate-from-device-group=GROUP</term>
-			<listitem>
-				<para>
-					User is allowed to
-					authenticate, if the device they
-					authenticate from is assigned
-					and granted membership of a
-					given <constant>GROUP</constant>.
-				</para>
-				<para>
-					This attribute avoids the need to write SDDL by hand and
-					cannot be used with --user-allowed-to-authenticate-from
-				</para>
-			</listitem>
-		</varlistentry>
-		<varlistentry>
-			<term>--user-allowed-to-authenticate-from-device-silo=SILO</term>
-			<listitem>
-				<para>
-					User is allowed to
-					authenticate, if the device they
-					authenticate from is assigned
-					and granted membership of a
-					given <constant>SILO</constant>.
-				</para>
-				<para>
-					This attribute avoids the need to write SDDL by hand and
-					cannot be used with --user-allowed-to-authenticate-from
-				</para>
-			</listitem>
-		</varlistentry>
-		<varlistentry>
 			<term>--user-allowed-to-authenticate-to=SDDL</term>
 			<listitem>
 				<para>
@@ -810,42 +778,6 @@
 				</para>
 				<para>
 					SDDL Example: <constant>O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AO)}))</constant>
-				</para>
-			</listitem>
-		</varlistentry>
-		<varlistentry>
-			<term>--user-allowed-to-authenticate-to-by-group=GROUP</term>
-			<listitem>
-				<para>
-					The user account, offering a
-					network service, covered by
-					this policy, will only be allowed
-					access from other accounts
-					that are members of the given
-					<constant>GROUP</constant>.
-				</para>
-				<para>
-					This attribute avoids the need to write SDDL by hand and
-					cannot be used with --user-allowed-to-authenticate-to
-				</para>
-			</listitem>
-		</varlistentry>
-		<varlistentry>
-			<term>--user-allowed-to-authenticate-to-by-silo=SILO</term>
-			<listitem>
-				<para>
-					The user account, offering a
-					network service, covered by
-					this policy, will only be
-					allowed access from other accounts
-					that are assigned to,
-					granted membership of (and
-					meet any authentication
-					conditions of) the given <constant>SILO</constant>.
-				</para>
-				<para>
-					This attribute avoids the need to write SDDL by hand and
-					cannot be used with --user-allowed-to-authenticate-to
 				</para>
 			</listitem>
 		</varlistentry>
@@ -890,41 +822,6 @@
 			</listitem>
 		</varlistentry>
 		<varlistentry>
-			<term>--service-allowed-to-authenticate-from-device-silo=SILO</term>
-			<listitem>
-				<para>
-					The service account (eg a Managed
-					Service Account, Group Managed
-					Service Account) is allowed to
-					authenticate, if the device it
-					authenticates from is assigned
-					and granted membership of a
-					given <constant>SILO</constant>.
-				</para>
-				<para>
-					This attribute avoids the need to write SDDL by hand and
-					cannot be used with --service-allowed-to-authenticate-from
-				</para>
-			</listitem>
-		</varlistentry>
-		<varlistentry>
-			<term>--service-allowed-to-authenticate-from-device-group=GROUP</term>
-			<listitem>
-				<para>
-					The service account (eg a Managed
-					Service Account, Group Managed
-					Service Account) is allowed to
-					authenticate, if the device it
-					authenticates from is a member
-					of the given <constant>GROUP</constant>.
-				</para>
-				<para>
-					This attribute avoids the need to write SDDL by hand and
-					cannot be used with --service-allowed-to-authenticate-from
-				</para>
-			</listitem>
-		</varlistentry>
-		<varlistentry>
 			<term>--service-allowed-to-authenticate-to=SDDL</term>
 			<listitem>
 				<para>
@@ -941,42 +838,6 @@
 				</para>
 				<para>
 					SDDL Example: <constant>O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AO)}))</constant>
-				</para>
-			</listitem>
-		</varlistentry>
-		<varlistentry>
-			<term>--service-allowed-to-authenticate-to-by-group=GROUP</term>
-			<listitem>
-				<para>
-					The service account (eg a Managed
-					Service Account, Group Managed
-					Service Account), will only be
-					allowed access by other accounts
-					that are members of the given
-					<constant>GROUP</constant>.
-				</para>
-				<para>
-					This attribute avoids the need to write SDDL by hand and
-					cannot be used with --service-allowed-to-authenticate-to
-				</para>
-			</listitem>
-		</varlistentry>
-		<varlistentry>
-			<term>--service-allowed-to-authenticate-to-by-silo=SILO</term>
-			<listitem>
-				<para>
-					The service account (eg a
-					Managed Service Account, Group
-					Managed Service Account), will
-					only be allowed access by other
-					accounts that are assigned
-					to, granted membership of (and
-					meet any authentication
-					conditions of) the given <constant>SILO</constant>.
-				</para>
-				<para>
-					This attribute avoids the need to write SDDL by hand and
-					cannot be used with --service-allowed-to-authenticate-to
 				</para>
 			</listitem>
 		</varlistentry>
@@ -1007,43 +868,7 @@
 				</para>
 			</listitem>
 		</varlistentry>
-		<varlistentry>
-			<term>--computer-allowed-to-authenticate-to-by-group=GROUP</term>
-			<listitem>
-				<para>
-					The computer account (eg a server
-					or workstation), will only be
-					allowed access by other accounts
-					that are members of the given
-					<constant>GROUP</constant>.
-				</para>
-				<para>
-					This attribute avoids the need to write SDDL by hand and
-					cannot be used with --computer-allowed-to-authenticate-to
-				</para>
-			</listitem>
-		</varlistentry>
-		<varlistentry>
-			<term>--computer-allowed-to-authenticate-to-by-silo=SILO</term>
-			<listitem>
-				<para>
-					The computer account (eg a
-					server or workstation), will
-					only be allowed access by
-					other accounts that are
-					assigned to, granted
-					membership of (and meet any
-					authentication conditions of)
-					the given <constant>SILO</constant>.
-				</para>
-				<para>
-					This attribute avoids the need to write SDDL by hand and
-					cannot be used with --computer-allowed-to-authenticate-to
-				</para>
-			</listitem>
-		</varlistentry>
-
-	      </variablelist>
+	</variablelist>
 </refsect3>
 
 <refsect3>
@@ -1072,6 +897,215 @@
 			<term>--force</term>
 			<listitem><para>
 				Force authentication policy delete even if it is protected.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain auth policy user-allowed-to-authenticate-from set</title>
+	<para>Set the user-allowed-to-authenticate-from property by scenario.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Name of authentication policy.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--by-group=GROUP</term>
+			<listitem><para>
+				User is allowed to
+				authenticate, if the device they
+				authenticate from is assigned
+				and granted membership of a
+				given <constant>GROUP</constant>.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--silo=SILO</term>
+			<listitem><para>
+				User is allowed to
+				authenticate, if the device they
+				authenticate from is assigned
+				and granted membership of a
+				given <constant>SILO</constant>.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain auth policy user-allowed-to-authenticate-to set</title>
+	<para>Set the user-allowed-to-authenticate-to property by scenario.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Name of authentication policy.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--group=GROUP</term>
+			<listitem><para>
+				The user account, offering a
+				network service, covered by
+				this policy, will only be allowed
+				access from other accounts
+				that are members of the given
+				<constant>GROUP</constant>.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--silo=SILO</term>
+			<listitem><para>
+				The user account, offering a
+				network service, covered by
+				this policy, will only be
+				allowed access from other accounts
+				that are assigned to,
+				granted membership of (and
+				meet any authentication
+				conditions of) the given <constant>SILO</constant>.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain auth policy service-allowed-to-authenticate-from set</title>
+	<para>Set the service-allowed-to-authenticate-from property by scenario.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Name of authentication policy.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--group=GROUP</term>
+			<listitem><para>
+				The service account (eg a Managed
+				Service Account, Group Managed
+				Service Account) is allowed to
+				authenticate, if the device it
+				authenticates from is a member
+				of the given <constant>GROUP</constant>.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--silo=SILO</term>
+			<listitem><para>
+				The service account (eg a Managed
+				Service Account, Group Managed
+				Service Account) is allowed to
+				authenticate, if the device it
+				authenticates from is assigned
+				and granted membership of a
+				given <constant>SILO</constant>.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain auth policy service-allowed-to-authenticate-to set</title>
+	<para>Set the service-allowed-to-authenticate-to property by scenario.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Name of authentication policy.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--group=GROUP</term>
+			<listitem><para>
+				The service account (eg a Managed
+				Service Account, Group Managed
+				Service Account), will only be
+				allowed access by other accounts
+				that are members of the given
+				<constant>GROUP</constant>.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--silo=SILO</term>
+			<listitem><para>
+				The service account (eg a
+				Managed Service Account, Group
+				Managed Service Account), will
+				only be allowed access by other
+				accounts that are assigned
+				to, granted membership of (and
+				meet any authentication
+				conditions of) the given <constant>SILO</constant>.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain auth policy computer-allowed-to-authenticate-to set</title>
+	<para>Set the computer-allowed-to-authenticate-to property by scenario.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name</term>
+			<listitem><para>
+				Name of authentication policy.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--group=GROUP</term>
+			<listitem><para>
+				The computer account (eg a server
+				or workstation), will only be
+				allowed access by other accounts
+				that are members of the given
+				<constant>GROUP</constant>.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--silo=SILO</term>
+			<listitem><para>
+				The computer account (eg a
+				server or workstation), will
+				only be allowed access by
+				other accounts that are
+				assigned to, granted
+				membership of (and meet any
+				authentication conditions of)
+				the given <constant>SILO</constant>.
 			</para></listitem>
 		</varlistentry>
 	</variablelist>
