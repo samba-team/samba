@@ -24,7 +24,7 @@ import inspect
 
 from ldb import (ERR_NO_SUCH_OBJECT, FLAG_MOD_ADD, FLAG_MOD_REPLACE,
                  LdbError, Message, MessageElement, SCOPE_BASE,
-                 SCOPE_SUBTREE)
+                 SCOPE_ONELEVEL, SCOPE_SUBTREE)
 from samba.sd_utils import SDUtils
 
 from .constants import MODELS
@@ -317,6 +317,11 @@ class Model(metaclass=ModelMeta):
             return cls.create(ldb, **attrs), True
         else:
             return obj, False
+
+    def children(self, ldb):
+        """Returns a Query of the current models children."""
+        return Model.query(
+            ldb, base_dn=self.dn, scope=SCOPE_ONELEVEL, polymorphic=True)
 
     def save(self, ldb):
         """Save model to Ldb database.
