@@ -757,6 +757,22 @@
 			</listitem>
 		</varlistentry>
 		<varlistentry>
+			<term>--user-allowed-to-authenticate-from-device-group=GROUP</term>
+			<listitem>
+				<para>
+					User is allowed to
+					authenticate, if the device they
+					authenticate from is assigned
+					and granted membership of a
+					given <constant>GROUP</constant>.
+				</para>
+				<para>
+					This attribute avoids the need to write SDDL by hand and
+					cannot be used with --user-allowed-to-authenticate-from
+				</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
 			<term>--user-allowed-to-authenticate-from-device-silo=SILO</term>
 			<listitem>
 				<para>
