@@ -45,6 +45,12 @@ static int http_response_needs_body(struct http_request *req)
 		char c;
 		unsigned long long v;
 
+		cmp = strcasecmp(h->key, "Transfer-Encoding");
+		if (cmp == 0) {
+			cmp = strcasecmp(h->value, "chunked");
+			return 2;
+		}
+
 		cmp = strcasecmp(h->key, "Content-Length");
 		if (cmp != 0) {
 			continue;
@@ -66,6 +72,11 @@ static int http_response_needs_body(struct http_request *req)
 
 	return 0;
 }
+struct http_chunk
+{
+	struct http_chunk *prev, *next;
+	DATA_BLOB blob;
+};
 
 struct http_read_response_state {
 	enum http_parser_state	parser_state;
@@ -73,6 +84,7 @@ struct http_read_response_state {
 	uint64_t		max_content_length;
 	DATA_BLOB		buffer;
 	struct http_request	*response;
+	struct http_chunk	*chunks;
 };
 
 /**
@@ -119,6 +131,11 @@ static enum http_read_status http_parse_headers(struct http_read_response_state 
 
 		ret = http_response_needs_body(state->response);
 		switch (ret) {
+		case 2:
+			DEBUG(11, ("%s: need to process chunks... %d\n", __func__,
+				   state->response->response_code));
+			state->parser_state = HTTP_READING_CHUNK_SIZE;
+			break;
 		case 1:
 			if (state->response->remaining_content_length <= state->max_content_length) {
 				DEBUG(11, ("%s: Start of read body\n", __func__));
@@ -158,6 +175,141 @@ static enum http_read_status http_parse_headers(struct http_read_response_state 
 error:
 	free(key);
 	free(value);
+	TALLOC_FREE(line);
+	return status;
+}
+
+static bool http_response_process_chunks(struct http_read_response_state *state)
+{
+	struct http_chunk *chunk = NULL;
+	struct http_request *resp = state->response;
+
+	for (chunk = state->chunks; chunk; chunk = chunk->next) {
+		DBG_DEBUG("processing chunk of size %zi\n",
+			  chunk->blob.length);
+		if (resp->body.data == NULL) {
+			resp->body = chunk->blob;
+			chunk->blob = data_blob_null;
+			talloc_steal(resp, resp->body.data);
+			continue;
+		}
+
+		resp->body.data =
+			talloc_realloc(resp,
+				resp->body.data,
+				uint8_t,
+				resp->body.length + chunk->blob.length);
+		if (!resp->body.data) {
+				return false;
+		}
+		memcpy(resp->body.data + resp->body.length,
+		       chunk->blob.data,
+		       chunk->blob.length);
+
+		resp->body.length += chunk->blob.length;
+
+		TALLOC_FREE(chunk->blob.data);
+		chunk->blob = data_blob_null;
+	}
+	return true;
+}
+
+static enum http_read_status http_read_chunk_term(struct http_read_response_state *state)
+{
+	enum http_read_status	status = HTTP_ALL_DATA_READ;
+	char			*ptr = NULL;
+	char			*line = NULL;
+
+	/* Sanity checks */
+	if (!state || !state->response) {
+		DBG_ERR("%s: Invalid Parameter\n", __func__);
+		return HTTP_DATA_CORRUPTED;
+	}
+
+	line = talloc_strndup(state, (char *)state->buffer.data, state->buffer.length);
+	if (!line) {
+		DBG_ERR("%s: Memory error\n", __func__);
+		return HTTP_DATA_CORRUPTED;
+	}
+	ptr = strstr(line, "\r\n");
+	if (ptr == NULL) {
+		TALLOC_FREE(line);
+		return HTTP_MORE_DATA_EXPECTED;
+	}
+
+	if (strncmp(line, "\r\n", 2) == 0) {
+		/* chunk terminator */
+		if (state->parser_state == HTTP_READING_FINAL_CHUNK_TERM) {
+			if (http_response_process_chunks(state) == false) {
+				status = HTTP_DATA_CORRUPTED;
+				goto out;
+			}
+			state->parser_state = HTTP_READING_DONE;
+		} else {
+			state->parser_state = HTTP_READING_CHUNK_SIZE;
+		}
+		status = HTTP_ALL_DATA_READ;
+		goto out;
+	}
+
+	status = HTTP_DATA_CORRUPTED;
+out:
+	TALLOC_FREE(line);
+	return status;
+}
+
+static enum http_read_status http_read_chunk_size(struct http_read_response_state *state)
+{
+	enum http_read_status	status = HTTP_ALL_DATA_READ;
+	char			*ptr = NULL;
+	char			*line = NULL;
+	char			*value = NULL;
+	int			n = 0;
+	unsigned long long v;
+
+	/* Sanity checks */
+	if (!state || !state->response) {
+		DBG_ERR("%s: Invalid Parameter\n", __func__);
+		return HTTP_DATA_CORRUPTED;
+	}
+
+	line = talloc_strndup(state, (char *)state->buffer.data, state->buffer.length);
+	if (!line) {
+		DBG_ERR("%s: Memory error\n", __func__);
+		return HTTP_DATA_CORRUPTED;
+	}
+	ptr = strstr(line, "\r\n");
+	if (ptr == NULL) {
+		TALLOC_FREE(line);
+		return HTTP_MORE_DATA_EXPECTED;
+	}
+
+	n = sscanf(line, "%m[^\r\n]\r\n", &value);
+	if (n != 1) {
+		DBG_ERR("%s: Error parsing chunk size '%s'\n", __func__, line);
+		status = HTTP_DATA_CORRUPTED;
+		goto out;
+	}
+
+	DBG_DEBUG("Got chunk size string %s\n", value);
+	n = sscanf(value, "%llx", &v);
+	if (n != 1) {
+		DBG_ERR("%s: Error parsing chunk size '%s'\n", __func__, line);
+		status = HTTP_DATA_CORRUPTED;
+		goto out;
+	}
+	DBG_DEBUG("Got chunk size %llu 0x%llx\n", v, v);
+	if (v == 0) {
+		state->parser_state = HTTP_READING_FINAL_CHUNK_TERM;
+	} else {
+		state->parser_state = HTTP_READING_CHUNK;
+	}
+	state->response->remaining_content_length = v;
+	status = HTTP_ALL_DATA_READ;
+out:
+	if (value) {
+		free(value);
+	}
 	TALLOC_FREE(line);
 	return status;
 }
@@ -301,6 +453,55 @@ static enum http_read_status http_read_body(struct http_read_response_state *sta
 	return HTTP_ALL_DATA_READ;
 }
 
+static enum http_read_status http_read_chunk(struct http_read_response_state *state)
+{
+	struct http_request *resp = state->response;
+	struct http_chunk *chunk = NULL;
+	size_t total = 0;
+	size_t prev = 0;
+
+	if (state->buffer.length < resp->remaining_content_length) {
+		return HTTP_MORE_DATA_EXPECTED;
+	}
+
+	for (chunk = state->chunks; chunk; chunk = chunk->next) {
+		total += chunk->blob.length;
+	}
+
+	prev = total;
+	total = total + state->buffer.length;
+	if (total < prev) {
+		DBG_ERR("adding chunklen %zu to buf len %zu "
+			"will overflow\n",
+			state->buffer.length,
+			prev);
+		return HTTP_DATA_CORRUPTED;
+	}
+	if (total > state->max_content_length)  {
+		DBG_DEBUG("size %zu exceeds "
+			  "max content len %"PRIu64" skipping body\n",
+			  total,
+			  state->max_content_length);
+		state->parser_state = HTTP_READING_DONE;
+		goto out;
+	}
+
+	/* chunk read */
+	chunk = talloc_zero(state, struct http_chunk);
+	if (chunk == NULL) {
+		DBG_ERR("%s: Memory error\n", __func__);
+		return HTTP_DATA_CORRUPTED;
+	}
+	chunk->blob = state->buffer;
+	talloc_steal(chunk, chunk->blob.data);
+	DLIST_ADD_END(state->chunks, chunk);
+	state->parser_state = HTTP_READING_CHUNK_TERM;
+out:
+	state->buffer = data_blob_null;
+	resp->remaining_content_length = 0;
+	return HTTP_ALL_DATA_READ;
+}
+
 static enum http_read_status http_read_trailer(struct http_read_response_state *state)
 {
 	enum http_read_status status = HTTP_DATA_CORRUPTED;
@@ -322,6 +523,16 @@ static enum http_read_status http_parse_buffer(struct http_read_response_state *
 			return http_parse_headers(state);
 		case HTTP_READING_BODY:
 			return http_read_body(state);
+			break;
+		case HTTP_READING_FINAL_CHUNK_TERM:
+		case HTTP_READING_CHUNK_TERM:
+			return http_read_chunk_term(state);
+			break;
+		case HTTP_READING_CHUNK_SIZE:
+			return http_read_chunk_size(state);
+			break;
+		case HTTP_READING_CHUNK:
+			return http_read_chunk(state);
 			break;
 		case HTTP_READING_TRAILER:
 			return http_read_trailer(state);
@@ -530,7 +741,8 @@ static int http_read_response_next_vector(struct tstream_context *stream,
 		case HTTP_MORE_DATA_EXPECTED: {
 			size_t toread = 1;
 			size_t total;
-			if (state->parser_state == HTTP_READING_BODY) {
+			if (state->parser_state == HTTP_READING_BODY ||
+			    state->parser_state == HTTP_READING_CHUNK) {
 				struct http_request *resp = state->response;
 				toread = resp->remaining_content_length -
 					 state->buffer.length;
@@ -549,7 +761,7 @@ static int http_read_response_next_vector(struct tstream_context *stream,
 			/*
 			 * test if content-length message exceeds the
 			 * specified max_content_length
-			 * Note: This check wont be hit at the moment
+			 * Note: This check won't be hit at the moment
 			 *       due to an existing check in parse_headers
 			 *       which will skip the body. Check is here
 			 *       for completeness and to cater for future
@@ -558,7 +770,7 @@ static int http_read_response_next_vector(struct tstream_context *stream,
 			if (state->parser_state == HTTP_READING_BODY) {
 				if (total > state->max_content_length)  {
 					DBG_ERR("content size %zu exceeds "
-						"max content len %zu\n",
+						"max content len %"PRIu64"\n",
 						total,
 						state->max_content_length);
 					return -1;
