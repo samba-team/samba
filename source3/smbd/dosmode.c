@@ -388,12 +388,12 @@ NTSTATUS fget_ea_dos_attribute(struct files_struct *fsp,
 		   run because in cases like NFS, root might have even less
 		   rights than the real user
 		*/
-		set_effective_capability(DAC_OVERRIDE_CAPABILITY);
+		become_root();
 		sizeret = SMB_VFS_FGETXATTR(fsp,
 					    SAMBA_XATTR_DOS_ATTRIB,
 					    attrstr,
 					    sizeof(attrstr));
-		drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
+		unbecome_root();
 	}
 	if (sizeret == -1) {
 		DBG_INFO("Cannot get attribute "
@@ -508,14 +508,14 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
-		set_effective_capability(DAC_OVERRIDE_CAPABILITY);
+		become_root();
 		ret = SMB_VFS_FSETXATTR(smb_fname->fsp,
 					SAMBA_XATTR_DOS_ATTRIB,
 					blob.data, blob.length, 0);
-		drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
 		if (ret == 0) {
 			status = NT_STATUS_OK;
 		}
+		unbecome_root();
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
