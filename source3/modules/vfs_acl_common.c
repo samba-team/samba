@@ -764,9 +764,9 @@ static NTSTATUS set_underlying_acl(vfs_handle_struct *handle, files_struct *fsp,
 
 	/* Ok, we failed to chown and we have
 	   SEC_STD_WRITE_OWNER access - override. */
-	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
+	become_root();
 	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
-	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
+	unbecome_root();
 
 	return status;
 }
@@ -1072,7 +1072,7 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
+	become_root();
 	if (is_directory) {
 		ret = SMB_VFS_NEXT_UNLINKAT(handle,
 				dirfsp,
@@ -1084,7 +1084,7 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 				smb_fname,
 				0);
 	}
-	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
+	unbecome_root();
 
 	if (ret == -1) {
 		saved_errno = errno;
