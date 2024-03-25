@@ -377,6 +377,46 @@ class SegfaultTests(samba.tests.TestCase):
 
     @no_gdb_backtrace
     @segfault_detector
+    def test_ldb_use_after_dict_init(self):
+
+        msg = ldb.Message()
+
+        samdb = self.get_samdb()
+        msg.dn = ldb.Dn(samdb, "CN=Test")
+
+        msg2 = ldb.Message.from_dict(samdb,
+                                     {"dn": msg.dn,
+                                      "foo": ["bar"]})
+        del msg
+        dn = msg2.dn
+        dn.add_child("CN=TEST")
+        dn.set_component(0, "CN", "Test2")
+
+        del samdb
+
+        dn.get_casefold()
+
+    @no_gdb_backtrace
+    @segfault_detector
+    def test_ldb_use_after_msg_init(self):
+
+        msg = ldb.Message()
+
+        samdb = self.get_samdb()
+        msg.dn = ldb.Dn(samdb, "CN=Test")
+
+        msg2 = ldb.Message(dn=msg.dn)
+        del msg
+        dn = msg2.dn
+        dn.add_child("CN=TEST")
+        dn.set_component(0, "CN", "Test2")
+
+        del samdb
+
+        dn.get_casefold()
+
+    @no_gdb_backtrace
+    @segfault_detector
     def test_ldb_use_after_free_msg_diff(self):
         samdb = self.get_samdb()
         msg = ldb.Message()
