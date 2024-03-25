@@ -81,7 +81,7 @@ class HttpChunkBlackboxTests(BlackboxTestCase):
         try:
             msg = "one_chunk"
             resp = self.check_output("%s -U%% -I%s --uri %s" % (COMMAND, os.getenv("SERVER_IP", "localhost"), msg))
-            self.assertEqual(msg, resp.decode('utf-8'))
+            self.assertEqual(msg,resp.decode('utf-8'))
         except BlackboxProcessError as e:
             print("Failed with: %s" % e)
             self.fail(str(e))

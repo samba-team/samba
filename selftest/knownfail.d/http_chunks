@@ -1,5 +1,0 @@
-^samba.tests.blackbox.http_chunk.samba.tests.blackbox.http_chunk.HttpChunkBlackboxTests.test_multi_chunks
-^samba.tests.blackbox.http_chunk.samba.tests.blackbox.http_chunk.HttpChunkBlackboxTests.test_single_chunk
-^samba.tests.blackbox.http_chunk.samba.tests.blackbox.http_chunk.HttpChunkBlackboxTests.test_exact_request_size
-^samba.tests.blackbox.http_chunk.samba.tests.blackbox.http_chunk.HttpChunkBlackboxTests.test_exceed_request_size
-
