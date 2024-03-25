@@ -613,6 +613,16 @@ static void scavenger_timer(struct tevent_context *ev,
 		  file_id_str_buf(ctx->msg.file_id, &idbuf),
 		  timeval_string(talloc_tos(), &t, true));
 
+	status = smbXsrv_open_cleanup(ctx->msg.open_persistent_id);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("Failed to cleanup open global for file %s open "
+			    "%"PRIu64": %s\n",
+			    file_id_str_buf(ctx->msg.file_id, &idbuf),
+			    ctx->msg.open_persistent_id,
+			    nt_errstr(status));
+		return;
+	}
+
 	ok = share_mode_cleanup_disconnected(ctx->msg.file_id,
 					     ctx->msg.open_persistent_id);
 	if (!ok) {
@@ -622,14 +632,6 @@ static void scavenger_timer(struct tevent_context *ev,
 			    ctx->msg.open_persistent_id);
 	}
 
-	status = smbXsrv_open_cleanup(ctx->msg.open_persistent_id);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("Failed to cleanup open global for file %s open "
-			    "%"PRIu64": %s\n",
-			    file_id_str_buf(ctx->msg.file_id, &idbuf),
-			    ctx->msg.open_persistent_id,
-			    nt_errstr(status));
-	}
 }
 
 static void scavenger_add_timer(struct smbd_scavenger_state *state,

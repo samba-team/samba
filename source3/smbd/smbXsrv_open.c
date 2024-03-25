@@ -1475,7 +1475,7 @@ static void smbXsrv_open_cleanup_fn(
 	}
 
 	if (!delete_open) {
-		state->status = NT_STATUS_OK;
+		state->status = NT_STATUS_CANNOT_DELETE;
 		return;
 	}
 do_delete:
@@ -1494,6 +1494,7 @@ do_delete:
 		  "deleted record from %s\n",
 		  state->global_id,
 		  dbwrap_name(dbwrap_record_get_db(rec)));
+	state->status = NT_STATUS_OK;
 }
 
 NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id)
