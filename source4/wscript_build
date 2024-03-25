@@ -6,6 +6,11 @@ bld.SAMBA_BINARY('client/smbclient'  + bld.env.suffix4,
 	install=False
 	)
 
+bld.SAMBA_BINARY('client/http_test',
+    source='client/http_test.c',
+    deps='samba-hostconfig SMBREADLINE samba-util LIBCLI_SMB RPC_NDR_SRVSVC LIBCLI_LSA popt CMDLINE_S4',
+    for_selftest=True,
+    )
 
 bld.SAMBA_BINARY('client/cifsdd',
 	source='client/cifsdd.c client/cifsddio.c',
