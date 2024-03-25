@@ -5094,6 +5094,115 @@ done:
 	return ret;
 }
 
+static bool test_reconnect_twice(struct torture_context *tctx,
+				 struct smb2_tree *tree,
+				 struct smb2_tree *tree2)
+{
+       NTSTATUS status;
+       TALLOC_CTX *mem_ctx = talloc_new(tctx);
+       char fname[256];
+       struct smb2_handle _h;
+       struct smb2_handle *h = NULL;
+       struct smb2_create io;
+       struct GUID create_guid = GUID_random();
+       struct smbcli_options options;
+       uint64_t previous_session_id;
+       uint8_t b = 0;
+       bool ret = true;
+       bool ok;
+
+       options = tree->session->transport->options;
+       previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
+
+       /* Choose a random name in case the state is left a little funky. */
+       snprintf(fname,
+                sizeof(fname),
+                "durable_v2_reconnect_delay_%s.dat",
+                generate_random_str(tctx, 8));
+
+       smb2_util_unlink(tree, fname);
+
+       smb2_oplock_create_share(&io, fname,
+                                smb2_util_share_access(""),
+                                smb2_util_oplock_level("b"));
+       io.in.durable_open = false;
+       io.in.durable_open_v2 = true;
+       io.in.persistent_open = false;
+       io.in.create_guid = create_guid;
+       io.in.timeout = 5000;
+
+       status = smb2_create(tree, mem_ctx, &io);
+       CHECK_STATUS(status, NT_STATUS_OK);
+
+       _h = io.out.file.handle;
+       h = &_h;
+       CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+       CHECK_VAL(io.out.durable_open_v2, true);
+
+       status = smb2_util_write(tree, *h, &b, 0, 1);
+       CHECK_STATUS(status, NT_STATUS_OK);
+
+       /* disconnect, leaving the durable open */
+       TALLOC_FREE(tree);
+       h = NULL;
+
+       /*
+	* Getting us closer to the time the Durable Handle scavenger fires: in
+	* one second it will go off...
+	*/
+       sleep(4);
+
+       ok = torture_smb2_connection_ext(tctx, previous_session_id,
+                                        &options, &tree);
+       torture_assert_goto(tctx, ok, ret, done, "couldn't reconnect, bailing\n");
+
+       ZERO_STRUCT(io);
+       io.in.fname = fname;
+       io.in.durable_open_v2 = false;
+       io.in.durable_handle_v2 = &_h;
+       io.in.create_guid = create_guid;
+
+       status = smb2_create(tree, mem_ctx, &io);
+       CHECK_STATUS(status, NT_STATUS_OK);
+       CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+       _h = io.out.file.handle;
+       h = &_h;
+
+       /* Second disconnect, leaving the durable open */
+       TALLOC_FREE(tree);
+       h = NULL;
+
+       /*
+	* Sleep longer then remaining first timeout and check if the
+	* scavenger time started by the first disconnect wipes the handle.
+	*/
+       sleep(2);
+
+       ok = torture_smb2_connection_ext(tctx, previous_session_id,
+                                        &options, &tree);
+       torture_assert_goto(tctx, ok, ret, done, "couldn't reconnect, bailing\n");
+
+       ZERO_STRUCT(io);
+       io.in.fname = fname;
+       io.in.durable_open_v2 = false;
+       io.in.durable_handle_v2 = &_h;
+       io.in.create_guid = create_guid;
+
+       status = smb2_create(tree, mem_ctx, &io);
+       CHECK_STATUS(status, NT_STATUS_OK);
+       CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+       _h = io.out.file.handle;
+       h = &_h;
+
+done:
+       if (h != NULL) {
+               smb2_util_close(tree, *h);
+       }
+       smb2_util_unlink(tree2, fname);
+       talloc_free(mem_ctx);
+       return ret;
+}
+
 struct torture_suite *torture_smb2_durable_v2_open_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -5131,6 +5240,7 @@ struct torture_suite *torture_smb2_durable_v2_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_2smb2_test(suite, "app-instance", test_durable_v2_open_app_instance);
 	torture_suite_add_1smb2_test(suite, "persistent-open-oplock", test_persistent_open_oplock);
 	torture_suite_add_1smb2_test(suite, "persistent-open-lease", test_persistent_open_lease);
+	torture_suite_add_2smb2_test(suite, "reconnect-twice", test_reconnect_twice);
 
 	suite->description = talloc_strdup(suite, "SMB2-DURABLE-V2-OPEN tests");
 
