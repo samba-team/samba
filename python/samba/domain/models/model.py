@@ -42,10 +42,7 @@ class ModelMeta(type):
         cls.fields = dict(inspect.getmembers(cls, lambda f: isinstance(f, Field)))
         cls.meta = mcls
         object_class = cls.get_object_class()
-
-        if cls.__name__ != "Model":
-            MODELS[object_class] = cls
-
+        MODELS[object_class] = cls
         return cls
 
 

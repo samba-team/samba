@@ -50,6 +50,7 @@ class cmd_shell(Command):
         context.update({
             "samdb": samdb,
             "ldb": ldb,
+            "Model": Model,
         })
         context.update({model.__name__: model for model in MODELS.values()})
 
