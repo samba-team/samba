@@ -3748,7 +3748,7 @@ static PyObject *py_ldb_msg_add(PyLdbMessageObject *self, PyObject *args)
 
 static PyMethodDef py_ldb_msg_methods[] = {
 	{ "from_dict", (PyCFunction)py_ldb_msg_from_dict, METH_CLASS | METH_VARARGS,
-		"Message.from_dict(ldb, dict, mod_flag=FLAG_MOD_REPLACE) -> ldb.Message\n"
+		"Message.from_dict(ldb, dict, mod_flag) -> ldb.Message\n"
 		"Class method to create ldb.Message object from Dictionary.\n"
 		"mod_flag is one of FLAG_MOD_ADD, FLAG_MOD_REPLACE or FLAG_MOD_DELETE."},
 	{ "keys", (PyCFunction)py_ldb_msg_keys, METH_NOARGS,
