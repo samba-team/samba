@@ -757,7 +757,7 @@
 			</listitem>
 		</varlistentry>
 		<varlistentry>
-			<term>--user-allowed-to-authenticate-from-silo</term>
+			<term>--user-allowed-to-authenticate-from-device-silo=SILO</term>
 			<listitem>
 				<para>
 					User is allowed to
