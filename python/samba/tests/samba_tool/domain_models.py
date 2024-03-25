@@ -83,31 +83,37 @@ class ComputerModelTests(SambaToolCmdTest):
     def test_computer_constructor(self):
         # Use only name
         comp1 = Computer.create(self.samdb, name="comp1")
+        self.addCleanup(comp1.delete, self.samdb)
         self.assertEqual(comp1.name, "comp1")
         self.assertEqual(comp1.account_name, "comp1$")
 
         # Use only cn
         comp2 = Computer.create(self.samdb, cn="comp2")
+        self.addCleanup(comp2.delete, self.samdb)
         self.assertEqual(comp2.name, "comp2")
         self.assertEqual(comp2.account_name, "comp2$")
 
         # Use name and account_name but missing "$" in account_name.
         comp3 = Computer.create(self.samdb, name="comp3", account_name="comp3")
+        self.addCleanup(comp3.delete, self.samdb)
         self.assertEqual(comp3.name, "comp3")
         self.assertEqual(comp3.account_name, "comp3$")
 
         # Use cn and account_name but missing "$" in account_name.
         comp4 = Computer.create(self.samdb, cn="comp4", account_name="comp4$")
+        self.addCleanup(comp4.delete, self.samdb)
         self.assertEqual(comp4.name, "comp4")
         self.assertEqual(comp4.account_name, "comp4$")
 
         # Use only account_name, the name should get the "$" removed.
         comp5 = Computer.create(self.samdb, account_name="comp5$")
+        self.addCleanup(comp5.delete, self.samdb)
         self.assertEqual(comp5.name, "comp5")
         self.assertEqual(comp5.account_name, "comp5$")
 
         # Use only account_name but accidentally forgot the "$" character.
         comp6 = Computer.create(self.samdb, account_name="comp6")
+        self.addCleanup(comp6.delete, self.samdb)
         self.assertEqual(comp6.name, "comp6")
         self.assertEqual(comp6.account_name, "comp6$")
 
