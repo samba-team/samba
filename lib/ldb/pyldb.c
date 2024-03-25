@@ -1425,14 +1425,21 @@ static struct ldb_message *PyDict_AsMessage(TALLOC_CTX *mem_ctx,
 	}
 
 	if (dn_value) {
-		if (!pyldb_Object_AsDn(msg, dn_value, ldb_ctx, &msg->dn)) {
+		struct ldb_dn *dn = NULL;
+		if (!pyldb_Object_AsDn(msg, dn_value, ldb_ctx, &dn)) {
 			PyErr_SetString(PyExc_TypeError, "unable to import dn object");
 			TALLOC_FREE(msg);
 			return NULL;
 		}
-		if (msg->dn == NULL) {
+		if (dn == NULL) {
 			PyErr_SetString(PyExc_TypeError, "dn set but not found");
 			TALLOC_FREE(msg);
+			return NULL;
+		}
+		msg->dn = talloc_reference(msg, dn);
+		if (msg->dn == NULL) {
+			talloc_free(mem_ctx);
+			PyErr_NoMemory();
 			return NULL;
 		}
 	} else {
