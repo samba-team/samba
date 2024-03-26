@@ -4785,6 +4785,8 @@ class RawKerberosTest(TestCase):
                 else:
                     self.assertEqual(creds.get_nt_hash(), nt_password)
 
+                kdc_exchange_dict['nt_hash_from_pac'] = ntlm_package.nt_password
+
                 lm_password = bytes(ntlm_package.lm_password.hash)
                 self.assertEqual(bytes(16), lm_password)
 

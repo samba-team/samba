@@ -584,7 +584,11 @@ class PkInitTests(KDCBaseTest):
                 send_enc_ts=False,
                 ):
         if send_enc_ts:
-            preauth_key = self.PasswordKey_from_creds(creds, kcrypto.Enctype.AES256)
+            if creds.get_password() is None:
+                # Try the NT hash if there isn't a password
+                preauth_key = self.PasswordKey_from_creds(creds, kcrypto.Enctype.RC4)
+            else:
+                preauth_key = self.PasswordKey_from_creds(creds, kcrypto.Enctype.AES256)
         else:
             preauth_key = None
 
@@ -1235,7 +1239,7 @@ class PkInitTests(KDCBaseTest):
             return None
 
         self.check_as_reply(rep)
-        return kdc_exchange_dict['rep_ticket_creds']
+        return kdc_exchange_dict
 
 
 if __name__ == '__main__':
