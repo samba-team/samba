@@ -209,8 +209,9 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 					*error_string = smb_get_krb5_error_message(context,
 										   code,
 										   mem_ctx);
-					DEBUG(0, ("smb_krb5_kt_add_entry failed code=%d, error = %s\n",
-						  code, *error_string));
+					DBG_ERR("krb5_kt_add_entry failed "
+						"code=%d, error = %s\n",
+						code, *error_string);
 					goto done;
 				}
 				keys_exported = true;
