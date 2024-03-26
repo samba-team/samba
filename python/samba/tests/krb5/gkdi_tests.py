@@ -92,7 +92,7 @@ class GkdiExplicitRootKeyTests(GkdiKdcBaseTest):
         # It actually doesn’t matter what we specify for the L1 and L2 indices.
         # We’ll get the same result regardless — they just cannot specify a key
         # from the future.
-        current_gkid = self.current_gkid()
+        current_gkid = self.current_gkid(self.get_samdb())
         key = self.check_rpc_get_key(root_key_id, current_gkid)
 
         self.assertEqual(current_gkid, key.gkid)
@@ -104,7 +104,7 @@ class GkdiExplicitRootKeyTests(GkdiKdcBaseTest):
 
         # It actually doesn’t matter what we specify for the L1 and L2 indices.
         # We’ll get the same result regardless.
-        previous_l0_idx = self.current_gkid().l0_idx - 1
+        previous_l0_idx = self.current_gkid(self.get_samdb()).l0_idx - 1
         key = self.check_rpc_get_key(root_key_id, Gkid(previous_l0_idx, 0, 0))
 
         # Expect to get an L1 seed key.
@@ -117,7 +117,7 @@ class GkdiExplicitRootKeyTests(GkdiKdcBaseTest):
         """Test with the SHA1 algorithm."""
         key = self.check_rpc_get_key(
             self.new_root_key(hash_algorithm=Algorithm.SHA1),
-            self.current_gkid(),
+            self.current_gkid(self.get_samdb()),
         )
         self.assertIs(Algorithm.SHA1, key.hash_algorithm)
 
@@ -125,7 +125,7 @@ class GkdiExplicitRootKeyTests(GkdiKdcBaseTest):
         """Test with the SHA256 algorithm."""
         key = self.check_rpc_get_key(
             self.new_root_key(hash_algorithm=Algorithm.SHA256),
-            self.current_gkid(),
+            self.current_gkid(self.get_samdb()),
         )
         self.assertIs(Algorithm.SHA256, key.hash_algorithm)
 
@@ -133,7 +133,7 @@ class GkdiExplicitRootKeyTests(GkdiKdcBaseTest):
         """Test with the SHA384 algorithm."""
         key = self.check_rpc_get_key(
             self.new_root_key(hash_algorithm=Algorithm.SHA384),
-            self.current_gkid(),
+            self.current_gkid(self.get_samdb()),
         )
         self.assertIs(Algorithm.SHA384, key.hash_algorithm)
 
@@ -141,7 +141,7 @@ class GkdiExplicitRootKeyTests(GkdiKdcBaseTest):
         """Test with the SHA512 algorithm."""
         key = self.check_rpc_get_key(
             self.new_root_key(hash_algorithm=Algorithm.SHA512),
-            self.current_gkid(),
+            self.current_gkid(self.get_samdb()),
         )
         self.assertIs(Algorithm.SHA512, key.hash_algorithm)
 
@@ -149,7 +149,7 @@ class GkdiExplicitRootKeyTests(GkdiKdcBaseTest):
         """Test without a specified algorithm."""
         key = self.check_rpc_get_key(
             self.new_root_key(hash_algorithm=None),
-            self.current_gkid(),
+            self.current_gkid(self.get_samdb()),
         )
         self.assertIs(Algorithm.SHA256, key.hash_algorithm)
 
@@ -158,6 +158,7 @@ class GkdiExplicitRootKeyTests(GkdiKdcBaseTest):
         root_key_id = self.new_root_key(use_start_time=ROOT_KEY_START_TIME)
 
         future_gkid = self.current_gkid(
+            self.get_samdb(),
             offset=timedelta_from_nt_time_delta(
                 NtTimeDelta(KEY_CYCLE_DURATION + MAX_CLOCK_SKEW)
             )
@@ -185,7 +186,7 @@ class GkdiExplicitRootKeyTests(GkdiKdcBaseTest):
         """Attempt to use a root key with an effective time of zero."""
         root_key_id = self.new_root_key(use_start_time=NtTime(0))
 
-        gkid = self.current_gkid()
+        gkid = self.current_gkid(self.get_samdb())
 
         with self.assertRaises(GetKeyError) as err:
             self.get_key(self.get_samdb(), self.gmsa_sd, root_key_id, gkid)
@@ -209,7 +210,7 @@ class GkdiExplicitRootKeyTests(GkdiKdcBaseTest):
         """Attempt to use a root key with an effective time set too low."""
         root_key_id = self.new_root_key(use_start_time=NtTime(ROOT_KEY_START_TIME - 1))
 
-        gkid = self.current_gkid()
+        gkid = self.current_gkid(self.get_samdb())
 
         with self.assertRaises(GetKeyError) as err:
             self.get_key(self.get_samdb(), self.gmsa_sd, root_key_id, gkid)
@@ -233,7 +234,7 @@ class GkdiExplicitRootKeyTests(GkdiKdcBaseTest):
 
     def test_before_valid(self):
         """Attempt to use a key before it is valid."""
-        gkid = self.current_gkid()
+        gkid = self.current_gkid(self.get_samdb())
         valid_start_time = NtTime(
             gkid.start_nt_time() + KEY_CYCLE_DURATION + MAX_CLOCK_SKEW
         )
@@ -268,7 +269,7 @@ class GkdiExplicitRootKeyTests(GkdiKdcBaseTest):
         """Attempt to use a non‐existent root key."""
         root_key_id = misc.GUID(secrets.token_bytes(16))
 
-        gkid = self.current_gkid()
+        gkid = self.current_gkid(self.get_samdb())
 
         with self.assertRaises(GetKeyError) as err:
             self.get_key(self.get_samdb(), self.gmsa_sd, root_key_id, gkid)
@@ -292,7 +293,7 @@ class GkdiExplicitRootKeyTests(GkdiKdcBaseTest):
         """Attempt to use a root key that is the wrong length."""
         root_key_id = self.new_root_key(data=bytes(KEY_LEN_BYTES // 2))
 
-        gkid = self.current_gkid()
+        gkid = self.current_gkid(self.get_samdb())
 
         with self.assertRaises(GetKeyError) as err:
             self.get_key(self.get_samdb(), self.gmsa_sd, root_key_id, gkid)
@@ -724,7 +725,7 @@ class GkdiSelfTests(GkdiKdcBaseTest):
             self.gmsa_sd,
             root_key_id,
             gkid,
-            current_gkid=self.current_gkid(),
+            current_gkid=self.current_gkid(self.get_samdb()),
         )
 
         self.assertEqual(gkid, key.gkid)
