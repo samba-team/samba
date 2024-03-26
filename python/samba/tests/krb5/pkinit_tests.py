@@ -51,6 +51,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_PREAUTH_REQUIRED,
     KU_PA_ENC_TIMESTAMP,
     NT_PRINCIPAL,
+    NT_SRV_INST,
     PADATA_AS_FRESHNESS,
     PADATA_ENC_TIMESTAMP,
     PADATA_PK_AS_REP_19,
@@ -625,8 +626,12 @@ class PkInitTests(KDCBaseTest):
         target_name = target_creds.get_username()
         target_realm = target_creds.get_realm()
 
-        sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
-                                          names=['host', target_name[:-1]])
+        if target_name == "krbtgt":
+            sname = self.PrincipalName_create(name_type=NT_SRV_INST,
+                                              names=['krbtgt', target_realm])
+        else:
+            sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                              names=['host', target_name[:-1]])
 
         if expect_error:
             check_error_fn = self.generic_check_kdc_error
@@ -637,8 +642,11 @@ class PkInitTests(KDCBaseTest):
             check_error_fn = None
             check_rep_fn = self.generic_check_kdc_rep
 
-            expected_sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
-                                                       names=[target_name])
+            if target_name == "krbtgt":
+                expected_sname = sname
+            else:
+                expected_sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                                           names=[target_name])
 
         kdc_options = ('forwardable,'
                        'renewable,'
@@ -1146,20 +1154,26 @@ class PkInitTests(KDCBaseTest):
         target_name = target_creds.get_username()
         target_realm = target_creds.get_realm()
 
-        sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
-                                          names=['host', target_name[:-1]])
+        target_name = target_creds.get_username()
+        if target_name == "krbtgt":
+            target_sname = self.PrincipalName_create(name_type=NT_SRV_INST,
+                                                     names=['krbtgt', target_realm])
+            expected_sname = target_sname
+        else:
+            target_sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                                     names=['host', target_name[:-1]])
+
+            expected_sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                                           names=[target_name])
 
         if expect_error:
             check_error_fn = self.generic_check_kdc_error
             check_rep_fn = None
 
-            expected_sname = sname
+            expected_sname = target_sname
         else:
             check_error_fn = None
             check_rep_fn = self.generic_check_kdc_rep
-
-            expected_sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
-                                                       names=[target_name])
 
         kdc_options = ('forwardable,'
                        'renewable,'
@@ -1213,7 +1227,7 @@ class PkInitTests(KDCBaseTest):
         rep = self._generic_kdc_exchange(kdc_exchange_dict,
                                          cname=cname,
                                          realm=target_realm,
-                                         sname=sname,
+                                         sname=target_sname,
                                          till_time=till,
                                          etypes=etypes)
         if expect_error:
