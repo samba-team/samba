@@ -107,7 +107,7 @@ class cmd_service_account_create(Command):
     takes_options = [
         Option("--name", help="Name of managed service account (required).",
                dest="name", action="store", type=str, required=True),
-        Option("--dns-host-name", help="Name of DNS host (required).",
+        Option("--dns-host-name", help="DNS hostname of this service account (required).",
                dest="dns_host_name", action="store", type=str, required=True),
         Option("--group-msa-membership",
                help="Provide optional Group MSA Membership SDDL.",
@@ -153,7 +153,7 @@ class cmd_service_account_modify(Command):
     takes_options = [
         Option("--name", help="Name of managed service account (required).",
                dest="name", action="store", type=str, required=True),
-        Option("--dns-host-name", help="Update name of DNS host.",
+        Option("--dns-host-name", help="Update DNS hostname of this service account.",
                dest="dns_host_name", action="store", type=str),
         Option("--group-msa-membership",
                help="Update Group MSA Membership field directly (SDDL).",
