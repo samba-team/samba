@@ -61,8 +61,9 @@ def process_one_file(f):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--pipe', default='$PIPE',
-                        help='pipe name (for output command line)')
+    parser.add_argument('-p', '--pipe', default=None,
+                        help=('pipe name (for output command line, '
+                              'default is a guess or "$PIPE")'))
     parser.add_argument('-t', '--type', default=None, choices=TYPES,
                         help='restrict to this type')
     parser.add_argument('-o', '--opnum', default=None, type=int,
@@ -91,6 +92,13 @@ def main():
         sys.exit(1)
 
     for fn in args.FILES:
+        if pipe is None:
+            m = re.search(r'clusterfuzz-testcase.+-fuzz_ndr_([a-z]+)', fn)
+            if m is None:
+                pipe = '$PIPE'
+            else:
+                pipe = m.group(1)
+
         if args.crash_filter is not None:
             if not re.search(args.crash_filter, fn):
                 print_if_verbose(f"skipping {fn}")
