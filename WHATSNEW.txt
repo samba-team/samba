@@ -1,16 +1,11 @@
-Release Announcements
-=====================
-
-This is the fourth release candidate of Samba 4.20.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
-
-Samba 4.20 will be the next version of the Samba suite.
+                   ==============================
+                   Release Notes for Samba 4.20.0
+                           March 27, 2024
+                   ==============================
 
 
-UPGRADING
-=========
+This is the first stable release of the Samba 4.20 release series.
+Please read the release notes carefully before upgrading.
 
 
 NEW FEATURES/CHANGES
@@ -278,6 +273,33 @@ smb.conf changes
   smb3 share cap:CLUSTER                  new             see 'man smb.conf'
   smb3 share cap:CONTINUOUS AVAILABILITY  new             no
   smb3 share cap:SCALE OUT                new             see 'man smb.conf'
+
+
+Changes since 4.20.0rc4
+=======================
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15606: Avoid null-dereference with bad claims.
+   * BUG 15613: ndr_pull_security_ace can leave resource attribute ACE coda
+     claim struct undefined.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15527: fd_handle_destructor() panics within an smbd_smb2_close() if
+     vfs_stat_fsp() fails in fd_close().
+
+o  Björn Jacke <bjacke@samba.org>
+   * BUG 15583: set_nt_acl sometimes fails with NT_STATUS_INVALID_PARAMETER -
+     openat() EACCES.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15527: fd_handle_destructor() panics within an smbd_smb2_close() if
+     vfs_stat_fsp() fails in fd_close().
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15599: libgpo: Segfault in python bindings.
+
+o  Jo Sutton <josutton@catalyst.net.nz>
+   * BUG 15607: Samba AD is missing some authentication policy tests.
 
 
 CHANGES SINCE 4.20.0rc3
