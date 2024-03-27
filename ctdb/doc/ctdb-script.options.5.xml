@@ -864,6 +864,29 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 
 	<varlistentry>
 	  <term>
+	    CTDB_NFS_EXPORTS_FILE=<parameter>FILE</parameter>
+	  </term>
+	  <listitem>
+	    <para>
+	      Set FILE as the path of the file containing NFS exports,
+	      for use by the NFS callout (see CTDB_NFS_CALLOUT,
+	      above).  This is used for share checks when
+	      CTDB_NFS_SKIP_SHARE_CHECK is not set to "yes".  This is
+	      most useful with NFS-Ganesha, since it supports
+	      configuration include files and exports may be stored in
+	      a separate file.
+	    </para>
+	    <para>
+	      Default is <filename>/var/lib/nfs/etab</filename> for
+	      <filename>nfs-linux-kernel-callout</filename>,
+	      <filename>/etc/ganesha/ganesha.conf</filename> for
+	      <filename>nfs-ganesha-callout</filename>.
+	    </para>
+	  </listitem>
+	</varlistentry>
+
+	<varlistentry>
+	  <term>
 	    CTDB_NFS_SKIP_SHARE_CHECK=yes|no
 	  </term>
 	  <listitem>

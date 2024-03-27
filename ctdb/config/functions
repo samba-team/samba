@@ -1125,6 +1125,9 @@ nfs_callout_init()
 	if [ -n "$CTDB_NFS_STATE_MNT" ]; then
 		export CTDB_NFS_STATE_MNT
 	fi
+	if [ -n "$CTDB_NFS_EXPORTS_FILE" ]; then
+		export CTDB_NFS_EXPORTS_FILE
+	fi
 
 	nfs_callout_cache="${_state_dir}/nfs_callout_cache"
 	nfs_callout_cache_callout="${nfs_callout_cache}/CTDB_NFS_CALLOUT"

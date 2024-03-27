@@ -41,9 +41,11 @@ set -e
 state_fs="${CTDB_NFS_STATE_FS_TYPE:-gpfs}"
 state_dir="${CTDB_NFS_STATE_MNT}" # No sane default.
 
+# Location of exports file
+nfs_exports_file="${CTDB_NFS_EXPORTS_FILE:-/etc/ganesha/ganesha.conf}"
+
 # To change the following, edit the default values below.  Do not set
 # these - they aren't configuration variables, just hooks for testing.
-nfs_exports_file="${CTDB_NFS_EXPORTS_FILE:-/etc/ganesha/ganesha.conf}"
 nfs_service="${CTDB_NFS_SERVICE:-nfs-ganesha}"
 ganesha_rec_subdir=${CTDB_GANESHA_REC_SUBDIR:-.ganesha}
 procfs=${PROCFS_PATH:-/proc}

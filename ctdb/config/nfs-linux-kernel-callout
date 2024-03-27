@@ -6,14 +6,11 @@ set -e
 # NFS exports file.  Some code below keeps a cache of output derived
 # from exportfs(8).  When this file is updated the cache is invalid
 # and needs to be regenerated.
-#
-# To change the file, edit the default value below.  Do not set
-# CTDB_NFS_EXPORTS_FILE - it isn't a configuration variable, just a
-# hook for testing.
 nfs_exports_file="${CTDB_NFS_EXPORTS_FILE:-/var/lib/nfs/etab}"
 
-# As above, edit the default value below.  CTDB_NFS_DISTRO_STYLE is a
-# test variable only.
+# Do not set CTDB_NFS_DISTRO_STYLE - it isn't a configuration
+# variable, just a hook for testing.  To change the style, edit the
+# default value below.
 nfs_distro_style="${CTDB_NFS_DISTRO_STYLE:-systemd-redhat}"
 
 # As above, edit the default value below.  CTDB_SYS_ETCDIR is a
