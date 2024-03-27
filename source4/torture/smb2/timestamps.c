@@ -163,18 +163,18 @@ static bool test_time_t(struct torture_context *tctx,
 			nt_time_string(tctx, gi.basic_info.out.change_time));
 
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      gi.basic_info.out.create_time,
+				      nttime,
 				      ret, done,
 				      "Wrong create time\n");
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      gi.basic_info.out.write_time,
+				      nttime,
 				      ret, done,
 				      "Wrong write time\n");
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      gi.basic_info.out.change_time,
+				      nttime,
 				      ret, done,
 				      "Wrong change time\n");
 
@@ -190,18 +190,18 @@ static bool test_time_t(struct torture_context *tctx,
 					"smb2_find_level failed\n");
 
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      d[0].id_both_directory_info.create_time,
+				      nttime,
 				      ret, done,
 				      "Wrong create time\n");
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      d[0].id_both_directory_info.write_time,
+				      nttime,
 				      ret, done,
 				      "Wrong write time\n");
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      d[0].id_both_directory_info.change_time,
+				      nttime,
 				      ret, done,
 				      "Wrong change time\n");
 
@@ -239,18 +239,18 @@ static bool test_time_t(struct torture_context *tctx,
 			nt_time_string(tctx, gi.basic_info.out.change_time));
 
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      gi.basic_info.out.create_time,
+				      nttime,
 				      ret, done,
 				      "Wrong create time\n");
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      gi.basic_info.out.write_time,
+				      nttime,
 				      ret, done,
 				      "Wrong write time\n");
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      gi.basic_info.out.change_time,
+				      nttime,
 				      ret, done,
 				      "Wrong change time\n");
 
@@ -267,18 +267,18 @@ static bool test_time_t(struct torture_context *tctx,
 					"smb2_find_level failed\n");
 
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      d[0].id_both_directory_info.create_time,
+				      nttime,
 				      ret, done,
 				      "Wrong create time\n");
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      d[0].id_both_directory_info.write_time,
+				      nttime,
 				      ret, done,
 				      "Wrong write time\n");
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      d[0].id_both_directory_info.change_time,
+				      nttime,
 				      ret, done,
 				      "Wrong change time\n");
 
@@ -423,18 +423,18 @@ static bool test_freeze_thaw(struct torture_context *tctx,
 			nt_time_string(tctx, gi.basic_info.out.change_time));
 
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      gi.basic_info.out.create_time,
+				      nttime,
 				      ret, done,
 				      "Wrong create time\n");
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      gi.basic_info.out.write_time,
+				      nttime,
 				      ret, done,
 				      "Wrong write time\n");
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      gi.basic_info.out.change_time,
+				      nttime,
 				      ret, done,
 				      "Wrong change time\n");
 
@@ -477,18 +477,18 @@ static bool test_freeze_thaw(struct torture_context *tctx,
 			nt_time_string(tctx, gi.basic_info.out.change_time));
 
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      gi.basic_info.out.create_time,
+				      nttime,
 				      ret, done,
 				      "Wrong create time\n");
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      gi.basic_info.out.write_time,
+				      nttime,
 				      ret, done,
 				      "Wrong write time\n");
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      gi.basic_info.out.change_time,
+				      nttime,
 				      ret, done,
 				      "Wrong change time\n");
 
@@ -531,18 +531,18 @@ static bool test_freeze_thaw(struct torture_context *tctx,
 			nt_time_string(tctx, gi.basic_info.out.change_time));
 
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      gi.basic_info.out.create_time,
+				      nttime,
 				      ret, done,
 				      "Wrong create time\n");
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      gi.basic_info.out.write_time,
+				      nttime,
 				      ret, done,
 				      "Wrong write time\n");
 	torture_assert_u64_equal_goto(tctx,
-				      nttime,
 				      gi.basic_info.out.change_time,
+				      nttime,
 				      ret, done,
 				      "Wrong change time\n");
 
