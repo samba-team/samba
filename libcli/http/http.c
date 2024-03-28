@@ -28,16 +28,28 @@
 
 #undef strcasecmp
 
+enum http_body_type {
+	BODY_NONE = 0,
+	BODY_CONTENT_LENGTH,
+	BODY_CHUNKED,
+	BODY_ERROR = -1
+};
+
 /**
  * Determines if a response should have a body.
- * @return 1 if the response MUST have a body; 0 if the response MUST NOT have
- *     a body. Returns -1 on error.
+ * @return 2 if response MUST use chunked encoding,
+ *         1 if the response MUST have a body;
+ *         0 if the response MUST NOT have a body.
+ * Returns -1 on error.
  */
-static int http_response_needs_body(struct http_request *req)
+static enum http_body_type http_response_needs_body(
+					struct http_request *req)
 {
 	struct http_header *h = NULL;
 
-	if (!req) return -1;
+	if (!req) {
+		return BODY_ERROR;
+	}
 
 	for (h = req->headers; h != NULL; h = h->next) {
 		int cmp;
@@ -48,7 +60,13 @@ static int http_response_needs_body(struct http_request *req)
 		cmp = strcasecmp(h->key, "Transfer-Encoding");
 		if (cmp == 0) {
 			cmp = strcasecmp(h->value, "chunked");
-			return 2;
+			if (cmp == 0) {
+				return BODY_CHUNKED;
+			}
+			/* unsupported Transfer-Encoding type */
+			DBG_ERR("Unsupported transfer encoding type %s\n",
+				h->value);
+			return BODY_ERROR;
 		}
 
 		cmp = strcasecmp(h->key, "Content-Length");
@@ -58,19 +76,19 @@ static int http_response_needs_body(struct http_request *req)
 
 		n = sscanf(h->value, "%llu%c", &v, &c);
 		if (n != 1) {
-			return -1;
+			return BODY_ERROR;
 		}
 
 		req->remaining_content_length = v;
 
 		if (v != 0) {
-			return 1;
+			return BODY_CONTENT_LENGTH;
 		}
 
-		return 0;
+		return BODY_NONE;
 	}
 
-	return 0;
+	return BODY_NONE;
 }
 struct http_chunk
 {
@@ -98,7 +116,7 @@ static enum http_read_status http_parse_headers(struct http_read_response_state 
 	char			*key = NULL;
 	char			*value = NULL;
 	int			n = 0;
-	int			ret;
+	enum http_body_type	ret;
 
 	/* Sanity checks */
 	if (!state || !state->response) {
@@ -131,24 +149,24 @@ static enum http_read_status http_parse_headers(struct http_read_response_state 
 
 		ret = http_response_needs_body(state->response);
 		switch (ret) {
-		case 2:
+		case BODY_CHUNKED:
 			DEBUG(11, ("%s: need to process chunks... %d\n", __func__,
 				   state->response->response_code));
 			state->parser_state = HTTP_READING_CHUNK_SIZE;
 			break;
-		case 1:
+		case BODY_CONTENT_LENGTH:
 			if (state->response->remaining_content_length <= state->max_content_length) {
 				DEBUG(11, ("%s: Start of read body\n", __func__));
 				state->parser_state = HTTP_READING_BODY;
 				break;
 			}
 			FALL_THROUGH;
-		case 0:
+		case BODY_NONE:
 			DEBUG(11, ("%s: Skipping body for code %d\n", __func__,
 				   state->response->response_code));
 			state->parser_state = HTTP_READING_DONE;
 			break;
-		case -1:
+		case BODY_ERROR:
 			DEBUG(0, ("%s_: Error in http_response_needs_body\n", __func__));
 			TALLOC_FREE(line);
 			return HTTP_DATA_CORRUPTED;
@@ -854,7 +872,7 @@ static void http_read_response_done(struct tevent_req *subreq)
 {
 	NTSTATUS			status;
 	struct tevent_req		*req;
-	int				ret;
+	enum http_body_type		ret;
 	int				sys_errno;
 
 	if (!subreq) {
