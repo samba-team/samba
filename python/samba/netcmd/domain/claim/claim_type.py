@@ -21,7 +21,7 @@
 #
 
 import samba.getopt as options
-from samba.domain.models import AttributeSchema, ClaimType, ClassSchema, ValueType
+from samba.domain.models import AttributeSchema, ClaimType, ClassSchema
 from samba.domain.models.exceptions import ModelError
 from samba.netcmd import Command, CommandError, Option, SuperCommand
 

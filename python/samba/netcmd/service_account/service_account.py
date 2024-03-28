@@ -20,9 +20,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from samba.domain.models import (AccountType, Computer, Group,
-                                 GroupManagedServiceAccount,
-                                 SupportedEncryptionTypes, User)
+from samba.domain.models import GroupManagedServiceAccount
 from samba.domain.models.exceptions import ModelError
 from samba.getopt import CredentialsOptions, HostOptions, Option, SambaOptions
 from samba.netcmd import Command, CommandError
