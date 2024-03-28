@@ -47,7 +47,7 @@ def list_to_claim(k, v, case_sensitive=False):
         t = type(v[0])
         c.value_type = CLAIM_VAL_TYPES[t]
         for val in v[1:]:
-            if type(val) != t:
+            if type(val) is not t:
                 raise TypeError(f"claim values for '{k}' "
                                 "should all be the same type")
     else:
