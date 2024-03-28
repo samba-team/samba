@@ -77,7 +77,7 @@ class HttpContentBlackboxTests(BlackboxTestCase):
             msg = "012345678" # 9 bytes
             # limit response to 8 bytes
             resp = self.check_output("%s -d11 -U%% -I%s --rsize 8 --uri %s" % (COMMAND, os.getenv("SERVER_IP", "localhost"), msg))
-            self.fail(str(e))
+            self.fail("unexpected success")
         except BlackboxProcessError as e:
             if "unexpected 0 len response" not in e.stdout.decode('utf-8'):
                 self.fail(str(e))

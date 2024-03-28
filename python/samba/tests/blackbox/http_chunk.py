@@ -99,7 +99,7 @@ class HttpChunkBlackboxTests(BlackboxTestCase):
         try:
             msg = "snglechunksnglechunksnglechunksnglechunksnglechunk"
             resp = self.check_output("%s -d11 -U%% -I%s --rsize 49 --uri %s" % (COMMAND, os.getenv("SERVER_IP", "localhost"), msg))
-            self.fail(str(e))
+            self.fail("unexpected success")
         except BlackboxProcessError as e:
             if "http_read_chunk: size 50 exceeds max content len 49 skipping body" not in e.stderr.decode('utf-8'):
                 self.fail(str(e))
