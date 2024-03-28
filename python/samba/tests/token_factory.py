@@ -216,7 +216,7 @@ def token(sids=None, **kwargs):
 
     To add claims and device SIDs you do something like this:
 
-    >>> t = token(["AA", WD"],
+    >>> t = token(["AA", "WD"],
                   device_sids=["WD"],
                   user_claims={"Title": ["PM"],
                                "ClearanceLevel": [1]}
