@@ -378,8 +378,8 @@ class cmd_domain_auth_silo_delete(Command):
             if not force:
                 raise CommandError(
                     f"{e}\nTry --force to delete protected authentication silos.")
-            else:
-                raise CommandError(e)
+
+            raise CommandError(e)
 
         # Authentication silo deleted successfully.
         print(f"Deleted authentication silo: {name}", file=self.outf)

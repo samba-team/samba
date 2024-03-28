@@ -437,8 +437,8 @@ class cmd_domain_auth_policy_delete(Command):
             if not force:
                 raise CommandError(
                     f"{e}\nTry --force to delete protected authentication policies.")
-            else:
-                raise CommandError(e)
+
+            raise CommandError(e)
 
         # Authentication policy deleted successfully.
         print(f"Deleted authentication policy: {name}", file=self.outf)
