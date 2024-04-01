@@ -260,8 +260,12 @@ class GkdiBaseTest(TestCase):
         return root_key_object, root_key_id
 
     def validate_get_key_request(
-        self, gkid: Gkid, current_gkid: Gkid, root_key_specified: bool
+        self, gkid: Gkid, current_time: NtTime, root_key_specified: bool
     ) -> None:
+        # The key being requested must not be from the future. That said, we
+        # allow for a little bit of clock skew so that we can compute the next
+        # managed password prior to the expiration of the current one.
+        current_gkid = Gkid.from_nt_time(NtTime(current_time + MAX_CLOCK_SKEW))
         if gkid > current_gkid:
             raise GetKeyError(
                 HRES_E_INVALIDARG,
@@ -290,7 +294,7 @@ class GkdiBaseTest(TestCase):
         gkid: Gkid,
         *,
         root_key_id_hint: Optional[misc.GUID] = None,
-        current_gkid: Optional[Gkid] = None,
+        current_time: Optional[NtTime] = None,
     ) -> SeedKeyPair:
         """Emulate the ISDKey.GetKey() RPC method.
 
@@ -300,8 +304,8 @@ class GkdiBaseTest(TestCase):
         Windows, pass a GUID in the *root_key_id_hint* parameter to specify a
         particular root key to use."""
 
-        if current_gkid is None:
-            current_gkid = self.current_gkid(samdb)
+        if current_time is None:
+            current_time = self.current_nt_time(samdb)
 
         root_key_specified = root_key_id is not None
         if root_key_specified:
@@ -309,13 +313,14 @@ class GkdiBaseTest(TestCase):
                 root_key_id_hint, "don’t provide both root key ID parameters"
             )
 
-        self.validate_get_key_request(gkid, current_gkid, root_key_specified)
+        self.validate_get_key_request(gkid, current_time, root_key_specified)
 
         root_key_object, root_key_id = self.get_root_key_object(
             samdb, root_key_id if root_key_specified else root_key_id_hint, gkid
         )
 
         if root_key_specified:
+            current_gkid = Gkid.from_nt_time(current_time)
             if gkid.l0_idx < current_gkid.l0_idx:
                 # All of the seed keys with an L0 index less than the current L0
                 # index are from the past and thus are safe to return. If the
@@ -378,13 +383,13 @@ class GkdiBaseTest(TestCase):
         target_sd: bytes,  # An NDR‐encoded valid security descriptor in self‐relative format.
         root_key_id: Optional[misc.GUID],
         gkid: Gkid,
-        current_gkid: Optional[Gkid] = None,
+        current_time: Optional[NtTime] = None,
     ) -> GroupKey:
-        if current_gkid is None:
-            current_gkid = self.current_gkid(samdb)
+        if current_time is None:
+            current_time = self.current_nt_time(samdb)
 
         root_key_specified = root_key_id is not None
-        self.validate_get_key_request(gkid, current_gkid, root_key_specified)
+        self.validate_get_key_request(gkid, current_time, root_key_specified)
 
         root_key_object, root_key_id = self.get_root_key_object(
             samdb, root_key_id, gkid

@@ -462,7 +462,7 @@ class GkdiSelfTests(GkdiKdcBaseTest):
             self.gmsa_sd,
             root_key_id,
             Gkid(255, 2, 5),
-            current_gkid=current_gkid,
+            current_time=current_gkid.start_nt_time(),
         )
 
         # Expect to get an L1 seed key.
@@ -497,7 +497,7 @@ class GkdiSelfTests(GkdiKdcBaseTest):
             self.gmsa_sd,
             root_key_id,
             Gkid(321, 0, 1),
-            current_gkid=current_gkid,
+            current_time=current_gkid.start_nt_time(),
         )
 
         # Expect to get an L2 seed key.
@@ -532,7 +532,7 @@ class GkdiSelfTests(GkdiKdcBaseTest):
             self.gmsa_sd,
             root_key_id,
             Gkid(123, 2, 1),
-            current_gkid=current_gkid,
+            current_time=current_gkid.start_nt_time(),
         )
 
         # Expect to get both L1 and L2 seed keys.
@@ -571,7 +571,7 @@ class GkdiSelfTests(GkdiKdcBaseTest):
             self.gmsa_sd,
             root_key_id,
             Gkid(100, 20, 30),
-            current_gkid=Gkid(101, 2, 3),
+            current_time=Gkid(101, 2, 3).start_nt_time(),
         )
 
         # Expect to get an L1 seed key.
@@ -605,7 +605,7 @@ class GkdiSelfTests(GkdiKdcBaseTest):
             self.gmsa_sd,
             root_key_id,
             Gkid(1, 1, 1),
-            current_gkid=current_gkid,
+            current_time=current_gkid.start_nt_time(),
         )
 
         # Expect to get both L1 and L2 seed keys.
@@ -645,7 +645,7 @@ class GkdiSelfTests(GkdiKdcBaseTest):
             self.gmsa_sd,
             root_key_id,
             Gkid(222, 11, 0),
-            current_gkid=current_gkid,
+            current_time=current_gkid.start_nt_time(),
         )
 
         # Expect to get both L1 and L2 seed keys.
@@ -685,7 +685,7 @@ class GkdiSelfTests(GkdiKdcBaseTest):
             self.gmsa_sd,
             root_key_id,
             Gkid(287, 8, 7),
-            current_gkid=current_gkid,
+            current_time=current_gkid.start_nt_time(),
         )
 
         # Expect to get both L1 and L2 seed keys.
@@ -725,7 +725,7 @@ class GkdiSelfTests(GkdiKdcBaseTest):
             self.gmsa_sd,
             root_key_id,
             gkid,
-            current_gkid=self.current_gkid(self.get_samdb()),
+            current_time=self.current_nt_time(self.get_samdb()),
         )
 
         self.assertEqual(gkid, key.gkid)
