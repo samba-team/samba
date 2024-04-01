@@ -238,8 +238,12 @@ NTSTATUS gmsa_talloc_password_based_on_key_id(
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = gmsa_password_based_on_key_id(
-		mem_ctx, gkid, current_time, root_key, account_sid, password->buf);
+	status = gmsa_password_based_on_key_id(mem_ctx,
+					       gkid,
+					       current_time,
+					       root_key,
+					       account_sid,
+					       password->buf);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(password);
 		return status;
