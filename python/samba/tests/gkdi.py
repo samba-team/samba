@@ -120,10 +120,6 @@ class GkdiBaseTest(TestCase):
     def current_gkid(
         self, samdb: SamDB, *, offset: Optional[datetime.timedelta] = None
     ) -> Gkid:
-        if offset is None:
-            # Allow for clock skew.
-            offset = timedelta_from_nt_time_delta(MAX_CLOCK_SKEW)
-
         return Gkid.from_nt_time(self.current_nt_time(samdb, offset=offset))
 
     def gkdi_connect(
