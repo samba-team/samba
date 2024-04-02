@@ -36,6 +36,7 @@
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
 #include "lib/util/util_net.h"
+#include "lib/util/tsort.h"
 
 /*
   work out the ttl we will use given a client requested ttl
@@ -653,7 +654,7 @@ static int nbtd_wins_randomize1Clist_sort(void *p1,/* (const char **) */
 	match_bits1 = ipv4_match_bits(interpret_addr2(a1), interpret_addr2(src->addr));
 	match_bits2 = ipv4_match_bits(interpret_addr2(a2), interpret_addr2(src->addr));
 
-	return match_bits2 - match_bits1;
+	return NUMERIC_CMP(match_bits2, match_bits1);
 }
 
 static void nbtd_wins_randomize1Clist(struct loadparm_context *lp_ctx,
