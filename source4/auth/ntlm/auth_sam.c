@@ -446,9 +446,9 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 	}
 
 	/*
-	 * We only continue if this was a wrong password
-	 * and we'll always return NT_STATUS_WRONG_PASSWORD
-	 * no matter what error happens.
+	 * We only continue if this was a wrong password and we'll
+	 * return NT_STATUS_WRONG_PASSWORD in most cases, except for a
+	 * (default) 60 min grace period for previous NTLM password
 	 */
 
 	/* pull the domain password property attributes */
