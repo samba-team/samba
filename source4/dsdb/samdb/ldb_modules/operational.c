@@ -1071,7 +1071,7 @@ static int pso_compare(struct ldb_message **m1, struct ldb_message **m2)
 
 		return ndr_guid_compare(&guid1, &guid2);
 	} else {
-		return prec1 - prec2;
+		return NUMERIC_CMP(prec1, prec2);
 	}
 }
 
