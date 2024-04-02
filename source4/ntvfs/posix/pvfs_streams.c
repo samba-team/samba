@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "vfs_posix.h"
 #include "librpc/gen_ndr/xattr.h"
+#include "lib/util/tsort.h"
 
 /*
   normalise a stream name, removing a :$DATA suffix if there is one 
@@ -51,7 +52,7 @@ static int stream_name_cmp(const char *name1, const char *name2)
 	l1 = c1?(c1 - name1):strlen(name1);
 	l2 = c2?(c2 - name2):strlen(name2);
 	if (l1 != l2) {
-		return l1 - l2;
+		return NUMERIC_CMP(l1, l2);
 	}
 	ret = strncasecmp_m(name1, name2, l1);
 	if (ret != 0) {
