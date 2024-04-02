@@ -894,7 +894,6 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             domain = samdb.domain_netbios_name().upper()
 
             password = generate_random_password(32, 32)
-            utf16pw = ('"%s"' % password).encode('utf-16-le')
 
             try:
                 net_ctx.set_password(newpassword=password,
