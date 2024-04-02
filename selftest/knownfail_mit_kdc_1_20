@@ -36,6 +36,7 @@
 ^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_ntlm_from_pac
 ^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_kpasswd_change
 ^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_samlogon_smartcard_required
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_smartcard_required_must_change_now
 #
 # PK-INIT Freshness tests
 #

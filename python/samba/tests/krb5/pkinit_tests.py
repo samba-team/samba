@@ -67,6 +67,23 @@ SidType = RawKerberosTest.SidType
 global_asn1_print = False
 global_hexdump = False
 
+def set_ExpirePasswordsOnSmartCardOnlyAccounts(samdb, val):
+    msg = ldb.Message()
+    msg.dn = samdb.get_default_basedn()
+
+    # Allow val to be True, False, strings or message elements
+    if val is True:
+        val = "TRUE"
+    elif val is False:
+        val = "FALSE"
+    elif val is None:
+        val = []
+
+    msg["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"] \
+        = ldb.MessageElement(val,
+                             ldb.FLAG_MOD_REPLACE,
+                             "msDS-ExpirePasswordsOnSmartCardOnlyAccounts")
+    samdb.modify(msg)
 
 class PkInitTests(KDCBaseTest):
     @classmethod
@@ -589,6 +606,59 @@ class PkInitTests(KDCBaseTest):
                             logon_type=netlogon.NetlogonNetworkInformation,
                             expect_error=ntstatus.NT_STATUS_WRONG_PASSWORD)
 
+    def _test_samlogon_smartcard_required_expired(self, smartcard_pw_expire):
+        """Test SamLogon with an account set to smartcard login required.  No actual PK-INIT in this test."""
+        samdb = self.get_samdb()
+        msgs = samdb.search(base=samdb.get_default_basedn(),
+                            scope=ldb.SCOPE_BASE,
+                            attrs=["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"])
+        msg = msgs[0]
+
+        try:
+            old_ExpirePasswordsOnSmartCardOnlyAccounts = msg["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"]
+        except KeyError:
+            old_ExpirePasswordsOnSmartCardOnlyAccounts = None
+
+        self.addCleanup(set_ExpirePasswordsOnSmartCardOnlyAccounts,
+                        samdb, old_ExpirePasswordsOnSmartCardOnlyAccounts)
+
+        # Enable auto-rotation for this test
+        set_ExpirePasswordsOnSmartCardOnlyAccounts(samdb, smartcard_pw_expire)
+
+        client_creds = self._get_creds(smartcard_required=True)
+
+        client_creds.set_kerberos_state(credentials.AUTO_USE_KERBEROS)
+
+        msg = ldb.Message()
+        msg.dn = client_creds.get_dn()
+
+        # Ideally we would set this to a time just long enough for the
+        # password to expire, but we are unable to do that.
+        #
+        # 0 means "must change on first login"
+        msg["pwdLastSet"] = \
+            ldb.MessageElement(str(0),
+                               ldb.FLAG_MOD_REPLACE,
+                               "pwdLastSet")
+        samdb.modify(msg)
+
+        # This shows that the magic rotation behaviour is not
+        # triggered in SamLogon
+        self._test_samlogon(
+            creds=client_creds,
+            logon_type=netlogon.NetlogonInteractiveInformation,
+            expect_error=ntstatus.NT_STATUS_SMARTCARD_LOGON_REQUIRED)
+
+        self._test_samlogon(creds=client_creds,
+                            logon_type=netlogon.NetlogonNetworkInformation,
+                            expect_error=ntstatus.NT_STATUS_WRONG_PASSWORD)
+
+    def test_samlogon_smartcard_required_expired(self):
+        self._test_samlogon_smartcard_required_expired(True)
+
+    def test_samlogon_smartcard_required_expired_disabled(self):
+        self._test_samlogon_smartcard_required_expired(False)
+
     def test_pkinit_ntlm_from_pac(self):
         """Test public-key PK-INIT to get an NT hash and confirm NTLM
            authentication is possible with it."""
@@ -630,8 +700,11 @@ class PkInitTests(KDCBaseTest):
 
         freshness_token = self.create_freshness_token()
 
+        # The hash will not match as UF_SMARTCARD_REQUIRED at creation
+        # time make the password random
         kdc_exchange_dict = self._pkinit_req(client_creds, krbtgt_creds,
-                                             freshness_token=freshness_token)
+                                             freshness_token=freshness_token,
+                                             expect_matching_nt_hash_in_pac=False)
         nt_hash_from_pac = kdc_exchange_dict['nt_hash_from_pac']
 
         client_creds.set_nt_hash(nt_hash_from_pac,
@@ -659,22 +732,23 @@ class PkInitTests(KDCBaseTest):
     def test_pkinit_ntlm_from_pac_must_change_now(self):
         """Test public-key PK-INIT to get an NT hash and confirm NTLM
            authentication is possible with it."""
+        samdb = self.get_samdb()
+
         client_creds = self._get_creds()
         client_creds.set_kerberos_state(credentials.AUTO_USE_KERBEROS)
 
-        msg = ldb.Message()
-        msg.dn = client_creds.get_dn()
+        mod_msg = ldb.Message()
+        mod_msg.dn = client_creds.get_dn()
 
         # Ideally we would set this to a time just long enough for the
-        # password to expire, but we are unable to do that.
+        # password to expire, but this is good enough
         #
         # 0 means "must change on first login"
-        msg["pwdLastSet"] = \
+        mod_msg["pwdLastSet"] = \
             ldb.MessageElement(str(0),
                                ldb.FLAG_MOD_REPLACE,
                                "pwdLastSet")
-        samdb = self.get_samdb()
-        samdb.modify(msg)
+        samdb.modify(mod_msg)
 
         krbtgt_creds = self.get_krbtgt_creds()
 
@@ -707,9 +781,29 @@ class PkInitTests(KDCBaseTest):
                             logon_type=netlogon.NetlogonNetworkInformation,
                             expect_error=ntstatus.NT_STATUS_PASSWORD_MUST_CHANGE)
 
-    def test_pkinit_ntlm_from_pac_smartcard_required_must_change_now(self):
+    def _test_pkinit_ntlm_from_pac_smartcard_required_must_change_now(self, smartcard_pw_expire):
         """Test public-key PK-INIT to get the user's NT hash for an account
-           that is restricted by UF_SMARTCARD_REQUIRED."""
+           that is restricted by UF_SMARTCARD_REQUIRED.
+
+        We test with both modes for the 2016FL msDS-ExpirePasswordsOnSmartCardOnlyAccounts behaviour"""
+
+        samdb = self.get_samdb()
+        msgs = samdb.search(base=samdb.get_default_basedn(),
+                            scope=ldb.SCOPE_BASE,
+                            attrs=["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"])
+        msg = msgs[0]
+
+        try:
+            old_ExpirePasswordsOnSmartCardOnlyAccounts = msg["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"]
+        except KeyError:
+            old_ExpirePasswordsOnSmartCardOnlyAccounts = None
+
+        self.addCleanup(set_ExpirePasswordsOnSmartCardOnlyAccounts,
+                        samdb, old_ExpirePasswordsOnSmartCardOnlyAccounts)
+
+        # Enable auto-rotation for this test
+        set_ExpirePasswordsOnSmartCardOnlyAccounts(samdb, smartcard_pw_expire)
+
         client_creds = self._get_creds(smartcard_required=True)
         client_creds.set_kerberos_state(credentials.AUTO_USE_KERBEROS)
 
@@ -717,41 +811,128 @@ class PkInitTests(KDCBaseTest):
 
         freshness_token = self.create_freshness_token()
 
-        samdb = self.get_samdb()
-
+        # The hash will not match as UF_SMARTCARD_REQUIRED at creation
+        # time make the password random
         kdc_exchange_dict = self._pkinit_req(client_creds, krbtgt_creds,
-                                             freshness_token=freshness_token)
+                                             freshness_token=freshness_token,
+                                             expect_matching_nt_hash_in_pac=False)
         nt_hash_from_pac = kdc_exchange_dict['nt_hash_from_pac']
 
-        msg = ldb.Message()
-        msg.dn = client_creds.get_dn()
+        client_creds.set_nt_hash(nt_hash_from_pac,
+                                 credentials.SPECIFIED)
+
+        mod_msg = ldb.Message()
+        mod_msg.dn = client_creds.get_dn()
 
         # Ideally we would set this to a time just long enough for the
-        # password to expire, but we are unable to do that.
+        # password to expire, but this is good enough
         #
         # 0 means "must change on first login"
-        msg["pwdLastSet"] = \
+        mod_msg["pwdLastSet"] = \
             ldb.MessageElement(str(0),
                                ldb.FLAG_MOD_REPLACE,
                                "pwdLastSet")
-        samdb.modify(msg)
+        samdb.modify(mod_msg)
 
-        kdc_exchange_dict = self._pkinit_req(client_creds, krbtgt_creds,
-                                             freshness_token=freshness_token)
-        nt_hash_from_pac2 = kdc_exchange_dict['nt_hash_from_pac']
-
-        self.assertNotEqual(nt_hash_from_pac.hash, nt_hash_from_pac2.hash)
-
-        # The password should have changed as it was expired and the
-        # DC is set up to change expired passwords to keep the
-        # smart-card logins working and the keys fresh
+        # pwdLastSet has magic set properties, but this still sticks
+        # to zero.  We assert this so that we can be sure of the
+        # remaining checks
         res = samdb.search(base=client_creds.get_dn(),
                            scope=ldb.SCOPE_BASE,
                            attrs=["pwdLastSet"])
-        self.assertNotEqual(res[0]["pwdLastSet"], 0)
+        self.assertEqual(int(res[0]["pwdLastSet"][0]), 0)
+
+        # Interactive SamLogon will fail, but with
+        # SMARTCARD_LOGON_REQUIRED not password expired
+        self._test_samlogon(
+            creds=client_creds,
+            logon_type=netlogon.NetlogonInteractiveInformation,
+            expect_error=ntstatus.NT_STATUS_SMARTCARD_LOGON_REQUIRED)
+
+        # The password should not have changed yet as we have not
+        # touched the KDC so far
+        res = samdb.search(base=client_creds.get_dn(),
+                           scope=ldb.SCOPE_BASE,
+                           attrs=["pwdLastSet"])
+        self.assertEqual(int(res[0]["pwdLastSet"][0]), 0)
+
+        if smartcard_pw_expire:
+            # msDS-ExpirePasswordsOnSmartCardOnlyAccounts=TRUE
+            #
+            # Try NTLM (Network SamLogon), this show that password expiry
+            # is enforced for UF_SMARTCARD_REQUIRED
+            self._test_samlogon(creds=client_creds,
+                                logon_type=netlogon.NetlogonNetworkInformation,
+                                expect_error=ntstatus.NT_STATUS_PASSWORD_MUST_CHANGE)
+        else:
+            # msDS-ExpirePasswordsOnSmartCardOnlyAccounts=FALSE
+            #
+            # Try NTLM (Network SamLogon), this show that password expiry
+            # is not enforced for UF_SMARTCARD_REQUIRED
+            self._test_samlogon(creds=client_creds,
+                                logon_type=netlogon.NetlogonNetworkInformation)
+
+        # The password should not have changed yet as we have not
+        # touched the KDC so far
+        res = samdb.search(base=client_creds.get_dn(),
+                           scope=ldb.SCOPE_BASE,
+                           attrs=["pwdLastSet"])
+        self.assertEqual(int(res[0]["pwdLastSet"][0]), 0)
+
+        # password-based AS-REQ will fail, but with
+        # SMARTCARD_LOGON_REQUIRED not password expired.
+        #
+        # But it will rotate the PW.
+        self._as_req(client_creds,
+                     krbtgt_creds,
+                     expect_error=KDC_ERR_POLICY,
+                     expect_edata=True,
+                     expect_status=True,
+                     expected_status=ntstatus.NT_STATUS_SMARTCARD_LOGON_REQUIRED,
+                     send_enc_ts=True)
+
+        res = samdb.search(base=client_creds.get_dn(),
+                           scope=ldb.SCOPE_BASE,
+                           attrs=["pwdLastSet"])
+        if smartcard_pw_expire:
+            # The password should have changed as it was expired and the
+            # KDC is set up to change expired passwords to keep the
+            # smart-card logins working and the keys fresh
+            self.assertGreater(int(res[0]["pwdLastSet"][0]), 0)
+        else:
+            self.assertEqual(int(res[0]["pwdLastSet"][0]), 0)
+
+        kdc_exchange_dict = self._pkinit_req(client_creds, krbtgt_creds,
+                                             freshness_token=freshness_token,
+                                             expect_matching_nt_hash_in_pac=not smartcard_pw_expire)
+        nt_hash_from_pac2 = kdc_exchange_dict['nt_hash_from_pac']
+
+        if smartcard_pw_expire:
+            self.assertNotEqual(nt_hash_from_pac.hash, nt_hash_from_pac2.hash)
+        else:
+            self.assertEqual(nt_hash_from_pac.hash, nt_hash_from_pac2.hash)
+
+        # The password will not have further changed, the not-PKINIT
+        # request will have triggered the rotation.
+        res2 = samdb.search(base=client_creds.get_dn(),
+                           scope=ldb.SCOPE_BASE,
+                           attrs=["pwdLastSet"])
+        self.assertEqual(res[0]["pwdLastSet"], res2[0]["pwdLastSet"])
 
         client_creds.set_nt_hash(nt_hash_from_pac2,
                                  credentials.SPECIFIED)
+
+        # Password has not changed again, so we will continue to get the same NT hash
+        kdc_exchange_dict = self._pkinit_req(client_creds, krbtgt_creds,
+                                             freshness_token=freshness_token,
+                                             expect_matching_nt_hash_in_pac=True)
+
+        # The password will not have further changed, the earlier
+        # not-PKINIT request will have triggered the rotation.
+        res3 = samdb.search(base=client_creds.get_dn(),
+                           scope=ldb.SCOPE_BASE,
+                           attrs=["pwdLastSet"])
+        self.assertEqual(res[0]["pwdLastSet"], res3[0]["pwdLastSet"])
 
         # password-based AS-REQ will fail
         self._as_req(client_creds,
@@ -772,6 +953,114 @@ class PkInitTests(KDCBaseTest):
 
         self._test_samlogon(creds=client_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
+
+    def test_pkinit_ntlm_from_pac_smartcard_required_must_change_now(self):
+        """Test public-key PK-INIT to get the user's NT hash for an account
+           that is restricted by UF_SMARTCARD_REQUIRED but is expired.
+
+           Verify that NT hash with SamLogon requests
+
+           This variant sets the enabling attribute for auto-rotation."""
+        self._test_pkinit_ntlm_from_pac_smartcard_required_must_change_now(True)
+
+    def test_pkinit_ntlm_from_pac_smartcard_required_must_change_now_rotate_disabled(self):
+        """Test public-key PK-INIT to get the user's NT hash for an account
+           that is restricted by UF_SMARTCARD_REQUIRED but is expired.
+
+           Verify that NT hash with SamLogon requests
+
+           This variant DISABLES the enabling attribute for auto-rotation."""
+        self._test_pkinit_ntlm_from_pac_smartcard_required_must_change_now(False)
+
+    def _test_pkinit_smartcard_required_must_change_now(self, smartcard_pw_expire):
+        """Test public-key PK-INIT to get the user's NT hash for an account
+           that is restricted by UF_SMARTCARD_REQUIRED.
+
+        We test with both modes for the 2016FL msDS-ExpirePasswordsOnSmartCardOnlyAccounts behaviour"""
+
+        samdb = self.get_samdb()
+        msgs = samdb.search(base=samdb.get_default_basedn(),
+                            scope=ldb.SCOPE_BASE,
+                            attrs=["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"])
+        msg = msgs[0]
+
+        try:
+            old_ExpirePasswordsOnSmartCardOnlyAccounts = msg["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"]
+        except KeyError:
+            old_ExpirePasswordsOnSmartCardOnlyAccounts = None
+
+        self.addCleanup(set_ExpirePasswordsOnSmartCardOnlyAccounts,
+                        samdb, old_ExpirePasswordsOnSmartCardOnlyAccounts)
+
+        # Enable auto-rotation for this test
+        set_ExpirePasswordsOnSmartCardOnlyAccounts(samdb, smartcard_pw_expire)
+
+        client_creds = self._get_creds(smartcard_required=True)
+        client_creds.set_kerberos_state(credentials.AUTO_USE_KERBEROS)
+
+        krbtgt_creds = self.get_krbtgt_creds()
+
+        freshness_token = self.create_freshness_token()
+
+        kdc_exchange_dict = self._pkinit_req(client_creds, krbtgt_creds,
+                                             freshness_token=freshness_token,
+                                             expect_matching_nt_hash_in_pac=False)
+        nt_hash_from_pac = kdc_exchange_dict['nt_hash_from_pac']
+
+        mod_msg = ldb.Message()
+        mod_msg.dn = client_creds.get_dn()
+
+        # Ideally we would set this to a time just long enough for the
+        # password to expire, but this is good enough
+        #
+        # 0 means "must change on first login"
+        mod_msg["pwdLastSet"] = \
+            ldb.MessageElement(str(0),
+                               ldb.FLAG_MOD_REPLACE,
+                               "pwdLastSet")
+        samdb.modify(mod_msg)
+
+        # pwdLastSet has magic set properties, but this still sticks
+        # to zero.  We assert this so that we can be sure of the
+        # remaining checks
+        res = samdb.search(base=client_creds.get_dn(),
+                           scope=ldb.SCOPE_BASE,
+                           attrs=["pwdLastSet"])
+        self.assertEqual(int(res[0]["pwdLastSet"][0]), 0)
+
+        kdc_exchange_dict = self._pkinit_req(client_creds, krbtgt_creds,
+                                             freshness_token=freshness_token,
+                                             expect_matching_nt_hash_in_pac=False)
+        nt_hash_from_pac2 = kdc_exchange_dict['nt_hash_from_pac']
+
+        if smartcard_pw_expire:
+            self.assertNotEqual(nt_hash_from_pac.hash, nt_hash_from_pac2.hash)
+        else:
+            self.assertEqual(nt_hash_from_pac.hash, nt_hash_from_pac2.hash)
+
+        # If expiry/rotation enabled, the password will have changed, the PKINIT
+        # request will have triggered the rotation.
+        res2 = samdb.search(base=client_creds.get_dn(),
+                           scope=ldb.SCOPE_BASE,
+                           attrs=["pwdLastSet"])
+        if smartcard_pw_expire:
+            self.assertGreater(int(res2[0]["pwdLastSet"][0]), 0)
+        else:
+            self.assertEqual(int(res2[0]["pwdLastSet"][0]), 0)
+
+    def test_pkinit_smartcard_required_must_change_now(self):
+        """Test public-key PK-INIT to get the user's NT hash for an account
+           that is restricted by UF_SMARTCARD_REQUIRED but is expired.
+
+           This variant sets the enabling attribute for auto-rotation."""
+        self._test_pkinit_smartcard_required_must_change_now(True)
+
+    def test_pkinit_smartcard_required_must_change_now_rotate_disabled(self):
+        """Test public-key PK-INIT to get the user's NT hash for an account
+           that is restricted by UF_SMARTCARD_REQUIRED but is expired.
+
+           This variant DISABLES the enabling attribute for auto-rotation."""
+        self._test_pkinit_smartcard_required_must_change_now(False)
 
     def test_pkinit_kpasswd_change(self):
         """Test public-key PK-INIT to get an initial ticket to change the user's own password."""
@@ -1199,6 +1488,7 @@ class PkInitTests(KDCBaseTest):
                     certificate_signature=None,
                     freshness_token=None,
                     win2k_variant=False,
+                    expect_matching_nt_hash_in_pac=True,
                     target_sname=None
                     ):
         self.assertIsNot(using_pkinit, PkInit.NOT_USED)
@@ -1460,7 +1750,8 @@ class PkInitTests(KDCBaseTest):
             kdc_options=str(kdc_options),
             using_pkinit=using_pkinit,
             pk_nonce=pk_nonce,
-            expect_edata=expect_edata)
+            expect_edata=expect_edata,
+            expect_matching_nt_hash_in_pac=expect_matching_nt_hash_in_pac)
 
         till = self.get_KerberosTime(offset=36000)
 
