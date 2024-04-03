@@ -227,7 +227,7 @@ void ldb_qsort (void *const pbase, size_t total_elems, size_t size,
     while ((run_ptr += size) <= end_ptr)
       {
 	tmp_ptr = run_ptr - size;
-	while ((*cmp) ((void *) run_ptr, (void *) tmp_ptr, opaque) < 0)
+	while (tmp_ptr > base_ptr && (*cmp) ((void *) run_ptr, (void *) tmp_ptr, opaque) < 0)
 	  tmp_ptr -= size;
 
 	tmp_ptr += size;
