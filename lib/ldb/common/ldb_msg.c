@@ -749,9 +749,16 @@ int ldb_msg_element_compare(struct ldb_message_element *el1,
 	unsigned int i;
 
 	if (el1->num_values != el2->num_values) {
-		return el1->num_values - el2->num_values;
+		return NUMERIC_CMP(el1->num_values, el2->num_values);
 	}
-
+	/*
+	 * Note this is an inconsistent comparison, unsuitable for
+	 * sorting. If A has values {a, b} and B has values {b, c},
+	 * then
+	 *
+	 * ldb_msg_element_compare(A, B) returns -1, meaning A < B
+	 * ldb_msg_element_compare(B, A) returns -1, meaning B < A
+	 */
 	for (i=0;i<el1->num_values;i++) {
 		if (!ldb_msg_find_val(el2, &el1->values[i])) {
 			return -1;
