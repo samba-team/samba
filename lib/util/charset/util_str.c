@@ -157,14 +157,14 @@ _PUBLIC_ int strncasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 			continue;
 		}
 
-		return l1 - l2;
+		return NUMERIC_CMP(l1, l2);
 	}
 
 	if (n == 0) {
 		return 0;
 	}
 
-	return *s1 - *s2;
+	return NUMERIC_CMP(*s1, *s2);
 }
 
 /**
