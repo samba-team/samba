@@ -23,17 +23,19 @@
 
 #include "includes.h"
 #include "lib/util/binsearch.h"
+#include "lib/util/tsort.h"
 #include "torture/torture.h"
 #include "torture/local/proto.h"
 
 static int int_cmp(int a, int b)
 {
-	return a - b;
+	return NUMERIC_CMP(a, b);
 }
 
 static int int_cmp_p(int a, int *b)
 {
-	return a - *b;
+	int _b = *b;
+	return NUMERIC_CMP(a, _b);
 }
 
 static bool test_binsearch_v(struct torture_context *tctx)
