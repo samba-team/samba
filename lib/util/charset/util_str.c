@@ -26,6 +26,7 @@
 #include "system/locale.h"
 #include "charset.h"
 #include "lib/util/fault.h"
+#include "lib/util/tsort.h"
 
 #ifdef strcasecmp
 #undef strcasecmp
@@ -79,10 +80,10 @@ _PUBLIC_ int strcasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 			continue;
 		}
 
-		return l1 - l2;
+		return NUMERIC_CMP(l1, l2);
 	}
 
-	return *s1 - *s2;
+	return NUMERIC_CMP(*s1, *s2);
 }
 
 /**
