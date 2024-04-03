@@ -26,6 +26,7 @@
 #include "dynconfig/dynconfig.h"
 #include "lib/util/debug.h"
 #include "lib/util/byteorder.h"
+#include "lib/util/tsort.h"
 
 #ifdef strcasecmp
 #undef strcasecmp
@@ -16483,7 +16484,7 @@ _PUBLIC_ int codepoint_cmpi(codepoint_t c1, codepoint_t c2)
 	    toupper_m(c1) == toupper_m(c2)) {
 		return 0;
 	}
-	return c1 - c2;
+	return NUMERIC_CMP(c1, c2);
 }
 
 
