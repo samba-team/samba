@@ -34,6 +34,7 @@
 #include "lib/gencache.h"
 #include "librpc/gen_ndr/dns.h"
 #include "lib/util/util_net.h"
+#include "lib/util/tsort.h"
 #include "lib/util/string_wrappers.h"
 
 /* nmbd.c sets this to True. */
@@ -1183,7 +1184,7 @@ static int addr_compare(const struct sockaddr_storage *ss1,
 			max_bits2 += 128;
 		}
 	}
-	return max_bits2 - max_bits1;
+	return NUMERIC_CMP(max_bits2, max_bits1);
 }
 
 /*
