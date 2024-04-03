@@ -22,8 +22,8 @@ from samba import NTSTATUSError, arcfour_encrypt, string_to_byte_array
 from samba.ntstatus import (
     NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE
 )
-import random
 from samba import crypto
+from secrets import token_bytes
 
 
 def OpenPolicyFallback(
@@ -76,9 +76,7 @@ def CreateTrustedDomainRelax(
 ):
 
     def generate_AuthInfoInternal(session_key, incoming=None, outgoing=None):
-        confounder = [0] * 512
-        for i in range(len(confounder)):
-            confounder[i] = random.randint(0, 255)
+        confounder = string_to_byte_array(token_bytes(512))
 
         trustpass = drsblobs.trustDomainPasswords()
 
