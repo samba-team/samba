@@ -651,9 +651,14 @@ static bool user_can_stat_name_under_fsp(files_struct *fsp, const char *name)
 					   0,
 					   &fname);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("synthetic_pathref failed for %s, error %s\n",
-				filepath,
-				nt_errstr(status));
+			int dbg_lvl = DBGLVL_ERR;
+			if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+				dbg_lvl = DBGLVL_DEBUG;
+			}
+			DBG_PREFIX(dbg_lvl, (
+				   "synthetic_pathref failed for %s, error %s\n",
+				   filepath,
+				   nt_errstr(status)));
 			TALLOC_FREE(fname);
 			TALLOC_FREE(filepath);
 			return false;
