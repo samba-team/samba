@@ -18,7 +18,12 @@
 
 from samba.dcerpc import lsa, drsblobs, misc
 from samba.ndr import ndr_pack
-from samba import NTSTATUSError, arcfour_encrypt, string_to_byte_array
+from samba import (
+    NTSTATUSError,
+    aead_aes_256_cbc_hmac_sha512,
+    arcfour_encrypt,
+    string_to_byte_array
+)
 from samba.ntstatus import (
     NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE
 )
@@ -109,3 +114,80 @@ def CreateTrustedDomainRelax(
         crypto.set_strict_mode()
 
     return lsaconn.CreateTrustedDomainEx2(policy, trust_info, auth_info, mask)
+
+
+def CreateTrustedDomainFallback(
+    conn: lsa.lsarpc,
+    policy_handle: misc.policy_handle,
+    trust_info: lsa.TrustDomainInfoInfoEx,
+    access_mask: int,
+    srv_version: int,
+    srv_revision_info1: lsa.revision_info1,
+    in_blob: drsblobs.trustAuthInOutBlob,
+    out_blob: drsblobs.trustAuthInOutBlob
+):
+    def generate_AuthInfoInternalAES(
+        session_key,
+        incoming=None,
+        outgoing=None
+    ):
+        trustpass = drsblobs.trustDomainPasswords()
+
+        trustpass.outgoing = outgoing
+        trustpass.incoming = incoming
+
+        trustpass_blob = ndr_pack(trustpass)
+
+        lsa_aes256_enc_key = (
+            "Microsoft LSAD encryption key AEAD-AES-256-CBC-HMAC-SHA512 16".encode()
+            + b'\x00'
+        )
+        lsa_aes256_mac_key = (
+            "Microsoft LSAD MAC key AEAD-AES-256-CBC-HMAC-SHA512 16".encode()
+            + b'\x00'
+        )
+
+        iv = token_bytes(16)
+        ciphertext, auth_data = aead_aes_256_cbc_hmac_sha512(
+            trustpass_blob,
+            session_key,
+            lsa_aes256_enc_key,
+            lsa_aes256_mac_key,
+            iv,
+        )
+
+        return ciphertext, iv, auth_data
+
+    if (srv_version == 1
+        and srv_revision_info1.revision == 1
+        and (srv_revision_info1.supported_features
+             & lsa.LSA_FEATURE_TDO_AUTH_INFO_AES_CIPHER)):
+
+        ciphertext, iv, auth_data = generate_AuthInfoInternalAES(
+            conn.session_key, in_blob, out_blob
+        )
+
+        auth_blob = lsa.DATA_BUF2()
+        auth_blob.size = len(ciphertext)
+        auth_blob.data = string_to_byte_array(ciphertext)
+
+        auth_info = lsa.TrustDomainInfoAuthInfoInternalAES()
+        auth_info.cipher = auth_blob
+        auth_info.salt = string_to_byte_array(iv)
+        auth_info.auth_data = string_to_byte_array(auth_data)
+
+        return conn.CreateTrustedDomainEx3(
+            policy_handle,
+            trust_info,
+            auth_info,
+            access_mask
+        )
+
+    return CreateTrustedDomainRelax(
+        conn,
+        policy_handle,
+        trust_info,
+        access_mask,
+        in_blob,
+        out_blob
+    )

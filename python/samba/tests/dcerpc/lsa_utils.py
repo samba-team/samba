@@ -27,7 +27,11 @@ from samba.credentials import (
     SMB_ENCRYPTION_REQUIRED,
     SMB_ENCRYPTION_OFF
 )
-from samba.lsa_utils import OpenPolicyFallback, CreateTrustedDomainRelax
+from samba.lsa_utils import (
+    OpenPolicyFallback,
+    CreateTrustedDomainRelax,
+    CreateTrustedDomainFallback,
+)
 
 
 class CreateTrustedDomain(TestCase):
@@ -144,8 +148,100 @@ class CreateTrustedDomain(TestCase):
         else:
             self.assertIsNone(trustdom_handle)
 
+    def _create_trust_fallback(self):
+        creds = self.get_user_creds()
+
+        lp = self.get_loadparm()
+
+        binding_string = (
+            "ncacn_np:%s" % (samba.tests.env_get_var_value('SERVER'))
+        )
+        lsa_conn = lsa.lsarpc(binding_string, lp, creds)
+
+        in_version = 1
+        in_revision_info1 = lsa.revision_info1()
+        in_revision_info1.revision = 1
+        in_revision_info1.supported_features = (
+            lsa.LSA_FEATURE_TDO_AUTH_INFO_AES_CIPHER
+        )
+
+        out_version, out_revision_info1, pol_handle = OpenPolicyFallback(
+            lsa_conn,
+            '',
+            in_version,
+            in_revision_info1,
+            access_mask=security.SEC_FLAG_MAXIMUM_ALLOWED
+        )
+        self.assertIsNotNone(pol_handle)
+
+        name = lsa.String()
+        name.string = "tests.samba.example.com"
+        try:
+            info = lsa_conn.QueryTrustedDomainInfoByName(
+                pol_handle,
+                name,
+                lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO
+            )
+
+            lsa_conn.DeleteTrustedDomain(pol_handle, info.info_ex.sid)
+        except RuntimeError:
+            pass
+
+        info = lsa.TrustDomainInfoInfoEx()
+        info.domain_name.string = name.string
+        info.netbios_name.string = "createtrustrelax"
+        info.sid = security.dom_sid("S-1-5-21-538490383-3740119673-95748416")
+        info.trust_direction = (
+            lsa.LSA_TRUST_DIRECTION_INBOUND
+            | lsa.LSA_TRUST_DIRECTION_OUTBOUND
+        )
+        info.trust_type = lsa.LSA_TRUST_TYPE_UPLEVEL
+        info.trust_attributes = lsa.LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE
+
+        password_blob = samba.string_to_byte_array(
+            "password".encode('utf-16-le')
+        )
+
+        clear_value = drsblobs.AuthInfoClear()
+        clear_value.size = len(password_blob)
+        clear_value.password = password_blob
+
+        clear_authentication_information = drsblobs.AuthenticationInformation()
+        clear_authentication_information.LastUpdateTime = 0
+        clear_authentication_information.AuthType = lsa.TRUST_AUTH_TYPE_CLEAR
+        clear_authentication_information.AuthInfo = clear_value
+
+        auth_info_array = drsblobs.AuthenticationInformationArray()
+        auth_info_array.count = 1
+        auth_info_array.array = [clear_authentication_information]
+
+        outgoing = drsblobs.trustAuthInOutBlob()
+        outgoing.count = 1
+        outgoing.current = auth_info_array
+
+        trustdom_handle = None
+        try:
+            trustdom_handle = CreateTrustedDomainFallback(
+                lsa_conn,
+                pol_handle,
+                info,
+                security.SEC_STD_DELETE,
+                out_version,
+                out_revision_info1,
+                outgoing,
+                outgoing
+            )
+        except samba.NTSTATUSError as nt:
+            raise AssertionError(nt)
+
+        self.assertIsNotNone(trustdom_handle)
+        lsa_conn.DeleteTrustedDomain(pol_handle, info.sid)
+
     def test_create_trust_relax_encrypt(self):
         self._create_trust_relax(True)
 
     def test_create_trust_relax_no_enc(self):
         self._create_trust_relax(False)
+
+    def test_create_trust_fallback(self):
+        self._create_trust_fallback()
