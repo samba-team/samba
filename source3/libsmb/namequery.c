@@ -1087,8 +1087,15 @@ bool name_status_find(const char *q_name,
 }
 
 /*
-  comparison function used by sort_addr_list
-*/
+ * comparison function used by sort_addr_list
+ *
+ * This comparison is intransitive in sort if a socket has an invalid
+ * family (i.e., not IPv4 or IPv6), or an interface doesn't support
+ * the family. Say we have sockaddrs with IP versions {4,5,6}, of
+ * which 5 is invalid. By this function, 4 == 5 and 6 == 5, but 4 !=
+ * 6. This is of course a consequence of cmp() being unable to
+ * communicate error.
+ */
 
 static int addr_compare(const struct sockaddr_storage *ss1,
 			const struct sockaddr_storage *ss2)
