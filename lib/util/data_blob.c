@@ -22,6 +22,7 @@
 #include "attr.h"
 #include "data_blob.h"
 #include "lib/util/samba_util.h"
+#include "lib/util/tsort.h"
 
 const DATA_BLOB data_blob_null = { NULL, 0 };
 
@@ -121,12 +122,12 @@ _PUBLIC_ int data_blob_cmp(const DATA_BLOB *d1, const DATA_BLOB *d2)
 		return 1;
 	}
 	if (d1->data == d2->data) {
-		return d1->length - d2->length;
+		return NUMERIC_CMP(d1->length, d2->length);
 	}
 	ret = memcmp(d1->data, d2->data, MIN(d1->length, d2->length));
 	if (ret == 0) {
 		/* Note this ordering is used in conditional aces */
-		return d1->length - d2->length;
+		return NUMERIC_CMP(d1->length, d2->length);
 	}
 	return ret;
 }
