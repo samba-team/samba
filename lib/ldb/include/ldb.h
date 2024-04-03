@@ -2335,6 +2335,22 @@ do { \
 } while (0)
 #endif
 
+#ifndef NUMERIC_CMP
+/*
+ * NUMERIC_CMP is a safe replacement for `a - b` in comparison
+ * functions. It will work on integers, pointers, and floats.
+ *
+ * Rather than
+ *
+ *      return a - b;
+ *
+ * use
+ *
+ *     return NUMERIC_CMP(a, b);
+ */
+#define NUMERIC_CMP(a, b) (((a) > (b)) - ((a) < (b)))
+#endif
+
 
 
 /**
