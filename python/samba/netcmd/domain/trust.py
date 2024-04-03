@@ -34,7 +34,7 @@ from samba.dcerpc import drsblobs, lsa, nbt, netlogon, security
 from samba.net import Net
 from samba.netcmd import Command, CommandError, Option, SuperCommand
 from samba.samdb import SamDB
-from samba.lsa_utils import CreateTrustedDomainRelax
+from samba.lsa_utils import OpenPolicyFallback, CreateTrustedDomainFallback
 
 
 class LocalDCCredentialsOptions(options.CredentialsOptions):
@@ -210,15 +210,24 @@ class DomainTrustCommand(Command):
         return netlogon.netlogon(self.remote_binding_string, self.local_lp, self.remote_creds)
 
     def get_lsa_info(self, conn, policy_access):
-        objectAttr = lsa.ObjectAttribute()
-        objectAttr.sec_qos = lsa.QosInfo()
+        in_version = 1
+        in_revision_info1 = lsa.revision_info1()
+        in_revision_info1.revision = 1
+        in_revision_info1.supported_features = (
+            lsa.LSA_FEATURE_TDO_AUTH_INFO_AES_CIPHER
+        )
 
-        policy = conn.OpenPolicy2(b''.decode('utf-8'),
-                                  objectAttr, policy_access)
+        out_version, out_revision_info1, policy = OpenPolicyFallback(
+            conn,
+            b''.decode('utf-8'),
+            in_version,
+            in_revision_info1,
+            policy_access
+        )
 
         info = conn.QueryInfoPolicy2(policy, lsa.LSA_POLICY_INFO_DNS)
 
-        return (policy, info)
+        return (policy, out_version, out_revision_info1, info)
 
     def get_netlogon_dc_unc(self, conn, server, domain):
         try:
@@ -505,7 +514,12 @@ class cmd_domain_trust_show(DomainTrustCommand):
 
         try:
             local_policy_access = lsa.LSA_POLICY_VIEW_LOCAL_INFORMATION
-            (local_policy, local_lsa_info) = self.get_lsa_info(local_lsa, local_policy_access)
+            (
+                local_policy,
+                local_version,
+                local_revision_info1,
+                local_lsa_info
+            ) = self.get_lsa_info(local_lsa, local_policy_access)
         except RuntimeError as error:
             raise self.LocalRuntimeError(self, error, "failed to query LSA_POLICY_INFO_DNS")
 
@@ -641,8 +655,12 @@ class cmd_domain_trust_modify(DomainTrustCommand):
 
         try:
             local_policy_access = lsa.LSA_POLICY_VIEW_LOCAL_INFORMATION
-            local_policy_access |= lsa.LSA_POLICY_TRUST_ADMIN
-            (local_policy, local_lsa_info) = self.get_lsa_info(local_lsa, local_policy_access)
+            (
+                local_policy,
+                local_version,
+                local_revision_info1,
+                local_lsa_info
+            ) = self.get_lsa_info(local_lsa, local_policy_access)
         except RuntimeError as error:
             raise self.LocalRuntimeError(self, error, "failed to query LSA_POLICY_INFO_DNS")
 
@@ -895,7 +913,12 @@ class cmd_domain_trust_create(DomainTrustCommand):
             raise self.LocalRuntimeError(self, error, "failed to connect lsa server")
 
         try:
-            (local_policy, local_lsa_info) = self.get_lsa_info(local_lsa, local_policy_access)
+            (
+                local_policy,
+                local_version,
+                local_revision_info1,
+                local_lsa_info
+            ) = self.get_lsa_info(local_lsa, local_policy_access)
         except RuntimeError as error:
             raise self.LocalRuntimeError(self, error, "failed to query LSA_POLICY_INFO_DNS")
 
@@ -915,7 +938,12 @@ class cmd_domain_trust_create(DomainTrustCommand):
             raise self.RemoteRuntimeError(self, error, "failed to connect lsa server")
 
         try:
-            (remote_policy, remote_lsa_info) = self.get_lsa_info(remote_lsa, remote_policy_access)
+            (
+                remote_policy,
+                remote_version,
+                remote_revision_info1,
+                remote_lsa_info
+            ) = self.get_lsa_info(remote_lsa, remote_policy_access)
         except RuntimeError as error:
             raise self.RemoteRuntimeError(self, error, "failed to query LSA_POLICY_INFO_DNS")
 
@@ -1041,12 +1069,16 @@ class cmd_domain_trust_create(DomainTrustCommand):
             if remote_trust_info:
                 self.outf.write("Creating remote TDO.\n")
                 current_request = {"location": "remote", "name": "CreateTrustedDomainEx2"}
-                remote_tdo_handle = CreateTrustedDomainRelax(remote_lsa,
-                                                             remote_policy,
-                                                             remote_trust_info,
-                                                             lsa.LSA_TRUSTED_DOMAIN_ALL_ACCESS,
-                                                             outgoing_blob,
-                                                             incoming_blob)
+                remote_tdo_handle = CreateTrustedDomainFallback(
+                    remote_lsa,
+                    remote_policy,
+                    remote_trust_info,
+                    lsa.LSA_TRUSTED_DOMAIN_ALL_ACCESS,
+                    remote_version,
+                    remote_revision_info1,
+                    outgoing_blob,
+                    incoming_blob
+                )
                 self.outf.write("Remote TDO created.\n")
                 if enc_types:
                     self.outf.write("Setting supported encryption types on remote TDO.\n")
@@ -1057,12 +1089,16 @@ class cmd_domain_trust_create(DomainTrustCommand):
 
             self.outf.write("Creating local TDO.\n")
             current_request = {"location": "local", "name": "CreateTrustedDomainEx2"}
-            local_tdo_handle = CreateTrustedDomainRelax(local_lsa,
-                                                        local_policy,
-                                                        local_trust_info,
-                                                        lsa.LSA_TRUSTED_DOMAIN_ALL_ACCESS,
-                                                        incoming_blob,
-                                                        outgoing_blob)
+            local_tdo_handle = CreateTrustedDomainFallback(
+                local_lsa,
+                local_policy,
+                local_trust_info,
+                lsa.LSA_TRUSTED_DOMAIN_ALL_ACCESS,
+                local_version,
+                local_revision_info1,
+                incoming_blob,
+                outgoing_blob
+            )
             self.outf.write("Local TDO created\n")
             if enc_types:
                 self.outf.write("Setting supported encryption types on local TDO.\n")
@@ -1266,7 +1302,12 @@ class cmd_domain_trust_delete(DomainTrustCommand):
             raise self.LocalRuntimeError(self, error, "failed to connect lsa server")
 
         try:
-            (local_policy, local_lsa_info) = self.get_lsa_info(local_lsa, local_policy_access)
+            (
+                local_policy,
+                local_version,
+                local_revision_info1,
+                local_lsa_info
+            ) = self.get_lsa_info(local_lsa, local_policy_access)
         except RuntimeError as error:
             raise self.LocalRuntimeError(self, error, "failed to query LSA_POLICY_INFO_DNS")
 
@@ -1302,7 +1343,12 @@ class cmd_domain_trust_delete(DomainTrustCommand):
                 raise self.RemoteRuntimeError(self, error, "failed to connect lsa server")
 
             try:
-                (remote_policy, remote_lsa_info) = self.get_lsa_info(remote_lsa, remote_policy_access)
+                (
+                    remote_policy,
+                    remote_version,
+                    remote_revision_info1,
+                    remote_lsa_info
+                ) = self.get_lsa_info(remote_lsa, remote_policy_access)
             except RuntimeError as error:
                 raise self.RemoteRuntimeError(self, error, "failed to query LSA_POLICY_INFO_DNS")
 
@@ -1409,7 +1455,12 @@ class cmd_domain_trust_validate(DomainTrustCommand):
             raise self.LocalRuntimeError(self, error, "failed to connect lsa server")
 
         try:
-            (local_policy, local_lsa_info) = self.get_lsa_info(local_lsa, local_policy_access)
+            (
+                local_policy,
+                local_version,
+                local_revision_info1,
+                local_lsa_info
+            ) = self.get_lsa_info(local_lsa, local_policy_access)
         except RuntimeError as error:
             raise self.LocalRuntimeError(self, error, "failed to query LSA_POLICY_INFO_DNS")
 
@@ -1844,7 +1895,12 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
             raise self.LocalRuntimeError(self, error, "failed to connect lsa server")
 
         try:
-            (local_policy, local_lsa_info) = self.get_lsa_info(local_lsa, local_policy_access)
+            (
+                local_policy,
+                local_version,
+                local_revision_info1,
+                local_lsa_info
+            ) = self.get_lsa_info(local_lsa, local_policy_access)
         except RuntimeError as error:
             raise self.LocalRuntimeError(self, error, "failed to query LSA_POLICY_INFO_DNS")
 
