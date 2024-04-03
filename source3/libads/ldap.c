@@ -2906,11 +2906,13 @@ static bool ads_dump_field(ADS_STRUCT *ads, char *field, void **values, void *da
 		{"nTSecurityDescriptor", False, dump_sd},
 		{"dnsRecord", False, dump_binary},
 		{"objectSid", False, dump_sid},
+		{"securityIdentifier", False, dump_sid},
 		{"tokenGroups", False, dump_sid},
 		{"tokenGroupsNoGCAcceptable", False, dump_sid},
 		{"tokengroupsGlobalandUniversal", False, dump_sid},
 		{"mS-DS-CreatorSID", False, dump_sid},
 		{"msExchMailboxGuid", False, dump_guid},
+		{"msDS-TrustForestTrustInfo", False, dump_binary},
 		{NULL, True, NULL}
 	};
 	int i;
