@@ -357,6 +357,17 @@ def arcfour_encrypt(key, data):
     return arcfour_crypt_blob(data, key)
 
 
+def aead_aes_256_cbc_hmac_sha512(plaintext, cek, key_salt, mac_salt, iv):
+    from samba.crypto import aead_aes_256_cbc_hmac_sha512_blob
+    return aead_aes_256_cbc_hmac_sha512_blob(
+        plaintext,
+        cek,
+        key_salt,
+        mac_salt,
+        iv
+    )
+
+
 GUID_RE = re.compile(
     "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 
