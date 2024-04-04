@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/security.h"
 #include "dom_sid.h"
 #include "lib/util/smb_strtox.h"
+#include "lib/util/tsort.h"
 
 /*****************************************************************
  Compare the auth portion of two sids.
@@ -71,12 +72,17 @@ int dom_sid_compare(const struct dom_sid *sid1, const struct dom_sid *sid2)
 		return 1;
 
 	/* Compare most likely different rids, first: i.e start at end */
-	if (sid1->num_auths != sid2->num_auths)
-		return sid1->num_auths - sid2->num_auths;
-
-	for (i = sid1->num_auths-1; i >= 0; --i)
-		if (sid1->sub_auths[i] != sid2->sub_auths[i])
-			return sid1->sub_auths[i] - sid2->sub_auths[i];
+	if (sid1->num_auths != sid2->num_auths) {
+		return NUMERIC_CMP(sid1->num_auths, sid2->num_auths);
+	}
+	for (i = sid1->num_auths-1; i >= 0; --i) {
+		if (sid1->sub_auths[i] < sid2->sub_auths[i]) {
+			return -1;
+		}
+		if (sid1->sub_auths[i] > sid2->sub_auths[i]) {
+			return 1;
+		}
+	}
 
 	return dom_sid_compare_auth(sid1, sid2);
 }
