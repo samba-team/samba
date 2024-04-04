@@ -324,11 +324,11 @@ int tdb_data_cmp(TDB_DATA t1, TDB_DATA t2)
 		return 1;
 	}
 	if (t1.dptr == t2.dptr) {
-		return t1.dsize - t2.dsize;
+		return NUMERIC_CMP(t1.dsize, t2.dsize);
 	}
 	ret = memcmp(t1.dptr, t2.dptr, MIN(t1.dsize, t2.dsize));
 	if (ret == 0) {
-		return t1.dsize - t2.dsize;
+		return NUMERIC_CMP(t1.dsize, t2.dsize);
 	}
 	return ret;
 }
