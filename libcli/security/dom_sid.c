@@ -47,11 +47,12 @@ int dom_sid_compare_auth(const struct dom_sid *sid1,
 		return 1;
 
 	if (sid1->sid_rev_num != sid2->sid_rev_num)
-		return sid1->sid_rev_num - sid2->sid_rev_num;
+		return NUMERIC_CMP(sid1->sid_rev_num, sid2->sid_rev_num);
 
 	for (i = 0; i < 6; i++)
-		if (sid1->id_auth[i] != sid2->id_auth[i])
-			return sid1->id_auth[i] - sid2->id_auth[i];
+		if (sid1->id_auth[i] != sid2->id_auth[i]) {
+			return NUMERIC_CMP(sid1->id_auth[i], sid2->id_auth[i]);
+		}
 
 	return 0;
 }
