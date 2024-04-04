@@ -1166,7 +1166,7 @@ static NTSTATUS dcesrv_samr_CreateDomainGroup(struct dcesrv_call_state *dce_call
 */
 static int compare_SamEntry(struct samr_SamEntry *e1, struct samr_SamEntry *e2)
 {
-	return e1->idx - e2->idx;
+	return NUMERIC_CMP(e1->idx, e2->idx);
 }
 
 static int compare_msgRid(struct ldb_message **m1, struct ldb_message **m2) {
