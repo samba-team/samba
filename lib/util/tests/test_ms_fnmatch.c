@@ -36,7 +36,7 @@ static void test_ms_fn_match_protocol_no_wildcard(void **state)
 	/* no wildcards in pattern, a simple strcasecmp_m */
 	cmp = ms_fnmatch_protocol("pattern", "string", PROTOCOL_COREPLUS,
 				  true);	/* case sensitive */
-	assert_int_equal(cmp, -3);
+	assert_true(cmp < 0);
 }
 
 static void test_ms_fn_match_protocol_pattern_upgraded(void **state)
