@@ -350,7 +350,7 @@ static int winsdb_addr_sort_list (struct winsdb_addr **p1, struct winsdb_addr **
 	 * then the replica addresses with the newest to the oldest address
 	 */
 	if (a2->expire_time != a1->expire_time) {
-		return a2->expire_time - a1->expire_time;
+		return NUMERIC_CMP(a2->expire_time, a1->expire_time);
 	}
 
 	if (strcmp(a2->wins_owner, h->local_owner) == 0) {
