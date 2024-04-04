@@ -491,6 +491,7 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 	char *spn = NULL;
 	const char **netbios_aliases = NULL;
 	const char **addl_hostnames = NULL;
+	const char *dns_hostname = NULL;
 
 	/* Find our DN */
 
@@ -537,6 +538,27 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 	}
 
 	spn = talloc_asprintf(frame, "HOST/%s", my_fqdn);
+	if (spn == NULL) {
+		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+	status = add_uniq_spn(frame, spn, &spn_array, &num_spns);
+	if (!ADS_ERR_OK(status)) {
+		goto done;
+	}
+
+	/*
+	 * Register dns_hostname if needed, add_uniq_spn() will avoid
+	 * duplicates.
+	 */
+	dns_hostname = lp_dns_hostname();
+	if (dns_hostname == NULL) {
+		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+	spn = talloc_asprintf(frame, "HOST/%s", dns_hostname);
 	if (spn == NULL) {
 		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 		goto done;
