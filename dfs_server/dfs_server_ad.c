@@ -804,7 +804,7 @@ NTSTATUS dfs_server_ad_get_referrals(struct loadparm_context *lp_ctx,
 	const char *netbios_domain;
 	const char *dns_domain;
 	const char *netbios_name;
-	const char *dns_name;
+	const char *dns_hostname = NULL;
 	const char **netbios_aliases;
 	char path_separator;
 
@@ -863,13 +863,13 @@ NTSTATUS dfs_server_ad_get_referrals(struct loadparm_context *lp_ctx,
 	netbios_domain = lpcfg_workgroup(lp_ctx);
 	dns_domain = lpcfg_dnsdomain(lp_ctx);
 	netbios_name = lpcfg_netbios_name(lp_ctx);
-	dns_name = talloc_asprintf(r, "%s.%s", netbios_name, dns_domain);
-	if (dns_name == NULL) {
+	dns_hostname = lpcfg_dns_hostname(lp_ctx);
+	if (dns_hostname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if ((strcasecmp_m(server_name, netbios_name) == 0) ||
-	    (strcasecmp_m(server_name, dns_name) == 0)) {
+	    (strcasecmp_m(server_name, dns_hostname) == 0)) {
 		/*
 		 * If it is not domain related do not
 		 * handle it here.
