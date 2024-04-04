@@ -240,6 +240,7 @@ static bool b9_format(struct dlz_bind9_data *state,
 		break;
 
 	case DNS_TYPE_SOA: {
+		const char *dns_hostname = NULL;
 		const char *mname;
 		*type = "soa";
 
@@ -247,13 +248,11 @@ static bool b9_format(struct dlz_bind9_data *state,
 		 * point at ourselves. This is how AD DNS servers
 		 * force clients to send updates to the right local DC
 		 */
-		mname = talloc_asprintf(mem_ctx, "%s.%s.",
-					lpcfg_netbios_name(state->lp),
-					lpcfg_dnsdomain(state->lp));
-		if (mname == NULL) {
+		dns_hostname = lpcfg_dns_hostname(state->lp);
+		if (dns_hostname == NULL) {
 			return false;
 		}
-		mname = strlower_talloc(mem_ctx, mname);
+		mname = talloc_asprintf(mem_ctx, "%s.", dns_hostname);
 		if (mname == NULL) {
 			return false;
 		}
