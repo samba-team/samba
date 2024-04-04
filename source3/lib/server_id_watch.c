@@ -17,17 +17,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "replace.h"
-#include <tevent.h>
-#include <talloc.h>
+#include "includes.h"
 #include "serverid.h"
 #include "server_id_watch.h"
+#include "lib/util/server_id.h"
 #include "lib/util/tevent_unix.h"
+#include "lib/util/util_file.h"
 
 struct server_id_watch_state {
 	struct tevent_context *ev;
 	struct server_id pid;
 	struct timeval start;
+	struct timeval warn;
+	bool debug;
 };
 
 static void server_id_watch_waited(struct tevent_req *subreq);
@@ -47,6 +49,12 @@ struct tevent_req *server_id_watch_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->pid = pid;
 	state->start = tevent_timeval_current();
+	state->warn = tevent_timeval_add(&state->start, 10, 0);
+
+	state->debug = lp_parm_bool(GLOBAL_SECTION_SNUM,
+				    "serverid watch",
+				    "debug",
+				    CHECK_DEBUGLVL(DBGLVL_DEBUG));
 
 	if (!serverid_exists(&state->pid)) {
 		tevent_req_done(req);
@@ -86,6 +94,55 @@ static void server_id_watch_waited(struct tevent_req *subreq)
 	}
 
 	now = tevent_timeval_current();
+
+	if (!state->debug) {
+		goto next;
+	}
+
+	if (timeval_compare(&state->warn, &now) == -1) {
+		double duration = timeval_elapsed2(&state->start, &now);
+		char proc_path[64] = { 0, };
+		char *kstack = NULL;
+		struct server_id_buf buf;
+		const char *pid = server_id_str_buf(state->pid, &buf);
+		int ret;
+
+		state->warn = tevent_timeval_add(&now, 10, 0);
+
+		if (!procid_is_local(&state->pid) || !sys_have_proc_fds()) {
+			DBG_ERR("Process %s hanging for %f seconds?\n",
+				pid, duration);
+			goto next;
+		}
+
+		ret = snprintf(proc_path,
+			       ARRAY_SIZE(proc_path),
+			       "/proc/%" PRIu64 "/stack",
+			       state->pid.pid);
+		if (ret < 0) {
+			DBG_ERR("Process %s hanging for %f seconds?\n"
+				"snprintf failed\n",
+				pid, duration);
+			goto next;
+		}
+
+		become_root();
+		kstack = file_load(proc_path, NULL, 0, state);
+		unbecome_root();
+		if (kstack == NULL) {
+			DBG_ERR("Process %s hanging for %f seconds?\n"
+				"file_load [%s] failed\n",
+				pid, duration, proc_path);
+			goto next;
+		}
+
+		DBG_ERR("Process %s hanging for %f seconds?\n"
+			"%s:\n%s",
+			pid, duration, proc_path, kstack);
+		TALLOC_FREE(kstack);
+	}
+
+next:
 	next = tevent_timeval_add(&now, 0, 500000);
 	subreq = tevent_wakeup_send(state, state->ev, next);
 	if (tevent_req_nomem(subreq, req)) {
