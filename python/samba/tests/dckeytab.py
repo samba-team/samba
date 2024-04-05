@@ -17,12 +17,11 @@
 #
 
 import os
-import sys
-import string
+import subprocess
 from samba.net import Net
 from samba import enable_net_export_keytab
 
-from samba import credentials, dsdb, ntstatus, NTSTATUSError, tests
+from samba import credentials, dsdb, ntstatus, NTSTATUSError
 from samba.dcerpc import krb5ccache, security
 from samba.dsdb import UF_WORKSTATION_TRUST_ACCOUNT
 from samba.ndr import ndr_unpack, ndr_pack
@@ -153,10 +152,28 @@ class DCKeytabTests(TestCaseInTempDir):
         net.export_keytab(keytab=self.ktfile, principal=new_principal)
         self.assertTrue(os.path.exists(self.ktfile), 'keytab was not created')
 
+        cmd = ['klist', '-K', '-C', '-t', '-k', self.ktfile]
+        keytab_orig_content = subprocess.Popen(
+            cmd,
+            shell=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        ).communicate()[0]
+
         with open(self.ktfile, 'rb') as bytes_kt:
             keytab_orig_bytes = bytes_kt.read()
 
         net.export_keytab(keytab=self.ktfile, principal=new_principal)
+        self.assertTrue(os.path.exists(self.ktfile), 'keytab was not created')
+
+        keytab_content = subprocess.Popen(
+            cmd,
+            shell=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        ).communicate()[0]
+
+        self.assertEqual(keytab_orig_content, keytab_content)
 
         # Parse the first entry in the keytab
         with open(self.ktfile, 'rb') as bytes_kt:
