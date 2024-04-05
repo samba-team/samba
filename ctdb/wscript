@@ -877,6 +877,7 @@ def build(bld):
     bld.INSTALL_FILES(bld.env.CTDB_ETCDIR, 'functions', destname='functions')
 
     etc_scripts = [
+        'ctdb-backup-persistent-tdbs.sh',
         'ctdb-crash-cleanup.sh',
         'debug-hung-script.sh',
         'debug_locks.sh',

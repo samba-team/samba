@@ -101,6 +101,38 @@ EOF
 	done
 }
 
+maybe_backup_persistent_tdbs()
+{
+	_dir="${CTDB_PERSISTENT_DB_BACKUP_DIR:-}"
+	if [ -z "$_dir" ]; then
+		return 0
+	fi
+
+	if [ ! -d "$_dir" ]; then
+		echo "Creating CTDB_PERSISTENT_DB_BACKUP_DIR=${_dir}"
+		if ! mkdir -p "$_dir"; then
+			die "ERROR: unable to create ${_dir}"
+		fi
+	fi
+
+	# Don't backup if there are backup files from within the past day
+	_out=$(find "$_dir" -type f -mtime -1)
+	if [ -n "$_out" ]; then
+		return 0
+	fi
+
+	# Script will ignore if this isn't leader node, so don't
+	# double-check that here...
+	"${CTDB_BASE}/ctdb-backup-persistent-tdbs.sh" -l "$_dir"
+
+	# Remove backups beyond the limit (default 14)
+	_limit="${CTDB_PERSISTENT_DB_BACKUP_LIMIT:-14}"
+	_offset=$((_limit + 1))
+	# Can't sort by time using find instead of ls
+	# shellcheck disable=SC2012
+	ls -t "$_dir"/* 2>/dev/null | tail -n "+${_offset}" | xargs rm -f
+}
+
 ############################################################
 
 ctdb_check_args "$@"
@@ -114,6 +146,9 @@ init)
 		check_persistent_databases || exit $?
 		check_non_persistent_databases
 	fi
+	;;
+monitor)
+	maybe_backup_persistent_tdbs
 	;;
 esac
 

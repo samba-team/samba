@@ -199,6 +199,7 @@ fi
 %doc doc/examples
 %dir %{_sysconfdir}/ctdb
 %{_sysconfdir}/ctdb/functions
+%{_sysconfdir}/ctdb/ctdb-backup-persistent-tdbs.sh
 %dir %{_sysconfdir}/ctdb/events
 %{_sysconfdir}/ctdb/events/*
 %dir %{_sysconfdir}/ctdb/nfs-checks.d
