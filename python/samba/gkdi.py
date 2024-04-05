@@ -105,6 +105,10 @@ class UndefinedStartTime(Exception):
 
 @total_ordering
 class Gkid:
+    # L2 increments every 10 hours. It rolls over after 320 hours (13 days and 8 hours).
+    # L1 increments every 320 hours. It rolls over after 10240 hours (426 days and 16 hours).
+    # L0 increments every 10240 hours. It rolls over after 43980465111040 hours (five billion years).
+
     __slots__ = ["_l0_idx", "_l1_idx", "_l2_idx"]
 
     max_l0_idx = 0x7FFF_FFFF
