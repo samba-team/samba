@@ -32,20 +32,27 @@
  */
 
 #include "includes.h"
+#include "ldb.h"
+#include "ldb_errors.h"
 #include "libcli/ldap/ldap_ndr.h"
 #include "ldb_module.h"
 #include "auth/auth.h"
+#include "dsdb/gmsa/util.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "dsdb/samdb/ldb_modules/ridalloc.h"
 #include "libcli/security/security.h"
+#include "librpc/gen_ndr/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "ldb_wrap.h"
 #include "param/param.h"
 #include "libds/common/flag_mapping.h"
 #include "system/network.h"
 #include "librpc/gen_ndr/irpc.h"
+#include "lib/crypto/gmsa.h"
+#include "lib/util/data_blob.h"
 #include "lib/util/smb_strtox.h"
+#include "lib/util/time.h"
 
 #undef strcasecmp
 
@@ -83,6 +90,9 @@ struct samldb_ctx {
 
 	/* used in "samldb_find_for_defaultObjectCategory" */
 	struct ldb_dn *dn, *res_dn;
+
+	/* the SID to be assigned to the resulting account */
+	const struct dom_sid *sid;
 
 	/* all the async steps necessary to complete the operation */
 	struct samldb_step *steps;
@@ -1041,6 +1051,8 @@ static int samldb_allocate_sid(struct samldb_ctx *ac)
 		return ldb_operr(ldb);
 	}
 
+	ac->sid = sid;
+
 	return samldb_next_step(ac);
 }
 
@@ -1135,6 +1147,85 @@ found:
 	}
 
 	return samldb_next_step(ac);
+}
+
+static int samldb_gmsa_add(struct samldb_ctx *ac)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	int ret = LDB_SUCCESS;
+	NTTIME current_time = 0;
+	const bool userPassword = dsdb_user_password_support(ac->module,
+							     ac->msg,
+							     ac->req);
+	bool ok;
+
+	ok = dsdb_gmsa_current_time(ldb, &current_time);
+	if (!ok) {
+		ret = ldb_operr(ldb);
+		goto out;
+	}
+
+	/* Remove any user‐specified passwords. */
+	dsdb_remove_password_related_attrs(ac->msg, userPassword);
+
+	/* Remove any user‐specified password IDs. */
+	ldb_msg_remove_attr(ac->msg, "msDS-ManagedPasswordId");
+	ldb_msg_remove_attr(ac->msg, "msDS-ManagedPasswordPreviousId");
+
+	{
+		DATA_BLOB pwd_id_blob = {};
+		DATA_BLOB password_blob = {};
+		struct gmsa_null_terminated_password *password = NULL;
+
+		/*
+		 * The account must have a SID allocated for us to be able to
+		 * derive its password.
+		 */
+		if (ac->sid == NULL) {
+			ret = ldb_operr(ldb);
+			goto out;
+		}
+
+		/* Calculate the password and ID blobs. */
+		ret = gmsa_generate_blobs(ldb,
+					  ac->msg,
+					  current_time,
+					  ac->sid,
+					  &pwd_id_blob,
+					  &password);
+		if (ret) {
+			goto out;
+		}
+
+		password_blob = (DATA_BLOB){.data = password->buf,
+					    .length = GMSA_PASSWORD_LEN};
+
+		/* Add the new password blob. */
+		ret = ldb_msg_append_steal_value(ac->msg,
+						 "clearTextPassword",
+						 &password_blob,
+						 0);
+		if (ret) {
+			goto out;
+		}
+
+		/* Add the new password ID blob. */
+		ret = ldb_msg_append_steal_value(ac->msg,
+						 "msDS-ManagedPasswordId",
+						 &pwd_id_blob,
+						 0);
+		if (ret) {
+			goto out;
+		}
+	}
+
+	ret = samldb_next_step(ac);
+	if (ret) {
+		goto out;
+	}
+
+out:
+	return ret;
 }
 
 static int samldb_find_for_defaultObjectCategory(struct samldb_ctx *ac)
@@ -1416,6 +1507,13 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 			rodc_control->critical = false;
 			ret = samldb_add_step(ac, samldb_rodc_add);
 			if (ret != LDB_SUCCESS) return ret;
+		}
+
+		if (dsdb_account_is_gmsa(ldb, ac->msg)) {
+			ret = samldb_add_step(ac, samldb_gmsa_add);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
 		}
 
 		/* check if we have a valid sAMAccountName */
