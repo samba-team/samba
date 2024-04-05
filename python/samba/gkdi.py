@@ -289,6 +289,10 @@ class Gkid:
 
         return start_time
 
+    @staticmethod
+    def from_key_envelope(env: gkdi.KeyEnvelope) -> "Gkid":
+        return Gkid(env.l0_index, env.l1_index, env.l2_index)
+
 
 class SeedKeyPair:
     __slots__ = ["l1_key", "l2_key", "gkid", "hash_algorithm", "root_key_id"]
