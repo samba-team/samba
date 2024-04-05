@@ -2946,8 +2946,9 @@ static void defer_open_done(struct tevent_req *req)
 	status = share_mode_watch_recv(req, NULL, NULL);
 	TALLOC_FREE(req);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5, ("dbwrap_watched_watch_recv returned %s\n",
-			  nt_errstr(status)));
+		DBG_ERR("share_mode_watch_recv() returned %s, "
+			"rescheduling mid %" PRIu64 "\n",
+			nt_errstr(status), state->mid);
 		/*
 		 * Even if it failed, retry anyway. TODO: We need a way to
 		 * tell a re-scheduled open about that error.
