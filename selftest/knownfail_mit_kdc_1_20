@@ -136,3 +136,8 @@
 ^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_single_component_krbtgt_no_pac_as_req\(ad_dc\)$
 ^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_single_component_krbtgt_no_pac_tgs_req\(ad_dc\)$
 ^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_single_component_krbtgt_service_ticket\(ad_dc\)$
+#
+# gMSA tests
+#
+^samba.tests.krb5.gmsa_tests.samba.tests.krb5.gmsa_tests.GmsaTests.test_gmsa_can_perform_as_req_with_aes256\(ad_dc:local\)$
+^samba.tests.krb5.gmsa_tests.samba.tests.krb5.gmsa_tests.GmsaTests.test_gmsa_can_perform_as_req_with_rc4\(ad_dc:local\)$
