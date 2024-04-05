@@ -67,9 +67,6 @@
 # REASON: Exception: Exception: ../../lib/util/charset/tests/charset.c:56: strcasecmp("foo", "bar") was 1 (0x1), expected 4 (0x4): different strings both lower
 # UNEXPECTED(failure): samba4.local.charset.strncasecmp(none)
 # REASON: Exception: Exception: ../../lib/util/charset/tests/charset.c:132: strncasecmp("foo", "bar", 3) was 1 (0x1), expected 4 (0x4): different strings both lower
-# UNEXPECTED(failure): samba4.local.charset.strncasecmp_m(none)
-# REASON: Exception: Exception: ../../lib/util/charset/tests/charset.c:167: strncasecmp_m(file_iso8859_1, file_utf8, 6) was 1 (0x1), expected 38 (0x26): file.{accent
-# ed e} should differ
 # command:  /home/samba/samba.git/bin/smbtorture  $LOADLIST --configfile=$SMB_CONF_PATH --option='fss:sequence timeout=1' --maximum-runtime=$SELFTEST_MAXTIME --based
 # ir=$SELFTEST_TMPDIR --format=subunit --option=torture:progress=no --target=samba4 ncalrpc:localhost local.charset 2>&1  | python3 /home/samba/samba.git/selftest/fi
 # lter-subunit --fail-on-empty --prefix="samba4.local.charset." --suffix="(none)"
@@ -80,7 +77,6 @@
 # REASON: Exit code was 1
 ^samba4.local.charset.strcasecmp.none
 ^samba4.local.charset.strncasecmp.none
-^samba4.local.charset.strncasecmp_m.none
 #
 # [229(2702)/261 at 8m44s, 5 errors] samba.tests.samba_tool.provision_lmdb_size
 # UNEXPECTED(failure): samba.tests.samba_tool.provision_lmdb_size.samba.tests.samba_tool.provision_lmdb_size.ProvisionLmdbSizeTestCase.test_134217728b(none)
