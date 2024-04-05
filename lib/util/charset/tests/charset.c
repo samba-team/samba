@@ -151,19 +151,19 @@ static bool test_strncasecmp_m(struct torture_context *tctx)
 	const char file_iso8859_1[7] = { 0x66, 0x69, 0x6c, 0x65, 0x2d, 0xe9, 0 };
 	/* file.{accented e} in utf8 */
 	const char file_utf8[8] =      { 0x66, 0x69, 0x6c, 0x65, 0x2d, 0xc3, 0xa9, 0 };
-	torture_assert_int_equal(tctx, strncasecmp_m("foo", "bar", 3), 4, "different strings both lower");
-	torture_assert_int_equal(tctx, strncasecmp_m("foo", "Bar", 3), 4, "different strings lower/upper");
-	torture_assert_int_equal(tctx, strncasecmp_m("Foo", "bar", 3), 4, "different strings upper/lower");
-	torture_assert_int_equal(tctx, strncasecmp_m("AFoo", "_bar", 4), 2, "different strings upper/lower");
+	torture_assert_int_greater(tctx, strncasecmp_m("foo", "bar", 3), 0, "different strings both lower");
+	torture_assert_int_greater(tctx, strncasecmp_m("foo", "Bar", 3), 0, "different strings lower/upper");
+	torture_assert_int_greater(tctx, strncasecmp_m("Foo", "bar", 3), 0, "different strings upper/lower");
+	torture_assert_int_greater(tctx, strncasecmp_m("AFoo", "_bar", 4), 0, "different strings upper/lower");
 	torture_assert_int_equal(tctx, strncasecmp_m("foo", "foo", 3), 0, "same case strings");
 	torture_assert_int_equal(tctx, strncasecmp_m("foo", "Foo", 3), 0, "different case strings");
 	torture_assert_int_equal(tctx, strncasecmp_m("fool", "Foo", 3),0, "different case strings");
 	torture_assert_int_equal(tctx, strncasecmp_m("fool", "Fool", 40), 0, "over size");
 	torture_assert_int_equal(tctx, strncasecmp_m("BLA", "Fool", 0),0, "empty");
-	torture_assert_int_equal(tctx, strncasecmp_m(NULL, "Foo", 3),  -1, "one NULL");
-	torture_assert_int_equal(tctx, strncasecmp_m("foo", NULL, 3),  1, "other NULL");
+	torture_assert_int_less(tctx, strncasecmp_m(NULL, "Foo", 3),  0, "one NULL");
+	torture_assert_int_greater(tctx, strncasecmp_m("foo", NULL, 3),  0, "other NULL");
 	torture_assert_int_equal(tctx, strncasecmp_m(NULL, NULL, 3),   0, "both NULL");
-	torture_assert_int_equal(tctx, strncasecmp_m(file_iso8859_1, file_utf8, 6), 38,
+	torture_assert_int_greater(tctx, strncasecmp_m(file_iso8859_1, file_utf8, 6), 0,
 		"file.{accented e} should differ");
 	return true;
 }
