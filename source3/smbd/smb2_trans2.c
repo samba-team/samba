@@ -2040,7 +2040,7 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 	int snum = SNUM(conn);
 	const char *fstype = lp_fstype(SNUM(conn));
 	const char *filename = NULL;
-	const uint64_t bytes_per_sector = 512;
+	uint64_t bytes_per_sector = 512;
 	struct smb_filename smb_fname;
 	SMB_STRUCT_STAT st;
 	NTSTATUS status = NT_STATUS_OK;
@@ -2417,6 +2417,23 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 
 		case SMB_FS_SECTOR_SIZE_INFORMATION:
 		{
+			uint32_t bps_logical = lp_parm_ulong(
+				SNUM(conn),
+				"fs", "logical bytes per sector",
+				bytes_per_sector);
+			uint32_t bps_aligned = lp_parm_ulong(
+				SNUM(conn),
+				"fs", "aligned bytes per sector",
+				bytes_per_sector);
+			uint32_t bps_performance = lp_parm_ulong(
+				SNUM(conn),
+				"fs", "performance bytes per sector",
+				bytes_per_sector);
+			uint32_t bps_effective = lp_parm_ulong(
+				SNUM(conn),
+				"fs", "effective aligned bytes per sector",
+				bytes_per_sector);
+
 			data_len = 28;
 			/*
 			 * These values match a physical Windows Server 2012
@@ -2424,13 +2441,13 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			 */
 			DEBUG(5, ("SMB_FS_SECTOR_SIZE_INFORMATION:"));
 			/* logical_bytes_per_sector */
-			SIVAL(pdata, 0, bytes_per_sector);
+			SIVAL(pdata, 0, bps_logical);
 			/* phys_bytes_per_sector_atomic */
-			SIVAL(pdata, 4, bytes_per_sector);
+			SIVAL(pdata, 4, bps_aligned);
 			/* phys_bytes_per_sector_perf */
-			SIVAL(pdata, 8, bytes_per_sector);
+			SIVAL(pdata, 8, bps_performance);
 			/* fs_effective_phys_bytes_per_sector_atomic */
-			SIVAL(pdata, 12, bytes_per_sector);
+			SIVAL(pdata, 12, bps_effective);
 			/* flags */
 			SIVAL(pdata, 16, SSINFO_FLAGS_ALIGNED_DEVICE
 				| SSINFO_FLAGS_PARTITION_ALIGNED_ON_DEVICE);
