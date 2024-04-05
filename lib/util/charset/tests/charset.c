@@ -73,11 +73,14 @@ static bool test_strcasecmp_m(struct torture_context *tctx)
 	/* file.{accented e} in utf8 */
 	const char file_utf8[8] =      { 0x66, 0x69, 0x6c, 0x65, 0x2d, 0xc3, 0xa9, 0 };
 	torture_assert_int_greater(tctx, strcasecmp_m("foo", "bar"), 0, "different strings both lower");
+	torture_assert_int_less(tctx, strcasecmp_m("bar", "foo"), 0, "different strings both lower");
 	torture_assert_int_greater(tctx, strcasecmp_m("foo", "Bar"), 0, "different strings lower/upper");
 	torture_assert_int_greater(tctx, strcasecmp_m("Foo", "bar"), 0, "different strings upper/lower");
 	torture_assert_int_greater(tctx, strcasecmp_m("AFoo", "_bar"), 0, "different strings upper/lower");
 	torture_assert_int_equal(tctx, strcasecmp_m("foo", "foo"), 0, "same case strings");
 	torture_assert_int_equal(tctx, strcasecmp_m("foo", "Foo"), 0, "different case strings");
+	torture_assert_int_greater(tctx, strcasecmp_m("food", "Foo"), 0, "strings differ towards the end");
+	torture_assert_int_less(tctx, strcasecmp_m("food", "Fool"), 0, "strings differ towards the end");
 	torture_assert_int_less(tctx, strcasecmp_m(NULL, "Foo"),  0, "one NULL");
 	torture_assert_int_greater(tctx, strcasecmp_m("foo", NULL),  0, "other NULL");
 	torture_assert_int_equal(tctx, strcasecmp_m(NULL, NULL),   0, "both NULL");
