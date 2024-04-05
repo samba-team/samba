@@ -92,9 +92,9 @@ interface ads
 	typedef [nopull,nopush] struct {
 		ads_saslwrap_type wrap_type;
 		[ignore] ads_saslwrap_ops *wrap_ops;
-#ifdef HAVE_LDAP_SASL_WRAPPING
+#ifdef HAVE_ADS
 		[ignore] struct sockbuf_io_desc *sbiod; /* lowlevel state for LDAP wrapping */
-#endif /* HAVE_LDAP_SASL_WRAPPING */
+#endif /* HAVE_ADS */
 		[ignore] TALLOC_CTX *mem_ctx;
 		[ignore] void *wrap_private_data;
 		ads_ldap_buf_in in;
@@ -118,11 +118,11 @@ interface ads
 		/* info derived from the servers config */
 		ads_config config;
 
-#ifdef HAVE_LDAP
+#ifdef HAVE_ADS
 		ads_saslwrap ldap_wrap_data;
 		/* info about the current LDAP connection */
 		ads_ldap ldap;
-#endif /* HAVE_LDAP */
+#endif /* HAVE_ADS */
 
 	} ads_struct;
 }

@@ -25,9 +25,9 @@ void ndr_print_ads_saslwrap_struct(struct ndr_print *ndr, const char *name, cons
 	ndr_print_struct(ndr, name, "saslwrap");
 	ndr->depth++;
 	ndr_print_uint16(ndr, "wrap_type", r->wrap_type);
-#ifdef HAVE_LDAP_SASL_WRAPPING
+#ifdef HAVE_ADS
 	ndr_print_ptr(ndr, "sbiod", r->sbiod);
-#endif /* HAVE_LDAP_SASL_WRAPPING */
+#endif /* HAVE_ADS */
 	ndr_print_ptr(ndr, "mem_ctx", r->mem_ctx);
 	ndr_print_ptr(ndr, "wrap_ops", r->wrap_ops);
 	ndr_print_ptr(ndr, "wrap_private_data", r->wrap_private_data);
@@ -52,7 +52,7 @@ void ndr_print_ads_saslwrap_struct(struct ndr_print *ndr, const char *name, cons
 	ndr->depth--;
 }
 
-#ifdef HAVE_LDAP_SASL_WRAPPING
+#ifdef HAVE_ADS
 
 static int ads_saslwrap_setup(Sockbuf_IO_Desc *sbiod, void *arg)
 {
@@ -348,4 +348,4 @@ ADS_STATUS ads_setup_sasl_wrapping(struct ads_saslwrap *wrap, LDAP *ld,
 {
 	return ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
 }
-#endif /* HAVE_LDAP_SASL_WRAPPING */
+#endif /* HAVE_ADS */

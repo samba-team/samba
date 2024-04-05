@@ -9,6 +9,6 @@ if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
                    'gen_output.py',
                    'samba_downgrade_db']:
         bld.SAMBA_SCRIPT(script, pattern=script, installdir='.')
-if bld.CONFIG_SET('WITH_ADS'):
+if bld.CONFIG_SET('HAVE_ADS'):
     bld.SAMBA_SCRIPT('samba-tool', pattern='samba-tool', installdir='.')
 bld.SAMBA_SCRIPT('samba-gpupdate', pattern='samba-gpupdate', installdir='.')

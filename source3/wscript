@@ -723,13 +723,13 @@ msg.msg_accrightslen = sizeof(fd);
             conf.undefine('HAVE_GSSAPI_GSSAPI_H')
             use_ads = False
 
-        if not conf.CONFIG_SET('HAVE_LDAP'):
+        if not conf.CONFIG_SET('HAVE_LDAP_TRANSPORT_WRAPPING'):
+            Logs.warn("need ber_sockbuf_add_io() and LDAP_OPT_SOCKBUF for SASL and TLS support")
             use_ads = False
             use_ads_ldap = False
 
     if use_ads:
-        conf.DEFINE('WITH_ADS', '1')
-        conf.env['HAVE_ADS'] = '1'
+        conf.DEFINE('HAVE_ADS', '1')
         Logs.info("Building with Active Directory support.")
         # these have broken dependencies
         forced_shared_modules.extend(['idmap_ad', 'idmap_rfc2307'])

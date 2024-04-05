@@ -291,7 +291,7 @@ def configure(conf):
             # SASL wrapping hooks
             if conf.CONFIG_SET('HAVE_BER_SOCKBUF_ADD_IO') and \
                     conf.CONFIG_SET('HAVE_LDAP_OPT_SOCKBUF'):
-                conf.DEFINE('HAVE_LDAP_SASL_WRAPPING', '1')
+                conf.DEFINE('HAVE_LDAP_TRANSPORT_WRAPPING', 1)
             conf.env.ENABLE_LDAP_BACKEND = True
         else:
             conf.fatal("LDAP support not found. "

@@ -31,7 +31,7 @@ sub have_ads($) {
         open(IN, $smbd_build_options) or die("Unable to run $smbd_build_options: $!");
 
         while (<IN>) {
-                if (/WITH_ADS/) {
+                if (/HAVE_ADS/) {
                        $found_ads = 1;
                 }
         }
