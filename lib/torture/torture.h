@@ -534,6 +534,26 @@ static inline void torture_dump_data_str_cb(const char *buf, void *private_data)
 	} \
 	} while(0)
 
+#define torture_assert_int_less(torture_ctx,got,limit,cmt)\
+	do { int __got = (got), __limit = (limit); \
+	if (__got >= __limit) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+			__location__": "#got" was %d (0x%X), expected < %d (0x%X): %s", \
+			__got, __got, __limit, __limit, cmt); \
+		return false; \
+	} \
+	} while(0)
+
+#define torture_assert_int_greater(torture_ctx,got,limit,cmt)\
+	do { int __got = (got), __limit = (limit); \
+	if (__got <= __limit) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+			__location__": "#got" was %d (0x%X), expected > %d (0x%X): %s", \
+			__got, __got, __limit, __limit, cmt); \
+		return false; \
+	} \
+	} while(0)
+
 #define torture_assert_int_equal_goto(torture_ctx,got,expected,ret,label,cmt)\
 	do { int __got = (got), __expected = (expected); \
 	if (__got != __expected) { \
