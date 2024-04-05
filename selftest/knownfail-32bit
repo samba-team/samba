@@ -65,9 +65,6 @@
 # [171(1386)/261 at 6m24s, 4 errors] samba4.local.charset
 # UNEXPECTED(failure): samba4.local.charset.strcasecmp(none)
 # REASON: Exception: Exception: ../../lib/util/charset/tests/charset.c:56: strcasecmp("foo", "bar") was 1 (0x1), expected 4 (0x4): different strings both lower
-# UNEXPECTED(failure): samba4.local.charset.strcasecmp_m(none)
-# REASON: Exception: Exception: ../../lib/util/charset/tests/charset.c:85: strcasecmp_m(file_iso8859_1, file_utf8) was 1 (0x1), expected 38 (0x26): file.{accented e}
-#  should differ
 # UNEXPECTED(failure): samba4.local.charset.strncasecmp(none)
 # REASON: Exception: Exception: ../../lib/util/charset/tests/charset.c:132: strncasecmp("foo", "bar", 3) was 1 (0x1), expected 4 (0x4): different strings both lower
 # UNEXPECTED(failure): samba4.local.charset.strncasecmp_m(none)
@@ -82,7 +79,6 @@
 # ERROR: Testsuite[samba4.local.charset]
 # REASON: Exit code was 1
 ^samba4.local.charset.strcasecmp.none
-^samba4.local.charset.strcasecmp_m.none
 ^samba4.local.charset.strncasecmp.none
 ^samba4.local.charset.strncasecmp_m.none
 #
