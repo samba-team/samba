@@ -352,13 +352,15 @@ class SeedKeyPair:
         )
 
     def __hash__(self) -> int:
-        return hash((
-            self.l1_key,
-            self.l2_key,
-            self.gkid,
-            self.hash_algorithm,
-            ndr_pack(self.root_key_id),
-        ))
+        return hash(
+            (
+                self.l1_key,
+                self.l2_key,
+                self.gkid,
+                self.hash_algorithm,
+                ndr_pack(self.root_key_id),
+            )
+        )
 
 
 class GroupKey:
