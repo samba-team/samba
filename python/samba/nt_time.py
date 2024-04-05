@@ -25,6 +25,7 @@ import re
 NtTime = NewType("NtTime", int)
 NtTimeDelta = NewType("NtTimeDelta", int)
 
+NT_TIME_MAX = NtTime((1 << 64) - 1)
 
 NT_EPOCH = datetime.datetime(1601, 1, 1, 0, 0, 0, 0, tzinfo=datetime.timezone.utc)
 NT_TICKS_PER_μSEC = 10
@@ -34,7 +35,7 @@ NT_TICKS_PER_SEC = NT_TICKS_PER_μSEC * 1_000_000
 def _validate_nt_time(nt_time: NtTime) -> None:
     if not isinstance(nt_time, int):
         raise ValueError(f"{nt_time} is not an integer")
-    if not 0 <= nt_time < 2**64:
+    if not 0 <= nt_time <= NT_TIME_MAX:
         raise ValueError(f"{nt_time} is out of range")
 
 
