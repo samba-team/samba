@@ -6,3 +6,10 @@ if not conf.env['BISON']:
 
 conf.define('USING_EMBEDDED_HEIMDAL', 1)
 conf.RECURSE('third_party/heimdal_build')
+
+#
+# See https://github.com/heimdal/heimdal/pull/1234
+# and https://github.com/krb5/krb5/pull/1329
+# when this will be available also in
+# system libraries...
+conf.define('HAVE_CLIENT_GSS_C_CHANNEL_BOUND_FLAG', 1)
