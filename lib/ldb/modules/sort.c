@@ -121,14 +121,17 @@ static int sort_compare(struct ldb_message **msg1, struct ldb_message **msg2, vo
 	el1 = ldb_msg_find_element(*msg1, ac->attributeName);
 	el2 = ldb_msg_find_element(*msg2, ac->attributeName);
 
-	if (!el1 && el2) {
+	/*
+	 * NULL elements sort at the end (regardless of ac->reverse flag).
+	 */
+	if (el1 == NULL && el2 == NULL) {
+		return 0;
+	}
+	if (el1 == NULL) {
 		return 1;
 	}
-	if (el1 && !el2) {
+	if (el2 == NULL) {
 		return -1;
-	}
-	if (!el1 && !el2) {
-		return 0;
 	}
 
 	if (ac->reverse)
