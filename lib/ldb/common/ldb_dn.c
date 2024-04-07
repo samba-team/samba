@@ -1132,8 +1132,22 @@ int ldb_dn_compare(struct ldb_dn *dn0, struct ldb_dn *dn1)
 {
 	unsigned int i;
 	int ret;
+	/*
+	 * If used in sort, we shift NULL and invalid DNs to the end.
+	 *
+	 * If ldb_dn_casefold_internal() fails, that goes to the end too, so
+	 * we end up with:
+	 *
+	 * | normal DNs, sorted | casefold failed DNs | invalid DNs | NULLs |
+	 */
 
-	if (( ! dn0) || dn0->invalid || ! dn1 || dn1->invalid) {
+	if (dn0 == dn1 || (dn0->invalid && dn1->invalid)) {
+		return 0;
+	}
+	if (dn0 == NULL || dn0->invalid) {
+		return 1;
+	}
+	if (dn1 == NULL || dn1->invalid) {
 		return -1;
 	}
 
