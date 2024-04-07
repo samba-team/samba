@@ -1103,7 +1103,7 @@ _PUBLIC_ const struct gensec_critical_sizes *gensec_interface_version(void)
 }
 
 static int sort_gensec(const struct gensec_security_ops **gs1, const struct gensec_security_ops **gs2) {
-	return (*gs2)->priority - (*gs1)->priority;
+	return NUMERIC_CMP((*gs2)->priority, (*gs1)->priority);
 }
 
 int gensec_setting_int(struct gensec_settings *settings, const char *mechanism, const char *name, int default_value)
