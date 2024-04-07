@@ -125,7 +125,7 @@ static int sort_compare(struct ldb_message **msg1, struct ldb_message **msg2, vo
 	 * NULL and empty elements sort at the end (regardless of ac->reverse flag).
 	 * NULL elements come after empty ones.
 	 */
-	if (el1 == NULL && el2 == NULL) {
+	if (el1 == el2) {
 		return 0;
 	}
 	if (el1 == NULL) {
