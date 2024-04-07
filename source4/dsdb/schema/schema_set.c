@@ -478,19 +478,13 @@ static void dsdb_setup_attribute_shortcuts(struct ldb_context *ldb, struct dsdb_
 	TALLOC_FREE(frame);
 }
 
-static int uint32_cmp(uint32_t c1, uint32_t c2)
-{
-	if (c1 == c2) return 0;
-	return c1 > c2 ? 1 : -1;
-}
-
 static int dsdb_compare_class_by_lDAPDisplayName(struct dsdb_class **c1, struct dsdb_class **c2)
 {
 	return strcasecmp((*c1)->lDAPDisplayName, (*c2)->lDAPDisplayName);
 }
 static int dsdb_compare_class_by_governsID_id(struct dsdb_class **c1, struct dsdb_class **c2)
 {
-	return uint32_cmp((*c1)->governsID_id, (*c2)->governsID_id);
+	return NUMERIC_CMP((*c1)->governsID_id, (*c2)->governsID_id);
 }
 static int dsdb_compare_class_by_governsID_oid(struct dsdb_class **c1, struct dsdb_class **c2)
 {
@@ -507,11 +501,11 @@ static int dsdb_compare_attribute_by_lDAPDisplayName(struct dsdb_attribute **a1,
 }
 static int dsdb_compare_attribute_by_attributeID_id(struct dsdb_attribute **a1, struct dsdb_attribute **a2)
 {
-	return uint32_cmp((*a1)->attributeID_id, (*a2)->attributeID_id);
+	return NUMERIC_CMP((*a1)->attributeID_id, (*a2)->attributeID_id);
 }
 static int dsdb_compare_attribute_by_msDS_IntId(struct dsdb_attribute **a1, struct dsdb_attribute **a2)
 {
-	return uint32_cmp((*a1)->msDS_IntId, (*a2)->msDS_IntId);
+	return NUMERIC_CMP((*a1)->msDS_IntId, (*a2)->msDS_IntId);
 }
 static int dsdb_compare_attribute_by_attributeID_oid(struct dsdb_attribute **a1, struct dsdb_attribute **a2)
 {
@@ -519,7 +513,7 @@ static int dsdb_compare_attribute_by_attributeID_oid(struct dsdb_attribute **a1,
 }
 static int dsdb_compare_attribute_by_linkID(struct dsdb_attribute **a1, struct dsdb_attribute **a2)
 {
-	return uint32_cmp((*a1)->linkID, (*a2)->linkID);
+	return NUMERIC_CMP((*a1)->linkID, (*a2)->linkID);
 }
 static int dsdb_compare_attribute_by_cn(struct dsdb_attribute **a1, struct dsdb_attribute **a2)
 {
