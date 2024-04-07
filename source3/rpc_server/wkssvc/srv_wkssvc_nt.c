@@ -50,7 +50,7 @@ static int dom_user_cmp(const struct dom_usr *usr1, const struct dom_usr *usr2)
 	/* Called from qsort to compare two domain users in a dom_usr_t array
 	 * for sorting by login time. Return >0 if usr1 login time was later
 	 * than usr2 login time, <0 if it was earlier */
-	return (usr1->login_time - usr2->login_time);
+	return NUMERIC_CMP(usr1->login_time, usr2->login_time);
 }
 
 /*******************************************************************
