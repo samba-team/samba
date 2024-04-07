@@ -122,7 +122,8 @@ static int sort_compare(struct ldb_message **msg1, struct ldb_message **msg2, vo
 	el2 = ldb_msg_find_element(*msg2, ac->attributeName);
 
 	/*
-	 * NULL elements sort at the end (regardless of ac->reverse flag).
+	 * NULL and empty elements sort at the end (regardless of ac->reverse flag).
+	 * NULL elements come after empty ones.
 	 */
 	if (el1 == NULL && el2 == NULL) {
 		return 0;
@@ -131,6 +132,15 @@ static int sort_compare(struct ldb_message **msg1, struct ldb_message **msg2, vo
 		return 1;
 	}
 	if (el2 == NULL) {
+		return -1;
+	}
+	if (unlikely(el1->num_values == 0 && el2->num_values == 0)) {
+		return 0;
+	}
+	if (unlikely(el1->num_values == 0)) {
+		return 1;
+	}
+	if (unlikely(el2->num_values == 0)) {
 		return -1;
 	}
 
