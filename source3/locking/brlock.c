@@ -408,12 +408,9 @@ static int lock_compare(const struct lock_struct *lck1,
 			 const struct lock_struct *lck2)
 {
 	if (lck1->start != lck2->start) {
-		return (lck1->start - lck2->start);
+		return NUMERIC_CMP(lck1->start, lck2->start);
 	}
-	if (lck2->size != lck1->size) {
-		return ((int)lck1->size - (int)lck2->size);
-	}
-	return 0;
+	return NUMERIC_CMP(lck1->size, lck2->size);
 }
 #endif
 
