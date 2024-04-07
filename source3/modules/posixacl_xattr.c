@@ -226,14 +226,14 @@ static int posixacl_xattr_entry_compare(const void *left, const void *right)
 	tag_left = SVAL(left, 0);
 	tag_right = SVAL(right, 0);
 
-	ret = (tag_left - tag_right);
-	if (!ret) {
+	ret = NUMERIC_CMP(tag_left, tag_right);
+	if (ret == 0) {
 		/* ID is the third element in the entry, after two short
 		   integers (tag and perm), i.e at offset 4.
 		*/
 		id_left = IVAL(left, 4);
 		id_right = IVAL(right, 4);
-		ret = id_left - id_right;
+		ret = NUMERIC_CMP(id_left, id_right);
 	}
 
 	return ret;
