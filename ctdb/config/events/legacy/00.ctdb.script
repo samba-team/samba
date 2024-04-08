@@ -3,7 +3,7 @@
 # Event script for ctdb-specific setup and other things that don't fit
 # elsewhere.
 
-[ -n "$CTDB_BASE" ] || \
+[ -n "$CTDB_BASE" ] ||
 	CTDB_BASE=$(d=$(dirname "$0") && cd -P "$d" && dirname "$PWD")
 
 . "${CTDB_BASE}/functions"
@@ -14,91 +14,91 @@ load_script_options
 
 # type is commonly supported and more portable than which(1)
 # shellcheck disable=SC2039
-select_tdb_checker ()
+select_tdb_checker()
 {
-    # Find the best TDB consistency check available.
-    use_tdb_tool_check=false
-    type tdbtool >/dev/null 2>&1 && found_tdbtool=true
-    type tdbdump >/dev/null 2>&1 && found_tdbdump=true
+	# Find the best TDB consistency check available.
+	use_tdb_tool_check=false
+	type tdbtool >/dev/null 2>&1 && found_tdbtool=true
+	type tdbdump >/dev/null 2>&1 && found_tdbdump=true
 
-    if $found_tdbtool && echo "help" | tdbtool | grep -q check ; then
-	    use_tdb_tool_check=true
-    elif $found_tdbtool && $found_tdbdump ; then
-	    cat <<EOF
+	if $found_tdbtool && echo "help" | tdbtool | grep -q check; then
+		use_tdb_tool_check=true
+	elif $found_tdbtool && $found_tdbdump; then
+		cat <<EOF
 WARNING: The installed 'tdbtool' does not offer the 'check' subcommand.
  Using 'tdbdump' for database checks.
  Consider updating 'tdbtool' for better checks!
 EOF
-    elif $found_tdbdump ; then
-	cat <<EOF
+	elif $found_tdbdump; then
+		cat <<EOF
 WARNING: 'tdbtool' is not available.
  Using 'tdbdump' to check the databases.
  Consider installing a recent 'tdbtool' for better checks!
 EOF
-    else
-	cat <<EOF
+	else
+		cat <<EOF
 WARNING: Cannot check databases since neither
  'tdbdump' nor 'tdbtool check' is available.
  Consider installing tdbtool or at least tdbdump!
 EOF
-        return 1
-    fi
-}
-
-check_tdb ()
-{
-    _db="$1"
-
-    if $use_tdb_tool_check ; then
-	# tdbtool always exits with 0  :-(
-	if timeout 10 tdbtool "$_db" check 2>/dev/null |
-	    grep -q "Database integrity is OK" ; then
-	    return 0
-	else
-	    return 1
+		return 1
 	fi
-    else
-	timeout 10 tdbdump "$_db" >/dev/null 2>/dev/null
-	return $?
-    fi
 }
 
-check_persistent_databases ()
+check_tdb()
 {
-    _dir="${CTDB_DBDIR_PERSISTENT:-${CTDB_VARDIR}/persistent}"
-    [ -d "$_dir" ] || return 0
+	_db="$1"
 
-    for _db in "$_dir/"*.tdb.*[0-9] ; do
-	[ -r "$_db" ] || continue
-	check_tdb "$_db" || \
-	    die "Persistent database $_db is corrupted! CTDB will not start."
-    done
+	if $use_tdb_tool_check; then
+		# tdbtool always exits with 0  :-(
+		if timeout 10 tdbtool "$_db" check 2>/dev/null |
+			grep -q "Database integrity is OK"; then
+			return 0
+		else
+			return 1
+		fi
+	else
+		timeout 10 tdbdump "$_db" >/dev/null 2>/dev/null
+		return $?
+	fi
 }
 
-check_non_persistent_databases ()
+check_persistent_databases()
 {
-    _dir="${CTDB_DBDIR:-${CTDB_VARDIR}}"
-    [ -d "$_dir" ] || return 0
+	_dir="${CTDB_DBDIR_PERSISTENT:-${CTDB_VARDIR}/persistent}"
+	[ -d "$_dir" ] || return 0
 
-    for _db in "${_dir}/"*.tdb.*[0-9] ; do
-	[ -r "$_db" ] || continue
-	check_tdb "$_db" || {
-	    _backup="${_db}.$(date +'%Y%m%d.%H%M%S').corrupt"
-	    cat <<EOF
+	for _db in "$_dir/"*.tdb.*[0-9]; do
+		[ -r "$_db" ] || continue
+		check_tdb "$_db" ||
+			die "Persistent database $_db is corrupted! CTDB will not start."
+	done
+}
+
+check_non_persistent_databases()
+{
+	_dir="${CTDB_DBDIR:-${CTDB_VARDIR}}"
+	[ -d "$_dir" ] || return 0
+
+	for _db in "${_dir}/"*.tdb.*[0-9]; do
+		[ -r "$_db" ] || continue
+		check_tdb "$_db" || {
+			_backup="${_db}.$(date +'%Y%m%d.%H%M%S').corrupt"
+			cat <<EOF
 WARNING: database ${_db} is corrupted.
  Moving to backup ${_backup} for later analysis.
 EOF
-	    mv "$_db" "$_backup"
+			mv "$_db" "$_backup"
 
-	    # Now remove excess backups
-	    _max="${CTDB_MAX_CORRUPT_DB_BACKUPS:-10}"
-	    _bdb="${_db##*/}" # basename
-	    find "$_dir" -name "${_bdb}.*.corrupt" |
-		    sort -r |
-		    tail -n +$((_max + 1)) |
-		    xargs rm -f
-	}
-    done
+			# Now remove excess backups
+			_max="${CTDB_MAX_CORRUPT_DB_BACKUPS:-10}"
+			_bdb="${_db##*/}" # basename
+			find "$_dir" -name "${_bdb}.*.corrupt" |
+				sort -r |
+				tail -n +$((_max + 1)) |
+				xargs rm -f
+		}
+	done
 }
 
 ############################################################
@@ -107,17 +107,17 @@ ctdb_check_args "$@"
 
 case "$1" in
 init)
-        # make sure we have a blank state directory for the scripts to work with
+	# make sure we have a blank state directory for the scripts to work with
 	rm -rf "$CTDB_SCRIPT_VARDIR"
-	mkdir -p "$CTDB_SCRIPT_VARDIR" || \
-	    die "mkdir -p ${CTDB_SCRIPT_VARDIR} - failed - $?" $?
+	mkdir -p "$CTDB_SCRIPT_VARDIR" ||
+		die "mkdir -p ${CTDB_SCRIPT_VARDIR} - failed - $?" $?
 
 	# Load/cache database options from configuration file
 	ctdb_get_db_options
 
-	if select_tdb_checker ; then
-	    check_persistent_databases || exit $?
-	    check_non_persistent_databases
+	if select_tdb_checker; then
+		check_persistent_databases || exit $?
+		check_non_persistent_databases
 	fi
 	;;
 esac
