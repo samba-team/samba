@@ -1235,8 +1235,10 @@ static unsigned char sort_ip[4];
 
 static int name_query_comp(unsigned char *p1, unsigned char *p2)
 {
-	return matching_len_bits(p2+2, sort_ip, 4) -
-		matching_len_bits(p1+2, sort_ip, 4);
+	int a = matching_len_bits(p1+2, sort_ip, 4);
+	int b = matching_len_bits(p2+2, sort_ip, 4);
+	/* reverse sort -- p2 derived value comes first */
+	return NUMERIC_CMP(b, a);
 }
 
 /****************************************************************************
