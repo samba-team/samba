@@ -1,4 +1,60 @@
                    ==============================
+                   Release Notes for Samba 4.19.6
+                           April 08, 2024
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.19 release series.
+
+
+Changes since 4.19.5
+--------------------
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15527: fd_handle_destructor() panics within an smbd_smb2_close() if
+     vfs_stat_fsp() fails in fd_close().
+
+o  Guenther Deschner <gd@samba.org>
+   * BUG 15588: samba-gpupdate: Correctly implement site support.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15527: fd_handle_destructor() panics within an smbd_smb2_close() if
+     vfs_stat_fsp() fails in fd_close().
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15588: samba-gpupdate: Correctly implement site support.
+   * BUG 15599: libgpo: Segfault in python bindings.
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15580: Packet marshalling push support missing for
+     CTDB_CONTROL_TCP_CLIENT_DISCONNECTED and
+     CTDB_CONTROL_TCP_CLIENT_PASSED.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.19.5
                          February 19, 2024
                    ==============================
@@ -59,8 +115,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.19.4
                           January 08, 2024
