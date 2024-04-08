@@ -1197,8 +1197,9 @@ static int compare_msgRid(struct ldb_message **m1, struct ldb_message **m2) {
 	}
 
 	/*
-	 * Get and compare the rids, if we fail to extract a rid treat it as a
-	 * missing SID and sort to the end of the list
+	 * Get and compare the rids. If we fail to extract a rid (because
+	 * there are no subauths) the msg goes to the end of the list, but
+	 * before the NULL SIDs.
 	 */
 	status = dom_sid_split_rid(NULL, sid1, NULL, &rid1);
 	if (!NT_STATUS_IS_OK(status)) {
