@@ -140,7 +140,7 @@ unicodePwd:: """ + base64.b64encode(u"\"P@ssw0rd\"".encode('utf-16-le')).decode(
         res = ldb_virtual.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
 
     def test_computer_account_bind(self):
-        # create a computer acocount for the test
+        # create a computer account for the test
         delete_force(self.ldb, self.computer_dn)
         self.ldb.add_ldif("""
 dn: """ + self.computer_dn + """
