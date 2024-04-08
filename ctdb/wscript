@@ -863,6 +863,7 @@ def build(bld):
                                 '01.reclock',
                                 '05.system',
                                 '10.interface',
+                                '95.database',
                               ]
             for t in default_scripts:
                 tgt = os.path.join(bld.env.CTDB_DATADIR, fmt % (t))

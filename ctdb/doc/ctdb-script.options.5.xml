@@ -996,7 +996,7 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 
   <refsect1>
     <title>
-      DATABASE SETUP
+      DATABASE HANDLING
       </title>
 
       <para>
@@ -1004,7 +1004,7 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
       </para>
 
       <refsect2>
-	<title>00.ctdb</title>
+	<title>95.database</title>
 
 	<variablelist>
 

@@ -151,6 +151,7 @@ if [ ! -L "$required_path" ] && [ ! -e "$required_path" ] ; then
 			 01.reclock
 			 05.system
 			 10.interface
+			 95.database
 			 "
 	for t in $default_scripts ; do
 		tgt="%{_datadir}/ctdb/events/legacy/${t}.script"
