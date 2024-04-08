@@ -1075,8 +1075,22 @@ int dns_name_compare(struct ldb_message * const *m1, struct ldb_message * const 
 
 	name1 = ldb_msg_find_attr_as_string(*m1, "name", NULL);
 	name2 = ldb_msg_find_attr_as_string(*m2, "name", NULL);
-	if (name1 == NULL || name2 == NULL) {
+	/*
+	 * We sort NULL names to the start of the list, because the only
+	 * caller of this function, dnsserver_enumerate_records() will call
+	 * dns_build_tree() with the sorted list, which will always return an
+	 * error when it hits a NULL, so we might as well make that happen
+	 * quickly.
+	 */
+	if (name1 == name2) {
+		/* this includes the both NULL case */
 		return 0;
+	}
+	if (name1 == NULL) {
+		return -1;
+	}
+	if (name2 == NULL) {
+		return 1;
 	}
 
 	/* Compare the last components of names.
