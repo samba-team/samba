@@ -1955,3 +1955,21 @@ int dsdb_make_object_category(struct ldb_context *ldb, const struct dsdb_schema 
 
 	return LDB_SUCCESS;
 }
+
+/*
+ * Remove all password related attributes.
+ */
+void dsdb_remove_password_related_attrs(struct ldb_message *msg,
+					bool userPassword)
+{
+	if (userPassword) {
+		ldb_msg_remove_attr(msg, "userPassword");
+	}
+	ldb_msg_remove_attr(msg, "clearTextPassword");
+	ldb_msg_remove_attr(msg, "unicodePwd");
+	ldb_msg_remove_attr(msg, "ntPwdHistory");
+	ldb_msg_remove_attr(msg, "dBCSPwd");
+	ldb_msg_remove_attr(msg, "lmPwdHistory");
+	ldb_msg_remove_attr(msg, "supplementalCredentials");
+	ldb_msg_remove_attr(msg, "pwdLastSet");
+}

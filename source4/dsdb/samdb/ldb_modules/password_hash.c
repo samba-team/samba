@@ -4741,19 +4741,7 @@ static int password_hash_needed(struct ldb_module *module,
 		return ldb_oom(ldb);
 	}
 
-	/*
-	 * Remove all password related attributes.
-	 */
-	if (ac->userPassword) {
-		ldb_msg_remove_attr(ac->update_msg, "userPassword");
-	}
-	ldb_msg_remove_attr(ac->update_msg, "clearTextPassword");
-	ldb_msg_remove_attr(ac->update_msg, "unicodePwd");
-	ldb_msg_remove_attr(ac->update_msg, "ntPwdHistory");
-	ldb_msg_remove_attr(ac->update_msg, "dBCSPwd");
-	ldb_msg_remove_attr(ac->update_msg, "lmPwdHistory");
-	ldb_msg_remove_attr(ac->update_msg, "supplementalCredentials");
-	ldb_msg_remove_attr(ac->update_msg, "pwdLastSet");
+	dsdb_remove_password_related_attrs(ac->update_msg, ac->userPassword);
 
 	*_ac = ac;
 	return LDB_SUCCESS;
