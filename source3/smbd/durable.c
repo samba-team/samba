@@ -538,6 +538,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	enum ndr_err_code ndr_err;
 	struct vfs_default_durable_cookie cookie;
 	DATA_BLOB new_cookie_blob = data_blob_null;
+	bool have_share_mode_entry = false;
 
 	*result = NULL;
 	*new_cookie = data_blob_null;
@@ -776,6 +777,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto fail;
 	}
+	have_share_mode_entry = true;
 
 	ok = brl_reconnect_disconnected(fsp);
 	if (!ok) {
@@ -872,6 +874,12 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	return NT_STATUS_OK;
 
 fail:
+	if (fsp != NULL && have_share_mode_entry) {
+		/*
+		 * Something is screwed up, delete the sharemode entry.
+		 */
+		del_share_mode(lck, fsp);
+	}
 	if (fsp != NULL && fsp_get_pathref_fd(fsp) != -1) {
 		NTSTATUS close_status;
 		close_status = fd_close(fsp);
