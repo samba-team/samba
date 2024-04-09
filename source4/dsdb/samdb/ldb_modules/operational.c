@@ -1830,9 +1830,6 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 
 			ac->attrs_to_replace[ac->attrs_to_replace_size] = search_sub[i];
 			ac->attrs_to_replace_size++;
-			if (!search_sub[i].replace) {
-				continue;
-			}
 
 			if (search_sub[i].extra_attrs && search_sub[i].extra_attrs[0]) {
 				unsigned int j;
@@ -1850,6 +1847,10 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 					talloc_free(search_attrs);
 					search_attrs = search_attrs2;
 				}
+			}
+
+			if (!search_sub[i].replace) {
+				continue;
 			}
 
 			if (!search_attrs) {
