@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# We do this because we do not want to depend on the KDC, only find and use it's header files.  We do not want 
+# We do this because we do not want to depend on the KDC, only find and use its header files.  We do not want
 if not bld.CONFIG_SET("USING_SYSTEM_KDC"):
     kdc_include = "../../third_party/heimdal/kdc ../../third_party/heimdal/lib/gssapi"
 else:
