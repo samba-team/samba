@@ -458,8 +458,8 @@ class DCKeytabTests(TestCaseInTempDir):
         remote_enctypes = set(remote_keys.keys())
 
         # Check that at least the AES keys were generated
-        self.assertLessEqual(set(credentials.ENCTYPE_AES256_CTS_HMAC_SHA1_96,
-                                 credentials.ENCTYPE_AES128_CTS_HMAC_SHA1_96),
+        self.assertLessEqual({credentials.ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+                              credentials.ENCTYPE_AES128_CTS_HMAC_SHA1_96},
                              remote_enctypes)
 
         local_enctypes = set(local_keys.keys())
