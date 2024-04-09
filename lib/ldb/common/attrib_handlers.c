@@ -281,15 +281,36 @@ static int ldb_canonicalise_Boolean(struct ldb_context *ldb, void *mem_ctx,
 }
 
 /*
-  compare two Booleans
-*/
+ * compare two Booleans.
+ *
+ * According to RFC4517 4.2.2, "the booleanMatch rule is an equality matching
+ * rule", meaning it isn't used for ordering.
+ *
+ * However, it seems conceivable that Samba could be coerced into sorting on a
+ * field with Boolean syntax, so we might as well have consistent behaviour in
+ * that case.
+ *
+ * The most probably values are {"FALSE", 5} and {"TRUE", 4}. To save time we
+ * compare first by length, which makes FALSE > TRUE. This is somewhat
+ * contrary to convention, but is how Samba has worked forever.
+ *
+ * If somehow we are comparing incompletely normalised values where the length
+ * is the same (for example {"false", 5} and {"TRUE\0", 5}), the length is the
+ * same, and we fall back to a strncasecmp. In this case, since "FALSE" is
+ * alphabetically lower, we swap the order, so that "TRUE\0" again comes
+ * before "FALSE".
+ *
+ * ldb_canonicalise_Boolean (just above) gives us a clue as to what we might
+ * expect to cope with by way of invalid values.
+ */
 static int ldb_comparison_Boolean(struct ldb_context *ldb, void *mem_ctx,
 			   const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	if (v1->length != v2->length) {
-		return NUMERIC_CMP(v1->length, v2->length);
+		return NUMERIC_CMP(v2->length, v1->length);
 	}
-	return strncasecmp((char *)v1->data, (char *)v2->data, v1->length);
+	/* reversed, see long comment above */
+	return strncasecmp((char *)v2->data, (char *)v1->data, v1->length);
 }
 
 
