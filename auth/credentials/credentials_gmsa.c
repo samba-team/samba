@@ -40,16 +40,7 @@ NTSTATUS cli_credentials_set_gmsa_passwords(struct cli_credentials *creds,
 	DATA_BLOB previous_managed_pw_utf16;
 	enum ndr_err_code ndr_err;
 	TALLOC_CTX *frame = talloc_stackframe();
-
-	/*
-	 * We check if this is 'for keytab' as a keytab wants to know
-	 * about a near-future password as it will be on disk for some
-	 * time
-	 */
-	bool only_use_previous_pw =
-		managed_password.passwords.query_interval != NULL
-		&& *managed_password.passwords.query_interval <= gkdi_max_clock_skew
-		&& for_keytab == false;
+	bool only_use_previous_pw;
 
 	/*
 	 * Group Managed Service Accounts are type
@@ -69,6 +60,16 @@ NTSTATUS cli_credentials_set_gmsa_passwords(struct cli_credentials *creds,
 		TALLOC_FREE(frame);
 		return NT_STATUS_ILL_FORMED_PASSWORD;
 	}
+
+	/*
+	 * We check if this is 'for keytab' as a keytab wants to know
+	 * about a near-future password as it will be on disk for some
+	 * time
+	 */
+	only_use_previous_pw =
+		managed_password.passwords.query_interval != NULL
+		&& *managed_password.passwords.query_interval <= gkdi_max_clock_skew
+		&& for_keytab == false;
 
 	/*
 	 * We look at the old password first as we might bail out

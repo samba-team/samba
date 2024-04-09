@@ -95,7 +95,7 @@ class GMSABlackboxTest(BlackboxTestCase):
         self.check_run(f"samba-tool service-account group-msa-membership remove --name={gmsa_account} --principal={machine_account} -H {HOST} {ADMIN_CREDS}")
 
         try:
-            self.assertRaises(KeyError, self.getpassword(gmsa_account, "unicodePwd", creds=machine_creds))
+            self.assertRaises(KeyError, self.getpassword, gmsa_account, "unicodePwd", creds=machine_creds)
         except BlackboxProcessError:
             self.fail("Unexpected subcommand failure retrieving unicodePwd")
 
