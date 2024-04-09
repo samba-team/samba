@@ -192,7 +192,7 @@ class GMSABlackboxTest(BlackboxTestCase):
         self.check_run(f'samba-tool service-account modify --name={gmsa_account} --group-msa-membership="{sddl}" -H {HOST} {ADMIN_CREDS}')
 
         # Group MSA membership can no longer be represented as a simple list.
-        with self.assertRaisesRegexp(BlackboxProcessError, "Cannot be represented as a simple list"):
+        with self.assertRaisesRegex(BlackboxProcessError, "Cannot be represented as a simple list"):
             self.check_run(f"samba-tool service-account group-msa-membership show --name={gmsa_account} -H {HOST} {ADMIN_CREDS}")
 
         # Retrieving the SDDL still works fine.
