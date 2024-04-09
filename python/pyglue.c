@@ -29,7 +29,6 @@
 #include "lib/cmdline/cmdline.h"
 #include "lib/crypto/gkdi.h"
 
-void init_glue(void);
 static PyObject *PyExc_NTSTATUSError;
 static PyObject *PyExc_WERRORError;
 static PyObject *PyExc_HRESULTError;
