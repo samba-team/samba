@@ -77,7 +77,7 @@ class ServiceAccountTests(SambaToolCmdTest):
                                managed_password_interval=None):
         """Create a service account using samba-tool.
 
-        Adds a class cleanup to automatically delete the gmsa and the end
+        Adds a class cleanup to automatically delete the gmsa at the end
         of the test case.
         """
         # required arguments
