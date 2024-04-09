@@ -29,7 +29,7 @@ os.environ["PYTHONUNBUFFERED"] = "1"
 import datetime
 import shlex
 
-from ldb import SCOPE_BASE
+from ldb import ERR_INVALID_CREDENTIALS, LdbError, SCOPE_BASE
 
 from samba.credentials import MUST_USE_KERBEROS
 from samba.dcerpc import samr, security
@@ -98,7 +98,14 @@ class GMSAPasswordTest(BlackboxTestCase):
         creds = self.insta_creds(template=self.env_creds)
         creds.set_username(self.gmsa.account_name)
         creds.set_utf16_password(password)
-        db = connect_samdb(HOST, credentials=creds, lp=self.lp)
+        try:
+            db = connect_samdb(HOST, credentials=creds, lp=self.lp)
+        except LdbError as err:
+            num, _ = err.args
+            if num == ERR_INVALID_CREDENTIALS:
+                self.fail('failed to authenticate using credentials')
+
+            raise
 
         msg = db.search(base="", scope=SCOPE_BASE, attrs=["tokenGroups"])[0]
         connecting_user_sid = str(ndr_unpack(security.dom_sid, msg["tokenGroups"][0]))
@@ -116,7 +123,14 @@ class GMSAPasswordTest(BlackboxTestCase):
         creds.set_kerberos_state(MUST_USE_KERBEROS)
         creds.set_username(self.gmsa.account_name)
         creds.set_password(password)
-        db = connect_samdb(HOST, credentials=creds, lp=self.lp)
+        try:
+            db = connect_samdb(HOST, credentials=creds, lp=self.lp)
+        except LdbError as err:
+            num, _ = err.args
+            if num == ERR_INVALID_CREDENTIALS:
+                self.fail('failed to authenticate using credentials')
+
+            raise
 
         msg = db.search(base="", scope=SCOPE_BASE, attrs=["tokenGroups"])[0]
         connecting_user_sid = str(ndr_unpack(security.dom_sid, msg["tokenGroups"][0]))
@@ -131,7 +145,14 @@ class GMSAPasswordTest(BlackboxTestCase):
         nt_pass = samr.Password()
         nt_pass.hash = list(user_msg["unicodePwd"][0])
         creds.set_nt_hash(nt_pass)
-        db = connect_samdb(HOST, credentials=creds, lp=self.lp)
+        try:
+            db = connect_samdb(HOST, credentials=creds, lp=self.lp)
+        except LdbError as err:
+            num, _ = err.args
+            if num == ERR_INVALID_CREDENTIALS:
+                self.fail('failed to authenticate using credentials')
+
+            raise
 
         msg = db.search(base="", scope=SCOPE_BASE, attrs=["tokenGroups"])[0]
         connecting_user_sid = str(ndr_unpack(security.dom_sid, msg["tokenGroups"][0]))
