@@ -35,8 +35,6 @@
 #include "auth/kerberos/kerberos.h"
 #include "libcli/smb/smb_constants.h"
 
-void initcredentials(void);
-
 static PyObject *py_creds_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	return pytalloc_steal(type, cli_credentials_init(NULL));
