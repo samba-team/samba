@@ -36,6 +36,8 @@
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "dsdb/common/util.h"
+#include "dsdb/gmsa/gkdi.h"
+#include "dsdb/gmsa/util.h"
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/irpc.h"
 #include "libds/common/flag_mapping.h"
@@ -5634,6 +5636,8 @@ int dsdb_search(struct ldb_context *ldb,
 	va_list ap;
 	char *expression = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	int tries;
+	const int max_tries = 5;
 
 	/* cross-partitions searches with a basedn break multi-domain support */
 	SMB_ASSERT(basedn == NULL || (dsdb_flags & DSDB_SEARCH_SEARCH_ALL_PARTITIONS) == 0);
@@ -5642,7 +5646,7 @@ int dsdb_search(struct ldb_context *ldb,
 		return ldb_oom(ldb);
 	}
 
-	res = talloc_zero(tmp_ctx, struct ldb_result);
+	res = talloc(tmp_ctx, struct ldb_result);
 	if (!res) {
 		talloc_free(tmp_ctx);
 		return ldb_oom(ldb);
@@ -5659,70 +5663,111 @@ int dsdb_search(struct ldb_context *ldb,
 		}
 	}
 
-	ret = ldb_build_search_req(&req, ldb, tmp_ctx,
-				   basedn,
-				   scope,
-				   expression,
-				   attrs,
-				   NULL,
-				   res,
-				   ldb_search_default_callback,
-				   NULL);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
+	for (tries = 0; tries < max_tries; ++tries) {
+		bool retry = true;
 
-	ret = dsdb_request_add_controls(req, dsdb_flags);
-	if (ret != LDB_SUCCESS) {
+		*res = (struct ldb_result){};
+
+		ret = ldb_build_search_req(&req, ldb, tmp_ctx,
+					   basedn,
+					   scope,
+					   expression,
+					   attrs,
+					   NULL,
+					   res,
+					   ldb_search_default_callback,
+					   NULL);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		ret = dsdb_request_add_controls(req, dsdb_flags);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			ldb_reset_err_string(ldb);
+			return ret;
+		}
+
+		ret = ldb_request(ldb, req);
+		if (ret == LDB_SUCCESS) {
+			ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+		}
+
+		if (ret != LDB_SUCCESS) {
+			DBG_INFO("%s flags=0x%08x %s %s -> %s (%s)\n",
+				 dsdb_search_scope_as_string(scope),
+				 dsdb_flags,
+				 basedn?ldb_dn_get_extended_linearized(tmp_ctx,
+								       basedn,
+								       1):"NULL",
+				 expression?expression:"NULL",
+				 ldb_errstring(ldb), ldb_strerror(ret));
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		if (dsdb_flags & DSDB_SEARCH_ONE_ONLY) {
+			if (res->count == 0) {
+				DBG_INFO("%s SEARCH_ONE_ONLY flags=0x%08x %s %s -> %u results\n",
+					 dsdb_search_scope_as_string(scope),
+					 dsdb_flags,
+					 basedn?ldb_dn_get_extended_linearized(tmp_ctx,
+									       basedn,
+									       1):"NULL",
+					 expression?expression:"NULL", res->count);
+				talloc_free(tmp_ctx);
+				ldb_reset_err_string(ldb);
+				return ldb_error(ldb, LDB_ERR_NO_SUCH_OBJECT, __func__);
+			}
+			if (res->count != 1) {
+				DBG_INFO("%s SEARCH_ONE_ONLY flags=0x%08x %s %s -> %u (expected 1) results\n",
+					 dsdb_search_scope_as_string(scope),
+					 dsdb_flags,
+					 basedn?ldb_dn_get_extended_linearized(tmp_ctx,
+									       basedn,
+									       1):"NULL",
+					 expression?expression:"NULL", res->count);
+				talloc_free(tmp_ctx);
+				ldb_reset_err_string(ldb);
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+		}
+
+		if (!(dsdb_flags & DSDB_SEARCH_UPDATE_MANAGED_PASSWORDS)) {
+			break;
+		}
+
+		/*
+		 * If we’re searching for passwords, we must account for the
+		 * possibility that one or more of the accounts are Group
+		 * Managed Service Accounts with out‐of‐date keys. In such a
+		 * case, we must derive the new password(s), update the keys,
+		 * and perform the search again to get the updated results.
+		 *
+		 * The following attributes are necessary in order for this to
+		 * work properly:
+		 *
+		 * • msDS-ManagedPasswordId
+		 * • msDS-ManagedPasswordInterval
+		 * • objectClass
+		 * • objectSid
+		 * • whenCreated
+		 */
+
+		ret = dsdb_update_gmsa_keys(ldb, tmp_ctx, res, &retry);
+		if (ret) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+		if (!retry) {
+			break;
+		}
+	}
+	if (tries == max_tries) {
 		talloc_free(tmp_ctx);
 		ldb_reset_err_string(ldb);
-		return ret;
-	}
-
-	ret = ldb_request(ldb, req);
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-	}
-
-	if (ret != LDB_SUCCESS) {
-		DBG_INFO("%s flags=0x%08x %s %s -> %s (%s)\n",
-			 dsdb_search_scope_as_string(scope),
-			 dsdb_flags,
-			 basedn?ldb_dn_get_extended_linearized(tmp_ctx,
-							       basedn,
-							       1):"NULL",
-			 expression?expression:"NULL",
-			 ldb_errstring(ldb), ldb_strerror(ret));
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-	if (dsdb_flags & DSDB_SEARCH_ONE_ONLY) {
-		if (res->count == 0) {
-			DBG_INFO("%s SEARCH_ONE_ONLY flags=0x%08x %s %s -> %u results\n",
-				 dsdb_search_scope_as_string(scope),
-				 dsdb_flags,
-				 basedn?ldb_dn_get_extended_linearized(tmp_ctx,
-								       basedn,
-								       1):"NULL",
-				 expression?expression:"NULL", res->count);
-			talloc_free(tmp_ctx);
-			ldb_reset_err_string(ldb);
-			return ldb_error(ldb, LDB_ERR_NO_SUCH_OBJECT, __func__);
-		}
-		if (res->count != 1) {
-			DBG_INFO("%s SEARCH_ONE_ONLY flags=0x%08x %s %s -> %u (expected 1) results\n",
-				 dsdb_search_scope_as_string(scope),
-				 dsdb_flags,
-				 basedn?ldb_dn_get_extended_linearized(tmp_ctx,
-								       basedn,
-								       1):"NULL",
-				 expression?expression:"NULL", res->count);
-			talloc_free(tmp_ctx);
-			ldb_reset_err_string(ldb);
-			return LDB_ERR_CONSTRAINT_VIOLATION;
-		}
+		return ldb_operr(ldb);
 	}
 
 	*_result = talloc_steal(mem_ctx, res);
