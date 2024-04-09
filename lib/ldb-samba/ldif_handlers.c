@@ -150,36 +150,47 @@ bool ldif_comparision_objectSid_isString(const struct ldb_val *v)
 
 /*
   compare two objectSids
+
+  If the SIDs seem to be strings, they are converted to binary form.
 */
 static int ldif_comparison_objectSid(struct ldb_context *ldb, void *mem_ctx,
 				    const struct ldb_val *v1, const struct ldb_val *v2)
 {
-	if (ldif_comparision_objectSid_isString(v1) && ldif_comparision_objectSid_isString(v2)) {
-		return ldb_comparison_binary(ldb, mem_ctx, v1, v2);
-	} else if (ldif_comparision_objectSid_isString(v1)
-		   && !ldif_comparision_objectSid_isString(v2)) {
-		struct ldb_val v;
-		int ret;
-		if (ldif_read_objectSid(ldb, mem_ctx, v1, &v) != 0) {
-			/* Perhaps not a string after all */
-			return ldb_comparison_binary(ldb, mem_ctx, v1, v2);
+	bool v1_is_string = ldif_comparision_objectSid_isString(v1);
+	bool v2_is_string = ldif_comparision_objectSid_isString(v2);
+	struct ldb_val parsed_1 = {};
+	struct ldb_val parsed_2 = {};
+	int ret;
+	/*
+	 * If the ldb_vals look like SID strings (i.e. start with "S-"
+	 * or "s-"), we try to parse them as such. If that fails, we
+	 * assume they are binary SIDs, even though that's not really
+	 * possible -- the first two bytes of a struct dom_sid are the
+	 * version (1), and the number of sub-auths (<= 15), neither
+	 * of which are close to 'S' or '-'.
+	 */
+	if (v1_is_string) {
+		int r = ldif_read_objectSid(ldb, mem_ctx, v1, &parsed_1);
+		if (r == 0) {
+			v1 = &parsed_1;
 		}
-		ret = ldb_comparison_binary(ldb, mem_ctx, &v, v2);
-		talloc_free(v.data);
-		return ret;
-	} else if (!ldif_comparision_objectSid_isString(v1)
-		   && ldif_comparision_objectSid_isString(v2)) {
-		struct ldb_val v;
-		int ret;
-		if (ldif_read_objectSid(ldb, mem_ctx, v2, &v) != 0) {
-			/* Perhaps not a string after all */
-			return ldb_comparison_binary(ldb, mem_ctx, v1, v2);
-		}
-		ret = ldb_comparison_binary(ldb, mem_ctx, v1, &v);
-		talloc_free(v.data);
-		return ret;
 	}
-	return ldb_comparison_binary(ldb, mem_ctx, v1, v2);
+	if (v2_is_string) {
+		int r = ldif_read_objectSid(ldb, mem_ctx, v2, &parsed_2);
+		if (r == 0) {
+			v2 = &parsed_2;
+		}
+	}
+
+	ret = ldb_comparison_binary(ldb, mem_ctx, v1, v2);
+
+	if (v1_is_string) {
+		TALLOC_FREE(parsed_1.data);
+	}
+	if (v2_is_string) {
+		TALLOC_FREE(parsed_2.data);
+	}
+	return ret;
 }
 
 /*
