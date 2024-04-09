@@ -62,7 +62,8 @@ class GMSABlackboxTest(BlackboxTestCase):
 
         # check each attr is returned
         for attr in attrs.split(","):
-            self.assertIn(attr, user_message)
+            if attr not in user_message:
+                raise KeyError
 
         return user_message
 
@@ -85,15 +86,18 @@ class GMSABlackboxTest(BlackboxTestCase):
         # Grant password read access to the machine account.
         self.check_run(f"samba-tool service-account group-msa-membership add --name={gmsa_account} --principal={machine_account} -H {HOST} {ADMIN_CREDS}")
 
-        self.getpassword(gmsa_account, "unicodePwd", creds=machine_creds)
+        try:
+            self.getpassword(gmsa_account, "unicodePwd", creds=machine_creds)
+        except KeyError:
+            self.fail("Failed to get unicodePwd despite being in the gMSA membership")
 
         # Remove password read access from the machine account and verify.
         self.check_run(f"samba-tool service-account group-msa-membership remove --name={gmsa_account} --principal={machine_account} -H {HOST} {ADMIN_CREDS}")
 
         try:
-            self.getpassword(gmsa_account, "unicodePwd", creds=machine_creds)
+            self.assertRaises(KeyError, self.getpassword(gmsa_account, "unicodePwd", creds=machine_creds))
         except BlackboxProcessError:
-            self.fail("Unexpected failure retrieving unicodePwd")
+            self.fail("Unexpected subcommand failure retrieving unicodePwd")
 
     def test_gmsa_add_sid_only_viewer(self):
         """Add unknown SID to password viewers and check group-msa-membership show output."""
