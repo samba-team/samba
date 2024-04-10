@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "passdb/machine_sid.h"
 #include "secrets.h"
 #include "dbwrap/dbwrap.h"

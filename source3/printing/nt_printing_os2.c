@@ -20,6 +20,7 @@
  */
 
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "printing/nt_printing_os2.h"
 
 /****************************************************************************

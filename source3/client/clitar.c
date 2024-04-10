@@ -71,6 +71,7 @@
 #include "client/client_proto.h"
 #include "client/clitar_proto.h"
 #include "libsmb/libsmb.h"
+#include "lib/util/util_file.h"
 
 #ifdef HAVE_LIBARCHIVE
 

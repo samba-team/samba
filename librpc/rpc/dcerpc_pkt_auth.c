@@ -22,6 +22,7 @@
 #include "replace.h"
 #include "system/network.h"
 #include <tevent.h>
+#include "lib/util/util_file.h"
 #include "lib/util/talloc_stack.h"
 #include "lib/util/debug.h"
 #include "lib/util/byteorder.h"

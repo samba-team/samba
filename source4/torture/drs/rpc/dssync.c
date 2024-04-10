@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "lib/cmdline/cmdline.h"
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"

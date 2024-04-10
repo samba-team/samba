@@ -18,7 +18,8 @@
  */
 
 #include "replace.h"
-#include "lib/util_file.h"
+#include "lib/util/util_file.h"
+#include "source3/lib/util_file.h"
 #include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
 #include "lib/util/sys_rw.h"

@@ -54,6 +54,7 @@
 #include "lib/util/debug.h"
 #include "lib/util/server_id.h"
 #include "lib/util/util_tdb.h"
+#include "lib/util/util_file.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/async_req/async_sock.h"
 #include "librpc/rpc/dcerpc_util.h"

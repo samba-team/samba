@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "lib/cmdline/cmdline.h"
 #include "system/time.h"
 #include "system/wait.h"

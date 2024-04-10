@@ -24,6 +24,7 @@
 #include "system/filesys.h"
 #include "nmbd/nmbd.h"
 #include "util_tdb.h"
+#include "lib/util/util_file.h"
 
 #define WINS_LIST "wins.dat"
 #define WINS_VERSION 1

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "libcli/dgram/libdgram.h"
 #include "lib/socket/socket.h"
 #include "libcli/resolve/resolve.h"

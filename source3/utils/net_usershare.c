@@ -24,6 +24,7 @@
 #include "utils/net.h"
 #include "../libcli/security/security.h"
 #include "lib/util/string_wrappers.h"
+#include "lib/util/util_file.h"
 
 struct {
 	const char *us_errstr;

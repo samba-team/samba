@@ -23,6 +23,7 @@
 #include "system/network.h"
 #include <tevent.h>
 #include "lib/tsocket/tsocket.h"
+#include "lib/util/util_file.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_util.h"

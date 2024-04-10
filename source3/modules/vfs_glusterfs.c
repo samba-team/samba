@@ -41,6 +41,7 @@
 #include <glusterfs/api/glfs.h>
 #include "lib/util/dlinklist.h"
 #include "lib/util/tevent_unix.h"
+#include "lib/util/util_file.h"
 #include "smbd/globals.h"
 #include "lib/util/sys_rw.h"
 #include "smbprofile.h"

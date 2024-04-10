@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "system/kerberos.h"
 #include "auth/auth.h"
 #include "auth/kerberos/kerberos.h"

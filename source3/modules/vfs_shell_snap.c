@@ -21,6 +21,7 @@
 #include "include/ntioctl.h"
 #include "system/filesys.h"
 #include "smbd/smbd.h"
+#include "lib/util/util_file.h"
 
 /*
  * Check whether a path can be shadow copied. Return the base volume, allowing

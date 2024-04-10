@@ -31,6 +31,7 @@
 #include "lib/util/tevent_unix.h"
 #include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
+#include "lib/util/util_file.h"
 #include "lib/async_req/async_sock.h"
 
 #include "protocol/protocol.h"

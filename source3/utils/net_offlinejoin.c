@@ -24,6 +24,7 @@
 #include "libcli/registry/util_reg.h"
 #include "libcli/security/dom_sid.h"
 #include "lib/cmdline/cmdline.h"
+#include "lib/util/util_file.h"
 
 int net_offlinejoin_usage(struct net_context *c, int argc, const char **argv)
 {

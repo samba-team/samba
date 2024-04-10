@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "system/filesys.h"
 #include "torture/torture.h"
 #include "torture/local/proto.h"

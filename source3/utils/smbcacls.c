@@ -34,6 +34,7 @@
 #include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "util_sd.h"
 #include "lib/param/param.h"
+#include "lib/util/util_file.h"
 
 static char DIRSEP_CHAR = '\\';
 

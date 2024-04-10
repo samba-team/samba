@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "lib/util/util_net.h"
 #include "system/filesys.h"
 #include "system/network.h"

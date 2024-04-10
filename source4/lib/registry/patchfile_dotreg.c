@@ -26,6 +26,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "lib/registry/registry.h"
 #include "system/filesys.h"
 

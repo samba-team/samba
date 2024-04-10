@@ -42,6 +42,7 @@
 #include "utils/net_dns.h"
 #include "auth/kerberos/pac_utils.h"
 #include "lib/util/string_wrappers.h"
+#include "lib/util/util_file.h"
 
 #ifdef HAVE_JANSSON
 #include <jansson.h>

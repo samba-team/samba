@@ -24,6 +24,7 @@
 #include "registry.h"
 #include "../librpc/gen_ndr/ndr_preg.h"
 #include "libgpo/gpext/gpext.h"
+#include "lib/util/util_file.h"
 
 #define GP_EXT_NAME "registry"
 

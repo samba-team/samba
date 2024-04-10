@@ -33,6 +33,7 @@
 #include "libsmb/clirap.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "lib/util/string_wrappers.h"
+#include "lib/util/util_file.h"
 #include "source3/lib/substitute.h"
 
 struct sync_record {

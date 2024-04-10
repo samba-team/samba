@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "librpc/gen_ndr/samr.h" /* for struct samrPassword */
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_internal.h"

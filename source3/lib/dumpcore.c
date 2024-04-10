@@ -26,6 +26,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "system/filesys.h"
 
 #ifdef HAVE_SYS_SYSCTL_H

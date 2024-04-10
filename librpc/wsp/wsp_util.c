@@ -19,6 +19,7 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "librpc/wsp/wsp_util.h"
 #include "librpc/gen_ndr/wsp.h"
 #include "librpc/gen_ndr/ndr_wsp.h"

@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "printing.h"
 #include "smbd/proto.h"
 #include "source3/lib/substitute.h"

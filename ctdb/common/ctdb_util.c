@@ -21,6 +21,7 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/wait.h"
+#include "lib/util/util_file.h"
 
 #include <tdb.h>
 

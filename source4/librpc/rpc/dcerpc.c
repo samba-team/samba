@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "system/filesys.h"
 #include "../lib/util/dlinklist.h"
 #include "lib/events/events.h"

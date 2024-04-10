@@ -366,61 +366,6 @@ const char **str_list_make_v3_const(TALLOC_CTX *mem_ctx,
 				    const char *string,
 				    const char *sep);
 
-/* The following definitions come from lib/util/util_file.c  */
-
-
-/**
- * Read one line (data until next newline or eof) and allocate it
- */
-_PUBLIC_ char *afdgets(int fd, TALLOC_CTX *mem_ctx, size_t hint);
-
-char *fgets_slash(TALLOC_CTX *mem_ctx, char *s2, size_t maxlen, FILE *f);
-
-/**
-load a file into memory from a fd.
-**/
-_PUBLIC_ char *fd_load(int fd, size_t *size, size_t maxsize, TALLOC_CTX *mem_ctx);
-
-
-char **file_lines_parse(const char *p, size_t size, int *numlines, TALLOC_CTX *mem_ctx);
-
-/**
-load a file into memory
-**/
-_PUBLIC_ char *file_load(const char *fname, size_t *size, size_t maxsize, TALLOC_CTX *mem_ctx);
-
-/**
-load a file into memory and return an array of pointers to lines in the file
-must be freed with talloc_free().
-**/
-_PUBLIC_ char **file_lines_load(const char *fname, int *numlines, size_t maxsize, TALLOC_CTX *mem_ctx);
-
-/**
-load a fd into memory and return an array of pointers to lines in the file
-must be freed with talloc_free(). If convert is true calls unix_to_dos on
-the list.
-**/
-_PUBLIC_ char **fd_lines_load(int fd, int *numlines, size_t maxsize, TALLOC_CTX *mem_ctx);
-
-_PUBLIC_ bool file_save_mode(const char *fname, const void *packet,
-			     size_t length, mode_t mode);
-/**
-  save a lump of data into a file. Mostly used for debugging
-*/
-_PUBLIC_ bool file_save(const char *fname, const void *packet, size_t length);
-_PUBLIC_ int vfdprintf(int fd, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
-_PUBLIC_ int fdprintf(int fd, const char *format, ...) PRINTF_ATTRIBUTE(2,3);
-
-/*
-  compare two files, return true if the two files have the same content
- */
-bool file_compare(const char *path1, const char *path2);
-
-/*
-  load from a pipe into memory.
- */
-char *file_ploadv(char * const argl[], size_t *size);
-
 /* The following definitions come from lib/util/util.c  */
 
 

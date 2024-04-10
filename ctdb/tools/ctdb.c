@@ -33,6 +33,7 @@
 #include "version.h"
 #include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
+#include "lib/util/util_file.h"
 #include "lib/util/sys_rw.h"
 #include "lib/util/smb_strtox.h"
 

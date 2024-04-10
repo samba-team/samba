@@ -30,6 +30,7 @@
 #include "../libcli/smb/smb2_create_ctx.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/util/tevent_unix.h"
+#include "lib/util/util_file.h"
 #include "offload_token.h"
 #include "string_replace.h"
 #include "hash_inode.h"

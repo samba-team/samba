@@ -26,6 +26,7 @@
    */
 
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "source3/smbd/smbXsrv_session.h"

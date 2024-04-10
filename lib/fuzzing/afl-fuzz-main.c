@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "lib/util/samba_util.h"
+#include "lib/util/util_file.h"
 #include "fuzzing.h"
 
 int main(int argc, char *argv[]) {

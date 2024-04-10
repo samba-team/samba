@@ -48,6 +48,7 @@
 #include "lib/gencache.h"
 #include "lib/util/sys_rw.h"
 #include "lib/util/asn1.h"
+#include "lib/util/util_file.h"
 #include "lib/param/param.h"
 #include "auth/gensec/gensec.h"
 #include "lib/util/string_wrappers.h"

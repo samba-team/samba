@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "lib/cmdline/cmdline.h"
 #include "lib/events/events.h"
 #include "system/time.h"

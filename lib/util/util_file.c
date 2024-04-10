@@ -24,6 +24,7 @@
 #include "system/filesys.h"
 #include <talloc.h>
 #include "lib/util/samba_util.h"
+#include "lib/util/util_file.h"
 #include "lib/util/sys_popen.h"
 #include "lib/util/sys_rw.h"
 #include "lib/util/debug.h"

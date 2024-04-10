@@ -21,6 +21,7 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/time.h"
+#include "lib/util/util_file.h"
 #include "../util/tevent_unix.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/tsocket/tsocket_internal.h"

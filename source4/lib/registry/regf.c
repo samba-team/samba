@@ -18,6 +18,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "system/filesys.h"
 #include "system/time.h"
 #include "lib/registry/tdr_regf.h"
@@ -2218,7 +2219,8 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx, const char *location,
 
 	pull = tdr_pull_init(regf);
 
-	pull->data.data = (uint8_t*)fd_load(regf->fd, &pull->data.length, 0, regf);
+	pull->data.data = (uint8_t*)
+		fd_load(regf->fd, &pull->data.length, 0, regf);
 
 	if (pull->data.data == NULL) {
 		DEBUG(0, ("Error reading data from file: %s\n", location));

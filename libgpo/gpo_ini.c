@@ -19,6 +19,7 @@
  */
 
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "gpo.h"
 #include "gpo_ini.h"
 #include "system/filesys.h"

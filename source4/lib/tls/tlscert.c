@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "lib/tls/tls.h"
 
 #include <gnutls/gnutls.h>

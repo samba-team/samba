@@ -55,6 +55,7 @@
 
 #define LOADPARM_SUBSTITUTION_INTERNALS 1
 #include "includes.h"
+#include "lib/util/util_file.h"
 #include "system/filesys.h"
 #include "util_tdb.h"
 #include "lib/param/loadparm.h"
