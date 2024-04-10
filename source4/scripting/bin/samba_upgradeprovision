@@ -1668,7 +1668,7 @@ if __name__ == '__main__':
         populate_links(new_ldbs.sam, names.schemadn)
         # List of attribute with ASN DN synthax)
         populate_dnsyntax(new_ldbs.sam, names.schemadn)
-        # 9) (now skipped, was copy of privileges.ldb)
+        # 9) (now skipped, was copy of privilege.ldb)
         # 10)
         oem = getOEMInfo(ldbs.sam, str(names.rootdn))
         # Do some modification on sam.ldb

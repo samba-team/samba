@@ -490,7 +490,7 @@ interface security
 
 	/* Bitmap of privilege values for internal use only.  We need
 	 * our own bitmap here as privileges.tdb records these values
-	 * as a bitmap (privileges.ldb uses the string forms).
+	 * as a bitmap (privilege.ldb uses the string forms).
 	 */
 	typedef [bitmap64bit] bitmap {
 		SEC_PRIV_MACHINE_ACCOUNT_BIT		= 0x00000010,
