@@ -465,10 +465,13 @@ static PyObject *py_ldb_dn_is_null(PyObject *self,
 	return PyBool_FromLong(ldb_dn_is_null(dn));
 }
 
-static PyObject *py_ldb_dn_get_casefold(PyLdbDnObject *self,
+static PyObject *py_ldb_dn_get_casefold(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	const char *s = ldb_dn_get_casefold(self->dn);
+	const char *s = NULL;
+	struct ldb_dn *dn = NULL;
+	PyErr_LDB_DN_OR_RAISE(self, dn);
+	s = ldb_dn_get_casefold(dn);
 	if (s == NULL) {
 		PyErr_NoMemory();
 		return NULL;
