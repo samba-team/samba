@@ -64,8 +64,7 @@ static kdc_code kdc_process(struct kdc_server *kdc,
 	char *pa;
 	struct sockaddr_storage ss;
 	krb5_data k5_reply;
-	krb5_kdc_configuration *kdc_config =
-		(krb5_kdc_configuration *)kdc->private_data;
+	krb5_kdc_configuration *kdc_config = kdc->private_data;
 
 	krb5_data_zero(&k5_reply);
 
