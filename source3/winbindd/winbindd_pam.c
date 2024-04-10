@@ -3433,11 +3433,16 @@ static NTSTATUS extract_pac_vrfy_sigs(TALLOC_CTX *mem_ctx, DATA_BLOB pac_blob,
 					     NULL, /* client_principal */
 					     0, /* tgs_authtime */
 					     p_pac_data);
+		(void)smb_krb5_kt_free_entry(krbctx, &entry);
 		if (NT_STATUS_IS_OK(status)) {
 			break;
 		}
-		k5ret = smb_krb5_kt_free_entry(krbctx, &entry);
 		k5ret = krb5_kt_next_entry(krbctx, keytab, &entry, &cursor);
+	}
+	if (k5ret != 0 && k5ret != KRB5_KT_END) {
+		DEBUG(1, ("Failed to get next entry: %s\n",
+			  error_message(k5ret)));
+		(void)smb_krb5_kt_free_entry(krbctx, &entry);
 	}
 
 	k5ret = krb5_kt_end_seq_get(krbctx, keytab, &cursor);
