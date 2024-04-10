@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "lib/util/util_file.h"
 #include "passdb/machine_sid.h"
 #include "secrets.h"
 #include "dbwrap/dbwrap.h"
@@ -42,19 +41,24 @@ static struct dom_sid *global_sam_sid=NULL;
 
 static bool read_sid_from_file(const char *fname, struct dom_sid *sid)
 {
-	char **lines;
-	int numlines;
-	bool ret;
+	char *line = NULL;
+	size_t n;
+	ssize_t len;
+	bool ret = false;
+	FILE *f = NULL;
 
-	lines = file_lines_load(fname, &numlines,0, NULL);
-
-	if (!lines || numlines < 1) {
-		TALLOC_FREE(lines);
-		return False;
+	f = fopen(fname, "r");
+	if (f == NULL) {
+		return false;
 	}
 
-	ret = string_to_sid(sid, lines[0]);
-	TALLOC_FREE(lines);
+	len = getline(&line, &n, f);
+	if (len >= 0) {
+		ret = string_to_sid(sid, line);
+		SAFE_FREE(line);
+	}
+
+	fclose(f);
 	return ret;
 }
 
