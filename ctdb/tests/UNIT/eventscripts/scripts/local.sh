@@ -15,6 +15,7 @@ else
 fi
 
 setup_ctdb_base "$CTDB_TEST_TMP_DIR" "etc-ctdb" \
+	ctdb-backup-persistent-tdbs.sh \
 	debug_locks.sh \
 	functions \
 	nfs-checks.d \
@@ -307,6 +308,12 @@ ctdb_set_pnn()
 			fi
 		done >"${CTDB_SCRIPT_VARDIR}/my-public-ip-addresses"
 	fi
+}
+
+ctdb_set_leader()
+{
+	export FAKE_CTDB_LEADER="$1"
+	echo "Setting up leader ${FAKE_CTDB_LEADER}"
 }
 
 ctdb_get_interfaces()

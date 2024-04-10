@@ -141,6 +141,12 @@ ctdb_pnn()
 	echo "${FAKE_CTDB_PNN:-0}"
 }
 
+ctdb_leader()
+{
+	# Defaults to 0
+	echo "${FAKE_CTDB_LEADER:-${FAKE_CTDB_PNN:-0}}"
+}
+
 ######################################################################
 
 FAKE_CTDB_NODE_STATE="$FAKE_CTDB_STATE/node-state"
@@ -311,9 +317,29 @@ ctdb_nodestatus()
 
 ######################################################################
 
+_fake_db_prefix_dir="${CTDB_TEST_TMP_DIR}/fake-ctdb/fake-tdb"
 _t_setup()
 {
-	_t_dir="${CTDB_TEST_TMP_DIR}/fake-ctdb/fake-tdb/$1"
+	_db="$1"
+	_type="${2:-volatile}"
+
+	case "$2" in
+	persistent)
+		_t_dir="${_fake_db_prefix_dir}/persistent/$1"
+		;;
+	auto)
+		_t_dir="${_fake_db_prefix_dir}/persistent/$1"
+		if [ ! -d "$_t_dir" ]; then
+			_t_dir="${_fake_db_prefix_dir}/volatile/$1"
+			if [ ! -d "$_t_dir" ]; then
+				die 'Unknown database for "auto"'
+			fi
+		fi
+		;;
+	*)
+		_t_dir="${_fake_db_prefix_dir}/volatile/$1"
+	esac
+
 	mkdir -p "$_t_dir"
 }
 
@@ -334,30 +360,30 @@ _t_del()
 
 ctdb_attach()
 {
-	_t_setup "$1"
+	_t_setup "$1" "$2"
 }
 
 ctdb_pstore()
 {
-	_t_setup "$1"
+	_t_setup "$1" "persistent"
 	_t_put "$2" "$3"
 }
 
 ctdb_pdelete()
 {
-	_t_setup "$1"
+	_t_setup "$1" "persistent"
 	_t_del "$2"
 }
 
 ctdb_pfetch()
 {
-	_t_setup "$1"
+	_t_setup "$1" "persistent"
 	_t_get "$2" >"$3" 2>/dev/null
 }
 
 ctdb_ptrans()
 {
-	_t_setup "$1"
+	_t_setup "$1" "persistent"
 
 	while IFS="" read -r _line; do
 		_k=$(echo "$_line" | sed -n -e 's@^"\([^"]*\)" "[^"]*"$@\1@p')
@@ -371,9 +397,49 @@ ctdb_ptrans()
 	done
 }
 
+getdbmap_1()
+{
+	_path="$1"
+	_persistent="${2:-0}"
+
+	_mypnn=$(ctdb_pnn)
+	_tpath="${_path}.${_mypnn}"
+
+	_name=$(basename "$_path")
+	_id=$(echo "${_name}:${_path}" |
+		      od -A n -t x4 |
+		      tr '[:lower:]' '[:upper:]' |
+		      sed -n -e 's| ||g' -e '1s|\(........\).*|0x\1|p')
+
+	echo "|${_id}|${_name}|${_tpath}|${_persistent}|0|0|0|0|"
+}
+
+ctdb_getdbmap()
+{
+	if ! $machine_readable; then
+		not_implemented "getdbmap without -X"
+	fi
+
+	echo '|ID|Name|Path|Persistent|Sticky|Unhealthy|Readonly|Replicated|'
+
+	for i in "${_fake_db_prefix_dir}/volatile/"* ; do
+		if [ ! -d "$i" ]; then
+			continue
+		fi
+		getdbmap_1 "$i" 0
+	done
+
+	for i in "${_fake_db_prefix_dir}/persistent/"* ; do
+		if [ ! -d "$i" ]; then
+			continue
+		fi
+		getdbmap_1 "$i" 1
+	done
+}
+
 ctdb_catdb()
 {
-	_t_setup "$1"
+	_t_setup "$1" "auto"
 
 	# This will break on keys with spaces but we don't have any of
 	# those yet.
@@ -395,6 +461,19 @@ EOF
 	done
 
 	echo "Dumped ${_count} records"
+}
+
+ctdb_backupdb()
+{
+	_db="$1"
+	_file="$2"
+
+	if {
+		echo "Fake backup of ${_db}"
+		ctdb_catdb "$_db"
+	}>"$_file"; then
+		echo "Database backed up to ${_file}"
+	fi
 }
 
 ######################################################################
