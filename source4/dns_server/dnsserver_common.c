@@ -1034,10 +1034,11 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 			 * record.
 			 */
 			if (records[i].data.EntombedTime != 0) {
-				if (rec_count != 1) {
-					DBG_ERR("tombstone record has %u neighbour "
-						"records.\n",
-						rec_count - 1);
+				if (rec_count != 1 && DEBUGLVL(DBGLVL_NOTICE)) {
+					DBG_NOTICE("tombstone record [%u] has "
+						   "%u neighbour records.\n",
+						   i, rec_count - 1);
+					NDR_PRINT_DEBUG(dnsp_DnssrvRpcRecord, &records[i]);
 				}
 				was_tombstoned = true;
 			}
