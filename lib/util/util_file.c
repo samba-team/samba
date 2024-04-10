@@ -176,20 +176,13 @@ _PUBLIC_ char *fd_load(int fd, size_t *psize, size_t maxsize, TALLOC_CTX *mem_ct
 	size_t size = 0;
 	size_t chunk = 1024;
 	int err;
-	int fd_dup;
 
 	if (maxsize == 0) {
 		maxsize = SIZE_MAX;
 	}
 
-	fd_dup = dup(fd);
-	if (fd_dup == -1) {
-		return NULL;
-	}
-
-	file = fdopen(fd_dup, "r");
+	file = fdopen_keepfd(fd, "r");
 	if (file == NULL) {
-		close(fd_dup);
 		return NULL;
 	}
 
@@ -496,4 +489,31 @@ char *file_ploadv(char * const argl[], size_t *size)
 	}
 
 	return p;
+}
+
+/*
+ * fopen a dup'ed fd. Prevent fclose to close the fd passed in.
+ *
+ * Don't use on fd's that have fcntl locks, on error it will close the
+ * dup'ed fd, thus killing your fcntl locks.
+ */
+FILE *fdopen_keepfd(int fd, const char *mode)
+{
+	FILE *f = NULL;
+	int dup_fd;
+
+	dup_fd = dup(fd);
+	if (dup_fd == -1) {
+		return NULL;
+	}
+
+	f = fdopen(dup_fd, mode);
+	if (f == NULL) {
+		int err = errno;
+		close(dup_fd);
+		errno = err;
+		return NULL;
+	}
+
+	return f;
 }
