@@ -530,7 +530,7 @@ static struct ldb_dn *drs_ObjectIdentifier_to_dn(TALLOC_CTX *mem_ctx,
  * not valid or able to parse as a DN.
  *
  * Finally, we must return the DN as found in the DB, as otherwise a
- * subsequence ldb_dn_compare(dn, nc_root) will fail (as this is based
+ * subsequent ldb_dn_compare(dn, nc_root) will fail (as this is based
  * on the string components).
  */
 int drs_ObjectIdentifier_to_dn_and_nc_root(TALLOC_CTX *mem_ctx,
