@@ -287,7 +287,7 @@ def populateNotReplicated(samdb, schemadn):
 
 
 def populate_dnsyntax(samdb, schemadn):
-    """Populate an array with all the attributes that have DN synthax
+    """Populate an array with all the attributes that have DN syntax
        (oid 2.5.5.1)
 
     :param samdb: A LDB object for sam.ldb file
@@ -1666,7 +1666,7 @@ if __name__ == '__main__':
         # 8) Populate some associative array to ease the update process
         # List of attribute which are link and backlink
         populate_links(new_ldbs.sam, names.schemadn)
-        # List of attribute with ASN DN synthax)
+        # List of attributes with ASN DN syntax)
         populate_dnsyntax(new_ldbs.sam, names.schemadn)
         # 9) (now skipped, was copy of privilege.ldb)
         # 10)
