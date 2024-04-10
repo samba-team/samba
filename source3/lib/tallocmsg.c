@@ -21,11 +21,11 @@
 #include "source3/lib/tallocmsg.h"
 #include "lib/util/talloc_report_printf.h"
 #include "lib/util/debug.h"
+#include "lib/util/util_file.h"
 
 static bool pool_usage_filter(struct messaging_rec *rec, void *private_data)
 {
 	FILE *f = NULL;
-	int fd;
 
 	if (rec->msg_type != MSG_REQ_POOL_USAGE) {
 		return false;
@@ -38,18 +38,9 @@ static bool pool_usage_filter(struct messaging_rec *rec, void *private_data)
 		return false;
 	}
 
-	fd = dup(rec->fds[0]);
-	if (fd == -1) {
-		DBG_DEBUG("dup(%"PRIi64") failed: %s\n",
-			  rec->fds[0],
-			  strerror(errno));
-		return false;
-	}
-
-	f = fdopen(fd, "w");
+	f = fdopen_keepfd(rec->fds[0], "w");
 	if (f == NULL) {
 		DBG_DEBUG("fdopen failed: %s\n", strerror(errno));
-		close(fd);
 		return false;
 	}
 
