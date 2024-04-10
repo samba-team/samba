@@ -1,3 +1,0 @@
-^samba\.tests\.segfault\.samba\.tests\.segfault\.SegfaultTests\.test_ldb_use_after_free_dn_assign_disconnecting_connection\(ad_dc\)
-^samba\.tests\.segfault\.samba\.tests\.segfault\.SegfaultTests\.test_ldb_use_after_free_dn_assign_disconnecting_connection_add_child_later\(ad_dc\)
-^samba\.tests\.segfault\.samba\.tests\.segfault\.SegfaultTests\.test_ldb_use_after_free_dn_assign_disconnecting_connection_no_del\(ad_dc\)
