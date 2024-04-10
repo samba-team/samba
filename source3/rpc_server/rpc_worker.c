@@ -24,6 +24,7 @@
 #include "source3/librpc/gen_ndr/ndr_rpc_host.h"
 #include "lib/util/debug.h"
 #include "lib/util/fault.h"
+#include "lib/util/util_file.h"
 #include "rpc_server.h"
 #include "rpc_pipes.h"
 #include "source3/smbd/proto.h"
@@ -569,7 +570,6 @@ static bool rpc_worker_status_filter(
 		private_data, struct rpc_worker);
 	struct dcerpc_ncacn_conn *conn = NULL;
 	FILE *f = NULL;
-	int fd;
 
 	if (rec->msg_type != MSG_RPC_DUMP_STATUS) {
 		return false;
@@ -580,18 +580,9 @@ static bool rpc_worker_status_filter(
 		return false;
 	}
 
-	fd = dup(rec->fds[0]);
-	if (fd == -1) {
-		DBG_DEBUG("dup(%"PRIi64") failed: %s\n",
-			  rec->fds[0],
-			  strerror(errno));
-		return false;
-	}
-
-	f = fdopen(fd, "w");
+	f = fdopen_keepfd(rec->fds[0], "w");
 	if (f == NULL) {
-		DBG_DEBUG("fdopen failed: %s\n", strerror(errno));
-		close(fd);
+		DBG_DEBUG("fdopen_keepfd failed: %s\n", strerror(errno));
 		return false;
 	}
 

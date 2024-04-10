@@ -2309,7 +2309,6 @@ static bool rpc_host_dump_status_filter(
 	struct rpc_server **servers = host->servers;
 	size_t i, num_servers = talloc_array_length(servers);
 	FILE *f = NULL;
-	int fd;
 
 	if (rec->msg_type != MSG_RPC_DUMP_STATUS) {
 		return false;
@@ -2319,18 +2318,9 @@ static bool rpc_host_dump_status_filter(
 		return false;
 	}
 
-	fd = dup(rec->fds[0]);
-	if (fd == -1) {
-		DBG_DEBUG("dup(%"PRIi64") failed: %s\n",
-			  rec->fds[0],
-			  strerror(errno));
-		return false;
-	}
-
-	f = fdopen(fd, "w");
+	f = fdopen_keepfd(rec->fds[0], "w");
 	if (f == NULL) {
 		DBG_DEBUG("fdopen failed: %s\n", strerror(errno));
-		close(fd);
 		return false;
 	}
 
