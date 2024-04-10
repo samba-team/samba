@@ -1038,7 +1038,11 @@ char *ldb_dn_alloc_casefold(TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
 
 /* Determine if dn is below base, in the ldap tree.  Used for
  * evaluating a subtree search.
- * 0 if they match, otherwise non-zero
+ *
+ * 0 if they match, otherwise non-zero.
+ *
+ * This is not for use in a qsort()-like function, as the comparison
+ * is not symmetric.
  */
 
 int ldb_dn_compare_base(struct ldb_dn *base, struct ldb_dn *dn)
