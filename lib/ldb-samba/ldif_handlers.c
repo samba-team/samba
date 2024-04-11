@@ -235,6 +235,7 @@ static int extended_dn_read_SID(struct ldb_context *ldb, void *mem_ctx,
 	ndr_err = ndr_pull_struct_blob_all_noalloc(out, &sid,
 					   (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(out->data);
 		return -1;
 	}
 	return 0;
