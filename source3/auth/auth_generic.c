@@ -29,6 +29,7 @@
 #include "auth/gensec/gensec.h"
 #include "lib/param/param.h"
 #ifdef HAVE_KRB5
+#include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "auth/kerberos/pac_utils.h"
 #include "nsswitch/libwbclient/wbclient.h"
 #endif
@@ -173,14 +174,70 @@ static NTSTATUS generate_krb5_session_info(
 	NTSTATUS status;
 
 	if (pac_blob != NULL) {
-		/*
-		 * In standalone mode we don't expect a PAC!
-		 * we only support MIT realms
-		 */
-		status = NT_STATUS_BAD_TOKEN_TYPE;
-		DBG_WARNING("Unexpected PAC for [%s] in standalone mode - %s\n",
-			    princ_name, nt_errstr(status));
-		return status;
+		struct PAC_LOGON_NAME *logon_name = NULL;
+		struct PAC_LOGON_INFO *logon_info = NULL;
+		struct PAC_DATA *pac_data = NULL;
+		enum ndr_err_code ndr_err;
+		size_t i;
+
+		pac_data = talloc_zero(mem_ctx, struct PAC_DATA);
+		if (pac_data == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		ndr_err = ndr_pull_struct_blob(pac_blob,
+					       pac_data,
+					       pac_data,
+					       (ndr_pull_flags_fn_t)
+						       ndr_pull_PAC_DATA);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			status = ndr_map_error2ntstatus(ndr_err);
+			DBG_ERR("Can't parse the PAC: %s\n", nt_errstr(status));
+			return status;
+		}
+
+		if (pac_data->num_buffers < 4) {
+			DBG_ERR("We expect at least 4 PAC buffers.\n");
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		for (i = 0; i < pac_data->num_buffers; i++) {
+			struct PAC_BUFFER *data_buf = &pac_data->buffers[i];
+
+			switch (data_buf->type) {
+			case PAC_TYPE_LOGON_NAME:
+				logon_name = &data_buf->info->logon_name;
+				break;
+			case PAC_TYPE_LOGON_INFO:
+				if (!data_buf->info) {
+					break;
+				}
+				logon_info = data_buf->info->logon_info.info;
+				break;
+			default:
+				break;
+			}
+		}
+
+		if (logon_name == NULL) {
+			TALLOC_FREE(pac_data);
+			DBG_ERR("PAC without logon_name\n");
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		if (logon_info != NULL) {
+			/*
+			* In standalone mode we don't expect a MS-PAC!
+			* we only support MIT realms
+			*/
+			TALLOC_FREE(pac_data);
+			status = NT_STATUS_BAD_TOKEN_TYPE;
+			DBG_WARNING("Unexpected PAC for [%s] in standalone mode - %s\n",
+				princ_name, nt_errstr(status));
+			return status;
+		}
+
+		TALLOC_FREE(pac_data);
 	}
 
 	status = get_user_from_kerberos_info(mem_ctx,
@@ -259,6 +316,7 @@ static NTSTATUS auth3_generate_session_info_pac(
 			tmp_ctx, princ_name, rhost, pac_blob, &session_info);
 		break;
 	case ROLE_STANDALONE:
+		/* This requires no PAC or a minimal PAC */
 		status = generate_krb5_session_info(
 			tmp_ctx, princ_name, rhost, pac_blob, &session_info);
 		break;
