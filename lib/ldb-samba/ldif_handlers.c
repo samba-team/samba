@@ -1166,10 +1166,17 @@ static int samba_ldb_dn_link_comparison(struct ldb_context *ldb, void *mem_ctx,
 	 * They never match in an equality
 	 */
 	if (dsdb_dn_is_deleted_val(v1)) {
-		return 1;
-	}
-
-	if (dsdb_dn_is_deleted_val(v2)) {
+		if (! dsdb_dn_is_deleted_val(v2)) {
+			return 1;
+		}
+		/*
+		 * They are both deleted!
+		 *
+		 * The soundest thing to do at this point is carry on
+		 * and compare the DNs normally. This matches the
+		 * behaviour of samba_dn_extended_match() below.
+		 */
+	} else if (dsdb_dn_is_deleted_val(v2)) {
 		return -1;
 	}
 
