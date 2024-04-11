@@ -952,6 +952,8 @@ void loadparm_s3_init_globals(struct loadparm_context *lp_ctx,
 
 	Globals.kdc_enable_fast = true;
 
+	Globals.winbind_debug_traceid = true;
+
 	Globals.aio_max_threads = 100;
 
 	lpcfg_string_set(Globals.ctx,

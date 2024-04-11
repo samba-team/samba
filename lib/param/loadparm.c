@@ -2707,6 +2707,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "debug pid", "No");
 	lpcfg_do_global_parameter(lp_ctx, "debug uid", "No");
 	lpcfg_do_global_parameter(lp_ctx, "debug class", "No");
+	lpcfg_do_global_parameter(lp_ctx, "winbind debug traceid", "Yes");
 
 	lpcfg_do_global_parameter(lp_ctx, "server role", "auto");
 	lpcfg_do_global_parameter(lp_ctx, "domain logons", "No");
