@@ -689,7 +689,7 @@ krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		old_hash = &ntPwdHistory[1];
 	}
 	if (num_ntPwdHistory > 2) {
-		older_hash = &ntPwdHistory[1];
+		older_hash = &ntPwdHistory[2];
 	}
 	sc_val = ldb_msg_find_ldb_val(msg, "supplementalCredentials");
 
