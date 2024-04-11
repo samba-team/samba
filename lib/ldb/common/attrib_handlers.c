@@ -351,8 +351,9 @@ int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 		 * never appear in multibyte sequences */
 		if (((unsigned char)s1[0]) & 0x80) goto utf8str;
 		if (((unsigned char)s2[0]) & 0x80) goto utf8str;
-		if (toupper((unsigned char)*s1) != toupper((unsigned char)*s2))
+		if (ldb_ascii_toupper(*s1) != ldb_ascii_toupper(*s2)) {
 			break;
+		}
 		if (*s1 == ' ') {
 			while (n1 > 1 && s1[0] == s1[1]) { s1++; n1--; }
 			while (n2 > 1 && s2[0] == s2[1]) { s2++; n2--; }
