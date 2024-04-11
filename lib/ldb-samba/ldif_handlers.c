@@ -1161,13 +1161,15 @@ static int samba_ldb_dn_link_comparison(struct ldb_context *ldb, void *mem_ctx,
 	struct ldb_dn *dn1 = NULL, *dn2 = NULL;
 	int ret;
 
+	/*
+	 * In a sort context, Deleted DNs get shifted to the end.
+	 * They never match in an equality
+	 */
 	if (dsdb_dn_is_deleted_val(v1)) {
-		/* If the DN is deleted, then we can't search for it */
-		return -1;
+		return 1;
 	}
 
 	if (dsdb_dn_is_deleted_val(v2)) {
-		/* If the DN is deleted, then we can't search for it */
 		return -1;
 	}
 
