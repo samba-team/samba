@@ -1180,12 +1180,14 @@ static int samba_ldb_dn_link_comparison(struct ldb_context *ldb, void *mem_ctx,
 
 	dn1 = ldb_dn_from_ldb_val(mem_ctx, ldb, v1);
 	if ( ! ldb_dn_validate(dn1)) {
+		TALLOC_FREE(dn1);
 		return 1;
 	}
 
 	dn2 = ldb_dn_from_ldb_val(mem_ctx, ldb, v2);
 	if ( ! ldb_dn_validate(dn2)) {
-		talloc_free(dn1);
+		TALLOC_FREE(dn1);
+		TALLOC_FREE(dn2);
 		return -1;
 	}
 
