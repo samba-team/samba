@@ -560,8 +560,13 @@ for t in smbtorture4_testsuites("dns_internal."):
     plansmbtorture4testsuite(t, "ad_dc_default:local", '//$SERVER/whavever')
 
 # These tests want to run on a barely changed fresh provision, before
-# too much happens to this environment.
-planpythontestsuite("chgdcpass:local", "samba.tests.dsdb_quiet_provision_tests")
+# too much happens to this environment, it is read only and local
+# (direct to the DB) so we use proclimitdc as it is otherwise empty
+# bar a test for process limits.
+planpythontestsuite("proclimitdc:local", "samba.tests.dsdb_quiet_provision_tests")
+
+# We want this local test to run in an environment where not much is happening that could use root keys
+planpythontestsuite("chgdcpass:local", "samba.tests.dsdb_quiet_env_tests")
 
 # Local tests
 for t in smbtorture4_testsuites("dlz_bind9."):
@@ -1170,7 +1175,12 @@ planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.schema")
 planpythontestsuite("ad_dc_default", "samba.tests.samba_tool.domain_claim")
 planpythontestsuite("ad_dc_default", "samba.tests.samba_tool.domain_auth_policy")
 planpythontestsuite("ad_dc_default", "samba.tests.samba_tool.domain_auth_silo")
-planpythontestsuite("ad_dc_default", "samba.tests.samba_tool.domain_kds_root_key")
+
+# This test needs to be run in an environment well apart from most
+# other tests as it deletes root keys and we don't want this to happen
+# where a gMSA account might be live.
+planpythontestsuite("chgdcpass", "samba.tests.samba_tool.domain_kds_root_key")
+
 planpythontestsuite("ad_dc_default", "samba.tests.samba_tool.domain_models")
 planpythontestsuite("ad_dc_default", "samba.tests.samba_tool.service_account")
 planpythontestsuite("schema_dc:local", "samba.tests.samba_tool.schema")
