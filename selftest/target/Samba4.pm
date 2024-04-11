@@ -3725,10 +3725,6 @@ sub setup_customdc
 	my $upn_array = ["$env->{REALM}.upn"];
 	my $spn_array = ["$env->{REALM}.spn"];
 
-	if ($self->setup_namespaces($env, $upn_array, $spn_array) != 0) {
-		return undef;
-	}
-
 	return $env;
 }
 
