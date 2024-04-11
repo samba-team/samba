@@ -137,6 +137,28 @@ static int gmsa_managed_password(struct ldb_context *const ldb,
 
 	SMB_ASSERT(return_pwd.new_pwd != NULL);
 
+	if (gmsa_update != NULL) {
+		/*
+		 * Return a control to indicate to the LDAP server that it needs
+		 * to refresh the physical passwords — that is, the keys in the
+		 * database, and the ManagedPasswordId attribute.
+		 */
+		ret = ldb_reply_add_control(ares,
+					    DSDB_CONTROL_GMSA_UPDATE_OID,
+					    false,
+					    gmsa_update);
+		if (ret) {
+			/* Ignore the error. */
+			ret = LDB_SUCCESS;
+		} else {
+			/*
+			 * Link the lifetime of the GMSA update control to that
+			 * of the reply.
+			 */
+			talloc_steal(ares, gmsa_update);
+		}
+	}
+
 	{
 		DATA_BLOB packed_blob = {};
 
