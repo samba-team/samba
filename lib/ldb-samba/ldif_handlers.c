@@ -110,6 +110,7 @@ static int ldif_read_objectSid(struct ldb_context *ldb, void *mem_ctx,
 		ndr_err = ndr_push_struct_into_fixed_blob(out, &sid,
 				(ndr_push_flags_fn_t)ndr_push_dom_sid);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			TALLOC_FREE(out->data);
 			return -1;
 		}
 	}
