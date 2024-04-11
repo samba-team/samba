@@ -800,7 +800,7 @@ class LockoutTests(KDCBaseTest):
             samdb.transaction_start()
             try:
                 # Lock out the account. We must do it using an actual password
-                # check like so, rather than directly with a database
+                # change like so, rather than directly with a database
                 # modification, so that the account is also added to the
                 # auxiliary bad password database.
 
