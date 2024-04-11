@@ -426,7 +426,7 @@ utf8str:
 		while (*u1 == ' ') u1++;
 		while (*u2 == ' ') u2++;
 	}
-	ret = (int)(*u1 - *u2);
+	ret = NUMERIC_CMP(*u1, *u2);
 
 	talloc_free(b1);
 	talloc_free(b2);
