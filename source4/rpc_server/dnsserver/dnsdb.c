@@ -1143,7 +1143,8 @@ WERROR dnsserver_db_create_zone(struct ldb_context *samdb,
 	TALLOC_CTX *tmp_ctx;
 	struct dnsp_DnssrvRpcRecord *dns_rec;
 	struct dnsp_soa soa;
-	char *tmpstr, *soa_email;
+	char *soa_email = NULL;
+	const char *dnsdomain = NULL;
 	struct ldb_val name_val = data_blob_string_const(zone->name);
 
 	/* We only support primary zones for now */
@@ -1195,12 +1196,16 @@ WERROR dnsserver_db_create_zone(struct ldb_context *samdb,
 	dns_rec = talloc_zero_array(tmp_ctx, struct dnsp_DnssrvRpcRecord, 2);
 	W_ERROR_HAVE_NO_MEMORY_AND_FREE(dns_rec, tmp_ctx);
 
-	tmpstr = talloc_asprintf(tmp_ctx, "hostmaster.%s",
-				  lpcfg_realm(lp_ctx));
-	W_ERROR_HAVE_NO_MEMORY_AND_FREE(tmpstr, tmp_ctx);
-	soa_email = strlower_talloc(tmp_ctx, tmpstr);
-	W_ERROR_HAVE_NO_MEMORY_AND_FREE(soa_email, tmp_ctx);
-	talloc_free(tmpstr);
+	dnsdomain = lpcfg_dnsdomain(lp_ctx);
+	if (dnsdomain == NULL) {
+		talloc_free(tmp_ctx);
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+	soa_email = talloc_asprintf(tmp_ctx, "hostmaster.%s", dnsdomain);
+	if (soa_email == NULL) {
+		talloc_free(tmp_ctx);
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 
 	/* SOA Record - values same as defined in provision/sambadns.py */
 	soa.serial = 1;
@@ -1208,7 +1213,7 @@ WERROR dnsserver_db_create_zone(struct ldb_context *samdb,
 	soa.retry = 600;
 	soa.expire = 86400;
 	soa.minimum = 3600;
-	soa.mname = lpcfg_dns_hostname(lp_ctx);
+	soa.mname = dnsdomain;
 	soa.rname = soa_email;
 
 	dns_rec[0].wType = DNS_TYPE_SOA;
@@ -1224,7 +1229,7 @@ WERROR dnsserver_db_create_zone(struct ldb_context *samdb,
 	dns_rec[1].dwSerial = soa.serial;
 	dns_rec[1].dwTtlSeconds = 3600;
 	dns_rec[1].dwTimeStamp = 0;
-	dns_rec[1].data.ns = lpcfg_dns_hostname(lp_ctx);
+	dns_rec[1].data.ns = dnsdomain;
 
 	/* Add @ Record */
 	status = dnsserver_db_do_add_rec(tmp_ctx, samdb, dn, 2, dns_rec);
