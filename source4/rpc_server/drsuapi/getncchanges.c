@@ -1026,8 +1026,7 @@ struct drsuapi_changed_objects {
   sort the objects we send by tree order (Samba 4.5 emulation)
  */
 static int site_res_cmp_anc_order(struct drsuapi_changed_objects *m1,
-				  struct drsuapi_changed_objects *m2,
-				  struct drsuapi_getncchanges_state *getnc_state)
+				  struct drsuapi_changed_objects *m2)
 {
 	return ldb_dn_compare(m2->dn, m1->dn);
 }
@@ -3322,10 +3321,9 @@ allowed:
 		if (req10->extended_op == DRSUAPI_EXOP_FSMO_RID_ALLOC) {
 			/* Do nothing */
 		} else if (getnc_state->broken_samba_4_5_get_anc_emulation) {
-			LDB_TYPESAFE_QSORT(changes,
-					   getnc_state->num_records,
-					   getnc_state,
-					   site_res_cmp_anc_order);
+			TYPESAFE_QSORT(changes,
+				       getnc_state->num_records,
+				       site_res_cmp_anc_order);
 		} else {
 			LDB_TYPESAFE_QSORT(changes,
 					   getnc_state->num_records,
