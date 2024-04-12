@@ -9,6 +9,7 @@ fi
 
 TDB_FILE=$1
 EXPECTED_DUMP=$2
+EXPECTED_DUMP_X=$3
 TEMP_DUMP=tempdump.txt
 
 failed=0
@@ -46,6 +47,10 @@ testit()
 
 $BINDIR/tdbdump $TDB_FILE > $TEMP_DUMP
 testit "Verifying tdbdump" cmp $TEMP_DUMP $EXPECTED_DUMP \
+	|| failed=$(expr $failed + 1)
+
+$BINDIR/tdbdump -x $TDB_FILE > $TEMP_DUMP
+testit "Verifying tdbdump -x" cmp $TEMP_DUMP $EXPECTED_DUMP_X \
 	|| failed=$(expr $failed + 1)
 
 rm $TEMP_DUMP

@@ -217,7 +217,7 @@ def testonly(ctx):
             os.symlink(ctx.path.make_node('test').abspath(), link)
 
         sh_tests = ["test/test_tdbbackup.sh test/jenkins-be-hash.tdb",
-                    "test/test_tdbdump.sh test/sample_tdb.tdb test/sample_tdb.txt"]
+                    "test/test_tdbdump.sh test/sample_tdb.tdb test/sample_tdb.txt test/sample_tdb_x.txt"]
 
         for sh_test in sh_tests:
             cmd = "BINDIR=%s %s" % (blddir, sh_test)
