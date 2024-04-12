@@ -596,6 +596,10 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 		fstr_sprintf(my_alias, "%s.%s",
 			     *netbios_aliases,
 			     lp_dnsdomain());
+		if (!strlower_m(my_alias)) {
+			status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			goto done;
+		}
 
 		spn = talloc_asprintf(frame, "HOST/%s", my_alias);
 		if (spn == NULL) {
