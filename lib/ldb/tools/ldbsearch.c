@@ -45,8 +45,7 @@ static void usage(struct ldb_context *ldb)
 }
 
 static int do_compare_msg(struct ldb_message **el1,
-			  struct ldb_message **el2,
-			  void *opaque)
+			  struct ldb_message **el2)
 {
 	return ldb_dn_compare((*el1)->dn, (*el2)->dn);
 }
@@ -269,7 +268,7 @@ again:
 		unsigned int i;
 
 		if (sctx->num_stored) {
-			LDB_TYPESAFE_QSORT(sctx->store, sctx->num_stored, ldb, do_compare_msg);
+			TYPESAFE_QSORT(sctx->store, sctx->num_stored, do_compare_msg);
 		}
 		for (i = 0; i < sctx->num_stored; i++) {
 			display_message(sctx->store[i], sctx);
