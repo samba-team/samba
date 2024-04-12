@@ -893,6 +893,10 @@ static uint8_t get_flags_to_propagate(bool is_container,
 	/* Assume we are not propagating the ACE */
 
 	newflags &= ~SEC_ACE_FLAG_INHERITED_ACE;
+
+	/* Inherit-only flag is not propagated to children */
+
+	newflags &= ~SEC_ACE_FLAG_INHERIT_ONLY;
 	/* all children need to have the SEC_ACE_FLAG_INHERITED_ACE set */
 	if (acl_cntrinherit || acl_objinherit) {
 		/*

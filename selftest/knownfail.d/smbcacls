@@ -1,6 +1,0 @@
-^samba.tests.blackbox.smbcacls_propagate_inhertance.samba.tests.blackbox.smbcacls_propagate_inhertance.InheritanceSmbCaclsTests.test_simple_iocioi_add
-^samba.tests.blackbox.smbcacls_propagate_inhertance.samba.tests.blackbox.smbcacls_propagate_inhertance.InheritanceSmbCaclsTests.test_simple_ioci_add
-^samba.tests.blackbox.smbcacls_dfs_propagate_inherit\(DFS-msdfs-root\).samba.tests.blackbox.smbcacls_propagate_inhertance.InheritanceSmbCaclsTests.test_simple_iocioi_add
-^samba.tests.blackbox.smbcacls_dfs_propagate_inherit\(DFS-msdfs-root\).samba.tests.blackbox.smbcacls_propagate_inhertance.InheritanceSmbCaclsTests.test_simple_ioci_add
-^samba.tests.blackbox.smbcacls_dfs_propagate_inherit\(DFS-msdfs-root\).samba.tests.blackbox.smbcacls_dfs_propagate_inherit.DfsInheritanceSmbCaclsTests.test_simple_iocioi_add
-^samba.tests.blackbox.smbcacls_dfs_propagate_inherit\(DFS-msdfs-root\).samba.tests.blackbox.smbcacls_dfs_propagate_inherit.DfsInheritanceSmbCaclsTests.test_simple_ioci_add
