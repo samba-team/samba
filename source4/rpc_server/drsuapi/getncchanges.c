@@ -1035,8 +1035,7 @@ static int site_res_cmp_anc_order(struct drsuapi_changed_objects *m1,
   sort the objects we send first by uSNChanged
  */
 static int site_res_cmp_usn_order(struct drsuapi_changed_objects *m1,
-				  struct drsuapi_changed_objects *m2,
-				  struct drsuapi_getncchanges_state *getnc_state)
+				  struct drsuapi_changed_objects *m2)
 {
 	if (m1->usn == m2->usn) {
 		return ldb_dn_compare(m2->dn, m1->dn);
@@ -3325,10 +3324,9 @@ allowed:
 				       getnc_state->num_records,
 				       site_res_cmp_anc_order);
 		} else {
-			LDB_TYPESAFE_QSORT(changes,
-					   getnc_state->num_records,
-					   getnc_state,
-					   site_res_cmp_usn_order);
+			TYPESAFE_QSORT(changes,
+				       getnc_state->num_records,
+				       site_res_cmp_usn_order);
 		}
 
 		for (i=0; i < getnc_state->num_records; i++) {
