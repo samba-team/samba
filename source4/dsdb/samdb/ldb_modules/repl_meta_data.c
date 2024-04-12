@@ -1077,10 +1077,7 @@ static int replmd_ldb_message_element_attid_sort(const struct ldb_message_elemen
 	if (a2 == NULL) {
 		return -1;
 	}
-	if (a1->attributeID_id == a2->attributeID_id) {
-		return 0;
-	}
-	return a1->attributeID_id > a2->attributeID_id ? 1 : -1;
+	return NUMERIC_CMP(a1->attributeID_id, a2->attributeID_id);
 }
 
 static void replmd_ldb_message_sort(struct ldb_message *msg,
