@@ -2683,7 +2683,7 @@ static struct tevent_req *cli_connect_nb_send(
 		}
 	} else {
 		/* No host or dest_ss given. Error out. */
-		tevent_req_error(req, EINVAL);
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
 		return tevent_req_post(req, ev);
 	}
 
