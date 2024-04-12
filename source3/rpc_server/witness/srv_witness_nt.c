@@ -313,10 +313,7 @@ static NTSTATUS swn_service_init_globals(struct dcesrv_context *dce_ctx)
 {
 	struct swn_service_globals *swn = NULL;
 	char *global_path = NULL;
-	const char *realm = NULL;
-	const char *nbname = NULL;
 	int ret;
-	bool ok;
 
 	if (swn_globals != NULL) {
 		SMB_ASSERT(swn_globals->dce_ctx == dce_ctx);
@@ -362,30 +359,11 @@ static NTSTATUS swn_service_init_globals(struct dcesrv_context *dce_ctx)
 	}
 	TALLOC_FREE(global_path);
 
-	nbname = lpcfg_netbios_name(dce_ctx->lp_ctx);
-	realm = lpcfg_realm(dce_ctx->lp_ctx);
-	if (realm != NULL && realm[0] != '\0') {
-		char *name = NULL;
-
-		name = talloc_asprintf(swn, "%s.%s", nbname, realm);
-		if (name == NULL) {
-			TALLOC_FREE(swn);
-			return NT_STATUS_NO_MEMORY;
-		}
-		ok = strlower_m(name);
-		if (!ok) {
-			TALLOC_FREE(swn);
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-		swn->server_global_name = name;
-	} else {
-		swn->server_global_name = talloc_strdup(swn, nbname);
-		if (swn->server_global_name == NULL) {
-			TALLOC_FREE(swn);
-			return NT_STATUS_NO_MEMORY;
-		}
+	swn->server_global_name = lpcfg_dns_hostname(dce_ctx->lp_ctx);
+	if (swn->server_global_name == NULL) {
+		TALLOC_FREE(swn);
+		return NT_STATUS_NO_MEMORY;
 	}
-
 	swn->local_vnn = get_my_vnn();
 
 	ret = register_with_ctdbd(messaging_ctdb_connection(),
