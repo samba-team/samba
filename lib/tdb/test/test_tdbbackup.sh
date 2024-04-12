@@ -8,6 +8,7 @@ if [ $# -lt 1 ]; then
 fi
 
 LDBFILE=$1
+failed=0
 
 timestamp()
 {
@@ -42,16 +43,22 @@ testit()
 
 $BINDIR/tdbdump $LDBFILE | sort >orig_dump
 
-testit "normal tdbbackup on tdb file" $BINDIR/tdbbackup $LDBFILE -s .bak
+testit "normal tdbbackup on tdb file" $BINDIR/tdbbackup $LDBFILE -s .bak  \
+	|| failed=$((failed + 1))
 $BINDIR/tdbdump $LDBFILE.bak | sort >bak_dump
-testit "cmp between tdbdumps of original and backup" cmp orig_dump bak_dump
+testit "cmp between tdbdumps of original and backup" cmp orig_dump bak_dump \
+	|| failed=$((failed + 1))
 rm $LDBFILE.bak
 rm bak_dump
 
-testit "readonly tdbbackup on tdb file" $BINDIR/tdbbackup $LDBFILE -s .bak -r
+testit "readonly tdbbackup on tdb file" $BINDIR/tdbbackup $LDBFILE -s .bak -r \
+	|| failed=$((failed + 1))
 $BINDIR/tdbdump $LDBFILE.bak | sort >bak_dump
-testit "cmp between tdbdumps of original and back dbs" cmp orig_dump bak_dump
+testit "cmp between tdbdumps of original and back dbs" cmp orig_dump bak_dump \
+	|| failed=$((failed + 1))
 rm $LDBFILE.bak
 rm bak_dump
 
 rm orig_dump
+
+exit $failed
