@@ -1143,7 +1143,7 @@ WERROR dnsserver_db_create_zone(struct ldb_context *samdb,
 	TALLOC_CTX *tmp_ctx;
 	struct dnsp_DnssrvRpcRecord *dns_rec;
 	struct dnsp_soa soa;
-	char *tmpstr, *server_fqdn, *soa_email;
+	char *tmpstr, *soa_email;
 	struct ldb_val name_val = data_blob_string_const(zone->name);
 
 	/* We only support primary zones for now */
@@ -1195,14 +1195,6 @@ WERROR dnsserver_db_create_zone(struct ldb_context *samdb,
 	dns_rec = talloc_zero_array(tmp_ctx, struct dnsp_DnssrvRpcRecord, 2);
 	W_ERROR_HAVE_NO_MEMORY_AND_FREE(dns_rec, tmp_ctx);
 
-	tmpstr = talloc_asprintf(tmp_ctx, "%s.%s",
-				 lpcfg_netbios_name(lp_ctx),
-				 lpcfg_realm(lp_ctx));
-	W_ERROR_HAVE_NO_MEMORY_AND_FREE(tmpstr, tmp_ctx);
-	server_fqdn = strlower_talloc(tmp_ctx, tmpstr);
-	W_ERROR_HAVE_NO_MEMORY_AND_FREE(server_fqdn, tmp_ctx);
-	talloc_free(tmpstr);
-
 	tmpstr = talloc_asprintf(tmp_ctx, "hostmaster.%s",
 				  lpcfg_realm(lp_ctx));
 	W_ERROR_HAVE_NO_MEMORY_AND_FREE(tmpstr, tmp_ctx);
@@ -1216,7 +1208,7 @@ WERROR dnsserver_db_create_zone(struct ldb_context *samdb,
 	soa.retry = 600;
 	soa.expire = 86400;
 	soa.minimum = 3600;
-	soa.mname = server_fqdn;
+	soa.mname = lpcfg_dns_hostname(lp_ctx);
 	soa.rname = soa_email;
 
 	dns_rec[0].wType = DNS_TYPE_SOA;
@@ -1232,7 +1224,7 @@ WERROR dnsserver_db_create_zone(struct ldb_context *samdb,
 	dns_rec[1].dwSerial = soa.serial;
 	dns_rec[1].dwTtlSeconds = 3600;
 	dns_rec[1].dwTimeStamp = 0;
-	dns_rec[1].data.ns = server_fqdn;
+	dns_rec[1].data.ns = lpcfg_dns_hostname(lp_ctx);
 
 	/* Add @ Record */
 	status = dnsserver_db_do_add_rec(tmp_ctx, samdb, dn, 2, dns_rec);
