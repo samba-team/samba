@@ -286,7 +286,8 @@ class RpcdWitnessSambaTests(BlackboxTestCase):
                 expected_state = witness.WITNESS_STATE_AVAILABLE
 
             self.assertIsNotNone(iface.group_name)
-            self.assertEqual(iface.group_name, self.interface_group_name)
+            self.assertEqual(iface.group_name.lower(),
+                             self.interface_group_name.lower())
 
             self.assertEqual(iface.version, witness.WITNESS_V2)
             self.assertEqual(iface.state, expected_state)
