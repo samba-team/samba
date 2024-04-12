@@ -1487,7 +1487,7 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 
 	r->in.debug		= true;
 	r->in.dc_name		= c->opt_host;
-	r->in.domain_name	= lp_realm();
+	r->in.domain_name	= lp_dnsdomain();
 	r->in.admin_credentials	= c->creds;
 	r->in.modify_config	= lp_config_backend_is_registry();
 
