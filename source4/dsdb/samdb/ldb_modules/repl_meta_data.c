@@ -1063,11 +1063,19 @@ static int replmd_ldb_message_element_attid_sort(const struct ldb_message_elemen
 	a2 = dsdb_attribute_by_lDAPDisplayName(schema, e2->name);
 
 	/*
-	 * TODO: remove this check, we should rely on e1 and e2 having valid attribute names
-	 *       in the schema
+	 * If the elements do not have valid attribute names in the schema
+	 * (which we would prefer to think can't happen), we need to sort them
+	 * somehow. The current strategy is to put them at the end, sorted by
+	 * attribute name.
 	 */
-	if (!a1 || !a2) {
+	if (a1 == NULL && a2 == NULL) {
 		return strcasecmp(e1->name, e2->name);
+	}
+	if (a1 == NULL) {
+		return 1;
+	}
+	if (a2 == NULL) {
+		return -1;
 	}
 	if (a1->attributeID_id == a2->attributeID_id) {
 		return 0;
