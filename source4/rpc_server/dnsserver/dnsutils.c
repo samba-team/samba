@@ -114,6 +114,7 @@ struct dnsserver_serverinfo *dnsserver_init_serverinfo(TALLOC_CTX *mem_ctx,
 	struct dnsserver_serverinfo *serverinfo;
 	struct dcerpc_server_info *dinfo;
 	struct ldb_dn *domain_dn, *forest_dn;
+	const char *dns_hostname = NULL;
 
 	serverinfo = talloc_zero(mem_ctx, struct dnsserver_serverinfo);
 	if (serverinfo == NULL) {
@@ -135,9 +136,12 @@ struct dnsserver_serverinfo *dnsserver_init_serverinfo(TALLOC_CTX *mem_ctx,
 	serverinfo->fAllowUpdate = 1;
 	serverinfo->fDsAvailable = 1;
 
-	serverinfo->pszServerName = talloc_asprintf(mem_ctx, "%s.%s",
-					lpcfg_netbios_name(lp_ctx),
-					lpcfg_dnsdomain(lp_ctx));
+	dns_hostname = lpcfg_dns_hostname(lp_ctx);
+	if (dns_hostname == NULL) {
+		TALLOC_FREE(serverinfo);
+		return NULL;
+	}
+	serverinfo->pszServerName = discard_const_p(char, dns_hostname);
 
 	domain_dn = ldb_get_default_basedn(samdb);
 	forest_dn = ldb_get_root_basedn(samdb);
