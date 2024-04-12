@@ -68,7 +68,7 @@ NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_security,
 	session_info_flags |= AUTH_SESSION_INFO_NTLM;
 
 	if (gensec_security->auth_context && gensec_security->auth_context->generate_session_info) {
-		nt_status = gensec_security->auth_context->generate_session_info(gensec_security->auth_context, mem_ctx, 
+		nt_status = gensec_security->auth_context->generate_session_info(gensec_security->auth_context, mem_ctx,
 										 gensec_ntlmssp->server_returned_info,
 										 gensec_ntlmssp->ntlmssp_state->user,
 										 session_info_flags,
