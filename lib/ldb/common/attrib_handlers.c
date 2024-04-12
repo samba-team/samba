@@ -290,7 +290,7 @@ static int ldb_canonicalise_Boolean(struct ldb_context *ldb, void *mem_ctx,
  * field with Boolean syntax, so we might as well have consistent behaviour in
  * that case.
  *
- * The most probably values are {"FALSE", 5} and {"TRUE", 4}. To save time we
+ * The most probable values are {"FALSE", 5} and {"TRUE", 4}. To save time we
  * compare first by length, which makes FALSE > TRUE. This is somewhat
  * contrary to convention, but is how Samba has worked forever.
  *
