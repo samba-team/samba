@@ -822,7 +822,7 @@ static NTSTATUS dns_task_init(struct task_server *task)
 	int ret;
 	static const char * const attrs_none[] = { NULL};
 	struct ldb_message *dns_acc;
-	char *hostname_lower;
+	const char *dns_hostname = NULL;
 	char *dns_spn;
 	bool ok;
 
@@ -882,11 +882,14 @@ static NTSTATUS dns_task_init(struct task_server *task)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	hostname_lower = strlower_talloc(dns, lpcfg_netbios_name(task->lp_ctx));
-	dns_spn = talloc_asprintf(dns, "DNS/%s.%s",
-				  hostname_lower,
-				  lpcfg_dnsdomain(task->lp_ctx));
-	TALLOC_FREE(hostname_lower);
+	dns_hostname = lpcfg_dns_hostname(task->lp_ctx);
+	if (dns_hostname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	dns_spn = talloc_asprintf(dns, "DNS/%s", dns_hostname);
+	if (dns_spn == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	ret = dsdb_search_one(dns->samdb, dns, &dns_acc,
 			      ldb_get_default_basedn(dns->samdb), LDB_SCOPE_SUBTREE,
