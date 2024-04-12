@@ -619,6 +619,22 @@ static NTSTATUS dsdb_trust_crossref_tdo_info(TALLOC_CTX *mem_ctx,
  *
  * The DNS names are compared per component, starting from
  * the last one.
+ *
+ * The function is usable in a sort, but the return value contains more
+ * information than a simple comparison. There are 5 return values, defined
+ * above.
+ *
+ * DNS_CMP_FIRST_IS_CHILD (-2) means the first argument is a sub-domain of the
+ * second. e.g. dns_cmp("foo.example.org", "example.org")
+ *
+ * DNS_CMP_FIRST_IS_LESS (-1) means the first argument sorts before the
+ * second, but is not a sub-domain. e.g. dns_cmp("eggsample.org", "example.org").
+ *
+ * DNS_CMP_SECOND_IS_CHILD (+2) and DNS_CMP_SECOND_IS_LESS (+1) have the
+ * similar expected meanings. DNS_CMP_MATCH (0) means equality.
+ *
+ * NULL values are the parent of all addresses, which means comparisons
+ * between a string and NULL will return +2 or -2.
  */
 static int dns_cmp(const char *s1, const char *s2)
 {
