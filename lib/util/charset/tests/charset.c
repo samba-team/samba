@@ -47,7 +47,16 @@ static bool test_codepoint_cmpi(struct torture_context *tctx)
 	torture_assert_int_equal(tctx, codepoint_cmpi('a', 'a'), 0, "same char");
 	torture_assert_int_equal(tctx, codepoint_cmpi('A', 'a'), 0, "upcase version");
 	torture_assert_int_equal(tctx, codepoint_cmpi('b', 'a'), 1, "right diff");
-	torture_assert_int_equal(tctx, codepoint_cmpi('a', 'b'), -1, "right diff");
+	torture_assert_int_equal(tctx, codepoint_cmpi('b', 'A'), 1, "left greater, mixed case");
+	torture_assert_int_equal(tctx, codepoint_cmpi('C', 'a'), 1, "left greater, mixed case");
+	torture_assert_int_equal(tctx, codepoint_cmpi('a', 'b'), -1, "right greater");
+	torture_assert_int_equal(tctx, codepoint_cmpi('A', 'B'), -1, "right greater, upper case");
+	torture_assert_int_equal(tctx, codepoint_cmpi(0xc5, 0xc5), 0,
+				 "Latin Capital Letter A with Ring Above");
+	torture_assert_int_equal(tctx, codepoint_cmpi(0xc5, 0xe5), 0,
+				 "Latin both Letter A with Ring Above, lower right");
+	torture_assert_int_equal(tctx, codepoint_cmpi(0xe5, 0xde), -1,
+				 "å < Þ");
 	return true;
 }
 
