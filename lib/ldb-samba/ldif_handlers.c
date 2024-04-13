@@ -562,7 +562,7 @@ static int ldif_write_schemaInfo(struct ldb_context *ldb, void *mem_ctx,
 				 const struct ldb_val *in, struct ldb_val *out)
 {
 	return ldif_write_NDR(ldb, mem_ctx, in, out,
-			      sizeof(struct repsFromToBlob),
+			      sizeof(struct schemaInfoBlob),
 			      (ndr_pull_flags_fn_t)ndr_pull_schemaInfoBlob,
 			      (ndr_print_fn_t)ndr_print_schemaInfoBlob,
 			      true);
