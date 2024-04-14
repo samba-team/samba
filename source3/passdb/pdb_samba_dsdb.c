@@ -662,6 +662,11 @@ static NTSTATUS pdb_samba_dsdb_getsamupriv(struct pdb_samba_dsdb_state *state,
 		"codePage",
 		"unicodePwd",
 		"dBCSPwd",
+		/* Required for Group Managed Service Accounts. */
+		"msDS-ManagedPasswordId",
+		"msDS-ManagedPasswordInterval",
+		"objectClass",
+		"whenCreated",
 		NULL};
 
 	int rc = dsdb_search_one(state->ldb,
@@ -670,7 +675,7 @@ static NTSTATUS pdb_samba_dsdb_getsamupriv(struct pdb_samba_dsdb_state *state,
 				 ldb_get_default_basedn(state->ldb),
 				 LDB_SCOPE_SUBTREE,
 				 attrs,
-				 0,
+				 DSDB_SEARCH_UPDATE_MANAGED_PASSWORDS,
 				 "%s",
 				 filter);
 	if (rc != LDB_SUCCESS) {

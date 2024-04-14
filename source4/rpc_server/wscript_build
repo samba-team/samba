@@ -120,6 +120,7 @@ bld.SAMBA_MODULE('dcerpc_netlogon',
                       DSDB_MODULE_HELPERS
                       util_str_escape
                       DCERPC_SERVER_NETLOGON
+                      samdb-common
                       '''
                  )
 

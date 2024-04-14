@@ -832,6 +832,7 @@ out:
 NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 				   TALLOC_CTX *mem_ctx, const char *principal,
 				   const char **attrs,
+				   const uint32_t dsdb_flags,
 				   struct ldb_dn **domain_dn,
 				   struct ldb_message **msg)
 {
@@ -854,7 +855,7 @@ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 	/* pull the user attributes */
 	ret = dsdb_search_one(sam_ctx, tmp_ctx, msg, user_dn,
 			      LDB_SCOPE_BASE, attrs,
-			      DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG,
+			      dsdb_flags | DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG,
 			      "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -892,7 +893,7 @@ NTSTATUS authsam_get_user_info_dc_principal(TALLOC_CTX *mem_ctx,
 
 	if (principal) {
 		nt_status = sam_get_results_principal(sam_ctx, tmp_ctx, principal,
-						      user_attrs, &domain_dn, &msg);
+						      user_attrs, DSDB_SEARCH_UPDATE_MANAGED_PASSWORDS, &domain_dn, &msg);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(tmp_ctx);
 			return nt_status;
@@ -903,7 +904,7 @@ NTSTATUS authsam_get_user_info_dc_principal(TALLOC_CTX *mem_ctx,
 		/* pull the user attributes */
 		ret = dsdb_search_one(sam_ctx, tmp_ctx, &msg, user_dn,
 				      LDB_SCOPE_BASE, user_attrs,
-				      DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG,
+				      DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG | DSDB_SEARCH_UPDATE_MANAGED_PASSWORDS,
 				      "(objectClass=*)");
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			talloc_free(tmp_ctx);
@@ -1020,7 +1021,7 @@ NTSTATUS authsam_reread_user_logon_data(
 			     &res,
 			     user_msg->dn,
 			     user_attrs,
-			     DSDB_SEARCH_SHOW_EXTENDED_DN);
+			     DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_UPDATE_MANAGED_PASSWORDS);
 	if (ret != LDB_SUCCESS) {
 		DBG_ERR("Unable to re-read account control data for %s\n",
 			ldb_dn_get_linearized(user_msg->dn));
@@ -1542,7 +1543,7 @@ NTSTATUS authsam_search_account(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx
 	/* pull the user attributes */
 	ret = dsdb_search_one(sam_ctx, mem_ctx, ret_msg, domain_dn, LDB_SCOPE_SUBTREE,
 			      user_attrs,
-			      DSDB_SEARCH_SHOW_EXTENDED_DN,
+			      DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_UPDATE_MANAGED_PASSWORDS,
 			      "(&(sAMAccountName=%s)(objectclass=user))",
 			      account_name_encoded);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {

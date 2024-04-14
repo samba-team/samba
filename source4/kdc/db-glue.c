@@ -2311,6 +2311,7 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 						TALLOC_CTX *mem_ctx,
 						krb5_const_principal principal,
 						const char **attrs,
+						const uint32_t dsdb_flags,
 						struct ldb_dn **realm_dn,
 						struct ldb_message **msg)
 {
@@ -2342,7 +2343,7 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 	}
 
 	nt_status = sam_get_results_principal(kdc_db_ctx->samdb,
-					      mem_ctx, principal_string, attrs,
+					      mem_ctx, principal_string, attrs, dsdb_flags,
 					      realm_dn, msg);
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
 		krb5_principal fallback_principal = NULL;
@@ -2422,7 +2423,7 @@ static krb5_error_code samba_kdc_lookup_client(krb5_context context,
 			nt_status = sam_get_results_principal(kdc_db_ctx->samdb,
 							      mem_ctx,
 							      fallback_string,
-							      attrs,
+							      attrs, dsdb_flags,
 							      realm_dn, msg);
 			SAFE_FREE(fallback_string);
 		}
@@ -2455,7 +2456,7 @@ static krb5_error_code samba_kdc_fetch_client(krb5_context context,
 	struct ldb_message *msg = NULL;
 
 	ret = samba_kdc_lookup_client(context, kdc_db_ctx,
-				      mem_ctx, principal, user_attrs,
+				      mem_ctx, principal, user_attrs, DSDB_SEARCH_UPDATE_MANAGED_PASSWORDS,
 				      &realm_dn, &msg);
 	if (ret != 0) {
 		return ret;
@@ -2545,7 +2546,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		if (krbtgt_number == kdc_db_ctx->my_krbtgt_number) {
 			lret = dsdb_search_one(kdc_db_ctx->samdb, tmp_ctx,
 					       &msg, kdc_db_ctx->krbtgt_dn, LDB_SCOPE_BASE,
-					       krbtgt_attrs, DSDB_SEARCH_NO_GLOBAL_CATALOG,
+					       krbtgt_attrs, DSDB_SEARCH_NO_GLOBAL_CATALOG | DSDB_SEARCH_UPDATE_MANAGED_PASSWORDS,
 					       "(objectClass=user)");
 		} else {
 			/* We need to look up an RODC krbtgt (perhaps
@@ -2554,7 +2555,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 			lret = dsdb_search_one(kdc_db_ctx->samdb, tmp_ctx,
 					       &msg, realm_dn, LDB_SCOPE_SUBTREE,
 					       krbtgt_attrs,
-					       DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG,
+					       DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG | DSDB_SEARCH_UPDATE_MANAGED_PASSWORDS,
 					       "(&(objectClass=user)(msDS-SecondaryKrbTgtNumber=%u))", (unsigned)(krbtgt_number));
 		}
 
@@ -2685,7 +2686,7 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 					  mem_ctx,
 					  msg, user_dn, LDB_SCOPE_BASE,
 					  server_attrs,
-					  DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG,
+					  DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG | DSDB_SEARCH_UPDATE_MANAGED_PASSWORDS,
 					  "(objectClass=*)");
 		if (ldb_ret != LDB_SUCCESS) {
 			return SDB_ERR_NOENTRY;
@@ -2700,7 +2701,7 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 		 * not AS-REQ packets.
 		 */
 		return samba_kdc_lookup_client(context, kdc_db_ctx,
-					       mem_ctx, principal, server_attrs,
+					       mem_ctx, principal, server_attrs, DSDB_SEARCH_UPDATE_MANAGED_PASSWORDS,
 					       realm_dn, msg);
 	} else {
 		/*
@@ -2790,7 +2791,7 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 		lret = dsdb_search_one(kdc_db_ctx->samdb, mem_ctx, msg,
 				       *realm_dn, LDB_SCOPE_SUBTREE,
 				       server_attrs,
-				       DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG,
+				       DSDB_SEARCH_SHOW_EXTENDED_DN | DSDB_SEARCH_NO_GLOBAL_CATALOG | DSDB_SEARCH_UPDATE_MANAGED_PASSWORDS,
 				       "%s", filter);
 		if (lret == LDB_ERR_NO_SUCH_OBJECT) {
 			DBG_DEBUG("Failed to find an entry for %s filter:%s\n",
@@ -3215,7 +3216,7 @@ krb5_error_code samba_kdc_firstkey(krb5_context context,
 
 	lret = dsdb_search(ldb_ctx, priv, &res,
 			   priv->realm_dn, LDB_SCOPE_SUBTREE, user_attrs,
-			   DSDB_SEARCH_NO_GLOBAL_CATALOG,
+			   DSDB_SEARCH_NO_GLOBAL_CATALOG | DSDB_SEARCH_UPDATE_MANAGED_PASSWORDS,
 			   "(objectClass=user)");
 
 	if (lret != LDB_SUCCESS) {
@@ -3310,7 +3311,7 @@ samba_kdc_check_pkinit_ms_upn_match(krb5_context context,
 
 	ret = samba_kdc_lookup_client(context, kdc_db_ctx,
 				      mem_ctx, certificate_principal,
-				      ms_upn_check_attrs, &realm_dn, &msg);
+				      ms_upn_check_attrs, 0, &realm_dn, &msg);
 
 	if (ret != 0) {
 		talloc_free(mem_ctx);
@@ -3771,7 +3772,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 					  ldb_get_default_basedn(kdc_db_ctx->samdb),
 					  LDB_SCOPE_SUBTREE,
 					  krbtgt_attrs,
-					  DSDB_SEARCH_NO_GLOBAL_CATALOG,
+					  DSDB_SEARCH_NO_GLOBAL_CATALOG | DSDB_SEARCH_UPDATE_MANAGED_PASSWORDS,
 					  "(&(objectClass=user)(samAccountName=krbtgt))");
 
 		if (ldb_ret != LDB_SUCCESS) {

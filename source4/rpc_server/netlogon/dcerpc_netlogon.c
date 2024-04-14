@@ -34,6 +34,7 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc_c.h"
 #include "../libcli/ldap/ldap_ndr.h"
+#include "dsdb/common/util.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "lib/tsocket/tsocket.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
@@ -407,14 +408,19 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 	struct samr_Password *curNtHash = NULL;
 	struct samr_Password *prevNtHash = NULL;
 	uint32_t user_account_control;
-	int num_records;
 	struct ldb_message **msgs;
 	NTSTATUS nt_status;
-	static const char *attrs[] = {"unicodePwd",
-				      "userAccountControl",
-				      "objectSid",
-				      "samAccountName",
-				      NULL};
+	static const char *attrs[] = {
+		"unicodePwd",
+		"userAccountControl",
+		"objectSid",
+		"samAccountName",
+		/* Required for Group Managed Service Accounts. */
+		"msDS-ManagedPasswordId",
+		"msDS-ManagedPasswordInterval",
+		"objectClass",
+		"whenCreated",
+		NULL};
 	uint32_t server_flags = 0;
 	uint32_t negotiate_flags = 0;
 
@@ -642,29 +648,33 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 		*trust_account_for_search = r->in.account_name;
 	}
 
-	/* pull the user attributes */
-	num_records = gendb_search(sam_ctx, mem_ctx, NULL, &msgs, attrs,
-				   "(&(sAMAccountName=%s)(objectclass=user))",
-				   ldb_binary_encode_string(mem_ctx,
-							    *trust_account_for_search));
+	{
+		struct ldb_result *res = NULL;
+		int ret;
 
-	if (num_records == 0) {
-		DEBUG(3,("Couldn't find user [%s] in samdb.\n",
+		/* pull the user attributes */
+		ret = dsdb_search(
+			sam_ctx,
+			mem_ctx,
+			&res,
+			ldb_get_default_basedn(sam_ctx),
+			LDB_SCOPE_SUBTREE,
+			attrs,
+			DSDB_SEARCH_ONE_ONLY | DSDB_SEARCH_UPDATE_MANAGED_PASSWORDS,
+			"(&(sAMAccountName=%s)(objectclass=user))",
+			ldb_binary_encode_string(mem_ctx,
+						 *trust_account_for_search));
+		if (ret) {
+			DEBUG(3,("Couldn't find user [%s] in samdb.\n",
 			 log_escape(mem_ctx, r->in.account_name)));
-		return dcesrv_netr_ServerAuthenticate3_check_downgrade(
+			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
 				dce_call, r, pipe_state, negotiate_flags,
 				NULL, /* trust_account_in_db */
 				NT_STATUS_NO_TRUST_SAM_ACCOUNT);
-	}
+		}
 
-	if (num_records > 1) {
-		DEBUG(0,("Found %d records matching user [%s]\n",
-			 num_records,
-			 log_escape(mem_ctx, r->in.account_name)));
-		return dcesrv_netr_ServerAuthenticate3_check_downgrade(
-				dce_call, r, pipe_state, negotiate_flags,
-				NULL, /* trust_account_in_db */
-				NT_STATUS_INTERNAL_DB_CORRUPTION);
+		msgs = talloc_steal(mem_ctx, res->msgs);
+		talloc_free(res);
 	}
 
 	*trust_account_in_db = ldb_msg_find_attr_as_string(msgs[0],
@@ -4418,10 +4428,16 @@ static NTSTATUS dcesrv_netr_ServerGetTrustInfo(struct dcesrv_call_state *dce_cal
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 	struct netlogon_creds_CredentialState *creds = NULL;
 	struct ldb_context *sam_ctx = NULL;
-	const char * const attrs[] = {
+	static const char * const attrs[] = {
 		"unicodePwd",
 		"sAMAccountName",
 		"userAccountControl",
+		/* Required for Group Managed Service Accounts. */
+		"msDS-ManagedPasswordId",
+		"msDS-ManagedPasswordInterval",
+		"objectClass",
+		"objectSid",
+		"whenCreated",
 		NULL
 	};
 	struct ldb_message **res = NULL;
@@ -4476,11 +4492,25 @@ static NTSTATUS dcesrv_netr_ServerGetTrustInfo(struct dcesrv_call_state *dce_cal
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = gendb_search(sam_ctx, mem_ctx, NULL, &res, attrs,
-			   "(&(objectClass=user)(objectSid=%s))",
-			   asid);
-	if (ret != 1) {
-		return NT_STATUS_ACCOUNT_DISABLED;
+	{
+		struct ldb_result *result = NULL;
+
+		ret = dsdb_search(sam_ctx,
+				  mem_ctx,
+				  &result,
+				  ldb_get_default_basedn(sam_ctx),
+				  LDB_SCOPE_SUBTREE,
+				  attrs,
+				  DSDB_SEARCH_ONE_ONLY |
+					  DSDB_SEARCH_UPDATE_MANAGED_PASSWORDS,
+				  "(&(objectClass=user)(objectSid=%s))",
+				  asid);
+		if (ret) {
+			return NT_STATUS_ACCOUNT_DISABLED;
+		}
+
+		res = talloc_steal(mem_ctx, result->msgs);
+		talloc_free(result);
 	}
 
 	switch (creds->secure_channel_type) {
