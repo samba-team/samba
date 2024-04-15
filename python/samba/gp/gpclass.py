@@ -805,9 +805,7 @@ def site_dn_for_machine(samdb, dc_hostname, lp, creds, hostname):
 
     samlogon_response = ndr_unpack(nbt.netlogon_samlogon_response,
                                    bytes(res.msgs[0]['Netlogon'][0]))
-    if samlogon_response.ntver not in [nbt.NETLOGON_NT_VERSION_5EX,
-                                       (nbt.NETLOGON_NT_VERSION_1
-                                        | nbt.NETLOGON_NT_VERSION_5EX)]:
+    if not (samlogon_response.ntver & nbt.NETLOGON_NT_VERSION_5EX):
         raise RuntimeError('site_dn_for_machine: Invalid NtVer in '
                            + 'netlogon_samlogon_response')
 
