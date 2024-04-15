@@ -3164,6 +3164,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 		 */
 		krb5_ret = dsdb_extract_aes_256_key(io->smb_krb5_context->krb5_context,
 						    io->ac,
+						    ldb,
 						    io->ac->search_res->message,
 						    io->u.userAccountControl,
 						    &request_kvno, /* kvno */
@@ -4066,6 +4067,7 @@ static int setup_io(struct ph_context *ac,
 		 */
 		krb5_ret = dsdb_extract_aes_256_key(io->smb_krb5_context->krb5_context,
 						    io->ac,
+						    ldb,
 						    existing_msg,
 						    io->u.userAccountControl,
 						    NULL, /* kvno */

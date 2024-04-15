@@ -400,6 +400,7 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 
 		krb5_ret = dsdb_extract_aes_256_key(smb_krb5_context->krb5_context,
 						    tmp_ctx,
+						    sam_ctx,
 						    msg,
 						    userAccountControl,
 						    NULL, /* kvno */
@@ -551,6 +552,7 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 
 			krb5_ret = dsdb_extract_aes_256_key(smb_krb5_context->krb5_context,
 							    tmp_ctx,
+							    sam_ctx,
 							    msg,
 							    userAccountControl,
 							    &request_kvno, /* kvno */
