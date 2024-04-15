@@ -76,10 +76,10 @@ class UnicodePwdEncryptedConnectionTests(PasswordTestCase):
         ldb.modify(m)
 
     def get_admin_sid(self, ldb):
-        res = self.ldb.search(
+        res = ldb.search(
             base="", expression="", scope=SCOPE_BASE, attrs=["tokenGroups"])
 
-        return self.ldb.schema_format_value(
+        return ldb.schema_format_value(
             "tokenGroups", res[0]["tokenGroups"][0]).decode("utf8")
 
     def test_with_seal(self):
