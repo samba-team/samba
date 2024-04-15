@@ -99,6 +99,9 @@ struct gmsa_return_pwd {
 	NTTIME unchanged_interval;
 };
 
+bool samdb_gmsa_key_is_recent(const struct ldb_message *msg,
+			      const NTTIME current_time);
+
 /*
  * Recalculate the managed password of an account. The account referred to by
  * ‘msg’ should be a Group Managed Service Account.

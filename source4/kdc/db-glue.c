@@ -26,12 +26,15 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "auth/auth.h"
 #include "auth/auth_sam.h"
+#include "dsdb/gmsa/util.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "param/param.h"
 #include "param/secrets.h"
+#include "lib/crypto/gkdi.h"
 #include "../lib/crypto/md4.h"
+#include "lib/util/memory.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "kdc/authn_policy_util.h"
@@ -575,6 +578,40 @@ fail:
 	return ret;
 }
 
+static krb5_error_code samba_kdc_merge_keys(struct sdb_keys *keys,
+					    struct sdb_keys *old_keys)
+{
+	unsigned num_keys;
+	unsigned num_old_keys;
+	unsigned total_keys;
+	unsigned j;
+	struct sdb_key *skeys = NULL;
+
+	if (keys == NULL || old_keys == NULL) {
+		return EINVAL;
+	}
+
+	num_keys = keys->len;
+	num_old_keys = old_keys->len;
+	total_keys = num_keys + num_old_keys;
+
+	skeys = realloc(keys->val, total_keys * sizeof keys->val[0]);
+	if (skeys == NULL) {
+		return ENOMEM;
+	}
+	keys->val = skeys;
+
+	for (j = 0; j < num_old_keys; ++j) {
+		keys->val[num_keys + j] = old_keys->val[j];
+	}
+	keys->len = total_keys;
+
+	old_keys->len = 0;
+	SAFE_FREE(old_keys->val);
+
+	return 0;
+}
+
 krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 					     TALLOC_CTX *mem_ctx,
 					     struct ldb_context *ldb,
@@ -854,6 +891,44 @@ krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		ret = samba_kdc_fill_user_keys(context, &old_keys);
 		if (ret != 0) {
 			goto out;
+		}
+
+		if (keys.skeys != NULL && !exporting_keytab) {
+			bool is_gmsa;
+
+			is_gmsa = dsdb_account_is_gmsa(ldb, msg);
+			if (is_gmsa) {
+				NTTIME current_time;
+				bool gmsa_key_is_recent;
+				bool ok;
+
+				ok = dsdb_gmsa_current_time(ldb, &current_time);
+				if (!ok) {
+					ret = EINVAL;
+					goto out;
+				}
+
+				gmsa_key_is_recent = samdb_gmsa_key_is_recent(
+					msg, current_time);
+				if (gmsa_key_is_recent) {
+					/*
+					 * As the current gMSA keys are less
+					 * than five minutes old, the previous
+					 * set of keys remains valid. The
+					 * Heimdal KDC will try each of the
+					 * current keys when decrypting a
+					 * client’s PA‐DATA, so by merging the
+					 * old set into the current set we can
+					 * cause both sets to be considered for
+					 * decryption.
+					 */
+					ret = samba_kdc_merge_keys(
+						keys.skeys, old_keys.skeys);
+					if (ret) {
+						goto out;
+					}
+				}
+			}
 		}
 	}
 

@@ -1108,6 +1108,31 @@ static bool samdb_result_gkdi_rollover_interval(const struct ldb_message *msg,
 				      rollover_interval_out);
 }
 
+bool samdb_gmsa_key_is_recent(const struct ldb_message *msg,
+			      const NTTIME current_time)
+{
+	const struct KeyEnvelopeId *pwd_id = NULL;
+	struct KeyEnvelopeId pwd_id_buf;
+	NTTIME key_start_time;
+	bool ok;
+
+	pwd_id = gmsa_get_managed_pwd_id(msg, &pwd_id_buf);
+	if (pwd_id == NULL) {
+		return false;
+	}
+
+	ok = gkdi_get_key_start_time(pwd_id->gkid, &key_start_time);
+	if (!ok) {
+		return false;
+	}
+
+	if (current_time < key_start_time) {
+		return false;
+	}
+
+	return current_time - key_start_time < gkdi_max_clock_skew;
+}
+
 /*
  * Recalculate the managed password of an account. The account referred to by
  * ‘msg’ should be a Group Managed Service Account.
