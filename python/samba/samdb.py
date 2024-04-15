@@ -1557,6 +1557,13 @@ schemaUpdateNow: 1
         dn = dsdb._dsdb_create_gkdi_root_key(self, *args, **kwargs)
         return dn
 
+    def get_admin_sid(self):
+        res = self.search(
+            base="", expression="", scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
+
+        return self.schema_format_value(
+            "tokenGroups", res[0]["tokenGroups"][0]).decode("utf8")
+
 
 class dsdb_Dn(object):
     """a class for binary DN"""

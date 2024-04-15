@@ -6,7 +6,7 @@ import optparse
 sys.path.insert(0, "bin/python")
 import samba.getopt as options
 from ldb import Message, MessageElement, Dn
-from ldb import LdbError, FLAG_MOD_REPLACE, ERR_UNWILLING_TO_PERFORM, SCOPE_BASE
+from ldb import LdbError, FLAG_MOD_REPLACE, ERR_UNWILLING_TO_PERFORM
 from samba import gensec
 from samba.auth import system_session
 from samba.samdb import SamDB
@@ -75,13 +75,6 @@ class UnicodePwdEncryptedConnectionTests(PasswordTestCase):
         )
         ldb.modify(m)
 
-    def get_admin_sid(self, ldb):
-        res = ldb.search(
-            base="", expression="", scope=SCOPE_BASE, attrs=["tokenGroups"])
-
-        return ldb.schema_format_value(
-            "tokenGroups", res[0]["tokenGroups"][0]).decode("utf8")
-
     def test_with_seal(self):
         """Test unicodePwd on connection with seal.
 
@@ -123,7 +116,7 @@ class UnicodePwdEncryptedConnectionTests(PasswordTestCase):
 
     def test_simple_bind_plain(self):
         """Test unicodePwd using simple bind without encryption."""
-        admin_sid = self.get_admin_sid(self.ldb)
+        admin_sid = self.ldb.get_admin_sid()
 
         self.creds.set_bind_dn(admin_sid)
         ldb = SamDB(url=host_ldap, credentials=self.creds, lp=lp)
@@ -140,7 +133,7 @@ class UnicodePwdEncryptedConnectionTests(PasswordTestCase):
 
     def test_simple_bind_tls(self):
         """Test unicodePwd using simple bind with encryption."""
-        admin_sid = self.get_admin_sid(self.ldb)
+        admin_sid = self.ldb.get_admin_sid()
 
         self.creds.set_bind_dn(admin_sid)
         ldb = SamDB(url=host_ldaps, credentials=self.creds, lp=lp)
