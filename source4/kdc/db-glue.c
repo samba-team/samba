@@ -612,6 +612,7 @@ krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	struct samba_kdc_user_keys older_keys = { .num_pkeys = 0, };
 	uint32_t available_enctypes = 0;
 	uint32_t supported_enctypes = supported_enctypes_in;
+	const bool exporting_keytab = flags & SDB_F_ADMIN_DATA;
 
 	*supported_enctypes_out = 0;
 
@@ -826,7 +827,7 @@ krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 		if ((flags & SDB_F_GET_CLIENT) && (flags & SDB_F_FOR_AS_REQ)) {
 			include_history = true;
-		} else if (flags & SDB_F_ADMIN_DATA) {
+		} else if (exporting_keytab) {
 			include_history = true;
 		}
 
