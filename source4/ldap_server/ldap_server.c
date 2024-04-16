@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    LDAP server
@@ -302,7 +302,7 @@ static void ldapsrv_accept(struct stream_connection *c,
 			   struct auth_session_info *session_info,
 			   bool is_privileged)
 {
-	struct ldapsrv_service *ldapsrv_service = 
+	struct ldapsrv_service *ldapsrv_service =
 		talloc_get_type(c->private_data, struct ldapsrv_service);
 	struct ldapsrv_connection *conn;
 	struct cli_credentials *server_credentials;
@@ -400,7 +400,7 @@ static void ldapsrv_accept(struct stream_connection *c,
 	/* load limits from the conf partition */
 	ldapsrv_load_limits(conn); /* should we fail on error ? */
 
-	/* register the server */	
+	/* register the server */
 	irpc_add_name(c->msg_ctx, "ldap_server");
 
 	DLIST_ADD_END(ldapsrv_service->connections, conn);
@@ -1375,7 +1375,7 @@ static void ldap_reload_certs(struct imessaging_context *msg_ctx,
   open the ldap server sockets
 */
 static NTSTATUS ldapsrv_task_init(struct task_server *task)
-{	
+{
 	char *ldapi_path;
 #ifdef WITH_LDAPI_PRIV_SOCKET
 	char *priv_dir;
@@ -1385,11 +1385,11 @@ static NTSTATUS ldapsrv_task_init(struct task_server *task)
 
 	switch (lpcfg_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
-		task_server_terminate(task, "ldap_server: no LDAP server required in standalone configuration", 
+		task_server_terminate(task, "ldap_server: no LDAP server required in standalone configuration",
 				      false);
 		return NT_STATUS_INVALID_DOMAIN_ROLE;
 	case ROLE_DOMAIN_MEMBER:
-		task_server_terminate(task, "ldap_server: no LDAP server required in member server configuration", 
+		task_server_terminate(task, "ldap_server: no LDAP server required in member server configuration",
 				      false);
 		return NT_STATUS_INVALID_DOMAIN_ROLE;
 	case ROLE_ACTIVE_DIRECTORY_DC:
@@ -1449,7 +1449,7 @@ static NTSTATUS ldapsrv_task_init(struct task_server *task)
 		load_interface_list(task, task->lp_ctx, &ifaces);
 		num_interfaces = iface_list_count(ifaces);
 
-		/* We have been given an interfaces line, and been 
+		/* We have been given an interfaces line, and been
 		   told to only bind to those interfaces. Create a
 		   socket per interface and bind to only these.
 		*/
@@ -1491,7 +1491,7 @@ static NTSTATUS ldapsrv_task_init(struct task_server *task)
 
 	status = stream_setup_socket(task, task->event_ctx, task->lp_ctx,
 				     task->model_ops, &ldap_stream_nonpriv_ops,
-				     "unix", ldapi_path, NULL, 
+				     "unix", ldapi_path, NULL,
 				     lpcfg_socket_options(task->lp_ctx),
 				     ldap_service, task->process_context);
 	talloc_free(ldapi_path);
