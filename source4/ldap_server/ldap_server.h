@@ -50,6 +50,7 @@ struct ldapsrv_connection {
 
 	bool global_catalog;
 	bool is_privileged;
+	bool is_ldapi;
 	enum ldap_server_require_strong_auth require_strong_auth;
 	bool authz_logged;
 	enum ldap_server_referral_scheme referral_scheme;
