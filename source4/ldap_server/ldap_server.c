@@ -1150,6 +1150,30 @@ static const struct stream_server_ops ldap_stream_nonpriv_ops = {
 	.send_handler		= ldapsrv_send,
 };
 
+static void ldapsrv_accept_nonpriv_ldapi(struct stream_connection *c)
+{
+	struct ldapsrv_service *ldapsrv_service = talloc_get_type_abort(
+		c->private_data, struct ldapsrv_service);
+	struct auth_session_info *session_info;
+	NTSTATUS status;
+
+	status = auth_anonymous_session_info(
+		c, ldapsrv_service->lp_ctx, &session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		stream_terminate_connection(c, "failed to setup anonymous "
+					    "session info");
+		return;
+	}
+	ldapsrv_accept(c, session_info, false);
+}
+
+static const struct stream_server_ops ldapi_stream_nonpriv_ops = {
+	.name			= "ldap",
+	.accept_connection	= ldapsrv_accept_nonpriv_ldapi,
+	.recv_handler		= ldapsrv_recv,
+	.send_handler		= ldapsrv_send,
+};
+
 /* The feature removed behind an #ifdef until we can do it properly
  * with an EXTERNAL bind. */
 
@@ -1490,7 +1514,7 @@ static NTSTATUS ldapsrv_task_init(struct task_server *task)
 	}
 
 	status = stream_setup_socket(task, task->event_ctx, task->lp_ctx,
-				     task->model_ops, &ldap_stream_nonpriv_ops,
+				     task->model_ops, &ldapi_stream_nonpriv_ops,
 				     "unix", ldapi_path, NULL,
 				     lpcfg_socket_options(task->lp_ctx),
 				     ldap_service, task->process_context);
