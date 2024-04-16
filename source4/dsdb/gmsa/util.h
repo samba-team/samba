@@ -33,6 +33,11 @@
 struct gmsa_update {
 	/* The DN of the gMSA to be updated. */
 	struct ldb_dn *dn;
+	/*
+	 * The managed password ID (if any) found in the database at the time of
+	 * preparing this update.
+	 */
+	const DATA_BLOB *found_pwd_id;
 	/* An optional request to set the previous password. */
 	struct ldb_request *old_pw_req;
 	/* A request to set the current password. */

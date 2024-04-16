@@ -807,6 +807,7 @@ static int gmsa_create_update(TALLOC_CTX *mem_ctx,
 			      struct gmsa_update **update_out)
 {
 	TALLOC_CTX *tmp_ctx = NULL;
+	const DATA_BLOB *found_pwd_id = NULL;
 	struct ldb_request *old_pw_req = NULL;
 	struct ldb_request *new_pw_req = NULL;
 	struct ldb_request *pwd_id_req = NULL;
@@ -909,6 +910,37 @@ static int gmsa_create_update(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
+	{
+		/*
+		 * Remember the original managed password ID so that we can
+		 * confirm it hasn’t changed when we perform the update.
+		 */
+
+		const struct ldb_val *pwd_id_blob = ldb_msg_find_ldb_val(
+			msg, "msDS-ManagedPasswordId");
+
+		if (pwd_id_blob != NULL) {
+			DATA_BLOB found_pwd_id_data = {};
+			DATA_BLOB *found_pwd_id_blob = NULL;
+
+			found_pwd_id_blob = talloc(tmp_ctx, DATA_BLOB);
+			if (found_pwd_id_blob == NULL) {
+				ret = ldb_oom(ldb);
+				goto out;
+			}
+
+			found_pwd_id_data = data_blob_dup_talloc(
+				found_pwd_id_blob, *pwd_id_blob);
+			if (found_pwd_id_data.length != pwd_id_blob->length) {
+				ret = ldb_oom(ldb);
+				goto out;
+			}
+
+			*found_pwd_id_blob = found_pwd_id_data;
+			found_pwd_id = found_pwd_id_blob;
+		}
+	}
+
 	account_dn = ldb_dn_copy(tmp_ctx, msg->dn);
 	if (account_dn == NULL) {
 		ret = ldb_oom(ldb);
@@ -923,6 +955,7 @@ static int gmsa_create_update(TALLOC_CTX *mem_ctx,
 
 	*update = (struct gmsa_update){
 		.dn = talloc_steal(update, account_dn),
+		.found_pwd_id = talloc_steal(update, found_pwd_id),
 		.old_pw_req = talloc_steal(update, old_pw_req),
 		.new_pw_req = talloc_steal(update, new_pw_req),
 		.pwd_id_req = talloc_steal(update, pwd_id_req)};
