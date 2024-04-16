@@ -166,7 +166,7 @@ static int gkdi_create_root_key(TALLOC_CTX *mem_ctx,
 			     &server_config_res,
 			     server_config_dn,
 			     server_config_attrs,
-			     DSDB_SEARCH_ONE_ONLY);
+			     0);
 
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ldb_asprintf_errstring(ldb, "Unable to create new GKDI root key as we do not have a GKDI server configuration at %s",
