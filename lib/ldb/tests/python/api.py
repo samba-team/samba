@@ -2852,6 +2852,10 @@ class DnTests(TestCase):
         x = ldb.Dn(self.ldb, "dc=foo14,bar=bloe")
         self.assertEqual(x.get_casefold(), "DC=FOO14,BAR=bloe")
 
+    def test_get_casefold_dotted_i(self):
+        x = ldb.Dn(self.ldb, "dc=foo14,bir=blie")
+        self.assertEqual(x.get_casefold(), "DC=FOO14,BIR=blie")
+
     def test_validate(self):
         x = ldb.Dn(self.ldb, "dc=foo15,bar=bloe")
         self.assertTrue(x.validate())
