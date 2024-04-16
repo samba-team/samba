@@ -550,6 +550,7 @@ static int gmsa_system_update_password_id_req(
 	TALLOC_CTX *mem_ctx,
 	const struct ldb_message *msg,
 	const struct gmsa_update_pwd *new_pwd,
+	const bool current_key_becomes_previous,
 	struct ldb_request **req_out)
 {
 	TALLOC_CTX *tmp_ctx = NULL;
@@ -636,7 +637,8 @@ static int gmsa_system_update_password_id_req(
 			}
 
 			prev_pwd_id_blob = &prev_pwd_id;
-		} else if (pwd_id_blob != NULL) {
+		} else if (current_key_becomes_previous && pwd_id_blob != NULL)
+		{
 			/* Copy the current password ID to the previous ID. */
 			_prev_pwd_id_blob = ldb_val_dup(tmp_ctx, pwd_id_blob);
 			if (_prev_pwd_id_blob.length != pwd_id_blob->length) {
@@ -896,8 +898,12 @@ static int gmsa_create_update(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Ready the update of the msDS-ManagedPasswordId attribute. */
-	ret = gmsa_system_update_password_id_req(
-		ldb, tmp_ctx, msg, &new_pwd, &pwd_id_req);
+	ret = gmsa_system_update_password_id_req(ldb,
+						 tmp_ctx,
+						 msg,
+						 &new_pwd,
+						 current_key_becomes_previous,
+						 &pwd_id_req);
 	if (ret) {
 		goto out;
 	}
