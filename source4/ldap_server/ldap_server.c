@@ -320,7 +320,7 @@ static void ldapsrv_accept(struct stream_connection *c,
 	}
 	conn->is_privileged = is_privileged;
 
-	conn->sockets.send_queue = tevent_queue_create(conn, "ldapsev send queue");
+	conn->sockets.send_queue = tevent_queue_create(conn, "ldapsrv send queue");
 	if (conn->sockets.send_queue == NULL) {
 		stream_terminate_connection(c,
 					    "ldapsrv_accept: tevent_queue_create failed");
