@@ -1156,7 +1156,7 @@ static const struct stream_server_ops ldap_stream_nonpriv_ops = {
 #define WITH_LDAPI_PRIV_SOCKET
 
 #ifdef WITH_LDAPI_PRIV_SOCKET
-static void ldapsrv_accept_priv(struct stream_connection *c)
+static void ldapsrv_accept_priv_ldapi(struct stream_connection *c)
 {
 	struct ldapsrv_service *ldapsrv_service = talloc_get_type_abort(
 		c->private_data, struct ldapsrv_service);
@@ -1171,9 +1171,9 @@ static void ldapsrv_accept_priv(struct stream_connection *c)
 	ldapsrv_accept(c, session_info, true);
 }
 
-static const struct stream_server_ops ldap_stream_priv_ops = {
+static const struct stream_server_ops ldapi_stream_priv_ops = {
 	.name			= "ldap",
-	.accept_connection	= ldapsrv_accept_priv,
+	.accept_connection	= ldapsrv_accept_priv_ldapi,
 	.recv_handler		= ldapsrv_recv,
 	.send_handler		= ldapsrv_send,
 };
@@ -1523,7 +1523,7 @@ static NTSTATUS ldapsrv_task_init(struct task_server *task)
 	}
 
 	status = stream_setup_socket(task, task->event_ctx, task->lp_ctx,
-				     task->model_ops, &ldap_stream_priv_ops,
+				     task->model_ops, &ldapi_stream_priv_ops,
 				     "unix", ldapi_path, NULL,
 				     lpcfg_socket_options(task->lp_ctx),
 				     ldap_service,
