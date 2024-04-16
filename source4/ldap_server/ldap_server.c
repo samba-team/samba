@@ -300,7 +300,8 @@ static void ldapsrv_accept_tls_done(struct tevent_req *subreq);
 */
 static void ldapsrv_accept(struct stream_connection *c,
 			   struct auth_session_info *session_info,
-			   bool is_privileged)
+			   bool is_privileged,
+			   bool is_ldapi)
 {
 	struct ldapsrv_service *ldapsrv_service =
 		talloc_get_type(c->private_data, struct ldapsrv_service);
@@ -319,6 +320,7 @@ static void ldapsrv_accept(struct stream_connection *c,
 		return;
 	}
 	conn->is_privileged = is_privileged;
+	conn->is_ldapi = is_ldapi;
 
 	conn->sockets.send_queue = tevent_queue_create(conn, "ldapsrv send queue");
 	if (conn->sockets.send_queue == NULL) {
@@ -1140,7 +1142,7 @@ static void ldapsrv_accept_nonpriv(struct stream_connection *c)
 					    "session info");
 		return;
 	}
-	ldapsrv_accept(c, session_info, false);
+	ldapsrv_accept(c, session_info, false, false);
 }
 
 static const struct stream_server_ops ldap_stream_nonpriv_ops = {
@@ -1164,7 +1166,7 @@ static void ldapsrv_accept_nonpriv_ldapi(struct stream_connection *c)
 					    "session info");
 		return;
 	}
-	ldapsrv_accept(c, session_info, false);
+	ldapsrv_accept(c, session_info, false, true);
 }
 
 static const struct stream_server_ops ldapi_stream_nonpriv_ops = {
@@ -1192,7 +1194,7 @@ static void ldapsrv_accept_priv_ldapi(struct stream_connection *c)
 					    "session info");
 		return;
 	}
-	ldapsrv_accept(c, session_info, true);
+	ldapsrv_accept(c, session_info, true, true);
 }
 
 static const struct stream_server_ops ldapi_stream_priv_ops = {
