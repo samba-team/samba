@@ -118,6 +118,7 @@ static int gmsa_managed_password(struct ldb_context *const ldb,
 
 		if (!allowed_to_view) {
 			/* Sorry, you can’t view the password. */
+			ret = LDB_SUCCESS;
 			goto out;
 		}
 	}
