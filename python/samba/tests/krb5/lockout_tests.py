@@ -802,7 +802,8 @@ class LockoutTests(KDCBaseTest):
                 # Lock out the account. We must do it using an actual password
                 # change like so, rather than directly with a database
                 # modification, so that the account is also added to the
-                # auxiliary bad password database.
+                # auxiliary bad password database. Our goal is to get lockouts
+                # to happen, i.e. password checking.
 
                 old_utf16pw = '"Secret007"'.encode('utf-16le')  # invalid pwd
                 new_utf16pw = '"Secret008"'.encode('utf-16le')
