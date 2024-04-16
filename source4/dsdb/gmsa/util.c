@@ -1180,6 +1180,12 @@ int gmsa_recalculate_managed_pwd(TALLOC_CTX *mem_ctx,
 	 * the keys.
 	 */
 
+	/*
+	 * Administrators should be careful not to set a DC’s clock too far in
+	 * the future, or a gMSA’s keys may be stuck at that future time and
+	 * stop updating until said time rolls around for real.
+	 */
+
 	current_key_is_valid = pwd_id != NULL &&
 			       current_time < current_key_expiration_time;
 	if (current_key_is_valid) {
