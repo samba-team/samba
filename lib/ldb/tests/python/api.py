@@ -1341,6 +1341,22 @@ class SearchTests(LdbBaseTest):
                               expression="(ou=unique)")
         self.assertEqual(len(res11), 1)
 
+    def test_subtree_uni123_elsewhere(self):
+        """Testing a search, where the search term contains a (normal ASCII)
+        dotted-i, that will be upper-cased to 'İ', U+0130, LATIN
+        CAPITAL LETTER I WITH DOT ABOVE in certain locales including
+        tr_TR in which this test is sometimes run.
+
+        The search term should fail because the ou does not exist, but
+        we used to get it wrong in unindexed searches which stopped
+        comparing at the i, ignoring the rest of the string, which is
+        not the same as the existing ou ('123' != 'que').
+        """
+        res11 = self.l.search(base="DC=EXAMPLE,DC=NET",
+                              scope=ldb.SCOPE_SUBTREE,
+                              expression="(ou=uni123)")
+        self.assertEqual(len(res11), 0)
+
     def test_subtree_unique_elsewhere3(self):
         """Testing a search"""
 
