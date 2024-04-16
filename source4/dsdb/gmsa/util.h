@@ -31,6 +31,8 @@
 #include "lib/util/time.h"
 
 struct gmsa_update {
+	/* The DN of the gMSA to be updated. */
+	struct ldb_dn *dn;
 	/* An optional request to set the previous password. */
 	struct ldb_request *old_pw_req;
 	/* A request to set the current password. */

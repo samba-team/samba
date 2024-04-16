@@ -810,6 +810,7 @@ static int gmsa_create_update(TALLOC_CTX *mem_ctx,
 	struct ldb_request *old_pw_req = NULL;
 	struct ldb_request *new_pw_req = NULL;
 	struct ldb_request *pwd_id_req = NULL;
+	struct ldb_dn *account_dn = NULL;
 	struct gmsa_update_pwd new_pwd = {};
 	struct gmsa_update *update = NULL;
 	NTSTATUS status = NT_STATUS_OK;
@@ -908,6 +909,12 @@ static int gmsa_create_update(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
+	account_dn = ldb_dn_copy(tmp_ctx, msg->dn);
+	if (account_dn == NULL) {
+		ret = ldb_oom(ldb);
+		goto out;
+	}
+
 	update = talloc(tmp_ctx, struct gmsa_update);
 	if (update == NULL) {
 		ret = ldb_oom(ldb);
@@ -915,6 +922,7 @@ static int gmsa_create_update(TALLOC_CTX *mem_ctx,
 	}
 
 	*update = (struct gmsa_update){
+		.dn = talloc_steal(update, account_dn),
 		.old_pw_req = talloc_steal(update, old_pw_req),
 		.new_pw_req = talloc_steal(update, new_pw_req),
 		.pwd_id_req = talloc_steal(update, pwd_id_req)};
