@@ -129,6 +129,7 @@ static const int gkdi_l1_key_iteration = 32;
 static const int gkdi_l2_key_iteration = 32;
 
 static const int64_t gkdi_key_cycle_duration = 360000000000; /* ten hours */
+static const int gkdi_max_clock_skew_mins = 5;
 static const int64_t gkdi_max_clock_skew = 3000000000;	     /* five minutes */
 
 #define GKDI_KEY_LEN 64
