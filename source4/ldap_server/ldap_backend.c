@@ -212,7 +212,7 @@ int ldapsrv_backend_Init(struct ldapsrv_connection *conn,
 	if (opaque_connection_state == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	opaque_connection_state->using_encrypted_connection = using_tls || using_seal;
+	opaque_connection_state->using_encrypted_connection = using_tls || using_seal || conn->is_ldapi;
 	ret = ldb_set_opaque(conn->ldb,
 			     DSDB_OPAQUE_ENCRYPTED_CONNECTION_STATE_NAME,
 			     opaque_connection_state);
