@@ -544,6 +544,7 @@ class SegfaultTests(samba.tests.TestCase):
         samdb.disconnect()
         lp, creds, server = self.get_lp_et_al()
         url = 'ldap://' + server
+        samdb.set_loadparm(lp)
         samdb.connect(url)
         dn.get_casefold()
 
@@ -558,12 +559,14 @@ class SegfaultTests(samba.tests.TestCase):
         lp, creds, server = self.get_lp_et_al()
         url = 'ldap://' + server
         samdb.disconnect()
+        samdb.set_loadparm(lp)
         samdb.connect(url)
 
         dn = msg.dn
         dn.add_child("CN=TEST")
         dn.set_component(0, "CN", "Test2")
         samdb.disconnect()
+        samdb.set_loadparm(lp)
         samdb.connect(url)
         del samdb
         del msg
@@ -580,6 +583,7 @@ class SegfaultTests(samba.tests.TestCase):
         samdb.disconnect()
         lp, creds, server = self.get_lp_et_al()
         url = 'ldap://' + server
+        samdb.set_loadparm(lp)
         samdb.connect(url)
 
         dn = msg.dn
