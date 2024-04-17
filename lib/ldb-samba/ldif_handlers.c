@@ -191,13 +191,11 @@ static int ldif_comparison_objectSid(struct ldb_context *ldb, void *mem_ctx,
 static int ldif_canonicalise_objectSid(struct ldb_context *ldb, void *mem_ctx,
 				      const struct ldb_val *in, struct ldb_val *out)
 {
-	if (ldif_comparision_objectSid_isString(in)) {
-		if (ldif_read_objectSid(ldb, mem_ctx, in, out) != 0) {
-			/* Perhaps not a string after all */
-			return ldb_handler_copy(ldb, mem_ctx, in, out);
-		}
+	/* First try as a string SID */
+	if (ldif_read_objectSid(ldb, mem_ctx, in, out) == 0) {
 		return 0;
 	}
+	/* not a string after all */
 	return ldb_handler_copy(ldb, mem_ctx, in, out);
 }
 
