@@ -96,7 +96,7 @@ enum protocol_types smbd_smb2_protocol_dialect_match(const uint8_t *indyn,
 				const int dialect_count,
 				uint16_t *dialect)
 {
-	struct {
+	static const struct {
 		enum protocol_types proto;
 		uint16_t dialect;
 	} pd[] = {
