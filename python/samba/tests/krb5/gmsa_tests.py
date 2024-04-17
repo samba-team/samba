@@ -51,7 +51,7 @@ from samba.gkdi import (
 
 from samba.tests import connect_samdb
 from samba.tests.krb5 import kcrypto
-from samba.tests.gkdi import GkdiBaseTest
+from samba.tests.gkdi import GkdiBaseTest, ROOT_KEY_START_TIME
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
 from samba.tests.krb5.raw_testcase import KerberosCredentials
 from samba.tests.krb5.rfc4120_constants import (
@@ -839,6 +839,137 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
             return_future_key=True,
         )
         self.check_managed_pwd(samdb, creds, expected_managed_pwd=expected)
+
+    def test_retrieving_managed_password_triggers_keys_update(self):
+        # Create a root key with a start time early enough to be usable at the
+        # time the gMSA is purported to be created.
+        samdb = self.get_samdb()
+        domain_dn = self.get_server_dn(samdb)
+        self.create_root_key(samdb, domain_dn, use_start_time=ROOT_KEY_START_TIME)
+
+        password_interval = 16
+
+        local_samdb = self.get_local_samdb()
+        series = GmsaSeries(Gkid(100, 0, 0), gkdi_rollover_interval(password_interval))
+        self.set_db_time(local_samdb, series.start_of_interval(0))
+
+        creds = self.gmsa_account(samdb=local_samdb, interval=password_interval)
+        dn = creds.get_dn()
+
+        current_nt_time = self.current_nt_time(local_samdb)
+        self.set_db_time(local_samdb, current_nt_time)
+
+        # Search the local database for the account’s keys.
+        res = local_samdb.search(
+            dn, scope=ldb.SCOPE_BASE, attrs=["unicodePwd", "supplementalCredentials"]
+        )
+        self.assertEqual(1, len(res))
+
+        previous_nt_hash = res[0].get("unicodePwd", idx=0)
+        previous_supplemental_creds = self.unpack_supplemental_credentials(
+            res[0].get("supplementalCredentials", idx=0)
+        )
+
+        # Search for the managed password over LDAP, triggering an update of the
+        # keys in the database.
+        res = samdb.search(dn, scope=ldb.SCOPE_BASE, attrs=["msDS-ManagedPassword"])
+        self.assertEqual(1, len(res))
+
+        # Verify that the password is present in the result.
+        managed_password = res[0].get("msDS-ManagedPassword", idx=0)
+        self.assertIsNotNone(managed_password, "should be allowed to view the password")
+
+        # Search the local database again for the account’s keys, which should
+        # have been updated.
+        res = local_samdb.search(
+            dn, scope=ldb.SCOPE_BASE, attrs=["unicodePwd", "supplementalCredentials"]
+        )
+        self.assertEqual(1, len(res))
+
+        nt_hash = res[0].get("unicodePwd", idx=0)
+        supplemental_creds = self.unpack_supplemental_credentials(
+            res[0].get("supplementalCredentials", idx=0)
+        )
+
+        self.assertNotEqual(
+            previous_nt_hash, nt_hash, "NT hash has not been updated (yet)"
+        )
+        self.assertNotEqual(
+            previous_supplemental_creds,
+            supplemental_creds,
+            "supplementalCredentials has not been updated (yet)",
+        )
+
+    def test_authentication_triggers_keys_update(self):
+        # Create a root key with a start time early enough to be usable at the
+        # time the gMSA is purported to be created. But don’t create it on a
+        # local samdb with a specifically set time, because (if the key isn’t
+        # deleted later) we could end up with multiple keys with identical
+        # creation and start times, and tests failing when the test and the
+        # server don’t agree on which root key to use at a specific time.
+        samdb = self.get_samdb()
+        domain_dn = self.get_server_dn(samdb)
+        self.create_root_key(samdb, domain_dn, use_start_time=ROOT_KEY_START_TIME)
+
+        password_interval = 16
+
+        local_samdb = self.get_local_samdb()
+        series = GmsaSeries(Gkid(100, 0, 0), gkdi_rollover_interval(password_interval))
+        self.set_db_time(local_samdb, series.start_of_interval(0))
+
+        creds = self.gmsa_account(samdb=local_samdb, interval=password_interval)
+        dn = creds.get_dn()
+
+        current_nt_time = self.current_nt_time(local_samdb)
+        self.set_db_time(local_samdb, current_nt_time)
+
+        # Search the local database for the account’s keys.
+        res = local_samdb.search(
+            dn, scope=ldb.SCOPE_BASE, attrs=["unicodePwd", "supplementalCredentials"]
+        )
+        self.assertEqual(1, len(res))
+
+        previous_nt_hash = res[0].get("unicodePwd", idx=0)
+        previous_supplemental_creds = self.unpack_supplemental_credentials(
+            res[0].get("supplementalCredentials", idx=0)
+        )
+
+        # Calculate the password with which to authenticate.
+        managed_pwd = self.expected_current_gmsa_password_blob(
+            samdb, creds, future_key_is_acceptable=False
+        )
+
+        # Set the new password.
+        self.assertIsNotNone(
+            managed_pwd.passwords.current, "current password must be present"
+        )
+        creds.set_utf16_password(managed_pwd.passwords.current)
+
+        # Perform an authentication using the new password. The KDC should
+        # recognize that the keys in the database are out of date and update
+        # them.
+        self._as_req(creds, self.get_service_creds(), kcrypto.Enctype.AES256)
+
+        # Search the local database again for the account’s keys, which should
+        # have been updated.
+        res = local_samdb.search(
+            dn, scope=ldb.SCOPE_BASE, attrs=["unicodePwd", "supplementalCredentials"]
+        )
+        self.assertEqual(1, len(res))
+
+        nt_hash = res[0].get("unicodePwd", idx=0)
+        supplemental_creds = self.unpack_supplemental_credentials(
+            res[0].get("supplementalCredentials", idx=0)
+        )
+
+        self.assertNotEqual(
+            previous_nt_hash, nt_hash, "NT hash has not been updated (yet)"
+        )
+        self.assertNotEqual(
+            previous_supplemental_creds,
+            supplemental_creds,
+            "supplementalCredentials has not been updated (yet)",
+        )
 
     def test_gmsa_can_perform_gensec_ntlmssp_logon(self):
         creds = self.gmsa_account(kerberos_enabled=False)
