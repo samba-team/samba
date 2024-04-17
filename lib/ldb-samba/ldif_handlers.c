@@ -157,40 +157,31 @@ bool ldif_comparision_objectSid_isString(const struct ldb_val *v)
 static int ldif_comparison_objectSid(struct ldb_context *ldb, void *mem_ctx,
 				    const struct ldb_val *v1, const struct ldb_val *v2)
 {
-	bool v1_is_string = ldif_comparision_objectSid_isString(v1);
-	bool v2_is_string = ldif_comparision_objectSid_isString(v2);
-	struct ldb_val parsed_1 = {};
-	struct ldb_val parsed_2 = {};
+	struct ldb_val parsed_1 = {.data = NULL};
+	struct ldb_val parsed_2 = {.data = NULL};
 	int ret;
 	/*
 	 * If the ldb_vals look like SID strings (i.e. start with "S-"
-	 * or "s-"), we try to parse them as such. If that fails, we
-	 * assume they are binary SIDs, even though that's not really
-	 * possible -- the first two bytes of a struct dom_sid are the
-	 * version (1), and the number of sub-auths (<= 15), neither
-	 * of which are close to 'S' or '-'.
+	 * or "s-"), we treat them as strings.
+	 *
+	 * It is not really possible for a blob to be both a SID string and a
+	 * SID struct -- the first two bytes of a struct dom_sid (including in
+	 * NDR form) are the version (1), and the number of sub-auths (<= 15),
+	 * neither of which are close to 'S' or '-'.
 	 */
-	if (v1_is_string) {
-		int r = ldif_read_objectSid(ldb, mem_ctx, v1, &parsed_1);
-		if (r == 0) {
-			v1 = &parsed_1;
-		}
+	ret = ldif_read_objectSid(ldb, mem_ctx, v1, &parsed_1);
+	if (ret == 0) {
+		v1 = &parsed_1;
 	}
-	if (v2_is_string) {
-		int r = ldif_read_objectSid(ldb, mem_ctx, v2, &parsed_2);
-		if (r == 0) {
-			v2 = &parsed_2;
-		}
+	ret = ldif_read_objectSid(ldb, mem_ctx, v2, &parsed_2);
+	if (ret == 0) {
+		v2 = &parsed_2;
 	}
 
 	ret = ldb_comparison_binary(ldb, mem_ctx, v1, v2);
 
-	if (v1_is_string) {
-		TALLOC_FREE(parsed_1.data);
-	}
-	if (v2_is_string) {
-		TALLOC_FREE(parsed_2.data);
-	}
+	TALLOC_FREE(parsed_1.data);
+	TALLOC_FREE(parsed_2.data);
 	return ret;
 }
 
