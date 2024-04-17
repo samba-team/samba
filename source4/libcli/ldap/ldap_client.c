@@ -65,6 +65,10 @@ _PUBLIC_ struct ldap_connection *ldap4_new_connection(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	if (lp_ctx == NULL) {
+		return NULL;
+	}
+
 	conn = talloc_zero(mem_ctx, struct ldap_connection);
 	if (conn == NULL) {
 		return NULL;
