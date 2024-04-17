@@ -99,6 +99,15 @@ struct gmsa_return_pwd {
 	NTTIME unchanged_interval;
 };
 
+/*
+ * Recalculate the managed password of an account. The account referred to by
+ * ‘msg’ should be a Group Managed Service Account.
+ *
+ * Updated passwords are returned in ‘update_out’.
+ *
+ * Pass in a non‐NULL pointer for ‘return_out’ if you want the passwords as
+ * reflected by the msDS-ManagedPassword operational attribute.
+ */
 int gmsa_recalculate_managed_pwd(TALLOC_CTX *mem_ctx,
 				 struct ldb_context *ldb,
 				 const struct ldb_message *msg,

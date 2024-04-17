@@ -1108,6 +1108,15 @@ static bool samdb_result_gkdi_rollover_interval(const struct ldb_message *msg,
 				      rollover_interval_out);
 }
 
+/*
+ * Recalculate the managed password of an account. The account referred to by
+ * ‘msg’ should be a Group Managed Service Account.
+ *
+ * Updated passwords are returned in ‘update_out’.
+ *
+ * Pass in a non‐NULL pointer for ‘return_out’ if you want the passwords as
+ * reflected by the msDS-ManagedPassword operational attribute.
+ */
 int gmsa_recalculate_managed_pwd(TALLOC_CTX *mem_ctx,
 				 struct ldb_context *ldb,
 				 const struct ldb_message *msg,
@@ -1142,20 +1151,6 @@ int gmsa_recalculate_managed_pwd(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 	*update_out = NULL;
-
-	{
-		/* Is the account a Group Managed Service Account? */
-		const bool is_gmsa = dsdb_account_is_gmsa(ldb, msg);
-		if (!is_gmsa) {
-			/* It’s not a GMSA — we’re done here. */
-			*update_out = NULL;
-			if (return_out != NULL) {
-				*return_out = (struct gmsa_return_pwd){};
-			}
-			ret = LDB_SUCCESS;
-			goto out;
-		}
-	}
 
 	/* Calculate the rollover interval. */
 	ok = samdb_result_gkdi_rollover_interval(msg, &rollover_interval);
