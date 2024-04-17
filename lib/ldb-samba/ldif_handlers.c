@@ -204,10 +204,9 @@ static int extended_dn_read_SID(struct ldb_context *ldb, void *mem_ctx,
 {
 	struct dom_sid sid;
 	enum ndr_err_code ndr_err;
-	if (ldif_comparision_objectSid_isString(in)) {
-		if (ldif_read_objectSid(ldb, mem_ctx, in, out) == 0) {
-			return 0;
-		}
+
+	if (ldif_read_objectSid(ldb, mem_ctx, in, out) == 0) {
+		return 0;
 	}
 
 	/* Perhaps not a string after all */
