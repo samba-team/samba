@@ -86,6 +86,8 @@ static int group_enum_state_destructor(struct group_enum_state *s)
 		s->call = varlink_call_unref(s->call);
 	}
 
+	vl_active = false;
+
 	return 0;
 }
 
@@ -326,27 +328,30 @@ NTSTATUS wb_vl_group_enumerate(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req = NULL;
 	NTSTATUS status;
 
+	s = talloc_zero(mem_ctx, struct group_enum_state);
+	if (s == NULL) {
+		DBG_ERR("No memory\n");
+		vl_active = false;
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(s, group_enum_state_destructor);
+
 	/* Check if enumeration enabled */
 	if (!lp_winbind_enum_groups()) {
 		varlink_call_reply_error(
 			call,
 			WB_VL_REPLY_ERROR_ENUMERATION_NOT_SUPPORTED,
 			NULL);
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto fail;
 	}
 
 	/* Check more flag is set */
 	if (!(flags & VARLINK_CALL_MORE)) {
 		DBG_WARNING("Enum request without more flag set\n");
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
-
-	s = talloc_zero(mem_ctx, struct group_enum_state);
-	if (s == NULL) {
-		DBG_ERR("No memory\n");
-		return NT_STATUS_NO_MEMORY;
-	}
-	talloc_set_destructor(s, group_enum_state_destructor);
 
 	s->fake_cli = talloc_zero(s, struct winbindd_cli_state);
 	if (s->fake_cli == NULL) {
@@ -407,6 +412,8 @@ static int group_by_gid_state_destructor(struct group_by_gid_state *s)
 	if (s->call != NULL) {
 		s->call = varlink_call_unref(s->call);
 	}
+
+	vl_active = false;
 
 	return 0;
 }
@@ -475,6 +482,7 @@ NTSTATUS wb_vl_group_by_gid(TALLOC_CTX *mem_ctx,
 	s = talloc_zero(mem_ctx, struct group_by_gid_state);
 	if (s == NULL) {
 		DBG_ERR("No memory\n");
+		vl_active = false;
 		return NT_STATUS_NO_MEMORY;
 	}
 	talloc_set_destructor(s, group_by_gid_state_destructor);
@@ -540,6 +548,8 @@ static int group_by_name_state_destructor(struct group_by_name_state *s)
 	if (s->call != NULL) {
 		s->call = varlink_call_unref(s->call);
 	}
+
+	vl_active = false;
 
 	return 0;
 }
@@ -609,6 +619,7 @@ NTSTATUS wb_vl_group_by_name(TALLOC_CTX *mem_ctx,
 	s = talloc_zero(mem_ctx, struct group_by_name_state);
 	if (s == NULL) {
 		DBG_ERR("No memory\n");
+		vl_active = false;
 		return NT_STATUS_NO_MEMORY;
 	}
 	talloc_set_destructor(s, group_by_name_state_destructor);
@@ -678,6 +689,8 @@ static int group_by_name_gid_state_destructor(struct group_by_name_gid_state *s)
 	if (s->call != NULL) {
 		s->call = varlink_call_unref(s->call);
 	}
+
+	vl_active = false;
 
 	return 0;
 }
@@ -797,6 +810,7 @@ NTSTATUS wb_vl_group_by_name_and_gid(TALLOC_CTX *mem_ctx,
 	s = talloc_zero(mem_ctx, struct group_by_name_gid_state);
 	if (s == NULL) {
 		DBG_ERR("No memory\n");
+		vl_active = false;
 		return NT_STATUS_NO_MEMORY;
 	}
 	talloc_set_destructor(s, group_by_name_gid_state_destructor);

@@ -51,6 +51,8 @@ static const char s_interface[] =
 "error ConflictingRecordFound ()\n"
 "error EnumerationNotSupported ()\n";
 
+bool vl_active = false;
+
 struct wb_vl_state {
 	VarlinkService *service;
 	struct tevent_context *ev_ctx;
@@ -164,10 +166,19 @@ static long io_systemd_getuserrecord(VarlinkService *service,
 	}
 
 	DBG_DEBUG("GetUserRecord call parameters: service='%s', "
-		  "userName='%s', uid='%" PRId64 "'\n",
+		  "userName='%s', uid='%" PRId64 ", vl_active=%s'\n",
 		  parm_service,
 		  parm_name,
-		  parm_uid);
+		  parm_uid,
+		  vl_active ? "1" : "0");
+
+	if (vl_active) {
+		DBG_DEBUG("Varlink service dispatching call, avoid recursion\n");
+		goto fail;
+	}
+
+	/* Flag will be unset by state talloc destructors */
+	vl_active = true;
 
 	/*
 	 * The wb_vl_user_* functions will reply theirselves when return
@@ -216,6 +227,7 @@ fail:
 	varlink_call_reply_error(call,
 				 WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
 				 NULL);
+	vl_active = false;
 	return 0;
 }
 
@@ -273,11 +285,19 @@ static long io_systemd_getgrouprecord(VarlinkService *service,
 	}
 
 	DBG_DEBUG("GetGroupRecord call parameters: service='%s', "
-		  "groupName='%s', gid='%" PRId64 "'\n",
+		  "groupName='%s', gid='%" PRId64 "', vl_active=%s\n",
 		  parm_service,
 		  parm_name,
-		  parm_gid);
+		  parm_gid,
+		  vl_active ? "1" : "0");
 
+	if (vl_active) {
+		DBG_DEBUG("Varlink service dispatching call, avoid recursion\n");
+		goto fail;
+	}
+
+	/* Flag will be unset by state talloc destructors */
+	vl_active = true;
 	/*
 	 * The wb_vl_group_* functions will reply theirselves when return
 	 * NT_STATUS_OK
@@ -325,6 +345,7 @@ fail:
 	varlink_call_reply_error(call,
 				 WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
 				 NULL);
+	vl_active = false;
 	return 0;
 }
 
@@ -384,10 +405,19 @@ static long io_systemd_getmemberships(VarlinkService *service,
 	}
 
 	DBG_DEBUG("GetMemberships call parameters: service='%s', "
-		  "userName='%s', groupName='%s'\n",
+		  "userName='%s', groupName='%s', vl_active=%s\n",
 		  parm_service,
 		  parm_username,
-		  parm_groupname);
+		  parm_groupname,
+		  vl_active ? "1" : "0");
+
+	if (vl_active) {
+		DBG_DEBUG("Varlink service dispatching call, avoid recursion\n");
+		goto fail;
+	}
+
+	/* Flag will be unset by state talloc destructors */
+	vl_active = true;
 
 	/*
 	 * The wb_vl_membership_* functions will reply theirselves when return
@@ -436,6 +466,7 @@ fail:
 	varlink_call_reply_error(call,
 				 WB_VL_REPLY_ERROR_SERVICE_NOT_AVAILABLE,
 				 NULL);
+	vl_active = false;
 	return 0;
 }
 

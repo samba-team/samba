@@ -24,6 +24,8 @@
 #include <tevent.h>
 #include <varlink.h>
 
+extern bool vl_active;
+
 #define WB_VL_SERVICE_NAME "org.samba.winbind"
 
 #define WB_VL_REPLY_ERROR_NO_RECORD_FOUND \

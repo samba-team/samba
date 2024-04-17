@@ -78,6 +78,8 @@ static int membership_enum_state_destructor(struct membership_enum_state *s)
 		s->call = varlink_call_unref(s->call);
 	}
 
+	vl_active = false;
+
 	return 0;
 }
 
@@ -349,13 +351,22 @@ NTSTATUS wb_vl_memberships_enumerate(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req = NULL;
 	NTSTATUS status;
 
+	s = talloc_zero(mem_ctx, struct membership_enum_state);
+	if (s == NULL) {
+		DBG_ERR("No memory\n");
+		vl_active = false;
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	talloc_set_destructor(s, membership_enum_state_destructor);
 	/* Check if enumeration enabled */
 	if (!lp_winbind_enum_groups()) {
 		varlink_call_reply_error(
 			call,
 			WB_VL_REPLY_ERROR_ENUMERATION_NOT_SUPPORTED,
 			NULL);
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto fail;
 	}
 
 	/* Check if group expansion is enabled */
@@ -364,21 +375,16 @@ NTSTATUS wb_vl_memberships_enumerate(TALLOC_CTX *mem_ctx,
 			call,
 			WB_VL_REPLY_ERROR_ENUMERATION_NOT_SUPPORTED,
 			NULL);
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto fail;
 	}
 
 	/* Check more flag is set */
 	if (!(flags & VARLINK_CALL_MORE)) {
 		DBG_WARNING("Enum request without more flag set\n");
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
-
-	s = talloc_zero(mem_ctx, struct membership_enum_state);
-	if (s == NULL) {
-		DBG_ERR("No memory\n");
-		return NT_STATUS_NO_MEMORY;
-	}
-	talloc_set_destructor(s, membership_enum_state_destructor);
 
 	s->fake_cli = talloc_zero(s, struct winbindd_cli_state);
 	if (s->fake_cli == NULL) {
@@ -445,6 +451,8 @@ memberships_by_user_state_destructor(struct memberships_by_user_state *s)
 	if (s->call != NULL) {
 		s->call = varlink_call_unref(s->call);
 	}
+
+	vl_active = false;
 
 	return 0;
 }
@@ -597,27 +605,30 @@ NTSTATUS wb_vl_memberships_by_user(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req = NULL;
 	NTSTATUS status;
 
+	s = talloc_zero(mem_ctx, struct memberships_by_user_state);
+	if (s == NULL) {
+		DBG_ERR("No memory\n");
+		vl_active = false;
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(s, memberships_by_user_state_destructor);
+
 	/* Check if group expansion is enabled */
 	if (!lp_winbind_expand_groups()) {
 		varlink_call_reply_error(
 			call,
 			WB_VL_REPLY_ERROR_ENUMERATION_NOT_SUPPORTED,
 			NULL);
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto fail;
 	}
 
 	/* Check more flag is set */
 	if (!(flags & VARLINK_CALL_MORE)) {
 		DBG_WARNING("Request without more flag set\n");
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
-
-	s = talloc_zero(mem_ctx, struct memberships_by_user_state);
-	if (s == NULL) {
-		DBG_ERR("No memory\n");
-		return NT_STATUS_NO_MEMORY;
-	}
-	talloc_set_destructor(s, memberships_by_user_state_destructor);
 
 	s->fake_cli = talloc_zero(s, struct winbindd_cli_state);
 	if (s->fake_cli == NULL) {
@@ -689,6 +700,8 @@ memberships_by_group_state_destructor(struct memberships_by_group_state *s)
 	if (s->call != NULL) {
 		s->call = varlink_call_unref(s->call);
 	}
+
+	vl_active = false;
 
 	return 0;
 }
@@ -765,27 +778,30 @@ NTSTATUS wb_vl_memberships_by_group(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req = NULL;
 	NTSTATUS status;
 
+	s = talloc_zero(mem_ctx, struct memberships_by_group_state);
+	if (s == NULL) {
+		DBG_ERR("No memory\n");
+		vl_active = false;
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(s, memberships_by_group_state_destructor);
+
 	/* Check if group expansion is enabled */
 	if (!lp_winbind_expand_groups()) {
 		varlink_call_reply_error(
 			call,
 			WB_VL_REPLY_ERROR_ENUMERATION_NOT_SUPPORTED,
 			NULL);
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto fail;
 	}
 
 	/* Check more flag is set */
 	if (!(flags & VARLINK_CALL_MORE)) {
 		DBG_WARNING("Request without more flag set\n");
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
-
-	s = talloc_zero(mem_ctx, struct memberships_by_group_state);
-	if (s == NULL) {
-		DBG_ERR("No memory\n");
-		return NT_STATUS_NO_MEMORY;
-	}
-	talloc_set_destructor(s, memberships_by_group_state_destructor);
 
 	s->fake_cli = talloc_zero(s, struct winbindd_cli_state);
 	if (s->fake_cli == NULL) {
@@ -858,6 +874,8 @@ static int membership_check_state_destructor(struct membership_check_state *s)
 	if (s->call != NULL) {
 		s->call = varlink_call_unref(s->call);
 	}
+
+	vl_active = false;
 
 	return 0;
 }
@@ -952,27 +970,30 @@ NTSTATUS wb_vl_membership_check(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req = NULL;
 	NTSTATUS status;
 
+	s = talloc_zero(mem_ctx, struct membership_check_state);
+	if (s == NULL) {
+		DBG_ERR("No memory\n");
+		vl_active = false;
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(s, membership_check_state_destructor);
+
 	/* Check if group expansion is enabled */
 	if (!lp_winbind_expand_groups()) {
 		varlink_call_reply_error(
 			call,
 			WB_VL_REPLY_ERROR_ENUMERATION_NOT_SUPPORTED,
 			NULL);
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto fail;
 	}
 
 	/* Check more flag is set */
 	if (!(flags & VARLINK_CALL_MORE)) {
 		DBG_WARNING("Request without more flag set\n");
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
-
-	s = talloc_zero(mem_ctx, struct membership_check_state);
-	if (s == NULL) {
-		DBG_ERR("No memory\n");
-		return NT_STATUS_NO_MEMORY;
-	}
-	talloc_set_destructor(s, membership_check_state_destructor);
 
 	s->fake_cli = talloc_zero(s, struct winbindd_cli_state);
 	if (s->fake_cli == NULL) {
