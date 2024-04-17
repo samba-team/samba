@@ -997,7 +997,6 @@ static NTSTATUS tstream_tls_prepare_gnutls(struct tstream_tls_params *_tlsp,
 		flags = GNUTLS_SERVER;
 	} else {
 		flags = GNUTLS_CLIENT;
-#ifdef GNUTLS_NO_TICKETS
 		/*
 		 * tls_tstream can't properly handle 'New Session Ticket'
 		 * messages sent 'after' the client sends the 'Finished'
@@ -1006,7 +1005,6 @@ static NTSTATUS tstream_tls_prepare_gnutls(struct tstream_tls_params *_tlsp,
 		 * use resumption with session tickets.
 		 */
 		flags |= GNUTLS_NO_TICKETS;
-#endif
 	}
 
 	/*
