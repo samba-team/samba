@@ -41,6 +41,8 @@ TEST_USER="$(mktemp -u keytabtest-XXXXXX)"
 TEST_PASSWORD=testPaSS@01%
 
 EXPECTED_NKEYS=3
+EXPECTED_NKEYS_WITH_OLD=6
+
 # MIT
 kbase="$(basename "${samba_kinit}")"
 if [ "${kbase}" != "samba4kinit" ]; then
@@ -115,7 +117,12 @@ test_keytab()
 }
 
 testit "create local user ${TEST_USER}" \
-	"${VALGRIND}" "${PYTHON}" "${samba_newuser}" "${TEST_USER}" "${TEST_PASSWORD}" \
+	"${VALGRIND}" "${PYTHON}" "${samba_newuser}" "${TEST_USER}" "First${TEST_PASSWORD}Pwd" \
+	"${CONFIGURATION}" "$@" || \
+	failed=$((failed + 1))
+
+testit "reset local user pw ${TEST_USER}" \
+	"${VALGRIND}" "${PYTHON}" "${samba_tool}" user setpassword "${TEST_USER}" --newpassword="${TEST_PASSWORD}" \
 	"${CONFIGURATION}" "$@" || \
 	failed=$((failed + 1))
 
@@ -164,6 +171,7 @@ test_keytab "read keytab from domain for cifs service principal (2nd time)" \
 testit "dump keytab from domain for user principal" \
 	"${VALGRIND}" "${PYTHON}" "${samba_tool}" domain exportkeytab \
 	"${PREFIX}/tmpkeytab-user-princ" --principal="${TEST_USER}" \
+	--only-current-keys \
 	"${CONFIGURATION}" "$@" || \
 	failed=$((failed + 1))
 
@@ -172,15 +180,15 @@ test_keytab "read keytab from domain for user principal" \
 	"${EXPECTED_NKEYS}" || \
 	failed=$((failed + 1))
 
-testit "dump keytab from domain for user principal (2nd time)" \
+testit "dump keytab from domain for user principal (all keys)" \
 	"${VALGRIND}" "${PYTHON}" "${samba_tool}" domain exportkeytab \
-	"${PREFIX}/tmpkeytab-user-princ-2" --principal="${TEST_USER}@${REALM}" \
+	"${PREFIX}/tmpkeytab-user-princ-all-keys" --principal="${TEST_USER}@${REALM}" \
 	"${CONFIGURATION}" "$@" || \
 	failed=$((failed + 1))
 
-test_keytab "read keytab from domain for user principal (2nd time)" \
-	"${PREFIX}/tmpkeytab-user-princ-2" "${TEST_USER}@${REALM}" \
-	"${EXPECTED_NKEYS}" || \
+test_keytab "read keytab from domain for user principal (all keys)" \
+	"${PREFIX}/tmpkeytab-user-princ-all-keys" "${TEST_USER}@${REALM}" \
+	"${EXPECTED_NKEYS_WITH_OLD}" || \
 	failed=$((failed + 1))
 
 testit "dump keytab from domain for user principal with SPN as UPN" \
@@ -256,7 +264,7 @@ rm -f "${PREFIX}/tmpadminccache" \
 	"${PREFIX}/tmpuserccache" \
 	"${PREFIX}/tmpkeytab" \
 	"${PREFIX}/tmpkeytab-user-princ" \
-	"${PREFIX}/tmpkeytab-user-princ-2" \
+	"${PREFIX}/tmpkeytab-user-princ-all-keys" \
 	"${PREFIX}/tmpkeytab-server" \
 	"${PREFIX}/tmpkeytab-spn-upn" \
 	"${PREFIX}/tmpkeytab-all"
