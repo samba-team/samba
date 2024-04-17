@@ -138,17 +138,6 @@ int ldif_write_objectSid(struct ldb_context *ldb, void *mem_ctx,
 	return 0;
 }
 
-bool ldif_comparision_objectSid_isString(const struct ldb_val *v)
-{
-	if (v->length < 3) {
-		return false;
-	}
-
-	if (strncmp("S-", (const char *)v->data, 2) != 0) return false;
-
-	return true;
-}
-
 /*
   compare two objectSids
 
