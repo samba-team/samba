@@ -917,6 +917,12 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 	struct cli_credentials *creds;
 	struct loadparm_context *lp_ctx;
 
+	lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+				 struct loadparm_context);
+	if (lp_ctx == NULL) {
+		return ldb_operr(ldb);
+	}
+
 	module = ldb_module_new(ldb, ldb, "ldb_ildap backend", &ildb_ops);
 	if (!module) return LDB_ERR_OPERATIONS_ERROR;
 
@@ -928,9 +934,6 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 	ldb_module_set_private(module, ildb);
 
 	ildb->event_ctx = ldb_get_event_context(ldb);
-
-	lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
-				 struct loadparm_context);
 
 	ildb->ldap = ldap4_new_connection(ildb, lp_ctx,
 					  ildb->event_ctx);
