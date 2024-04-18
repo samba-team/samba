@@ -4143,6 +4143,9 @@ static PyObject *py_ldb_msg_iter(PyObject *self)
 	PyObject *list, *iter;
 
 	list = py_ldb_msg_keys(self, NULL);
+	if (list == NULL) {
+		return NULL;
+	}
 	iter = PyObject_GetIter(list);
 	Py_DECREF(list);
 	return iter;
