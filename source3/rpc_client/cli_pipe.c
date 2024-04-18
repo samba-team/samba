@@ -1656,8 +1656,9 @@ static NTSTATUS rpc_api_pipe_req_recv(struct tevent_req *req, TALLOC_CTX *mem_ct
 ****************************************************************************/
 
 static bool check_bind_response(const struct dcerpc_bind_ack *r,
-				const struct ndr_syntax_id *transfer)
+				struct rpc_pipe_client *cli)
 {
+	const struct ndr_syntax_id *transfer = &cli->transfer_syntax;
 	struct dcerpc_ack_ctx ctx;
 	bool equal;
 
@@ -1866,7 +1867,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (!check_bind_response(&pkt->u.bind_ack, &state->cli->transfer_syntax)) {
+	if (!check_bind_response(&pkt->u.bind_ack, state->cli)) {
 		DEBUG(2, ("rpc_pipe_bind: check_bind_response failed.\n"));
 		tevent_req_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
 		return;
