@@ -37,6 +37,13 @@ struct rpc_pipe_client {
 	struct rpc_cli_transport *transport;
 	struct dcerpc_binding_handle *binding_handle;
 
+	/*
+	 * This is per association_group, but
+	 * for now we only have one connection
+	 * per association_group.
+	 */
+	uint16_t bind_time_features;
+
 	struct ndr_syntax_id abstract_syntax;
 	struct ndr_syntax_id transfer_syntax;
 	bool verified_pcontext;
