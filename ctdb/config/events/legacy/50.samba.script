@@ -40,7 +40,6 @@ generate_smb_interfaces_config()
 	if [ -n "$CTDB_SAMBA_INTERFACES_EXTRA" ]; then
 		public_ifaces="$public_ifaces $CTDB_SAMBA_INTERFACES_EXTRA"
 	fi
-	public_ifaces=$(echo "$public_ifaces" | xargs -n 1 | sort -u)
 
 cat <<EOT > "$CTDB_SAMBA_INTERFACES_FILE"
     bind interfaces only = yes
