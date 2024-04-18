@@ -1679,9 +1679,10 @@ static bool check_bind_response(const struct dcerpc_bind_ack *r,
 		return False;
 	}
 
-	if (r->num_results != 0x1 || ctx.result != 0) {
-		DEBUG(2,("bind_rpc_pipe: bind denied results: %d reason: %x\n",
-		          r->num_results, ctx.reason.value));
+	if (ctx.result != DCERPC_BIND_ACK_RESULT_ACCEPTANCE) {
+		DBG_NOTICE("bind denied result: %d reason: %x\n",
+			   ctx.result, ctx.reason.value);
+		return false;
 	}
 
 	DEBUG(5,("check_bind_response: accepted!\n"));
