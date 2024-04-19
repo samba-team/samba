@@ -46,11 +46,12 @@ from samba.gkdi import (
     Gkid,
     GroupKey,
     KEY_CYCLE_DURATION,
+    MAX_CLOCK_SKEW,
 )
 
 from samba.tests import connect_samdb
 from samba.tests.krb5 import kcrypto
-from samba.tests.gkdi import GkdiBaseTest, MAX_CLOCK_SKEW
+from samba.tests.gkdi import GkdiBaseTest
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
 from samba.tests.krb5.raw_testcase import KerberosCredentials
 from samba.tests.krb5.rfc4120_constants import (
