@@ -1161,10 +1161,11 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         keys = {}
 
         for attr in attributes:
+            if not attr.value_ctr.num_values:
+                continue
+
             if attr.attid == drsuapi.DRSUAPI_ATTID_supplementalCredentials:
                 net_ctx.replicate_decrypt(bind, attr, rid)
-                if attr.value_ctr.num_values == 0:
-                    continue
                 attr_val = attr.value_ctr.values[0].blob
 
                 spl = ndr_unpack(drsblobs.supplementalCredentialsBlob,
@@ -1182,9 +1183,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                                 keys[keytype] = key.value.hex()
             elif attr.attid == drsuapi.DRSUAPI_ATTID_unicodePwd:
                 net_ctx.replicate_decrypt(bind, attr, rid)
-                if attr.value_ctr.num_values > 0:
-                    pwd = attr.value_ctr.values[0].blob
-                    keys[kcrypto.Enctype.RC4] = pwd.hex()
+                pwd = attr.value_ctr.values[0].blob
+                keys[kcrypto.Enctype.RC4] = pwd.hex()
 
         if expected_etypes is None:
             expected_etypes = self.get_default_enctypes(creds)
