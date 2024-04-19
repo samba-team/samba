@@ -31,7 +31,7 @@ from collections import namedtuple
 from datetime import datetime, timezone
 from enum import Enum
 from functools import partial
-from typing import Optional
+from typing import Dict, Optional
 
 import ldb
 from ldb import SCOPE_BASE
@@ -1143,6 +1143,26 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
         return bind, identifier, attributes
 
+    def unpack_supplemental_credentials(
+        self, blob: bytes
+    ) -> Dict[kcrypto.Enctype, str]:
+        spl = ndr_unpack(drsblobs.supplementalCredentialsBlob, blob)
+
+        keys: Dict[kcrypto.Enctype, str] = {}
+
+        for pkg in spl.sub.packages:
+            if pkg.name == 'Primary:Kerberos-Newer-Keys':
+                krb5_new_keys_raw = binascii.a2b_hex(pkg.data)
+                krb5_new_keys = ndr_unpack(
+                    drsblobs.package_PrimaryKerberosBlob, krb5_new_keys_raw
+                )
+                for key in krb5_new_keys.ctr.keys:
+                    keytype = key.keytype
+                    if keytype in (kcrypto.Enctype.AES256, kcrypto.Enctype.AES128):
+                        keys[keytype] = key.value.hex()
+
+        return keys
+
     def get_keys(self, creds, expected_etypes=None):
         admin_creds = self.get_admin_creds()
         samdb = self.get_samdb()
@@ -1166,23 +1186,13 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
             if attr.attid == drsuapi.DRSUAPI_ATTID_supplementalCredentials:
                 net_ctx.replicate_decrypt(bind, attr, rid)
-                attr_val = attr.value_ctr.values[0].blob
 
-                spl = ndr_unpack(drsblobs.supplementalCredentialsBlob,
-                                 attr_val)
-                for pkg in spl.sub.packages:
-                    if pkg.name == 'Primary:Kerberos-Newer-Keys':
-                        krb5_new_keys_raw = binascii.a2b_hex(pkg.data)
-                        krb5_new_keys = ndr_unpack(
-                            drsblobs.package_PrimaryKerberosBlob,
-                            krb5_new_keys_raw)
-                        for key in krb5_new_keys.ctr.keys:
-                            keytype = key.keytype
-                            if keytype in (kcrypto.Enctype.AES256,
-                                           kcrypto.Enctype.AES128):
-                                keys[keytype] = key.value.hex()
+                keys.update(
+                    self.unpack_supplemental_credentials(attr.value_ctr.values[0].blob)
+                )
             elif attr.attid == drsuapi.DRSUAPI_ATTID_unicodePwd:
                 net_ctx.replicate_decrypt(bind, attr, rid)
+
                 pwd = attr.value_ctr.values[0].blob
                 keys[kcrypto.Enctype.RC4] = pwd.hex()
 
