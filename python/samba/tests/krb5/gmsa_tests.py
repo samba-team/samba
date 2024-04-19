@@ -30,7 +30,7 @@ from itertools import chain
 
 import ldb
 
-from samba import auth, dsdb, gensec
+from samba import auth, dsdb, gensec, werror
 from samba.dcerpc import gkdi, gmsa, misc, netlogon, security
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.nt_time import (
@@ -633,9 +633,17 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
         )
 
     def check_managed_password_access(
-        self, creds: Credentials, *, expect_access
+        self,
+        creds: Credentials,
+        *,
+        samdb: Optional[SamDB] = None,
+        expect_access: bool = False,
+        expected_werror: int = werror.WERR_SUCCESS,
     ) -> None:
-        samdb = self.get_samdb()
+        if samdb is None:
+            samdb = self.get_samdb()
+        if expected_werror:
+            self.assertFalse(expect_access)
         managed_service_accounts_dn = self.get_managed_service_accounts_dn()
         username = creds.get_username()
 
@@ -649,12 +657,24 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
         for dn, scope in searches:
             # Perform a search and see whether we’re allowed to view the managed password.
 
-            res = samdb.search(
-                dn,
-                scope=scope,
-                expression=f"sAMAccountName={username}",
-                attrs=["msDS-ManagedPassword"],
-            )
+            try:
+                res = samdb.search(
+                    dn,
+                    scope=scope,
+                    expression=f"sAMAccountName={username}",
+                    attrs=["msDS-ManagedPassword"],
+                )
+            except ldb.LdbError as err:
+                self.assertTrue(expected_werror, "got an unexpected error")
+
+                num, estr = err.args
+                if num != ldb.ERR_OPERATIONS_ERROR:
+                    raise
+
+                self.assertIn(f"{expected_werror:08X}", estr)
+                return
+
+            self.assertFalse(expected_werror, "expected to get an error")
             self.assertEqual(1, len(res), "should always find the gMSA")
 
             managed_password = res[0].get("msDS-ManagedPassword", idx=0)
@@ -676,6 +696,36 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
         deny_world_sddl = "O:SYD:(D;;RP;;;WD)"
         self.check_managed_password_access(
             self.gmsa_account(msa_membership=deny_world_sddl), expect_access=False
+        )
+
+    def test_retrieving_denied_password_over_unsealed_connection(self):
+        # Requires --use-kerberos=required, or it automatically upgrades to an
+        # encrypted connection.
+
+        # Remove FEATURE_SEAL which gets added by insta_creds.
+        creds = self.insta_creds(template=self.get_admin_creds())
+        creds.set_gensec_features(creds.get_gensec_features() & ~gensec.FEATURE_SEAL)
+
+        lp = self.get_lp()
+
+        sasl_wrap = lp.get("client ldap sasl wrapping")
+        self.addCleanup(lp.set, "client ldap sasl wrapping", sasl_wrap)
+        lp.set("client ldap sasl wrapping", "sign")
+
+        # Create a second ldb connection without seal.
+        samdb = SamDB(
+            f"ldap://{self.dc_host}",
+            credentials=creds,
+            session_info=auth.system_session(lp),
+            lp=lp,
+        )
+
+        # Deny anyone from being able to view the password.
+        deny_world_sddl = "O:SYD:(D;;RP;;;WD)"
+        self.check_managed_password_access(
+            self.gmsa_account(msa_membership=deny_world_sddl),
+            samdb=samdb,
+            expected_werror=werror.WERR_DS_CONFIDENTIALITY_REQUIRED,
         )
 
     def future_gkid(self) -> Gkid:
