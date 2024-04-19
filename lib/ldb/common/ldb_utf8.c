@@ -136,5 +136,15 @@ int ldb_attr_dn(const char *attr)
 }
 
 _PRIVATE_ char ldb_ascii_toupper(char c) {
-	return ('a' <= c && c <= 'z') ? c ^ 0x20 : toupper(c);
+	/*
+	 * We are aiming for a 1970s C-locale toupper(), when all letters
+	 * were 7-bit and behaved with true American spirit.
+	 *
+	 * For example, we don't want the "i" in "<guid=" to be upper-cased to
+	 * "İ" as would happen in some locales, or we won't be able to parse
+	 * that properly. This is unfortunate for cases where we are dealing
+	 * with real text; a search for the name "Ali" would need to be
+	 * written "Alİ" to match.
+	 */
+	return ('a' <= c && c <= 'z') ? c ^ 0x20 : c;
 }
