@@ -193,7 +193,7 @@ bool gkdi_get_key_start_time(const struct Gkid gkid, NTTIME *start_time_out)
 		 * Make sure that the GKID is not so large its start time can’t
 		 * be represented in NTTIME.
 		 */
-		static const struct Gkid max_gkid = {
+		const struct Gkid max_gkid = {
 			UINT64_MAX /
 				(gkdi_l1_key_iteration * gkdi_l2_key_iteration *
 				 gkdi_key_cycle_duration),
