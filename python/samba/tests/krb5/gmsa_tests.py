@@ -920,6 +920,9 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
             res[0].get("supplementalCredentials", idx=0)
         )
 
+        # Check that the NT hash is the value we expect.
+        self.assertEqual(creds.get_nt_hash(), previous_nt_hash)
+
         # Search for the managed password over LDAP, triggering an update of the
         # keys in the database.
         res = samdb.search(dn, scope=ldb.SCOPE_BASE, attrs=["msDS-ManagedPassword"])
@@ -949,6 +952,16 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
             supplemental_creds,
             "supplementalCredentials has not been updated (yet)",
         )
+
+        # Set the new password.
+        managed_pwd = ndr_unpack(gmsa.MANAGEDPASSWORD_BLOB, managed_password)
+        self.assertIsNotNone(
+            managed_pwd.passwords.current, "current password must be present"
+        )
+        creds.set_utf16_password(managed_pwd.passwords.current)
+
+        # Check that the new NT hash is the value we expect.
+        self.assertEqual(creds.get_nt_hash(), nt_hash)
 
     def test_authentication_triggers_keys_update(self):
         # Create a root key with a start time early enough to be usable at the
@@ -983,6 +996,9 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
         previous_supplemental_creds = self.unpack_supplemental_credentials(
             res[0].get("supplementalCredentials", idx=0)
         )
+
+        # Check that the NT hash is the value we expect.
+        self.assertEqual(creds.get_nt_hash(), previous_nt_hash)
 
         # Calculate the password with which to authenticate.
         managed_pwd = self.expected_current_gmsa_password_blob(
@@ -1020,6 +1036,9 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
             supplemental_creds,
             "supplementalCredentials has not been updated (yet)",
         )
+
+        # Check that the new NT hash is the value we expect.
+        self.assertEqual(creds.get_nt_hash(), nt_hash)
 
     def test_gmsa_can_perform_gensec_ntlmssp_logon(self):
         creds = self.gmsa_account(kerberos_enabled=False)
