@@ -956,8 +956,9 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 		for (n = 0; n < len; ++n) {
 			int ret;
 
-			ret = dsdb_update_gmsa_entry_keys(
-				samdb, local_ctx, callback_ctx->updates[n]);
+			ret = dsdb_update_gmsa_entry_keys(local_ctx,
+							  samdb,
+							  callback_ctx->updates[n]);
 			if (ret) {
 				/* Ignore the error. */
 				DBG_WARNING("Failed to update keys for Group "

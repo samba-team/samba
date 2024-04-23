@@ -5755,7 +5755,7 @@ int dsdb_search(struct ldb_context *ldb,
 		 * • whenCreated
 		 */
 
-		ret = dsdb_update_gmsa_keys(ldb, tmp_ctx, res, &retry);
+		ret = dsdb_update_gmsa_keys(tmp_ctx, ldb, res, &retry);
 		if (ret) {
 			talloc_free(tmp_ctx);
 			return ret;
