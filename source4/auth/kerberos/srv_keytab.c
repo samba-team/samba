@@ -350,7 +350,7 @@ NTSTATUS smb_krb5_fill_keytab_gmsa_keys(TALLOC_CTX *mem_ctx,
 
 	supported_enctypes = ldb_msg_find_attr_as_uint(msg,
 						       "msDS-SupportedEncryptionTypes",
-						       ENC_HMAC_SHA1_96_AES256);
+						       ENC_STRONG_SALTED_TYPES);
 	/*
 	 * We trim this down to just the salted AES types, as the
 	 * passwords are now wrong for rc4-hmac due to the mapping of
