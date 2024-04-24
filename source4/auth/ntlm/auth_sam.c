@@ -28,12 +28,14 @@
 #include "../libcli/auth/ntlm_check.h"
 #include "auth/ntlm/auth_proto.h"
 #include "auth/auth_sam.h"
+#include "dsdb/gmsa/util.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "dsdb/common/util.h"
 #include "param/param.h"
 #include "librpc/gen_ndr/ndr_irpc_c.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
+#include "lib/crypto/gkdi.h"
 #include "lib/messaging/irpc.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libds/common/roles.h"
@@ -471,6 +473,7 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 		int allowed_period_mins;
 		NTTIME allowed_period;
 		bool ok;
+		bool is_gmsa;
 
 		/* Reset these variables back to starting as empty */
 		aes_256_key = NULL;
@@ -639,11 +642,26 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 		 * before the user can lock and unlock their other screens
 		 * (resetting their cached password).
 		 *
-		 * See http://support.microsoft.com/kb/906305
-		 * OldPasswordAllowedPeriod ("old password allowed period")
-		 * is specified in minutes. The default is 60.
 		 */
-		allowed_period_mins = lpcfg_old_password_allowed_period(auth_context->lp_ctx);
+
+		/* Is the account a Group Managed Service Account? */
+		is_gmsa = dsdb_account_is_gmsa(sam_ctx, msg);
+		if (is_gmsa) {
+			/*
+			 * For Group Managed Service Accounts, the previous
+			 * password is allowed for five minutes after a password
+			 * change.
+			 */
+			allowed_period_mins = gkdi_max_clock_skew_mins;
+		} else {
+			/*
+			 * See http://support.microsoft.com/kb/906305
+			 * OldPasswordAllowedPeriod ("old password allowed
+			 * period") is specified in minutes. The default is 60.
+			 */
+			allowed_period_mins = lpcfg_old_password_allowed_period(
+				auth_context->lp_ctx);
+		}
 		/*
 		 * NTTIME uses 100ns units
 		 */
