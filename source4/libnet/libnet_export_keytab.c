@@ -89,7 +89,7 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 			status = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
-		
+
 		code = krb5_unparse_name(context,
 					 sentry.principal,
 					 &entry_principal);
