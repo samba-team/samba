@@ -30,7 +30,7 @@ from itertools import chain
 
 import ldb
 
-from samba import auth, dsdb, gensec, werror
+from samba import auth, dsdb, gensec, ntstatus, NTSTATUSError, werror
 from samba.dcerpc import gkdi, gmsa, misc, netlogon, security
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.nt_time import (
@@ -537,8 +537,8 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
     # Perform a gensec logon using NTLMSSP. As samdb is passed in as a
     # parameter, it can have a time set on it with set_db_time().
     def gensec_ntlmssp_logon(
-        self, client_creds: Credentials, samdb: SamDB
-    ) -> "auth.session_info":
+        self, client_creds: Credentials, samdb: SamDB, expect_success: bool = True
+    ) -> "Optional[auth.session_info]":
         lp = self.get_lp()
         lp.set("server role", "active directory domain controller")
 
@@ -573,9 +573,17 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
                     server_to_client
                 )
             if not server_finished:
-                server_finished, server_to_client = gensec_server.update(
-                    client_to_server
-                )
+                try:
+                    server_finished, server_to_client = gensec_server.update(
+                        client_to_server
+                    )
+                except NTSTATUSError as err:
+                    self.assertFalse(expect_success, "got an unexpected error")
+
+                    self.assertEqual(ntstatus.NT_STATUS_WRONG_PASSWORD, err.args[0])
+                    return None
+
+        self.assertTrue(expect_success, "expected to get an error")
 
         # Retrieve the SIDs from the security token.
         return gensec_server.session_info()
