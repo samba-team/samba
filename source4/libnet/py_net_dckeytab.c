@@ -29,8 +29,6 @@
 #include "pyldb.h"
 #include "libcli/util/pyerrors.h"
 
-void initdckeytab(void);
-
 static PyObject *py_net_export_keytab(py_net_Object *self, PyObject *args, PyObject *kwargs)
 {
 	struct libnet_export_keytab r;
@@ -104,7 +102,6 @@ static PyMethodDef export_keytab_method_table[] = {
  * the global module table even if we don't really need that record. Thus, we initialize
  * dckeytab module but never use it.
  * */
-void initdckeytab(void);
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
     .m_name = "dckeytab",
