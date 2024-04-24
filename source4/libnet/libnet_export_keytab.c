@@ -37,6 +37,7 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 			    const char *principal,
 			    bool keep_stale_entries,
 			    bool include_historic_keys,
+			    const unsigned sdb_flags,
 			    const char **error_string)
 {
 	struct sdb_entry sentry = {};
@@ -74,15 +75,15 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 		}
 
 		code = samba_kdc_fetch(context, db_ctx, k5_princ,
-				       SDB_F_GET_ANY | SDB_F_ADMIN_DATA,
+				       SDB_F_GET_ANY | sdb_flags,
 				       0, &sentry);
 
 		krb5_free_principal(context, k5_princ);
 	} else {
-		code = samba_kdc_firstkey(context, db_ctx, &sentry);
+		code = samba_kdc_firstkey(context, db_ctx, sdb_flags, &sentry);
 	}
 
-	for (; code == 0; code = samba_kdc_nextkey(context, db_ctx, &sentry)) {
+	for (; code == 0; code = samba_kdc_nextkey(context, db_ctx, sdb_flags, &sentry)) {
 		int i;
 		bool found_previous = false;
 		tmp_ctx = talloc_new(mem_ctx);
@@ -352,6 +353,7 @@ NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, s
 	struct samba_kdc_base_context *base_ctx;
 	struct samba_kdc_db_context *db_ctx = NULL;
 	const char *error_string = NULL;
+	unsigned sdb_flags;
 	NTSTATUS status;
 
 	bool keep_stale_entries = r->in.keep_stale_entries;
@@ -408,6 +410,7 @@ NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, s
 		}
 	}
 
+	sdb_flags = SDB_F_ADMIN_DATA;
 
 	status = sdb_kt_copy(mem_ctx,
 			     smb_krb5_context,
@@ -416,6 +419,7 @@ NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, s
 			     r->in.principal,
 			     keep_stale_entries,
 			     !r->in.only_current_keys,
+			     sdb_flags,
 			     &error_string);
 
 	talloc_free(db_ctx);

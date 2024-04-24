@@ -348,7 +348,7 @@ krb5_error_code mit_samba_get_firstkey(struct mit_samba_context *ctx,
 		return ENOMEM;
 	}
 
-	ret = samba_kdc_firstkey(ctx->context, ctx->db_ctx, &sentry);
+	ret = samba_kdc_firstkey(ctx->context, ctx->db_ctx, SDB_F_ADMIN_DATA, &sentry);
 	switch (ret) {
 	case 0:
 		break;
@@ -386,7 +386,7 @@ krb5_error_code mit_samba_get_nextkey(struct mit_samba_context *ctx,
 		return ENOMEM;
 	}
 
-	ret = samba_kdc_nextkey(ctx->context, ctx->db_ctx, &sentry);
+	ret = samba_kdc_nextkey(ctx->context, ctx->db_ctx, SDB_F_ADMIN_DATA, &sentry);
 	switch (ret) {
 	case 0:
 		break;

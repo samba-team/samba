@@ -3311,6 +3311,7 @@ struct samba_kdc_seq {
 
 static krb5_error_code samba_kdc_seq(krb5_context context,
 				     struct samba_kdc_db_context *kdc_db_ctx,
+				     const unsigned sdb_flags,
 				     struct sdb_entry *entry)
 {
 	krb5_error_code ret;
@@ -3364,7 +3365,7 @@ static krb5_error_code samba_kdc_seq(krb5_context context,
 
 	ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
 				      principal, SAMBA_KDC_ENT_TYPE_ANY,
-				      SDB_F_ADMIN_DATA|SDB_F_GET_ANY,
+				      sdb_flags|SDB_F_GET_ANY,
 				      0 /* kvno */,
 				      priv->realm_dn, msg, entry);
 	krb5_free_principal(context, principal);
@@ -3420,7 +3421,7 @@ trusts:
 						    mem_ctx,
 						    trust_direction,
 						    priv->realm_dn,
-						    SDB_F_ADMIN_DATA|SDB_F_GET_ANY,
+						    sdb_flags|SDB_F_GET_ANY,
 						    0, /* kvno */
 						    msg,
 						    entry);
@@ -3436,6 +3437,7 @@ trusts:
 
 krb5_error_code samba_kdc_firstkey(krb5_context context,
 				   struct samba_kdc_db_context *kdc_db_ctx,
+				   const unsigned sdb_flags,
 				   struct sdb_entry *entry)
 {
 	struct ldb_context *ldb_ctx = kdc_db_ctx->samdb;
@@ -3500,7 +3502,7 @@ krb5_error_code samba_kdc_firstkey(krb5_context context,
 
 	kdc_db_ctx->seq_ctx = priv;
 
-	ret = samba_kdc_seq(context, kdc_db_ctx, entry);
+	ret = samba_kdc_seq(context, kdc_db_ctx, sdb_flags, entry);
 
 	if (ret != 0) {
 		TALLOC_FREE(priv);
@@ -3511,9 +3513,10 @@ krb5_error_code samba_kdc_firstkey(krb5_context context,
 
 krb5_error_code samba_kdc_nextkey(krb5_context context,
 				  struct samba_kdc_db_context *kdc_db_ctx,
+				  const unsigned sdb_flags,
 				  struct sdb_entry *entry)
 {
-	return samba_kdc_seq(context, kdc_db_ctx, entry);
+	return samba_kdc_seq(context, kdc_db_ctx, sdb_flags, entry);
 }
 
 /* Check if a given entry may delegate or do s4u2self to this target principal
