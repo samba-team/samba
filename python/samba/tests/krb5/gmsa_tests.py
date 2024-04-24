@@ -300,6 +300,17 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
             self.future_gkid(), gkdi_rollover_interval(managed_password_interval)
         )
 
+    def quantized_time(
+        self, key_start_time: NtTime, time: NtTime, gkdi_rollover_interval: NtTimeDelta
+    ) -> NtTime:
+        self.assertLessEqual(key_start_time, time)
+
+        time_since_key_start = NtTimeDelta(time - key_start_time)
+        quantized_time_since_key_start = NtTimeDelta(
+            time_since_key_start // gkdi_rollover_interval * gkdi_rollover_interval
+        )
+        return NtTime(key_start_time + quantized_time_since_key_start)
+
     def expected_gmsa_password_blob(
         self,
         samdb: SamDB,
@@ -360,11 +371,9 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
 
         current_time = self.current_nt_time(samdb)
 
-        time_since_key_start = NtTimeDelta(current_time - key_start_time)
-        quantized_time_since_key_start = NtTimeDelta(
-            time_since_key_start // gkdi_rollover_interval * gkdi_rollover_interval
+        new_key_start_time = self.quantized_time(
+            key_start_time, current_time, gkdi_rollover_interval
         )
-        new_key_start_time = NtTime(key_start_time + quantized_time_since_key_start)
         new_key_expiration_time = NtTime(new_key_start_time + gkdi_rollover_interval)
 
         account_sid = creds.get_sid()
