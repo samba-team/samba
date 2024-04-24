@@ -61,22 +61,22 @@ class DCKeytabTests(TestCaseInTempDir):
         keytab = ndr_unpack(krb5ccache.KEYTAB, keytab_bytes)
         entry = keytab.entry
 
-        keytab_as_set = set()
+        keytab_set = set()
 
         entry_as_tuple = entry_to_tuple(entry)
-        keytab_as_set.add(entry_as_tuple)
+        keytab_set.add(entry_as_tuple)
 
         keytab_bytes = keytab.further_entry
         while keytab_bytes:
             multiple_entry = ndr_unpack(krb5ccache.MULTIPLE_KEYTAB_ENTRIES, keytab_bytes)
             entry = multiple_entry.entry
             entry_as_tuple = entry_to_tuple(entry)
-            self.assertNotIn(entry_as_tuple, keytab_as_set)
-            keytab_as_set.add(entry_as_tuple)
+            self.assertNotIn(entry_as_tuple, keytab_set)
+            keytab_set.add(entry_as_tuple)
 
             keytab_bytes = multiple_entry.further_entry
 
-        return keytab_as_set
+        return keytab_set
 
     def test_export_keytab(self):
         net = Net(None, self.lp)
@@ -103,10 +103,10 @@ class DCKeytabTests(TestCaseInTempDir):
             keytab_bytes = bytes_kt.read()
 
         # Parse the keytab
-        keytab_as_set = self.keytab_as_set(keytab_bytes)
+        keytab_set = self.keytab_as_set(keytab_bytes)
 
         # confirm many principals were exported
-        self.assertGreater(len(keytab_as_set), 10)
+        self.assertGreater(len(keytab_set), 10)
 
     def test_export_keytab_all_keep_stale(self):
         net = Net(None, self.lp)
@@ -127,13 +127,13 @@ class DCKeytabTests(TestCaseInTempDir):
         # confirm many principals were exported
         # self.keytab_as_set() will also check we only got it
         # each entry once
-        keytab_as_set = self.keytab_as_set(keytab_bytes)
+        keytab_set = self.keytab_as_set(keytab_bytes)
 
-        self.assertGreater(len(keytab_as_set), 10)
+        self.assertGreater(len(keytab_set), 10)
 
         # Look for the new principal, showing this was updated
         found = False
-        for entry in keytab_as_set:
+        for entry in keytab_set:
             (principal, enctype, kvno, key) = entry
             if principal == new_principal:
                 found = True
@@ -270,11 +270,11 @@ class DCKeytabTests(TestCaseInTempDir):
 
         # self.keytab_as_set() will also check we got each entry
         # exactly once
-        keytab_as_set = self.keytab_as_set(keytab_change_bytes)
+        keytab_set = self.keytab_as_set(keytab_change_bytes)
 
         # Look for the new principal, showing this was updated but the old kept
         found = 0
-        for entry in keytab_as_set:
+        for entry in keytab_set:
             (principal, enctype, kvno, key) = entry
             if principal == new_principal and enctype == credentials.ENCTYPE_AES128_CTS_HMAC_SHA1_96:
                 found += 1
@@ -284,7 +284,7 @@ class DCKeytabTests(TestCaseInTempDir):
 
         # confirm at least 12 keys (4 changes, 1 in orig export and 3
         # history in 2nd export, 3 enctypes) were exported
-        self.assertGreaterEqual(len(keytab_as_set), 12)
+        self.assertGreaterEqual(len(keytab_set), 12)
 
     def test_export_keytab_change3_update_only_current_keep(self):
         new_principal=f"keytab_testuser@{self.creds.get_realm()}"
@@ -319,11 +319,11 @@ class DCKeytabTests(TestCaseInTempDir):
 
         # self.keytab_as_set() will also check we got each entry
         # exactly once
-        keytab_as_set = self.keytab_as_set(keytab_change_bytes)
+        keytab_set = self.keytab_as_set(keytab_change_bytes)
 
         # Look for the new principal, showing this was updated but the old kept
         found = 0
-        for entry in keytab_as_set:
+        for entry in keytab_set:
             (principal, enctype, kvno, key) = entry
             if principal == new_principal and enctype == credentials.ENCTYPE_AES128_CTS_HMAC_SHA1_96:
                 found += 1
@@ -333,7 +333,7 @@ class DCKeytabTests(TestCaseInTempDir):
 
         # confirm at least 6 keys (1 change, 1 in orig export
         # both with 3 enctypes) were exported
-        self.assertGreaterEqual(len(keytab_as_set), 6)
+        self.assertGreaterEqual(len(keytab_set), 6)
 
     def test_export_keytab_change2_export2_update_keep(self):
         new_principal=f"keytab_testuser@{self.creds.get_realm()}"
@@ -363,11 +363,11 @@ class DCKeytabTests(TestCaseInTempDir):
 
         # self.keytab_as_set() will also check we got each entry
         # exactly once
-        keytab_as_set = self.keytab_as_set(keytab_change_bytes)
+        keytab_set = self.keytab_as_set(keytab_change_bytes)
 
         # Look for the new principal, showing this was updated but the old kept
         found = 0
-        for entry in keytab_as_set:
+        for entry in keytab_set:
             (principal, enctype, kvno, key) = entry
             if principal == new_principal and enctype == credentials.ENCTYPE_AES128_CTS_HMAC_SHA1_96:
                 found += 1
@@ -376,7 +376,7 @@ class DCKeytabTests(TestCaseInTempDir):
         self.assertEqual(found, 3)
 
         # confirm at least 9 keys (3 exports, 3 enctypes) were exported
-        self.assertGreaterEqual(len(keytab_as_set), 9)
+        self.assertGreaterEqual(len(keytab_set), 9)
 
     def test_export_keytab_not_a_dir(self):
         net = Net(None, self.lp)
