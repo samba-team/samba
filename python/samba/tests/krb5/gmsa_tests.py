@@ -906,7 +906,7 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
         creds = self.gmsa_account(samdb=local_samdb, interval=password_interval)
         dn = creds.get_dn()
 
-        current_nt_time = self.current_nt_time(local_samdb)
+        current_nt_time = self.current_nt_time(samdb)
         self.set_db_time(local_samdb, current_nt_time)
 
         # Search the local database for the account’s keys.
@@ -983,7 +983,7 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
         creds = self.gmsa_account(samdb=local_samdb, interval=password_interval)
         dn = creds.get_dn()
 
-        current_nt_time = self.current_nt_time(local_samdb)
+        current_nt_time = self.current_nt_time(samdb)
         self.set_db_time(local_samdb, current_nt_time)
 
         # Search the local database for the account’s keys.
