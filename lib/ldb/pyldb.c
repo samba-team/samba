@@ -57,7 +57,6 @@ struct py_ldb_search_iterator_reply {
 	PyObject *obj;
 };
 
-void initldb(void);
 static PyObject *PyLdbMessage_FromMessage(struct ldb_message *msg, PyLdbObject *pyldb);
 static PyObject *PyExc_LdbError;
 
