@@ -88,8 +88,10 @@ static PyObject *py_net_export_keytab(py_net_Object *self, PyObject *args, PyObj
 	Py_RETURN_NONE;
 }
 
-static const char py_net_export_keytab_doc[] = "export_keytab(keytab, name)\n\n"
-"Export the DC keytab to a keytab file.";
+static const char py_net_export_keytab_doc[] =
+	"export_keytab(keytab, samdb=None, principal=None, "
+	"keep_stale_entries=False, only_current_keys=False)\n\n"
+	"Export the DC keytab to a keytab file.";
 
 static PyMethodDef export_keytab_method_table[] = {
 	{"export_keytab", PY_DISCARD_FUNC_SIG(PyCFunction,
