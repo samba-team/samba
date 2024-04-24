@@ -71,7 +71,8 @@ class DCKeytabTests(TestCaseInTempDir):
             multiple_entry = ndr_unpack(krb5ccache.MULTIPLE_KEYTAB_ENTRIES, keytab_bytes)
             entry = multiple_entry.entry
             entry_as_tuple = entry_to_tuple(entry)
-            self.assertNotIn(entry_as_tuple, keytab_set)
+            if entry_as_tuple in keytab_set:
+                raise AssertionError('entry found multiple times in keytab')
             keytab_set.add(entry_as_tuple)
 
             keytab_bytes = multiple_entry.further_entry
