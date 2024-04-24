@@ -436,7 +436,7 @@ class DCKeytabTests(TestCaseInTempDir):
         remote_keys = {}
 
         while True:
-            remote_keys[remote_keytab.entry.enctype] = remote_keytab.entry.key.data
+            remote_keys[remote_keytab.entry.enctype] = bytes(remote_keytab.entry.key.data)
             keytab_bytes = remote_keytab.further_entry
             if not keytab_bytes:
                 break
@@ -446,7 +446,7 @@ class DCKeytabTests(TestCaseInTempDir):
         local_keys = {}
 
         while True:
-            local_keys[local_keytab.entry.enctype] = local_keytab.entry.key.data
+            local_keys[local_keytab.entry.enctype] = bytes(local_keytab.entry.key.data)
             keytab_bytes = local_keytab.further_entry
             if not keytab_bytes:
                 break
