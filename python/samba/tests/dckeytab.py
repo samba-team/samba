@@ -55,7 +55,7 @@ class DCKeytabTests(TestCaseInTempDir):
             principal = '/'.join(entry.principal.components) + f"@{entry.principal.realm}"
             enctype = entry.enctype
             kvno = entry.key_version
-            key = tuple(entry.key.data)
+            key = bytes(entry.key.data)
             return (principal, enctype, kvno, key)
 
         keytab = ndr_unpack(krb5ccache.KEYTAB, keytab_bytes)
