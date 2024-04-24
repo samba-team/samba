@@ -749,7 +749,7 @@ int ctdb_connection_list_read(TALLOC_CTX *mem_ctx,
 	struct ctdb_connection_list_read_state state;
 	char *line = NULL;
 	FILE *f = NULL;
-	int ret;
+	int ret = 0;
 	size_t len = 0;
 	ssize_t nread;
 
