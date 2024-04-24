@@ -300,6 +300,16 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
             self.future_gkid(), gkdi_rollover_interval(managed_password_interval)
         )
 
+    def gmsa_series_for_account(
+        self, samdb: SamDB, creds: KerberosCredentials, managed_password_interval: int
+    ) -> GmsaSeries:
+        gmsa_object = self.get_gmsa_object(samdb, creds.get_dn())
+        current_nt_time = self.current_nt_time(samdb)
+        gkid = Gkid.from_nt_time(
+            self.account_quantized_time(gmsa_object, current_nt_time)
+        )
+        return GmsaSeries(gkid, gkdi_rollover_interval(managed_password_interval))
+
     def quantized_time(
         self, key_start_time: NtTime, time: NtTime, gkdi_rollover_interval: NtTimeDelta
     ) -> NtTime:
@@ -310,6 +320,16 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
             time_since_key_start // gkdi_rollover_interval * gkdi_rollover_interval
         )
         return NtTime(key_start_time + quantized_time_since_key_start)
+
+    def account_quantized_time(self, gmsa_object: Gmsa, time: NtTime) -> NtTime:
+        pwd_id_blob = gmsa_object.get("msDS-ManagedPasswordId", idx=0)
+        self.assertIsNotNone(pwd_id_blob, "SAM should have initialized password ID")
+
+        pwd_id = ndr_unpack(gkdi.KeyEnvelope, pwd_id_blob)
+        key_start_time = Gkid.from_key_envelope(pwd_id).start_nt_time()
+
+        gkdi_rollover_interval = self.gmsa_rollover_interval(gmsa_object)
+        return self.quantized_time(key_start_time, time, gkdi_rollover_interval)
 
     def expected_gmsa_password_blob(
         self,
@@ -1010,8 +1030,14 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
         self.assertEqual(creds.get_nt_hash(), previous_nt_hash)
 
         # Calculate the password with which to authenticate.
-        managed_pwd = self.expected_current_gmsa_password_blob(
-            samdb, creds, future_key_is_acceptable=False
+        current_series = self.gmsa_series_for_account(
+            local_samdb, creds, password_interval
+        )
+        managed_pwd = self.expected_gmsa_password_blob(
+            local_samdb,
+            creds,
+            current_series.interval_gkid(0),
+            query_expiration_gkid=current_series.interval_gkid(1),
         )
 
         # Set the new password.
