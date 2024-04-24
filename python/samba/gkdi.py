@@ -289,6 +289,12 @@ class Gkid:
 
         return start_time
 
+    def previous(self) -> "Gkid":
+        return Gkid.from_nt_time(NtTime(self.start_nt_time() - KEY_CYCLE_DURATION))
+
+    def next(self) -> "Gkid":
+        return Gkid.from_nt_time(NtTime(self.start_nt_time() + KEY_CYCLE_DURATION))
+
     @staticmethod
     def from_key_envelope(env: gkdi.KeyEnvelope) -> "Gkid":
         return Gkid(env.l0_index, env.l1_index, env.l2_index)
