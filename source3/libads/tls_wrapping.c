@@ -153,6 +153,7 @@ ADS_STATUS ads_setup_tls_wrapping(struct ads_tlswrap *wrap,
 				  LDAP *ld,
 				  const char *server_name)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	Sockbuf_IO *io = discard_const_p(Sockbuf_IO, &ads_tlswrap_sockbuf_io);
 	Sockbuf *sb = NULL;
 	struct loadparm_context *lp_ctx = NULL;
@@ -164,11 +165,13 @@ ADS_STATUS ads_setup_tls_wrapping(struct ads_tlswrap *wrap,
 	rc = ldap_get_option(ld, LDAP_OPT_SOCKBUF, &sb);
 	status = ADS_ERROR_LDAP(rc);
 	if (!ADS_ERR_OK(status)) {
+		TALLOC_FREE(frame);
 		return status;
 	}
 
-	lp_ctx = loadparm_init_s3(talloc_tos(), loadparm_s3_helpers());
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
+		TALLOC_FREE(frame);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
@@ -177,6 +180,7 @@ ADS_STATUS ads_setup_tls_wrapping(struct ads_tlswrap *wrap,
 						   server_name,
 						   &wrap->tls_params);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
+		TALLOC_FREE(frame);
 		return ADS_ERROR_NT(ntstatus);
 	}
 
@@ -184,6 +188,7 @@ ADS_STATUS ads_setup_tls_wrapping(struct ads_tlswrap *wrap,
 	rc = ber_sockbuf_add_io(sb, io, LBER_SBIOD_LEVEL_TRANSPORT, wrap);
 	status = ADS_ERROR_LDAP(rc);
 	if (!ADS_ERR_OK(status)) {
+		TALLOC_FREE(frame);
 		return status;
 	}
 
@@ -198,9 +203,11 @@ ADS_STATUS ads_setup_tls_wrapping(struct ads_tlswrap *wrap,
 	wrap->endtime = timeval_zero();
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		ber_sockbuf_remove_io(sb, io, LBER_SBIOD_LEVEL_TRANSPORT);
+		TALLOC_FREE(frame);
 		return ADS_ERROR_NT(ntstatus);
 	}
 
+	TALLOC_FREE(frame);
 	return ADS_SUCCESS;
 }
 
