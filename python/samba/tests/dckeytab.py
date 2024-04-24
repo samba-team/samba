@@ -34,6 +34,36 @@ from ldb import SCOPE_BASE
 enable_net_export_keytab()
 
 
+def keytab_as_set(keytab_bytes):
+    def entry_to_tuple(entry):
+        principal = '/'.join(entry.principal.components) + f"@{entry.principal.realm}"
+        enctype = entry.enctype
+        kvno = entry.key_version
+        key = bytes(entry.key.data)
+        return (principal, enctype, kvno, key)
+
+    keytab = ndr_unpack(krb5ccache.KEYTAB, keytab_bytes)
+    entry = keytab.entry
+
+    keytab_set = set()
+
+    entry_as_tuple = entry_to_tuple(entry)
+    keytab_set.add(entry_as_tuple)
+
+    keytab_bytes = keytab.further_entry
+    while keytab_bytes:
+        multiple_entry = ndr_unpack(krb5ccache.MULTIPLE_KEYTAB_ENTRIES, keytab_bytes)
+        entry = multiple_entry.entry
+        entry_as_tuple = entry_to_tuple(entry)
+        if entry_as_tuple in keytab_set:
+            raise AssertionError('entry found multiple times in keytab')
+        keytab_set.add(entry_as_tuple)
+
+        keytab_bytes = multiple_entry.further_entry
+
+    return keytab_set
+
+
 class DCKeytabTests(TestCaseInTempDir):
     def setUp(self):
         super().setUp()
@@ -50,35 +80,6 @@ class DCKeytabTests(TestCaseInTempDir):
     def tearDown(self):
         super().tearDown()
 
-    def keytab_as_set(self, keytab_bytes):
-        def entry_to_tuple(entry):
-            principal = '/'.join(entry.principal.components) + f"@{entry.principal.realm}"
-            enctype = entry.enctype
-            kvno = entry.key_version
-            key = bytes(entry.key.data)
-            return (principal, enctype, kvno, key)
-
-        keytab = ndr_unpack(krb5ccache.KEYTAB, keytab_bytes)
-        entry = keytab.entry
-
-        keytab_set = set()
-
-        entry_as_tuple = entry_to_tuple(entry)
-        keytab_set.add(entry_as_tuple)
-
-        keytab_bytes = keytab.further_entry
-        while keytab_bytes:
-            multiple_entry = ndr_unpack(krb5ccache.MULTIPLE_KEYTAB_ENTRIES, keytab_bytes)
-            entry = multiple_entry.entry
-            entry_as_tuple = entry_to_tuple(entry)
-            if entry_as_tuple in keytab_set:
-                raise AssertionError('entry found multiple times in keytab')
-            keytab_set.add(entry_as_tuple)
-
-            keytab_bytes = multiple_entry.further_entry
-
-        return keytab_set
-
     def test_export_keytab(self):
         net = Net(None, self.lp)
         self.addCleanup(self.rm_files, self.ktfile)
@@ -90,7 +91,7 @@ class DCKeytabTests(TestCaseInTempDir):
             keytab_bytes = bytes_kt.read()
 
         # confirm only this principal was exported
-        for entry in self.keytab_as_set(keytab_bytes):
+        for entry in keytab_as_set(keytab_bytes):
             (principal, enctype, kvno, key) = entry
             self.assertEqual(principal, self.principal)
 
@@ -104,7 +105,7 @@ class DCKeytabTests(TestCaseInTempDir):
             keytab_bytes = bytes_kt.read()
 
         # Parse the keytab
-        keytab_set = self.keytab_as_set(keytab_bytes)
+        keytab_set = keytab_as_set(keytab_bytes)
 
         # confirm many principals were exported
         self.assertGreater(len(keytab_set), 10)
@@ -126,9 +127,9 @@ class DCKeytabTests(TestCaseInTempDir):
             keytab_bytes = bytes_kt.read()
 
         # confirm many principals were exported
-        # self.keytab_as_set() will also check we only got it
+        # keytab_as_set() will also check we only got it
         # each entry once
-        keytab_set = self.keytab_as_set(keytab_bytes)
+        keytab_set = keytab_as_set(keytab_bytes)
 
         self.assertGreater(len(keytab_set), 10)
 
@@ -181,9 +182,9 @@ class DCKeytabTests(TestCaseInTempDir):
         self.assertEqual(keytab_orig_bytes, keytab_bytes)
 
         # confirm only this principal was exported.
-        # self.keytab_as_set() will also check we only got it
+        # keytab_as_set() will also check we only got it
         # once
-        for entry in self.keytab_as_set(keytab_bytes):
+        for entry in keytab_as_set(keytab_bytes):
             (principal, enctype, kvno, key) = entry
             self.assertEqual(principal, new_principal)
 
@@ -269,9 +270,9 @@ class DCKeytabTests(TestCaseInTempDir):
 
         self.assertNotEqual(keytab_orig_bytes, keytab_change_bytes)
 
-        # self.keytab_as_set() will also check we got each entry
+        # keytab_as_set() will also check we got each entry
         # exactly once
-        keytab_set = self.keytab_as_set(keytab_change_bytes)
+        keytab_set = keytab_as_set(keytab_change_bytes)
 
         # Look for the new principal, showing this was updated but the old kept
         found = 0
@@ -318,9 +319,9 @@ class DCKeytabTests(TestCaseInTempDir):
 
         self.assertNotEqual(keytab_orig_bytes, keytab_change_bytes)
 
-        # self.keytab_as_set() will also check we got each entry
+        # keytab_as_set() will also check we got each entry
         # exactly once
-        keytab_set = self.keytab_as_set(keytab_change_bytes)
+        keytab_set = keytab_as_set(keytab_change_bytes)
 
         # Look for the new principal, showing this was updated but the old kept
         found = 0
@@ -362,9 +363,9 @@ class DCKeytabTests(TestCaseInTempDir):
 
         self.assertNotEqual(keytab_orig_bytes, keytab_change_bytes)
 
-        # self.keytab_as_set() will also check we got each entry
+        # keytab_as_set() will also check we got each entry
         # exactly once
-        keytab_set = self.keytab_as_set(keytab_change_bytes)
+        keytab_set = keytab_as_set(keytab_change_bytes)
 
         # Look for the new principal, showing this was updated but the old kept
         found = 0
