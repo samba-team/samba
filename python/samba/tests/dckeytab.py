@@ -67,7 +67,7 @@ class DCKeytabTests(TestCaseInTempDir):
         keytab_as_set.add(entry_as_tuple)
 
         keytab_bytes = keytab.further_entry
-        while True:
+        while keytab_bytes:
             multiple_entry = ndr_unpack(krb5ccache.MULTIPLE_KEYTAB_ENTRIES, keytab_bytes)
             entry = multiple_entry.entry
             entry_as_tuple = entry_to_tuple(entry)
@@ -75,8 +75,6 @@ class DCKeytabTests(TestCaseInTempDir):
             keytab_as_set.add(entry_as_tuple)
 
             keytab_bytes = multiple_entry.further_entry
-            if not keytab_bytes:
-                break
 
         return keytab_as_set
 
