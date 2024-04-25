@@ -101,6 +101,7 @@ static void server_id_watch_waited(struct tevent_req *subreq)
 
 	if (timeval_compare(&state->warn, &now) == -1) {
 		double duration = timeval_elapsed2(&state->start, &now);
+		const char *cmd = NULL;
 		char proc_path[64] = { 0, };
 		char *kstack = NULL;
 		struct server_id_buf buf;
@@ -108,6 +109,57 @@ static void server_id_watch_waited(struct tevent_req *subreq)
 		int ret;
 
 		state->warn = tevent_timeval_add(&now, 10, 0);
+
+		cmd = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "serverid watch",
+					   "debug script",
+					   NULL);
+		if (cmd != NULL) {
+			char *cmdstr = NULL;
+			char *output = NULL;
+			int fd;
+
+			/*
+			 * Note in a cluster setup pid will be
+			 * a NOTE:PID like '1:3978365'
+			 *
+			 * Without clustering it is just '3978365'
+			 */
+			cmdstr = talloc_asprintf(state, "%s %s", cmd, pid);
+			if (cmdstr == NULL) {
+				DBG_ERR("Process %s hanging for %f seconds?\n"
+					"talloc_asprintf failed\n",
+					pid, duration);
+				goto next;
+			}
+
+			become_root();
+			ret = smbrun(cmdstr, &fd, NULL);
+			unbecome_root();
+			if (ret != 0) {
+				DBG_ERR("Process %s hanging for %f seconds?\n"
+					"smbrun('%s') failed\n",
+					pid, duration, cmdstr);
+				TALLOC_FREE(cmdstr);
+				goto next;
+			}
+
+			output = fd_load(fd, NULL, 0, state);
+			close(fd);
+			if (output == NULL) {
+				DBG_ERR("Process %s hanging for %f seconds?\n"
+					"fd_load() of smbrun('%s') failed\n",
+					pid, duration, cmdstr);
+				TALLOC_FREE(cmdstr);
+				goto next;
+			}
+			DBG_ERR("Process %s hanging for %f seconds?\n"
+				"%s returned:\n%s",
+				pid, duration, cmdstr, output);
+			TALLOC_FREE(cmdstr);
+			TALLOC_FREE(output);
+			goto next;
+		}
 
 		if (!procid_is_local(&state->pid) || !sys_have_proc_fds()) {
 			DBG_ERR("Process %s hanging for %f seconds?\n",
