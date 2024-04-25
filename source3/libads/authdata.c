@@ -272,7 +272,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 
 	gensec_init();
 
-	backends[idx++] = &gensec_gse_krb5_security_ops;
+	backends[idx++] = gensec_gse_security_by_oid(GENSEC_OID_KERBEROS5);
 
 	status = gensec_server_start(tmp_ctx, gensec_settings,
 					auth_context, &gensec_server_context);

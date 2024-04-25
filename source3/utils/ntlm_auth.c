@@ -1208,7 +1208,7 @@ static NTSTATUS ntlm_auth_prepare_gensec_client(TALLOC_CTX *mem_ctx,
 
 	/* These need to be in priority order, krb5 before NTLMSSP */
 #if defined(HAVE_KRB5)
-	backends[idx++] = &gensec_gse_krb5_security_ops;
+	backends[idx++] = gensec_gse_security_by_oid(GENSEC_OID_KERBEROS5);
 #endif
 
 	backends[idx++] = gensec_security_by_oid(NULL, GENSEC_OID_NTLMSSP);
@@ -1336,7 +1336,7 @@ static NTSTATUS ntlm_auth_prepare_gensec_server(TALLOC_CTX *mem_ctx,
 
 	/* These need to be in priority order, krb5 before NTLMSSP */
 #if defined(HAVE_KRB5)
-	backends[idx++] = &gensec_gse_krb5_security_ops;
+	backends[idx++] = gensec_gse_security_by_oid(GENSEC_OID_KERBEROS5);
 #endif
 
 	backends[idx++] = gensec_security_by_oid(NULL, GENSEC_OID_NTLMSSP);

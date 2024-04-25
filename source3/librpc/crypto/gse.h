@@ -21,6 +21,7 @@
 
 struct gse_context;
 
-extern const struct gensec_security_ops gensec_gse_krb5_security_ops;
+const struct gensec_security_ops *gensec_gse_security_by_oid(
+	const char *oid_string);
 
 #endif /* _GSE_H_ */

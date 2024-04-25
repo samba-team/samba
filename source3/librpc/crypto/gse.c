@@ -1479,7 +1479,7 @@ static const char *gensec_gse_krb5_oids[] = {
 	NULL
 };
 
-const struct gensec_security_ops gensec_gse_krb5_security_ops = {
+static const struct gensec_security_ops gensec_gse_krb5_security_ops = {
 	.name		= "gse_krb5",
 	.auth_type	= DCERPC_AUTH_TYPE_KRB5,
 	.oid            = gensec_gse_krb5_oids,
@@ -1507,4 +1507,16 @@ const struct gensec_security_ops gensec_gse_krb5_security_ops = {
 	.priority       = GENSEC_GSSAPI
 };
 
+const struct gensec_security_ops *gensec_gse_security_by_oid(
+	const char *oid_string)
+{
+	int cmp;
+
+	cmp = strcmp(oid_string, GENSEC_OID_KERBEROS5);
+	if (cmp == 0) {
+		return &gensec_gse_krb5_security_ops;
+	}
+
+	return NULL;
+}
 #endif /* HAVE_KRB5 */
