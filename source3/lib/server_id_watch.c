@@ -27,6 +27,7 @@
 struct server_id_watch_state {
 	struct tevent_context *ev;
 	struct server_id pid;
+	struct timeval start;
 };
 
 static void server_id_watch_waited(struct tevent_req *subreq);
@@ -37,6 +38,7 @@ struct tevent_req *server_id_watch_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct server_id_watch_state *state;
+	struct timeval next;
 
 	req = tevent_req_create(mem_ctx, &state, struct server_id_watch_state);
 	if (req == NULL) {
@@ -44,14 +46,15 @@ struct tevent_req *server_id_watch_send(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 	state->pid = pid;
+	state->start = tevent_timeval_current();
 
 	if (!serverid_exists(&state->pid)) {
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = tevent_wakeup_send(
-		state, ev, tevent_timeval_current_ofs(0, 500000));
+	next = tevent_timeval_add(&state->start, 0, 500000);
+	subreq = tevent_wakeup_send(state, ev, next);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -66,6 +69,8 @@ static void server_id_watch_waited(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct server_id_watch_state *state = tevent_req_data(
 		req, struct server_id_watch_state);
+	struct timeval now;
+	struct timeval next;
 	bool ok;
 
 	ok = tevent_wakeup_recv(subreq);
@@ -80,8 +85,9 @@ static void server_id_watch_waited(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = tevent_wakeup_send(
-		state, state->ev, tevent_timeval_current_ofs(0, 500000));
+	now = tevent_timeval_current();
+	next = tevent_timeval_add(&now, 0, 500000);
+	subreq = tevent_wakeup_send(state, state->ev, next);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
