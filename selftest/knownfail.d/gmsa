@@ -1,3 +1,4 @@
+^samba\.tests\.krb5\.gmsa_tests\.samba\.tests\.krb5\.gmsa_tests\.GmsaTests\.test_gmsa_keys_when_previous_password_is_acceptable\(ad_dc:local\)$
 # The unencrypted simple bind fails because the ad_dc environment sets ‘ldap
 # server require strong auth = yes’.
 ^samba\.tests\.krb5\.gmsa_tests\.samba\.tests\.krb5\.gmsa_tests\.GmsaTests\.test_retrieving_password_after_unencrypted_simple_bind\(ad_dc:local\)$

@@ -532,6 +532,9 @@ class KerberosCredentials(Credentials):
         etype = int(etype)
         return self.forced_keys.get(etype)
 
+    def clear_forced_keys(self):
+        self.forced_keys.clear()
+
     def set_forced_salt(self, salt):
         self.forced_salt = bytes(salt)
 
