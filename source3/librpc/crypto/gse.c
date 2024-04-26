@@ -666,8 +666,9 @@ static NTSTATUS gse_init_server(struct gensec_security *gensec_security,
 	}
 
 	/* This creates a GSSAPI cred_id_t with the keytab set */
-	gss_maj = smb_gss_krb5_import_cred(&gss_min, gse_ctx->k5ctx,
+	gss_maj = smb_gss_mech_import_cred(&gss_min, gse_ctx->k5ctx,
 					   NULL, NULL, gse_ctx->keytab,
+					   &gse_ctx->gss_mech,
 					   &gse_ctx->creds);
 
 	if (gss_maj != 0) {
