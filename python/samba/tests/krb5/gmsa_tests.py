@@ -1520,6 +1520,22 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
             validation_level=netlogon.NetlogonValidationSamInfo4,
         )
 
+    def test_computer_cannot_perform_interactive_logon(self):
+        self._test_samlogon(
+            self.get_mach_creds(),
+            netlogon.NetlogonInteractiveInformation,
+            expect_error=ntstatus.NT_STATUS_NO_SUCH_USER,
+            validation_level=netlogon.NetlogonValidationSamInfo4,
+        )
+
+    def test_gmsa_cannot_perform_interactive_logon(self):
+        self._test_samlogon(
+            self.gmsa_account(kerberos_enabled=False),
+            netlogon.NetlogonInteractiveInformation,
+            expect_error=ntstatus.NT_STATUS_NO_SUCH_USER,
+            validation_level=netlogon.NetlogonValidationSamInfo4,
+        )
+
     def _gmsa_can_perform_as_req(self, *, enctype: kcrypto.Enctype) -> None:
         self._as_req(self.gmsa_account(), self.get_service_creds(), enctype)
 
