@@ -176,6 +176,7 @@ static NTSTATUS gse_setup_server_principal(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS gse_context_init(struct gensec_security *gensec_security,
 				 bool do_sign, bool do_seal,
+				 const struct gss_OID_desc_struct *mech,
 				 uint32_t add_gss_c_flags,
 				 struct gse_context **_gse_ctx)
 {
@@ -192,7 +193,7 @@ static NTSTATUS gse_context_init(struct gensec_security *gensec_security,
 	gse_ctx->expire_time = GENSEC_EXPIRE_TIME_INFINITY;
 	gse_ctx->max_wrap_buf_size = UINT16_MAX;
 
-	memcpy(&gse_ctx->gss_mech, gss_mech_krb5, sizeof(gss_OID_desc));
+	memcpy(&gse_ctx->gss_mech, mech, sizeof(gss_OID_desc));
 
 	gse_ctx->gss_want_flags = GSS_C_MUTUAL_FLAG |
 				GSS_C_DELEG_POLICY_FLAG |
@@ -268,6 +269,7 @@ err_out:
 static NTSTATUS gse_init_client(struct gensec_security *gensec_security,
 				bool do_sign, bool do_seal,
 				const char *ccache_name,
+				const struct gss_OID_desc_struct *mech,
 				uint32_t add_gss_c_flags,
 				struct gse_context **_gse_ctx)
 {
@@ -280,7 +282,10 @@ static NTSTATUS gse_init_client(struct gensec_security *gensec_security,
 	krb5_error_code k5ret;
 	NTSTATUS status;
 
-	status = gse_context_init(gensec_security, do_sign, do_seal,
+	status = gse_context_init(gensec_security,
+				  do_sign,
+				  do_seal,
+				  mech,
 				  add_gss_c_flags,
 				  &gse_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -644,6 +649,7 @@ done:
 
 static NTSTATUS gse_init_server(struct gensec_security *gensec_security,
 				bool do_sign, bool do_seal,
+				const struct gss_OID_desc_struct *mech,
 				uint32_t add_gss_c_flags,
 				struct gse_context **_gse_ctx)
 {
@@ -652,8 +658,12 @@ static NTSTATUS gse_init_server(struct gensec_security *gensec_security,
 	krb5_error_code ret;
 	NTSTATUS status;
 
-	status = gse_context_init(gensec_security, do_sign, do_seal,
-				  add_gss_c_flags, &gse_ctx);
+	status = gse_context_init(gensec_security,
+				  do_sign,
+				  do_seal,
+				  mech,
+				  add_gss_c_flags,
+				  &gse_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -864,6 +874,7 @@ static NTSTATUS gensec_gse_client_start(struct gensec_security *gensec_security)
 	NTSTATUS nt_status;
 	OM_uint32 want_flags = 0;
 	bool do_sign = false, do_seal = false;
+	const char *ccache_name = NULL;
 
 	nt_status = gensec_kerberos_possible(gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -910,8 +921,13 @@ static NTSTATUS gensec_gse_client_start(struct gensec_security *gensec_security)
 	}
 #endif
 
-	nt_status = gse_init_client(gensec_security, do_sign, do_seal, NULL,
-				    want_flags, &gse_ctx);
+	nt_status = gse_init_client(gensec_security,
+				    do_sign,
+				    do_seal,
+				    ccache_name,
+				    gss_mech_krb5,
+				    want_flags,
+				    &gse_ctx);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -936,7 +952,11 @@ static NTSTATUS gensec_gse_server_start(struct gensec_security *gensec_security)
 		want_flags |= GSS_C_DCE_STYLE;
 	}
 
-	nt_status = gse_init_server(gensec_security, do_sign, do_seal, want_flags,
+	nt_status = gse_init_server(gensec_security,
+				    do_sign,
+				    do_seal,
+				    gss_mech_krb5,
+				    want_flags,
 				    &gse_ctx);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
