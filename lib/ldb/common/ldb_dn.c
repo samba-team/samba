@@ -1145,13 +1145,23 @@ int ldb_dn_compare(struct ldb_dn *dn0, struct ldb_dn *dn1)
 	 * | normal DNs, sorted | casefold failed DNs | invalid DNs | NULLs |
 	 */
 
-	if (dn0 == dn1 || (dn0->invalid && dn1->invalid)) {
+	if (dn0 == dn1) {
+		/* this includes the both-NULL case */
 		return 0;
 	}
-	if (dn0 == NULL || dn0->invalid) {
+	if (dn0 == NULL) {
 		return 1;
 	}
-	if (dn1 == NULL || dn1->invalid) {
+	if (dn1 == NULL) {
+		return -1;
+	}
+	if (dn0->invalid && dn1->invalid) {
+		return 0;
+	}
+	if (dn0->invalid) {
+		return 1;
+	}
+	if (dn1->invalid) {
 		return -1;
 	}
 
