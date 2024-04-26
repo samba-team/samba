@@ -48,16 +48,35 @@ int smb_gss_oid_equal(const gss_OID first_oid, const gss_OID second_oid)
 }
 #endif /* !HAVE_GSS_OID_EQUAL */
 
-
 /* wrapper around gss_krb5_import_cred() that prefers to use gss_acquire_cred_from()
  * if this GSSAPI extension is available. gss_acquire_cred_from() is properly
  * interposed by GSSPROXY while gss_krb5_import_cred() is not.
  *
  * This wrapper requires a proper krb5_context to resolve ccache name.
  * All gss_krb5_import_cred() callers in Samba already have krb5_context available. */
-uint32_t smb_gss_krb5_import_cred(uint32_t *minor_status, krb5_context ctx,
-				  krb5_ccache id, krb5_principal keytab_principal,
-				  krb5_keytab keytab, gss_cred_id_t *cred)
+uint32_t smb_gss_krb5_import_cred(uint32_t *minor_status,
+				  krb5_context ctx,
+				  krb5_ccache id,
+				  krb5_principal keytab_principal,
+				  krb5_keytab keytab,
+				  gss_cred_id_t *cred)
+{
+	return smb_gss_mech_import_cred(minor_status,
+					ctx,
+					id,
+					keytab_principal,
+					keytab,
+					gss_mech_krb5,
+					cred);
+}
+
+uint32_t smb_gss_mech_import_cred(OM_uint32 *minor_status,
+				  krb5_context ctx,
+				  krb5_ccache id,
+				  krb5_principal keytab_principal,
+				  krb5_keytab keytab,
+				  const struct gss_OID_desc_struct *mech,
+				  gss_cred_id_t *cred)
 {
 	uint32_t major_status = 0;
 
@@ -86,7 +105,7 @@ uint32_t smb_gss_krb5_import_cred(uint32_t *minor_status, krb5_context ctx,
 	gss_OID_set_desc mech_set = {
 		.count = 1,
 		.elements = discard_const_p(struct gss_OID_desc_struct,
-					    gss_mech_krb5),
+					    mech),
 	};
 
 	gss_cred_usage_t cred_usage = GSS_C_INITIATE;

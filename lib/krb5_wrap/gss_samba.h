@@ -45,5 +45,13 @@ uint32_t smb_gss_krb5_import_cred(OM_uint32 *minor_status, krb5_context ctx,
 				  krb5_ccache id, krb5_principal keytab_principal,
 				  krb5_keytab keytab, gss_cred_id_t *cred);
 
+uint32_t smb_gss_mech_import_cred(OM_uint32 *minor_status,
+				  krb5_context ctx,
+				  krb5_ccache id,
+				  krb5_principal keytab_principal,
+				  krb5_keytab keytab,
+				  const struct gss_OID_desc_struct *mech,
+				  gss_cred_id_t *cred);
+
 #endif /* HAVE_GSSAPI */
 #endif /* _GSS_SAMBA_H */
