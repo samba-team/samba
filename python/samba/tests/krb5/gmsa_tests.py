@@ -812,6 +812,39 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
             expected_werror=werror.WERR_DS_CONFIDENTIALITY_REQUIRED,
         )
 
+    def test_retrieving_password_after_encrypted_simple_bind(self):
+        """Test retrieving the managed password using a simple bind with encryption."""
+        admin_sid = self.get_samdb().get_admin_sid()
+
+        creds = self.insta_creds(template=self.get_admin_creds())
+        creds.set_bind_dn(admin_sid)
+        samdb = SamDB(
+            url=f"ldaps://{self.dc_host}", credentials=creds, lp=self.get_lp()
+        )
+
+        self.check_managed_password_access(
+            self.gmsa_account(), samdb=samdb, expect_access=True
+        )
+
+    def test_retrieving_password_after_unencrypted_simple_bind(self):
+        """Test retrieving the managed password using a simple bind without encryption."""
+        admin_sid = self.get_samdb().get_admin_sid()
+
+        creds = self.insta_creds(template=self.get_admin_creds())
+        creds.set_bind_dn(admin_sid)
+        try:
+            samdb = SamDB(
+                url=f"ldap://{self.dc_host}", credentials=creds, lp=self.get_lp()
+            )
+        except ldb.LdbError:
+            self.fail("failed to perform simple bind")
+
+        self.check_managed_password_access(
+            self.gmsa_account(),
+            samdb=samdb,
+            expected_werror=werror.WERR_DS_CONFIDENTIALITY_REQUIRED,
+        )
+
     def future_gkid(self) -> Gkid:
         """Return (6333, 26, 5)—an arbitrary GKID far enough in the future that
         it’s situated beyond any reasonable rollover period. But not so far in
