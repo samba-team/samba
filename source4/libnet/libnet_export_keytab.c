@@ -410,7 +410,7 @@ NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, s
 		}
 	}
 
-	sdb_flags = SDB_F_ADMIN_DATA;
+	sdb_flags = r->in.as_for_AS_REQ ? SDB_F_FOR_AS_REQ : SDB_F_ADMIN_DATA;
 
 	status = sdb_kt_copy(mem_ctx,
 			     smb_krb5_context,

@@ -39,6 +39,7 @@ static PyObject *py_net_export_keytab(py_net_Object *self, PyObject *args, PyObj
 				  "principal",
 				  "keep_stale_entries",
 				  "only_current_keys",
+				  "as_for_AS_REQ",
 				  NULL };
 	NTSTATUS status;
 	/*
@@ -47,18 +48,21 @@ static PyObject *py_net_export_keytab(py_net_Object *self, PyObject *args, PyObj
 	 */
 	int keep_stale_entries = false;
 	int only_current_keys = false;
+	int as_for_AS_REQ = false;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|Ozpp:export_keytab", discard_const_p(char *, kwnames),
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|Ozppp:export_keytab", discard_const_p(char *, kwnames),
 					 &r.in.keytab_name,
 					 &py_samdb,
 					 &r.in.principal,
 					 &keep_stale_entries,
-					 &only_current_keys)) {
+					 &only_current_keys,
+					 &as_for_AS_REQ)) {
 		return NULL;
 	}
 
 	r.in.keep_stale_entries = keep_stale_entries;
 	r.in.only_current_keys = only_current_keys;
+	r.in.as_for_AS_REQ = as_for_AS_REQ;
 
 	if (py_samdb == NULL) {
 		r.in.samdb = NULL;
@@ -90,8 +94,13 @@ static PyObject *py_net_export_keytab(py_net_Object *self, PyObject *args, PyObj
 
 static const char py_net_export_keytab_doc[] =
 	"export_keytab(keytab, samdb=None, principal=None, "
-	"keep_stale_entries=False, only_current_keys=False)\n\n"
-	"Export the DC keytab to a keytab file.";
+	"keep_stale_entries=False, only_current_keys=False, "
+	"as_for_AS_REQ=False)\n\n"
+	"Export the DC keytab to a keytab file.\n\n"
+	"Pass as_for_AS_REQ=True to simulate the combination of flags normally "
+	"utilized for an AS‐REQ. Samba’s testsuite uses this to verify which "
+	"keys the KDC would see — some combination of previous and current "
+	"keys — for a Group Managed Service Account performing an AS‐REQ.";
 
 static PyMethodDef export_keytab_method_table[] = {
 	{"export_keytab", PY_DISCARD_FUNC_SIG(PyCFunction,
