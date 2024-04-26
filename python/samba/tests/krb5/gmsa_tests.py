@@ -735,6 +735,47 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
             self.gmsa_account(msa_membership=deny_world_sddl), expect_access=False
         )
 
+    def test_retrieving_password_over_sealed_connection(self):
+        lp = self.get_lp()
+        samdb = SamDB(
+            f"ldap://{self.dc_host}",
+            credentials=self.get_admin_creds(),
+            session_info=auth.system_session(lp),
+            lp=lp,
+        )
+
+        self.check_managed_password_access(
+            self.gmsa_account(), samdb=samdb, expect_access=True
+        )
+
+    def test_retrieving_password_over_unsealed_connection(self):
+        # Requires --use-kerberos=required, or it automatically upgrades to an
+        # encrypted connection.
+
+        # Remove FEATURE_SEAL which gets added by insta_creds.
+        creds = self.insta_creds(template=self.get_admin_creds())
+        creds.set_gensec_features(creds.get_gensec_features() & ~gensec.FEATURE_SEAL)
+
+        lp = self.get_lp()
+
+        sasl_wrap = lp.get("client ldap sasl wrapping")
+        self.addCleanup(lp.set, "client ldap sasl wrapping", sasl_wrap)
+        lp.set("client ldap sasl wrapping", "sign")
+
+        # Create a second ldb connection without seal.
+        samdb = SamDB(
+            f"ldap://{self.dc_host}",
+            credentials=creds,
+            session_info=auth.system_session(lp),
+            lp=lp,
+        )
+
+        self.check_managed_password_access(
+            self.gmsa_account(),
+            samdb=samdb,
+            expected_werror=werror.WERR_DS_CONFIDENTIALITY_REQUIRED,
+        )
+
     def test_retrieving_denied_password_over_unsealed_connection(self):
         # Requires --use-kerberos=required, or it automatically upgrades to an
         # encrypted connection.
