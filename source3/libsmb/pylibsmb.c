@@ -1896,12 +1896,14 @@ static NTSTATUS list_posix_helper(struct file_info *finfo,
 			     "s:l,s:l,s:l,s:l,"
 			     "s:i,s:K,s:i,s:i,s:I,"
 			     "s:s,s:s,s:k}",
-			     "name", finfo->name,
-			     "attrib", finfo->attr,
-
-			     "size", finfo->size,
-			     "allocaction_size", finfo->allocated_size,
-
+			     "name",
+			     finfo->name,
+			     "attrib",
+			     finfo->attr,
+			     "size",
+			     finfo->size,
+			     "allocaction_size",
+			     finfo->allocated_size,
 			     "btime",
 			     convert_timespec_to_time_t(finfo->btime_ts),
 			     "atime",
@@ -1910,18 +1912,22 @@ static NTSTATUS list_posix_helper(struct file_info *finfo,
 			     convert_timespec_to_time_t(finfo->mtime_ts),
 			     "ctime",
 			     convert_timespec_to_time_t(finfo->ctime_ts),
-
-			     "perms", finfo->st_ex_mode,
-			     "ino", finfo->ino,
-			     "dev", finfo->st_ex_dev,
-			     "nlink", finfo->st_ex_nlink,
-			     "reparse_tag", finfo->reparse_tag,
-
+			     "perms",
+			     finfo->st_ex_mode,
+			     "ino",
+			     finfo->ino,
+			     "dev",
+			     finfo->st_ex_dev,
+			     "nlink",
+			     finfo->st_ex_nlink,
+			     "reparse_tag",
+			     finfo->reparse_tag,
 			     "owner_sid",
 			     dom_sid_string(finfo, &finfo->owner_sid),
 			     "group_sid",
 			     dom_sid_string(finfo, &finfo->group_sid),
-			     "reparse_tag", (unsigned long)finfo->reparse_tag);
+			     "reparse_tag",
+			     (unsigned long)finfo->reparse_tag);
 	if (file == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1956,13 +1962,18 @@ static NTSTATUS list_helper(struct file_info *finfo,
 	 * Note: Windows does not always return short_name (so it may be None)
 	 */
 	file = Py_BuildValue("{s:s,s:i,s:s,s:O,s:l,s:k}",
-			     "name", finfo->name,
-			     "attrib", (int)finfo->attr,
-			     "short_name", finfo->short_name,
-			     "size", size,
+			     "name",
+			     finfo->name,
+			     "attrib",
+			     (int)finfo->attr,
+			     "short_name",
+			     finfo->short_name,
+			     "size",
+			     size,
 			     "mtime",
 			     convert_timespec_to_time_t(finfo->mtime_ts),
-			     "reparse_tag", (unsigned long)finfo->reparse_tag);
+			     "reparse_tag",
+			     (unsigned long)finfo->reparse_tag);
 
 	Py_CLEAR(size);
 
