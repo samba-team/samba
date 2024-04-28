@@ -2077,7 +2077,7 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 	const char *kwlist[] = { "directory", "mask", "attribs",
 				 "info_level", NULL };
 	NTSTATUS (*callback_fn)(struct file_info *, const char *, void *) =
-		&list_helper;
+		list_helper;
 
 	if (!ParseTupleAndKeywords(args, kwds, "z|sII:list", kwlist,
 				   &base_dir, &user_mask, &attribute,
@@ -2099,7 +2099,7 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 	}
 
 	if (info_level == SMB2_FIND_POSIX_INFORMATION) {
-		callback_fn = &list_posix_helper;
+		callback_fn = list_posix_helper;
 	}
 	status = do_listing(self, base_dir, user_mask, attribute,
 			    info_level, callback_fn, result);
