@@ -1478,7 +1478,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 	case FSCTL_CREATE_OR_GET_OBJECT_ID:
 	{
 		unsigned char objid[16];
-		char *return_data = NULL;
+		uint8_t *return_data = NULL;
 
 		/* This should return the object-id on this file.
 		 * I think I'll make this be the inode+dev. JRA.
@@ -1490,17 +1490,17 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		*out_len = MIN(max_out_len, 64);
 
 		/* Hmmm, will this cause problems if less data asked for? */
-		return_data = talloc_array(ctx, char, 64);
+		return_data = talloc_array(ctx, uint8_t, 64);
 		if (return_data == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
 
 		/* For backwards compatibility only store the dev/inode. */
-		push_file_id_16(return_data, &fsp->file_id);
+		push_file_id_16((char *)return_data, &fsp->file_id);
 		memcpy(return_data+16,create_volume_objectid(fsp->conn,objid),16);
-		push_file_id_16(return_data+32, &fsp->file_id);
+		push_file_id_16((char *)return_data+32, &fsp->file_id);
 		memset(return_data+48, 0, 16);
-		*out_data = return_data;
+		*_out_data = return_data;
 		return NT_STATUS_OK;
 	}
 
