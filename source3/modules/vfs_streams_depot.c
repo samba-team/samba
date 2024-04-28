@@ -215,7 +215,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 
 	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &base_sbuf_tmp);
 
-	push_file_id_16((char *)id_buf, &id);
+	push_file_id_16(id_buf, &id);
 
 	hash = hash_fn(data_blob_const(id_buf, sizeof(id_buf)));
 

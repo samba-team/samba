@@ -102,7 +102,7 @@ static NTSTATUS acl_tdb_delete(vfs_handle_struct *handle,
 	uint8_t id_buf[16];
 
 	/* For backwards compatibility only store the dev/inode. */
-	push_file_id_16((char *)id_buf, &id);
+	push_file_id_16(id_buf, &id);
 
 	status = dbwrap_delete(db, make_tdb_data(id_buf, sizeof(id_buf)));
 	return status;
@@ -131,7 +131,7 @@ static NTSTATUS fget_acl_blob(TALLOC_CTX *ctx,
 	id = vfs_file_id_from_sbuf(handle->conn, &fsp->fsp_name->st);
 
 	/* For backwards compatibility only store the dev/inode. */
-	push_file_id_16((char *)id_buf, &id);
+	push_file_id_16(id_buf, &id);
 
 	status = dbwrap_fetch(db,
 			      ctx,
@@ -179,7 +179,7 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 	id = vfs_file_id_from_sbuf(handle->conn, &fsp->fsp_name->st);
 
 	/* For backwards compatibility only store the dev/inode. */
-	push_file_id_16((char *)id_buf, &id);
+	push_file_id_16(id_buf, &id);
 
 	status = dbwrap_store(
 		db, make_tdb_data(id_buf, sizeof(id_buf)), data, 0);

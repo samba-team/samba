@@ -46,7 +46,7 @@ char *file_id_str_buf(struct file_id fid, struct file_id_buf *dst)
   push a 16 byte version of a file id into a buffer.  This ignores the extid
   and is needed when dev/inodes are stored in persistent storage (tdbs).
  */
-void push_file_id_16(char *buf, const struct file_id *id)
+void push_file_id_16(uint8_t *buf, const struct file_id *id)
 {
 	SIVAL(buf,  0, id->devid&0xFFFFFFFF);
 	SIVAL(buf,  4, id->devid>>32);

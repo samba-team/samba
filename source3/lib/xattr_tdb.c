@@ -109,7 +109,7 @@ static NTSTATUS xattr_tdb_load_attrs(TALLOC_CTX *mem_ctx,
 	TDB_DATA data;
 
 	/* For backwards compatibility only store the dev/inode. */
-	push_file_id_16((char *)id_buf, id);
+	push_file_id_16(id_buf, id);
 
 	status = dbwrap_fetch(db_ctx, mem_ctx,
 			      make_tdb_data(id_buf, sizeof(id_buf)),
@@ -137,7 +137,7 @@ static struct db_record *xattr_tdb_lock_attrs(TALLOC_CTX *mem_ctx,
 	uint8_t id_buf[16];
 
 	/* For backwards compatibility only store the dev/inode. */
-	push_file_id_16((char *)id_buf, id);
+	push_file_id_16(id_buf, id);
 	return dbwrap_fetch_locked(db_ctx, mem_ctx,
 				   make_tdb_data(id_buf, sizeof(id_buf)));
 }
