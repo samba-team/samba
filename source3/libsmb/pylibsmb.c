@@ -1886,6 +1886,7 @@ static NTSTATUS list_posix_helper(struct file_info *finfo,
 {
 	PyObject *result = (PyObject *)state;
 	PyObject *file = NULL;
+	struct dom_sid_buf owner_buf, group_buf;
 	int ret;
 
 	/*
@@ -1923,9 +1924,9 @@ static NTSTATUS list_posix_helper(struct file_info *finfo,
 			     "reparse_tag",
 			     finfo->reparse_tag,
 			     "owner_sid",
-			     dom_sid_string(finfo, &finfo->owner_sid),
+			     dom_sid_str_buf(&finfo->owner_sid, &owner_buf),
 			     "group_sid",
-			     dom_sid_string(finfo, &finfo->group_sid),
+			     dom_sid_str_buf(&finfo->group_sid, &group_buf),
 			     "reparse_tag",
 			     (unsigned long)finfo->reparse_tag);
 	if (file == NULL) {
