@@ -1000,12 +1000,19 @@ NTSTATUS authsam_reread_user_logon_data(
 	const struct ldb_message *user_msg,
 	struct ldb_message **current)
 {
+	TALLOC_CTX *tmp_ctx = NULL;
 	const struct ldb_val *v = NULL;
 	struct ldb_result *res = NULL;
 	uint16_t acct_flags = 0;
 	const char *attr_name = "msDS-User-Account-Control-Computed";
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
 
 	/*
 	 * Re-read the account details, using the GUID in case the DN
@@ -1016,7 +1023,7 @@ NTSTATUS authsam_reread_user_logon_data(
 	 * subset to ensure that we can reuse existing validation code.
 	 */
 	ret = dsdb_search_dn(sam_ctx,
-			     mem_ctx,
+			     tmp_ctx,
 			     &res,
 			     user_msg->dn,
 			     user_attrs,
@@ -1049,7 +1056,7 @@ NTSTATUS authsam_reread_user_logon_data(
 	}
 	*current = talloc_steal(mem_ctx, res->msgs[0]);
 out:
-	TALLOC_FREE(res);
+	TALLOC_FREE(tmp_ctx);
 	return status;
 }
 
