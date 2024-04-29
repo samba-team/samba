@@ -651,7 +651,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 		/*
 		  prioritise the GUID - we have had instances of
 		  duplicate SIDs in the database in the
-		  ForeignSecurityPrinciples due to provision errors
+		  ForeignSecurityPrincipals due to provision errors
 		 */
 		if (guid_val) {
 			dsdb_flags |= DSDB_SEARCH_SEARCH_ALL_PARTITIONS;
