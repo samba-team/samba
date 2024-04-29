@@ -1004,7 +1004,7 @@ NTSTATUS authsam_reread_user_logon_data(
 	struct ldb_result *res = NULL;
 	uint16_t acct_flags = 0;
 	const char *attr_name = "msDS-User-Account-Control-Computed";
-
+	NTSTATUS status = NT_STATUS_OK;
 	int ret;
 
 	/*
@@ -1024,7 +1024,8 @@ NTSTATUS authsam_reread_user_logon_data(
 	if (ret != LDB_SUCCESS) {
 		DBG_ERR("Unable to re-read account control data for %s\n",
 			ldb_dn_get_linearized(user_msg->dn));
-		return NT_STATUS_INTERNAL_ERROR;
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto out;
 	}
 
 	/*
@@ -1035,20 +1036,21 @@ NTSTATUS authsam_reread_user_logon_data(
 		DBG_ERR("No %s attribute for %s\n",
 			attr_name,
 			ldb_dn_get_linearized(user_msg->dn));
-		TALLOC_FREE(res);
-		return NT_STATUS_INTERNAL_ERROR;
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto out;
 	}
 	acct_flags = samdb_result_acct_flags(res->msgs[0], attr_name);
 	if (acct_flags & ACB_AUTOLOCK) {
 		DBG_WARNING(
 			"Account for user %s was locked out.\n",
 			ldb_dn_get_linearized(user_msg->dn));
-		TALLOC_FREE(res);
-		return NT_STATUS_ACCOUNT_LOCKED_OUT;
+		status = NT_STATUS_ACCOUNT_LOCKED_OUT;
+		goto out;
 	}
 	*current = talloc_steal(mem_ctx, res->msgs[0]);
+out:
 	TALLOC_FREE(res);
-	return NT_STATUS_OK;
+	return status;
 }
 
 static struct db_context *authsam_get_bad_password_db(
