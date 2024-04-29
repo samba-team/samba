@@ -6541,7 +6541,9 @@ NTSTATUS dsdb_update_bad_pwd_count(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (badPwdCount >= lockoutThreshold) {
+	if (dsdb_account_is_trust(user_msg)) {
+		/* Trust accounts cannot be locked out. */
+	} else if (badPwdCount >= lockoutThreshold) {
 		ret = samdb_msg_add_int64(sam_ctx, mod_msg, mod_msg, "lockoutTime", now);
 		if (ret != LDB_SUCCESS) {
 			TALLOC_FREE(mod_msg);
