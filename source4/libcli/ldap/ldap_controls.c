@@ -366,7 +366,7 @@ static bool decode_dirsync_request(void *mem_ctx, DATA_BLOB in, void *_out)
 }
 
 /* seem that this controls has 2 forms one in case it is used with
- * a Search Request and another when used ina Search Response
+ * a Search Request and another when used in a Search Response
  */
 static bool decode_asq_control(void *mem_ctx, DATA_BLOB in, void *_out)
 {
@@ -901,7 +901,7 @@ static bool encode_paged_results_request(void *mem_ctx, void *in, DATA_BLOB *out
 }
 
 /* seem that this controls has 2 forms one in case it is used with
- * a Search Request and another when used ina Search Response
+ * a Search Request and another when used in a Search Response
  */
 static bool encode_asq_control(void *mem_ctx, void *in, DATA_BLOB *out)
 {
