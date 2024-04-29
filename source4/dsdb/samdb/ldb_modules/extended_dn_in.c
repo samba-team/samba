@@ -1,4 +1,4 @@
-/* 
+/*
    ldb database library
 
    Copyright (C) Simo Sorce 2005-2008
@@ -8,12 +8,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -77,15 +77,15 @@ static int extended_final_callback(struct ldb_request *req, struct ldb_reply *ar
 	} else {
 		switch (ares->type) {
 		case LDB_REPLY_ENTRY:
-			
+
 			ret = ldb_module_send_entry(ac->req, ares->message, ares->controls);
 			break;
 		case LDB_REPLY_REFERRAL:
-			
+
 			ret = ldb_module_send_referral(ac->req, ares->referral);
 			break;
 		case LDB_REPLY_DONE:
-			
+
 			ret = ldb_module_done(ac->req, ares->controls,
 					      ares->response, ares->error);
 			break;
@@ -204,7 +204,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 						      ac->tree,
 						      ac->req->op.search.attrs,
 						      ac->req->controls,
-						      ac, extended_final_callback, 
+						      ac, extended_final_callback,
 						      ac->req);
 			LDB_REQ_SET_LOCATION(down_req);
 			break;
@@ -216,14 +216,14 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 				return ldb_module_done(ac->req, NULL, NULL,
 						       LDB_ERR_OPERATIONS_ERROR);
 			}
-			
+
 			add_msg->dn = ac->basedn;
 
 			ret = ldb_build_add_req(&down_req,
 						ldb_module_get_ctx(ac->module), ac->req,
-						add_msg, 
+						add_msg,
 						ac->req->controls,
-						ac, extended_final_callback, 
+						ac, extended_final_callback,
 						ac->req);
 			LDB_REQ_SET_LOCATION(down_req);
 			break;
@@ -236,14 +236,14 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 				return ldb_module_done(ac->req, NULL, NULL,
 						       LDB_ERR_OPERATIONS_ERROR);
 			}
-			
+
 			mod_msg->dn = ac->basedn;
 
 			ret = ldb_build_mod_req(&down_req,
 						ldb_module_get_ctx(ac->module), ac->req,
-						mod_msg, 
+						mod_msg,
 						ac->req->controls,
-						ac, extended_final_callback, 
+						ac, extended_final_callback,
 						ac->req);
 			LDB_REQ_SET_LOCATION(down_req);
 			break;
@@ -251,26 +251,26 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 		case LDB_DELETE:
 			ret = ldb_build_del_req(&down_req,
 						ldb_module_get_ctx(ac->module), ac->req,
-						ac->basedn, 
+						ac->basedn,
 						ac->req->controls,
-						ac, extended_final_callback, 
+						ac, extended_final_callback,
 						ac->req);
 			LDB_REQ_SET_LOCATION(down_req);
 			break;
 		case LDB_RENAME:
 			ret = ldb_build_rename_req(&down_req,
 						   ldb_module_get_ctx(ac->module), ac->req,
-						   ac->basedn, 
+						   ac->basedn,
 						   ac->req->op.rename.newdn,
 						   ac->req->controls,
-						   ac, extended_final_callback, 
+						   ac, extended_final_callback,
 						   ac->req);
 			LDB_REQ_SET_LOCATION(down_req);
 			break;
 		default:
 			return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
 		}
-		
+
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
@@ -718,14 +718,14 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 		if (ac == NULL) {
 			return ldb_oom(ldb_module_get_ctx(module));
 		}
-		
+
 		ac->module = module;
 		ac->req = req;
 		ac->tree = (down_tree != NULL) ? down_tree : req->op.search.tree;
 		ac->dn = dn;
 		ac->basedn = NULL;  /* Filled in if the search finds the DN by SID/GUID etc */
 		ac->wellknown_object = wellknown_object;
-		
+
 		/* If the base DN was an extended DN (perhaps a well known
 		 * GUID) then search for that, so we can proceed with the original operation */
 
