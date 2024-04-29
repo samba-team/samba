@@ -829,7 +829,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 					 struct server_id src,
 					 DATA_BLOB *data)
 {
-	struct oplock_break_message *msg = NULL;
+	struct oplock_break_message msg;
 	enum ndr_err_code ndr_err;
 	files_struct *fsp;
 	bool use_kernel;
@@ -844,34 +844,22 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 
 	smb_vfs_assert_allowed();
 
-	msg = talloc(talloc_tos(), struct oplock_break_message);
-	if (msg == NULL) {
-		DBG_WARNING("talloc failed\n");
-		return;
-	}
-
-	ndr_err = ndr_pull_struct_blob_all(
-		data,
-		msg,
-		msg,
-		(ndr_pull_flags_fn_t)ndr_pull_oplock_break_message);
+	ndr_err = ndr_pull_struct_blob_all_noalloc(
+		data, &msg, (ndr_pull_flags_fn_t)ndr_pull_oplock_break_message);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DBG_DEBUG("ndr_pull_oplock_break_message failed: %s\n",
 			  ndr_errstr(ndr_err));
-		TALLOC_FREE(msg);
 		return;
 	}
 	if (DEBUGLEVEL >= 10) {
 		struct server_id_buf buf;
 		DBG_DEBUG("Got break message from %s\n",
 			  server_id_str_buf(src, &buf));
-		NDR_PRINT_DEBUG(oplock_break_message, msg);
+		NDR_PRINT_DEBUG(oplock_break_message, &msg);
 	}
 
-	break_to = msg->break_to;
-	fsp = initial_break_processing(sconn, msg->id, msg->share_file_id);
-
-	TALLOC_FREE(msg);
+	break_to = msg.break_to;
+	fsp = initial_break_processing(sconn, msg.id, msg.share_file_id);
 
 	if (fsp == NULL) {
 		/* We hit a race here. Break messages are sent, and before we

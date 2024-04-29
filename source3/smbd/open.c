@@ -1995,7 +1995,8 @@ NTSTATUS send_break_message(struct messaging_context *msg_ctx,
 		.break_to = break_to,
 	};
 	enum ndr_err_code ndr_err;
-	DATA_BLOB blob;
+	uint8_t msgbuf[33];
+	DATA_BLOB blob = {.data = msgbuf, .length = sizeof(msgbuf)};
 	NTSTATUS status;
 
 	if (DEBUGLVL(10)) {
@@ -2005,9 +2006,8 @@ NTSTATUS send_break_message(struct messaging_context *msg_ctx,
 		NDR_PRINT_DEBUG(oplock_break_message, &msg);
 	}
 
-	ndr_err = ndr_push_struct_blob(
+	ndr_err = ndr_push_struct_into_fixed_blob(
 		&blob,
-		talloc_tos(),
 		&msg,
 		(ndr_push_flags_fn_t)ndr_push_oplock_break_message);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -2016,9 +2016,10 @@ NTSTATUS send_break_message(struct messaging_context *msg_ctx,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	status = messaging_send(
-		msg_ctx, exclusive->pid, MSG_SMB_BREAK_REQUEST, &blob);
-	TALLOC_FREE(blob.data);
+	status = messaging_send(msg_ctx,
+				exclusive->pid,
+				MSG_SMB_BREAK_REQUEST,
+				&blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("Could not send oplock break message: %s\n",
 			  nt_errstr(status)));
