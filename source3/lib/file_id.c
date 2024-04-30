@@ -53,30 +53,3 @@ void push_file_id_16(uint8_t *buf, const struct file_id *id)
 	SIVAL(buf,  8, id->inode&0xFFFFFFFF);
 	SIVAL(buf, 12, id->inode>>32);
 }
-
-/*
-  push a 24 byte version of a file id into a buffer
- */
-void push_file_id_24(char *buf, const struct file_id *id)
-{
-	SIVAL(buf,  0, id->devid&0xFFFFFFFF);
-	SIVAL(buf,  4, id->devid>>32);
-	SIVAL(buf,  8, id->inode&0xFFFFFFFF);
-	SIVAL(buf, 12, id->inode>>32);
-	SIVAL(buf, 16, id->extid&0xFFFFFFFF);
-	SIVAL(buf, 20, id->extid>>32);
-}
-
-/*
-  pull a 24 byte version of a file id from a buffer
- */
-void pull_file_id_24(const char *buf, struct file_id *id)
-{
-	ZERO_STRUCTP(id);
-	id->devid  = IVAL(buf,  0);
-	id->devid |= ((uint64_t)IVAL(buf,4))<<32;
-	id->inode  = IVAL(buf,  8);
-	id->inode |= ((uint64_t)IVAL(buf,12))<<32;
-	id->extid  = IVAL(buf,  16);
-	id->extid |= ((uint64_t)IVAL(buf,20))<<32;
-}
