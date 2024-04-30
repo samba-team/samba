@@ -324,9 +324,29 @@ nfs_startup()
 
 nfs_monitor_list_shares()
 {
-	grep Path "$nfs_exports_file" |
-		cut -f2 -d\" |
-		sort -u
+	# The 1st sed command prints anything after "Path = ", where
+	# Path is matched case-insensitively, and must be on a word
+	# boundary.  This also deletes any semicolon-terminated items
+	# before Path.  Each output line now starts with a value for
+	# Path, but may have other settings after a semicolon.
+	_s1='s/.*;*[[:space:]]*\<path\>[[:space:]]*=[[:space:]]*//ip'
+
+	# The 2nd sed command has 2 steps:
+	#
+	# a. Attempt to match an unquoted value not containing
+	#    semicolon or double-quote, followed by an optional
+	#    line-terminating semicolon or a semicolon followed by
+	#    anything else.  Keep the value and double-quote it.  If
+	#    the value was already quoted then the line will be
+	#    unchanged.  The pattern space now starts with a
+	#    double-quoted value.
+	_s2a='s/^\([^";][^";]*\)[[:space:]]*\(;*[[:space:]]*$\|;.*\)/"\1"/'
+	# b. Finally, print the contents of double-quotes at the
+	#    beginning of the pattern space, discarding anything
+	#    that follows.
+	_s2b='s/^"\([^"][^"]*\)".*/\1/p'
+
+	sed -n -e "$_s1" "$nfs_exports_file" | sed -n -e "$_s2a" -e "$_s2b"
 }
 
 ##################################################
