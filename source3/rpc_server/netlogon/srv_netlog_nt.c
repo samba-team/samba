@@ -2916,6 +2916,31 @@ NTSTATUS _netr_DsrUpdateReadOnlyServerDnsRecords(struct pipes_struct *p,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+DCESRV_COMPAT_NOT_USED_ON_WIRE(netr_Opnum49NotUsedOnWire)
+DCESRV_COMPAT_NOT_USED_ON_WIRE(netr_Opnum50NotUsedOnWire)
+DCESRV_COMPAT_NOT_USED_ON_WIRE(netr_Opnum51NotUsedOnWire)
+DCESRV_COMPAT_NOT_USED_ON_WIRE(netr_Opnum52NotUsedOnWire)
+DCESRV_COMPAT_NOT_USED_ON_WIRE(netr_Opnum53NotUsedOnWire)
+
+NTSTATUS _netr_ChainSetClientAttributes(struct pipes_struct *p,
+					struct netr_ChainSetClientAttributes *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+DCESRV_COMPAT_NOT_USED_ON_WIRE(netr_Opnum55NotUsedOnWire)
+DCESRV_COMPAT_NOT_USED_ON_WIRE(netr_Opnum56NotUsedOnWire)
+DCESRV_COMPAT_NOT_USED_ON_WIRE(netr_Opnum57NotUsedOnWire)
+DCESRV_COMPAT_NOT_USED_ON_WIRE(netr_Opnum58NotUsedOnWire)
+
+NTSTATUS _netr_ServerAuthenticateKerberos(struct pipes_struct *p,
+					  struct netr_ServerAuthenticateKerberos *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 /*
  * Define the bind function that will be used by ndr_netlogon_scompat.c,
  * included at the bottom of this file.
