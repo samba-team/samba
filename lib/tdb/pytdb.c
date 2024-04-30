@@ -383,6 +383,10 @@ static PyObject *obj_storev(PyTdbObject *self, PyObject *args)
 		PyErr_SetFromErrno(PyExc_OverflowError);
 		return NULL;
 	}
+	if (num_values > INT_MAX) {
+		PyErr_SetFromErrno(PyExc_OverflowError);
+		return NULL;
+	}
 	values = malloc(sizeof(TDB_DATA) * num_values);
 	if (values == NULL) {
 		PyErr_NoMemory();
@@ -398,7 +402,7 @@ static PyObject *obj_storev(PyTdbObject *self, PyObject *args)
 		values[i] = value;
 	}
 
-	ret = tdb_storev(self->ctx, key, values, num_values, flag);
+	ret = tdb_storev(self->ctx, key, values, (int)num_values, flag);
 	free(values);
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
 	Py_RETURN_NONE;
