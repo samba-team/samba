@@ -6538,7 +6538,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	struct sockaddr_storage server_ss;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct policy_handle connect_hnd;
-	TALLOC_CTX *mem_ctx = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS nt_status, result;
 	struct dom_sid *domain_sid;
 	char* domain_name;
@@ -6616,15 +6616,10 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 		goto out;
 	}
 
-	if (!(mem_ctx = talloc_init("establishing trust relationship to "
-				    "domain %s", domain_name))) {
-		DEBUG(0, ("talloc_init() failed\n"));
-		goto out;
-	}
 
 	/* Make sure we're talking to a proper server */
 
-	nt_status = rpc_trustdom_get_pdc(c, cli, mem_ctx, domain_name);
+	nt_status = rpc_trustdom_get_pdc(c, cli, frame, domain_name);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		goto out;
 	}
@@ -6643,7 +6638,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	b = pipe_hnd->binding_handle;
 
 	nt_status = dcerpc_lsa_open_policy_fallback(b,
-						    mem_ctx,
+						    frame,
 						    pipe_hnd->srv_name_slash,
 						    true,
 						    KEY_QUERY_VALUE,
@@ -6659,7 +6654,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 
 	/* Querying info level 5 */
 
-	nt_status = dcerpc_lsa_QueryInfoPolicy(b, mem_ctx,
+	nt_status = dcerpc_lsa_QueryInfoPolicy(b, frame,
 					       &connect_hnd,
 					       LSA_POLICY_INFO_ACCOUNT_DOMAIN,
 					       &info,
@@ -6695,7 +6690,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	 * Close the pipes and clean up
 	 */
 
-	nt_status = dcerpc_lsa_Close(b, mem_ctx, &connect_hnd, &result);
+	nt_status = dcerpc_lsa_Close(b, frame, &connect_hnd, &result);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't close LSA pipe. Error was %s\n",
 			nt_errstr(nt_status)));
@@ -6707,7 +6702,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	rc = 0;
 out:
 	cli_shutdown(cli);
-	TALLOC_FREE(mem_ctx);
+	TALLOC_FREE(frame);
 	return rc;
 }
 
