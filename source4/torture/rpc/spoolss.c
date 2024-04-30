@@ -10846,14 +10846,21 @@ static bool check_printer_driver_file(struct torture_context *tctx,
 				      struct torture_driver_context *d,
 				      const char *file_name)
 {
-	const char *remote_arch_dir = driver_directory_dir(d->remote.driver_directory);
-	const char *remote_name = talloc_asprintf(tctx, "%s\\%d\\%s",
-						  remote_arch_dir,
-						  d->info8.version,
-						  file_name);
+	const char *remote_arch_dir = NULL;
+	const char *remote_name = NULL;
 	int fnum;
 
 	torture_assert(tctx, (file_name && strlen(file_name) != 0), "invalid filename");
+
+	remote_arch_dir = driver_directory_dir(d->remote.driver_directory);
+	torture_assert_not_null(tctx, remote_arch_dir, "remote_arch_dir is null");
+
+	remote_name = talloc_asprintf(tctx,
+				      "%s\\%d\\%s",
+				      remote_arch_dir,
+				      d->info8.version,
+				      file_name);
+	torture_assert_not_null(tctx, remote_name, "renote_name is null");
 
 	torture_comment(tctx, "checking for driver file at %s\n", remote_name);
 
