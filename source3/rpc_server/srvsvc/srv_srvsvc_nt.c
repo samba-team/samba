@@ -30,6 +30,7 @@
 #include "librpc/rpc/dcesrv_core.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "librpc/gen_ndr/ndr_srvsvc_scompat.h"
+#include "librpc/gen_ndr/ndr_open_files.h"
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "../librpc/gen_ndr/open_files.h"
@@ -2891,10 +2892,17 @@ static int enum_file_close_fn(struct file_id id,
 			      const struct share_mode_entry *e,
 			      void *private_data)
 {
-	char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
 	struct enum_file_close_state *state =
 		(struct enum_file_close_state *)private_data;
 	uint32_t fid = (((uint32_t)(procid_to_pid(&e->pid))<<16) | e->share_file_id);
+	struct oplock_break_message msg = {
+		.id = id,
+		.share_file_id = e->share_file_id,
+	};
+	enum ndr_err_code ndr_err;
+	uint8_t msgbuf[33];
+	DATA_BLOB blob = {.data = msgbuf, .length = sizeof(msgbuf)};
+	NTSTATUS status;
 
 	if (fid != state->r->in.fid) {
 		return 0; /* Not this file. */
@@ -2908,12 +2916,24 @@ static int enum_file_close_fn(struct file_id id,
 	DBG_DEBUG("request to close file %s, %s\n", d->servicepath,
 		  share_mode_str(talloc_tos(), 0, &id, e));
 
-	share_mode_entry_to_message(msg, &id, e);
+	ndr_err = ndr_push_struct_into_fixed_blob(
+		&blob,
+		&msg,
+		(ndr_push_flags_fn_t)ndr_push_oplock_break_message);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_WARNING("ndr_push_oplock_break_message failed: %s\n",
+			    ndr_errstr(ndr_err));
+		status = ndr_map_error2ntstatus(ndr_err);
+	} else {
+		status = messaging_send(state->msg_ctx,
+					e->pid,
+					MSG_SMB_CLOSE_FILE,
+					&blob);
+	}
 
-	state->r->out.result = ntstatus_to_werror(
-		messaging_send_buf(state->msg_ctx,
-				e->pid, MSG_SMB_CLOSE_FILE,
-				(uint8_t *)msg, sizeof(msg)));
+	if (!NT_STATUS_IS_OK(status)) {
+		state->r->out.result = ntstatus_to_werror(status);
+	}
 
 	return 0;
 }

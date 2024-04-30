@@ -32,7 +32,7 @@
 #include "transfer_file.h"
 #include "auth.h"
 #include "messages.h"
-#include "../librpc/gen_ndr/open_files.h"
+#include "librpc/gen_ndr/ndr_open_files.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "source3/smbd/dir.h"
 
@@ -1714,26 +1714,24 @@ void msg_close_file(struct messaging_context *msg_ctx,
 			struct server_id server_id,
 			DATA_BLOB *data)
 {
+	struct oplock_break_message msg;
+	enum ndr_err_code ndr_err;
 	files_struct *fsp = NULL;
-	struct file_id id;
-	struct share_mode_entry e;
 	struct smbd_server_connection *sconn =
 		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
 
-	message_to_share_mode_entry(&id, &e, (char *)data->data);
-
-	if(DEBUGLVL(10)) {
-		char *sm_str = share_mode_str(NULL, 0, &id, &e);
-		if (!sm_str) {
-			smb_panic("talloc failed");
-		}
-		DEBUG(10,("msg_close_file: got request to close share mode "
-			"entry %s\n", sm_str));
-		TALLOC_FREE(sm_str);
+	ndr_err = ndr_pull_struct_blob_all_noalloc(
+		data,
+		&msg,
+		(ndr_pull_flags_fn_t)ndr_pull_oplock_break_message);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_DEBUG("ndr_pull_oplock_break_message failed: %s\n",
+			  ndr_errstr(ndr_err));
+		return;
 	}
 
-	fsp = file_find_dif(sconn, id, e.share_file_id);
+	fsp = file_find_dif(sconn, msg.id, msg.share_file_id);
 	if (!fsp) {
 		DEBUG(10,("msg_close_file: failed to find file.\n"));
 		return;

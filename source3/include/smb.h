@@ -211,7 +211,6 @@ Offset  Data			length.
 #define OP_BREAK_MSG_NAME_HASH_OFFSET 68
 
 #define OP_BREAK_MSG_VNN_OFFSET 72
-#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 76
 
 #define NT_HASH_LEN 16
 #define LM_HASH_LEN 16
