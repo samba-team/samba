@@ -517,9 +517,9 @@ class PyCredentialsTests(TestCase):
         pwd.data = filler + [x if isinstance(x, int) else ord(x) for x in encoded]
         self.machine_creds.encrypt_netr_crypt_password(pwd)
         c.netr_ServerPasswordSet2(self.server,
-                                  self.machine_creds.get_workstation(),
+                                  f'{self.machine_name}$',
                                   SEC_CHAN_WKSTA,
-                                  self.machine_name,
+                                  self.machine_creds.get_workstation(),
                                   authenticator,
                                   pwd)
 
