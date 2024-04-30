@@ -6582,14 +6582,6 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	}
 	cli_credentials_set_username(c->creds, acct_name, CRED_SPECIFIED);
 
-	/*
-	 * opt_workgroup will be used by connection functions further,
-	 * hence it should be set to remote domain name instead of ours
-	 */
-	if (c->opt_workgroup) {
-		c->opt_workgroup = smb_xstrdup(domain_name);
-	};
-
 	/* find the domain controller */
 	if (!net_find_pdc(&server_ss, pdc_name, domain_name)) {
 		DEBUG(0, ("Couldn't find domain controller for domain %s\n", domain_name));
