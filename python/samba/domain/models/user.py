@@ -27,6 +27,7 @@ from samba.dsdb import DS_GUID_USERS_CONTAINER
 
 from .exceptions import NotFound
 from .fields import DnField, EnumField, IntegerField, NtTimeField, StringField
+from .group import Group
 from .org import OrganizationalPerson
 from .types import AccountType, UserAccountControl
 
@@ -51,6 +52,11 @@ class User(OrganizationalPerson):
     def __str__(self):
         """Return sAMAccountName rather than cn for User model."""
         return self.account_name
+
+    def get_primary_group(self, samdb) -> Group:
+        """Returns the primary Group object for this User."""
+        group_sid = f"{samdb.domain_sid}-{self.primary_group_id}"
+        return Group.get(samdb, object_sid=group_sid)
 
     @staticmethod
     def get_base_dn(samdb):
