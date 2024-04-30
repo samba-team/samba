@@ -239,6 +239,16 @@ _gsskrb5_verify_8003_checksum(
     _gss_mg_decode_le_uint32(p, flags);
     p += 4;
 
+    /*
+     * Sometimes Windows clients forget
+     * to set GSS_C_MUTUAL_FLAG together
+     * with GSS_C_DCE_STYLE, but
+     * DCE_STYLE implies mutual authentication
+     */
+    if (*flags & GSS_C_DCE_STYLE) {
+	*flags |= GSS_C_MUTUAL_FLAG;
+    }
+
     if (cksum->checksum.length > 24 && (*flags & GSS_C_DELEG_FLAG)) {
 	if(cksum->checksum.length < 28) {
 	    *minor_status = 0;
