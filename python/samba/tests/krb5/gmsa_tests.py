@@ -1514,12 +1514,10 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
         self.gensec_ntlmssp_logon(creds, samdb, expect_success=False)
 
     def test_gmsa_can_perform_netlogon(self):
-        creds = self.gmsa_account(kerberos_enabled=False)
         self._test_samlogon(
-            creds,
+            self.gmsa_account(kerberos_enabled=False),
             netlogon.NetlogonNetworkInformation,
             validation_level=netlogon.NetlogonValidationSamInfo4,
-            domain_joined_mach_creds=creds,
         )
 
     def _gmsa_can_perform_as_req(self, *, enctype: kcrypto.Enctype) -> None:
