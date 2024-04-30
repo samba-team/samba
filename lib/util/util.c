@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba utility functions
    Copyright (C) Andrew Tridgell 1992-1998
@@ -13,12 +13,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -428,8 +428,8 @@ _PUBLIC_ bool fcntl_lock(int fd, int op, off_t offset, off_t count, int type)
 	/* a lock query */
 	if (op == F_GETLK) {
 		if ((ret != -1) &&
-				(lock.l_type != F_UNLCK) && 
-				(lock.l_pid != 0) && 
+				(lock.l_type != F_UNLCK) &&
+				(lock.l_pid != 0) &&
 				(lock.l_pid != tevent_cached_getpid())) {
 			DEBUG(3,("fcntl_lock: fd %d is locked by pid %d\n",fd,(int)lock.l_pid));
 			return true;
@@ -814,7 +814,7 @@ _PUBLIC_ void *smb_memdup(const void *p, size_t size)
 /**
  * Write a password to the log file.
  *
- * @note Only actually does something if DEBUG_PASSWORD was defined during 
+ * @note Only actually does something if DEBUG_PASSWORD was defined during
  * compile-time.
  */
 _PUBLIC_ void dump_data_pw(const char *msg, const uint8_t * data, size_t len)
@@ -842,7 +842,7 @@ _PUBLIC_ void dump_data_addbuf(const uint8_t *buf, size_t buflen, char **str)
 
 /**
  * see if a range of memory is all zero. A NULL pointer is considered
- * to be all zero 
+ * to be all zero
  */
 _PUBLIC_ bool all_zero(const uint8_t *ptr, size_t size)
 {
@@ -1018,9 +1018,9 @@ _PUBLIC_ DATA_BLOB strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *strhex)
 }
 
 /**
- * Parse a hex dump and return a data blob. Hex dump is structured as 
+ * Parse a hex dump and return a data blob. Hex dump is structured as
  * is generated from dump_data_cb() elsewhere in this file
- * 
+ *
  */
 _PUBLIC_ DATA_BLOB hexdump_to_data_blob(TALLOC_CTX *mem_ctx, const char *hexdump, size_t hexdump_len)
 {
@@ -1034,10 +1034,10 @@ _PUBLIC_ DATA_BLOB hexdump_to_data_blob(TALLOC_CTX *mem_ctx, const char *hexdump
 	if (hexdump_len % 77) {
 		hexdump_byte_count += ((hexdump_len % 77) - 59 - 2);
 	}
-	
+
 	ret_blob = data_blob_talloc(mem_ctx, NULL, hexdump_byte_count+1);
 	for (; i+1 < hexdump_len && hexdump[i] != 0 && hexdump[i+1] != 0; i++) {
-		if ((i%77) == 0) 
+		if ((i%77) == 0)
 			i += 7; /* Skip the offset at the start of the line */
 		if ((i%77) < 56) { /* position 56 is after both hex chunks */
 			if (hexdump[i] != ' ') {
@@ -1053,7 +1053,7 @@ _PUBLIC_ DATA_BLOB hexdump_to_data_blob(TALLOC_CTX *mem_ctx, const char *hexdump
 		}
 	}
 	ret_blob.length = char_count;
-	
+
 	return ret_blob;
 }
 
