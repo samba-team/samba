@@ -389,6 +389,9 @@ utf8str:
 	 * No need to recheck from the start, just from the first utf8 charu
 	 * found. Note that the callback of ldb_casefold() needs to be ascii
 	 * compatible.
+	 *
+	 * Probably ldb_casefold() is wrap_casefold() which wraps
+	 * strupper_talloc_n().
 	 */
 	b1 = ldb_casefold(ldb, mem_ctx, s1, n1);
 	b2 = ldb_casefold(ldb, mem_ctx, s2, n2);
@@ -397,6 +400,28 @@ utf8str:
 		/*
 		 * One of the strings was not UTF8, so we have no
 		 * options but to do a binary compare.
+		 *
+		 * FIXME: this can be non-transitive.
+		 *
+		 * consider {
+		 *           CA 8A  "ʊ"
+		 *           C6 B1  "Ʊ"
+		 *           C8 FE  invalid utf-8
+		 *          }
+		 *
+		 * The byte "0xfe" is always invalid in utf-8, so the
+		 * comparisons against that string end up coming this way,
+		 * while the "Ʊ" vs "ʊ" comparison goes via the ldb_casefold
+		 * branch. Then:
+		 *
+		 *  "ʊ" == "Ʊ"     by casefold.
+		 *  "ʊ" > {c8 fe}  by byte comparison.
+		 *  "Ʊ" < {c8 fe}  by byte comparison.
+		 *
+		 * In many cases there are no invalid encodings between the
+		 * upper and lower case letters, but the string as a whole
+		 * might also compare differently due to the space-eating in
+		 * the other branch.
 		 */
 		talloc_free(b1);
 		talloc_free(b2);
