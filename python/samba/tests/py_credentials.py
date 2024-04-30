@@ -585,7 +585,6 @@ class PyCredentialsTests(TestCase):
         self.user_creds.set_password(self.user_pass)
         self.user_creds.set_username(self.user_name)
         self.user_creds.set_workstation(self.machine_name)
-        pass
 
     #
     # Get the authenticator from the machine creds.
