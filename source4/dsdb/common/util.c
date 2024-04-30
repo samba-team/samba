@@ -6578,7 +6578,7 @@ int dsdb_user_obj_set_defaults(struct ldb_context *ldb,
 {
 	size_t i;
 	int ret;
-	const struct attribute_values {
+	static const struct attribute_values {
 		const char *name;
 		const char *value;
 		const char *add_value;
