@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Python interface to tdb.
@@ -44,7 +44,7 @@ static PyTypeObject PyTdb;
 
 static void PyErr_SetTDBError(TDB_CONTEXT *tdb)
 {
-	PyErr_SetObject(PyExc_RuntimeError, 
+	PyErr_SetObject(PyExc_RuntimeError,
 		Py_BuildValue("(i,s)", tdb_error(tdb), tdb_errorstr(tdb)));
 }
 
@@ -294,7 +294,7 @@ static PyObject *obj_nextkey(PyTdbObject *self, PyObject *args)
 	key = PyBytes_AsTDB_DATA(py_key);
 	if (!key.dptr)
 		return NULL;
-	
+
 	return PyBytes_FromTDB_DATA(tdb_nextkey(self->ctx, key));
 }
 
@@ -466,7 +466,7 @@ PyTypeObject PyTdbIterator = {
 static PyObject *tdb_object_iter(PyTdbObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	PyTdbIteratorObject *ret;	
+	PyTdbIteratorObject *ret;
 
 	PyErr_TDB_RAISE_IF_CLOSED(self);
 
@@ -514,7 +514,7 @@ static PyObject *obj_increment_seqnum_nonblock(PyTdbObject *self,
 }
 
 static PyMethodDef tdb_object_methods[] = {
-	{ "transaction_cancel", (PyCFunction)obj_transaction_cancel, METH_NOARGS, 
+	{ "transaction_cancel", (PyCFunction)obj_transaction_cancel, METH_NOARGS,
 		"S.transaction_cancel() -> None\n"
 		"Cancel the currently active transaction." },
 	{ "transaction_commit", (PyCFunction)obj_transaction_commit, METH_NOARGS,
@@ -713,9 +713,9 @@ static int obj_setitem(PyTdbObject *self, PyObject *key, PyObject *value)
 
 	tkey = PyBytes_AsTDB_DATA(key);
 
-	if (value == NULL) { 
+	if (value == NULL) {
 		ret = tdb_delete(self->ctx, tkey);
-	} else { 
+	} else {
 		if (!PyBytes_Check(value)) {
 			PyErr_SetString(PyExc_TypeError, "Expected string as value");
 			return -1;
@@ -729,7 +729,7 @@ static int obj_setitem(PyTdbObject *self, PyObject *key, PyObject *value)
 	if (ret != 0) {
 		PyErr_SetTDBError(self->ctx);
 		return -1;
-	} 
+	}
 
 	return ret;
 }
