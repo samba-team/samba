@@ -116,6 +116,21 @@ class ModelTests(SambaToolCmdTest):
         self.assertIn("whenCreated", silo_dict)
 
 
+class UserModelTests(SambaToolCmdTest):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.samdb = cls.getSamDB("-H", HOST, CREDS)
+        super().setUpClass()
+
+    def test_get_primary_group(self):
+        jane = User.get(self.samdb, account_name="jane")
+        domain_sid = self.samdb.domain_sid
+        expected_group = Group.get(self.samdb,
+                                   object_sid=f"{domain_sid}-{jane.primary_group_id}")
+        self.assertEqual(jane.get_primary_group(self.samdb), expected_group)
+
+
 class ComputerModelTests(SambaToolCmdTest):
 
     @classmethod
