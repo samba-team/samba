@@ -4806,6 +4806,36 @@ static NTSTATUS dcesrv_netr_DsrUpdateReadOnlyServerDnsRecords(struct dcesrv_call
 	return NT_STATUS_OK;
 }
 
+DCESRV_NOT_USED_ON_WIRE(netr_Opnum49NotUsedOnWire)
+DCESRV_NOT_USED_ON_WIRE(netr_Opnum50NotUsedOnWire)
+DCESRV_NOT_USED_ON_WIRE(netr_Opnum51NotUsedOnWire)
+DCESRV_NOT_USED_ON_WIRE(netr_Opnum52NotUsedOnWire)
+DCESRV_NOT_USED_ON_WIRE(netr_Opnum53NotUsedOnWire)
+
+/*
+  netr_ChainSetClientAttributes
+ */
+static NTSTATUS dcesrv_netr_ChainSetClientAttributes(struct dcesrv_call_state *dce_call,
+						     TALLOC_CTX *mem_ctx,
+						     struct netr_ChainSetClientAttributes *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+DCESRV_NOT_USED_ON_WIRE(netr_Opnum55NotUsedOnWire)
+DCESRV_NOT_USED_ON_WIRE(netr_Opnum56NotUsedOnWire)
+DCESRV_NOT_USED_ON_WIRE(netr_Opnum57NotUsedOnWire)
+DCESRV_NOT_USED_ON_WIRE(netr_Opnum58NotUsedOnWire)
+
+/*
+  netr_ServerAuthenticateKerberos
+ */
+static NTSTATUS dcesrv_netr_ServerAuthenticateKerberos(struct dcesrv_call_state *dce_call,
+						       TALLOC_CTX *mem_ctx,
+						       struct netr_ServerAuthenticateKerberos *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
 
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_netlogon_s.c"

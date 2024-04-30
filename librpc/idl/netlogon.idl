@@ -1036,7 +1036,8 @@ interface netlogon
 		NETLOGON_NEG_SUPPORTS_AES_SHA2		= 0x00400000,
 		NETLOGON_NEG_SUPPORTS_AES		= 0x01000000,
 		NETLOGON_NEG_AUTHENTICATED_RPC_LSASS	= 0x20000000,
-		NETLOGON_NEG_AUTHENTICATED_RPC		= 0x40000000
+		NETLOGON_NEG_AUTHENTICATED_RPC		= 0x40000000,
+		NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH	= 0x80000000
 	} netr_NegotiateFlags;
 
 	const uint32 NETLOGON_NEG_128BIT = NETLOGON_NEG_STRONG_KEYS;
@@ -1884,5 +1885,33 @@ interface netlogon
 		[in,unique] [string,charset(UTF16)] uint16 *site_name,
 		[in] uint32 dns_ttl,
 		[in,out,ref] NL_DNS_NAME_INFO_ARRAY *dns_names
+		);
+
+	[todo] void netr_Opnum49NotUsedOnWire(void);
+	[todo] void netr_Opnum50NotUsedOnWire(void);
+	[todo] void netr_Opnum51NotUsedOnWire(void);
+	[todo] void netr_Opnum52NotUsedOnWire(void);
+	[todo] void netr_Opnum53NotUsedOnWire(void);
+
+	/**********************/
+	/* Function 0x36 (54) */
+	/* from wireshark:    */
+	/* This is documented as 49 (0x31) but it's 54) */
+	[todo] NTSTATUS netr_ChainSetClientAttributes();
+
+	[todo] void netr_Opnum55NotUsedOnWire(void);
+	[todo] void netr_Opnum56NotUsedOnWire(void);
+	[todo] void netr_Opnum57NotUsedOnWire(void);
+	[todo] void netr_Opnum58NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0x3b (59) */
+	[public] NTSTATUS netr_ServerAuthenticateKerberos(
+		[in,unique]  [string,charset(UTF16)] uint16 *server_name,
+		[in]         [string,charset(UTF16)] uint16 *account_name,
+		[in]         netr_SchannelType account_type,
+		[in]         [string,charset(UTF16)] uint16 *computer_name,
+		[in,out,ref] netr_NegotiateFlags *negotiate_flags,
+		[out,ref]    uint32 *rid
 		);
 }
