@@ -45,7 +45,8 @@ static int ldb_read_data_file(TALLOC_CTX *mem_ctx, struct ldb_val *value)
 {
 	struct stat statbuf;
 	char *buf;
-	int count, size, bytes;
+	size_t count, size;
+	ssize_t bytes;
 	int ret;
 	int f;
 	const char *fname = (const char *)value->data;
