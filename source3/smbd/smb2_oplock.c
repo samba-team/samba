@@ -1333,63 +1333,6 @@ void smbd_contend_level2_oplocks_end(files_struct *fsp,
 }
 
 /****************************************************************************
- Linearize a share mode entry struct to an internal oplock break message.
-****************************************************************************/
-
-void share_mode_entry_to_message(char *msg, const struct file_id *id,
-				 const struct share_mode_entry *e)
-{
-	SIVAL(msg,OP_BREAK_MSG_PID_OFFSET,(uint32_t)e->pid.pid);
-	SBVAL(msg,OP_BREAK_MSG_MID_OFFSET,e->op_mid);
-	SSVAL(msg,OP_BREAK_MSG_OP_TYPE_OFFSET,e->op_type);
-	SIVAL(msg,OP_BREAK_MSG_ACCESS_MASK_OFFSET,e->access_mask);
-	SIVAL(msg,OP_BREAK_MSG_SHARE_ACCESS_OFFSET,e->share_access);
-	SIVAL(msg,OP_BREAK_MSG_PRIV_OFFSET,e->private_options);
-	SIVAL(msg,OP_BREAK_MSG_TIME_SEC_OFFSET,(uint32_t)e->time.tv_sec);
-	SIVAL(msg,OP_BREAK_MSG_TIME_USEC_OFFSET,(uint32_t)e->time.tv_usec);
-	/*
-	 * "id" used to be part of share_mode_entry, thus the strange
-	 * place to put this. Feel free to move somewhere else :-)
-	 */
-	push_file_id_24(msg+OP_BREAK_MSG_DEV_OFFSET, id);
-	SIVAL(msg,OP_BREAK_MSG_FILE_ID_OFFSET,e->share_file_id);
-	SIVAL(msg,OP_BREAK_MSG_UID_OFFSET,e->uid);
-	SSVAL(msg,OP_BREAK_MSG_FLAGS_OFFSET,e->flags);
-	SIVAL(msg,OP_BREAK_MSG_NAME_HASH_OFFSET,e->name_hash);
-	SIVAL(msg,OP_BREAK_MSG_VNN_OFFSET,e->pid.vnn);
-}
-
-/****************************************************************************
- De-linearize an internal oplock break message to a share mode entry struct.
-****************************************************************************/
-
-void message_to_share_mode_entry(struct file_id *id,
-				 struct share_mode_entry *e,
-				 const char *msg)
-{
-	e->pid = (struct server_id){
-		.pid = (pid_t)IVAL(msg, OP_BREAK_MSG_PID_OFFSET),
-		.vnn = IVAL(msg, OP_BREAK_MSG_VNN_OFFSET),
-	};
-	e->op_mid = BVAL(msg,OP_BREAK_MSG_MID_OFFSET);
-	e->op_type = SVAL(msg,OP_BREAK_MSG_OP_TYPE_OFFSET);
-	e->access_mask = IVAL(msg,OP_BREAK_MSG_ACCESS_MASK_OFFSET);
-	e->share_access = IVAL(msg,OP_BREAK_MSG_SHARE_ACCESS_OFFSET);
-	e->private_options = IVAL(msg,OP_BREAK_MSG_PRIV_OFFSET);
-	e->time.tv_sec = (time_t)IVAL(msg,OP_BREAK_MSG_TIME_SEC_OFFSET);
-	e->time.tv_usec = (int)IVAL(msg,OP_BREAK_MSG_TIME_USEC_OFFSET);
-	/*
-	 * "id" used to be part of share_mode_entry, thus the strange
-	 * place to put this. Feel free to move somewhere else :-)
-	 */
-	pull_file_id_24(msg+OP_BREAK_MSG_DEV_OFFSET, id);
-	e->share_file_id = (unsigned long)IVAL(msg,OP_BREAK_MSG_FILE_ID_OFFSET);
-	e->uid = (uint32_t)IVAL(msg,OP_BREAK_MSG_UID_OFFSET);
-	e->flags = (uint16_t)SVAL(msg,OP_BREAK_MSG_FLAGS_OFFSET);
-	e->name_hash = IVAL(msg, OP_BREAK_MSG_NAME_HASH_OFFSET);
-}
-
-/****************************************************************************
  Setup oplocks for this process.
 ****************************************************************************/
 

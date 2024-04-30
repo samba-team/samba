@@ -172,46 +172,6 @@ struct interface {
 
 #include "librpc/gen_ndr/server_id.h"
 
-/* oplock break message definition - linearization of share_mode_entry.
-
-Offset  Data			length.
-0	struct server_id pid	4
-4	uint16_t op_mid		8
-12	uint16_t op_type	2
-14	uint32_t access_mask	4
-18	uint32_t share_access	4
-22	uint32_t private_options	4
-26	uint32_t time sec		4
-30	uint32_t time usec	4
-34	uint64_t dev		8 bytes
-42	uint64_t inode		8 bytes
-50	uint64_t extid		8 bytes
-58	unsigned long file_id	4 bytes
-62	uint32_t uid		4 bytes
-66	uint16_t flags		2 bytes
-68	uint32_t name_hash	4 bytes
-72
-
-*/
-
-#define OP_BREAK_MSG_PID_OFFSET 0
-#define OP_BREAK_MSG_MID_OFFSET 4
-#define OP_BREAK_MSG_OP_TYPE_OFFSET 12
-#define OP_BREAK_MSG_ACCESS_MASK_OFFSET 14
-#define OP_BREAK_MSG_SHARE_ACCESS_OFFSET 18
-#define OP_BREAK_MSG_PRIV_OFFSET 22
-#define OP_BREAK_MSG_TIME_SEC_OFFSET 26
-#define OP_BREAK_MSG_TIME_USEC_OFFSET 30
-#define OP_BREAK_MSG_DEV_OFFSET 34
-#define OP_BREAK_MSG_INO_OFFSET 42
-#define OP_BREAK_MSG_EXTID_OFFSET 50
-#define OP_BREAK_MSG_FILE_ID_OFFSET 58
-#define OP_BREAK_MSG_UID_OFFSET 62
-#define OP_BREAK_MSG_FLAGS_OFFSET 66
-#define OP_BREAK_MSG_NAME_HASH_OFFSET 68
-
-#define OP_BREAK_MSG_VNN_OFFSET 72
-
 #define NT_HASH_LEN 16
 #define LM_HASH_LEN 16
 
