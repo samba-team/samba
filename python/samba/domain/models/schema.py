@@ -43,25 +43,25 @@ class ClassSchema(Model):
     system_only = BooleanField("systemOnly", readonly=True)
 
     @staticmethod
-    def get_base_dn(ldb):
+    def get_base_dn(samdb):
         """Return the base DN for the ClassSchema model.
 
         This is the same as AttributeSchema, but the objectClass is different.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :return: Dn object of container
         """
-        return ldb.get_schema_basedn()
+        return samdb.get_schema_basedn()
 
     @staticmethod
     def get_object_class():
         return "classSchema"
 
     @classmethod
-    def find(cls, ldb, name):
+    def find(cls, samdb, name):
         """Helper function to find class by name or raise NotFound.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :param name: Class name
         :raises: NotFound if not found
         :raises: ValueError if name is not provided
@@ -69,7 +69,7 @@ class ClassSchema(Model):
         if not name:
             raise ValueError("Class name is required.")
 
-        attr = cls.get(ldb, ldap_display_name=name)
+        attr = cls.get(samdb, ldap_display_name=name)
         if attr is None:
             raise NotFound(f"Could not locate {name} in class schema.")
 
@@ -92,25 +92,25 @@ class AttributeSchema(Model):
     system_only = BooleanField("systemOnly", readonly=True)
 
     @staticmethod
-    def get_base_dn(ldb):
+    def get_base_dn(samdb):
         """Return the base DN for the AttributeSchema model.
 
         This is the same as ClassSchema, but the objectClass is different.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :return: Dn object of container
         """
-        return ldb.get_schema_basedn()
+        return samdb.get_schema_basedn()
 
     @staticmethod
     def get_object_class():
         return "attributeSchema"
 
     @classmethod
-    def find(cls, ldb, name):
+    def find(cls, samdb, name):
         """Helper function to find attribute by name or raise NotFound.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :param name: Attribute name
         :raises: NotFound if not found
         :raises: ValueError if name is not provided
@@ -118,7 +118,7 @@ class AttributeSchema(Model):
         if not name:
             raise ValueError("Attribute name is required.")
 
-        attr = cls.get(ldb, ldap_display_name=name)
+        attr = cls.get(samdb, ldap_display_name=name)
         if attr is None:
             raise NotFound(f"Could not locate {name} in attribute schema.")
 

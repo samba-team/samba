@@ -52,13 +52,13 @@ class ValueType(Model):
         "msDS-ValueTypeReferenceBL", readonly=True)
 
     @staticmethod
-    def get_base_dn(ldb):
+    def get_base_dn(samdb):
         """Return the base DN for the ValueType model.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :return: Dn object of container
         """
-        base_dn = ldb.get_config_basedn()
+        base_dn = samdb.get_config_basedn()
         base_dn.add_child("CN=Value Types,CN=Claims Configuration,CN=Services")
         return base_dn
 
@@ -67,10 +67,10 @@ class ValueType(Model):
         return "msDS-ValueType"
 
     @classmethod
-    def find(cls, ldb, attribute):
+    def find(cls, samdb, attribute):
         """Helper function to get ValueType by attribute or raise NotFound.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :param attribute: AttributeSchema object
         :raises: NotFound if not found
         :raises: ValueError for unknown attribute syntax
@@ -86,7 +86,7 @@ class ValueType(Model):
             raise ValueError(f"Unable to process attribute syntax {syntax}")
 
         # This should always return something but should still be handled.
-        value_type = cls.get(ldb, cn=cn)
+        value_type = cls.get(samdb, cn=cn)
         if value_type is None:
             raise NotFound(f"Could not find claim value type for {attribute}.")
 

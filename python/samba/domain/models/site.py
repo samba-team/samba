@@ -32,13 +32,13 @@ class Site(Model):
     site_object_bl = DnField("siteObjectBL", readonly=True)
 
     @staticmethod
-    def get_base_dn(ldb):
+    def get_base_dn(samdb):
         """Return the base DN for the Site model.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :return: Dn to use for new objects
         """
-        base_dn = ldb.get_config_basedn()
+        base_dn = samdb.get_config_basedn()
         base_dn.add_child("CN=Sites")
         return base_dn
 

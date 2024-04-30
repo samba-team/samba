@@ -69,13 +69,13 @@ class AuthenticationPolicy(Model):
         "msDS-ComputerAllowedToAuthenticateTo")
 
     @staticmethod
-    def get_base_dn(ldb):
+    def get_base_dn(samdb):
         """Return the base DN for the AuthenticationPolicy model.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :return: Dn object of container
         """
-        base_dn = ldb.get_config_basedn()
+        base_dn = samdb.get_config_basedn()
         base_dn.add_child(
             "CN=AuthN Policies,CN=AuthN Policy Configuration,CN=Services")
         return base_dn
@@ -85,10 +85,10 @@ class AuthenticationPolicy(Model):
         return "msDS-AuthNPolicy"
 
     @staticmethod
-    def find(ldb, name):
+    def find(samdb, name):
         """Helper function to return auth policy or raise NotFound.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :param name: Either DN or name of Authentication Policy
         :raises: NotFound if not found
         :raises: ValueError if name is not set
@@ -98,10 +98,10 @@ class AuthenticationPolicy(Model):
 
         try:
             # It's possible name is already a Dn.
-            dn = name if isinstance(name, Dn) else Dn(ldb, name)
-            policy = AuthenticationPolicy.get(ldb, dn=dn)
+            dn = name if isinstance(name, Dn) else Dn(samdb, name)
+            policy = AuthenticationPolicy.get(samdb, dn=dn)
         except ValueError:
-            policy = AuthenticationPolicy.get(ldb, cn=name)
+            policy = AuthenticationPolicy.get(samdb, cn=name)
 
         if policy is None:
             raise LookupError(f"Authentication policy {name} not found.")

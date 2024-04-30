@@ -38,13 +38,13 @@ class AuthenticationSilo(Model):
     members = DnField("msDS-AuthNPolicySiloMembers", many=True)
 
     @staticmethod
-    def get_base_dn(ldb):
+    def get_base_dn(samdb):
         """Return the base DN for the AuthenticationSilo model.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :return: Dn object of container
         """
-        base_dn = ldb.get_config_basedn()
+        base_dn = samdb.get_config_basedn()
         base_dn.add_child(
             "CN=AuthN Silos,CN=AuthN Policy Configuration,CN=Services")
         return base_dn
@@ -53,13 +53,13 @@ class AuthenticationSilo(Model):
     def get_object_class():
         return "msDS-AuthNPolicySilo"
 
-    def grant(self, ldb, member):
+    def grant(self, samdb, member):
         """Grant a member access to the Authentication Silo.
 
         Rather than saving the silo object and writing the entire member
         list out again, just add one member only.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :param member: Member to grant access to silo
         """
         # Create a message with only an add member operation.
@@ -69,20 +69,20 @@ class AuthenticationSilo(Model):
 
         # Update authentication silo.
         try:
-            ldb.modify(message)
+            samdb.modify(message)
         except LdbError as e:
             raise GrantMemberError(f"Failed to grant access to silo member: {e}")
 
         # If the modify operation was successful refresh members field.
-        self.refresh(ldb, fields=["members"])
+        self.refresh(samdb, fields=["members"])
 
-    def revoke(self, ldb, member):
+    def revoke(self, samdb, member):
         """Revoke a member from the Authentication Silo.
 
         Rather than saving the silo object and writing the entire member
         list out again, just remove one member only.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :param member: Member to revoke from silo
         """
         # Create a message with only a remove member operation.
@@ -92,12 +92,12 @@ class AuthenticationSilo(Model):
 
         # Update authentication silo.
         try:
-            ldb.modify(message)
+            samdb.modify(message)
         except LdbError as e:
             raise RevokeMemberError(f"Failed to revoke silo member: {e}")
 
         # If the modify operation was successful refresh members field.
-        self.refresh(ldb, fields=["members"])
+        self.refresh(samdb, fields=["members"])
 
     def get_authentication_sddl(self):
         return ('O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/'

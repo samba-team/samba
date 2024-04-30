@@ -69,31 +69,31 @@ class Computer(User):
         super().__init__(**kwargs)
 
     @staticmethod
-    def get_base_dn(ldb):
+    def get_base_dn(samdb):
         """Return base Dn for Computers.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :return: Dn to use for searching
         """
-        return ldb.get_wellknown_dn(ldb.get_default_basedn(),
-                                    DS_GUID_COMPUTERS_CONTAINER)
+        return samdb.get_wellknown_dn(samdb.get_default_basedn(),
+                                      DS_GUID_COMPUTERS_CONTAINER)
 
     @staticmethod
     def get_object_class():
         return "computer"
 
     @classmethod
-    def find(cls, ldb, name):
+    def find(cls, samdb, name):
         """Helper function to find a computer, first by Dn then sAMAccountName.
 
         If the Dn can't be parsed use sAMAccountName, automatically add the $.
         """
         try:
-            query = {"dn": Dn(ldb, name)}
+            query = {"dn": Dn(samdb, name)}
         except ValueError:
             if name.endswith("$"):
                 query = {"account_name": name}
             else:
                 query = {"account_name": name + "$"}
 
-        return cls.get(ldb, **query)
+        return cls.get(samdb, **query)

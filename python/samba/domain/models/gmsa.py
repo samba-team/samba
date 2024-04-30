@@ -45,14 +45,14 @@ class GroupManagedServiceAccount(Computer):
                                            SupportedEncryptionTypes)
 
     @staticmethod
-    def get_base_dn(ldb):
+    def get_base_dn(samdb):
         """Return base Dn for Managed Service Accounts.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :return: Dn to use for searching
         """
-        return ldb.get_wellknown_dn(ldb.get_default_basedn(),
-                                    DS_GUID_MANAGED_SERVICE_ACCOUNTS_CONTAINER)
+        return samdb.get_wellknown_dn(samdb.get_default_basedn(),
+                                      DS_GUID_MANAGED_SERVICE_ACCOUNTS_CONTAINER)
 
     @staticmethod
     def get_object_class():

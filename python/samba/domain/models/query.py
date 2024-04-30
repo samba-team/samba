@@ -31,9 +31,9 @@ RE_SPLIT_CAMELCASE = re.compile(r"[A-Z](?:[a-z]+|[A-Z]*(?=[A-Z]|$))")
 class Query:
     """Simple Query class used by the `Model.query` method."""
 
-    def __init__(self, model, ldb, result, polymorphic):
+    def __init__(self, model, samdb, result, polymorphic):
         self.model = model
-        self.ldb = ldb
+        self.samdb = samdb
         self.result = result
         self.count = result.count
         self.name = " ".join(RE_SPLIT_CAMELCASE.findall(model.__name__)).lower()
@@ -62,7 +62,7 @@ class Query:
         else:
             model = self.model
 
-        return model._from_message(self.ldb, message)
+        return model._from_message(self.samdb, message)
 
     def first(self):
         """Returns the first item in the Query or None for no results."""

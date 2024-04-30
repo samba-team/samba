@@ -47,13 +47,13 @@ class ClaimType(Model):
         return str(self.display_name)
 
     @staticmethod
-    def get_base_dn(ldb):
+    def get_base_dn(samdb):
         """Return the base DN for the ClaimType model.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :return: Dn object of container
         """
-        base_dn = ldb.get_config_basedn()
+        base_dn = samdb.get_config_basedn()
         base_dn.add_child("CN=Claim Types,CN=Claims Configuration,CN=Services")
         return base_dn
 
@@ -62,11 +62,11 @@ class ClaimType(Model):
         return "msDS-ClaimType"
 
     @staticmethod
-    def new_claim_type(ldb, attribute, applies_to, display_name=None,
+    def new_claim_type(samdb, attribute, applies_to, display_name=None,
                        description=None, enabled=True):
         """Creates a ClaimType but does not save the instance.
 
-        :param ldb: SamDB database connection
+        :param samdb: SamDB database connection
         :param attribute: AttributeSchema object to use for creating ClaimType
         :param applies_to: List of ClassSchema objects ClaimType applies to
         :param display_name: Optional display name to use or use attribute name
@@ -74,7 +74,7 @@ class ClaimType(Model):
         :param enabled: Create an enabled or disabled claim type (default True)
         :raises NotFound: if the ValueType for this attribute doesn't exist
         """
-        value_type = ValueType.find(ldb, attribute)
+        value_type = ValueType.find(samdb, attribute)
 
         # Generate the new Claim Type cn.
         # Windows creates a random number here containing 16 hex digits.

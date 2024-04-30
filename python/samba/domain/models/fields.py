@@ -49,7 +49,7 @@ class Field(metaclass=ABCMeta):
                  readonly=False):
         """Creates a new field, should be subclassed.
 
-        :param name: Ldb field name.
+        :param name: SamDB field name.
         :param many: If true always convert field to a list when loaded.
         :param default: Default value or callback method (obj is first argument)
         :param hidden: If this is True, exclude the field when calling as_dict()
@@ -68,23 +68,23 @@ class Field(metaclass=ABCMeta):
             self.default = default
 
     @abstractmethod
-    def from_db_value(self, ldb, value):
+    def from_db_value(self, samdb, value):
         """Converts value read from the database to Python value.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :param value: MessageElement value from the database
         :returns: Parsed value as Python type
         """
         pass
 
     @abstractmethod
-    def to_db_value(self, ldb, value, flags):
+    def to_db_value(self, samdb, value, flags):
         """Converts value to database value.
 
         This should return a MessageElement or None, where None means
         the field will be unset on the next save.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :param value: Input value from Python field
         :param flags: MessageElement flags
         :returns: MessageElement or None
@@ -99,7 +99,7 @@ class Field(metaclass=ABCMeta):
 class IntegerField(Field):
     """A simple integer field, can be an int or list of int."""
 
-    def from_db_value(self, ldb, value):
+    def from_db_value(self, samdb, value):
         """Convert MessageElement to int or list of int."""
         if value is None:
             return
@@ -108,7 +108,7 @@ class IntegerField(Field):
         else:
             return int(value[0])
 
-    def to_db_value(self, ldb, value, flags):
+    def to_db_value(self, samdb, value, flags):
         """Convert int or list of int to MessageElement."""
         if value is None:
             return
@@ -125,7 +125,7 @@ class BinaryField(Field):
     This tends to be quite easy because a MessageElement already uses bytes.
     """
 
-    def from_db_value(self, ldb, value):
+    def from_db_value(self, samdb, value):
         """Convert MessageElement to bytes or list of bytes.
 
         The values on the MessageElement should already be bytes so the
@@ -138,7 +138,7 @@ class BinaryField(Field):
         else:
             return bytes(value[0])
 
-    def to_db_value(self, ldb, value, flags):
+    def to_db_value(self, samdb, value, flags):
         """Convert bytes or list of bytes to MessageElement."""
         if value is None:
             return
@@ -152,7 +152,7 @@ class BinaryField(Field):
 class StringField(Field):
     """A simple string field, may contain str or list of str."""
 
-    def from_db_value(self, ldb, value):
+    def from_db_value(self, samdb, value):
         """Convert MessageElement to str or list of str."""
         if value is None:
             return
@@ -161,7 +161,7 @@ class StringField(Field):
         else:
             return str(value)
 
-    def to_db_value(self, ldb, value, flags):
+    def to_db_value(self, samdb, value, flags):
         """Convert str or list of str to MessageElement."""
         if value is None:
             return
@@ -190,7 +190,7 @@ class EnumField(Field):
         else:
             return self.enum(str(value))
 
-    def from_db_value(self, ldb, value):
+    def from_db_value(self, samdb, value):
         """Convert MessageElement to enum or list of enum."""
         if value is None:
             return
@@ -199,7 +199,7 @@ class EnumField(Field):
         else:
             return self.enum_from_value(value)
 
-    def to_db_value(self, ldb, value, flags):
+    def to_db_value(self, samdb, value, flags):
         """Convert enum or list of enum to MessageElement."""
         if value is None:
             return
@@ -217,7 +217,7 @@ class EnumField(Field):
 class DateTimeField(Field):
     """A field for parsing ldb timestamps into Python datetime."""
 
-    def from_db_value(self, ldb, value):
+    def from_db_value(self, samdb, value):
         """Convert MessageElement to datetime or list of datetime."""
         if value is None:
             return
@@ -228,7 +228,7 @@ class DateTimeField(Field):
             return datetime.fromtimestamp(string_to_time(str(value)),
                                           tz=timezone.utc)
 
-    def to_db_value(self, ldb, value, flags):
+    def to_db_value(self, samdb, value, flags):
         """Convert datetime or list of datetime to MessageElement."""
         if value is None:
             return
@@ -244,7 +244,7 @@ class DateTimeField(Field):
 class NtTimeField(Field):
     """18-digit Active Directory timestamps."""
 
-    def from_db_value(self, ldb, value):
+    def from_db_value(self, samdb, value):
         """Convert MessageElement to datetime or list of datetime."""
         if value is None:
             return
@@ -253,7 +253,7 @@ class NtTimeField(Field):
         else:
             return datetime_from_nt_time(int(value[0]))
 
-    def to_db_value(self, ldb, value, flags):
+    def to_db_value(self, samdb, value, flags):
         """Convert datetime or list of datetime to MessageElement."""
         if value is None:
             return
@@ -277,7 +277,7 @@ class RelatedField(Field):
         self.model = model
         super().__init__(name, many, default)
 
-    def from_db_value(self, ldb, value):
+    def from_db_value(self, samdb, value):
         """Convert Message element to related object or list of objects.
 
         Note that fetching related items is not using any sort of lazy
@@ -286,11 +286,11 @@ class RelatedField(Field):
         if value is None:
             return
         elif len(value) > 1 or self.many:
-            return [self.model.get(ldb, dn=Dn(ldb, str(item))) for item in value]
+            return [self.model.get(samdb, dn=Dn(samdb, str(item))) for item in value]
         else:
-            return self.model.get(ldb, dn=Dn(ldb, str(value)))
+            return self.model.get(samdb, dn=Dn(samdb, str(value)))
 
-    def to_db_value(self, ldb, value, flags):
+    def to_db_value(self, samdb, value, flags):
         """Convert related object or list of objects to MessageElement."""
         if value is None:
             return
@@ -304,18 +304,18 @@ class RelatedField(Field):
 class DnField(Field):
     """A Dn field parses the current field into a Dn object."""
 
-    def from_db_value(self, ldb, value):
+    def from_db_value(self, samdb, value):
         """Convert MessageElement to a Dn object or list of Dn objects."""
         if value is None:
             return
         elif isinstance(value, Dn):
             return value
         elif len(value) > 1 or self.many:
-            return [Dn(ldb, str(item)) for item in value]
+            return [Dn(samdb, str(item)) for item in value]
         else:
-            return Dn(ldb, str(value))
+            return Dn(samdb, str(value))
 
-    def to_db_value(self, ldb, value, flags):
+    def to_db_value(self, samdb, value, flags):
         """Convert Dn object or list of Dn objects into a MessageElement."""
         if value is None:
             return
@@ -329,7 +329,7 @@ class DnField(Field):
 class GUIDField(Field):
     """A GUID field decodes fields containing binary GUIDs."""
 
-    def from_db_value(self, ldb, value):
+    def from_db_value(self, samdb, value):
         """Convert MessageElement with a GUID into a str or list of str."""
         if value is None:
             return
@@ -338,7 +338,7 @@ class GUIDField(Field):
         else:
             return str(ndr_unpack(GUID, value[0]))
 
-    def to_db_value(self, ldb, value, flags):
+    def to_db_value(self, samdb, value, flags):
         """Convert str with GUID into MessageElement."""
         if value is None:
             return
@@ -352,7 +352,7 @@ class GUIDField(Field):
 class SIDField(Field):
     """A SID field encodes and decodes SID data."""
 
-    def from_db_value(self, ldb, value):
+    def from_db_value(self, samdb, value):
         """Convert MessageElement with a GUID into a str or list of str."""
         if value is None:
             return
@@ -361,7 +361,7 @@ class SIDField(Field):
         else:
             return str(ndr_unpack(security.dom_sid, value[0]))
 
-    def to_db_value(self, ldb, value, flags):
+    def to_db_value(self, samdb, value, flags):
         """Convert str with GUID into MessageElement."""
         if value is None:
             return
@@ -393,7 +393,7 @@ class SDDLField(Field):
         self.allow_device_in_sddl = allow_device_in_sddl
         super().__init__(name, many=many, default=default, hidden=hidden)
 
-    def from_db_value(self, ldb, value):
+    def from_db_value(self, samdb, value):
         if value is None:
             return
         elif len(value) > 1 or self.many:
@@ -401,16 +401,16 @@ class SDDLField(Field):
         else:
             return ndr_unpack(security.descriptor, value[0])
 
-    def to_db_value(self, ldb, value, flags):
+    def to_db_value(self, samdb, value, flags):
         if value is None:
             return
         elif isinstance(value, list):
             return MessageElement(
-                [self.to_db_value(ldb, item, flags)[0] for item in value],
+                [self.to_db_value(samdb, item, flags)[0] for item in value],
                 flags,
                 self.name)
         else:
-            domain_sid = security.dom_sid(ldb.get_domain_sid())
+            domain_sid = security.dom_sid(samdb.get_domain_sid())
 
             # If this is a SDDL string convert it to a descriptor.
             if isinstance(value, str):
@@ -426,7 +426,7 @@ class SDDLField(Field):
 class BooleanField(Field):
     """A simple boolean field, can be a bool or list of bool."""
 
-    def from_db_value(self, ldb, value):
+    def from_db_value(self, samdb, value):
         """Convert MessageElement into a bool or list of bool."""
         if value is None:
             return
@@ -435,7 +435,7 @@ class BooleanField(Field):
         else:
             return str(value) == "TRUE"
 
-    def to_db_value(self, ldb, value, flags):
+    def to_db_value(self, samdb, value, flags):
         """Convert bool or list of bool into a MessageElement."""
         if value is None:
             return
@@ -480,7 +480,7 @@ class PossibleClaimValuesField(Field):
         "": "http://schemas.microsoft.com/2010/08/ActiveDirectory/PossibleValues"
     }
 
-    def from_db_value(self, ldb, value):
+    def from_db_value(self, samdb, value):
         """Parse MessageElement with XML to list of dicts."""
         if value is not None:
             root = ElementTree.fromstring(str(value))
@@ -499,7 +499,7 @@ class PossibleClaimValuesField(Field):
 
             return values
 
-    def to_db_value(self, ldb, value, flags):
+    def to_db_value(self, samdb, value, flags):
         """Convert list of dicts back to XML as a MessageElement."""
         if value is None:
             return

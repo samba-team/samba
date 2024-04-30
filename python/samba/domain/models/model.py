@@ -112,25 +112,25 @@ class Model(metaclass=ModelMeta):
         return self.as_dict(**kwargs)
 
     @staticmethod
-    def get_base_dn(ldb):
+    def get_base_dn(samdb):
         """Return the base DN for the container of this model.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :return: Dn to use for new objects
         """
-        return ldb.get_default_basedn()
+        return samdb.get_default_basedn()
 
     @classmethod
-    def get_search_dn(cls, ldb):
+    def get_search_dn(cls, samdb):
         """Return the DN used for querying.
 
         By default, this just calls get_base_dn, but it is possible to
         return a different Dn for querying.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :return: Dn to use for searching
         """
-        return cls.get_base_dn(ldb)
+        return cls.get_base_dn(samdb)
 
     @staticmethod
     def get_object_class():
@@ -138,20 +138,20 @@ class Model(metaclass=ModelMeta):
         return "top"
 
     @classmethod
-    def _from_message(cls, ldb, message):
+    def _from_message(cls, samdb, message):
         """Create a new model instance from the Ldb Message object.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :param message: Ldb Message object to create instance from
         """
         obj = cls()
-        obj._apply(ldb, message)
+        obj._apply(samdb, message)
         return obj
 
-    def _apply(self, ldb, message):
+    def _apply(self, samdb, message):
         """Internal method to apply Ldb Message to current object.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :param message: Ldb Message object to apply
         """
         # Store the ldb Message so that in save we can see what changed.
@@ -159,25 +159,25 @@ class Model(metaclass=ModelMeta):
 
         for attr, field in self.fields.items():
             if field.name in message:
-                setattr(self, attr, field.from_db_value(ldb, message[field.name]))
+                setattr(self, attr, field.from_db_value(samdb, message[field.name]))
 
-    def refresh(self, ldb, fields=None):
+    def refresh(self, samdb, fields=None):
         """Refresh object from database.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :param fields: Optional list of field names to refresh
         """
         attrs = [self.fields[f].name for f in fields] if fields else None
 
         # This shouldn't normally happen but in case the object refresh fails.
         try:
-            res = ldb.search(self.dn, scope=SCOPE_BASE, attrs=attrs)
+            res = samdb.search(self.dn, scope=SCOPE_BASE, attrs=attrs)
         except LdbError as e:
             if e.args[0] == ERR_NO_SUCH_OBJECT:
                 raise NotFound(f"Refresh failed, object gone: {self.dn}")
             raise
 
-        self._apply(ldb, res[0])
+        self._apply(samdb, res[0])
 
     def as_dict(self, include_hidden=False, **kwargs):
         """Returns a dict representation of the model.
@@ -222,7 +222,7 @@ class Model(metaclass=ModelMeta):
         return expression
 
     @classmethod
-    def query(cls, ldb, polymorphic=False, base_dn=None, scope=SCOPE_SUBTREE,
+    def query(cls, samdb, polymorphic=False, base_dn=None, scope=SCOPE_SUBTREE,
               **kwargs):
         """Returns a search query for this model.
 
@@ -233,35 +233,35 @@ class Model(metaclass=ModelMeta):
         By default, polymorphic querying is disabled, and querying User
         will only return User instances.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :param polymorphic: If true enables polymorphic querying (see note)
         :param base_dn: Optional provide base dn for searching or use the model
         :param scope: Ldb search scope (default SCOPE_SUBTREE)
         :param kwargs: Search criteria as keyword args
         """
         if base_dn is None:
-            base_dn = cls.get_search_dn(ldb)
+            base_dn = cls.get_search_dn(samdb)
 
         # If the container does not exist produce a friendly error message.
         try:
-            result = ldb.search(base_dn,
-                                scope=scope,
-                                expression=cls.build_expression(**kwargs))
+            result = samdb.search(base_dn,
+                                  scope=scope,
+                                  expression=cls.build_expression(**kwargs))
         except LdbError as e:
             if e.args[0] == ERR_NO_SUCH_OBJECT:
                 raise NotFound(f"Container does not exist: {base_dn}")
             raise
 
-        return Query(cls, ldb, result, polymorphic)
+        return Query(cls, samdb, result, polymorphic)
 
     @classmethod
-    def get(cls, ldb, **kwargs):
+    def get(cls, samdb, **kwargs):
         """Get one object, must always return one item.
 
         Either find object by dn=, or any combination of attributes via kwargs.
         If there are more than one result, MultipleObjectsReturned is raised.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :param kwargs: Search criteria as keyword args
         :returns: Model instance or None if not found
         :raises: MultipleObjects returned if there are more than one results
@@ -274,53 +274,53 @@ class Model(metaclass=ModelMeta):
             # Handle LDAP error 32 LDAP_NO_SUCH_OBJECT, but raise for the rest.
             # Return None if the User does not exist.
             try:
-                res = ldb.search(dn, scope=SCOPE_BASE)
+                res = samdb.search(dn, scope=SCOPE_BASE)
             except LdbError as e:
                 if e.args[0] == ERR_NO_SUCH_OBJECT:
                     return None
                 else:
                     raise
 
-            return cls._from_message(ldb, res[0])
+            return cls._from_message(samdb, res[0])
         else:
-            return cls.query(ldb, **kwargs).get()
+            return cls.query(samdb, **kwargs).get()
 
     @classmethod
-    def create(cls, ldb, **kwargs):
+    def create(cls, samdb, **kwargs):
         """Create object constructs object and calls save straight after.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :param kwargs: Fields to populate object from
         :returns: object
         """
         obj = cls(**kwargs)
-        obj.save(ldb)
+        obj.save(samdb)
         return obj
 
     @classmethod
-    def get_or_create(cls, ldb, defaults=None, **kwargs):
+    def get_or_create(cls, samdb, defaults=None, **kwargs):
         """Retrieve object and if it doesn't exist create a new instance.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :param defaults: Attributes only used for create but not search
         :param kwargs: Attributes used for searching existing object
         :returns: (object, bool created)
         """
-        obj = cls.get(ldb, **kwargs)
+        obj = cls.get(samdb, **kwargs)
         if obj is None:
             attrs = dict(kwargs)
             if defaults is not None:
                 attrs.update(defaults)
-            return cls.create(ldb, **attrs), True
+            return cls.create(samdb, **attrs), True
         else:
             return obj, False
 
-    def children(self, ldb):
+    def children(self, samdb):
         """Returns a Query of the current models children."""
         return Model.query(
-            ldb, base_dn=self.dn, scope=SCOPE_ONELEVEL, polymorphic=True)
+            samdb, base_dn=self.dn, scope=SCOPE_ONELEVEL, polymorphic=True)
 
-    def save(self, ldb):
+    def save(self, samdb):
         """Save model to Ldb database.
 
         The save operation will save all fields excluding fields that
@@ -338,10 +338,10 @@ class Model(metaclass=ModelMeta):
         After the save operation the object is refreshed from the server,
         as often the server will populate some fields.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         """
         if self.dn is None:
-            dn = self.get_base_dn(ldb)
+            dn = self.get_base_dn(samdb)
             dn.add_child(f"CN={self.cn or self.name}")
             self.dn = dn
 
@@ -350,7 +350,7 @@ class Model(metaclass=ModelMeta):
                 if attr != "dn" and not field.readonly:
                     value = getattr(self, attr)
                     try:
-                        db_value = field.to_db_value(ldb, value, FLAG_MOD_ADD)
+                        db_value = field.to_db_value(samdb, value, FLAG_MOD_ADD)
                     except ValueError as e:
                         raise FieldError(e, field=field)
 
@@ -359,14 +359,14 @@ class Model(metaclass=ModelMeta):
                         message.add(db_value)
 
             # Create object
-            ldb.add(message)
+            samdb.add(message)
 
             # Fetching object refreshes any automatically populated fields.
-            res = ldb.search(dn, scope=SCOPE_BASE)
-            self._apply(ldb, res[0])
+            res = samdb.search(dn, scope=SCOPE_BASE)
+            self._apply(samdb, res[0])
         else:
             # Existing Message was stored to work out what fields changed.
-            existing_obj = self._from_message(ldb, self._message)
+            existing_obj = self._from_message(samdb, self._message)
 
             # Only modify replace or modify fields that have changed.
             # Any fields that are set to None or an empty list get unset.
@@ -378,7 +378,7 @@ class Model(metaclass=ModelMeta):
 
                     if value != old_value:
                         try:
-                            db_value = field.to_db_value(ldb, value,
+                            db_value = field.to_db_value(samdb, value,
                                                          FLAG_MOD_REPLACE)
                         except ValueError as e:
                             raise FieldError(e, field=field)
@@ -392,44 +392,44 @@ class Model(metaclass=ModelMeta):
 
             # Saving nothing only triggers an error.
             if len(message):
-                ldb.modify(message)
+                samdb.modify(message)
 
                 # Fetching object refreshes any automatically populated fields.
-                self.refresh(ldb)
+                self.refresh(samdb)
 
-    def delete(self, ldb):
+    def delete(self, samdb):
         """Delete item from Ldb database.
 
         If self.dn is None then the object has not yet been saved.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         """
         if self.dn is None:
             raise DeleteError("Cannot delete object that doesn't have a dn.")
 
         try:
-            ldb.delete(self.dn)
+            samdb.delete(self.dn)
         except LdbError as e:
             raise DeleteError(f"Delete failed: {e}")
 
-    def protect(self, ldb):
+    def protect(self, samdb):
         """Protect object from accidental deletion.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         """
-        utils = SDUtils(ldb)
+        utils = SDUtils(samdb)
 
         try:
             utils.dacl_add_ace(self.dn, "(D;;DTSD;;;WD)")
         except LdbError as e:
             raise ProtectError(f"Failed to protect object: {e}")
 
-    def unprotect(self, ldb):
+    def unprotect(self, samdb):
         """Unprotect object from accidental deletion.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         """
-        utils = SDUtils(ldb)
+        utils = SDUtils(samdb)
 
         try:
             utils.dacl_delete_aces(self.dn, "(D;;DTSD;;;WD)")

@@ -53,46 +53,46 @@ class User(OrganizationalPerson):
         return self.account_name
 
     @staticmethod
-    def get_base_dn(ldb):
+    def get_base_dn(samdb):
         """Return the base DN for the User model.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :return: Dn to use for new objects
         """
-        return ldb.get_wellknown_dn(ldb.get_default_basedn(),
-                                    DS_GUID_USERS_CONTAINER)
+        return samdb.get_wellknown_dn(samdb.get_default_basedn(),
+                                      DS_GUID_USERS_CONTAINER)
 
     @classmethod
-    def get_search_dn(cls, ldb):
+    def get_search_dn(cls, samdb):
         """Return Dn used for searching so Computers will also be found.
 
-        :param ldb: Ldb connection
+        :param samdb: SamDB connection
         :return: Dn to use for searching
         """
-        return ldb.get_root_basedn()
+        return samdb.get_root_basedn()
 
     @staticmethod
     def get_object_class():
         return "user"
 
     @classmethod
-    def find(cls, ldb, name):
+    def find(cls, samdb, name):
         """Helper function to find a user by Dn, objectSid, or sAMAccountName.
 
         If the Dn or Sid can't be parsed, use sAMAccountName instead.
         """
         try:
-            query = {"dn": Dn(ldb, name)}
+            query = {"dn": Dn(samdb, name)}
         except ValueError:
             try:
                 query = {"object_sid": dom_sid(name)}
             except ValueError:
                 query = {"account_name": name}
 
-        return cls.get(ldb, **query)
+        return cls.get(samdb, **query)
 
     @classmethod
-    def get_sid_for_principal(cls, ldb, principal) -> str:
+    def get_sid_for_principal(cls, samdb, principal) -> str:
         """Return object_sid for the provided principal.
 
         If principal is already an object sid then return without fetching,
@@ -101,7 +101,7 @@ class User(OrganizationalPerson):
         try:
             return str(dom_sid(principal))
         except ValueError:
-            user = cls.find(ldb, principal)
+            user = cls.find(samdb, principal)
             if user:
                 return user.object_sid
             else:
