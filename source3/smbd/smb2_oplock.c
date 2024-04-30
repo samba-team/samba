@@ -34,18 +34,31 @@
  */
 void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp)
 {
-	uint8_t msg[MSG_SMB_KERNEL_BREAK_SIZE];
-
-	/* Put the kernel break info into the message. */
-	push_file_id_24((char *)msg, &fsp->file_id);
-	SIVAL(msg, 24, fh_get_gen_id(fsp->fh));
+	struct oplock_break_message msg = {
+		.id = fsp->file_id,
+		.share_file_id = fh_get_gen_id(fsp->fh),
+	};
+	enum ndr_err_code ndr_err;
+	uint8_t msgbuf[33];
+	DATA_BLOB blob = {.data = msgbuf, .length = sizeof(msgbuf)};
 
 	/* Don't need to be root here as we're only ever
 	   sending to ourselves. */
 
-	messaging_send_buf(msg_ctx, messaging_server_id(msg_ctx),
-			   MSG_SMB_KERNEL_BREAK,
-			   msg, MSG_SMB_KERNEL_BREAK_SIZE);
+	ndr_err = ndr_push_struct_into_fixed_blob(
+		&blob,
+		&msg,
+		(ndr_push_flags_fn_t)ndr_push_oplock_break_message);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_WARNING("ndr_push_oplock_break_message failed: %s\n",
+			    ndr_errstr(ndr_err));
+		return;
+	}
+
+	messaging_send(msg_ctx,
+		       messaging_server_id(msg_ctx),
+		       MSG_SMB_KERNEL_BREAK,
+		       &blob);
 }
 
 /****************************************************************************
@@ -1063,35 +1076,31 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 					struct server_id src,
 					DATA_BLOB *data)
 {
-	struct file_id id;
+	struct oplock_break_message msg;
+	enum ndr_err_code ndr_err;
 	struct file_id_buf idbuf;
-	unsigned long file_id;
 	files_struct *fsp;
 	struct smbd_server_connection *sconn =
 		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
 	struct server_id_buf tmp;
 
-	if (data->data == NULL) {
-		DEBUG(0, ("Got NULL buffer\n"));
+	ndr_err = ndr_pull_struct_blob_all_noalloc(
+		data,
+		&msg,
+		(ndr_pull_flags_fn_t)ndr_pull_oplock_break_message);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_DEBUG("ndr_pull_oplock_break_message failed: %s\n",
+			  ndr_errstr(ndr_err));
 		return;
 	}
-
-	if (data->length != MSG_SMB_KERNEL_BREAK_SIZE) {
-		DEBUG(0, ("Got invalid msg len %d\n", (int)data->length));
-		return;
-	}
-
-	/* Pull the data from the message. */
-	pull_file_id_24((char *)data->data, &id);
-	file_id = (unsigned long)IVAL(data->data, 24);
 
 	DBG_DEBUG("Got kernel oplock break message from pid %s: %s/%u\n",
 		  server_id_str_buf(src, &tmp),
-		  file_id_str_buf(id, &idbuf),
-		  (unsigned int)file_id);
+		  file_id_str_buf(msg.id, &idbuf),
+		  (unsigned int)msg.share_file_id);
 
-	fsp = initial_break_processing(sconn, id, file_id);
+	fsp = initial_break_processing(sconn, msg.id, msg.share_file_id);
 
 	if (fsp == NULL) {
 		DEBUG(3, ("Got a kernel oplock break message for a file "
