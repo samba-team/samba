@@ -5125,7 +5125,7 @@ void msg_file_was_renamed(struct messaging_context *msg_ctx,
 		msg,
 		(ndr_pull_flags_fn_t)ndr_pull_file_rename_message);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DBG_DEBUG("ndr_pull_oplock_break_message failed: %s\n",
+		DBG_DEBUG("ndr_pull_file_rename_message failed: %s\n",
 			  ndr_errstr(ndr_err));
 		goto out;
 	}
