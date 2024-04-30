@@ -128,6 +128,7 @@ static int gkdi_create_root_key(TALLOC_CTX *mem_ctx,
 	struct KdfAlgorithm kdf_algorithm;
 	DATA_BLOB kdf_parameters_blob = data_blob_null;
 	struct ldb_message *add_msg = NULL;
+	uint8_t root_key_data[GKDI_KEY_LEN];
 	NTSTATUS status = NT_STATUS_OK;
 	int ret = LDB_SUCCESS;
 
@@ -349,7 +350,6 @@ static int gkdi_create_root_key(TALLOC_CTX *mem_ctx,
 	}
 
 	{
-		uint8_t root_key_data[GKDI_KEY_LEN];
 		const DATA_BLOB root_key_data_blob = {
 			.data = root_key_data, .length = sizeof root_key_data};
 
