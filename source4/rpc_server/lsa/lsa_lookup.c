@@ -674,6 +674,8 @@ static NTSTATUS schannel_call_setup(struct dcesrv_call_state *dce_call,
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
 	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
+
 	if (transport != NCACN_IP_TCP) {
 		/* We can't call DCESRV_FAULT() in the sub-function */
 		dce_call->fault_code = DCERPC_FAULT_ACCESS_DENIED;
@@ -687,8 +689,14 @@ static NTSTATUS schannel_call_setup(struct dcesrv_call_state *dce_call,
 	 * NB. gensec requires schannel connections to
 	 * have at least DCERPC_AUTH_LEVEL_INTEGRITY.
 	 */
-	dcesrv_call_auth_info(dce_call, &auth_type, NULL);
-	if (auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
+	dcesrv_call_auth_info(dce_call, &auth_type, &auth_level);
+	if (auth_type == DCERPC_AUTH_TYPE_KRB5 &&
+	    auth_level == DCERPC_AUTH_LEVEL_PRIVACY)
+	{
+		/* ok */
+	} else if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
+		/* ok - implies at least DCERPC_AUTH_LEVEL_INTEGRITY. */
+	} else {
 		/* We can't call DCESRV_FAULT() in the sub-function */
 		dce_call->fault_code = DCERPC_FAULT_ACCESS_DENIED;
 		return NT_STATUS_ACCESS_DENIED;
