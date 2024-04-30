@@ -36,11 +36,15 @@
  *
  *   persistent_db
  *   shared_dir
+ *   none
  *
- * In these modes, the file contains 2 subsequent lines of text:
+ * In persistent_db and shared_dir modes, the file contains 2
+ * subsequent lines of text:
  *
  *   path: directory where files should be created
  *   ips_file: file containing node's currently assigned public IP addresses
+ *
+ * In none mode, there are no subsequent lines.
  */
 #define CONFIG_FILE CTDB_VARDIR "/scripts/statd_callout.conf"
 
@@ -50,6 +54,7 @@ struct {
 	enum {
 		CTDB_SC_MODE_PERSISTENT_DB,
 		CTDB_SC_MODE_SHARED_DIR,
+		CTDB_SC_MODE_NONE,
 	} mode;
 	union {
 		struct {
@@ -94,6 +99,9 @@ static void free_config(void)
 		config.path = NULL;
 		free(config.ips_file);
 		config.ips_file = NULL;
+		break;
+	case CTDB_SC_MODE_NONE:
+		break;
 	}
 }
 
@@ -132,6 +140,8 @@ static void read_config(void)
 		config.mode = CTDB_SC_MODE_PERSISTENT_DB;
 	} else if (strcmp(mode, "shared_dir") == 0) {
 		config.mode = CTDB_SC_MODE_SHARED_DIR;
+	} else if (strcmp(mode, "none") == 0) {
+		config.mode = CTDB_SC_MODE_NONE;
 	} else {
 		fprintf(stderr,
 			"%s: unknown mode=%s in %s\n",
@@ -156,6 +166,8 @@ static void read_config(void)
 			goto parse_error;
 		}
 
+		break;
+	case CTDB_SC_MODE_NONE:
 		break;
 	}
 
@@ -367,6 +379,8 @@ int main(int argc, const char *argv[])
 		case CTDB_SC_MODE_SHARED_DIR:
 			add_client_shared_dir(mon_name);
 			break;
+		case CTDB_SC_MODE_NONE:
+			break;
 		}
 	} else if (strcmp(event, "del-client") == 0) {
 		mon_name = argv[2];
@@ -376,6 +390,8 @@ int main(int argc, const char *argv[])
 			break;
 		case CTDB_SC_MODE_SHARED_DIR:
 			del_client_shared_dir(mon_name);
+			break;
+		case CTDB_SC_MODE_NONE:
 			break;
 		}
 	} else {

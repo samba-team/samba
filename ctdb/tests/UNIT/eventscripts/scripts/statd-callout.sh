@@ -106,11 +106,20 @@ check_shared_storage_statd_state()
 		esac
 		check_shared_dir_statd_state "$@"
 		;;
+	none)
+		:
+		;;
 	esac
 }
 
 check_statd_callout_smnotify()
 {
+	case "$statd_callout_mode" in
+	none)
+		return
+		;;
+	esac
+
 	# The state here doesn't really matter because the date stub
 	# generates a fixed value (as per above setup() function,
 	# which happens to set it to an even value).  In reality,

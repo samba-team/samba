@@ -1096,6 +1096,27 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 		  </para>
 		</listitem>
 	      </varlistentry>
+	      <varlistentry>
+		<term>
+		  none
+		</term>
+		<listitem>
+		  <para>
+		    No cluster-aware handling of NFSv3 statd state is
+		    done.  NFSv3 lock reclaim will not occur and
+		    applications that use locking over NFSv3 are
+		    likely to lose or corrupt data.
+		  </para>
+		  <para>
+		    This should be used with care and only in the case
+		    where no applications are using POSIX locks in
+		    NFSv3 mounts.  It should probably be considered an
+		    option to test the latency of
+		    <filename>statd_callout</filename>, without
+		    including any storage costs.
+		  </para>
+		</listitem>
+	      </varlistentry>
 	    </variablelist>
 	  </listitem>
 	</varlistentry>

@@ -116,6 +116,9 @@ shared_dir)
 		statd_callout_shared_dir="$t"
 	fi
 	;;
+none)
+	:
+	;;
 *)
 	mode="$statd_callout_mode"
 	die "error: unknown CTDB_STATD_CALLOUT_SHARED_STORAGE mode ${mode}"
@@ -329,6 +332,39 @@ delete_records_shared_dir()
 }
 
 cleanup_shared_dir()
+{
+	:
+}
+
+############################################################
+
+# No-op implementation
+
+startup_none()
+{
+	_config_file="$1"
+
+	cat >"$_config_file" <<EOF
+none
+EOF
+}
+
+update_none()
+{
+	:
+}
+
+list_records_none()
+{
+	:
+}
+
+delete_records_none()
+{
+	:
+}
+
+cleanup_none()
 {
 	:
 }
