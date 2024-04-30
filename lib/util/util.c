@@ -495,7 +495,9 @@ static void dump_data_block16(const char *prefix, size_t idx,
 			      void (*cb)(const char *buf, void *private_data),
 			      void *private_data)
 {
-	char tmp[16];
+	size_t prefix_len = strlen(prefix);
+	/* 16 (=%04zX) + 2 (=[]) + 1 (='\0') => 19 */
+	char tmp[prefix_len + 19];
 	size_t i;
 
 	SMB_ASSERT(len <= 16);
