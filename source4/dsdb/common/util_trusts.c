@@ -648,13 +648,19 @@ static int dns_cmp(const char *s1, const char *s2)
 	uint16_t comp2[UINT8_MAX] = {0};
 	size_t i;
 
-	if (s1 != NULL) {
-		l1 = strlen(s1);
+	if (s1 == s2) {
+		/* this includes the both NULL case */
+		return DNS_CMP_MATCH;
+	}
+	if (s1 == NULL) {
+		return DNS_CMP_SECOND_IS_CHILD;
+	}
+	if (s2 == NULL) {
+		return DNS_CMP_FIRST_IS_CHILD;
 	}
 
-	if (s2 != NULL) {
-		l2 = strlen(s2);
-	}
+	l1 = strlen(s1);
+	l2 = strlen(s2);
 
 	/*
 	 * trailing '.' are ignored.
