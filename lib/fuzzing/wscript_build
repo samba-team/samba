@@ -153,6 +153,11 @@ bld.SAMBA_BINARY('fuzz_stable_sort_r',
                  deps='fuzzing stable_sort afl-fuzz-main',
                  fuzzer=True)
 
+bld.SAMBA_BINARY('fuzz_stable_sort_r_unstable',
+                 source='fuzz_stable_sort_r_unstable.c',
+                 deps='fuzzing stable_sort afl-fuzz-main',
+                 fuzzer=True)
+
 bld.SAMBA_BINARY('fuzz_security_token_vs_descriptor',
                  source='fuzz_security_token_vs_descriptor.c',
                  deps='fuzzing samba-security afl-fuzz-main',
