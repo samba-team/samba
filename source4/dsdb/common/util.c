@@ -7012,3 +7012,13 @@ int dsdb_is_protected_user(struct ldb_context *ldb,
 
 	return 0;
 }
+
+bool dsdb_account_is_trust(const struct ldb_message *msg)
+{
+	uint32_t userAccountControl;
+
+	userAccountControl = ldb_msg_find_attr_as_uint(msg,
+						       "userAccountControl",
+						       0);
+	return userAccountControl & UF_TRUST_ACCOUNT_MASK;
+}
