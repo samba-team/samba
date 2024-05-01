@@ -1398,6 +1398,22 @@ struct ldb_dn *ldb_dn_copy(TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
 	return new_dn;
 }
 
+struct ldb_dn *ldb_dn_copy_with_ldb_context(TALLOC_CTX *mem_ctx,
+					    struct ldb_dn *dn,
+					    struct ldb_context *ldb)
+{
+	struct ldb_dn *new_dn = NULL;
+
+	new_dn = ldb_dn_copy(mem_ctx, dn);
+	if (new_dn == NULL) {
+		return NULL;
+	}
+
+	/* Set the ldb context. */
+	new_dn->ldb = ldb;
+	return new_dn;
+}
+
 /* modify the given dn by adding a base.
  *
  * return true if successful and false if not

@@ -586,7 +586,7 @@ static int ldb_kv_search_and_return_base(struct ldb_kv_private *ldb_kv,
 		 * returned result, as it has already been
 		 * casefolded
 		 */
-		struct ldb_dn *dn = ldb_dn_copy(msg, ctx->base);
+		struct ldb_dn *dn = ldb_dn_copy_with_ldb_context(msg, ctx->base, ldb);
 		if (dn != NULL) {
 			msg->dn = dn;
 		}

@@ -1800,7 +1800,7 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
         modify_attr("lockoutThreshold", lockout_threshold)
 
         creds = self.gmsa_account(kerberos_enabled=kerberos_enabled)
-        dn = ldb.Dn(samdb, str(creds.get_dn()))
+        dn = creds.get_dn()
 
         # Truncate the password to ensure that it is invalid.
         creds.set_password(creds.get_password()[:-1])
