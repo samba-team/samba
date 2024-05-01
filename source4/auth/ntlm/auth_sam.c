@@ -467,10 +467,10 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 	for (i = 1; i < MIN(history_len, 3); i++) {
 		const struct samr_Password *nt_history_pwd = NULL;
 		NTTIME pwdLastSet;
-		struct timeval tv_now;
 		NTTIME now;
 		int allowed_period_mins;
 		NTTIME allowed_period;
+		bool ok;
 
 		/* Reset these variables back to starting as empty */
 		aes_256_key = NULL;
@@ -650,8 +650,11 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 		allowed_period = (NTTIME) allowed_period_mins *
 				 60 * 1000*1000*10;
 		pwdLastSet = samdb_result_nttime(msg, "pwdLastSet", 0);
-		tv_now = timeval_current();
-		now = timeval_to_nttime(&tv_now);
+		ok = dsdb_gmsa_current_time(sam_ctx, &now);
+		if (!ok) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_WRONG_PASSWORD;
+		}
 
 		if (now < pwdLastSet) {
 			/*
