@@ -33,11 +33,13 @@
  */
 
 #include "includes.h"
+#include "ldb_errors.h"
 #include "ldb_module.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/dom_sid.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
+#include "dsdb/gmsa/util.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "dsdb/samdb/ldb_modules/password_modules.h"
@@ -2349,10 +2351,10 @@ static int setup_last_set_field(struct setup_password_fields_io *io)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
 	const struct ldb_message *msg = NULL;
-	struct timeval tv = { .tv_sec = 0 };
 	const struct ldb_val *old_val = NULL;
 	const struct ldb_val *new_val = NULL;
 	int ret;
+	bool ok;
 
 	switch (io->ac->req->operation) {
 	case LDB_ADD:
@@ -2487,8 +2489,10 @@ static int setup_last_set_field(struct setup_password_fields_io *io)
 			break;
 		}
 		/* -1 means set it as now */
-		GetTimeOfDay(&tv);
-		io->g.last_set = timeval_to_nttime(&tv);
+		ok = dsdb_gmsa_current_time(ldb, &io->g.last_set);
+		if (!ok) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 		break;
 	default:
 		return dsdb_module_werror(io->ac->module,
