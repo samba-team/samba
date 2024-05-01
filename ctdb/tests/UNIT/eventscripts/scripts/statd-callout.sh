@@ -4,7 +4,7 @@ setup()
 	ctdb_set_pnn
 	setup_date "1234567890"
 
-	export NFS_HOSTNAME
+	export FAKE_NFS_HOSTNAME="cluster1"
 }
 
 ctdb_catdb_format_pairs()
@@ -64,7 +64,7 @@ check_statd_callout_smnotify()
 		while read -r _ _sip _; do
 			for _cip; do
 				cat <<EOF
-SM_NOTIFY: ${_sip} -> ${_cip}, MON_NAME=${NFS_HOSTNAME}, STATE=${_state}
+SM_NOTIFY: ${_sip} -> ${_cip}, MON_NAME=${FAKE_NFS_HOSTNAME}, STATE=${_state}
 EOF
 			done
 		done | {

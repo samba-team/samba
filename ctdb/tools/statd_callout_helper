@@ -11,8 +11,7 @@
 # Older Linux versions may use something like the following...
 #
 # /etc/sysconfig/nfs (Red Hat) or /etc/default/nfs-common (Debian):
-#   NFS_HOSTNAME=mycluster
-#   STATD_HOSTNAME="${NFS_HOSTNAME} -H /usr/local/libexec/ctdb/statd_callout"
+#   STATD_HOSTNAME="mycluster -H /usr/local/libexec/ctdb/statd_callout"
 #
 # If using Linux kernel NFS then the following should also be set in
 # /etc/nfs.conf:
@@ -37,22 +36,6 @@ die()
 	script_log "statd_callout_helper" "$@"
 	exit 1
 }
-
-# Try different variables to find config file for NFS_HOSTNAME
-load_system_config "nfs" "nfs-common"
-
-# If NFS_HOSTNAME not set then try to pull it out of /etc/nfs.conf
-if [ -z "$NFS_HOSTNAME" ]; then
-	if type nfsconf >/dev/null 2>&1; then
-		NFS_HOSTNAME=$(nfsconf --get statd name)
-	elif type git >/dev/null 2>&1; then
-		# git to the rescue!
-		NFS_HOSTNAME=$(git config --file=/etc/nfs.conf statd.name)
-	fi
-fi
-
-[ -n "$NFS_HOSTNAME" ] ||
-	die "NFS_HOSTNAME is not configured. statd_callout_helper failed"
 
 ############################################################
 

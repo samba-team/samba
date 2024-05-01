@@ -71,6 +71,6 @@ sort |
 while IFS="" read -r file ; do
 	read -r _ _ _ _ _ cip sip <"$file"
 	cat <<EOF
-SM_NOTIFY: ${sip} -> ${cip}, MON_NAME=${NFS_HOSTNAME}, STATE=${state}
+SM_NOTIFY: ${sip} -> ${cip}, MON_NAME=${FAKE_NFS_HOSTNAME}, STATE=${state}
 EOF
 done
