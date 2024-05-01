@@ -75,7 +75,7 @@ struct charset_functions {
 /* this type is used for manipulating unicode codepoints */
 typedef uint32_t codepoint_t;
 
-#define INVALID_CODEPOINT ((codepoint_t)-1)
+#define INVALID_CODEPOINT (UINT32_MAX)
 
 /* generic iconv conversion structure */
 typedef struct smb_iconv_s {
