@@ -2167,7 +2167,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         #
         # The NT hash is different, as it is returned to the client in
         # the PAC so is visible in the network behaviour.
-        if force_nt4_hash or smartcard_required:
+        if force_nt4_hash:
             expected_etypes = {kcrypto.Enctype.RC4}
         keys = self.get_keys(creds, expected_etypes=expected_etypes)
         self.creds_set_keys(creds, keys)
