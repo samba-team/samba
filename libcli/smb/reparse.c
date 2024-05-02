@@ -26,11 +26,11 @@
 #include "lib/util/charset/charset.h"
 #include "smb_util.h"
 
-static NTSTATUS reparse_buffer_check(const uint8_t *in_data,
-				     size_t in_len,
-				     uint32_t *reparse_tag,
-				     const uint8_t **_reparse_data,
-				     size_t *_reparse_data_length)
+NTSTATUS reparse_buffer_check(const uint8_t *in_data,
+			      size_t in_len,
+			      uint32_t *reparse_tag,
+			      const uint8_t **_reparse_data,
+			      size_t *_reparse_data_length)
 {
 	uint16_t reparse_data_length;
 

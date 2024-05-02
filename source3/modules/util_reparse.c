@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "util_reparse.h"
+#include "libcli/smb/reparse.h"
 
 NTSTATUS fsctl_get_reparse_point(struct files_struct *fsp,
 				 TALLOC_CTX *mem_ctx,
@@ -32,45 +33,32 @@ NTSTATUS fsctl_get_reparse_point(struct files_struct *fsp,
 	return NT_STATUS_NOT_A_REPARSE_POINT;
 }
 
-static NTSTATUS check_reparse_data_buffer(
-	const uint8_t *in_data, size_t in_len)
-{
-	uint16_t reparse_data_length;
-
-	if (in_len == 0) {
-		DBG_DEBUG("in_len=0\n");
-		return NT_STATUS_INVALID_BUFFER_SIZE;
-	}
-	if (in_len < 8) {
-		DBG_DEBUG("in_len=%zu\n", in_len);
-		return NT_STATUS_IO_REPARSE_DATA_INVALID;
-	}
-
-	reparse_data_length = PULL_LE_U16(in_data, 4);
-
-	if (reparse_data_length != (in_len - 8)) {
-		DBG_DEBUG("in_len=%zu, reparse_data_length=%"PRIu16"\n",
-			  in_len,
-			  reparse_data_length);
-		return NT_STATUS_IO_REPARSE_DATA_INVALID;
-	}
-
-	return NT_STATUS_OK;
-}
-
 NTSTATUS fsctl_set_reparse_point(struct files_struct *fsp,
 				 TALLOC_CTX *mem_ctx,
 				 const uint8_t *in_data,
 				 uint32_t in_len)
 {
+	uint32_t reparse_tag;
+	const uint8_t *reparse_data = NULL;
+	size_t reparse_data_length;
 	NTSTATUS status;
 
 	DBG_DEBUG("Called on %s\n", fsp_str_dbg(fsp));
 
-	status = check_reparse_data_buffer(in_data, in_len);
+	status = reparse_buffer_check(in_data,
+				      in_len,
+				      &reparse_tag,
+				      &reparse_data,
+				      &reparse_data_length);
 	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("check_reparse_data_buffer failed: %s\n",
+			  nt_errstr(status));
 		return status;
 	}
+
+	DBG_DEBUG("reparse tag=%" PRIX32 ", length=%zu\n",
+		  reparse_tag,
+		  reparse_data_length);
 
 	return NT_STATUS_NOT_A_REPARSE_POINT;
 }
