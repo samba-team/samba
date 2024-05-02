@@ -841,6 +841,9 @@ static int ldb_kv_dn_list_store(struct ldb_module *module,
 	int ret = LDB_SUCCESS;
 	struct dn_list *list2 = NULL;
 	struct ldb_kv_idxptr *idxptr = NULL;
+	struct ldb_dn_list_state state = {
+		.module = module,
+	};
 
 	key.dptr = discard_const_p(unsigned char, ldb_dn_get_linearized(dn));
 	if (key.dptr == NULL) {
@@ -865,14 +868,16 @@ static int ldb_kv_dn_list_store(struct ldb_module *module,
 	 * the dn_list directly.
 	 *
 	 */
-	rec = tdb_fetch(idxptr->itdb, key);
-	if (rec.dptr != NULL) {
-		list2 = ldb_kv_index_idxptr(module, rec);
+	ret = tdb_parse_record(idxptr->itdb,
+			       key,
+			       ldb_kv_index_idxptr_wrapper,
+			       &state);
+	if (ret == 0) {
+		list2 = state.list;
 		if (list2 == NULL) {
 			free(rec.dptr);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		free(rec.dptr);
 		/* Now put the updated pointer back in the cache */
 		if (list->dn == NULL) {
 			list2->dn = NULL;
