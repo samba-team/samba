@@ -453,7 +453,8 @@ class SidStringsAsDnInSearchBase(SidStringBase):
              'S-1-99999999999999999999999999999999999999-32-11111111111': ldb.ERR_INVALID_DN_SYNTAX,
              'S-10-5-32-579': ldb.ERR_INVALID_DN_SYNTAX,
              'S-2-5-32-579': ldb.ERR_INVALID_DN_SYNTAX,
-             's-1-5-32-579': ldb.ERR_INVALID_DN_SYNTAX,
+             's-1-5-32-5791': ldb.ERR_NO_SUCH_OBJECT,
+             's-1-5-32-545': None,
              'AA': ldb.ERR_INVALID_DN_SYNTAX,
         }
 
@@ -517,7 +518,8 @@ class SidStringsAsDnSearchWithDnObject(SidStringBase):
                                                                            None),
              'S-10-5-32-579': (None, ldb.ERR_INVALID_DN_SYNTAX),
              'S-2-5-32-579': (None, ldb.ERR_INVALID_DN_SYNTAX),
-             's-1-5-32-579': ('parse error', None),
+             's-1-5-32-545': (None, None),
+             's-1-5-1234-5678': (None, ldb.ERR_NO_SUCH_OBJECT),
             }
 
     def _test_sid_string_with_args(self, code, expected):
