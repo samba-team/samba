@@ -244,7 +244,11 @@ class cmd_domain_schema_upgrade(Command):
 
         temp_folder = None
 
-        samdb = SamDB(url=H, session_info=system_session(), credentials=creds, lp=lp)
+        # we set the transaction_index_cache_size to 200,000 to ensure it is
+        # not too small, if it's too small the performance of the upgrade will
+        # be negatively impacted. (similarly to the join operation)
+        samdb = SamDB(url=H, session_info=system_session(), credentials=creds, lp=lp,
+                      options=['transaction_index_cache_size:200000'])
 
         # we're not going to get far if the config doesn't allow schema updates
         if lp.get("dsdb:schema update allowed") is None:
