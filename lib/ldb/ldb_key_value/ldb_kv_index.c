@@ -4041,7 +4041,7 @@ int ldb_kv_index_sub_transaction_commit(struct ldb_kv_private *ldb_kv)
 	if (ldb_kv->nested_idx_ptr->itdb == NULL) {
 		return LDB_SUCCESS;
 	}
-	tdb_traverse(
+	tdb_traverse_read(
 	    ldb_kv->nested_idx_ptr->itdb,
 	    ldb_kv_sub_transaction_traverse,
 	    ldb_kv->module);
