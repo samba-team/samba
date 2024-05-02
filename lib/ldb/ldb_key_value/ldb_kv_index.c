@@ -3888,6 +3888,9 @@ static int ldb_kv_sub_transaction_traverse(
 	TDB_DATA rec = {0};
 	struct dn_list *index_in_subtransaction = NULL;
 	struct dn_list *index_in_top_level = NULL;
+	struct ldb_dn_list_state sub_state = {
+		.module = module,
+	};
 	int ret = 0;
 
 	/*
@@ -3908,10 +3911,12 @@ static int ldb_kv_sub_transaction_traverse(
 	 * The TDB and so the fetched rec contains NO DATA, just a
 	 * pointer to data held in memory.
 	 */
-	rec = tdb_fetch(ldb_kv->idxptr->itdb, key);
-	if (rec.dptr != NULL) {
-		index_in_top_level = ldb_kv_index_idxptr(module, rec);
-		free(rec.dptr);
+	ret = tdb_parse_record(ldb_kv->idxptr->itdb,
+			       key,
+			       ldb_kv_index_idxptr_wrapper,
+			       &sub_state);
+	if (ret == 0) {
+		index_in_top_level = sub_state.list;
 		if (index_in_top_level == NULL) {
 			abort();
 		}
