@@ -74,8 +74,10 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
 
         fd = conn.create(
             filename,
-            DesiredAccess=sec.SEC_FILE_WRITE_ATTRIBUTE,
+            DesiredAccess=sec.SEC_FILE_WRITE_ATTRIBUTE | sec.SEC_STD_DELETE,
             CreateDisposition=libsmb.FILE_CREATE)
+
+        conn.delete_on_close(fd, 1)
 
         with self.assertRaises(NTSTATUSError) as e:
             conn.fsctl(fd, libsmb.FSCTL_SET_REPARSE_POINT, b'', 0)
