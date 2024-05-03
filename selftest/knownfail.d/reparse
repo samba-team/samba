@@ -1,0 +1,2 @@
+^samba.tests.reparsepoints.samba.tests.reparsepoints.ReparsePoints.test_create_reparse_directory
+^samba.tests.reparsepoints.samba.tests.reparsepoints.ReparsePoints.test_create_reparse_nonempty_directory
