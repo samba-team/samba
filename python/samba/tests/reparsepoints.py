@@ -105,6 +105,7 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
         self.assertEqual(e.exception.args[0],
                          ntstatus.NT_STATUS_IO_REPARSE_DATA_INVALID)
 
+        # Exact length works
         conn.fsctl(fd, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
         b = reparse_symlink.put(0x80000026, 0, b'asdfasdfasdfasdfasdfasdf')
         conn.fsctl(fd, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
