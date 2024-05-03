@@ -107,8 +107,14 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
 
         # Exact length works
         conn.fsctl(fd, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
-        b = reparse_symlink.put(0x80000026, 0, b'asdfasdfasdfasdfasdfasdf')
-        conn.fsctl(fd, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
+
+        b = reparse_symlink.put(0x80000026, 0, b'asdf')
+
+        # We can't overwrite an existing reparse point with a different tag
+        with self.assertRaises(NTSTATUSError) as e:
+            conn.fsctl(fd, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
+        self.assertEqual(e.exception.args[0],
+                         ntstatus.NT_STATUS_IO_REPARSE_TAG_MISMATCH)
 
     # Show that we can write to a reparse point when opened properly
     def test_write_reparse(self):
