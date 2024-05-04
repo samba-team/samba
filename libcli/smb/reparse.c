@@ -45,7 +45,7 @@ static NTSTATUS reparse_buffer_check(const uint8_t *in_data,
 
 	reparse_data_length = PULL_LE_U16(in_data, 4);
 
-	if (reparse_data_length > (in_len - 8)) {
+	if (reparse_data_length != (in_len - 8)) {
 		DBG_DEBUG("in_len=%zu, reparse_data_length=%" PRIu16 "\n",
 			  in_len,
 			  reparse_data_length);
