@@ -23,9 +23,9 @@
 
 NTSTATUS fsctl_get_reparse_point(struct files_struct *fsp,
 				 TALLOC_CTX *mem_ctx,
-				 char **out_data,
+				 uint8_t **_out_data,
 				 uint32_t max_out_len,
-				 uint32_t *out_len)
+				 uint32_t *_out_len)
 {
 	DBG_DEBUG("Called on %s\n", fsp_str_dbg(fsp));
 	return NT_STATUS_NOT_A_REPARSE_POINT;

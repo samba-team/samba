@@ -1507,7 +1507,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 	case FSCTL_GET_REPARSE_POINT:
 	{
 		status = fsctl_get_reparse_point(
-			fsp, ctx, out_data, max_out_len, out_len);
+			fsp, ctx, _out_data, max_out_len, out_len);
 		return status;
 	}
 
