@@ -163,7 +163,8 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 	*sidout = (struct dom_sid) {};
 
 	if ((sidstr[0] != 'S' && sidstr[0] != 's') || sidstr[1] != '-') {
-		goto format_error;
+		DBG_INFO("'%s' is not a SID\n", sidstr);
+		return false;
 	}
 
 	/* Get the revision number. */
