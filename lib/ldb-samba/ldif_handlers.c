@@ -98,7 +98,7 @@ static int ldif_read_objectSid(struct ldb_context *ldb, void *mem_ctx,
 	if (in->data[0] != 'S' && in->data[0] != 's') {
 		return -1;
 	} else {
-		char p[in->length+1];
+		char p[DOM_SID_STR_BUFLEN + 1];
 		memcpy(p, in->data, in->length);
 		p[in->length] = '\0';
 
