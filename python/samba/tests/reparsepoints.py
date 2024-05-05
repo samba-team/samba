@@ -162,8 +162,20 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
             sec.SEC_STD_DELETE,
             CreateDisposition=libsmb.FILE_CREATE,
             CreateOptions=libsmb.FILE_DIRECTORY_FILE)
+
         b = reparse_symlink.put(0x80000025, 0, b'asdfasdfasdfasdfasdfasdf')
-        conn.fsctl(dir_fd, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
+
+        try:
+            conn.fsctl(dir_fd, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
+        except NTSTATUSError as e:
+            err = e.args[0]
+            if (err != ntstatus.NT_STATUS_ACCESS_DENIED):
+                raise
+
+        if (err == ntstatus.NT_STATUS_ACCESS_DENIED):
+            self.fail("Could not set reparse point on directory")
+            conn.delete_on_close(fd, 1)
+            return
 
         with self.assertRaises(NTSTATUSError) as e:
             fd = conn.create(
@@ -199,19 +211,21 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
             sec.SEC_STD_DELETE,
             CreateDisposition=libsmb.FILE_CREATE)
 
+
         b = reparse_symlink.put(0x80000025, 0, b'asdf')
         try:
             conn.fsctl(dir_fd, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
         except NTSTATUSError as e:
             err = e.args[0]
-            ok = (err == ntstatus.NT_STATUS_DIRECTORY_NOT_EMPTY)
-            if not ok:
-                raise
 
         conn.delete_on_close(fd, 1)
         conn.close(fd)
         conn.delete_on_close(dir_fd, 1)
         conn.close(dir_fd)
+
+        ok = (err == ntstatus.NT_STATUS_DIRECTORY_NOT_EMPTY)
+        if not ok:
+            self.fail(f'set_reparse on nonempty directory returned {err}')
 
     # Show that reparse point opens respect share modes
 
