@@ -22,6 +22,56 @@
 #include "util_reparse.h"
 #include "libcli/smb/reparse.h"
 
+static NTSTATUS fsctl_get_reparse_point_reg(struct files_struct *fsp,
+					    TALLOC_CTX *ctx,
+					    uint8_t **_out_data,
+					    uint32_t max_out_len,
+					    uint32_t *_out_len)
+{
+	uint8_t *val = NULL;
+	ssize_t sizeret;
+	NTSTATUS status;
+
+	/*
+	 * 64k+8 bytes is the maximum reparse point length
+	 * possible
+	 */
+
+	val = talloc_array(ctx, uint8_t, MIN(max_out_len, 65536 + 8));
+	if (val == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	sizeret = SMB_VFS_FGETXATTR(fsp,
+				    SAMBA_XATTR_REPARSE_ATTRIB,
+				    val,
+				    talloc_get_size(val));
+
+	if ((sizeret == -1) && (errno == ERANGE)) {
+		status = NT_STATUS_BUFFER_TOO_SMALL;
+		goto fail;
+	}
+
+	if ((sizeret == -1) && (errno == ENOATTR)) {
+		DBG_DEBUG(SAMBA_XATTR_REPARSE_ATTRIB " does not exist\n");
+		status = NT_STATUS_NOT_A_REPARSE_POINT;
+		goto fail;
+	}
+
+	if (sizeret == -1) {
+		status = map_nt_error_from_unix(errno);
+		DBG_DEBUG("SMB_VFS_FGETXATTR failed: %s\n", strerror(errno));
+		goto fail;
+	}
+
+	*_out_data = val;
+	*_out_len = sizeret;
+	return NT_STATUS_OK;
+fail:
+	TALLOC_FREE(val);
+	return status;
+}
+
 NTSTATUS fsctl_get_reparse_point(struct files_struct *fsp,
 				 TALLOC_CTX *mem_ctx,
 				 uint32_t *_reparse_tag,
@@ -29,8 +79,45 @@ NTSTATUS fsctl_get_reparse_point(struct files_struct *fsp,
 				 uint32_t max_out_len,
 				 uint32_t *_out_len)
 {
-	DBG_DEBUG("Called on %s\n", fsp_str_dbg(fsp));
-	return NT_STATUS_NOT_A_REPARSE_POINT;
+	uint32_t dos_mode;
+	uint8_t *out_data = NULL;
+	uint32_t out_len = 0;
+	uint32_t reparse_tag = 0;
+	const uint8_t *reparse_data = NULL;
+	size_t reparse_data_length;
+	NTSTATUS status = NT_STATUS_NOT_A_REPARSE_POINT;
+
+	dos_mode = fdos_mode(fsp);
+	if ((dos_mode & FILE_ATTRIBUTE_REPARSE_POINT) == 0) {
+		return NT_STATUS_NOT_A_REPARSE_POINT;
+	}
+
+	if (S_ISREG(fsp->fsp_name->st.st_ex_mode)) {
+		DBG_DEBUG("%s is a regular file\n", fsp_str_dbg(fsp));
+		status = fsctl_get_reparse_point_reg(
+			fsp, mem_ctx, &out_data, max_out_len, &out_len);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = reparse_buffer_check(out_data,
+				      out_len,
+				      &reparse_tag,
+				      &reparse_data,
+				      &reparse_data_length);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("Invalid reparse data: %s\n", nt_errstr(status));
+		TALLOC_FREE(out_data);
+		return status;
+	}
+
+	*_reparse_tag = reparse_tag;
+	*_out_data = out_data;
+	*_out_len = out_len;
+
+	return NT_STATUS_OK;
 }
 
 NTSTATUS fsctl_set_reparse_point(struct files_struct *fsp,
