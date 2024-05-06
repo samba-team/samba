@@ -43,7 +43,7 @@ static krb5_error_code kpasswd_change_password(struct kdc_server *kdc,
 {
 	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	enum samPwdChangeReason reject_reason;
+	enum samPwdChangeReason reject_reason = SAM_PWD_CHANGE_NO_ERROR;
 	const char *reject_string = NULL;
 	struct samr_DomInfo1 *dominfo = NULL;
 	bool ok;
