@@ -213,6 +213,71 @@ NTSTATUS fsctl_del_reparse_point(struct files_struct *fsp,
 				 const uint8_t *in_data,
 				 uint32_t in_len)
 {
-	DBG_DEBUG("Called on %s\n", fsp_str_dbg(fsp));
-	return NT_STATUS_NOT_A_REPARSE_POINT;
+	uint32_t existing_tag;
+	uint8_t *existing_data = NULL;
+	uint32_t existing_len;
+	uint32_t reparse_tag;
+	const uint8_t *reparse_data = NULL;
+	size_t reparse_data_length;
+	NTSTATUS status;
+	uint32_t dos_mode;
+	int ret;
+
+	status = fsctl_get_reparse_point(fsp,
+					 talloc_tos(),
+					 &existing_tag,
+					 &existing_data,
+					 UINT32_MAX,
+					 &existing_len);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	TALLOC_FREE(existing_data);
+
+	status = reparse_buffer_check(in_data,
+				      in_len,
+				      &reparse_tag,
+				      &reparse_data,
+				      &reparse_data_length);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (reparse_data_length != 0) {
+		return NT_STATUS_IO_REPARSE_DATA_INVALID;
+	}
+
+	if (existing_tag != reparse_tag) {
+		DBG_DEBUG("Expect correct tag %" PRIX32 ", got tag %" PRIX32
+			  "\n",
+			  existing_tag,
+			  reparse_tag);
+		return NT_STATUS_IO_REPARSE_TAG_MISMATCH;
+	}
+
+	ret = SMB_VFS_FREMOVEXATTR(fsp, SAMBA_XATTR_REPARSE_ATTRIB);
+	if (ret == -1) {
+		status = map_nt_error_from_unix(errno);
+		DBG_DEBUG("removexattr fail on %s - %s\n",
+			  fsp_str_dbg(fsp),
+			  strerror(errno));
+		return status;
+	}
+
+	/*
+	 * Files with reparse points don't have the ATTR_NORMAL bit
+	 * set
+	 */
+	dos_mode = fdos_mode(fsp);
+	dos_mode &= ~FILE_ATTRIBUTE_REPARSE_POINT;
+
+	status = SMB_VFS_FSET_DOS_ATTRIBUTES(fsp->conn, fsp, dos_mode);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("set reparse attr fail on %s - %s\n",
+			fsp_str_dbg(fsp),
+			nt_errstr(status));
+		return status;
+	}
+
+	return NT_STATUS_OK;
 }
