@@ -544,6 +544,9 @@ static PyObject *py_creds_get_nt_hash(PyObject *self, PyObject *unused)
 		return NULL;
 	}
 	ntpw = cli_credentials_get_nt_hash(creds, creds);
+	if (ntpw == NULL) {
+		Py_RETURN_NONE;
+	}
 
 	ret = PyBytes_FromStringAndSize(discard_const_p(char, ntpw->hash), 16);
 	TALLOC_FREE(ntpw);
