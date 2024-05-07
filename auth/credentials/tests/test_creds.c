@@ -167,6 +167,7 @@ static void torture_creds_parse_string(void **state)
 	TALLOC_CTX *mem_ctx = *state;
 	struct cli_credentials *creds = NULL;
 	enum credentials_obtained princ_obtained = CRED_UNINITIALISED;
+	enum credentials_obtained usr_obtained = CRED_UNINITIALISED;
 	enum credentials_obtained pwd_obtained = CRED_UNINITIALISED;
 
 	creds = cli_credentials_init(mem_ctx);
@@ -215,7 +216,8 @@ static void torture_creds_parse_string(void **state)
 	assert_int_equal(creds->domain_obtained, CRED_SPECIFIED);
 
 	assert_string_equal(creds->username, "wurst@brot.realm");
-	assert_int_equal(creds->username_obtained, CRED_SPECIFIED);
+	usr_obtained = cli_credentials_get_username_obtained(creds);
+	assert_int_equal(usr_obtained, CRED_SPECIFIED);
 
 	assert_string_equal(creds->principal, "wurst@brot.realm");
 	princ_obtained = cli_credentials_get_principal_obtained(creds);
