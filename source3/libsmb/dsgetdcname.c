@@ -196,7 +196,29 @@ static NTSTATUS store_cldap_reply(TALLOC_CTX *mem_ctx,
 	/* FIXME */
 	r->sockaddr_size = 0x10; /* the w32 winsock addr size */
 	r->sockaddr.sockaddr_family = 2; /* AF_INET */
-	r->sockaddr.pdc_ip = talloc_strdup(mem_ctx, addr);
+	if (is_ipaddress_v4(addr)) {
+		r->sockaddr.pdc_ip = talloc_strdup(mem_ctx, addr);
+		if (r->sockaddr.pdc_ip == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		/*
+		 * ndr_push_NETLOGON_SAM_LOGON_RESPONSE_EX will
+		 * fail with an ipv6 address.
+		 *
+		 * This matches windows behaviour in the CLDAP
+		 * response when NETLOGON_NT_VERSION_5EX_WITH_IP
+		 * is used.
+		 *
+		 * Windows returns the ipv4 address of the ipv6
+		 * server interface and falls back to 127.0.0.1
+		 * if there's no ipv4 address.
+		 */
+		r->sockaddr.pdc_ip = talloc_strdup(mem_ctx, "127.0.0.1");
+		if (r->sockaddr.pdc_ip == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
 
 	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, r,
 		       (ndr_push_flags_fn_t)ndr_push_NETLOGON_SAM_LOGON_RESPONSE_EX);
