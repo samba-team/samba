@@ -167,7 +167,7 @@ static void torture_schannel_seal_rc4(void **state)
 	int buffer_sizes[] = {
 		0, 1, 3, 7, 8, 9, 15, 16, 17
 	};
-	int i;
+	size_t i;
 
 	torture_schannel_seal_flags(state, 0,
 				    session_key,
@@ -259,7 +259,7 @@ static void torture_schannel_seal_aes(void **state)
 	int buffer_sizes[] = {
 		0, 1, 3, 7, 8, 9, 15, 16, 17
 	};
-	int i;
+	size_t i;
 
 	torture_schannel_seal_flags(state, NETLOGON_NEG_SUPPORTS_AES,
 				    session_key,
