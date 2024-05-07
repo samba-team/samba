@@ -4605,7 +4605,7 @@ static bool wcache_tdc_store_list( struct winbindd_tdc_domain *domains, size_t n
 		goto done;
 	}
 
-	ret = tdb_store( wcache->tdb, key, data, 0 );
+	ret = tdb_store(wcache->tdb, key, data, TDB_REPLACE);
 
  done:
 	SAFE_FREE( data.dptr );
@@ -4922,7 +4922,7 @@ void wcache_store_ndr(struct winbindd_domain *domain, uint32_t opnum,
 	SBVAL(data.dptr, 4, timeout);
 	memcpy(data.dptr + 12, resp->data, resp->length);
 
-	tdb_store(wcache->tdb, key, data, 0);
+	tdb_store(wcache->tdb, key, data, TDB_REPLACE);
 
 done:
 	TALLOC_FREE(key.dptr);
