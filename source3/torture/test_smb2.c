@@ -3951,20 +3951,21 @@ static NTSTATUS get_smb2_inode(struct cli_state *cli,
 	/*
 	 * Get the inode.
 	 */
-	status = smb2cli_query_info(cli->conn,
-				    cli->timeout,
-				    cli->smb2.session,
-				    cli->smb2.tcon,
-				    SMB2_0_INFO_FILE,
-				    (SMB_FILE_ALL_INFORMATION - 1000), /* in_file_info_class */
-				    1024, /* in_max_output_length */
-				    NULL, /* in_input_buffer */
-				    0, /* in_additional_info */
-				    0, /* in_flags */
-				    fid_persistent,
-				    fid_volatile,
-				    talloc_tos(),
-				    &outbuf);
+	status = smb2cli_query_info(
+		cli->conn,
+		cli->timeout,
+		cli->smb2.session,
+		cli->smb2.tcon,
+		SMB2_0_INFO_FILE,
+		FSCC_FILE_ALL_INFORMATION, /* in_file_info_class */
+		1024,			   /* in_max_output_length */
+		NULL,			   /* in_input_buffer */
+		0,			   /* in_additional_info */
+		0,			   /* in_flags */
+		fid_persistent,
+		fid_volatile,
+		talloc_tos(),
+		&outbuf);
 
 	if (NT_STATUS_IS_OK(status)) {
 		*ino_ret = PULL_LE_U64(outbuf.data, 0x40);
