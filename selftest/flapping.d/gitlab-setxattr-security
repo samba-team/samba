@@ -1,0 +1,18 @@
+# gitlab runners with kernel 5.15.109+
+# allow setxattr() on security.NTACL
+#
+# It's not clear in detail why there's a difference
+# between various systems, one reason could be that
+# with selinux inode_owner_or_capable() is used to check
+# setxattr() permissions:
+# it checks for the fileowner too, as well as CAP_FOWNER.
+# Otherwise cap_inode_setxattr() is used, which checks for
+# CAP_SYS_ADMIN.
+#
+# But the kernel doesn't have selinux only apparmor...
+#
+# test_setntacl_forcenative expects
+# PermissionError: [Errno 1] Operation not permitted
+#
+# So for now we allow this to fail...
+^samba.tests.ntacls.samba.tests.ntacls.NtaclsTests.test_setntacl_forcenative.none
