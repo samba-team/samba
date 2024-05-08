@@ -83,5 +83,5 @@ class NtaclsTests(TestCaseInTempDir):
         lp = LoadParm()
         open(self.tempf, 'w').write("empty")
         lp.set("posix:eadb", os.path.join(self.tempdir, "eadbtest.tdb"))
-        self.assertRaises(Exception, setntacl, lp, self.tempf, NTACL_SDDL,
+        self.assertRaises(PermissionError, setntacl, lp, self.tempf, NTACL_SDDL,
                           DOMAIN_SID, self.session_info, "native")
