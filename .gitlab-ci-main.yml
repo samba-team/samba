@@ -112,8 +112,14 @@ include:
 
   before_script:
     - uname -a
+    - ls -l /sys/module/
+    - ls -l /sys/kernel/security/
+    - if [ -e /sys/kernel/security/lsm ]; then cat /sys/kernel/security/lsm ; echo; fi
+    - if [ -e /proc/config.gz ]; then sudo zcat /proc/config.gz; echo; fi
     - lsb_release -a
     - cat /etc/os-release
+    - id
+    - cat /proc/self/status
     - lscpu
     - cat /proc/cpuinfo
     - mount
