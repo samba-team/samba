@@ -48,6 +48,7 @@
 #include "source3/lib/substitute.h"
 #include "source3/lib/adouble.h"
 #include "source3/smbd/dir.h"
+#include "source3/modules/util_reparse.h"
 
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 
@@ -3676,14 +3677,27 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			*fixed_portion = 56;
 			break;
 
-		case SMB_FILE_ATTRIBUTE_TAG_INFORMATION:
+		case SMB_FILE_ATTRIBUTE_TAG_INFORMATION: {
+			uint32_t tag = 0;
+			uint8_t *data = NULL;
+			uint32_t datalen;
+
 			DBG_DEBUG("SMB_FILE_ATTRIBUTE_TAG_INFORMATION\n");
-			SIVAL(pdata,0,mode);
-			SIVAL(pdata,4,0);
+
+			(void)fsctl_get_reparse_point(fsp,
+						      talloc_tos(),
+						      &tag,
+						      &data,
+						      UINT32_MAX,
+						      &datalen);
+			TALLOC_FREE(data);
+
+			SIVAL(pdata, 0, mode);
+			SIVAL(pdata, 4, tag);
 			data_size = 8;
 			*fixed_portion = 8;
 			break;
-
+		}
 		/*
 		 * SMB2 UNIX Extensions.
 		 */
