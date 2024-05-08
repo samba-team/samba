@@ -52,12 +52,13 @@ ctdb_setup_state_dir "service" "nfs"
 
 # script_state_dir set by ctdb_setup_state_dir()
 # shellcheck disable=SC2154
-d="${script_state_dir}/statd-callout"
+statd_callout_state_dir="${script_state_dir}/statd-callout"
 
 statd_callout_db="ctdb.tdb"
+statd_callout_queue_dir="${statd_callout_state_dir}/queue"
 
-mkdir -p "$d" || die "Failed to create directory \"${d}\""
-cd "$d" || die "Failed to change directory to \"${d}\""
+mkdir -p "$statd_callout_queue_dir" ||
+	die "Failed to create directory \"${statd_callout_queue_dir}\""
 
 pnn=$(ctdb_get_pnn)
 
@@ -142,7 +143,8 @@ add-client)
 		while IFS="|" read -r x sip node x; do
 			[ "$node" = "$pnn" ] || continue # not us
 			key="statd-state@${sip}@${cip}"
-			echo "\"${key}\" \"${date}\"" >"$key"
+			file="${statd_callout_queue_dir}/${key}"
+			echo "\"${key}\" \"${date}\"" >"$file"
 		done
 	;;
 
@@ -157,11 +159,14 @@ del-client)
 		while IFS="|" read -r x sip node x; do
 			[ "$node" = "$pnn" ] || continue # not us
 			key="statd-state@${sip}@${cip}"
-			echo "\"${key}\" \"\"" >"$key"
+			file="${statd_callout_queue_dir}/${key}"
+			echo "\"${key}\" \"\"" >"$file"
 		done
 	;;
 
 update)
+	cd "$statd_callout_queue_dir" ||
+		die "Failed to change directory to \"${statd_callout_queue_dir}\""
 	files=$(echo statd-state@*)
 	if [ "$files" = "statd-state@*" ]; then
 		# No files!
@@ -265,7 +270,7 @@ notify)
 	echo "$ctdb_all_ips" |
 		awk -v pnn="$pnn" 'pnn != $2 { print $1 }' |
 		while read -r sip; do
-			rm -f "statd-state@${sip}@"*
+			rm -f "${statd_callout_queue_dir}/statd-state@${sip}@"*
 		done
 	;;
 esac
