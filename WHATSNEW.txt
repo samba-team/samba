@@ -1,4 +1,59 @@
                    ==============================
+                   Release Notes for Samba 4.20.1
+                            May 08, 2024
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.20 release series.
+
+
+Changes since 4.20.0
+--------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15630: dns update debug message is too noisy.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 15635: Do not fail PAC validation for RFC8009 checksums types.
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15605: Improve performance of lookup_groupmem() in idmap_ad.
+
+o  Anna Popova <popova.anna235@gmail.com>
+   * BUG 15636: Smbcacls incorrectly propagates inheritance with Inherit-Only
+     flag.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15611: http library doesn't support 'chunked transfer encoding'.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15600: Provide a systemd service file for the background queue daemon.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.20.0
                            March 27, 2024
                    ==============================
