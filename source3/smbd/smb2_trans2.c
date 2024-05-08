@@ -222,7 +222,7 @@ NTSTATUS get_ea_value_fsp(TALLOC_CTX *mem_ctx,
 		return map_nt_error_from_unix(errno);
 	}
 
-	DEBUG(10,("get_ea_value: EA %s is of length %u\n", ea_name, (unsigned int)sizeret));
+	DBG_DEBUG("EA %s is of length %zd\n", ea_name, sizeret);
 	dump_data(10, (uint8_t *)val, sizeret);
 
 	pea->flags = 0;
