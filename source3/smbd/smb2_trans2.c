@@ -3677,7 +3677,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			break;
 
 		case SMB_FILE_ATTRIBUTE_TAG_INFORMATION:
-			DBG_DEBUG(" SMB_FILE_ATTRIBUTE_TAG_INFORMATION\n");
+			DBG_DEBUG("SMB_FILE_ATTRIBUTE_TAG_INFORMATION\n");
 			SIVAL(pdata,0,mode);
 			SIVAL(pdata,4,0);
 			data_size = 8;
