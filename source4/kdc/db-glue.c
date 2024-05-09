@@ -1841,6 +1841,17 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 			 * against possible future attacks on weak
 			 * keys.
 			 */
+
+			/*
+			 * The krbtgt account is never a Group Managed Service
+			 * Account, but a similar system might well be
+			 * implemented as a means of having the krbtgt’s keys
+			 * roll over automatically. In that case, thought might
+			 * be given as to how this security measure — of
+			 * stripping out weaker keys — would interact with key
+			 * management.
+			 */
+
 			entry->keys.len = 1;
 			if (entry->etypes != NULL) {
 				entry->etypes->len = MIN(entry->etypes->len, 1);
