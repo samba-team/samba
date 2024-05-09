@@ -241,6 +241,7 @@ struct ldb_debug_ops {
 struct ldb_utf8_fns {
 	void *context;
 	char *(*casefold)(void *context, TALLOC_CTX *mem_ctx, const char *s, size_t n);
+	int (*casecmp)(void *context, const struct ldb_val *v1, const struct ldb_val *v2);
 };
 
 /**
