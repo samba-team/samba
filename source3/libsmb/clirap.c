@@ -1351,16 +1351,16 @@ struct tevent_req *cli_qfileinfo_basic_send(
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		subreq = cli_smb2_query_info_fnum_send(
-			state,	/* mem_ctx */
-			ev,	/* ev */
-			cli,	/* cli */
-			fnum,	/* fnum */
-			1,	/* in_info_type */
-			(SMB_FILE_ALL_INFORMATION - 1000), /* in_file_info_class */
-			0xFFFF, /* in_max_output_length */
-			NULL,	/* in_input_buffer */
-			0,	/* in_additional_info */
-			0);	/* in_flags */
+			state,			   /* mem_ctx */
+			ev,			   /* ev */
+			cli,			   /* cli */
+			fnum,			   /* fnum */
+			SMB2_0_INFO_FILE,	   /* in_info_type */
+			FSCC_FILE_ALL_INFORMATION, /* in_file_info_class */
+			0xFFFF,			   /* in_max_output_length */
+			NULL,			   /* in_input_buffer */
+			0,			   /* in_additional_info */
+			0);			   /* in_flags */
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
