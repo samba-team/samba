@@ -6965,20 +6965,55 @@ static void cli_qfileinfo_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_qfileinfo_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
-				      struct cli_state *cli, uint16_t fnum,
-				      uint16_t level, uint32_t min_rdata,
+				      struct cli_state *cli,
+				      uint16_t fnum,
+				      uint16_t fscc_level,
+				      uint32_t min_rdata,
 				      uint32_t max_rdata)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_qfileinfo_state *state;
+	uint16_t smb_level;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_qfileinfo_state);
 	if (req == NULL) {
 		return NULL;
 	}
+
+	switch (fscc_level) {
+	case FSCC_FILE_BASIC_INFORMATION:
+		smb_level = SMB_QUERY_FILE_BASIC_INFO;
+		break;
+	case FSCC_FILE_STANDARD_INFORMATION:
+		smb_level = SMB_QUERY_FILE_STANDARD_INFO;
+		break;
+	case FSCC_FILE_EA_INFORMATION:
+		smb_level = SMB_QUERY_FILE_EA_INFO;
+		break;
+	case FSCC_FILE_NAME_INFORMATION:
+		smb_level = SMB_QUERY_FILE_NAME_INFO;
+		break;
+	case FSCC_FILE_ALL_INFORMATION:
+		smb_level = SMB_QUERY_FILE_ALL_INFO;
+		break;
+	case FSCC_FILE_ALTERNATE_NAME_INFORMATION:
+		smb_level = SMB_QUERY_FILE_ALT_NAME_INFO;
+		break;
+	case FSCC_FILE_STREAM_INFORMATION:
+		smb_level = SMB_QUERY_FILE_STREAM_INFO;
+		break;
+	case FSCC_FILE_COMPRESSION_INFORMATION:
+		smb_level = SMB_QUERY_COMPRESSION_INFO;
+		break;
+	default:
+		/* Probably wrong, but the server will tell us */
+		smb_level = fscc_level;
+		break;
+	}
+
 	state->min_rdata = min_rdata;
 	SSVAL(state->param, 0, fnum);
-	SSVAL(state->param, 2, level);
+	SSVAL(state->param, 2, smb_level);
 	SSVAL(state->setup, 0, TRANSACT2_QFILEINFO);
 
 	subreq = cli_trans_send(
@@ -7054,10 +7089,15 @@ NTSTATUS cli_qfileinfo_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_qfileinfo(TALLOC_CTX *mem_ctx, struct cli_state *cli,
-		       uint16_t fnum, uint16_t level, uint32_t min_rdata,
-		       uint32_t max_rdata, uint16_t *recv_flags2,
-		       uint8_t **rdata, uint32_t *num_rdata)
+NTSTATUS cli_qfileinfo(TALLOC_CTX *mem_ctx,
+		       struct cli_state *cli,
+		       uint16_t fnum,
+		       uint16_t fscc_level,
+		       uint32_t min_rdata,
+		       uint32_t max_rdata,
+		       uint16_t *recv_flags2,
+		       uint8_t **rdata,
+		       uint32_t *num_rdata)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -7075,8 +7115,8 @@ NTSTATUS cli_qfileinfo(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = cli_qfileinfo_send(frame, ev, cli, fnum, level, min_rdata,
-				 max_rdata);
+	req = cli_qfileinfo_send(
+		frame, ev, cli, fnum, fscc_level, min_rdata, max_rdata);
 	if (req == NULL) {
 		goto fail;
 	}

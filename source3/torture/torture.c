@@ -4411,10 +4411,15 @@ static NTSTATUS cli_qfilename(
 	char *name = NULL;
 	uint32_t namelen;
 
-	status = cli_qfileinfo(talloc_tos(), cli, fnum,
-			       SMB_QUERY_FILE_NAME_INFO,
-			       4, CLI_BUFFER_SIZE, &recv_flags2,
-			       &rdata, &num_rdata);
+	status = cli_qfileinfo(talloc_tos(),
+			       cli,
+			       fnum,
+			       FSCC_FILE_NAME_INFORMATION,
+			       4,
+			       CLI_BUFFER_SIZE,
+			       &recv_flags2,
+			       &rdata,
+			       &num_rdata);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

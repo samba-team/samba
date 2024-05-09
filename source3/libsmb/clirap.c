@@ -1369,14 +1369,13 @@ struct tevent_req *cli_qfileinfo_basic_send(
 		return req;
 	}
 
-	subreq = cli_qfileinfo_send(
-		state,
-		ev,
-		cli,
-		fnum,
-		SMB_QUERY_FILE_ALL_INFO, /* level */
-		68,			 /* min_rdata */
-		CLI_BUFFER_SIZE);	 /* max_rdata */
+	subreq = cli_qfileinfo_send(state,
+				    ev,
+				    cli,
+				    fnum,
+				    FSCC_FILE_ALL_INFORMATION, /* level */
+				    68,			       /* min_rdata */
+				    CLI_BUFFER_SIZE);	       /* max_rdata */
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
