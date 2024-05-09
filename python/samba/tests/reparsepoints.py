@@ -118,6 +118,30 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
         self.assertEqual(e.exception.args[0],
                          ntstatus.NT_STATUS_IO_REPARSE_TAG_MISMATCH)
 
+    def test_query_reparse_tag(self):
+        conn = self.connection()
+        filename = 'reparse'
+        self.clean_file(conn, filename)
+
+        fd = conn.create(
+            filename,
+            DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE |
+                sec.SEC_FILE_WRITE_ATTRIBUTE |
+                sec.SEC_STD_DELETE,
+            CreateDisposition=libsmb.FILE_CREATE)
+
+        conn.delete_on_close(fd, 1)
+
+        info = conn.qfileinfo(fd, libsmb.FSCC_FILE_ATTRIBUTE_TAG_INFORMATION);
+        self.assertEqual(info['tag'], 0)
+
+        b = reparse_symlink.put(0x80000026, 0, b'asdf')
+        conn.fsctl(fd, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
+
+        info = conn.qfileinfo(fd, libsmb.FSCC_FILE_ATTRIBUTE_TAG_INFORMATION);
+        self.assertEqual(info['tag'], 0x80000026)
+
+
     # Show that we can write to a reparse point when opened properly
     def test_write_reparse(self):
         conn = self.connection()
