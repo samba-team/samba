@@ -97,7 +97,8 @@ int ldb_comparison_fold_ascii(void *ignored,
 			      const struct ldb_val *v1,
 			      const struct ldb_val *v2)
 {
-	const char *s1=(const char *)v1->data, *s2=(const char *)v2->data;
+	const uint8_t *s1 = v1->data;
+	const uint8_t *s2 = v2->data;
 	size_t n1 = v1->length, n2 = v2->length;
 
 	while (n1 && *s1 == ' ') { s1++; n1--; };
@@ -127,15 +128,15 @@ int ldb_comparison_fold_ascii(void *ignored,
 		while (n2 && *s2 == ' ') { s2++; n2--; }
 	}
 	if (n1 == 0 && n2 != 0) {
-		return -(int)ldb_ascii_toupper(*s2);
+		return *s2 ? -1 : 0;
 	}
 	if (n2 == 0 && n1 != 0) {
-		return (int)ldb_ascii_toupper(*s1);
+		return *s1 ? 1 : 0;
 	}
 	if (n1 == 0 && n2 == 0) {
 		return 0;
 	}
-	return (int)ldb_ascii_toupper(*s1) - (int)ldb_ascii_toupper(*s2);
+	return NUMERIC_CMP(*s1, *s2);
 }
 
 void ldb_set_utf8_default(struct ldb_context *ldb)
