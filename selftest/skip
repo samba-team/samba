@@ -147,4 +147,3 @@ bench # don't run benchmarks in our selftest
 ^samba4.smb2.tcon.*\(ad_dc_ntvfs\)$ # Ignore ad_dc_ntvfs since this is a new test
 ^samba4.smb2.mkdir.*\(ad_dc_ntvfs\)$ # Ignore ad_dc_ntvfs since this is a new test
 ^samba3.blackbox.open-eintr.*
-^samba\.tests\.krb5\. # Lots of these tests will fail until we’ve updated the Hemidal KDC to generate PAC checksums.
