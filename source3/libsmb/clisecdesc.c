@@ -49,16 +49,16 @@ struct tevent_req *cli_query_security_descriptor_send(
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		subreq = cli_smb2_query_info_fnum_send(
-			state,		/* mem_ctx */
-			ev,		/* ev */
-			cli,		/* cli */
-			fnum,		/* fnum */
-			3,		/* in_info_type */
-			0,		/* in_info_class */
-			0xFFFF,		/* in_max_output_length */
-			NULL,		/* in_input_buffer */
-			sec_info,	/* in_additional_info */
-			0);		/* in_flags */
+			state,		      /* mem_ctx */
+			ev,		      /* ev */
+			cli,		      /* cli */
+			fnum,		      /* fnum */
+			SMB2_0_INFO_SECURITY, /* in_info_type */
+			0,		      /* in_info_class */
+			0xFFFF,		      /* in_max_output_length */
+			NULL,		      /* in_input_buffer */
+			sec_info,	      /* in_additional_info */
+			0);		      /* in_flags */
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
