@@ -2818,6 +2818,8 @@ static krb5_error_code samba_kdc_fetch_client(krb5_context context,
 	krb5_error_code ret;
 	struct ldb_message *msg = NULL;
 	int tries = 0;
+	NTTIME pwd_last_set_last_loop = INT64_MAX;
+	bool pwd_last_set_last_loop_set = false;
 
 	/*
 	 * We will try up to 3 times to rotate the expired or soon to
@@ -2832,6 +2834,7 @@ static krb5_error_code samba_kdc_fetch_client(krb5_context context,
 	 * expired.
 	 */
 	while (tries++ <= 2) {
+		NTTIME pwd_last_set_this_loop;
 		uint32_t attr_flags_computed;
 
 		/*
@@ -2873,6 +2876,24 @@ static krb5_error_code samba_kdc_fetch_client(krb5_context context,
 		if (entry->pw_end == NULL) {
 			break;
 		}
+
+		/*
+		 * Find if the pwdLastSet has changed on an account
+		 * that we are about to change the password for.  If
+		 * we have both seen it and it has changed already, go
+		 * with that, even if it would fail the tests.  As
+		 * well as dealing with races, this will avoid a
+		 * double-reset every loop if the TGT lifetime is
+		 * longer than the expiry.
+		 */
+		pwd_last_set_this_loop =
+			ldb_msg_find_attr_as_int64(msg, "pwdLastSet", INT64_MAX);
+		if (pwd_last_set_last_loop_set &&
+		    pwd_last_set_last_loop != pwd_last_set_this_loop) {
+			break;
+		}
+		pwd_last_set_last_loop = pwd_last_set_this_loop;
+		pwd_last_set_last_loop_set = true;
 
 		attr_flags_computed
 			= ldb_msg_find_attr_as_uint(msg,
