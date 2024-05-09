@@ -1923,6 +1923,7 @@ NTSTATUS cli_smb2_query_info_fnum_recv(
 		.data = talloc_move(mem_ctx, &state->outbuf.data),
 		.length = state->outbuf.length,
 	};
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
