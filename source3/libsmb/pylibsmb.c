@@ -1263,6 +1263,61 @@ static PyObject *py_cli_close(struct py_cli_state *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_cli_qfileinfo(struct py_cli_state *self, PyObject *args)
+{
+	struct tevent_req *req = NULL;
+	int fnum, level;
+	uint16_t recv_flags2;
+	uint8_t *rdata = NULL;
+	uint32_t num_rdata;
+	PyObject *result = NULL;
+	NTSTATUS status;
+
+	if (!PyArg_ParseTuple(args, "ii", &fnum, &level)) {
+		return NULL;
+	}
+
+	req = cli_qfileinfo_send(
+		NULL, self->ev, self->cli, fnum, level, 0, UINT32_MAX);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NULL;
+	}
+	status = cli_qfileinfo_recv(
+		req, NULL, &recv_flags2, &rdata, &num_rdata);
+	TALLOC_FREE(req);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	switch (level) {
+	case FSCC_FILE_ATTRIBUTE_TAG_INFORMATION: {
+		uint32_t mode = PULL_LE_U32(rdata, 0);
+		uint32_t tag = PULL_LE_U32(rdata, 4);
+
+		if (num_rdata != 8) {
+			PyErr_SetNTSTATUS(NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return NULL;
+		}
+
+		result = Py_BuildValue("{s:K,s:K}",
+				       "mode",
+				       (unsigned long long)mode,
+				       "tag",
+				       (unsigned long long)tag);
+		break;
+	}
+	default:
+		result = PyBytes_FromStringAndSize((char *)rdata, num_rdata);
+		break;
+	}
+
+	TALLOC_FREE(rdata);
+
+	return result;
+}
+
 static PyObject *py_cli_rename(
 	struct py_cli_state *self, PyObject *args, PyObject *kwds)
 {
@@ -2786,6 +2841,12 @@ static PyMethodDef py_cli_state_methods[] = {
 	  (PyCFunction)py_cli_fsctl,
 	  METH_VARARGS|METH_KEYWORDS,
 	  "fsctl(fnum, ctl_code, in_bytes, max_out) -> out_bytes",
+	},
+	{
+		"qfileinfo",
+		(PyCFunction)py_cli_qfileinfo,
+		METH_VARARGS | METH_KEYWORDS,
+		"qfileinfo(fnum, level) -> blob",
 	},
 	{ "mknod",
 	  PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_mknod),
