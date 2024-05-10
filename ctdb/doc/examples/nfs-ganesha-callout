@@ -272,13 +272,34 @@ grace_period()
 {
 	_arg="$1"
 
+	_gp_status=0
 	if [ -x "/usr/bin/grace_period" ]; then
-		/usr/bin/grace_period "$_arg"
+		_out=$(/usr/bin/grace_period "$_arg" 2>&1) ||
+			_gp_status=$?
+		_down_msg="Error: Can't talk to ganesha service on d-bus"
 	else
-		dbus-send --print-reply --system --dest=org.ganesha.nfsd \
+		_out=$(dbus-send \
+			--print-reply --system --dest=org.ganesha.nfsd \
 			/org/ganesha/nfsd/admin org.ganesha.nfsd.admin.grace \
-			string:"$_arg"
+			string:"$_arg" 2>&1) ||
+			_gp_status=$?
+		_down_msg="Error org.freedesktop.DBus.Error.ServiceUnknown"
 	fi
+
+	if [ -n "$_out" ]; then
+		echo "$_out"
+	fi
+
+	if [ $_gp_status -ne 0 ]; then
+		# If $_out contains $_down_msg then NFS-Ganesha is
+		# either down or is starting, so will be in grace
+		# anyway.
+		if [ "${_out#*"${_down_msg}"}" != "$_out" ]; then
+			return 3 # ESRCH - No such process
+		fi
+	fi
+
+	return $_gp_status
 }
 
 grace_period_if_running()
@@ -290,7 +311,17 @@ grace_period_if_running()
 		return 0
 	fi
 
-	grace_period "$_arg"
+	_status=0
+	grace_period "$_arg" || _status=$?
+	case $_status in
+	3)
+		# Convert to success
+		return 0
+		;;
+	*)
+		return $_status
+		;;
+	esac
 }
 
 nfs_startipreallocate()
