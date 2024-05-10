@@ -24,6 +24,7 @@ sys.path.insert(0, 'bin/python')
 os.environ['PYTHONUNBUFFERED'] = '1'
 
 from datetime import datetime, timedelta
+import time
 
 from pyasn1.type import univ
 
@@ -37,7 +38,11 @@ from cryptography.x509.oid import NameOID
 import ldb
 import samba.tests
 from samba import credentials, generate_random_password, ntstatus
+from samba.nt_time import (nt_time_delta_from_timedelta,
+                           nt_now, string_from_nt_time)
 from samba.dcerpc import security, netlogon
+from samba.dsdb import UF_PASSWORD_EXPIRED, UF_DONT_EXPIRE_PASSWD
+from samba.tests.pso import PasswordSettings
 from samba.tests.krb5 import kcrypto
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
 from samba.tests.krb5.raw_testcase import PkInit, RawKerberosTest
@@ -95,16 +100,23 @@ class PkInitTests(KDCBaseTest):
         self.do_asn1_print = global_asn1_print
         self.do_hexdump = global_hexdump
 
-    def _get_creds(self, account_type=KDCBaseTest.AccountType.USER, use_cache=False, smartcard_required=False):
+    def _get_creds(self,
+                   account_type=KDCBaseTest.AccountType.USER,
+                   use_cache=False,
+                   smartcard_required=False,
+                   assigned_policy=None):
         """Return credentials with an account having a UPN for performing
         PK-INIT."""
         samdb = self.get_samdb()
         realm = samdb.domain_dns_name().upper()
 
+        opts={'upn': f'{{account}}.{realm}@{realm}',
+              'smartcard_required': smartcard_required}
+        if assigned_policy is not None:
+            opts['assigned_policy'] = str(assigned_policy.dn)
         return self.get_cached_creds(
             account_type=account_type,
-            opts={'upn': f'{{account}}.{realm}@{realm}',
-                  'smartcard_required': smartcard_required},
+            opts=opts,
             use_cache=use_cache)
 
     def test_pkinit_no_des3(self):
@@ -1061,6 +1073,174 @@ class PkInitTests(KDCBaseTest):
 
            This variant DISABLES the enabling attribute for auto-rotation."""
         self._test_pkinit_smartcard_required_must_change_now(False)
+
+    def _test_pkinit_smartcard_required_must_change(self, short_tgt_lifetime=False,
+                                                    short_pw_lifetime=True,
+                                                    expired=False):
+        """Test public-key PK-INIT to get the user's NT hash for an account
+           that is restricted by UF_SMARTCARD_REQUIRED rotates if it expires before the TGT lifetime.
+
+        This test is of 'natural' expiry, not just reset pwdLastSet to 0"""
+
+        samdb = self.get_samdb()
+        msgs = samdb.search(base=samdb.get_default_basedn(),
+                            scope=ldb.SCOPE_BASE,
+                            attrs=["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"])
+        msg = msgs[0]
+
+        try:
+            old_ExpirePasswordsOnSmartCardOnlyAccounts = msg["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"]
+        except KeyError:
+            old_ExpirePasswordsOnSmartCardOnlyAccounts = None
+
+        self.addCleanup(set_ExpirePasswordsOnSmartCardOnlyAccounts,
+                        samdb, old_ExpirePasswordsOnSmartCardOnlyAccounts)
+
+        # Enable auto-rotation for this test
+        set_ExpirePasswordsOnSmartCardOnlyAccounts(samdb, True)
+
+        if expired:
+            password_age_max = 4
+            expect_rotate=True
+        elif short_pw_lifetime:
+            password_age_max = 16
+            if short_tgt_lifetime:
+                # TGT will expire before password
+                expect_rotate = False
+            else:
+                # TGT expires after password, rotate
+                expect_rotate = True
+        else:
+            password_age_max = 111
+
+            # After sleep, won't be half-way though lifetime
+            expect_rotate=False
+
+        tgt_life = 10*60*60
+
+        if short_tgt_lifetime:
+            # Create an authentication policy with a TGT lifetime set.
+            # This is less than the short_pw_lifetime
+            # password_age_max (16) set above, minus the sleep (8) below, to
+            # show that we can be half-way though the life, but if the
+            # TGT to expire in that time, we should not rotate
+            tgt_life = 1
+            policy = self.create_authn_policy(enforced=True,
+                                              user_tgt_lifetime=tgt_life)
+
+            client_creds = self._get_creds(smartcard_required=True, assigned_policy=policy)
+        else:
+            client_creds = self._get_creds(smartcard_required=True)
+
+        userdn = str(client_creds.get_dn())
+
+        client_creds.set_kerberos_state(credentials.AUTO_USE_KERBEROS)
+
+        nt_hash_remote = client_creds.get_nt_hash()
+        newpass = client_creds.get_password()
+        samdb.setpassword("(distinguishedName=%s)" % ldb.binary_encode(userdn),
+                          newpass)
+
+        # Sleep enough to expire 4 sec passwords and be half-way to expiry of 16sec passwords, but not the 111sec passwords
+        time.sleep(8)
+
+        # create a PSO setting password_age_max, which depending on
+        # the above may be shorter or longer than the TGT time in
+        # tgt_life, to test the interaction.
+        #
+        # The first parameter is not a username, just a new unique name for the PSO
+        short_expiry_pso = PasswordSettings(self.get_new_username(), samdb,
+                                            precedence=200,
+                                            password_age_max=password_age_max)
+        self.addCleanup(samdb.delete, short_expiry_pso.dn)
+        short_expiry_pso.apply_to(userdn)
+
+        krbtgt_creds = self.get_krbtgt_creds()
+
+        freshness_token = self.create_freshness_token()
+
+        # Get initial pwdLastSet
+        res = samdb.search(base=client_creds.get_dn(),
+                           scope=ldb.SCOPE_BASE,
+                           attrs=["pwdLastSet",
+                                  "msDS-UserPasswordExpiryTimeComputed",
+                                  "msDS-User-Account-Control-Computed",
+                                  "userAccountControl"
+                           ])
+        self.assertEqual((int(res[0]['userAccountControl'][0])
+                          & UF_DONT_EXPIRE_PASSWD), 0)
+
+        server_uac_expired = (int(res[0]['msDS-User-Account-Control-Computed'][0])
+                              & UF_PASSWORD_EXPIRED) == UF_PASSWORD_EXPIRED
+
+        self.assertEqual(expired, server_uac_expired)
+
+        pwd_last_set = int(res[0]["pwdLastSet"][0])
+        self.assertGreater(pwd_last_set, 0)
+
+        # This just checks the value is sensible
+        self.assertAlmostEqual(pwd_last_set, nt_now(), delta=nt_time_delta_from_timedelta(timedelta(seconds=300)),
+                               msg=f"pwdLastSet {string_from_nt_time(pwd_last_set)} unreasonable, should be close to {string_from_nt_time(nt_now())}")
+        new_expiry = int(res[0]['msDS-UserPasswordExpiryTimeComputed'][0])
+        calculated_expiry = pwd_last_set + nt_time_delta_from_timedelta(timedelta(seconds=password_age_max))
+
+        # Assert that the PSO applied
+        self.assertEqual(calculated_expiry, new_expiry)
+
+        kdc_exchange_dict = self._pkinit_req(client_creds, krbtgt_creds,
+                                             freshness_token=freshness_token,
+                                             expect_matching_nt_hash_in_pac=not expect_rotate)
+
+        nt_hash_from_pac = kdc_exchange_dict['nt_hash_from_pac']
+        tgt = kdc_exchange_dict['rep_ticket_creds']
+
+        # Check (as well as via expect_matching_nt_hash_in_pac) that
+        # the password was or was not rotated.
+
+        res2 = samdb.search(base=client_creds.get_dn(),
+                            scope=ldb.SCOPE_BASE,
+                            attrs=["pwdLastSet"])
+
+        if expect_rotate:
+            self.assertGreater(int(res2[0]["pwdLastSet"][0]), int(res[0]["pwdLastSet"][0]))
+            self.assertNotEqual(nt_hash_remote, bytes(nt_hash_from_pac.hash))
+
+            # We are checking we now got a full-length ticket
+            if short_tgt_lifetime:
+                self.check_ticket_times(tgt, expected_life=tgt_life)
+            else:
+                delta=300
+                # delta is for any clock skew, Windows seems to take any clock skew off the ticket life
+                self.check_ticket_times(tgt, expected_life=tgt_life, delta=delta)
+
+        else:
+            self.assertEqual(int(res2[0]["pwdLastSet"][0]), int(res[0]["pwdLastSet"][0]))
+            self.assertEqual(nt_hash_remote, bytes(nt_hash_from_pac.hash))
+
+            if short_tgt_lifetime:
+                # Not rotated and should be the TGT lifetime from the policy.
+                self.check_ticket_times(tgt, expected_life=tgt_life)
+
+            # Otherwise should be either the remaining password time (Windows) or the TGT time (Samba).
+
+
+    def test_pkinit_smartcard_required_must_change_before_tgt_expiry(self):
+        return self._test_pkinit_smartcard_required_must_change(short_tgt_lifetime=False, short_pw_lifetime=False)
+
+    def test_pkinit_smartcard_required_must_change_expired(self):
+        return self._test_pkinit_smartcard_required_must_change(expired=True)
+
+    def test_pkinit_smartcard_required_must_change_soon(self):
+        return self._test_pkinit_smartcard_required_must_change()
+
+    def test_pkinit_smartcard_required_must_change_soon_after_tgt(self):
+        return self._test_pkinit_smartcard_required_must_change(short_tgt_lifetime=True, short_pw_lifetime=False)
+
+    def test_pkinit_smartcard_required_must_change_short_tgt(self):
+        return self._test_pkinit_smartcard_required_must_change(short_tgt_lifetime=True)
+
+    def test_pkinit_smartcard_required_must_change_expired_short_tgt(self):
+        return self._test_pkinit_smartcard_required_must_change(short_tgt_lifetime=True, expired=True)
 
     def test_pkinit_kpasswd_change(self):
         """Test public-key PK-INIT to get an initial ticket to change the user's own password."""
