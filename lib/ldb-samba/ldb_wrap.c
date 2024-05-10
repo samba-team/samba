@@ -125,6 +125,14 @@ char *wrap_casefold(void *context, void *mem_ctx, const char *s, size_t n)
 	return strupper_talloc_n(mem_ctx, s, n);
 }
 
+int ldb_comparison_fold_utf8(void *ignored,
+			     const struct ldb_val *v1,
+			     const struct ldb_val *v2)
+{
+	return strncasecmp_ldb((const char *)v1->data, v1->length,
+			       (const char *)v2->data, v2->length);
+}
+
 
  struct ldb_context *samba_ldb_init(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,

@@ -30,8 +30,13 @@ struct ldb_dn;
 struct cli_credentials;
 struct loadparm_context;
 struct tevent_context;
+struct ldb_val;
 
 char *wrap_casefold(void *context, void *mem_ctx, const char *s, size_t n);
+
+int ldb_comparison_fold_utf8(void *ignored,
+			     const struct ldb_val *v1,
+			     const struct ldb_val *v2);
 
 struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
