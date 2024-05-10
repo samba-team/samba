@@ -232,6 +232,22 @@ create_ganesha_recdirs()
 	esac
 }
 
+is_ganesha_running()
+{
+	# Check that NFS Ganesha is running, according to PID file
+	_pidfile="/var/run/ganesha/ganesha.pid"
+	_ganesha="ganesha.nfsd"
+	if ! {
+		read -r _pid <"$_pidfile" &&
+			[ "$(ps -p "$_pid" -o comm=)" = "$_ganesha" ]
+	} >/dev/null 2>&1; then
+
+		return 1
+	fi
+
+	return 0
+}
+
 service_check()
 {
 	create_ganesha_recdirs
@@ -242,14 +258,7 @@ service_check()
 		return 0
 	fi
 
-	# Check that NFS Ganesha is running, according to PID file
-	_pidfile="/var/run/ganesha/ganesha.pid"
-	_ganesha="/usr/bin/ganesha.nfsd"
-	if ! {
-		read -r _pid <"$_pidfile" &&
-			grep "$_ganesha" "${procfs}/${_pid}/cmdline"
-	} >/dev/null 2>&1; then
-
+	if ! is_ganesha_running; then
 		echo "ERROR: NFS Ganesha not running according to PID file"
 		return 1
 	fi
