@@ -1,23 +1,5 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
-#
-# Augment PATH with relevant stubs/ directories.
-#
-
-stubs_dir="${CTDB_TEST_SUITE_DIR}/stubs"
-[ -d "${stubs_dir}" ] || die "Failed to locate stubs/ subdirectory"
-
-# Make the path absolute for tests that change directory
-case "$stubs_dir" in
-/*) : ;;
-*) stubs_dir="${PWD}/${stubs_dir}" ;;
-esac
-
-# Use stubs as helpers
-export CTDB_HELPER_BINDIR="$stubs_dir"
-
-PATH="${stubs_dir}:${PATH}"
-
 export CTDB="ctdb"
 
 # Force this to be absolute - event scripts can change directory
@@ -36,8 +18,7 @@ setup_ctdb_base "$CTDB_TEST_TMP_DIR" "etc-ctdb" \
 	debug_locks.sh \
 	functions \
 	nfs-checks.d \
-	nfs-linux-kernel-callout \
-	statd-callout
+	nfs-linux-kernel-callout
 
 export FAKE_CTDB_STATE="${CTDB_TEST_TMP_DIR}/fake-ctdb"
 mkdir -p "$FAKE_CTDB_STATE"
@@ -500,8 +481,9 @@ define_test()
 	esac
 
 	_s="${script_dir}/${script}"
-	[ -r "$_s" ] ||
+	if [ ! -r "$_s" ] && [ "$script" != "statd-callout" ]; then
 		die "Internal error - unable to find script \"${_s}\""
+	fi
 
 	case "$script" in
 	*.script) script_short="${script%.script}" ;;
@@ -511,6 +493,25 @@ define_test()
 
 	printf "%-17s %-10s %-4s - %s\n\n" \
 		"$script_short" "$event" "$_num" "$desc"
+
+	#
+	# Augment PATH with relevant stubs/ directories.
+	#
+
+	stubs_dir="${CTDB_TEST_SUITE_DIR}/stubs"
+	[ -d "${stubs_dir}" ] || die "Failed to locate stubs/ subdirectory"
+
+	# Make the path absolute for tests that change directory
+	case "$stubs_dir" in
+	/*) : ;;
+	*) stubs_dir="${PWD}/${stubs_dir}" ;;
+	esac
+
+	# Use stubs as helpers but remember the original, so
+	# certain things (e.g. statd_callout) can be found
+	#
+	export CTDB_HELPER_BINDIR="$stubs_dir"
+	PATH="${stubs_dir}:${PATH}"
 
 	_f="${CTDB_TEST_SUITE_DIR}/scripts/${script_short}.sh"
 	if [ -r "$_f" ]; then

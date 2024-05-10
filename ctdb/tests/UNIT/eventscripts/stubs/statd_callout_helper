@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# Do nothing.  statd_callout and statd_callout_helper are tested
+# separately.
+
+exit 0

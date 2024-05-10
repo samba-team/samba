@@ -14,11 +14,6 @@ Selected highlights:
 
     Support functions, sourced by eventscripts and other scripts.
 
-  statd-callout
-
-    rpc.statd high-availability callout to support lock migration on
-    failover.
-
 Notes:
 
 * All of these scripts are written in POSIX Bourne shell.  Please

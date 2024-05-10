@@ -21,8 +21,8 @@ service_reconfigure()
 	# Restart lock manager, notify clients
 	# shellcheck disable=SC2317
 	# Called indirectly via check_thresholds()
-	if [ -x "${CTDB_BASE}/statd-callout" ]; then
-		"${CTDB_BASE}/statd-callout" notify &
+	if [ -x "${CTDB_HELPER_BINDIR}/statd_callout_helper" ] ; then
+		"${CTDB_HELPER_BINDIR}/statd_callout_helper" notify &
 	fi >/dev/null 2>&1
 }
 
@@ -281,12 +281,12 @@ nfs_check_rpcinfo()
 }
 
 ##################################################################
-# use statd-callout to update NFS lock info
+# use statd_callout_helper to update NFS lock info
 ##################################################################
 nfs_update_lock_info()
 {
-	if [ -x "$CTDB_BASE/statd-callout" ]; then
-		"$CTDB_BASE/statd-callout" update
+	if [ -x "$CTDB_HELPER_BINDIR/statd_callout_helper" ] ; then
+		"$CTDB_HELPER_BINDIR/statd_callout_helper" update
 	fi
 }
 
@@ -298,8 +298,8 @@ nfs_callout_init "$script_state_dir"
 
 case "$1" in
 startup)
-	if [ -x "${CTDB_BASE}/statd-callout" ] ; then
-		"${CTDB_BASE}/statd-callout" startup
+	if [ -x "${CTDB_HELPER_BINDIR}/statd_callout_helper" ] ; then
+		"${CTDB_HELPER_BINDIR}/statd_callout_helper" startup
 	fi
 
 	nfs_callout "$@" || exit $?

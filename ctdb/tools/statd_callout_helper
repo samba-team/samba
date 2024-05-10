@@ -6,24 +6,25 @@
 #
 #   [statd]
 #     name = mycluster
-#     ha-callout = /etc/ctdb/statd-callout
+#     ha-callout = /usr/local/libexec/ctdb/statd_callout
 #
 # Older Linux versions may use something like the following...
 #
 # /etc/sysconfig/nfs (Red Hat) or /etc/default/nfs-common (Debian):
 #   NFS_HOSTNAME=mycluster
-#   STATD_HOSTNAME="${NFS_HOSTNAME} -H /etc/ctdb/statd-callout"
+#   STATD_HOSTNAME="${NFS_HOSTNAME} -H /usr/local/libexec/ctdb/statd_callout"
 #
 
-[ -n "$CTDB_BASE" ] ||
-	CTDB_BASE=$(d=$(dirname "$0") && cd -P "$d" && echo "$PWD")
+if [ -z "$CTDB_BASE" ] ; then
+	export CTDB_BASE="/usr/local/etc/ctdb"
+fi
 
 . "${CTDB_BASE}/functions"
 
 # Overwrite this so we get some logging
 die()
 {
-	script_log "statd-callout" "$@"
+	script_log "statd_callout_helper" "$@"
 	exit 1
 }
 
@@ -41,7 +42,7 @@ if [ -z "$NFS_HOSTNAME" ]; then
 fi
 
 [ -n "$NFS_HOSTNAME" ] ||
-	die "NFS_HOSTNAME is not configured. statd-callout failed"
+	die "NFS_HOSTNAME is not configured. statd_callout_helper failed"
 
 ############################################################
 
@@ -82,7 +83,7 @@ create_add_del_client_dir()
 
 # script_state_dir set by ctdb_setup_state_dir()
 # shellcheck disable=SC2154
-statd_callout_state_dir="${script_state_dir}/statd-callout"
+statd_callout_state_dir="${script_state_dir}/statd_callout"
 
 statd_callout_db="ctdb.tdb"
 statd_callout_queue_dir="${statd_callout_state_dir}/queue"
@@ -149,6 +150,14 @@ startup()
 	create_add_del_client_dir "$statd_callout_queue_dir"
 
 	$CTDB attach "$statd_callout_db" persistent
+
+	_default="${CTDB_SCRIPT_VARDIR}/statd_callout.conf"
+	_config_file="${CTDB_STATD_CALLOUT_CONFIG_FILE:-"${_default}"}"
+	cat >"$_config_file" <<EOF
+persistent_db
+${statd_callout_queue_dir}
+${CTDB_MY_PUBLIC_IPS_CACHE}
+EOF
 }
 
 ############################################################
@@ -156,29 +165,6 @@ startup()
 case "$1" in
 startup)
 	startup
-	;;
-
-add-client)
-	# statd does not tell us to which IP the client connected so
-	# we must add it to all the IPs that we serve
-	cip="$2"
-	date=$(date '+%s')
-	while read -r sip; do
-		key="statd-state@${sip}@${cip}"
-		file="${statd_callout_queue_dir}/${key}"
-		echo "\"${key}\" \"${date}\"" >"$file"
-	done <"$CTDB_MY_PUBLIC_IPS_CACHE"
-	;;
-
-del-client)
-	# statd does not tell us from which IP the client disconnected
-	# so we must add it to all the IPs that we serve
-	cip="$2"
-	while read -r sip; do
-		key="statd-state@${sip}@${cip}"
-		file="${statd_callout_queue_dir}/${key}"
-		echo "\"${key}\" \"\"" >"$file"
-	done <"$CTDB_MY_PUBLIC_IPS_CACHE"
 	;;
 
 update)

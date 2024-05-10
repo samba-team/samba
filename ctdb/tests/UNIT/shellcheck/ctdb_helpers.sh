@@ -6,4 +6,5 @@ define_test "ctdb helpers"
 
 shellcheck_test \
 	"${CTDB_SCRIPTS_TOOLS_HELPER_DIR}/ctdb_lvs" \
-	"${CTDB_SCRIPTS_TOOLS_HELPER_DIR}/ctdb_natgw"
+	"${CTDB_SCRIPTS_TOOLS_HELPER_DIR}/ctdb_natgw" \
+	"${CTDB_SCRIPTS_TOOLS_HELPER_DIR}/statd_callout_helper"

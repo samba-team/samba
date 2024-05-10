@@ -270,7 +270,7 @@ ctdb_get_ip_address()
 }
 
 # Cache of public IP addresses assigned to this node.  This function
-# exists mainly so statd-callout does not need to talk to ctdbd, so
+# exists mainly so statd_callout does not need to talk to ctdbd, so
 # can be run as non-root, but it may be used in other places.  This
 # must be updated/refreshed on failover.  This is done in
 # 10.interface, but doing it in "ipreallocated" isn't enough because
