@@ -281,9 +281,21 @@ grace_period()
 	fi
 }
 
+grace_period_if_running()
+{
+	_arg="$1"
+
+	if ! is_ganesha_running; then
+		echo "WARNING: NFS Ganesha not running according to PID file"
+		return 0
+	fi
+
+	grace_period "$_arg"
+}
+
 nfs_startipreallocate()
 {
-	grace_period "0:"
+	grace_period_if_running "0:"
 }
 
 nfs_releaseip()
@@ -291,7 +303,7 @@ nfs_releaseip()
 	_ip="$2"
 
 	# NFS-Ganesha recovery code only processes items matching $_ip
-	grace_period "2:${_ip}"
+	grace_period_if_running "2:${_ip}"
 }
 
 nfs_takeip()
