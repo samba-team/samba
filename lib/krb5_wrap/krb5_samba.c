@@ -4114,6 +4114,24 @@ krb5_error_code smb_krb5_init_context_common(krb5_context *_krb5_context)
 	return 0;
 }
 
+/*
+ * This should only be used in code that
+ * really wants to touch the global default ccache!
+ */
+krb5_error_code smb_force_krb5_cc_default(krb5_context ctx, krb5_ccache *id)
+{
+	return krb5_cc_default(ctx, id);
+}
+
+/*
+ * This should only be used in code that
+ * really wants to touch the global default ccache!
+ */
+const char *smb_force_krb5_cc_default_name(krb5_context ctx)
+{
+	return krb5_cc_default_name(ctx);
+}
+
 #else /* HAVE_KRB5 */
 /* This saves a few linking headaches */
 int ads_krb5_cli_get_ticket(TALLOC_CTX *mem_ctx,

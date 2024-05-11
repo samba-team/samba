@@ -191,6 +191,17 @@ krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
 
 krb5_error_code smb_krb5_init_context_common(krb5_context *_krb5_context);
 
+/*
+ * This should only be used in code that
+ * really wants to touch the global default ccache!
+ */
+krb5_error_code smb_force_krb5_cc_default(krb5_context ctx, krb5_ccache *id);
+/*
+ * This should only be used in code that
+ * really wants to touch the global default ccache!
+ */
+const char *smb_force_krb5_cc_default_name(krb5_context ctx);
+
 krb5_error_code krb5_set_default_tgs_ktypes(krb5_context ctx, const krb5_enctype *enc);
 
 #if defined(HAVE_KRB5_AUTH_CON_SETKEY) && !defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY)
