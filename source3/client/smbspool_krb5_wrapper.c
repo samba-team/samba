@@ -24,10 +24,6 @@
 #include "system/kerberos.h"
 #include "system/passwd.h"
 
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include <cups/backend.h>
 
 #include "dynconfig/dynconfig.h"
