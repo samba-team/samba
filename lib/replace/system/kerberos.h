@@ -37,5 +37,8 @@
 #include <com_err.h>
 #endif
 
+#define krb5_cc_default __ERROR__XX__NEVER_USE_krb5_cc_default__;
+#define krb5_cc_default_name __ERROR__XX__NEVER_USE_krb5_cc_default_name__;
+
 #endif
 #endif

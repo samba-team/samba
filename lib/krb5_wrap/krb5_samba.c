@@ -4125,7 +4125,9 @@ krb5_error_code smb_krb5_init_context_common(krb5_context *_krb5_context)
  */
 krb5_error_code smb_force_krb5_cc_default(krb5_context ctx, krb5_ccache *id)
 {
+#undef krb5_cc_default
 	return krb5_cc_default(ctx, id);
+#define krb5_cc_default __ERROR__XX__NEVER_USE_krb5_cc_default__;
 }
 
 /*
@@ -4134,7 +4136,9 @@ krb5_error_code smb_force_krb5_cc_default(krb5_context ctx, krb5_ccache *id)
  */
 const char *smb_force_krb5_cc_default_name(krb5_context ctx)
 {
+#undef krb5_cc_default_name
 	return krb5_cc_default_name(ctx);
+#define krb5_cc_default_name __ERROR__XX__NEVER_USE_krb5_cc_default_name__;
 }
 
 #else /* HAVE_KRB5 */
