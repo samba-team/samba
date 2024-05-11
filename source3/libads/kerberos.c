@@ -284,23 +284,25 @@ int ads_kdestroy(const char *cc_name)
 		return code;
 	}
 
-	if (!cc_name) {
-		if ((code = krb5_cc_default(ctx, &cc))) {
-			krb5_free_context(ctx);
-			return code;
-		}
-	} else {
-		if ((code = krb5_cc_resolve(ctx, cc_name, &cc))) {
-			DEBUG(3, ("ads_kdestroy: krb5_cc_resolve failed: %s\n",
-				  error_message(code)));
-			krb5_free_context(ctx);
-			return code;
-		}
+	/*
+	 * This should not happen, if
+	 * we need that behaviour we
+	 * should add an ads_kdestroy_default()
+	 */
+	SMB_ASSERT(cc_name != NULL);
+
+	code = krb5_cc_resolve(ctx, cc_name, &cc);
+	if (code != 0) {
+		DBG_NOTICE("krb5_cc_resolve(%s) failed: %s\n",
+			   cc_name, error_message(code));
+		krb5_free_context(ctx);
+		return code;
 	}
 
-	if ((code = krb5_cc_destroy (ctx, cc))) {
-		DEBUG(3, ("ads_kdestroy: krb5_cc_destroy failed: %s\n",
-			error_message(code)));
+	code = krb5_cc_destroy(ctx, cc);
+	if (code != 0) {
+		DBG_ERR("krb5_cc_destroy(%s) failed: %s\n",
+			cc_name, error_message(code));
 	}
 
 	krb5_free_context (ctx);
