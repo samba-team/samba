@@ -88,6 +88,7 @@ static NTSTATUS net_update_dns_internal(struct net_context *c,
 			ads_status = ads_connect( ads );
 			if ( !ADS_ERR_OK(ads_status) ) {
 				DEBUG(0,("net_update_dns_internal: Failed to connect to our DC!\n"));
+				status = ads_ntstatus(ads_status);
 				goto done;
 			}
 		}
@@ -95,12 +96,14 @@ static NTSTATUS net_update_dns_internal(struct net_context *c,
 		ads_status = ads_do_search(ads, "", LDAP_SCOPE_BASE,
 				       "(objectclass=*)", rootname_attrs, &msg);
 		if (!ADS_ERR_OK(ads_status)) {
+			status = ads_ntstatus(ads_status);
 			goto done;
 		}
 
 		root_dn = ads_pull_string(ads, ctx, msg,  "rootDomainNamingContext");
 		if ( !root_dn ) {
 			ads_msgfree( ads, msg );
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 			goto done;
 		}
 
