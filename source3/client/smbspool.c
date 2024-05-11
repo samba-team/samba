@@ -608,7 +608,7 @@ static bool kerberos_ccache_is_valid(void) {
 		return false;
 	}
 
-	ccache_name = krb5_cc_default_name(ctx);
+	ccache_name = smb_force_krb5_cc_default_name(ctx);
 	if (ccache_name == NULL) {
 		DBG_ERR("Failed to get default ccache name\n");
 		krb5_free_context(ctx);
