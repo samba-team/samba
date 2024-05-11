@@ -46,3 +46,5 @@ if conf.CHECK_CFG(package='icu-i18n icu-uc',
     if not conf.CHECK_HEADERS('unicode/ustring.h', lib='icui18n'):
         conf.fatal('Found icui18n, but unicode/ustring.h is missing')
     conf.DEFINE('HAVE_UTF8_NORMALISATION', 1)
+else:
+    conf.env['icu-libs'] = ''
