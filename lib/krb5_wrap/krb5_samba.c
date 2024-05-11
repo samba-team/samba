@@ -1214,7 +1214,12 @@ krb5_error_code smb_krb5_renew_ticket(const char *ccache_string,
 	}
 
 	if (!ccache_string) {
-		ccache_string = krb5_cc_default_name(context);
+		/*
+		 * A renew has low risk in mixing different
+		 * ccaches, so we allow callers to pass
+		 * NULL for the default cache.
+		 */
+		ccache_string = smb_force_krb5_cc_default_name(context);
 	}
 
 	if (!ccache_string) {
