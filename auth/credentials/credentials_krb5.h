@@ -23,9 +23,8 @@
 #ifndef __CREDENTIALS_KRB5_H__
 #define __CREDENTIALS_KRB5_H__
 
-#include <gssapi/gssapi.h>
-#include <gssapi/gssapi_krb5.h>
-#include <krb5.h>
+#include "system/gssapi.h"
+#include "system/kerberos.h"
 
 struct gssapi_creds_container {
 	gss_cred_id_t creds;
