@@ -323,7 +323,11 @@ _PUBLIC_ int cli_credentials_set_ccache(struct cli_credentials *cred,
 			return ret;
 		}
 	} else {
-		ret = krb5_cc_default(ccc->smb_krb5_context->krb5_context, &ccc->ccache);
+		/*
+		 * This is where the caller really wants to use
+		 * the default krb5 ccache.
+		 */
+		ret = smb_force_krb5_cc_default(ccc->smb_krb5_context->krb5_context, &ccc->ccache);
 		if (ret) {
 			(*error_string) = talloc_asprintf(cred, "failed to read default krb5 ccache: %s\n",
 							  smb_get_krb5_error_message(ccc->smb_krb5_context->krb5_context,
