@@ -932,8 +932,27 @@ static krb5_error_code samba_wdc_referral_policy(void *priv,
 	return kdc_request_get_error_code((kdc_request_t)r);
 }
 
+static krb5_error_code samba_wdc_hwauth_policy(void *priv, astgs_request_t r)
+{
+	const hdb_entry *client = kdc_request_get_client(r);
+	krb5_error_code ret = 0;
+
+	if (client != NULL && client->flags.require_hwauth) {
+		krb5_error_code ret2;
+
+		ret = KRB5KDC_ERR_POLICY;
+		ret2 = hdb_samba4_set_ntstatus(
+			r, NT_STATUS_SMARTCARD_LOGON_REQUIRED, ret);
+		if (ret2) {
+			ret = ret2;
+		}
+	}
+
+	return ret;
+}
+
 struct krb5plugin_kdc_ftable kdc_plugin_table = {
-	.minor_version = KRB5_PLUGIN_KDC_VERSION_11,
+	.minor_version = KRB5_PLUGIN_KDC_VERSION_12,
 	.init = samba_wdc_plugin_init,
 	.fini = samba_wdc_plugin_fini,
 	.pac_verify = samba_wdc_verify_pac,
@@ -942,4 +961,5 @@ struct krb5plugin_kdc_ftable kdc_plugin_table = {
 	.finalize_reply = samba_wdc_finalize_reply,
 	.pac_generate = samba_wdc_get_pac,
 	.referral_policy = samba_wdc_referral_policy,
+	.hwauth_policy = samba_wdc_hwauth_policy,
 };
