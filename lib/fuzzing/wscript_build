@@ -169,6 +169,11 @@ bld.SAMBA_BINARY('fuzz_security_token_vs_descriptor_ds',
                  deps='fuzzing samba-security afl-fuzz-main',
                  fuzzer=True)
 
+bld.SAMBA_BINARY('fuzz_strncasecmp_ldb',
+                 source='fuzz_strncasecmp_ldb.c',
+                 deps='fuzzing samba-util afl-fuzz-main',
+                 fuzzer=True)
+
 
 # The fuzz_type and fuzz_function parameters make the built
 # fuzzer take the same input as ndrdump and so the same that
