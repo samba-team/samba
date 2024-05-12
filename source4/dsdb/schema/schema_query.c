@@ -52,7 +52,9 @@ static int strcasecmp_with_ldb_val(const struct ldb_val *target, const char *str
 			}
 			return 1;
 		}
-		return (target->length - len);
+		if (target->length < len) {
+			return -1;
+		}
 	}
 	return ret;
 }
