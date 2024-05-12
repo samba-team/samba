@@ -180,14 +180,17 @@ _PUBLIC_ char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *src)
  * 2. Comparisons are done in UPPER CASE, as Windows does, not in
  *    lowercase as POSIX would have it.
  *
- * 3. The first invalid byte sequence ends the comparison, as if it
- *    were '\0', but it compares higher than any real character,
- *    unlike '\0'. For example, "hello\xc2\xffworld" would end after
- *    "hello" -- although '\xc2' is a valid utf-8 byte in the right
- *    circumstances, "\xc2\xff" is an invalid sequence.
+ * 3. An invalid byte compares higher than any real character. For example,
+ *    "hello\xc2\xff" would sort higher than "hello\xcd\xb6", because CD
+ *    B6 is a valid sequence and C2 FF is not.
  *
- *    All invalid sequences compare equal. This means
- *    "hello\xC2\xFFworld" equals "  hElLo\xFE ".
+ * 4. If two strings become invalid on the same character, the rest
+ *    of the string is compared via ldb ASCII case fold rules.
+ *
+ *    For example, "hellō\xC2\xFFworld" < " hElLŌ\xFE ", because the the
+ *    strings are equal up to 'ō' by utf-8 casefold, but the "\xc2\xff" and
+ *    "\xfe" are invalid sequences. At that point, we skip to the byte-by-byte
+ *    (but space-eating, casefolding) comparison, and 0xc2 < 0xff.
  */
 
 #define EAT_SPACE(s, len, ends_in_space)			 \
@@ -309,7 +312,45 @@ _PUBLIC_ int strncasecmp_ldb(const char *s1,
 	if (end2) {
 		return -1;
 	}
-	return 0;
+
+	/*
+	 * By elimination, if we got here, we have INVALID_CODEPOINT on both
+	 * sides.
+	 *
+	 * THere is no perfect option, but what we choose to do is continue on
+	 * with ascii case fold (as if calling ldb_comparison_fold_ascii()
+	 * which is private to ldb, so we can't just defer to it).
+	 */
+	while (true) {
+		if (len1 == 0 || *s1 == 0) {
+			c1 = 0;
+		} else if (*s1 == ' ') {
+			EAT_SPACE(s1, len1, ends_in_space1);
+			c1 = ends_in_space1 ? 0 : ' ';
+		} else {
+			c1 = *s1;
+			s1++;
+			len1--;
+			c1 = ('a' <= c1 && c1 <= 'z') ? c1 ^ 0x20 : c1;
+		}
+
+		if (len2 == 0 || *s2 == 0) {
+			c2 = 0;
+		} else if (*s2 == ' ') {
+			EAT_SPACE(s2, len2, ends_in_space2);
+			c2 = ends_in_space2 ? 0 : ' ';
+		} else {
+			c2 = *s2;
+			s2++;
+			len2--;
+			c2 = ('a' <= c2 && c2 <= 'z') ? c2 ^ 0x20 : c2;
+		}
+
+		if (c1 == 0 || c2 == 0 || c1 != c2) {
+			break;
+		}
+	}
+	return NUMERIC_CMP(c1, c2);
 }
 
 #undef EAT_SPACE
