@@ -1547,9 +1547,9 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	if (strcsequal(fsp->fsp_name->base_name, smb_fname_dst->base_name) &&
 	    strcsequal(fsp->fsp_name->stream_name,
 		       smb_fname_dst->stream_name)) {
-		DEBUG(3, ("rename_internals_fsp: identical names in rename %s "
-			  "- returning success\n",
-			  smb_fname_str_dbg(smb_fname_dst)));
+		DBG_NOTICE("identical names in rename %s "
+			   "- returning success\n",
+			   smb_fname_str_dbg(smb_fname_dst));
 		status = NT_STATUS_OK;
 		goto out;
 	}
@@ -1571,9 +1571,10 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	dst_exists = vfs_stat(conn, smb_fname_dst) == 0;
 
 	if(!replace_if_exists && dst_exists) {
-		DEBUG(3, ("rename_internals_fsp: dest exists doing rename "
-			  "%s -> %s\n", smb_fname_str_dbg(fsp->fsp_name),
-			  smb_fname_str_dbg(smb_fname_dst)));
+		DBG_NOTICE("dest exists doing rename "
+			   "%s -> %s\n",
+			   smb_fname_str_dbg(fsp->fsp_name),
+			   smb_fname_str_dbg(smb_fname_dst));
 		status = NT_STATUS_OBJECT_NAME_COLLISION;
 		goto out;
 	}
@@ -1595,7 +1596,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 							   fileid, true);
 		/* The file can be open when renaming a stream */
 		if (dst_fsp && !new_is_stream) {
-			DEBUG(3, ("rename_internals_fsp: Target file open\n"));
+			DBG_NOTICE("Target file open\n");
 			status = NT_STATUS_ACCESS_DENIED;
 			goto out;
 		}
@@ -1610,9 +1611,10 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	status = can_rename(conn, fsp, attrs);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("rename_internals_fsp: Error %s rename %s -> %s\n",
-			  nt_errstr(status), smb_fname_str_dbg(fsp->fsp_name),
-			  smb_fname_str_dbg(smb_fname_dst)));
+		DBG_NOTICE("Error %s rename %s -> %s\n",
+			   nt_errstr(status),
+			   smb_fname_str_dbg(fsp->fsp_name),
+			   smb_fname_str_dbg(smb_fname_dst));
 		if (NT_STATUS_EQUAL(status,NT_STATUS_SHARING_VIOLATION))
 			status = NT_STATUS_ACCESS_DENIED;
 		goto out;
@@ -1757,9 +1759,10 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	if (ret == 0) {
 		uint32_t create_options = fh_get_private_options(fsp->fh);
 
-		DEBUG(3, ("rename_internals_fsp: succeeded doing rename on "
-			  "%s -> %s\n", smb_fname_str_dbg(fsp->fsp_name),
-			  smb_fname_str_dbg(smb_fname_dst)));
+		DBG_NOTICE("succeeded doing rename on "
+			   "%s -> %s\n",
+			   smb_fname_str_dbg(fsp->fsp_name),
+			   smb_fname_str_dbg(smb_fname_dst));
 
 		notify_rename(conn,
 			      fsp->fsp_flags.is_directory,
@@ -1825,9 +1828,10 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		status = map_nt_error_from_unix(errno);
 	}
 
-	DEBUG(3, ("rename_internals_fsp: Error %s rename %s -> %s\n",
-		  nt_errstr(status), smb_fname_str_dbg(fsp->fsp_name),
-		  smb_fname_str_dbg(smb_fname_dst)));
+	DBG_NOTICE("Error %s rename %s -> %s\n",
+		   nt_errstr(status),
+		   smb_fname_str_dbg(fsp->fsp_name),
+		   smb_fname_str_dbg(smb_fname_dst));
 
  out:
 

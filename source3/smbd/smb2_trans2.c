@@ -761,10 +761,13 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 
 		canonicalize_ea_name(fsp, unix_ea_name);
 
-		DEBUG(10,("set_ea: ea_name %s ealen = %u\n", unix_ea_name, (unsigned int)ea_list->ea.value.length));
+		DBG_DEBUG("ea_name %s ealen = %zu\n",
+			  unix_ea_name,
+			  ea_list->ea.value.length);
 
 		if (samba_private_attr_name(unix_ea_name)) {
-			DEBUG(10,("set_ea: ea name %s is a private Samba name.\n", unix_ea_name));
+			DBG_DEBUG("ea name %s is a private Samba name.\n",
+				  unix_ea_name);
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
@@ -777,15 +780,17 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 #ifdef ENOATTR
 			/* Removing a non existent attribute always succeeds. */
 			if (ret == -1 && errno == ENOATTR) {
-				DEBUG(10,("set_ea: deleting ea name %s didn't exist - succeeding by default.\n",
-						unix_ea_name));
+				DBG_DEBUG("deleting ea name %s didn't exist - "
+					  "succeeding by default.\n",
+					  unix_ea_name);
 				ret = 0;
 			}
 #endif
 		} else {
-			DEBUG(10,("set_ea: setting ea name %s on file "
+			DBG_DEBUG("setting ea name %s on file "
 				  "%s by file descriptor.\n",
-				  unix_ea_name, fsp_str_dbg(fsp)));
+				  unix_ea_name,
+				  fsp_str_dbg(fsp));
 			ret = SMB_VFS_FSETXATTR(fsp, unix_ea_name,
 						ea_list->ea.value.data, ea_list->ea.value.length, 0);
 		}
@@ -4368,8 +4373,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 		return status;
 	}
 
-	DEBUG(10,("smb2_file_rename_information: got name |%s|\n",
-				newname));
+	DBG_DEBUG("got name |%s|\n", newname);
 
 	if (newname[0] == ':') {
 		/* Create an smb_fname to call rename_internals_fsp() with. */
@@ -4409,10 +4413,11 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 		goto out;
 	}
 
-	DEBUG(10,("smb2_file_rename_information: "
-		  "SMB_FILE_RENAME_INFORMATION (%s) %s -> %s\n",
-		  fsp_fnum_dbg(fsp), fsp_str_dbg(fsp),
-		  smb_fname_str_dbg(smb_fname_dst)));
+	DBG_DEBUG("SMB_FILE_RENAME_INFORMATION (%s) %s -> %s\n",
+		  fsp_fnum_dbg(fsp),
+		  fsp_str_dbg(fsp),
+		  smb_fname_str_dbg(smb_fname_dst));
+
 	status = rename_internals_fsp(conn,
 				fsp,
 				smb_fname_dst,

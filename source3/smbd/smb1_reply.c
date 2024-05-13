@@ -6488,8 +6488,9 @@ void reply_mv(struct smb_request *req)
 		}
 	}
 
-	DEBUG(3,("reply_mv : %s -> %s\n", smb_fname_str_dbg(smb_fname_src),
-		 smb_fname_str_dbg(smb_fname_dst)));
+	DBG_NOTICE("%s -> %s\n",
+		   smb_fname_str_dbg(smb_fname_src),
+		   smb_fname_str_dbg(smb_fname_dst));
 
 	status = rename_internals(ctx,
 				conn,
