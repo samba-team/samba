@@ -148,8 +148,6 @@ NTSTATUS fsctl_set_reparse_point(struct files_struct *fsp,
 	const uint8_t *reparse_data = NULL;
 	size_t reparse_data_length;
 	uint32_t existing_tag;
-	uint8_t *existing_data = NULL;
-	uint32_t existing_len;
 	NTSTATUS status;
 	uint32_t dos_mode;
 	int ret;
@@ -176,23 +174,13 @@ NTSTATUS fsctl_set_reparse_point(struct files_struct *fsp,
 		  reparse_tag,
 		  reparse_data_length);
 
-	status = fsctl_get_reparse_point(fsp,
-					 talloc_tos(),
-					 &existing_tag,
-					 &existing_data,
-					 UINT32_MAX,
-					 &existing_len);
-	if (NT_STATUS_IS_OK(status)) {
-
-		TALLOC_FREE(existing_data);
-
-		if (existing_tag != reparse_tag) {
-			DBG_DEBUG("Can't overwrite tag %" PRIX32
-				  " with tag %" PRIX32 "\n",
-				  existing_tag,
-				  reparse_tag);
-			return NT_STATUS_IO_REPARSE_TAG_MISMATCH;
-		}
+	status = fsctl_get_reparse_tag(fsp, &existing_tag);
+	if (NT_STATUS_IS_OK(status) && (existing_tag != reparse_tag)) {
+		DBG_DEBUG("Can't overwrite tag %" PRIX32 " with tag %" PRIX32
+			  "\n",
+			  existing_tag,
+			  reparse_tag);
+		return NT_STATUS_IO_REPARSE_TAG_MISMATCH;
 	}
 
 	/* Store the data */
