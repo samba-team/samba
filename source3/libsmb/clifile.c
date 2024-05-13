@@ -7003,6 +7003,8 @@ struct tevent_req *cli_qfileinfo_send(TALLOC_CTX *mem_ctx,
 		return req;
 	}
 
+	max_rdata = MIN(max_rdata, UINT16_MAX);
+
 	switch (fscc_level) {
 	case FSCC_FILE_BASIC_INFORMATION:
 		smb_level = SMB_QUERY_FILE_BASIC_INFO;
