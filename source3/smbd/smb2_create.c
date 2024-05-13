@@ -32,6 +32,7 @@
 #include "messages.h"
 #include "lib/util_ea.h"
 #include "source3/passdb/lookup_sid.h"
+#include "source3/modules/util_reparse.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
@@ -1695,6 +1696,8 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 
 		uid_to_sid(&cc.owner, psbuf->st_ex_uid);
 		gid_to_sid(&cc.group, psbuf->st_ex_gid);
+
+		(void)fsctl_get_reparse_tag(state->result, &cc.reparse_tag);
 
 		ndr_err =
 			ndr_push_smb3_posix_cc_info(&ndr,
