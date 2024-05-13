@@ -23,6 +23,7 @@ from samba.common import get_string
 from samba.dcerpc import smb3posix
 from samba.ndr import ndr_unpack
 from samba.dcerpc.security import dom_sid
+from samba import reparse_symlink
 import os
 import subprocess
 
@@ -390,6 +391,46 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
         finally:
             self.delete_test_file(c, '\\test_create_context_basic1_file')
             self.delete_test_file(c, '\\test_create_context_basic1_dir')
+
+    def test_create_context_reparse(self):
+        """
+        Check reparse tag in posix create context response
+        """
+        try:
+            c = libsmb.Conn(
+                self.server_ip,
+                "smb3_posix_share",
+                self.lp,
+                self.creds,
+                posix=True)
+            self.assertTrue(c.have_posix())
+
+            tag = 0x80000025
+
+            f,_,cc_out = c.create_ex('\\reparse',
+                                     DesiredAccess=security.SEC_STD_ALL,
+                                     CreateDisposition=libsmb.FILE_CREATE,
+                                     CreateContexts=[posix_context(0o600)])
+
+            cc = ndr_unpack(smb3posix.smb3_posix_cc_info, cc_out[0][1])
+            self.assertEqual(cc.reparse_tag, libsmb.IO_REPARSE_TAG_RESERVED_ZERO)
+
+            b = reparse_symlink.put(tag, 0, b'asdf')
+            c.fsctl(f, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
+
+            c.close(f)
+
+            f,_,cc_out = c.create_ex('\\reparse',
+                                     DesiredAccess=security.SEC_STD_ALL,
+                                     CreateDisposition=libsmb.FILE_OPEN,
+                                     CreateContexts=[posix_context(0o600)])
+            c.close(f)
+
+            cc = ndr_unpack(smb3posix.smb3_posix_cc_info, cc_out[0][1])
+            self.assertEqual(cc.reparse_tag, tag)
+
+        finally:
+            self.delete_test_file(c, '\\reparse')
 
     def test_delete_on_close(self):
         """
