@@ -24,6 +24,7 @@ from samba.dcerpc import smb3posix
 from samba.ndr import ndr_unpack
 from samba.dcerpc.security import dom_sid
 import os
+import subprocess
 
 def posix_context(mode):
     return (libsmb.SMB2_CREATE_TAG_POSIX, mode.to_bytes(4, 'little'))
@@ -34,6 +35,9 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
         super().setUp()
 
         self.samsid = os.environ["SAMSID"]
+        prefix_abs = os.environ["PREFIX_ABS"]
+        p = subprocess.run(['stat', '-f', '-c', '%T', prefix_abs], capture_output=True, text=True)
+        self.fstype = p.stdout.strip().lower()
 
     def connections(self, share1=None, posix1=False, share2=None, posix2=True):
         if not share1:
@@ -303,7 +307,11 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
                     self.assertEqual(found_files[fname]['attrib'],
                                      libsmb.FILE_ATTRIBUTE_ARCHIVE)
                 else:
-                    self.assertEqual(found_files[fname]['nlink'], 2)
+                    # Note: btrfs always reports the link count of directories as one.
+                    if self.fstype == "btrfs":
+                        self.assertEqual(found_files[fname]['nlink'], 1)
+                    else:
+                        self.assertEqual(found_files[fname]['nlink'], 2)
                     self.assertEqual(found_files[fname]['attrib'],
                                      libsmb.FILE_ATTRIBUTE_DIRECTORY)
 
@@ -368,9 +376,11 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
 
             cc = ndr_unpack(smb3posix.smb3_posix_cc_info, cc_out[0][1])
 
-            # Note: this fails on btrfs which always reports the link
-            # count of directories as one.
-            self.assertEqual(cc.nlinks, 2)
+            # Note: btrfs always reports the link count of directories as one.
+            if self.fstype == "btrfs":
+                self.assertEqual(cc.nlinks, 1)
+            else:
+                self.assertEqual(cc.nlinks, 2)
 
             self.assertEqual(cc.reparse_tag, libsmb.IO_REPARSE_TAG_RESERVED_ZERO)
             self.assertEqual(cc.posix_perms, 0o700)
