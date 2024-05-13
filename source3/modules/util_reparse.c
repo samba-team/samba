@@ -220,8 +220,6 @@ NTSTATUS fsctl_del_reparse_point(struct files_struct *fsp,
 				 uint32_t in_len)
 {
 	uint32_t existing_tag;
-	uint8_t *existing_data = NULL;
-	uint32_t existing_len;
 	uint32_t reparse_tag;
 	const uint8_t *reparse_data = NULL;
 	size_t reparse_data_length;
@@ -229,16 +227,10 @@ NTSTATUS fsctl_del_reparse_point(struct files_struct *fsp,
 	uint32_t dos_mode;
 	int ret;
 
-	status = fsctl_get_reparse_point(fsp,
-					 talloc_tos(),
-					 &existing_tag,
-					 &existing_data,
-					 UINT32_MAX,
-					 &existing_len);
+	status = fsctl_get_reparse_tag(fsp, &existing_tag);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	TALLOC_FREE(existing_data);
 
 	status = reparse_buffer_check(in_data,
 				      in_len,
