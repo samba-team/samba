@@ -633,17 +633,6 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	}
 
 	if (lck_state.delete_object) {
-		/*
-		 * Do the notification after we released the share
-		 * mode lock. Inside notify_fname we take out another
-		 * tdb lock. With ctdb also accessing our databases,
-		 * this can lead to deadlocks. Putting this notify
-		 * after the TALLOC_FREE(lck) above we avoid locking
-		 * two records simultaneously. Notifies are async and
-		 * informational only, so calling the notify_fname
-		 * without holding the share mode lock should not do
-		 * any harm.
-		 */
 		notify_fname(conn, NOTIFY_ACTION_REMOVED,
 			     FILE_NOTIFY_CHANGE_FILE_NAME,
 			     fsp->fsp_name->base_name);
