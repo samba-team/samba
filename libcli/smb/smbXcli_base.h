@@ -535,6 +535,11 @@ void smb2cli_session_start_replay(struct smbXcli_session *session);
 void smb2cli_session_stop_replay(struct smbXcli_session *session);
 void smb2cli_session_require_signed_response(struct smbXcli_session *session,
 					     bool require_signed_response);
+void smb2cli_session_torture_anonymous_signing(struct smbXcli_session *session,
+					       bool anonymous_signing);
+void smb2cli_session_torture_anonymous_encryption(struct smbXcli_session *session,
+						  bool anonymous_encryption);
+void smb2cli_session_torture_no_signing_disconnect(struct smbXcli_session *session);
 NTSTATUS smb2cli_session_update_preauth(struct smbXcli_session *session,
 					const struct iovec *iov);
 NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
