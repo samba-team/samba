@@ -341,7 +341,6 @@ NTSTATUS check_parent_access_fsp(struct files_struct *fsp,
 	NTSTATUS status;
 	struct security_descriptor *parent_sd = NULL;
 	uint32_t access_granted = 0;
-	struct share_mode_lock *lck = NULL;
 	uint32_t name_hash;
 	bool delete_on_close_set;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -410,20 +409,7 @@ NTSTATUS check_parent_access_fsp(struct files_struct *fsp,
 		goto out;
 	}
 
-	/*
-	 * Don't take a lock here. We just need a snapshot
-	 * of the current state of delete on close and this is
-	 * called in a codepath where we may already have a lock
-	 * (and we explicitly can't hold 2 locks at the same time
-	 * as that may deadlock).
-	 */
-	lck = fetch_share_mode_unlocked(frame, fsp->file_id);
-	if (lck == NULL) {
-		status = NT_STATUS_OK;
-		goto out;
-	}
-
-	delete_on_close_set = is_delete_on_close_set(lck, name_hash);
+	get_file_infos(fsp->file_id, name_hash, &delete_on_close_set, NULL);
 	if (delete_on_close_set) {
 		status = NT_STATUS_DELETE_PENDING;
 		goto out;
