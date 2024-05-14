@@ -2604,9 +2604,8 @@ sub setup_fl2008r2dc
 	$trustpw .= "$env->{SOCKET_WRAPPER_DEFAULT_IFACE}";
 	$trustpw .= "$nt4_dc_vars->{SOCKET_WRAPPER_DEFAULT_IFACE}";
 
-	my $cmd = "";
-	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
-	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$env->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
+	my $cmd_env = $self->get_cmd_env_vars($env);
+	my $cmd = $cmd_env;
 	$cmd .= "$net rpc trust create ";
 	$cmd .= "otherdomainsid=$nt4_dc_vars->{SAMSID} ";
 	$cmd .= "otherdomain=$nt4_dc_vars->{DOMAIN} ";
@@ -2620,9 +2619,8 @@ sub setup_fl2008r2dc
 		return undef;
 	}
 
-	$cmd = "";
-	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$nt4_dc_vars->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
-	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$nt4_dc_vars->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
+	my $nt4_cmd_env = $self->get_cmd_env_vars($nt4_dc_vars);
+	$cmd = $nt4_cmd_env;
 	$cmd .= "$net rpc trustdom establish $env->{DOMAIN} -U/%$trustpw $nt4_dc_vars->{CONFIGURATION}";
 
 	if (system($cmd) != 0) {
@@ -2631,7 +2629,8 @@ sub setup_fl2008r2dc
 	}
 
 	# Reload trusts
-	$cmd = "$smbcontrol winbindd reload-config $nt4_dc_vars->{CONFIGURATION}";
+	$cmd = $nt4_cmd_env;
+	$cmd .= "$smbcontrol winbindd reload-config $nt4_dc_vars->{CONFIGURATION}";
 
 	if (system($cmd) != 0) {
 		warn("add failed\n$cmd");
