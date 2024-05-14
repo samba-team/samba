@@ -44,7 +44,7 @@ static int cmp_int8(int8_t *_a, int8_t *_b, int8_t *ctx)
 		/* aim for sustained chaos. */
 		c += a;
 		c ^= b;
-		c ^= (c >> 5) + (c << 3);
+		c ^= (c >> 5) + ((uint8_t)c << 3);
 		*ctx = (c + 99) | 1;
 	}
 	switch((c >> 1) & 7) {
