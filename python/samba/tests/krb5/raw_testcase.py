@@ -4143,8 +4143,7 @@ class RawKerberosTest(TestCase):
             self.assertIsNotNone(ticket_decryption_key)
 
         if ticket_decryption_key is not None:
-            service_ticket = (rep_msg_type == KRB_TGS_REP
-                              and not self.is_tgs_principal(expected_sname))
+            service_ticket = not self.is_tgs_principal(expected_sname)
             self.verify_ticket(ticket_creds, krbtgt_keys,
                                service_ticket=service_ticket,
                                expect_pac=expect_pac,
@@ -4464,10 +4463,9 @@ class RawKerberosTest(TestCase):
             if expect_device_info is None and compound_id:
                 unchecked.add(krb5pac.PAC_TYPE_DEVICE_INFO)
 
-        if rep_msg_type == KRB_TGS_REP:
-            if not self.is_tgs_principal(expected_sname):
-                expected_types.append(krb5pac.PAC_TYPE_TICKET_CHECKSUM)
-                expected_types.append(krb5pac.PAC_TYPE_FULL_CHECKSUM)
+        if not self.is_tgs_principal(expected_sname):
+            expected_types.append(krb5pac.PAC_TYPE_TICKET_CHECKSUM)
+            expected_types.append(krb5pac.PAC_TYPE_FULL_CHECKSUM)
 
         expect_extra_pac_buffers = self.is_tgs(expected_sname)
 
