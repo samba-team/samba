@@ -158,12 +158,14 @@ bool strict_lock_check_default(files_struct *fsp, struct lock_struct *plock)
 		TALLOC_FREE(br_lck);
 	}
 
-	DEBUG(10, ("strict_lock_default: flavour = %s brl start=%ju "
-		   "len=%ju %s for fnum %ju file %s\n",
-		   lock_flav_name(plock->lock_flav),
-		   (uintmax_t)plock->start, (uintmax_t)plock->size,
-		   ret ? "unlocked" : "locked",
-		   (uintmax_t)plock->fnum, fsp_str_dbg(fsp)));
+	DBG_DEBUG("flavour = %s brl start=%" PRIu64 " "
+		  "len=%" PRIu64 " %s for fnum %" PRIu64 " file %s\n",
+		  lock_flav_name(plock->lock_flav),
+		  plock->start,
+		  plock->size,
+		  ret ? "unlocked" : "locked",
+		  plock->fnum,
+		  fsp_str_dbg(fsp));
 
 	return ret;
 }
@@ -583,8 +585,9 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 	NTSTATUS status;
 	bool ok;
 
-	DEBUG(10, ("rename_share_filename: servicepath %s newname %s\n",
-		   servicepath, smb_fname_dst->base_name));
+	DBG_DEBUG("servicepath %s newname %s\n",
+		  servicepath,
+		  smb_fname_dst->base_name);
 
 	status = share_mode_lock_access_private_data(lck, &d);
 	if (!NT_STATUS_IS_OK(status)) {

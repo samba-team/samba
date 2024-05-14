@@ -473,8 +473,8 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	 */
 	lck_state.cleanup_fn = close_share_mode_lock_cleanup;
 
-	DEBUG(5,("close_remove_share_mode: file %s. Delete on close was set "
-		 "- deleting file.\n", fsp_str_dbg(fsp)));
+	DBG_INFO("%s. Delete on close was set - deleting file.\n",
+		 fsp_str_dbg(fsp));
 
 	/*
 	 * Don't try to update the write time when we delete the file
@@ -486,10 +486,9 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	{
 		/* Become the user who requested the delete. */
 
-		DEBUG(5,("close_remove_share_mode: file %s. "
-			"Change user to uid %u\n",
-			fsp_str_dbg(fsp),
-			(unsigned int)lck_state.del_token->uid));
+		DBG_INFO("file %s. Change user to uid %u\n",
+			 fsp_str_dbg(fsp),
+			 (unsigned int)lck_state.del_token->uid);
 
 		if (!push_sec_ctx()) {
 			smb_panic("close_remove_share_mode: file %s. failed to push "
@@ -510,9 +509,10 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 
 	tmp_status = vfs_stat_fsp(fsp);
 	if (!NT_STATUS_IS_OK(tmp_status)) {
-		DEBUG(5,("close_remove_share_mode: file %s. Delete on close "
+		DBG_INFO("file %s. Delete on close "
 			 "was set and stat failed with error %s\n",
-			 fsp_str_dbg(fsp), nt_errstr(tmp_status)));
+			 fsp_str_dbg(fsp),
+			 nt_errstr(tmp_status));
 		/*
 		 * Don't save the errno here, we ignore this error
 		 */
@@ -523,14 +523,13 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 
 	if (!file_id_equal(&fsp->file_id, &id)) {
 		struct file_id_buf ftmp1, ftmp2;
-		DEBUG(5,("close_remove_share_mode: file %s. Delete on close "
+		DBG_INFO("file %s. Delete on close "
 			 "was set and dev and/or inode does not match\n",
-			 fsp_str_dbg(fsp)));
-		DEBUG(5,("close_remove_share_mode: file %s. stored file_id %s, "
-			 "stat file_id %s\n",
+			 fsp_str_dbg(fsp));
+		DBG_INFO("file %s. stored file_id %s, stat file_id %s\n",
 			 fsp_str_dbg(fsp),
 			 file_id_str_buf(fsp->file_id, &ftmp1),
-			 file_id_str_buf(id, &ftmp2)));
+			 file_id_str_buf(id, &ftmp2));
 		/*
 		 * Don't save the errno here, we ignore this error
 		 */
@@ -588,9 +587,10 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		 * zero.
 		 */
 
-		DEBUG(5,("close_remove_share_mode: file %s. Delete on close "
+		DBG_INFO("file %s. Delete on close "
 			 "was set and unlink failed with error %s\n",
-			 fsp_str_dbg(fsp), strerror(errno)));
+			 fsp_str_dbg(fsp),
+			 strerror(errno));
 
 		status = map_nt_error_from_unix(errno);
 	}
