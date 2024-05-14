@@ -73,7 +73,6 @@ static int cmp_int8(int8_t *_a, int8_t *_b, int8_t *ctx)
 
 int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len)
 {
-	size_t i;
 	int8_t buf2[MAX_SIZE];
 	int8_t aux[MAX_SIZE];
 	int8_t context;
