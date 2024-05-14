@@ -739,7 +739,6 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 {
 #ifdef HAVE_KRB5
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	krb5_error_code krb5_ret;
 	const char *cc = NULL;
 	const char *principal_s = NULL;
 	char *realm = NULL;
@@ -851,6 +850,11 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 		DEBUG(10,("winbindd_raw_kerberos_login: uid is %d\n", uid));
 	}
 
+	/*
+	 * Note cc can be NULL, it means
+	 * kerberos_return_pac() will use
+	 * a temporary krb5 ccache internally.
+	 */
 	result = kerberos_return_pac(mem_ctx,
 				     principal_s,
 				     pass,
@@ -939,18 +943,8 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 			DEBUG(10,("winbindd_raw_kerberos_login: failed to add ccache to list: %s\n",
 				nt_errstr(result)));
 		}
-	} else {
-
-		/* need to delete the memory cred cache, it is not used anymore */
-
-		krb5_ret = ads_kdestroy(cc);
-		if (krb5_ret) {
-			DEBUG(3,("winbindd_raw_kerberos_login: "
-				 "could not destroy krb5 credential cache: "
-				 "%s\n", error_message(krb5_ret)));
-		}
-
 	}
+
 	*info6 = info6_copy;
 	return NT_STATUS_OK;
 
@@ -968,13 +962,6 @@ failed:
 	 * but we weren't able to get or verify the service ticket for this
 	 * local host and therefore didn't get the PAC, we need to remove that
 	 * cache entirely now */
-
-	krb5_ret = ads_kdestroy(cc);
-	if (krb5_ret) {
-		DEBUG(3,("winbindd_raw_kerberos_login: "
-			 "could not destroy krb5 credential cache: "
-			 "%s\n", error_message(krb5_ret)));
-	}
 
 	if (!NT_STATUS_IS_OK(remove_ccache(user))) {
 		DEBUG(3,("winbindd_raw_kerberos_login: "
