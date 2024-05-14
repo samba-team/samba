@@ -85,9 +85,18 @@ int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len)
 	len--;
 
 	memcpy(buf2, buf, len);
-
-	stable_sort_r(buf2, aux, len, 1,
+	stable_sort_r(buf2, aux, len - 1, 1,
 		      (samba_compare_with_context_fn_t)cmp_int8,
 		      &context);
+
+	/*
+	 * We sorted all but the last element, which should remain unchanged.
+	 * buf2[-1] should also be unchanged, but the sanitizers will catch
+	 * that one.
+	 */
+	if (buf2[len - 1] != buf[len - 1]) {
+		abort();
+	}
+
 	return 0;
 }
