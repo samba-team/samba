@@ -250,6 +250,10 @@ _PUBLIC_ int strncasecmp_ldb(const char *s1,
 		} else if (*s1 == ' ') {
 			EAT_SPACE(s1, len1, ends_in_space1);
 			c1 = ends_in_space1 ? 0 : ' ';
+		} else if ((*s1 & 0x80) == 0) {
+			c1 = *s1;
+			s1++;
+			len1--;
 		} else {
 			c1 = next_codepoint_handle_ext(iconv_handle, s1, len1,
 						       CH_UNIX, &cs1);
@@ -264,6 +268,10 @@ _PUBLIC_ int strncasecmp_ldb(const char *s1,
 		} else if (*s2 == ' ') {
 			EAT_SPACE(s2, len2, ends_in_space2);
 			c2 = ends_in_space2 ? 0 : ' ';
+		} else if ((*s2 & 0x80) == 0) {
+			c2 = *s2;
+			s2++;
+			len2--;
 		} else {
 			c2 = next_codepoint_handle_ext(iconv_handle, s2, len2,
 						       CH_UNIX, &cs2);
