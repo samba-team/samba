@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Locking functions
    Copyright (C) Jeremy Allison 1992-2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -175,7 +175,7 @@ static bool posix_lock_in_range(off_t *offset_out, off_t *count_out,
 
 	*offset_out = offset;
 	*count_out = count;
-	
+
 	return True;
 }
 
@@ -338,7 +338,7 @@ bool is_posix_locked(files_struct *fsp,
 struct lock_ref_count_key {
 	struct file_id id;
 	char r;
-}; 
+};
 
 /*******************************************************************
  Form a static locking key for a dev/inode pair for the lock ref count
@@ -742,7 +742,7 @@ OR....
 				}
 
 				l_curr = ul_next;
-				
+
 			} else if ( (l_curr->start >= lock->start) &&
 						(l_curr->start < lock->start + lock->size) &&
 						(l_curr->start + l_curr->size > lock->start + lock->size) ) {
@@ -803,7 +803,7 @@ BECOMES....
 					   (uintmax_t)l_curr->size ));
 
 				l_curr = l_curr->next;
-		
+
 			} else if ( (l_curr->start < lock->start) &&
 						(l_curr->start + l_curr->size > lock->start + lock->size) ) {
 				/*
@@ -847,7 +847,7 @@ BECOMES.....
 					   (uintmax_t)l_new->size ));
 
 				/*
-				 * Add into the dlink list after the l_curr point - NOT at lhead. 
+				 * Add into the dlink list after the l_curr point - NOT at lhead.
 				 */
 				DLIST_ADD_AFTER(lhead, l_new, l_curr);
 
@@ -928,7 +928,7 @@ bool set_posix_lock_windows_flavour(files_struct *fsp,
 	 * ------------------------------------------------------------------------
 	 * WRITE LOCK : start = 2, len = 10
 	 *                                            READ LOCK: start =0, len = 10 - FAIL
-	 * READ LOCK : start = 0, len = 14 
+	 * READ LOCK : start = 0, len = 14
 	 *                                            READ LOCK: start =0, len = 10 - FAIL
 	 * UNLOCK : start = 2, len = 10
 	 *                                            READ LOCK: start =0, len = 10 - OK
@@ -936,7 +936,7 @@ bool set_posix_lock_windows_flavour(files_struct *fsp,
 	 * Under POSIX, the same sequence in steps 1 and 2 would not be reference counted, but
 	 * would leave a single read lock over the 0-14 region.
 	 */
-	
+
 	if ((l_ctx = talloc_init("set_posix_lock")) == NULL) {
 		DEBUG(0,("set_posix_lock_windows_flavour: unable to init talloc context.\n"));
 		return False;
