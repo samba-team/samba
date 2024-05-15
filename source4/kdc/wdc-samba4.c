@@ -943,5 +943,3 @@ struct krb5plugin_kdc_ftable kdc_plugin_table = {
 	.pac_generate = samba_wdc_get_pac,
 	.referral_policy = samba_wdc_referral_policy,
 };
-
-
