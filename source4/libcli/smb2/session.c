@@ -385,7 +385,9 @@ static void smb2_session_setup_spnego_both_ready(struct tevent_req *req)
 		return;
 	}
 
-	if (cli_credentials_is_anonymous(state->credentials)) {
+	if (cli_credentials_is_anonymous(state->credentials) &&
+	    !state->session->anonymous_session_key)
+	{
 		/*
 		 * Windows server does not set the
 		 * SMB2_SESSION_FLAG_IS_GUEST nor
@@ -399,10 +401,14 @@ static void smb2_session_setup_spnego_both_ready(struct tevent_req *req)
 		return;
 	}
 
-	status = gensec_session_key(session->gensec, state,
-				    &session_key);
-	if (tevent_req_nterror(req, status)) {
-		return;
+	if (state->session->forced_session_key.length != 0) {
+		session_key = state->session->forced_session_key;
+	} else {
+		status = gensec_session_key(session->gensec, state,
+					    &session_key);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
 	}
 
 	if (state->session_bind) {
