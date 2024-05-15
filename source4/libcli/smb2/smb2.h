@@ -128,6 +128,8 @@ struct smb2_session {
 	struct gensec_security *gensec;
 	struct smbXcli_session *smbXcli;
 	bool needs_bind;
+	bool anonymous_session_key;
+	DATA_BLOB forced_session_key;
 };
 
 
