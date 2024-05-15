@@ -361,7 +361,7 @@ NTSTATUS g_lock_lock_cb_dump(struct g_lock_lock_cb_state *cb_state,
 {
 	struct g_lock *lck = cb_state->lck;
 
-	/* We allow a cn_fn only for G_LOCK_WRITE for now... */
+	/* We allow a cb_fn only for G_LOCK_WRITE for now... */
 	SMB_ASSERT(lck->num_shared == 0);
 
 	fn(lck->exclusive,
@@ -1019,7 +1019,7 @@ struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
 	};
 
 	/*
-	 * We allow a cn_fn only for G_LOCK_WRITE for now.
+	 * We allow a cb_fn only for G_LOCK_WRITE for now.
 	 *
 	 * It's all we currently need and it makes a few things
 	 * easier to implement.
@@ -1239,7 +1239,7 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
 	SMB_ASSERT(!ctx->busy);
 
 	/*
-	 * We allow a cn_fn only for G_LOCK_WRITE for now.
+	 * We allow a cb_fn only for G_LOCK_WRITE for now.
 	 *
 	 * It's all we currently need and it makes a few things
 	 * easier to implement.
