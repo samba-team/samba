@@ -5527,6 +5527,630 @@ static bool test_session_ntlmssp_bug14932(struct torture_context *tctx, struct s
 	return ret;
 }
 
+static bool test_session_anon_encryption1(struct torture_context *tctx,
+					  struct smb2_tree *tree0)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = "IPC$";
+	char *unc = NULL;
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct cli_credentials *anon_creds = NULL;
+	struct smbcli_options options;
+	struct smb2_transport *transport = NULL;
+	struct smb2_session *anon_session = NULL;
+	struct smb2_tree *anon_tree = NULL;
+	NTSTATUS status;
+	bool ok = true;
+	struct tevent_req *subreq = NULL;
+	uint32_t timeout_msec;
+
+	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_00) {
+		torture_skip(tctx,
+			     "Can't test without SMB3 support");
+	}
+
+	unc = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
+	torture_assert(tctx, unc != NULL, "talloc_asprintf");
+
+	anon_creds = cli_credentials_init_anon(tctx);
+	torture_assert(tctx, anon_creds != NULL, "cli_credentials_init_anon");
+	ok = cli_credentials_set_smb_encryption(anon_creds,
+						SMB_ENCRYPTION_REQUIRED,
+						CRED_SPECIFIED);
+	torture_assert(tctx, ok, "cli_credentials_set_smb_encryption");
+
+	options = transport0->options;
+	options.client_guid = GUID_random();
+	options.only_negprot = true;
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      anon_creds,
+			      &anon_tree,
+			      tctx->ev,
+			      &options,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	torture_assert_ntstatus_ok(tctx, status, "smb2_connect failed");
+	anon_session = anon_tree->session;
+	transport = anon_session->transport;
+
+	anon_session->anonymous_session_key = true;
+	smb2cli_session_torture_anonymous_encryption(anon_session->smbXcli, true);
+
+	status = smb2_session_setup_spnego(anon_session,
+					   anon_creds,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "smb2_session_setup_spnego failed");
+
+	ok = smbXcli_session_is_authenticated(anon_session->smbXcli);
+	torture_assert(tctx, !ok, "smbXcli_session_is_authenticated(anon) wrong");
+
+	/*
+	 * The connection is still in ConstrainedConnection state...
+	 *
+	 * This will use encryption and causes a connection reset
+	 */
+	timeout_msec = transport->options.request_timeout * 1000;
+	subreq = smb2cli_tcon_send(tctx,
+				   tctx->ev,
+				   transport->conn,
+				   timeout_msec,
+				   anon_session->smbXcli,
+				   anon_tree->smbXcli,
+				   0, /* flags */
+				   unc);
+	torture_assert(tctx, subreq != NULL, "smb2cli_tcon_send");
+
+	torture_assert(tctx,
+		       tevent_req_poll_ntstatus(subreq, tctx->ev, &status),
+		       "tevent_req_poll_ntstatus");
+
+	status = smb2cli_tcon_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_DISCONNECTED)) {
+		status = NT_STATUS_CONNECTION_RESET;
+	}
+	torture_assert_ntstatus_equal(tctx, status,
+				      NT_STATUS_CONNECTION_RESET,
+				      "smb2cli_tcon_recv");
+
+	ok = smbXcli_conn_is_connected(transport->conn);
+	torture_assert(tctx, !ok, "smbXcli_conn_is_connected still connected");
+
+	return true;
+}
+
+static bool test_session_anon_encryption2(struct torture_context *tctx,
+					  struct smb2_tree *tree0)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = "IPC$";
+	char *unc = NULL;
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct cli_credentials *_creds = samba_cmdline_get_creds();
+	struct cli_credentials *user_creds = NULL;
+	struct cli_credentials *anon_creds = NULL;
+	struct smbcli_options options;
+	struct smb2_transport *transport = NULL;
+	struct smb2_session *user_session = NULL;
+	struct smb2_tree *user_tree = NULL;
+	struct smb2_session *anon_session = NULL;
+	struct smb2_tree *anon_tree = NULL;
+	struct smb2_ioctl ioctl = {
+		.level = RAW_IOCTL_SMB2,
+		.in = {
+			.file = {
+				.handle = {
+					.data = {
+						[0] = UINT64_MAX,
+						[1] = UINT64_MAX,
+					},
+				},
+			},
+			.function = FSCTL_QUERY_NETWORK_INTERFACE_INFO,
+			/* Windows client sets this to 64KiB */
+			.max_output_response = 0x10000,
+			.flags = SMB2_IOCTL_FLAG_IS_FSCTL,
+		},
+	};
+	NTSTATUS status;
+	bool ok = true;
+	struct tevent_req *subreq = NULL;
+	uint32_t timeout_msec;
+	uint32_t caps = smb2cli_conn_server_capabilities(transport0->conn);
+	NTSTATUS expected_mc_status;
+
+	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_00) {
+		torture_skip(tctx,
+			     "Can't test without SMB3 support");
+	}
+
+	if (caps & SMB2_CAP_MULTI_CHANNEL) {
+		expected_mc_status = NT_STATUS_OK;
+	} else {
+		expected_mc_status = NT_STATUS_FS_DRIVER_REQUIRED;
+	}
+
+	unc = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
+	torture_assert(tctx, unc != NULL, "talloc_asprintf");
+
+	user_creds = cli_credentials_shallow_copy(tctx, _creds);
+	torture_assert(tctx, user_creds != NULL, "cli_credentials_shallow_copy");
+	ok = cli_credentials_set_smb_encryption(user_creds,
+						SMB_ENCRYPTION_REQUIRED,
+						CRED_SPECIFIED);
+	torture_assert(tctx, ok, "cli_credentials_set_smb_encryption");
+
+	anon_creds = cli_credentials_init_anon(tctx);
+	torture_assert(tctx, anon_creds != NULL, "cli_credentials_init_anon");
+	ok = cli_credentials_set_smb_encryption(anon_creds,
+						SMB_ENCRYPTION_REQUIRED,
+						CRED_SPECIFIED);
+	torture_assert(tctx, ok, "cli_credentials_set_smb_encryption");
+
+	options = transport0->options;
+	options.client_guid = GUID_random();
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      user_creds,
+			      &user_tree,
+			      tctx->ev,
+			      &options,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	torture_assert_ntstatus_ok(tctx, status, "smb2_connect failed");
+	user_session = user_tree->session;
+	transport = user_session->transport;
+	ok = smb2cli_tcon_is_encryption_on(user_tree->smbXcli);
+	torture_assert(tctx, ok, "smb2cli_tcon_is_encryption_on(user)");
+	ok = smbXcli_session_is_authenticated(user_session->smbXcli);
+	torture_assert(tctx, ok, "smbXcli_session_is_authenticated(user)");
+
+	anon_session = smb2_session_init(transport,
+					 lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					 tctx);
+	torture_assert(tctx, anon_session != NULL, "smb2_session_init(anon)");
+
+	anon_session->anonymous_session_key = true;
+	smb2cli_session_torture_anonymous_encryption(anon_session->smbXcli, true);
+
+	status = smb2_session_setup_spnego(anon_session,
+					   anon_creds,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "smb2_session_setup_spnego failed");
+
+	ok = smb2cli_tcon_is_encryption_on(user_tree->smbXcli);
+	torture_assert(tctx, ok, "smb2cli_tcon_is_encryption_on(anon)");
+	ok = smbXcli_session_is_authenticated(anon_session->smbXcli);
+	torture_assert(tctx, !ok, "smbXcli_session_is_authenticated(anon) wrong");
+
+	anon_tree = smb2_tree_init(anon_session, tctx, false);
+	torture_assert(tctx, anon_tree != NULL, "smb2_tree_init");
+
+	timeout_msec = transport->options.request_timeout * 1000;
+	subreq = smb2cli_tcon_send(tctx,
+				   tctx->ev,
+				   transport->conn,
+				   timeout_msec,
+				   anon_session->smbXcli,
+				   anon_tree->smbXcli,
+				   0, /* flags */
+				   unc);
+	torture_assert(tctx, subreq != NULL, "smb2cli_tcon_send");
+
+	torture_assert(tctx,
+		       tevent_req_poll_ntstatus(subreq, tctx->ev, &status),
+		       "tevent_req_poll_ntstatus");
+
+	status = smb2cli_tcon_recv(subreq);
+	TALLOC_FREE(subreq);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "smb2cli_tcon_recv(anon)");
+
+	ok = smbXcli_conn_is_connected(transport->conn);
+	torture_assert(tctx, ok, "smbXcli_conn_is_connected");
+
+	ok = smb2cli_tcon_is_encryption_on(anon_tree->smbXcli);
+	torture_assert(tctx, ok, "smb2cli_tcon_is_encryption_on(anon)");
+	ok = smbXcli_session_is_authenticated(anon_session->smbXcli);
+	torture_assert(tctx, !ok, "smbXcli_session_is_authenticated(anon) wrong");
+
+	status = smb2_ioctl(user_tree, tctx, &ioctl);
+	torture_assert_ntstatus_equal(tctx, status, expected_mc_status,
+				      "FSCTL_QUERY_NETWORK_INTERFACE_INFO user");
+
+	ok = smbXcli_conn_is_connected(transport->conn);
+	torture_assert(tctx, ok, "smbXcli_conn_is_connected");
+
+	status = smb2_ioctl(anon_tree, tctx, &ioctl);
+	torture_assert_ntstatus_equal(tctx, status, expected_mc_status,
+				      "FSCTL_QUERY_NETWORK_INTERFACE_INFO anonymous");
+
+	ok = smbXcli_conn_is_connected(transport->conn);
+	torture_assert(tctx, ok, "smbXcli_conn_is_connected");
+
+	status = smb2_ioctl(user_tree, tctx, &ioctl);
+	torture_assert_ntstatus_equal(tctx, status, expected_mc_status,
+				      "FSCTL_QUERY_NETWORK_INTERFACE_INFO user");
+
+	ok = smbXcli_conn_is_connected(transport->conn);
+	torture_assert(tctx, ok, "smbXcli_conn_is_connected");
+
+	status = smb2_ioctl(anon_tree, tctx, &ioctl);
+	torture_assert_ntstatus_equal(tctx, status, expected_mc_status,
+				      "FSCTL_QUERY_NETWORK_INTERFACE_INFO anonymous");
+
+	ok = smbXcli_conn_is_connected(transport->conn);
+	torture_assert(tctx, ok, "smbXcli_conn_is_connected");
+
+	return true;
+}
+
+static bool test_session_anon_encryption3(struct torture_context *tctx,
+					  struct smb2_tree *tree0)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = "IPC$";
+	char *unc = NULL;
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct cli_credentials *_creds = samba_cmdline_get_creds();
+	struct cli_credentials *user_creds = NULL;
+	struct cli_credentials *anon_creds = NULL;
+	struct smbcli_options options;
+	struct smb2_transport *transport = NULL;
+	struct smb2_session *user_session = NULL;
+	struct smb2_tree *user_tree = NULL;
+	struct smb2_session *anon_session = NULL;
+	struct smb2_tree *anon_tree = NULL;
+	NTSTATUS status;
+	bool ok = true;
+	struct tevent_req *subreq = NULL;
+	uint32_t timeout_msec;
+	uint8_t wrong_session_key[16] = { 0x1f, 0x2f, 0x3f, };
+
+	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_00) {
+		torture_skip(tctx,
+			     "Can't test without SMB3 support");
+	}
+
+	unc = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
+	torture_assert(tctx, unc != NULL, "talloc_asprintf");
+
+	user_creds = cli_credentials_shallow_copy(tctx, _creds);
+	torture_assert(tctx, user_creds != NULL, "cli_credentials_shallow_copy");
+	ok = cli_credentials_set_smb_encryption(user_creds,
+						SMB_ENCRYPTION_REQUIRED,
+						CRED_SPECIFIED);
+	torture_assert(tctx, ok, "cli_credentials_set_smb_encryption");
+
+	anon_creds = cli_credentials_init_anon(tctx);
+	torture_assert(tctx, anon_creds != NULL, "cli_credentials_init_anon");
+	ok = cli_credentials_set_smb_encryption(anon_creds,
+						SMB_ENCRYPTION_REQUIRED,
+						CRED_SPECIFIED);
+	torture_assert(tctx, ok, "cli_credentials_set_smb_encryption");
+
+	options = transport0->options;
+	options.client_guid = GUID_random();
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      user_creds,
+			      &user_tree,
+			      tctx->ev,
+			      &options,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	torture_assert_ntstatus_ok(tctx, status, "smb2_connect failed");
+	user_session = user_tree->session;
+	transport = user_session->transport;
+	ok = smb2cli_tcon_is_encryption_on(user_tree->smbXcli);
+	torture_assert(tctx, ok, "smb2cli_tcon_is_encryption_on(user)");
+	ok = smbXcli_session_is_authenticated(user_session->smbXcli);
+	torture_assert(tctx, ok, "smbXcli_session_is_authenticated(user)");
+
+	anon_session = smb2_session_init(transport,
+					 lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					 tctx);
+	torture_assert(tctx, anon_session != NULL, "smb2_session_init(anon)");
+
+	anon_session->anonymous_session_key = true;
+	anon_session->forced_session_key = data_blob_const(wrong_session_key,
+						ARRAY_SIZE(wrong_session_key));
+	smb2cli_session_torture_anonymous_encryption(anon_session->smbXcli, true);
+
+	status = smb2_session_setup_spnego(anon_session,
+					   anon_creds,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "smb2_session_setup_spnego failed");
+
+	ok = smb2cli_tcon_is_encryption_on(user_tree->smbXcli);
+	torture_assert(tctx, ok, "smb2cli_tcon_is_encryption_on(anon)");
+	ok = smbXcli_session_is_authenticated(anon_session->smbXcli);
+	torture_assert(tctx, !ok, "smbXcli_session_is_authenticated(anon) wrong");
+
+	anon_tree = smb2_tree_init(anon_session, tctx, false);
+	torture_assert(tctx, anon_tree != NULL, "smb2_tree_init");
+
+	timeout_msec = transport->options.request_timeout * 1000;
+	subreq = smb2cli_tcon_send(tctx,
+				   tctx->ev,
+				   transport->conn,
+				   timeout_msec,
+				   anon_session->smbXcli,
+				   anon_tree->smbXcli,
+				   0, /* flags */
+				   unc);
+	torture_assert(tctx, subreq != NULL, "smb2cli_tcon_send");
+
+	torture_assert(tctx,
+		       tevent_req_poll_ntstatus(subreq, tctx->ev, &status),
+		       "tevent_req_poll_ntstatus");
+
+	status = smb2cli_tcon_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_DISCONNECTED)) {
+		status = NT_STATUS_CONNECTION_RESET;
+	}
+	torture_assert_ntstatus_equal(tctx, status,
+				      NT_STATUS_CONNECTION_RESET,
+				      "smb2cli_tcon_recv");
+
+	ok = smbXcli_conn_is_connected(transport->conn);
+	torture_assert(tctx, !ok, "smbXcli_conn_is_connected still connected");
+
+	return true;
+}
+
+static bool test_session_anon_signing1(struct torture_context *tctx,
+				       struct smb2_tree *tree0)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = "IPC$";
+	char *unc = NULL;
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct cli_credentials *anon_creds = NULL;
+	struct smbcli_options options;
+	struct smb2_transport *transport = NULL;
+	struct smb2_session *anon_session = NULL;
+	struct smb2_tree *anon_tree = NULL;
+	NTSTATUS status;
+	bool ok = true;
+	struct tevent_req *subreq = NULL;
+	uint32_t timeout_msec;
+
+	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_00) {
+		torture_skip(tctx,
+			     "Can't test without SMB3 support");
+	}
+
+	unc = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
+	torture_assert(tctx, unc != NULL, "talloc_asprintf");
+
+	anon_creds = cli_credentials_init_anon(tctx);
+	torture_assert(tctx, anon_creds != NULL, "cli_credentials_init_anon");
+	ok = cli_credentials_set_smb_signing(anon_creds,
+					     SMB_SIGNING_REQUIRED,
+					     CRED_SPECIFIED);
+	torture_assert(tctx, ok, "cli_credentials_set_smb_signing");
+	ok = cli_credentials_set_smb_ipc_signing(anon_creds,
+						 SMB_SIGNING_REQUIRED,
+						 CRED_SPECIFIED);
+	torture_assert(tctx, ok, "cli_credentials_set_smb_ipc_signing");
+	ok = cli_credentials_set_smb_encryption(anon_creds,
+						SMB_ENCRYPTION_OFF,
+						CRED_SPECIFIED);
+	torture_assert(tctx, ok, "cli_credentials_set_smb_encryption");
+
+	options = transport0->options;
+	options.client_guid = GUID_random();
+	options.only_negprot = true;
+	options.signing = SMB_SIGNING_REQUIRED;
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      anon_creds,
+			      &anon_tree,
+			      tctx->ev,
+			      &options,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	torture_assert_ntstatus_ok(tctx, status, "smb2_connect failed");
+	anon_session = anon_tree->session;
+	transport = anon_session->transport;
+
+	anon_session->anonymous_session_key = true;
+	smb2cli_session_torture_anonymous_signing(anon_session->smbXcli, true);
+
+	status = smb2_session_setup_spnego(anon_session,
+					   anon_creds,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "smb2_session_setup_spnego failed");
+
+	ok = smbXcli_session_is_authenticated(anon_session->smbXcli);
+	torture_assert(tctx, !ok, "smbXcli_session_is_authenticated(anon) wrong");
+
+	timeout_msec = transport->options.request_timeout * 1000;
+	subreq = smb2cli_tcon_send(tctx,
+				   tctx->ev,
+				   transport->conn,
+				   timeout_msec,
+				   anon_session->smbXcli,
+				   anon_tree->smbXcli,
+				   0, /* flags */
+				   unc);
+	torture_assert(tctx, subreq != NULL, "smb2cli_tcon_send");
+
+	torture_assert(tctx,
+		       tevent_req_poll_ntstatus(subreq, tctx->ev, &status),
+		       "tevent_req_poll_ntstatus");
+
+	status = smb2cli_tcon_recv(subreq);
+	TALLOC_FREE(subreq);
+	torture_assert_ntstatus_ok(tctx, status, "smb2cli_tcon_recv");
+
+	ok = smbXcli_conn_is_connected(transport->conn);
+	torture_assert(tctx, ok, "smbXcli_conn_is_connected");
+
+	return true;
+}
+
+static bool test_session_anon_signing2(struct torture_context *tctx,
+				       struct smb2_tree *tree0)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = "IPC$";
+	char *unc = NULL;
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct cli_credentials *anon_creds = NULL;
+	struct smbcli_options options;
+	struct smb2_transport *transport = NULL;
+	struct smb2_session *anon_session = NULL;
+	struct smb2_session *anon_session_nosign = NULL;
+	struct smb2_tree *anon_tree = NULL;
+	NTSTATUS status;
+	bool ok = true;
+	struct tevent_req *subreq = NULL;
+	uint32_t timeout_msec;
+	uint8_t wrong_session_key[16] = { 0x1f, 0x2f, 0x3f, };
+	uint64_t session_id;
+
+	if (smbXcli_conn_protocol(transport0->conn) < PROTOCOL_SMB3_00) {
+		torture_skip(tctx,
+			     "Can't test without SMB3 support");
+	}
+
+	unc = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
+	torture_assert(tctx, unc != NULL, "talloc_asprintf");
+
+	anon_creds = cli_credentials_init_anon(tctx);
+	torture_assert(tctx, anon_creds != NULL, "cli_credentials_init_anon");
+	ok = cli_credentials_set_smb_signing(anon_creds,
+					     SMB_SIGNING_REQUIRED,
+					     CRED_SPECIFIED);
+	torture_assert(tctx, ok, "cli_credentials_set_smb_signing");
+	ok = cli_credentials_set_smb_ipc_signing(anon_creds,
+						 SMB_SIGNING_REQUIRED,
+						 CRED_SPECIFIED);
+	torture_assert(tctx, ok, "cli_credentials_set_smb_ipc_signing");
+	ok = cli_credentials_set_smb_encryption(anon_creds,
+						SMB_ENCRYPTION_OFF,
+						CRED_SPECIFIED);
+	torture_assert(tctx, ok, "cli_credentials_set_smb_encryption");
+
+	options = transport0->options;
+	options.client_guid = GUID_random();
+	options.only_negprot = true;
+	options.signing = SMB_SIGNING_REQUIRED;
+
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      anon_creds,
+			      &anon_tree,
+			      tctx->ev,
+			      &options,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	torture_assert_ntstatus_ok(tctx, status, "smb2_connect failed");
+	anon_session = anon_tree->session;
+	transport = anon_session->transport;
+
+	anon_session->anonymous_session_key = true;
+	anon_session->forced_session_key = data_blob_const(wrong_session_key,
+						ARRAY_SIZE(wrong_session_key));
+	smb2cli_session_torture_anonymous_signing(anon_session->smbXcli, true);
+	smb2cli_session_torture_no_signing_disconnect(anon_session->smbXcli);
+
+	status = smb2_session_setup_spnego(anon_session,
+					   anon_creds,
+					   0 /* previous_session_id */);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "smb2_session_setup_spnego failed");
+
+	ok = smbXcli_session_is_authenticated(anon_session->smbXcli);
+	torture_assert(tctx, !ok, "smbXcli_session_is_authenticated(anon) wrong");
+
+	/*
+	 * create a new structure for the same session id,
+	 * but without smb2.should_sign set.
+	 */
+	session_id = smb2cli_session_current_id(anon_session->smbXcli);
+	anon_session_nosign = smb2_session_init(transport,
+					        lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+					        tctx);
+	torture_assert(tctx, anon_session_nosign != NULL, "smb2_session_init(anon_nosign)");
+	smb2cli_session_set_id_and_flags(anon_session_nosign->smbXcli, session_id, 0);
+	smb2cli_session_torture_no_signing_disconnect(anon_session_nosign->smbXcli);
+
+	timeout_msec = transport->options.request_timeout * 1000;
+	subreq = smb2cli_tcon_send(tctx,
+				   tctx->ev,
+				   transport->conn,
+				   timeout_msec,
+				   anon_session->smbXcli,
+				   anon_tree->smbXcli,
+				   0, /* flags */
+				   unc);
+	torture_assert(tctx, subreq != NULL, "smb2cli_tcon_send");
+
+	torture_assert(tctx,
+		       tevent_req_poll_ntstatus(subreq, tctx->ev, &status),
+		       "tevent_req_poll_ntstatus");
+
+	status = smb2cli_tcon_recv(subreq);
+	TALLOC_FREE(subreq);
+	torture_assert_ntstatus_equal(tctx, status,
+				      NT_STATUS_ACCESS_DENIED,
+				      "smb2cli_tcon_recv");
+
+	ok = smbXcli_conn_is_connected(transport->conn);
+	torture_assert(tctx, ok, "smbXcli_conn_is_connected");
+
+	subreq = smb2cli_tcon_send(tctx,
+				   tctx->ev,
+				   transport->conn,
+				   timeout_msec,
+				   anon_session_nosign->smbXcli,
+				   anon_tree->smbXcli,
+				   0, /* flags */
+				   unc);
+	torture_assert(tctx, subreq != NULL, "smb2cli_tcon_send");
+
+	torture_assert(tctx,
+		       tevent_req_poll_ntstatus(subreq, tctx->ev, &status),
+		       "tevent_req_poll_ntstatus");
+
+	status = smb2cli_tcon_recv(subreq);
+	TALLOC_FREE(subreq);
+	torture_assert_ntstatus_ok(tctx, status, "smb2cli_tcon_recv");
+
+	ok = smbXcli_conn_is_connected(transport->conn);
+	torture_assert(tctx, ok, "smbXcli_conn_is_connected");
+
+	return true;
+}
+
 struct torture_suite *torture_smb2_session_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -5599,6 +6223,11 @@ struct torture_suite *torture_smb2_session_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "encryption-aes-256-ccm", test_session_encryption_aes_256_ccm);
 	torture_suite_add_1smb2_test(suite, "encryption-aes-256-gcm", test_session_encryption_aes_256_gcm);
 	torture_suite_add_1smb2_test(suite, "ntlmssp_bug14932", test_session_ntlmssp_bug14932);
+	torture_suite_add_1smb2_test(suite, "anon-encryption1", test_session_anon_encryption1);
+	torture_suite_add_1smb2_test(suite, "anon-encryption2", test_session_anon_encryption2);
+	torture_suite_add_1smb2_test(suite, "anon-encryption3", test_session_anon_encryption3);
+	torture_suite_add_1smb2_test(suite, "anon-signing1", test_session_anon_signing1);
+	torture_suite_add_1smb2_test(suite, "anon-signing2", test_session_anon_signing2);
 
 	suite->description = talloc_strdup(suite, "SMB2-SESSION tests");
 
