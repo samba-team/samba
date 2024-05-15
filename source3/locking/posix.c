@@ -1048,9 +1048,11 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 	struct lock_list *ulist = NULL;
 	struct lock_list *ul = NULL;
 
-	DEBUG(5, ("release_posix_lock_windows_flavour: File %s, offset = %ju, "
-		  "count = %ju\n", fsp_str_dbg(fsp),
-		  (uintmax_t)u_offset, (uintmax_t)u_count));
+	DBG_INFO("File %s, offset = %" PRIu64 ", "
+		 "count = %" PRIu64 "\n",
+		 fsp_str_dbg(fsp),
+		 u_offset,
+		 u_count);
 
 	/* Remember the number of locks we have on this dev/ino pair. */
 	decrement_lock_ref_count(fsp);
@@ -1065,12 +1067,12 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 	}
 
 	if ((ul_ctx = talloc_init("release_posix_lock")) == NULL) {
-		DEBUG(0,("release_posix_lock_windows_flavour: unable to init talloc context.\n"));
+		DBG_ERR("unable to init talloc context.\n");
 		return False;
 	}
 
 	if ((ul = talloc(ul_ctx, struct lock_list)) == NULL) {
-		DEBUG(0,("release_posix_lock_windows_flavour: unable to talloc unlock list.\n"));
+		DBG_ERR("unable to talloc unlock list.\n");
 		talloc_destroy(ul_ctx);
 		return False;
 	}
@@ -1112,12 +1114,14 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 	if (deleted_lock_type == WRITE_LOCK &&
 			(!ulist || ulist->next != NULL || ulist->start != offset || ulist->size != count)) {
 
-		DEBUG(5, ("release_posix_lock_windows_flavour: downgrading "
-			  "lock to READ: offset = %ju, count = %ju\n",
-			  (uintmax_t)offset, (uintmax_t)count ));
+		DBG_INFO("downgrading lock to READ: offset = %" PRIu64
+			 ", count = %" PRIu64 "\n",
+			 offset,
+			 count);
 
 		if (!posix_fcntl_lock(fsp,F_SETLK,offset,count,F_RDLCK)) {
-			DEBUG(0,("release_posix_lock_windows_flavour: downgrade of lock failed with error %s !\n", strerror(errno) ));
+			DBG_ERR("downgrade of lock failed with error %s !\n",
+				strerror(errno));
 			talloc_destroy(ul_ctx);
 			return False;
 		}
@@ -1131,9 +1135,10 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 		offset = ulist->start;
 		count = ulist->size;
 
-		DEBUG(5, ("release_posix_lock_windows_flavour: Real unlock: "
-			  "offset = %ju, count = %ju\n",
-			  (uintmax_t)offset, (uintmax_t)count ));
+		DBG_INFO("Real unlock: offset = %" PRIu64 ", count = %" PRIu64
+			 "\n",
+			 offset,
+			 count);
 
 		if (!posix_fcntl_lock(fsp,F_SETLK,offset,count,F_UNLCK)) {
 			ret = False;
