@@ -38,8 +38,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
 
-#define ZERO_ZERO 0
-
 /* The open brlock.tdb database. */
 
 static struct db_context *brlock_db;
@@ -268,32 +266,6 @@ static bool brl_conflict_posix(const struct lock_struct *lck1,
 	return brl_overlap(lck1, lck2);
 }
 
-#if ZERO_ZERO
-static bool brl_conflict1(const struct lock_struct *lck1,
-			 const struct lock_struct *lck2)
-{
-	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) {
-		return False;
-	}
-
-	if (brl_same_context(&lck1->context, &lck2->context) &&
-	    lck2->lock_type == READ_LOCK && lck1->fnum == lck2->fnum) {
-		return False;
-	}
-
-	if (lck2->start == 0 && lck2->size == 0 && lck1->size != 0) {
-		return True;
-	}
-
-	if (lck1->start >= (lck2->start + lck2->size) ||
-	    lck2->start >= (lck1->start + lck1->size)) {
-		return False;
-	}
-
-	return True;
-}
-#endif
-
 /****************************************************************************
  Check to see if this lock conflicts, but ignore our own locks on the
  same fnum only. This is the read/write lock check code path.
@@ -399,21 +371,6 @@ void brl_shutdown(void)
 	TALLOC_FREE(brlock_db);
 }
 
-#if ZERO_ZERO
-/****************************************************************************
- Compare two locks for sorting.
-****************************************************************************/
-
-static int lock_compare(const struct lock_struct *lck1,
-			 const struct lock_struct *lck2)
-{
-	if (lck1->start != lck2->start) {
-		return NUMERIC_CMP(lck1->start, lck2->start);
-	}
-	return NUMERIC_CMP(lck1->size, lck2->size);
-}
-#endif
-
 /****************************************************************************
  Lock a range of bytes - Windows lock semantics.
 ****************************************************************************/
@@ -446,12 +403,6 @@ NTSTATUS brl_lock_windows_default(struct byte_range_lock *br_lck,
 			plock->context.smblctx = locks[i].context.smblctx;
 			return NT_STATUS_LOCK_NOT_GRANTED;
 		}
-#if ZERO_ZERO
-		if (plock->start == 0 && plock->size == 0 &&
-				locks[i].size == 0) {
-			break;
-		}
-#endif
 	}
 
 	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_WINDOWS_BRL);
@@ -983,12 +934,6 @@ NTSTATUS brl_lock(
 
 	ZERO_STRUCT(lock);
 
-#if !ZERO_ZERO
-	if (start == 0 && size == 0) {
-		DEBUG(0,("client sent 0/0 lock - please report this\n"));
-	}
-#endif
-
 	lock = (struct lock_struct) {
 		.context.smblctx = smblctx,
 		.context.pid = pid,
@@ -1007,10 +952,6 @@ NTSTATUS brl_lock(
 		ret = brl_lock_posix(br_lck, &lock);
 	}
 
-#if ZERO_ZERO
-	/* sort the lock list */
-	TYPESAFE_QSORT(br_lck->lock_data, (size_t)br_lck->num_locks, lock_compare);
-#endif
 	/* If we're returning an error, return who blocked us. */
 	if (!NT_STATUS_IS_OK(ret) && psmblctx) {
 		*blocker_pid = lock.context.pid;
@@ -1032,31 +973,6 @@ bool brl_unlock_windows_default(struct byte_range_lock *br_lck,
 
 	SMB_ASSERT(plock->lock_type == UNLOCK_LOCK);
 
-#if ZERO_ZERO
-	/* Delete write locks by preference... The lock list
-	   is sorted in the zero zero case. */
-
-	for (i = 0; i < br_lck->num_locks; i++) {
-		struct lock_struct *lock = &locks[i];
-
-		if (lock->lock_type == WRITE_LOCK &&
-		    brl_same_context(&lock->context, &plock->context) &&
-		    lock->fnum == plock->fnum &&
-		    lock->lock_flav == WINDOWS_LOCK &&
-		    lock->start == plock->start &&
-		    lock->size == plock->size) {
-
-			/* found it - delete it */
-			deleted_lock_type = lock->lock_type;
-			break;
-		}
-	}
-
-	if (i != br_lck->num_locks) {
-		/* We found it - don't search again. */
-		goto unlock_continue;
-	}
-#endif
 
 	for (i = 0; i < br_lck->num_locks; i++) {
 		struct lock_struct *lock = &locks[i];
@@ -1076,10 +992,6 @@ bool brl_unlock_windows_default(struct byte_range_lock *br_lck,
 		/* we didn't find it */
 		return False;
 	}
-
-#if ZERO_ZERO
-  unlock_continue:
-#endif
 
 	ARRAY_DEL_ELEMENT(locks, i, br_lck->num_locks);
 	br_lck->num_locks -= 1;
