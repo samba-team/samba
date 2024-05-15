@@ -214,6 +214,9 @@ int ldb_subclass_add(struct ldb_context *ldb, const char *classname, const char 
 /* The following definitions come from lib/ldb/common/ldb_utf8.c */
 char *ldb_casefold_default(void *context, TALLOC_CTX *mem_ctx, const char *s, size_t n);
 
+int ldb_comparison_fold_ascii(void *ignored,
+			      const struct ldb_val *v1, const struct ldb_val *v2);
+
 void ldb_dump_results(struct ldb_context *ldb, struct ldb_result *result, FILE *f);
 
 

@@ -83,6 +83,61 @@ char *ldb_casefold_default(void *context, TALLOC_CTX *mem_ctx, const char *s, si
 	return ret;
 }
 
+
+/*
+ * The default comparison fold function only knows ASCII. Multiple
+ * spaces (0x20) are collapsed into one, and [a-z] map to [A-Z]. All
+ * other bytes are compared without casefolding.
+ *
+ * Note that as well as not handling UTF-8, this function does not exactly
+ * implement RFC 4518 (2.6.1. Insignificant Space Handling and Appendix B).
+ */
+
+int ldb_comparison_fold_ascii(void *ignored,
+			      const struct ldb_val *v1,
+			      const struct ldb_val *v2)
+{
+	const char *s1=(const char *)v1->data, *s2=(const char *)v2->data;
+	size_t n1 = v1->length, n2 = v2->length;
+
+	while (n1 && *s1 == ' ') { s1++; n1--; };
+	while (n2 && *s2 == ' ') { s2++; n2--; };
+
+	while (n1 && n2 && *s1 && *s2) {
+		if (ldb_ascii_toupper(*s1) != ldb_ascii_toupper(*s2)) {
+			break;
+		}
+		if (*s1 == ' ') {
+			while (n1 > 1 && s1[0] == s1[1]) { s1++; n1--; }
+			while (n2 > 1 && s2[0] == s2[1]) { s2++; n2--; }
+		}
+		s1++; s2++;
+		n1--; n2--;
+	}
+
+	/* check for trailing spaces only if the other pointers has
+	 * reached the end of the strings otherwise we can
+	 * mistakenly match.  ex. "domain users" <->
+	 * "domainUpdates"
+	 */
+	if (n1 && *s1 == ' ' && (!n2 || !*s2)) {
+		while (n1 && *s1 == ' ') { s1++; n1--; }
+	}
+	if (n2 && *s2 == ' ' && (!n1 || !*s1)) {
+		while (n2 && *s2 == ' ') { s2++; n2--; }
+	}
+	if (n1 == 0 && n2 != 0) {
+		return -(int)ldb_ascii_toupper(*s2);
+	}
+	if (n2 == 0 && n1 != 0) {
+		return (int)ldb_ascii_toupper(*s1);
+	}
+	if (n1 == 0 && n2 == 0) {
+		return 0;
+	}
+	return (int)ldb_ascii_toupper(*s1) - (int)ldb_ascii_toupper(*s2);
+}
+
 void ldb_set_utf8_default(struct ldb_context *ldb)
 {
 	ldb_set_utf8_fns(ldb, NULL, ldb_casefold_default);
