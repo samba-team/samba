@@ -1091,8 +1091,7 @@ void reply_dskattr(struct smb_request *req)
  Make a dir struct.
 ****************************************************************************/
 
-static void make_dir_struct(TALLOC_CTX *ctx,
-			    char *buf,
+static void make_dir_struct(char *buf,
 			    const char *mask,
 			    const char *fname,
 			    off_t size,
@@ -1525,8 +1524,7 @@ void reply_search(struct smb_request *req)
 	if ((dirtype&0x1F) == FILE_ATTRIBUTE_VOLUME) {
 		char buf[DIR_STRUCT_SIZE];
 		memcpy(buf,status,21);
-		make_dir_struct(ctx,
-				buf,
+		make_dir_struct(buf,
 				"???????????",
 				volume_label(ctx, SNUM(conn)),
 				0,
@@ -1572,15 +1570,14 @@ void reply_search(struct smb_request *req)
 			if (!finished) {
 				char buf[DIR_STRUCT_SIZE];
 				memcpy(buf,status,21);
-				make_dir_struct(
-					ctx,
-					buf,
-					mask,
-					fname,
-					size,
-					mode,
-					convert_timespec_to_time_t(date),
-					!allow_long_path_components);
+				make_dir_struct(buf,
+						mask,
+						fname,
+						size,
+						mode,
+						convert_timespec_to_time_t(
+							date),
+						!allow_long_path_components);
 				SCVAL(buf, 12, dptr_num);
 				PUSH_LE_U32(buf,
 					    13,
