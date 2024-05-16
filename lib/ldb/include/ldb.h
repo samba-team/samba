@@ -2235,7 +2235,7 @@ void ldb_set_utf8_functions(struct ldb_context *ldb,
  */
 void ldb_set_utf8_fns(struct ldb_context *ldb,
 		      void *context,
-		      char *(*casefold)(void *, void *, const char *, size_t n));
+		      char *(*casefold)(void *, void *, const char *, size_t n)) _DEPRECATED_;
 
 /**
    this sets up debug to print messages on stderr
