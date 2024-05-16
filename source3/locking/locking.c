@@ -95,14 +95,16 @@ void init_strict_lock_struct(files_struct *fsp,
 {
 	SMB_ASSERT(lock_type == READ_LOCK || lock_type == WRITE_LOCK);
 
-	plock->context.smblctx = smblctx;
-        plock->context.tid = fsp->conn->cnum;
-        plock->context.pid = messaging_server_id(fsp->conn->sconn->msg_ctx);
-        plock->start = start;
-        plock->size = size;
-        plock->fnum = fsp->fnum;
-        plock->lock_type = lock_type;
-        plock->lock_flav = lp_posix_cifsu_locktype(fsp);
+	*plock = (struct lock_struct) {
+		.context.smblctx = smblctx,
+		.context.tid = fsp->conn->cnum,
+		.context.pid = messaging_server_id(fsp->conn->sconn->msg_ctx),
+		.start = start,
+		.size = size,
+		.fnum = fsp->fnum,
+		.lock_type = lock_type,
+		.lock_flav = lp_posix_cifsu_locktype(fsp),
+	};
 }
 
 bool strict_lock_check_default(files_struct *fsp, struct lock_struct *plock)
