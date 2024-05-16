@@ -334,8 +334,8 @@ int ldb_comparison_binary(struct ldb_context *ldb, void *mem_ctx,
   try to optimize for the ascii case,
   but if we find out an utf8 codepoint revert to slower but correct function
 */
-int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
-			       const struct ldb_val *v1, const struct ldb_val *v2)
+static int ldb_comparison_fold_utf8_broken(struct ldb_context *ldb, void *mem_ctx,
+					   const struct ldb_val *v1, const struct ldb_val *v2)
 {
 	const char *s1=(const char *)v1->data, *s2=(const char *)v2->data;
 	size_t n1 = v1->length, n2 = v2->length;
@@ -467,6 +467,13 @@ utf8str:
 	talloc_free(b2);
 
 	return ret;
+}
+
+
+int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
+			const struct ldb_val *v1, const struct ldb_val *v2)
+{
+	return ldb_comparison_fold_utf8_broken(ldb, mem_ctx, v1, v2);
 }
 
 
