@@ -444,7 +444,7 @@ static bool torture_ldb_attrs(struct torture_context *torture)
 				 ldb_register_samba_handlers(ldb), LDB_SUCCESS,
 				 "Failed to register Samba handlers");
 
-	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
+	ldb_set_utf8_functions(ldb, NULL, wrap_casefold, ldb_comparison_fold_utf8);
 
 	/* Test SID behaviour */
 	torture_assert(torture, attr = ldb_schema_attribute_by_name(ldb, "objectSid"), 
@@ -603,7 +603,7 @@ static bool torture_ldb_dn_attrs(struct torture_context *torture)
 				 ldb_register_samba_handlers(ldb), LDB_SUCCESS,
 				 "Failed to register Samba handlers");
 
-	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
+	ldb_set_utf8_functions(ldb, NULL, wrap_casefold, ldb_comparison_fold_utf8);
 
 	/* Test SID behaviour */
 	torture_assert(torture, attr = ldb_dn_extended_syntax_by_name(ldb, "SID"), 
@@ -721,7 +721,7 @@ static bool torture_ldb_dn_extended(struct torture_context *torture)
 				 ldb_register_samba_handlers(ldb), LDB_SUCCESS,
 				 "Failed to register Samba handlers");
 
-	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
+	ldb_set_utf8_functions(ldb, NULL, wrap_casefold, ldb_comparison_fold_utf8);
 
 	/* Check behaviour of a normal DN */
 	torture_assert(torture, 
@@ -982,7 +982,7 @@ static bool torture_ldb_dn(struct torture_context *torture)
 				 ldb_register_samba_handlers(ldb), LDB_SUCCESS,
 				 "Failed to register Samba handlers");
 
-	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
+	ldb_set_utf8_functions(ldb, NULL, wrap_casefold, ldb_comparison_fold_utf8);
 
 	/* Check behaviour of a normal DN */
 	torture_assert(torture, 
@@ -1100,7 +1100,7 @@ static bool torture_ldb_dn_invalid_extended(struct torture_context *torture)
 				 ldb_register_samba_handlers(ldb), LDB_SUCCESS,
 				 "Failed to register Samba handlers");
 
-	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
+	ldb_set_utf8_functions(ldb, NULL, wrap_casefold, ldb_comparison_fold_utf8);
 
 	/* Check behaviour of a normal DN */
 	torture_assert(torture, 

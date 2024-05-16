@@ -144,7 +144,7 @@ static int extensions_hook(struct ldb_context *ldb, enum ldb_module_hook_type t)
 			return ldb_operr(ldb);
 		}
 
-		ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
+		ldb_set_utf8_functions(ldb, NULL, wrap_casefold, ldb_comparison_fold_utf8);
 		break;
 	}
 

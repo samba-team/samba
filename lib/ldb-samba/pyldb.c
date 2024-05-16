@@ -88,7 +88,7 @@ static PyObject *py_ldb_set_utf8_casefold(PyObject *self,
 
 	ldb = pyldb_Ldb_AS_LDBCONTEXT(self);
 
-	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
+	ldb_set_utf8_functions(ldb, NULL, wrap_casefold, ldb_comparison_fold_utf8);
 
 	Py_RETURN_NONE;
 }

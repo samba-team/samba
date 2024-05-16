@@ -47,7 +47,7 @@ static bool torture_dsdb_dn_attrs(struct torture_context *torture)
 				 ldb_register_samba_handlers(ldb), LDB_SUCCESS,
 				 "Failed to register Samba handlers");
 
-	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
+	ldb_set_utf8_functions(ldb, NULL, wrap_casefold, ldb_comparison_fold_utf8);
 
 	/* Test DN+Binary behaviour */
 	torture_assert(torture, syntax = ldb_samba_syntax_by_name(ldb, DSDB_SYNTAX_BINARY_DN), 
@@ -144,7 +144,7 @@ static bool torture_dsdb_dn_valid(struct torture_context *torture)
 				 ldb_register_samba_handlers(ldb), LDB_SUCCESS,
 				 "Failed to register Samba handlers");
 
-	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
+	ldb_set_utf8_functions(ldb, NULL, wrap_casefold, ldb_comparison_fold_utf8);
 
 	/* Check behaviour of a normal DN */
 	torture_assert(torture, 
@@ -266,7 +266,7 @@ static bool torture_dsdb_dn_invalid(struct torture_context *torture)
 				 ldb_register_samba_handlers(ldb), LDB_SUCCESS,
 				 "Failed to register Samba handlers");
 
-	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
+	ldb_set_utf8_functions(ldb, NULL, wrap_casefold, ldb_comparison_fold_utf8);
 
 	/* Check behaviour of a normal DN */
 	val = data_blob_string_const("samba,dc=org");

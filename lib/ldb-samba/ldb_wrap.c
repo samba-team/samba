@@ -152,7 +152,7 @@ int ldb_comparison_fold_utf8(void *ignored,
 
 	ldb_set_debug(ldb, ldb_wrap_debug, NULL);
 
-	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
+	ldb_set_utf8_functions(ldb, NULL, wrap_casefold, ldb_comparison_fold_utf8);
 
 	if (session_info) {
 		if (ldb_set_opaque(ldb, DSDB_SESSION_INFO, session_info)) {

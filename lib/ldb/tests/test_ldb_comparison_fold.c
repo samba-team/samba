@@ -177,7 +177,7 @@ static void test_ldb_comparison_fold_default_common(void **state)
 static void test_ldb_comparison_fold_utf8_common(void **state)
 {
 	struct ldb_context *ldb = ldb_init(NULL, NULL);
-	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
+	ldb_set_utf8_functions(ldb, NULL, wrap_casefold, ldb_comparison_fold_utf8);
 	_test_ldb_comparison_fold_set(ldb,
 				      values_common,
 				      ARRAY_SIZE(values_common));
@@ -190,7 +190,7 @@ static void test_ldb_comparison_fold_utf8_common(void **state)
 static void test_ldb_comparison_fold_utf8(void **state)
 {
 	struct ldb_context *ldb = ldb_init(NULL, NULL);
-	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
+	ldb_set_utf8_functions(ldb, NULL, wrap_casefold, ldb_comparison_fold_utf8);
 	_test_ldb_comparison_fold_set(ldb,
 				      values_utf8,
 				      ARRAY_SIZE(values_utf8));
