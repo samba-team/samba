@@ -458,7 +458,8 @@ static NTSTATUS get_ea_list_from_fsp(TALLOC_CTX *mem_ctx,
 			 */
 			TALLOC_FREE(listp);
 			continue;
-		} else if (listp->ea.value.length > 65536) {
+		}
+		if (listp->ea.value.length > 65536) {
 			/*
 			 * SMB clients may report error with file
 			 * if large EA is presented to them.
