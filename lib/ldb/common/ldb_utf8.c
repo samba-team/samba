@@ -141,7 +141,9 @@ int ldb_comparison_fold_ascii(void *ignored,
 
 void ldb_set_utf8_default(struct ldb_context *ldb)
 {
-	ldb_set_utf8_fns(ldb, NULL, ldb_casefold_default);
+	ldb_set_utf8_functions(ldb, NULL,
+			  ldb_casefold_default,
+			  ldb_comparison_fold_ascii);
 }
 
 char *ldb_casefold(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char *s, size_t n)
