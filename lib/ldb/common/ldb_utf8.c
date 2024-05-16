@@ -34,6 +34,24 @@
 #include "ldb_private.h"
 #include "system/locale.h"
 
+/*
+ * Set functions for comparing and case-folding case-insensitive ldb val
+ * strings.
+ */
+void ldb_set_utf8_functions(struct ldb_context *ldb,
+			    void *context,
+			    char *(*casefold)(void *, void *, const char *, size_t),
+			    int (*casecmp)(void *ctx,
+					   const struct ldb_val *v1,
+					   const struct ldb_val *v2))
+{
+	if (context)
+		ldb->utf8_fns.context = context;
+	if (casefold)
+		ldb->utf8_fns.casefold = casefold;
+	if (casecmp)
+		ldb->utf8_fns.casecmp = casecmp;
+}
 
 /*
   this allow the user to pass in a caseless comparison
@@ -43,11 +61,9 @@ void ldb_set_utf8_fns(struct ldb_context *ldb,
 		      void *context,
 		      char *(*casefold)(void *, void *, const char *, size_t))
 {
-	if (context)
-		ldb->utf8_fns.context = context;
-	if (casefold)
-		ldb->utf8_fns.casefold = casefold;
+	ldb_set_utf8_functions(ldb, context, casefold, NULL);
 }
+
 
 /*
   a simple case folding function

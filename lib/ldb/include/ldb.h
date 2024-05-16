@@ -2205,10 +2205,34 @@ int ldb_set_debug(struct ldb_context *ldb,
 		  void *context);
 
 /**
-  this allows the user to set custom utf8 function for error reporting. make
-  sure it is able to handle ASCII first, so it prevents issues with dotted
-  languages.
-*/
+ * This allows the user to set custom utf8 functions.
+ *
+ * Be aware that casefold in some locales will break ldb expectations. In
+ * particular, if 'i' is uppercased to 'İ' (a capital I with a dot, used in
+ * some languages), the string '<guid=' will not equal '<GUID='.
+ *
+ * The default functions casefold ASCII only, and those used by Samba use a
+ * version of the NTFS UCS-2 upcase table which is dotted-i safe.
+ *
+ * The context argument will be passed to the casefold() and casecmp()
+ * functions as the first argument. It is unused in the default and Samba
+ * implementations, but could for example be used to hold a libICU context.
+ *
+ * The second argument for the casefold function is a TALLOC context.
+ */
+void ldb_set_utf8_functions(struct ldb_context *ldb,
+			    void *context,
+			    char *(*casefold)(void *, void *, const char *, size_t n),
+			    int (*casecmp)(void *ctx, const struct ldb_val *v1,
+					   const struct ldb_val *v2));
+
+/**
+ * This legacy function is for setting a custom utf8 casefold function. It
+ * cannot set a comparison function, which makes it very difficult for a
+ * comparison to be both efficient and correct.
+ *
+ * Use ldb_set_utf8_functions() instead!
+ */
 void ldb_set_utf8_fns(struct ldb_context *ldb,
 		      void *context,
 		      char *(*casefold)(void *, void *, const char *, size_t n));
