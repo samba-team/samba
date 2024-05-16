@@ -204,7 +204,6 @@ static int smb2_smb2_read_state_deny_destructor(struct smbd_smb2_read_state *sta
 /* struct smbd_smb2_read_state destructor. Send the SMB2_READ data. */
 static int smb2_sendfile_send_data(struct smbd_smb2_read_state *state)
 {
-	struct lock_struct lock;
 	uint32_t in_length = state->in_length;
 	uint64_t in_offset = state->in_offset;
 	files_struct *fsp = state->fsp;
@@ -331,14 +330,6 @@ normal_read:
 			return 0;
 		}
 	}
-
-	init_strict_lock_struct(fsp,
-				fsp->op->global->open_persistent_id,
-				in_offset,
-				in_length,
-				READ_LOCK,
-				lp_posix_cifsu_locktype(fsp),
-				&lock);
 
 	*pstatus = NT_STATUS_OK;
 	return 0;
