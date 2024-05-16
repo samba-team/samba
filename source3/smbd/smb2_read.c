@@ -581,11 +581,10 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 	if (NT_STATUS_IS_OK(status)) {
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
-	} else {
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
-			tevent_req_nterror(req, status);
-			return tevent_req_post(req, ev);
-		}
+	}
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
 	}
 
 	/* Ok, read into memory. Allocate the out buffer. */
