@@ -81,7 +81,7 @@ char *ldb_casefold_default(void *context, TALLOC_CTX *mem_ctx, const char *s, si
 		return NULL;
 	}
 	for (i=0;ret[i];i++) {
-		ret[i] = ldb_ascii_toupper((unsigned char)ret[i]);
+		ret[i] = ldb_ascii_toupper(ret[i]);
 	}
 	return ret;
 }
@@ -195,7 +195,7 @@ char *ldb_attr_casefold(TALLOC_CTX *mem_ctx, const char *s)
 		return NULL;
 	}
 	for (i = 0; ret[i]; i++) {
-		ret[i] = ldb_ascii_toupper((unsigned char)ret[i]);
+		ret[i] = ldb_ascii_toupper(ret[i]);
 	}
 	return ret;
 }
