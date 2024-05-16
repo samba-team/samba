@@ -334,6 +334,7 @@ int ldb_comparison_binary(struct ldb_context *ldb, void *mem_ctx,
   try to optimize for the ascii case,
   but if we find out an utf8 codepoint revert to slower but correct function
 */
+__attribute__ ((unused))
 static int ldb_comparison_fold_utf8_broken(struct ldb_context *ldb, void *mem_ctx,
 					   const struct ldb_val *v1, const struct ldb_val *v2)
 {
@@ -469,14 +470,19 @@ utf8str:
 	return ret;
 }
 
-
+/*
+ * ldb_comparison_fold is a schema syntax comparison_fn for utf-8 strings that
+ * collapse multiple spaces into one (e.g. "Directory String" syntax).
+ *
+ * The default comparison function only performs ASCII case-folding, and only
+ * collapses multiple spaces, not tabs and other whitespace (contrary to
+ * RFC4518). To change the comparison function (as Samba does), use
+ * ldb_set_utf8_functions().
+ */
 int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 			const struct ldb_val *v1, const struct ldb_val *v2)
 {
-	if (ldb->utf8_fns.casecmp) {
-		return ldb->utf8_fns.casecmp(ldb->utf8_fns.context, v1, v2);
-	}
-	return ldb_comparison_fold_utf8_broken(ldb, mem_ctx, v1, v2);
+	return ldb->utf8_fns.casecmp(ldb->utf8_fns.context, v1, v2);
 }
 
 
