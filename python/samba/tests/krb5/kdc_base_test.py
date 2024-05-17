@@ -3789,7 +3789,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
     def check_ticket_times(self,
                            ticket_creds,
                            expected_life=None,
-                           expected_renew_life=None):
+                           expected_renew_life=None,
+                           delta=0):
         ticket = ticket_creds.ticket_private
 
         authtime = ticket['authtime']
@@ -3804,7 +3805,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                 endtime.decode('ascii'))
             actual_lifetime = actual_end - starttime
 
-            self.assertEqual(expected_life, actual_lifetime)
+            self.assertAlmostEqual(expected_life, actual_lifetime, delta=delta)
 
         if renew_till is None:
             self.assertIsNone(expected_renew_life)
@@ -3814,4 +3815,4 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                     renew_till.decode('ascii'))
                 actual_renew_life = actual_renew_till - starttime
 
-                self.assertEqual(expected_renew_life, actual_renew_life)
+                self.assertAlmostEqual(expected_renew_life, actual_renew_life, delta=delta)
