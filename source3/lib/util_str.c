@@ -124,7 +124,7 @@ bool trim_char(char *s,char cfront,char cback)
 		while ((ep >= fp) && (*ep == cback)) {
 			ret = true;
 			if ((ep > fp) && (((unsigned char)ep[-1]) & 0x80)) {
-				/* Could be mb... bail back to tim_string. */
+				/* Could be mb... bail back to trim_string. */
 				char fs[2], bs[2];
 				if (cfront) {
 					fs[0] = cfront;
