@@ -625,10 +625,10 @@ NTSTATUS cli_setpathinfo_ext(struct cli_state *cli, const char *fname,
 		 * the correct info type and level.
 		 */
 		return cli_smb2_setpathinfo(cli,
-				fname,
-				1, /* SMB2_SETINFO_FILE */
-				SMB_FILE_BASIC_INFORMATION - 1000,
-				&in_data);
+					    fname,
+					    1, /* SMB2_SETINFO_FILE */
+					    FSCC_FILE_BASIC_INFORMATION,
+					    &in_data);
 	}
 
 	return cli_setpathinfo(
@@ -681,9 +681,9 @@ struct tevent_req *cli_setfileinfo_ext_send(
 			cli,
 			fnum,
 			SMB2_0_INFO_FILE,
-			SMB_FILE_BASIC_INFORMATION - 1000,
+			FSCC_FILE_BASIC_INFORMATION,
 			&state->in_data,
-			0);	/* in_additional_info */
+			0); /* in_additional_info */
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
