@@ -710,8 +710,6 @@ struct tevent_req *cli_smb2_delete_on_close_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req = NULL;
 	struct cli_smb2_delete_on_close_state *state = NULL;
 	struct tevent_req *subreq = NULL;
-	uint8_t in_info_type;
-	uint8_t in_file_info_class;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_smb2_delete_on_close_state);
@@ -720,26 +718,19 @@ struct tevent_req *cli_smb2_delete_on_close_send(TALLOC_CTX *mem_ctx,
 	}
 	state->cli = cli;
 
-	/*
-	 * setinfo on the handle with info_type SMB2_SETINFO_FILE (1),
-	 * level 13 (SMB_FILE_DISPOSITION_INFORMATION - 1000).
-	 */
-	in_info_type = 1;
-	in_file_info_class = FSCC_FILE_DISPOSITION_INFORMATION;
 	/* Setup data array. */
 	SCVAL(&state->data[0], 0, flag ? 1 : 0);
 	state->inbuf.data = &state->data[0];
 	state->inbuf.length = 1;
 
-	subreq = cli_smb2_set_info_fnum_send(
-		state,
-		ev,
-		cli,
-		fnum,
-		in_info_type,
-		in_file_info_class,
-		&state->inbuf,
-		0);
+	subreq = cli_smb2_set_info_fnum_send(state,
+					     ev,
+					     cli,
+					     fnum,
+					     SMB2_0_INFO_FILE,
+					     FSCC_FILE_DISPOSITION_INFORMATION,
+					     &state->inbuf,
+					     0);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
