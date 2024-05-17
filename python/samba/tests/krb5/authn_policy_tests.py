@@ -1067,36 +1067,6 @@ class AuthnPolicyBaseTests(AuthLogTestBase, KdcTgsBaseTests):
                               audit_event=server_policy_event,
                               reason=server_policy_reason)
 
-    def check_ticket_times(self,
-                           ticket_creds,
-                           expected_life=None,
-                           expected_renew_life=None):
-        ticket = ticket_creds.ticket_private
-
-        authtime = ticket['authtime']
-        starttime = ticket.get('starttime', authtime)
-        endtime = ticket['endtime']
-        renew_till = ticket.get('renew-till', None)
-
-        starttime = self.get_EpochFromKerberosTime(starttime)
-
-        if expected_life is not None:
-            actual_end = self.get_EpochFromKerberosTime(
-                endtime.decode('ascii'))
-            actual_lifetime = actual_end - starttime
-
-            self.assertEqual(expected_life, actual_lifetime)
-
-        if renew_till is None:
-            self.assertIsNone(expected_renew_life)
-        else:
-            if expected_renew_life is not None:
-                actual_renew_till = self.get_EpochFromKerberosTime(
-                    renew_till.decode('ascii'))
-                actual_renew_life = actual_renew_till - starttime
-
-                self.assertEqual(expected_renew_life, actual_renew_life)
-
     def _get_tgt(self, creds, *,
                  armor_tgt=None,
                  till=None,
