@@ -2026,7 +2026,7 @@ static void cli_smb2_hardlink_opened(struct tevent_req *subreq)
 		state->ev,
 		state->cli,
 		state->fnum_src,
-		1,			    /* in_info_type */
+		SMB2_0_INFO_FILE,	    /* in_info_type */
 		FSCC_FILE_LINK_INFORMATION, /* in_file_info_class */
 		&inbuf,
 		0); /* in_additional_info */

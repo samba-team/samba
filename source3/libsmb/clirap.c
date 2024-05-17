@@ -626,7 +626,7 @@ NTSTATUS cli_setpathinfo_ext(struct cli_state *cli, const char *fname,
 		 */
 		return cli_smb2_setpathinfo(cli,
 					    fname,
-					    1, /* SMB2_SETINFO_FILE */
+					    SMB2_0_INFO_FILE,
 					    FSCC_FILE_BASIC_INFORMATION,
 					    &in_data);
 	}

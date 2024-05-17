@@ -2431,7 +2431,7 @@ NTSTATUS cli_smb2_setatr(struct cli_state *cli,
 	return cli_smb2_setpathinfo(
 		cli,
 		name,
-		1,			     /* in_info_type */
+		SMB2_0_INFO_FILE,	     /* in_info_type */
 		FSCC_FILE_BASIC_INFORMATION, /* in_file_info_class */
 		&inbuf);
 }
@@ -2480,7 +2480,7 @@ NTSTATUS cli_smb2_setattrE(struct cli_state *cli,
 	status = cli_smb2_set_info_fnum(
 		cli,
 		fnum,
-		1,			     /* in_info_type */
+		SMB2_0_INFO_FILE,	     /* in_info_type */
 		FSCC_FILE_BASIC_INFORMATION, /* in_file_info_class */
 		&inbuf,			     /* in_input_buffer */
 		0);			     /* in_additional_info */
@@ -3149,7 +3149,7 @@ static struct tevent_req *cli_smb2_rename_fnum_send(
 		ev,			      /* ev */
 		cli,			      /* cli */
 		fnum,			      /* fnum */
-		1,			      /* in_info_type */
+		SMB2_0_INFO_FILE,	      /* in_info_type */
 		FSCC_FILE_RENAME_INFORMATION, /* in_file_info_class */
 		&state->inbuf,		      /* in_input_buffer */
 		0);			      /* in_additional_info */
@@ -3365,7 +3365,7 @@ NTSTATUS cli_smb2_set_ea_fnum(struct cli_state *cli,
 	status = cli_smb2_set_info_fnum(
 		cli,
 		fnum,
-		1,			       /* in_info_type */
+		SMB2_0_INFO_FILE,	       /* in_info_type */
 		FSCC_FILE_FULL_EA_INFORMATION, /* in_file_info_class */
 		&inbuf,			       /* in_input_buffer */
 		0);			       /* in_additional_info */
@@ -3474,7 +3474,7 @@ NTSTATUS cli_smb2_get_ea_list_path(struct cli_state *cli,
 	status = cli_smb2_query_info_fnum(
 		cli,
 		fnum,
-		1,			       /* in_info_type */
+		SMB2_0_INFO_FILE,	       /* in_info_type */
 		FSCC_FILE_FULL_EA_INFORMATION, /* in_file_info_class */
 		0xFFFF,			       /* in_max_output_length */
 		NULL,			       /* in_input_buffer */
@@ -3726,7 +3726,7 @@ NTSTATUS cli_smb2_get_fs_quota_info(struct cli_state *cli,
 	status = cli_smb2_query_info_fnum(
 		cli,
 		quota_fnum,
-		2,			   /* in_info_type */
+		SMB2_0_INFO_FILESYSTEM,	   /* in_info_type */
 		FSCC_FS_QUOTA_INFORMATION, /* in_file_info_class */
 		0xFFFF,			   /* in_max_output_length */
 		NULL,			   /* in_input_buffer */
@@ -3814,7 +3814,7 @@ NTSTATUS cli_smb2_set_fs_quota_info(struct cli_state *cli,
 	status = cli_smb2_set_info_fnum(
 		cli,
 		quota_fnum,
-		2,			   /* in_info_type */
+		SMB2_0_INFO_FILESYSTEM,	   /* in_info_type */
 		FSCC_FS_QUOTA_INFORMATION, /* in_file_info_class */
 		&inbuf,			   /* in_input_buffer */
 		0);			   /* in_additional_info */
@@ -4722,7 +4722,7 @@ NTSTATUS cli_smb2_ftruncate(struct cli_state *cli,
 	status = cli_smb2_set_info_fnum(
 		cli,
 		fnum,
-		1,				   /* in_info_type */
+		SMB2_0_INFO_FILE,		   /* in_info_type */
 		FSCC_FILE_END_OF_FILE_INFORMATION, /* in_file_info_class */
 		&inbuf,				   /* in_input_buffer */
 		0);
