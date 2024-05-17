@@ -2908,14 +2908,30 @@ static krb5_error_code samba_kdc_fetch_client(krb5_context context,
 			 * However we must first
 			 * check if this is before the TGT is due to
 			 * expire.
+			 *
+			 * Then we check if we are half-way
+			 * though the password lifetime before we make
+			 * a password rotation.
 			 */
 			NTTIME must_change_time
 				= samdb_result_nttime(msg,
 						      "msDS-UserPasswordExpiryTimeComputed",
 						      0);
+			NTTIME pw_lifetime = must_change_time - pwd_last_set_this_loop;
+			NTTIME pw_halflife = pw_lifetime / 2;
 			if (must_change_time
 			    > entry->skdc_entry->enforced_tgt_lifetime_nt_ticks + entry->skdc_entry->current_nttime) {
 				/* Password will not expire before TGT will */
+				break;
+			}
+
+			if (pwd_last_set_this_loop != 0
+			    && pwd_last_set_this_loop + pw_halflife > entry->skdc_entry->current_nttime) {
+				/*
+				 * Still in first half of password
+				 * lifetime, no change per
+				 * https://lists.samba.org/archive/cifs-protocol/2024-May/004316.html
+				 */
 				break;
 			}
 			/* Keep processing */
