@@ -165,7 +165,6 @@ typedef sig_atomic_t volatile SIG_ATOMIC_T;
 /* TODO: remove this macros */
 #define SBIG_UINT(p, ofs, v) SBVAL(p, ofs, v)
 #define BIG_UINT(p, ofs) BVAL(p, ofs)
-#define IVAL2_TO_SMB_BIG_UINT(p, ofs) BVAL(p, ofs)
 
 /*
  * Set the define that tells us if we can do 64 bit

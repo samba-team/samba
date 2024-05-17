@@ -254,7 +254,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			p += 8;
 			finfo->ctime_ts = interpret_long_date(BVAL(p, 0));
 			p += 8;
-			finfo->size = IVAL2_TO_SMB_BIG_UINT(p,0);
+			finfo->size = BVAL(p,0);
 			p += 8;
 			p += 8; /* alloc size */
 			finfo->attr = IVAL(p,0);
