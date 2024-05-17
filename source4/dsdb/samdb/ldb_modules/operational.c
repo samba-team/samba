@@ -786,13 +786,13 @@ static NTTIME get_msds_user_password_expiry_time_computed(struct ldb_module *mod
 	 *
 	 * Possible values are in the range of:
 	 *
-	 * maxPwdAge: -864000000001
+	 * maxPwdAge: -2
 	 * to
 	 * maxPwdAge: -9223372036854775808 (-0x8000000000000000ULL)
 	 *
 	 */
 	maxPwdAge = get_user_max_pwd_age(module, msg, parent, domain_dn);
-	if (maxPwdAge >= -864000000000) {
+	if (maxPwdAge >= -1) {
 		/*
 		 * This is not really possible...
 		 */
