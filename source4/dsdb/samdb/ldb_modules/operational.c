@@ -117,6 +117,7 @@ struct operational_context {
 	struct op_attributes_replace *attrs_to_replace;
 	unsigned int attrs_to_replace_size;
 	enum expire_uf_smartcard expire_passwords_onsmartcardonlyaccounts;
+	NTTIME now;
 };
 
 static int get_pso_for_user(struct ldb_module *module,
@@ -936,7 +937,6 @@ static int construct_msds_user_account_control_computed(struct ldb_module *modul
 {
 	uint32_t msDS_User_Account_Control_Computed = 0;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	NTTIME now;
 	struct ldb_dn *nc_root;
 	NTTIME must_change_time;
 	int ret;
@@ -956,8 +956,14 @@ static int construct_msds_user_account_control_computed(struct ldb_module *modul
 		/* Only calculate this on our default NC */
 		return 0;
 	}
-	/* Test account expire time */
-	unix_to_nt_time(&now, time(NULL));
+
+	if (ac->now == 0) {
+		/* Get the current or simulated time */
+		bool time_ok = dsdb_gmsa_current_time(ldb, &ac->now);
+		if (!time_ok) {
+			return ldb_module_operr(module);
+		}
+	}
 
 	if (!dsdb_account_is_trust(msg)) {
 
@@ -972,7 +978,7 @@ static int construct_msds_user_account_control_computed(struct ldb_module *modul
 			/* zero locks out until the administrator intervenes */
 			if (lockoutDuration >= 0) {
 				msDS_User_Account_Control_Computed |= UF_LOCKOUT;
-			} else if (lockoutTime - lockoutDuration >= now) {
+			} else if (lockoutTime - lockoutDuration >= ac->now) {
 				msDS_User_Account_Control_Computed |= UF_LOCKOUT;
 			}
 		}
@@ -985,7 +991,7 @@ static int construct_msds_user_account_control_computed(struct ldb_module *modul
 							      parent,
 							      nc_root);
 	/* check for expired password */
-	if (must_change_time < now) {
+	if (must_change_time < ac->now) {
 		msDS_User_Account_Control_Computed |= UF_PASSWORD_EXPIRED;
 	}
 
@@ -1835,11 +1841,12 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 	ac->expire_passwords_onsmartcardonlyaccounts
 		= EXPIRE_UF_SMARTCARD_UNINIT;
 
+	ac->now = 0;
+
 	ac->module = module;
 	ac->req = req;
 	ac->scope = req->op.search.scope;
 	ac->attrs = req->op.search.attrs;
-
 	ctx.found_operational = false;
 
 	/*
