@@ -1589,6 +1589,26 @@ static NTSTATUS cephwrap_fget_dos_attributes(struct vfs_handle_struct *handle,
 	return status;
 }
 
+static NTSTATUS cephwrap_fset_dos_attributes(struct vfs_handle_struct *handle,
+					     struct files_struct *fsp,
+					     uint32_t dosmode)
+{
+	struct timespec saved_btime = fsp->fsp_name->st.st_ex_btime;
+	NTSTATUS status;
+
+	status = set_ea_dos_attribute(handle->conn, fsp->fsp_name, dosmode);
+
+	/*
+	 * Restore previously stored btime from statx timestamps. This is done
+	 * to ensure that we have the exact btime in fsp stat information while
+	 * the file handle is still open since the create_time stored as part of
+	 * dos attributes can loose its precision when converted back to btime.
+	 */
+	fsp->fsp_name->st.st_ex_btime = saved_btime;
+
+	return status;
+}
+
 /****************************************************************
  Extended attribute operations.
 *****************************************************************/
@@ -1954,6 +1974,7 @@ static struct vfs_fn_pointers ceph_fns = {
 	.get_real_filename_at_fn = cephwrap_get_real_filename_at,
 	.connectpath_fn = cephwrap_connectpath,
 	.fget_dos_attributes_fn = cephwrap_fget_dos_attributes,
+	.fset_dos_attributes_fn = cephwrap_fset_dos_attributes,
 
 	/* EA operations. */
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
