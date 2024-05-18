@@ -1577,9 +1577,6 @@ static NTSTATUS cephwrap_fget_dos_attributes(struct vfs_handle_struct *handle,
 	NTSTATUS status;
 
 	status = fget_ea_dos_attribute(fsp, dosmode);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
 
 	/*
 	 * Restore previously stored btime from statx timestamps as it should be
@@ -1589,7 +1586,7 @@ static NTSTATUS cephwrap_fget_dos_attributes(struct vfs_handle_struct *handle,
 	 */
 	fsp->fsp_name->st.st_ex_btime = saved_btime;
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 /****************************************************************
