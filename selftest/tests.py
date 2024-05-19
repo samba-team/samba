@@ -111,6 +111,7 @@ ldb_test_exes = ['test_ldb_qsort',
                  'ldb_tdb_test',
                  'ldb_match_test',
                  'ldb_key_value_test',
+                 "test_ldb_comparison_fold",
                  # we currently don't run ldb_key_value_sub_txn_tdb_test as it
                  # tests the nested/sub transaction handling
                  # on operations which the TDB backend does not currently
