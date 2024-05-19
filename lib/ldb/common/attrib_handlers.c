@@ -473,6 +473,9 @@ utf8str:
 int ldb_comparison_fold(struct ldb_context *ldb, void *mem_ctx,
 			const struct ldb_val *v1, const struct ldb_val *v2)
 {
+	if (ldb->utf8_fns.casecmp) {
+		return ldb->utf8_fns.casecmp(ldb->utf8_fns.context, v1, v2);
+	}
 	return ldb_comparison_fold_utf8_broken(ldb, mem_ctx, v1, v2);
 }
 
