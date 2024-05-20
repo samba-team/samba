@@ -39,7 +39,15 @@ struct KeyEnvelope;
 enum dsdb_password_checked {
 	DSDB_PASSWORD_NOT_CHECKED = 0, /* unused */
 	DSDB_PASSWORD_RESET,
-	DSDB_PASSWORD_CHECKED_AND_CORRECT
+	DSDB_PASSWORD_CHECKED_AND_CORRECT,
+	/*
+	 * This disables the password rules for this new random
+	 * password for ResetSmartCardAccountPassword handling.  This
+	 * produces a
+	 * DSDB_CONTROL_PASSWORD_KDC_RESET_SMARTCARD_ACCOUNT_PASSWORD
+	 * control.
+	 */
+	DSDB_PASSWORD_KDC_RESET_SMARTCARD_ACCOUNT_PASSWORD
 };
 
 #include "lib/util/data_blob.h"
@@ -262,6 +270,11 @@ struct dsdb_control_calculated_default_sd {
  */
 #define DSDB_CONTROL_GMSA_UPDATE_OID "1.3.6.1.4.1.7165.4.3.38"
 /* struct gmsa_update */
+
+/*
+ * KDC is running ResetSmartCardAccountPassword behaviour, the password needs to be made random
+ */
+#define DSDB_CONTROL_PASSWORD_KDC_RESET_SMARTCARD_ACCOUNT_PASSWORD "1.3.6.1.4.1.7165.4.3.39"
 
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {

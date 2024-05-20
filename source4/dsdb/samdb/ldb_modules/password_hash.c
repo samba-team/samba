@@ -135,6 +135,7 @@ struct ph_context {
 	bool pwd_last_set_bypass;
 	bool pwd_last_set_default;
 	bool smartcard_reset;
+	bool kdc_reset_smartcard_account_password;
 	const char **userPassword_schemes;
 };
 
@@ -2622,6 +2623,8 @@ static int setup_given_passwords(struct setup_password_fields_io *io,
 static int setup_password_fields(struct setup_password_fields_io *io)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
+	bool prepare_random;
+
 	int ret;
 
 	ret = setup_last_set_field(io);
@@ -2649,12 +2652,16 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 		}
 	}
 
+	prepare_random = io->u.is_krbtgt || io->ac->smartcard_reset ||
+			 io->ac->kdc_reset_smartcard_account_password;
+
 	/*
-	 * Both krbtgt and smartcard reset (on addition of
-	 * UF_SMARTCARD_REQUIRED) need random passwords for all
-	 * supported keys
+	 * krbtgt, smartcard reset (on addition of
+	 * UF_SMARTCARD_REQUIRED) and KDC-triggered rollover (for
+	 * ResetSmartCardAccountPassword) need random passwords for
+	 * all supported keys
 	 */
-	if (io->u.is_krbtgt || io->ac->smartcard_reset) {
+	if (prepare_random) {
 		size_t min = 196;
 		size_t max = 255;
 		size_t diff = max - min;
@@ -2749,7 +2756,7 @@ static int setup_smartcard_reset(struct setup_password_fields_io *io)
 	 * to declare this a password update so that the change is
 	 * made (this ensures that the other rules about updates are
 	 * skipped in case, which is the setting of
-	 * UF_SMARTCARD_REQUIRED on an account
+	 * UF_SMARTCARD_REQUIRED on an account)
 	 */
 
 	io->ac->update_password = true;
@@ -2925,6 +2932,11 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 				       "must be over an encrypted connection",
 				       W_ERROR_V(*werror));
 		return ret;
+	}
+
+	/* Do not apply restrictions on a KDC-issued rollover (eg ResetSmartCardAccountPassword) */
+	if (io->ac->kdc_reset_smartcard_account_password) {
+		return LDB_SUCCESS;
 	}
 
 	/*
@@ -4189,6 +4201,17 @@ static void ph_apply_controls(struct ph_context *ac)
 		/* Mark the "smartcard required" control as uncritical (done) */
 		ctrl->critical = false;
 	}
+
+	ac->kdc_reset_smartcard_account_password = false;
+	ctrl = ldb_request_get_control(ac->req,
+				DSDB_CONTROL_PASSWORD_KDC_RESET_SMARTCARD_ACCOUNT_PASSWORD);
+	if (ctrl != NULL) {
+		ac->kdc_reset_smartcard_account_password = true;
+
+		/* Mark KDC running ResetSmartCardAccountPassword control as uncritical (done) */
+		ctrl->critical = false;
+	}
+
 }
 
 static int ph_op_callback(struct ldb_request *req, struct ldb_reply *ares)
