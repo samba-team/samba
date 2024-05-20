@@ -260,7 +260,7 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	}
 
 	/* check for expired password (but not if this is a password change request) */
-	if ((must_change_time < now) && !password_change) {
+	if ((acct_flags & ACB_PW_EXPIRED) && !password_change) {
 		DEBUG(2,("sam_account_ok: Account for user '%s' password expired!.\n",
 			 name_for_logs));
 		DEBUG(2,("sam_account_ok: Password expired at '%s' unix time.\n",
