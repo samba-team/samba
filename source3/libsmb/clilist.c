@@ -298,11 +298,10 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			   Namelen doesn't include the terminating unicode null, so
 			   copy it here. */
 
-			if (p_last_name_raw) {
-				*p_last_name_raw = data_blob(NULL, namelen+2);
-				memcpy(p_last_name_raw->data, p, namelen);
-				SSVAL(p_last_name_raw->data, namelen, 0);
-			}
+			*p_last_name_raw = data_blob(NULL, namelen + 2);
+			memcpy(p_last_name_raw->data, p, namelen);
+			SSVAL(p_last_name_raw->data, namelen, 0);
+
 			return calc_next_entry_offset(base, pdata_end);
 		}
 	}
