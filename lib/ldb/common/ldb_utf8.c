@@ -45,12 +45,15 @@ void ldb_set_utf8_functions(struct ldb_context *ldb,
 					   const struct ldb_val *v1,
 					   const struct ldb_val *v2))
 {
-	if (context)
+	if (context) {
 		ldb->utf8_fns.context = context;
-	if (casefold)
+	}
+	if (casefold) {
 		ldb->utf8_fns.casefold = casefold;
-	if (casecmp)
+	}
+	if (casecmp) {
 		ldb->utf8_fns.casecmp = casecmp;
+	}
 }
 
 /*
