@@ -88,6 +88,7 @@ struct samba_kdc_entry {
 	bool claims_from_db_are_initialized : 1;
 	bool group_managed_service_account : 1;
 	NTTIME current_nttime;
+	int64_t enforced_tgt_lifetime_nt_ticks;
 };
 
 extern struct hdb_method hdb_samba4_interface;
