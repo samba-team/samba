@@ -937,55 +937,6 @@ static NTSTATUS cli_list_trans_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_list_trans(struct cli_state *cli, const char *mask,
-			uint32_t attribute, int info_level,
-			NTSTATUS (*fn)(
-				struct file_info *finfo,
-				const char *mask,
-				void *private_data),
-			void *private_data)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct tevent_context *ev;
-	struct tevent_req *req;
-	int i, num_finfo;
-	struct file_info *finfo = NULL;
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
-
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		/*
-		 * Can't use sync call while an async call is in flight
-		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-	ev = samba_tevent_context_init(frame);
-	if (ev == NULL) {
-		goto fail;
-	}
-	req = cli_list_trans_send(frame, ev, cli, mask, attribute, info_level);
-	if (req == NULL) {
-		goto fail;
-	}
-	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
-		goto fail;
-	}
-	status = cli_list_trans_recv(req, frame, &finfo);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-	num_finfo = talloc_array_length(finfo);
-	for (i=0; i<num_finfo; i++) {
-		status = fn(&finfo[i], mask, private_data);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
-		}
-	}
- fail:
-	TALLOC_FREE(frame);
-	return status;
-}
-
 struct cli_list_state {
 	struct tevent_context *ev;
 	struct tevent_req *subreq;
