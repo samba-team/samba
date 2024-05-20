@@ -667,11 +667,7 @@ static struct tevent_req *cli_list_trans_send(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 	state->cli = cli;
-	state->mask = talloc_strdup(state, mask);
-	if (tevent_req_nomem(state->mask, req)) {
-		return tevent_req_post(req, ev);
-	}
-	state->mask = smb1_dfs_share_path(state, cli, state->mask);
+	state->mask = smb1_dfs_share_path(state, cli, mask);
 	if (tevent_req_nomem(state->mask, req)) {
 		return tevent_req_post(req, ev);
 	}
