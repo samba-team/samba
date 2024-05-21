@@ -304,6 +304,7 @@ normal_read:
 	}
 	nread = fake_sendfile(xconn, fsp, in_offset, in_length);
 	if (nread == -1) {
+		saved_errno = errno;
 		DBG_ERR("fake_sendfile failed for file %s (%s) for client %s. "
 			"Terminating\n",
 			fsp_str_dbg(fsp),
