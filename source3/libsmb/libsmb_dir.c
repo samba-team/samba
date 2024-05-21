@@ -186,10 +186,8 @@ static int add_dirplus(SMBCFILE *dir, struct file_info *finfo)
 	info->atime_ts = finfo->atime_ts;
 	info->ctime_ts = finfo->ctime_ts;
 	info->mtime_ts = finfo->mtime_ts;
-	info->gid = finfo->gid;
 	info->attrs = finfo->attr;
 	info->size = finfo->size;
-	info->uid = finfo->uid;
 	info->name = SMB_STRDUP(finfo->name);
 	if (info->name == NULL) {
 		SAFE_FREE(info);
