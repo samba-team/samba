@@ -102,9 +102,7 @@ time_t convert_timespec_to_time_t(struct timespec ts)
 
 struct timespec convert_time_t_to_timespec(time_t t)
 {
-	struct timespec ts;
-	ts.tv_sec = t;
-	ts.tv_nsec = 0;
+	struct timespec ts = {.tv_sec = t};
 	return ts;
 }
 
