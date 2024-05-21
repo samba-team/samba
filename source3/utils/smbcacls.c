@@ -511,7 +511,7 @@ static int ace_compare(struct security_ace *ace1, struct security_ace *ace2)
 		return -1;
 	if ((ace1->flags & SEC_ACE_FLAG_INHERITED_ACE) &&
 			(ace2->flags & SEC_ACE_FLAG_INHERITED_ACE))
-		return NUMERIC_CMP(ace1, ace2);
+		return NUMERIC_CMP(ace2->type, ace1->type);
 
 	if (ace1->type != ace2->type) {
 		/* note the reverse order */
