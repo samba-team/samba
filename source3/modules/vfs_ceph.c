@@ -1513,27 +1513,26 @@ static struct smb_filename *cephwrap_realpath(struct vfs_handle_struct *handle,
 	const char *path = smb_fname->base_name;
 	size_t len = strlen(path);
 	struct smb_filename *result_fname = NULL;
-	int r = -1;
 
-	if (len && (path[0] == '/')) {
-		r = asprintf(&result, "%s", path);
+	if (path[0] == '/') {
+		result = talloc_strdup(ctx, path);
 	} else if ((len >= 2) && (path[0] == '.') && (path[1] == '/')) {
 		if (len == 2) {
-			r = asprintf(&result, "%s", cwd);
+			result = talloc_strdup(ctx, cwd);
 		} else {
-			r = asprintf(&result, "%s/%s", cwd, &path[2]);
+			result = talloc_asprintf(ctx, "%s/%s", cwd, &path[2]);
 		}
 	} else {
-		r = asprintf(&result, "%s/%s", cwd, path);
+		result = talloc_asprintf(ctx, "%s/%s", cwd, path);
 	}
 
-	if (r < 0) {
+	if (result == NULL) {
 		return NULL;
 	}
 
 	DBG_DEBUG("[CEPH] realpath(%p, %s) = %s\n", handle, path, result);
 	result_fname = synthetic_smb_fname(ctx, result, NULL, NULL, 0, 0);
-	SAFE_FREE(result);
+	TALLOC_FREE(result);
 	return result_fname;
 }
 
