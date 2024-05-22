@@ -224,17 +224,6 @@ enum ldb_debug_level {LDB_DEBUG_FATAL, LDB_DEBUG_ERROR,
 #define LDB_DEBUG_ALWAYS_LOG  LDB_DEBUG_FATAL
 
 /**
-  the user can optionally supply a debug function. The function
-  is based on the vfprintf() style of interface, but with the addition
-  of a severity level
-*/
-struct ldb_debug_ops {
-	void (*debug)(void *context, enum ldb_debug_level level,
-		      const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3,0);
-	void *context;
-};
-
-/**
    Flag value for database connection mode.
 
    If LDB_FLG_RDONLY is used in ldb_connect, then the database will be

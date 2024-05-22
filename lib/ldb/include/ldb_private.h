@@ -104,6 +104,17 @@ struct ldb_schema {
 };
 
 /**
+  the user can optionally supply a debug function. The function
+  is based on the vfprintf() style of interface, but with the addition
+  of a severity level
+*/
+struct ldb_debug_ops {
+	void (*debug)(void *context, enum ldb_debug_level level,
+		      const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3,0);
+	void *context;
+};
+
+/**
   The user can optionally supply a custom utf8 functions,
   to handle comparisons and casefolding.
 */
