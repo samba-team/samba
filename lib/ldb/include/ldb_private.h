@@ -103,6 +103,16 @@ struct ldb_schema {
 	const char *GUID_index_dn_component;
 };
 
+/**
+  The user can optionally supply a custom utf8 functions,
+  to handle comparisons and casefolding.
+*/
+struct ldb_utf8_fns {
+	void *context;
+	char *(*casefold)(void *context, TALLOC_CTX *mem_ctx, const char *s, size_t n);
+	int (*casecmp)(void *context, const struct ldb_val *v1, const struct ldb_val *v2);
+};
+
 /*
   every ldb connection is started by establishing a ldb_context
 */
