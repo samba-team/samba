@@ -38,7 +38,7 @@ string2key_SOURCES = string2key.c headers.h
 
 if HAVE_MICROHTTPD
 bx509d_SOURCES = bx509d.c
-bx509d_AM_CPPFLAGS = $(AM_CPPFLAGS) $(MICROHTTPD_CFLAGS)
+bx509d_CPPFLAGS = $(AM_CPPFLAGS) $(MICROHTTPD_CFLAGS)
 bx509d_LDADD =	-ldl \
                  $(top_builddir)/lib/hdb/libhdb.la \
 		 libkdc.la \
@@ -54,7 +54,7 @@ bx509d_LDADD =	-ldl \
 libexec_PROGRAMS += bx509d
 
 httpkadmind_SOURCES = httpkadmind.c
-httpkadmind_AM_CPPFLAGS = $(AM_CPPFLAGS) $(MICROHTTPD_CFLAGS)
+httpkadmind_CPPFLAGS = $(AM_CPPFLAGS) $(MICROHTTPD_CFLAGS)
 httpkadmind_LDADD =	-ldl \
 		 $(top_builddir)/lib/hdb/libhdb.la \
 		 $(top_builddir)/lib/kadm5/libkadm5clnt.la \

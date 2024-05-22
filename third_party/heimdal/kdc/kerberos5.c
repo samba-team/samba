@@ -2692,7 +2692,7 @@ _kdc_as_rep(astgs_request_t r)
                     ret = _kdc_hwauth_policy(r);
                     if (ret) {
                         kdc_log(r->context, config, 4, "Hardware authentication required for %s", r->cname);
-                        return ret;
+                        goto out;
                     }
                 }
 		kdc_audit_addkv((kdc_request_t)r, KDC_AUDIT_VIS, "pa", "%s",
