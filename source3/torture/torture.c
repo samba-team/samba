@@ -13634,17 +13634,17 @@ static bool run_local_rbtree(int dummy)
 	}
 
 	for (i = 0; i < 999; i++) {
-		char key[sizeof("key-9223372036854775807")];
-		char value[sizeof("value-9223372036854775807")];
+		char key[sizeof("key-9223372036854775807-1234")];
+		char value[sizeof("value-9223372036854775807-1234")];
 
-		snprintf(key, sizeof(key), "key%ld", random());
-		snprintf(value, sizeof(value) ,"value%ld", random());
+		snprintf(key, sizeof(key), "key%ld-%d", random(), i);
+		snprintf(value, sizeof(value) ,"value%ld-%d", random(), i);
 
 		if (!rbt_testval(db, key, value)) {
 			goto done;
 		}
 
-		snprintf(value, sizeof(value) ,"value%ld", random());
+		snprintf(value, sizeof(value) ,"value%ld-%d", random(), i + 1);
 
 		if (!rbt_testval(db, key, value)) {
 			goto done;
