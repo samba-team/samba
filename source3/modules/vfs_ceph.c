@@ -349,53 +349,6 @@ static uint64_t cephwrap_disk_free(struct vfs_handle_struct *handle,
 	}
 }
 
-static int cephwrap_get_quota(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				enum SMB_QUOTA_TYPE qtype,
-				unid_t id,
-				SMB_DISK_QUOTA *qt)
-{
-	/* libcephfs: Ceph does not implement this */
-#if 0
-/* was ifdef HAVE_SYS_QUOTAS */
-	int ret;
-
-	ret = ceph_get_quota(handle->conn->connectpath, qtype, id, qt);
-
-	if (ret) {
-		errno = -ret;
-		ret = -1;
-	}
-
-	return ret;
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
-static int cephwrap_set_quota(struct vfs_handle_struct *handle,
-			      enum SMB_QUOTA_TYPE qtype,
-			      unid_t id,
-			      SMB_DISK_QUOTA *qt)
-{
-	/* libcephfs: Ceph does not implement this */
-#if 0
-/* was ifdef HAVE_SYS_QUOTAS */
-	int ret;
-
-	ret = ceph_set_quota(handle->conn->connectpath, qtype, id, qt);
-	if (ret) {
-		errno = -ret;
-		ret = -1;
-	}
-
-	return ret;
-#else
-	WRAP_RETURN(-ENOSYS);
-#endif
-}
-
 static int cephwrap_statvfs(struct vfs_handle_struct *handle,
 			    const struct smb_filename *smb_fname,
 			    struct vfs_statvfs_struct *statbuf)
@@ -1345,8 +1298,10 @@ static int cephwrap_filesystem_sharemode(struct vfs_handle_struct *handle,
 	DBG_ERR("[CEPH] filesystem sharemodes unsupported! Consider setting "
 		"\"kernel share modes = no\"\n");
 
-	errno = ENOSYS;
-	return -1;
+	return vfs_not_implemented_filesystem_sharemode(handle,
+							fsp,
+							share_access,
+							access_mask);
 }
 
 static int cephwrap_fcntl(vfs_handle_struct *handle,
@@ -1388,22 +1343,6 @@ static bool cephwrap_getlock(struct vfs_handle_struct *handle,
 
 	errno = 0;
 	return false;
-}
-
-/*
- * We cannot let this fall through to the default, because the file might only
- * be accessible from libcephfs (which is a user-space client) but the fd might
- * be for some file the kernel knows about.
- */
-static int cephwrap_linux_setlease(struct vfs_handle_struct *handle,
-				   files_struct *fsp,
-				   int leasetype)
-{
-	int result = -1;
-
-	DBG_DEBUG("[CEPH] linux_setlease\n");
-	errno = ENOSYS;
-	return result;
 }
 
 static int cephwrap_symlinkat(struct vfs_handle_struct *handle,
@@ -1596,15 +1535,6 @@ static struct smb_filename *cephwrap_realpath(struct vfs_handle_struct *handle,
 	result_fname = synthetic_smb_fname(ctx, result, NULL, NULL, 0, 0);
 	SAFE_FREE(result);
 	return result_fname;
-}
-
-
-static int cephwrap_fchflags(struct vfs_handle_struct *handle,
-			struct files_struct *fsp,
-			unsigned int flags)
-{
-	errno = ENOSYS;
-	return -1;
 }
 
 static NTSTATUS cephwrap_get_real_filename_at(
@@ -1801,22 +1731,6 @@ static int cephwrap_fsetxattr(struct vfs_handle_struct *handle,
 	WRAP_RETURN(ret);
 }
 
-static bool cephwrap_aio_force(struct vfs_handle_struct *handle,
-			       struct files_struct *fsp)
-{
-
-	/*
-	 * We do not support AIO yet.
-	 */
-
-	DBG_DEBUG("[CEPH] cephwrap_aio_force(%p, %p) = false "
-		  "(errno = ENOTSUP)\n",
-		  handle,
-		  fsp);
-	errno = ENOTSUP;
-	return false;
-}
-
 static NTSTATUS cephwrap_create_dfs_pathat(struct vfs_handle_struct *handle,
 				struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
@@ -1996,8 +1910,8 @@ static struct vfs_fn_pointers ceph_fns = {
 	.connect_fn = cephwrap_connect,
 	.disconnect_fn = cephwrap_disconnect,
 	.disk_free_fn = cephwrap_disk_free,
-	.get_quota_fn = cephwrap_get_quota,
-	.set_quota_fn = cephwrap_set_quota,
+	.get_quota_fn = vfs_not_implemented_get_quota,
+	.set_quota_fn = vfs_not_implemented_set_quota,
 	.statvfs_fn = cephwrap_statvfs,
 	.fs_capabilities_fn = cephwrap_fs_capabilities,
 
@@ -2043,14 +1957,14 @@ static struct vfs_fn_pointers ceph_fns = {
 	.lock_fn = cephwrap_lock,
 	.filesystem_sharemode_fn = cephwrap_filesystem_sharemode,
 	.fcntl_fn = cephwrap_fcntl,
-	.linux_setlease_fn = cephwrap_linux_setlease,
+	.linux_setlease_fn = vfs_not_implemented_linux_setlease,
 	.getlock_fn = cephwrap_getlock,
 	.symlinkat_fn = cephwrap_symlinkat,
 	.readlinkat_fn = cephwrap_readlinkat,
 	.linkat_fn = cephwrap_linkat,
 	.mknodat_fn = cephwrap_mknodat,
 	.realpath_fn = cephwrap_realpath,
-	.fchflags_fn = cephwrap_fchflags,
+	.fchflags_fn = vfs_not_implemented_fchflags,
 	.get_real_filename_at_fn = cephwrap_get_real_filename_at,
 	.connectpath_fn = cephwrap_connectpath,
 	.fget_dos_attributes_fn = cephwrap_fget_dos_attributes,
@@ -2071,7 +1985,7 @@ static struct vfs_fn_pointers ceph_fns = {
 	.sys_acl_delete_def_fd_fn = posixacl_xattr_acl_delete_def_fd,
 
 	/* aio operations */
-	.aio_force_fn = cephwrap_aio_force,
+	.aio_force_fn = vfs_not_implemented_aio_force,
 };
 
 static_decl_vfs;
