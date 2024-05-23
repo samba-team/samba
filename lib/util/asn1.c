@@ -778,7 +778,6 @@ static bool _ber_read_OID_String_impl(TALLOC_CTX *mem_ctx, DATA_BLOB blob,
 	b = blob.data;
 
 	tmp_oid = talloc_asprintf(mem_ctx, "%u.%u", b[0]/40, b[0]%40);
-	if (!tmp_oid) goto nomem;
 
 	if (bytes_eaten != NULL) {
 		*bytes_eaten = 0;
@@ -787,12 +786,15 @@ static bool _ber_read_OID_String_impl(TALLOC_CTX *mem_ctx, DATA_BLOB blob,
 	for(i = 1, v = 0; i < blob.length; i++) {
 		v = (v<<7) | (b[i]&0x7f);
 		if ( ! (b[i] & 0x80)) {
-			tmp_oid = talloc_asprintf_append_buffer(tmp_oid, ".%u",  v);
+			talloc_asprintf_addbuf(&tmp_oid, ".%u",  v);
 			v = 0;
 			if (bytes_eaten)
 				*bytes_eaten = i+1;
 		}
-		if (!tmp_oid) goto nomem;
+	}
+
+	if (tmp_oid == NULL) {
+		goto nomem;
 	}
 
 	*OID = tmp_oid;
