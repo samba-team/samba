@@ -771,7 +771,7 @@ int asn1_tag_remaining(struct asn1_data *data)
 static bool _ber_read_OID_String_impl(TALLOC_CTX *mem_ctx, DATA_BLOB blob,
 				      char **OID, size_t *bytes_eaten)
 {
-	int i;
+	size_t i;
 	uint8_t *b;
 	unsigned int v;
 	char *tmp_oid = NULL;
