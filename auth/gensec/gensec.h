@@ -25,6 +25,7 @@
 
 #include "../lib/util/data_blob.h"
 #include "libcli/util/ntstatus.h"
+#include "lib/util/time.h"
 
 #define GENSEC_SASL_NAME_NTLMSSP "NTLM"
 
