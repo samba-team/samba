@@ -308,8 +308,11 @@ bool ber_write_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char *OID)
 		v = smb_strtoul(p, &newp, 10, &error, SMB_STR_STANDARD);
 		if (newp[0] == '.' || error != 0) {
 			p = newp + 1;
-			/* check for empty last component */
-			if (!*p) return false;
+			if (!*p) {
+				/* empty last component */
+				data_blob_free(blob);
+				return false;
+			}
 		} else if (newp[0] == '\0') {
 			p = newp;
 		} else {
