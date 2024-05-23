@@ -71,8 +71,9 @@ static int cmp_int8(int8_t *_a, int8_t *_b, int8_t *ctx)
 
 #define MAX_SIZE (1024 * 1024)
 
-int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len)
+int LLVMFuzzerTestOneInput(const uint8_t *input, size_t len)
 {
+	const int8_t *buf = (const int8_t *)input;
 	int8_t buf2[MAX_SIZE];
 	int8_t aux[MAX_SIZE];
 	int8_t context;
