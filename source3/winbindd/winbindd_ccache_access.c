@@ -210,8 +210,8 @@ bool winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state)
 				   &name_domain,
 				   &name_user);
 	if (!ok) {
-		DEBUG(5,("winbindd_ccache_ntlm_auth: cannot parse domain and user from name [%s]\n",
-			state->request->data.ccache_ntlm_auth.user));
+		DBG_INFO("cannot parse domain and user from name [%s]\n",
+			 state->request->data.ccache_ntlm_auth.user);
 		return false;
 	}
 
@@ -221,8 +221,7 @@ bool winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state)
 	domain = find_auth_domain(state->request->flags, name_domain);
 
 	if (domain == NULL) {
-		DEBUG(5,("winbindd_ccache_ntlm_auth: can't get domain [%s]\n",
-			name_domain));
+		DBG_INFO("can't get domain [%s]\n", name_domain);
 		return false;
 	}
 
@@ -240,11 +239,11 @@ bool winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state)
 		initial_blob_len + challenge_blob_len < initial_blob_len ||
 		initial_blob_len + challenge_blob_len < challenge_blob_len) {
 
-		DEBUG(10,("winbindd_dual_ccache_ntlm_auth: blob lengths overrun "
-			"or wrap. Buffer [%d+%d > %d]\n",
-			initial_blob_len,
-			challenge_blob_len,
-			extra_len));
+		DBG_DEBUG("blob lengths overrun "
+			  "or wrap. Buffer [%d+%d > %d]\n",
+			  initial_blob_len,
+			  challenge_blob_len,
+			  extra_len);
 		goto process_result;
 	}
 
@@ -258,21 +257,19 @@ bool winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state)
 			       &name_domain,
 			       &name_user);
 	if (!ok) {
-		DEBUG(10,("winbindd_dual_ccache_ntlm_auth: cannot parse "
-			"domain and user from name [%s]\n",
-			state->request->data.ccache_ntlm_auth.user));
+		DBG_DEBUG("cannot parse domain and user from name [%s]\n",
+			  state->request->data.ccache_ntlm_auth.user);
 		goto process_result;
 	}
 
 	entry = find_memory_creds_by_name(state->request->data.ccache_ntlm_auth.user);
 	if (entry == NULL || entry->nt_hash == NULL || entry->lm_hash == NULL) {
-		DEBUG(10,("winbindd_dual_ccache_ntlm_auth: could not find "
-			"credentials for user %s\n", 
-			state->request->data.ccache_ntlm_auth.user));
+		DBG_DEBUG("could not find credentials for user %s\n",
+			  state->request->data.ccache_ntlm_auth.user);
 		goto process_result;
 	}
 
-	DEBUG(10,("winbindd_dual_ccache_ntlm_auth: found ccache [%s]\n", entry->username));
+	DBG_DEBUG("found ccache [%s]\n", entry->username);
 
 	if (!client_can_access_ccache_entry(state->request->data.ccache_ntlm_auth.uid, entry)) {
 		goto process_result;

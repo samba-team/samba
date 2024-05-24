@@ -898,13 +898,11 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 	}
 
 	if (logon_info == NULL) {
-		DEBUG(10,("Missing logon_info in ticket of %s\n",
-			principal_s));
+		DBG_DEBUG("Missing logon_info in ticket of %s\n", principal_s);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	DEBUG(10,("winbindd_raw_kerberos_login: winbindd validated ticket of %s\n",
-		principal_s));
+	DBG_DEBUG("winbindd validated ticket of %s\n", principal_s);
 
 	result = create_info6_from_pac(mem_ctx, logon_info,
 				       upn_dns_info, &info6_copy);
@@ -935,8 +933,8 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 					    canon_realm);
 
 		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(10,("winbindd_raw_kerberos_login: failed to add ccache to list: %s\n",
-				nt_errstr(result)));
+			DBG_DEBUG("failed to add ccache to list: %s\n",
+				  nt_errstr(result));
 		}
 	}
 
@@ -959,9 +957,7 @@ failed:
 	 * cache entirely now */
 
 	if (!NT_STATUS_IS_OK(remove_ccache(user))) {
-		DEBUG(3,("winbindd_raw_kerberos_login: "
-			  "could not remove ccache for user %s\n",
-			user));
+		DBG_NOTICE("could not remove ccache for user %s\n", user);
 	}
 
 	return result;
@@ -986,8 +982,7 @@ bool check_request_flags(uint32_t flags)
 		return true;
 	}
 
-	DEBUG(1, ("check_request_flags: invalid request flags[0x%08X]\n",
-		  flags));
+	DBG_WARNING("invalid request flags[0x%08X]\n", flags);
 
 	return false;
 }
