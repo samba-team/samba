@@ -117,7 +117,7 @@ struct replmd_replicated_request {
 	/*
 	 * Backlinks for the replmd_add() case (we want to create
 	 * backlinks after creating the user, but before the end of
-	 * the ADD request) 
+	 * the ADD request)
 	 */
 	struct la_backlink *la_backlinks;
 
@@ -621,7 +621,7 @@ static int replmd_defer_add_backlink(struct ldb_module *module,
 {
 	const struct dsdb_attribute *target_attr;
 	struct la_backlink *bl;
-	
+
 	bl = talloc(ac, struct la_backlink);
 	if (bl == NULL) {
 		ldb_module_oom(module);
@@ -666,7 +666,7 @@ static int replmd_add_backlink(struct ldb_module *module,
 	const struct dsdb_attribute *target_attr;
 	struct la_backlink bl;
 	int ret;
-	
+
 	target_attr = dsdb_attribute_by_linkID(schema, schema_attr->linkID ^ 1);
 	if (!target_attr) {
 		/*
@@ -783,7 +783,7 @@ static int replmd_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 			}
 		}
 	}
-	
+
 	if (!partition_ctrl) {
 		ldb_set_errstring(ldb_module_get_ctx(ac->module),"No partition control on reply");
 		return ldb_module_done(ac->req, NULL,
@@ -1151,7 +1151,7 @@ static int replmd_add_fix_la(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	
+
 	ret = get_parsed_dns(module, tmp_ctx, el, &pdn,
 			     sa->syntax->ldap_oid, parent);
 	if (ret != LDB_SUCCESS) {
@@ -1244,7 +1244,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	struct replPropertyMetaDataBlob nmd;
 	struct ldb_val nmd_value;
 	struct ldb_dn *extended_dn = NULL;
-	
+
 	/*
 	 * The use of a time_t here seems odd, but as the NTTIME
 	 * elements are actually declared as NTTIME_1sec in the IDL,
@@ -1301,9 +1301,9 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	} else {
 		/* a new GUID */
 		guid = GUID_random();
-		
+
 		guid_blob_stack = data_blob_const(guid_data, sizeof(guid_data));
-		
+
 		/* This can't fail */
 		ndr_push_struct_into_fixed_blob(&guid_blob_stack, &guid,
 						(ndr_push_flags_fn_t)ndr_push_GUID);
@@ -1414,7 +1414,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 					talloc_free(ac);
 					return ret;
 				}
-			}			
+			}
 
 			/*
 			 * Prepare the context for the backlinks and
@@ -2795,7 +2795,7 @@ static int replmd_modify_la_add(struct ldb_module *module,
 			ret = replmd_add_backlink(module, replmd_private,
 						  ac->schema,
 						  msg_dn,
-						  &dns[i].guid, 
+						  &dns[i].guid,
 						  true,
 						  schema_attr,
 						  parent);
@@ -4388,7 +4388,7 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 		.data = discard_const_p(uint8_t, "TRUE"),
 		.length = 4
 	};
-	
+
 	unsigned int i;
 	uint32_t dsdb_flags = 0;
 	struct replmd_private *replmd_private;
@@ -6300,7 +6300,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 					  &guid_txt),
 			  ldb_dn_get_linearized(msg->dn)));
 	}
-		
+
 	local_isDeleted = ldb_msg_find_attr_as_bool(ar->search_msg,
 						    "isDeleted", false);
 	remote_isDeleted = ldb_msg_find_attr_as_bool(msg,
@@ -7699,7 +7699,7 @@ static int replmd_allow_missing_target(struct ldb_module *module,
 			    missing_str, ldb_dn_get_linearized(target_dn),
 			    ldb_dn_get_linearized(source_dn));
 	}
-	
+
 	return LDB_SUCCESS;
 }
 
@@ -8353,7 +8353,7 @@ static int replmd_process_linked_attribute(struct ldb_module *module,
 		if (!(rmd_flags & DSDB_RMD_FLAG_DELETED)) {
 			/* remove the existing backlink */
 			ret = replmd_add_backlink(module, replmd_private,
-						  schema, 
+						  schema,
 						  src_dn,
 						  &pdn->guid, false, attr,
 						  parent);
