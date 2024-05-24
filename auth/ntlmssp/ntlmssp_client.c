@@ -416,7 +416,6 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		nt_hash = cli_credentials_get_nt_hash(gensec_security->credentials,
 						      mem_ctx);
 		if (nt_hash != NULL) {
-			ZERO_STRUCTP(nt_hash);
 			TALLOC_FREE(nt_hash);
 			ntlmssp_state->use_ccache = false;
 		}

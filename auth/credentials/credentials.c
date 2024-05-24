@@ -604,6 +604,7 @@ _PUBLIC_ bool cli_credentials_set_password(struct cli_credentials *cred,
 			if (nt_hash == NULL) {
 				return false;
 			}
+			talloc_keep_secret(nt_hash);
 
 			converted = strhex_to_str((char *)nt_hash->hash,
 						  sizeof(nt_hash->hash),
@@ -739,6 +740,7 @@ _PUBLIC_ struct samr_Password *cli_credentials_get_nt_hash(struct cli_credential
 	if (nt_hash == NULL) {
 		return NULL;
 	}
+	talloc_keep_secret(nt_hash);
 
 	if (password_is_nt_hash) {
 		size_t password_len = strlen(password);
@@ -763,6 +765,7 @@ return_hash:
 	if (nt_hash == NULL) {
 		return NULL;
 	}
+	talloc_keep_secret(nt_hash);
 
 	*nt_hash = *cred->nt_hash;
 
@@ -788,6 +791,7 @@ _PUBLIC_ struct samr_Password *cli_credentials_get_old_nt_hash(struct cli_creden
 		if (!nt_hash) {
 			return NULL;
 		}
+		talloc_keep_secret(nt_hash);
 
 		*nt_hash = *cred->old_nt_hash;
 
@@ -800,6 +804,7 @@ _PUBLIC_ struct samr_Password *cli_credentials_get_old_nt_hash(struct cli_creden
 		if (!nt_hash) {
 			return NULL;
 		}
+		talloc_keep_secret(nt_hash);
 
 		E_md4hash(old_password, nt_hash->hash);
 
