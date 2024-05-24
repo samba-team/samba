@@ -1346,7 +1346,7 @@ wbcErr wbcCtxCredentialCache(struct wbcContext *ctx,
 
 	for (i=0; i<params->num_blobs; i++) {
 		/*
-		 * Older callers may used to provide the NEGOTIATE request
+		 * Older callers used to provide the NEGOTIATE request
 		 * as "initial_blob", but it was completely ignored by winbindd.
 		 *
 		 * So we keep ignoring it.
