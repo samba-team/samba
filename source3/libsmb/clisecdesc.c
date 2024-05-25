@@ -250,14 +250,14 @@ struct tevent_req *cli_set_security_descriptor_send(
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		subreq = cli_smb2_set_info_fnum_send(
-			state, 	/* mem_ctx */
-			ev,	/* ev */
-			cli,	/* cli */
-			fnum,	/* fnum */
-			3,	/* in_info_type */
-			0,	/* in_file_info_class */
-			&state->buf, /* in_input_buffer */
-			sec_info); /* in_additional_info */
+			state,		      /* mem_ctx */
+			ev,		      /* ev */
+			cli,		      /* cli */
+			fnum,		      /* fnum */
+			SMB2_0_INFO_SECURITY, /* in_info_type */
+			0,		      /* in_file_info_class */
+			&state->buf,	      /* in_input_buffer */
+			sec_info);	      /* in_additional_info */
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
