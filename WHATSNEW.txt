@@ -69,6 +69,27 @@ never took into account later changes, and so has not worked for a
 number of years.  Samba 4.21 and LDB 2.10 removes this unused and
 broken feature.
 
+Some Samba public libraries made private by default
+---------------------------------------------------
+
+The following Samba C libraries are currently made public due to their
+use by OpenChange or for historical reasons that are no longer clear.
+
+ dcerpc-samr, samba-policy, tevent-util, dcerpc, samba-hostconfig,
+ samba-credentials, dcerpc_server, samdb
+
+The libraries used by the OpenChange client now private, but can be
+made public (like ldb above) with:
+
+ ./configure --private-libraries='!dcerpc,!samba-hostconfig,!samba-credentials,!ldb'
+
+The C libraries without any known user or used only for the OpenChange
+server (a dead project) may be made private entirely in a future Samba
+version.
+
+If you use a Samba library in this list, please be in touch with the
+samba-technical mailing list.
+
 Using ldaps from 'winbindd' and 'net ads'
 -----------------------------------------
 

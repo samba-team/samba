@@ -16,7 +16,25 @@ from waflib.Tools import bison
 samba_dist.DIST_DIRS('.')
 samba_dist.DIST_BLACKLIST('.gitignore .bzrignore source4/selftest/provisions')
 
-DEFAULT_PRIVATE_LIBS = ["ldb"]
+# A function so the variables are not in global scope
+def get_default_private_libs():
+    # LDB is used by sssd (was made private by default in Samba 4.21)
+    SSSD_LIBS=["ldb"]
+    # These following libs without ABI checking were made private by default in Samba 4.21
+    # Presumably unused (dcerpc-samr was probably a copy and paste error,
+    # and samba-policy has primary use via python bindings).  tevent-util
+    # was for openchange but was for PIDL output that is no longer
+    # generated
+    POSSIBLY_UNUSED_LIBS=["dcerpc-samr","samba-policy","tevent-util"]
+    # These were used by mapiproxy in OpenChange (also used LDB and
+    # the real public libs tdb, talloc, tevent)
+    OPENCHANGE_SERVER_LIBS = ["dcerpc_server","samdb"]
+    # These (plus LDB, ndr, talloc, tevent) are used by the OpenChange
+    # client, which is still in use (Fedora/Red Hat packages it)
+    OPENCHANGE_LIBS = ["dcerpc","samba-hostconfig","samba-credentials"]
+    return SSSD_LIBS + POSSIBLY_UNUSED_LIBS + OPENCHANGE_LIBS + OPENCHANGE_SERVER_LIBS
+
+DEFAULT_PRIVATE_LIBS = get_default_private_libs()
 
 # install in /usr/local/samba by default
 default_prefix = Options.default_prefix = '/usr/local/samba'
