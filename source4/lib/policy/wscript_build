@@ -3,19 +3,15 @@
 
 
 pytalloc_util = bld.pyembed_libname('pytalloc-util')
-samba_policy = bld.pyembed_libname('samba-policy')
-bld.SAMBA_LIBRARY(samba_policy,
+bld.SAMBA_LIBRARY('samba-policy',
 	source='gp_ldap.c gp_filesys.c gp_manage.c gp_ini.c',
 	pc_files='samba-policy.pc',
 	public_deps='ldb samba-net',
 	vnum='0.0.1',
-	pyembed=True,
-	public_headers='policy.h',
-	enabled=bld.PYTHON_BUILD_IS_ENABLED()
-	)
+	public_headers='policy.h')
 bld.SAMBA_PYTHON(
         'py_policy',
         source='pypolicy.c',
-        public_deps='%s %s' % (samba_policy, pytalloc_util),
+        public_deps=f'samba-policy {pytalloc_util}',
         realname='samba/policy.so'
         )
