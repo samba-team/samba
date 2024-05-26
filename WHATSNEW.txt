@@ -139,6 +139,31 @@ authentication and DNS functions.
 
 This is not supported in samba-tool yet.
 
+Samba AD will rotate expired passwords on smartcard-required accounts
+---------------------------------------------------------------------
+
+Traditionally in AD, accounts set to be "smart card require for logon"
+will have a password for NTLM fallback and local profile encryption
+(Windows DPAPI). This password previously would not expire.
+
+Matching Windows behaviour, when the DC in a FL 2016 domain and the
+msDS-ExpirePasswordsOnSmartCardOnlyAccounts attribute on the domain
+root is set to TRUE, Samba will now expire these passwords and rotate
+them shortly before they expire.
+
+Note that the password expiry time must be set to twice the TGT lifetime for
+smooth operation, e.g. daily expiry given a default 10 hour TGT
+lifetime, as the password is only rotated in the second half of its
+life.  Again, this matches the Windows behaviour.
+
+Provided the default 2016 schema is used, new Samba domains
+provisioned with Samba 4.21 will have this enabled once the domain
+functional level is set to 2016.
+
+NOTE: Domains upgraded from older Samba versions will not have this
+set, even after the functional level preparation, matching the
+behaviour of upgraded Windows AD domains.
+
 REMOVED FEATURES
 ================
 
@@ -181,4 +206,3 @@ database (https://bugzilla.samba.org/).
 == Our Code, Our Bugs, Our Responsibility.
 == The Samba Team
 ======================================================================
-
