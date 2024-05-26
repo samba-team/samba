@@ -2392,7 +2392,9 @@ def provision(logger, session_info, smbconf=None,
                 try:
                     from samba.domain_update import DomainUpdate
 
-                    DomainUpdate(samdb, fix=True).check_updates_functional_level(
+                    DomainUpdate(samdb,
+                                 new_install=True,
+                                 fix=True).check_updates_functional_level(
                         adprep_level,
                         DS_DOMAIN_FUNCTION_2008,
                         update_revision=True,

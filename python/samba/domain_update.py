@@ -92,15 +92,18 @@ class DomainUpdate(object):
     """Check and update a SAM database for domain updates"""
 
     def __init__(self, samdb, fix=False,
+                 new_install=False,
                  add_update_container=True):
         """
         :param samdb: LDB database
         :param fix: Apply the update if the container is missing
+        :param new_install: Apply the update as per a new install (see op 88)
         :param add_update_container: Add the container at the end of the change
         :raise DomainUpdateException:
         """
         self.samdb = samdb
         self.fix = fix
+        self.new_install = new_install
         self.add_update_container = add_update_container
         # TODO: In future we should check for inconsistencies when it claims it has been done
         self.check_update_applied = False
@@ -521,19 +524,29 @@ otherWellKnownObjects: B:32:683A24E2E8164BD3AF86AC3C2CF3F981:%s
     ## Operation 88: {434bb40d-dbc9-4fe7-81d4-d57229f7b080}
     ##
     ## Add "msDS-ExpirePasswordsOnSmartCardOnlyAccounts" on the domain NC object
-    ## and set default value to FALSE
+    ## and set default value to FALSE (upgrades) or TRUE (new installs)
+    ##
+    ## See
+    ## https://learn.microsoft.com/en-us/windows-server/get-started/whats-new-in-windows-server-2016#rolling-public-key-only-users-ntlm-secrets
+    ## for justification of the observed behaviour that new installs
+    ## have this set to TRUE
     ##
     def operation_88(self, op):
         if self.update_exists(op):
             return
         self.raise_if_not_fix(op)
 
-        ldif = """
-dn: %s
+        if self.new_install:
+            expire_value = "TRUE"
+        else:
+            expire_value = "FALSE"
+
+        ldif = f"""
+dn: {self.domain_dn}
 changetype: modify
 add: msDS-ExpirePasswordsOnSmartCardOnlyAccounts
-msDS-ExpirePasswordsOnSmartCardOnlyAccounts: FALSE
-""" % str(self.domain_dn)
+msDS-ExpirePasswordsOnSmartCardOnlyAccounts: {expire_value}
+"""
 
         self.samdb.modify_ldif(ldif)
 
