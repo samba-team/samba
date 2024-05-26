@@ -190,7 +190,8 @@
 		<varlistentry>
 		<term>--ready-signal-fd=&lt;fd&gt;</term>
 		<listitem><para>Report service readiness via this fd
-		to <command>smbd</command>. Only for internal use.
+		to <command>smbd</command> or <command>winbind</command>.
+		Only for internal use.
 		</para></listitem>
 		</varlistentry>
 	</variablelist>
