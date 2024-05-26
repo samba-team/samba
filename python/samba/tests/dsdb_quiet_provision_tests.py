@@ -67,3 +67,13 @@ class DsdbQuietProvisionTests(TestCase):
                                 expression=f"(&(objectClass = msKds-ProvRootKey)(msKds-UseStartTime<={min_use_start_time}))")
 
         self.assertGreater(len(res), 0)
+
+    def test_dsdb_smartcard_expire_set(self):
+        """In provision we set msDS-ExpirePasswordsOnSmartCardOnlyAccounts: TRUE for a new 2016 provision
+        """
+        dn = self.samdb.get_default_basedn()
+        res = self.samdb.search(dn,
+                                scope=ldb.SCOPE_BASE,
+                                expression="(msDS-ExpirePasswordsOnSmartCardOnlyAccounts=TRUE)")
+
+        self.assertEqual(len(res), 1)
