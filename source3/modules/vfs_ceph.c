@@ -346,21 +346,20 @@ static uint64_t cephwrap_disk_free(struct vfs_handle_struct *handle,
 	struct statvfs statvfs_buf = { 0 };
 	int ret;
 
-	if (!(ret = ceph_statfs(handle->data, smb_fname->base_name,
-			&statvfs_buf))) {
-		/*
-		 * Provide all the correct values.
-		 */
-		*bsize = statvfs_buf.f_bsize;
-		*dfree = statvfs_buf.f_bavail;
-		*dsize = statvfs_buf.f_blocks;
-		DBG_DEBUG("[CEPH] bsize: %llu, dfree: %llu, dsize: %llu\n",
-			llu(*bsize), llu(*dfree), llu(*dsize));
-		return *dfree;
-	} else {
+	ret = ceph_statfs(handle->data, smb_fname->base_name, &statvfs_buf);
+	if (ret < 0) {
 		DBG_DEBUG("[CEPH] ceph_statfs returned %d\n", ret);
 		return status_code(ret);
 	}
+	/*
+	 * Provide all the correct values.
+	 */
+	*bsize = statvfs_buf.f_bsize;
+	*dfree = statvfs_buf.f_bavail;
+	*dsize = statvfs_buf.f_blocks;
+	DBG_DEBUG("[CEPH] bsize: %llu, dfree: %llu, dsize: %llu\n", llu(*bsize),
+		llu(*dfree), llu(*dsize));
+	return *dfree;
 }
 
 static int cephwrap_statvfs(struct vfs_handle_struct *handle,
