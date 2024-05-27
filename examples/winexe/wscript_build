@@ -17,23 +17,12 @@ def generate_winexesvc_c_from_exe(t):
         return -1
 
     def c_array(src):
-        N = 0
-        result = ''
-        while src:
-            l = src[:8]
-            src = src[8:]
-            # Even files opened in binary mode are read as type "str" in
-            # Python 2, so we need to get the integer ordinal of each
-            # character in the string before we try to convert it to hex.
-            if isinstance(l, str):
-                h = ' '.join(["0x%02X," % ord(x) for x in l])
-            # Files opened in binary mode are read as type "bytes" in
-            # Python 3, so we can convert each individual integer in the
-            # array of bytes to hex directly.
-            else:
-                h = ' '.join(["0x%02X," % x for x in l])
-            result += "\t\t%s\n" % (h)
-        return result
+        result = []
+        for i in range(0, len(src), 8):
+            l = src[i:i+8]
+            h = ' '.join(["0x%02X," % x for x in l])
+            result.append(h)
+        return "\n\t\t".join(result)
 
     src_array = c_array(src_blob)
     if len(src_array) <= 0:
@@ -48,7 +37,7 @@ const DATA_BLOB *%s(void);
 const DATA_BLOB *%s(void)
 {
 \tstatic const uint8_t array[] = {
-%s
+\t\t%s
 \t};
 \tstatic const DATA_BLOB blob = {
 \t\t.data = discard_const_p(uint8_t, array),
