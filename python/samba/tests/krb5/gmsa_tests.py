@@ -1897,11 +1897,11 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
         self.assertEqual(ntstatus.NT_STATUS_LOGON_FAILURE, err.exception.args[0])
 
         # But we can use the previous password to authenticate.
-        creds.set_password(password_1)
+        creds.update_password(password_1)
         srvsvc.srvsvc(f"ncacn_np:{dc_server}", lp, creds)
 
         # And we can authenticate using the current password.
-        creds.set_password(password_2)
+        creds.update_password(password_2)
         srvsvc.srvsvc(f"ncacn_np:{dc_server}", lp, creds)
 
 
