@@ -36,7 +36,7 @@ from cryptography.x509.oid import NameOID
 
 import ldb
 import samba.tests
-from samba import credentials, ntstatus
+from samba import credentials, generate_random_password, ntstatus
 from samba.dcerpc import security, netlogon
 from samba.tests.krb5 import kcrypto
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
@@ -51,6 +51,7 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_PREAUTH_EXPIRED,
     KDC_ERR_PREAUTH_FAILED,
     KDC_ERR_PREAUTH_REQUIRED,
+    KPASSWD_SUCCESS,
     KU_PA_ENC_TIMESTAMP,
     NT_PRINCIPAL,
     NT_SRV_INST,
@@ -772,6 +773,44 @@ class PkInitTests(KDCBaseTest):
         self._test_samlogon(creds=client_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
 
+    def test_pkinit_kpasswd_change(self):
+        """Test public-key PK-INIT to get an initial ticket to change the user's own password."""
+        client_creds = self._get_creds()
+        krbtgt_creds = self.get_krbtgt_creds()
+        kpasswd_sname = self.get_kpasswd_sname()
+
+        freshness_token = self.create_freshness_token()
+
+        samdb = self.get_samdb()
+        # Get the old 'minPwdAge'
+        minPwdAge = samdb.get_minPwdAge()
+
+        # Reset the 'minPwdAge' as it was before
+        self.addCleanup(samdb.set_minPwdAge, minPwdAge)
+
+        # Set it temporarily to '0'
+        samdb.set_minPwdAge('0')
+
+        kdc_exchange_dict = self._pkinit_req(client_creds, krbtgt_creds,
+                                             freshness_token=freshness_token,
+                                             target_sname=kpasswd_sname)
+        ticket = kdc_exchange_dict['rep_ticket_creds']
+
+        expected_code = KPASSWD_SUCCESS
+        expected_msg = b'Password changed'
+
+        # Set the password.
+        new_password = generate_random_password(32, 32)
+        self.kpasswd_exchange(ticket,
+                              new_password,
+                              expected_code,
+                              expected_msg,
+                              mode=self.KpasswdMode.SET)
+
+        # Test the newly set password.
+        client_creds.update_password(new_password)
+        self.get_tgt(client_creds, fresh=True)
+
     def _as_req(self,
                 creds,
                 target_creds,
@@ -1160,6 +1199,7 @@ class PkInitTests(KDCBaseTest):
                     certificate_signature=None,
                     freshness_token=None,
                     win2k_variant=False,
+                    target_sname=None
                     ):
         self.assertIsNot(using_pkinit, PkInit.NOT_USED)
 
@@ -1360,17 +1400,19 @@ class PkInitTests(KDCBaseTest):
         target_name = target_creds.get_username()
         target_realm = target_creds.get_realm()
 
-        target_name = target_creds.get_username()
-        if target_name == "krbtgt":
-            target_sname = self.PrincipalName_create(name_type=NT_SRV_INST,
-                                                     names=['krbtgt', target_realm])
-            expected_sname = target_sname
-        else:
-            target_sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
-                                                     names=['host', target_name[:-1]])
+        expected_sname = target_sname
+        if target_sname is None:
+            target_name = target_creds.get_username()
+            if target_name == "krbtgt":
+                target_sname = self.PrincipalName_create(name_type=NT_SRV_INST,
+                                                         names=['krbtgt', target_realm])
+                expected_sname = target_sname
+            else:
+                target_sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                                         names=['host', target_name[:-1]])
 
-            expected_sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
-                                                           names=[target_name])
+                expected_sname = self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                                               names=[target_name])
 
         if expect_error:
             check_error_fn = self.generic_check_kdc_error
