@@ -58,7 +58,7 @@ bld.SAMBA_GENERATOR(
     'winexesvc32_exe',
     source='winexesvc.c',
     target='winexesvc32.exe',
-    rule='${WINEXE_CC_WIN32} ${SRC} -o ${TGT} ${WINEXE_LDFLAGS}',
+    rule='SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH} ${WINEXE_CC_WIN32} ${SRC} -o ${TGT} ${WINEXE_LDFLAGS}',
     enabled=bld.env.build_winexe and bld.env.WINEXE_CC_WIN32)
 
 vars = {"WINEXE_FN": "winexesvc32_exe_binary"}
@@ -78,7 +78,7 @@ bld.SAMBA_GENERATOR(
     'winexesvc64_exe',
     source='winexesvc.c',
     target='winexesvc64.exe',
-    rule='${WINEXE_CC_WIN64} ${SRC} -o ${TGT} ${WINEXE_LDFLAGS}',
+    rule='SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH} ${WINEXE_CC_WIN64} ${SRC} -o ${TGT} ${WINEXE_LDFLAGS}',
     enabled=bld.env.build_winexe and bld.env.WINEXE_CC_WIN64)
 
 vars = {"WINEXE_FN": "winexesvc64_exe_binary"}

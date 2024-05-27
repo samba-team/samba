@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import os
+
 
 def configure(conf):
     AR32 = ['i386', 'i586', 'i686']
@@ -27,5 +29,17 @@ def configure(conf):
             conf.DEFINE('HAVE_WINEXE_CC_WIN64', 1);
             break
 
+    source_date_epoch = os.environ.get('SOURCE_DATE_EPOCH')
+    if source_date_epoch is None:
+        # We set the timestamp to be 0, which makes the winexe build
+        # reproducible. According to
+        # https://learn.microsoft.com/en-us/windows/win32/debug/pe-format
+        #
+        # > If the stamp value is 0 or 0xFFFFFFFF, it does not
+        # > represent a real or meaningful date/time stamp.
+
+        source_date_epoch = '0'
+
+    conf.env.SOURCE_DATE_EPOCH = source_date_epoch
     conf.DEFINE("WINEXE_LDFLAGS",
                 "-s -Wall -Wl,-Bstatic -Wl,-Bdynamic -luserenv")
