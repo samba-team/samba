@@ -90,10 +90,6 @@ class KpasswdTests(KDCBaseTest):
 
         return creds
 
-    def get_kpasswd_sname(self):
-        return self.PrincipalName_create(name_type=NT_PRINCIPAL,
-                                         names=['kadmin', 'changepw'])
-
     def get_ticket_lifetime(self, ticket):
         enc_part = ticket.ticket_private
 

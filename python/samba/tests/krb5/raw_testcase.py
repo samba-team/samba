@@ -6054,6 +6054,10 @@ class RawKerberosTest(TestCase):
 
         return krbtgt_sname
 
+    def get_kpasswd_sname(self):
+        return self.PrincipalName_create(name_type=NT_PRINCIPAL,
+                                         names=['kadmin', 'changepw'])
+
     def add_requester_sid(self, pac, sid):
         pac_buffers = pac.buffers
 
