@@ -4,21 +4,28 @@ pytalloc_util = bld.pyembed_libname('pytalloc-util')
 pyrpc_util = bld.pyembed_libname('pyrpc_util')
 pyldb_util = bld.pyembed_libname('pyldb-util')
 provision = bld.pyembed_libname('PROVISION')
-name = bld.pyembed_libname('samba-net')
+name = bld.pyembed_libname('samba-net-join')
 auto_proto='libnet_proto.h'
-bld.SAMBA_LIBRARY(name,
-        source='libnet.c libnet_passwd.c libnet_time.c libnet_rpc.c libnet_join.c libnet_site.c libnet_become_dc.c libnet_unbecome_dc.c libnet_vampire.c libnet_user.c libnet_group.c libnet_share.c libnet_lookup.c libnet_domain.c userinfo.c groupinfo.c userman.c groupman.c prereq_domain.c',
+bld.SAMBA_LIBRARY('samba-net',
+        source='libnet.c libnet_passwd.c libnet_time.c libnet_rpc.c libnet_site.c libnet_become_dc.c libnet_unbecome_dc.c libnet_user.c libnet_group.c libnet_share.c libnet_lookup.c libnet_domain.c userinfo.c groupinfo.c userman.c groupman.c prereq_domain.c',
         autoproto=auto_proto,
         deps='INIT_SAMR',
-        public_deps='samba-credentials dcerpc dcerpc-samr RPC_NDR_LSA RPC_NDR_SRVSVC RPC_NDR_DRSUAPI cli_composite LIBCLI_RESOLVE LIBCLI_FINDDCS cli_cldap LIBCLI_FINDDCS gensec_schannel LIBCLI_AUTH ndr smbpasswdparser %s LIBCLI_SAMSYNC LIBTSOCKET GNUTLS_HELPERS' % (provision),
-        private_library=True,
-        pyembed=True,
-        enabled=bld.PYTHON_BUILD_IS_ENABLED()
+        public_deps='samba-credentials dcerpc dcerpc-samr RPC_NDR_LSA RPC_NDR_SRVSVC RPC_NDR_DRSUAPI cli_composite LIBCLI_RESOLVE LIBCLI_FINDDCS cli_cldap LIBCLI_FINDDCS gensec_schannel LIBCLI_AUTH ndr smbpasswdparser LIBCLI_SAMSYNC LIBTSOCKET GNUTLS_HELPERS',
+        private_library=True
         )
+
+bld.SAMBA_LIBRARY(name,
+                  source='libnet_join.c libnet_vampire.c',
+                  autoproto='libnet_join_proto.h',
+                  deps=f'samba-net {provision}',
+                  private_library=True,
+                  pyembed=True,
+                  enabled=bld.PYTHON_BUILD_IS_ENABLED()
+                  )
 
 bld.SAMBA_PYTHON('python_net',
         source='py_net.c',
-        deps='%s %s %s' % (name, pyrpc_util, pytalloc_util),
+        deps=f'samba-net {name} {pyrpc_util} {pytalloc_util}',
         realname='samba/net.so'
         )
 

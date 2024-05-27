@@ -27,6 +27,7 @@
 #include "includes.h"
 #include "system/time.h"
 #include "libnet/libnet.h"
+#include "libnet/libnet_join_proto.h"
 #include "lib/cmdline/cmdline.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"

@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
+#include "libnet/libnet_join_proto.h"
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 #include <ldb.h>
 #include <ldb_errors.h>

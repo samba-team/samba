@@ -26,6 +26,7 @@
 #include <pyldb.h>
 #include <pytalloc.h>
 #include "libnet.h"
+#include "libnet_join_proto.h"
 #include "auth/credentials/pycredentials.h"
 #include "libcli/security/security.h"
 #include "lib/events/events.h"

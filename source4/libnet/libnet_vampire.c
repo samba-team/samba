@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
+#include "libnet/libnet_join_proto.h"
 #include "lib/events/events.h"
 #include "dsdb/samdb/samdb.h"
 #include "../lib/util/dlinklist.h"

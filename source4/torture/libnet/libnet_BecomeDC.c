@@ -23,6 +23,7 @@
 #include "lib/cmdline/cmdline.h"
 #include "torture/rpc/torture_rpc.h"
 #include "libnet/libnet.h"
+#include "libnet/libnet_join_proto.h"
 #include "dsdb/samdb/samdb.h"
 #include "../lib/util/dlinklist.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"

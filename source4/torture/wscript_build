@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 provision = bld.pyembed_libname('PROVISION')
-samba_net = bld.pyembed_libname('samba-net')
+samba_net_join = bld.pyembed_libname('samba-net-join')
 
 bld.SAMBA_SUBSYSTEM('TORTURE_UTIL',
 	source='util_smb.c',
@@ -189,7 +189,7 @@ bld.SAMBA_MODULE('torture_rpc',
                       printer_driver
                       RPC_NDR_MDSSVC
                       mdssvc
-                      ''' % samba_net + ntvfs_specific['deps'],
+                      ''' % samba_net_join + ntvfs_specific['deps'],
                  internal_module=True,
                  enabled=bld.PYTHON_BUILD_IS_ENABLED())
 
@@ -284,7 +284,7 @@ bld.SAMBA_MODULE('TORTURE_NET',
 	autoproto='libnet/proto.h',
 	subsystem='smbtorture',
 	init_function='torture_net_init',
-	deps='%s torture_rpc %s' % (provision, samba_net),
+	deps='%s torture_rpc %s' % (provision, samba_net_join),
 	internal_module=True,
 	enabled=bld.PYTHON_BUILD_IS_ENABLED()
 	)
