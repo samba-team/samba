@@ -79,72 +79,62 @@ bool gensec_security_ops_enabled(const struct gensec_security_ops *ops, struct g
  * more complex.
  */
 
-static const struct gensec_security_ops **gensec_use_kerberos_mechs(
-		TALLOC_CTX *mem_ctx,
-		const struct gensec_security_ops * const *old_gensec_list,
-		enum credentials_use_kerberos use_kerberos,
-		bool keep_schannel)
+static bool gensec_offer_mech(struct gensec_security *gensec_security,
+			      const struct gensec_security_ops *mech)
 {
-	const struct gensec_security_ops **new_gensec_list;
-	int i, j, num_mechs_in;
+	struct cli_credentials *creds = NULL;
+	enum credentials_use_kerberos use_kerberos;
+	bool offer;
 
-	for (num_mechs_in=0; old_gensec_list && old_gensec_list[num_mechs_in]; num_mechs_in++) {
-		/* noop */
+	/*
+	 * We want to always offer SPNEGO and other backends
+	 */
+	offer = mech->glue;
+
+	if (gensec_security != NULL) {
+		creds = gensec_get_credentials(gensec_security);
 	}
 
-	new_gensec_list = talloc_array(mem_ctx,
-				       const struct gensec_security_ops *,
-				       num_mechs_in + 1);
-	if (!new_gensec_list) {
-		return NULL;
-	}
-
-	j = 0;
-	for (i=0; old_gensec_list && old_gensec_list[i]; i++) {
-		bool keep = false;
-
+	if ((mech->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) && (creds != NULL))
+	{
+		if (cli_credentials_get_netlogon_creds(creds) != NULL) {
+			offer = true;
+		}
 		/*
-		 * We want to keep SPNEGO and other backends
+		 * Even if Kerberos is set to REQUIRED, offer the
+		 * schannel auth mechanism so that machine accounts are
+		 * able to authenticate via netlogon.
 		 */
-		keep = old_gensec_list[i]->glue;
-
-		if (old_gensec_list[i]->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
-			keep = keep_schannel;
+		if (gensec_security->gensec_role == GENSEC_SERVER) {
+			offer = true;
 		}
-
-		switch (use_kerberos) {
-		case CRED_USE_KERBEROS_DESIRED:
-			keep = true;
-			break;
-
-		case CRED_USE_KERBEROS_DISABLED:
-			if (old_gensec_list[i]->kerberos == false) {
-				keep = true;
-			}
-
-			break;
-
-		case CRED_USE_KERBEROS_REQUIRED:
-			if (old_gensec_list[i]->kerberos == true) {
-				keep = true;
-			}
-
-			break;
-		default:
-			/* Can't happen or invalid parameter */
-			return NULL;
-		}
-
-		if (!keep) {
-			continue;
-		}
-
-		new_gensec_list[j] = old_gensec_list[i];
-		j++;
 	}
-	new_gensec_list[j] = NULL;
 
-	return new_gensec_list;
+	use_kerberos = CRED_USE_KERBEROS_DESIRED;
+	if (creds != NULL) {
+		use_kerberos = cli_credentials_get_kerberos_state(creds);
+	}
+
+	switch (use_kerberos) {
+	case CRED_USE_KERBEROS_DESIRED:
+		offer = true;
+		break;
+	case CRED_USE_KERBEROS_DISABLED:
+		if (!mech->kerberos) {
+			offer = true;
+		}
+		break;
+	case CRED_USE_KERBEROS_REQUIRED:
+		if (mech->kerberos) {
+			offer = true;
+		}
+		break;
+	default:
+		/* Can't happen or invalid parameter */
+		offer = false;
+	}
+
+	return offer;
 }
 
 _PUBLIC_ const struct gensec_security_ops **gensec_security_mechs(
@@ -153,37 +143,40 @@ _PUBLIC_ const struct gensec_security_ops **gensec_security_mechs(
 {
 	const struct gensec_security_ops * const *backends =
 		generic_security_ops;
-	enum credentials_use_kerberos use_kerberos = CRED_USE_KERBEROS_DESIRED;
-	bool keep_schannel = false;
+	const struct gensec_security_ops **result = NULL;
+	size_t i, j, num_backends;
 
-	if (gensec_security != NULL) {
-		struct cli_credentials *creds = NULL;
+	if ((gensec_security != NULL) &&
+	    (gensec_security->settings->backends != NULL)) {
+		backends = gensec_security->settings->backends;
+	}
 
-		creds = gensec_get_credentials(gensec_security);
-		if (creds != NULL) {
-			use_kerberos = cli_credentials_get_kerberos_state(creds);
-			if (cli_credentials_get_netlogon_creds(creds) != NULL) {
-				keep_schannel = true;
-			}
+	if (backends == NULL) {
+		/* Just return the NULL terminator */
+		return talloc_zero(mem_ctx,
+				   const struct gensec_security_ops *);
+	}
 
-			/*
-			 * Even if Kerberos is set to REQUIRED, keep the
-			 * schannel auth mechanism so that machine accounts are
-			 * able to authenticate via netlogon.
-			 */
-			if (gensec_security->gensec_role == GENSEC_SERVER) {
-				keep_schannel = true;
-			}
-		}
+	for (num_backends = 0; backends[num_backends]; num_backends++) {
+		/* noop */
+	}
 
-		if (gensec_security->settings->backends) {
-			backends = gensec_security->settings->backends;
+	result = talloc_array(
+		mem_ctx, const struct gensec_security_ops *, num_backends + 1);
+	if (result == NULL) {
+		return NULL;
+	}
+
+	j = 0;
+	for (i = 0; backends[i]; i++) {
+		bool offer = gensec_offer_mech(gensec_security, backends[i]);
+		if (offer) {
+			result[j++] = backends[i];
 		}
 	}
 
-	return gensec_use_kerberos_mechs(mem_ctx, backends,
-					 use_kerberos, keep_schannel);
-
+	result[j] = NULL;
+	return result;
 }
 
 static const struct gensec_security_ops *gensec_security_by_fn(
