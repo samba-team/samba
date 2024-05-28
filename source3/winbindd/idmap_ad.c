@@ -298,7 +298,10 @@ static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 				       struct tldap_context **pld)
 {
 	struct netr_DsRGetDCNameInfo *dcinfo;
-	struct sockaddr_storage dcaddr;
+	struct sockaddr_storage dcaddr = {
+		.ss_family = AF_UNSPEC,
+	};
+	struct sockaddr_storage *pdcaddr = NULL;
 	struct winbindd_domain *creds_domain = NULL;
 	struct cli_credentials *creds;
 	struct loadparm_context *lp_ctx;
@@ -365,9 +368,13 @@ static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 	 * create_local_private_krb5_conf_for_domain() can deal with
 	 * sitename==NULL
 	 */
+	if (strequal(domname, lp_realm()) || strequal(domname, lp_workgroup()))
+	{
+		pdcaddr = &dcaddr;
+	}
 
 	ok = create_local_private_krb5_conf_for_domain(
-		lp_realm(), lp_workgroup(), sitename, &dcaddr);
+		lp_realm(), lp_workgroup(), sitename, pdcaddr);
 	TALLOC_FREE(sitename);
 	if (!ok) {
 		DBG_DEBUG("Could not create private krb5.conf\n");
