@@ -29,12 +29,8 @@ import time
 from samba.dcerpc import dns
 import samba.ndr as ndr
 
-if sys.version_info[0] < 3:
-    import SocketServer
-    sserver = SocketServer
-else:
-    import socketserver
-    sserver = socketserver
+import socketserver
+sserver = socketserver
 
 DNS_REQUEST_TIMEOUT = 10
 
