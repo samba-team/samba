@@ -186,126 +186,123 @@ _PUBLIC_ const struct gensec_security_ops **gensec_security_mechs(
 
 }
 
-_PUBLIC_ const struct gensec_security_ops *gensec_security_by_oid(
-				struct gensec_security *gensec_security,
-				const char *oid_string)
+static const struct gensec_security_ops *gensec_security_by_fn(
+	struct gensec_security *gensec_security,
+	bool (*fn)(const struct gensec_security_ops *backend,
+		   const void *private_data),
+	const void *private_data)
 {
-	int i, j;
-	const struct gensec_security_ops **backends;
-	const struct gensec_security_ops *backend;
-	TALLOC_CTX *mem_ctx = talloc_new(gensec_security);
-	if (!mem_ctx) {
-		return NULL;
-	}
-	backends = gensec_security_mechs(gensec_security, mem_ctx);
-	for (i=0; backends && backends[i]; i++) {
-		if (gensec_security != NULL &&
-				!gensec_security_ops_enabled(backends[i],
-											 gensec_security))
-		    continue;
-		if (backends[i]->oid) {
-			for (j=0; backends[i]->oid[j]; j++) {
-				if (backends[i]->oid[j] &&
-				    (strcmp(backends[i]->oid[j], oid_string) == 0)) {
-					backend = backends[i];
-					talloc_free(mem_ctx);
-					return backend;
-				}
-			}
-		}
-	}
-	talloc_free(mem_ctx);
-
-	return NULL;
-}
-
-_PUBLIC_ const struct gensec_security_ops *gensec_security_by_sasl_name(
-				struct gensec_security *gensec_security,
-				const char *sasl_name)
-{
-	int i;
-	const struct gensec_security_ops **backends;
-	const struct gensec_security_ops *backend;
-	TALLOC_CTX *mem_ctx = talloc_new(gensec_security);
-	if (!mem_ctx) {
-		return NULL;
-	}
-	backends = gensec_security_mechs(gensec_security, mem_ctx);
-	for (i=0; backends && backends[i]; i++) {
-		if (gensec_security != NULL &&
-		    !gensec_security_ops_enabled(backends[i], gensec_security)) {
-			continue;
-		}
-		if (backends[i]->sasl_name
-		    && (strcmp(backends[i]->sasl_name, sasl_name) == 0)) {
-			backend = backends[i];
-			talloc_free(mem_ctx);
-			return backend;
-		}
-	}
-	talloc_free(mem_ctx);
-
-	return NULL;
-}
-
-_PUBLIC_ const struct gensec_security_ops *gensec_security_by_auth_type(
-				struct gensec_security *gensec_security,
-				uint32_t auth_type)
-{
-	int i;
-	const struct gensec_security_ops **backends;
-	const struct gensec_security_ops *backend;
-	TALLOC_CTX *mem_ctx;
-
-	if (auth_type == DCERPC_AUTH_TYPE_NONE) {
-		return NULL;
-	}
+	size_t i;
+	const struct gensec_security_ops **backends = NULL;
+	TALLOC_CTX *mem_ctx = NULL;
 
 	mem_ctx = talloc_new(gensec_security);
 	if (!mem_ctx) {
 		return NULL;
 	}
+
 	backends = gensec_security_mechs(gensec_security, mem_ctx);
-	for (i=0; backends && backends[i]; i++) {
-		if (gensec_security != NULL &&
-		    !gensec_security_ops_enabled(backends[i], gensec_security)) {
+	if (backends == NULL) {
+		TALLOC_FREE(mem_ctx);
+		return NULL;
+	}
+
+	for (i = 0; backends[i] != NULL; i++) {
+		const struct gensec_security_ops *backend = backends[i];
+		bool ok;
+
+		if ((gensec_security != NULL)  &&
+		    !gensec_security_ops_enabled(backend, gensec_security)) {
 			continue;
 		}
-		if (backends[i]->auth_type == auth_type) {
-			backend = backends[i];
-			talloc_free(mem_ctx);
+
+		ok = fn(backend, private_data);
+		if (ok) {
+			TALLOC_FREE(mem_ctx);
 			return backend;
 		}
 	}
-	talloc_free(mem_ctx);
 
+	TALLOC_FREE(mem_ctx);
 	return NULL;
 }
 
-const struct gensec_security_ops *gensec_security_by_name(struct gensec_security *gensec_security,
-							  const char *name)
+static bool by_oid_fn(const struct gensec_security_ops *backend,
+		      const void *private_data)
 {
+	const char *oid = private_data;
 	int i;
-	const struct gensec_security_ops **backends;
-	const struct gensec_security_ops *backend;
-	TALLOC_CTX *mem_ctx = talloc_new(gensec_security);
-	if (!mem_ctx) {
-		return NULL;
+
+	if (backend->oid == NULL) {
+		return false;
 	}
-	backends = gensec_security_mechs(gensec_security, mem_ctx);
-	for (i=0; backends && backends[i]; i++) {
-		if (gensec_security != NULL &&
-				!gensec_security_ops_enabled(backends[i], gensec_security))
-		    continue;
-		if (backends[i]->name
-		    && (strcmp(backends[i]->name, name) == 0)) {
-			backend = backends[i];
-			talloc_free(mem_ctx);
-			return backend;
+
+	for (i = 0; backend->oid[i] != NULL; i++) {
+		if (strcmp(backend->oid[i], oid) == 0) {
+			return true;
 		}
 	}
-	talloc_free(mem_ctx);
-	return NULL;
+	return false;
+}
+
+_PUBLIC_ const struct gensec_security_ops *gensec_security_by_oid(
+	struct gensec_security *gensec_security,
+	const char *oid_string)
+{
+	return gensec_security_by_fn(gensec_security, by_oid_fn, oid_string);
+}
+
+static bool by_sasl_name_fn(const struct gensec_security_ops *backend,
+			    const void *private_data)
+{
+	const char *sasl_name = private_data;
+	if (backend->sasl_name == NULL) {
+		return false;
+	}
+	return (strcmp(backend->sasl_name, sasl_name) == 0);
+}
+
+_PUBLIC_ const struct gensec_security_ops *gensec_security_by_sasl_name(
+	struct gensec_security *gensec_security,
+	const char *sasl_name)
+{
+	return gensec_security_by_fn(
+		gensec_security, by_sasl_name_fn, sasl_name);
+}
+
+static bool by_auth_type_fn(const struct gensec_security_ops *backend,
+			    const void *private_data)
+{
+	uint32_t auth_type = *((const uint32_t *)private_data);
+	return (backend->auth_type == auth_type);
+}
+
+_PUBLIC_ const struct gensec_security_ops *gensec_security_by_auth_type(
+	struct gensec_security *gensec_security,
+	uint32_t auth_type)
+{
+	if (auth_type == DCERPC_AUTH_TYPE_NONE) {
+		return NULL;
+	}
+	return gensec_security_by_fn(
+		gensec_security, by_auth_type_fn, &auth_type);
+}
+
+static bool by_name_fn(const struct gensec_security_ops *backend,
+		       const void *private_data)
+{
+	const char *name = private_data;
+	if (backend->name == NULL) {
+		return false;
+	}
+	return (strcmp(backend->name, name) == 0);
+}
+
+_PUBLIC_ const struct gensec_security_ops *gensec_security_by_name(
+	struct gensec_security *gensec_security,
+	const char *name)
+{
+	return gensec_security_by_fn(gensec_security, by_name_fn, name);
 }
 
 static const char **gensec_security_sasl_names_from_ops(
