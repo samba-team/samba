@@ -253,6 +253,9 @@ bool cli_credentials_set_gensec_features(struct cli_credentials *creds,
 					 uint32_t gensec_features,
 					 enum credentials_obtained obtained);
 uint32_t cli_credentials_get_gensec_features(struct cli_credentials *creds);
+bool cli_credentials_add_gensec_features(struct cli_credentials *creds,
+					 uint32_t gensec_features,
+					 enum credentials_obtained obtained);
 int cli_credentials_set_ccache(struct cli_credentials *cred,
 			       struct loadparm_context *lp_ctx,
 			       const char *name,

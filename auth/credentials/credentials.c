@@ -171,6 +171,15 @@ _PUBLIC_ bool cli_credentials_set_gensec_features(struct cli_credentials *creds,
 	return false;
 }
 
+_PUBLIC_ bool cli_credentials_add_gensec_features(
+	struct cli_credentials *creds,
+	uint32_t gensec_features,
+	enum credentials_obtained obtained)
+{
+	return cli_credentials_set_gensec_features(
+		creds, creds->gensec_features | gensec_features, obtained);
+}
+
 _PUBLIC_ uint32_t cli_credentials_get_gensec_features(struct cli_credentials *creds)
 {
 	return creds->gensec_features;
