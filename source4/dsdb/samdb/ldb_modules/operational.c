@@ -1580,7 +1580,7 @@ static int operational_callback(struct ldb_request *req, struct ldb_reply *ares)
 	struct operational_context *ac;
 	int ret;
 
-	ac = talloc_get_type(req->context, struct operational_context);
+	ac = talloc_get_type_abort(req->context, struct operational_context);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
