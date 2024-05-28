@@ -1079,8 +1079,18 @@ class GmsaTests(GkdiBaseTest, KDCBaseTest):
             "supplementalCredentials has not been updated (yet)",
         )
 
+        # Calculate the password with which to authenticate.
+        current_series = self.gmsa_series_for_account(
+            local_samdb, creds, password_interval
+        )
+        managed_pwd = self.expected_gmsa_password_blob(
+            local_samdb,
+            creds,
+            current_series.interval_gkid(0),
+            query_expiration_gkid=current_series.interval_gkid(1),
+        )
+
         # Set the new password.
-        managed_pwd = ndr_unpack(gmsa.MANAGEDPASSWORD_BLOB, managed_password)
         self.assertIsNotNone(
             managed_pwd.passwords.current, "current password must be present"
         )
