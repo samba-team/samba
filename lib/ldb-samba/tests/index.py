@@ -28,7 +28,6 @@ import shutil
 from ldb import SCOPE_SUBTREE
 from samba.tests.subunitrun import TestProgram
 
-PY3 = sys.version_info > (3, 0)
 
 TDB_PREFIX = "tdb://"
 MDB_PREFIX = "mdb://"
