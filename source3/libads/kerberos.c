@@ -712,7 +712,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 		return false;
 	}
 
-	if (domain == NULL || pss == NULL) {
+	if (domain == NULL) {
 		return false;
 	}
 
