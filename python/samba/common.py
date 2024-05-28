@@ -70,20 +70,12 @@ def normalise_int32(ivalue):
     return str(ivalue)
 
 
-# Sometimes in PY3 we have variables whose content can be 'bytes' or
+# Sometimes we have variables whose content can be 'bytes' or
 # 'str' and we can't be sure which. Generally this is because the
 # code variable can be initialised (or reassigned) a value from different
-# api(s) or functions depending on complex conditions or logic. Or another
-# common case is in PY2 the variable is 'type <str>' and in PY3 it is
-# 'class <str>' and the function to use e.g. b64encode requires 'bytes'
-# in PY3. In such cases it would be nice to avoid excessive testing in
-# the client code. Calling such a helper function should be avoided
-# if possible but sometimes this just isn't possible.
+# api(s) or functions depending on complex conditions or logic.
 # If a 'str' object is passed in it is encoded using 'utf8' or if 'bytes'
 # is passed in it is returned unchanged.
-# Using this function is PY2/PY3 code should ensure in most cases
-# the PY2 code runs unchanged in PY2 whereas the code in PY3 possibly
-# encodes the variable (see PY2 implementation of this function below)
 def get_bytes(bytesorstring):
     tmp = bytesorstring
     if isinstance(bytesorstring, str):
@@ -95,9 +87,6 @@ def get_bytes(bytesorstring):
 # helper function to get a string from a variable that maybe 'str' or
 # 'bytes' if 'bytes' then it is decoded using 'utf8'. If 'str' is passed
 # it is returned unchanged
-# Using this function is PY2/PY3 code should ensure in most cases
-# the PY2 code runs unchanged in PY2 whereas the code in PY3 possibly
-# decodes the variable (see PY2 implementation of this function below)
 def get_string(bytesorstring):
     tmp = bytesorstring
     if isinstance(bytesorstring, bytes):
