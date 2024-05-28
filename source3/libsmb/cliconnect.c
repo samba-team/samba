@@ -53,6 +53,7 @@ struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
 	struct loadparm_context *lp_ctx = NULL;
 	struct cli_credentials *creds = NULL;
 	const char *principal = NULL;
+	enum credentials_use_kerberos creds_use_krb;
 	char *tmp = NULL;
 	char *p = NULL;
 	bool ok;
@@ -118,25 +119,24 @@ struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
 		principal = NULL;
 	}
 
-	if (use_kerberos && fallback_after_kerberos) {
-		/*
-		 * Keep what we learned from the
-		 * "client use kerberos" option.
-		 */
-		enum credentials_use_kerberos current_krb5 =
-			cli_credentials_get_kerberos_state(creds);
-		cli_credentials_set_kerberos_state(creds,
-						   current_krb5,
-						   CRED_SPECIFIED);
-	} else if (use_kerberos) {
-		cli_credentials_set_kerberos_state(creds,
-						   CRED_USE_KERBEROS_REQUIRED,
-						   CRED_SPECIFIED);
+	if (use_kerberos) {
+		if (fallback_after_kerberos) {
+			/*
+			 * Keep what we learned from the
+			 * "client use kerberos" option.
+			 */
+			creds_use_krb = cli_credentials_get_kerberos_state(
+				creds);
+		} else {
+			creds_use_krb = CRED_USE_KERBEROS_REQUIRED;
+		}
 	} else {
-		cli_credentials_set_kerberos_state(creds,
-						   CRED_USE_KERBEROS_DISABLED,
-						   CRED_SPECIFIED);
+		creds_use_krb = CRED_USE_KERBEROS_DISABLED;
 	}
+
+	cli_credentials_set_kerberos_state(creds,
+					   creds_use_krb,
+					   CRED_SPECIFIED);
 
 	if (use_ccache) {
 		uint32_t features;
