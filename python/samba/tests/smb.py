@@ -25,7 +25,6 @@ from samba.ntstatus import (NT_STATUS_OBJECT_NAME_NOT_FOUND,
 from samba.samba3 import libsmb_samba_internal as libsmb
 from samba.samba3 import param as s3param
 
-PY3 = sys.version_info[0] == 3
 realm = os.environ.get('REALM')
 domain_dir = realm.lower() + '/'
 test_contents = 'abcd' * 256
@@ -204,8 +203,7 @@ class SMBTests(samba.tests.TestCase):
         self.assertEqual(contents.decode('utf8'), new_contents,
                           msg='contents of test file did not match what was written')
 
-    # with python2 this will save/load str type (with embedded nulls)
-    # with python3 this will save/load bytes type
+    # this will save/load bytes type
     def test_save_load_string_bytes(self):
         self.smb_conn.savefile(test_file, test_literal_bytes_embed_nulls)
 
@@ -213,17 +211,15 @@ class SMBTests(samba.tests.TestCase):
         self.assertEqual(contents, test_literal_bytes_embed_nulls,
                           msg='contents of test file did not match what was written')
 
-    # python3 only this will save/load unicode
+    # this will save/load unicode
     def test_save_load_utfcontents(self):
-        if PY3:
-            self.smb_conn.savefile(test_file, utf_contents.encode('utf8'))
+        self.smb_conn.savefile(test_file, utf_contents.encode('utf8'))
 
-            contents = self.smb_conn.loadfile(test_file)
-            self.assertEqual(contents.decode('utf8'), utf_contents,
-                              msg='contents of test file did not match what was written')
+        contents = self.smb_conn.loadfile(test_file)
+        self.assertEqual(contents.decode('utf8'), utf_contents,
+                          msg='contents of test file did not match what was written')
 
-    # with python2 this will save/load str type
-    # with python3 this will save/load bytes type
+    # this will save/load bytes type
     def test_save_binary_contents(self):
         self.smb_conn.savefile(test_file, binary_contents)
 
