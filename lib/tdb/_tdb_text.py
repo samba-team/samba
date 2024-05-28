@@ -74,11 +74,7 @@ class TdbTextWrapper(object):
         key = key.encode('utf-8')
         del self._tdb[key]
 
-    if sys.version_info > (3, 0):
-        keys = __iter__
-    else:
-        iterkeys = __iter__
-        has_key = __contains__
+    keys = __iter__
 
 
 ## Add wrappers for functions and getters that don't deal with text
