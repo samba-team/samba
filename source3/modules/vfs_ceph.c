@@ -771,7 +771,7 @@ static ssize_t cephwrap_recvfile(struct vfs_handle_struct *handle,
 	 * We cannot support recvfile because libcephfs is in user space.
 	 */
 	DBG_DEBUG("[CEPH] cephwrap_recvfile\n");
-	errno=ENOTSUP;
+	errno = ENOTSUP;
 	return -1;
 }
 
