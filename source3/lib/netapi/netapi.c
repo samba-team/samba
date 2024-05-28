@@ -429,12 +429,8 @@ NET_API_STATUS libnetapi_get_use_kerberos(struct libnetapi_ctx *ctx,
 
 NET_API_STATUS libnetapi_set_use_ccache(struct libnetapi_ctx *ctx)
 {
-	uint32_t gensec_features;
-
-	gensec_features = cli_credentials_get_gensec_features(ctx->creds);
-	gensec_features |= GENSEC_FEATURE_NTLM_CCACHE;
-	cli_credentials_set_gensec_features(ctx->creds,
-					    gensec_features,
+	cli_credentials_add_gensec_features(ctx->creds,
+					    GENSEC_FEATURE_NTLM_CCACHE,
 					    CRED_SPECIFIED);
 
 	return NET_API_STATUS_SUCCESS;

@@ -1373,7 +1373,6 @@ static struct functable net_func[] = {
 			cli_credentials_get_principal_obtained(c->creds);
 		enum credentials_obtained password_obtained =
 			cli_credentials_get_password_obtained(c->creds);
-		uint32_t gensec_features;
 
 		if (principal_obtained == CRED_SPECIFIED) {
 			c->explicit_credentials = true;
@@ -1384,12 +1383,11 @@ static struct functable net_func[] = {
 
 		c->opt_workgroup = cli_credentials_get_domain(c->creds);
 
-		gensec_features = cli_credentials_get_gensec_features(c->creds);
 		if (c->legacy_opt_ccache) {
-			gensec_features |= GENSEC_FEATURE_NTLM_CCACHE;
-			cli_credentials_set_gensec_features(c->creds,
-							    gensec_features,
-							    CRED_SPECIFIED);
+			cli_credentials_add_gensec_features(
+				c->creds,
+				GENSEC_FEATURE_NTLM_CCACHE,
+				CRED_SPECIFIED);
 		}
 	}
 

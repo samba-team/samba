@@ -139,12 +139,8 @@ struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
 					   CRED_SPECIFIED);
 
 	if (use_ccache) {
-		uint32_t features;
-
-		features = cli_credentials_get_gensec_features(creds);
-		features |= GENSEC_FEATURE_NTLM_CCACHE;
-		cli_credentials_set_gensec_features(creds,
-						    features,
+		cli_credentials_add_gensec_features(creds,
+						    GENSEC_FEATURE_NTLM_CCACHE,
 						    CRED_SPECIFIED);
 
 		if (password != NULL && strlen(password) == 0) {

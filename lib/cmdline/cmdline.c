@@ -1009,14 +1009,8 @@ static void popt_common_credentials_callback(poptContext popt_ctx,
 	}
 	case OPT_USE_WINBIND_CCACHE:
 	{
-		uint32_t gensec_features;
-
-		gensec_features = cli_credentials_get_gensec_features(creds);
-		gensec_features |= GENSEC_FEATURE_NTLM_CCACHE;
-
-		ok = cli_credentials_set_gensec_features(creds,
-							 gensec_features,
-							 CRED_SPECIFIED);
+		ok = cli_credentials_add_gensec_features(
+			creds, GENSEC_FEATURE_NTLM_CCACHE, CRED_SPECIFIED);
 		if (!ok) {
 			fprintf(stderr,
 				"Failed to set gensec feature!\n");

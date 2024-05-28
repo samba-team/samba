@@ -793,12 +793,8 @@ void smbc_set_credentials_with_fallback(SMBCCTX *context,
 					   kerberos_state,
 					   CRED_SPECIFIED);
 	if (smbc_getOptionUseCCache(context)) {
-		uint32_t gensec_features;
-
-		gensec_features = cli_credentials_get_gensec_features(creds);
-		gensec_features |= GENSEC_FEATURE_NTLM_CCACHE;
-		cli_credentials_set_gensec_features(creds,
-						    gensec_features,
+		cli_credentials_add_gensec_features(creds,
+						    GENSEC_FEATURE_NTLM_CCACHE,
 						    CRED_SPECIFIED);
 	}
 
