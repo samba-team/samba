@@ -131,9 +131,6 @@ class SimpleTdbTests(TestCase):
         self.tdb[b"bla"] = b"bloe"
         self.assertTrue(b"bla" in self.tdb)
         self.assertFalse(b"qwertyuiop" in self.tdb)
-        if sys.version_info < (3, 0):
-            self.assertTrue(self.tdb.has_key(b"bla"))
-            self.assertFalse(self.tdb.has_key(b"qwertyuiop"))
 
     def test_keyerror(self):
         self.assertRaises(KeyError, lambda: self.tdb[b"bla"])
@@ -170,10 +167,7 @@ class SimpleTdbTests(TestCase):
     def test_iterkeys(self):
         self.tdb[b"bloe"] = b"2"
         self.tdb[b"bla"] = b"25"
-        if sys.version_info >= (3, 0):
-            i = self.tdb.keys()
-        else:
-            i = self.tdb.iterkeys()
+        i = self.tdb.keys()
         self.assertEqual(set([b"bloe", b"bla"]), set([next(i), next(i)]))
 
     def test_clear(self):
@@ -231,9 +225,6 @@ class TdbTextTests(TestCase):
         self.tdb.text["bla"] = "bloe"
         self.assertTrue("bla" in self.tdb.text)
         self.assertFalse("qwertyuiop" in self.tdb.text)
-        if sys.version_info < (3, 0):
-            self.assertTrue(self.tdb.text.has_key("bla"))
-            self.assertFalse(self.tdb.text.has_key("qwertyuiop"))
 
     def test_keyerror(self):
         self.assertRaises(KeyError, lambda: self.tdb.text["bla"])
@@ -270,10 +261,7 @@ class TdbTextTests(TestCase):
     def test_iterkeys(self):
         self.tdb.text["bloe"] = "2"
         self.tdb.text["bla"] = "25"
-        if sys.version_info >= (3, 0):
-            i = self.tdb.text.keys()
-        else:
-            i = self.tdb.text.iterkeys()
+        i = self.tdb.text.keys()
         self.assertEqual(set(["bloe", "bla"]), set([next(i), next(i)]))
 
     def test_clear(self):
