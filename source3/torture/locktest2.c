@@ -179,10 +179,6 @@ static struct cli_state *connect_one(char *share)
 	fstring myname;
 	static int count;
 	NTSTATUS nt_status;
-	bool use_kerberos = false;
-	bool fallback_after_kerberos = false;
-	bool use_ccache = false;
-	bool pw_nt_hash = false;
 	struct cli_credentials *creds = NULL;
 
 	fstrcpy(server,share+2);
@@ -208,10 +204,10 @@ static struct cli_state *connect_one(char *share)
 				       lp_workgroup(),
 				       NULL, /* realm (use default) */
 				       password,
-				       use_kerberos,
-				       fallback_after_kerberos,
-				       use_ccache,
-				       pw_nt_hash);
+				       false,  /* use_kerberos */
+				       false,  /* fallback_after_kerberos */
+				       false,  /* use_ccache */
+				       false); /* pw_nt_hash */
 	if (creds == NULL) {
 		DEBUG(0, ("cli_session_creds_init failed\n"));
 		return NULL;
