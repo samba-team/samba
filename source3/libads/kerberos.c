@@ -445,23 +445,23 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	char *kdc_str = NULL;
 	char *canon_sockaddr = NULL;
 
-	SMB_ASSERT(pss != NULL);
+	if (pss != NULL) {
+		canon_sockaddr = print_canonical_sockaddr_with_port(frame, pss);
+		if (canon_sockaddr == NULL) {
+			goto out;
+		}
 
-	canon_sockaddr = print_canonical_sockaddr_with_port(frame, pss);
-	if (canon_sockaddr == NULL) {
-		goto out;
-	}
+		kdc_str = talloc_asprintf(frame,
+					  "\t\tkdc = %s\n",
+					  canon_sockaddr);
+		if (kdc_str == NULL) {
+			goto out;
+		}
 
-	kdc_str = talloc_asprintf(frame,
-				  "\t\tkdc = %s\n",
-				  canon_sockaddr);
-	if (kdc_str == NULL) {
-		goto out;
-	}
-
-	ok = sockaddr_storage_to_samba_sockaddr(&sa, pss);
-	if (!ok) {
-		goto out;
+		ok = sockaddr_storage_to_samba_sockaddr(&sa, pss);
+		if (!ok) {
+			goto out;
+		}
 	}
 
 	/*
