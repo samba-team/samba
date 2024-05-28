@@ -368,6 +368,12 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 		r->out.query->info1 = info1;
 		break;
 	case 2:
+		if (r->in.function_code != NETLOGON_CONTROL_REDISCOVER &&
+		    r->in.function_code != NETLOGON_CONTROL_TC_QUERY &&
+		    r->in.function_code != NETLOGON_CONTROL_TC_VERIFY)
+		{
+			return WERR_INVALID_PARAMETER;
+		}
 		info2 = talloc_zero(p->mem_ctx, struct netr_NETLOGON_INFO_2);
 		W_ERROR_HAVE_NO_MEMORY(info2);
 
