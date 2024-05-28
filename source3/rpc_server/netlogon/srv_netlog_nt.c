@@ -263,10 +263,16 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 	case NETLOGON_CONTROL_TRUNCATE_LOG:
 	case NETLOGON_CONTROL_TRANSPORT_NOTIFY:
 	case NETLOGON_CONTROL_FORCE_DNS_REG:
-	case NETLOGON_CONTROL_QUERY_DNS_REG:
 		return WERR_NOT_SUPPORTED;
-
+	case NETLOGON_CONTROL_QUERY_DNS_REG:
+		if (r->in.level != 1) {
+			return WERR_INVALID_PARAMETER;
+		}
+		return WERR_NOT_SUPPORTED;
 	case NETLOGON_CONTROL_FIND_USER:
+		if (r->in.level != 4) {
+			return WERR_INVALID_PARAMETER;
+		}
 		if (!r->in.data || !r->in.data->user) {
 			return WERR_NOT_SUPPORTED;
 		}
@@ -277,6 +283,9 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 		}
 		break;
 	case NETLOGON_CONTROL_TC_VERIFY:
+		if (r->in.level != 2) {
+			return WERR_INVALID_PARAMETER;
+		}
 		if (!r->in.data || !r->in.data->domain) {
 			return WERR_NOT_SUPPORTED;
 		}
