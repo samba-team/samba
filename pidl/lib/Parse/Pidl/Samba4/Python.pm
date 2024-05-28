@@ -1829,7 +1829,8 @@ sub ConvertObjectFromPythonData($$$$$$;$$)
 		my $ctype_name = $self->use_type_variable($ctype);
 		unless (defined ($ctype_name)) {
 			error($location, "Unable to determine origin of type `" . mapTypeName($ctype) . "'");
-			$self->pidl("PyErr_SetString(PyExc_TypeError, \"Can not convert C Type " . mapTypeName($ctype) . " from Python\");");
+			$self->pidl("PyErr_SetString(PyExc_TypeError, \"Cannot convert Python object to NDR $target\");");
+			$self->pidl("$fail");
 			return;
 		}
 		$self->pidl("PY_CHECK_TYPE($ctype_name, $cvar, $fail);");
