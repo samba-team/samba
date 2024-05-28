@@ -91,24 +91,6 @@ class TallocComparisonTests(unittest.TestCase):
         self.assertFalse(obj1 >= obj2)
         self.assertFalse(obj1 > obj2)
 
-    def test_compare_different_types(self):
-        # object comparison falls back to comparing types
-        if sys.version_info >= (3, 0):
-            # In Python 3, types are unorderable -- nothing to test
-            return
-        if talloc.Object < _test_pytalloc.DObject:
-            obj1 = _test_pytalloc.new()
-            obj2 = _test_pytalloc.DObject(dummy_func)
-        else:
-            obj2 = _test_pytalloc.new()
-            obj1 = _test_pytalloc.DObject(dummy_func)
-        self.assertFalse(obj1 == obj2)
-        self.assertTrue(obj1 != obj2)
-        self.assertTrue(obj1 <= obj2)
-        self.assertTrue(obj1 < obj2)
-        self.assertFalse(obj1 >= obj2)
-        self.assertFalse(obj1 > obj2)
-
 
 class TallocBaseComparisonTests(unittest.TestCase):
 
@@ -126,24 +108,6 @@ class TallocBaseComparisonTests(unittest.TestCase):
         obj1, obj2 = sorted([
             _test_pytalloc.base_new(),
             _test_pytalloc.base_new()])
-        self.assertFalse(obj1 == obj2)
-        self.assertTrue(obj1 != obj2)
-        self.assertTrue(obj1 <= obj2)
-        self.assertTrue(obj1 < obj2)
-        self.assertFalse(obj1 >= obj2)
-        self.assertFalse(obj1 > obj2)
-
-    def test_compare_different_types(self):
-        # object comparison falls back to comparing types
-        if sys.version_info >= (3, 0):
-            # In Python 3, types are unorderable -- nothing to test
-            return
-        if talloc.BaseObject < _test_pytalloc.DBaseObject:
-            obj1 = _test_pytalloc.base_new()
-            obj2 = _test_pytalloc.DBaseObject(dummy_func)
-        else:
-            obj2 = _test_pytalloc.base_new()
-            obj1 = _test_pytalloc.DBaseObject(dummy_func)
         self.assertFalse(obj1 == obj2)
         self.assertTrue(obj1 != obj2)
         self.assertTrue(obj1 <= obj2)
