@@ -45,13 +45,9 @@ join = os.path.join
 if sys.hexversion<0x206000f:
 	raise ImportError('Python >= 2.6 is required to create the waf file')
 
-WAF='waf'
+WAF='waf3'
 def b(x):
-	return x
-if sys.hexversion>0x300000f:
-	WAF='waf3'
-	def b(x):
-		return x.encode()
+	return x.encode()
 
 def err(m):
 	print(('\033[91mError: %s\033[0m' % m))
@@ -106,11 +102,6 @@ def unpack_wafdir(dir, src):
 
 	for x in ('Tools', 'extras'):
 		os.chmod(join('waflib',x), 493)
-
-	if sys.hexversion<0x300000f:
-		sys.path = [join(dir, 'waflib')] + sys.path
-		import fixpy2
-		fixpy2.fixdir(dir)
 
 	os.remove(tmp)
 	os.chdir(cwd)

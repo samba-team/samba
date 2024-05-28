@@ -187,11 +187,7 @@ def write_build_options(task):
     keys_header_sys = []
     keys_header_other = []
     keys_misc = []
-    if sys.hexversion>0x300000f:
-        trans_table = bytes.maketrans(b'.-()', b'____')
-    else:
-        import string
-        trans_table = string.maketrans('.-()', '____')
+    trans_table = bytes.maketrans(b'.-()', b'____')
 
     for key in tbl:
         if key.startswith("HAVE_UT_UT_") or key.find("UTMP") >= 0:

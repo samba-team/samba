@@ -200,8 +200,6 @@ also accepted as dictionary entries here
             string+="#define SAMBA_VERSION_%s " % name
             value = self.vcs_fields[name]
             string_types = str
-            if sys.version_info[0] < 3:
-                string_types = basestring
             if isinstance(value, string_types):
                 string += "\"%s\"" % value
             elif type(value) is int:
