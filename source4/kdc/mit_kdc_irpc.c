@@ -36,6 +36,7 @@
 #include "db-glue.h"
 #include "sdb.h"
 #include "mit_kdc_irpc.h"
+#include "lib/crypto/gmsa.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_KERBEROS
@@ -62,6 +63,15 @@ static NTSTATUS netr_samlogon_generic_logon(struct irpc_message *msg,
 	struct sdb_keys skeys;
 	unsigned int i;
 	const uint8_t *d = NULL;
+	NTTIME now;
+	bool time_ok;
+
+	time_ok = gmsa_current_time(&now);
+	if (!time_ok) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	*mki_ctx->db_ctx->current_nttime_ull = now;
 
 	/* There is no reply to this request */
 	r->out.generic_reply = data_blob(NULL, 0);
@@ -173,6 +183,11 @@ NTSTATUS samba_setup_mit_kdc_irpc(struct task_server *task)
 
 	base_ctx.ev_ctx = task->event_ctx;
 	base_ctx.lp_ctx = task->lp_ctx;
+
+	base_ctx.current_nttime_ull = talloc_zero(mki_ctx, unsigned long long);
+	if (base_ctx.current_nttime_ull == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* db-glue.h */
 	status = samba_kdc_setup_db_ctx(mki_ctx,

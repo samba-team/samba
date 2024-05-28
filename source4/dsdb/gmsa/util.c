@@ -1783,3 +1783,14 @@ bool dsdb_gmsa_current_time(struct ldb_context *ldb, NTTIME *current_time_out)
 
 	return gmsa_current_time(current_time_out);
 }
+
+/* Set the current time.  Caller to supply valid unsigned long long talloc pointer and manage lifetime */
+bool dsdb_gmsa_set_current_time(struct ldb_context *ldb, unsigned long long *current_time_talloc)
+{
+	int ret = ldb_set_opaque(ldb, DSDB_GMSA_TIME_OPAQUE, current_time_talloc);
+	if (ret != LDB_SUCCESS) {
+
+		return false;
+	}
+	return true;
+}

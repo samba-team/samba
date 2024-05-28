@@ -29,6 +29,7 @@
 #include "libnet/libnet_export_keytab.h"
 #include "kdc/db-glue.h"
 #include "kdc/sdb.h"
+#include "dsdb/gmsa/util.h"
 
 static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 			    struct smb_krb5_context *smb_krb5_context,
@@ -371,6 +372,37 @@ NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, s
 	base_ctx->ev_ctx = ctx->event_ctx;
 	base_ctx->lp_ctx = ctx->lp_ctx;
 	base_ctx->samdb = r->in.samdb;
+	if (base_ctx->samdb != NULL) {
+		base_ctx->current_nttime_ull = talloc_get_type(
+			ldb_get_opaque(base_ctx->samdb, DSDB_GMSA_TIME_OPAQUE), unsigned long long);
+	}
+
+	/*
+	 * If the caller hasn't set a fixed time, or a samdb, set up
+	 * the pointer for the opaque and set to the current time
+	 */
+	if (base_ctx->current_nttime_ull == NULL) {
+		bool time_ok;
+		NTTIME current_nttime;
+
+		base_ctx->current_nttime_ull = talloc_zero(base_ctx, unsigned long long);
+		if (base_ctx->current_nttime_ull == NULL) {
+			r->out.error_string = NULL;
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		time_ok = gmsa_current_time(&current_nttime);
+
+		if (!time_ok) {
+			/* This is really quite unlikely */
+			r->out.error_string
+				= talloc_asprintf(mem_ctx,
+						  "Failed to get current time to check "
+						  "time-dependent keys against for export");
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+		*base_ctx->current_nttime_ull = current_nttime;
+	}
 
 	status = samba_kdc_setup_db_ctx(mem_ctx, base_ctx, &db_ctx);
 	if (!NT_STATUS_IS_OK(status)) {

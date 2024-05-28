@@ -39,6 +39,13 @@ struct samba_kdc_base_context {
 	struct loadparm_context *lp_ctx;
 	struct imessaging_context *msg_ctx;
 	struct ldb_context *samdb;
+
+	/*
+	 * If we are under Heimdal, this will be updated at each
+	 * packet to be the same time as the KDC process uses and will
+	 * be set into dsdb_gmsa_set_current_time() (otherwise NULL)
+	 */
+	unsigned long long *current_nttime_ull;
 };
 
 struct samba_kdc_seq;
@@ -53,6 +60,10 @@ struct samba_kdc_db_context {
 	unsigned int my_krbtgt_number;
 	struct ldb_dn *krbtgt_dn;
 	struct samba_kdc_policy policy;
+	/*
+	 * Copied from the base_context when this is created
+	 */
+	unsigned long long *current_nttime_ull;
 };
 
 struct samba_kdc_entry {
@@ -76,6 +87,7 @@ struct samba_kdc_entry {
 	bool claims_from_pac_are_initialized : 1;
 	bool claims_from_db_are_initialized : 1;
 	bool group_managed_service_account : 1;
+	NTTIME current_nttime;
 };
 
 extern struct hdb_method hdb_samba4_interface;

@@ -114,6 +114,12 @@ krb5_error_code mit_samba_context_init(struct mit_samba_context **_ctx)
 		lpcfg_load_default(base_ctx.lp_ctx);
 	}
 
+	base_ctx.current_nttime_ull = talloc_zero(ctx, unsigned long long);
+	if (base_ctx.current_nttime_ull == NULL) {
+		ret = ENOMEM;
+		goto done;
+	}
+
 	status = samba_kdc_setup_db_ctx(ctx, &base_ctx, &ctx->db_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = EINVAL;
@@ -201,6 +207,15 @@ krb5_error_code mit_samba_get_principal(struct mit_samba_context *ctx,
 	krb5_error_code ret;
 	uint32_t sflags = 0;
 	krb5_principal referral_principal = NULL;
+	NTTIME now;
+	bool time_ok;
+
+	time_ok = gmsa_current_time(&now);
+	if (!time_ok) {
+		return EINVAL;
+	}
+
+	*ctx->db_ctx->current_nttime_ull = now;
 
 	kentry = calloc(1, sizeof(krb5_db_entry));
 	if (kentry == NULL) {
@@ -343,6 +358,16 @@ krb5_error_code mit_samba_get_firstkey(struct mit_samba_context *ctx,
 	krb5_db_entry *kentry;
 	krb5_error_code ret;
 
+	NTTIME now;
+	bool time_ok;
+
+	time_ok = gmsa_current_time(&now);
+	if (!time_ok) {
+		return EINVAL;
+	}
+
+	*ctx->db_ctx->current_nttime_ull = now;
+
 	kentry = malloc(sizeof(krb5_db_entry));
 	if (kentry == NULL) {
 		return ENOMEM;
@@ -380,6 +405,8 @@ krb5_error_code mit_samba_get_nextkey(struct mit_samba_context *ctx,
 	struct sdb_entry sentry = {};
 	krb5_db_entry *kentry;
 	krb5_error_code ret;
+
+	/* Not updating time, keep the same for the whole operation */
 
 	kentry = malloc(sizeof(krb5_db_entry));
 	if (kentry == NULL) {
@@ -449,6 +476,9 @@ krb5_error_code mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 	}
 	skdc_entry = talloc_get_type_abort(client->e_data,
 					   struct samba_kdc_entry);
+
+       /* This sets the time into the DSDB opaque */
+	*smb_ctx->db_ctx->current_nttime_ull = skdc_entry->current_nttime;
 
 	if (server == NULL) {
 		return EINVAL;
@@ -650,6 +680,9 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 		talloc_get_type_abort(krbtgt->e_data,
 				      struct samba_kdc_entry);
 
+	/* This sets the time into the DSDB opaque */
+	*ctx->db_ctx->current_nttime_ull = krbtgt_skdc_entry->current_nttime;
+
 	if (server == NULL) {
 		code = EINVAL;
 		goto done;
@@ -788,6 +821,9 @@ krb5_error_code mit_samba_check_client_access(struct mit_samba_context *ctx,
 
 	skdc_entry = talloc_get_type(client->e_data, struct samba_kdc_entry);
 
+       /* This sets the time into the DSDB opaque */
+	*ctx->db_ctx->current_nttime_ull = skdc_entry->current_nttime;
+
 	nt_status = samba_kdc_check_client_access(skdc_entry,
 						  client_name,
 						  netbios_name,
@@ -814,6 +850,9 @@ krb5_error_code mit_samba_check_s4u2proxy(struct mit_samba_context *ctx,
 		talloc_get_type_abort(server->e_data, struct samba_kdc_entry);
 	krb5_error_code code;
 
+	/* This sets the time into the DSDB opaque */
+	*ctx->db_ctx->current_nttime_ull = server_skdc_entry->current_nttime;
+
 	code = samba_kdc_check_s4u2proxy(ctx->context,
 					 ctx->db_ctx,
 					 server_skdc_entry,
@@ -834,6 +873,9 @@ krb5_error_code mit_samba_check_allowed_to_delegate_from(
 	struct auth_user_info_dc *user_info_dc = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 	krb5_error_code code;
+
+	/* This sets the time into the DSDB opaque */
+	*ctx->db_ctx->current_nttime_ull = proxy_skdc_entry->current_nttime;
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -951,6 +993,9 @@ krb5_error_code mit_samba_kpasswd_change_password(struct mit_samba_context *ctx,
 		talloc_get_type_abort(db_entry->e_data, struct samba_kdc_entry);
 	krb5_error_code code = 0;
 
+       /* This sets the time into the DSDB opaque */
+	*ctx->db_ctx->current_nttime_ull = p->current_nttime;
+
 #ifdef DEBUG_PASSWORD
 	DBG_WARNING("mit_samba_kpasswd_change_password called with: %s\n", pwd);
 #endif
@@ -1035,6 +1080,9 @@ void mit_samba_zero_bad_password_count(krb5_db_entry *db_entry)
 		talloc_get_type_abort(db_entry->e_data, struct samba_kdc_entry);
 	struct ldb_dn *domain_dn;
 
+	/* This sets the time into the DSDB opaque */
+	*p->kdc_db_ctx->current_nttime_ull = p->current_nttime;
+
 	domain_dn = ldb_get_default_basedn(p->kdc_db_ctx->samdb);
 
 	authsam_logon_success_accounting(p->kdc_db_ctx->samdb,
@@ -1051,6 +1099,9 @@ void mit_samba_update_bad_password_count(krb5_db_entry *db_entry)
 	struct samba_kdc_entry *p =
 		talloc_get_type_abort(db_entry->e_data, struct samba_kdc_entry);
 
+	/* This sets the time into the DSDB opaque */
+	*p->kdc_db_ctx->current_nttime_ull = p->current_nttime;
+
 	authsam_update_bad_pwd_count(p->kdc_db_ctx->samdb,
 				     p->msg,
 				     ldb_get_default_basedn(p->kdc_db_ctx->samdb));
@@ -1060,6 +1111,9 @@ bool mit_samba_princ_needs_pac(krb5_db_entry *db_entry)
 {
 	struct samba_kdc_entry *skdc_entry =
 		talloc_get_type_abort(db_entry->e_data, struct samba_kdc_entry);
+
+	/* This sets the time into the DSDB opaque */
+	*skdc_entry->kdc_db_ctx->current_nttime_ull = skdc_entry->current_nttime;
 
 	return samba_princ_needs_pac(skdc_entry);
 }

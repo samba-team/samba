@@ -65,10 +65,15 @@ static kdc_code kdc_process(struct kdc_server *kdc,
 	struct sockaddr_storage ss;
 	krb5_data k5_reply;
 	krb5_kdc_configuration *kdc_config = kdc->private_data;
+	struct timespec now_timespec = timespec_current();
+	struct timeval now_timeval = convert_timespec_to_timeval(now_timespec);
 
 	krb5_data_zero(&k5_reply);
 
-	krb5_kdc_update_time(NULL);
+	krb5_kdc_update_time(&now_timeval);
+
+	/* This sets the time into the DSDB opaque */
+	*kdc->base_ctx->current_nttime_ull = full_timespec_to_nt_time(&now_timespec);
 
 	ret = tsocket_address_bsd_sockaddr(peer_addr, (struct sockaddr *) &ss,
 				sizeof(struct sockaddr_storage));
@@ -448,6 +453,12 @@ static void kdc_post_fork(struct task_server *task, struct process_details *pd)
 	kdc->base_ctx->ev_ctx = task->event_ctx;
 	kdc->base_ctx->lp_ctx = task->lp_ctx;
 	kdc->base_ctx->msg_ctx = task->msg_ctx;
+
+	kdc->base_ctx->current_nttime_ull = talloc_zero(kdc, unsigned long long);
+	if (kdc->base_ctx->current_nttime_ull == NULL) {
+		task_server_terminate(task, "kdc: out of memory creating time variable", true);
+		return;
+	}
 
 	status = hdb_samba4_create_kdc(kdc->base_ctx,
 				       kdc->smb_krb5_context->krb5_context,

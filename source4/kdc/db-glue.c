@@ -1286,6 +1286,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		ret = ENOMEM;
 		goto out;
 	}
+	p->current_nttime = *kdc_db_ctx->current_nttime_ull;
 
 	talloc_set_destructor(p, samba_kdc_entry_destructor);
 
@@ -2180,8 +2181,8 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	enum ndr_err_code ndr_err;
 	int ret;
 	unsigned int i;
-	struct timeval tv;
-	NTTIME an_hour_ago;
+	NTTIME now = *kdc_db_ctx->current_nttime_ull;
+	NTTIME an_hour_ago, an_hour;
 	bool prefer_current = false;
 	bool force_rc4 = lpcfg_kdc_force_enable_rc4_weak_session_keys(lp_ctx);
 	uint32_t supported_enctypes = ENC_RC4_HMAC_MD5;
@@ -2308,6 +2309,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	p->kdc_db_ctx = kdc_db_ctx;
 	p->realm_dn = realm_dn;
 	p->supported_enctypes = pa_supported_enctypes;
+	p->current_nttime = *kdc_db_ctx->current_nttime_ull;
 
 	talloc_set_destructor(p, samba_kdc_entry_destructor);
 
@@ -2350,11 +2352,18 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	/*
 	 * Windows prefers the previous key for one hour.
 	 */
-	tv = timeval_current();
-	if (tv.tv_sec > 3600) {
-		tv.tv_sec -= 3600;
+
+	an_hour = INT64_C(1000) * 1000 * 10 * 3600;
+
+	/*
+	 * While a 'now' value of 0 is implausible, avoid this being a
+	 * silly value in that case
+	 */
+	if (now > an_hour) {
+		an_hour_ago = now - an_hour;
+	} else {
+		an_hour_ago = now;
 	}
-	an_hour_ago = timeval_to_nttime(&tv);
 
 	/* first work out the current kvno */
 	current_kvno = 0;
@@ -4009,6 +4018,8 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 	int ldb_ret;
 	struct ldb_message *msg = NULL;
 	struct samba_kdc_db_context *kdc_db_ctx = NULL;
+	bool time_ok;
+
 	/* The idea here is very simple.  Using Kerberos to
 	 * authenticate the KDC to the LDAP server is highly likely to
 	 * be circular.
@@ -4024,6 +4035,9 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 	kdc_db_ctx->ev_ctx = base_ctx->ev_ctx;
 	kdc_db_ctx->lp_ctx = base_ctx->lp_ctx;
 	kdc_db_ctx->msg_ctx = base_ctx->msg_ctx;
+
+	/* Copy over the pointer that will be updated with the time */
+	kdc_db_ctx->current_nttime_ull = base_ctx->current_nttime_ull;
 
 	/* get default kdc policy */
 	lpcfg_default_kdc_policy(mem_ctx,
@@ -4063,6 +4077,16 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 			talloc_free(kdc_db_ctx);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
+	}
+
+	/*
+	 * Set the current time pointer, which will be updated before
+	 * each packet (Heimdal) or fetch call (MIT)
+	 */
+	time_ok = dsdb_gmsa_set_current_time(kdc_db_ctx->samdb, kdc_db_ctx->current_nttime_ull);
+	if (!time_ok) {
+		talloc_free(kdc_db_ctx);
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	/* Find out our own krbtgt kvno */
