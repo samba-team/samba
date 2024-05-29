@@ -55,10 +55,27 @@ class TestDNSUpdates(DNSTKeyTest):
         self.server_ip = server_ip
         super(TestDNSUpdates, self).setUp()
 
-    def test_tkey(self):
-        "test DNS TKEY handshake"
+    def test_tkey_gss_tsig(self):
+        "test DNS TKEY handshake with gss-tsig"
 
         self.tkey_trans()
+
+    def test_tkey_gss_microsoft_com(self):
+        "test DNS TKEY handshake with gss.microsoft.com"
+
+        self.tkey_trans(algorithm_name="gss.microsoft.com")
+
+    def test_tkey_invalid_gss_TSIG(self):
+        "test DNS TKEY handshake with invalid gss-TSIG"
+
+        self.tkey_trans(algorithm_name="gss-TSIG",
+                        expected_rcode=dns.DNS_RCODE_REFUSED)
+
+    def test_tkey_invalid_gss_MICROSOFT_com(self):
+        "test DNS TKEY handshake with invalid gss.MICROSOFT.com"
+
+        self.tkey_trans(algorithm_name="gss.MICROSOFT.com",
+                        expected_rcode=dns.DNS_RCODE_REFUSED)
 
     def test_update_wo_tsig(self):
         "test DNS update without TSIG record"
