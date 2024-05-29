@@ -331,35 +331,28 @@ class TestDNSUpdates(DNSTKeyTest):
     def test_update_tsig_windows(self):
         "test DNS update with correct TSIG record (follow Windows pattern)"
 
-        newrecname = "win" + self.newrecname
+        p = self.make_update_request()
+
         rr_class = dns.DNS_QCLASS_IN
         ttl = 1200
 
-        p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
-        q = self.make_name_question(self.get_dns_domain(),
-                                    dns.DNS_QTYPE_SOA,
-                                    dns.DNS_QCLASS_IN)
-        questions = []
-        questions.append(q)
-        self.finish_name_packet(p, questions)
-
         updates = []
         r = dns.res_rec()
-        r.name = newrecname
+        r.name = self.newrecname
         r.rr_type = dns.DNS_QTYPE_A
         r.rr_class = dns.DNS_QCLASS_ANY
         r.ttl = 0
         r.length = 0
         updates.append(r)
         r = dns.res_rec()
-        r.name = newrecname
+        r.name = self.newrecname
         r.rr_type = dns.DNS_QTYPE_AAAA
         r.rr_class = dns.DNS_QCLASS_ANY
         r.ttl = 0
         r.length = 0
         updates.append(r)
         r = dns.res_rec()
-        r.name = newrecname
+        r.name = self.newrecname
         r.rr_type = dns.DNS_QTYPE_A
         r.rr_class = rr_class
         r.ttl = ttl
@@ -371,7 +364,7 @@ class TestDNSUpdates(DNSTKeyTest):
 
         prereqs = []
         r = dns.res_rec()
-        r.name = newrecname
+        r.name = self.newrecname
         r.rr_type = dns.DNS_QTYPE_CNAME
         r.rr_class = dns.DNS_QCLASS_NONE
         r.ttl = 0
@@ -390,11 +383,22 @@ class TestDNSUpdates(DNSTKeyTest):
         self.verify_packet(response, response_p, mac)
 
         # Check the record is around
-        rcode = self.search_record(newrecname)
+        rcode = self.search_record(self.newrecname)
         self.assert_rcode_equals(rcode, dns.DNS_RCODE_OK)
 
         # Now delete the record
+        delete_updates = []
+        r = dns.res_rec()
+        r.name = self.newrecname
+        r.rr_type = dns.DNS_QTYPE_A
+        r.rr_class = dns.DNS_QCLASS_NONE
+        r.ttl = 0
+        r.length = 0xffff
+        r.rdata = "10.1.45.64"
+        delete_updates.append(r)
         p = self.make_update_request(delete=True)
+        p.nscount = len(delete_updates)
+        p.nsrecs = delete_updates
         mac = self.sign_packet(p, self.tkey['name'])
         (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
