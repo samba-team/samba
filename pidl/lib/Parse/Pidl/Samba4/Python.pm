@@ -2295,6 +2295,10 @@ sub ConvertObjectToPythonLevel($$$$$$$)
 		}
 		my $conv = $self->ConvertObjectToPythonData($mem_ctx, $l->{DATA_TYPE}, $var_name, $e->{ORIGINAL});
 		$self->pidl("$py_var = $conv;");
+		if ($conv eq "NULL") {
+			$self->pidl("PyErr_SetString(PyExc_NotImplementedError, \"Cannot convert NDR $var_name to Python\");");
+			$self->pidl("$fail");
+		}
 	} elsif ($l->{TYPE} eq "SUBCONTEXT") {
 		$self->ConvertObjectToPythonLevel($mem_ctx, $env, $e, $nl, $var_name, $py_var, $fail, $recurse);
 	} else {
