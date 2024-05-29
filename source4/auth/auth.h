@@ -109,6 +109,7 @@ struct cli_credentials;
 NTSTATUS auth_get_challenge(struct auth4_context *auth_ctx, uint8_t chal[8]);
 NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 			    struct ldb_context *sam_ctx,
+			    NTTIME now,
 			    uint32_t logon_parameters,
 			    struct ldb_dn *domain_dn,
 			    struct ldb_message *msg,

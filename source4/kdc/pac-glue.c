@@ -1559,6 +1559,7 @@ NTSTATUS samba_kdc_check_client_access(struct samba_kdc_entry *kdc_entry,
 	/* we allow all kinds of trusts here */
 	nt_status = authsam_account_ok(tmp_ctx,
 				       kdc_entry->kdc_db_ctx->samdb,
+				       kdc_entry->current_nttime,
 				       MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT |
 				       MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT,
 				       kdc_entry->realm_dn, kdc_entry->msg,

@@ -204,6 +204,7 @@ static bool logon_hours_ok(struct ldb_message *msg, const char *name_for_logs)
 ****************************************************************************/
 _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 				     struct ldb_context *sam_ctx,
+				     NTTIME now,
 				     uint32_t logon_parameters,
 				     struct ldb_dn *domain_dn,
 				     struct ldb_message *msg,
@@ -216,8 +217,6 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	const char *workstation_list;
 	NTTIME acct_expiry;
 	NTTIME must_change_time;
-	struct timeval tv_now = timeval_current();
-	NTTIME now = timeval_to_nttime(&tv_now);
 
 	DEBUG(4,("authsam_account_ok: Checking SMB password for user %s\n", name_for_logs));
 
