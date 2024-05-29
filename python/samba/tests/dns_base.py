@@ -161,6 +161,10 @@ class DNSTest(TestCaseInTempDir):
             response = ndr.ndr_unpack(dns.name_packet, recv_packet_p,
                                       allow_remaining=allow_remaining)
             return (response, recv_packet)
+        except RuntimeError as re:
+            if s is not None:
+                s.close()
+            raise AssertionError(re)
         finally:
             if s is not None:
                 s.close()
@@ -198,6 +202,10 @@ class DNSTest(TestCaseInTempDir):
                 print(self.hexdump(recv_packet))
             response = ndr.ndr_unpack(dns.name_packet, recv_packet[2:])
 
+        except RuntimeError as re:
+            if s is not None:
+                s.close()
+            raise AssertionError(re)
         finally:
             if s is not None:
                 s.close()
