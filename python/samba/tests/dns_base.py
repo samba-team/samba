@@ -353,6 +353,15 @@ class DNSTKeyTest(DNSTest):
         self.assertEqual(response.arcount, 1)
         self.assertEqual(response.additional[0].rr_type, dns.DNS_QTYPE_TSIG)
 
+        if self.tkey['algorithm'] == "gss-tsig":
+            gss_tsig = True
+        else:
+            gss_tsig = False
+
+        request_mac_len = b""
+        if len(request_mac) > 0 and gss_tsig:
+            request_mac_len = struct.pack('!H', len(request_mac))
+
         tsig_record = response.additional[0].rdata
         mac = bytes(tsig_record.mac)
 
@@ -378,7 +387,7 @@ class DNSTKeyTest(DNSTest):
         fake_tsig.other_data = tsig_record.other_data
         fake_tsig_packet = ndr.ndr_pack(fake_tsig)
 
-        data = request_mac + response_packet_wo_tsig + fake_tsig_packet
+        data = request_mac_len + request_mac + response_packet_wo_tsig + fake_tsig_packet
         try:
             self.tkey['gensec'].check_packet(data, data, mac)
         except NTSTATUSError as nt:
