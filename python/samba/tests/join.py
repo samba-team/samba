@@ -156,7 +156,7 @@ class JoinTestCase(DNSTKeyTest):
         p.nscount = len(updates)
         p.nsrecs = updates
 
-        mac = self.sign_packet(p, self.key_name)
+        mac = self.sign_packet(p, self.tkey['name'])
         (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.verify_packet(response, response_p, mac)
