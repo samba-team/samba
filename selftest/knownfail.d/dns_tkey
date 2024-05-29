@@ -3,3 +3,4 @@
 ^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_tkey_gss_microsoft_com.fl2008r2dc
 ^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_tkey_invalid_gss_MICROSOFT_com.fl2008r2dc
 ^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_tkey_invalid_gss_TSIG.fl2008r2dc
+^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_update_gss_tsig_tkey_req_answers.fl2008r2dc
