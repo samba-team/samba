@@ -317,7 +317,7 @@ class DNSTKeyTest(DNSTest):
         data = request_mac + response_packet_wo_tsig + fake_tsig_packet
         self.g.check_packet(data, data, mac)
 
-    def sign_packet(self, packet, key_name):
+    def sign_packet(self, packet, key_name, bad_sig=False):
         "Sign a packet, calculate a MAC and add TSIG record"
         packet_data = ndr.ndr_pack(packet)
 
@@ -336,6 +336,23 @@ class DNSTKeyTest(DNSTest):
         data = packet_data + fake_tsig_packet
         mac = self.g.sign_packet(data, data)
         mac_list = [x if isinstance(x, int) else ord(x) for x in list(mac)]
+        if bad_sig:
+            if len(mac) > 8:
+                mac_list[-8] = mac_list[-8] ^ 0xff
+            if len(mac) > 7:
+                mac_list[-7] = ord('b')
+            if len(mac) > 6:
+                mac_list[-6] = ord('a')
+            if len(mac) > 5:
+                mac_list[-5] = ord('d')
+            if len(mac) > 4:
+                mac_list[-4] = ord('m')
+            if len(mac) > 3:
+                mac_list[-3] = ord('a')
+            if len(mac) > 2:
+                mac_list[-2] = ord('c')
+            if len(mac) > 1:
+                mac_list[-1] = mac_list[-1] ^ 0xff
 
         rdata = dns.tsig_record()
         rdata.algorithm_name = "gss-tsig"
@@ -363,33 +380,10 @@ class DNSTKeyTest(DNSTest):
         return mac
 
     def bad_sign_packet(self, packet, key_name):
-        """Add bad signature for a packet by bitflipping
-        the final byte in the MAC"""
+        """Add bad signature for a packet by
+        bitflipping and hardcoding bytes at the end of the MAC"""
 
-        mac_list = [x if isinstance(x, int) else ord(x) for x in list("badmac")]
-
-        rdata = dns.tsig_record()
-        rdata.algorithm_name = "gss-tsig"
-        rdata.time_prefix = 0
-        rdata.time = int(time.time())
-        rdata.fudge = 300
-        rdata.original_id = packet.id
-        rdata.error = 0
-        rdata.other_size = 0
-        rdata.mac = mac_list
-        rdata.mac_size = len(mac_list)
-
-        r = dns.res_rec()
-        r.name = key_name
-        r.rr_type = dns.DNS_QTYPE_TSIG
-        r.rr_class = dns.DNS_QCLASS_ANY
-        r.ttl = 0
-        r.length = 0xffff
-        r.rdata = rdata
-
-        additional = [r]
-        packet.additional = additional
-        packet.arcount = 1
+        return self.sign_packet(packet, key_name, bad_sig=True)
 
     def search_record(self, name):
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
