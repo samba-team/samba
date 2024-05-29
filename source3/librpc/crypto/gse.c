@@ -820,14 +820,11 @@ done:
 static char *gse_errstr(TALLOC_CTX *mem_ctx, OM_uint32 maj, OM_uint32 min)
 {
 	OM_uint32 gss_min, gss_maj;
-	gss_buffer_desc msg_min;
-	gss_buffer_desc msg_maj;
+	gss_buffer_desc msg_min = {};
+	gss_buffer_desc msg_maj = {};
 	OM_uint32 msg_ctx = 0;
 
 	char *errstr = NULL;
-
-	ZERO_STRUCT(msg_min);
-	ZERO_STRUCT(msg_maj);
 
 	gss_maj = gss_display_status(&gss_min, maj, GSS_C_GSS_CODE,
 				     GSS_C_NO_OID, &msg_ctx, &msg_maj);
