@@ -4037,7 +4037,10 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 		/*
 		 * Caller is responsible for lifetimes.  In reality
 		 * the whole thing is destroyed before leaving the
-		 * function the samdb was passed into
+		 * function the samdb was passed into.
+		 *
+		 * We assume this DB is created from python and so
+		 * can't be in the ldb_wrap cache.
 		 */
 		kdc_db_ctx->samdb = base_ctx->samdb;
 	} else {
@@ -4054,7 +4057,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 						  base_ctx->lp_ctx,
 						  session_info,
 						  NULL,
-						  0);
+						  SAMBA_LDB_WRAP_CONNECT_FLAG_NO_SHARE_CONTEXT);
 		if (kdc_db_ctx->samdb == NULL) {
 			DBG_WARNING("Cannot open samdb for KDC backend!\n");
 			talloc_free(kdc_db_ctx);
