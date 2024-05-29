@@ -267,7 +267,22 @@ class DNSTKeyTest(DNSTest):
         self.creds.set_username(tests.env_get_var_value('USERNAME'))
         self.creds.set_password(tests.env_get_var_value('PASSWORD'))
         self.creds.set_kerberos_state(credentials.MUST_USE_KERBEROS)
+
+        self.unpriv_creds = None
+
         self.newrecname = "tkeytsig.%s" % self.get_dns_domain()
+
+    def get_unpriv_creds(self):
+        if self.unpriv_creds is not None:
+            return self.unpriv_creds
+
+        self.unpriv_creds = credentials.Credentials()
+        self.unpriv_creds.guess(self.lp_ctx)
+        self.unpriv_creds.set_username(tests.env_get_var_value('USERNAME_UNPRIV'))
+        self.unpriv_creds.set_password(tests.env_get_var_value('PASSWORD_UNPRIV'))
+        self.unpriv_creds.set_kerberos_state(credentials.MUST_USE_KERBEROS)
+
+        return self.unpriv_creds
 
     def tkey_trans(self, creds=None, algorithm_name="gss-tsig",
                    tkey_req_in_answers=False,
