@@ -301,8 +301,6 @@ NTSTATUS gensec_wrap(struct gensec_security *gensec_security,
 		     const DATA_BLOB *in,
 		     DATA_BLOB *out);
 
-bool gensec_security_ops_enabled(const struct gensec_security_ops *ops, struct gensec_security *security);
-
 NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security,
 					const char *sasl_name);
 const char **gensec_security_sasl_names(struct gensec_security *gensec_security,

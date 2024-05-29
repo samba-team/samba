@@ -43,7 +43,8 @@
 static const struct gensec_security_ops **generic_security_ops;
 static int gensec_num_backends;
 
-bool gensec_security_ops_enabled(const struct gensec_security_ops *ops, struct gensec_security *security)
+static bool gensec_security_ops_enabled(const struct gensec_security_ops *ops,
+					struct gensec_security *security)
 {
 	bool ok = lpcfg_parm_bool(security->settings->lp_ctx,
 				  NULL,
@@ -134,6 +135,10 @@ static bool gensec_offer_mech(struct gensec_security *gensec_security,
 		offer = false;
 	}
 
+	if (offer && (gensec_security != NULL)) {
+		offer = gensec_security_ops_enabled(mech, gensec_security);
+	}
+
 	return offer;
 }
 
@@ -203,11 +208,6 @@ static const struct gensec_security_ops *gensec_security_by_fn(
 	for (i = 0; backends[i] != NULL; i++) {
 		const struct gensec_security_ops *backend = backends[i];
 		bool ok;
-
-		if ((gensec_security != NULL)  &&
-		    !gensec_security_ops_enabled(backend, gensec_security)) {
-			continue;
-		}
 
 		ok = fn(backend, private_data);
 		if (ok) {
@@ -324,11 +324,6 @@ static const char **gensec_security_sasl_names_from_ops(
 		}
 
 		if (gensec_security != NULL) {
-			if (!gensec_security_ops_enabled(ops[i],
-							 gensec_security)) {
-				continue;
-			}
-
 			role = gensec_security->gensec_role;
 		}
 
@@ -418,9 +413,6 @@ static const struct gensec_security_ops **gensec_security_by_sasl_list(
 	/* Find backends in our preferred order, by walking our list,
 	 * then looking in the supplied list */
 	for (i=0; backends && backends[i]; i++) {
-		if (gensec_security != NULL &&
-				!gensec_security_ops_enabled(backends[i], gensec_security))
-		    continue;
 		for (sasl_idx = 0; sasl_names[sasl_idx]; sasl_idx++) {
 			if (!backends[i]->sasl_name ||
 			    !(strcmp(backends[i]->sasl_name,
@@ -490,9 +482,6 @@ _PUBLIC_ const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(
 	/* Find backends in our preferred order, by walking our list,
 	 * then looking in the supplied list */
 	for (i=0; backends && backends[i]; i++) {
-		if (gensec_security != NULL &&
-				!gensec_security_ops_enabled(backends[i], gensec_security))
-		    continue;
 		if (!backends[i]->oid) {
 			continue;
 		}
@@ -560,10 +549,6 @@ static const char **gensec_security_oids_from_ops(
 	}
 
 	for (i=0; ops && ops[i]; i++) {
-		if (gensec_security != NULL &&
-			!gensec_security_ops_enabled(ops[i], gensec_security)) {
-			continue;
-		}
 		if (!ops[i]->oid) {
 			continue;
 		}
