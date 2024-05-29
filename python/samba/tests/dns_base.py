@@ -248,7 +248,7 @@ class DNSTKeyTest(DNSTest):
         self.creds.set_kerberos_state(credentials.MUST_USE_KERBEROS)
         self.newrecname = "tkeytsig.%s" % self.get_dns_domain()
 
-    def tkey_trans(self, creds=None):
+    def tkey_trans(self, creds=None, algorithm_name="gss-tsig"):
         "Do a TKEY transaction and establish a gensec context"
 
         if creds is None:
@@ -271,7 +271,7 @@ class DNSTKeyTest(DNSTest):
         r.ttl = 0
         r.length = 0xffff
         rdata = dns.tkey_record()
-        rdata.algorithm = "gss-tsig"
+        rdata.algorithm = algorithm_name
         rdata.inception = int(time.time())
         rdata.expiration = int(time.time()) + 60 * 60
         rdata.mode = dns.DNS_TKEY_MODE_GSSAPI
@@ -343,7 +343,9 @@ class DNSTKeyTest(DNSTest):
         data = request_mac + response_packet_wo_tsig + fake_tsig_packet
         self.g.check_packet(data, data, mac)
 
-    def sign_packet(self, packet, key_name, bad_sig=False):
+    def sign_packet(self, packet, key_name,
+                    algorithm_name="gss-tsig",
+                    bad_sig=False):
         "Sign a packet, calculate a MAC and add TSIG record"
         packet_data = ndr.ndr_pack(packet)
 
@@ -353,7 +355,7 @@ class DNSTKeyTest(DNSTest):
         fake_tsig.ttl = 0
         fake_tsig.time_prefix = 0
         fake_tsig.time = int(time.time())
-        fake_tsig.algorithm_name = "gss-tsig"
+        fake_tsig.algorithm_name = algorithm_name
         fake_tsig.fudge = 300
         fake_tsig.error = 0
         fake_tsig.other_size = 0
@@ -381,7 +383,7 @@ class DNSTKeyTest(DNSTest):
                 mac_list[-1] = mac_list[-1] ^ 0xff
 
         rdata = dns.tsig_record()
-        rdata.algorithm_name = "gss-tsig"
+        rdata.algorithm_name = algorithm_name
         rdata.time_prefix = 0
         rdata.time = fake_tsig.time
         rdata.fudge = 300
