@@ -248,7 +248,8 @@ class DNSTKeyTest(DNSTest):
         self.creds.set_kerberos_state(credentials.MUST_USE_KERBEROS)
         self.newrecname = "tkeytsig.%s" % self.get_dns_domain()
 
-    def tkey_trans(self, creds=None, algorithm_name="gss-tsig"):
+    def tkey_trans(self, creds=None, algorithm_name="gss-tsig",
+                   tkey_req_in_answers=False):
         "Do a TKEY transaction and establish a gensec context"
 
         if creds is None:
@@ -297,8 +298,12 @@ class DNSTKeyTest(DNSTest):
         r.rdata = rdata
 
         additional = [r]
-        p.arcount = 1
-        p.additional = additional
+        if tkey_req_in_answers:
+            p.ancount = 1
+            p.answers = additional
+        else:
+            p.arcount = 1
+            p.additional = additional
 
         (response, response_packet) =\
             self.dns_transaction_tcp(p, self.server_ip)
