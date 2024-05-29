@@ -251,6 +251,11 @@ def samba_version_file(version_file, path, env=None, is_install=True):
                 print("Failed to parse line %s from %s" % (line, version_file))
                 raise
 
+    if "SAMBA_VERSION_VENDOR_SUFFIX" in env:
+        version_dict["SAMBA_VERSION_VENDOR_SUFFIX"] = env.SAMBA_VERSION_VENDOR_SUFFIX
+    if "SAMBA_VERSION_VENDOR_PATCH" in env:
+        version_dict["SAMBA_VERSION_VENDOR_PATCH"] = str(env.SAMBA_VERSION_VENDOR_PATCH)
+
     return SambaVersion(version_dict, path, env=env, is_install=is_install)
 
 
