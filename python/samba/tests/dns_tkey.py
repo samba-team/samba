@@ -408,5 +408,60 @@ class TestDNSUpdates(DNSTKeyTest):
         rcode = self.search_record(self.newrecname)
         self.assert_rcode_equals(rcode, dns.DNS_RCODE_NXDOMAIN)
 
+    def test_update_tsig_record_access_denied(self):
+        """test DNS update with a TSIG record where the user does not have
+        permissions to change the record"""
+
+        self.tkey_trans()
+        adm_tkey = self.tkey
+
+        # First create the record as admin
+        p = self.make_update_request()
+        mac = self.sign_packet(p, self.tkey['name'])
+        (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.verify_packet(response, response_p, mac)
+
+        # Check the record is around
+        rcode = self.search_record(self.newrecname)
+        self.assert_rcode_equals(rcode, dns.DNS_RCODE_OK)
+
+        # Now update the same values as normal user
+        # should work without error
+        self.tkey_trans(creds=self.get_unpriv_creds())
+        unpriv_tkey = self.tkey
+
+        p = self.make_update_request()
+        mac = self.sign_packet(p, self.tkey['name'])
+        (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.verify_packet(response, response_p, mac)
+
+        # Check the record is still around
+        rcode = self.search_record(self.newrecname)
+        self.assert_rcode_equals(rcode, dns.DNS_RCODE_OK)
+
+        # Now try to delete the record a normal user (should fail)
+        p = self.make_update_request(delete=True)
+        mac = self.sign_packet(p, self.tkey['name'])
+        (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
+        self.assert_echoed_dns_error(p, response, response_p, dns.DNS_RCODE_REFUSED)
+
+        # Check the record is still around
+        rcode = self.search_record(self.newrecname)
+        self.assert_rcode_equals(rcode, dns.DNS_RCODE_OK)
+
+        # Now delete the record as admin
+        self.tkey = adm_tkey
+        p = self.make_update_request(delete=True)
+        mac = self.sign_packet(p, self.tkey['name'])
+        (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.verify_packet(response, response_p, mac)
+
+        # check it's gone
+        rcode = self.search_record(self.newrecname)
+        self.assert_rcode_equals(rcode, dns.DNS_RCODE_NXDOMAIN)
+
 
 TestProgram(module=__name__, opts=subunitopts)

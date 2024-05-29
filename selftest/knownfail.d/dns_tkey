@@ -12,3 +12,4 @@
 ^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_update_gss_tsig_tkey_req_additional.fl2008r2dc
 ^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_update_tsig_windows.fl2008r2dc
 ^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_update_wo_tsig.fl2008r2dc
+^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_update_tsig_record_access_denied.fl2008r2dc
