@@ -76,6 +76,24 @@ class DNSTest(TestCaseInTempDir):
         self.assertEqual(p_opcode, opcode, "Expected OPCODE %s, got %s" %
                           (opcode, p_opcode))
 
+    def assert_dns_flags_equals(self, packet, flags):
+        "Helper function to check opcode"
+        p_flags = packet.operation & (~(dns.DNS_OPCODE|dns.DNS_RCODE))
+        self.assertEqual(p_flags, flags, "Expected FLAGS %02x, got %02x" %
+                          (flags, p_flags))
+
+    def assert_echoed_dns_error(self, request, response, response_p, rcode):
+
+        request_p = ndr.ndr_pack(request)
+
+        self.assertEqual(response.id, request.id)
+        self.assert_dns_rcode_equals(response, rcode)
+        self.assert_dns_opcode_equals(response, request.operation & dns.DNS_OPCODE)
+        self.assert_dns_flags_equals(response,
+            (request.operation | dns.DNS_FLAG_REPLY) & (~(dns.DNS_OPCODE|dns.DNS_RCODE)))
+        self.assertEqual(len(response_p), len(request_p))
+        self.assertEqual(response_p[4:], request_p[4:])
+
     def make_name_packet(self, opcode, qid=None):
         "Helper creating a dns.name_packet"
         p = dns.name_packet()
