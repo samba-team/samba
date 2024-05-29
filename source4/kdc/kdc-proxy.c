@@ -28,6 +28,7 @@
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/stream/packet.h"
 #include "kdc/kdc-server.h"
+#include "kdc/samba_kdc.h"
 #include "kdc/kdc-proxy.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/composite/composite.h"
@@ -45,7 +46,12 @@ static WERROR kdc_proxy_get_writeable_dcs(struct kdc_server *kdc, TALLOC_CTX *me
 	uint32_t count, i;
 	struct repsFromToBlob *reps;
 
-	werr = dsdb_loadreps(kdc->samdb, mem_ctx, ldb_get_default_basedn(kdc->samdb), "repsFrom", &reps, &count);
+	werr = dsdb_loadreps(kdc->kdc_db_ctx->samdb,
+			     mem_ctx,
+			     ldb_get_default_basedn(kdc->kdc_db_ctx->samdb),
+			     "repsFrom",
+			     &reps,
+			     &count);
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	if (count == 0) {

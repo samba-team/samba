@@ -318,19 +318,6 @@ NTSTATUS mitkdc_task_init(struct task_server *task)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	kdc->samdb = samdb_connect(kdc,
-				   kdc->task->event_ctx,
-				   kdc->task->lp_ctx,
-				   system_session(kdc->task->lp_ctx),
-				   NULL,
-				   0);
-	if (kdc->samdb == NULL) {
-		task_server_terminate(task,
-				      "KDC: Unable to connect to samdb",
-				      true);
-		return NT_STATUS_CONNECTION_INVALID;
-	}
-
 	status = startup_kpasswd_server(kdc,
 				    kdc,
 				    task->lp_ctx,

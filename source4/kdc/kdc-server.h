@@ -37,11 +37,11 @@ struct kdc_server {
 	struct task_server *task;
 	struct smb_krb5_context *smb_krb5_context;
 	struct samba_kdc_base_context *base_ctx;
-	struct ldb_context *samdb;
 	bool am_rodc;
 	uint32_t proxy_timeout;
 	const char *kpasswd_keytab_name;
 	void *private_data;
+	struct samba_kdc_db_context *kdc_db_ctx;
 };
 
 typedef enum kdc_code_e {

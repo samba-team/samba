@@ -1194,9 +1194,9 @@ static krb5_error_code hdb_samba4_audit(krb5_context context,
  * kpasswdd -> krb5 -> keytab_hdb -> hdb code */
 
 NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
-			       krb5_context context, struct HDB **db)
+			       krb5_context context, struct HDB **db,
+			       struct samba_kdc_db_context **kdc_db_ctx)
 {
-	struct samba_kdc_db_context *kdc_db_ctx = NULL;
 	NTSTATUS nt_status;
 
 	if (hdb_interface_version != HDB_INTERFACE_VERSION) {
@@ -1214,12 +1214,12 @@ NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 	(*db)->hdb_db = NULL;
 	(*db)->hdb_capability_flags = HDB_CAP_F_HANDLE_ENTERPRISE_PRINCIPAL;
 
-	nt_status = samba_kdc_setup_db_ctx(*db, base_ctx, &kdc_db_ctx);
+	nt_status = samba_kdc_setup_db_ctx(*db, base_ctx, kdc_db_ctx);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(*db);
 		return nt_status;
 	}
-	(*db)->hdb_db = kdc_db_ctx;
+	(*db)->hdb_db = *kdc_db_ctx;
 
 	(*db)->hdb_dbc = NULL;
 	(*db)->hdb_open = hdb_samba4_open;
@@ -1254,7 +1254,10 @@ NTSTATUS hdb_samba4_kpasswd_create_kdc(struct samba_kdc_base_context *base_ctx,
 {
 	NTSTATUS nt_status;
 
-	nt_status = hdb_samba4_create_kdc(base_ctx, context, db);
+	/* This is only used in other callers */
+	struct samba_kdc_db_context *kdc_db_ctx = NULL;
+
+	nt_status = hdb_samba4_create_kdc(base_ctx, context, db, &kdc_db_ctx);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}

@@ -34,7 +34,8 @@
 
 /* from hdb-samba4.c */
 NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
-			       krb5_context context, struct HDB **db);
+			       krb5_context context, struct HDB **db,
+			       struct samba_kdc_db_context **kdc_db_ctx);
 
 NTSTATUS hdb_samba4_kpasswd_create_kdc(struct samba_kdc_base_context *base_ctx,
 				       krb5_context context, struct HDB **db);
