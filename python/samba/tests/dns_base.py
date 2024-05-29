@@ -130,6 +130,8 @@ class DNSTest(TestCaseInTempDir):
         return self.creds.get_realm().lower()
 
     def dns_transaction_udp(self, packet, host,
+                            allow_remaining=False,
+                            allow_truncated=False,
                             dump=False, timeout=None):
         "send a DNS query and read the reply"
         s = None
@@ -146,7 +148,17 @@ class DNSTest(TestCaseInTempDir):
             recv_packet = s.recv(2048, 0)
             if dump:
                 print(self.hexdump(recv_packet))
-            response = ndr.ndr_unpack(dns.name_packet, recv_packet)
+            if allow_truncated:
+                # with allow_remaining
+                # we add some zero bytes
+                # in order to also parse truncated
+                # responses
+                recv_packet_p = recv_packet + 32*b"\x00"
+                allow_remaining = True
+            else:
+                recv_packet_p = recv_packet
+            response = ndr.ndr_unpack(dns.name_packet, recv_packet_p,
+                                      allow_remaining=allow_remaining)
             return (response, recv_packet)
         finally:
             if s is not None:
