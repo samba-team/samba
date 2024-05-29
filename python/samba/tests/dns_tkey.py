@@ -19,6 +19,7 @@
 import sys
 import optparse
 import samba.getopt as options
+import samba.ndr as ndr
 from samba.dcerpc import dns
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 from samba.tests.dns_base import DNSTKeyTest
@@ -109,6 +110,109 @@ class TestDNSUpdates(DNSTKeyTest):
         self.bad_sign_packet(p, self.tkey['name'])
         (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
         self.assert_echoed_dns_error(p, response, response_p, dns.DNS_RCODE_REFUSED)
+
+        rcode = self.search_record(self.newrecname)
+        self.assert_rcode_equals(rcode, dns.DNS_RCODE_NXDOMAIN)
+
+    def test_update_tsig_bad_algorithm(self):
+        "test DNS update with a TSIG record with a bad algorithm"
+
+        self.tkey_trans()
+
+        algorithm_name = "gss-TSIG"
+        p = self.make_update_request()
+        mac = self.sign_packet(p, self.tkey['name'],
+                               algorithm_name=algorithm_name)
+        (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
+        self.assert_echoed_dns_error(p, response, response_p, dns.DNS_RCODE_REFUSED)
+
+        rcode = self.search_record(self.newrecname)
+        self.assert_rcode_equals(rcode, dns.DNS_RCODE_NXDOMAIN)
+
+    def test_update_tsig_changed_algorithm1(self):
+        "test DNS update with a TSIG record with a changed algorithm"
+
+        algorithm_name = "gss-tsig"
+        self.tkey_trans(algorithm_name=algorithm_name)
+
+        # Now delete the record, it's most likely
+        # a no-op as it should not be there if the test
+        # runs the first time
+        p = self.make_update_request(delete=True)
+        mac = self.sign_packet(p, self.tkey['name'], algorithm_name=algorithm_name)
+        (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.verify_packet(response, response_p, mac)
+
+        # Now do an update with the algorithm_name
+        # changed in the requests TSIG message.
+        p = self.make_update_request()
+        algorithm_name = "gss.microsoft.com"
+        mac = self.sign_packet(p, self.tkey['name'],
+                               algorithm_name=algorithm_name)
+        algorithm_name = "gss-tsig"
+        (response, response_p) = self.dns_transaction_udp(p, self.server_ip,
+                                                          allow_remaining=True)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.verify_packet(response, response_p, mac)
+
+        # Check the record is around
+        rcode = self.search_record(self.newrecname)
+        self.assert_rcode_equals(rcode, dns.DNS_RCODE_OK)
+
+        # Now delete the record, with the original
+        # algorithm_name used in the tkey exchange
+        p = self.make_update_request(delete=True)
+        mac = self.sign_packet(p, self.tkey['name'], algorithm_name=algorithm_name)
+        (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.verify_packet(response, response_p, mac)
+
+        rcode = self.search_record(self.newrecname)
+        self.assert_rcode_equals(rcode, dns.DNS_RCODE_NXDOMAIN)
+
+    def test_update_tsig_changed_algorithm2(self):
+        "test DNS update with a TSIG record with a changed algorithm"
+
+        algorithm_name = "gss.microsoft.com"
+        self.tkey_trans(algorithm_name=algorithm_name)
+
+        # Now delete the record, it's most likely
+        # a no-op as it should not be there if the test
+        # runs the first time
+        p = self.make_update_request(delete=True)
+        mac = self.sign_packet(p, self.tkey['name'], algorithm_name=algorithm_name)
+        (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.verify_packet(response, response_p, mac)
+
+        # Now do an update with the algorithm_name
+        # changed in the requests TSIG message.
+        p = self.make_update_request()
+        algorithm_name = "gss-tsig"
+        mac = self.sign_packet(p, self.tkey['name'],
+                               algorithm_name=algorithm_name)
+        algorithm_name = "gss.microsoft.com"
+        (response, response_p) = self.dns_transaction_udp(p, self.server_ip,
+                                                          allow_truncated=True)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        response_p_pack = ndr.ndr_pack(response)
+        if len(response_p_pack) == len(response_p):
+            self.verify_packet(response, response_p, mac)
+        else:
+            pass # Windows bug
+
+        # Check the record is around
+        rcode = self.search_record(self.newrecname)
+        self.assert_rcode_equals(rcode, dns.DNS_RCODE_OK)
+
+        # Now delete the record, with the original
+        # algorithm_name used in the tkey exchange
+        p = self.make_update_request(delete=True)
+        mac = self.sign_packet(p, self.tkey['name'], algorithm_name=algorithm_name)
+        (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.verify_packet(response, response_p, mac)
 
         rcode = self.search_record(self.newrecname)
         self.assert_rcode_equals(rcode, dns.DNS_RCODE_NXDOMAIN)
