@@ -89,7 +89,7 @@ class TestDNSUpdates(DNSTKeyTest):
         self.tkey_trans()
 
         p = self.make_update_request()
-        self.bad_sign_packet(p, self.key_name)
+        self.bad_sign_packet(p, self.tkey['name'])
         (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
         self.assert_echoed_dns_error(p, response, response_p, dns.DNS_RCODE_REFUSED)
 
@@ -102,7 +102,7 @@ class TestDNSUpdates(DNSTKeyTest):
         self.tkey_trans()
 
         p = self.make_update_request()
-        mac = self.sign_packet(p, self.key_name)
+        mac = self.sign_packet(p, self.tkey['name'])
         (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.verify_packet(response, response_p, mac)
@@ -113,7 +113,7 @@ class TestDNSUpdates(DNSTKeyTest):
 
         # Now delete the record
         p = self.make_update_request(delete=True)
-        mac = self.sign_packet(p, self.key_name)
+        mac = self.sign_packet(p, self.tkey['name'])
         (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.verify_packet(response, response_p, mac)
@@ -178,7 +178,7 @@ class TestDNSUpdates(DNSTKeyTest):
         self.assert_echoed_dns_error(p, response, response_p, dns.DNS_RCODE_REFUSED)
 
         self.tkey_trans()
-        mac = self.sign_packet(p, self.key_name)
+        mac = self.sign_packet(p, self.tkey['name'])
         (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.verify_packet(response, response_p, mac)
@@ -189,7 +189,7 @@ class TestDNSUpdates(DNSTKeyTest):
 
         # Now delete the record
         p = self.make_update_request(delete=True)
-        mac = self.sign_packet(p, self.key_name)
+        mac = self.sign_packet(p, self.tkey['name'])
         (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.verify_packet(response, response_p, mac)
