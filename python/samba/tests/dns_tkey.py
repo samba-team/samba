@@ -165,6 +165,65 @@ class TestDNSUpdates(DNSTKeyTest):
         rcode = self.search_record(self.newrecname)
         self.assert_rcode_equals(rcode, dns.DNS_RCODE_NXDOMAIN)
 
+    def test_update_gss_microsoft_com_tkey_req_additional(self):
+        "test DNS update with correct gss.microsoft.com record tsig req in additional"
+
+        algorithm_name = "gss.microsoft.com"
+        self.tkey_trans(algorithm_name=algorithm_name)
+
+        p = self.make_update_request()
+        mac = self.sign_packet(p, self.tkey['name'],
+                               algorithm_name=algorithm_name)
+        (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.verify_packet(response, response_p, mac)
+
+        # Check the record is around
+        rcode = self.search_record(self.newrecname)
+        self.assert_rcode_equals(rcode, dns.DNS_RCODE_OK)
+
+        # Now delete the record
+        p = self.make_update_request(delete=True)
+        mac = self.sign_packet(p, self.tkey['name'],
+                               algorithm_name=algorithm_name)
+        (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.verify_packet(response, response_p, mac)
+
+        # check it's gone
+        rcode = self.search_record(self.newrecname)
+        self.assert_rcode_equals(rcode, dns.DNS_RCODE_NXDOMAIN)
+
+    def test_update_gss_microsoft_com_tkey_req_answers(self):
+        "test DNS update with correct gss.microsoft.com record tsig req in answers"
+
+        algorithm_name = "gss.microsoft.com"
+        self.tkey_trans(algorithm_name=algorithm_name,
+                        tkey_req_in_answers=True)
+
+        p = self.make_update_request()
+        mac = self.sign_packet(p, self.tkey['name'],
+                               algorithm_name=algorithm_name)
+        (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.verify_packet(response, response_p, mac)
+
+        # Check the record is around
+        rcode = self.search_record(self.newrecname)
+        self.assert_rcode_equals(rcode, dns.DNS_RCODE_OK)
+
+        # Now delete the record
+        p = self.make_update_request(delete=True)
+        mac = self.sign_packet(p, self.tkey['name'],
+                               algorithm_name=algorithm_name)
+        (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.verify_packet(response, response_p, mac)
+
+        # check it's gone
+        rcode = self.search_record(self.newrecname)
+        self.assert_rcode_equals(rcode, dns.DNS_RCODE_NXDOMAIN)
+
     def test_update_tsig_windows(self):
         "test DNS update with correct TSIG record (follow Windows pattern)"
 
