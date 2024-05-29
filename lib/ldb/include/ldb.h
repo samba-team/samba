@@ -273,6 +273,12 @@ enum ldb_debug_level {LDB_DEBUG_FATAL, LDB_DEBUG_ERROR,
 */
 #define LDB_FLG_DONT_CREATE_DB 64
 
+/**
+ * Allow DB create time flags that have meaning only to our
+ * calling application or modules.  These must be in this range:
+ */
+#define LDB_FLG_PRIVATE_MASK 0xff000000
+
 /*
    structures for ldb_parse_tree handling code
 */

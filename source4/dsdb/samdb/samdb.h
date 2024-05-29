@@ -435,4 +435,6 @@ struct dsdb_encrypted_connection_state {
  */
 #define SAMBA_LMDB_LEVEL_ONE_FEATURE "lmdbLevelOne"
 
+#define SAMBA_LDB_WRAP_CONNECT_FLAG_NO_SHARE_CONTEXT 0x01000000
+
 #endif /* __SAMDB_H__ */

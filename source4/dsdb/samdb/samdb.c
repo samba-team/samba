@@ -116,7 +116,12 @@ int samdb_connect_url(TALLOC_CTX *mem_ctx,
 		*ldb_ret = ldb;
 		return LDB_SUCCESS;
 	}
-		
+
+	if (flags & SAMBA_LDB_WRAP_CONNECT_FLAG_NO_SHARE_CONTEXT) {
+		*ldb_ret = ldb;
+		return LDB_SUCCESS;
+	}
+
 	if (!ldb_wrap_add(url, ev_ctx, lp_ctx, session_info, NULL, flags, ldb)) {
 		*errstring = talloc_asprintf(mem_ctx,
 					     "Failed to add cached DB reference"
