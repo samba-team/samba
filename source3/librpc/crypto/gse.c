@@ -834,9 +834,7 @@ static char *gse_errstr(TALLOC_CTX *mem_ctx, OM_uint32 maj, OM_uint32 min)
 	errstr = talloc_strndup(mem_ctx,
 				(char *)msg_maj.value,
 					msg_maj.length);
-	if (!errstr) {
-		goto done;
-	}
+
 	gss_maj = gss_display_status(&gss_min, min, GSS_C_MECH_CODE,
 				     (gss_OID)discard_const(gss_mech_krb5),
 				     &msg_ctx, &msg_min);
@@ -844,16 +842,10 @@ static char *gse_errstr(TALLOC_CTX *mem_ctx, OM_uint32 maj, OM_uint32 min)
 		goto done;
 	}
 
-	errstr = talloc_strdup_append_buffer(errstr, ": ");
-	if (!errstr) {
-		goto done;
-	}
-	errstr = talloc_strndup_append_buffer(errstr,
-						(char *)msg_min.value,
-							msg_min.length);
-	if (!errstr) {
-		goto done;
-	}
+	talloc_asprintf_addbuf(&errstr,
+			       ": %.*s",
+			       (int)msg_min.length,
+			       (char *)msg_min.value);
 
 done:
 	if (msg_min.value) {
