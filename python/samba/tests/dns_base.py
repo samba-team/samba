@@ -249,7 +249,8 @@ class DNSTKeyTest(DNSTest):
         self.newrecname = "tkeytsig.%s" % self.get_dns_domain()
 
     def tkey_trans(self, creds=None, algorithm_name="gss-tsig",
-                   tkey_req_in_answers=False):
+                   tkey_req_in_answers=False,
+                   expected_rcode=dns.DNS_RCODE_OK):
         "Do a TKEY transaction and establish a gensec context"
 
         if creds is None:
@@ -307,6 +308,9 @@ class DNSTKeyTest(DNSTest):
 
         (response, response_packet) =\
             self.dns_transaction_tcp(p, self.server_ip)
+        if expected_rcode != dns.DNS_RCODE_OK:
+            self.assert_echoed_dns_error(p, response, response_packet, expected_rcode)
+            return
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
 
         tkey_record = response.answers[0].rdata
