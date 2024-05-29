@@ -192,16 +192,9 @@ static const struct gensec_security_ops *gensec_security_by_fn(
 {
 	size_t i;
 	const struct gensec_security_ops **backends = NULL;
-	TALLOC_CTX *mem_ctx = NULL;
 
-	mem_ctx = talloc_new(gensec_security);
-	if (!mem_ctx) {
-		return NULL;
-	}
-
-	backends = gensec_security_mechs(gensec_security, mem_ctx);
+	backends = gensec_security_mechs(gensec_security, gensec_security);
 	if (backends == NULL) {
-		TALLOC_FREE(mem_ctx);
 		return NULL;
 	}
 
@@ -211,12 +204,12 @@ static const struct gensec_security_ops *gensec_security_by_fn(
 
 		ok = fn(backend, private_data);
 		if (ok) {
-			TALLOC_FREE(mem_ctx);
+			TALLOC_FREE(backends);
 			return backend;
 		}
 	}
 
-	TALLOC_FREE(mem_ctx);
+	TALLOC_FREE(backends);
 	return NULL;
 }
 
