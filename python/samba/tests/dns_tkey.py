@@ -65,7 +65,7 @@ class TestDNSUpdates(DNSTKeyTest):
 
         p = self.make_update_request()
         (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
-        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_REFUSED)
+        self.assert_echoed_dns_error(p, response, response_p, dns.DNS_RCODE_REFUSED)
 
         rcode = self.search_record(self.newrecname)
         self.assert_rcode_equals(rcode, dns.DNS_RCODE_NXDOMAIN)
@@ -78,10 +78,7 @@ class TestDNSUpdates(DNSTKeyTest):
         p = self.make_update_request()
         self.sign_packet(p, "badkey")
         (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
-        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NOTAUTH)
-        tsig_record = response.additional[0].rdata
-        self.assertEqual(tsig_record.error, dns.DNS_RCODE_BADKEY)
-        self.assertEqual(tsig_record.mac_size, 0)
+        self.assert_echoed_dns_error(p, response, response_p, dns.DNS_RCODE_REFUSED)
 
         rcode = self.search_record(self.newrecname)
         self.assert_rcode_equals(rcode, dns.DNS_RCODE_NXDOMAIN)
@@ -94,10 +91,7 @@ class TestDNSUpdates(DNSTKeyTest):
         p = self.make_update_request()
         self.bad_sign_packet(p, self.key_name)
         (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
-        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NOTAUTH)
-        tsig_record = response.additional[0].rdata
-        self.assertEqual(tsig_record.error, dns.DNS_RCODE_BADSIG)
-        self.assertEqual(tsig_record.mac_size, 0)
+        self.assert_echoed_dns_error(p, response, response_p, dns.DNS_RCODE_REFUSED)
 
         rcode = self.search_record(self.newrecname)
         self.assert_rcode_equals(rcode, dns.DNS_RCODE_NXDOMAIN)
@@ -181,7 +175,7 @@ class TestDNSUpdates(DNSTKeyTest):
         p.answers = prereqs
 
         (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
-        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_REFUSED)
+        self.assert_echoed_dns_error(p, response, response_p, dns.DNS_RCODE_REFUSED)
 
         self.tkey_trans()
         mac = self.sign_packet(p, self.key_name)
