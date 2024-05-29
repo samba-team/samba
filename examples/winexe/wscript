@@ -31,14 +31,21 @@ def configure(conf):
 
     source_date_epoch = os.environ.get('SOURCE_DATE_EPOCH')
     if source_date_epoch is None:
-        # We set the timestamp to be 0, which makes the winexe build
-        # reproducible. According to
-        # https://learn.microsoft.com/en-us/windows/win32/debug/pe-format
+        # We use the version to make up the timestamp that will be
+        # embedded in winexe.exe, to keep the build reproducible.
         #
-        # > If the stamp value is 0 or 0xFFFFFFFF, it does not
-        # > represent a real or meaningful date/time stamp.
-
-        source_date_epoch = '0'
+        # This is less evil than it sounds. According to Raymond Chen in
+        # https://devblogs.microsoft.com/oldnewthing/20180103-00/?p=97705
+        # since Windows 10 the timestamp has been randomised.
+        #
+        # The purpose of the timestamp in Windows PE files seems to be
+        # to make spotting ABI changes in DLLs quicker, for which a
+        # random number is just as good as a real time. The timestamp
+        # in .exe files is not used.
+        import samba_version
+        v = samba_version.load_version(env=conf.env)
+        version = (v.MAJOR << 16) | (v.MINOR << 8) | v.RELEASE
+        source_date_epoch = str(version)
 
     conf.env.SOURCE_DATE_EPOCH = source_date_epoch
     conf.DEFINE("WINEXE_LDFLAGS",
