@@ -580,6 +580,9 @@ static bool test_doc_read_only(struct torture_context *tctx,
 	expected_status = delete_readonly ?
 		NT_STATUS_OK : NT_STATUS_CANNOT_DELETE;
 
+	/* File should not exist for this first test, so make sure */
+	set_dir_delete_perms(tctx, tree);
+
 	smb2_deltree(tree, DNAME);
 
 	status = torture_smb2_testdir(tree, DNAME, &dir_handle);
