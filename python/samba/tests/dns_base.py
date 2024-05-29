@@ -283,24 +283,20 @@ class DNSTKeyTest(DNSTest):
         self.verify_packet(response, response_packet)
 
     def verify_packet(self, response, response_packet, request_mac=b""):
+        self.assertEqual(response.arcount, 1)
         self.assertEqual(response.additional[0].rr_type, dns.DNS_QTYPE_TSIG)
 
         tsig_record = response.additional[0].rdata
         mac = bytes(tsig_record.mac)
 
+        self.assertEqual(tsig_record.original_id, response.id)
+        self.assertEqual(tsig_record.mac_size, len(mac))
+
         # Cut off tsig record from dns response packet for MAC verification
         # and reset additional record count.
-        key_name_len = len(self.key_name) + 2
-        tsig_record_len = len(ndr.ndr_pack(tsig_record)) + key_name_len + 10
-
-        # convert str/bytes to a list (of string char or int)
-        # so it can be modified
-        response_packet_list = [x if isinstance(x, int) else ord(x) for x in response_packet]
-        del response_packet_list[-tsig_record_len:]
-        response_packet_list[11] = 0
-
-        # convert modified list (of string char or int) to str/bytes
-        response_packet_wo_tsig = bytes(response_packet_list)
+        response_copy = ndr.ndr_deepcopy(response)
+        response_copy.arcount = 0
+        response_packet_wo_tsig = ndr.ndr_pack(response_copy)
 
         fake_tsig = dns.fake_tsig_rec()
         fake_tsig.name = self.key_name
@@ -310,8 +306,9 @@ class DNSTKeyTest(DNSTest):
         fake_tsig.time = tsig_record.time
         fake_tsig.algorithm_name = tsig_record.algorithm_name
         fake_tsig.fudge = tsig_record.fudge
-        fake_tsig.error = 0
-        fake_tsig.other_size = 0
+        fake_tsig.error = tsig_record.error
+        fake_tsig.other_size = tsig_record.other_size
+        fake_tsig.other_data = tsig_record.other_data
         fake_tsig_packet = ndr.ndr_pack(fake_tsig)
 
         data = request_mac + response_packet_wo_tsig + fake_tsig_packet
