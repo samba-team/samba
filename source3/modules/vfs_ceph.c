@@ -349,7 +349,7 @@ static uint64_t cephwrap_disk_free(struct vfs_handle_struct *handle,
 	ret = ceph_statfs(handle->data, smb_fname->base_name, &statvfs_buf);
 	if (ret < 0) {
 		DBG_DEBUG("[CEPH] ceph_statfs returned %d\n", ret);
-		return status_code(ret);
+		return (uint64_t)status_code(ret);
 	}
 	/*
 	 * Provide all the correct values.
