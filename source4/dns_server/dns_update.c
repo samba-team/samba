@@ -570,6 +570,8 @@ static WERROR handle_one_update(struct dns_server *dns,
 		W_ERROR_NOT_OK_RETURN(werror);
 
 		for (i = first; i < rcount; i++) {
+			struct dnsp_DnssrvRpcRecord orig_rec = recs[i];
+
 			if (!dns_record_match(&recs[i], &recs[rcount])) {
 				continue;
 			}
@@ -583,6 +585,15 @@ static WERROR handle_one_update(struct dns_server *dns,
 			werror = dns_replace_records(dns, mem_ctx, dn,
 						     needs_add, recs, rcount);
 			DBG_DEBUG("dns_replace_records(REPLACE): %s\n", win_errstr(werror));
+			if (W_ERROR_EQUAL(werror, WERR_ACCESS_DENIED) &&
+			    !needs_add &&
+			    orig_rec.dwTtlSeconds == recs[i].dwTtlSeconds)
+			{
+				DBG_NOTICE("dns_replace_records(REPLACE): %s "
+					    "=> skip no-op\n",
+					    win_errstr(werror));
+				werror = WERR_OK;
+			}
 			W_ERROR_NOT_OK_RETURN(werror);
 
 			return WERR_OK;
