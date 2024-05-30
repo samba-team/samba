@@ -799,12 +799,22 @@ static WERROR handle_tkey(struct dns_server *dns,
 {
 	struct dns_res_rec *in_tkey = NULL;
 	struct dns_res_rec *ret_tkey;
-	uint16_t i;
 
-	for (i = 0; i < in->arcount; i++) {
+	/*
+	 * TKEY needs to we the last one in
+	 * additional or answers
+	 */
+	if (in->arcount >= 1) {
+		uint16_t i = in->arcount - 1;
 		if (in->additional[i].rr_type == DNS_QTYPE_TKEY) {
 			in_tkey = &in->additional[i];
-			break;
+		}
+	} else if (in->nscount >= 1) {
+		/* no lookup */
+	} else if (in->ancount >= 1) {
+		uint16_t i = in->ancount - 1;
+		if (in->answers[i].rr_type == DNS_QTYPE_TKEY) {
+			in_tkey = &in->answers[i];
 		}
 	}
 
