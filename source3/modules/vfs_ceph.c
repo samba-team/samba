@@ -1503,6 +1503,7 @@ static struct smb_filename *cephwrap_realpath(struct vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname)
 {
 	char *result = NULL;
+	const char *cwd = handle->conn->cwd_fsp->fsp_name->base_name;
 	const char *path = smb_fname->base_name;
 	size_t len = strlen(path);
 	struct smb_filename *result_fname = NULL;
@@ -1512,15 +1513,12 @@ static struct smb_filename *cephwrap_realpath(struct vfs_handle_struct *handle,
 		r = asprintf(&result, "%s", path);
 	} else if ((len >= 2) && (path[0] == '.') && (path[1] == '/')) {
 		if (len == 2) {
-			r = asprintf(&result, "%s",
-					handle->conn->cwd_fsp->fsp_name->base_name);
+			r = asprintf(&result, "%s", cwd);
 		} else {
-			r = asprintf(&result, "%s/%s",
-					handle->conn->cwd_fsp->fsp_name->base_name, &path[2]);
+			r = asprintf(&result, "%s/%s", cwd, &path[2]);
 		}
 	} else {
-		r = asprintf(&result, "%s/%s",
-				handle->conn->cwd_fsp->fsp_name->base_name, path);
+		r = asprintf(&result, "%s/%s", cwd, path);
 	}
 
 	if (r < 0) {
