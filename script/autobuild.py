@@ -892,9 +892,10 @@ tasks = {
             ("ldb-make", "cd lib/ldb && make"),
             ("ldb-install", "cd lib/ldb && make install"),
 
-            ("nondevel-configure", samba_libs_envvars + " ./configure ${PREFIX}"),
+            ("nondevel-configure", samba_libs_envvars + " ./configure --vendor-name=autobuild-TEST-STRING --vendor-patch-revision=5 ${PREFIX}"),
             ("nondevel-make", "make -j"),
             ("nondevel-check", "./bin/smbd -b | grep WITH_NTVFS_FILESERVER && exit 1; exit 0"),
+            ("nondevel-check", "./bin/smbd --version | grep -e '-autobuild-TEST-STRING-5' && exit 0; exit 1"),
             ("nondevel-no-libtalloc", "find ./bin | grep -v 'libtalloc-report' | grep 'libtalloc' && exit 1; exit 0"),
             ("nondevel-no-libtdb", "find ./bin | grep -v 'libtdb-wrap' | grep 'libtdb' && exit 1; exit 0"),
             ("nondevel-no-libtevent", "find ./bin | grep -v 'libtevent-util' | grep 'libtevent' && exit 1; exit 0"),
