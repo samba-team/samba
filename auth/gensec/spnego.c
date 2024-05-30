@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    RFC2478 Compliant SPNEGO implementation
@@ -221,14 +221,14 @@ static NTSTATUS gensec_spnego_server_start(struct gensec_security *gensec_securi
 	return NT_STATUS_OK;
 }
 
-/** Fallback to another GENSEC mechanism, based on magic strings 
+/** Fallback to another GENSEC mechanism, based on magic strings
  *
  * This is the 'fallback' case, where we don't get SPNEGO, and have to
  * try all the other options (and hope they all have a magic string
  * they check)
 */
 
-static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec_security, 
+static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec_security,
 						  struct spnego_state *spnego_state,
 						  TALLOC_CTX *mem_ctx,
 						  const DATA_BLOB in)
@@ -267,8 +267,8 @@ static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec
 
 		spnego_state->state_position = SPNEGO_FALLBACK;
 
-		nt_status = gensec_subcontext_start(spnego_state, 
-						    gensec_security, 
+		nt_status = gensec_subcontext_start(spnego_state,
+						    gensec_security,
 						    &spnego_state->sub_sec_security);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -1098,7 +1098,7 @@ static const struct spnego_neg_ops gensec_spnego_client_negTokenTarg_ops = {
 	.finish_fn = gensec_spnego_client_negTokenTarg_finish,
 };
 
-/** create a server negTokenTarg 
+/** create a server negTokenTarg
  *
  * This is the case, where the client is the first one who sends data
 */
@@ -1118,7 +1118,7 @@ static NTSTATUS gensec_spnego_server_response(struct spnego_state *spnego_state,
 	spnego_out.negTokenTarg.mechListMIC = mech_list_mic;
 	spnego_out.negTokenTarg.supportedMech = NULL;
 
-	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {	
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		spnego_out.negTokenTarg.supportedMech = spnego_state->neg_oid;
 		if (spnego_state->mic_requested) {
 			spnego_out.negTokenTarg.negResult = SPNEGO_REQUEST_MIC;
@@ -2185,9 +2185,9 @@ static NTSTATUS gensec_spnego_update_recv(struct tevent_req *req,
 	return status;
 }
 
-static const char *gensec_spnego_oids[] = { 
+static const char *gensec_spnego_oids[] = {
 	GENSEC_OID_SPNEGO,
-	NULL 
+	NULL
 };
 
 static const struct gensec_security_ops gensec_spnego_security_ops = {
