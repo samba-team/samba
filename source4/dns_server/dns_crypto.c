@@ -145,7 +145,7 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 
 	tkey = dns_find_tkey(dns->tkeys, state->tsig->name);
 	if (tkey == NULL) {
-		DBG_DEBUG("dns_find_tkey() => NOTAUTH / DNS_RCODE_BADKEY\n");
+		DBG_DEBUG("dns_find_tkey() => REFUSED / DNS_RCODE_BADKEY\n");
 		/*
 		 * We must save the name for use in the TSIG error
 		 * response and have no choice here but to save the
@@ -157,7 +157,7 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		state->tsig_error = DNS_RCODE_BADKEY;
-		return DNS_ERR(NOTAUTH);
+		return DNS_ERR(REFUSED);
 	}
 	DBG_DEBUG("dns_find_tkey() => found\n");
 
@@ -249,7 +249,7 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 		dump_data_dbgc(DBGC_DNS, 8, buffer, buffer_len);
 		DBG_NOTICE("Verifying tsig failed: %s\n", nt_errstr(status));
 		state->tsig_error = DNS_RCODE_BADSIG;
-		return DNS_ERR(NOTAUTH);
+		return DNS_ERR(REFUSED);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
