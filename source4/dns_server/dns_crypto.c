@@ -27,6 +27,7 @@
 #include "libcli/util/ntstatus.h"
 #include "auth/auth.h"
 #include "auth/gensec/gensec.h"
+#include "lib/util/bytearray.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_DNS
@@ -281,9 +282,17 @@ static WERROR dns_tsig_compute_mac(TALLOC_CTX *mem_ctx,
 	struct dns_fake_tsig_rec *check_rec = talloc_zero(mem_ctx,
 			struct dns_fake_tsig_rec);
 	size_t mac_size = 0;
+	bool gss_tsig;
 
 	if (check_rec == NULL) {
 		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	if (strcmp(tkey->algorithm, "gss-tsig") == 0) {
+		gss_tsig = true;
+	} else {
+		/* gss.microsoft.com */
+		gss_tsig = false;
 	}
 
 	/* first build and verify check packet */
@@ -325,6 +334,9 @@ static WERROR dns_tsig_compute_mac(TALLOC_CTX *mem_ctx,
 	}
 
 	buffer_len = mac_size;
+	if (gss_tsig && mac_size > 0) {
+		buffer_len += 2;
+	}
 
 	buffer_len += packet_blob.length;
 	if (buffer_len < packet_blob.length) {
@@ -345,11 +357,21 @@ static WERROR dns_tsig_compute_mac(TALLOC_CTX *mem_ctx,
 	/*
 	 * RFC 2845 "4.2 TSIG on Answers", how to lay out the buffer
 	 * that we're going to sign:
-	 * 1. MAC of request (if present)
+	 * 1. if MAC of request is present
+	 *    - 16bit big endian length of MAC of request
+	 *    - MAC of request
 	 * 2. Outgoing packet
 	 * 3. TSIG record
 	 */
 	if (mac_size > 0) {
+		if (gss_tsig) {
+			/*
+			 * only gss-tsig not with
+			 * gss.microsoft.com
+			 */
+			PUSH_BE_U16(p, 0, mac_size);
+			p += 2;
+		}
 		memcpy(p, state->tsig->rdata.tsig_record.mac, mac_size);
 		p += mac_size;
 	}
