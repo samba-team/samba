@@ -359,7 +359,7 @@ static uint64_t cephwrap_disk_free(struct vfs_handle_struct *handle,
 		return *dfree;
 	} else {
 		DBG_DEBUG("[CEPH] ceph_statfs returned %d\n", ret);
-		return status_code(ret);
+		return (uint64_t)status_code(ret);
 	}
 }
 
