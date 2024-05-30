@@ -66,11 +66,11 @@ struct spnego_neg_ops {
 	const char *name;
 	/*
 	 * The start hook does the initial processing on the incoming packet and
-	 * may starts the first possible subcontext. It indicates that
+	 * may start the first possible subcontext. It indicates that
 	 * gensec_update() is required on the subcontext by returning
 	 * NT_STATUS_MORE_PROCESSING_REQUIRED and return something useful in
 	 * 'in_next'. Note that 'in_mem_ctx' is just passed as a hint, the
-	 * caller should treat 'in_next' as const and don't attempt to free the
+	 * caller should treat 'in_next' as const and not attempt to free the
 	 * content.  NT_STATUS_OK indicates the finish hook should be invoked
 	 * directly within the need of gensec_update() on the subcontext.
 	 * Every other error indicates an error that's returned to the caller.
@@ -88,7 +88,7 @@ struct spnego_neg_ops {
 	 * gensec_update() is required on the subcontext by returning
 	 * NT_STATUS_MORE_PROCESSING_REQUIRED and return something useful in
 	 * 'in_next'. Note that 'in_mem_ctx' is just passed as a hint, the
-	 * caller should treat 'in_next' as const and don't attempt to free the
+	 * caller should treat 'in_next' as const and not attempt to free the
 	 * content.  NT_STATUS_OK indicates the finish hook should be invoked
 	 * directly within the need of gensec_update() on the subcontext.
 	 * Every other error indicates an error that's returned to the caller.
