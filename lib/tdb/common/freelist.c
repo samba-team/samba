@@ -34,7 +34,7 @@ int tdb_rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct tdb_record 
 		return -1;
 
 	if (rec->magic == TDB_MAGIC) {
-		/* this happens when a app is showdown while deleting a record - we should
+		/* this happens when a app is shutdown while deleting a record - we should
 		   not completely fail when this happens */
 		TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_rec_free_read non-free magic 0x%x at offset=%u - fixing\n",
 			 rec->magic, off));
