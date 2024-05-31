@@ -1,12 +1,9 @@
 ^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_update_tsig_bad_keyname.fl2008r2dc
 ^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_update_tsig_bad_mac.fl2008r2dc
-^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_tkey_gss_microsoft_com.fl2008r2dc
 ^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_update_gss_tsig_tkey_req_answers.fl2008r2dc
-^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_update_gss_microsoft_com_tkey_req_additional.fl2008r2dc
 ^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_update_gss_microsoft_com_tkey_req_answers.fl2008r2dc
 ^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_update_tsig_bad_algorithm.fl2008r2dc
 ^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_update_tsig_changed_algorithm1.fl2008r2dc
-^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_update_tsig_changed_algorithm2.fl2008r2dc
 ^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_update_gss_tsig_tkey_req_additional.fl2008r2dc
 ^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_update_tsig_windows.fl2008r2dc
 ^samba.tests.dns_tkey.__main__.TestDNSUpdates.test_update_wo_tsig.fl2008r2dc
