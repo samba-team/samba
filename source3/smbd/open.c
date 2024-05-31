@@ -355,7 +355,7 @@ NTSTATUS check_parent_access_fsp(struct files_struct *fsp,
 	}
 
 	status = SMB_VFS_FGET_NT_ACL(fsp,
-				SECINFO_DACL,
+				(SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL),
 				frame,
 				&parent_sd);
 
