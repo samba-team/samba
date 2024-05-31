@@ -106,7 +106,7 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 	struct dns_server_tkey *tkey = NULL;
 	struct dns_fake_tsig_rec *check_rec = talloc_zero(mem_ctx,
 			struct dns_fake_tsig_rec);
-
+	const char *algorithm = NULL;
 
 	/* Find the first TSIG record in the additional records */
 	for (i=0; i < packet->arcount; i++) {
@@ -160,6 +160,16 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 		return DNS_ERR(NOTAUTH);
 	}
 	DBG_DEBUG("dns_find_tkey() => found\n");
+
+	algorithm = state->tsig->rdata.tsig_record.algorithm_name;
+	if (strcmp(algorithm, "gss-tsig") == 0) {
+		/* ok */
+	} else if (strcmp(algorithm, "gss.microsoft.com") == 0) {
+		/* ok */
+	} else {
+		state->tsig_error = DNS_RCODE_BADKEY;
+		return DNS_ERR(REFUSED);
+	}
 
 	/*
 	 * Remember the keyname that found an existing tkey, used
