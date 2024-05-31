@@ -486,8 +486,7 @@ size_t pull_string_talloc(TALLOC_CTX *ctx,
 	}
 
 	if (!(flags & STR_ASCII) &&
-	    ((flags & STR_UNICODE ||
-	      (smb_flags2 & FLAGS2_UNICODE_STRINGS)))) {
+	    ((flags & STR_UNICODE || (smb_flags2 & FLAGS2_UNICODE_STRINGS)))) {
 		return pull_ucs2_base_talloc(ctx,
 					base_ptr,
 					ppdest,
