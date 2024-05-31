@@ -193,7 +193,7 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 	}
 	check_rec->rr_class = DNS_QCLASS_ANY;
 	check_rec->ttl = 0;
-	check_rec->algorithm_name = talloc_strdup(check_rec, tkey->algorithm);
+	check_rec->algorithm_name = talloc_strdup(check_rec, algorithm);
 	if (check_rec->algorithm_name == NULL) {
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
