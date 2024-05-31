@@ -382,6 +382,7 @@ WERROR dns_sign_tsig(struct dns_server *dns,
 		.data = NULL,
 		.length = 0
 	};
+	const char *algorithm = "gss-tsig";
 
 	tsig = talloc_zero(mem_ctx, struct dns_res_rec);
 	if (tsig == NULL) {
@@ -402,6 +403,8 @@ WERROR dns_sign_tsig(struct dns_server *dns,
 		if (!W_ERROR_IS_OK(werror)) {
 			return werror;
 		}
+
+		algorithm = tkey->algorithm;
 	}
 
 	tsig->name = talloc_strdup(tsig, state->key_name);
@@ -412,7 +415,7 @@ WERROR dns_sign_tsig(struct dns_server *dns,
 	tsig->rr_type = DNS_QTYPE_TSIG;
 	tsig->ttl = 0;
 	tsig->length = UINT16_MAX;
-	tsig->rdata.tsig_record.algorithm_name = talloc_strdup(tsig, "gss-tsig");
+	tsig->rdata.tsig_record.algorithm_name = talloc_strdup(tsig, algorithm);
 	if (tsig->rdata.tsig_record.algorithm_name == NULL) {
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
