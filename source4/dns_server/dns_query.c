@@ -663,8 +663,17 @@ static NTSTATUS create_tkey(struct dns_server *dns,
 {
 	NTSTATUS status;
 	struct dns_server_tkey_store *store = dns->tkeys;
-	struct dns_server_tkey *k = talloc_zero(store, struct dns_server_tkey);
+	struct dns_server_tkey *k = NULL;
 
+	if (strcmp(algorithm, "gss-tsig") == 0) {
+		/* ok */
+	} else if (strcmp(algorithm, "gss.microsoft.com") == 0) {
+		/* ok */
+	} else {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	k = talloc_zero(store, struct dns_server_tkey);
 	if (k == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
