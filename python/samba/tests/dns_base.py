@@ -151,7 +151,18 @@ class DNSTest(TestCaseInTempDir):
             tcp_packet += send_packet
             s.sendall(tcp_packet)
 
-            recv_packet = s.recv(0xffff + 2, 0)
+            recv_packet = b''
+            length = None
+            for i in range(0, 2 + 0xffff):
+                if len(recv_packet) >= 2:
+                    length, = struct.unpack('!H', recv_packet[0:2])
+                    remaining = 2 + length
+                else:
+                    remaining = 2 + 12
+                remaining -= len(recv_packet)
+                if remaining == 0:
+                    break
+                recv_packet += s.recv(remaining, 0)
             if dump:
                 print(self.hexdump(recv_packet))
             response = ndr.ndr_unpack(dns.name_packet, recv_packet[2:])
