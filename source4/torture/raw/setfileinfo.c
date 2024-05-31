@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    RAW_SFILEINFO_* individual test suite
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -26,9 +26,9 @@
 
 #define BASEDIR "\\testsfileinfo"
 
-/* basic testing of all RAW_SFILEINFO_* calls 
-   for each call we test that it succeeds, and where possible test 
-   for consistency between the calls. 
+/* basic testing of all RAW_SFILEINFO_* calls
+   for each call we test that it succeeds, and where possible test
+   for consistency between the calls.
 */
 static bool
 torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state *cli)
@@ -45,7 +45,7 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	time_t basetime = (time(NULL) - 86400) & ~1;
 	bool check_fnum;
 	int n = time(NULL) % 100;
-	
+
 	path_fname = talloc_asprintf(torture, BASEDIR "\\fname_test_%d.txt", n);
 	path_fname_new = talloc_asprintf(torture, BASEDIR "\\fname_test_new_%d.txt", n);
 	fnum_fname = talloc_asprintf(torture, BASEDIR "\\fnum_test_%d.txt", n);
@@ -69,7 +69,7 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	} while (0)
 
 	RECREATE_BOTH;
-	
+
 #define CHECK_CALL_FNUM(call, rightstatus) do { \
 	check_fnum = true; \
 	call_name = #call; \
@@ -194,7 +194,7 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 		goto done; \
 	}} while (0)
 
-	
+
 	printf("Test setattr\n");
 	sfinfo.setattr.in.attrib = FILE_ATTRIBUTE_READONLY;
 	sfinfo.setattr.in.write_time = basetime;
@@ -682,7 +682,7 @@ done:
 	return ret;
 }
 
-/* 
+/*
    look for the w2k3 setpathinfo STANDARD bug
 */
 static bool torture_raw_sfileinfo_bug(struct torture_context *torture,
@@ -694,7 +694,7 @@ static bool torture_raw_sfileinfo_bug(struct torture_context *torture,
 	int fnum;
 
 	if (!torture_setting_bool(torture, "dangerous", false))
-		torture_skip(torture, 
+		torture_skip(torture,
 			"torture_raw_sfileinfo_bug disabled - enable dangerous tests to use\n");
 
 	fnum = create_complex_file(cli, torture, fname);

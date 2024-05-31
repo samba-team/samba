@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    RAW_CLOSE_* individual test suite
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -27,7 +27,7 @@
 #include "torture/raw/proto.h"
 
 /**
- * basic testing of all RAW_CLOSE_* calls 
+ * basic testing of all RAW_CLOSE_* calls
 */
 bool torture_raw_close(struct torture_context *torture,
 		       struct smbcli_state *cli)
@@ -67,7 +67,7 @@ bool torture_raw_close(struct torture_context *torture,
 
 	status = smb_raw_close(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
-	
+
 	printf("Testing close.in.write_time\n");
 
 	/* the file should have the write time set */
@@ -78,7 +78,7 @@ bool torture_raw_close(struct torture_context *torture,
 
 	if (basetime != nt_time_to_unix(finfo.all_info.out.write_time)) {
 		printf("Incorrect write time on file - %s - %s\n",
-		       timestring(torture, basetime), 
+		       timestring(torture, basetime),
 		       nt_time_string(torture, finfo.all_info.out.write_time));
 		dump_all_info(torture, &finfo);
 		ret = false;
@@ -87,11 +87,11 @@ bool torture_raw_close(struct torture_context *torture,
 	printf("Testing other times\n");
 
 	/* none of the other times should be set to that time */
-	if (nt_time_equal(&finfo.all_info.out.write_time, 
+	if (nt_time_equal(&finfo.all_info.out.write_time,
 			  &finfo.all_info.out.access_time) ||
-	    nt_time_equal(&finfo.all_info.out.write_time, 
+	    nt_time_equal(&finfo.all_info.out.write_time,
 			  &finfo.all_info.out.create_time) ||
-	    nt_time_equal(&finfo.all_info.out.write_time, 
+	    nt_time_equal(&finfo.all_info.out.write_time,
 			  &finfo.all_info.out.change_time)) {
 		printf("Incorrect times after close - only write time should be set\n");
 		dump_all_info(torture, &finfo);
@@ -105,7 +105,7 @@ bool torture_raw_close(struct torture_context *torture,
 			ret = false;
 		}
 	}
-	    
+
 
 	smbcli_unlink(cli->tree, fname);
 	REOPEN;
@@ -127,7 +127,7 @@ bool torture_raw_close(struct torture_context *torture,
 	status = smb_raw_pathinfo(cli->tree, torture, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	if (!nt_time_equal(&finfo.all_info.out.write_time, 
+	if (!nt_time_equal(&finfo.all_info.out.write_time,
 			   &finfo2.all_info.out.write_time)) {
 		printf("Incorrect write time on file - 0 time should be ignored\n");
 		dump_all_info(torture, &finfo);
@@ -169,7 +169,7 @@ bool torture_raw_close(struct torture_context *torture,
 	io_flush.flush.in.file.fnum	= fnum;
 	status = smb_raw_flush(cli->tree, &io_flush);
 	CHECK_STATUS(status, NT_STATUS_INVALID_HANDLE);
-	
+
 
 done:
 	smbcli_close(cli->tree, fnum);

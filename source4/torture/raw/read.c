@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    test suite for various read operations
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -201,7 +201,7 @@ static bool test_read(struct torture_context *tctx, struct smbcli_state *cli)
 	io.read.in.count = ~0;
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
-	
+
 
 done:
 	smbcli_close(cli->tree, fnum);
@@ -214,7 +214,7 @@ done:
 /*
   test lockread ops
 */
-static bool test_lockread(struct torture_context *tctx, 
+static bool test_lockread(struct torture_context *tctx,
 						  struct smbcli_state *cli)
 {
 	union smb_read io;
@@ -238,7 +238,7 @@ static bool test_lockread(struct torture_context *tctx,
 
 	printf("Testing RAW_READ_LOCKREAD\n");
 	io.generic.level = RAW_READ_LOCKREAD;
-	
+
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
@@ -351,7 +351,7 @@ static bool test_lockread(struct torture_context *tctx,
 	io.lockread.in.count = ~0;
 	status = smb_raw_read(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
-	
+
 
 done:
 	smbcli_close(cli->tree, fnum);
@@ -382,7 +382,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	printf("Testing RAW_READ_READX\n");
-	
+
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
@@ -657,7 +657,7 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	io.readx.in.mincnt = 100;
 	io.readx.in.maxcnt = 200;
 	status = smb_raw_read(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);	
+	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 
 	if (!(cli->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
 		printf("skipping large file tests - CAP_LARGE_FILES not set\n");
@@ -694,7 +694,7 @@ done:
 /*
   test readbraw ops
 */
-static bool test_readbraw(struct torture_context *tctx, 
+static bool test_readbraw(struct torture_context *tctx,
 						  struct smbcli_state *cli)
 {
 	union smb_read io;
@@ -717,7 +717,7 @@ static bool test_readbraw(struct torture_context *tctx,
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	printf("Testing RAW_READ_READBRAW\n");
-	
+
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
@@ -870,7 +870,7 @@ done:
 /*
   test read for execute
 */
-static bool test_read_for_execute(struct torture_context *tctx, 
+static bool test_read_for_execute(struct torture_context *tctx,
 								  struct smbcli_state *cli)
 {
 	union smb_open op;
@@ -1021,7 +1021,7 @@ done:
 }
 
 
-/* 
+/*
    basic testing of read calls
 */
 struct torture_suite *torture_raw_read(TALLOC_CTX *mem_ctx)
@@ -1032,7 +1032,7 @@ struct torture_suite *torture_raw_read(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "readx", test_readx);
 	torture_suite_add_1smb_test(suite, "lockread", test_lockread);
 	torture_suite_add_1smb_test(suite, "readbraw", test_readbraw);
-	torture_suite_add_1smb_test(suite, "read for execute", 
+	torture_suite_add_1smb_test(suite, "read for execute",
 		test_read_for_execute);
 
 	return suite;

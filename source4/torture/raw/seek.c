@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    seek test suite
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -68,7 +68,7 @@ static bool test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	finfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
 	finfo.position_information.in.file.fnum = fnum;
-	
+
 	printf("Trying bad handle\n");
 	io.lseek.in.file.fnum = fnum+1;
 	io.lseek.in.mode = SEEK_MODE_START;
@@ -86,7 +86,7 @@ static bool test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 0);
-	
+
 	printf("Trying relative seek\n");
 	io.lseek.in.file.fnum = fnum;
 	io.lseek.in.mode = SEEK_MODE_CURRENT;
@@ -142,7 +142,7 @@ static bool test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	if (smbcli_write(cli->tree, fnum, 0, c, 0, 2) != 2) {
 		printf("Write failed - %s\n", smbcli_errstr(cli->tree));
 		ret = false;
-		goto done;		
+		goto done;
 	}
 
 	printf("Testing position information change\n");
@@ -158,11 +158,11 @@ static bool test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_seek(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.lseek.out.offset, 2);
-	
+
 	if (smbcli_read(cli->tree, fnum, c, 0, 1) != 1) {
 		printf("Read failed - %s\n", smbcli_errstr(cli->tree));
 		ret = false;
-		goto done;		
+		goto done;
 	}
 
 	printf("Testing position information change\n");
@@ -220,7 +220,7 @@ static bool test_seek(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(finfo.position_information.out.position, 0);
-	
+
 
 done:
 	smb_raw_exit(cli->session);
@@ -229,7 +229,7 @@ done:
 }
 
 
-/* 
+/*
    basic testing of seek calls
 */
 bool torture_raw_seek(struct torture_context *torture, struct smbcli_state *cli)

@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    open benchmark
 
    Copyright (C) Andrew Tridgell 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -77,7 +77,7 @@ struct benchopen_state {
 };
 
 static void next_open(struct benchopen_state *state);
-static void reopen_connection(struct tevent_context *ev, struct tevent_timer *te, 
+static void reopen_connection(struct tevent_context *ev, struct tevent_timer *te,
 			      struct timeval t, void *private_data);
 
 
@@ -94,7 +94,7 @@ static void reopen_connection_complete(struct composite_context *ctx)
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(state->te);
 		state->te = tevent_add_timer(state->ev, state->mem_ctx,
-					    timeval_current_ofs(1,0), 
+					    timeval_current_ofs(1,0),
 					    reopen_connection, state);
 		return;
 	}
@@ -111,12 +111,12 @@ static void reopen_connection_complete(struct composite_context *ctx)
 	next_open(state);
 }
 
-	
+
 
 /*
   reopen a connection
  */
-static void reopen_connection(struct tevent_context *ev, struct tevent_timer *te, 
+static void reopen_connection(struct tevent_context *ev, struct tevent_timer *te,
 			      struct timeval t, void *private_data)
 {
 	struct benchopen_state *state = (struct benchopen_state *)private_data;
@@ -150,7 +150,7 @@ static void reopen_connection(struct tevent_context *ev, struct tevent_timer *te
 	state->open_fnum = -1;
 	state->close_fnum = -1;
 
-	ctx = smb_composite_connect_send(io, state->mem_ctx, 
+	ctx = smb_composite_connect_send(io, state->mem_ctx,
 					 lpcfg_resolve_context(state->tctx->lp_ctx),
 					 state->ev);
 	if (ctx == NULL) {
@@ -231,12 +231,12 @@ static void open_completed(struct smbcli_request *req)
 		talloc_free(state->cli);
 		state->tree = NULL;
 		state->cli = NULL;
-		num_connected--;	
+		num_connected--;
 		DEBUG(0,("[%u] reopening connection to %s\n",
 			 state->client_num, state->dest_host));
 		talloc_free(state->te);
 		state->te = tevent_add_timer(state->ev, state->mem_ctx,
-					    timeval_current_ofs(1,0), 
+					    timeval_current_ofs(1,0),
 					    reopen_connection, state);
 		return;
 	}
@@ -272,7 +272,7 @@ static void open_completed(struct smbcli_request *req)
 	}
 
 	next_open(state);
-}	
+}
 
 /*
   called when a close completes
@@ -291,12 +291,12 @@ static void close_completed(struct smbcli_request *req)
 		talloc_free(state->cli);
 		state->tree = NULL;
 		state->cli = NULL;
-		num_connected--;	
+		num_connected--;
 		DEBUG(0,("[%u] reopening connection to %s\n",
 			 state->client_num, state->dest_host));
 		talloc_free(state->te);
 		state->te = tevent_add_timer(state->ev, state->mem_ctx,
-					    timeval_current_ofs(1,0), 
+					    timeval_current_ofs(1,0),
 					    reopen_connection, state);
 		return;
 	}
@@ -313,7 +313,7 @@ static void close_completed(struct smbcli_request *req)
 	DEBUG(2,("[%d] close completed %d (fnum[%d])\n",
 		 state->client_num, state->close_file_num,
 		 state->close_fnum));
-}	
+}
 
 static void echo_completion(struct smbcli_request *req)
 {
@@ -324,20 +324,20 @@ static void echo_completion(struct smbcli_request *req)
 	    NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_RESET)) {
 		talloc_free(state->tree);
 		state->tree = NULL;
-		num_connected--;	
+		num_connected--;
 		DEBUG(0,("[%u] reopening connection to %s\n",
 			 state->client_num, state->dest_host));
 		talloc_free(state->te);
 		state->te = tevent_add_timer(state->ev, state->mem_ctx,
-					    timeval_current_ofs(1,0), 
+					    timeval_current_ofs(1,0),
 					    reopen_connection, state);
 	}
 }
 
-static void report_rate(struct tevent_context *ev, struct tevent_timer *te, 
+static void report_rate(struct tevent_context *ev, struct tevent_timer *te,
 			struct timeval t, void *private_data)
 {
-	struct benchopen_state *state = talloc_get_type(private_data, 
+	struct benchopen_state *state = talloc_get_type(private_data,
 							struct benchopen_state);
 	int i;
 	for (i=0;i<nprocs;i++) {
@@ -368,7 +368,7 @@ static void report_rate(struct tevent_context *ev, struct tevent_timer *te,
 	}
 }
 
-/* 
+/*
    benchmark open calls
 */
 bool torture_bench_open(struct torture_context *torture)
@@ -385,7 +385,7 @@ bool torture_bench_open(struct torture_context *torture)
 	bool progress=false;
 
 	progress = torture_setting_bool(torture, "progress", true);
-	
+
 	nprocs = torture_setting_int(torture, "nprocs", 4);
 
 	state = talloc_zero_array(mem_ctx, struct benchopen_state, nprocs);
@@ -413,9 +413,9 @@ bool torture_bench_open(struct torture_context *torture)
 		dest_port = get_sockaddr_port(dest_ss);
 
 		state[i].dest_host = talloc_strdup(state[i].mem_ctx, dest_str);
-		state[i].dest_ports = talloc_array(state[i].mem_ctx, 
+		state[i].dest_ports = talloc_array(state[i].mem_ctx,
 						   const char *, 2);
-		state[i].dest_ports[0] = talloc_asprintf(state[i].dest_ports, 
+		state[i].dest_ports[0] = talloc_asprintf(state[i].dest_ports,
 							 "%u", dest_port);
 		state[i].dest_ports[1] = NULL;
 		state[i].called_name  = talloc_strdup(state[i].mem_ctx,
@@ -442,7 +442,7 @@ bool torture_bench_open(struct torture_context *torture)
 		next_open(&state[i]);
 	}
 
-	tv = timeval_current();	
+	tv = timeval_current();
 
 	if (progress) {
 		report_te = tevent_add_timer(torture->ev, state, timeval_current_ofs(1, 0),

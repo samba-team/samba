@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    RAW_QFS_* individual test suite
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -146,7 +146,7 @@ static union smb_fsinfo *find(const char *name)
         ret = false; \
 }} while(0)
 
-/* used to find hints on unknown values - and to make sure 
+/* used to find hints on unknown values - and to make sure
    we zero-fill */
 #define VAL_UNKNOWN(n1, v1) do {if (s1->n1.out.v1 != 0) { \
         printf("%s/%s non-zero unknown - %u (0x%x) at %s(%d)\n", \
@@ -157,20 +157,20 @@ static union smb_fsinfo *find(const char *name)
         ret = false; \
 }} while(0)
 
-/* basic testing of all RAW_QFS_* calls 
-   for each call we test that it succeeds, and where possible test 
-   for consistency between the calls. 
+/* basic testing of all RAW_QFS_* calls
+   for each call we test that it succeeds, and where possible test
+   for consistency between the calls.
 
    Some of the consistency tests assume that the target filesystem is
    quiescent, which is sometimes hard to achieve
 */
-bool torture_raw_qfsinfo(struct torture_context *torture, 
+bool torture_raw_qfsinfo(struct torture_context *torture,
 			 struct smbcli_state *cli)
 {
 	size_t i;
 	bool ret = true;
 	size_t count;
-	union smb_fsinfo *s1, *s2;	
+	union smb_fsinfo *s1, *s2;
 
 	/* scan all the levels, pulling the results */
 	for (i=0; levels[i].name; i++) {
@@ -186,9 +186,9 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 		if ((cap & levels[i].capability_mask) != levels[i].capability_mask) {
 			continue;
 		}
-		
+
 		if (!NT_STATUS_IS_OK(levels[i].status)) {
-			printf("ERROR: level %s failed - %s\n", 
+			printf("ERROR: level %s failed - %s\n",
 			       levels[i].name, nt_errstr(levels[i].status));
 			count++;
 		}
@@ -207,14 +207,14 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 		VAL_APPROX_EQUAL(size_info, avail_alloc_units, size_info, avail_alloc_units);
 		VAL_EQUAL(size_info, sectors_per_unit,  size_info, sectors_per_unit);
 		VAL_EQUAL(size_info, bytes_per_sector,  size_info, bytes_per_sector);
-	}	
+	}
 
 	s1 = find("DEVICE_INFO");
 	s2 = find("DEVICE_INFORMATION");
 	if (s1 && s2) {
 		VAL_EQUAL(device_info, device_type,     device_info, device_type);
 		VAL_EQUAL(device_info, characteristics, device_info, characteristics);
-	}	
+	}
 
 	s1 = find("VOLUME_INFO");
 	s2 = find("VOLUME_INFORMATION");
@@ -223,18 +223,18 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 		VAL_EQUAL   (volume_info, serial_number,  volume_info, serial_number);
 		STR_EQUAL   (volume_info, volume_name.s,    volume_info, volume_name.s);
 		torture_comment(torture, "volume_info.volume_name = '%s'\n", s1->volume_info.out.volume_name.s);
-	}	
+	}
 
 	s1 = find("ATTRIBUTE_INFO");
 	s2 = find("ATTRIBUTE_INFORMATION");
 	if (s1 && s2) {
-		VAL_EQUAL(attribute_info, fs_attr,    
+		VAL_EQUAL(attribute_info, fs_attr,
 			  attribute_info, fs_attr);
-		VAL_EQUAL(attribute_info, max_file_component_length, 
+		VAL_EQUAL(attribute_info, max_file_component_length,
 			  attribute_info, max_file_component_length);
 		STR_EQUAL(attribute_info, fs_type.s, attribute_info, fs_type.s);
 		torture_comment(torture, "attribute_info.fs_type = '%s'\n", s1->attribute_info.out.fs_type.s);
-	}	
+	}
 
 	torture_comment(torture, "check for consistent disk sizes\n");
 	s1 = find("DSKATTR");
@@ -242,16 +242,16 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 	if (s1 && s2) {
 		double size1, size2;
 		double scale = s1->dskattr.out.blocks_per_unit * s1->dskattr.out.block_size;
-		size1 = 1.0 * 
-			s1->dskattr.out.units_total * 
-			s1->dskattr.out.blocks_per_unit * 
+		size1 = 1.0 *
+			s1->dskattr.out.units_total *
+			s1->dskattr.out.blocks_per_unit *
 			s1->dskattr.out.block_size / scale;
 		size2 = 1.0 *
 			s2->allocation.out.sectors_per_unit *
 			s2->allocation.out.total_alloc_units *
 			s2->allocation.out.bytes_per_sector / scale;
 		if (fabs(size1 - size2) > 1) {
-			printf("Inconsistent total size in DSKATTR and ALLOCATION - size1=%.0f size2=%.0f\n", 
+			printf("Inconsistent total size in DSKATTR and ALLOCATION - size1=%.0f size2=%.0f\n",
 			       size1, size2);
 			ret = false;
 		}
@@ -264,29 +264,29 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 	if (s1 && s2) {
 		double size1, size2;
 		double scale = s1->dskattr.out.blocks_per_unit * s1->dskattr.out.block_size;
-		size1 = 1.0 * 
-			s1->dskattr.out.units_free * 
-			s1->dskattr.out.blocks_per_unit * 
+		size1 = 1.0 *
+			s1->dskattr.out.units_free *
+			s1->dskattr.out.blocks_per_unit *
 			s1->dskattr.out.block_size / scale;
 		size2 = 1.0 *
 			s2->allocation.out.sectors_per_unit *
 			s2->allocation.out.avail_alloc_units *
 			s2->allocation.out.bytes_per_sector / scale;
 		if (fabs(size1 - size2) > 1) {
-			printf("Inconsistent avail size in DSKATTR and ALLOCATION - size1=%.0f size2=%.0f\n", 
+			printf("Inconsistent avail size in DSKATTR and ALLOCATION - size1=%.0f size2=%.0f\n",
 			       size1, size2);
 			ret = false;
 		}
 		torture_comment(torture, "free disk = %.0f MB\n", size1*scale/1.0e6);
 	}
-	
+
 	torture_comment(torture, "volume info consistency\n");
 	s1 = find("VOLUME");
 	s2 = find("VOLUME_INFO");
 	if (s1 && s2) {
 		VAL_EQUAL(volume, serial_number,  volume_info, serial_number);
 		STR_EQUAL(volume, volume_name.s,  volume_info, volume_name.s);
-	}	
+	}
 
 	/* disk size consistency - notice that 'avail_alloc_units' maps to the caller
 	   available allocation units, not the total */
@@ -297,7 +297,7 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 		VAL_APPROX_EQUAL(size_info, avail_alloc_units, full_size_information, call_avail_alloc_units);
 		VAL_EQUAL(size_info, sectors_per_unit,  full_size_information, sectors_per_unit);
 		VAL_EQUAL(size_info, bytes_per_sector,  full_size_information, bytes_per_sector);
-	}	
+	}
 
 	printf("check for non-zero unknown fields\n");
 	s1 = find("QUOTA_INFORMATION");
@@ -329,7 +329,7 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 	}} while (0)
 
 	torture_comment(torture, "check for correct termination\n");
-	
+
 	STR_CHECK("VOLUME",                volume,         volume_name, 0);
 	STR_CHECK("VOLUME_INFO",           volume_info,    volume_name, STR_UNICODE);
 	STR_CHECK("VOLUME_INFORMATION",    volume_info,    volume_name, STR_UNICODE);

@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    test suite for various lock operations
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -107,7 +107,7 @@ static bool test_lock(struct torture_context *tctx, struct smbcli_state *cli)
 
 	torture_comment(tctx, "Testing RAW_LOCK_LOCK\n");
 	io.generic.level = RAW_LOCK_LOCK;
-	
+
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	torture_assert(tctx,(fnum != -1), talloc_asprintf(tctx,
 		       "Failed to create %s - %s\n",
@@ -239,7 +239,7 @@ static bool test_lockx(struct torture_context *tctx, struct smbcli_state *cli)
 
 	torture_comment(tctx, "Testing RAW_LOCK_LOCKX\n");
 	io.generic.level = RAW_LOCK_LOCKX;
-	
+
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	torture_assert(tctx,(fnum != -1), talloc_asprintf(tctx,
 		       "Failed to create %s - %s\n",
@@ -404,7 +404,7 @@ done:
 /*
   test high pid
 */
-static bool test_pidhigh(struct torture_context *tctx, 
+static bool test_pidhigh(struct torture_context *tctx,
 						 struct smbcli_state *cli)
 {
 	union smb_lock io;
@@ -421,7 +421,7 @@ static bool test_pidhigh(struct torture_context *tctx,
 	io.generic.level = RAW_LOCK_LOCKX;
 
 	cli->session->pid = 1;
-	
+
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	torture_assert(tctx,(fnum != -1), talloc_asprintf(tctx,
 		       "Failed to create %s - %s\n",
@@ -486,7 +486,7 @@ done:
 /*
   test locking&X async operation
 */
-static bool test_async(struct torture_context *tctx, 
+static bool test_async(struct torture_context *tctx,
 					   struct smbcli_state *cli)
 {
 	struct smbcli_session *session;
@@ -995,7 +995,7 @@ done:
 /*
   test NT_STATUS_LOCK_NOT_GRANTED vs. NT_STATUS_FILE_LOCK_CONFLICT
 */
-static bool test_errorcode(struct torture_context *tctx, 
+static bool test_errorcode(struct torture_context *tctx,
 						   struct smbcli_state *cli)
 {
 	union smb_lock io;
@@ -1107,7 +1107,7 @@ next_run:
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 	lock[0].pid--;
 
-	/* 
+	/*
 	 * demonstrate that a successful lock with count = 0 and the same offset,
 	 * doesn't reset the error cache
 	 */
@@ -1131,7 +1131,7 @@ next_run:
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 
-	/* 
+	/*
 	 * demonstrate that a successful lock with count = 0 and outside the locked range,
 	 * doesn't reset the error cache
 	 */
@@ -1196,7 +1196,7 @@ next_run:
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 
-	/* 
+	/*
 	 * demonstrate that a lock with count = 0 and inside the locked range,
 	 * fails and resets the error cache
 	 */
@@ -1285,7 +1285,7 @@ next_run:
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 
-	/* 
+	/*
 	 * demonstrate that a successful lock in a different range
 	 * doesn't reset the cache, the failing lock on the 2nd handle
 	 * resets the cache
@@ -1485,7 +1485,7 @@ done:
 /*
   test LOCKING_ANDX_CHANGE_LOCKTYPE
 */
-static bool test_changetype(struct torture_context *tctx, 
+static bool test_changetype(struct torture_context *tctx,
 							struct smbcli_state *cli)
 {
 	union smb_lock io;
@@ -1500,7 +1500,7 @@ static bool test_changetype(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing LOCKING_ANDX_CHANGE_LOCKTYPE\n");
 	io.generic.level = RAW_LOCK_LOCKX;
-	
+
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	torture_assert(tctx,(fnum != -1), talloc_asprintf(tctx,
 		       "Failed to create %s - %s\n",

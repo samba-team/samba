@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    test security descriptor operations
 
    Copyright (C) Andrew Tridgell 2004
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -155,8 +155,8 @@ static bool test_sd(struct torture_context *tctx, struct smbcli_state *cli)
 	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
-	io.ntcreatex.in.share_access = 
-		NTCREATEX_SHARE_ACCESS_READ | 
+	io.ntcreatex.in.share_access =
+		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
@@ -166,10 +166,10 @@ static bool test_sd(struct torture_context *tctx, struct smbcli_state *cli)
 	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
-	
+
 	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
 	q.query_secdesc.in.file.fnum = fnum;
-	q.query_secdesc.in.secinfo_flags = 
+	q.query_secdesc.in.secinfo_flags =
 		SECINFO_OWNER |
 		SECINFO_GROUP |
 		SECINFO_DACL;
@@ -251,8 +251,8 @@ static bool test_nttrans_create_ext(struct torture_context *tctx,
 	io.ntcreatex.in.create_options =
 	    test_dir ? NTCREATEX_OPTIONS_DIRECTORY : 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
-	io.ntcreatex.in.share_access = 
-		NTCREATEX_SHARE_ACCESS_READ | 
+	io.ntcreatex.in.share_access =
+		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
@@ -272,7 +272,7 @@ static bool test_nttrans_create_ext(struct torture_context *tctx,
 
 	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
 	q.query_secdesc.in.file.fnum = fnum;
-	q.query_secdesc.in.secinfo_flags = 
+	q.query_secdesc.in.secinfo_flags =
 		SECINFO_OWNER |
 		SECINFO_GROUP |
 		SECINFO_DACL;
@@ -296,14 +296,14 @@ static bool test_nttrans_create_ext(struct torture_context *tctx,
 
 	status = security_descriptor_dacl_add(sd, &ace);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	
+
 	torture_comment(tctx, "creating with an initial ACL\n");
 
 	io.ntcreatex.in.sec_desc = sd;
 	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
-	
+
 	FAIL_UNLESS(verify_sd(tctx, cli, fnum, sd));
 
 	status = smbcli_close(cli->tree, fnum);
@@ -729,7 +729,7 @@ done:
   mapping bits
   Test copied to smb2/acls.c for SMB2.
 */
-static bool test_creator_sid(struct torture_context *tctx, 
+static bool test_creator_sid(struct torture_context *tctx,
 							 struct smbcli_state *cli)
 {
 	NTSTATUS status;
@@ -753,8 +753,8 @@ static bool test_creator_sid(struct torture_context *tctx,
 	io.ntcreatex.in.access_mask = SEC_STD_READ_CONTROL | SEC_STD_WRITE_DAC | SEC_STD_WRITE_OWNER;
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
-	io.ntcreatex.in.share_access = 
-		NTCREATEX_SHARE_ACCESS_READ | 
+	io.ntcreatex.in.share_access =
+		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
@@ -842,7 +842,7 @@ static bool test_creator_sid(struct torture_context *tctx,
 	io.ntcreatex.in.access_mask = SEC_FILE_READ_DATA;
 	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum, 
+	CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum,
 			   SEC_FILE_READ_DATA|
 			   SEC_FILE_READ_ATTRIBUTE);
 	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
@@ -856,7 +856,7 @@ static bool test_creator_sid(struct torture_context *tctx,
 	io.ntcreatex.in.access_mask = SEC_GENERIC_READ;
 	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum, 
+	CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum,
 			   SEC_RIGHTS_FILE_READ);
 	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
 
@@ -895,8 +895,8 @@ static bool test_creator_sid(struct torture_context *tctx,
 	io.ntcreatex.in.access_mask = SEC_FILE_READ_DATA;
 	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum, 
-			   SEC_FILE_READ_DATA | 
+	CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum,
+			   SEC_FILE_READ_DATA |
 			   SEC_FILE_READ_ATTRIBUTE);
 	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
 
@@ -932,7 +932,7 @@ done:
   SEC_FILE_xx bits
   Test copied to smb2/acls.c for SMB2.
 */
-static bool test_generic_bits(struct torture_context *tctx, 
+static bool test_generic_bits(struct torture_context *tctx,
 							  struct smbcli_state *cli)
 {
 	NTSTATUS status;
@@ -977,14 +977,14 @@ static bool test_generic_bits(struct torture_context *tctx,
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
-	io.ntcreatex.in.access_mask = 
-		SEC_STD_READ_CONTROL | 
-		SEC_STD_WRITE_DAC | 
+	io.ntcreatex.in.access_mask =
+		SEC_STD_READ_CONTROL |
+		SEC_STD_WRITE_DAC |
 		SEC_STD_WRITE_OWNER;
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
-	io.ntcreatex.in.share_access = 
-		NTCREATEX_SHARE_ACCESS_READ | 
+	io.ntcreatex.in.share_access =
+		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
@@ -1005,8 +1005,8 @@ static bool test_generic_bits(struct torture_context *tctx,
 
 	owner_sid = dom_sid_string(tctx, sd_orig->owner_sid);
 
-	status = torture_check_privilege(cli, 
-					    owner_sid, 
+	status = torture_check_privilege(cli,
+					    owner_sid,
 					    sec_privilege_name(SEC_PRIV_RESTORE));
 	has_restore_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1015,8 +1015,8 @@ static bool test_generic_bits(struct torture_context *tctx,
 	}
 	torture_comment(tctx, "SEC_PRIV_RESTORE - %s\n", has_restore_privilege?"Yes":"No");
 
-	status = torture_check_privilege(cli, 
-					    owner_sid, 
+	status = torture_check_privilege(cli,
+					    owner_sid,
 					    sec_privilege_name(SEC_PRIV_TAKE_OWNERSHIP));
 	has_take_ownership_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1026,9 +1026,9 @@ static bool test_generic_bits(struct torture_context *tctx,
 	torture_comment(tctx, "SEC_PRIV_TAKE_OWNERSHIP - %s\n", has_take_ownership_privilege?"Yes":"No");
 
 	for (i=0;i<ARRAY_SIZE(file_mappings);i++) {
-		uint32_t expected_mask = 
-			SEC_STD_WRITE_DAC | 
-			SEC_STD_READ_CONTROL | 
+		uint32_t expected_mask =
+			SEC_STD_WRITE_DAC |
+			SEC_STD_READ_CONTROL |
 			SEC_FILE_READ_ATTRIBUTE |
 			SEC_STD_DELETE;
 		uint32_t expected_mask_anon = SEC_FILE_READ_ATTRIBUTE;
@@ -1070,7 +1070,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 		io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 		status = smb_raw_open(cli->tree, tctx, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
-		CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum, 
+		CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum,
 				   expected_mask | file_mappings[i].specific_bits);
 		smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
 
@@ -1111,7 +1111,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 		io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 		status = smb_raw_open(cli->tree, tctx, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
-		CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum, 
+		CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum,
 				   expected_mask_anon | file_mappings[i].specific_bits);
 		smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
 	}
@@ -1130,14 +1130,14 @@ static bool test_generic_bits(struct torture_context *tctx,
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
-	io.ntcreatex.in.access_mask = 
-		SEC_STD_READ_CONTROL | 
-		SEC_STD_WRITE_DAC | 
+	io.ntcreatex.in.access_mask =
+		SEC_STD_READ_CONTROL |
+		SEC_STD_WRITE_DAC |
 		SEC_STD_WRITE_OWNER;
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_DIRECTORY;
-	io.ntcreatex.in.share_access = 
-		NTCREATEX_SHARE_ACCESS_READ | 
+	io.ntcreatex.in.share_access =
+		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
@@ -1158,8 +1158,8 @@ static bool test_generic_bits(struct torture_context *tctx,
 
 	owner_sid = dom_sid_string(tctx, sd_orig->owner_sid);
 
-	status = torture_check_privilege(cli, 
-					    owner_sid, 
+	status = torture_check_privilege(cli,
+					    owner_sid,
 					    sec_privilege_name(SEC_PRIV_RESTORE));
 	has_restore_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1168,8 +1168,8 @@ static bool test_generic_bits(struct torture_context *tctx,
 	}
 	torture_comment(tctx, "SEC_PRIV_RESTORE - %s\n", has_restore_privilege?"Yes":"No");
 
-	status = torture_check_privilege(cli, 
-					    owner_sid, 
+	status = torture_check_privilege(cli,
+					    owner_sid,
 					    sec_privilege_name(SEC_PRIV_TAKE_OWNERSHIP));
 	has_take_ownership_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1179,9 +1179,9 @@ static bool test_generic_bits(struct torture_context *tctx,
 	torture_comment(tctx, "SEC_PRIV_TAKE_OWNERSHIP - %s\n", has_take_ownership_privilege?"Yes":"No");
 
 	for (i=0;i<ARRAY_SIZE(dir_mappings);i++) {
-		uint32_t expected_mask = 
-			SEC_STD_WRITE_DAC | 
-			SEC_STD_READ_CONTROL | 
+		uint32_t expected_mask =
+			SEC_STD_WRITE_DAC |
+			SEC_STD_READ_CONTROL |
 			SEC_FILE_READ_ATTRIBUTE |
 			SEC_STD_DELETE;
 		uint32_t expected_mask_anon = SEC_FILE_READ_ATTRIBUTE;
@@ -1223,7 +1223,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 		io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 		status = smb_raw_open(cli->tree, tctx, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
-		CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum, 
+		CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum,
 				   expected_mask | dir_mappings[i].specific_bits);
 		smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
 
@@ -1264,7 +1264,7 @@ static bool test_generic_bits(struct torture_context *tctx,
 		io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 		status = smb_raw_open(cli->tree, tctx, &io);
 		CHECK_STATUS(status, NT_STATUS_OK);
-		CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum, 
+		CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum,
 				   expected_mask_anon | dir_mappings[i].specific_bits);
 		smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
 	}
@@ -1289,7 +1289,7 @@ done:
   see what access bits the owner of a file always gets
   Test copied to smb2/acls.c for SMB2.
 */
-static bool test_owner_bits(struct torture_context *tctx, 
+static bool test_owner_bits(struct torture_context *tctx,
 							struct smbcli_state *cli)
 {
 	NTSTATUS status;
@@ -1313,14 +1313,14 @@ static bool test_owner_bits(struct torture_context *tctx,
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
-	io.ntcreatex.in.access_mask = 
-		SEC_STD_READ_CONTROL | 
-		SEC_STD_WRITE_DAC | 
+	io.ntcreatex.in.access_mask =
+		SEC_STD_READ_CONTROL |
+		SEC_STD_WRITE_DAC |
 		SEC_STD_WRITE_OWNER;
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
-	io.ntcreatex.in.share_access = 
-		NTCREATEX_SHARE_ACCESS_READ | 
+	io.ntcreatex.in.share_access =
+		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
@@ -1341,8 +1341,8 @@ static bool test_owner_bits(struct torture_context *tctx,
 
 	owner_sid = dom_sid_string(tctx, sd_orig->owner_sid);
 
-	status = torture_check_privilege(cli, 
-					    owner_sid, 
+	status = torture_check_privilege(cli,
+					    owner_sid,
 					    sec_privilege_name(SEC_PRIV_RESTORE));
 	has_restore_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1350,8 +1350,8 @@ static bool test_owner_bits(struct torture_context *tctx,
 	}
 	torture_comment(tctx, "SEC_PRIV_RESTORE - %s\n", has_restore_privilege?"Yes":"No");
 
-	status = torture_check_privilege(cli, 
-					    owner_sid, 
+	status = torture_check_privilege(cli,
+					    owner_sid,
 					    sec_privilege_name(SEC_PRIV_TAKE_OWNERSHIP));
 	has_take_ownership_privilege = NT_STATUS_IS_OK(status);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1418,7 +1418,7 @@ done:
   test the inheritance of ACL flags onto new files and directories
   Test copied to smb2/acls.c for SMB2.
 */
-static bool test_inheritance(struct torture_context *tctx, 
+static bool test_inheritance(struct torture_context *tctx,
 							 struct smbcli_state *cli)
 {
 	NTSTATUS status;
@@ -1439,14 +1439,14 @@ static bool test_inheritance(struct torture_context *tctx,
 		uint32_t dir_flags;
 	} test_flags[] = {
 		{
-			0, 
+			0,
 			0,
 			0
 		},
 		{
 			SEC_ACE_FLAG_OBJECT_INHERIT,
 			0,
-			SEC_ACE_FLAG_OBJECT_INHERIT | 
+			SEC_ACE_FLAG_OBJECT_INHERIT |
 			SEC_ACE_FLAG_INHERIT_ONLY,
 		},
 		{
@@ -1455,10 +1455,10 @@ static bool test_inheritance(struct torture_context *tctx,
 			SEC_ACE_FLAG_CONTAINER_INHERIT,
 		},
 		{
-			SEC_ACE_FLAG_OBJECT_INHERIT | 
+			SEC_ACE_FLAG_OBJECT_INHERIT |
 			SEC_ACE_FLAG_CONTAINER_INHERIT,
 			0,
-			SEC_ACE_FLAG_OBJECT_INHERIT | 
+			SEC_ACE_FLAG_OBJECT_INHERIT |
 			SEC_ACE_FLAG_CONTAINER_INHERIT,
 		},
 		{
@@ -1467,20 +1467,20 @@ static bool test_inheritance(struct torture_context *tctx,
 			0,
 		},
 		{
-			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT | 
+			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT |
 			SEC_ACE_FLAG_OBJECT_INHERIT,
 			0,
 			0,
 		},
 		{
-			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT | 
+			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT |
 			SEC_ACE_FLAG_CONTAINER_INHERIT,
 			0,
 			0,
 		},
 		{
-			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT | 
-			SEC_ACE_FLAG_CONTAINER_INHERIT | 
+			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT |
+			SEC_ACE_FLAG_CONTAINER_INHERIT |
 			SEC_ACE_FLAG_OBJECT_INHERIT,
 			0,
 			0,
@@ -1491,50 +1491,50 @@ static bool test_inheritance(struct torture_context *tctx,
 			0,
 		},
 		{
-			SEC_ACE_FLAG_INHERIT_ONLY | 
+			SEC_ACE_FLAG_INHERIT_ONLY |
 			SEC_ACE_FLAG_OBJECT_INHERIT,
 			0,
-			SEC_ACE_FLAG_OBJECT_INHERIT | 
+			SEC_ACE_FLAG_OBJECT_INHERIT |
 			SEC_ACE_FLAG_INHERIT_ONLY,
 		},
 		{
-			SEC_ACE_FLAG_INHERIT_ONLY | 
+			SEC_ACE_FLAG_INHERIT_ONLY |
 			SEC_ACE_FLAG_CONTAINER_INHERIT,
 			0,
 			SEC_ACE_FLAG_CONTAINER_INHERIT,
 		},
 		{
-			SEC_ACE_FLAG_INHERIT_ONLY | 
-			SEC_ACE_FLAG_CONTAINER_INHERIT | 
+			SEC_ACE_FLAG_INHERIT_ONLY |
+			SEC_ACE_FLAG_CONTAINER_INHERIT |
 			SEC_ACE_FLAG_OBJECT_INHERIT,
 			0,
-			SEC_ACE_FLAG_CONTAINER_INHERIT | 
+			SEC_ACE_FLAG_CONTAINER_INHERIT |
 			SEC_ACE_FLAG_OBJECT_INHERIT,
 		},
 		{
-			SEC_ACE_FLAG_INHERIT_ONLY | 
+			SEC_ACE_FLAG_INHERIT_ONLY |
 			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT,
 			0,
 			0,
 		},
 		{
-			SEC_ACE_FLAG_INHERIT_ONLY | 
-			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT | 
+			SEC_ACE_FLAG_INHERIT_ONLY |
+			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT |
 			SEC_ACE_FLAG_OBJECT_INHERIT,
 			0,
 			0,
 		},
 		{
-			SEC_ACE_FLAG_INHERIT_ONLY | 
-			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT | 
+			SEC_ACE_FLAG_INHERIT_ONLY |
+			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT |
 			SEC_ACE_FLAG_CONTAINER_INHERIT,
 			0,
 			0,
 		},
 		{
-			SEC_ACE_FLAG_INHERIT_ONLY | 
-			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT | 
-			SEC_ACE_FLAG_CONTAINER_INHERIT | 
+			SEC_ACE_FLAG_INHERIT_ONLY |
+			SEC_ACE_FLAG_NO_PROPAGATE_INHERIT |
+			SEC_ACE_FLAG_CONTAINER_INHERIT |
 			SEC_ACE_FLAG_OBJECT_INHERIT,
 			0,
 			0,
@@ -1688,7 +1688,7 @@ static bool test_inheritance(struct torture_context *tctx,
 			goto check_dir;
 		}
 
-		if (q.query_secdesc.out.sd->dacl->aces[0].flags != 
+		if (q.query_secdesc.out.sd->dacl->aces[0].flags !=
 		    test_flags[i].file_flags) {
 			torture_warning(tctx, "incorrect file_flags 0x%x - expected 0x%x for parent 0x%x with (i=%d)\n",
 			       q.query_secdesc.out.sd->dacl->aces[0].flags,
@@ -1725,7 +1725,7 @@ static bool test_inheritance(struct torture_context *tctx,
 			continue;
 		}
 
-		if ((test_flags[i].parent_flags & SEC_ACE_FLAG_CONTAINER_INHERIT) && 
+		if ((test_flags[i].parent_flags & SEC_ACE_FLAG_CONTAINER_INHERIT) &&
 		    (test_flags[i].parent_flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT)) {
 			if (q.query_secdesc.out.sd->dacl == NULL ||
 			    q.query_secdesc.out.sd->dacl->num_aces != 1 ||
@@ -1752,7 +1752,7 @@ static bool test_inheritance(struct torture_context *tctx,
 			    !dom_sid_equal(&q.query_secdesc.out.sd->dacl->aces[1].trustee,
 					   creator_owner) ||
 			    q.query_secdesc.out.sd->dacl->aces[0].flags != 0 ||
-			    q.query_secdesc.out.sd->dacl->aces[1].flags != 
+			    q.query_secdesc.out.sd->dacl->aces[1].flags !=
 			    (test_flags[i].dir_flags | SEC_ACE_FLAG_INHERIT_ONLY)) {
 				torture_warning(tctx, "(CI) Bad sd in child dir - expected 0x%x for parent 0x%x (i=%d)\n",
 				       test_flags[i].dir_flags,
@@ -2167,7 +2167,7 @@ done:
   test dynamic acl inheritance
   Test copied to smb2/acls.c for SMB2.
 */
-static bool test_inheritance_dynamic(struct torture_context *tctx, 
+static bool test_inheritance_dynamic(struct torture_context *tctx,
 									 struct smbcli_state *cli)
 {
 	NTSTATUS status;
@@ -2180,7 +2180,7 @@ static bool test_inheritance_dynamic(struct torture_context *tctx,
 	union smb_setfileinfo set;
 	struct security_descriptor *sd, *sd_orig=NULL;
 	const char *owner_sid;
-	
+
 	torture_comment(tctx, "TESTING DYNAMIC ACL INHERITANCE\n");
 
 	if (!torture_setup_dir(cli, BASEDIR))
@@ -2338,7 +2338,7 @@ done:
 
 /* test what access mask is needed for getting and setting security_descriptors
   Test copied to smb2/acls.c for SMB2. */
-static bool test_sd_get_set(struct torture_context *tctx, 
+static bool test_sd_get_set(struct torture_context *tctx,
 							struct smbcli_state *cli)
 {
 	NTSTATUS status;
@@ -2362,7 +2362,7 @@ static bool test_sd_get_set(struct torture_context *tctx,
 		SEC_FLAG_SYSTEM_SECURITY |
 		SEC_FLAG_MAXIMUM_ALLOWED |
 		SEC_STD_ALL |
-		SEC_FILE_ALL | 
+		SEC_FILE_ALL |
 		NO_BITS_HACK;
 	uint64_t get_owner_bits = SEC_MASK_GENERIC | SEC_FLAG_MAXIMUM_ALLOWED | SEC_STD_READ_CONTROL;
 	uint64_t set_owner_bits = SEC_GENERIC_ALL  | SEC_FLAG_MAXIMUM_ALLOWED | SEC_STD_WRITE_OWNER;
@@ -2409,7 +2409,7 @@ static bool test_sd_get_set(struct torture_context *tctx,
 	status = smbcli_close(cli->tree, fnum);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	/* 
+	/*
 	 * now try each access_mask bit and no bit at all in a loop
 	 * and see what's allowed
 	 * NOTE: if i == 32 it means access_mask = 0 (see NO_BITS_HACK above)
@@ -2527,7 +2527,7 @@ done:
 
 #endif
 
-/* 
+/*
    basic testing of security descriptor calls
 */
 struct torture_suite *torture_raw_acls(TALLOC_CTX *mem_ctx)

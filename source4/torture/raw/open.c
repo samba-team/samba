@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    RAW_OPEN_* individual test suite
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -225,7 +225,7 @@ static bool test_open(struct torture_context *tctx, struct smbcli_state *cli)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.openold.out.file.fnum;
 	CHECK_RDWR(fnum, RDWR_RDWR);
-	
+
 	if (io.openold.in.open_mode != io.openold.out.rmode) {
 		torture_warning(tctx, "(%s) rmode should equal open_mode - 0x%x 0x%x\n",
 		       __location__, io.openold.out.rmode, io.openold.in.open_mode);
@@ -408,12 +408,12 @@ static bool test_openx(struct torture_context *tctx, struct smbcli_state *cli)
 	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	if (torture_setting_bool(tctx, "samba3", false)) {
-		CHECK_ALL_INFO(FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_ARCHIVE, 
+		CHECK_ALL_INFO(FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_ARCHIVE,
 			       attrib & ~(FILE_ATTRIBUTE_NONINDEXED|
 					  FILE_ATTRIBUTE_SPARSE));
 	}
 	else {
-		CHECK_ALL_INFO(FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_ARCHIVE, 
+		CHECK_ALL_INFO(FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_ARCHIVE,
 			       attrib & ~(FILE_ATTRIBUTE_NONINDEXED));
 	}
 	smbcli_close(cli->tree, io.openx.out.file.fnum);
@@ -672,7 +672,7 @@ done:
 
 	return ret;
 }
-	
+
 
 /*
   test RAW_OPEN_NTCREATEX
@@ -833,7 +833,7 @@ static bool test_ntcreatex(struct torture_context *tctx, struct smbcli_state *cl
 	CHECK_NTTIME(io.ntcreatex.out.write_time, write_time);
 	CHECK_NTTIME(io.ntcreatex.out.change_time, change_time);
 	CHECK_ALL_INFO(io.ntcreatex.out.attrib, attrib);
-	CHECK_VAL(io.ntcreatex.out.attrib & ~FILE_ATTRIBUTE_NONINDEXED, 
+	CHECK_VAL(io.ntcreatex.out.attrib & ~FILE_ATTRIBUTE_NONINDEXED,
 		  FILE_ATTRIBUTE_DIRECTORY);
 	CHECK_ALL_INFO(io.ntcreatex.out.alloc_size, alloc_size);
 	CHECK_ALL_INFO(io.ntcreatex.out.size, size);
@@ -842,7 +842,7 @@ static bool test_ntcreatex(struct torture_context *tctx, struct smbcli_state *cl
 	CHECK_VAL(io.ntcreatex.out.size, 0);
 	CHECK_VAL(io.ntcreatex.out.file_type, FILE_TYPE_DISK);
 	smbcli_unlink(cli->tree, fname);
-	
+
 
 done:
 	smbcli_close(cli->tree, fnum);
@@ -1105,7 +1105,7 @@ static bool test_nttrans_create(struct torture_context *tctx, struct smbcli_stat
 	CHECK_NTTIME(io.ntcreatex.out.write_time, write_time);
 	CHECK_NTTIME(io.ntcreatex.out.change_time, change_time);
 	CHECK_ALL_INFO(io.ntcreatex.out.attrib, attrib);
-	CHECK_VAL(io.ntcreatex.out.attrib & ~FILE_ATTRIBUTE_NONINDEXED, 
+	CHECK_VAL(io.ntcreatex.out.attrib & ~FILE_ATTRIBUTE_NONINDEXED,
 		  FILE_ATTRIBUTE_DIRECTORY);
 	CHECK_ALL_INFO(io.ntcreatex.out.alloc_size, alloc_size);
 	CHECK_ALL_INFO(io.ntcreatex.out.size, size);
@@ -1114,7 +1114,7 @@ static bool test_nttrans_create(struct torture_context *tctx, struct smbcli_stat
 	CHECK_VAL(io.ntcreatex.out.size, 0);
 	CHECK_VAL(io.ntcreatex.out.file_type, FILE_TYPE_DISK);
 	smbcli_unlink(cli->tree, fname);
-	
+
 
 done:
 	smbcli_close(cli->tree, fnum);
@@ -1244,9 +1244,9 @@ static bool test_mknew(struct torture_context *tctx, struct smbcli_state *cli)
 	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.mknew.out.file.fnum;
-	CHECK_ALL_INFO(FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_ARCHIVE, 
+	CHECK_ALL_INFO(FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_ARCHIVE,
 		       attrib & ~FILE_ATTRIBUTE_NONINDEXED);
-	
+
 done:
 	smbcli_close(cli->tree, fnum);
 	smbcli_deltree(cli->tree, BASEDIR);
@@ -1300,9 +1300,9 @@ static bool test_create(struct torture_context *tctx, struct smbcli_state *cli)
 	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.create.out.file.fnum;
-	CHECK_ALL_INFO(FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_ARCHIVE, 
+	CHECK_ALL_INFO(FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_ARCHIVE,
 		       attrib & ~FILE_ATTRIBUTE_NONINDEXED);
-	
+
 done:
 	smbcli_close(cli->tree, fnum);
 	smbcli_deltree(cli->tree, BASEDIR);
@@ -1371,7 +1371,7 @@ static bool test_chained(struct torture_context *tctx, struct smbcli_state *cli)
 
 	smbcli_write(cli->tree, fnum, 0, buf, 0, sizeof(buf));
 
-	smbcli_close(cli->tree, fnum);	
+	smbcli_close(cli->tree, fnum);
 
 	io.openxreadx.level = RAW_OPEN_OPENX_READX;
 	io.openxreadx.in.fname = fname;
@@ -1383,7 +1383,7 @@ static bool test_chained(struct torture_context *tctx, struct smbcli_state *cli)
 	io.openxreadx.in.write_time = 0;
 	io.openxreadx.in.size = 1024*1024;
 	io.openxreadx.in.timeout = 0;
-	
+
 	io.openxreadx.in.offset = 0;
 	io.openxreadx.in.mincnt = sizeof(buf2);
 	io.openxreadx.in.maxcnt = sizeof(buf2);
@@ -1410,7 +1410,7 @@ done:
 /*
   test RAW_OPEN_OPENX without a leading slash on the path.
   NetApp filers are known to fail on this.
-  
+
 */
 static bool test_no_leading_slash(struct torture_context *tctx, struct smbcli_state *cli)
 {
@@ -1428,7 +1428,7 @@ static bool test_no_leading_slash(struct torture_context *tctx, struct smbcli_st
 	/* Create the file */
 	fnum = create_complex_file(cli, tctx, fname);
 	smbcli_write(cli->tree, fnum, 0, buf, 0, sizeof(buf));
-	smbcli_close(cli->tree, fnum);	
+	smbcli_close(cli->tree, fnum);
 
 	/* Prepare to open the file using path without leading slash */
 	io.openx.level = RAW_OPEN_OPENX;
@@ -1457,7 +1457,7 @@ done:
   test RAW_OPEN_OPENX against an existing directory to
   ensure it returns NT_STATUS_FILE_IS_A_DIRECTORY.
   Samba 3.2.0 - 3.2.6 are known to fail this.
-  
+
 */
 static bool test_openx_over_dir(struct torture_context *tctx, struct smbcli_state *cli)
 {
@@ -1474,7 +1474,7 @@ static bool test_openx_over_dir(struct torture_context *tctx, struct smbcli_stat
 
 	/* Create the Directory */
 	status = create_directory_handle(cli->tree, fname, &d_fnum);
-	smbcli_close(cli->tree, d_fnum);	
+	smbcli_close(cli->tree, d_fnum);
 
 	/* Prepare to open the file over the directory. */
 	io.openx.level = RAW_OPEN_OPENX;
@@ -1518,7 +1518,7 @@ static bool test_raw_open_multi(struct torture_context *tctx, struct smbcli_stat
 	int i, num_files = 3;
 	int num_ok = 0;
 	int num_collision = 0;
-	
+
 	clients = talloc_array(mem_ctx, struct smbcli_state *, num_files);
 	requests = talloc_array(mem_ctx, struct smbcli_request *, num_files);
 	ios = talloc_array(mem_ctx, union smb_open, num_files);
@@ -1597,7 +1597,7 @@ static bool test_raw_open_multi(struct torture_context *tctx, struct smbcli_stat
 
 			if (NT_STATUS_IS_OK(status)) {
 				num_ok += 1;
-			} 
+			}
 
 			if (NT_STATUS_EQUAL(status,
 					    NT_STATUS_OBJECT_NAME_COLLISION)) {

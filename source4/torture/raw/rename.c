@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    rename test suite
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -44,7 +44,7 @@
 /*
   test SMBmv ops
 */
-static bool test_mv(struct torture_context *tctx, 
+static bool test_mv(struct torture_context *tctx,
 					struct smbcli_state *cli)
 {
 	union smb_rename io;
@@ -69,8 +69,8 @@ static bool test_mv(struct torture_context *tctx,
 	op.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	op.ntcreatex.in.create_options = 0;
 	op.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
-	op.ntcreatex.in.share_access = 
-		NTCREATEX_SHARE_ACCESS_READ | 
+	op.ntcreatex.in.share_access =
+		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
 	op.ntcreatex.in.alloc_size = 0;
 	op.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
@@ -86,7 +86,7 @@ static bool test_mv(struct torture_context *tctx,
 	io.rename.in.pattern1 = fname1;
 	io.rename.in.pattern2 = fname2;
 	io.rename.in.attrib = 0;
-	
+
 	torture_comment(tctx, "trying rename while first file open\n");
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
@@ -94,8 +94,8 @@ static bool test_mv(struct torture_context *tctx,
 	smbcli_close(cli->tree, fnum);
 
 	op.ntcreatex.in.access_mask = SEC_FILE_READ_DATA;
-	op.ntcreatex.in.share_access = 
-		NTCREATEX_SHARE_ACCESS_DELETE | 
+	op.ntcreatex.in.share_access =
+		NTCREATEX_SHARE_ACCESS_DELETE |
 		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
 	status = smb_raw_open(cli->tree, tctx, &op);
@@ -134,7 +134,7 @@ static bool test_mv(struct torture_context *tctx,
 	smb_raw_exit(cli->session);
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	
+
 	torture_comment(tctx, "Trying self rename\n");
 	io.rename.in.pattern1 = fname2;
 	io.rename.in.pattern2 = fname2;
@@ -238,7 +238,7 @@ done:
 /*
   test SMBntrename ops
 */
-static bool test_ntrename(struct torture_context *tctx, 
+static bool test_ntrename(struct torture_context *tctx,
 						  struct smbcli_state *cli)
 {
 	union smb_rename io;
@@ -256,17 +256,17 @@ static bool test_ntrename(struct torture_context *tctx,
 	torture_comment(tctx, "Trying simple rename\n");
 
 	fnum = create_complex_file(cli, tctx, fname1);
-	
+
 	io.generic.level = RAW_RENAME_NTRENAME;
 	io.ntrename.in.old_name = fname1;
 	io.ntrename.in.new_name = fname2;
 	io.ntrename.in.attrib = 0;
 	io.ntrename.in.cluster_size = 0;
 	io.ntrename.in.flags = RENAME_FLAG_RENAME;
-	
+
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
-	
+
 	smbcli_close(cli->tree, fnum);
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -285,7 +285,7 @@ static bool test_ntrename(struct torture_context *tctx,
 	torture_comment(tctx, "trying wildcard rename\n");
 	io.ntrename.in.old_name = BASEDIR "\\*.txt";
 	io.ntrename.in.new_name = fname1;
-	
+
 	status = smb_raw_rename(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
 
@@ -449,7 +449,7 @@ static bool test_ntrename(struct torture_context *tctx,
 		torture_all_info(cli->tree, fname1);
 		torture_all_info(cli->tree, fname2);
 	}
-	
+
 
 	io.ntrename.in.flags = RENAME_FLAG_MOVE_CLUSTER_INFORMATION;
 	status = smb_raw_rename(cli->tree, &io);
@@ -493,7 +493,7 @@ static bool test_ntrename(struct torture_context *tctx,
 			}
 		}
 	}
-	
+
 done:
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
@@ -581,7 +581,7 @@ static bool test_dir_rename(struct torture_context *tctx, struct smbcli_state *c
 	ren_io.rename.in.pattern1 = dname1;
 	ren_io.rename.in.pattern2 = dname2;
 	ren_io.rename.in.attrib = 0;
-	
+
 	status = smb_raw_rename(cli->tree, &ren_io);
 	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
 
@@ -672,7 +672,7 @@ done:
 extern bool test_trans2rename(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2);
 extern bool test_nttransrename(struct torture_context *tctx, struct smbcli_state *cli1);
 
-/* 
+/*
    basic testing of rename calls
 */
 struct torture_suite *torture_raw_rename(TALLOC_CTX *mem_ctx)

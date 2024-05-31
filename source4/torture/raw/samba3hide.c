@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Test samba3 hide unreadable/unwriteable
    Copyright (C) Volker Lendecke 2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -33,11 +33,11 @@ static void init_unixinfo_nochange(union smb_setfileinfo *info)
 	info->unix_basic.in.end_of_file = SMB_SIZE_NO_CHANGE_HI;
 	info->unix_basic.in.end_of_file <<= 32;
 	info->unix_basic.in.end_of_file |= SMB_SIZE_NO_CHANGE_LO;
-	
+
 	info->unix_basic.in.num_bytes = SMB_SIZE_NO_CHANGE_HI;
 	info->unix_basic.in.num_bytes <<= 32;
 	info->unix_basic.in.num_bytes |= SMB_SIZE_NO_CHANGE_LO;
-	
+
 	info->unix_basic.in.status_change_time = SMB_TIME_NO_CHANGE_HI;
 	info->unix_basic.in.status_change_time <<= 32;
 	info->unix_basic.in.status_change_time |= SMB_TIME_NO_CHANGE_LO;
@@ -260,7 +260,7 @@ bool torture_samba3_hide(struct torture_context *torture, struct smbcli_state *c
 
 	smbcli_chmod(cli->tree, fname, UNIX_R_USR|UNIX_W_USR);
 	smbcli_unlink(cli->tree, fname);
-	
+
 	return true;
 }
 
@@ -287,29 +287,29 @@ bool torture_samba3_closeerr(struct torture_context *tctx, struct smbcli_state *
 
 	fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR,
 			    DENY_NONE);
-	torture_assert(tctx, fnum != -1, 
+	torture_assert(tctx, fnum != -1,
 		       talloc_asprintf(tctx, "smbcli_open failed: %s\n",
 				       smbcli_errstr(cli->tree)));
 	smbcli_close(cli->tree, fnum);
 
-	fnum = smbcli_nt_create_full(cli->tree, fname, 0, 
+	fnum = smbcli_nt_create_full(cli->tree, fname, 0,
 				      SEC_RIGHTS_FILE_ALL,
 				      FILE_ATTRIBUTE_NORMAL,
 				      NTCREATEX_SHARE_ACCESS_DELETE,
 				      NTCREATEX_DISP_OPEN, 0, 0);
 
-	torture_assert(tctx, fnum != -1, 
+	torture_assert(tctx, fnum != -1,
 		       talloc_asprintf(tctx, "smbcli_open failed: %s\n",
 				       smbcli_errstr(cli->tree)));
 
 	status = smbcli_nt_delete_on_close(cli->tree, fnum, true);
 
-	torture_assert_ntstatus_ok(tctx, status, 
+	torture_assert_ntstatus_ok(tctx, status,
 				   "setting delete_on_close on file failed !");
 
 	status = smbcli_chmod(cli->tree, dname, 0);
 
-	torture_assert_ntstatus_ok(tctx, status, 
+	torture_assert_ntstatus_ok(tctx, status,
 				   "smbcli_chmod on file failed !");
 
 	status = smbcli_close(cli->tree, fnum);
@@ -321,6 +321,6 @@ bool torture_samba3_closeerr(struct torture_context *tctx, struct smbcli_state *
 				      "smbcli_close");
 
 	result = true;
-	
+
 	return result;
 }

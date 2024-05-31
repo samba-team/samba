@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    unlink test suite
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -120,9 +120,9 @@ done:
 
 
 /*
-  test delete on close 
+  test delete on close
 */
-static bool test_delete_on_close(struct torture_context *tctx, 
+static bool test_delete_on_close(struct torture_context *tctx,
 								 struct smbcli_state *cli)
 {
 	union smb_open op;
@@ -190,7 +190,7 @@ static bool test_delete_on_close(struct torture_context *tctx,
 	printf("Testing with directory delete_on_close 1\n");
 	status = create_directory_handle(cli->tree, dname, &fnum);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	
+
 	sfinfo.disposition_info.in.file.fnum = fnum;
 	sfinfo.disposition_info.in.delete_on_close = 1;
 	status = smb_raw_setfileinfo(cli->tree, &sfinfo);
@@ -241,7 +241,7 @@ static bool test_delete_on_close(struct torture_context *tctx,
 	printf("Testing open dir with delete_on_close\n");
 	status = create_directory_handle(cli->tree, dname, &fnum);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	
+
 	smbcli_close(cli->tree, fnum);
 	fnum2 = create_complex_file(cli, tctx, inside);
 	smbcli_close(cli->tree, fnum2);
@@ -274,7 +274,7 @@ static bool test_delete_on_close(struct torture_context *tctx,
 	status = create_directory_handle(cli->tree, dname, &fnum);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smbcli_close(cli->tree, fnum);
-	
+
 	fnum2 = create_complex_file(cli, tctx, inside);
 	smbcli_close(cli->tree, fnum2);
 
@@ -305,7 +305,7 @@ static bool test_delete_on_close(struct torture_context *tctx,
 	printf("Testing pre-existing open dir with second delete_on_close\n");
 	status = create_directory_handle(cli->tree, dname, &fnum);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	
+
 	smbcli_close(cli->tree, fnum);
 
 	fnum = create_complex_file(cli, tctx, inside);
@@ -341,13 +341,13 @@ static bool test_delete_on_close(struct torture_context *tctx,
 
 	status = smb_raw_rmdir(cli->tree, &dio);
 	CHECK_STATUS(status, NT_STATUS_DIRECTORY_NOT_EMPTY);
-	
+
 
 	smbcli_close(cli->tree, fnum);
 
 	status = smb_raw_rmdir(cli->tree, &dio);
 	CHECK_STATUS(status, NT_STATUS_DIRECTORY_NOT_EMPTY);
-	
+
 done:
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
@@ -455,7 +455,7 @@ done:
 	return ret;
 }
 
-/* 
+/*
    basic testing of unlink calls
 */
 struct torture_suite *torture_raw_unlink(TALLOC_CTX *mem_ctx)

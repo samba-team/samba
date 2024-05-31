@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    libcli composite function testing
 
    Copyright (C) Andrew Tridgell 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -92,7 +92,7 @@ static bool test_loadfile(struct torture_context *tctx, struct smbcli_state *cli
 		}
 	}
 	torture_comment(tctx, "count=%d\n", *count);
-	
+
 	for (i=0;i<num_ops;i++) {
 		status = smb_composite_loadfile_recv(c[i], tctx);
 		torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK, "loadfile failed");
@@ -240,7 +240,7 @@ static bool test_appendacl(struct torture_context *tctx, struct smbcli_state *cl
 		io1.in.fname = talloc_asprintf(io_orig, BASEDIR "\\test%d.txt", i);
 		io1.in.data  = NULL;
 		io1.in.size  = 0;
-	  
+
 		status = smb_composite_savefile(cli->tree, &io1);
 		torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK, "savefile failed");
 
@@ -250,7 +250,7 @@ static bool test_appendacl(struct torture_context *tctx, struct smbcli_state *cl
 		status = smb_composite_appendacl(cli->tree, io_orig[i], io_orig[i]);
 		torture_assert_ntstatus_equal(tctx, status, NT_STATUS_OK, "appendacl failed");
 	}
-	
+
 
 	/* fill Security Descriptor with aces to be added */
 
@@ -301,19 +301,19 @@ static bool test_appendacl(struct torture_context *tctx, struct smbcli_state *cl
 			torture_comment(tctx, "(%s) appendacl[%d] failed - %s\n", __location__, i, nt_errstr(status));
 			return false;
 		}
-		
+
 		security_descriptor_dacl_add(io_orig[i]->out.sd, ace);
 		torture_assert(tctx,
 			       security_acl_equal(io_orig[i]->out.sd->dacl,
 						  io[i]->out.sd->dacl),
 			       "appendacl failed - needed acl isn't set");
 	}
-	
+
 
 	talloc_free (ace);
 	talloc_free (test_sid);
 	talloc_free (test_sd);
-		
+
 	return true;
 }
 

@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    ping pong test
@@ -7,17 +7,17 @@
 
    Significantly based on and borrowed from lockbench.c by
    Copyright (C) Andrew Tridgell 2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -133,7 +133,7 @@ static void write_byte(struct smbcli_state *cli, int fd, uint8_t c, int offset)
 		printf("write failed\n");
 		exit(1);
 	}
-}	
+}
 
 static void read_byte(struct smbcli_state *cli, int fd, uint8_t *c, int offset)
 {
@@ -154,9 +154,9 @@ static void read_byte(struct smbcli_state *cli, int fd, uint8_t *c, int offset)
 		printf("read failed\n");
 		exit(1);
 	}
-}	
+}
 
-/* 
+/*
    ping pong
 */
 bool torture_ping_pong(struct torture_context *torture)
@@ -218,7 +218,7 @@ bool torture_ping_pong(struct torture_context *torture)
 			uint8_t c;
 			read_byte(cli, fd, &c, i);
 			incr   = c-val[i];
-			val[i] = c;			
+			val[i] = c;
 		}
 
 		if (do_writes) {
@@ -236,7 +236,7 @@ bool torture_ping_pong(struct torture_context *torture)
 			fflush(stdout);
 		}
 		if (timeval_elapsed(&start) > 1.0) {
-			printf("%8u locks/sec\r", 
+			printf("%8u locks/sec\r",
 			       (unsigned)(2*count/timeval_elapsed(&start)));
 			fflush(stdout);
 			start = timeval_current();
@@ -245,4 +245,3 @@ bool torture_ping_pong(struct torture_context *torture)
 		loops++;
 	}
 }
-

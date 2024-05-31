@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    basic raw test suite for change notify
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -38,7 +38,7 @@ do { \
 
 #define BASEDIR_CN1_DIR BASEDIR "_CN1_DIR"
 
-/* 
+/*
    basic testing of change notify on directories
 */
 static bool test_notify_dir(struct torture_context *tctx,
@@ -206,7 +206,7 @@ static bool test_notify_dir(struct torture_context *tctx,
 					   "smbcli_unlink");
 
 	/* (1st unlink) as the 2nd notify directly returns,
-	   this unlink is only seen by the 1st notify and 
+	   this unlink is only seen by the 1st notify and
 	   the 3rd notify (later) */
 	torture_comment(tctx, "Testing notify on unlink for the first file\n");
 	status = smbcli_unlink(cli2->tree, BASEDIR_CN1_DIR "\\test0.txt");
@@ -354,7 +354,7 @@ static bool check_rename_reply(struct torture_context *tctx,
 	return false;
 }
 
-/* 
+/*
    testing of recursive change notify
 */
 
@@ -431,7 +431,7 @@ static bool test_notify_recursive(struct torture_context *tctx,
 	 */
 	smbcli_mkdir(cli->tree, BASEDIR_CN1_RECUR "\\subdir-name");
 	smbcli_mkdir(cli2->tree, BASEDIR_CN1_RECUR "\\subdir-name\\subname1");
-	smbcli_close(cli->tree, 
+	smbcli_close(cli->tree,
 		     smbcli_open(cli->tree,
 				BASEDIR_CN1_RECUR "\\subdir-name\\subname2",
 				O_CREAT, 0));
@@ -502,7 +502,7 @@ static bool test_notify_recursive(struct torture_context *tctx,
 	ret &= check_rename_reply(tctx,
 		cli, __LINE__, &notify.nttrans.out.changes[5],
 		NOTIFY_ACTION_MODIFIED, "subname2-r");
-		
+
 	ret &= check_rename_reply(tctx,
 		cli, __LINE__, &notify.nttrans.out.changes[8],
 		NOTIFY_ACTION_OLD_NAME, "subname2-r");
@@ -548,7 +548,7 @@ done:
 	return ret;
 }
 
-/* 
+/*
    testing of change notify mask change
 */
 
@@ -654,7 +654,7 @@ static bool test_notify_mask_change(struct torture_context *tctx,
 
 	smbcli_mkdir(cli->tree, BASEDIR_CN1_CNMC "\\subdir-name");
 	smbcli_mkdir(cli->tree, BASEDIR_CN1_CNMC "\\subdir-name\\subname1");
-	smbcli_close(cli->tree, 
+	smbcli_close(cli->tree,
 		     smbcli_open(cli->tree,
 			BASEDIR_CN1_CNMC "\\subdir-name\\subname2",
 			O_CREAT, 0));
@@ -705,7 +705,7 @@ done:
 }
 
 
-/* 
+/*
    testing of mask bits for change notify
 */
 
@@ -1362,7 +1362,7 @@ done:
 	return ret;
 }
 
-/* 
+/*
    test setting up two change notify requests on one handle
 */
 
@@ -1442,7 +1442,7 @@ done:
 }
 
 
-/* 
+/*
    test multiple change notifies at different depths and with/without recursion
 */
 
@@ -1658,7 +1658,7 @@ static bool test_notify_tree(struct torture_context *tctx,
 			status = smb_raw_changenotify_recv(req, tctx, &notify);
 			dirs[i].counted += notify.nttrans.out.num_changes;
 		}
-		
+
 		all_done = true;
 
 		for (i=0;i<ARRAY_SIZE(dirs);i++) {
@@ -1871,7 +1871,7 @@ done:
   with change notify
 */
 
-static struct smbcli_tree *secondary_tcon(struct smbcli_state *cli, 
+static struct smbcli_tree *secondary_tcon(struct smbcli_state *cli,
 					  struct torture_context *tctx)
 {
 	NTSTATUS status;
@@ -1881,7 +1881,7 @@ static struct smbcli_tree *secondary_tcon(struct smbcli_state *cli,
 
 	share = torture_setting_string(tctx, "share", NULL);
 	host  = torture_setting_string(tctx, "host", NULL);
-	
+
 	torture_comment(tctx, "create a second tree context on the same session\n");
 	tree = smbcli_tree_init(cli->session, tctx, false);
 
@@ -1889,7 +1889,7 @@ static struct smbcli_tree *secondary_tcon(struct smbcli_state *cli,
 	tcon.tconx.in.flags = TCONX_FLAG_EXTENDED_RESPONSE;
 	tcon.tconx.in.password = data_blob(NULL, 0);
 	tcon.tconx.in.path = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
-	tcon.tconx.in.device = "A:";	
+	tcon.tconx.in.device = "A:";
 	status = smb_raw_tcon(tree, tctx, &tcon);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tree);
@@ -1904,7 +1904,7 @@ static struct smbcli_tree *secondary_tcon(struct smbcli_state *cli,
 }
 
 
-/* 
+/*
    very simple change notify test
 */
 
@@ -1921,7 +1921,7 @@ static bool test_notify_tcon(struct torture_context *tctx,
 	struct smbcli_request *req;
 	extern int torture_numops;
 	struct smbcli_tree *tree = NULL;
-		
+
 	torture_comment(tctx, "TESTING SIMPLE CHANGE NOTIFY\n");
 
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR_CN1_NTCON),

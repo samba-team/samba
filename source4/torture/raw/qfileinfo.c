@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    RAW_FILEINFO_* individual test suite
    Copyright (C) Andrew Tridgell 2003
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -314,7 +314,7 @@ static union smb_fileinfo *fnum_find(const char *name)
 	int i;
 	for (i=0; levels[i].name; i++) {
 		if (NT_STATUS_IS_OK(levels[i].fnum_status) &&
-		    strcmp(name, levels[i].name) == 0 && 
+		    strcmp(name, levels[i].name) == 0 &&
 		    !levels[i].only_paths) {
 			return &levels[i].fnum_finfo;
 		}
@@ -333,7 +333,7 @@ static union smb_fileinfo *fname_find(bool is_ipc, const char *name)
 	}
 	for (i=0; levels[i].name; i++) {
 		if (NT_STATUS_IS_OK(levels[i].fname_status) &&
-		    strcmp(name, levels[i].name) == 0 && 
+		    strcmp(name, levels[i].name) == 0 &&
 		    !levels[i].only_handles) {
 			return &levels[i].fname_finfo;
 		}
@@ -367,7 +367,7 @@ static union smb_fileinfo *fname_find(bool is_ipc, const char *name)
         ret = false; \
 }} while(0)
 
-/* used to find hints on unknown values - and to make sure 
+/* used to find hints on unknown values - and to make sure
    we zero-fill */
 #if 0 /* unused */
 #define VAL_UNKNOWN(n1, v1) do {if (s1->n1.out.v1 != 0) { \
@@ -380,20 +380,20 @@ static union smb_fileinfo *fname_find(bool is_ipc, const char *name)
 }} while(0)
 #endif
 
-/* basic testing of all RAW_FILEINFO_* calls 
-   for each call we test that it succeeds, and where possible test 
-   for consistency between the calls. 
+/* basic testing of all RAW_FILEINFO_* calls
+   for each call we test that it succeeds, and where possible test
+   for consistency between the calls.
 */
-static bool torture_raw_qfileinfo_internals(struct torture_context *torture, 
-					    TALLOC_CTX *mem_ctx, 	
-					    struct smbcli_tree *tree, 
+static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
+					    TALLOC_CTX *mem_ctx,
+					    struct smbcli_tree *tree,
 					    int fnum, const char *fname,
 					    bool is_ipc)
 {
 	size_t i;
 	bool ret = true;
 	size_t count;
-	union smb_fileinfo *s1, *s2;	
+	union smb_fileinfo *s1, *s2;
 	NTTIME correct_time;
 	uint64_t correct_size;
 	uint32_t correct_attrib;
@@ -405,14 +405,14 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 		if (!levels[i].only_paths) {
 			levels[i].fnum_finfo.generic.level = levels[i].level;
 			levels[i].fnum_finfo.generic.in.file.fnum = fnum;
-			levels[i].fnum_status = smb_raw_fileinfo(tree, mem_ctx, 
+			levels[i].fnum_status = smb_raw_fileinfo(tree, mem_ctx,
 								 &levels[i].fnum_finfo);
 		}
 
 		if (!levels[i].only_handles) {
 			levels[i].fname_finfo.generic.level = levels[i].level;
 			levels[i].fname_finfo.generic.in.file.path = talloc_strdup(mem_ctx, fname);
-			levels[i].fname_status = smb_raw_pathinfo(tree, mem_ctx, 
+			levels[i].fname_status = smb_raw_pathinfo(tree, mem_ctx,
 								  &levels[i].fname_finfo);
 		}
 	}
@@ -435,7 +435,7 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 					nt_errstr(levels[i].fname_status));
 				continue;
 			} else if (!levels[i].only_handles && !NT_STATUS_EQUAL(NT_STATUS_INVALID_DEVICE_REQUEST, levels[i].fname_status)) {
-				printf("ERROR: fname level %s failed, expected NT_STATUS_INVALID_DEVICE_REQUEST - %s\n", 
+				printf("ERROR: fname level %s failed, expected NT_STATUS_INVALID_DEVICE_REQUEST - %s\n",
 				       levels[i].name, nt_errstr(levels[i].fname_status));
 				count++;
 			}
@@ -450,8 +450,8 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 				continue;
 			}
 			if (!levels[i].only_paths && !NT_STATUS_EQUAL(levels[i].expected_ipc_fnum_status, levels[i].fnum_status)) {
-				printf("ERROR: fnum level %s failed, expected %s - %s\n", 
-				       levels[i].name, nt_errstr(levels[i].expected_ipc_fnum_status), 
+				printf("ERROR: fnum level %s failed, expected %s - %s\n",
+				       levels[i].name, nt_errstr(levels[i].expected_ipc_fnum_status),
 				       nt_errstr(levels[i].fnum_status));
 				count++;
 			}
@@ -479,17 +479,17 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 			}
 
 			if (!levels[i].only_paths && !NT_STATUS_IS_OK(levels[i].fnum_status)) {
-				printf("ERROR: fnum level %s failed - %s\n", 
+				printf("ERROR: fnum level %s failed - %s\n",
 				       levels[i].name, nt_errstr(levels[i].fnum_status));
 				count++;
 			}
 			if (!levels[i].only_handles && !NT_STATUS_IS_OK(levels[i].fname_status)) {
-				printf("ERROR: fname level %s failed - %s\n", 
+				printf("ERROR: fname level %s failed - %s\n",
 				       levels[i].name, nt_errstr(levels[i].fname_status));
 				count++;
 			}
 		}
-		
+
 	}
 
 	if (count != 0) {
@@ -508,13 +508,13 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 			       s1 ? s1->stream_info.out.num_streams : -1);
 		}
 		skip_streams = true;
-	}	
+	}
 
 
 	/* this code is incredibly repititive but doesn't lend itself to loops, so
 	   we use lots of macros to make it less painful */
 
-	/* first off we check the levels that are supposed to be aliases. It will be quite rare for 
+	/* first off we check the levels that are supposed to be aliases. It will be quite rare for
 	   this code to fail, but we need to check it for completeness */
 
 
@@ -712,7 +712,7 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 	s1 = fnum_find("STANDARD_INFO");
 	correct_size = s1->standard_info.out.size;
 	torture_comment(torture, "size: %u\n", (unsigned int)correct_size);
-	
+
 	SIZE_CHECK("GETATTR",                  getattr,                  size);
 	SIZE_CHECK("GETATTRE",                 getattre,                 size);
 	SIZE_CHECK("STANDARD",                 standard,                 size);
@@ -733,7 +733,7 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 	s1 = fnum_find("STANDARD_INFO");
 	correct_size = s1->standard_info.out.alloc_size;
 	torture_comment(torture, "alloc_size: %u\n", (unsigned int)correct_size);
-	
+
 	SIZE_CHECK("GETATTRE",                 getattre,                 alloc_size);
 	SIZE_CHECK("STANDARD",                 standard,                 alloc_size);
 	SIZE_CHECK("EA_SIZE",                  ea_size,                  alloc_size);
@@ -766,7 +766,7 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 	s1 = fnum_find("BASIC_INFO");
 	correct_attrib = s1->basic_info.out.attrib;
 	torture_comment(torture, "attrib: 0x%x\n", (unsigned int)correct_attrib);
-	
+
 	ATTRIB_CHECK("GETATTR",                   getattr,                   attrib);
 	if (!is_ipc) {
 		ATTRIB_CHECK("GETATTRE",                  getattre,                  attrib);
@@ -810,7 +810,7 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 	if (s1 && s1->all_info.out.fname.s) {
 		char *p = strrchr(s1->all_info.out.fname.s, '\\');
 		if (!p) {
-			printf("Not a full path in all_info/fname? - '%s'\n", 
+			printf("Not a full path in all_info/fname? - '%s'\n",
 			       s1->all_info.out.fname.s);
 			ret = false;
 		} else {
@@ -835,40 +835,40 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 		torture_comment(torture, "no alternate name information\n");
 	} else {
 		torture_comment(torture, "alt_name: %s\n", correct_name);
-		
+
 		NAME_CHECK("ALT_NAME_INFO",        alt_name_info, fname, STR_UNICODE);
 		NAME_CHECK("ALT_NAME_INFORMATION", alt_name_info, fname, STR_UNICODE);
-		
+
 		/* and make sure we can open by alternate name */
 		smbcli_close(tree, fnum);
-		fnum = smbcli_nt_create_full(tree, correct_name, 0, 
+		fnum = smbcli_nt_create_full(tree, correct_name, 0,
 					     SEC_RIGHTS_FILE_ALL,
 					     FILE_ATTRIBUTE_NORMAL,
 					     NTCREATEX_SHARE_ACCESS_DELETE|
 					     NTCREATEX_SHARE_ACCESS_READ|
-					     NTCREATEX_SHARE_ACCESS_WRITE, 
-					     NTCREATEX_DISP_OVERWRITE_IF, 
+					     NTCREATEX_SHARE_ACCESS_WRITE,
+					     NTCREATEX_DISP_OVERWRITE_IF,
 					     0, 0);
 		if (fnum == -1) {
 			printf("Unable to open by alt_name - %s\n", smbcli_errstr(tree));
 			ret = false;
 		}
-		
+
 		if (!skip_streams) {
 			correct_name = "::$DATA";
 			torture_comment(torture, "stream_name: %s\n", correct_name);
-			
+
 			NAME_CHECK("STREAM_INFO",        stream_info, streams[0].stream_name, STR_UNICODE);
 			NAME_CHECK("STREAM_INFORMATION", stream_info, streams[0].stream_name, STR_UNICODE);
 		}
 	}
-		
+
 	/* make sure the EAs look right */
 	s1 = fnum_find("ALL_EAS");
 	s2 = fnum_find("ALL_INFO");
 	if (s1) {
 		for (i=0;i<s1->all_eas.out.num_eas;i++) {
-			printf("  flags=%d %s=%*.*s\n", 
+			printf("  flags=%d %s=%*.*s\n",
 			       s1->all_eas.out.eas[i].flags,
 			       s1->all_eas.out.eas[i].name.s,
 			       (int)s1->all_eas.out.eas[i].value.length,
@@ -883,7 +883,7 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 				       s2->all_info.out.ea_size);
 			}
 		} else {
-			if (s2->all_info.out.ea_size != 
+			if (s2->all_info.out.ea_size !=
 			    ea_list_size(s1->all_eas.out.num_eas, s1->all_eas.out.eas)) {
 				printf("ERROR: ea_list_size=%d != fnum all_info.out.ea_size=%d\n",
 				       (int)ea_list_size(s1->all_eas.out.num_eas, s1->all_eas.out.eas),
@@ -931,11 +931,11 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 		ret = false; \
 	}} while (0)
 
-	VAL_CHECK("STANDARD_INFO", standard_info, delete_pending, 
+	VAL_CHECK("STANDARD_INFO", standard_info, delete_pending,
 		  "ALL_INFO",      all_info,      delete_pending);
-	VAL_CHECK("STANDARD_INFO", standard_info, directory, 
+	VAL_CHECK("STANDARD_INFO", standard_info, directory,
 		  "ALL_INFO",      all_info,      directory);
-	VAL_CHECK("STANDARD_INFO", standard_info, nlink, 
+	VAL_CHECK("STANDARD_INFO", standard_info, nlink,
 		  "ALL_INFO",      all_info,      nlink);
 	s1 = fnum_find("BASIC_INFO");
 	if (s1 && is_ipc) {
@@ -955,10 +955,10 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 			ret = false;
 		}
 	}
-	VAL_CHECK("EA_INFO",       ea_info,       ea_size, 
+	VAL_CHECK("EA_INFO",       ea_info,       ea_size,
 		  "ALL_INFO",      all_info,      ea_size);
 	if (!is_ipc) {
-		VAL_CHECK("EA_SIZE",       ea_size,       ea_size, 
+		VAL_CHECK("EA_SIZE",       ea_size,       ea_size,
 			  "ALL_INFO",      all_info,      ea_size);
 	}
 
@@ -1008,18 +1008,18 @@ static bool torture_raw_qfileinfo_internals(struct torture_context *torture,
 	}} while (0)
 #endif
 	/* now get a bit fancier .... */
-	
+
 	/* when we set the delete disposition then the link count should drop
 	   to 0 and delete_pending should be 1 */
-	
+
 	return ret;
 }
 
-/* basic testing of all RAW_FILEINFO_* calls 
-   for each call we test that it succeeds, and where possible test 
-   for consistency between the calls. 
+/* basic testing of all RAW_FILEINFO_* calls
+   for each call we test that it succeeds, and where possible test
+   for consistency between the calls.
 */
-bool torture_raw_qfileinfo(struct torture_context *torture, 
+bool torture_raw_qfileinfo(struct torture_context *torture,
 						   struct smbcli_state *cli)
 {
 	int fnum;
@@ -1033,14 +1033,14 @@ bool torture_raw_qfileinfo(struct torture_context *torture,
 	}
 
 	ret = torture_raw_qfileinfo_internals(torture, torture, cli->tree, fnum, fname, false /* is_ipc */);
-	
+
 	smbcli_close(cli->tree, fnum);
 	smbcli_unlink(cli->tree, fname);
 
 	return ret;
 }
 
-bool torture_raw_qfileinfo_pipe(struct torture_context *torture, 
+bool torture_raw_qfileinfo_pipe(struct torture_context *torture,
 				struct smbcli_state *cli)
 {
 	bool ret = true;

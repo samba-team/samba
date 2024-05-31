@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    basic raw test suite for multiplexing
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -86,7 +86,7 @@ static bool test_mux_open(struct torture_context *tctx, struct smbcli_state *cli
 	torture_comment(tctx, "send 2nd async open, conflicting\n");
 	tv = timeval_current();
 	req2 = smb_raw_open_send(cli->tree, &io);
-	
+
 	torture_comment(tctx, "close first sync open\n");
 	smbcli_close(cli->tree, fnum1);
 
@@ -166,7 +166,7 @@ static bool test_mux_write(struct torture_context *tctx, struct smbcli_state *cl
 	io.writex.in.wmode = 0;
 	io.writex.in.remaining = 0;
 	io.writex.in.count = 4;
-	io.writex.in.data = (const uint8_t *)&fnum;	
+	io.writex.in.data = (const uint8_t *)&fnum;
 	req = smb_raw_write_send(cli->tree, &io);
 
 	/* unlock the range */
@@ -275,7 +275,7 @@ static bool test_mux_lock(struct torture_context *tctx, struct smbcli_state *cli
 	smb_raw_ntcancel(req);
 
 	torture_comment(tctx, "sending 2nd cancel\n");
-	/* the 2nd cancel is totally harmless, but tests the server trying to 
+	/* the 2nd cancel is totally harmless, but tests the server trying to
 	   cancel an already cancelled request */
 	smb_raw_ntcancel(req);
 
@@ -320,7 +320,7 @@ static bool test_mux_lock(struct torture_context *tctx, struct smbcli_state *cli
 
 
 
-/* 
+/*
    basic testing of multiplexing notify
 */
 bool torture_raw_mux(struct torture_context *torture, struct smbcli_state *cli)

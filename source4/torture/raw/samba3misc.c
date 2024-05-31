@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Test some misc Samba3 code paths
    Copyright (C) Volker Lendecke 2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -173,7 +173,7 @@ bool torture_samba3_checkfsp(struct torture_context *torture, struct smbcli_stat
 
 	torture_assert_ntstatus_equal(torture, torture_second_tcon(torture, cli->session,
 								   torture_setting_string(torture, "share", NULL),
-								   &tree2), 
+								   &tree2),
 				      NT_STATUS_OK,
 				      "creating second tcon");
 
@@ -458,7 +458,7 @@ bool torture_samba3_badpath(struct torture_context *torture)
 	torture_assert_goto(torture, torture_open_connection(&cli_dos, torture, 1), ret, fail, "Could not open DOS connection\n");
 
 	torture_assert_goto(torture, lpcfg_set_cmdline(torture->lp_ctx, "nt status support",
-						       nt_status_support ? "yes":"no"), 
+						       nt_status_support ? "yes":"no"),
 			    ret, fail, "Could not set 'nt status support' back to where it was\n");
 	torture_assert_goto(torture, lpcfg_set_cmdline(torture->lp_ctx, "client ntlmv2 auth",
 						       client_ntlmv2_auth ? "yes":"no"),
@@ -486,7 +486,7 @@ bool torture_samba3_badpath(struct torture_context *torture)
 						dirname));
 	CHECK_STATUS(torture, status, NT_STATUS_DOS(ERRDOS, ERRbadpath));
 
-	torture_assert_goto(torture, fpath = talloc_asprintf(mem_ctx, "%s\\%s", dirname, fname), 
+	torture_assert_goto(torture, fpath = talloc_asprintf(mem_ctx, "%s\\%s", dirname, fname),
 			    ret, fail, "Could not allocate fpath\n");
 
 	fnum = smbcli_open(cli_nt->tree, fpath, O_RDWR | O_CREAT, DENY_NONE);
@@ -953,7 +953,7 @@ bool torture_samba3_rootdirfid(struct torture_context *tctx, struct smbcli_state
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
 	io.ntcreatex.in.fname = "\\";
-	torture_assert_ntstatus_equal_goto(tctx, smb_raw_open(cli->tree, tctx, &io), 
+	torture_assert_ntstatus_equal_goto(tctx, smb_raw_open(cli->tree, tctx, &io),
 					   NT_STATUS_OK,
 					   ret, done, "smb_open on the directory failed: %s\n");
 

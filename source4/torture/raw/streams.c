@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    test alternate data streams
 
    Copyright (C) Andrew Tridgell 2004
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -65,7 +65,7 @@
 */
 static bool check_stream(struct smbcli_state *cli, const char *location,
 			 TALLOC_CTX *mem_ctx,
-			 const char *fname, const char *sname, 
+			 const char *fname, const char *sname,
 			 const char *value)
 {
 	int fnum;
@@ -85,7 +85,7 @@ static bool check_stream(struct smbcli_state *cli, const char *location,
 		}
 		return true;
 	}
-	    
+
 	if (fnum == -1) {
 		printf("(%s) Failed to open stream '%s' - %s\n",
 		       location, full_name, smbcli_errstr(cli->tree));
@@ -93,7 +93,7 @@ static bool check_stream(struct smbcli_state *cli, const char *location,
 	}
 
 	buf = talloc_array(mem_ctx, uint8_t, strlen(value)+11);
-	
+
 	ret = smbcli_read(cli->tree, fnum, buf, 0, strlen(value)+11);
 	if (ret != strlen(value)) {
 		printf("(%s) Failed to read %lu bytes from stream '%s' - got %d\n",
@@ -373,7 +373,7 @@ static bool test_stream_io(struct torture_context *tctx,
 	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.file.fnum;
-	
+
 	smbcli_close(cli->tree, fnum);
 	status = smbcli_unlink(cli->tree, sname2);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
@@ -468,7 +468,7 @@ done:
 	return ret;
 }
 
-/* 
+/*
  *  Test FILE_SHARE_DELETE on streams
  *
  * A stream opened with !FILE_SHARE_DELETE prevents the main file to be opened
@@ -2060,7 +2060,7 @@ static bool test_stream_permissions(struct torture_context *tctx,
 	return ret;
 }
 
-/* 
+/*
    basic testing of streams calls
 */
 struct torture_suite *torture_raw_streams(TALLOC_CTX *tctx)

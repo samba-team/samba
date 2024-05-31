@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    test suite for session setup operations
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -91,7 +91,7 @@ static bool test_session(struct torture_context *tctx,
 
 	status = smb_composite_sesssetup(session, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	
+
 	session->vuid = setup.out.vuid;
 
 	torture_comment(tctx, "create a third security context on the same transport, with given vuid\n");
@@ -141,7 +141,7 @@ static bool test_session(struct torture_context *tctx,
 		setup.in.sesskey = cli->transport->negotiate.sesskey;
 		setup.in.capabilities &= ~CAP_EXTENDED_SECURITY; /* force a non extended security login (should fail) */
 		setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
-	
+
 		setup.in.credentials = samba_cmdline_get_creds();
 
 		status = smb_composite_sesssetup(session3, &setup);
@@ -160,19 +160,19 @@ static bool test_session(struct torture_context *tctx,
 		setup.in.sesskey = cli->transport->negotiate.sesskey;
 		setup.in.capabilities &= ~CAP_EXTENDED_SECURITY; /* force a non extended security login (should fail) */
 		setup.in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
-		
+
 		anon_creds = cli_credentials_init(tctx);
 		cli_credentials_set_conf(anon_creds, tctx->lp_ctx);
 		cli_credentials_set_anonymous(anon_creds);
 
 		setup.in.credentials = anon_creds;
-	
+
 		status = smb_composite_sesssetup(session3, &setup);
 		CHECK_STATUS(status, NT_STATUS_OK);
 
 		talloc_free(session4);
 	}
-		
+
 	torture_comment(tctx, "use the same tree as the existing connection\n");
 	tree = smbcli_tree_init(session, tctx, false);
 	tree->tid = cli->tree->tid;
@@ -238,7 +238,7 @@ static bool test_session(struct torture_context *tctx,
 		setups[i].in.sesskey = cli->transport->negotiate.sesskey;
 		setups[i].in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
 		setups[i].in.workgroup = lpcfg_workgroup(tctx->lp_ctx);
-		
+
 		setups[i].in.credentials = samba_cmdline_get_creds();
 		setups[i].in.gensec_settings = gensec_settings;
 
@@ -287,7 +287,7 @@ static bool test_tree(struct torture_context *tctx, struct smbcli_state *cli)
 
 	share = torture_setting_string(tctx, "share", NULL);
 	host  = torture_setting_string(tctx, "host", NULL);
-	
+
 	torture_comment(tctx, "create a second tree context on the same session\n");
 	tree = smbcli_tree_init(cli->session, tctx, false);
 
@@ -295,16 +295,16 @@ static bool test_tree(struct torture_context *tctx, struct smbcli_state *cli)
 	tcon.tconx.in.flags = TCONX_FLAG_EXTENDED_RESPONSE;
 	tcon.tconx.in.password = data_blob(NULL, 0);
 	tcon.tconx.in.path = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
-	tcon.tconx.in.device = "A:";	
+	tcon.tconx.in.device = "A:";
 	status = smb_raw_tcon(tree, tctx, &tcon);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	
+
 
 	tree->tid = tcon.tconx.out.tid;
 	torture_comment(tctx, "tid1=%d tid2=%d\n", cli->tree->tid, tree->tid);
 
 	torture_comment(tctx, "try a tconx with a bad device type\n");
-	tcon.tconx.in.device = "FOO";	
+	tcon.tconx.in.device = "FOO";
 	status = smb_raw_tcon(tree, tctx, &tcon);
 	CHECK_STATUS(status, NT_STATUS_BAD_DEVICE_TYPE);
 
@@ -360,7 +360,7 @@ static bool test_tree(struct torture_context *tctx, struct smbcli_state *cli)
 
 	/* close down the new tree */
 	talloc_free(tree);
-	
+
 done:
 	return ret;
 }
@@ -513,7 +513,7 @@ static bool test_tree_ulogoff(struct torture_context *tctx, struct smbcli_state 
 
 	/* close down the new tree */
 	talloc_free(tree);
-	
+
 done:
 	return ret;
 }
@@ -663,7 +663,7 @@ static bool test_pid_2sess(struct torture_context *tctx,
 	setup.in.gensec_settings = lpcfg_gensec_settings(tctx, tctx->lp_ctx);
 
 	status = smb_composite_sesssetup(session, &setup);
-	CHECK_STATUS(status, NT_STATUS_OK);	
+	CHECK_STATUS(status, NT_STATUS_OK);
 	session->vuid = setup.out.vuid;
 
 	vuid1 = cli->session->vuid;
@@ -760,7 +760,7 @@ static bool test_pid_2tcon(struct torture_context *tctx,
 
 	share = torture_setting_string(tctx, "share", NULL);
 	host  = torture_setting_string(tctx, "host", NULL);
-	
+
 	torture_comment(tctx, "create a second tree context on the same session\n");
 	tree = smbcli_tree_init(cli->session, tctx, false);
 
@@ -768,9 +768,9 @@ static bool test_pid_2tcon(struct torture_context *tctx,
 	tcon.tconx.in.flags = TCONX_FLAG_EXTENDED_RESPONSE;
 	tcon.tconx.in.password = data_blob(NULL, 0);
 	tcon.tconx.in.path = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
-	tcon.tconx.in.device = "A:";	
+	tcon.tconx.in.device = "A:";
 	status = smb_raw_tcon(tree, tctx, &tcon);
-	CHECK_STATUS(status, NT_STATUS_OK);	
+	CHECK_STATUS(status, NT_STATUS_OK);
 
 	tree->tid = tcon.tconx.out.tid;
 

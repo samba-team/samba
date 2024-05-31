@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    RAW_MKDIR_* and RAW_RMDIR_* individual test suite
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -46,7 +46,7 @@ static bool test_mkdir(struct smbcli_state *cli, struct torture_context *tctx)
 
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
-	/* 
+	/*
 	   basic mkdir
 	*/
 	md.mkdir.level = RAW_MKDIR_MKDIR;
@@ -90,13 +90,13 @@ static bool test_mkdir(struct smbcli_state *cli, struct torture_context *tctx)
 	md.mkdir.in.path = "..\\..\\..";
 	status = smb_raw_mkdir(cli->tree, &md);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
-	
+
 	printf("Testing t2mkdir\n");
 
 	/* try a t2mkdir - need to work out why this fails! */
 	md.t2mkdir.level = RAW_MKDIR_T2MKDIR;
 	md.t2mkdir.in.path = path;
-	md.t2mkdir.in.num_eas = 0;	
+	md.t2mkdir.in.num_eas = 0;
 	status = smb_raw_mkdir(cli->tree, &md);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
@@ -155,10 +155,10 @@ done:
 }
 
 
-/* 
-   basic testing of all RAW_MKDIR_* calls 
+/*
+   basic testing of all RAW_MKDIR_* calls
 */
-bool torture_raw_mkdir(struct torture_context *torture, 
+bool torture_raw_mkdir(struct torture_context *torture,
 		       struct smbcli_state *cli)
 {
 	bool ret = true;
