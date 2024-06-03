@@ -741,10 +741,27 @@ class PkInitTests(KDCBaseTest):
         self._test_samlogon(creds=client_creds,
                             logon_type=netlogon.NetlogonNetworkInformation)
 
-    def test_pkinit_ntlm_from_pac_must_change_now(self):
-        """Test public-key PK-INIT to get an NT hash and confirm NTLM
-           authentication is possible with it."""
+    def _test_pkinit_ntlm_from_pac_must_change_now(self, smartcard_pw_expire):
+        """Test public-key PK-INIT on an account set to 'must change now'.
+        This shows that PKINIT is not available for these accounts and no
+        auto-rollover happens because UF_SMARTCARD_REQUIRED is not set"""
         samdb = self.get_samdb()
+
+        msgs = samdb.search(base=samdb.get_default_basedn(),
+                            scope=ldb.SCOPE_BASE,
+                            attrs=["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"])
+        msg = msgs[0]
+
+        try:
+            old_ExpirePasswordsOnSmartCardOnlyAccounts = msg["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"]
+        except KeyError:
+            old_ExpirePasswordsOnSmartCardOnlyAccounts = None
+
+        self.addCleanup(set_ExpirePasswordsOnSmartCardOnlyAccounts,
+                        samdb, old_ExpirePasswordsOnSmartCardOnlyAccounts)
+
+        # Enable auto-rotation for this test
+        set_ExpirePasswordsOnSmartCardOnlyAccounts(samdb, smartcard_pw_expire)
 
         client_creds = self._get_creds()
         client_creds.set_kerberos_state(credentials.AUTO_USE_KERBEROS)
@@ -792,6 +809,12 @@ class PkInitTests(KDCBaseTest):
         self._test_samlogon(creds=client_creds,
                             logon_type=netlogon.NetlogonNetworkInformation,
                             expect_error=ntstatus.NT_STATUS_PASSWORD_MUST_CHANGE)
+
+    def test_pkinit_ntlm_from_pac_must_change_now(self):
+        self._test_pkinit_ntlm_from_pac_must_change_now(smartcard_pw_expire=True)
+
+    def test_pkinit_ntlm_from_pac_must_change_now_rotate_disabled(self):
+        self._test_pkinit_ntlm_from_pac_must_change_now(smartcard_pw_expire=False)
 
     def _test_pkinit_ntlm_from_pac_smartcard_required_must_change_now(self, smartcard_pw_expire):
         """Test public-key PK-INIT to get the user's NT hash for an account
