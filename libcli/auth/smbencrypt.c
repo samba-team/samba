@@ -344,16 +344,17 @@ NTSTATUS SMBOWFencrypt_ntv2(const uint8_t kr[16],
 		goto out;
 	}
 
-#ifdef DEBUG_PASSWORD
-	DEBUG(100, ("SMBOWFencrypt_ntv2: srv_chal, smbcli_chal, resp_buf\n"));
-	dump_data(100, srv_chal->data, srv_chal->length);
-	dump_data(100, smbcli_chal->data, smbcli_chal->length);
-	dump_data(100, resp_buf, 16);
-#endif
 
 	status = NT_STATUS_OK;
 out:
 	gnutls_hmac_deinit(hmac_hnd, resp_buf);
+#ifdef DEBUG_PASSWORD
+	DEBUG(100, ("SMBOWFencrypt_ntv2: srv_chal, smbcli_chal, resp_buf: %s\n",
+		    nt_errstr(status)));
+	dump_data(100, srv_chal->data, srv_chal->length);
+	dump_data(100, smbcli_chal->data, smbcli_chal->length);
+	dump_data(100, resp_buf, 16);
+#endif
 	return status;
 }
 
