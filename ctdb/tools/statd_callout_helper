@@ -321,8 +321,8 @@ notify)
 		exit 0
 	fi
 
-	send_notifies <"$statd_state"
 	delete_records <"$statd_state"
+	send_notifies <"$statd_state"
 
 	rm -f "$statd_state"
 
