@@ -783,10 +783,16 @@ class PkInitTests(KDCBaseTest):
 
         freshness_token = self.create_freshness_token()
 
+        # Windows does not send an NTSTATUS in this case for an
+        # expired password against PKINIT, but will for ENC-TS,
+        # However Samba on Heimdal is consistent between both, so we
+        # must set expect_status=None to allow the test to pass
+        # against both.
         self._pkinit_req(client_creds, krbtgt_creds,
                          freshness_token=freshness_token,
                          expect_error=KDC_ERR_KEY_EXPIRED,
-                         expect_edata=True
+                         expect_edata=True,
+                         expected_status=ntstatus.NT_STATUS_PASSWORD_MUST_CHANGE,
         )
 
         # AS-REQ will not succeed, password is still expired
@@ -1683,6 +1689,7 @@ class PkInitTests(KDCBaseTest):
                     certificate=None,
                     expect_error=0,
                     expect_edata=False,
+                    expected_status=None,
                     using_pkinit=PkInit.PUBLIC_KEY,
                     etypes=None,
                     pk_nonce=None,
@@ -1954,6 +1961,7 @@ class PkInitTests(KDCBaseTest):
             using_pkinit=using_pkinit,
             pk_nonce=pk_nonce,
             expect_edata=expect_edata,
+            expected_status=expected_status,
             expect_matching_nt_hash_in_pac=expect_matching_nt_hash_in_pac)
 
         till = self.get_KerberosTime(offset=36000)
