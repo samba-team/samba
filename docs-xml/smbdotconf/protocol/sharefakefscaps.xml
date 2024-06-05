@@ -3,15 +3,25 @@
                  type="string"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
+	<para>
+	  This is needed to support some special applications that makes use of
+	  filesystem specific features like sparse files or block reflink copy.
+	</para>
 
 	<para>
-	This is needed to support some special application that makes
-	QFSINFO calls to check whether we set the SPARSE_FILES bit
-	(0x40). If this bit is not set that particular application
-	refuses to work against
-	Samba. With <smbconfoption name="share:fake_fscaps">64</smbconfoption>
-	the SPARSE_FILES file system capability flag is set. Use other
-	decimal values to specify the bitmask you need to fake.
+	  With <smbconfoption name="share:fake_fscaps">64</smbconfoption>
+	  the SPARSE_FILES (0x40) file system capability flag is set.
+	</para>
+	<para>
+	  With <smbconfoption name="share:fake_fscaps">134217728</smbconfoption>
+	  the SUPPORTS_BLOCK_REFCOUNTING (0x8000000) file system capability flag
+	  is set. As of this writing, filesystems that support this feature are
+	  BTRFS, XFS and ZFS.
+	</para>
+	<para>
+	  The complete list can be found in MS-FSCC 2.5.1
+	  FileFsAttributeInformation. Note that only decimal values can be used
+	  in the configuration.
 	</para>
 
 </description>
