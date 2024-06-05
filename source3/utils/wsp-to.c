@@ -113,6 +113,7 @@ static struct {
 	const char *name;
 } backend_map[] = {
 	{WSP_BACKEND_NONE, "none"},
+	{WSP_BACKEND_ELASTIC, "elastic"},
 };
 
 static int get_backend_id(const char *backend_name)
@@ -128,6 +129,9 @@ static int get_backend_id(const char *backend_name)
 	return id;
 }
 
+#ifdef HAVE_WSP_BACKEND_ES
+void initialise_elastic_conv(void);
+#endif
 int main(int argc, const char *argv[])
 {
 	DATA_BLOB blob;
@@ -238,6 +242,10 @@ int main(int argc, const char *argv[])
 	} else {
 		backend = "none";
 	}
+
+#ifdef HAVE_WSP_BACKEND_ES
+	initialise_elastic_conv();
+#endif
 
 	id = get_backend_id(backend);
 	conv_ops = get_query_conv_ops(id);
