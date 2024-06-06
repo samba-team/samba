@@ -17,12 +17,14 @@
 from samba import provision, param
 import os
 import shutil
+import subprocess
 from samba.tests import (env_loadparm, create_test_ou, BlackboxProcessError,
                          BlackboxTestCase, connect_samdb)
 import ldb
 from samba.samdb import SamDB
 from samba.auth import system_session
 from samba import Ldb, dn_from_dns_name
+from samba.netcmd import CommandError
 from samba.netcmd.fsmo import get_fsmo_roleowner
 import re
 from samba import sites
@@ -131,13 +133,30 @@ class DomainBackupBase(BlackboxTestCase):
         extract_dir = self.restore_dir()
         with tarfile.open(backup_file) as tf:
             tf.extractall(extract_dir)
+        return extract_dir
 
-    def _test_backup_untar(self, primary_domain_secrets=0):
+    def _test_backup_untar(
+        self,
+        primary_domain_secrets=0,
+        verify_checksums=False
+    ):
         """Creates a backup, untars the raw files, and sanity-checks the DB"""
         backup_file = self.create_backup()
-        self.untar_backup(backup_file)
+        extract_dir = self.untar_backup(backup_file)
 
-        private_dir = os.path.join(self.restore_dir(), "private")
+        if (verify_checksums):
+            p = subprocess.Popen(
+                ["sha256sum", "-c", "SHA256SUM"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=extract_dir,
+            )
+            (out, err) = p.communicate()
+            if p.returncode:
+                print("Error: " + err.decode('utf-8'))
+                raise CommandError('Failed to verify checksums')
+
+        private_dir = os.path.join(extract_dir, "private")
         samdb_path = os.path.join(private_dir, "sam.ldb")
         lp = env_loadparm()
         samdb = SamDB(url=samdb_path, session_info=system_session(), lp=lp)
@@ -612,7 +631,7 @@ class DomainBackupOffline(DomainBackupBase):
         self.base_cmd = ["domain", "backup", "offline"]
 
     def test_backup_untar(self):
-        self._test_backup_untar(primary_domain_secrets=1)
+        self._test_backup_untar(primary_domain_secrets=1, verify_checksums=True)
 
     def test_backup_restore_with_conf(self):
         self._test_backup_restore_with_conf()
