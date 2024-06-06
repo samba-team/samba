@@ -996,6 +996,12 @@ bld.SAMBA3_SUBSYSTEM('DCUTIL',
                          libcli_lsa3
                          ''')
 
+bld.SAMBA_SUBSYSTEM('ELASTIC-UTIL',
+                    source='''
+                           lib/elastic_util.c
+                           ''',
+                    deps='talloc')
+
 bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
                     source='lib/util_tdb.c',
                     deps='talloc samba3-util')
