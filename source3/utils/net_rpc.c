@@ -6566,19 +6566,14 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 		goto out;
 	}
 
-	domain_name = smb_xstrdup(argv[0]);
-	if (!strupper_m(domain_name)) {
-		SAFE_FREE(domain_name);
+	domain_name = talloc_strdup_upper(frame, argv[0]);
+	if (domain_name == NULL) {
 		goto out;
 	}
 
 	/* account name used at first is our domain's name with '$' */
-	if (asprintf(&acct_name, "%s$", lp_workgroup()) == -1) {
-		goto out;
-	}
-	if (!strupper_m(acct_name)) {
-		SAFE_FREE(domain_name);
-		SAFE_FREE(acct_name);
+	acct_name = talloc_asprintf_strupper_m(frame, "%s$", lp_workgroup());
+	if (acct_name == NULL) {
 		goto out;
 	}
 	cli_credentials_set_username(c->creds, acct_name, CRED_SPECIFIED);
