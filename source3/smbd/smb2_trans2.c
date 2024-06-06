@@ -2041,7 +2041,6 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 	const char *fstype = lp_fstype(SNUM(conn));
 	const char *filename = NULL;
 	const uint64_t bytes_per_sector = 512;
-	uint32_t additional_flags = 0;
 	struct smb_filename smb_fname;
 	SMB_STRUCT_STAT st;
 	NTSTATUS status = NT_STATUS_OK;
@@ -2172,24 +2171,9 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 		case SMB_QUERY_FS_ATTRIBUTE_INFO:
 		case SMB_FS_ATTRIBUTE_INFORMATION:
 
-			additional_flags = 0;
-#if defined(HAVE_SYS_QUOTAS)
-			additional_flags |= FILE_VOLUME_QUOTAS;
-#endif
-
-			if(lp_nt_acl_support(SNUM(conn))) {
-				additional_flags |= FILE_PERSISTENT_ACLS;
-			}
-
-			/* Capabilities are filled in at connection time through STATVFS call */
-			additional_flags |= conn->fs_capabilities;
-			additional_flags |= lp_parm_int(conn->params->service,
-							"share", "fake_fscaps",
-							0);
-
 			SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
 				FILE_SUPPORTS_OBJECT_IDS|FILE_UNICODE_ON_DISK|
-				additional_flags); /* FS ATTRIBUTES */
+				conn->fs_capabilities); /* FS ATTRIBUTES */
 
 			SIVAL(pdata,4,255); /* Max filename component length */
 			/* NOTE! the fstype must *not* be null terminated or win98 won't recognise it

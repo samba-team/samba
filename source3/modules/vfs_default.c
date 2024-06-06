@@ -177,6 +177,16 @@ static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle,
 		caps = statbuf.FsCapabilities;
 	}
 
+#if defined(HAVE_SYS_QUOTAS)
+	caps |= FILE_VOLUME_QUOTAS;
+#endif
+
+	if (lp_nt_acl_support(SNUM(conn))) {
+		caps |= FILE_PERSISTENT_ACLS;
+	}
+
+	caps |= lp_parm_int(SNUM(conn), "share", "fake_fscaps", 0);
+
 	*p_ts_res = TIMESTAMP_SET_SECONDS;
 
 	/* Work out what timestamp resolution we can
