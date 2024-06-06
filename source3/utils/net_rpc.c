@@ -6538,7 +6538,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	struct sockaddr_storage server_ss;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct policy_handle connect_hnd;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx = NULL;
 	NTSTATUS nt_status, result;
 	struct dom_sid *domain_sid;
 	char* domain_name;
@@ -6553,6 +6553,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 		},
 	};
 	uint32_t out_version = 0;
+	int rc = -1;
 
 	/*
 	 * Connect to \\server\ipc$ as 'our domain' account with password
@@ -6562,30 +6563,30 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 		d_printf("%s\n%s",
 			 _("Usage:"),
 			 _("net rpc trustdom establish <domain_name>\n"));
-		return -1;
+		goto out;
 	}
 
 	domain_name = smb_xstrdup(argv[0]);
 	if (!strupper_m(domain_name)) {
 		SAFE_FREE(domain_name);
-		return -1;
+		goto out;
 	}
 
 	/* account name used at first is our domain's name with '$' */
 	if (asprintf(&acct_name, "%s$", lp_workgroup()) == -1) {
-		return -1;
+		goto out;
 	}
 	if (!strupper_m(acct_name)) {
 		SAFE_FREE(domain_name);
 		SAFE_FREE(acct_name);
-		return -1;
+		goto out;
 	}
 	cli_credentials_set_username(c->creds, acct_name, CRED_SPECIFIED);
 
 	/* find the domain controller */
 	if (!net_find_pdc(&server_ss, pdc_name, domain_name)) {
 		DEBUG(0, ("Couldn't find domain controller for domain %s\n", domain_name));
-		return -1;
+		goto out;
 	}
 
 	/* connect to ipc$ as username/password */
@@ -6595,7 +6596,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 		/* Is it trusting domain account for sure ? */
 		DEBUG(0, ("Couldn't verify trusting domain account. Error was %s\n",
 			nt_errstr(nt_status)));
-		return -1;
+		goto out;
 	}
 
 	/* store who we connected to */
@@ -6612,23 +6613,20 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't connect to domain %s controller. Error was %s.\n",
 			domain_name, nt_errstr(nt_status)));
-		return -1;
+		goto out;
 	}
 
 	if (!(mem_ctx = talloc_init("establishing trust relationship to "
 				    "domain %s", domain_name))) {
 		DEBUG(0, ("talloc_init() failed\n"));
-		cli_shutdown(cli);
-		return -1;
+		goto out;
 	}
 
 	/* Make sure we're talking to a proper server */
 
 	nt_status = rpc_trustdom_get_pdc(c, cli, mem_ctx, domain_name);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
-		return -1;
+		goto out;
 	}
 
 	/*
@@ -6639,9 +6637,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 					     &pipe_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Could not initialise lsa pipe. Error was %s\n", nt_errstr(nt_status) ));
-		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
-		return -1;
+		goto out;
 	}
 
 	b = pipe_hnd->binding_handle;
@@ -6658,9 +6654,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	if (any_nt_status_not_ok(nt_status, result, &nt_status)) {
 		DBG_ERR("Couldn't open policy handle: %s\n",
 			nt_errstr(nt_status));
-		cli_shutdown(cli);
-		talloc_free(mem_ctx);
-		return -1;
+		goto out;
 	}
 
 	/* Querying info level 5 */
@@ -6673,16 +6667,12 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
 			nt_errstr(nt_status)));
-		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
-		return -1;
+		goto out;
 	}
 	if (NT_STATUS_IS_ERR(result)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
 			nt_errstr(result)));
-		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
-		return -1;
+		goto out;
 	}
 
 	domain_sid = info->account_domain.sid;
@@ -6698,9 +6688,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 
 	if (!pdb_set_trusteddom_pw(domain_name, pwd, domain_sid)) {
 		DEBUG(0, ("Storing password for trusted domain failed.\n"));
-		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
-		return -1;
+		goto out;
 	}
 
 	/*
@@ -6711,17 +6699,16 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't close LSA pipe. Error was %s\n",
 			nt_errstr(nt_status)));
-		cli_shutdown(cli);
-		talloc_destroy(mem_ctx);
-		return -1;
+		goto out;
 	}
 
-	cli_shutdown(cli);
-
-	talloc_destroy(mem_ctx);
-
 	d_printf(_("Trust to domain %s established\n"), domain_name);
-	return 0;
+
+	rc = 0;
+out:
+	cli_shutdown(cli);
+	TALLOC_FREE(mem_ctx);
+	return rc;
 }
 
 /**
