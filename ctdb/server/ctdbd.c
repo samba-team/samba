@@ -309,7 +309,7 @@ int main(int argc, const char *argv[])
 		DBG_ERR(" Out of memory\n");
 		goto fail;
 	}
-	ctdb_load_nodes_file(ctdb);
+	ctdb_load_nodes(ctdb);
 
 	/*
 	 * Database setup/options

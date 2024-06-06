@@ -121,8 +121,8 @@ static int convert_node_map_to_list(struct ctdb_context *ctdb,
 	return 0;
 }
 
-/* Load the nodes list from a file */
-void ctdb_load_nodes_file(struct ctdb_context *ctdb)
+/* Load the nodes list from a file or sub-processes' stdout  */
+void ctdb_load_nodes(struct ctdb_context *ctdb)
 {
 	struct ctdb_node_map *node_map;
 	int ret;

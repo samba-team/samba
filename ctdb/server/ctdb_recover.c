@@ -158,7 +158,7 @@ ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode)
 	ctdb->num_nodes = 0;
 
 	/* load the new nodes file */
-	ctdb_load_nodes_file(ctdb);
+	ctdb_load_nodes(ctdb);
 
 	for (i=0; i<ctdb->num_nodes; i++) {
 		/* keep any identical pre-existing nodes and connections */
