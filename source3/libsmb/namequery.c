@@ -30,7 +30,6 @@
 #include "libsmb/nmblib.h"
 #include "libsmb/unexpected.h"
 #include "../libcli/nbt/libnbt.h"
-#include "libads/kerberos_proto.h"
 #include "lib/gencache.h"
 #include "librpc/gen_ndr/dns.h"
 #include "lib/util/util_net.h"
