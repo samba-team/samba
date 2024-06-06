@@ -36,6 +36,7 @@ ok <<EOF
 	# node address = 
 	# cluster lock = 
 	# recovery lock = 
+	# nodes list = 
 	# leader timeout = 5
 	# leader capability = true
 [database]

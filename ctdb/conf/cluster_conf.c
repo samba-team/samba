@@ -22,6 +22,8 @@
 
 #include "lib/util/debug.h"
 
+#include "common/path.h"
+
 #include "conf/conf.h"
 
 #include "conf/cluster_conf.h"
@@ -169,6 +171,11 @@ void cluster_conf_init(struct conf_context *conf)
 			   CLUSTER_CONF_RECOVERY_LOCK,
 			   NULL,
 			   validate_recovery_lock);
+	conf_define_string(conf,
+			   CLUSTER_CONF_SECTION,
+			   CLUSTER_CONF_NODES_LIST,
+			   NULL,
+			   check_static_string_change);
 	conf_define_integer(conf,
 			    CLUSTER_CONF_SECTION,
 			    CLUSTER_CONF_LEADER_TIMEOUT,
@@ -179,4 +186,18 @@ void cluster_conf_init(struct conf_context *conf)
 			    CLUSTER_CONF_LEADER_CAPABILITY,
 			    true,
 			    NULL);
+}
+
+char *cluster_conf_nodes_list(TALLOC_CTX *mem_ctx, struct conf_context *conf)
+{
+	const char *out = NULL;
+	int ret = conf_get_string(conf,
+				  CLUSTER_CONF_SECTION,
+				  CLUSTER_CONF_NODES_LIST,
+				  &out,
+				  NULL);
+	if (ret == 0 && out != NULL) {
+		return talloc_strdup(mem_ctx, out);
+	}
+	return path_etcdir_append(mem_ctx, "nodes");
 }

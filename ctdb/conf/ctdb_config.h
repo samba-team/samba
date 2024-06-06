@@ -28,6 +28,7 @@ struct ctdb_config {
 	const char *node_address;
 	const char *cluster_lock;
 	const char *recovery_lock;
+	const char *nodes_list;
 	int leader_timeout;
 	bool leader_capability;
 
