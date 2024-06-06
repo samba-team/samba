@@ -127,7 +127,7 @@ void ctdb_load_nodes_file(struct ctdb_context *ctdb)
 	struct ctdb_node_map *node_map;
 	int ret;
 
-	node_map = ctdb_read_nodes(ctdb, ctdb->nodes_file);
+	node_map = ctdb_read_nodes(ctdb, ctdb->nodes_source);
 	if (node_map == NULL) {
 		goto fail;
 	}
@@ -143,8 +143,8 @@ void ctdb_load_nodes_file(struct ctdb_context *ctdb)
 	return;
 
 fail:
-	DEBUG(DEBUG_ERR, ("Failed to load nodes file \"%s\"\n",
-			  ctdb->nodes_file));
+	DEBUG(DEBUG_ERR, ("Failed to load nodes \"%s\"\n",
+			  ctdb->nodes_source));
 	talloc_free(node_map);
 	exit(1);
 }

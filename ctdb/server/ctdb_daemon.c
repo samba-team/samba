@@ -2193,7 +2193,7 @@ int ctdb_control_getnodesfile(struct ctdb_context *ctdb,
 
 	CHECK_CONTROL_DATA_SIZE(0);
 
-	node_map = ctdb_read_nodes(ctdb, ctdb->nodes_file);
+	node_map = ctdb_read_nodes(ctdb, ctdb->nodes_source);
 	if (node_map == NULL) {
 		D_ERR("Failed to read nodes file\n");
 		return -1;

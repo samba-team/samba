@@ -328,7 +328,7 @@ struct ctdb_context {
 
 	struct ctdb_reloadips_handle *reload_ips;
 
-	const char *nodes_file;
+	const char *nodes_source;
 	const char *public_addresses_file;
 	struct trbt_tree *child_processes; 
 

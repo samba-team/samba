@@ -304,8 +304,8 @@ int main(int argc, const char *argv[])
 	}
 
 	/* tell ctdb what nodes are available */
-	ctdb->nodes_file = cluster_conf_nodes_list(ctdb, conf);
-	if (ctdb->nodes_file == NULL) {
+	ctdb->nodes_source = cluster_conf_nodes_list(ctdb, conf);
+	if (ctdb->nodes_source == NULL) {
 		DBG_ERR(" Out of memory\n");
 		goto fail;
 	}
