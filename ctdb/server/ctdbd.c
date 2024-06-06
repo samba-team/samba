@@ -42,6 +42,7 @@
 #include "common/logging.h"
 
 #include "conf/logging_conf.h"
+#include "conf/cluster_conf.h"
 #include "conf/ctdb_config.h"
 
 int script_log_level;
@@ -303,7 +304,7 @@ int main(int argc, const char *argv[])
 	}
 
 	/* tell ctdb what nodes are available */
-	ctdb->nodes_file = talloc_asprintf(ctdb, "%s/nodes", ctdb_base);
+	ctdb->nodes_file = cluster_conf_nodes_list(ctdb, conf);
 	if (ctdb->nodes_file == NULL) {
 		DBG_ERR(" Out of memory\n");
 		goto fail;
