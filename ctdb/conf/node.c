@@ -29,6 +29,7 @@
 #include <talloc.h>
 
 #include "lib/util/util_file.h"
+#include "lib/util/util_strlist.h"
 
 #include "protocol/protocol.h"
 #include "protocol/protocol_util.h"
@@ -95,22 +96,15 @@ static bool node_map_add(struct ctdb_node_map *nodemap,
 	return true;
 }
 
-/* Read a nodes file into a node map */
-static struct ctdb_node_map *ctdb_read_nodes_file(TALLOC_CTX *mem_ctx,
-						  const char *nlist)
+static struct ctdb_node_map *ctdb_parse_nodes_lines(TALLOC_CTX *mem_ctx,
+						    char **lines,
+						    int nlines)
 {
-	char **lines = NULL;
-	int nlines;
 	int i;
 	struct ctdb_node_map *nodemap = NULL;
 
 	nodemap = talloc_zero(mem_ctx, struct ctdb_node_map);
 	if (nodemap == NULL) {
-		return NULL;
-	}
-
-	lines = file_lines_load(nlist, &nlines, 0, mem_ctx);
-	if (lines == NULL) {
 		return NULL;
 	}
 
@@ -158,12 +152,67 @@ static struct ctdb_node_map *ctdb_read_nodes_file(TALLOC_CTX *mem_ctx,
 			node = line;
 		}
 		if (!node_map_add(nodemap, node, flags)) {
-			talloc_free(lines);
 			TALLOC_FREE(nodemap);
 			return NULL;
 		}
 	}
 
+	return nodemap;
+}
+
+/* Convert a string containing a command line to an array of strings. Does not
+ * handle shell style quoting! A space will always create a new argument.
+ */
+static char **command_str_to_args(TALLOC_CTX *mem_ctx,
+				  const char *argstring)
+{
+	return str_list_make(mem_ctx, argstring, " \t");
+}
+
+/* Read a nodes file into a node map */
+static struct ctdb_node_map *ctdb_read_nodes_file(TALLOC_CTX *mem_ctx,
+						  const char *nlist)
+{
+	char **lines = NULL;
+	int nlines;
+	struct ctdb_node_map *nodemap = NULL;
+
+	lines = file_lines_load(nlist, &nlines, 0, mem_ctx);
+	if (lines == NULL) {
+		return NULL;
+	}
+
+	nodemap = ctdb_parse_nodes_lines(mem_ctx, lines, nlines);
+	talloc_free(lines);
+	return nodemap;
+}
+
+/* Read a nodes file from an external process into a node map */
+static struct ctdb_node_map *ctdb_read_nodes_cmd(TALLOC_CTX *mem_ctx,
+						 const char *nodes_cmd)
+{
+	char **lines = NULL;
+	int nlines;
+	char *p;
+	size_t size;
+	struct ctdb_node_map *nodemap = NULL;
+	char **argl = command_str_to_args(mem_ctx, nodes_cmd);
+
+	if (argl == NULL) {
+		return NULL;
+	}
+	p = file_ploadv(argl, &size);
+	if (!p) {
+		return NULL;
+	}
+
+	lines = file_lines_parse(p, size, &nlines, mem_ctx);
+	talloc_free(p);
+	if (lines == NULL) {
+		return NULL;
+	}
+
+	nodemap = ctdb_parse_nodes_lines(mem_ctx, lines, nlines);
 	talloc_free(lines);
 	return nodemap;
 }
@@ -186,7 +235,11 @@ struct ctdb_node_map *ctdb_read_nodes(TALLOC_CTX *mem_ctx,
 {
 	struct ctdb_node_map* nodemap = NULL;
 
-	nodemap = ctdb_read_nodes_file(mem_ctx, location);
+	if (location != NULL && location[0] == '!') {
+		nodemap = ctdb_read_nodes_cmd(mem_ctx, &location[1]);
+	} else {
+		nodemap = ctdb_read_nodes_file(mem_ctx, location);
+	}
 
 	return nodemap;
 }
