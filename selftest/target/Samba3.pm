@@ -3942,7 +3942,8 @@ sub wait_for_start($$$$$)
 			$cmd .= " smbd ping";
 	    } else {
 			# This uses NTLM which is not available in FIPS
-			$cmd = Samba::bindir_path($self, "smbclient");
+			$cmd = "NSS_WRAPPER_HOSTS='$envvars->{NSS_WRAPPER_HOSTS}' ";
+			$cmd .= Samba::bindir_path($self, "smbclient");
 			$cmd .= " $envvars->{CONFIGURATION}";
 			$cmd .= " -L $envvars->{SERVER}";
 			$cmd .= " -U%";
