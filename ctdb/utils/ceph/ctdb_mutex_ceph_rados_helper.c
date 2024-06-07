@@ -42,9 +42,18 @@
 
 static char *progname = NULL;
 
+static void usage(void)
+{
+	fprintf(stderr, "Usage: %s <Ceph Cluster> <Ceph user> "
+			"<RADOS pool> <RADOS object> "
+			"[lock duration secs] [-n RADOS namespace]\n",
+			progname);
+}
+
 static int ctdb_mutex_rados_ctx_create(const char *ceph_cluster_name,
 				       const char *ceph_auth_name,
 				       const char *pool_name,
+				       const char *namespace,
 				       rados_t *_ceph_cluster,
 				       rados_ioctx_t *_ioctx)
 {
@@ -85,6 +94,10 @@ static int ctdb_mutex_rados_ctx_create(const char *ceph_cluster_name,
 			" - (%s)\n", progname, pool_name, strerror(-ret));
 		rados_shutdown(ceph_cluster);
 		return ret;
+	}
+
+	if (namespace != NULL) {
+		rados_ioctx_set_namespace(ioctx, namespace);
 	}
 
 	*_ceph_cluster = ceph_cluster;
@@ -145,6 +158,7 @@ struct ctdb_mutex_rados_state {
 	const char *ceph_cluster_name;
 	const char *ceph_auth_name;
 	const char *pool_name;
+	const char *namespace;
 	const char *object;
 	uint64_t lock_duration_s;
 	int ppid;
@@ -295,15 +309,13 @@ static int ctdb_mutex_rados_mgr_reg(rados_t ceph_cluster)
 int main(int argc, char *argv[])
 {
 	int ret;
+	int opt;
 	struct ctdb_mutex_rados_state *cmr_state;
 
 	progname = argv[0];
 
-	if ((argc != 5) && (argc != 6)) {
-		fprintf(stderr, "Usage: %s <Ceph Cluster> <Ceph user> "
-				"<RADOS pool> <RADOS object> "
-				"[lock duration secs]\n",
-			progname);
+	if (argc < 5) {
+		usage();
 		ret = -EINVAL;
 		goto err_out;
 	}
@@ -325,15 +337,36 @@ int main(int argc, char *argv[])
 	cmr_state->ceph_auth_name = argv[2];
 	cmr_state->pool_name = argv[3];
 	cmr_state->object = argv[4];
-	if (argc == 6) {
+
+	optind = 5;
+	while ((opt = getopt(argc, argv, "n:")) != -1) {
+		switch(opt) {
+		case 'n':
+			cmr_state->namespace = optarg;
+			break;
+		default:
+			usage();
+			ret = -EINVAL;
+			goto err_ctx_cleanup;
+		}
+	}
+
+	if (argv[optind] != NULL) {
 		/* optional lock duration provided */
 		char *endptr = NULL;
-		cmr_state->lock_duration_s = strtoull(argv[5], &endptr, 0);
-		if ((endptr == argv[5]) || (*endptr != '\0')) {
+		cmr_state->lock_duration_s = strtoull(argv[optind], &endptr, 0);
+		if ((endptr == argv[optind]) || (*endptr != '\0')) {
 			fprintf(stdout, CTDB_MUTEX_STATUS_ERROR);
 			ret = -EINVAL;
 			goto err_ctx_cleanup;
 		}
+		if (argv[++optind] != NULL) {
+			/* incorrect count or format for optional arguments */
+			usage();
+			ret = -EINVAL;
+			goto err_ctx_cleanup;
+		}
+
 	} else {
 		cmr_state->lock_duration_s
 			= CTDB_MUTEX_CEPH_LOCK_DURATION_SECS_DEFAULT;
@@ -398,6 +431,7 @@ int main(int argc, char *argv[])
 	ret = ctdb_mutex_rados_ctx_create(cmr_state->ceph_cluster_name,
 					  cmr_state->ceph_auth_name,
 					  cmr_state->pool_name,
+					  cmr_state->namespace,
 					  &cmr_state->ceph_cluster,
 					  &cmr_state->ioctx);
 	if (ret < 0) {
