@@ -29,12 +29,14 @@
       <manvolnum>5</manvolnum></citerefentry>:
     </para>
     <screen format="linespecific">
-cluster lock = !ctdb_mutex_ceph_rados_helper [Cluster] [User] [Pool] [Object]
+cluster lock = !ctdb_mutex_ceph_rados_helper [Cluster] [User] [Pool] [Object] [Timeout] [-n Namespace]
 
 Cluster: Ceph cluster name (e.g. ceph)
 User: Ceph cluster user name (e.g. client.admin)
 Pool: Ceph RADOS pool name
 Object: Ceph RADOS object name
+Timeout: Ceph RADOS lock duration in seconds (optional)
+Namespace: Ceph RADOS pool namespace (optional)
     </screen>
     <para>
       The Ceph cluster <parameter>Cluster</parameter> must be up and running,
