@@ -14,7 +14,7 @@ f="${CTDB_BASE}/nodes"
 rm -f "$f"
 
 required_result 1 <<EOF
-${TEST_DATE_STAMP}Failed to read nodes file "${f}"
+${TEST_DATE_STAMP}Failed to read nodes from "${f}"
 EOF
 
 simple_test

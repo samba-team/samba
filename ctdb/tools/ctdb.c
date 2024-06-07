@@ -47,6 +47,8 @@
 #include "common/system_socket.h"
 #include "client/client.h"
 #include "client/client_sync.h"
+#include "conf/cluster_conf.h"
+#include "conf/ctdb_config.h"
 #include "conf/node.h"
 
 #define TIMEOUT()	timeval_current_ofs(options.timelimit, 0)
@@ -72,6 +74,7 @@ static struct {
 	int printrecordflags;
 } options;
 
+struct conf_context *config_ctx;
 static poptContext pc;
 
 struct ctdb_context {
@@ -464,25 +467,19 @@ static bool ctdb_same_ip(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2)
 	return ret;
 }
 
-static struct ctdb_node_map *read_nodes_file(TALLOC_CTX *mem_ctx, uint32_t pnn)
+static struct ctdb_node_map *read_nodes(TALLOC_CTX *mem_ctx, uint32_t pnn)
 {
 	struct ctdb_node_map *nodemap;
-	const char *nodes_list = NULL;
-
-	const char *basedir = getenv("CTDB_BASE");
-	if (basedir == NULL) {
-		basedir = CTDB_ETCDIR;
-	}
-	nodes_list = talloc_asprintf(mem_ctx, "%s/nodes", basedir);
-	if (nodes_list == NULL) {
+	const char *nodes_source = cluster_conf_nodes_list(mem_ctx, config_ctx);
+	if (nodes_source == NULL) {
 		fprintf(stderr, "Memory allocation error\n");
 		return NULL;
 	}
 
-	nodemap = ctdb_read_nodes(mem_ctx, nodes_list);
+	nodemap = ctdb_read_nodes(mem_ctx, nodes_source);
 	if (nodemap == NULL) {
-		fprintf(stderr, "Failed to read nodes file \"%s\"\n",
-			nodes_list);
+		fprintf(stderr, "Failed to read nodes from \"%s\"\n",
+			nodes_source);
 		return NULL;
 	}
 
@@ -3406,7 +3403,7 @@ static int control_listnodes(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		usage("listnodes");
 	}
 
-	nodemap = read_nodes_file(mem_ctx, CTDB_UNKNOWN_PNN);
+	nodemap = read_nodes(mem_ctx, CTDB_UNKNOWN_PNN);
 	if (nodemap == NULL) {
 		return 1;
 	}
@@ -3659,7 +3656,7 @@ static int control_reloadnodes(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	file_nodemap = read_nodes_file(mem_ctx, ctdb->pnn);
+	file_nodemap = read_nodes(mem_ctx, ctdb->pnn);
 	if (file_nodemap == NULL) {
 		return 1;
 	}
@@ -4741,7 +4738,7 @@ static bool find_node_xpnn(TALLOC_CTX *mem_ctx, uint32_t *pnn)
 	struct ctdb_node_map *nodemap;
 	unsigned int i;
 
-	nodemap = read_nodes_file(mem_ctx, CTDB_UNKNOWN_PNN);
+	nodemap = read_nodes(mem_ctx, CTDB_UNKNOWN_PNN);
 	if (nodemap == NULL) {
 		return false;
 	}
@@ -6301,6 +6298,12 @@ static int process_command(const struct ctdb_cmd *cmd, int argc,
 		goto fail;
 	}
 
+	ret = ctdb_config_load(tmp_ctx, &config_ctx, false);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to load configuration\n");
+		goto fail;
+	}
+
 	if (cmd->without_daemon) {
 		if (options.pnn != -1) {
 			fprintf(stderr,
@@ -6376,10 +6379,12 @@ static int process_command(const struct ctdb_cmd *cmd, int argc,
 	}
 
 	ret = cmd->fn(tmp_ctx, ctdb, argc-1, argv+1);
+	config_ctx = NULL;
 	talloc_free(tmp_ctx);
 	return ret;
 
 fail:
+	config_ctx = NULL;
 	talloc_free(tmp_ctx);
 	return 1;
 }

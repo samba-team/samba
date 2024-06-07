@@ -628,6 +628,7 @@ def build(bld):
     bld.SAMBA_BINARY('ctdb',
                      source='tools/ctdb.c',
                      deps='''ctdb-client
+                             ctdb-conf
                              ctdb-conf-util
                              ctdb-protocol
                              ctdb-protocol-util
