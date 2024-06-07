@@ -1307,6 +1307,24 @@ next:
 	}
 
 	if (fd == -1) {
+		/*
+		 * vfs_widelink widelink_openat will update stat for fsp
+		 * and return ELOOP for non-existing link, we can report
+		 * the link here and let calling code decide what to do.
+		 */
+		if ((errno == ELOOP) && S_ISLNK(fsp->fsp_name->st.st_ex_mode)) {
+			status = read_symlink_reparse(mem_ctx,
+						      dirfsp,
+						      &rel_fname,
+						      &symlink_err);
+			if (NT_STATUS_IS_OK(status)) {
+				status = NT_STATUS_STOPPED_ON_SYMLINK;
+			} else {
+				DBG_ERR("read_symlink_reparse failed: %s\n",
+					nt_errstr(status));
+			}
+			goto fail;
+		}
 		status = map_nt_error_from_unix(errno);
 		DBG_DEBUG("SMB_VFS_OPENAT() failed: %s\n",
 			  strerror(errno));
