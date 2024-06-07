@@ -260,6 +260,28 @@ yum install -y \
 yum clean all
 """
 
+CENTOS9S_DNF_BOOTSTRAP = r"""
+#!/bin/bash
+{GENERATED_MARKER}
+set -xueo pipefail
+
+dnf update -y
+dnf install -y dnf-plugins-core
+dnf install -y epel-release
+dnf install -y centos-release-gluster9
+
+dnf -v repolist all
+dnf config-manager --set-enabled crb -y
+
+dnf update -y
+
+dnf install -y \
+    --setopt=install_weak_deps=False \
+    {pkgs}
+
+dnf clean all
+"""
+
 DNF_BOOTSTRAP = r"""
 #!/bin/bash
 {GENERATED_MARKER}
@@ -501,6 +523,25 @@ RPM_DISTS = {
             'ShellCheck': '',
             'shfmt': '',
             'codespell': '',
+        }
+    },
+    'centos9s': {
+        'docker_image': 'quay.io/centos/centos:stream9',
+        'vagrant_box': 'centos/stream9',
+        'bootstrap': CENTOS9S_DNF_BOOTSTRAP,
+        'replace': {
+            'lsb-release': 'lsb_release',
+            '@development-tools': '"@Development Tools"',  # add quotes
+            'lcov': '', # does not exist
+            'perl-JSON-Parse': '', # does not exist?
+            'perl-Test-Base': 'perl-Test-Simple',
+            'perl-FindBin': '',
+            'mold': '',
+            'ShellCheck': '',
+            'shfmt': '',
+            'codespell': '',
+            'libcephfs-devel': '',  # not available anymore
+            'curl': '',  # Use installed curl-minimal
         }
     },
     'fedora39': {

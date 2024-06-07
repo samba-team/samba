@@ -109,5 +109,8 @@ debian11-32bit:
 centos8s:
   extends: .build_image_template
 
+centos9s:
+  extends: .build_image_template
+
 opensuse155:
   extends: .build_image_template
