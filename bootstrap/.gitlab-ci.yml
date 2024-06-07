@@ -109,13 +109,5 @@ debian11-32bit:
 centos8s:
   extends: .build_image_template
 
-centos7:
-  extends: .build_image_template
-  variables:
-    # Shallow copies are not supported by git on CentOS7
-    GIT_DEPTH: ""
-    # We install a compat-gnutls34 package for GnuTLS >= 3.4.7
-    PKG_CONFIG_PATH: /usr/lib64/compat-gnutls34/pkgconfig:/usr/lib64/compat-nettle32/pkgconfig
-
 opensuse155:
   extends: .build_image_template
