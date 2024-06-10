@@ -1,4 +1,67 @@
                    ==============================
+                   Release Notes for Samba 4.19.7
+                           June 10, 2024
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.19 release series.
+
+
+Changes since 4.19.6
+--------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15569: ldb qsort might r/w out of bounds with an intransitive compare
+     function (ldb 2.8.1 is already released).
+   * BUG 15625: Many qsort() comparison functions are non-transitive, which can
+     lead to out-of-bounds access in some circumstances (ldb 2.8.1 is already
+     released).
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 15638: Need to change gitlab-ci.yml tags in all branches to avoid CI
+     bill.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14981: netr_LogonSamLogonEx returns NR_STATUS_ACCESS_DENIED with
+     SysvolReady=0.
+   * BUG 15412: Anonymous smb3 signing/encryption should be allowed (similar to
+     Windows Server 2022).
+   * BUG 15573: Panic in dreplsrv_op_pull_source_apply_changes_trigger.
+   * BUG 15642: winbindd, net ads join and other things don't work on an ipv6
+     only host.
+
+o  Anna Popova <popova.anna235@gmail.com>
+   * BUG 15636: Smbcacls incorrectly propagates inheritance with Inherit-Only
+     flag.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15611: http library doesn't support  'chunked transfer encoding'.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.19.6
                            April 08, 2024
                    ==============================
@@ -52,8 +115,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.19.5
                          February 19, 2024
