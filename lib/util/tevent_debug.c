@@ -16,8 +16,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include <tevent.h>
+#include "lib/util/debug.h"
+#include "lib/util/samba_util.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_TEVENT
