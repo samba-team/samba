@@ -242,6 +242,9 @@ CENTOS8S_YUM_BOOTSTRAP = r"""
 {GENERATED_MARKER}
 set -xueo pipefail
 
+sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+
 yum update -y
 yum install -y dnf-plugins-core
 yum install -y epel-release
