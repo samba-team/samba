@@ -20,7 +20,7 @@
 
 from samba.auth import system_session
 from samba.samdb import SamDB
-from samba import gensec, Ldb, drs_utils, arcfour_encrypt, string_to_byte_array
+from samba import gensec, Ldb, drs_utils, arcfour_encrypt
 import ldb
 import samba
 import uuid
@@ -1407,7 +1407,7 @@ class DCJoinContext(object):
         except RuntimeError:
             pass
 
-        password_blob = string_to_byte_array(ctx.trustdom_pass.encode('utf-16-le'))
+        password_blob = list(ctx.trustdom_pass.encode('utf-16-le'))
 
         clear_value = drsblobs.AuthInfoClear()
         clear_value.size = len(password_blob)
@@ -1443,7 +1443,7 @@ class DCJoinContext(object):
 
         auth_blob = lsa.DATA_BUF2()
         auth_blob.size = len(encrypted_trustpass)
-        auth_blob.data = string_to_byte_array(encrypted_trustpass)
+        auth_blob.data = list(encrypted_trustpass)
 
         auth_info = lsa.TrustDomainInfoAuthInfoInternal()
         auth_info.auth_blob = auth_blob
