@@ -1481,6 +1481,9 @@ planoldpythontestsuite("fileserver",
                        "samba.tests.blackbox.smbcacls_dfs_propagate_inherit",
                        "samba.tests.blackbox.smbcacls_dfs_propagate_inherit(DFS-msdfs-root)",
                        environ={'SHARE': 'smbcacls_share'})
+
+planoldpythontestsuite("fileserver",
+                       "samba.tests.blackbox.misc_dfs_widelink")
 #
 # Want a selection of environments across the process models
 #
