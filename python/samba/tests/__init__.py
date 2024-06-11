@@ -57,7 +57,8 @@ from unittest import SkipTest
 BINDIR = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                       "../../../../bin"))
 
-HEXDUMP_FILTER = bytearray([x if ((len(repr(chr(x))) == 3) and (x < 127)) else ord('.') for x in range(256)])
+# HEXDUMP_FILTER maps ASCII control characters to '.', printables to themselves
+HEXDUMP_FILTER = bytearray(x if (x > 31 and x < 127) else 46 for x in range(256))
 
 LDB_ERR_LUT = {v: k for k, v in vars(ldb).items() if k.startswith('ERR_')}
 
