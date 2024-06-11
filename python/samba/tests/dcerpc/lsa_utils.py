@@ -107,9 +107,7 @@ class CreateTrustedDomain(TestCase):
         info.trust_type = lsa.LSA_TRUST_TYPE_UPLEVEL
         info.trust_attributes = lsa.LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE
 
-        password_blob = samba.string_to_byte_array(
-            "password".encode('utf-16-le')
-        )
+        password_blob = list("password".encode('utf-16-le'))
 
         clear_value = drsblobs.AuthInfoClear()
         clear_value.size = len(password_blob)
@@ -198,9 +196,7 @@ class CreateTrustedDomain(TestCase):
         info.trust_type = lsa.LSA_TRUST_TYPE_UPLEVEL
         info.trust_attributes = lsa.LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE
 
-        password_blob = samba.string_to_byte_array(
-            "password".encode('utf-16-le')
-        )
+        password_blob = list("password".encode('utf-16-le'))
 
         clear_value = drsblobs.AuthInfoClear()
         clear_value.size = len(password_blob)
