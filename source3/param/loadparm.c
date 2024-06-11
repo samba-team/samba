@@ -4790,6 +4790,7 @@ const char *lp_dns_hostname(void)
 	const char *dns_hostname = lp__dns_hostname();
 	const char *dns_domain = lp_dnsdomain();
 	char *netbios_name = NULL;
+	bool ok;
 
 	if (dns_hostname != NULL && dns_hostname[0] != '\0') {
 		return dns_hostname;
@@ -4799,7 +4800,10 @@ const char *lp_dns_hostname(void)
 	if (netbios_name == NULL) {
 		return NULL;
 	}
-	strlower_m(netbios_name);
+	ok = strlower_m(netbios_name);
+	if (!ok) {
+		return NULL;
+	}
 
 	/* If it isn't set, try to initialize with [netbios name].[realm] */
 	if (dns_domain != NULL && dns_domain[0] != '\0') {
