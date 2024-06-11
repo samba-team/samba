@@ -227,32 +227,6 @@ class LDAPBase(object):
         desc = ndr_unpack(security.descriptor, desc)
         return desc.as_sddl(self.domain_sid)
 
-    def guid_as_string(self, guid_blob):
-        """ Translate binary representation of schemaIDGUID to standard string representation.
-            @gid_blob: binary schemaIDGUID
-        """
-        blob = "%s" % guid_blob
-        stops = [4, 2, 2, 2, 6]
-        index = 0
-        res = ""
-        x = 0
-        while x < len(stops):
-            tmp = ""
-            y = 0
-            while y < stops[x]:
-                c = hex(ord(blob[index])).replace("0x", "")
-                c = [None, "0" + c, c][len(c)]
-                if 2 * index < len(blob):
-                    tmp = c + tmp
-                else:
-                    tmp += c
-                index += 1
-                y += 1
-            res += tmp + " "
-            x += 1
-        assert index == len(blob)
-        return res.strip().replace(" ", "-")
-
     def get_sid_map(self):
         """ Build dictionary that maps GUID to 'name' attribute found in Schema or Extended-Rights.
         """
