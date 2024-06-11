@@ -213,7 +213,7 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 				     bool allow_domain_trust,
 				     bool password_change)
 {
-	uint16_t acct_flags;
+	uint32_t acct_flags;
 	const char *workstation_list;
 	NTTIME acct_expiry;
 	NTTIME must_change_time;
