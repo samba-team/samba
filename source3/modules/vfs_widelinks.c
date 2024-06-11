@@ -383,8 +383,17 @@ static int widelinks_openat(vfs_handle_struct *handle,
 		}
 		lstat_ret = SMB_VFS_NEXT_LSTAT(handle,
 				full_fname);
-		if (lstat_ret != -1 &&
-		    VALID_STAT(full_fname->st) &&
+		if (lstat_ret == -1) {
+			/*
+			 * Path doesn't exist. We must
+			 * return errno from LSTAT.
+			 */
+			int saved_errno = errno;
+			TALLOC_FREE(full_fname);
+			errno = saved_errno;
+			return -1;
+		}
+		if (VALID_STAT(full_fname->st) &&
 		    S_ISLNK(full_fname->st.st_ex_mode)) {
 			fsp->fsp_name->st = full_fname->st;
 		}
