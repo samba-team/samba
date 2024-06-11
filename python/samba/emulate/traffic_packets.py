@@ -569,10 +569,10 @@ def packet_rpc_netlogon_30(packet, conversation, context):
     # subsequent runs
     newpass = context.machine_creds.get_password().encode('utf-16-le')
     pwd_len = len(newpass)
-    filler  = [x if isinstance(x, int) else ord(x) for x in os.urandom(DATA_LEN - pwd_len)]
+    filler  = list(os.urandom(DATA_LEN - pwd_len))
     pwd = netlogon.netr_CryptPassword()
     pwd.length = pwd_len
-    pwd.data = filler + [x if isinstance(x, int) else ord(x) for x in newpass]
+    pwd.data = filler + list(newpass)
     context.machine_creds.encrypt_netr_crypt_password(pwd)
     c.netr_ServerPasswordSet2(context.server,
                               # must ends with $, so use get_username instead
@@ -650,10 +650,10 @@ def samlogon_logon_info(domain_name, computer_name, creds):
 
     logon = netlogon.netr_NetworkInfo()
 
-    logon.challenge     = [x if isinstance(x, int) else ord(x) for x in challenge]
+    logon.challenge     = list(challenge)
     logon.nt            = netlogon.netr_ChallengeResponse()
     logon.nt.length     = len(response["nt_response"])
-    logon.nt.data       = [x if isinstance(x, int) else ord(x) for x in response["nt_response"]]
+    logon.nt.data       = list(response["nt_response"])
 
     logon.identity_info = netlogon.netr_IdentityInfo()
 
