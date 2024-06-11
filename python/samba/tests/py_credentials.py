@@ -511,10 +511,10 @@ class PyCredentialsTests(TestCase):
         newpass = samba.generate_random_password(PWD_LEN, PWD_LEN)
         encoded = newpass.encode('utf-16-le')
         pwd_len = len(encoded)
-        filler  = [x if isinstance(x, int) else ord(x) for x in os.urandom(DATA_LEN - pwd_len)]
+        filler  = list(os.urandom(DATA_LEN - pwd_len))
         pwd = netlogon.netr_CryptPassword()
         pwd.length = pwd_len
-        pwd.data = filler + [x if isinstance(x, int) else ord(x) for x in encoded]
+        pwd.data = filler + list(encoded)
         self.machine_creds.encrypt_netr_crypt_password(pwd)
         c.netr_ServerPasswordSet2(self.server,
                                   f'{self.machine_name}$',
@@ -591,7 +591,7 @@ class PyCredentialsTests(TestCase):
     def get_authenticator(self):
         auth = self.machine_creds.new_client_authenticator()
         current = netr_Authenticator()
-        current.cred.data = [x if isinstance(x, int) else ord(x) for x in auth["credential"]]
+        current.cred.data = list(auth["credential"])
         current.timestamp = auth["timestamp"]
 
         subsequent = netr_Authenticator()
@@ -641,10 +641,10 @@ def samlogon_logon_info(domain_name, computer_name, creds,
 
     logon = netlogon.netr_NetworkInfo()
 
-    logon.challenge     = [x if isinstance(x, int) else ord(x) for x in challenge]
+    logon.challenge     = list(challenge)
     logon.nt            = netlogon.netr_ChallengeResponse()
     logon.nt.length     = len(response["nt_response"])
-    logon.nt.data       = [x if isinstance(x, int) else ord(x) for x in response["nt_response"]]
+    logon.nt.data       = list(response["nt_response"])
     logon.identity_info = netlogon.netr_IdentityInfo()
 
     (username, domain)  = creds.get_ntlm_username_domain()
