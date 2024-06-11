@@ -1204,6 +1204,20 @@ class PkInitTests(KDCBaseTest):
 
         self.assertEqual(expired, server_uac_expired)
 
+        # Check NTLM also saw this as expired
+        self._test_samlogon(
+            creds=client_creds,
+            logon_type=netlogon.NetlogonInteractiveInformation,
+            expect_error=ntstatus.NT_STATUS_SMARTCARD_LOGON_REQUIRED)
+
+        if expired:
+            self._test_samlogon(creds=client_creds,
+                                logon_type=netlogon.NetlogonNetworkInformation,
+                                expect_error=ntstatus.NT_STATUS_PASSWORD_EXPIRED)
+        else:
+            self._test_samlogon(creds=client_creds,
+                                logon_type=netlogon.NetlogonNetworkInformation)
+
         pwd_last_set = int(res[0]["pwdLastSet"][0])
         self.assertGreater(pwd_last_set, 0)
 
