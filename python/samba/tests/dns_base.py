@@ -335,7 +335,7 @@ class DNSTKeyTest(DNSTest):
         (finished, server_to_client) = tkey['gensec'].update(client_to_server)
         self.assertFalse(finished)
 
-        data = [x if isinstance(x, int) else ord(x) for x in list(server_to_client)]
+        data = list(server_to_client)
         rdata.key_data = data
         rdata.key_size = len(data)
         r.rdata = rdata
@@ -428,7 +428,7 @@ class DNSTKeyTest(DNSTest):
 
         data = packet_data + fake_tsig_packet
         mac = self.tkey['gensec'].sign_packet(data, data)
-        mac_list = [x if isinstance(x, int) else ord(x) for x in list(mac)]
+        mac_list = list(mac)
         if bad_sig:
             if len(mac) > 8:
                 mac_list[-8] = mac_list[-8] ^ 0xff
