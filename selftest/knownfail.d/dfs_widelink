@@ -1,0 +1,2 @@
+^samba.tests.blackbox.misc_dfs_widelink.samba.tests.blackbox.misc_dfs_widelink.DfsWidelinkBlockboxTestBase.test_nested_chdir\(fileserver\)
+^samba.tests.blackbox.misc_dfs_widelink.samba.tests.blackbox.misc_dfs_widelink.DfsWidelinkBlockboxTestBase.test_enumerate_dfs_link
