@@ -807,8 +807,7 @@ class ReplayContext(object):
     def get_authenticator(self):
         auth = self.machine_creds.new_client_authenticator()
         current  = netr_Authenticator()
-        current.cred.data = [x if isinstance(x, int) else ord(x)
-                             for x in auth["credential"]]
+        current.cred.data = list(auth["credential"])
         current.timestamp = auth["timestamp"]
 
         subsequent = netr_Authenticator()
