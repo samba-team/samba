@@ -22,7 +22,6 @@ from samba import (
     NTSTATUSError,
     aead_aes_256_cbc_hmac_sha512,
     arcfour_encrypt,
-    string_to_byte_array
 )
 from samba.ntstatus import (
     NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE
@@ -81,7 +80,7 @@ def CreateTrustedDomainRelax(
 ):
 
     def generate_AuthInfoInternal(session_key, incoming=None, outgoing=None):
-        confounder = string_to_byte_array(token_bytes(512))
+        confounder = list(token_bytes(512))
 
         trustpass = drsblobs.trustDomainPasswords()
 
@@ -95,7 +94,7 @@ def CreateTrustedDomainRelax(
 
         auth_blob = lsa.DATA_BUF2()
         auth_blob.size = len(encrypted_trustpass)
-        auth_blob.data = string_to_byte_array(encrypted_trustpass)
+        auth_blob.data = list(encrypted_trustpass)
 
         auth_info = lsa.TrustDomainInfoAuthInfoInternal()
         auth_info.auth_blob = auth_blob
@@ -169,12 +168,12 @@ def CreateTrustedDomainFallback(
 
         auth_blob = lsa.DATA_BUF2()
         auth_blob.size = len(ciphertext)
-        auth_blob.data = string_to_byte_array(ciphertext)
+        auth_blob.data = list(ciphertext)
 
         auth_info = lsa.TrustDomainInfoAuthInfoInternalAES()
         auth_info.cipher = auth_blob
-        auth_info.salt = string_to_byte_array(iv)
-        auth_info.auth_data = string_to_byte_array(auth_data)
+        auth_info.salt = list(iv)
+        auth_info.auth_data = list(auth_data)
 
         return conn.CreateTrustedDomainEx3(
             policy_handle,
