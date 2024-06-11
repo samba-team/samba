@@ -114,7 +114,7 @@ class SamrPasswordTests(RpcInterfaceTestCase):
         def encode_pw_buffer(password):
             data = bytearray([0] * 516)
 
-            p = samba.string_to_byte_array(password.encode('utf-16-le'))
+            p = list(password.encode('utf-16-le'))
             plen = len(p)
 
             b = generate_random_bytes(512 - plen)
