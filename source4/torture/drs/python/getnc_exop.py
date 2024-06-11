@@ -1093,7 +1093,7 @@ class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase):
         schi = drsuapi.DsReplicaOIDMapping()
         schi.id_prefix = 0
         if 'schemaInfo' in res[0]:
-            binary_oid = [x if isinstance(x, int) else ord(x) for x in res[0]['schemaInfo'][0]]
+            binary_oid = list(res[0]['schemaInfo'][0])
             schi.oid.length = len(binary_oid)
             schi.oid.binary_oid = binary_oid
         else:
@@ -1102,7 +1102,7 @@ class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase):
             schema_info.marker = 0xFF
             schema_info.invocation_id = misc.GUID(samdb.get_invocation_id())
 
-            binary_oid = [x if isinstance(x, int) else ord(x) for x in ndr_pack(schema_info)]
+            binary_oid = list(ndr_pack(schema_info))
             # you have to set the length before setting binary_oid
             schi.oid.length = len(binary_oid)
             schi.oid.binary_oid = binary_oid
