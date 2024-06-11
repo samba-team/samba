@@ -28,7 +28,7 @@ from getpass import getpass
 import ldb
 import samba.getopt as options
 import samba.ntacls
-from samba import NTSTATUSError, ntstatus, string_to_byte_array, werror
+from samba import NTSTATUSError, ntstatus, werror
 from samba.auth import system_session
 from samba.dcerpc import drsblobs, lsa, nbt, netlogon, security
 from samba.net import Net
@@ -855,10 +855,10 @@ class cmd_domain_trust_create(DomainTrustCommand):
         if create_location == "local":
             if local_trust_info.trust_direction & lsa.LSA_TRUST_DIRECTION_INBOUND:
                 incoming_password = get_password("Incoming Trust")
-                incoming_secret = string_to_byte_array(incoming_password.encode('utf-16-le'))
+                incoming_secret = list(incoming_password.encode('utf-16-le'))
             if local_trust_info.trust_direction & lsa.LSA_TRUST_DIRECTION_OUTBOUND:
                 outgoing_password = get_password("Outgoing Trust")
-                outgoing_secret = string_to_byte_array(outgoing_password.encode('utf-16-le'))
+                outgoing_secret = list(outgoing_password.encode('utf-16-le'))
 
             remote_trust_info = None
         else:
@@ -874,7 +874,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
             #
             def random_trust_secret(length):
                 pw = samba.generate_random_machine_password(length // 2, length // 2)
-                return string_to_byte_array(pw.encode('utf-16-le'))
+                return list(pw.encode('utf-16-le'))
 
             if local_trust_info.trust_direction & lsa.LSA_TRUST_DIRECTION_INBOUND:
                 incoming_secret = random_trust_secret(240)
