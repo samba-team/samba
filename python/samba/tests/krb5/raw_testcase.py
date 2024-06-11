@@ -5100,7 +5100,8 @@ class RawKerberosTest(TestCase):
                 if sent_freshness:
                     expected_patypes += PADATA_AS_FRESHNESS,
 
-                if (self.kdc_fast_support
+                if (error_code != KDC_ERR_PREAUTH_FAILED
+                        and self.kdc_fast_support
                         and not sent_fast
                         and not sent_enc_challenge):
                     expected_patypes += (PADATA_FX_FAST,)

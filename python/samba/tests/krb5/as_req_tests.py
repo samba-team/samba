@@ -22,8 +22,12 @@ import os
 sys.path.insert(0, "bin/python")
 os.environ["PYTHONUNBUFFERED"] = "1"
 
-from samba import ntstatus
+import time
+
+from samba import credentials, ntstatus
+from samba.dcerpc import netlogon
 from samba.tests import DynamicTestCase
+from samba.tests.pso import PasswordSettings
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
 import samba.tests.krb5.kcrypto as kcrypto
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
@@ -33,6 +37,8 @@ from samba.tests.krb5.rfc4120_constants import (
     KDC_ERR_S_PRINCIPAL_UNKNOWN,
     KDC_ERR_ETYPE_NOSUPP,
     KDC_ERR_PREAUTH_REQUIRED,
+    KDC_ERR_PREAUTH_FAILED,
+    KDC_ERR_KEY_EXPIRED,
     KU_PA_ENC_TIMESTAMP,
     NT_ENTERPRISE_PRINCIPAL,
     NT_PRINCIPAL,
@@ -150,6 +156,7 @@ class AsReqBaseTest(KDCBaseTest):
             etypes,
             preauth_padata,
             kdc_options,
+            creds=client_creds,
             expected_supported_etypes=krbtgt_supported_etypes,
             expected_account_name=user_name,
             expect_edata=expect_pa_edata,
@@ -590,6 +597,77 @@ class AsReqKerberosTests(AsReqBaseTest):
             expect_status=ntstatus.NT_STATUS_INVALID_LOGON_HOURS,
             expected_pa_error=KDC_ERR_CLIENT_REVOKED,
             expect_pa_status=ntstatus.NT_STATUS_INVALID_LOGON_HOURS)
+
+    def test_pw_expired(self):
+        """Test making an AS-REQ with an expired password."""
+
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER)
+        client_creds.set_kerberos_state(credentials.AUTO_USE_KERBEROS)
+
+        userdn = str(client_creds.get_dn())
+        samdb = self.get_samdb()
+
+        # create a PSO setting password_age_max to 1 second
+        #
+        # The first parameter is not a username, just a new unique name for the PSO
+        short_expiry_pso = PasswordSettings(self.get_new_username(), samdb,
+                                            precedence=200,
+                                            password_age_max=1)
+        self.addCleanup(samdb.delete, short_expiry_pso.dn)
+        short_expiry_pso.apply_to(userdn)
+
+        time.sleep(1)
+
+        # Expect to get a CLIENT_REVOKED error.
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            expected_error=(KDC_ERR_KEY_EXPIRED, KDC_ERR_PREAUTH_FAILED, KDC_ERR_PREAUTH_REQUIRED),
+            expect_status=ntstatus.NT_STATUS_PASSWORD_EXPIRED,
+            expected_pa_error=KDC_ERR_KEY_EXPIRED,
+            expect_pa_status=ntstatus.NT_STATUS_PASSWORD_EXPIRED)
+
+        self._test_samlogon(creds=client_creds,
+                            logon_type=netlogon.NetlogonNetworkInformation,
+                            expect_error=ntstatus.NT_STATUS_PASSWORD_EXPIRED)
+
+    def test_pw_expired_wrong_password(self):
+        """Test making an AS-REQ with an expired, wrong password"""
+
+        # Use a non-cached account so that it is not locked out for other
+        # tests.
+        client_creds = self.get_cached_creds(
+            account_type=self.AccountType.USER,
+            use_cache=False)
+        client_creds.set_kerberos_state(credentials.AUTO_USE_KERBEROS)
+
+        userdn = str(client_creds.get_dn())
+        samdb = self.get_samdb()
+
+        # create a PSO setting password_age_max to 1 second
+        #
+        # The first parameter is not a username, just a new unique name for the PSO
+        short_expiry_pso = PasswordSettings(self.get_new_username(), samdb,
+                                            precedence=200,
+                                            password_age_max=1)
+        self.addCleanup(samdb.delete, short_expiry_pso.dn)
+        short_expiry_pso.apply_to(userdn)
+
+        time.sleep(1)
+
+        client_creds.set_password('wrong password')
+
+        # Expect to get a CLIENT_REVOKED error.
+        self._run_as_req_enc_timestamp(
+            client_creds,
+            expected_error=(KDC_ERR_KEY_EXPIRED, KDC_ERR_PREAUTH_FAILED, KDC_ERR_PREAUTH_REQUIRED),
+            expect_status=ntstatus.NT_STATUS_PASSWORD_EXPIRED,
+            expected_pa_error=KDC_ERR_PREAUTH_FAILED,
+            expect_pa_status=ntstatus.NT_STATUS_PASSWORD_EXPIRED)
+
+        self._test_samlogon(creds=client_creds,
+                            logon_type=netlogon.NetlogonNetworkInformation,
+                            expect_error=ntstatus.NT_STATUS_WRONG_PASSWORD)
 
     def test_as_req_unicode(self):
         client_creds = self.get_cached_creds(

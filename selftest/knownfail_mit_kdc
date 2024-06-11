@@ -42,6 +42,8 @@
 ^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_no_preauth_dummy_aes256_aes128_pac_False\(fl2003dc\)
 ^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_no_preauth_dummy_aes256_aes128_pac_None\(fl2003dc\)
 ^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_as_req_no_preauth_dummy_aes256_aes128_pac_True\(fl2003dc\)
+^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_pw_expired_wrong_password\(fl2008r2dc\)
+^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_pw_expired_wrong_password\(fl2003dc\)
 #
 # Currently MOST but not quite all the Canonicalization tests fail on the
 # MIT KDC

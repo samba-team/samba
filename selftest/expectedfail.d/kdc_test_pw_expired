@@ -1,0 +1,2 @@
+# This tests needs Password Settings Objects to work, so is expected to fail in this environment
+^samba.tests.krb5.as_req_tests.samba.tests.krb5.as_req_tests.AsReqKerberosTests.test_pw_expired\(fl2003dc\)
