@@ -20,7 +20,7 @@
 import ldb
 import os
 import samba
-from samba import arcfour_encrypt, string_to_byte_array
+from samba import arcfour_encrypt
 from samba.tests import TestCase, TestCaseInTempDir
 
 
@@ -59,14 +59,6 @@ class ArcfourTestCase(TestCase):
         crypt_expected = b'\xda\x91Z\xb0l\xd7\xb9\xcf\x99'
         crypt_calculated = arcfour_encrypt(key, plain)
         self.assertEqual(crypt_expected, crypt_calculated)
-
-
-class StringToByteArrayTestCase(TestCase):
-
-    def test_byte_array(self):
-        expected = [218, 145, 90, 176, 108, 215, 185, 207, 153]
-        calculated = string_to_byte_array('\xda\x91Z\xb0l\xd7\xb9\xcf\x99')
-        self.assertEqual(expected, calculated)
 
 
 class LdbExtensionTests(TestCaseInTempDir):

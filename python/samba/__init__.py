@@ -348,10 +348,6 @@ def current_unix_time():
     return int(time.time())
 
 
-def string_to_byte_array(string):
-    return [c if isinstance(c, int) else ord(c) for c in string]
-
-
 def arcfour_encrypt(key, data):
     from samba.crypto import arcfour_crypt_blob
     return arcfour_crypt_blob(data, key)
