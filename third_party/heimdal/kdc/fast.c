@@ -488,7 +488,18 @@ _kdc_fast_mk_error(astgs_request_t r,
 
     heim_assert(r != NULL, "invalid request in _kdc_fast_mk_error");
 
-    if (r->e_data != NULL) {
+    if (!armor_crypto && r->e_data != NULL) {
+	/*
+	 * If we’re not armoring the response with FAST, r->e_data
+	 * takes precedence over the e‐data that would normally be
+	 * generated. r->e_data typically contains a
+	 * Microsoft‐specific NTSTATUS code.
+	 *
+	 * But if FAST is in use, Windows Server suppresses the
+	 * NTSTATUS code in favour of an armored response
+	 * encapsulating an ordinary KRB‐ERROR. So we ignore r->e_data
+	 * in that case.
+	 */
 	e_data = r->e_data;
     } else {
 	ret = _kdc_fast_mk_e_data(r,
