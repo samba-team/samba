@@ -156,11 +156,3 @@
 ^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_compound_id_support_no_claims_valid_existing_device_claims_target_policy\(ad_dc\)$
 ^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_no_compound_id_support_no_claims_valid_existing_device_claims\(ad_dc\)$
 ^samba\.tests\.krb5\.conditional_ace_tests\.samba\.tests\.krb5\.conditional_ace_tests\.TgsReqServicePolicyTests\.test_pac_device_info_rodc_issued\(ad_dc\)$
-#
-# Lockout tests
-#
-^samba\.tests\.krb5\.lockout_tests\.samba\.tests\.krb5\.lockout_tests\.LockoutTests\.test_lockout_status_disabled_fast\(ad_dc:local\)$
-^samba\.tests\.krb5\.lockout_tests\.samba\.tests\.krb5\.lockout_tests\.LockoutTests\.test_lockout_status_expired_fast\(ad_dc:local\)$
-^samba\.tests\.krb5\.lockout_tests\.samba\.tests\.krb5\.lockout_tests\.LockoutTests\.test_lockout_status_locked_out_fast\(ad_dc:local\)$
-^samba\.tests\.krb5\.lockout_tests\.samba\.tests\.krb5\.lockout_tests\.LockoutTests\.test_lockout_status_must_change_fast\(ad_dc:local\)$
-^samba\.tests\.krb5\.lockout_tests\.samba\.tests\.krb5\.lockout_tests\.LockoutTests\.test_lockout_status_password_expired_fast\(ad_dc:local\)$
