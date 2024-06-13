@@ -3029,11 +3029,14 @@ allowed:
 		ret = drsuapi_DsReplicaHighWaterMark_cmp(&getnc_state->last_hwm,
 							 &req10->highwatermark);
 		if (ret != 0) {
-			DEBUG(0,(__location__ ": DsGetNCChanges 2nd replication "
-				 "on DN %s %s highwatermark (last_dn %s)\n",
-				 ldb_dn_get_linearized(getnc_state->ncRoot_dn),
-				 (ret > 0) ? "older" : "newer",
-				 ldb_dn_get_linearized(getnc_state->last_dn)));
+			DBG_ERR("DsGetNCChanges 2nd replication "
+				"on DN %s %s highwatermark "
+				"(last_dn %s)\n",
+				ldb_dn_get_linearized(
+					getnc_state->ncRoot_dn),
+				(ret > 0) ? "older" : "newer",
+				ldb_dn_get_linearized(
+					getnc_state->last_dn));
 			TALLOC_FREE(getnc_state);
 			b_state->getncchanges_full_repl_state = NULL;
 		}
