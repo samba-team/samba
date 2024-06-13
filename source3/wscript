@@ -1899,6 +1899,7 @@ int main(void) {
         # addition to vfs_ceph. Still, only enable vfs_ceph_snapshots builds
         # if we're building with libcephfs for now.
         default_shared_modules.extend(['vfs_ceph_snapshots'])
+        default_shared_modules.extend(['vfs_ceph_new'])
 
     if conf.CONFIG_SET('HAVE_GLUSTERFS'):
         default_shared_modules.extend(['vfs_glusterfs'])
