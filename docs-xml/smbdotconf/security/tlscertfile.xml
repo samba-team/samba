@@ -5,7 +5,8 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <description>
 	 <para>This option can be set to a file (PEM format)
-		 containing the RSA certificate. </para>
+		 containing the RSA certificate to be used as TLS server certificate.
+		 If required it can also contain additional intermediate certificates to be send along during the TLS handshake.</para>
 	 <para>This path is relative to <smbconfoption name="private dir"/> if the path
 	 does not start with a /.</para>
 </description>
