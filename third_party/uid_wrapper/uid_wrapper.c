@@ -38,6 +38,10 @@
 
 #include <pthread.h>
 
+#ifdef HAVE_GNU_LIB_NAMES_H
+#include <gnu/lib-names.h>
+#endif
+
 #ifdef HAVE_GCC_THREAD_LOCAL_STORAGE
 # define UWRAP_THREAD __thread
 #else
@@ -558,6 +562,13 @@ static void *uwrap_load_lib_handle(enum uwrap_lib lib)
 	switch (lib) {
 	case UWRAP_LIBC:
 		handle = uwrap.libc.handle;
+#ifdef LIBC_SO
+		if (handle == NULL) {
+			handle = dlopen(LIBC_SO, flags);
+
+			uwrap.libc.handle = handle;
+		}
+#endif
 		if (handle == NULL) {
 			for (i = 10; i >= 0; i--) {
 				char soname[256] = {0};
@@ -656,6 +667,9 @@ static void *_uwrap_bind_symbol(enum uwrap_lib lib, const char *fn_name)
 			dlsym(RTLD_DEFAULT, #sym_name);                        \
 	}
 
+/* JEMALLOC: This tells uid_wrapper if it should handle syscall() */
+static bool uwrap_handle_syscall;
+
 /* DO NOT call this function during library initialization! */
 static void __uwrap_bind_symbol_all_once(void)
 {
@@ -699,6 +713,8 @@ static void __uwrap_bind_symbol_all_once(void)
 #endif
 	uwrap_bind_symbol_libpthread(pthread_create);
 	uwrap_bind_symbol_libpthread(pthread_exit);
+
+	uwrap_handle_syscall = true;
 }
 
 static void uwrap_bind_symbol_all(void)
@@ -863,7 +879,27 @@ static long int libc_vsyscall(long int sysno, va_list va)
 	long int rc;
 	int i;
 
-	uwrap_bind_symbol_all();
+	/*
+	 * JEMALLOC:
+	 *
+	 * This is a workaround to prevent a deadlock in jemalloc calling
+	 * malloc_init() twice. The first allocation call will trigger a
+	 * malloc_init() of jemalloc. The functions calls syscall(SYS_open, ...)
+	 * so it goes to socket or uid wrapper. In this code path we need to
+	 * avoid any allocation calls. This will prevent the deadlock.
+	 *
+	 * We also need to avoid dlopen() as that would trigger the recursion
+	 * into malloc_init(), so we use dlsym(RTLD_NEXT), until we reached
+	 * swrap_constructor() or any real socket call at that time
+	 * swrap_bind_symbol_all() will replace the function pointer again after
+	 * dlopen of libc.
+	 */
+	if (uwrap_handle_syscall) {
+		uwrap_bind_symbol_all();
+	} else if (uwrap.libc.symbols._libc_syscall.obj == NULL) {
+		uwrap.libc.symbols._libc_syscall.obj = dlsym(RTLD_NEXT,
+							     "syscall");
+	}
 
 	for (i = 0; i < 8; i++) {
 		args[i] = va_arg(va, long int);
@@ -1375,7 +1411,7 @@ static void uwrap_init_env(struct uwrap_thread *id)
 			exit(-1);
 		}
 
-		UWRAP_LOG(UWRAP_LOG_DEBUG, "Initalize groups with %s", env);
+		UWRAP_LOG(UWRAP_LOG_DEBUG, "Initialize groups with %s", env);
 		id->ngroups = ngroups;
 	}
 }
@@ -2709,6 +2745,21 @@ long int syscall (long int sysno, ...)
 	va_start(va, sysno);
 
 	/*
+	 * JEMALLOC:
+	 *
+	 * This is a workaround to prevent a deadlock in jemalloc calling
+	 * malloc_init() twice. The first allocation call will trigger a
+	 * malloc_init() of jemalloc. The functions calls syscall(SYS_open, ...)
+	 * so it goes to socket or uid wrapper. In this code path we need to
+	 * avoid any allocation calls. This will prevent the deadlock.
+	 */
+	if (!uwrap_handle_syscall) {
+		rc = libc_vsyscall(sysno, va);
+		va_end(va);
+		return rc;
+	}
+
+	/*
 	 * We need to check for uwrap related syscall numbers before calling
 	 * uid_wrapper_enabled() otherwise we'd deadlock during the freebsd libc
 	 * fork() which calls syscall() after invoking uwrap_thread_prepare().
@@ -2821,6 +2872,9 @@ void uwrap_constructor(void)
 	 * for main process.
 	 */
 	uwrap_init();
+
+	/* Let socket_wrapper handle syscall() */
+	uwrap_handle_syscall = true;
 }
 
 /****************************
