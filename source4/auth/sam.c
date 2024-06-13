@@ -1003,7 +1003,7 @@ NTSTATUS authsam_reread_user_logon_data(
 	TALLOC_CTX *tmp_ctx = NULL;
 	const struct ldb_val *v = NULL;
 	struct ldb_result *res = NULL;
-	uint16_t acct_flags = 0;
+	uint32_t acct_flags = 0;
 	const char *attr_name = "msDS-User-Account-Control-Computed";
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
