@@ -90,10 +90,15 @@ quit
 	return 0
 }
 
+panic_count_0=$(grep -c PANIC $SMBD_TEST_LOG)
 
 testit "recycle" \
 	test_recycle ||
 	failed=$((failed + 1))
+
+panic_count_1=$(grep -c PANIC $SMBD_TEST_LOG)
+
+testit "check_panic" test $panic_count_0 -eq $panic_count_1 || failed=$(expr $failed + 1)
 
 #
 # Cleanup.
