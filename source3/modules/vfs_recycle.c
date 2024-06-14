@@ -650,13 +650,7 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 		TALLOC_FREE(smb_fname_final->base_name);
 		smb_fname_final->base_name = talloc_strdup(smb_fname_final,
 							   final_name);
-		if (smb_fname_final->base_name == NULL) {
-			rc = SMB_VFS_NEXT_UNLINKAT(handle,
-						dirfsp,
-						smb_fname,
-						flags);
-			goto done;
-		}
+		ALLOC_CHECK(smb_fname_final->base_name, done);
 	}
 
 	DEBUG(10, ("recycle: Moving %s to %s\n", smb_fname_str_dbg(full_fname),
