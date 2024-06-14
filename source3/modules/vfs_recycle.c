@@ -436,14 +436,14 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 	off_t file_size; /* space_avail;	*/
 	bool exist;
 	int rc = -1;
-	struct recycle_config_data *config;
+	struct recycle_config_data *config = NULL;
 
 	reload_services(NULL, NULL, false);
 
 	SMB_VFS_HANDLE_GET_DATA(handle,
 				config,
 				struct recycle_config_data,
-				return true);
+				return -1);
 
 	frame = talloc_stackframe();
 
