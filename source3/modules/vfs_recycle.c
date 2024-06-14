@@ -437,6 +437,8 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 	int rc = -1;
 	struct recycle_config_data *config;
 
+	reload_services(NULL, NULL, false);
+
 	SMB_VFS_HANDLE_GET_DATA(handle,
 				config,
 				struct recycle_config_data,
