@@ -55,11 +55,14 @@ static int vfs_recycle_connect(struct vfs_handle_struct *handle,
 			       const char *service,
 			       const char *user)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct recycle_config_data *config = NULL;
 	int ret;
 	int t;
 	const char *buff = NULL;
 	const char **tmplist = NULL;
+	char *repository = NULL;
 
 	ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
 	if (ret < 0) {
@@ -80,13 +83,26 @@ static int vfs_recycle_connect(struct vfs_handle_struct *handle,
 				    "recycle",
 				    "repository",
 				    ".recycle");
-	config->repository = talloc_strdup(config, buff);
-	if (config->repository == NULL) {
-		DBG_ERR("talloc_strdup(%s) failed\n", buff);
+	repository = talloc_sub_full(
+		config,
+		lp_servicename(talloc_tos(), lp_sub, SNUM(handle->conn)),
+		handle->conn->session_info->unix_info->unix_name,
+		handle->conn->connectpath,
+		handle->conn->session_info->unix_token->gid,
+		handle->conn->session_info->unix_info->sanitized_username,
+		handle->conn->session_info->info->domain_name,
+		buff);
+	if (repository == NULL) {
+		DBG_ERR("talloc_sub_full() failed\n");
 		TALLOC_FREE(config);
 		errno = ENOMEM;
 		return -1;
 	}
+	/* shouldn't we allow absolute path names here? --metze */
+	/* Yes :-). JRA. */
+	trim_char(repository, '\0', '/');
+	config->repository = repository;
+
 	config->keeptree = lp_parm_bool(SNUM(handle->conn),
 					"recycle",
 					"keeptree",
@@ -460,16 +476,12 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 				int flags)
 {
 	TALLOC_CTX *frame = NULL;
-	const struct loadparm_substitution *lp_sub =
-		loadparm_s3_global_substitution();
-	connection_struct *conn = handle->conn;
 	struct smb_filename *full_fname = NULL;
 	char *path_name = NULL;
 	const char *temp_name = NULL;
 	const char *final_name = NULL;
 	struct smb_filename *smb_fname_final = NULL;
 	const char *base = NULL;
-	char *repository = NULL;
 	int i = 1;
 	off_t file_size; /* space_avail;	*/
 	bool exist;
@@ -483,21 +495,7 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 
 	frame = talloc_stackframe();
 
-	repository = talloc_sub_full(
-		frame,
-		lp_servicename(frame, lp_sub, SNUM(conn)),
-		conn->session_info->unix_info->unix_name,
-		conn->connectpath,
-		conn->session_info->unix_token->gid,
-		conn->session_info->unix_info->sanitized_username,
-		conn->session_info->info->domain_name,
-		config->repository);
-	ALLOC_CHECK(repository, done);
-	/* shouldn't we allow absolute path names here? --metze */
-	/* Yes :-). JRA. */
-	trim_char(repository, '\0', '/');
-
-	if(!repository || *(repository) == '\0') {
+	if (config->repository[0] == '\0') {
 		DEBUG(3, ("recycle: repository path not set, purging %s...\n",
 			  smb_fname_str_dbg(smb_fname)));
 		rc = SMB_VFS_NEXT_UNLINKAT(handle,
@@ -517,8 +515,8 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 	}
 
 	/* we don't recycle the recycle bin... */
-	if (strncmp(full_fname->base_name, repository,
-		    strlen(repository)) == 0) {
+	if (strncmp(full_fname->base_name, config->repository,
+		    strlen(config->repository)) == 0) {
 		DEBUG(3, ("recycle: File is within recycling bin, unlinking ...\n"));
 		rc = SMB_VFS_NEXT_UNLINKAT(handle,
 					dirfsp,
