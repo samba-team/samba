@@ -421,15 +421,16 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				int flags)
 {
+	TALLOC_CTX *frame = NULL;
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	connection_struct *conn = handle->conn;
 	struct smb_filename *full_fname = NULL;
 	char *path_name = NULL;
-       	char *temp_name = NULL;
-	char *final_name = NULL;
+	const char *temp_name = NULL;
+	const char *final_name = NULL;
 	struct smb_filename *smb_fname_final = NULL;
-	const char *base;
+	const char *base = NULL;
 	char *repository = NULL;
 	int i = 1;
 	off_t file_size; /* space_avail;	*/
@@ -444,9 +445,11 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 				struct recycle_config_data,
 				return true);
 
+	frame = talloc_stackframe();
+
 	repository = talloc_sub_full(
-		NULL,
-		lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
+		frame,
+		lp_servicename(frame, lp_sub, SNUM(conn)),
 		conn->session_info->unix_info->unix_name,
 		conn->connectpath,
 		conn->session_info->unix_token->gid,
@@ -468,11 +471,13 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 		goto done;
 	}
 
-	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
+	full_fname = full_path_from_dirfsp_atname(frame,
 						  dirfsp,
 						  smb_fname);
 	if (full_fname == NULL) {
-		return -1;
+		rc = -1;
+		errno = ENOMEM;
+		goto done;
 	}
 
 	/* we don't recycle the recycle bin... */
@@ -541,7 +546,7 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 	 */
 
 	/* extract filename and path */
-	if (!parent_dirname(talloc_tos(), full_fname->base_name, &path_name, &base)) {
+	if (!parent_dirname(frame, full_fname->base_name, &path_name, &base)) {
 		rc = -1;
 		errno = ENOMEM;
 		goto done;
@@ -573,13 +578,16 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 	}
 
 	if (config->keeptree) {
-		if (asprintf(&temp_name, "%s/%s", repository, path_name) == -1) {
-			ALLOC_CHECK(temp_name, done);
+		temp_name = talloc_asprintf(frame, "%s/%s",
+					    config->repository,
+					    path_name);
+		if (temp_name == NULL) {
+			rc = -1;
+			goto done;
 		}
 	} else {
-		temp_name = SMB_STRDUP(repository);
+		temp_name = config->repository;
 	}
-	ALLOC_CHECK(temp_name, done);
 
 	exist = recycle_directory_exist(handle, temp_name);
 	if (exist) {
@@ -602,12 +610,15 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 		}
 	}
 
-	if (asprintf(&final_name, "%s/%s", temp_name, base) == -1) {
-		ALLOC_CHECK(final_name, done);
+	final_name = talloc_asprintf(frame, "%s/%s",
+				     temp_name, base);
+	if (final_name == NULL) {
+		rc = -1;
+		goto done;
 	}
 
 	/* Create smb_fname with final base name and orig stream name. */
-	smb_fname_final = synthetic_smb_fname(talloc_tos(),
+	smb_fname_final = synthetic_smb_fname(frame,
 					final_name,
 					full_fname->stream_name,
 					NULL,
@@ -679,12 +690,7 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 		recycle_do_touch(handle, smb_fname_final, config->touch_mtime);
 
 done:
-	TALLOC_FREE(path_name);
-	SAFE_FREE(temp_name);
-	SAFE_FREE(final_name);
-	TALLOC_FREE(full_fname);
-	TALLOC_FREE(smb_fname_final);
-	TALLOC_FREE(repository);
+	TALLOC_FREE(frame);
 	return rc;
 }
 
