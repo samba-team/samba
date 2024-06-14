@@ -643,14 +643,16 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 	/* rename file we move to recycle bin */
 	i = 1;
 	while (recycle_file_exist(handle, smb_fname_final)) {
-		SAFE_FREE(final_name);
-		if (asprintf(&final_name, "%s/Copy #%d of %s", temp_name, i++, base) == -1) {
-			ALLOC_CHECK(final_name, done);
-		}
+		char *copy = NULL;
+
 		TALLOC_FREE(smb_fname_final->base_name);
-		smb_fname_final->base_name = talloc_strdup(smb_fname_final,
-							   final_name);
-		ALLOC_CHECK(smb_fname_final->base_name, done);
+		copy = talloc_asprintf(smb_fname_final, "%s/Copy #%d of %s",
+				       temp_name, i++, base);
+		if (copy == NULL) {
+			rc = -1;
+			goto done;
+		}
+		smb_fname_final->base_name = copy;
 	}
 
 	DEBUG(10, ("recycle: Moving %s to %s\n", smb_fname_str_dbg(full_fname),
