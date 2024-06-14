@@ -58,7 +58,8 @@ static int vfs_recycle_connect(struct vfs_handle_struct *handle,
 	struct recycle_config_data *config = NULL;
 	int ret;
 	int t;
-	const char *buff;
+	const char *buff = NULL;
+	const char **tmplist = NULL;
 
 	ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
 	if (ret < 0) {
@@ -75,10 +76,17 @@ static int vfs_recycle_connect(struct vfs_handle_struct *handle,
 		errno = ENOMEM;
 		return -1;
 	}
-	config->repository = lp_parm_const_string(SNUM(handle->conn),
-						  "recycle",
-						  "repository",
-						  ".recycle");
+	buff = lp_parm_const_string(SNUM(handle->conn),
+				    "recycle",
+				    "repository",
+				    ".recycle");
+	config->repository = talloc_strdup(config, buff);
+	if (config->repository == NULL) {
+		DBG_ERR("talloc_strdup(%s) failed\n", buff);
+		TALLOC_FREE(config);
+		errno = ENOMEM;
+		return -1;
+	}
 	config->keeptree = lp_parm_bool(SNUM(handle->conn),
 					"recycle",
 					"keeptree",
@@ -95,18 +103,48 @@ static int vfs_recycle_connect(struct vfs_handle_struct *handle,
 					   "recycle",
 					   "touch_mtime",
 					   False);
-	config->exclude = lp_parm_string_list(SNUM(handle->conn),
-					      "recycle",
-					      "exclude",
-					      NULL);
-	config->exclude_dir = lp_parm_string_list(SNUM(handle->conn),
-						  "recycle",
-						  "exclude_dir",
-						  NULL);
-	config->noversions = lp_parm_string_list(SNUM(handle->conn),
-						 "recycle",
-						 "noversions",
-						 NULL);
+	tmplist = lp_parm_string_list(SNUM(handle->conn),
+				      "recycle",
+				      "exclude",
+				      NULL);
+	if (tmplist != NULL) {
+		char **tmpcpy = str_list_copy(config, tmplist);
+		if (tmpcpy == NULL) {
+			DBG_ERR("str_list_copy() failed\n");
+			TALLOC_FREE(config);
+			errno = ENOMEM;
+			return -1;
+		}
+		config->exclude = discard_const_p(const char *, tmpcpy);
+	}
+	tmplist = lp_parm_string_list(SNUM(handle->conn),
+				      "recycle",
+				      "exclude_dir",
+				      NULL);
+	if (tmplist != NULL) {
+		char **tmpcpy = str_list_copy(config, tmplist);
+		if (tmpcpy == NULL) {
+			DBG_ERR("str_list_copy() failed\n");
+			TALLOC_FREE(config);
+			errno = ENOMEM;
+			return -1;
+		}
+		config->exclude_dir = discard_const_p(const char *, tmpcpy);
+	}
+	tmplist = lp_parm_string_list(SNUM(handle->conn),
+				      "recycle",
+				      "noversions",
+				      NULL);
+	if (tmplist != NULL) {
+		char **tmpcpy = str_list_copy(config, tmplist);
+		if (tmpcpy == NULL) {
+			DBG_ERR("str_list_copy() failed\n");
+			TALLOC_FREE(config);
+			errno = ENOMEM;
+			return -1;
+		}
+		config->noversions = discard_const_p(const char *, tmpcpy);
+	}
 	config->minsize = conv_str_size(lp_parm_const_string(
 		SNUM(handle->conn), "recycle", "minsize", NULL));
 	config->maxsize = conv_str_size(lp_parm_const_string(
