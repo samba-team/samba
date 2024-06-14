@@ -1512,7 +1512,7 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
 			     NULL,
 			     NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("g_lock_lock(G_LOCK_WRITE) failed: %s\n",
+		DBG_WARNING("g_lock_lock(G_LOCK_UPGRADE) failed: %s\n",
 			    nt_errstr(status));
 		DBG_ERR("smbd %s already running, refusing to start "
 			"version %s\n", state.version, version);
@@ -1536,7 +1536,7 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
 			     NULL,
 			     NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("g_lock_lock(G_LOCK_READ) failed: %s\n",
+		DBG_WARNING("g_lock_lock(G_LOCK_DOWNGRADE) failed: %s\n",
 			    nt_errstr(status));
 		TALLOC_FREE(ctx);
 		return status;
