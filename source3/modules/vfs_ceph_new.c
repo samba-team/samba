@@ -344,19 +344,26 @@ static uint64_t vfs_ceph_disk_free(struct vfs_handle_struct *handle,
 				uint64_t *dsize)
 {
 	struct statvfs statvfs_buf = { 0 };
+	struct Inode *inode = NULL;
 	int ret;
 
-	ret = ceph_statfs(handle->data, smb_fname->base_name, &statvfs_buf);
-	if (ret < 0) {
-		DBG_DEBUG("[CEPH] ceph_statfs returned %d\n", ret);
-		return (uint64_t)status_code(ret);
+	ret = ceph_ll_lookup_root(handle->data, &inode);
+	if (ret != 0) {
+		DBG_DEBUG("[CEPH] ceph_ll_lookup_root returned %d\n", ret);
+		errno = -ret;
+		return (uint64_t)(-1);
 	}
-	/*
-	 * Provide all the correct values.
-	 */
-	*bsize = statvfs_buf.f_bsize;
-	*dfree = statvfs_buf.f_bavail;
-	*dsize = statvfs_buf.f_blocks;
+	ret = ceph_ll_statfs(handle->data, inode, &statvfs_buf);
+	ceph_ll_put(handle->data, inode);
+	if (ret != 0) {
+		DBG_DEBUG("[CEPH] ceph_ll_statfs returned %d\n", ret);
+		errno = -ret;
+		return (uint64_t)(-1);
+	}
+	*bsize = (uint64_t)statvfs_buf.f_bsize;
+	*dfree = (uint64_t)statvfs_buf.f_bavail;
+	*dsize = (uint64_t)statvfs_buf.f_blocks;
+
 	DBG_DEBUG("[CEPH] bsize: %llu, dfree: %llu, dsize: %llu\n",
 		  llu(*bsize),
 		  llu(*dfree),
