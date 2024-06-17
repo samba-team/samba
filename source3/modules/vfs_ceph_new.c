@@ -447,6 +447,28 @@ static int vfs_ceph_ll_getattr(const struct vfs_handle_struct *handle,
 	return ret;
 }
 
+static int vfs_ceph_ll_chown(struct vfs_handle_struct *handle,
+			     const struct vfs_ceph_iref *iref,
+			     uid_t uid,
+			     gid_t gid)
+{
+	struct ceph_statx stx = {.stx_uid = uid, .stx_gid = gid};
+	struct UserPerm *uperm = NULL;
+	int ret = -1;
+
+	uperm = vfs_ceph_userperm_new(handle);
+	if (uperm == NULL) {
+		return -ENOMEM;
+	}
+	ret = ceph_ll_setattr(handle->data,
+			      iref->inode,
+			      &stx,
+			      CEPH_STATX_UID | CEPH_STATX_GID,
+			      uperm);
+	vfs_ceph_userperm_del(uperm);
+	return ret;
+}
+
 /* Ceph Inode-refernce get/put wrappers */
 static int vfs_ceph_iget(const struct vfs_handle_struct *handle,
 			 uint64_t ino,
@@ -1401,12 +1423,22 @@ static int vfs_ceph_lchown(struct vfs_handle_struct *handle,
 			gid_t gid)
 {
 	int result;
+	struct vfs_ceph_iref iref = {0};
+
 	DBG_DEBUG("[CEPH] lchown(%p, %s, %d, %d)\n",
 		  handle,
 		  smb_fname->base_name,
 		  uid,
 		  gid);
-	result = ceph_lchown(handle->data, smb_fname->base_name, uid, gid);
+
+	result = vfs_ceph_igetl(handle, smb_fname, &iref);
+	if (result != 0) {
+		goto out;
+	}
+
+	result = vfs_ceph_ll_chown(handle, &iref, uid, gid);
+	vfs_ceph_iput(handle, &iref);
+out:
 	DBG_DEBUG("[CEPH] lchown(...) = %d\n", result);
 	return status_code(result);
 }
