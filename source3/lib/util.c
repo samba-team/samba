@@ -1070,7 +1070,7 @@ const char *get_remote_arch_str(void)
 
 enum remote_arch_types get_remote_arch_from_str(const char *remote_arch_string)
 {
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(remote_arch_strings); i++) {
 		if (strcmp(remote_arch_string, remote_arch_strings[i]) == 0) {
