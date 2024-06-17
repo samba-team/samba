@@ -2148,6 +2148,12 @@ static struct tevent_req *vfswrap_offload_write_send(
 		.remaining = to_copy,
 	};
 
+	status = vfs_offload_token_ctx_init(handle->conn->sconn->client,
+					    &vfswrap_offload_ctx);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
 	tevent_req_set_cleanup_fn(req, vfswrap_offload_write_cleanup);
 
 	switch (fsctl) {
