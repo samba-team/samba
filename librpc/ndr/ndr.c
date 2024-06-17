@@ -439,12 +439,15 @@ _PUBLIC_ bool ndr_print_debug(int level,
 			      const char *function)
 {
 	struct ndr_print *ndr;
-
-	DEBUGLF(level, (" "), location, function);
+	bool ret = false;
 
 	ndr = talloc_zero(NULL, struct ndr_print);
 	if (!ndr) return false;
-	ndr->print = ndr_print_debug_helper;
+	ndr->private_data = talloc_strdup(ndr, "");
+	if (ndr->private_data == NULL) {
+		goto fail;
+	}
+	ndr->print = ndr_print_string_helper;
 	ndr->depth = 1;
 	ndr->flags = 0;
 #ifdef DEBUG_PASSWORD
@@ -454,8 +457,12 @@ _PUBLIC_ bool ndr_print_debug(int level,
 #endif
 
 	fn(ndr, name, ptr);
+	DEBUGLF(level, (" %s", (char *)ndr->private_data), location, function);
+
+	ret = true;
+fail:
 	talloc_free(ndr);
-	return true;
+	return ret;
 }
 
 /*
