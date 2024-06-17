@@ -3688,18 +3688,10 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 		case SMB_FILE_ATTRIBUTE_TAG_INFORMATION: {
 			uint32_t tag = 0;
-			uint8_t *data = NULL;
-			uint32_t datalen;
 
 			DBG_DEBUG("SMB_FILE_ATTRIBUTE_TAG_INFORMATION\n");
 
-			(void)fsctl_get_reparse_point(fsp,
-						      talloc_tos(),
-						      &tag,
-						      &data,
-						      UINT32_MAX,
-						      &datalen);
-			TALLOC_FREE(data);
+			(void)fsctl_get_reparse_tag(fsp, &tag);
 
 			SIVAL(pdata, 0, mode);
 			SIVAL(pdata, 4, tag);
