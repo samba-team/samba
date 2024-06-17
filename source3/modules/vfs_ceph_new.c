@@ -415,6 +415,13 @@ static int vfs_ceph_ll_walk(const struct vfs_handle_struct *handle,
 	return ret;
 }
 
+static int vfs_ceph_ll_statfs(const struct vfs_handle_struct *handle,
+			      const struct vfs_ceph_iref *iref,
+			      struct statvfs *stbuf)
+{
+	return ceph_ll_statfs(handle->data, iref->inode, stbuf);
+}
+
 static int vfs_ceph_ll_getattr(const struct vfs_handle_struct *handle,
 			       const struct vfs_ceph_iref *iref,
 			       SMB_STRUCT_STAT *st)
@@ -556,11 +563,17 @@ static int vfs_ceph_statvfs(struct vfs_handle_struct *handle,
 			    struct vfs_statvfs_struct *statbuf)
 {
 	struct statvfs statvfs_buf = { 0 };
+	struct vfs_ceph_iref iref = {0};
 	int ret;
 
-	ret = ceph_statfs(handle->data, smb_fname->base_name, &statvfs_buf);
-	if (ret < 0) {
-		return status_code(ret);
+	ret = vfs_ceph_iget_by_fname(handle, smb_fname, &iref);
+	if (ret != 0) {
+		goto out;
+	}
+
+	ret = vfs_ceph_ll_statfs(handle, &iref, &statvfs_buf);
+	if (ret != 0) {
+		goto out;
 	}
 
 	statbuf->OptimalTransferSize = statvfs_buf.f_frsize;
@@ -577,8 +590,9 @@ static int vfs_ceph_statvfs(struct vfs_handle_struct *handle,
 		  (long int)statvfs_buf.f_blocks,
 		  (long int)statvfs_buf.f_bfree,
 		  (long int)statvfs_buf.f_bavail);
-
-	return ret;
+out:
+	vfs_ceph_iput(handle, &iref);
+	return status_code(ret);
 }
 
 static uint32_t vfs_ceph_fs_capabilities(
