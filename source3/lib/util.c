@@ -140,42 +140,55 @@ bool check_same_stat(const SMB_STRUCT_STAT *sbuf1,
 
 void show_msg(const char *buf)
 {
+	char *msg = NULL;
 	int i;
 	int bcc=0;
 
 	if (!DEBUGLVL(5))
 		return;
 
-	DEBUG(5,("size=%d\nsmb_com=0x%x\nsmb_rcls=%d\nsmb_reh=%d\nsmb_err=%d\nsmb_flg=%d\nsmb_flg2=%d\n",
-			smb_len(buf),
-			(int)CVAL(buf,smb_com),
-			(int)CVAL(buf,smb_rcls),
-			(int)CVAL(buf,smb_reh),
-			(int)SVAL(buf,smb_err),
-			(int)CVAL(buf,smb_flg),
-			(int)SVAL(buf,smb_flg2)));
-	DEBUGADD(5,("smb_tid=%d\nsmb_pid=%d\nsmb_uid=%d\nsmb_mid=%d\n",
-			(int)SVAL(buf,smb_tid),
-			(int)SVAL(buf,smb_pid),
-			(int)SVAL(buf,smb_uid),
-			(int)SVAL(buf,smb_mid)));
-	DEBUGADD(5,("smt_wct=%d\n",(int)CVAL(buf,smb_wct)));
+	msg = talloc_asprintf(
+		talloc_tos(),
+		"size=%d\nsmb_com=0x%x\nsmb_rcls=%d\n"
+		"smb_reh=%d\nsmb_err=%d\nsmb_flg=%d\nsmb_flg2=%d\n"
+		"smb_tid=%d\nsmb_pid=%d\nsmb_uid=%d\nsmb_mid=%d\n"
+		"smt_wct=%d\n",
+		smb_len(buf),
+		(int)CVAL(buf, smb_com),
+		(int)CVAL(buf, smb_rcls),
+		(int)CVAL(buf, smb_reh),
+		(int)SVAL(buf, smb_err),
+		(int)CVAL(buf, smb_flg),
+		(int)SVAL(buf, smb_flg2),
+		(int)SVAL(buf, smb_tid),
+		(int)SVAL(buf, smb_pid),
+		(int)SVAL(buf, smb_uid),
+		(int)SVAL(buf, smb_mid),
+		(int)CVAL(buf, smb_wct));
 
-	for (i=0;i<(int)CVAL(buf,smb_wct);i++)
-		DEBUGADD(5,("smb_vwv[%2d]=%5d (0x%X)\n",i,
-			SVAL(buf,smb_vwv+2*i),SVAL(buf,smb_vwv+2*i)));
+	for (i=0;i<(int)CVAL(buf,smb_wct);i++) {
+		talloc_asprintf_addbuf(&msg,
+				       "smb_vwv[%2d]=%5d (0x%X)\n",
+				       i,
+				       SVAL(buf, smb_vwv + 2 * i),
+				       SVAL(buf, smb_vwv + 2 * i));
+	}
 
 	bcc = (int)SVAL(buf,smb_vwv+2*(CVAL(buf,smb_wct)));
 
-	DEBUGADD(5,("smb_bcc=%d\n",bcc));
+	talloc_asprintf_addbuf(&msg, "smb_bcc=%d\n", bcc);
 
-	if (DEBUGLEVEL < 10)
-		return;
+	if (DEBUGLEVEL >= 10) {
+		if (DEBUGLEVEL < 50) {
+			bcc = MIN(bcc, 512);
+		}
+		dump_data_addbuf((const uint8_t *)smb_buf_const(buf),
+				 bcc,
+				 &msg);
+	}
 
-	if (DEBUGLEVEL < 50)
-		bcc = MIN(bcc, 512);
-
-	dump_data(10, (const uint8_t *)smb_buf_const(buf), bcc);
+	DEBUG(5, ("%s", msg));
+	TALLOC_FREE(msg);
 }
 
 /*******************************************************************
