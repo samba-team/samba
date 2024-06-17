@@ -493,6 +493,17 @@ static int vfs_ceph_iget_by_fname(const struct vfs_handle_struct *handle,
 	return ret;
 }
 
+static int vfs_ceph_igetl(const struct vfs_handle_struct *handle,
+			  const struct smb_filename *smb_fname,
+			  struct vfs_ceph_iref *iref)
+{
+	return vfs_ceph_iget(handle,
+			     0,
+			     smb_fname->base_name,
+			     AT_SYMLINK_NOFOLLOW,
+			     iref);
+}
+
 static void vfs_ceph_iput(const struct vfs_handle_struct *handle,
 			  struct vfs_ceph_iref *iref)
 {
@@ -1181,10 +1192,10 @@ static int vfs_ceph_fstatat(struct vfs_handle_struct *handle,
 }
 
 static int vfs_ceph_lstat(struct vfs_handle_struct *handle,
-			 struct smb_filename *smb_fname)
+			  struct smb_filename *smb_fname)
 {
 	int result = -1;
-	struct ceph_statx stx = { 0 };
+	struct vfs_ceph_iref iref = {0};
 
 	DBG_DEBUG("[CEPH] lstat(%p, %s)\n",
 		  handle,
@@ -1195,15 +1206,19 @@ static int vfs_ceph_lstat(struct vfs_handle_struct *handle,
 		return result;
 	}
 
-	result = ceph_statx(handle->data, smb_fname->base_name, &stx,
-				SAMBA_STATX_ATTR_MASK, AT_SYMLINK_NOFOLLOW);
-	DBG_DEBUG("[CEPH] lstat(...) = %d\n", result);
-	if (result < 0) {
-		return status_code(result);
+	result = vfs_ceph_igetl(handle, smb_fname, &iref);
+	if (result != 0) {
+		goto out;
 	}
 
-	init_stat_ex_from_ceph_statx(&smb_fname->st, &stx);
-	return result;
+	result = vfs_ceph_ll_getattr(handle, &iref, &smb_fname->st);
+	if (result != 0) {
+		goto out;
+	}
+out:
+	vfs_ceph_iput(handle, &iref);
+	DBG_DEBUG("[CEPH] lstat(...) = %d\n", result);
+	return status_code(result);
 }
 
 static int vfs_ceph_fntimes(struct vfs_handle_struct *handle,
