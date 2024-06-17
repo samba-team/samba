@@ -71,6 +71,86 @@ static PyObject *py_reparse_put(PyObject *module, PyObject *args)
 	return result;
 }
 
+static PyObject *py_reparse_get(PyObject *module, PyObject *args)
+{
+	char *buf = NULL;
+	Py_ssize_t buflen;
+	PyObject *result = NULL;
+	struct reparse_data_buffer *rep = NULL;
+	bool ok;
+	NTSTATUS status;
+
+	ok = PyArg_ParseTuple(args, PYARG_BYTES_LEN ":get", &buf, &buflen);
+	if (!ok) {
+		return NULL;
+	}
+
+	rep = talloc(NULL, struct reparse_data_buffer);
+	if (rep == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	status = reparse_data_buffer_parse(rep, rep, (uint8_t *)buf, buflen);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(rep);
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	switch (rep->tag) {
+	case IO_REPARSE_TAG_SYMLINK: {
+		const struct symlink_reparse_struct *lnk = &rep->parsed.lnk;
+		result = Py_BuildValue("s(ssII)",
+				       "IO_REPARSE_TAG_SYMLINK",
+				       lnk->substitute_name,
+				       lnk->print_name,
+				       (unsigned)lnk->unparsed_path_length,
+				       (unsigned)lnk->flags);
+		break;
+	}
+	case IO_REPARSE_TAG_NFS: {
+		const struct nfs_reparse_data_buffer *nfs = &rep->parsed.nfs;
+		switch (nfs->type) {
+		case NFS_SPECFILE_LNK:
+			result = Py_BuildValue("ss",
+					       "NFS_SPECFILE_LNK",
+					       nfs->data.lnk_target);
+			break;
+		case NFS_SPECFILE_BLK:
+			result = Py_BuildValue("sII",
+					       "NFS_SPECFILE_BLK",
+					       (unsigned)nfs->data.dev.major,
+					       (unsigned)nfs->data.dev.minor);
+			break;
+		case NFS_SPECFILE_CHR:
+			result = Py_BuildValue("sII",
+					       "NFS_SPECFILE_CHR",
+					       (unsigned)nfs->data.dev.major,
+					       (unsigned)nfs->data.dev.minor);
+			break;
+		case NFS_SPECFILE_FIFO:
+			result = Py_BuildValue("(s)", "NFS_SPECFILE_FIFO");
+			break;
+		case NFS_SPECFILE_SOCK:
+			result = Py_BuildValue("(s)", "NFS_SPECFILE_SOCK");
+			break;
+		}
+	}
+	}
+
+	if (result == NULL) {
+		result = Py_BuildValue("Iy#I",
+				       (unsigned)rep->tag,
+				       (const char *)rep->parsed.raw.data,
+				       (Py_ssize_t)rep->parsed.raw.length,
+				       (unsigned)rep->parsed.raw.reserved);
+	}
+
+	TALLOC_FREE(rep);
+	return result;
+}
+
 static PyObject *py_reparse_symlink_put(PyObject *module, PyObject *args)
 {
 	int unparsed = 0;
@@ -167,6 +247,10 @@ static PyMethodDef py_reparse_symlink_methods[] = {
 	  PY_DISCARD_FUNC_SIG(PyCFunction, py_reparse_put),
 	  METH_VARARGS,
 	  "Create a reparse point blob"},
+	{ "get",
+	  PY_DISCARD_FUNC_SIG(PyCFunction, py_reparse_get),
+	  METH_VARARGS,
+	  "Parse a reparse point blob"},
 	{ "symlink_put",
 	  PY_DISCARD_FUNC_SIG(PyCFunction, py_reparse_symlink_put),
 	  METH_VARARGS,
