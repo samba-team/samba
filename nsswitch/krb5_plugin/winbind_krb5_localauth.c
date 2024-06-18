@@ -120,6 +120,7 @@ static krb5_error_code winbind_userok(krb5_context context,
 		break;
 	}
 	wbcFreeMemory(pwd);
+	pwd = NULL;
 	if (code != 0) {
 		goto out;
 	}
