@@ -82,7 +82,7 @@ static ssize_t lstatus_code(intmax_t ret)
 
 /*
  * Track unique connections, as virtual mounts, to cephfs file systems.
- * Individual mounts will be set on the handle->data attribute, but
+ * Individual mount-entries will be set on the handle->data attribute, but
  * the mounts themselves will be shared so as not to spawn extra mounts
  * to the same cephfs.
  *
@@ -98,7 +98,8 @@ static struct cephmount_cached {
 } *cephmount_cached;
 
 static int cephmount_cache_add(const char *cookie,
-			       struct ceph_mount_info *mount)
+			       struct ceph_mount_info *mount,
+			       struct cephmount_cached **out_entry)
 {
 	struct cephmount_cached *entry = NULL;
 
@@ -120,10 +121,12 @@ static int cephmount_cache_add(const char *cookie,
 
 	DBG_DEBUG("adding mount cache entry for %s\n", entry->cookie);
 	DLIST_ADD(cephmount_cached, entry);
+
+	*out_entry = entry;
 	return 0;
 }
 
-static struct ceph_mount_info *cephmount_cache_update(const char *cookie)
+static struct cephmount_cached *cephmount_cache_update(const char *cookie)
 {
 	struct cephmount_cached *entry = NULL;
 
@@ -132,7 +135,7 @@ static struct ceph_mount_info *cephmount_cache_update(const char *cookie)
 			entry->count++;
 			DBG_DEBUG("updated mount cache: count is [%"
 				  PRIu32 "]\n", entry->count);
-			return entry->mount;
+			return entry;
 		}
 	}
 
@@ -140,27 +143,18 @@ static struct ceph_mount_info *cephmount_cache_update(const char *cookie)
 	return NULL;
 }
 
-static int cephmount_cache_remove(struct ceph_mount_info *mount)
+static int cephmount_cache_remove(struct cephmount_cached *entry)
 {
-	struct cephmount_cached *entry = NULL;
-
-	for (entry = cephmount_cached; entry; entry = entry->next) {
-		if (entry->mount == mount) {
-			if (--entry->count) {
-				DBG_DEBUG("updated mount cache: count is [%"
-					  PRIu32 "]\n", entry->count);
-				return entry->count;
-			}
-
-			DBG_DEBUG("removing mount cache entry for %s\n",
-				  entry->cookie);
-			DLIST_REMOVE(cephmount_cached, entry);
-			talloc_free(entry);
-			return 0;
-		}
+	if (--entry->count) {
+		DBG_DEBUG("updated mount cache: count is [%" PRIu32 "]\n",
+			  entry->count);
+		return entry->count;
 	}
-	errno = ENOENT;
-	return -1;
+
+	DBG_DEBUG("removing mount cache entry for %s\n", entry->cookie);
+	DLIST_REMOVE(cephmount_cached, entry);
+	talloc_free(entry);
+	return 0;
 }
 
 static char *cephmount_get_cookie(TALLOC_CTX * mem_ctx, const int snum)
@@ -276,6 +270,7 @@ static int vfs_ceph_connect(struct vfs_handle_struct *handle,
 			    const char *service, const char *user)
 {
 	int ret = 0;
+	struct cephmount_cached *entry = NULL;
 	struct ceph_mount_info *cmount = NULL;
 	int snum = SNUM(handle->conn);
 	char *cookie = cephmount_get_cookie(handle, snum);
@@ -283,8 +278,8 @@ static int vfs_ceph_connect(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	cmount = cephmount_cache_update(cookie);
-	if (cmount != NULL) {
+	entry = cephmount_cache_update(cookie);
+	if (entry != NULL) {
 		goto connect_ok;
 	}
 
@@ -293,42 +288,48 @@ static int vfs_ceph_connect(struct vfs_handle_struct *handle,
 		ret = -1;
 		goto connect_fail;
 	}
-	ret = cephmount_cache_add(cookie, cmount);
-	if (ret) {
+	ret = cephmount_cache_add(cookie, cmount, &entry);
+	if (ret != 0) {
 		goto connect_fail;
 	}
 
-      connect_ok:
-	handle->data = cmount;
+connect_ok:
+	handle->data = entry;
 	DBG_WARNING("Connection established with the server: %s\n", cookie);
+
 	/*
 	 * Unless we have an async implementation of getxattrat turn this off.
 	 */
 	lp_do_parameter(SNUM(handle->conn), "smbd async dosmode", "false");
-      connect_fail:
+connect_fail:
 	talloc_free(cookie);
 	return ret;
 }
 
+static struct ceph_mount_info *cmount_of(const struct vfs_handle_struct *handle)
+{
+	const struct cephmount_cached *entry = handle->data;
+
+	return entry->mount;
+}
+
 static void vfs_ceph_disconnect(struct vfs_handle_struct *handle)
 {
-	int ret = cephmount_cache_remove(handle->data);
-	if (ret < 0) {
-		DBG_ERR("failed to remove ceph mount from cache: %s\n",
-			strerror(errno));
-		return;
-	}
+	struct ceph_mount_info *cmount = cmount_of(handle);
+	int ret = 0;
+
+	ret = cephmount_cache_remove(handle->data);
 	if (ret > 0) {
 		DBG_DEBUG("mount cache entry still in use\n");
 		return;
 	}
 
-	ret = ceph_unmount(handle->data);
+	ret = ceph_unmount(cmount);
 	if (ret < 0) {
 		DBG_ERR("[CEPH] failed to unmount: %s\n", strerror(-ret));
 	}
 
-	ret = ceph_release(handle->data);
+	ret = ceph_release(cmount);
 	if (ret < 0) {
 		DBG_ERR("[CEPH] failed to release: %s\n", strerror(-ret));
 	}
@@ -393,7 +394,7 @@ static int vfs_ceph_ll_lookup_inode(const struct vfs_handle_struct *handle,
 {
 	struct inodeno_t ino = {.val = inoval};
 
-	return ceph_ll_lookup_inode(handle->data, ino, pout);
+	return ceph_ll_lookup_inode(cmount_of(handle), ino, pout);
 }
 
 static int vfs_ceph_ll_walk(const struct vfs_handle_struct *handle,
@@ -410,7 +411,15 @@ static int vfs_ceph_ll_walk(const struct vfs_handle_struct *handle,
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
-	ret = ceph_ll_walk(handle->data, name, pin, stx, want, flags, uperm);
+
+	ret = ceph_ll_walk(cmount_of(handle),
+			   name,
+			   pin,
+			   stx,
+			   want,
+			   flags,
+			   uperm);
+
 	vfs_ceph_userperm_del(uperm);
 	return ret;
 }
@@ -419,7 +428,7 @@ static int vfs_ceph_ll_statfs(const struct vfs_handle_struct *handle,
 			      const struct vfs_ceph_iref *iref,
 			      struct statvfs *stbuf)
 {
-	return ceph_ll_statfs(handle->data, iref->inode, stbuf);
+	return ceph_ll_statfs(cmount_of(handle), iref->inode, stbuf);
 }
 
 static int vfs_ceph_ll_getattr(const struct vfs_handle_struct *handle,
@@ -434,7 +443,7 @@ static int vfs_ceph_ll_getattr(const struct vfs_handle_struct *handle,
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
-	ret = ceph_ll_getattr(handle->data,
+	ret = ceph_ll_getattr(cmount_of(handle),
 			      iref->inode,
 			      &stx,
 			      SAMBA_STATX_ATTR_MASK,
@@ -460,7 +469,7 @@ static int vfs_ceph_ll_chown(struct vfs_handle_struct *handle,
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
-	ret = ceph_ll_setattr(handle->data,
+	ret = ceph_ll_setattr(cmount_of(handle),
 			      iref->inode,
 			      &stx,
 			      CEPH_STATX_UID | CEPH_STATX_GID,
@@ -511,7 +520,7 @@ static int vfs_ceph_iget_by_fname(const struct vfs_handle_struct *handle,
 				  struct vfs_ceph_iref *iref)
 {
 	const char *name = smb_fname->base_name;
-	const char *cwd = ceph_getcwd(handle->data);
+	const char *cwd = ceph_getcwd(cmount_of(handle));
 	int ret = -1;
 
 	if (!strcmp(name, cwd)) {
@@ -539,7 +548,7 @@ static void vfs_ceph_iput(const struct vfs_handle_struct *handle,
 	if ((iref != NULL) && (iref->inode != NULL)) {
 		DBG_DEBUG("[CEPH] put-inode: ino=%" PRIu64 "\n", iref->ino);
 
-		ceph_ll_put(handle->data, iref->inode);
+		ceph_ll_put(cmount_of(handle), iref->inode);
 		iref->inode = NULL;
 	}
 }
@@ -556,14 +565,14 @@ static uint64_t vfs_ceph_disk_free(struct vfs_handle_struct *handle,
 	struct Inode *inode = NULL;
 	int ret;
 
-	ret = ceph_ll_lookup_root(handle->data, &inode);
+	ret = ceph_ll_lookup_root(cmount_of(handle), &inode);
 	if (ret != 0) {
 		DBG_DEBUG("[CEPH] ceph_ll_lookup_root returned %d\n", ret);
 		errno = -ret;
 		return (uint64_t)(-1);
 	}
-	ret = ceph_ll_statfs(handle->data, inode, &statvfs_buf);
-	ceph_ll_put(handle->data, inode);
+	ret = ceph_ll_statfs(cmount_of(handle), inode, &statvfs_buf);
+	ceph_ll_put(cmount_of(handle), inode);
 	if (ret != 0) {
 		DBG_DEBUG("[CEPH] ceph_ll_statfs returned %d\n", ret);
 		errno = -ret;
@@ -641,10 +650,12 @@ static DIR *vfs_ceph_fdopendir(struct vfs_handle_struct *handle,
 #ifdef HAVE_CEPH_FDOPENDIR
 	int dirfd = fsp_get_io_fd(fsp);
 	DBG_DEBUG("[CEPH] fdopendir(%p, %d)\n", handle, dirfd);
-	ret = ceph_fdopendir(handle->data, dirfd, &result);
+	ret = ceph_fdopendir(cmount_of(handle), dirfd, &result);
 #else
 	DBG_DEBUG("[CEPH] fdopendir(%p, %p)\n", handle, fsp);
-	ret = ceph_opendir(handle->data, fsp->fsp_name->base_name, &result);
+	ret = ceph_opendir(cmount_of(handle),
+			   fsp->fsp_name->base_name,
+			   &result);
 #endif
 	if (ret < 0) {
 		result = NULL;
@@ -662,7 +673,8 @@ static struct dirent *vfs_ceph_readdir(struct vfs_handle_struct *handle,
 	struct dirent *result = NULL;
 
 	DBG_DEBUG("[CEPH] readdir(%p, %p)\n", handle, dirp);
-	result = ceph_readdir(handle->data, (struct ceph_dir_result *) dirp);
+	result = ceph_readdir(cmount_of(handle),
+			      (struct ceph_dir_result *)dirp);
 	DBG_DEBUG("[CEPH] readdir(...) = %p\n", result);
 
 	return result;
@@ -671,7 +683,7 @@ static struct dirent *vfs_ceph_readdir(struct vfs_handle_struct *handle,
 static void vfs_ceph_rewinddir(struct vfs_handle_struct *handle, DIR *dirp)
 {
 	DBG_DEBUG("[CEPH] rewinddir(%p, %p)\n", handle, dirp);
-	ceph_rewinddir(handle->data, (struct ceph_dir_result *) dirp);
+	ceph_rewinddir(cmount_of(handle), (struct ceph_dir_result *)dirp);
 }
 
 static int vfs_ceph_mkdirat(struct vfs_handle_struct *handle,
@@ -688,7 +700,10 @@ static int vfs_ceph_mkdirat(struct vfs_handle_struct *handle,
 		  dirfd,
 		  smb_fname->base_name);
 
-	result = ceph_mkdirat(handle->data, dirfd, smb_fname->base_name, mode);
+	result = ceph_mkdirat(cmount_of(handle),
+			      dirfd,
+			      smb_fname->base_name,
+			      mode);
 
 	DBG_DEBUG("[CEPH] mkdirat(...) = %d\n", result);
 
@@ -706,7 +721,7 @@ static int vfs_ceph_mkdirat(struct vfs_handle_struct *handle,
 	DBG_DEBUG("[CEPH] mkdir(%p, %s)\n",
 		  handle, smb_fname_str_dbg(full_fname));
 
-	result = ceph_mkdir(handle->data, full_fname->base_name, mode);
+	result = ceph_mkdir(cmount_of(handle), full_fname->base_name, mode);
 
 	TALLOC_FREE(full_fname);
 
@@ -719,7 +734,8 @@ static int vfs_ceph_closedir(struct vfs_handle_struct *handle, DIR *dirp)
 	int result;
 
 	DBG_DEBUG("[CEPH] closedir(%p, %p)\n", handle, dirp);
-	result = ceph_closedir(handle->data, (struct ceph_dir_result *) dirp);
+	result = ceph_closedir(cmount_of(handle),
+			       (struct ceph_dir_result *)dirp);
 	DBG_DEBUG("[CEPH] closedir(...) = %d\n", result);
 	return status_code(result);
 }
@@ -769,7 +785,7 @@ static int vfs_ceph_openat(struct vfs_handle_struct *handle,
 		became_root = true;
 	}
 
-	result = ceph_openat(handle->data,
+	result = ceph_openat(cmount_of(handle),
 			     dirfd,
 			     smb_fname->base_name,
 			     flags,
@@ -794,7 +810,10 @@ static int vfs_ceph_openat(struct vfs_handle_struct *handle,
 		became_root = true;
 	}
 
-	result = ceph_open(handle->data, smb_fname->base_name, flags, mode);
+	result = ceph_open(cmount_of(handle),
+			   smb_fname->base_name,
+			   flags,
+			   mode);
 #endif
 	if (became_root) {
 		unbecome_root();
@@ -811,7 +830,7 @@ static int vfs_ceph_close(struct vfs_handle_struct *handle, files_struct *fsp)
 	int result;
 
 	DBG_DEBUG("[CEPH] close(%p, %p)\n", handle, fsp);
-	result = ceph_close(handle->data, fsp_get_pathref_fd(fsp));
+	result = ceph_close(cmount_of(handle), fsp_get_pathref_fd(fsp));
 	DBG_DEBUG("[CEPH] close(...) = %d\n", result);
 	return status_code(result);
 }
@@ -831,7 +850,12 @@ static ssize_t vfs_ceph_pread(struct vfs_handle_struct *handle,
 		  llu(n),
 		  llu(offset));
 
-	result = ceph_read(handle->data, fsp_get_io_fd(fsp), data, n, offset);
+	result = ceph_read(cmount_of(handle),
+			   fsp_get_io_fd(fsp),
+			   data,
+			   n,
+			   offset);
+
 	DBG_DEBUG("[CEPH] pread(...) = %llu\n", llu(result));
 	return lstatus_code(result);
 }
@@ -861,7 +885,7 @@ static struct tevent_req *vfs_ceph_pread_send(struct vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	ret = ceph_read(handle->data, fsp_get_io_fd(fsp), data, n, offset);
+	ret = ceph_read(cmount_of(handle), fsp_get_io_fd(fsp), data, n, offset);
 	if (ret < 0) {
 		/* ceph returns -errno on error. */
 		tevent_req_error(req, -ret);
@@ -902,7 +926,13 @@ static ssize_t vfs_ceph_pwrite(struct vfs_handle_struct *handle,
 		  data,
 		  llu(n),
 		  llu(offset));
-	result = ceph_write(handle->data, fsp_get_io_fd(fsp), data, n, offset);
+
+	result = ceph_write(cmount_of(handle),
+			    fsp_get_io_fd(fsp),
+			    data,
+			    n,
+			    offset);
+
 	DBG_DEBUG("[CEPH] pwrite(...) = %llu\n", llu(result));
 	return lstatus_code(result);
 }
@@ -932,7 +962,8 @@ static struct tevent_req *vfs_ceph_pwrite_send(struct vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	ret = ceph_write(handle->data, fsp_get_io_fd(fsp), data, n, offset);
+	ret = ceph_write(
+		cmount_of(handle), fsp_get_io_fd(fsp), data, n, offset);
 	if (ret < 0) {
 		/* ceph returns -errno on error. */
 		tevent_req_error(req, -ret);
@@ -967,7 +998,10 @@ static off_t vfs_ceph_lseek(struct vfs_handle_struct *handle,
 	off_t result = 0;
 
 	DBG_DEBUG("[CEPH] vfs_ceph_lseek\n");
-	result = ceph_lseek(handle->data, fsp_get_io_fd(fsp), offset, whence);
+	result = ceph_lseek(cmount_of(handle),
+			    fsp_get_io_fd(fsp),
+			    offset,
+			    whence);
 	return lstatus_code(result);
 }
 
@@ -1032,7 +1066,7 @@ static int vfs_ceph_renameat(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	result = ceph_rename(handle->data,
+	result = ceph_rename(cmount_of(handle),
 			     full_fname_src->base_name,
 			     full_fname_dst->base_name);
 
@@ -1063,7 +1097,7 @@ static struct tevent_req *vfs_ceph_fsync_send(struct vfs_handle_struct *handle,
 	}
 
 	/* Make sync call. */
-	ret = ceph_fsync(handle->data, fsp_get_io_fd(fsp), false);
+	ret = ceph_fsync(cmount_of(handle), fsp_get_io_fd(fsp), false);
 
 	if (ret != 0) {
 		/* ceph_fsync returns -errno on error. */
@@ -1195,8 +1229,12 @@ static int vfs_ceph_fstatat(struct vfs_handle_struct *handle,
 
 	DBG_DEBUG("[CEPH] fstatat(%p, %d, %s)\n",
 		  handle, dirfd, smb_fname->base_name);
-	result = ceph_statxat(handle->data, dirfd, smb_fname->base_name,
-			      &stx, SAMBA_STATX_ATTR_MASK, 0);
+	result = ceph_statxat(cmount_of(handle),
+			      dirfd,
+			      smb_fname->base_name,
+			      &stx,
+			      SAMBA_STATX_ATTR_MASK,
+			      0);
 #else
 	struct smb_filename *full_fname = NULL;
 
@@ -1210,8 +1248,11 @@ static int vfs_ceph_fstatat(struct vfs_handle_struct *handle,
 
 	DBG_DEBUG("[CEPH] fstatat(%p, %s)\n",
 		  handle, smb_fname_str_dbg(full_fname));
-	result = ceph_statx(handle->data, full_fname->base_name,
-			    &stx, SAMBA_STATX_ATTR_MASK, 0);
+	result = ceph_statx(cmount_of(handle),
+			    full_fname->base_name,
+			    &stx,
+			    SAMBA_STATX_ATTR_MASK,
+			    0);
 
 	TALLOC_FREE(full_fname);
 #endif
@@ -1286,7 +1327,7 @@ static int vfs_ceph_fntimes(struct vfs_handle_struct *handle,
 		/*
 		 * We can use an io_fd to set xattrs.
 		 */
-		result = ceph_fsetattrx(handle->data,
+		result = ceph_fsetattrx(cmount_of(handle),
 					fsp_get_io_fd(fsp),
 					&stx,
 					mask);
@@ -1294,7 +1335,7 @@ static int vfs_ceph_fntimes(struct vfs_handle_struct *handle,
 		/*
 		 * This is no longer a handle based call.
 		 */
-		result = ceph_setattrx(handle->data,
+		result = ceph_setattrx(cmount_of(handle),
 				       fsp->fsp_name->base_name,
 				       &stx,
 				       mask,
@@ -1327,7 +1368,7 @@ static int vfs_ceph_unlinkat(struct vfs_handle_struct *handle,
 		return result;
 	}
 
-	result = ceph_unlinkat(handle->data,
+	result = ceph_unlinkat(cmount_of(handle),
 			       dirfd,
 			       smb_fname->base_name,
 			       flags);
@@ -1353,9 +1394,9 @@ static int vfs_ceph_unlinkat(struct vfs_handle_struct *handle,
 	}
 
 	if (flags & AT_REMOVEDIR) {
-		result = ceph_rmdir(handle->data, full_fname->base_name);
+		result = ceph_rmdir(cmount_of(handle), full_fname->base_name);
 	} else {
-		result = ceph_unlink(handle->data, full_fname->base_name);
+		result = ceph_unlink(cmount_of(handle), full_fname->base_name);
 	}
 	TALLOC_FREE(full_fname);
 	DBG_DEBUG("[CEPH] unlink(...) = %d\n", result);
@@ -1374,12 +1415,14 @@ static int vfs_ceph_fchmod(struct vfs_handle_struct *handle,
 		/*
 		 * We can use an io_fd to change permissions.
 		 */
-		result = ceph_fchmod(handle->data, fsp_get_io_fd(fsp), mode);
+		result = ceph_fchmod(cmount_of(handle),
+				     fsp_get_io_fd(fsp),
+				     mode);
 	} else {
 		/*
 		 * This is no longer a handle based call.
 		 */
-		result = ceph_chmod(handle->data,
+		result = ceph_chmod(cmount_of(handle),
 				    fsp->fsp_name->base_name,
 				    mode);
 	}
@@ -1399,7 +1442,7 @@ static int vfs_ceph_fchown(struct vfs_handle_struct *handle,
 		/*
 		 * We can use an io_fd to change ownership.
 		 */
-		result = ceph_fchown(handle->data,
+		result = ceph_fchown(cmount_of(handle),
 				     fsp_get_io_fd(fsp),
 				     uid,
 				     gid);
@@ -1407,7 +1450,7 @@ static int vfs_ceph_fchown(struct vfs_handle_struct *handle,
 		/*
 		 * This is no longer a handle based call.
 		 */
-		result = ceph_chown(handle->data,
+		result = ceph_chown(cmount_of(handle),
 				    fsp->fsp_name->base_name,
 				    uid,
 				    gid);
@@ -1448,7 +1491,7 @@ static int vfs_ceph_chdir(struct vfs_handle_struct *handle,
 {
 	int result = -1;
 	DBG_DEBUG("[CEPH] chdir(%p, %s)\n", handle, smb_fname->base_name);
-	result = ceph_chdir(handle->data, smb_fname->base_name);
+	result = ceph_chdir(cmount_of(handle), smb_fname->base_name);
 	DBG_DEBUG("[CEPH] chdir(...) = %d\n", result);
 	return status_code(result);
 }
@@ -1456,7 +1499,7 @@ static int vfs_ceph_chdir(struct vfs_handle_struct *handle,
 static struct smb_filename *vfs_ceph_getwd(struct vfs_handle_struct *handle,
 			TALLOC_CTX *ctx)
 {
-	const char *cwd = ceph_getcwd(handle->data);
+	const char *cwd = ceph_getcwd(cmount_of(handle));
 	DBG_DEBUG("[CEPH] getwd(%p) = %s\n", handle, cwd);
 	return synthetic_smb_fname(ctx, cwd, NULL, NULL, 0, 0);
 }
@@ -1486,12 +1529,14 @@ static int strict_allocate_ftruncate(struct vfs_handle_struct *handle,
 
 	/* Shrink - just ftruncate. */
 	if (pst->st_ex_size > len) {
-		result = ceph_ftruncate(handle->data, fsp_get_io_fd(fsp), len);
+		result = ceph_ftruncate(cmount_of(handle),
+					fsp_get_io_fd(fsp),
+					len);
 		return status_code(result);
 	}
 
 	space_to_write = len - pst->st_ex_size;
-	result = ceph_fallocate(handle->data,
+	result = ceph_fallocate(cmount_of(handle),
 				fsp_get_io_fd(fsp),
 				0,
 				pst->st_ex_size,
@@ -1511,7 +1556,7 @@ static int vfs_ceph_ftruncate(struct vfs_handle_struct *handle,
 		return strict_allocate_ftruncate(handle, fsp, len);
 	}
 
-	result = ceph_ftruncate(handle->data, fsp_get_io_fd(fsp), len);
+	result = ceph_ftruncate(cmount_of(handle), fsp_get_io_fd(fsp), len);
 	return status_code(result);
 }
 
@@ -1526,8 +1571,11 @@ static int vfs_ceph_fallocate(struct vfs_handle_struct *handle,
 	DBG_DEBUG("[CEPH] fallocate(%p, %p, %u, %llu, %llu\n",
 		  handle, fsp, mode, llu(offset), llu(len));
 	/* unsupported mode flags are rejected by libcephfs */
-	result = ceph_fallocate(
-		handle->data, fsp_get_io_fd(fsp), mode, offset, len);
+	result = ceph_fallocate(cmount_of(handle),
+			        fsp_get_io_fd(fsp),
+				mode,
+				offset,
+				len);
 	DBG_DEBUG("[CEPH] fallocate(...) = %d\n", result);
 	return status_code(result);
 }
@@ -1613,7 +1661,7 @@ static int vfs_ceph_symlinkat(struct vfs_handle_struct *handle,
 		  dirfd,
 		  new_smb_fname->base_name);
 
-	result = ceph_symlinkat(handle->data,
+	result = ceph_symlinkat(cmount_of(handle),
 				link_target->base_name,
 				dirfd,
 				new_smb_fname->base_name);
@@ -1633,9 +1681,9 @@ static int vfs_ceph_symlinkat(struct vfs_handle_struct *handle,
 			link_target->base_name,
 			full_fname->base_name);
 
-	result = ceph_symlink(handle->data,
-			link_target->base_name,
-			full_fname->base_name);
+	result = ceph_symlink(cmount_of(handle),
+			      link_target->base_name,
+			      full_fname->base_name);
 	TALLOC_FREE(full_fname);
 	DBG_DEBUG("[CEPH] symlink(...) = %d\n", result);
 	return status_code(result);
@@ -1659,7 +1707,7 @@ static int vfs_ceph_readlinkat(struct vfs_handle_struct *handle,
 		  buf,
 		  llu(bufsiz));
 
-	result = ceph_readlinkat(handle->data,
+	result = ceph_readlinkat(cmount_of(handle),
 				 dirfd,
 				 smb_fname->base_name,
 				 buf,
@@ -1680,7 +1728,7 @@ static int vfs_ceph_readlinkat(struct vfs_handle_struct *handle,
 	DBG_DEBUG("[CEPH] readlink(%p, %s, %p, %llu)\n", handle,
 			full_fname->base_name, buf, llu(bufsiz));
 
-	result = ceph_readlink(handle->data,
+	result = ceph_readlink(cmount_of(handle),
 			       full_fname->base_name,
 			       buf,
 			       bufsiz);
@@ -1719,9 +1767,9 @@ static int vfs_ceph_linkat(struct vfs_handle_struct *handle,
 			full_fname_old->base_name,
 			full_fname_new->base_name);
 
-	result = ceph_link(handle->data,
-				full_fname_old->base_name,
-				full_fname_new->base_name);
+	result = ceph_link(cmount_of(handle),
+			   full_fname_old->base_name,
+			   full_fname_new->base_name);
 	DBG_DEBUG("[CEPH] link(...) = %d\n", result);
 	TALLOC_FREE(full_fname_old);
 	TALLOC_FREE(full_fname_new);
@@ -1745,7 +1793,10 @@ static int vfs_ceph_mknodat(struct vfs_handle_struct *handle,
 	}
 
 	DBG_DEBUG("[CEPH] mknodat(%p, %s)\n", handle, full_fname->base_name);
-	result = ceph_mknod(handle->data, full_fname->base_name, mode, dev);
+	result = ceph_mknod(cmount_of(handle),
+			    full_fname->base_name,
+			    mode,
+			    dev);
 	DBG_DEBUG("[CEPH] mknodat(...) = %d\n", result);
 
 	TALLOC_FREE(full_fname);
@@ -1869,13 +1920,13 @@ static ssize_t vfs_ceph_fgetxattr(struct vfs_handle_struct *handle,
 		  value,
 		  llu(size));
 	if (!fsp->fsp_flags.is_pathref) {
-		ret = ceph_fgetxattr(handle->data,
+		ret = ceph_fgetxattr(cmount_of(handle),
 				     fsp_get_io_fd(fsp),
 				     name,
 				     value,
 				     size);
 	} else {
-		ret = ceph_getxattr(handle->data,
+		ret = ceph_getxattr(cmount_of(handle),
 				    fsp->fsp_name->base_name,
 				    name,
 				    value,
@@ -1897,18 +1948,18 @@ static ssize_t vfs_ceph_flistxattr(struct vfs_handle_struct *handle,
 		/*
 		 * We can use an io_fd to list xattrs.
 		 */
-		ret = ceph_flistxattr(handle->data,
-					fsp_get_io_fd(fsp),
-					list,
-					size);
+		ret = ceph_flistxattr(cmount_of(handle),
+				      fsp_get_io_fd(fsp),
+				      list,
+				      size);
 	} else {
 		/*
 		 * This is no longer a handle based call.
 		 */
-		ret = ceph_listxattr(handle->data,
-					fsp->fsp_name->base_name,
-					list,
-					size);
+		ret = ceph_listxattr(cmount_of(handle),
+				     fsp->fsp_name->base_name,
+				     list,
+				     size);
 	}
 	DBG_DEBUG("[CEPH] flistxattr(...) = %d\n", ret);
 	return lstatus_code(ret);
@@ -1924,14 +1975,16 @@ static int vfs_ceph_fremovexattr(struct vfs_handle_struct *handle,
 		/*
 		 * We can use an io_fd to remove xattrs.
 		 */
-		ret = ceph_fremovexattr(handle->data, fsp_get_io_fd(fsp), name);
+		ret = ceph_fremovexattr(cmount_of(handle),
+					fsp_get_io_fd(fsp),
+					name);
 	} else {
 		/*
 		 * This is no longer a handle based call.
 		 */
-		ret = ceph_removexattr(handle->data,
-					fsp->fsp_name->base_name,
-					name);
+		ret = ceph_removexattr(cmount_of(handle),
+				       fsp->fsp_name->base_name,
+				       name);
 	}
 	DBG_DEBUG("[CEPH] fremovexattr(...) = %d\n", ret);
 	return status_code(ret);
@@ -1956,22 +2009,22 @@ static int vfs_ceph_fsetxattr(struct vfs_handle_struct *handle,
 		/*
 		 * We can use an io_fd to set xattrs.
 		 */
-		ret = ceph_fsetxattr(handle->data,
-				fsp_get_io_fd(fsp),
-				name,
-				value,
-				size,
-				flags);
+		ret = ceph_fsetxattr(cmount_of(handle),
+				     fsp_get_io_fd(fsp),
+				     name,
+				     value,
+				     size,
+				     flags);
 	} else {
 		/*
 		 * This is no longer a handle based call.
 		 */
-		ret = ceph_setxattr(handle->data,
-				fsp->fsp_name->base_name,
-				name,
-				value,
-				size,
-				flags);
+		ret = ceph_setxattr(cmount_of(handle),
+				    fsp->fsp_name->base_name,
+				    name,
+				    value,
+				    size,
+				    flags);
 	}
 	DBG_DEBUG("[CEPH] fsetxattr(...) = %d\n", ret);
 	return status_code(ret);
@@ -2004,9 +2057,9 @@ static NTSTATUS vfs_ceph_create_dfs_pathat(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
-	ret = ceph_symlink(handle->data,
-			msdfs_link,
-			full_fname->base_name);
+	ret = ceph_symlink(cmount_of(handle),
+			   msdfs_link,
+			   full_fname->base_name);
 	if (ret == 0) {
 		status = NT_STATUS_OK;
 	} else {
@@ -2081,7 +2134,7 @@ static NTSTATUS vfs_ceph_read_dfs_pathat(struct vfs_handle_struct *handle,
 		goto err;
 	}
 
-	ret = ceph_statx(handle->data,
+	ret = ceph_statx(cmount_of(handle),
 			 full_fname->base_name,
 			 &stx,
 			 SAMBA_STATX_ATTR_MASK,
@@ -2091,11 +2144,11 @@ static NTSTATUS vfs_ceph_read_dfs_pathat(struct vfs_handle_struct *handle,
 		goto err;
 	}
 
-        referral_len = ceph_readlink(handle->data,
-                                full_fname->base_name,
-                                link_target,
-                                bufsize - 1);
-        if (referral_len < 0) {
+	referral_len = ceph_readlink(cmount_of(handle),
+				     full_fname->base_name,
+				     link_target,
+				     bufsize - 1);
+	if (referral_len < 0) {
 		/* ceph errors are -errno. */
 		if (-referral_len == EINVAL) {
 			DBG_INFO("%s is not a link.\n",
@@ -2109,8 +2162,8 @@ static NTSTATUS vfs_ceph_read_dfs_pathat(struct vfs_handle_struct *handle,
 			strerror(errno));
 		}
                 goto err;
-        }
-        link_target[referral_len] = '\0';
+	}
+	link_target[referral_len] = '\0';
 
         DBG_INFO("%s -> %s\n",
                         full_fname->base_name,
