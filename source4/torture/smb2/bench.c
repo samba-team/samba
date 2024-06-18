@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "lib/param/param.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "libcli/smb/smbXcli_base.h"
@@ -1361,6 +1362,481 @@ static bool test_smb2_bench_read(struct torture_context *tctx,
 	return ret;
 }
 
+/*
+   stress testing session setups
+ */
+
+struct test_smb2_bench_session_setup_shared_conn;
+struct test_smb2_bench_session_setup_shared_loop;
+
+struct test_smb2_bench_session_setup_shared_state {
+	struct torture_context *tctx;
+	struct cli_credentials *credentials;
+	struct gensec_settings *gensec_settings;
+	size_t num_conns;
+	struct test_smb2_bench_session_setup_shared_conn *conns;
+	size_t num_loops;
+	struct test_smb2_bench_session_setup_shared_loop *loops;
+	struct timeval starttime;
+	int timecount;
+	int timelimit;
+	struct {
+		uint64_t num_finished;
+		double total_latency;
+		double min_latency;
+		double max_latency;
+	} setups;
+	struct {
+		uint64_t num_finished;
+		double total_latency;
+		double min_latency;
+		double max_latency;
+	} logoffs;
+	bool ok;
+	bool stop;
+};
+
+struct test_smb2_bench_session_setup_shared_conn {
+	struct test_smb2_bench_session_setup_shared_state *state;
+	int idx;
+	struct smb2_transport *transport;
+};
+
+struct test_smb2_bench_session_setup_shared_loop {
+	struct test_smb2_bench_session_setup_shared_state *state;
+	struct test_smb2_bench_session_setup_shared_conn *conn;
+	int idx;
+	struct smb2_session *session;
+	struct tevent_immediate *im;
+	struct {
+		struct tevent_req *req;
+		struct timeval starttime;
+		uint64_t num_started;
+		uint64_t num_finished;
+		double total_latency;
+		double min_latency;
+		double max_latency;
+	} setups;
+	struct {
+		struct smb2_request *req;
+		struct timeval starttime;
+		uint64_t num_started;
+		uint64_t num_finished;
+		double total_latency;
+		double min_latency;
+		double max_latency;
+	} logoffs;
+	NTSTATUS error;
+};
+
+static void test_smb2_bench_session_setup_loop_do_setup(
+	struct test_smb2_bench_session_setup_shared_loop *loop);
+
+static void test_smb2_bench_session_setup_loop_start(struct tevent_context *ctx,
+						     struct tevent_immediate *im,
+						     void *private_data)
+{
+	struct test_smb2_bench_session_setup_shared_loop *loop =
+		(struct test_smb2_bench_session_setup_shared_loop *)
+		private_data;
+
+	test_smb2_bench_session_setup_loop_do_setup(loop);
+}
+
+static void test_smb2_bench_session_setup_loop_done_setup(struct tevent_req *subreq);
+
+static void test_smb2_bench_session_setup_loop_do_setup(
+	struct test_smb2_bench_session_setup_shared_loop *loop)
+{
+	struct test_smb2_bench_session_setup_shared_state *state = loop->state;
+
+	loop->session = smb2_session_init(loop->conn->transport,
+					  state->gensec_settings,
+					  loop->conn->transport);
+	torture_assert_goto(state->tctx, loop->session != NULL,
+			    state->ok, asserted, "smb2_session_init");
+	talloc_steal(state->conns, loop->conn->transport);
+
+	loop->setups.num_started += 1;
+	loop->setups.starttime = timeval_current();
+	loop->setups.req = smb2_session_setup_spnego_send(loop->session,
+							  state->tctx->ev,
+							  loop->session,
+							  state->credentials,
+							  0); /* previous_session_id */
+	torture_assert_goto(state->tctx, loop->setups.req != NULL,
+			    state->ok, asserted,
+			    "smb2_session_setup_spnego_send");
+
+	tevent_req_set_callback(loop->setups.req,
+				test_smb2_bench_session_setup_loop_done_setup,
+				loop);
+	return;
+asserted:
+	state->stop = true;
+}
+
+static void test_smb2_bench_session_setup_loop_do_logoff(
+	struct test_smb2_bench_session_setup_shared_loop *loop);
+
+static void test_smb2_bench_session_setup_loop_done_setup(struct tevent_req *subreq)
+{
+	struct test_smb2_bench_session_setup_shared_loop *loop =
+		(struct test_smb2_bench_session_setup_shared_loop *)
+		tevent_req_callback_data_void(subreq);
+	struct test_smb2_bench_session_setup_shared_state *state = loop->state;
+	double latency = timeval_elapsed(&loop->setups.starttime);
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	torture_assert_goto(state->tctx, loop->setups.req == subreq,
+			    state->ok, asserted, __location__);
+	loop->setups.req = NULL;
+	loop->error = smb2_session_setup_spnego_recv(subreq);
+	TALLOC_FREE(subreq);
+	torture_assert_ntstatus_ok_goto(state->tctx, loop->error,
+					state->ok, asserted, __location__);
+	SMB_ASSERT(latency >= 0.000001);
+
+	if (loop->setups.num_finished == 0) {
+		/* first round */
+		loop->setups.min_latency = latency;
+		loop->setups.max_latency = latency;
+	}
+
+	loop->setups.num_finished += 1;
+	loop->setups.total_latency += latency;
+
+	if (latency < loop->setups.min_latency) {
+		loop->setups.min_latency = latency;
+	}
+
+	if (latency > loop->setups.max_latency) {
+		loop->setups.max_latency = latency;
+	}
+
+	TALLOC_FREE(frame);
+	test_smb2_bench_session_setup_loop_do_logoff(loop);
+	return;
+asserted:
+	state->stop = true;
+	TALLOC_FREE(frame);
+}
+
+static void test_smb2_bench_session_setup_loop_done_logoff(struct smb2_request *req);
+
+static void test_smb2_bench_session_setup_loop_do_logoff(
+	struct test_smb2_bench_session_setup_shared_loop *loop)
+{
+	struct test_smb2_bench_session_setup_shared_state *state = loop->state;
+
+	loop->logoffs.num_started += 1;
+	loop->logoffs.starttime = timeval_current();
+	loop->logoffs.req = smb2_logoff_send(loop->session);
+	torture_assert_goto(state->tctx, loop->logoffs.req != NULL,
+			    state->ok, asserted, "smb2_logoff_send");
+
+	loop->logoffs.req->async.fn = test_smb2_bench_session_setup_loop_done_logoff;
+	loop->logoffs.req->async.private_data = loop;
+	return;
+asserted:
+	state->stop = true;
+}
+
+static void test_smb2_bench_session_setup_loop_done_logoff(struct smb2_request *req)
+{
+	struct test_smb2_bench_session_setup_shared_loop *loop =
+		(struct test_smb2_bench_session_setup_shared_loop *)
+		req->async.private_data;
+	struct test_smb2_bench_session_setup_shared_state *state = loop->state;
+	double latency = timeval_elapsed(&loop->logoffs.starttime);
+
+	torture_assert_goto(state->tctx, loop->logoffs.req == req,
+			    state->ok, asserted, __location__);
+	loop->error = smb2_logoff_recv(req);
+	torture_assert_ntstatus_ok_goto(state->tctx, loop->error,
+					state->ok, asserted, __location__);
+	TALLOC_FREE(loop->session);
+	SMB_ASSERT(latency >= 0.000001);
+	if (loop->logoffs.num_finished == 0) {
+		/* first round */
+		loop->logoffs.min_latency = latency;
+		loop->logoffs.max_latency = latency;
+	}
+	loop->logoffs.num_finished += 1;
+
+	loop->logoffs.total_latency += latency;
+
+	if (latency < loop->logoffs.min_latency) {
+		loop->logoffs.min_latency = latency;
+	}
+
+	if (latency > loop->logoffs.max_latency) {
+		loop->logoffs.max_latency = latency;
+	}
+
+	test_smb2_bench_session_setup_loop_do_setup(loop);
+	return;
+asserted:
+	state->stop = true;
+}
+
+static void test_smb2_bench_session_setup_progress(struct tevent_context *ev,
+						   struct tevent_timer *te,
+						   struct timeval current_time,
+						   void *private_data)
+{
+	struct test_smb2_bench_session_setup_shared_state *state =
+		(struct test_smb2_bench_session_setup_shared_state *)private_data;
+	uint64_t num_setups = 0;
+	double total_setup_latency = 0;
+	double min_setup_latency = 0;
+	double max_setup_latency = 0;
+	double avs_setup_latency = 0;
+	uint64_t num_logoffs = 0;
+	double total_logoff_latency = 0;
+	double min_logoff_latency = 0;
+	double max_logoff_latency = 0;
+	double avs_logoff_latency = 0;
+	size_t i;
+
+	state->timecount += 1;
+
+	for (i=0;i<state->num_loops;i++) {
+		struct test_smb2_bench_session_setup_shared_loop *loop =
+			&state->loops[i];
+
+		num_setups += loop->setups.num_finished;
+		total_setup_latency += loop->setups.total_latency;
+		if (min_setup_latency == 0.0 && loop->setups.min_latency != 0.0) {
+			min_setup_latency = loop->setups.min_latency;
+		}
+		if (loop->setups.min_latency < min_setup_latency) {
+			min_setup_latency = loop->setups.min_latency;
+		}
+		if (max_setup_latency == 0.0) {
+			max_setup_latency = loop->setups.max_latency;
+		}
+		if (loop->setups.max_latency > max_setup_latency) {
+			max_setup_latency = loop->setups.max_latency;
+		}
+		loop->setups.num_finished = 0;
+		loop->setups.total_latency = 0.0;
+
+		num_logoffs += loop->logoffs.num_finished;
+		total_logoff_latency += loop->logoffs.total_latency;
+		if (min_logoff_latency == 0.0 && loop->logoffs.min_latency != 0.0) {
+			min_logoff_latency = loop->logoffs.min_latency;
+		}
+		if (loop->logoffs.min_latency < min_logoff_latency) {
+			min_logoff_latency = loop->logoffs.min_latency;
+		}
+		if (max_logoff_latency == 0.0) {
+			max_logoff_latency = loop->logoffs.max_latency;
+		}
+		if (loop->logoffs.max_latency > max_logoff_latency) {
+			max_logoff_latency = loop->logoffs.max_latency;
+		}
+		loop->logoffs.num_finished = 0;
+		loop->logoffs.total_latency = 0.0;
+	}
+
+	state->setups.num_finished += num_setups;
+	state->setups.total_latency += total_setup_latency;
+	if (state->setups.min_latency == 0.0 && min_setup_latency != 0.0) {
+		state->setups.min_latency = min_setup_latency;
+	}
+	if (min_setup_latency < state->setups.min_latency) {
+		state->setups.min_latency = min_setup_latency;
+	}
+	if (state->setups.max_latency == 0.0) {
+		state->setups.max_latency = max_setup_latency;
+	}
+	if (max_setup_latency > state->setups.max_latency) {
+		state->setups.max_latency = max_setup_latency;
+	}
+
+	state->logoffs.num_finished += num_logoffs;
+	state->logoffs.total_latency += total_logoff_latency;
+	if (state->logoffs.min_latency == 0.0 && min_logoff_latency != 0.0) {
+		state->logoffs.min_latency = min_logoff_latency;
+	}
+	if (min_logoff_latency < state->logoffs.min_latency) {
+		state->logoffs.min_latency = min_logoff_latency;
+	}
+	if (state->logoffs.max_latency == 0.0) {
+		state->logoffs.max_latency = max_logoff_latency;
+	}
+	if (max_logoff_latency > state->logoffs.max_latency) {
+		state->logoffs.max_latency = max_logoff_latency;
+	}
+
+	if (state->timecount < state->timelimit) {
+		te = tevent_add_timer(state->tctx->ev,
+				      state,
+				      timeval_current_ofs(1, 0),
+				      test_smb2_bench_session_setup_progress,
+				      state);
+		torture_assert_goto(state->tctx, te != NULL,
+				    state->ok, asserted, "tevent_add_timer");
+
+		if (!torture_setting_bool(state->tctx, "progress", true)) {
+			return;
+		}
+
+		avs_setup_latency = total_setup_latency / num_setups;
+		avs_logoff_latency = total_logoff_latency / num_logoffs;
+
+		torture_comment(state->tctx,
+				"%.2f second: "
+				"setup[num/s=%llu,avslat=%.6f,minlat=%.6f,maxlat=%.6f] "
+				"logoff[num/s=%llu,avslat=%.6f,minlat=%.6f,maxlat=%.6f]     \r",
+				timeval_elapsed(&state->starttime),
+				(unsigned long long)num_setups,
+				avs_setup_latency,
+				min_setup_latency,
+				max_setup_latency,
+				(unsigned long long)num_logoffs,
+				avs_logoff_latency,
+				min_logoff_latency,
+				max_logoff_latency);
+		return;
+	}
+
+	avs_setup_latency = state->setups.total_latency / state->setups.num_finished;
+	avs_logoff_latency = state->logoffs.total_latency / state->logoffs.num_finished;
+	num_setups = state->setups.num_finished / state->timelimit;
+	num_logoffs = state->logoffs.num_finished / state->timelimit;
+
+	torture_comment(state->tctx,
+			"%.2f second: "
+			"setup[num/s=%llu,avslat=%.6f,minlat=%.6f,maxlat=%.6f] "
+			"logoff[num/s=%llu,avslat=%.6f,minlat=%.6f,maxlat=%.6f]\n",
+			timeval_elapsed(&state->starttime),
+			(unsigned long long)num_setups,
+			avs_setup_latency,
+			state->setups.min_latency,
+			state->setups.max_latency,
+			(unsigned long long)num_logoffs,
+			avs_logoff_latency,
+			state->logoffs.min_latency,
+			state->logoffs.max_latency);
+
+asserted:
+	state->stop = true;
+}
+
+static bool test_smb2_bench_session_setup(struct torture_context *tctx,
+					  struct smb2_tree *tree)
+{
+	struct test_smb2_bench_session_setup_shared_state *state = NULL;
+	bool ret = true;
+	int torture_nprocs = torture_setting_int(tctx, "nprocs", 4);
+	int torture_qdepth = torture_setting_int(tctx, "qdepth", 1);
+	size_t i;
+	size_t li = 0;
+	int timelimit = torture_setting_int(tctx, "timelimit", 10);
+	struct tevent_timer *te = NULL;
+	uint32_t timeout_msec;
+
+	state = talloc_zero(tctx, struct test_smb2_bench_session_setup_shared_state);
+	torture_assert(tctx, state != NULL, __location__);
+	state->tctx = tctx;
+	state->credentials = samba_cmdline_get_creds();
+	torture_assert(tctx, state->credentials != NULL, __location__);
+	state->gensec_settings = lpcfg_gensec_settings(state, tctx->lp_ctx);
+	torture_assert(tctx, state->gensec_settings != NULL, __location__);
+	state->num_conns = torture_nprocs;
+	state->conns = talloc_zero_array(state,
+			struct test_smb2_bench_session_setup_shared_conn,
+			state->num_conns);
+	torture_assert(tctx, state->conns != NULL, __location__);
+	state->num_loops = torture_nprocs * torture_qdepth;
+	state->loops = talloc_zero_array(state,
+			struct test_smb2_bench_session_setup_shared_loop,
+			state->num_loops);
+	torture_assert(tctx, state->loops != NULL, __location__);
+	state->ok = true;
+	state->timelimit = MAX(timelimit, 1);
+
+	timeout_msec = tree->session->transport->options.request_timeout * 1000;
+
+	torture_comment(tctx, "Opening %zd connections\n", state->num_conns);
+
+	for (i=0;i<state->num_conns;i++) {
+		struct smb2_tree *ct = NULL;
+		DATA_BLOB out_input_buffer = data_blob_null;
+		DATA_BLOB out_output_buffer = data_blob_null;
+		size_t pcli;
+
+		state->conns[i].state = state;
+		state->conns[i].idx = i;
+
+		if (!torture_smb2_connection(tctx, &ct)) {
+			torture_comment(tctx, "Failed opening %zd/%zd connections\n", i, state->num_conns);
+			return false;
+		}
+		talloc_steal(state->conns, ct);
+		state->conns[i].transport = ct->session->transport;
+
+		smb2cli_conn_set_max_credits(ct->session->transport->conn, 8192);
+		smb2cli_ioctl(ct->session->transport->conn,
+			      timeout_msec,
+			      ct->session->smbXcli,
+			      ct->smbXcli,
+			      UINT64_MAX, /* in_fid_persistent */
+			      UINT64_MAX, /* in_fid_volatile */
+			      UINT32_MAX,
+			      0, /* in_max_input_length */
+			      NULL, /* in_input_buffer */
+			      1, /* in_max_output_length */
+			      NULL, /* in_output_buffer */
+			      SMB2_IOCTL_FLAG_IS_FSCTL,
+			      ct,
+			      &out_input_buffer,
+			      &out_output_buffer);
+		torture_assert(tctx,
+		       smbXcli_conn_is_connected(ct->session->transport->conn),
+		       "smbXcli_conn_is_connected");
+		for (pcli = 0; pcli < torture_qdepth; pcli++) {
+			struct test_smb2_bench_session_setup_shared_loop *loop = &state->loops[li];
+
+			loop->idx = li++;
+			loop->state = state;
+			loop->conn = &state->conns[i];
+			loop->im = tevent_create_immediate(state->loops);
+			torture_assert(tctx, loop->im != NULL, __location__);
+
+			tevent_schedule_immediate(loop->im,
+						  tctx->ev,
+						  test_smb2_bench_session_setup_loop_start,
+						  loop);
+		}
+	}
+
+	torture_comment(tctx, "Opened %zu connections with qdepth=%d => %zu loops\n",
+			state->num_conns, torture_qdepth, state->num_loops);
+
+	torture_comment(tctx, "Running for %d seconds\n", state->timelimit);
+
+	state->starttime = timeval_current();
+
+	te = tevent_add_timer(tctx->ev,
+			      state,
+			      timeval_current_ofs(1, 0),
+			      test_smb2_bench_session_setup_progress,
+			      state);
+	torture_assert(tctx, te != NULL, __location__);
+
+	while (!state->stop) {
+		int rc = tevent_loop_once(tctx->ev);
+		torture_assert_int_equal(tctx, rc, 0, "tevent_loop_once");
+	}
+
+	torture_comment(tctx, "%.2f seconds\n", timeval_elapsed(&state->starttime));
+	TALLOC_FREE(state);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_bench_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "bench");
@@ -1369,6 +1845,7 @@ struct torture_suite *torture_smb2_bench_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "echo", test_smb2_bench_echo);
 	torture_suite_add_1smb2_test(suite, "path-contention-shared", test_smb2_bench_path_contention_shared);
 	torture_suite_add_1smb2_test(suite, "read", test_smb2_bench_read);
+	torture_suite_add_1smb2_test(suite, "session-setup", test_smb2_bench_session_setup);
 
 	suite->description = talloc_strdup(suite, "SMB2-BENCH tests");
 
