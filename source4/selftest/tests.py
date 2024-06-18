@@ -851,6 +851,11 @@ plantestsuite("samba4.blackbox.trust_ntlm", "fl2000dc:local", [os.path.join(bbdi
 plantestsuite("samba4.blackbox.trust_ntlm", "ad_member:local", [os.path.join(bbdir, "test_trust_ntlm.sh"), '$SERVER_IP', '$USERNAME', '$PASSWORD', '$SERVER', '$SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$REALM', '$DOMAIN', 'member', 'auto', 'NT_STATUS_LOGON_FAILURE'])
 plantestsuite("samba4.blackbox.trust_ntlm", "nt4_member:local", [os.path.join(bbdir, "test_trust_ntlm.sh"), '$SERVER_IP', '$USERNAME', '$PASSWORD', '$SERVER', '$SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$DOMAIN', '$DOMAIN', 'member', 'auto', 'NT_STATUS_LOGON_FAILURE'])
 
+plantestsuite("samba4.blackbox.ldap_token", "fl2008r2dc:local", [os.path.join(bbdir, "test_ldap_token.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$DOMSID'])
+plantestsuite("samba4.blackbox.ldap_token", "fl2003dc:local", [os.path.join(bbdir, "test_ldap_token.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$DOMSID'])
+plantestsuite("samba4.blackbox.ldap_token", "fl2000dc:local", [os.path.join(bbdir, "test_ldap_token.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$DOMSID'])
+plantestsuite("samba4.blackbox.ldap_token", "ad_member:local", [os.path.join(bbdir, "test_ldap_token.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$REALM', '$DOMAIN', '$DOMSID'])
+
 plantestsuite("samba4.blackbox.trust_utils(fl2008r2dc:local)", "fl2008r2dc:local", [os.path.join(bbdir, "test_trust_utils.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$TRUST_SERVER', '$TRUST_USERNAME', '$TRUST_PASSWORD', '$TRUST_REALM', '$TRUST_DOMAIN', '$PREFIX', "forest"])
 plantestsuite("samba4.blackbox.trust_utils(fl2003dc:local)", "fl2003dc:local", [os.path.join(bbdir, "test_trust_utils.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$TRUST_SERVER', '$TRUST_USERNAME', '$TRUST_PASSWORD', '$TRUST_REALM', '$TRUST_DOMAIN', '$PREFIX', "external"])
 plantestsuite("samba4.blackbox.trust_utils(fl2000dc:local)", "fl2000dc:local", [os.path.join(bbdir, "test_trust_utils.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$TRUST_SERVER', '$TRUST_USERNAME', '$TRUST_PASSWORD', '$TRUST_REALM', '$TRUST_DOMAIN', '$PREFIX', "external"])
