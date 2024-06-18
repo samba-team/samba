@@ -146,6 +146,11 @@ _PUBLIC_ enum credentials_use_kerberos cli_credentials_get_kerberos_state(struct
 	return creds->kerberos_state;
 }
 
+_PUBLIC_ enum credentials_obtained cli_credentials_get_kerberos_state_obtained(struct cli_credentials *creds)
+{
+	return creds->kerberos_state_obtained;
+}
+
 _PUBLIC_ const char *cli_credentials_get_forced_sasl_mech(struct cli_credentials *creds)
 {
 	return creds->forced_sasl_mech;
