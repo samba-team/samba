@@ -370,13 +370,17 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credenti
 	}
 
 	if (secrets_tdb_password_more_recent) {
-		enum credentials_use_kerberos use_kerberos =
-			CRED_USE_KERBEROS_DISABLED;
 		char *machine_account = talloc_asprintf(tmp_ctx, "%s$", lpcfg_netbios_name(lp_ctx));
 		cli_credentials_set_password(cred, secrets_tdb_password, CRED_SPECIFIED);
 		cli_credentials_set_old_password(cred, secrets_tdb_old_password, CRED_SPECIFIED);
 		cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
 		if (strequal(domain, lpcfg_workgroup(lp_ctx))) {
+			enum credentials_use_kerberos use_kerberos =
+				cli_credentials_get_kerberos_state(cred);
+			enum credentials_obtained use_kerberos_obtained =
+				cli_credentials_get_kerberos_state_obtained(cred);
+			bool is_ad = false;
+
 			cli_credentials_set_realm(cred, lpcfg_realm(lp_ctx), CRED_SPECIFIED);
 
 			switch (server_role) {
@@ -388,13 +392,28 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credenti
 				FALL_THROUGH;
 			case ROLE_ACTIVE_DIRECTORY_DC:
 			case ROLE_IPA_DC:
-				use_kerberos = CRED_USE_KERBEROS_DESIRED;
+				is_ad = true;
 				break;
 			}
+
+			if (use_kerberos != CRED_USE_KERBEROS_DESIRED || is_ad) {
+				/*
+				 * Keep an explicit selection
+				 *
+				 * For AD domains we also keep
+				 * CRED_USE_KERBEROS_DESIRED
+				 */
+			} else if (use_kerberos_obtained <= CRED_SMB_CONF) {
+				/*
+				 * Disable kerberos by default within
+				 * an NT4 domain.
+				 */
+				cli_credentials_set_kerberos_state(cred,
+						CRED_USE_KERBEROS_DISABLED,
+						CRED_SMB_CONF);
+			}
 		}
-		cli_credentials_set_kerberos_state(cred,
-						   use_kerberos,
-						   CRED_SPECIFIED);
+
 		cli_credentials_set_username(cred, machine_account, CRED_SPECIFIED);
 		cli_credentials_set_password_last_changed_time(cred, secrets_tdb_lct);
 		cli_credentials_set_secure_channel_type(cred, secrets_tdb_secure_channel_type);
