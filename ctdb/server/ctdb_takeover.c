@@ -1730,6 +1730,9 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 	}
 
 	for (vnn = ctdb->vnn; vnn != NULL; vnn = next) {
+		bool have_ip;
+		int ret;
+
 		/* vnn can be freed below in release_ip_post() */
 		next = vnn->next;
 
@@ -1757,19 +1760,34 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 				    vnn->public_netmask_bits,
 				    ctdb_vnn_iface_string(vnn)));
 
-		ctdb_event_script_args(ctdb, CTDB_EVENT_RELEASE_IP, "%s %s %u",
-				       ctdb_vnn_iface_string(vnn),
-				       ctdb_addr_to_str(&vnn->public_address),
-				       vnn->public_netmask_bits);
-		/* releaseip timeouts are converted to success, so to
-		 * detect failures just check if the IP address is
-		 * still there...
+		/*
+		 * releaseip timeouts are converted to success, or IP
+		 * might be released but releaseip event failed (due
+		 * to failure of script after 10.interface), so try
+		 * hard to correctly report failures...
 		 */
-		if (ctdb_sys_have_ip(&vnn->public_address)) {
-			DEBUG(DEBUG_ERR,
-			      (__location__
-			       " IP address %s not released\n",
-			       ctdb_addr_to_str(&vnn->public_address)));
+		ret = ctdb_event_script_args(
+			ctdb,
+			CTDB_EVENT_RELEASE_IP,
+			"%s %s %u",
+			ctdb_vnn_iface_string(vnn),
+			ctdb_addr_to_str(&vnn->public_address),
+			vnn->public_netmask_bits);
+		have_ip = ctdb_sys_have_ip(&vnn->public_address);
+		if (have_ip) {
+			if (ret != 0) {
+				DBG_ERR("Error releasing IP %s\n",
+					ctdb_addr_to_str(&vnn->public_address));
+			} else {
+				DBG_ERR("IP %s not released (timed out?)\n",
+					ctdb_addr_to_str(&vnn->public_address));
+			}
+			vnn->update_in_flight = false;
+			continue;
+		}
+		if (ret != 0) {
+			DBG_ERR("Error releasing IP %s (but IP is gone!)\n",
+				ctdb_addr_to_str(&vnn->public_address));
 			vnn->update_in_flight = false;
 			continue;
 		}
