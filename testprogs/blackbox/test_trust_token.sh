@@ -34,7 +34,7 @@ ldbsearch=$(system_or_builddir_binary ldbsearch "${BINDIR}")
 test_token()
 {
 	auth_args="${1}"
-	auth_sid="${2-}"
+	auth_sid="${2}"
 
 	out=$($VALGRIND $ldbsearch -H ldap://$SERVER.$REALM -U$TRUST_REALM\\$TRUST_USERNAME%$TRUST_PASSWORD -b '' --scope=base -k ${auth_args} tokenGroups 2>&1)
 	ret=$?
@@ -84,7 +84,8 @@ test_token()
 	return 0
 }
 
-testit "Test token with kerberos" test_token "yes" "" || failed=$(expr $failed + 1)
+# Check that SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY(S-1-18-1) is added for krb5
+testit "Test token with kerberos" test_token "yes" "S-1-18-1" || failed=$(expr $failed + 1)
 # Check that SID_NT_NTLM_AUTHENTICATION(S-1-5-64-10) is added for NTLMSSP
 testit "Test token with NTLMSSP" test_token "no" "S-1-5-64-10" || failed=$(expr $failed + 1)
 
