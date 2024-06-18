@@ -1651,7 +1651,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb,
 
 	initialise_node_flags(ctdb);
 
-	ret = ctdb_set_public_addresses(ctdb, true);
+	ret = ctdb_set_public_addresses(ctdb);
 	if (ret == -1) {
 		D_ERR("Unable to setup public IP addresses\n");
 		exit(1);

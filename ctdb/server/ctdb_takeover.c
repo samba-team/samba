@@ -1051,8 +1051,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 
 static int ctdb_add_public_address(struct ctdb_context *ctdb,
 				   ctdb_sock_addr *addr,
-				   unsigned mask, const char *ifaces,
-				   bool check_address)
+				   unsigned mask, const char *ifaces)
 {
 	struct ctdb_vnn      *vnn;
 	char *tmp;
@@ -1124,7 +1123,7 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 /*
   setup the public address lists from a file
 */
-int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses)
+int ctdb_set_public_addresses(struct ctdb_context *ctdb)
 {
 	bool ok;
 	char **lines;
@@ -1208,7 +1207,7 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses)
 			return -1;
 		}
 
-		if (ctdb_add_public_address(ctdb, &addr, mask, ifaces, check_addresses)) {
+		if (ctdb_add_public_address(ctdb, &addr, mask, ifaces)) {
 			DEBUG(DEBUG_CRIT,("Failed to add line %u to the public address list\n", i+1));
 			talloc_free(lines);
 			return -1;
@@ -2348,7 +2347,7 @@ int32_t ctdb_control_add_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 
 	DEBUG(DEBUG_NOTICE,("Add IP %s\n", ctdb_addr_to_str(&pub->addr)));
 
-	ret = ctdb_add_public_address(ctdb, &pub->addr, pub->mask, &pub->iface[0], true);
+	ret = ctdb_add_public_address(ctdb, &pub->addr, pub->mask, &pub->iface[0]);
 
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to add public address\n"));
@@ -2618,7 +2617,7 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 
 	/* Read IPs file - this is safe since this is a child process */
 	ctdb->vnn = NULL;
-	if (ctdb_set_public_addresses(ctdb, false) != 0) {
+	if (ctdb_set_public_addresses(ctdb) != 0) {
 		DEBUG(DEBUG_ERR,("Failed to re-read public addresses file\n"));
 		talloc_free(mem_ctx);
 		return -1;

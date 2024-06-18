@@ -893,7 +893,7 @@ int32_t ctdb_control_start_ipreallocate(struct ctdb_context *ctdb,
 					struct ctdb_req_control_old *c,
 					bool *async_reply);
 
-int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses);
+int ctdb_set_public_addresses(struct ctdb_context *ctdb);
 
 int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 				TDB_DATA indata);
