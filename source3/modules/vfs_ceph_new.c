@@ -95,6 +95,7 @@ static struct cephmount_cached {
 	uint32_t count;
 	struct ceph_mount_info *mount;
 	struct cephmount_cached *next, *prev;
+	uint64_t fd_index;
 } *cephmount_cached;
 
 static int cephmount_cache_add(const char *cookie,
@@ -384,7 +385,110 @@ static void smb_stat_from_ceph_statx(SMB_STRUCT_STAT *st,
 struct vfs_ceph_iref {
 	struct Inode *inode;
 	uint64_t ino; /* for debug printing */
+	bool owner;   /* indicate when actual owner of Inode ref */
 };
+
+/* Ceph DIR pointer wrapper */
+struct vfs_ceph_dirp {
+	struct ceph_dir_result *cdr;
+};
+
+/* Ceph file-handles via fsp-extension */
+struct vfs_ceph_fh {
+	struct vfs_ceph_dirp dirp; /* keep first for up-casting */
+	struct cephmount_cached *cme;
+	struct UserPerm *uperm;
+	struct files_struct *fsp;
+	struct vfs_ceph_iref iref;
+	struct Fh *fh;
+	int fd;
+};
+
+static int cephmount_next_fd(struct cephmount_cached *cme)
+{
+	/*
+	 * Those file-descriptor numbers are reported back to VFS layer
+	 * (debug-hints only). Using numbers within a large range of
+	 * [1000, 1001000], thus the chances of (annoying but harmless)
+	 * collision are low.
+	 */
+	uint64_t next;
+
+	next = (cme->fd_index++ % 1000000) + 1000;
+	return (int)next;
+}
+
+static int vfs_ceph_release_fh(struct vfs_ceph_fh *cfh)
+{
+	int ret = 0;
+
+	if (cfh->fh != NULL) {
+		ret = ceph_ll_close(cfh->cme->mount, cfh->fh);
+		cfh->fh = NULL;
+	}
+	if (cfh->iref.inode != NULL) {
+		ceph_ll_put(cfh->cme->mount, cfh->iref.inode);
+		cfh->iref.inode = NULL;
+	}
+	if (cfh->uperm != NULL) {
+		vfs_ceph_userperm_del(cfh->uperm);
+		cfh->uperm = NULL;
+	}
+	cfh->fd = -1;
+
+	return ret;
+}
+
+static void vfs_ceph_fsp_ext_destroy_cb(void *p_data)
+{
+	vfs_ceph_release_fh((struct vfs_ceph_fh *)p_data);
+}
+
+static int vfs_ceph_add_fh(struct vfs_handle_struct *handle,
+			   files_struct *fsp,
+			   struct vfs_ceph_fh **out_cfh)
+{
+	struct cephmount_cached *cme = handle->data;
+	struct UserPerm *uperm = NULL;
+
+	uperm = vfs_ceph_userperm_new(handle);
+	if (uperm == NULL) {
+		return -ENOMEM;
+	}
+
+	*out_cfh = VFS_ADD_FSP_EXTENSION(handle,
+					 fsp,
+					 struct vfs_ceph_fh,
+					 vfs_ceph_fsp_ext_destroy_cb);
+	if (*out_cfh == NULL) {
+		vfs_ceph_userperm_del(uperm);
+		return -ENOMEM;
+	}
+	(*out_cfh)->cme = cme;
+	(*out_cfh)->uperm = uperm;
+	(*out_cfh)->fsp = fsp;
+	(*out_cfh)->fd = -1;
+	return 0;
+}
+
+static void vfs_ceph_remove_fh(struct vfs_handle_struct *handle,
+			       struct files_struct *fsp)
+{
+	VFS_REMOVE_FSP_EXTENSION(handle, fsp);
+}
+
+static int vfs_ceph_fetch_fh(struct vfs_handle_struct *handle,
+			     const struct files_struct *fsp,
+			     struct vfs_ceph_fh **out_cfh)
+{
+	*out_cfh = VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	return (*out_cfh == NULL) ? -EBADF : 0;
+}
+
+static void vfs_ceph_assign_fh_fd(struct vfs_ceph_fh *cfh)
+{
+	cfh->fd = cephmount_next_fd(cfh->cme); /* debug only */
+}
 
 /* Ceph low-level wrappers */
 
@@ -478,6 +582,98 @@ static int vfs_ceph_ll_chown(struct vfs_handle_struct *handle,
 	return ret;
 }
 
+static int vfs_ceph_ll_releasedir(const struct vfs_handle_struct *handle,
+				  const struct vfs_ceph_fh *dircfh)
+{
+	return ceph_ll_releasedir(cmount_of(handle), dircfh->dirp.cdr);
+}
+
+static int vfs_ceph_ll_create(const struct vfs_handle_struct *handle,
+			      const struct vfs_ceph_iref *parent,
+			      const char *name,
+			      mode_t mode,
+			      int oflags,
+			      struct vfs_ceph_fh *cfh)
+{
+	struct ceph_statx stx = {.stx_ino = 0};
+	struct Inode *inode = NULL;
+	struct Fh *fh = NULL;
+	int ret = -1;
+
+	ret = ceph_ll_create(cmount_of(handle),
+			     parent->inode,
+			     name,
+			     mode,
+			     oflags,
+			     &inode,
+			     &fh,
+			     &stx,
+			     CEPH_STATX_INO,
+			     0,
+			     cfh->uperm);
+	if (ret != 0) {
+		return ret;
+	}
+
+	cfh->iref.inode = inode;
+	cfh->iref.ino = (long)stx.stx_ino;
+	cfh->iref.owner = true;
+	cfh->fh = fh;
+	vfs_ceph_assign_fh_fd(cfh);
+
+	return 0;
+}
+
+static int vfs_ceph_ll_lookup(const struct vfs_handle_struct *handle,
+			      const struct vfs_ceph_iref *parent,
+			      const char *name,
+			      struct vfs_ceph_iref *iref)
+{
+	struct ceph_statx stx = {.stx_ino = 0};
+	struct Inode *inode = NULL;
+	struct UserPerm *uperm = NULL;
+	int ret = -1;
+
+	uperm = vfs_ceph_userperm_new(handle);
+	if (uperm == NULL) {
+		return -ENOMEM;
+	}
+	ret = ceph_ll_lookup(cmount_of(handle),
+			     parent->inode,
+			     name,
+			     &inode,
+			     &stx,
+			     CEPH_STATX_INO,
+			     0,
+			     uperm);
+
+	vfs_ceph_userperm_del(uperm);
+	if (ret != 0) {
+		return ret;
+	}
+
+	iref->inode = inode;
+	iref->ino = stx.stx_ino;
+	iref->owner = true;
+	return 0;
+}
+
+static int vfs_ceph_ll_open(const struct vfs_handle_struct *handle,
+			    struct vfs_ceph_fh *cfh,
+			    int flags)
+{
+	struct Inode *in = cfh->iref.inode;
+	struct Fh *fh = NULL;
+	int ret = -1;
+
+	ret = ceph_ll_open(cmount_of(handle), in, flags, &fh, cfh->uperm);
+	if (ret == 0) {
+		cfh->fh = fh;
+		vfs_ceph_assign_fh_fd(cfh);
+	}
+	return ret;
+}
+
 /* Ceph Inode-refernce get/put wrappers */
 static int vfs_ceph_iget(const struct vfs_handle_struct *handle,
 			 uint64_t ino,
@@ -511,6 +707,7 @@ static int vfs_ceph_iget(const struct vfs_handle_struct *handle,
 	}
 	iref->inode = inode;
 	iref->ino = ino;
+	iref->owner = true;
 	DBG_DEBUG("[CEPH] get-inode: %s ino=%" PRIu64 "\n", name, iref->ino);
 	return 0;
 }
@@ -542,10 +739,39 @@ static int vfs_ceph_igetl(const struct vfs_handle_struct *handle,
 			     iref);
 }
 
+static int vfs_ceph_igetd(struct vfs_handle_struct *handle,
+			  const struct files_struct *dirfsp,
+			  struct vfs_ceph_iref *iref)
+{
+	struct vfs_ceph_fh *dircfh = NULL;
+	int ret = -1;
+
+	/* case-1: already have reference to open directory; re-ref */
+	ret = vfs_ceph_fetch_fh(handle, dirfsp, &dircfh);
+	if (ret == 0) {
+		iref->inode = dircfh->iref.inode;
+		iref->ino = dircfh->iref.ino;
+		iref->owner = false;
+		return 0;
+	}
+
+	/* case-2: resolve by current work-dir */
+	if (fsp_get_pathref_fd(dirfsp) == AT_FDCWD) {
+		return vfs_ceph_iget(handle, 0, ".", 0, iref);
+	}
+
+	/* case-3: resolve by parent dir and name */
+	return vfs_ceph_iget(handle,
+			     dirfsp->file_id.inode,
+			     dirfsp->fsp_name->base_name,
+			     AT_SYMLINK_NOFOLLOW,
+			     iref);
+}
+
 static void vfs_ceph_iput(const struct vfs_handle_struct *handle,
 			  struct vfs_ceph_iref *iref)
 {
-	if ((iref != NULL) && (iref->inode != NULL)) {
+	if ((iref != NULL) && (iref->inode != NULL) && iref->owner) {
 		DBG_DEBUG("[CEPH] put-inode: ino=%" PRIu64 "\n", iref->ino);
 
 		ceph_ll_put(cmount_of(handle), iref->inode);
@@ -732,10 +958,12 @@ static int vfs_ceph_mkdirat(struct vfs_handle_struct *handle,
 static int vfs_ceph_closedir(struct vfs_handle_struct *handle, DIR *dirp)
 {
 	int result;
+	struct vfs_ceph_fh *cfh = (struct vfs_ceph_fh *)dirp;
 
 	DBG_DEBUG("[CEPH] closedir(%p, %p)\n", handle, dirp);
-	result = ceph_closedir(cmount_of(handle),
-			       (struct ceph_dir_result *)dirp);
+	result = vfs_ceph_ll_releasedir(handle, cfh);
+	vfs_ceph_release_fh(cfh);
+	vfs_ceph_remove_fh(handle, cfh->fsp);
 	DBG_DEBUG("[CEPH] closedir(...) = %d\n", result);
 	return status_code(result);
 }
@@ -748,15 +976,11 @@ static int vfs_ceph_openat(struct vfs_handle_struct *handle,
 			   files_struct *fsp,
 			   const struct vfs_open_how *how)
 {
+	struct vfs_ceph_iref diref = {0};
+	struct vfs_ceph_fh *cfh = NULL;
 	int flags = how->flags;
 	mode_t mode = how->mode;
-	struct smb_filename *name = NULL;
-	bool have_opath = false;
-	bool became_root = false;
 	int result = -ENOENT;
-#ifdef HAVE_CEPH_OPENAT
-	int dirfd = -1;
-#endif
 
 	if (how->resolve != 0) {
 		errno = ENOSYS;
@@ -764,62 +988,70 @@ static int vfs_ceph_openat(struct vfs_handle_struct *handle,
 	}
 
 	if (smb_fname->stream_name) {
-		goto out;
+		errno = ENOENT;
+		return -1;
 	}
 
 #ifdef O_PATH
-	have_opath = true;
 	if (fsp->fsp_flags.is_pathref) {
 		flags |= O_PATH;
 	}
 #endif
 
-#ifdef HAVE_CEPH_OPENAT
-	dirfd = fsp_get_pathref_fd(dirfsp);
+	DBG_DEBUG("[CEPH] openat(%p, %p, %d, %d)\n", handle, fsp, flags, mode);
 
-	DBG_DEBUG("[CEPH] openat(%p, %d, %p, %d, %d)\n",
-		  handle, dirfd, fsp, flags, mode);
-
-	if (fsp->fsp_flags.is_pathref && !have_opath) {
-		become_root();
-		became_root = true;
+	result = vfs_ceph_igetd(handle, dirfsp, &diref);
+	if (result != 0) {
+		goto out;
 	}
 
-	result = ceph_openat(cmount_of(handle),
-			     dirfd,
-			     smb_fname->base_name,
-			     flags,
-			     mode);
+	result = vfs_ceph_add_fh(handle, fsp, &cfh);
+	if (result != 0) {
+		goto out;
+	}
 
-#else
-	if (fsp_get_pathref_fd(dirfsp) != AT_FDCWD) {
-		name = full_path_from_dirfsp_atname(talloc_tos(),
-						    dirfsp,
-						    smb_fname);
-		if (name == NULL) {
-			return -1;
+	if (flags & O_CREAT) {
+		result = vfs_ceph_ll_create(handle,
+					    &diref,
+					    smb_fname->base_name,
+					    mode,
+					    flags,
+					    cfh);
+		if (result != 0) {
+			vfs_ceph_remove_fh(handle, fsp);
+			goto out;
 		}
-		smb_fname = name;
-	}
-
-	DBG_DEBUG("[CEPH] openat(%p, %s, %p, %d, %d)\n", handle,
-		  smb_fname_str_dbg(smb_fname), fsp, flags, mode);
-
-	if (fsp->fsp_flags.is_pathref && !have_opath) {
-		become_root();
-		became_root = true;
-	}
-
-	result = ceph_open(cmount_of(handle),
-			   smb_fname->base_name,
-			   flags,
-			   mode);
+	} else {
+		result = vfs_ceph_ll_lookup(handle,
+					    &diref,
+					    smb_fname->base_name,
+					    &cfh->iref);
+		if (result != 0) {
+			vfs_ceph_remove_fh(handle, fsp);
+			goto out;
+		}
+#ifdef O_PATH
+		if (flags & O_PATH) {
+			/*
+			 * Special case: open with O_PATH: we already have
+			 * Cephfs' Inode* from the above lookup so there is no
+			 * need to go via expensive ceph_ll_open for Fh*.
+			 */
+			vfs_ceph_assign_fh_fd(cfh);
+			result = cfh->fd;
+			goto out;
+		}
 #endif
-	if (became_root) {
-		unbecome_root();
+		result = vfs_ceph_ll_open(handle, cfh, flags);
+		if (result != 0) {
+			vfs_ceph_remove_fh(handle, fsp);
+			goto out;
+		}
 	}
+
+	result = cfh->fd;
 out:
-	TALLOC_FREE(name);
+	vfs_ceph_iput(handle, &diref);
 	fsp->fsp_flags.have_proc_fds = false;
 	DBG_DEBUG("[CEPH] open(...) = %d\n", result);
 	return status_code(result);
@@ -828,9 +1060,17 @@ out:
 static int vfs_ceph_close(struct vfs_handle_struct *handle, files_struct *fsp)
 {
 	int result;
+	struct vfs_ceph_fh *cfh = NULL;
 
 	DBG_DEBUG("[CEPH] close(%p, %p)\n", handle, fsp);
-	result = ceph_close(cmount_of(handle), fsp_get_pathref_fd(fsp));
+	result = vfs_ceph_fetch_fh(handle, fsp, &cfh);
+	if (result != 0) {
+		goto out;
+	}
+
+	result = vfs_ceph_release_fh(cfh);
+	vfs_ceph_remove_fh(handle, fsp);
+out:
 	DBG_DEBUG("[CEPH] close(...) = %d\n", result);
 	return status_code(result);
 }
