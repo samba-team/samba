@@ -711,6 +711,15 @@ static int vfs_ceph_ll_open(const struct vfs_handle_struct *handle,
 	return ret;
 }
 
+static int vfs_ceph_ll_opendir(const struct vfs_handle_struct *handle,
+			       struct vfs_ceph_fh *cfh)
+{
+	return ceph_ll_opendir(cmount_of(handle),
+			       cfh->iref.inode,
+			       &cfh->dirp.cdr,
+			       cfh->uperm);
+}
+
 /* Ceph Inode-refernce get/put wrappers */
 static int vfs_ceph_iget(const struct vfs_handle_struct *handle,
 			 uint64_t ino,
@@ -908,24 +917,25 @@ static DIR *vfs_ceph_fdopendir(struct vfs_handle_struct *handle,
 			       uint32_t attributes)
 {
 	int ret = 0;
-	struct ceph_dir_result *result = NULL;
+	void *result = NULL;
+	struct vfs_ceph_fh *cfh = NULL;
 
-#ifdef HAVE_CEPH_FDOPENDIR
-	int dirfd = fsp_get_io_fd(fsp);
-	DBG_DEBUG("[CEPH] fdopendir(%p, %d)\n", handle, dirfd);
-	ret = ceph_fdopendir(cmount_of(handle), dirfd, &result);
-#else
 	DBG_DEBUG("[CEPH] fdopendir(%p, %p)\n", handle, fsp);
-	ret = ceph_opendir(cmount_of(handle),
-			   fsp->fsp_name->base_name,
-			   &result);
-#endif
-	if (ret < 0) {
-		result = NULL;
-		errno = -ret; /* We return result which is NULL in this case */
+	ret = vfs_ceph_fetch_fh(handle, fsp, &cfh);
+	if (ret != 0) {
+		goto out;
 	}
 
+	ret = vfs_ceph_ll_opendir(handle, cfh);
+	if (ret != 0) {
+		goto out;
+	}
+	result = &cfh->dirp;
+out:
 	DBG_DEBUG("[CEPH] fdopendir(...) = %d\n", ret);
+	if (ret != 0) {
+		errno = -ret;
+	}
 	return (DIR *)result;
 }
 
