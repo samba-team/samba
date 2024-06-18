@@ -272,7 +272,9 @@ static struct security_descriptor *get_share_security_default(TALLOC_CTX *ctx,
 							uint32_t def_access)
 {
 	uint32_t sa;
-	struct security_ace ace;
+	struct security_ace ace = {
+		.size = 0,
+	};
 	struct security_acl *psa = NULL;
 	struct security_descriptor *psd = NULL;
 	uint32_t spec_access = def_access;
