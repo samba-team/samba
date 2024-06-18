@@ -276,6 +276,7 @@ const char *cli_credentials_get_impersonate_principal(struct cli_credentials *cr
 const char *cli_credentials_get_self_service(struct cli_credentials *cred);
 const char *cli_credentials_get_target_service(struct cli_credentials *cred);
 enum credentials_use_kerberos cli_credentials_get_kerberos_state(struct cli_credentials *creds);
+enum credentials_obtained cli_credentials_get_kerberos_state_obtained(struct cli_credentials *creds);
 const char *cli_credentials_get_forced_sasl_mech(struct cli_credentials *cred);
 enum credentials_krb_forwardable cli_credentials_get_krb_forwardable(struct cli_credentials *creds);
 NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
