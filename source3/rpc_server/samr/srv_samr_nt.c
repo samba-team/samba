@@ -232,7 +232,7 @@ static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, struct security_descriptor
 				     struct dom_sid *sid, uint32_t sid_access )
 {
 	struct dom_sid domadmin_sid;
-	struct security_ace ace[5];		/* at most 5 entries */
+	struct security_ace ace[5] = {0};		/* at most 5 entries */
 	size_t i = 0;
 
 	struct security_acl *psa = NULL;
