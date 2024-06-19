@@ -628,6 +628,39 @@ static int vfs_ceph_ll_fchmod(struct vfs_handle_struct *handle,
 			       cfh->uperm);
 }
 
+static int vfs_ceph_ll_futimes(struct vfs_handle_struct *handle,
+			       const struct vfs_ceph_fh *cfh,
+			       const struct smb_file_time *ft)
+{
+	struct ceph_statx stx = {0};
+	int mask = 0;
+
+	if (!is_omit_timespec(&ft->atime)) {
+		stx.stx_atime = ft->atime;
+		mask |= CEPH_SETATTR_ATIME;
+	}
+	if (!is_omit_timespec(&ft->mtime)) {
+		stx.stx_mtime = ft->mtime;
+		mask |= CEPH_SETATTR_MTIME;
+	}
+	if (!is_omit_timespec(&ft->ctime)) {
+		stx.stx_ctime = ft->ctime;
+		mask |= CEPH_SETATTR_CTIME;
+	}
+	if (!is_omit_timespec(&ft->create_time)) {
+		stx.stx_btime = ft->create_time;
+		mask |= CEPH_SETATTR_BTIME;
+	}
+	if (!mask) {
+		return 0;
+	}
+	return ceph_ll_setattr(cmount_of(handle),
+			       cfh->iref.inode,
+			       &stx,
+			       mask,
+			       cfh->uperm);
+}
+
 static int vfs_ceph_ll_releasedir(const struct vfs_handle_struct *handle,
 				  const struct vfs_ceph_fh *dircfh)
 {
@@ -1640,51 +1673,28 @@ static int vfs_ceph_fntimes(struct vfs_handle_struct *handle,
 			    files_struct *fsp,
 			    struct smb_file_time *ft)
 {
-	struct ceph_statx stx = { 0 };
+	struct vfs_ceph_fh *cfh = NULL;
 	int result;
-	int mask = 0;
 
-	if (!is_omit_timespec(&ft->atime)) {
-		stx.stx_atime = ft->atime;
-		mask |= CEPH_SETATTR_ATIME;
+	result = vfs_ceph_fetch_fh(handle, fsp, &cfh);
+	if (result != 0) {
+		goto out;
 	}
-	if (!is_omit_timespec(&ft->mtime)) {
-		stx.stx_mtime = ft->mtime;
-		mask |= CEPH_SETATTR_MTIME;
+
+	result = vfs_ceph_ll_futimes(handle, cfh, ft);
+	if (result != 0) {
+		goto out;
 	}
+
 	if (!is_omit_timespec(&ft->create_time)) {
-		stx.stx_btime = ft->create_time;
-		mask |= CEPH_SETATTR_BTIME;
-	}
-
-	if (!mask) {
-		return 0;
-	}
-
-	if (!fsp->fsp_flags.is_pathref) {
-		/*
-		 * We can use an io_fd to set xattrs.
-		 */
-		result = ceph_fsetattrx(cmount_of(handle),
-					fsp_get_io_fd(fsp),
-					&stx,
-					mask);
-	} else {
-		/*
-		 * This is no longer a handle based call.
-		 */
-		result = ceph_setattrx(cmount_of(handle),
-				       fsp->fsp_name->base_name,
-				       &stx,
-				       mask,
-				       0);
+		set_create_timespec_ea(fsp, ft->create_time);
 	}
 
 	DBG_DEBUG("[CEPH] ntimes(%p, %s, {%ld, %ld, %ld, %ld}) = %d\n",
 		  handle, fsp_str_dbg(fsp), ft->mtime.tv_sec, ft->atime.tv_sec,
 		  ft->ctime.tv_sec, ft->create_time.tv_sec, result);
-
-	return result;
+out:
+	return status_code(result);
 }
 
 static int vfs_ceph_unlinkat(struct vfs_handle_struct *handle,
