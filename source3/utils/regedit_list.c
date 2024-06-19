@@ -20,6 +20,9 @@
 #include "regedit_list.h"
 #include "regedit.h"
 
+#define CLAMP(x, low, high) \
+	(((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
+
 struct multilist {
 	WINDOW *window;
 	WINDOW *pad;
@@ -405,21 +408,22 @@ WERROR multilist_set_data(struct multilist *list, const void *data)
 	return WERR_OK;
 }
 
-static int get_window_height(struct multilist *list)
+static unsigned get_window_height(struct multilist *list)
 {
-	int height;
+	unsigned height;
 
 	height = list->window_height;
-	if (list->cb->get_column_header) {
+	if (height > 0 && list->cb->get_column_header) {
 		height--;
 	}
 
-	return height;
+	/* Clamp to some sensible values */
+	return CLAMP(height, 1, 16384);
 }
 
 static void fix_start_row(struct multilist *list)
 {
-	int height;
+	unsigned height;
 
 	/* adjust start_row so that the cursor appears on the screen */
 
