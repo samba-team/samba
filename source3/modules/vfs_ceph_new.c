@@ -485,6 +485,14 @@ static int vfs_ceph_fetch_fh(struct vfs_handle_struct *handle,
 	return (*out_cfh == NULL) ? -EBADF : 0;
 }
 
+static int vfs_ceph_fetch_io_fh(struct vfs_handle_struct *handle,
+				const struct files_struct *fsp,
+				struct vfs_ceph_fh **out_cfh)
+{
+	*out_cfh = VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	return (*out_cfh == NULL) || ((*out_cfh)->fh == NULL) ? -EBADF : 0;
+}
+
 static void vfs_ceph_assign_fh_fd(struct vfs_ceph_fh *cfh)
 {
 	cfh->fd = cephmount_next_fd(cfh->cme); /* debug only */
@@ -591,6 +599,33 @@ static int vfs_ceph_ll_chown(struct vfs_handle_struct *handle,
 			      uperm);
 	vfs_ceph_userperm_del(uperm);
 	return ret;
+}
+
+static int vfs_ceph_ll_fchown(struct vfs_handle_struct *handle,
+			      const struct vfs_ceph_fh *cfh,
+			      uid_t uid,
+			      gid_t gid)
+{
+	struct ceph_statx stx = {.stx_uid = uid, .stx_gid = gid};
+
+	return ceph_ll_setattr(cmount_of(handle),
+			       cfh->iref.inode,
+			       &stx,
+			       CEPH_STATX_UID | CEPH_STATX_GID,
+			       cfh->uperm);
+}
+
+static int vfs_ceph_ll_fchmod(struct vfs_handle_struct *handle,
+			      const struct vfs_ceph_fh *cfh,
+			      mode_t mode)
+{
+	struct ceph_statx stx = {.stx_mode = mode};
+
+	return ceph_ll_setattr(cmount_of(handle),
+			       cfh->iref.inode,
+			       &stx,
+			       CEPH_STATX_MODE,
+			       cfh->uperm);
 }
 
 static int vfs_ceph_ll_releasedir(const struct vfs_handle_struct *handle,
@@ -1712,23 +1747,16 @@ static int vfs_ceph_fchmod(struct vfs_handle_struct *handle,
 			   mode_t mode)
 {
 	int result;
+	struct vfs_ceph_fh *cfh = NULL;
 
 	DBG_DEBUG("[CEPH] fchmod(%p, %p, %d)\n", handle, fsp, mode);
-	if (!fsp->fsp_flags.is_pathref) {
-		/*
-		 * We can use an io_fd to change permissions.
-		 */
-		result = ceph_fchmod(cmount_of(handle),
-				     fsp_get_io_fd(fsp),
-				     mode);
-	} else {
-		/*
-		 * This is no longer a handle based call.
-		 */
-		result = ceph_chmod(cmount_of(handle),
-				    fsp->fsp_name->base_name,
-				    mode);
+	result = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
+	if (result != 0) {
+		goto out;
 	}
+
+	result = vfs_ceph_ll_fchmod(handle, cfh, mode);
+out:
 	DBG_DEBUG("[CEPH] fchmod(...) = %d\n", result);
 	return status_code(result);
 }
@@ -1739,26 +1767,15 @@ static int vfs_ceph_fchown(struct vfs_handle_struct *handle,
 			   gid_t gid)
 {
 	int result;
+	struct vfs_ceph_fh *cfh = NULL;
 
 	DBG_DEBUG("[CEPH] fchown(%p, %p, %d, %d)\n", handle, fsp, uid, gid);
-	if (!fsp->fsp_flags.is_pathref) {
-		/*
-		 * We can use an io_fd to change ownership.
-		 */
-		result = ceph_fchown(cmount_of(handle),
-				     fsp_get_io_fd(fsp),
-				     uid,
-				     gid);
-	} else {
-		/*
-		 * This is no longer a handle based call.
-		 */
-		result = ceph_chown(cmount_of(handle),
-				    fsp->fsp_name->base_name,
-				    uid,
-				    gid);
+	result = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
+	if (result != 0) {
+		goto out;
 	}
-
+	result = vfs_ceph_ll_fchown(handle, cfh, uid, gid);
+out:
 	DBG_DEBUG("[CEPH] fchown(...) = %d\n", result);
 	return status_code(result);
 }
