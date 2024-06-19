@@ -46,7 +46,7 @@
 #   Extract the directory name from the file name.
 #   Concat this with /.config to get the config file.
 #
-eval acct_file=\${$#}
+eval acct_file="\${$#}"
 spool_dir=$(dirname $acct_file)
 config_file=$spool_dir/.config
 
