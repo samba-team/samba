@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    WINS replication testing
 
    Copyright (C) Andrew Tridgell	2005
    Copyright (C) Stefan Metzmacher	2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -195,7 +195,7 @@ static bool test_assoc_ctx2(struct torture_context *tctx)
 	torture_comment(tctx, "Test if we always get back the same assoc_ctx\n");
 
 	wrepl_socket = wrepl_socket_init(tctx, tctx->ev);
-	
+
 	torture_comment(tctx, "Setup wrepl connections\n");
 	status = wrepl_connect(wrepl_socket, wrepl_best_ip(tctx->lp_ctx, address), address);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
@@ -209,13 +209,13 @@ static bool test_assoc_ctx2(struct torture_context *tctx)
 	torture_comment(tctx, "Send 2nd start association request\n");
 	status = wrepl_associate(wrepl_socket, &associate);
 	torture_assert_ntstatus_ok(tctx, status, "2nd start association failed");
-	torture_assert(tctx, associate.out.assoc_ctx == assoc_ctx1, 
+	torture_assert(tctx, associate.out.assoc_ctx == assoc_ctx1,
 				   "Different context returned");
 	torture_comment(tctx, "2nd association context: 0x%x\n", associate.out.assoc_ctx);
 
 	torture_comment(tctx, "Send 3rd start association request\n");
 	status = wrepl_associate(wrepl_socket, &associate);
-	torture_assert(tctx, associate.out.assoc_ctx == assoc_ctx1, 
+	torture_assert(tctx, associate.out.assoc_ctx == assoc_ctx1,
 				   "Different context returned");
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 	torture_comment(tctx, "3rd association context: 0x%x\n", associate.out.assoc_ctx);
@@ -239,7 +239,7 @@ static void display_entry(struct torture_context *tctx, struct wrepl_name *name)
 	torture_comment(tctx, "\tRAW_FLAGS: 0x%08X OWNER: %-15s\n",
 		name->raw_flags, name->owner);
 	for (i=0;i<name->num_addresses;i++) {
-		torture_comment(tctx, "\tADDR: %-15s OWNER: %-15s\n", 
+		torture_comment(tctx, "\tADDR: %-15s OWNER: %-15s\n",
 			name->addresses[i].address, name->addresses[i].owner);
 	}
 }
@@ -264,7 +264,7 @@ static bool test_wins_replication(struct torture_context *tctx)
 	torture_comment(tctx, "Test one pull replication cycle\n");
 
 	wrepl_socket = wrepl_socket_init(tctx, tctx->ev);
-	
+
 	torture_comment(tctx, "Setup wrepl connections\n");
 	status = wrepl_connect(wrepl_socket, wrepl_best_ip(tctx->lp_ctx, address), address);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
@@ -297,14 +297,14 @@ static bool test_wins_replication(struct torture_context *tctx)
 	for (i=0;i<pull_table.out.num_partners;i++) {
 		struct wrepl_wins_owner *partner = &pull_table.out.partners[i];
 		torture_comment(tctx, "%s   max_version=%6llu   min_version=%6llu type=%d\n",
-		       partner->address, 
-		       (long long)partner->max_version, 
-		       (long long)partner->min_version, 
+		       partner->address,
+		       (long long)partner->max_version,
+		       (long long)partner->min_version,
 		       partner->type);
 
 		pull_names.in.assoc_ctx = associate.out.assoc_ctx;
 		pull_names.in.partner = *partner;
-		
+
 		status = wrepl_pull_names(wrepl_socket, tctx, &pull_names);
 		CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
@@ -665,9 +665,9 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 		if (!ctx->nbtsock_srv2) return NULL;
 
 		/* Make a port 137 version of ctx->myaddr2 */
-		nbt_srv_addr = socket_address_from_strings(tctx, 
-							   ctx->nbtsock_srv->sock->backend_name, 
-							   ctx->myaddr2->addr, 
+		nbt_srv_addr = socket_address_from_strings(tctx,
+							   ctx->nbtsock_srv->sock->backend_name,
+							   ctx->myaddr2->addr,
 							   lpcfg_nbt_port(tctx->lp_ctx));
 		if (!nbt_srv_addr) return NULL;
 
@@ -719,7 +719,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 	return ctx;
 }
 
-static bool test_wrepl_update_one(struct torture_context *tctx, 
+static bool test_wrepl_update_one(struct torture_context *tctx,
 								  struct test_wrepl_conflict_conn *ctx,
 				  const struct wrepl_wins_owner *owner,
 				  const struct wrepl_wins_name *name)
@@ -786,7 +786,7 @@ static bool test_wrepl_update_one(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_wrepl_is_applied(struct torture_context *tctx, 
+static bool test_wrepl_is_applied(struct torture_context *tctx,
 								  struct test_wrepl_conflict_conn *ctx,
 				  const struct wrepl_wins_owner *owner,
 				  const struct wrepl_wins_name *name,
@@ -799,10 +799,10 @@ static bool test_wrepl_is_applied(struct torture_context *tctx,
 	pull_names.in.assoc_ctx	= ctx->pull_assoc;
 	pull_names.in.partner	= *owner;
 	pull_names.in.partner.min_version = pull_names.in.partner.max_version;
-		
+
 	status = wrepl_pull_names(ctx->pull, ctx->pull, &pull_names);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
-	torture_assert(tctx, pull_names.out.num_names == (expected?1:0), 
+	torture_assert(tctx, pull_names.out.num_names == (expected?1:0),
 		       talloc_asprintf(tctx, "Invalid number of records returned - expected %d got %d", expected, pull_names.out.num_names));
 
 	names = pull_names.out.names;
@@ -838,7 +838,7 @@ static bool test_wrepl_is_applied(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_wrepl_mhomed_merged(struct torture_context *tctx, 
+static bool test_wrepl_mhomed_merged(struct torture_context *tctx,
 									 struct test_wrepl_conflict_conn *ctx,
 				     const struct wrepl_wins_owner *owner1,
 				     uint32_t num_ips1, const struct wrepl_ip *ips1,
@@ -859,7 +859,7 @@ static bool test_wrepl_mhomed_merged(struct torture_context *tctx,
 				num_ips--;
 				break;
 			}
-		} 
+		}
 	}
 
 	pull_names.in.assoc_ctx	= ctx->pull_assoc;
@@ -885,7 +885,7 @@ static bool test_wrepl_mhomed_merged(struct torture_context *tctx,
 	CHECK_VALUE(tctx, names[0].num_addresses, num_ips);
 
 	for (i = 0; i < names[0].num_addresses; i++) {
-		const char *addr = names[0].addresses[i].address; 
+		const char *addr = names[0].addresses[i].address;
 		const char *owner = names[0].addresses[i].owner;
 		bool found = false;
 
@@ -915,7 +915,7 @@ static bool test_wrepl_mhomed_merged(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_wrepl_sgroup_merged(struct torture_context *tctx, 
+static bool test_wrepl_sgroup_merged(struct torture_context *tctx,
 									 struct test_wrepl_conflict_conn *ctx,
 				     struct wrepl_wins_owner *merge_owner,
 				     struct wrepl_wins_owner *owner1,
@@ -959,7 +959,7 @@ static bool test_wrepl_sgroup_merged(struct torture_context *tctx,
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
 	names = pull_names.out.names;
-	
+
 	for (i = 0; i < pull_names.out.num_names; i++) {
 		if (names[i].name.type != name2->name->type)	continue;
 		if (!names[i].name.name) continue;
@@ -990,7 +990,7 @@ static bool test_wrepl_sgroup_merged(struct torture_context *tctx,
 	CHECK_VALUE(tctx, name->num_addresses, num_ips);
 
 	for (i = 0; i < name->num_addresses; i++) {
-		const char *addr = name->addresses[i].address; 
+		const char *addr = name->addresses[i].address;
 		const char *owner = name->addresses[i].owner;
 		bool found = false;
 
@@ -1045,7 +1045,7 @@ static char *test_nbt_winsrepl_scope_string(TALLOC_CTX *mem_ctx, uint8_t count)
 	return res;
 }
 
-static bool test_conflict_same_owner(struct torture_context *tctx, 
+static bool test_conflict_same_owner(struct torture_context *tctx,
 									 struct test_wrepl_conflict_conn *ctx)
 {
 	bool ret = true;
@@ -1237,7 +1237,7 @@ static bool test_conflict_same_owner(struct torture_context *tctx,
 	return ret;
 }
 
-static bool test_conflict_different_owner(struct torture_context *tctx, 
+static bool test_conflict_different_owner(struct torture_context *tctx,
 										  struct test_wrepl_conflict_conn *ctx)
 {
 	bool ret = true;
@@ -1266,7 +1266,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 			bool sgroup_cleanup;
 		} r1, r2;
 	} records[] = {
-	/* 
+	/*
 	 * NOTE: the first record and the last applied one
 	 *       needs to be from the same owner,
 	 *       to not conflict in the next smbtorture run!!!
@@ -1300,7 +1300,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 /*
  * unique vs unique section
  */
-	/* 
+	/*
 	 * unique,active vs. unique,active
 	 * => should be replaced
 	 */
@@ -1329,7 +1329,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,active vs. unique,tombstone
 	 * => should NOT be replaced
 	 */
@@ -1358,7 +1358,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,released vs. unique,active
 	 * => should be replaced
 	 */
@@ -1387,7 +1387,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,released vs. unique,tombstone
 	 * => should be replaced
 	 */
@@ -1416,7 +1416,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,tombstone vs. unique,active
 	 * => should be replaced
 	 */
@@ -1445,7 +1445,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,tombstone vs. unique,tombstone
 	 * => should be replaced
 	 */
@@ -1478,7 +1478,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 /*
  * unique vs normal groups section,
  */
-	/* 
+	/*
 	 * unique,active vs. group,active
 	 * => should be replaced
 	 */
@@ -1507,7 +1507,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,active vs. group,tombstone
 	 * => should NOT be replaced
 	 */
@@ -1536,7 +1536,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,released vs. group,active
 	 * => should be replaced
 	 */
@@ -1565,7 +1565,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,released vs. group,tombstone
 	 * => should be replaced
 	 */
@@ -1594,7 +1594,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,tombstone vs. group,active
 	 * => should be replaced
 	 */
@@ -1623,7 +1623,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,tombstone vs. group,tombstone
 	 * => should be replaced
 	 */
@@ -1655,7 +1655,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 /*
  * unique vs special groups section,
  */
-	/* 
+	/*
 	 * unique,active vs. sgroup,active
 	 * => should NOT be replaced
 	 */
@@ -1684,7 +1684,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,active vs. sgroup,tombstone
 	 * => should NOT be replaced
 	 */
@@ -1713,7 +1713,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,released vs. sgroup,active
 	 * => should be replaced
 	 */
@@ -1742,7 +1742,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,released vs. sgroup,tombstone
 	 * => should be replaced
 	 */
@@ -1771,7 +1771,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,tombstone vs. sgroup,active
 	 * => should be replaced
 	 */
@@ -1800,7 +1800,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,tombstone vs. sgroup,tombstone
 	 * => should be replaced
 	 */
@@ -1832,7 +1832,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 /*
  * unique vs multi homed section,
  */
-	/* 
+	/*
 	 * unique,active vs. mhomed,active
 	 * => should be replaced
 	 */
@@ -1861,7 +1861,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,active vs. mhomed,tombstone
 	 * => should NOT be replaced
 	 */
@@ -1890,7 +1890,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,released vs. mhomed,active
 	 * => should be replaced
 	 */
@@ -1919,7 +1919,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,released vs. mhomed,tombstone
 	 * => should be replaced
 	 */
@@ -1948,7 +1948,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,tombstone vs. mhomed,active
 	 * => should be replaced
 	 */
@@ -1977,7 +1977,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * unique,tombstone vs. mhomed,tombstone
 	 * => should be replaced
 	 */
@@ -2009,7 +2009,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 /*
  * normal groups vs unique section,
  */
-	/* 
+	/*
 	 * group,active vs. unique,active
 	 * => should NOT be replaced
 	 */
@@ -2038,7 +2038,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,active vs. unique,tombstone
 	 * => should NOT be replaced
 	 */
@@ -2067,7 +2067,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,released vs. unique,active
 	 * => should NOT be replaced
 	 */
@@ -2096,7 +2096,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,released vs. unique,tombstone
 	 * => should NOT be replaced
 	 */
@@ -2125,7 +2125,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,tombstone vs. unique,active
 	 * => should NOT be replaced
 	 */
@@ -2154,7 +2154,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,tombstone vs. unique,tombstone
 	 * => should NOT be replaced
 	 */
@@ -2186,7 +2186,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 /*
  * normal groups vs normal groups section,
  */
-	/* 
+	/*
 	 * group,active vs. group,active
 	 * => should NOT be replaced
 	 */
@@ -2215,7 +2215,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,active vs. group,tombstone
 	 * => should NOT be replaced
 	 */
@@ -2244,7 +2244,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,released vs. group,active
 	 * => should be replaced
 	 */
@@ -2273,7 +2273,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,released vs. group,tombstone
 	 * => should be replaced
 	 */
@@ -2302,7 +2302,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,tombstone vs. group,active
 	 * => should be replaced
 	 */
@@ -2331,7 +2331,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,tombstone vs. group,tombstone
 	 * => should be replaced
 	 */
@@ -2363,7 +2363,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 /*
  * normal groups vs special groups section,
  */
-	/* 
+	/*
 	 * group,active vs. sgroup,active
 	 * => should NOT be replaced
 	 */
@@ -2392,7 +2392,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,active vs. sgroup,tombstone
 	 * => should NOT be replaced
 	 */
@@ -2421,7 +2421,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,released vs. sgroup,active
 	 * => should be replaced
 	 */
@@ -2450,7 +2450,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,released vs. sgroup,tombstone
 	 * => should NOT be replaced
 	 */
@@ -2479,7 +2479,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,tombstone vs. sgroup,active
 	 * => should be replaced
 	 */
@@ -2508,7 +2508,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,tombstone vs. sgroup,tombstone
 	 * => should be replaced
 	 */
@@ -2540,7 +2540,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 /*
  * normal groups vs multi homed section,
  */
-	/* 
+	/*
 	 * group,active vs. mhomed,active
 	 * => should NOT be replaced
 	 */
@@ -2569,7 +2569,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,active vs. mhomed,tombstone
 	 * => should NOT be replaced
 	 */
@@ -2598,7 +2598,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,released vs. mhomed,active
 	 * => should NOT be replaced
 	 */
@@ -2627,7 +2627,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,released vs. mhomed,tombstone
 	 * => should NOT be replaced
 	 */
@@ -2656,7 +2656,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,tombstone vs. mhomed,active
 	 * => should be replaced
 	 */
@@ -2685,7 +2685,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * group,tombstone vs. mhomed,tombstone
 	 * => should be replaced
 	 */
@@ -2717,7 +2717,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 /*
  * special groups vs unique section,
  */
-	/* 
+	/*
 	 * sgroup,active vs. unique,active
 	 * => should NOT be replaced
 	 */
@@ -2746,7 +2746,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * sgroup,active vs. unique,tombstone
 	 * => should NOT be replaced
 	 */
@@ -2775,7 +2775,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * sgroup,released vs. unique,active
 	 * => should be replaced
 	 */
@@ -2804,7 +2804,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * sgroup,released vs. unique,tombstone
 	 * => should be replaced
 	 */
@@ -2833,7 +2833,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * sgroup,tombstone vs. unique,active
 	 * => should be replaced
 	 */
@@ -2862,7 +2862,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * sgroup,tombstone vs. unique,tombstone
 	 * => should be replaced
 	 */
@@ -2894,7 +2894,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 /*
  * special groups vs normal group section,
  */
-	/* 
+	/*
 	 * sgroup,active vs. group,active
 	 * => should NOT be replaced
 	 */
@@ -2923,7 +2923,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * sgroup,active vs. group,tombstone
 	 * => should NOT be replaced
 	 */
@@ -2952,7 +2952,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * sgroup,released vs. group,active
 	 * => should be replaced
 	 */
@@ -2981,7 +2981,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * sgroup,released vs. group,tombstone
 	 * => should be replaced
 	 */
@@ -3010,7 +3010,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * sgroup,tombstone vs. group,active
 	 * => should NOT be replaced
 	 */
@@ -3039,7 +3039,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * sgroup,tombstone vs. group,tombstone
 	 * => should NOT be replaced
 	 */
@@ -3071,7 +3071,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 /*
  * special groups (not active) vs special group section,
  */
-	/* 
+	/*
 	 * sgroup,released vs. sgroup,active
 	 * => should be replaced
 	 */
@@ -3100,7 +3100,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * sgroup,released vs. sgroup,tombstone
 	 * => should be replaced
 	 */
@@ -3129,7 +3129,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * sgroup,tombstone vs. sgroup,active
 	 * => should NOT be replaced
 	 */
@@ -3158,7 +3158,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * sgroup,tombstone vs. sgroup,tombstone
 	 * => should NOT be replaced
 	 */
@@ -3190,7 +3190,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 /*
  * special groups vs multi homed section,
  */
-	/* 
+	/*
 	 * sgroup,active vs. mhomed,active
 	 * => should NOT be replaced
 	 */
@@ -3219,7 +3219,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * sgroup,active vs. mhomed,tombstone
 	 * => should NOT be replaced
 	 */
@@ -3248,7 +3248,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * sgroup,released vs. mhomed,active
 	 * => should be replaced
 	 */
@@ -3277,7 +3277,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * sgroup,released vs. mhomed,tombstone
 	 * => should be replaced
 	 */
@@ -3306,7 +3306,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * sgroup,tombstone vs. mhomed,active
 	 * => should be replaced
 	 */
@@ -3335,7 +3335,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * sgroup,tombstone vs. mhomed,tombstone
 	 * => should be replaced
 	 */
@@ -3367,7 +3367,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 /*
  * multi homed vs. unique section,
  */
-	/* 
+	/*
 	 * mhomed,active vs. unique,active
 	 * => should be replaced
 	 */
@@ -3396,7 +3396,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,active vs. unique,tombstone
 	 * => should NOT be replaced
 	 */
@@ -3425,7 +3425,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,released vs. unique,active
 	 * => should be replaced
 	 */
@@ -3454,7 +3454,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,released vs. uinique,tombstone
 	 * => should be replaced
 	 */
@@ -3483,7 +3483,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,tombstone vs. unique,active
 	 * => should be replaced
 	 */
@@ -3512,7 +3512,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,tombstone vs. uinique,tombstone
 	 * => should be replaced
 	 */
@@ -3544,7 +3544,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 /*
  * multi homed vs. normal group section,
  */
-	/* 
+	/*
 	 * mhomed,active vs. group,active
 	 * => should be replaced
 	 */
@@ -3573,7 +3573,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,active vs. group,tombstone
 	 * => should NOT be replaced
 	 */
@@ -3602,7 +3602,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,released vs. group,active
 	 * => should be replaced
 	 */
@@ -3631,7 +3631,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,released vs. group,tombstone
 	 * => should be replaced
 	 */
@@ -3660,7 +3660,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,tombstone vs. group,active
 	 * => should be replaced
 	 */
@@ -3689,7 +3689,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,tombstone vs. group,tombstone
 	 * => should be replaced
 	 */
@@ -3721,7 +3721,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 /*
  * multi homed vs. special group section,
  */
-	/* 
+	/*
 	 * mhomed,active vs. sgroup,active
 	 * => should NOT be replaced
 	 */
@@ -3750,7 +3750,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,active vs. sgroup,tombstone
 	 * => should NOT be replaced
 	 */
@@ -3779,7 +3779,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,released vs. sgroup,active
 	 * => should be replaced
 	 */
@@ -3808,7 +3808,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,released vs. sgroup,tombstone
 	 * => should be replaced
 	 */
@@ -3837,7 +3837,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,tombstone vs. sgroup,active
 	 * => should be replaced
 	 */
@@ -3866,7 +3866,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,tombstone vs. sgroup,tombstone
 	 * => should be replaced
 	 */
@@ -3898,7 +3898,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 /*
  * multi homed vs. mlti homed section,
  */
-	/* 
+	/*
 	 * mhomed,active vs. mhomed,active
 	 * => should be replaced
 	 */
@@ -3927,7 +3927,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,active vs. mhomed,tombstone
 	 * => should NOT be replaced
 	 */
@@ -3956,7 +3956,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,released vs. mhomed,active
 	 * => should be replaced
 	 */
@@ -3985,7 +3985,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,released vs. mhomed,tombstone
 	 * => should be replaced
 	 */
@@ -4014,7 +4014,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,tombstone vs. mhomed,active
 	 * => should be replaced
 	 */
@@ -4043,7 +4043,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * mhomed,tombstone vs. mhomed,tombstone
 	 * => should be replaced
 	 */
@@ -4099,7 +4099,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 /*
  * special group vs special group section,
  */
-	/* 
+	/*
 	 * sgroup,active vs. sgroup,active same addresses
 	 * => should be NOT replaced
 	 */
@@ -4130,7 +4130,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 			.sgroup_cleanup	= true
 		}
 	},
-	/* 
+	/*
 	 * sgroup,active vs. sgroup,active same addresses
 	 * => should be NOT replaced
 	 */
@@ -4161,7 +4161,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 			.sgroup_cleanup	= true
 		}
 	},
-	/* 
+	/*
 	 * sgroup,active vs. sgroup,active subset addresses, special case...
 	 * => should NOT be replaced
 	 */
@@ -4216,7 +4216,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 			.apply_expected	= false,
 		}
 	},
-	/* 
+	/*
 	 * sgroup,active vs. sgroup,active different addresses, but owner changed
 	 * => should be replaced
 	 */
@@ -4247,7 +4247,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 			.sgroup_cleanup	= true
 		}
 	},
-	/* 
+	/*
 	 * sgroup,active vs. sgroup,active different addresses, but owner changed
 	 * => should be replaced
 	 */
@@ -4278,7 +4278,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 			.sgroup_cleanup	= true
 		}
 	},
-	/* 
+	/*
 	 * sgroup,active vs. sgroup,active different addresses, but owner changed
 	 * => should be replaced
 	 */
@@ -4309,7 +4309,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 			.sgroup_cleanup	= true
 		}
 	},
-	/* 
+	/*
 	 * sgroup,active vs. sgroup,active different addresses
 	 * => should be merged
 	 */
@@ -4340,7 +4340,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 			.sgroup_cleanup = true,
 		}
 	},
-	/* 
+	/*
 	 * sgroup,active vs. sgroup,active different addresses, special case...
 	 * => should be merged
 	 */
@@ -4397,7 +4397,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 			.apply_expected	= false,
 		}
 	},
-	/* 
+	/*
 	 * sgroup,active vs. sgroup,active different addresses, special case...
 	 * => should be merged
 	 */
@@ -4453,7 +4453,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 			.apply_expected	= false,
 		}
 	},
-	/* 
+	/*
 	 * sgroup,active vs. sgroup,active different addresses, special case...
 	 * => should be merged
 	 */
@@ -4509,7 +4509,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 			.apply_expected	= false,
 		}
 	},
-	/* 
+	/*
 	 * sgroup,active vs. sgroup,active partly different addresses, special case...
 	 * => should be merged
 	 */
@@ -4565,7 +4565,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 			.apply_expected	= false,
 		}
 	},
-	/* 
+	/*
 	 * sgroup,active vs. sgroup,active different addresses, special case...
 	 * => should be merged
 	 */
@@ -4622,7 +4622,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 			.apply_expected	= true,
 		}
 	},
-	/* 
+	/*
 	 * sgroup,active vs. sgroup,active different addresses, special case...
 	 * => should be merged
 	 */
@@ -4680,7 +4680,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * sgroup,active vs. sgroup,tombstone different no addresses, special
 	 * => should be replaced
 	 */
@@ -4710,7 +4710,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 			.apply_expected	= true,
 		}
 	},
-	/* 
+	/*
 	 * sgroup,active vs. sgroup,tombstone different addresses
 	 * => should be replaced
 	 */
@@ -4740,7 +4740,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 			.apply_expected	= true,
 		}
 	},
-	/* 
+	/*
 	 * sgroup,active vs. sgroup,tombstone subset addresses
 	 * => should be replaced
 	 */
@@ -4770,7 +4770,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 			.apply_expected	= true,
 		}
 	},
-	/* 
+	/*
 	 * sgroup,active vs. sgroup,active same addresses
 	 * => should be replaced
 	 */
@@ -4801,7 +4801,7 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 		}
 	},
 
-	/* 
+	/*
 	 * This should be the last record in this array,
 	 * we need to make sure the we leave a tombstoned unique entry
 	 * owned by OWNER_A
@@ -5064,7 +5064,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 			bool apply_expected;
 		} replica;
 	} records[] = {
-/* 
+/*
  * unique vs. unique section
  */
 	/*
@@ -5159,7 +5159,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 			.apply_expected	= true
 		},
 	},
-/* 
+/*
  * unique vs. group section
  */
 	/*
@@ -5254,7 +5254,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 			.apply_expected	= true
 		},
 	},
-/* 
+/*
  * unique vs. special group section
  */
 	/*
@@ -5349,7 +5349,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 			.apply_expected	= true
 		},
 	},
-/* 
+/*
  * unique vs. multi homed section
  */
 	/*
@@ -5444,7 +5444,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 			.apply_expected	= true
 		},
 	},
-/* 
+/*
  * group vs. unique section
  */
 	/*
@@ -5539,7 +5539,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 			.apply_expected	= false
 		},
 	},
-/* 
+/*
  * group vs. group section
  */
 	/*
@@ -5634,7 +5634,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 			.apply_expected	= true
 		},
 	},
-/* 
+/*
  * group vs. special group section
  */
 	/*
@@ -5729,7 +5729,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 			.apply_expected	= false
 		},
 	},
-/* 
+/*
  * group vs. multi homed section
  */
 	/*
@@ -5824,7 +5824,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 			.apply_expected	= false
 		},
 	},
-/* 
+/*
  * special group vs. unique section
  */
 	/*
@@ -5919,7 +5919,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 			.apply_expected	= true
 		},
 	},
-/* 
+/*
  * special group vs. group section
  */
 	/*
@@ -6014,7 +6014,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 			.apply_expected	= true
 		},
 	},
-/* 
+/*
  * special group vs. special group section
  */
 	/*
@@ -6109,7 +6109,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 			.apply_expected	= true
 		},
 	},
-/* 
+/*
  * special group vs. multi homed section
  */
 	/*
@@ -6204,7 +6204,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 			.apply_expected	= true
 		},
 	},
-/* 
+/*
  * multi homed vs. unique section
  */
 	/*
@@ -6299,7 +6299,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 			.apply_expected	= true
 		},
 	},
-/* 
+/*
  * multi homed vs. group section
  */
 	/*
@@ -6394,7 +6394,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 			.apply_expected	= true
 		},
 	},
-/* 
+/*
  * multi homed vs. special group section
  */
 	/*
@@ -6489,7 +6489,7 @@ static bool test_conflict_owned_released_vs_replica(struct torture_context *tctx
 			.apply_expected	= true
 		},
 	},
-/* 
+/*
  * multi homed vs. multi homed section
  */
 	/*
@@ -6747,8 +6747,8 @@ struct test_conflict_owned_active_vs_replica_struct {
 	} replica;
 };
 
-static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket *nbtsock, 
-							  struct nbt_name_packet *req_packet, 
+static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket *nbtsock,
+							  struct nbt_name_packet *req_packet,
 							  struct socket_address *src);
 
 static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
@@ -6764,7 +6764,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 	struct nbt_name_release *release = &release_;
 	uint32_t i;
 	struct test_conflict_owned_active_vs_replica_struct records[] = {
-/* 
+/*
  * unique vs. unique section
  */
 	/*
@@ -6934,7 +6934,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 			.apply_expected	= false
 		},
 	},
-/* 
+/*
  * unique vs. group section
  */
 	/*
@@ -7047,7 +7047,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 			.apply_expected	= false
 		},
 	},
-/* 
+/*
  * unique vs. special group section
  */
 	/*
@@ -7160,7 +7160,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 			.apply_expected	= false
 		},
 	},
-/* 
+/*
  * unique vs. multi homed section
  */
 	/*
@@ -7357,7 +7357,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 			.apply_expected	= false
 		},
 	},
-/* 
+/*
  * normal group vs. unique section
  */
 	/*
@@ -7468,7 +7468,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 			.apply_expected	= false
 		},
 	},
-/* 
+/*
  * normal group vs. normal group section
  */
 	/*
@@ -7579,7 +7579,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 			.apply_expected	= false
 		},
 	},
-/* 
+/*
  * normal group vs. special group section
  */
 	/*
@@ -7690,7 +7690,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 			.apply_expected	= false
 		},
 	},
-/* 
+/*
  * normal group vs. multi homed section
  */
 	/*
@@ -7801,7 +7801,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 			.apply_expected	= false
 		},
 	},
-/* 
+/*
  * special group vs. unique section
  */
 	/*
@@ -7912,7 +7912,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 			.apply_expected	= false
 		},
 	},
-/* 
+/*
  * special group vs. normal group section
  */
 	/*
@@ -8023,7 +8023,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 			.apply_expected	= false
 		},
 	},
-/* 
+/*
  * special group vs. multi homed section
  */
 	/*
@@ -8134,7 +8134,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 			.apply_expected	= false
 		},
 	},
-/* 
+/*
  * multi homed vs. unique section
  */
 	/*
@@ -8304,7 +8304,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 			.apply_expected	= false
 		},
 	},
-/* 
+/*
  * multi homed vs. normal group section
  */
 	/*
@@ -8417,7 +8417,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 			.apply_expected	= false
 		},
 	},
-/* 
+/*
  * multi homed vs. special group section
  */
 	/*
@@ -8530,7 +8530,7 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 			.apply_expected	= false
 		},
 	},
-/* 
+/*
  * multi homed vs. multi homed section
  */
 	/*
@@ -9613,13 +9613,13 @@ _NBT_LABEL: \
 	} \
 } while (0)
 
-static void test_conflict_owned_active_vs_replica_handler_query(struct nbt_name_socket *nbtsock, 
-								struct nbt_name_packet *req_packet, 
+static void test_conflict_owned_active_vs_replica_handler_query(struct nbt_name_socket *nbtsock,
+								struct nbt_name_packet *req_packet,
 								struct socket_address *src)
 {
 	struct nbt_name *name;
 	struct nbt_name_packet *rep_packet;
-	struct test_conflict_owned_active_vs_replica_struct *rec = 
+	struct test_conflict_owned_active_vs_replica_struct *rec =
 		(struct test_conflict_owned_active_vs_replica_struct *)nbtsock->incoming.private_data;
 
 	_NBT_ASSERT(req_packet->qdcount, 1);
@@ -9649,7 +9649,7 @@ static void test_conflict_owned_active_vs_replica_handler_query(struct nbt_name_
 
 	if (rec->defend.positive) {
 		uint32_t i, num_ips;
-		const struct wrepl_ip *ips;		
+		const struct wrepl_ip *ips;
 
 		if (rec->defend.num_ips > 0) {
 			num_ips	= rec->defend.num_ips;
@@ -9670,17 +9670,17 @@ static void test_conflict_owned_active_vs_replica_handler_query(struct nbt_name_
 		rep_packet->answers[0].rr_type   = NBT_QTYPE_NETBIOS;
 
 		rep_packet->answers[0].rdata.netbios.length = num_ips*6;
-		rep_packet->answers[0].rdata.netbios.addresses = 
+		rep_packet->answers[0].rdata.netbios.addresses =
 			talloc_array(rep_packet->answers, struct nbt_rdata_address, num_ips);
 		if (rep_packet->answers[0].rdata.netbios.addresses == NULL) return;
 
 		for (i=0; i < num_ips; i++) {
-			struct nbt_rdata_address *addr = 
+			struct nbt_rdata_address *addr =
 				&rep_packet->answers[0].rdata.netbios.addresses[i];
 			addr->nb_flags	= rec->wins.nb_flags;
 			addr->ipaddr	= ips[i].ip;
 		}
-		DEBUG(2,("Sending positive name query reply for %s to %s:%d\n", 
+		DEBUG(2,("Sending positive name query reply for %s to %s:%d\n",
 			nbt_name_string(rep_packet, name), src->addr, src->port));
 	} else {
 		/* send a negative reply */
@@ -9694,7 +9694,7 @@ static void test_conflict_owned_active_vs_replica_handler_query(struct nbt_name_
 
 		ZERO_STRUCT(rep_packet->answers[0].rdata);
 
-		DEBUG(2,("Sending negative name query reply for %s to %s:%d\n", 
+		DEBUG(2,("Sending negative name query reply for %s to %s:%d\n",
 			nbt_name_string(rep_packet, name), src->addr, src->port));
 	}
 
@@ -9712,13 +9712,13 @@ static void test_conflict_owned_active_vs_replica_handler_query(struct nbt_name_
 }
 
 static void test_conflict_owned_active_vs_replica_handler_release(
-								  struct nbt_name_socket *nbtsock, 
-								  struct nbt_name_packet *req_packet, 
+								  struct nbt_name_socket *nbtsock,
+								  struct nbt_name_packet *req_packet,
 								  struct socket_address *src)
 {
 	struct nbt_name *name;
 	struct nbt_name_packet *rep_packet;
-	struct test_conflict_owned_active_vs_replica_struct *rec = 
+	struct test_conflict_owned_active_vs_replica_struct *rec =
 		(struct test_conflict_owned_active_vs_replica_struct *)nbtsock->incoming.private_data;
 
 	_NBT_ASSERT(req_packet->qdcount, 1);
@@ -9752,7 +9752,7 @@ static void test_conflict_owned_active_vs_replica_handler_release(
 	rep_packet->answers[0].ttl	= req_packet->additional[0].ttl;
 	rep_packet->answers[0].rdata    = req_packet->additional[0].rdata;
 
-	DEBUG(2,("Sending name release reply for %s to %s:%d\n", 
+	DEBUG(2,("Sending name release reply for %s to %s:%d\n",
 		nbt_name_string(rep_packet, name), src->addr, src->port));
 
 	nbt_name_reply_send(nbtsock, src, rep_packet);
@@ -9768,11 +9768,11 @@ static void test_conflict_owned_active_vs_replica_handler_release(
 	rec->defend.ret		= true;
 }
 
-static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket *nbtsock, 
-							  struct nbt_name_packet *req_packet, 
+static void test_conflict_owned_active_vs_replica_handler(struct nbt_name_socket *nbtsock,
+							  struct nbt_name_packet *req_packet,
 							  struct socket_address *src)
 {
-	struct test_conflict_owned_active_vs_replica_struct *rec = 
+	struct test_conflict_owned_active_vs_replica_struct *rec =
 		(struct test_conflict_owned_active_vs_replica_struct *)nbtsock->incoming.private_data;
 	struct nbt_name *name = &req_packet->questions[0].name;
 
@@ -9841,7 +9841,7 @@ static bool torture_nbt_winsreplication_owned(struct torture_context *tctx)
 	struct test_wrepl_conflict_conn *ctx;
 
 	if (torture_setting_bool(tctx, "quick", false))
-		torture_skip(tctx, 
+		torture_skip(tctx,
 			"skip NBT-WINSREPLICATION-OWNED test in quick test mode\n");
 
 	if (!torture_nbt_get_name(tctx, &name, &address))
@@ -9865,12 +9865,12 @@ struct torture_suite *torture_nbt_winsreplication(TALLOC_CTX *mem_ctx)
 		mem_ctx, "winsreplication");
 	struct torture_tcase *tcase;
 
-	tcase = torture_suite_add_simple_test(suite, "assoc_ctx1", 
+	tcase = torture_suite_add_simple_test(suite, "assoc_ctx1",
 					     test_assoc_ctx1);
 	tcase->tests->dangerous = true;
 
 	torture_suite_add_simple_test(suite, "assoc_ctx2", test_assoc_ctx2);
-	
+
 	torture_suite_add_simple_test(suite, "wins_replication",
 				      test_wins_replication);
 
