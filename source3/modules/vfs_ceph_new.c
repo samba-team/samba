@@ -720,6 +720,34 @@ static int vfs_ceph_ll_opendir(const struct vfs_handle_struct *handle,
 			       cfh->uperm);
 }
 
+static int vfs_ceph_ll_mkdirat(const struct vfs_handle_struct *handle,
+			       const struct vfs_ceph_fh *dircfh,
+			       const char *name,
+			       mode_t mode,
+			       struct vfs_ceph_iref *iref)
+{
+	struct ceph_statx stx = {.stx_ino = 0};
+	struct Inode *inode = NULL;
+	int ret = -1;
+
+	ret = ceph_ll_mkdir(cmount_of(handle),
+			    dircfh->iref.inode,
+			    name,
+			    mode,
+			    &inode,
+			    &stx,
+			    CEPH_STATX_INO,
+			    0,
+			    dircfh->uperm);
+	if (ret != 0) {
+		return ret;
+	}
+	iref->inode = inode;
+	iref->ino = stx.stx_ino;
+	iref->owner = true;
+	return false;
+}
+
 /* Ceph Inode-refernce get/put wrappers */
 static int vfs_ceph_iget(const struct vfs_handle_struct *handle,
 			 uint64_t ino,
@@ -965,41 +993,21 @@ static int vfs_ceph_mkdirat(struct vfs_handle_struct *handle,
 			mode_t mode)
 {
 	int result = -1;
-#ifdef HAVE_CEPH_MKDIRAT
-	int dirfd = fsp_get_pathref_fd(dirfsp);
+	const char *name = smb_fname->base_name;
+	struct vfs_ceph_fh *dircfh = NULL;
+	struct vfs_ceph_iref iref = {0};
 
-	DBG_DEBUG("[CEPH] mkdirat(%p, %d, %s)\n",
-		  handle,
-		  dirfd,
-		  smb_fname->base_name);
-
-	result = ceph_mkdirat(cmount_of(handle),
-			      dirfd,
-			      smb_fname->base_name,
-			      mode);
-
-	DBG_DEBUG("[CEPH] mkdirat(...) = %d\n", result);
-
-	return status_code(result);
-#else
-	struct smb_filename *full_fname = NULL;
-
-	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						dirfsp,
-						smb_fname);
-	if (full_fname == NULL) {
-		return -1;
+	DBG_DEBUG("[CEPH] mkdirat(%p, %s)\n", handle, name);
+	result = vfs_ceph_fetch_fh(handle, dirfsp, &dircfh);
+	if (result != 0) {
+		goto out;
 	}
 
-	DBG_DEBUG("[CEPH] mkdir(%p, %s)\n",
-		  handle, smb_fname_str_dbg(full_fname));
-
-	result = ceph_mkdir(cmount_of(handle), full_fname->base_name, mode);
-
-	TALLOC_FREE(full_fname);
-
+	result = vfs_ceph_ll_mkdirat(handle, dircfh, name, mode, &iref);
+	vfs_ceph_iput(handle, &iref);
+out:
+	DBG_DEBUG("[CEPH] mkdirat(...) = %d\n", result);
 	return status_code(result);
-#endif
 }
 
 static int vfs_ceph_closedir(struct vfs_handle_struct *handle, DIR *dirp)
