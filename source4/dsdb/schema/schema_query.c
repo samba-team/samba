@@ -1,7 +1,7 @@
-/* 
+/*
    Unix SMB/CIFS Implementation.
    DSDB schema header
-   
+
    Copyright (C) Stefan Metzmacher <metze@samba.org> 2006-2007
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2006-2008
 
@@ -9,15 +9,15 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
+
 */
 
 #include "includes.h"
@@ -30,12 +30,12 @@
 #undef strcasecmp
 #undef strncasecmp
 
-static const char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx, 
-						      const struct dsdb_schema *schema, 
+static const char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx,
+						      const struct dsdb_schema *schema,
 						      const char **class_list,
 						      enum dsdb_attr_list_query query);
 
-static int uint32_cmp(uint32_t c1, uint32_t c2) 
+static int uint32_cmp(uint32_t c1, uint32_t c2)
 {
 	if (c1 == c2) return 0;
 	return c1 > c2 ? 1 : -1;
@@ -213,7 +213,7 @@ const char *dsdb_lDAPDisplayName_by_id(const struct dsdb_schema *schema,
 	return NULL;
 }
 
-/** 
+/**
     Return a list of linked attributes, in lDAPDisplayName format.
 
     This may be used to determine if a modification would require
@@ -227,7 +227,7 @@ WERROR dsdb_linked_attribute_lDAPDisplayName_list(const struct dsdb_schema *sche
 	unsigned int i = 0;
 	for (cur = schema->attributes; cur; cur = cur->next) {
 		if (cur->linkID == 0) continue;
-		
+
 		attr_list = talloc_realloc(mem_ctx, attr_list, const char *, i+2);
 		if (!attr_list) {
 			return WERR_NOT_ENOUGH_MEMORY;
@@ -242,8 +242,8 @@ WERROR dsdb_linked_attribute_lDAPDisplayName_list(const struct dsdb_schema *sche
 	return WERR_OK;
 }
 
-const char **merge_attr_list(TALLOC_CTX *mem_ctx, 
-		       const char **attrs, const char * const*new_attrs) 
+const char **merge_attr_list(TALLOC_CTX *mem_ctx,
+		       const char **attrs, const char * const*new_attrs)
 {
 	const char **ret_attrs;
 	unsigned int i;
@@ -280,28 +280,28 @@ const char **dsdb_attribute_list(TALLOC_CTX *mem_ctx, const struct dsdb_class *s
 		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->mayContain);
 		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->systemMayContain);
 		break;
-		
+
 	case DSDB_SCHEMA_ALL_MUST:
 		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->mustContain);
 		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->systemMustContain);
 		break;
-		
+
 	case DSDB_SCHEMA_SYS_MAY:
 		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->systemMayContain);
 		break;
-		
+
 	case DSDB_SCHEMA_SYS_MUST:
 		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->systemMustContain);
 		break;
-		
+
 	case DSDB_SCHEMA_MAY:
 		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->mayContain);
 		break;
-		
+
 	case DSDB_SCHEMA_MUST:
 		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->mustContain);
 		break;
-		
+
 	case DSDB_SCHEMA_ALL:
 		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->mayContain);
 		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->systemMayContain);
@@ -313,9 +313,9 @@ const char **dsdb_attribute_list(TALLOC_CTX *mem_ctx, const struct dsdb_class *s
 }
 
 static const char **attribute_list_from_class(TALLOC_CTX *mem_ctx,
-					      const struct dsdb_schema *schema, 
+					      const struct dsdb_schema *schema,
 					      const struct dsdb_class *sclass,
-					      enum dsdb_attr_list_query query) 
+					      enum dsdb_attr_list_query query)
 {
 	const char **this_class_list;
 	const char **system_recursive_list;
@@ -323,15 +323,15 @@ static const char **attribute_list_from_class(TALLOC_CTX *mem_ctx,
 	const char **attr_list;
 
 	this_class_list = dsdb_attribute_list(mem_ctx, sclass, query);
-	
-	recursive_list = dsdb_full_attribute_list_internal(mem_ctx, schema, 
+
+	recursive_list = dsdb_full_attribute_list_internal(mem_ctx, schema,
 							   sclass->systemAuxiliaryClass,
 							   query);
-	
-	system_recursive_list = dsdb_full_attribute_list_internal(mem_ctx, schema, 
+
+	system_recursive_list = dsdb_full_attribute_list_internal(mem_ctx, schema,
 								  sclass->auxiliaryClass,
 								  query);
-	
+
 	attr_list = this_class_list;
 	attr_list = merge_attr_list(mem_ctx, attr_list, recursive_list);
 	attr_list = merge_attr_list(mem_ctx, attr_list, system_recursive_list);
@@ -342,8 +342,8 @@ static const char **attribute_list_from_class(TALLOC_CTX *mem_ctx,
 
    Via attribute_list_from_class() this calls itself when recursing on auxiliary classes
  */
-static const char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx, 
-						      const struct dsdb_schema *schema, 
+static const char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx,
+						      const struct dsdb_schema *schema,
 						      const char **class_list,
 						      enum dsdb_attr_list_query query)
 {
@@ -366,11 +366,11 @@ static const char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx,
    Using the ldb_message_element ensures we do length-limited
    comparisons, rather than casting the possibly-unterminated string
 
-   Via attribute_list_from_class() this calls 
+   Via attribute_list_from_class() this calls
    dsdb_full_attribute_list_internal() when recursing on auxiliary classes
  */
-static const char **dsdb_full_attribute_list_internal_el(TALLOC_CTX *mem_ctx, 
-							 const struct dsdb_schema *schema, 
+static const char **dsdb_full_attribute_list_internal_el(TALLOC_CTX *mem_ctx,
+							 const struct dsdb_schema *schema,
 							 const struct ldb_message_element *el,
 							 enum dsdb_attr_list_query query)
 {
@@ -382,7 +382,7 @@ static const char **dsdb_full_attribute_list_internal_el(TALLOC_CTX *mem_ctx,
 			= attribute_list_from_class(mem_ctx, schema,
 						    dsdb_class_by_lDAPDisplayName_ldb_val(schema, &el->values[i]),
 						    query);
-		
+
 		attr_list = merge_attr_list(mem_ctx, attr_list, sclass_list);
 	}
 	return attr_list;
@@ -394,19 +394,19 @@ static int qsort_string(const char **s1, const char **s2)
 }
 
 /* Helper function to remove duplicates from the attribute list to be returned */
-static const char **dedup_attr_list(const char **attr_list) 
+static const char **dedup_attr_list(const char **attr_list)
 {
 	size_t new_len = str_list_length(attr_list);
 	/* Remove duplicates */
 	if (new_len > 1) {
 		size_t i;
 		TYPESAFE_QSORT(attr_list, new_len, qsort_string);
-		
+
 		for (i=1; i < new_len; i++) {
 			const char **val1 = &attr_list[i-1];
 			const char **val2 = &attr_list[i];
 			if (ldb_attr_cmp(*val1, *val2) == 0) {
-				memmove(val1, val2, (new_len - i) * sizeof( *attr_list)); 
+				memmove(val1, val2, (new_len - i) * sizeof( *attr_list));
 				attr_list[new_len-1] = NULL;
 				new_len--;
 				i--;
@@ -423,8 +423,8 @@ static const char **dedup_attr_list(const char **attr_list)
 
    The result contains only unique values
  */
-const char **dsdb_full_attribute_list(TALLOC_CTX *mem_ctx, 
-				      const struct dsdb_schema *schema, 
+const char **dsdb_full_attribute_list(TALLOC_CTX *mem_ctx,
+				      const struct dsdb_schema *schema,
 				      const struct ldb_message_element *class_list,
 				      enum dsdb_attr_list_query query)
 {
