@@ -669,6 +669,32 @@ static int vfs_ceph_ll_lookup(const struct vfs_handle_struct *handle,
 	return 0;
 }
 
+static int vfs_ceph_ll_lookupat(const struct vfs_handle_struct *handle,
+				const struct vfs_ceph_fh *parent_fh,
+				const char *name,
+				struct vfs_ceph_iref *iref)
+{
+	struct ceph_statx stx = {.stx_ino = 0};
+	struct Inode *inode = NULL;
+	int ret = -1;
+
+	ret = ceph_ll_lookup(cmount_of(handle),
+			     parent_fh->iref.inode,
+			     name,
+			     &inode,
+			     &stx,
+			     CEPH_STATX_INO,
+			     0,
+			     parent_fh->uperm);
+	if (ret != 0) {
+		return ret;
+	}
+	iref->inode = inode;
+	iref->ino = stx.stx_ino;
+	iref->owner = true;
+	return 0;
+}
+
 static int vfs_ceph_ll_open(const struct vfs_handle_struct *handle,
 			    struct vfs_ceph_fh *cfh,
 			    int flags)
@@ -1477,49 +1503,32 @@ static int vfs_ceph_fstatat(struct vfs_handle_struct *handle,
 			    int flags)
 {
 	int result = -1;
-	struct ceph_statx stx = { 0 };
-#ifdef HAVE_CEPH_STATXAT
-	int dirfd = fsp_get_pathref_fd(dirfsp);
+	struct vfs_ceph_iref iref = {0};
+	struct vfs_ceph_fh *dircfh = NULL;
 
-	DBG_DEBUG("[CEPH] fstatat(%p, %d, %s)\n",
-		  handle, dirfd, smb_fname->base_name);
-	result = ceph_statxat(cmount_of(handle),
-			      dirfd,
-			      smb_fname->base_name,
-			      &stx,
-			      SAMBA_STATX_ATTR_MASK,
-			      0);
-#else
-	struct smb_filename *full_fname = NULL;
+	DBG_DEBUG("[CEPH] fstatat(%p, %s)\n", handle, smb_fname->base_name);
 
-	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						  dirfsp,
-						  smb_fname);
-	if (full_fname == NULL) {
-		errno = ENOMEM;
-		return -1;
+	result = vfs_ceph_fetch_fh(handle, dirfsp, &dircfh);
+	if (result != 0) {
+		goto out;
 	}
 
-	DBG_DEBUG("[CEPH] fstatat(%p, %s)\n",
-		  handle, smb_fname_str_dbg(full_fname));
-	result = ceph_statx(cmount_of(handle),
-			    full_fname->base_name,
-			    &stx,
-			    SAMBA_STATX_ATTR_MASK,
-			    0);
+	result = vfs_ceph_ll_lookupat(handle,
+				      dircfh,
+				      smb_fname->base_name,
+				      &iref);
+	if (result != 0) {
+		goto out;
+	}
 
-	TALLOC_FREE(full_fname);
-#endif
-
+	result = vfs_ceph_ll_getattr2(handle, &iref, dircfh->uperm, sbuf);
+	if (result != 0) {
+		goto out;
+	}
+out:
+	vfs_ceph_iput(handle, &iref);
 	DBG_DEBUG("[CEPH] fstatat(...) = %d\n", result);
-	if (result < 0) {
-		return status_code(result);
-	}
-
-	init_stat_ex_from_ceph_statx(sbuf, &stx);
-	DBG_DEBUG("[CEPH] mode = 0x%x\n", sbuf->st_ex_mode);
-
-	return 0;
+	return status_code(result);
 }
 
 static int vfs_ceph_lstat(struct vfs_handle_struct *handle,
