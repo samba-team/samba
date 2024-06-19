@@ -889,6 +889,24 @@ static int vfs_ceph_ll_readlinkat(const struct vfs_handle_struct *handle,
 				dircfh->uperm);
 }
 
+static int vfs_ceph_ll_read(const struct vfs_handle_struct *handle,
+			    const struct vfs_ceph_fh *cfh,
+			    int64_t off,
+			    uint64_t len,
+			    char *buf)
+{
+	return ceph_ll_read(cmount_of(handle), cfh->fh, off, len, buf);
+}
+
+static int vfs_ceph_ll_write(const struct vfs_handle_struct *handle,
+			     const struct vfs_ceph_fh *cfh,
+			     int64_t off,
+			     uint64_t len,
+			     const char *data)
+{
+	return ceph_ll_write(cmount_of(handle), cfh->fh, off, len, data);
+}
+
 /* Ceph Inode-refernce get/put wrappers */
 static int vfs_ceph_iget(const struct vfs_handle_struct *handle,
 			 uint64_t ino,
@@ -1287,6 +1305,7 @@ static ssize_t vfs_ceph_pread(struct vfs_handle_struct *handle,
 			      size_t n,
 			      off_t offset)
 {
+	struct vfs_ceph_fh *cfh = NULL;
 	ssize_t result;
 
 	DBG_DEBUG("[CEPH] pread(%p, %p, %p, %llu, %llu)\n",
@@ -1296,12 +1315,13 @@ static ssize_t vfs_ceph_pread(struct vfs_handle_struct *handle,
 		  llu(n),
 		  llu(offset));
 
-	result = ceph_read(cmount_of(handle),
-			   fsp_get_io_fd(fsp),
-			   data,
-			   n,
-			   offset);
+	result = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
+	if (result != 0) {
+		goto out;
+	}
 
+	result = vfs_ceph_ll_read(handle, cfh, offset, n, data);
+out:
 	DBG_DEBUG("[CEPH] pread(...) = %llu\n", llu(result));
 	return lstatus_code(result);
 }
@@ -1321,6 +1341,7 @@ static struct tevent_req *vfs_ceph_pread_send(struct vfs_handle_struct *handle,
 					      void *data,
 					      size_t n, off_t offset)
 {
+	struct vfs_ceph_fh *cfh = NULL;
 	struct tevent_req *req = NULL;
 	struct vfs_ceph_pread_state *state = NULL;
 	int ret = -1;
@@ -1331,7 +1352,13 @@ static struct tevent_req *vfs_ceph_pread_send(struct vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	ret = ceph_read(cmount_of(handle), fsp_get_io_fd(fsp), data, n, offset);
+	ret = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
+	if (ret != 0) {
+		tevent_req_error(req, -ret);
+		return tevent_req_post(req, ev);
+	}
+
+	ret = vfs_ceph_ll_read(handle, cfh, offset, n, data);
 	if (ret < 0) {
 		/* ceph returns -errno on error. */
 		tevent_req_error(req, -ret);
@@ -1364,6 +1391,7 @@ static ssize_t vfs_ceph_pwrite(struct vfs_handle_struct *handle,
 			       size_t n,
 			       off_t offset)
 {
+	struct vfs_ceph_fh *cfh = NULL;
 	ssize_t result;
 
 	DBG_DEBUG("[CEPH] pwrite(%p, %p, %p, %llu, %llu)\n",
@@ -1373,12 +1401,12 @@ static ssize_t vfs_ceph_pwrite(struct vfs_handle_struct *handle,
 		  llu(n),
 		  llu(offset));
 
-	result = ceph_write(cmount_of(handle),
-			    fsp_get_io_fd(fsp),
-			    data,
-			    n,
-			    offset);
-
+	result = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
+	if (result != 0) {
+		goto out;
+	}
+	result = vfs_ceph_ll_write(handle, cfh, offset, n, data);
+out:
 	DBG_DEBUG("[CEPH] pwrite(...) = %llu\n", llu(result));
 	return lstatus_code(result);
 }
@@ -1398,6 +1426,7 @@ static struct tevent_req *vfs_ceph_pwrite_send(struct vfs_handle_struct *handle,
 					       const void *data,
 					       size_t n, off_t offset)
 {
+	struct vfs_ceph_fh *cfh = NULL;
 	struct tevent_req *req = NULL;
 	struct vfs_ceph_pwrite_state *state = NULL;
 	int ret = -1;
@@ -1408,8 +1437,13 @@ static struct tevent_req *vfs_ceph_pwrite_send(struct vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	ret = ceph_write(
-		cmount_of(handle), fsp_get_io_fd(fsp), data, n, offset);
+	ret = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
+	if (ret != 0) {
+		tevent_req_error(req, -ret);
+		return tevent_req_post(req, ev);
+	}
+
+	ret = vfs_ceph_ll_write(handle, cfh, offset, n, data);
 	if (ret < 0) {
 		/* ceph returns -errno on error. */
 		tevent_req_error(req, -ret);
@@ -2068,7 +2102,6 @@ static int vfs_ceph_readlinkat(struct vfs_handle_struct *handle,
 	if (result != 0) {
 		goto out;
 	}
-
 	result = vfs_ceph_ll_lookupat(handle,
 				      dircfh,
 				      smb_fname->base_name,
@@ -2078,6 +2111,7 @@ static int vfs_ceph_readlinkat(struct vfs_handle_struct *handle,
 	}
 
 	result = vfs_ceph_ll_readlinkat(handle, dircfh, &iref, buf, bufsiz);
+
 	vfs_ceph_iput(handle, &iref);
 out:
 	DBG_DEBUG("[CEPH] readlinkat(...) = %d\n", result);
