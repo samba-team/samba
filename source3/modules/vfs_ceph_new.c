@@ -828,6 +828,26 @@ static int vfs_ceph_ll_mkdirat(const struct vfs_handle_struct *handle,
 	return false;
 }
 
+static int vfs_ceph_ll_rmdir(const struct vfs_handle_struct *handle,
+			     const struct vfs_ceph_fh *dircfh,
+			     const char *name)
+{
+	return ceph_ll_rmdir(cmount_of(handle),
+			     dircfh->iref.inode,
+			     name,
+			     dircfh->uperm);
+}
+
+static int vfs_ceph_ll_unlinkat(const struct vfs_handle_struct *handle,
+				const struct vfs_ceph_fh *dircfh,
+				const char *name)
+{
+	return ceph_ll_unlink(cmount_of(handle),
+			      dircfh->iref.inode,
+			      name,
+			      dircfh->uperm);
+}
+
 /* Ceph Inode-refernce get/put wrappers */
 static int vfs_ceph_iget(const struct vfs_handle_struct *handle,
 			 uint64_t ino,
@@ -1698,17 +1718,16 @@ out:
 }
 
 static int vfs_ceph_unlinkat(struct vfs_handle_struct *handle,
-			struct files_struct *dirfsp,
-			const struct smb_filename *smb_fname,
-			int flags)
+			     struct files_struct *dirfsp,
+			     const struct smb_filename *smb_fname,
+			     int flags)
 {
+	struct vfs_ceph_fh *dircfh = NULL;
+	const char *name = smb_fname->base_name;
 	int result = -1;
-#ifdef HAVE_CEPH_UNLINKAT
-	int dirfd = fsp_get_pathref_fd(dirfsp);
 
-	DBG_DEBUG("[CEPH] unlinkat(%p, %d, %s)\n",
+	DBG_DEBUG("[CEPH] unlinkat(%p, %s)\n",
 		  handle,
-		  dirfd,
 		  smb_fname_str_dbg(smb_fname));
 
 	if (smb_fname->stream_name) {
@@ -1716,40 +1735,19 @@ static int vfs_ceph_unlinkat(struct vfs_handle_struct *handle,
 		return result;
 	}
 
-	result = ceph_unlinkat(cmount_of(handle),
-			       dirfd,
-			       smb_fname->base_name,
-			       flags);
-	DBG_DEBUG("[CEPH] unlinkat(...) = %d\n", result);
-	return status_code(result);
-#else
-	struct smb_filename *full_fname = NULL;
-
-	DBG_DEBUG("[CEPH] unlink(%p, %s)\n",
-		handle,
-		smb_fname_str_dbg(smb_fname));
-
-	if (smb_fname->stream_name) {
-		errno = ENOENT;
-		return result;
-	}
-
-	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						  dirfsp,
-						  smb_fname);
-	if (full_fname == NULL) {
-		return -1;
+	result = vfs_ceph_fetch_fh(handle, dirfsp, &dircfh);
+	if (result != 0) {
+		goto out;
 	}
 
 	if (flags & AT_REMOVEDIR) {
-		result = ceph_rmdir(cmount_of(handle), full_fname->base_name);
+		result = vfs_ceph_ll_rmdir(handle, dircfh, name);
 	} else {
-		result = ceph_unlink(cmount_of(handle), full_fname->base_name);
+		result = vfs_ceph_ll_unlinkat(handle, dircfh, name);
 	}
-	TALLOC_FREE(full_fname);
-	DBG_DEBUG("[CEPH] unlink(...) = %d\n", result);
+out:
+	DBG_DEBUG("[CEPH] unlinkat(...) = %d\n", result);
 	return status_code(result);
-#endif
 }
 
 static int vfs_ceph_fchmod(struct vfs_handle_struct *handle,
