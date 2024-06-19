@@ -262,6 +262,9 @@ uint32_t reg_perfcount_get_counter_help(uint32_t base_index, char **retbuf)
 	for(i = 1; i <= base_index; i++)
 	{
 		buffer_size = _reg_perfcount_multi_sz_from_tdb(names, (i*2)+1, retbuf, buffer_size);
+		if (buffer_size == 0) {
+			return buffer_size;
+		}
 	}
 	tdb_close(names);
 
@@ -310,10 +313,16 @@ uint32_t reg_perfcount_get_counter_names(uint32_t base_index, char **retbuf)
 	TALLOC_FREE(fname);
 
 	buffer_size = _reg_perfcount_multi_sz_from_tdb(names, 1, retbuf, buffer_size);
+	if (buffer_size == 0) {
+		return buffer_size;
+	}
 
 	for(i = 1; i <= base_index; i++)
 	{
 		buffer_size = _reg_perfcount_multi_sz_from_tdb(names, i*2, retbuf, buffer_size);
+		if (buffer_size == 0) {
+			return buffer_size;
+		}
 	}
 	tdb_close(names);
 
