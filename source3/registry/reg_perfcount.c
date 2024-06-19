@@ -173,6 +173,9 @@ static uint32_t _reg_perfcount_multi_sz_from_tdb(TDB_CONTEXT *tdb,
 	DATA_BLOB name_index, name;
 	bool ok;
 
+	/* Set to NULL, to avoid possible double frees on error. */
+	*retbuf = NULL;
+
 	snprintf(temp, sizeof(temp), "%d", keyval);
 	kbuf = string_tdb_data(temp);
 	dbuf = tdb_fetch(tdb, kbuf);
