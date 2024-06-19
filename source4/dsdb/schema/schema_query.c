@@ -402,7 +402,7 @@ static const char **dedup_attr_list(const char **attr_list)
 		size_t i;
 		TYPESAFE_QSORT(attr_list, new_len, qsort_string);
 
-		for (i=1; i < new_len; i++) {
+		for (i=1; new_len > 0 && i < new_len; i++) {
 			const char **val1 = &attr_list[i-1];
 			const char **val2 = &attr_list[i];
 			if (ldb_attr_cmp(*val1, *val2) == 0) {
