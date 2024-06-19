@@ -1,4 +1,87 @@
                    ==============================
+                   Release Notes for Samba 4.20.2
+                           June 19, 2024
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.20 release series.
+
+
+Changes since 4.20.1
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15662: vfs_widelinks with DFS shares breaks case insensitivity.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 13213: Samba build is not reproducible.
+   * BUG 15569: ldb qsort might r/w out of bounds with an intransitive compare
+     function.
+   * BUG 15625: Many qsort() comparison functions are non-transitive, which can
+     lead to out-of-bounds access in some circumstances.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 15638: Need to change gitlab-ci.yml tags in all branches to avoid CI
+     bill.
+   * BUG 15654: We have added new options --vendor-name and --vendor-patch-
+     revision arguments to ./configure to allow distributions and packagers to
+     put their name in the Samba version string so that when debugging Samba the
+     source of the binary is obvious.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 15665: CTDB RADOS mutex helper misses namespace support.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13019: Dynamic DNS updates with the internal DNS are not working.
+   * BUG 14981: netr_LogonSamLogonEx returns NR_STATUS_ACCESS_DENIED with
+     SysvolReady=0.
+   * BUG 15412: Anonymous smb3 signing/encryption should be allowed (similar to
+     Windows Server 2022).
+   * BUG 15573: Panic in dreplsrv_op_pull_source_apply_changes_trigger.
+   * BUG 15620: s4:nbt_server: does not provide unexpected handling, so winbindd
+     can't use nmb requests instead cldap.
+   * BUG 15642: winbindd, net ads join and other things don't work on an ipv6
+     only host.
+   * BUG 15659: Segmentation fault when deleting files in vfs_recycle.
+   * BUG 15664: Panic in vfs_offload_token_db_fetch_fsp().
+   * BUG 15666: "client use kerberos" and --use-kerberos is ignored for the
+     machine account.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15435: Regression DFS not working with widelinks = true.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15633: samba-gpupdate - Invalid NtVer in netlogon_samlogon_response.
+   * BUG 15653: idmap_ad creates an incorrect local krb5.conf in case of trusted
+     domain lookups.
+   * BUG 15660: The images don't build after the git security release and CentOS
+     8 Stream is EOL.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.20.1
                             May 08, 2024
                    ==============================
@@ -51,8 +134,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.20.0
                            March 27, 2024
