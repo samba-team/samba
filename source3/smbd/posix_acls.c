@@ -4775,7 +4775,7 @@ static NTSTATUS make_default_acl_everyone(TALLOC_CTX *ctx,
 {
 	struct dom_sid owner_sid, group_sid;
 	size_t size = 0;
-	struct security_ace aces[1];
+	struct security_ace aces[1] = {0};
 	mode_t mode = psbuf->st_ex_mode;
 	struct security_acl *new_dacl = NULL;
 	int idx = 0;
