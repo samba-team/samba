@@ -907,6 +907,14 @@ static int vfs_ceph_ll_write(const struct vfs_handle_struct *handle,
 	return ceph_ll_write(cmount_of(handle), cfh->fh, off, len, data);
 }
 
+static off_t vfs_ceph_ll_lseek(const struct vfs_handle_struct *handle,
+			       const struct vfs_ceph_fh *cfh,
+			       off_t offset,
+			       int whence)
+{
+	return ceph_ll_lseek(cmount_of(handle), cfh->fh, offset, whence);
+}
+
 /* Ceph Inode-refernce get/put wrappers */
 static int vfs_ceph_iget(const struct vfs_handle_struct *handle,
 			 uint64_t ino,
@@ -1475,13 +1483,17 @@ static off_t vfs_ceph_lseek(struct vfs_handle_struct *handle,
 			    off_t offset,
 			    int whence)
 {
-	off_t result = 0;
+	struct vfs_ceph_fh *cfh = NULL;
+	intmax_t result = 0;
 
 	DBG_DEBUG("[CEPH] vfs_ceph_lseek\n");
-	result = ceph_lseek(cmount_of(handle),
-			    fsp_get_io_fd(fsp),
-			    offset,
-			    whence);
+	result = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
+	if (result != 0) {
+		goto out;
+	}
+
+	result = vfs_ceph_ll_lseek(handle, cfh, offset, whence);
+out:
 	return lstatus_code(result);
 }
 
