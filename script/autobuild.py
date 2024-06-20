@@ -887,10 +887,10 @@ tasks = {
             ("tevent-make", "cd lib/tevent && make"),
             ("tevent-install", "cd lib/tevent && make install"),
 
-            ("nondevel-configure", samba_libs_envvars + " ./configure --private-libraries='!ldb' --vendor-name=autobuild-TEST-STRING --vendor-patch-revision=5 ${PREFIX}"),
+            ("nondevel-configure", samba_libs_envvars + " ./configure --private-libraries='!ldb' --vendor-suffix=TEST-STRING~5.1.2 ${PREFIX}"),
             ("nondevel-make", "make -j"),
             ("nondevel-check", "./bin/smbd -b | grep WITH_NTVFS_FILESERVER && exit 1; exit 0"),
-            ("nondevel-check", "./bin/smbd --version | grep -e '-autobuild-TEST-STRING-5' && exit 0; exit 1"),
+            ("nondevel-check", "./bin/smbd --version | grep -F 'TEST-STRING~5.1.2' && exit 0; exit 1"),
             ("nondevel-no-libtalloc", "find ./bin | grep -v 'libtalloc-report' | grep 'libtalloc' && exit 1; exit 0"),
             ("nondevel-no-libtdb", "find ./bin | grep -v 'libtdb-wrap' | grep 'libtdb' && exit 1; exit 0"),
             ("nondevel-no-libtevent", "find ./bin | grep -v 'libtevent-util' | grep 'libtevent' && exit 1; exit 0"),

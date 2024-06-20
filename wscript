@@ -162,26 +162,16 @@ def options(opt):
                                dest='with_smb1server',
                                help=("Build smbd with SMB1 support (default=yes)."))
 
-    opt.add_option('--vendor-name',
+    opt.add_option('--vendor-suffix',
                    help=('Specify a vendor (or packager) name to include in the version string'),
                    type="string",
                    dest='SAMBA_VERSION_VENDOR_SUFFIX',
                    default=None)
 
-    opt.add_option('--vendor-patch-revision',
-                   help=('Specify a vendor (or packager) patch revision number include in the version string (requires --vendor-name)'),
-                   type="int",
-                   dest='SAMBA_VERSION_VENDOR_PATCH',
-                   default=None)
 
 def configure(conf):
     if Options.options.SAMBA_VERSION_VENDOR_SUFFIX:
         conf.env.SAMBA_VERSION_VENDOR_SUFFIX = Options.options.SAMBA_VERSION_VENDOR_SUFFIX
-
-    if Options.options.SAMBA_VERSION_VENDOR_PATCH:
-        if not Options.options.SAMBA_VERSION_VENDOR_SUFFIX:
-            raise conf.fatal('--vendor-patch-revision requires --vendor-version')
-        conf.env.SAMBA_VERSION_VENDOR_PATCH = Options.options.SAMBA_VERSION_VENDOR_PATCH
 
     version = samba_version.load_version(env=conf.env)
 
