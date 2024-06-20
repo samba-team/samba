@@ -944,6 +944,18 @@ static int vfs_ceph_ll_fallocate(const struct vfs_handle_struct *handle,
 	return ceph_ll_fallocate(cmount_of(handle), cfh->fh, mode, off, len);
 }
 
+static int vfs_ceph_ll_link(const struct vfs_handle_struct *handle,
+			    const struct vfs_ceph_fh *dircfh,
+			    const char *name,
+			    const struct vfs_ceph_iref *iref)
+{
+	return ceph_ll_link(cmount_of(handle),
+			    iref->inode,
+			    dircfh->iref.inode,
+			    name,
+			    dircfh->uperm);
+}
+
 /* Ceph Inode-refernce get/put wrappers */
 static int vfs_ceph_iget(const struct vfs_handle_struct *handle,
 			 uint64_t ino,
@@ -2177,40 +2189,50 @@ out:
 }
 
 static int vfs_ceph_linkat(struct vfs_handle_struct *handle,
-		files_struct *srcfsp,
-		const struct smb_filename *old_smb_fname,
-		files_struct *dstfsp,
-		const struct smb_filename *new_smb_fname,
-		int flags)
+			   files_struct *srcfsp,
+			   const struct smb_filename *old_smb_fname,
+			   files_struct *dstfsp,
+			   const struct smb_filename *new_smb_fname,
+			   int flags)
 {
-	struct smb_filename *full_fname_old = NULL;
-	struct smb_filename *full_fname_new = NULL;
+	struct vfs_ceph_fh *src_dircfh = NULL;
+	struct vfs_ceph_fh *dst_dircfh = NULL;
+	struct vfs_ceph_iref iref = {0};
+	const char *name = old_smb_fname->base_name;
+	const char *newname = new_smb_fname->base_name;
 	int result = -1;
 
-	full_fname_old = full_path_from_dirfsp_atname(talloc_tos(),
-					srcfsp,
-					old_smb_fname);
-	if (full_fname_old == NULL) {
-		return -1;
-	}
-	full_fname_new = full_path_from_dirfsp_atname(talloc_tos(),
-					dstfsp,
-					new_smb_fname);
-	if (full_fname_new == NULL) {
-		TALLOC_FREE(full_fname_old);
+	/* Prevent special linkat modes until it is required by VFS layer */
+	if (flags & (AT_EMPTY_PATH | AT_SYMLINK_FOLLOW)) {
+		errno = ENOTSUP;
 		return -1;
 	}
 
-	DBG_DEBUG("[CEPH] link(%p, %s, %s)\n", handle,
-			full_fname_old->base_name,
-			full_fname_new->base_name);
+	DBG_DEBUG("[CEPH] link(%p, %s, %s)\n", handle, name, newname);
 
-	result = ceph_link(cmount_of(handle),
-			   full_fname_old->base_name,
-			   full_fname_new->base_name);
+	result = vfs_ceph_fetch_fh(handle, srcfsp, &src_dircfh);
+	if (result != 0) {
+		goto out;
+	}
+
+	result = vfs_ceph_fetch_fh(handle, dstfsp, &dst_dircfh);
+	if (result != 0) {
+		goto out;
+	}
+
+	result = vfs_ceph_ll_lookupat(handle, src_dircfh, name, &iref);
+	if (result != 0) {
+		goto out;
+	}
+
+	result = vfs_ceph_ll_link(handle, dst_dircfh, newname, &iref);
+	if (result != 0) {
+		goto out;
+	}
+
+	vfs_ceph_iput(handle, &iref);
+out:
 	DBG_DEBUG("[CEPH] link(...) = %d\n", result);
-	TALLOC_FREE(full_fname_old);
-	TALLOC_FREE(full_fname_new);
 	return status_code(result);
 }
 
