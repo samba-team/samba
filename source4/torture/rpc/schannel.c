@@ -247,7 +247,11 @@ static bool test_netlogon_ex_bug14932(struct dcerpc_pipe *p,
 				      struct netlogon_creds_CredentialState *creds)
 {
 	NTSTATUS status;
-	struct netr_LogonSamLogonEx r;
+	struct netr_LogonSamLogonEx r = {
+		.in = {
+			.flags = 0,
+		}
+	};
 	struct netr_NetworkInfo ninfo;
 	union netr_LogonLevel logon;
 	union netr_Validation validation;
