@@ -1225,7 +1225,12 @@ static bool test_lease_oplock(struct torture_context *tctx,
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_create io;
 	struct smb2_lease ls;
-	struct smb2_handle h, h2;
+	struct smb2_handle h = {
+		.data = {0},
+	};
+	struct smb2_handle h2 = {
+		.data = {0},
+	};
 	NTSTATUS status;
 	const char *fname = "lease_oplock.dat";
 	bool ret = true;
