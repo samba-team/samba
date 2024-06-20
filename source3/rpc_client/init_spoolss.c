@@ -345,7 +345,7 @@ WERROR spoolss_create_default_devmode(TALLOC_CTX *mem_ctx,
 WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
 				      struct spoolss_security_descriptor **secdesc)
 {
-	struct security_ace ace[7];	/* max number of ace entries */
+	struct security_ace ace[7] = {0};	/* max number of ace entries */
 	int i = 0;
 	uint32_t sa;
 	struct security_acl *psa = NULL;
