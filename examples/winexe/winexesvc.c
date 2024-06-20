@@ -681,7 +681,7 @@ static DWORD winexesvcInitialization(DWORD argc, LPTSTR * argv, DWORD * specific
 static void WINAPI winexesvcStart(DWORD argc, LPTSTR * argv)
 {
 	DWORD status;
-	DWORD specificError;
+	DWORD specificError = NO_ERROR;
 
 	winexesvcStatus.dwServiceType = SERVICE_WIN32;
 	winexesvcStatus.dwCurrentState = SERVICE_START_PENDING;
