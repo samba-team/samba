@@ -11,6 +11,9 @@
 <xsl:param name="use.id.as.filename" select="1"/>
 <xsl:param name="man.endnotes.are.numbered" select="0"/>
 
+<!-- make room for long version numbers -->
+<xsl:param name="man.th.extra2.max.length">40</xsl:param>
+
 <!-- 
     Our ulink stylesheet omits @url part if content was specified
 -->
