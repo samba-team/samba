@@ -286,7 +286,7 @@ def abi_build_vscript(task):
         f.close()
 
 def VSCRIPT_MAP_PRIVATE(bld, libname, orig_vscript, version, private_vscript):
-    version = version.replace("-", "_").replace("+","_").upper()
+    version = re.sub(r'\W', '_', version).upper()
     t = bld.SAMBA_GENERATOR(private_vscript,
                             rule=abi_build_vscript,
                             source=orig_vscript,
@@ -314,8 +314,8 @@ def ABI_VSCRIPT(bld, libname, abi_directory, version, vscript, abi_match=None, p
 
     libname = os.path.basename(libname)
     version = os.path.basename(version)
-    libname = libname.replace("-", "_").replace("+","_").upper()
-    version = version.replace("-", "_").replace("+","_").upper()
+    libname = re.sub(r'\W', '_', libname).upper()
+    version = re.sub(r'\W', '_', version).upper()
 
     t = bld.SAMBA_GENERATOR(vscript,
                             rule=abi_build_vscript,
