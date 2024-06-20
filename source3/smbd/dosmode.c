@@ -457,10 +457,11 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 	dosattrib.info.info5.create_time = full_timespec_to_nt_time(
 		&smb_fname->st.st_ex_btime);
 
-	DEBUG(10,("set_ea_dos_attributes: set attribute 0x%x, btime = %s on file %s\n",
-		(unsigned int)dosmode,
-		time_to_asc(convert_timespec_to_time_t(smb_fname->st.st_ex_btime)),
-		smb_fname_str_dbg(smb_fname) ));
+	DBG_DEBUG("set attribute 0x%" PRIx32 ", btime = %s on file %s\n",
+		  dosmode,
+		  time_to_asc(convert_timespec_to_time_t(
+			  smb_fname->st.st_ex_btime)),
+		  smb_fname_str_dbg(smb_fname));
 
 	ndr_err = ndr_push_struct_blob(
 			&blob, talloc_tos(), &dosattrib,
