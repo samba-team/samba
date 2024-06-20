@@ -915,6 +915,13 @@ static off_t vfs_ceph_ll_lseek(const struct vfs_handle_struct *handle,
 	return ceph_ll_lseek(cmount_of(handle), cfh->fh, offset, whence);
 }
 
+static int vfs_ceph_ll_fsync(const struct vfs_handle_struct *handle,
+			     const struct vfs_ceph_fh *cfh,
+			     int syncdataonly)
+{
+	return ceph_ll_fsync(cmount_of(handle), cfh->fh, syncdataonly);
+}
+
 /* Ceph Inode-refernce get/put wrappers */
 static int vfs_ceph_iget(const struct vfs_handle_struct *handle,
 			 uint64_t ino,
@@ -1577,6 +1584,7 @@ static struct tevent_req *vfs_ceph_fsync_send(struct vfs_handle_struct *handle,
 					struct tevent_context *ev,
 					files_struct *fsp)
 {
+	struct vfs_ceph_fh *cfh = NULL;
 	struct tevent_req *req = NULL;
 	struct vfs_aio_state *state = NULL;
 	int ret = -1;
@@ -1588,9 +1596,14 @@ static struct tevent_req *vfs_ceph_fsync_send(struct vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	/* Make sync call. */
-	ret = ceph_fsync(cmount_of(handle), fsp_get_io_fd(fsp), false);
+	ret = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
+	if (ret != 0) {
+		tevent_req_error(req, -ret);
+		return tevent_req_post(req, ev);
+	}
 
+	/* Make sync call. */
+	ret = vfs_ceph_ll_fsync(handle, cfh, false);
 	if (ret != 0) {
 		/* ceph_fsync returns -errno on error. */
 		tevent_req_error(req, -ret);
