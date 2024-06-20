@@ -182,9 +182,11 @@ bool samba_cmdline_burn(int argc, char *argv[])
 
 			if (is_user) {
 				q = strchr_m(p, '%');
-				if (q != NULL) {
-					p = q;
+				if (q == NULL) {
+					/* -U without '%' has no secret */
+					continue;
 				}
+				p = q;
 			} else {
 				p += ulen;
 			}
