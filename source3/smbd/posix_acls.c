@@ -2091,7 +2091,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
  entry as a mask on all following allow entries. Finally, delete
  the Everyone DENY entry (we have applied it to everything possible).
 
- In addition, in this pass we remove any DENY entries that have 
+ In addition, in this pass we remove any DENY entries that have
  no permissions (ie. they are a DENY nothing).
  ---------------------------------------------------------------------------
  Second pass - only deal with deny user entries.
@@ -2227,7 +2227,7 @@ static void process_deny_list(connection_struct *conn, canon_ace **pp_ace_list )
 
 		for (allow_ace_p = curr_ace->next; allow_ace_p; allow_ace_p = allow_ace_p->next) {
 
-			/* 
+			/*
 			 * Only mask off allow entries.
 			 */
 
@@ -2456,7 +2456,7 @@ static bool unpack_canon_ace(files_struct *fsp,
 	process_deny_list(fsp->conn, &dir_ace);
 
 	/*
-	 * A well formed POSIX file or default ACL has at least 3 entries, a 
+	 * A well formed POSIX file or default ACL has at least 3 entries, a
 	 * SMB_ACL_USER_OBJ, SMB_ACL_GROUP_OBJ, SMB_ACL_OTHER_OBJ
 	 * and optionally a mask entry. Ensure this is the case.
 	 */
@@ -2973,7 +2973,7 @@ static bool set_canon_ace_list(files_struct *fsp,
 }
 
 /****************************************************************************
- 
+
 ****************************************************************************/
 
 SMB_ACL_T free_empty_sys_acl(connection_struct *conn, SMB_ACL_T the_acl)
@@ -3398,7 +3398,7 @@ NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
  Try to chown a file. We will be able to chown it under the following conditions.
 
   1) If we have root privileges, then it will just work.
-  2) If we have SeRestorePrivilege we can change the user + group to any other user. 
+  2) If we have SeRestorePrivilege we can change the user + group to any other user.
   3) If we have SeTakeOwnershipPrivilege we can change the user to the current user.
   4) If we have write permission to the file and dos_filemodes is set
      then allow chown to the currently authenticated user.
@@ -3967,7 +3967,7 @@ static int chmod_acl_internals(SMB_ACL_T posix_acl, mode_t mode)
 
 	/*
 	 * If this is a simple 3 element ACL or no elements then it's a standard
-	 * UNIX permission set. Just use chmod...	
+	 * UNIX permission set. Just use chmod...
 	 */
 
 	if ((num_entries == 3) || (num_entries == 0))
