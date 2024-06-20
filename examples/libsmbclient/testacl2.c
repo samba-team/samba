@@ -24,7 +24,7 @@ int main(int argc, const char *argv[])
 	static char *the_acl = NULL;
 	int ret;
 	const char *debugstr;
-	char value[1024];
+	char value[1024] = {0};
 	SMBCCTX *context;
 
 	if (smbc_init(get_auth_data_fn, debug) != 0)
