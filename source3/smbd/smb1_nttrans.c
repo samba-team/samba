@@ -1675,20 +1675,10 @@ static void call_nt_transact_notify_change(connection_struct *conn,
 		return;
 	}
 
-	{
-		char *filter_string;
-
-		if (!(filter_string = notify_filter_string(NULL, filter))) {
-			reply_nterror(req,NT_STATUS_NO_MEMORY);
-			return;
-		}
-
-		DEBUG(3,("call_nt_transact_notify_change: notify change "
-			 "called on %s, filter = %s, recursive = %d\n",
-			 fsp_str_dbg(fsp), filter_string, recursive));
-
-		TALLOC_FREE(filter_string);
-	}
+	DBG_NOTICE("notify change called on %s, filter = %s, recursive = %d\n",
+		   fsp_str_dbg(fsp),
+		   notify_filter_string(talloc_tos(), filter),
+		   recursive);
 
 	if((!fsp->fsp_flags.is_directory) || (conn != fsp->conn)) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);

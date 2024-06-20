@@ -240,20 +240,10 @@ static struct tevent_req *smbd_smb2_notify_send(TALLOC_CTX *mem_ctx,
 	state->smbreq = smbreq;
 	smbreq->async_priv = (void *)req;
 
-	if (DEBUGLEVEL >= 3) {
-		char *filter_string;
-
-		filter_string = notify_filter_string(NULL, in_completion_filter);
-		if (tevent_req_nomem(filter_string, req)) {
-			return tevent_req_post(req, ev);
-		}
-
-		DEBUG(3,("smbd_smb2_notify_send: notify change "
-			 "called on %s, filter = %s, recursive = %d\n",
-			 fsp_str_dbg(fsp), filter_string, recursive));
-
-		TALLOC_FREE(filter_string);
-	}
+	DBG_NOTICE("notify change called on %s, filter = %s, recursive = %d\n",
+		   fsp_str_dbg(fsp),
+		   notify_filter_string(talloc_tos(), in_completion_filter),
+		   recursive);
 
 	if ((!fsp->fsp_flags.is_directory) || (conn != fsp->conn)) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
