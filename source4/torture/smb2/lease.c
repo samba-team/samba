@@ -454,7 +454,15 @@ static bool test_lease_upgrade3(struct torture_context *tctx,
                                 struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
-	struct smb2_handle h, h2, hnew;
+	struct smb2_handle h = {
+		.data = {0},
+	};
+	struct smb2_handle h2 = {
+		.data = {0},
+	};
+	struct smb2_handle hnew = {
+		.data = {0},
+	};
 	NTSTATUS status;
 	struct smb2_create io;
 	struct smb2_lease ls;
