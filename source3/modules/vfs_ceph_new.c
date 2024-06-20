@@ -922,6 +922,28 @@ static int vfs_ceph_ll_fsync(const struct vfs_handle_struct *handle,
 	return ceph_ll_fsync(cmount_of(handle), cfh->fh, syncdataonly);
 }
 
+static int vfs_ceph_ll_ftruncate(struct vfs_handle_struct *handle,
+				 const struct vfs_ceph_fh *cfh,
+				 int64_t size)
+{
+	struct ceph_statx stx = {.stx_size = (uint64_t)size};
+
+	return ceph_ll_setattr(cmount_of(handle),
+			       cfh->iref.inode,
+			       &stx,
+			       CEPH_SETATTR_SIZE,
+			       cfh->uperm);
+}
+
+static int vfs_ceph_ll_fallocate(const struct vfs_handle_struct *handle,
+				 const struct vfs_ceph_fh *cfh,
+				 int mode,
+				 int64_t off,
+				 int64_t len)
+{
+	return ceph_ll_fallocate(cmount_of(handle), cfh->fh, mode, off, len);
+}
+
 /* Ceph Inode-refernce get/put wrappers */
 static int vfs_ceph_iget(const struct vfs_handle_struct *handle,
 			 uint64_t ino,
@@ -1940,6 +1962,7 @@ static int strict_allocate_ftruncate(struct vfs_handle_struct *handle,
 	int result;
 	NTSTATUS status;
 	SMB_STRUCT_STAT *pst;
+	struct vfs_ceph_fh *cfh = NULL;
 
 	status = vfs_stat_fsp(fsp);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1955,20 +1978,21 @@ static int strict_allocate_ftruncate(struct vfs_handle_struct *handle,
 	if (pst->st_ex_size == len)
 		return 0;
 
+	result = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
+	if (result != 0) {
+		return status_code(result);
+	}
+
 	/* Shrink - just ftruncate. */
 	if (pst->st_ex_size > len) {
-		result = ceph_ftruncate(cmount_of(handle),
-					fsp_get_io_fd(fsp),
-					len);
+		result = vfs_ceph_ll_ftruncate(handle, cfh, len);
 		return status_code(result);
 	}
 
 	space_to_write = len - pst->st_ex_size;
-	result = ceph_fallocate(cmount_of(handle),
-				fsp_get_io_fd(fsp),
-				0,
-				pst->st_ex_size,
-				space_to_write);
+	result = vfs_ceph_ll_fallocate(
+		handle, cfh, 0, pst->st_ex_size, space_to_write);
+
 	return status_code(result);
 }
 
@@ -1976,6 +2000,7 @@ static int vfs_ceph_ftruncate(struct vfs_handle_struct *handle,
 			      files_struct *fsp,
 			      off_t len)
 {
+	struct vfs_ceph_fh *cfh = NULL;
 	int result = -1;
 
 	DBG_DEBUG("[CEPH] ftruncate(%p, %p, %llu\n", handle, fsp, llu(len));
@@ -1984,7 +2009,12 @@ static int vfs_ceph_ftruncate(struct vfs_handle_struct *handle,
 		return strict_allocate_ftruncate(handle, fsp, len);
 	}
 
-	result = ceph_ftruncate(cmount_of(handle), fsp_get_io_fd(fsp), len);
+	result = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
+	if (result != 0) {
+		goto out;
+	}
+	result = vfs_ceph_ll_ftruncate(handle, cfh, len);
+out:
 	return status_code(result);
 }
 
@@ -1994,16 +2024,19 @@ static int vfs_ceph_fallocate(struct vfs_handle_struct *handle,
 			      off_t offset,
 			      off_t len)
 {
+	struct vfs_ceph_fh *cfh = NULL;
 	int result;
 
 	DBG_DEBUG("[CEPH] fallocate(%p, %p, %u, %llu, %llu\n",
 		  handle, fsp, mode, llu(offset), llu(len));
+	result = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
+	if (result != 0) {
+		goto out;
+	}
+
 	/* unsupported mode flags are rejected by libcephfs */
-	result = ceph_fallocate(cmount_of(handle),
-			        fsp_get_io_fd(fsp),
-				mode,
-				offset,
-				len);
+	result = vfs_ceph_ll_fallocate(handle, cfh, mode, offset, len);
+out:
 	DBG_DEBUG("[CEPH] fallocate(...) = %d\n", result);
 	return status_code(result);
 }
