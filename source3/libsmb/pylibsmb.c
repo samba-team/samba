@@ -208,12 +208,14 @@ static int py_cli_thread_destructor(struct py_cli_thread *t)
 	ssize_t written;
 	int ret;
 
-	do {
-		/*
-		 * This will wake the poll thread from the poll(2)
-		 */
-		written = write(t->shutdown_pipe[1], &c, 1);
-	} while ((written == -1) && (errno == EINTR));
+	if (t->shutdown_pipe[1] != -1) {
+		do {
+			/*
+			* This will wake the poll thread from the poll(2)
+			*/
+			written = write(t->shutdown_pipe[1], &c, 1);
+		} while ((written == -1) && (errno == EINTR));
+	}
 
 	/*
 	 * Allow the poll thread to do its own cleanup under the GIL
