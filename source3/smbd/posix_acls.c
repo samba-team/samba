@@ -4703,7 +4703,7 @@ static NTSTATUS make_default_acl_windows(TALLOC_CTX *ctx,
 {
 	struct dom_sid owner_sid, group_sid;
 	size_t size = 0;
-	struct security_ace aces[4];
+	struct security_ace aces[4] = {0};
 	uint32_t access_mask = 0;
 	mode_t mode = psbuf->st_ex_mode;
 	struct security_acl *new_dacl = NULL;
