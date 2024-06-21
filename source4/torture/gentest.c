@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    generic testing tool - version with both SMB and SMB2 support
 
    Copyright (C) Andrew Tridgell 2003-2008
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -150,7 +150,7 @@ static bool ignore_pattern(const char *str)
 	return false;
 }
 
-/***************************************************** 
+/*****************************************************
 connect to the servers
 *******************************************************/
 static bool connect_servers_fast(void)
@@ -182,7 +182,7 @@ static bool connect_servers_fast(void)
 
 
 
-/***************************************************** 
+/*****************************************************
 connect to the servers
 *******************************************************/
 static bool connect_servers(struct tevent_context *ev,
@@ -221,15 +221,15 @@ static bool connect_servers(struct tevent_context *ev,
 			lpcfg_smbcli_session_options(lp_ctx, &smb_session_options);
 
 			printf("Connecting to \\\\%s\\%s as %s - instance %d\n",
-			       servers[i].server_name, servers[i].share_name, 
+			       servers[i].server_name, servers[i].share_name,
 			       cli_credentials_get_username(servers[i].credentials),
 			       j);
 
-			cli_credentials_set_workstation(servers[i].credentials, 
+			cli_credentials_set_workstation(servers[i].credentials,
 							"gentest", CRED_SPECIFIED);
 
 			if (options.smb2) {
-				status = smb2_connect(NULL, servers[i].server_name, 
+				status = smb2_connect(NULL, servers[i].server_name,
 									  lpcfg_smb_ports(lp_ctx),
 						      servers[i].share_name,
 						      lpcfg_resolve_context(lp_ctx),
@@ -241,8 +241,8 @@ static bool connect_servers(struct tevent_context *ev,
 							  );
 			} else {
 				status = smbcli_tree_full_connection(NULL,
-								     &servers[i].smb_tree[j], 
-								     servers[i].server_name, 
+								     &servers[i].smb_tree[j],
+								     servers[i].server_name,
 								     lpcfg_smb_ports(lp_ctx),
 								     servers[i].share_name, "A:",
 									 lpcfg_socket_options(lp_ctx),
@@ -262,12 +262,12 @@ static bool connect_servers(struct tevent_context *ev,
 			if (options.smb2) {
 				servers[i].smb2_tree[j]->session->transport->oplock.handler = oplock_handler_smb2;
 				servers[i].smb2_tree[j]->session->transport->oplock.private_data = (void *)(uintptr_t)((i<<8)|j);
-				smb2_transport_idle_handler(servers[i].smb2_tree[j]->session->transport, 
+				smb2_transport_idle_handler(servers[i].smb2_tree[j]->session->transport,
 							    idle_func_smb2, 50000, NULL);
 			} else {
-				smbcli_oplock_handler(servers[i].smb_tree[j]->session->transport, oplock_handler_smb, 
+				smbcli_oplock_handler(servers[i].smb_tree[j]->session->transport, oplock_handler_smb,
 						      (void *)(uintptr_t)((i<<8)|j));
-				smbcli_transport_idle_handler(servers[i].smb_tree[j]->session->transport, idle_func_smb, 
+				smbcli_transport_idle_handler(servers[i].smb_tree[j]->session->transport, idle_func_smb,
 							      50000, (void *)(uintptr_t)((i<<8)|j));
 			}
 		}
@@ -324,7 +324,7 @@ static unsigned int fnum_to_handle_smb2(int server, int instance, struct smb2_ha
 			return i;
 		}
 	}
-	printf("Invalid server handle in fnum_to_handle on server %d instance %d\n", 
+	printf("Invalid server handle in fnum_to_handle on server %d instance %d\n",
 	       server, instance);
 	return BAD_HANDLE;
 }
@@ -342,7 +342,7 @@ static unsigned int fnum_to_handle_smb(int server, int instance, uint16_t server
 			return i;
 		}
 	}
-	printf("Invalid server handle in fnum_to_handle on server %d instance %d\n", 
+	printf("Invalid server handle in fnum_to_handle on server %d instance %d\n",
 	       server, instance);
 	return BAD_HANDLE;
 }
@@ -361,7 +361,7 @@ static void gen_add_handle_smb2(int instance, const char *name, struct smb2_hand
 		h = random() % options.max_open_handles;
 		for (i=0;i<NSERVERS;i++) {
 			NTSTATUS status;
-			status = smb2_util_close(servers[i].smb2_tree[open_handles[h].instance], 
+			status = smb2_util_close(servers[i].smb2_tree[open_handles[h].instance],
 						 open_handles[h].smb2_handle[i]);
 			if (NT_STATUS_IS_ERR(status)) {
 				printf("INTERNAL ERROR: Close failed when recovering handle! - %s\n",
@@ -379,7 +379,7 @@ static void gen_add_handle_smb2(int instance, const char *name, struct smb2_hand
 	}
 	num_open_handles++;
 
-	printf("OPEN num_open_handles=%d h=%d (%s)\n", 
+	printf("OPEN num_open_handles=%d h=%d (%s)\n",
 	       num_open_handles, h, name);
 }
 
@@ -397,7 +397,7 @@ static void gen_add_handle_smb(int instance, const char *name, uint16_t handles[
 		h = random() % options.max_open_handles;
 		for (i=0;i<NSERVERS;i++) {
 			NTSTATUS status;
-			status = smbcli_close(servers[i].smb_tree[open_handles[h].instance], 
+			status = smbcli_close(servers[i].smb_tree[open_handles[h].instance],
 					      open_handles[h].smb_handle[i]);
 			if (NT_STATUS_IS_ERR(status)) {
 				printf("INTERNAL ERROR: Close failed when recovering handle! - %s\n",
@@ -415,7 +415,7 @@ static void gen_add_handle_smb(int instance, const char *name, uint16_t handles[
 	}
 	num_open_handles++;
 
-	printf("OPEN num_open_handles=%d h=%d (%s)\n", 
+	printf("OPEN num_open_handles=%d h=%d (%s)\n",
 	       num_open_handles, h, name);
 }
 
@@ -429,10 +429,10 @@ static void gen_remove_handle_smb2(int instance, struct smb2_handle handles[NSER
 	for (h=0;h<options.max_open_handles;h++) {
 		if (instance == open_handles[h].instance &&
 		    smb2_handle_equal(&open_handles[h].smb2_handle[0], &handles[0])) {
-			open_handles[h].active = false;			
+			open_handles[h].active = false;
 			num_open_handles--;
-			printf("CLOSE num_open_handles=%d h=%d (%s)\n", 
-			       num_open_handles, h, 
+			printf("CLOSE num_open_handles=%d h=%d (%s)\n",
+			       num_open_handles, h,
 			       open_handles[h].name);
 			return;
 		}
@@ -450,10 +450,10 @@ static void gen_remove_handle_smb(int instance, uint16_t handles[NSERVERS])
 	for (h=0;h<options.max_open_handles;h++) {
 		if (instance == open_handles[h].instance &&
 		    open_handles[h].smb_handle[0] == handles[0]) {
-			open_handles[h].active = false;			
+			open_handles[h].active = false;
 			num_open_handles--;
-			printf("CLOSE num_open_handles=%d h=%d (%s)\n", 
-			       num_open_handles, h, 
+			printf("CLOSE num_open_handles=%d h=%d (%s)\n",
+			       num_open_handles, h,
 			       open_handles[h].name);
 			return;
 		}
@@ -500,7 +500,7 @@ static uint16_t gen_fnum(int instance)
 
 	while (num_open_handles > 0 && count++ < 10*options.max_open_handles) {
 		h = random() % options.max_open_handles;
-		if (open_handles[h].active && 
+		if (open_handles[h].active &&
 		    open_handles[h].instance == instance) {
 			return h;
 		}
@@ -565,28 +565,28 @@ static int gen_io_count(void)
 */
 static const char *gen_fname(void)
 {
-	const char *names[] = {"gentest\\gentest.dat", 
-			       "gentest\\foo", 
-			       "gentest\\foo2.sym", 
-			       "gentest\\foo3.dll", 
-			       "gentest\\foo4", 
-			       "gentest\\foo4:teststream1", 
-			       "gentest\\foo4:teststream2", 
-			       "gentest\\foo5.exe", 
-			       "gentest\\foo5.exe:teststream3", 
-			       "gentest\\foo5.exe:teststream4", 
-			       "gentest\\foo6.com", 
-			       "gentest\\blah", 
-			       "gentest\\blah\\blergh.txt", 
-			       "gentest\\blah\\blergh2", 
-			       "gentest\\blah\\blergh3.txt", 
-			       "gentest\\blah\\blergh4", 
-			       "gentest\\blah\\blergh5.txt", 
-			       "gentest\\blah\\blergh5", 
-			       "gentest\\blah\\.", 
-			       "gentest\\blah\\..", 
-			       "gentest\\a_very_long_name.bin", 
-			       "gentest\\x.y", 
+	const char *names[] = {"gentest\\gentest.dat",
+			       "gentest\\foo",
+			       "gentest\\foo2.sym",
+			       "gentest\\foo3.dll",
+			       "gentest\\foo4",
+			       "gentest\\foo4:teststream1",
+			       "gentest\\foo4:teststream2",
+			       "gentest\\foo5.exe",
+			       "gentest\\foo5.exe:teststream3",
+			       "gentest\\foo5.exe:teststream4",
+			       "gentest\\foo6.com",
+			       "gentest\\blah",
+			       "gentest\\blah\\blergh.txt",
+			       "gentest\\blah\\blergh2",
+			       "gentest\\blah\\blergh3.txt",
+			       "gentest\\blah\\blergh4",
+			       "gentest\\blah\\blergh5.txt",
+			       "gentest\\blah\\blergh5",
+			       "gentest\\blah\\.",
+			       "gentest\\blah\\..",
+			       "gentest\\a_very_long_name.bin",
+			       "gentest\\x.y",
 			       "gentest\\blah"};
 	int i;
 
@@ -598,7 +598,7 @@ static const char *gen_fname(void)
 }
 
 /*
-  generate a filename with a higher chance of choosing an already 
+  generate a filename with a higher chance of choosing an already
   open file
 */
 static const char *gen_fname_open(int instance)
@@ -617,11 +617,11 @@ static const char *gen_fname_open(int instance)
 static const char *gen_pattern(void)
 {
 	int i;
-	const char *names[] = {"gentest\\*.dat", 
-			       "gentest\\*", 
-			       "gentest\\*.*", 
-			       "gentest\\blah\\*.*", 
-			       "gentest\\blah\\*", 
+	const char *names[] = {"gentest\\*.dat",
+			       "gentest\\*",
+			       "gentest\\*.*",
+			       "gentest\\blah\\*.*",
+			       "gentest\\blah\\*",
 			       "gentest\\?"};
 
 	if (gen_chance(50)) return gen_fname();
@@ -720,7 +720,7 @@ static uint16_t gen_rename_flags(void)
 }
 
 /*
-  generate a pid 
+  generate a pid
 */
 static uint16_t gen_pid(void)
 {
@@ -736,8 +736,8 @@ static uint16_t gen_lock_flags_smb2(void)
 	if (!options.valid && gen_chance(5))  return gen_bits_mask(0xFFFF);
 	if (gen_chance(20)) return gen_bits_mask(0x1F);
 	if (gen_chance(50)) return SMB2_LOCK_FLAG_UNLOCK;
-	return gen_bits_mask(SMB2_LOCK_FLAG_SHARED | 
-			     SMB2_LOCK_FLAG_EXCLUSIVE | 
+	return gen_bits_mask(SMB2_LOCK_FLAG_SHARED |
+			     SMB2_LOCK_FLAG_EXCLUSIVE |
 			     SMB2_LOCK_FLAG_FAIL_IMMEDIATELY);
 }
 
@@ -904,17 +904,17 @@ static unsigned int gen_alloc_size(void)
 static struct ea_struct gen_ea_struct(void)
 {
 	struct ea_struct ea;
-	const char *names[] = {"EAONE", 
-			       "", 
-			       "FOO!", 
-			       " WITH SPACES ", 
-			       ".", 
+	const char *names[] = {"EAONE",
+			       "",
+			       "FOO!",
+			       " WITH SPACES ",
+			       ".",
 			       "AVERYLONGATTRIBUTENAME"};
-	const char *values[] = {"VALUE1", 
-			       "", 
-			       "NOT MUCH FOO", 
-			       " LEADING SPACES ", 
-			       ":", 
+	const char *values[] = {"VALUE1",
+			       "",
+			       "NOT MUCH FOO",
+			       " LEADING SPACES ",
+			       ":",
 			       "ASOMEWHATLONGERATTRIBUTEVALUE"};
 	int i;
 
@@ -1087,7 +1087,7 @@ static void oplock_handler_ack_callback_smb2(struct smb2_request *req)
 	}
 }
 
-static bool send_oplock_ack_smb2(struct smb2_tree *tree, struct smb2_handle handle, 
+static bool send_oplock_ack_smb2(struct smb2_tree *tree, struct smb2_handle handle,
 				 uint8_t level)
 {
 	struct smb2_break br;
@@ -1109,7 +1109,7 @@ static bool send_oplock_ack_smb2(struct smb2_tree *tree, struct smb2_handle hand
 /*
   the oplock handler will either ack the break or close the file
 */
-static bool oplock_handler_smb2(struct smb2_transport *transport, const struct smb2_handle *handle, 
+static bool oplock_handler_smb2(struct smb2_transport *transport, const struct smb2_handle *handle,
 				uint8_t level, void *private_data)
 {
 	struct smb2_close io;
@@ -1209,8 +1209,8 @@ static bool compare_status(NTSTATUS status1, NTSTATUS status2)
 	/* also support ignore patterns of the form NT_STATUS_XX:NT_STATUS_YY
 	   meaning that the first server returns NT_STATUS_XX and the 2nd
 	   returns NT_STATUS_YY */
-	s = talloc_asprintf(current_op.mem_ctx, "%s:%s", 
-			    nt_errstr(status1), 
+	s = talloc_asprintf(current_op.mem_ctx, "%s:%s",
+			    nt_errstr(status1),
 			    nt_errstr(status2));
 	if (ignore_pattern(s)) {
 		return true;
@@ -1233,7 +1233,7 @@ static void check_pending(void)
 		for (i=0;i<NSERVERS;i++) {
 			// smb2_transport_process(servers[i].smb2_tree[j]->session->transport);
 		}
-	}	
+	}
 }
 
 /*
@@ -1259,11 +1259,11 @@ again:
 			    oplocks[0][j].level != oplocks[i][j].level) {
 				if (tries++ < 10) goto again;
 				printf("oplock break inconsistent - %d/%d/%d vs %d/%d/%d\n",
-				       oplocks[0][j].got_break, 
-				       oplocks[0][j].handle, 
-				       oplocks[0][j].level, 
-				       oplocks[i][j].got_break, 
-				       oplocks[i][j].handle, 
+				       oplocks[0][j].got_break,
+				       oplocks[0][j].handle,
+				       oplocks[0][j].level,
+				       oplocks[i][j].got_break,
+				       oplocks[i][j].handle,
 				       oplocks[i][j].level);
 				current_op.mismatch = "oplock break";
 				return false;
@@ -1282,7 +1282,7 @@ again:
 			gen_remove_handle_smb(j, fnums);
 			break;
 		}
-	}	
+	}
 	return true;
 }
 
@@ -1336,7 +1336,7 @@ again:
 			not2 = notifies[i][j].notify;
 
 			for (n=0;n<not1.nttrans.out.num_changes;n++) {
-				if (not1.nttrans.out.changes[n].action != 
+				if (not1.nttrans.out.changes[n].action !=
 				    not2.nttrans.out.changes[n].action) {
 					printf("Notify action %d inconsistent %d %d\n", n,
 					       not1.nttrans.out.changes[n].action,
@@ -1533,7 +1533,7 @@ again:
 /*
   compare returned fileinfo structures
 */
-static bool cmp_fileinfo(int instance, 
+static bool cmp_fileinfo(int instance,
 			 union smb_fileinfo parm[NSERVERS],
 			 NTSTATUS status[NSERVERS])
 {
@@ -1594,7 +1594,7 @@ static bool cmp_fileinfo(int instance,
 
 	case RAW_FILEINFO_IS_NAME_VALID:
 		break;
-		
+
 	case RAW_FILEINFO_BASIC_INFO:
 	case RAW_FILEINFO_BASIC_INFORMATION:
 		CHECK_NTTIMES_EQUAL(basic_info.out.create_time);
@@ -1774,7 +1774,7 @@ static bool handler_smb_openx(int instance)
 		parm[0].openx.in.flags &= ~(OPENX_FLAGS_REQUEST_OPLOCK|
 					    OPENX_FLAGS_REQUEST_BATCH_OPLOCK);
 	}
-	
+
 	GEN_COPY_PARM;
 	GEN_CALL_SMB(smb_raw_open(tree, current_op.mem_ctx, &parm[i]));
 
@@ -1813,7 +1813,7 @@ static bool handler_smb_open(int instance)
 		parm[0].openold.in.open_mode &= ~(OPENX_FLAGS_REQUEST_OPLOCK|
 						  OPENX_FLAGS_REQUEST_BATCH_OPLOCK);
 	}
-	
+
 	GEN_COPY_PARM;
 	GEN_CALL_SMB(smb_raw_open(tree, current_op.mem_ctx, &parm[i]));
 
@@ -1855,7 +1855,7 @@ static bool handler_smb_ntcreatex(int instance)
 		parm[0].ntcreatex.in.flags &= ~(NTCREATEX_FLAGS_REQUEST_OPLOCK|
 						NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK);
 	}
-	
+
 	GEN_COPY_PARM;
 	if (parm[0].ntcreatex.in.root_fid.fnum != 0) {
 		GEN_SET_FNUM_SMB(ntcreatex.in.root_fid.fnum);
@@ -2140,13 +2140,13 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 	}  levels[] = {
 #if 0
 		/* disabled until win2003 can handle them ... */
-		LVL(EA_SET), LVL(BASIC_INFO), LVL(DISPOSITION_INFO), 
-		LVL(STANDARD), LVL(ALLOCATION_INFO), LVL(END_OF_FILE_INFO), 
+		LVL(EA_SET), LVL(BASIC_INFO), LVL(DISPOSITION_INFO),
+		LVL(STANDARD), LVL(ALLOCATION_INFO), LVL(END_OF_FILE_INFO),
 #endif
 		LVL(SETATTR), LVL(SETATTRE), LVL(BASIC_INFORMATION),
-		LVL(RENAME_INFORMATION), LVL(DISPOSITION_INFORMATION), 
+		LVL(RENAME_INFORMATION), LVL(DISPOSITION_INFORMATION),
 		LVL(POSITION_INFORMATION), LVL(MODE_INFORMATION),
-		LVL(ALLOCATION_INFORMATION), LVL(END_OF_FILE_INFORMATION), 
+		LVL(ALLOCATION_INFORMATION), LVL(END_OF_FILE_INFORMATION),
 		LVL(1023), LVL(1025), LVL(1029), LVL(1032), LVL(1039), LVL(1040)
 	};
 	do {
@@ -2243,22 +2243,22 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 		const char *name;
 	};
 	struct levels smb_levels[] = {
-		LVL(EA_SET), LVL(BASIC_INFO), LVL(DISPOSITION_INFO), 
-		LVL(STANDARD), LVL(ALLOCATION_INFO), LVL(END_OF_FILE_INFO), 
+		LVL(EA_SET), LVL(BASIC_INFO), LVL(DISPOSITION_INFO),
+		LVL(STANDARD), LVL(ALLOCATION_INFO), LVL(END_OF_FILE_INFO),
 		LVL(SETATTR), LVL(SETATTRE), LVL(BASIC_INFORMATION),
-		LVL(RENAME_INFORMATION), LVL(DISPOSITION_INFORMATION), 
+		LVL(RENAME_INFORMATION), LVL(DISPOSITION_INFORMATION),
 		LVL(POSITION_INFORMATION), LVL(FULL_EA_INFORMATION), LVL(MODE_INFORMATION),
-		LVL(ALLOCATION_INFORMATION), LVL(END_OF_FILE_INFORMATION), 
-		LVL(PIPE_INFORMATION), LVL(VALID_DATA_INFORMATION), LVL(SHORT_NAME_INFORMATION), 
+		LVL(ALLOCATION_INFORMATION), LVL(END_OF_FILE_INFORMATION),
+		LVL(PIPE_INFORMATION), LVL(VALID_DATA_INFORMATION), LVL(SHORT_NAME_INFORMATION),
 		LVL(1025), LVL(1027), LVL(1029), LVL(1030), LVL(1031), LVL(1032), LVL(1036),
 		LVL(1041), LVL(1042), LVL(1043), LVL(1044),
 	};
 	struct levels smb2_levels[] = {
 		LVL(BASIC_INFORMATION),
-		LVL(RENAME_INFORMATION), LVL(DISPOSITION_INFORMATION), 
+		LVL(RENAME_INFORMATION), LVL(DISPOSITION_INFORMATION),
 		LVL(POSITION_INFORMATION), LVL(FULL_EA_INFORMATION), LVL(MODE_INFORMATION),
-		LVL(ALLOCATION_INFORMATION), LVL(END_OF_FILE_INFORMATION), 
-		LVL(PIPE_INFORMATION), LVL(VALID_DATA_INFORMATION), LVL(SHORT_NAME_INFORMATION), 
+		LVL(ALLOCATION_INFORMATION), LVL(END_OF_FILE_INFORMATION),
+		LVL(PIPE_INFORMATION), LVL(VALID_DATA_INFORMATION), LVL(SHORT_NAME_INFORMATION),
 		LVL(1025), LVL(1027), LVL(1029), LVL(1030), LVL(1031), LVL(1032), LVL(1036),
 		LVL(1041), LVL(1042), LVL(1043), LVL(1044),
 	};
@@ -2489,8 +2489,8 @@ static void async_notify_smb(struct smbcli_request *req)
 	notify.nttrans.level = RAW_NOTIFY_NTTRANS;
 	status = smb_raw_changenotify_recv(req, current_op.mem_ctx, &notify);
 	if (NT_STATUS_IS_OK(status) && notify.nttrans.out.num_changes > 0) {
-		printf("notify tid=%d num_changes=%d action=%d name=%s\n", 
-		       tid, 
+		printf("notify tid=%d num_changes=%d action=%d name=%s\n",
+		       tid,
 		       notify.nttrans.out.num_changes,
 		       notify.nttrans.out.changes[0].action,
 		       notify.nttrans.out.changes[0].name.s);
@@ -2696,7 +2696,7 @@ static bool handler_smb2_lock(int instance)
 	parm[0].in.file.handle.data[0] = gen_fnum(instance);
 	parm[0].in.lock_count = gen_lock_count();
 	parm[0].in.lock_sequence = gen_reserved32();
-	
+
 	parm[0].in.locks = talloc_array(current_op.mem_ctx,
 					struct smb2_lock_element,
 					parm[0].in.lock_count);
@@ -2704,7 +2704,7 @@ static bool handler_smb2_lock(int instance)
 		parm[0].in.locks[n].offset = gen_offset();
 		parm[0].in.locks[n].length = gen_io_count();
 		/* don't yet cope with async replies */
-		parm[0].in.locks[n].flags  = gen_lock_flags_smb2() | 
+		parm[0].in.locks[n].flags  = gen_lock_flags_smb2() |
 			SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
 		parm[0].in.locks[n].reserved = gen_bits_mask2(0x0, 0xFFFFFFFF);
 	}
@@ -3088,7 +3088,7 @@ static int run_test(struct tevent_context *ev, struct loadparm_context *lp_ctx)
 
 		gen_ops[which_op].count++;
 		if (NT_STATUS_IS_OK(current_op.status)) {
-			gen_ops[which_op].success_count++;			
+			gen_ops[which_op].success_count++;
 		}
 
 		if (!ret) {
@@ -3103,7 +3103,7 @@ static int run_test(struct tevent_context *ev, struct loadparm_context *lp_ctx)
 	}
 
 	for (i=0;i<ARRAY_SIZE(gen_ops);i++) {
-		printf("Op %-10s got %d/%d success\n", 
+		printf("Op %-10s got %d/%d success\n",
 		       gen_ops[i].name,
 		       gen_ops[i].success_count,
 		       gen_ops[i].count);
@@ -3112,7 +3112,7 @@ static int run_test(struct tevent_context *ev, struct loadparm_context *lp_ctx)
 	return op;
 }
 
-/* 
+/*
    perform a backtracking analysis of the minimal set of operations
    to generate an error
 */
@@ -3126,7 +3126,7 @@ static void backtrack_analyze(struct tevent_context *ev,
 
 	do {
 		int base;
-		for (base=0; 
+		for (base=0;
 		     chunk > 0 && base+chunk < options.numops && options.numops > 1; ) {
 			int i, max;
 
@@ -3137,7 +3137,7 @@ static void backtrack_analyze(struct tevent_context *ev,
 			for (i=base;i<max; i++) {
 				op_parms[i].disabled = true;
 			}
-			printf("Testing %d ops with %d-%d disabled\n", 
+			printf("Testing %d ops with %d-%d disabled\n",
 			       options.numops, base, max-1);
 			ret = run_test(ev, lp_ctx);
 			printf("Completed %d of %d ops\n", ret, options.numops);
@@ -3157,7 +3157,7 @@ static void backtrack_analyze(struct tevent_context *ev,
 				base = 0;
 			} else {
 				/* it failed - this chunk isn't needed for a failure */
-				memmove(&op_parms[base], &op_parms[max], 
+				memmove(&op_parms[base], &op_parms[max],
 					sizeof(op_parms[0]) * (options.numops - max));
 				options.numops = (ret+1) - (max - base);
 			}
@@ -3181,7 +3181,7 @@ static void backtrack_analyze(struct tevent_context *ev,
 	}
 }
 
-/* 
+/*
    start the main gentest process
 */
 static bool start_gentest(struct tevent_context *ev,
@@ -3269,7 +3269,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 
 	*p = 0;
 	(*share) = p+1;
-	
+
 	return true;
 }
 
