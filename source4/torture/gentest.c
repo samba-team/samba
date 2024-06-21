@@ -1755,7 +1755,7 @@ static bool cmp_fileinfo(int instance,
 */
 static bool handler_smb_openx(int instance)
 {
-	union smb_open parm[NSERVERS];
+	union smb_open parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	parm[0].openx.level = RAW_OPEN_OPENX;
@@ -1800,7 +1800,7 @@ static bool handler_smb_openx(int instance)
 */
 static bool handler_smb_open(int instance)
 {
-	union smb_open parm[NSERVERS];
+	union smb_open parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	parm[0].openold.level = RAW_OPEN_OPEN;
@@ -1834,7 +1834,7 @@ static bool handler_smb_open(int instance)
 */
 static bool handler_smb_ntcreatex(int instance)
 {
-	union smb_open parm[NSERVERS];
+	union smb_open parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	parm[0].ntcreatex.level = RAW_OPEN_NTCREATEX;
@@ -1886,7 +1886,7 @@ static bool handler_smb_ntcreatex(int instance)
 */
 static bool handler_smb_close(int instance)
 {
-	union smb_close parm[NSERVERS];
+	union smb_close parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	parm[0].close.level = RAW_CLOSE_CLOSE;
@@ -1907,7 +1907,7 @@ static bool handler_smb_close(int instance)
 */
 static bool handler_smb_unlink(int instance)
 {
-	union smb_unlink parm[NSERVERS];
+	union smb_unlink parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	parm[0].unlink.in.pattern = gen_pattern();
@@ -1924,7 +1924,7 @@ static bool handler_smb_unlink(int instance)
 */
 static bool handler_smb_chkpath(int instance)
 {
-	union smb_chkpath parm[NSERVERS];
+	union smb_chkpath parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	parm[0].chkpath.in.path = gen_fname_open(instance);
@@ -1940,7 +1940,7 @@ static bool handler_smb_chkpath(int instance)
 */
 static bool handler_smb_mkdir(int instance)
 {
-	union smb_mkdir parm[NSERVERS];
+	union smb_mkdir parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	parm[0].mkdir.level = RAW_MKDIR_MKDIR;
@@ -1957,7 +1957,7 @@ static bool handler_smb_mkdir(int instance)
 */
 static bool handler_smb_rmdir(int instance)
 {
-	struct smb_rmdir parm[NSERVERS];
+	struct smb_rmdir parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	parm[0].in.path = gen_fname_open(instance);
@@ -1973,7 +1973,7 @@ static bool handler_smb_rmdir(int instance)
 */
 static bool handler_smb_rename(int instance)
 {
-	union smb_rename parm[NSERVERS];
+	union smb_rename parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	parm[0].generic.level = RAW_RENAME_RENAME;
@@ -1992,7 +1992,7 @@ static bool handler_smb_rename(int instance)
 */
 static bool handler_smb_ntrename(int instance)
 {
-	union smb_rename parm[NSERVERS];
+	union smb_rename parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	parm[0].generic.level = RAW_RENAME_NTRENAME;
@@ -2014,7 +2014,7 @@ static bool handler_smb_ntrename(int instance)
 */
 static bool handler_smb_seek(int instance)
 {
-	union smb_seek parm[NSERVERS];
+	union smb_seek parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	parm[0].lseek.in.file.fnum = gen_fnum(instance);
@@ -2036,7 +2036,7 @@ static bool handler_smb_seek(int instance)
 */
 static bool handler_smb_readx(int instance)
 {
-	union smb_read parm[NSERVERS];
+	union smb_read parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	parm[0].readx.level = RAW_READ_READX;
@@ -2065,7 +2065,7 @@ static bool handler_smb_readx(int instance)
 */
 static bool handler_smb_writex(int instance)
 {
-	union smb_write parm[NSERVERS];
+	union smb_write parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	parm[0].writex.level = RAW_WRITE_WRITEX;
@@ -2091,7 +2091,7 @@ static bool handler_smb_writex(int instance)
 */
 static bool handler_smb_lockingx(int instance)
 {
-	union smb_lock parm[NSERVERS];
+	union smb_lock parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 	int n, nlocks;
 
@@ -2393,7 +2393,7 @@ static void gen_fileinfo_smb(int instance, union smb_fileinfo *info)
 */
 static bool handler_smb_qpathinfo(int instance)
 {
-	union smb_fileinfo parm[NSERVERS];
+	union smb_fileinfo parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	parm[0].generic.in.file.path = gen_fname_open(instance);
@@ -2411,7 +2411,7 @@ static bool handler_smb_qpathinfo(int instance)
 */
 static bool handler_smb_qfileinfo(int instance)
 {
-	union smb_fileinfo parm[NSERVERS];
+	union smb_fileinfo parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	parm[0].generic.in.file.fnum = gen_fnum(instance);
@@ -2431,7 +2431,7 @@ static bool handler_smb_qfileinfo(int instance)
 */
 static bool handler_smb_spathinfo(int instance)
 {
-	union smb_setfileinfo parm[NSERVERS];
+	union smb_setfileinfo parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	gen_setfileinfo(instance, &parm[0]);
@@ -2456,7 +2456,7 @@ static bool handler_smb_spathinfo(int instance)
 */
 static bool handler_smb_sfileinfo(int instance)
 {
-	union smb_setfileinfo parm[NSERVERS];
+	union smb_setfileinfo parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	parm[0].generic.in.file.fnum = gen_fnum(instance);
@@ -2513,10 +2513,9 @@ static void async_notify_smb(struct smbcli_request *req)
 */
 static bool handler_smb_notify(int instance)
 {
-	union smb_notify parm[NSERVERS];
+	union smb_notify parm[NSERVERS] = {0};
 	int n;
 
-	ZERO_STRUCT(parm[0]);
 	parm[0].nttrans.level			= RAW_NOTIFY_NTTRANS;
 	parm[0].nttrans.in.buffer_size		= gen_io_count();
 	parm[0].nttrans.in.completion_filter	= gen_bits_mask(0xFF);
@@ -2541,7 +2540,7 @@ static bool handler_smb_notify(int instance)
 */
 static bool handler_smb2_create(int instance)
 {
-	struct smb2_create parm[NSERVERS];
+	struct smb2_create parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	ZERO_STRUCT(parm[0]);
@@ -2602,7 +2601,7 @@ static bool handler_smb2_create(int instance)
 */
 static bool handler_smb2_close(int instance)
 {
-	struct smb2_close parm[NSERVERS];
+	struct smb2_close parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	ZERO_STRUCT(parm[0]);
@@ -2633,7 +2632,7 @@ static bool handler_smb2_close(int instance)
 */
 static bool handler_smb2_read(int instance)
 {
-	struct smb2_read parm[NSERVERS];
+	struct smb2_read parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	parm[0].in.file.handle.data[0] = gen_fnum(instance);
@@ -2662,7 +2661,7 @@ static bool handler_smb2_read(int instance)
 */
 static bool handler_smb2_write(int instance)
 {
-	struct smb2_write parm[NSERVERS];
+	struct smb2_write parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	parm[0].in.file.handle.data[0] = gen_fnum(instance);
@@ -2688,7 +2687,7 @@ static bool handler_smb2_write(int instance)
 */
 static bool handler_smb2_lock(int instance)
 {
-	struct smb2_lock parm[NSERVERS];
+	struct smb2_lock parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 	int n;
 
@@ -2721,7 +2720,7 @@ static bool handler_smb2_lock(int instance)
 */
 static bool handler_smb2_flush(int instance)
 {
-	struct smb2_flush parm[NSERVERS];
+	struct smb2_flush parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	ZERO_STRUCT(parm[0]);
@@ -2783,7 +2782,7 @@ static void gen_fileinfo_smb2(int instance, union smb_fileinfo *info)
 */
 static bool handler_smb2_qfileinfo(int instance)
 {
-	union smb_fileinfo parm[NSERVERS];
+	union smb_fileinfo parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	parm[0].generic.in.file.handle.data[0] = gen_fnum(instance);
@@ -2803,7 +2802,7 @@ static bool handler_smb2_qfileinfo(int instance)
 */
 static bool handler_smb2_sfileinfo(int instance)
 {
-	union smb_setfileinfo parm[NSERVERS];
+	union smb_setfileinfo parm[NSERVERS] = {0};
 	NTSTATUS status[NSERVERS];
 
 	gen_setfileinfo(instance, &parm[0]);
