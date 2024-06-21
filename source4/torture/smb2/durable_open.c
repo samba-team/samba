@@ -1513,9 +1513,9 @@ static bool test_durable_open_reopen4(struct torture_context *tctx,
 	struct smb2_handle *h = NULL;
 	struct smb2_create io1, io2;
 	bool ret = true;
-	struct smb2_transport *transport;
-	struct smb2_session *session2;
-	struct smb2_tree *tree2;
+	struct smb2_transport *transport = NULL;
+	struct smb2_session *session2 = NULL;
+	struct smb2_tree *tree2 = NULL;
 
 	/* Choose a random name in case the state is left a little funky. */
 	snprintf(fname, 256, "durable_open_reopen4_%s.dat",
@@ -2048,7 +2048,7 @@ static bool test_durable_open_lease(struct torture_context *tctx,
 	 * Windows7 (build 7000) will grant an RH lease immediate (not an RHW?)
 	 * even if the original client is gone. (ZML: This seems like a bug. It
 	 * should give some time for the client to reconnect! And why RH?)
-	 * 
+	 *
 	 * obnox: Current windows 7 and w2k8r2 grant RHW instead of RH.
 	 * Test is adapted accordingly.
 	 */
