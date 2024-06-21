@@ -834,7 +834,7 @@ static void centry_put_uint8(struct cache_entry *centry, uint8_t v)
  */
 static void centry_put_string(struct cache_entry *centry, const char *s)
 {
-	int len;
+	size_t len;
 
 	if (!s) {
 		/* null strings are marked as len 0xFFFF */
@@ -845,7 +845,8 @@ static void centry_put_string(struct cache_entry *centry, const char *s)
 	len = strlen(s);
 	/* can't handle more than 254 char strings. Truncating is probably best */
 	if (len > 254) {
-		DBG_DEBUG("centry_put_string: truncating len (%d) to: 254\n", len);
+		DBG_DEBUG("centry_put_string: truncating len (%zu) to: 254\n",
+			  len);
 		len = 254;
 	}
 	centry_put_uint8(centry, len);
