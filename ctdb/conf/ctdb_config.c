@@ -133,8 +133,8 @@ static void setup_config_pointers(struct conf_context *conf)
 				   &ctdb_config.script_log_level);
 }
 
-int ctdbd_config_load(TALLOC_CTX *mem_ctx,
-		      struct conf_context **result)
+int ctdb_config_load(TALLOC_CTX *mem_ctx,
+		     struct conf_context **result)
 {
 	struct conf_context *conf = NULL;
 	int ret = 0;

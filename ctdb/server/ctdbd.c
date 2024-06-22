@@ -232,9 +232,9 @@ int main(int argc, const char *argv[])
 	 * Configuration file handling
 	 */
 
-	ret = ctdbd_config_load(ctdb, &conf);
+	ret = ctdb_config_load(ctdb, &conf);
 	if (ret != 0) {
-		/* ctdbd_config_load() logs the failure */
+		/* ctdb_config_load() logs the failure */
 		goto fail;
 	}
 

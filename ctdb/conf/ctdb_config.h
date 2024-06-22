@@ -54,6 +54,6 @@ struct ctdb_config {
 
 extern struct ctdb_config ctdb_config;
 
-int ctdbd_config_load(TALLOC_CTX *mem_ctx, struct conf_context **conf);
+int ctdb_config_load(TALLOC_CTX *mem_ctx, struct conf_context **conf);
 
 #endif /* __CTDB_CONFIG_H__ */
