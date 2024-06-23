@@ -970,6 +970,35 @@ static int vfs_ceph_ll_rename(const struct vfs_handle_struct *handle,
 			      newparent->uperm);
 }
 
+static int vfs_ceph_ll_mknod(const struct vfs_handle_struct *handle,
+			     const struct vfs_ceph_fh *parent,
+			     const char *name,
+			     mode_t mode,
+			     dev_t rdev,
+			     struct vfs_ceph_iref *iref)
+{
+	struct ceph_statx stx = {.stx_ino = 0};
+	struct Inode *inode = NULL;
+	int ret = -1;
+
+	ret = ceph_ll_mknod(cmount_of(handle),
+			    parent->iref.inode,
+			    name,
+			    mode,
+			    rdev,
+			    &inode,
+			    &stx,
+			    CEPH_STATX_INO,
+			    0,
+			    parent->uperm);
+	if (ret == 0) {
+		iref->inode = inode;
+		iref->ino = stx.stx_ino;
+		iref->owner = true;
+	}
+	return ret;
+}
+
 /* Ceph Inode-refernce get/put wrappers */
 static int vfs_ceph_iget(const struct vfs_handle_struct *handle,
 			 uint64_t ino,
@@ -2249,25 +2278,26 @@ static int vfs_ceph_mknodat(struct vfs_handle_struct *handle,
 		mode_t mode,
 		SMB_DEV_T dev)
 {
-	struct smb_filename *full_fname = NULL;
+	struct vfs_ceph_iref iref = {0};
+	struct vfs_ceph_fh *dircfh = NULL;
+	const char *name = smb_fname->base_name;
 	int result = -1;
 
-	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						dirfsp,
-						smb_fname);
-	if (full_fname == NULL) {
-		return -1;
+	result = vfs_ceph_fetch_fh(handle, dirfsp, &dircfh);
+	if (result != 0) {
+		goto out;
 	}
 
-	DBG_DEBUG("[CEPH] mknodat(%p, %s)\n", handle, full_fname->base_name);
-	result = ceph_mknod(cmount_of(handle),
-			    full_fname->base_name,
-			    mode,
-			    dev);
+	DBG_DEBUG("[CEPH] mknodat(%p, %s)\n", handle, name);
+
+	result = vfs_ceph_ll_mknod(handle, dircfh, name, mode, dev, &iref);
+	if (result != 0) {
+		goto out;
+	}
+
+	vfs_ceph_iput(handle, &iref);
+out:
 	DBG_DEBUG("[CEPH] mknodat(...) = %d\n", result);
-
-	TALLOC_FREE(full_fname);
-
 	return status_code(result);
 }
 
