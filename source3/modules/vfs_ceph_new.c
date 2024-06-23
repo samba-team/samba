@@ -999,6 +999,159 @@ static int vfs_ceph_ll_mknod(const struct vfs_handle_struct *handle,
 	return ret;
 }
 
+static int vfs_ceph_ll_getxattr(const struct vfs_handle_struct *handle,
+				const struct vfs_ceph_iref *iref,
+				const char *name,
+				void *value,
+				size_t size)
+{
+	struct UserPerm *uperm = NULL;
+	int ret = -1;
+
+	uperm = vfs_ceph_userperm_new(handle);
+	if (uperm == NULL) {
+		return -ENOMEM;
+	}
+
+	ret = ceph_ll_getxattr(cmount_of(handle),
+			       iref->inode,
+			       name,
+			       value,
+			       size,
+			       uperm);
+
+	vfs_ceph_userperm_del(uperm);
+
+	return ret;
+}
+
+static int vfs_ceph_ll_fgetxattr(const struct vfs_handle_struct *handle,
+				 const struct vfs_ceph_fh *cfh,
+				 const char *name,
+				 void *value,
+				 size_t size)
+{
+	return ceph_ll_getxattr(cmount_of(handle),
+				cfh->iref.inode,
+				name,
+				value,
+				size,
+				cfh->uperm);
+}
+
+static int vfs_ceph_ll_setxattr(const struct vfs_handle_struct *handle,
+				const struct vfs_ceph_iref *iref,
+				const char *name,
+				const void *value,
+				size_t size,
+				int flags)
+{
+	struct UserPerm *uperm = NULL;
+	int ret = -1;
+
+	uperm = vfs_ceph_userperm_new(handle);
+	if (uperm == NULL) {
+		return -ENOMEM;
+	}
+
+	ret = ceph_ll_setxattr(cmount_of(handle),
+			       iref->inode,
+			       name,
+			       value,
+			       size,
+			       flags,
+			       uperm);
+
+	vfs_ceph_userperm_del(uperm);
+
+	return ret;
+}
+
+static int vfs_ceph_ll_fsetxattr(const struct vfs_handle_struct *handle,
+				 const struct vfs_ceph_fh *cfh,
+				 const char *name,
+				 const void *value,
+				 size_t size,
+				 int flags)
+{
+	return ceph_ll_setxattr(cmount_of(handle),
+				cfh->iref.inode,
+				name,
+				value,
+				size,
+				flags,
+				cfh->uperm);
+}
+
+static int vfs_ceph_ll_listxattr(const struct vfs_handle_struct *handle,
+				 const struct vfs_ceph_iref *iref,
+				 char *list,
+				 size_t buf_size,
+				 size_t *list_size)
+{
+	struct UserPerm *uperm = NULL;
+	int ret = -1;
+
+	uperm = vfs_ceph_userperm_new(handle);
+	if (uperm == NULL) {
+		return -ENOMEM;
+	}
+
+	ret = ceph_ll_listxattr(cmount_of(handle),
+				iref->inode,
+				list,
+				buf_size,
+				list_size,
+				uperm);
+
+	vfs_ceph_userperm_del(uperm);
+
+	return ret;
+}
+
+static int vfs_ceph_ll_flistxattr(const struct vfs_handle_struct *handle,
+				  const struct vfs_ceph_fh *cfh,
+				  char *list,
+				  size_t buf_size,
+				  size_t *list_size)
+{
+	return ceph_ll_listxattr(cmount_of(handle),
+				 cfh->iref.inode,
+				 list,
+				 buf_size,
+				 list_size,
+				 cfh->uperm);
+}
+
+static int vfs_ceph_ll_removexattr(const struct vfs_handle_struct *handle,
+				   const struct vfs_ceph_iref *iref,
+				   const char *name)
+{
+	struct UserPerm *uperm = NULL;
+	int ret = -1;
+
+	uperm = vfs_ceph_userperm_new(handle);
+	if (uperm == NULL) {
+		return -ENOMEM;
+	}
+
+	ret = ceph_ll_removexattr(cmount_of(handle), iref->inode, name, uperm);
+
+	vfs_ceph_userperm_del(uperm);
+
+	return ret;
+}
+
+static int vfs_ceph_ll_fremovexattr(const struct vfs_handle_struct *handle,
+				    const struct vfs_ceph_fh *cfh,
+				    const char *name)
+{
+	return ceph_ll_removexattr(cmount_of(handle),
+				   cfh->iref.inode,
+				   name,
+				   cfh->uperm);
+}
+
 /* Ceph Inode-refernce get/put wrappers */
 static int vfs_ceph_iget(const struct vfs_handle_struct *handle,
 			 uint64_t ino,
@@ -1091,6 +1244,14 @@ static int vfs_ceph_igetd(struct vfs_handle_struct *handle,
 			     dirfsp->fsp_name->base_name,
 			     AT_SYMLINK_NOFOLLOW,
 			     iref);
+}
+
+static int vfs_ceph_igetf(struct vfs_handle_struct *handle,
+			  const struct files_struct *fsp,
+			  struct vfs_ceph_iref *iref)
+{
+	return vfs_ceph_iget(
+		handle, fsp->file_id.inode, fsp->fsp_name->base_name, 0, iref);
 }
 
 static void vfs_ceph_iput(const struct vfs_handle_struct *handle,
@@ -2410,25 +2571,35 @@ static ssize_t vfs_ceph_fgetxattr(struct vfs_handle_struct *handle,
 				  size_t size)
 {
 	int ret;
+
 	DBG_DEBUG("[CEPH] fgetxattr(%p, %p, %s, %p, %llu)\n",
 		  handle,
 		  fsp,
 		  name,
 		  value,
 		  llu(size));
+
 	if (!fsp->fsp_flags.is_pathref) {
-		ret = ceph_fgetxattr(cmount_of(handle),
-				     fsp_get_io_fd(fsp),
-				     name,
-				     value,
-				     size);
+		struct vfs_ceph_fh *cfh = NULL;
+
+		ret = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
+		if (ret != 0) {
+			goto out;
+		}
+
+		ret = vfs_ceph_ll_fgetxattr(handle, cfh, name, value, size);
 	} else {
-		ret = ceph_getxattr(cmount_of(handle),
-				    fsp->fsp_name->base_name,
-				    name,
-				    value,
-				    size);
+		struct vfs_ceph_iref iref = {0};
+
+		ret = vfs_ceph_igetf(handle, fsp, &iref);
+		if (ret != 0) {
+			goto out;
+		}
+
+		ret = vfs_ceph_ll_getxattr(handle, &iref, name, value, size);
+		vfs_ceph_iput(handle, &iref);
 	}
+out:
 	DBG_DEBUG("[CEPH] fgetxattr(...) = %d\n", ret);
 	return lstatus_code(ret);
 }
@@ -2438,26 +2609,47 @@ static ssize_t vfs_ceph_flistxattr(struct vfs_handle_struct *handle,
 				   char *list,
 				   size_t size)
 {
+	size_t list_size = 0;
 	int ret;
+
 	DBG_DEBUG("[CEPH] flistxattr(%p, %p, %p, %llu)\n",
 		  handle, fsp, list, llu(size));
+
 	if (!fsp->fsp_flags.is_pathref) {
-		/*
-		 * We can use an io_fd to list xattrs.
-		 */
-		ret = ceph_flistxattr(cmount_of(handle),
-				      fsp_get_io_fd(fsp),
-				      list,
-				      size);
+		struct vfs_ceph_fh *cfh = NULL;
+
+		ret = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
+		if (ret != 0) {
+			goto out;
+		}
+
+		ret = vfs_ceph_ll_flistxattr(handle,
+					     cfh,
+					     list,
+					     size,
+					     &list_size);
+		if (ret != 0) {
+			goto out;
+		}
 	} else {
-		/*
-		 * This is no longer a handle based call.
-		 */
-		ret = ceph_listxattr(cmount_of(handle),
-				     fsp->fsp_name->base_name,
-				     list,
-				     size);
+		struct vfs_ceph_iref iref = {0};
+
+		ret = vfs_ceph_igetf(handle, fsp, &iref);
+		if (ret != 0) {
+			goto out;
+		}
+		ret = vfs_ceph_ll_listxattr(handle,
+					    &iref,
+					    list,
+					    size,
+					    &list_size);
+		if (ret != 0) {
+			goto out;
+		}
+		vfs_ceph_iput(handle, &iref);
 	}
+	ret = (int)list_size;
+out:
 	DBG_DEBUG("[CEPH] flistxattr(...) = %d\n", ret);
 	return lstatus_code(ret);
 }
@@ -2467,22 +2659,29 @@ static int vfs_ceph_fremovexattr(struct vfs_handle_struct *handle,
 				 const char *name)
 {
 	int ret;
+
 	DBG_DEBUG("[CEPH] fremovexattr(%p, %p, %s)\n", handle, fsp, name);
 	if (!fsp->fsp_flags.is_pathref) {
-		/*
-		 * We can use an io_fd to remove xattrs.
-		 */
-		ret = ceph_fremovexattr(cmount_of(handle),
-					fsp_get_io_fd(fsp),
-					name);
+		struct vfs_ceph_fh *cfh = NULL;
+
+		ret = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
+		if (ret != 0) {
+			goto out;
+		}
+
+		ret = vfs_ceph_ll_fremovexattr(handle, cfh, name);
 	} else {
-		/*
-		 * This is no longer a handle based call.
-		 */
-		ret = ceph_removexattr(cmount_of(handle),
-				       fsp->fsp_name->base_name,
-				       name);
+		struct vfs_ceph_iref iref = {0};
+
+		ret = vfs_ceph_igetf(handle, fsp, &iref);
+		if (ret != 0) {
+			goto out;
+		}
+
+		ret = vfs_ceph_ll_removexattr(handle, &iref, name);
+		vfs_ceph_iput(handle, &iref);
 	}
+out:
 	DBG_DEBUG("[CEPH] fremovexattr(...) = %d\n", ret);
 	return status_code(ret);
 }
@@ -2495,6 +2694,7 @@ static int vfs_ceph_fsetxattr(struct vfs_handle_struct *handle,
 			      int flags)
 {
 	int ret;
+
 	DBG_DEBUG("[CEPH] fsetxattr(%p, %p, %s, %p, %llu, %d)\n",
 		  handle,
 		  fsp,
@@ -2502,27 +2702,36 @@ static int vfs_ceph_fsetxattr(struct vfs_handle_struct *handle,
 		  value,
 		  llu(size),
 		  flags);
+
 	if (!fsp->fsp_flags.is_pathref) {
-		/*
-		 * We can use an io_fd to set xattrs.
-		 */
-		ret = ceph_fsetxattr(cmount_of(handle),
-				     fsp_get_io_fd(fsp),
-				     name,
-				     value,
-				     size,
-				     flags);
+		struct vfs_ceph_fh *cfh = NULL;
+
+		ret = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
+		if (ret != 0) {
+			goto out;
+		}
+		ret = vfs_ceph_ll_fsetxattr(handle,
+					    cfh,
+					    name,
+					    value,
+					    size,
+					    flags);
 	} else {
-		/*
-		 * This is no longer a handle based call.
-		 */
-		ret = ceph_setxattr(cmount_of(handle),
-				    fsp->fsp_name->base_name,
-				    name,
-				    value,
-				    size,
-				    flags);
+		struct vfs_ceph_iref iref = {0};
+
+		ret = vfs_ceph_igetf(handle, fsp, &iref);
+		if (ret != 0) {
+			goto out;
+		}
+		ret = vfs_ceph_ll_setxattr(handle,
+					   &iref,
+					   name,
+					   value,
+					   size,
+					   flags);
+		vfs_ceph_iput(handle, &iref);
 	}
+out:
 	DBG_DEBUG("[CEPH] fsetxattr(...) = %d\n", ret);
 	return status_code(ret);
 }
