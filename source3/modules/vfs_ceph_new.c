@@ -956,6 +956,20 @@ static int vfs_ceph_ll_link(const struct vfs_handle_struct *handle,
 			    dircfh->uperm);
 }
 
+static int vfs_ceph_ll_rename(const struct vfs_handle_struct *handle,
+			      const struct vfs_ceph_fh *parent,
+			      const char *name,
+			      const struct vfs_ceph_fh *newparent,
+			      const char *newname)
+{
+	return ceph_ll_rename(cmount_of(handle),
+			      parent->iref.inode,
+			      name,
+			      newparent->iref.inode,
+			      newname,
+			      newparent->uperm);
+}
+
 /* Ceph Inode-refernce get/put wrappers */
 static int vfs_ceph_iget(const struct vfs_handle_struct *handle,
 			 uint64_t ino,
@@ -1573,8 +1587,8 @@ static int vfs_ceph_renameat(struct vfs_handle_struct *handle,
 			files_struct *dstfsp,
 			const struct smb_filename *smb_fname_dst)
 {
-	struct smb_filename *full_fname_src = NULL;
-	struct smb_filename *full_fname_dst = NULL;
+	struct vfs_ceph_fh *src_dircfh = NULL;
+	struct vfs_ceph_fh *dst_dircfh = NULL;
 	int result = -1;
 
 	DBG_DEBUG("[CEPH] vfs_ceph_renameat\n");
@@ -1583,29 +1597,22 @@ static int vfs_ceph_renameat(struct vfs_handle_struct *handle,
 		return result;
 	}
 
-	full_fname_src = full_path_from_dirfsp_atname(talloc_tos(),
-						  srcfsp,
-						  smb_fname_src);
-	if (full_fname_src == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-	full_fname_dst = full_path_from_dirfsp_atname(talloc_tos(),
-						  dstfsp,
-						  smb_fname_dst);
-	if (full_fname_dst == NULL) {
-		TALLOC_FREE(full_fname_src);
-		errno = ENOMEM;
-		return -1;
+	result = vfs_ceph_fetch_fh(handle, srcfsp, &src_dircfh);
+	if (result != 0) {
+		goto out;
 	}
 
-	result = ceph_rename(cmount_of(handle),
-			     full_fname_src->base_name,
-			     full_fname_dst->base_name);
+	result = vfs_ceph_fetch_fh(handle, dstfsp, &dst_dircfh);
+	if (result != 0) {
+		goto out;
+	}
 
-	TALLOC_FREE(full_fname_src);
-	TALLOC_FREE(full_fname_dst);
-
+	result = vfs_ceph_ll_rename(handle,
+				    src_dircfh,
+				    smb_fname_src->base_name,
+				    dst_dircfh,
+				    smb_fname_dst->base_name);
+out:
 	return status_code(result);
 }
 
