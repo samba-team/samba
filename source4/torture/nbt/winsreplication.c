@@ -1241,8 +1241,12 @@ static bool test_conflict_different_owner(struct torture_context *tctx,
 										  struct test_wrepl_conflict_conn *ctx)
 {
 	bool ret = true;
-	struct wrepl_wins_name wins_name1;
-	struct wrepl_wins_name wins_name2;
+	struct wrepl_wins_name wins_name1 = {
+		.flags = 0,
+	};
+	struct wrepl_wins_name wins_name2 = {
+		.flags = 0,
+	};
 	struct wrepl_wins_name *wins_name_r1;
 	struct wrepl_wins_name *wins_name_r2;
 	uint32_t i;
