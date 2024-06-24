@@ -464,12 +464,16 @@ static bool smb_pam_end(pam_handle_t *pamh, struct pam_conv *smb_pam_conv_ptr)
 
 	if( pamh != NULL ) {
 		pam_error = pam_end(pamh, 0);
-		if(smb_pam_error_handler(pamh, pam_error, "End Cleanup Failed", 2) == True) {
-			DEBUG(4, ("smb_pam_end: PAM: PAM_END OK.\n"));
+		if (pam_error == PAM_SUCCESS) {
+			DBG_NOTICE("PAM: PAM_END OK.\n");
 			return True;
 		}
+
+		DBG_WARNING("PAM: PAM_END FAILED (%d).\n", pam_error);
+	} else {
+		DBG_INFO("PAM: not initialised\n");
 	}
-	DEBUG(2,("smb_pam_end: PAM: not initialised\n"));
+
 	return False;
 }
 
