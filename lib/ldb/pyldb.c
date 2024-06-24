@@ -4445,18 +4445,18 @@ static PyObject *py_ldb_msg_richcmp(PyLdbMessageObject *py_msg1,
 	PyErr_LDB_MESSAGE_OR_RAISE(py_msg1, msg1);
 	PyErr_LDB_MESSAGE_OR_RAISE(py_msg2, msg2);
 	/*
-	 * FIXME: this can be a non-transitive compare, unsuitable for
-	 * sorting.
+	 * If the DNs are different, sort by DN.
 	 *
-	 * supposing msg1, msg2, and msg3 have 1, 2, and 3 elements
-	 * each. msg2 has a NULL DN, while msg1 has a DN that compares
-	 * higher than msg3. Then:
-	 *
-	 * msg1 < msg2, due to num_elements.
-	 * msg2 < msg3, due to num_elements.
-	 * msg1 > msg3, due to DNs.
+	 * NULL DNs sort to the end. Note that if there are multiple messages
+	 * with NULL DNs, they sort normally by the other attributes.
 	 */
-	if ((msg1->dn != NULL) || (msg2->dn != NULL)) {
+	if (msg1->dn != msg2->dn) {
+		if (msg1->dn == NULL) {
+			return richcmp(-1, op);
+		}
+		if (msg2->dn == NULL) {
+			return richcmp(1, op);
+		}
 		ret = ldb_dn_compare(msg1->dn, msg2->dn);
 		if (ret != 0) {
 			return richcmp(ret, op);
