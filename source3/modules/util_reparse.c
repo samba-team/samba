@@ -211,6 +211,8 @@ NTSTATUS fsctl_set_reparse_point(struct files_struct *fsp,
 		return status;
 	}
 
+	fsp->fsp_name->st.cached_dos_attributes = dos_mode;
+
 	return NT_STATUS_OK;
 }
 
@@ -276,6 +278,8 @@ NTSTATUS fsctl_del_reparse_point(struct files_struct *fsp,
 			nt_errstr(status));
 		return status;
 	}
+
+	fsp->fsp_name->st.cached_dos_attributes = dos_mode;
 
 	return NT_STATUS_OK;
 }
