@@ -124,7 +124,9 @@ static void mdscli_connect_open_done(struct tevent_req *subreq)
 	}
 
 	share_path_len = strlen(mdscli_ctx->mdscmd_open.share_path);
-	if (share_path_len < 1 || share_path_len > UINT16_MAX) {
+	if (share_path_len < 1 ||
+	    share_path_len >= sizeof(mdscli_ctx->mdscmd_open.share_path))
+	{
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
