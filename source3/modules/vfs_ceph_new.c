@@ -535,18 +535,14 @@ static int vfs_ceph_ll_statfs(const struct vfs_handle_struct *handle,
 	return ceph_ll_statfs(cmount_of(handle), iref->inode, stbuf);
 }
 
-static int vfs_ceph_ll_getattr(const struct vfs_handle_struct *handle,
-			       const struct vfs_ceph_iref *iref,
-			       SMB_STRUCT_STAT *st)
+static int vfs_ceph_ll_getattr2(const struct vfs_handle_struct *handle,
+				const struct vfs_ceph_iref *iref,
+				struct UserPerm *uperm,
+				SMB_STRUCT_STAT *st)
 {
 	struct ceph_statx stx = {0};
-	struct UserPerm *uperm = NULL;
 	int ret = -1;
 
-	uperm = vfs_ceph_userperm_new(handle);
-	if (uperm == NULL) {
-		return -ENOMEM;
-	}
 	ret = ceph_ll_getattr(cmount_of(handle),
 			      iref->inode,
 			      &stx,
@@ -556,6 +552,21 @@ static int vfs_ceph_ll_getattr(const struct vfs_handle_struct *handle,
 	if (ret == 0) {
 		smb_stat_from_ceph_statx(st, &stx);
 	}
+	return ret;
+}
+
+static int vfs_ceph_ll_getattr(const struct vfs_handle_struct *handle,
+			       const struct vfs_ceph_iref *iref,
+			       SMB_STRUCT_STAT *st)
+{
+	struct UserPerm *uperm = NULL;
+	int ret = -1;
+
+	uperm = vfs_ceph_userperm_new(handle);
+	if (uperm == NULL) {
+		return -ENOMEM;
+	}
+	ret = vfs_ceph_ll_getattr2(handle, iref, uperm, st);
 	vfs_ceph_userperm_del(uperm);
 	return ret;
 }
@@ -1440,20 +1451,23 @@ static int vfs_ceph_fstat(struct vfs_handle_struct *handle,
 			  SMB_STRUCT_STAT *sbuf)
 {
 	int result = -1;
-	struct ceph_statx stx = { 0 };
-	int fd = fsp_get_pathref_fd(fsp);
+	struct vfs_ceph_fh *cfh = NULL;
 
-	DBG_DEBUG("[CEPH] fstat(%p, %d)\n", handle, fd);
-	result = ceph_fstatx(handle->data, fd, &stx,
-				SAMBA_STATX_ATTR_MASK, 0);
-	DBG_DEBUG("[CEPH] fstat(...) = %d\n", result);
-	if (result < 0) {
-		return status_code(result);
+	DBG_DEBUG("[CEPH] fstat(%p)\n", handle);
+
+	result = vfs_ceph_fetch_fh(handle, fsp, &cfh);
+	if (result != 0) {
+		goto out;
 	}
 
-	init_stat_ex_from_ceph_statx(sbuf, &stx);
+	result = vfs_ceph_ll_getattr2(handle, &cfh->iref, cfh->uperm, sbuf);
+	if (result != 0) {
+		goto out;
+	}
 	DBG_DEBUG("[CEPH] mode = 0x%x\n", sbuf->st_ex_mode);
-	return result;
+out:
+	DBG_DEBUG("[CEPH] fstat(...) = %d\n", result);
+	return status_code(result);
 }
 
 static int vfs_ceph_fstatat(struct vfs_handle_struct *handle,
