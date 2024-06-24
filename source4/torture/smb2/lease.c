@@ -333,7 +333,12 @@ static bool test_lease_upgrade2(struct torture_context *tctx,
                                 struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
-	struct smb2_handle h, hnew;
+	struct smb2_handle h = {
+		.data = {},
+	};
+	struct smb2_handle hnew = {
+		.data = {},
+	};
 	NTSTATUS status;
 	struct smb2_create io;
 	struct smb2_lease ls;
