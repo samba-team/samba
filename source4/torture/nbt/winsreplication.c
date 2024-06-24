@@ -6758,7 +6758,9 @@ static bool test_conflict_owned_active_vs_replica(struct torture_context *tctx,
 {
 	bool ret = true;
 	NTSTATUS status;
-	struct wrepl_wins_name wins_name_;
+	struct wrepl_wins_name wins_name_ = {
+		.flags = 0,
+	};
 	struct wrepl_wins_name *wins_name = &wins_name_;
 	struct nbt_name_register name_register_;
 	struct nbt_name_register *name_register = &name_register_;
