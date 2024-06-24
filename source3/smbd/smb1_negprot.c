@@ -519,10 +519,10 @@ void reply_negprot(struct smb_request *req)
 
 	while (smbreq_bufrem(req, p) > 0) {
 
-		char **tmp;
-
-		tmp = talloc_realloc(talloc_tos(), cliprotos, char *,
-					   num_cliprotos+1);
+		char **tmp = talloc_realloc(talloc_tos(),
+					    cliprotos,
+					    char *,
+					    num_cliprotos + 1);
 		if (tmp == NULL) {
 			DEBUG(0, ("talloc failed\n"));
 			TALLOC_FREE(cliprotos);
