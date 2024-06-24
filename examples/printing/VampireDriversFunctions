@@ -948,7 +948,7 @@ else
 	for i in */; do
 	CWD2="$( pwd )" ;
 	cd "${i}";
-	echo "yes" | cp ../alldriverfiles.txt . 2> /dev/null ;
+	cp -f ../alldriverfiles.txt . 2> /dev/null ;
 
 	cat alldriverfiles.txt \
 	| egrep '(\\'"$(basename "$( pwd )")"'\\|Driver Name)' \
@@ -1076,7 +1076,7 @@ else
 	echo " "
 	echo " ###########################################################################################"
 
-######		echo "yes" | cp -f ../../../${nthost}/W32X86/${nthost}-enumdrivers3list-NTx86.txt . 2> /dev/null ;
+######		cp -f ../../../${nthost}/W32X86/${nthost}-enumdrivers3list-NTx86.txt . 2> /dev/null ;
 		ln -s -f ../${nthost}-enumdrivers3list-NTx86.txt ${nthost}-enumdrivers3list-NTx86.lnk ;
 
 	tac ${nthost}-enumdrivers3list-NTx86.lnk \
@@ -1095,7 +1095,7 @@ else
 	for i in */; do
 	CWD2="$( pwd )" ;
 	cd "${i}";
-	echo "yes" | cp ../alldriverfiles.txt . 2> /dev/null ;
+	cp -f ../alldriverfiles.txt . 2> /dev/null ;
 
 	cat alldriverfiles.txt \
 	| egrep '(\\'"$(basename "$( pwd )")"'\\|Driver Name)' \
