@@ -50,7 +50,11 @@ static bool bench_namequery(struct torture_context *tctx)
 	struct nbt_name_socket *nbtsock = torture_init_nbt_socket(tctx);
 	int num_sent=0;
 	struct result_struct *result;
-	struct nbt_name_query io;
+	struct nbt_name_query io = {
+		.in = {
+			.retries = 0,
+		}
+	};
 	struct timeval tv = timeval_current();
 	int timelimit = torture_setting_int(tctx, "timelimit", 5);
 
