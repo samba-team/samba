@@ -12,8 +12,8 @@ int main(int argc, char * argv[])
 {
 	int             ret;
 	int             debug = 0;
-	char            value[2048];
-	char            path[2048];
+	char            value[2048] = {};
+	char            path[2048] = {};
 	char *          the_acl;
 	char *          p;
 	SMBCCTX *       context;
