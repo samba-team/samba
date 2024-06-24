@@ -480,7 +480,7 @@ void reply_negprot(struct smb_request *req)
 	int protocol;
 	const char *p;
 	int protocols = 0;
-	int num_cliprotos;
+	size_t num_cliprotos;
 	char **cliprotos;
 	size_t i;
 	size_t converted_size;
