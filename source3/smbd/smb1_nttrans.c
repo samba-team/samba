@@ -563,18 +563,20 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		goto out;
 	}
 
-	DEBUG(10,("reply_ntcreate_and_X: flags = 0x%x, access_mask = 0x%x "
-		  "file_attributes = 0x%x, share_access = 0x%x, "
-		  "create_disposition = 0x%x create_options = 0x%x "
-		  "root_dir_fid = 0x%x, fname = %s\n",
-			(unsigned int)flags,
-			(unsigned int)access_mask,
-			(unsigned int)file_attributes,
-			(unsigned int)share_access,
-			(unsigned int)create_disposition,
-			(unsigned int)create_options,
-			(unsigned int)root_dir_fid,
-			fname));
+	DBG_DEBUG("flags = 0x%" PRIx32 ", access_mask = 0x%" PRIx32
+		  ", file_attributes = 0x%" PRIx32
+		  ", share_access = 0x%" PRIx32
+		  ", create_disposition = 0x%" PRIx32
+		  ", create_options = 0x%" PRIx32 ", root_dir_fid = 0x%" PRIx32
+		  ", fname = %s\n",
+		  flags,
+		  access_mask,
+		  file_attributes,
+		  share_access,
+		  create_disposition,
+		  create_options,
+		  root_dir_fid,
+		  fname);
 
 	/*
 	 * we need to remove ignored bits when they come directly from the client
