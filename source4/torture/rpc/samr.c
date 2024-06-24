@@ -7378,13 +7378,17 @@ static bool test_each_DisplayInfo_user(struct dcerpc_binding_handle *b,
 				       struct samr_QueryDisplayInfo *querydisplayinfo,
 				       bool *seen_testuser)
 {
-	struct samr_OpenUser r;
+	struct samr_OpenUser r = {
+		.in = {
+			.domain_handle = querydisplayinfo->in.domain_handle,
+			.access_mask = SEC_FLAG_MAXIMUM_ALLOWED,
+		},
+	};
 	struct samr_QueryUserInfo q;
 	union samr_UserInfo *info;
 	struct policy_handle user_handle;
 	int i, ret = true;
-	r.in.domain_handle = querydisplayinfo->in.domain_handle;
-	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+
 	for (i = 0; ; i++) {
 		switch (querydisplayinfo->in.level) {
 		case 1:
