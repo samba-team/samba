@@ -720,6 +720,18 @@ static int vfs_ceph_ll_opendir(const struct vfs_handle_struct *handle,
 			       cfh->uperm);
 }
 
+static struct dirent *vfs_ceph_ll_readdir(const struct vfs_handle_struct *hndl,
+					  const struct vfs_ceph_fh *dircfh)
+{
+	return ceph_readdir(cmount_of(hndl), dircfh->dirp.cdr);
+}
+
+static void vfs_ceph_ll_rewinddir(const struct vfs_handle_struct *handle,
+				  const struct vfs_ceph_fh *dircfh)
+{
+	ceph_rewinddir(cmount_of(handle), dircfh->dirp.cdr);
+}
+
 static int vfs_ceph_ll_mkdirat(const struct vfs_handle_struct *handle,
 			       const struct vfs_ceph_fh *dircfh,
 			       const char *name,
@@ -971,11 +983,11 @@ static struct dirent *vfs_ceph_readdir(struct vfs_handle_struct *handle,
 				       struct files_struct *dirfsp,
 				       DIR *dirp)
 {
+	const struct vfs_ceph_fh *dircfh = (const struct vfs_ceph_fh *)dirp;
 	struct dirent *result = NULL;
 
 	DBG_DEBUG("[CEPH] readdir(%p, %p)\n", handle, dirp);
-	result = ceph_readdir(cmount_of(handle),
-			      (struct ceph_dir_result *)dirp);
+	result = vfs_ceph_ll_readdir(handle, dircfh);
 	DBG_DEBUG("[CEPH] readdir(...) = %p\n", result);
 
 	return result;
@@ -983,8 +995,10 @@ static struct dirent *vfs_ceph_readdir(struct vfs_handle_struct *handle,
 
 static void vfs_ceph_rewinddir(struct vfs_handle_struct *handle, DIR *dirp)
 {
+	const struct vfs_ceph_fh *dircfh = (const struct vfs_ceph_fh *)dirp;
+
 	DBG_DEBUG("[CEPH] rewinddir(%p, %p)\n", handle, dirp);
-	ceph_rewinddir(cmount_of(handle), (struct ceph_dir_result *)dirp);
+	vfs_ceph_ll_rewinddir(handle, dircfh);
 }
 
 static int vfs_ceph_mkdirat(struct vfs_handle_struct *handle,
