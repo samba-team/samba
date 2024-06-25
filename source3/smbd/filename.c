@@ -755,6 +755,7 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 	SMB_ASSERT(!(ucf_flags & UCF_DFS_PATHNAME));
 
 	if (is_fake_file_path(name_in)) {
+		const struct timespec omit = make_omit_timespec();
 		smb_fname = synthetic_smb_fname_split(mem_ctx, name_in, posix);
 		if (smb_fname == NULL) {
 			return NT_STATUS_NO_MEMORY;
@@ -762,15 +763,11 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 		smb_fname->st = (SMB_STRUCT_STAT){
 			.st_ex_nlink = 1,
 			.st_ex_mode = S_IFREG | 0644,
+			.st_ex_btime = omit,
+			.st_ex_atime = omit,
+			.st_ex_mtime = omit,
+			.st_ex_ctime = omit,
 		};
-		smb_fname->st.st_ex_btime =
-			(struct timespec){0, SAMBA_UTIME_OMIT};
-		smb_fname->st.st_ex_atime =
-			(struct timespec){0, SAMBA_UTIME_OMIT};
-		smb_fname->st.st_ex_mtime =
-			(struct timespec){0, SAMBA_UTIME_OMIT};
-		smb_fname->st.st_ex_ctime =
-			(struct timespec){0, SAMBA_UTIME_OMIT};
 
 		*_dirfsp = conn->cwd_fsp;
 		*_smb_fname = smb_fname;
