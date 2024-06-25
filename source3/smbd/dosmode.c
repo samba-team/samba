@@ -215,13 +215,14 @@ static uint32_t dos_mode_from_sbuf(connection_struct *conn,
 		if ((st->st_ex_mode & S_IWUSR) == 0) {
 			result |= FILE_ATTRIBUTE_READONLY;
 		}
-	} else if (ro_opts == MAP_READONLY_PERMISSIONS) {
+	}
+	if (ro_opts == MAP_READONLY_PERMISSIONS) {
 		/* smb_fname->fsp can be NULL for an MS-DFS link. */
 		/* Check actual permissions for read-only. */
 		if ((fsp != NULL) && !can_write_to_fsp(fsp)) {
 			result |= FILE_ATTRIBUTE_READONLY;
 		}
-	} /* Else never set the readonly bit. */
+	}
 
 	if (MAP_ARCHIVE(conn) && ((st->st_ex_mode & S_IXUSR) != 0)) {
 		result |= FILE_ATTRIBUTE_ARCHIVE;
