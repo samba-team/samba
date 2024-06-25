@@ -719,15 +719,11 @@ uint32_t fdos_mode(struct files_struct *fsp)
 	status = SMB_VFS_FGET_DOS_ATTRIBUTES(fsp->conn,
 					     metadata_fsp(fsp),
 					     &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		/*
-		 * Only fall back to using UNIX modes if we get NOT_IMPLEMENTED.
-		 */
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
-			result |= dos_mode_from_sbuf(fsp->conn,
-						     &fsp->fsp_name->st,
-						     fsp);
-		}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+		result |= dos_mode_from_sbuf(fsp->conn,
+					     &fsp->fsp_name->st,
+					     fsp);
 	}
 
 	fsp->fsp_name->st.cached_dos_attributes = dos_mode_post(result, fsp, __func__);
