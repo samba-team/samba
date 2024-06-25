@@ -1190,11 +1190,13 @@ NTSTATUS vfs_stat_fsp(files_struct *fsp)
 
 void init_smb_file_time(struct smb_file_time *ft)
 {
+	struct timespec omit = make_omit_timespec();
+
 	*ft = (struct smb_file_time) {
-		.atime = make_omit_timespec(),
-		.ctime = make_omit_timespec(),
-		.mtime = make_omit_timespec(),
-		.create_time = make_omit_timespec()
+		.atime = omit,
+		.ctime = omit,
+		.mtime = omit,
+		.create_time = omit,
 	};
 }
 
