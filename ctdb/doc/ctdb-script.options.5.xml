@@ -1065,7 +1065,7 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 		  </para>
 		  <para>
 		    If :TDB is omitted then TDB defaults to
-		    <filename>ctdb.tdb</filename>.
+		    <filename>ctdb_statd_callout.tdb</filename>.
 		  </para>
 		</listitem>
 	      </varlistentry>

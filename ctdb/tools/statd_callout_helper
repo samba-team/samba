@@ -93,7 +93,7 @@ fi
 
 case "$statd_callout_mode" in
 persistent_db)
-	statd_callout_db="${statd_callout_location:-ctdb.tdb}"
+	statd_callout_db="${statd_callout_location:-ctdb_statd_callout.tdb}"
 	statd_callout_queue_dir="${statd_callout_state_dir}/queue"
 	;;
 shared_dir)

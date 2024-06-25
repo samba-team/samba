@@ -10,7 +10,7 @@ setup()
 
 	case "$CTDB_STATD_CALLOUT_SHARED_STORAGE" in
 	"" | persistent_db)
-		CTDB_STATD_CALLOUT_SHARED_STORAGE="persistent_db:ctdb.tdb"
+		CTDB_STATD_CALLOUT_SHARED_STORAGE="persistent_db:statd_foo.tdb"
 		;;
 	shared_dir)
 		export CTDB_NFS_SHARED_STATE_DIR="/clusterfs"
@@ -87,7 +87,7 @@ check_shared_storage_statd_state()
 	case "$statd_callout_mode" in
 	persistent_db)
 		if [ -z "$statd_callout_location" ]; then
-			statd_callout_location="ctdb.tdb"
+			statd_callout_location="statd_foo.tdb"
 		fi
 		check_ctdb_tdb_statd_state "$@"
 		;;
