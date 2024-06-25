@@ -540,9 +540,9 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 	btime = nt_time_to_full_timespec(dosattrib.info.info5.create_time);
 	update_stat_ex_create_time(&smb_fname->st, btime);
 
-	DEBUG(10,("set_ea_dos_attribute: set EA 0x%x on file %s\n",
-		(unsigned int)dosmode,
-		smb_fname_str_dbg(smb_fname)));
+	DBG_DEBUG("set EA 0x%" PRIx32 " on file %s\n",
+		  dosmode,
+		  smb_fname_str_dbg(smb_fname));
 	return NT_STATUS_OK;
 }
 
