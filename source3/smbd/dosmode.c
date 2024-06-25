@@ -68,7 +68,9 @@ static void dos_mode_debug_print(const char *func, uint32_t mode)
 		fstrcat(modestr, "[reparse_point]");
 	}
 
-	DBG_INFO("%s returning (0x%x): \"%s\"\n", func, (unsigned)mode,
+	DBG_INFO("%s returning (0x%" PRIx32 "): \"%s\"\n",
+		 func,
+		 mode,
 		 modestr);
 }
 
