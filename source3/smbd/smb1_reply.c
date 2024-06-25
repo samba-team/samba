@@ -6957,11 +6957,6 @@ void reply_setattrE(struct smb_request *req)
 
 	reply_smb1_outbuf(req, 0, 0);
 
-	/*
-	 * Patch from Ray Frush <frush@engr.colostate.edu>
-	 * Sometimes times are sent as zero - ignore them.
-	 */
-
 	/* Ensure we have a valid stat struct for the source. */
 	status = vfs_stat_fsp(fsp);
 	if (!NT_STATUS_IS_OK(status)) {
