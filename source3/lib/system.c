@@ -249,22 +249,23 @@ void update_stat_ex_from_saved_stat(struct stat_ex *dst,
 	}
 }
 
-void copy_stat_ex_timestamps(files_struct *fsp, const struct smb_file_time *ft)
+void copy_stat_ex_timestamps(struct stat_ex *st,
+			     const struct smb_file_time *ft)
 {
 	if (!is_omit_timespec(&ft->atime)) {
-		fsp->fsp_name->st.st_ex_atime = ft->atime;
+		st->st_ex_atime = ft->atime;
 	}
 
 	if (!is_omit_timespec(&ft->create_time)) {
-		fsp->fsp_name->st.st_ex_btime = ft->create_time;
+		st->st_ex_btime = ft->create_time;
 	}
 
 	if (!is_omit_timespec(&ft->ctime)) {
-		fsp->fsp_name->st.st_ex_ctime = ft->ctime;
+		st->st_ex_ctime = ft->ctime;
 	}
 
 	if (!is_omit_timespec(&ft->mtime)) {
-		fsp->fsp_name->st.st_ex_mtime = ft->mtime;
+		st->st_ex_mtime = ft->mtime;
 	}
 }
 

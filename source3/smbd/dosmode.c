@@ -1226,7 +1226,7 @@ int file_ntimes(connection_struct *conn,
 
 done:
 	if (ret == 0) {
-		copy_stat_ex_timestamps(fsp, ft);
+		copy_stat_ex_timestamps(&fsp->fsp_name->st, ft);
 	}
 
 	return ret;
