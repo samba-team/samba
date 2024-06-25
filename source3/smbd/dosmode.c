@@ -64,6 +64,9 @@ static void dos_mode_debug_print(const char *func, uint32_t mode)
 	if (mode & FILE_ATTRIBUTE_COMPRESSED) {
 		fstrcat(modestr, "[compressed]");
 	}
+	if (mode & FILE_ATTRIBUTE_REPARSE_POINT) {
+		fstrcat(modestr, "[reparse_point]");
+	}
 
 	DBG_INFO("%s returning (0x%x): \"%s\"\n", func, (unsigned)mode,
 		 modestr);
