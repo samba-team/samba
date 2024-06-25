@@ -334,14 +334,14 @@ static acl_t smb_acl_to_posix(const struct smb_acl_t *acl)
 		switch (entry->a_type) {
 		case SMB_ACL_USER:
 			if (acl_set_qualifier(e, &entry->info.user.uid) != 0) {
-				DEBUG(1, ("acl_set_qualifiier failed: %s\n",
+				DEBUG(1, ("acl_set_qualifier failed: %s\n",
 					  strerror(errno)));
 				goto fail;
 			}
 			break;
 		case SMB_ACL_GROUP:
 			if (acl_set_qualifier(e, &entry->info.group.gid) != 0) {
-				DEBUG(1, ("acl_set_qualifiier failed: %s\n",
+				DEBUG(1, ("acl_set_qualifier failed: %s\n",
 					  strerror(errno)));
 				goto fail;
 			}
