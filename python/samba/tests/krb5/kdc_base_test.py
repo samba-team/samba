@@ -74,6 +74,7 @@ from samba.dsdb import (
     GTYPE_SECURITY_DOMAIN_LOCAL_GROUP,
     GTYPE_SECURITY_GLOBAL_GROUP,
     GTYPE_SECURITY_UNIVERSAL_GROUP,
+    UF_ACCOUNTDISABLE,
     UF_NORMAL_ACCOUNT,
     UF_NOT_DELEGATED,
     UF_NO_AUTH_DATA_REQUIRED,
@@ -2007,7 +2008,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             'assigned_policy': None,
             'assigned_silo': None,
             'logon_hours': None,
-            'smartcard_required': False
+            'smartcard_required': False,
+            'enabled': True,
         }
 
         account_opts = {
@@ -2061,7 +2063,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                             assigned_policy,
                             assigned_silo,
                             logon_hours,
-                            smartcard_required):
+                            smartcard_required,
+                            enabled):
         if account_type is self.AccountType.USER:
             self.assertIsNone(delegation_to_spn)
             self.assertIsNone(delegation_from_dn)
@@ -2086,6 +2089,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             user_account_control |= UF_NO_AUTH_DATA_REQUIRED
         if smartcard_required:
             user_account_control |= UF_SMARTCARD_REQUIRED
+        if not enabled:
+            user_account_control |= UF_ACCOUNTDISABLE
 
         if additional_details:
             details = {k: v for k, v in additional_details}
