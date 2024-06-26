@@ -1161,7 +1161,7 @@ static NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 	    ((old_fd = fsp_get_pathref_fd(fsp)) != -1)) {
 
 		struct sys_proc_fd_path_buf buf;
-		struct smb_filename proc_fname = (struct smb_filename){
+		struct smb_filename proc_fname = {
 			.base_name = sys_proc_fd_path(old_fd, &buf),
 		};
 		mode_t mode = fsp->fsp_name->st.st_ex_mode;
