@@ -5146,15 +5146,6 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 		case SMB_FILE_DISPOSITION_INFORMATION:
 		case SMB_SET_FILE_DISPOSITION_INFO: /* Set delete on close for open file. */
 		{
-#if 0
-			/* JRA - We used to just ignore this on a path ?
-			 * Shouldn't this be invalid level on a pathname
-			 * based call ?
-			 */
-			if (tran_call != TRANSACT2_SETFILEINFO) {
-				return ERROR_NT(NT_STATUS_INVALID_LEVEL);
-			}
-#endif
 			status = smb_set_file_disposition_info(conn,
 						pdata,
 						total_data,
