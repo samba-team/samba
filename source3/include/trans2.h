@@ -342,6 +342,7 @@ Byte offset   Type     name                description
 
 /* As yet undefined FSCC_ code for POSIX info level. */
 #define SMB2_FILE_POSIX_INFORMATION			100
+#define SMB2_FS_POSIX_INFORMATION			100
 
 /* MS-FSCC 2.4 File System Information Classes */
 
