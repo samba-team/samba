@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB Transport encryption (sealing) code - server code.
    Copyright (C) Jeremy Allison 2007.
