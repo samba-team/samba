@@ -217,6 +217,7 @@ bool smb1_srv_send(struct smbXsrv_connection *xconn,
 	size_t len = 0;
 	ssize_t ret;
 	char *buf_out = buffer;
+	char *encrypted_buf = NULL;
 
 	if (!NT_STATUS_IS_OK(xconn->transport.status)) {
 		/*
@@ -240,7 +241,7 @@ bool smb1_srv_send(struct smbXsrv_connection *xconn,
 	}
 
 	if (do_encrypt) {
-		NTSTATUS status = srv_encrypt_buffer(xconn, buffer, &buf_out);
+		NTSTATUS status = srv_encrypt_buffer(xconn, buffer, &encrypted_buf);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("send_smb: SMB encryption failed "
 				"on outgoing packet! Error %s\n",
@@ -248,11 +249,13 @@ bool smb1_srv_send(struct smbXsrv_connection *xconn,
 			ret = -1;
 			goto out;
 		}
+		buf_out = encrypted_buf;
 	}
 
 	len = smb_len_large(buf_out) + 4;
 
 	ret = write_data(xconn->transport.sock, buf_out, len);
+	srv_free_enc_buffer(xconn, encrypted_buf);
 	if (ret <= 0) {
 		int saved_errno = errno;
 		/*
@@ -265,11 +268,9 @@ bool smb1_srv_send(struct smbXsrv_connection *xconn,
 			 (int)ret, strerror(saved_errno)));
 		errno = saved_errno;
 
-		srv_free_enc_buffer(xconn, buf_out);
 		goto out;
 	}
 
-	srv_free_enc_buffer(xconn, buf_out);
 out:
 	smbd_unlock_socket(xconn);
 	return (ret > 0);

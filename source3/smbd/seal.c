@@ -139,11 +139,7 @@ static NTSTATUS make_srv_encryption_context(const struct tsocket_address *remote
 
 void srv_free_enc_buffer(struct smbXsrv_connection *xconn, char *buf)
 {
-	/* We know this is an smb buffer, and we
-	 * didn't malloc, only copy, for a keepalive,
-	 * so ignore non-session messages. */
-
-	if(CVAL(buf,0)) {
+	if (buf == NULL) {
 		return;
 	}
 
