@@ -115,7 +115,7 @@ static int write_block( REGF_FILE *file, prs_struct *ps, uint32_t offset )
 
 static int read_block( REGF_FILE *file, prs_struct *ps, uint32_t file_offset, uint32_t block_size )
 {
-	int bytes_read, returned;
+	ssize_t bytes_read, returned;
 	char *buffer;
 	SMB_STRUCT_STAT sbuf;
 
@@ -182,7 +182,7 @@ static int read_block( REGF_FILE *file, prs_struct *ps, uint32_t file_offset, ui
 			return False;
 		}
 
-		if (returned < 0 || bytes_read > INT_MAX - returned) {
+		if (returned < 0 || bytes_read > SSIZE_MAX - returned) {
 			DBG_ERR("Integer overflow\n");
 			return false;
 		}
