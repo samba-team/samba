@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    process incoming packets - main loop
    Copyright (C) Andrew Tridgell 1992-1998
@@ -642,7 +642,7 @@ NTSTATUS allow_new_trans(struct trans_state *list, uint64_t mid)
 }
 
 /*
-These flags determine some of the permissions required to do an operation 
+These flags determine some of the permissions required to do an operation
 
 Note that I don't set NEED_WRITE on some write operations because they
 are used by some brain-dead clients when printing, and I don't want to
@@ -655,7 +655,7 @@ force write permissions on print services.
 #define AS_GUEST (1<<5) /* Must *NOT* be paired with AS_USER */
 #define DO_CHDIR (1<<6)
 
-/* 
+/*
    define a list of possible SMB messages and their corresponding
    functions. Any message that has a NULL function is unimplemented -
    please feel free to contribute implementations!
