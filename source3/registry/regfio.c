@@ -182,6 +182,10 @@ static int read_block( REGF_FILE *file, prs_struct *ps, uint32_t file_offset, ui
 			return False;
 		}
 
+		if (returned < 0 || bytes_read > INT_MAX - returned) {
+			DBG_ERR("Integer overflow\n");
+			return false;
+		}
 		bytes_read += returned;
 	}
 
