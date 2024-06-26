@@ -848,6 +848,47 @@ static int vfs_ceph_ll_unlinkat(const struct vfs_handle_struct *handle,
 			      dircfh->uperm);
 }
 
+static int vfs_ceph_ll_symlinkat(const struct vfs_handle_struct *handle,
+				 const struct vfs_ceph_fh *dircfh,
+				 const char *name,
+				 const char *value,
+				 struct vfs_ceph_iref *out_iref)
+{
+	struct ceph_statx stx = {.stx_ino = 0};
+	struct Inode *inode = NULL;
+	int ret = -1;
+
+	ret = ceph_ll_symlink(cmount_of(handle),
+			      dircfh->iref.inode,
+			      name,
+			      value,
+			      &inode,
+			      &stx,
+			      CEPH_STATX_INO,
+			      0,
+			      dircfh->uperm);
+	if (ret != 0) {
+		return ret;
+	}
+	out_iref->inode = inode;
+	out_iref->ino = stx.stx_ino;
+	out_iref->owner = true;
+	return 0;
+}
+
+static int vfs_ceph_ll_readlinkat(const struct vfs_handle_struct *handle,
+				  const struct vfs_ceph_fh *dircfh,
+				  const struct vfs_ceph_iref *iref,
+				  char *buf,
+				  size_t bsz)
+{
+	return ceph_ll_readlink(cmount_of(handle),
+				iref->inode,
+				buf,
+				bsz,
+				dircfh->uperm);
+}
+
 /* Ceph Inode-refernce get/put wrappers */
 static int vfs_ceph_iget(const struct vfs_handle_struct *handle,
 			 uint64_t ino,
@@ -1979,43 +2020,32 @@ static int vfs_ceph_symlinkat(struct vfs_handle_struct *handle,
 		struct files_struct *dirfsp,
 		const struct smb_filename *new_smb_fname)
 {
+	struct vfs_ceph_iref iref = {0};
+	struct vfs_ceph_fh *dircfh = NULL;
 	int result = -1;
-#ifdef HAVE_CEPH_SYMLINKAT
-	int dirfd = fsp_get_pathref_fd(dirfsp);
 
-	DBG_DEBUG("[CEPH] symlinkat(%p, %s, %d, %s)\n",
+	DBG_DEBUG("[CEPH] symlinkat(%p, %s, %s)\n",
 		  handle,
 		  link_target->base_name,
-		  dirfd,
 		  new_smb_fname->base_name);
 
-	result = ceph_symlinkat(cmount_of(handle),
-				link_target->base_name,
-				dirfd,
-				new_smb_fname->base_name);
-	DBG_DEBUG("[CEPH] symlinkat(...) = %d\n", result);
-	return status_code(result);
-#else
-	struct smb_filename *full_fname = NULL;
-
-	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						dirfsp,
-						new_smb_fname);
-	if (full_fname == NULL) {
-		return -1;
+	result = vfs_ceph_fetch_fh(handle, dirfsp, &dircfh);
+	if (result != 0) {
+		goto out;
 	}
 
-	DBG_DEBUG("[CEPH] symlink(%p, %s, %s)\n", handle,
-			link_target->base_name,
-			full_fname->base_name);
-
-	result = ceph_symlink(cmount_of(handle),
-			      link_target->base_name,
-			      full_fname->base_name);
-	TALLOC_FREE(full_fname);
-	DBG_DEBUG("[CEPH] symlink(...) = %d\n", result);
+	result = vfs_ceph_ll_symlinkat(handle,
+				       dircfh,
+				       new_smb_fname->base_name,
+				       link_target->base_name,
+				       &iref);
+	if (result != 0) {
+		goto out;
+	}
+	vfs_ceph_iput(handle, &iref);
+out:
+	DBG_DEBUG("[CEPH] symlinkat(...) = %d\n", result);
 	return status_code(result);
-#endif
 }
 
 static int vfs_ceph_readlinkat(struct vfs_handle_struct *handle,
@@ -2025,45 +2055,33 @@ static int vfs_ceph_readlinkat(struct vfs_handle_struct *handle,
 		size_t bufsiz)
 {
 	int result = -1;
-#ifdef HAVE_CEPH_READLINKAT
-	int dirfd = fsp_get_pathref_fd(dirfsp);
+	struct vfs_ceph_iref iref = {0};
+	struct vfs_ceph_fh *dircfh = NULL;
 
-	DBG_DEBUG("[CEPH] readlinkat(%p, %d, %s, %p, %llu)\n",
+	DBG_DEBUG("[CEPH] readlinkat(%p, %s, %p, %llu)\n",
 		  handle,
-		  dirfd,
 		  smb_fname->base_name,
 		  buf,
 		  llu(bufsiz));
 
-	result = ceph_readlinkat(cmount_of(handle),
-				 dirfd,
-				 smb_fname->base_name,
-				 buf,
-				 bufsiz);
-
-	DBG_DEBUG("[CEPH] readlinkat(...) = %d\n", result);
-	return status_code(result);
-#else
-	struct smb_filename *full_fname = NULL;
-
-	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						dirfsp,
-						smb_fname);
-	if (full_fname == NULL) {
-		return -1;
+	result = vfs_ceph_fetch_fh(handle, dirfsp, &dircfh);
+	if (result != 0) {
+		goto out;
 	}
 
-	DBG_DEBUG("[CEPH] readlink(%p, %s, %p, %llu)\n", handle,
-			full_fname->base_name, buf, llu(bufsiz));
+	result = vfs_ceph_ll_lookupat(handle,
+				      dircfh,
+				      smb_fname->base_name,
+				      &iref);
+	if (result != 0) {
+		goto out;
+	}
 
-	result = ceph_readlink(cmount_of(handle),
-			       full_fname->base_name,
-			       buf,
-			       bufsiz);
-	TALLOC_FREE(full_fname);
-	DBG_DEBUG("[CEPH] readlink(...) = %d\n", result);
+	result = vfs_ceph_ll_readlinkat(handle, dircfh, &iref, buf, bufsiz);
+	vfs_ceph_iput(handle, &iref);
+out:
+	DBG_DEBUG("[CEPH] readlinkat(...) = %d\n", result);
 	return status_code(result);
-#endif
 }
 
 static int vfs_ceph_linkat(struct vfs_handle_struct *handle,
