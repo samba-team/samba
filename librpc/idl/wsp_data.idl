@@ -321,6 +321,7 @@ interface constants
 	const uint32 STORESTATUSNULL			= 0x00000002;
 
 	const uint32 DB_S_ENDOFROWSET			= 0x00040EC6;
+	const uint32 DB_S_BLOCKLIMITEDROWS		= 0x00040ECD;
 
 	const uint32 XOR_CONST				= 0x59533959;
 	const uint32 E_UNEXPECTED			= 0x8000FFFF;
