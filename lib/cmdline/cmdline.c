@@ -150,6 +150,9 @@ bool samba_cmdline_burn(int argc, char *argv[])
 			return false;
 		}
 
+		found = false;
+		is_user = false;
+
 		/*
 		 * Take care that this list must be in longest-match
 		 * first order
@@ -192,8 +195,6 @@ bool samba_cmdline_burn(int argc, char *argv[])
 			}
 
 			memset_s(p, strlen(p), '\0', strlen(p));
-			found = false;
-			is_user = false;
 			burnt = true;
 		}
 	}
