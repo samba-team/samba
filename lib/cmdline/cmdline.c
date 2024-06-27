@@ -147,7 +147,7 @@ bool samba_cmdline_burn(int argc, char *argv[])
 	for (i = 0; i < argc; i++) {
 		p = argv[i];
 		if (p == NULL) {
-			return false;
+			return burnt;
 		}
 
 		found = false;
@@ -203,7 +203,7 @@ bool samba_cmdline_burn(int argc, char *argv[])
 				}
 				p = argv[i];
 				if (p == NULL) {
-					return false;
+					return burnt;
 				}
 				ulen = 0;
 			}
