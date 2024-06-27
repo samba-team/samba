@@ -487,3 +487,6 @@ plantestsuite("samba.unittests.compression.lzxpress_huffman", "none",
 plantestsuite("samba.unittests.compression.lzxpress_plain", "none",
               [os.path.join(bindir(),
                             "default/lib/compression/test_lzxpress_plain")])
+
+plantestsuite("samba.unittests.cmdline", "none",
+              [os.path.join(bindir(), "test_cmdline")])
