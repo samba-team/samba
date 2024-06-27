@@ -75,3 +75,11 @@
 ^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_sha256_certificate_signature_win2k.ad_dc
 ^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_sha256_signature_win2k.ad_dc
 ^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_win2k.ad_dc
+#
+# Lockout tests
+#
+^samba\.tests\.krb5\.lockout_tests\.samba\.tests\.krb5\.lockout_tests\.LockoutTests\.test_lockout_status_disabled_fast\(ad_dc:local\)$
+^samba\.tests\.krb5\.lockout_tests\.samba\.tests\.krb5\.lockout_tests\.LockoutTests\.test_lockout_status_expired_fast\(ad_dc:local\)$
+^samba\.tests\.krb5\.lockout_tests\.samba\.tests\.krb5\.lockout_tests\.LockoutTests\.test_lockout_status_locked_out_fast\(ad_dc:local\)$
+^samba\.tests\.krb5\.lockout_tests\.samba\.tests\.krb5\.lockout_tests\.LockoutTests\.test_lockout_status_must_change_fast\(ad_dc:local\)$
+^samba\.tests\.krb5\.lockout_tests\.samba\.tests\.krb5\.lockout_tests\.LockoutTests\.test_lockout_status_password_expired_fast\(ad_dc:local\)$
