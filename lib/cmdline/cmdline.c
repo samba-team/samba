@@ -180,7 +180,32 @@ bool samba_cmdline_burn(int argc, char *argv[])
 			char *q = NULL;
 
 			if (strlen(p) == ulen) {
-				continue;
+				/*
+				 * The option string has no '=', so
+				 * its argument will come in the NEXT
+				 * argv member. If there is one, we
+				 * can just step forward and take it,
+				 * setting ulen to 0.
+				 *
+				 * {"--password=secret"}    --> {"--password"}
+				 * {"--password", "secret"} --> {"--password", ""}
+				 * {"-Uadmin%secret"}       --> {"-Uadmin"}
+				 * {"-U", "admin%secret"}   --> {"-U", "admin"}
+				 */
+				i++;
+				if (i == argc) {
+					/*
+					 * this looks like an invalid
+					 * command line, but that's
+					 * for the caller to decide.
+					 */
+					return burnt;
+				}
+				p = argv[i];
+				if (p == NULL) {
+					return false;
+				}
+				ulen = 0;
 			}
 
 			if (is_user) {
