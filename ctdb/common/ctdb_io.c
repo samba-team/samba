@@ -272,7 +272,7 @@ static void queue_dead(struct tevent_context *ev, struct tevent_immediate *im,
 /*
   called when an incoming connection is writeable
 */
-static void queue_io_write(struct ctdb_queue *queue)
+static bool queue_io_write(struct ctdb_queue *queue)
 {
 	while (queue->out_queue) {
 		struct ctdb_queue_pkt *pkt = queue->out_queue;
@@ -294,14 +294,14 @@ static void queue_io_write(struct ctdb_queue *queue)
 			queue->fd = -1;
 			tevent_schedule_immediate(queue->im, queue->ctdb->ev,
 						  queue_dead, queue);
-			return;
+			return false;
 		}
-		if (n <= 0) return;
+		if (n <= 0) return true;
 		
 		if (n != pkt->length) {
 			pkt->length -= n;
 			pkt->data += n;
-			return;
+			return true;
 		}
 
 		DLIST_REMOVE(queue->out_queue, pkt);
@@ -310,6 +310,8 @@ static void queue_io_write(struct ctdb_queue *queue)
 	}
 
 	TEVENT_FD_NOT_WRITEABLE(queue->fde);
+
+	return true;
 }
 
 /*
@@ -320,10 +322,13 @@ static void queue_io_handler(struct tevent_context *ev, struct tevent_fd *fde,
 {
 	struct ctdb_queue *queue = talloc_get_type(private_data, struct ctdb_queue);
 
+	if (flags & TEVENT_FD_WRITE) {
+		if (!queue_io_write(queue)) {
+			return;
+		}
+	}
 	if (flags & TEVENT_FD_READ) {
 		queue_io_read(queue);
-	} else {
-		queue_io_write(queue);
 	}
 }
 
