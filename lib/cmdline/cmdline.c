@@ -138,24 +138,22 @@ void samba_cmdline_set_machine_account_fn(
 bool samba_cmdline_burn(int argc, char *argv[])
 {
 	bool burnt = false;
-	bool found = false;
-	bool is_user = false;
-	char *p = NULL;
 	int i;
-	size_t ulen = 0;
 
 	for (i = 0; i < argc; i++) {
+		bool found = false;
+		bool is_user = false;
+		size_t ulen = 0;
+		char *p = NULL;
+
 		p = argv[i];
 		if (p == NULL) {
 			return burnt;
 		}
 
-		found = false;
-		is_user = false;
-
 		/*
 		 * Take care that this list must be in longest-match
-		 * first order
+		 * first order (e.g. --password2 before --password).
 		 */
 		if (strncmp(p, "-U", 2) == 0) {
 			ulen = 2;
@@ -177,8 +175,6 @@ bool samba_cmdline_burn(int argc, char *argv[])
 		}
 
 		if (found) {
-			char *q = NULL;
-
 			if (strlen(p) == ulen) {
 				/*
 				 * The option string has no '=', so
@@ -209,7 +205,7 @@ bool samba_cmdline_burn(int argc, char *argv[])
 			}
 
 			if (is_user) {
-				q = strchr_m(p, '%');
+				char *q = strchr_m(p, '%');
 				if (q == NULL) {
 					/* -U without '%' has no secret */
 					continue;
