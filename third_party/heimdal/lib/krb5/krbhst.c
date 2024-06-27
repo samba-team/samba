@@ -280,7 +280,7 @@ parse_hostspec(krb5_context context, struct krb5_krbhst_data *kd,
 
     if (p[0] == '[' && (q = strchr(p, ']')) != NULL) {
 	/* if address looks like [foo:bar] or [foo:bar]: its a ipv6
-	   adress, strip of [] */
+	   address, strip of [] */
 	memcpy(hi->hostname, &p[1], q - p - 1);
 	hi->hostname[q - p - 1] = '\0';
 	p = q + 1;

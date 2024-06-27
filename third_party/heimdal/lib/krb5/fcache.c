@@ -1656,7 +1656,7 @@ fcc_get_kdc_offset(krb5_context context, krb5_ccache id, krb5_deltat *kdc_offset
 
 
 /**
- * Variable containing the FILE based credential cache implemention.
+ * Variable containing the FILE based credential cache implementation.
  *
  * @ingroup krb5_ccache
  */

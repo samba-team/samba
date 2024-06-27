@@ -1100,7 +1100,7 @@ krb5_get_use_admin_kdc (krb5_context context)
  * the client's address list when communicating with the KDC.
  *
  * @param context Kerberos 5 context.
- * @param addresses addreses to add
+ * @param addresses addresses to add
  *
  * @return Returns 0 to indicate success. Otherwise an kerberos et
  * error code is returned, see krb5_get_error_message().
@@ -1124,7 +1124,7 @@ krb5_add_extra_addresses(krb5_context context, krb5_addresses *addresses)
  * the client's address list when communicating with the KDC.
  *
  * @param context Kerberos 5 context.
- * @param addresses addreses to set
+ * @param addresses addresses to set
  *
  * @return Returns 0 to indicate success. Otherwise an kerberos et
  * error code is returned, see krb5_get_error_message().
@@ -1158,7 +1158,7 @@ krb5_set_extra_addresses(krb5_context context, const krb5_addresses *addresses)
  * the client's address list when communicating with the KDC.
  *
  * @param context Kerberos 5 context.
- * @param addresses addreses to set
+ * @param addresses addresses to set
  *
  * @return Returns 0 to indicate success. Otherwise an kerberos et
  * error code is returned, see krb5_get_error_message().
@@ -1181,7 +1181,7 @@ krb5_get_extra_addresses(krb5_context context, krb5_addresses *addresses)
  * underlaying operating system.
  *
  * @param context Kerberos 5 context.
- * @param addresses addreses to ignore
+ * @param addresses addresses to ignore
  *
  * @return Returns 0 to indicate success. Otherwise an kerberos et
  * error code is returned, see krb5_get_error_message().
@@ -1205,7 +1205,7 @@ krb5_add_ignore_addresses(krb5_context context, krb5_addresses *addresses)
  * underlaying operating system.
  *
  * @param context Kerberos 5 context.
- * @param addresses addreses to ignore
+ * @param addresses addresses to ignore
  *
  * @return Returns 0 to indicate success. Otherwise an kerberos et
  * error code is returned, see krb5_get_error_message().
@@ -1238,7 +1238,7 @@ krb5_set_ignore_addresses(krb5_context context, const krb5_addresses *addresses)
  * underlaying operating system.
  *
  * @param context Kerberos 5 context.
- * @param addresses list addreses ignored
+ * @param addresses list addresses ignored
  *
  * @return Returns 0 to indicate success. Otherwise an kerberos et
  * error code is returned, see krb5_get_error_message().

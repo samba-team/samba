@@ -1468,8 +1468,8 @@ id-pkkdcekuoid (1.3.6.1.5.2.3.5) set. Second, there must be a
 subjectAltName otherName using OID id-pkinit-san (1.3.6.1.5.2.2) in
 the type field and a DER encoded KRB5PrincipalName that matches the
 name of the TGS of the target realm.  Also, if the certificate has a
-nameConstraints extension with a Generalname with dNSName or iPAdress,
-it must match the hostname or adress of the KDC.
+nameConstraints extension with a Generalname with dNSName or iPAddress,
+it must match the hostname or address of the KDC.
 
 The client is not required by the standard to check the server
 certificate for this information if the client has external

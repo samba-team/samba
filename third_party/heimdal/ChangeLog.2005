@@ -1323,7 +1323,7 @@
 2005-05-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/addr_families.c (krb5_print_address): catch when the
-	unknown adress don't fit. From Björn Sandell <biorn@dce.chalmers.se>
+	unknown address don't fit. From Björn Sandell <biorn@dce.chalmers.se>
 
 2005-05-05  Dave Love  <d.love@dl.ac.uk>
 

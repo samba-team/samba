@@ -162,13 +162,13 @@ typedef heim_object_t heim_null_t;
 typedef LONG heim_base_once_t;
 #define HEIM_BASE_ONCE_INIT 0
 #elif defined(HAVE_DISPATCH_DISPATCH_H)
-typedef long heim_base_once_t; /* XXX arch dependant */
+typedef long heim_base_once_t; /* XXX arch dependent */
 #define HEIM_BASE_ONCE_INIT 0
 #elif defined(ENABLE_PTHREAD_SUPPORT)
 typedef pthread_once_t heim_base_once_t;
 #define HEIM_BASE_ONCE_INIT PTHREAD_ONCE_INIT
 #else
-typedef long heim_base_once_t; /* XXX arch dependant */
+typedef long heim_base_once_t; /* XXX arch dependent */
 #define HEIM_BASE_ONCE_INIT 0
 #endif
 

@@ -78,7 +78,7 @@
 	* Add partial support for LDAP-prep Insignificant Character Handling
 
 	* normalize.c: use generated constant for length, check for
-	overruns, dont use gcc/c99 extentions
+	overruns, dont use gcc/c99 extensions
 
 	* gen-normalize.py, test-normalize.c: use generated constant for length
 	

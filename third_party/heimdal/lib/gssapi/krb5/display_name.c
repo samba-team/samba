@@ -65,8 +65,12 @@ OM_uint32 GSSAPI_CALLCONV _gsskrb5_display_name
     memcpy (output_name_buffer->value, buf, len);
     ((char *)output_name_buffer->value)[len] = '\0';
     free (buf);
-    if (output_name_type)
-	*output_name_type = GSS_KRB5_NT_PRINCIPAL_NAME;
+    if (output_name_type) {
+	if (krb5_principal_is_anonymous(context, name, 0))
+	    *output_name_type = GSS_C_NT_ANONYMOUS;
+	else
+	    *output_name_type = GSS_KRB5_NT_PRINCIPAL_NAME;
+    }
     *minor_status = 0;
     return GSS_S_COMPLETE;
 }

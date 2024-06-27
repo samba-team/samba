@@ -1563,7 +1563,7 @@ scc_set_default(krb5_context context, krb5_ccache id)
 }
 
 /**
- * Variable containing the SCC based credential cache implemention.
+ * Variable containing the SCC based credential cache implementation.
  *
  * @ingroup krb5_ccache
  */

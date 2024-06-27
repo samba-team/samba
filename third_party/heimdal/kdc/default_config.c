@@ -430,21 +430,18 @@ KDC_LIB_FUNCTION krb5_error_code KDC_LIB_CALL
 krb5_kdc_pkinit_config(krb5_context context, krb5_kdc_configuration *config)
 {
 #ifdef PKINIT
+    if (config->enable_pkinit) {
 #ifdef __APPLE__
-    config->enable_pkinit = 1;
-
-    if (config->pkinit_kdc_identity == NULL) {
-	if (config->pkinit_kdc_friendly_name == NULL)
-	    config->pkinit_kdc_friendly_name =
-		strdup("O=System Identity,CN=com.apple.kerberos.kdc");
-	config->pkinit_kdc_identity = strdup("KEYCHAIN:");
-    }
-    if (config->pkinit_kdc_anchors == NULL)
-	config->pkinit_kdc_anchors = strdup("KEYCHAIN:");
-
+	if (config->pkinit_kdc_identity == NULL) {
+	    if (config->pkinit_kdc_friendly_name == NULL)
+		config->pkinit_kdc_friendly_name =
+		    strdup("O=System Identity,CN=com.apple.kerberos.kdc");
+	    config->pkinit_kdc_identity = strdup("KEYCHAIN:");
+	}
+	if (config->pkinit_kdc_anchors == NULL)
+	    config->pkinit_kdc_anchors = strdup("KEYCHAIN:");
 #endif /* __APPLE__ */
 
-    if (config->enable_pkinit) {
 	if (config->pkinit_kdc_identity == NULL)
 	    krb5_errx(context, 1, "pkinit enabled but no identity");
 

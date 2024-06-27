@@ -163,7 +163,7 @@
  * database has expired''.
  *
  * This is a great improvement compared to just getting one of the unix
- * error-codes back.  However, Heimdal have an extention to pass back
+ * error-codes back.  However, Heimdal have an extension to pass back
  * customised errors messages.  Instead of getting ``Key table entry not
  * found'', the user might back ``failed to find
  * host/host.example.com\@EXAMLE.COM(kvno 3) in keytab /etc/krb5.keytab
@@ -546,7 +546,7 @@
  * The last field of the keytab_entry structure is optional. If the size of
  * the keytab_entry indicates that there are at least 4 bytes remaining,
  * a 32 bit value representing the key version number is present. This
- * value supersedes the 8 bit vno8 value preceeding the keyblock.
+ * value supersedes the 8 bit vno8 value preceding the keyblock.
  *
  * Older keytabs with a file_format_version of 0x501 are different in
  * three ways:
@@ -583,7 +583,7 @@
  * 	Max renew time of ticket [integer optional]
  * 	Flags [hdb flags]
  * 	Generation number [generation optional]
- * 	Extensions [extentions optional]
+ * 	Extensions [extensions optional]
  * @endcode
  *
  * Fields following these silently are ignored.

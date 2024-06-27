@@ -1,6 +1,6 @@
 /*
  * dpagaix.c
- * On AIX we need to get the kernel extentions
+ * On AIX we need to get the kernel extensions
  * with the DFS kafs_syscall in it.
  * We might be running on a system
  * where DFS is not active.

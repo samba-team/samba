@@ -159,7 +159,7 @@
 	* gen.c: Add struct units; as a forward declaration. Pointed out
 	by Marcus Watts.
 
-	* rfc2459.asn1: Netscape extentions
+	* rfc2459.asn1: Netscape extensions
 
 	* Makefile.am: add U.S. Federal PKI Common Policy Framework
 

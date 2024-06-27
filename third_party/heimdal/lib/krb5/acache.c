@@ -1090,7 +1090,7 @@ acc_lastchange(krb5_context context, krb5_ccache id, krb5_timestamp *mtime)
 }
 
 /**
- * Variable containing the API based credential cache implemention.
+ * Variable containing the API based credential cache implementation.
  *
  * @ingroup krb5_ccache
  */

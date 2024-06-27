@@ -423,7 +423,7 @@
 	
 2007-06-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
-	* kdc/digest.c: On success, print username, not ip-adress.
+	* kdc/digest.c: On success, print username, not ip-address.
 
 2007-06-26  Love Hörnquist Åstrand  <lha@it.su.se>
 

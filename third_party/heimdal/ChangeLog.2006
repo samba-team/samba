@@ -366,7 +366,7 @@
 
 	* lib/krb5/pac.c: Almost enough code to do PAC parsing and
 	verification, missing in the unix2NTTIME and ucs2 corner. The
-	later will be adressed by finally adding libwind.
+	later will be addressed by finally adding libwind.
 
 	* lib/krb5/krb5_init_context.3: document krb5_[gs]et_max_time_skew
 
@@ -2016,7 +2016,7 @@
 	* lib/krb5/n-fold-test.c: main is not a KRB5_LIB_FUNCTION
 
 	* lib/krb5/mk_priv.c (krb5_mk_priv): abort if ASN1_MALLOC_ENCODE
-	failes to produce the matching lenghts.
+	failes to produce the matching lengths.
 	
 2006-01-27  Love Hörnquist Åstrand  <lha@it.su.se>
 

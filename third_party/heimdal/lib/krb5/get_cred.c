@@ -1418,7 +1418,7 @@ _krb5_get_cred_kdc_any(krb5_context context,
     krb5_data_zero(&data);
 
     /*
-     * If we are using LKDC, lets pull out the addreses from the
+     * If we are using LKDC, lets pull out the addresses from the
      * ticket and use that.
      */
     

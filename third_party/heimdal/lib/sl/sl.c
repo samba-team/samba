@@ -434,9 +434,9 @@ osad(const char *s1, const char *s2)
     size_t l1 = strlen(s1), l2 = strlen(s2), i, j;
     int *row0, *row1, *row2, *tmp, cost;
 
-    row0 = calloc(sizeof(int), l2 + 1);
-    row1 = calloc(sizeof(int), l2 + 1);
-    row2 = calloc(sizeof(int), l2 + 1);
+    row0 = calloc(l2 + 1, sizeof(int));
+    row1 = calloc(l2 + 1, sizeof(int));
+    row2 = calloc(l2 + 1, sizeof(int));
 
     for (j = 0; j < l2 + 1; j++)
         row1[j] = j;
@@ -448,7 +448,7 @@ osad(const char *s1, const char *s2)
         for (j = 0; j < l2; j++) {
 
 	    row2[j + 1] = row1[j] + (s1[i] != s2[j]); /* substitute */
-	    
+
 	    if (row2[j + 1] > row1[j + 1] + 1) /* delete */
 		row2[j + 1] = row1[j + 1] + 1;
 	    if (row2[j + 1] > row2[j] + 1) /* insert */

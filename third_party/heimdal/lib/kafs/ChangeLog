@@ -247,7 +247,7 @@
 	version from kafs_settoken to kafs_settoken_rxkad
 	(_kafs_fixup_viceid): move the fixup the timestamp to make client
 	happy code here.
-	(_kafs_v4_to_kt): move all the kerberos 4 dependant parts from
+	(_kafs_v4_to_kt): move all the kerberos 4 dependent parts from
 	kafs_settoken here.
 	(*): adapt to kafs_token
 
@@ -262,7 +262,7 @@
 	
 	* kafs_locl.h: include krb5-v4compat.h if needed, define an
 	internal structure struct kafs_token that carries around for rxkad
-	data that is independant of kerberos version
+	data that is independent of kerberos version
 	
 2003-02-18  Love Hörnquist Åstrand  <lha@it.su.se>
 

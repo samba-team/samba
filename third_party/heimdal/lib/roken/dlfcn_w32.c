@@ -579,7 +579,7 @@ static BOOL is_import_thunk( void *addr )
     return *(short *) addr == 0x25ff ? TRUE : FALSE;
 }
 
-/* Return adress from the import address table (iat),
+/* Return address from the import address table (iat),
  * if the original address points to a thunk table entry.
  */
 static void *get_address_from_import_address_table( void *iat, DWORD iat_size, void *addr )

@@ -11,7 +11,7 @@
 #  * Confirmed by SU's erstwhile registrar, Leif Johansson <leifj at sunet.se>,
 #  * as well as by SU's current registrar (through Leif), as:
 #  *
-#  *  1.2.752.43.13 Namn Heimdal GSS-API extentions
+#  *  1.2.752.43.13 Namn Heimdal GSS-API extensions
 #  *  Beskrivning OIDar för användning av Heimdal projektet
 #  *  1.2.752.43.14 Namn Heimdal GSS-API mechs
 #  *  Beskrivning OIDar för användning av Heimdal projektet

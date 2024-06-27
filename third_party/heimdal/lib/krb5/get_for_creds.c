@@ -173,7 +173,7 @@ krb5_fwd_tgt_creds(krb5_context	context,
  * out the address to forward the ticket too. This since this might
  * use DNS, its insecure and also doesn't represent configured all
  * addresses of the host. For example, the host might have two
- * adresses, one IPv4 and one IPv6 address where the later is not
+ * addresses, one IPv4 and one IPv6 address where the later is not
  * published in DNS. This IPv6 address might be used communications
  * and thus the resulting ticket useless.
  *

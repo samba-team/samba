@@ -1069,7 +1069,7 @@ krb5_h_addr2addr (krb5_context context,
  * @param context a Keberos context
  * @param af address family
  * @param sa sockaddr
- * @param sa_size lenght of sa.
+ * @param sa_size length of sa.
  * @param port for to fill into sa.
  *
  * @return Return an error code or 0.
@@ -1449,7 +1449,7 @@ krb5_copy_addresses(krb5_context context,
  *
  * @param context a Keberos context
  * @param dest destination of copy operation
- * @param source adresses that are going to be added to dest
+ * @param source addresses that are going to be added to dest
  *
  * @return Return an error code or 0.
  *

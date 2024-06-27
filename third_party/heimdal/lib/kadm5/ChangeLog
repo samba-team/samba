@@ -80,7 +80,7 @@
 
 	* version-script.map: version script fro kadm5 server libary.
 
-	* log.c: only free the orignal entries extentions if there was
+	* log.c: only free the orignal entries extensions if there was
 	any.  Bug reported by Peter Meinecke.
 
 	* add configuration for signal file and acl file, let user select

@@ -2303,7 +2303,7 @@
 
 	* hx509_err.et: Add HX509_CRL_UNKNOWN_EXTENSION.
 
-	* revoke.c: Check for unknown extentions in CRLs and CRLEntries.
+	* revoke.c: Check for unknown extensions in CRLs and CRLEntries.
 
 	* test_nist.in: Parse new format to handle CRL info.
 

@@ -265,7 +265,7 @@ gss_accept_sec_context(OM_uint32 *minor_status,
 	_mg_buffer_zero(output_token);
 
         if (!*context_handle) {
-                ctx = calloc(sizeof(*ctx), 1);
+                ctx = calloc(1, sizeof(*ctx));
 		if (!ctx) {
 			*minor_status = ENOMEM;
 			return (GSS_S_DEFECTIVE_TOKEN);
@@ -281,7 +281,7 @@ gss_accept_sec_context(OM_uint32 *minor_status,
         /*
          * If we get here, then we have a complete token.  Please note
          * that we may have a major_status of GSS_S_DEFECTIVE_TOKEN.  This
-         * 
+         *
          */
 
         initial = ctx->gc_initial;
@@ -469,7 +469,7 @@ got_one:
 			mech_ret_flags &=
 			    ~(GSS_C_DELEG_FLAG|GSS_C_DELEG_POLICY_FLAG);
 		} else if ((m->gm_flags & GM_USE_MG_CRED) != 0) {
-			/* 
+			/*
 			 * If credential is uses mechglue cred, assume it
 			 * returns one too.
 			 */

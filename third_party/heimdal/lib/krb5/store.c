@@ -864,7 +864,7 @@ krb5_ret_uint8(krb5_storage *sp,
 
 /**
  * Store a data to the storage. The data is stored with an int32 as
- * lenght plus the data (not padded).
+ * length plus the data (not padded).
  *
  * @param sp the storage buffer to write to
  * @param data the buffer to store.

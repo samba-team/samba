@@ -83,7 +83,9 @@ static int version_flag;
 
 static int master;
 static int slave;
+#if defined(HAVE_OPENPTY) || defined(__osf__) || defined(STREAMSPTY)
 static char line[256] = { 0 };
+#endif
 
 static void
 caught_signal(int signo)

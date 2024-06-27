@@ -85,7 +85,7 @@ typedef krb5_sigtype sigtype;
  * HPUX 10.10 /opt/dce/include/dcedfs/syscall.h
  * Solaris 2.5 /opt/dcelocal/share/include/dcedfs/syscall.h
  * AIX 4.2  - needs some funny games with load and kafs_syscall
- * to get the kernel extentions. There should be a better way!
+ * to get the kernel extensions. There should be a better way!
  *
  * DEE 5/27/97
  *
