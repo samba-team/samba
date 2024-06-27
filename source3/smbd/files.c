@@ -742,7 +742,7 @@ NTSTATUS read_symlink_reparse(TALLOC_CTX *mem_ctx,
 	struct symlink_reparse_struct *lnk = NULL;
 	NTSTATUS status;
 
-	reparse = talloc_zero(mem_ctx, struct reparse_data_buffer);
+	reparse = talloc(mem_ctx, struct reparse_data_buffer);
 	if (reparse == NULL) {
 		goto nomem;
 	}
