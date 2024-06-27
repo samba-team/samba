@@ -292,7 +292,6 @@ size_t strnlen_w(const smb_ucs2_t *src, size_t max);
 smb_ucs2_t *strchr_w(const smb_ucs2_t *s, smb_ucs2_t c);
 smb_ucs2_t *strchr_wa(const smb_ucs2_t *s, char c);
 smb_ucs2_t *strrchr_w(const smb_ucs2_t *s, smb_ucs2_t c);
-smb_ucs2_t *strnrchr_w(const smb_ucs2_t *s, smb_ucs2_t c, unsigned int n);
 smb_ucs2_t *strstr_w(const smb_ucs2_t *s, const smb_ucs2_t *ins);
 bool strlower_w(smb_ucs2_t *s);
 bool strupper_w(smb_ucs2_t *s);

@@ -115,32 +115,6 @@ smb_ucs2_t *strrchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 }
 
 /*******************************************************************
- Wide version of strrchr that returns after doing strrchr 'n' times.
-********************************************************************/
-
-smb_ucs2_t *strnrchr_w(const smb_ucs2_t *s, smb_ucs2_t c, unsigned int n)
-{
-	smb_ucs2_t cp;
-	const smb_ucs2_t *p = s;
-	int len = strlen_w(s);
-
-	if (len == 0 || !n) {
-		return NULL;
-	}
-	p += (len - 1);
-	do {
-		if (c == *(COPY_UCS2_CHAR(&cp,p))) {
-			n--;
-		}
-
-		if (!n) {
-			return discard_const_p(smb_ucs2_t, p);
-		}
-	} while (p-- != s);
-	return NULL;
-}
-
-/*******************************************************************
  Wide strstr().
 ********************************************************************/
 
