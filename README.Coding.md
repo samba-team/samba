@@ -390,6 +390,48 @@ Bad Example:
 
 	pointer1 = some_func1();
 ```
+### Initialize structs
+
+All structures MUST be at least initialised to 0/NULL.
+
+Current recommended initialization:
+
+```c
+        struct somestruct {
+                int ival;
+                bool bval;
+                double dval;
+                char *sval;
+        };
+
+        struct somestruct var1 = {};
+```
+
+avoid:
+
+```c
+        struct somestruct var1 = {0};
+```
+
+as it can be less portable, in particular if the first element of the struct in question is a nested struct.
+
+Of course if specific members need non-zero initialization then use something like:
+
+```c
+        struct bar {
+            int inner;
+        };
+        struct foo {
+                int outer;
+                struct bar nested;
+        };
+        struct foo var2 = {
+                .outer = 5,
+                .nested = {
+                        .inner = 3,
+                },
+        };
+```
 
 ### Make use of helper variables
 
