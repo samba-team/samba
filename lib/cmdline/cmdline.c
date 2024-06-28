@@ -135,6 +135,21 @@ void samba_cmdline_set_machine_account_fn(
 	cli_credentials_set_machine_account_fn = fn;
 }
 
+/*
+ * Are the strings p and option equal from the point of view of option
+ * parsing, meaning is the next character '\0' or '='.
+ */
+static bool strneq_cmdline_exact(const char *p, const char *option, size_t len)
+{
+	if (strncmp(p, option, len) == 0) {
+		if (p[len] == 0 || p[len] == '=') {
+			return true;
+		}
+	}
+	return false;
+}
+
+
 bool samba_cmdline_burn(int argc, char *argv[])
 {
 	bool burnt = false;
@@ -151,25 +166,21 @@ bool samba_cmdline_burn(int argc, char *argv[])
 			return burnt;
 		}
 
-		/*
-		 * Take care that this list must be in longest-match
-		 * first order (e.g. --password2 before --password).
-		 */
 		if (strncmp(p, "-U", 2) == 0) {
 			ulen = 2;
 			found = true;
 			is_user = true;
-		} else if (strncmp(p, "--user", 6) == 0) {
+		} else if (strneq_cmdline_exact(p, "--user", 6)) {
 			ulen = 6;
 			found = true;
 			is_user = true;
-		} else if (strncmp(p, "--password2", 11) == 0) {
+		} else if (strneq_cmdline_exact(p, "--password2", 11)) {
 			ulen = 11;
 			found = true;
-		} else if (strncmp(p, "--password", 10) == 0) {
+		} else if (strneq_cmdline_exact(p, "--password", 10)) {
 			ulen = 10;
 			found = true;
-		} else if (strncmp(p, "--newpassword", 13) == 0) {
+		} else if (strneq_cmdline_exact(p, "--newpassword", 13)) {
 			ulen = 13;
 			found = true;
 		}
