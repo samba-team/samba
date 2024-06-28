@@ -48,7 +48,7 @@ are the highlights.
 
 Add the follow to your $HOME/.emacs file:
 
-```
+```lisp
   (add-hook 'c-mode-hook
 	(lambda ()
 		(c-set-style "linux")
@@ -63,7 +63,7 @@ Add the follow to your $HOME/.emacs file:
 For the basic vi editor included with all variants of \*nix, add the
 following to $HOME/.exrc:
 
-```
+```vim
   set tabstop=8
   set shiftwidth=8
 ```
@@ -71,7 +71,7 @@ following to $HOME/.exrc:
 For Vim, the following settings in $HOME/.vimrc will also deal with
 displaying trailing whitespace:
 
-```
+```vim
   if has("syntax") && (&t_Co > 2 || has("gui_running"))
 	syntax on
 	function! ActivateInvisibleCharIndicator()
@@ -113,7 +113,7 @@ of multiple following code blocks.
 
 This is good:
 
-```
+```c
 	...
 	int i;
 
@@ -153,7 +153,7 @@ This is good:
 
 This is bad:
 
-```
+```c
 	...
 	int i;
 	/*
@@ -191,7 +191,7 @@ align the parameter list with the first parameter on the previous line.
 Use tabs to get as close as possible and then fill in the final 7
 characters or less with whitespace.  For example,
 
-```
+```c
 	var1 = foo(arg1, arg2,
 		   arg3);
 ```
@@ -214,13 +214,13 @@ Always follow an `if` keyword with a space but don't include additional
 spaces following or preceding the parentheses in the conditional.
 This is good:
 
-```
+```c
 	if (x == 1)
 ```
 
 This is bad:
 
-```
+```c
 	if ( x == 1 )
 ```
 
@@ -246,7 +246,7 @@ loop.
 
 Good examples:
 
-```
+```c
 	if (x == 1) {
 		printf("good\n");
 	}
@@ -269,7 +269,7 @@ Good examples:
 
 Bad examples:
 
-```
+```c
 	while (1)
 	{
 		print("I'm in a loop!\n"); }
@@ -296,7 +296,7 @@ idea.
 
 Good Examples:
 
-```
+```c
 	int function foo(int y)
 	{
 		int *z = NULL;
@@ -338,7 +338,7 @@ lib/replace/, new code should adhere to the following conventions:
 Most of the time a good name for a boolean variable is 'ok'. Here is an
 example we often use:
 
-```
+```c
 	bool ok;
 
 	ok = foo();
@@ -367,7 +367,7 @@ instructions sequence may change over time.
 
 Good Example:
 
-```
+```c
 	char *pointer1 = NULL;
 	char *pointer2 = NULL;
 
@@ -380,7 +380,7 @@ Good Example:
 
 Bad Example:
 
-```
+```c
 	char *pointer1;
 	char *pointer2;
 
@@ -441,7 +441,7 @@ it's also easier to use the "step" command within gdb.
 
 Good Example:
 
-```
+```c
 	char *name = NULL;
 	int ret;
 
@@ -457,7 +457,7 @@ Good Example:
 
 Bad Example:
 
-```
+```c
 	ret = some_function_my_name(get_some_name());
 	...
 ```
@@ -468,7 +468,7 @@ debugger.
 
 Good example:
 
-```
+```c
 	x = malloc(sizeof(short)*10);
 	if (x == NULL) {
 		fprintf(stderr, "Unable to alloc memory!\n");
@@ -477,7 +477,7 @@ Good example:
 
 Bad example:
 
-```
+```c
 	if ((x = malloc(sizeof(short)*10)) == NULL ) {
 		fprintf(stderr, "Unable to alloc memory!\n");
 	}
@@ -486,7 +486,7 @@ Bad example:
 There are exceptions to this rule. One example is walking a data structure in
 an iterator style:
 
-```
+```c
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		   ... do something with opt ...
 	}
@@ -499,7 +499,7 @@ rarely exists for this particular use case, and we gain some
 efficiency because the DBG_ macros don't evaluate their arguments if
 the debuglevel is not high enough.
 
-```
+```c
 	if (!NT_STATUS_IS_OK(status)) {
 		struct dom_sid_buf sid_buf;
 		struct GUID_txt_buf guid_buf;
@@ -528,7 +528,7 @@ like `CHECK_STATUS`, `CHECK_VAL` and others.
 
 Don't do this:
 
-```
+```c
 	frame = talloc_stackframe();
 
 	if (ret == LDB_SUCCESS) {
@@ -551,7 +551,7 @@ Don't do this:
 
 It should be:
 
-```
+```c
 	frame = talloc_stackframe();
 
 	if (ret != LDB_SUCCESS) {
@@ -580,7 +580,7 @@ It should be:
 
 Use these following macros instead of DEBUG:
 
-```
+```c
 DBG_ERR         log level 0		error conditions
 DBG_WARNING     log level 1		warning conditions
 DBG_NOTICE      log level 3		normal, but significant, condition
@@ -590,7 +590,7 @@ DBG_DEBUG       log level 10		debug-level message
 
 Example usage:
 
-```
+```c
 DBG_ERR("Memory allocation failed\n");
 DBG_DEBUG("Received %d bytes\n", count);
 ```
@@ -613,7 +613,7 @@ The PRIuxx specifiers are standard.
 
 Example usage:
 
-```
+```c
 D_DEBUG("Resolving %"PRIu32" SID(s).\n", state->num_sids);
 ```
 
