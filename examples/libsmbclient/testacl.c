@@ -31,8 +31,8 @@ int main(int argc, const char *argv[])
 	int ret;
 	char *p;
 	const char *debugstr;
-	char path[1024];
-	char value[1024];
+	char path[1024] = {};
+	char value[1024] = {};
 	poptContext pc;
 	struct stat st;
 	struct poptOption long_options[] =
