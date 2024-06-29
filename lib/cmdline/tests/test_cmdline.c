@@ -62,6 +62,7 @@ static void torture_cmdline_sanity_check_bad(void **state)
 
 static void torture_cmdline_burn(void **state)
 {
+	 /* arg1 would require -U' Administrator%secret' */
 	char arg1[] = "-U Administrator%secret";
 	char arg2[] = "--no-no-no-not-secret=not%secret";
 	char arg3[] = "--user=Administrator%secret";
@@ -74,9 +75,23 @@ static void torture_cmdline_burn(void **state)
 	char arg10[] = "fish%chips";
 	char arg11[] = "--password2";
 	char arg12[] = "fish%chips";
+	char arg13[] = "--username=Admonisher % secretest";
+	/*
+	 * The next two are not used in samba (--client-password
+	 * appears in a Heimdal script that won't use lib/cmdline even
+	 * if built) and are burnt by virtue of not being in the allow
+	 * list.
+	 */
+	char arg14[] = "--client-password=bean stew";
+	char arg15[] = "--enpassant="; /* like --enpassant='', no effect on affect next arg */
+	char arg16[] = "bean";
+	char arg17[] = "--bean=password";
+	char arg18[] = "--name";
+	char arg19[] = "Compass Alompass";
 
 	char *argv[] = { arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8,
-		arg9, arg10, arg11, arg12, NULL };
+		arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17,
+		arg18, arg19, NULL };
 	int argc = ARRAY_SIZE(argv) - 1;
 
 	samba_cmdline_burn(argc, argv);
@@ -93,6 +108,13 @@ static void torture_cmdline_burn(void **state)
 	assert_string_equal(arg10, "");
 	assert_string_equal(arg11, "--password2");
 	assert_string_equal(arg12, "");
+	assert_string_equal(arg13, "--username=Admonisher ");
+	assert_string_equal(arg14, "--client-password");
+	assert_string_equal(arg15, "--enpassant");
+	assert_string_equal(arg16, "bean");
+	assert_string_equal(arg17, "--bean=password");
+	assert_string_equal(arg18, "--name");
+	assert_string_equal(arg19, "Compass Alompass");
 }
 
 int main(int argc, char *argv[])
