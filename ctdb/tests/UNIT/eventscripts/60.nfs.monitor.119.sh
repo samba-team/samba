@@ -2,7 +2,10 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "NFS RPC service timeout, stats change, 10 iterations"
+define_test "NFS RPC service timeout, silent stats error, 10 iterations"
+
+# It would be nice to have a non-silent stats error... but that's a
+# bit hard for the current test code to handle.  :-(
 
 setup
 
@@ -14,8 +17,7 @@ unhealthy_after=2
 service_stop_cmd="\$CTDB_NFS_CALLOUT stop nfs"
 service_start_cmd="\$CTDB_NFS_CALLOUT start nfs"
 service_debug_cmd="program_stack_traces nfsd 5"
-# Dummy pipeline confirms that pipelines work in this context
-service_stats_cmd="date --rfc-3339=ns | grep ."
+service_stats_cmd="false"
 EOF
 
 nfs_iterate_test 10 "nfs:TIMEOUT"

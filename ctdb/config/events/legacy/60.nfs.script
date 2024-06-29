@@ -164,20 +164,22 @@ nfs_check_service()
 
 			if [ -f "$_curr" ]; then
 				mv -f "$_curr" "$_prev"
+			else
+				# Make initial stats empty, so a
+				# failed attempt to retrieve them on
+				# service stall is less likely to
+				# result in a false stats change
+				: >"$_prev"
 			fi
-			eval "$service_stats_cmd" >"$_curr" 2>&1
+			eval "$service_stats_cmd" >"$_curr"
 
 			# Only consider statistics on timeout.  This
 			# is done below by checking if this string is
 			# contained in $_err.
 			_t="rpcinfo: RPC: Timed out"
-
 			if ! $_ok &&
 				[ "${_err#*"${_t}"}" != "$_err" ] &&
 				! cmp "$_prev" "$_curr" >/dev/null 2>&1; then
-				# Stats always implicitly change on
-				# the first monitor event, since
-				# previous stats don't exists...
 				echo "WARNING: statistics changed but ${_err}"
 				_ok=true
 			fi

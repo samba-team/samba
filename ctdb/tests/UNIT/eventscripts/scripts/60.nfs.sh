@@ -136,29 +136,27 @@ nfs_setup_fake_threads()
 	esac
 }
 
-nfs_stats_set_changed()
-{
-	FAKE_NFS_STATS_CHANGED=" $* "
-}
-
 nfs_stats_check_changed()
 {
 	_rpc_service="$1"
-	_iteration="$2"
+	_cmd="$2"
 
-	_t="$FAKE_NFS_STATS_CHANGED"
-	if [ -z "$_t" ]; then
+	if [ -z "$_cmd" ]; then
+		# No stats command, statistics don't change...
 		return 1
 	fi
-	if [ "${_t#* "${_rpc_service}"}" != "$_t" ]; then
-		return 0
-	fi
-	# Statistics always change on the first iteration
-	if [ "$_iteration" -eq 1 ]; then
-		return 0
+
+	_curr="${CTDB_TEST_TMP_DIR}/${_rpc_service}.stats"
+	_prev="${_curr}.prev"
+
+	: >"$_prev"
+	if [ -e "$_curr" ]; then
+		mv "$_curr" "$_prev"
 	fi
 
-	return 1
+	eval "$_cmd" >"$_curr"
+
+	! diff "$_prev" "$_curr" >/dev/null
 }
 
 rpcinfo_timed_out()
@@ -344,6 +342,7 @@ rpc_set_service_failure_response()
 		# Unused, but for completeness, possible future use
 		service_check_cmd=""
 		service_debug_cmd=""
+		service_stats_cmd=""
 
 		# Don't bother syntax checking, eventscript does that...
 		. "$_file"
@@ -360,6 +359,17 @@ rpc_set_service_failure_response()
 			esac
 		fi
 
+		# It doesn't matter here if the statistics have
+		# changed.  However, this generates the current
+		# statistics, which needs to happen, regardless of
+		# service health, so they can be compared when they
+		# matter...
+		_stats_changed=false
+		if nfs_stats_check_changed \
+			   "$_rpc_service" "$service_stats_cmd"; then
+			_stats_changed=true
+		fi
+
 		_why=""
 		_ri_out=$(rpcinfo -T tcp localhost "$_rpc_service" 2>&1)
 		# Check exit code separately for readability
@@ -370,9 +380,7 @@ rpc_set_service_failure_response()
 		elif rpcinfo_timed_out "$_ri_out"; then
 			_why="Timed out"
 
-			if nfs_stats_check_changed \
-				"$_rpc_service" "$_iteration"; then
-
+			if $_stats_changed; then
 				rpc_failure \
 					"WARNING: statistics changed but" \
 					"$_rpc_service" \

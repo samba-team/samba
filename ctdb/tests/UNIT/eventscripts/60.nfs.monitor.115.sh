@@ -18,7 +18,4 @@ service_debug_cmd="program_stack_traces nfsd 5"
 service_stats_cmd="date --rfc-3339=ns | grep ."
 EOF
 
-# Test flag to indicate that stats are expected to change
-nfs_stats_set_changed "nfs" "status"
-
 nfs_iterate_test 10 "nfs"
