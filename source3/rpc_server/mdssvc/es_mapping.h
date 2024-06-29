@@ -37,9 +37,6 @@ struct es_attr_map {
 	const char *name;
 };
 
-char *es_escape_str(TALLOC_CTX *mem_ctx,
-		    const char *in,
-		    const char *exceptions);
 struct es_attr_map *es_map_sl_attr(TALLOC_CTX *mem_ctx,
 				   json_t *kmd_map,
 				   const char *sl_attr);

@@ -20,6 +20,7 @@
 
 %{
 	#include "includes.h"
+	#include "lib/elastic_util.h"
 	#include "rpc_server/mdssvc/mdssvc.h"
 	#include "rpc_server/mdssvc/mdssvc_es.h"
 	#include "rpc_server/mdssvc/es_parser.tab.h"
@@ -310,6 +311,7 @@ static char *map_type(const struct es_attr_map *attr,
 
 	esc_mime_type_list = es_escape_str(s->frame,
 					   mime_type_list,
+					   "\\\"",
 					   "* ");
 	if (esc_mime_type_list == NULL) {
 		return NULL;
@@ -403,7 +405,7 @@ static char *map_fts(const struct es_attr_map *attr,
 	char *esval = NULL;
 	char *es = NULL;
 
-	esval = es_escape_str(s->frame, val, "*\\\"");
+	esval = es_escape_str(s->frame, val, "\\\"", "*\\\"");
 	if (esval == NULL) {
 		yyerror("es_escape_str failed");
 		return NULL;
@@ -450,7 +452,7 @@ static char *map_str(const struct es_attr_map *attr,
 	const char *not = NULL;
 	const char *end = NULL;
 
-	esval = es_escape_str(s->frame, val, "*\\\"");
+	esval = es_escape_str(s->frame, val, "\\\"", "*\\\"");
 	if (esval == NULL) {
 		yyerror("es_escape_str failed");
 		return NULL;
@@ -522,7 +524,7 @@ static char *map_sldate_to_esdate(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	esdate = es_escape_str(mem_ctx, buf, NULL);
+	esdate = es_escape_str(mem_ctx, buf, "\\\"", NULL);
 	if (esdate == NULL) {
 		yyerror("es_escape_str failed");
 		return NULL;

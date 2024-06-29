@@ -1226,6 +1226,7 @@ bld.SAMBA3_BINARY('test_mdsparser_es',
                  jansson
                  cmocka
                  CMDLINE_S3
+                 ELASTIC-UTIL
                  ''',
                  enabled=bld.env.spotlight_backend_es,
                  for_selftest=True)
@@ -1282,7 +1283,7 @@ bld.SAMBA3_BINARY('spotlight2es',
                  rpc_server/mdssvc/es_parser.y
                  rpc_server/mdssvc/es_lexer.l
                  rpc_server/mdssvc/es_mapping.c''',
-                 deps='samba3-util talloc jansson smbconf',
+                 deps='samba3-util talloc jansson smbconf ELASTIC-UTIL',
                  enabled=bld.env.spotlight_backend_es,
                  install=False)
 

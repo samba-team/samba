@@ -266,7 +266,7 @@ if bld.env.spotlight_backend_es:
                           mdssvc/es_parser.y
                           mdssvc/es_lexer.l
                           '''
-    rpc_mdssvc_deps += ' http jansson'
+    rpc_mdssvc_deps += ' ELASTIC-UTIL http jansson'
 
     bld.INSTALL_FILES(bld.env.SAMBA_DATADIR,
                       'mdssvc/elasticsearch_mappings.json')
