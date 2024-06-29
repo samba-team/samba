@@ -149,6 +149,75 @@ static bool strneq_cmdline_exact(const char *p, const char *option, size_t len)
 	return false;
 }
 
+/*
+ * If an option looks like a password, and it isn't in the allow list, we
+ * will burn it.
+ *
+ * *ulen is set to zero if found is false (we don't need it in that case).
+ */
+static bool burn_possible_password(const char *p, size_t *ulen)
+{
+	size_t i, len;
+	static const char *allowed[] = {
+		"--bad-password-count-reset",
+		"--badpassword-frequency",
+		"--change-user-password",
+		"--force-initialized-passwords",
+		"--machine-pass",  /* distinct from --machinepass */
+		"--managed-password-interval",
+		"--no-pass",
+		"--no-pass2",
+		"--no-passthrough",
+		"--no-password",
+		"--passcmd",
+		"--passwd",
+		"--passwd_path",
+		"--password-file",
+		"--password-from-stdin",
+		"--random-password",
+		"--smbpasswd-style",
+		"--strip-passed-output",
+		"--with-smbpasswd-file",
+	};
+	char *equals = NULL;
+	*ulen = 0;
+
+	for (i = 0; i < ARRAY_SIZE(allowed); i++) {
+		bool safe;
+		len = strlen(allowed[i]);
+		safe = strneq_cmdline_exact(p, allowed[i], len);
+		if (safe) {
+			return false;
+		}
+	}
+	/*
+	 * We have found a suspicious option, and we need to work out where to
+	 * burn it from. It could be
+	 *
+	 * --secret-password=cow    -> password after '='
+	 * --secret-password        -> password is in next argument.
+	 *
+	 * but we also have the possibility of
+	 *
+	 * --cow=secret-password
+	 *
+	 * that is, the 'pass' in this option string is not in the option but
+	 * the argument to it, which should not be burnt.
+	 */
+	equals = strchr(p, '=');
+	if (equals == NULL) {
+		*ulen = strlen(p);
+	} else {
+		char *pass = (strstr(p, "pass"));
+		if (pass > equals) {
+			/* this is --foo=pass, not --pass=foo */
+			return false;
+		}
+		*ulen = equals - p;
+	}
+	DBG_NOTICE("burning command line argument %*s\n", (int)(*ulen), p);
+	return true;
+}
 
 bool samba_cmdline_burn(int argc, char *argv[])
 {
@@ -174,15 +243,14 @@ bool samba_cmdline_burn(int argc, char *argv[])
 			ulen = 6;
 			found = true;
 			is_user = true;
-		} else if (strneq_cmdline_exact(p, "--password2", 11)) {
-			ulen = 11;
-			found = true;
-		} else if (strneq_cmdline_exact(p, "--password", 10)) {
-			ulen = 10;
-			found = true;
-		} else if (strneq_cmdline_exact(p, "--newpassword", 13)) {
-			ulen = 13;
-			found = true;
+		} else if (strncmp(p, "--", 2) == 0 && strstr(p, "pass")) {
+			/*
+			 * We have many secret options like --password,
+			 * --adminpass, --client-password, and we could easily
+			 * add more, so we will use an allowlist to let the
+			 * safe ones through (of which there are also many).
+			 */
+			found = burn_possible_password(p, &ulen);
 		}
 
 		if (found) {
