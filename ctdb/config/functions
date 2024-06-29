@@ -866,6 +866,11 @@ ctdb_counter_get()
 	# shellcheck disable=SC2086
 	echo $_val
 }
+ctdb_counter_exists()
+{
+	_ctdb_counter_common "$1"
+	[ -e "$_counter_file" ]
+}
 
 #
 # Fail counter/threshold combination to control warnings and node unhealthy

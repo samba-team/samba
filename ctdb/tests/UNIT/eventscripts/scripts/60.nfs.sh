@@ -22,6 +22,8 @@ EOF
 
 	export RPCNFSDCOUNT
 
+	TEST_RPC_ALL_SERVICES="portmapper nfs mountd rquotad nlockmgr status"
+
 	if [ "$1" != "down" ]; then
 		debug <<EOF
 Setting up NFS environment: all RPC services up, NFS managed by CTDB
@@ -40,9 +42,9 @@ EOF
 			;;
 		esac
 
-		_rpc_services_up \
-			"portmapper" "nfs" "mountd" "rquotad" \
-			"nlockmgr" "status"
+		# Intentional word splitting
+		# shellcheck disable=SC2086
+		_rpc_services_up $TEST_RPC_ALL_SERVICES
 
 		nfs_setup_fake_threads "nfsd"
 		nfs_setup_fake_threads "rpc.foobar" # Set the variable to empty
@@ -283,6 +285,35 @@ program ${_rpc_service}${_ver:+ version }${_ver} is not available
 EOF
 }
 
+_rpc_was_healthy_common()
+{
+	_rpc_service="$1"
+
+	_f="rpc.${_rpc_service}.was_healthy"
+	_rpc_was_healthy_file="${CTDB_TEST_TMP_DIR}/${_f}"
+}
+
+_rpc_set_was_healthy()
+{
+	if [ $# -eq 0 ]; then
+		# Intentional word splitting
+		# shellcheck disable=SC2086
+		set -- $TEST_RPC_ALL_SERVICES
+	fi
+
+	for _rpc_service; do
+		_rpc_was_healthy_common "$_rpc_service"
+		touch "$_rpc_was_healthy_file"
+	done
+}
+
+_rpc_check_was_healthy()
+{
+	_rpc_was_healthy_common "$1"
+
+	[ -e "$_rpc_was_healthy_file" ]
+}
+
 # Set the required result for a particular RPC program having failed
 # for a certain number of iterations.  This is probably still a work
 # in progress.  Note that we could hook aggressively
@@ -299,6 +330,7 @@ rpc_set_service_failure_response()
 	ok_null
 
 	if [ -z "$_rpc_service" ]; then
+		_rpc_set_was_healthy
 		return
 	fi
 
@@ -376,6 +408,7 @@ rpc_set_service_failure_response()
 		# shellcheck disable=SC2181
 		if [ $? -eq 0 ]; then
 			echo 0 >"$_failcount_file"
+			_rpc_set_was_healthy "$_rpc_service"
 			exit # from subshell
 		elif rpcinfo_timed_out "$_ri_out"; then
 			_why="Timed out"
@@ -390,6 +423,10 @@ rpc_set_service_failure_response()
 				echo 0 >"$_failcount_file"
 				exit # from subshell
 			fi
+		elif ! _rpc_check_was_healthy "$_rpc_service"; then
+			echo 1 >"$_rc_file"
+			rpc_failure "ERROR:" "$_rpc_service" "$_ver" >"$_out"
+			exit # from subshell
 		fi
 
 		_numfails=$((_numfails + 1))
@@ -407,6 +444,7 @@ rpc_set_service_failure_response()
 				>"$_out"
 		else
 			_unhealthy=false
+			_rpc_set_was_healthy "$_rpc_service"
 		fi
 
 		if [ $restart_every -gt 0 ] &&
@@ -480,6 +518,12 @@ program_stack_traces()
 #
 nfs_iterate_test()
 {
+	_initial_monitor_event=false
+	if [ "$1" = "-i" ]; then
+		shift
+		_initial_monitor_event=true
+	fi
+
 	_repeats="$1"
 	_rpc_service="$2"
 	_up_iteration="${3:--1}"
@@ -490,16 +534,29 @@ nfs_iterate_test()
 	fi
 
 	if [ -n "$_rpc_service" ]; then
-		debug <<EOF
---------------------------------------------------
-EOF
-
 		_action="${_rpc_service#*:}"
 		if [ "$_action" != "$_rpc_service" ]; then
 			_rpc_service="${_rpc_service%:*}"
 		else
 			_action=""
 		fi
+
+		if ! $_initial_monitor_event; then
+			cat <<EOF
+--------------------------------------------------
+Running initial monitor event
+
+EOF
+			# Remember a successful test result...
+			rpc_set_service_failure_response "$_rpc_service"
+			# ... and a successful monitor result
+			simple_test
+		fi
+
+
+		cat <<EOF
+--------------------------------------------------
+EOF
 
 		if [ -n "$_action" ]; then
 			case "$_action" in

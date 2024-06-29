@@ -193,6 +193,12 @@ nfs_check_service()
 			exit 0
 		fi
 
+		# Don't count immediately after startup
+		if ! ctdb_counter_exists "$_progname"; then
+			echo "ERROR: $_err"
+			exit 1
+		fi
+
 		ctdb_counter_incr "$_progname"
 		_failcount=$(ctdb_counter_get "$_progname")
 
