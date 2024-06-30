@@ -40,6 +40,8 @@ parse_options()
 
 parse_options "$@"
 
+_fail_msg="rpcinfo: RPC: Program not registered"
+
 for i in ${FAKE_RPCINFO_SERVICES}; do
 	# This is stupidly cumulative, but needs to happen after the
 	# initial split of the list above.
@@ -47,9 +49,16 @@ for i in ${FAKE_RPCINFO_SERVICES}; do
 	# Want glob expansion
 	# shellcheck disable=SC2086
 	set -- $i
-	# $1 = program, $2 = low version, $3 = high version
+	# $1 = program, $2 = low version, $3 = high version, $4 = flag
 
 	if [ "$1" = "$p" ]; then
+		case "$4" in
+		TIMEOUT)
+			_fail_msg="rpcinfo: RPC: Timed out"
+			break
+			;;
+		esac
+
 		if [ -n "$v" ]; then
 			if [ "$2" -le "$v" ] && [ "$v" -le "$3" ]; then
 				echo "program ${p} version ${v} ready and waiting"
@@ -68,7 +77,7 @@ for i in ${FAKE_RPCINFO_SERVICES}; do
 	fi
 done
 
-echo "rpcinfo: RPC: Program not registered" >&2
+echo "$_fail_msg" >&2
 if [ -n "$v" ]; then
 	echo "program ${p} version ${v} is not available"
 else

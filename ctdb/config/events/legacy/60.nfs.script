@@ -167,7 +167,13 @@ nfs_check_service()
 			fi
 			eval "$service_stats_cmd" >"$_curr" 2>&1
 
+			# Only consider statistics on timeout.  This
+			# is done below by checking if this string is
+			# contained in $_err.
+			_t="rpcinfo: RPC: Timed out"
+
 			if ! $_ok &&
+				[ "${_err#*"${_t}"}" != "$_err" ] &&
 				! cmp "$_prev" "$_curr" >/dev/null 2>&1; then
 				# Stats always implicitly change on
 				# the first monitor event, since

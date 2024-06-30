@@ -82,6 +82,21 @@ _rpc_services_down()
 	FAKE_RPCINFO_SERVICES="$_out"
 }
 
+_rpc_services_timeout()
+{
+	_out=""
+	for _s in $FAKE_RPCINFO_SERVICES; do
+		for _i; do
+			if [ "$_i" = "${_s%%:*}" ]; then
+				debug "Marking RPC service \"${_i}\" as TIMEOUT"
+				_s="${_s}:TIMEOUT"
+			fi
+		done
+		_out="${_out}${_out:+ }${_s}"
+	done
+	FAKE_RPCINFO_SERVICES="$_out"
+}
+
 _rpc_services_up()
 {
 	_out="$FAKE_RPCINFO_SERVICES"
@@ -144,6 +159,11 @@ nfs_stats_check_changed()
 	fi
 
 	return 1
+}
+
+rpcinfo_timed_out()
+{
+	echo "$1" | grep -q "Timed out"
 }
 
 guess_output()
@@ -256,10 +276,11 @@ rpc_failure()
 	_err_or_warn="$1"
 	_rpc_service="$2"
 	_ver="$3"
+	_why="${4:-Program not registered}"
 
 	cat <<EOF
 ${_err_or_warn} ${_rpc_service} failed RPC check:
-rpcinfo: RPC: Program not registered
+rpcinfo: RPC: ${_why}
 program ${_rpc_service}${_ver:+ version }${_ver} is not available
 EOF
 }
@@ -339,21 +360,28 @@ rpc_set_service_failure_response()
 			esac
 		fi
 
-		if rpcinfo -T tcp localhost "$_rpc_service" \
-			>/dev/null 2>&1; then
-
+		_why=""
+		_ri_out=$(rpcinfo -T tcp localhost "$_rpc_service" 2>&1)
+		# Check exit code separately for readability
+		# shellcheck disable=SC2181
+		if [ $? -eq 0 ]; then
 			echo 0 >"$_failcount_file"
 			exit # from subshell
-		elif nfs_stats_check_changed \
-			"$_rpc_service" "$_iteration"; then
+		elif rpcinfo_timed_out "$_ri_out"; then
+			_why="Timed out"
 
-			rpc_failure \
-				"WARNING: statistics changed but" \
-				"$_rpc_service" \
-				"$_ver" \
-				>"$_out"
-			echo 0 >"$_failcount_file"
-			exit # from subshell
+			if nfs_stats_check_changed \
+				"$_rpc_service" "$_iteration"; then
+
+				rpc_failure \
+					"WARNING: statistics changed but" \
+					"$_rpc_service" \
+					"$_ver" \
+					"$_why" \
+					>"$_out"
+				echo 0 >"$_failcount_file"
+				exit # from subshell
+			fi
 		fi
 
 		_numfails=$((_numfails + 1))
@@ -367,6 +395,7 @@ rpc_set_service_failure_response()
 				"ERROR:" \
 				"$_rpc_service" \
 				"$_ver" \
+				"$_why" \
 				>"$_out"
 		else
 			_unhealthy=false
@@ -379,6 +408,7 @@ rpc_set_service_failure_response()
 					"WARNING:" \
 					"$_rpc_service" \
 					"$_ver" \
+					"$_why" \
 					>"$_out"
 			fi
 
@@ -424,7 +454,8 @@ program_stack_traces()
 #
 # - 1st argument is the number of iterations.
 #
-# - 2nd argument is the NFS/RPC service being tested
+# - 2nd argument is the NFS/RPC service being tested, with optional
+#   TIMEOUT flag
 #
 #   This service is marked down before the 1st iteration.
 #
@@ -454,7 +485,23 @@ nfs_iterate_test()
 		debug <<EOF
 --------------------------------------------------
 EOF
-		_rpc_services_down "$_rpc_service"
+
+		_action="${_rpc_service#*:}"
+		if [ "$_action" != "$_rpc_service" ]; then
+			_rpc_service="${_rpc_service%:*}"
+		else
+			_action=""
+		fi
+
+		if [ -n "$_action" ]; then
+			case "$_action" in
+			TIMEOUT)
+				_rpc_services_timeout "$_rpc_service"
+				;;
+			esac
+		else
+			_rpc_services_down "$_rpc_service"
+		fi
 	fi
 
 	debug <<EOF
