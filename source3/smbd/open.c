@@ -1219,7 +1219,9 @@ static NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 		return NT_STATUS_OK;
 	}
 
+#if defined(HAVE_FSTATFS) && defined(HAVE_LINUX_MAGIC_H)
 namebased_open:
+#endif
 	/*
 	 * Close the existing pathref fd and set the fsp flag
 	 * is_pathref to false so we get a "normal" fd this time.
