@@ -202,7 +202,7 @@ also accepted as dictionary entries here
             string_types = str
             if isinstance(value, string_types):
                 string += "\"%s\"" % value
-            elif type(value) is int:
+            elif isinstance(value, int):
                 string += "%d" % value
             else:
                 raise Exception("Unknown type for %s: %r" % (name, value))
