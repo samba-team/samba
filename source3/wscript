@@ -86,10 +86,6 @@ def options(opt):
     opt.samba_add_onoff_option('fake-kaserver',
                           help=("Include AFS fake-kaserver support"), default=False)
 
-    opt.add_option('--with-libcephfs',
-                   help=("Directory under which libcephfs is installed"),
-                   action="store", dest='libcephfs_dir', default=None)
-
     opt.samba_add_onoff_option('glusterfs', with_name="enable", without_name="disable", default=True)
     opt.samba_add_onoff_option('cephfs', with_name="enable", without_name="disable", default=True)
 
@@ -1622,10 +1618,6 @@ int main(void) {
             conf.DEFINE('HAVE_LINUX_IOCTL', '1')
 
     conf.env['CFLAGS_CEPHFS'] = "-D_FILE_OFFSET_BITS=64"
-    if Options.options.libcephfs_dir:
-        Logs.error('''--with-libcephfs no longer supported, please use compiler
-                   flags instead, e.g. GCC LIBRARY_PATH and C_INCLUDE_PATH''')
-        sys.exit(1)
 
     if (Options.options.with_cephfs and
         conf.CHECK_HEADERS('cephfs/libcephfs.h', False, False, 'cephfs') and
