@@ -339,7 +339,7 @@ static bool samsync_handle_domain(struct torture_context *tctx, TALLOC_CTX *mem_
 			   int database_id, struct netr_DELTA_ENUM *delta)
 {
 	struct netr_DELTA_DOMAIN *domain = delta->delta_union.domain;
-	struct dom_sid *dom_sid;
+	struct dom_sid *dom_sid = NULL;
 	struct samr_QueryDomainInfo q[14]; /* q[0] will be unused simple for clarity */
 	union samr_DomainInfo *info[14];
 	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13};
