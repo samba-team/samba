@@ -626,10 +626,7 @@ class PkInitTests(KDCBaseTest):
                             attrs=["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"])
         msg = msgs[0]
 
-        try:
-            old_ExpirePasswordsOnSmartCardOnlyAccounts = msg["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"]
-        except KeyError:
-            old_ExpirePasswordsOnSmartCardOnlyAccounts = None
+        old_ExpirePasswordsOnSmartCardOnlyAccounts = msg.get("msDS-ExpirePasswordsOnSmartCardOnlyAccounts")
 
         self.addCleanup(set_ExpirePasswordsOnSmartCardOnlyAccounts,
                         samdb, old_ExpirePasswordsOnSmartCardOnlyAccounts)
@@ -752,10 +749,7 @@ class PkInitTests(KDCBaseTest):
                             attrs=["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"])
         msg = msgs[0]
 
-        try:
-            old_ExpirePasswordsOnSmartCardOnlyAccounts = msg["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"]
-        except KeyError:
-            old_ExpirePasswordsOnSmartCardOnlyAccounts = None
+        old_ExpirePasswordsOnSmartCardOnlyAccounts = msg.get("msDS-ExpirePasswordsOnSmartCardOnlyAccounts")
 
         self.addCleanup(set_ExpirePasswordsOnSmartCardOnlyAccounts,
                         samdb, old_ExpirePasswordsOnSmartCardOnlyAccounts)
@@ -834,10 +828,7 @@ class PkInitTests(KDCBaseTest):
                             attrs=["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"])
         msg = msgs[0]
 
-        try:
-            old_ExpirePasswordsOnSmartCardOnlyAccounts = msg["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"]
-        except KeyError:
-            old_ExpirePasswordsOnSmartCardOnlyAccounts = None
+        old_ExpirePasswordsOnSmartCardOnlyAccounts = msg.get("msDS-ExpirePasswordsOnSmartCardOnlyAccounts")
 
         self.addCleanup(set_ExpirePasswordsOnSmartCardOnlyAccounts,
                         samdb, old_ExpirePasswordsOnSmartCardOnlyAccounts)
@@ -1025,10 +1016,7 @@ class PkInitTests(KDCBaseTest):
                             attrs=["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"])
         msg = msgs[0]
 
-        try:
-            old_ExpirePasswordsOnSmartCardOnlyAccounts = msg["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"]
-        except KeyError:
-            old_ExpirePasswordsOnSmartCardOnlyAccounts = None
+        old_ExpirePasswordsOnSmartCardOnlyAccounts = msg.get("msDS-ExpirePasswordsOnSmartCardOnlyAccounts")
 
         self.addCleanup(set_ExpirePasswordsOnSmartCardOnlyAccounts,
                         samdb, old_ExpirePasswordsOnSmartCardOnlyAccounts)
@@ -1117,10 +1105,7 @@ class PkInitTests(KDCBaseTest):
                             attrs=["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"])
         msg = msgs[0]
 
-        try:
-            old_ExpirePasswordsOnSmartCardOnlyAccounts = msg["msDS-ExpirePasswordsOnSmartCardOnlyAccounts"]
-        except KeyError:
-            old_ExpirePasswordsOnSmartCardOnlyAccounts = None
+        old_ExpirePasswordsOnSmartCardOnlyAccounts = msg.get("msDS-ExpirePasswordsOnSmartCardOnlyAccounts")
 
         self.addCleanup(set_ExpirePasswordsOnSmartCardOnlyAccounts,
                         samdb, old_ExpirePasswordsOnSmartCardOnlyAccounts)
