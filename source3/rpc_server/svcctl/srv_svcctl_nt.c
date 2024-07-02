@@ -160,7 +160,7 @@ static NTSTATUS svcctl_access_check( struct security_descriptor *sec_desc, struc
 
 static struct security_descriptor* construct_scm_sd( TALLOC_CTX *ctx )
 {
-	struct security_ace ace[2];
+	struct security_ace ace[2] = {};
 	size_t i = 0;
 	struct security_descriptor *sd;
 	struct security_acl *theacl;
