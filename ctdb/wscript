@@ -102,9 +102,6 @@ def options(opt):
                    help=("Use pcap for packet capture (default=no)"),
                    action="store_true", dest='ctdb_pcap', default=False)
 
-    opt.add_option('--with-libcephfs',
-                   help=("Directory under which libcephfs is installed"),
-                   action="store", dest='libcephfs_dir', default=None)
     opt.add_option('--enable-ceph-reclock',
                    help=("Enable Ceph CTDB recovery lock helper (default=no)"),
                    action="store_true", dest='ctdb_ceph_reclock', default=False)
@@ -281,11 +278,6 @@ def configure(conf):
     if have_etcd_reclock:
         Logs.info('Building with etcd support')
     conf.env.etcd_reclock = have_etcd_reclock
-
-    if Options.options.libcephfs_dir:
-        Logs.error('''--with-libcephfs no longer supported, please use compiler
-                   flags instead, e.g. GCC LIBRARY_PATH and C_INCLUDE_PATH''')
-        sys.exit(1)
 
     if Options.options.ctdb_ceph_reclock:
         if (conf.CHECK_HEADERS('rados/librados.h', False, False, 'rados') and
