@@ -55,9 +55,9 @@ struct {
 	};
 } config;
 
-static bool getline_strip(char **restrict lineptr,
+static bool getline_strip(char **lineptr,
 			  size_t *n,
-			  FILE *restrict stream)
+			  FILE *stream)
 {
 	bool was_null;
 	int ret;
