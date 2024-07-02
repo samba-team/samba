@@ -243,6 +243,10 @@ bool samba_cmdline_burn(int argc, char *argv[])
 			ulen = 6;
 			found = true;
 			is_user = true;
+		} else if (strneq_cmdline_exact(p, "--username", 10)) {
+			ulen = 10;
+			found = true;
+			is_user = true;
 		} else if (strncmp(p, "--", 2) == 0 && strstr(p, "pass")) {
 			/*
 			 * We have many secret options like --password,
