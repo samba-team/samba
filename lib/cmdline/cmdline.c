@@ -236,6 +236,22 @@ bool samba_cmdline_burn(int argc, char *argv[])
 		}
 
 		if (strncmp(p, "-U", 2) == 0) {
+			/*
+			 * Note: this won't catch combinations of
+			 * short options like
+			 * `samba-tool -NUAdministrator%...`, which is
+			 * not possible in general outside of the
+			 * actual parser (consider for example
+			 * `-NHUroot%password`, which parses as
+			 * `-N -H 'Uroot%password'`). We don't know
+			 * here which short options might take
+			 * arguments.
+			 *
+			 * This is an argument for embedding redaction
+			 * inside the parser (e.g. by adding a flag to
+			 * the option definitions), but we decided not
+			 * to do that in order to share cmdline_burn().
+			 */
 			ulen = 2;
 			found = true;
 			is_user = true;
