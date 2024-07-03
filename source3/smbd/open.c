@@ -1190,10 +1190,8 @@ static NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 				struct statfs sbuf = {};
 				int ret = fstatfs(old_fd, &sbuf);
 				if (ret == -1) {
-					int saved_errno = errno;
 					DBG_ERR("fstatfs failed: %s\n",
 						strerror(errno));
-					errno = saved_errno;
 				} else if (sbuf.f_type == AUTOFS_SUPER_MAGIC) {
 					/*
 					 * When reopening an as-yet
@@ -1203,6 +1201,8 @@ static NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 					 */
 					goto namebased_open;
 				}
+				/* restore ENOENT if changed in the meantime */
+				errno = ENOENT;
 			}
 #endif
 			status = map_nt_error_from_unix(errno);
