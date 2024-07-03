@@ -79,4 +79,12 @@ ssize_t reparse_data_buffer_marshall(const struct reparse_data_buffer *src,
 				     uint8_t *buf,
 				     size_t buflen);
 
+int symlink_target_path(TALLOC_CTX *ctx,
+			const char *_name_in,
+			size_t num_unparsed,
+			const char *substitute,
+			bool relative,
+			char separator,
+			char **_target);
+
 #endif

@@ -565,3 +565,97 @@ ssize_t reparse_data_buffer_marshall(const struct reparse_data_buffer *src,
 
 	return ret;
 }
+
+/*
+ * Implement [MS-SMB2] 2.2.2.2.1.1 Handling the Symbolic Link Error Response
+ */
+
+int symlink_target_path(TALLOC_CTX *ctx,
+			const char *_name_in,
+			size_t num_unparsed,
+			const char *substitute,
+			bool relative,
+			char separator,
+			char **_target)
+{
+	size_t name_in_len = strlen(_name_in);
+	size_t num_parsed;
+	char name_in[name_in_len + 1];
+	char *unparsed = NULL;
+	char *syml = NULL;
+	char *target = NULL;
+
+	if (num_unparsed > name_in_len) {
+		return EINVAL;
+	}
+	num_parsed = name_in_len - num_unparsed;
+
+	/*
+	 * We need to NULL out separators in name_in. Make a copy of
+	 * _name_in, which is a const char *.
+	 */
+	memcpy(name_in, _name_in, sizeof(name_in));
+
+	unparsed = name_in + num_parsed;
+
+	if ((num_unparsed != 0) && (unparsed[0] != separator)) {
+		/*
+		 * Symlinks in the middle of name_in must end in a separator
+		 */
+		return EINVAL;
+	}
+
+	if (!relative) {
+		/*
+		 * From [MS-SMB2] 2.2.2.2.1.1:
+		 *
+		 * If the SYMLINK_FLAG_RELATIVE flag is not set in the Flags
+		 * field of the symbolic link error response, the unparsed
+		 * portion of the file name MUST be appended to the substitute
+		 * name to create the new target path name.
+		 */
+		target = talloc_asprintf(ctx, "%s%s", substitute, unparsed);
+		goto done;
+	}
+
+	/*
+	 * From [MS-SMB2] 2.2.2.2.1.1:
+	 *
+	 * If the SYMLINK_FLAG_RELATIVE flag is set in the Flags field
+	 * of the symbolic link error response, the symbolic link name
+	 * MUST be identified by backing up one path name element from
+	 * the unparsed portion of the path name. The symbolic link
+	 * MUST be replaced with the substitute name to create the new
+	 * target path name.
+	 */
+
+	{
+		char symlink_end_char = unparsed[0]; /* '\0' or a separator */
+
+		unparsed[0] = '\0';
+		syml = strrchr_m(name_in, separator);
+		unparsed[0] = symlink_end_char;
+	}
+
+	if (syml == NULL) {
+		/*
+		 * Nothing to back up to, the symlink was the first
+		 * path component.
+		 */
+		name_in[0] = '\0';
+	} else {
+		/*
+		 * Make "name_in" up to the symlink usable for asprintf
+		 */
+		syml[1] = '\0';
+	}
+
+	target = talloc_asprintf(ctx, "%s%s%s", name_in, substitute, unparsed);
+
+done:
+	if (target == NULL) {
+		return ENOMEM;
+	}
+	*_target = target;
+	return 0;
+}
