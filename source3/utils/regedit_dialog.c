@@ -1962,7 +1962,7 @@ static bool edit_on_submit(struct dialog *dia, struct dialog_section *section,
 {
 	struct edit_req *edit = arg;
 	WERROR rv;
-	DATA_BLOB blob;
+	DATA_BLOB blob = {};
 	const char *name;
 	struct dialog_section *name_section, *data;
 
