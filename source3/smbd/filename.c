@@ -619,11 +619,10 @@ static const char *previous_slash(const char *name_in, const char *slash)
 	return NULL; /* unreachable */
 }
 
-static char *symlink_target_path(
-	TALLOC_CTX *mem_ctx,
-	const char *name_in,
-	const char *substitute,
-	size_t unparsed)
+static char *_symlink_target_path(TALLOC_CTX *mem_ctx,
+				  const char *name_in,
+				  const char *substitute,
+				  size_t unparsed)
 {
 	size_t name_in_len = strlen(name_in);
 	const char *p_unparsed = NULL;
@@ -1203,10 +1202,10 @@ next:
 	 * resolve all symlinks locally.
 	 */
 
-	target = symlink_target_path(mem_ctx,
-				     name_in,
-				     lnk->substitute_name,
-				     lnk->unparsed_path_length);
+	target = _symlink_target_path(mem_ctx,
+				      name_in,
+				      lnk->substitute_name,
+				      lnk->unparsed_path_length);
 	if (target == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
