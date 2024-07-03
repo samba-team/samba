@@ -301,7 +301,7 @@ static NTSTATUS make_lsa_object_sd(TALLOC_CTX *mem_ctx, struct security_descript
 					struct dom_sid *sid, uint32_t sid_access)
 {
 	struct dom_sid adm_sid;
-	struct security_ace ace[5];
+	struct security_ace ace[5] = {};
 	size_t i = 0;
 
 	struct security_acl *psa = NULL;
