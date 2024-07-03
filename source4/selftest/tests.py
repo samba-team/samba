@@ -1204,17 +1204,20 @@ have_fast_support = 1
 claims_support = 1
 compound_id_support = int('SAMBA4_USES_HEIMDAL' in config_hash)
 if ('SAMBA4_USES_HEIMDAL' in config_hash or
+    'HAVE_MIT_KRB5_1_21' in config_hash or
     'HAVE_MIT_KRB5_1_20' in config_hash):
     tkt_sig_support = 1
 else:
     tkt_sig_support = 0
 
-if 'SAMBA4_USES_HEIMDAL' in config_hash:
+if ('SAMBA4_USES_HEIMDAL' in config_hash or
+    'HAVE_MIT_KRB5_1_21' in config_hash):
     full_sig_support = 1
 else:
     full_sig_support = 0
 
-if 'HAVE_MIT_KRB5_1_20' in config_hash:
+if ('HAVE_MIT_KRB5_1_21' in config_hash or
+    'HAVE_MIT_KRB5_1_20' in config_hash):
     kadmin_is_tgs = 1
 else:
     kadmin_is_tgs = 0

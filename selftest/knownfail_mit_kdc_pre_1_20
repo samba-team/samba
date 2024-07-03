@@ -119,25 +119,6 @@ samba.tests.krb5.compatability_tests.samba.tests.krb5.compatability_tests.Simple
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_authdata_no_pac
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_no_pac
 #
-# PAC tests
-#
-^samba4.rpc.pac on ncacn_np.netr-bdc-aes.verify-sig-aes.fl2000dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-aes.verify-sig-aes.fl2003dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-aes.verify-sig-aes.fl2008dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-aes.verify-sig-aes.fl2008r2dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-arcfour.verify-sig-arcfour.fl2000dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-arcfour.verify-sig-arcfour.fl2003dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-arcfour.verify-sig-arcfour.fl2008dc
-^samba4.rpc.pac on ncacn_np.netr-bdc-arcfour.verify-sig-arcfour.fl2008r2dc
-^samba4.rpc.pac on ncacn_np.netr-mem-aes.verify-sig-aes.fl2000dc
-^samba4.rpc.pac on ncacn_np.netr-mem-aes.verify-sig-aes.fl2003dc
-^samba4.rpc.pac on ncacn_np.netr-mem-aes.verify-sig-aes.fl2008dc
-^samba4.rpc.pac on ncacn_np.netr-mem-aes.verify-sig-aes.fl2008r2dc
-^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2000dc
-^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2003dc
-^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2008dc
-^samba4.rpc.pac on ncacn_np.netr-mem-arcfour.verify-sig-arcfour.fl2008r2dc
-#
 # PAC attributes tests
 #
 ^samba.tests.krb5.kdc_tgs_tests.samba.tests.krb5.kdc_tgs_tests.KdcTgsTests.test_s4u2self_req(?!_invalid)

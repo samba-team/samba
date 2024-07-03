@@ -100,7 +100,9 @@ if conf.env.KRB5_CONFIG:
 
     if parse_version(krb5_version) < parse_version('1.20'):
         conf.DEFINE('HAVE_MIT_KRB5_PRE_1_20', 1)
-    if parse_version(krb5_version) >= parse_version('1.20'):
+    if parse_version(krb5_version) >= parse_version('1.21'):
+        conf.DEFINE('HAVE_MIT_KRB5_1_21', 1)
+    elif parse_version(krb5_version) >= parse_version('1.20'):
         conf.DEFINE('HAVE_MIT_KRB5_1_20', 1)
     conf.define('USING_SYSTEM_MITKRB5', '"%s"' % krb5_version)
 
