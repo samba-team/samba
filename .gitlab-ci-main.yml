@@ -146,9 +146,7 @@ include:
     - ccache -z -M 500M
     - ccache -s
       # We are already running .gitlab-ci directives from this repo, remove additional checks that break our CI
-    - git config --global --add safe.directory `pwd`
-    - git config --global --add safe.directory /builds/samba-team/devel/samba/.git
-    - git config --global --add safe.directory /builds/samba-team/samba/.git
+    - git config --global --add safe.directory '*'
   after_script:
     - mount
     - df -h
