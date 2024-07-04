@@ -691,10 +691,14 @@ _krb5_fast_unwrap_error(krb5_context context,
     idx = 0;
     pa = krb5_find_padata(md->val, md->len, KRB5_PADATA_FX_FAST, &idx);
     if (pa == NULL) {
-	ret = KRB5_KDCREP_MODIFIED;
-	krb5_set_error_message(context, ret,
-			       N_("FAST fast response is missing FX-FAST", ""));
-	goto out;
+	/*
+	 * Typically _krb5_fast_wrap_req() has set KRB5_FAST_EXPECTED, which
+	 * means check_fast() will complain and return KRB5KRB_AP_ERR_MODIFIED.
+	 *
+	 * But for TGS-REP init_tgs_req() clears KRB5_FAST_EXPECTED and we'll
+	 * ignore a missing KRB5_PADATA_FX_FAST.
+	 */
+	return check_fast(context, state);
     }
 
     ret = unwrap_fast_rep(context, state, pa, &fastrep);
