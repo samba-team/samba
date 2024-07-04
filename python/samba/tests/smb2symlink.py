@@ -186,7 +186,7 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
         except:
             self.fail("Could not parse symlink buffer")
 
-        self.assertEqual(syml, ('bar', 'bar', 0, 1));
+        self.assertEqual(syml, ('bar', 'bar', 0, 1))
 
     def test_bug15505(self):
         """Test an absolute intermediate symlink inside the share"""
