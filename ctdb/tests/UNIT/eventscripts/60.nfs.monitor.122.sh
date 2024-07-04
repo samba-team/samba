@@ -12,5 +12,4 @@ setup
 # Iteration 2 should try to restart rpc.lockd.  However, our test
 # stub rpc.lockd does nothing, so we have to explicitly flag it as up.
 
-nfs_iterate_test 7 "nlockmgr" \
-    3 "rpc_services_up nlockmgr"
+nfs_iterate_test 7 "nlockmgr" 3

@@ -397,19 +397,14 @@ program_stack_traces()
 #   useful in baseline tests to confirm that the eventscript and test
 #   infrastructure is working correctly.
 #
-# - Subsequent arguments come in pairs: an iteration number and
-#   something to eval before that iteration.  Each time an iteration
-#   number is matched the associated argument is given to eval after
-#   the default setup is done.  The iteration numbers need to be given
-#   in ascending order.
-#
-#   These arguments can allow a service to be started or stopped
-#   before a particular iteration.
+# - 3rd argument is optional iteration on which to bring the RPC
+#   service back up
 #
 nfs_iterate_test()
 {
 	_repeats="$1"
 	_rpc_service="$2"
+	_up_iteration="${3:--1}"
 	if [ -n "$2" ]; then
 		shift 2
 	else
@@ -432,19 +427,14 @@ EOF
 
 	_iterate_failcount=0
 	for _iteration in $(seq 1 "$_repeats"); do
-		# This is not a numerical comparison because $1 will
-		# often not be set.
-		if [ "$_iteration" = "$1" ]; then
-			debug <<EOF
-##################################################
-EOF
-			eval "$2"
-			debug <<EOF
-##################################################
-EOF
-			shift 2
-		fi
 		if [ -n "$_rpc_service" ]; then
+			if [ "$_iteration" = "$_up_iteration" ]; then
+				debug <<EOF
+--------------------------------------------------
+EOF
+				rpc_services_up "$_rpc_service"
+			fi
+
 			if rpcinfo -T tcp localhost "$_rpc_service" \
 				>/dev/null 2>&1; then
 				_iterate_failcount=0
