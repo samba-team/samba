@@ -10,6 +10,4 @@ define_test "mountd down, 7 iterations"
 
 setup
 
-rpc_services_down "mountd"
-
 nfs_iterate_test 7 "mountd"

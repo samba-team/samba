@@ -387,12 +387,14 @@ program_stack_traces()
 #
 # - 2nd argument is the NFS/RPC service being tested
 #
-#   rpcinfo is used on each iteration to test the availability of the
-#   service
+#   This service is marked down before the 1st iteration.
 #
-#   If this is not set or null then no RPC service is checked and the
-#   required output is not reset on each iteration.  This is useful in
-#   baseline tests to confirm that the eventscript and test
+#   rpcinfo is then used on each iteration to test the availability of
+#   the service.
+#
+#   If this is not set or null it is assumed all services are healthy
+#   and no output or non-zero return codes are generated.  This is
+#   useful in baseline tests to confirm that the eventscript and test
 #   infrastructure is working correctly.
 #
 # - Subsequent arguments come in pairs: an iteration number and
@@ -414,6 +416,16 @@ nfs_iterate_test()
 		shift
 	fi
 
+	if [ -n "$_rpc_service" ]; then
+		debug <<EOF
+--------------------------------------------------
+EOF
+		rpc_services_down "$_rpc_service"
+	fi
+
+	debug <<EOF
+--------------------------------------------------
+EOF
 	# shellcheck disable=SC2154
 	# Variables defined in define_test()
 	echo "Running $_repeats iterations of \"$script $event\" $args"

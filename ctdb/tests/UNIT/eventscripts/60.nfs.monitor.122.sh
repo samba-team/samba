@@ -9,8 +9,6 @@ define_test "lockd down, 7 iterations, back up after 2"
 
 setup
 
-rpc_services_down "nlockmgr"
-
 # Iteration 2 should try to restart rpc.lockd.  However, our test
 # stub rpc.lockd does nothing, so we have to explicitly flag it as up.
 

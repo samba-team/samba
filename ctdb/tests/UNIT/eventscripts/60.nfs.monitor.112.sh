@@ -8,6 +8,4 @@ define_test "knfsd down, 10 iterations"
 
 setup
 
-rpc_services_down "nfs"
-
 nfs_iterate_test 10 "nfs"

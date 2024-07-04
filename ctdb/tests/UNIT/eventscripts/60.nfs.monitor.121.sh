@@ -10,6 +10,4 @@ define_test "lockd down, 7 iterations"
 
 setup
 
-rpc_services_down "nlockmgr"
-
 nfs_iterate_test 7 "nlockmgr"

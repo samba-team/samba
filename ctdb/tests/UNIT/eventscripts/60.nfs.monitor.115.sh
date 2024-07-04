@@ -21,6 +21,4 @@ EOF
 # Test flag to indicate that stats are expected to change
 nfs_stats_set_changed "nfs" "status"
 
-rpc_services_down "nfs"
-
 nfs_iterate_test 10 "nfs"
