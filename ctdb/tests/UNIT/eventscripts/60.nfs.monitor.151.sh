@@ -6,8 +6,4 @@ define_test "mountd down, 1 iteration"
 
 setup
 
-rpc_services_down "mountd"
-
-ok_null
-
-simple_test
+nfs_iterate_test 1 "mountd"
