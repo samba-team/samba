@@ -182,10 +182,11 @@ class Smb2SymlinkTests(samba.tests.libsmb.LibsmbTests):
                b'\x72\x00\x62\x00\x61\x00\x72\x00')
 
         try:
-            syml = reparse_symlink.symlink_get(buf);
+            (tag,syml) = reparse_symlink.get(buf)
         except:
             self.fail("Could not parse symlink buffer")
 
+        self.assertEqual(tag, "IO_REPARSE_TAG_SYMLINK")
         self.assertEqual(syml, ('bar', 'bar', 0, 1))
 
     def test_bug15505(self):
