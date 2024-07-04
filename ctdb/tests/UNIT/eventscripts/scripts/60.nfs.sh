@@ -275,11 +275,11 @@ EOF
 rpc_set_service_failure_response()
 {
 	_rpc_service="$1"
-	_numfails="${2:-1}" # default 1
 
 	# Default
 	ok_null
-	if [ "$_numfails" -eq 0 ]; then
+
+	if [ -z "$_rpc_service" ]; then
 		return
 	fi
 
@@ -299,6 +299,13 @@ rpc_set_service_failure_response()
 	: >"$_out"
 	_rc_file="${CTDB_TEST_TMP_DIR}/rpc_result"
 	echo 0 >"$_rc_file"
+
+	# 0 if not already set - makes this function self-contained
+	_failcount_file="${CTDB_TEST_TMP_DIR}/test_failcount"
+	if [ ! -e "$_failcount_file" ]; then
+		echo 0 >"$_failcount_file"
+	fi
+	read -r _numfails <"$_failcount_file"
 
 	(
 		# Subshell to restrict scope variables...
@@ -332,6 +339,24 @@ rpc_set_service_failure_response()
 			esac
 		fi
 
+		if rpcinfo -T tcp localhost "$_rpc_service" \
+			>/dev/null 2>&1; then
+
+			_numfails=0
+		elif nfs_stats_check_changed \
+			"$_rpc_service" "$_iteration"; then
+
+			_numfails=-1
+		else
+			# -1 above is a special case of 0:
+			# hack, unhack ;-)
+			if [ "$_numfails" -eq -1 ]; then
+				_numfails=0
+			fi
+			_numfails=$((_numfails + 1))
+		fi
+		echo "$_numfails" >"$_failcount_file"
+
 		if [ "$_numfails" -eq -1 ]; then
 			_unhealthy=false
 			rpc_failure \
@@ -353,6 +378,7 @@ rpc_set_service_failure_response()
 		fi
 
 		if [ $restart_every -gt 0 ] &&
+			[ $_numfails -gt 0 ] &&
 			[ $((_numfails % restart_every)) -eq 0 ]; then
 			if ! $_unhealthy; then
 				rpc_failure \
@@ -444,7 +470,6 @@ EOF
 	# Variables defined in define_test()
 	echo "Running $_repeats iterations of \"$script $event\" $args"
 
-	_iterate_failcount=0
 	for _iteration in $(seq 1 "$_repeats"); do
 		if [ -n "$_rpc_service" ]; then
 			if [ "$_iteration" = "$_up_iteration" ]; then
@@ -453,24 +478,10 @@ EOF
 EOF
 				rpc_services_up "$_rpc_service"
 			fi
-
-			if rpcinfo -T tcp localhost "$_rpc_service" \
-				>/dev/null 2>&1; then
-				_iterate_failcount=0
-			elif nfs_stats_check_changed \
-				"$_rpc_service" "$_iteration"; then
-				_iterate_failcount=-1
-			else
-				# -1 above is a special case of 0:
-				# hack, unhack ;-)
-				if [ $_iterate_failcount -eq -1 ]; then
-					_iterate_failcount=0
-				fi
-				_iterate_failcount=$((_iterate_failcount + 1))
-			fi
-			rpc_set_service_failure_response \
-				"$_rpc_service" $_iterate_failcount
 		fi
+
+		rpc_set_service_failure_response "$_rpc_service"
+
 		_out=$(simple_test 2>&1)
 		_ret=$?
 		if "$CTDB_TEST_VERBOSE" || [ $_ret -ne 0 ]; then
