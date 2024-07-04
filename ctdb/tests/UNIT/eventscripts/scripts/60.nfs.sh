@@ -251,6 +251,19 @@ EOF
 	esac
 }
 
+rpc_failure()
+{
+	_err_or_warn="$1"
+	_rpc_service="$2"
+	_ver="$3"
+
+	cat <<EOF
+${_err_or_warn} ${_rpc_service} failed RPC check:
+rpcinfo: RPC: Program not registered
+program ${_rpc_service}${_ver:+ version }${_ver} is not available
+EOF
+}
+
 # Set the required result for a particular RPC program having failed
 # for a certain number of iterations.  This is probably still a work
 # in progress.  Note that we could hook aggressively
@@ -317,21 +330,24 @@ rpc_set_service_failure_response()
 			*) _ver=1 ;;
 			esac
 		fi
-		_rpc_check_out="\
-$_rpc_service failed RPC check:
-rpcinfo: RPC: Program not registered
-program $_rpc_service${_ver:+ version }${_ver} is not available"
 
 		if [ "$_numfails" -eq -1 ]; then
 			_unhealthy=false
 			echo 0 >"$_rc_file"
-			printf 'WARNING: statistics changed but %s\n' \
-				"$_rpc_check_out" >>"$_out"
+			rpc_failure \
+				"WARNING: statistics changed but" \
+				"$_rpc_service" \
+				"$_ver" \
+				>"$_out"
 		elif [ $unhealthy_after -gt 0 ] &&
 			[ "$_numfails" -ge $unhealthy_after ]; then
 			_unhealthy=true
 			echo 1 >"$_rc_file"
-			echo "ERROR: ${_rpc_check_out}" >>"$_out"
+			rpc_failure \
+				"ERROR:" \
+				"$_rpc_service" \
+				"$_ver" \
+				>"$_out"
 		else
 			_unhealthy=false
 			echo 0 >"$_rc_file"
@@ -340,7 +356,11 @@ program $_rpc_service${_ver:+ version }${_ver} is not available"
 		if [ $restart_every -gt 0 ] &&
 			[ $((_numfails % restart_every)) -eq 0 ]; then
 			if ! $_unhealthy; then
-				echo "WARNING: ${_rpc_check_out}" >>"$_out"
+				rpc_failure \
+					"WARNING:" \
+					"$_rpc_service" \
+					"$_ver" \
+					>"$_out"
 			fi
 
 			echo "Trying to restart service \"${_rpc_service}\"..." \
