@@ -197,51 +197,6 @@ static PyObject *py_reparse_symlink_put(PyObject *module, PyObject *args)
 	return result;
 }
 
-static PyObject *py_reparse_symlink_get(PyObject *module, PyObject *args)
-{
-	char *buf = NULL;
-	Py_ssize_t buflen;
-	struct reparse_data_buffer *syml = NULL;
-	struct symlink_reparse_struct *lnk = NULL;
-	PyObject *result = NULL;
-	NTSTATUS status;
-	bool ok;
-
-	ok = PyArg_ParseTuple(args, PYARG_BYTES_LEN ":get", &buf, &buflen);
-	if (!ok) {
-		return NULL;
-	}
-
-	syml = talloc(NULL, struct reparse_data_buffer);
-	if (syml == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-
-	status = reparse_data_buffer_parse(syml, syml, (uint8_t *)buf, buflen);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(syml);
-		PyErr_SetNTSTATUS(status);
-		return NULL;
-	}
-
-	if (syml->tag != IO_REPARSE_TAG_SYMLINK) {
-		TALLOC_FREE(syml);
-		PyErr_SetNTSTATUS(NT_STATUS_INVALID_NETWORK_RESPONSE);
-		return NULL;
-	}
-	lnk = &syml->parsed.lnk;
-
-	result = Py_BuildValue("ssII",
-			       lnk->substitute_name,
-			       lnk->print_name,
-			       (unsigned)lnk->unparsed_path_length,
-			       (unsigned)lnk->flags);
-
-	TALLOC_FREE(syml);
-	return result;
-}
-
 static PyMethodDef py_reparse_symlink_methods[] = {
 	{ "put",
 	  PY_DISCARD_FUNC_SIG(PyCFunction, py_reparse_put),
@@ -255,10 +210,6 @@ static PyMethodDef py_reparse_symlink_methods[] = {
 	  PY_DISCARD_FUNC_SIG(PyCFunction, py_reparse_symlink_put),
 	  METH_VARARGS,
 	  "Create a reparse symlink blob"},
-	{ "symlink_get",
-	  PY_DISCARD_FUNC_SIG(PyCFunction, py_reparse_symlink_get),
-	  METH_VARARGS,
-	  "Parse a reparse symlink blob"},
 	{0},
 };
 
