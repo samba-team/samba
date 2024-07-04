@@ -342,7 +342,8 @@ rpc_set_service_failure_response()
 		if rpcinfo -T tcp localhost "$_rpc_service" \
 			>/dev/null 2>&1; then
 
-			_numfails=0
+			echo 0 >"$_failcount_file"
+			exit # from subshell
 		elif nfs_stats_check_changed \
 			"$_rpc_service" "$_iteration"; then
 
@@ -351,7 +352,8 @@ rpc_set_service_failure_response()
 				"$_rpc_service" \
 				"$_ver" \
 				>"$_out"
-			_numfails=0
+			echo 0 >"$_failcount_file"
+			exit # from subshell
 		else
 			_numfails=$((_numfails + 1))
 		fi
@@ -371,7 +373,6 @@ rpc_set_service_failure_response()
 		fi
 
 		if [ $restart_every -gt 0 ] &&
-			[ $_numfails -gt 0 ] &&
 			[ $((_numfails % restart_every)) -eq 0 ]; then
 			if ! $_unhealthy; then
 				rpc_failure \
