@@ -346,25 +346,18 @@ rpc_set_service_failure_response()
 		elif nfs_stats_check_changed \
 			"$_rpc_service" "$_iteration"; then
 
-			_numfails=-1
-		else
-			# -1 above is a special case of 0:
-			# hack, unhack ;-)
-			if [ "$_numfails" -eq -1 ]; then
-				_numfails=0
-			fi
-			_numfails=$((_numfails + 1))
-		fi
-		echo "$_numfails" >"$_failcount_file"
-
-		if [ "$_numfails" -eq -1 ]; then
-			_unhealthy=false
 			rpc_failure \
 				"WARNING: statistics changed but" \
 				"$_rpc_service" \
 				"$_ver" \
 				>"$_out"
-		elif [ $unhealthy_after -gt 0 ] &&
+			_numfails=0
+		else
+			_numfails=$((_numfails + 1))
+		fi
+		echo "$_numfails" >"$_failcount_file"
+
+		if [ $unhealthy_after -gt 0 ] &&
 			[ "$_numfails" -ge $unhealthy_after ]; then
 			_unhealthy=true
 			echo 1 >"$_rc_file"
