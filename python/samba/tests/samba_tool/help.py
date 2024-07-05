@@ -79,3 +79,12 @@ class HelpTestCase(SambaToolCmdTest):
             known_commands = new_commands
 
         self.assertEqual(failed_commands, [])
+
+    def test_bad_password_option(self):
+        """Do we get a warning with an invalid --pass option?"""
+        (result, out, err) = self.run_command(["samba-tool",
+                                               "processes",
+                                               "--pass-the-salt-please",
+                                               "pleeease"])
+        self.assertIn("if '--pass-the-salt-please' is not misspelt", err)
+        self.assertIn("the appropriate list in is_password_option", err)
