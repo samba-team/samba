@@ -73,6 +73,42 @@ fail:
 	return status;
 }
 
+static NTSTATUS fsctl_get_reparse_point_fifo(struct files_struct *fsp,
+					     TALLOC_CTX *ctx,
+					     uint8_t **_out_data,
+					     uint32_t max_out_len,
+					     uint32_t *_out_len)
+{
+	struct reparse_data_buffer reparse_data = {
+		.tag = IO_REPARSE_TAG_NFS,
+		.parsed.nfs.type = NFS_SPECFILE_FIFO,
+	};
+	uint8_t *out_data = NULL;
+	ssize_t out_len;
+
+	out_len = reparse_data_buffer_marshall(&reparse_data, NULL, 0);
+	if (out_len == -1) {
+		return NT_STATUS_INSUFFICIENT_RESOURCES;
+	}
+	if (max_out_len < out_len) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	out_data = talloc_array(ctx, uint8_t, out_len);
+	if (out_data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	reparse_data_buffer_marshall(&reparse_data,
+				     out_data,
+				     out_len);
+
+	*_out_data = out_data;
+	*_out_len = out_len;
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS fsctl_get_reparse_point(struct files_struct *fsp,
 				 TALLOC_CTX *mem_ctx,
 				 uint32_t *_reparse_tag,
@@ -97,6 +133,11 @@ NTSTATUS fsctl_get_reparse_point(struct files_struct *fsp,
 	case S_IFREG:
 		DBG_DEBUG("%s is a regular file\n", fsp_str_dbg(fsp));
 		status = fsctl_get_reparse_point_reg(
+			fsp, mem_ctx, &out_data, max_out_len, &out_len);
+		break;
+	case S_IFIFO:
+		DBG_DEBUG("%s is a fifo\n", fsp_str_dbg(fsp));
+		status = fsctl_get_reparse_point_fifo(
 			fsp, mem_ctx, &out_data, max_out_len, &out_len);
 		break;
 	default:
