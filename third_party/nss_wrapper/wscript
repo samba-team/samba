@@ -2,7 +2,7 @@
 
 import os
 
-VERSION="1.1.15"
+VERSION="1.1.16"
 
 def configure(conf):
     if conf.CHECK_NSS_WRAPPER():
@@ -10,6 +10,7 @@ def configure(conf):
         libnss_wrapper_so_path = 'libnss_wrapper.so'
     else:
         conf.CHECK_HEADERS('nss.h')
+        conf.CHECK_HEADERS('gnu/lib-names.h')
 
         if conf.CONFIG_SET("HAVE___THREAD"):
             conf.DEFINE("HAVE_GCC_THREAD_LOCAL_STORAGE", 1)

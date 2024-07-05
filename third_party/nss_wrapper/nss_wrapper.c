@@ -61,6 +61,10 @@
 #include <search.h>
 #include <assert.h>
 
+#ifdef HAVE_GNU_LIB_NAMES_H
+#include <gnu/lib-names.h>
+#endif
+
 #include "nss_utils.h"
 /*
  * Defining _POSIX_PTHREAD_SEMANTICS before including pwd.h and grp.h  gives us
@@ -1156,6 +1160,13 @@ static void *nwrap_load_lib_handle(enum nwrap_lib lib)
 	case NWRAP_LIBNSL:
 #ifdef HAVE_LIBNSL
 		handle = nwrap_main_global->libc->nsl_handle;
+#ifdef LIBNSL_SO
+		if (handle == NULL) {
+			handle = dlopen(LIBNSL_SO, flags);
+
+			nwrap_main_global->libc->nsl_handle = handle;
+		}
+#endif
 		if (handle == NULL) {
 			for (i = 10; i >= 0; i--) {
 				char soname[256] = {0};
@@ -1193,6 +1204,13 @@ static void *nwrap_load_lib_handle(enum nwrap_lib lib)
 		/* FALL TROUGH */
 	case NWRAP_LIBC:
 		handle = nwrap_main_global->libc->handle;
+#ifdef LIBC_SO
+		if (handle == NULL) {
+			handle = dlopen(LIBC_SO, flags);
+
+			nwrap_main_global->libc->handle = handle;
+		}
+#endif
 		if (handle == NULL) {
 			for (i = 10; i >= 0; i--) {
 				char soname[256] = {0};
@@ -2422,6 +2440,13 @@ static bool nwrap_pw_parse_line(struct nwrap_cache *nwrap, char *line)
 		return false;
 	}
 	*p = '\0';
+#ifdef HAVE_STRUCT_PASSWD_PW_CLASS
+	/*
+	 * We don't support pw_class, so just let it point to
+	 * an '\0' byte (empty string).
+	 */
+	pw->pw_class = p;
+#endif /* HAVE_STRUCT_PASSWD_PW_CLASS */
 	p++;
 	e = NULL;
 	pw->pw_gid = (gid_t)strtoul(c, &e, 10);
@@ -2448,8 +2473,6 @@ static bool nwrap_pw_parse_line(struct nwrap_cache *nwrap, char *line)
 	NWRAP_LOG(NWRAP_LOG_TRACE, "gid[%u]\n", pw->pw_gid);
 
 #ifdef HAVE_STRUCT_PASSWD_PW_CLASS
-	pw->pw_class = discard_const_p(char, "");
-
 	NWRAP_LOG(NWRAP_LOG_TRACE, "class[%s]", pw->pw_class);
 #endif /* HAVE_STRUCT_PASSWD_PW_CLASS */
 
@@ -6531,7 +6554,7 @@ void nwrap_destructor(void)
 		}
 
 		SAFE_FREE(nwrap_gr_global.list);
-		nwrap_pw_global.num = 0;
+		nwrap_gr_global.num = 0;
 	}
 
 #if defined(HAVE_SHADOW_H) && defined(HAVE_GETSPNAM)
