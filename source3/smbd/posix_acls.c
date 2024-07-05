@@ -4000,7 +4000,9 @@ static int copy_access_posix_acl(struct files_struct *from,
 		goto done;
 	}
 
-	ret = SMB_VFS_SYS_ACL_SET_FD(to, SMB_ACL_TYPE_ACCESS, posix_acl);
+	ret = SMB_VFS_SYS_ACL_SET_FD(metadata_fsp(to),
+				     SMB_ACL_TYPE_ACCESS,
+				     posix_acl);
 
  done:
 
