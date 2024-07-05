@@ -354,9 +354,9 @@ rpc_set_service_failure_response()
 				>"$_out"
 			echo 0 >"$_failcount_file"
 			exit # from subshell
-		else
-			_numfails=$((_numfails + 1))
 		fi
+
+		_numfails=$((_numfails + 1))
 		echo "$_numfails" >"$_failcount_file"
 
 		if [ $unhealthy_after -gt 0 ] &&
