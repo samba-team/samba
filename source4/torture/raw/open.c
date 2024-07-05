@@ -1133,7 +1133,7 @@ done:
 */
 static bool test_ntcreatex_brlocked(struct torture_context *tctx, struct smbcli_state *cli)
 {
-	union smb_open io, io1;
+	union smb_open io = {}, io1 = {};
 	union smb_lock io2;
 	struct smb_lock_entry lock[1];
 	const char *fname = BASEDIR "\\torture_ntcreatex.txt";
