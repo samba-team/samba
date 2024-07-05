@@ -533,6 +533,16 @@ def build(bld):
                                ''',
                         deps='''ctdb-util talloc replace''')
 
+    bld.SAMBA_SUBSYSTEM('ctdb-conf-util',
+                        source='''conf/node.c
+                               ''',
+                        deps='''ctdb-protocol
+                                ctdb-protocol-util
+                                replace
+                                samba-util
+                                talloc
+                             ''')
+
     bld.SAMBA_BINARY('ctdb-config',
                      source='conf/conf_tool.c',
                      cflags='-DCTDB_CONF_TOOL',
