@@ -150,14 +150,36 @@ static bool strneq_cmdline_exact(const char *p, const char *option, size_t len)
 }
 
 /*
- * If an option looks like a password, and it isn't in the allow list, we
- * will burn it.
+ * Return true if the argument to the option should be redacted.
  *
- * *ulen is set to zero if found is false (we don't need it in that case).
+ * The option name is presumed to contain the substring "pass". It is checked
+ * against a list of options that specify secrets. If it is there, the value
+ * should be redacted and we return early.
+ *
+ * Otherwise, it is checked against a list of known safe options. If it is
+ * there, we return false.
+ *
+ * If the option is not in either list, we assume it might be secret and
+ * redact the argument, but warn loadly about it. The hope is that developers
+ * will see what they're doing and add the option to the appropriate list.
+ *
+ * If true is returned, *ulen will be set to the apparent length of the
+ * option. It is set to zero if false is returned (we don't need it in that
+ * case).
  */
-static bool burn_possible_password(const char *p, size_t *ulen)
+static bool is_password_option(const char *p, size_t *ulen)
 {
 	size_t i, len;
+	static const char *must_burn[] = {
+		"--password",
+		"--newpassword",
+		"--password2",
+		"--adminpass",
+		"--dnspass",
+		"--machinepass",
+		"--krbtgtpass",
+		"--fixed-password",
+	};
 	static const char *allowed[] = {
 		"--bad-password-count-reset",
 		"--badpassword-frequency",
@@ -179,8 +201,19 @@ static bool burn_possible_password(const char *p, size_t *ulen)
 		"--strip-passed-output",
 		"--with-smbpasswd-file",
 	};
+
 	char *equals = NULL;
 	*ulen = 0;
+
+	for (i = 0; i < ARRAY_SIZE(must_burn); i++) {
+		bool secret;
+		len = strlen(must_burn[i]);
+		secret = strneq_cmdline_exact(p, must_burn[i], len);
+		if (secret) {
+			*ulen = len;
+			return true;
+		}
+	}
 
 	for (i = 0; i < ARRAY_SIZE(allowed); i++) {
 		bool safe;
@@ -215,7 +248,18 @@ static bool burn_possible_password(const char *p, size_t *ulen)
 		}
 		*ulen = equals - p;
 	}
-	DBG_NOTICE("burning command line argument %*s\n", (int)(*ulen), p);
+	/*
+	 * This message will be seen with Python tools when an option
+	 * is misspelt, but not with C tools, because in C burning
+	 * happens after the command line is parsed, while in Python
+	 * it happens before (on a copy of argv).
+	 *
+	 * In either case it will appear for a newly added option, and
+	 * we hope developers will notice it before pushing.
+	 */
+	DBG_ERR("\nNote for developers: if '%*s' is not misspelt, it should be "
+		"added to the appropriate list in is_password_option().\n\n",
+		(int)(*ulen), p);
 	return true;
 }
 
@@ -266,11 +310,11 @@ bool samba_cmdline_burn(int argc, char *argv[])
 		} else if (strncmp(p, "--", 2) == 0 && strstr(p, "pass")) {
 			/*
 			 * We have many secret options like --password,
-			 * --adminpass, --client-password, and we could easily
+			 * --adminpass, --newpassword, and we could easily
 			 * add more, so we will use an allowlist to let the
 			 * safe ones through (of which there are also many).
 			 */
-			found = burn_possible_password(p, &ulen);
+			found = is_password_option(p, &ulen);
 		}
 
 		if (found) {
