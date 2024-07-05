@@ -713,8 +713,12 @@ uint32_t fdos_mode(struct files_struct *fsp)
 		return 0;
 	}
 
-	if (S_ISLNK(fsp->fsp_name->st.st_ex_mode)) {
+	switch (fsp->fsp_name->st.st_ex_mode & S_IFMT) {
+	case S_IFLNK:
 		return FILE_ATTRIBUTE_NORMAL;
+		break;
+	default:
+		break;
 	}
 
 	if (fsp->fsp_name->st.cached_dos_attributes != FILE_ATTRIBUTE_INVALID) {
