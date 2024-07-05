@@ -47,6 +47,7 @@
 #include "common/system_socket.h"
 #include "client/client.h"
 #include "client/client_sync.h"
+#include "conf/node.h"
 
 #define TIMEOUT()	timeval_current_ofs(options.timelimit, 0)
 
@@ -463,106 +464,6 @@ static bool ctdb_same_ip(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2)
 	return ret;
 }
 
-/* Append a node to a node map with given address and flags */
-static bool node_map_add(struct ctdb_node_map *nodemap,
-			 const char *nstr, uint32_t flags)
-{
-	ctdb_sock_addr addr;
-	uint32_t num;
-	struct ctdb_node_and_flags *n;
-	int ret;
-
-	ret = ctdb_sock_addr_from_string(nstr, &addr, false);
-	if (ret != 0) {
-		fprintf(stderr, "Invalid IP address %s\n", nstr);
-		return false;
-	}
-
-	num = nodemap->num;
-	nodemap->node = talloc_realloc(nodemap, nodemap->node,
-				       struct ctdb_node_and_flags, num+1);
-	if (nodemap->node == NULL) {
-		return false;
-	}
-
-	n = &nodemap->node[num];
-	n->addr = addr;
-	n->pnn = num;
-	n->flags = flags;
-
-	nodemap->num = num+1;
-	return true;
-}
-
-/* Read a nodes file into a node map */
-static struct ctdb_node_map *ctdb_read_nodes_file(TALLOC_CTX *mem_ctx,
-						  const char *nlist)
-{
-	char **lines;
-	int nlines;
-	int i;
-	struct ctdb_node_map *nodemap;
-
-	nodemap = talloc_zero(mem_ctx, struct ctdb_node_map);
-	if (nodemap == NULL) {
-		return NULL;
-	}
-
-	lines = file_lines_load(nlist, &nlines, 0, mem_ctx);
-	if (lines == NULL) {
-		return NULL;
-	}
-
-	while (nlines > 0 && strcmp(lines[nlines-1], "") == 0) {
-		nlines--;
-	}
-
-	for (i=0; i<nlines; i++) {
-		char *node;
-		uint32_t flags;
-		size_t len;
-
-		node = lines[i];
-		/* strip leading spaces */
-		while((*node == ' ') || (*node == '\t')) {
-			node++;
-		}
-
-		len = strlen(node);
-
-		/* strip trailing spaces */
-		while ((len > 1) &&
-		       ((node[len-1] == ' ') || (node[len-1] == '\t')))
-		{
-			node[len-1] = '\0';
-			len--;
-		}
-
-		if (len == 0) {
-			continue;
-		}
-		if (*node == '#') {
-			/* A "deleted" node is a node that is
-			   commented out in the nodes file.  This is
-			   used instead of removing a line, which
-			   would cause subsequent nodes to change
-			   their PNN. */
-			flags = NODE_FLAGS_DELETED;
-			node = discard_const("0.0.0.0");
-		} else {
-			flags = 0;
-		}
-		if (! node_map_add(nodemap, node, flags)) {
-			talloc_free(lines);
-			TALLOC_FREE(nodemap);
-			return NULL;
-		}
-	}
-
-	talloc_free(lines);
-	return nodemap;
-}
-
 static struct ctdb_node_map *read_nodes_file(TALLOC_CTX *mem_ctx, uint32_t pnn)
 {
 	struct ctdb_node_map *nodemap;
@@ -578,7 +479,7 @@ static struct ctdb_node_map *read_nodes_file(TALLOC_CTX *mem_ctx, uint32_t pnn)
 		return NULL;
 	}
 
-	nodemap = ctdb_read_nodes_file(mem_ctx, nodes_list);
+	nodemap = ctdb_read_nodes(mem_ctx, nodes_list);
 	if (nodemap == NULL) {
 		fprintf(stderr, "Failed to read nodes file \"%s\"\n",
 			nodes_list);

@@ -615,8 +615,16 @@ def build(bld):
 
     bld.SAMBA_BINARY('ctdb',
                      source='tools/ctdb.c',
-                     deps='''ctdb-client ctdb-protocol ctdb-protocol-util
-                             ctdb-util ctdb-system samba-util sys_rw popt''',
+                     deps='''ctdb-client
+                             ctdb-conf-util
+                             ctdb-protocol
+                             ctdb-protocol-util
+                             ctdb-system
+                             ctdb-util
+                             popt
+                             samba-util
+                             sys_rw
+                          ''',
                      install_path='${BINDIR}',
                      manpages='ctdb.1')
 
