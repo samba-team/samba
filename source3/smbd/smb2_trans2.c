@@ -3690,6 +3690,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 			(void)fsctl_get_reparse_tag(fsp, &tag);
 
+			DBG_DEBUG("tag=%"PRIu32"\n", tag);
+
 			SIVAL(pdata, 0, mode);
 			SIVAL(pdata, 4, tag);
 			data_size = 8;
