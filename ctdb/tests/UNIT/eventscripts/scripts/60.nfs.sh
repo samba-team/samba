@@ -298,6 +298,7 @@ rpc_set_service_failure_response()
 	_out="${CTDB_TEST_TMP_DIR}/rpc_failure_output"
 	: >"$_out"
 	_rc_file="${CTDB_TEST_TMP_DIR}/rpc_result"
+	echo 0 >"$_rc_file"
 
 	(
 		# Subshell to restrict scope variables...
@@ -333,7 +334,6 @@ rpc_set_service_failure_response()
 
 		if [ "$_numfails" -eq -1 ]; then
 			_unhealthy=false
-			echo 0 >"$_rc_file"
 			rpc_failure \
 				"WARNING: statistics changed but" \
 				"$_rpc_service" \
@@ -350,7 +350,6 @@ rpc_set_service_failure_response()
 				>"$_out"
 		else
 			_unhealthy=false
-			echo 0 >"$_rc_file"
 		fi
 
 		if [ $restart_every -gt 0 ] &&
