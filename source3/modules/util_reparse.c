@@ -93,10 +93,14 @@ NTSTATUS fsctl_get_reparse_point(struct files_struct *fsp,
 		return NT_STATUS_NOT_A_REPARSE_POINT;
 	}
 
-	if (S_ISREG(fsp->fsp_name->st.st_ex_mode)) {
+	switch (fsp->fsp_name->st.st_ex_mode & S_IFMT) {
+	case S_IFREG:
 		DBG_DEBUG("%s is a regular file\n", fsp_str_dbg(fsp));
 		status = fsctl_get_reparse_point_reg(
 			fsp, mem_ctx, &out_data, max_out_len, &out_len);
+		break;
+	default:
+		break;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
