@@ -22,9 +22,9 @@ bld.SAMBA_GENERATOR('hresult_generated',
 
 bld.SAMBA_GENERATOR('ntstatus_generated',
                     source='../../source4/scripting/bin/gen_ntstatus.py ntstatus_err_table.txt ../../source4/scripting/bin/gen_error_common.py',
-                    target='ntstatus_gen.h nterr_gen.c py_ntstatus.c',
+                    target='ntstatus_gen.h nterr_gen.c py_ntstatus.c ntstatus_gen.rs',
                     group='build_source',
-                    rule='${PYTHON} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${TGT[0].abspath(env)} ${TGT[1].abspath(env)} ${TGT[2].abspath(env)}'
+                    rule='${PYTHON} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${TGT[0].abspath(env)} ${TGT[1].abspath(env)} ${TGT[2].abspath(env)} ${TGT[3].abspath(env)}'
                    )
 
 bld.SAMBA_GENERATOR('werror_generated',

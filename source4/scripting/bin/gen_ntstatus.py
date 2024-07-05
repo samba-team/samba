@@ -92,6 +92,49 @@ def generatePythonFile(out_file, errors):
     out_file.write("\treturn m;\n")
     out_file.write("}\n")
 
+
+def generateRustFile(out_file, errors):
+    out_file.write("/*\n")
+    out_file.write(" * Descriptions for errors generated from\n")
+    out_file.write(" * [MS-ERREF] http://msdn.microsoft.com/en-us/library/cc704588.aspx\n")
+    out_file.write(" */\n\n")
+    out_file.write("use std::fmt;\n\n")
+    out_file.write("#[derive(PartialEq, Eq)]\n")
+    out_file.write("pub struct NTSTATUS(u32);\n\n")
+    for err in errors:
+        if err.err_define in ['NT_STATUS_OK', 'NT_STATUS_WAIT_0',
+                              'NT_STATUS_ABANDONED_WAIT_0',
+                              'NT_STATUS_FWP_TOO_MANY_BOOTTIME_FILTERS']:
+            out_file.write("#[allow(dead_code)]\n")
+        line = "pub const %s: NTSTATUS = NTSTATUS(%#x);\n" % (err.err_define, err.err_code)
+        out_file.write(line)
+    out_file.write("\nimpl NTSTATUS {\n")
+    out_file.write("\tfn description(&self) -> &str {\n")
+    out_file.write("\t\tmatch *self {\n")
+    for err in errors:
+        # Account for the possibility that some errors may not have descriptions
+        if err.err_string == "":
+            continue
+        if err.err_define not in ['NT_STATUS_OK', 'NT_STATUS_WAIT_0',
+                                  'NT_STATUS_ABANDONED_WAIT_0',
+                                  'NT_STATUS_FWP_TOO_MANY_BOOTTIME_FILTERS']:
+            out_file.write("\t\t\t%s => \"%s\",\n" % (err.err_define, err.err_string))
+    out_file.write("\t\t\t_ => \"Unknown NTSTATUS error code\",\n")
+    out_file.write("\t\t}\n");
+    out_file.write("\t}\n");
+    out_file.write("}\n\n");
+    out_file.write("impl fmt::Display for NTSTATUS {\n")
+    out_file.write("\tfn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n")
+    out_file.write("\t\twrite!(f, \"NTSTATUS({:#x}): {}\", self.0, self.description())\n")
+    out_file.write("\t}\n")
+    out_file.write("}\n\n");
+    out_file.write("impl fmt::Debug for NTSTATUS {\n")
+    out_file.write("\tfn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {\n")
+    out_file.write("\t\twrite!(f, \"NTSTATUS({:#x})\", self.0)\n")
+    out_file.write("\t}\n")
+    out_file.write("}\n\n");
+    out_file.write("impl std::error::Error for NTSTATUS {}\n")
+
 def transformErrorName( error_name ):
     if error_name.startswith("STATUS_"):
         error_name = error_name.replace("STATUS_", "", 1)
@@ -113,13 +156,14 @@ def transformErrorName( error_name ):
 def main ():
     input_file = None
 
-    if len(sys.argv) == 5:
+    if len(sys.argv) == 6:
         input_file =  sys.argv[1]
         gen_headerfile_name = sys.argv[2]
         gen_sourcefile_name = sys.argv[3]
         gen_pythonfile_name = sys.argv[4]
+        gen_rustfile_name = sys.argv[5]
     else:
-        print("usage: %s winerrorfile headerfile sourcefile pythonfile" % (sys.argv[0]))
+        print("usage: %s winerrorfile headerfile sourcefile pythonfile rustfile" % (sys.argv[0]))
         sys.exit()
 
     # read in the data
@@ -146,6 +190,10 @@ def main ():
     print("writing new python file: %s" % gen_pythonfile_name)
     out_file = io.open(gen_pythonfile_name, "wt", encoding='utf8')
     generatePythonFile(out_file, errors)
+    out_file.close()
+    print("writing new rust file: %s" % gen_rustfile_name)
+    out_file = io.open(gen_rustfile_name, "wt", encoding='utf8')
+    generateRustFile(out_file, errors)
     out_file.close()
 
 if __name__ == '__main__':
