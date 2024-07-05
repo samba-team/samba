@@ -496,9 +496,7 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 		goto failed;
 	}
 
-	ctdb->name = talloc_asprintf(ctdb, "%s:%u",
-				     ctdb_addr_to_str(ctdb->address),
-				     ctdb_addr_to_port(ctdb->address));
+	ctdb->name = talloc_strdup(ctdb, ctdb->nodes[i]->name);
 	if (ctdb->name == NULL) {
 		ctdb_set_error(ctdb, "Out of memory at %s:%d",
 			       __FILE__, __LINE__);
