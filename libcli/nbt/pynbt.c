@@ -141,7 +141,7 @@ err:
 	return false;
 }
 
-static PyObject *PyObject_FromNBTName(struct nbt_name_socket *name_socket, 
+static PyObject *PyObject_FromNBTName(struct nbt_name_socket *name_socket,
 				      struct nbt_name *name)
 {
 	if (name->scope) {
@@ -274,7 +274,7 @@ static PyObject *py_nbt_name_register(PyObject *self, PyObject *args, PyObject *
 {
 	nbt_node_Object *node = (nbt_node_Object *)self;
 	PyObject *ret, *py_dest, *py_name;
-	struct nbt_name_register io;
+	struct nbt_name_register io = {};
 	NTSTATUS status;
 
 	const char *kwnames[] = { "name", "address", "dest", "register_demand", "broadcast",
