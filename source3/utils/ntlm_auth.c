@@ -2733,7 +2733,7 @@ enum {
 			opt_challenge = strhex_to_data_blob(NULL, hex_challenge);
 			if (opt_challenge.length != 8) {
 				fprintf(stderr, "hex decode of %s failed! "
-					"(only got %d bytes)\n",
+					"(got %d bytes, expected 8)\n",
 					hex_challenge,
 					(int)opt_challenge.length);
 				exit(1);
@@ -2743,7 +2743,7 @@ enum {
 			opt_lm_response = strhex_to_data_blob(NULL, hex_lm_response);
 			if (opt_lm_response.length != 24) {
 				fprintf(stderr, "hex decode of %s failed! "
-					"(only got %d bytes)\n",
+					"(got %d bytes, expected 24)\n",
 					hex_lm_response,
 					(int)opt_lm_response.length);
 				exit(1);
@@ -2754,7 +2754,7 @@ enum {
 			opt_nt_response = strhex_to_data_blob(NULL, hex_nt_response);
 			if (opt_nt_response.length < 24) {
 				fprintf(stderr, "hex decode of %s failed! "
-					"(only got %d bytes)\n",
+					"(only got %d bytes, needed at least 24)\n",
 					hex_nt_response,
 					(int)opt_nt_response.length);
 				exit(1);
