@@ -604,11 +604,23 @@ def build(bld):
                                              ctdb_tunnel.c ctdb_client.c
                                           '''),
                      includes='include',
-                     deps='''ctdb-common ctdb-system ctdb-protocol
-                             ctdb-tcp ctdb-util replace sys_rw popt
+                     deps='''ctdb-common
                              ctdb-conf
+                             ctdb-conf-util
                              ctdb-event-protocol
-                             talloc tevent tdb-wrap tdb talloc_report''' +
+                             ctdb-protocol
+                             ctdb-system
+                             ctdb-tcp
+                             ctdb-util
+                             popt
+                             replace
+                             sys_rw
+                             talloc
+                             talloc_report
+                             tdb
+                             tdb-wrap
+                             tevent
+                          ''' +
                           ib_deps,
                      install_path='${SBINDIR}',
                      manpages='ctdbd.1')

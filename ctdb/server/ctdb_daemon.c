@@ -40,6 +40,9 @@
 #include "ctdb_private.h"
 #include "ctdb_client.h"
 
+#include "protocol/protocol.h"
+#include "protocol/protocol_api.h"
+
 #include "common/rb_tree.h"
 #include "common/reqid.h"
 #include "common/system.h"
@@ -47,6 +50,8 @@
 #include "common/logging.h"
 #include "common/pidfile.h"
 #include "common/sock_io.h"
+
+#include "conf/node.h"
 
 struct ctdb_client_pid_list {
 	struct ctdb_client_pid_list *next, *prev;
@@ -2175,22 +2180,43 @@ int32_t ctdb_control_check_pid_srvid(struct ctdb_context *ctdb,
 	return -1;
 }
 
-int ctdb_control_getnodesfile(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata)
+int ctdb_control_getnodesfile(struct ctdb_context *ctdb,
+			      uint32_t opcode,
+			      TDB_DATA indata,
+			      TDB_DATA *outdata)
 {
-	struct ctdb_node_map_old *node_map = NULL;
+	struct ctdb_node_map *node_map = NULL;
+	size_t len;
+	uint8_t *buf = NULL;
+	size_t npush = 0;
+	int ret = -1;
 
 	CHECK_CONTROL_DATA_SIZE(0);
 
-	node_map = ctdb_read_nodes_file(ctdb, ctdb->nodes_file);
+	node_map = ctdb_read_nodes(ctdb, ctdb->nodes_file);
 	if (node_map == NULL) {
-		DEBUG(DEBUG_ERR, ("Failed to read nodes file\n"));
+		D_ERR("Failed to read nodes file\n");
 		return -1;
 	}
 
-	outdata->dptr  = (unsigned char *)node_map;
-	outdata->dsize = talloc_get_size(outdata->dptr);
+	len = ctdb_node_map_len(node_map);
+	buf = talloc_size(ctdb, len);
+	if (buf == NULL) {
+		goto done;
+	}
 
-	return 0;
+	ctdb_node_map_push(node_map, buf, &npush);
+	if (len != npush) {
+		talloc_free(buf);
+		goto done;
+	}
+
+	outdata->dptr  = buf;
+	outdata->dsize = len;
+	ret = 0;
+done:
+	talloc_free(node_map);
+	return ret;
 }
 
 void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code)

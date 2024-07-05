@@ -31,8 +31,12 @@
 #include "ctdb_private.h"
 #include "ctdb_client.h"
 
+#include "protocol/protocol.h"
+
 #include "common/common.h"
 #include "common/logging.h"
+
+#include "conf/node.h"
 
 /*
   choose the transport we will use
@@ -80,7 +84,7 @@ uint32_t ctdb_ip_to_pnn(struct ctdb_context *ctdb,
 /* Load a nodes list file into a nodes array */
 static int convert_node_map_to_list(struct ctdb_context *ctdb,
 				    TALLOC_CTX *mem_ctx,
-				    struct ctdb_node_map_old *node_map,
+				    struct ctdb_node_map *node_map,
 				    struct ctdb_node ***nodes,
 				    uint32_t *num_nodes)
 {
@@ -98,12 +102,12 @@ static int convert_node_map_to_list(struct ctdb_context *ctdb,
 		CTDB_NO_MEMORY(ctdb, node);
 		(*nodes)[i] = node;
 
-		node->address = node_map->nodes[i].addr;
+		node->address = node_map->node[i].addr;
 		node->name = talloc_asprintf(node, "%s:%u",
 					     ctdb_addr_to_str(&node->address),
 					     ctdb_addr_to_port(&node->address));
 
-		node->flags = node_map->nodes[i].flags;
+		node->flags = node_map->node[i].flags;
 		if (!(node->flags & NODE_FLAGS_DELETED)) {
 			node->flags = NODE_FLAGS_UNHEALTHY;
 		}
@@ -120,10 +124,10 @@ static int convert_node_map_to_list(struct ctdb_context *ctdb,
 /* Load the nodes list from a file */
 void ctdb_load_nodes_file(struct ctdb_context *ctdb)
 {
-	struct ctdb_node_map_old *node_map;
+	struct ctdb_node_map *node_map;
 	int ret;
 
-	node_map = ctdb_read_nodes_file(ctdb, ctdb->nodes_file);
+	node_map = ctdb_read_nodes(ctdb, ctdb->nodes_file);
 	if (node_map == NULL) {
 		goto fail;
 	}
