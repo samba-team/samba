@@ -8,6 +8,7 @@ packages:
   - binutils
   - bison
   - build-essential
+  - cargo
   - ccache
   - chrpath
   - codespell

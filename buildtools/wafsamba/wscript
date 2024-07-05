@@ -288,6 +288,9 @@ Currently the only tested value is 'smbtorture,smbd/smbd' for Samba'''),
     opt.add_option('--disable-python',
                     help='do not generate python modules',
                     action='store_true', dest='disable_python', default=False)
+    opt.add_option('--disable-rust',
+                    help='do not build rust modules',
+                    action='store_true', dest='disable_rust', default=False)
 
 
 @Utils.run_once
@@ -351,6 +354,7 @@ def configure(conf):
     conf.env.AUTOCONF_PROGRAM_PREFIX = Options.options.AUTOCONF_PROGRAM_PREFIX
 
     conf.env.disable_python = Options.options.disable_python
+    conf.env.disable_rust = Options.options.disable_rust
 
     if (conf.env.AUTOCONF_HOST and
         conf.env.AUTOCONF_BUILD and

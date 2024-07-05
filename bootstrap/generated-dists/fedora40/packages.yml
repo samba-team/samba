@@ -9,6 +9,7 @@ packages:
   - bind-utils
   - binutils
   - bison
+  - cargo
   - ccache
   - chrpath
   - codespell

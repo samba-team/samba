@@ -27,6 +27,7 @@ dnf install -y \
     bind-utils \
     binutils \
     bison \
+    cargo \
     ccache \
     chrpath \
     crypto-policies-scripts \

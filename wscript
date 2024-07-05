@@ -218,6 +218,8 @@ def configure(conf):
     conf.SAMBA_CHECK_PYTHON()
     conf.SAMBA_CHECK_PYTHON_HEADERS()
 
+    conf.SAMBA_CHECK_RUST()
+
     if sys.platform == 'darwin' and not conf.env['HAVE_ENVIRON_DECL']:
         # Mac OSX needs to have this and it's also needed that the python is compiled with this
         # otherwise you face errors about common symbols
@@ -501,6 +503,9 @@ def configure(conf):
 
     if Options.options.with_smb1server is not False:
         conf.DEFINE('WITH_SMB1SERVER', '1')
+
+    conf.env.debug = Options.options.debug
+    conf.env.developer = Options.options.developer
 
     #
     # FreeBSD is broken. It doesn't include 'extern char **environ'

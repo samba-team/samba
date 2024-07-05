@@ -20,6 +20,7 @@ zypper --non-interactive install \
     bind-utils \
     binutils \
     bison \
+    cargo \
     ccache \
     chrpath \
     codespell \

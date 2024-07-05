@@ -64,6 +64,7 @@ COMMON = [
     'tar',
     'tree',
     'wget',
+    'cargo',
 ]
 
 
