@@ -57,6 +57,7 @@
 	<listitem><para><parameter moreinfo="none">dsdb_transaction_json_audit</parameter></para></listitem>
 	<listitem><para><parameter moreinfo="none">dsdb_group_audit</parameter></para></listitem>
 	<listitem><para><parameter moreinfo="none">dsdb_group_json_audit</parameter></para></listitem>
+	<listitem><para><parameter moreinfo="none">ldapsrv</parameter></para></listitem>
     </itemizedlist>
 
     <para>Various modules register dynamic debug classes at first usage:</para>

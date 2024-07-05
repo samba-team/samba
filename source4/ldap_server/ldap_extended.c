@@ -26,6 +26,9 @@
 #include "librpc/gen_ndr/auth.h"
 #include "libcli/security/security_token.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_LDAPSRV
+
 struct ldapsrv_starttls_postprocess_context {
 	struct ldapsrv_connection *conn;
 };

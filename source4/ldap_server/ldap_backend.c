@@ -36,6 +36,9 @@
 #include "libcli/ldap/ldap_proto.h"
 #include "source4/auth/auth.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_LDAPSRV
+
 static int map_ldb_error(TALLOC_CTX *mem_ctx, int ldb_err,
 	const char *add_err_string, const char **errstring)
 {

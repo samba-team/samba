@@ -54,6 +54,9 @@
 
 #undef strcasecmp
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_LDAPSRV
+
 static void ldapsrv_terminate_connection_done(struct tevent_req *subreq);
 
 /*

@@ -98,6 +98,7 @@ bool dbgsetclass(int level, int cls);
 #define DBGC_DSDB_TXN_AUDIT_JSON	35
 #define DBGC_DSDB_GROUP_AUDIT	36
 #define DBGC_DSDB_GROUP_AUDIT_JSON	37
+#define DBGC_LDAPSRV		38
 
 /* So you can define DBGC_CLASS before including debug.h */
 #ifndef DBGC_CLASS

@@ -33,7 +33,7 @@ CLASS_LIST = ["all", "tdb", "printdrivers", "lanman", "smb",
               "smb2", "smb2_credits", "dsdb_audit", "dsdb_json_audit",
               "dsdb_password_audit", "dsdb_password_json_audit",
               "dsdb_transaction_audit", "dsdb_transaction_json_audit",
-              "dsdb_group_audit", "dsdb_group_json_audit"]
+              "dsdb_group_audit", "dsdb_group_json_audit", "ldapsrv"]
 
 
 CLASS_CODES = {k: i for i, k in enumerate(CLASS_LIST)}

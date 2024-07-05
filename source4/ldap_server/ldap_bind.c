@@ -32,6 +32,9 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "lib/util/time_basic.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_LDAPSRV
+
 static char *ldapsrv_bind_error_msg(TALLOC_CTX *mem_ctx,
 				    HRESULT hresult,
 				    uint32_t DSID,
