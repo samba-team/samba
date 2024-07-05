@@ -3598,7 +3598,7 @@ static bool test_SamLogon(struct torture_context *tctx,
 	union netr_LogonLevel logon;
 	union netr_Validation validation;
 	uint8_t authoritative;
-	struct netr_IdentityInfo identity;
+	struct netr_IdentityInfo identity = {};
 	struct netr_NetworkInfo ninfo;
 	struct netr_PasswordInfo pinfo;
 	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
