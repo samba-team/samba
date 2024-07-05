@@ -40,7 +40,7 @@ EOF
 			;;
 		esac
 
-		rpc_services_up \
+		_rpc_services_up \
 			"portmapper" "nfs" "mountd" "rquotad" \
 			"nlockmgr" "status"
 
@@ -67,7 +67,7 @@ EOF
 	fi
 }
 
-rpc_services_down()
+_rpc_services_down()
 {
 	_out=""
 	for _s in $FAKE_RPCINFO_SERVICES; do
@@ -82,7 +82,7 @@ rpc_services_down()
 	FAKE_RPCINFO_SERVICES="$_out"
 }
 
-rpc_services_up()
+_rpc_services_up()
 {
 	_out="$FAKE_RPCINFO_SERVICES"
 	for _i; do
@@ -454,7 +454,7 @@ nfs_iterate_test()
 		debug <<EOF
 --------------------------------------------------
 EOF
-		rpc_services_down "$_rpc_service"
+		_rpc_services_down "$_rpc_service"
 	fi
 
 	debug <<EOF
@@ -470,7 +470,7 @@ EOF
 				debug <<EOF
 --------------------------------------------------
 EOF
-				rpc_services_up "$_rpc_service"
+				_rpc_services_up "$_rpc_service"
 			fi
 		fi
 
