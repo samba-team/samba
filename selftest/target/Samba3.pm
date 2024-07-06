@@ -2126,6 +2126,11 @@ sub setup_fileserver
 	comment = Home directories
 	browseable = No
 	read only = No
+
+[inherit_perms]
+	path = $share_dir
+	vfs objects = streams_depot
+	inherit permissions = yes
 ";
 
 	if (defined($more_conf)) {
