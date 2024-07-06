@@ -30,6 +30,7 @@
 #include "system/filesys.h"
 #include "system/locale.h"
 #include "lib/util/tsort.h"
+#include "libcli/security/security_descriptor.h"
 
 #define DNAME "teststreams"
 
@@ -2392,6 +2393,78 @@ done:
 	smb2_util_unlink(tree, fname);
 	smb2_util_unlink(tree, fname_renamed);
 
+	return ret;
+}
+
+/*
+ * Simple test creating a stream on a share with "inherit permissions"
+ * enabled. This tests specifically bug 15695.
+ */
+bool test_stream_inherit_perms(struct torture_context *tctx,
+			       struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	struct smb2_handle h = {};
+	union smb_fileinfo q = {};
+	union smb_setfileinfo setinfo = {};
+	struct security_descriptor *sd = NULL;
+	struct security_ace ace = {};
+	const char *fname = DNAME "\\test_stream_inherit_perms:stream";
+	bool ret = true;
+
+	smb2_deltree(tree, DNAME);
+
+	status = torture_smb2_testdir(tree, DNAME, &h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+
+	torture_comment(tctx, "getting original sd\n");
+
+	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	q.query_secdesc.in.file.handle = h;
+	q.query_secdesc.in.secinfo_flags = SECINFO_DACL | SECINFO_OWNER;
+
+	status = smb2_getinfo_file(tree, tctx, &q);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed\n");
+
+	sd = q.query_secdesc.out.sd;
+
+	/*
+	 * Add one explicit non-inheriting ACE which will be stored
+	 * as a non-inheriting POSIX ACE. These are the ACEs that
+	 * "inherit permissions" will want to inherit.
+	 */
+	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+	ace.access_mask = SEC_STD_ALL;
+	ace.trustee = *(sd->owner_sid);
+
+	status = security_descriptor_dacl_add(sd, &ace);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"security_descriptor_dacl_add failed\n");
+
+	setinfo.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	setinfo.set_secdesc.in.file.handle = h;
+	setinfo.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	setinfo.set_secdesc.in.sd = sd;
+
+	status = smb2_setinfo_file(tree, &setinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed");
+
+	smb2_util_close(tree, h);
+	ZERO_STRUCT(h);
+
+	/* This triggers the crash */
+	status = torture_smb2_testfile(tree, fname, &h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testfile failed");
+
+done:
+	if (!smb2_util_handle_empty(h)) {
+		smb2_util_close(tree, h);
+	}
+	smb2_deltree(tree, DNAME);
 	return ret;
 }
 
