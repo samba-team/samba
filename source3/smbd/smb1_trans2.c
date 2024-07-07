@@ -3890,9 +3890,11 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 			return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	DEBUG(10,("smb_unix_mknod: SMB_SET_FILE_UNIX_BASIC doing mknod dev "
-		  "%.0f mode 0%o for file %s\n", (double)dev,
-		  (unsigned int)unixmode, smb_fname_str_dbg(smb_fname)));
+	DBG_DEBUG("SMB_SET_FILE_UNIX_BASIC doing mknod dev "
+		  "%ju mode 0%o for file %s\n",
+		  (uintmax_t)dev,
+		  (unsigned int)unixmode,
+		  smb_fname_str_dbg(smb_fname));
 
 	status = SMB_VFS_PARENT_PATHNAME(dirfsp->conn,
 					 talloc_tos(),
@@ -3993,11 +3995,13 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 		return status;
 	}
 
-	DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC: name = "
+	DBG_DEBUG("SMB_SET_FILE_UNIX_BASIC: name = "
 		  "%s size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
-		  smb_fname_str_dbg(smb_fname), (double)size,
-		  (unsigned int)set_owner, (unsigned int)set_grp,
-		  (int)raw_unixmode));
+		  smb_fname_str_dbg(smb_fname),
+		  (double)size,
+		  (unsigned int)set_owner,
+		  (unsigned int)set_grp,
+		  (int)raw_unixmode);
 
 	sbuf = smb_fname->st;
 
@@ -4060,10 +4064,10 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	    (sbuf.st_ex_uid != set_owner)) {
 		int ret;
 
-		DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC "
+		DBG_DEBUG("SMB_SET_FILE_UNIX_BASIC "
 			  "changing owner %u for path %s\n",
 			  (unsigned int)set_owner,
-			  smb_fname_str_dbg(smb_fname)));
+			  smb_fname_str_dbg(smb_fname));
 
 		if (fsp &&
 		    !fsp->fsp_flags.is_pathref &&
@@ -4093,10 +4097,10 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	    (sbuf.st_ex_gid != set_grp)) {
 		int ret;
 
-		DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC "
+		DBG_DEBUG("SMB_SET_FILE_UNIX_BASIC "
 			  "changing group %u for file %s\n",
 			  (unsigned int)set_grp,
-			  smb_fname_str_dbg(smb_fname)));
+			  smb_fname_str_dbg(smb_fname));
 		if (fsp &&
 		    !fsp->fsp_flags.is_pathref &&
 		    fsp_get_io_fd(fsp) != -1)
