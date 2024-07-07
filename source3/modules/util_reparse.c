@@ -73,20 +73,18 @@ fail:
 	return status;
 }
 
-static NTSTATUS fsctl_get_reparse_point_fifo(struct files_struct *fsp,
-					     TALLOC_CTX *ctx,
-					     uint8_t **_out_data,
-					     uint32_t max_out_len,
-					     uint32_t *_out_len)
+static NTSTATUS fsctl_get_reparse_point_int(
+	struct files_struct *fsp,
+	const struct reparse_data_buffer *reparse_data,
+	TALLOC_CTX *ctx,
+	uint8_t **_out_data,
+	uint32_t max_out_len,
+	uint32_t *_out_len)
 {
-	struct reparse_data_buffer reparse_data = {
-		.tag = IO_REPARSE_TAG_NFS,
-		.parsed.nfs.type = NFS_SPECFILE_FIFO,
-	};
 	uint8_t *out_data = NULL;
 	ssize_t out_len;
 
-	out_len = reparse_data_buffer_marshall(&reparse_data, NULL, 0);
+	out_len = reparse_data_buffer_marshall(reparse_data, NULL, 0);
 	if (out_len == -1) {
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
@@ -99,14 +97,27 @@ static NTSTATUS fsctl_get_reparse_point_fifo(struct files_struct *fsp,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	reparse_data_buffer_marshall(&reparse_data,
-				     out_data,
-				     out_len);
+	reparse_data_buffer_marshall(reparse_data, out_data, out_len);
 
 	*_out_data = out_data;
 	*_out_len = out_len;
 
 	return NT_STATUS_OK;
+}
+
+static NTSTATUS fsctl_get_reparse_point_fifo(struct files_struct *fsp,
+					     TALLOC_CTX *ctx,
+					     uint8_t **_out_data,
+					     uint32_t max_out_len,
+					     uint32_t *_out_len)
+{
+	struct reparse_data_buffer reparse_data = {
+		.tag = IO_REPARSE_TAG_NFS,
+		.parsed.nfs.type = NFS_SPECFILE_FIFO,
+	};
+
+	return fsctl_get_reparse_point_int(
+		fsp, &reparse_data, ctx, _out_data, max_out_len, _out_len);
 }
 
 NTSTATUS fsctl_get_reparse_point(struct files_struct *fsp,
