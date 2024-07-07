@@ -382,14 +382,13 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
         conn.delete_on_close(fd, 1)
         conn.close(fd)
 
-    def test_fifo_reparse(self):
-        """Test FIFO reparse tag"""
-        filename = 'fifo'
+    def do_test_nfs_reparse(self, filename, filetype, nfstype):
+        """Test special file reparse tag"""
         smb2 = self.connection()
         smb1 = self.connection_posix()
 
         self.clean_file(smb2, filename)
-        smb1.mknod(filename, stat.S_IFIFO | 0o755)
+        smb1.mknod(filename, filetype | 0o755)
 
         fd = smb2.create(
             filename,
@@ -403,7 +402,11 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
 
         reparse = smb2.fsctl(fd, libsmb.FSCTL_GET_REPARSE_POINT, b'', 1024)
         (tag, ) = reparse_symlink.get(reparse)
-        self.assertEqual(tag, 'NFS_SPECFILE_FIFO')
+        self.assertEqual(tag, nfstype)
+
+    def test_fifo_reparse(self):
+        """Test FIFO reparse tag"""
+        self.do_test_nfs_reparse('fifo', stat.S_IFIFO, 'NFS_SPECFILE_FIFO')
 
 if __name__ == '__main__':
     import unittest
