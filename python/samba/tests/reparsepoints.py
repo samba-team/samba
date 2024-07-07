@@ -408,6 +408,10 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
         """Test FIFO reparse tag"""
         self.do_test_nfs_reparse('fifo', stat.S_IFIFO, 'NFS_SPECFILE_FIFO')
 
+    def test_sock_reparse(self):
+        """Test SOCK reparse tag"""
+        self.do_test_nfs_reparse('sock', stat.S_IFSOCK, 'NFS_SPECFILE_SOCK')
+
 if __name__ == '__main__':
     import unittest
     unittest.main()
