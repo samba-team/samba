@@ -120,6 +120,21 @@ static NTSTATUS fsctl_get_reparse_point_fifo(struct files_struct *fsp,
 		fsp, &reparse_data, ctx, _out_data, max_out_len, _out_len);
 }
 
+static NTSTATUS fsctl_get_reparse_point_sock(struct files_struct *fsp,
+					     TALLOC_CTX *ctx,
+					     uint8_t **_out_data,
+					     uint32_t max_out_len,
+					     uint32_t *_out_len)
+{
+	struct reparse_data_buffer reparse_data = {
+		.tag = IO_REPARSE_TAG_NFS,
+		.parsed.nfs.type = NFS_SPECFILE_SOCK,
+	};
+
+	return fsctl_get_reparse_point_int(
+		fsp, &reparse_data, ctx, _out_data, max_out_len, _out_len);
+}
+
 NTSTATUS fsctl_get_reparse_point(struct files_struct *fsp,
 				 TALLOC_CTX *mem_ctx,
 				 uint32_t *_reparse_tag,
@@ -149,6 +164,11 @@ NTSTATUS fsctl_get_reparse_point(struct files_struct *fsp,
 	case S_IFIFO:
 		DBG_DEBUG("%s is a fifo\n", fsp_str_dbg(fsp));
 		status = fsctl_get_reparse_point_fifo(
+			fsp, mem_ctx, &out_data, max_out_len, &out_len);
+		break;
+	case S_IFSOCK:
+		DBG_DEBUG("%s is a socket\n", fsp_str_dbg(fsp));
+		status = fsctl_get_reparse_point_sock(
 			fsp, mem_ctx, &out_data, max_out_len, &out_len);
 		break;
 	default:
