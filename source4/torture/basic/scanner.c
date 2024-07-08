@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB torture tester - scanning functions
    Copyright (C) Andrew Tridgell 2001
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -51,7 +51,7 @@ static void trans2_check_hit(const char *format, int op, int level, NTSTATUS sta
 /****************************************************************************
 check for existence of a trans2 call
 ****************************************************************************/
-static NTSTATUS try_trans2(struct smbcli_state *cli, 
+static NTSTATUS try_trans2(struct smbcli_state *cli,
 			   int op,
 			   uint8_t *param, uint8_t *data,
 			   int param_len, int data_len,
@@ -292,22 +292,22 @@ bool torture_trans2_scan(struct torture_context *torture,
 	if (fnum == -1) {
 		printf("file open failed - %s\n", smbcli_errstr(cli->tree));
 	}
-	dnum = smbcli_nt_create_full(cli->tree, "\\", 
-				     0, 
-				     SEC_RIGHTS_FILE_READ, 
+	dnum = smbcli_nt_create_full(cli->tree, "\\",
+				     0,
+				     SEC_RIGHTS_FILE_READ,
 				     FILE_ATTRIBUTE_NORMAL,
-				     NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE, 
-				     NTCREATEX_DISP_OPEN, 
+				     NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE,
+				     NTCREATEX_DISP_OPEN,
 				     NTCREATEX_OPTIONS_DIRECTORY, 0);
 	if (dnum == -1) {
 		printf("directory open failed - %s\n", smbcli_errstr(cli->tree));
 	}
-	qfnum = smbcli_nt_create_full(cli->tree, "\\$Extend\\$Quota:$Q:$INDEX_ALLOCATION", 
-				   NTCREATEX_FLAGS_EXTENDED, 
-				   SEC_FLAG_MAXIMUM_ALLOWED, 
+	qfnum = smbcli_nt_create_full(cli->tree, "\\$Extend\\$Quota:$Q:$INDEX_ALLOCATION",
+				   NTCREATEX_FLAGS_EXTENDED,
+				   SEC_FLAG_MAXIMUM_ALLOWED,
 				   0,
-				   NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE, 
-				   NTCREATEX_DISP_OPEN, 
+				   NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE,
+				   NTCREATEX_DISP_OPEN,
 				   0, 0);
 	if (qfnum == -1) {
 		printf("quota open failed - %s\n", smbcli_errstr(cli->tree));
@@ -359,7 +359,7 @@ static void nttrans_check_hit(const char *format, int op, int level, NTSTATUS st
 /****************************************************************************
 check for existence of a nttrans call
 ****************************************************************************/
-static NTSTATUS try_nttrans(struct smbcli_state *cli, 
+static NTSTATUS try_nttrans(struct smbcli_state *cli,
 			    int op,
 			    uint8_t *param, uint8_t *data,
 			    int param_len, int data_len,
@@ -384,9 +384,9 @@ static NTSTATUS try_nttrans(struct smbcli_state *cli,
 	parms.in.function = op;
 	parms.in.params = ntparam_blob;
 	parms.in.data = ntdata_blob;
-	
+
 	status = smb_raw_nttrans(cli->tree, mem_ctx, &parms);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(1,("Failed to send NT_TRANS\n"));
 		talloc_free(mem_ctx);
@@ -541,14 +541,14 @@ static bool scan_nttrans(struct smbcli_state *cli, int op, int level,
 }
 
 
-bool torture_nttrans_scan(struct torture_context *torture, 
+bool torture_nttrans_scan(struct torture_context *torture,
 			  struct smbcli_state *cli)
 {
 	int op, level;
 	const char *fname = "\\scanner.dat";
 	int fnum, dnum;
 
-	fnum = smbcli_open(cli->tree, fname, O_RDWR | O_CREAT | O_TRUNC, 
+	fnum = smbcli_open(cli->tree, fname, O_RDWR | O_CREAT | O_TRUNC,
 			 DENY_NONE);
 	dnum = smbcli_open(cli->tree, "\\", O_RDONLY, DENY_NONE);
 
