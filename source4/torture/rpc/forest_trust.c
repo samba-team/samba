@@ -236,7 +236,7 @@ static bool get_and_set_info(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	struct lsa_QueryTrustedDomainInfoByName qr;
 	struct lsa_SetTrustedDomainInfoByName sr;
-	union lsa_TrustedDomainInfo *info;
+	union lsa_TrustedDomainInfo *info = NULL;
 	struct lsa_Close cr;
 	struct policy_handle closed_handle;
 	size_t c;
@@ -273,7 +273,6 @@ static bool get_and_set_info(struct dcerpc_pipe *p,
 	sr.in.handle = handle;
 	sr.in.trusted_domain = talloc_zero(tctx, struct lsa_String);
 	sr.in.trusted_domain->string = name;
-	sr.in.info = info;
 
 	for (c = 0; il[c].info_level != -1; c++) {
 		torture_comment(tctx, "\nGetting/Setting dom info [%d]\n",il[c].info_level);
