@@ -1273,6 +1273,9 @@ bool handle_printing(struct loadparm_context *lp_ctx, struct loadparm_service *s
 
 	if (parm_num == -1) {
 		parm_num = lpcfg_map_parameter("printing");
+		if (parm_num == -1) {
+			return false;
+		}
 	}
 
 	if (!lp_set_enum_parm(&parm_table[parm_num], pszParmValue, (int*)ptr)) {
