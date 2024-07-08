@@ -719,6 +719,8 @@ uint32_t fdos_mode(struct files_struct *fsp)
 		break;
 	case S_IFIFO:
 	case S_IFSOCK:
+	case S_IFBLK:
+	case S_IFCHR:
 		return FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_REPARSE_POINT;
 		break;
 	default:

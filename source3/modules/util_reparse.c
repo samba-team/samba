@@ -135,6 +135,25 @@ static NTSTATUS fsctl_get_reparse_point_sock(struct files_struct *fsp,
 		fsp, &reparse_data, ctx, _out_data, max_out_len, _out_len);
 }
 
+static NTSTATUS fsctl_get_reparse_point_dev(struct files_struct *fsp,
+					    uint64_t nfs_type,
+					    dev_t rdev,
+					    TALLOC_CTX *ctx,
+					    uint8_t **_out_data,
+					    uint32_t max_out_len,
+					    uint32_t *_out_len)
+{
+	struct reparse_data_buffer reparse_data = {
+		.tag = IO_REPARSE_TAG_NFS,
+		.parsed.nfs.type = nfs_type,
+		.parsed.nfs.data.dev.major = unix_dev_major(rdev),
+		.parsed.nfs.data.dev.minor = unix_dev_minor(rdev),
+	};
+
+	return fsctl_get_reparse_point_int(
+		fsp, &reparse_data, ctx, _out_data, max_out_len, _out_len);
+}
+
 NTSTATUS fsctl_get_reparse_point(struct files_struct *fsp,
 				 TALLOC_CTX *mem_ctx,
 				 uint32_t *_reparse_tag,
@@ -170,6 +189,28 @@ NTSTATUS fsctl_get_reparse_point(struct files_struct *fsp,
 		DBG_DEBUG("%s is a socket\n", fsp_str_dbg(fsp));
 		status = fsctl_get_reparse_point_sock(
 			fsp, mem_ctx, &out_data, max_out_len, &out_len);
+		break;
+	case S_IFBLK:
+		DBG_DEBUG("%s is a block device\n", fsp_str_dbg(fsp));
+		status = fsctl_get_reparse_point_dev(
+			fsp,
+			NFS_SPECFILE_BLK,
+			fsp->fsp_name->st.st_ex_rdev,
+			mem_ctx,
+			&out_data,
+			max_out_len,
+			&out_len);
+		break;
+	case S_IFCHR:
+		DBG_DEBUG("%s is a character device\n", fsp_str_dbg(fsp));
+		status = fsctl_get_reparse_point_dev(
+			fsp,
+			NFS_SPECFILE_CHR,
+			fsp->fsp_name->st.st_ex_rdev,
+			mem_ctx,
+			&out_data,
+			max_out_len,
+			&out_len);
 		break;
 	default:
 		break;
