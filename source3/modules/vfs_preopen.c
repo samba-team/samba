@@ -210,15 +210,15 @@ static bool preopen_helper_open_one(int sock_fd, char **pnamebuf,
 	nread = 0;
 
 	do {
-		ssize_t thistime;
+		ssize_t chunk;
 
-		thistime = read(sock_fd, namebuf + nread,
+		chunk = read(sock_fd, namebuf + nread,
 				talloc_get_size(namebuf) - nread);
-		if (thistime <= 0) {
+		if (chunk <= 0) {
 			return false;
 		}
 
-		nread += thistime;
+		nread += chunk;
 
 		if (nread == talloc_get_size(namebuf)) {
 			namebuf = talloc_realloc(
