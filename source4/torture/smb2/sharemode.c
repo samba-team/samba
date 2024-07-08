@@ -634,9 +634,9 @@ static bool test_smb2_bug14375(struct torture_context *tctx,
 			       struct smb2_tree *tree)
 {
 	const char *fname = "test_bug14375";
-	struct smb2_create cr1;
-	struct smb2_create cr2;
-	struct smb2_create cr3;
+	struct smb2_create cr1 = {};
+	struct smb2_create cr2 = {};
+	struct smb2_create cr3 = {};
 	NTSTATUS status;
 	bool ret = true;
 
