@@ -1623,28 +1623,12 @@ int main(void) {
         conf.CHECK_HEADERS('cephfs/libcephfs.h', False, False, 'cephfs') and
         conf.CHECK_LIB('cephfs', shlib=True)):
         if (Options.options.with_acl_support and
-            conf.CHECK_FUNCS_IN('ceph_statx', 'cephfs',
+            conf.CHECK_FUNCS_IN('ceph_statx ceph_openat', 'cephfs',
                                 headers='cephfs/libcephfs.h')):
             conf.DEFINE('HAVE_CEPH', '1')
-            conf.CHECK_FUNCS_IN('ceph_select_filesystem', 'cephfs',
-                                headers='cephfs/libcephfs.h')
-            conf.DEFINE('HAVE_MANDATORY_CEPH_API', '1')
-            for api in ['ceph_mkdirat', 'ceph_openat', 'ceph_unlinkat',
-                        'ceph_symlinkat', 'ceph_readlinkat', 'ceph_statxat',
-                        'ceph_fdopendir']:
-                if not conf.CHECK_FUNCS_IN(api, 'cephfs',
-                                           headers='cephfs/libcephfs.h'):
-                    conf.undefine('HAVE_MANDATORY_CEPH_API')
-            if not conf.env.HAVE_MANDATORY_CEPH_API:
-                Logs.warn("Installed Ceph version support is at the verge of "
-                          "deprecation due to the absence of some mandatory "
-                          "libcephfs APIs. This warning there shall result in "
-                          "disabling the Ceph VFS module altogether with the "
-                          "next major Samba version. It is highly recommended "
-                          "to update to a more recent/active version of Ceph.")
         else:
             Logs.warn('''Ceph support disabled due to --without-acl-support
-                      or lack of ceph_statx support''')
+                      or lack of ceph_statx/ceph_openat support''')
             conf.undefine('HAVE_CEPH')
 
     if Options.options.with_glusterfs:
