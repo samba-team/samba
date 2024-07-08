@@ -47,9 +47,10 @@ _PUBLIC_ int close_low_fd(int fd)
 		if (ret != 0) {
 			return errno;
 		}
+
+		dev_null = open("/dev/null", O_RDWR, 0);
 	}
 
-	dev_null = open("/dev/null", O_RDWR, 0);
 	if (dev_null == -1) {
 		dev_null = open("/dev/null", O_WRONLY, 0);
 	}
