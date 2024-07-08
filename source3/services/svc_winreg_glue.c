@@ -35,7 +35,7 @@ struct security_descriptor* svcctl_gen_service_sd(TALLOC_CTX *mem_ctx)
 {
 	struct security_descriptor *sd = NULL;
 	struct security_acl *theacl = NULL;
-	struct security_ace ace[4];
+	struct security_ace ace[4] = {};
 	size_t sd_size;
 	size_t i = 0;
 
