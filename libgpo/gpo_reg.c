@@ -705,7 +705,7 @@ static WERROR gp_reg_generate_sd(TALLOC_CTX *mem_ctx,
 				 struct security_descriptor **sd,
 				 size_t *sd_size)
 {
-	struct security_ace ace[6];
+	struct security_ace ace[6] = {};
 	uint32_t mask;
 
 	struct security_acl *theacl = NULL;
