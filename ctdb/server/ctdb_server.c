@@ -154,10 +154,14 @@ fail:
 */
 int ctdb_set_address(struct ctdb_context *ctdb, const char *address)
 {
+	bool ok;
+
 	ctdb->address = talloc(ctdb, ctdb_sock_addr);
 	CTDB_NO_MEMORY(ctdb, ctdb->address);
 
-	if (ctdb_parse_address(ctdb, address, ctdb->address) != 0) {
+	ok = ctdb_parse_node_address(address, ctdb->address);
+	if (!ok) {
+		TALLOC_FREE(ctdb->address);
 		return -1;
 	}
 

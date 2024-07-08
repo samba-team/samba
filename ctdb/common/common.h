@@ -101,9 +101,6 @@ bool ctdb_set_helper(const char *type, char *helper, size_t size,
 		     const char *envvar,
 		     const char *dir, const char *file);
 
-int ctdb_parse_address(TALLOC_CTX *mem_ctx, const char *str,
-		       ctdb_sock_addr *address);
-
 bool ctdb_same_address(ctdb_sock_addr *a1, ctdb_sock_addr *a2);
 
 uint32_t ctdb_hash(const TDB_DATA *key);

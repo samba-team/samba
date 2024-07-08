@@ -141,36 +141,6 @@ bool ctdb_set_helper(const char *type, char *helper, size_t size,
 }
 
 /*
-  parse a IP:port pair
-*/
-int ctdb_parse_address(TALLOC_CTX *mem_ctx, const char *str,
-		       ctdb_sock_addr *address)
-{
-	struct servent *se;
-	int port;
-	int ret;
-
-	setservent(0);
-	se = getservbyname("ctdb", "tcp");
-	endservent();
-
-	if (se == NULL) {
-		port = CTDB_PORT;
-	} else {
-		port = ntohs(se->s_port);
-	}
-
-	ret = ctdb_sock_addr_from_string(str, address, false);
-	if (ret != 0) {
-		return -1;
-	}
-	ctdb_sock_addr_set_port(address, port);
-
-	return 0;
-}
-
-
-/*
   check if two addresses are the same
 */
 bool ctdb_same_address(ctdb_sock_addr *a1, ctdb_sock_addr *a2)
