@@ -365,7 +365,7 @@ static NTSTATUS try_nttrans(struct smbcli_state *cli,
 			    int param_len, int data_len,
 			    int *rparam_len, int *rdata_len)
 {
-	struct smb_nttrans parms;
+	struct smb_nttrans parms = {};
 	DATA_BLOB ntparam_blob, ntdata_blob;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
