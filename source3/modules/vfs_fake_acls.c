@@ -47,7 +47,7 @@ static int fake_acls_fuid(vfs_handle_struct *handle,
 	uint8_t uid_buf[4];
 
 	size = SMB_VFS_NEXT_FGETXATTR(handle, fsp, FAKE_UID, uid_buf, sizeof(uid_buf));
-	if (size == -1 && errno == ENOATTR) {
+	if (size == -1 && ((errno == ENOATTR) || (errno == EBADF))) {
 		return 0;
 	}
 	if (size != 4) {
@@ -65,7 +65,7 @@ static int fake_acls_fgid(vfs_handle_struct *handle,
 	uint8_t gid_buf[4];
 
 	size = SMB_VFS_NEXT_FGETXATTR(handle, fsp, FAKE_GID, gid_buf, sizeof(gid_buf));
-	if (size == -1 && errno == ENOATTR) {
+	if (size == -1 && ((errno == ENOATTR) || (errno == EBADF))) {
 		return 0;
 	}
 	if (size != 4) {
@@ -335,7 +335,7 @@ static SMB_ACL_T fake_acls_sys_acl_get_fd(struct vfs_handle_struct *handle,
 		length = SMB_VFS_NEXT_FGETXATTR(handle, fsp, name, blob.data, blob.length);
 		blob.length = length;
 	} while (length == -1 && errno == ERANGE);
-	if (length == -1 && errno == ENOATTR) {
+	if (length == -1 && ((errno == ENOATTR) || (errno == EBADF))) {
 		TALLOC_FREE(frame);
 		return NULL;
 	}
@@ -391,7 +391,7 @@ static int fake_acls_sys_acl_delete_def_fd(vfs_handle_struct *handle,
 	}
 
 	ret = SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, name);
-	if (ret == -1 && errno == ENOATTR) {
+	if (ret == -1 && ((errno == ENOATTR) || (errno == EBADF))) {
 		ret = 0;
 		errno = 0;
 	}
@@ -628,7 +628,7 @@ static int fake_acls_fchmod(vfs_handle_struct *handle,
 				talloc_tos());
 	if (the_acl == NULL) {
 		TALLOC_FREE(frame);
-		if (errno == ENOATTR) {
+		if (((errno == ENOATTR) || (errno == EBADF))) {
 			/* No ACL on this file. Just passthrough. */
 			return 0;
 		}
