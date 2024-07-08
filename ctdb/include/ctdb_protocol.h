@@ -23,9 +23,6 @@
 #include <sys/socket.h>
 #include "protocol/protocol.h"
 
-/* define ctdb port number */
-#define CTDB_PORT 4379
-
 /* we must align packets to ensure ctdb works on all architectures (eg. sparc) */
 #define CTDB_DS_ALIGNMENT 8
 

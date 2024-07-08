@@ -48,8 +48,6 @@
 #include "ipalloc_read_known_ips.h"
 
 
-#define CTDB_PORT 4379
-
 /* A fake flag that is only supported by some functions */
 #define NODE_FLAGS_FAKE_TIMEOUT 0x80000000
 

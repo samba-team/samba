@@ -22,6 +22,8 @@
 
 #include <tdb.h>
 
+#define CTDB_PORT 4379
+
 #define CTDB_MAGIC	0x43544442 /* CTDB */
 #define CTDB_PROTOCOL	1
 
