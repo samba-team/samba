@@ -275,6 +275,10 @@ static int ldb_kv_dn_list_find_val(struct ldb_kv_private *ldb_kv,
 	unsigned int i;
 	struct ldb_val *exact = NULL, *next = NULL;
 
+	if (unlikely(list->count > INT_MAX)) {
+		return -1;
+	}
+
 	if (ldb_kv->cache->GUID_index_attribute == NULL) {
 		for (i=0; i<list->count; i++) {
 			if (ldb_val_equal_exact(&list->dn[i], v) == 1) {
