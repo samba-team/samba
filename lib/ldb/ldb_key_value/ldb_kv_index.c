@@ -375,10 +375,7 @@ static int ldb_kv_dn_list_load(struct ldb_module *module,
 	bool from_primary_cache = false;
 	TDB_DATA key = {0};
 
-	list->dn = NULL;
-	list->count = 0;
-	list->strict = false;
-
+	*list = (struct dn_list){};
 	/*
 	 * See if we have an in memory index cache
 	 */
@@ -593,6 +590,7 @@ int ldb_kv_key_dn_from_idx(struct ldb_module *module,
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
+	list->strict = false;
 
 	ret = ldb_kv_index_dn_base_dn(module, ldb_kv, dn, list, &truncation);
 	if (ret != LDB_SUCCESS) {
@@ -863,6 +861,7 @@ static int ldb_kv_dn_list_store(struct ldb_module *module,
 	}
 	list2->dn = talloc_steal(list2, list->dn);
 	list2->count = list->count;
+	list2->strict = false;
 
 	rec.dptr = (uint8_t *)&list2;
 	rec.dsize = sizeof(void *);
@@ -1261,8 +1260,7 @@ static int ldb_kv_index_dn_simple(struct ldb_module *module,
 
 	ldb = ldb_module_get_ctx(module);
 
-	list->count = 0;
-	list->dn = NULL;
+	*list = (struct dn_list){};
 
 	/* if the attribute isn't in the list of indexed attributes then
 	   this node needs a full search */
@@ -1312,17 +1310,14 @@ static int ldb_kv_index_dn_leaf(struct ldb_module *module,
 				const struct ldb_parse_tree *tree,
 				struct dn_list *list)
 {
+	*list = (struct dn_list){};
 	if (ldb_kv->disallow_dn_filter &&
 	    (ldb_attr_cmp(tree->u.equality.attr, "dn") == 0)) {
 		/* in AD mode we do not support "(dn=...)" search filters */
-		list->dn = NULL;
-		list->count = 0;
 		return LDB_SUCCESS;
 	}
 	if (tree->u.equality.attr[0] == '@') {
 		/* Do not allow a indexed search against an @ */
-		list->dn = NULL;
-		list->count = 0;
 		return LDB_SUCCESS;
 	}
 	if (ldb_attr_dn(tree->u.equality.attr) == 0) {
@@ -1334,16 +1329,12 @@ static int ldb_kv_index_dn_leaf(struct ldb_module *module,
 					      &tree->u.equality.value);
 		if (dn == NULL) {
 			/* If we can't parse it, no match */
-			list->dn = NULL;
-			list->count = 0;
 			return LDB_SUCCESS;
 		}
 
 		valid_dn = ldb_dn_validate(dn);
 		if (valid_dn == false) {
 			/* If we can't parse it, no match */
-			list->dn = NULL;
-			list->count = 0;
 			return LDB_SUCCESS;
 		}
 
@@ -3450,6 +3441,7 @@ static int delete_index(struct ldb_kv_private *ldb_kv,
 	 * index entry */
 	list.dn = NULL;
 	list.count = 0;
+	list.strict = false;
 
 	/* the offset of 3 is to remove the DN= prefix. */
 	v.data = key.data + 3;
@@ -3921,6 +3913,7 @@ static int ldb_kv_sub_transaction_traverse(
 		= talloc_steal(index_in_top_level,
 			       index_in_subtransaction->dn);
 	index_in_top_level->count = index_in_subtransaction->count;
+	index_in_top_level->strict = false;
 
 	rec.dptr = (uint8_t *)&index_in_top_level;
 	rec.dsize = sizeof(void *);
