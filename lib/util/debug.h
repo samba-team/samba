@@ -142,7 +142,7 @@ bool dbgsetclass(int level, int cls);
  *
  * DEBUGADD(), DEBUGADDC()
  *    Same as DEBUG() and DEBUGC() except the text is appended to the previous
- *    DEBUG(), DEBUGC(), DEBUGADD(), DEBUGADDC() with out another interviening
+ *    DEBUG(), DEBUGC(), DEBUGADD(), DEBUGADDC() without another intervening
  *    header.
  *
  *    Example: DEBUGADD( 2, ("Some text and a value %d.\n", value) );
