@@ -248,7 +248,7 @@ static NTSTATUS store_or_fetch_attribute(TALLOC_CTX *mem_ctx,
 		struct libnet_keytab_entry *entry = NULL;
 		char *principal = NULL;
 
-		D_DEBUG("looking for %s/%s@%s in keytayb...\n",
+		D_DEBUG("looking for %s/%s@%s in keytab...\n",
 			attr, object_dn, ctx->dns_domain_name);
 
 		principal = talloc_asprintf(mem_ctx,
