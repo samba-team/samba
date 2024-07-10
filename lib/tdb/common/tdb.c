@@ -1208,7 +1208,7 @@ static void tdb_trace_end_ret(struct tdb_context *tdb, int ret)
 
 static void tdb_trace_record(struct tdb_context *tdb, TDB_DATA rec)
 {
-	char msg[20 + rec.dsize*2], *p;
+	char msg[21 + rec.dsize*2], *p;
 	unsigned int i;
 
 	/* We differentiate zero-length records from non-existent ones. */
@@ -1220,8 +1220,11 @@ static void tdb_trace_record(struct tdb_context *tdb, TDB_DATA rec)
 	/* snprintf here is purely cargo-cult programming. */
 	p = msg;
 	p += snprintf(p, sizeof(msg), " %zu:", rec.dsize);
-	for (i = 0; i < rec.dsize; i++)
-		p += snprintf(p, 2, "%02x", rec.dptr[i]);
+	
+	for (i = 0; i < rec.dsize; i++) {
+		snprintf(p, 3, "%02x", rec.dptr[i]);
+		p += 2;
+	}
 
 	tdb_trace_write(tdb, msg);
 }
