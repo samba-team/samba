@@ -721,12 +721,21 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 		goto fail;
 	}
 
+ internal:
+	/* Internal (memory-only) databases skip all the code above to
+	 * do with disk files, and resume here by releasing their
+	 * open lock and hooking into the active list. */
+
 #ifdef TDB_TRACE
 	{
-		char tracefile[strlen(name) + 32];
-
-		snprintf(tracefile, sizeof(tracefile),
-			 "%s.trace.%li", name, (long)getpid());
+		char tracefile[64];
+		if (tdb->flags & TDB_INTERNAL) {
+			snprintf(tracefile, sizeof(tracefile),
+				 "tdb_%p.trace.%li", tdb, (long)getpid());
+		} else {
+			snprintf(tracefile, sizeof(tracefile),
+				 "%s.trace.%li", name, (long)getpid());
+		}
 		tdb->tracefd = open(tracefile, O_WRONLY|O_CREAT|O_EXCL, 0600);
 		if (tdb->tracefd >= 0) {
 			tdb_enable_seqnum(tdb);
@@ -737,10 +746,6 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 	}
 #endif
 
- internal:
-	/* Internal (memory-only) databases skip all the code above to
-	 * do with disk files, and resume here by releasing their
-	 * open lock and hooking into the active list. */
 	if (tdb_nest_unlock(tdb, OPEN_LOCK, F_WRLCK, false) == -1) {
 		goto fail;
 	}
