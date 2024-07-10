@@ -12,21 +12,36 @@ homepage.workspace = true
 version.workspace = true
 
 [dependencies]
+libhimmelblau = "0.2.7"
+ntstatus_gen.workspace = true
+param = { workspace = true }
+sock = { workspace = true }
 tdb = { workspace = true }
 dbg = { workspace = true }
+chelps.workspace = true
+clap = "4.5.9"
+kanidm-hsm-crypto = "0.2.0"
+serde_json = "1.0.120"
+tokio = { version = "1.38.1", features = [ "rt", "macros" ] }
+tokio-util = { version = "0.7.11", features = ["codec"] }
+bytes = "1.6.1"
+futures = "0.3.30"
+serde = "1.0.204"
+idmap = { workspace = true }
 libc = "0.2.155"
 
 [workspace]
 members = [
   "chelps", "dbg", "idmap",
   "ntstatus_gen",
-  "param", "tdb",
+  "param", "sock", "tdb",
 ]
 
 [workspace.dependencies]
 param = { path = "param" }
 dbg = { path = "dbg" }
 chelps = { path = "chelps" }
+sock = { path = "sock" }
 ntstatus_gen = { path = "ntstatus_gen" }
 tdb = { path = "tdb" }
 idmap = { path = "idmap" }

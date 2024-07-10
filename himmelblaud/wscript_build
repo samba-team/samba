@@ -1,0 +1,4 @@
+#!/usr/bin/env python
+
+bld.SAMBA_RUST_BINARY('himmelblaud',
+                      source='src/main.rs param/src/lib.rs chelps/src/lib.rs dbg/src/lib.rs ntstatus_gen/src/lib.rs sock/src/lib.rs tdb/src/lib.rs version/src/lib.rs')
