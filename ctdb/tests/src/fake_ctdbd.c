@@ -2499,7 +2499,15 @@ static void control_reload_nodes_file(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i=0; i<nodemap->num; i++) {
-		struct node *node;
+		struct node *node = NULL;
+		ctdb_sock_addr zero = {};
+		int ret;
+
+		ret = ctdb_sock_addr_from_string("0.0.0.0", &zero, false);
+		if (ret != 0) {
+			/* Can't happen, but Coverity... */
+			goto fail;
+		}
 
 		if (i < node_map->num_nodes &&
 		    ctdb_sock_addr_same(&nodemap->node[i].addr,
@@ -2507,18 +2515,12 @@ static void control_reload_nodes_file(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		if (nodemap->node[i].flags & NODE_FLAGS_DELETED) {
-			int ret;
-
+		if (i < node_map->num_nodes &&
+		    nodemap->node[i].flags & NODE_FLAGS_DELETED) {
 			node = &node_map->node[i];
 
 			node->flags |= NODE_FLAGS_DELETED;
-			ret = ctdb_sock_addr_from_string("0.0.0.0", &node->addr,
-							 false);
-			if (ret != 0) {
-				/* Can't happen, but Coverity... */
-				goto fail;
-			}
+			node->addr = zero;
 
 			continue;
 		}
@@ -2543,7 +2545,11 @@ static void control_reload_nodes_file(TALLOC_CTX *mem_ctx,
 
 		node->addr = nodemap->node[i].addr;
 		node->pnn = nodemap->node[i].pnn;
-		node->flags = 0;
+		if (ctdb_sock_addr_same_ip(&node->addr, &zero)) {
+			node->flags = NODE_FLAGS_DELETED;
+		} else {
+			node->flags = 0;
+		}
 		node->capabilities = CTDB_CAP_DEFAULT;
 		node->recovery_disabled = false;
 		node->recovery_substate = NULL;
