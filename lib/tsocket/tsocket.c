@@ -25,6 +25,7 @@
 #include "system/filesys.h"
 #include "tsocket.h"
 #include "tsocket_internal.h"
+#include "lib/util/iov_buf.h"
 
 int tsocket_simple_int_recv(struct tevent_req *req, int *perrno)
 {
@@ -524,8 +525,7 @@ struct tevent_req *tstream_readv_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct tstream_readv_state *state;
 	struct tevent_req *subreq;
-	int to_read = 0;
-	size_t i;
+	ssize_t to_read;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct tstream_readv_state);
@@ -545,16 +545,11 @@ struct tevent_req *tstream_readv_send(TALLOC_CTX *mem_ctx,
 	}
 #endif
 
-	for (i=0; i < count; i++) {
-		int tmp = to_read;
-		tmp += vector[i].iov_len;
+	to_read = iov_buflen(vector, count);
 
-		if (tmp < to_read) {
-			tevent_req_error(req, EMSGSIZE);
-			goto post;
-		}
-
-		to_read = tmp;
+	if (to_read < 0) {
+		tevent_req_error(req, EMSGSIZE);
+		goto post;
 	}
 
 	if (to_read == 0) {
@@ -646,8 +641,7 @@ struct tevent_req *tstream_writev_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct tstream_writev_state *state;
 	struct tevent_req *subreq;
-	int to_write = 0;
-	size_t i;
+	ssize_t to_write;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct tstream_writev_state);
@@ -667,16 +661,10 @@ struct tevent_req *tstream_writev_send(TALLOC_CTX *mem_ctx,
 	}
 #endif
 
-	for (i=0; i < count; i++) {
-		int tmp = to_write;
-		tmp += vector[i].iov_len;
-
-		if (tmp < to_write) {
-			tevent_req_error(req, EMSGSIZE);
-			goto post;
-		}
-
-		to_write = tmp;
+	to_write = iov_buflen(vector, count);
+	if (to_write < 0) {
+		tevent_req_error(req, EMSGSIZE);
+		goto post;
 	}
 
 	if (to_write == 0) {
