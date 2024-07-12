@@ -1716,14 +1716,16 @@ sub setup_simpleserver
 	remove_tree($external_streams_depot);
 	mkdir($external_streams_depot, 0777);
 
-	my $simpleserver_options = "
+	my $simpleserver_options_globals = "
 	lanman auth = yes
 	ntlm auth = yes
 	vfs objects = xattr_tdb streams_depot
 	change notify = no
 	server smb encrypt = off
         allow trusted domains = no
+";
 
+	my $simpleserver_options = "
 [vfs_aio_pthread]
 	path = $prefix_abs/share
 	read only = no
@@ -1781,6 +1783,7 @@ sub setup_simpleserver
 	    domain => "WORKGROUP",
 	    server => "LOCALSHARE4",
 	    password => "local4pass",
+	    extra_options_before_inject => $simpleserver_options_globals,
 	    extra_options => $simpleserver_options);
 
 	$vars or return undef;
@@ -2554,7 +2557,8 @@ sub provision($$)
 	my $realm = $args{realm};
 	my $server = $args{server};
 	my $password = $args{password};
-	my $extra_options = $args{extra_options};
+	my $extra_options_before_inject = $args{extra_options_before_inject} // "";
+	my $extra_options = $args{extra_options} // "";
 	my $resolv_conf = $args{resolv_conf};
 	my $no_delete_prefix= $args{no_delete_prefix};
 	my $netbios_name = $args{netbios_name} // $server;
@@ -3003,6 +3007,10 @@ sub provision($$)
 	#this does not mean that we use non-secure test env,
 	#it just means we ALLOW one to be configured.
 	allow insecure wide links = yes
+
+	# Begin extra options before global inject
+	$extra_options_before_inject
+	# End extra options befoore global inject
 
 	include = $globalinjectconf
 
