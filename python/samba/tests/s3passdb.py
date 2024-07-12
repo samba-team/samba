@@ -90,7 +90,7 @@ class PassdbTestCase(TestCaseInTempDir):
         self.assertEqual([-1 for i in range(21)], user.hours)
         self.assertEqual(21, user.hours_len)
         self.assertEqual(9223372036854775807, user.kickoff_time)
-        self.assertEqual(None, user.lanman_passwd)
+        self.assertEqual(b'U)\x02\x03\x1b\xed\xe9\xef\xaa\xd3\xb45\xb5\x14\x04\xee', user.lanman_passwd)
         self.assertEqual(9223372036854775807, user.logoff_time)
         self.assertEqual(0, user.logon_count)
         self.assertEqual(168, user.logon_divs)

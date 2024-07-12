@@ -857,7 +857,7 @@ bool pdb_set_lanman_passwd(struct samu *sampass, const uint8_t pwd[LM_HASH_LEN],
 
 	/* on keep the password if we are allowing LANMAN authentication */
 
-	if (pwd && lp_lanman_auth() ) {
+	if (pwd && (flag != PDB_CHANGED || lp_lanman_auth())) {
 		sampass->lm_pw = data_blob_talloc(sampass, pwd, LM_HASH_LEN);
 	} else {
 		sampass->lm_pw = data_blob_null;
