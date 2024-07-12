@@ -253,7 +253,9 @@ int main(int argc, const char *argv[])
 	log_stdout = (debug_get_log_type() == DEBUG_STDOUT);
 
 	/* main process will notify systemd */
-	daemon_sd_notifications(false);
+	if (ready_signal_fd != -1 || watch_fd != -1) {
+		daemon_sd_notifications(false);
+	}
 
 	if (!cmdline_daemon_cfg->fork) {
 		daemon_status(progname, "Starting process ... ");
@@ -323,6 +325,10 @@ int main(int argc, const char *argv[])
 	if (!ok) {
 		DBG_ERR("locking_init failed\n");
 		goto done;
+	}
+
+	if (!cmdline_daemon_cfg->fork) {
+		daemon_ready(progname);
 	}
 
 	if (ready_signal_fd != -1) {
