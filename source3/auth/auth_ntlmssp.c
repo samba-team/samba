@@ -183,7 +183,7 @@ struct tevent_req *auth3_check_password_send(
 				       user_info->service_description,
 	                               user_info->password.response.lanman.data ? &user_info->password.response.lanman : NULL,
 	                               user_info->password.response.nt.data ? &user_info->password.response.nt : NULL,
-				       NULL, NULL, NULL,
+				       NULL, NULL, user_info->password.plaintext,
 				       AUTH_PASSWORD_RESPONSE);
 
 	if (tevent_req_nterror(req, nt_status)) {
