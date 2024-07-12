@@ -26,6 +26,7 @@
 #include "smbXcli_base.h"
 #include "tstream_smbXcli_np.h"
 #include "libcli/security/security.h"
+#include "lib/util/iov_buf.h"
 
 static const struct tstream_context_ops tstream_smbXcli_np_ops;
 
@@ -537,11 +538,13 @@ static void tstream_smbXcli_np_writev_write_next(struct tevent_req *req)
 		tstream_context_data(state->stream,
 		struct tstream_smbXcli_np);
 	struct tevent_req *subreq;
-	size_t i;
-	size_t left = 0;
+	ssize_t left;
 
-	for (i=0; i < state->count; i++) {
-		left += state->vector[i].iov_len;
+	left = iov_buflen(state->vector, state->count);
+
+	if (left < 0) {
+		tevent_req_error(req, EMSGSIZE);
+		return;
 	}
 
 	if (left == 0) {
