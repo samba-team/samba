@@ -1790,6 +1790,29 @@ sub setup_simpleserver
 
 	$vars or return undef;
 
+	my $pam_service_dir = "$prefix_abs/pam_services";
+	remove_tree($pam_service_dir);
+	mkdir($pam_service_dir, 0777);
+	my $pam_service_file = "$pam_service_dir/samba";
+	my $pam_matrix_passdb = "$pam_service_dir/samba_pam_matrix_passdb";
+	my $pam_matrix_so_path = Samba::pam_matrix_so_path($self);
+
+	open(FILE, "> $pam_service_file");
+	print FILE "auth required ${pam_matrix_so_path} passdb=${pam_matrix_passdb} verbose\n";
+	print FILE "account required ${pam_matrix_so_path} passdb=${pam_matrix_passdb} verbose\n";
+	close(FILE);
+
+	my $tmpusername = $vars->{USERNAME};
+	my $tmppassword = $vars->{PASSWORD};
+	open(FILE, "> $pam_matrix_passdb");
+	print FILE "$tmpusername:$tmppassword:samba";
+	close(FILE);
+
+	$vars->{PAM_WRAPPER} = "1";
+	$vars->{PAM_WRAPPER_KEEP_DIR} = "1";
+	$vars->{PAM_WRAPPER_SERVICE_DIR} = $pam_service_dir;
+	$vars->{PAM_WRAPPER_DEBUGLEVEL} = "3";
+
 	if (not $self->check_or_start(
 		env_vars => $vars,
 		nmbd => "yes",

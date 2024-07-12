@@ -62,6 +62,8 @@ my $opt_libnss_wrapper_so_path = "";
 my $opt_libresolv_wrapper_so_path = "";
 my $opt_libsocket_wrapper_so_path = "";
 my $opt_libuid_wrapper_so_path = "";
+my $opt_libpam_wrapper_so_path = "";
+my $opt_libpam_matrix_so_path = "";
 my $opt_libasan_so_path = "";
 my $opt_libcrypt_so_path = "";
 my $opt_use_dns_faking = 0;
@@ -255,6 +257,8 @@ my $result = GetOptions (
 		'resolv_wrapper_so_path=s' => \$opt_libresolv_wrapper_so_path,
 		'socket_wrapper_so_path=s' => \$opt_libsocket_wrapper_so_path,
 		'uid_wrapper_so_path=s' => \$opt_libuid_wrapper_so_path,
+		'pam_wrapper_so_path=s' => \$opt_libpam_wrapper_so_path,
+		'pam_matrix_so_path=s' => \$opt_libpam_matrix_so_path,
 		'asan_so_path=s' => \$opt_libasan_so_path,
 		'crypt_so_path=s' => \$opt_libcrypt_so_path,
 		'use-dns-faking' => \$opt_use_dns_faking
@@ -402,6 +406,14 @@ if ($opt_libuid_wrapper_so_path) {
 	}
 }
 
+if ($opt_libpam_wrapper_so_path) {
+	if ($ld_preload) {
+		$ld_preload = "$ld_preload:$opt_libpam_wrapper_so_path";
+	} else {
+		$ld_preload = "$opt_libpam_wrapper_so_path";
+	}
+}
+
 if (defined($ENV{USE_NAMESPACES})) {
 	print "Using linux containerization for selftest testenv(s)...\n";
 
@@ -469,6 +481,7 @@ if (defined($ENV{SMBD_MAXTIME}) and $ENV{SMBD_MAXTIME} ne "") {
 $target = new Samba($bindir, $srcdir, $server_maxtime,
 		    $opt_socket_wrapper_pcap,
 		    $opt_socket_wrapper_keep_pcap,
+		    $opt_libpam_matrix_so_path,
 		    $opt_default_ldb_backend);
 unless ($opt_list) {
 	if ($opt_target eq "samba") {

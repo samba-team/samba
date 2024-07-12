@@ -16,11 +16,13 @@ use IO::Poll qw(POLLIN);
 sub new($$$$$) {
 	my ($classname, $bindir, $srcdir, $server_maxtime,
 	    $opt_socket_wrapper_pcap, $opt_socket_wrapper_keep_pcap,
+	    $opt_libpam_matrix_so_path,
 	    $default_ldb_backend) = @_;
 
 	my $self = {
 	    opt_socket_wrapper_pcap => $opt_socket_wrapper_pcap,
 	    opt_socket_wrapper_keep_pcap => $opt_socket_wrapper_keep_pcap,
+	    opt_libpam_matrix_so_path => $opt_libpam_matrix_so_path,
 	};
 	$self->{samba3} = new Samba3($self, $bindir, $srcdir, $server_maxtime);
 	$self->{samba4} = new Samba4($self, $bindir, $srcdir, $server_maxtime, $default_ldb_backend);
@@ -176,6 +178,14 @@ sub nss_wrapper_winbind_so_path($) {
 	    $ret = abs_path($ret);
 	}
 	return $ret;
+}
+
+sub pam_matrix_so_path($) {
+	my ($self) = @_;
+	my $SambaCtx = $self;
+	$SambaCtx = $self->{SambaCtx} if defined($self->{SambaCtx});
+
+	return $SambaCtx->{opt_libpam_matrix_so_path};
 }
 
 sub copy_file_content($$)
@@ -795,6 +805,20 @@ sub get_env_for_process
 	if (defined($env_vars->{OPENSSL_FORCE_FIPS_MODE})) {
 		$proc_envs->{OPENSSL_FORCE_FIPS_MODE} = $env_vars->{OPENSSL_FORCE_FIPS_MODE};
 	}
+
+	if (defined($env_vars->{PAM_WRAPPER})) {
+		$proc_envs->{PAM_WRAPPER} = $env_vars->{PAM_WRAPPER};
+	}
+	if (defined($env_vars->{PAM_WRAPPER_KEEP_DIR})) {
+		$proc_envs->{PAM_WRAPPER_KEEP_DIR} = $env_vars->{PAM_WRAPPER_KEEP_DIR};
+	}
+	if (defined($env_vars->{PAM_WRAPPER_SERVICE_DIR})) {
+		$proc_envs->{PAM_WRAPPER_SERVICE_DIR} = $env_vars->{PAM_WRAPPER_SERVICE_DIR};
+	}
+	if (defined($env_vars->{PAM_WRAPPER_DEBUGLEVEL})) {
+		$proc_envs->{PAM_WRAPPER_DEBUGLEVEL} = $env_vars->{PAM_WRAPPER_DEBUGLEVEL};
+	}
+
 	return $proc_envs;
 }
 

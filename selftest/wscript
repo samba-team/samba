@@ -253,6 +253,8 @@ def cmd_testonly(opt):
     env.OPTIONS += " --nss_wrapper_so_path=" + CONFIG_GET(opt, 'LIBNSS_WRAPPER_SO_PATH')
     env.OPTIONS += " --resolv_wrapper_so_path=" + CONFIG_GET(opt, 'LIBRESOLV_WRAPPER_SO_PATH')
     env.OPTIONS += " --uid_wrapper_so_path=" + CONFIG_GET(opt, 'LIBUID_WRAPPER_SO_PATH')
+    env.OPTIONS += " --pam_wrapper_so_path=" + CONFIG_GET(opt, 'LIBPAM_WRAPPER_SO_PATH')
+    env.OPTIONS += " --pam_matrix_so_path=" + CONFIG_GET(opt, 'PAM_MATRIX_SO_PATH')
 
     # selftest can optionally use kernel namespaces instead of socket-wrapper
     if os.environ.get('USE_NAMESPACES') is None:
