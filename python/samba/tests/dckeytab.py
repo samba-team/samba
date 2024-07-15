@@ -174,7 +174,8 @@ class DCKeytabTests(TestCaseInTempDir):
         ).communicate()[0]
 
         self.maxDiff = None  # No maximum length of diffs.
-        self.assertMultiLineEqual(str(keytab_orig_content), str(keytab_content))
+        self.assertMultiLineEqual(keytab_orig_content.decode(),
+                                  keytab_content.decode())
 
         # Parse the first entry in the keytab
         with open(self.ktfile, 'rb') as bytes_kt:
