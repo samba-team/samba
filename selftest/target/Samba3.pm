@@ -497,7 +497,7 @@ sub setup_nt4_member
 
 sub setup_clusteredmember
 {
-	my ($self, $prefix, $nt4_dc_vars) = @_;
+	my ($self, $prefix, $dcvars) = @_;
 	my $count = 0;
 	my $rc;
 	my @retvals = ();
@@ -552,7 +552,7 @@ sub setup_clusteredmember
 
 		my $node_ret = $self->provision(
 		    prefix => "$node_prefix",
-		    domain => $nt4_dc_vars->{DOMAIN},
+		    domain => $dcvars->{DOMAIN},
 		    server => "$server_name",
 		    password => "clustermember8pass",
 		    netbios_name => "CLUSTEREDMEMBER",
@@ -623,8 +623,8 @@ sub setup_clusteredmember
 	$cmd .= "UID_WRAPPER_ROOT=1 ";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
-	$cmd .= "$net join $ret->{CONFIGURATION} $nt4_dc_vars->{DOMAIN} member";
-	$cmd .= " -U$nt4_dc_vars->{USERNAME}\%$nt4_dc_vars->{PASSWORD}";
+	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} member";
+	$cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}";
 
 	if (system($cmd) != 0) {
 		warn("Join failed\n$cmd");
@@ -693,13 +693,13 @@ sub setup_clusteredmember
 		close(UNCLIST);
 	}
 
-	$ret->{DOMSID} = $nt4_dc_vars->{DOMSID};
-	$ret->{DC_SERVER} = $nt4_dc_vars->{SERVER};
-	$ret->{DC_SERVER_IP} = $nt4_dc_vars->{SERVER_IP};
-	$ret->{DC_SERVER_IPV6} = $nt4_dc_vars->{SERVER_IPV6};
-	$ret->{DC_NETBIOSNAME} = $nt4_dc_vars->{NETBIOSNAME};
-	$ret->{DC_USERNAME} = $nt4_dc_vars->{USERNAME};
-	$ret->{DC_PASSWORD} = $nt4_dc_vars->{PASSWORD};
+	$ret->{DOMSID} = $dcvars->{DOMSID};
+	$ret->{DC_SERVER} = $dcvars->{SERVER};
+	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
+	$ret->{DC_SERVER_IPV6} = $dcvars->{SERVER_IPV6};
+	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
+	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
+	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
 
 	return $ret;
 }
