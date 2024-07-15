@@ -255,7 +255,7 @@ sub check_env($$)
 	ad_member_idmap_nss => ["ad_dc"],
 	ad_member_s3_join   => ["vampire_dc"],
 
-	clusteredmember => ["nt4_dc"],
+	clusteredmember => ["ad_dc"],
 );
 
 %Samba3::ENV_DEPS_POST = ();
@@ -539,7 +539,10 @@ sub setup_clusteredmember
 		}
 
 		my $member_options = "
-       security = domain
+       security = ADS
+       workgroup = $dcvars->{DOMAIN}
+       realm = $dcvars->{REALM}
+       password server = $dcvars->{SERVER}
        server signing = on
        clustering = yes
        rpc start on demand helpers = false
@@ -618,10 +621,25 @@ sub setup_clusteredmember
 
 	$ret = {%$ctdb_data, %{$retvals[0]}};
 
+	my $ctx;
+	$ctx = {};
+	$ctx->{krb5_conf} = "$prefix_abs/lib/krb5.conf";
+	$ctx->{domain} = $dcvars->{DOMAIN};
+	$ctx->{realm} = $dcvars->{REALM};
+	$ctx->{dnsname} = lc($dcvars->{REALM});
+	$ctx->{kdc_ipv4} = $dcvars->{SERVER_IP};
+	$ctx->{kdc_ipv6} = $dcvars->{SERVER_IPV6};
+	$ctx->{krb5_ccname} = "$prefix_abs/krb5cc_%{uid}";
+	Samba::mk_krb5_conf($ctx, "");
+
+	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
+
 	my $net = Samba::bindir_path($self, "net");
-	my $cmd = "";
+	my $cmd = "NSS_WRAPPER_HOSTS='$ret->{NSS_WRAPPER_HOSTS}' ";
 	$cmd .= "UID_WRAPPER_ROOT=1 ";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	$cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
+	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
 	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} member";
 	$cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}";
@@ -700,6 +718,8 @@ sub setup_clusteredmember
 	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
+	$ret->{REALM} = $dcvars->{REALM};
+	$ret->{DOMAIN} = $dcvars->{DOMAIN};
 
 	return $ret;
 }

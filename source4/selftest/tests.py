@@ -2226,7 +2226,7 @@ planpythontestsuite("none", "samba.tests.security_descriptors")
 if have_cluster_support:
     cluster_environ = {
         "SERVER_HOSTNAME": "$NETBIOSNAME",
-        "INTERFACE_GROUP_NAME": "$NETBIOSNAME",
+        "INTERFACE_GROUP_NAME": "$NETBIOSNAME.$REALM",
         "CLUSTER_SHARE": "registry_share",
         "USERNAME": "$DC_USERNAME",
         "PASSWORD": "$DC_PASSWORD",
