@@ -423,6 +423,8 @@ sub setup_nt4_member
 
 	my $member_options = "
 	security = domain
+	lanman auth = yes
+	ntlm auth = yes
 	dbwrap_tdb_mutexes:* = yes
 	${require_mutexes}
 ";
@@ -430,8 +432,8 @@ sub setup_nt4_member
 	    prefix => $prefix,
 	    domain => $nt4_dc_vars->{DOMAIN},
 	    server => "LOCALNT4MEMBER3",
-	    password => "localnt4member3pass",
-	    extra_options => $member_options);
+	    password => "Lnt4member3p14",
+	    extra_options_before_inject => $member_options);
 
 	$ret or return undef;
 
