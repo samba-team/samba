@@ -679,6 +679,15 @@ plantestsuite(
         configuration,
     ],
 )
+plantestsuite(
+    "samba3.blackbox.update_keytab_clustered",
+    "clusteredmember:local",
+    [
+        os.path.join(samba3srcdir, "script/tests/test_update_keytab_clustered.sh"),
+        "$DOMAIN",
+        configuration,
+    ],
+)
 
 env = "ad_member"
 t = "--krb5auth=$DOMAIN/$DC_USERNAME%$DC_PASSWORD"

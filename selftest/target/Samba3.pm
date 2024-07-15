@@ -551,6 +551,7 @@ sub setup_clusteredmember
        include = registry
        dbwrap_tdb_mutexes:* = yes
        ${require_mutexes}
+       sync machine password to keytab = $node_prefix/keytab0:account_name:machine_password:sync_kvno
 ";
 
 		my $node_ret = $self->provision(
