@@ -19,6 +19,8 @@ def configure(conf):
 
         pam_set_items_so_path = find_library(['pam_set_items.so'],
                                              ['/usr/lib64/pam_wrapper', '/usr/lib/pam_wrapper'])
+        pam_matrix_so_path = find_library(['pam_matrix.so'],
+                                          ['/usr/lib64/pam_wrapper', '/usr/lib/pam_wrapper'])
     else:
 
         if conf.CONFIG_SET("HAVE___THREAD"):
@@ -79,9 +81,11 @@ def configure(conf):
         blddir = os.path.realpath(conf.bldnode.abspath())
         libpam_wrapper_so_path = blddir + '/default/third_party/pam_wrapper/libpam-wrapper.so'
         pam_set_items_so_path = blddir + '/default/third_party/pam_wrapper/libpam-set-items.so'
+        pam_matrix_so_path = blddir + '/default/third_party/pam_wrapper/libpam-matrix.so'
 
     conf.DEFINE('LIBPAM_WRAPPER_SO_PATH', libpam_wrapper_so_path)
     conf.DEFINE('PAM_SET_ITEMS_SO_PATH', pam_set_items_so_path)
+    conf.DEFINE('PAM_MATRIX_SO_PATH', pam_matrix_so_path)
     conf.DEFINE('PAM_WRAPPER', 1)
 
 def build(bld):
@@ -106,6 +110,12 @@ def build(bld):
                           install=False,
                           force_unversioned=True,
                           realname='pam_set_items.so')
+        bld.SAMBA_LIBRARY('pam_matrix',
+                          source='modules/pam_matrix.c',
+                          deps='pam',
+                          install=False,
+                          force_unversioned=True,
+                          realname='pam_matrix.so')
 
         pypamtest_cflags = ''
         if bld.CONFIG_SET('HAVE_WNO_ERROR_DECLARATION_AFTER_STATEMENT'):
