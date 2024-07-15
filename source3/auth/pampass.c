@@ -131,7 +131,9 @@ static int smb_pam_conv(int num_msg,
 	struct pam_response *reply = NULL;
 	struct smb_pam_userdata *udp = (struct smb_pam_userdata *)appdata_ptr;
 
-	*resp = NULL;
+	if (resp != NULL) {
+		*resp = NULL;
+	}
 
 	if (num_msg <= 0)
 		return PAM_CONV_ERR;
@@ -183,8 +185,13 @@ static int smb_pam_conv(int num_msg,
 				return PAM_CONV_ERR;
 		}
 	}
-	if (reply)
-		*resp = reply;
+	if (reply != NULL) {
+		if (resp != NULL) {
+			*resp = reply;
+		} else {
+			SAFE_FREE(reply);
+		}
+	}
 	return PAM_SUCCESS;
 }
 
