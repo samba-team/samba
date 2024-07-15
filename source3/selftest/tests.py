@@ -1615,6 +1615,14 @@ plantestsuite("samba3.blackbox.smbd_no_krb5", "ad_member:local",
               [os.path.join(samba3srcdir, "script/tests/test_smbd_no_krb5.sh"),
                smbclient3, '$SERVER', "$DC_USERNAME", "$DC_PASSWORD", "$PREFIX"])
 
+plantestsuite("samba3.blackbox.smb1_lanman_plaintext", "simpleserver:local",
+              [os.path.join(samba3srcdir, "script/tests/test_smb1_lanman_plaintext.sh"),
+               smbclient3, '$SERVER', "$USERNAME", "$PASSWORD"])
+
+plantestsuite("samba3.blackbox.smb1_lanman_plaintext", "nt4_member:local",
+              [os.path.join(samba3srcdir, "script/tests/test_smb1_lanman_plaintext.sh"),
+               smbclient3, '$SERVER', "$USERNAME", "$PASSWORD"])
+
 plantestsuite("samba3.blackbox.winbind_ignore_domain", "ad_member_idmap_ad:local",
               [os.path.join(samba3srcdir, "script/tests/test_winbind_ignore_domains.sh")])
 

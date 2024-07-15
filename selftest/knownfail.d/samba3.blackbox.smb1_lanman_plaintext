@@ -1,0 +1,4 @@
+^samba3.blackbox.smb1_lanman_plaintext.test_lm_ok.simpleserver
+^samba3.blackbox.smb1_lanman_plaintext.test_plaintext_ok.simpleserver
+^samba3.blackbox.smb1_lanman_plaintext.test_lm_ok.nt4_member
+^samba3.blackbox.smb1_lanman_plaintext.test_plaintext_ok.nt4_member
