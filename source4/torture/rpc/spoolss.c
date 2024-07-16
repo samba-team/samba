@@ -7832,7 +7832,7 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 {
 	struct spoolss_EnumPrinterKey r;
 	uint32_t needed = 0;
-	union spoolss_KeyNames key_buffer;
+	union spoolss_KeyNames key_buffer = {};
 	int32_t offered[] = { 0, 1, 2, 3, 4, 5, -1, -2, -3, -4, -5, 256, 512, 1024, 2048 };
 	uint32_t _ndr_size;
 	int i;
