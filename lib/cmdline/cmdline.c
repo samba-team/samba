@@ -160,7 +160,7 @@ static bool strneq_cmdline_exact(const char *p, const char *option, size_t len)
  * there, we return false.
  *
  * If the option is not in either list, we assume it might be secret and
- * redact the argument, but warn loadly about it. The hope is that developers
+ * redact the argument, but warn loudly about it. The hope is that developers
  * will see what they're doing and add the option to the appropriate list.
  *
  * If true is returned, *ulen will be set to the apparent length of the
