@@ -120,7 +120,7 @@ static int cephmount_cache_add(const char *cookie,
 	entry->mount = mount;
 	entry->count = 1;
 
-	DBG_DEBUG("adding mount cache entry for %s\n", entry->cookie);
+	DBG_DEBUG("[CEPH] adding mount cache entry for %s\n", entry->cookie);
 	DLIST_ADD(cephmount_cached, entry);
 
 	*out_entry = entry;
@@ -134,7 +134,7 @@ static struct cephmount_cached *cephmount_cache_update(const char *cookie)
 	for (entry = cephmount_cached; entry; entry = entry->next) {
 		if (strcmp(entry->cookie, cookie) == 0) {
 			entry->count++;
-			DBG_DEBUG("updated mount cache: count is [%"
+			DBG_DEBUG("[CEPH] updated mount cache: count is [%"
 				  PRIu32 "]\n", entry->count);
 			return entry;
 		}
@@ -147,12 +147,12 @@ static struct cephmount_cached *cephmount_cache_update(const char *cookie)
 static int cephmount_cache_remove(struct cephmount_cached *entry)
 {
 	if (--entry->count) {
-		DBG_DEBUG("updated mount cache: count is [%" PRIu32 "]\n",
-			  entry->count);
+		DBG_DEBUG("[CEPH] updated mount cache: count is [%"
+			  PRIu32 "]\n", entry->count);
 		return entry->count;
 	}
 
-	DBG_DEBUG("removing mount cache entry for %s\n", entry->cookie);
+	DBG_DEBUG("[CEPH] removing mount cache entry for %s\n", entry->cookie);
 	DLIST_REMOVE(cephmount_cached, entry);
 	talloc_free(entry);
 	return 0;
@@ -321,7 +321,7 @@ static void vfs_ceph_disconnect(struct vfs_handle_struct *handle)
 
 	ret = cephmount_cache_remove(handle->data);
 	if (ret > 0) {
-		DBG_DEBUG("mount cache entry still in use\n");
+		DBG_DEBUG("[CEPH] mount cache entry still in use\n");
 		return;
 	}
 
