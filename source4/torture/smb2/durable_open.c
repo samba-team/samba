@@ -1444,7 +1444,7 @@ static bool test_durable_open_reopen3(struct torture_context *tctx,
 	struct smb2_handle *h = NULL;
 	struct smb2_create io1, io2;
 	bool ret = true;
-	struct smb2_tree *tree2;
+	struct smb2_tree *tree2 = NULL;
 
 	/* Choose a random name in case the state is left a little funky. */
 	snprintf(fname, 256, "durable_open_reopen3_%s.dat",
