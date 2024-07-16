@@ -148,7 +148,7 @@ finish:
 
 static int hprintf(OV_HANDLE *pipe, const char *fmt, ...)
 {
-	int res;
+	int res = -1;
 	char buf[1024];
 	va_list ap;
 	va_start(ap, fmt);
