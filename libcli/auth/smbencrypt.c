@@ -1106,7 +1106,7 @@ NTSTATUS encode_rc4_passwd_buffer(const char *passwd,
 
 	/*
 	 * The packet format is the 516 byte RC4 encrypted
-	 * password followed by the 16 byte counfounder
+	 * password followed by the 16 byte confounder
 	 * The confounder is a salt to prevent pre-computed hash attacks on the
 	 * database.
 	 */
