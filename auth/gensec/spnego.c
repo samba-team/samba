@@ -1110,13 +1110,12 @@ static NTSTATUS gensec_spnego_server_response(struct spnego_state *spnego_state,
 					      DATA_BLOB mech_list_mic,
 					      DATA_BLOB *out)
 {
-	struct spnego_data spnego_out;
-
-	/* compose reply */
-	spnego_out.type = SPNEGO_NEG_TOKEN_TARG;
-	spnego_out.negTokenTarg.responseToken = unwrapped_out;
-	spnego_out.negTokenTarg.mechListMIC = mech_list_mic;
-	spnego_out.negTokenTarg.supportedMech = NULL;
+	struct spnego_data spnego_out = {
+		.type = SPNEGO_NEG_TOKEN_TARG,
+		.negTokenTarg.responseToken = unwrapped_out,
+		.negTokenTarg.mechListMIC = mech_list_mic,
+		.negTokenTarg.supportedMech = NULL,
+	};
 
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		spnego_out.negTokenTarg.supportedMech = spnego_state->neg_oid;
