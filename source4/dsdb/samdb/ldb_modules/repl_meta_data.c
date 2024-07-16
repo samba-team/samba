@@ -1056,7 +1056,7 @@ static int replmd_ldb_message_element_attid_sort(const struct ldb_message_elemen
 
 	/*
 	 * TODO: make this faster by caching the dsdb_attribute pointer
-	 *       on the ldb_messag_element
+	 *       on the ldb_message_element
 	 */
 
 	a1 = dsdb_attribute_by_lDAPDisplayName(schema, e1->name);
@@ -5108,7 +5108,7 @@ static int replmd_make_prefix_child_dn(TALLOC_CTX *tmp_ctx,
 	 * TODO: Per MS-ADTS 3.1.1.5.5 Delete Operation
 	 * we should truncate this value to ensure the RDN is not more than 255 chars.
 	 *
-	 * However we MS-ADTS 3.1.1.5.1.2 Naming Constraints indicates that:
+	 * However MS-ADTS 3.1.1.5.1.2 Naming Constraints indicates that:
 	 *
 	 * "Naming constraints are not enforced for replicated
 	 * updates." so this is safe and we don't have to work out not

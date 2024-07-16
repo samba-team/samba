@@ -254,7 +254,7 @@ static NTSTATUS dreplsrv_get_target_principal(struct dreplsrv_service *s,
 	   DC. We find that by first looking for the msDS-HasDomainNCs
 	   in the NTDSDSA object of the DC, and if we don't find that,
 	   then we look for the hasMasterNCs attribute, and eliminate
-	   the known schema and configuruation DNs. Despite how
+	   the known schema and configuration DNs. Despite how
 	   bizarre this seems, Hongwei tells us that this is in fact
 	   what windows does to find the SPN!!
 	*/
