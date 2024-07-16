@@ -338,7 +338,7 @@ class SiteCoverageTests(samba.tests.TestCase):
                             [site4, site5, site6, uncovered_dn1],
                             cost=50)
 
-        # Join to Uncovered2 (no preferene on site links)
+        # Join to Uncovered2 (no preference on site links)
         self._add_site_link(self.prefix + "link1B",
                             [site1, site2, site3, uncovered_dn2],
                             cost=50)
