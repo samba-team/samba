@@ -783,8 +783,8 @@ static void dcesrv_call_set_list(struct dcesrv_call_state *call,
 	}
 }
 
-static void dcesrv_call_disconnect_after(struct dcesrv_call_state *call,
-					 const char *reason)
+void dcesrv_call_disconnect_after(struct dcesrv_call_state *call,
+				  const char *reason)
 {
 	struct dcesrv_auth *a = NULL;
 
