@@ -125,8 +125,13 @@ class DomainTrustCommand(Command):
         self.local_creds = local_creds
         return self.local_server
 
-    def new_local_lsa_connection(self):
-        return lsa.lsarpc(self.local_binding_string, self.local_lp, self.local_creds)
+    def new_local_lsa_connection(self, basis_connection=None):
+        return lsa.lsarpc(
+            self.local_binding_string,
+            self.local_lp,
+            self.local_creds,
+            basis_connection=basis_connection
+        )
 
     def new_local_netlogon_connection(self):
         return netlogon.netlogon(self.local_binding_string, self.local_lp, self.local_creds)
@@ -203,13 +208,23 @@ class DomainTrustCommand(Command):
         self.remote_creds = remote_creds
         return self.remote_server
 
-    def new_remote_lsa_connection(self):
-        return lsa.lsarpc(self.remote_binding_string, self.local_lp, self.remote_creds)
+    def new_remote_lsa_connection(self, basis_connection=None):
+        return lsa.lsarpc(
+            self.remote_binding_string,
+            self.local_lp,
+            self.remote_creds,
+            basis_connection=basis_connection
+        )
 
-    def new_remote_netlogon_connection(self):
-        return netlogon.netlogon(self.remote_binding_string, self.local_lp, self.remote_creds)
+    def new_remote_netlogon_connection(self, basis_connection=None):
+        return netlogon.netlogon(
+            self.remote_binding_string,
+            self.local_lp,
+            self.remote_creds,
+            basis_connection=basis_connection
+        )
 
-    def get_lsa_info(self, conn, policy_access):
+    def get_lsa_info(self, conn_fn, policy_access):
         in_version = 1
         in_revision_info1 = lsa.revision_info1()
         in_revision_info1.revision = 1
@@ -217,9 +232,9 @@ class DomainTrustCommand(Command):
             lsa.LSA_FEATURE_TDO_AUTH_INFO_AES_CIPHER
         )
 
-        out_version, out_revision_info1, policy = OpenPolicyFallback(
-            conn,
-            b''.decode('utf-8'),
+        conn, out_version, out_revision_info1, policy = OpenPolicyFallback(
+            conn_fn,
+            '',
             in_version,
             in_revision_info1,
             False,
@@ -228,7 +243,7 @@ class DomainTrustCommand(Command):
 
         info = conn.QueryInfoPolicy2(policy, lsa.LSA_POLICY_INFO_DNS)
 
-        return (policy, out_version, out_revision_info1, info)
+        return (conn, policy, out_version, out_revision_info1, info)
 
     def get_netlogon_dc_unc(self, conn, server, domain):
         try:
@@ -509,18 +524,14 @@ class cmd_domain_trust_show(DomainTrustCommand):
 
         self.setup_local_server(sambaopts, localdcopts)
         try:
-            local_lsa = self.new_local_lsa_connection()
-        except RuntimeError as error:
-            raise self.LocalRuntimeError(self, error, "failed to connect lsa server")
-
-        try:
             local_policy_access = lsa.LSA_POLICY_VIEW_LOCAL_INFORMATION
             (
+                local_lsa,
                 local_policy,
                 local_version,
                 local_revision_info1,
                 local_lsa_info
-            ) = self.get_lsa_info(local_lsa, local_policy_access)
+            ) = self.get_lsa_info(self.new_local_lsa_connection, local_policy_access)
         except RuntimeError as error:
             raise self.LocalRuntimeError(self, error, "failed to query LSA_POLICY_INFO_DNS")
 
@@ -649,19 +660,16 @@ class cmd_domain_trust_modify(DomainTrustCommand):
             raise CommandError("modification arguments are required, try --help")
 
         self.setup_local_server(sambaopts, localdcopts)
-        try:
-            local_lsa = self.new_local_lsa_connection()
-        except RuntimeError as error:
-            raise self.LocalRuntimeError(self, error, "failed to connect to lsa server")
 
         try:
             local_policy_access = lsa.LSA_POLICY_VIEW_LOCAL_INFORMATION
             (
+                local_lsa,
                 local_policy,
                 local_version,
                 local_revision_info1,
                 local_lsa_info
-            ) = self.get_lsa_info(local_lsa, local_policy_access)
+            ) = self.get_lsa_info(self.new_local_lsa_connection, local_policy_access)
         except RuntimeError as error:
             raise self.LocalRuntimeError(self, error, "failed to query LSA_POLICY_INFO_DNS")
 
@@ -908,18 +916,15 @@ class cmd_domain_trust_create(DomainTrustCommand):
                 remote_trust_info.trust_attributes |= lsa.LSA_TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL
 
         local_server = self.setup_local_server(sambaopts, localdcopts)
-        try:
-            local_lsa = self.new_local_lsa_connection()
-        except RuntimeError as error:
-            raise self.LocalRuntimeError(self, error, "failed to connect lsa server")
 
         try:
             (
+                local_lsa,
                 local_policy,
                 local_version,
                 local_revision_info1,
                 local_lsa_info
-            ) = self.get_lsa_info(local_lsa, local_policy_access)
+            ) = self.get_lsa_info(self.new_local_lsa_connection, local_policy_access)
         except RuntimeError as error:
             raise self.LocalRuntimeError(self, error, "failed to query LSA_POLICY_INFO_DNS")
 
@@ -934,17 +939,13 @@ class cmd_domain_trust_create(DomainTrustCommand):
             raise self.RemoteRuntimeError(self, error, "failed to locate remote server")
 
         try:
-            remote_lsa = self.new_remote_lsa_connection()
-        except RuntimeError as error:
-            raise self.RemoteRuntimeError(self, error, "failed to connect lsa server")
-
-        try:
             (
+                remote_lsa,
                 remote_policy,
                 remote_version,
                 remote_revision_info1,
                 remote_lsa_info
-            ) = self.get_lsa_info(remote_lsa, remote_policy_access)
+            ) = self.get_lsa_info(self.new_remote_lsa_connection, remote_policy_access)
         except RuntimeError as error:
             raise self.RemoteRuntimeError(self, error, "failed to query LSA_POLICY_INFO_DNS")
 
@@ -1297,18 +1298,15 @@ class cmd_domain_trust_delete(DomainTrustCommand):
             remote_policy_access |= lsa.LSA_POLICY_CREATE_SECRET
 
         self.setup_local_server(sambaopts, localdcopts)
-        try:
-            local_lsa = self.new_local_lsa_connection()
-        except RuntimeError as error:
-            raise self.LocalRuntimeError(self, error, "failed to connect lsa server")
 
         try:
             (
+                local_lsa,
                 local_policy,
                 local_version,
                 local_revision_info1,
                 local_lsa_info
-            ) = self.get_lsa_info(local_lsa, local_policy_access)
+            ) = self.get_lsa_info(self.new_local_lsa_connection, local_policy_access)
         except RuntimeError as error:
             raise self.LocalRuntimeError(self, error, "failed to query LSA_POLICY_INFO_DNS")
 
@@ -1339,17 +1337,13 @@ class cmd_domain_trust_delete(DomainTrustCommand):
                 raise self.RemoteRuntimeError(self, error, "failed to locate remote server")
 
             try:
-                remote_lsa = self.new_remote_lsa_connection()
-            except RuntimeError as error:
-                raise self.RemoteRuntimeError(self, error, "failed to connect lsa server")
-
-            try:
                 (
+                    remote_lsa,
                     remote_policy,
                     remote_version,
                     remote_revision_info1,
                     remote_lsa_info
-                ) = self.get_lsa_info(remote_lsa, remote_policy_access)
+                ) = self.get_lsa_info(self.new_remote_lsa_connection, remote_policy_access)
             except RuntimeError as error:
                 raise self.RemoteRuntimeError(self, error, "failed to query LSA_POLICY_INFO_DNS")
 
@@ -1450,18 +1444,15 @@ class cmd_domain_trust_validate(DomainTrustCommand):
         local_policy_access = lsa.LSA_POLICY_VIEW_LOCAL_INFORMATION
 
         local_server = self.setup_local_server(sambaopts, localdcopts)
-        try:
-            local_lsa = self.new_local_lsa_connection()
-        except RuntimeError as error:
-            raise self.LocalRuntimeError(self, error, "failed to connect lsa server")
 
         try:
             (
+                local_lsa,
                 local_policy,
                 local_version,
                 local_revision_info1,
                 local_lsa_info
-            ) = self.get_lsa_info(local_lsa, local_policy_access)
+            ) = self.get_lsa_info(self.new_local_lsa_connection, local_policy_access)
         except RuntimeError as error:
             raise self.LocalRuntimeError(self, error, "failed to query LSA_POLICY_INFO_DNS")
 
@@ -1897,11 +1888,12 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
 
         try:
             (
+                local_lsa,
                 local_policy,
                 local_version,
                 local_revision_info1,
                 local_lsa_info
-            ) = self.get_lsa_info(local_lsa, local_policy_access)
+            ) = self.get_lsa_info(self.new_local_lsa_connection, local_policy_access)
         except RuntimeError as error:
             raise self.LocalRuntimeError(self, error, "failed to query LSA_POLICY_INFO_DNS")
 
