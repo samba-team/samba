@@ -263,6 +263,12 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_renew_unicode\(ad_dc\)$
 ^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_validate_unicode\(ad_dc\)$
 #
+# Single‐component krbtgt principal tests
+#
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_single_component_krbtgt_no_pac_as_req\(ad_dc\)$
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_single_component_krbtgt_no_pac_tgs_req\(ad_dc\)$
+^samba\.tests\.krb5\.kdc_tgs_tests\.samba\.tests\.krb5\.kdc_tgs_tests\.KdcTgsTests\.test_single_component_krbtgt_service_ticket\(ad_dc\)$
+#
 # MIT currently fails the following MS-KILE tests.
 #
 ^samba.tests.krb5.ms_kile_client_principal_lookup_tests.samba.tests.krb5.ms_kile_client_principal_lookup_tests.MS_Kile_Client_Principal_Lookup_Tests.test_enterprise_principal_step_1_3
@@ -3725,6 +3731,7 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 # Authentication policy tests
 #
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_from_no_fast.ad_dc
+^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_from_no_fast_negative_lifetime.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_from_no_owner.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_from_service_allow_from_rodc.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_from_service_deny.ad_dc
@@ -3804,6 +3811,7 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_to_user_deny_rbcd.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_to_user_deny_rbcd_to_self.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_to_user_deny_s4u2self.ad_dc
+^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_to_user_deny_s4u2self_constrained_delegation.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_to_user_derived_class_allow.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_to_user_not_allowed_constrained_delegation_to_self.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_allowed_to_user_not_allowed_rbcd_to_self.ad_dc
@@ -3813,6 +3821,11 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_rbcd_not_allowed_from.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_s4u2self_not_allowed_from.ad_dc
 ^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_tgt_lifetime_min.ad_dc
+#
+# This test fails; but that is acceptable, for we have an alternative test
+# (test_authn_policy_protected_flags_without_policy_error) that expects to
+# receive a policy error.
+^samba.tests.krb5.authn_policy_tests.samba.tests.krb5.authn_policy_tests.AuthnPolicyTests.test_authn_policy_protected_flags_with_policy_error.ad_dc
 #
 # S4U Tests
 #
@@ -4181,3 +4194,69 @@ samba.tests.krb5.as_canonicalization_tests.samba.tests.krb5.as_canonicalization_
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.TgsReqServicePolicyTests.test_pac_device_info_no_compound_id_support_target_policy\(ad_dc\)$
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.TgsReqServicePolicyTests.test_pac_device_info_rodc_issued\(ad_dc\)$
 ^samba.tests.krb5.conditional_ace_tests.samba.tests.krb5.conditional_ace_tests.TgsReqServicePolicyTests.test_pac_device_info_target_policy\(ad_dc\)$
+#
+# PK-INIT tests
+#
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_aes128.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_computer.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_computer_dh.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_empty_supported_cms_types.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_empty_supported_cms_types_dh.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_no_des3.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_no_des3_dh.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_no_supported_cms_types.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_no_supported_cms_types_dh.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_rc4.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_revoked.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_service.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_service_dh.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_sha256_certificate_signature.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_sha256_certificate_signature_dh.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_sha256_signature.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_sha256_signature_dh.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_zero_nonce.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_zero_nonce_dh.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_ntlm_from_pac_must_change_now
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_ntlm_from_pac_smartcard_required
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_ntlm_from_pac_smartcard_required_must_change_now
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_ntlm_from_pac
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_kpasswd_change
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_smartcard_required_must_change_now
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_smartcard_required_must_change_before_tgt_expiry
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_smartcard_required_must_change_expired
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_smartcard_required_must_change_short_tgt
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_smartcard_required_must_change_soon
+#
+# PK-INIT Freshness tests
+#
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_freshness.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_freshness_current.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_freshness_current_dh.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_freshness_dh.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_freshness_empty.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_freshness_empty_dh.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_freshness_future.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_freshness_future_dh.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_freshness_invalid.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_freshness_invalid_dh.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_freshness_non_empty.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_freshness_old.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_freshness_old_dh.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_freshness_rodc_dh.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_freshness_rodc_ts.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_freshness_with_enc_ts.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_freshness_wrong_header.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_freshness_wrong_header_dh.ad_dc
+#
+# Windows 2000 PK-INIT tests
+#
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_computer_win2k.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_service_win2k.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_sha256_certificate_signature_win2k.ad_dc
+^samba.tests.krb5.pkinit_tests.samba.tests.krb5.pkinit_tests.PkInitTests.test_pkinit_sha256_signature_win2k.ad_dc
+#
+# gMSA tests
+#
+^samba.tests.krb5.gmsa_tests.samba.tests.krb5.gmsa_tests.GmsaTests.test_authentication_triggers_keys_update\(ad_dc:local\)$
+^samba.tests.krb5.gmsa_tests.samba.tests.krb5.gmsa_tests.GmsaTests.test_gmsa_can_perform_as_req_with_aes256\(ad_dc:local\)$
+^samba.tests.krb5.gmsa_tests.samba.tests.krb5.gmsa_tests.GmsaTests.test_gmsa_can_perform_as_req_with_rc4\(ad_dc:local\)$

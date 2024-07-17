@@ -270,8 +270,6 @@ def cmd_testonly(opt):
         env.OPTIONS += " --exclude=${srcdir}/selftest/skip_mit_kdc"
         env.FILTER_XFAIL += " --expected-failures=${srcdir}/selftest/"\
                             "knownfail_mit_kdc"
-
-        env.FILTER_XFAIL += ' --expected-failures=${srcdir}/selftest/knownfail_mit_kdc_1_20'
     else:
         env.FILTER_XFAIL += " --expected-failures=${srcdir}/selftest/"\
                             "knownfail_heimdal_kdc"
