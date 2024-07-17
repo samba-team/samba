@@ -37,7 +37,7 @@ struct bench_state {
 
 static void request_netlogon_handler(struct tevent_req *req)
 {
-	struct cldap_netlogon io;
+	struct cldap_netlogon io = {};
 	struct bench_state *state = tevent_req_callback_data(req, struct bench_state);
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
