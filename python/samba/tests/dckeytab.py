@@ -18,6 +18,7 @@
 
 import os
 import subprocess
+import time
 from samba.net import Net
 from samba import enable_net_export_keytab
 
@@ -148,10 +149,38 @@ class DCKeytabTests(TestCaseInTempDir):
         self.addCleanup(self.samdb.deleteuser, "keytab_testuser")
 
         net = Net(None, self.lp)
-        self.addCleanup(self.rm_files, self.ktfile)
-        net.export_keytab(keytab=self.ktfile, principal=new_principal)
-        self.assertTrue(os.path.exists(self.ktfile), 'keytab was not created')
 
+        self.addCleanup(self.rm_files, self.ktfile)
+        ktfile1 = self.ktfile + ".1"
+        self.addCleanup(self.rm_files, ktfile1, allow_missing=True)
+        ktfile2 = self.ktfile + ".2"
+        self.addCleanup(self.rm_files, ktfile2, allow_missing=True)
+
+        # The export includes the current timestamp
+        # so we better do both exports within the
+        # same second.
+        #
+        # First we sleep until we reach the next second
+        now = time.time()
+        next = float(int(now)+1)
+        sleep = next-now
+        time.sleep(sleep)
+        start = time.time()
+        net.export_keytab(keytab=ktfile1, principal=new_principal)
+        net.export_keytab(keytab=ktfile2, principal=new_principal)
+        end = time.time()
+        self.assertTrue(os.path.exists(ktfile1), 'keytab1 was not created')
+        self.assertTrue(os.path.exists(ktfile2), 'keytab2 was not created')
+        print("now: %f" % now)
+        print("next: %f" % next)
+        print("sleep: %f" % sleep)
+        print("start: %f" % start)
+        print("end: %f" % end)
+        self.assertEqual(int(end), int(start))
+
+        # The output may contain the file name
+        # so we have to use self.ktfile...
+        os.rename(ktfile1, self.ktfile)
         cmd = ['klist', '-K', '-C', '-t', '-k', self.ktfile]
         keytab_orig_content = subprocess.Popen(
             cmd,
@@ -163,9 +192,10 @@ class DCKeytabTests(TestCaseInTempDir):
         with open(self.ktfile, 'rb') as bytes_kt:
             keytab_orig_bytes = bytes_kt.read()
 
-        net.export_keytab(keytab=self.ktfile, principal=new_principal)
-        self.assertTrue(os.path.exists(self.ktfile), 'keytab was not created')
-
+        # The output may contain the file name
+        # so we have to use self.ktfile...
+        os.rename(ktfile2, self.ktfile)
+        cmd = ['klist', '-K', '-C', '-t', '-k', self.ktfile]
         keytab_content = subprocess.Popen(
             cmd,
             shell=False,
