@@ -671,10 +671,14 @@ static int winbind_open_pipe_sock(struct winbindd_context *ctx,
 
 /* Write data to winbindd socket */
 
-static int winbind_write_sock(struct winbindd_context *ctx, void *buffer,
-			      int count, int recursing, int need_priv)
+static ssize_t winbind_write_sock(struct winbindd_context *ctx,
+				  void *buffer,
+				  size_t count,
+				  int recursing,
+				  int need_priv)
 {
-	int fd, result, nwritten;
+	int fd;
+	ssize_t nwritten;
 
 	/* Open connection to winbind daemon */
 
@@ -692,6 +696,7 @@ static int winbind_write_sock(struct winbindd_context *ctx, void *buffer,
 
 	while(nwritten < count) {
 		struct pollfd pfd;
+		ssize_t result;
 		int ret;
 
 		/* Catch pipe close on other end by checking if a read()
