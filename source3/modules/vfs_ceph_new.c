@@ -985,11 +985,19 @@ static struct dirent *vfs_ceph_readdir(struct vfs_handle_struct *handle,
 {
 	const struct vfs_ceph_fh *dircfh = (const struct vfs_ceph_fh *)dirp;
 	struct dirent *result = NULL;
+	int errval = 0;
 
 	DBG_DEBUG("[CEPH] readdir(%p, %p)\n", handle, dirp);
+	errno = 0;
 	result = vfs_ceph_ll_readdir(handle, dircfh);
-	DBG_DEBUG("[CEPH] readdir(...) = %p\n", result);
-
+	errval = errno;
+	if ((result == NULL) && (errval != 0)) {
+		DBG_DEBUG("[CEPH] readdir(...) = %d\n", errval);
+	} else {
+		DBG_DEBUG("[CEPH] readdir(...) = %p\n", result);
+	}
+	/* re-assign errno to avoid possible over-write by DBG_DEBUG */
+	errno = errval;
 	return result;
 }
 
