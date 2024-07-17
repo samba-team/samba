@@ -1,0 +1,8 @@
+#
+# PAC tests
+#
+^samba4.blackbox.pkinit_pac.netr-bdc-aes.verify-sig-aes.ad_dc:local
+^samba4.blackbox.pkinit_pac.netr-mem-aes.s4u2proxy-aes.ad_dc:local
+^samba4.blackbox.pkinit_pac.netr-mem-aes.verify-sig-aes.ad_dc:local
+^samba4.blackbox.pkinit_pac.netr-mem-arcfour.s4u2proxy-arcfour.ad_dc:local
+^samba4.blackbox.pkinit_pac.netr-mem-arcfour.verify-sig-arcfour.ad_dc:local

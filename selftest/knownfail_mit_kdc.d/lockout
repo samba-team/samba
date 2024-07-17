@@ -1,0 +1,18 @@
+#
+# Lockout tests
+#
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_bad_pwd_count_transaction_kdc.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_bad_pwd_count_transaction_rename_kdc.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_race_kdc.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_race_kdc_ntstatus.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_transaction_bad_pwd_kdc.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_transaction_bad_pwd_kdc_ntstatus.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_transaction_kdc.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_transaction_kdc_ntstatus.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_transaction_rename_kdc.ad_dc:local
+^samba.tests.krb5.lockout_tests.samba.tests.krb5.lockout_tests.LockoutTests.test_lockout_transaction_rename_kdc_ntstatus.ad_dc:local
+^samba\.tests\.krb5\.lockout_tests\.samba\.tests\.krb5\.lockout_tests\.LockoutTests\.test_lockout_status_disabled\(ad_dc:local\)$
+^samba\.tests\.krb5\.lockout_tests\.samba\.tests\.krb5\.lockout_tests\.LockoutTests\.test_lockout_status_expired\(ad_dc:local\)$
+^samba\.tests\.krb5\.lockout_tests\.samba\.tests\.krb5\.lockout_tests\.LockoutTests\.test_lockout_status_locked_out\(ad_dc:local\)$
+^samba\.tests\.krb5\.lockout_tests\.samba\.tests\.krb5\.lockout_tests\.LockoutTests\.test_lockout_status_must_change\(ad_dc:local\)$
+^samba\.tests\.krb5\.lockout_tests\.samba\.tests\.krb5\.lockout_tests\.LockoutTests\.test_lockout_status_password_expired\(ad_dc:local\)$
