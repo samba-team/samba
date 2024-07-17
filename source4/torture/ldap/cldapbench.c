@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    CLDAP benchmark test
 
    Copyright (C) Andrew Tridgell 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -97,7 +97,7 @@ static bool bench_cldap_netlogon(struct torture_context *tctx, const char *addre
 			num_sent++;
 			if (num_sent % 50 == 0) {
 				if (torture_setting_bool(tctx, "progress", true)) {
-					printf("%.1f queries per second (%d failures)  \r", 
+					printf("%.1f queries per second (%d failures)  \r",
 					       state->pass_count / timeval_elapsed(&tv),
 					       state->fail_count);
 					fflush(stdout);
@@ -112,7 +112,7 @@ static bool bench_cldap_netlogon(struct torture_context *tctx, const char *addre
 		tevent_loop_once(tctx->ev);
 	}
 
-	printf("%.1f queries per second (%d failures)  \n", 
+	printf("%.1f queries per second (%d failures)  \n",
 	       state->pass_count / timeval_elapsed(&tv),
 	       state->fail_count);
 
@@ -206,7 +206,7 @@ static bool bench_cldap_rootdse(struct torture_context *tctx, const char *addres
 
 /*
   benchmark how fast a CLDAP server can respond to a series of parallel
-  requests 
+  requests
 */
 bool torture_bench_cldap(struct torture_context *torture)
 {
@@ -214,7 +214,7 @@ bool torture_bench_cldap(struct torture_context *torture)
 	struct nbt_name name;
 	NTSTATUS status;
 	bool ret = true;
-	
+
 	make_nbt_name_server(&name, torture_setting_string(torture, "host", NULL));
 
 	/* do an initial name resolution to find its IP */
