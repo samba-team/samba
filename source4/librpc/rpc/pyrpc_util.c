@@ -181,6 +181,8 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 		struct dcerpc_pipe *base_pipe;
 		PyObject *py_base;
 		PyTypeObject *ClientConnection_Type;
+		struct loadparm_context *lp_ctx = NULL;
+		struct cli_credentials *credentials = NULL;
 
 		py_base = PyImport_ImportModule("samba.dcerpc.base");
 		if (py_base == NULL) {
@@ -225,16 +227,76 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 			return NULL;
 		}
 
-		status = dcerpc_secondary_context(base_pipe, &ret->pipe, table);
-		if (!NT_STATUS_IS_OK(status)) {
-			PyErr_SetNTSTATUS(status);
-			Py_DECREF(ret);
-			Py_DECREF(py_base);
-			Py_DECREF(ClientConnection_Type);
-			return NULL;
+		if (py_lp_ctx != Py_None) {
+			lp_ctx = lpcfg_from_py_object(ret->ev, py_lp_ctx);
+			if (lp_ctx == NULL) {
+				PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
+				Py_DECREF(ret);
+				return NULL;
+			}
 		}
 
-		ret->pipe = talloc_steal(ret->mem_ctx, ret->pipe);
+		if (py_credentials != Py_None) {
+			credentials = cli_credentials_from_py_object(py_credentials);
+			if (credentials == NULL) {
+				PyErr_SetString(PyExc_TypeError, "Expected credentials");
+				Py_DECREF(ret);
+				return NULL;
+			}
+		}
+
+		if (credentials != NULL) {
+			struct dcerpc_binding *binding = NULL;
+
+			if (lp_ctx == NULL) {
+				PyErr_SetString(
+					PyExc_TypeError,
+					"Expected a loadparm context together "
+					"with provided credentials");
+				Py_DECREF(ret);
+				Py_DECREF(py_base);
+				Py_DECREF(ClientConnection_Type);
+				return NULL;
+			}
+
+			status = dcerpc_parse_binding(ret->mem_ctx,
+						      binding_string,
+						      &binding);
+			if (!NT_STATUS_IS_OK(status)) {
+				PyErr_SetNTSTATUS(status);
+				Py_DECREF(ret);
+				Py_DECREF(py_base);
+				Py_DECREF(ClientConnection_Type);
+				return NULL;
+			}
+
+			status = dcerpc_secondary_auth_connection(base_pipe,
+								  binding,
+								  table,
+								  credentials,
+								  lp_ctx,
+								  ret->mem_ctx,
+								  &ret->pipe);
+			TALLOC_FREE(binding);
+			if (!NT_STATUS_IS_OK(status)) {
+				PyErr_SetNTSTATUS(status);
+				Py_DECREF(ret);
+				Py_DECREF(py_base);
+				Py_DECREF(ClientConnection_Type);
+				return NULL;
+			}
+		} else {
+			status = dcerpc_secondary_context(base_pipe, &ret->pipe, table);
+			if (!NT_STATUS_IS_OK(status)) {
+				PyErr_SetNTSTATUS(status);
+				Py_DECREF(ret);
+				Py_DECREF(py_base);
+				Py_DECREF(ClientConnection_Type);
+				return NULL;
+			}
+			ret->pipe = talloc_steal(ret->mem_ctx, ret->pipe);
+		}
+
 		Py_XDECREF(ClientConnection_Type);
 		Py_XDECREF(py_base);
 	} else {
