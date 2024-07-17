@@ -271,8 +271,10 @@ def cmd_testonly(opt):
         env.FILTER_XFAIL += " --expected-failures=${srcdir}/selftest/"\
                             "knownfail_mit_kdc"
     else:
-        env.FILTER_XFAIL += " --expected-failures=${srcdir}/selftest/"\
-                            "knownfail_heimdal_kdc"
+        env.FILTER_XFAIL += (
+            " --expected-failures=${srcdir}/selftest/knownfail_heimdal_kdc"
+            " --expected-failures=${srcdir}/selftest/knownfail_heimdal_kdc.d"
+        )
 
     if CONFIG_SET(opt, 'USING_EMBEDDED_HEIMDAL'):
         env.FILTER_XFAIL += " --expected-failures=${srcdir}/selftest/"\
