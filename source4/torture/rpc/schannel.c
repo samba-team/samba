@@ -46,7 +46,7 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 			  struct netlogon_creds_CredentialState *creds)
 {
 	NTSTATUS status;
-	struct netr_LogonSamLogonEx r;
+	struct netr_LogonSamLogonEx r = {};
 	struct netr_NetworkInfo ninfo;
 	union netr_LogonLevel logon;
 	union netr_Validation validation;
