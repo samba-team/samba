@@ -20,24 +20,27 @@ from samba.dcerpc import lsa, drsblobs, misc
 from samba.ndr import ndr_pack
 from samba import (
     NTSTATUSError,
+    ntstatus,
     aead_aes_256_cbc_hmac_sha512,
     arcfour_encrypt,
 )
-from samba.ntstatus import (
-    NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE
-)
 from samba import crypto
 from secrets import token_bytes
+# FIXME from collections.abc import Callable
 
 
 def OpenPolicyFallback(
-    conn: lsa.lsarpc,
+    # new_lsa_conn: Callable[[], lsa.lsarpc], - FIXME the type doesn't work
+    # with python version 3.6 (CentOS8, SLES15).
+    new_lsa_conn,
     system_name: str,
     in_version: int,
     in_revision_info: lsa.revision_info1,
     sec_qos: bool,
     access_mask: int,
 ):
+    conn = new_lsa_conn()
+
     attr = lsa.ObjectAttribute()
     if sec_qos:
         qos = lsa.QosInfo()
@@ -48,26 +51,38 @@ def OpenPolicyFallback(
 
         attr.sec_qos = qos
 
-    try:
-        out_version, out_rev_info, policy = conn.OpenPolicy3(
-            system_name,
-            attr,
-            access_mask,
-            in_version,
-            in_revision_info
-        )
-    except NTSTATUSError as e:
-        if e.args[0] == NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE:
-            out_version = 1
-            out_rev_info = lsa.revision_info1()
-            out_rev_info.revision = 1
-            out_rev_info.supported_features = 0
+    open_policy2 = False
+    if in_revision_info is not None:
+        try:
+            out_version, out_rev_info, policy = conn.OpenPolicy3(
+                system_name,
+                attr,
+                access_mask,
+                in_version,
+                in_revision_info
+            )
+        except NTSTATUSError as e:
+            if e.args[0] == ntstatus.NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE:
+                open_policy2 = True
+            if e.args[0] == ntstatus.NT_STATUS_ACCESS_DENIED:
+                # We need a new connection
+                conn = new_lsa_conn(basis_connection=conn)
 
-            policy = conn.OpenPolicy2(system_name, attr, access_mask)
-        else:
-            raise
+                open_policy2 = True
+            else:
+                raise
+    else:
+        open_policy2 = True
 
-    return out_version, out_rev_info, policy
+    if open_policy2:
+        out_version = 1
+        out_rev_info = lsa.revision_info1()
+        out_rev_info.revision = 1
+        out_rev_info.supported_features = 0
+
+        policy = conn.OpenPolicy2(system_name, attr, access_mask)
+
+    return conn, out_version, out_rev_info, policy
 
 
 def CreateTrustedDomainRelax(

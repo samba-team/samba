@@ -35,6 +35,7 @@ from samba.lsa_utils import (
 
 
 class CreateTrustedDomain(TestCase):
+    smbencrypt = True
 
     def get_user_creds(self):
         c = Credentials()
@@ -47,25 +48,34 @@ class CreateTrustedDomain(TestCase):
         c.set_password(password)
         return c
 
-    def _create_trust_relax(self, smbencrypt=True):
+    def new_lsa_conn(self, basis_connection=None):
         creds = self.get_user_creds()
-
-        if smbencrypt:
+        if self.smbencrypt:
             creds.set_smb_encryption(SMB_ENCRYPTION_REQUIRED)
         else:
             creds.set_smb_encryption(SMB_ENCRYPTION_OFF)
 
         lp = self.get_loadparm()
-
         binding_string = (
             "ncacn_np:%s" % (samba.tests.env_get_var_value('SERVER'))
         )
-        lsa_conn = lsa.lsarpc(binding_string, lp, creds)
 
-        if smbencrypt:
+        lsa_conn = lsa.lsarpc(
+            binding_string,
+            lp,
+            creds,
+            basis_connection=basis_connection
+        )
+
+        if self.smbencrypt:
             self.assertTrue(lsa_conn.transport_encrypted())
         else:
             self.assertFalse(lsa_conn.transport_encrypted())
+
+        return lsa_conn
+
+    def _create_trust_relax(self, smbencrypt=True):
+        self.smbencrypt = smbencrypt
 
         in_version = 1
         in_revision_info1 = lsa.revision_info1()
@@ -74,8 +84,13 @@ class CreateTrustedDomain(TestCase):
             lsa.LSA_FEATURE_TDO_AUTH_INFO_AES_CIPHER
         )
 
-        out_version, out_revision_info1, pol_handle = OpenPolicyFallback(
+        (
             lsa_conn,
+            out_version,
+            out_revision_info1,
+            pol_handle
+        ) = OpenPolicyFallback(
+            self.new_lsa_conn,
             '',
             in_version,
             in_revision_info1,
@@ -148,14 +163,7 @@ class CreateTrustedDomain(TestCase):
             self.assertIsNone(trustdom_handle)
 
     def _create_trust_fallback(self):
-        creds = self.get_user_creds()
-
-        lp = self.get_loadparm()
-
-        binding_string = (
-            "ncacn_np:%s" % (samba.tests.env_get_var_value('SERVER'))
-        )
-        lsa_conn = lsa.lsarpc(binding_string, lp, creds)
+        self.smbencrypt = True
 
         in_version = 1
         in_revision_info1 = lsa.revision_info1()
@@ -164,8 +172,13 @@ class CreateTrustedDomain(TestCase):
             lsa.LSA_FEATURE_TDO_AUTH_INFO_AES_CIPHER
         )
 
-        out_version, out_revision_info1, pol_handle = OpenPolicyFallback(
+        (
             lsa_conn,
+            out_version,
+            out_revision_info1,
+            pol_handle
+        ) = OpenPolicyFallback(
+            self.new_lsa_conn,
             '',
             in_version,
             in_revision_info1,

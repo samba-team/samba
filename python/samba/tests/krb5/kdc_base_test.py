@@ -57,7 +57,6 @@ from samba.crypto import des_crypt_blob_16, md4_hash_blob
 from samba.lsa_utils import OpenPolicyFallback, CreateTrustedDomainFallback
 from samba.dcerpc import (
     claims,
-    dcerpc,
     drsblobs,
     drsuapi,
     krb5ccache,
@@ -441,7 +440,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         return self._drsuapi_connection
 
     def get_lsarpc_connection(self):
-        def get_lsa_info(conn, policy_access):
+        def get_lsa_info(conn_fn, policy_access):
             in_version = 1
             in_revision_info1 = lsa.revision_info1()
             in_revision_info1.revision = 1
@@ -449,9 +448,9 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                 lsa.LSA_FEATURE_TDO_AUTH_INFO_AES_CIPHER
             )
 
-            out_version, out_revision_info1, policy = OpenPolicyFallback(
-                conn,
-                b''.decode('utf-8'),
+            conn, out_version, out_revision_info1, policy = OpenPolicyFallback(
+                conn_fn,
+                '',
                 in_version,
                 in_revision_info1,
                 False,
@@ -460,7 +459,18 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
             info = conn.QueryInfoPolicy2(policy, lsa.LSA_POLICY_INFO_DNS)
 
-            return (policy, out_version, out_revision_info1, info)
+            return (conn, policy, out_version, out_revision_info1, info)
+
+        def new_lsa_conn(basis_connection=None):
+            lp = self.get_lp()
+            admin_creds = self.get_admin_creds()
+
+            return lsa.lsarpc(
+                self._binding_string,
+                lp,
+                admin_creds,
+                basis_connection=basis_connection
+            )
 
         def lsarpc_connect(server, lp, creds, ip=None):
             binding_options = ""
@@ -474,13 +484,14 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             else:
                 binding_string = "ncacn_np:%s[%s]" % (server, binding_options)
 
+            self._binding_string = binding_string
+
             try:
-                conn = lsa.lsarpc(binding_string, lp, creds)
                 policy_access = lsa.LSA_POLICY_VIEW_LOCAL_INFORMATION
                 policy_access |= lsa.LSA_POLICY_TRUST_ADMIN
                 policy_access |= lsa.LSA_POLICY_CREATE_SECRET
-                (policy, out_version, out_revision_info1, info) = \
-                    get_lsa_info(conn, policy_access)
+                (conn, policy, out_version, out_revision_info1, info) = \
+                    get_lsa_info(new_lsa_conn, policy_access)
             except Exception as e:
                 raise RuntimeError("LSARPC connection to %s failed: %s" % (server, e))
 
