@@ -1220,8 +1220,14 @@ close_out:
 
 	status = cli_setatr(cli, full_path, mode, mtime);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("Error setting attributes on remote file %s: %s\n",
-				full_path, nt_errstr(status));
+		char *timestr = timestring(talloc_tos(), mtime);
+		d_printf("Error setting attributes (mode: %3o, mtime: %s) on "
+			 "remote file %s: %s\n",
+			 mode & 0777,
+			 timestr,
+			 full_path,
+			 nt_errstr(status));
+		TALLOC_FREE(timestr);
 		err = 1;
 	}
 
