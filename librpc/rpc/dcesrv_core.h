@@ -566,6 +566,9 @@ NTSTATUS dcesrv_auth_session_key(struct dcesrv_call_state *call,
 NTSTATUS dcesrv_transport_session_key(struct dcesrv_call_state *call,
 				      DATA_BLOB *session_key);
 
+void dcesrv_call_disconnect_after(struct dcesrv_call_state *call,
+				  const char *reason);
+
 /* a useful macro for generating a RPC fault in the backend code */
 #define DCESRV_FAULT(code) do { \
 	dce_call->fault_code = code; \
