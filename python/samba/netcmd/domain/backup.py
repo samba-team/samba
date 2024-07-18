@@ -1182,7 +1182,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
         # not use this any more as the data has all been copied under
         # the transaction
         samdb.disconnect()
-        samdb = None
+        del samdb
 
         # Open the new backed up samdb, flag it as backed up, and write
         # the next SID so the restore tool can add objects. We use
@@ -1200,7 +1200,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
 
         # Close the backed up samdb
         samdb.disconnect()
-        samdb = None
+        del samdb
 
         # Now handle all the LDB and TDB files that are not linked to
         # anything else.  Use transactions for LDBs.
