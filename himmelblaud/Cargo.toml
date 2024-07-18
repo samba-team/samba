@@ -33,7 +33,7 @@ libc = "0.2.155"
 [workspace]
 members = [
   "chelps", "dbg", "idmap",
-  "ntstatus_gen",
+  "nss", "ntstatus_gen",
   "param", "sock", "tdb",
 ]
 

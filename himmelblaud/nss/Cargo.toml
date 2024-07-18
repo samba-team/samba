@@ -1,14 +1,18 @@
 [package]
-name = "sock"
+name = "nss_himmelblau"
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 version.workspace = true
 
+[lib]
+name = "nss_himmelblau"
+crate-type = [ "cdylib" ]
+path =  "src/lib.rs"
+
 [dependencies]
 libc = "0.2.155"
 libnss = "0.8.0"
 ntstatus_gen.workspace = true
-param.workspace = true
-serde = { version = "1.0.204", features = ["derive"] }
-serde_json = "1.0.120"
+param = { workspace = true }
+sock = { workspace = true }

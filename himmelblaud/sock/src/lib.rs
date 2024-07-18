@@ -22,10 +22,13 @@
 mod proto;
 pub use proto::*;
 
+use ntstatus_gen::*;
+use param::LoadParm;
 use serde_json::{from_slice as json_from_slice, to_vec as json_to_vec};
 use std::error::Error;
 use std::io::{Read, Write};
 use std::os::unix::net::UnixStream;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 pub struct ClientStream {
@@ -54,4 +57,28 @@ impl ClientStream {
         let resp: Response = json_from_slice(&buf)?;
         Ok(resp)
     }
+}
+
+pub fn stream_and_timeout(
+    lp: &LoadParm,
+) -> Result<(ClientStream, u64), Box<NTSTATUS>> {
+    // Get the socket path
+    let sock_dir_str = lp
+        .winbindd_socket_directory()
+        .map_err(|_| Box::new(NT_STATUS_NOT_FOUND))?
+        .ok_or(Box::new(NT_STATUS_NOT_FOUND))?;
+    let sock_dir = Path::new(&sock_dir_str);
+    let mut sock_path = PathBuf::from(sock_dir);
+    sock_path.push("hb_pipe");
+    let sock_path = sock_path.to_str().ok_or(Box::new(NT_STATUS_NOT_FOUND))?;
+
+    // Open the socket
+    let timeout: u64 = lp
+        .winbind_request_timeout()
+        .map_err(|_| Box::new(NT_STATUS_NOT_FOUND))?
+        .try_into()
+        .map_err(|_| Box::new(NT_STATUS_NOT_FOUND))?;
+    let stream = ClientStream::new(sock_path)
+        .map_err(|_| Box::new(NT_STATUS_PIPE_NOT_AVAILABLE))?;
+    Ok((stream, timeout))
 }
