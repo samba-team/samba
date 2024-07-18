@@ -183,6 +183,7 @@ int smb2_deltree(struct smb2_tree *tree, const char *dname)
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 	struct smb2_find f;
 	struct smb2_create create_parm;
+	union smb_fileinfo finfo;
 	bool did_delete;
 
 	/* it might be a file */
@@ -223,7 +224,50 @@ int smb2_deltree(struct smb2_tree *tree, const char *dname)
 		talloc_free(tmp_ctx);
 		return -1;
 	}
-	
+
+	ZERO_STRUCT(finfo);
+	finfo.generic.level = RAW_FILEINFO_STREAM_INFORMATION;
+	finfo.generic.in.file.handle = create_parm.out.file.handle;
+
+	status = smb2_getinfo_file(tree, tmp_ctx, &finfo);
+	if (NT_STATUS_IS_OK(status)) {
+		/*
+		 * For directories we need to cleanup
+		 * streams manually
+		 */
+		for (i = 0; i < finfo.stream_info.out.num_streams; i++) {
+			const struct stream_struct *s =
+				&finfo.stream_info.out.streams[i];
+			union smb_unlink io;
+			char *spath = NULL;
+
+			if (strequal(s->stream_name.s, "::$DATA")) {
+				/* should not happen for directories */
+				continue;
+			}
+
+			spath = talloc_asprintf(tmp_ctx,
+						"%s%s",
+						dname,
+						s->stream_name.s);
+			if (spath == NULL) {
+				talloc_free(tmp_ctx);
+				return -1;
+			}
+
+			ZERO_STRUCT(io);
+			io.unlink.in.pattern = spath;
+			if (s->alloc_size != 0) {
+				io.unlink.in.truncate_if_needed = true;
+			}
+
+			status = smb2_composite_unlink(tree, &io);
+			TALLOC_FREE(spath);
+			if (NT_STATUS_IS_OK(status)) {
+				total_deleted++;
+			}
+		}
+	}
 
 	do {
 		did_delete = false;
