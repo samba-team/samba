@@ -402,7 +402,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             This test uses the altsecid, so the AS-REQ should fail.
         """
 
-        # Create user and machine accounts for the test.
+        # Create a user account for the test.
         #
         samdb = self.get_samdb()
         user_name = "mskileusr"
@@ -411,10 +411,6 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         realm = uc.get_realm().lower()
         alt_sec = "Kerberos:%s@%s" % (alt_name, realm)
         self.add_attribute(samdb, dn, "altSecurityIdentities", alt_sec)
-
-        mach_name = "mskilemac"
-        (mc, _) = self.create_account(samdb, mach_name,
-                                      account_type=self.AccountType.COMPUTER)
 
         # Do the initial AS-REQ, should get a pre-authentication required
         # response
@@ -770,7 +766,7 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
             This test uses the altsecid, so the AS-REQ should fail.
         """
 
-        # Create user and machine accounts for the test.
+        # Create a user account for the test.
         #
         samdb = self.get_samdb()
         user_name = "mskileusr"
@@ -780,10 +776,6 @@ class MS_Kile_Client_Principal_Lookup_Tests(KDCBaseTest):
         alt_sec = "Kerberos:%s@%s" % (alt_name, realm)
         self.add_attribute(samdb, dn, "altSecurityIdentities", alt_sec)
         ename = alt_name + "@" + realm
-
-        mach_name = "mskilemac"
-        (mc, _) = self.create_account(samdb, mach_name,
-                                      account_type=self.AccountType.COMPUTER)
 
         # Do the initial AS-REQ, should get a pre-authentication required
         # response
