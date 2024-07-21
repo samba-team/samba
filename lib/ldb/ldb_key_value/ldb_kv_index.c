@@ -970,10 +970,7 @@ int ldb_kv_index_transaction_cancel(struct ldb_module *module)
 		tdb_close(ldb_kv->idxptr->itdb);
 	}
 	TALLOC_FREE(ldb_kv->idxptr);
-	if (ldb_kv->nested_idx_ptr && ldb_kv->nested_idx_ptr->itdb) {
-		tdb_close(ldb_kv->nested_idx_ptr->itdb);
-	}
-	TALLOC_FREE(ldb_kv->nested_idx_ptr);
+	ldb_kv_index_sub_transaction_cancel(ldb_kv);
 	return LDB_SUCCESS;
 }
 
