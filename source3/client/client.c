@@ -3182,7 +3182,9 @@ static int cmd_posix(void)
 		return 1;
 	}
 
-	d_printf("Server supports CIFS extensions %u.%u\n", (unsigned int)major, (unsigned int)minor);
+	d_printf("Server supports CIFS extensions %" PRIu16 ".%" PRIu16 "\n",
+		 major,
+		 minor);
 
 	caps = talloc_strdup(ctx, "");
 	if (caplow & CIFS_UNIX_FCNTL_LOCKS_CAP) {
