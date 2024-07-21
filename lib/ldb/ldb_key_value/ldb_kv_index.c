@@ -1452,8 +1452,7 @@ static bool list_intersect(struct ldb_kv_private *ldb_kv,
 		return false;
 	}
 
-	list3->dn = talloc_array(list3, struct ldb_val,
-				 MIN(list->count, list2->count));
+	list3->dn = talloc_array(list3, struct ldb_val, short_list->count);
 	if (!list3->dn) {
 		talloc_free(list3);
 		return false;
