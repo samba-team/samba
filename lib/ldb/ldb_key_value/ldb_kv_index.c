@@ -3991,7 +3991,9 @@ int ldb_kv_index_sub_transaction_start(struct ldb_kv_private *ldb_kv)
 int ldb_kv_index_sub_transaction_cancel(struct ldb_kv_private *ldb_kv)
 {
 	if (ldb_kv->nested_idx_ptr != NULL) {
-		tdb_close(ldb_kv->nested_idx_ptr->itdb);
+		if (ldb_kv->nested_idx_ptr->itdb != NULL) {
+			tdb_close(ldb_kv->nested_idx_ptr->itdb);
+		}
 		TALLOC_FREE(ldb_kv->nested_idx_ptr);
 	}
 	return LDB_SUCCESS;
