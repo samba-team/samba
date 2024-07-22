@@ -4572,15 +4572,7 @@ static void call_trans2setpathinfo(
 	}
 
 	if (info_level_handled) {
-		handle_trans2setfilepathinfo_result(
-			conn,
-			req,
-			info_level,
-			status,
-			*ppdata,
-			data_return_size,
-			max_data_bytes);
-		return;
+		goto done;
 	}
 
 	/*
@@ -4601,6 +4593,7 @@ static void call_trans2setpathinfo(
 		total_data,
 		&data_return_size);
 
+done:
 	handle_trans2setfilepathinfo_result(
 		conn,
 		req,
