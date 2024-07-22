@@ -3919,8 +3919,12 @@ static int ldb_kv_sub_transaction_traverse(
 		 *
 		 * So we don't free the index_in_top_level dn list yet,
 		 * because we are (probably) borrowing most of its
-		 * children.
+		 * children. But we can save memory by discarding the
+		 * values and keeping it as an almost empty talloc
+		 * node.
 		 */
+		talloc_realloc(index_in_top_level,
+			       index_in_top_level->dn, struct ldb_val *, 1);
 		index_in_top_level->dn
 			= talloc_steal(index_in_top_level,
 				       index_in_subtransaction->dn);
