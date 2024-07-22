@@ -40,7 +40,10 @@ static bool notifyd_parse_db_parser(TDB_DATA key, TDB_DATA value,
 	memcpy(path, key.dptr, key.dsize);
 	path[key.dsize] = 0;
 
-	ok = notifyd_parse_entry(value.dptr, value.dsize, &instances,
+	ok = notifyd_parse_entry(value.dptr,
+				 value.dsize,
+				 NULL,
+				 &instances,
 				 &num_instances);
 	if (!ok) {
 		DBG_DEBUG("Could not parse entry for path %s\n", path);

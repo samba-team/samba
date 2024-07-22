@@ -337,6 +337,7 @@ static bool notifyd_apply_rec_change(
 	struct messaging_context *msg_ctx)
 {
 	struct db_record *rec = NULL;
+	struct notifyd_watcher watcher = {};
 	struct notifyd_instance *instances = NULL;
 	size_t num_instances;
 	size_t i;
@@ -344,6 +345,7 @@ static bool notifyd_apply_rec_change(
 	TDB_DATA value;
 	NTSTATUS status;
 	bool ok = false;
+	bool new_watcher = false;
 
 	if (pathlen == 0) {
 		DBG_WARNING("pathlen==0\n");
@@ -374,8 +376,12 @@ static bool notifyd_apply_rec_change(
 	value = dbwrap_record_get_value(rec);
 
 	if (value.dsize != 0) {
-		if (!notifyd_parse_entry(value.dptr, value.dsize, NULL,
-					 &num_instances)) {
+		ok = notifyd_parse_entry(value.dptr,
+					 value.dsize,
+					 &watcher,
+					 NULL,
+					 &num_instances);
+		if (!ok) {
 			goto fail;
 		}
 	}
@@ -390,8 +396,22 @@ static bool notifyd_apply_rec_change(
 		goto fail;
 	}
 
-	if (value.dsize != 0) {
-		memcpy(instances, value.dptr, value.dsize);
+	if (num_instances > 0) {
+		struct notifyd_instance *tmp = NULL;
+		size_t num_tmp = 0;
+
+		ok = notifyd_parse_entry(value.dptr,
+					 value.dsize,
+					 NULL,
+					 &tmp,
+					 &num_tmp);
+		if (!ok) {
+			goto fail;
+		}
+
+		memcpy(instances,
+		       tmp,
+		       sizeof(struct notifyd_instance) * num_tmp);
 	}
 
 	for (i=0; i<num_instances; i++) {
@@ -414,41 +434,106 @@ static bool notifyd_apply_rec_change(
 		*instance = (struct notifyd_instance) {
 			.client = *client,
 			.instance = *chg,
-			.internal_filter = chg->filter,
-			.internal_subdir_filter = chg->subdir_filter
 		};
 
 		num_instances += 1;
 	}
 
-	if ((instance->instance.filter != 0) ||
-	    (instance->instance.subdir_filter != 0)) {
-		int ret;
+	/*
+	 * Calculate an intersection of the instances filters for the watcher.
+	 */
+	if (instance->instance.filter > 0) {
+		uint32_t filter = instance->instance.filter;
 
-		TALLOC_FREE(instance->sys_watch);
+		if ((watcher.filter & filter) != filter) {
+			watcher.filter |= filter;
 
-		ret = sys_notify_watch(entries, sys_notify_ctx, path,
-				       &instance->internal_filter,
-				       &instance->internal_subdir_filter,
-				       notifyd_sys_callback, msg_ctx,
-				       &instance->sys_watch);
-		if (ret != 0) {
-			DBG_WARNING("sys_notify_watch for [%s] returned %s\n",
-				    path, strerror(errno));
+			new_watcher = true;
+		}
+	}
+
+	/*
+	 * Calculate an intersection of the instances subdir_filters for the
+	 * watcher.
+	 */
+	if (instance->instance.subdir_filter > 0) {
+		uint32_t subdir_filter = instance->instance.subdir_filter;
+
+		if ((watcher.subdir_filter & subdir_filter) != subdir_filter) {
+			watcher.subdir_filter |= subdir_filter;
+
+			new_watcher = true;
 		}
 	}
 
 	if ((instance->instance.filter == 0) &&
 	    (instance->instance.subdir_filter == 0)) {
+		uint32_t tmp_filter = 0;
+		uint32_t tmp_subdir_filter = 0;
+
 		/* This is a delete request */
-		TALLOC_FREE(instance->sys_watch);
 		*instance = instances[num_instances-1];
 		num_instances -= 1;
+
+		for (i = 0; i < num_instances; i++) {
+			struct notifyd_instance *tmp = &instances[i];
+
+			tmp_filter |= tmp->instance.filter;
+			tmp_subdir_filter |= tmp->instance.subdir_filter;
+		}
+
+		/*
+		 * If the filter has changed, register a new watcher with the
+		 * changed filter.
+		 */
+		if (watcher.filter != tmp_filter ||
+		    watcher.subdir_filter != tmp_subdir_filter)
+		{
+			watcher.filter = tmp_filter;
+			watcher.subdir_filter = tmp_subdir_filter;
+
+			new_watcher = true;
+		}
+	}
+
+	if (new_watcher) {
+		/*
+		 * In case we removed all notify instances, we want to remove
+		 * the watcher. We won't register a new one, if no filters are
+		 * set anymore.
+		 */
+
+		TALLOC_FREE(watcher.sys_watch);
+
+		watcher.sys_filter = watcher.filter;
+		watcher.sys_subdir_filter = watcher.subdir_filter;
+
+		/*
+		 * Only register a watcher if we have filter.
+		 */
+		if (watcher.filter != 0 || watcher.subdir_filter != 0) {
+			int ret = sys_notify_watch(entries,
+						   sys_notify_ctx,
+						   path,
+						   &watcher.sys_filter,
+						   &watcher.sys_subdir_filter,
+						   notifyd_sys_callback,
+						   msg_ctx,
+						   &watcher.sys_watch);
+			if (ret != 0) {
+				DBG_WARNING("sys_notify_watch for [%s] "
+					    "returned %s\n",
+					    path,
+					    strerror(errno));
+			}
+		}
 	}
 
 	DBG_DEBUG("%s has %zu instances\n", path, num_instances);
 
 	if (num_instances == 0) {
+		TALLOC_FREE(watcher.sys_watch);
+
 		status = dbwrap_record_delete(rec);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_WARNING("dbwrap_record_delete returned %s\n",
@@ -456,13 +541,21 @@ static bool notifyd_apply_rec_change(
 			goto fail;
 		}
 	} else {
-		value = make_tdb_data(
-			(uint8_t *)instances,
-			sizeof(struct notifyd_instance) * num_instances);
+		struct TDB_DATA iov[2] = {
+			{
+				.dptr = (uint8_t *)&watcher,
+				.dsize = sizeof(struct notifyd_watcher),
+			},
+			{
+				.dptr = (uint8_t *)instances,
+				.dsize = sizeof(struct notifyd_instance) *
+					 num_instances,
+			},
+		};
 
-		status = dbwrap_record_store(rec, value, 0);
+		status = dbwrap_record_storev(rec, iov, ARRAY_SIZE(iov), 0);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_WARNING("dbwrap_record_store returned %s\n",
+			DBG_WARNING("dbwrap_record_storev returned %s\n",
 				    nt_errstr(status));
 			goto fail;
 		}
@@ -706,12 +799,18 @@ static void notifyd_trigger_parser(TDB_DATA key, TDB_DATA data,
 					.when = tstate->msg->when };
 	struct iovec iov[2];
 	size_t path_len = key.dsize;
+	struct notifyd_watcher watcher = {};
 	struct notifyd_instance *instances = NULL;
 	size_t num_instances = 0;
 	size_t i;
+	bool ok;
 
-	if (!notifyd_parse_entry(data.dptr, data.dsize, &instances,
-				 &num_instances)) {
+	ok = notifyd_parse_entry(data.dptr,
+				 data.dsize,
+				 &watcher,
+				 &instances,
+				 &num_instances);
+	if (!ok) {
 		DBG_DEBUG("Could not parse notifyd_entry\n");
 		return;
 	}
@@ -734,9 +833,11 @@ static void notifyd_trigger_parser(TDB_DATA key, TDB_DATA data,
 
 		if (tstate->covered_by_sys_notify) {
 			if (tstate->recursive) {
-				i_filter = instance->internal_subdir_filter;
+				i_filter = watcher.sys_subdir_filter &
+					   instance->instance.subdir_filter;
 			} else {
-				i_filter = instance->internal_filter;
+				i_filter = watcher.sys_filter &
+					   instance->instance.filter;
 			}
 		} else {
 			if (tstate->recursive) {
@@ -1146,45 +1247,38 @@ static int notifyd_add_proxy_syswatches(struct db_record *rec,
 	struct db_context *db = dbwrap_record_get_db(rec);
 	TDB_DATA key = dbwrap_record_get_key(rec);
 	TDB_DATA value = dbwrap_record_get_value(rec);
-	struct notifyd_instance *instances = NULL;
-	size_t num_instances = 0;
-	size_t i;
+	struct notifyd_watcher watcher = {};
 	char path[key.dsize+1];
 	bool ok;
+	int ret;
 
 	memcpy(path, key.dptr, key.dsize);
 	path[key.dsize] = '\0';
 
-	ok = notifyd_parse_entry(value.dptr, value.dsize, &instances,
-				 &num_instances);
+	/* This is a remote database, we just need the watcher. */
+	ok = notifyd_parse_entry(value.dptr, value.dsize, &watcher, NULL, NULL);
 	if (!ok) {
 		DBG_WARNING("Could not parse notifyd entry for %s\n", path);
 		return 0;
 	}
 
-	for (i=0; i<num_instances; i++) {
-		struct notifyd_instance *instance = &instances[i];
-		uint32_t filter = instance->instance.filter;
-		uint32_t subdir_filter = instance->instance.subdir_filter;
-		int ret;
+	watcher.sys_watch = NULL;
+	watcher.sys_filter = watcher.filter;
+	watcher.sys_subdir_filter = watcher.subdir_filter;
 
-		/*
-		 * This is a remote database. Pointers that we were
-		 * given don't make sense locally. Initialize to NULL
-		 * in case sys_notify_watch fails.
-		 */
-		instances[i].sys_watch = NULL;
-
-		ret = state->sys_notify_watch(
-			db, state->sys_notify_ctx, path,
-			&filter, &subdir_filter,
-			notifyd_sys_callback, state->msg_ctx,
-			&instance->sys_watch);
-		if (ret != 0) {
-			DBG_WARNING("inotify_watch returned %s\n",
-				    strerror(errno));
-		}
+	ret = state->sys_notify_watch(db,
+				      state->sys_notify_ctx,
+				      path,
+				      &watcher.filter,
+				      &watcher.subdir_filter,
+				      notifyd_sys_callback,
+				      state->msg_ctx,
+				      &watcher.sys_watch);
+	if (ret != 0) {
+		DBG_WARNING("inotify_watch returned %s\n", strerror(errno));
 	}
+
+	memcpy(value.dptr, &watcher, sizeof(struct notifyd_watcher));
 
 	return 0;
 }
@@ -1193,21 +1287,17 @@ static int notifyd_db_del_syswatches(struct db_record *rec, void *private_data)
 {
 	TDB_DATA key = dbwrap_record_get_key(rec);
 	TDB_DATA value = dbwrap_record_get_value(rec);
-	struct notifyd_instance *instances = NULL;
-	size_t num_instances = 0;
-	size_t i;
+	struct notifyd_watcher watcher = {};
 	bool ok;
 
-	ok = notifyd_parse_entry(value.dptr, value.dsize, &instances,
-				 &num_instances);
+	ok = notifyd_parse_entry(value.dptr, value.dsize, &watcher, NULL, NULL);
 	if (!ok) {
 		DBG_WARNING("Could not parse notifyd entry for %.*s\n",
 			    (int)key.dsize, (char *)key.dptr);
 		return 0;
 	}
-	for (i=0; i<num_instances; i++) {
-		TALLOC_FREE(instances[i].sys_watch);
-	}
+	TALLOC_FREE(watcher.sys_watch);
+
 	return 0;
 }
 
