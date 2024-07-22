@@ -5070,6 +5070,8 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 		 fsp_fnum_dbg(fsp),
 		 info_level, total_data));
 
+	SMB_ASSERT(fsp != NULL);
+
 	switch (info_level) {
 
 		case SMB_INFO_STANDARD:
