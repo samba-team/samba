@@ -956,8 +956,11 @@ void reply_setatr(struct smb_request *req)
 	}
 
 	if (smb_fname->fsp == NULL) {
-		/* Can't set access rights on a symlink. */
-		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+		/*
+		 * filename_convert_dirfsp only returns a NULL fsp for
+		 * new files.
+		 */
+		reply_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		goto out;
 	}
 
