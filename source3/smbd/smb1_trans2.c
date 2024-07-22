@@ -4581,6 +4581,10 @@ static void call_trans2setpathinfo(
 	 * below, it can still be NULL.
 	 */
 	fsp = smb_fname->fsp;
+	if (fsp == NULL) {
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto done;
+	}
 
 	status = smbd_do_setfilepathinfo(
 		conn,
