@@ -336,7 +336,7 @@ static void *pwrap_load_lib_handle(enum pwrap_lib lib)
 
 #ifdef RTLD_DEEPBIND
 	const char *env_preload = getenv("LD_PRELOAD");
-	const char *env_deepbind = getenv("UID_WRAPPER_DISABLE_DEEPBIND");
+	const char *env_deepbind = getenv("PAM_WRAPPER_DISABLE_DEEPBIND");
 	bool enable_deepbind = true;
 
 	/* Don't do a deepbind if we run with libasan */
@@ -749,6 +749,7 @@ static int copy_confdir(const char *src)
 
 static int p_rmdirs(const char *path);
 
+#ifndef HAVE_PAM_START_CONFDIR
 static void pwrap_clean_stale_dirs(const char *dir)
 {
 	size_t len = strlen(dir);
@@ -816,20 +817,18 @@ static void pwrap_clean_stale_dirs(const char *dir)
 
 	return;
 }
+#endif /* HAVE_PAM_START_CONFDIR */
 
 #ifdef HAVE_PAM_START_CONFDIR
 static void pwrap_init(void)
 {
-	char tmp_config_dir[] = "/tmp/pam.X";
-	size_t len = strlen(tmp_config_dir);
+	const char *tmpdir = getenv("TMPDIR");
+	char *tmp_config_dir = NULL;
 	const char *env;
-	struct stat sb;
 	int rc;
-	unsigned i;
 	ssize_t ret;
 	FILE *pidfile;
 	char pidfile_path[1024] = { 0 };
-	char letter;
 
 	if (!pam_wrapper_enabled()) {
 		return;
@@ -839,61 +838,32 @@ static void pwrap_init(void)
 		return;
 	}
 
-	/*
-	 * The name is selected to match/replace /etc/pam.d
-	 * We start from a random alphanum trying letters until
-	 * an available directory is found.
-	 */
-	letter = 48 + (getpid() % 70);
-	for (i = 0; i < 127; i++) {
-		if (isalpha(letter) || isdigit(letter)) {
-			tmp_config_dir[len - 1] = letter;
-
-			rc = lstat(tmp_config_dir, &sb);
-			if (rc == 0) {
-				PWRAP_LOG(PWRAP_LOG_TRACE,
-					  "Check if pam_wrapper dir %s is a "
-					  "stale directory",
-					  tmp_config_dir);
-				pwrap_clean_stale_dirs(tmp_config_dir);
-			} else if (rc < 0) {
-				if (errno != ENOENT) {
-					continue;
-				}
-				break; /* found */
-			}
-		}
-
-		letter++;
-		letter %= 127;
-	}
-
-	if (i == 127) {
-		PWRAP_LOG(PWRAP_LOG_ERROR,
-			  "Failed to find a possible path to create "
-			  "pam_wrapper config dir: %s",
-			  tmp_config_dir);
-		exit(1);
-	}
-
 	PWRAP_LOG(PWRAP_LOG_DEBUG, "Initialize pam_wrapper");
 
-	pwrap.config_dir = strdup(tmp_config_dir);
-	if (pwrap.config_dir == NULL) {
-		PWRAP_LOG(PWRAP_LOG_ERROR,
-			  "No memory");
+	if (tmpdir == NULL || strlen(tmpdir) == 0 ||
+	    strlen(tmpdir) >= PATH_MAX - 12)
+	{
+		tmpdir = "/tmp";
+	}
+
+	rc = asprintf(&pwrap.config_dir, "%s/pam.XXXXXX", tmpdir);
+	if (rc <= 0) {
+		PWRAP_LOG(PWRAP_LOG_ERROR, "Failed to create path");
 		exit(1);
 	}
+
+	tmp_config_dir = mkdtemp(pwrap.config_dir);
+	if (tmp_config_dir == NULL) {
+		PWRAP_LOG(PWRAP_LOG_ERROR,
+			  "Failed to create temporary directory based "
+			  "on template: %s",
+			  pwrap.config_dir);
+		exit(1);
+	}
+
 	PWRAP_LOG(PWRAP_LOG_TRACE,
 		  "pam_wrapper config dir: %s",
 		  tmp_config_dir);
-
-	rc = mkdir(pwrap.config_dir, 0755);
-	if (rc != 0) {
-		PWRAP_LOG(PWRAP_LOG_ERROR,
-			  "Failed to create pam_wrapper config dir: %s - %s",
-			  tmp_config_dir, strerror(errno));
-	}
 
 	/* Create file with the PID of the the process */
 	ret = snprintf(pidfile_path, sizeof(pidfile_path),
@@ -1121,6 +1091,7 @@ static void pwrap_init(void)
 		PWRAP_LOG(PWRAP_LOG_ERROR,
 			  "Failed to create pam_wrapper config dir: %s - %s",
 			  tmp_config_dir, strerror(errno));
+		exit(1);
 	}
 
 	/* Create file with the PID of the the process */

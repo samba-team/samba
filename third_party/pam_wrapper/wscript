@@ -2,7 +2,7 @@
 
 import os
 
-VERSION="1.1.4"
+VERSION="1.1.7"
 
 def find_library(library_names, lookup_paths):
     for directory in lookup_paths:
@@ -22,6 +22,7 @@ def configure(conf):
         pam_matrix_so_path = find_library(['pam_matrix.so'],
                                           ['/usr/lib64/pam_wrapper', '/usr/lib/pam_wrapper'])
     else:
+        conf.CHECK_HEADERS('gnu/lib-names.h')
 
         if conf.CONFIG_SET("HAVE___THREAD"):
             conf.DEFINE("HAVE_GCC_THREAD_LOCAL_STORAGE", 1)
