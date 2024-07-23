@@ -1809,9 +1809,8 @@ sub setup_simpleserver
 	close(FILE);
 
 	$vars->{PAM_WRAPPER} = "1";
-	$vars->{PAM_WRAPPER_KEEP_DIR} = "1";
 	$vars->{PAM_WRAPPER_SERVICE_DIR} = $pam_service_dir;
-	$vars->{PAM_WRAPPER_DEBUGLEVEL} = "3";
+	#$vars->{PAM_WRAPPER_DEBUGLEVEL} = "3";
 
 	if (not $self->check_or_start(
 		env_vars => $vars,
