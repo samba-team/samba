@@ -954,9 +954,14 @@ class DCJoinContext(object):
 
     def create_replicator(ctx, repl_creds, binding_options):
         """Creates a new DRS object for managing replications"""
-        return drs_utils.drs_Replicate(
-                "ncacn_ip_tcp:%s[%s]" % (ctx.server, binding_options),
-                ctx.lp, repl_creds, ctx.local_samdb, ctx.invocation_id)
+        repl = drs_utils.drs_ReplicatorImpl(
+            f"ncacn_ip_tcp:{ctx.server}[{binding_options}]",
+            ctx.lp,
+            repl_creds,
+            ctx.local_samdb,
+            ctx.invocation_id,
+        )
+        return repl
 
     def join_replicate(ctx):
         """Replicate the SAM."""
@@ -989,6 +994,7 @@ class DCJoinContext(object):
                 binding_options += ",print"
 
             repl = ctx.create_replicator(repl_creds, binding_options)
+            repl = drs_utils.drs_Replicator(repl, ctx.local_samdb)
 
             repl.replicate(ctx.schema_dn, source_dsa_invocation_id,
                            destination_dsa_guid, schema=True, rodc=ctx.RODC,
@@ -1726,11 +1732,8 @@ class DCCloneAndRenameContext(DCCloneContext):
         # We want to rename all the domain objects, and the simplest way to do
         # this is during replication. This is because the base DN of the top-
         # level replicated object will flow through to all the objects below it
-        binding_str = "ncacn_ip_tcp:%s[%s]" % (ctx.server, binding_options)
-        return drs_utils.drs_ReplicateRenamer(binding_str, ctx.lp, repl_creds,
-                                              ctx.local_samdb,
-                                              ctx.invocation_id,
-                                              ctx.base_dn, ctx.new_base_dn)
+        repl = super().create_replicator(repl_creds, binding_options)
+        return drs_utils.drs_ReplicateRenamer(repl, ctx.base_dn, ctx.new_base_dn)
 
     def create_non_global_lp(ctx, global_lp):
         """Creates a non-global LoadParm based on the global LP's settings"""
