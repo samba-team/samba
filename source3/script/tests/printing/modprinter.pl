@@ -122,7 +122,11 @@ while (<CONFIGFILE>) {
 	}
 }
 if ($opt_add) {
-	print CONFIGFILE_NEW "[$share_name]\n\tprintable = yes\n\tpath = /tmp\n";
+	my $tmpdir = "/tmp";
+	if (defined($ENV{TMPDIR})) {
+		$tmpdir = $ENV{TMPDIR};
+	}
+	print CONFIGFILE_NEW "[$share_name]\n\tprintable = yes\n\tpath = $tmpdir\n";
 }
 close (CONFIGFILE);
 close (CONFIGFILE_NEW);
