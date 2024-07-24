@@ -3947,7 +3947,7 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		}
 	}
 
-	DEBUG(10,("smb_set_file_time: setting utimes to modified values.\n"));
+	DBG_DEBUG("setting utimes to modified values.\n");
 
 	ret = file_ntimes(conn, set_fsp, ft);
 	if (ret != 0) {
