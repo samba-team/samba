@@ -3915,13 +3915,13 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 	round_timespec(conn->ts_res, &ft->atime);
 	round_timespec(conn->ts_res, &ft->mtime);
 
-	DBG_DEBUG("smb_set_filetime: actime: %s\n ",
+	DBG_DEBUG("actime: %s\n ",
 		  timespec_string_buf(&ft->atime, true, &tbuf[0]));
-	DBG_DEBUG("smb_set_filetime: modtime: %s\n ",
+	DBG_DEBUG("modtime: %s\n ",
 		  timespec_string_buf(&ft->mtime, true, &tbuf[1]));
-	DBG_DEBUG("smb_set_filetime: ctime: %s\n ",
+	DBG_DEBUG("ctime: %s\n ",
 		  timespec_string_buf(&ft->ctime, true, &tbuf[2]));
-	DBG_DEBUG("smb_set_file_time: createtime: %s\n ",
+	DBG_DEBUG("createtime: %s\n ",
 		  timespec_string_buf(&ft->create_time, true, &tbuf[3]));
 
 	if (setting_write_time) {
