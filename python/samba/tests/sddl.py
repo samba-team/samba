@@ -670,6 +670,11 @@ class SddlNonCanonical(SddlDecodeEncodeBase):
           ("O:LAG:BAD:(A;;CCDCLCSWRPWPDTLOCR;;;WD)"))),
 
         ("D:(A;;FAGX;;;SY)", "D:(A;;0x201f01ff;;;SY)"),
+        # whitespace before ACL string flags is ignored.
+        ("D: (A;;GA;;;LG)", "D:(A;;GA;;;LG)"),
+        ("D: AI(A;;GA;;;LG)", "D:AI(A;;GA;;;LG)"),
+        ("D: P(A;;GA;;;LG)", "D:P(A;;GA;;;LG)"),
+        ("D: S:","D:S:"),
     ]
 
 
@@ -818,17 +823,12 @@ class SddlWindowsIsLessFussy(SddlDecodeEncodeBase):
     strings = [
         # whitespace is ignored, repaired on return
         ("D:(A;;GA;;; LG)", "D:(A;;GA;;;LG)"),
-        ("D: (A;;GA;;;LG)", "D:(A;;GA;;;LG)"),
-        # whitespace before ACL string flags is ignored.
-        ("D: AI(A;;GA;;;LG)", "D:AI(A;;GA;;;LG)"),
         # wrong case on type is ignored, fixed
         ("D:(a;;GA;;;LG)", "D:(A;;GA;;;LG)"),
         ("D:(A;;GA;;;lg)", "D:(A;;GA;;;LG)"),
         ("D:(A;;ga;;;LG)", "D:(A;;GA;;;LG)"),
-        ("D: S:","D:S:"),
 
         # whitespace around ACL flags
-        ("D: P(A;;GA;;;LG)", "D:P(A;;GA;;;LG)"),
         ("D:P (A;;GA;;;LG)", "D:P(A;;GA;;;LG)"),
 
         # whitespace between ACES
