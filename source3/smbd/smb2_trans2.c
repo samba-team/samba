@@ -3938,13 +3938,7 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		DBG_DEBUG("setting pending modtime to %s\n",
 			  timespec_string_buf(&ft->mtime, true, &tbuf[0]));
 
-		if (set_fsp != NULL) {
-			set_sticky_write_time_fsp(set_fsp, ft->mtime);
-		} else {
-			set_sticky_write_time_path(
-				vfs_file_id_from_sbuf(conn, &smb_fname->st),
-				ft->mtime);
-		}
+		set_sticky_write_time_fsp(set_fsp, ft->mtime);
 	}
 
 	DBG_DEBUG("setting utimes to modified values.\n");
