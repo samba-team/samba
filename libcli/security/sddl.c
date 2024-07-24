@@ -814,6 +814,11 @@ static struct security_acl *sddl_decode_acl(struct security_descriptor *sd,
 		return acl;
 	}
 
+	/* Windows AD allows spaces here */
+	while (*sddl == ' ') {
+		sddl++;
+	}
+
 	/* work out the ACL flags */
 	if (!sddl_map_flags(acl_flags, sddl, flags, &len, true)) {
 		*msg = talloc_strdup(sd, "bad ACL flags");
