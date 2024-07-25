@@ -74,6 +74,7 @@ struct ctdb_vnn {
 	struct vnn_interface *ifaces;
 	ctdb_sock_addr public_address;
 	uint8_t public_netmask_bits;
+	const char *name;
 
 	/*
 	 * The node number that is serving this public address - set
@@ -1072,6 +1073,14 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 		DBG_ERR("Memory allocation error\n");
 		return -1;
 	}
+
+	vnn->name = ctdb_sock_addr_to_string(vnn, addr, false);
+	if (vnn->name == NULL) {
+		DBG_ERR("Memory allocation error\n");
+		talloc_free(vnn);
+		return -1;
+	}
+
 	tmp = talloc_strdup(vnn, ifaces);
 	if (tmp == NULL) {
 		DBG_ERR("Memory allocation error\n");
