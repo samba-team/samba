@@ -216,7 +216,6 @@ NTSTATUS file_set_sparse(connection_struct *conn,
 int file_ntimes(connection_struct *conn,
 		files_struct *fsp,
 		struct smb_file_time *ft);
-bool set_sticky_write_time_path(struct file_id fileid, struct timespec mtime);
 bool set_sticky_write_time_fsp(struct files_struct *fsp,
 			       struct timespec mtime);
 

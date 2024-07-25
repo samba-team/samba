@@ -1245,30 +1245,14 @@ done:
 }
 
 /******************************************************************
- Force a "sticky" write time on a pathname. This will always be
- returned on all future write time queries and set on close.
-******************************************************************/
-
-bool set_sticky_write_time_path(struct file_id fileid, struct timespec mtime)
-{
-	if (is_omit_timespec(&mtime)) {
-		return true;
-	}
-
-	if (!set_sticky_write_time(fileid, mtime)) {
-		return false;
-	}
-
-	return true;
-}
-
-/******************************************************************
  Force a "sticky" write time on an fsp. This will always be
  returned on all future write time queries and set on close.
 ******************************************************************/
 
 bool set_sticky_write_time_fsp(struct files_struct *fsp, struct timespec mtime)
 {
+	bool ok;
+
 	if (is_omit_timespec(&mtime)) {
 		return true;
 	}
@@ -1276,7 +1260,8 @@ bool set_sticky_write_time_fsp(struct files_struct *fsp, struct timespec mtime)
 	fsp->fsp_flags.write_time_forced = true;
 	TALLOC_FREE(fsp->update_write_time_event);
 
-	return set_sticky_write_time_path(fsp->file_id, mtime);
+	ok = set_sticky_write_time(fsp->file_id, mtime);
+	return ok;
 }
 
 /******************************************************************
