@@ -112,6 +112,11 @@ static const char *ctdb_vnn_iface_string(const struct ctdb_vnn *vnn)
 	return iface_string(vnn->iface);
 }
 
+static const char *ctdb_vnn_address_string(const struct ctdb_vnn *vnn)
+{
+	return vnn->name;
+}
+
 static struct ctdb_interface *ctdb_find_iface(struct ctdb_context *ctdb,
 					      const char *iface);
 
@@ -370,7 +375,7 @@ static void ctdb_control_send_arp(struct tevent_context *ev,
 	/* IP address might have been released between sends */
 	if (arp->vnn->iface == NULL) {
 		DBG_INFO("Cancelling ARP send for released IP %s\n",
-			 ctdb_addr_to_str(&arp->vnn->public_address));
+			 ctdb_vnn_address_string(arp->vnn));
 		talloc_free(arp);
 		return;
 	}
@@ -501,7 +506,8 @@ static void ctdb_do_takeip_callback(struct ctdb_context *ctdb, int status,
 
 	}
 
-	data.dptr  = (uint8_t *)ctdb_addr_to_str(&state->vnn->public_address);
+	data.dptr  = (uint8_t *)discard_const(
+		ctdb_vnn_address_string(state->vnn));
 	data.dsize = strlen((char *)data.dptr) + 1;
 	DEBUG(DEBUG_INFO,(__location__ " sending TAKE_IP for '%s'\n", data.dptr));
 
@@ -568,7 +574,7 @@ static int32_t ctdb_do_takeip(struct ctdb_context *ctdb,
 					 CTDB_EVENT_TAKE_IP,
 					 "%s %s %u",
 					 ctdb_vnn_iface_string(vnn),
-					 ctdb_addr_to_str(&vnn->public_address),
+					 ctdb_vnn_address_string(vnn),
 					 vnn->public_netmask_bits);
 
 	if (ret != 0) {
@@ -700,7 +706,7 @@ static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
 					 "%s %s %s %u",
 					 old_name,
 					 new_name,
-					 ctdb_addr_to_str(&vnn->public_address),
+					 ctdb_vnn_address_string(vnn),
 					 vnn->public_netmask_bits);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
@@ -1094,7 +1100,7 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 		if (!ctdb_sys_check_iface_exists(iface)) {
 			D_ERR("Unknown interface %s for public address %s\n",
 			      iface,
-			      ctdb_addr_to_str(addr));
+			      ctdb_vnn_address_string(vnn));
 			talloc_free(vnn);
 			return -1;
 		}
@@ -1104,7 +1110,7 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 			D_ERR("Failed to add interface '%s' "
 			      "for public address %s\n",
 			      iface,
-			      ctdb_addr_to_str(addr));
+			      ctdb_vnn_address_string(vnn));
 			talloc_free(vnn);
 			return -1;
 		}
@@ -1779,23 +1785,23 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 			CTDB_EVENT_RELEASE_IP,
 			"%s %s %u",
 			ctdb_vnn_iface_string(vnn),
-			ctdb_addr_to_str(&vnn->public_address),
+			ctdb_vnn_address_string(vnn),
 			vnn->public_netmask_bits);
 		have_ip = ctdb_sys_have_ip(&vnn->public_address);
 		if (have_ip) {
 			if (ret != 0) {
 				DBG_ERR("Error releasing IP %s\n",
-					ctdb_addr_to_str(&vnn->public_address));
+					ctdb_vnn_address_string(vnn));
 			} else {
 				DBG_ERR("IP %s not released (timed out?)\n",
-					ctdb_addr_to_str(&vnn->public_address));
+					ctdb_vnn_address_string(vnn));
 			}
 			vnn->update_in_flight = false;
 			continue;
 		}
 		if (ret != 0) {
 			DBG_ERR("Error releasing IP %s (but IP is gone!)\n",
-				ctdb_addr_to_str(&vnn->public_address));
+				ctdb_vnn_address_string(vnn));
 			vnn->update_in_flight = false;
 			continue;
 		}
@@ -2211,11 +2217,11 @@ static void ctdb_send_set_tcp_tickles_for_all(struct ctdb_context *ctdb,
 						       vnn->tcp_array);
 		if (ret != 0) {
 			D_ERR("Failed to send the tickle update for ip %s\n",
-			      ctdb_addr_to_str(&vnn->public_address));
+			      ctdb_vnn_address_string(vnn));
 			vnn->tcp_update_needed = true;
 		} else {
 			D_INFO("Sent tickle update for ip %s\n",
-			       ctdb_addr_to_str(&vnn->public_address));
+			       ctdb_vnn_address_string(vnn));
 			vnn->tcp_update_needed = false;
 		}
 	}
