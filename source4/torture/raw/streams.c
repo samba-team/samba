@@ -42,23 +42,8 @@
 #define CHECK_NTTIME(v, correct) \
 	torture_assert_u64_equal(tctx,v,correct,"CHECK_NTTIME")
 
-#define CHECK_STR(v, correct) do { \
-	bool ok; \
-	if ((v) && !(correct)) { \
-		ok = false; \
-	} else if (!(v) && (correct)) { \
-		ok = false; \
-	} else if (!(v) && !(correct)) { \
-		ok = true; \
-	} else if (strcmp((v), (correct)) == 0) { \
-		ok = true; \
-	} else { \
-		ok = false; \
-	} \
-	torture_assert(tctx,ok,\
-		       talloc_asprintf(tctx, "got '%s', expected '%s'",\
-		       (v)?(v):"NULL", (correct)?(correct):"NULL")); \
-} while (0)
+#define CHECK_STR(v, correct) \
+	torture_assert_str_equal(tctx,v,correct,"CHECK_STR")
 
 /*
   check that a stream has the right contents
@@ -1092,18 +1077,12 @@ done:
         sfinfo.generic.level = RAW_SFILEINFO_ ## call; \
         sfinfo.generic.in.file.fnum = fnum; \
         status = smb_raw_setfileinfo(cli->tree, &sfinfo); \
-        if (!NT_STATUS_EQUAL(status, rightstatus)) { \
-                printf("(%s) %s - %s (should be %s)\n", __location__, #call, \
-                        nt_errstr(status), nt_errstr(rightstatus)); \
-                ret = false; \
-        } \
+        torture_assert_ntstatus_equal_goto(tctx, status, rightstatus, ret, done, #call); \
         finfo1.generic.level = RAW_FILEINFO_ALL_INFO; \
         finfo1.generic.in.file.fnum = fnum; \
         status2 = smb_raw_fileinfo(cli->tree, tctx, &finfo1); \
-        if (!NT_STATUS_IS_OK(status2)) { \
-                printf("(%s) %s pathinfo - %s\n", __location__, #call, nt_errstr(status)); \
-                ret = false; \
-        }} while (0)
+        torture_assert_ntstatus_ok_goto(tctx, status2, ret, done, "ALL_INFO"); \
+} while (0)
 
 /*
   test stream renames
