@@ -264,18 +264,16 @@ static int32_t ctdb_vnn_assign_iface(struct ctdb_context *ctdb,
 	struct ctdb_interface *best = NULL;
 
 	if (vnn->iface) {
-		DEBUG(DEBUG_INFO, (__location__ " public address '%s' "
-				   "still assigned to iface '%s'\n",
-				   ctdb_addr_to_str(&vnn->public_address),
-				   ctdb_vnn_iface_string(vnn)));
+		DBG_INFO("public address '%s' still assigned to iface '%s'\n",
+			 ctdb_vnn_address_string(vnn),
+			 ctdb_vnn_iface_string(vnn));
 		return 0;
 	}
 
 	best = ctdb_vnn_best_iface(ctdb, vnn);
 	if (best == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " public address '%s' "
-				  "cannot assign to iface any iface\n",
-				  ctdb_addr_to_str(&vnn->public_address)));
+		DBG_ERR("public address '%s' cannot assign to iface any iface\n",
+			ctdb_vnn_address_string(vnn));
 		return -1;
 	}
 
@@ -283,22 +281,21 @@ static int32_t ctdb_vnn_assign_iface(struct ctdb_context *ctdb,
 	best->references++;
 	vnn->pnn = ctdb->pnn;
 
-	DEBUG(DEBUG_INFO, (__location__ " public address '%s' "
-			   "now assigned to iface '%s' refs[%d]\n",
-			   ctdb_addr_to_str(&vnn->public_address),
-			   ctdb_vnn_iface_string(vnn),
-			   best->references));
+	DBG_INFO("public address '%s' now assigned to iface '%s' refs[%d]\n",
+		 ctdb_vnn_address_string(vnn),
+		 ctdb_vnn_iface_string(vnn),
+		 best->references);
 	return 0;
 }
 
 static void ctdb_vnn_unassign_iface(struct ctdb_context *ctdb,
 				    struct ctdb_vnn *vnn)
 {
-	DEBUG(DEBUG_INFO, (__location__ " public address '%s' "
-			   "now unassigned (old iface '%s' refs[%d])\n",
-			   ctdb_addr_to_str(&vnn->public_address),
-			   ctdb_vnn_iface_string(vnn),
-			   vnn->iface?vnn->iface->references:0));
+	DBG_INFO("public address '%s' "
+		 "now unassigned (old iface '%s' refs[%d])\n",
+		 ctdb_vnn_address_string(vnn),
+		 ctdb_vnn_iface_string(vnn),
+		 vnn->iface != NULL ? vnn->iface->references : 0);
 	if (vnn->iface) {
 		vnn->iface->references--;
 	}
@@ -486,9 +483,9 @@ static void ctdb_do_takeip_callback(struct ctdb_context *ctdb, int status,
 		if (status == -ETIMEDOUT) {
 			ctdb_ban_self(ctdb);
 		}
-		DEBUG(DEBUG_ERR,(__location__ " Failed to takeover IP %s on interface %s\n",
-				 ctdb_addr_to_str(&state->vnn->public_address),
-				 ctdb_vnn_iface_string(state->vnn)));
+		DBG_ERR("Failed to takeover IP %s on interface %s\n",
+			ctdb_vnn_address_string(state->vnn),
+			ctdb_vnn_iface_string(state->vnn));
 		ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
 
 		talloc_free(state);
@@ -537,19 +534,19 @@ static int32_t ctdb_do_takeip(struct ctdb_context *ctdb,
 	struct ctdb_do_takeip_state *state;
 
 	if (vnn->update_in_flight) {
-		DEBUG(DEBUG_NOTICE,("Takeover of IP %s/%u rejected "
-				    "update for this IP already in flight\n",
-				    ctdb_addr_to_str(&vnn->public_address),
-				    vnn->public_netmask_bits));
+		D_NOTICE("Takeover of IP %s/%u rejected "
+			 "update for this IP already in flight\n",
+			 ctdb_vnn_address_string(vnn),
+			 vnn->public_netmask_bits);
 		return -1;
 	}
 
 	ret = ctdb_vnn_assign_iface(ctdb, vnn);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Takeover of IP %s/%u failed to "
-				 "assign a usable interface\n",
-				 ctdb_addr_to_str(&vnn->public_address),
-				 vnn->public_netmask_bits));
+		D_ERR("Takeover of IP %s/%u failed to "
+		      "assign a usable interface\n",
+		      ctdb_vnn_address_string(vnn),
+		      vnn->public_netmask_bits);
 		return -1;
 	}
 
@@ -562,10 +559,10 @@ static int32_t ctdb_do_takeip(struct ctdb_context *ctdb,
 	vnn->update_in_flight = true;
 	talloc_set_destructor(state, ctdb_takeip_destructor);
 
-	DEBUG(DEBUG_NOTICE,("Takeover of IP %s/%u on interface %s\n",
-			    ctdb_addr_to_str(&vnn->public_address),
-			    vnn->public_netmask_bits,
-			    ctdb_vnn_iface_string(vnn)));
+	D_NOTICE("Takeover of IP %s/%u on interface %s\n",
+		 ctdb_vnn_address_string(vnn),
+		 vnn->public_netmask_bits,
+		 ctdb_vnn_iface_string(vnn));
 
 	ret = ctdb_event_script_callback(ctdb,
 					 state,
@@ -578,9 +575,9 @@ static int32_t ctdb_do_takeip(struct ctdb_context *ctdb,
 					 vnn->public_netmask_bits);
 
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to takeover IP %s on interface %s\n",
-			ctdb_addr_to_str(&vnn->public_address),
-			ctdb_vnn_iface_string(vnn)));
+		DBG_ERR("Failed to takeover IP %s on interface %s\n",
+			ctdb_vnn_address_string(vnn),
+			ctdb_vnn_iface_string(vnn));
 		talloc_free(state);
 		return -1;
 	}
@@ -608,11 +605,10 @@ static void ctdb_do_updateip_callback(struct ctdb_context *ctdb, int status,
 		if (status == -ETIMEDOUT) {
 			ctdb_ban_self(ctdb);
 		}
-		DEBUG(DEBUG_ERR,
-		      ("Failed update of IP %s from interface %s to %s\n",
-		       ctdb_addr_to_str(&state->vnn->public_address),
-		       iface_string(state->old),
-		       ctdb_vnn_iface_string(state->vnn)));
+		D_ERR("Failed update of IP %s from interface %s to %s\n",
+		      ctdb_vnn_address_string(state->vnn),
+		      iface_string(state->old),
+		      ctdb_vnn_iface_string(state->vnn));
 
 		/*
 		 * All we can do is reset the old interface
@@ -653,21 +649,21 @@ static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
 	const char *new_name;
 
 	if (vnn->update_in_flight) {
-		DEBUG(DEBUG_NOTICE,("Update of IP %s/%u rejected "
-				    "update for this IP already in flight\n",
-				    ctdb_addr_to_str(&vnn->public_address),
-				    vnn->public_netmask_bits));
+		D_NOTICE("Update of IP %s/%u rejected "
+			 "update for this IP already in flight\n",
+			 ctdb_vnn_address_string(vnn),
+			 vnn->public_netmask_bits);
 		return -1;
 	}
 
 	ctdb_vnn_unassign_iface(ctdb, vnn);
 	ret = ctdb_vnn_assign_iface(ctdb, vnn);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Update of IP %s/%u failed to "
-				 "assign a usable interface (old iface '%s')\n",
-				 ctdb_addr_to_str(&vnn->public_address),
-				 vnn->public_netmask_bits,
-				 old_name));
+		D_ERR("Update of IP %s/%u failed to "
+		      "assign a usable interface (old iface '%s')\n",
+		      ctdb_vnn_address_string(vnn),
+		      vnn->public_netmask_bits,
+		      old_name);
 		return -1;
 	}
 
@@ -691,12 +687,12 @@ static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
 	talloc_set_destructor(state, ctdb_updateip_destructor);
 
 	new_name = ctdb_vnn_iface_string(vnn);
-	DEBUG(DEBUG_NOTICE,("Update of IP %s/%u from "
-			    "interface %s to %s\n",
-			    ctdb_addr_to_str(&vnn->public_address),
-			    vnn->public_netmask_bits,
-			    old_name,
-			    new_name));
+	D_NOTICE("Update of IP %s/%u from "
+		 "interface %s to %s\n",
+		 ctdb_vnn_address_string(vnn),
+		 vnn->public_netmask_bits,
+		 old_name,
+		 new_name);
 
 	ret = ctdb_event_script_callback(ctdb,
 					 state,
@@ -709,10 +705,10 @@ static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
 					 ctdb_vnn_address_string(vnn),
 					 vnn->public_netmask_bits);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Failed update IP %s from interface %s to %s\n",
-		       ctdb_addr_to_str(&vnn->public_address),
-		       old_name, new_name));
+		D_ERR("Failed update IP %s from interface %s to %s\n",
+		      ctdb_vnn_address_string(vnn),
+		      old_name,
+		      new_name);
 		talloc_free(state);
 		return -1;
 	}
@@ -775,21 +771,24 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	}
 	best_iface = ctdb_vnn_best_iface(ctdb, vnn);
 	if (best_iface == NULL) {
-		DEBUG(DEBUG_ERR,("takeoverip of IP %s/%u failed to find"
-				 "a usable interface (old %s, have_ip %d)\n",
-				 ctdb_addr_to_str(&vnn->public_address),
-				 vnn->public_netmask_bits,
-				 ctdb_vnn_iface_string(vnn),
-				 have_ip));
+		D_ERR("takeoverip of IP %s/%u failed to find"
+		      "a usable interface (old %s, have_ip %d)\n",
+		      ctdb_vnn_address_string(vnn),
+		      vnn->public_netmask_bits,
+		      ctdb_vnn_iface_string(vnn),
+		      have_ip);
 		return -1;
 	}
 
 	if (vnn->pnn != ctdb->pnn && have_ip && vnn->pnn != CTDB_UNKNOWN_PNN) {
-		DEBUG(DEBUG_CRIT,(__location__ " takeoverip of IP %s is known to the kernel, "
-				  "and we have it on iface[%s], but it was assigned to node %d"
-				  "and we are node %d, banning ourself\n",
-				 ctdb_addr_to_str(&vnn->public_address),
-				 ctdb_vnn_iface_string(vnn), vnn->pnn, ctdb->pnn));
+		DBG_ERR("takeoverip of IP %s is known to the kernel, "
+			"and we have it on iface[%s], "
+			"but it was assigned to node %d"
+			"and we are node %d, banning ourself\n",
+			ctdb_vnn_address_string(vnn),
+			ctdb_vnn_iface_string(vnn),
+			vnn->pnn,
+			ctdb->pnn);
 		ctdb_ban_self(ctdb);
 		return -1;
 	}
@@ -800,10 +799,9 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 		 * situation and doing this will completely repair the
 		 * inconsistency in the VNN.
 		 */
-		DEBUG(DEBUG_WARNING,
-		      (__location__
-		       " Doing updateip for IP %s already on an interface\n",
-		       ctdb_addr_to_str(&vnn->public_address)));
+		DBG_WARNING(
+			"Doing updateip for IP %s already on an interface\n",
+			ctdb_vnn_address_string(vnn));
 		do_updateip = true;
 	}
 
@@ -998,10 +996,10 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	 * update to be in flight at a time.
 	 */
 	if (vnn->update_in_flight) {
-		DEBUG(DEBUG_NOTICE,("Release of IP %s/%u rejected "
-				    "update for this IP already in flight\n",
-				    ctdb_addr_to_str(&vnn->public_address),
-				    vnn->public_netmask_bits));
+		D_NOTICE("Release of IP %s/%u rejected "
+			 "update for this IP already in flight\n",
+			 ctdb_vnn_address_string(vnn),
+			 vnn->public_netmask_bits);
 		return -1;
 	}
 
@@ -1759,20 +1757,20 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 		 * particularly ctdb_tickle_sentenced_connections() is
 		 * not re-entrant */
 		if (vnn->update_in_flight) {
-			DEBUG(DEBUG_WARNING,
-			      (__location__
-			       " Not releasing IP %s/%u on interface %s, an update is already in progress\n",
-				    ctdb_addr_to_str(&vnn->public_address),
-				    vnn->public_netmask_bits,
-				    ctdb_vnn_iface_string(vnn)));
+			DBG_WARNING(
+				"Not releasing IP %s/%u on interface %s, "
+				"an update is already in progress\n",
+				ctdb_vnn_address_string(vnn),
+				vnn->public_netmask_bits,
+				ctdb_vnn_iface_string(vnn));
 			continue;
 		}
 		vnn->update_in_flight = true;
 
-		DEBUG(DEBUG_INFO,("Release of IP %s/%u on interface %s node:-1\n",
-				    ctdb_addr_to_str(&vnn->public_address),
-				    vnn->public_netmask_bits,
-				    ctdb_vnn_iface_string(vnn)));
+		D_INFO("Release of IP %s/%u on interface %s node:-1\n",
+		       ctdb_vnn_address_string(vnn),
+		       vnn->public_netmask_bits,
+		       ctdb_vnn_iface_string(vnn));
 
 		/*
 		 * releaseip timeouts are converted to success, or IP
@@ -2705,9 +2703,8 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 			uint32_t len;
 			struct vnn_interface *iface = NULL;
 
-			DEBUG(DEBUG_NOTICE,
-			      ("New IP %s configured, adding it\n",
-			       ctdb_addr_to_str(&vnn->public_address)));
+			D_NOTICE("New IP %s configured, adding it\n",
+				 ctdb_vnn_address_string(vnn));
 			if (first_add) {
 				uint32_t pnn = ctdb_get_pnn(ctdb);
 
