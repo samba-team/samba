@@ -114,18 +114,18 @@
 		ret = false; \
 	}} while (0)
 
-#define SET_ATTRIB(sattrib) do { \
+#define SET_ATTRIB(sattrib, expected_status) do { \
 	union smb_setfileinfo sfinfo; \
 	ZERO_STRUCT(sfinfo.basic_info.in); \
 	sfinfo.basic_info.level = RAW_SFILEINFO_BASIC_INFORMATION; \
 	sfinfo.basic_info.in.file.handle = h1; \
 	sfinfo.basic_info.in.attrib = sattrib; \
 	status = smb2_setinfo_file(tree, &sfinfo); \
-	if (!NT_STATUS_IS_OK(status)) { \
-		torture_comment(tctx, \
-		    "(%s) Failed to set attrib 0x%x on %s\n", \
-		       __location__, (unsigned int)(sattrib), fname); \
-	}} while (0)
+	torture_assert_ntstatus_equal(tctx, status, expected_status, \
+		talloc_asprintf(tctx, \
+		"(%s) Failed to set attrib 0x%x on %s\n", \
+		 __location__, (unsigned int)(sattrib), fname)); \
+} while (0)
 
 /*
   test some interesting combinations found by gentest
@@ -759,30 +759,21 @@ static bool test_smb2_open(struct torture_context *tctx,
 		if (open_funcs[i].with_file) {
 			io.smb2.in.create_disposition = NTCREATEX_DISP_CREATE;
 			status= smb2_create(tree, tctx, &(io.smb2));
-			if (!NT_STATUS_IS_OK(status)) {
-				torture_comment(tctx,
+			torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+				talloc_asprintf(tctx,
 				    "Failed to create file %s status %s %zu\n",
-				    fname, nt_errstr(status), i);
-
-				ret = false;
-				goto done;
-			}
+				    fname, nt_errstr(status), i));
 			smb2_util_close(tree, io.smb2.out.file.handle);
 		}
 		io.smb2.in.create_disposition = open_funcs[i].create_disp;
 		status = smb2_create(tree, tctx, &(io.smb2));
-		if (!NT_STATUS_EQUAL(status, open_funcs[i].correct_status)) {
-			torture_comment(tctx,
-			    "(%s) incorrect status %s should be %s (i=%zu "
-			    "with_file=%d open_disp=%d)\n",
-			 __location__, nt_errstr(status),
-			nt_errstr(open_funcs[i].correct_status),
-			i, (int)open_funcs[i].with_file,
-			(int)open_funcs[i].create_disp);
-
-			ret = false;
-			goto done;
-		}
+		torture_assert_ntstatus_equal_goto(tctx, status,
+					open_funcs[i].correct_status,
+					ret, done,
+					talloc_asprintf(tctx,
+					"(i=%zu with_file=%d open_disp=%d)\n",
+					i, (int)open_funcs[i].with_file,
+					(int)open_funcs[i].create_disp));
 		if (NT_STATUS_IS_OK(status) || open_funcs[i].with_file) {
 			smb2_util_close(tree, io.smb2.out.file.handle);
 			smb2_util_unlink(tree, fname);
@@ -991,8 +982,7 @@ static bool test_smb2_open_multi(struct torture_context *tctx,
 		if (!torture_smb2_connection(tctx, &(trees[i]))) {
 			torture_comment(tctx,
 				"Could not open %d'th connection\n", i);
-			ret = false;
-			goto done;
+			torture_assert_goto(tctx, false, ret, done, __location__);
 		}
 		trees[i]->session->transport->options.request_timeout = 60;
 	}
@@ -1024,8 +1014,7 @@ static bool test_smb2_open_multi(struct torture_context *tctx,
 		if (requests[i] == NULL) {
 			torture_comment(tctx,
 				"could not send %d'th request\n", i);
-			ret = false;
-			goto done;
+			torture_assert_goto(tctx, false, ret, done, __location__);
 		}
 	}
 
@@ -1064,13 +1053,12 @@ static bool test_smb2_open_multi(struct torture_context *tctx,
 
 		if (tevent_loop_once(tctx->ev) != 0) {
 			torture_comment(tctx, "tevent_loop_once failed\n");
-			ret = false;
-			goto done;
+			torture_assert_goto(tctx, false, ret, done, __location__);
 		}
 	}
 
 	if ((num_ok != 1) || (num_ok + num_collision != num_files)) {
-		ret = false;
+		torture_assert_goto(tctx, false, ret, done, __location__);
 	}
 done:
 	smb2_deltree(tree, fname);
@@ -1143,7 +1131,7 @@ static bool test_smb2_open_for_delete(struct torture_context *tctx,
 	status = smb2_create(tree, tctx, &(io.smb2));
 	CHECK_STATUS(status, NT_STATUS_OK);
 	h1 = io.smb2.out.file.handle;
-	SET_ATTRIB(FILE_ATTRIBUTE_ARCHIVE);
+	SET_ATTRIB(FILE_ATTRIBUTE_ARCHIVE, NT_STATUS_OK);
 	smb2_util_close(tree, h1);
 
 	smb2_util_close(tree, h);
@@ -3705,12 +3693,7 @@ static bool test_dosattr_tmp_dir(struct torture_context *tctx,
 	h1 = c.out.file.handle;
 
 	/* Try to set temporary attribute on directory */
-	SET_ATTRIB(FILE_ATTRIBUTE_TEMPORARY);
-
-	torture_assert_ntstatus_equal_goto(tctx, status,
-					   NT_STATUS_INVALID_PARAMETER,
-					   ret, done,
-					   "Unexpected setinfo result\n");
+	SET_ATTRIB(FILE_ATTRIBUTE_TEMPORARY, NT_STATUS_INVALID_PARAMETER);
 
 done:
 	if (!smb2_util_handle_empty(h1)) {
