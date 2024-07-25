@@ -77,7 +77,7 @@ struct ctdb_vnn {
 
 	/*
 	 * The node number that is serving this public address - set
-	 * to CTDB_UNKNOWN_PNN if node is serving it
+	 * to CTDB_UNKNOWN_PNN if no node is serving it
 	 */
 	uint32_t pnn;
 
