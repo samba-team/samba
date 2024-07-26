@@ -1294,19 +1294,23 @@ int ldb_filter_attrs_in_place(struct ldb_message *msg,
 		keep_all = true;
 	}
 
+	if (keep_all) {
+		return LDB_SUCCESS;
+	}
+	/*
+	 * Find the intersection between the msg elements and attrs.
+	 *
+	 * TODO, maybe: use a faster algorithm when (n * m) is too large.
+	 */
 	for (i = 0; i < msg->num_elements; i++) {
 		bool found = false;
 		unsigned int j;
 
-		if (keep_all) {
-			found = true;
-		} else {
-			for (j = 0; attrs[j]; j++) {
-				int cmp = ldb_attr_cmp(msg->elements[i].name, attrs[j]);
-				if (cmp == 0) {
-					found = true;
-					break;
-				}
+		for (j = 0; attrs[j]; j++) {
+			int cmp = ldb_attr_cmp(msg->elements[i].name, attrs[j]);
+			if (cmp == 0) {
+				found = true;
+				break;
 			}
 		}
 
