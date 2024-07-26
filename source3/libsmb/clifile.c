@@ -1139,6 +1139,157 @@ NTSTATUS cli_fchmod_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
+struct cli_chmod_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	mode_t mode;
+
+	uint16_t fnum;
+
+	NTSTATUS fchmod_status;
+
+	uint8_t data[100]; /* smb1 posix extensions */
+};
+
+static void cli_chmod_opened(struct tevent_req *subreq);
+static void cli_chmod_done(struct tevent_req *subreq);
+static void cli_chmod_closed(struct tevent_req *subreq);
+
+struct tevent_req *cli_chmod_send(TALLOC_CTX *mem_ctx,
+				  struct tevent_context *ev,
+				  struct cli_state *cli,
+				  const char *fname,
+				  mode_t mode)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_chmod_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_chmod_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->cli = cli;
+	state->mode = mode;
+
+	subreq = cli_ntcreate_send(
+		state,				    /* mem_ctx */
+		ev,				    /* ev */
+		cli,				    /* cli */
+		fname,				    /* fname */
+		0,				    /* create_flags */
+		SEC_STD_WRITE_DAC,		    /* desired_access */
+		0,				    /* file_attributes */
+		FILE_SHARE_READ | FILE_SHARE_WRITE, /* share_access */
+		FILE_OPEN,			    /* create_disposition */
+		0x0,				    /* create_options */
+		SMB2_IMPERSONATION_IMPERSONATION,   /* impersonation_level */
+		0x0);				    /* SecurityFlags */
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_chmod_opened, req);
+	return req;
+}
+
+static void cli_chmod_opened(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+							  struct tevent_req);
+	struct cli_chmod_state *state = tevent_req_data(
+		req, struct cli_chmod_state);
+	NTSTATUS status;
+
+	status = cli_ntcreate_recv(subreq, &state->fnum, NULL);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	subreq = cli_fchmod_send(
+		state, state->ev, state->cli, state->fnum, state->mode);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_chmod_done, req);
+}
+
+static void cli_chmod_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+							  struct tevent_req);
+	struct cli_chmod_state *state = tevent_req_data(
+		req, struct cli_chmod_state);
+
+	state->fchmod_status = cli_fchmod_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	subreq = cli_close_send(state, state->ev, state->cli, state->fnum, 0);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_chmod_closed, req);
+}
+
+static void cli_chmod_closed(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+							  struct tevent_req);
+	NTSTATUS status;
+
+	status = cli_close_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_chmod_recv(struct tevent_req *req)
+{
+	struct cli_chmod_state *state = tevent_req_data(
+		req, struct cli_chmod_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+	tevent_req_received(req);
+	return state->fchmod_status;
+}
+
+NTSTATUS cli_chmod(struct cli_state *cli, const char *fname, mode_t mode)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_chmod_send(frame, ev, cli, fname, mode);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_chmod_recv(req);
+fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 /****************************************************************************
  chown a file (UNIX extensions).
 ****************************************************************************/

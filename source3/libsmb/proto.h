@@ -325,6 +325,13 @@ struct tevent_req *cli_fchmod_send(TALLOC_CTX *mem_ctx,
 				   uint16_t fnum,
 				   mode_t mode);
 NTSTATUS cli_fchmod_recv(struct tevent_req *req);
+struct tevent_req *cli_chmod_send(TALLOC_CTX *mem_ctx,
+				  struct tevent_context *ev,
+				  struct cli_state *cli,
+				  const char *fname,
+				  mode_t mode);
+NTSTATUS cli_chmod_recv(struct tevent_req *req);
+NTSTATUS cli_chmod(struct cli_state *cli, const char *fname, mode_t mode);
 struct tevent_req *cli_posix_chown_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct cli_state *cli,
