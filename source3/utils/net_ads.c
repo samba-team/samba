@@ -3141,11 +3141,6 @@ int net_ads_keytab(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	if (!USE_KERBEROS_KEYTAB) {
-		d_printf(_("\nWarning: \"kerberos method\" must be set to a "
-		    "keytab method to use keytab functions.\n"));
-	}
-
 	return net_run_function(c, argc, argv, "net ads keytab", func);
 }
 
