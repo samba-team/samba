@@ -44,7 +44,10 @@
 int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport)
 {
 	ctdb->transport = talloc_strdup(ctdb, transport);
-	CTDB_NO_MEMORY(ctdb, ctdb->transport);
+	if (ctdb->transport == NULL) {
+		DBG_ERR("Memory allocation error\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -92,21 +95,32 @@ static int convert_node_map_to_list(struct ctdb_context *ctdb,
 
 	*nodes = talloc_zero_array(mem_ctx,
 					struct ctdb_node *, node_map->num);
-	CTDB_NO_MEMORY(ctdb, *nodes);
+	if (*nodes == NULL) {
+		DBG_ERR("Memory allocation error\n");
+		return -1;
+	}
 	*num_nodes = node_map->num;
 
 	for (i = 0; i < node_map->num; i++) {
 		struct ctdb_node *node;
 
 		node = talloc_zero(*nodes, struct ctdb_node);
-		CTDB_NO_MEMORY(ctdb, node);
+		if (node == NULL) {
+			DBG_ERR("Memory allocation error\n");
+			TALLOC_FREE(*nodes);
+			return -1;
+		}
 		(*nodes)[i] = node;
 
 		node->address = node_map->node[i].addr;
 		node->name = talloc_asprintf(node, "%s:%u",
 					     ctdb_addr_to_str(&node->address),
 					     ctdb_addr_to_port(&node->address));
-		CTDB_NO_MEMORY(ctdb, node->name);
+		if (node->name == NULL) {
+			DBG_ERR("Memory allocation error\n");
+			TALLOC_FREE(*nodes);
+			return -1;
+		}
 
 		node->flags = node_map->node[i].flags;
 		if (!(node->flags & NODE_FLAGS_DELETED)) {
