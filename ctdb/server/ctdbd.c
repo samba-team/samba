@@ -297,8 +297,7 @@ int main(int argc, const char *argv[])
 	if (ctdb_config.node_address) {
 		ret = ctdb_set_address(ctdb, ctdb_config.node_address);
 		if (ret == -1) {
-			D_ERR("ctdb_set_address failed - %s\n",
-			      ctdb_errstr(ctdb));
+			D_ERR("Failed to set node address\n");
 			goto fail;
 		}
 	}

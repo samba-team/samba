@@ -158,10 +158,14 @@ int ctdb_set_address(struct ctdb_context *ctdb, const char *address)
 	bool ok;
 
 	ctdb->address = talloc(ctdb, ctdb_sock_addr);
-	CTDB_NO_MEMORY(ctdb, ctdb->address);
+	if (ctdb->address == NULL) {
+		DBG_ERR("Memory allocation error\n");
+		return -1;
+	}
 
 	ok = ctdb_parse_node_address(address, ctdb->address);
 	if (!ok) {
+		DBG_ERR("Failed to parse node address\n");
 		TALLOC_FREE(ctdb->address);
 		return -1;
 	}
@@ -169,6 +173,12 @@ int ctdb_set_address(struct ctdb_context *ctdb, const char *address)
 	ctdb->name = talloc_asprintf(ctdb, "%s:%u",
 				     ctdb_addr_to_str(ctdb->address),
 				     ctdb_addr_to_port(ctdb->address));
+	if (ctdb->name == NULL) {
+		DBG_ERR("Memory allocation error\n");
+		TALLOC_FREE(ctdb->address);
+		return -1;
+	}
+
 	return 0;
 }
 
