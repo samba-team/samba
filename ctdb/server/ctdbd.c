@@ -281,7 +281,7 @@ int main(int argc, const char *argv[])
 
 	ret = ctdb_set_transport(ctdb, ctdb_config.transport);
 	if (ret == -1) {
-		D_ERR("ctdb_set_transport failed - %s\n", ctdb_errstr(ctdb));
+		D_ERR("Failed to setup transport\n");
 		goto fail;
 	}
 
