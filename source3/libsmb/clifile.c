@@ -1081,6 +1081,64 @@ NTSTATUS cli_posix_chmod(struct cli_state *cli, const char *fname, mode_t mode)
 	return status;
 }
 
+struct cli_fchmod_state {
+	uint8_t data[100]; /* smb1 posix extensions */
+};
+
+static void cli_fchmod_done1(struct tevent_req *subreq);
+
+struct tevent_req *cli_fchmod_send(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   struct cli_state *cli,
+				   uint16_t fnum,
+				   mode_t mode)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_fchmod_state *state = NULL;
+	const enum protocol_types proto = smbXcli_conn_protocol(cli->conn);
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_fchmod_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if ((proto < PROTOCOL_SMB2_02) && SERVER_HAS_UNIX_CIFS(cli)) {
+		memset(state->data,
+		       0xff,
+		       40); /* Set all sizes/times to no change. */
+		PUSH_LE_U32(state->data, 40, SMB_UID_NO_CHANGE);
+		PUSH_LE_U32(state->data, 48, SMB_GID_NO_CHANGE);
+		PUSH_LE_U32(state->data, 84, mode);
+
+		subreq = cli_setfileinfo_send(state,
+					      ev,
+					      cli,
+					      fnum,
+					      SMB_SET_FILE_UNIX_BASIC,
+					      state->data,
+					      sizeof(state->data));
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_fchmod_done1, req);
+		return req;
+	}
+
+	tevent_req_nterror(req, NT_STATUS_INVALID_LEVEL);
+	return tevent_req_post(req, ev);
+}
+
+static void cli_fchmod_done1(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_setfileinfo_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+NTSTATUS cli_fchmod_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
 /****************************************************************************
  chown a file (UNIX extensions).
 ****************************************************************************/
