@@ -1204,11 +1204,13 @@ static void discard_whitespace(char *str)
  *                      See "man regexec" for possible errors
  */
 
-int lp_wi_scan_global_parametrics(
-	const char *regex_str, size_t max_matches,
-	bool (*cb)(const char *string, regmatch_t matches[],
-		   void *private_data),
-	void *private_data)
+static int lp_wi_scan_parametrics(struct parmlist_entry *parmlist,
+				  const char *regex_str,
+				  size_t max_matches,
+				  bool (*cb)(const char *string,
+					     regmatch_t matches[],
+					     void *private_data),
+				  void *private_data)
 {
 	struct parmlist_entry *data;
 	regex_t regex;
@@ -1219,7 +1221,7 @@ int lp_wi_scan_global_parametrics(
 		return ret;
 	}
 
-	for (data = Globals.param_opt; data != NULL; data = data->next) {
+	for (data = parmlist; data != NULL; data = data->next) {
 		size_t keylen = strlen(data->key);
 		char key[keylen+1];
 		regmatch_t matches[max_matches];
@@ -1248,6 +1250,17 @@ fail:
 	return ret;
 }
 
+int lp_wi_scan_global_parametrics(const char *regex_str,
+				  size_t max_matches,
+				  bool (*cb)(const char *string,
+					     regmatch_t matches[],
+					     void *private_data),
+				  void *private_data)
+{
+	int ret = lp_wi_scan_parametrics(
+		Globals.param_opt, regex_str, max_matches, cb, private_data);
+	return ret;
+}
 
 #define MISSING_PARAMETER(name) \
     DEBUG(0, ("%s(): value is NULL or empty!\n", #name))
