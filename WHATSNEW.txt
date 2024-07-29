@@ -1,208 +1,24 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.21.  This is *not*
+This is the first pre release of Samba 4.22.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.21 will be the next version of the Samba suite.
+Samba 4.22 will be the next version of the Samba suite.
 
 
 UPGRADING
 =========
 
-Hardening of "valid users", "invalid users", "read list" and "write list"
--------------------------------------------------------------------------
-
-In previous versions of Samba, if a user or group name in either of the
-mentioned options could not be resolved to a valid SID, the user (or group)
-would be skipped without any notification. This could result in unexpected and
-insecure behaviour. Starting with this version of Samba, if any user or group
-name in any of the options cannot be resolved due to a communication error with
-a domain controller, Samba will log an error and the tree connect will fail.
-Non existing users (or groups) are ignored.
-
-LDAP TLS/SASL channel binding support
--------------------------------------
-
-The ldap server supports SASL binds with
-kerberos or NTLMSSP over TLS connections
-now (either ldaps or starttls).
-
-Setups where 'ldap server require strong auth = allow_sasl_over_tls'
-was required before, can now most likely move to the
-default of 'ldap server require strong auth = yes'.
-
-If SASL binds without correct tls channel bindings are required
-'ldap server require strong auth = allow_sasl_without_tls_channel_bindings'
-should be used now, as 'allow_sasl_over_tls' will generate a
-warning in every start of 'samba', as well as '[samba-tool ]testparm'.
-
-This is similar to LdapEnforceChannelBinding under
-HKLM\SYSTEM\CurrentControlSet\Services\NTDS\Parameters
-on Windows.
-
-All client tools using ldaps also include the correct
-channel bindings now.
-
 
 NEW FEATURES/CHANGES
 ====================
 
-LDB no longer a standalone tarball
-----------------------------------
-
-LDB, Samba's LDAP-like local database and the power behind the Samba
-AD DC, is no longer available to build as a distinct tarball, but is
-instead provided as an optional public library.
-
-If you need ldb as a public library, say to build sssd, then use
- ./configure --private-libraries='!ldb'
-
-This re-integration allows LDB tests to use the Samba's full selftest
-system, including our knownfail infrastructure, and decreases the work
-required during security releases as a coordinated release of the ldb
-tarball is not also required.
-
-This approach has been demonstrated already in Debian, which is already
-building Samba and LDB is this way.
-
-As part of this work, the pyldb-util public library, not known to be
-used by any other software, is made private to Samba.
-
-LDB Module API Python bindings removed
---------------------------------------
-
-The LDB Modules API, which we do not promise a stable ABI or API for,
-was wrapped in python in early LDB development.  However that wrapping
-never took into account later changes, and so has not worked for a
-number of years.  Samba 4.21 and LDB 2.10 removes this unused and
-broken feature.
-
-Some Samba public libraries made private by default
----------------------------------------------------
-
-The following Samba C libraries are currently made public due to their
-use by OpenChange or for historical reasons that are no longer clear.
-
- dcerpc-samr, samba-policy, tevent-util, dcerpc, samba-hostconfig,
- samba-credentials, dcerpc_server, samdb
-
-The libraries used by the OpenChange client now private, but can be
-made public (like ldb above) with:
-
- ./configure --private-libraries='!dcerpc,!samba-hostconfig,!samba-credentials,!ldb'
-
-The C libraries without any known user or used only for the OpenChange
-server (a dead project) may be made private entirely in a future Samba
-version.
-
-If you use a Samba library in this list, please be in touch with the
-samba-technical mailing list.
-
-Using ldaps from 'winbindd' and 'net ads'
------------------------------------------
-
-Beginning with Samba 3.0.22 the 'ldap ssl = start tls' option also
-impacted LDAP connections to active directory domain controllers.
-Using the STARTTLS operation on LDAP port 389 connections. Starting
-with Samba 3.5.0 'ldap ssl ads = yes' was required in addition in
-order let to 'ldap ssl = start tls' have any effect on those
-connections.
-
-'ldap ssl ads' was deprecated with Samba 4.8.0 and removed together
-with the whole functionality in Samba 4.14.0, because it didn't support
-tls channel bindings required for the sasl authentication.
-
-The functionality is now re-added using the correct channel bindings
-based on the gnutls based tls implementation we already have, instead
-of using the tls layer provided by openldap. This makes it available
-and consistent with all LDAP client libraries we use and implement on
-our own.
-
-The 'client ldap sasl wrapping' option gained the two new possible values:
-'starttls' (using STARTTLS on tcp port 389)
-and
-'ldaps' (using TLS directly on tcp port 636).
-
-If you had 'ldap ssl = start tls' and 'ldap ssl ads = yes'
-before, you can now use 'client ldap sasl wrapping = starttls'
-in order to get STARTTLS on tcp port 389.
-
-As we no longer use the openldap tls layer it is required to configure the
-correct certificate trusts with at least one of the following options:
-'tls trust system cas', 'tls ca directories' or 'tls cafile'.
-While 'tls verify peer' and 'tls crlfile' are also relevant,
-see 'man smb.conf' for further details.
-
-New DNS hostname config option
-------------------------------
-
-To get `net ads dns register` working correctly running manually or during a
-domain join a special entry in /etc/hosts was required. This not really
-documented and thus the DNS registration mostly didn't work. With the new option
-the default is [netbios name].[realm] which should be correct in the majority of
-use cases.
-
-We will also use the value to create service principal names during a Kerberos
-authentication and DNS functions.
-
-This is not supported in samba-tool yet.
-
-Samba AD will rotate expired passwords on smartcard-required accounts
----------------------------------------------------------------------
-
-Traditionally in AD, accounts set to be "smart card require for logon"
-will have a password for NTLM fallback and local profile encryption
-(Windows DPAPI). This password previously would not expire.
-
-Matching Windows behaviour, when the DC in a FL 2016 domain and the
-msDS-ExpirePasswordsOnSmartCardOnlyAccounts attribute on the domain
-root is set to TRUE, Samba will now expire these passwords and rotate
-them shortly before they expire.
-
-Note that the password expiry time must be set to twice the TGT lifetime for
-smooth operation, e.g. daily expiry given a default 10 hour TGT
-lifetime, as the password is only rotated in the second half of its
-life.  Again, this matches the Windows behaviour.
-
-Provided the default 2016 schema is used, new Samba domains
-provisioned with Samba 4.21 will have this enabled once the domain
-functional level is set to 2016.
-
-NOTE: Domains upgraded from older Samba versions will not have this
-set, even after the functional level preparation, matching the
-behaviour of upgraded Windows AD domains.
-
-Per-user and group "veto files" and "hide files"
-------------------------------------------------
-
-"veto files" and "hide files" can optionally be restricted to certain users and
-groups. To apply a veto or hide directive to a filename for a specific user or
-group, prefix the filename with "../USERNAME/" or "../GROUPNAME/". For details
-consult the updated smb.conf manpage.
-
-Automatic keytab update after machine password change
------------------------------------------------------
-
-When machine account password is updated, either by winbind doing regular
-updates or manually (e.g. net ads changetrustpw), now winbind will also support
-update of keytab entries in case you use newly added option
-'sync machine password to keytab'.
-The new parameter allows you to describe what keytabs and how should be updated.
-A new parameter 'sync machine password script' allows to specify external script
-that will be triggered after the automatic keytab update. For detailed
-information check the smb.conf manpage.
 
 REMOVED FEATURES
 ================
-
-Following commands are removed:
-
-net ads keytab add <principal>
-net ads keytab delete <principal>
-net ads keytab add_update_ads
 
 
 smb.conf changes
@@ -210,26 +26,12 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
-  client ldap sasl wrapping               new values
-  client use spnego principal             removed
-  ldap server require strong auth         new values
-  tls trust system cas                    new
-  tls ca directories                      new
-  dns hostname                            client dns name [netbios name].[realm]
-  valid users                             Hardening
-  invalid users                           Hardening
-  read list                               Hardening
-  write list                              Hardening
-  veto files                              Added per-user and per-group vetos
-  hide files                              Added per-user and per-group hides
-  sync machine password to keytab         keytabs
-  sync machine password script            script
 
 
 KNOWN ISSUES
 ============
 
-https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.21#Release_blocking_bugs
+https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.22#Release_blocking_bugs
 
 
 #######################################
