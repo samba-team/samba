@@ -4589,7 +4589,7 @@ static NTSTATUS fruit_fset_nt_acl(vfs_handle_struct *handle,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	DBG_DEBUG("fruit_fset_nt_acl: %s\n", fsp_str_dbg(fsp));
+	DBG_DEBUG("%s\n", fsp_str_dbg(fsp));
 
 	status = check_ms_nfs(handle, fsp, psd, &ms_nfs_mode, &do_chmod);
 	if (!NT_STATUS_IS_OK(status)) {
