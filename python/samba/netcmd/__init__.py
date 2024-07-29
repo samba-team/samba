@@ -245,6 +245,9 @@ class Command(object):
             elif ldb_ecode == ERR_INSUFFICIENT_ACCESS_RIGHTS:
                 self._print_error("User has insufficient access rights")
                 force_traceback = False
+            elif ldb_emsg == "Operation unavailable without authentication":
+                self._print_error(ldb_emsg)
+                force_traceback = False
             else:
                 self._print_error(message, ldb_emsg, 'ldb')
 
