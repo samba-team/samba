@@ -192,7 +192,7 @@ static size_t namearray_len(const struct name_compare_entry *array)
 
 /*******************************************************************
  Strip a '/' separated list into an array of
- name_compare_enties structures suitable for
+ name_compare_entry structures suitable for
  passing to is_in_path(). We do this for
  speed so we can pre-parse all the names in the list
  and don't do it for each call to is_in_path().
