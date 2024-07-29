@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# For Samba 4.21.x
-LDB_VERSION = '2.10.0'
+# For Samba 4.22.x
+LDB_VERSION = '2.11.0'
 
 import sys, os
 
