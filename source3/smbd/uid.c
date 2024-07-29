@@ -179,6 +179,82 @@ NTSTATUS check_user_share_access(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
+struct scan_file_list_state {
+	TALLOC_CTX *mem_ctx;
+	const struct loadparm_substitution *lp_sub;
+	int snum;
+	const char *param_type;
+	struct security_token *token;
+	struct name_compare_entry **list;
+	bool ok;
+};
+
+static bool scan_file_list_cb(const char *string,
+			      regmatch_t matches[],
+			      void *private_data)
+{
+	struct scan_file_list_state *state = private_data;
+
+	if (matches[1].rm_so == -1) {
+		DBG_WARNING("Found match, but no name??\n");
+		goto fail;
+	}
+	if (matches[1].rm_eo <= matches[1].rm_so) {
+		DBG_WARNING("Invalid match\n");
+		goto fail;
+	}
+
+	{
+		regoff_t len = matches[1].rm_eo - matches[1].rm_so;
+		char name[len + 1];
+		bool ok, match;
+		char *files = NULL;
+
+		memcpy(name, string + matches[1].rm_so, len);
+		name[len] = '\0';
+
+		DBG_DEBUG("Found name \"%s : %s\"\n", state->param_type, name);
+
+		ok = token_contains_name(talloc_tos(),
+					 NULL,
+					 NULL,
+					 NULL,
+					 state->token,
+					 name,
+					 &match);
+		if (!ok) {
+			goto fail;
+		}
+		if (!match) {
+			return false; /* don't stop traverse */
+		}
+
+		files = lp_parm_substituted_string(state->mem_ctx,
+						   state->lp_sub,
+						   state->snum,
+						   state->param_type,
+						   name,
+						   NULL);
+		if (files == NULL) {
+			goto fail;
+		}
+
+		ok = append_to_namearray(state->mem_ctx,
+					 files,
+					 NULL,
+					 state->list);
+		if (!ok) {
+			goto fail;
+		}
+
+		return false; /* don't stop traverse */
+	}
+
+fail:
+	state->ok = false;
+	return true; /* stop traverse */
+}
+
 /*******************************************************************
  Check if a username is OK.
 
@@ -284,6 +360,15 @@ static bool check_user_ok(connection_struct *conn,
 
 	/* Add veto/hide lists */
 	if (!IS_IPC(conn) && !IS_PRINT(conn)) {
+		struct scan_file_list_state state = {
+			.mem_ctx = conn,
+			.lp_sub = lp_sub,
+			.snum = snum,
+			.token = session_info->security_token,
+			.ok = true,
+		};
+		int ret;
+
 		ok = set_namearray(conn,
 				   lp_veto_files(talloc_tos(), lp_sub, snum),
 				   session_info->security_token,
@@ -291,11 +376,57 @@ static bool check_user_ok(connection_struct *conn,
 		if (!ok) {
 			return false;
 		}
+
+		/*
+		 * A bit of boilerplate code duplication for userlevel
+		 * hide and veto files in the share and global
+		 * sections, but not enough to justify putting this
+		 * into functions for now :-)
+		 */
+
+		state.param_type = "veto files";
+		state.list = &ent->veto_list;
+
+		ret = lp_wi_scan_global_parametrics("vetofiles:\\(.*\\)",
+						    2,
+						    scan_file_list_cb,
+						    &state);
+		if ((ret != 0) || !state.ok) {
+			return false;
+		}
+		ret = lp_wi_scan_share_parametrics(snum,
+						   "vetofiles:\\(.*\\)",
+						   2,
+						   scan_file_list_cb,
+						   &state);
+		if ((ret != 0) || !state.ok) {
+			return false;
+		}
+
 		ok = set_namearray(conn,
 				   lp_hide_files(talloc_tos(), lp_sub, snum),
 				   session_info->security_token,
 				   &ent->hide_list);
 		if (!ok) {
+			return false;
+		}
+
+		state.param_type = "hide files";
+		state.list = &ent->hide_list;
+
+		ret = lp_wi_scan_global_parametrics("hidefiles:\\(.*\\)",
+						    2,
+						    scan_file_list_cb,
+						    &state);
+		if ((ret != 0) || !state.ok) {
+			return false;
+		}
+		ret = lp_wi_scan_share_parametrics(snum,
+						   "hidefiles:\\(.*\\)",
+						   2,
+						   scan_file_list_cb,
+						   &state);
+		if ((ret != 0) || !state.ok) {
 			return false;
 		}
 	}
