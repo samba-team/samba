@@ -1262,6 +1262,31 @@ int lp_wi_scan_global_parametrics(const char *regex_str,
 	return ret;
 }
 
+int lp_wi_scan_share_parametrics(int snum,
+				 const char *regex_str,
+				 size_t max_matches,
+				 bool (*cb)(const char *string,
+					    regmatch_t matches[],
+					    void *private_data),
+				 void *private_data)
+{
+	struct loadparm_service *s = NULL;
+	int ret;
+
+	if (!LP_SNUM_OK(snum)) {
+		/*
+		 * We return regex return values here, REG_NOMATCH is
+		 * the closest I could find.
+		 */
+		return REG_NOMATCH;
+	}
+	s = ServicePtrs[snum];
+
+	ret = lp_wi_scan_parametrics(
+		s->param_opt, regex_str, max_matches, cb, private_data);
+	return ret;
+}
+
 #define MISSING_PARAMETER(name) \
     DEBUG(0, ("%s(): value is NULL or empty!\n", #name))
 

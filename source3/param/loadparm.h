@@ -75,6 +75,13 @@ int lp_wi_scan_global_parametrics(
 	bool (*cb)(const char *string, regmatch_t matches[],
 		   void *private_data),
 	void *private_data);
+int lp_wi_scan_share_parametrics(int snum,
+				 const char *regex_str,
+				 size_t max_matches,
+				 bool (*cb)(const char *string,
+					    regmatch_t matches[],
+					    void *private_data),
+				 void *private_data);
 
 const char *lp_parm_const_string(int snum, const char *type, const char *option, const char *def);
 struct loadparm_service;
