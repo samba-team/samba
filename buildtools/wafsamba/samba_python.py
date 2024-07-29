@@ -153,5 +153,3 @@ def pyembed_libname(bld, name):
         return name
 
 Build.BuildContext.pyembed_libname = pyembed_libname
-
-
