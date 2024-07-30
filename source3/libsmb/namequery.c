@@ -1701,6 +1701,10 @@ static struct tevent_req *name_queries_send(
 	struct tevent_req *req, *subreq;
 	struct name_queries_state *state;
 
+	if (num_addrs == 0) {
+		return NULL;
+	}
+
 	req = tevent_req_create(mem_ctx, &state,
 				struct name_queries_state);
 	if (req == NULL) {
