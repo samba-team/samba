@@ -16,3 +16,6 @@ libnss = "0.8.0"
 ntstatus_gen.workspace = true
 param = { workspace = true }
 sock = { workspace = true }
+
+[build-dependencies]
+version = { path = "../version" }

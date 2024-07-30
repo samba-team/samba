@@ -30,11 +30,14 @@ serde = "1.0.204"
 idmap = { workspace = true }
 libc = "0.2.155"
 
+[build-dependencies]
+version = { path = "version" }
+
 [workspace]
 members = [
   "chelps", "dbg", "idmap",
   "nss", "ntstatus_gen",
-  "param", "sock", "tdb",
+  "param", "sock", "tdb", "version",
 ]
 
 [workspace.dependencies]
