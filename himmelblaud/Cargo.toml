@@ -12,7 +12,9 @@ homepage.workspace = true
 version.workspace = true
 
 [dependencies]
+tdb = { workspace = true }
 dbg = { workspace = true }
+libc = "0.2.155"
 
 [workspace]
 members = [
