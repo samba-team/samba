@@ -1482,19 +1482,20 @@ static struct dirent *vfs_ceph_readdir(struct vfs_handle_struct *handle,
 {
 	const struct vfs_ceph_fh *dircfh = (const struct vfs_ceph_fh *)dirp;
 	struct dirent *result = NULL;
-	int errval = 0;
+	int saved_errno = errno;
 
 	DBG_DEBUG("[CEPH] readdir(%p, %p)\n", handle, dirp);
+
 	errno = 0;
 	result = vfs_ceph_ll_readdir(handle, dircfh);
-	errval = errno;
-	if ((result == NULL) && (errval != 0)) {
-		DBG_DEBUG("[CEPH] readdir(...) = %d\n", errval);
+	if ((result == NULL) && (errno != 0)) {
+		saved_errno = errno;
+		DBG_DEBUG("[CEPH] readdir(...) = %d\n", errno);
 	} else {
 		DBG_DEBUG("[CEPH] readdir(...) = %p\n", result);
 	}
-	/* re-assign errno to avoid possible over-write by DBG_DEBUG */
-	errno = errval;
+
+	errno = saved_errno;
 	return result;
 }
 
