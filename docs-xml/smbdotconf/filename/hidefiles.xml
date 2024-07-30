@@ -14,14 +14,22 @@
 	as in DOS wildcards.</para>
 
 	<para>
-	If a file or directory name is prefixed by &quot;../USERNAME/&quot;
-	or &quot;../GROUPNAME/&quot;, then the subsequent filename is only hidden for the
-	given user or group. Instead of specifying users or groups by name, they
-	can also be specified by SID.
+	<smbconfoption name="hide files"/> can also be used as a
+	parametric option where NAME in</para>
+
+	<para>
+	hide files : NAME =
 	</para>
 
-	<para>User and group names use the same format as <smbconfoption
-	name="valid users"/>.</para>
+	<para>
+	specifies a user or group name with the same syntax as
+	<smbconfoption name="valid users"/>. This parametric form can
+	be specified multiple times for different users or
+	groups. This means that &quot;hide files : NAME&quot; set both
+	in the [global] and the share section add up, whereas normally
+	options set in a share section overwrite the default in the
+	[global] section.
+	</para>
 
 	<para>Each entry must be a Unix path, not a DOS path and must 
 	not include the Unix directory separator '/'.</para>
@@ -46,9 +54,12 @@
 hide files = /.*/DesktopFolderDB/TrashFor%m/resource.frk/
 
 ; Hide some files for anyone and some files for specific users and groups
-hide files = hideforall1/../joe/hideforuserjoe/hideforall2/../students/hideforstudents/hideforall3
-hide files = ../UNIVERSITY\Alumnis/somefile.txt/../john@university.org/anotherfile.txt
-hide files = ../S-1-5-21-123-456-789-1000/secretfile.txt
+hide files = /hideforall1/
+hide files : USER = /hidetoforuser/
+hide files : GROUP = /hideforgroup/
+hide files : UNIVERSITY\Alumnis = /somefile.txt/
+hide files : john@university.org = /anotherfile.txt/
+hide files : S-1-5-21-123-456-789-1000 = /secretfile.txt/
 
 </programlisting>
 	</para>
