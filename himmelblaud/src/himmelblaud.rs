@@ -207,6 +207,7 @@ pub(crate) async fn handle_client(
                     }
                 }
             }
+            Request::NssAccounts => resolver.getpwent().await?,
             _ => todo!(),
         };
         reqs.send(resp).await?;
@@ -218,4 +219,5 @@ pub(crate) async fn handle_client(
     Ok(())
 }
 
+mod himmelblaud_getpwent;
 mod himmelblaud_pam_auth;
