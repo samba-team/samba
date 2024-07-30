@@ -326,6 +326,10 @@ bool token_contains_name(TALLOC_CTX *mem_ctx,
 			 const struct security_token *token,
 			 const char *name,
 			 bool *match);
+bool append_to_namearray(TALLOC_CTX *mem_ctx,
+			 const char *namelist_in,
+			 const struct security_token *token,
+			 struct name_compare_entry **_name_array);
 bool set_namearray(TALLOC_CTX *mem_ctx,
 		   const char *namelist,
 		   const struct security_token *token,
