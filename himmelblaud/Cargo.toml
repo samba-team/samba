@@ -16,9 +16,10 @@ dbg = { workspace = true }
 
 [workspace]
 members = [
-  "chelps", "dbg"
+  "chelps", "dbg", "ntstatus_gen",
 ]
 
 [workspace.dependencies]
 dbg = { path = "dbg" }
 chelps = { path = "chelps" }
+ntstatus_gen = { path = "ntstatus_gen" }
