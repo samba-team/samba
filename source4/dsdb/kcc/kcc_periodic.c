@@ -740,9 +740,13 @@ static void kccsrv_periodic_run(struct kccsrv_service *service)
 
 	mem_ctx = talloc_new(service);
 
-        if (service->samba_kcc_code)
+	if (service->samba_kcc_code) {
 		status = kccsrv_samba_kcc(service);
-	else {
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("kccsrv_samba_kcc failed - %s\n",
+				nt_errstr(status));
+		}
+	} else {
 		status = kccsrv_simple_update(service, mem_ctx);
 		if (!NT_STATUS_IS_OK(status))
 			DEBUG(0,("kccsrv_simple_update failed - %s\n",
