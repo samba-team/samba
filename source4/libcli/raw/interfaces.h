@@ -139,6 +139,12 @@ union smb_unlink {
 		struct {
 			const char *pattern;
 			uint16_t attrib;
+
+			/*
+			 * only used by
+			 * smb2_composite_unlink*
+			 */
+			bool truncate_if_needed;
 		} in;
 	} unlink;
 };

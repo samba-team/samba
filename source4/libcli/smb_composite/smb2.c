@@ -47,6 +47,38 @@ static void continue_close(struct smb2_request *req)
 	composite_error(ctx, status);	
 }
 
+struct smb2_composite_unlink_state {
+	bool truncate_if_needed;
+	struct smb2_handle handle;
+};
+
+/*
+  continue after the truncate in a composite unlink
+ */
+static void continue_truncate(struct smb2_request *req)
+{
+	struct composite_context *ctx = talloc_get_type(req->async.private_data,
+							struct composite_context);
+	struct smb2_composite_unlink_state *state =
+		talloc_get_type_abort(ctx->private_data,
+		struct smb2_composite_unlink_state);
+	struct smb2_tree *tree = req->tree;
+	struct smb2_close close_parm;
+	NTSTATUS status;
+
+	status = smb2_setinfo_recv(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* we ignore errors as we should not leak the handle */
+	}
+
+	ZERO_STRUCT(close_parm);
+	close_parm.in.file.handle = state->handle;
+	close_parm.in.flags = SMB2_CLOSE_FLAGS_FULL_INFORMATION;
+
+	req = smb2_close_send(tree, &close_parm);
+	composite_continue_smb2(ctx, req, continue_close, ctx);
+}
+
 /*
   continue after the create in a composite unlink
  */
@@ -54,6 +86,9 @@ static void continue_unlink(struct smb2_request *req)
 {
 	struct composite_context *ctx = talloc_get_type(req->async.private_data, 
 							struct composite_context);
+	struct smb2_composite_unlink_state *state =
+		talloc_get_type_abort(ctx->private_data,
+		struct smb2_composite_unlink_state);
 	struct smb2_tree *tree = req->tree;
 	struct smb2_create create_parm;
 	struct smb2_close close_parm;
@@ -62,6 +97,23 @@ static void continue_unlink(struct smb2_request *req)
 	status = smb2_create_recv(req, ctx, &create_parm);
 	if (!NT_STATUS_IS_OK(status)) {
 		composite_error(ctx, status);
+		return;
+	}
+
+	if (create_parm.out.size != 0 &&
+	    state->truncate_if_needed)
+	{
+		union smb_setfileinfo sinfo;
+
+		state->handle = create_parm.out.file.handle;
+
+		ZERO_STRUCT(sinfo);
+		sinfo.end_of_file_info.level =
+			RAW_SFILEINFO_END_OF_FILE_INFORMATION;
+		sinfo.end_of_file_info.in.file.handle = state->handle;
+		sinfo.end_of_file_info.in.size = 0;
+		req = smb2_setinfo_file_send(tree, &sinfo);
+		composite_continue_smb2(ctx, req, continue_truncate, ctx);
 		return;
 	}
 
@@ -79,11 +131,19 @@ struct composite_context *smb2_composite_unlink_send(struct smb2_tree *tree,
 						     union smb_unlink *io)
 {
 	struct composite_context *ctx;
+	struct smb2_composite_unlink_state *state = NULL;
 	struct smb2_create create_parm;
 	struct smb2_request *req;
 
 	ctx = composite_create(tree, tree->session->transport->ev);
 	if (ctx == NULL) return NULL;
+
+	state = talloc_zero(ctx, struct smb2_composite_unlink_state);
+	if (composite_nomem(state, ctx)) {
+		return ctx;
+	}
+	ctx->private_data = state;
+	state->truncate_if_needed = io->unlink.in.truncate_if_needed;
 
 	/* check for wildcards - we could support these with a
 	   search, but for now they aren't necessary */
@@ -94,6 +154,9 @@ struct composite_context *smb2_composite_unlink_send(struct smb2_tree *tree,
 
 	ZERO_STRUCT(create_parm);
 	create_parm.in.desired_access     = SEC_STD_DELETE;
+	if (state->truncate_if_needed) {
+		create_parm.in.desired_access |= SEC_FILE_WRITE_DATA;
+	}
 	create_parm.in.create_disposition = NTCREATEX_DISP_OPEN;
 	create_parm.in.share_access = 
 		NTCREATEX_SHARE_ACCESS_DELETE|
