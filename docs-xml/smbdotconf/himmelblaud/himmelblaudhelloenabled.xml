@@ -1,0 +1,18 @@
+<samba:parameter name="himmelblaud hello enabled"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+
+	<para>This parameter controls Hello enrollment and authentication to
+	Azure Entra ID. By default, it is disabled to prevent security risks,
+	such as on hosts exposing the SSH port. Administrators should enable
+	this setting only when Hello enrollment is appropriate for their
+	environment.
+
+</para>
+</description>
+
+<value type="default">no</value>
+<value type="example">yes</value>
+</samba:parameter>

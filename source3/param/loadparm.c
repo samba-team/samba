@@ -1004,6 +1004,10 @@ void loadparm_s3_init_globals(struct loadparm_context *lp_ctx,
 
 	Globals.acl_claims_evaluation = ACL_CLAIMS_EVALUATION_AD_DC_ONLY;
 
+	/* Set the default Himmelblaud globals */
+	Globals.himmelblaud_hello_enabled = false;
+	Globals.himmelblaud_sfa_fallback = false;
+
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();
 }

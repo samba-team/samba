@@ -1,0 +1,15 @@
+[package]
+name = "param"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+version.workspace = true
+
+[dependencies]
+chelps = { workspace = true }
+dbg.workspace = true
+ntstatus_gen.workspace = true
+paste = "1.0.15"
+
+[build-dependencies]
+bindgen = "0.69.4"
