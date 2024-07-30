@@ -179,6 +179,17 @@ bool token_contains_name(TALLOC_CTX *mem_ctx,
 	return true;
 }
 
+static size_t namearray_len(const struct name_compare_entry *array)
+{
+	size_t i = 0;
+
+	while (array[i].name != NULL) {
+		i += 1;
+	}
+
+	return i;
+}
+
 /*******************************************************************
  Strip a '/' separated list into an array of
  name_compare_enties structures suitable for
@@ -190,46 +201,38 @@ bool token_contains_name(TALLOC_CTX *mem_ctx,
  if possible.
 ********************************************************************/
 
-bool set_namearray(TALLOC_CTX *mem_ctx,
-		   const char *namelist_in,
-		   const struct security_token *token,
-		   struct name_compare_entry **_name_array)
+bool append_to_namearray(TALLOC_CTX *mem_ctx,
+			 const char *namelist_in,
+			 const struct security_token *token,
+			 struct name_compare_entry **_name_array)
 {
-	struct name_compare_entry *name_array = NULL;
-	struct name_compare_entry *e = NULL;
+	struct name_compare_entry *name_array = *_name_array;
+	size_t len;
 	char *namelist = NULL;
 	const char *p = NULL;
-	size_t num_entries;
 	bool ok;
-
-	*_name_array = NULL;
 
 	if ((namelist_in == NULL) || (namelist_in[0] == '\0')) {
 		return true;
 	}
 
-	namelist = path_to_strv(mem_ctx, namelist_in);
+	if (name_array == NULL) {
+		name_array = talloc_zero(mem_ctx, struct name_compare_entry);
+		if (name_array == NULL) {
+			return false;
+		}
+	}
+	len = namearray_len(name_array);
+
+	namelist = path_to_strv(name_array, namelist_in);
 	if (namelist == NULL) {
 		DBG_ERR("path_to_strv failed\n");
 		return false;
 	}
 
-	num_entries = strv_count(namelist);
-
-	name_array = talloc_zero_array(mem_ctx,
-				       struct name_compare_entry,
-				       num_entries + 1);
-	if (name_array == NULL) {
-		DBG_ERR("talloc failed\n");
-		TALLOC_FREE(namelist);
-		return false;
-	}
-
-	namelist = talloc_reparent(mem_ctx, name_array, namelist);
-
-	e = &name_array[0];
-
 	while ((p = strv_next(namelist, p)) != NULL) {
+		struct name_compare_entry *tmp = NULL;
+
 		if (*p == '\0') {
 			/* cope with multiple (useless) /s) */
 			continue;
@@ -273,11 +276,36 @@ bool set_namearray(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		e->name = p;
-		e->is_wild = ms_has_wild(e->name);
-		e++;
+		tmp = talloc_realloc(mem_ctx,
+				     name_array,
+				     struct name_compare_entry,
+				     len + 2);
+		if (tmp == NULL) {
+			return false;
+		}
+		name_array = tmp;
+
+		name_array[len] = (struct name_compare_entry){
+			.name = p,
+			.is_wild = ms_has_wild(p),
+		};
+		name_array[len + 1] = (struct name_compare_entry){};
+		len += 1;
 	}
 
 	*_name_array = name_array;
 	return true;
+}
+
+bool set_namearray(TALLOC_CTX *mem_ctx,
+		   const char *namelist_in,
+		   const struct security_token *token,
+		   struct name_compare_entry **_name_array)
+{
+	bool ret;
+
+	*_name_array = NULL;
+
+	ret = append_to_namearray(mem_ctx, namelist_in, token, _name_array);
+	return ret;
 }
