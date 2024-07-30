@@ -74,6 +74,7 @@ apt-get -y install \
     libtasn1-dev \
     libunwind-dev \
     liburing-dev \
+    libutf8proc-dev \
     lmdb-utils \
     locales \
     lsb-release \

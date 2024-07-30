@@ -107,6 +107,7 @@ zypper --non-interactive install \
     tar \
     tracker-devel \
     tree \
+    utf8proc-devel \
     wget \
     which \
     xfsprogs-devel \

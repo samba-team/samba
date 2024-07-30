@@ -75,6 +75,7 @@ apt-get -y install \
     libtracker-sparql-2.0-dev \
     libunwind-dev \
     liburing-dev \
+    libutf8proc-dev \
     lmdb-utils \
     locales \
     lsb-release \

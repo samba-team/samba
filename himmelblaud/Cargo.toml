@@ -16,7 +16,8 @@ dbg = { workspace = true }
 
 [workspace]
 members = [
-  "chelps", "dbg", "ntstatus_gen",
+  "chelps", "dbg", "idmap",
+  "ntstatus_gen",
   "param", "tdb",
 ]
 
@@ -26,3 +27,4 @@ dbg = { path = "dbg" }
 chelps = { path = "chelps" }
 ntstatus_gen = { path = "ntstatus_gen" }
 tdb = { path = "tdb" }
+idmap = { path = "idmap" }

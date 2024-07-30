@@ -75,6 +75,7 @@ apt-get -y install \
     libtasn1-dev \
     libtracker-sparql-2.0-dev \
     libunwind-dev \
+    libutf8proc-dev \
     lmdb-utils \
     locales \
     lsb-release \
