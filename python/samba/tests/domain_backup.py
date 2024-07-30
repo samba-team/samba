@@ -358,7 +358,7 @@ class DomainBackupBase(BlackboxTestCase):
         """Check the user secrets in the restored DB match what's expected"""
 
         # check secrets for the built-in testenv users match what's expected
-        test_users = ["alice", "bob", "jane"]
+        test_users = ["alice", "bob", "jane", "joe"]
         for user in test_users:
             self.assert_user_secrets(samdb, user, expect_secrets)
 
