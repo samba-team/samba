@@ -1,0 +1,24 @@
+[workspace.package]
+edition = "2021"
+license = "GPL-3.0-or-later"
+homepage = "https://www.samba.org/"
+version = "4.21.0"
+
+[package]
+name = "himmelblaud"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+version.workspace = true
+
+[dependencies]
+dbg = { workspace = true }
+
+[workspace]
+members = [
+  "chelps", "dbg"
+]
+
+[workspace.dependencies]
+dbg = { path = "dbg" }
+chelps = { path = "chelps" }

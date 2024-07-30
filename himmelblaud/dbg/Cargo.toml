@@ -1,0 +1,12 @@
+[package]
+name = "dbg"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+version.workspace = true
+
+[build-dependencies]
+bindgen = "0.69.4"
+
+[dependencies]
+chelps.workspace = true

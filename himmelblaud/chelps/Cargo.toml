@@ -1,0 +1,8 @@
+[package]
+name = "chelps"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+version.workspace = true
+
+[dependencies]
