@@ -203,7 +203,6 @@ static size_t namearray_len(const struct name_compare_entry *array)
 
 bool append_to_namearray(TALLOC_CTX *mem_ctx,
 			 const char *namelist_in,
-			 const struct security_token *token,
 			 struct name_compare_entry **_name_array)
 {
 	struct name_compare_entry *name_array = *_name_array;
@@ -260,13 +259,12 @@ bool append_to_namearray(TALLOC_CTX *mem_ctx,
 
 bool set_namearray(TALLOC_CTX *mem_ctx,
 		   const char *namelist_in,
-		   const struct security_token *token,
 		   struct name_compare_entry **_name_array)
 {
 	bool ret;
 
 	*_name_array = NULL;
 
-	ret = append_to_namearray(mem_ctx, namelist_in, token, _name_array);
+	ret = append_to_namearray(mem_ctx, namelist_in, _name_array);
 	return ret;
 }

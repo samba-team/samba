@@ -241,7 +241,6 @@ static bool scan_file_list_cb(const char *string,
 
 		ok = append_to_namearray(state->mem_ctx,
 					 files,
-					 NULL,
 					 state->list);
 		if (!ok) {
 			goto fail;
@@ -371,7 +370,6 @@ static bool check_user_ok(connection_struct *conn,
 
 		ok = set_namearray(conn,
 				   lp_veto_files(talloc_tos(), lp_sub, snum),
-				   session_info->security_token,
 				   &ent->veto_list);
 		if (!ok) {
 			return false;
@@ -405,7 +403,6 @@ static bool check_user_ok(connection_struct *conn,
 
 		ok = set_namearray(conn,
 				   lp_hide_files(talloc_tos(), lp_sub, snum),
-				   session_info->security_token,
 				   &ent->hide_list);
 		if (!ok) {
 			return false;

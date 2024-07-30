@@ -755,7 +755,6 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	if (!IS_IPC(conn) && !IS_PRINT(conn)) {
 		ok = set_namearray(conn,
 				   lp_veto_oplock_files(talloc_tos(), lp_sub, snum),
-				   NULL,
 				   &conn->veto_oplock_list);
 		if (!ok) {
 			status = NT_STATUS_NO_MEMORY;
@@ -763,7 +762,6 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 		}
 		ok = set_namearray(conn,
 				   lp_aio_write_behind(talloc_tos(), lp_sub, snum),
-				   NULL,
 				   &conn->aio_write_behind_list);
 		if (!ok) {
 			status = NT_STATUS_NO_MEMORY;

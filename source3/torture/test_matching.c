@@ -66,7 +66,7 @@ bool run_str_match_mswild(int dummy)
 
 	d_fprintf(stderr, "namelist: %s\n", namelist);
 
-	ret = set_namearray(talloc_tos(), namelist, NULL, &name_entries);
+	ret = set_namearray(talloc_tos(), namelist, &name_entries);
 	SMB_ASSERT(ret && name_entries != NULL);
 
 	status = samba_path_matching_mswild_create(talloc_tos(),
