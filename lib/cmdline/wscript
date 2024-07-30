@@ -26,7 +26,7 @@ def build(bld):
 
     bld.SAMBA_SUBSYSTEM('CMDLINE_S4',
                         source='cmdline_s4.c',
-                        deps='cmdline')
+                        deps='cmdline samba3core')
 
     bld.SAMBA_BINARY('test_cmdline',
                      source='tests/test_cmdline.c',

@@ -20,9 +20,11 @@
 #include "lib/param/param.h"
 #include "lib/util/debug.h"
 #include "lib/util/fault.h"
+#include "lib/util/talloc_stack.h"
 #include "auth/credentials/credentials.h"
 #include "dynconfig/dynconfig.h"
 #include "cmdline_private.h"
+#include "source3/lib/interface.h"
 
 static bool _require_smbconf;
 static enum samba_cmdline_config_type _config_type;
@@ -80,6 +82,15 @@ static bool _samba_cmdline_load_config_s4(void)
 		break;
 	default:
 		break;
+	}
+
+	{
+		/* load_interfaces() requires a talloc stackframe. */
+		TALLOC_CTX *frame = talloc_stackframe();
+
+		load_interfaces();
+
+		TALLOC_FREE(frame);
 	}
 
 	return true;
