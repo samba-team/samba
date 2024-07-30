@@ -1909,6 +1909,14 @@ struct tevent_req *name_resolve_bcast_send(TALLOC_CTX *mem_ctx,
 		  "for name %s<0x%x>\n", name, name_type));
 
 	num_addrs = iface_count();
+	if (num_addrs == 0) {
+		DBG_INFO("name_resolve_bcast(%s#%02x): no interfaces are available\n",
+			 name,
+			 name_type);
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
 	bcast_addrs = talloc_array(state, struct sockaddr_storage, num_addrs);
 	if (tevent_req_nomem(bcast_addrs, req)) {
 		return tevent_req_post(req, ev);
