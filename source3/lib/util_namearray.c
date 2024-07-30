@@ -210,7 +210,6 @@ bool append_to_namearray(TALLOC_CTX *mem_ctx,
 	size_t len;
 	char *namelist = NULL;
 	const char *p = NULL;
-	bool ok;
 
 	if ((namelist_in == NULL) || (namelist_in[0] == '\0')) {
 		return true;
@@ -236,44 +235,6 @@ bool append_to_namearray(TALLOC_CTX *mem_ctx,
 		if (*p == '\0') {
 			/* cope with multiple (useless) /s) */
 			continue;
-		}
-
-		if (ISDOTDOT(p) && token != NULL) {
-			const char *username = NULL;
-			bool match;
-
-			/* Get the username */
-			p = strv_next(namelist, p);
-			if (p == NULL) {
-				DBG_ERR("Missing username\n");
-				TALLOC_FREE(namelist);
-				return false;
-			}
-			username = p;
-
-			/* Get the filename */
-			p = strv_next(namelist, p);
-			if (p == NULL) {
-				DBG_ERR("Missing filename after username '%s'\n",
-					username);
-				TALLOC_FREE(namelist);
-				return false;
-			}
-
-			ok = token_contains_name(talloc_tos(),
-						 NULL,
-						 NULL,
-						 NULL,
-						 token,
-						 username,
-						 &match);
-			if (!ok) {
-				TALLOC_FREE(namelist);
-				return false;
-			}
-			if (!match) {
-				continue;
-			}
 		}
 
 		tmp = talloc_realloc(mem_ctx,
