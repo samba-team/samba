@@ -171,11 +171,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_string(struct ndr_pull *ndr, ndr_flags_
 
 enum ndr_err_code ndr_push_dnsp_string(struct ndr_push *ndr, ndr_flags_type ndr_flags, const char *string)
 {
-	int total_len;
+	size_t total_len;
 	total_len = strlen(string);
 	if (total_len > 255) {
 		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
-				      "dns_name of length %d larger than 255", total_len);
+				      "dns_name of length %zu larger than 255",
+				      total_len);
 	}
 	NDR_CHECK(ndr_push_uint8(ndr, ndr_flags, (uint8_t)total_len));
 	NDR_CHECK(ndr_push_bytes(ndr, (const uint8_t *)string, total_len));
