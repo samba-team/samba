@@ -328,11 +328,9 @@ bool token_contains_name(TALLOC_CTX *mem_ctx,
 			 bool *match);
 bool append_to_namearray(TALLOC_CTX *mem_ctx,
 			 const char *namelist_in,
-			 const struct security_token *token,
 			 struct name_compare_entry **_name_array);
 bool set_namearray(TALLOC_CTX *mem_ctx,
 		   const char *namelist,
-		   const struct security_token *token,
 		   struct name_compare_entry **_name_array);
 bool fcntl_lock(int fd, int op, off_t offset, off_t count, int type);
 bool fcntl_getlock(int fd, int op, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid);

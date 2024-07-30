@@ -258,7 +258,6 @@ static int virusfilter_vfs_connect(
 	if (exclude_files != NULL) {
 		ok = set_namearray(config,
 				   exclude_files,
-				   NULL,
 				   &config->exclude_files);
 		if (!ok) {
 			DBG_ERR("set_namearray failed\n");
@@ -271,7 +270,6 @@ static int virusfilter_vfs_connect(
 	if (infected_files != NULL) {
 		ok = set_namearray(config,
 				   infected_files,
-				   NULL,
 				   &config->infected_files);
 		if (!ok) {
 			DBG_ERR("set_namearray failed\n");
