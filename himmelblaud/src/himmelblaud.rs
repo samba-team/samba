@@ -19,15 +19,16 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 use crate::cache::{GroupCache, PrivateCache, UserCache};
+use crate::himmelblaud::himmelblaud_pam_auth::AuthSession;
 use bytes::{BufMut, BytesMut};
-use dbg::{DBG_DEBUG, DBG_ERR};
+use dbg::{DBG_DEBUG, DBG_ERR, DBG_WARNING};
 use futures::{SinkExt, StreamExt};
 use himmelblau::graph::Graph;
 use himmelblau::BrokerClientApplication;
 use idmap::Idmap;
 use kanidm_hsm_crypto::{BoxedDynTpm, MachineKey};
 use param::LoadParm;
-use sock::{Request, Response};
+use sock::{PamAuthResponse, Request, Response};
 use std::error::Error;
 use std::io;
 use std::io::{Error as IoError, ErrorKind};
@@ -138,9 +139,74 @@ pub(crate) async fn handle_client(
     };
 
     let mut reqs = Framed::new(stream, ClientCodec::new());
+    let mut pam_auth_session_state = None;
 
     while let Some(Ok(req)) = reqs.next().await {
+        let mut resolver = resolver.lock().await;
         let resp = match req {
+            Request::PamAuthenticateInit(account_id) => {
+                DBG_DEBUG!("pam authenticate init");
+
+                match &pam_auth_session_state {
+                    Some(_) => {
+                        DBG_WARNING!(
+                            "Attempt to init \
+                                                    auth session while current \
+                                                    session is active"
+                        );
+                        pam_auth_session_state = None;
+                        Response::Error
+                    }
+                    None => {
+                        let (auth_session, resp) =
+                            resolver.pam_auth_init(&account_id)?;
+                        pam_auth_session_state = Some(auth_session);
+                        resp
+                    }
+                }
+            }
+            Request::PamAuthenticateStep(pam_next_req) => {
+                DBG_DEBUG!("pam authenticate step");
+                match &mut pam_auth_session_state {
+                    Some(AuthSession::InProgress {
+                        account_id,
+                        cred_handler,
+                    }) => {
+                        let resp = resolver
+                            .pam_auth_step(
+                                account_id,
+                                cred_handler,
+                                pam_next_req,
+                            )
+                            .await?;
+                        match resp {
+                            Response::PamAuthStepResponse(
+                                PamAuthResponse::Success,
+                            ) => {
+                                pam_auth_session_state =
+                                    Some(AuthSession::Success);
+                            }
+                            Response::PamAuthStepResponse(
+                                PamAuthResponse::Denied,
+                            ) => {
+                                pam_auth_session_state =
+                                    Some(AuthSession::Denied);
+                            }
+                            _ => {}
+                        }
+                        resp
+                    }
+                    _ => {
+                        DBG_WARNING!(
+                            "Attempt to \
+                                                    continue auth session \
+                                                    while current session is \
+                                                    inactive"
+                        );
+                        Response::Error
+                    }
+                }
+            }
             _ => todo!(),
         };
         reqs.send(resp).await?;
@@ -151,3 +217,5 @@ pub(crate) async fn handle_client(
     DBG_DEBUG!("Disconnecting client ...");
     Ok(())
 }
+
+mod himmelblaud_pam_auth;
