@@ -18,7 +18,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-use crate::cache::{GroupCache, PrivateCache, UserCache};
+use crate::cache::{GroupCache, PrivateCache, UidCache, UserCache};
 use crate::himmelblaud::himmelblaud_pam_auth::AuthSession;
 use bytes::{BufMut, BytesMut};
 use dbg::{DBG_DEBUG, DBG_ERR, DBG_WARNING};
@@ -45,6 +45,7 @@ pub(crate) struct Resolver {
     graph: Graph,
     pcache: PrivateCache,
     user_cache: UserCache,
+    uid_cache: UidCache,
     group_cache: GroupCache,
     hsm: Mutex<BoxedDynTpm>,
     machine_key: MachineKey,
@@ -60,6 +61,7 @@ impl Resolver {
         graph: Graph,
         pcache: PrivateCache,
         user_cache: UserCache,
+        uid_cache: UidCache,
         group_cache: GroupCache,
         hsm: BoxedDynTpm,
         machine_key: MachineKey,
@@ -73,6 +75,7 @@ impl Resolver {
             graph,
             pcache,
             user_cache,
+            uid_cache,
             group_cache,
             hsm: Mutex::new(hsm),
             machine_key,
@@ -208,6 +211,9 @@ pub(crate) async fn handle_client(
                 }
             }
             Request::NssAccounts => resolver.getpwent().await?,
+            Request::NssAccountByName(account_id) => {
+                resolver.getpwnam(&account_id).await?
+            }
             _ => todo!(),
         };
         reqs.send(resp).await?;
@@ -220,4 +226,5 @@ pub(crate) async fn handle_client(
 }
 
 mod himmelblaud_getpwent;
+mod himmelblaud_getpwnam;
 mod himmelblaud_pam_auth;

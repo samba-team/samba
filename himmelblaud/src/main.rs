@@ -38,7 +38,7 @@ mod constants;
 use constants::DEFAULT_ODC_PROVIDER;
 mod cache;
 mod himmelblaud;
-use cache::{GroupCache, PrivateCache, UserCache};
+use cache::{GroupCache, PrivateCache, UidCache, UserCache};
 mod utils;
 
 #[tokio::main(flavor = "current_thread")]
@@ -175,6 +175,18 @@ async fn main() -> ExitCode {
             }
         };
 
+        let uid_cache_path = Path::new(&cache_dir)
+            .join("himmelblau_uid_map.tdb")
+            .display()
+            .to_string();
+        let uid_cache = match UidCache::new(&uid_cache_path) {
+            Ok(cache) => cache,
+            Err(e) => {
+                DBG_ERR!("Failed to open the himmelblau uid cache: {:?}", e);
+                return ExitCode::FAILURE;
+            }
+        };
+
         let group_cache_path = Path::new(&cache_dir)
             .join("himmelblau_groups.tdb")
             .display()
@@ -283,6 +295,7 @@ async fn main() -> ExitCode {
             graph,
             pcache,
             user_cache,
+            uid_cache,
             group_cache,
             hsm,
             machine_key,
