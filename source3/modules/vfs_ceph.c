@@ -66,7 +66,6 @@ static inline int status_code(int ret)
 		errno = -ret;
 		return -1;
 	}
-	errno = 0;
 	return ret;
 }
 
@@ -76,7 +75,6 @@ static inline ssize_t lstatus_code(intmax_t ret)
 		errno = -((int)ret);
 		return -1;
 	}
-	errno = 0;
 	return (ssize_t)ret;
 }
 
