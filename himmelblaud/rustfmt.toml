@@ -1,0 +1,2 @@
+# Lightly enforce maximum 80 characters
+max_width = 80
