@@ -1968,6 +1968,8 @@ sub setup_fileserver
 
 	get quota command = $prefix_abs/getset_quota.py
 	set quota command = $prefix_abs/getset_quota.py
+	veto files : user1 = /user1file/
+	veto files : +group1 = /group1file/
 [tarmode]
 	path = $tarmode_sharedir
 	comment = tar test share
@@ -2079,7 +2081,9 @@ sub setup_fileserver
 
 [veto_files]
 	path = $veto_sharedir
-	veto files = /veto_name*/../user1/user1file/../user2/user2file/../+group1/group1file/../+group2/group2file
+	veto files = /veto_name*/
+	veto files : user2 = /user2file/
+	veto files : +group2 = /group2file/
 
 [delete_yes_unwrite]
 	read only = no
