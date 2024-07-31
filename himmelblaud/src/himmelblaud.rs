@@ -216,6 +216,9 @@ pub(crate) async fn handle_client(
             }
             Request::NssAccountByUid(uid) => resolver.getpwuid(uid).await?,
             Request::NssGroups => resolver.getgrent().await?,
+            Request::NssGroupByName(grp_id) => {
+                resolver.getgrnam(&grp_id).await?
+            }
             _ => todo!(),
         };
         reqs.send(resp).await?;
@@ -228,6 +231,7 @@ pub(crate) async fn handle_client(
 }
 
 mod himmelblaud_getgrent;
+mod himmelblaud_getgrnam;
 mod himmelblaud_getpwent;
 mod himmelblaud_getpwnam;
 mod himmelblaud_getpwuid;
