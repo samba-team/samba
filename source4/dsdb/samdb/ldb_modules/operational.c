@@ -557,7 +557,7 @@ static int construct_msds_isrodc_with_server_dn(struct ldb_module *module,
 						struct ldb_dn *dn,
 						struct ldb_request *parent)
 {
-	struct ldb_dn *server_dn;
+	struct ldb_dn *server_dn = NULL;
 	const char *attr_obj_cat[] = { "objectCategory", NULL };
 	struct ldb_result *res;
 	struct ldb_message_element *object_category;
@@ -594,7 +594,7 @@ static int construct_msds_isrodc_with_computer_dn(struct ldb_module *module,
 						  struct ldb_request *parent)
 {
 	int ret;
-	struct ldb_dn *server_dn;
+	struct ldb_dn *server_dn = NULL;
 
 	ret = dsdb_module_reference_dn(module, msg, msg->dn, "serverReferenceBL",
 				       &server_dn, parent);
