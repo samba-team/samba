@@ -219,6 +219,7 @@ pub(crate) async fn handle_client(
             Request::NssGroupByName(grp_id) => {
                 resolver.getgrnam(&grp_id).await?
             }
+            Request::NssGroupByGid(gid) => resolver.getgrgid(gid).await?,
             _ => todo!(),
         };
         reqs.send(resp).await?;
@@ -231,6 +232,7 @@ pub(crate) async fn handle_client(
 }
 
 mod himmelblaud_getgrent;
+mod himmelblaud_getgrgid;
 mod himmelblaud_getgrnam;
 mod himmelblaud_getpwent;
 mod himmelblaud_getpwnam;
