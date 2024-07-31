@@ -286,13 +286,22 @@ fail:
 
 }
 
+static bool use_nodes_command;
+
 static struct ctdb_node_map *read_nodes_file(TALLOC_CTX *mem_ctx,
 					     uint32_t pnn)
 {
 	struct ctdb_node_map *nodemap;
 	char nodes_list[PATH_MAX];
 	const char *ctdb_base;
+	const char *per_node_template = "%s/nodes.%d";
+	const char *node_template = "%s/nodes";
 	int num;
+
+	if (use_nodes_command) {
+		per_node_template = "!%s/nodes.sh %d";
+		node_template = "!%s/nodes.sh";
+	}
 
 	ctdb_base = getenv("CTDB_BASE");
 	if (ctdb_base == NULL) {
@@ -302,7 +311,7 @@ static struct ctdb_node_map *read_nodes_file(TALLOC_CTX *mem_ctx,
 
 	/* read optional node-specific nodes file */
 	num = snprintf(nodes_list, sizeof(nodes_list),
-		       "%s/nodes.%d", ctdb_base, pnn);
+		       per_node_template, ctdb_base, pnn);
 	if (num == sizeof(nodes_list)) {
 		D_ERR("nodes file path too long\n");
 		return NULL;
@@ -321,7 +330,7 @@ static struct ctdb_node_map *read_nodes_file(TALLOC_CTX *mem_ctx,
 	}
 
 	/* read normal nodes file */
-	num = snprintf(nodes_list, sizeof(nodes_list), "%s/nodes", ctdb_base);
+	num = snprintf(nodes_list, sizeof(nodes_list), node_template, ctdb_base);
 	if (num == sizeof(nodes_list)) {
 		D_ERR("nodes file path too long\n");
 		return NULL;
@@ -1229,6 +1238,10 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx,
 			status = control_failures_parse(ctdb);
 		} else if (strcmp(line, "RUNSTATE") == 0) {
 			status = runstate_parse(ctdb);
+		} else if (strcmp(line, "USENODESCOMMAND") == 0) {
+			fprintf(stderr, "Using nodes command\n");
+			use_nodes_command = true;
+			status = true;
 		} else {
 			fprintf(stderr, "Unknown line %s\n", line);
 			status = false;
