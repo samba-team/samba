@@ -180,8 +180,10 @@ Per-user and group "veto files" and "hide files"
 
 "veto files" and "hide files" can optionally be restricted to certain users and
 groups. To apply a veto or hide directive to a filename for a specific user or
-group, prefix the filename with "../USERNAME/" or "../GROUPNAME/". For details
-consult the updated smb.conf manpage.
+group, a parametric option like this can be used:
+ hide files : USERNAME = /somefile.txt/
+ veto files : GROUPNAME = /otherfile.txt/
+For details consult the updated smb.conf manpage.
 
 Automatic keytab update after machine password change
 -----------------------------------------------------
