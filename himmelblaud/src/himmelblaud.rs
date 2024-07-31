@@ -214,6 +214,7 @@ pub(crate) async fn handle_client(
             Request::NssAccountByName(account_id) => {
                 resolver.getpwnam(&account_id).await?
             }
+            Request::NssAccountByUid(uid) => resolver.getpwuid(uid).await?,
             _ => todo!(),
         };
         reqs.send(resp).await?;
@@ -227,4 +228,5 @@ pub(crate) async fn handle_client(
 
 mod himmelblaud_getpwent;
 mod himmelblaud_getpwnam;
+mod himmelblaud_getpwuid;
 mod himmelblaud_pam_auth;
