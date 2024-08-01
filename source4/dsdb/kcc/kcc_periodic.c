@@ -1,23 +1,23 @@
-/* 
+/*
    Unix SMB/CIFS Implementation.
    KCC service periodic handling
-   
+
    Copyright (C) Andrew Tridgell 2009
    based on repl service code
-    
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
+
 */
 
 #include "includes.h"
@@ -207,7 +207,7 @@ NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ctx,
 
 		werr = dsdb_loadreps(s->samdb, mem_ctx, p->dn, "repsFrom", &our_reps, &our_count);
 		if (!W_ERROR_IS_OK(werr)) {
-			DEBUG(0,(__location__ ": Failed to load repsFrom from %s - %s\n", 
+			DEBUG(0,(__location__ ": Failed to load repsFrom from %s - %s\n",
 				 ldb_dn_get_linearized(p->dn), ldb_errstring(s->samdb)));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
@@ -265,7 +265,7 @@ NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ctx,
 		if (modified) {
 			werr = dsdb_savereps(s->samdb, mem_ctx, p->dn, "repsFrom", our_reps, our_count);
 			if (!W_ERROR_IS_OK(werr)) {
-				DEBUG(0,(__location__ ": Failed to save repsFrom to %s - %s\n", 
+				DEBUG(0,(__location__ ": Failed to save repsFrom to %s - %s\n",
 					 ldb_dn_get_linearized(p->dn), ldb_errstring(s->samdb)));
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
 			}
@@ -277,7 +277,7 @@ NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ctx,
 		modified = false;
 		werr = dsdb_loadreps(s->samdb, mem_ctx, p->dn, "repsTo", &our_reps, &our_count);
 		if (!W_ERROR_IS_OK(werr)) {
-			DEBUG(0,(__location__ ": Failed to load repsTo from %s - %s\n", 
+			DEBUG(0,(__location__ ": Failed to load repsTo from %s - %s\n",
 				 ldb_dn_get_linearized(p->dn), ldb_errstring(s->samdb)));
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
@@ -297,7 +297,7 @@ NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ctx,
 		if (modified) {
 			werr = dsdb_savereps(s->samdb, mem_ctx, p->dn, "repsTo", our_reps, our_count);
 			if (!W_ERROR_IS_OK(werr)) {
-				DEBUG(0,(__location__ ": Failed to save repsTo to %s - %s\n", 
+				DEBUG(0,(__location__ ": Failed to save repsTo to %s - %s\n",
 					 ldb_dn_get_linearized(p->dn), ldb_errstring(s->samdb)));
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
 			}

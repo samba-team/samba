@@ -1,22 +1,22 @@
-/* 
+/*
    Unix SMB/CIFS Implementation.
    DSDB replication service
-   
+
    Copyright (C) Stefan Metzmacher 2007
-    
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
+
 */
 
 #include "includes.h"
@@ -387,7 +387,7 @@ static struct dreplsrv_partition_source_dsa *dreplsrv_find_source_dsa(struct dre
 			return s;
 		}
 	}
-	return NULL;	
+	return NULL;
 }
 
 
@@ -405,7 +405,7 @@ static WERROR dreplsrv_partition_add_source_dsa(struct dreplsrv_service *s,
 	source = talloc_zero(p, struct dreplsrv_partition_source_dsa);
 	W_ERROR_HAVE_NO_MEMORY(source);
 
-	ndr_err = ndr_pull_struct_blob(val, source, 
+	ndr_err = ndr_pull_struct_blob(val, source,
 				       &source->_repsFromBlob,
 				       (ndr_pull_flags_fn_t)ndr_pull_repsFromToBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -425,7 +425,7 @@ static WERROR dreplsrv_partition_add_source_dsa(struct dreplsrv_service *s,
 	status = dreplsrv_out_connection_attach(s, source->repsFrom1, &source->conn);
 	W_ERROR_NOT_OK_RETURN(status);
 
-	if (check_list && 
+	if (check_list &&
 	    dreplsrv_find_source_dsa(check_list, &source->repsFrom1->source_dsa_obj_guid)) {
 		/* its in the check list, don't add it again */
 		talloc_free(source);
@@ -604,7 +604,7 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 	} else {
 		dn = r->msgs[0]->dn;
 	}
-	
+
 	talloc_free(discard_const(p->nc.dn));
 	ZERO_STRUCT(p->nc);
 	p->nc.dn	= ldb_dn_alloc_linearized(p, dn);
