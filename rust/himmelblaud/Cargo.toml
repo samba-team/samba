@@ -1,9 +1,3 @@
-[workspace.package]
-edition = "2021"
-license = "GPL-3.0-or-later"
-homepage = "https://www.samba.org/"
-version = "4.21.0"
-
 [package]
 name = "himmelblaud"
 edition.workspace = true
@@ -31,21 +25,4 @@ idmap = { workspace = true }
 libc = { workspace = true }
 
 [build-dependencies]
-version = { path = "version" }
-
-[workspace]
-members = [
-  "chelps", "dbg", "idmap",
-  "nss", "ntstatus_gen", "pam",
-  "param", "sock", "tdb", "version",
-]
-
-[workspace.dependencies]
-param = { path = "param" }
-dbg = { path = "dbg" }
-chelps = { path = "chelps" }
-sock = { path = "sock" }
-ntstatus_gen = { path = "ntstatus_gen" }
-tdb = { path = "tdb" }
-idmap = { path = "idmap" }
-libc = "0.2.155"
+version = { path = "../version" }
