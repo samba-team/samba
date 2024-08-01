@@ -332,7 +332,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
 
         for groupobj in grouplist:
             name = str(groupobj.get("dn", idx=0))
-            found = self.assertMatch(out, name, "group '%s' not found" % name)
+            self.assertMatch(out, name, "group '%s' not found" % name)
 
 
     def test_move(self):
