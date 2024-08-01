@@ -874,9 +874,9 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
         setup_add_ldif(dom_ldb,
                        setup_path("provision_basedn_options.ldif"), None)
 
-    except:
+    except Exception as err:
         logger.error(
-            "Failed to setup database for BIND, AD based DNS cannot be used")
+            f"Failed to setup database for BIND, AD based DNS cannot be used: {err}")
         raise
 
     # This line is critical to the security of the whole scheme.
@@ -914,9 +914,9 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
                 # lock file as well
                 os.link(os.path.join(private_dir, forestzone_file + "-lock"),
                         os.path.join(dns_dir, forestzone_file + "-lock"))
-    except OSError:
+    except OSError as err:
         logger.error(
-            "Failed to setup database for BIND, AD based DNS cannot be used")
+            f"Failed to setup database for BIND, AD based DNS cannot be used: {err}")
         raise
     del partfile[domainzonedn]
     if forestzone_file:
@@ -935,9 +935,9 @@ def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):
             else:
                 tdb_copy(os.path.join(private_dir, pfile),
                          os.path.join(dns_dir, pfile))
-    except:
+    except Exception as err:
         logger.error(
-            "Failed to setup database for BIND, AD based DNS cannot be used")
+            f"Failed to setup database for BIND, AD based DNS cannot be used: {err}")
         raise
 
     # Give bind read/write permissions dns partitions
