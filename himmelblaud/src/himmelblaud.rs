@@ -223,7 +223,7 @@ pub(crate) async fn handle_client(
             Request::PamAccountAllowed(account_id) => {
                 resolver.pam_acct_mgmt(&account_id).await?
             }
-            _ => todo!(),
+            Request::PamAccountBeginSession(_account_id) => Response::Success,
         };
         reqs.send(resp).await?;
         reqs.flush().await?;
