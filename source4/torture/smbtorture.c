@@ -189,7 +189,7 @@ bool torture_parse_target(TALLOC_CTX *ctx,
 	NTSTATUS status;
 
 	/* see if its a RPC transport specifier */
-	if (!smbcli_parse_unc(target, NULL, &host, &share)) {
+	if (!smbcli_parse_unc(target, ctx, &host, &share)) {
 		const char *h;
 
 		status = dcerpc_parse_binding(ctx, target, &binding_struct);
@@ -211,6 +211,9 @@ bool torture_parse_target(TALLOC_CTX *ctx,
 		lpcfg_set_cmdline(lp_ctx, "torture:host", host);
 		lpcfg_set_cmdline(lp_ctx, "torture:share", share);
 		lpcfg_set_cmdline(lp_ctx, "torture:binding", host);
+
+		TALLOC_FREE(host);
+		TALLOC_FREE(share);
 	}
 
 	return true;
