@@ -80,12 +80,12 @@
 	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
-	<para>The Samba net utility is meant to work just like the net utility 
-	available for windows and DOS. The first argument should be used 
-	to specify the protocol to use when executing a certain command. 
-	ADS is used for ActiveDirectory, RAP is using for old (Win9x/NT3) 
-	clients and RPC can be used for NT4 and Windows 2000. If this 
-	argument is omitted, net will try to determine it automatically. 
+	<para>The Samba net utility is meant to work just like the net utility
+	available for windows and DOS. The first argument should be used
+	to specify the protocol to use when executing a certain command.
+	ADS is used for ActiveDirectory, RAP is using for old (Win9x/NT3)
+	clients and RPC can be used for NT4 and Windows 2000. If this
+	argument is omitted, net will try to determine it automatically.
 	Not all commands are available on all protocols.
 	</para>
 
@@ -98,7 +98,7 @@
 		<varlistentry>
 		<term>-w|--target-workgroup target-workgroup</term>
 		<listitem><para>
-		Sets target workgroup or domain. You have to specify 
+		Sets target workgroup or domain. You have to specify
 		either this option or the IP address or the name of a server.
 		</para></listitem>
 		</varlistentry>
@@ -115,7 +115,7 @@
 		<varlistentry>
 		<term>-p|--port port</term>
 		<listitem><para>
-		Port on the target server to connect to (usually 139 or 445). 
+		Port on the target server to connect to (usually 139 or 445).
 		Defaults to trying 445 first, then 139.
 		</para></listitem>
 		</varlistentry>
@@ -123,7 +123,7 @@
 		<varlistentry>
 		<term>-S|--server server</term>
 		<listitem><para>
-		Name of target server. You should specify either 
+		Name of target server. You should specify either
 		this option or a target workgroup or a target IP address.
 		</para></listitem>
 		</varlistentry>
@@ -524,7 +524,7 @@ YOU HAVE BEEN WARNED.
 <refsect3>
 <title>TIME</title>
 
-<para>Without any options, the <command>NET TIME</command> command 
+<para>Without any options, the <command>NET TIME</command> command
 displays the time on the remote server. The remote server must be
 specified with the -S option.
 </para>
@@ -542,7 +542,7 @@ The remote server must be specified with the -S option.
 
 <refsect3>
 <title>TIME SET</title>
-<para>Tries to set the date and time of the local server to that on 
+<para>Tries to set the date and time of the local server to that on
 the remote server using <command>/bin/date</command>.
 The remote server must be specified with the -S option.
 </para>
@@ -565,8 +565,8 @@ The remote server must be specified with the -S option.
 [osName=string osVer=string] [options]</title>
 
 <para>
-Join a domain.  If the account already exists on the server, and 
-[TYPE] is MEMBER, the machine will attempt to join automatically. 
+Join a domain.  If the account already exists on the server, and
+[TYPE] is MEMBER, the machine will attempt to join automatically.
 (Assuming that the machine has been created in server manager)
 Otherwise, a password will be prompted for, and a new account may
 be created.</para>
@@ -590,7 +590,7 @@ format is host/netbiosname@REALM.
 [OU] (ADS only) Precreate the computer account in a specific OU.  The
 OU string reads from top to bottom without RDNs, and is delimited by
 a '/'.  Please note that '\' is used for escape by both the shell
-and ldap, so it may need to be doubled or quadrupled to pass through, 
+and ldap, so it may need to be doubled or quadrupled to pass through,
 and it is not used as a delimiter.
 </para>
 <para>
@@ -607,8 +607,8 @@ must be specified for either to take effect.
 <refsect2>
 <title>[RPC] OLDJOIN [options]</title>
 
-<para>Join a domain. Use the OLDJOIN option to join the domain 
-using the old style of domain joining - you need to create a trust 
+<para>Join a domain. Use the OLDJOIN option to join the domain
+using the old style of domain joining - you need to create a trust
 account in server manager first.</para>
 </refsect2>
 
@@ -692,8 +692,8 @@ account in server manager first.</para>
 <refsect3>
 <title>[RAP|RPC] SHARE ADD <replaceable>name=serverpath</replaceable> [-C comment] [-M maxusers] [targets]</title>
 
-<para>Adds a share from a server (makes the export active). Maxusers 
-specifies the number of users that can be connected to the 
+<para>Adds a share from a server (makes the export active). Maxusers
+specifies the number of users that can be connected to the
 share simultaneously.</para>
 
 </refsect3>
@@ -718,7 +718,7 @@ share simultaneously.</para>
 <refsect3>
 <title>[RPC|RAP] FILE CLOSE <replaceable>fileid</replaceable></title>
 
-<para>Close file with specified <replaceable>fileid</replaceable> on 
+<para>Close file with specified <replaceable>fileid</replaceable> on
 remote server.</para>
 
 </refsect3>
@@ -727,7 +727,7 @@ remote server.</para>
 <title>[RPC|RAP] FILE INFO <replaceable>fileid</replaceable></title>
 
 <para>
-Print information on specified <replaceable>fileid</replaceable>. 
+Print information on specified <replaceable>fileid</replaceable>.
 Currently listed are: file-id, username, locks, path, permissions.
 </para>
 
@@ -739,7 +739,7 @@ Currently listed are: file-id, username, locks, path, permissions.
 <para>
 List files opened by specified <replaceable>user</replaceable>.
 Please note that <command>net rap file user</command> does not work
-against Samba servers. 
+against Samba servers.
 </para>
 
 </refsect3>
@@ -752,7 +752,7 @@ against Samba servers.
 <refsect3>
 <title>RAP SESSION</title>
 
-<para>Without any other options, SESSION enumerates all active SMB/CIFS 
+<para>Without any other options, SESSION enumerates all active SMB/CIFS
 sessions on the target server.</para>
 
 </refsect3>
@@ -784,7 +784,7 @@ to local domain.</para>
 <refsect2>
 <title>RAP DOMAIN</title>
 
-<para>Lists all domains and workgroups visible on the 
+<para>Lists all domains and workgroups visible on the
 current network.</para>
 
 </refsect2>
@@ -796,7 +796,7 @@ current network.</para>
 <title>RAP PRINTQ INFO <replaceable>QUEUE_NAME</replaceable></title>
 
 <para>Lists the specified print queue and print jobs on the server.
-If the <replaceable>QUEUE_NAME</replaceable> is omitted, all 
+If the <replaceable>QUEUE_NAME</replaceable> is omitted, all
 queues are listed.</para>
 
 </refsect3>
@@ -814,9 +814,9 @@ queues are listed.</para>
 <title>RAP VALIDATE <replaceable>user</replaceable> [<replaceable>password</replaceable>]</title>
 
 <para>
-Validate whether the specified user can log in to the 
-remote server. If the password is not specified on the commandline, it 
-will be prompted. 
+Validate whether the specified user can log in to the
+remote server. If the password is not specified on the commandline, it
+will be prompted.
 </para>
 
 &not.implemented;
@@ -852,7 +852,7 @@ will be prompted.
 <refsect2>
 <title>RAP ADMIN <replaceable>command</replaceable></title>
 
-<para>Execute the specified <replaceable>command</replaceable> on 
+<para>Execute the specified <replaceable>command</replaceable> on
 the remote server. Only works with OS/2 servers.
 </para>
 
@@ -899,7 +899,7 @@ Change password of <replaceable>USER</replaceable> from <replaceable>OLDPASS</re
 <title>LOOKUP HOST <replaceable>HOSTNAME</replaceable> [<replaceable>TYPE</replaceable>]</title>
 
 <para>
-Lookup the IP address of the given host with the specified type (netbios suffix). 
+Lookup the IP address of the given host with the specified type (netbios suffix).
 The type defaults to 0x20 (workstation).
 </para>
 
@@ -965,7 +965,7 @@ or workgroup. Defaults to local domain.</para>
 <refsect2>
 <title>CACHE</title>
 
-<para>Samba uses a general caching interface called 'gencache'. It 
+<para>Samba uses a general caching interface called 'gencache'. It
 can be controlled using 'NET CACHE'.</para>
 
 <para>All the timeout parameters support the suffixes:
@@ -1044,7 +1044,7 @@ omitted, the SID of the local server.</para>
 <refsect2>
 <title>GETDOMAINSID</title>
 
-<para>Prints the local machine SID and the SID of the current 
+<para>Prints the local machine SID and the SID of the current
 domain.</para>
 
 </refsect2>
@@ -1158,15 +1158,15 @@ such as domain name, domain sid and number of users and groups.
 <refsect3>
 <title>RPC TRUSTDOM ADD <replaceable>DOMAIN</replaceable></title>
 
-<para>Add a interdomain trust account for <replaceable>DOMAIN</replaceable>. 
-This is in fact a Samba account named <replaceable>DOMAIN$</replaceable> 
-with the account flag <constant>'I'</constant> (interdomain trust account). 
+<para>Add a interdomain trust account for <replaceable>DOMAIN</replaceable>.
+This is in fact a Samba account named <replaceable>DOMAIN$</replaceable>
+with the account flag <constant>'I'</constant> (interdomain trust account).
 This is required for incoming trusts to work. It makes Samba be a
 trusted domain of the foreign (trusting) domain.
 Users of the Samba domain will be made available in the foreign domain.
-If the command is used against localhost it has the same effect as 
+If the command is used against localhost it has the same effect as
 <command>smbpasswd -a -i DOMAIN</command>. Please note that both commands
-expect a appropriate UNIX account. 
+expect a appropriate UNIX account.
 </para>
 
 </refsect3>
@@ -1174,9 +1174,9 @@ expect a appropriate UNIX account.
 <refsect3>
 <title>RPC TRUSTDOM DEL <replaceable>DOMAIN</replaceable></title>
 
-<para>Remove interdomain trust account for 
-<replaceable>DOMAIN</replaceable>. If it is used against localhost 
-it has the same effect as <command>smbpasswd -x DOMAIN$</command>. 
+<para>Remove interdomain trust account for
+<replaceable>DOMAIN</replaceable>. If it is used against localhost
+it has the same effect as <command>smbpasswd -x DOMAIN$</command>.
 </para>
 
 </refsect3>
@@ -1185,7 +1185,7 @@ it has the same effect as <command>smbpasswd -x DOMAIN$</command>.
 <title>RPC TRUSTDOM ESTABLISH <replaceable>DOMAIN</replaceable></title>
 
 <para>
-Establish a trust relationship to a trusted domain. 
+Establish a trust relationship to a trusted domain.
 Interdomain account must already be created on the remote PDC.
 This is required for outgoing trusts to work. It makes Samba be a
 trusting domain of a foreign (trusted) domain.
@@ -1326,9 +1326,9 @@ net rpc trust delete \
 <refsect3>
 <title>RPC RIGHTS</title>
 
-<para>This subcommand is used to view and manage Samba's rights assignments (also 
-referred to as privileges).  There are three options currently available: 
-<parameter>list</parameter>, <parameter>grant</parameter>, and 
+<para>This subcommand is used to view and manage Samba's rights assignments (also
+referred to as privileges).  There are three options currently available:
+<parameter>list</parameter>, <parameter>grant</parameter>, and
 <parameter>revoke</parameter>.  More details on Samba's privilege model and its use
 can be found in the Samba-HOWTO-Collection.</para>
 
@@ -1367,14 +1367,14 @@ Force shutting down all applications.
 <varlistentry>
 <term>-t timeout</term>
 <listitem><para>
-Timeout before system will be shut down. An interactive 
+Timeout before system will be shut down. An interactive
 user of the system can use this time to cancel the shutdown.
 </para></listitem>
 </varlistentry>
 
 <varlistentry>
 <term>-C message</term>
-<listitem><para>Display the specified message on the screen to 
+<listitem><para>Display the specified message on the screen to
 announce the shutdown.</para></listitem>
 </varlistentry>
 </variablelist>
@@ -1391,8 +1391,8 @@ to run this against the PDC, from a Samba machine joined as a BDC. </para>
 <refsect2>
 <title>RPC VAMPIRE</title>
 
-<para>Export users, aliases and groups from remote server to 
-local server.  You need to run this against the PDC, from a Samba machine joined as a BDC. 
+<para>Export users, aliases and groups from remote server to
+local server.  You need to run this against the PDC, from a Samba machine joined as a BDC.
 This vampire command cannot be used against an Active Directory, only
 against an NT4 Domain Controller.
 </para>
@@ -1486,7 +1486,7 @@ against an NT4 Domain Controller.
 <title>ADS STATUS</title>
 
 <para>Print out status of machine account of the local machine in ADS.
-Prints out quite some debug info. Aimed at developers, regular 
+Prints out quite some debug info. Aimed at developers, regular
 users should use <command>NET ADS TESTJOIN</command>.</para>
 
 </refsect2>
@@ -1498,7 +1498,7 @@ users should use <command>NET ADS TESTJOIN</command>.</para>
 <title>ADS PRINTER INFO [<replaceable>PRINTER</replaceable>] [<replaceable>SERVER</replaceable>]</title>
 
 <para>
-Lookup info for <replaceable>PRINTER</replaceable> on <replaceable>SERVER</replaceable>. The printer name defaults to "*", the 
+Lookup info for <replaceable>PRINTER</replaceable> on <replaceable>SERVER</replaceable>. The printer name defaults to "*", the
 server name defaults to the local host.</para>
 
 </refsect3>
@@ -1522,8 +1522,8 @@ server name defaults to the local host.</para>
 <refsect2>
 <title>ADS SEARCH <replaceable>EXPRESSION</replaceable> <replaceable>ATTRIBUTES...</replaceable></title>
 
-<para>Perform a raw LDAP search on a ADS server and dump the results. The 
-expression is a standard LDAP search expression, and the 
+<para>Perform a raw LDAP search on a ADS server and dump the results. The
+expression is a standard LDAP search expression, and the
 attributes are a list of LDAP fields to show in the results.</para>
 
 <para>Example: <userinput>net ads search '(objectCategory=group)' sAMAccountName</userinput>
@@ -1535,9 +1535,9 @@ attributes are a list of LDAP fields to show in the results.</para>
 <title>ADS DN <replaceable>DN</replaceable> <replaceable>(attributes)</replaceable></title>
 
 <para>
-Perform a raw LDAP search on a ADS server and dump the results. The 
-DN standard LDAP DN, and the attributes are a list of LDAP fields 
-to show in the result. 
+Perform a raw LDAP search on a ADS server and dump the results. The
+DN standard LDAP DN, and the attributes are a list of LDAP fields
+to show in the result.
 </para>
 
 <para>Example: <userinput>net ads dn 'CN=administrator,CN=Users,DC=my,DC=domain' SAMAccountName</userinput></para>
@@ -2281,7 +2281,7 @@ share (no creation of new files or directories or writing to files).
 </para>
 
 <para>
-The default if no "acl" is given is "Everyone:R", which means any 
+The default if no "acl" is given is "Everyone:R", which means any
 authenticated user has read-only access.
 </para>
 
@@ -3675,20 +3675,20 @@ net witness force-response   Force an AsyncNotify response based on json input (
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is complete for version 3 of the Samba 
+	<para>This man page is complete for version 3 of the Samba
 	suite.</para>
 </refsect1>
 
 <refsect1>
 	<title>AUTHOR</title>
-	
-	<para>The original Samba software and related utilities 
+
+	<para>The original Samba software and related utilities
 	were created by Andrew Tridgell. Samba is now developed
-	by the Samba Team as an Open Source project similar 
+	by the Samba Team as an Open Source project similar
 	to the way the Linux kernel is developed.</para>
 
 	<para>The net manpage was written by Jelmer Vernooij.</para>
-	
+
 </refsect1>
 
 </refentry>
