@@ -4620,8 +4620,8 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	int ret;
 
 	if (!CAN_WRITE(conn) || (access_mask & ~(conn->share_access))) {
-		DEBUG(5,("mkdir_internal: failing share access "
-			 "%s\n", lp_servicename(talloc_tos(), lp_sub, SNUM(conn))));
+		DBG_INFO("failing share access %s\n",
+			 lp_servicename(talloc_tos(), lp_sub, SNUM(conn)));
 		TALLOC_FREE(frame);
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -4658,8 +4658,11 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 			      smb_fname_atname,
 			      mode);
 	if (ret != 0) {
+		status = map_nt_error_from_unix(errno);
+		DBG_NOTICE("MKDIRAT failed for '%s': %s\n",
+			   smb_fname_str_dbg(smb_dname), nt_errstr(status));
 		TALLOC_FREE(frame);
-		return map_nt_error_from_unix(errno);
+		return status;
 	}
 
 	/*
@@ -4670,6 +4673,8 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 
 	status = fd_openat(parent_dir_fname->fsp, smb_fname_atname, fsp, &how);
 	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("fd_openat() failed for '%s': %s\n",
+			smb_fname_str_dbg(smb_dname), nt_errstr(status));
 		TALLOC_FREE(frame);
 		return status;
 	}
@@ -4679,17 +4684,18 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 
 	status = vfs_stat_fsp(fsp);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2, ("Could not stat directory '%s' just created: %s\n",
-			  smb_fname_str_dbg(smb_dname), nt_errstr(status)));
+		DBG_ERR("Could not stat directory '%s' just created: %s\n",
+			smb_fname_str_dbg(smb_dname), nt_errstr(status));
 		TALLOC_FREE(frame);
 		return status;
 	}
 
 	if (!S_ISDIR(smb_dname->st.st_ex_mode)) {
-		DEBUG(0, ("Directory '%s' just created is not a directory !\n",
-			  smb_fname_str_dbg(smb_dname)));
+		status = NT_STATUS_NOT_A_DIRECTORY;
+		DBG_ERR("Directory '%s' just created is not a directory !\n",
+			smb_fname_str_dbg(smb_dname));
 		TALLOC_FREE(frame);
-		return NT_STATUS_NOT_A_DIRECTORY;
+		return status;
 	}
 
 	if (lp_store_dos_attributes(SNUM(conn))) {
@@ -4732,8 +4738,8 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	if (need_re_stat) {
 		status = vfs_stat_fsp(fsp);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(2, ("Could not stat directory '%s' just created: %s\n",
-			  smb_fname_str_dbg(smb_dname), nt_errstr(status)));
+			DBG_ERR("Could not stat directory '%s' just created: %s\n",
+				smb_fname_str_dbg(smb_dname), nt_errstr(status));
 			TALLOC_FREE(frame);
 			return status;
 		}
@@ -4751,6 +4757,9 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 			return status;
 		}
 	}
+
+	DBG_DEBUG("Created directory '%s'\n",
+		  smb_fname_str_dbg(smb_dname));
 
 	notify_fname(conn, NOTIFY_ACTION_ADDED, FILE_NOTIFY_CHANGE_DIR_NAME,
 		     smb_dname->base_name);
