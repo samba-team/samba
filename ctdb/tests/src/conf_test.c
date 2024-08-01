@@ -373,7 +373,7 @@ static void test8(const char *filename)
 	status = conf_valid(conf);
 	assert(status == true);
 
-	ret = conf_load(conf, filename, true);
+	ret = conf_load(conf, filename, true, true);
 	conf_dump(conf, stdout);
 
 	talloc_free(mem_ctx);
@@ -402,7 +402,7 @@ static void test9(const char *filename, bool ignore_unknown)
 
 	conf_set_boolean(conf, "section1", "key3", false);
 
-	ret = conf_load(conf, filename, ignore_unknown);
+	ret = conf_load(conf, filename, ignore_unknown, true);
 	conf_dump(conf, stdout);
 
 	talloc_free(mem_ctx);
@@ -433,7 +433,7 @@ static void test11(const char *filename)
 	status = conf_valid(conf);
 	assert(status == true);
 
-	ret = conf_load(conf, filename, false);
+	ret = conf_load(conf, filename, false, true);
 	assert(ret == 0);
 
 	ret = rename(reload, filename);

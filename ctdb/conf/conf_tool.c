@@ -57,7 +57,7 @@ static int conf_tool_dump(TALLOC_CTX *mem_ctx,
 		return EINVAL;
 	}
 
-	ret = conf_load(ctx->conf, ctx->conf_file, true);
+	ret = conf_load(ctx->conf, ctx->conf_file, true, true);
 	if (ret != 0 && ret != ENOENT) {
 		D_ERR("Failed to load config file %s\n", ctx->conf_file);
 		return ret;
@@ -97,7 +97,7 @@ static int conf_tool_get(TALLOC_CTX *mem_ctx,
 		return ENOENT;
 	}
 
-	ret = conf_load(ctx->conf, ctx->conf_file, true);
+	ret = conf_load(ctx->conf, ctx->conf_file, true, true);
 	if (ret != 0 && ret != ENOENT) {
 		D_ERR("Failed to load config file %s\n", ctx->conf_file);
 		return ret;
@@ -169,7 +169,7 @@ static int conf_tool_validate(TALLOC_CTX *mem_ctx,
 		return EINVAL;
 	}
 
-	ret = conf_load(ctx->conf, ctx->conf_file, false);
+	ret = conf_load(ctx->conf, ctx->conf_file, false, true);
 	if (ret != 0) {
 		D_ERR("Failed to load config file %s\n", ctx->conf_file);
 		return ret;

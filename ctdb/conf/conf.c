@@ -1176,7 +1176,8 @@ done:
 
 int conf_load(struct conf_context *conf,
 	      const char *filename,
-	      bool ignore_unknown)
+	      bool ignore_unknown,
+	      bool verbose)
 {
 	conf->filename = talloc_strdup(conf, filename);
 	if (conf->filename == NULL) {
@@ -1185,7 +1186,9 @@ int conf_load(struct conf_context *conf,
 
 	conf->ignore_unknown = ignore_unknown;
 
-	D_NOTICE("Reading config file %s\n", filename);
+	if (verbose) {
+		D_NOTICE("Reading config file %s\n", filename);
+	}
 
 	return conf_load_internal(conf);
 }

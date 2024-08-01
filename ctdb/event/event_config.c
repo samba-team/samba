@@ -85,7 +85,7 @@ int event_config_init(TALLOC_CTX *mem_ctx, struct event_config **result)
 		return EINVAL;
 	}
 
-	ret = conf_load(config->conf, config->config_file, true);
+	ret = conf_load(config->conf, config->config_file, true, true);
 	if (ret != 0 && ret != ENOENT) {
 		talloc_free(config);
 		return ret;

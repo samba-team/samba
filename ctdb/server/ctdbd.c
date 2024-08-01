@@ -233,7 +233,7 @@ int main(int argc, const char *argv[])
 	 * Configuration file handling
 	 */
 
-	ret = ctdb_config_load(ctdb, &conf);
+	ret = ctdb_config_load(ctdb, &conf, true);
 	if (ret != 0) {
 		/* ctdb_config_load() logs the failure */
 		goto fail;

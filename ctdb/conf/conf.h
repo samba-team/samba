@@ -306,7 +306,8 @@ void conf_set_defaults(struct conf_context *conf);
  */
 int conf_load(struct conf_context *conf,
 	      const char *filename,
-	      bool ignore_unknown);
+	      bool ignore_unknown,
+	      bool verbose);
 
 /**
  * @brief Reload the values for configuration options

@@ -138,7 +138,8 @@ static void setup_config_pointers(struct conf_context *conf)
 }
 
 int ctdb_config_load(TALLOC_CTX *mem_ctx,
-		     struct conf_context **result)
+		     struct conf_context **result,
+		     bool verbose)
 {
 	struct conf_context *conf = NULL;
 	int ret = 0;
@@ -169,7 +170,7 @@ int ctdb_config_load(TALLOC_CTX *mem_ctx,
 		ret = ENOMEM;
 		goto fail;
 	}
-	ret = conf_load(conf, conf_file, true);
+	ret = conf_load(conf, conf_file, true, verbose);
 	/* Configuration file does not need to exist */
 	if (ret != 0 && ret != ENOENT) {
 		D_ERR("Failed to load configuration file %s\n", conf_file);
