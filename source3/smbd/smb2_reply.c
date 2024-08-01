@@ -166,6 +166,8 @@ NTSTATUS check_path_syntax(char *path, bool posix_path)
 					s++;
 					continue;
 				}
+			} else if (IS_SMBD_TMPNAME(s, NULL)) {
+				return NT_STATUS_OBJECT_NAME_INVALID;
 			}
 
 		}

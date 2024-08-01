@@ -657,6 +657,7 @@ NTSTATUS smbd_check_access_rights_fsp(struct files_struct *dirfsp,
 				      uint32_t access_mask);
 NTSTATUS check_parent_access_fsp(struct files_struct *fsp,
 				uint32_t access_mask);
+bool smbd_is_tmpname(const char *n, int *_unlink_flags);
 NTSTATUS fd_openat(const struct files_struct *dirfsp,
 		   struct smb_filename *smb_fname,
 		   files_struct *fsp,

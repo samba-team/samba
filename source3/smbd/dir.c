@@ -1186,8 +1186,64 @@ const char *ReadDirName(struct smb_Dir *dir_hnd, char **ptalloced)
 				    dir_hnd->fsp,
 				    dir_hnd->dir,
 				    &talloced))) {
+		int unlink_flags = INT_MAX;
 		/* Ignore . and .. - we've already returned them. */
 		if (ISDOT(n) || ISDOTDOT(n)) {
+			TALLOC_FREE(talloced);
+			continue;
+		}
+		/*
+		 * ignore tmp directories, see mkdir_internals()
+		 */
+		if (IS_SMBD_TMPNAME(n, &unlink_flags)) {
+			struct smb_filename *atname = NULL;
+			const char *fp = NULL;
+			int ret;
+
+			atname = synthetic_smb_fname(talloc_tos(),
+						     n,
+						     NULL,
+						     NULL,
+						     0,
+						     0);
+			if (atname == NULL) {
+				TALLOC_FREE(talloced);
+				continue;
+			}
+			fp = full_path_from_dirfsp_at_basename(atname,
+							       dir_hnd->fsp,
+							       n);
+			if (fp == NULL) {
+				TALLOC_FREE(atname);
+				TALLOC_FREE(talloced);
+				continue;
+			}
+
+			if (unlink_flags == INT_MAX) {
+				DBG_NOTICE("ignoring %s\n", fp);
+				TALLOC_FREE(atname);
+				TALLOC_FREE(talloced);
+				continue;
+			}
+
+			/*
+			 * We remove the stale tmpname
+			 * as root and ignore any errors
+			 */
+			DBG_NOTICE("unlink stale %s\n", fp);
+			become_root();
+			ret = SMB_VFS_UNLINKAT(conn,
+					       dir_hnd->fsp,
+					       atname,
+					       unlink_flags);
+			unbecome_root();
+			if (ret == 0) {
+				DBG_NOTICE("unlinked stale %s\n", fp);
+			} else {
+				DBG_WARNING("failed to unlink stale %s: %s\n",
+					    fp, strerror(errno));
+			}
+			TALLOC_FREE(atname);
 			TALLOC_FREE(talloced);
 			continue;
 		}

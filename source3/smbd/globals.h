@@ -842,4 +842,13 @@ struct aio_extra {
 	bool write_through;
 };
 
+#define SMBD_TMPNAME_PREFIX ".::TMPNAME:"
+#define SMBD_TMPDIR_PREFIX  SMBD_TMPNAME_PREFIX "D:"
+#define IS_SMBD_TMPNAME_PREFIX(__n) \
+	unlikely(__n[0] == '.' && __n[1] == ':' && \
+	 strncmp(__n, SMBD_TMPNAME_PREFIX, sizeof(SMBD_TMPNAME_PREFIX) -1) == 0)
+#define IS_SMBD_TMPNAME(__n, __unlink_flags) \
+	(IS_SMBD_TMPNAME_PREFIX(__n) && \
+	 smbd_is_tmpname(__n, __unlink_flags))
+
 #endif /* _SOURCE3_SMBD_GLOBALS_H_ */
