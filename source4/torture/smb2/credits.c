@@ -912,6 +912,433 @@ out:
 	return ok;
 }
 
+
+#define TESTDIR "test_max_async_credits"
+
+#define SMBXCLI_NOTIFY_DIR_DESIRED_ACCESS                                  \
+	(SEC_STD_READ_CONTROL | SEC_FILE_READ_DATA | SEC_FILE_WRITE_DATA | \
+	 SEC_FILE_APPEND_DATA | SEC_FILE_READ_EA | SEC_FILE_WRITE_EA |     \
+	 SEC_FILE_READ_ATTRIBUTE | SEC_FILE_WRITE_ATTRIBUTE | 0)
+
+struct test_notify_async_credit_loop;
+
+struct test_notify_async_credit_state {
+	struct torture_context *tctx;
+	struct smbXcli_conn *conn;
+	struct smbXcli_session *session;
+	struct smbXcli_tcon *tcon;
+	uint32_t timeout_msec;
+	uint16_t pid;
+	const char *fname;
+
+	size_t num_loops;
+	struct test_notify_async_credit_loop *loops;
+	size_t num_status_received;
+	size_t num_started;
+
+	size_t num_status_pending;
+	size_t num_status_insufficient;
+
+	bool stop;
+};
+
+struct test_notify_async_credit_loop {
+	size_t idx;
+	struct test_notify_async_credit_state *state;
+	struct tevent_req *req;
+
+	uint64_t fid_persistent;
+	uint64_t fid_volatile;
+
+	struct tevent_immediate *im;
+
+	NTSTATUS status;
+};
+
+static void test_async_notify_loop_do(
+	struct test_notify_async_credit_loop *loop);
+
+static void test_async_notify_loop_start(struct tevent_context *ctx,
+					 struct tevent_immediate *im,
+					 void *private_data)
+{
+	struct test_notify_async_credit_loop *loop = private_data;
+
+	test_async_notify_loop_do(loop);
+}
+
+static void test_async_notify_loop_done(struct tevent_req *req);
+
+static void test_async_notify_loop_do(struct test_notify_async_credit_loop *loop)
+{
+	struct test_notify_async_credit_state *state = loop->state;
+	bool ok;
+
+	state->num_started += 1;
+	loop->req = smb2cli_notify_send(state->loops,
+					state->tctx->ev,
+					state->conn,
+					state->timeout_msec,
+					state->session,
+					state->tcon,
+					10000, /* out_buffer_length */
+					loop->fid_persistent,
+					loop->fid_volatile,
+					FILE_NOTIFY_CHANGE_NAME |
+						FILE_NOTIFY_CHANGE_ATTRIBUTES |
+						FILE_NOTIFY_CHANGE_CREATION,
+					false /* recursive */
+	);
+	torture_assert_not_null_goto(state->tctx,
+				     loop->req,
+				     ok,
+				     asserted,
+				     "smb2cli_notify_send failed");
+	smb2cli_notify_set_notify_async(loop->req);
+	tevent_req_set_callback(loop->req,
+				test_async_notify_loop_done,
+				loop);
+
+
+	return;
+asserted:
+	torture_comment(state->tctx, "Assserted for idx=%zu\n", loop->idx);
+	(void)ok;
+	state->stop = true;
+}
+
+static void test_async_notify_loop_done(struct tevent_req *req)
+{
+	struct test_notify_async_credit_loop *loop = _tevent_req_callback_data(
+		req);
+	struct test_notify_async_credit_state *state = loop->state;
+	TALLOC_CTX *frame = talloc_stackframe();
+	uint8_t *data = NULL;
+	uint32_t data_length = 0;
+	bool ok;
+	bool was_pending = false;
+	bool in_progress = false;
+
+	torture_assert_goto(state->tctx,
+			    loop->req == req,
+			    ok,
+			    asserted,
+			    __location__);
+
+	if (NT_STATUS_EQUAL(loop->status, NT_STATUS_PENDING)) {
+		was_pending = true;
+	}
+
+	loop->status = smb2cli_notify_recv(req, frame, &data, &data_length);
+#if 0
+	torture_comment(state->tctx,
+			"loop->status: %s\n",
+			nt_errstr(loop->status));
+#endif
+	in_progress = tevent_req_is_in_progress(req);
+	state->num_status_received += 1;
+
+	if (NT_STATUS_EQUAL(loop->status, NT_STATUS_PENDING)) {
+		state->num_status_pending += 1;
+		torture_assert_goto(state->tctx,
+				    in_progress,
+				    ok,
+				    asserted,
+				    __location__);
+		goto done;
+	}
+	loop->req = NULL;
+	TALLOC_FREE(req);
+	torture_assert_goto(state->tctx,
+			    !in_progress,
+			    ok,
+			    asserted,
+			    __location__);
+	if (was_pending &&
+	    NT_STATUS_EQUAL(loop->status, NT_STATUS_NOTIFY_CLEANUP))
+	{
+		goto done;
+	}
+	torture_assert_ntstatus_equal_goto(state->tctx,
+					   loop->status,
+					   NT_STATUS_INSUFFICIENT_RESOURCES,
+					   ok,
+					   asserted,
+					   __location__);
+	state->num_status_insufficient += 1;
+
+done:
+	TALLOC_FREE(frame);
+	return;
+asserted:
+	(void)ok;
+	state->stop = true;
+	TALLOC_FREE(frame);
+}
+
+static bool test_notify_max_async_credits(struct torture_context *tctx,
+				   struct smb2_tree *trees[],
+				   size_t num_trees,
+				   size_t num_loops)
+{
+	struct test_notify_async_credit_state *states[num_trees];
+	bool stop_loop = false;
+	NTSTATUS status;
+	size_t i, t;
+	bool ok;
+
+	for (t = 0; t < num_trees; t++) {
+		uint16_t cur_credits;
+
+		states[t] = NULL;
+
+		cur_credits = smb2cli_conn_get_cur_credits(
+			trees[t]->session->transport->conn);
+		torture_assert_int_equal_goto(
+			tctx,
+			cur_credits,
+			num_loops,
+			ok,
+			out,
+			"Invalid number of granted credits");
+	}
+
+	torture_assert_int_not_equal_goto(
+		tctx, num_trees, 0, ok, out, "Invalid number of trees");
+
+	for (i = 0; i < num_trees; i++) {
+		struct smb2_tree *tree = trees[i];
+		struct test_notify_async_credit_state *state = NULL;
+
+		state = talloc_zero(tctx,
+				    struct test_notify_async_credit_state);
+		torture_assert_not_null_goto(
+			tctx, state, ok, out, "tevent_zero failed");
+
+		state->tctx = tctx;
+		state->conn = tree->session->transport->conn;
+		state->session = tree->session->smbXcli;
+		state->tcon = tree->smbXcli;
+		state->timeout_msec = tree->session->transport->options
+					       .request_timeout * 1000;
+		state->pid = 0;
+		state->fname = TESTDIR;
+
+		state->num_loops = num_loops;
+		state->loops = talloc_zero_array(
+			state,
+			struct test_notify_async_credit_loop,
+			state->num_loops);
+		torture_assert_not_null_goto(tctx,
+					     state->loops,
+					     ok,
+					     out,
+					     "tevent_zero_array failed");
+
+		states[i] = state;
+	}
+
+	for (i = 0; i < num_loops; i++) {
+		for (t = 0; t < num_trees; t++) {
+			struct test_notify_async_credit_state
+				*state = states[t];
+			struct test_notify_async_credit_loop
+				*loop = &state->loops[i];
+
+			loop->idx = i;
+			loop->state = state;
+			loop->status = NT_STATUS_UNSUCCESSFUL;
+
+			loop->im = tevent_create_immediate(state->loops);
+			torture_assert_not_null_goto(
+				tctx,
+				loop->im,
+				ok,
+				out,
+				"tevent_create_immediate failed");
+
+			/* Open directory */
+			status = smb2cli_create(
+				state->conn,
+				state->timeout_msec,
+				state->session,
+				state->tcon,
+				state->fname,
+				SMB2_OPLOCK_LEVEL_NONE,
+				SMB2_IMPERSONATION_IMPERSONATION,
+				SMBXCLI_NOTIFY_DIR_DESIRED_ACCESS,
+				0, /* file_attributes */
+				FILE_SHARE_READ | FILE_SHARE_WRITE,
+				FILE_OPEN,
+				FILE_DIRECTORY_FILE,
+				NULL, /* blobs */
+				&loop->fid_persistent,
+				&loop->fid_volatile,
+				NULL,  /* cr */
+				state, /* mem_ctx */
+				NULL,  /* ret_blobs */
+				NULL); /* psymlink */
+			torture_assert_ntstatus_ok_goto(
+				tctx, status, ok, out, "smb2cli_create failed");
+
+			tevent_schedule_immediate(loop->im,
+						  tctx->ev,
+						  test_async_notify_loop_start,
+						  loop);
+		}
+	}
+
+	/* Loop to send and receive packets */
+	while (!stop_loop) {
+		size_t loops_ready = 0;
+		int rc;
+
+		rc = tevent_loop_once(tctx->ev);
+		torture_assert_int_equal_goto(
+			tctx, rc, 0, ok, out, "tevent_loop_once");
+
+		for (i = 0; i < num_trees; i++) {
+			struct test_notify_async_credit_state
+				*state = states[i];
+			if (state->stop) {
+				stop_loop = true;
+			}
+
+			if (state->num_status_received >= state->num_loops) {
+				loops_ready += 1;
+			}
+		}
+
+		if (loops_ready >= num_trees) {
+			stop_loop = true;
+		}
+	}
+
+	for (t = 0; t < num_trees; t++) {
+		struct test_notify_async_credit_state *state = states[t];
+		size_t max_async_credits = 512;
+		size_t max_credits = max_async_credits + 2;
+
+		torture_assert_goto(state->tctx, !state->stop, ok, out, "");
+		torture_assert_int_equal_goto(state->tctx,
+					      state->num_status_received,
+					      state->num_loops,
+					      ok,
+					      out,
+					      "");
+		torture_assert_int_equal_goto(state->tctx,
+					      state->num_status_pending,
+					      max_async_credits - 1,
+					      ok,
+					      out,
+					      "");
+		torture_assert_int_equal_goto(state->tctx,
+					      state->num_status_insufficient,
+					      max_credits - max_async_credits + 1,
+					      ok,
+					      out,
+					      "");
+	}
+
+	for (t = 0; t < num_trees; t++) {
+		struct test_notify_async_credit_state *state = states[t];
+
+		for (i = 0; i < num_loops; i++) {
+			struct test_notify_async_credit_loop
+				*loop = &state->loops[i];
+			struct smb2_handle h = {{
+				loop->fid_persistent,
+				loop->fid_volatile,
+			}};
+
+			/* the close cancels any pending notify request */
+			status = smb2_util_close(trees[t], h);
+			torture_assert_ntstatus_ok_goto(
+				tctx,
+				status,
+				ok,
+				out,
+				"smb2_util_close failed");
+		}
+	}
+
+	for (t = 0; t < num_trees; t++) {
+		struct test_notify_async_credit_state *state = states[t];
+
+		for (i = 0; i < num_loops; i++) {
+			struct test_notify_async_credit_loop
+				*loop = &state->loops[i];
+
+			if (NT_STATUS_EQUAL(loop->status,
+					    NT_STATUS_INSUFFICIENT_RESOURCES))
+			{
+				continue;
+			}
+
+			if (loop->req != NULL) {
+				ok = tevent_req_poll(loop->req, state->tctx->ev);
+				torture_assert_goto(state->tctx,
+						    ok,
+						    ok,
+						    out,
+						    "tevent_req_poll failed");
+			}
+			torture_assert_ntstatus_equal_goto(
+				tctx,
+				loop->status,
+				NT_STATUS_NOTIFY_CLEANUP,
+				ok,
+				out,
+				__location__);
+		}
+	}
+
+	ok = true;
+out:
+	for (t = 0; t < num_trees; t++) {
+		TALLOC_FREE(states[t]);
+	}
+
+	return ok;
+}
+
+static bool test_1conn_notify_max_async_credits(struct torture_context *tctx,
+						struct smb2_tree *tree0)
+{
+	struct smb2_tree *trees[1] = { tree0 };
+	struct smb2_handle dh = {{}};
+	uint16_t max_async_credits = torture_setting_int(
+		tctx,
+		"maxasynccredits",
+		512 /* lpcfg_smb2_max_async_credits(tctx->lp_ctx) */);
+	bool ok = false;
+	NTSTATUS status;
+	uint16_t max_credits = max_async_credits + 2;
+
+	smb2_transport_credits_ask_num(tree0->session->transport, max_credits);
+
+	/* Cleanup TESTDIR */
+	smb2_deltree(tree0, TESTDIR);
+
+	/* Create TESTDIR */
+	status = torture_smb2_testdir(tree0, TESTDIR, &dh);
+	torture_assert_ntstatus_ok_goto(
+		tctx, status, ok, out, "smb2_create failed");
+	status = smb2_util_close(tree0, dh);
+	torture_assert_ntstatus_ok_goto(
+		tctx, status, ok, out, "smb2_util_close failed");
+
+	ok = test_notify_max_async_credits(tctx,
+					   trees,
+					   ARRAY_SIZE(trees),
+					   max_credits);
+out:
+	/* Cleanup TESTDIR */
+	smb2_deltree(tree0, TESTDIR);
+
+	return ok;
+}
+
 struct torture_suite *torture_smb2_crediting_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "credits");
@@ -929,6 +1356,10 @@ struct torture_suite *torture_smb2_crediting_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite,
 				     "multichannel_ipc_max_async_credits",
 				     test_multichannel_ipc_max_async_credits);
+
+	torture_suite_add_1smb2_test(suite,
+				     "1conn_notify_max_async_credits",
+				     test_1conn_notify_max_async_credits);
 
 	suite->description = talloc_strdup(suite, "SMB2-CREDITS tests");
 
