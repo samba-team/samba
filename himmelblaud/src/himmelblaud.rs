@@ -220,6 +220,9 @@ pub(crate) async fn handle_client(
                 resolver.getgrnam(&grp_id).await?
             }
             Request::NssGroupByGid(gid) => resolver.getgrgid(gid).await?,
+            Request::PamAccountAllowed(account_id) => {
+                resolver.pam_acct_mgmt(&account_id).await?
+            }
             _ => todo!(),
         };
         reqs.send(resp).await?;
@@ -237,4 +240,5 @@ mod himmelblaud_getgrnam;
 mod himmelblaud_getpwent;
 mod himmelblaud_getpwnam;
 mod himmelblaud_getpwuid;
+mod himmelblaud_pam_acct_mgmt;
 mod himmelblaud_pam_auth;
