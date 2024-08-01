@@ -4608,6 +4608,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 			       uint32_t file_attributes,
 			       struct files_struct *fsp)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	mode_t mode;
@@ -4621,6 +4622,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	if (!CAN_WRITE(conn) || (access_mask & ~(conn->share_access))) {
 		DEBUG(5,("mkdir_internal: failing share access "
 			 "%s\n", lp_servicename(talloc_tos(), lp_sub, SNUM(conn))));
+		TALLOC_FREE(frame);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -4641,6 +4643,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 			smb_fname_str_dbg(parent_dir_fname),
 			smb_dname->base_name,
 			nt_errstr(status));
+		TALLOC_FREE(frame);
 		return status;
 	}
 
@@ -4655,6 +4658,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 			      smb_fname_atname,
 			      mode);
 	if (ret != 0) {
+		TALLOC_FREE(frame);
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -4666,6 +4670,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 
 	status = fd_openat(parent_dir_fname->fsp, smb_fname_atname, fsp, &how);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
 		return status;
 	}
 
@@ -4676,12 +4681,14 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2, ("Could not stat directory '%s' just created: %s\n",
 			  smb_fname_str_dbg(smb_dname), nt_errstr(status)));
+		TALLOC_FREE(frame);
 		return status;
 	}
 
 	if (!S_ISDIR(smb_dname->st.st_ex_mode)) {
 		DEBUG(0, ("Directory '%s' just created is not a directory !\n",
 			  smb_fname_str_dbg(smb_dname)));
+		TALLOC_FREE(frame);
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
@@ -4727,6 +4734,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(2, ("Could not stat directory '%s' just created: %s\n",
 			  smb_fname_str_dbg(smb_dname), nt_errstr(status)));
+			TALLOC_FREE(frame);
 			return status;
 		}
 	}
@@ -4739,6 +4747,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 			DBG_WARNING("apply_new_nt_acl() failed for %s with %s\n",
 				    fsp_str_dbg(fsp),
 				    nt_errstr(status));
+			TALLOC_FREE(frame);
 			return status;
 		}
 	}
@@ -4746,6 +4755,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	notify_fname(conn, NOTIFY_ACTION_ADDED, FILE_NOTIFY_CHANGE_DIR_NAME,
 		     smb_dname->base_name);
 
+	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
