@@ -11,7 +11,7 @@ path = "src/lib.rs"
 
 [dependencies]
 chelps.workspace = true
-libc = "0.2.153"
+libc.workspace = true
 
 [build-dependencies]
 cc = "1.0.97"

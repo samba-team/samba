@@ -8,7 +8,7 @@ version.workspace = true
 [dependencies]
 chelps.workspace = true
 dbg.workspace = true
-libc = "0.2.153"
+libc.workspace = true
 
 [build-dependencies]
 cc = "1.0.97"

@@ -11,7 +11,7 @@ crate-type = [ "cdylib" ]
 path =  "src/lib.rs"
 
 [dependencies]
-libc = "0.2.155"
+libc.workspace = true
 libnss = "0.8.0"
 ntstatus_gen.workspace = true
 param = { workspace = true }

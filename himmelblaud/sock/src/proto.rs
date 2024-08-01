@@ -98,6 +98,7 @@ pub enum PamAuthResponse {
     Password,
     MFACode { msg: String },
     MFAPoll { msg: String, polling_interval: u32 },
+    MFAPollWait,
     SetupPin { msg: String },
     Pin,
 }

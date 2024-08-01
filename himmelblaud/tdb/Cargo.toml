@@ -8,7 +8,7 @@ version.workspace = true
 [dependencies]
 chelps = { workspace = true }
 dbg.workspace = true
-libc = "0.2.155"
+libc.workspace = true
 ntstatus_gen.workspace = true
 
 [build-dependencies]

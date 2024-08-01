@@ -28,7 +28,7 @@ bytes = "1.6.1"
 futures = "0.3.30"
 serde = "1.0.204"
 idmap = { workspace = true }
-libc = "0.2.155"
+libc = { workspace = true }
 
 [build-dependencies]
 version = { path = "version" }
@@ -36,7 +36,7 @@ version = { path = "version" }
 [workspace]
 members = [
   "chelps", "dbg", "idmap",
-  "nss", "ntstatus_gen",
+  "nss", "ntstatus_gen", "pam",
   "param", "sock", "tdb", "version",
 ]
 
@@ -48,3 +48,4 @@ sock = { path = "sock" }
 ntstatus_gen = { path = "ntstatus_gen" }
 tdb = { path = "tdb" }
 idmap = { path = "idmap" }
+libc = "0.2.155"

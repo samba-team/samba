@@ -1,0 +1,4 @@
+#!/usr/bin/env python
+
+bld.SAMBA_RUST_LIBRARY('libpam_himmelblau.so',
+                       source='src/lib.rs src/pam/constants.rs src/pam/conv.rs src/pam/items.rs src/pam/items.rs src/pam/macros.rs src/pam/mod.rs src/pam/module.rs ../sock/src/lib.rs ../ntstatus_gen/src/lib.rs ../param/src/lib.rs ../version/src/lib.rs')
