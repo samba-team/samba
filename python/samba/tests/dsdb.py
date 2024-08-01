@@ -946,7 +946,7 @@ class DsdbTests(TestCase):
         self.samdb.modify(msg)
 
         #
-        # Finally ry the non-linked attribute 'assistant'
+        # Finally try the non-linked attribute 'assistant'
         # but with non existing GUID, SID, DN
         #
         msg = ldb.Message()
