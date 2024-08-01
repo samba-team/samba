@@ -174,7 +174,7 @@ def build(bld):
                             dep_vars=['LDB_VERSION'],
                             target='include/ldb_version.h',
                             public_headers='include/ldb_version.h',
-                            public_headers_install=not bld.env.ldb_is_public_library)
+                            public_headers_install=bld.env.ldb_is_public_library)
     t.env.LDB_VERSION = LDB_VERSION
 
     bld.SAMBA_MODULE('ldb_asq',
