@@ -56,23 +56,27 @@ struct smb2_hnd {
  */
 
 /***************************************************************
- Allocate a new fnum between 1 and 0xFFFE from an smb2_hnd.
+ Allocate a new fnum between 1 and 0xFFFE from an smb2 file id.
  Ensures handle is owned by cli struct.
 ***************************************************************/
 
 static NTSTATUS map_smb2_handle_to_fnum(struct cli_state *cli,
-				const struct smb2_hnd *ph,	/* In */
-				uint16_t *pfnum)		/* Out */
+					uint64_t fid_persistent,
+					uint64_t fid_volatile,
+					uint16_t *pfnum)
 {
 	int ret;
 	struct idr_context *idp = cli->smb2.open_handles;
-	struct smb2_hnd *owned_h = talloc_memdup(cli,
-						ph,
-						sizeof(struct smb2_hnd));
+	struct smb2_hnd *owned_h = NULL;
 
+	owned_h = talloc(cli, struct smb2_hnd);
 	if (owned_h == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	*owned_h = (struct smb2_hnd){
+		.fid_persistent = fid_persistent,
+		.fid_volatile = fid_volatile,
+	};
 
 	if (idp == NULL) {
 		/* Lazy init */
@@ -342,22 +346,25 @@ static void cli_smb2_create_fnum_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct cli_smb2_create_fnum_state *state = tevent_req_data(
 		req, struct cli_smb2_create_fnum_state);
-	struct smb2_hnd h;
+	uint64_t fid_persistent, fid_volatile;
 	NTSTATUS status;
 
-	status = smb2cli_create_recv(
-		subreq,
-		&h.fid_persistent,
-		&h.fid_volatile, &state->cr,
-		state,
-		&state->out_cblobs,
-		&state->symlink);
+	status = smb2cli_create_recv(subreq,
+				     &fid_persistent,
+				     &fid_volatile,
+				     &state->cr,
+				     state,
+				     &state->out_cblobs,
+				     &state->symlink);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
-	status = map_smb2_handle_to_fnum(state->cli, &h, &state->fnum);
+	status = map_smb2_handle_to_fnum(state->cli,
+					 fid_persistent,
+					 fid_volatile,
+					 &state->fnum);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
