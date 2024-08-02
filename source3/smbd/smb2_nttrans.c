@@ -204,6 +204,10 @@ static bool check_smb2_posix_chmod_ace(const struct files_struct *fsp,
 		return false;
 	}
 
+	if (psd->dacl->aces[0].trustee.num_auths != 3) {
+		return false;
+	}
+
 	cmp = dom_sid_compare_domain(&global_sid_Unix_NFS_Mode,
 				     &psd->dacl->aces[0].trustee);
 	if (cmp != 0) {
