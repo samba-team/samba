@@ -52,7 +52,8 @@ char *server_id_str_buf(struct server_id id, struct server_id_buf *dst);
 char *server_id_str_buf_unique_ex(struct server_id id,
 				  char unique_delimiter,
 				  struct server_id_buf *dst);
-size_t server_id_str_buf_unique(struct server_id id, char *buf, size_t buflen);
+char *server_id_str_buf_unique(struct server_id id,
+			       struct server_id_buf *dst);
 
 struct server_id server_id_from_string(uint32_t local_vnn,
 				       const char *pid_string);

@@ -111,10 +111,9 @@ int server_id_db_add(struct server_id_db *db, const char *name)
 	key = string_term_tdb_data(name);
 
 	{
-		size_t idlen = server_id_str_buf_unique(db->pid, NULL, 0);
-		char idbuf[idlen];
-
-		server_id_str_buf_unique(db->pid, idbuf, idlen);
+		struct server_id_buf _buf;
+		char *idbuf = server_id_str_buf_unique(db->pid, &_buf);
+		size_t idlen = strlen(idbuf) + 1;
 
 		ret = tdb_append(
 			tdb, key,
@@ -134,8 +133,8 @@ int server_id_db_prune_name(struct server_id_db *db, const char *name,
 			    struct server_id server)
 {
 	struct tdb_context *tdb = db->tdb->tdb;
-	size_t idbuf_len = server_id_str_buf_unique(server, NULL, 0);
-	char idbuf[idbuf_len];
+	struct server_id_buf _buf;
+	char *idbuf = server_id_str_buf_unique(server, &_buf);
 	TDB_DATA key;
 	uint8_t *data;
 	size_t datalen;
@@ -143,7 +142,6 @@ int server_id_db_prune_name(struct server_id_db *db, const char *name,
 	int ret;
 
 	key = string_term_tdb_data(name);
-	server_id_str_buf_unique(server, idbuf, idbuf_len);
 
 	ret = tdb_chainlock(tdb, key);
 	if (ret == -1) {

@@ -91,26 +91,9 @@ char *server_id_str_buf_unique_ex(struct server_id id,
 	return dst->buf;
 }
 
-size_t server_id_str_buf_unique(struct server_id id, char *buf, size_t buflen)
+char *server_id_str_buf_unique(struct server_id id, struct server_id_buf *dst)
 {
-	struct server_id_buf idbuf;
-	char unique_buf[21];	/* 2^64 is 18446744073709551616, 20 chars */
-	size_t idlen, unique_len, needed;
-
-	server_id_str_buf(id, &idbuf);
-
-	idlen = strlen(idbuf.buf);
-	unique_len = snprintf(unique_buf, sizeof(unique_buf), "%"PRIu64,
-			      id.unique_id);
-	needed = idlen + unique_len + 2;
-
-	if (buflen >= needed) {
-		memcpy(buf, idbuf.buf, idlen);
-		buf[idlen] = '/';
-		memcpy(buf + idlen + 1, unique_buf, unique_len+1);
-	}
-
-	return needed;
+	return server_id_str_buf_unique_ex(id, '/', dst);
 }
 
 struct server_id server_id_from_string(uint32_t local_vnn,
