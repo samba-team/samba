@@ -3674,18 +3674,13 @@ static int cmd_chmod(void)
 		return 1;
 	}
 
-	if (!SERVER_HAS_UNIX_CIFS(targetcli)) {
-		d_printf("Server doesn't support UNIX CIFS calls.\n");
-		return 1;
-	}
-
 	if (CLI_DIRSEP_CHAR != '/') {
 		d_printf("Command \"posix\" must be issued before "
 			 "the \"chmod\" command can be used.\n");
 		return 1;
 	}
 
-	status = cli_posix_chmod(targetcli, targetname, mode);
+	status = cli_chmod(targetcli, targetname, mode);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s chmod file %s 0%o\n",
 			 nt_errstr(status), src, (unsigned int)mode);
