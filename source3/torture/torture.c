@@ -6755,10 +6755,11 @@ static bool run_rename_access(int dummy)
 		goto fail;
 	}
 	/* Now go around the back and chmod to 777 via POSIX. */
-	status = cli_posix_chmod(posix_cli, dname, 0777);
+	status = cli_chmod(posix_cli, dname, 0777);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("cli_posix_chmod failed for %s (%s)\n",
-			dname, nt_errstr(status));
+		printf("cli_chmod failed for %s (%s)\n",
+		       dname,
+		       nt_errstr(status));
 		goto fail;
 	}
 

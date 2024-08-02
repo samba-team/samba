@@ -1066,19 +1066,19 @@ bool run_posix_symlink_chmod_test(int dummy)
 	}
 
 	/* We should not be able to chmod symlinks that point to something. */
-	status = cli_posix_chmod(cli_unix, fname_real_symlink, 0777);
+	status = cli_chmod(cli_unix, fname_real_symlink, 0777);
 
 	/* This should fail with something other than server crashed. */
 	if (NT_STATUS_IS_OK(status)) {
-		printf("cli_posix_chmod of %s succeeded (should have failed)\n",
-			fname_real_symlink);
+		printf("cli_chmod of %s succeeded (should have failed)\n",
+		       fname_real_symlink);
 		goto out;
 	}
 	if (NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_DISCONNECTED)) {
 		/* Oops. Server crashed. */
-		printf("cli_posix_chmod of %s failed error %s\n",
-			fname_real_symlink,
-			nt_errstr(status));
+		printf("cli_chmod of %s failed error %s\n",
+		       fname_real_symlink,
+		       nt_errstr(status));
 		goto out;
 	}
 	/* Any other failure is ok. */
@@ -1096,19 +1096,19 @@ bool run_posix_symlink_chmod_test(int dummy)
 	}
 
 	/* We should not be able to chmod symlinks that point to nothing. */
-	status = cli_posix_chmod(cli_unix, nonexist_symlink, 0777);
+	status = cli_chmod(cli_unix, nonexist_symlink, 0777);
 
 	/* This should fail with something other than server crashed. */
 	if (NT_STATUS_IS_OK(status)) {
-		printf("cli_posix_chmod of %s succeeded (should have failed)\n",
-			nonexist_symlink);
+		printf("cli_chmod of %s succeeded (should have failed)\n",
+		       nonexist_symlink);
 		goto out;
 	}
 	if (NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_DISCONNECTED)) {
 		/* Oops. Server crashed. */
-		printf("cli_posix_chmod of %s failed error %s\n",
-			nonexist_symlink,
-			nt_errstr(status));
+		printf("cli_chmod of %s failed error %s\n",
+		       nonexist_symlink,
+		       nt_errstr(status));
 		goto out;
 	}
 
