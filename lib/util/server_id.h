@@ -24,7 +24,23 @@
 
 struct server_id;
 
-struct server_id_buf { char buf[48]; }; /* probably a bit too large ... */
+struct server_id_buf {
+	/*
+	 * 4294967295 uses 10 chars
+	 * 18446744073709551615 uses 20 chars
+	 *
+	 * We have these combinations:
+	 * - "disconnected"
+	 * - PID64
+	 * - PID64.TASK32
+	 * - VNN32:PID64.TASK32
+	 *
+	 * The largest has 10 + 1 + 20 + 1 + 10 + 1 = 43 chars
+	 *
+	 * Then we align it to a multiple of 8.
+	 */
+	char buf[48];
+};
 
 bool server_id_same_process(const struct server_id *p1,
 			    const struct server_id *p2);
