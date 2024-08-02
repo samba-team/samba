@@ -255,7 +255,9 @@ bool smb1_srv_send(struct smbXsrv_connection *xconn,
 	len = smb_len_large(buf_out) + 4;
 
 	ret = write_data(xconn->transport.sock, buf_out, len);
-	srv_free_enc_buffer(xconn, encrypted_buf);
+	if (encrypted_buf != buffer) {
+		srv_free_enc_buffer(xconn, encrypted_buf);
+	}
 	if (ret <= 0) {
 		int saved_errno = errno;
 		/*
