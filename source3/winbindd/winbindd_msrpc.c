@@ -1050,7 +1050,7 @@ static NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 	enum lsa_LookupNamesLevel level = LSA_LOOKUP_NAMES_ALL;
 
  connect:
-	if (domains == NULL) {
+	if (domains != NULL) {
 		*domains = NULL;
 	}
 	*sids = NULL;
