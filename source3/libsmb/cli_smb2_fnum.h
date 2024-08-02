@@ -67,6 +67,8 @@ NTSTATUS cli_smb2_create_fnum(
 	TALLOC_CTX *mem_ctx,
 	struct smb2_create_blobs *out_cblobs);
 
+bool cli_smb2_fnum_is_posix(struct cli_state *cli, uint16_t fnum);
+
 struct tevent_req *cli_smb2_close_fnum_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    struct cli_state *cli,

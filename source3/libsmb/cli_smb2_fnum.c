@@ -49,6 +49,7 @@
 struct smb2_hnd {
 	uint64_t fid_persistent;
 	uint64_t fid_volatile;
+	bool posix; /* Opened with posix context */
 };
 
 /*
@@ -63,6 +64,7 @@ struct smb2_hnd {
 static NTSTATUS map_smb2_handle_to_fnum(struct cli_state *cli,
 					uint64_t fid_persistent,
 					uint64_t fid_volatile,
+					bool posix,
 					uint16_t *pfnum)
 {
 	int ret;
@@ -76,6 +78,7 @@ static NTSTATUS map_smb2_handle_to_fnum(struct cli_state *cli,
 	*owned_h = (struct smb2_hnd){
 		.fid_persistent = fid_persistent,
 		.fid_volatile = fid_volatile,
+		.posix = posix,
 	};
 
 	if (idp == NULL) {
@@ -347,6 +350,7 @@ static void cli_smb2_create_fnum_done(struct tevent_req *subreq)
 	struct cli_smb2_create_fnum_state *state = tevent_req_data(
 		req, struct cli_smb2_create_fnum_state);
 	uint64_t fid_persistent, fid_volatile;
+	struct smb2_create_blob *posix = NULL;
 	NTSTATUS status;
 
 	status = smb2cli_create_recv(subreq,
@@ -361,9 +365,13 @@ static void cli_smb2_create_fnum_done(struct tevent_req *subreq)
 		return;
 	}
 
+	posix = smb2_create_blob_find(&state->in_cblobs,
+				      SMB2_CREATE_TAG_POSIX);
+
 	status = map_smb2_handle_to_fnum(state->cli,
 					 fid_persistent,
 					 fid_volatile,
+					 (posix != NULL),
 					 &state->fnum);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -413,6 +421,18 @@ NTSTATUS cli_smb2_create_fnum_recv(
 	}
 	state->cli->raw_status = NT_STATUS_OK;
 	return NT_STATUS_OK;
+}
+
+bool cli_smb2_fnum_is_posix(struct cli_state *cli, uint16_t fnum)
+{
+	struct smb2_hnd *ph = NULL;
+	NTSTATUS status;
+
+	status = map_fnum_to_smb2_handle(cli, fnum, &ph);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+	return ph->posix;
 }
 
 NTSTATUS cli_smb2_create_fnum(
