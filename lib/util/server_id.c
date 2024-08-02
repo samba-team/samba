@@ -58,19 +58,17 @@ char *server_id_str_buf(struct server_id id, struct server_id_buf *dst)
 	if (server_id_is_disconnected(&id)) {
 		strlcpy(dst->buf, "disconnected", sizeof(dst->buf));
 	} else if ((id.vnn == NONCLUSTER_VNN) && (id.task_id == 0)) {
-		snprintf(dst->buf, sizeof(dst->buf), "%llu",
-			 (unsigned long long)id.pid);
+		snprintf(dst->buf, sizeof(dst->buf), "%"PRIu64"",
+			 id.pid);
 	} else if (id.vnn == NONCLUSTER_VNN) {
-		snprintf(dst->buf, sizeof(dst->buf), "%llu.%u",
-			 (unsigned long long)id.pid, (unsigned)id.task_id);
+		snprintf(dst->buf, sizeof(dst->buf), "%"PRIu64".%"PRIu32"",
+			 id.pid, id.task_id);
 	} else if (id.task_id == 0) {
-		snprintf(dst->buf, sizeof(dst->buf), "%u:%llu",
-			 (unsigned)id.vnn, (unsigned long long)id.pid);
+		snprintf(dst->buf, sizeof(dst->buf), "%"PRIu32":%"PRIu64"",
+			 id.vnn, id.pid);
 	} else {
-		snprintf(dst->buf, sizeof(dst->buf), "%u:%llu.%u",
-			 (unsigned)id.vnn,
-			 (unsigned long long)id.pid,
-			 (unsigned)id.task_id);
+		snprintf(dst->buf, sizeof(dst->buf), "%"PRIu32":%"PRIu64".%"PRIu32"",
+			 id.vnn, id.pid, id.task_id);
 	}
 	return dst->buf;
 }
