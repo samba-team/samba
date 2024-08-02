@@ -1,4 +1,107 @@
                    ==============================
+                   Release Notes for Samba 4.20.3
+                           August 02, 2024
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.20 release series.
+
+LDAP TLS/SASL channel binding support
+-------------------------------------
+
+The ldap server supports SASL binds with
+kerberos or NTLMSSP over TLS connections
+now (either ldaps or starttls).
+
+Setups where 'ldap server require strong auth = allow_sasl_over_tls'
+was required before, can now most likely move to the
+default of 'ldap server require strong auth = yes'.
+
+If SASL binds without correct tls channel bindings are required
+'ldap server require strong auth = allow_sasl_without_tls_channel_bindings'
+should be used now, as 'allow_sasl_over_tls' will generate a
+warning in every start of 'samba', as well as '[samba-tool ]testparm'.
+
+This is similar to LdapEnforceChannelBinding under
+HKLM\SYSTEM\CurrentControlSet\Services\NTDS\Parameters
+on Windows.
+
+All client tools using ldaps also include the correct
+channel bindings now.
+
+smb.conf changes
+================
+
+  Parameter Name                          Description     Default
+  --------------                          -----------     -------
+  ldap server require strong auth         new values
+
+Changes since 4.20.2
+--------------------
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15683: Running samba-bgqd a a standalone systemd service does not work.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 15655: When claims enabled with heimdal kerberos, unable to log on to a
+     Windows computer when user account need to change their own password.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15671: Invalid client warning about command line passwords.
+   * BUG 15672: Version string is truncated in manpages.
+   * BUG 15673: --version-* options are still not ergonomic, and they reject
+     tilde characters.
+   * BUG 15674: cmdline_burn does not always burn secrets.
+   * BUG 15685: Samba does not parse SDDL found in defaultSecurityDescriptor in
+     AD_DS_Classes_Windows_Server_v1903.ldf.
+
+o  Jo Sutton <josutton@catalyst.net.nz>
+   * BUG 15655: When claims enabled with heimdal kerberos, unable to log on to a
+     Windows computer when user account need to change their own password.
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15660: The images don\'t build after the git security release and
+     CentOS 8 Stream is EOL.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15676: Fix clock skew error message and memory cache clock skew
+     recovery.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15603: Heimdal ignores _gsskrb5_decapsulate errors in
+     init_sec_context/repl_mutual.
+   * BUG 15621: s4:ldap_server: does not support tls channel bindings
+     for sasl binds.
+
+o  Xavi Hernandez <xhernandez@redhat.com>
+   * BUG 15678: CTDB socket output queues may suffer unbounded delays under some
+     special conditions.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.20.2
                            June 19, 2024
                    ==============================
@@ -79,8 +182,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.20.1
                             May 08, 2024
@@ -404,6 +506,7 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
+  ldap server require strong auth         new values             (4.20.3)
   acl claims evaluation                   new             AD DC only
   smb3 unix extensions                    Per share       -
   smb3 share cap:ASYMMETRIC               new             no
