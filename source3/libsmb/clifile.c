@@ -1086,6 +1086,7 @@ struct cli_fchmod_state {
 };
 
 static void cli_fchmod_done1(struct tevent_req *subreq);
+static void cli_fchmod_done2(struct tevent_req *subreq);
 
 struct tevent_req *cli_fchmod_send(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *ev,
@@ -1124,6 +1125,42 @@ struct tevent_req *cli_fchmod_send(TALLOC_CTX *mem_ctx,
 		return req;
 	}
 
+	if ((proto >= PROTOCOL_SMB3_11) && cli_smb2_fnum_is_posix(cli, fnum)) {
+		struct security_ace ace = {
+			.type = SEC_ACE_TYPE_ACCESS_ALLOWED,
+			.trustee = global_sid_Unix_NFS_Mode,
+		};
+		struct security_acl acl = {
+			.revision = SECURITY_ACL_REVISION_NT4,
+			.num_aces = 1,
+			.aces = &ace,
+		};
+		struct security_descriptor *sd = NULL;
+
+		sid_append_rid(&ace.trustee, mode);
+
+		sd = make_sec_desc(state,
+				   SECURITY_DESCRIPTOR_REVISION_1,
+				   SEC_DESC_SELF_RELATIVE |
+					   SEC_DESC_DACL_PRESENT,
+				   NULL,
+				   NULL,
+				   NULL,
+				   &acl,
+				   NULL);
+		if (tevent_req_nomem(sd, req)) {
+			return tevent_req_post(req, ev);
+		}
+
+		subreq = cli_set_security_descriptor_send(
+			state, ev, cli, fnum, SECINFO_DACL, sd);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_fchmod_done2, req);
+		return req;
+	}
+
 	tevent_req_nterror(req, NT_STATUS_INVALID_LEVEL);
 	return tevent_req_post(req, ev);
 }
@@ -1131,6 +1168,12 @@ struct tevent_req *cli_fchmod_send(TALLOC_CTX *mem_ctx,
 static void cli_fchmod_done1(struct tevent_req *subreq)
 {
 	NTSTATUS status = cli_setfileinfo_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+static void cli_fchmod_done2(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_set_security_descriptor_recv(subreq);
 	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
