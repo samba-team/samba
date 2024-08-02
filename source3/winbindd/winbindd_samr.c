@@ -679,7 +679,9 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 
 	DBG_NOTICE("%s\\%s\n", domain_name, name);
 
-	*ptype = SID_NAME_UNKNOWN;
+	if (ptype != NULL) {
+		*ptype = SID_NAME_UNKNOWN;
+	}
 
 	if (strequal(domain_name, unix_users_domain_name())) {
 		struct passwd *pwd = NULL;
