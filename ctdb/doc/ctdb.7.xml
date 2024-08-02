@@ -233,8 +233,8 @@
 
       <para>
 	Some users like to put this configuration file in their
-	cluster filesystem.  A symbolic link should be used in this
-	case.
+	cluster filesystem.  A symbolic link or the
+	<parameter>nodes list</parameter> parameter can be used.
       </para>
 
       <para>
