@@ -169,23 +169,6 @@ static char *cephmount_get_cookie(TALLOC_CTX * mem_ctx, const int snum)
 			       fsname);
 }
 
-static int cephmount_select_fs(struct ceph_mount_info *mnt, const char *fsname)
-{
-	/*
-	 * ceph_select_filesystem was added in ceph 'nautilus' (v14).
-	 * Earlier versions of libcephfs will lack that API function.
-	 * At the time of this writing (Feb 2023) all versions of ceph
-	 * supported by ceph upstream have this function.
-	 */
-#if defined(HAVE_CEPH_SELECT_FILESYSTEM)
-	DBG_DEBUG("[CEPH] calling: ceph_select_filesystem with %s\n", fsname);
-	return ceph_select_filesystem(mnt, fsname);
-#else
-	DBG_ERR("[CEPH] ceph_select_filesystem not available\n");
-	return -ENOTSUP;
-#endif
-}
-
 static struct ceph_mount_info *cephmount_mount_fs(const int snum)
 {
 	int ret;
@@ -235,7 +218,7 @@ static struct ceph_mount_info *cephmount_mount_fs(const int snum)
 	 * 'pacific'. Permit different shares to access different file systems.
 	 */
 	if (fsname != NULL) {
-		ret = cephmount_select_fs(mnt, fsname);
+		ret = ceph_select_filesystem(mnt, fsname);
 		if (ret < 0) {
 			goto err_cm_release;
 		}
