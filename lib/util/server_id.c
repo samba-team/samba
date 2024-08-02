@@ -55,20 +55,38 @@ bool server_id_equal(const struct server_id *p1, const struct server_id *p2)
 
 char *server_id_str_buf(struct server_id id, struct server_id_buf *dst)
 {
+	return server_id_str_buf_unique_ex(id, '\0', dst);
+}
+
+char *server_id_str_buf_unique_ex(struct server_id id,
+				  char unique_delimiter,
+				  struct server_id_buf *dst)
+{
+	if (id.unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
+		unique_delimiter = '\0';
+	}
+
 	if (server_id_is_disconnected(&id)) {
 		strlcpy(dst->buf, "disconnected", sizeof(dst->buf));
 	} else if ((id.vnn == NONCLUSTER_VNN) && (id.task_id == 0)) {
-		snprintf(dst->buf, sizeof(dst->buf), "%"PRIu64"",
-			 id.pid);
+		snprintf(dst->buf, sizeof(dst->buf),
+			 "%"PRIu64"%c%"PRIu64"",
+			 id.pid, unique_delimiter, id.unique_id);
 	} else if (id.vnn == NONCLUSTER_VNN) {
-		snprintf(dst->buf, sizeof(dst->buf), "%"PRIu64".%"PRIu32"",
-			 id.pid, id.task_id);
+		snprintf(dst->buf, sizeof(dst->buf),
+			 "%"PRIu64".%"PRIu32"%c%"PRIu64"",
+			 id.pid, id.task_id,
+			 unique_delimiter, id.unique_id);
 	} else if (id.task_id == 0) {
-		snprintf(dst->buf, sizeof(dst->buf), "%"PRIu32":%"PRIu64"",
-			 id.vnn, id.pid);
+		snprintf(dst->buf, sizeof(dst->buf),
+			 "%"PRIu32":%"PRIu64"%c%"PRIu64"",
+			 id.vnn, id.pid,
+			 unique_delimiter, id.unique_id);
 	} else {
-		snprintf(dst->buf, sizeof(dst->buf), "%"PRIu32":%"PRIu64".%"PRIu32"",
-			 id.vnn, id.pid, id.task_id);
+		snprintf(dst->buf, sizeof(dst->buf),
+			 "%"PRIu32":%"PRIu64".%"PRIu32"%c%"PRIu64"",
+			 id.vnn, id.pid, id.task_id,
+			 unique_delimiter, id.unique_id);
 	}
 	return dst->buf;
 }

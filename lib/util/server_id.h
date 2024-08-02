@@ -37,9 +37,11 @@ struct server_id_buf {
 	 *
 	 * The largest has 10 + 1 + 20 + 1 + 10 + 1 = 43 chars
 	 *
-	 * Then we align it to a multiple of 8.
+	 * Optionally we allow :UNIQUE64 added,
+	 * which adds 21 chars, so we are at 64 chars
+	 * and that's 8 byte aligned.
 	 */
-	char buf[48];
+	char buf[64];
 };
 
 bool server_id_same_process(const struct server_id *p1,
@@ -47,6 +49,9 @@ bool server_id_same_process(const struct server_id *p1,
 int server_id_cmp(const struct server_id *p1, const struct server_id *p2);
 bool server_id_equal(const struct server_id *p1, const struct server_id *p2);
 char *server_id_str_buf(struct server_id id, struct server_id_buf *dst);
+char *server_id_str_buf_unique_ex(struct server_id id,
+				  char unique_delimiter,
+				  struct server_id_buf *dst);
 size_t server_id_str_buf_unique(struct server_id id, char *buf, size_t buflen);
 
 struct server_id server_id_from_string(uint32_t local_vnn,
