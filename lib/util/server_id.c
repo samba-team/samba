@@ -116,10 +116,18 @@ size_t server_id_str_buf_unique(struct server_id id, char *buf, size_t buflen)
 struct server_id server_id_from_string(uint32_t local_vnn,
 				       const char *pid_string)
 {
+	return server_id_from_string_ex(local_vnn, '/', pid_string);
+}
+
+struct server_id server_id_from_string_ex(uint32_t local_vnn,
+					  char unique_delimiter,
+					  const char *pid_string)
+{
 	struct server_id templ = {
 		.vnn = NONCLUSTER_VNN, .pid = UINT64_MAX
 	};
 	struct server_id result;
+	char unique_delimiter_found = '\0';
 	int ret;
 
 	/*
@@ -130,10 +138,10 @@ struct server_id server_id_from_string(uint32_t local_vnn,
 	 */
 
 	result = templ;
-	ret = sscanf(pid_string, "%"SCNu32":%"SCNu64".%"SCNu32"/%"SCNu64,
+	ret = sscanf(pid_string, "%"SCNu32":%"SCNu64".%"SCNu32"%c%"SCNu64,
 		     &result.vnn, &result.pid, &result.task_id,
-		     &result.unique_id);
-	if (ret == 4) {
+		     &unique_delimiter_found, &result.unique_id);
+	if (ret == 5 && unique_delimiter_found == unique_delimiter) {
 		return result;
 	}
 
@@ -145,9 +153,10 @@ struct server_id server_id_from_string(uint32_t local_vnn,
 	}
 
 	result = templ;
-	ret = sscanf(pid_string, "%"SCNu32":%"SCNu64"/%"SCNu64,
-		     &result.vnn, &result.pid, &result.unique_id);
-	if (ret == 3) {
+	ret = sscanf(pid_string, "%"SCNu32":%"SCNu64"%c%"SCNu64,
+		     &result.vnn, &result.pid,
+		     &unique_delimiter_found, &result.unique_id);
+	if (ret == 4 && unique_delimiter_found == unique_delimiter) {
 		return result;
 	}
 
@@ -159,9 +168,10 @@ struct server_id server_id_from_string(uint32_t local_vnn,
 	}
 
 	result = templ;
-	ret = sscanf(pid_string, "%"SCNu64".%"SCNu32"/%"SCNu64,
-		     &result.pid, &result.task_id, &result.unique_id);
-	if (ret == 3) {
+	ret = sscanf(pid_string, "%"SCNu64".%"SCNu32"%c%"SCNu64,
+		     &result.pid, &result.task_id,
+		     &unique_delimiter_found, &result.unique_id);
+	if (ret == 4 && unique_delimiter_found == unique_delimiter) {
 		result.vnn = local_vnn;
 		return result;
 	}
@@ -175,9 +185,9 @@ struct server_id server_id_from_string(uint32_t local_vnn,
 	}
 
 	result = templ;
-	ret = sscanf(pid_string, "%"SCNu64"/%"SCNu64,
-		     &result.pid, &result.unique_id);
-	if (ret == 2) {
+	ret = sscanf(pid_string, "%"SCNu64"%c%"SCNu64,
+		     &result.pid, &unique_delimiter_found, &result.unique_id);
+	if (ret == 3 && unique_delimiter_found == unique_delimiter) {
 		result.vnn = local_vnn;
 		return result;
 	}

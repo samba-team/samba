@@ -56,6 +56,9 @@ size_t server_id_str_buf_unique(struct server_id id, char *buf, size_t buflen);
 
 struct server_id server_id_from_string(uint32_t local_vnn,
 				       const char *pid_string);
+struct server_id server_id_from_string_ex(uint32_t local_vnn,
+					  char unique_delimiter,
+					  const char *pid_string);
 
 /**
  * Set the serverid to the special value that represents a disconnected
