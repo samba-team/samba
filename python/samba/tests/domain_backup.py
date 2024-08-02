@@ -136,7 +136,7 @@ class DomainBackupBase(BlackboxTestCase, GkdiBaseTest):
         self.assertTrue(server_found,
                         "Could not find %s server" % expected_server)
 
-        if expected_count:
+        if expected_count is not None:
             self.assertTrue(len(res) == expected_count)
 
     def restore_dir(self):
