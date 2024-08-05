@@ -310,23 +310,27 @@ NTSTATUS remote_password_change(const char *remote_machine,
 			}
 			cli_shutdown(cli);
 			return NT_STATUS_UNSUCCESSFUL;
-		} else {
-			/* Use the old RAP method. */
-			if (cli_oem_change_password(cli, user_name, new_passwd, old_passwd)) {
-				/* SAMR failed, but the old LanMan protocol worked! */
-
-				cli_shutdown(cli);
-				return NT_STATUS_OK;
-			}
-
-			result = cli_nt_error(cli);
-			if (asprintf(err_str, "machine %s rejected the password "
-				 "change: Error was : %s.\n",
-				 remote_machine, nt_errstr(result)) == -1) {
-				*err_str = NULL;
-			}
-			cli_shutdown(cli);
-			return result;
 		}
+
+		/* Use the old RAP method. */
+		if (cli_oem_change_password(
+			    cli, user_name, new_passwd, old_passwd)) {
+			/* SAMR failed, but the old LanMan protocol worked! */
+
+			cli_shutdown(cli);
+			return NT_STATUS_OK;
+		}
+
+		result = cli_nt_error(cli);
+		if (asprintf(err_str,
+			     "machine %s rejected the password "
+			     "change: Error was : %s.\n",
+			     remote_machine,
+			     nt_errstr(result)) == -1)
+		{
+			*err_str = NULL;
+		}
+		cli_shutdown(cli);
+		return result;
 	}
 }
