@@ -72,20 +72,33 @@ pub(crate) enum AuthSession {
 
 impl Resolver {
     pub(crate) fn pam_auth_init(
-        &self,
+        &mut self,
         account_id: &str,
     ) -> Result<(AuthSession, Response), Box<NTSTATUS>> {
         let auth_session = AuthSession::InProgress {
             account_id: account_id.to_string(),
             cred_handler: AuthCredHandler::None,
         };
-        // TODO: Check for Hello Key in the Cache
-
-        // Send a password request to the client
-        Ok((
-            auth_session,
-            Response::PamAuthStepResponse(PamAuthResponse::Password),
-        ))
+        let hello_key = self.pcache.loadable_hello_key_fetch(account_id);
+        // Skip Hello authentication if it is disabled by config
+        let hello_enabled =
+            self.lp.himmelblaud_hello_enabled().map_err(|e| {
+                DBG_ERR!("{:?}", e);
+                Box::new(NT_STATUS_LOGON_FAILURE)
+            })?;
+        if !self.is_domain_joined() || hello_key.is_none() || !hello_enabled {
+            // Send a password request to the client
+            Ok((
+                auth_session,
+                Response::PamAuthStepResponse(PamAuthResponse::Password),
+            ))
+        } else {
+            // Send a pin request to the client
+            Ok((
+                auth_session,
+                Response::PamAuthStepResponse(PamAuthResponse::Pin),
+            ))
+        }
     }
 
     pub(crate) async fn pam_auth_step(
@@ -96,7 +109,7 @@ impl Resolver {
     ) -> Result<Response, Box<NTSTATUS>> {
         macro_rules! enroll_and_obtain_enrolled_token {
             ($token:ident) => {{
-                if !self.is_domain_joined().await {
+                if !self.is_domain_joined() {
                     DBG_DEBUG!("Device is not enrolled. Enrolling now.");
                     self.join_domain(&$token)
                         .await
@@ -754,7 +767,7 @@ impl Resolver {
         }
     }
 
-    async fn is_domain_joined(&mut self) -> bool {
+    fn is_domain_joined(&mut self) -> bool {
         /* If we have access to tpm keys, and the domain device_id is
          * configured, we'll assume we are domain joined. */
         let device_id = self.pcache.device_id(&self.realm);
