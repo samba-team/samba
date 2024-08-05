@@ -909,7 +909,7 @@ class ConfidentialAttrTestDirsync(ConfidentialAttrCommon):
         self.extra_filter = "(|{0}{1})".format(exclude_deleted_objs_filter,
                                                deleted_filter)
 
-        # for matching on a single object, the search expresseion becomes:
+        # for matching on a single object, the search expression becomes:
         # match exactly by account-name AND either a non-deleted object OR a
         # deleted object from this test run
         match_by_name = "(samaccountname={0})".format(self.conf_user)
