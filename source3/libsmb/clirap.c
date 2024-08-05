@@ -1672,10 +1672,13 @@ NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstrin
  Send a qpathinfo SMB_QUERY_FILE_STANDARD_INFO call.
 ****************************************************************************/
 
-NTSTATUS cli_qpathinfo_standard(struct cli_state *cli, const char *fname,
-				uint64_t *allocated, uint64_t *size,
-				uint32_t *nlinks,
-				bool *is_del_pending, bool *is_dir)
+static NTSTATUS cli_qpathinfo_standard(struct cli_state *cli,
+				       const char *fname,
+				       uint64_t *allocated,
+				       uint64_t *size,
+				       uint32_t *nlinks,
+				       bool *is_del_pending,
+				       bool *is_dir)
 {
 	uint8_t *rdata;
 	uint32_t num_rdata;
