@@ -404,32 +404,6 @@ impl PrivateCache {
         })
     }
 
-    pub(crate) fn hsm_pin_fetch_or_create(
-        &mut self,
-    ) -> Result<AuthValue, Box<NTSTATUS>> {
-        let hsm_pin = match self.cache.fetch_str("auth_value") {
-            Some(hsm_pin) => hsm_pin,
-            None => {
-                let auth_str = match AuthValue::generate() {
-                    Ok(auth_str) => auth_str,
-                    Err(e) => {
-                        DBG_ERR!("Failed to create hsm pin: {:?}", e);
-                        return Err(Box::new(NT_STATUS_UNSUCCESSFUL));
-                    }
-                };
-                self.cache.store_bytes("auth_value", auth_str.as_bytes())?;
-                auth_str
-            }
-        };
-        match AuthValue::try_from(hsm_pin.as_bytes()) {
-            Ok(auth_value) => Ok(auth_value),
-            Err(e) => {
-                DBG_ERR!("Invalid hsm pin: {:?}", e);
-                return Err(Box::new(NT_STATUS_UNSUCCESSFUL));
-            }
-        }
-    }
-
     pub(crate) fn loadable_machine_key_fetch_or_create(
         &mut self,
         hsm: &mut BoxedDynTpm,

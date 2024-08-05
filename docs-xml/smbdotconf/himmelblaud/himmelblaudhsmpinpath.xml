@@ -1,0 +1,13 @@
+<samba:parameter name="himmelblaud hsm pin path"
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>Specifies the file path where the HSM PIN is stored. This PIN is used
+	for unlocking TPM objects required for Azure Entra ID authentication. The HSM
+	PIN is critical for ensuring secure communication and authentication within
+	the Himmelblaud daemon.</para>
+</description>
+
+<value type="default">&pathconfig.HIMMELBLAUD_HSM_PIN_PATH;</value>
+</samba:parameter>

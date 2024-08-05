@@ -18,7 +18,13 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+use dbg::{DBG_ERR, DBG_INFO};
+use kanidm_hsm_crypto::AuthValue;
 use ntstatus_gen::*;
+use std::path::PathBuf;
+use std::str::FromStr;
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
 
 pub fn split_username(
     username: &str,
@@ -28,4 +34,48 @@ pub fn split_username(
         return Ok((tup[0].to_string(), tup[1].to_string()));
     }
     Err(Box::new(NT_STATUS_INVALID_USER_PRINCIPAL_NAME))
+}
+
+pub(crate) async fn hsm_pin_fetch_or_create(
+    hsm_pin_path: &str,
+) -> Result<AuthValue, Box<NTSTATUS>> {
+    let auth_value = if !PathBuf::from_str(hsm_pin_path)
+        .map_err(|e| {
+            DBG_ERR!("Failed to create hsm pin: {:?}", e);
+            Box::new(NT_STATUS_UNSUCCESSFUL)
+        })?
+        .exists()
+    {
+        let auth_value = AuthValue::generate().map_err(|e| {
+            DBG_ERR!("Failed to create hsm pin: {:?}", e);
+            Box::new(NT_STATUS_UNSUCCESSFUL)
+        })?;
+        std::fs::write(hsm_pin_path, auth_value.clone()).map_err(|e| {
+            DBG_ERR!("Failed to write hsm pin: {:?}", e);
+            Box::new(NT_STATUS_UNSUCCESSFUL)
+        })?;
+
+        DBG_INFO!("Generated new HSM pin");
+        auth_value
+    } else {
+        let mut file = File::open(hsm_pin_path).await.map_err(|e| {
+            DBG_ERR!("Failed to read hsm pin: {:?}", e);
+            Box::new(NT_STATUS_UNSUCCESSFUL)
+        })?;
+        let mut auth_value = vec![];
+        file.read_to_end(&mut auth_value).await.map_err(|e| {
+            DBG_ERR!("Failed to read hsm pin: {:?}", e);
+            Box::new(NT_STATUS_UNSUCCESSFUL)
+        })?;
+        std::str::from_utf8(&auth_value)
+            .map_err(|e| {
+                DBG_ERR!("Failed to read hsm pin: {:?}", e);
+                Box::new(NT_STATUS_UNSUCCESSFUL)
+            })?
+            .to_string()
+    };
+    AuthValue::try_from(auth_value.as_bytes()).map_err(|e| {
+        DBG_ERR!("Invalid hsm pin: {:?}", e);
+        Box::new(NT_STATUS_UNSUCCESSFUL)
+    })
 }

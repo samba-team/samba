@@ -202,6 +202,7 @@ impl LoadParm {
     lpcfg_str!(cache_directory);
     lpcfg_str!(template_homedir);
     lpcfg_str!(template_shell);
+    lpcfg_str!(himmelblaud_hsm_pin_path);
 }
 
 unsafe impl Send for LoadParm {}

@@ -200,13 +200,21 @@ async fn main() -> ExitCode {
         };
 
         // Check for and create the hsm pin if required.
-        let auth_value = match pcache.hsm_pin_fetch_or_create() {
-            Ok(auth_value) => auth_value,
-            Err(e) => {
-                DBG_ERR!("{:?}", e);
+        let hsm_pin_path = match lp.himmelblaud_hsm_pin_path() {
+            Ok(Some(hsm_pin_path)) => hsm_pin_path,
+            _ => {
+                DBG_ERR!("Failed loading hsm pin path.");
                 return ExitCode::FAILURE;
             }
         };
+        let auth_value =
+            match utils::hsm_pin_fetch_or_create(&hsm_pin_path).await {
+                Ok(auth_value) => auth_value,
+                Err(e) => {
+                    DBG_ERR!("{:?}", e);
+                    return ExitCode::FAILURE;
+                }
+            };
 
         // Setup the HSM and its machine key
         let mut hsm: BoxedDynTpm = BoxedDynTpm::new(SoftTpm::new());
