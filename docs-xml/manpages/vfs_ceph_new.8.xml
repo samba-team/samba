@@ -111,20 +111,20 @@
 	<variablelist>
 
 		<varlistentry>
-		<term>ceph:config_file = path</term>
+		<term>ceph_new:config_file = path</term>
 		<listitem>
 		<para>
 			Allows one to define a ceph configfile to use. Empty by default.
 		</para>
 		<para>
-			Example: ceph:config_file =
+			Example: ceph_new:config_file =
 			/etc/ceph/ceph.conf
 		</para>
 		</listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>ceph:user_id = name</term>
+		<term>ceph_new:user_id = name</term>
 		<listitem>
 		<para>
 			Allows one to explicitly set the client ID used for the
@@ -132,13 +132,13 @@
 			client default).
 		</para>
 		<para>
-			Example: ceph:user_id = samba
+			Example: ceph_new:user_id = samba
 		</para>
 		</listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>ceph:filesystem = fs_name</term>
+		<term>ceph_new:filesystem = fs_name</term>
 		<listitem>
 		<para>
 			Allows one to explicitly select the CephFS file system
@@ -147,7 +147,7 @@
 			system of the Ceph cluster).
 		</para>
 		<para>
-			Example: ceph:filesystem = myfs2
+			Example: ceph_new:filesystem = myfs2
 		</para>
 		</listitem>
 		</varlistentry>
