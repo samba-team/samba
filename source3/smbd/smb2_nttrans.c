@@ -177,6 +177,7 @@ static bool check_smb2_posix_chmod_ace(const struct files_struct *fsp,
 					struct security_descriptor *psd,
 					mode_t *pmode)
 {
+	struct security_ace *ace = NULL;
 	int cmp;
 
 	/*
@@ -203,18 +204,18 @@ static bool check_smb2_posix_chmod_ace(const struct files_struct *fsp,
 	if (psd->dacl->num_aces != 1) {
 		return false;
 	}
+	ace = &psd->dacl->aces[0];
 
-	if (psd->dacl->aces[0].trustee.num_auths != 3) {
+	if (ace->trustee.num_auths != 3) {
 		return false;
 	}
 
-	cmp = dom_sid_compare_domain(&global_sid_Unix_NFS_Mode,
-				     &psd->dacl->aces[0].trustee);
+	cmp = dom_sid_compare_domain(&global_sid_Unix_NFS_Mode, &ace->trustee);
 	if (cmp != 0) {
 		return false;
 	}
 
-	*pmode = (mode_t)psd->dacl->aces[0].trustee.sub_auths[2];
+	*pmode = (mode_t)ace->trustee.sub_auths[2];
 	*pmode &= (S_IRWXU | S_IRWXG | S_IRWXO);
 
 	return true;
