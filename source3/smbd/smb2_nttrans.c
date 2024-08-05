@@ -318,9 +318,9 @@ NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	DEBUG(10,("copy_internals: doing file copy %s to %s\n",
+	DBG_DEBUG("doing file copy %s to %s\n",
 		  smb_fname_str_dbg(smb_fname_src),
-		  smb_fname_str_dbg(smb_fname_dst)));
+		  smb_fname_str_dbg(smb_fname_dst));
 
         status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
@@ -440,9 +440,10 @@ NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	}
  out:
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3,("copy_internals: Error %s copy file %s to %s\n",
-			nt_errstr(status), smb_fname_str_dbg(smb_fname_src),
-			smb_fname_str_dbg(smb_fname_dst)));
+		DBG_NOTICE("Error %s copy file %s to %s\n",
+			   nt_errstr(status),
+			   smb_fname_str_dbg(smb_fname_src),
+			   smb_fname_str_dbg(smb_fname_dst));
 	}
 
 	return status;
@@ -458,7 +459,7 @@ static NTSTATUS get_null_nt_acl(TALLOC_CTX *mem_ctx, struct security_descriptor 
 
 	*ppsd = make_standard_sec_desc( mem_ctx, &global_sid_World, &global_sid_World, NULL, &sd_size);
 	if(!*ppsd) {
-		DEBUG(0,("get_null_nt_acl: Unable to malloc space for security descriptor.\n"));
+		DBG_ERR("Unable to malloc space for security descriptor.\n");
 		return NT_STATUS_NO_MEMORY;
 	}
 
