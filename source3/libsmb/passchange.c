@@ -250,9 +250,11 @@ NTSTATUS remote_password_change(const char *remote_machine,
 		/* Great - it all worked! */
 		cli_shutdown(cli);
 		return NT_STATUS_OK;
+	}
 
-	} else if (!(NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED)
-		     || NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL))) {
+	if (!(NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) ||
+	      NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)))
+	{
 		/* it failed, but for reasons such as wrong password, too short etc ... */
 
 		if (asprintf(err_str, "machine %s rejected the password change: "
