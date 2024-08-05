@@ -301,7 +301,16 @@ NTSTATUS remote_password_change(const char *remote_machine,
 		/* We have failed to change the user's password, and we think the server
 		   just might not support SAMR password changes, so fall back */
 
-		if (lp_client_lanman_auth()) {
+		if (!lp_client_lanman_auth()) {
+			if (asprintf(err_str, "SAMR connection to machine %s "
+				 "failed. Error was %s, but LANMAN password "
+				 "changes are disabled\n",
+				remote_machine, nt_errstr(result)) == -1) {
+				*err_str = NULL;
+			}
+			cli_shutdown(cli);
+			return NT_STATUS_UNSUCCESSFUL;
+		} else {
 			/* Use the old RAP method. */
 			if (cli_oem_change_password(cli, user_name, new_passwd, old_passwd)) {
 				/* SAMR failed, but the old LanMan protocol worked! */
@@ -318,15 +327,6 @@ NTSTATUS remote_password_change(const char *remote_machine,
 			}
 			cli_shutdown(cli);
 			return result;
-		} else {
-			if (asprintf(err_str, "SAMR connection to machine %s "
-				 "failed. Error was %s, but LANMAN password "
-				 "changes are disabled\n",
-				remote_machine, nt_errstr(result)) == -1) {
-				*err_str = NULL;
-			}
-			cli_shutdown(cli);
-			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 }
