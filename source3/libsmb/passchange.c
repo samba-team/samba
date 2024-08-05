@@ -269,9 +269,6 @@ NTSTATUS remote_password_change(const char *remote_machine,
 	/* OK, that failed, so try again... */
 	TALLOC_FREE(pipe_hnd);
 
-	/* Try anonymous NTLMSSP... */
-	result = NT_STATUS_UNSUCCESSFUL;
-
 	/* OK, this is ugly, but... try an anonymous pipe. */
 	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_samr,
 					  &pipe_hnd);
