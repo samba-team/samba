@@ -737,6 +737,7 @@ struct tevent_req *smb2cli_read_send(TALLOC_CTX *mem_ctx,
 				     uint64_t fid_volatile,
 				     uint64_t minimum_count,
 				     uint64_t remaining_bytes);
+void smb2cli_read_set_notify_async(struct tevent_req *req);
 NTSTATUS smb2cli_read_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			   uint8_t **data, uint32_t *data_length);
 NTSTATUS smb2cli_read(struct smbXcli_conn *conn,
