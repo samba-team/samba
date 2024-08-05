@@ -725,7 +725,12 @@ impl Resolver {
             .client
             .lock()
             .await
-            .enroll_device(token, attrs, &mut tpm, &self.machine_key)
+            .enroll_device(
+                &token.refresh_token,
+                attrs,
+                &mut tpm,
+                &self.machine_key,
+            )
             .await
         {
             Ok((

@@ -6,7 +6,7 @@ homepage.workspace = true
 version.workspace = true
 
 [dependencies]
-libhimmelblau = "0.2.7"
+libhimmelblau = "0.2.9"
 ntstatus_gen.workspace = true
 param = { workspace = true }
 sock = { workspace = true }
