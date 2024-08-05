@@ -159,10 +159,11 @@ static int cephmount_cache_remove(struct cephmount_cached *entry)
 static char *cephmount_get_cookie(TALLOC_CTX * mem_ctx, const int snum)
 {
 	const char *conf_file =
-	    lp_parm_const_string(snum, "ceph", "config_file", ".");
-	const char *user_id = lp_parm_const_string(snum, "ceph", "user_id", "");
+	    lp_parm_const_string(snum, "ceph_new", "config_file", ".");
+	const char *user_id =
+	    lp_parm_const_string(snum, "ceph_new", "user_id", "");
 	const char *fsname =
-	    lp_parm_const_string(snum, "ceph", "filesystem", "");
+	    lp_parm_const_string(snum, "ceph_new", "filesystem", "");
 	return talloc_asprintf(mem_ctx, "(%s/%s/%s)", conf_file, user_id,
 			       fsname);
 }
@@ -174,11 +175,11 @@ static struct ceph_mount_info *cephmount_mount_fs(const int snum)
 	struct ceph_mount_info *mnt = NULL;
 	/* if config_file and/or user_id are NULL, ceph will use defaults */
 	const char *conf_file =
-	    lp_parm_const_string(snum, "ceph", "config_file", NULL);
+	    lp_parm_const_string(snum, "ceph_new", "config_file", NULL);
 	const char *user_id =
-	    lp_parm_const_string(snum, "ceph", "user_id", NULL);
+	    lp_parm_const_string(snum, "ceph_new", "user_id", NULL);
 	const char *fsname =
-	    lp_parm_const_string(snum, "ceph", "filesystem", NULL);
+	    lp_parm_const_string(snum, "ceph_new", "filesystem", NULL);
 
 	DBG_DEBUG("[CEPH] calling: ceph_create\n");
 	ret = ceph_create(&mnt, user_id);
