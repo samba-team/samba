@@ -205,8 +205,7 @@ static inline void samba_trace_keytab_entry(krb5_context context,
 	TALLOC_CTX *frame = talloc_stackframe();
 	krb5_error_code code;
 	const uint8_t *ptr = NULL;
-	unsigned len;
-	int i;
+	unsigned len, i;
 
 	code = smb_krb5_unparse_name(frame,
 				     context,
