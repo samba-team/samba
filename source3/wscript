@@ -87,7 +87,7 @@ def options(opt):
                           help=("Include AFS fake-kaserver support"), default=False)
 
     opt.samba_add_onoff_option('glusterfs', with_name="enable", without_name="disable", default=True)
-    opt.samba_add_onoff_option('cephfs', with_name="enable", without_name="disable", default=True)
+    opt.samba_add_onoff_option('cephfs', with_name="enable", without_name="disable", default=None)
 
     opt.add_option('--enable-vxfs',
                   help=("enable support for VxFS (default=no)"),
@@ -1619,17 +1619,27 @@ int main(void) {
 
     conf.env['CFLAGS_CEPHFS'] = "-D_FILE_OFFSET_BITS=64"
 
-    if (Options.options.with_cephfs and
+    if (Options.options.with_cephfs is not False and
         conf.CHECK_HEADERS('cephfs/libcephfs.h', False, False, 'cephfs') and
         conf.CHECK_LIB('cephfs', shlib=True)):
         if (Options.options.with_acl_support and
             conf.CHECK_FUNCS_IN('ceph_statx ceph_openat', 'cephfs',
                                 headers='cephfs/libcephfs.h')):
             conf.DEFINE('HAVE_CEPH', '1')
+
+    if conf.CONFIG_SET('HAVE_CEPH'):
+        Logs.info("building ceph vfs modules")
+    else:
+        if Options.options.with_cephfs == False:
+            Logs.info("not building ceph vfs modules(--disable-cephfs)")
+        elif Options.options.with_cephfs == True:
+            Logs.error("acl support disabled or ceph_statx/ceph_openat not "
+                       "available, cannot build ceph vfs modules")
+            conf.fatal("acl support disabled or ceph_statx/ceph_openat not "
+                       "available, but --enable-cephfs was specified")
         else:
-            Logs.warn('''Ceph support disabled due to --without-acl-support
-                      or lack of ceph_statx/ceph_openat support''')
-            conf.undefine('HAVE_CEPH')
+            Logs.warn("acl support disabled or ceph_statx/ceph_openat not "
+                       "available, not building ceph vfs modules")
 
     if Options.options.with_glusterfs:
         conf.CHECK_CFG(package='glusterfs-api', args='"glusterfs-api >= 4" --cflags --libs',
