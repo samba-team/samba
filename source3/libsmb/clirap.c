@@ -468,7 +468,7 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
 	int rc;
 
 	if (strlen(user) >= sizeof(fstring)-1) {
-		DEBUG(0,("cli_oem_change_password: user name %s is too long.\n", user));
+		DBG_ERR("user name %s is too long.\n", user);
 		return False;
 	}
 
@@ -532,8 +532,7 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
 		     (char *)data, data_len, 0,		/* data, length, max */
 		     &rparam, &rprcnt,
 		     &rdata, &rdrcnt)) {
-		DEBUG(0,("cli_oem_change_password: Failed to send password change for user %s\n",
-			user ));
+		DBG_ERR("Failed to send password change for user %s\n", user);
 		return False;
 	}
 
