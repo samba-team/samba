@@ -535,7 +535,7 @@ class DomainBackupBase(BlackboxTestCase, GkdiBaseTest):
             # that we skip the TestCaseInTempDir._remove_tempdir() assertions
             self.cleanup_tempdir()
             self.fail("Error calling samba-tool: %s" % e)
-        print(out)
+        print(out.decode())
 
     def create_backup(self, extra_args=None):
         """Runs the backup cmd to produce a backup file for the testenv DC"""
