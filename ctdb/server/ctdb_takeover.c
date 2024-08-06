@@ -44,6 +44,7 @@
 #include "common/system_socket.h"
 #include "common/common.h"
 #include "common/logging.h"
+#include "common/path.h"
 
 #include "conf/ctdb_config.h"
 
@@ -1145,13 +1146,8 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb)
 
 	/* If no public addresses file given then try the default */
 	if (ctdb->public_addresses_file == NULL) {
-		const char *b = getenv("CTDB_BASE");
-		if (b == NULL) {
-			DBG_ERR("CTDB_BASE not set\n");
-			return -1;
-		}
-		ctdb->public_addresses_file = talloc_asprintf(
-					ctdb, "%s/%s", b, "public_addresses");
+		ctdb->public_addresses_file = path_etcdir_append(
+			ctdb, "public_addresses");
 		if (ctdb->public_addresses_file == NULL) {
 			DBG_ERR("Out of memory\n");
 			return -1;
