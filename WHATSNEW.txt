@@ -193,9 +193,49 @@ updates or manually (e.g. net ads changetrustpw), now winbind will also support
 update of keytab entries in case you use newly added option
 'sync machine password to keytab'.
 The new parameter allows you to describe what keytabs and how should be updated.
+From smb.conf(5) manpage - each keytab can have exactly one of these four forms:
+
+               account_name
+               sync_spns
+               spn_prefixes=value1[,value2[...]]
+               spns=value1[,value2[...]]
+
+The functionaity provided by the removed commands "net ads keytab
+add/delete/add_update_ads" can be achieved via the 'sync machine password to
+keytab' as in these examples:
+
+"net ads keytab add  wurst/brot@REALM"
+
+- this command is not adding <principal> to AD, so the best fit can be specifier
+  "spns"
+- add to smb.conf:
+  sync machine password to keytab = /path/to/keytab1:spns=wurst/brot@REALM:machine_password
+- run:
+  "net ads keytab create"
+
+"net ads keytab delete wurst/brot@REALM"
+
+- remove the principal (or the whole keytab line if there was just one)
+- run:
+  "net ads keytab create"
+
+"net ads keytab add_update_ads wurst/brot@REALM"
+
+- this command was adding the principal to AD, so for this case use a keytab
+  with specifier sync_spns
+- add to smb.conf:
+  sync machine password to keytab = /path/to/keytab2:sync_spns:machine_password
+- run:
+  "net ads setspn add  wurst/brot@REALM"  # this adds the principal to AD
+  "net ads keytab create"  # this sync it from AD to local keytab
+
+
 A new parameter 'sync machine password script' allows to specify external script
-that will be triggered after the automatic keytab update. For detailed
-information check the smb.conf manpage.
+that will be triggered after the automatic keytab update. Example of such script
+that can be used in a cluster environment with ctdb is
+source3/script/updatekeytab.sh
+
+For detailed information check the smb.conf(5) manpage.
 
 REMOVED FEATURES
 ================
