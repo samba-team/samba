@@ -494,9 +494,17 @@ class BlackboxProcessError(Exception):
         self.msg = msg
 
     def __str__(self):
+        stdout = self.stdout
+        if isinstance(stdout, bytes):
+            stdout = stdout.decode()
+
+        stderr = self.stderr
+        if isinstance(stderr, bytes):
+            stderr = stderr.decode()
+
         s = ("Command '%s'; shell %s; exit status %d; "
              "stdout: '%s'; stderr: '%s'" %
-             (self.cmd, self.shell, self.returncode, self.stdout, self.stderr))
+             (self.cmd, self.shell, self.returncode, stdout, stderr))
         if self.msg is not None:
             s = "%s; message: %s" % (s, self.msg)
 
