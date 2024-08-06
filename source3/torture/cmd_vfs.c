@@ -675,6 +675,7 @@ static NTSTATUS cmd_rename(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 	int ret;
 	struct smb_filename *smb_fname_src = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
+	struct vfs_rename_how rhow = { .flags = 0, };
 
 	if (argc != 3) {
 		printf("Usage: rename <old> <new>\n");
@@ -700,7 +701,8 @@ static NTSTATUS cmd_rename(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 			vfs->conn->cwd_fsp,
 			smb_fname_src,
 			vfs->conn->cwd_fsp,
-			smb_fname_dst);
+			smb_fname_dst,
+			&rhow);
 
 	TALLOC_FREE(smb_fname_src);
 	TALLOC_FREE(smb_fname_dst);

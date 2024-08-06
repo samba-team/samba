@@ -926,7 +926,8 @@ static int um_renameat(vfs_handle_struct *handle,
 		files_struct *srcfsp,
 		const struct smb_filename *smb_fname_src,
 		files_struct *dstfsp,
-		const struct smb_filename *smb_fname_dst)
+		const struct smb_filename *smb_fname_dst,
+		const struct vfs_rename_how *how)
 {
 	int status;
 	struct smb_filename *src_full_fname = NULL;
@@ -965,7 +966,8 @@ static int um_renameat(vfs_handle_struct *handle,
 					srcfsp,
 					smb_fname_src,
 					dstfsp,
-					smb_fname_dst);
+					smb_fname_dst,
+					how);
 	}
 
 	status = alloc_get_client_smb_fname(handle, talloc_tos(),
@@ -987,7 +989,8 @@ static int um_renameat(vfs_handle_struct *handle,
 				handle->conn->cwd_fsp,
 				src_client_fname,
 				handle->conn->cwd_fsp,
-				dst_client_fname);
+				dst_client_fname,
+				how);
 
 err:
 	TALLOC_FREE(dst_client_fname);

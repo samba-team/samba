@@ -1287,7 +1287,8 @@ static int vfswrap_renameat(vfs_handle_struct *handle,
 			  files_struct *srcfsp,
 			  const struct smb_filename *smb_fname_src,
 			  files_struct *dstfsp,
-			  const struct smb_filename *smb_fname_dst)
+			  const struct smb_filename *smb_fname_dst,
+			  const struct vfs_rename_how *how)
 {
 	int result = -1;
 
@@ -1295,6 +1296,12 @@ static int vfswrap_renameat(vfs_handle_struct *handle,
 
 	SMB_ASSERT(!is_named_stream(smb_fname_src));
 	SMB_ASSERT(!is_named_stream(smb_fname_dst));
+
+	if (how->flags != 0) {
+		END_PROFILE(syscall_renameat);
+		errno = EINVAL;
+		return -1;
+	}
 
 	result = renameat(fsp_get_pathref_fd(srcfsp),
 			smb_fname_src->base_name,

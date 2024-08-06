@@ -55,12 +55,14 @@ int virusfilter_vfs_next_move(
 	const struct smb_filename *smb_fname_dst)
 {
 	int result;
+	struct vfs_rename_how rhow = { .flags = 0, };
 
 	result = SMB_VFS_NEXT_RENAMEAT(vfs_h,
 			vfs_h->conn->cwd_fsp,
 			smb_fname_src,
 			vfs_h->conn->cwd_fsp,
-			smb_fname_dst);
+			smb_fname_dst,
+			&rhow);
 	if (result == 0 || errno != EXDEV) {
 		return result;
 	}

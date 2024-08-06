@@ -713,7 +713,8 @@ static int cephwrap_renameat(struct vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *smb_fname_src,
 			files_struct *dstfsp,
-			const struct smb_filename *smb_fname_dst)
+			const struct smb_filename *smb_fname_dst,
+			const struct vfs_rename_how *how)
 {
 	struct smb_filename *full_fname_src = NULL;
 	struct smb_filename *full_fname_dst = NULL;
@@ -723,6 +724,11 @@ static int cephwrap_renameat(struct vfs_handle_struct *handle,
 	if (smb_fname_src->stream_name || smb_fname_dst->stream_name) {
 		errno = ENOENT;
 		return result;
+	}
+
+	if (how->flags != 0) {
+		errno = EINVAL;
+		return -1;
 	}
 
 	full_fname_src = full_path_from_dirfsp_atname(talloc_tos(),

@@ -541,7 +541,8 @@ static int catia_renameat(vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *smb_fname_src,
 			files_struct *dstfsp,
-			const struct smb_filename *smb_fname_dst)
+			const struct smb_filename *smb_fname_dst,
+			const struct vfs_rename_how *how)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smb_filename *smb_fname_src_tmp = NULL;
@@ -591,7 +592,8 @@ static int catia_renameat(vfs_handle_struct *handle,
 			srcfsp,
 			smb_fname_src_tmp,
 			dstfsp,
-			smb_fname_dst_tmp);
+			smb_fname_dst_tmp,
+			how);
 
 out:
 	TALLOC_FREE(src_name_mapped);

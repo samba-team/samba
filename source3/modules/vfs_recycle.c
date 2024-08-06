@@ -487,6 +487,7 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 	bool exist;
 	int rc = -1;
 	struct recycle_config_data *config = NULL;
+	struct vfs_rename_how rhow = { .flags = 0, };
 
 	SMB_VFS_HANDLE_GET_DATA(handle,
 				config,
@@ -706,7 +707,8 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 			dirfsp,
 			smb_fname,
 			handle->conn->cwd_fsp,
-			smb_fname_final);
+			smb_fname_final,
+			&rhow);
 	if (rc != 0) {
 		DEBUG(3, ("recycle: Move error %d (%s), purging file %s "
 			  "(%s)\n", errno, strerror(errno),

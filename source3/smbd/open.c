@@ -4681,6 +4681,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	struct server_id_buf idbuf;
 	char *idstr = server_id_str_buf_unique_ex(id, '%', &idbuf);
 	struct vfs_open_how how = { .flags = O_RDONLY|O_DIRECTORY, };
+	struct vfs_rename_how rhow = { .flags = 0, };
 	int ret;
 
 	if (!CAN_WRITE(conn) || (access_mask & ~(conn->share_access))) {
@@ -4933,7 +4934,8 @@ mkdir_first:
 				       parent_dir_fname->fsp,
 				       tmp_atname,
 				       parent_dir_fname->fsp,
-				       smb_fname_atname);
+				       smb_fname_atname,
+				       &rhow);
 	}
 
 	if (ret != 0) {

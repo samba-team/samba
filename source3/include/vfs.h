@@ -381,9 +381,11 @@
  * Change to Version 49 - will ship with 4.19
  * Version 49 - remove seekdir and telldir
  * Version 49 - remove "sbuf" argument from readdir_fn()
+ * Change to Version 50 - will ship with 4.22
+ * Version 50 - Change SMB_VFS_RENAMEAT() add vfs_rename_how
  */
 
-#define SMB_VFS_INTERFACE_VERSION 49
+#define SMB_VFS_INTERFACE_VERSION 50
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
@@ -918,6 +920,10 @@ struct vfs_open_how {
 	uint64_t resolve;
 };
 
+struct vfs_rename_how {
+	int flags;
+};
+
 /*
     Available VFS operations. These values must be in sync with vfs_ops struct
     (struct vfs_fn_pointers and struct vfs_handle_pointers inside of struct vfs_ops).
@@ -1029,7 +1035,8 @@ struct vfs_fn_pointers {
 			 struct files_struct *srcdir_fsp,
 			 const struct smb_filename *smb_fname_src,
 			 struct files_struct *dstdir_fsp,
-			 const struct smb_filename *smb_fname_dst);
+			 const struct smb_filename *smb_fname_dst,
+			 const struct vfs_rename_how *how);
 	struct tevent_req *(*fsync_send_fn)(struct vfs_handle_struct *handle,
 					    TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
@@ -1535,7 +1542,8 @@ int smb_vfs_call_renameat(struct vfs_handle_struct *handle,
 			struct files_struct *srcfsp,
 			const struct smb_filename *smb_fname_src,
 			struct files_struct *dstfsp,
-			const struct smb_filename *smb_fname_dst);
+			const struct smb_filename *smb_fname_dst,
+			const struct vfs_rename_how *how);
 
 struct tevent_req *smb_vfs_call_fsync_send(struct vfs_handle_struct *handle,
 					   TALLOC_CTX *mem_ctx,
@@ -1970,7 +1978,8 @@ int vfs_not_implemented_renameat(vfs_handle_struct *handle,
 			       files_struct *srcfsp,
 			       const struct smb_filename *smb_fname_src,
 			       files_struct *dstfsp,
-			       const struct smb_filename *smb_fname_dst);
+			       const struct smb_filename *smb_fname_dst,
+			       const struct vfs_rename_how *how);
 struct tevent_req *vfs_not_implemented_fsync_send(struct vfs_handle_struct *handle,
 						  TALLOC_CTX *mem_ctx,
 						  struct tevent_context *ev,

@@ -192,7 +192,8 @@ static int cap_renameat(vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *smb_fname_src,
 			files_struct *dstfsp,
-			const struct smb_filename *smb_fname_dst)
+			const struct smb_filename *smb_fname_dst,
+			const struct vfs_rename_how *how)
 {
 	char *capold = NULL;
 	char *capnew = NULL;
@@ -245,7 +246,8 @@ static int cap_renameat(vfs_handle_struct *handle,
 				srcfsp->conn->cwd_fsp,
 				smb_fname_src_tmp,
 				dstfsp->conn->cwd_fsp,
-				smb_fname_dst_tmp);
+				smb_fname_dst_tmp,
+				how);
 
  out:
 

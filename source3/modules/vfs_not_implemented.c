@@ -318,10 +318,11 @@ ssize_t vfs_not_implemented_recvfile(vfs_handle_struct *handle, int fromfd,
 
 _PUBLIC_
 int vfs_not_implemented_renameat(vfs_handle_struct *handle,
-			       files_struct *srcfsp,
-			       const struct smb_filename *smb_fname_src,
-			       files_struct *dstfsp,
-			       const struct smb_filename *smb_fname_dst)
+				 files_struct *srcfsp,
+				 const struct smb_filename *smb_fname_src,
+				 files_struct *dstfsp,
+				 const struct smb_filename *smb_fname_dst,
+				 const struct vfs_rename_how *how)
 {
 	errno = ENOSYS;
 	return -1;

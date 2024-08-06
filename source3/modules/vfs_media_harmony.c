@@ -1195,7 +1195,8 @@ static int mh_renameat(vfs_handle_struct *handle,
 		files_struct *srcfsp,
 		const struct smb_filename *smb_fname_src,
 		files_struct *dstfsp,
-		const struct smb_filename *smb_fname_dst)
+		const struct smb_filename *smb_fname_dst,
+		const struct vfs_rename_how *how)
 {
 	int status = -1;
 	struct smb_filename *full_fname_src = NULL;
@@ -1217,7 +1218,8 @@ static int mh_renameat(vfs_handle_struct *handle,
 				srcfsp,
 				smb_fname_src,
 				dstfsp,
-				smb_fname_dst);
+				smb_fname_dst,
+				how);
 		goto out;
 	}
 
@@ -1256,7 +1258,8 @@ static int mh_renameat(vfs_handle_struct *handle,
 				srcfsp->conn->cwd_fsp,
 				srcClientFname,
 				dstfsp->conn->cwd_fsp,
-				dstClientFname);
+				dstClientFname,
+				how);
 err:
 	TALLOC_FREE(full_fname_src);
 	TALLOC_FREE(full_fname_dst);

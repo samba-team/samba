@@ -1721,14 +1721,16 @@ int smb_vfs_call_renameat(struct vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *smb_fname_src,
 			files_struct *dstfsp,
-			const struct smb_filename *smb_fname_dst)
+			const struct smb_filename *smb_fname_dst,
+			const struct vfs_rename_how *how)
 {
 	VFS_FIND(renameat);
 	return handle->fns->renameat_fn(handle,
 				srcfsp,
 				smb_fname_src,
 				dstfsp,
-				smb_fname_dst);
+				smb_fname_dst,
+				how);
 }
 
 struct smb_vfs_call_fsync_state {

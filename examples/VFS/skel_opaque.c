@@ -298,7 +298,8 @@ static int skel_renameat(vfs_handle_struct *handle,
 		       files_struct *srcfsp,
 		       const struct smb_filename *smb_fname_src,
 		       files_struct *dstfsp,
-		       const struct smb_filename *smb_fname_dst)
+		       const struct smb_filename *smb_fname_dst,
+		       const struct vfs_rename_how *how)
 {
 	errno = ENOSYS;
 	return -1;

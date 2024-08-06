@@ -918,7 +918,8 @@ static int smb_time_audit_renameat(vfs_handle_struct *handle,
 				files_struct *srcfsp,
 				const struct smb_filename *oldname,
 				files_struct *dstfsp,
-				const struct smb_filename *newname)
+				const struct smb_filename *newname,
+				const struct vfs_rename_how *how)
 {
 	int result;
 	struct timespec ts1,ts2;
@@ -937,7 +938,8 @@ static int smb_time_audit_renameat(vfs_handle_struct *handle,
 			srcfsp,
 			oldname,
 			dstfsp,
-			newname);
+			newname,
+			how);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 

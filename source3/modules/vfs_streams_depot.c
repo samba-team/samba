@@ -165,6 +165,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 	char *rootdir = NULL;
 	struct smb_filename *rootdir_fname = NULL;
 	struct smb_filename *tmp_fname = NULL;
+	struct vfs_rename_how rhow = { .flags = 0, };
 	int ret;
 
 	check_valid = lp_parm_bool(SNUM(handle->conn),
@@ -310,11 +311,13 @@ static char *stream_dir(vfs_handle_struct *handle,
 				goto fail;
 			}
 
-			if (SMB_VFS_NEXT_RENAMEAT(handle,
+			ret = SMB_VFS_NEXT_RENAMEAT(handle,
 					handle->conn->cwd_fsp,
 					smb_fname_hash,
 					handle->conn->cwd_fsp,
-					smb_fname_new) == -1) {
+					smb_fname_new,
+					&rhow);
+			if (ret == -1) {
 				TALLOC_FREE(smb_fname_new);
 				if ((errno == EEXIST) || (errno == ENOTEMPTY)) {
 					goto again;
@@ -962,7 +965,8 @@ static int streams_depot_renameat(vfs_handle_struct *handle,
 				files_struct *srcfsp,
 				const struct smb_filename *smb_fname_src,
 				files_struct *dstfsp,
-				const struct smb_filename *smb_fname_dst)
+				const struct smb_filename *smb_fname_dst,
+				const struct vfs_rename_how *how)
 {
 	struct smb_filename *smb_fname_src_stream = NULL;
 	struct smb_filename *smb_fname_dst_stream = NULL;
@@ -984,7 +988,13 @@ static int streams_depot_renameat(vfs_handle_struct *handle,
 					srcfsp,
 					smb_fname_src,
 					dstfsp,
-					smb_fname_dst);
+					smb_fname_dst,
+					how);
+	}
+
+	if (how->flags != 0) {
+		errno = EINVAL;
+		goto done;
 	}
 
 	/* for now don't allow renames from or to the default stream */
@@ -1035,7 +1045,8 @@ static int streams_depot_renameat(vfs_handle_struct *handle,
 				handle->conn->cwd_fsp,
 				smb_fname_src_stream,
 				handle->conn->cwd_fsp,
-				smb_fname_dst_stream);
+				smb_fname_dst_stream,
+				how);
 
 done:
 	TALLOC_FREE(smb_fname_src_stream);

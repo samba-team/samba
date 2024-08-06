@@ -194,10 +194,10 @@
 #define SMB_VFS_NEXT_RECVFILE(handle, fromfd, tofsp, offset, count) \
 	smb_vfs_call_recvfile((handle)->next, (fromfd), (tofsp), (offset), (count))
 
-#define SMB_VFS_RENAMEAT(conn, oldfsp, old, newfsp, new) \
-	smb_vfs_call_renameat((conn)->vfs_handles, (oldfsp), (old), (newfsp), (new))
-#define SMB_VFS_NEXT_RENAMEAT(handle, oldfsp, old, newfsp, new) \
-	smb_vfs_call_renameat((handle)->next, (oldfsp), (old), (newfsp), (new))
+#define SMB_VFS_RENAMEAT(conn, oldfsp, old, newfsp, newname, how) \
+	smb_vfs_call_renameat((conn)->vfs_handles, (oldfsp), (old), (newfsp), (newname), (how))
+#define SMB_VFS_NEXT_RENAMEAT(handle, oldfsp, old, newfsp, newname, how) \
+	smb_vfs_call_renameat((handle)->next, (oldfsp), (old), (newfsp), (newname), (how))
 
 #define SMB_VFS_FSYNC_SEND(mem_ctx, ev, fsp) \
 	smb_vfs_call_fsync_send((fsp)->conn->vfs_handles, (mem_ctx), (ev), \

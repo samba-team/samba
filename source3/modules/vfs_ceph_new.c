@@ -1874,7 +1874,8 @@ static int vfs_ceph_renameat(struct vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *smb_fname_src,
 			files_struct *dstfsp,
-			const struct smb_filename *smb_fname_dst)
+			const struct smb_filename *smb_fname_dst,
+			const struct vfs_rename_how *how)
 {
 	struct vfs_ceph_fh *src_dircfh = NULL;
 	struct vfs_ceph_fh *dst_dircfh = NULL;
@@ -1884,6 +1885,11 @@ static int vfs_ceph_renameat(struct vfs_handle_struct *handle,
 	if (smb_fname_src->stream_name || smb_fname_dst->stream_name) {
 		errno = ENOENT;
 		return result;
+	}
+
+	if (how->flags != 0) {
+		errno = EINVAL;
+		return -1;
 	}
 
 	result = vfs_ceph_fetch_fh(handle, srcfsp, &src_dircfh);

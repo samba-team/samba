@@ -1895,7 +1895,8 @@ static int fruit_renameat(struct vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *smb_fname_src,
 			files_struct *dstfsp,
-			const struct smb_filename *smb_fname_dst)
+			const struct smb_filename *smb_fname_dst,
+			const struct vfs_rename_how *how)
 {
 	int rc = -1;
 	struct fruit_config_data *config = NULL;
@@ -1915,7 +1916,8 @@ static int fruit_renameat(struct vfs_handle_struct *handle,
 				srcfsp,
 				smb_fname_src,
 				dstfsp,
-				smb_fname_dst);
+				smb_fname_dst,
+				how);
 	if (rc != 0) {
 		return -1;
 	}
@@ -1944,7 +1946,8 @@ static int fruit_renameat(struct vfs_handle_struct *handle,
 			srcfsp,
 			src_adp_smb_fname,
 			dstfsp,
-			dst_adp_smb_fname);
+			dst_adp_smb_fname,
+			how);
 	if (errno == ENOENT) {
 		rc = 0;
 	}

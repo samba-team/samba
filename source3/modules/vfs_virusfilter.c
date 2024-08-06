@@ -1592,13 +1592,15 @@ static int virusfilter_vfs_renameat(
 	files_struct *srcfsp,
 	const struct smb_filename *smb_fname_src,
 	files_struct *dstfsp,
-	const struct smb_filename *smb_fname_dst)
+	const struct smb_filename *smb_fname_dst,
+	const struct vfs_rename_how *how)
 {
 	int ret = SMB_VFS_NEXT_RENAMEAT(handle,
 			srcfsp,
 			smb_fname_src,
 			dstfsp,
-			smb_fname_dst);
+			smb_fname_dst,
+			how);
 	struct virusfilter_config *config = NULL;
 	char *fname = NULL;
 	char *dst_fname = NULL;
