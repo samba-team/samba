@@ -231,11 +231,13 @@ keytab' as in these examples:
 
 
 A new parameter 'sync machine password script' allows to specify external script
-that will be triggered after the automatic keytab update. Example of such script
-that can be used in a cluster environment with ctdb is
-source3/script/updatekeytab.sh
+that will be triggered after the automatic keytab update. If keytabs should be
+generated in clustered environments it is recommended to update them on all
+nodes.  Check in smb.conf(5) the scripts winbind_ctdb_updatekeytab.sh and
+46.update-keytabs.script in section 'sync machine password script' for details.
 
-For detailed information check the smb.conf(5) manpage.
+For detailed information check the smb.conf(5) and net(8) manpages.
+
 
 REMOVED FEATURES
 ================
