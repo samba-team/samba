@@ -23,7 +23,7 @@ from samba.ndr import ndr_unpack
 from samba import dsdb
 from samba import werror
 from samba import WERRORError
-import samba
+
 import ldb
 from samba.dcerpc.drsuapi import (DRSUAPI_ATTID_name,
                                   DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8,
@@ -158,12 +158,12 @@ def drs_get_rodc_partial_attribute_set(samdb):
         ldap_display_name = str(r["lDAPDisplayName"][0])
         if "systemFlags" in r:
             system_flags      = r["systemFlags"][0]
-            if (int(system_flags) & (samba.dsdb.DS_FLAG_ATTR_NOT_REPLICATED |
-                                     samba.dsdb.DS_FLAG_ATTR_IS_CONSTRUCTED)):
+            if (int(system_flags) & (dsdb.DS_FLAG_ATTR_NOT_REPLICATED |
+                                     dsdb.DS_FLAG_ATTR_IS_CONSTRUCTED)):
                 continue
         if "searchFlags" in r:
             search_flags = r["searchFlags"][0]
-            if (int(search_flags) & samba.dsdb.SEARCH_FLAG_RODC_ATTRIBUTE):
+            if (int(search_flags) & dsdb.SEARCH_FLAG_RODC_ATTRIBUTE):
                 continue
         attid = samdb.get_attid_from_lDAPDisplayName(ldap_display_name)
         attids.append(int(attid))
