@@ -1558,8 +1558,28 @@ are made to the computer AD account.
 </refsect2>
 
 <refsect2>
-<title>ADS KEYTAB <replaceable>ADD</replaceable> <replaceable>(principal | machine | serviceclass | windows SPN</replaceable></title>
+<title>(Removed!) ADS KEYTAB <replaceable>ADD</replaceable> <replaceable>(principal | machine | serviceclass | windows SPN</replaceable></title>
 
+<para>
+This command is no longer available in Samba 4.21.0 and newer. See <smbconfoption name="sync machine password to keytab"/> for replacement.
+</para>
+
+To replace e.g. call of
+<programlisting>
+net ads keytab add wurst/brot@REALM
+</programlisting>
+Add to smb.conf:
+<programlisting>
+sync machine password to keytab = /path/to/keytab1:spns=wurst/brot@REALM:machine_password
+</programlisting>
+and run:
+<programlisting>
+net ads keytab create
+</programlisting>
+
+<para>
+Original description of this command:
+</para>
 <para>
 Adds a new keytab entry, the entry can be either;
   <variablelist>
@@ -1600,7 +1620,48 @@ available.
 </refsect2>
 
 <refsect2>
-<title>ADS KEYTAB <replaceable>ADD_UPDATE_ADS</replaceable> <replaceable>(principal | machine | serviceclass | windows SPN</replaceable></title>
+<title>(Removed!) ADS KEYTAB <replaceable>DELETE</replaceable> <replaceable>(principal | machine | serviceclass | windows SPN</replaceable></title>
+
+<para>
+This command is no longer available in Samba 4.21.0 and newer. See <smbconfoption name="sync machine password to keytab"/> for replacement.
+</para>
+
+<para>
+To replace e.g. call of
+<programlisting>
+net ads keytab delete wurst/brot@REALM
+</programlisting>
+Delete from <smbconfoption name="sync machine password to keytab"/> principal "wurst/brot@REALM" and run:
+<programlisting>
+net ads keytab create
+</programlisting>
+
+</para>
+</refsect2>
+
+<refsect2>
+<title>(Removed!) ADS KEYTAB <replaceable>ADD_UPDATE_ADS</replaceable> <replaceable>(principal | machine | serviceclass | windows SPN</replaceable></title>
+<para>
+This command is no longer available in Samba 4.21.0 and newer. See <smbconfoption name="sync machine password to keytab"/> for replacement.
+</para>
+
+To replace e.g. call of
+<programlisting>
+net ads keytab add_update_ads wurst/brot@REALM
+</programlisting>
+Add to smb.conf:
+<programlisting>
+sync machine password to keytab = /path/to/keytab2:sync_spns:machine_password
+</programlisting>
+and run:
+<programlisting>
+net ads setspn add wurst/brot@REALM
+net ads keytab create
+</programlisting>
+
+<para>
+Original description of this command:
+</para>
 
 <para>
 Adds a new keytab entry (see section for net ads keytab add). In addition to
