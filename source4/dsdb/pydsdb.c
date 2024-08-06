@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2010
    Copyright (C) Matthias Dieter Wallnöfer          2009
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -98,7 +98,7 @@ static PyObject *py_dsdb_convert_schema_to_openldap(PyObject *self,
 		PyErr_SetString(PyExc_RuntimeError,
 						"dsdb_convert_schema_to_openldap failed");
 		return NULL;
-	} 
+	}
 
 	ret = PyUnicode_FromString(retstr);
 	talloc_free(retstr);
@@ -135,12 +135,12 @@ static PyObject *py_samdb_set_domain_sid(PyLdbObject *self, PyObject *args)
 	if (!ret) {
 		PyErr_SetString(PyExc_RuntimeError, "set_domain_sid failed");
 		return NULL;
-	} 
+	}
 	Py_RETURN_NONE;
 }
 
 static PyObject *py_samdb_set_ntds_settings_dn(PyLdbObject *self, PyObject *args)
-{ 
+{
 	PyObject *py_ldb, *py_ntds_settings_dn;
 	struct ldb_context *ldb;
 	struct ldb_dn *ntds_settings_dn;
@@ -169,12 +169,12 @@ static PyObject *py_samdb_set_ntds_settings_dn(PyLdbObject *self, PyObject *args
 	if (!ret) {
 		PyErr_SetString(PyExc_RuntimeError, "set_ntds_settings_dn failed");
 		return NULL;
-	} 
+	}
 	Py_RETURN_NONE;
 }
 
 static PyObject *py_samdb_get_domain_sid(PyLdbObject *self, PyObject *args)
-{ 
+{
 	PyObject *py_ldb;
 	struct ldb_context *ldb;
 	const struct dom_sid *sid;
@@ -254,7 +254,7 @@ static PyObject *py_dsdb_get_oid_from_attid(PyObject *self, PyObject *args)
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-	
+
 	status = dsdb_schema_pfm_oid_from_attid(schema->prefixmap, attid,
 	                                        mem_ctx, &oid);
 	if (!W_ERROR_IS_OK(status)) {
