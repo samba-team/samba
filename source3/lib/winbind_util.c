@@ -363,6 +363,17 @@ bool winbind_lookup_name(const char *dom_name, const char *name, struct dom_sid 
 	return false;
 }
 
+_PRIVATE_
+NTSTATUS winbind_lookup_name_ex(const char *dom_name,
+				const char *name,
+				struct dom_sid *sid,
+				enum lsa_SidType *name_type)
+{
+	*name_type = SID_NAME_UNKNOWN;
+	ZERO_STRUCTP(sid);
+	return NT_STATUS_OK;
+}
+
 /* Call winbindd to convert sid to name */
 
 bool winbind_lookup_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
