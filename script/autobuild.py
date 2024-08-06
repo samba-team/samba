@@ -1082,6 +1082,15 @@ tasks = {
             ("nonshared-lcov", LCOV_CMD),
             ("nonshared-check-clean-tree", CLEAN_SOURCE_TREE_CMD),
             ("nonshared-clean", "make clean"),
+
+        # retry without winbindd
+            ("nonwinbind-distclean", "make distclean"),
+            ("nonwinbind-configure", "./configure.developer " + samba_configure_params + " --bundled-libraries=ALL --with-static-modules=ALL --without-winbind"),
+            ("nonwinbind-make", "make -j"),
+            ("nonwinbind-test", make_test(TESTS="samba3.smb2.*.simpleserver")),
+            ("nonwinbind-lcov", LCOV_CMD),
+            ("nonwinbind-check-clean-tree", CLEAN_SOURCE_TREE_CMD),
+            ("nonwinbind-clean", "make clean"),
         ],
     },
 
