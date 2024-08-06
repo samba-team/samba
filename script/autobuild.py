@@ -884,14 +884,56 @@ tasks = {
             ("talloc-configure", "cd lib/talloc && " + samba_libs_configure_libs),
             ("talloc-make", "cd lib/talloc && make"),
             ("talloc-install", "cd lib/talloc && make install"),
+            ("talloc-abi-check1",
+                check_versioned_symbol(
+                    "./lib/talloc/bin/shared/libtalloc.so.2",
+                    "talloc_named",
+                    "TALLOC_2.0.2"
+                )
+            ),
+            ("talloc-abi-check2",
+                check_versioned_symbol(
+                    "./lib/talloc/bin/shared/libtalloc.so.2",
+                    "talloc_asprintf_addbuf",
+                    "TALLOC_2.3.5"
+                )
+            ),
 
             ("tdb-configure", "cd lib/tdb && " + samba_libs_configure_libs),
             ("tdb-make", "cd lib/tdb && make"),
             ("tdb-install", "cd lib/tdb && make install"),
+            ("tdb-abi-check1",
+                check_versioned_symbol(
+                    "./lib/tdb/bin/shared/libtdb.so.1",
+                    "tdb_errorstr",
+                    "TDB_1.2.1"
+                )
+            ),
+            ("tdb-abi-check2",
+                check_versioned_symbol(
+                    "./lib/tdb/bin/shared/libtdb.so.1",
+                    "tdb_traverse_chain",
+                    "TDB_1.3.17"
+                )
+            ),
 
             ("tevent-configure", "cd lib/tevent && " + samba_libs_configure_libs),
             ("tevent-make", "cd lib/tevent && make"),
             ("tevent-install", "cd lib/tevent && make install"),
+            ("tevent-abi-check1",
+                check_versioned_symbol(
+                    "./lib/tevent/bin/shared/libtevent.so.0",
+                    "_tevent_loop_once",
+                    "TEVENT_0.9.9"
+                )
+            ),
+            ("tevent-abi-check2",
+                check_versioned_symbol(
+                    "./lib/tevent/bin/shared/libtevent.so.0",
+                    "__tevent_req_create",
+                    "TEVENT_0.15.0"
+                )
+            ),
 
             ("nondevel-configure", samba_libs_envvars + " ./configure --private-libraries='!ldb' --vendor-suffix=TEST-STRING~5.1.2 ${PREFIX}"),
             ("nondevel-make", "make -j"),
