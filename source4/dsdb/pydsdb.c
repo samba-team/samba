@@ -315,6 +315,38 @@ static PyObject *py_dsdb_get_attid_from_lDAPDisplayName(PyObject *self, PyObject
 }
 
 /*
+  return the searchFlags as int from the attribute name
+ */
+static PyObject *py_dsdb_get_searchFlags_from_lDAPDisplayName(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb = NULL;
+	struct ldb_context *ldb = NULL;
+	struct dsdb_schema *schema = NULL;
+	const char *ldap_display_name = NULL;
+	const struct dsdb_attribute *attribute = NULL;
+
+	if (!PyArg_ParseTuple(args, "Os", &py_ldb, &ldap_display_name)) {
+		return NULL;
+	}
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	schema = dsdb_get_schema(ldb, NULL);
+	if (schema == NULL) {
+		PyErr_SetString(PyExc_RuntimeError, "Failed to find a schema from ldb");
+		return NULL;
+	}
+
+	attribute = dsdb_attribute_by_lDAPDisplayName(schema, ldap_display_name);
+	if (attribute == NULL) {
+		PyErr_Format(PyExc_KeyError, "Failed to find attribute '%s'", ldap_display_name);
+		return NULL;
+	}
+
+	return PyLong_FromLong(attribute->searchFlags);
+}
+
+/*
   return the systemFlags as int from the attribute name
  */
 static PyObject *py_dsdb_get_systemFlags_from_lDAPDisplayName(PyObject *self, PyObject *args)
@@ -1701,6 +1733,8 @@ static PyMethodDef py_dsdb_methods[] = {
 	{ "_dsdb_get_attid_from_lDAPDisplayName", (PyCFunction)py_dsdb_get_attid_from_lDAPDisplayName,
 		METH_VARARGS, NULL },
 	{ "_dsdb_get_syntax_oid_from_lDAPDisplayName", (PyCFunction)py_dsdb_get_syntax_oid_from_lDAPDisplayName,
+		METH_VARARGS, NULL },
+	{ "_dsdb_get_searchFlags_from_lDAPDisplayName", (PyCFunction)py_dsdb_get_searchFlags_from_lDAPDisplayName,
 		METH_VARARGS, NULL },
 	{ "_dsdb_get_systemFlags_from_lDAPDisplayName", (PyCFunction)py_dsdb_get_systemFlags_from_lDAPDisplayName,
 		METH_VARARGS, NULL },
