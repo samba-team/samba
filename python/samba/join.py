@@ -1749,8 +1749,7 @@ class DCCloneAndRenameContext(DCCloneContext):
 
     def rename_dn(ctx, dn_str):
         """Uses string substitution to replace the base DN"""
-        old_base_dn = ctx.base_dn
-        return re.sub('%s$' % old_base_dn, ctx.new_base_dn, dn_str)
+        return re.sub('%s$' % ctx.base_dn, ctx.new_base_dn, dn_str)
 
     # we want to override the normal DCCloneContext's join_provision() so that
     # use the new domain DNs during the provision. We do this because:
