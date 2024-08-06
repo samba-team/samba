@@ -1,4 +1,54 @@
                    ==============================
+                   Release Notes for Samba 4.20.4
+                           August 06, 2024
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.20 release series.
+
+Changes since 4.20.3
+--------------------
+
+This only fixes a regression in library version strings in Samba
+4.20.3, see: https://bugzilla.samba.org/show_bug.cgi?id=15673
+
+If you compiled Samba from the sources and don't have other
+applications relying on Samba's public libraries, there's
+no reason to upgrade from 4.20.3 to 4.20.4.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15673: --version-* options are still not ergonomic, and they reject
+     tilde characters.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15673: --version-* options are still not ergonomic, and they reject
+     tilde characters.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.20.3
                            August 02, 2024
                    ==============================
@@ -99,8 +149,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.20.2
                            June 19, 2024
