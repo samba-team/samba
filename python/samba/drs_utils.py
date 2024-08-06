@@ -231,10 +231,7 @@ class drs_Replicate(object):
 
         object_to_check = ctr.first_object
 
-        while True:
-            if object_to_check is None:
-                break
-
+        while object_to_check is not None:
             self.guids_seen.add(str(object_to_check.object.identifier.guid))
 
             if object_to_check.parent_object_guid is not None \
