@@ -278,4 +278,33 @@ long rep_openat2(int dirfd, const char *pathname,
 	rep_openat2(dirfd, pathname, how, size)
 #endif /* !HAVE_OPENAT2 */
 
+#ifdef DISABLE_OPATH
+/*
+ * Without O_PATH, the kernel
+ * most likely doesn't have renameat2() too
+ * and we should test the fallback code
+ */
+#undef HAVE_RENAMEAT2
+#endif
+
+#ifndef HAVE_RENAMEAT2
+
+#ifndef RENAME_NOREPLACE
+# define RENAME_NOREPLACE (1 << 0)
+#endif
+
+#ifndef RENAME_EXCHANGE
+# define RENAME_EXCHANGE (1 << 1)
+#endif
+
+#ifndef RENAME_WHITEOUT
+# define RENAME_WHITEOUT (1 << 2)
+#endif
+
+int rep_renameat2(int __oldfd, const char *__old, int __newfd,
+		  const char *__new, unsigned int __flags);
+#define renameat2(__oldfd, __old, __newfd, __new, __flags) \
+	rep_renameat2(__oldfd, __old, __newfd, __new, __flags)
+#endif /* !HAVE_RENAMEAT2 */
+
 #endif
