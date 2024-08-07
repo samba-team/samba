@@ -4681,7 +4681,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	struct server_id_buf idbuf;
 	char *idstr = server_id_str_buf_unique_ex(id, '%', &idbuf);
 	struct vfs_open_how how = { .flags = O_RDONLY|O_DIRECTORY, };
-	struct vfs_rename_how rhow = { .flags = 0, };
+	struct vfs_rename_how rhow = { .flags = VFS_RENAME_HOW_NO_REPLACE, };
 	int ret;
 
 	if (!CAN_WRITE(conn) || (access_mask & ~(conn->share_access))) {
@@ -4896,7 +4896,27 @@ mkdir_first:
 	 */
 	tmp_atname->st = smb_dname->st;
 
-	{
+	/*
+	 * We first try VFS_RENAME_HOW_NO_REPLACE,
+	 * if it's implemented in the kernel,
+	 * we'll always get EEXIST if the target
+	 * exist, as it's handled at the linux vfs
+	 * layer. But if it doesn't exist we
+	 * can still get EINVAL if the actual
+	 * filesystem doesn't support RENAME_NOREPLACE.
+	 *
+	 * If the kernel doesn't support rename2()
+	 * we get EINVAL instead of ENOSYS (this
+	 * is mapped in the libreplace replacement
+	 * (as well as the glibc replacement).
+	 */
+	ret = SMB_VFS_RENAMEAT(conn,
+			       parent_dir_fname->fsp,
+			       tmp_atname,
+			       parent_dir_fname->fsp,
+			       smb_fname_atname,
+			       &rhow);
+	if (ret == -1 && errno == EINVAL) {
 		/*
 		 * This is the strategie we use without having
 		 * renameat2(RENAME_NOREPLACE):
@@ -4915,6 +4935,8 @@ mkdir_first:
 		 * This a much smaller window where the other clients may see
 		 * the incomplete directory, which has a mode of 0.
 		 */
+
+		rhow.flags &= ~VFS_RENAME_HOW_NO_REPLACE;
 
 		DBG_DEBUG("MKDIRAT/RENAMEAT '%s' -> '%s'\n",
 			  tmp_dname, orig_dname);
