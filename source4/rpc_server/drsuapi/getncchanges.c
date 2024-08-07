@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    implement the DSGetNCChanges call
@@ -11,12 +11,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -443,7 +443,7 @@ static WERROR get_nc_changes_filter_attrs(struct drsuapi_DsReplicaObjectListItem
 	return WERR_OK;
 }
 
-/* 
+/*
   drsuapi_DsGetNCChanges for one object
 */
 static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItemEx *obj,
@@ -698,7 +698,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 			}
 			/* some attributes needs to be encrypted
 			   before being sent */
-			werr = drsuapi_encrypt_attribute(obj, session_key, rid, 
+			werr = drsuapi_encrypt_attribute(obj, session_key, rid,
 							 &obj->object.attribute_ctr.attributes[i]);
 			if (!W_ERROR_IS_OK(werr)) {
 				DEBUG(0,("Unable to encrypt %s on %s in DRS object - %s\n",
@@ -2760,7 +2760,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	r->out.ctr->ctr6.source_dsa_invocation_id = *(samdb_ntds_invocation_id(sam_ctx));
 	r->out.ctr->ctr6.first_object = NULL;
 
-	/* Check request revision. 
+	/* Check request revision.
 	 */
 	switch (r->in.level) {
 	case 8:
@@ -3201,7 +3201,7 @@ allowed:
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	/* 
+	/*
 	   TODO: MS-DRSR section 4.1.10.1.1
 	   Work out if this is the start of a new cycle */
 
@@ -3854,4 +3854,3 @@ allowed:
 
 	return WERR_OK;
 }
-
