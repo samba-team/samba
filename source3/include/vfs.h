@@ -383,6 +383,7 @@
  * Version 49 - remove "sbuf" argument from readdir_fn()
  * Change to Version 50 - will ship with 4.22
  * Version 50 - Change SMB_VFS_RENAMEAT() add vfs_rename_how
+ * Version 50 - Add VFS_RENAME_HOW_NO_REPLACE to vfs_rename_how
  */
 
 #define SMB_VFS_INTERFACE_VERSION 50
@@ -919,6 +920,8 @@ struct vfs_open_how {
 	mode_t mode;
 	uint64_t resolve;
 };
+
+#define VFS_RENAME_HOW_NO_REPLACE 1
 
 struct vfs_rename_how {
 	int flags;
