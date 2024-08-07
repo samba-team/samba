@@ -32,15 +32,15 @@ share_test_dir="$LOCAL_PATH"
 #
 # These files/directories will be created.
 #
-file_outside_share="/tmp/symlink_traverse_test_file.$$"
-dir_outside_share="/tmp/symlink_traverse_test_dir.$$"
-file_outside_share_noperms="/tmp/symlink_traverse_test_file_noperm.$$"
-dir_outside_share_noperms="/tmp/symlink_traverse_test_dir_noperm.$$"
+file_outside_share="${TMPDIR:-/tmp}/symlink_traverse_test_file.$$"
+dir_outside_share="${TMPDIR:-/tmp}/symlink_traverse_test_dir.$$"
+file_outside_share_noperms="${TMPDIR:-/tmp}/symlink_traverse_test_file_noperm.$$"
+dir_outside_share_noperms="${TMPDIR:-/tmp}/symlink_traverse_test_dir_noperm.$$"
 #
 # These two objects do not exist.
 #
-file_outside_share_noexist="/tmp/symlink_traverse_test_noexist.$$"
-dir_outside_share_noexist="/tmp/symlink_traverse_test_dir_noexist.$$"
+file_outside_share_noexist="${TMPDIR:-/tmp}/symlink_traverse_test_noexist.$$"
+dir_outside_share_noexist="${TMPDIR:-/tmp}/symlink_traverse_test_dir_noexist.$$"
 
 #
 # Cleanup function.
