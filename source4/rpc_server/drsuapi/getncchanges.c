@@ -3029,16 +3029,67 @@ allowed:
 		ret = drsuapi_DsReplicaHighWaterMark_cmp(&getnc_state->last_hwm,
 							 &req10->highwatermark);
 		if (ret != 0) {
-			DBG_ERR("DsGetNCChanges 2nd replication "
-				"on DN %s %s highwatermark "
-				"(last_dn %s)\n",
-				ldb_dn_get_linearized(
-					getnc_state->ncRoot_dn),
-				(ret > 0) ? "older" : "newer",
-				ldb_dn_get_linearized(
-					getnc_state->last_dn));
-			TALLOC_FREE(getnc_state);
-			b_state->getncchanges_full_repl_state = NULL;
+			if (req10->highwatermark.reserved_usn == 0) {
+				/*
+				 * Entra ID Connect / Azure AD is known to set
+				 * reserved_usn to zero in replies, when we
+				 * were expecting it to be returned unchanged
+				 * (it is supposed to be an opaque cookie).
+				 *
+				 * If the only difference is in the
+				 * reserved_usn, and it is 0 on the return, we
+				 * assume it is Azure AD and treat the
+				 * highwatermarks as equal.
+				 */
+				req10->highwatermark.reserved_usn =
+					getnc_state->last_hwm.reserved_usn;
+
+				ret = drsuapi_DsReplicaHighWaterMark_cmp(
+					&getnc_state->last_hwm,
+					&req10->highwatermark);
+
+				/* put things as they were */
+				req10->highwatermark.reserved_usn = 0;
+
+				if (ret != 0) {
+					/* we will start again */
+					DBG_ERR("DsGetNCChanges 2nd replication "
+						"on DN %s %s highwatermark "
+						"(last_dn %s) after Azure AD "
+						"reserved_usn adjustment\n",
+						ldb_dn_get_linearized(
+							getnc_state->ncRoot_dn),
+						(ret > 0) ? "older" : "newer",
+						ldb_dn_get_linearized(
+							getnc_state->last_dn));
+					TALLOC_FREE(getnc_state);
+					b_state->getncchanges_full_repl_state =
+						NULL;
+				} else {
+					/* log and continue as normal */
+					DBG_NOTICE(
+						"DsGetNCChanges 2nd replication "
+						"on DN %s: highwatermark "
+						"matches only after Azure AD "
+						"reserved_usn adjustment "
+						"(last_dn %s)\n",
+						ldb_dn_get_linearized(
+							getnc_state->ncRoot_dn),
+						ldb_dn_get_linearized(
+							getnc_state->last_dn));
+				}
+			} else {
+				DBG_ERR("DsGetNCChanges 2nd replication "
+					"on DN %s %s highwatermark "
+					"(last_dn %s)\n",
+					ldb_dn_get_linearized(
+						getnc_state->ncRoot_dn),
+					(ret > 0) ? "older" : "newer",
+					ldb_dn_get_linearized(
+						getnc_state->last_dn));
+				TALLOC_FREE(getnc_state);
+				b_state->getncchanges_full_repl_state = NULL;
+			}
 		}
 	}
 
