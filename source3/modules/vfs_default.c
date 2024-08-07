@@ -1291,22 +1291,28 @@ static int vfswrap_renameat(vfs_handle_struct *handle,
 			  const struct vfs_rename_how *how)
 {
 	int result = -1;
+	int flags = 0;
 
 	START_PROFILE(syscall_renameat);
 
 	SMB_ASSERT(!is_named_stream(smb_fname_src));
 	SMB_ASSERT(!is_named_stream(smb_fname_dst));
 
-	if (how->flags != 0) {
+	if (how->flags & ~VFS_RENAME_HOW_NO_REPLACE) {
 		END_PROFILE(syscall_renameat);
 		errno = EINVAL;
 		return -1;
 	}
 
-	result = renameat(fsp_get_pathref_fd(srcfsp),
-			smb_fname_src->base_name,
-			fsp_get_pathref_fd(dstfsp),
-			smb_fname_dst->base_name);
+	if (how->flags & VFS_RENAME_HOW_NO_REPLACE) {
+		flags |= RENAME_NOREPLACE;
+	}
+
+	result = renameat2(fsp_get_pathref_fd(srcfsp),
+			   smb_fname_src->base_name,
+			   fsp_get_pathref_fd(dstfsp),
+			   smb_fname_dst->base_name,
+			   flags);
 
 	END_PROFILE(syscall_renameat);
 	return result;
