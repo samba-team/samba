@@ -33,6 +33,7 @@ import samba.tests
 import ldb
 from ldb import SCOPE_BASE
 import random
+import time
 
 from samba.dcerpc import drsuapi, misc
 from samba import WERRORError
@@ -57,6 +58,7 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
 
         self.default_conn = DcConnection(self, self.ldb_dc2, self.dnsname_dc2)
         self.set_dc_connection(self.default_conn)
+        self.start_time = time.time()
 
     def init_test_state(self):
         self.rxd_dn_list = []
@@ -358,6 +360,9 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
 
     def replication_complete(self):
         """Returns True if the current/last replication cycle is complete"""
+        now = time.time()
+        if now - self.start_time > 30:
+            self.fail("we seem to be in an eternal loop")
 
         if self.last_ctr is None or self.last_ctr.more_data:
             return False
