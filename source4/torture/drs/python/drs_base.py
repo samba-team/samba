@@ -311,6 +311,13 @@ class DrsBaseTestCase(SambaToolCmdTest):
         if drs_handle is None:
             drs_handle = self.drs_handle
 
+        # Add a modify_highwatermark method to cause damage to the
+        # highwatermark. For example, it could set reserved_usn to
+        # zero as Entra ID does.
+        modify_hwm = getattr(self, "modify_highwatermark", None)
+        if modify_hwm is not None:
+            modify_hwm(highwatermark)
+
         req10 = self._getnc_req10(dest_dsa=dest_dsa,
                                   invocation_id=invocation_id,
                                   nc_dn_str=nc_dn_str,
