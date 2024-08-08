@@ -7,7 +7,7 @@ version = "4.21.0"
 [workspace]
 resolver = "2"
 members = [
-  "chelps", "dbg", "himmelblaud", "idmap",
+  "chelps", "config", "dbg", "himmelblaud", "idmap",
   "nss", "ntstatus_gen", "pam",
   "param", "sock", "tdb", "version",
 ]
@@ -21,3 +21,4 @@ ntstatus_gen = { path = "ntstatus_gen" }
 tdb = { path = "tdb" }
 idmap = { path = "idmap" }
 libc = "0.2.155"
+config = { path = "config" }

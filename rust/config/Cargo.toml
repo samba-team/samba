@@ -1,16 +1,12 @@
 [package]
-name = "tdb"
+name = "config"
 edition.workspace = true
 license.workspace = true
 homepage.workspace = true
 version.workspace = true
 
 [dependencies]
-chelps = { workspace = true }
-dbg.workspace = true
 libc.workspace = true
-ntstatus_gen.workspace = true
 
 [build-dependencies]
 bindgen = "0.69.4"
-config.workspace = true

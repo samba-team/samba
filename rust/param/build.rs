@@ -13,6 +13,7 @@ fn main() {
         .clang_arg("-Dbool=int")
         .clang_arg("-Doffset_t=loff_t")
         .clang_arg("-I../../bin/default")
+        .clang_arg("-I../../lib/talloc")
         .clang_arg("-includestdint.h")
         .header("../../lib/param/param.h")
         .header("../../lib/param/loadparm.h")

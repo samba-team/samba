@@ -23,7 +23,11 @@ fn main() {
 
     let mut src_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     src_dir.push("../../bin/default/lib/tdb");
-    println!("cargo:rustc-link-lib=tdb");
+    if config::USING_SYSTEM_TDB == 1 {
+        println!("cargo:rustc-link-lib=tdb");
+    } else {
+        println!("cargo:rustc-link-lib=tdb-private-samba");
+    }
     println!(
         "cargo:rustc-link-search=native={}",
         src_dir.to_str().unwrap()
