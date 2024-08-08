@@ -11,6 +11,7 @@ packages:
   - cargo
   - ccache
   - chrpath
+  - clang-devel
   - codespell
   - crypto-policies-scripts
   - cups-devel
@@ -61,6 +62,7 @@ packages:
   - mingw64-gcc
   - ncurses-devel
   - openldap2-devel
+  - openssl-devel
   - pam-devel
   - patch
   - perl

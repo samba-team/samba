@@ -23,6 +23,7 @@ dnf install -y \
     cargo \
     ccache \
     chrpath \
+    clang-devel \
     codespell \
     crypto-policies-scripts \
     cups-devel \
@@ -76,6 +77,7 @@ dnf install -y \
     mold \
     ncurses-devel \
     openldap-devel \
+    openssl-devel \
     pam-devel \
     patch \
     perl \

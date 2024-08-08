@@ -85,6 +85,8 @@ PKGS = [
     ('libacl1-dev', 'libacl-devel'),
     ('libattr1-dev', 'libattr-devel'),
     ('libutf8proc-dev', 'utf8proc-devel'),
+    ('libssl-dev', 'openssl-devel'),
+    ('libclang-dev', 'clang-devel'),
 
     # libNAME1-dev, NAME2-devel
     ('libpopt-dev', 'popt-devel'),

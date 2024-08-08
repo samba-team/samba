@@ -30,6 +30,7 @@ dnf install -y \
     cargo \
     ccache \
     chrpath \
+    clang-devel \
     crypto-policies-scripts \
     cups-devel \
     dbus-devel \
@@ -79,6 +80,7 @@ dnf install -y \
     mingw64-gcc \
     ncurses-devel \
     openldap-devel \
+    openssl-devel \
     pam-devel \
     patch \
     perl \

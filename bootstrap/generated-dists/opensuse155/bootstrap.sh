@@ -23,6 +23,7 @@ zypper --non-interactive install \
     cargo \
     ccache \
     chrpath \
+    clang-devel \
     codespell \
     crypto-policies-scripts \
     cups-devel \
@@ -73,6 +74,7 @@ zypper --non-interactive install \
     mingw64-gcc \
     ncurses-devel \
     openldap2-devel \
+    openssl-devel \
     pam-devel \
     patch \
     perl \

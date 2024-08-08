@@ -12,6 +12,7 @@ packages:
   - cargo
   - ccache
   - chrpath
+  - clang-devel
   - codespell
   - crypto-policies-scripts
   - cups-devel
@@ -65,6 +66,7 @@ packages:
   - mold
   - ncurses-devel
   - openldap-devel
+  - openssl-devel
   - pam-devel
   - patch
   - perl
