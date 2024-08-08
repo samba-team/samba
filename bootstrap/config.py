@@ -524,6 +524,7 @@ RPM_DISTS = {
             'ShellCheck': '',
             'shfmt': '',
             'codespell': '',
+            'utf8proc-devel': '',
         }
     },
     'centos9s': {
