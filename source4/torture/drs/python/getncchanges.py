@@ -1427,6 +1427,43 @@ class DrsReplicaSyncFakeAzureAdTests(DrsReplicaSyncIntegrityTestCase):
         if hwm is not None:
             hwm.reserved_usn = 0
 
+    SKIPPED_TESTS = {
+        "test_repl_get_tgt",
+        "test_repl_get_tgt_and_anc",
+        "test_repl_get_tgt_chain",
+        "test_do_full_repl_mix_no_overlap",
+        "test_do_full_repl_no_overlap",
+        "test_do_full_repl_no_overlap_get_anc",
+        "test_DummyDN_valid_GUID_full_repl",
+        "test_InvalidNC_DummyDN_InvalidGUID_full_repl",
+        "test_repl_get_anc_link_attr",
+        "test_repl_integrity_cross_partition_links",
+        "test_repl_integrity_cross_partition_links_with_tgt",
+        "test_repl_integrity_get_anc",
+        "test_repl_integrity_obj_reanimation",
+        "test_repl_integrity_src_obj_deletion",
+        "test_repl_integrity_tgt_obj_deletion",
+        "test_repl_nc_is_first",
+        "test_repl_nc_is_first_mid",
+        "test_repl_nc_is_first_nc_change_only", # xfail in parent
+        "test_repl_nc_is_first_no_change",
+        "test_repl_nc_is_first_start_zero",
+        "test_repl_nc_is_first_start_zero_nc_change",
+    }
+
+    def setUp(self):
+        # Only some tests behave any differently with the zeroed
+        # reserved_usn. The getncchanges tests are quite slow, so it
+        # is worth skipping unnecessary tests.
+        #
+        # If you think a test is worth running here, add it to the
+        # list.
+        testname = self.id().rsplit(".", 1)[1]
+        if testname in self.SKIPPED_TESTS:
+            self.skipTest("Probably not affected by reserved_usn = 0")
+
+        super().setUp()
+
 
 class DcConnection:
     """Helper class to track a connection to another DC"""
