@@ -313,7 +313,7 @@ tasks = {
     "samba": {
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "./configure.developer" + samba_configure_params),
+            ("configure", "./configure.developer --with-himmelblau" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(exclude_envs=[
             "none",

@@ -168,6 +168,10 @@ def options(opt):
                    dest='SAMBA_VERSION_VENDOR_SUFFIX',
                    default=None)
 
+    opt.add_option('--with-himmelblau', default=False,
+                  help=('Build with Azure Entra ID support.'),
+                  action='store_true', dest='enable_himmelblau')
+
 
 def configure(conf):
     if Options.options.SAMBA_VERSION_VENDOR_SUFFIX:
@@ -506,6 +510,7 @@ def configure(conf):
 
     conf.env.debug = Options.options.debug
     conf.env.developer = Options.options.developer
+    conf.env.enable_himmelblau = Options.options.enable_himmelblau
 
     #
     # FreeBSD is broken. It doesn't include 'extern char **environ'
