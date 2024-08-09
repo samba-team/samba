@@ -34,6 +34,7 @@
 #include "common/system.h"
 #include "common/common.h"
 #include "common/logging.h"
+#include "common/path.h"
 
 #include "ctdb_tcp.h"
 
@@ -479,7 +480,7 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 {
 	int lock_fd;
 	unsigned int i;
-	const char *lock_path = CTDB_RUNDIR "/.socket_lock";
+	char *lock_path = NULL;
 	struct flock lock;
 	int ret;
 
@@ -499,9 +500,15 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	 * atomic. The SO_REUSEADDR setsockopt only prevents double
 	 * binds if the first socket is in LISTEN state.
 	 */
+	lock_path = path_rundir_append(ctdb, ".socket_lock");
+	if (lock_path == NULL) {
+		DBG_ERR("Memory allocation error\n");
+		return -1;
+	}
 	lock_fd = open(lock_path, O_RDWR|O_CREAT, 0666);
 	if (lock_fd == -1) {
 		DBG_ERR("Unable to open %s\n", lock_path);
+		talloc_free(lock_path);
 		return -1;
 	}
 
@@ -514,8 +521,10 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	if (fcntl(lock_fd, F_SETLKW, &lock) != 0) {
 		DBG_ERR("Unable to lock %s\n", lock_path);
 		close(lock_fd);
+		talloc_free(lock_path);
 		return -1;
 	}
+	talloc_free(lock_path);
 
 	for (i=0; i < ctdb->num_nodes; i++) {
 		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
