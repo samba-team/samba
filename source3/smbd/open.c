@@ -47,6 +47,8 @@
 #include <linux/magic.h>
 #endif
 
+static NTSTATUS inherit_new_acl(files_struct *dirfsp, files_struct *fsp);
+
 extern const struct generic_mapping file_generic_mapping;
 
 struct deferred_open_record {
@@ -4539,6 +4541,65 @@ unlock:
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS apply_new_nt_acl(struct files_struct *dirfsp,
+				 struct files_struct *fsp,
+				 struct security_descriptor *sd)
+{
+	NTSTATUS status;
+
+	if (sd != NULL) {
+		/*
+		 * According to the MS documentation, the only time the security
+		 * descriptor is applied to the opened file is iff we *created* the
+		 * file; an existing file stays the same.
+		 *
+		 * Also, it seems (from observation) that you can open the file with
+		 * any access mask but you can still write the sd. We need to override
+		 * the granted access before we call set_sd
+		 * Patch for bug #2242 from Tom Lackemann <cessnatomny@yahoo.com>.
+		 */
+
+		uint32_t sec_info_sent;
+		uint32_t saved_access_mask = fsp->access_mask;
+
+		sec_info_sent = get_sec_info(sd);
+
+		fsp->access_mask = FILE_GENERIC_ALL;
+
+		if (sec_info_sent & (SECINFO_OWNER|
+					SECINFO_GROUP|
+					SECINFO_DACL|
+					SECINFO_SACL)) {
+			status = set_sd(fsp, sd, sec_info_sent);
+		} else {
+			status = NT_STATUS_OK;
+		}
+
+		fsp->access_mask = saved_access_mask;
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("set_sd() failed for '%s': %s\n",
+				    fsp_str_dbg(fsp), nt_errstr(status));
+			return status;
+		}
+
+		return NT_STATUS_OK;
+	}
+
+	if (!lp_inherit_acls(SNUM(fsp->conn))) {
+		return NT_STATUS_OK;
+	}
+
+	/* Inherit from parent. Errors here are not fatal. */
+	status = inherit_new_acl(dirfsp, fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("inherit_new_acl failed for %s with %s\n",
+			    fsp_str_dbg(fsp), nt_errstr(status));
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS mkdir_internal(connection_struct *conn,
 			       struct smb_filename *parent_dir_fname, /* parent. */
 			       struct smb_filename *smb_fname_atname, /* atname relative to parent. */
@@ -6419,45 +6480,11 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	if ((info == FILE_WAS_CREATED) &&
 	    lp_nt_acl_support(SNUM(conn)) &&
 	    !fsp_is_alternate_stream(fsp)) {
-		if (sd != NULL) {
-			/*
-			 * According to the MS documentation, the only time the security
-			 * descriptor is applied to the opened file is iff we *created* the
-			 * file; an existing file stays the same.
-			 *
-			 * Also, it seems (from observation) that you can open the file with
-			 * any access mask but you can still write the sd. We need to override
-			 * the granted access before we call set_sd
-			 * Patch for bug #2242 from Tom Lackemann <cessnatomny@yahoo.com>.
-			 */
-
-			uint32_t sec_info_sent;
-			uint32_t saved_access_mask = fsp->access_mask;
-
-			sec_info_sent = get_sec_info(sd);
-
-			fsp->access_mask = FILE_GENERIC_ALL;
-
-			if (sec_info_sent & (SECINFO_OWNER|
-						SECINFO_GROUP|
-						SECINFO_DACL|
-						SECINFO_SACL)) {
-				status = set_sd(fsp, sd, sec_info_sent);
-			}
-
-			fsp->access_mask = saved_access_mask;
-
-			if (!NT_STATUS_IS_OK(status)) {
-				goto fail;
-			}
-		} else if (lp_inherit_acls(SNUM(conn))) {
-			/* Inherit from parent. Errors here are not fatal. */
-			status = inherit_new_acl(dirfsp, fsp);
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(10,("inherit_new_acl: failed for %s with %s\n",
-					fsp_str_dbg(fsp),
-					nt_errstr(status) ));
-			}
+		status = apply_new_nt_acl(dirfsp, fsp, sd);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("apply_new_nt_acl(): failed for %s with %s\n",
+				    fsp_str_dbg(fsp), nt_errstr(status));
+			goto fail;
 		}
 	}
 
