@@ -4604,6 +4604,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 			       struct smb_filename *parent_dir_fname, /* parent. */
 			       struct smb_filename *smb_fname_atname, /* atname relative to parent. */
 			       struct smb_filename *smb_dname, /* full pathname from root of share. */
+			       struct security_descriptor *sd,
 			       uint32_t file_attributes,
 			       struct files_struct *fsp)
 {
@@ -4730,6 +4731,18 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		}
 	}
 
+	if (lp_nt_acl_support(SNUM(conn))) {
+		status = apply_new_nt_acl(parent_dir_fname->fsp,
+					  fsp,
+					  sd);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("apply_new_nt_acl() failed for %s with %s\n",
+				    fsp_str_dbg(fsp),
+				    nt_errstr(status));
+			return status;
+		}
+	}
+
 	notify_fname(conn, NOTIFY_ACTION_ADDED, FILE_NOTIFY_CHANGE_DIR_NAME,
 		     smb_dname->base_name);
 
@@ -4749,6 +4762,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 			       uint32_t file_attributes,
 			       struct smb_filename *parent_dir_fname,
 			       struct smb_filename *smb_fname_atname,
+			       struct security_descriptor *sd,
 			       int *pinfo,
 			       struct files_struct *fsp)
 {
@@ -4838,6 +4852,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 						parent_dir_fname,
 						smb_fname_atname,
 						smb_dname,
+						sd,
 						file_attributes,
 						fsp);
 
@@ -4869,6 +4884,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 							parent_dir_fname,
 							smb_fname_atname,
 							smb_dname,
+							sd,
 							file_attributes,
 							fsp);
 
@@ -6375,6 +6391,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 					file_attributes,
 					dirfsp->fsp_name,
 					smb_fname_atname,
+					sd,
 					&info,
 					fsp);
 	} else {
@@ -6431,6 +6448,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 						file_attributes,
 						dirfsp->fsp_name,
 						smb_fname_atname,
+						sd,
 						&info,
 						fsp);
 		}
@@ -6478,6 +6496,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	}
 
 	if ((info == FILE_WAS_CREATED) &&
+	    !S_ISDIR(fsp->fsp_name->st.st_ex_mode) &&
 	    lp_nt_acl_support(SNUM(conn)) &&
 	    !fsp_is_alternate_stream(fsp)) {
 		status = apply_new_nt_acl(dirfsp, fsp, sd);
