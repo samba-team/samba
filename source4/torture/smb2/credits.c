@@ -1339,6 +1339,46 @@ out:
 	return ok;
 }
 
+static bool test_2conn_notify_max_async_credits(struct torture_context *tctx,
+						struct smb2_tree *tree1,
+						struct smb2_tree *tree2)
+{
+	struct smb2_tree *trees[2] = { tree1, tree2 };
+	uint16_t max_async_credits = torture_setting_int(
+		tctx,
+		"maxasynccredits",
+		512 /* lpcfg_smb2_max_async_credits(tctx->lp_ctx) */);
+	struct smb2_handle dh = {{}};
+	bool ok = false;
+	NTSTATUS status;
+	uint16_t max_credits = max_async_credits + 2;
+
+	smb2_transport_credits_ask_num(tree1->session->transport, max_credits);
+	smb2_transport_credits_ask_num(tree2->session->transport, max_credits);
+
+	/* Cleanup TESTDIR */
+	smb2_deltree(tree1, TESTDIR);
+	smb2_deltree(tree2, TESTDIR);
+
+	/* Create TESTDIR */
+	status = torture_smb2_testdir(tree1, TESTDIR, &dh);
+	torture_assert_ntstatus_ok_goto(
+		tctx, status, ok, out, "smb2_create failed");
+	status = smb2_util_close(tree1, dh);
+	torture_assert_ntstatus_ok_goto(
+		tctx, status, ok, out, "smb2_util_close failed");
+
+	ok = test_notify_max_async_credits(tctx,
+					   trees,
+					   ARRAY_SIZE(trees),
+					   max_credits);
+out:
+	/* Cleanup TESTDIR */
+	smb2_deltree(tree1, TESTDIR);
+
+	return ok;
+}
+
 struct torture_suite *torture_smb2_crediting_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "credits");
@@ -1360,6 +1400,9 @@ struct torture_suite *torture_smb2_crediting_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite,
 				     "1conn_notify_max_async_credits",
 				     test_1conn_notify_max_async_credits);
+	torture_suite_add_2smb2_test(suite,
+				     "2conn_notify_max_async_credits",
+				     test_2conn_notify_max_async_credits);
 
 	suite->description = talloc_strdup(suite, "SMB2-CREDITS tests");
 

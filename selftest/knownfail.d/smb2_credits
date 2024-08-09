@@ -2,3 +2,4 @@ samba3.smb2.credits.*1conn_ipc_max_async_credits
 samba3.smb2.credits.*2conn_ipc_max_async_credits
 samba3.smb2.credits.*multichannel_ipc_max_async_credits
 samba3.smb2.credits.*1conn_notify_max_async_credits
+samba3.smb2.credits.*2conn_notify_max_async_credits
