@@ -165,7 +165,6 @@ int main(int argc, const char *argv[])
 	const char **extra_argv;
 	poptContext pc;
 	struct tevent_context *ev;
-	const char *ctdb_base;
 	struct conf_context *conf;
 	const char *logging_location;
 	const char *test_mode;
@@ -195,10 +194,9 @@ int main(int argc, const char *argv[])
 	}
 
 	/* Default value for CTDB_BASE - don't override */
-	setenv("CTDB_BASE", CTDB_ETCDIR, 0);
-	ctdb_base = getenv("CTDB_BASE");
-	if (ctdb_base == NULL) {
-		D_ERR("CTDB_BASE not set\n");
+	ret = setenv("CTDB_BASE", CTDB_ETCDIR, 0);
+	if (ret != 0) {
+		D_ERR("Unable to set CTDB_BASE (errno=%d)\n", errno);
 		exit(1);
 	}
 
