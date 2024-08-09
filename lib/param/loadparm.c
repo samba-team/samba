@@ -3095,6 +3095,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "store dos attributes", "yes");
 
+	lpcfg_do_global_parameter(lp_ctx, "vfs mkdir use tmp name", "Auto");
+
 	lpcfg_do_global_parameter(lp_ctx, "debug encryption", "no");
 
 	lpcfg_do_global_parameter(lp_ctx, "spotlight backend", "noindex");

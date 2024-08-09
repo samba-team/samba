@@ -162,6 +162,7 @@ static const struct loadparm_service _sDefault =
 	.volume = NULL,
 	.fstype = NULL,
 	.vfs_objects = NULL,
+	.vfs_mkdir_use_tmp_name = Auto,
 	.msdfs_proxy = NULL,
 	.aio_write_behind = NULL,
 	.dfree_command = NULL,

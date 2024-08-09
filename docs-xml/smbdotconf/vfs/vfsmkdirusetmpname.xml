@@ -1,0 +1,47 @@
+<samba:parameter name="vfs mkdir use tmp name"
+                 context="S"
+                 type="enum"
+                 enumlist="enum_bool_auto"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	Creating a new directory for an SMB client is a very complex task!
+	It includes things like inheriting permissions from the parent directory
+	and storing DOS attributes.
+	</para>
+
+	<para>
+	Other clients should not see the existence of the directory that
+	is in progress of being created!
+	</para>
+
+	<para>
+	This option is an enumerated type that controls the usage of a temporary directory name.
+	When this is set to <constant>yes</constant>,
+	the directory name will be prefixed with '.::TMPNAME:D:$SERVERID:' (where $SERVERID is
+	a unique identifier for the current process).
+	</para>
+
+	<para>
+	When this option is set to Auto (the default), the server uses a temporary directory name
+	if, at least, one of the following options
+	is effectively not set to <constant>no</constant>:
+	<smbconfoption name="inherit acls"/>,
+	<smbconfoption name="inherit owner"/>,
+	<smbconfoption name="inherit permissions"/>,
+	<smbconfoption name="nt acl support"/> or
+	<smbconfoption name="store dos attributes"/>.
+	</para>
+
+	<para>
+	A re-export of an SMB/CIFS mount might one rare case where
+	<command moreinfo="none">vfs mkdir use tmp name = no</command> could be useful.
+	</para>
+
+	<para>
+	In most cases <command moreinfo="none">vfs mkdir use tmp name = Auto</command> should be kept.
+	</para>
+</description>
+<value type="default">Auto</value>
+</samba:parameter>
+
