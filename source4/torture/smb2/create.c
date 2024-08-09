@@ -1678,6 +1678,399 @@ done:
 }
 
 /*
+  test SMB2 mkdir with OPEN_IF on the same name twice.
+  Must use 2 connections to hit the race.
+*/
+
+struct test_mkdir_visible_open;
+
+struct test_mkdir_visible_state {
+	struct torture_context *tctx;
+	size_t loops_running;
+	bool ok;
+};
+
+struct test_mkdir_visible_open {
+	struct test_mkdir_visible_state *state;
+	struct smb2_tree *tree;
+	uint64_t try;
+	struct smbXcli_conn *conn;
+	uint32_t timeout_msec;
+	struct smbXcli_session *session;
+	struct smbXcli_tcon *tcon;
+	const char *filename;
+	uint8_t oplock_level;
+	uint32_t impersonation_level;
+	uint32_t desired_access;
+	uint32_t file_attributes;
+	uint32_t share_access;
+	uint32_t create_disposition;
+	uint32_t create_options;
+	struct tevent_req *subreq;
+	NTSTATUS status;
+	uint64_t fid_persistent;
+	uint64_t fid_volatile;
+	struct smb_create_returns cr;
+	bool done;
+};
+
+static void test_mkdir_visible_open_retry(struct tevent_req *subreq)
+{
+	struct test_mkdir_visible_open *op =
+		tevent_req_callback_data(subreq,
+		struct test_mkdir_visible_open);
+	struct test_mkdir_visible_state *state = op->state;
+	struct torture_context *tctx = state->tctx;
+
+	if (!state->ok) {
+		return;
+	}
+
+	torture_assert_goto(tctx, op->subreq == subreq,
+			    state->ok, done, "subreq");
+	op->subreq = NULL;
+
+	op->status = smb2cli_create_recv(subreq,
+					 &op->fid_persistent,
+					 &op->fid_volatile,
+					 &op->cr,
+					 op,
+					 NULL,
+					 NULL);
+	TALLOC_FREE(subreq);
+	torture_comment(tctx, "%s:%s: try[%"PRIu64"] %s\n",
+			__func__, op->filename, op->try,
+			nt_errstr(op->status));
+	if (NT_STATUS_EQUAL(op->status, NT_STATUS_ACCESS_DENIED)) {
+		goto done;
+	}
+	torture_assert_ntstatus_equal_goto(tctx,
+		op->status, NT_STATUS_OBJECT_PATH_NOT_FOUND,
+		state->ok, done, "smb2cli_create_recv");
+
+	op->try += 1;
+	torture_comment(tctx, "%s:%s: try[%"PRIu64"] starting\n",
+			__func__, op->filename, op->try);
+	subreq = smb2cli_create_send(op,
+				     tctx->ev,
+				     op->conn,
+				     op->timeout_msec,
+				     op->session,
+				     op->tcon,
+				     op->filename,
+				     op->oplock_level,
+				     op->impersonation_level,
+				     op->desired_access,
+				     op->file_attributes,
+				     op->share_access,
+				     op->create_disposition,
+				     op->create_options,
+				     NULL);
+	torture_assert_not_null_goto(tctx, subreq,
+				     state->ok, done,
+				     "smb2cli_create_send");
+	tevent_req_set_callback(subreq,
+				test_mkdir_visible_open_retry,
+				op);
+	op->subreq = subreq;
+	return;
+
+done:
+	op->done = true;
+	state->loops_running -= 1;
+}
+
+static void test_mkdir_visible_open_done(struct tevent_req *subreq)
+{
+	struct test_mkdir_visible_open *op =
+		tevent_req_callback_data(subreq,
+		struct test_mkdir_visible_open);
+	struct test_mkdir_visible_state *state = op->state;
+	struct torture_context *tctx = state->tctx;
+
+	if (!state->ok) {
+		return;
+	}
+
+	torture_assert_goto(tctx, op->subreq == subreq,
+			    state->ok, done, "subreq");
+	op->subreq = NULL;
+
+	op->status = smb2cli_create_recv(subreq,
+					 &op->fid_persistent,
+					 &op->fid_volatile,
+					 &op->cr,
+					 op,
+					 NULL,
+					 NULL);
+	TALLOC_FREE(subreq);
+	torture_comment(tctx, "%s:%s: %s\n",
+			__func__, op->filename,
+			nt_errstr(op->status));
+	torture_assert_ntstatus_ok_goto(tctx, op->status,
+		state->ok, done, "smb2cli_create_recv");
+
+done:
+	op->done = true;
+}
+
+static bool test_mkdir_visible(struct torture_context *tctx,
+			       struct smb2_tree *tree)
+{
+	struct test_mkdir_visible_state *state = NULL;
+	struct test_mkdir_visible_open templ = {
+		.state = NULL,
+	};
+	struct test_mkdir_visible_open *dop = NULL;
+	size_t num_loops = 50;
+	struct test_mkdir_visible_open **loops = NULL;
+	const char *base_dname = "mkdir_visible";
+	const char *file_ok = NULL;
+	const char *file_fail = NULL;
+	struct smb2_handle bdh = {{}};
+	struct smb2_handle h = {{}};
+	union smb_fileinfo q = {};
+	union smb_setfileinfo setinfo = {};
+	struct security_descriptor *sd = NULL;
+	struct security_ace *ace = NULL;
+	NTSTATUS status;
+	bool ret = true;
+	size_t i;
+
+	smb2_keepalive(tree->session->transport);
+	smb2_deltree(tree, base_dname);
+	smb2_keepalive(tree->session->transport);
+
+	torture_comment(tctx,
+		"Testing SMB2 Create Directory is visible with multiple connections\n");
+
+	state = talloc_zero(tctx, struct test_mkdir_visible_state);
+	torture_assert_not_null_goto(tctx, state, ret, done, "talloc_zero");
+	state->tctx = tctx;
+	state->ok = true;
+
+	/*
+	 * We create a base directory that has an inheritiable
+	 * ACE to deny SEC_DIR_ADD_FILE.
+	 */
+
+	status = torture_smb2_testdir(tree, base_dname, &bdh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir");
+
+	file_ok = talloc_asprintf(state, "%s\\file_ok", base_dname);
+	torture_assert_not_null_goto(tctx, file_ok, ret, done,
+				     "talloc_asprintf");
+	file_fail = talloc_asprintf(state, "%s\\file_fail", base_dname);
+	torture_assert_not_null_goto(tctx, file_fail, ret, done,
+				     "talloc_asprintf");
+
+	status = torture_smb2_testfile(tree, file_ok, &h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testfile(file_ok)");
+	status = smb2_util_close(tree, h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close(file_ok)");
+
+	q.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	q.query_secdesc.in.file.handle = bdh;
+	q.query_secdesc.in.secinfo_flags = SECINFO_DACL;
+	status = smb2_getinfo_file(tree, state, &q);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"RAW_FILEINFO_SEC_DESC");
+	sd = q.query_secdesc.out.sd;
+	torture_assert_not_null_goto(tctx, sd, ret, done,
+				     "q.query_secdesc.out.sd");
+	torture_assert_not_null_goto(tctx, sd->dacl, ret, done,
+				     "q.query_secdesc.out.sd->dacl");
+
+	sd = security_descriptor_copy(state, sd);
+	torture_assert_not_null_goto(tctx, sd, ret, done,
+				     "security_descriptor_copy");
+	ace = security_ace_create(sd,
+				  SID_WORLD,
+				  SEC_ACE_TYPE_ACCESS_DENIED,
+				  SEC_DIR_ADD_FILE,
+				  SEC_ACE_FLAG_CONTAINER_INHERIT);
+	torture_assert_not_null_goto(tctx, ace, ret, done,
+				     "security_ace_create");
+	status = security_descriptor_dacl_insert(sd, ace, 0);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"security_descriptor_dacl_insert");
+
+	setinfo.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	setinfo.set_secdesc.in.file.handle = bdh;
+	setinfo.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	setinfo.set_secdesc.in.sd = sd;
+	status = smb2_setinfo_file(tree, &setinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"RAW_SFILEINFO_SEC_DESC");
+
+	/*
+	 * Make sure the new deny ACE works
+	 */
+	status = torture_smb2_testfile(tree, file_fail, &h);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+					   NT_STATUS_ACCESS_DENIED,
+					   ret, done,
+					   "torture_smb2_testfile(file_ok)");
+
+	status = smb2_util_close(tree, bdh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close(base_dname)");
+
+	templ.state = state;
+	templ.timeout_msec = 30000;
+	templ.oplock_level = SMB2_OPLOCK_LEVEL_NONE;
+	templ.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	templ.desired_access = SEC_FILE_READ_ATTRIBUTE;
+	templ.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	templ.share_access = FILE_SHARE_READ |
+			     FILE_SHARE_WRITE |
+			     FILE_SHARE_DELETE;
+	templ.create_disposition = FILE_CREATE;
+	templ.create_options = FILE_NON_DIRECTORY_FILE;
+	templ.status = NT_STATUS_REQUEST_OUT_OF_SEQUENCE;
+
+	dop = talloc_zero(state, struct test_mkdir_visible_open);
+	torture_assert_not_null_goto(tctx, dop, ret, done, "talloc_zero");
+	*dop = templ;
+	dop->filename = talloc_asprintf(dop, "%s\\visible_dir", base_dname);
+	torture_assert_not_null_goto(tctx, dop->filename, ret, done,
+				     "talloc_asprintf");
+	dop->desired_access |= SEC_STD_READ_CONTROL;
+	dop->file_attributes = FILE_ATTRIBUTE_DIRECTORY;
+	dop->create_options = FILE_DIRECTORY_FILE;
+	dop->tree = tree;
+	dop->conn = tree->session->transport->conn;
+	dop->session = tree->session->smbXcli;
+	dop->tcon = tree->smbXcli;
+
+	loops = talloc_zero_array(state,
+				  struct test_mkdir_visible_open *,
+				  num_loops);
+	torture_assert_not_null_goto(tctx, loops, ret, done,
+				     "talloc_zero_array");
+
+	for (i = 0; i < num_loops; i++) {
+		struct test_mkdir_visible_open *op = NULL;
+
+		op = talloc_zero(loops, struct test_mkdir_visible_open);
+		torture_assert_not_null_goto(tctx, op, ret, done, "talloc_zero");
+
+		*op = templ;
+		op->filename = talloc_asprintf(op, "%s\\visible_dir\\file_%zu",
+					       base_dname, i);
+		torture_assert_not_null_goto(tctx, op->filename, ret, done,
+					     "talloc_asprintf");
+
+		ret = torture_smb2_connection(tctx, &op->tree);
+		torture_assert_goto(tctx, ret, ret, done,
+				    "torture_smb2_connection");
+
+		op->conn = op->tree->session->transport->conn;
+		op->session = op->tree->session->smbXcli;
+		op->tcon = op->tree->smbXcli;
+
+		loops[i] = op;
+	}
+
+	for (i = 0; i < num_loops; i++) {
+		struct test_mkdir_visible_open *op = loops[i];
+
+		op->try = 1;
+		torture_comment(tctx, "%s:%s: try[%"PRIu64"] starting\n",
+				__func__, op->filename, op->try);
+		op->subreq = smb2cli_create_send(op,
+						 tctx->ev,
+						 op->conn,
+						 op->timeout_msec,
+						 op->session,
+						 op->tcon,
+						 op->filename,
+						 op->oplock_level,
+						 op->impersonation_level,
+						 op->desired_access,
+						 op->file_attributes,
+						 op->share_access,
+						 op->create_disposition,
+						 op->create_options,
+						 NULL);
+		torture_assert_not_null_goto(tctx, op->subreq,
+					     state->ok, done,
+					     "smb2cli_create_send");
+		tevent_req_set_callback(op->subreq,
+					test_mkdir_visible_open_retry,
+					op);
+		state->loops_running += 1;
+	}
+
+	torture_comment(tctx, "%s:%s: starting\n",
+			__func__, dop->filename);
+	dop->subreq = smb2cli_create_send(dop,
+					  tctx->ev,
+					  dop->conn,
+					  dop->timeout_msec,
+					  dop->session,
+					  dop->tcon,
+					  dop->filename,
+					  dop->oplock_level,
+					  dop->impersonation_level,
+					  dop->desired_access,
+					  dop->file_attributes,
+					  dop->share_access,
+					  dop->create_disposition,
+					  dop->create_options,
+					  NULL);
+	torture_assert_not_null_goto(tctx, dop->subreq,
+				     state->ok, done,
+				     "smb2cli_create_send");
+	tevent_req_set_callback(dop->subreq,
+				test_mkdir_visible_open_done,
+				dop);
+
+	ret = tevent_req_poll(dop->subreq, tctx->ev);
+	torture_assert_goto(tctx, ret, ret, done, "tevent_req_poll(dop)");
+	torture_assert_goto(tctx, dop->done, ret, done, "dop->done after dop");
+
+	torture_assert_goto(tctx, state->ok, ret, done, "state->ok after dop");
+
+	while (state->ok && state->loops_running > 0) {
+		int lret = tevent_loop_once(tctx->ev);
+		torture_assert_int_equal_goto(tctx, lret, 0,
+					      ret, done,
+					      "tevent_loop_once()");
+	}
+
+	torture_assert_goto(tctx, state->ok, ret, done, "state->ok after loop");
+	torture_assert_int_equal_goto(tctx, state->loops_running, 0,
+				      ret, done,
+				      "state->loops_running after loop");
+
+	for (i = 0; i < num_loops; i++) {
+		struct test_mkdir_visible_open *op = loops[i];
+
+		torture_assert_goto(tctx, op->done, ret, done,
+				    "op->done after loop");
+
+		torture_comment(tctx, "%s:%s: try[%"PRIu64"] checking...\n",
+				__func__, op->filename, op->try);
+
+		torture_assert_ntstatus_equal_goto(tctx,
+			op->status, NT_STATUS_ACCESS_DENIED,
+			ret, done, "smb2cli_create_recv");
+	}
+
+done:
+	TALLOC_FREE(state);
+	smb2_keepalive(tree->session->transport);
+	smb2_deltree(tree, base_dname);
+	smb2_keepalive(tree->session->transport);
+
+	return ret;
+}
+
+/*
   test directory creation with an initial allocation size > 0
 */
 static bool test_dir_alloc_size(struct torture_context *tctx,
@@ -3538,6 +3931,7 @@ struct torture_suite *torture_smb2_create_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "acldir", test_create_acl_dir);
 	torture_suite_add_1smb2_test(suite, "nulldacl", test_create_null_dacl);
 	torture_suite_add_1smb2_test(suite, "mkdir-dup", test_mkdir_dup);
+	torture_suite_add_1smb2_test(suite, "mkdir-visible", test_mkdir_visible);
 	torture_suite_add_1smb2_test(suite, "dir-alloc-size", test_dir_alloc_size);
 	torture_suite_add_1smb2_test(suite, "dosattr_tmp_dir", test_dosattr_tmp_dir);
 	torture_suite_add_1smb2_test(suite, "quota-fake-file", test_smb2_open_quota_fake_file);
