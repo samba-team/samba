@@ -1210,6 +1210,9 @@ class DCJoinContext(object):
         except WERRORError as e:
             if e.args[0] == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
                 name_found = False
+            else:
+                print(e)
+                raise
 
         if name_found:
             for rec in res.rec:
