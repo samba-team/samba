@@ -50,3 +50,28 @@ struct smb2_tree *smb2_tree_init(struct smb2_session *session,
 
 	return tree;
 }
+
+struct smb2_tree *smb2_tree_channel(struct smb2_tree *base_tree,
+				    TALLOC_CTX *parent_ctx, bool primary,
+				    struct smb2_session *session)
+{
+	struct smb2_tree *tree;
+
+	tree = talloc_zero(parent_ctx, struct smb2_tree);
+	if (!session) {
+		return NULL;
+	}
+	if (primary) {
+		tree->session = talloc_steal(tree, session);
+	} else {
+		tree->session = talloc_reference(tree, session);
+	}
+
+	tree->smbXcli = smbXcli_tcon_copy(tree, base_tree->smbXcli);
+	if (tree->smbXcli == NULL) {
+		talloc_free(tree);
+		return NULL;
+	}
+
+	return tree;
+}
