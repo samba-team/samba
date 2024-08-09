@@ -310,7 +310,7 @@ async fn main() -> ExitCode {
             client,
         )));
 
-        // Listen for incomming requests from PAM and NSS
+        // Listen for incoming requests from PAM and NSS
         let listener = match UnixListener::bind(sock_path) {
             Ok(listener) => listener,
             Err(e) => {
