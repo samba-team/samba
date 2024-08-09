@@ -1379,6 +1379,94 @@ out:
 	return ok;
 }
 
+static bool test_multichannel_notify_max_async_credits(
+	struct torture_context *tctx,
+	struct smb2_tree *tree1a)
+{
+	uint16_t max_async_credits = torture_setting_int(
+		tctx,
+		"maxasynccredits",
+		512 /* lpcfg_smb2_max_async_credits(tctx->lp_ctx) */);
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct smb2_transport *transport1a = tree1a->session->transport;
+	struct smbcli_options options = transport1a->options;
+	struct smb2_session *session1a = tree1a->session;
+	struct smb2_session *session1b = NULL;
+	struct smb2_tree *tree1b_base = NULL;
+	struct smb2_transport *transport1b = NULL;
+	struct smb2_tree *tree1b = NULL;
+	struct smb2_tree *trees[2] = {};
+	struct smb2_handle dh = {{}};
+	bool ok = false;
+	NTSTATUS status;
+	uint16_t max_credits = max_async_credits + 2;
+
+	smb2_transport_credits_ask_num(transport1a, max_credits);
+
+	/* Cleanup TESTDIR */
+	smb2_deltree(tree1a, TESTDIR);
+
+	/* Create TESTDIR */
+	status = torture_smb2_testdir(tree1a, TESTDIR, &dh);
+	torture_assert_ntstatus_ok_goto(
+		tctx, status, ok, out, "smb2_create failed");
+	status = smb2_util_close(tree1a, dh);
+	torture_assert_ntstatus_ok_goto(
+		tctx, status, ok, out, "smb2_util_close failed");
+
+	/* Create a new connection with bigger max_credits value */
+	options.max_credits = max_credits;
+	/* Connect multichannel */
+	options.only_negprot = true;
+
+	status = smb2_connect(tree1a,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      samba_cmdline_get_creds(),
+			      &tree1b_base,
+			      tctx->ev,
+			      &options,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	torture_assert_ntstatus_ok_goto(
+		tctx, status, ok, out, "smb2_connect failed");
+	transport1b = tree1b_base->session->transport;
+
+	session1b = smb2_session_channel(transport1b,
+					 lpcfg_gensec_settings(tctx,
+							       tctx->lp_ctx),
+					 tree1b_base,
+					 session1a);
+	torture_assert_not_null_goto(
+		tctx, session1b, ok, out, "smb2_session_channel failed");
+
+	status = smb2_session_setup_spnego(session1b,
+					   samba_cmdline_get_creds(),
+					   0);
+	torture_assert_ntstatus_ok_goto(
+		tctx, status, ok, out, "smb2_session_setup_spnego failed");
+
+	tree1b = smb2_tree_channel(tree1a, tree1b_base, false, session1b);
+	torture_assert_not_null_goto(
+		tctx, tree1b, ok, out, "smb2_tree_channel failed");
+
+	trees[0] = tree1a;
+	trees[1] = tree1b;
+
+	ok = test_notify_max_async_credits(tctx,
+					   trees,
+					   ARRAY_SIZE(trees),
+					   max_credits);
+out:
+	/* Cleanup TESTDIR */
+	smb2_deltree(tree1a, TESTDIR);
+
+	return ok;
+}
+
 struct torture_suite *torture_smb2_crediting_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "credits");
@@ -1403,6 +1491,9 @@ struct torture_suite *torture_smb2_crediting_init(TALLOC_CTX *ctx)
 	torture_suite_add_2smb2_test(suite,
 				     "2conn_notify_max_async_credits",
 				     test_2conn_notify_max_async_credits);
+	torture_suite_add_1smb2_test(suite,
+				     "multichannel_max_async_credits",
+				     test_multichannel_notify_max_async_credits);
 
 	suite->description = talloc_strdup(suite, "SMB2-CREDITS tests");
 
