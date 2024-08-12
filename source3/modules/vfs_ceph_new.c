@@ -757,12 +757,13 @@ static int vfs_ceph_ll_lookup(const struct vfs_handle_struct *handle,
 	return 0;
 }
 
-static int vfs_ceph_ll_lookupat(const struct vfs_handle_struct *handle,
-				const struct vfs_ceph_fh *parent_fh,
-				const char *name,
-				struct vfs_ceph_iref *iref)
+static int vfs_ceph_ll_lookup2(const struct vfs_handle_struct *handle,
+			       const struct vfs_ceph_fh *parent_fh,
+			       const char *name,
+			       unsigned want,
+			       struct vfs_ceph_iref *iref,
+			       struct ceph_statx *stx)
 {
-	struct ceph_statx stx = {.stx_ino = 0};
 	struct Inode *inode = NULL;
 	int ret = -1;
 
@@ -773,17 +774,53 @@ static int vfs_ceph_ll_lookupat(const struct vfs_handle_struct *handle,
 			     parent_fh->iref.inode,
 			     name,
 			     &inode,
-			     &stx,
-			     CEPH_STATX_INO,
+			     stx,
+			     want | CEPH_STATX_INO,
 			     0,
 			     parent_fh->uperm);
 	if (ret != 0) {
 		return ret;
 	}
 	iref->inode = inode;
-	iref->ino = stx.stx_ino;
+	iref->ino = stx->stx_ino;
 	iref->owner = true;
 	return 0;
+}
+
+static int vfs_ceph_ll_lookupat(const struct vfs_handle_struct *handle,
+				const struct vfs_ceph_fh *parent_fh,
+				const char *name,
+				struct vfs_ceph_iref *iref)
+{
+	struct ceph_statx stx = {.stx_ino = 0};
+
+	return vfs_ceph_ll_lookup2(handle,
+				   parent_fh,
+				   name,
+				   CEPH_STATX_INO,
+				   iref,
+				   &stx);
+}
+
+static int vfs_ceph_ll_lookupat2(const struct vfs_handle_struct *handle,
+				 const struct vfs_ceph_fh *parent_fh,
+				 const char *name,
+				 struct vfs_ceph_iref *iref,
+				 SMB_STRUCT_STAT *st)
+{
+	struct ceph_statx stx = {.stx_ino = 0};
+	int ret;
+
+	ret = vfs_ceph_ll_lookup2(handle,
+				  parent_fh,
+				  name,
+				  CEPH_STATX_ALL_STATS,
+				  iref,
+				  &stx);
+	if (ret == 0) {
+		smb_stat_from_ceph_statx(st, &stx);
+	}
+	return ret;
 }
 
 static int vfs_ceph_ll_open(const struct vfs_handle_struct *handle,
@@ -1967,44 +2004,6 @@ static int vfs_ceph_fsync_recv(struct tevent_req *req,
 	return 0;
 }
 
-static void init_stat_ex_from_ceph_statx(struct stat_ex *dst,
-					 const struct ceph_statx *stx)
-{
-	DBG_DEBUG("[CEPH]\tstx = {dev = %llx, ino = %llu, mode = 0x%x, "
-		  "nlink = %llu, uid = %d, gid = %d, rdev = %llx, size = %llu, "
-		  "blksize = %llu, blocks = %llu, atime = %llu, mtime = %llu, "
-		  "ctime = %llu, btime = %llu}\n",
-		  llu(stx->stx_dev), llu(stx->stx_ino), stx->stx_mode,
-		  llu(stx->stx_nlink), stx->stx_uid, stx->stx_gid,
-		  llu(stx->stx_rdev), llu(stx->stx_size), llu(stx->stx_blksize),
-		  llu(stx->stx_blocks), llu(stx->stx_atime.tv_sec),
-		  llu(stx->stx_mtime.tv_sec), llu(stx->stx_ctime.tv_sec),
-		  llu(stx->stx_btime.tv_sec));
-
-	if ((stx->stx_mask & SAMBA_STATX_ATTR_MASK) != SAMBA_STATX_ATTR_MASK) {
-		DBG_WARNING("%s: stx->stx_mask is incorrect "
-			    "(wanted %x, got %x)\n",
-			    __func__,
-			    SAMBA_STATX_ATTR_MASK,
-			    stx->stx_mask);
-	}
-
-	dst->st_ex_dev = stx->stx_dev;
-	dst->st_ex_rdev = stx->stx_rdev;
-	dst->st_ex_ino = stx->stx_ino;
-	dst->st_ex_mode = stx->stx_mode;
-	dst->st_ex_uid = stx->stx_uid;
-	dst->st_ex_gid = stx->stx_gid;
-	dst->st_ex_size = stx->stx_size;
-	dst->st_ex_nlink = stx->stx_nlink;
-	dst->st_ex_atime = stx->stx_atime;
-	dst->st_ex_btime = stx->stx_btime;
-	dst->st_ex_ctime = stx->stx_ctime;
-	dst->st_ex_mtime = stx->stx_mtime;
-	dst->st_ex_blksize = stx->stx_blksize;
-	dst->st_ex_blocks = stx->stx_blocks;
-}
-
 static int vfs_ceph_stat(struct vfs_handle_struct *handle,
 			struct smb_filename *smb_fname)
 {
@@ -2862,12 +2861,12 @@ static NTSTATUS vfs_ceph_create_dfs_pathat(struct vfs_handle_struct *handle,
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	int ret;
 	char *msdfs_link = NULL;
-	struct smb_filename *full_fname = NULL;
+	struct vfs_ceph_fh *dircfh = NULL;
+	struct vfs_ceph_iref iref = {0};
 
-	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						dirfsp,
-						smb_fname);
-	if (full_fname == NULL) {
+	ret = vfs_ceph_fetch_fh(handle, dirfsp, &dircfh);
+	if (ret != 0) {
+		status = map_nt_error_from_unix(-ret);
 		goto out;
 	}
 
@@ -2879,20 +2878,20 @@ static NTSTATUS vfs_ceph_create_dfs_pathat(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
-	ret = ceph_symlink(cmount_of(handle),
-			   msdfs_link,
-			   full_fname->base_name);
+	ret = vfs_ceph_ll_symlinkat(handle,
+				    dircfh,
+				    smb_fname->base_name,
+				    msdfs_link,
+				    &iref);
 	if (ret == 0) {
+		vfs_ceph_iput(handle, &iref);
 		status = NT_STATUS_OK;
 	} else {
 		status = map_nt_error_from_unix(-ret);
-        }
+	}
 
-  out:
-
-	DBG_DEBUG("[CEPH] create_dfs_pathat(%s) = %s\n",
-			full_fname != NULL ? full_fname->base_name : "",
-			nt_errstr(status));
+out:
+	DBG_DEBUG("[CEPH] create_dfs_pathat(...) = %s\n", nt_errstr(status));
 
 	TALLOC_FREE(frame);
 	return status;
@@ -2915,22 +2914,23 @@ static NTSTATUS vfs_ceph_read_dfs_pathat(struct vfs_handle_struct *handle,
 				size_t *preferral_count)
 {
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
-	size_t bufsize;
+	size_t bufsize = 0;
 	char *link_target = NULL;
-	int referral_len;
+	int referral_len = 0;
 	bool ok;
 #if defined(HAVE_BROKEN_READLINK)
 	char link_target_buf[PATH_MAX];
 #else
 	char link_target_buf[7];
 #endif
-	struct ceph_statx stx = { 0 };
-	struct smb_filename *full_fname = NULL;
+	SMB_STRUCT_STAT st = {0};
+	struct vfs_ceph_fh *dircfh = NULL;
+	struct vfs_ceph_iref iref = {0};
 	int ret;
 
 	if (is_named_stream(smb_fname)) {
 		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		goto err;
+		goto out;
 	}
 
 	if (ppreflist == NULL && preferral_count == NULL) {
@@ -2944,85 +2944,80 @@ static NTSTATUS vfs_ceph_read_dfs_pathat(struct vfs_handle_struct *handle,
 		bufsize = PATH_MAX;
 		link_target = talloc_array(mem_ctx, char, bufsize);
 		if (!link_target) {
-			goto err;
+			goto out;
 		}
 	}
 
-	full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-						  dirfsp,
-						  smb_fname);
-	if (full_fname == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err;
-	}
-
-	ret = ceph_statx(cmount_of(handle),
-			 full_fname->base_name,
-			 &stx,
-			 SAMBA_STATX_ATTR_MASK,
-			 AT_SYMLINK_NOFOLLOW);
-	if (ret < 0) {
+	ret = vfs_ceph_fetch_fh(handle, dirfsp, &dircfh);
+	if (ret != 0) {
 		status = map_nt_error_from_unix(-ret);
-		goto err;
+		goto out;
 	}
 
-	referral_len = ceph_readlink(cmount_of(handle),
-				     full_fname->base_name,
+	ret = vfs_ceph_ll_lookupat2(handle,
+				    dircfh,
+				    smb_fname->base_name,
+				    &iref,
+				    &st);
+	if (ret != 0) {
+		status = map_nt_error_from_unix(-ret);
+		goto out;
+	}
+
+	if (!S_ISLNK(st.st_ex_mode)) {
+		DBG_INFO("%s is not a link.\n", smb_fname->base_name);
+		status = NT_STATUS_OBJECT_TYPE_MISMATCH;
+		goto out;
+	}
+
+	ret = vfs_ceph_ll_readlinkat(handle,
+				     dircfh,
+				     &iref,
 				     link_target,
 				     bufsize - 1);
-	if (referral_len < 0) {
-		/* ceph errors are -errno. */
-		if (-referral_len == EINVAL) {
-			DBG_INFO("%s is not a link.\n",
-				full_fname->base_name);
-			status = NT_STATUS_OBJECT_TYPE_MISMATCH;
-		} else {
-	                status = map_nt_error_from_unix(-referral_len);
-			DBG_ERR("Error reading "
-				"msdfs link %s: %s\n",
-				full_fname->base_name,
-			strerror(errno));
-		}
-                goto err;
+	if (ret < 0) {
+		DBG_ERR("Error reading msdfs link %s: %d\n",
+			smb_fname->base_name, ret);
+		status = map_nt_error_from_unix(-ret);
+		goto out;
 	}
+
+	referral_len = ret;
 	link_target[referral_len] = '\0';
+	DBG_INFO("%s -> %s\n", smb_fname->base_name, link_target);
 
-        DBG_INFO("%s -> %s\n",
-                        full_fname->base_name,
-                        link_target);
+	if (!strnequal(link_target, "msdfs:", 6)) {
+		status = NT_STATUS_OBJECT_TYPE_MISMATCH;
+		goto out;
+	}
 
-        if (!strnequal(link_target, "msdfs:", 6)) {
-                status = NT_STATUS_OBJECT_TYPE_MISMATCH;
-                goto err;
-        }
+	status = NT_STATUS_OK;
+	if (ppreflist == NULL && preferral_count == NULL) {
+		/* Early return for checking if this is a DFS link. */
+		goto out;
+	}
 
-        if (ppreflist == NULL && preferral_count == NULL) {
-                /* Early return for checking if this is a DFS link. */
-		TALLOC_FREE(full_fname);
-		init_stat_ex_from_ceph_statx(&smb_fname->st, &stx);
-                return NT_STATUS_OK;
-        }
+	ok = parse_msdfs_symlink(mem_ctx,
+			lp_msdfs_shuffle_referrals(SNUM(handle->conn)),
+			link_target,
+			ppreflist,
+			preferral_count);
 
-        ok = parse_msdfs_symlink(mem_ctx,
-                        lp_msdfs_shuffle_referrals(SNUM(handle->conn)),
-                        link_target,
-                        ppreflist,
-                        preferral_count);
+	if (!ok) {
+		status = NT_STATUS_NO_MEMORY;
+	}
 
-        if (ok) {
-		init_stat_ex_from_ceph_statx(&smb_fname->st, &stx);
-                status = NT_STATUS_OK;
-        } else {
-                status = NT_STATUS_NO_MEMORY;
-        }
+out:
+	DBG_DEBUG("[CEPH] read_dfs_pathat(...) = %s\n", nt_errstr(status));
 
-  err:
-
-        if (link_target != link_target_buf) {
-                TALLOC_FREE(link_target);
-        }
-	TALLOC_FREE(full_fname);
-        return status;
+	vfs_ceph_iput(handle, &iref);
+	if ((link_target != NULL) && (link_target != link_target_buf)) {
+		TALLOC_FREE(link_target);
+	}
+	if (NT_STATUS_IS_OK(status)) {
+		memcpy(&smb_fname->st, &st, sizeof(smb_fname->st));
+	}
+	return status;
 }
 
 static struct vfs_fn_pointers ceph_new_fns = {
