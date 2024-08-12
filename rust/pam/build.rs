@@ -6,4 +6,5 @@ fn main() {
     let _ = pkg_config::Config::new()
         .atleast_version("1.3.0")
         .probe("pam");
+    println!("cargo:rustc-env=LD_LIBRARY_PATH=../../bin/shared:../../bin/shared/private/");
 }

@@ -14,6 +14,7 @@ fn main() {
         .clang_arg("-Doffset_t=loff_t")
         .clang_arg("-I../../bin/default")
         .clang_arg("-I../../lib/talloc")
+        .generate_comments(false)
         .clang_arg("-includestdint.h")
         .header("../../lib/param/param.h")
         .header("../../lib/param/loadparm.h")
@@ -22,6 +23,9 @@ fn main() {
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()
         .expect("Unable to generate bindings");
+    println!("cargo:rerun-if-changed=../../lib/param/param.h");
+    println!("cargo:rerun-if-changed=../../lib/param/loadparm.h");
+    println!("cargo:rerun-if-changed=../../source3/param/loadparm.h");
     println!(
         "cargo:rerun-if-changed=../../bin/default/lib/param/param_functions.h"
     );

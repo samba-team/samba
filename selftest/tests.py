@@ -615,3 +615,6 @@ plantestsuite("samba.unittests.claim_conversion", "none",
               [os.path.join(bindir(), "test_claim_conversion")])
 plantestsuite("samba.unittests.cmdline", "none",
               [os.path.join(bindir(), "test_cmdline")])
+
+# Run the Rust cargo tests
+planpythontestsuite("none", "samba.tests.rust")

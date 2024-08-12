@@ -29,4 +29,5 @@ fn main() {
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
     println!("cargo:rustc-link-lib=utf8proc");
+    println!("cargo:rustc-env=LD_LIBRARY_PATH=../../bin/shared/private/");
 }

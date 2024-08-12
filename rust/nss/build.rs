@@ -14,4 +14,5 @@ fn main() {
         "cargo:rustc-env=CARGO_PKG_VERSION_PATCH={}",
         version::SAMBA_VERSION_RELEASE
     );
+    println!("cargo:rustc-env=LD_LIBRARY_PATH=../../bin/shared:../../bin/shared/private/");
 }
