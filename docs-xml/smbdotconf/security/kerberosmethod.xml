@@ -35,6 +35,12 @@
 	  <smbconfoption name="dedicated keytab file"/> must be set to
 	  specify the location of the keytab file.
 	</para>
+
+	<para>
+	Suggested configuration is to use the default value 'secrets only' together with the
+	<smbconfoption name="sync machine password to keytab"/> option.
+	</para>
+
 </description>
 <related>dedicated keytab file</related>
 <value type="default">default</value>
