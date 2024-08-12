@@ -1,6 +1,20 @@
 #!/usr/bin/env python
 
 if conf.env.enable_himmelblau:
-    bld.SAMBA_RUST_BINARY('himmelblaud', 'himmelblaud', 'himmelblaud/src/main.rs param/src/lib.rs chelps/src/lib.rs dbg/src/lib.rs ntstatus_gen/src/lib.rs sock/src/lib.rs tdb/src/lib.rs version/src/lib.rs')
-    bld.SAMBA_RUST_LIBRARY('nss', 'libnss_himmelblau.so', 'nss/src/lib.rs sock/src/lib.rs ntstatus_gen/src/lib.rs param/src/lib.rs version/src/lib.rs')
-    bld.SAMBA_RUST_LIBRARY('pam', 'libpam_himmelblau.so', 'pam/src/lib.rs pam/src/pam/constants.rs pam/src/pam/conv.rs pam/src/pam/items.rs pam/src/pam/items.rs pam/src/pam/macros.rs pam/src/pam/mod.rs pam/src/pam/module.rs sock/src/lib.rs ntstatus_gen/src/lib.rs param/src/lib.rs version/src/lib.rs')
+    bld.SAMBA_RUST_BINARY('himmelblaud', 'himmelblaud',
+                          ['param',
+                           'chelps',
+                           'dbg',
+                           'ntstatus_gen',
+                           'sock',
+                           'tdb',
+                           'version',
+                           'idmap'])
+    bld.SAMBA_RUST_LIBRARY('nss', 'libnss_himmelblau.so', ['sock',
+                                                           'ntstatus_gen',
+                                                           'param',
+                                                           'version'])
+    bld.SAMBA_RUST_LIBRARY('pam', 'libpam_himmelblau.so', ['sock',
+                                                           'chelps',
+                                                           'param',
+                                                           'version'])
