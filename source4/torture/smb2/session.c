@@ -1317,6 +1317,7 @@ static bool test_session_expire2i(struct torture_context *tctx,
 	char fname[256];
 	struct smb2_handle dh;
 	struct smb2_handle dh2;
+	struct smb2_handle relhandle = { .data = { UINT64_MAX, UINT64_MAX } };
 	struct smb2_handle _h1;
 	struct smb2_handle *h1 = NULL;
 	struct smb2_create io1;
@@ -1330,7 +1331,10 @@ static bool test_session_expire2i(struct torture_context *tctx,
 	struct smb2_ioctl ctl;
 	struct smb2_break oack;
 	struct smb2_lease_break_ack lack;
+	struct smb2_create cio;
 	struct smb2_find fnd;
+	struct smb2_close cl;
+	struct smb2_request *reqs[3] = { NULL, };
 	union smb_search_data *d = NULL;
 	unsigned int count;
 	struct smb2_request *req = NULL;
@@ -1560,6 +1564,58 @@ static bool test_session_expire2i(struct torture_context *tctx,
 	torture_assert_ntstatus_equal_goto(tctx, status,
 				NT_STATUS_NETWORK_SESSION_EXPIRED,
 				ret, done, "smb2_find_level "
+				"returned unexpected status");
+
+	/* Now do a compound open + query directory + close handle. */
+	smb2_transport_compound_start(tree->session->transport, 3);
+	torture_comment(tctx, "Compound: Open+QueryDirectory+Close => EXPIRED\n");
+
+	ZERO_STRUCT(cio);
+	cio.in.oplock_level = 0;
+	cio.in.desired_access = SEC_STD_SYNCHRONIZE | SEC_DIR_READ_ATTRIBUTE | SEC_DIR_LIST;
+	cio.in.file_attributes   = 0;
+	cio.in.create_disposition = NTCREATEX_DISP_OPEN;
+	cio.in.share_access = NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_DELETE;
+	cio.in.create_options = NTCREATEX_OPTIONS_ASYNC_ALERT;
+	cio.in.fname = "";
+
+	reqs[0] = smb2_create_send(tree, &cio);
+	torture_assert_not_null_goto(tctx, reqs[0], ret, done,
+		"smb2_create_send failed\n");
+
+	smb2_transport_compound_set_related(tree->session->transport, true);
+
+	ZERO_STRUCT(fnd);
+	fnd.in.file.handle	= relhandle;
+	fnd.in.pattern		= "*";
+	fnd.in.continue_flags	= SMB2_CONTINUE_FLAG_SINGLE;
+	fnd.in.max_response_size= 0x100;
+	fnd.in.level		= SMB2_FIND_BOTH_DIRECTORY_INFO;
+
+	reqs[1] = smb2_find_send(tree, &fnd);
+	torture_assert_not_null_goto(tctx, reqs[1], ret, done,
+		"smb2_find_send failed\n");
+
+	ZERO_STRUCT(cl);
+	cl.in.file.handle = relhandle;
+	reqs[2] = smb2_close_send(tree, &cl);
+	torture_assert_not_null_goto(tctx, reqs[2], ret, done,
+		"smb2_close_send failed\n");
+
+	status = smb2_create_recv(reqs[0], tree, &cio);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+				NT_STATUS_NETWORK_SESSION_EXPIRED,
+				ret, done, "smb2_create "
+				"returned unexpected status");
+	status = smb2_find_recv(reqs[1], tree, &fnd);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+				NT_STATUS_NETWORK_SESSION_EXPIRED,
+				ret, done, "smb2_find "
+				"returned unexpected status");
+	status = smb2_close_recv(reqs[2], &cl);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+				NT_STATUS_NETWORK_SESSION_EXPIRED,
+				ret, done, "smb2_close "
 				"returned unexpected status");
 
 	torture_comment(tctx, "1st notify => CANCEL\n");
