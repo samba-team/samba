@@ -7,6 +7,36 @@ def SAMBA_CHECK_RUST(conf):
     conf.find_program('cargo', var='CARGO',
                       mandatory=not conf.env.disable_rust)
 
+def vendor_sources(bld, enabled=True):
+    # force-disable when we can't build rust modules, so
+    # every single call doesn't need to pass this in.
+    if bld.env.disable_rust:
+        enabled = False
+
+    # Save time, no need to build rust when fuzzing
+    if bld.env.enable_fuzzing:
+        enabled = False
+
+    # Determine the vendor directory
+    vendor = bld.path.find_or_declare('./vendor')
+    # WAF dependencies can only be explicit files, not directories, so we touch
+    # a file to indicate vendoring has been completed.
+    vendor_exists = '%s.exists' % vendor
+    # Locate the source manifest file
+    source_manifest = bld.path.find_or_declare('../../../rust/Cargo.toml')
+
+    rule = ['${CARGO}', 'vendor',
+            '--manifest-path=${SRC[0].abspath(env)}',
+            '%s' % vendor,
+            '&& touch %s' % vendor_exists]
+    bld.SAMBA_GENERATOR('vendor.exists',
+                        ' '.join(rule),
+                        source=source_manifest,
+                        target=vendor_exists,
+                        group='final',
+                        enabled=enabled)
+Build.BuildContext.vendor_sources = vendor_sources
+
 def find_sources(source_dir, dep_crate):
     sources = []
     for root, dirs, files in os.walk(os.path.join(source_dir, dep_crate)):
@@ -50,7 +80,8 @@ def SAMBA_RUST(bld, rust_subdir, target_name, dep_crates=[], enabled=True):
             release_flag]
     bld.SAMBA_GENERATOR(target_name,
                         ' '.join(rule),
-                        source='%s/Cargo.toml %s' % (rust_subdir, ' '.join(sources)),
+                        source='%s/Cargo.toml vendor.exists %s' % \
+                                (rust_subdir, ' '.join(sources)),
                         target=target,
                         group='final',
                         enabled=enabled)

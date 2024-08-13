@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+bld.vendor_sources()
+
 if conf.env.enable_himmelblau:
     bld.SAMBA_RUST_BINARY('himmelblaud', 'himmelblaud',
                           ['param',
