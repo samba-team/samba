@@ -49,3 +49,85 @@ pub unsafe fn string_free(input: *mut c_char) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ffi::CString;
+    use std::ptr;
+
+    #[test]
+    fn test_wrap_c_char_non_null() {
+        let original = "Hello, world!";
+        let c_string = CString::new(original).expect("CString::new failed");
+        let c_ptr = c_string.as_ptr();
+
+        let result = unsafe { wrap_c_char(c_ptr) };
+        assert_eq!(result, Some(original.to_string()));
+    }
+
+    #[test]
+    fn test_wrap_c_char_null() {
+        let result = unsafe { wrap_c_char(ptr::null()) };
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_wrap_c_char_invalid_utf8() {
+        let invalid_utf8 = vec![0xff, 0xff, 0xff, 0xff];
+        let c_string = CString::new(invalid_utf8).expect("CString::new failed");
+        let c_ptr = c_string.as_ptr();
+
+        let result = unsafe { wrap_c_char(c_ptr) };
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_wrap_string() {
+        let original = "Hello, world!";
+        let c_ptr = wrap_string(original);
+
+        let c_str = unsafe { CStr::from_ptr(c_ptr) };
+        let result = c_str.to_str().expect("CStr::to_str failed");
+
+        assert_eq!(result, original);
+
+        // Clean up the allocated memory
+        unsafe { string_free(c_ptr) };
+    }
+
+    #[test]
+    fn test_wrap_string_empty() {
+        let original = "";
+        let c_ptr = wrap_string(original);
+
+        let c_str = unsafe { CStr::from_ptr(c_ptr) };
+        let result = c_str.to_str().expect("CStr::to_str failed");
+
+        assert_eq!(result, original);
+
+        // Clean up the allocated memory
+        unsafe { string_free(c_ptr) };
+    }
+
+    #[test]
+    fn test_wrap_string_null_pointer() {
+        let c_ptr = wrap_string("\0");
+        assert!(c_ptr.is_null());
+    }
+
+    #[test]
+    fn test_string_free_null() {
+        unsafe { string_free(ptr::null_mut()) };
+        // No assertion needed, just ensuring no crash occurs
+    }
+
+    #[test]
+    fn test_string_free_non_null() {
+        let original = "Hello, world!";
+        let c_ptr = wrap_string(original);
+
+        unsafe { string_free(c_ptr) };
+        // No assertion needed, just ensuring the memory was freed without a crash
+    }
+}
