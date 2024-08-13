@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.21.  This is *not*
+This is the second release candidate of Samba 4.21.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -268,6 +268,40 @@ smb.conf changes
   hide files                              Added per-user and per-group hides
   sync machine password to keytab         keytabs
   sync machine password script            script
+
+
+CHANGES SINCE 4.21.0rc1
+=======================
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15673: --version-* options are still not ergonomic, and they reject
+     tilde characters.
+
+o  Anoop C S <anoopcs@samba.org>
+   * BUG 15686: Add new vfs_ceph module (based on low level API)
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15673: --version-* options are still not ergonomic, and they reject
+     tilde characters.
+
+o  Jo Sutton <josutton@catalyst.net.nz>
+   * BUG 15690: ldb_version.h is missing from ldb public library
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15689: Can not add/delete special keys to keytab for nfs, cifs, http etc
+
+o  Shachar Sharon <ssharon@redhat.com>
+   * BUG 15686: Add new vfs_ceph module (based on low level API)
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15673: --version-* options are still not ergonomic, and they reject
+     tilde characters.
+   * BUG 15687: undefined reference to winbind_lookup_name_ex
+   * BUG 15688: per user veto and hide file syntax is to complex
+   * BUG 15689: Can not add/delete special keys to keytab for nfs, cifs, http etc
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15688: per user veto and hide file syntax is to complex
 
 
 KNOWN ISSUES
