@@ -61,12 +61,18 @@ pub fn setup_logging(prog_name: &str, new_logtype: ffi::debug_logtype) {
     }
 }
 
+pub fn dbgflush() {
+    unsafe {
+        ffi::dbgflush();
+    }
+}
+
 #[macro_export]
 macro_rules! debuglevel_set {
     ($level:expr) => {{
         unsafe {
-            dbg::ffi::debuglevel_set_class(
-                dbg::ffi::DBGC_ALL as usize,
+            $crate::ffi::debuglevel_set_class(
+                $crate::ffi::DBGC_ALL as usize,
                 $level as i32,
             )
         }
@@ -92,23 +98,23 @@ macro_rules! function {
 #[macro_export]
 macro_rules! DBG_PREFIX {
     ($level:expr $(, $arg:expr)* $(,)?) => {{
-        if $level <= dbg::ffi::MAX_DEBUG_LEVEL {
+        if $level <= $crate::ffi::MAX_DEBUG_LEVEL {
             let location = format!("{}:{}", file!(), line!());
             let location_cstr = chelps::wrap_string(&location);
-            let function = dbg::function!();
+            let function = $crate::function!();
             let function_msg = format!("{}: ", function);
             let function_cstr = chelps::wrap_string(function);
             let function_msg_cstr = chelps::wrap_string(&function_msg);
             let msg = format!($($arg),*);
             let msg_cstr = chelps::wrap_string(&msg);
             unsafe {
-                let _ = dbg::ffi::debuglevel_get_class(dbg::ffi::DBGC_CLASS as usize) >= ($level as i32)
-                    && dbg::ffi::dbghdrclass($level as i32,
-			    dbg::ffi::DBGC_CLASS as i32,
+                let _ = $crate::ffi::debuglevel_get_class($crate::ffi::DBGC_CLASS as usize) >= ($level as i32)
+                    && $crate::ffi::dbghdrclass($level as i32,
+			    $crate::ffi::DBGC_CLASS as i32,
 			    location_cstr,
 			    function_cstr)
-                    && dbg::ffi::dbgtext(function_msg_cstr)
-                    && dbg::ffi::dbgtext(msg_cstr);
+                    && $crate::ffi::dbgtext(function_msg_cstr)
+                    && $crate::ffi::dbgtext(msg_cstr);
                 chelps::string_free(location_cstr);
                 chelps::string_free(function_cstr);
                 chelps::string_free(function_msg_cstr);
@@ -121,34 +127,105 @@ macro_rules! DBG_PREFIX {
 #[macro_export]
 macro_rules! DBG_ERR {
     ($msg:expr $(, $arg:expr)* $(,)?) => {{
-        dbg::DBG_PREFIX!(dbg::ffi::DBGLVL_ERR, $msg, $($arg),*)
+        $crate::DBG_PREFIX!($crate::ffi::DBGLVL_ERR, $msg, $($arg),*)
     }}
 }
 
 #[macro_export]
 macro_rules! DBG_WARNING {
     ($msg:expr $(, $arg:expr)* $(,)?) => {{
-        dbg::DBG_PREFIX!(dbg::ffi::DBGLVL_WARNING, $msg, $($arg),*)
+        $crate::DBG_PREFIX!($crate::ffi::DBGLVL_WARNING, $msg, $($arg),*)
     }}
 }
 
 #[macro_export]
 macro_rules! DBG_NOTICE {
     ($msg:expr $(, $arg:expr)* $(,)?) => {{
-        dbg::DBG_PREFIX!(dbg::ffi::DBGLVL_NOTICE, $msg, $($arg),*)
+        $crate::DBG_PREFIX!($crate::ffi::DBGLVL_NOTICE, $msg, $($arg),*)
     }}
 }
 
 #[macro_export]
 macro_rules! DBG_INFO {
     ($msg:expr $(, $arg:expr)* $(,)?) => {{
-        dbg::DBG_PREFIX!(dbg::ffi::DBGLVL_INFO, $msg, $($arg),*)
+        $crate::DBG_PREFIX!($crate::ffi::DBGLVL_INFO, $msg, $($arg),*)
     }}
 }
 
 #[macro_export]
 macro_rules! DBG_DEBUG {
     ($msg:expr $(, $arg:expr)* $(,)?) => {{
-        dbg::DBG_PREFIX!(dbg::ffi::DBGLVL_DEBUG, $msg, $($arg),*)
+        $crate::DBG_PREFIX!($crate::ffi::DBGLVL_DEBUG, $msg, $($arg),*)
     }}
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use paste::paste;
+    use std::fs::File;
+    use std::io::Read;
+    use tempfile::NamedTempFile;
+
+    #[test]
+    fn test_debug_constants() {
+        assert_eq!(MAX_DEBUG_LEVEL, ffi::MAX_DEBUG_LEVEL);
+        assert_eq!(DBGLVL_ERR, ffi::DBGLVL_ERR);
+        assert_eq!(DBGLVL_WARNING, ffi::DBGLVL_WARNING);
+        assert_eq!(DBGLVL_NOTICE, ffi::DBGLVL_NOTICE);
+        assert_eq!(DBGLVL_INFO, ffi::DBGLVL_INFO);
+        assert_eq!(DBGLVL_DEBUG, ffi::DBGLVL_DEBUG);
+
+        assert_eq!(
+            DEBUG_DEFAULT_STDERR,
+            ffi::debug_logtype_DEBUG_DEFAULT_STDERR
+        );
+        assert_eq!(
+            DEBUG_DEFAULT_STDOUT,
+            ffi::debug_logtype_DEBUG_DEFAULT_STDOUT
+        );
+        assert_eq!(DEBUG_FILE, ffi::debug_logtype_DEBUG_FILE);
+        assert_eq!(DEBUG_STDOUT, ffi::debug_logtype_DEBUG_STDOUT);
+        assert_eq!(DEBUG_STDERR, ffi::debug_logtype_DEBUG_STDERR);
+        assert_eq!(DEBUG_CALLBACK, ffi::debug_logtype_DEBUG_CALLBACK);
+    }
+
+    macro_rules! test_dbg_macro {
+        ($level:ident) => {
+            paste! {
+                #[test]
+                fn [<test_dbg_ $level:lower _macro>]() {
+                    let logfile = NamedTempFile::new().expect("Failed to create temporary file");
+                    let logfile = logfile.path().to_str().unwrap();
+                    setup_logging("test_program", DEBUG_FILE);
+                    debug_set_logfile(logfile);
+
+                    let logfile_output = concat!("This is a ", stringify!($level), " message");
+
+                    debuglevel_set!([<DBGLVL_ $level:upper>]);
+
+                    [<DBG_ $level:upper>]!("{}\n", logfile_output);
+                    dbgflush();
+
+                    let mut file = File::open(logfile).expect("Failed to open logfile");
+                    let mut logfile_contents = String::new();
+                    file.read_to_string(&mut logfile_contents)
+                        .expect("Failed to read logfile");
+                    assert!(
+                        logfile_contents.contains(logfile_output),
+                        "Test data missing from logfile: {}",
+                        logfile_contents
+                    );
+                }
+            }
+        };
+    }
+
+    test_dbg_macro!(DEBUG);
+    // Multiple re-inits of the debug env cause it to fail, so we can't
+    // reliably test all of these in one go.
+    //test_dbg_macro!(INFO);
+    //test_dbg_macro!(NOTICE);
+    //test_dbg_macro!(WARNING);
+    //test_dbg_macro!(ERR);
 }

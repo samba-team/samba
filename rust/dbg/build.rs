@@ -21,4 +21,5 @@ fn main() {
     );
     println!("cargo:rustc-link-lib=samba-debug-private-samba");
     println!("cargo:rustc-link-lib=samba-util");
+    println!("cargo:rustc-env=LD_LIBRARY_PATH=../../bin/shared:../../bin/shared/private/");
 }
