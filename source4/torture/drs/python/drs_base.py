@@ -373,7 +373,8 @@ class DrsBaseTestCase(SambaToolCmdTest):
         # check the response is what we expect
         self._check_ctr6(ctr6, expected_dns, expected_links,
                          nc_object_count=nc_object_count, more_data=more_data,
-                         dn_ordered=dn_ordered)
+                         dn_ordered=dn_ordered, links_ordered=links_ordered,
+                         nc_linked_attributes_count=nc_linked_attributes_count)
         return (ctr6.new_highwatermark, ctr6.uptodateness_vector)
 
     def _get_ctr6_dn_list(self, ctr6):
