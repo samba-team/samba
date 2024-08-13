@@ -20,11 +20,12 @@
 
 """Cargo tests for Rust sources"""
 
-from samba.tests import BlackboxTestCase
+from samba.tests import TestCase, BlackboxProcessError
 import os
+from subprocess import Popen, PIPE
 
 
-class RustCargoTests(BlackboxTestCase):
+class RustCargoTests(TestCase):
     def setUp(self):
         super().setUp()
 
@@ -52,7 +53,16 @@ class RustCargoTests(BlackboxTestCase):
     def check_cargo_test(self, crate_toml):
         # Execute the cargo test command
         cmd = 'cargo test --target-dir=%s --manifest-path=%s' % (self.target_dir, crate_toml)
-        return self.check_run(cmd, 'cargo test failed')
+        p = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
+        stdoutdata, stderrdata = p.communicate()
+        retcode = p.returncode
+        if retcode != 0:
+            msg = "cargo test failed; return code %s" % retcode
+            raise BlackboxProcessError(retcode,
+                                       cmd,
+                                       stdoutdata.decode('utf-8'),
+                                       stderrdata.decode('utf-8'),
+                                       msg)
 
     def test_rust(self):
         crates = []
