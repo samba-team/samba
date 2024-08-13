@@ -25,3 +25,19 @@
 #![allow(dead_code)]
 #![allow(clippy::upper_case_acronyms)]
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_using_system_tdb() {
+        // This test just ensures that USING_SYSTEM_TDB is available from the
+        // config. None of the other options are really used at the moment.
+        assert!(
+            USING_SYSTEM_TDB == 0 || USING_SYSTEM_TDB == 1,
+            "Unexpected value for USING_SYSTEM_TDB: {}",
+            USING_SYSTEM_TDB
+        );
+    }
+}
