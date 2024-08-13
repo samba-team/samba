@@ -510,7 +510,7 @@ test_kerberos_trust()
 
 # TODO FIXME
 # This test does not work, as we can't tell the libsmb code that the
-# principal is an enterprice principal. We need support for enterprise
+# principal is an enterprise principal. We need support for enterprise
 # principals in kerberos_kinit_password_ext() and a way to pass it via the
 # credenitals structure and commandline options.
 # It works if you do: kinit -E testdenied_upn@${REALM}.upn
