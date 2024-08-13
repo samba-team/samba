@@ -19,7 +19,6 @@ apt-get -y install \
     binutils \
     bison \
     build-essential \
-    cargo \
     ccache \
     chrpath \
     codespell \

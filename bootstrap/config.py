@@ -447,6 +447,7 @@ DEB_DISTS = {
         'replace': {
             'language-pack-en': '',   # included in locales
             'shfmt': '',
+            'cargo': '', # included cargo is broken
         }
     },
     'debian11-32bit': {
@@ -455,6 +456,7 @@ DEB_DISTS = {
         'replace': {
             'language-pack-en': '',   # included in locales
             'shfmt': '',
+            'cargo': '', # included cargo is broken
         }
     },
     'debian12': {
@@ -463,6 +465,7 @@ DEB_DISTS = {
         'replace': {
             'language-pack-en': '',   # included in locales
             'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
+            'cargo': '', # included cargo is broken
         }
     },
     'debian12-32bit': {
@@ -471,6 +474,7 @@ DEB_DISTS = {
         'replace': {
             'language-pack-en': '',   # included in locales
             'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
+            'cargo': '', # included cargo is broken
         }
     },
     'ubuntu1804': {
