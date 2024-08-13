@@ -3050,6 +3050,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	bool signing_required = false;
 	bool encryption_desired = false;
 	bool encryption_required = false;
+	bool session_expired = false;
 
 	inhdr = SMBD_SMB2_IN_HDR_PTR(req);
 
@@ -3098,6 +3099,9 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		signing_required = x->global->signing_flags & SMBXSRV_SIGNING_REQUIRED;
 		encryption_desired = x->global->encryption_flags & SMBXSRV_ENCRYPTION_DESIRED;
 		encryption_required = x->global->encryption_flags & SMBXSRV_ENCRYPTION_REQUIRED;
+		session_expired =
+			NT_STATUS_EQUAL(session_status,
+					NT_STATUS_NETWORK_SESSION_EXPIRED);
 	}
 
 	req->async_internal = false;
@@ -3171,7 +3175,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		 * This check is mostly for giving the correct error code
 		 * for compounded requests.
 		 */
-		if (!NT_STATUS_IS_OK(session_status)) {
+		if (!session_expired && !NT_STATUS_IS_OK(session_status)) {
 			return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 		}
 	} else {
@@ -3257,6 +3261,9 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		}
 
 		if (!NT_STATUS_IS_OK(session_status)) {
+			if (session_expired && opcode == SMB2_OP_CREATE) {
+				req->compound_create_err = session_status;
+			}
 			return smbd_smb2_request_error(req, session_status);
 		}
 	}
@@ -3308,11 +3315,18 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 skipped_signing:
 
 	if (flags & SMB2_HDR_FLAG_CHAINED) {
+		if (!NT_STATUS_IS_OK(req->compound_create_err)) {
+			return smbd_smb2_request_error(req,
+					req->compound_create_err);
+		}
 		req->compound_related = true;
 	}
 
 	if (call->need_session) {
 		if (!NT_STATUS_IS_OK(session_status)) {
+			if (session_expired && opcode == SMB2_OP_CREATE) {
+				req->compound_create_err = session_status;
+			}
 			return smbd_smb2_request_error(req, session_status);
 		}
 	}
