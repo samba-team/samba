@@ -1421,6 +1421,18 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # The NC should not be present in this replication
         self._test_repl_nc_is_first(start_at_zero=False, nc_change=False, ou_change=False)
 
+
+class DrsReplicaSyncFakeAzureAdTests(DrsReplicaSyncIntegrityTestCase):
+    """This repeats all of DrsReplicaSyncIntegrityTestCase, but the client
+    always sets highwatermark.reserved_usn = 0. This is what Azure AD
+    / Entra ID Connect does.
+    """
+    @staticmethod
+    def modify_highwatermark(hwm):
+        if hwm is not None:
+            hwm.reserved_usn = 0
+
+
 class DcConnection:
     """Helper class to track a connection to another DC"""
 
