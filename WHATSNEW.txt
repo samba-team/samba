@@ -238,6 +238,16 @@ nodes.  Check in smb.conf(5) the scripts winbind_ctdb_updatekeytab.sh and
 
 For detailed information check the smb.conf(5) and net(8) manpages.
 
+New cephfs VFS module
+---------------------
+Introduce new vfs-to-cephfs bridge which uses libcephfs low-level APIs (instead
+of path-based operations in the existing module). It allows users to pass
+explicit user-credentials per call (including supplementary groups), as well as
+faster operations using inode and file-handle caching on the Samba side.
+Configuration is identical to existing module, but using 'ceph_new' instead of
+'ceph' for the relevant smb.conf entries. This new module is expected to
+deprecate and replace the old one in next major release.
+
 
 REMOVED FEATURES
 ================
