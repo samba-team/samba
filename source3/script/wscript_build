@@ -6,7 +6,9 @@ bld.INSTALL_FILES('${BINDIR}',
 	          'smbtar',
                   chmod=MODE_755, flat=True)
 bld.INSTALL_FILES('${BINDIR}', 'samba-log-parser', chmod=MODE_755, flat=True)
-bld.INSTALL_FILES('${DATADIR}', 'winbind_ctdb_updatekeytab.sh', chmod=MODE_755, flat=True)
+if conf.env.with_ctdb:
+    bld.INSTALL_FILES(bld.env.CTDB_DATADIR+"/scripts",
+                      'winbind_ctdb_updatekeytab.sh', chmod=MODE_755, flat=True)
 
 # Callout scripts for use in selftest environment
 bld.SAMBA_SCRIPT('smbaddshare', pattern='smbaddshare', installdir='.')
