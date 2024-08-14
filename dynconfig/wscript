@@ -105,6 +105,11 @@ dynconfig = {
          'FHS-PATH':  '${DATADIR}',
          'OVERWRITE': True,
     },
+    'CTDB_DATADIR' : {
+         'STD-PATH':  '${DATADIR}/ctdb',
+         'FHS-PATH':  '${DATADIR}/ctdb',
+         'OVERWRITE': True,
+    },
     'SAMBA_DATADIR' : {
          'STD-PATH':  '${DATADIR}/samba',
          'FHS-PATH':  '${DATADIR}/samba',
