@@ -1,0 +1,5 @@
+^samba4.drs.getncchanges.python\(vampire_dc\).getncchanges.DrsReplicaSyncFakeAzureAdTests.test_repl_get_tgt_multivalued_links\(vampire_dc\)
+^samba4.drs.getncchanges.python\(vampire_dc\).getncchanges.DrsReplicaSyncFakeAzureAdTests.test_repl_integrity\(vampire_dc\)
+^samba4.drs.getncchanges.python\(vampire_dc\).getncchanges.DrsReplicaSyncFakeAzureAdTests.test_repl_integrity_link_attr\(vampire_dc\)
+^samba4.drs.getncchanges.python\(promoted_dc\).getncchanges.DrsReplicaSyncFakeAzureAdTests.test_repl_integrity\(promoted_dc\)
+^samba4.drs.getncchanges.python\(promoted_dc\).getncchanges.DrsReplicaSyncFakeAzureAdTests.test_repl_integrity_link_attr\(promoted_dc\)
