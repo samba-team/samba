@@ -1306,7 +1306,7 @@ class DCJoinContext(object):
                                                    | security.SECINFO_GROUP)])
 
         ctx.logger.info("All other DNS records (like _ldap SRV records) " +
-                        "will be created samba_dnsupdate on first startup")
+                        "will be created by samba_dnsupdate on first startup")
 
     def join_replicate_new_dns_records(ctx):
         for nc in (ctx.domaindns_zone, ctx.forestdns_zone):
