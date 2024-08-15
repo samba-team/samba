@@ -1,4 +1,105 @@
                    ==============================
+                   Release Notes for Samba 4.19.8
+                          August 15, 2024
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.19 release series.
+
+
+Changes since 4.19.7
+--------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15671: Invalid client warning about command line passwords.
+   * BUG 15672: Version string is truncated in manpages.
+   * BUG 15673: --version-* options are still not ergonomic, and they reject
+     tilde characters.
+   * BUG 15674: cmdline_burn does not always burn secrets.
+   * BUG 15685: Samba doesn't parse SDDL found in defaultSecurityDescriptor in
+     AD_DS_Classes_Windows_Server_v1903.ldf.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 15654: We have added new options --vendor-name and --vendor-patch-
+     revision arguments to ./configure to allow distributions and packagers to
+     put their name in the Samba version string so that when debugging Samba the
+     source of the binary is obvious.
+   * BUG 15655: When claims enabled with heimdal kerberos, unable to log on to a
+     Windows computer when user account need to change their own
+     password.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15676: Fix clock skew error message and memory cache clock skew
+     recovery.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 15665: CTDB RADOS mutex helper misses namespace support.
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15660: The images don't build after the git security release and CentOS
+     8 Stream is EOL.
+
+o  Xavi Hernandez <xhernandez@redhat.com>
+   * BUG 15678: Fix unnecessary delays in CTDB while processing requests under
+     high load.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13019: Dynamic DNS updates with the internal DNS are not working.
+   * BUG 15620: s4:nbt_server: does not provide unexpected handling, so winbindd
+     can't use nmb requests instead cldap.
+   * BUG 15660: The images don't build after the git security release and CentOS
+     8 Stream is EOL.
+   * BUG 15664: Panic in vfs_offload_token_db_fetch_fsp().
+   * BUG 15666: "client use kerberos" and --use-kerberos is ignored for the
+     machine account.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15435: Regression DFS not working with widelinks = true.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15660: The images don't build after the git security release and CentOS
+     8 Stream is EOL.
+   * BUG 15673: --version-* options are still not ergonomic, and they reject
+     tilde characters.
+
+o  Jo Sutton <josutton@catalyst.net.nz>
+   * BUG 15655: When claims enabled with heimdal kerberos, unable to log on to a
+     Windows computer when user account need to change their own
+     password.
+
+o  Joseph Sutton <josephsutton@catalyst.net.nz>
+   * BUG 15655: When claims enabled with heimdal kerberos, unable to log on to a
+     Windows computer when user account need to change their own
+     password.
+
+o  Jones Syue <jonessyue@qnap.com>
+   * BUG 15677: ntlm_auth make logs more consistent with length check.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.19.7
                            June 10, 2024
                    ==============================
@@ -59,8 +160,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.19.6
                            April 08, 2024
