@@ -1741,6 +1741,9 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	/* If UF_USE_DES_KEY_ONLY has been set, then don't allow use of the newer enc types */
 	if (userAccountControl & UF_USE_DES_KEY_ONLY) {
 		supported_enctypes &= ~ENC_ALL_TYPES;
+		DBG_NOTICE("DES-only keys allowed on the account '%s', "
+			   "most likely auth will fail through Kerberos\n",
+			   samAccountName);
 	}
 
 	if (protected_user) {
