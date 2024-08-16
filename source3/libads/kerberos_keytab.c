@@ -838,8 +838,9 @@ static bool pw2kt_default_keytab_name(char *name_str, size_t name_size)
 		break;
 
 	default:
-		DBG_ERR("Invalid kerberos method set (%d)\n",
-			lp_kerberos_method());
+		DBG_NOTICE("'kerberos method' is 'secrets only' but "
+			   "'sync machine password to keytab' is not set "
+			   "==> no keytab will be generated.\n");
 		return false;
 	}
 
