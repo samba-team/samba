@@ -76,7 +76,7 @@ class NoContextTests(TestCase):
 
 class LdbBaseTest(TestCase):
     def setUp(self):
-        super(LdbBaseTest, self).setUp()
+        super().setUp()
         try:
             if self.prefix is None:
                 self.prefix = TDB_PREFIX
@@ -96,7 +96,7 @@ class LdbBaseTest(TestCase):
 class SimpleLdb(LdbBaseTest):
 
     def setUp(self):
-        super(SimpleLdb, self).setUp()
+        super().setUp()
         self.testdir = tempdir()
         self.filename = os.path.join(self.testdir, "test.ldb")
         self.ldb = ldb.Ldb(self.url(), flags=self.flags())
@@ -107,7 +107,7 @@ class SimpleLdb(LdbBaseTest):
 
     def tearDown(self):
         shutil.rmtree(self.testdir)
-        super(SimpleLdb, self).tearDown()
+        super().tearDown()
         # Ensure the LDB is closed now, so we close the FD
         del(self.ldb)
 
@@ -801,7 +801,7 @@ class SimpleLdbLmdb(SimpleLdb):
             self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
         self.index = MDB_INDEX_OBJ
-        super(SimpleLdbLmdb, self).setUp()
+        super().setUp()
 
 
 class SimpleLdbNoLmdb(LdbBaseTest):
@@ -811,7 +811,7 @@ class SimpleLdbNoLmdb(LdbBaseTest):
             self.skipTest("lmdb backend enabled")
         self.prefix = MDB_PREFIX
         self.index = MDB_INDEX_OBJ
-        super(SimpleLdbNoLmdb, self).setUp()
+        super().setUp()
 
     def test_lmdb_disabled(self):
         self.testdir = tempdir()
@@ -827,13 +827,13 @@ class SimpleLdbNoLmdb(LdbBaseTest):
 class SearchTests(LdbBaseTest):
     def tearDown(self):
         shutil.rmtree(self.testdir)
-        super(SearchTests, self).tearDown()
+        super().tearDown()
 
         # Ensure the LDB is closed now, so we close the FD
         del(self.l)
 
     def setUp(self):
-        super(SearchTests, self).setUp()
+        super().setUp()
         self.testdir = tempdir()
         self.filename = os.path.join(self.testdir, "search_test.ldb")
         options = ["modules:rdn_name"]
@@ -1984,7 +1984,7 @@ class SearchTestsLmdb(SearchTests):
             self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
         self.index = MDB_INDEX_OBJ
-        super(SearchTestsLmdb, self).setUp()
+        super().setUp()
 
 
 class IndexedSearchTests(SearchTests):
@@ -1992,7 +1992,7 @@ class IndexedSearchTests(SearchTests):
        break things"""
 
     def setUp(self):
-        super(IndexedSearchTests, self).setUp()
+        super().setUp()
         self.l.add({"dn": "@INDEXLIST",
                     "@IDXATTR": [b"x", b"y", b"ou"]})
         self.IDX = True
@@ -2004,7 +2004,7 @@ class IndexedCheckSearchTests(IndexedSearchTests):
 
     def setUp(self):
         self.IDXCHECK = True
-        super(IndexedCheckSearchTests, self).setUp()
+        super().setUp()
 
 
 class IndexedSearchDnFilterTests(SearchTests):
@@ -2012,7 +2012,7 @@ class IndexedSearchDnFilterTests(SearchTests):
        break things"""
 
     def setUp(self):
-        super(IndexedSearchDnFilterTests, self).setUp()
+        super().setUp()
         self.l.add({"dn": "@OPTIONS",
                     "disallowDNFilter": "TRUE"})
         self.disallowDNFilter = True
@@ -2027,7 +2027,7 @@ class IndexedAndOneLevelSearchTests(SearchTests):
        the index doesn't break things"""
 
     def setUp(self):
-        super(IndexedAndOneLevelSearchTests, self).setUp()
+        super().setUp()
         self.l.add({"dn": "@INDEXLIST",
                     "@IDXATTR": [b"x", b"y", b"ou"],
                     "@IDXONE": [b"1"]})
@@ -2041,7 +2041,7 @@ class IndexedCheckedAndOneLevelSearchTests(IndexedAndOneLevelSearchTests):
 
     def setUp(self):
         self.IDXCHECK = True
-        super(IndexedCheckedAndOneLevelSearchTests, self).setUp()
+        super().setUp()
 
 
 class IndexedAndOneLevelDNFilterSearchTests(SearchTests):
@@ -2049,7 +2049,7 @@ class IndexedAndOneLevelDNFilterSearchTests(SearchTests):
        the index doesn't break things"""
 
     def setUp(self):
-        super(IndexedAndOneLevelDNFilterSearchTests, self).setUp()
+        super().setUp()
         self.l.add({"dn": "@OPTIONS",
                     "disallowDNFilter": "TRUE",
                     "checkBaseOnSearch": "TRUE"})
@@ -2072,7 +2072,7 @@ class GUIDIndexedSearchTests(SearchTests):
                       "@IDXATTR": [b"x", b"y", b"ou"],
                       "@IDXGUID": [b"objectUUID"],
                       "@IDX_DN_GUID": [b"GUID"]}
-        super(GUIDIndexedSearchTests, self).setUp()
+        super().setUp()
 
         self.IDXGUID = True
 
@@ -2086,7 +2086,7 @@ class GUIDIndexedDNFilterSearchTests(SearchTests):
                       "@IDXATTR": [b"x", b"y", b"ou"],
                       "@IDXGUID": [b"objectUUID"],
                       "@IDX_DN_GUID": [b"GUID"]}
-        super(GUIDIndexedDNFilterSearchTests, self).setUp()
+        super().setUp()
         self.l.add({"dn": "@OPTIONS",
                     "disallowDNFilter": "TRUE",
                     "checkBaseOnSearch": "TRUE"})
@@ -2106,7 +2106,7 @@ class GUIDAndOneLevelIndexedSearchTests(SearchTests):
                       "@IDXONE": [b"1"],
                       "@IDXGUID": [b"objectUUID"],
                       "@IDX_DN_GUID": [b"GUID"]}
-        super(GUIDAndOneLevelIndexedSearchTests, self).setUp()
+        super().setUp()
         self.l.add({"dn": "@OPTIONS",
                     "disallowDNFilter": "TRUE",
                     "checkBaseOnSearch": "TRUE"})
@@ -2123,7 +2123,7 @@ class GUIDIndexedSearchTestsLmdb(GUIDIndexedSearchTests):
         if os.environ.get('HAVE_LMDB', '1') == '0':
             self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
-        super(GUIDIndexedSearchTestsLmdb, self).setUp()
+        super().setUp()
 
 
 class GUIDIndexedDNFilterSearchTestsLmdb(GUIDIndexedDNFilterSearchTests):
@@ -2132,7 +2132,7 @@ class GUIDIndexedDNFilterSearchTestsLmdb(GUIDIndexedDNFilterSearchTests):
         if os.environ.get('HAVE_LMDB', '1') == '0':
             self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
-        super(GUIDIndexedDNFilterSearchTestsLmdb, self).setUp()
+        super().setUp()
 
 
 class GUIDAndOneLevelIndexedSearchTestsLmdb(GUIDAndOneLevelIndexedSearchTests):
@@ -2141,19 +2141,19 @@ class GUIDAndOneLevelIndexedSearchTestsLmdb(GUIDAndOneLevelIndexedSearchTests):
         if os.environ.get('HAVE_LMDB', '1') == '0':
             self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
-        super(GUIDAndOneLevelIndexedSearchTestsLmdb, self).setUp()
+        super().setUp()
 
 
 class AddModifyTests(LdbBaseTest):
     def tearDown(self):
         shutil.rmtree(self.testdir)
-        super(AddModifyTests, self).tearDown()
+        super().tearDown()
 
         # Ensure the LDB is closed now, so we close the FD
         del(self.l)
 
     def setUp(self):
-        super(AddModifyTests, self).setUp()
+        super().setUp()
         self.testdir = tempdir()
         self.filename = os.path.join(self.testdir, "add_test.ldb")
         self.l = ldb.Ldb(self.url(),
@@ -2351,7 +2351,7 @@ class AddModifyTestsLmdb(AddModifyTests):
             self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
         self.index = MDB_INDEX_OBJ
-        super(AddModifyTestsLmdb, self).setUp()
+        super().setUp()
 
 
 class IndexedAddModifyTests(AddModifyTests):
@@ -2363,7 +2363,7 @@ class IndexedAddModifyTests(AddModifyTests):
             self.index = {"dn": "@INDEXLIST",
                           "@IDXATTR": [b"x", b"y", b"ou", b"objectUUID", b"z"],
                           "@IDXONE": [b"1"]}
-        super(IndexedAddModifyTests, self).setUp()
+        super().setUp()
 
     def test_duplicate_GUID(self):
         try:
@@ -2454,31 +2454,31 @@ class GUIDIndexedAddModifyTests(IndexedAddModifyTests):
                       "@IDXONE": [b"1"],
                       "@IDXGUID": [b"objectUUID"],
                       "@IDX_DN_GUID": [b"GUID"]}
-        super(GUIDIndexedAddModifyTests, self).setUp()
+        super().setUp()
 
 
 class GUIDTransIndexedAddModifyTests(GUIDIndexedAddModifyTests):
     """Test GUID index behaviour insdie the transaction"""
 
     def setUp(self):
-        super(GUIDTransIndexedAddModifyTests, self).setUp()
+        super().setUp()
         self.l.transaction_start()
 
     def tearDown(self):
         self.l.transaction_commit()
-        super(GUIDTransIndexedAddModifyTests, self).tearDown()
+        super().tearDown()
 
 
 class TransIndexedAddModifyTests(IndexedAddModifyTests):
     """Test index behaviour insdie the transaction"""
 
     def setUp(self):
-        super(TransIndexedAddModifyTests, self).setUp()
+        super().setUp()
         self.l.transaction_start()
 
     def tearDown(self):
         self.l.transaction_commit()
-        super(TransIndexedAddModifyTests, self).tearDown()
+        super().tearDown()
 
 
 class GuidIndexedAddModifyTestsLmdb(GUIDIndexedAddModifyTests):
@@ -2487,7 +2487,7 @@ class GuidIndexedAddModifyTestsLmdb(GUIDIndexedAddModifyTests):
         if os.environ.get('HAVE_LMDB', '1') == '0':
             self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
-        super(GuidIndexedAddModifyTestsLmdb, self).setUp()
+        super().setUp()
 
 
 class GuidTransIndexedAddModifyTestsLmdb(GUIDTransIndexedAddModifyTests):
@@ -2496,12 +2496,12 @@ class GuidTransIndexedAddModifyTestsLmdb(GUIDTransIndexedAddModifyTests):
         if os.environ.get('HAVE_LMDB', '1') == '0':
             self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
-        super(GuidTransIndexedAddModifyTestsLmdb, self).setUp()
+        super().setUp()
 
 
 class BadIndexTests(LdbBaseTest):
     def setUp(self):
-        super(BadIndexTests, self).setUp()
+        super().setUp()
         self.testdir = tempdir()
         self.filename = os.path.join(self.testdir, "test.ldb")
         self.ldb = ldb.Ldb(self.url(), flags=self.flags())
@@ -2514,7 +2514,7 @@ class BadIndexTests(LdbBaseTest):
             self.ldb.add({"dn": "@INDEXLIST",
                           "@IDXATTR": [b"x", b"y", b"ou"]})
 
-        super(BadIndexTests, self).setUp()
+        super().setUp()
 
     def test_unique(self):
         self.ldb.add({"dn": "x=x,dc=samba,dc=org",
@@ -2709,7 +2709,7 @@ class GUIDBadIndexTests(BadIndexTests):
     def setUp(self):
         self.IDXGUID = True
 
-        super(GUIDBadIndexTests, self).setUp()
+        super().setUp()
 
 
 class GUIDBadIndexTestsLmdb(BadIndexTests):
@@ -2720,13 +2720,13 @@ class GUIDBadIndexTestsLmdb(BadIndexTests):
         self.prefix = MDB_PREFIX
         self.index = MDB_INDEX_OBJ
         self.IDXGUID = True
-        super(GUIDBadIndexTestsLmdb, self).setUp()
+        super().setUp()
 
 
 class BatchModeTests(LdbBaseTest):
 
     def setUp(self):
-        super(BatchModeTests, self).setUp()
+        super().setUp()
         self.testdir = tempdir()
         self.filename = os.path.join(self.testdir, "test.ldb")
         self.ldb = ldb.Ldb(self.url(),
@@ -2780,11 +2780,11 @@ class BatchModeTests(LdbBaseTest):
 class DnTests(TestCase):
 
     def setUp(self):
-        super(DnTests, self).setUp()
+        super().setUp()
         self.ldb = ldb.Ldb()
 
     def tearDown(self):
-        super(DnTests, self).tearDown()
+        super().tearDown()
         del(self.ldb)
 
     def test_set_dn_invalid(self):
@@ -3079,7 +3079,7 @@ foo: föö
 class LdbMsgTests(TestCase):
 
     def setUp(self):
-        super(LdbMsgTests, self).setUp()
+        super().setUp()
         self.msg = ldb.Message()
 
     def test_init_dn(self):
@@ -3438,7 +3438,7 @@ class MessageElementTests(TestCase):
 class LdbResultTests(LdbBaseTest):
 
     def setUp(self):
-        super(LdbResultTests, self).setUp()
+        super().setUp()
         self.testdir = tempdir()
         self.filename = os.path.join(self.testdir, "test.ldb")
         self.l = ldb.Ldb(self.url(), flags=self.flags())
@@ -3475,7 +3475,7 @@ class LdbResultTests(LdbBaseTest):
 
     def tearDown(self):
         shutil.rmtree(self.testdir)
-        super(LdbResultTests, self).tearDown()
+        super().tearDown()
         # Ensure the LDB is closed now, so we close the FD
         del(self.l)
 
@@ -3711,7 +3711,7 @@ class LdbResultTestsLmdb(LdbResultTests):
             self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
         self.index = MDB_INDEX_OBJ
-        super(LdbResultTestsLmdb, self).setUp()
+        super().setUp()
 
 
 class BadTypeTests(TestCase):
@@ -3763,7 +3763,7 @@ class VersionTests(TestCase):
 
 class NestedTransactionTests(LdbBaseTest):
     def setUp(self):
-        super(NestedTransactionTests, self).setUp()
+        super().setUp()
         self.testdir = tempdir()
         self.filename = os.path.join(self.testdir, "test.ldb")
         self.ldb = ldb.Ldb(self.url(), flags=self.flags())
@@ -3772,7 +3772,7 @@ class NestedTransactionTests(LdbBaseTest):
                       "@IDXGUID": [b"objectUUID"],
                       "@IDX_DN_GUID": [b"GUID"]})
 
-        super(NestedTransactionTests, self).setUp()
+        super().setUp()
 
     #
     # This test documents that currently ldb does not support true nested
@@ -3856,7 +3856,7 @@ class LmdbNestedTransactionTests(NestedTransactionTests):
             self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
         self.index = MDB_INDEX_OBJ
-        super(LmdbNestedTransactionTests, self).setUp()
+        super().setUp()
 
 
 if __name__ == '__main__':
