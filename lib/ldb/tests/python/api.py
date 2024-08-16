@@ -83,9 +83,6 @@ class LdbBaseTest(TestCase):
         except AttributeError:
             self.prefix = TDB_PREFIX
 
-    def tearDown(self):
-        super(LdbBaseTest, self).tearDown()
-
     def url(self):
         return self.prefix + self.filename
 
@@ -806,9 +803,6 @@ class SimpleLdbLmdb(SimpleLdb):
         self.index = MDB_INDEX_OBJ
         super(SimpleLdbLmdb, self).setUp()
 
-    def tearDown(self):
-        super(SimpleLdbLmdb, self).tearDown()
-
 
 class SimpleLdbNoLmdb(LdbBaseTest):
 
@@ -818,9 +812,6 @@ class SimpleLdbNoLmdb(LdbBaseTest):
         self.prefix = MDB_PREFIX
         self.index = MDB_INDEX_OBJ
         super(SimpleLdbNoLmdb, self).setUp()
-
-    def tearDown(self):
-        super(SimpleLdbNoLmdb, self).tearDown()
 
     def test_lmdb_disabled(self):
         self.testdir = tempdir()
@@ -1995,9 +1986,6 @@ class SearchTestsLmdb(SearchTests):
         self.index = MDB_INDEX_OBJ
         super(SearchTestsLmdb, self).setUp()
 
-    def tearDown(self):
-        super(SearchTestsLmdb, self).tearDown()
-
 
 class IndexedSearchTests(SearchTests):
     """Test searches using the index, to ensure the index doesn't
@@ -2137,9 +2125,6 @@ class GUIDIndexedSearchTestsLmdb(GUIDIndexedSearchTests):
         self.prefix = MDB_PREFIX
         super(GUIDIndexedSearchTestsLmdb, self).setUp()
 
-    def tearDown(self):
-        super(GUIDIndexedSearchTestsLmdb, self).tearDown()
-
 
 class GUIDIndexedDNFilterSearchTestsLmdb(GUIDIndexedDNFilterSearchTests):
 
@@ -2149,9 +2134,6 @@ class GUIDIndexedDNFilterSearchTestsLmdb(GUIDIndexedDNFilterSearchTests):
         self.prefix = MDB_PREFIX
         super(GUIDIndexedDNFilterSearchTestsLmdb, self).setUp()
 
-    def tearDown(self):
-        super(GUIDIndexedDNFilterSearchTestsLmdb, self).tearDown()
-
 
 class GUIDAndOneLevelIndexedSearchTestsLmdb(GUIDAndOneLevelIndexedSearchTests):
 
@@ -2160,9 +2142,6 @@ class GUIDAndOneLevelIndexedSearchTestsLmdb(GUIDAndOneLevelIndexedSearchTests):
             self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
         super(GUIDAndOneLevelIndexedSearchTestsLmdb, self).setUp()
-
-    def tearDown(self):
-        super(GUIDAndOneLevelIndexedSearchTestsLmdb, self).tearDown()
 
 
 class AddModifyTests(LdbBaseTest):
@@ -2374,9 +2353,6 @@ class AddModifyTestsLmdb(AddModifyTests):
         self.index = MDB_INDEX_OBJ
         super(AddModifyTestsLmdb, self).setUp()
 
-    def tearDown(self):
-        super(AddModifyTestsLmdb, self).tearDown()
-
 
 class IndexedAddModifyTests(AddModifyTests):
     """Test searches using the index, to ensure the index doesn't
@@ -2513,9 +2489,6 @@ class GuidIndexedAddModifyTestsLmdb(GUIDIndexedAddModifyTests):
         self.prefix = MDB_PREFIX
         super(GuidIndexedAddModifyTestsLmdb, self).setUp()
 
-    def tearDown(self):
-        super(GuidIndexedAddModifyTestsLmdb, self).tearDown()
-
 
 class GuidTransIndexedAddModifyTestsLmdb(GUIDTransIndexedAddModifyTests):
 
@@ -2524,9 +2497,6 @@ class GuidTransIndexedAddModifyTestsLmdb(GUIDTransIndexedAddModifyTests):
             self.skipTest("No lmdb backend")
         self.prefix = MDB_PREFIX
         super(GuidTransIndexedAddModifyTestsLmdb, self).setUp()
-
-    def tearDown(self):
-        super(GuidTransIndexedAddModifyTestsLmdb, self).tearDown()
 
 
 class BadIndexTests(LdbBaseTest):
@@ -2732,9 +2702,6 @@ class BadIndexTests(LdbBaseTest):
         self.assertEqual(len(res), 1)
         self.assertEqual(str(res[0].dn), "x=y,dc=samba,dc=org")
 
-    def tearDown(self):
-        super(BadIndexTests, self).tearDown()
-
 
 class GUIDBadIndexTests(BadIndexTests):
     """Test Bad index things with GUID index mode"""
@@ -2754,9 +2721,6 @@ class GUIDBadIndexTestsLmdb(BadIndexTests):
         self.index = MDB_INDEX_OBJ
         self.IDXGUID = True
         super(GUIDBadIndexTestsLmdb, self).setUp()
-
-    def tearDown(self):
-        super(GUIDBadIndexTestsLmdb, self).tearDown()
 
 
 class BatchModeTests(LdbBaseTest):
@@ -2811,9 +2775,6 @@ class BatchModeTests(LdbBaseTest):
         except ldb.LdbError as err:
             enum = err.args[0]
             self.assertEqual(enum, ldb.ERR_OPERATIONS_ERROR)
-
-    def tearDown(self):
-        super(BatchModeTests, self).tearDown()
 
 
 class DnTests(TestCase):
@@ -3752,9 +3713,6 @@ class LdbResultTestsLmdb(LdbResultTests):
         self.index = MDB_INDEX_OBJ
         super(LdbResultTestsLmdb, self).setUp()
 
-    def tearDown(self):
-        super(LdbResultTestsLmdb, self).tearDown()
-
 
 class BadTypeTests(TestCase):
     def test_control(self):
@@ -3890,9 +3848,6 @@ class NestedTransactionTests(LdbBaseTest):
         #         self.assertEqual(len(res), 0)
         self.assertEqual(len(res), 1)
 
-    def tearDown(self):
-        super(NestedTransactionTests, self).tearDown()
-
 
 class LmdbNestedTransactionTests(NestedTransactionTests):
 
@@ -3902,9 +3857,6 @@ class LmdbNestedTransactionTests(NestedTransactionTests):
         self.prefix = MDB_PREFIX
         self.index = MDB_INDEX_OBJ
         super(LmdbNestedTransactionTests, self).setUp()
-
-    def tearDown(self):
-        super(LmdbNestedTransactionTests, self).tearDown()
 
 
 if __name__ == '__main__':
