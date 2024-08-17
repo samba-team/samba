@@ -1388,15 +1388,15 @@ class LdbResultTests(LdbBaseTest):
 
     def test_get_msgs(self):
         res = self.l.search()
-        list = res.msgs
+        self.assertIsInstance(res.msgs, list)
 
     def test_get_controls(self):
         res = self.l.search()
-        list = res.controls
+        self.assertIsInstance(res.controls, list)
 
     def test_get_referals(self):
         res = self.l.search()
-        list = res.referals
+        self.assertIsInstance(res.referals, list)
 
     def test_iter_msgs(self):
         found = False
