@@ -1172,169 +1172,166 @@ class SearchTests(LdbBaseTest):
 
 # Run the search tests against an lmdb backend
 class SearchTestsLmdb(SearchTests):
+    prefix = MDB_PREFIX
+    index = MDB_INDEX_OBJ
 
     def setUp(self):
         if os.environ.get('HAVE_LMDB', '1') == '0':
             self.skipTest("No lmdb backend")
-        self.prefix = MDB_PREFIX
-        self.index = MDB_INDEX_OBJ
         super().setUp()
 
 
 class IndexedSearchTests(SearchTests):
     """Test searches using the index, to ensure the index doesn't
        break things"""
-
+    IDX = True
     def setUp(self):
         super().setUp()
         self.l.add({"dn": "@INDEXLIST",
                     "@IDXATTR": [b"x", b"y", b"ou"]})
-        self.IDX = True
 
 
 class IndexedCheckSearchTests(IndexedSearchTests):
     """Test searches using the index, to ensure the index doesn't
        break things (full scan disabled)"""
+    IDXCHECK = True
 
     def setUp(self):
-        self.IDXCHECK = True
         super().setUp()
 
 
 class IndexedSearchDnFilterTests(SearchTests):
     """Test searches using the index, to ensure the index doesn't
        break things"""
-
+    disallowDNFilter = True
+    IDX = True
     def setUp(self):
         super().setUp()
         self.l.add({"dn": "@OPTIONS",
                     "disallowDNFilter": "TRUE"})
-        self.disallowDNFilter = True
 
         self.l.add({"dn": "@INDEXLIST",
                     "@IDXATTR": [b"x", b"y", b"ou"]})
-        self.IDX = True
+
 
 
 class IndexedAndOneLevelSearchTests(SearchTests):
     """Test searches using the index including @IDXONE, to ensure
        the index doesn't break things"""
+    IDX = True
+    IDXONE = True
 
     def setUp(self):
         super().setUp()
         self.l.add({"dn": "@INDEXLIST",
                     "@IDXATTR": [b"x", b"y", b"ou"],
                     "@IDXONE": [b"1"]})
-        self.IDX = True
-        self.IDXONE = True
 
 
 class IndexedCheckedAndOneLevelSearchTests(IndexedAndOneLevelSearchTests):
     """Test searches using the index including @IDXONE, to ensure
        the index doesn't break things (full scan disabled)"""
+    IDXCHECK = True
 
     def setUp(self):
-        self.IDXCHECK = True
         super().setUp()
 
 
 class IndexedAndOneLevelDNFilterSearchTests(SearchTests):
     """Test searches using the index including @IDXONE, to ensure
        the index doesn't break things"""
+    disallowDNFilter = True
+    checkBaseOnSearch = True
+    IDX = True
+    IDXONE = True
 
     def setUp(self):
         super().setUp()
         self.l.add({"dn": "@OPTIONS",
                     "disallowDNFilter": "TRUE",
                     "checkBaseOnSearch": "TRUE"})
-        self.disallowDNFilter = True
-        self.checkBaseOnSearch = True
 
         self.l.add({"dn": "@INDEXLIST",
                     "@IDXATTR": [b"x", b"y", b"ou"],
                     "@IDXONE": [b"1"]})
-        self.IDX = True
-        self.IDXONE = True
 
 
 class GUIDIndexedSearchTests(SearchTests):
     """Test searches using the index, to ensure the index doesn't
        break things"""
+    IDXGUID = True
+    index = {"dn": "@INDEXLIST",
+             "@IDXATTR": [b"x", b"y", b"ou"],
+             "@IDXGUID": [b"objectUUID"],
+             "@IDX_DN_GUID": [b"GUID"]}
 
     def setUp(self):
-        self.index = {"dn": "@INDEXLIST",
-                      "@IDXATTR": [b"x", b"y", b"ou"],
-                      "@IDXGUID": [b"objectUUID"],
-                      "@IDX_DN_GUID": [b"GUID"]}
         super().setUp()
-
-        self.IDXGUID = True
 
 
 class GUIDIndexedDNFilterSearchTests(SearchTests):
     """Test searches using the index, to ensure the index doesn't
        break things"""
+    disallowDNFilter = True
+    checkBaseOnSearch = True
+    IDX = True
+    IDXGUID = True
+    index = {"dn": "@INDEXLIST",
+             "@IDXATTR": [b"x", b"y", b"ou"],
+             "@IDXGUID": [b"objectUUID"],
+             "@IDX_DN_GUID": [b"GUID"]}
 
     def setUp(self):
-        self.index = {"dn": "@INDEXLIST",
-                      "@IDXATTR": [b"x", b"y", b"ou"],
-                      "@IDXGUID": [b"objectUUID"],
-                      "@IDX_DN_GUID": [b"GUID"]}
         super().setUp()
         self.l.add({"dn": "@OPTIONS",
                     "disallowDNFilter": "TRUE",
                     "checkBaseOnSearch": "TRUE"})
-        self.disallowDNFilter = True
-        self.checkBaseOnSearch = True
-        self.IDX = True
-        self.IDXGUID = True
 
 
 class GUIDAndOneLevelIndexedSearchTests(SearchTests):
     """Test searches using the index including @IDXONE, to ensure
        the index doesn't break things"""
+    disallowDNFilter = True
+    checkBaseOnSearch = True
+    IDX = True
+    IDXGUID = True
+    IDXONE = True
+    index = {"dn": "@INDEXLIST",
+             "@IDXATTR": [b"x", b"y", b"ou"],
+             "@IDXONE": [b"1"],
+             "@IDXGUID": [b"objectUUID"],
+             "@IDX_DN_GUID": [b"GUID"]}
 
     def setUp(self):
-        self.index = {"dn": "@INDEXLIST",
-                      "@IDXATTR": [b"x", b"y", b"ou"],
-                      "@IDXONE": [b"1"],
-                      "@IDXGUID": [b"objectUUID"],
-                      "@IDX_DN_GUID": [b"GUID"]}
         super().setUp()
         self.l.add({"dn": "@OPTIONS",
                     "disallowDNFilter": "TRUE",
                     "checkBaseOnSearch": "TRUE"})
-        self.disallowDNFilter = True
-        self.checkBaseOnSearch = True
-        self.IDX = True
-        self.IDXGUID = True
-        self.IDXONE = True
 
 
 class GUIDIndexedSearchTestsLmdb(GUIDIndexedSearchTests):
+    prefix = MDB_PREFIX
 
     def setUp(self):
         if os.environ.get('HAVE_LMDB', '1') == '0':
             self.skipTest("No lmdb backend")
-        self.prefix = MDB_PREFIX
         super().setUp()
 
 
 class GUIDIndexedDNFilterSearchTestsLmdb(GUIDIndexedDNFilterSearchTests):
+    prefix = MDB_PREFIX
 
     def setUp(self):
         if os.environ.get('HAVE_LMDB', '1') == '0':
             self.skipTest("No lmdb backend")
-        self.prefix = MDB_PREFIX
         super().setUp()
 
 
 class GUIDAndOneLevelIndexedSearchTestsLmdb(GUIDAndOneLevelIndexedSearchTests):
-
+    prefix = MDB_PREFIX
     def setUp(self):
         if os.environ.get('HAVE_LMDB', '1') == '0':
             self.skipTest("No lmdb backend")
-        self.prefix = MDB_PREFIX
         super().setUp()
 
 
@@ -1608,12 +1605,12 @@ class LdbResultTests(LdbBaseTest):
 
 
 class LdbResultTestsLmdb(LdbResultTests):
+    prefix = MDB_PREFIX
+    index = MDB_INDEX_OBJ
 
     def setUp(self):
         if os.environ.get('HAVE_LMDB', '1') == '0':
             self.skipTest("No lmdb backend")
-        self.prefix = MDB_PREFIX
-        self.index = MDB_INDEX_OBJ
         super().setUp()
 
 
@@ -1706,12 +1703,12 @@ class NestedTransactionTests(LdbBaseTest):
 
 
 class LmdbNestedTransactionTests(NestedTransactionTests):
+    prefix = MDB_PREFIX
+    index = MDB_INDEX_OBJ
 
     def setUp(self):
         if os.environ.get('HAVE_LMDB', '1') == '0':
             self.skipTest("No lmdb backend")
-        self.prefix = MDB_PREFIX
-        self.index = MDB_INDEX_OBJ
         super().setUp()
 
 
