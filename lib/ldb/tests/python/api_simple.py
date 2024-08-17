@@ -95,9 +95,9 @@ class SimpleLdb(LdbBaseTest):
         except UnicodeDecodeError as e:
                 raise
         except TypeError as te:
-           p3errors = ["argument 2 must be str, not bytes",
-                       "Can't convert 'bytes' object to str implicitly"]
-           self.assertIn(str(te), p3errors)
+            p3errors = ["argument 2 must be str, not bytes",
+                        "Can't convert 'bytes' object to str implicitly"]
+            self.assertIn(str(te), p3errors)
 
     def test_search_attrs(self):
         l = ldb.Ldb(self.url(), flags=self.flags())
