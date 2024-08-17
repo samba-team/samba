@@ -21,6 +21,17 @@ from api_base import (
 class SearchTests(LdbBaseTest):
 
     @classmethod
+    def add_index(cls, db):
+        """Subclasses can override this function with something like
+
+        def add_index(cls, db):
+            db.add(MDB_INDEX_OBJ)
+
+        it will be called in class setup.
+        """
+        pass
+
+    @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.testdir = tempdir()
@@ -35,10 +46,7 @@ class SearchTests(LdbBaseTest):
                      flags=cls.flags(),
                      options=cls.options)
 
-        try:
-            db.add(cls.index)
-        except AttributeError:
-            pass
+        cls.add_index(db)
 
         db.add({"dn": "@ATTRIBUTES",
                 "DC": "CASE_INSENSITIVE"})
@@ -1187,7 +1195,10 @@ class SearchTests(LdbBaseTest):
 # Run the search tests against an lmdb backend
 class SearchTestsLmdb(SearchTests):
     prefix = MDB_PREFIX
-    index = MDB_INDEX_OBJ
+
+    @classmethod
+    def add_index(cls, db):
+        db.add(MDB_INDEX_OBJ)
 
     def setUp(self):
         if os.environ.get('HAVE_LMDB', '1') == '0':
@@ -1274,10 +1285,13 @@ class GUIDIndexedSearchTests(SearchTests):
     """Test searches using the index, to ensure the index doesn't
        break things"""
     IDXGUID = True
-    index = {"dn": "@INDEXLIST",
-             "@IDXATTR": [b"x", b"y", b"ou"],
-             "@IDXGUID": [b"objectUUID"],
-             "@IDX_DN_GUID": [b"GUID"]}
+
+    @classmethod
+    def add_index(cls, db):
+        db.add({"dn": "@INDEXLIST",
+                "@IDXATTR": [b"x", b"y", b"ou"],
+                "@IDXGUID": [b"objectUUID"],
+                "@IDX_DN_GUID": [b"GUID"]})
 
     def setUp(self):
         super().setUp()
@@ -1290,10 +1304,13 @@ class GUIDIndexedDNFilterSearchTests(SearchTests):
     checkBaseOnSearch = True
     IDX = True
     IDXGUID = True
-    index = {"dn": "@INDEXLIST",
-             "@IDXATTR": [b"x", b"y", b"ou"],
-             "@IDXGUID": [b"objectUUID"],
-             "@IDX_DN_GUID": [b"GUID"]}
+
+    @classmethod
+    def add_index(cls, db):
+        db.add({"dn": "@INDEXLIST",
+                "@IDXATTR": [b"x", b"y", b"ou"],
+                "@IDXGUID": [b"objectUUID"],
+                "@IDX_DN_GUID": [b"GUID"]})
 
     def setUp(self):
         super().setUp()
@@ -1310,11 +1327,14 @@ class GUIDAndOneLevelIndexedSearchTests(SearchTests):
     IDX = True
     IDXGUID = True
     IDXONE = True
-    index = {"dn": "@INDEXLIST",
+
+    @classmethod
+    def add_index(cls, db):
+        db.add({"dn": "@INDEXLIST",
              "@IDXATTR": [b"x", b"y", b"ou"],
              "@IDXONE": [b"1"],
              "@IDXGUID": [b"objectUUID"],
-             "@IDX_DN_GUID": [b"GUID"]}
+             "@IDX_DN_GUID": [b"GUID"]})
 
     def setUp(self):
         super().setUp()
@@ -1350,6 +1370,17 @@ class GUIDAndOneLevelIndexedSearchTestsLmdb(GUIDAndOneLevelIndexedSearchTests):
 
 
 class LdbResultTests(LdbBaseTest):
+    @classmethod
+    def add_index(cls, db):
+        """Subclasses can override this function with something like
+
+        def add_index(cls, db):
+            db.add(MDB_INDEX_OBJ)
+
+        it will be called in class setup.
+        """
+        pass
+
 
     @classmethod
     def setUpClass(cls):
@@ -1359,10 +1390,8 @@ class LdbResultTests(LdbBaseTest):
         cls.reference_db = os.path.join(cls.testdir,
                                         f"{cls.__name__}-ref.ldb")
         db = ldb.Ldb(cls.prefix + cls.reference_db, flags=cls.flags())
-        try:
-            db.add(cls.index)
-        except AttributeError:
-            pass
+        cls.add_index(db)
+
         db.add({"dn": "DC=SAMBA,DC=ORG", "name": b"samba.org",
                 "objectUUID": b"0123456789abcde0"})
         db.add({"dn": "OU=ADMIN,DC=SAMBA,DC=ORG", "name": b"Admins",
@@ -1630,7 +1659,10 @@ class LdbResultTests(LdbBaseTest):
 
 class LdbResultTestsLmdb(LdbResultTests):
     prefix = MDB_PREFIX
-    index = MDB_INDEX_OBJ
+
+    @classmethod
+    def add_index(cls, db):
+        db.add(MDB_INDEX_OBJ)
 
     def setUp(self):
         if os.environ.get('HAVE_LMDB', '1') == '0':
@@ -1728,7 +1760,10 @@ class NestedTransactionTests(LdbBaseTest):
 
 class LmdbNestedTransactionTests(NestedTransactionTests):
     prefix = MDB_PREFIX
-    index = MDB_INDEX_OBJ
+
+    @classmethod
+    def add_index(cls, db):
+        db.add(MDB_INDEX_OBJ)
 
     def setUp(self):
         if os.environ.get('HAVE_LMDB', '1') == '0':
