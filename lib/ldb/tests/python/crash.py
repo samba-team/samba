@@ -4,10 +4,9 @@
 
 import os
 from unittest import TestCase
-import os
 import sys
 import traceback
-
+sys.path.insert(0, "bin/python")
 import ldb
 
 
