@@ -30,13 +30,7 @@ def tempdir():
 
 
 class LdbBaseTest(TestCase):
-    def setUp(self):
-        super().setUp()
-        try:
-            if self.prefix is None:
-                self.prefix = TDB_PREFIX
-        except AttributeError:
-            self.prefix = TDB_PREFIX
+    prefix = TDB_PREFIX
 
     def url(self):
         return self.prefix + self.filename
