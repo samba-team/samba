@@ -998,7 +998,7 @@ class BadTypeTests(TestCase):
     def test_control(self):
         l = ldb.Ldb()
         self.assertRaises(TypeError, ldb.Control, '<bad type>', 'relax:1')
-        self.assertRaises(TypeError, ldb.Control, ldb, 1234)
+        self.assertRaises(TypeError, ldb.Control, l, 1234)
 
     def test_modify(self):
         l = ldb.Ldb()
