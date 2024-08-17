@@ -73,6 +73,10 @@ planpythontestsuite("none", "api",
                     name="ldb.python.api",
                     extra_path=['lib/ldb/tests/python'],
                     environ={'HAVE_LMDB': str(int(have_lmdb))})
+planpythontestsuite("none", "api_search",
+                    name="ldb.python.api_search",
+                    extra_path=['lib/ldb/tests/python'],
+                    environ={'HAVE_LMDB': str(int(have_lmdb))})
 planpythontestsuite("none", "crash",
                     name="ldb.python.crash",
                     extra_path=['lib/ldb/tests/python'],
@@ -91,6 +95,11 @@ planpythontestsuite("none", "repack",
 # https://bugzilla.samba.org/show_bug.cgi?id=15248
 planpythontestsuite("none", "api",
                     name="ldb.python.api.tr",
+                    extra_path=['lib/ldb/tests/python'],
+                    environ={'LC_ALL': 'tr_TR.UTF-8',
+                             'HAVE_LMDB': str(int(have_lmdb))})
+planpythontestsuite("none", "api_search",
+                    name="ldb.python.api_search.tr",
                     extra_path=['lib/ldb/tests/python'],
                     environ={'LC_ALL': 'tr_TR.UTF-8',
                              'HAVE_LMDB': str(int(have_lmdb))})
