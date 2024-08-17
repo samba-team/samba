@@ -77,6 +77,10 @@ planpythontestsuite("none", "api_search",
                     name="ldb.python.api_search",
                     extra_path=['lib/ldb/tests/python'],
                     environ={'HAVE_LMDB': str(int(have_lmdb))})
+planpythontestsuite("none", "api_add_modify",
+                    name="ldb.python.api_add_modify",
+                    extra_path=['lib/ldb/tests/python'],
+                    environ={'HAVE_LMDB': str(int(have_lmdb))})
 planpythontestsuite("none", "crash",
                     name="ldb.python.crash",
                     extra_path=['lib/ldb/tests/python'],
@@ -100,6 +104,11 @@ planpythontestsuite("none", "api",
                              'HAVE_LMDB': str(int(have_lmdb))})
 planpythontestsuite("none", "api_search",
                     name="ldb.python.api_search.tr",
+                    extra_path=['lib/ldb/tests/python'],
+                    environ={'LC_ALL': 'tr_TR.UTF-8',
+                             'HAVE_LMDB': str(int(have_lmdb))})
+planpythontestsuite("none", "api_add_modify",
+                    name="ldb.python.api_add_modify.tr",
                     extra_path=['lib/ldb/tests/python'],
                     environ={'LC_ALL': 'tr_TR.UTF-8',
                              'HAVE_LMDB': str(int(have_lmdb))})
