@@ -98,6 +98,12 @@ planpythontestsuite("none", "repack",
                     extra_path=['lib/ldb/tests/python'],
                     environ={'HAVE_LMDB': str(int(have_lmdb))})
 
+planpythontestsuite("none", "index_transparency",
+                    name="ldb.python.index_transparency",
+                    extra_path=['lib/ldb/tests/python'],
+                    environ={'SKIP_SLOW_TESTS': '1',
+                             'HAVE_LMDB': str(int(have_lmdb))})
+
 # LDB tests for standalone operation, in the tr_TR.UTF-8 to cover
 # dotless i locales, see
 # https://bugzilla.samba.org/show_bug.cgi?id=15248
