@@ -19,191 +19,200 @@ from api_base import (
 
 
 class SearchTests(LdbBaseTest):
-    def tearDown(self):
-        shutil.rmtree(self.testdir)
-        super().tearDown()
 
-        # Ensure the LDB is closed now, so we close the FD
-        del(self.l)
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.testdir = tempdir()
+        cls.addClassCleanup(shutil.rmtree, cls.testdir)
+        cls.reference_db = os.path.join(cls.testdir,
+                                        f"{cls.__name__}-ref.ldb")
 
-    def setUp(self):
-        super().setUp()
-        self.testdir = tempdir()
-        self.filename = os.path.join(
-            self.testdir,
-            f"{self.id().rsplit('.',1)[1]}.ldb")
-        options = ["modules:rdn_name"]
-        if hasattr(self, 'IDXCHECK'):
-            options.append("disable_full_db_scan_for_self_test:1")
-        self.l = ldb.Ldb(self.url(),
-                         flags=self.flags(),
-                         options=options)
+        cls.options = ["modules:rdn_name"]
+        if hasattr(cls, 'IDXCHECK'):
+            cls.options.append("disable_full_db_scan_for_self_test:1")
+        db = ldb.Ldb(cls.prefix + cls.reference_db,
+                     flags=cls.flags(),
+                     options=cls.options)
+
         try:
-            self.l.add(self.index)
+            db.add(cls.index)
         except AttributeError:
             pass
 
-        self.l.add({"dn": "@ATTRIBUTES",
-                    "DC": "CASE_INSENSITIVE"})
+        db.add({"dn": "@ATTRIBUTES",
+                "DC": "CASE_INSENSITIVE"})
 
         # Note that we can't use the name objectGUID here, as we
         # want to stay clear of the objectGUID handler in LDB and
         # instead use just the 16 bytes raw, which we just keep
         # to printable chars here for ease of handling.
 
-        self.l.add({"dn": "DC=ORG",
-                    "name": b"org",
-                    "objectUUID": b"0000000000abcdef"})
-        self.l.add({"dn": "DC=EXAMPLE,DC=ORG",
-                    "name": b"org",
-                    "objectUUID": b"0000000001abcdef"})
-        self.l.add({"dn": "OU=OU1,DC=EXAMPLE,DC=ORG",
-                    "name": b"OU #1",
-                    "x": "y", "y": "a",
-                    "objectUUID": b"0023456789abcde3"})
-        self.l.add({"dn": "OU=OU2,DC=EXAMPLE,DC=ORG",
-                    "name": b"OU #2",
-                    "x": "y", "y": "a",
-                    "objectUUID": b"0023456789abcde4"})
-        self.l.add({"dn": "OU=OU3,DC=EXAMPLE,DC=ORG",
-                    "name": b"OU #3",
-                    "x": "y", "y": "a",
-                    "objectUUID": b"0023456789abcde5"})
-        self.l.add({"dn": "OU=OU4,DC=EXAMPLE,DC=ORG",
-                    "name": b"OU #4",
-                    "x": "z", "y": "b",
-                    "objectUUID": b"0023456789abcde6"})
-        self.l.add({"dn": "OU=OU5,DC=EXAMPLE,DC=ORG",
-                    "name": b"OU #5",
-                    "x": "y", "y": "a",
-                    "objectUUID": b"0023456789abcde7"})
-        self.l.add({"dn": "OU=OU6,DC=EXAMPLE,DC=ORG",
-                    "name": b"OU #6",
-                    "x": "y", "y": "a",
-                    "objectUUID": b"0023456789abcde8"})
-        self.l.add({"dn": "OU=OU7,DC=EXAMPLE,DC=ORG",
-                    "name": b"OU #7",
-                    "x": "y", "y": "c",
-                    "objectUUID": b"0023456789abcde9"})
-        self.l.add({"dn": "OU=OU8,DC=EXAMPLE,DC=ORG",
-                    "name": b"OU #8",
-                    "x": "y", "y": "b",
-                    "objectUUID": b"0023456789abcde0"})
-        self.l.add({"dn": "OU=OU9,DC=EXAMPLE,DC=ORG",
-                    "name": b"OU #9",
-                    "x": "y", "y": "a",
-                    "objectUUID": b"0023456789abcdea"})
+        db.add({"dn": "DC=ORG",
+                "name": b"org",
+                "objectUUID": b"0000000000abcdef"})
+        db.add({"dn": "DC=EXAMPLE,DC=ORG",
+                "name": b"org",
+                "objectUUID": b"0000000001abcdef"})
+        db.add({"dn": "OU=OU1,DC=EXAMPLE,DC=ORG",
+                "name": b"OU #1",
+                "x": "y", "y": "a",
+                "objectUUID": b"0023456789abcde3"})
+        db.add({"dn": "OU=OU2,DC=EXAMPLE,DC=ORG",
+                "name": b"OU #2",
+                "x": "y", "y": "a",
+                "objectUUID": b"0023456789abcde4"})
+        db.add({"dn": "OU=OU3,DC=EXAMPLE,DC=ORG",
+                "name": b"OU #3",
+                "x": "y", "y": "a",
+                "objectUUID": b"0023456789abcde5"})
+        db.add({"dn": "OU=OU4,DC=EXAMPLE,DC=ORG",
+                "name": b"OU #4",
+                "x": "z", "y": "b",
+                "objectUUID": b"0023456789abcde6"})
+        db.add({"dn": "OU=OU5,DC=EXAMPLE,DC=ORG",
+                "name": b"OU #5",
+                "x": "y", "y": "a",
+                "objectUUID": b"0023456789abcde7"})
+        db.add({"dn": "OU=OU6,DC=EXAMPLE,DC=ORG",
+                "name": b"OU #6",
+                "x": "y", "y": "a",
+                "objectUUID": b"0023456789abcde8"})
+        db.add({"dn": "OU=OU7,DC=EXAMPLE,DC=ORG",
+                "name": b"OU #7",
+                "x": "y", "y": "c",
+                "objectUUID": b"0023456789abcde9"})
+        db.add({"dn": "OU=OU8,DC=EXAMPLE,DC=ORG",
+                "name": b"OU #8",
+                "x": "y", "y": "b",
+                "objectUUID": b"0023456789abcde0"})
+        db.add({"dn": "OU=OU9,DC=EXAMPLE,DC=ORG",
+                "name": b"OU #9",
+                "x": "y", "y": "a",
+                "objectUUID": b"0023456789abcdea"})
 
-        self.l.add({"dn": "DC=EXAMPLE,DC=COM",
-                    "name": b"org",
-                    "objectUUID": b"0000000011abcdef"})
+        db.add({"dn": "DC=EXAMPLE,DC=COM",
+                "name": b"org",
+                "objectUUID": b"0000000011abcdef"})
 
-        self.l.add({"dn": "DC=EXAMPLE,DC=NET",
-                    "name": b"org",
-                    "objectUUID": b"0000000021abcdef"})
+        db.add({"dn": "DC=EXAMPLE,DC=NET",
+                "name": b"org",
+                "objectUUID": b"0000000021abcdef"})
 
-        self.l.add({"dn": "OU=UNIQUE,DC=EXAMPLE,DC=NET",
-                    "objectUUID": b"0000000022abcdef"})
+        db.add({"dn": "OU=UNIQUE,DC=EXAMPLE,DC=NET",
+                "objectUUID": b"0000000022abcdef"})
 
-        self.l.add({"dn": "DC=SAMBA,DC=ORG",
-                    "name": b"samba.org",
-                    "objectUUID": b"0123456789abcdef"})
-        self.l.add({"dn": "OU=ADMIN,DC=SAMBA,DC=ORG",
-                    "name": b"Admins",
-                    "x": "z", "y": "a",
-                    "objectUUID": b"0123456789abcde1"})
-        self.l.add({"dn": "OU=USERS,DC=SAMBA,DC=ORG",
-                    "name": b"Users",
-                    "x": "z", "y": "a",
-                    "objectUUID": b"0123456789abcde2"})
-        self.l.add({"dn": "OU=OU1,DC=SAMBA,DC=ORG",
-                    "name": b"OU #1",
-                    "x": "y", "y": "a",
-                    "objectUUID": b"0123456789abcde3"})
-        self.l.add({"dn": "OU=OU2,DC=SAMBA,DC=ORG",
-                    "name": b"OU #2",
-                    "x": "y", "y": "a",
-                    "objectUUID": b"0123456789abcde4"})
-        self.l.add({"dn": "OU=OU3,DC=SAMBA,DC=ORG",
-                    "name": b"OU #3",
-                    "x": "y", "y": "a",
-                    "objectUUID": b"0123456789abcde5"})
-        self.l.add({"dn": "OU=OU4,DC=SAMBA,DC=ORG",
-                    "name": b"OU #4",
-                    "x": "y", "y": "a",
-                    "objectUUID": b"0123456789abcde6"})
-        self.l.add({"dn": "OU=OU5,DC=SAMBA,DC=ORG",
-                    "name": b"OU #5",
-                    "x": "y", "y": "a",
-                    "objectUUID": b"0123456789abcde7"})
-        self.l.add({"dn": "OU=OU6,DC=SAMBA,DC=ORG",
-                    "name": b"OU #6",
-                    "x": "y", "y": "a",
-                    "objectUUID": b"0123456789abcde8"})
-        self.l.add({"dn": "OU=OU7,DC=SAMBA,DC=ORG",
-                    "name": b"OU #7",
-                    "x": "y", "y": "a",
-                    "objectUUID": b"0123456789abcde9"})
-        self.l.add({"dn": "OU=OU8,DC=SAMBA,DC=ORG",
-                    "name": b"OU #8",
-                    "x": "y", "y": "a",
-                    "objectUUID": b"0123456789abcde0"})
-        self.l.add({"dn": "OU=OU9,DC=SAMBA,DC=ORG",
-                    "name": b"OU #9",
-                    "x": "y", "y": "a",
-                    "objectUUID": b"0123456789abcdea"})
-        self.l.add({"dn": "OU=OU10,DC=SAMBA,DC=ORG",
-                    "name": b"OU #10",
-                    "x": "y", "y": "a",
-                    "objectUUID": b"0123456789abcdeb"})
-        self.l.add({"dn": "OU=OU11,DC=SAMBA,DC=ORG",
-                    "name": b"OU #10",
-                    "x": "y", "y": "a",
-                    "objectUUID": b"0123456789abcdec"})
-        self.l.add({"dn": "OU=OU12,DC=SAMBA,DC=ORG",
-                    "name": b"OU #10",
-                    "x": "y", "y": "b",
-                    "objectUUID": b"0123456789abcded"})
-        self.l.add({"dn": "OU=OU13,DC=SAMBA,DC=ORG",
-                    "name": b"OU #10",
-                    "x": "x", "y": "b",
-                    "objectUUID": b"0123456789abcdee"})
-        self.l.add({"dn": "OU=OU14,DC=SAMBA,DC=ORG",
-                    "name": b"OU #10",
-                    "x": "x", "y": "b",
-                    "objectUUID": b"0123456789abcd01"})
-        self.l.add({"dn": "OU=OU15,DC=SAMBA,DC=ORG",
-                    "name": b"OU #10",
-                    "x": "x", "y": "b",
-                    "objectUUID": b"0123456789abcd02"})
-        self.l.add({"dn": "OU=OU16,DC=SAMBA,DC=ORG",
-                    "name": b"OU #10",
-                    "x": "x", "y": "b",
-                    "objectUUID": b"0123456789abcd03"})
-        self.l.add({"dn": "OU=OU17,DC=SAMBA,DC=ORG",
-                    "name": b"OU #10",
-                    "x": "x", "y": "b",
-                    "objectUUID": b"0123456789abcd04"})
-        self.l.add({"dn": "OU=OU18,DC=SAMBA,DC=ORG",
-                    "name": b"OU #10",
-                    "x": "x", "y": "b",
-                    "objectUUID": b"0123456789abcd05"})
-        self.l.add({"dn": "OU=OU19,DC=SAMBA,DC=ORG",
-                    "name": b"OU #10",
-                    "x": "x", "y": "b",
-                    "objectUUID": b"0123456789abcd06"})
-        self.l.add({"dn": "OU=OU20,DC=SAMBA,DC=ORG",
-                    "name": b"OU #10",
-                    "x": "x", "y": "b",
-                    "objectUUID": b"0123456789abcd07"})
-        self.l.add({"dn": "OU=OU21,DC=SAMBA,DC=ORG",
-                    "name": b"OU #10",
-                    "x": "x", "y": "c",
-                    "objectUUID": b"0123456789abcd08"})
-        self.l.add({"dn": "OU=OU22,DC=SAMBA,DC=ORG",
-                    "name": b"OU #10",
-                    "x": "x", "y": "c",
-                    "objectUUID": b"0123456789abcd09"})
+        db.add({"dn": "DC=SAMBA,DC=ORG",
+                "name": b"samba.org",
+                "objectUUID": b"0123456789abcdef"})
+        db.add({"dn": "OU=ADMIN,DC=SAMBA,DC=ORG",
+                "name": b"Admins",
+                "x": "z", "y": "a",
+                "objectUUID": b"0123456789abcde1"})
+        db.add({"dn": "OU=USERS,DC=SAMBA,DC=ORG",
+                "name": b"Users",
+                "x": "z", "y": "a",
+                "objectUUID": b"0123456789abcde2"})
+        db.add({"dn": "OU=OU1,DC=SAMBA,DC=ORG",
+                "name": b"OU #1",
+                "x": "y", "y": "a",
+                "objectUUID": b"0123456789abcde3"})
+        db.add({"dn": "OU=OU2,DC=SAMBA,DC=ORG",
+                "name": b"OU #2",
+                "x": "y", "y": "a",
+                "objectUUID": b"0123456789abcde4"})
+        db.add({"dn": "OU=OU3,DC=SAMBA,DC=ORG",
+                "name": b"OU #3",
+                "x": "y", "y": "a",
+                "objectUUID": b"0123456789abcde5"})
+        db.add({"dn": "OU=OU4,DC=SAMBA,DC=ORG",
+                "name": b"OU #4",
+                "x": "y", "y": "a",
+                "objectUUID": b"0123456789abcde6"})
+        db.add({"dn": "OU=OU5,DC=SAMBA,DC=ORG",
+                "name": b"OU #5",
+                "x": "y", "y": "a",
+                "objectUUID": b"0123456789abcde7"})
+        db.add({"dn": "OU=OU6,DC=SAMBA,DC=ORG",
+                "name": b"OU #6",
+                "x": "y", "y": "a",
+                "objectUUID": b"0123456789abcde8"})
+        db.add({"dn": "OU=OU7,DC=SAMBA,DC=ORG",
+                "name": b"OU #7",
+                "x": "y", "y": "a",
+                "objectUUID": b"0123456789abcde9"})
+        db.add({"dn": "OU=OU8,DC=SAMBA,DC=ORG",
+                "name": b"OU #8",
+                "x": "y", "y": "a",
+                "objectUUID": b"0123456789abcde0"})
+        db.add({"dn": "OU=OU9,DC=SAMBA,DC=ORG",
+                "name": b"OU #9",
+                "x": "y", "y": "a",
+                "objectUUID": b"0123456789abcdea"})
+        db.add({"dn": "OU=OU10,DC=SAMBA,DC=ORG",
+                "name": b"OU #10",
+                "x": "y", "y": "a",
+                "objectUUID": b"0123456789abcdeb"})
+        db.add({"dn": "OU=OU11,DC=SAMBA,DC=ORG",
+                "name": b"OU #10",
+                "x": "y", "y": "a",
+                "objectUUID": b"0123456789abcdec"})
+        db.add({"dn": "OU=OU12,DC=SAMBA,DC=ORG",
+                "name": b"OU #10",
+                "x": "y", "y": "b",
+                "objectUUID": b"0123456789abcded"})
+        db.add({"dn": "OU=OU13,DC=SAMBA,DC=ORG",
+                "name": b"OU #10",
+                "x": "x", "y": "b",
+                "objectUUID": b"0123456789abcdee"})
+        db.add({"dn": "OU=OU14,DC=SAMBA,DC=ORG",
+                "name": b"OU #10",
+                "x": "x", "y": "b",
+                "objectUUID": b"0123456789abcd01"})
+        db.add({"dn": "OU=OU15,DC=SAMBA,DC=ORG",
+                "name": b"OU #10",
+                "x": "x", "y": "b",
+                "objectUUID": b"0123456789abcd02"})
+        db.add({"dn": "OU=OU16,DC=SAMBA,DC=ORG",
+                "name": b"OU #10",
+                "x": "x", "y": "b",
+                "objectUUID": b"0123456789abcd03"})
+        db.add({"dn": "OU=OU17,DC=SAMBA,DC=ORG",
+                "name": b"OU #10",
+                "x": "x", "y": "b",
+                "objectUUID": b"0123456789abcd04"})
+        db.add({"dn": "OU=OU18,DC=SAMBA,DC=ORG",
+                "name": b"OU #10",
+                "x": "x", "y": "b",
+                "objectUUID": b"0123456789abcd05"})
+        db.add({"dn": "OU=OU19,DC=SAMBA,DC=ORG",
+                "name": b"OU #10",
+                "x": "x", "y": "b",
+                "objectUUID": b"0123456789abcd06"})
+        db.add({"dn": "OU=OU20,DC=SAMBA,DC=ORG",
+                "name": b"OU #10",
+                "x": "x", "y": "b",
+                "objectUUID": b"0123456789abcd07"})
+        db.add({"dn": "OU=OU21,DC=SAMBA,DC=ORG",
+                "name": b"OU #10",
+                "x": "x", "y": "c",
+                "objectUUID": b"0123456789abcd08"})
+        db.add({"dn": "OU=OU22,DC=SAMBA,DC=ORG",
+                "name": b"OU #10",
+                "x": "x", "y": "c",
+                "objectUUID": b"0123456789abcd09"})
+        db.disconnect()
+
+    def setUp(self):
+        super().setUp()
+        self.filename = os.path.join(
+            self.testdir,
+            f"{self.id().rsplit('.',1)[1]}.ldb")
+        shutil.copy(self.reference_db, self.filename)
+        self.l = ldb.Ldb(self.url(),
+                         flags=self.flags(),
+                         options=self.options)
+        self.addCleanup(self.l.disconnect)
 
     def test_base(self):
         """Testing a search"""
@@ -1339,49 +1348,54 @@ class GUIDAndOneLevelIndexedSearchTestsLmdb(GUIDAndOneLevelIndexedSearchTests):
 
 class LdbResultTests(LdbBaseTest):
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.testdir = tempdir()
+        cls.addClassCleanup(shutil.rmtree, cls.testdir)
+        cls.reference_db = os.path.join(cls.testdir,
+                                        f"{cls.__name__}-ref.ldb")
+        db = ldb.Ldb(cls.prefix + cls.reference_db, flags=cls.flags())
+        try:
+            db.add(cls.index)
+        except AttributeError:
+            pass
+        db.add({"dn": "DC=SAMBA,DC=ORG", "name": b"samba.org",
+                "objectUUID": b"0123456789abcde0"})
+        db.add({"dn": "OU=ADMIN,DC=SAMBA,DC=ORG", "name": b"Admins",
+                "objectUUID": b"0123456789abcde1"})
+        db.add({"dn": "OU=USERS,DC=SAMBA,DC=ORG", "name": b"Users",
+                "objectUUID": b"0123456789abcde2"})
+        db.add({"dn": "OU=OU1,DC=SAMBA,DC=ORG", "name": b"OU #1",
+                "objectUUID": b"0123456789abcde3"})
+        db.add({"dn": "OU=OU2,DC=SAMBA,DC=ORG", "name": b"OU #2",
+                "objectUUID": b"0123456789abcde4"})
+        db.add({"dn": "OU=OU3,DC=SAMBA,DC=ORG", "name": b"OU #3",
+                "objectUUID": b"0123456789abcde5"})
+        db.add({"dn": "OU=OU4,DC=SAMBA,DC=ORG", "name": b"OU #4",
+                "objectUUID": b"0123456789abcde6"})
+        db.add({"dn": "OU=OU5,DC=SAMBA,DC=ORG", "name": b"OU #5",
+                "objectUUID": b"0123456789abcde7"})
+        db.add({"dn": "OU=OU6,DC=SAMBA,DC=ORG", "name": b"OU #6",
+                "objectUUID": b"0123456789abcde8"})
+        db.add({"dn": "OU=OU7,DC=SAMBA,DC=ORG", "name": b"OU #7",
+                "objectUUID": b"0123456789abcde9"})
+        db.add({"dn": "OU=OU8,DC=SAMBA,DC=ORG", "name": b"OU #8",
+                "objectUUID": b"0123456789abcdea"})
+        db.add({"dn": "OU=OU9,DC=SAMBA,DC=ORG", "name": b"OU #9",
+                "objectUUID": b"0123456789abcdeb"})
+        db.add({"dn": "OU=OU10,DC=SAMBA,DC=ORG", "name": b"OU #10",
+                "objectUUID": b"0123456789abcdec"})
+        db.disconnect()
+
     def setUp(self):
         super().setUp()
-        self.testdir = tempdir()
         self.filename = os.path.join(
             self.testdir,
             f"{self.id().rsplit('.',1)[1]}.ldb")
+        shutil.copy(self.reference_db, self.filename)
         self.l = ldb.Ldb(self.url(), flags=self.flags())
-        try:
-            self.l.add(self.index)
-        except AttributeError:
-            pass
-        self.l.add({"dn": "DC=SAMBA,DC=ORG", "name": b"samba.org",
-                    "objectUUID": b"0123456789abcde0"})
-        self.l.add({"dn": "OU=ADMIN,DC=SAMBA,DC=ORG", "name": b"Admins",
-                    "objectUUID": b"0123456789abcde1"})
-        self.l.add({"dn": "OU=USERS,DC=SAMBA,DC=ORG", "name": b"Users",
-                    "objectUUID": b"0123456789abcde2"})
-        self.l.add({"dn": "OU=OU1,DC=SAMBA,DC=ORG", "name": b"OU #1",
-                    "objectUUID": b"0123456789abcde3"})
-        self.l.add({"dn": "OU=OU2,DC=SAMBA,DC=ORG", "name": b"OU #2",
-                    "objectUUID": b"0123456789abcde4"})
-        self.l.add({"dn": "OU=OU3,DC=SAMBA,DC=ORG", "name": b"OU #3",
-                    "objectUUID": b"0123456789abcde5"})
-        self.l.add({"dn": "OU=OU4,DC=SAMBA,DC=ORG", "name": b"OU #4",
-                    "objectUUID": b"0123456789abcde6"})
-        self.l.add({"dn": "OU=OU5,DC=SAMBA,DC=ORG", "name": b"OU #5",
-                    "objectUUID": b"0123456789abcde7"})
-        self.l.add({"dn": "OU=OU6,DC=SAMBA,DC=ORG", "name": b"OU #6",
-                    "objectUUID": b"0123456789abcde8"})
-        self.l.add({"dn": "OU=OU7,DC=SAMBA,DC=ORG", "name": b"OU #7",
-                    "objectUUID": b"0123456789abcde9"})
-        self.l.add({"dn": "OU=OU8,DC=SAMBA,DC=ORG", "name": b"OU #8",
-                    "objectUUID": b"0123456789abcdea"})
-        self.l.add({"dn": "OU=OU9,DC=SAMBA,DC=ORG", "name": b"OU #9",
-                    "objectUUID": b"0123456789abcdeb"})
-        self.l.add({"dn": "OU=OU10,DC=SAMBA,DC=ORG", "name": b"OU #10",
-                    "objectUUID": b"0123456789abcdec"})
-
-    def tearDown(self):
-        shutil.rmtree(self.testdir)
-        super().tearDown()
-        # Ensure the LDB is closed now, so we close the FD
-        del(self.l)
+        self.addCleanup(self.l.disconnect)
 
     def test_return_type(self):
         res = self.l.search()
