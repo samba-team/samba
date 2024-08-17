@@ -2,18 +2,14 @@ import os
 from unittest import TestCase
 import shutil
 from subprocess import check_output
+import sys
+sys.path.insert(0, "bin/python")
 import ldb
 
-TDB_PREFIX = "tdb://"
-MDB_PREFIX = "mdb://"
-
-def tempdir():
-    import tempfile
-    try:
-        dir_prefix = os.path.join(os.environ["SELFTEST_PREFIX"], "tmp")
-    except KeyError:
-        dir_prefix = None
-    return tempfile.mkdtemp(dir=dir_prefix)
+from api_base import (
+    TDB_PREFIX,
+    tempdir,
+)
 
 
 # Check enabling and disabling GUID indexing works and that the database is
@@ -199,6 +195,5 @@ class GUIDIndexAndPackFormatTests(TestCase):
 
 if __name__ == '__main__':
     import unittest
-
 
     unittest.TestProgram()
