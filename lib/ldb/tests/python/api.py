@@ -106,10 +106,10 @@ class SimpleLdb(LdbBaseTest):
             pass
 
     def tearDown(self):
+        self.ldb.disconnect()
         shutil.rmtree(self.testdir)
         super().tearDown()
         # Ensure the LDB is closed now, so we close the FD
-        del(self.ldb)
 
     def test_connect(self):
         ldb.Ldb(self.url(), flags=self.flags())
