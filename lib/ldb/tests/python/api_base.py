@@ -35,8 +35,9 @@ class LdbBaseTest(TestCase):
     def url(self):
         return self.prefix + self.filename
 
-    def flags(self):
-        if self.prefix == MDB_PREFIX:
+    @classmethod
+    def flags(cls):
+        if cls.prefix == MDB_PREFIX:
             return ldb.FLG_NOSYNC
         else:
             return 0
