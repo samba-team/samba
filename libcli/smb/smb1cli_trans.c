@@ -822,22 +822,16 @@ NTSTATUS smb1cli_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	if (setup != NULL) {
 		*setup = talloc_move(mem_ctx, &state->rsetup);
 		*num_setup = state->num_rsetup;
-	} else {
-		TALLOC_FREE(state->rsetup);
 	}
 
 	if (param != NULL) {
 		*param = talloc_move(mem_ctx, &state->rparam.data);
 		*num_param = state->rparam.total;
-	} else {
-		TALLOC_FREE(state->rparam.data);
 	}
 
 	if (data != NULL) {
 		*data = talloc_move(mem_ctx, &state->rdata.data);
 		*num_data = state->rdata.total;
-	} else {
-		TALLOC_FREE(state->rdata.data);
 	}
 
 	status = state->status;
