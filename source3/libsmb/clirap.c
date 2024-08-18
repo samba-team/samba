@@ -458,8 +458,7 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
 	unsigned int data_len;
 	unsigned int param_len = 0;
 	uint8_t *rparam = NULL;
-	uint8_t *rdata = NULL;
-	uint32_t rprcnt, rdrcnt;
+	uint32_t rprcnt;
 	gnutls_cipher_hd_t cipher_hnd = NULL;
 	gnutls_datum_t old_pw_key = {
 		.data = old_pw_hash,
@@ -549,27 +548,17 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
 			   0,		     /* min_rsetup */
 			   NULL,	     /* num_rsetup */
 			   &rparam,	     /* rparam */
-			   0,		     /* min_rparam */
+			   2,		     /* min_rparam */
 			   &rprcnt,	     /* num_rparam */
-			   &rdata,	     /* rdata */
+			   NULL,	     /* rdata */
 			   0,		     /* min_rdata */
-			   &rdrcnt);	     /* num_rdata */
+			   NULL);	     /* num_rdata */
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
+	cli->rap_error = PULL_LE_U16(rparam, 0);
 
-	if (rdrcnt < 2) {
-		cli->rap_error = ERRbadformat;
-		goto done;
-	}
-
-	if (rparam) {
-		cli->rap_error = SVAL(rparam,0);
-	}
-
-done:
 	TALLOC_FREE(rparam);
-	TALLOC_FREE(rdata);
 
 	return (cli->rap_error == 0);
 }
