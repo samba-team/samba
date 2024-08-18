@@ -1218,7 +1218,7 @@ NTSTATUS pass_oem_change(char *user, const char *rhost,
 	ret = pdb_getsampwnam(sampass, user);
 	unbecome_root();
 
-	if (ret == false) {
+	if (!ret) {
 		DEBUG(0,("pass_oem_change: getsmbpwnam returned NULL\n"));
 		nt_status = NT_STATUS_NO_SUCH_USER;
 		goto done;
