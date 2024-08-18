@@ -29,11 +29,6 @@ struct cli_state;
 
 /* The following definitions come from libsmb/clirap.c  */
 
-bool cli_api(struct cli_state *cli,
-	     char *param, int prcnt, int mprcnt,
-	     char *data, int drcnt, int mdrcnt,
-	     char **rparam, unsigned int *rprcnt,
-	     char **rdata, unsigned int *rdrcnt);
 NTSTATUS cli_RNetShareEnum(
 	struct cli_state *cli,
 	void (*fn)(const char *, uint32_t, const char *, void *),

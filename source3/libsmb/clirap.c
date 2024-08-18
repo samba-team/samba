@@ -35,68 +35,6 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
-#define PIPE_LANMAN   "\\PIPE\\LANMAN"
-
-/****************************************************************************
- Call a remote api
-****************************************************************************/
-
-bool cli_api(struct cli_state *cli,
-	     char *param, int prcnt, int mprcnt,
-	     char *data, int drcnt, int mdrcnt,
-	     char **rparam, unsigned int *rprcnt,
-	     char **rdata, unsigned int *rdrcnt)
-{
-	NTSTATUS status;
-
-	uint8_t *my_rparam, *my_rdata;
-	uint32_t num_my_rparam, num_my_rdata;
-
-	status = cli_trans(talloc_tos(), cli, SMBtrans,
-			   PIPE_LANMAN, 0, /* name, fid */
-			   0, 0,	   /* function, flags */
-			   NULL, 0, 0,	   /* setup */
-			   (uint8_t *)param, prcnt, mprcnt, /* Params, length, max */
-			   (uint8_t *)data, drcnt, mdrcnt,  /* Data, length, max */
-			   NULL,		 /* recv_flags2 */
-			   NULL, 0, NULL,	 /* rsetup */
-			   &my_rparam, 0, &num_my_rparam,
-			   &my_rdata, 0, &num_my_rdata);
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
-	}
-
-	/*
-	 * I know this memcpy massively hurts, but there are just tons
-	 * of callers of cli_api that eventually need changing to
-	 * talloc
-	 */
-
-	*rparam = (char *)smb_memdup(my_rparam, num_my_rparam);
-	if (*rparam == NULL) {
-		goto fail;
-	}
-	*rprcnt = num_my_rparam;
-	TALLOC_FREE(my_rparam);
-
-	*rdata = (char *)smb_memdup(my_rdata, num_my_rdata);
-	if (*rdata == NULL) {
-		goto fail;
-	}
-	*rdrcnt = num_my_rdata;
-	TALLOC_FREE(my_rdata);
-
-	return true;
-fail:
-	TALLOC_FREE(my_rdata);
-	TALLOC_FREE(my_rparam);
-	*rparam = NULL;
-	*rprcnt = 0;
-	*rdata = NULL;
-	*rdrcnt = 0;
-	return false;
-}
-
 /****************************************************************************
  Call a NetShareEnum - try and browse available connections on a host.
 ****************************************************************************/
@@ -136,7 +74,7 @@ NTSTATUS cli_RNetShareEnum(
 	status = cli_trans(talloc_tos(),       /* mem_ctx */
 			   cli,		       /* cli */
 			   SMBtrans,	       /* cmd */
-			   PIPE_LANMAN,	       /* name */
+			   "\\PIPE\\LANMAN",	       /* name */
 			   0,		       /* fid */
 			   0,		       /* function */
 			   0,		       /* flags */
@@ -320,7 +258,7 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
 		status = cli_trans(talloc_tos(),       /* mem_ctx */
 				   cli,		       /* cli */
 				   SMBtrans,	       /* cmd */
-				   PIPE_LANMAN,	       /* name */
+				   "\\PIPE\\LANMAN",	       /* name */
 				   0,		       /* fid */
 				   0,		       /* function */
 				   0,		       /* flags */
@@ -574,7 +512,7 @@ NTSTATUS cli_oem_change_password(struct cli_state *cli,
 	status = cli_trans(talloc_tos(),     /* mem_ctx */
 			   cli,		     /* cli */
 			   SMBtrans,	     /* cmd */
-			   PIPE_LANMAN,	     /* name */
+			   "\\PIPE\\LANMAN", /* name */
 			   0,		     /* fid */
 			   0,		     /* function */
 			   0,		     /* flags */
