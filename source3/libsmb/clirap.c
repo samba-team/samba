@@ -103,16 +103,16 @@ fail:
 
 int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32_t, const char *, void *), void *state)
 {
-	char *rparam = NULL;
-	char *rdata = NULL;
+	uint8_t *rparam = NULL;
+	uint8_t *rdata = NULL;
 	char *rdata_end = NULL;
-	char *p;
+	char *p = NULL;
 	unsigned int rdrcnt,rprcnt;
 	char param[1024];
 	int count = -1;
 	int i, converter;
-	bool ok;
 	int res;
+	NTSTATUS status;
 
 	/* now send a SMBtrans command with api RNetShareEnum */
 	p = param;
@@ -130,23 +130,38 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32_t, 
 	SSVAL(p,2,0xFFE0);
 	p += 4;
 
-	ok = cli_api(
-		cli,
-		param, PTR_DIFF(p,param), 1024,  /* Param, length, maxlen */
-		NULL, 0, 0xFFE0,            /* data, length, maxlen - Win2k needs a small buffer here too ! */
-		&rparam, &rprcnt,                /* return params, length */
-		&rdata, &rdrcnt);                /* return data, length */
-	if (!ok) {
+	status = cli_trans(talloc_tos(),       /* mem_ctx */
+			   cli,		       /* cli */
+			   SMBtrans,	       /* cmd */
+			   PIPE_LANMAN,	       /* name */
+			   0,		       /* fid */
+			   0,		       /* function */
+			   0,		       /* flags */
+			   NULL,	       /* setup */
+			   0,		       /* num_setup */
+			   0,		       /* max_setup */
+			   (uint8_t *)param,   /* param */
+			   PTR_DIFF(p, param), /* num_param */
+			   1024,	       /* max_param */
+			   NULL,	       /* data */
+			   0,		       /* num_data */
+			   0xFFE0,	       /* max_data, for W2K */
+			   NULL,	       /* recv_flags2 */
+			   NULL,	       /* rsetup */
+			   0,		       /* min_rsetup */
+			   NULL,	       /* num_rsetup */
+			   &rparam,	       /* rparam */
+			   6,		       /* min_rparam */
+			   &rprcnt,	       /* num_rparam */
+			   &rdata,	       /* rdata */
+			   0,		       /* min_rdata */
+			   &rdrcnt);	       /* num_rdata */
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(4,("NetShareEnum failed\n"));
 		goto done;
 	}
 
-	if (rprcnt < 6) {
-		DBG_ERR("Got invalid result: rprcnt=%u\n", rprcnt);
-		goto done;
-	}
-
-	res = rparam? SVAL(rparam,0) : -1;
+	res = PULL_LE_U16(rparam, 0);
 
 	if (!(res == 0 || res == ERRmoredata)) {
 		DEBUG(4,("NetShareEnum res=%d\n", res));
@@ -154,10 +169,10 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32_t, 
 	}
 
 	converter = SVAL(rparam,2);
-	rdata_end = rdata + rdrcnt;
+	rdata_end = (char *)rdata + rdrcnt;
 
 	count=SVAL(rparam,4);
-	p = rdata;
+	p = (char *)rdata;
 
 	for (i=0;i<count;i++,p+=20) {
 		char *sname;
@@ -182,7 +197,7 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32_t, 
 			TALLOC_FREE(frame);
 			break;
 		}
-		cmnt = comment_offset?(rdata+comment_offset):"";
+		cmnt = comment_offset ? ((char *)rdata + comment_offset) : "";
 
 		/* Work out the comment length. */
 		for (p1 = cmnt, len = 0; *p1 &&
@@ -206,8 +221,8 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32_t, 
 	}
 
 done:
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
+	TALLOC_FREE(rparam);
+	TALLOC_FREE(rdata);
 
 	return count;
 }
