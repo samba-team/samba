@@ -105,10 +105,12 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32_t, 
 {
 	char *rparam = NULL;
 	char *rdata = NULL;
+	char *rdata_end = NULL;
 	char *p;
 	unsigned int rdrcnt,rprcnt;
 	char param[1024];
 	int count = -1;
+	int i, converter;
 	bool ok;
 	int res;
 
@@ -146,61 +148,61 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32_t, 
 
 	res = rparam? SVAL(rparam,0) : -1;
 
-	if (res == 0 || res == ERRmoredata) {
-		int converter=SVAL(rparam,2);
-		int i;
-		char *rdata_end = rdata + rdrcnt;
+	if (!(res == 0 || res == ERRmoredata)) {
+		DEBUG(4,("NetShareEnum res=%d\n", res));
+		goto done;
+	}
 
-		count=SVAL(rparam,4);
-		p = rdata;
+	converter = SVAL(rparam,2);
+	rdata_end = rdata + rdrcnt;
 
-		for (i=0;i<count;i++,p+=20) {
-			char *sname;
-			int type;
-			int comment_offset;
-			const char *cmnt;
-			const char *p1;
-			char *s1, *s2;
-			size_t len;
-			TALLOC_CTX *frame = talloc_stackframe();
+	count=SVAL(rparam,4);
+	p = rdata;
 
-			if (p + 20 > rdata_end) {
-				TALLOC_FREE(frame);
-				break;
-			}
+	for (i=0;i<count;i++,p+=20) {
+		char *sname;
+		int type;
+		int comment_offset;
+		const char *cmnt;
+		const char *p1;
+		char *s1, *s2;
+		size_t len;
+		TALLOC_CTX *frame = talloc_stackframe();
 
-			sname = p;
-			type = SVAL(p,14);
-			comment_offset = (IVAL(p,16) & 0xFFFF) - converter;
-			if (comment_offset < 0 ||
-			    comment_offset > (int)rdrcnt) {
-				TALLOC_FREE(frame);
-				break;
-			}
-			cmnt = comment_offset?(rdata+comment_offset):"";
-
-			/* Work out the comment length. */
-			for (p1 = cmnt, len = 0; *p1 &&
-				     p1 < rdata_end; len++)
-				p1++;
-			if (!*p1) {
-				len++;
-			}
-			pull_string_talloc(frame,rdata,0,
-					   &s1,sname,14,STR_ASCII);
-			pull_string_talloc(frame,rdata,0,
-					   &s2,cmnt,len,STR_ASCII);
-			if (!s1 || !s2) {
-				TALLOC_FREE(frame);
-				continue;
-			}
-
-			fn(s1, type, s2, state);
-
+		if (p + 20 > rdata_end) {
 			TALLOC_FREE(frame);
+			break;
 		}
-	} else {
-			DEBUG(4,("NetShareEnum res=%d\n", res));
+
+		sname = p;
+		type = SVAL(p,14);
+		comment_offset = (IVAL(p,16) & 0xFFFF) - converter;
+		if (comment_offset < 0 ||
+		    comment_offset > (int)rdrcnt) {
+			TALLOC_FREE(frame);
+			break;
+		}
+		cmnt = comment_offset?(rdata+comment_offset):"";
+
+		/* Work out the comment length. */
+		for (p1 = cmnt, len = 0; *p1 &&
+			     p1 < rdata_end; len++)
+			p1++;
+		if (!*p1) {
+			len++;
+		}
+		pull_string_talloc(frame,rdata,0,
+				   &s1,sname,14,STR_ASCII);
+		pull_string_talloc(frame,rdata,0,
+				   &s2,cmnt,len,STR_ASCII);
+		if (!s1 || !s2) {
+			TALLOC_FREE(frame);
+			continue;
+		}
+
+		fn(s1, type, s2, state);
+
+		TALLOC_FREE(frame);
 	}
 
 done:
