@@ -321,8 +321,7 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 	if (node == NULL) {
 		D_ERR("Refused connection from unknown node %s\n",
 		      ctdb_addr_to_str(&addr));
-		close(fd);
-		return;
+		goto failed;
 	}
 
 	tnode = talloc_get_type_abort(node->transport_data,
@@ -331,23 +330,20 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 		/* This can't happen - see ctdb_tcp_initialise() */
 		DBG_ERR("INTERNAL ERROR setting up connection from node %s\n",
 			node->name);
-		close(fd);
-		return;
+		goto failed;
 	}
 
 	if (tnode->in_queue != NULL) {
 		DBG_ERR("Incoming queue active, rejecting connection from %s\n",
 			node->name);
-		close(fd);
-		return;
+		goto failed;
 	}
 
 	ret = set_blocking(fd, false);
 	if (ret != 0) {
 		DBG_ERR("Failed to set socket non-blocking (%s)\n",
 			strerror(errno));
-		close(fd);
-		return;
+		goto failed;
 	}
 
 	set_close_on_exec(fd);
@@ -374,8 +370,7 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 					   node->name);
 	if (tnode->in_queue == NULL) {
 		DBG_ERR("Failed to set up incoming queue\n");
-		close(fd);
-		return;
+		goto failed;
 	}
 
        /*
@@ -385,6 +380,11 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 	if (tnode->out_queue != NULL) {
 		node->ctdb->upcalls->node_connected(node);
 	}
+
+	return;
+
+failed:
+	close(fd);
  }
 
 static int ctdb_tcp_listen_addr(struct ctdb_context *ctdb,
