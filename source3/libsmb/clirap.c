@@ -455,7 +455,6 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
 	char *p = param;
 	unsigned char old_pw_hash[16];
 	unsigned char new_pw_hash[16];
-	unsigned int data_len;
 	unsigned int param_len = 0;
 	uint8_t *rparam = NULL;
 	uint32_t rprcnt;
@@ -525,8 +524,6 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
 		return false;
 	}
 
-	data_len = 532;
-
 	status = cli_trans(talloc_tos(),     /* mem_ctx */
 			   cli,		     /* cli */
 			   SMBtrans,	     /* cmd */
@@ -541,7 +538,7 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
 			   param_len,	     /* num_param */
 			   4,		     /* max_param */
 			   data,	     /* data */
-			   data_len,	     /* num_data */
+			   sizeof(data),     /* num_data */
 			   0,		     /* max_data */
 			   NULL,	     /* recv_flags2 */
 			   NULL,	     /* rsetup */
