@@ -451,21 +451,22 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
                              const char *old_password)
 {
 	char param[1024];
-	unsigned char data[532];
+	uint8_t data[532];
 	char *p = param;
 	unsigned char old_pw_hash[16];
 	unsigned char new_pw_hash[16];
 	unsigned int data_len;
 	unsigned int param_len = 0;
-	char *rparam = NULL;
-	char *rdata = NULL;
-	unsigned int rprcnt, rdrcnt;
+	uint8_t *rparam = NULL;
+	uint8_t *rdata = NULL;
+	uint32_t rprcnt, rdrcnt;
 	gnutls_cipher_hd_t cipher_hnd = NULL;
 	gnutls_datum_t old_pw_key = {
 		.data = old_pw_hash,
 		.size = sizeof(old_pw_hash),
 	};
 	int rc;
+	NTSTATUS status;
 
 	if (strlen(user) >= sizeof(fstring)-1) {
 		DBG_ERR("user name %s is too long.\n", user);
@@ -527,13 +528,34 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
 
 	data_len = 532;
 
-	if (!cli_api(cli,
-		     param, param_len, 4,		/* param, length, max */
-		     (char *)data, data_len, 0,		/* data, length, max */
-		     &rparam, &rprcnt,
-		     &rdata, &rdrcnt)) {
-		DBG_ERR("Failed to send password change for user %s\n", user);
-		return False;
+	status = cli_trans(talloc_tos(),     /* mem_ctx */
+			   cli,		     /* cli */
+			   SMBtrans,	     /* cmd */
+			   PIPE_LANMAN,	     /* name */
+			   0,		     /* fid */
+			   0,		     /* function */
+			   0,		     /* flags */
+			   NULL,	     /* setup */
+			   0,		     /* num_setup */
+			   0,		     /* max_setup */
+			   (uint8_t *)param, /* param */
+			   param_len,	     /* num_param */
+			   4,		     /* max_param */
+			   data,	     /* data */
+			   data_len,	     /* num_data */
+			   0,		     /* max_data */
+			   NULL,	     /* recv_flags2 */
+			   NULL,	     /* rsetup */
+			   0,		     /* min_rsetup */
+			   NULL,	     /* num_rsetup */
+			   &rparam,	     /* rparam */
+			   0,		     /* min_rparam */
+			   &rprcnt,	     /* num_rparam */
+			   &rdata,	     /* rdata */
+			   0,		     /* min_rdata */
+			   &rdrcnt);	     /* num_rdata */
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
 	}
 
 	if (rdrcnt < 2) {
@@ -546,8 +568,8 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
 	}
 
 done:
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
+	TALLOC_FREE(rparam);
+	TALLOC_FREE(rdata);
 
 	return (cli->rap_error == 0);
 }
