@@ -36,6 +36,8 @@
 #include "common/logging.h"
 #include "common/path.h"
 
+#include "protocol/protocol_util.h"
+
 #include "ctdb_tcp.h"
 
 /*
@@ -319,8 +321,14 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 
 	node = ctdb_ip_to_node(ctdb, &addr);
 	if (node == NULL) {
-		D_ERR("Refused connection from unknown node %s\n",
-		      ctdb_addr_to_str(&addr));
+		char *t = ctdb_sock_addr_to_string(ctcp, &addr, true);
+		if (t == NULL) {
+			DBG_ERR("Refused connection from unparsable node\n");
+			goto failed;
+		}
+
+		D_ERR("Refused connection from unknown node %s\n", t);
+		talloc_free(t);
 		goto failed;
 	}
 
