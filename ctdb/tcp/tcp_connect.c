@@ -330,14 +330,14 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 	if (tnode == NULL) {
 		/* This can't happen - see ctdb_tcp_initialise() */
 		DBG_ERR("INTERNAL ERROR setting up connection from node %s\n",
-			ctdb_addr_to_str(&addr));
+			node->name);
 		close(fd);
 		return;
 	}
 
 	if (tnode->in_queue != NULL) {
 		DBG_ERR("Incoming queue active, rejecting connection from %s\n",
-			ctdb_addr_to_str(&addr));
+			node->name);
 		close(fd);
 		return;
 	}
@@ -371,7 +371,7 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 					   ctdb_tcp_read_cb,
 					   node,
 					   "ctdbd-%s",
-					   ctdb_addr_to_str(&addr));
+					   node->name);
 	if (tnode->in_queue == NULL) {
 		DBG_ERR("Failed to set up incoming queue\n");
 		close(fd);
