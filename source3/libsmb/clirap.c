@@ -447,8 +447,10 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
  Send a SamOEMChangePassword command.
 ****************************************************************************/
 
-bool cli_oem_change_password(struct cli_state *cli, const char *user, const char *new_password,
-                             const char *old_password)
+NTSTATUS cli_oem_change_password(struct cli_state *cli,
+				 const char *user,
+				 const char *new_password,
+				 const char *old_password)
 {
 	char param[1024];
 	uint8_t data[532];
@@ -468,7 +470,7 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
 
 	if (strlen(user) >= sizeof(fstring)-1) {
 		DBG_ERR("user name %s is too long.\n", user);
-		return False;
+		return NT_STATUS_NAME_TOO_LONG;
 	}
 
 	SSVAL(p,0,214); /* SamOEMChangePassword command. */
@@ -503,14 +505,18 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
 	if (rc < 0) {
 		DBG_ERR("gnutls_cipher_init failed: %s\n",
 			gnutls_strerror(rc));
-		return false;
+		status = gnutls_error_to_ntstatus(
+			rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		return status;
 	}
 	rc = gnutls_cipher_encrypt(cipher_hnd,
 			      data,
 			      516);
 	gnutls_cipher_deinit(cipher_hnd);
 	if (rc < 0) {
-		return false;
+		status = gnutls_error_to_ntstatus(
+			rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		return status;
 	}
 
 	/*
@@ -521,7 +527,9 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
 	rc = E_old_pw_hash( new_pw_hash, old_pw_hash, (uchar *)&data[516]);
 	if (rc != 0) {
 		DBG_ERR("E_old_pw_hash failed: %s\n", gnutls_strerror(rc));
-		return false;
+		status = gnutls_error_to_ntstatus(
+			rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		return status;
 	}
 
 	status = cli_trans(talloc_tos(),     /* mem_ctx */
@@ -551,13 +559,15 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
 			   0,		     /* min_rdata */
 			   NULL);	     /* num_rdata */
 	if (!NT_STATUS_IS_OK(status)) {
-		return false;
+		return status;
 	}
 	cli->rap_error = PULL_LE_U16(rparam, 0);
 
+	status = werror_to_ntstatus(W_ERROR(cli->rap_error));
+
 	TALLOC_FREE(rparam);
 
-	return (cli->rap_error == 0);
+	return status;
 }
 
 static void prep_basic_information_buf(

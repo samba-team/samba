@@ -38,8 +38,10 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32_t, 
 bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
 		       void (*fn)(const char *, uint32_t, const char *, void *),
 		       void *state);
-bool cli_oem_change_password(struct cli_state *cli, const char *user, const char *new_password,
-                             const char *old_password);
+NTSTATUS cli_oem_change_password(struct cli_state *cli,
+				 const char *user,
+				 const char *new_password,
+				 const char *old_password);
 NTSTATUS cli_setpathinfo_ext(struct cli_state *cli, const char *fname,
 			     struct timespec create_time,
 			     struct timespec access_time,
