@@ -243,10 +243,10 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
 		       void (*fn)(const char *, uint32_t, const char *, void *),
 		       void *state)
 {
-	char *rparam = NULL;
-	char *rdata = NULL;
+	uint8_t *rparam = NULL;
+	uint8_t *rdata = NULL;
 	char *rdata_end = NULL;
-	unsigned int rdrcnt,rprcnt;
+	uint32_t rdrcnt, rprcnt;
 	char *p;
 	char param[1024];
 	int uLevel = 1;
@@ -256,6 +256,7 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
 	int total_cnt = 0;
 	int return_cnt = 0;
 	int res;
+	NTSTATUS status;
 
 	errno = 0; /* reset */
 
@@ -316,26 +317,41 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
 		/* Next time through we need to use the continue api */
 		func = RAP_NetServerEnum3;
 
-		if (!cli_api(cli,
-			param, PTR_DIFF(p,param), 8, /* params, length, max */
-			NULL, 0, CLI_BUFFER_SIZE, /* data, length, max */
-		            &rparam, &rprcnt, /* return params, return size */
-		            &rdata, &rdrcnt)) { /* return data, return size */
-
+		status = cli_trans(talloc_tos(),       /* mem_ctx */
+				   cli,		       /* cli */
+				   SMBtrans,	       /* cmd */
+				   PIPE_LANMAN,	       /* name */
+				   0,		       /* fid */
+				   0,		       /* function */
+				   0,		       /* flags */
+				   NULL,	       /* setup */
+				   0,		       /* num_setup */
+				   0,		       /* max_setup */
+				   (uint8_t *)param,   /* param */
+				   PTR_DIFF(p, param), /* num_param */
+				   8,		       /* max_param */
+				   NULL,	       /* data */
+				   0,		       /* num_data */
+				   CLI_BUFFER_SIZE,    /* max_data */
+				   NULL,	       /* recv_flags2 */
+				   NULL,	       /* rsetup */
+				   0,		       /* min_rsetup */
+				   NULL,	       /* num_rsetup */
+				   &rparam,	       /* rparam */
+				   6,		       /* min_rparam */
+				   &rprcnt,	       /* num_rparam */
+				   &rdata,	       /* rdata */
+				   0,		       /* min_rdata */
+				   &rdrcnt);	       /* num_rdata */
+		if (!NT_STATUS_IS_OK(status)) {
 			/* break out of the loop on error */
 		        res = -1;
 		        break;
 		}
 
-		rdata_end = rdata + rdrcnt;
+		rdata_end = (char *)rdata + rdrcnt;
 
-		if (rprcnt < 6) {
-			DBG_ERR("Got invalid result: rprcnt=%u\n", rprcnt);
-			res = -1;
-			break;
-		}
-
-		res = rparam ? SVAL(rparam,0) : -1;
+		res = PULL_LE_U16(rparam, 0);
 
 		if (res == 0 || res == ERRmoredata ||
                     (res != -1 && cli_errno(cli) == 0)) {
@@ -357,7 +373,7 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
 
 			/* Keep track of how many we have read */
 			return_cnt += count;
-			p = rdata;
+			p = (char *)rdata;
 
 			/* The last name in the previous NetServerEnum reply is
 			 * sent back to server in the NetServerEnum3 request
@@ -375,7 +391,7 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
 				(strncmp(last_entry, p, 16) == 0)) {
 			    count -= 1; /* Skip this entry */
 			    return_cnt = -1; /* Not part of total, so don't count. */
-			    p = rdata + 26; /* Skip the whole record */
+			    p = (char *)rdata + 26; /* Skip the whole record */
 			}
 
 			for (i = 0; i < count; i++, p += 26) {
@@ -393,7 +409,9 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
 
 				sname = p;
 				comment_offset = (IVAL(p,22) & 0xFFFF)-converter;
-				cmnt = comment_offset?(rdata+comment_offset):"";
+				cmnt = comment_offset ? ((char *)rdata +
+							 comment_offset)
+						      : "";
 
 				if (comment_offset < 0 || comment_offset >= (int)rdrcnt) {
 					TALLOC_FREE(frame);
@@ -442,12 +460,12 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
 
 		}
 
-		SAFE_FREE(rparam);
-		SAFE_FREE(rdata);
+		TALLOC_FREE(rparam);
+		TALLOC_FREE(rdata);
 	} while ((res == ERRmoredata) && (total_cnt > return_cnt));
 
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
+	TALLOC_FREE(rparam);
+	TALLOC_FREE(rdata);
 	SAFE_FREE(last_entry);
 
 	if (res == -1) {
