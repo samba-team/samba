@@ -23,26 +23,6 @@
 #include "libsmb/libsmb.h"
 #include "../libcli/smb/smbXcli_base.h"
 
-/****************************************************************************
- Return the 32-bit NT status code from the last packet.
-****************************************************************************/
-
-NTSTATUS cli_nt_error(struct cli_state *cli)
-{
-	/* Deal with socket errors first. */
-	if (!cli_state_is_connected(cli)) {
-		return NT_STATUS_CONNECTION_DISCONNECTED;
-	}
-
-	if (NT_STATUS_IS_DOS(cli->raw_status)) {
-		int e_class = NT_STATUS_DOS_CLASS(cli->raw_status);
-		int code = NT_STATUS_DOS_CODE(cli->raw_status);
-		return dos_to_ntstatus(e_class, code);
-	}
-
-	return cli->raw_status;
-}
-
 int cli_status_to_errno(NTSTATUS status)
 {
 	int err;

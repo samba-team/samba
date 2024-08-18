@@ -223,7 +223,6 @@ NTSTATUS cli_smb(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 
 /* The following definitions come from libsmb/clierror.c  */
 
-NTSTATUS cli_nt_error(struct cli_state *cli);
 int cli_status_to_errno(NTSTATUS status);
 int cli_errno(struct cli_state *cli);
 bool cli_is_error(struct cli_state *cli);
