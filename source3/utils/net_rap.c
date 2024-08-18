@@ -1251,7 +1251,7 @@ int net_rap_password(struct net_context *c, int argc, const char **argv)
 	/* BB Add check for password lengths? */
 	ret = cli_oem_change_password(cli, argv[0], argv[2], argv[1]);
 	cli_shutdown(cli);
-	return ret;
+	return ret ? 0 : -1;
 }
 
 int net_rap_admin_usage(struct net_context *c, int argc, const char **argv)
