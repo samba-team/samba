@@ -34,7 +34,10 @@ bool cli_api(struct cli_state *cli,
 	     char *data, int drcnt, int mdrcnt,
 	     char **rparam, unsigned int *rprcnt,
 	     char **rdata, unsigned int *rdrcnt);
-int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32_t, const char *, void *), void *state);
+NTSTATUS cli_RNetShareEnum(
+	struct cli_state *cli,
+	void (*fn)(const char *, uint32_t, const char *, void *),
+	void *state);
 bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
 		       void (*fn)(const char *, uint32_t, const char *, void *),
 		       void *state);

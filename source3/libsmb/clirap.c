@@ -101,7 +101,10 @@ fail:
  Call a NetShareEnum - try and browse available connections on a host.
 ****************************************************************************/
 
-int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32_t, const char *, void *), void *state)
+NTSTATUS cli_RNetShareEnum(
+	struct cli_state *cli,
+	void (*fn)(const char *, uint32_t, const char *, void *),
+	void *state)
 {
 	uint8_t *rparam = NULL;
 	uint8_t *rdata = NULL;
@@ -165,6 +168,7 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32_t, 
 
 	if (!(res == 0 || res == ERRmoredata)) {
 		DEBUG(4,("NetShareEnum res=%d\n", res));
+		status = werror_to_ntstatus(W_ERROR(res));
 		goto done;
 	}
 
@@ -224,7 +228,7 @@ done:
 	TALLOC_FREE(rparam);
 	TALLOC_FREE(rdata);
 
-	return count;
+	return status;
 }
 
 /****************************************************************************

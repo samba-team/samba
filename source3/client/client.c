@@ -4995,7 +4995,7 @@ static bool browse_host_rpc(bool sort)
 
 static bool browse_host(bool sort)
 {
-	int ret;
+	NTSTATUS status;
 
 	if (!grepable) {
 	        d_printf("\n\tSharename       Type      Comment\n");
@@ -5010,14 +5010,14 @@ static bool browse_host(bool sort)
 		return false;
 	}
 
-	ret = cli_RNetShareEnum(cli, browse_fn, NULL);
-	if (ret == -1) {
-		NTSTATUS status = cli_nt_error(cli);
+	status = cli_RNetShareEnum(cli, browse_fn, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Error returning browse list: %s\n",
 			 nt_errstr(status));
+		return false;
 	}
 
-	return (ret != -1);
+	return true;
 }
 
 /****************************************************************************

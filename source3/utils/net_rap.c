@@ -301,7 +301,7 @@ int net_rap_share(struct net_context *c, int argc, const char **argv)
 
 	if (argc == 0) {
 		struct cli_state *cli;
-		int ret;
+		NTSTATUS status;
 
 		if (c->display_usage) {
 			d_printf(_("Usage:\n"));
@@ -319,12 +319,12 @@ int net_rap_share(struct net_context *c, int argc, const char **argv)
 	"\nEnumerating shared resources (exports) on remote server:\n\n"
 	"\nShare name   Type     Description\n"
 	"----------   ----     -----------\n"));
-			ret = cli_RNetShareEnum(cli, long_share_fn, NULL);
+			status = cli_RNetShareEnum(cli, long_share_fn, NULL);
 		} else {
-			ret = cli_RNetShareEnum(cli, share_fn, NULL);
+			status = cli_RNetShareEnum(cli, share_fn, NULL);
 		}
 		cli_shutdown(cli);
-		return ret;
+		return NT_STATUS_IS_OK(status) ? 0 : -1;
 	}
 
 	return net_run_function(c, argc, argv, "net rap share", func);

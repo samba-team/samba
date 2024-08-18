@@ -869,14 +869,10 @@ SMBC_opendir_ctx(SMBCCTX *context,
 					 * Only call cli_RNetShareEnum()
 					 * on SMB1 connections, not SMB2+.
 					 */
-					int rc = cli_RNetShareEnum(srv->cli,
-							       list_fn,
-							       (void *)dir);
-					if (rc != 0) {
-						status = cli_nt_error(srv->cli);
-					} else {
-						status = NT_STATUS_OK;
-					}
+					status = cli_RNetShareEnum(
+						srv->cli,
+						list_fn,
+						(void *)dir);
 				}
 				if (!NT_STATUS_IS_OK(status)) {
 					/*
