@@ -3979,15 +3979,6 @@ static bool run_maxfidtest(int dummy)
 	return correct;
 }
 
-/* generate a random buffer */
-static void rand_buf(char *buf, int len)
-{
-	while (len--) {
-		*buf = (char)sys_random();
-		buf++;
-	}
-}
-
 /* send smb negprot commands, not reading the response */
 static bool run_negprot_nowait(int dummy)
 {
@@ -4083,11 +4074,7 @@ static bool run_bad_nbt_session(int dummy)
 /* send random IPC commands */
 static bool run_randomipc(int dummy)
 {
-	char *rparam = NULL;
-	char *rdata = NULL;
-	unsigned int rdrcnt,rprcnt;
-	char param[1024];
-	int api, param_len, i;
+	int i;
 	struct cli_state *cli;
 	bool correct = True;
 	int count = 50000;
@@ -4099,30 +4086,54 @@ static bool run_randomipc(int dummy)
 	}
 
 	for (i=0;i<count;i++) {
-		api = sys_random() % 500;
-		param_len = (sys_random() % 64);
+		int api = sys_random() % 500;
+		int param_len = (sys_random() % 64);
+		uint8_t param[1024];
+		uint8_t *rparam = NULL;
+		uint8_t *rdata = NULL;
+		uint32_t rdrcnt, rprcnt;
 
-		rand_buf(param, param_len);
+		generate_random_buffer(param, param_len);
 
 		SSVAL(param,0,api);
 
-		cli_api(cli,
-			param, param_len, 8,
-			NULL, 0, CLI_BUFFER_SIZE,
-			&rparam, &rprcnt,
-			&rdata, &rdrcnt);
+		cli_trans(talloc_tos(),	    /* mem_ctx */
+			  cli,		    /* cli */
+			  SMBtrans,	    /* cmd */
+			  "\\PIPE\\LANMAN", /* name */
+			  0,		    /* fid */
+			  0,		    /* function */
+			  0,		    /* flags */
+			  NULL,		    /* setup */
+			  0,		    /* num_setup */
+			  0,		    /* max_setup */
+			  param,	    /* param */
+			  param_len,	    /* num_param */
+			  8,		    /* max_param */
+			  NULL,		    /* data */
+			  0,		    /* num_data */
+			  CLI_BUFFER_SIZE,  /* max_data, for W2K */
+			  NULL,		    /* recv_flags2 */
+			  NULL,		    /* rsetup */
+			  0,		    /* min_rsetup */
+			  NULL,		    /* num_rsetup */
+			  &rparam,	    /* rparam */
+			  0,		    /* min_rparam */
+			  &rprcnt,	    /* num_rparam */
+			  &rdata,	    /* rdata */
+			  0,		    /* min_rdata */
+			  &rdrcnt);	    /* num_rdata */
 		if (i % 100 == 0) {
 			printf("%d/%d\r", i,count);
 		}
+		TALLOC_FREE(rparam);
+		TALLOC_FREE(rdata);
 	}
 	printf("%d/%d\n", i, count);
 
 	if (!torture_close_connection(cli)) {
 		correct = False;
 	}
-
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
 
 	printf("finished random ipc test\n");
 
