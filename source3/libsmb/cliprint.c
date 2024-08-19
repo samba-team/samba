@@ -112,7 +112,6 @@ NTSTATUS cli_print_queue(struct cli_state *cli,
 		0,		   /* min_rdata */
 		&rdrcnt);	   /* num_rdata */
 	if (!NT_STATUS_IS_OK(status)) {
-		cli->raw_status = status;
 		return status;
 	}
 
@@ -201,7 +200,6 @@ NTSTATUS cli_printjob_del(struct cli_state *cli, int job)
 			   0,		       /* min_rdata */
 			   &rdrcnt);	       /* num_rdata */
 	if (!NT_STATUS_IS_OK(status)) {
-		cli->raw_status = status;
 		return status;
 	}
 
@@ -212,7 +210,6 @@ NTSTATUS cli_printjob_del(struct cli_state *cli, int job)
 
 	if (result_code == ERRnosuchprintjob) {
 		status = NT_STATUS_INVALID_PARAMETER;
-		cli->raw_status = NT_STATUS_INVALID_PARAMETER;
 	}
 
 	return status;

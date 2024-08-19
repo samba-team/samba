@@ -207,7 +207,6 @@ NTSTATUS cli_smb_recv(struct tevent_req *req,
 		}
 
 		map_dos_errors = state->cli->map_dos_errors;
-		state->cli->raw_status = status;
 		talloc_free(state->ptr);
 		state = NULL;
 	}

@@ -1490,9 +1490,6 @@ NTSTATUS cli_qfileinfo_basic(
 		write_time,
 		change_time,
 		ino);
-
-	/* cli_smb2_query_info_fnum_recv doesn't set this */
-	cli->raw_status = status;
 fail:
 	TALLOC_FREE(frame);
 	return status;

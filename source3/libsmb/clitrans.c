@@ -152,7 +152,6 @@ NTSTATUS cli_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 map_error:
 	map_dos_errors = state->cli->map_dos_errors;
-	state->cli->raw_status = status;
 
 	if (NT_STATUS_IS_DOS(status) && map_dos_errors) {
 		uint8_t eclass = NT_STATUS_DOS_CLASS(status);

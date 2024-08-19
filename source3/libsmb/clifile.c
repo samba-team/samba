@@ -1878,8 +1878,6 @@ NTSTATUS cli_rename(struct cli_state *cli,
 	}
 
 	status = cli_rename_recv(req);
-	cli->raw_status = status; /* cli_smb2_rename_recv doesn't set this */
-
  fail:
 	TALLOC_FREE(frame);
 	return status;
@@ -2461,8 +2459,6 @@ NTSTATUS cli_unlink(struct cli_state *cli, const char *fname, uint32_t mayhave_a
 	}
 
 	status = cli_unlink_recv(req);
-	cli->raw_status = status; /* cli_smb2_unlink_recv doesn't set this */
-
  fail:
 	TALLOC_FREE(frame);
 	return status;
@@ -2600,8 +2596,6 @@ NTSTATUS cli_mkdir(struct cli_state *cli, const char *dname)
 	}
 
 	status = cli_mkdir_recv(req);
-	cli->raw_status = status; /* cli_smb2_mkdir_recv doesn't set this */
-
  fail:
 	TALLOC_FREE(frame);
 	return status;
@@ -2732,8 +2726,6 @@ NTSTATUS cli_rmdir(struct cli_state *cli, const char *dname)
 	}
 
 	status = cli_rmdir_recv(req);
-	cli->raw_status = status; /* cli_smb2_rmdir_recv doesn't set this */
-
  fail:
 	TALLOC_FREE(frame);
 	return status;
@@ -3727,8 +3719,6 @@ NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags,
 			return status;
 		}
 		status = NT_STATUS_FILE_IS_A_DIRECTORY;
-		/* Set this so libsmbclient can retrieve it. */
-		cli->raw_status = status;
 	}
 
 	return status;
@@ -5345,8 +5335,6 @@ NTSTATUS cli_chkpath(struct cli_state *cli, const char *path)
 	}
 
 	status = cli_chkpath_recv(req);
-	cli->raw_status = status; /* cli_smb2_chkpath_recv doesn't set this */
-
  fail:
 	TALLOC_FREE(frame);
 	return status;

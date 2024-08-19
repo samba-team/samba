@@ -49,7 +49,6 @@ struct cli_state {
 	 */
         struct cli_state *prev, *next;
 	int rap_error;
-	NTSTATUS raw_status; /* maybe via NT_STATUS_DOS() */
 	bool map_dos_errors;
 
 	/*

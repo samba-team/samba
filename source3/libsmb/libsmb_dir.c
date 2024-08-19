@@ -879,11 +879,6 @@ SMBC_opendir_ctx(SMBCCTX *context,
 						(void *)dir);
 				}
 				if (!NT_STATUS_IS_OK(status)) {
-					/*
-					 * Set cli->raw_status so SMBC_errno()
-					 * will correctly return the error.
-					 */
-					srv->cli->raw_status = status;
 					if (dir != NULL) {
 						SAFE_FREE(dir->fname);
 						SAFE_FREE(dir);
