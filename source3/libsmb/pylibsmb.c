@@ -1070,6 +1070,48 @@ fail:
 	return v;
 }
 
+static PyObject *py_cli_get_posix_fs_info(
+	struct py_cli_state *self, PyObject *args, PyObject *kwds)
+{
+	NTSTATUS status;
+	struct tevent_req *req = NULL;
+	uint32_t optimal_transfer_size = 0;
+	uint32_t block_size = 0;
+	uint64_t total_blocks = 0;
+	uint64_t blocks_available = 0;
+	uint64_t user_blocks_available = 0;
+	uint64_t total_file_nodes = 0;
+	uint64_t free_file_nodes = 0;
+	uint64_t fs_identifier = 0;
+
+	req = cli_get_posix_fs_info_send(NULL, self->ev, self->cli);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		return NULL;
+	}
+
+	status = cli_get_posix_fs_info_recv(req,
+					    &optimal_transfer_size,
+					    &block_size,
+					    &total_blocks,
+					    &blocks_available,
+					    &user_blocks_available,
+					    &total_file_nodes,
+					    &free_file_nodes,
+					    &fs_identifier);
+	TALLOC_FREE(req);
+	PyErr_NTSTATUS_NOT_OK_RAISE(status);
+
+	return Py_BuildValue("{s:I,s:I,s:I,s:I,s:I,s:I,s:I,s:I}",
+			     "optimal_transfer_size", optimal_transfer_size,
+			     "block_size", block_size,
+			     "total_blocks", total_blocks,
+			     "blocks_available", blocks_available,
+			     "user_blocks_available", user_blocks_available,
+			     "total_file_nodes", total_file_nodes,
+			     "free_file_nodes", free_file_nodes,
+			     "fs_identifier", fs_identifier);
+}
+
 static PyObject *py_cli_create_ex(
 	struct py_cli_state *self, PyObject *args, PyObject *kwds)
 {
@@ -2777,6 +2819,10 @@ static PyMethodDef py_cli_state_methods[] = {
 	{ "create", PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_create),
 		METH_VARARGS|METH_KEYWORDS,
 	  "Open a file" },
+	{ "get_posix_fs_info",
+	  PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_get_posix_fs_info),
+	  METH_NOARGS,
+	  "Get posix filesystem attribute information" },
 	{ "create_ex",
 	  PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_create_ex),
 	  METH_VARARGS|METH_KEYWORDS,
