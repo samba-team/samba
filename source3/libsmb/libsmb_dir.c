@@ -996,12 +996,13 @@ SMBC_opendir_ctx(SMBCCTX *context,
                                         }
                                 }
 
-                                /*
-                                 * If there was an error and the server is no
-                                 * good any more...
-                                 */
-                                if (cli_is_error(targetcli) &&
-                                    smbc_getFunctionCheckServer(context)(context, srv)) {
+				/*
+				 * There was an error (we're in the
+				 * !NT_STATUS_IS_OK branch) and the
+				 * server good any more...
+				 */
+				if (smbc_getFunctionCheckServer(
+					    context)(context, srv)) {
 
                                         /* ... then remove it. */
                                         if (smbc_getFunctionRemoveUnusedServer(context)(context,
