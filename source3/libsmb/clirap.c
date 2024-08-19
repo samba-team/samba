@@ -199,8 +199,6 @@ NTSTATUS cli_NetServerEnum(
 	int res;
 	NTSTATUS status;
 
-	errno = 0; /* reset */
-
 	/*
 	 * This may take more than one transaction, so we should loop until
 	 * we no longer get a more data to process or we have all of the
@@ -394,7 +392,6 @@ NTSTATUS cli_NetServerEnum(
 
 			/* If we have more data, but no last entry then error out */
 			if (!last_entry && (res == ERRmoredata)) {
-			        errno = EINVAL;
 			        res = 0;
 			}
 
@@ -407,17 +404,6 @@ NTSTATUS cli_NetServerEnum(
 	TALLOC_FREE(rparam);
 	TALLOC_FREE(rdata);
 	SAFE_FREE(last_entry);
-
-	if (res == -1) {
-		errno = cli_errno(cli);
-	} else {
-		if (!return_cnt) {
-			/* this is a very special case, when the domain master for the
-			   work group isn't part of the work group itself, there is something
-			   wild going on */
-			errno = ENOENT;
-		}
-	    }
 
 	if (return_cnt == 0) {
 		return NT_STATUS_NO_MORE_ENTRIES;
