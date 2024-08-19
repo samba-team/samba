@@ -1342,7 +1342,12 @@ static PyObject *py_ldb_setup_wellknown_attributes(PyLdbObject *self,
 
 static PyObject *py_ldb_repr(PyLdbObject *self)
 {
-	return PyUnicode_FromString("<ldb connection>");
+	struct ldb_context *ldb_ctx = pyldb_Ldb_AS_LDBCONTEXT(self);
+	const char *url = ldb_get_opaque(ldb_ctx, "ldb_url");
+	if (url == NULL) {
+		url = "no connection";
+	}
+	return PyUnicode_FromFormat("<ldb connection %s>", url);
 }
 
 static PyObject *py_ldb_get_root_basedn(PyLdbObject *self,
