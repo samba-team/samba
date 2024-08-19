@@ -58,7 +58,6 @@ int cli_NetShareDelete(struct cli_state *cli, const char * share_name );
 bool cli_get_pdc_name(struct cli_state *cli, const char *workgroup, char **pdc_name);
 bool cli_get_server_name(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			 char **servername);
-bool cli_ns_check_server_type(struct cli_state *cli, char *workgroup, uint32_t stype);
 bool cli_NetWkstaUserLogoff(struct cli_state *cli, const char *user, const char *workstation);
 int cli_NetPrintQEnum(struct cli_state *cli,
 		void (*qfn)(const char*,uint16_t,uint16_t,uint16_t,const char*,const char*,const char*,const char*,const char*,uint16_t,uint16_t),
