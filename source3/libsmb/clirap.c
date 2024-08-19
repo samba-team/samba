@@ -291,8 +291,7 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
 
 		res = PULL_LE_U16(rparam, 0);
 
-		if (res == 0 || res == ERRmoredata ||
-                    (res != -1 && cli_errno(cli) == 0)) {
+		if (res == 0 || res == ERRmoredata) {
 			char *sname = NULL;
 			int i, count;
 			int converter=SVAL(rparam,2);
