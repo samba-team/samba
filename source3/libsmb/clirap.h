@@ -33,9 +33,12 @@ NTSTATUS cli_RNetShareEnum(
 	struct cli_state *cli,
 	void (*fn)(const char *, uint32_t, const char *, void *),
 	void *state);
-bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
-		       void (*fn)(const char *, uint32_t, const char *, void *),
-		       void *state);
+NTSTATUS cli_NetServerEnum(
+	struct cli_state *cli,
+	char *workgroup,
+	uint32_t stype,
+	void (*fn)(const char *, uint32_t, const char *, void *),
+	void *state);
 NTSTATUS cli_oem_change_password(struct cli_state *cli,
 				 const char *user,
 				 const char *new_password,

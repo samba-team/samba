@@ -177,9 +177,12 @@ done:
  the comment and a state pointer.
 ****************************************************************************/
 
-bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
-		       void (*fn)(const char *, uint32_t, const char *, void *),
-		       void *state)
+NTSTATUS cli_NetServerEnum(
+	struct cli_state *cli,
+	char *workgroup,
+	uint32_t stype,
+	void (*fn)(const char *, uint32_t, const char *, void *),
+	void *state)
 {
 	uint8_t *rparam = NULL;
 	uint8_t *rdata = NULL;
@@ -235,7 +238,7 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
 
 		if (len == 0) {
 			SAFE_FREE(last_entry);
-			return false;
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 		p += len;
 
@@ -247,7 +250,7 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
 
 			if (len == 0) {
 				SAFE_FREE(last_entry);
-				return false;
+				return NT_STATUS_INTERNAL_ERROR;
 			}
 			p += len;
 		}
@@ -416,7 +419,10 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32_t stype,
 		}
 	    }
 
-	return(return_cnt > 0);
+	if (return_cnt == 0) {
+		return NT_STATUS_NO_MORE_ENTRIES;
+	}
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************

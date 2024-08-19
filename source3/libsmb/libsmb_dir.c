@@ -700,11 +700,12 @@ SMBC_opendir_ctx(SMBCCTX *context,
 
                         /* Now, list the stuff ... */
 
-                        if (!cli_NetServerEnum(srv->cli,
-                                               workgroup,
-                                               SV_TYPE_DOMAIN_ENUM,
-                                               list_unique_wg_fn,
-                                               (void *)dir)) {
+			status = cli_NetServerEnum(srv->cli,
+						   workgroup,
+						   SV_TYPE_DOMAIN_ENUM,
+						   list_unique_wg_fn,
+						   (void *)dir);
+			if (!NT_STATUS_IS_OK(status)) {
                                 continue;
                         }
                 }
@@ -761,6 +762,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 				 */
 				char *wgroup = server;
 				fstring buserver;
+				NTSTATUS status;
 
 				dir->dir_type = SMBC_SERVER;
 
@@ -819,10 +821,12 @@ SMBC_opendir_ctx(SMBCCTX *context,
 				}
 
 				/* Now, list the servers ... */
-				if (!cli_NetServerEnum(srv->cli, wgroup,
-                                                       0x0000FFFE, list_fn,
-						       (void *)dir)) {
-
+				status = cli_NetServerEnum(srv->cli,
+							   wgroup,
+							   0x0000FFFE,
+							   list_fn,
+							   (void *)dir);
+				if (!NT_STATUS_IS_OK(status)) {
 					if (dir) {
 						SAFE_FREE(dir->fname);
 						SAFE_FREE(dir);
