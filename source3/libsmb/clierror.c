@@ -50,23 +50,6 @@ int cli_status_to_errno(NTSTATUS status)
 	return err;
 }
 
-/* Return a UNIX errno appropriate for the error received in the last
-   packet. */
-
-int cli_errno(struct cli_state *cli)
-{
-	bool connected;
-	int err;
-
-	connected = cli_state_is_connected(cli);
-	if (!connected) {
-		return EPIPE;
-	}
-
-	err = cli_status_to_errno(cli->raw_status);
-	return err;
-}
-
 /* Return true if the last packet was in error */
 
 bool cli_is_error(struct cli_state *cli)
