@@ -50,24 +50,6 @@ int cli_status_to_errno(NTSTATUS status)
 	return err;
 }
 
-/* Return true if the last packet was in error */
-
-bool cli_is_error(struct cli_state *cli)
-{
-	/* A socket error is always an error. */
-	if (!cli_state_is_connected(cli)) {
-		return true;
-	}
-
-	if (NT_STATUS_IS_DOS(cli->raw_status)) {
-		/* Return error if error class in non-zero */
-		uint8_t rcls = NT_STATUS_DOS_CLASS(cli->raw_status);
-		return rcls != 0;
-	}
-
-	return NT_STATUS_IS_ERR(cli->raw_status);
-}
-
 bool cli_state_is_connected(struct cli_state *cli)
 {
 	if (cli == NULL) {
