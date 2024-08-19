@@ -490,3 +490,23 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
         l = winconn.list('', mask='test_delete_on_close')
         found_files = {get_string(f['name']): f for f in l}
         self.assertFalse('test_delete_on_close' in found_files)
+
+    def test_posix_fs_info(self):
+        """
+        Test the posix filesystem attributes list given by cli_get_posix_fs_info.
+        With a non-posix connection, a NT_STATUS_INVALID_INFO_CLASS error
+        is expected.
+        """
+        (winconn, posixconn) = self.connections()
+
+        try:
+            posix_info = posixconn.get_posix_fs_info()
+        except Exception as e:
+            self.fail(str(e))
+        self.assertTrue(isinstance(posix_info, dict))
+        self.assertTrue('optimal_transfer_size' in posix_info)
+
+        with self.assertRaises(NTSTATUSError) as cm:
+            winconn.get_posix_fs_info()
+        e = cm.exception
+        self.assertEqual(e.args[0], ntstatus.NT_STATUS_INVALID_INFO_CLASS)
