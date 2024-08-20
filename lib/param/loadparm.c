@@ -1132,7 +1132,7 @@ bool handle_include(struct loadparm_context *lp_ctx, struct loadparm_service *se
 
 	DEBUG(2, ("Can't find include file %s\n", fname));
 
-	return false;
+	return true;
 }
 
 /***************************************************************************
