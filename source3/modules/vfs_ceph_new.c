@@ -2461,7 +2461,6 @@ static int vfs_ceph_readlinkat(struct vfs_handle_struct *handle,
 		size_t bufsiz)
 {
 	int result = -1;
-	struct vfs_ceph_iref iref = {0};
 	struct vfs_ceph_fh *dircfh = NULL;
 
 	DBG_DEBUG("[CEPH] readlinkat(%p, %s, %p, %llu)\n",
@@ -2474,17 +2473,29 @@ static int vfs_ceph_readlinkat(struct vfs_handle_struct *handle,
 	if (result != 0) {
 		goto out;
 	}
-	result = vfs_ceph_ll_lookupat(handle,
-				      dircfh,
-				      smb_fname->base_name,
-				      &iref);
-	if (result != 0) {
-		goto out;
+	if (strcmp(smb_fname->base_name, "") != 0) {
+		struct vfs_ceph_iref iref = {0};
+
+		result = vfs_ceph_ll_lookupat(handle,
+					      dircfh,
+					      smb_fname->base_name,
+					      &iref);
+		if (result != 0) {
+			goto out;
+		}
+		result = vfs_ceph_ll_readlinkat(handle,
+						dircfh,
+						&iref,
+						buf,
+						bufsiz);
+		vfs_ceph_iput(handle, &iref);
+	} else {
+		result = vfs_ceph_ll_readlinkat(handle,
+						dircfh,
+						&dircfh->iref,
+						buf,
+						bufsiz);
 	}
-
-	result = vfs_ceph_ll_readlinkat(handle, dircfh, &iref, buf, bufsiz);
-
-	vfs_ceph_iput(handle, &iref);
 out:
 	DBG_DEBUG("[CEPH] readlinkat(...) = %d\n", result);
 	return status_code(result);
