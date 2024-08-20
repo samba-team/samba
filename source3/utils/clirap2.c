@@ -460,11 +460,10 @@ int cli_RNetGroupEnum(struct cli_state *cli, void (*fn)(const char *, const char
 		char *endp = rparam + rdrcnt;
 
 		res = GETRES(rparam, endp);
-		cli->rap_error = res;
-		if(cli->rap_error == 234) {
+		if(res == 234) {
 			DEBUG(1,("Not all group names were returned (such as those longer than 21 characters)\n"));
-		} else if (cli->rap_error != 0) {
-			DEBUG(1,("NetGroupEnum gave error %d\n", cli->rap_error));
+		} else if (res != 0) {
+			DEBUG(1,("NetGroupEnum gave error %d\n", res));
 		}
 	}
 
@@ -549,11 +548,10 @@ int cli_RNetGroupEnum0(struct cli_state *cli,
 			&rdata, &rdrcnt)) {
 		char *endp = rparam+rprcnt;
 		res = GETRES(rparam,endp);
-		cli->rap_error = res;
-		if(cli->rap_error == 234) {
+		if(res == 234) {
 			DEBUG(1,("Not all group names were returned (such as those longer than 21 characters)\n"));
-		} else if (cli->rap_error != 0) {
-			DEBUG(1,("NetGroupEnum gave error %d\n", cli->rap_error));
+		} else if (res != 0) {
+			DEBUG(1,("NetGroupEnum gave error %d\n", res));
 		}
 	}
 
@@ -740,7 +738,6 @@ int cli_NetGroupGetUsers(struct cli_state * cli, const char *group_name, void (*
 			&rdata, &rdrcnt)) {
 		char *endp = rparam + rprcnt;
 		res = GETRES(rparam,endp);
-		cli->rap_error = res;
 		if (res != 0) {
 			DEBUG(1,("NetGroupGetUsers gave error %d\n", res));
 		}
@@ -809,7 +806,6 @@ int cli_NetUserGetGroups(struct cli_state * cli, const char *user_name, void (*f
 			&rdata, &rdrcnt)) {
 		char *endp = rparam + rprcnt;
 		res = GETRES(rparam,endp);
-		cli->rap_error = res;
 		if (res != 0) {
 			DEBUG(1,("NetUserGetGroups gave error %d\n", res));
 		}
@@ -1013,9 +1009,8 @@ int cli_RNetUserEnum(struct cli_state *cli, void (*fn)(const char *, const char 
 			&rdata, &rdrcnt)) {
 		char *endp = rparam + rprcnt;
 		res = GETRES(rparam,endp);
-		cli->rap_error = res;
-		if (cli->rap_error != 0) {
-			DEBUG(1,("NetUserEnum gave error %d\n", cli->rap_error));
+		if (res != 0) {
+			DEBUG(1,("NetUserEnum gave error %d\n", res));
 		}
 	}
 
@@ -1121,9 +1116,8 @@ int cli_RNetUserEnum0(struct cli_state *cli,
 			&rdata, &rdrcnt)) {
 		char *endp = rparam + rprcnt;
 		res = GETRES(rparam,endp);
-		cli->rap_error = res;
-		if (cli->rap_error != 0) {
-			DEBUG(1,("NetUserEnum gave error %d\n", cli->rap_error));
+		if (res != 0) {
+			DEBUG(1,("NetUserEnum gave error %d\n", res));
 		}
 	}
 
@@ -1577,13 +1571,12 @@ bool cli_get_pdc_name(struct cli_state *cli, const char *workgroup, char **pdc_n
 
 		char *endp = rparam + rprcnt;
 		res = GETRES(rparam, endp);
-		cli->rap_error = res;
 
 		/*
 		 * We only really care to copy a name if the
 		 * API succeeded and we got back a name.
 		 */
-		if (cli->rap_error == 0) {
+		if (res == 0) {
 			p = rparam + WORDSIZE + WORDSIZE; /* skip result and converter */
 			GETWORD(p, count, endp);
 			p = rdata;
@@ -1605,7 +1598,7 @@ bool cli_get_pdc_name(struct cli_state *cli, const char *workgroup, char **pdc_n
 			DEBUG(4, ("cli_get_pdc_name: machine %s failed the "
 				  "NetServerEnum call. Error was : %s.\n",
 				  smbXcli_conn_remote_name(cli->conn),
-				  win_errstr(W_ERROR(cli->rap_error))));
+				  win_errstr(W_ERROR(res))));
 		}
 	}
 
@@ -1704,7 +1697,6 @@ int cli_NetPrintQEnum(struct cli_state *cli,
 			&rdata, &rdrcnt)) {
 		char *endp = rparam + rprcnt;
 		res = GETRES(rparam, endp);
-		cli->rap_error = res;
 		if (res != 0) {
 			DEBUG(1,("NetPrintQEnum gave error %d\n", res));
 		}
@@ -1882,7 +1874,6 @@ int cli_NetPrintQGetInfo(struct cli_state *cli, const char *printer,
 			&rdata, &rdrcnt)) {
 		char *endp = rparam + rprcnt;
 		res = GETRES(rparam, endp);
-		cli->rap_error = res;
 		if (res != 0) {
 			DEBUG(1,("NetPrintQGetInfo gave error %d\n", res));
 		}
@@ -2055,11 +2046,10 @@ int cli_RNetServiceEnum(struct cli_state *cli, void (*fn)(const char *, const ch
 			&rdata, &rdrcnt)) {
 		char *endp = rparam + rprcnt;
 		res = GETRES(rparam, endp);
-		cli->rap_error = res;
-		if(cli->rap_error == 234) {
+		if(res == 234) {
 			DEBUG(1,("Not all service names were returned (such as those longer than 15 characters)\n"));
-		} else if (cli->rap_error != 0) {
-			DEBUG(1,("NetServiceEnum gave error %d\n", cli->rap_error));
+		} else if (res != 0) {
+			DEBUG(1,("NetServiceEnum gave error %d\n", res));
 		}
 	}
 
@@ -2138,7 +2128,6 @@ int cli_NetSessionEnum(struct cli_state *cli, void (*fn)(char *, char *, uint16_
 			&rdata, &rdrcnt)) {
 		char *endp = rparam + rprcnt;
 		res = GETRES(rparam, endp);
-		cli->rap_error = res;
 		if (res != 0) {
 			DEBUG(1,("NetSessionEnum gave error %d\n", res));
 		}
@@ -2241,9 +2230,8 @@ int cli_NetSessionGetInfo(struct cli_state *cli, const char *workstation,
 			&rdata, &rdrcnt)) {
 		endp = rparam + rprcnt;
 		res = GETRES(rparam, endp);
-		cli->rap_error = res;
-		if (cli->rap_error != 0) {
-			DEBUG(1,("NetSessionGetInfo gave error %d\n", cli->rap_error));
+		if (res != 0) {
+			DEBUG(1,("NetSessionGetInfo gave error %d\n", res));
 		}
 	}
 
@@ -2339,7 +2327,6 @@ int cli_NetSessionDel(struct cli_state *cli, const char *workstation)
 	{
 		char *endp = rparam + rprcnt;
 		res = GETRES(rparam, endp);
-		cli->rap_error = res;
 
 		if (res == 0) {
 			/* nothing to do */
@@ -2389,7 +2376,6 @@ int cli_NetConnectionEnum(struct cli_state *cli, const char *qualifier,
 			&rdata, &rdrcnt)) {
 		char *endp = rparam + rprcnt;
 		res = GETRES(rparam, endp);
-		cli->rap_error = res;
 		if (res != 0) {
 			DEBUG(1,("NetConnectionEnum gave error %d\n", res));
 		}

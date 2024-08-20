@@ -433,7 +433,7 @@ NTSTATUS cli_oem_change_password(struct cli_state *cli,
 		.data = old_pw_hash,
 		.size = sizeof(old_pw_hash),
 	};
-	int rc;
+	int rc, res;
 	NTSTATUS status;
 
 	if (strlen(user) >= sizeof(fstring)-1) {
@@ -529,9 +529,9 @@ NTSTATUS cli_oem_change_password(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	cli->rap_error = PULL_LE_U16(rparam, 0);
+	res = PULL_LE_U16(rparam, 0);
 
-	status = werror_to_ntstatus(W_ERROR(cli->rap_error));
+	status = werror_to_ntstatus(W_ERROR(res));
 
 	TALLOC_FREE(rparam);
 
