@@ -106,6 +106,7 @@ static int convert_node_map_to_list(struct ctdb_context *ctdb,
 		node->name = talloc_asprintf(node, "%s:%u",
 					     ctdb_addr_to_str(&node->address),
 					     ctdb_addr_to_port(&node->address));
+		CTDB_NO_MEMORY(ctdb, node->name);
 
 		node->flags = node_map->node[i].flags;
 		if (!(node->flags & NODE_FLAGS_DELETED)) {
