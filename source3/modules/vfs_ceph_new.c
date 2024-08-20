@@ -730,7 +730,7 @@ static int vfs_ceph_ll_lookup(const struct vfs_handle_struct *handle,
 	struct UserPerm *uperm = NULL;
 	int ret = -1;
 
-	DBG_DEBUG("[ceph] ceph_ll_lookup: parent-ino=%" PRIu64 " name=%s",
+	DBG_DEBUG("[ceph] ceph_ll_lookup: parent-ino=%" PRIu64 " name=%s\n",
 		  parent->ino, name);
 
 	uperm = vfs_ceph_userperm_new(handle);
