@@ -2007,41 +2007,83 @@ _PUBLIC_ enum ndr_err_code ndr_pull_relative_ptr2(struct ndr_pull *ndr, const vo
 	return ndr_pull_set_offset(ndr, rel_offset);
 }
 
-static const struct {
-	enum ndr_err_code err;
-	const char *string;
-} ndr_err_code_strings[] = {
-	{ NDR_ERR_SUCCESS, "Success" },
-	{ NDR_ERR_ARRAY_SIZE, "Bad Array Size" },
-	{ NDR_ERR_BAD_SWITCH, "Bad Switch" },
-	{ NDR_ERR_OFFSET, "Offset Error" },
-	{ NDR_ERR_RELATIVE, "Relative Pointer Error" },
-	{ NDR_ERR_CHARCNV, "Character Conversion Error" },
-	{ NDR_ERR_LENGTH, "Length Error" },
-	{ NDR_ERR_SUBCONTEXT, "Subcontext Error" },
-	{ NDR_ERR_COMPRESSION, "Compression Error" },
-	{ NDR_ERR_STRING, "String Error" },
-	{ NDR_ERR_VALIDATE, "Validate Error" },
-	{ NDR_ERR_BUFSIZE, "Buffer Size Error" },
-	{ NDR_ERR_ALLOC, "Allocation Error" },
-	{ NDR_ERR_RANGE, "Range Error" },
-	{ NDR_ERR_TOKEN, "Token Error" },
-	{ NDR_ERR_IPV4ADDRESS, "IPv4 Address Error" },
-	{ NDR_ERR_INVALID_POINTER, "Invalid Pointer" },
-	{ NDR_ERR_UNREAD_BYTES, "Unread Bytes" },
-	{ NDR_ERR_NDR64, "NDR64 assertion error" },
-	{ NDR_ERR_INCOMPLETE_BUFFER, "Incomplete Buffer" },
-	{ NDR_ERR_MAX_RECURSION_EXCEEDED, "Maximum Recursion Exceeded" },
-	{ NDR_ERR_UNDERFLOW, "Underflow" },
-	{ 0, NULL }
-};
-
 _PUBLIC_ const char *ndr_map_error2string(enum ndr_err_code ndr_err)
 {
-	int i;
-	for (i = 0; ndr_err_code_strings[i].string != NULL; i++) {
-		if (ndr_err_code_strings[i].err == ndr_err)
-			return ndr_err_code_strings[i].string;
+	const char *ret = "Unknown error";
+
+	switch (ndr_err) {
+	case NDR_ERR_SUCCESS:
+		ret = "Success";
+		break;
+	case NDR_ERR_ARRAY_SIZE:
+		ret = "Bad Array Size";
+		break;
+	case NDR_ERR_BAD_SWITCH:
+		ret = "Bad Switch";
+		break;
+	case NDR_ERR_OFFSET:
+		ret = "Offset Error";
+		break;
+	case NDR_ERR_RELATIVE:
+		ret = "Relative Pointer Error";
+		break;
+	case NDR_ERR_CHARCNV:
+		ret = "Character Conversion Error";
+		break;
+	case NDR_ERR_LENGTH:
+		ret = "Length Error";
+		break;
+	case NDR_ERR_SUBCONTEXT:
+		ret = "Subcontext Error";
+		break;
+	case NDR_ERR_COMPRESSION:
+		ret = "Compression Error";
+		break;
+	case NDR_ERR_STRING:
+		ret = "String Error";
+		break;
+	case NDR_ERR_VALIDATE:
+		ret = "Validate Error";
+		break;
+	case NDR_ERR_BUFSIZE:
+		ret = "Buffer Size Error";
+		break;
+	case NDR_ERR_ALLOC:
+		ret = "Allocation Error";
+		break;
+	case NDR_ERR_RANGE:
+		ret = "Range Error";
+		break;
+	case NDR_ERR_TOKEN:
+		ret = "Token Error";
+		break;
+	case NDR_ERR_IPV4ADDRESS:
+		ret = "IPv4 Address Error";
+		break;
+	case NDR_ERR_INVALID_POINTER:
+		ret = "Invalid Pointer";
+		break;
+	case NDR_ERR_UNREAD_BYTES:
+		ret = "Unread Bytes";
+		break;
+	case NDR_ERR_NDR64:
+		ret = "NDR64 assertion error";
+		break;
+	case NDR_ERR_INCOMPLETE_BUFFER:
+		ret = "Incomplete Buffer";
+		break;
+	case NDR_ERR_MAX_RECURSION_EXCEEDED:
+		ret = "Maximum Recursion Exceeded";
+		break;
+	case NDR_ERR_UNDERFLOW:
+		ret = "Underflow";
+		break;
+	case NDR_ERR_IPV6ADDRESS:
+		ret = "Invalid IPv6 address";
+		break;
+	case NDR_ERR_FLAGS:
+		ret = "Invalid NDR flags";
+		break;
 	}
-	return "Unknown error";
+	return ret;
 }
