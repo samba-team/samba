@@ -58,7 +58,8 @@ static int map_posix_lock_type( files_struct *fsp, enum brl_type lock_type)
 		 * Win32 locking semantics allow this.
 		 * Do the best we can and attempt a read-only lock.
 		 */
-		DEBUG(10,("map_posix_lock_type: Downgrading write lock to read due to read-only file.\n"));
+		DBG_DEBUG("Downgrading write lock to read due to read-only "
+			  "file.\n");
 		return F_RDLCK;
 	}
 
@@ -129,10 +130,10 @@ static bool posix_lock_in_range(off_t *offset_out, off_t *count_out,
 	 */
 
 	if (u_offset & ~((uint64_t)max_positive_lock_offset)) {
-		DEBUG(10, ("posix_lock_in_range: (offset = %ju) offset > %ju "
-			   "and we cannot handle this. Ignoring lock.\n",
-			   (uintmax_t)u_offset,
-			   (uintmax_t)max_positive_lock_offset));
+		DBG_DEBUG("(offset = %ju) offset > %ju"
+			  "and we cannot handle this. Ignoring lock.\n",
+			  (uintmax_t)u_offset,
+			  (uintmax_t)max_positive_lock_offset);
 		return False;
 	}
 
@@ -158,10 +159,10 @@ static bool posix_lock_in_range(off_t *offset_out, off_t *count_out,
 	 */
 
 	if (count == 0) {
-		DEBUG(10, ("posix_lock_in_range: Count = 0. Ignoring lock "
-			   "u_offset = %ju, u_count = %ju\n",
-			   (uintmax_t)u_offset,
-			   (uintmax_t)u_count));
+		DBG_DEBUG("Count = 0. Ignoring lock "
+			  "u_offset = %" PRIu64 ", u_count = %" PRIu64 "\n",
+			  u_offset,
+			  u_count);
 		return False;
 	}
 
@@ -169,9 +170,9 @@ static bool posix_lock_in_range(off_t *offset_out, off_t *count_out,
 	 * The mapping was successful.
 	 */
 
-	DEBUG(10, ("posix_lock_in_range: offset_out = %ju, "
-		   "count_out = %ju\n",
-		   (uintmax_t)offset, (uintmax_t)count));
+	DBG_DEBUG("offset_out = %ju count_out = %ju\n",
+		  (uintmax_t)offset,
+		  (uintmax_t)count);
 
 	*offset_out = offset;
 	*count_out = count;
@@ -298,9 +299,12 @@ bool is_posix_locked(files_struct *fsp,
 	off_t count;
 	int posix_lock_type = map_posix_lock_type(fsp,*plock_type);
 
-	DEBUG(10, ("is_posix_locked: File %s, offset = %ju, count = %ju, "
-		   "type = %s\n", fsp_str_dbg(fsp), (uintmax_t)*pu_offset,
-		   (uintmax_t)*pu_count,  posix_lock_type_name(*plock_type)));
+	DBG_DEBUG("File %s, offset = %" PRIu64 ", count = %" PRIu64 ", "
+		  "type = %s\n",
+		  fsp_str_dbg(fsp),
+		  *pu_offset,
+		  *pu_count,
+		  posix_lock_type_name(*plock_type));
 
 	/*
 	 * If the requested lock won't fit in the POSIX range, we will
