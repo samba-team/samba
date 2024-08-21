@@ -926,7 +926,7 @@ char *ldb_dn_alloc_linearized(TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
 
 static bool ldb_dn_casefold_internal(struct ldb_dn *dn)
 {
-	unsigned int i;
+	unsigned int i, j;
 	int ret;
 
 	if ( ! dn || dn->invalid) return false;
@@ -954,18 +954,24 @@ static bool ldb_dn_casefold_internal(struct ldb_dn *dn)
 						 &(dn->components[i].value),
 						 &(dn->components[i].cf_value));
 		if (ret != 0) {
-			goto failed;
+			goto failed_1;
 		}
 	}
 
 	dn->valid_case = true;
 
 	return true;
-
-failed:
-	for (i = 0; i < dn->comp_num; i++) {
-		LDB_FREE(dn->components[i].cf_name);
-		LDB_FREE(dn->components[i].cf_value.data);
+  failed_1:
+	/*
+	 * Although we try to always initialise .cf_name and .cf.value.data to
+	 * NULL, we want to avoid TALLOC_FREEing the values we have not just
+	 * set here.
+	 */
+	TALLOC_FREE(dn->components[i].cf_name);
+  failed:
+	for (j = 0; j < i; i++) {
+		TALLOC_FREE(dn->components[j].cf_name);
+		TALLOC_FREE(dn->components[j].cf_value.data);
 	}
 	return false;
 }
