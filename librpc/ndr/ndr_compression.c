@@ -43,7 +43,7 @@ struct ndr_compression_state {
 
 static voidpf ndr_zlib_alloc(voidpf opaque, uInt items, uInt size)
 {
-	return talloc_zero_size(opaque, items * size);
+	return _talloc_array(opaque, size, items, __location__);
 }
 
 static void  ndr_zlib_free(voidpf opaque, voidpf address)
