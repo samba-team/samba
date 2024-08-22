@@ -31,7 +31,7 @@ cpp_quote("#define dom_sid0 dom_sid")
 	 */
 	uuid("cbf7d408-2d6c-11e2-ae5b-0b5692790e18"),
 	version(0.0),
-	helper("../libcli/security/security.h"),
+	helper("../libcli/security/secace.h"),
 	pyhelper("librpc/ndr/py_security.c"),
 	pointer_default(unique)
 ]
