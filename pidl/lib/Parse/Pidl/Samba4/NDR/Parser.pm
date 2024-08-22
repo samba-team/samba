@@ -3225,7 +3225,7 @@ sub GenerateIncludes($)
 {
 	my ($self) = @_;
 	if (is_intree()) {
-		$self->pidl("#include \"includes.h\"");
+		$self->pidl("#include \"replace.h\"");
 	} else {
 		$self->pidl("#ifndef _GNU_SOURCE");
 		$self->pidl("#define _GNU_SOURCE");
