@@ -88,10 +88,15 @@ macro_rules! function {
         }
         let name = type_name_of(f);
 
-        match &name[..name.len() - 3].rfind(':') {
-            Some(pos) => &name[pos + 1..name.len() - 3],
-            None => &name[..name.len() - 3],
-        }
+        let base_name = match name.rfind("::") {
+            Some(pos) => &name[..pos],
+            None => name,
+        };
+        let parts: Vec<&str> = base_name
+            .split("::")
+            .filter(|&p| p != "{{closure}}")
+            .collect();
+        parts.join("::")
     }};
 }
 
@@ -103,7 +108,7 @@ macro_rules! DBG_PREFIX {
             let location_cstr = chelps::wrap_string(&location);
             let function = $crate::function!();
             let function_msg = format!("{}: ", function);
-            let function_cstr = chelps::wrap_string(function);
+            let function_cstr = chelps::wrap_string(&function);
             let function_msg_cstr = chelps::wrap_string(&function_msg);
             let msg = format!($($arg),*);
             let msg_cstr = chelps::wrap_string(&msg);
