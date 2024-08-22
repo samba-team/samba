@@ -152,6 +152,15 @@ async fn main() -> ExitCode {
                 return ExitCode::FAILURE;
             }
         };
+        let mut private_dir = Path::new(&private_cache_path).to_path_buf();
+        private_dir.pop();
+        if !private_dir.exists() {
+            DBG_ERR!(
+                "The private directory '{}' does not exist",
+                private_dir.display()
+            );
+            return ExitCode::FAILURE;
+        }
         let mut pcache = match PrivateCache::new(&private_cache_path) {
             Ok(cache) => cache,
             Err(e) => {
@@ -170,6 +179,10 @@ async fn main() -> ExitCode {
                 return ExitCode::FAILURE;
             }
         };
+        if !Path::new(&cache_dir).exists() {
+            DBG_ERR!("The cache directory '{}' does not exist", cache_dir);
+            return ExitCode::FAILURE;
+        }
 
         let user_cache_path = Path::new(&cache_dir)
             .join("himmelblau_users.tdb")
@@ -215,6 +228,15 @@ async fn main() -> ExitCode {
                 return ExitCode::FAILURE;
             }
         };
+        let mut hsm_pin_dir = Path::new(&hsm_pin_path).to_path_buf();
+        hsm_pin_dir.pop();
+        if !hsm_pin_dir.exists() {
+            DBG_ERR!(
+                "The hsm pin directory '{}' does not exist",
+                hsm_pin_dir.display()
+            );
+            return ExitCode::FAILURE;
+        }
         let auth_value =
             match utils::hsm_pin_fetch_or_create(&hsm_pin_path).await {
                 Ok(auth_value) => auth_value,
