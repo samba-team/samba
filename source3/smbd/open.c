@@ -582,6 +582,10 @@ static NTSTATUS symlink_target_below_conn(
 			talloc_tos(), dirfsp, symlink_name, &target);
 	}
 
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	status = safe_symlink_target_path(talloc_tos(),
 					  connection_path,
 					  dirfsp->fsp_name->base_name,
