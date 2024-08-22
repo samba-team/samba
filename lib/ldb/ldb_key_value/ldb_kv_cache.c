@@ -328,7 +328,7 @@ static int ldb_kv_baseinfo_init(struct ldb_module *module)
 	struct ldb_val val;
 	int ret;
 	/* the initial sequence number must be different from the one
-	   set in ltdb_cache_free(). Thanks to Jon for pointing this
+	   set in ldb_kv_cache_free(). Thanks to Jon for pointing this
 	   out. */
 	const char *initial_sequence_number = "1";
 
@@ -476,8 +476,10 @@ int ldb_kv_cache_load(struct ldb_module *module)
 		ldb_kv->pack_format_version = LDB_PACKING_FORMAT;
 		ldb_kv->target_pack_format_version = LDB_PACKING_FORMAT;
 
-		/* error handling for ltdb_baseinfo_init() is by
-		   looking for the record again. */
+		/*
+		 * error handling for ldb_kv_baseinfo_init() is by
+		 * looking for the record again.
+		 */
 		ldb_kv_baseinfo_init(module);
 
 	} else if (r != LDB_SUCCESS) {
@@ -527,7 +529,7 @@ int ldb_kv_cache_load(struct ldb_module *module)
 	}
 
 	/*
-	 * ltdb_attributes_unload() calls internally talloc_free() on
+	 * ldb_kv_attributes_unload() calls internally talloc_free() on
 	 * any non-fixed elements in ldb->schema.attributes.
 	 *
 	 * NOTE WELL: This is per-ldb, not per module, so overwrites
