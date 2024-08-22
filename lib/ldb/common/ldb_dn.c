@@ -1062,13 +1062,15 @@ int ldb_dn_compare_base(struct ldb_dn *base, struct ldb_dn *dn)
 		if (base->linearized && dn->linearized && dn->special == base->special) {
 			/* try with a normal compare first, if we are lucky
 			 * we will avoid exploding and casefolding */
-			int dif;
-			dif = strlen(dn->linearized) - strlen(base->linearized);
-			if (dif < 0) {
-				return dif;
+			size_t len_dn = strlen(dn->linearized);
+			size_t len_base = strlen(base->linearized);
+
+			if (len_dn < len_base) {
+				return -1;
 			}
+
 			if (strcmp(base->linearized,
-				   &dn->linearized[dif]) == 0) {
+				   &dn->linearized[len_dn - len_base]) == 0) {
 				return 0;
 			}
 		}
