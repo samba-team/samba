@@ -29,6 +29,7 @@
 #include "lib/util/fault.h"
 #include "lib/util/time.h"
 #include "libcli/security/access_check.h"
+#include "libcli/security/session.h"
 #include "librpc/gen_ndr/auth.h"
 #include "librpc/gen_ndr/ndr_gkdi.h"
 #include "librpc/gen_ndr/ndr_gmsa.h"

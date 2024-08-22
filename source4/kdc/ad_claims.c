@@ -31,6 +31,7 @@
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "lib/util/binsearch.h"
 #include "auth/session.h"
+#include "libcli/security/sddl.h"
 
 #undef strcasecmp
 

@@ -71,6 +71,7 @@
 #include "reg_objects.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "reg_parse_internal.h"
+#include "libcli/security/security_token.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY

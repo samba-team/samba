@@ -22,6 +22,7 @@
 #include "libcli/security/claims-conversions.h"
 #include "lib/util/debug.h"
 #include "lib/util/stable_sort.h"
+#include "libcli/security/dom_sid.h"
 
 #include "librpc/gen_ndr/conditional_ace.h"
 #include "librpc/gen_ndr/claims.h"
