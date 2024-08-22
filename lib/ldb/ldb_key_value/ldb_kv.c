@@ -339,7 +339,8 @@ static int ldb_kv_modified(struct ldb_module *module, struct ldb_dn *dn)
 	/* only allow modifies inside a transaction, otherwise the
 	 * ldb is unsafe */
 	if (ldb_kv->kv_ops->transaction_active(ldb_kv) == false) {
-		ldb_set_errstring(ldb_module_get_ctx(module), "ltdb modify without transaction");
+		ldb_set_errstring(ldb_module_get_ctx(module),
+				  "ldb_kv modify without transaction");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -1497,8 +1498,8 @@ static int ldb_kv_rename(struct ldb_kv_context *ctx)
 	 * exists, so we can return this error to the caller with an
 	 * unmodified DB
 	 *
-	 * Even in GUID index mode we use ltdb_key_dn() as we are
-	 * trying to figure out if this is just a case rename
+	 * Even in GUID index mode we use ldb_kv_key_dn() as we are
+	 * trying to figure out if this is just a case rename.
 	 */
 	key = ldb_kv_key_dn(msg, req->op.rename.newdn);
 	if (!key.data) {
@@ -1634,7 +1635,7 @@ static int ldb_kv_prepare_commit(struct ldb_module *module)
 
 	if (!ldb_kv->kv_ops->transaction_active(ldb_kv)) {
 		ldb_set_errstring(ldb_module_get_ctx(module),
-				  "ltdb_prepare_commit() called "
+				  "ldb_kv_prepare_commit() called "
 				  "without transaction active");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -2081,8 +2082,10 @@ static int ldb_kv_handle_request(struct ldb_module *module,
 
 	ac->timeout_timeval = tv;
 
-	/* set a spy so that we do not try to use the request context
-	 * if it is freed before ltdb_callback fires */
+	/*
+	 * Set a spy so that we do not try to use the request context
+	 * if it is freed before ldb_kv_callback fires.
+	 */
 	ac->spy = talloc(req, struct ldb_kv_req_spy);
 	if (NULL == ac->spy) {
 		talloc_free(ac);
@@ -2167,7 +2170,7 @@ int ldb_kv_init_store(struct ldb_kv_private *ldb_kv,
 	talloc_steal(ldb_kv->module, ldb_kv);
 
 	if (ldb_kv_cache_load(ldb_kv->module) != 0) {
-		ldb_asprintf_errstring(ldb, "Unable to load ltdb cache "
+		ldb_asprintf_errstring(ldb, "Unable to load ldb_kv cache "
 				       "records for backend '%s'", name);
 		talloc_free(ldb_kv->module);
 		return LDB_ERR_OPERATIONS_ERROR;
