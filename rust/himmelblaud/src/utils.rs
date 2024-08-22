@@ -79,3 +79,71 @@ pub(crate) async fn hsm_pin_fetch_or_create(
         Box::new(NT_STATUS_UNSUCCESSFUL)
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::tempdir;
+    use tokio::fs;
+
+    #[test]
+    fn test_split_username_success() {
+        let username = "user@domain.com";
+        let result = split_username(username);
+        assert!(result.is_ok());
+        let (user, domain) = result.unwrap();
+        assert_eq!(user, "user");
+        assert_eq!(domain, "domain.com");
+    }
+
+    #[test]
+    fn test_split_username_failure() {
+        let username = "invalid_username";
+        let result = split_username(username);
+        assert!(result.is_err());
+        assert_eq!(*result.unwrap_err(), NT_STATUS_INVALID_USER_PRINCIPAL_NAME);
+    }
+
+    #[tokio::test]
+    async fn test_hsm_pin_fetch_or_create_generate() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("hsm_pin");
+
+        let result = hsm_pin_fetch_or_create(path.to_str().unwrap()).await;
+        assert!(result.is_ok());
+
+        // Verify that the file is created and contains a valid auth value
+        let saved_pin = fs::read(path).await.expect("Auth value missing");
+        AuthValue::try_from(saved_pin.as_slice())
+            .expect("Failed parsing auth value");
+    }
+
+    #[tokio::test]
+    async fn test_hsm_pin_fetch_or_create_invalid_path() {
+        let result = hsm_pin_fetch_or_create("invalid_path\0").await;
+        assert!(result.is_err());
+        match result {
+            Err(e) => assert_eq!(*e, NT_STATUS_UNSUCCESSFUL),
+            Ok(_) => panic!("Expected error but got success"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_hsm_pin_fetch_or_create_invalid_auth_value() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("hsm_pin");
+
+        // Write invalid content to the file
+        let mut file = std::fs::File::create(&path).unwrap();
+        file.write_all(b"invalid_auth_value").unwrap();
+
+        // Test reading the invalid file
+        let result = hsm_pin_fetch_or_create(path.to_str().unwrap()).await;
+        assert!(result.is_err());
+        match result {
+            Err(e) => assert_eq!(*e, NT_STATUS_UNSUCCESSFUL),
+            Ok(_) => panic!("Expected error but got success"),
+        }
+    }
+}

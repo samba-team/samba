@@ -41,3 +41,107 @@ impl Resolver {
         Ok(Response::NssGroup(None))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cache::GroupEntry;
+    use crate::{GroupCache, PrivateCache, UidCache, UserCache};
+    use idmap::Idmap;
+    use param::LoadParm;
+    use std::collections::HashSet;
+    use tempfile::tempdir;
+
+    #[tokio::test]
+    async fn test_getgrgid() {
+        // Create a temporary directory for the cache
+        let dir = tempdir().unwrap();
+
+        // Initialize the caches
+        let private_cache_path = dir
+            .path()
+            .join("himmelblau.tdb")
+            .to_str()
+            .unwrap()
+            .to_string();
+        let pcache = PrivateCache::new(&private_cache_path).unwrap();
+        let user_cache_path = dir
+            .path()
+            .join("himmelblau_users.tdb")
+            .to_str()
+            .unwrap()
+            .to_string();
+        let user_cache = UserCache::new(&user_cache_path).unwrap();
+        let uid_cache_path = dir
+            .path()
+            .join("uid_cache.tdb")
+            .to_str()
+            .unwrap()
+            .to_string();
+        let mut uid_cache = UidCache::new(&uid_cache_path).unwrap();
+        let group_cache_path = dir
+            .path()
+            .join("himmelblau_groups.tdb")
+            .to_str()
+            .unwrap()
+            .to_string();
+        let mut group_cache = GroupCache::new(&group_cache_path).unwrap();
+
+        // Initialize the Idmap with dummy configuration
+        let realm = "test.com";
+        let tenant_id = "89a61bb7-d1b9-4356-a1e0-75d88e06f14e";
+        let mut idmap = Idmap::new().unwrap();
+        idmap
+            .add_gen_domain(realm, tenant_id, (1000, 2000))
+            .unwrap();
+
+        // Insert a dummy GroupEntry into the cache
+        let group_uuid = "c490c3ea-fd98-4d45-b6aa-2a3520f804fa".to_string();
+        let dummy_gid = idmap
+            .gen_to_unix(tenant_id, &group_uuid)
+            .expect("Failed to map group gid");
+        // Store the calculated gid -> uuid map in the cache
+        uid_cache
+            .store(dummy_gid, &group_uuid)
+            .expect("Failed to store group gid");
+        let dummy_group = GroupEntry::new(&group_uuid);
+        group_cache
+            .merge_groups("user1@test.com", vec![dummy_group.clone()])
+            .unwrap();
+
+        // Initialize dummy configuration
+        let lp = LoadParm::new(None).expect("Failed loading default config");
+
+        // Initialize the Resolver
+        let mut resolver = Resolver {
+            realm: realm.to_string(),
+            tenant_id: tenant_id.to_string(),
+            lp,
+            idmap,
+            pcache,
+            user_cache,
+            uid_cache,
+            group_cache,
+        };
+
+        // Test the getgrgid function with a gid that exists
+        let result = resolver.getgrgid(dummy_gid).await.unwrap();
+
+        match result {
+            Response::NssGroup(Some(group)) => {
+                assert_eq!(group.name, dummy_group.uuid);
+                assert_eq!(group.gid, dummy_gid);
+                assert_eq!(group.members, vec!["user1@test.com".to_string()]);
+            }
+            other => panic!("Expected NssGroup with Some(group): {:?}", other),
+        }
+
+        // Test the getgrgid function with a gid that does not exist
+        let nonexistent_gid: gid_t = 1600;
+        let result = resolver.getgrgid(nonexistent_gid).await.unwrap();
+        match result {
+            Response::NssGroup(None) => {} // This is the expected result
+            _ => panic!("Expected NssGroup with None"),
+        }
+    }
+}

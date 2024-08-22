@@ -53,7 +53,7 @@ impl Resolver {
         for entry in user_entries {
             let uid = self
                 .idmap
-                .gen_to_unix(&self.tenant_id, &entry.upn.to_lowercase())
+                .gen_to_unix(&self.tenant_id, &entry.upn)
                 .map_err(|e| {
                     DBG_ERR!("{:?}", e);
                     Box::new(NT_STATUS_INVALID_TOKEN)
@@ -88,5 +88,123 @@ impl Resolver {
             res.push(passwd);
         }
         Ok(Response::NssAccounts(res))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cache::UserEntry;
+    use crate::{GroupCache, PrivateCache, UidCache, UserCache};
+    use idmap::Idmap;
+    use param::LoadParm;
+    use std::collections::HashSet;
+    use tempfile::tempdir;
+
+    #[tokio::test]
+    async fn test_getpwent() {
+        // Create a temporary directory for the cache
+        let dir = tempdir().unwrap();
+
+        // Initialize the caches
+        let private_cache_path = dir
+            .path()
+            .join("himmelblau.tdb")
+            .to_str()
+            .unwrap()
+            .to_string();
+        let pcache = PrivateCache::new(&private_cache_path).unwrap();
+        let user_cache_path = dir
+            .path()
+            .join("himmelblau_users.tdb")
+            .to_str()
+            .unwrap()
+            .to_string();
+        let mut user_cache = UserCache::new(&user_cache_path).unwrap();
+        let uid_cache_path = dir
+            .path()
+            .join("uid_cache.tdb")
+            .to_str()
+            .unwrap()
+            .to_string();
+        let uid_cache = UidCache::new(&uid_cache_path).unwrap();
+        let group_cache_path = dir
+            .path()
+            .join("himmelblau_groups.tdb")
+            .to_str()
+            .unwrap()
+            .to_string();
+        let group_cache = GroupCache::new(&group_cache_path).unwrap();
+
+        // Insert dummy UserEntrys into the cache
+        let dummy_user = UserEntry {
+            upn: "user1@test.com".to_string(),
+            uuid: "731e9af3-668d-4033-afd1-9f09b9120cc7".to_string(),
+            name: "User One".to_string(),
+        };
+        user_cache
+            .store(dummy_user.clone())
+            .expect("Failed storing user in cache");
+
+        let dummy_user2 = UserEntry {
+            upn: "user2@test.com".to_string(),
+            uuid: "7be6c0c5-5763-4633-aecf-f8c460b338fd".to_string(),
+            name: "User Two".to_string(),
+        };
+        user_cache
+            .store(dummy_user2.clone())
+            .expect("Failed storing user in cache");
+
+        // Initialize the Idmap with dummy configuration
+        let realm = "test.com";
+        let tenant_id = "89a61bb7-d1b9-4356-a1e0-75d88e06f14e";
+        let mut idmap = Idmap::new().unwrap();
+        idmap
+            .add_gen_domain(realm, tenant_id, (1000, 2000))
+            .unwrap();
+
+        // Initialize dummy configuration for LoadParm
+        let lp = LoadParm::new(None).expect("Failed loading default config");
+
+        // Initialize the Resolver
+        let mut resolver = Resolver {
+            realm: realm.to_string(),
+            tenant_id: tenant_id.to_string(),
+            lp,
+            idmap,
+            pcache,
+            user_cache,
+            uid_cache,
+            group_cache,
+        };
+
+        // Test the getpwent function
+        let result = resolver.getpwent().await.unwrap();
+
+        match result {
+            Response::NssAccounts(accounts) => {
+                assert_eq!(accounts.len(), 2);
+
+                let account1 = &accounts[0];
+                assert_eq!(account1.name, dummy_user.upn);
+                assert_eq!(account1.uid, 1316);
+                assert_eq!(account1.gid, 1316);
+                assert_eq!(account1.gecos, dummy_user.name);
+                assert_eq!(account1.dir, "/home/test.com/user1");
+                assert_eq!(account1.shell, "/bin/false");
+
+                let account2 = &accounts[1];
+                assert_eq!(account2.name, dummy_user2.upn);
+                assert_eq!(account2.uid, 1671);
+                assert_eq!(account2.gid, 1671);
+                assert_eq!(account2.gecos, dummy_user2.name);
+                assert_eq!(account2.dir, "/home/test.com/user2");
+                assert_eq!(account2.shell, "/bin/false");
+            }
+            other => panic!(
+                "Expected NssAccounts with a list of accounts: {:?}",
+                other
+            ),
+        }
     }
 }

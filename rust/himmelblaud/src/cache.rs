@@ -167,7 +167,7 @@ impl BasicCache {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct UserEntry {
     pub(crate) upn: String,
     pub(crate) uuid: String,
@@ -294,6 +294,16 @@ impl GroupEntry {
     }
 }
 
+#[cfg(test)]
+impl GroupEntry {
+    pub fn new(uuid: &str) -> Self {
+        GroupEntry {
+            uuid: uuid.to_string(),
+            members: HashSet::new(),
+        }
+    }
+}
+
 pub(crate) struct GroupCache {
     cache: BasicCache,
 }
@@ -330,7 +340,7 @@ impl GroupCache {
     pub(crate) fn merge_groups(
         &mut self,
         member: &str,
-        entries: Vec<GroupEntry>,
+        mut entries: Vec<GroupEntry>,
     ) -> Result<(), Box<NTSTATUS>> {
         // We need to ensure the member is removed from non-intersecting
         // groups, otherwise we don't honor group membership removals.
@@ -367,6 +377,11 @@ impl GroupCache {
                     return Err(Box::new(NT_STATUS_UNSUCCESSFUL));
                 }
             }
+        }
+
+        // Ensure the member is added to the listed groups
+        for group in &mut entries {
+            group.add_member(member);
         }
 
         // Now add the new entries, merging with existing memberships
@@ -511,5 +526,134 @@ impl PrivateCache {
     ) -> Result<(), Box<NTSTATUS>> {
         let device_id_tag = format!("{}/device_id", realm);
         self.cache.store_bytes(&device_id_tag, device_id.as_bytes())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use kanidm_hsm_crypto::soft::SoftTpm;
+    use std::str::FromStr;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_basic_cache_new() {
+        let dir = tempdir().unwrap();
+        let cache_path = dir.path().join("test.tdb");
+        let cache = BasicCache::new(cache_path.to_str().unwrap());
+        assert!(cache.is_ok());
+    }
+
+    #[test]
+    fn test_basic_cache_store_fetch_str() {
+        let dir = tempdir().unwrap();
+        let cache_path = dir.path().join("test.tdb");
+        let mut cache = BasicCache::new(cache_path.to_str().unwrap()).unwrap();
+
+        let key = "test_key";
+        let value = "test_value";
+        cache.store_bytes(key, value.as_bytes()).unwrap();
+        let fetched_value = cache.fetch_str(key).unwrap();
+        assert_eq!(fetched_value, value);
+    }
+
+    #[test]
+    fn test_basic_cache_store_fetch() {
+        let dir = tempdir().unwrap();
+        let cache_path = dir.path().join("test.tdb");
+        let mut cache = BasicCache::new(cache_path.to_str().unwrap()).unwrap();
+
+        let key = "test_key";
+        let value = UserEntry {
+            upn: "user@test.com".to_string(),
+            uuid: "f63a43c7-b783-4da9-acb4-89f8ebfc49e9".to_string(),
+            name: "Test User".to_string(),
+        };
+
+        cache.store(key, &value).unwrap();
+        let fetched_value: Option<UserEntry> = cache.fetch(key);
+        assert!(fetched_value.is_some());
+        let fetched_value = fetched_value.unwrap();
+        assert_eq!(fetched_value.upn, value.upn);
+        assert_eq!(fetched_value.uuid, value.uuid);
+        assert_eq!(fetched_value.name, value.name);
+    }
+
+    #[test]
+    fn test_user_cache_store_fetch() {
+        let dir = tempdir().unwrap();
+        let cache_path = dir.path().join("test.tdb");
+        let mut cache = UserCache::new(cache_path.to_str().unwrap()).unwrap();
+
+        let entry = UserEntry {
+            upn: "user@test.com".to_string(),
+            uuid: "f63a43c7-b783-4da9-acb4-89f8ebfc49e9".to_string(),
+            name: "Test User".to_string(),
+        };
+
+        cache.store(entry.clone()).unwrap();
+        let fetched_entry = cache.fetch(&entry.upn);
+        assert!(fetched_entry.is_some());
+        let fetched_entry = fetched_entry.unwrap();
+        assert_eq!(fetched_entry.upn, entry.upn);
+        assert_eq!(fetched_entry.uuid, entry.uuid);
+        assert_eq!(fetched_entry.name, entry.name);
+    }
+
+    #[test]
+    fn test_uid_cache_store_fetch() {
+        let dir = tempdir().unwrap();
+        let cache_path = dir.path().join("test.tdb");
+        let mut cache = UidCache::new(cache_path.to_str().unwrap()).unwrap();
+
+        let uid: uid_t = 1000;
+        let upn = "user@test.com";
+
+        cache.store(uid, upn).unwrap();
+        let fetched_upn = cache.fetch(uid);
+        assert!(fetched_upn.is_some());
+        assert_eq!(fetched_upn.unwrap(), upn);
+    }
+
+    #[test]
+    fn test_group_cache_store_fetch() {
+        let dir = tempdir().unwrap();
+        let cache_path = dir.path().join("test.tdb");
+        let mut cache = GroupCache::new(cache_path.to_str().unwrap()).unwrap();
+
+        let mut group = GroupEntry {
+            uuid: "5f8be63a-a379-4324-9f42-9ea40bed9d7f".to_string(),
+            members: HashSet::new(),
+        };
+        group.add_member("user@test.com");
+
+        cache.cache.store(&group.uuid, &group).unwrap();
+        let fetched_group = cache.fetch(&group.uuid);
+        assert!(fetched_group.is_some());
+        let fetched_group = fetched_group.unwrap();
+        assert_eq!(fetched_group.uuid, group.uuid);
+        assert!(fetched_group.members.contains("user@test.com"));
+    }
+
+    #[test]
+    fn test_private_cache_loadable_machine_key_fetch_or_create() {
+        let dir = tempdir().unwrap();
+        let cache_path = dir.path().join("test.tdb");
+        let mut cache =
+            PrivateCache::new(cache_path.to_str().unwrap()).unwrap();
+
+        let mut hsm = BoxedDynTpm::new(SoftTpm::new());
+        let auth_str = AuthValue::generate().expect("Failed to create hex pin");
+        let auth_value = AuthValue::from_str(&auth_str)
+            .expect("Unable to create auth value");
+
+        let result =
+            cache.loadable_machine_key_fetch_or_create(&mut hsm, &auth_value);
+        assert!(result.is_ok());
+
+        let fetched_key = cache
+            .cache
+            .fetch::<LoadableMachineKey>("loadable_machine_key");
+        assert!(fetched_key.is_some());
     }
 }

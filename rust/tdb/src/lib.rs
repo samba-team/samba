@@ -26,6 +26,7 @@ use ntstatus_gen::NT_STATUS_UNSUCCESSFUL;
 use std::error::Error;
 use std::ffi::c_void;
 use std::fmt;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 mod ffi {
@@ -111,12 +112,22 @@ impl Tdb {
         open_flags: Option<i32>,
         mode: Option<u32>,
     ) -> Result<Self, Box<dyn Error + '_>> {
+        let path = PathBuf::from(name);
         let tdb = unsafe {
             ffi::tdb_open(
                 wrap_string(name),
                 hash_size.unwrap_or(0),
                 tdb_flags.unwrap_or(ffi::TDB_DEFAULT as i32),
-                open_flags.unwrap_or(libc::O_RDWR),
+                match open_flags {
+                    Some(open_flags) => open_flags,
+                    None => {
+                        if path.exists() {
+                            libc::O_RDWR
+                        } else {
+                            libc::O_RDWR | libc::O_CREAT
+                        }
+                    }
+                },
                 mode.unwrap_or(0o600),
             )
         };

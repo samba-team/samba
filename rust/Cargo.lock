@@ -819,6 +819,7 @@ dependencies = [
  "serde_json",
  "sock",
  "tdb",
+ "tempfile",
  "tokio",
  "tokio-util",
  "version",

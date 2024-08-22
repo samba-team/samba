@@ -19,6 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 use crate::cache::{GroupCache, PrivateCache, UidCache, UserCache};
+#[cfg(not(test))]
 use crate::himmelblaud::himmelblaud_pam_auth::AuthSession;
 use bytes::{BufMut, BytesMut};
 use dbg::{DBG_DEBUG, DBG_ERR, DBG_WARNING};
@@ -37,6 +38,7 @@ use tokio::net::UnixStream;
 use tokio::sync::Mutex;
 use tokio_util::codec::{Decoder, Encoder, Framed};
 
+#[cfg(not(test))]
 pub(crate) struct Resolver {
     realm: String,
     tenant_id: String,
@@ -52,6 +54,7 @@ pub(crate) struct Resolver {
     client: Arc<Mutex<BrokerClientApplication>>,
 }
 
+#[cfg(not(test))]
 impl Resolver {
     pub(crate) fn new(
         realm: &str,
@@ -80,6 +83,46 @@ impl Resolver {
             hsm: Mutex::new(hsm),
             machine_key,
             client: Arc::new(Mutex::new(client)),
+        }
+    }
+}
+
+// The test environment is unable to communicate with Entra ID, therefore
+// we alter the resolver to only test the cache interactions.
+
+#[cfg(test)]
+pub(crate) struct Resolver {
+    realm: String,
+    tenant_id: String,
+    lp: LoadParm,
+    idmap: Idmap,
+    pcache: PrivateCache,
+    user_cache: UserCache,
+    uid_cache: UidCache,
+    group_cache: GroupCache,
+}
+
+#[cfg(test)]
+impl Resolver {
+    pub(crate) fn new(
+        realm: &str,
+        tenant_id: &str,
+        lp: LoadParm,
+        idmap: Idmap,
+        pcache: PrivateCache,
+        user_cache: UserCache,
+        uid_cache: UidCache,
+        group_cache: GroupCache,
+    ) -> Self {
+        Resolver {
+            realm: realm.to_string(),
+            tenant_id: tenant_id.to_string(),
+            lp,
+            idmap,
+            pcache,
+            user_cache,
+            uid_cache,
+            group_cache,
         }
     }
 }
@@ -142,11 +185,13 @@ pub(crate) async fn handle_client(
     };
 
     let mut reqs = Framed::new(stream, ClientCodec::new());
+    #[cfg(not(test))]
     let mut pam_auth_session_state = None;
 
     while let Some(Ok(req)) = reqs.next().await {
         let mut resolver = resolver.lock().await;
         let resp = match req {
+            #[cfg(not(test))]
             Request::PamAuthenticateInit(account_id) => {
                 DBG_DEBUG!("pam authenticate init");
 
@@ -168,6 +213,7 @@ pub(crate) async fn handle_client(
                     }
                 }
             }
+            #[cfg(not(test))]
             Request::PamAuthenticateStep(pam_next_req) => {
                 DBG_DEBUG!("pam authenticate step");
                 match &mut pam_auth_session_state {
@@ -220,10 +266,13 @@ pub(crate) async fn handle_client(
                 resolver.getgrnam(&grp_id).await?
             }
             Request::NssGroupByGid(gid) => resolver.getgrgid(gid).await?,
+            #[cfg(not(test))]
             Request::PamAccountAllowed(account_id) => {
                 resolver.pam_acct_mgmt(&account_id).await?
             }
             Request::PamAccountBeginSession(_account_id) => Response::Success,
+            #[cfg(test)]
+            _ => Response::Error,
         };
         reqs.send(resp).await?;
         reqs.flush().await?;
@@ -240,5 +289,7 @@ mod himmelblaud_getgrnam;
 mod himmelblaud_getpwent;
 mod himmelblaud_getpwnam;
 mod himmelblaud_getpwuid;
+#[cfg(not(test))]
 mod himmelblaud_pam_acct_mgmt;
+#[cfg(not(test))]
 mod himmelblaud_pam_auth;

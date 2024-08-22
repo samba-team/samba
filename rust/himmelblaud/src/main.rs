@@ -18,6 +18,11 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+// Ignore unused/dead code when running cargo test
+#![cfg_attr(test, allow(unused_imports))]
+#![cfg_attr(test, allow(dead_code))]
+
 use clap::{Arg, ArgAction, Command};
 use dbg::*;
 use himmelblau::graph::Graph;
@@ -41,6 +46,7 @@ mod himmelblaud;
 use cache::{GroupCache, PrivateCache, UidCache, UserCache};
 mod utils;
 
+#[cfg(not(test))]
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> ExitCode {
     let clap_args = Command::new("himmelblaud")
