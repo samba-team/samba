@@ -48,7 +48,8 @@ impl BasicCache {
     }
 
     fn fetch_str(&self, key: &str) -> Option<String> {
-        let exists = match self.tdb.exists(key) {
+        let key = key.to_string().to_lowercase();
+        let exists = match self.tdb.exists(&key) {
             Ok(exists) => exists,
             Err(e) => {
                 DBG_ERR!("Failed to fetch {}: {:?}", key, e);
@@ -56,7 +57,7 @@ impl BasicCache {
             }
         };
         if exists {
-            match self.tdb.fetch(key) {
+            match self.tdb.fetch(&key) {
                 Ok(val) => Some(val),
                 Err(e) => {
                     DBG_ERR!("Failed to fetch {}: {:?}", key, e);
@@ -72,7 +73,8 @@ impl BasicCache {
     where
         T: for<'de> Deserialize<'de>,
     {
-        match self.fetch_str(key) {
+        let key = key.to_string().to_lowercase();
+        match self.fetch_str(&key) {
             Some(val) => match json_from_slice::<T>(val.as_bytes()) {
                 Ok(res) => Some(res),
                 Err(e) => {
@@ -91,6 +93,7 @@ impl BasicCache {
         key: &str,
         val: &[u8],
     ) -> Result<(), Box<NTSTATUS>> {
+        let key = key.to_string().to_lowercase();
         match self.tdb.transaction_start() {
             Ok(start) => {
                 if !start {
@@ -104,7 +107,7 @@ impl BasicCache {
             }
         };
 
-        let res = match self.tdb.store(key, val, None) {
+        let res = match self.tdb.store(&key, val, None) {
             Ok(res) => Some(res),
             Err(e) => {
                 DBG_ERR!("Unable to persist {}: {:?}", key, e);
@@ -145,6 +148,7 @@ impl BasicCache {
     where
         T: Serialize,
     {
+        let key = key.to_string().to_lowercase();
         let val_bytes = match json_to_vec(&val) {
             Ok(val_bytes) => val_bytes,
             Err(e) => {
@@ -152,7 +156,7 @@ impl BasicCache {
                 return Err(Box::new(NT_STATUS_UNSUCCESSFUL));
             }
         };
-        self.store_bytes(key, &val_bytes)
+        self.store_bytes(&key, &val_bytes)
     }
 
     fn keys(&self) -> Result<Vec<String>, Box<NTSTATUS>> {
@@ -241,6 +245,7 @@ impl UidCache {
         upn: &str,
     ) -> Result<(), Box<NTSTATUS>> {
         let key = format!("{}", uid);
+        let upn = upn.to_string().to_lowercase();
         self.cache.store_bytes(&key, upn.as_bytes())
     }
 
