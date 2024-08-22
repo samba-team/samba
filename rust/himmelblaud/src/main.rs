@@ -119,13 +119,15 @@ async fn main() -> ExitCode {
         // on what is specified on the command line.
         match clap_args.get_flag("debug-stdout") {
             true => setup_logging(env!("CARGO_PKG_NAME"), DEBUG_STDOUT),
-            false => setup_logging(env!("CARGO_PKG_NAME"), DEBUG_FILE),
-        }
-        match lp.logfile() {
-            Ok(Some(logfile)) => debug_set_logfile(&logfile),
-            _ => {
-                eprintln!("Failed to determine logfile name");
-                return ExitCode::FAILURE;
+            false => {
+                setup_logging(env!("CARGO_PKG_NAME"), DEBUG_FILE);
+                match lp.logfile() {
+                    Ok(Some(logfile)) => debug_set_logfile(&logfile),
+                    _ => {
+                        eprintln!("Failed to determine logfile name");
+                        return ExitCode::FAILURE;
+                    }
+                }
             }
         }
 
