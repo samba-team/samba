@@ -1171,6 +1171,7 @@ int ldb_dn_compare(struct ldb_dn *dn0, struct ldb_dn *dn1)
 	}
 
 	if (( ! dn0->valid_case) || ( ! dn1->valid_case)) {
+		bool ok0, ok1;
 		if (dn0->linearized && dn1->linearized) {
 			/* try with a normal compare first, if we are lucky
 			 * we will avoid exploding and casefolding */
@@ -1178,15 +1179,20 @@ int ldb_dn_compare(struct ldb_dn *dn0, struct ldb_dn *dn1)
 				return 0;
 			}
 		}
-
-		if ( ! ldb_dn_casefold_internal(dn0)) {
+		/*
+		 * If a DN can't casefold, it goes to the end.
+		 */
+		ok0 = ldb_dn_casefold_internal(dn0);
+		ok1 = ldb_dn_casefold_internal(dn1);
+		if (! ok0) {
+			if (! ok1) {
+				return 0;
+			}
 			return 1;
 		}
-
-		if ( ! ldb_dn_casefold_internal(dn1)) {
+		if (! ok1) {
 			return -1;
 		}
-
 	}
 
 	/*
