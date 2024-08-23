@@ -72,7 +72,8 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 				DATA_BLOB in_data,
 				bool write_through);
 bool cancel_smb2_aio(struct smb_request *smbreq);
-bool aio_add_req_to_fsp(files_struct *fsp, struct tevent_req *req);
+struct aio_req_fsp_link;
+struct aio_req_fsp_link *aio_add_req_to_fsp(files_struct *fsp, struct tevent_req *req);
 struct aio_extra *create_aio_extra(TALLOC_CTX *mem_ctx,
 				   files_struct *fsp,
 				   size_t buflen);

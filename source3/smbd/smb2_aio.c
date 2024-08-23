@@ -113,14 +113,14 @@ static int aio_del_req_from_fsp(struct aio_req_fsp_link *lnk)
 	return 0;
 }
 
-bool aio_add_req_to_fsp(files_struct *fsp, struct tevent_req *req)
+struct aio_req_fsp_link *aio_add_req_to_fsp(files_struct *fsp, struct tevent_req *req)
 {
 	size_t array_len;
 	struct aio_req_fsp_link *lnk;
 
 	lnk = talloc(req, struct aio_req_fsp_link);
 	if (lnk == NULL) {
-		return false;
+		return NULL;
 	}
 
 	array_len = talloc_array_length(fsp->aio_requests);
@@ -130,7 +130,7 @@ bool aio_add_req_to_fsp(files_struct *fsp, struct tevent_req *req)
 		if (fsp->num_aio_requests + 10 < 10) {
 			/* Integer wrap. */
 			TALLOC_FREE(lnk);
-			return false;
+			return NULL;
 		}
 
 		/*
@@ -142,7 +142,7 @@ bool aio_add_req_to_fsp(files_struct *fsp, struct tevent_req *req)
 			fsp->num_aio_requests+10);
 		if (tmp == NULL) {
 			TALLOC_FREE(lnk);
-			return false;
+			return NULL;
 		}
 		fsp->aio_requests = tmp;
 	}
@@ -156,7 +156,7 @@ bool aio_add_req_to_fsp(files_struct *fsp, struct tevent_req *req)
 #endif
 	talloc_set_destructor(lnk, aio_del_req_from_fsp);
 
-	return true;
+	return lnk;
 }
 
 struct pwrite_fsync_state {
