@@ -268,7 +268,8 @@ static bool smbd_smb2_ioctl_is_failure(uint32_t ctl_code, NTSTATUS status,
 	if (NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)
 	 && ((ctl_code == FSCTL_PIPE_TRANSCEIVE)
 	  || (ctl_code == FSCTL_PIPE_PEEK)
-	  || (ctl_code == FSCTL_DFS_GET_REFERRALS))) {
+	  || (ctl_code == FSCTL_DFS_GET_REFERRALS)
+	  || (ctl_code == FSCTL_QUERY_ALLOCATED_RANGES))) {
 		return false;
 	}
 
@@ -344,6 +345,7 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 		 * in:
 		 * - fsctl_dfs_get_refers()
 		 * - smbd_smb2_ioctl_pipe_read_done()
+		 * - fsctl_qar()
 		 */
 		status = NT_STATUS_BUFFER_TOO_SMALL;
 	}
