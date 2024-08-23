@@ -52,12 +52,6 @@ interface misc
 		SEC_CHAN_RODC        = 7
 	} netr_SchannelType;
 
-	typedef [public] struct {
-		NTSTATUS ntstatus;
-		uint32 unknown1;
-		uint32 unknown2; /* 0x00000001 */
-	} KRB5_EDATA_NTSTATUS;
-
 	typedef [public,v1_enum] enum {
 		REG_NONE                       = 0,
 		REG_SZ                         = 1,
