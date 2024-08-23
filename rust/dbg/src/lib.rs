@@ -89,7 +89,9 @@ macro_rules! DBG_PREFIX {
             let function_msg = format!("{}: ", function);
             let function_cstr = chelps::wrap_string(&function);
             let function_msg_cstr = chelps::wrap_string(&function_msg);
-            let msg = format!($($arg),*);
+            // Always append a newline to the debug, otherwise it won't flush
+            // to the log.
+            let msg = format!("{}\n", format!($($arg),*));
             let msg_cstr = chelps::wrap_string(&msg);
             unsafe {
                 let _ = $crate::ffi::debuglevel_get_class($crate::ffi::DBGC_CLASS as usize) >= ($level as i32)
