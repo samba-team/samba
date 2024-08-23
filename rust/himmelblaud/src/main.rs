@@ -145,15 +145,21 @@ async fn main() -> ExitCode {
             }
         };
         let sock_dir = Path::new(&sock_dir_str);
-        let mut sock_path = PathBuf::from(sock_dir);
-        sock_path.push("hb_pipe");
-        let sock_path = match sock_path.to_str() {
+        let mut sock_path_buf = PathBuf::from(sock_dir);
+        sock_path_buf.push("hb_pipe");
+        let sock_path = match sock_path_buf.to_str() {
             Some(sock_path) => sock_path,
             None => {
                 talloc::TALLOC_FREE!(frame);
                 return ExitCode::FAILURE;
             }
         };
+        if sock_path_buf.exists() {
+            DBG_DEBUG!("Cleaning up socket from previous invocations");
+            if let Err(_) = std::fs::remove_file(sock_path) {
+                DBG_ERR!("Failed removing socket");
+            }
+        }
 
         // Initialize the Himmelblau cache
         let private_cache_path = match lp.private_path("himmelblau.tdb") {
