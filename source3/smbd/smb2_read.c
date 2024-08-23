@@ -185,6 +185,7 @@ static void smbd_smb2_request_read_done(struct tevent_req *subreq)
 struct smbd_smb2_read_state {
 	struct smbd_smb2_request *smb2req;
 	struct smb_request *smbreq;
+	struct tevent_req *ipc_subreq;
 	files_struct *fsp;
 	uint8_t in_flags;
 	uint32_t in_length;
@@ -428,6 +429,22 @@ NTSTATUS smb2_read_complete(struct tevent_req *req, ssize_t nread, int err)
 	return NT_STATUS_OK;
 }
 
+static bool smbd_smb2_read_ipc_cancel(struct tevent_req *req)
+{
+	struct smbd_smb2_read_state *state =
+		tevent_req_data(req,
+		struct smbd_smb2_read_state);
+
+	TALLOC_FREE(state->ipc_subreq);
+	tevent_req_defer_callback(req, state->smb2req->xconn->client->raw_ev_ctx);
+	if (state->fsp->fsp_flags.closing) {
+		tevent_req_nterror(req, NT_STATUS_PIPE_BROKEN);
+	} else {
+		tevent_req_nterror(req, NT_STATUS_CANCELLED);
+	}
+	return true;
+}
+
 static bool smbd_smb2_read_cancel(struct tevent_req *req)
 {
 	struct smbd_smb2_read_state *state =
@@ -487,7 +504,7 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 
 	if (IS_IPC(smbreq->conn)) {
 		struct tevent_req *subreq = NULL;
-		bool ok;
+		struct aio_req_fsp_link *aio_lnk = NULL;
 
 		state->out_data = data_blob_talloc(state, NULL, in_length);
 		if (in_length > 0 && tevent_req_nomem(state->out_data.data, req)) {
@@ -515,12 +532,15 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 		 * activity so we don't crash on shutdown close.
 		 */
 
-		ok = aio_add_req_to_fsp(fsp, req);
-		if (!ok) {
+		aio_lnk = aio_add_req_to_fsp(fsp, req);
+		if (aio_lnk == NULL) {
 			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 			return tevent_req_post(req, ev);
 		}
+		talloc_move(subreq, &aio_lnk);
 
+		state->ipc_subreq = subreq;
+		tevent_req_set_cancel_fn(req, smbd_smb2_read_ipc_cancel);
 		return req;
 	}
 
