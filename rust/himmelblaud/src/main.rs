@@ -30,6 +30,7 @@ use himmelblau::BrokerClientApplication;
 use idmap::Idmap;
 use kanidm_hsm_crypto::soft::SoftTpm;
 use kanidm_hsm_crypto::{BoxedDynTpm, Tpm};
+use libc::umask;
 use param::LoadParm;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -375,6 +376,8 @@ async fn main() -> ExitCode {
             client,
         )));
 
+        // Set the umask while we open the path for most clients.
+        let before = unsafe { umask(0) };
         // Listen for incoming requests from PAM and NSS
         let listener = match UnixListener::bind(sock_path) {
             Ok(listener) => listener,
@@ -384,6 +387,8 @@ async fn main() -> ExitCode {
                 return ExitCode::FAILURE;
             }
         };
+        // Undo umask changes.
+        let _ = unsafe { umask(before) };
 
         let server = tokio::spawn(async move {
             while !stop_now.load(Ordering::Relaxed) {
