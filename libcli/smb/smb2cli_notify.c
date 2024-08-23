@@ -33,6 +33,8 @@ struct smb2cli_notify_state {
 
 	struct tevent_req *subreq;
 	struct tevent_req *timeout_subreq;
+	bool notify_async;
+	bool report_pending;
 };
 
 static void smb2cli_notify_done(struct tevent_req *subreq);
@@ -133,6 +135,16 @@ static void smb2cli_notify_timedout(struct tevent_req *subreq)
 	}
 }
 
+void smb2cli_notify_set_notify_async(struct tevent_req *req)
+{
+	struct smb2cli_notify_state *state =
+		tevent_req_data(req,
+		struct smb2cli_notify_state);
+
+	smb2cli_req_set_notify_async(state->subreq);
+	state->notify_async = true;
+}
+
 static void smb2cli_notify_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
@@ -149,10 +161,20 @@ static void smb2cli_notify_done(struct tevent_req *subreq)
 	}
 	};
 
+	SMB_ASSERT(state->subreq == subreq);
+
 	status = smb2cli_req_recv(subreq, state, &iov,
 				  expected, ARRAY_SIZE(expected));
+	if (NT_STATUS_EQUAL(status, NT_STATUS_PENDING) && state->notify_async) {
+		state->notify_async = false;
+		state->report_pending = true;
+		tevent_req_notify_callback(req);
+		return;
+	}
+	state->notify_async = false;
+	state->report_pending = false;
+	state->subreq = NULL;
 	TALLOC_FREE(subreq);
-
 	if (NT_STATUS_EQUAL(status, NT_STATUS_CANCELLED)) {
 		status = NT_STATUS_IO_TIMEOUT;
 	}
@@ -180,6 +202,12 @@ NTSTATUS smb2cli_notify_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	struct smb2cli_notify_state *state = tevent_req_data(
 		req, struct smb2cli_notify_state);
 	NTSTATUS status;
+
+	if (state->report_pending) {
+		*data_length = 0;
+		*data = NULL;
+		return NT_STATUS_PENDING;
+	}
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;

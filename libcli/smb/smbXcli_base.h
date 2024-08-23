@@ -897,6 +897,7 @@ struct tevent_req *smb2cli_notify_send(TALLOC_CTX *mem_ctx,
 				       uint64_t fid_volatile,
 				       uint32_t completion_filter,
 				       bool recursive);
+void smb2cli_notify_set_notify_async(struct tevent_req *req);
 NTSTATUS smb2cli_notify_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			     uint8_t **data, uint32_t *data_length);
 NTSTATUS smb2cli_notify(struct smbXcli_conn *conn,
