@@ -80,33 +80,12 @@ macro_rules! debuglevel_set {
 }
 
 #[macro_export]
-macro_rules! function {
-    () => {{
-        fn f() {}
-        fn type_name_of<T>(_: T) -> &'static str {
-            std::any::type_name::<T>()
-        }
-        let name = type_name_of(f);
-
-        let base_name = match name.rfind("::") {
-            Some(pos) => &name[..pos],
-            None => name,
-        };
-        let parts: Vec<&str> = base_name
-            .split("::")
-            .filter(|&p| p != "{{closure}}")
-            .collect();
-        parts.join("::")
-    }};
-}
-
-#[macro_export]
 macro_rules! DBG_PREFIX {
     ($level:expr $(, $arg:expr)* $(,)?) => {{
         if $level <= $crate::ffi::MAX_DEBUG_LEVEL {
             let location = format!("{}:{}", file!(), line!());
             let location_cstr = chelps::wrap_string(&location);
-            let function = $crate::function!();
+            let function = chelps::function!();
             let function_msg = format!("{}: ", function);
             let function_cstr = chelps::wrap_string(&function);
             let function_msg_cstr = chelps::wrap_string(&function_msg);

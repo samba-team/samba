@@ -1,0 +1,13 @@
+[package]
+name = "talloc"
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+version.workspace = true
+
+[build-dependencies]
+bindgen = "0.69.4"
+config.workspace = true
+
+[dependencies]
+chelps.workspace = true

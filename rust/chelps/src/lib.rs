@@ -50,6 +50,27 @@ pub unsafe fn string_free(input: *mut c_char) {
     }
 }
 
+#[macro_export]
+macro_rules! function {
+    () => {{
+        fn f() {}
+        fn type_name_of<T>(_: T) -> &'static str {
+            std::any::type_name::<T>()
+        }
+        let name = type_name_of(f);
+
+        let base_name = match name.rfind("::") {
+            Some(pos) => &name[..pos],
+            None => name,
+        };
+        let parts: Vec<&str> = base_name
+            .split("::")
+            .filter(|&p| p != "{{closure}}")
+            .collect();
+        parts.join("::")
+    }};
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

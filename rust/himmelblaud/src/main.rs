@@ -82,6 +82,8 @@ async fn main() -> ExitCode {
     let quit_now = Arc::clone(&stop_now);
     let interrupt_now = Arc::clone(&stop_now);
 
+    let frame = talloc::talloc_stackframe!();
+
     async {
         // Set the command line debug level
         if let Some(debuglevel) = clap_args.get_one::<u16>("debuglevel") {
@@ -97,6 +99,7 @@ async fn main() -> ExitCode {
             Ok(lp) => lp,
             Err(e) => {
                 eprintln!("Failed loading smb.conf: {:?}", e);
+                talloc::TALLOC_FREE!(frame);
                 return ExitCode::FAILURE;
             }
         };
@@ -111,6 +114,7 @@ async fn main() -> ExitCode {
                     "The realm MUST be set in the \
                     smb.conf to start himmelblaud"
                 );
+                talloc::TALLOC_FREE!(frame);
                 return ExitCode::FAILURE;
             }
         };
@@ -125,6 +129,7 @@ async fn main() -> ExitCode {
                     Ok(Some(logfile)) => debug_set_logfile(&logfile),
                     _ => {
                         eprintln!("Failed to determine logfile name");
+                        talloc::TALLOC_FREE!(frame);
                         return ExitCode::FAILURE;
                     }
                 }
@@ -134,14 +139,20 @@ async fn main() -> ExitCode {
         // Determine the unix socket path
         let sock_dir_str = match lp.winbindd_socket_directory() {
             Ok(Some(sock_dir)) => sock_dir,
-            _ => return ExitCode::FAILURE,
+            _ => {
+                talloc::TALLOC_FREE!(frame);
+                return ExitCode::FAILURE;
+            }
         };
         let sock_dir = Path::new(&sock_dir_str);
         let mut sock_path = PathBuf::from(sock_dir);
         sock_path.push("hb_pipe");
         let sock_path = match sock_path.to_str() {
             Some(sock_path) => sock_path,
-            None => return ExitCode::FAILURE,
+            None => {
+                talloc::TALLOC_FREE!(frame);
+                return ExitCode::FAILURE;
+            }
         };
 
         // Initialize the Himmelblau cache
@@ -149,6 +160,7 @@ async fn main() -> ExitCode {
             Ok(Some(private_cache_path)) => private_cache_path,
             _ => {
                 DBG_ERR!("Failed to determine private cache path");
+                talloc::TALLOC_FREE!(frame);
                 return ExitCode::FAILURE;
             }
         };
@@ -159,6 +171,7 @@ async fn main() -> ExitCode {
                 "The private directory '{}' does not exist",
                 private_dir.display()
             );
+            talloc::TALLOC_FREE!(frame);
             return ExitCode::FAILURE;
         }
         let mut pcache = match PrivateCache::new(&private_cache_path) {
@@ -168,6 +181,7 @@ async fn main() -> ExitCode {
                     "Failed to open the himmelblau private cache: {:?}",
                     e
                 );
+                talloc::TALLOC_FREE!(frame);
                 return ExitCode::FAILURE;
             }
         };
@@ -176,11 +190,13 @@ async fn main() -> ExitCode {
             Ok(Some(cache_dir)) => cache_dir,
             _ => {
                 DBG_ERR!("Failed to determine cache directory");
+                talloc::TALLOC_FREE!(frame);
                 return ExitCode::FAILURE;
             }
         };
         if !Path::new(&cache_dir).exists() {
             DBG_ERR!("The cache directory '{}' does not exist", cache_dir);
+            talloc::TALLOC_FREE!(frame);
             return ExitCode::FAILURE;
         }
 
@@ -192,6 +208,7 @@ async fn main() -> ExitCode {
             Ok(cache) => cache,
             Err(e) => {
                 DBG_ERR!("Failed to open the himmelblau user cache: {:?}", e);
+                talloc::TALLOC_FREE!(frame);
                 return ExitCode::FAILURE;
             }
         };
@@ -204,6 +221,7 @@ async fn main() -> ExitCode {
             Ok(cache) => cache,
             Err(e) => {
                 DBG_ERR!("Failed to open the himmelblau uid cache: {:?}", e);
+                talloc::TALLOC_FREE!(frame);
                 return ExitCode::FAILURE;
             }
         };
@@ -216,6 +234,7 @@ async fn main() -> ExitCode {
             Ok(cache) => cache,
             Err(e) => {
                 DBG_ERR!("Failed to open the himmelblau group cache: {:?}", e);
+                talloc::TALLOC_FREE!(frame);
                 return ExitCode::FAILURE;
             }
         };
@@ -225,6 +244,7 @@ async fn main() -> ExitCode {
             Ok(Some(hsm_pin_path)) => hsm_pin_path,
             _ => {
                 DBG_ERR!("Failed loading hsm pin path.");
+                talloc::TALLOC_FREE!(frame);
                 return ExitCode::FAILURE;
             }
         };
@@ -235,6 +255,7 @@ async fn main() -> ExitCode {
                 "The hsm pin directory '{}' does not exist",
                 hsm_pin_dir.display()
             );
+            talloc::TALLOC_FREE!(frame);
             return ExitCode::FAILURE;
         }
         let auth_value =
@@ -242,6 +263,7 @@ async fn main() -> ExitCode {
                 Ok(auth_value) => auth_value,
                 Err(e) => {
                     DBG_ERR!("{:?}", e);
+                    talloc::TALLOC_FREE!(frame);
                     return ExitCode::FAILURE;
                 }
             };
@@ -255,6 +277,7 @@ async fn main() -> ExitCode {
             Ok(lmk) => lmk,
             Err(e) => {
                 DBG_ERR!("{:?}", e);
+                talloc::TALLOC_FREE!(frame);
                 return ExitCode::FAILURE;
             }
         };
@@ -270,6 +293,7 @@ async fn main() -> ExitCode {
                     private_cache_path
                 );
                 DBG_INFO!("The host will forget domain enrollments.");
+                talloc::TALLOC_FREE!(frame);
                 return ExitCode::FAILURE;
             }
         };
@@ -286,6 +310,7 @@ async fn main() -> ExitCode {
             Ok(graph) => graph,
             Err(e) => {
                 DBG_ERR!("Failed initializing the graph: {:?}", e);
+                talloc::TALLOC_FREE!(frame);
                 return ExitCode::FAILURE;
             }
         };
@@ -301,6 +326,7 @@ async fn main() -> ExitCode {
             Ok(client) => client,
             Err(e) => {
                 DBG_ERR!("Failed initializing the broker: {:?}", e);
+                talloc::TALLOC_FREE!(frame);
                 return ExitCode::FAILURE;
             }
         };
@@ -309,6 +335,7 @@ async fn main() -> ExitCode {
             Ok(idmap) => idmap,
             Err(e) => {
                 DBG_ERR!("Failed initializing the idmapper: {:?}", e);
+                talloc::TALLOC_FREE!(frame);
                 return ExitCode::FAILURE;
             }
         };
@@ -317,11 +344,13 @@ async fn main() -> ExitCode {
             Ok(res) => res,
             Err(e) => {
                 DBG_ERR!("Failed fetching idmap range: {:?}", e);
+                talloc::TALLOC_FREE!(frame);
                 return ExitCode::FAILURE;
             }
         };
         if let Err(e) = idmap.add_gen_domain(&realm, &tenant_id, (low, high)) {
             DBG_ERR!("Failed adding the domain idmap range: {:?}", e);
+            talloc::TALLOC_FREE!(frame);
             return ExitCode::FAILURE;
         }
 
@@ -345,6 +374,7 @@ async fn main() -> ExitCode {
             Ok(listener) => listener,
             Err(e) => {
                 DBG_ERR!("Failed setting up the socket listener: {:?}", e);
+                talloc::TALLOC_FREE!(frame);
                 return ExitCode::FAILURE;
             }
         };
@@ -428,6 +458,7 @@ async fn main() -> ExitCode {
             }
         }
 
+        talloc::TALLOC_FREE!(frame);
         ExitCode::SUCCESS
     }
     .await

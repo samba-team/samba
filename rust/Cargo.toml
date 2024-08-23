@@ -9,7 +9,7 @@ resolver = "2"
 members = [
   "chelps", "config", "dbg", "himmelblaud", "idmap",
   "nss", "ntstatus_gen", "pam",
-  "param", "sock", "tdb", "version",
+  "param", "sock", "talloc", "tdb", "version",
 ]
 
 [workspace.dependencies]

@@ -23,6 +23,7 @@ futures = "0.3.30"
 serde = "1.0.204"
 idmap = { workspace = true }
 libc = { workspace = true }
+talloc = { version = "4.21.0", path = "../talloc" }
 
 [build-dependencies]
 version = { path = "../version" }

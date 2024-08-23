@@ -40,4 +40,13 @@ mod tests {
             USING_SYSTEM_TDB
         );
     }
+
+    #[test]
+    fn test_using_system_talloc() {
+        assert!(
+            USING_SYSTEM_TALLOC == 0 || USING_SYSTEM_TALLOC == 1,
+            "Unexpected value for USING_SYSTEM_TALLOC: {}",
+            USING_SYSTEM_TALLOC
+        );
+    }
 }

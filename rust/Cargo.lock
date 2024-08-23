@@ -818,6 +818,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sock",
+ "talloc",
  "tdb",
  "tempfile",
  "tokio",
@@ -2136,6 +2137,15 @@ checksum = "a75fb188eb626b924683e3b95e3a48e63551fcfb51949de2f06a9d91dbee93c9"
 dependencies = [
  "core-foundation-sys",
  "libc",
+]
+
+[[package]]
+name = "talloc"
+version = "4.21.0"
+dependencies = [
+ "bindgen",
+ "chelps",
+ "config",
 ]
 
 [[package]]
