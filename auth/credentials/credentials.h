@@ -25,6 +25,7 @@
 #include "../lib/util/time.h"
 #include "../lib/util/data_blob.h"
 #include "librpc/gen_ndr/misc.h"
+#include "libcli/util/ntstatus.h"
 
 struct cli_credentials;
 struct ccache_container;

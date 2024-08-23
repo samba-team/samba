@@ -26,6 +26,7 @@
 #include "replace.h"
 #include <talloc.h>
 #include "lib/util/data_blob.h"
+#include "libcli/util/ntstatus.h"
 #include "librpc/gen_ndr/security.h"
 
 /* Some well-known SIDs */

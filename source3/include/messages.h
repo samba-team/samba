@@ -23,6 +23,7 @@
 
 #include "replace.h"
 #include <tevent.h>
+#include "libcli/util/ntstatus.h"
 
 /* change the message version with any incompatible changes in the protocol */
 #define MESSAGE_VERSION 2

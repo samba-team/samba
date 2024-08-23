@@ -20,6 +20,7 @@
 #include <tevent.h>
 #include "librpc/gen_ndr/file_id.h"
 #include "lib/util/time.h"
+#include "libcli/util/ntstatus.h"
 
 struct share_mode_data;
 struct share_mode_lock;
