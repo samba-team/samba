@@ -86,7 +86,8 @@ static bool smb2_ioctl_is_failure(uint32_t ctl_code, NTSTATUS status,
 	if (NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)
 	 && ((ctl_code == FSCTL_PIPE_TRANSCEIVE)
 	  || (ctl_code == FSCTL_PIPE_PEEK)
-	  || (ctl_code == FSCTL_DFS_GET_REFERRALS))) {
+	  || (ctl_code == FSCTL_DFS_GET_REFERRALS)
+	  || (ctl_code == FSCTL_QUERY_ALLOCATED_RANGES))) {
 		return false;
 	}
 
