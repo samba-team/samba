@@ -10,7 +10,7 @@ require Exporter;
 @EXPORT_OK = qw(hasType getType resolveType mapTypeName mapTypeSpecifier scalar_is_reference expandAlias
 	mapScalarType addType typeIs is_signed is_scalar enum_type_fn
 	bitmap_type_fn mapType typeHasBody is_fixed_size_scalar
-	is_string_type
+	is_string_type scalarTypeUsed
 );
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -115,6 +115,8 @@ sub expandAlias($)
 	return $name;
 }
 
+my %scalars_used = ();
+
 # map from a IDL type to a C header type
 sub mapScalarType($)
 {
@@ -122,9 +124,18 @@ sub mapScalarType($)
 
 	# it's a bug when a type is not in the list
 	# of known scalars or has no mapping
-	return $scalars{$name} if defined($scalars{$name});
+	if (defined($scalars{$name})) {
+		$scalars_used{$name} = $scalars{$name};
+		return $scalars{$name};
+	}
 
 	die("Unknown scalar type $name");
+}
+
+sub scalarTypeUsed($)
+{
+	my $name = shift;
+	return defined($scalars_used{$name});
 }
 
 sub addType($)
