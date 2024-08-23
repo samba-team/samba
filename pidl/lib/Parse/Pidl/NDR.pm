@@ -1118,6 +1118,7 @@ my %property_list = (
 	"endpoint"		=> ["INTERFACE"],
 	"pointer_default"	=> ["INTERFACE"],
 	"helper"		=> ["INTERFACE"],
+	"headerhelper"		=> ["INTERFACE"],
 	"pyhelper"		=> ["INTERFACE"],
 	"authservice"		=> ["INTERFACE"],
 	"restricted"	        => ["INTERFACE"],

@@ -401,6 +401,13 @@ sub HeaderInterface($)
 	pidl "#ifndef _HEADER_$interface->{NAME}\n";
 	pidl "#define _HEADER_$interface->{NAME}\n\n";
 
+	if (has_property($interface, "headerhelper")) {
+	    foreach my $h (split /,/, $interface->{PROPERTIES}->{headerhelper}) {
+		pidl("#include $h\n");
+	    }
+	    pidl("\n");
+	}
+
 	foreach my $c (@{$interface->{CONSTS}}) {
 		HeaderConst($c);
 	}
