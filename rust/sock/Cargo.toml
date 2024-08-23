@@ -6,6 +6,8 @@ homepage.workspace = true
 version.workspace = true
 
 [dependencies]
+chelps.workspace = true
+dbg.workspace = true
 libc.workspace = true
 libnss = "0.8.0"
 ntstatus_gen.workspace = true
