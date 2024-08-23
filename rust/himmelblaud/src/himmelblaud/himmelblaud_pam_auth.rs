@@ -710,16 +710,17 @@ impl Resolver {
         token: &UnixUserToken,
     ) -> Result<(), Box<NTSTATUS>> {
         /* If not already joined, join the domain now. */
-        let os = env::var("TARGET_OS").map_err(|e| {
+        let attrs = EnrollAttrs::new(
+            self.realm.clone(),
+            None,
+            Some(env::consts::OS.to_string()),
+            None,
+            None,
+        )
+        .map_err(|e| {
             DBG_ERR!("{:?}", e);
             Box::new(NT_STATUS_LOGON_FAILURE)
         })?;
-        let attrs =
-            EnrollAttrs::new(self.realm.clone(), None, Some(os), None, None)
-                .map_err(|e| {
-                    DBG_ERR!("{:?}", e);
-                    Box::new(NT_STATUS_LOGON_FAILURE)
-                })?;
         let mut tpm = self.hsm.lock().await;
         match self
             .client
