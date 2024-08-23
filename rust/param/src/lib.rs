@@ -24,6 +24,7 @@ use dbg::{DBG_ERR, DBG_INFO, DBG_WARNING};
 use ntstatus_gen::NT_STATUS_UNSUCCESSFUL;
 use std::error::Error;
 use std::ffi::c_void;
+use std::ptr;
 use std::sync::{Arc, Mutex};
 
 mod ffi {
@@ -127,71 +128,62 @@ impl LoadParm {
                 DBG_ERR!("Backend '{}' is not supported for Entra ID", backend);
                 return Err(Box::new(NT_STATUS_UNSUCCESSFUL));
             }
-        } else {
+        } else if domain_name != "*" {
             DBG_WARNING!(
                 "No idmap backend configured for domain '{}'",
                 domain_name
             );
             DBG_INFO!("Falling back to default idmap configuration");
-            return self.idmap_default_range();
-        }
-        let mut low: u32 = 0;
-        let mut high: u32 = 0;
-        let res = unsafe {
-            let domain_name_cstr = wrap_string(domain_name);
-            let res =
-                ffi::lp_idmap_range(domain_name_cstr, &mut low, &mut high);
-            string_free(domain_name_cstr);
-            res
-        };
-        if res == 0 {
+            return self.idmap_range("*");
+        } else {
+            DBG_WARNING!("No idmap backend configured");
             return Err(Box::new(NT_STATUS_UNSUCCESSFUL));
         }
-        Ok((low, high))
+        let lp = self.lp.lock()?;
+        let parm_name = format!("idmap config {}", domain_name);
+        let parm_opt = "range";
+        let range = unsafe {
+            let parm_name_cstr = wrap_string(&parm_name);
+            let parm_opt_cstr = wrap_string(parm_opt);
+            let parm_opt_value = ffi::lpcfg_parm_string(
+                *lp,
+                ptr::null_mut(),
+                parm_name_cstr,
+                parm_opt_cstr,
+            );
+            string_free(parm_name_cstr);
+            string_free(parm_opt_cstr);
+            wrap_c_char(parm_opt_value)
+        }
+        .ok_or(Box::new(NT_STATUS_UNSUCCESSFUL))?;
+        let parts: Vec<&str> = range.split('-').collect();
+        if parts.len() != 2 {
+            DBG_ERR!("Failed to parse the idmap range: {}", range);
+            return Err(Box::new(NT_STATUS_UNSUCCESSFUL));
+        }
+        Ok((parts[0].parse::<u32>()?, parts[1].parse::<u32>()?))
     }
 
     pub fn idmap_backend(
         &self,
         domain_name: &str,
     ) -> Result<Option<String>, Box<dyn Error + '_>> {
-        let backend = unsafe {
-            let domain_name_cstr = wrap_string(domain_name);
-            let backend = ffi::lp_idmap_backend(domain_name_cstr);
-            string_free(domain_name_cstr);
-            backend
-        };
-        unsafe { Ok(wrap_c_char(backend)) }
-    }
-
-    pub fn idmap_default_range(
-        &self,
-    ) -> Result<(u32, u32), Box<dyn Error + '_>> {
-        if let Ok(Some(backend)) = self.idmap_default_backend() {
-            if backend != "upn" {
-                DBG_ERR!(
-                    "Default backend '{}' is not supported for Entra ID",
-                    backend
-                );
-                return Err(Box::new(NT_STATUS_UNSUCCESSFUL));
-            }
-        } else {
-            DBG_ERR!("No default idmap backend configured.");
-            return Err(Box::new(NT_STATUS_UNSUCCESSFUL));
+        let lp = self.lp.lock()?;
+        let parm_name = format!("idmap config {}", domain_name);
+        let parm_opt = "backend";
+        unsafe {
+            let parm_name_cstr = wrap_string(&parm_name);
+            let parm_opt_cstr = wrap_string(parm_opt);
+            let parm_opt_value = ffi::lpcfg_parm_string(
+                *lp,
+                ptr::null_mut(),
+                parm_name_cstr,
+                parm_opt_cstr,
+            );
+            string_free(parm_name_cstr);
+            string_free(parm_opt_cstr);
+            Ok(wrap_c_char(parm_opt_value))
         }
-        let mut low: u32 = 0;
-        let mut high: u32 = 0;
-        let res = unsafe { ffi::lp_idmap_default_range(&mut low, &mut high) };
-        if res == 0 {
-            return Err(Box::new(NT_STATUS_UNSUCCESSFUL));
-        }
-        Ok((low, high))
-    }
-
-    pub fn idmap_default_backend(
-        &self,
-    ) -> Result<Option<String>, Box<dyn Error + '_>> {
-        let backend = unsafe { ffi::lp_idmap_default_backend() };
-        unsafe { Ok(wrap_c_char(backend)) }
     }
 
     lpcfg_str!(realm);
