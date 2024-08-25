@@ -18,6 +18,7 @@ import "misc.idl";
   version(0.0),
   pointer_default(unique),
   helper("../librpc/ndr/ndr_dnsp.h"),
+  headerhelper("lib/util/time.h"),
   helpstring("DNSP interfaces")
 ]
 
