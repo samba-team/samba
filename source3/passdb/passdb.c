@@ -436,27 +436,15 @@ void pdb_sethexpwd(char p[33], const unsigned char *pwd, uint32_t acct_ctrl)
 bool pdb_gethexpwd(const char *p, unsigned char *pwd)
 {
 	int i;
-	unsigned char   lonybble, hinybble;
-	const char      *hexchars = "0123456789ABCDEF";
-	char           *p1, *p2;
 
 	if (!p)
 		return false;
 
 	for (i = 0; i < 32; i += 2) {
-		hinybble = toupper_m(p[i]);
-		lonybble = toupper_m(p[i + 1]);
-
-		p1 = strchr(hexchars, hinybble);
-		p2 = strchr(hexchars, lonybble);
-
-		if (!p1 || !p2)
+		bool ok = hex_byte(p + i, &pwd[i / 2]);
+		if (!ok) {
 			return false;
-
-		hinybble = PTR_DIFF(p1, hexchars);
-		lonybble = PTR_DIFF(p2, hexchars);
-
-		pwd[i / 2] = (hinybble << 4) | lonybble;
+		}
 	}
 	return true;
 }
