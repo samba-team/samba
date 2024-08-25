@@ -179,10 +179,11 @@ DNS_ERROR dns_create_aaaa_record(TALLOC_CTX *mem_ctx, const char *host,
 #endif
 }
 
-DNS_ERROR dns_create_name_in_use_record(TALLOC_CTX *mem_ctx,
-					const char *name,
-					const struct sockaddr_storage *ss,
-					struct dns_rrec **prec)
+static DNS_ERROR dns_create_name_in_use_record(
+	TALLOC_CTX *mem_ctx,
+	const char *name,
+	const struct sockaddr_storage *ss,
+	struct dns_rrec **prec)
 {
 	if (ss != NULL) {
 		switch (ss->ss_family) {
@@ -201,17 +202,20 @@ DNS_ERROR dns_create_name_in_use_record(TALLOC_CTX *mem_ctx,
 			       NULL, prec);
 }
 
-DNS_ERROR dns_create_name_not_in_use_record(TALLOC_CTX *mem_ctx,
-					    const char *name, uint32_t type,
-					    struct dns_rrec **prec)
+static DNS_ERROR dns_create_name_not_in_use_record(TALLOC_CTX *mem_ctx,
+						   const char *name,
+						   uint32_t type,
+						   struct dns_rrec **prec)
 {
 	return dns_create_rrec(mem_ctx, name, type, DNS_CLASS_NONE, 0,
 			       0, NULL, prec);
 }
 
-DNS_ERROR dns_create_delete_record(TALLOC_CTX *mem_ctx, const char *name,
-				   uint16_t type, uint16_t r_class,
-				   struct dns_rrec **prec)
+static DNS_ERROR dns_create_delete_record(TALLOC_CTX *mem_ctx,
+					  const char *name,
+					  uint16_t type,
+					  uint16_t r_class,
+					  struct dns_rrec **prec)
 {
 	return dns_create_rrec(mem_ctx, name, type, r_class, 0, 0, NULL, prec);
 }
