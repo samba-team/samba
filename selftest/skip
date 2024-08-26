@@ -149,3 +149,4 @@ bench # don't run benchmarks in our selftest
 ^samba.tests.reparsepoints.*
 ^samba.tests.smb2symlink.*
 ^samba3.blackbox.open-eintr.*
+smb2.durable-v2-regressions # Only used in blackbox tests
