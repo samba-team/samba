@@ -4076,6 +4076,16 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 		}
 	}
 
+	if (req->compound_related &&
+	    NT_STATUS_EQUAL(status, NT_STATUS_CANCELLED))
+	{
+		/*
+		 * A compound request went async but was cancelled as it was not
+		 * one of the allowed async compound requests.
+		 */
+		status = NT_STATUS_INTERNAL_ERROR;
+	}
+
 	body.data = outhdr + SMB2_HDR_BODY;
 	body.length = 8;
 	SSVAL(body.data, 0, 9);
