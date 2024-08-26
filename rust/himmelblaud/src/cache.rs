@@ -294,7 +294,6 @@ impl GroupEntry {
     }
 }
 
-#[cfg(test)]
 impl GroupEntry {
     pub fn new(uuid: &str) -> Self {
         GroupEntry {

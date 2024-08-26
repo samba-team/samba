@@ -18,6 +18,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+use crate::cache::GroupEntry;
 use crate::himmelblaud::Resolver;
 use crate::utils::split_username;
 use dbg::{DBG_ERR, DBG_WARNING};
@@ -59,6 +60,10 @@ impl Resolver {
             })?;
         // Store the calculated uid -> upn map in the cache
         self.uid_cache.store(uid, &upn)?;
+        // Store the primary group (which is a fake group matching the user upn)
+        let mut group = GroupEntry::new(upn);
+        group.add_member(upn);
+        self.group_cache.merge_groups(upn, vec![group])?;
         let (cn, domain) = match split_username(&upn) {
             Ok(res) => res,
             Err(e) => {
