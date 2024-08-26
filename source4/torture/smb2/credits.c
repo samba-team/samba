@@ -439,9 +439,10 @@ static const uint8_t dcerpc_bind_lsa_bytes[] = {
 };
 
 static bool test_ipc_max_async_credits(struct torture_context *tctx,
-				   struct smb2_tree *trees[],
-				   size_t num_trees,
-				   size_t num_loops)
+				       struct smb2_tree *trees[],
+				       size_t num_trees,
+				       size_t num_loops,
+				       size_t max_data)
 {
 	struct test_ipc_async_credits_state *states[num_trees];
 	bool stop_loop = false;
@@ -515,7 +516,7 @@ static bool test_ipc_max_async_credits(struct torture_context *tctx,
 			loop->idx = i;
 			loop->state = state;
 			loop->status = NT_STATUS_UNSUCCESSFUL;
-			loop->max_data = 1024;
+			loop->max_data = max_data;
 
 			loop->im = tevent_create_immediate(state->loops);
 			torture_assert_not_null_goto(
@@ -688,6 +689,54 @@ out:
 	return ok;
 }
 
+static bool test_ipc_max_data_zero(struct torture_context *tctx,
+				   struct smb2_tree *tree0)
+{
+	struct smb2_transport *transport0 = tree0->session->transport;
+	struct smbcli_options options = transport0->options;
+	struct smb2_tree *tree1 = NULL;
+	struct smb2_tree *trees[1] = {};
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = "IPC$";
+	/* We want to check if we IPC connections add to "max async credits" */
+	uint16_t max_async_credits = torture_setting_int(
+		tctx,
+		"maxasynccredits",
+		512 /* lpcfg_smb2_max_async_credits(tctx->lp_ctx) */);
+	bool ok = false;
+	NTSTATUS status;
+	uint16_t max_credits = max_async_credits + 2;
+
+	options.client_guid = GUID_random();
+	options.max_credits = max_credits;
+
+	/* Create connection to IPC$ */
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      samba_cmdline_get_creds(),
+			      &tree1,
+			      tctx->ev,
+			      &options,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	torture_assert_ntstatus_ok_goto(
+		tctx, status, ok, out, "smb2_connect failed");
+
+	trees[0] = tree1;
+	ok = test_ipc_max_async_credits(tctx,
+					trees,
+					ARRAY_SIZE(trees),
+					max_credits,
+					0);
+out:
+	TALLOC_FREE(tree1);
+
+	return ok;
+}
+
 static bool test_1conn_ipc_max_async_credits(struct torture_context *tctx,
 					     struct smb2_tree *tree0)
 {
@@ -728,7 +777,8 @@ static bool test_1conn_ipc_max_async_credits(struct torture_context *tctx,
 	ok = test_ipc_max_async_credits(tctx,
 					trees,
 					ARRAY_SIZE(trees),
-					max_credits);
+					max_credits,
+					1024); /* max_data */
 out:
 	TALLOC_FREE(tree1);
 
@@ -806,7 +856,8 @@ static bool test_2conn_ipc_max_async_credits(struct torture_context *tctx,
 	ok = test_ipc_max_async_credits(tctx,
 					trees,
 					ARRAY_SIZE(trees),
-					max_credits);
+					max_credits,
+					1024); /* max_data */
 out:
 	TALLOC_FREE(tree2);
 	TALLOC_FREE(tree1);
@@ -906,7 +957,8 @@ static bool test_multichannel_ipc_max_async_credits(
 	ok = test_ipc_max_async_credits(tctx,
 					trees,
 					ARRAY_SIZE(trees),
-					max_credits);
+					max_credits,
+					1024); /* max_data */
 out:
 
 	return ok;
@@ -1475,6 +1527,9 @@ struct torture_suite *torture_smb2_crediting_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "single_req_credits_granted", test_single_req_credits_granted);
 	torture_suite_add_1smb2_test(suite, "skipped_mid", test_crediting_skipped_mid);
 
+	torture_suite_add_1smb2_test(suite,
+				     "ipc_max_data_zero",
+				     test_ipc_max_data_zero);
 	torture_suite_add_1smb2_test(suite,
 				     "1conn_ipc_max_async_credits",
 				     test_1conn_ipc_max_async_credits);
