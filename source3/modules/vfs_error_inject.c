@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "smbd/smbd.h"
+#include "librpc/gen_ndr/ndr_open_files.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -204,11 +205,86 @@ static int vfs_error_inject_unlinkat(struct vfs_handle_struct *handle,
 	return -1;
 }
 
+static NTSTATUS vfs_error_inject_durable_reconnect(struct vfs_handle_struct *handle,
+						   struct smb_request *smb1req,
+						   struct smbXsrv_open *op,
+						   const DATA_BLOB old_cookie,
+						   TALLOC_CTX *mem_ctx,
+						   struct files_struct **fsp,
+						   DATA_BLOB *new_cookie)
+{
+	const char *vfs_func = "durable_reconnect";
+	const char *err_str = NULL;
+	NTSTATUS status;
+	enum ndr_err_code ndr_err;
+	struct vfs_default_durable_cookie cookie;
+	DATA_BLOB modified_cookie = data_blob_null;
+
+	err_str = lp_parm_const_string(SNUM(handle->conn),
+				       "error_inject",
+				       vfs_func,
+				       NULL);
+	if (err_str == NULL) {
+		return SMB_VFS_NEXT_DURABLE_RECONNECT(handle,
+						      smb1req,
+						      op,
+						      old_cookie,
+						      mem_ctx,
+						      fsp,
+						      new_cookie);
+	}
+
+	ndr_err = ndr_pull_struct_blob(&old_cookie, talloc_tos(), &cookie,
+			(ndr_pull_flags_fn_t)ndr_pull_vfs_default_durable_cookie);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		return status;
+	}
+
+	if (strcmp(cookie.magic, VFS_DEFAULT_DURABLE_COOKIE_MAGIC) != 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (cookie.version != VFS_DEFAULT_DURABLE_COOKIE_VERSION) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (strequal(err_str, "st_ex_nlink")) {
+		cookie.stat_info.st_ex_nlink += 1;
+	} else {
+		DBG_ERR("Unknown error inject %s requested "
+			"for vfs function %s\n", err_str, vfs_func);
+		return SMB_VFS_NEXT_DURABLE_RECONNECT(handle,
+						      smb1req,
+						      op,
+						      old_cookie,
+						      mem_ctx,
+						      fsp,
+						      new_cookie);
+	}
+
+	ndr_err = ndr_push_struct_blob(&modified_cookie, talloc_tos(), &cookie,
+			(ndr_push_flags_fn_t)ndr_push_vfs_default_durable_cookie);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		return status;
+	}
+
+	return SMB_VFS_NEXT_DURABLE_RECONNECT(handle,
+					      smb1req,
+					      op,
+					      modified_cookie,
+					      mem_ctx,
+					      fsp,
+					      new_cookie);
+}
+
 static struct vfs_fn_pointers vfs_error_inject_fns = {
 	.chdir_fn = vfs_error_inject_chdir,
 	.pwrite_fn = vfs_error_inject_pwrite,
 	.openat_fn = vfs_error_inject_openat,
 	.unlinkat_fn = vfs_error_inject_unlinkat,
+	.durable_reconnect_fn = vfs_error_inject_durable_reconnect,
 };
 
 static_decl_vfs;
