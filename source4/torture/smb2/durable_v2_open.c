@@ -2355,6 +2355,112 @@ done:
 	return ret;
 }
 
+/**
+ * basic test for doing a durable open
+ * tcp disconnect, reconnect, do a durable reopen (succeeds)
+ */
+static bool test_durable_v2_reconnect_bug15624(struct torture_context *tctx,
+					       struct smb2_tree *tree,
+					       struct smb2_tree *tree2)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_create io;
+	struct GUID create_guid = GUID_random();
+	struct smbcli_options options;
+	uint64_t previous_session_id;
+	uint8_t b = 0;
+	bool ret = true;
+	bool ok;
+
+	if (!torture_setting_bool(tctx, "bug15624", false)) {
+		torture_comment(tctx,
+				"share requires:\n"
+				"'vfs objects = error_inject'\n"
+				"'error_inject:durable_reconnect=st_ex_nlink'\n"
+				"test requires:\n"
+				"'--option=torture:bug15624=yes'\n");
+		torture_skip(tctx, "'--option=torture:bug15624=yes' missing");
+	}
+
+	options = tree->session->transport->options;
+	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname,
+		 sizeof(fname),
+		 "durable_v2_reconnect_bug15624_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&io, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid;
+	io.in.timeout = 0;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	_h = io.out.file.handle;
+	h = &_h;
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io.out.durable_open_v2, true);
+
+	status = smb2_util_write(tree, *h, &b, 0, 1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* disconnect, leaving the durable open */
+	TALLOC_FREE(tree);
+	h = NULL;
+
+	ok = torture_smb2_connection_ext(tctx, previous_session_id,
+					 &options, &tree);
+	torture_assert_goto(tctx, ok, ret, done, "couldn't reconnect, bailing\n");
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_open_v2 = false;
+	io.in.durable_handle_v2 = &_h;
+	io.in.create_guid = create_guid;
+
+	/*
+	 * This assumes 'error_inject:durable_reconnect = st_ex_nlink'
+	 * will cause the durable reconnect to fail...
+	 * in order to have a regression test for the dead lock.
+	 */
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	/*
+	 * With the regression this will fail with
+	 * a timeout...
+	 */
+	status = smb2_util_unlink(tree2, fname);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+done:
+	if (h != NULL) {
+		smb2_util_close(tree, *h);
+	}
+	TALLOC_FREE(tree);
+
+	smb2_util_unlink(tree2, fname);
+
+	TALLOC_FREE(tree2);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 struct torture_suite *torture_smb2_durable_v2_delay_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -2366,6 +2472,18 @@ struct torture_suite *torture_smb2_durable_v2_delay_init(TALLOC_CTX *ctx)
 	torture_suite_add_2smb2_test(suite,
 				     "durable_v2_reconnect_delay_msec",
 				     test_durable_v2_reconnect_delay_msec);
+
+	return suite;
+}
+
+struct torture_suite *torture_smb2_durable_v2_regressions_init(TALLOC_CTX *ctx)
+{
+	struct torture_suite *suite =
+	    torture_suite_create(ctx, "durable-v2-regressions");
+
+	torture_suite_add_2smb2_test(suite,
+				     "durable_v2_reconnect_bug15624",
+				     test_durable_v2_reconnect_bug15624);
 
 	return suite;
 }
