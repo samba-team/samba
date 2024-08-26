@@ -814,6 +814,104 @@ out:
 	return ok;
 }
 
+static bool test_multichannel_ipc_max_async_credits(
+	struct torture_context *tctx,
+	struct smb2_tree *tree0)
+{
+	uint16_t max_async_credits = torture_setting_int(
+		tctx,
+		"maxasynccredits",
+		512 /* lpcfg_smb2_max_async_credits(tctx->lp_ctx) */);
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = "IPC$";
+	struct smbcli_options options = tree0->session->transport->options;
+	struct smb2_session *session1a = NULL;
+	struct smb2_session *session1b = NULL;
+	struct smb2_tree *tree1a = NULL;
+	struct smb2_tree *tree1b_base = NULL;
+	struct smb2_transport *transport1b = NULL;
+	struct smb2_tree *tree1b = NULL;
+	struct smb2_tree *trees[2] = {};
+	bool ok = false;
+	NTSTATUS status;
+	uint16_t max_credits = max_async_credits + 2;
+
+	/*
+	 * If we run the test against the source4 rpc_server, then we get a lot
+	 * of:
+	 *     single_accept_connection: accept: NT_STATUS_TOO_MANY_OPENED_FILES
+	 */
+	if (torture_setting_bool(tctx, "samba4", false)) {
+		torture_skip(tctx, "Skip test against Samba4");
+	}
+
+	options.client_guid = GUID_random();
+	options.max_credits = max_credits;
+
+	/* Create connection to IPC$ */
+	status = smb2_connect(tctx,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      samba_cmdline_get_creds(),
+			      &tree1a,
+			      tctx->ev,
+			      &options,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	torture_assert_ntstatus_ok_goto(
+		tctx, status, ok, out, "smb2_connect failed");
+	session1a = tree1a->session;
+
+	/* Connect multichannel */
+	options.only_negprot = true;
+
+	status = smb2_connect(tree1a,
+			      host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      samba_cmdline_get_creds(),
+			      &tree1b_base,
+			      tctx->ev,
+			      &options,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	torture_assert_ntstatus_ok_goto(
+		tctx, status, ok, out, "smb2_connect failed");
+	transport1b = tree1b_base->session->transport;
+
+	session1b = smb2_session_channel(transport1b,
+					 lpcfg_gensec_settings(tctx,
+							       tctx->lp_ctx),
+					 tree1b_base,
+					 session1a);
+	torture_assert_not_null_goto(
+		tctx, session1b, ok, out, "smb2_session_channel failed");
+
+	status = smb2_session_setup_spnego(session1b,
+					   samba_cmdline_get_creds(),
+					   0);
+	torture_assert_ntstatus_ok_goto(
+		tctx, status, ok, out, "smb2_session_setup_spnego failed");
+
+	tree1b = smb2_tree_channel(tree1a, tree1b_base, false, session1b);
+	torture_assert_not_null_goto(
+		tctx, tree1b, ok, out, "smb2_tree_channel failed");
+
+	trees[0] = tree1a;
+	trees[1] = tree1b;
+
+	ok = test_ipc_max_async_credits(tctx,
+					trees,
+					ARRAY_SIZE(trees),
+					max_credits);
+out:
+
+	return ok;
+}
+
 struct torture_suite *torture_smb2_crediting_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "credits");
@@ -828,6 +926,9 @@ struct torture_suite *torture_smb2_crediting_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite,
 				     "2conn_ipc_max_async_credits",
 				     test_2conn_ipc_max_async_credits);
+	torture_suite_add_1smb2_test(suite,
+				     "multichannel_ipc_max_async_credits",
+				     test_multichannel_ipc_max_async_credits);
 
 	suite->description = talloc_strdup(suite, "SMB2-CREDITS tests");
 
