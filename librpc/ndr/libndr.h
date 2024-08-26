@@ -26,10 +26,10 @@
 #define __LIBNDR_H__
 
 #include <talloc.h>
-#include "../lib/util/discard.h" /* for discard_const */
-#include "../lib/util/data_blob.h"
-#include "../lib/util/time.h"
-#include "../lib/util/charset/charset.h"
+#include "lib/util/discard.h" /* for discard_const */
+#include "lib/util/data_blob.h"
+#include "lib/util/time.h"
+#include "lib/util/charset/charset.h"
 
 /*
   this provides definitions for the libcli/rpc/ MSRPC library
@@ -533,7 +533,7 @@ typedef enum ndr_err_code (*ndr_pull_flags_fn_t)(struct ndr_pull *, ndr_flags_ty
 typedef void (*ndr_print_fn_t)(struct ndr_print *, const char *, const void *);
 typedef void (*ndr_print_function_t)(struct ndr_print *, const char *, ndr_flags_type, const void *);
 
-#include "../libcli/util/error.h"
+#include "libcli/util/error.h"
 #include "librpc/gen_ndr/misc.h"
 
 extern const struct ndr_syntax_id ndr_transfer_syntax_ndr;
