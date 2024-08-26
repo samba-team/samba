@@ -835,7 +835,6 @@ void ndr_print_struct(struct ndr_print *ndr, const char *name, const char *type)
 void ndr_print_null(struct ndr_print *ndr);
 void ndr_print_enum(struct ndr_print *ndr, const char *name, const char *type, const char *val, uint32_t value);
 void ndr_print_bitmap_flag(struct ndr_print *ndr, size_t size, const char *flag_name, uint32_t flag, uint32_t value);
-void ndr_print_bitmap_flag(struct ndr_print *ndr, size_t size, const char *flag_name, uint32_t flag, uint32_t value);
 void ndr_print_ptr(struct ndr_print *ndr, const char *name, const void *p);
 void ndr_print_union(struct ndr_print *ndr, const char *name, int level, const char *type);
 void ndr_print_bad_level(struct ndr_print *ndr, const char *name, uint16_t level);
