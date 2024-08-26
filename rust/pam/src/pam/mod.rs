@@ -376,6 +376,12 @@ impl PamHooks for PamHimmelblau {
                         }
                     }
 
+                    // Necessary because of OpenSSH bug
+                    // https://bugzilla.mindrot.org/show_bug.cgi?id=2876 -
+                    // PAM_TEXT_INFO and PAM_ERROR_MSG conversation not
+                    // honoured during PAM authentication
+                    let _ = conv.send(PAM_PROMPT_ECHO_OFF, "Press enter to continue");
+
                     let mut poll_attempt = 0;
                     loop {
                         thread::sleep(Duration::from_secs(polling_interval.into()));
