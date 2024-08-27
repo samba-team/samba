@@ -309,6 +309,16 @@ static PyObject *py_is_ad_dc_built(PyObject *self,
 #endif
 }
 
+static PyObject *py_is_rust_built(PyObject *self,
+		PyObject *Py_UNUSED(ignored))
+{
+#ifdef HAVE_RUST
+	Py_RETURN_TRUE;
+#else
+	Py_RETURN_FALSE;
+#endif
+}
+
 static PyObject *py_is_selftest_enabled(PyObject *self,
                 PyObject *Py_UNUSED(ignored))
 {
@@ -580,6 +590,8 @@ static PyMethodDef py_misc_methods[] = {
 		METH_NOARGS, "How many NDR internal tokens is too many for this build?" },
 	{ "get_burnt_commandline", (PyCFunction)py_get_burnt_commandline,
 		METH_VARARGS, "Return a redacted commandline to feed to setproctitle (None if no redaction required)" },
+	{ "is_rust_built", (PyCFunction)py_is_rust_built, METH_NOARGS,
+		"is Samba built with Rust?" },
 	{0}
 };
 

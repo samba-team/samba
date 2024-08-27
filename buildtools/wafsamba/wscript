@@ -355,6 +355,8 @@ def configure(conf):
 
     conf.env.disable_python = Options.options.disable_python
     conf.env.enable_rust = Options.options.enable_rust
+    if Options.options.enable_rust:
+        conf.DEFINE('HAVE_RUST', '1')
 
     if (conf.env.AUTOCONF_HOST and
         conf.env.AUTOCONF_BUILD and

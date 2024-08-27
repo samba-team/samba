@@ -23,6 +23,7 @@
 from samba.tests import TestCase, BlackboxProcessError
 import os
 from subprocess import Popen, PIPE
+from samba import is_rust_built
 
 
 class RustCargoTests(TestCase):
@@ -65,6 +66,9 @@ class RustCargoTests(TestCase):
                                        msg)
 
     def test_rust(self):
+        if not is_rust_built():
+            self.skipTest('Cannot test Samba Rust if not built')
+
         crates = []
         for root, dirs, files in os.walk(self.rust_dir):
             for file in files:
