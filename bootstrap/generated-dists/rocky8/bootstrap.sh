@@ -10,6 +10,11 @@ set -xueo pipefail
 yum update -y
 yum install -y dnf-plugins-core
 yum install -y epel-release
+yum install -y centos-release-ceph-pacific
+
+sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-Ceph-*
+sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-Ceph-*
+sed -i 's/$contentdir/centos/g' /etc/yum.repos.d/CentOS-Ceph-*
 
 yum -v repolist all
 yum config-manager --set-enabled powertools -y
@@ -18,6 +23,7 @@ yum update -y
 
 yum install -y \
     --setopt=install_weak_deps=False \
+    --setopt=centos-ceph-pacific.module_hotfixes=true \
     "@Development Tools" \
     acl \
     attr \
@@ -118,6 +124,7 @@ yum install -y \
     tar \
     tracker-devel \
     tree \
+    utf8proc-devel \
     wget \
     which \
     xfsprogs-devel \
