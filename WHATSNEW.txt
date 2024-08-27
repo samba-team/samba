@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the third release candidate of Samba 4.21.  This is *not*
+This is the fourth release candidate of Samba 4.21.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -278,6 +278,16 @@ smb.conf changes
   hide files                              Added per-user and per-group hides
   sync machine password to keytab         keytabs
   sync machine password script            script
+
+
+CHANGES SINCE 4.21.0rc3
+=======================
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15698: samba-tool can not load the default configuration file.
+
+o  Shachar Sharon <ssharon@redhat.com>
+   * BUG 15700: Crash when readlinkat fails.
 
 
 CHANGES SINCE 4.21.0rc2
