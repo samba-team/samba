@@ -5,12 +5,12 @@ import os
 @conf
 def SAMBA_CHECK_RUST(conf):
     conf.find_program('cargo', var='CARGO',
-                      mandatory=not conf.env.disable_rust)
+                      mandatory=conf.env.enable_rust)
 
 def vendor_sources(bld, enabled=True):
     # force-disable when we can't build rust modules, so
     # every single call doesn't need to pass this in.
-    if bld.env.disable_rust:
+    if not bld.env.enable_rust:
         enabled = False
 
     # Save time, no need to build rust when fuzzing
@@ -48,7 +48,7 @@ def find_sources(source_dir, dep_crate):
 def SAMBA_RUST(bld, rust_subdir, target_name, dep_crates=[], enabled=True):
     # force-disable when we can't build rust modules, so
     # every single call doesn't need to pass this in.
-    if bld.env.disable_rust:
+    if not bld.env.enable_rust:
         enabled = False
 
     # Save time, no need to build rust when fuzzing
