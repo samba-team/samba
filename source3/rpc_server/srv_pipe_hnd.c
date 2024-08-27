@@ -278,13 +278,44 @@ static int np_ipc_readv_next_vector(struct tstream_context *stream,
 	return 0;
 }
 
+struct np_read_zero_state;
+
 struct np_read_state {
 	struct npa_state *p;
 	struct np_ipc_readv_next_vector_state next_vector;
 
 	ssize_t nread;
 	bool is_data_outstanding;
+
+	struct np_read_zero_state *zs;
 };
+
+struct np_read_zero_state {
+	struct np_read_state *state;
+	struct tevent_req *req;
+};
+
+static int np_read_zero_state_destructor(struct np_read_zero_state *zs)
+{
+	if (zs->state != NULL) {
+		zs->state->zs = NULL;
+		zs->state = NULL;
+	}
+	tevent_req_nterror(zs->req, NT_STATUS_PIPE_BROKEN);
+	return 0;
+}
+
+static void np_read_send_cleanup(struct tevent_req *req,
+				 enum tevent_req_state req_state)
+{
+	struct np_read_state *state = tevent_req_data(
+		req, struct np_read_state);
+
+	if (state->zs != NULL) {
+		talloc_set_destructor(state->zs, NULL);
+		TALLOC_FREE(state->zs);
+	}
+}
 
 static void np_read_done(struct tevent_req *subreq);
 
@@ -302,12 +333,26 @@ struct tevent_req *np_read_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		return NULL;
 	}
 
+	tevent_req_set_cleanup_fn(req, np_read_send_cleanup);
+
 	if (handle->type != FAKE_FILE_TYPE_NAMED_PIPE_PROXY) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return tevent_req_post(req, ev);
 	}
 
 	p = talloc_get_type_abort(handle->private_data, struct npa_state);
+
+	if (len == 0) {
+		state->zs = talloc_zero(p, struct np_read_zero_state);
+		if (tevent_req_nomem(state->zs, req)) {
+			return tevent_req_post(req, ev);
+		}
+		talloc_set_destructor(state->zs,
+				      np_read_zero_state_destructor);
+		state->zs->state = state;
+		state->zs->req = req;
+		return req;
+	}
 
 	np_ipc_readv_next_vector_init(&state->next_vector, data, len);
 
