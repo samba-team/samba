@@ -236,13 +236,10 @@ if [ ! -f /usr/bin/python3 ]; then
 fi
 """
 
-CENTOS8S_YUM_BOOTSTRAP = r"""
+ROCKY8_DNF_BOOTSTRAP = r"""
 #!/bin/bash
 {GENERATED_MARKER}
 set -xueo pipefail
-
-sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
-sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
 
 yum update -y
 yum install -y dnf-plugins-core
@@ -507,10 +504,10 @@ DEB_DISTS = {
 
 
 RPM_DISTS = {
-    'centos8s': {
-        'docker_image': 'quay.io/centos/centos:stream8',
-        'vagrant_box': 'centos/stream8',
-        'bootstrap': CENTOS8S_YUM_BOOTSTRAP,
+    'rocky8': {
+        'docker_image': 'docker.io/library/rockylinux:8',
+        'vagrant_box': 'rocky/8',
+        'bootstrap': ROCKY8_DNF_BOOTSTRAP,
         'replace': {
             'lsb-release': 'redhat-lsb',
             '@development-tools': '"@Development Tools"',  # add quotes

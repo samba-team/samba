@@ -106,7 +106,7 @@ debian11-32bit:
   variables:
     SAMBA_CI_TEST_JOB: "samba-32bit"
 
-centos8s:
+rocky8:
   extends: .build_image_template
 
 centos9s:

@@ -3,7 +3,7 @@
 # See also bootstrap/config.py
 #
 
-FROM quay.io/centos/centos:stream8
+FROM docker.io/library/rockylinux:8
 
 # pass in with --build-arg while build
 ARG SHA1SUM
