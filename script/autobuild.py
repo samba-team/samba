@@ -18,6 +18,7 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from sysconfig import get_path
 import platform
+import ssl
 
 import logging
 
@@ -169,6 +170,12 @@ builddirs = {
 ctdb_configure_params = " --enable-developer ${PREFIX}"
 samba_configure_params = " ${ENABLE_COVERAGE} ${PREFIX} --with-profiling-data"
 
+# We cannot configure himmelblau on old systems missing openssl 3
+himmelblau_configure_params = ''
+rust_configure_param = ' --enable-rust'
+if ssl.OPENSSL_VERSION_INFO[0] >= 3:
+    himmelblau_configure_params = rust_configure_param + ' --with-himmelblau'
+
 samba_libs_envvars = "PYTHONPATH=${PYTHON_PREFIX}:$PYTHONPATH"
 samba_libs_envvars += " PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig"
 samba_libs_envvars += " ADDITIONAL_CFLAGS='-Wmissing-prototypes'"
@@ -313,7 +320,7 @@ tasks = {
     "samba": {
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "./configure.developer --enable-rust --with-himmelblau" + samba_configure_params),
+            ("configure", "./configure.developer" + himmelblau_configure_params + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(exclude_envs=[
             "none",
@@ -818,7 +825,7 @@ tasks = {
     "samba-o3": {
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "ADDITIONAL_CFLAGS='-O3 -Wp,-D_FORTIFY_SOURCE=2' ./configure.developer --abi-check-disable --enable-rust" + samba_configure_params),
+            ("configure", "ADDITIONAL_CFLAGS='-O3 -Wp,-D_FORTIFY_SOURCE=2' ./configure.developer --abi-check-disable" + rust_configure_param + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(cmd='make test', TESTS="--exclude=selftest/slow-none", include_envs=["none"])),
             ("quicktest", make_test(cmd='make quicktest', include_envs=["ad_dc", "ad_dc_smb1", "ad_dc_smb1_done"])),
