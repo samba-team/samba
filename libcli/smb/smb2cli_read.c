@@ -35,6 +35,7 @@ struct smb2cli_read_state {
 	bool report_pending;
 };
 
+static bool smb2cli_read_cancel(struct tevent_req *req);
 static void smb2cli_read_done(struct tevent_req *subreq);
 
 struct tevent_req *smb2cli_read_send(TALLOC_CTX *mem_ctx,
@@ -83,7 +84,19 @@ struct tevent_req *smb2cli_read_send(TALLOC_CTX *mem_ctx,
 	}
 	tevent_req_set_callback(subreq, smb2cli_read_done, req);
 	state->subreq = subreq;
+	tevent_req_set_cancel_fn(req, smb2cli_read_cancel);
+
 	return req;
+}
+
+static bool smb2cli_read_cancel(struct tevent_req *req)
+{
+	struct smb2cli_read_state *state = tevent_req_data(
+		req, struct smb2cli_read_state);
+	bool ok;
+
+	ok = tevent_req_cancel(state->subreq);
+	return ok;
 }
 
 void smb2cli_read_set_notify_async(struct tevent_req *req)
