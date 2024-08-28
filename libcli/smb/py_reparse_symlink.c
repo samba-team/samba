@@ -30,7 +30,7 @@ static PyObject *py_reparse_put(PyObject *module, PyObject *args)
 	char *reparse = NULL;
 	Py_ssize_t reparse_len;
 	unsigned long long tag = 0;
-	unsigned reserved = 0;
+	unsigned long reserved = 0;
 	uint8_t *buf = NULL;
 	ssize_t buflen;
 	PyObject *result = NULL;
