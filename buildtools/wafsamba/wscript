@@ -8,6 +8,13 @@ import wafsamba
 from samba_utils import symlink
 from optparse import SUPPRESS_HELP
 
+def get_libc_version():
+    import ctypes
+    libc = ctypes.CDLL("libc.so.6")
+    gnu_get_libc_version = libc.gnu_get_libc_version
+    gnu_get_libc_version.restype = ctypes.c_char_p
+    return gnu_get_libc_version().decode()
+
 phs = os.environ.get("PYTHONHASHSEED", None)
 if phs != "1":
     raise Errors.WafError('''PYTHONHASHSEED=1 missing! Don't use waf directly, use ./configure and make!''')
@@ -356,6 +363,10 @@ def configure(conf):
     conf.env.disable_python = Options.options.disable_python
     conf.env.enable_rust = Options.options.enable_rust
     if Options.options.enable_rust:
+        glibc_vers = float('.'.join(get_libc_version().split('.')[:2]))
+        if glibc_vers < 2.32:
+            conf.fatal('--enable-rust cannot be specified with '
+                       'glibc version %s' % glibc_vers)
         conf.DEFINE('HAVE_RUST', '1')
 
     if (conf.env.AUTOCONF_HOST and

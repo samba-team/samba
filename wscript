@@ -12,6 +12,7 @@ import shutil
 import wafsamba, samba_dist, samba_git, samba_version, samba_utils
 from waflib import Options, Scripting, Logs, Context, Errors
 from waflib.Tools import bison
+import ssl
 
 samba_dist.DIST_DIRS('.')
 samba_dist.DIST_BLACKLIST('.gitignore .bzrignore source4/selftest/provisions')
@@ -511,6 +512,13 @@ def configure(conf):
     conf.env.debug = Options.options.debug
     conf.env.developer = Options.options.developer
     conf.env.enable_himmelblau = Options.options.enable_himmelblau
+    if Options.options.enable_himmelblau:
+        if not conf.env.enable_rust:
+            conf.fatal('--with-himmelblau cannot be specified without '
+                       '--enable-rust')
+        if ssl.OPENSSL_VERSION_INFO[0] < 3:
+            conf.fatal('--with-himmelblau cannot be specified with '
+                       '%s' % ssl.OPENSSL_VERSION)
 
     #
     # FreeBSD is broken. It doesn't include 'extern char **environ'
