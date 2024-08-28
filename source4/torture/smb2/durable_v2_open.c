@@ -26,6 +26,7 @@
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
 #include "librpc/ndr/libndr.h"
+#include "lease_break_handler.h"
 
 #define CHECK_VAL(v, correct) \
 	torture_assert_u64_equal_goto(tctx, v, correct, ret, done, __location__)
@@ -2065,6 +2066,784 @@ static bool test_durable_v2_open_lock_noW_lease(struct torture_context *tctx,
 }
 
 /**
+ * 1. stat open (without lease) => h1
+ * 2. durable open with RWH => h2
+ * 3. disconnect
+ * 4. reconnect
+ * 5. durable reconnect RWH => h2
+ */
+static bool test_durable_v2_open_stat_and_lease(struct torture_context *tctx,
+						struct smb2_tree *tree1)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	NTSTATUS status;
+	char fname[256];
+	struct smb2_handle dh;
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	struct smb2_handle _h2;
+	struct smb2_handle *h2 = NULL;
+	struct smb2_create io;
+	struct GUID create_guid2 = GUID_random();
+	struct smb2_lease ls;
+	uint64_t lease_key;
+	bool ret = true;
+	struct smbcli_options options1;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree1->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	options1 = tree1->session->transport->options;
+
+	smb2_deltree(tree1, __func__);
+	status = torture_smb2_testdir(tree1, __func__, &dh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+	smb2_util_close(tree1, dh);
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "%s\\file_%s.dat",
+		 __func__, generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree1, fname);
+
+	smb2_generic_create(&io, NULL, false /* dir */, fname,
+			    FILE_OPEN_IF, 0, 0, 0);
+	io.in.desired_access  = SEC_FILE_READ_ATTRIBUTE;
+	io.in.desired_access |= SEC_FILE_WRITE_ATTRIBUTE;
+	io.in.desired_access |= SEC_STD_SYNCHRONIZE;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h1 = io.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, false);
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.oplock_level, SMB2_OPLOCK_LEVEL_NONE);
+
+	lease_key = random();
+	smb2_lease_v2_create(&io, &ls, false /* dir */, fname,
+			     lease_key, 0, /* parent lease key */
+			     smb2_util_lease_state("RWH"), 0 /* lease epoch */);
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid2;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h2 = io.out.file.handle;
+	h2 = &_h2;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.timeout, 300*1000);
+	ls.lease_epoch += 1;
+	CHECK_LEASE_V2(&io, "RWH", true, lease_key,
+		       0, 0, ls.lease_epoch);
+
+	/* disconnect, reconnect and then do durable reopen */
+	TALLOC_FREE(tree1);
+	h1 = NULL;
+
+	if (!torture_smb2_connection_ext(tctx, 0, &options1, &tree1)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_open_v2 = false;
+	io.in.durable_handle_v2 = h2;
+	io.in.create_guid = create_guid2;
+	io.in.lease_request_v2 = &ls;
+	io.in.oplock_level = SMB2_OPLOCK_LEVEL_LEASE;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h2 = io.out.file.handle;
+	h2 = &_h2;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, false); /* no dh2q response blob */
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_LEASE_V2(&io, "RWH", true, lease_key,
+		       0, 0, ls.lease_epoch);
+
+	status = smb2_util_close(tree1, *h2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h2 = NULL;
+
+done:
+	if (tree1 != NULL) {
+		smb2_keepalive(tree1->session->transport);
+	}
+
+	if (tree1 != NULL && h1 != NULL) {
+		smb2_util_close(tree1, *h1);
+	}
+	if (tree1 != NULL && h2 != NULL) {
+		smb2_util_close(tree1, *h2);
+	}
+
+	if (tree1 != NULL) {
+		smb2_util_unlink(tree1, fname);
+		smb2_deltree(tree1, __func__);
+
+		TALLOC_FREE(tree1);
+	}
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/**
+ * 1. non stat open (without a lease) => h1
+ * 2. durable open with RWH => h2 => RH
+ * 3. disconnect
+ * 4. reconnect
+ * 5. durable reconnect RH => h2
+ */
+static bool test_durable_v2_open_nonstat_and_lease(struct torture_context *tctx,
+						   struct smb2_tree *tree1)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	NTSTATUS status;
+	char fname[256];
+	struct smb2_handle dh;
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	struct smb2_handle _h2;
+	struct smb2_handle *h2 = NULL;
+	struct smb2_create io;
+	struct GUID create_guid2 = GUID_random();
+	struct smb2_lease ls;
+	uint64_t lease_key;
+	bool ret = true;
+	struct smbcli_options options1;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree1->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	options1 = tree1->session->transport->options;
+
+	smb2_deltree(tree1, __func__);
+	status = torture_smb2_testdir(tree1, __func__, &dh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+	smb2_util_close(tree1, dh);
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "%s\\file_%s.dat",
+		 __func__, generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree1, fname);
+
+	smb2_generic_create(&io, NULL, false /* dir */, fname,
+			    FILE_OPEN_IF, 0, 0, 0);
+	io.in.desired_access  = SEC_FILE_READ_ATTRIBUTE;
+	io.in.desired_access |= SEC_FILE_WRITE_ATTRIBUTE;
+	io.in.desired_access |= SEC_STD_SYNCHRONIZE;
+	/*
+	 * SEC_STD_READ_CONTROL means we no longer
+	 * have a stat open that would allow a RWH lease
+	 */
+	io.in.desired_access |= SEC_STD_READ_CONTROL;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h1 = io.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, false);
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.oplock_level, SMB2_OPLOCK_LEVEL_NONE);
+
+	lease_key = random();
+	smb2_lease_v2_create(&io, &ls, false /* dir */, fname,
+			     lease_key, 0, /* parent lease key */
+			     smb2_util_lease_state("RWH"), 0 /* lease epoch */);
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid2;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h2 = io.out.file.handle;
+	h2 = &_h2;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.timeout, 300*1000);
+	ls.lease_epoch += 1;
+	CHECK_LEASE_V2(&io, "RH", true, lease_key,
+		       0, 0, ls.lease_epoch);
+
+	/* disconnect, reconnect and then do durable reopen */
+	TALLOC_FREE(tree1);
+	h1 = NULL;
+
+	if (!torture_smb2_connection_ext(tctx, 0, &options1, &tree1)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_open_v2 = false;
+	io.in.durable_handle_v2 = h2;
+	io.in.create_guid = create_guid2;
+	io.in.lease_request_v2 = &ls;
+	io.in.oplock_level = SMB2_OPLOCK_LEVEL_LEASE;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h2 = io.out.file.handle;
+	h2 = &_h2;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, false); /* no dh2q response blob */
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_LEASE_V2(&io, "RH", true, lease_key,
+		       0, 0, ls.lease_epoch);
+
+	status = smb2_util_close(tree1, *h2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h2 = NULL;
+
+done:
+	if (tree1 != NULL) {
+		smb2_keepalive(tree1->session->transport);
+	}
+
+	if (tree1 != NULL && h1 != NULL) {
+		smb2_util_close(tree1, *h1);
+	}
+	if (tree1 != NULL && h2 != NULL) {
+		smb2_util_close(tree1, *h2);
+	}
+
+	if (tree1 != NULL) {
+		smb2_util_unlink(tree1, fname);
+		smb2_deltree(tree1, __func__);
+
+		TALLOC_FREE(tree1);
+	}
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/**
+ * 1. stat open with RH lease => h1
+ * 2. durable open with RWH => h2 => RH
+ * 3. disconnect
+ * 4. reconnect
+ * 5. durable reconnect RH => h2
+ */
+static bool test_durable_v2_open_statRH_and_lease(struct torture_context *tctx,
+						  struct smb2_tree *tree1)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	NTSTATUS status;
+	char fname[256];
+	struct smb2_handle dh;
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	struct smb2_handle _h2;
+	struct smb2_handle *h2 = NULL;
+	struct smb2_create io;
+	struct GUID create_guid2 = GUID_random();
+	struct smb2_lease ls;
+	uint64_t lease_key;
+	bool ret = true;
+	struct smbcli_options options1;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree1->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	options1 = tree1->session->transport->options;
+
+	smb2_deltree(tree1, __func__);
+	status = torture_smb2_testdir(tree1, __func__, &dh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+	smb2_util_close(tree1, dh);
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "%s\\file_%s.dat",
+		 __func__, generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree1, fname);
+
+	smb2_generic_create(&io, NULL, false /* dir */, fname,
+			    FILE_OPEN_IF, 0, 0, 0);
+	lease_key = random();
+	smb2_lease_v2_create(&io, &ls, false /* dir */, fname,
+			     lease_key, 0, /* parent lease key */
+			     smb2_util_lease_state("RH"), 0 /* lease epoch */);
+	io.in.desired_access = SEC_FILE_READ_ATTRIBUTE;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h1 = io.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, false);
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
+	ls.lease_epoch += 1;
+	CHECK_LEASE_V2(&io, "RH", true, lease_key,
+		       0, 0, ls.lease_epoch);
+
+	lease_key = random();
+	smb2_lease_v2_create(&io, &ls, false /* dir */, fname,
+			     lease_key, 0, /* parent lease key */
+			     smb2_util_lease_state("RWH"), 0 /* lease epoch */);
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid2;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h2 = io.out.file.handle;
+	h2 = &_h2;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.timeout, 300*1000);
+	ls.lease_epoch += 1;
+	CHECK_LEASE_V2(&io, "RH", true, lease_key,
+		       0, 0, ls.lease_epoch);
+
+	/* disconnect, reconnect and then do durable reopen */
+	TALLOC_FREE(tree1);
+	h1 = NULL;
+
+	if (!torture_smb2_connection_ext(tctx, 0, &options1, &tree1)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_open_v2 = false;
+	io.in.durable_handle_v2 = h2;
+	io.in.create_guid = create_guid2;
+	io.in.lease_request_v2 = &ls;
+	io.in.oplock_level = SMB2_OPLOCK_LEVEL_LEASE;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h2 = io.out.file.handle;
+	h2 = &_h2;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, false); /* no dh2q response blob */
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_LEASE_V2(&io, "RH", true, lease_key,
+		       0, 0, ls.lease_epoch);
+
+	status = smb2_util_close(tree1, *h2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h2 = NULL;
+
+done:
+	if (tree1 != NULL) {
+		smb2_keepalive(tree1->session->transport);
+	}
+
+	if (tree1 != NULL && h1 != NULL) {
+		smb2_util_close(tree1, *h1);
+	}
+	if (tree1 != NULL && h2 != NULL) {
+		smb2_util_close(tree1, *h2);
+	}
+
+	if (tree1 != NULL) {
+		smb2_util_unlink(tree1, fname);
+		smb2_deltree(tree1, __func__);
+
+		TALLOC_FREE(tree1);
+	}
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/**
+ * 1. durable open with L1(RWH) => h1
+ * 2. durable open with L1(RWH) => h2
+ * 3. disconnect
+ * 4. reconnect
+ * 5. durable reconnect L1(RWH) => h1
+ * 6. durable reconnect L1(RWH) => h2
+ */
+static bool test_durable_v2_open_two_same_lease(struct torture_context *tctx,
+						struct smb2_tree *tree1)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	NTSTATUS status;
+	char fname[256];
+	struct smb2_handle dh;
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	struct smb2_handle _h2;
+	struct smb2_handle *h2 = NULL;
+	struct smb2_create io;
+	struct GUID create_guid1 = GUID_random();
+	struct GUID create_guid2 = GUID_random();
+	struct smb2_lease ls;
+	uint64_t lease_key;
+	bool ret = true;
+	struct smbcli_options options1;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree1->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	options1 = tree1->session->transport->options;
+
+	smb2_deltree(tree1, __func__);
+	status = torture_smb2_testdir(tree1, __func__, &dh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+	smb2_util_close(tree1, dh);
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "%s\\file_%s.dat",
+		 __func__, generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree1, fname);
+
+	lease_key = random();
+	smb2_lease_v2_create(&io, &ls, false /* dir */, fname,
+			     lease_key, 0, /* parent lease key */
+			     smb2_util_lease_state("RWH"), 0 /* lease epoch */);
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid1;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h1 = io.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.timeout, 300*1000);
+	ls.lease_epoch += 1;
+	CHECK_LEASE_V2(&io, "RWH", true, lease_key,
+		       0, 0, ls.lease_epoch);
+
+	smb2_lease_v2_create(&io, &ls, false /* dir */, fname,
+			     lease_key, 0, /* parent lease key */
+			     smb2_util_lease_state("RWH"), 0 /* lease epoch */);
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid2;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h2 = io.out.file.handle;
+	h2 = &_h2;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.timeout, 300*1000);
+	ls.lease_epoch += 1;
+	CHECK_LEASE_V2(&io, "RWH", true, lease_key,
+		       0, 0, ls.lease_epoch);
+
+	/* disconnect, reconnect and then do durable reopen */
+	TALLOC_FREE(tree1);
+
+	if (!torture_smb2_connection_ext(tctx, 0, &options1, &tree1)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_open_v2 = false;
+	io.in.durable_handle_v2 = h1;
+	io.in.create_guid = create_guid1;
+	io.in.lease_request_v2 = &ls;
+	io.in.oplock_level = SMB2_OPLOCK_LEVEL_LEASE;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h1 = io.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, false); /* no dh2q response blob */
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_LEASE_V2(&io, "RWH", true, lease_key,
+		       0, 0, ls.lease_epoch);
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_open_v2 = false;
+	io.in.durable_handle_v2 = h2;
+	io.in.create_guid = create_guid2;
+	io.in.lease_request_v2 = &ls;
+	io.in.oplock_level = SMB2_OPLOCK_LEVEL_LEASE;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h2 = io.out.file.handle;
+	h2 = &_h2;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, false); /* no dh2q response blob */
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_LEASE_V2(&io, "RWH", true, lease_key,
+		       0, 0, ls.lease_epoch);
+
+	status = smb2_util_close(tree1, *h1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = NULL;
+
+	status = smb2_util_close(tree1, *h2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h2 = NULL;
+
+done:
+	if (tree1 != NULL) {
+		smb2_keepalive(tree1->session->transport);
+	}
+
+	if (tree1 != NULL && h1 != NULL) {
+		smb2_util_close(tree1, *h1);
+	}
+	if (tree1 != NULL && h2 != NULL) {
+		smb2_util_close(tree1, *h2);
+	}
+
+	if (tree1 != NULL) {
+		smb2_util_unlink(tree1, fname);
+		smb2_deltree(tree1, __func__);
+
+		TALLOC_FREE(tree1);
+	}
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/**
+ * 1. durable open with L1(RH) => h1
+ * 2. durable open with L2(RH) => h2
+ * 3. disconnect
+ * 4. reconnect
+ * 5. durable reconnect L1(RH) => h1
+ * 6. durable reconnect L2(RH) => h2
+ */
+static bool test_durable_v2_open_two_different_leases(struct torture_context *tctx,
+						      struct smb2_tree *tree1)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	NTSTATUS status;
+	char fname[256];
+	struct smb2_handle dh;
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	struct smb2_handle _h2;
+	struct smb2_handle *h2 = NULL;
+	struct smb2_create io;
+	struct GUID create_guid1 = GUID_random();
+	struct GUID create_guid2 = GUID_random();
+	struct smb2_lease ls1;
+	uint64_t lease_key1;
+	struct smb2_lease ls2;
+	uint64_t lease_key2;
+	bool ret = true;
+	struct smbcli_options options1;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree1->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	options1 = tree1->session->transport->options;
+
+	smb2_deltree(tree1, __func__);
+	status = torture_smb2_testdir(tree1, __func__, &dh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+	smb2_util_close(tree1, dh);
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "%s\\file_%s.dat",
+		 __func__, generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree1, fname);
+
+	lease_key1 = random();
+	smb2_lease_v2_create(&io, &ls1, false /* dir */, fname,
+			     lease_key1, 0, /* parent lease key */
+			     smb2_util_lease_state("RH"), 0 /* lease epoch */);
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid1;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h1 = io.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.timeout, 300*1000);
+	ls1.lease_epoch += 1;
+	CHECK_LEASE_V2(&io, "RH", true, lease_key1,
+		       0, 0, ls1.lease_epoch);
+
+	lease_key2 = random();
+	smb2_lease_v2_create(&io, &ls2, false /* dir */, fname,
+			     lease_key2, 0, /* parent lease key */
+			     smb2_util_lease_state("RH"), 0 /* lease epoch */);
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid2;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h2 = io.out.file.handle;
+	h2 = &_h2;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.timeout, 300*1000);
+	ls2.lease_epoch += 1;
+	CHECK_LEASE_V2(&io, "RH", true, lease_key2,
+		       0, 0, ls2.lease_epoch);
+
+	/* disconnect, reconnect and then do durable reopen */
+	TALLOC_FREE(tree1);
+
+	if (!torture_smb2_connection_ext(tctx, 0, &options1, &tree1)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_open_v2 = false;
+	io.in.durable_handle_v2 = h1;
+	io.in.create_guid = create_guid1;
+	io.in.lease_request_v2 = &ls1;
+	io.in.oplock_level = SMB2_OPLOCK_LEVEL_LEASE;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h1 = io.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, false); /* no dh2q response blob */
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_LEASE_V2(&io, "RH", true, lease_key1,
+		       0, 0, ls1.lease_epoch);
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_open_v2 = false;
+	io.in.durable_handle_v2 = h2;
+	io.in.create_guid = create_guid2;
+	io.in.lease_request_v2 = &ls2;
+	io.in.oplock_level = SMB2_OPLOCK_LEVEL_LEASE;
+
+	status = smb2_create(tree1, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h2 = io.out.file.handle;
+	h2 = &_h2;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, false); /* no dh2q response blob */
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_LEASE_V2(&io, "RH", true, lease_key2,
+		       0, 0, ls2.lease_epoch);
+
+	status = smb2_util_close(tree1, *h1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = NULL;
+
+	status = smb2_util_close(tree1, *h2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h2 = NULL;
+
+done:
+	if (tree1 != NULL) {
+		smb2_keepalive(tree1->session->transport);
+	}
+
+	if (tree1 != NULL && h1 != NULL) {
+		smb2_util_close(tree1, *h1);
+	}
+	if (tree1 != NULL && h2 != NULL) {
+		smb2_util_close(tree1, *h2);
+	}
+
+	if (tree1 != NULL) {
+		smb2_util_unlink(tree1, fname);
+		smb2_deltree(tree1, __func__);
+
+		TALLOC_FREE(tree1);
+	}
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/**
  * Test durable request / reconnect with AppInstanceId
  */
 bool test_durable_v2_open_app_instance(struct torture_context *tctx,
@@ -2493,6 +3272,11 @@ struct torture_suite *torture_smb2_durable_v2_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "lock-oplock", test_durable_v2_open_lock_oplock);
 	torture_suite_add_1smb2_test(suite, "lock-lease", test_durable_v2_open_lock_lease);
 	torture_suite_add_1smb2_test(suite, "lock-noW-lease", test_durable_v2_open_lock_noW_lease);
+	torture_suite_add_1smb2_test(suite, "stat-and-lease", test_durable_v2_open_stat_and_lease);
+	torture_suite_add_1smb2_test(suite, "nonstat-and-lease", test_durable_v2_open_nonstat_and_lease);
+	torture_suite_add_1smb2_test(suite, "statRH-and-lease", test_durable_v2_open_statRH_and_lease);
+	torture_suite_add_1smb2_test(suite, "two-same-lease", test_durable_v2_open_two_same_lease);
+	torture_suite_add_1smb2_test(suite, "two-different-lease", test_durable_v2_open_two_different_leases);
 	torture_suite_add_2smb2_test(suite, "app-instance", test_durable_v2_open_app_instance);
 	torture_suite_add_1smb2_test(suite, "persistent-open-oplock", test_persistent_open_oplock);
 	torture_suite_add_1smb2_test(suite, "persistent-open-lease", test_persistent_open_lease);
