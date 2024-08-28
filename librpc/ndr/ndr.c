@@ -1051,17 +1051,9 @@ _PUBLIC_ enum ndr_err_code ndr_token_retrieve_cmp_fn(struct ndr_token_list *list
 {
 	struct ndr_token *tokens = list->tokens;
 	unsigned i;
-	if (_cmp_fn) {
-		for (i = list->count - 1; i < list->count; i--) {
-			if (_cmp_fn(tokens[i].key, key) == 0) {
-				goto found;
-			}
-		}
-	} else {
-		for (i = list->count - 1; i < list->count; i--) {
-			if (tokens[i].key == key) {
-				goto found;
-			}
+	for (i = list->count - 1; i < list->count; i--) {
+		if (_cmp_fn(tokens[i].key, key) == 0) {
+			goto found;
 		}
 	}
 	return NDR_ERR_TOKEN;
@@ -1076,13 +1068,18 @@ found:
 	return NDR_ERR_SUCCESS;
 }
 
+static int token_cmp_ptr(const void *a, const void *b)
+{
+	return (a == b) ? 0 : 1;
+}
+
 /*
   retrieve a token from a ndr context
 */
 _PUBLIC_ enum ndr_err_code ndr_token_retrieve(struct ndr_token_list *list,
 					      const void *key, uint32_t *v)
 {
-	return ndr_token_retrieve_cmp_fn(list, key, v, NULL, true);
+	return ndr_token_retrieve_cmp_fn(list, key, v, token_cmp_ptr, true);
 }
 
 /*
@@ -1091,7 +1088,7 @@ _PUBLIC_ enum ndr_err_code ndr_token_retrieve(struct ndr_token_list *list,
 _PUBLIC_ enum ndr_err_code ndr_token_peek(struct ndr_token_list *list,
 					  const void *key, uint32_t *v)
 {
-	return ndr_token_retrieve_cmp_fn(list, key, v, NULL, false);
+	return ndr_token_retrieve_cmp_fn(list, key, v, token_cmp_ptr, false);
 }
 
 /*
