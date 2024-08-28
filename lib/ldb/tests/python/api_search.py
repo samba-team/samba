@@ -29,7 +29,9 @@ class SearchTests(LdbBaseTest):
     def setUp(self):
         super().setUp()
         self.testdir = tempdir()
-        self.filename = os.path.join(self.testdir, "search_test.ldb")
+        self.filename = os.path.join(
+            self.testdir,
+            f"{self.id().rsplit('.',1)[1]}.ldb")
         options = ["modules:rdn_name"]
         if hasattr(self, 'IDXCHECK'):
             options.append("disable_full_db_scan_for_self_test:1")
@@ -1340,7 +1342,9 @@ class LdbResultTests(LdbBaseTest):
     def setUp(self):
         super().setUp()
         self.testdir = tempdir()
-        self.filename = os.path.join(self.testdir, "test.ldb")
+        self.filename = os.path.join(
+            self.testdir,
+            f"{self.id().rsplit('.',1)[1]}.ldb")
         self.l = ldb.Ldb(self.url(), flags=self.flags())
         try:
             self.l.add(self.index)
