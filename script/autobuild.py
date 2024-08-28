@@ -20,6 +20,13 @@ from sysconfig import get_path
 import platform
 import ssl
 
+def get_libc_version():
+    import ctypes
+    libc = ctypes.CDLL("libc.so.6")
+    gnu_get_libc_version = libc.gnu_get_libc_version
+    gnu_get_libc_version.restype = ctypes.c_char_p
+    return gnu_get_libc_version().decode()
+
 import logging
 
 try:
@@ -170,10 +177,14 @@ builddirs = {
 ctdb_configure_params = " --enable-developer ${PREFIX}"
 samba_configure_params = " ${ENABLE_COVERAGE} ${PREFIX} --with-profiling-data"
 
-# We cannot configure himmelblau on old systems missing openssl 3
+# We cannot configure himmelblau on old systems missing openssl 3 or with glibc
+# older than version 2.32.
 himmelblau_configure_params = ''
-rust_configure_param = ' --enable-rust'
-if ssl.OPENSSL_VERSION_INFO[0] >= 3:
+rust_configure_param = ''
+glibc_vers = float('.'.join(get_libc_version().split('.')[:2]))
+if glibc_vers >= 2.32:
+    rust_configure_param = ' --enable-rust'
+if ssl.OPENSSL_VERSION_INFO[0] >= 3 and rust_configure_param:
     himmelblau_configure_params = rust_configure_param + ' --with-himmelblau'
 
 samba_libs_envvars = "PYTHONPATH=${PYTHON_PREFIX}:$PYTHONPATH"
