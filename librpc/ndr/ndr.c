@@ -1044,28 +1044,31 @@ _PUBLIC_ enum ndr_err_code ndr_token_store(TALLOC_CTX *mem_ctx,
 /*
   retrieve a token from a ndr context, using cmp_fn to match the tokens
 */
-_PUBLIC_ enum ndr_err_code ndr_token_retrieve_cmp_fn(struct ndr_token_list *list,
-						     const void *key, uint32_t *v,
-						     comparison_fn_t _cmp_fn,
-						     bool erase)
+static enum ndr_err_code ndr_token_find(struct ndr_token_list *list,
+					const void *key,
+					uint32_t *v,
+					comparison_fn_t _cmp_fn,
+					unsigned *_i)
 {
 	struct ndr_token *tokens = list->tokens;
 	unsigned i;
 	for (i = list->count - 1; i < list->count; i--) {
 		if (_cmp_fn(tokens[i].key, key) == 0) {
-			goto found;
+			*_i = i;
+			*v = tokens[i].value;
+			return NDR_ERR_SUCCESS;
 		}
 	}
 	return NDR_ERR_TOKEN;
-found:
-	*v = tokens[i].value;
-	if (erase) {
-		if (i != list->count - 1) {
-			tokens[i] = tokens[list->count - 1];
-		}
-		list->count--;
-	}
-	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_token_peek_cmp_fn(struct ndr_token_list *list,
+						 const void *key,
+						 uint32_t *v,
+						 comparison_fn_t _cmp_fn)
+{
+	unsigned i;
+	return ndr_token_find(list, key, v, _cmp_fn, &i);
 }
 
 static int token_cmp_ptr(const void *a, const void *b)
@@ -1079,7 +1082,22 @@ static int token_cmp_ptr(const void *a, const void *b)
 _PUBLIC_ enum ndr_err_code ndr_token_retrieve(struct ndr_token_list *list,
 					      const void *key, uint32_t *v)
 {
-	return ndr_token_retrieve_cmp_fn(list, key, v, token_cmp_ptr, true);
+	enum ndr_err_code err;
+	uint32_t last;
+	unsigned i;
+
+	err = ndr_token_find(list, key, v, token_cmp_ptr, &i);
+	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+		return err;
+	}
+
+	last = list->count - 1;
+	if (i != last) {
+		list->tokens[i] = list->tokens[last];
+	}
+	list->count--;
+
+	return NDR_ERR_SUCCESS;
 }
 
 /*
@@ -1088,7 +1106,8 @@ _PUBLIC_ enum ndr_err_code ndr_token_retrieve(struct ndr_token_list *list,
 _PUBLIC_ enum ndr_err_code ndr_token_peek(struct ndr_token_list *list,
 					  const void *key, uint32_t *v)
 {
-	return ndr_token_retrieve_cmp_fn(list, key, v, token_cmp_ptr, false);
+	unsigned i;
+	return ndr_token_find(list, key, v, token_cmp_ptr, &i);
 }
 
 /*

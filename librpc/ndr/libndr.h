@@ -721,8 +721,11 @@ enum ndr_err_code ndr_token_store(TALLOC_CTX *mem_ctx,
 			 struct ndr_token_list *list,
 			 const void *key,
 			 uint32_t value);
-enum ndr_err_code ndr_token_retrieve_cmp_fn(struct ndr_token_list *list, const void *key, uint32_t *v,
-					    int(*_cmp_fn)(const void*,const void*), bool erase);
+enum ndr_err_code ndr_token_peek_cmp_fn(struct ndr_token_list *list,
+					const void *key,
+					uint32_t *v,
+					int (*_cmp_fn)(const void *,
+						       const void *));
 enum ndr_err_code ndr_token_retrieve(struct ndr_token_list *list, const void *key, uint32_t *v);
 enum ndr_err_code ndr_token_peek(struct ndr_token_list *list, const void *key, uint32_t *v);
 enum ndr_err_code ndr_pull_array_size(struct ndr_pull *ndr, const void *p);
