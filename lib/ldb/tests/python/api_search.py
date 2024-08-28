@@ -212,7 +212,10 @@ class SearchTests(LdbBaseTest):
         self.l = ldb.Ldb(self.url(),
                          flags=self.flags(),
                          options=self.options)
-        self.addCleanup(self.l.disconnect)
+
+    def tearDown(self):
+        self.l.disconnect()
+        os.unlink(self.filename)
 
     def test_base(self):
         """Testing a search"""
@@ -1395,7 +1398,10 @@ class LdbResultTests(LdbBaseTest):
             f"{self.id().rsplit('.',1)[1]}.ldb")
         shutil.copy(self.reference_db, self.filename)
         self.l = ldb.Ldb(self.url(), flags=self.flags())
-        self.addCleanup(self.l.disconnect)
+
+    def tearDown(self):
+        self.l.disconnect()
+        os.unlink(self.filename)
 
     def test_return_type(self):
         res = self.l.search()
