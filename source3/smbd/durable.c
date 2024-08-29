@@ -506,19 +506,33 @@ static bool vfs_default_durable_reconnect_check_stat(
 	return true;
 }
 
+struct durable_reconnect_state {
+	struct smbXsrv_open *op;
+	struct share_mode_entry *e;
+};
+
 static bool durable_reconnect_fn(
 	struct share_mode_entry *e,
 	bool *modified,
 	void *private_data)
 {
-	struct share_mode_entry *dst_e = private_data;
+	struct durable_reconnect_state *state = private_data;
+	uint64_t id = state->op->global->open_persistent_id;
 
-	if (dst_e->pid.pid != 0) {
+	if (e->share_file_id != id) {
+		return false; /* Look at potential other entries */
+	}
+
+	if (!server_id_is_disconnected(&e->pid)) {
+		return false; /* Look at potential other entries */
+	}
+
+	if (state->e->share_file_id == id) {
 		DBG_INFO("Found more than one entry, invalidating previous\n");
-		dst_e->pid.pid = 0;
+		*state->e = (struct share_mode_entry) { .pid = { .pid = 0, }};
 		return true;	/* end the loop through share mode entries */
 	}
-	*dst_e = *e;
+	*state->e = *e;
 	return false;		/* Look at potential other entries */
 }
 
@@ -533,7 +547,8 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	struct share_mode_lock *lck;
-	struct share_mode_entry e;
+	struct share_mode_entry e = { .pid = { .pid = 0, }};
+	struct durable_reconnect_state rstate = { .op = op, .e = &e, };
 	struct files_struct *fsp = NULL;
 	NTSTATUS status;
 	bool ok;
@@ -626,9 +641,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	e = (struct share_mode_entry) { .pid.pid = 0 };
-
-	ok = share_mode_forall_entries(lck, durable_reconnect_fn, &e);
+	ok = share_mode_forall_entries(lck, durable_reconnect_fn, &rstate);
 	if (!ok) {
 		DBG_WARNING("share_mode_forall_entries failed\n");
 		status = NT_STATUS_INTERNAL_DB_ERROR;
