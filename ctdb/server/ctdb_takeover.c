@@ -2389,31 +2389,31 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 
 	DEBUG(DEBUG_NOTICE,("Delete IP %s\n", ctdb_addr_to_str(&pub->addr)));
 
-	/* walk over all public addresses until we find a match */
-	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
-		if (ctdb_same_ip(&vnn->public_address, &pub->addr)) {
-			if (vnn->pnn == ctdb->pnn) {
-				/* This IP is currently being hosted.
-				 * Defer the deletion until the next
-				 * takeover run. "ctdb reloadips" will
-				 * always cause a takeover run.  "ctdb
-				 * delip" will now need an explicit
-				 * "ctdb ipreallocated" afterwards. */
-				vnn->delete_pending = true;
-			} else {
-				/* This IP is not hosted on the
-				 * current node so just delete it
-				 * now. */
-				do_delete_ip(ctdb, vnn);
-			}
-
-			return 0;
-		}
+	vnn = find_public_ip_vnn(ctdb, &pub->addr);
+	if (vnn == NULL) {
+		D_ERR("Delete IP of unknown public IP address %s\n",
+		      ctdb_addr_to_str(&pub->addr));
+		return -1;
 	}
 
-	DEBUG(DEBUG_ERR,("Delete IP of unknown public IP address %s\n",
-			 ctdb_addr_to_str(&pub->addr)));
-	return -1;
+	if (vnn->pnn == ctdb->pnn) {
+		/*
+		 * This IP is currently being hosted.  Defer the
+		 * deletion until the next takeover run. "ctdb
+		 * reloadips" will always cause a takeover run.  "ctdb
+		 * delip" will now need an explicit "ctdb
+		 * ipreallocated" afterwards.
+		 */
+		vnn->delete_pending = true;
+	} else {
+		/*
+		 * This IP is not hosted on the current node so just
+		 * delete it now.
+		 */
+		do_delete_ip(ctdb, vnn);
+	}
+
+	return 0;
 }
 
 
@@ -2637,49 +2637,44 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 
 	/* Compare IPs between node and file for IPs to be deleted */
 	for (i = 0; i < ips->num; i++) {
-		/* */
-		for (vnn = ctdb->vnn; vnn; vnn = vnn->next) {
-			if (ctdb_same_ip(&vnn->public_address,
-					 &ips->ips[i].addr)) {
-				/* IP is still in file */
-				break;
-			}
+		struct ctdb_addr_info_old *pub = NULL;
+
+		vnn = find_public_ip_vnn(ctdb, &ips->ips[i].addr);
+		if (vnn != NULL) {
+			/* IP is still in file */
+			continue;
 		}
 
-		if (vnn == NULL) {
-			/* Delete IP ips->ips[i] */
-			struct ctdb_addr_info_old *pub;
+		/*
+		 * Delete IP ips->ips[i]
+		 */
 
-			DEBUG(DEBUG_NOTICE,
-			      ("IP %s no longer configured, deleting it\n",
-			       ctdb_addr_to_str(&ips->ips[i].addr)));
+		D_NOTICE("IP %s no longer configured, deleting it\n",
+			 ctdb_addr_to_str(&ips->ips[i].addr));
 
-			pub = talloc_zero(mem_ctx, struct ctdb_addr_info_old);
-			CTDB_NO_MEMORY(ctdb, pub);
+		pub = talloc_zero(mem_ctx, struct ctdb_addr_info_old);
+		CTDB_NO_MEMORY(ctdb, pub);
 
-			pub->addr  = ips->ips[i].addr;
-			pub->mask  = 0;
-			pub->len   = 0;
+		pub->addr  = ips->ips[i].addr;
+		pub->mask  = 0;
+		pub->len   = 0;
 
-			timeout = TAKEOVER_TIMEOUT();
+		timeout = TAKEOVER_TIMEOUT();
 
-			data.dsize = offsetof(struct ctdb_addr_info_old,
-					      iface) + pub->len;
-			data.dptr = (uint8_t *)pub;
+		data.dsize = offsetof(struct ctdb_addr_info_old,
+				      iface) + pub->len;
+		data.dptr = (uint8_t *)pub;
 
-			state = ctdb_control_send(ctdb, CTDB_CURRENT_NODE, 0,
-						  CTDB_CONTROL_DEL_PUBLIC_IP,
-						  0, data, async_data,
-						  &timeout, NULL);
-			if (state == NULL) {
-				DEBUG(DEBUG_ERR,
-				      (__location__
-				       " failed sending CTDB_CONTROL_DEL_PUBLIC_IP\n"));
-				goto failed;
-			}
-
-			ctdb_client_async_add(async_data, state);
+		state = ctdb_control_send(ctdb, CTDB_CURRENT_NODE, 0,
+					  CTDB_CONTROL_DEL_PUBLIC_IP,
+					  0, data, async_data,
+					  &timeout, NULL);
+		if (state == NULL) {
+			DBG_ERR("Failed sending CTDB_CONTROL_DEL_PUBLIC_IP\n");
+			goto failed;
 		}
+
+		ctdb_client_async_add(async_data, state);
 	}
 
 	/* Compare IPs between node and file for IPs to be added */
