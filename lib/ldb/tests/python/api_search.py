@@ -1200,10 +1200,11 @@ class SearchTestsLmdb(SearchTests):
     def add_index(cls, db):
         db.add(MDB_INDEX_OBJ)
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         if os.environ.get('HAVE_LMDB', '1') == '0':
-            self.skipTest("No lmdb backend")
-        super().setUp()
+            cls.skipTest("No lmdb backend")
+        super().setUpClass()
 
 
 class IndexedSearchTests(SearchTests):
@@ -1346,27 +1347,31 @@ class GUIDAndOneLevelIndexedSearchTests(SearchTests):
 class GUIDIndexedSearchTestsLmdb(GUIDIndexedSearchTests):
     prefix = MDB_PREFIX
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         if os.environ.get('HAVE_LMDB', '1') == '0':
-            self.skipTest("No lmdb backend")
-        super().setUp()
+            cls.skipTest("No lmdb backend")
+        super().setUpClass()
 
 
 class GUIDIndexedDNFilterSearchTestsLmdb(GUIDIndexedDNFilterSearchTests):
     prefix = MDB_PREFIX
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         if os.environ.get('HAVE_LMDB', '1') == '0':
-            self.skipTest("No lmdb backend")
-        super().setUp()
+            cls.skipTest("No lmdb backend")
+        super().setUpClass()
 
 
 class GUIDAndOneLevelIndexedSearchTestsLmdb(GUIDAndOneLevelIndexedSearchTests):
     prefix = MDB_PREFIX
-    def setUp(self):
+
+    @classmethod
+    def setUpClass(cls):
         if os.environ.get('HAVE_LMDB', '1') == '0':
-            self.skipTest("No lmdb backend")
-        super().setUp()
+            cls.skipTest("No lmdb backend")
+        super().setUpClass()
 
 
 class LdbResultTests(LdbBaseTest):
@@ -1664,10 +1669,11 @@ class LdbResultTestsLmdb(LdbResultTests):
     def add_index(cls, db):
         db.add(MDB_INDEX_OBJ)
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         if os.environ.get('HAVE_LMDB', '1') == '0':
-            self.skipTest("No lmdb backend")
-        super().setUp()
+            cls.skipTest("No lmdb backend")
+        super().setUpClass()
 
 
 class NestedTransactionTests(LdbBaseTest):
@@ -1765,10 +1771,11 @@ class LmdbNestedTransactionTests(NestedTransactionTests):
     def add_index(cls, db):
         db.add(MDB_INDEX_OBJ)
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         if os.environ.get('HAVE_LMDB', '1') == '0':
-            self.skipTest("No lmdb backend")
-        super().setUp()
+            cls.skipTest("No lmdb backend")
+        super().setUpClass()
 
 
 if __name__ == '__main__':
