@@ -149,7 +149,7 @@ def encode_by_key(k, v):
     return [fn(x) for x in v]
 
 
-# these attributes we normally wany to show. 'name' is a GUID string
+# these attributes we normally want to show. 'name' is a GUID string
 # (and has the same value as cn, the rdn).
 BASE_ATTRS = ["name",
               "msKds-UseStartTime",
