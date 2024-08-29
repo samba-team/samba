@@ -210,7 +210,7 @@ size_t ndr_subcontext_size_of_ace_coda(const struct security_ace *ace,
 size_t ndr_size_security_acl(const struct security_acl *theacl, libndr_flags flags)
 {
 	size_t ret;
-	int i;
+	uint32_t i;
 	if (!theacl) return 0;
 	ret = 8;
 	for (i=0;i<theacl->num_aces;i++) {
