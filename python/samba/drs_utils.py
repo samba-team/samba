@@ -163,7 +163,7 @@ def drs_get_rodc_partial_attribute_set(samdb):
                 continue
         if "searchFlags" in r:
             search_flags = r["searchFlags"][0]
-            if (int(search_flags) & dsdb.SEARCH_FLAG_RODC_ATTRIBUTE):
+            if int(search_flags) & dsdb.SEARCH_FLAG_RODC_ATTRIBUTE:
                 continue
         attid = samdb.get_attid_from_lDAPDisplayName(ldap_display_name)
         attids.append(int(attid))
@@ -171,7 +171,7 @@ def drs_get_rodc_partial_attribute_set(samdb):
     # the attids do need to be sorted, or windows doesn't return
     # all the attributes we need
     attids.sort()
-    partial_attribute_set.attids         = attids
+    partial_attribute_set.attids = attids
     partial_attribute_set.num_attids = len(attids)
     return partial_attribute_set
 
@@ -319,8 +319,7 @@ class drs_Replicate(object):
                                  drsuapi.DRSUAPI_DRS_NEVER_SYNCED |
                                  drsuapi.DRSUAPI_DRS_GET_ALL_GROUP_MEMBERSHIP)
             if rodc:
-                req.replica_flags |= (
-                     drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING)
+                req.replica_flags |= drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING
             else:
                 req.replica_flags |= drsuapi.DRSUAPI_DRS_WRIT_REP
 
@@ -361,7 +360,6 @@ class drs_Replicate(object):
             except WERRORError as e:
                 # Check if retrying with the GET_TGT flag set might resolve this error
                 if self._should_retry_with_get_tgt(e.args[0], req):
-
                     print("Missing target object - retrying with DRS_GET_TGT")
                     req.more_flags |= drsuapi.DRSUAPI_DRS_GET_TGT
 
@@ -370,8 +368,7 @@ class drs_Replicate(object):
                     first_chunk = True
                     continue
 
-                if self._should_calculate_missing_anc_locally(e.args[0],
-                                                              req):
+                if self._should_calculate_missing_anc_locally(e.args[0], req):
                     print("Missing parent object - calculating missing objects locally")
 
                     self._calculate_missing_anc_locally(ctr)
@@ -422,14 +419,13 @@ class drs_ReplicateRenamer(drs_Replicate):
             if attr.attid == DRSUAPI_ATTID_name:
                 base_dn = ldb.Dn(self.samdb, base_obj.identifier.dn)
                 new_name = base_dn.get_rdn_value()
-                attr.value_ctr.values[0].blob = new_name.encode('utf-16-le')
+                attr.value_ctr.values[0].blob = new_name.encode("utf-16-le")
 
     def rename_top_level_object(self, first_obj):
         """Renames the first/top-level object in a partition"""
         old_dn = first_obj.identifier.dn
         first_obj.identifier.dn = self.rename_dn(first_obj.identifier.dn)
-        print("Renaming partition %s --> %s" % (old_dn,
-                                                first_obj.identifier.dn))
+        print("Renaming partition %s --> %s" % (old_dn, first_obj.identifier.dn))
 
         # we also need to fix up the 'name' attribute for the base DN,
         # otherwise the RDNs won't match
