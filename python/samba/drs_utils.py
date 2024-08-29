@@ -260,12 +260,15 @@ class drs_Replicate(object):
 
         # setup for a GetNCChanges call
         if self.supports_ext & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10:
+            req_level = 10
             req = drsuapi.DsGetNCChangesRequest10()
             req.more_flags = self.more_flags
-            req_level = 10
-        else:
+        elif self.supports_ext & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8:
             req_level = 8
             req = drsuapi.DsGetNCChangesRequest8()
+        else:
+            req_level = 5
+            req = drsuapi.DsGetNCChangesRequest5()
 
         req.destination_dsa_guid = destination_dsa_guid
         req.source_dsa_invocation_id = source_dsa_invocation_id
@@ -330,21 +333,9 @@ class drs_Replicate(object):
         req.max_ndr_size = 402116
         req.extended_op = exop
         req.fsmo_info = 0
-        req.partial_attribute_set = None
-        req.partial_attribute_set_ex = None
-        req.mapping_ctr.num_mappings = 0
-        req.mapping_ctr.mappings = None
 
-        if not schema and rodc:
+        if hasattr(req, "partial_attribute_set") and not schema and rodc:
             req.partial_attribute_set = drs_get_rodc_partial_attribute_set(self.samdb)
-
-        if not self.supports_ext & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8:
-            req_level = 5
-            req5 = drsuapi.DsGetNCChangesRequest5()
-            for a in dir(req5):
-                if a[0] != '_':
-                    setattr(req5, a, getattr(req, a))
-            req = req5
 
         num_objects = 0
         num_links = 0
