@@ -719,14 +719,14 @@ static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
 }
 
 /*
-  Find the vnn of the node that has a public ip address
-  returns -1 if the address is not known as a public address
+ * Find vnn that has public IP addr, return NULL if not found
  */
-static struct ctdb_vnn *find_public_ip_vnn(struct ctdb_context *ctdb, ctdb_sock_addr *addr)
+static struct ctdb_vnn *find_public_ip_vnn(struct ctdb_context *ctdb,
+					   ctdb_sock_addr *addr)
 {
-	struct ctdb_vnn *vnn;
+	struct ctdb_vnn *vnn = NULL;
 
-	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
+	for (vnn = ctdb->vnn; vnn != NULL; vnn = vnn->next) {
 		if (ctdb_same_ip(&vnn->public_address, addr)) {
 			return vnn;
 		}
