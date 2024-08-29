@@ -4,7 +4,7 @@
  * Copyright © Catalyst IT 2022
  *
  * Written by Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
- *        and Jo Sutton       <josutton@catalyst.net.nz>
+ *        and Jennifer Sutton <jennifersutton@catalyst.net.nz>
  *
  *  ** NOTE! The following LGPL license applies to this file.
  *  ** It does NOT imply that all of Samba is released under the LGPL
