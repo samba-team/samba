@@ -1,5 +1,0 @@
-^samba3.smb2.durable-v2-open.statRH-and-lease
-^samba3.smb2.durable-v2-open.two-same-lease
-^samba3.smb2.durable-v2-open.two-different-lease
-^samba3.smb2.durable-v2-open.keep-disconnected-rh-with-stat-open
-^samba3.smb2.durable-v2-open.keep-disconnected-rwh-with-stat-open
