@@ -19,6 +19,7 @@ from email.mime.multipart import MIMEMultipart
 from sysconfig import get_path
 import platform
 import ssl
+import shutil
 
 def get_libc_version():
     import ctypes
@@ -177,12 +178,13 @@ builddirs = {
 ctdb_configure_params = " --enable-developer ${PREFIX}"
 samba_configure_params = " ${ENABLE_COVERAGE} ${PREFIX} --with-profiling-data"
 
-# We cannot configure himmelblau on old systems missing openssl 3 or with glibc
-# older than version 2.32.
+# We cannot configure himmelblau on old systems missing openssl 3, with glibc
+# older than version 2.32, or when cargo isn't available.
 himmelblau_configure_params = ''
 rust_configure_param = ''
 glibc_vers = float('.'.join(get_libc_version().split('.')[:2]))
-if glibc_vers >= 2.32:
+cargo = shutil.which('cargo')
+if glibc_vers >= 2.32 and cargo != None:
     rust_configure_param = ' --enable-rust'
 if ssl.OPENSSL_VERSION_INFO[0] >= 3 and rust_configure_param:
     himmelblau_configure_params = rust_configure_param + ' --with-himmelblau'
