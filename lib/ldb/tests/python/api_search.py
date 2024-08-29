@@ -1219,9 +1219,6 @@ class IndexedCheckSearchTests(IndexedSearchTests):
        break things (full scan disabled)"""
     IDXCHECK = True
 
-    def setUp(self):
-        super().setUp()
-
 
 class IndexedSearchDnFilterTests(SearchTests):
     """Test searches using the index, to ensure the index doesn't
@@ -1256,9 +1253,6 @@ class IndexedCheckedAndOneLevelSearchTests(IndexedAndOneLevelSearchTests):
        the index doesn't break things (full scan disabled)"""
     IDXCHECK = True
 
-    def setUp(self):
-        super().setUp()
-
 
 class IndexedAndOneLevelDNFilterSearchTests(SearchTests):
     """Test searches using the index including @IDXONE, to ensure
@@ -1290,9 +1284,6 @@ class GUIDIndexedSearchTests(SearchTests):
                 "@IDXATTR": [b"x", b"y", b"ou"],
                 "@IDXGUID": [b"objectUUID"],
                 "@IDX_DN_GUID": [b"GUID"]})
-
-    def setUp(self):
-        super().setUp()
 
 
 class GUIDIndexedDNFilterSearchTests(SearchTests):
