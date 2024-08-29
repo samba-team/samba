@@ -108,6 +108,8 @@ EXCLUDE_DIRS = {
     'python/samba/tests/dcerpc',
     'python/samba/tests/krb5',
     'python/samba/tests/ndr',
+    'bin/default/rust/vendor/unicode-width/scripts',
+    'bin/default/rust/vendor/rustls-webpki/tests',
 }
 
 
