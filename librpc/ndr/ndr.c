@@ -1675,7 +1675,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr1(struct ndr_push *ndr, const vo
 				      NDR_TOKEN_MAX_LIST_SIZE);
 	}
 	NDR_CHECK(ret);
-	return ndr_push_uint32(ndr, NDR_SCALARS, 0xFFFFFFFF);
+	return ndr_push_uint32(ndr, NDR_SCALARS, UINT32_MAX);
 }
 
 /*
