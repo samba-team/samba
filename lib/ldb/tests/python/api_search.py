@@ -9,6 +9,8 @@ import ldb
 import gc
 import time
 import shutil
+import unittest
+
 
 from api_base import (
     MDB_PREFIX,
@@ -1193,18 +1195,13 @@ class SearchTests(LdbBaseTest):
 
 
 # Run the search tests against an lmdb backend
+@unittest.skipIf(os.getenv('HAVE_LMDB') == '0', "No lmdb backend")
 class SearchTestsLmdb(SearchTests):
     prefix = MDB_PREFIX
 
     @classmethod
     def add_index(cls, db):
         db.add(MDB_INDEX_OBJ)
-
-    @classmethod
-    def setUpClass(cls):
-        if os.environ.get('HAVE_LMDB', '1') == '0':
-            cls.skipTest("No lmdb backend")
-        super().setUpClass()
 
 
 class IndexedSearchTests(SearchTests):
@@ -1344,34 +1341,19 @@ class GUIDAndOneLevelIndexedSearchTests(SearchTests):
                     "checkBaseOnSearch": "TRUE"})
 
 
+@unittest.skipIf(os.getenv('HAVE_LMDB') == '0', "No lmdb backend")
 class GUIDIndexedSearchTestsLmdb(GUIDIndexedSearchTests):
     prefix = MDB_PREFIX
 
-    @classmethod
-    def setUpClass(cls):
-        if os.environ.get('HAVE_LMDB', '1') == '0':
-            cls.skipTest("No lmdb backend")
-        super().setUpClass()
 
-
+@unittest.skipIf(os.getenv('HAVE_LMDB') == '0', "No lmdb backend")
 class GUIDIndexedDNFilterSearchTestsLmdb(GUIDIndexedDNFilterSearchTests):
     prefix = MDB_PREFIX
 
-    @classmethod
-    def setUpClass(cls):
-        if os.environ.get('HAVE_LMDB', '1') == '0':
-            cls.skipTest("No lmdb backend")
-        super().setUpClass()
 
-
+@unittest.skipIf(os.getenv('HAVE_LMDB') == '0', "No lmdb backend")
 class GUIDAndOneLevelIndexedSearchTestsLmdb(GUIDAndOneLevelIndexedSearchTests):
     prefix = MDB_PREFIX
-
-    @classmethod
-    def setUpClass(cls):
-        if os.environ.get('HAVE_LMDB', '1') == '0':
-            cls.skipTest("No lmdb backend")
-        super().setUpClass()
 
 
 class LdbResultTests(LdbBaseTest):
@@ -1662,18 +1644,13 @@ class LdbResultTests(LdbBaseTest):
         self.assertEqual(got_pid, pid)
 
 
+@unittest.skipIf(os.getenv('HAVE_LMDB') == '0', "No lmdb backend")
 class LdbResultTestsLmdb(LdbResultTests):
     prefix = MDB_PREFIX
 
     @classmethod
     def add_index(cls, db):
         db.add(MDB_INDEX_OBJ)
-
-    @classmethod
-    def setUpClass(cls):
-        if os.environ.get('HAVE_LMDB', '1') == '0':
-            cls.skipTest("No lmdb backend")
-        super().setUpClass()
 
 
 class NestedTransactionTests(LdbBaseTest):
@@ -1764,6 +1741,7 @@ class NestedTransactionTests(LdbBaseTest):
         self.assertEqual(len(res), 1)
 
 
+@unittest.skipIf(os.getenv('HAVE_LMDB') == '0', "No lmdb backend")
 class LmdbNestedTransactionTests(NestedTransactionTests):
     prefix = MDB_PREFIX
 
@@ -1771,13 +1749,6 @@ class LmdbNestedTransactionTests(NestedTransactionTests):
     def add_index(cls, db):
         db.add(MDB_INDEX_OBJ)
 
-    @classmethod
-    def setUpClass(cls):
-        if os.environ.get('HAVE_LMDB', '1') == '0':
-            cls.skipTest("No lmdb backend")
-        super().setUpClass()
-
 
 if __name__ == '__main__':
-    import unittest
     unittest.TestProgram()
