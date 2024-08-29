@@ -515,12 +515,6 @@ enum ndr_compression_alg {
 	if (unlikely(!(s))) return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Alloc %zu * %s failed: %s\n", (size_t)n, # s, __location__); \
 } while (0)
 
-
-#define NDR_PUSH_ALLOC_SIZE(ndr, s, size) do { \
-       (s) = talloc_array(ndr, uint8_t, size); \
-       if (unlikely(!(s))) return ndr_push_error(ndr, NDR_ERR_ALLOC, "push alloc %zu failed: %s\n", (size_t)size, __location__); \
-} while (0)
-
 #define NDR_PUSH_ALLOC(ndr, s) do { \
        (s) = talloc_ptrtype(ndr, (s)); \
        if (unlikely(!(s))) return ndr_push_error(ndr, NDR_ERR_ALLOC, "push alloc %s failed: %s\n", # s, __location__); \
