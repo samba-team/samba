@@ -1208,10 +1208,11 @@ class IndexedSearchTests(SearchTests):
     """Test searches using the index, to ensure the index doesn't
        break things"""
     IDX = True
-    def setUp(self):
-        super().setUp()
-        self.l.add({"dn": "@INDEXLIST",
-                    "@IDXATTR": [b"x", b"y", b"ou"]})
+
+    @classmethod
+    def add_index(cls, db):
+        db.add({"dn": "@INDEXLIST",
+                "@IDXATTR": [b"x", b"y", b"ou"]})
 
 
 class IndexedCheckSearchTests(IndexedSearchTests):
@@ -1225,13 +1226,14 @@ class IndexedSearchDnFilterTests(SearchTests):
        break things"""
     disallowDNFilter = True
     IDX = True
-    def setUp(self):
-        super().setUp()
-        self.l.add({"dn": "@OPTIONS",
-                    "disallowDNFilter": "TRUE"})
 
-        self.l.add({"dn": "@INDEXLIST",
-                    "@IDXATTR": [b"x", b"y", b"ou"]})
+    @classmethod
+    def add_index(cls, db):
+        db.add({"dn": "@OPTIONS",
+                "disallowDNFilter": "TRUE"})
+
+        db.add({"dn": "@INDEXLIST",
+               "@IDXATTR": [b"x", b"y", b"ou"]})
 
 
 
@@ -1241,11 +1243,11 @@ class IndexedAndOneLevelSearchTests(SearchTests):
     IDX = True
     IDXONE = True
 
-    def setUp(self):
-        super().setUp()
-        self.l.add({"dn": "@INDEXLIST",
-                    "@IDXATTR": [b"x", b"y", b"ou"],
-                    "@IDXONE": [b"1"]})
+    @classmethod
+    def add_index(cls, db):
+        db.add({"dn": "@INDEXLIST",
+                "@IDXATTR": [b"x", b"y", b"ou"],
+                "@IDXONE": [b"1"]})
 
 
 class IndexedCheckedAndOneLevelSearchTests(IndexedAndOneLevelSearchTests):
@@ -1262,15 +1264,15 @@ class IndexedAndOneLevelDNFilterSearchTests(SearchTests):
     IDX = True
     IDXONE = True
 
-    def setUp(self):
-        super().setUp()
-        self.l.add({"dn": "@OPTIONS",
-                    "disallowDNFilter": "TRUE",
-                    "checkBaseOnSearch": "TRUE"})
+    @classmethod
+    def add_index(cls, db):
+        db.add({"dn": "@OPTIONS",
+                "disallowDNFilter": "TRUE",
+                "checkBaseOnSearch": "TRUE"})
 
-        self.l.add({"dn": "@INDEXLIST",
-                    "@IDXATTR": [b"x", b"y", b"ou"],
-                    "@IDXONE": [b"1"]})
+        db.add({"dn": "@INDEXLIST",
+                "@IDXATTR": [b"x", b"y", b"ou"],
+                "@IDXONE": [b"1"]})
 
 
 class GUIDIndexedSearchTests(SearchTests):
@@ -1300,12 +1302,9 @@ class GUIDIndexedDNFilterSearchTests(SearchTests):
                 "@IDXATTR": [b"x", b"y", b"ou"],
                 "@IDXGUID": [b"objectUUID"],
                 "@IDX_DN_GUID": [b"GUID"]})
-
-    def setUp(self):
-        super().setUp()
-        self.l.add({"dn": "@OPTIONS",
-                    "disallowDNFilter": "TRUE",
-                    "checkBaseOnSearch": "TRUE"})
+        db.add({"dn": "@OPTIONS",
+                "disallowDNFilter": "TRUE",
+                "checkBaseOnSearch": "TRUE"})
 
 
 class GUIDAndOneLevelIndexedSearchTests(SearchTests):
@@ -1324,12 +1323,9 @@ class GUIDAndOneLevelIndexedSearchTests(SearchTests):
              "@IDXONE": [b"1"],
              "@IDXGUID": [b"objectUUID"],
              "@IDX_DN_GUID": [b"GUID"]})
-
-    def setUp(self):
-        super().setUp()
-        self.l.add({"dn": "@OPTIONS",
-                    "disallowDNFilter": "TRUE",
-                    "checkBaseOnSearch": "TRUE"})
+        db.add({"dn": "@OPTIONS",
+                "disallowDNFilter": "TRUE",
+                "checkBaseOnSearch": "TRUE"})
 
 
 @unittest.skipIf(os.getenv('HAVE_LMDB') == '0', "No lmdb backend")
