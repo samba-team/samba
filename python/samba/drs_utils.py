@@ -255,13 +255,13 @@ class drs_Replicate(object):
 
     def replicate(self, dn, source_dsa_invocation_id, destination_dsa_guid,
                   schema=False, exop=drsuapi.DRSUAPI_EXOP_NONE, rodc=False,
-                  replica_flags=None, full_sync=True, sync_forced=False, more_flags=0):
+                  replica_flags=None, full_sync=True, sync_forced=False):
         """replicate a single DN"""
 
         # setup for a GetNCChanges call
         if self.supports_ext & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10:
             req = drsuapi.DsGetNCChangesRequest10()
-            req.more_flags = (more_flags | self.more_flags)
+            req.more_flags = self.more_flags
             req_level = 10
         else:
             req_level = 8
