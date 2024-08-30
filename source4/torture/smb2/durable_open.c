@@ -28,34 +28,17 @@
 #include "torture/smb2/proto.h"
 #include "../libcli/smb/smbXcli_base.h"
 
-#define CHECK_VAL(v, correct) do { \
-	if ((v) != (correct)) { \
-		torture_result(tctx, TORTURE_FAIL, "(%s): wrong value for %s got 0x%llx - should be 0x%llx\n", \
-				__location__, #v, (unsigned long long)v, (unsigned long long)correct); \
-		ret = false; \
-	}} while (0)
+#define CHECK_VAL(v, correct) \
+	torture_assert_u64_equal_goto(tctx, v, correct, ret, done, __location__)
 
-#define CHECK_NOT_VAL(v, incorrect) do { \
-	if ((v) == (incorrect)) { \
-		torture_result(tctx, TORTURE_FAIL, "(%s): wrong value for %s got 0x%llx - should not be 0x%llx\n", \
-				__location__, #v, (unsigned long long)v, (unsigned long long)incorrect); \
-		ret = false; \
-	}} while (0)
+#define CHECK_NOT_VAL(v, incorrect) \
+	torture_assert_u64_not_equal_goto(tctx, v, incorrect, ret, done, __location__)
 
-#define CHECK_NOT_NULL(p) do { \
-	if ((p) == NULL) { \
-		torture_result(tctx, TORTURE_FAIL, "(%s): %s is NULL but it should not be.\n", \
-				__location__, #p); \
-		ret = false; \
-	}} while (0)
+#define CHECK_NOT_NULL(p) \
+	torture_assert_not_null_goto(tctx, p, ret, done, __location__)
 
-#define CHECK_STATUS(status, correct) do { \
-	if (!NT_STATUS_EQUAL(status, correct)) { \
-		torture_result(tctx, TORTURE_FAIL, __location__": Incorrect status %s - should be %s", \
-		       nt_errstr(status), nt_errstr(correct)); \
-		ret = false; \
-		goto done; \
-	}} while (0)
+#define CHECK_STATUS(status, correct) \
+	torture_assert_ntstatus_equal_goto(tctx, status, correct, ret, done, __location__)
 
 #define CHECK_CREATED(__io, __created, __attribute)			\
 	do {								\
