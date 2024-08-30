@@ -41,6 +41,30 @@
 		CHECK_VAL((__io)->out.reserved2, 0);			\
 	} while(0)
 
+#define CHECK_LEASE_V2(__io, __state, __oplevel, __key, __flags, __parent, __epoch) \
+	do {								\
+		CHECK_VAL((__io)->out.lease_response_v2.lease_version, 2); \
+		if (__oplevel) {					\
+			CHECK_VAL((__io)->out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE); \
+			CHECK_VAL((__io)->out.lease_response_v2.lease_key.data[0], (__key)); \
+			CHECK_VAL((__io)->out.lease_response_v2.lease_key.data[1], ~(__key)); \
+			CHECK_VAL((__io)->out.lease_response_v2.lease_state, smb2_util_lease_state(__state)); \
+		} else {						\
+			CHECK_VAL((__io)->out.oplock_level, SMB2_OPLOCK_LEVEL_NONE); \
+			CHECK_VAL((__io)->out.lease_response_v2.lease_key.data[0], 0); \
+			CHECK_VAL((__io)->out.lease_response_v2.lease_key.data[1], 0); \
+			CHECK_VAL((__io)->out.lease_response_v2.lease_state, 0); \
+		}							\
+									\
+		CHECK_VAL((__io)->out.lease_response_v2.lease_flags, __flags); \
+		if (__flags & SMB2_LEASE_FLAG_PARENT_LEASE_KEY_SET) { \
+			CHECK_VAL((__io)->out.lease_response_v2.parent_lease_key.data[0], (__parent)); \
+			CHECK_VAL((__io)->out.lease_response_v2.parent_lease_key.data[1], ~(__parent)); \
+		} \
+		CHECK_VAL((__io)->out.lease_response_v2.lease_duration, 0); \
+		CHECK_VAL((__io)->out.lease_response_v2.lease_epoch, (__epoch)); \
+	} while(0)
+
 static struct {
 	int count;
 	struct smb2_close cl;
@@ -1731,6 +1755,315 @@ done:
 	return ret;
 }
 
+/*
+  Open(BATCH), take BRL, disconnect, reconnect.
+*/
+static bool test_durable_v2_open_lock_oplock(struct torture_context *tctx,
+					     struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io;
+	struct GUID create_guid = GUID_random();
+	struct smb2_handle h = {{0}};
+	struct smb2_lock lck;
+	struct smb2_lock_element el[2];
+	NTSTATUS status;
+	char fname[256];
+	bool ret = true;
+	struct smbcli_options options;
+
+	options = tree->session->transport->options;
+
+	snprintf(fname, 256, "durable_v2_open_lock_oplock_%s.dat", generate_random_str(tctx, 8));
+
+	/* Clean slate */
+	smb2_util_unlink(tree, fname);
+
+	/* Create with lease */
+
+	smb2_oplock_create_share(&io, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = io.out.file.handle;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+
+	ZERO_STRUCT(lck);
+	ZERO_STRUCT(el);
+	lck.in.locks		= el;
+	lck.in.lock_count	= 0x0001;
+	lck.in.lock_sequence	= 0x00000000;
+	lck.in.file.handle	= h;
+	el[0].offset		= 0;
+	el[0].length		= 1;
+	el[0].reserved		= 0x00000000;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Disconnect/Reconnect. */
+	talloc_free(tree);
+	tree = NULL;
+
+	if (!torture_smb2_connection_ext(tctx, 0, &options, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_open_v2 = false;
+	io.in.durable_handle_v2 = &h;
+	io.in.create_guid = create_guid;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = io.out.file.handle;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, false); /* no dh2q response blob */
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+
+	lck.in.file.handle	= h;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+ done:
+	smb2_util_close(tree, h);
+	smb2_util_unlink(tree, fname);
+	talloc_free(tree);
+
+	return ret;
+}
+
+/*
+  Open(RWH), take BRL, disconnect, reconnect.
+*/
+static bool test_durable_v2_open_lock_lease(struct torture_context *tctx,
+					    struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io;
+	struct smb2_lease ls;
+	struct GUID create_guid = GUID_random();
+	struct smb2_handle h = {{0}};
+	struct smb2_lock lck;
+	struct smb2_lock_element el[2];
+	NTSTATUS status;
+	char fname[256];
+	bool ret = true;
+	uint64_t lease;
+	uint32_t caps;
+	struct smbcli_options options;
+
+	options = tree->session->transport->options;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	/*
+	 * Choose a random name and random lease in case the state is left a
+	 * little funky.
+	 */
+	lease = random();
+	snprintf(fname, 256, "durable_v2_open_lock_lease_%s.dat", generate_random_str(tctx, 8));
+
+	/* Clean slate */
+	smb2_util_unlink(tree, fname);
+
+	/* Create with lease */
+
+	smb2_lease_v2_create(&io, &ls, false /* dir */, fname,
+			     lease, 0, /* parent lease key */
+			     smb2_util_lease_state("RWH"), 0 /* lease epoch */);
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = io.out.file.handle;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.persistent_open, false);
+	ls.lease_epoch += 1;
+	CHECK_LEASE_V2(&io, "RWH", true, lease,
+		       0, 0, ls.lease_epoch);
+
+	ZERO_STRUCT(lck);
+	ZERO_STRUCT(el);
+	lck.in.locks		= el;
+	lck.in.lock_count	= 0x0001;
+	lck.in.lock_sequence	= 0x00000000;
+	lck.in.file.handle	= h;
+	el[0].offset		= 0;
+	el[0].length		= 1;
+	el[0].reserved		= 0x00000000;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Disconnect/Reconnect. */
+	talloc_free(tree);
+	tree = NULL;
+
+	if (!torture_smb2_connection_ext(tctx, 0, &options, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_open_v2 = false;
+	io.in.durable_handle_v2 = &h;
+	io.in.create_guid = create_guid;
+	io.in.lease_request_v2 = &ls;
+	io.in.oplock_level = SMB2_OPLOCK_LEVEL_LEASE;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = io.out.file.handle;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, false); /* no dh2q response blob */
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_LEASE_V2(&io, "RWH", true, lease,
+		       0, 0, ls.lease_epoch);
+
+	lck.in.file.handle	= h;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+ done:
+	smb2_util_close(tree, h);
+	smb2_util_unlink(tree, fname);
+	talloc_free(tree);
+
+	return ret;
+}
+
+/*
+  Open(RH), take BRL, disconnect, fails reconnect without W LEASE
+*/
+static bool test_durable_v2_open_lock_noW_lease(struct torture_context *tctx,
+						struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io;
+	struct smb2_lease ls;
+	struct GUID create_guid = GUID_random();
+	struct smb2_handle h = {{0}};
+	struct smb2_lock lck;
+	struct smb2_lock_element el[2];
+	NTSTATUS status;
+	char fname[256];
+	bool ret = true;
+	uint64_t lease;
+	uint32_t caps;
+	struct smbcli_options options;
+
+	options = tree->session->transport->options;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	/*
+	 * Choose a random name and random lease in case the state is left a
+	 * little funky.
+	 */
+	lease = random();
+	snprintf(fname, 256, "durable_v2_open_lock_noW_lease_%s.dat", generate_random_str(tctx, 8));
+
+	/* Clean slate */
+	smb2_util_unlink(tree, fname);
+
+	/* Create with lease */
+
+	smb2_lease_v2_create(&io, &ls, false /* dir */, fname,
+			     lease, 0, /* parent lease key */
+			     smb2_util_lease_state("RH"), 0 /* lease epoch */);
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = io.out.file.handle;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.persistent_open, false);
+	ls.lease_epoch += 1;
+	CHECK_LEASE_V2(&io, "RH", true, lease,
+		       0, 0, ls.lease_epoch);
+
+	ZERO_STRUCT(lck);
+	ZERO_STRUCT(el);
+	lck.in.locks		= el;
+	lck.in.lock_count	= 0x0001;
+	lck.in.lock_sequence	= 0x00000000;
+	lck.in.file.handle	= h;
+	el[0].offset		= 0;
+	el[0].length		= 1;
+	el[0].reserved		= 0x00000000;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Disconnect/Reconnect. */
+	talloc_free(tree);
+	tree = NULL;
+
+	if (!torture_smb2_connection_ext(tctx, 0, &options, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_open_v2 = false;
+	io.in.durable_handle_v2 = &h;
+	io.in.create_guid = create_guid;
+	io.in.lease_request_v2 = &ls;
+	io.in.oplock_level = SMB2_OPLOCK_LEVEL_LEASE;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+ done:
+	smb2_util_close(tree, h);
+	smb2_util_unlink(tree, fname);
+	talloc_free(tree);
+
+	return ret;
+}
+
 /**
  * Test durable request / reconnect with AppInstanceId
  */
@@ -2157,6 +2490,9 @@ struct torture_suite *torture_smb2_durable_v2_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "reopen2-lease", test_durable_v2_open_reopen2_lease);
 	torture_suite_add_1smb2_test(suite, "reopen2-lease-v2", test_durable_v2_open_reopen2_lease_v2);
 	torture_suite_add_1smb2_test(suite, "durable-v2-setinfo", test_durable_v2_setinfo);
+	torture_suite_add_1smb2_test(suite, "lock-oplock", test_durable_v2_open_lock_oplock);
+	torture_suite_add_1smb2_test(suite, "lock-lease", test_durable_v2_open_lock_lease);
+	torture_suite_add_1smb2_test(suite, "lock-noW-lease", test_durable_v2_open_lock_noW_lease);
 	torture_suite_add_2smb2_test(suite, "app-instance", test_durable_v2_open_app_instance);
 	torture_suite_add_1smb2_test(suite, "persistent-open-oplock", test_persistent_open_oplock);
 	torture_suite_add_1smb2_test(suite, "persistent-open-lease", test_persistent_open_lease);
