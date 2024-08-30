@@ -356,6 +356,15 @@ Support for key features of AD Domain/Forest Functional Level 2012R2
 Combined with other changes in recent versions (such as claims support
 in 4.20), Samba can now claim Functional Level 2012R2 support.
 
+Build system
+------------
+In previous versions of Samba, packagers of Samba would set their
+package-specific version strings using a patch to the
+SAMBA_VERSION_VENDOR_SUFFIX line in the ./VERSION file. Now that is
+achieved by using --vendor-suffix (at configure time), allowing this
+to be more easily scripted. Vendors are encouraged to include their
+name and full package version to assist with upstream debugging.
+
 
 REMOVED FEATURES
 ================
