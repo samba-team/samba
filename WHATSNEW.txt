@@ -461,7 +461,7 @@ o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
    * BUG 15673: --version-* options are still not ergonomic, and they reject
      tilde characters.
 
-o  Jo Sutton <josutton@catalyst.net.nz>
+o  Jennifer Sutton <jennifersutton@catalyst.net.nz>
    * BUG 15690: ldb_version.h is missing from ldb public library
 
 o  Pavel Filipenský <pfilipensky@samba.org>
