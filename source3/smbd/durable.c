@@ -173,6 +173,12 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
+	if (fsp->current_lock_count != 0 &&
+	    (fsp_lease_type(fsp) & SMB2_LEASE_WRITE) == 0)
+	{
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
 	/*
 	 * For now let it be simple and do not keep
 	 * delete on close files durable open
