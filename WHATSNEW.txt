@@ -380,6 +380,16 @@ industry-wide effort and
 https://tests.reproducible-builds.org/debian/rb-pkg/unstable/amd64/samba.html
 for the status in Debian.
 
+Improved command-line redaction
+-------------------------------
+There are several options that can be used with Samba tools for
+specifying secrets. Although this is best avoided, when these options
+are used, Samba will redact the secrets in /proc, so that they won't
+be seen in ps or top. This is now carried out more thoroughly,
+redacting more options. There is a race inherent in this, and the
+passwords will be visible for a short time. The secrets are also not
+removed from .bash_history and similar files.
+
 
 REMOVED FEATURES
 ================
