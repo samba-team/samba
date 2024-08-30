@@ -219,7 +219,6 @@
 ^samba3.smb2.compound.interim2 # wrong return code (STATUS_CANCELLED)
 ^samba3.smb2.compound.aio.interim2 # wrong return code (STATUS_CANCELLED)
 ^samba3.smb2.lock.*replay_broken_windows # This tests the windows behaviour
-^samba3.smb2.lease.statopen3
 ^samba3.smb2.lease.unlink # we currently do not downgrade RH lease to R after unlink
 ^samba4.smb2.ioctl.compress_notsup.*\(ad_dc_ntvfs\)
 ^samba3.raw.session.*reauth2 # maybe fix this?

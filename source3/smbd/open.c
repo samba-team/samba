@@ -2449,7 +2449,7 @@ struct delay_for_oplock_state {
 	bool first_open_attempt;
 	bool got_handle_lease;
 	bool got_oplock;
-	bool have_other_lease;
+	bool disallow_write_lease;
 	uint32_t total_lease_types;
 	bool delay;
 	struct blocker_debug_state *blocker_debug_state;
@@ -2557,15 +2557,27 @@ static bool delay_for_oplock_fn(
 	}
 
 	if (!state->got_oplock &&
+	    (e->op_type != NO_OPLOCK) &&
 	    (e->op_type != LEASE_OPLOCK) &&
 	    !share_entry_stale_pid(e)) {
 		state->got_oplock = true;
 	}
 
-	if (!state->have_other_lease &&
+	/*
+	 * Two things prevent a write lease
+	 * to be granted:
+	 *
+	 * 1. Any oplock or lease (even broken to NONE)
+	 * 2. An open with an access mask other than
+	 *    FILE_READ_ATTRIBUTES, FILE_WRITE_ATTRIBUTES
+	 *    or SYNCHRONIZE_ACCESS
+	 */
+	if (!state->disallow_write_lease &&
+	    (e->op_type != NO_OPLOCK || !is_oplock_stat_open(e->access_mask)) &&
 	    !is_same_lease(fsp, e, lease) &&
-	    !share_entry_stale_pid(e)) {
-		state->have_other_lease = true;
+	    !share_entry_stale_pid(e))
+	{
+		state->disallow_write_lease = true;
 	}
 
 	if (e_is_lease && is_lease_stat_open(fsp->access_mask)) {
@@ -2799,9 +2811,11 @@ grant:
 		granted &= ~SMB2_LEASE_READ;
 	}
 
-	if (state.have_other_lease) {
+	if (state.disallow_write_lease) {
 		/*
-		 * Can grant only one writer
+		 * Can grant only a write lease
+		 * if there are no other leases
+		 * and no other non-stat opens.
 		 */
 		granted &= ~SMB2_LEASE_WRITE;
 	}
