@@ -80,6 +80,27 @@ never took into account later changes, and so has not worked for a
 number of years.  Samba 4.21 and LDB 2.10 removes this unused and
 broken feature.
 
+Changes in LDB handling of Unicode
+----------------------------------
+
+Developers using LDB up to version 2.9 could call ldb_set_utf8_fns()
+to determine how LDB handled casefolding. This is used internally by
+string comparison functions. In LDB 2.10 this function is deprecated,
+and ldb_set_utf8_functions() is preferred. The new function allows a
+direct comparison function to be set as well as a casefold function.
+This improves performance and allows for more robust handling of
+degenerate cases. The function should be called just after ldb_init(),
+with the following arguments:
+
+   ldb_set_utf8_functions(ldb, /* the struct ldb_ctx LDB object */
+                          context_variable /* possibly NULL */
+                          casefold_function,
+                          case_insensitive_comparison_function);
+
+The default behaviour of LDB remains to perform ASCII casefolding
+only, as if in the "C" locale. Recent versions have become
+increasingly consistent in this.
+
 Some Samba public libraries made private by default
 ---------------------------------------------------
 
