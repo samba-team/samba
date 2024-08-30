@@ -345,6 +345,12 @@ allowing sensitive resources to be additionally protected.
 Only Windows clients are known to support the client side of this
 feature at this time.
 
+New samba-tool Authentication Policy management command structure
+-----------------------------------------------------------------
+As foreshadowed in the Samba 4.20 release notes, the "samba-tool
+domain auth policy" commands have been reworked to be more intuitive
+based on user feedback and reflection.
+
 
 REMOVED FEATURES
 ================
