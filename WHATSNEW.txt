@@ -269,6 +269,59 @@ Configuration is identical to existing module, but using 'ceph_new' instead of
 'ceph' for the relevant smb.conf entries. This new module is expected to
 deprecate and replace the old one in next major release.
 
+Group Managed Service Accounts
+------------------------------
+Samba 4.21 adds support for gMSAs (Group Managed Service Accounts),
+completing support for Functional Level 2012.
+
+The purpose of a gMSA is to allow a single host, or a cluster of
+hosts, to share access to an automatically rotating password, avoiding
+the weak static service passwords that are often the entrypoint of
+attackers to AD domains. Each server has a strong and regularly
+rotated password, which is used to access the gMSA account of (e.g.)
+the database server.
+
+Samba provides management and client tools, allowing services on Unix
+hosts to access the current and next gMSA passwords, as well as obtain
+a credentials cache.
+
+Samba 4.20 announced the client-side tools for this feature. To avoid
+duplication and provide consistency, the existing commands for
+password viewing have been extended, so these commands operate both on
+a gMSA (with credentials, over LDAP, specify -H) and locally for
+accounts that have a compatible password (e.g. plaintext via GPG,
+compatible hash)
+
+  samba-tool user getpassword
+  samba-tool user get-kerberos-ticket
+  samba-tool domain exportkeytab
+
+An example command, which gets the NT hash for use with NTLM, is
+
+  samba-tool user getpassword -H ldap://server --machine-pass  \
+      TestUser1 --attributes=unicodePwd
+
+Kerberos is a better choice (gMSA accounts should not use LDAP simple
+binds, for reasons of both security and compatibility). Use
+
+  samba-tool user get-kerberos-ticket -H ldap://server --machine-pass \
+      TestUser1 --output-krb5-ccache=/srv/service/krb5_ccache
+
+gMSAs disclose a current and previous password. To access the previous
+NT hash, use:
+
+  samba-tool user getpassword -H ldap://server --machine-pass TestUser1 \
+     --attrs=unicodePwd;previous=1
+
+To access the previous password as UTF8, use:
+
+  samba-tool user getpassword -H ldap://server --machine-pass TestUser1 \
+      --attributes=pwdLastSet,virtualClearTextUTF8;previous=1
+
+However, Windows tools for dealing with gMSAs tend to use Active
+Directory Web Services (ADWS) from Powershell for setting up the
+accounts, and this separate protocol is not supported by Samba 4.21.
+
 
 REMOVED FEATURES
 ================
