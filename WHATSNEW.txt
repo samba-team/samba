@@ -365,6 +365,21 @@ achieved by using --vendor-suffix (at configure time), allowing this
 to be more easily scripted. Vendors are encouraged to include their
 name and full package version to assist with upstream debugging.
 
+More deterministic builds
+-------------------------
+Samba builds are now more reproducible, providing better assurance
+that the Samba binaries you run are the same as what is expected from
+the source code. If locale settings are not changed, the same objects
+will be produced from each compilation run. If Samba is built in a
+different path, the object code will remain the same, but DWARF
+debugging sections will change (while remaining functionally
+equivalent).
+
+See https://reproducible-builds.org/ for more information on this
+industry-wide effort and
+https://tests.reproducible-builds.org/debian/rb-pkg/unstable/amd64/samba.html
+for the status in Debian.
+
 
 REMOVED FEATURES
 ================
