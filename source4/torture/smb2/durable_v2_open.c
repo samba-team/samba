@@ -27,20 +27,11 @@
 #include "torture/smb2/proto.h"
 #include "librpc/ndr/libndr.h"
 
-#define CHECK_VAL(v, correct) do { \
-	if ((v) != (correct)) { \
-		torture_result(tctx, TORTURE_FAIL, "(%s): wrong value for %s got 0x%x - should be 0x%x\n", \
-				__location__, #v, (int)v, (int)correct); \
-		ret = false; \
-	}} while (0)
+#define CHECK_VAL(v, correct) \
+	torture_assert_u64_equal_goto(tctx, v, correct, ret, done, __location__)
 
-#define CHECK_STATUS(status, correct) do { \
-	if (!NT_STATUS_EQUAL(status, correct)) { \
-		torture_result(tctx, TORTURE_FAIL, __location__": Incorrect status %s - should be %s", \
-		       nt_errstr(status), nt_errstr(correct)); \
-		ret = false; \
-		goto done; \
-	}} while (0)
+#define CHECK_STATUS(status, correct) \
+	torture_assert_ntstatus_equal_goto(tctx, status, correct, ret, done, __location__)
 
 #define CHECK_CREATED(__io, __created, __attribute)			\
 	do {								\
