@@ -333,7 +333,7 @@ tasks = {
     "samba": {
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "./configure.developer" + himmelblau_configure_params + samba_configure_params),
+            ("configure", "./configure.developer" + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(exclude_envs=[
             "none",
@@ -838,7 +838,7 @@ tasks = {
     "samba-o3": {
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "ADDITIONAL_CFLAGS='-O3 -Wp,-D_FORTIFY_SOURCE=2' ./configure.developer --abi-check-disable" + rust_configure_param + samba_configure_params),
+            ("configure", "ADDITIONAL_CFLAGS='-O3 -Wp,-D_FORTIFY_SOURCE=2' ./configure.developer --abi-check-disable" + himmelblau_configure_params + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(cmd='make test', TESTS="--exclude=selftest/slow-none", include_envs=["none"])),
             ("quicktest", make_test(cmd='make quicktest', include_envs=["ad_dc", "ad_dc_smb1", "ad_dc_smb1_done"])),
