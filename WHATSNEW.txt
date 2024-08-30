@@ -334,6 +334,17 @@ Samba will create a new root key for new domains at provision time,
 but users of gMSA accounts on upgraded domains will need to first
 create a root key.
 
+RFC 8070 PKINIT "Freshness extension" supported in the Heimdal KDC
+------------------------------------------------------------------
+The Heimdal KDC will recognise when a client provides proof that they
+hold the hardware token used for smart-card authentication 'now' and
+has not used a saved future-dated reply. Samba 4.21 now matches
+Windows and will assign an extra SID to the user in this case,
+allowing sensitive resources to be additionally protected.
+
+Only Windows clients are known to support the client side of this
+feature at this time.
+
 
 REMOVED FEATURES
 ================
