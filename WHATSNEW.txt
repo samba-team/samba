@@ -322,6 +322,18 @@ However, Windows tools for dealing with gMSAs tend to use Active
 Directory Web Services (ADWS) from Powershell for setting up the
 accounts, and this separate protocol is not supported by Samba 4.21.
 
+Samba-tool commands for handling gMSA (KDS) root keys
+-----------------------------------------------------
+Group managed service accounts rotate passwords based on root keys,
+which can be managed using samba-tool, with commands such as
+
+  samba-tool domain kds root_key create
+  samba-tool domain kds root_key list
+
+Samba will create a new root key for new domains at provision time,
+but users of gMSA accounts on upgraded domains will need to first
+create a root key.
+
 
 REMOVED FEATURES
 ================
