@@ -351,6 +351,11 @@ As foreshadowed in the Samba 4.20 release notes, the "samba-tool
 domain auth policy" commands have been reworked to be more intuitive
 based on user feedback and reflection.
 
+Support for key features of AD Domain/Forest Functional Level 2012R2
+--------------------------------------------------------------------
+Combined with other changes in recent versions (such as claims support
+in 4.20), Samba can now claim Functional Level 2012R2 support.
+
 
 REMOVED FEATURES
 ================
