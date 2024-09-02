@@ -2062,7 +2062,7 @@ static void winbindd_sig_hup_handler(struct tevent_context *ev,
 {
 	const char *file = (const char *)private_data;
 
-	DEBUG(1,("Reloading services after SIGHUP\n"));
+	DBG_NOTICE("Reloading services after SIGHUP\n");
 	flush_caches_noinit();
 	winbindd_reload_services_file(file);
 }
