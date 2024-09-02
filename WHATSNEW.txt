@@ -1,16 +1,10 @@
-Release Announcements
-=====================
+                   ==============================
+                   Release Notes for Samba 4.21.0
+                         September 02, 2024
+                   ==============================
 
-This is the fourth release candidate of Samba 4.21.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
-
-Samba 4.21 will be the next version of the Samba suite.
-
-
-UPGRADING
-=========
+This is the first stable release of the Samba 4.21 release series.
+Please read the release notes carefully before upgrading.
 
 Hardening of "valid users", "invalid users", "read list" and "write list"
 -------------------------------------------------------------------------
@@ -420,6 +414,20 @@ smb.conf changes
   hide files                              Added per-user and per-group hides
   sync machine password to keytab         keytabs
   sync machine password script            script
+
+
+CHANGES SINCE 4.21.0rc4
+=======================
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 15699: Incorrect FSCTL_QUERY_ALLOCATED_RANGES response when truncated.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 15702: Bad variable definition for ParseTuple causing test failure for
+     Smb3UnixTests.test_create_context_reparse.
+
+o  Shachar Sharon <ssharon@redhat.com>
+   * BUG 15686: Add new vfs_ceph module (based on low level API).
 
 
 CHANGES SINCE 4.21.0rc3
