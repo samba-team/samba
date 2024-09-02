@@ -1432,7 +1432,7 @@ static void smbd_parent_sig_hup_handler(struct tevent_context *ev,
 					void *private_data)
 {
 	change_to_root_user();
-	DEBUG(1,("parent: Reloading services after SIGHUP\n"));
+	DBG_NOTICE("parent: Reloading services after SIGHUP\n");
 	reload_services(NULL, NULL, false);
 }
 
