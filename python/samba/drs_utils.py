@@ -226,7 +226,7 @@ class drs_Replicate(object):
     def _calculate_missing_anc_locally(self, ctr):
         self.guids_seen = set()
 
-        # walk objects in ctr, add to guid_seen as we see them
+        # walk objects in ctr, add to guids_seen as we see them
         # note if an object doesn't have a parent
 
         object_to_check = ctr.first_object
