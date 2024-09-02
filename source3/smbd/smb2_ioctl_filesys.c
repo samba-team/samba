@@ -3,7 +3,7 @@
    Core SMB2 server
 
    Copyright (C) Stefan Metzmacher 2009
-   Copyright (C) David Disseldorp 2013-2024
+   Copyright (C) David Disseldorp 2013-2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -538,7 +538,6 @@ static NTSTATUS fsctl_qar_seek_fill(TALLOC_CTX *mem_ctx,
 				    struct files_struct *fsp,
 				    off_t curr_off,
 				    off_t max_off,
-				    size_t in_max_output,
 				    DATA_BLOB *qar_array_blob)
 {
 	NTSTATUS status = NT_STATUS_NOT_SUPPORTED;
@@ -577,17 +576,6 @@ static NTSTATUS fsctl_qar_seek_fill(TALLOC_CTX *mem_ctx,
 				  "data %lu\n", (unsigned long)hole_off,
 				  (unsigned long)data_off));
 			return NT_STATUS_INTERNAL_ERROR;
-		}
-
-		if (qar_array_blob->length + sizeof(qar_buf) > in_max_output) {
-			/*
-			 * Earlier check ensures space for one range or more.
-			 * Subsequent overflow results in a truncated response.
-			 */
-			DBG_NOTICE("truncated QAR output: need > %zu, max %zu\n",
-				qar_array_blob->length + sizeof(qar_buf),
-				in_max_output);
-			return STATUS_BUFFER_OVERFLOW;
 		}
 
 		qar_buf.file_off = data_off;
@@ -664,13 +652,6 @@ static NTSTATUS fsctl_qar(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* must have enough space for at least one range */
-	if (in_max_output < sizeof(struct file_alloced_range_buf)) {
-		DEBUG(2, ("QAR max %lu insufficient for one range\n",
-			  (unsigned long)in_max_output));
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
 	/*
 	 * Maximum offset is either the last valid offset _before_ EOF, or the
 	 * last byte offset within the requested range. -1 converts length to
@@ -706,24 +687,31 @@ static NTSTATUS fsctl_qar(TALLOC_CTX *mem_ctx,
 		status = fsctl_qar_buf_push(mem_ctx, &qar_buf, &qar_array_blob);
 	} else {
 		status = fsctl_qar_seek_fill(mem_ctx, fsp, qar_req.buf.file_off,
-					     max_off, in_max_output,
-					     &qar_array_blob);
+					     max_off, &qar_array_blob);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	if (NT_STATUS_IS_OK(status)
-	 || NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)) {
-		/* marshall response. STATUS_BUFFER_OVERFLOW=truncated */
-		qar_rsp.far_buf_array = qar_array_blob;
+	/* marshall response buffer. */
+	qar_rsp.far_buf_array = qar_array_blob;
 
-		ndr_ret = ndr_push_struct_blob(out_output, mem_ctx, &qar_rsp,
-		 (ndr_push_flags_fn_t)ndr_push_fsctl_query_alloced_ranges_rsp);
-		if (ndr_ret != NDR_ERR_SUCCESS) {
-			DEBUG(0, ("failed to marshall QAR rsp\n"));
-			return NT_STATUS_INVALID_PARAMETER;
-		}
+	ndr_ret = ndr_push_struct_blob(out_output, mem_ctx, &qar_rsp,
+		(ndr_push_flags_fn_t)ndr_push_fsctl_query_alloced_ranges_rsp);
+	if (ndr_ret != NDR_ERR_SUCCESS) {
+		DEBUG(0, ("failed to marshall QAR rsp\n"));
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	return status;
+	if (out_output->length > in_max_output) {
+		DEBUG(2, ("QAR output len %lu exceeds max %lu\n",
+			  (unsigned long)out_output->length,
+			  (unsigned long)in_max_output));
+		data_blob_free(out_output);
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	return NT_STATUS_OK;
 }
 
 static void smb2_ioctl_filesys_dup_extents_done(struct tevent_req *subreq);
