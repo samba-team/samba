@@ -218,7 +218,7 @@ static void bq_sig_hup_handler(struct tevent_context *ev,
 	state = talloc_get_type_abort(pvt, struct bq_state);
 	change_to_root_user();
 
-	DEBUG(1, ("Reloading pcap cache after SIGHUP\n"));
+	DBG_NOTICE("Reloading pcap cache after SIGHUP\n");
 	pcap_cache_reload(state->ev, state->msg,
 			  reload_pcap_change_notify);
 	printing_subsystem_queue_tasks(state);
