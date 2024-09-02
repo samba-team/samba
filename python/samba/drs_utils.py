@@ -224,7 +224,7 @@ class drs_Replicate(object):
 
 
     def _calculate_missing_anc_locally(self, ctr):
-        self.guids_seen = set()
+        guids_seen = set()
 
         # walk objects in ctr, add to guids_seen as we see them
         # note if an object doesn't have a parent
@@ -232,12 +232,12 @@ class drs_Replicate(object):
         object_to_check = ctr.first_object
 
         while object_to_check is not None:
-            self.guids_seen.add(str(object_to_check.object.identifier.guid))
+            guids_seen.add(str(object_to_check.object.identifier.guid))
 
             if object_to_check.parent_object_guid is not None \
                and object_to_check.parent_object_guid \
                != misc.GUID("00000000-0000-0000-0000-000000000000") \
-               and str(object_to_check.parent_object_guid) not in self.guids_seen:
+               and str(object_to_check.parent_object_guid) not in guids_seen:
                 obj_dn = ldb.Dn(self.samdb, object_to_check.object.identifier.dn)
                 parent_dn = obj_dn.parent()
                 print(f"Object {parent_dn} with "
