@@ -1389,7 +1389,7 @@ class DCJoinContext(object):
         objectAttr = lsa.ObjectAttribute()
         objectAttr.sec_qos = lsa.QosInfo()
 
-        pol_handle = lsaconn.OpenPolicy2(''.decode('utf-8'),
+        pol_handle = lsaconn.OpenPolicy2('',
                                          objectAttr, security.SEC_FLAG_MAXIMUM_ALLOWED)
 
         info = lsa.TrustDomainInfoInfoEx()
