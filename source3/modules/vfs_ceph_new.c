@@ -157,6 +157,7 @@ struct vfs_ceph_config {
 	CEPH_FN(ceph_version);
 	CEPH_FN(ceph_readdir);
 	CEPH_FN(ceph_rewinddir);
+	CEPH_FN(ceph_readdir_r);
 };
 
 /*
@@ -405,6 +406,7 @@ static bool vfs_cephfs_load_lib(struct vfs_ceph_config *config)
 	CHECK_CEPH_FN(libhandle, ceph_version);
 	CHECK_CEPH_FN(libhandle, ceph_readdir);
 	CHECK_CEPH_FN(libhandle, ceph_rewinddir);
+	CHECK_CEPH_FN(libhandle, ceph_readdir_r);
 
 	config->libhandle = libhandle;
 
@@ -625,6 +627,7 @@ struct vfs_ceph_fh {
 	struct vfs_ceph_config *config;
 	struct vfs_ceph_iref iref;
 	struct Fh *fh;
+	struct dirent *de;
 	int fd;
 };
 
@@ -640,6 +643,22 @@ static int cephmount_next_fd(struct cephmount_cached *cme)
 
 	next = (cme->fd_index++ % 1000000) + 1000;
 	return (int)next;
+}
+
+static struct dirent *vfs_ceph_get_fh_dirent(struct vfs_ceph_fh *cfh)
+{
+	if (cfh->de == NULL) {
+		cfh->de = talloc_zero_size(cfh->fsp, sizeof(*(cfh->de)));
+	}
+	return cfh->de;
+}
+
+static void vfs_ceph_put_fh_dirent(struct vfs_ceph_fh *cfh)
+{
+	if (cfh->de != NULL) {
+		TALLOC_FREE(cfh->de);
+		cfh->de = NULL;
+	}
 }
 
 static int vfs_ceph_release_fh(struct vfs_ceph_fh *cfh)
@@ -661,6 +680,7 @@ static int vfs_ceph_release_fh(struct vfs_ceph_fh *cfh)
 		vfs_ceph_userperm_del(cfh->config, cfh->uperm);
 		cfh->uperm = NULL;
 	}
+	vfs_ceph_put_fh_dirent(cfh);
 	cfh->fd = -1;
 
 	return ret;
@@ -1167,18 +1187,20 @@ static int vfs_ceph_ll_opendir(const struct vfs_handle_struct *handle,
 					  cfh->uperm);
 }
 
-static struct dirent *vfs_ceph_ll_readdir(const struct vfs_handle_struct *hndl,
-					  const struct vfs_ceph_fh *dircfh)
+static int vfs_ceph_ll_readdir(const struct vfs_handle_struct *hndl,
+			       const struct vfs_ceph_fh *dircfh)
 {
 	struct vfs_ceph_config *config = NULL;
 
 	SMB_VFS_HANDLE_GET_DATA(hndl, config, struct vfs_ceph_config,
-				return NULL);
+				return -ENOMEM);
 
 	DBG_DEBUG("[ceph] ceph_readdir: ino=%" PRIu64 " fd=%d\n",
 		  dircfh->iref.ino, dircfh->fd);
 
-	return config->ceph_readdir_fn(config->mount, dircfh->dirp.cdr);
+	return config->ceph_readdir_r_fn(config->mount,
+					 dircfh->dirp.cdr,
+					 dircfh->de);
 }
 
 static void vfs_ceph_ll_rewinddir(const struct vfs_handle_struct *handle,
@@ -1960,21 +1982,35 @@ static struct dirent *vfs_ceph_readdir(struct vfs_handle_struct *handle,
 				       struct files_struct *dirfsp,
 				       DIR *dirp)
 {
-	const struct vfs_ceph_fh *dircfh = (const struct vfs_ceph_fh *)dirp;
+	struct vfs_ceph_fh *dircfh = (struct vfs_ceph_fh *)dirp;
 	struct dirent *result = NULL;
 	int saved_errno = errno;
+	int ret = -1;
 
 	DBG_DEBUG("[CEPH] readdir(%p, %p)\n", handle, dirp);
 
-	errno = 0;
-	result = vfs_ceph_ll_readdir(handle, dircfh);
-	if ((result == NULL) && (errno != 0)) {
-		saved_errno = errno;
-		DBG_DEBUG("[CEPH] readdir(...) = %d\n", errno);
-	} else {
-		DBG_DEBUG("[CEPH] readdir(...) = %p\n", result);
+	result = vfs_ceph_get_fh_dirent(dircfh);
+	if (result == NULL) {
+		/* Memory allocation failure */
+		return NULL;
 	}
 
+	/* The low-level call uses 'dircfh->de' which is now 'result' */
+	ret = vfs_ceph_ll_readdir(handle, dircfh);
+	if (ret < 0) {
+		/* Error case */
+		DBG_DEBUG("[CEPH] readdir(...) = %d\n", ret);
+		vfs_ceph_put_fh_dirent(dircfh);
+		result = NULL;
+		saved_errno = ret;
+	} else if (ret == 0) {
+		/* End of directory stream */
+		vfs_ceph_put_fh_dirent(dircfh);
+		result = NULL;
+	} else {
+		/* Normal case */
+		DBG_DEBUG("[CEPH] readdir(...) = %p\n", result);
+	}
 	errno = saved_errno;
 	return result;
 }
