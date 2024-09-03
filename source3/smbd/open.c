@@ -5148,6 +5148,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 			       uint32_t file_attributes,
 			       struct smb_filename *parent_dir_fname,
 			       struct smb_filename *smb_fname_atname,
+			       uint32_t oplock_request,
+			       const struct smb2_lease *lease,
 			       struct security_descriptor *sd,
 			       int *pinfo,
 			       struct files_struct *fsp)
@@ -6775,7 +6777,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		 * CreateDirectory() call.
 		 */
 
-		oplock_request = 0;
 		status = open_directory(conn,
 					req,
 					access_mask,
@@ -6785,6 +6786,8 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 					file_attributes,
 					dirfsp->fsp_name,
 					smb_fname_atname,
+					oplock_request,
+					lease,
 					sd,
 					&info,
 					fsp);
@@ -6832,7 +6835,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 				goto fail;
 			}
 
-			oplock_request = 0;
 			status = open_directory(conn,
 						req,
 						access_mask,
@@ -6842,6 +6844,8 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 						file_attributes,
 						dirfsp->fsp_name,
 						smb_fname_atname,
+						oplock_request,
+						lease,
 						sd,
 						&info,
 						fsp);
