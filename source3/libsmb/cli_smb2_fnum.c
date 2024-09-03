@@ -45,6 +45,7 @@
 #include "librpc/gen_ndr/ndr_smb3posix.h"
 #include "lib/util/string_wrappers.h"
 #include "lib/util/idtree.h"
+#include "libcli/smb/smb2_posix.h"
 
 struct smb2_hnd {
 	uint64_t fid_persistent;
@@ -4987,6 +4988,194 @@ NTSTATUS cli_smb2_fsctl_recv(
 		}
 	}
 
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+struct cli_smb2_get_posix_fs_info_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	uint16_t fnum;
+	uint32_t optimal_transfer_size;
+	uint32_t block_size;
+	uint64_t total_blocks;
+	uint64_t blocks_available;
+	uint64_t user_blocks_available;
+	uint64_t total_file_nodes;
+	uint64_t free_file_nodes;
+	uint64_t fs_identifier;
+};
+
+static void cli_smb2_get_posix_fs_info_opened(struct tevent_req *subreq);
+static void cli_smb2_get_posix_fs_info_queried(struct tevent_req *subreq);
+static void cli_smb2_get_posix_fs_info_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_smb2_get_posix_fs_info_send(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct cli_state *cli)
+{
+	struct smb2_create_blobs *cblob = NULL;
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_smb2_get_posix_fs_info_state *state = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_smb2_get_posix_fs_info_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	*state = (struct cli_smb2_get_posix_fs_info_state) {
+		.ev = ev,
+		.cli = cli,
+	};
+	status = make_smb2_posix_create_ctx(state, &cblob, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+
+	/* First open the top level directory. */
+	subreq = cli_smb2_create_fnum_send(state,
+					   state->ev,
+					   state->cli,
+					   "",
+					   (struct cli_smb2_create_flags){0},
+					   SMB2_IMPERSONATION_IMPERSONATION,
+					   FILE_READ_ATTRIBUTES,
+					   FILE_ATTRIBUTE_DIRECTORY,
+					   FILE_SHARE_READ | FILE_SHARE_WRITE |
+						FILE_SHARE_DELETE,
+					   FILE_OPEN,
+					   FILE_DIRECTORY_FILE,
+					   cblob);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, cli_smb2_get_posix_fs_info_opened, req);
+	return req;
+}
+
+static void cli_smb2_get_posix_fs_info_opened(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_smb2_get_posix_fs_info_state *state = tevent_req_data(
+		req, struct cli_smb2_get_posix_fs_info_state);
+	struct smb2_create_blobs *cblob = {0};
+	NTSTATUS status;
+
+	status = cli_smb2_create_fnum_recv(subreq,
+					   &state->fnum,
+					   NULL,
+					   state,
+					   cblob,
+					   NULL);
+	TALLOC_FREE(subreq);
+
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	subreq = cli_smb2_query_info_fnum_send(
+			state,
+			state->ev,
+			state->cli,
+			state->fnum,
+			SMB2_0_INFO_FILESYSTEM,	   /* in_info_type */
+			SMB2_FS_POSIX_INFORMATION, /* in_file_info_class */
+			0xFFFF,			   /* in_max_output_length */
+			NULL,			   /* in_input_buffer */
+			0,			   /* in_additional_info */
+			0);			   /* in_flags */
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+
+	tevent_req_set_callback(subreq, cli_smb2_get_posix_fs_info_queried, req);
+}
+
+static void cli_smb2_get_posix_fs_info_queried(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_smb2_get_posix_fs_info_state *state = tevent_req_data(
+		req, struct cli_smb2_get_posix_fs_info_state);
+	DATA_BLOB outbuf = data_blob_null;
+	NTSTATUS status;
+
+	status = cli_smb2_query_info_fnum_recv(subreq, state, &outbuf);
+	TALLOC_FREE(subreq);
+
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	 if (outbuf.length != 56) {
+		goto close;
+	 }
+
+	state->optimal_transfer_size = PULL_LE_U32(outbuf.data, 0);
+	state->block_size = PULL_LE_U32(outbuf.data, 4);
+	state->total_blocks = PULL_LE_U64(outbuf.data, 8);
+	state->blocks_available = PULL_LE_U64(outbuf.data, 16);
+	state->user_blocks_available = PULL_LE_U64(outbuf.data, 24);
+	state->total_file_nodes = PULL_LE_U64(outbuf.data, 32);
+	state->free_file_nodes = PULL_LE_U64(outbuf.data, 40);
+	state->fs_identifier = PULL_LE_U64(outbuf.data, 48);
+
+close:
+	subreq = cli_smb2_close_fnum_send(state,
+					  state->ev,
+					  state->cli,
+					  state->fnum,
+					  0);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+
+	tevent_req_set_callback(subreq, cli_smb2_get_posix_fs_info_done, req);
+}
+
+static void cli_smb2_get_posix_fs_info_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = cli_smb2_close_fnum_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_smb2_get_posix_fs_info_recv(struct tevent_req *req,
+					 uint32_t *optimal_transfer_size,
+					 uint32_t *block_size,
+					 uint64_t *total_blocks,
+					 uint64_t *blocks_available,
+					 uint64_t *user_blocks_available,
+					 uint64_t *total_file_nodes,
+					 uint64_t *free_file_nodes,
+					 uint64_t *fs_identifier)
+{
+	struct cli_smb2_get_posix_fs_info_state *state = tevent_req_data(
+		req, struct cli_smb2_get_posix_fs_info_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+	*optimal_transfer_size = state->optimal_transfer_size;
+	*block_size = state->block_size;
+	*total_blocks = state->total_blocks;
+	*blocks_available = state->blocks_available;
+	*user_blocks_available = state->user_blocks_available;
+	*total_file_nodes = state->total_file_nodes;
+	*free_file_nodes = state->free_file_nodes;
+	*fs_identifier = state->fs_identifier;
 	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
