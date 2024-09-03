@@ -803,7 +803,8 @@ static int do_global_checks(void)
 			"instead of 'kerberos method'.\n\n");
 	}
 
-	if (lp_ptr != NULL) {
+	if (lp_ptr != NULL &&
+	    ((*lp_ptr != NULL) && !strequal_m(*lp_ptr, "disabled"))) {
 		while (*lp_ptr) {
 			ret |= pw2kt_check_line(*lp_ptr++);
 		}
