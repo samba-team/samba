@@ -2372,6 +2372,8 @@ static NTSTATUS grant_new_fsp_lease(struct files_struct *fsp,
 	fsp->lease->sconn = fsp->conn->sconn;
 	fsp->lease->lease.lease_version = lease->lease_version;
 	fsp->lease->lease.lease_key = lease->lease_key;
+	fsp->lease->lease.parent_lease_key = lease->parent_lease_key;
+	fsp->lease->lease.lease_flags = lease->lease_flags;
 	fsp->lease->lease.lease_state = granted;
 	fsp->lease->lease.lease_epoch = lease->lease_epoch + 1;
 
@@ -2718,17 +2720,6 @@ static NTSTATUS delay_for_oplock(files_struct *fsp,
 	*poplock_type = NO_OPLOCK;
 	*pgranted = 0;
 
-	if (fsp->fsp_flags.is_directory) {
-		/*
-		 * No directory leases yet
-		 */
-		SMB_ASSERT(oplock_request == NO_OPLOCK);
-		if (have_sharing_violation) {
-			return NT_STATUS_SHARING_VIOLATION;
-		}
-		return NT_STATUS_OK;
-	}
-
 	if (oplock_request == LEASE_OPLOCK) {
 		if (lease == NULL) {
 			/*
@@ -2738,6 +2729,15 @@ static NTSTATUS delay_for_oplock(files_struct *fsp,
 		}
 
 		requested = lease->lease_state;
+		if (fsp->fsp_flags.is_directory) {
+			/*
+			 * According to "MS-FSA 2.1.5.18 Server Requests an
+			 * Oplock" this should fail with
+			 * STATUS_INVALID_PARAMETER, but Windows 2022 just
+			 * ignores the SMB2_LEASE_WRITE bit.
+			 */
+			requested &= ~SMB2_LEASE_WRITE;
+		}
 	} else {
 		requested = map_oplock_to_lease_type(
 			oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK);
@@ -2920,6 +2920,16 @@ static NTSTATUS handle_share_mode_lease(
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	if (fsp->fsp_flags.is_directory &&
+	    oplock_request == LEASE_OPLOCK &&
+	    !lp_smb3_directory_leases())
+	{
+		DBG_NOTICE("Ignoring disabled DirectoryLease request on [%s]\n",
+			   fsp_str_dbg(fsp));
+		oplock_request = NO_OPLOCK;
+		lease = NULL;
 	}
 
 	if (oplock_request == INTERNAL_OPEN_ONLY) {
@@ -5479,9 +5489,9 @@ static NTSTATUS open_directory(connection_struct *conn,
 		.access_mask		= access_mask,
 		.open_access_mask	= access_mask,
 		.share_access		= share_access,
-		.oplock_request		= NO_OPLOCK,
-		.lease			= NULL,
-		.first_open_attempt	= true,
+		.oplock_request		= oplock_request,
+		.lease			= lease,
+		.first_open_attempt	= !deferred,
 		.keep_locked		= keep_locked,
 	};
 
