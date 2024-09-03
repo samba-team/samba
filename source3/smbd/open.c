@@ -6931,6 +6931,56 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	return status;
 }
 
+static NTSTATUS check_posix_create_context(connection_struct *conn,
+				struct smb_request *req,
+				const struct smb2_create_blobs *in_context_blobs,
+				uint32_t create_options,
+				uint32_t *file_attributes)
+{
+	uint32_t wire_mode_bits = 0;
+	NTSTATUS status;
+	mode_t mode_bits = 0;
+	SMB_STRUCT_STAT sbuf = { 0 };
+	struct smb2_create_blob *posx = NULL;
+
+	if (req == NULL || !req->posix_pathnames) {
+		return NT_STATUS_OK;
+	}
+
+	posx = smb2_create_blob_find(
+		in_context_blobs, SMB2_CREATE_TAG_POSIX);
+	if (posx == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	if (posx->data.length != 4) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	wire_mode_bits = IVAL(posx->data.data, 0);
+	status = unix_perms_from_wire(conn,
+				      &sbuf,
+				      wire_mode_bits,
+				      &mode_bits);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (create_options & FILE_DIRECTORY_FILE) {
+		mode_bits = apply_conf_dir_mask(conn, mode_bits);
+	} else {
+		mode_bits = apply_conf_file_mask(conn, mode_bits);
+	}
+	/*
+	 * Remove type info from mode, leaving only the
+	 * permissions and setuid/gid bits.
+	 */
+	mode_bits &= ~S_IFMT;
+
+	*file_attributes = (FILE_FLAG_POSIX_SEMANTICS | mode_bits);
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS create_file_default(connection_struct *conn,
 			     struct smb_request *req,
 			     struct files_struct *dirfsp,
@@ -6955,7 +7005,6 @@ NTSTATUS create_file_default(connection_struct *conn,
 	files_struct *fsp = NULL;
 	NTSTATUS status;
 	bool stream_name = false;
-	struct smb2_create_blob *posx = NULL;
 
 	DBG_DEBUG("access_mask = 0x%" PRIu32
 		  " file_attributes = 0x%" PRIu32
@@ -7039,38 +7088,13 @@ NTSTATUS create_file_default(connection_struct *conn,
 		}
 	}
 
-	posx = smb2_create_blob_find(
-		in_context_blobs, SMB2_CREATE_TAG_POSIX);
-	if (posx != NULL) {
-		uint32_t wire_mode_bits = 0;
-		mode_t mode_bits = 0;
-		SMB_STRUCT_STAT sbuf = { 0 };
-
-		if (posx->data.length != 4) {
-			status = NT_STATUS_INVALID_PARAMETER;
-			goto fail;
-		}
-
-		wire_mode_bits = IVAL(posx->data.data, 0);
-		status = unix_perms_from_wire(conn,
-					      &sbuf,
-					      wire_mode_bits,
-					      &mode_bits);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
-		}
-		if (create_options & FILE_DIRECTORY_FILE) {
-			mode_bits = apply_conf_dir_mask(conn, mode_bits);
-		} else {
-			mode_bits = apply_conf_file_mask(conn, mode_bits);
-		}
-		/*
-		 * Remove type info from mode, leaving only the
-		 * permissions and setuid/gid bits.
-		 */
-		mode_bits &= ~S_IFMT;
-
-		file_attributes = (FILE_FLAG_POSIX_SEMANTICS | mode_bits);
+	status = check_posix_create_context(conn,
+					    req,
+					    in_context_blobs,
+					    create_options,
+					    &file_attributes);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
 	}
 
 	status = create_file_unixpath(conn,
