@@ -904,6 +904,11 @@ NTSTATUS sync_pw2keytabs(void)
 		goto params_ready;
 	}
 
+	if ((*lp_ptr != NULL) && strequal_m(*lp_ptr, "disabled")) {
+		DBG_DEBUG("'sync machine password to keytab' is explicitly disabled.\n");
+		return NT_STATUS_OK;
+	}
+
 	line = lp_ptr;
 	while (*line) {
 		DBG_DEBUG("Scanning line: %s\n", *line);

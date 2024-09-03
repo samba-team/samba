@@ -207,6 +207,14 @@ static int net_changesecretpw(struct net_context *c, int argc,
 		struct timeval tv = timeval_current();
 		NTTIME now = timeval_to_nttime(&tv);
 
+#ifdef HAVE_ADS
+		if (USE_KERBEROS_KEYTAB) {
+		   if (lp_sync_machine_password_to_keytab() == NULL) {
+			lp_do_parameter(-1, "sync machine password to keytab", "disabled");
+		   }
+		}
+#endif
+
 		if (c->opt_stdin) {
 			set_line_buffering(stdin);
 			set_line_buffering(stdout);
