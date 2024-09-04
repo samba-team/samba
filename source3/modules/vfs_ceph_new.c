@@ -220,7 +220,6 @@ static struct cephmount_cached *cephmount_cache_update(const char *cookie)
 		}
 	}
 
-	errno = ENOENT;
 	return NULL;
 }
 
