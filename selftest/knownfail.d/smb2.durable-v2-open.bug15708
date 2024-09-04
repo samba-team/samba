@@ -1,0 +1,7 @@
+#
+# https://bugzilla.samba.org/show_bug.cgi?id=15708 is not fixed
+# yet, it requires some complex changes within handle_share_mode_lease()
+# merging logic of open_mode_check() and delay_for_oplock()...
+#
+^samba3.smb2.durable-v2-open.keep-disconnected-rh-with-rh-open
+^samba3.smb2.durable-v2-open.keep-disconnected-rh-with-rwh-open
