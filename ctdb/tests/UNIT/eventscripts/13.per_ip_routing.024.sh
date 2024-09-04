@@ -22,7 +22,7 @@ ctdb_get_1_public_address | {
 Removing ip rule for public address ${ip} for routing table ctdb.${ip}
 EOF
 	simple_test_event "shutdown"
-}
+} || exit $?
 
 ok_null
 simple_test_command diff -u "$_rt_orig" "$_rt_tables"
