@@ -976,7 +976,13 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	smb_set_close_on_exec(fd);
 
 	if (s->parent->interactive) {
-		reinit_after_fork(msg_ctx, ev, true);
+		NTSTATUS status;
+
+		status = reinit_after_fork(msg_ctx, ev, true);
+		if (!NT_STATUS_IS_OK(status)) {
+			exit_server("reinit_after_fork() failed");
+			return;
+		}
 		smbd_process(ev, msg_ctx, fd, true);
 		exit_server_cleanly("end of interactive mode");
 		return;

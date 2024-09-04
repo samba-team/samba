@@ -482,6 +482,7 @@ NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("messaging_reinit() failed: %s\n",
 				 nt_errstr(status)));
+			goto done;
 		}
 
 		if (lp_clustering()) {
