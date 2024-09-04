@@ -736,6 +736,9 @@ void smbd_contend_level2_oplocks_begin(files_struct *fsp,
 				  enum level2_contention_type type);
 void smbd_contend_level2_oplocks_end(files_struct *fsp,
 				enum level2_contention_type type);
+void contend_dirleases(struct connection_struct *conn,
+		       const struct smb_filename *smb_fname,
+		       const struct smb2_lease *lease);
 bool init_oplocks(struct smbd_server_connection *sconn);
 void init_kernel_oplocks(struct smbd_server_connection *sconn);
 

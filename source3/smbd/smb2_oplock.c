@@ -1247,6 +1247,133 @@ static bool do_break_oplock_to_none(struct share_mode_entry *e,
 	return false;
 }
 
+struct dirlease_break_state {
+	struct smbd_server_connection *sconn;
+	struct file_id file_id;
+	struct smb2_lease_key parent_lease_key;
+	uint32_t total_lease_types;
+};
+
+static bool do_dirlease_break_to_none(struct share_mode_entry *e,
+				      void *private_data)
+{
+	struct dirlease_break_state *state = private_data;
+	uint32_t current_state = 0;
+	NTSTATUS status;
+
+	DBG_DEBUG("lease_key=%"PRIu64"/%"PRIu64"\n",
+		  e->lease_key.data[0],
+		  e->lease_key.data[1]);
+
+	status = leases_db_get(&e->client_guid,
+			       &e->lease_key,
+			       &state->file_id,
+			       &current_state,
+			       NULL, /* breaking */
+			       NULL, /* breaking_to_requested */
+			       NULL, /* breaking_to_required */
+			       NULL, /* lease_version */
+			       NULL); /* epoch */
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("leases_db_get failed: %s\n",
+			    nt_errstr(status));
+		return false;
+	}
+
+	if (share_entry_stale_pid(e)) {
+		return false;
+	}
+
+	state->total_lease_types |= current_state;
+
+	if (smb2_lease_key_equal(&state->parent_lease_key, &e->lease_key)) {
+		return false;
+	}
+
+	if ((current_state & (SMB2_LEASE_READ | SMB2_LEASE_HANDLE)) == 0) {
+		return false;
+	}
+
+	DBG_DEBUG("Breaking %"PRIu64"/%"PRIu64" to none\n",
+		  e->lease_key.data[0],
+		  e->lease_key.data[1]);
+
+	send_break_to_none(state->sconn->msg_ctx, &state->file_id, e);
+	return false;
+}
+
+void contend_dirleases(struct connection_struct *conn,
+		       const struct smb_filename *smb_fname,
+		       const struct smb2_lease *lease)
+{
+	struct dirlease_break_state state = {
+		.sconn = conn->sconn,
+	};
+	struct share_mode_lock *lck = NULL;
+	struct smb_filename *parent_fname = NULL;
+	uint32_t access_mask, share_mode;
+	NTSTATUS status;
+	int ret;
+	bool ok;
+
+	if (lease != NULL) {
+		DBG_DEBUG("Parent leasekey %"PRIx64"/%"PRIx64"\n",
+			  lease->parent_lease_key.data[0],
+			  lease->parent_lease_key.data[1]);
+		state.parent_lease_key = lease->parent_lease_key;
+	}
+
+	status = SMB_VFS_PARENT_PATHNAME(conn,
+					 talloc_tos(),
+					 smb_fname,
+					 &parent_fname,
+					 NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("parent_smb_fname() for [%s] failed: %s\n",
+			smb_fname_str_dbg(smb_fname), strerror(errno));
+		return;
+	}
+
+	ret = SMB_VFS_STAT(conn, parent_fname);
+	if (ret != 0) {
+		DBG_ERR("Failed to stat [%s]: %s\n",
+			smb_fname_str_dbg(parent_fname), strerror(errno));
+		TALLOC_FREE(parent_fname);
+		return;
+	}
+
+	state.file_id = vfs_file_id_from_sbuf(conn, &parent_fname->st);
+	TALLOC_FREE(parent_fname);
+
+	lck = get_existing_share_mode_lock(talloc_tos(), state.file_id);
+	if (lck == NULL) {
+		/*
+		 * No sharemode db entry -> no leases.
+		 */
+		return;
+	}
+
+	ok = share_mode_forall_leases(lck, do_dirlease_break_to_none, &state);
+	if (!ok) {
+		DBG_WARNING("share_mode_forall_leases failed\n");
+	}
+
+	/*
+	 * While we're at it, update lease type.
+	 */
+	share_mode_flags_get(lck,
+			     &access_mask,
+			     &share_mode,
+			     NULL);
+	share_mode_flags_set(lck,
+			     access_mask,
+			     share_mode,
+			     state.total_lease_types,
+			     NULL);
+
+	TALLOC_FREE(lck);
+}
+
 /****************************************************************************
  This function is called on any file modification or lock request. If a file
  is level 2 oplocked then it must tell all other level 2 holders to break to
