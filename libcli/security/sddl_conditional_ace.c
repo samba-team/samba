@@ -2893,16 +2893,14 @@ static bool init_compiler_context(
 		TALLOC_FREE(program);
 		return false;
 	}
-	program->stack = talloc_array(program,
-				      struct ace_condition_token,
-				      max_stack + 1);
-	if (program->stack == NULL) {
+	comp->program = program;
+	comp->stack = talloc_array(program,
+				   struct ace_condition_token,
+				   max_stack + 1);
+	if (comp->stack == NULL) {
 		TALLOC_FREE(program);
 		return false;
 	}
-	comp->program = program;
-	/* we can borrow the program stack for the operator stack */
-	comp->stack = program->stack;
 	comp->target = program->tokens;
 	comp->target_len = &program->length;
 	comp->length = strlen(sddl);

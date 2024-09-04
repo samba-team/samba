@@ -390,7 +390,6 @@ interface conditional_ace
 	 */
 	typedef [public] struct {
 		ace_condition_token *tokens;
-		ace_condition_token *stack;
 		uint32 length;
 	} ace_condition_script;
 
