@@ -111,7 +111,7 @@ EOF
 
 	case "$event" in
 	add-client | del-client)
-		cmd="${CTDB_SCRIPTS_TESTS_LIBEXEC_DIR}/statd_callout"
+		cmd="${CTDB_SCRIPTS_HELPER_BINDIR}/statd_callout"
 		unit_test "$cmd" "$event" "$@"
 		;;
 	*)
