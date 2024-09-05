@@ -78,12 +78,34 @@ static ssize_t lstatus_code(intmax_t ret)
 	return (ssize_t)ret;
 }
 
+enum vfs_cephfs_proxy_mode {
+	VFS_CEPHFS_PROXY_NO = 0,
+	VFS_CEPHFS_PROXY_YES,
+	VFS_CEPHFS_PROXY_AUTO
+};
+
+static const struct enum_list enum_vfs_cephfs_proxy_vals[] = {
+	{VFS_CEPHFS_PROXY_NO, "No"},
+	{VFS_CEPHFS_PROXY_NO, "False"},
+	{VFS_CEPHFS_PROXY_NO, "0"},
+	{VFS_CEPHFS_PROXY_NO, "Off"},
+	{VFS_CEPHFS_PROXY_NO, "disable"},
+	{VFS_CEPHFS_PROXY_YES, "Yes"},
+	{VFS_CEPHFS_PROXY_YES, "True"},
+	{VFS_CEPHFS_PROXY_YES, "1"},
+	{VFS_CEPHFS_PROXY_YES, "On"},
+	{VFS_CEPHFS_PROXY_YES, "enable"},
+	{VFS_CEPHFS_PROXY_AUTO, "auto"},
+	{-1, NULL}
+};
+
 struct vfs_ceph_config {
 	const char *conf_file;
 	const char *user_id;
 	const char *fsname;
 	struct cephmount_cached *mount_entry;
 	struct ceph_mount_info *mount;
+	enum vfs_cephfs_proxy_mode proxy;
 };
 
 /*
@@ -275,6 +297,13 @@ static bool vfs_ceph_load_config(struct vfs_handle_struct *handle,
 						       "user_id", "");
 	config_tmp->fsname	= lp_parm_const_string(snum, module_name,
 						       "filesystem", "");
+	config_tmp->proxy	= lp_parm_enum(snum, module_name, "proxy",
+					       enum_vfs_cephfs_proxy_vals,
+					       VFS_CEPHFS_PROXY_NO);
+	if (config_tmp->proxy == -1) {
+		DBG_ERR("value for proxy: mode unknown\n");
+		return false;
+	}
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config_tmp, NULL,
 				struct vfs_ceph_config, return false);
