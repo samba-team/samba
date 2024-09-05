@@ -152,6 +152,35 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>ceph_new:proxy = [ yes | no | auto ]</term>
+		<listitem>
+		<para>
+			Allows one to indicate use of the libcephfs proxy library
+			for optimized resource utilization, allowing more simultaneous
+			client connections. Prerequisites include the presence of
+			<emphasis>libcephfs_proxy.so.X</emphasis> shared library file
+			under loadable locations for dynamic linker and an active(running)
+			<emphasis>libcephfsd</emphasis> daemon.
+		</para>
+
+		<itemizedlist>
+			<listitem><para><constant>no</constant> (default) - Do
+			not use the proxy library but regular connection through
+			<emphasis>libcephfs.so.X</emphasis>.</para></listitem>
+
+			<listitem><para><constant>yes</constant> - Always use
+			the proxy library and fail the client connection request
+			if prerequisites are unmet.</para></listitem>
+
+			<listitem><para><constant>auto</constant> - Attempt to
+			use the proxy library but fall back to the regular cephfs
+			connection if prerequisites are unmet.</para></listitem>
+
+		</itemizedlist>
+
+		</listitem>
+		</varlistentry>
 	</variablelist>
 
 </refsect1>
