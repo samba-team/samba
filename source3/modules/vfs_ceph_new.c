@@ -560,12 +560,11 @@ static void vfs_ceph_disconnect(struct vfs_handle_struct *handle)
 }
 
 /* Ceph user-credentials */
-static struct UserPerm *vfs_ceph_userperm_new(
-	const struct vfs_handle_struct *handle)
+static struct UserPerm *vfs_ceph_userperm_new(struct connection_struct *conn)
 {
 	const struct security_unix_token *unix_token = NULL;
 
-	unix_token = get_current_utok(handle->conn);
+	unix_token = get_current_utok(conn);
 	return ceph_userperm_new(unix_token->uid,
 				 unix_token->gid,
 				 unix_token->ngroups,
@@ -682,7 +681,7 @@ static int vfs_ceph_add_fh(struct vfs_handle_struct *handle,
 
 	cme = config->mount_entry;
 
-	uperm = vfs_ceph_userperm_new(handle);
+	uperm = vfs_ceph_userperm_new(handle->conn);
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
@@ -762,7 +761,7 @@ static int vfs_ceph_ll_walk(const struct vfs_handle_struct *handle,
 
 	DBG_DEBUG("[ceph] ceph_ll_walk: name=%s\n", name);
 
-	uperm = vfs_ceph_userperm_new(handle);
+	uperm = vfs_ceph_userperm_new(handle->conn);
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
@@ -826,7 +825,7 @@ static int vfs_ceph_ll_getattr(const struct vfs_handle_struct *handle,
 	struct UserPerm *uperm = NULL;
 	int ret = -1;
 
-	uperm = vfs_ceph_userperm_new(handle);
+	uperm = vfs_ceph_userperm_new(handle->conn);
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
@@ -851,7 +850,7 @@ static int vfs_ceph_ll_chown(struct vfs_handle_struct *handle,
 	DBG_DEBUG("[ceph] ceph_ll_setattr: ino=%" PRIu64 " uid=%u gid=%u\n",
 		  iref->ino, uid, gid);
 
-	uperm = vfs_ceph_userperm_new(handle);
+	uperm = vfs_ceph_userperm_new(handle->conn);
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
@@ -1025,7 +1024,7 @@ static int vfs_ceph_ll_lookup(const struct vfs_handle_struct *handle,
 	DBG_DEBUG("[ceph] ceph_ll_lookup: parent-ino=%" PRIu64 " name=%s\n",
 		  parent->ino, name);
 
-	uperm = vfs_ceph_userperm_new(handle);
+	uperm = vfs_ceph_userperm_new(handle->conn);
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
@@ -1508,7 +1507,7 @@ static int vfs_ceph_ll_getxattr(const struct vfs_handle_struct *handle,
 	DBG_DEBUG("[ceph] ceph_ll_getxattr: ino=%" PRIu64 " name=%s\n",
 		  iref->ino, name);
 
-	uperm = vfs_ceph_userperm_new(handle);
+	uperm = vfs_ceph_userperm_new(handle->conn);
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
@@ -1564,7 +1563,7 @@ static int vfs_ceph_ll_setxattr(const struct vfs_handle_struct *handle,
 	DBG_DEBUG("[ceph] ceph_ll_setxattr: ino=%" PRIu64 " name=%s "
 		  "size=%zu\n", iref->ino, name, size);
 
-	uperm = vfs_ceph_userperm_new(handle);
+	uperm = vfs_ceph_userperm_new(handle->conn);
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
@@ -1621,7 +1620,7 @@ static int vfs_ceph_ll_listxattr(const struct vfs_handle_struct *handle,
 
 	DBG_DEBUG("[ceph] ceph_ll_listxattr: ino=%" PRIu64 "\n", iref->ino);
 
-	uperm = vfs_ceph_userperm_new(handle);
+	uperm = vfs_ceph_userperm_new(handle->conn);
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
@@ -1673,7 +1672,7 @@ static int vfs_ceph_ll_removexattr(const struct vfs_handle_struct *handle,
 	DBG_DEBUG("[ceph] ceph_ll_removexattr: ino=%" PRIu64 " name=%s\n",
 		  iref->ino, name);
 
-	uperm = vfs_ceph_userperm_new(handle);
+	uperm = vfs_ceph_userperm_new(handle->conn);
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
