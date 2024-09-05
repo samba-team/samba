@@ -620,6 +620,7 @@ struct vfs_ceph_fh {
 	struct cephmount_cached *cme;
 	struct UserPerm *uperm;
 	struct files_struct *fsp;
+	struct vfs_ceph_config *config;
 	struct vfs_ceph_iref iref;
 	struct Fh *fh;
 	int fd;
@@ -697,6 +698,7 @@ static int vfs_ceph_add_fh(struct vfs_handle_struct *handle,
 	(*out_cfh)->cme = cme;
 	(*out_cfh)->uperm = uperm;
 	(*out_cfh)->fsp = fsp;
+	(*out_cfh)->config = config;
 	(*out_cfh)->fd = -1;
 	return 0;
 }
