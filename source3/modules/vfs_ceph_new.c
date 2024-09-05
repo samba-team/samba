@@ -99,6 +99,8 @@ static const struct enum_list enum_vfs_cephfs_proxy_vals[] = {
 	{-1, NULL}
 };
 
+#define CEPH_FN(_name) typeof(_name) *_name ## _fn
+
 struct vfs_ceph_config {
 	const char *conf_file;
 	const char *user_id;
@@ -107,6 +109,54 @@ struct vfs_ceph_config {
 	struct ceph_mount_info *mount;
 	enum vfs_cephfs_proxy_mode proxy;
 	void *libhandle;
+
+	CEPH_FN(ceph_ll_lookup_inode);
+	CEPH_FN(ceph_ll_walk);
+	CEPH_FN(ceph_ll_getattr);
+	CEPH_FN(ceph_ll_setattr);
+	CEPH_FN(ceph_ll_releasedir);
+	CEPH_FN(ceph_ll_create);
+	CEPH_FN(ceph_ll_lookup);
+	CEPH_FN(ceph_ll_open);
+	CEPH_FN(ceph_ll_opendir);
+	CEPH_FN(ceph_ll_mkdir);
+	CEPH_FN(ceph_ll_rmdir);
+	CEPH_FN(ceph_ll_unlink);
+	CEPH_FN(ceph_ll_symlink);
+	CEPH_FN(ceph_ll_readlink);
+	CEPH_FN(ceph_ll_put);
+	CEPH_FN(ceph_ll_read);
+	CEPH_FN(ceph_ll_write);
+	CEPH_FN(ceph_ll_lseek);
+	CEPH_FN(ceph_ll_fsync);
+	CEPH_FN(ceph_ll_fallocate);
+	CEPH_FN(ceph_ll_link);
+	CEPH_FN(ceph_ll_rename);
+	CEPH_FN(ceph_ll_mknod);
+	CEPH_FN(ceph_ll_getxattr);
+	CEPH_FN(ceph_ll_setxattr);
+	CEPH_FN(ceph_ll_listxattr);
+	CEPH_FN(ceph_ll_removexattr);
+	CEPH_FN(ceph_ll_lookup_root);
+	CEPH_FN(ceph_ll_statfs);
+	CEPH_FN(ceph_ll_close);
+
+	CEPH_FN(ceph_chdir);
+	CEPH_FN(ceph_conf_get);
+	CEPH_FN(ceph_conf_read_file);
+	CEPH_FN(ceph_conf_set);
+	CEPH_FN(ceph_create);
+	CEPH_FN(ceph_getcwd);
+	CEPH_FN(ceph_init);
+	CEPH_FN(ceph_mount);
+	CEPH_FN(ceph_release);
+	CEPH_FN(ceph_select_filesystem);
+	CEPH_FN(ceph_unmount);
+	CEPH_FN(ceph_userperm_destroy);
+	CEPH_FN(ceph_userperm_new);
+	CEPH_FN(ceph_version);
+	CEPH_FN(ceph_readdir);
+	CEPH_FN(ceph_rewinddir);
 };
 
 /*
