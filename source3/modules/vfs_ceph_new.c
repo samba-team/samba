@@ -172,7 +172,7 @@ struct vfs_ceph_config {
 
 static struct cephmount_cached {
 	char *cookie;
-	uint32_t count;
+	int32_t count;
 	struct ceph_mount_info *mount;
 	struct cephmount_cached *next, *prev;
 	uint64_t fd_index;
@@ -207,15 +207,28 @@ static int cephmount_cache_add(const char *cookie,
 	return 0;
 }
 
+static bool cephmount_cache_change_ref(struct cephmount_cached *entry, int n)
+{
+	entry->count += n;
+
+	DBG_DEBUG("[CEPH] updated mount cache entry: count=%" PRId32
+		  "change=%+d cookie='%s'\n", entry->count, n, entry->cookie);
+
+	if (entry->count && (n < 0)) {
+		DBG_DEBUG("[CEPH] mount cache entry still in use: "
+			  "count=%" PRId32 " cookie='%s'\n",
+			  entry->count, entry->cookie);
+	}
+	return (entry->count == 0);
+}
+
 static struct cephmount_cached *cephmount_cache_update(const char *cookie)
 {
 	struct cephmount_cached *entry = NULL;
 
 	for (entry = cephmount_cached; entry; entry = entry->next) {
 		if (strcmp(entry->cookie, cookie) == 0) {
-			entry->count++;
-			DBG_DEBUG("[CEPH] updated mount cache: count is [%"
-				  PRIu32 "]\n", entry->count);
+			cephmount_cache_change_ref(entry, 1);
 			return entry;
 		}
 	}
@@ -223,18 +236,16 @@ static struct cephmount_cached *cephmount_cache_update(const char *cookie)
 	return NULL;
 }
 
-static int cephmount_cache_remove(struct cephmount_cached *entry)
+static bool cephmount_cache_remove(struct cephmount_cached *entry)
 {
-	if (--entry->count) {
-		DBG_DEBUG("[CEPH] updated mount cache: count is [%"
-			  PRIu32 "]\n", entry->count);
-		return entry->count;
+	if (!cephmount_cache_change_ref(entry, -1)) {
+		return false;
 	}
 
 	DBG_DEBUG("[CEPH] removing mount cache entry for %s\n", entry->cookie);
 	DLIST_REMOVE(cephmount_cached, entry);
 	talloc_free(entry);
-	return 0;
+	return true;
 }
 
 static char *cephmount_get_cookie(TALLOC_CTX * mem_ctx,
@@ -543,9 +554,7 @@ static void vfs_ceph_disconnect(struct vfs_handle_struct *handle)
 
 	mount = config->mount;
 
-	ret = cephmount_cache_remove(config->mount_entry);
-	if (ret > 0) {
-		DBG_DEBUG("[CEPH] mount cache entry still in use\n");
+	if (!cephmount_cache_remove(config->mount_entry)) {
 		return;
 	}
 
