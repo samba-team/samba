@@ -241,7 +241,7 @@ class CharacterTests(TestCase):
             dirs = set()
             for c in set(s):
                 if is_bad_char(c):
-                    self.fail(f"{name} has potentially bad format characters!")
+                    self.fail(f"{name} has potentially bad format character {ord(c[0])}!")
                 dirs.add(u.bidirectional(c))
 
             if 'L' in dirs and 'R' in dirs:
