@@ -316,6 +316,18 @@ static struct ceph_mount_info *cephmount_mount_fs(
 	return mnt;
 }
 
+#define CHECK_CEPH_FN(hnd, func) \
+	do { \
+		config->func ## _fn = dlsym(hnd, #func); \
+		if (config->func ## _fn == NULL) { \
+			if (dlclose(hnd)) { \
+				DBG_ERR("%s\n", dlerror()); \
+			} \
+			errno = ENOSYS; \
+			return false; \
+		} \
+	} while(0);
+
 static bool vfs_cephfs_load_lib(struct vfs_ceph_config *config)
 {
 	void *libhandle = NULL;
@@ -345,6 +357,54 @@ static bool vfs_cephfs_load_lib(struct vfs_ceph_config *config)
 		}
 		break;
 	}
+
+	CHECK_CEPH_FN(libhandle, ceph_ll_lookup_inode);
+	CHECK_CEPH_FN(libhandle, ceph_ll_walk);
+	CHECK_CEPH_FN(libhandle, ceph_ll_getattr);
+	CHECK_CEPH_FN(libhandle, ceph_ll_setattr);
+	CHECK_CEPH_FN(libhandle, ceph_ll_releasedir);
+	CHECK_CEPH_FN(libhandle, ceph_ll_create);
+	CHECK_CEPH_FN(libhandle, ceph_ll_open);
+	CHECK_CEPH_FN(libhandle, ceph_ll_opendir);
+	CHECK_CEPH_FN(libhandle, ceph_ll_mkdir);
+	CHECK_CEPH_FN(libhandle, ceph_ll_rmdir);
+	CHECK_CEPH_FN(libhandle, ceph_ll_unlink);
+	CHECK_CEPH_FN(libhandle, ceph_ll_symlink);
+	CHECK_CEPH_FN(libhandle, ceph_ll_readlink);
+	CHECK_CEPH_FN(libhandle, ceph_ll_put);
+	CHECK_CEPH_FN(libhandle, ceph_ll_read);
+	CHECK_CEPH_FN(libhandle, ceph_ll_write);
+	CHECK_CEPH_FN(libhandle, ceph_ll_lseek);
+	CHECK_CEPH_FN(libhandle, ceph_ll_fsync);
+	CHECK_CEPH_FN(libhandle, ceph_ll_fallocate);
+	CHECK_CEPH_FN(libhandle, ceph_ll_link);
+	CHECK_CEPH_FN(libhandle, ceph_ll_rename);
+	CHECK_CEPH_FN(libhandle, ceph_ll_mknod);
+	CHECK_CEPH_FN(libhandle, ceph_ll_getxattr);
+	CHECK_CEPH_FN(libhandle, ceph_ll_setxattr);
+	CHECK_CEPH_FN(libhandle, ceph_ll_listxattr);
+	CHECK_CEPH_FN(libhandle, ceph_ll_removexattr);
+	CHECK_CEPH_FN(libhandle, ceph_ll_lookup);
+	CHECK_CEPH_FN(libhandle, ceph_ll_lookup_root);
+	CHECK_CEPH_FN(libhandle, ceph_ll_statfs);
+	CHECK_CEPH_FN(libhandle, ceph_ll_close);
+
+	CHECK_CEPH_FN(libhandle, ceph_chdir);
+	CHECK_CEPH_FN(libhandle, ceph_conf_get);
+	CHECK_CEPH_FN(libhandle, ceph_conf_read_file);
+	CHECK_CEPH_FN(libhandle, ceph_conf_set);
+	CHECK_CEPH_FN(libhandle, ceph_create);
+	CHECK_CEPH_FN(libhandle, ceph_getcwd);
+	CHECK_CEPH_FN(libhandle, ceph_init);
+	CHECK_CEPH_FN(libhandle, ceph_mount);
+	CHECK_CEPH_FN(libhandle, ceph_release);
+	CHECK_CEPH_FN(libhandle, ceph_select_filesystem);
+	CHECK_CEPH_FN(libhandle, ceph_unmount);
+	CHECK_CEPH_FN(libhandle, ceph_userperm_destroy);
+	CHECK_CEPH_FN(libhandle, ceph_userperm_new);
+	CHECK_CEPH_FN(libhandle, ceph_version);
+	CHECK_CEPH_FN(libhandle, ceph_readdir);
+	CHECK_CEPH_FN(libhandle, ceph_rewinddir);
 
 	config->libhandle = libhandle;
 
