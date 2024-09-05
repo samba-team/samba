@@ -3831,7 +3831,7 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 {
 	struct files_struct *set_fsp = NULL;
 	struct timeval_buf tbuf[4];
-	uint32_t action =
+	uint32_t filter =
 		FILE_NOTIFY_CHANGE_LAST_ACCESS
 		|FILE_NOTIFY_CHANGE_LAST_WRITE
 		|FILE_NOTIFY_CHANGE_CREATION;
@@ -3850,20 +3850,20 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 
 	/* get some defaults (no modifications) if any info is zero or -1. */
 	if (is_omit_timespec(&ft->create_time)) {
-		action &= ~FILE_NOTIFY_CHANGE_CREATION;
+		filter &= ~FILE_NOTIFY_CHANGE_CREATION;
 	}
 
 	if (is_omit_timespec(&ft->atime)) {
-		action &= ~FILE_NOTIFY_CHANGE_LAST_ACCESS;
+		filter &= ~FILE_NOTIFY_CHANGE_LAST_ACCESS;
 	}
 
 	if (is_omit_timespec(&ft->mtime)) {
-		action &= ~FILE_NOTIFY_CHANGE_LAST_WRITE;
+		filter &= ~FILE_NOTIFY_CHANGE_LAST_WRITE;
 	}
 
 	if (!setting_write_time) {
 		/* ft->mtime comes from change time, not write time. */
-		action &= ~FILE_NOTIFY_CHANGE_LAST_WRITE;
+		filter &= ~FILE_NOTIFY_CHANGE_LAST_WRITE;
 	}
 
 	/* Ensure the resolution is the correct for
@@ -3909,7 +3909,7 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 
 	notify_fname(conn,
 		     NOTIFY_ACTION_MODIFIED,
-		     action,
+		     filter,
 		     smb_fname,
 		     NULL);
 	return NT_STATUS_OK;
