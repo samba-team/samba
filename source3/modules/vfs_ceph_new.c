@@ -200,7 +200,8 @@ static bool cephmount_cache_add(const char *cookie,
 	entry->mount = mount;
 	entry->count = 1;
 
-	DBG_DEBUG("[CEPH] adding mount cache entry for %s\n", entry->cookie);
+	DBG_DEBUG("[CEPH] adding mount cache entry: cookie='%s'\n",
+		  entry->cookie);
 	DLIST_ADD(cephmount_cached, entry);
 
 	*out_entry = entry;
@@ -242,7 +243,8 @@ static bool cephmount_cache_remove(struct cephmount_cached *entry)
 		return false;
 	}
 
-	DBG_DEBUG("[CEPH] removing mount cache entry for %s\n", entry->cookie);
+	DBG_DEBUG("[CEPH] removing mount cache entry: cookie='%s'\n",
+		  entry->cookie);
 	DLIST_REMOVE(cephmount_cached, entry);
 	talloc_free(entry);
 	return true;
@@ -257,6 +259,18 @@ static char *cephmount_get_cookie(TALLOC_CTX * mem_ctx,
 			       config->fsname);
 }
 
+static int cephmount_update_conf(struct vfs_ceph_config *config,
+				 struct ceph_mount_info *mnt,
+				 const char *option,
+				 const char *value)
+{
+	DBG_DEBUG("[CEPH] calling ceph_conf_set: option='%s' value='%s'\n",
+		  option,
+		  value);
+
+	return config->ceph_conf_set_fn(mnt, option, value);
+}
+
 static struct ceph_mount_info *cephmount_mount_fs(
 	struct vfs_ceph_config *config)
 {
@@ -265,33 +279,41 @@ static struct ceph_mount_info *cephmount_mount_fs(
 	struct ceph_mount_info *mnt = NULL;
 	/* if config_file and/or user_id are NULL, ceph will use defaults */
 
-	DBG_DEBUG("[CEPH] calling: ceph_create\n");
+	DBG_DEBUG("[CEPH] calling ceph_create: user_id='%s'\n",
+		  (config->user_id != NULL) ? config->user_id : "");
 	ret = config->ceph_create_fn(&mnt, config->user_id);
 	if (ret) {
 		errno = -ret;
 		return NULL;
 	}
 
-	DBG_DEBUG("[CEPH] calling: ceph_conf_read_file with %s\n",
-		  (config->conf_file == NULL ? "default path" : config->conf_file));
+	DBG_DEBUG("[CEPH] calling ceph_conf_read_file: conf_file='%s'\n",
+		  (config->conf_file == NULL) ? "default path"
+					      : config->conf_file);
 	ret = config->ceph_conf_read_file_fn(mnt, config->conf_file);
 	if (ret) {
 		goto out;
 	}
 
-	DBG_DEBUG("[CEPH] calling: ceph_conf_get\n");
-	ret = config->ceph_conf_get_fn(mnt, "log file", buf, sizeof(buf));
+	DBG_DEBUG("[CEPH] calling ceph_conf_get: option='%s'\n", "log_file");
+	ret = config->ceph_conf_get_fn(mnt, "log_file", buf, sizeof(buf));
 	if (ret < 0) {
 		goto out;
 	}
 
 	/* libcephfs disables POSIX ACL support by default, enable it... */
-	ret = config->ceph_conf_set_fn(mnt, "client_acl_type", "posix_acl");
+	ret = cephmount_update_conf(config,
+				    mnt,
+				    "client_acl_type",
+				    "posix_acl");
 	if (ret < 0) {
 		goto out;
 	}
 	/* tell libcephfs to perform local permission checks */
-	ret = config->ceph_conf_set_fn(mnt, "fuse_default_permissions", "false");
+	ret = cephmount_update_conf(config,
+				    mnt,
+				    "fuse_default_permissions",
+				    "false");
 	if (ret < 0) {
 		goto out;
 	}
@@ -301,13 +323,15 @@ static struct ceph_mount_info *cephmount_mount_fs(
 	 * 'pacific'. Permit different shares to access different file systems.
 	 */
 	if (config->fsname != NULL) {
+		DBG_DEBUG("[CEPH] calling ceph_select_filesystem: "
+			  "fsname='%s'\n", config->fsname);
 		ret = config->ceph_select_filesystem_fn(mnt, config->fsname);
 		if (ret < 0) {
 			goto out;
 		}
 	}
 
-	DBG_DEBUG("[CEPH] calling: ceph_mount\n");
+	DBG_DEBUG("[CEPH] calling ceph_mount: mnt=%p\n", mnt);
 	ret = config->ceph_mount_fn(mnt, NULL);
 	if (ret < 0) {
 		goto out;
@@ -534,7 +558,10 @@ static int vfs_ceph_connect(struct vfs_handle_struct *handle,
 connect_ok:
 	config->mount = entry->mount;
 	config->mount_entry = entry;
-	DBG_WARNING("Connection established with the server: %s\n", cookie);
+	DBG_INFO("[CEPH] connection established with the server: "
+		 "snum=%d cookie='%s'\n",
+		 SNUM(handle->conn),
+		 cookie);
 
 	/*
 	 * Unless we have an async implementation of getxattrat turn this off.
@@ -561,12 +588,16 @@ static void vfs_ceph_disconnect(struct vfs_handle_struct *handle)
 
 	ret = config->ceph_unmount_fn(mount);
 	if (ret < 0) {
-		DBG_ERR("[CEPH] failed to unmount: %s\n", strerror(-ret));
+		DBG_ERR("[CEPH] failed to unmount: snum=%d %s\n",
+			SNUM(handle->conn),
+			strerror(-ret));
 	}
 
 	ret = config->ceph_release_fn(mount);
 	if (ret < 0) {
-		DBG_ERR("[CEPH] failed to release: %s\n", strerror(-ret));
+		DBG_ERR("[CEPH] failed to release: snum=%d %s\n",
+			SNUM(handle->conn),
+			strerror(-ret));
 	}
 
 	config->mount_entry = NULL;
