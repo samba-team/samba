@@ -560,7 +560,8 @@ static void vfs_ceph_disconnect(struct vfs_handle_struct *handle)
 }
 
 /* Ceph user-credentials */
-static struct UserPerm *vfs_ceph_userperm_new(struct connection_struct *conn)
+static struct UserPerm *vfs_ceph_userperm_new(struct vfs_ceph_config *config,
+	struct connection_struct *conn)
 {
 	const struct security_unix_token *unix_token = NULL;
 
@@ -571,7 +572,8 @@ static struct UserPerm *vfs_ceph_userperm_new(struct connection_struct *conn)
 				 unix_token->groups);
 }
 
-static void vfs_ceph_userperm_del(struct UserPerm *uperm)
+static void vfs_ceph_userperm_del(struct vfs_ceph_config *config,
+				  struct UserPerm *uperm)
 {
 	if (uperm != NULL) {
 		ceph_userperm_destroy(uperm);
@@ -656,7 +658,7 @@ static int vfs_ceph_release_fh(struct vfs_ceph_fh *cfh)
 		cfh->iref.inode = NULL;
 	}
 	if (cfh->uperm != NULL) {
-		vfs_ceph_userperm_del(cfh->uperm);
+		vfs_ceph_userperm_del(cfh->config, cfh->uperm);
 		cfh->uperm = NULL;
 	}
 	cfh->fd = -1;
@@ -682,7 +684,7 @@ static int vfs_ceph_add_fh(struct vfs_handle_struct *handle,
 
 	cme = config->mount_entry;
 
-	uperm = vfs_ceph_userperm_new(handle->conn);
+	uperm = vfs_ceph_userperm_new(config, handle->conn);
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
@@ -692,7 +694,7 @@ static int vfs_ceph_add_fh(struct vfs_handle_struct *handle,
 					 struct vfs_ceph_fh,
 					 vfs_ceph_fsp_ext_destroy_cb);
 	if (*out_cfh == NULL) {
-		vfs_ceph_userperm_del(uperm);
+		vfs_ceph_userperm_del(config, uperm);
 		return -ENOMEM;
 	}
 	(*out_cfh)->cme = cme;
@@ -763,7 +765,7 @@ static int vfs_ceph_ll_walk(const struct vfs_handle_struct *handle,
 
 	DBG_DEBUG("[ceph] ceph_ll_walk: name=%s\n", name);
 
-	uperm = vfs_ceph_userperm_new(handle->conn);
+	uperm = vfs_ceph_userperm_new(config, handle->conn);
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
@@ -776,7 +778,7 @@ static int vfs_ceph_ll_walk(const struct vfs_handle_struct *handle,
 			   flags,
 			   uperm);
 
-	vfs_ceph_userperm_del(uperm);
+	vfs_ceph_userperm_del(config, uperm);
 	return ret;
 }
 
@@ -826,13 +828,18 @@ static int vfs_ceph_ll_getattr(const struct vfs_handle_struct *handle,
 {
 	struct UserPerm *uperm = NULL;
 	int ret = -1;
+	struct vfs_ceph_config *config = NULL;
 
-	uperm = vfs_ceph_userperm_new(handle->conn);
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct vfs_ceph_config,
+				return -ENOMEM);
+
+	uperm = vfs_ceph_userperm_new(config, handle->conn);
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
 	ret = vfs_ceph_ll_getattr2(handle, iref, uperm, st);
-	vfs_ceph_userperm_del(uperm);
+	vfs_ceph_userperm_del(config, uperm);
 	return ret;
 }
 
@@ -852,7 +859,7 @@ static int vfs_ceph_ll_chown(struct vfs_handle_struct *handle,
 	DBG_DEBUG("[ceph] ceph_ll_setattr: ino=%" PRIu64 " uid=%u gid=%u\n",
 		  iref->ino, uid, gid);
 
-	uperm = vfs_ceph_userperm_new(handle->conn);
+	uperm = vfs_ceph_userperm_new(config, handle->conn);
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
@@ -861,7 +868,7 @@ static int vfs_ceph_ll_chown(struct vfs_handle_struct *handle,
 			      &stx,
 			      CEPH_STATX_UID | CEPH_STATX_GID,
 			      uperm);
-	vfs_ceph_userperm_del(uperm);
+	vfs_ceph_userperm_del(config, uperm);
 	return ret;
 }
 
@@ -1026,7 +1033,7 @@ static int vfs_ceph_ll_lookup(const struct vfs_handle_struct *handle,
 	DBG_DEBUG("[ceph] ceph_ll_lookup: parent-ino=%" PRIu64 " name=%s\n",
 		  parent->ino, name);
 
-	uperm = vfs_ceph_userperm_new(handle->conn);
+	uperm = vfs_ceph_userperm_new(config, handle->conn);
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
@@ -1039,7 +1046,7 @@ static int vfs_ceph_ll_lookup(const struct vfs_handle_struct *handle,
 			     0,
 			     uperm);
 
-	vfs_ceph_userperm_del(uperm);
+	vfs_ceph_userperm_del(config, uperm);
 	if (ret != 0) {
 		return ret;
 	}
@@ -1509,7 +1516,7 @@ static int vfs_ceph_ll_getxattr(const struct vfs_handle_struct *handle,
 	DBG_DEBUG("[ceph] ceph_ll_getxattr: ino=%" PRIu64 " name=%s\n",
 		  iref->ino, name);
 
-	uperm = vfs_ceph_userperm_new(handle->conn);
+	uperm = vfs_ceph_userperm_new(config, handle->conn);
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
@@ -1521,7 +1528,7 @@ static int vfs_ceph_ll_getxattr(const struct vfs_handle_struct *handle,
 			       size,
 			       uperm);
 
-	vfs_ceph_userperm_del(uperm);
+	vfs_ceph_userperm_del(config, uperm);
 
 	return ret;
 }
@@ -1565,7 +1572,7 @@ static int vfs_ceph_ll_setxattr(const struct vfs_handle_struct *handle,
 	DBG_DEBUG("[ceph] ceph_ll_setxattr: ino=%" PRIu64 " name=%s "
 		  "size=%zu\n", iref->ino, name, size);
 
-	uperm = vfs_ceph_userperm_new(handle->conn);
+	uperm = vfs_ceph_userperm_new(config, handle->conn);
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
@@ -1578,7 +1585,7 @@ static int vfs_ceph_ll_setxattr(const struct vfs_handle_struct *handle,
 			       flags,
 			       uperm);
 
-	vfs_ceph_userperm_del(uperm);
+	vfs_ceph_userperm_del(config, uperm);
 
 	return ret;
 }
@@ -1622,7 +1629,7 @@ static int vfs_ceph_ll_listxattr(const struct vfs_handle_struct *handle,
 
 	DBG_DEBUG("[ceph] ceph_ll_listxattr: ino=%" PRIu64 "\n", iref->ino);
 
-	uperm = vfs_ceph_userperm_new(handle->conn);
+	uperm = vfs_ceph_userperm_new(config, handle->conn);
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
@@ -1634,7 +1641,7 @@ static int vfs_ceph_ll_listxattr(const struct vfs_handle_struct *handle,
 				list_size,
 				uperm);
 
-	vfs_ceph_userperm_del(uperm);
+	vfs_ceph_userperm_del(config, uperm);
 
 	return ret;
 }
@@ -1674,14 +1681,14 @@ static int vfs_ceph_ll_removexattr(const struct vfs_handle_struct *handle,
 	DBG_DEBUG("[ceph] ceph_ll_removexattr: ino=%" PRIu64 " name=%s\n",
 		  iref->ino, name);
 
-	uperm = vfs_ceph_userperm_new(handle->conn);
+	uperm = vfs_ceph_userperm_new(config, handle->conn);
 	if (uperm == NULL) {
 		return -ENOMEM;
 	}
 
 	ret = ceph_ll_removexattr(config->mount, iref->inode, name, uperm);
 
-	vfs_ceph_userperm_del(uperm);
+	vfs_ceph_userperm_del(config, uperm);
 
 	return ret;
 }
