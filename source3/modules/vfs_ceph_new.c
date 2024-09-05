@@ -106,6 +106,7 @@ struct vfs_ceph_config {
 	struct cephmount_cached *mount_entry;
 	struct ceph_mount_info *mount;
 	enum vfs_cephfs_proxy_mode proxy;
+	void *libhandle;
 };
 
 /*
@@ -265,8 +266,49 @@ static struct ceph_mount_info *cephmount_mount_fs(
 	return mnt;
 }
 
+static bool vfs_cephfs_load_lib(struct vfs_ceph_config *config)
+{
+	void *libhandle = NULL;
+	const char *libname = "libcephfs.so.2";
+	const char *libname_proxy = "libcephfs_proxy.so.2";
+
+	switch (config->proxy) {
+	case VFS_CEPHFS_PROXY_YES:
+	case VFS_CEPHFS_PROXY_AUTO:
+		libhandle = dlopen(libname_proxy, RTLD_NOW);
+		if (libhandle == NULL) {
+			if (config->proxy == VFS_CEPHFS_PROXY_YES) {
+				DBG_ERR("%s\n", dlerror());
+				return false;
+			}
+			DBG_DEBUG("%s, trying %s\n", dlerror(), libname);
+			FALL_THROUGH;
+		} else {
+			break;
+		}
+	case VFS_CEPHFS_PROXY_NO:
+	default:
+		libhandle = dlopen(libname, RTLD_LAZY);
+		if (libhandle == NULL) {
+			DBG_ERR("%s\n", dlerror());
+			return false;
+		}
+		break;
+	}
+
+	config->libhandle = libhandle;
+
+	return true;
+}
+
 static int vfs_ceph_config_destructor(struct vfs_ceph_config *config)
 {
+	if (config->libhandle) {
+		if (dlclose(config->libhandle)) {
+			DBG_ERR("%s\n", dlerror());
+		}
+	}
+
 	return 0;
 }
 
@@ -276,6 +318,7 @@ static bool vfs_ceph_load_config(struct vfs_handle_struct *handle,
 	struct vfs_ceph_config *config_tmp = NULL;
 	int snum = SNUM(handle->conn);
 	const char *module_name = "ceph_new";
+	bool ok;
 
 	if (SMB_VFS_HANDLE_TEST_DATA(handle)) {
 		SMB_VFS_HANDLE_GET_DATA(handle, config_tmp,
@@ -302,6 +345,11 @@ static bool vfs_ceph_load_config(struct vfs_handle_struct *handle,
 					       VFS_CEPHFS_PROXY_NO);
 	if (config_tmp->proxy == -1) {
 		DBG_ERR("value for proxy: mode unknown\n");
+		return false;
+	}
+
+	ok = vfs_cephfs_load_lib(config_tmp);
+	if (!ok) {
 		return false;
 	}
 
