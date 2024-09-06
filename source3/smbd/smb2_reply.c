@@ -1738,17 +1738,19 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			&rhow);
 	if (ret == 0) {
 		uint32_t create_options = fh_get_private_options(fsp->fh);
+		struct smb_filename *old_fname = NULL;
 
 		DBG_NOTICE("succeeded doing rename on "
 			   "%s -> %s\n",
 			   smb_fname_str_dbg(fsp->fsp_name),
 			   smb_fname_str_dbg(smb_fname_dst));
 
-		notify_rename(conn,
-			      fsp->fsp_flags.is_directory,
-			      fsp->fsp_name,
-			      smb_fname_dst);
-
+		old_fname = cp_smb_filename(talloc_tos(), fsp->fsp_name);
+		if (old_fname == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			TALLOC_FREE(lck);
+			goto out;
+		}
 		rename_open_files(conn, lck, fsp->file_id, fsp->name_hash,
 				  smb_fname_dst);
 
@@ -1795,7 +1797,15 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 				fsp->fsp_flags.initial_delete_on_close = true;
 			}
 		}
+
 		TALLOC_FREE(lck);
+
+		notify_rename(conn,
+			      fsp->fsp_flags.is_directory,
+			      old_fname,
+			      smb_fname_dst);
+
+		TALLOC_FREE(old_fname);
 		status = NT_STATUS_OK;
 		goto out;
 	}
