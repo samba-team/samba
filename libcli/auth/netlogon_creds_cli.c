@@ -598,6 +598,24 @@ char *netlogon_creds_cli_debug_string(
 			       context->db.key_name);
 }
 
+void netlogon_creds_cli_use_kerberos(
+		struct netlogon_creds_cli_context *context,
+		bool *client_use_krb5_netlogon,
+		bool *reject_aes_servers)
+{
+	*client_use_krb5_netlogon = false;
+	*reject_aes_servers = false;
+
+	if (context->client.required_flags & NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH) {
+		*client_use_krb5_netlogon = true;
+		*reject_aes_servers = true;
+	}
+
+	if (context->client.proposed_flags & NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH) {
+		*client_use_krb5_netlogon = true;
+	}
+}
+
 enum dcerpc_AuthLevel netlogon_creds_cli_auth_level(
 		struct netlogon_creds_cli_context *context)
 {
