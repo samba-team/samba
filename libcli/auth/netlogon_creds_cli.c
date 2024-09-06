@@ -358,8 +358,17 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 	uint32_t required_flags = 0;
 	bool reject_md5_servers = true;
 	bool require_strong_key = true;
+	bool reject_aes_servers = true;
 	int require_sign_or_seal = true;
 	bool seal_secure_channel = true;
+	bool trust_support_kerberos = false;
+#if defined(HAVE_ADS) && defined(HAVE_KRB5_INIT_CREDS_STEP)
+	const bool support_krb5_netlogon = true;
+#else
+	const bool support_krb5_netlogon = false;
+#endif
+	int global_client_use_krb5_netlogon = true;
+	bool client_use_krb5_netlogon = true;
 	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
 	bool neutralize_nt4_emulation = false;
 
@@ -426,6 +435,24 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 						   server_netbios_domain,
 						   neutralize_nt4_emulation);
 
+	/*
+	 * allow overwrite per domain
+	 * reject aes netlogon servers:<netbios_domain>
+	 */
+	reject_aes_servers = lpcfg_reject_aes_netlogon_servers(lp_ctx);
+	reject_aes_servers = lpcfg_parm_bool(lp_ctx, NULL,
+					     "reject aes netlogon servers",
+					     server_netbios_domain,
+					     reject_aes_servers);
+
+	/*
+	 * allow overwrite per domain
+	 * client use krb5 netlogon:<netbios_domain>
+	 *
+	 * See further below!
+	 */
+	global_client_use_krb5_netlogon = lpcfg_client_use_krb5_netlogon(lp_ctx);
+
 	proposed_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 	proposed_flags |= NETLOGON_NEG_SUPPORTS_AES;
 
@@ -438,6 +465,7 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 			required_flags |= NETLOGON_NEG_PASSWORD_SET2;
 			require_sign_or_seal = true;
 			require_strong_key = true;
+			trust_support_kerberos = true;
 		}
 		break;
 
@@ -452,12 +480,16 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 		require_sign_or_seal = true;
 		require_strong_key = true;
 		neutralize_nt4_emulation = true;
+		trust_support_kerberos = true;
 		break;
 
 	case SEC_CHAN_BDC:
 		required_flags |= NETLOGON_NEG_PASSWORD_SET2;
 		require_sign_or_seal = true;
 		require_strong_key = true;
+		if (lpcfg_server_role(lp_ctx) == ROLE_ACTIVE_DIRECTORY_DC) {
+			trust_support_kerberos = true;
+		}
 		break;
 
 	case SEC_CHAN_RODC:
@@ -466,11 +498,38 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 		require_sign_or_seal = true;
 		require_strong_key = true;
 		neutralize_nt4_emulation = true;
+		trust_support_kerberos = true;
 		break;
 
 	default:
 		TALLOC_FREE(frame);
 		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (global_client_use_krb5_netlogon == Auto) {
+		if (support_krb5_netlogon) {
+			global_client_use_krb5_netlogon = trust_support_kerberos;
+		} else {
+			global_client_use_krb5_netlogon = false;
+		}
+	}
+	client_use_krb5_netlogon = global_client_use_krb5_netlogon;
+	client_use_krb5_netlogon = lpcfg_parm_bool(lp_ctx, NULL,
+						   "client use krb5 netlogon",
+						   server_netbios_domain,
+						   client_use_krb5_netlogon);
+
+	if (reject_aes_servers) {
+		client_use_krb5_netlogon = true;
+	}
+
+	if (client_use_krb5_netlogon) {
+		if (!support_krb5_netlogon) {
+			DBG_ERR("No support for ServerAuthenticateKerberos!\n");
+			TALLOC_FREE(frame);
+			return NT_STATUS_DEVICE_FEATURE_NOT_SUPPORTED;
+		}
+		proposed_flags |= NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH;
 	}
 
 	if (neutralize_nt4_emulation) {
@@ -497,6 +556,15 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 		required_flags |= NETLOGON_NEG_AUTHENTICATED_RPC;
 	}
 
+	if (reject_aes_servers) {
+		required_flags |= NETLOGON_NEG_ARCFOUR;
+		required_flags |= NETLOGON_NEG_STRONG_KEYS;
+		required_flags |= NETLOGON_NEG_PASSWORD_SET2;
+		required_flags |= NETLOGON_NEG_SUPPORTS_AES;
+		required_flags |= NETLOGON_NEG_AUTHENTICATED_RPC;
+		required_flags |= NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH;
+	}
+
 	/*
 	 * If weak crypto is disabled, do not announce that we support RC4 and
 	 * require AES.
@@ -510,6 +578,14 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 	if (required_flags & NETLOGON_NEG_SUPPORTS_AES) {
 		required_flags &= ~NETLOGON_NEG_ARCFOUR;
 		required_flags &= ~NETLOGON_NEG_STRONG_KEYS;
+	}
+
+	if (required_flags & NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH) {
+		required_flags &= ~NETLOGON_NEG_SUPPORTS_AES;
+	}
+
+	if (proposed_flags & NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH) {
+		seal_secure_channel = true;
 	}
 
 	if (seal_secure_channel) {
@@ -623,6 +699,7 @@ enum dcerpc_AuthLevel netlogon_creds_cli_auth_level(
 }
 
 static bool netlogon_creds_cli_downgraded(uint32_t negotiated_flags,
+					  bool authenticate_kerberos,
 					  uint32_t proposed_flags,
 					  uint32_t required_flags)
 {
@@ -630,6 +707,24 @@ static bool netlogon_creds_cli_downgraded(uint32_t negotiated_flags,
 	uint32_t tmp_flags;
 
 	req_flags = required_flags;
+	if (authenticate_kerberos) {
+		if ((negotiated_flags & NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH) &&
+		    (proposed_flags & NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH))
+		{
+			req_flags &= ~NETLOGON_NEG_ARCFOUR;
+			req_flags &= ~NETLOGON_NEG_STRONG_KEYS;
+			req_flags &= ~NETLOGON_NEG_SUPPORTS_AES;
+		} else {
+			return true;
+		}
+	} else {
+		if (req_flags & NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH) {
+			return true;
+		}
+		if (negotiated_flags & NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH) {
+			return true;
+		}
+	}
 	if ((negotiated_flags & NETLOGON_NEG_SUPPORTS_AES) &&
 	    (proposed_flags & NETLOGON_NEG_SUPPORTS_AES))
 	{
@@ -692,6 +787,7 @@ static void netlogon_creds_cli_fetch_parser(TDB_DATA key, TDB_DATA data,
 
 	downgraded = netlogon_creds_cli_downgraded(
 			state->creds->negotiate_flags,
+			state->creds->authenticate_kerberos,
 			state->proposed_flags,
 			state->required_flags);
 	if (downgraded) {
@@ -1245,6 +1341,19 @@ static NTSTATUS netlogon_creds_cli_check_transport(
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
+	if (creds->authenticate_kerberos) {
+		if (auth_type == DCERPC_AUTH_TYPE_KRB5) {
+			switch (auth_level) {
+			case DCERPC_AUTH_LEVEL_PRIVACY:
+				return NT_STATUS_OK;
+			default:
+				break;
+			}
+		}
+
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
 	if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
 		switch (auth_level) {
 		case DCERPC_AUTH_LEVEL_INTEGRITY:
@@ -1293,10 +1402,14 @@ struct netlogon_creds_cli_auth_state {
 	struct netr_Credential server_credential;
 	uint32_t negotiate_flags;
 	uint32_t rid;
+	bool try_krb5;
+	bool require_krb5;
 	bool try_auth3;
 	bool try_auth2;
 	bool require_auth2;
 };
+
+static void netlogon_creds_cli_auth_srvauth_done(struct tevent_req *subreq);
 
 static void netlogon_creds_cli_auth_challenge_start(struct tevent_req *req);
 
@@ -1310,6 +1423,8 @@ struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct netlogon_creds_cli_auth_state *state;
 	NTSTATUS status;
+	bool client_use_krb5_netlogon = false;
+	bool reject_aes_servers = false;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct netlogon_creds_cli_auth_state);
@@ -1355,6 +1470,25 @@ struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
 		state->require_auth2 = true;
 	}
 
+	netlogon_creds_cli_use_kerberos(context,
+					&client_use_krb5_netlogon,
+					&reject_aes_servers);
+	if (client_use_krb5_netlogon) {
+		if (state->auth_type == DCERPC_AUTH_TYPE_KRB5 &&
+		    state->auth_level == DCERPC_AUTH_LEVEL_PRIVACY)
+		{
+			state->try_krb5 = true;
+		}
+	}
+
+	if (reject_aes_servers) {
+		if (!state->try_krb5) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+			return tevent_req_post(req, ev);
+		}
+		state->require_krb5 = true;
+	}
+
 	state->used_nt_hash = state->nt_hashes[state->idx_nt_hashes];
 	state->current_flags = context->client.proposed_flags;
 
@@ -1362,6 +1496,40 @@ struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
 			      state->context->db.key_data);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
+	}
+
+	if (state->try_krb5) {
+		struct tevent_req *subreq = NULL;
+
+		state->creds = netlogon_creds_kerberos_init(state,
+						state->context->client.account,
+						state->context->client.computer,
+						state->context->client.type,
+						state->context->client.proposed_flags,
+						NULL, /* client_sid */
+						state->current_flags);
+		if (tevent_req_nomem(state->creds, req)) {
+			return tevent_req_post(req, ev);
+		}
+
+		state->negotiate_flags = state->context->client.proposed_flags;
+
+		subreq = dcerpc_netr_ServerAuthenticateKerberos_send(state,
+						state->ev,
+						state->binding_handle,
+						state->srv_name_slash,
+						state->context->client.account,
+						state->context->client.type,
+						state->context->client.computer,
+						&state->negotiate_flags,
+						&state->rid);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq,
+					netlogon_creds_cli_auth_srvauth_done,
+					req);
+		return req;
 	}
 
 	netlogon_creds_cli_auth_challenge_start(req);
@@ -1421,7 +1589,7 @@ static void netlogon_creds_cli_auth_challenge_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (!state->try_auth3 && !state->try_auth2) {
+	if (!state->try_krb5 && !state->try_auth3 && !state->try_auth2) {
 		state->current_flags = 0;
 	}
 
@@ -1524,7 +1692,31 @@ static void netlogon_creds_cli_auth_srvauth_done(struct tevent_req *subreq)
 	NTSTATUS result;
 	bool downgraded;
 
-	if (state->try_auth3) {
+	if (state->try_krb5) {
+		status = dcerpc_netr_ServerAuthenticateKerberos_recv(subreq, state,
+								     &result);
+		TALLOC_FREE(subreq);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
+			if (state->require_krb5) {
+				status = NT_STATUS_DOWNGRADE_DETECTED;
+				tevent_req_nterror(req, status);
+				return;
+			}
+			state->try_krb5 = false;
+			netlogon_creds_cli_auth_challenge_start(req);
+			return;
+		}
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+		/*
+		 * We don't downgrade if this fails
+		 * without PROCNUM_OUT_OF_RANGE.
+		 */
+		if (tevent_req_nterror(req, result)) {
+			return;
+		}
+	} else if (state->try_auth3) {
 		status = dcerpc_netr_ServerAuthenticate3_recv(subreq, state,
 							      &result);
 		TALLOC_FREE(subreq);
@@ -1571,6 +1763,7 @@ static void netlogon_creds_cli_auth_srvauth_done(struct tevent_req *subreq)
 
 	downgraded = netlogon_creds_cli_downgraded(
 			state->negotiate_flags,
+			state->creds->authenticate_kerberos,
 			state->context->client.proposed_flags,
 			state->context->client.required_flags);
 	if (downgraded) {
@@ -2727,7 +2920,9 @@ static void netlogon_creds_cli_LogonSamLogon_start(struct tevent_req *req)
 	state->try_logon_ex = state->context->server.try_logon_ex;
 	state->try_validation6 = state->context->server.try_validation6;
 
-	if (auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
+	if (auth_type != DCERPC_AUTH_TYPE_KRB5 &&
+	    auth_type != DCERPC_AUTH_TYPE_SCHANNEL)
+	{
 		state->try_logon_ex = false;
 	}
 
