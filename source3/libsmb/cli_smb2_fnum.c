@@ -3005,7 +3005,7 @@ NTSTATUS cli_smb2_query_mxac(struct cli_state *cli,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
-	NTSTATUS status = NT_STATUS_INTERNAL_ERROR;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	bool ok;
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
