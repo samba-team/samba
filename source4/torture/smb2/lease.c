@@ -1658,12 +1658,48 @@ done:
 	return ret;
 }
 
+static bool test_rearm_dirlease(TALLOC_CTX *mem_ctx,
+				struct torture_context *tctx,
+				struct smb2_tree *tree,
+				const char *dname,
+				uint64_t lease_key,
+				uint16_t *lease_epoch)
+{
+	struct smb2_create io;
+	struct smb2_lease ls;
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_lease_v2_create_share(&io,
+				   &ls,
+				   true,
+				   dname,
+				   smb2_util_share_access("RWD"),
+				   lease_key,
+				   NULL,
+				   smb2_util_lease_state("RH"),
+				   *lease_epoch);
+
+	io.in.create_disposition = NTCREATEX_DISP_OPEN;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "rearm failed\n");
+
+	smb2_util_close(tree, io.out.file.handle);
+
+	(*lease_epoch)++;
+	CHECK_LEASE_V2(&io, "RH", true, lease_key, 0, 0, *lease_epoch);
+
+done:
+	return ret;
+}
+
 static bool test_lease_v2_request(struct torture_context *tctx,
 				  struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_create io;
-	struct smb2_lease ls1, ls2, ls2t, ls3, ls4;
+	struct smb2_lease ls1, ls3, ls4, dirlease;
 	struct smb2_handle h1 = {};
 	struct smb2_handle h2 = {};
 	struct smb2_handle h3 = {};
@@ -1713,7 +1749,7 @@ static bool test_lease_v2_request(struct torture_context *tctx,
 	CHECK_LEASE_V2(&io, "RHW", true, LEASE1, 0, 0, ls1.lease_epoch + 1);
 
 	ZERO_STRUCT(io);
-	smb2_lease_v2_create_share(&io, &ls2, true, dname,
+	smb2_lease_v2_create_share(&io, &dirlease, true, dname,
 				   smb2_util_share_access("RWD"),
 				   LEASE2, NULL,
 				   smb2_util_lease_state("RHW"),
@@ -1722,7 +1758,12 @@ static bool test_lease_v2_request(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	h2 = io.out.file.handle;
 	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_DIRECTORY);
-	CHECK_LEASE_V2(&io, "RH", true, LEASE2, 0, 0, ls2.lease_epoch + 1);
+	CHECK_LEASE_V2(&io, "RH", true, LEASE2, 0, 0, ++dirlease.lease_epoch);
+
+	/*
+	 * TEST: create file in a directory with dirlease with valid parent key
+	 * -> no break
+	 */
 
 	ZERO_STRUCT(io);
 	smb2_lease_v2_create_share(&io, &ls3, false, dnamefname,
@@ -1740,6 +1781,11 @@ static bool test_lease_v2_request(struct torture_context *tctx,
 
 	CHECK_NO_BREAK(tctx);
 
+	/*
+	 * TEST: create file in a directory with dirlease with invalid parent
+	 * key -> break
+	 */
+
 	ZERO_STRUCT(io);
 	smb2_lease_v2_create_share(&io, &ls4, false, dnamefname2,
 				   smb2_util_share_access("RWD"),
@@ -1753,23 +1799,15 @@ static bool test_lease_v2_request(struct torture_context *tctx,
 	CHECK_LEASE_V2(&io, "RHW", true, LEASE4, 0, 0, ls4.lease_epoch + 1);
 
 	CHECK_BREAK_INFO_V2(tree->session->transport,
-			    "RH", "", LEASE2, ls2.lease_epoch + 2);
+			    "RH", "", LEASE2, ++dirlease.lease_epoch);
+
+	/*
+	 * TEST: Write on handle without valid parent key -> break
+	 */
 
 	torture_reset_lease_break_info(tctx, &lease_break_info);
-
-	ZERO_STRUCT(io);
-	smb2_lease_v2_create_share(&io, &ls2t, true, dname,
-				   smb2_util_share_access("RWD"),
-				   LEASE2, NULL,
-				   smb2_util_lease_state("RHW"),
-				   0x222);
-	io.in.create_disposition = NTCREATEX_DISP_OPEN;
-	status = smb2_create(tree, mem_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	h5 = io.out.file.handle;
-	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_DIRECTORY);
-	CHECK_LEASE_V2(&io, "RH", true, LEASE2, 0, 0, ls2.lease_epoch+3);
-	smb2_util_close(tree, h5);
+	ret = test_rearm_dirlease(mem_ctx, tctx, tree, dname, LEASE2, &dirlease.lease_epoch);
+	torture_assert_goto(tctx, ret == true, ret, done, "Rearm dirlease failed\n");
 
 	ZERO_STRUCT(w);
 	w.in.file.handle = h4;
@@ -1791,9 +1829,10 @@ static bool test_lease_v2_request(struct torture_context *tctx,
 	 * directory lease.
 	 */
 	smb2_util_close(tree, h4);
+	ZERO_STRUCT(h4);
 
 	CHECK_BREAK_INFO_V2(tree->session->transport,
-			    "RH", "", LEASE2, ls2.lease_epoch+4);
+			    "RH", "", LEASE2, ++dirlease.lease_epoch);
 
  done:
 	smb2_util_close(tree, h1);
