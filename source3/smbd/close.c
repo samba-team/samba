@@ -1536,11 +1536,10 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		return status;
 	}
 
-	/*
-	 * We don't have directory leases yet, so assert it in order
-	 * to skip release_file_oplock().
-	 */
-	SMB_ASSERT(fsp->oplock_type == NO_OPLOCK);
+	/* Remove the oplock before potentially deleting the file. */
+	if (fsp->oplock_type != NO_OPLOCK) {
+		release_file_oplock(fsp);
+	}
 
 	/*
 	 * NT can set delete_on_close of the last open
