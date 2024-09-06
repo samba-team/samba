@@ -5160,6 +5160,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 {
 	struct smb_filename *smb_dname = fsp->fsp_name;
 	bool dir_existed = VALID_STAT(smb_dname->st);
+	bool deferred = false;
 	struct open_ntcreate_lock_state lck_state = {};
 	bool keep_locked = false;
 	NTSTATUS status;
@@ -5189,6 +5190,23 @@ static NTSTATUS open_directory(connection_struct *conn,
 		 create_options,
 		 create_disposition,
 		 file_attributes);
+
+	if (req == NULL) {
+		/* Ensure req == NULL means INTERNAL_OPEN_ONLY */
+		SMB_ASSERT(oplock_request == INTERNAL_OPEN_ONLY);
+	} else {
+		/* And req != NULL means no INTERNAL_OPEN_ONLY */
+		SMB_ASSERT((oplock_request & INTERNAL_OPEN_ONLY) == 0);
+	}
+
+	if (req != NULL) {
+		struct deferred_open_record *open_rec = NULL;
+
+		deferred = get_deferred_open_message_state(req, NULL, &open_rec);
+		if (deferred) {
+			remove_deferred_open_message_smb(req->xconn, req->mid);
+		}
+	}
 
 	status = smbd_calculate_access_mask_fsp(parent_dir_fname->fsp,
 					smb_dname->fsp,
