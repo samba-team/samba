@@ -1125,9 +1125,6 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 			       unlink_flags);
 	if (ret == 0) {
 		TALLOC_FREE(parent_fname);
-		notify_fname(conn, NOTIFY_ACTION_REMOVED,
-			     FILE_NOTIFY_CHANGE_DIR_NAME,
-			     smb_dname->base_name);
 		return NT_STATUS_OK;
 	}
 
@@ -1460,10 +1457,6 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 		return status;
 	}
 
-	notify_fname(conn, NOTIFY_ACTION_REMOVED,
-		     FILE_NOTIFY_CHANGE_DIR_NAME,
-		     smb_dname->base_name);
-
 	return status;
 }
 
@@ -1598,6 +1591,13 @@ done:
 	}
 
 	remove_pending_change_notify_requests_by_fid(fsp, notify_status);
+
+	if (lck_state.delete_object) {
+		notify_fname(conn,
+			     NOTIFY_ACTION_REMOVED,
+			     FILE_NOTIFY_CHANGE_DIR_NAME,
+			     fsp->fsp_name->base_name);
+	}
 
 	status1 = fd_close(fsp);
 
