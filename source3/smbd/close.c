@@ -651,12 +651,28 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		smb_panic("share_mode_entry_prepare_unlock() failed!");
 	}
 
-	if (lck_state.delete_object) {
+	if (lck_state.delete_object && NT_STATUS_IS_OK(status)) {
+		const struct smb2_lease *lease = fsp_get_smb2_lease(fsp);
+
+		if (lease != NULL) {
+			/*
+			 * If parent lease key of handle on which delete
+			 * disposition was set does not match the parent key of
+			 * last closed handle, break all leases on the parent
+			 * directory.
+			 */
+			if (!smb2_lease_key_equal(&lease->parent_lease_key,
+						  &lck_state.parent_lease_key))
+			{
+				lease = NULL;
+			}
+		}
 		notify_fname(conn,
-			     NOTIFY_ACTION_REMOVED,
+			     NOTIFY_ACTION_REMOVED |
+			     NOTIFY_ACTION_DIRLEASE_BREAK,
 			     FILE_NOTIFY_CHANGE_FILE_NAME,
 			     fsp->fsp_name,
-			     NULL);
+			     lease);
 	}
 
 	return status;
