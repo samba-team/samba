@@ -1306,22 +1306,25 @@ static void notify_rename(struct connection_struct *conn,
 			     smb_fname_src,
 			     NULL);
 		notify_fname(conn,
-			     NOTIFY_ACTION_NEW_NAME,
+			     NOTIFY_ACTION_NEW_NAME |
+			     NOTIFY_ACTION_DIRLEASE_BREAK,
 			     mask,
 			     smb_fname_dst,
-			     NULL);
+			     fsp_get_smb2_lease(fsp));
 	}
 	else {
 		notify_fname(conn,
-			     NOTIFY_ACTION_REMOVED,
+			     NOTIFY_ACTION_REMOVED |
+			     NOTIFY_ACTION_DIRLEASE_BREAK,
 			     mask,
 			     smb_fname_src,
-			     NULL);
+			     fsp_get_smb2_lease(fsp));
 		notify_fname(conn,
-			     NOTIFY_ACTION_ADDED,
+			     NOTIFY_ACTION_ADDED |
+			     NOTIFY_ACTION_DIRLEASE_BREAK,
 			     mask,
 			     smb_fname_dst,
-			     NULL);
+			     fsp_get_smb2_lease(fsp));
 	}
 
 	/* this is a strange one. w2k3 gives an additional event for
