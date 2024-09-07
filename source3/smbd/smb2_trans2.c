@@ -3829,8 +3829,10 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 			   struct smb_file_time *ft,
 			   bool setting_write_time)
 {
+	const struct smb2_lease *lease = NULL;
 	struct files_struct *set_fsp = NULL;
 	struct timeval_buf tbuf[4];
+	uint32_t action = NOTIFY_ACTION_MODIFIED;
 	uint32_t filter =
 		FILE_NOTIFY_CHANGE_LAST_ACCESS
 		|FILE_NOTIFY_CHANGE_LAST_WRITE
@@ -3898,6 +3900,8 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 			  timespec_string_buf(&ft->mtime, true, &tbuf[0]));
 
 		set_sticky_write_time_fsp(set_fsp, ft->mtime);
+		action |= NOTIFY_ACTION_DIRLEASE_BREAK;
+		lease = fsp_get_smb2_lease(fsp);
 	}
 
 	DBG_DEBUG("setting utimes to modified values.\n");
@@ -3908,10 +3912,10 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 	}
 
 	notify_fname(conn,
-		     NOTIFY_ACTION_MODIFIED,
+		     action,
 		     filter,
 		     smb_fname,
-		     NULL);
+		     lease);
 	return NT_STATUS_OK;
 }
 
