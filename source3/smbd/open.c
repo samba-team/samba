@@ -4648,10 +4648,11 @@ unlock:
 
 	if (info == FILE_WAS_CREATED) {
 		notify_fname(conn,
-			     NOTIFY_ACTION_ADDED,
+			     NOTIFY_ACTION_ADDED |
+			     NOTIFY_ACTION_DIRLEASE_BREAK,
 			     FILE_NOTIFY_CHANGE_FILE_NAME,
 			     smb_fname,
-			     NULL);
+			     fsp_get_smb2_lease(fsp));
 	}
 	if (truncated) {
 		notify_fname(fsp->conn,
@@ -5531,10 +5532,11 @@ unlock:
 
 	if (info == FILE_WAS_CREATED) {
 		notify_fname(conn,
-			     NOTIFY_ACTION_ADDED,
+			     NOTIFY_ACTION_ADDED |
+			     NOTIFY_ACTION_DIRLEASE_BREAK,
 			     FILE_NOTIFY_CHANGE_DIR_NAME,
 			     smb_dname,
-			     NULL);
+			     fsp_get_smb2_lease(fsp));
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
