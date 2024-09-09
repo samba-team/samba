@@ -5851,6 +5851,7 @@ enum dirlease_test {
 	DLT_BTIME,
 	DLT_MTIME,
 	DLT_CTIME,
+	DLT_ATIME,
 };
 
 static void prepare_setinfo(enum dirlease_test t,
@@ -5877,6 +5878,9 @@ static void prepare_setinfo(enum dirlease_test t,
 		break;
 	case DLT_CTIME:
 		s->basic_info.in.change_time++;
+		break;
+	case DLT_ATIME:
+		s->basic_info.in.access_time++;
 		break;
 	default:
 		break;
@@ -6316,6 +6320,58 @@ done:
 	return ret;
 }
 
+/*
+ * TEST: Test setting last access date
+ */
+static bool test_dirlease_setatime(struct torture_context *tctx,
+				   struct smb2_tree *tree,
+				   struct smb2_tree *tree2)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create c;
+	struct smb2_lease dirlease;
+	struct smb2_handle dirh = {};
+	const char *dname = "test_dirlease_setatime_dir";
+	const char *dnamefname = "test_dirlease_setatime_dir\\lease.dat";
+	union smb_setfileinfo sfinfo = {};
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_deltree(tree, dname);
+
+	tree->session->transport->lease.handler	= torture_lease_handler;
+	tree->session->transport->lease.private_data = tree;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	/* Get an RH directory lease on the test directory */
+
+	smb2_lease_v2_create_share(&c, &dirlease, true, dname,
+				   smb2_util_share_access("RWD"),
+				   LEASE1, NULL,
+				   smb2_util_lease_state("RHW"), 0);
+	status = smb2_create(tree, mem_ctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	dirh = c.out.file.handle;
+	CHECK_LEASE_V2(&c, "RH", true, LEASE1, 0, 0, ++dirlease.lease_epoch);
+
+	sfinfo.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
+	unix_to_nt_time(&sfinfo.basic_info.in.access_time, time(NULL) + 9*30*24*60*60);
+
+	ret = test_dirlease_setinfo(tctx, mem_ctx, DLT_ATIME, tree, tree2,
+				    dname, dnamefname,
+				    &dirh, &dirlease, &sfinfo);
+	torture_assert_goto(tctx, ret, ret, done, "setctime test failed\n");
+
+done:
+	if (!smb2_util_handle_empty(dirh)) {
+		smb2_util_close(tree, dirh);
+	}
+	smb2_deltree(tree, dname);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_dirlease_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -6331,5 +6387,6 @@ struct torture_suite *torture_smb2_dirlease_init(TALLOC_CTX *ctx)
 	torture_suite_add_2smb2_test(suite, "setbtime", test_dirlease_setbtime);
 	torture_suite_add_2smb2_test(suite, "setmtime", test_dirlease_setmtime);
 	torture_suite_add_2smb2_test(suite, "setctime", test_dirlease_setctime);
+	torture_suite_add_2smb2_test(suite, "setatime", test_dirlease_setatime);
 	return suite;
 }
