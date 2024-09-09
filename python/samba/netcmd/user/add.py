@@ -186,7 +186,7 @@ Example5 shows how to add a new RFC2307/NIS domain enabled user account. If
             if None in (uid_number, login_shell, unix_home, gid_number):
                 raise CommandError('Missing parameters. To enable NIS features, '
                                    'the following options have to be given: '
-                                   '--nis-domain=, --uidNumber=, --login-shell='
+                                   '--nis-domain=, --uid-number=, --login-shell='
                                    ', --unix-home=, --gid-number= Operation '
                                    'cancelled.')
 
