@@ -1508,10 +1508,6 @@ static NTSTATUS open_file(
 					return status;
 				}
 			}
-
-			notify_fname(conn, NOTIFY_ACTION_ADDED,
-				     FILE_NOTIFY_CHANGE_FILE_NAME,
-				     smb_fname->base_name);
 		}
 	} else {
 		if (!file_existed) {
@@ -4652,6 +4648,13 @@ unlock:
 		smb_panic("share_mode_entry_prepare_unlock() failed!");
 	}
 
+	if (info == FILE_WAS_CREATED) {
+		notify_fname(conn,
+			     NOTIFY_ACTION_ADDED,
+			     FILE_NOTIFY_CHANGE_FILE_NAME,
+			     smb_fname->base_name);
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		fd_close(fsp);
 		return status;
@@ -5092,9 +5095,6 @@ done:
 	DBG_DEBUG("Created directory '%s'\n",
 		  smb_fname_str_dbg(smb_dname));
 
-	notify_fname(conn, NOTIFY_ACTION_ADDED, FILE_NOTIFY_CHANGE_DIR_NAME,
-		     smb_dname->base_name);
-
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 
@@ -5519,6 +5519,13 @@ unlock:
 		DBG_ERR("share_mode_entry_prepare_unlock() failed for %s - %s\n",
 			smb_fname_str_dbg(smb_dname), nt_errstr(ulstatus));
 		smb_panic("share_mode_entry_prepare_unlock() failed!");
+	}
+
+	if (info == FILE_WAS_CREATED) {
+		notify_fname(conn,
+			     NOTIFY_ACTION_ADDED,
+			     FILE_NOTIFY_CHANGE_DIR_NAME,
+			     smb_dname->base_name);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
