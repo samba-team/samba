@@ -6372,6 +6372,262 @@ done:
 	return ret;
 }
 
+#define DLEASE1 0x0000000000000001ull
+#define DLEASE2 0x0000000000000002ull
+#define DLEASE3 0x0000000000000003ull
+
+static struct dlt_rename {
+	const char *testname;
+	bool expect_srcdir_break;
+	bool expect_dstdir_break;
+	const char *srcdir;
+	const char *dstdir;
+	uint64_t srcdir_leasekey;
+	uint64_t dstdir_leasekey;
+	uint64_t parent_leasekey;
+	const char *srcfname;
+	const char *dstfname;
+} dlt_renames[] = {
+	{
+		.testname = "samedir-correct-parent-leaskey",
+		.expect_srcdir_break = false,
+		.expect_dstdir_break = false,
+		.srcdir = "test_dirlease_rename_dir",
+		.dstdir = "test_dirlease_rename_dir",
+		.srcdir_leasekey = DLEASE1,
+		.dstdir_leasekey = DLEASE2,
+		.parent_leasekey = DLEASE1,
+		.srcfname = "test_dirlease_rename_dir\\srcfile",
+		.dstfname = "test_dirlease_rename_dir\\dstfile",
+	}, {
+		.testname = "samedir-wrong-parent-leaskey",
+		.expect_srcdir_break = true,
+		.expect_dstdir_break = false,
+		.srcdir = "test_dirlease_rename_dir",
+		.dstdir = "test_dirlease_rename_dir",
+		.srcdir_leasekey = DLEASE1,
+		.dstdir_leasekey = DLEASE2,
+		.parent_leasekey = DLEASE3,
+		.srcfname = "test_dirlease_rename_dir\\srcfile",
+		.dstfname = "test_dirlease_rename_dir\\dstfile",
+	}, {
+		.testname = "samedir-no-parent-leaskey",
+		.expect_srcdir_break = true,
+		.expect_dstdir_break = false,
+		.srcdir = "test_dirlease_rename_dir",
+		.dstdir = "test_dirlease_rename_dir",
+		.srcdir_leasekey = DLEASE1,
+		.dstdir_leasekey = DLEASE2,
+		.parent_leasekey = 0,
+		.srcfname = "test_dirlease_rename_dir\\srcfile",
+		.dstfname = "test_dirlease_rename_dir\\dstfile",
+	}, {
+		.testname = "otherdir-correct-srcparent-leaskey",
+		.expect_srcdir_break = false,
+		.expect_dstdir_break = true,
+		.srcdir = "test_dirlease_rename_dir",
+		.dstdir = "test_dirlease_rename_dir2",
+		.srcdir_leasekey = DLEASE1,
+		.dstdir_leasekey = DLEASE2,
+		.parent_leasekey = DLEASE1,
+		.srcfname = "test_dirlease_rename_dir\\srcfile",
+		.dstfname = "test_dirlease_rename_dir2\\dstfile",
+	}, {
+		.testname = "otherdir-correct-dstparent-leaskey",
+		.expect_srcdir_break = true,
+		.expect_dstdir_break = false,
+		.srcdir = "test_dirlease_rename_dir",
+		.dstdir = "test_dirlease_rename_dir2",
+		.srcdir_leasekey = DLEASE1,
+		.dstdir_leasekey = DLEASE2,
+		.parent_leasekey = DLEASE2,
+		.srcfname = "test_dirlease_rename_dir\\srcfile",
+		.dstfname = "test_dirlease_rename_dir2\\dstfile",
+	}, {
+		.testname = "otherdir-wrong-parent-leaskey",
+		.expect_srcdir_break = true,
+		.expect_dstdir_break = true,
+		.srcdir = "test_dirlease_rename_dir",
+		.dstdir = "test_dirlease_rename_dir2",
+		.srcdir_leasekey = DLEASE1,
+		.dstdir_leasekey = DLEASE2,
+		.parent_leasekey = DLEASE3,
+		.srcfname = "test_dirlease_rename_dir\\srcfile",
+		.dstfname = "test_dirlease_rename_dir2\\dstfile",
+	}, {
+		.testname = "otherdir-no-parent-leaskey",
+		.expect_srcdir_break = true,
+		.expect_dstdir_break = true,
+		.srcdir = "test_dirlease_rename_dir",
+		.dstdir = "test_dirlease_rename_dir2",
+		.srcdir_leasekey = DLEASE1,
+		.dstdir_leasekey = DLEASE2,
+		.parent_leasekey = 0,
+		.srcfname = "test_dirlease_rename_dir\\srcfile",
+		.dstfname = "test_dirlease_rename_dir2\\dstfile",
+	}, {
+		.testname = NULL,
+	}
+};
+
+static bool test_rename_one(struct torture_context *tctx,
+			    struct smb2_tree *tree,
+			    struct dlt_rename *t)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create c;
+	struct smb2_lease dirlease1;
+	struct smb2_lease dirlease2;
+	struct smb2_handle dirh1 = {};
+	struct smb2_handle dirh2 = {};
+	struct smb2_lease lease1;
+	struct smb2_handle h1 = {};
+	struct smb2_lease_break_ack ack = {};
+	bool samedir = strequal(t->srcdir, t->dstdir);
+	union smb_setfileinfo sfinfo = {};
+	NTSTATUS status;
+	bool ret = true;
+
+	torture_comment(tctx, "\nRename subtest: %s\n"
+			"==================================\n",
+			t->testname);
+
+	smb2_deltree(tree, t->srcdir);
+	smb2_deltree(tree, t->dstdir);
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+
+	/* Get an RH directory lease on the src directory */
+	smb2_lease_v2_create_share(&c, &dirlease1, true, t->srcdir,
+				   smb2_util_share_access("RWD"),
+				   t->srcdir_leasekey, NULL,
+				   smb2_util_lease_state("RHW"), 0);
+	c.in.desired_access &= ~DELETE_ACCESS;
+	status = smb2_create(tree, mem_ctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	dirh1 = c.out.file.handle;
+	CHECK_LEASE_V2(&c, "RH", true, t->srcdir_leasekey, 0, 0, ++dirlease1.lease_epoch);
+
+	if (!samedir) {
+		/* Get an RH directory lease on the dst directory */
+		smb2_lease_v2_create_share(&c, &dirlease2, true, t->dstdir,
+					   smb2_util_share_access("RWD"),
+					   t->dstdir_leasekey, NULL,
+					   smb2_util_lease_state("RHW"), 0);
+		c.in.desired_access &= ~DELETE_ACCESS;
+		status = smb2_create(tree, mem_ctx, &c);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_create failed\n");
+		dirh2 = c.out.file.handle;
+		CHECK_LEASE_V2(&c, "RH", true, t->dstdir_leasekey, 0, 0, ++dirlease2.lease_epoch);
+	}
+
+	/* Create the to be renamed file */
+	smb2_lease_v2_create_share(&c, &lease1, false, t->srcfname,
+				   smb2_util_share_access("RWD"),
+				   LEASE4, &t->srcdir_leasekey,
+				   smb2_util_lease_state("RHW"),
+				   0x33);
+	status = smb2_create(tree, mem_ctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+	smb2_util_close(tree, h1);
+	ZERO_STRUCT(h1);
+
+	/* Open the testfile, possibly with a bad parent leasekey */
+	smb2_lease_v2_create_share(&c, &lease1, false, t->srcfname,
+				   smb2_util_share_access("RWD"),
+				   LEASE4,
+				   t->parent_leasekey != 0 ? &t->parent_leasekey : NULL,
+				   smb2_util_lease_state("RHW"),
+				   0x33);
+	status = smb2_create(tree, mem_ctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+
+	sfinfo.generic.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sfinfo.generic.in.file.handle = h1;
+	sfinfo.rename_information.in.new_name = t->dstfname;
+
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+	if (t->expect_srcdir_break) {
+		/* Delay the ack in order to be able to possibly process two breaks */
+		lease_break_info.lease_skip_ack = true;
+		CHECK_BREAK_INFO_V2(tree->session->transport,
+				    "RH", "",
+				    t->srcdir_leasekey,
+				    ++dirlease1.lease_epoch);
+		ack.in.lease.lease_key = lease_break_info.lease_break.current_lease.lease_key;
+		ack.in.lease.lease_state = lease_break_info.lease_break.new_lease_state;
+		torture_reset_lease_break_info(tctx, &lease_break_info);
+		if (!t->expect_dstdir_break) {
+			CHECK_NO_BREAK(tctx);
+		}
+	}
+	if (t->expect_dstdir_break) {
+		CHECK_BREAK_INFO_V2(tree->session->transport,
+				    "RH", "",
+				    t->dstdir_leasekey,
+				    ++dirlease2.lease_epoch);
+		torture_reset_lease_break_info(tctx, &lease_break_info);
+		if (!t->expect_srcdir_break) {
+			CHECK_NO_BREAK(tctx);
+		}
+	}
+	if (!t->expect_srcdir_break && !t->expect_dstdir_break) {
+		CHECK_NO_BREAK(tctx);
+	}
+
+	if (t->expect_srcdir_break) {
+		/* ack the first lease break. */
+		status = smb2_lease_break_ack(tree, &ack);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_lease_break_ack failed\n");
+		CHECK_LEASE_BREAK_ACK(&ack, "", t->srcdir_leasekey);
+	}
+
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	if (!smb2_util_handle_empty(dirh1)) {
+		smb2_util_close(tree, dirh1);
+	}
+	if (!smb2_util_handle_empty(dirh2)) {
+		smb2_util_close(tree, dirh2);
+	}
+	smb2_deltree(tree, t->srcdir);
+	smb2_deltree(tree, t->dstdir);
+	return ret;
+}
+
+static bool test_rename(struct torture_context *tctx,
+			struct smb2_tree *tree)
+{
+	struct dlt_rename *t = NULL;
+	bool ret = true;
+
+	tree->session->transport->lease.handler	= torture_lease_handler;
+	tree->session->transport->lease.private_data = tree;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	for (t = dlt_renames; t->testname != NULL; t++) {
+		ret = test_rename_one(tctx, tree, t);
+		torture_assert_goto(tctx, ret, ret, done,
+				    talloc_asprintf(tctx, "%s failed\n",
+						    t->testname));
+	}
+
+done:
+	return ret;
+}
+
 struct torture_suite *torture_smb2_dirlease_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -6388,5 +6644,6 @@ struct torture_suite *torture_smb2_dirlease_init(TALLOC_CTX *ctx)
 	torture_suite_add_2smb2_test(suite, "setmtime", test_dirlease_setmtime);
 	torture_suite_add_2smb2_test(suite, "setctime", test_dirlease_setctime);
 	torture_suite_add_2smb2_test(suite, "setatime", test_dirlease_setatime);
+	torture_suite_add_1smb2_test(suite, "rename", test_rename);
 	return suite;
 }
