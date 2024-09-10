@@ -254,14 +254,15 @@ bool ipalloc_can_host_ips(struct ipalloc_state *ipalloc_state)
 struct public_ip_list *ipalloc(struct ipalloc_state *ipalloc_state)
 {
 	bool status = false;
+	struct public_ip_list *ret = NULL;
 
 	ipalloc_state->all_ips = create_merged_ip_list(ipalloc_state);
 	if (ipalloc_state->all_ips == NULL) {
-		return NULL;
+		goto done;
 	}
 
 	if (!populate_bitmap(ipalloc_state)) {
-		return NULL;
+		goto done;
 	}
 
 	switch (ipalloc_state->algorithm) {
@@ -276,9 +277,16 @@ struct public_ip_list *ipalloc(struct ipalloc_state *ipalloc_state)
 		break;
 	}
 
-	/* at this point ->pnn is the node which will own each IP
-	   or CTDB_UNKNOWN_PNN if there is no node that can cover this ip
-	*/
+	if (!status) {
+		goto done;
+	}
 
-	return (status ? ipalloc_state->all_ips : NULL);
+	/*
+	 * At this point ->pnn is the node to which an IP is allocated or
+	 * CTDB_UNKNOWN_PNN if there is no node that can cover an ip
+	 */
+	ret = ipalloc_state->all_ips;
+
+done:
+	return ret;
 }
