@@ -1770,8 +1770,8 @@ class cmd_del(GPOCommand):
 
             # Remove LDAP entries
             gpo_dn = get_gpo_dn(self.samdb, gpo)
-            self.samdb.delete(ldb.Dn(self.samdb, "CN=User,%s" % str(gpo_dn)))
-            self.samdb.delete(ldb.Dn(self.samdb, "CN=Machine,%s" % str(gpo_dn)))
+            self.samdb.delete(ldb.Dn(self.samdb, "CN=User,%s" % str(gpo_dn)), ["tree_delete:1"])
+            self.samdb.delete(ldb.Dn(self.samdb, "CN=Machine,%s" % str(gpo_dn)), ["tree_delete:1"])
             self.samdb.delete(gpo_dn)
 
             # Remove GPO files
