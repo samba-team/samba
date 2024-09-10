@@ -149,6 +149,47 @@ create_merged_ip_list(struct ipalloc_state *ipalloc_state)
 	return ip_list;
 }
 
+static uint32_t *setup_prev(struct ipalloc_state *ipalloc_state)
+{
+	uint32_t *prev = NULL;
+	struct public_ip_list *ip = NULL;
+	unsigned int i = 0;
+
+	for (ip = ipalloc_state->all_ips; ip != NULL; ip = ip->next) {
+		i++;
+	}
+
+	prev = talloc_array(ipalloc_state, uint32_t, i);
+	if (prev == NULL) {
+		return NULL;
+	}
+
+	i = 0;
+	for (ip = ipalloc_state->all_ips; ip != NULL; ip = ip->next) {
+		prev[i] = ip->pnn;
+		i++;
+	}
+
+	return prev;
+}
+
+static unsigned int compare_with_prev(struct ipalloc_state *ipalloc_state,
+				      uint32_t *prev)
+{
+	struct public_ip_list *ip = NULL;
+	unsigned int i = 0;
+	unsigned int num_changed = 0;
+
+	for (ip = ipalloc_state->all_ips; ip != NULL; ip = ip->next) {
+		if (prev[i] != ip->pnn) {
+			num_changed++;
+		}
+		i++;
+	}
+
+	return num_changed;
+}
+
 static bool populate_bitmap(struct ipalloc_state *ipalloc_state)
 {
 	struct public_ip_list *ip = NULL;
@@ -251,14 +292,23 @@ bool ipalloc_can_host_ips(struct ipalloc_state *ipalloc_state)
 }
 
 /* The calculation part of the IP allocation algorithm. */
-struct public_ip_list *ipalloc(struct ipalloc_state *ipalloc_state)
+struct public_ip_list *ipalloc(struct ipalloc_state *ipalloc_state,
+			       unsigned int *num_changed)
 {
 	bool status = false;
 	struct public_ip_list *ret = NULL;
+	uint32_t *prev = NULL;
 
 	ipalloc_state->all_ips = create_merged_ip_list(ipalloc_state);
 	if (ipalloc_state->all_ips == NULL) {
 		goto done;
+	}
+
+	if (num_changed != NULL) {
+		prev = setup_prev(ipalloc_state);
+		if (prev == NULL) {
+			goto done;
+		}
 	}
 
 	if (!populate_bitmap(ipalloc_state)) {
@@ -287,6 +337,11 @@ struct public_ip_list *ipalloc(struct ipalloc_state *ipalloc_state)
 	 */
 	ret = ipalloc_state->all_ips;
 
+	if (num_changed != NULL) {
+		*num_changed = compare_with_prev(ipalloc_state, prev);
+	}
+
 done:
+	talloc_free(prev);
 	return ret;
 }

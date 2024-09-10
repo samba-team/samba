@@ -239,7 +239,7 @@ static void ctdb_test_ipalloc(const char nodestates[],
 	ctdb_test_init(tmp_ctx, nodestates, &ipalloc_state,
 		       read_ips_for_multiple_nodes);
 
-	print_ctdb_public_ip_list(tmp_ctx, ipalloc(ipalloc_state));
+	print_ctdb_public_ip_list(tmp_ctx, ipalloc(ipalloc_state, NULL));
 
 	talloc_free(tmp_ctx);
 }

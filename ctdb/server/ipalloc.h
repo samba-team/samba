@@ -62,6 +62,7 @@ void ipalloc_set_public_ips(struct ipalloc_state *ipalloc_state,
 
 bool ipalloc_can_host_ips(struct ipalloc_state *ipalloc_state);
 
-struct public_ip_list *ipalloc(struct ipalloc_state *ipalloc_state);
+struct public_ip_list *ipalloc(struct ipalloc_state *ipalloc_state,
+			       unsigned int *num_changed);
 
 #endif /* __CTDB_IPALLOC_H__ */

@@ -1049,7 +1049,7 @@ static void takeover_avail_ips_done(struct tevent_req *subreq)
 	}
 
 	/* Do the IP reassignment calculations */
-	state->all_ips = ipalloc(state->ipalloc_state);
+	state->all_ips = ipalloc(state->ipalloc_state, NULL);
 	if (tevent_req_nomem(state->all_ips, req)) {
 		return;
 	}
