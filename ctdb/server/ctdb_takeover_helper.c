@@ -804,6 +804,7 @@ static void takeover_nodemap_done(struct tevent_req *subreq);
 static void takeover_known_ips_done(struct tevent_req *subreq);
 static void takeover_avail_ips_done(struct tevent_req *subreq);
 static void takeover_start_ipreallocate_done(struct tevent_req *subreq);
+static void takeover_release_ip(struct tevent_req *req);
 static void takeover_release_ip_done(struct tevent_req *subreq);
 static void takeover_take_ip_done(struct tevent_req *subreq);
 static void takeover_ipreallocated(struct tevent_req *req);
@@ -1088,8 +1089,6 @@ static void takeover_start_ipreallocate_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct takeover_state *state = tevent_req_data(
-		req, struct takeover_state);
 	int ret;
 	bool status;
 
@@ -1100,6 +1099,15 @@ static void takeover_start_ipreallocate_done(struct tevent_req *subreq)
 		takeover_failed(req, ret);
 		return;
 	}
+
+	takeover_release_ip(req);
+}
+
+static void takeover_release_ip(struct tevent_req *req)
+{
+	struct takeover_state *state = tevent_req_data(
+		req, struct takeover_state);
+	struct tevent_req *subreq = NULL;
 
 	subreq = release_ip_send(state,
 				 state->ev,
