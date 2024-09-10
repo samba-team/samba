@@ -902,7 +902,6 @@ NTSTATUS vfs_cap_init(TALLOC_CTX *ctx)
 /* For CAP functions */
 #define hex_tag ':'
 #define hex2bin(c)		hex2bin_table[(unsigned char)(c)]
-#define bin2hex(c)		bin2hex_table[(unsigned char)(c)]
 #define is_hex(s)		((s)[0] == hex_tag)
 
 static unsigned char hex2bin_table[256] = {
@@ -925,7 +924,6 @@ static unsigned char hex2bin_table[256] = {
 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 0xe0 */
 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  /* 0xf0 */
 };
-static unsigned char bin2hex_table[256] = "0123456789abcdef";
 
 /*******************************************************************
   original code -> ":xx"  - CAP format
@@ -956,8 +954,8 @@ static char *capencode(TALLOC_CTX *ctx, const char *from)
 		/* buffer husoku error */
 		if ((unsigned char)*from >= 0x80) {
 			*out++ = hex_tag;
-			*out++ = bin2hex (((*from)>>4)&0x0f);
-			*out++ = bin2hex ((*from)&0x0f);
+			*out++ = nybble_to_hex_lower(((*from) >> 4));
+			*out++ = nybble_to_hex_lower(*from);
 			from++;
 		} else {
 			*out++ = *from++;
