@@ -470,29 +470,16 @@ void pdb_sethexhours(char *p, const unsigned char *hours)
 bool pdb_gethexhours(const char *p, unsigned char *hours)
 {
 	int i;
-	unsigned char   lonybble, hinybble;
-	const char      *hexchars = "0123456789ABCDEF";
-	char           *p1, *p2;
 
 	if (!p) {
 		return (False);
 	}
 
 	for (i = 0; i < 42; i += 2) {
-		hinybble = toupper_m(p[i]);
-		lonybble = toupper_m(p[i + 1]);
-
-		p1 = strchr(hexchars, hinybble);
-		p2 = strchr(hexchars, lonybble);
-
-		if (!p1 || !p2) {
-			return (False);
+		bool ok = hex_byte(p, (uint8_t *)&hours[i / 2]);
+		if (!ok) {
+			return false;
 		}
-
-		hinybble = PTR_DIFF(p1, hexchars);
-		lonybble = PTR_DIFF(p2, hexchars);
-
-		hours[i / 2] = (hinybble << 4) | lonybble;
 	}
 	return (True);
 }
