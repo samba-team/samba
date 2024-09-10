@@ -232,11 +232,10 @@ static int ldb_dn_escape_internal(char *dst, const char *src, int len)
 		case '\0': {
 			/* any others get \XX form */
 			unsigned char v;
-			const char *hexbytes = "0123456789ABCDEF";
 			v = (const unsigned char)c;
 			*d++ = '\\';
-			*d++ = hexbytes[v>>4];
-			*d++ = hexbytes[v&0xF];
+			*d++ = hexchars_upper[v>>4];
+			*d++ = hexchars_upper[v&0xF];
 			break;
 		}
 		default:
