@@ -1101,6 +1101,9 @@ static inline bool hex_byte(const char *in, uint8_t *out)
 	return ok;
 }
 
+extern const char hexchars_lower[];
+extern const char hexchars_upper[];
+
 /* Needed for Solaris atomic_add_XX functions. */
 #if defined(HAVE_SYS_ATOMIC_H)
 #include <sys/atomic.h>

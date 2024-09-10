@@ -832,9 +832,8 @@ static void fmtint(char *buffer, size_t *currlen, size_t maxlen,
 	if (flags & DP_F_UP) caps = 1; /* Should characters be upper case? */
 
 	do {
-		convert[place++] =
-			(caps? "0123456789ABCDEF":"0123456789abcdef")
-			[uvalue % (unsigned)base  ];
+		convert[place++] = (caps ? hex_upper
+					 : hex_lower)[uvalue % (unsigned)base];
 		uvalue = (uvalue / (unsigned)base );
 	} while(uvalue && (place < sizeof(convert)));
 	if (place == sizeof(convert)) place--;
@@ -1028,8 +1027,8 @@ static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
 		idx = (int) ((temp -intpart +0.05)* 10.0);
 		/* idx = (int) (((double)(temp*0.1) -intpart +0.05) *10.0); */
 		/* printf ("%llf, %f, %x\n", temp, intpart, idx); */
-		iconvert[iplace++] =
-			(caps? "0123456789ABCDEF":"0123456789abcdef")[idx];
+		iconvert[iplace++] = (caps ? hexchars_upper
+					   : hexchars_lower)[idx];
 	} while (intpart && (iplace < 311));
 	if (iplace == 311) iplace--;
 	iconvert[iplace] = 0;
@@ -1043,8 +1042,8 @@ static void fmtfp (char *buffer, size_t *currlen, size_t maxlen,
 			idx = (int) ((temp -fracpart +0.05)* 10.0);
 			/* idx = (int) ((((temp/10) -fracpart) +0.05) *10); */
 			/* printf ("%lf, %lf, %ld\n", temp, fracpart, idx ); */
-			fconvert[fplace++] =
-			(caps? "0123456789ABCDEF":"0123456789abcdef")[idx];
+			fconvert[fplace++] = (caps ? hexchars_upper
+						   : hexchars_lower)[idx];
 		} while(fracpart && (fplace < 311));
 		if (fplace == 311) fplace--;
 	}

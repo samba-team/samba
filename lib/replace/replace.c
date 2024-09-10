@@ -1231,3 +1231,6 @@ int rep_renameat2(int __oldfd, const char *__old, int __newfd,
 	return renameat(__oldfd, __old, __newfd, __new);
 }
 #endif /* ! HAVE_RENAMEAT2 */
+
+const char hexchars_lower[] = "0123456789abcdef";
+const char hexchars_upper[] = "0123456789ABCDEF";
