@@ -652,54 +652,12 @@ void samba_tevent_set_debug(struct tevent_context *ev, const char *name);
 
 static inline char nybble_to_hex_lower(uint8_t val)
 {
-	uint8_t nybble = val & 0xf;
-
-	switch (nybble) {
-	case 0x0: case 0x1: case 0x2: case 0x3: case 0x4:
-	case 0x5: case 0x6: case 0x7: case 0x8: case 0x9:
-		return '0' + nybble;
-	case 0xa:
-		return 'a';
-	case 0xb:
-		return 'b';
-	case 0xc:
-		return 'c';
-	case 0xd:
-		return 'd';
-	case 0xe:
-		return 'e';
-	case 0xf:
-		return 'f';
-	}
-
-	/* unreachable */
-	return '\0';
+	return hexchars_lower[val & 0xf];
 }
 
 static inline char nybble_to_hex_upper(uint8_t val)
 {
-	uint8_t nybble = val & 0xf;
-
-	switch (nybble) {
-	case 0x0: case 0x1: case 0x2: case 0x3: case 0x4:
-	case 0x5: case 0x6: case 0x7: case 0x8: case 0x9:
-		return '0' + nybble;
-	case 0xa:
-		return 'A';
-	case 0xb:
-		return 'B';
-	case 0xc:
-		return 'C';
-	case 0xd:
-		return 'D';
-	case 0xe:
-		return 'E';
-	case 0xf:
-		return 'F';
-	}
-
-	/* unreachable */
-	return '\0';
+	return hexchars_upper[val & 0xf];
 }
 
 #endif /* _SAMBA_UTIL_H_ */
