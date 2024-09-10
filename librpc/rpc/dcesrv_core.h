@@ -578,6 +578,14 @@ NTSTATUS dcesrv_transport_session_key(struct dcesrv_call_state *call,
 	return; \
 } while(0)
 
+#define DCESRV_NOT_USED_ON_WIRE(__opname) \
+static void dcesrv_## __opname(struct dcesrv_call_state *dce_call,\
+			       TALLOC_CTX *mem_ctx, \
+			       struct __opname *r) \
+{ \
+        DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR); \
+}
+
 /* a useful macro for checking the validity of a dcerpc policy handle
    and giving the right fault code if invalid */
 #define DCESRV_CHECK_HANDLE(h) do {if (!(h)) DCESRV_FAULT(DCERPC_FAULT_CONTEXT_MISMATCH); } while (0)
