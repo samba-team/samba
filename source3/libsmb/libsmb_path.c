@@ -131,8 +131,6 @@ smbc_urlencode(char *dest,
                char *src,
                int max_dest_len)
 {
-        char hex[] = "0123456789ABCDEF";
-
         for (; *src != '\0' && max_dest_len >= 3; src++) {
 
                 if ((*src < '0' &&
@@ -145,8 +143,8 @@ smbc_urlencode(char *dest,
                      *src != '_') ||
                     (*src > 'z')) {
                         *dest++ = '%';
-                        *dest++ = hex[(*src >> 4) & 0x0f];
-                        *dest++ = hex[*src & 0x0f];
+                        *dest++ = nybble_to_hex_upper(*src >> 4);
+                        *dest++ = nybble_to_hex_upper(*src);
                         max_dest_len -= 3;
                 } else {
                         *dest++ = *src;
