@@ -33,7 +33,6 @@ static void virusfilter_sophos_scan_end(struct virusfilter_config *config);
 static int virusfilter_url_quote(const char *src, char *dst, int dst_size)
 {
 	char *dst_c = dst;
-	static char hex[] = "0123456789ABCDEF";
 
 	for (; *src != '\0'; src++) {
 		if ((*src < '0' && *src != '-' && *src != '.' && *src != '/') ||
@@ -45,8 +44,8 @@ static int virusfilter_url_quote(const char *src, char *dst, int dst_size)
 				return -1;
 			}
 			*dst_c++ = '%';
-			*dst_c++ = hex[(*src >> 4) & 0x0F];
-			*dst_c++ = hex[*src & 0x0F];
+			*dst_c++ = nybble_to_hex_upper(*src >> 4);
+			*dst_c++ = nybble_to_hex_upper(*src);
 			dst_size -= 3;
 		} else {
 			if (dst_size < 2) {
