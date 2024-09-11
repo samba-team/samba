@@ -1,4 +1,0 @@
-^samba3.blackbox.update_keytab_clustered.net_ads_testjoin_initial.clusteredmember
-^samba3.blackbox.update_keytab_clustered.net_ads_testjoin_after_sync.clusteredmember
-^samba3.blackbox.update_keytab_clustered.wbinfo_change_secret_after_sync.clusteredmember
-^samba3.blackbox.update_keytab_clustered.net_ads_testjoin_final.clusteredmember

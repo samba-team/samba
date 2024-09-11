@@ -259,12 +259,16 @@ NTSTATUS connect_dst_pipe(struct net_context *c, struct cli_state **cli_dst,
 
 int net_use_krb_machine_account(struct net_context *c)
 {
+	struct db_context *db_ctx = NULL;
+
 	if (!secrets_init()) {
 		d_fprintf(stderr,_("ERROR: Unable to open secrets database\n"));
 		exit(1);
 	}
 
-	cli_credentials_set_machine_account(c->creds, c->lp_ctx);
+	db_ctx = secrets_db_ctx();
+
+	cli_credentials_set_machine_account_db_ctx(c->creds, c->lp_ctx, db_ctx);
 	c->explicit_credentials = true;
 	return 0;
 }
