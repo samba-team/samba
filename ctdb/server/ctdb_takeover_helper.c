@@ -775,7 +775,7 @@ static bool start_ipreallocate_recv(struct tevent_req *req, int *perr)
  *   addresses for allocation
  * - If cluster can't host IP addresses then jump to IPREALLOCATED
  * - Run IP allocation algorithm
- * - Send START_IPREALLOCATE to all nodes
+ * - Send START_IPREALLOCATE to all nodes (if any IPs have moved)
  * - Send RELEASE_IP to all nodes for IPs they should not host
  * - Send TAKE_IP to all nodes for IPs they should host
  * - Send IPREALLOCATED to all nodes
@@ -1030,6 +1030,7 @@ static void takeover_avail_ips_done(struct tevent_req *subreq)
 	bool status;
 	int ret;
 	struct ctdb_public_ip_list *available_ips;
+	unsigned int num_changed;
 
 	status = get_public_ips_recv(subreq, &ret, state, &available_ips);
 	TALLOC_FREE(subreq);
@@ -1050,7 +1051,7 @@ static void takeover_avail_ips_done(struct tevent_req *subreq)
 	}
 
 	/* Do the IP reassignment calculations */
-	state->all_ips = ipalloc(state->ipalloc_state, NULL);
+	state->all_ips = ipalloc(state->ipalloc_state, &num_changed);
 	if (tevent_req_nomem(state->all_ips, req)) {
 		return;
 	}
@@ -1071,6 +1072,12 @@ static void takeover_avail_ips_done(struct tevent_req *subreq)
 	 * ipalloc().
 	 */
 	state->timeout = timeval_current_ofs(3 * takeover_timeout, 0);
+
+	if (num_changed == 0) {
+		D_INFO("Skip sending START_IPREALLOCATE, no IPs changed\n");
+		takeover_release_ip(req);
+		return;
+	}
 
 	subreq = start_ipreallocate_send(state,
 					state->ev,

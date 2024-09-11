@@ -139,13 +139,15 @@ takeip <interface> <ip-address> <netmask-bits>
 
 startipreallocate
 
-	This event is triggered on all nodes before ip address is
-	released on node. This can be used to perform action needed
-	to complete before ip is given away to other node.
+	This event is triggered on all nodes as the first step of a
+	public IP address (re)assignment, but only if at least one
+	public IP address will change the node to which it is
+	assigned.  This includes an IP becoming assigned or
+	unassigned.  The main use is to perform an action before any
+	IP addresses are released.
 
-	Example: 60.nfs would use this event to put nfs-ganesha server
-	on all nodes in grace period so that locks can be reclaimed
-	safely in lock reclaim phase.
+	Example: 60.nfs uses this event to put the NFS server on all
+	nodes into grace so that locks can be safely reclaimed.
 
 releaseip <interface> <ip-address> <netmask-bits>
 
