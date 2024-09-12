@@ -57,7 +57,6 @@ int ads_kdestroy(const char *cc_name);
 
 int kerberos_kinit_password(const char *principal,
 			    const char *password,
-			    int time_offset,
 			    const char *cache_name);
 bool create_local_private_krb5_conf_for_domain(const char *realm,
 						const char *domain,

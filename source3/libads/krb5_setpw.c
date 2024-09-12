@@ -346,7 +346,6 @@ ADS_STATUS kerberos_set_password(const char *auth_principal,
 
 	ret = kerberos_kinit_password(auth_principal,
 				      auth_password,
-				      0, /* timeoutset */
 				      ccname);
 	if (ret != 0) {
 		DBG_ERR("Failed kinit for principal %s (%s)\n",

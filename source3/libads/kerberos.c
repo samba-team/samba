@@ -358,14 +358,13 @@ int create_kerberos_key_from_string(krb5_context context,
 
 int kerberos_kinit_password(const char *principal,
 			    const char *password,
-			    int time_offset,
 			    const char *cache_name)
 {
 	return kerberos_kinit_password_ext(principal,
 					   password,
-					   time_offset,
 					   0,
-					   0,
+					   NULL,
+					   NULL,
 					   cache_name,
 					   False,
 					   False,
