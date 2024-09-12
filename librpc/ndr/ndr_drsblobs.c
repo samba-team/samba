@@ -142,8 +142,8 @@ _PUBLIC_ void ndr_print_drsuapi_MSPrefixMap_Entry(struct ndr_print *ndr, const c
 			ndr->depth++;
 			ndr->print(ndr, "%-25s: 0x%s (%s)", "binary_oid", hex_str, partial_oid);
 			ndr->depth--;
-			talloc_free(hex_str);
-			talloc_free(partial_oid);
+			TALLOC_FREE(hex_str);
+			TALLOC_FREE(partial_oid);
 		}
 		ndr->depth--;
 		ndr->flags = _flags_save_STRUCT;

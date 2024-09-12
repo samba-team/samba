@@ -1579,7 +1579,7 @@ _PUBLIC_ void ndr_print_spoolss_Time(struct ndr_print *ndr, const char *name, co
 	ndr->depth++;
 	ndr_print_string(ndr, "", str);
 	ndr->depth--;
-	talloc_free(str);
+	TALLOC_FREE(str);
 }
 
 _PUBLIC_ libndr_flags ndr_spoolss_PrinterEnumValues_align(enum winreg_Type type)

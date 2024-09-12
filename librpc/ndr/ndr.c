@@ -238,7 +238,7 @@ _PUBLIC_ struct ndr_push *ndr_push_init_ctx(TALLOC_CTX *mem_ctx)
 	ndr->alloc_size = NDR_BASE_MARSHALL_SIZE;
 	ndr->data = talloc_array(ndr, uint8_t, ndr->alloc_size);
 	if (!ndr->data) {
-		talloc_free(ndr);
+		TALLOC_FREE(ndr);
 		return NULL;
 	}
 
@@ -425,7 +425,7 @@ _PUBLIC_ void ndr_print_debugc(int dbgc_class, ndr_print_fn_t fn, const char *na
 #endif
 
 	fn(ndr, name, ptr);
-	talloc_free(ndr);
+	TALLOC_FREE(ndr);
 }
 
 /*
@@ -461,7 +461,7 @@ _PUBLIC_ bool ndr_print_debug(int level,
 
 	ret = true;
 fail:
-	talloc_free(ndr);
+	TALLOC_FREE(ndr);
 	return ret;
 }
 
@@ -487,7 +487,7 @@ _PUBLIC_ void ndr_print_union_debug(ndr_print_fn_t fn, const char *name, uint32_
 
 	ndr_print_set_switch_value(ndr, ptr, level);
 	fn(ndr, name, ptr);
-	talloc_free(ndr);
+	TALLOC_FREE(ndr);
 }
 
 /*
@@ -511,7 +511,7 @@ _PUBLIC_ void ndr_print_function_debug(ndr_print_function_t fn, const char *name
 #endif
 
 	fn(ndr, name, flags, ptr);
-	talloc_free(ndr);
+	TALLOC_FREE(ndr);
 }
 
 /*
@@ -535,7 +535,7 @@ _PUBLIC_ char *ndr_print_struct_string(TALLOC_CTX *mem_ctx, ndr_print_fn_t fn, c
 	fn(ndr, name, ptr);
 	ret = talloc_steal(mem_ctx, (char *)ndr->private_data);
 failed:
-	talloc_free(ndr);
+	TALLOC_FREE(ndr);
 	return ret;
 }
 
@@ -560,7 +560,7 @@ _PUBLIC_ char *ndr_print_union_string(TALLOC_CTX *mem_ctx, ndr_print_fn_t fn, co
 	fn(ndr, name, ptr);
 	ret = talloc_steal(mem_ctx, (char *)ndr->private_data);
 failed:
-	talloc_free(ndr);
+	TALLOC_FREE(ndr);
 	return ret;
 }
 
@@ -586,7 +586,7 @@ _PUBLIC_ char *ndr_print_function_string(TALLOC_CTX *mem_ctx,
 	fn(ndr, name, flags, ptr);
 	ret = talloc_steal(mem_ctx, (char *)ndr->private_data);
 failed:
-	talloc_free(ndr);
+	TALLOC_FREE(ndr);
 	return ret;
 }
 
@@ -901,7 +901,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_subcontext_start(struct ndr_push *ndr,
 
 		status = ndr_push_zero(subndr, size_is);
 		if (!NDR_ERR_CODE_IS_SUCCESS(status)) {
-			talloc_free(subndr);
+			TALLOC_FREE(subndr);
 			return status;
 		}
 		subndr->offset = 0;
@@ -1337,7 +1337,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CT
 	ndr = ndr_pull_init_blob(blob, mem_ctx);
 	NDR_ERR_HAVE_NO_MEMORY(ndr);
 	NDR_CHECK_FREE(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
-	talloc_free(ndr);
+	TALLOC_FREE(ndr);
 	return NDR_ERR_SUCCESS;
 }
 
@@ -1362,10 +1362,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLO
 		ret = ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
 				     "not all bytes consumed ofs[%"PRIu32"] size[%"PRIu32"]",
 				     highest_ofs, ndr->data_size);
-		talloc_free(ndr);
+		TALLOC_FREE(ndr);
 		return ret;
 	}
-	talloc_free(ndr);
+	TALLOC_FREE(ndr);
 	return NDR_ERR_SUCCESS;
 }
 
@@ -1446,7 +1446,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX
 	NDR_ERR_HAVE_NO_MEMORY(ndr);
 	NDR_CHECK_FREE(ndr_pull_set_switch_value(ndr, p, level));
 	NDR_CHECK_FREE(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));
-	talloc_free(ndr);
+	TALLOC_FREE(ndr);
 	return NDR_ERR_SUCCESS;
 }
 
@@ -1474,10 +1474,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC
 		ret = ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
 				     "not all bytes consumed ofs[%"PRIu32"] size[%"PRIu32"]",
 				     highest_ofs, ndr->data_size);
-		talloc_free(ndr);
+		TALLOC_FREE(ndr);
 		return ret;
 	}
-	talloc_free(ndr);
+	TALLOC_FREE(ndr);
 	return NDR_ERR_SUCCESS;
 }
 
@@ -1494,7 +1494,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem
 
 	*blob = ndr_push_blob(ndr);
 	talloc_steal(mem_ctx, blob->data);
-	talloc_free(ndr);
+	TALLOC_FREE(ndr);
 
 	return NDR_ERR_SUCCESS;
 }
@@ -1543,7 +1543,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_
 
 	*blob = ndr_push_blob(ndr);
 	talloc_steal(mem_ctx, blob->data);
-	talloc_free(ndr);
+	TALLOC_FREE(ndr);
 
 	return NDR_ERR_SUCCESS;
 }
@@ -1570,11 +1570,11 @@ _PUBLIC_ size_t ndr_size_struct(const void *p, libndr_flags flags, ndr_push_flag
 	ndr->flags |= flags | LIBNDR_FLAG_NO_NDR_SIZE;
 	status = push(ndr, NDR_SCALARS|NDR_BUFFERS, discard_const(p));
 	if (!NDR_ERR_CODE_IS_SUCCESS(status)) {
-		talloc_free(ndr);
+		TALLOC_FREE(ndr);
 		return 0;
 	}
 	ret = ndr->offset;
-	talloc_free(ndr);
+	TALLOC_FREE(ndr);
 	return ret;
 }
 
@@ -1601,16 +1601,16 @@ _PUBLIC_ size_t ndr_size_union(const void *p, libndr_flags flags, uint32_t level
 
 	status = ndr_push_set_switch_value(ndr, p, level);
 	if (!NDR_ERR_CODE_IS_SUCCESS(status)) {
-		talloc_free(ndr);
+		TALLOC_FREE(ndr);
 		return 0;
 	}
 	status = push(ndr, NDR_SCALARS|NDR_BUFFERS, p);
 	if (!NDR_ERR_CODE_IS_SUCCESS(status)) {
-		talloc_free(ndr);
+		TALLOC_FREE(ndr);
 		return 0;
 	}
 	ret = ndr->offset;
-	talloc_free(ndr);
+	TALLOC_FREE(ndr);
 	return ret;
 }
 

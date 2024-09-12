@@ -419,7 +419,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_string(struct ndr_push *ndr, ndr_flags_type 
 	}
 
 out:
-	talloc_free(dest_to_free);
+	TALLOC_FREE(dest_to_free);
 	return ndr_err;
 }
 

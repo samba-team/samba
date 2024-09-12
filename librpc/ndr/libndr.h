@@ -478,7 +478,7 @@ enum ndr_compression_alg {
 	enum ndr_err_code _status; \
 	_status = call; \
 	if (unlikely(!NDR_ERR_CODE_IS_SUCCESS(_status))) {	\
-		talloc_free(ndr);		 \
+		TALLOC_FREE(ndr);		 \
 		return _status; \
 	} \
 } while (0)

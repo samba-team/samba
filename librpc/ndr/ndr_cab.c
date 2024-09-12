@@ -36,7 +36,7 @@ _PUBLIC_ void ndr_print_cf_time(struct ndr_print *ndr, const char *name, const s
 	s = talloc_asprintf(ndr, "%02d:%02d:%02d", hour, minute, seconds);
 	if (s == NULL) { return; }
 	ndr_print_string(ndr, "time", s);
-	talloc_free(s);
+	TALLOC_FREE(s);
 }
 
 _PUBLIC_ void ndr_print_cf_date(struct ndr_print *ndr, const char *name, const struct cf_date *r)
@@ -52,7 +52,7 @@ _PUBLIC_ void ndr_print_cf_date(struct ndr_print *ndr, const char *name, const s
 	s = talloc_asprintf(ndr, "%02"PRIu8"/%02"PRIu8"/%04"PRIu16, day, month, year);
 	if (s == NULL) { return; }
 	ndr_print_string(ndr, "date", s);
-	talloc_free(s);
+	TALLOC_FREE(s);
 }
 
 uint32_t ndr_count_cfdata(const struct cab_file *r)

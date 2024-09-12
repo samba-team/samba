@@ -81,8 +81,8 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaOID(struct ndr_print *ndr, const char *
 		ndr->depth++;
 		ndr->print(ndr, "%-25s: 0x%s (%s)", "binary_oid", hex_str, partial_oid);
 		ndr->depth--;
-		talloc_free(hex_str);
-		talloc_free(partial_oid);
+		TALLOC_FREE(hex_str);
+		TALLOC_FREE(partial_oid);
 	}
 	ndr->depth--;
 }
@@ -125,7 +125,7 @@ static void _print_drsuapi_DsAttributeValue_str(struct ndr_print *ndr, const cha
 	} else {
 		char *str = (char *)p;
 		ndr_print_string(ndr, "string", str);
-		talloc_free(str);
+		TALLOC_FREE(str);
 	}
 	ndr->depth--;
 }
@@ -223,7 +223,7 @@ enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesMSZIPCtr1(struct ndr_push *ndr,
 					NDR_CHECK(ndr_push_compression_end(_ndr_ts, _ndr_ts_compressed));
 				}
 				compressed_length = _ndr_ts->offset;
-				talloc_free(_ndr_ts);
+				TALLOC_FREE(_ndr_ts);
 			}
 		}
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -268,7 +268,7 @@ enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesMSZIPCtr6(struct ndr_push *ndr,
 					NDR_CHECK(ndr_push_compression_end(_ndr_ts, _ndr_ts_compressed));
 				}
 				compressed_length = _ndr_ts->offset;
-				talloc_free(_ndr_ts);
+				TALLOC_FREE(_ndr_ts);
 			}
 		}
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -313,7 +313,7 @@ enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesWIN2K3_LZ77_DIRECT2Ctr1(struct 
 					NDR_CHECK(ndr_push_compression_end(_ndr_ts, _ndr_ts_compressed));
 				}
 				compressed_length = _ndr_ts->offset;
-				talloc_free(_ndr_ts);
+				TALLOC_FREE(_ndr_ts);
 			}
 		}
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -358,7 +358,7 @@ enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesWIN2K3_LZ77_DIRECT2Ctr6(struct 
 					NDR_CHECK(ndr_push_compression_end(_ndr_ts, _ndr_ts_compressed));
 				}
 				compressed_length = _ndr_ts->offset;
-				talloc_free(_ndr_ts);
+				TALLOC_FREE(_ndr_ts);
 			}
 		}
 		NDR_CHECK(ndr_push_align(ndr, 4));

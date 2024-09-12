@@ -48,7 +48,7 @@ static voidpf ndr_zlib_alloc(voidpf opaque, uInt items, uInt size)
 
 static void  ndr_zlib_free(voidpf opaque, voidpf address)
 {
-	talloc_free(address);
+	TALLOC_FREE(address);
 }
 
 static enum ndr_err_code ndr_pull_compression_mszip_cab_chunk(struct ndr_pull *ndrpull,
@@ -974,7 +974,7 @@ enum ndr_err_code ndr_push_compression_end(struct ndr_push *subndr,
 				      compression_alg);
 	}
 
-	talloc_free(uncomndr);
+	TALLOC_FREE(uncomndr);
 	return NDR_ERR_SUCCESS;
 }
 
