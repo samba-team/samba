@@ -672,9 +672,11 @@ NTSTATUS passwd_to_SamInfo3(TALLOC_CTX *mem_ctx,
 		 * Winbind is running and the first element of the user_sids
 		 * is the primary group.
 		 */
-		if (num_sids > 0) {
-			group_sid = user_sids[0];
+		if (num_sids == 0) {
+			DBG_INFO("User %s has no groups\n", unix_username);
+			return NT_STATUS_NO_SUCH_USER;
 		}
+		group_sid = user_sids[0];
 	} else {
 		/*
 		 * Winbind is not running, try to create the group_sid from the
