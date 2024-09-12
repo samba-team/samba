@@ -99,24 +99,30 @@ kerb_prompter(krb5_context ctx, void *data,
 	return 0;
 }
 
+typedef krb5_error_code (*get_init_creds_fn_t)(krb5_context context,
+					       krb5_creds *creds,
+					       krb5_principal client,
+					       krb5_get_init_creds_opt *options,
+					       void *private_data);
+
 /*
-  simulate a kinit, putting the tgt in the given cache location. If cache_name == NULL
-  place in default cache location.
-  remus@snapserver.com
+  simulate a kinit, putting the tgt in the given cache location.
+  cache_name == NULL is not allowed.
 */
-int kerberos_kinit_password_ext(const char *given_principal,
-				const char *password,
-				int time_offset,
-				time_t *expire_time,
-				time_t *renew_till_time,
-				const char *cache_name,
-				bool request_pac,
-				bool add_netbios_addr,
-				time_t renewable_time,
-				TALLOC_CTX *mem_ctx,
-				char **_canon_principal,
-				char **_canon_realm,
-				NTSTATUS *ntstatus)
+static int kerberos_kinit_generic_once(const char *given_principal,
+				       get_init_creds_fn_t get_init_creds_fn,
+				       void *get_init_creds_private,
+				       int time_offset,
+				       time_t *expire_time,
+				       time_t *renew_till_time,
+				       const char *cache_name,
+				       bool request_pac,
+				       bool add_netbios_addr,
+				       time_t renewable_time,
+				       TALLOC_CTX *mem_ctx,
+				       char **_canon_principal,
+				       char **_canon_realm,
+				       NTSTATUS *ntstatus)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	krb5_context ctx = NULL;
@@ -203,9 +209,8 @@ int kerberos_kinit_password_ext(const char *given_principal,
 		krb5_get_init_creds_opt_set_address_list(opt, addr->addrs);
 	}
 
-	if ((code = krb5_get_init_creds_password(ctx, &my_creds, me, discard_const_p(char,password),
-						 kerb_prompter, discard_const_p(char, password),
-						 0, NULL, opt))) {
+	code = get_init_creds_fn(ctx, &my_creds, me, opt, get_init_creds_private);
+	if (code != 0) {
 		goto out;
 	}
 
@@ -280,6 +285,68 @@ int kerberos_kinit_password_ext(const char *given_principal,
 	}
 	TALLOC_FREE(frame);
 	return code;
+}
+
+struct kerberos_kinit_password_ext_private {
+	const char *password;
+};
+
+static krb5_error_code kerberos_kinit_password_ext_cb(krb5_context context,
+						      krb5_creds *creds,
+						      krb5_principal client,
+						      krb5_get_init_creds_opt *options,
+						      void *private_data)
+{
+	struct kerberos_kinit_password_ext_private *ep =
+		(struct kerberos_kinit_password_ext_private *)private_data;
+	krb5_deltat start_time = 0;
+	const char *in_tkt_service = NULL;
+
+	return krb5_get_init_creds_password(context, creds, client,
+					    discard_const_p(char, ep->password),
+					    kerb_prompter,
+					    discard_const_p(char, ep->password),
+					    start_time,
+					    in_tkt_service,
+					    options);
+}
+
+/*
+  simulate a kinit, putting the tgt in the given cache location.
+  cache_name == NULL is not allowed.
+*/
+int kerberos_kinit_password_ext(const char *given_principal,
+				const char *password,
+				int time_offset,
+				time_t *expire_time,
+				time_t *renew_till_time,
+				const char *cache_name,
+				bool request_pac,
+				bool add_netbios_addr,
+				time_t renewable_time,
+				TALLOC_CTX *mem_ctx,
+				char **_canon_principal,
+				char **_canon_realm,
+				NTSTATUS *ntstatus)
+{
+	struct kerberos_kinit_password_ext_private ep = {
+		.password = password,
+	};
+
+	return kerberos_kinit_generic_once(given_principal,
+					   kerberos_kinit_password_ext_cb,
+					   &ep,
+					   time_offset,
+					   expire_time,
+					   renew_till_time,
+					   cache_name,
+					   request_pac,
+					   add_netbios_addr,
+					   renewable_time,
+					   mem_ctx,
+					   _canon_principal,
+					   _canon_realm,
+					   ntstatus);
 }
 
 int ads_kdestroy(const char *cc_name)
