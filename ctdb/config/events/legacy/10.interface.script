@@ -5,7 +5,7 @@
 # this adds/removes IPs from your 
 # public interface
 
-[ -n "$CTDB_BASE" ] || \
+[ -n "$CTDB_BASE" ] ||
 	CTDB_BASE=$(d=$(dirname "$0") && cd -P "$d" && dirname "$PWD")
 
 . "${CTDB_BASE}/functions"
@@ -13,7 +13,7 @@
 load_script_options
 
 if ! have_public_addresses; then
-	if [ "$1" = "init" ] ; then
+	if [ "$1" = "init" ]; then
 		echo "No public addresses file found"
 	fi
 	exit 0
@@ -32,8 +32,8 @@ monitor_interfaces()
 	#
 	# public_ifaces set by get_public_ifaces() above
 	# shellcheck disable=SC2154
-	for _iface in $public_ifaces ; do
-		if interface_monitor "$_iface" ; then
+	for _iface in $public_ifaces; do
+		if interface_monitor "$_iface"; then
 			up_interfaces_found=true
 			$CTDB setifacelink "$_iface" up >/dev/null 2>&1
 		else
@@ -42,11 +42,11 @@ monitor_interfaces()
 		fi
 	done
 
-	if ! $down_interfaces_found ; then
+	if ! $down_interfaces_found; then
 		return 0
 	fi
 
-	if ! $up_interfaces_found ; then
+	if ! $up_interfaces_found; then
 		return 1
 	fi
 
@@ -58,63 +58,61 @@ monitor_interfaces()
 }
 
 # Sets: iface, ip, maskbits
-get_iface_ip_maskbits ()
+get_iface_ip_maskbits()
 {
-    _iface_in="$1"
-    ip="$2"
-    _maskbits_in="$3"
+	_iface_in="$1"
+	ip="$2"
+	_maskbits_in="$3"
 
-    # Intentional word splitting here
-    # shellcheck disable=SC2046
-    set -- $(ip_maskbits_iface "$ip")
-    if [ -n "$1" ] ; then
-	maskbits="$1"
-	iface="$2"
+	# Intentional word splitting here
+	# shellcheck disable=SC2046
+	set -- $(ip_maskbits_iface "$ip")
+	if [ -n "$1" ]; then
+		maskbits="$1"
+		iface="$2"
 
-	if [ "$iface" != "$_iface_in" ] ; then
-	    printf \
-		'WARNING: Public IP %s hosted on interface %s but VNN says %s\n' \
-		"$ip" "$iface" "$_iface_in"
+		if [ "$iface" != "$_iface_in" ]; then
+			printf 'WARNING: Public IP %s hosted on interface %s but VNN says %s\n' \
+				"$ip" "$iface" "$_iface_in"
+		fi
+		if [ "$maskbits" != "$_maskbits_in" ]; then
+			printf 'WARNING: Public IP %s has %s bit netmask but VNN says %s\n' \
+				"$ip" "$maskbits" "$_maskbits_in"
+		fi
+	else
+		die "ERROR: Unable to determine interface for IP ${ip}"
 	fi
-	if [ "$maskbits" != "$_maskbits_in" ] ; then
-	    printf \
-		'WARNING: Public IP %s has %s bit netmask but VNN says %s\n' \
-		    "$ip" "$maskbits" "$_maskbits_in"
-	fi
-    else
-	die "ERROR: Unable to determine interface for IP ${ip}"
-    fi
 }
 
-ip_block ()
+ip_block()
 {
 	_ip="$1"
 	_iface="$2"
 
 	case "$_ip" in
 	*:*) _family="inet6" ;;
-	*)   _family="inet"  ;;
+	*) _family="inet" ;;
 	esac
 
 	# Extra delete copes with previously killed script
 	iptables_wrapper "$_family" \
-			 -D INPUT -i "$_iface" -d "$_ip" -j DROP 2>/dev/null
+		-D INPUT -i "$_iface" -d "$_ip" -j DROP 2>/dev/null
 	iptables_wrapper "$_family" \
-			 -I INPUT -i "$_iface" -d "$_ip" -j DROP
+		-I INPUT -i "$_iface" -d "$_ip" -j DROP
 }
 
-ip_unblock ()
+ip_unblock()
 {
 	_ip="$1"
 	_iface="$2"
 
 	case "$_ip" in
 	*:*) _family="inet6" ;;
-	*)   _family="inet"  ;;
+	*) _family="inet" ;;
 	esac
 
 	iptables_wrapper "$_family" \
-			 -D INPUT -i "$_iface" -d "$_ip" -j DROP 2>/dev/null
+		-D INPUT -i "$_iface" -d "$_ip" -j DROP 2>/dev/null
 }
 
 ctdb_check_args "$@"
@@ -128,8 +126,8 @@ init)
 	}
 
 	_promote="sys/net/ipv4/conf/all/promote_secondaries"
-	get_proc "$_promote" >/dev/null 2>&1 || \
-	    die "Public IPs only supported if promote_secondaries is available"
+	get_proc "$_promote" >/dev/null 2>&1 ||
+		die "Public IPs only supported if promote_secondaries is available"
 
 	# make sure we drop any ips that might still be held if
 	# previous instance of ctdb got killed with -9 or similar
@@ -152,7 +150,7 @@ takeip)
 	update_my_public_ip_addresses "takeip" "$ip"
 
 	add_ip_to_iface "$iface" "$ip" "$maskbits" || {
-		exit 1;
+		exit 1
 	}
 
 	# In case a previous "releaseip" for this IP was killed...
@@ -213,7 +211,7 @@ updateip)
 
 	# Could check maskbits too.  However, that should never change
 	# so we want to notice if it does.
-	if [ "$oiface" = "$niface" ] ; then
+	if [ "$oiface" = "$niface" ]; then
 		echo "Redundant \"updateip\" - ${ip} already on ${niface}"
 		exit 0
 	fi
