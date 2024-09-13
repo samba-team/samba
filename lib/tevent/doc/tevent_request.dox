@@ -90,7 +90,7 @@ other requests. Stopping one request would stop the others, memory resources
 would not be freed, file descriptors might remain open, communication via
 socket could be interrupted, and so on. Therefore it is important to think
 about finishing requests, either successfully or not, and also to prepare
-functions for all possible scenarios, so that the the callbacks do not process
+functions for all possible scenarios, so that the callbacks do not process
 data that are actually invalid or, even worse, in fact non-existent meaning
 that a segmentation fault may arise.
 
