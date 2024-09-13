@@ -1870,7 +1870,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 			r->in.access_mask = PRINTER_ACCESS_USE;
 		}
 
-		/* check smb.conf parameters and the the sec_desc */
+		/* check smb.conf parameters and the sec_desc */
 		raddr = tsocket_address_inet_addr_string(remote_address,
 							 p->mem_ctx);
 		if (raddr == NULL) {

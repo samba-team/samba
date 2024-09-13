@@ -897,7 +897,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 			return 0;
 		}
 
-		/* need to continue the the bottom of the function to
+		/* need to continue at the bottom of the function to
 		   save the correct attributes */
 	}
 
