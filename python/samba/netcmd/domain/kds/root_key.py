@@ -136,7 +136,7 @@ ENCODERS = {
 
 
 def encode_by_key(k, v):
-    """Convert an attribute into a printable form, using the the attribute
+    """Convert an attribute into a printable form, using the attribute
     name to guess the best format."""
     fn = ENCODERS.get(k, lambda x: str(x))
 
