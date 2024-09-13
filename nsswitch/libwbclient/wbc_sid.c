@@ -150,7 +150,7 @@ wbcErr wbcStringToSid(const char *str,
 	sid->id_auth[1] = (x & 0x00ff00000000ULL) >> 32;
 	sid->id_auth[0] = (x & 0xff0000000000ULL) >> 40;
 
-	/* now read the the subauthorities */
+	/* now read the subauthorities */
 	p = q +1;
 	sid->num_auths = 0;
 	while (sid->num_auths < WBC_MAXSUBAUTHS) {

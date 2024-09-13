@@ -2531,7 +2531,7 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 		return NULL;
 	}
 
-	/* Convert the the SID back to the sAMAccountName */
+	/* Convert the SID back to the sAMAccountName */
 
 	wbc_status = wbcCtxLookupSid(ctx->wbc_ctx, &sid, &domain, &name, &type);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
