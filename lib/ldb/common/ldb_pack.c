@@ -636,7 +636,7 @@ static int ldb_unpack_data_flags_v1(struct ldb_context *ldb,
 	 * of these, just to then hold the pointer to the data buffer
 	 * So with LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC we allocate this
 	 * ahead of time and use it for the single values where possible.
-	 * (This is used the the normal search case, but not in the
+	 * (This is used in the normal search case, but not in the
 	 * index case because of caller requirements).
 	 */
 	if (flags & LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC) {
@@ -869,7 +869,7 @@ static int ldb_unpack_data_flags_v2(struct ldb_context *ldb,
 	 * of these, just to then hold the pointer to the data buffer.
 	 * So with LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC we allocate this
 	 * ahead of time and use it for the single values where possible.
-	 * (This is used the the normal search case, but not in the
+	 * (This is used in the normal search case, but not in the
 	 * index case because of caller requirements).
 	 */
 	if (flags & LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC) {
