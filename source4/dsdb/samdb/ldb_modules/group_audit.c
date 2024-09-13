@@ -385,7 +385,7 @@ static enum dn_compare_result dn_compare(
  *
  * Get the DN of a users primary group as a printable string.
  *
- * @param mem_ctx Talloc context the the returned string will be allocated on.
+ * @param mem_ctx Talloc context the returned string will be allocated on.
  * @param module The ldb module
  * @param account_sid The SID for the uses account.
  * @param primary_group_rid The RID for the users primary group.
