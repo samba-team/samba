@@ -129,7 +129,7 @@ static bool afs_createtoken(const char *username, const char *cell,
 	/* We need to create a session key */
 	generate_random_buffer((uint8_t *)p, 8);
 
-	/* Our client code needs the the key in the clear, it does not
+	/* Our client code needs the key in the clear, it does not
 	   know the server-key ... */
 	memcpy(ct->HandShakeKey, p, 8);
 
