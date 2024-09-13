@@ -1524,7 +1524,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 		}
 		li.key_count--;
 
-		/* If the there are no entries left, free the subkey list */
+		/* If there are no entries left, free the subkey list */
 		if (li.key_count == 0) {
 			hbin_free(regf, list_offset);
 			*ret = -1;
@@ -1569,7 +1569,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 		}
 		lf.key_count--;
 
-		/* If the there are no entries left, free the subkey list */
+		/* If there are no entries left, free the subkey list */
 		if (lf.key_count == 0) {
 			hbin_free(regf, list_offset);
 			*ret = -1;
@@ -1615,7 +1615,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 		}
 		lh.key_count--;
 
-		/* If the there are no entries left, free the subkey list */
+		/* If there are no entries left, free the subkey list */
 		if (lh.key_count == 0) {
 			hbin_free(regf, list_offset);
 			*ret = -1;
