@@ -187,7 +187,7 @@ _PUBLIC_ char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *src)
  * 4. If two strings become invalid on the same character, the rest
  *    of the string is compared via ldb ASCII case fold rules.
  *
- *    For example, "hellō\xC2\xFFworld" < " hElLŌ\xFE ", because the the
+ *    For example, "hellō\xC2\xFFworld" < " hElLŌ\xFE ", because the
  *    strings are equal up to 'ō' by utf-8 casefold, but the "\xc2\xff" and
  *    "\xfe" are invalid sequences. At that point, we skip to the byte-by-byte
  *    (but space-eating, casefolding) comparison, and 0xc2 < 0xff.
