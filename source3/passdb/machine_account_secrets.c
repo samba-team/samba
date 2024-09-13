@@ -1037,7 +1037,7 @@ static int secrets_domain_info_kerberos_keys(struct secrets_domain_info1_passwor
 	bool ok;
 #endif /* HAVE_ADS */
 	DATA_BLOB arc4_b = data_blob_null;
-	const uint16_t max_keys = 4;
+	const uint16_t max_keys = 3;
 	struct secrets_domain_info1_kerberos_key *keys = NULL;
 	uint16_t idx = 0;
 	char *salt_data = NULL;
@@ -1047,10 +1047,10 @@ static int secrets_domain_info_kerberos_keys(struct secrets_domain_info1_passwor
 	 * ENCTYPE_AES256_CTS_HMAC_SHA1_96
 	 * ENCTYPE_AES128_CTS_HMAC_SHA1_96
 	 * ENCTYPE_ARCFOUR_HMAC
-	 * ENCTYPE_DES_CBC_MD5
 	 *
 	 * We don't include ENCTYPE_DES_CBC_CRC
-	 * as W2008R2 also doesn't store it anymore.
+	 * and ENCTYPE_DES_CBC_MD5
+	 * as they are no longer supported.
 	 *
 	 * Note we store all enctypes we support,
 	 * including the weak encryption types,
