@@ -2508,7 +2508,7 @@ static bool unpack_canon_ace(files_struct *fsp,
 
 /******************************************************************************
  When returning permissions, try and fit NT display
- semantics if possible. Note the the canon_entries here must have been malloced.
+ semantics if possible. Note that the canon_entries here must have been malloced.
  The list format should be - first entry = owner, followed by group and other user
  entries, last entry = other.
 
