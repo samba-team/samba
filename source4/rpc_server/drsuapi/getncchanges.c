@@ -2597,7 +2597,7 @@ static WERROR getncchanges_chunk_add_la_targets(struct getncchanges_repl_chunk *
 		 * This could happen for a one-way linked attribute, if the
 		 * target is deleted and then later expunged (thus, the source
 		 * object can be left with a hanging link). Continue to send
-		 * the the link (the client-side has already tried once with
+		 * the link (the client-side has already tried once with
 		 * GET_TGT, so it should just end up ignoring it).
 		 */
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {

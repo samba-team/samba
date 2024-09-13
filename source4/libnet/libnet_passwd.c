@@ -876,7 +876,7 @@ static NTSTATUS libnet_SetPassword_samr_handle(struct libnet_context *ctx, TALLO
 /*
  * set a password with DCERPC/SAMR calls
  * 1. connect to the SAMR pipe of users domain PDC (maybe a standalone server or workstation)
- *    is it correct to contact the the pdc of the domain of the user who's password should be set?
+ *    is it correct to contact the pdc of the domain of the user who's password should be set?
  * 2. do a samr_Connect to get a policy handle
  * 3. do a samr_LookupDomain to get the domain sid
  * 4. do a samr_OpenDomain to get a domain handle

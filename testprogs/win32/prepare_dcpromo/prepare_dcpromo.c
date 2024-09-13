@@ -115,7 +115,7 @@ static DWORD StringToSid(const char *str,
 	sid->IdentifierAuthority.Value[1] = 0;
 	sid->IdentifierAuthority.Value[0] = 0;
 
-	/* now read the the subauthorities */
+	/* now read the subauthorities */
 
 	p = q +1;
 	sid->SubAuthorityCount = 0;

@@ -280,7 +280,7 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         (level, ctr) = self.rodc_drs.DsGetNCChanges(self.rodc_drs_handle, 8, req8)
 
         # Get the next replication chunk, but set REPL_SECRET this time. This
-        # is following on the the previous accepted request, but we've changed
+        # is following on the previous accepted request, but we've changed
         # exop to now request secrets. This request should fail
         try:
             req8 = self._exop_req8(dest_dsa=str(self.rodc_ctx.ntds_guid),
