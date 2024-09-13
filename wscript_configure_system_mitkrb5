@@ -4,7 +4,7 @@ from waflib import Logs, Options, Errors
 # Check for kerberos
 have_gssapi=False
 
-krb5_min_required_version = "1.9"
+krb5_min_required_version = "1.16"
 
 # Required versions
 krb5_required_version = krb5_min_required_version
