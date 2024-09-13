@@ -37,7 +37,7 @@ NTSTATUS msrpc_gen(TALLOC_CTX *mem_ctx,
 	       const char *format, ...);
 
 /**
-  this is a tiny msrpc packet parser. This the the partner of msrpc_gen
+  this is a tiny msrpc packet parser. This is the partner of msrpc_gen
 
   format specifiers are:
 

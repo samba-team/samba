@@ -219,7 +219,7 @@ if ((head_ofs + amount) > blob->length) { \
 }
 
 /**
-  this is a tiny msrpc packet parser. This the the partner of msrpc_gen
+  this is a tiny msrpc packet parser. This is the partner of msrpc_gen
 
   format specifiers are:
 
