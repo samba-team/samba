@@ -54,7 +54,7 @@
  * and attributes. The tar callback function is get_file_callback().
  *
  * The callback function checks whether the file should be skipped
- * according the the configuration via tar_create_skip_path(). If it's
+ * according to the configuration via tar_create_skip_path(). If it's
  * not skipped it's downloaded and written to the archive in
  * tar_get_file().
  *
