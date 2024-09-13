@@ -455,7 +455,7 @@ static void test_free_list_read_lock(void **state)
 		assert_int_equal(ret, LDB_SUCCESS);
 
 		/*
-		 * Signal the the parent that we've done the update
+		 * Signal to the parent that we've done the update
 		 */
 		ret = write(to_parent[1], "GO", 2);
 		assert_int_equal(ret, 2);
