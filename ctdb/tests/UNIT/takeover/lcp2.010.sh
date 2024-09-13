@@ -4,7 +4,7 @@
 
 define_test "2 disjoint groups of nodes/addresses, a node becomes healthy"
 
-# This illustrates a bug in LCP2 when the the only candidate for a
+# This illustrates a bug in LCP2 when the only candidate for a
 # source node is chosen to be the "most imbalanced" node.  This means
 # that nodes in the smaller group aren't necessarily (depends on sort
 # order and addresses used) considered as candidates.  If the larger
