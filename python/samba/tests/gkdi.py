@@ -574,7 +574,7 @@ def create_root_key(
 ) -> Tuple[misc.GUID, ldb.Dn]:
     # [MS-GKDI] 3.1.4.1.1, “Creating a New Root Key”, states that if the
     # server receives a GetKey request and the root keys container in Active
-    # Directory is empty, the the server must create a new root key object
+    # Directory is empty, the server must create a new root key object
     # based on the default Server Configuration object. Additional root keys
     # are to be created based on either the default Server Configuration
     # object or an updated one specifying optional configuration values.

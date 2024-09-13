@@ -55,7 +55,7 @@ class ContactCmdTestCase(SambaToolCmdTest):
                                        "mobile": "12345"})
         self.contacts.append(contact)
 
-        # No 'name' is given here, so the name will be made from the the
+        # No 'name' is given here, so the name will be made from the
         # sn, initials and givenName attributes.
         contact = self._randomContact({"expectedname": "James T. Kirk",
                                        "sn": "Kirk",
