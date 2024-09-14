@@ -184,6 +184,9 @@ struct dcerpc_binding_handle_ops {
 	void (*auth_info)(struct dcerpc_binding_handle *h,
 			  enum dcerpc_AuthType *auth_type,
 			  enum dcerpc_AuthLevel *auth_level);
+	NTSTATUS (*auth_session_key)(struct dcerpc_binding_handle *h,
+				     TALLOC_CTX *mem_ctx,
+				     DATA_BLOB *session_key);
 
 	struct tevent_req *(*raw_call_send)(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
@@ -265,6 +268,11 @@ NTSTATUS dcerpc_binding_handle_transport_session_key(
 void dcerpc_binding_handle_auth_info(struct dcerpc_binding_handle *h,
 				     enum dcerpc_AuthType *auth_type,
 				     enum dcerpc_AuthLevel *auth_level);
+
+NTSTATUS dcerpc_binding_handle_auth_session_key(
+		struct dcerpc_binding_handle *h,
+		TALLOC_CTX *mem_ctx,
+		DATA_BLOB *session_key);
 
 struct tevent_req *dcerpc_binding_handle_raw_call_send(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
