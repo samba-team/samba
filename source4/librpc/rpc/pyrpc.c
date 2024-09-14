@@ -161,30 +161,18 @@ static PyObject *py_iface_user_session_key(PyObject *obj, void *closure)
 	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)obj;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
-	struct gensec_security *security = NULL;
 	DATA_BLOB session_key = data_blob_null;
 	static PyObject *session_key_obj = NULL;
 
-	if (iface->pipe == NULL) {
+	if (iface->binding_handle == NULL) {
 		PyErr_SetNTSTATUS(NT_STATUS_NO_USER_SESSION_KEY);
 		return NULL;
 	}
-
-	if (iface->pipe->conn == NULL) {
-		PyErr_SetNTSTATUS(NT_STATUS_NO_USER_SESSION_KEY);
-		return NULL;
-	}
-
-	if (iface->pipe->conn->security_state.generic_state == NULL) {
-		PyErr_SetNTSTATUS(NT_STATUS_NO_USER_SESSION_KEY);
-		return NULL;
-	}
-
-	security = iface->pipe->conn->security_state.generic_state;
-
 	mem_ctx = talloc_new(NULL);
 
-	status = gensec_session_key(security, mem_ctx, &session_key);
+	status = dcerpc_binding_handle_auth_session_key(iface->binding_handle,
+							mem_ctx,
+							&session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		PyErr_SetNTSTATUS(status);
