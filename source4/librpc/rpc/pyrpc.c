@@ -296,7 +296,7 @@ static PyObject *py_iface_transport_encrypted(PyObject *self)
 {
 	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)self;
 
-	if (dcerpc_transport_encrypted(iface->pipe)) {
+	if (dcerpc_binding_handle_transport_encrypted(iface->binding_handle)) {
 		Py_RETURN_TRUE;
 	}
 
