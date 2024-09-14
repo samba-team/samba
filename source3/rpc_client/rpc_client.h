@@ -34,6 +34,7 @@ struct dcerpc_binding_handle;
 struct rpc_pipe_client {
 	struct rpc_pipe_client *prev, *next;
 
+	DATA_BLOB transport_session_key;
 	struct rpc_cli_transport *transport;
 	struct dcerpc_binding_handle *binding_handle;
 

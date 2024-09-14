@@ -2168,24 +2168,17 @@ static NTSTATUS rpccli_bh_transport_session_key(struct dcerpc_binding_handle *h,
 {
 	struct rpccli_bh_state *hs = dcerpc_binding_handle_data(h,
 				     struct rpccli_bh_state);
-	struct pipe_auth_data *auth = NULL;
 	DATA_BLOB sk = { .length = 0, };
 
 	if (hs->rpc_cli == NULL) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
-	if (hs->rpc_cli->auth == NULL) {
+	if (hs->rpc_cli->transport_session_key.length == 0) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
-	auth = hs->rpc_cli->auth;
-
-	if (auth->transport_session_key.length == 0) {
-		return NT_STATUS_NO_USER_SESSION_KEY;
-	}
-
-	sk = auth->transport_session_key;
+	sk = hs->rpc_cli->transport_session_key;
 	sk.length = MIN(sk.length, 16);
 
 	*session_key = data_blob_dup_talloc(mem_ctx, sk);
@@ -3479,10 +3472,10 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 			session = cli->smb1.session;
 		}
 
-		status = smbXcli_session_application_key(session, auth,
-						&auth->transport_session_key);
+		status = smbXcli_session_application_key(session, result,
+						&result->transport_session_key);
 		if (!NT_STATUS_IS_OK(status)) {
-			auth->transport_session_key = data_blob_null;
+			result->transport_session_key = data_blob_null;
 		}
 	}
 
