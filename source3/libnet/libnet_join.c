@@ -1370,7 +1370,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	b = pipe_hnd->binding_handle;
 
-	status = cli_get_session_key(mem_ctx, pipe_hnd, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(
+				b, mem_ctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Error getting session_key of SAM pipe. Error was %s\n",
 			nt_errstr(status)));
