@@ -176,6 +176,11 @@ struct dcerpc_binding_handle_ops {
 	uint32_t (*set_timeout)(struct dcerpc_binding_handle *h,
 				uint32_t timeout);
 
+	bool (*transport_encrypted)(struct dcerpc_binding_handle *h);
+	NTSTATUS (*transport_session_key)(struct dcerpc_binding_handle *h,
+					  TALLOC_CTX *mem_ctx,
+					  DATA_BLOB *session_key);
+
 	void (*auth_info)(struct dcerpc_binding_handle *h,
 			  enum dcerpc_AuthType *auth_type,
 			  enum dcerpc_AuthLevel *auth_level);
@@ -249,6 +254,13 @@ bool dcerpc_binding_handle_is_connected(struct dcerpc_binding_handle *h);
 
 uint32_t dcerpc_binding_handle_set_timeout(struct dcerpc_binding_handle *h,
 					   uint32_t timeout);
+
+bool dcerpc_binding_handle_transport_encrypted(struct dcerpc_binding_handle *h);
+
+NTSTATUS dcerpc_binding_handle_transport_session_key(
+		struct dcerpc_binding_handle *h,
+		TALLOC_CTX *mem_ctx,
+		DATA_BLOB *session_key);
 
 void dcerpc_binding_handle_auth_info(struct dcerpc_binding_handle *h,
 				     enum dcerpc_AuthType *auth_type,
