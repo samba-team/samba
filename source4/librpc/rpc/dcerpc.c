@@ -287,6 +287,44 @@ static void dcerpc_bh_auth_info(struct dcerpc_binding_handle *h,
 	*auth_level = hs->p->conn->security_state.auth_level;
 }
 
+static NTSTATUS dcerpc_bh_auth_session_key(struct dcerpc_binding_handle *h,
+					   TALLOC_CTX *mem_ctx,
+					   DATA_BLOB *session_key)
+{
+	struct dcerpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct dcerpc_bh_state);
+	struct dcecli_security *sec = NULL;
+	NTSTATUS status;
+
+	if (hs->p == NULL) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	if (hs->p->conn == NULL) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	sec = &hs->p->conn->security_state;
+
+	if (sec->auth_type == DCERPC_AUTH_TYPE_NONE) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	if (sec->generic_state == NULL) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	status = gensec_session_key(sec->generic_state,
+				    mem_ctx,
+				    session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	talloc_keep_secret(session_key->data);
+	return NT_STATUS_OK;
+}
+
 struct dcerpc_bh_raw_call_state {
 	struct tevent_context *ev;
 	struct dcerpc_binding_handle *h;
@@ -659,6 +697,7 @@ static const struct dcerpc_binding_handle_ops dcerpc_bh_ops = {
 	.transport_encrypted	= dcerpc_bh_transport_encrypted,
 	.transport_session_key	= dcerpc_bh_transport_session_key,
 	.auth_info		= dcerpc_bh_auth_info,
+	.auth_session_key	= dcerpc_bh_auth_session_key,
 	.raw_call_send		= dcerpc_bh_raw_call_send,
 	.raw_call_recv		= dcerpc_bh_raw_call_recv,
 	.disconnect_send	= dcerpc_bh_disconnect_send,
