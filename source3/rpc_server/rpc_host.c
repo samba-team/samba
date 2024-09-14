@@ -186,7 +186,7 @@ struct rpc_work_process {
 struct rpc_server {
 	struct rpc_host *host;
 	/*
-	 * Index into the rpc_host_state->servers array
+	 * Index into the rpc_host->servers array
 	 */
 	uint32_t server_index;
 
