@@ -134,10 +134,6 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 				    TALLOC_CTX *mem_ctx,
 				    struct netlogon_creds_cli_context **pcreds);
 
-NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
-			     struct rpc_pipe_client *cli,
-			     DATA_BLOB *session_key);
-
 #endif /* _CLI_PIPE_H */
 
 /* vim: set ts=8 sw=8 noet cindent ft=c.doxygen: */
