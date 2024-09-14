@@ -263,6 +263,7 @@ struct smbd_smb2_close_state {
 };
 
 static void smbd_smb2_close_wait_done(struct tevent_req *subreq);
+static void smbd_smb2_close_delay_lease_break_done(struct tevent_req *subreq);
 
 static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
@@ -343,6 +344,56 @@ static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 		return req;
 	}
 
+	if (in_fsp->fsp_flags.initial_delete_on_close) {
+		struct tevent_req *subreq = NULL;
+		struct share_mode_lock *lck = NULL;
+		struct timeval timeout;
+
+		lck = get_existing_share_mode_lock(mem_ctx,
+						   in_fsp->file_id);
+		if (lck == NULL) {
+			tevent_req_nterror(req,
+					   NT_STATUS_UNSUCCESSFUL);
+			return tevent_req_post(req, ev);
+		}
+
+		if (is_delete_on_close_set(lck, in_fsp->name_hash)) {
+			TALLOC_FREE(lck);
+			goto do_close;
+		}
+
+		timeout = tevent_timeval_set(OPLOCK_BREAK_TIMEOUT, 0);
+		timeout = timeval_sum(&smb2req->request_time, &timeout);
+
+		subreq = delay_for_handle_lease_break_send(req,
+							   ev,
+							   timeout,
+							   in_fsp,
+							   &lck);
+		if (tevent_req_nomem(subreq, req)) {
+			TALLOC_FREE(lck);
+			return tevent_req_post(req, ev);
+		}
+		if (tevent_req_is_in_progress(subreq)) {
+			tevent_req_set_callback(
+				subreq,
+				smbd_smb2_close_delay_lease_break_done,
+				req);
+			return req;
+		}
+
+		status = delay_for_handle_lease_break_recv(subreq,
+							   mem_ctx,
+							   &lck);
+		TALLOC_FREE(subreq);
+		TALLOC_FREE(lck);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+		/* Fall through */
+	}
+
+do_close:
 	status = smbd_smb2_close(smb2req,
 				 &state->in_fsp,
 				 state->in_flags,
@@ -375,6 +426,50 @@ static void smbd_smb2_close_wait_done(struct tevent_req *subreq)
 
 	tevent_queue_wait_recv(subreq);
 	TALLOC_FREE(subreq);
+
+	status = smbd_smb2_close(state->smb2req,
+				 &state->in_fsp,
+				 state->in_flags,
+				 &state->out_flags,
+				 &state->out_creation_ts,
+				 &state->out_last_access_ts,
+				 &state->out_last_write_ts,
+				 &state->out_change_ts,
+				 &state->out_allocation_size,
+				 &state->out_end_of_file,
+				 &state->out_file_attributes);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static void smbd_smb2_close_delay_lease_break_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq, struct tevent_req);
+	struct smbd_smb2_close_state *state = tevent_req_data(
+		req, struct smbd_smb2_close_state);
+	struct share_mode_lock *lck = NULL;
+	NTSTATUS status;
+	bool ok;
+
+	status = delay_for_handle_lease_break_recv(subreq, state, &lck);
+	TALLOC_FREE(subreq);
+	TALLOC_FREE(lck);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	/*
+	 * Make sure we run as the user again
+	 */
+	ok = change_to_user_and_service(
+		state->smb2req->tcon->compat,
+		state->smb2req->session->global->session_wire_id);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return;
+	}
 
 	status = smbd_smb2_close(state->smb2req,
 				 &state->in_fsp,
