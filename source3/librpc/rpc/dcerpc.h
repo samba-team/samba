@@ -44,9 +44,6 @@ struct pipe_auth_data {
 	bool verified_bitmask1;
 
 	struct gensec_security *auth_ctx;
-
-	/* Only the client code uses this for now */
-	DATA_BLOB transport_session_key;
 };
 
 /* The following definitions come from librpc/rpc/dcerpc_helpers.c  */
