@@ -98,6 +98,27 @@ uint32_t dcerpc_binding_handle_set_timeout(struct dcerpc_binding_handle *h,
 	return h->ops->set_timeout(h, timeout);
 }
 
+bool dcerpc_binding_handle_transport_encrypted(struct dcerpc_binding_handle *h)
+{
+	if (h->ops->transport_encrypted == NULL) {
+		return false;
+	}
+
+	return h->ops->transport_encrypted(h);
+}
+
+NTSTATUS dcerpc_binding_handle_transport_session_key(
+		struct dcerpc_binding_handle *h,
+		TALLOC_CTX *mem_ctx,
+		DATA_BLOB *session_key)
+{
+	if (h->ops->transport_session_key == NULL) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	return h->ops->transport_session_key(h, mem_ctx, session_key);
+}
+
 void dcerpc_binding_handle_auth_info(struct dcerpc_binding_handle *h,
 				     enum dcerpc_AuthType *auth_type,
 				     enum dcerpc_AuthLevel *auth_level)
