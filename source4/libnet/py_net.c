@@ -488,9 +488,9 @@ static PyObject *py_net_replicate_init(py_net_Object *self, PyObject *args, PyOb
 		return NULL;
 	}
 
-	status = gensec_session_key(s->drs_pipe->pipe->conn->security_state.generic_state,
-				    s,
-				    &s->gensec_skey);
+	status = dcerpc_binding_handle_auth_session_key(s->drs_pipe->binding_handle,
+							s,
+							&s->gensec_skey);
 	if (!NT_STATUS_IS_OK(status)) {
 		char *error_string = talloc_asprintf(s,
 						     "Unable to get session key from drspipe: %s",
@@ -681,9 +681,9 @@ static PyObject *py_net_replicate_decrypt(py_net_Object *self, PyObject *args, P
 	}
 	drs_pipe = (dcerpc_InterfaceObject *)(py_drspipe);
 
-	status = gensec_session_key(drs_pipe->pipe->conn->security_state.generic_state,
-				    frame,
-				    &gensec_skey);
+	status = dcerpc_binding_handle_auth_session_key(drs_pipe->binding_handle,
+							frame,
+							&gensec_skey);
 	if (!NT_STATUS_IS_OK(status)) {
 		char *error_string
 			= talloc_asprintf(frame,
