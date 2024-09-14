@@ -362,16 +362,23 @@ static NTSTATUS cmd_set_ss_level(struct dcerpc_binding *binding)
         	struct cmd_set *tmp_set;
 
 		for (tmp_set = tmp->cmd_set; tmp_set->name; tmp_set++) {
+			struct dcerpc_binding_handle *tmp_b = NULL;
+			enum dcerpc_AuthType tmp_auth_type;
+			enum dcerpc_AuthLevel tmp_auth_level;
+
 			if (tmp_set->rpc_pipe == NULL) {
 				continue;
 			}
 
-			if ((tmp_set->rpc_pipe->auth->auth_type
-			     != auth_type)
-			    || (tmp_set->rpc_pipe->auth->auth_level
-				!= auth_level)) {
+			tmp_b = tmp_set->rpc_pipe->binding_handle;
+			dcerpc_binding_handle_auth_info(tmp_b,
+							&tmp_auth_type,
+							&tmp_auth_level);
+
+			if (tmp_auth_type != auth_type ||
+			    tmp_auth_level != auth_level)
+			{
 				TALLOC_FREE(tmp_set->rpc_pipe);
-				tmp_set->rpc_pipe = NULL;
 			}
 		}
 	}
