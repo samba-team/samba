@@ -3198,7 +3198,8 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 		password_expired = atoi(argv[4]);
 	}
 
-	status = cli_get_session_key(frame, cli, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(
+				b, frame, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
