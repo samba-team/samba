@@ -213,6 +213,61 @@ static uint32_t dcerpc_bh_set_timeout(struct dcerpc_binding_handle *h,
 	return old;
 }
 
+static bool dcerpc_bh_transport_encrypted(struct dcerpc_binding_handle *h)
+{
+	struct dcerpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct dcerpc_bh_state);
+
+	if (hs->p == NULL) {
+		return false;
+	}
+
+	if (hs->p->conn == NULL) {
+		return false;
+	}
+
+	return hs->p->conn->transport.encrypted;
+}
+
+static NTSTATUS dcerpc_bh_transport_session_key(struct dcerpc_binding_handle *h,
+						TALLOC_CTX *mem_ctx,
+						DATA_BLOB *session_key)
+{
+	struct dcerpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct dcerpc_bh_state);
+	struct dcecli_security *sec = NULL;
+	DATA_BLOB sk = { .length = 0, };
+	NTSTATUS status;
+
+	if (hs->p == NULL) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	if (hs->p->conn == NULL) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	sec = &hs->p->conn->security_state;
+
+	if (sec->session_key == NULL) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	status = sec->session_key(hs->p->conn, &sk);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	sk.length = MIN(sk.length, 16);
+
+	*session_key = data_blob_dup_talloc(mem_ctx, sk);
+	if (session_key->length != sk.length) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_keep_secret(session_key->data);
+	return NT_STATUS_OK;
+}
+
 static void dcerpc_bh_auth_info(struct dcerpc_binding_handle *h,
 				enum dcerpc_AuthType *auth_type,
 				enum dcerpc_AuthLevel *auth_level)
@@ -601,6 +656,8 @@ static const struct dcerpc_binding_handle_ops dcerpc_bh_ops = {
 	.name			= "dcerpc",
 	.is_connected		= dcerpc_bh_is_connected,
 	.set_timeout		= dcerpc_bh_set_timeout,
+	.transport_encrypted	= dcerpc_bh_transport_encrypted,
+	.transport_session_key	= dcerpc_bh_transport_session_key,
 	.auth_info		= dcerpc_bh_auth_info,
 	.raw_call_send		= dcerpc_bh_raw_call_send,
 	.raw_call_recv		= dcerpc_bh_raw_call_recv,
