@@ -1612,9 +1612,10 @@ static void becomeDC_drsuapi1_connect_recv(struct composite_context *req)
 
 	s->drsuapi1.drsuapi_handle = s->drsuapi1.pipe->binding_handle;
 
-	c->status = gensec_session_key(s->drsuapi1.pipe->conn->security_state.generic_state,
-				       s,
-				       &s->drsuapi1.gensec_skey);
+	c->status = dcerpc_binding_handle_auth_session_key(
+				s->drsuapi1.drsuapi_handle,
+				s,
+				&s->drsuapi1.gensec_skey);
 	if (!composite_is_ok(c)) return;
 
 	becomeDC_drsuapi_bind_send(s, &s->drsuapi1, becomeDC_drsuapi1_bind_recv);
@@ -2524,9 +2525,10 @@ static void becomeDC_drsuapi2_connect_recv(struct composite_context *req)
 
 	s->drsuapi2.drsuapi_handle = s->drsuapi2.pipe->binding_handle;
 
-	c->status = gensec_session_key(s->drsuapi2.pipe->conn->security_state.generic_state,
-				       s,
-				       &s->drsuapi2.gensec_skey);
+	c->status = dcerpc_binding_handle_auth_session_key(
+				s->drsuapi2.drsuapi_handle,
+				s,
+				&s->drsuapi2.gensec_skey);
 	if (!composite_is_ok(c)) return;
 
 	becomeDC_drsuapi_bind_send(s, &s->drsuapi2, becomeDC_drsuapi2_bind_recv);
@@ -2594,9 +2596,10 @@ static void becomeDC_drsuapi3_connect_recv(struct composite_context *req)
 
 	s->drsuapi3.drsuapi_handle = s->drsuapi3.pipe->binding_handle;
 
-	c->status = gensec_session_key(s->drsuapi3.pipe->conn->security_state.generic_state,
-				       s,
-				       &s->drsuapi3.gensec_skey);
+	c->status = dcerpc_binding_handle_auth_session_key(
+				s->drsuapi3.drsuapi_handle,
+				s,
+				&s->drsuapi3.gensec_skey);
 	if (!composite_is_ok(c)) return;
 
 	becomeDC_drsuapi3_pull_schema_send(s);
