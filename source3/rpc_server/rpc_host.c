@@ -611,9 +611,7 @@ static void rpc_server_get_endpoints_done(struct tevent_req *subreq)
 	 * in order to use a 16-bit association group space
 	 * per worker.
 	 */
-	if (state->num_workers > 65536) {
-		state->num_workers = 65536;
-	}
+	state->num_workers = MIN(state->num_workers, UINT16_MAX);
 
 	state->idle_seconds = smb_strtoul(
 		lines[1], NULL, 10, &ret, SMB_STR_FULL_STR_CONV);
