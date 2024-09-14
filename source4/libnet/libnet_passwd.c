@@ -500,6 +500,8 @@ NTSTATUS libnet_ChangePassword(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, 
 
 static NTSTATUS libnet_SetPassword_samr_handle_26(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SetPassword *r)
 {
+	struct dcerpc_binding_handle *b =
+		r->samr_handle.in.dcerpc_pipe->binding_handle;
 	NTSTATUS status;
 	struct samr_SetUserInfo2 sui;
 	union samr_UserInfo u_info;
@@ -537,7 +539,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_26(struct libnet_context *ctx, TA
 	sui.in.level = 26;
 
 	/* 7. try samr_SetUserInfo2 level 26 to set the password */
-	status = dcerpc_samr_SetUserInfo2_r(r->samr_handle.in.dcerpc_pipe->binding_handle, mem_ctx, &sui);
+	status = dcerpc_samr_SetUserInfo2_r(b, mem_ctx, &sui);
 	/* check result of samr_SetUserInfo2 level 26 */
 	if (NT_STATUS_IS_OK(status) && !NT_STATUS_IS_OK(sui.out.result)) {
 		status = sui.out.result;
@@ -554,6 +556,8 @@ static NTSTATUS libnet_SetPassword_samr_handle_26(struct libnet_context *ctx, TA
 
 static NTSTATUS libnet_SetPassword_samr_handle_25(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SetPassword *r)
 {
+	struct dcerpc_binding_handle *b =
+		r->samr_handle.in.dcerpc_pipe->binding_handle;
 	NTSTATUS status;
 	struct samr_SetUserInfo2 sui;
 	union samr_UserInfo u_info;
@@ -593,7 +597,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_25(struct libnet_context *ctx, TA
 	sui.in.level = 25;
 
 	/* 8. try samr_SetUserInfo2 level 25 to set the password */
-	status = dcerpc_samr_SetUserInfo2_r(r->samr_handle.in.dcerpc_pipe->binding_handle, mem_ctx, &sui);
+	status = dcerpc_samr_SetUserInfo2_r(b, mem_ctx, &sui);
 	if (NT_STATUS_IS_OK(status) && !NT_STATUS_IS_OK(sui.out.result)) {
 		status = sui.out.result;
 	}
@@ -609,6 +613,8 @@ static NTSTATUS libnet_SetPassword_samr_handle_25(struct libnet_context *ctx, TA
 
 static NTSTATUS libnet_SetPassword_samr_handle_24(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SetPassword *r)
 {
+	struct dcerpc_binding_handle *b =
+		r->samr_handle.in.dcerpc_pipe->binding_handle;
 	NTSTATUS status;
 	struct samr_SetUserInfo2 sui;
 	union samr_UserInfo u_info;
@@ -662,7 +668,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_24(struct libnet_context *ctx, TA
 	sui.in.level = 24;
 
 	/* 9. try samr_SetUserInfo2 level 24 to set the password */
-	status = dcerpc_samr_SetUserInfo2_r(r->samr_handle.in.dcerpc_pipe->binding_handle, mem_ctx, &sui);
+	status = dcerpc_samr_SetUserInfo2_r(b, mem_ctx, &sui);
 	if (NT_STATUS_IS_OK(status) && !NT_STATUS_IS_OK(sui.out.result)) {
 		status = sui.out.result;
 	}
@@ -680,6 +686,8 @@ out:
 
 static NTSTATUS libnet_SetPassword_samr_handle_23(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SetPassword *r)
 {
+	struct dcerpc_binding_handle *b =
+		r->samr_handle.in.dcerpc_pipe->binding_handle;
 	NTSTATUS status;
 	struct samr_SetUserInfo2 sui;
 	union samr_UserInfo u_info;
@@ -736,7 +744,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_23(struct libnet_context *ctx, TA
 	sui.in.level = 23;
 
 	/* 10. try samr_SetUserInfo2 level 23 to set the password */
-	status = dcerpc_samr_SetUserInfo2_r(r->samr_handle.in.dcerpc_pipe->binding_handle, mem_ctx, &sui);
+	status = dcerpc_samr_SetUserInfo2_r(b, mem_ctx, &sui);
 	if (NT_STATUS_IS_OK(status) && !NT_STATUS_IS_OK(sui.out.result)) {
 		status = sui.out.result;
 	}
@@ -753,6 +761,8 @@ out:
 
 static NTSTATUS libnet_SetPassword_samr_handle_18(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_SetPassword *r)
 {
+	struct dcerpc_binding_handle *b =
+		r->samr_handle.in.dcerpc_pipe->binding_handle;
 	NTSTATUS status;
 	struct samr_SetUserInfo2 sui;
 	union samr_UserInfo u_info;
@@ -795,7 +805,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_18(struct libnet_context *ctx, TA
 	sui.in.level = 18;
 
 	/* 9. try samr_SetUserInfo2 level 18 to set the password */
-	status = dcerpc_samr_SetUserInfo2_r(r->samr_handle.in.dcerpc_pipe->binding_handle, mem_ctx, &sui);
+	status = dcerpc_samr_SetUserInfo2_r(b, mem_ctx, &sui);
 	if (NT_STATUS_IS_OK(status) && !NT_STATUS_IS_OK(sui.out.result)) {
 		status = sui.out.result;
 	}
