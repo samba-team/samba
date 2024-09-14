@@ -2162,6 +2162,40 @@ static uint32_t rpccli_bh_set_timeout(struct dcerpc_binding_handle *h,
 	return old;
 }
 
+static NTSTATUS rpccli_bh_transport_session_key(struct dcerpc_binding_handle *h,
+						TALLOC_CTX *mem_ctx,
+						DATA_BLOB *session_key)
+{
+	struct rpccli_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct rpccli_bh_state);
+	struct pipe_auth_data *auth = NULL;
+	DATA_BLOB sk = { .length = 0, };
+
+	if (hs->rpc_cli == NULL) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	if (hs->rpc_cli->auth == NULL) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	auth = hs->rpc_cli->auth;
+
+	if (auth->transport_session_key.length == 0) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	sk = auth->transport_session_key;
+	sk.length = MIN(sk.length, 16);
+
+	*session_key = data_blob_dup_talloc(mem_ctx, sk);
+	if (session_key->length != sk.length) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_keep_secret(session_key->data);
+	return NT_STATUS_OK;
+}
+
 static void rpccli_bh_auth_info(struct dcerpc_binding_handle *h,
 				enum dcerpc_AuthType *auth_type,
 				enum dcerpc_AuthLevel *auth_level)
@@ -2352,6 +2386,7 @@ static const struct dcerpc_binding_handle_ops rpccli_bh_ops = {
 	.name			= "rpccli",
 	.is_connected		= rpccli_bh_is_connected,
 	.set_timeout		= rpccli_bh_set_timeout,
+	.transport_session_key	= rpccli_bh_transport_session_key,
 	.auth_info		= rpccli_bh_auth_info,
 	.raw_call_send		= rpccli_bh_raw_call_send,
 	.raw_call_recv		= rpccli_bh_raw_call_recv,
