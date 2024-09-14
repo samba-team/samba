@@ -708,8 +708,9 @@ static bool test_GetNCChanges(struct torture_context *tctx,
 			dump_data_pw("CREDENTIALS nthash:", nthash->hash, sizeof(nthash->hash));
 		}
 	}
-	status = gensec_session_key(ctx->new_dc.drsuapi.drs_pipe->conn->security_state.generic_state,
-				    ctx, &gensec_skey);
+	status = dcerpc_binding_handle_auth_session_key(ctx->new_dc.drsuapi.drs_handle,
+							ctx,
+							&gensec_skey);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("failed to get gensec session key: %s\n", nt_errstr(status));
 		return false;
