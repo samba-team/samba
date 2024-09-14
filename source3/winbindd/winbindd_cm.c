@@ -2876,9 +2876,7 @@ static NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 	/*
 	 * rpccli_is_connected handles more error cases
 	 */
-	if (rpccli_is_connected(conn->lsa_pipe_tcp) &&
-	    conn->lsa_pipe_tcp->transport->transport == NCACN_IP_TCP &&
-	    conn->lsa_pipe_tcp->auth->auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
+	if (rpccli_is_connected(conn->lsa_pipe_tcp)) {
 		goto done;
 	}
 
