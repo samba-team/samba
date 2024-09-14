@@ -515,10 +515,12 @@ static NTSTATUS libnet_SetPassword_samr_handle_26(struct libnet_context *ctx, TA
 	ZERO_STRUCT(u_info);
 	u_info.info26.password_expired = 0;
 
-	status = dcerpc_fetch_session_key(r->samr_handle.in.dcerpc_pipe, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b,
+							     mem_ctx,
+							     &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr_handle.out.error_string = talloc_asprintf(mem_ctx,
-								  "dcerpc_fetch_session_key failed: %s",
+								  "transport_session_key failed: %s",
 								  nt_errstr(status));
 		return status;
 	}
@@ -526,6 +528,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_26(struct libnet_context *ctx, TA
 	status = encode_rc4_passwd_buffer(r->samr_handle.in.newpassword,
 					  &session_key,
 					  &u_info.info26.password);
+	data_blob_clear_free(&session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr_handle.out.error_string =
 			talloc_asprintf(mem_ctx,
@@ -572,10 +575,12 @@ static NTSTATUS libnet_SetPassword_samr_handle_25(struct libnet_context *ctx, TA
 	u_info.info25.info = *r->samr_handle.in.info21;
 	u_info.info25.info.fields_present |= SAMR_FIELD_NT_PASSWORD_PRESENT;
 
-	status = dcerpc_fetch_session_key(r->samr_handle.in.dcerpc_pipe, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b,
+							     mem_ctx,
+							     &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr_handle.out.error_string = talloc_asprintf(mem_ctx,
-						"dcerpc_fetch_session_key failed: %s",
+						"transport_session_key failed: %s",
 						nt_errstr(status));
 		return status;
 	}
@@ -583,6 +588,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_25(struct libnet_context *ctx, TA
 	status = encode_rc4_passwd_buffer(r->samr_handle.in.newpassword,
 					  &session_key,
 					  &u_info.info25.password);
+	data_blob_clear_free(&session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr_handle.out.error_string =
 			talloc_asprintf(mem_ctx,
@@ -632,10 +638,12 @@ static NTSTATUS libnet_SetPassword_samr_handle_24(struct libnet_context *ctx, TA
 	encode_pw_buffer(u_info.info24.password.data, r->samr_handle.in.newpassword, STR_UNICODE);
 	u_info.info24.password_expired = 0;
 
-	status = dcerpc_fetch_session_key(r->samr_handle.in.dcerpc_pipe, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b,
+							     mem_ctx,
+							     &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr_handle.out.error_string = talloc_asprintf(mem_ctx,
-						"dcerpc_fetch_session_key failed: %s",
+						"transport_session_key failed: %s",
 						nt_errstr(status));
 		return status;
 	}
@@ -649,6 +657,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_24(struct libnet_context *ctx, TA
 				GNUTLS_CIPHER_ARCFOUR_128,
 				&enc_session_key,
 				NULL);
+	data_blob_clear_free(&session_key);
 	if (rc < 0) {
 		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 		goto out;
@@ -706,11 +715,13 @@ static NTSTATUS libnet_SetPassword_samr_handle_23(struct libnet_context *ctx, TA
 	u_info.info23.info.fields_present |= SAMR_FIELD_NT_PASSWORD_PRESENT;
 	encode_pw_buffer(u_info.info23.password.data, r->samr_handle.in.newpassword, STR_UNICODE);
 
-	status = dcerpc_fetch_session_key(r->samr_handle.in.dcerpc_pipe, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b,
+							     mem_ctx,
+							     &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr_handle.out.error_string
 			= talloc_asprintf(mem_ctx,
-					  "dcerpc_fetch_session_key failed: %s",
+					  "transport_session_key failed: %s",
 					  nt_errstr(status));
 		return status;
 	}
@@ -724,6 +735,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_23(struct libnet_context *ctx, TA
 				GNUTLS_CIPHER_ARCFOUR_128,
 				&_session_key,
 				NULL);
+	data_blob_clear_free(&session_key);
 	if (rc < 0) {
 		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 		goto out;
@@ -785,16 +797,19 @@ static NTSTATUS libnet_SetPassword_samr_handle_18(struct libnet_context *ctx, TA
 	u_info.info18.nt_pwd_active = 1;
 	u_info.info18.password_expired = 0;
 
-	status = dcerpc_fetch_session_key(r->samr_handle.in.dcerpc_pipe, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b,
+							     mem_ctx,
+							     &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->samr_handle.out.error_string = talloc_asprintf(mem_ctx,
-						"dcerpc_fetch_session_key failed: %s",
+						"transport_session_key failed: %s",
 						nt_errstr(status));
 		return status;
 	}
 
 	rc = sess_crypt_blob(&ntpwd_out, &ntpwd_in,
 			     &session_key, SAMBA_GNUTLS_ENCRYPT);
+	data_blob_clear_free(&session_key);
 	if (rc < 0) {
 		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 		goto out;
