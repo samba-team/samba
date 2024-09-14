@@ -573,6 +573,14 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 		}
 	}
 
+	status = dcerpc_binding_handle_auth_session_key(
+			b, mem_ctx, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to get Session Key: %s",
+			nt_errstr(status));
+		return ntstatus_to_werror(status);
+	}
+
 	for (y=0; ;y++) {
 
 		if (level == 8) {
@@ -607,13 +615,6 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 		} else if (level_out == 2 && ctr.ctr2.mszip1.ts) {
 			out_level = 1;
 			ctr1 = &ctr.ctr2.mszip1.ts->ctr1;
-		}
-
-		status = cli_get_session_key(mem_ctx, cli, &session_key);
-		if (!NT_STATUS_IS_OK(status)) {
-			printf("Failed to get Session Key: %s",
-				nt_errstr(status));
-			return ntstatus_to_werror(status);
 		}
 
 		if (out_level == 1) {
