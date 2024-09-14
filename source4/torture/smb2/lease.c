@@ -4833,6 +4833,239 @@ static bool test_lease_v2_bug_15148(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_initial_delete_tdis(struct torture_context *tctx,
+				     struct smb2_tree *tree1)
+{
+	struct smb2_tree *tree2 = NULL;
+	struct smb2_create c = {};
+	struct smb2_handle h1 = {};
+	struct smb2_lease lease1 = {};
+	const char *fname = "test_initial_delete_tdis.dat";
+	NTSTATUS status;
+	bool ret = true;
+
+	tree1->session->transport->lease.handler	= torture_lease_handler;
+	tree1->session->transport->lease.private_data = tree1;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	ret = torture_smb2_connection(tctx, &tree2);
+	torture_assert_goto(tctx, ret, ret, done, "torture_smb2_connection failed\n");
+
+	smb2_util_unlink(tree1, fname);
+
+	smb2_lease_v2_create_share(&c, &lease1, false, fname,
+				   smb2_util_share_access("RWD"),
+				   LEASE1,
+				   NULL,
+				   smb2_util_lease_state("RH"),
+				   0);
+	status = smb2_create(tree1, tree1, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+
+	c = (struct smb2_create) {
+		.in.desired_access = SEC_RIGHTS_FILE_ALL ,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree2, tree2, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+	status = smb2_tdis(tree2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+	CHECK_BREAK_INFO_V2(tree1->session->transport,
+			    "RH", "R",
+			    LEASE1,
+			    2);
+
+	status = smb2_util_close(tree1, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(h1);
+
+	c = (struct smb2_create) {
+		.in.desired_access = SEC_RIGHTS_FILE_ALL ,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree1, tree1, &c);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+					   NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done,
+					   "file still there?\n");
+
+done:
+	smb2_util_unlink(tree1, fname);
+	return ret;
+}
+
+static bool test_initial_delete_logoff(struct torture_context *tctx,
+				       struct smb2_tree *tree1)
+{
+	struct smb2_tree *tree2 = NULL;
+	struct smb2_create c = {};
+	struct smb2_handle h1 = {};
+	struct smb2_lease lease1 = {};
+	const char *fname = "test_initial_delete_logoff.dat";
+	NTSTATUS status;
+	bool ret = true;
+
+	tree1->session->transport->lease.handler	= torture_lease_handler;
+	tree1->session->transport->lease.private_data = tree1;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	ret = torture_smb2_connection(tctx, &tree2);
+	torture_assert_goto(tctx, ret, ret, done, "torture_smb2_connection failed\n");
+
+	smb2_util_unlink(tree2, fname);
+
+	smb2_lease_v2_create_share(&c, &lease1, false, fname,
+				   smb2_util_share_access("RWD"),
+				   LEASE1,
+				   NULL,
+				   smb2_util_lease_state("RH"),
+				   0);
+	status = smb2_create(tree1, tree1, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+
+	c = (struct smb2_create) {
+		.in.desired_access = SEC_RIGHTS_FILE_ALL ,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree2, tree2, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+	status = smb2_logoff(tree2->session);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+	CHECK_BREAK_INFO_V2(tree1->session->transport,
+			    "RH", "R",
+			    LEASE1,
+			    2);
+
+	status = smb2_util_close(tree1, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(h1);
+
+	c = (struct smb2_create) {
+		.in.desired_access = SEC_RIGHTS_FILE_ALL ,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree1, tree1, &c);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+					   NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done,
+					   "file still there?\n");
+
+done:
+	return ret;
+}
+
+static bool test_initial_delete_disconnect(struct torture_context *tctx,
+					   struct smb2_tree *tree1)
+{
+	struct smb2_tree *tree2 = NULL;
+	struct smb2_create c = {};
+	struct smb2_handle h1 = {};
+	struct smb2_lease lease1 = {};
+	const char *fname = "test_initial_delete_disconnect.dat";
+	NTSTATUS status;
+	bool ret = true;
+
+	tree1->session->transport->lease.handler	= torture_lease_handler;
+	tree1->session->transport->lease.private_data = tree1;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	ret = torture_smb2_connection(tctx, &tree2);
+	torture_assert_goto(tctx, ret, ret, done, "torture_smb2_connection failed\n");
+
+	smb2_util_unlink(tree2, fname);
+
+	smb2_lease_v2_create_share(&c, &lease1, false, fname,
+				   smb2_util_share_access("RWD"),
+				   LEASE1,
+				   NULL,
+				   smb2_util_lease_state("RH"),
+				   0);
+	status = smb2_create(tree1, tree1, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+
+	c = (struct smb2_create) {
+		.in.desired_access = SEC_RIGHTS_FILE_ALL ,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree2, tree2, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+
+	TALLOC_FREE(tree2);
+
+	CHECK_BREAK_INFO_V2(tree1->session->transport,
+			    "RH", "R",
+			    LEASE1,
+			    2);
+
+	status = smb2_util_close(tree1, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(h1);
+
+	c = (struct smb2_create) {
+		.in.desired_access = SEC_RIGHTS_FILE_ALL ,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS,
+		.in.fname = fname,
+	};
+
+	status = smb2_create(tree1, tree1, &c);
+	torture_assert_ntstatus_equal_goto(tctx, status,
+					   NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done,
+					   "file still there?\n");
+
+done:
+	return ret;
+}
+
 struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -4887,6 +5120,12 @@ struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 				test_lease_v2_bug_15148);
 	torture_suite_add_1smb2_test(suite, "v2_rename_target_overwrite",
 				test_lease_v2_rename_target_overwrite);
+	torture_suite_add_1smb2_test(suite, "initial_delete_tdis",
+				     test_initial_delete_tdis);
+	torture_suite_add_1smb2_test(suite, "initial_delete_logoff",
+				     test_initial_delete_logoff);
+	torture_suite_add_1smb2_test(suite, "initial_delete_disconnect",
+				     test_initial_delete_disconnect);
 
 	suite->description = talloc_strdup(suite, "SMB2-LEASE tests");
 
