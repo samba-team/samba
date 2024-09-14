@@ -6118,7 +6118,8 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 
 	init_lsa_String(&lsa_acct_name, acct_name);
 
-	status = cli_get_session_key(frame, pipe_hnd, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(
+				b, frame, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Error getting session_key of SAM pipe. Error was %s\n",
 			nt_errstr(status)));
@@ -6803,7 +6804,8 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 	data = data_blob(info->password.password->data,
 			 info->password.password->length);
 
-	nt_status = cli_get_session_key(mem_ctx, pipe_hnd, &session_key);
+	nt_status = dcerpc_binding_handle_transport_session_key(
+				b, mem_ctx, &session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Could not retrieve session key: %s\n", nt_errstr(nt_status)));
 		goto done;

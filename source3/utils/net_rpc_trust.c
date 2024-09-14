@@ -260,7 +260,8 @@ static NTSTATUS connect_and_get_info(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	status = cli_get_session_key(mem_ctx, *pipe_hnd, session_key);
+	status = dcerpc_binding_handle_transport_session_key(
+			(*pipe_hnd)->binding_handle, mem_ctx, session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Error getting session_key of LSA pipe. Error was %s\n",
 			nt_errstr(status)));
