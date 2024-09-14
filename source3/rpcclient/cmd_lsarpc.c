@@ -1489,7 +1489,8 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	status = cli_get_session_key(mem_ctx, cli, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(
+				b, mem_ctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Could not retrieve session key: %s\n", nt_errstr(status)));
 		goto done;
@@ -1559,7 +1560,8 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	status = cli_get_session_key(mem_ctx, cli, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(
+				b, mem_ctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Could not retrieve session key: %s\n", nt_errstr(status)));
 		goto done;
@@ -1727,7 +1729,8 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	status = cli_get_session_key(mem_ctx, cli, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(
+				b, mem_ctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Could not retrieve session key: %s\n", nt_errstr(status)));
 		goto done;
@@ -2205,7 +2208,8 @@ static NTSTATUS cmd_lsa_query_secret(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	status = cli_get_session_key(mem_ctx, cli, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(
+				b, mem_ctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -2293,7 +2297,8 @@ static NTSTATUS cmd_lsa_set_secret(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(new_val);
 	ZERO_STRUCT(old_val);
 
-	status = cli_get_session_key(mem_ctx, cli, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(
+				b, mem_ctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -2382,7 +2387,8 @@ static NTSTATUS cmd_lsa_retrieve_private_data(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	status = cli_get_session_key(mem_ctx, cli, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(
+				b, mem_ctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -2444,7 +2450,8 @@ static NTSTATUS cmd_lsa_store_private_data(struct rpc_pipe_client *cli,
 
 	ZERO_STRUCT(val);
 
-	status = cli_get_session_key(mem_ctx, cli, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(
+				b, mem_ctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -2580,7 +2587,8 @@ static NTSTATUS cmd_lsa_create_trusted_domain_ex3(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	status = cli_get_session_key(mem_ctx, cli, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(
+				b, mem_ctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Could not retrieve session key: %s\n",
 			nt_errstr(status));
@@ -2694,7 +2702,8 @@ static NTSTATUS cmd_lsa_create_trusted_domain_ex2(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	status = cli_get_session_key(mem_ctx, cli, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(
+				b, mem_ctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Could not retrieve session key: %s\n",
 			nt_errstr(status));
