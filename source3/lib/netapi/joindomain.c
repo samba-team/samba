@@ -145,7 +145,8 @@ WERROR NetJoinDomain_r(struct libnetapi_ctx *ctx,
 
 	if (r->in.password) {
 
-		status = cli_get_session_key(talloc_tos(), pipe_cli, &session_key);
+		status = dcerpc_binding_handle_transport_session_key(
+				b, talloc_tos(), &session_key);
 		if (!NT_STATUS_IS_OK(status)) {
 			werr = ntstatus_to_werror(status);
 			goto done;
@@ -300,7 +301,8 @@ WERROR NetUnjoinDomain_r(struct libnetapi_ctx *ctx,
 
 	if (r->in.password) {
 
-		status = cli_get_session_key(talloc_tos(), pipe_cli, &session_key);
+		status = dcerpc_binding_handle_transport_session_key(
+				b, talloc_tos(), &session_key);
 		if (!NT_STATUS_IS_OK(status)) {
 			werr = ntstatus_to_werror(status);
 			goto done;
@@ -518,7 +520,8 @@ WERROR NetGetJoinableOUs_r(struct libnetapi_ctx *ctx,
 
 	if (r->in.password) {
 
-		status = cli_get_session_key(talloc_tos(), pipe_cli, &session_key);
+		status = dcerpc_binding_handle_transport_session_key(
+				b, talloc_tos(), &session_key);
 		if (!NT_STATUS_IS_OK(status)) {
 			werr = ntstatus_to_werror(status);
 			goto done;
@@ -574,7 +577,8 @@ WERROR NetRenameMachineInDomain_r(struct libnetapi_ctx *ctx,
 
 	if (r->in.password) {
 
-		status = cli_get_session_key(talloc_tos(), pipe_cli, &session_key);
+		status = dcerpc_binding_handle_transport_session_key(
+				b, talloc_tos(), &session_key);
 		if (!NT_STATUS_IS_OK(status)) {
 			werr = ntstatus_to_werror(status);
 			goto done;
