@@ -144,6 +144,18 @@ void dcerpc_binding_handle_auth_info(struct dcerpc_binding_handle *h,
 	h->ops->auth_info(h, auth_type, auth_level);
 }
 
+NTSTATUS dcerpc_binding_handle_auth_session_key(
+		struct dcerpc_binding_handle *h,
+		TALLOC_CTX *mem_ctx,
+		DATA_BLOB *session_key)
+{
+	if (h->ops->auth_session_key == NULL) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	return h->ops->auth_session_key(h, mem_ctx, session_key);
+}
+
 struct dcerpc_binding_handle_raw_call_state {
 	const struct dcerpc_binding_handle_ops *ops;
 	uint8_t *out_data;
