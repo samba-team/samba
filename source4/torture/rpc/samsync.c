@@ -933,9 +933,11 @@ static bool samsync_handle_secret(struct torture_context *tctx,
   We would like to do this, but it is NOT_SUPPORTED on win2k3
   TEST_SEC_DESC_EQUAL(secret->sdbuf, lsa, &sec_handle);
 */
-	status = dcerpc_fetch_session_key(samsync_state->p_lsa, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(samsync_state->b_lsa,
+							     mem_ctx,
+							     &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "dcerpc_fetch_session_key failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "transport_session_key failed - %s\n", nt_errstr(status));
 		return false;
 	}
 

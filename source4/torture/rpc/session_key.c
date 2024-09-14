@@ -66,8 +66,8 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 		"CreateSecret failed");
 	torture_assert_ntstatus_ok(tctx, r.out.result, "CreateSecret failed");
 
-	status = dcerpc_fetch_session_key(p, &session_key);
-	torture_assert_ntstatus_ok(tctx, status, "dcerpc_fetch_session_key failed");
+	status = dcerpc_binding_handle_transport_session_key(b, tctx, &session_key);
+	torture_assert_ntstatus_ok(tctx, status, "transport_session_key failed");
 
 	enc_key = sess_encrypt_string(secret1, &session_key);
 

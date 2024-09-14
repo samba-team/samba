@@ -813,6 +813,7 @@ static bool test_setup_trust(struct torture_context *tctx,
 			     DATA_BLOB *auth_blob)
 
 {
+	struct dcerpc_binding_handle *b = p->binding_handle;
 	DATA_BLOB session_key;
 	struct lsa_TrustDomainInfoAuthInfoInternal authinfo;
 	NTSTATUS status;
@@ -826,9 +827,9 @@ static bool test_setup_trust(struct torture_context *tctx,
 		return false;
 	}
 
-	status = dcerpc_fetch_session_key(p, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b, p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "dcerpc_fetch_session_key failed - %s\n",
+		torture_comment(tctx, "transport_session_key failed - %s\n",
 				nt_errstr(status));
 		return false;
 	}

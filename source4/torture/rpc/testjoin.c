@@ -332,7 +332,7 @@ again:
 
 	u.info24.password_expired = 0;
 
-	status = dcerpc_fetch_session_key(join->p, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b, tctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(tctx, "SetUserInfo level %u - no session key - %s\n",
 		       s.in.level, nt_errstr(status));

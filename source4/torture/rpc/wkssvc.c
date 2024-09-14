@@ -1236,7 +1236,7 @@ static bool test_NetrJoinDomain2(struct torture_context *tctx,
 	    	return false;
 	}
 
-	status = dcerpc_fetch_session_key(p, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b, tctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
@@ -1324,7 +1324,7 @@ static bool test_NetrUnjoinDomain2(struct torture_context *tctx,
 	    	return false;
 	}
 
-	status = dcerpc_fetch_session_key(p, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b, tctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}

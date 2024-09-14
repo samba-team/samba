@@ -1842,8 +1842,9 @@ static bool test_ServerWrap_encrypt_decrypt_manual(struct torture_context *tctx,
 
 	preferred_key.data = r_query_secret.out.new_val->buf->data;
 	preferred_key.length = r_query_secret.out.new_val->buf->size;
-	torture_assert_ntstatus_ok(tctx, dcerpc_fetch_session_key(lsa_p, &session_key),
-				   "dcerpc_fetch_session_key failed");
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_binding_handle_transport_session_key(lsa_b, tctx, &session_key),
+		"transport_session_key failed");
 
 	torture_assert_ntstatus_ok(tctx,
 				   sess_decrypt_blob(tctx,
