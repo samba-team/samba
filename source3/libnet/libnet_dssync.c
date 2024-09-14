@@ -467,6 +467,15 @@ static NTSTATUS libnet_dssync_getncchanges(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	status = dcerpc_binding_handle_auth_session_key(
+			b, mem_ctx, &ctx->session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		ctx->error_message = talloc_asprintf(ctx,
+			"Failed to get Session Key: %s",
+			nt_errstr(status));
+		goto out;
+	}
+
 	for (y=0, last_query = false; !last_query; y++) {
 		struct drsuapi_DsReplicaObjectListItemEx *first_object = NULL;
 		struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr = NULL;
@@ -575,14 +584,6 @@ static NTSTATUS libnet_dssync_getncchanges(TALLOC_CTX *mem_ctx,
 						ctr6->uptodateness_vector->cursors;
 				}
 			}
-		}
-
-		status = cli_get_session_key(mem_ctx, ctx->cli, &ctx->session_key);
-		if (!NT_STATUS_IS_OK(status)) {
-			ctx->error_message = talloc_asprintf(ctx,
-				"Failed to get Session Key: %s",
-				nt_errstr(status));
-			goto out;
 		}
 
 		libnet_dssync_decrypt_attributes(mem_ctx,
