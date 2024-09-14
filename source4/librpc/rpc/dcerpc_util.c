@@ -743,19 +743,6 @@ _PUBLIC_ NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
 	return NT_STATUS_OK;
 }
 
-_PUBLIC_ bool dcerpc_transport_encrypted(struct dcerpc_pipe *p)
-{
-	if (p == NULL) {
-		return false;
-	}
-
-	if (p->conn == NULL) {
-		return false;
-	}
-
-	return p->conn->transport.encrypted;
-}
-
 /*
   create a secondary context from a primary connection
 

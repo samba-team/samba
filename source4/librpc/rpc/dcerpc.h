@@ -182,7 +182,6 @@ NTSTATUS dcerpc_bind_auth_none(struct dcerpc_pipe *p,
 			       const struct ndr_interface_table *table);
 NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
 				  DATA_BLOB *session_key);
-bool dcerpc_transport_encrypted(struct dcerpc_pipe *p);
 struct composite_context;
 NTSTATUS dcerpc_secondary_connection_recv(struct composite_context *c,
 					  struct dcerpc_pipe **p2);
