@@ -645,7 +645,7 @@ static bool test_SetUserPass(struct dcerpc_pipe *p, struct torture_context *tctx
 
 	u.info24.password_expired = 0;
 
-	status = dcerpc_fetch_session_key(p, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b, tctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_result(tctx, TORTURE_FAIL, "SetUserInfo level %u - no session key - %s\n",
 		       s.in.level, nt_errstr(status));
@@ -710,7 +710,7 @@ static bool test_SetUserPass_23(struct dcerpc_pipe *p, struct torture_context *t
 
 	u.info23.info.fields_present = fields_present;
 
-	status = dcerpc_fetch_session_key(p, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b, tctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_result(tctx, TORTURE_FAIL, "SetUserInfo level %u - no session key - %s\n",
 		       s.in.level, nt_errstr(status));
@@ -739,7 +739,7 @@ static bool test_SetUserPass_23(struct dcerpc_pipe *p, struct torture_context *t
 		*password = newpass;
 	}
 
-	status = dcerpc_fetch_session_key(p, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b, tctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_result(tctx, TORTURE_FAIL, "SetUserInfo level %u - no session key - %s\n",
 		       s.in.level, nt_errstr(status));
@@ -813,7 +813,7 @@ static bool test_SetUserPass_32(struct dcerpc_pipe *p, struct torture_context *t
 
 	u.info32.info.fields_present = fields_present;
 
-	status = dcerpc_fetch_session_key(p, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b, tctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_result(tctx,
 			       TORTURE_FAIL,
@@ -938,7 +938,7 @@ static bool test_SetUserPass_31(struct dcerpc_pipe *p, struct torture_context *t
 
 	u.info31.password_expired = 0;
 
-	status = dcerpc_fetch_session_key(p, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b, tctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_result(tctx, TORTURE_FAIL, "SetUserInfo level %u - no session key - %s\n",
 		       s.in.level, nt_errstr(status));
@@ -1040,7 +1040,7 @@ static bool test_SetUserPassEx(struct dcerpc_pipe *p, struct torture_context *tc
 
 	u.info26.password_expired = 0;
 
-	status = dcerpc_fetch_session_key(p, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b, tctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_result(tctx, TORTURE_FAIL, "SetUserInfo level %u - no session key - %s\n",
 		       s.in.level, nt_errstr(status));
@@ -1133,7 +1133,7 @@ static bool test_SetUserPass_25(struct dcerpc_pipe *p, struct torture_context *t
 
 	u.info25.info.fields_present = fields_present;
 
-	status = dcerpc_fetch_session_key(p, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b, tctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_result(tctx, TORTURE_FAIL, "SetUserInfo level %u - no session key - %s\n",
 		       s.in.level, nt_errstr(status));
@@ -1228,7 +1228,7 @@ static bool test_SetUserPass_18(struct dcerpc_pipe *p, struct torture_context *t
 	E_md4hash(newpass, nt_hash);
 	E_deshash(newpass, lm_hash);
 
-	status = dcerpc_fetch_session_key(p, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b, tctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_result(tctx, TORTURE_FAIL, "SetUserInfo level %u - no session key - %s\n",
 		       s.in.level, nt_errstr(status));
@@ -1316,7 +1316,7 @@ static bool test_SetUserPass_21(struct dcerpc_pipe *p, struct torture_context *t
 		u.info21.nt_password_set = true;
 	}
 
-	status = dcerpc_fetch_session_key(p, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b, tctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_result(tctx, TORTURE_FAIL, "SetUserInfo level %u - no session key - %s\n",
 		       s.in.level, nt_errstr(status));
@@ -1506,7 +1506,7 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 		break;
 	}
 
-	status = dcerpc_fetch_session_key(p, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b, tctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_result(tctx, TORTURE_FAIL, "SetUserInfo level %u - no session key - %s\n",
 		       s.in.level, nt_errstr(status));
@@ -3218,7 +3218,7 @@ bool test_ChangePasswordRandomBytes(struct dcerpc_pipe *p, struct torture_contex
 
 	pw_data = data_blob_const(u.info25.password.data, 516);
 
-	status = dcerpc_fetch_session_key(p, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b, tctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_result(tctx, TORTURE_FAIL, "SetUserInfo level %u - no session key - %s\n",
 		       s.in.level, nt_errstr(status));

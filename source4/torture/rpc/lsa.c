@@ -1730,8 +1730,9 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 		torture_assert_ntstatus_ok(tctx, r2.out.result,
 					   "OpenSecret failed");
 
-		torture_assert_ntstatus_ok(tctx, dcerpc_fetch_session_key(p, &session_key),
-					   "dcerpc_fetch_session_key failed");
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_binding_handle_transport_session_key(b, tctx, &session_key),
+			"transport_session_key failed");
 
 		enc_key = sess_encrypt_string(secret1, &session_key);
 
@@ -4658,9 +4659,9 @@ static bool test_CreateTrustedDomainEx_common(struct dcerpc_pipe *p,
 	domsid = talloc_array(tctx, struct dom_sid *, num_trusts);
 	trustdom_handle = talloc_array(tctx, struct policy_handle, num_trusts);
 
-	status = dcerpc_fetch_session_key(p, &session_key);
+	status = dcerpc_binding_handle_transport_session_key(b, tctx, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "dcerpc_fetch_session_key failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "transport_session_key failed - %s\n", nt_errstr(status));
 		return false;
 	}
 

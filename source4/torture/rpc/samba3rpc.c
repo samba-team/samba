@@ -668,9 +668,11 @@ static bool create_user(struct torture_context *tctx,
 		encode_pw_buffer(u_info.info23.password.data, password,
 				 STR_UNICODE);
 
-		status = dcerpc_fetch_session_key(samr_pipe, &session_key);
+		status = dcerpc_binding_handle_transport_session_key(samr_handle,
+								     tctx,
+								     &session_key);
 		if (!NT_STATUS_IS_OK(status)) {
-			torture_comment(tctx, "dcerpc_fetch_session_key failed\n");
+			torture_comment(tctx, "transport_session_key failed\n");
 			goto done;
 		}
 
@@ -890,9 +892,11 @@ static bool join3(struct torture_context *tctx,
 		i21->password_expired = 1;
 		*/
 
-		status = dcerpc_fetch_session_key(samr_pipe, &session_key);
+		status = dcerpc_binding_handle_transport_session_key(samr_handle,
+								     tctx,
+								     &session_key);
 		if (!NT_STATUS_IS_OK(status)) {
-			torture_comment(tctx, "dcerpc_fetch_session_key failed: %s\n",
+			torture_comment(tctx, "transport_session_key failed: %s\n",
 				 nt_errstr(status));
 			goto done;
 		}
@@ -928,9 +932,11 @@ static bool join3(struct torture_context *tctx,
 		/* just to make this test pass */
 		u_info.info24.password_expired = 1;
 
-		status = dcerpc_fetch_session_key(samr_pipe, &session_key);
+		status = dcerpc_binding_handle_transport_session_key(samr_handle,
+								     tctx,
+								     &session_key);
 		if (!NT_STATUS_IS_OK(status)) {
-			torture_comment(tctx, "dcerpc_fetch_session_key failed\n");
+			torture_comment(tctx, "transport_session_key failed\n");
 			goto done;
 		}
 
