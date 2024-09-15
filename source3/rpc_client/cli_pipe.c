@@ -3046,8 +3046,14 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx,
 {
 	char *socket_name = NULL;
 	struct rpc_pipe_client *result;
-	struct sockaddr_un addr = { .sun_family = AF_UNIX };
-	socklen_t salen = sizeof(addr);
+	struct samba_sockaddr saddr = {
+		.sa_socklen = sizeof(struct sockaddr_un),
+		.u = {
+			.un = {
+				.sun_family = AF_UNIX,
+			},
+		},
+	};
 	int pathlen;
 	NTSTATUS status;
 	int fd = -1;
@@ -3066,12 +3072,12 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx,
 	}
 
 	pathlen = snprintf(
-		addr.sun_path,
-		sizeof(addr.sun_path),
+		saddr.u.un.sun_path,
+		sizeof(saddr.u.un.sun_path),
 		"%s/%s",
 		lp_ncalrpc_dir(),
 		socket_name);
-	if ((pathlen < 0) || ((size_t)pathlen >= sizeof(addr.sun_path))) {
+	if ((pathlen < 0) || ((size_t)pathlen >= sizeof(saddr.u.un.sun_path))) {
 		DBG_DEBUG("socket_path for %s too long\n", socket_name);
 		status = NT_STATUS_NAME_TOO_LONG;
 		goto fail;
@@ -3102,9 +3108,9 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	if (connect(fd, (struct sockaddr *)(void *)&addr, salen) == -1) {
+	if (connect(fd, &saddr.u.sa, saddr.sa_socklen) == -1) {
 		DBG_WARNING("connect(%s) failed: %s\n",
-			    addr.sun_path,
+			    saddr.u.un.sun_path,
 			    strerror(errno));
 		status = map_nt_error_from_unix(errno);
 		goto fail;
