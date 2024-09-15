@@ -39,6 +39,12 @@ struct rpc_pipe_client {
 	struct dcerpc_binding_handle *binding_handle;
 
 	/*
+	 * This is per connection
+	 */
+	bool client_hdr_signing;
+	bool hdr_signing;
+
+	/*
 	 * This is per association_group, but
 	 * for now we only have one connection
 	 * per association_group.
