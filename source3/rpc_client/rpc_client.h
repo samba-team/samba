@@ -59,29 +59,12 @@ struct rpc_pipe_client {
 	struct rpc_client_connection *conn;
 	struct pipe_auth_data *auth;
 
-	DATA_BLOB transport_session_key;
-	struct rpc_cli_transport *transport;
-
-	/*
-	 * This is per connection
-	 */
-	bool client_hdr_signing;
-	bool hdr_signing;
-
-	/*
-	 * This is per association_group, but
-	 * for now we only have one connection
-	 * per association_group.
-	 */
-	uint16_t bind_time_features;
-
-	struct ndr_syntax_id abstract_syntax;
+	uint16_t pres_context_id;
+	const struct ndr_interface_table *table;
 	struct ndr_syntax_id transfer_syntax;
 	bool verified_pcontext;
 
-	uint16_t max_xmit_frag;
-
-	SOURCE3_LIBRPC_INTERNALS_END;
+	SOURCE3_LIBRPC_INTERNALS_END
 };
 
 #endif /* _RPC_CLIENT_H */
