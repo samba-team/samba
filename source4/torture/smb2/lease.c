@@ -4260,6 +4260,7 @@ static bool test_lease_unlink(struct torture_context *tctx,
 	struct smb2_create io2;
 	struct smb2_lease ls1;
 	struct smb2_lease ls2;
+	union smb_setfileinfo sfinfo = {};
 
 	caps = smb2cli_conn_server_capabilities(
 			tree1->session->transport->conn);
@@ -4314,6 +4315,56 @@ static bool test_lease_unlink(struct torture_context *tctx,
 	smb2_util_unlink(tree2, fname);
 	CHECK_VAL(lease_break_info.count, 1);
 	CHECK_BREAK_INFO("RH", "R", LEASE1);
+
+	smb2_util_close(tree1, h1);
+
+	torture_comment(tctx, "Client 1 recreates file with RH lease\n");
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	smb2_lease_create(&io1, &ls1, false, fname, LEASE1,
+				smb2_util_lease_state("RH"));
+
+	status = smb2_create(tree1, mem_ctx, &io1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"create failed\n");
+	h1 = io1.out.file.handle;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io1, "RH", true, LEASE1, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	torture_comment(tctx, "Client 2 opens with RH lease\n");
+
+	smb2_lease_create(&io2, &ls2, false, fname, LEASE2,
+				smb2_util_lease_state("RH"));
+	status = smb2_create(tree2, mem_ctx, &io2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"create failed\n");
+
+	h2 = io2.out.file.handle;
+	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io2, "RH", true, LEASE2, 0);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	torture_comment(tctx, "Client 2 sets delete on close, "
+			"triggering lease break\n");
+
+	sfinfo.disposition_info.in.delete_on_close = 1;
+	sfinfo.generic.level = RAW_SFILEINFO_DISPOSITION_INFORMATION;
+	sfinfo.generic.in.file.handle = h2;
+
+	status = smb2_setinfo_file(tree2, &sfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+				      "Set DELETE_ON_CLOSE disposition "
+				      "returned un expected status.\n");
+
+	CHECK_LEASE(&io1, "RH", true, LEASE1, 0);
+	CHECK_VAL(lease_break_info.count, 1);
+
+	status = smb2_util_close(tree2, h2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(h2);
 
 done:
 	smb2_util_close(tree1, h1);
