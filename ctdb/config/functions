@@ -499,7 +499,7 @@ ctdb_check_unix_socket()
 		return 1
 	fi
 
-	_out=$(ss -l -x "src ${_sockpath}" | tail -n +2)
+	_out=$(ss -l -xH "src ${_sockpath}")
 	if [ -z "$_out" ]; then
 		echo "ERROR: ${service_name} not listening on ${_sockpath}"
 		return 1
@@ -602,7 +602,7 @@ get_tcp_connections_for_ip()
 {
 	_ip="$1"
 
-	ss -tn state established "src [$_ip]" | awk 'NR > 1 {print $3, $4}'
+	ss -tnH state established "src [$_ip]" | awk '{print $3, $4}'
 }
 
 ########################################################
@@ -1173,10 +1173,10 @@ update_tickles()
 	_my_connections="${tickledir}/${_port}.connections.$$"
 	# Parentheses are needed around the filters for precedence but
 	# the parentheses can't be empty!
-	ss -tn state established \
+	ss -tnH state established \
 		"${_ip_filter:+( ${_ip_filter} )}" \
 		"${_port_filter:+( ${_port_filter} )}" |
-		awk 'NR > 1 {print $4, $3}' |
+		awk '{print $4, $3}' |
 		sort >"$_my_connections"
 
 	# Record our current tickles in a temporary file
