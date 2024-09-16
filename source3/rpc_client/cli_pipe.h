@@ -47,9 +47,6 @@ NTSTATUS rpc_pipe_open_np_recv(
 	struct tevent_req *req,
 	TALLOC_CTX *mem_ctx,
 	struct rpc_pipe_client **_result);
-NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
-			  const struct ndr_interface_table *table,
-			  struct rpc_pipe_client **presult);
 
 unsigned int rpccli_set_timeout(struct rpc_pipe_client *cli,
 				unsigned int timeout);
