@@ -5,7 +5,7 @@ prog="ss"
 usage()
 {
 	cat >&2 <<EOF
-Usage: $prog { -t|--tcp | -x|--unix } [options] [ FILTER ]
+Usage: $prog { -t | -x } [options] [ FILTER ]
 
 A fake ss stub that prints items depending on the variables
 FAKE_NETSTAT_TCP_ESTABLISHED, FAKE_TCP_LISTEN,
