@@ -3459,33 +3459,115 @@ NTSTATUS rpc_pipe_open_local_np(
 	return NT_STATUS_OK;
 }
 
-struct rpc_pipe_client_np_ref {
+struct rpc_client_connection_np_state {
 	struct cli_state *cli;
-	struct rpc_pipe_client *pipe;
+	const char *pipe_name;
+	struct rpc_client_connection *conn;
 };
 
-static int rpc_pipe_client_np_ref_destructor(struct rpc_pipe_client_np_ref *np_ref)
+static void rpc_client_connection_np_done(struct tevent_req *subreq);
+
+static struct tevent_req *rpc_client_connection_np_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	const struct rpc_client_association *assoc)
 {
-	DLIST_REMOVE(np_ref->cli->pipe_list, np_ref->pipe);
-	return 0;
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct rpc_client_connection_np_state *state = NULL;
+	enum dcerpc_transport_t transport;
+	const char *endpoint = NULL;
+	struct smbXcli_session *session = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpc_client_connection_np_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	transport = dcerpc_binding_get_transport(assoc->binding);
+	if (transport != NCACN_NP) {
+		tevent_req_nterror(req, NT_STATUS_RPC_WRONG_KIND_OF_BINDING);
+		return tevent_req_post(req, ev);
+	}
+
+	endpoint = dcerpc_binding_get_string_option(assoc->binding,
+						    "endpoint");
+	if (endpoint == NULL) {
+		tevent_req_nterror(req, NT_STATUS_RPC_INVALID_ENDPOINT_FORMAT);
+		return tevent_req_post(req, ev);
+	}
+
+	status = rpc_client_connection_create(state, &state->conn);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		session = cli->smb2.session;
+	} else {
+		session = cli->smb1.session;
+	}
+
+	status = smbXcli_session_application_key(session, state->conn,
+					&state->conn->transport_session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		state->conn->transport_session_key = data_blob_null;
+	}
+
+	subreq = rpc_transport_np_init_send(state, ev, cli, endpoint);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpc_client_connection_np_done, req);
+	return req;
 }
 
-/****************************************************************************
- Open a named pipe over SMB to a remote server.
- *
- * CAVEAT CALLER OF THIS FUNCTION:
- *    The returned rpc_pipe_client saves a copy of the cli_state cli pointer,
- *    so be sure that this function is called AFTER any structure (vs pointer)
- *    assignment of the cli.  In particular, libsmbclient does structure
- *    assignments of cli, which invalidates the data in the returned
- *    rpc_pipe_client if this function is called before the structure assignment
- *    of cli.
- *
- ****************************************************************************/
+static void rpc_client_connection_np_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct rpc_client_connection_np_state *state = tevent_req_data(
+		req, struct rpc_client_connection_np_state);
+	NTSTATUS status;
+
+	status = rpc_transport_np_init_recv(subreq,
+					    state->conn,
+					    &state->conn->transport);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	state->conn->transport->transport = NCACN_NP;
+
+	tevent_req_done(req);
+}
+
+static NTSTATUS rpc_client_connection_np_recv(
+	struct tevent_req *req,
+	TALLOC_CTX *mem_ctx,
+	struct rpc_client_connection **pconn)
+{
+	struct rpc_client_connection_np_state *state = tevent_req_data(
+		req, struct rpc_client_connection_np_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+	*pconn = talloc_move(mem_ctx, &state->conn);
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
 
 struct rpc_pipe_open_np_state {
 	struct cli_state *cli;
 	const struct ndr_interface_table *table;
+	struct rpc_client_association *assoc;
+	struct rpc_client_connection *conn;
 	struct rpc_pipe_client *result;
 };
 
@@ -3499,8 +3581,11 @@ struct tevent_req *rpc_pipe_open_np_send(
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct rpc_pipe_open_np_state *state = NULL;
-	struct rpc_pipe_client *result = NULL;
+	const char *remote_name = NULL;
+	const struct sockaddr_storage *remote_sockaddr = NULL;
+	struct samba_sockaddr saddr = { .sa_socklen = 0, };
 	const char *pipe_name = NULL;
+	NTSTATUS status;
 
 	req = tevent_req_create(
 		mem_ctx, &state, struct rpc_pipe_open_np_state);
@@ -3510,28 +3595,9 @@ struct tevent_req *rpc_pipe_open_np_send(
 	state->cli = cli;
 	state->table = table;
 
-	state->result = talloc_zero(state, struct rpc_pipe_client);
-	if (tevent_req_nomem(state->result, req)) {
-		return tevent_req_post(req, ev);
-	}
-	result = state->result;
-
-	result->abstract_syntax = table->syntax_id;
-	result->transfer_syntax = ndr_transfer_syntax_ndr;
-
-	result->desthost = talloc_strdup(
-		result, smbXcli_conn_remote_name(cli->conn));
-	if (tevent_req_nomem(result->desthost, req)) {
-		return tevent_req_post(req, ev);
-	}
-
-	result->srv_name_slash = talloc_asprintf_strupper_m(
-		result, "\\\\%s", result->desthost);
-	if (tevent_req_nomem(result->srv_name_slash, req)) {
-		return tevent_req_post(req, ev);
-	}
-
-	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
+	remote_name = smbXcli_conn_remote_name(cli->conn);
+	remote_sockaddr = smbXcli_conn_remote_sockaddr(cli->conn);
+	saddr.u.ss = *remote_sockaddr;
 
 	pipe_name = dcerpc_default_transport_endpoint(state,
 						      NCACN_NP,
@@ -3540,7 +3606,17 @@ struct tevent_req *rpc_pipe_open_np_send(
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = rpc_transport_np_init_send(state, ev, cli, pipe_name);
+	status = rpc_client_association_create(state,
+					       remote_name,
+					       NCACN_NP,
+					       &saddr,
+					       pipe_name,
+					       &state->assoc);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = rpc_client_connection_np_send(state, ev, cli, state->assoc);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -3554,31 +3630,23 @@ static void rpc_pipe_open_np_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct rpc_pipe_open_np_state *state = tevent_req_data(
 		req, struct rpc_pipe_open_np_state);
-	struct rpc_pipe_client *result = state->result;
-	struct rpc_pipe_client_np_ref *np_ref = NULL;
 	NTSTATUS status;
 
-	status = rpc_transport_np_init_recv(
-		subreq, result, &result->transport);
+	status = rpc_client_connection_np_recv(subreq,
+					       state,
+					       &state->conn);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
-	result->transport->transport = NCACN_NP;
-
-	np_ref = talloc(result->transport, struct rpc_pipe_client_np_ref);
-	if (tevent_req_nomem(np_ref, req)) {
-		return;
-	}
-	np_ref->cli = state->cli;
-	np_ref->pipe = result;
-
-	DLIST_ADD(np_ref->cli->pipe_list, np_ref->pipe);
-	talloc_set_destructor(np_ref, rpc_pipe_client_np_ref_destructor);
-
-	result->binding_handle = rpccli_bh_create(result, NULL, state->table);
-	if (tevent_req_nomem(result->binding_handle, req)) {
+	status = rpc_pipe_wrap_create(state->table,
+				      state->cli,
+				      &state->assoc,
+				      &state->conn,
+				      state,
+				      &state->result);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -3595,9 +3663,11 @@ NTSTATUS rpc_pipe_open_np_recv(
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
 		return status;
 	}
 	*_result = talloc_move(mem_ctx, &state->result);
+	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
 
@@ -3769,28 +3839,6 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 			  nt_errstr(status)));
 		TALLOC_FREE(result);
 		return status;
-	}
-
-	/*
-	 * This is a bit of an abstraction violation due to the fact that an
-	 * anonymous bind on an authenticated SMB inherits the user/domain
-	 * from the enclosing SMB creds
-	 */
-
-	if (transport == NCACN_NP) {
-		struct smbXcli_session *session;
-
-		if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-			session = cli->smb2.session;
-		} else {
-			session = cli->smb1.session;
-		}
-
-		status = smbXcli_session_application_key(session, result,
-						&result->transport_session_key);
-		if (!NT_STATUS_IS_OK(status)) {
-			result->transport_session_key = data_blob_null;
-		}
 	}
 
 	status = rpc_pipe_bind(result, auth);
