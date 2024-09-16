@@ -2843,75 +2843,55 @@ NTSTATUS rpccli_ncalrpc_bind_data(TALLOC_CTX *mem_ctx,
 /**
  * Create an rpc pipe client struct, connecting to a tcp port.
  */
-static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
-				       const struct sockaddr_storage *ss_addr,
-				       uint16_t port,
-				       const struct ndr_interface_table *table,
-				       struct rpc_pipe_client **presult)
+static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx,
+				       const struct rpc_client_association *assoc,
+				       struct rpc_client_connection **pconn)
 {
-	struct rpc_pipe_client *result;
-	struct sockaddr_storage addr;
+	struct rpc_client_connection *conn = NULL;
+	enum dcerpc_transport_t transport;
+	const char *endpoint = NULL;
+	uint16_t port;
 	NTSTATUS status;
 	int fd;
 
-	result = talloc_zero(mem_ctx, struct rpc_pipe_client);
-	if (result == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	transport = dcerpc_binding_get_transport(assoc->binding);
+	if (transport != NCACN_IP_TCP) {
+		return NT_STATUS_RPC_WRONG_KIND_OF_BINDING;
 	}
 
-	result->abstract_syntax = table->syntax_id;
-	result->transfer_syntax = ndr_transfer_syntax_ndr;
-
-	result->desthost = talloc_strdup(result, host);
-	if (result->desthost == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
+	endpoint = dcerpc_binding_get_string_option(assoc->binding,
+						    "endpoint");
+	if (endpoint == NULL) {
+		return NT_STATUS_RPC_INVALID_ENDPOINT_FORMAT;
+	}
+	port = (uint16_t)atoi(endpoint);
+	if (port == 0) {
+		return NT_STATUS_RPC_INVALID_ENDPOINT_FORMAT;
 	}
 
-	result->srv_name_slash = talloc_asprintf_strupper_m(
-		result, "\\\\%s", result->desthost);
-	if (result->srv_name_slash == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
-
-	if (ss_addr == NULL) {
-		if (!resolve_name(host, &addr, NBT_NAME_SERVER, false)) {
-			status = NT_STATUS_NOT_FOUND;
-			goto fail;
-		}
-	} else {
-		addr = *ss_addr;
-	}
-
-	status = open_socket_out(&addr, port, 60*1000, &fd);
+	status = rpc_client_connection_create(mem_ctx, &conn);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
+		return status;
+	}
+
+	status = open_socket_out(&assoc->addr.u.ss, port, 60*1000, &fd);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(conn);
+		return status;
 	}
 	set_socket_options(fd, lp_socket_options());
 
-	status = rpc_transport_sock_init(result, fd, &result->transport);
+	status = rpc_transport_sock_init(conn, fd, &conn->transport);
 	if (!NT_STATUS_IS_OK(status)) {
 		close(fd);
-		goto fail;
+		TALLOC_FREE(conn);
+		return status;
 	}
 
-	result->transport->transport = NCACN_IP_TCP;
+	conn->transport->transport = NCACN_IP_TCP;
 
-	result->binding_handle = rpccli_bh_create(result, NULL, table);
-	if (result->binding_handle == NULL) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	*presult = result;
+	*pconn = conn;
 	return NT_STATUS_OK;
-
- fail:
-	TALLOC_FREE(result);
-	return status;
 }
 
 static NTSTATUS rpccli_epm_map_binding(
@@ -3080,88 +3060,98 @@ done:
  * target host.
  */
 static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
-				      const struct sockaddr_storage *addr,
+				      const struct samba_sockaddr *saddr,
 				      const struct ndr_interface_table *table,
 				      uint16_t *pport)
 {
-	NTSTATUS status;
+	TALLOC_CTX *frame = talloc_stackframe();
+	const char *epm_ep = NULL;
+	struct rpc_client_association *epm_assoc = NULL;
+	struct rpc_client_connection *epm_conn = NULL;
 	struct rpc_pipe_client *epm_pipe = NULL;
-	struct pipe_auth_data *auth = NULL;
+	struct pipe_auth_data *epm_auth = NULL;
 	char *endpoint = NULL;
-	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	uint16_t port = 0;
+	NTSTATUS status;
 
-	if (pport == NULL) {
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto done;
+	endpoint = dcerpc_default_transport_endpoint(frame,
+						     NCACN_IP_TCP,
+						     table);
+	if (endpoint != NULL) {
+		port = (uint16_t)atoi(endpoint);
 	}
 
-	if (ndr_syntax_id_equal(&table->syntax_id,
-				&ndr_table_epmapper.syntax_id)) {
-		*pport = 135;
-		status = NT_STATUS_OK;
-		goto done;
+	if (port != 0) {
+		*pport = port;
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	epm_ep = dcerpc_default_transport_endpoint(frame,
+						   NCACN_IP_TCP,
+						   &ndr_table_epmapper);
+	if (epm_ep == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_RPC_INTERNAL_ERROR;
+	}
+
+	status = rpc_client_association_create(frame,
+					       host,
+					       NCACN_IP_TCP,
+					       saddr,
+					       epm_ep,
+					       &epm_assoc);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
 	}
 
 	/* open the connection to the endpoint mapper */
-	status = rpc_pipe_open_tcp_port(tmp_ctx, host, addr, 135,
-					&ndr_table_epmapper,
-					&epm_pipe);
-
+	status = rpc_pipe_open_tcp_port(frame, epm_assoc, &epm_conn);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
+		TALLOC_FREE(frame);
+		return status;
 	}
 
-	status = rpccli_anon_bind_data(tmp_ctx, &auth);
+	status = rpccli_anon_bind_data(frame, &epm_auth);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
+		TALLOC_FREE(frame);
+		return status;
 	}
 
-	status = rpc_pipe_bind(epm_pipe, auth);
+	status = rpc_pipe_wrap_create(&ndr_table_epmapper,
+				      NULL,
+				      &epm_assoc,
+				      &epm_conn,
+				      frame,
+				      &epm_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	status = rpc_pipe_bind(epm_pipe, epm_auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
 	}
 
 	status = rpccli_epm_map_interface(
 		epm_pipe->binding_handle,
 		NCACN_IP_TCP,
 		&table->syntax_id,
-		tmp_ctx,
+		frame,
 		&endpoint);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("rpccli_epm_map_interface failed: %s\n",
 			  nt_errstr(status));
-		goto done;
-	}
-
-	*pport = (uint16_t)atoi(endpoint);
-
-done:
-	TALLOC_FREE(tmp_ctx);
-	return status;
-}
-
-/**
- * Create a rpc pipe client struct, connecting to a host via tcp.
- * The port is determined by asking the endpoint mapper on the given
- * host.
- */
-static NTSTATUS rpc_pipe_open_tcp(
-	TALLOC_CTX *mem_ctx,
-	const char *host,
-	const struct sockaddr_storage *addr,
-	const struct ndr_interface_table *table,
-	struct rpc_pipe_client **presult)
-{
-	NTSTATUS status;
-	uint16_t port = 0;
-
-	status = rpc_pipe_get_tcp_port(host, addr, table, &port);
-	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
 		return status;
 	}
 
-	return rpc_pipe_open_tcp_port(mem_ctx, host, addr, port,
-				      table, presult);
+	*pport = (uint16_t)atoi(endpoint);
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS rpc_pipe_get_ncalrpc_name(
@@ -3648,17 +3638,104 @@ static NTSTATUS cli_rpc_pipe_open(struct cli_state *cli,
 				  const struct sockaddr_storage *remote_sockaddr,
 				  struct rpc_pipe_client **presult)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct samba_sockaddr saddr = { .sa_socklen = 0, };
+	struct rpc_client_association *assoc = NULL;
+	struct rpc_client_connection *conn = NULL;
+	struct rpc_pipe_client *result = NULL;
+	char _tcp_endpoint[6] = { 0, };
+	const char *endpoint = NULL;
+	NTSTATUS status;
+
+	if (cli != NULL && remote_name == NULL) {
+		remote_name = smbXcli_conn_remote_name(cli->conn);
+	}
+	if (cli != NULL && remote_sockaddr == NULL) {
+		remote_sockaddr = smbXcli_conn_remote_sockaddr(cli->conn);
+	}
+
+	if (remote_sockaddr != NULL) {
+		saddr.u.ss = *remote_sockaddr;
+	} else {
+		bool ok;
+
+		ok = resolve_name(remote_name,
+				  &saddr.u.ss,
+				  NBT_NAME_SERVER,
+				  false);
+		if (!ok) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NOT_FOUND;
+		}
+	}
+
+	endpoint = dcerpc_default_transport_endpoint(frame,
+						     transport,
+						     table);
+	if (endpoint == NULL) {
+		uint16_t port = 0;
+
+		if (transport != NCACN_IP_TCP) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_RPC_NO_ENDPOINT_FOUND;
+		}
+
+		status = rpc_pipe_get_tcp_port(remote_name,
+					       &saddr,
+					       table,
+					       &port);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		snprintf(_tcp_endpoint, sizeof(_tcp_endpoint), "%u", port);
+		endpoint = _tcp_endpoint;
+	}
+
+	status = rpc_client_association_create(NULL,
+					       remote_name,
+					       transport,
+					       &saddr,
+					       endpoint,
+					       &assoc);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+	talloc_steal(frame, assoc);
+
 	switch (transport) {
 	case NCACN_IP_TCP:
-		return rpc_pipe_open_tcp(NULL,
-					 remote_name,
-					 remote_sockaddr,
-					 table, presult);
+		status = rpc_pipe_open_tcp_port(NULL,
+						assoc,
+						&conn);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+		talloc_steal(frame, conn);
+		break;
 	case NCACN_NP:
+		TALLOC_FREE(frame);
 		return rpc_pipe_open_np(cli, table, presult);
 	default:
+		TALLOC_FREE(frame);
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
+	status = rpc_pipe_wrap_create(table,
+				      cli,
+				      &assoc,
+				      &conn,
+				      NULL,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	*presult = result;
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
