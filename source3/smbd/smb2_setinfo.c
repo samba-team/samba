@@ -168,187 +168,29 @@ static void smbd_smb2_request_setinfo_done(struct tevent_req *subreq)
 	}
 }
 
-struct defer_rename_state {
-	struct tevent_req *req;
-	struct smbd_smb2_request *smb2req;
+struct smbd_smb2_setinfo_state {
 	struct tevent_context *ev;
+	struct smbd_smb2_request *smb2req;
 	struct files_struct *fsp;
+	struct share_mode_lock *lck;
+	uint16_t file_info_level;
 	DATA_BLOB data;
-};
-
-static void defer_rename_done(struct tevent_req *subreq);
-
-struct delay_rename_lease_break_state {
-	struct files_struct *fsp;
 	bool delay;
 };
 
-static bool delay_rename_lease_break_fn(
-	struct share_mode_entry *e,
-	void *private_data)
+static void smbd_smb2_setinfo_lease_break_check(struct tevent_req *req);
+
+static void smbd_smb2_setinfo_cleanup(struct tevent_req *req,
+				      enum tevent_req_state req_state)
 {
-	struct delay_rename_lease_break_state *state = private_data;
-	struct files_struct *fsp = state->fsp;
-	uint32_t e_lease_type, break_to;
-	bool ours, stale;
+	struct smbd_smb2_setinfo_state *state = tevent_req_data(
+		req, struct smbd_smb2_setinfo_state);
 
-	ours = smb2_lease_equal(fsp_client_guid(fsp),
-				&fsp->lease->lease.lease_key,
-				&e->client_guid,
-				&e->lease_key);
-	if (ours) {
-		return false;
+	if (req_state == TEVENT_REQ_DONE) {
+		return;
 	}
-
-	e_lease_type = get_lease_type(e, fsp->file_id);
-
-	if ((e_lease_type & SMB2_LEASE_HANDLE) == 0) {
-		return false;
-	}
-
-	stale = share_entry_stale_pid(e);
-	if (stale) {
-		return false;
-	}
-
-	state->delay = true;
-	break_to = (e_lease_type & ~SMB2_LEASE_HANDLE);
-
-	send_break_message(
-		fsp->conn->sconn->msg_ctx, &fsp->file_id, e, break_to);
-
-	return false;
+	TALLOC_FREE(state->lck);
 }
-
-static struct tevent_req *delay_rename_for_lease_break(struct tevent_req *req,
-				struct smbd_smb2_request *smb2req,
-				struct tevent_context *ev,
-				struct files_struct *fsp,
-				struct share_mode_lock *lck,
-				DATA_BLOB *data)
-{
-	struct tevent_req *subreq;
-	struct defer_rename_state *rename_state;
-	struct delay_rename_lease_break_state state = { .fsp = fsp };
-	struct timeval timeout;
-	bool ok;
-
-	ok = share_mode_forall_leases(
-		lck, delay_rename_lease_break_fn, &state);
-	if (!ok) {
-		return NULL;
-	}
-
-	if (!state.delay) {
-		return NULL;
-	}
-
-	/* Setup a watch on this record. */
-	rename_state = talloc_zero(req, struct defer_rename_state);
-	if (rename_state == NULL) {
-		return NULL;
-	}
-
-	rename_state->req = req;
-	rename_state->smb2req = smb2req;
-	rename_state->ev = ev;
-	rename_state->fsp = fsp;
-	rename_state->data = *data;
-
-	subreq = share_mode_watch_send(
-				rename_state,
-				ev,
-				lck,
-				(struct server_id){0});
-
-	if (subreq == NULL) {
-		exit_server("Could not watch share mode record for rename\n");
-	}
-
-	tevent_req_set_callback(subreq, defer_rename_done, rename_state);
-
-	timeout = tevent_timeval_set(OPLOCK_BREAK_TIMEOUT * 2, 0);
-	if (!tevent_req_set_endtime(subreq,
-			ev,
-			timeval_sum(&smb2req->request_time, &timeout))) {
-		exit_server("Could not set rename timeout\n");
-	}
-
-	return subreq;
-}
-
-static void defer_rename_done(struct tevent_req *subreq)
-{
-	struct defer_rename_state *state = tevent_req_callback_data(
-		subreq, struct defer_rename_state);
-	NTSTATUS status;
-	struct share_mode_lock *lck;
-	int ret_size = 0;
-	bool ok;
-
-	status = share_mode_watch_recv(subreq, NULL, NULL);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5, ("dbwrap_record_watch_recv returned %s\n",
-			nt_errstr(status)));
-		tevent_req_nterror(state->req, status);
-		return;
-	}
-
-	/*
-	 * Make sure we run as the user again
-	 */
-	ok = change_to_user_and_service(
-		state->smb2req->tcon->compat,
-		state->smb2req->session->global->session_wire_id);
-	if (!ok) {
-		tevent_req_nterror(state->req, NT_STATUS_ACCESS_DENIED);
-		return;
-	}
-
-	/* Do we still need to wait ? */
-	lck = get_existing_share_mode_lock(state->req, state->fsp->file_id);
-	if (lck == NULL) {
-		tevent_req_nterror(state->req, NT_STATUS_UNSUCCESSFUL);
-		return;
-	}
-	subreq = delay_rename_for_lease_break(state->req,
-				state->smb2req,
-				state->ev,
-				state->fsp,
-				lck,
-				&state->data);
-	if (subreq) {
-		/* Yep - keep waiting. */
-		TALLOC_FREE(state);
-		TALLOC_FREE(lck);
-		return;
-	}
-
-	/* Do the rename under the lock. */
-	status = smbd_do_setfilepathinfo(state->fsp->conn,
-				state->smb2req->smb1req,
-				state,
-				SMB2_FILE_RENAME_INFORMATION_INTERNAL,
-				state->fsp,
-				state->fsp->fsp_name,
-				(char *)state->data.data,
-				state->data.length,
-				&ret_size);
-
-	TALLOC_FREE(lck);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(state->req, status);
-		return;
-	}
-
-	tevent_req_done(state->req);
-}
-
-struct smbd_smb2_setinfo_state {
-	struct smbd_smb2_request *smb2req;
-};
 
 static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
@@ -363,7 +205,6 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 	struct smbd_smb2_setinfo_state *state = NULL;
 	struct smb_request *smbreq = NULL;
 	connection_struct *conn = smb2req->tcon->compat;
-	struct share_mode_lock *lck = NULL;
 	NTSTATUS status;
 	int ret;
 
@@ -372,7 +213,12 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->ev = ev;
 	state->smb2req = smb2req;
+	state->fsp = fsp;
+	state->data = in_input_buffer;
+
+	tevent_req_set_cleanup_fn(req, smbd_smb2_setinfo_cleanup);
 
 	DEBUG(10,("smbd_smb2_setinfo_send: %s - %s\n",
 		  fsp_str_dbg(fsp), fsp_fnum_dbg(fsp)));
@@ -391,13 +237,13 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 	case SMB2_0_INFO_FILE:
 	{
 		uint16_t file_info_level;
-		int ret_size = 0;
 
 		file_info_level = in_file_info_class + 1000;
 		if (file_info_level == SMB_FILE_RENAME_INFORMATION) {
 			/* SMB2_FILE_RENAME_INFORMATION_INTERNAL == 0xFF00 + in_file_info_class */
 			file_info_level = SMB2_FILE_RENAME_INFORMATION_INTERNAL;
 		}
+		state->file_info_level = file_info_level;
 
 		if (fsp_get_pathref_fd(fsp) == -1) {
 			/*
@@ -448,54 +294,12 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		if (file_info_level == SMB2_FILE_RENAME_INFORMATION_INTERNAL) {
-			struct tevent_req *subreq;
-
-			lck = get_existing_share_mode_lock(mem_ctx,
-							fsp->file_id);
-			if (lck == NULL) {
-				tevent_req_nterror(req,
-					NT_STATUS_UNSUCCESSFUL);
-				return tevent_req_post(req, ev);
-			}
-
-			subreq = delay_rename_for_lease_break(req,
-							smb2req,
-							ev,
-							fsp,
-							lck,
-							&in_input_buffer);
-			if (subreq) {
-				/* Wait for lease break response. */
-
-				/* Ensure we can't be closed in flight. */
-				if (!aio_add_req_to_fsp(fsp, req)) {
-					TALLOC_FREE(lck);
-					tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
-					return tevent_req_post(req, ev);
-				}
-
-				TALLOC_FREE(lck);
-				return req;
-			}
-		}
-
-		status = smbd_do_setfilepathinfo(conn, smbreq, state,
-						 file_info_level,
-						 fsp,
-						 fsp->fsp_name,
-						 (char *)in_input_buffer.data,
-						 in_input_buffer.length,
-						 &ret_size);
-		TALLOC_FREE(lck);
-		if (!NT_STATUS_IS_OK(status)) {
-			if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_LEVEL)) {
-				status = NT_STATUS_INVALID_INFO_CLASS;
-			}
-			tevent_req_nterror(req, status);
+		smbd_smb2_setinfo_lease_break_check(req);
+		if (!tevent_req_is_in_progress(req)) {
 			return tevent_req_post(req, ev);
 		}
-		break;
+		SMB_ASSERT(state->delay);
+		return req;
 	}
 
 	case SMB2_0_INFO_FILESYSTEM:
@@ -581,6 +385,144 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 
 	tevent_req_done(req);
 	return tevent_req_post(req, ev);
+}
+
+static void smbd_smb2_setinfo_lease_break_fsp_check(struct tevent_req *req);
+static void smbd_smb2_setinfo_lease_break_fsp_done(struct tevent_req *subreq);
+
+static void smbd_smb2_setinfo_lease_break_check(struct tevent_req *req)
+{
+	struct smbd_smb2_setinfo_state *state = tevent_req_data(
+		req, struct smbd_smb2_setinfo_state);
+	int ret_size;
+	NTSTATUS status;
+
+	state->delay = false;
+
+	smbd_smb2_setinfo_lease_break_fsp_check(req);
+	if (!tevent_req_is_in_progress(req)) {
+		return;
+	}
+	if (state->delay) {
+		TALLOC_FREE(state->lck);
+		DBG_DEBUG("Waiting for h-lease breaks on fsp [%s]\n",
+			  fsp_str_dbg(state->fsp));
+		return;
+	}
+
+	status = smbd_do_setfilepathinfo(state->fsp->conn,
+					 state->smb2req->smb1req,
+					 state,
+					 state->file_info_level,
+					 state->fsp,
+					 state->fsp->fsp_name,
+					 (char *)state->data.data,
+					 state->data.length,
+					 &ret_size);
+	TALLOC_FREE(state->lck);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_LEVEL)) {
+			status = NT_STATUS_INVALID_INFO_CLASS;
+		}
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static void smbd_smb2_setinfo_lease_break_fsp_check(struct tevent_req *req)
+{
+	struct smbd_smb2_setinfo_state *state = tevent_req_data(
+		req, struct smbd_smb2_setinfo_state);
+	struct smbd_smb2_request *smb2req = state->smb2req;
+	struct files_struct *fsp = state->fsp;
+	uint16_t file_info_level = state->file_info_level;
+	struct tevent_req *subreq = NULL;
+	struct timeval timeout;
+	bool rename;
+	NTSTATUS status;
+
+	rename = (file_info_level == SMB2_FILE_RENAME_INFORMATION_INTERNAL);
+	if (!rename) {
+		return;
+	}
+
+	state->lck = get_existing_share_mode_lock(state, fsp->file_id);
+	if (state->lck == NULL) {
+		tevent_req_nterror(req, NT_STATUS_UNSUCCESSFUL);
+		return;
+	}
+
+	timeout = tevent_timeval_set(OPLOCK_BREAK_TIMEOUT, 0);
+	timeout = timeval_sum(&smb2req->request_time, &timeout);
+
+	subreq = delay_for_handle_lease_break_send(state,
+						   state->ev,
+						   timeout,
+						   fsp,
+						   &state->lck);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	if (tevent_req_is_in_progress(subreq)) {
+		state->delay = true;
+		tevent_req_set_callback(subreq,
+					smbd_smb2_setinfo_lease_break_fsp_done,
+					req);
+		return;
+	}
+
+	status = delay_for_handle_lease_break_recv(subreq, state, &state->lck);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+}
+
+static void smbd_smb2_setinfo_lease_break_fsp_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smbd_smb2_setinfo_state *state = tevent_req_data(
+		req, struct smbd_smb2_setinfo_state);
+	int ret_size;
+	NTSTATUS status;
+	bool ok;
+
+	status = delay_for_handle_lease_break_recv(subreq, state, &state->lck);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	/*
+	 * Make sure we run as the user again
+	 */
+	ok = change_to_user_and_service(
+		state->smb2req->tcon->compat,
+		state->smb2req->session->global->session_wire_id);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return;
+	}
+
+	/* Do the rename under the lock. */
+	status = smbd_do_setfilepathinfo(state->fsp->conn,
+				state->smb2req->smb1req,
+				state,
+				state->file_info_level,
+				state->fsp,
+				state->fsp->fsp_name,
+				(char *)state->data.data,
+				state->data.length,
+				&ret_size);
+	TALLOC_FREE(state->lck);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	tevent_req_done(req);
 }
 
 static NTSTATUS smbd_smb2_setinfo_recv(struct tevent_req *req)

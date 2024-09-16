@@ -1204,4 +1204,15 @@ void smb3_file_posix_information_init(
 	uint32_t dos_attributes,
 	struct smb3_file_posix_information *dst);
 
+struct tevent_req *delay_for_handle_lease_break_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct timeval timeout,
+	struct files_struct *fsp,
+	struct share_mode_lock **lck);
+
+NTSTATUS delay_for_handle_lease_break_recv(struct tevent_req *req,
+					   TALLOC_CTX *mem_ctx,
+					   struct share_mode_lock **lck);
+
 #endif /* _SMBD_PROTO_H_ */

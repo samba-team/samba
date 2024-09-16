@@ -28,6 +28,7 @@
 #include "messages.h"
 #include "locking/leases_db.h"
 #include "../librpc/gen_ndr/ndr_open_files.h"
+#include "lib/util/tevent_ntstatus.h"
 
 /*
  * helper function used by the kernel oplock backends to post the break message
@@ -1367,4 +1368,233 @@ void init_kernel_oplocks(struct smbd_server_connection *sconn)
 #endif
 		sconn->oplocks.kernel_ops = koplocks;
 	}
+}
+
+struct delay_for_handle_lease_break_state {
+	TALLOC_CTX *mem_ctx;
+	struct tevent_context *ev;
+	struct timeval timeout;
+	struct files_struct *fsp;
+	struct share_mode_lock *lck;
+	bool delay;
+};
+
+static void delay_for_handle_lease_break_cleanup(struct tevent_req *req,
+						 enum tevent_req_state req_state)
+{
+	struct delay_for_handle_lease_break_state *state =
+		tevent_req_data(req, struct delay_for_handle_lease_break_state);
+
+	if (req_state == TEVENT_REQ_DONE) {
+		return;
+	}
+	TALLOC_FREE(state->lck);
+}
+
+static void delay_for_handle_lease_break_check(struct tevent_req *req);
+
+struct tevent_req *delay_for_handle_lease_break_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct timeval timeout,
+	struct files_struct *fsp,
+	struct share_mode_lock **lck)
+{
+	struct tevent_req *req = NULL;
+	struct delay_for_handle_lease_break_state *state = NULL;
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct delay_for_handle_lease_break_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	tevent_req_set_cleanup_fn(req, delay_for_handle_lease_break_cleanup);
+
+	*state = (struct delay_for_handle_lease_break_state) {
+		.mem_ctx = mem_ctx,
+		.ev = ev,
+		.timeout = timeout,
+		.fsp = fsp,
+		.lck = talloc_move(state, lck),
+	};
+
+	delay_for_handle_lease_break_check(req);
+	if (!tevent_req_is_in_progress(req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/* Ensure we can't be closed in flight. */
+	if (!aio_add_req_to_fsp(fsp, req)) {
+		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+		return tevent_req_post(req, ev);
+	}
+
+	return req;
+}
+
+static bool delay_for_handle_lease_break_fn(struct share_mode_entry *e,
+					    void *private_data)
+{
+	struct delay_for_handle_lease_break_state *state = talloc_get_type_abort(
+		private_data, struct delay_for_handle_lease_break_state);
+	struct files_struct *fsp = state->fsp;
+	struct server_id_buf buf;
+	uint32_t lease_type;
+	bool ours, stale;
+
+	if (fsp->lease != NULL) {
+		ours = smb2_lease_equal(fsp_client_guid(fsp),
+					&fsp->lease->lease.lease_key,
+					&e->client_guid,
+					&e->lease_key);
+		if (ours) {
+			return false;
+		}
+	}
+
+	lease_type = get_lease_type(e, fsp->file_id);
+	if ((lease_type & SMB2_LEASE_HANDLE) == 0) {
+		return false;
+	}
+
+	stale = share_entry_stale_pid(e);
+	if (stale) {
+		return false;
+	}
+
+	state->delay = true;
+
+	DBG_DEBUG("Breaking h-lease on [%s] pid [%s]\n",
+		  fsp_str_dbg(fsp),
+		  server_id_str_buf(e->pid, &buf));
+
+	send_break_message(fsp->conn->sconn->msg_ctx,
+			   &fsp->file_id,
+			   e,
+			   lease_type & ~SMB2_LEASE_HANDLE);
+
+	return false;
+}
+
+static void delay_for_handle_lease_break_fsp_done(struct tevent_req *subreq);
+
+static void delay_for_handle_lease_break_fsp_check(struct tevent_req *req)
+{
+	struct delay_for_handle_lease_break_state *state = tevent_req_data(
+		req, struct delay_for_handle_lease_break_state);
+	struct tevent_req *subreq = NULL;
+	bool ok;
+
+	DBG_DEBUG("fsp [%s]\n", fsp_str_dbg(state->fsp));
+
+	ok = share_mode_forall_leases(state->lck,
+				      delay_for_handle_lease_break_fn,
+				      state);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+	if (state->delay) {
+		DBG_DEBUG("Delaying fsp [%s]\n", fsp_str_dbg(state->fsp));
+
+		subreq = share_mode_watch_send(state,
+					       state->ev,
+					       state->lck,
+					       (struct server_id){0});
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+
+		tevent_req_set_callback(subreq,
+					delay_for_handle_lease_break_fsp_done,
+					req);
+
+		if (!tevent_req_set_endtime(subreq, state->ev, state->timeout)) {
+			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
+		return;
+	}
+}
+
+static void delay_for_handle_lease_break_fsp_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct delay_for_handle_lease_break_state *state = tevent_req_data(
+		req, struct delay_for_handle_lease_break_state);
+	NTSTATUS status;
+
+	DBG_DEBUG("Watch returned for fsp [%s]\n", fsp_str_dbg(state->fsp));
+
+	status = share_mode_watch_recv(subreq, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("share_mode_watch_recv returned %s\n",
+			nt_errstr(status));
+		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+			/*
+			 * The sharemode-watch timer fired because a client
+			 * didn't respond to the lease break.
+			 */
+			status = NT_STATUS_ACCESS_DENIED;
+		}
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	state->lck = get_existing_share_mode_lock(state, state->fsp->file_id);
+	if (state->lck == NULL) {
+		tevent_req_nterror(req, NT_STATUS_UNSUCCESSFUL);
+		return;
+	}
+
+	/*
+	 * This could potentially end up looping for some if a client
+	 * aggressively reaquires H-leases on the file, but we have a
+	 * timeout on the tevent req as upper bound.
+	 */
+	delay_for_handle_lease_break_check(req);
+}
+
+static void delay_for_handle_lease_break_check(struct tevent_req *req)
+{
+	struct delay_for_handle_lease_break_state *state = tevent_req_data(
+		req, struct delay_for_handle_lease_break_state);
+
+	state->delay = false;
+
+	DBG_DEBUG("fsp [%s]\n", fsp_str_dbg(state->fsp));
+
+	delay_for_handle_lease_break_fsp_check(req);
+	if (!tevent_req_is_in_progress(req)) {
+		return;
+	}
+	if (state->delay) {
+		DBG_DEBUG("Delaying fsp [%s]\n", fsp_str_dbg(state->fsp));
+		TALLOC_FREE(state->lck);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS delay_for_handle_lease_break_recv(struct tevent_req *req,
+					   TALLOC_CTX *mem_ctx,
+					   struct share_mode_lock **lck)
+{
+	NTSTATUS status;
+
+	struct delay_for_handle_lease_break_state *state =
+		tevent_req_data(req, struct delay_for_handle_lease_break_state);
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*lck = talloc_move(mem_ctx, &state->lck);
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
