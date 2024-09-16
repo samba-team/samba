@@ -56,7 +56,6 @@ struct rpc_client_association {
 	struct samba_sockaddr addr;
 };
 
-_UNUSED_
 static NTSTATUS rpc_client_association_create(TALLOC_CTX *mem_ctx,
 					      const char *target_hostname,
 					      enum dcerpc_transport_t transport,
@@ -117,7 +116,6 @@ struct rpc_client_connection {
 	struct rpc_cli_transport *transport;
 };
 
-_UNUSED_
 static NTSTATUS rpc_client_connection_create(TALLOC_CTX *mem_ctx,
 					     struct rpc_client_connection **pconn)
 {
@@ -142,7 +140,6 @@ static int rpc_pipe_client_wrap_destructor(struct rpc_pipe_client *p)
 	return 0;
 }
 
-_UNUSED_
 static NTSTATUS rpc_pipe_wrap_create(
 	const struct ndr_interface_table *table,
 	struct cli_state *np_cli,
@@ -3233,8 +3230,9 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx,
 			       const struct ndr_interface_table *table,
 			       struct rpc_pipe_client **presult)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
+	char *myname = NULL;
 	char *socket_name = NULL;
-	struct rpc_pipe_client *result;
 	struct samba_sockaddr saddr = {
 		.sa_socklen = sizeof(struct sockaddr_un),
 		.u = {
@@ -3243,21 +3241,27 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx,
 			},
 		},
 	};
+	struct rpc_client_association *assoc = NULL;
+	struct rpc_client_connection *conn = NULL;
+	struct rpc_pipe_client *result = NULL;
 	int pathlen;
 	NTSTATUS status;
 	int fd = -1;
 
-	result = talloc_zero(mem_ctx, struct rpc_pipe_client);
-	if (result == NULL) {
+	myname = get_myname(frame);
+	if (myname == NULL) {
+		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = rpc_pipe_get_ncalrpc_name(
-		&table->syntax_id, result, &socket_name);
+	status = rpc_pipe_get_ncalrpc_name(&table->syntax_id,
+					   frame,
+					   &socket_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("rpc_pipe_get_ncalrpc_name failed: %s\n",
 			  nt_errstr(status));
-		goto fail;
+		TALLOC_FREE(frame);
+		return status;
 	}
 
 	pathlen = snprintf(
@@ -3268,66 +3272,71 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx,
 		socket_name);
 	if ((pathlen < 0) || ((size_t)pathlen >= sizeof(saddr.u.un.sun_path))) {
 		DBG_DEBUG("socket_path for %s too long\n", socket_name);
-		status = NT_STATUS_NAME_TOO_LONG;
-		goto fail;
+		TALLOC_FREE(frame);
+		return NT_STATUS_NAME_TOO_LONG;
 	}
 	TALLOC_FREE(socket_name);
 
-	result->abstract_syntax = table->syntax_id;
-	result->transfer_syntax = ndr_transfer_syntax_ndr;
-
-	result->desthost = get_myname(result);
-	if (result->desthost == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
+	status = rpc_client_association_create(mem_ctx,
+					       myname,
+					       NCALRPC,
+					       &saddr,
+					       socket_name,
+					       &assoc);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
 	}
+	talloc_steal(frame, assoc);
 
-	result->srv_name_slash = talloc_asprintf_strupper_m(
-		result, "\\\\%s", result->desthost);
-	if (result->srv_name_slash == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
+	status = rpc_client_connection_create(mem_ctx, &conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
 	}
-
-	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
+	talloc_steal(frame, conn);
 
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (fd == -1) {
 		status = map_nt_error_from_unix(errno);
-		goto fail;
+		TALLOC_FREE(frame);
+		return status;
 	}
 
 	if (connect(fd, &saddr.u.sa, saddr.sa_socklen) == -1) {
-		DBG_WARNING("connect(%s) failed: %s\n",
-			    saddr.u.un.sun_path,
-			    strerror(errno));
 		status = map_nt_error_from_unix(errno);
-		goto fail;
+		close(fd);
+		DBG_WARNING("connect(%s) failed: %s - %s\n",
+			    saddr.u.un.sun_path,
+			    strerror(errno), nt_errstr(status));
+		TALLOC_FREE(frame);
+		return status;
 	}
 
-	status = rpc_transport_sock_init(result, fd, &result->transport);
+	status = rpc_transport_sock_init(conn, fd, &conn->transport);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
+		close(fd);
+		TALLOC_FREE(frame);
+		return status;
 	}
 	fd = -1;
 
-	result->transport->transport = NCALRPC;
+	conn->transport->transport = NCALRPC;
 
-	result->binding_handle = rpccli_bh_create(result, NULL, table);
-	if (result->binding_handle == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
+	status = rpc_pipe_wrap_create(table,
+				      NULL,
+				      &assoc,
+				      &conn,
+				      mem_ctx,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
 	}
 
 	*presult = result;
+	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
-
- fail:
-	if (fd != -1) {
-		close(fd);
-	}
-	TALLOC_FREE(result);
-	return status;
 }
 
 NTSTATUS rpc_pipe_open_local_np(
