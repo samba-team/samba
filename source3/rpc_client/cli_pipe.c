@@ -3563,6 +3563,32 @@ static NTSTATUS rpc_client_connection_np_recv(
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS rpc_client_connection_np(struct cli_state *cli,
+					 const struct rpc_client_association *assoc,
+					 struct rpc_client_connection **pconn)
+{
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = samba_tevent_context_init(cli);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = rpc_client_connection_np_send(ev, ev, cli, assoc);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = rpc_client_connection_np_recv(req, NULL, pconn);
+fail:
+	TALLOC_FREE(req);
+	TALLOC_FREE(ev);
+	return status;
+}
+
 struct rpc_pipe_open_np_state {
 	struct cli_state *cli;
 	const struct ndr_interface_table *table;
@@ -3671,32 +3697,6 @@ NTSTATUS rpc_pipe_open_np_recv(
 	return NT_STATUS_OK;
 }
 
-NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
-			  const struct ndr_interface_table *table,
-			  struct rpc_pipe_client **presult)
-{
-	struct tevent_context *ev = NULL;
-	struct tevent_req *req = NULL;
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
-
-	ev = samba_tevent_context_init(cli);
-	if (ev == NULL) {
-		goto fail;
-	}
-	req = rpc_pipe_open_np_send(ev, ev, cli, table);
-	if (req == NULL) {
-		goto fail;
-	}
-	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
-		goto fail;
-	}
-	status = rpc_pipe_open_np_recv(req, NULL, presult);
-fail:
-	TALLOC_FREE(req);
-	TALLOC_FREE(ev);
-	return status;
-}
-
 /****************************************************************************
  Open a pipe to a remote server.
  ****************************************************************************/
@@ -3786,8 +3786,15 @@ static NTSTATUS cli_rpc_pipe_open(struct cli_state *cli,
 		talloc_steal(frame, conn);
 		break;
 	case NCACN_NP:
-		TALLOC_FREE(frame);
-		return rpc_pipe_open_np(cli, table, presult);
+		status = rpc_client_connection_np(cli,
+						  assoc,
+						  &conn);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+		talloc_steal(frame, conn);
+		break;
 	default:
 		TALLOC_FREE(frame);
 		return NT_STATUS_NOT_IMPLEMENTED;
