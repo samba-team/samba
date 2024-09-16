@@ -177,8 +177,8 @@ done
 shift $((OPTIND - 1))
 
 $tcp || $unix || not_supported "$*"
-if [ -z "$all" ]; then
-	nosupported "$*"
+if "$all"; then
+	not_supported "$*"
 fi
 
 if $tcp; then
