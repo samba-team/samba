@@ -39,6 +39,9 @@
 
 struct dcerpc_binding_handle;
 
+struct rpc_client_association;
+struct rpc_client_connection;
+
 struct rpc_pipe_client {
 	struct rpc_pipe_client *prev, *next;
 
@@ -49,6 +52,12 @@ struct rpc_pipe_client {
 	struct dcerpc_binding_handle *binding_handle;
 
 	SOURCE3_LIBRPC_INTERNALS_BEGIN
+
+	struct cli_state *np_cli;
+
+	struct rpc_client_association *assoc;
+	struct rpc_client_connection *conn;
+	struct pipe_auth_data *auth;
 
 	DATA_BLOB transport_session_key;
 	struct rpc_cli_transport *transport;
@@ -71,8 +80,6 @@ struct rpc_pipe_client {
 	bool verified_pcontext;
 
 	uint16_t max_xmit_frag;
-
-	struct pipe_auth_data *auth;
 
 	SOURCE3_LIBRPC_INTERNALS_END;
 };

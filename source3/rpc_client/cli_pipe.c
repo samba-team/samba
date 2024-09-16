@@ -50,6 +50,157 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
 
+struct rpc_client_association {
+	struct dcerpc_binding *binding;
+
+	struct samba_sockaddr addr;
+};
+
+_UNUSED_
+static NTSTATUS rpc_client_association_create(TALLOC_CTX *mem_ctx,
+					      const char *target_hostname,
+					      enum dcerpc_transport_t transport,
+					      const struct samba_sockaddr *addr,
+					      const char *endpoint,
+					      struct rpc_client_association **passoc)
+{
+	struct rpc_client_association *assoc = NULL;
+	struct dcerpc_binding *bd = NULL;
+	NTSTATUS status;
+
+	assoc = talloc_zero(mem_ctx, struct rpc_client_association);
+	if (assoc == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = dcerpc_parse_binding(assoc, "", &bd);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(assoc);
+		return status;
+	}
+	status = dcerpc_binding_set_transport(bd, transport);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(assoc);
+		return status;
+	}
+	status = dcerpc_binding_set_string_option(bd,
+						  "host",
+						  target_hostname);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(assoc);
+		return status;
+	}
+	status = dcerpc_binding_set_string_option(bd,
+						  "target_hostname",
+						  target_hostname);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(assoc);
+		return status;
+	}
+	status = dcerpc_binding_set_string_option(bd,
+						  "endpoint",
+						  endpoint);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(assoc);
+		return status;
+	}
+
+	assoc->binding = bd;
+	assoc->addr = *addr;
+
+	*passoc = assoc;
+	return NT_STATUS_OK;
+}
+
+struct rpc_client_connection {
+	DATA_BLOB transport_session_key;
+	struct rpc_cli_transport *transport;
+};
+
+_UNUSED_
+static NTSTATUS rpc_client_connection_create(TALLOC_CTX *mem_ctx,
+					     struct rpc_client_connection **pconn)
+{
+	struct rpc_client_connection *conn = NULL;
+
+	conn = talloc_zero(mem_ctx, struct rpc_client_connection);
+	if (conn == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*pconn = conn;
+	return NT_STATUS_OK;
+}
+
+static int rpc_pipe_client_wrap_destructor(struct rpc_pipe_client *p)
+{
+	if (p->np_cli != NULL) {
+		DLIST_REMOVE(p->np_cli->pipe_list, p);
+		p->np_cli = NULL;
+	}
+
+	return 0;
+}
+
+_UNUSED_
+static NTSTATUS rpc_pipe_wrap_create(
+	const struct ndr_interface_table *table,
+	struct cli_state *np_cli,
+	struct rpc_client_association **passoc,
+	struct rpc_client_connection **pconn,
+	TALLOC_CTX *mem_ctx,
+	struct rpc_pipe_client **presult)
+{
+	struct rpc_pipe_client *result = NULL;
+	const char *hostname = NULL;
+
+	result = talloc_zero(mem_ctx, struct rpc_pipe_client);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(result, rpc_pipe_client_wrap_destructor);
+
+	result->assoc = talloc_move(result, passoc);
+	result->conn = talloc_move(result, pconn);
+
+	result->transport_session_key = result->conn->transport_session_key;
+	result->transport = result->conn->transport;
+
+	result->abstract_syntax = table->syntax_id;
+	result->transfer_syntax = ndr_transfer_syntax_ndr;
+
+	hostname = dcerpc_binding_get_string_option(result->assoc->binding,
+						    "target_hostname");
+	result->desthost = talloc_strdup(result, hostname);
+	if (result->desthost == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	result->srv_name_slash = talloc_asprintf_strupper_m(
+		result, "\\\\%s", result->desthost);
+	if (result->srv_name_slash == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
+
+	result->binding_handle = rpccli_bh_create(result, NULL, table);
+	if (result->binding_handle == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (np_cli != NULL) {
+		result->np_cli = np_cli;
+		DLIST_ADD_END(np_cli->pipe_list, result);
+	}
+
+	*presult = result;
+	return NT_STATUS_OK;
+}
+
 /********************************************************************
  Pipe description for a DEBUG
  ********************************************************************/
