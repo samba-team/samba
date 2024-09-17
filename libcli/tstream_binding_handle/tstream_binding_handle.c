@@ -35,7 +35,16 @@ struct tstream_bh_state {
 	size_t call_initial_read_size;
 	tstream_read_pdu_blob_full_fn_t *complete_pdu_fn;
 	void *complete_pdu_fn_private;
+	const struct dcerpc_binding *binding;
 };
+
+static const struct dcerpc_binding *tstream_bh_get_binding(struct dcerpc_binding_handle *h)
+{
+	struct tstream_bh_state *hs = dcerpc_binding_handle_data(
+		h, struct tstream_bh_state);
+
+	return hs->binding;
+}
 
 static bool tstream_bh_is_connected(struct dcerpc_binding_handle *h)
 {
@@ -290,6 +299,7 @@ static NTSTATUS tstream_bh_call_recv(struct tevent_req *req,
 
 static const struct dcerpc_binding_handle_ops tstream_bh_ops = {
 	.name			= "tstream_binding_handle",
+	.get_binding		= tstream_bh_get_binding,
 	.is_connected		= tstream_bh_is_connected,
 	.set_timeout		= tstream_bh_set_timeout,
 	.raw_call_send		= tstream_bh_call_send,
@@ -309,6 +319,8 @@ struct dcerpc_binding_handle *tstream_binding_handle_create(
 {
 	struct dcerpc_binding_handle *h = NULL;
 	struct tstream_bh_state *hs = NULL;
+	struct dcerpc_binding *b = NULL;
+	NTSTATUS status;
 
 	h = dcerpc_binding_handle_create(mem_ctx,
 					 &tstream_bh_ops,
@@ -332,6 +344,13 @@ struct dcerpc_binding_handle *tstream_binding_handle_create(
 		TALLOC_FREE(h);
 		return NULL;
 	}
+
+	status = dcerpc_parse_binding(hs, "", &b);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(h);
+		return NULL;
+	}
+	hs->binding = b;
 
 	if (max_data > 0) {
 		tstream_smbXcli_np_set_max_data(hs->stream, max_data);
