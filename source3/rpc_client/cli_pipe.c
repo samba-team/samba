@@ -4266,40 +4266,27 @@ NTSTATUS cli_rpc_pipe_open_with_creds(struct cli_state *cli,
 	return status;
 }
 
-NTSTATUS cli_rpc_pipe_open_bind_schannel(
-	struct cli_state *cli,
+NTSTATUS cli_rpc_pipe_client_auth_schannel(
+	struct rpc_pipe_client *rpccli,
 	const struct ndr_interface_table *table,
-	enum dcerpc_transport_t transport,
-	struct netlogon_creds_cli_context *netlogon_creds,
-	const char *remote_name,
-	const struct sockaddr_storage *remote_sockaddr,
-	struct rpc_pipe_client **_rpccli)
+	struct netlogon_creds_cli_context *netlogon_creds)
 {
-	struct rpc_pipe_client *rpccli;
-	struct pipe_auth_data *rpcauth;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct pipe_auth_data *rpcauth = NULL;
 	const char *target_service = table->authservices->names[0];
-	struct cli_credentials *cli_creds;
+	struct cli_credentials *cli_creds = NULL;
 	enum dcerpc_AuthLevel auth_level;
 	NTSTATUS status;
 
-	status = cli_rpc_pipe_open(cli,
-				   transport,
-				   table,
-				   remote_name,
-				   remote_sockaddr,
-				   &rpccli);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	auth_level = netlogon_creds_cli_auth_level(netlogon_creds);
 
-	status = netlogon_creds_bind_cli_credentials(
-		netlogon_creds, rpccli, &cli_creds);
+	status = netlogon_creds_bind_cli_credentials(netlogon_creds,
+						     frame,
+						     &cli_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("netlogon_creds_bind_cli_credentials failed: %s\n",
 			  nt_errstr(status));
-		TALLOC_FREE(rpccli);
+		TALLOC_FREE(frame);
 		return status;
 	}
 
@@ -4313,16 +4300,47 @@ NTSTATUS cli_rpc_pipe_open_bind_schannel(
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("rpccli_generic_bind_data_from_creds returned %s\n",
 			  nt_errstr(status)));
-		TALLOC_FREE(rpccli);
+		TALLOC_FREE(frame);
 		return status;
 	}
 
 	status = rpc_pipe_bind(rpccli, rpcauth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("rpc_pipe_bind failed with error %s\n",
+			  nt_errstr(status));
+		TALLOC_FREE(frame);
+		return status;
+	}
 
-	/* No TALLOC_FREE, gensec takes references */
-	talloc_unlink(rpccli, cli_creds);
-	cli_creds = NULL;
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
 
+NTSTATUS cli_rpc_pipe_open_bind_schannel(
+	struct cli_state *cli,
+	const struct ndr_interface_table *table,
+	enum dcerpc_transport_t transport,
+	struct netlogon_creds_cli_context *netlogon_creds,
+	const char *remote_name,
+	const struct sockaddr_storage *remote_sockaddr,
+	struct rpc_pipe_client **_rpccli)
+{
+	struct rpc_pipe_client *rpccli = NULL;
+	NTSTATUS status;
+
+	status = cli_rpc_pipe_open(cli,
+				   transport,
+				   table,
+				   remote_name,
+				   remote_sockaddr,
+				   &rpccli);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = cli_rpc_pipe_client_auth_schannel(rpccli,
+						   table,
+						   netlogon_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("rpc_pipe_bind failed with error %s\n",
 			  nt_errstr(status));
