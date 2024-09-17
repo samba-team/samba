@@ -255,6 +255,8 @@ void *_dcerpc_binding_handle_data(struct dcerpc_binding_handle *h);
 _DEPRECATED_ void dcerpc_binding_handle_set_sync_ev(struct dcerpc_binding_handle *h,
 						    struct tevent_context *ev);
 
+const struct dcerpc_binding *dcerpc_binding_handle_get_binding(struct dcerpc_binding_handle *h);
+
 bool dcerpc_binding_handle_is_connected(struct dcerpc_binding_handle *h);
 
 uint32_t dcerpc_binding_handle_set_timeout(struct dcerpc_binding_handle *h,
