@@ -594,16 +594,10 @@ static int vfs_gluster_statvfs(struct vfs_handle_struct *handle,
 static uint32_t vfs_gluster_fs_capabilities(struct vfs_handle_struct *handle,
 					    enum timestamp_set_resolution *p_ts_res)
 {
-	uint32_t caps;
-
-	caps = SMB_VFS_NEXT_FS_CAPABILITIES(handle, p_ts_res);
+	uint32_t caps = vfs_get_fs_capabilities(handle->conn, p_ts_res);
 
 #ifdef HAVE_GFAPI_VER_6
 	caps |= FILE_SUPPORTS_SPARSE_FILES;
-#endif
-
-#ifdef STAT_HAVE_NSEC
-	*p_ts_res = TIMESTAMP_SET_NT_OR_BETTER;
 #endif
 
 	return caps;
