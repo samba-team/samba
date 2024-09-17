@@ -1,3 +1,2 @@
 ^samba3.smb2.lease.initial_delete_disconnect\(fileserver\)
-^samba3.smb2.lease.initial_delete_logoff\(fileserver\)
 ^samba3.smb2.lease.initial_delete_tdis\(fileserver\)

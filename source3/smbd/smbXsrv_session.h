@@ -107,4 +107,13 @@ struct tevent_req *smb2srv_session_close_previous_send(
 	uint64_t current_session_id);
 NTSTATUS smb2srv_session_close_previous_recv(struct tevent_req *req);
 
+void smbXsrv_wait_for_handle_lease_break(
+				struct tevent_req *req,
+				struct tevent_context *ev,
+				struct smbXsrv_client *client,
+				struct tevent_queue *wait_queue,
+				bool (*fsp_cmp_fn)(struct files_struct *fsp,
+						   void *private_data),
+				void *fsp_cmp_private_data);
+
 #endif

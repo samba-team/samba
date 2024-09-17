@@ -1739,6 +1739,19 @@ struct smb2srv_session_shutdown_state {
 
 static void smb2srv_session_shutdown_wait_done(struct tevent_req *subreq);
 
+struct check_for_lease_break_fsp_cmp_state {
+	struct smbXsrv_session *session;
+};
+
+static bool check_for_lease_break_fsp_cmp_fn(struct files_struct *fsp,
+					     void *private_data)
+{
+	struct check_for_lease_break_fsp_cmp_state *state =
+		(struct check_for_lease_break_fsp_cmp_state *)private_data;
+
+	return (fsp->vuid == state->session->global->session_wire_id);
+}
+
 struct tevent_req *smb2srv_session_shutdown_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct smbXsrv_session *session,
@@ -1748,6 +1761,7 @@ struct tevent_req *smb2srv_session_shutdown_send(TALLOC_CTX *mem_ctx,
 	struct smb2srv_session_shutdown_state *state = NULL;
 	struct tevent_req *subreq = NULL;
 	struct smbXsrv_connection *xconn = NULL;
+	struct check_for_lease_break_fsp_cmp_state fsp_cmp_state;
 	size_t len = 0;
 
 	/*
@@ -1795,6 +1809,21 @@ struct tevent_req *smb2srv_session_shutdown_send(TALLOC_CTX *mem_ctx,
 				return tevent_req_post(req, ev);
 			}
 		}
+	}
+
+	fsp_cmp_state = (struct check_for_lease_break_fsp_cmp_state) {
+		.session = session,
+	};
+
+	smbXsrv_wait_for_handle_lease_break(
+		req,
+		ev,
+		session->client,
+		state->wait_queue,
+		check_for_lease_break_fsp_cmp_fn,
+		&fsp_cmp_state);
+	if (!tevent_req_is_in_progress(req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	len = tevent_queue_length(state->wait_queue);
@@ -2516,4 +2545,133 @@ NTSTATUS smbXsrv_session_global_traverse(
 	unbecome_root();
 
 	return status;
+}
+
+static struct files_struct *smbXsrv_wait_for_handle_lease_break_fn(
+						struct files_struct *fsp,
+						void *private_data);
+static void smbXsrv_wait_for_handle_lease_break_done(
+						struct tevent_req *subreq);
+
+struct delay_for_handle_lease_break_state {
+	struct tevent_req *req;
+	struct tevent_context *ev;
+	struct smbXsrv_client *client;
+	struct tevent_queue *wait_queue;
+	bool (*fsp_cmp_fn)(struct files_struct *fsp,
+			   void *private_data);
+	void *fsp_cmp_private_data;
+};
+
+void smbXsrv_wait_for_handle_lease_break(
+				struct tevent_req *req,
+				struct tevent_context *ev,
+				struct smbXsrv_client *client,
+				struct tevent_queue *wait_queue,
+				bool (*fsp_cmp_fn)(struct files_struct *fsp,
+						   void *private_data),
+				void *fsp_cmp_private_data)
+{
+	struct delay_for_handle_lease_break_state state;
+
+	state = (struct delay_for_handle_lease_break_state) {
+		.req = req,
+		.ev = ev,
+		.client = client,
+		.wait_queue = wait_queue,
+		.fsp_cmp_fn = fsp_cmp_fn,
+		.fsp_cmp_private_data = fsp_cmp_private_data,
+	};
+
+	files_forall(client->sconn,
+		     smbXsrv_wait_for_handle_lease_break_fn,
+		     &state);
+}
+
+static struct files_struct *smbXsrv_wait_for_handle_lease_break_fn(
+						struct files_struct *fsp,
+						void *private_data)
+{
+	struct delay_for_handle_lease_break_state *state = private_data;
+	struct tevent_req *subreq = NULL;
+	struct share_mode_lock *lck = NULL;
+	struct timeval timeout = timeval_current_ofs(OPLOCK_BREAK_TIMEOUT, 0);
+	bool match;
+	NTSTATUS status;
+
+	match = state->fsp_cmp_fn(fsp, state->fsp_cmp_private_data);
+	if (!match) {
+		return NULL;
+	}
+
+	if (!fsp->fsp_flags.initial_delete_on_close) {
+		return NULL;
+	}
+
+	lck = get_existing_share_mode_lock(fsp, fsp->file_id);
+	if (lck == NULL) {
+		/* No opens on this file */
+		return NULL;
+	}
+
+	subreq = delay_for_handle_lease_break_send(fsp,
+						   state->ev,
+						   timeout,
+						   fsp,
+						   &lck);
+	if (tevent_req_nomem(subreq, state->req)) {
+		TALLOC_FREE(lck);
+		/* Reminder: returning != NULL means STOP traverse */
+		return fsp;
+	}
+	if (tevent_req_is_in_progress(subreq)) {
+		struct tevent_req *wait_subreq = NULL;
+
+		tevent_req_set_callback(
+			subreq,
+			smbXsrv_wait_for_handle_lease_break_done,
+			state->req);
+
+		/*
+		 * This just adds a blocker that unblocks when subreq is
+		 * completed and goes away.
+		 */
+		wait_subreq = tevent_queue_wait_send(subreq,
+						     state->ev,
+						     state->wait_queue);
+		if (wait_subreq == NULL) {
+			exit_server("tevent_queue_wait_send failed");
+		}
+		return NULL;
+	}
+
+	status = delay_for_handle_lease_break_recv(subreq, state->req, &lck);
+	TALLOC_FREE(subreq);
+	TALLOC_FREE(lck);
+	if (tevent_req_nterror(state->req, status)) {
+		DBG_ERR("delay_for_handle_lease_break_recv failed %s\n",
+			nt_errstr(status));
+		return fsp;
+	}
+	return NULL;
+}
+
+static void smbXsrv_wait_for_handle_lease_break_done(
+						struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct share_mode_lock *lck = NULL;
+	NTSTATUS status;
+
+	status = delay_for_handle_lease_break_recv(subreq,
+						   req,
+						   &lck);
+	TALLOC_FREE(subreq);
+	TALLOC_FREE(lck);
+	if (tevent_req_nterror(req, status)) {
+		DBG_ERR("delay_for_handle_lease_break_recv failed %s\n",
+			nt_errstr(status));
+		return;
+	}
 }
