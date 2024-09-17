@@ -443,6 +443,15 @@ void imessaging_dgm_unref_ev(struct tevent_context *ev)
 static NTSTATUS imessaging_reinit(struct imessaging_context *msg)
 {
 	int ret = -1;
+	struct irpc_request *irpc = NULL;
+	struct irpc_request *next = NULL;
+
+	for (irpc = msg->requests; irpc != NULL; irpc = next) {
+		next = irpc->next;
+
+		DLIST_REMOVE(msg->requests, irpc);
+		irpc->callid = -1;
+	}
 
 	TALLOC_FREE(msg->msg_dgm_ref);
 
