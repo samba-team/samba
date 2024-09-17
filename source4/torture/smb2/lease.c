@@ -4004,6 +4004,102 @@ done:
 	return ret;
 }
 
+/*
+ * Try doing a rename overwrite where the target file is open
+ * with a RWH lease.
+ */
+
+static bool test_lease_v2_rename_target_overwrite(struct torture_context *tctx,
+				 struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io;
+	struct smb2_create io_dst;
+	struct smb2_lease ls1;
+	struct smb2_lease ls_dst;
+	struct smb2_handle h = {};
+	struct smb2_handle h_dst = {};
+	union smb_setfileinfo sinfo;
+	const char *fname = "lease_v2_rename_overwrite_src.dat";
+	const char *fname_dst = "lease_v2_rename_overwrite_dst.dat";
+	bool ret = true;
+	NTSTATUS status;
+	uint32_t caps;
+	enum protocol_types protocol;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	protocol = smbXcli_conn_protocol(tree->session->transport->conn);
+	if (protocol < PROTOCOL_SMB3_00) {
+		torture_skip(tctx, "v2 leases are not supported");
+	}
+
+	smb2_util_unlink(tree, fname);
+	smb2_util_unlink(tree, fname_dst);
+
+	tree->session->transport->lease.handler	= torture_lease_handler;
+	tree->session->transport->lease.private_data = tree;
+	tree->session->transport->oplock.handler = torture_oplock_handler;
+	tree->session->transport->oplock.private_data = tree;
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	ZERO_STRUCT(io);
+	smb2_lease_v2_create_share(&io, &ls1, false, fname,
+				   smb2_util_share_access("RWD"),
+				   LEASE1, NULL,
+				   smb2_util_lease_state("RHW"),
+				   0x4711);
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = io.out.file.handle;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	ls1.lease_epoch += 1;
+	CHECK_LEASE_V2(&io, "RHW", true, LEASE1, 0, 0, ls1.lease_epoch);
+
+	/* Create the target file with a lease and leave open. */
+	ZERO_STRUCT(io_dst);
+	smb2_lease_v2_create_share(&io_dst, &ls_dst, false, fname_dst,
+				   smb2_util_share_access("RWD"),
+				   LEASE2, NULL,
+				   smb2_util_lease_state("RHW"),
+				   0x4711);
+	status = smb2_create(tree, mem_ctx, &io_dst);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_dst = io_dst.out.file.handle;
+	CHECK_CREATED(&io_dst, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	ls_dst.lease_epoch += 1;
+	CHECK_LEASE_V2(&io_dst, "RHW", true, LEASE2, 0, 0, ls_dst.lease_epoch);
+
+	/*
+	 * Now rename - should break the target lease then return
+	 * ACCESS_DENIED.
+	 * */
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.handle = h;
+	sinfo.rename_information.in.overwrite = true;
+	sinfo.rename_information.in.new_name = fname_dst;
+	status = smb2_setinfo_file(tree, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	CHECK_BREAK_INFO_V2(tree->session->transport,
+			    "RWH", "RW", LEASE2, ls_dst.lease_epoch + 1);
+
+done:
+
+	smb2_util_close(tree, h);
+	smb2_util_close(tree, h_dst);
+
+	smb2_util_unlink(tree, fname);
+	smb2_util_unlink(tree, fname_dst);
+
+	talloc_free(mem_ctx);
+	return ret;
+}
 
 static bool test_lease_dynamic_share(struct torture_context *tctx,
 				   struct smb2_tree *tree1a)
@@ -4818,6 +4914,8 @@ struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 				test_lease_v1_bug_15148);
 	torture_suite_add_1smb2_test(suite, "v2_bug15148",
 				test_lease_v2_bug_15148);
+	torture_suite_add_1smb2_test(suite, "v2_rename_target_overwrite",
+				test_lease_v2_rename_target_overwrite);
 
 	suite->description = talloc_strdup(suite, "SMB2-LEASE tests");
 
