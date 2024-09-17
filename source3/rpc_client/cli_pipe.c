@@ -4045,6 +4045,87 @@ static NTSTATUS cli_rpc_pipe_open(struct cli_state *cli,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS cli_rpc_pipe_client_reconnect(struct rpc_pipe_client *p)
+{
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(p->assoc->binding);
+	NTSTATUS status;
+
+	switch (transport) {
+	case NCACN_IP_TCP:
+		status = rpc_pipe_open_tcp_port(p,
+						p->assoc,
+						&p->conn);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		break;
+	case NCACN_NP:
+		status = rpc_client_connection_np(p->np_cli,
+						  p->assoc,
+						  &p->conn);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		talloc_steal(p, p->conn);
+		break;
+	default:
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_rpc_pipe_client_prepare_alter(struct rpc_pipe_client *p,
+					   bool new_auth_context,
+					   const struct ndr_interface_table *table,
+					   bool new_pres_context)
+{
+	uint32_t f = p->assoc->features.negotiated;
+	NTSTATUS status;
+
+	if (!new_auth_context && !new_pres_context) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	TALLOC_FREE(p->binding_handle);
+
+	if (new_auth_context) {
+		p->auth = NULL;
+	}
+
+	if (new_auth_context &&
+	    !(f & DCERPC_BIND_TIME_SECURITY_CONTEXT_MULTIPLEXING))
+	{
+		/*
+		 * new auth context without
+		 * security context multiplexing.
+		 *
+		 * We need to create a new transport
+		 * connection is the same association
+		 * group
+		 *
+		 * We need to keep the old connection alive
+		 * in order to connect to the existing association
+		 * group..., so no TALLOC_FREE(p->conn)
+		 */
+		p->conn = NULL;
+		status = cli_rpc_pipe_client_reconnect(p);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	if (new_pres_context) {
+		/* rpc_pipe_bind_send should allocate an id... */
+		p->pres_context_id = UINT16_MAX;
+		p->table = table;
+		p->transfer_syntax = ndr_transfer_syntax_ndr;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Open a named pipe to an SMB server and bind anonymously.
  ****************************************************************************/
