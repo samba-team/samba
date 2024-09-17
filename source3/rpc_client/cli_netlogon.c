@@ -159,6 +159,8 @@ static NTSTATUS rpccli_setup_netlogon_creds_locked(
 	struct netlogon_creds_cli_context *creds_ctx,
 	bool force_reauth,
 	struct cli_credentials *cli_creds,
+	TALLOC_CTX *mem_ctx,
+	struct rpc_pipe_client **_netlogon_pipe,
 	uint32_t *negotiate_flags)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -249,6 +251,10 @@ static NTSTATUS rpccli_setup_netlogon_creds_locked(
 		 remote_name));
 
 done:
+	if (_netlogon_pipe != NULL) {
+		*_netlogon_pipe = talloc_move(mem_ctx, &netlogon_pipe);
+	}
+
 	if (negotiate_flags != NULL) {
 		*negotiate_flags = creds->negotiate_flags;
 	}
@@ -278,8 +284,14 @@ NTSTATUS rpccli_setup_netlogon_creds(
 		return status;
 	}
 
-	status = rpccli_setup_netlogon_creds_locked(
-		cli, transport, creds_ctx, force_reauth, cli_creds, NULL);
+	status = rpccli_setup_netlogon_creds_locked(cli,
+						    transport,
+						    creds_ctx,
+						    force_reauth,
+						    cli_creds,
+						    NULL,
+						    NULL,
+						    NULL);
 
 	TALLOC_FREE(frame);
 
@@ -407,9 +419,14 @@ again:
 		goto fail;
 	}
 
-	status = rpccli_setup_netlogon_creds_locked(
-		cli, transport, creds_ctx, true, trust_creds,
-		&negotiate_flags);
+	status = rpccli_setup_netlogon_creds_locked(cli,
+						    transport,
+						    creds_ctx,
+						    true,
+						    trust_creds,
+						    NULL,
+						    NULL,
+						    &negotiate_flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("rpccli_setup_netlogon_creds failed for %s, "
 			  "unable to setup NETLOGON credentials: %s\n",
