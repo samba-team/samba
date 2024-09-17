@@ -234,6 +234,8 @@ static bool _test_GetKeySecurity(struct dcerpc_pipe *p,
 	uint32_t sec_info;
 	DATA_BLOB sdblob;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	const struct dcerpc_binding *binding = dcerpc_binding_handle_get_binding(b);
+	uint16_t flags = dcerpc_binding_get_flags(binding);
 
 	if (sec_info_ptr) {
 		sec_info = *sec_info_ptr;
@@ -265,7 +267,7 @@ static bool _test_GetKeySecurity(struct dcerpc_pipe *p,
 				     (ndr_pull_flags_fn_t)ndr_pull_security_descriptor),
 				     "pull_security_descriptor failed");
 
-	if (p->conn->flags & DCERPC_DEBUG_PRINT_OUT) {
+	if (flags & DCERPC_DEBUG_PRINT_OUT) {
 		NDR_PRINT_DEBUG(security_descriptor, sd);
 	}
 
@@ -298,10 +300,12 @@ static bool _test_SetKeySecurity(struct dcerpc_pipe *p,
 	DATA_BLOB sdblob;
 	uint32_t sec_info;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	const struct dcerpc_binding *binding = dcerpc_binding_handle_get_binding(b);
+	uint16_t flags = dcerpc_binding_get_flags(binding);
 
 	ZERO_STRUCT(r);
 
-	if (sd && (p->conn->flags & DCERPC_DEBUG_PRINT_OUT)) {
+	if (sd && (flags & DCERPC_DEBUG_PRINT_OUT)) {
 		NDR_PRINT_DEBUG(security_descriptor, sd);
 	}
 

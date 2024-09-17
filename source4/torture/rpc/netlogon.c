@@ -472,10 +472,12 @@ bool test_SetupCredentialsPipe(const struct dcerpc_pipe *p1,
 			       struct dcerpc_pipe **_p2)
 {
 	NTSTATUS status;
+	const struct dcerpc_binding *b1 =
+		dcerpc_binding_handle_get_binding(p1->binding_handle);
 	struct dcerpc_binding *b2 = NULL;
 	struct dcerpc_pipe *p2 = NULL;
 
-	b2 = dcerpc_binding_dup(tctx, p1->binding);
+	b2 = dcerpc_binding_dup(tctx, b1);
 	torture_assert(tctx, b2 != NULL, "dcerpc_binding_dup");
 	dcerpc_binding_set_flags(b2,
 				 DCERPC_SCHANNEL | additional_flags,
@@ -2303,6 +2305,7 @@ static bool test_ServerReqChallengeGlobal(struct torture_context *tctx,
 	const char *machine_name;
 	const char *plain_pass;
 	struct dcerpc_binding_handle *b1 = p1->binding_handle;
+	const struct dcerpc_binding *bd1 = dcerpc_binding_handle_get_binding(b1);
 	struct dcerpc_pipe *p2 = NULL;
 	struct dcerpc_binding_handle *b2 = NULL;
 
@@ -2314,7 +2317,7 @@ static bool test_ServerReqChallengeGlobal(struct torture_context *tctx,
 	torture_comment(tctx, "Testing ServerReqChallenge on b1\n");
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_pipe_connect_b(tctx, &p2, p1->binding,
+		dcerpc_pipe_connect_b(tctx, &p2, bd1,
 				      &ndr_table_netlogon,
 				      machine_credentials,
 				      tctx->ev, tctx->lp_ctx),
@@ -2383,6 +2386,7 @@ static bool test_ServerReqChallengeReuseGlobal(struct torture_context *tctx,
 	const char *machine_name;
 	const char *plain_pass;
 	struct dcerpc_binding_handle *b1 = p1->binding_handle;
+	const struct dcerpc_binding *bd1 = dcerpc_binding_handle_get_binding(b1);
 	struct dcerpc_pipe *p2 = NULL;
 	struct dcerpc_binding_handle *b2 = NULL;
 	struct dcerpc_pipe *p3 = NULL;
@@ -2396,7 +2400,7 @@ static bool test_ServerReqChallengeReuseGlobal(struct torture_context *tctx,
 	torture_comment(tctx, "Testing ServerReqChallenge on b1\n");
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_pipe_connect_b(tctx, &p2, p1->binding,
+		dcerpc_pipe_connect_b(tctx, &p2, bd1,
 				      &ndr_table_netlogon,
 				      machine_credentials,
 				      tctx->ev, tctx->lp_ctx),
@@ -2404,7 +2408,7 @@ static bool test_ServerReqChallengeReuseGlobal(struct torture_context *tctx,
 	b2 = p2->binding_handle;
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_pipe_connect_b(tctx, &p3, p1->binding,
+		dcerpc_pipe_connect_b(tctx, &p3, bd1,
 				      &ndr_table_netlogon,
 				      machine_credentials,
 				      tctx->ev, tctx->lp_ctx),
@@ -2484,6 +2488,7 @@ static bool test_ServerReqChallengeReuseGlobal2(struct torture_context *tctx,
 	const char *machine_name;
 	const char *plain_pass;
 	struct dcerpc_binding_handle *b1 = p1->binding_handle;
+	const struct dcerpc_binding *bd1 = dcerpc_binding_handle_get_binding(b1);
 	struct dcerpc_pipe *p2 = NULL;
 	struct dcerpc_binding_handle *b2 = NULL;
 
@@ -2495,7 +2500,7 @@ static bool test_ServerReqChallengeReuseGlobal2(struct torture_context *tctx,
 	torture_comment(tctx, "Testing ServerReqChallenge on b1\n");
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_pipe_connect_b(tctx, &p2, p1->binding,
+		dcerpc_pipe_connect_b(tctx, &p2, bd1,
 				      &ndr_table_netlogon,
 				      machine_credentials,
 				      tctx->ev, tctx->lp_ctx),
@@ -2576,6 +2581,7 @@ static bool test_ServerReqChallengeReuseGlobal3(struct torture_context *tctx,
 	const char *machine_name;
 	const char *plain_pass;
 	struct dcerpc_binding_handle *b1 = p1->binding_handle;
+	const struct dcerpc_binding *bd1 = dcerpc_binding_handle_get_binding(b1);
 	struct dcerpc_pipe *p2 = NULL;
 	struct dcerpc_binding_handle *b2 = NULL;
 
@@ -2587,7 +2593,7 @@ static bool test_ServerReqChallengeReuseGlobal3(struct torture_context *tctx,
 	torture_comment(tctx, "Testing ServerReqChallenge on b1\n");
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_pipe_connect_b(tctx, &p2, p1->binding,
+		dcerpc_pipe_connect_b(tctx, &p2, bd1,
 				      &ndr_table_netlogon,
 				      machine_credentials,
 				      tctx->ev, tctx->lp_ctx),
@@ -2670,6 +2676,7 @@ static bool test_ServerReqChallengeReuseGlobal4(struct torture_context *tctx,
 	const char *machine_name;
 	const char *plain_pass;
 	struct dcerpc_binding_handle *b1 = p1->binding_handle;
+	const struct dcerpc_binding *bd1 = dcerpc_binding_handle_get_binding(b1);
 	struct dcerpc_pipe *p2 = NULL;
 	struct dcerpc_binding_handle *b2 = NULL;
 
@@ -2681,7 +2688,7 @@ static bool test_ServerReqChallengeReuseGlobal4(struct torture_context *tctx,
 	torture_comment(tctx, "Testing ServerReqChallenge on b1\n");
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_pipe_connect_b(tctx, &p2, p1->binding,
+		dcerpc_pipe_connect_b(tctx, &p2, bd1,
 				      &ndr_table_netlogon,
 				      machine_credentials,
 				      tctx->ev, tctx->lp_ctx),
@@ -5815,6 +5822,7 @@ static bool test_ManyGetDCName(struct torture_context *tctx,
 	struct netr_GetAnyDCName d;
 	const char *dcname = NULL;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	const struct dcerpc_binding *bd = dcerpc_binding_handle_get_binding(b);
 	struct dcerpc_binding_handle *b2;
 
 	int i;
@@ -5828,7 +5836,7 @@ static bool test_ManyGetDCName(struct torture_context *tctx,
 	anon_creds = cli_credentials_init_anon(tctx);
 	torture_assert(tctx, anon_creds != NULL, "cli_credentials_init_anon failed");
 
-	binding2 = dcerpc_binding_dup(tctx, p->binding);
+	binding2 = dcerpc_binding_dup(tctx, bd);
 	/* Swap the binding details from NETLOGON to LSA */
 	status = dcerpc_epm_map_binding(tctx, binding2, &ndr_table_lsarpc, tctx->ev, tctx->lp_ctx);
 	dcerpc_binding_set_assoc_group_id(binding2, 0);
@@ -5921,7 +5929,7 @@ static bool test_lsa_over_netlogon(struct torture_context *tctx,
 	anon_creds = cli_credentials_init_anon(tctx);
 	torture_assert(tctx, anon_creds != NULL, "cli_credentials_init_anon failed");
 
-	binding2 = p->binding;
+	binding2 = dcerpc_binding_handle_get_binding(p->binding_handle);
 
 	status = dcerpc_secondary_auth_connection(p, binding2, &ndr_table_lsarpc,
 						  anon_creds, tctx->lp_ctx,

@@ -86,6 +86,7 @@ static bool test_assoc_group_handles_external(struct torture_context *tctx,
 					      const void *private_data)
 {
 	struct dcerpc_binding *binding1 = NULL;
+	const struct dcerpc_binding *bd1 = NULL;
 	struct dcerpc_binding *binding2 = NULL;
 	struct dcerpc_pipe *p1 = NULL;
 	struct dcerpc_pipe *p2 = NULL;
@@ -152,7 +153,8 @@ static bool test_assoc_group_handles_external(struct torture_context *tctx,
 		"Unexpected EPM Lookup success");
 
 	/* Open second pipe, same association group. Handle is found */
-	assoc_group_id = dcerpc_binding_get_assoc_group_id(p1->binding);
+	bd1 = dcerpc_binding_handle_get_binding(p1->binding_handle);
+	assoc_group_id = dcerpc_binding_get_assoc_group_id(bd1);
 	dcerpc_binding_set_assoc_group_id(binding2, assoc_group_id);
 
 	TALLOC_FREE(p2);

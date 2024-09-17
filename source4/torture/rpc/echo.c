@@ -69,9 +69,11 @@ static bool test_echodata(struct torture_context *tctx,
 	int len;
 	struct echo_EchoData r;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	const struct dcerpc_binding *binding = dcerpc_binding_handle_get_binding(b);
+	uint16_t flags = dcerpc_binding_get_flags(binding);
 
 	if (torture_setting_bool(tctx, "quick", false) &&
-	    (p->conn->flags & DCERPC_DEBUG_VALIDATE_BOTH)) {
+	    (flags & DCERPC_DEBUG_VALIDATE_BOTH)) {
 		len = 1 + (random() % 500);
 	} else {
 		len = 1 + (random() % 5000);
@@ -115,9 +117,11 @@ static bool test_sourcedata(struct torture_context *tctx,
 	int len;
 	struct echo_SourceData r;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	const struct dcerpc_binding *binding = dcerpc_binding_handle_get_binding(b);
+	uint16_t flags = dcerpc_binding_get_flags(binding);
 
 	if (torture_setting_bool(tctx, "quick", false) &&
-	    (p->conn->flags & DCERPC_DEBUG_VALIDATE_BOTH)) {
+	    (flags & DCERPC_DEBUG_VALIDATE_BOTH)) {
 		len = 100 + (random() % 500);
 	} else {
 		len = 200000 + (random() % 5000);
@@ -148,9 +152,11 @@ static bool test_sinkdata(struct torture_context *tctx,
 	int len;
 	struct echo_SinkData r;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	const struct dcerpc_binding *binding = dcerpc_binding_handle_get_binding(b);
+	uint16_t flags = dcerpc_binding_get_flags(binding);
 
 	if (torture_setting_bool(tctx, "quick", false) &&
-	    (p->conn->flags & DCERPC_DEBUG_VALIDATE_BOTH)) {
+	    (flags & DCERPC_DEBUG_VALIDATE_BOTH)) {
 		len = 100 + (random() % 5000);
 	} else {
 		len = 200000 + (random() % 5000);
@@ -238,6 +244,7 @@ static bool test_sleep(struct torture_context *tctx,
 	struct timeval diff[ASYNC_COUNT];
 	int total_done = 0;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	const struct dcerpc_binding *bd = dcerpc_binding_handle_get_binding(b);
 	enum dcerpc_transport_t transport;
 	uint32_t assoc_group_id;
 	struct dcerpc_pipe *p2 = NULL;
@@ -248,8 +255,8 @@ static bool test_sleep(struct torture_context *tctx,
 	}
 	torture_comment(tctx, "Testing TestSleep - use \"torture:quick=yes\" to disable\n");
 
-	transport	= dcerpc_binding_get_transport(p->binding);
-	assoc_group_id	= dcerpc_binding_get_assoc_group_id(p->binding);
+	transport	= dcerpc_binding_get_transport(bd);
+	assoc_group_id	= dcerpc_binding_get_assoc_group_id(bd);
 
 	torture_comment(tctx, "connect echo connection 2 with "
 			"DCERPC_CONCURRENT_MULTIPLEX\n");
