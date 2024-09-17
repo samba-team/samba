@@ -5729,7 +5729,7 @@ static bool test_ManyGetDCName(struct torture_context *tctx,
 
 	int i;
 
-	if (p->conn->transport.transport != NCACN_NP) {
+	if (dcerpc_binding_handle_get_transport(b) != NCACN_NP) {
 		torture_skip(tctx, "test_ManyGetDCName works only with NCACN_NP");
 	}
 
@@ -5821,7 +5821,7 @@ static bool test_lsa_over_netlogon(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b2;
 
 
-	if (p->conn->transport.transport != NCACN_NP) {
+	if (dcerpc_binding_handle_get_transport(p->binding_handle) != NCACN_NP) {
 		torture_skip(tctx, "test_lsa_over_netlogon works only with NCACN_NP");
 	}
 

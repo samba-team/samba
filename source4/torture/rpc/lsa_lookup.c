@@ -228,7 +228,7 @@ bool torture_rpc_lsa_lookup(struct torture_context *torture)
 		torture_fail(torture, "unable to connect to table");
 	}
 	b = p->binding_handle;
-	transport = dcerpc_binding_get_transport(p->binding);
+	transport = dcerpc_binding_handle_get_transport(b);
 
 	if (transport != NCACN_NP && transport != NCALRPC) {
 		torture_comment(torture,
@@ -344,7 +344,8 @@ static bool test_LookupSidsReply(struct torture_context *tctx,
 	const char *dom_sid = "S-1-5-21-1111111111-2222222222-3333333333";
 	const char *dom_admin_sid;
 	struct dcerpc_binding_handle *b = p->binding_handle;
-	enum dcerpc_transport_t transport = dcerpc_binding_get_transport(p->binding);
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_handle_get_transport(b);
 
 	ZERO_STRUCT(r);
 	ZERO_STRUCT(sidarray);

@@ -6503,7 +6503,7 @@ static bool test_SecondaryClosePrinter(struct torture_context *tctx,
 	struct spoolss_ClosePrinter cp;
 
 	/* only makes sense on SMB */
-	if (p->conn->transport.transport != NCACN_NP) {
+	if (dcerpc_binding_handle_get_transport(p->binding_handle) != NCACN_NP) {
 		return true;
 	}
 
