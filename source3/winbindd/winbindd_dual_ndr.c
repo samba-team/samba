@@ -40,7 +40,16 @@
 struct wbint_bh_state {
 	struct winbindd_domain *domain;
 	struct winbindd_child *child;
+	const struct dcerpc_binding *binding;
 };
+
+static const struct dcerpc_binding *wbint_bh_get_binding(struct dcerpc_binding_handle *h)
+{
+	struct wbint_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct wbint_bh_state);
+
+	return hs->binding;
+}
 
 static bool wbint_bh_is_connected(struct dcerpc_binding_handle *h)
 {
@@ -313,6 +322,7 @@ static void wbint_bh_do_ndr_print(struct dcerpc_binding_handle *h,
 
 static const struct dcerpc_binding_handle_ops wbint_bh_ops = {
 	.name			= "wbint",
+	.get_binding		= wbint_bh_get_binding,
 	.is_connected		= wbint_bh_is_connected,
 	.set_timeout		= wbint_bh_set_timeout,
 	.raw_call_send		= wbint_bh_raw_call_send,
@@ -504,8 +514,10 @@ struct dcerpc_binding_handle *wbint_binding_handle(TALLOC_CTX *mem_ctx,
 						struct winbindd_domain *domain,
 						struct winbindd_child *child)
 {
-	struct dcerpc_binding_handle *h;
-	struct wbint_bh_state *hs;
+	struct dcerpc_binding_handle *h = NULL;
+	struct wbint_bh_state *hs = NULL;
+	struct dcerpc_binding *b = NULL;
+	NTSTATUS status;
 
 	h = dcerpc_binding_handle_create(mem_ctx,
 					 &wbint_bh_ops,
@@ -519,6 +531,37 @@ struct dcerpc_binding_handle *wbint_binding_handle(TALLOC_CTX *mem_ctx,
 	}
 	hs->domain = domain;
 	hs->child = child;
+
+	status = dcerpc_parse_binding(hs, "", &b);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(h);
+		return NULL;
+	}
+	status = dcerpc_binding_set_transport(b, NCACN_INTERNAL);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(h);
+		return NULL;
+	}
+	status = dcerpc_binding_set_string_option(b, "host", "localhost");
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(h);
+		return NULL;
+	}
+	status = dcerpc_binding_set_string_option(b,
+						  "endpoint",
+						  "winbindd_dual_ndrcmd");
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(h);
+		return NULL;
+	}
+	status = dcerpc_binding_set_abstract_syntax(b,
+						&ndr_table_winbind.syntax_id);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(h);
+		return NULL;
+	}
+
+	hs->binding = b;
 
 	return h;
 }
