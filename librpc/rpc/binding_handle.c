@@ -92,6 +92,12 @@ const struct dcerpc_binding *dcerpc_binding_handle_get_binding(struct dcerpc_bin
 	return h->ops->get_binding(h);
 }
 
+enum dcerpc_transport_t dcerpc_binding_handle_get_transport(struct dcerpc_binding_handle *h)
+{
+	const struct dcerpc_binding *b = dcerpc_binding_handle_get_binding(h);
+	return dcerpc_binding_get_transport(b);
+}
+
 bool dcerpc_binding_handle_is_connected(struct dcerpc_binding_handle *h)
 {
 	return h->ops->is_connected(h);
