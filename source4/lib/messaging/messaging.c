@@ -1168,11 +1168,20 @@ struct server_id imessaging_get_server_id(struct imessaging_context *msg_ctx)
 
 struct irpc_bh_state {
 	struct imessaging_context *msg_ctx;
+	const struct dcerpc_binding *binding;
 	struct server_id server_id;
 	const struct ndr_interface_table *table;
 	uint32_t timeout;
 	struct security_token *token;
 };
+
+static const struct dcerpc_binding *irpc_bh_get_binding(struct dcerpc_binding_handle *h)
+{
+	struct irpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				   struct irpc_bh_state);
+
+	return hs->binding;
+}
 
 static bool irpc_bh_is_connected(struct dcerpc_binding_handle *h)
 {
@@ -1450,6 +1459,7 @@ static void irpc_bh_do_ndr_print(struct dcerpc_binding_handle *h,
 
 static const struct dcerpc_binding_handle_ops irpc_bh_ops = {
 	.name			= "wbint",
+	.get_binding		= irpc_bh_get_binding,
 	.is_connected		= irpc_bh_is_connected,
 	.set_timeout		= irpc_bh_set_timeout,
 	.raw_call_send		= irpc_bh_raw_call_send,
@@ -1467,8 +1477,10 @@ struct dcerpc_binding_handle *irpc_binding_handle(TALLOC_CTX *mem_ctx,
 						  struct server_id server_id,
 						  const struct ndr_interface_table *table)
 {
-	struct dcerpc_binding_handle *h;
-	struct irpc_bh_state *hs;
+	struct dcerpc_binding_handle *h = NULL;
+	struct irpc_bh_state *hs = NULL;
+	struct dcerpc_binding *b = NULL;
+	NTSTATUS status;
 
 	h = dcerpc_binding_handle_create(mem_ctx,
 					 &irpc_bh_ops,
@@ -1484,6 +1496,34 @@ struct dcerpc_binding_handle *irpc_binding_handle(TALLOC_CTX *mem_ctx,
 	hs->server_id = server_id;
 	hs->table = table;
 	hs->timeout = IRPC_CALL_TIMEOUT;
+
+	status = dcerpc_parse_binding(hs, "", &b);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(h);
+		return NULL;
+	}
+	status = dcerpc_binding_set_transport(b, NCACN_INTERNAL);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(h);
+		return NULL;
+	}
+	status = dcerpc_binding_set_string_option(b, "host", "localhost");
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(h);
+		return NULL;
+	}
+	status = dcerpc_binding_set_string_option(b, "endpoint", "irpc");
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(h);
+		return NULL;
+	}
+	status = dcerpc_binding_set_abstract_syntax(b, &table->syntax_id);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(h);
+		return NULL;
+	}
+
+	hs->binding = b;
 
 	return h;
 }
