@@ -172,6 +172,8 @@ enum dcerpc_transport_t dcerpc_transport_by_tower(const struct epm_tower *tower)
 struct dcerpc_binding_handle_ops {
 	const char *name;
 
+	const struct dcerpc_binding *(*get_binding)(struct dcerpc_binding_handle *h);
+
 	bool (*is_connected)(struct dcerpc_binding_handle *h);
 	uint32_t (*set_timeout)(struct dcerpc_binding_handle *h,
 				uint32_t timeout);
