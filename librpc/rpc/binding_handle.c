@@ -87,6 +87,11 @@ void dcerpc_binding_handle_set_sync_ev(struct dcerpc_binding_handle *h,
 	h->sync_ev = ev;
 }
 
+const struct dcerpc_binding *dcerpc_binding_handle_get_binding(struct dcerpc_binding_handle *h)
+{
+	return h->ops->get_binding(h);
+}
+
 bool dcerpc_binding_handle_is_connected(struct dcerpc_binding_handle *h)
 {
 	return h->ops->is_connected(h);
