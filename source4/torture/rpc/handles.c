@@ -103,6 +103,7 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 	NTSTATUS status;
 	struct dcerpc_pipe *p1, *p2, *p3, *p4, *p5;
 	struct dcerpc_binding_handle *b1, *b2, *b3, *b4;
+	const struct dcerpc_binding *bd1 = NULL, *bd2 = NULL;
 	struct policy_handle handle;
 	struct policy_handle handle2;
 	struct lsa_ObjectAttribute attr;
@@ -122,9 +123,10 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 	status = torture_rpc_connection(torture, &p1, &ndr_table_lsarpc);
 	torture_assert_ntstatus_ok(torture, status, "opening lsa pipe1");
 	b1 = p1->binding_handle;
+	bd1 = dcerpc_binding_handle_get_binding(b1);
 
-	transport	= p1->conn->transport.transport;
-	assoc_group_id	= dcerpc_binding_get_assoc_group_id(p1->binding);
+	transport	= dcerpc_binding_get_transport(bd1);
+	assoc_group_id	= dcerpc_binding_get_assoc_group_id(bd1);
 
 	torture_comment(torture, "use assoc_group_id[0x%08X] for new connections\n", assoc_group_id);
 
@@ -135,9 +137,10 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 						  0);
 	torture_assert_ntstatus_ok(torture, status, "opening lsa pipe2");
 	b2 = p2->binding_handle;
+	bd2 = dcerpc_binding_handle_get_binding(b2);
 
 	torture_comment(torture, "got assoc_group_id[0x%08X] for p2\n", 
-			dcerpc_binding_get_assoc_group_id(p2->binding));
+			dcerpc_binding_get_assoc_group_id(bd2));
 
 	qos.len = 0;
 	qos.impersonation_level = 2;
@@ -403,6 +406,7 @@ static bool test_handles_mixed_shared(struct torture_context *torture)
 	NTSTATUS status;
 	struct dcerpc_pipe *p1, *p2, *p3, *p4, *p5, *p6;
 	struct dcerpc_binding_handle *b1, *b2;
+	const struct dcerpc_binding *bd1 = NULL, *bd2 = NULL;
 	struct policy_handle handle;
 	struct policy_handle handle2;
 	struct samr_Connect r;
@@ -418,9 +422,10 @@ static bool test_handles_mixed_shared(struct torture_context *torture)
 	status = torture_rpc_connection(torture, &p1, &ndr_table_samr);
 	torture_assert_ntstatus_ok(torture, status, "opening samr pipe1");
 	b1 = p1->binding_handle;
+	bd1 = dcerpc_binding_handle_get_binding(b1);
 
-	transport	= p1->conn->transport.transport;
-	assoc_group_id	= dcerpc_binding_get_assoc_group_id(p1->binding);
+	transport	= dcerpc_binding_get_transport(bd1);
+	assoc_group_id	= dcerpc_binding_get_assoc_group_id(bd1);
 
 	torture_comment(torture, "use assoc_group_id[0x%08X] for new connections\n", assoc_group_id);
 
@@ -431,9 +436,10 @@ static bool test_handles_mixed_shared(struct torture_context *torture)
 						  0);
 	torture_assert_ntstatus_ok(torture, status, "opening lsa pipe2");
 	b2 = p2->binding_handle;
+	bd2 = dcerpc_binding_handle_get_binding(b2);
 
 	torture_comment(torture, "got assoc_group_id[0x%08X] for p2\n", 
-			dcerpc_binding_get_assoc_group_id(p2->binding));
+			dcerpc_binding_get_assoc_group_id(bd2));
 	r.in.system_name = 0;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.connect_handle = &handle;
@@ -509,6 +515,7 @@ static bool test_handles_random_assoc(struct torture_context *torture)
 	NTSTATUS status;
 	struct dcerpc_pipe *p1, *p2, *p3;
 	TALLOC_CTX *mem_ctx = talloc_new(torture);
+	const struct dcerpc_binding *bd1 = NULL;
 	enum dcerpc_transport_t transport;
 	uint32_t assoc_group_id;
 
@@ -518,17 +525,20 @@ static bool test_handles_random_assoc(struct torture_context *torture)
 	status = torture_rpc_connection(torture, &p1, &ndr_table_samr);
 	torture_assert_ntstatus_ok(torture, status, "opening samr pipe1");
 
-	torture_comment(torture, "pipe1 uses assoc_group_id[0x%08X]\n",
-			dcerpc_binding_get_assoc_group_id(p1->binding));
+	bd1 = dcerpc_binding_handle_get_binding(p1->binding_handle);
+	assoc_group_id = dcerpc_binding_get_assoc_group_id(bd1);
 
-	transport	= p1->conn->transport.transport;
+	torture_comment(torture, "pipe1 uses assoc_group_id[0x%08X]\n",
+			assoc_group_id);
+
+	transport	= dcerpc_binding_get_transport(bd1);
+
 	/*
 	 * We use ~p1->assoc_group_id instead of p1->assoc_group_id, because
 	 * this way we are less likely to use an id which is already in use.
 	 *
 	 * And make sure it doesn't wrap.
 	 */
-	assoc_group_id = dcerpc_binding_get_assoc_group_id(p1->binding);
 	assoc_group_id = ~MIN(assoc_group_id, UINT32_MAX - 3);
 
 	torture_comment(torture, "connect samr pipe2 with assoc_group_id[0x%08X]- should fail\n", ++assoc_group_id);

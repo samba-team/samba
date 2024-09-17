@@ -6512,7 +6512,7 @@ static bool test_SecondaryClosePrinter(struct torture_context *tctx,
 	anon_creds = cli_credentials_init_anon(tctx);
 	torture_assert(tctx, anon_creds != NULL, "cli_credentials_init_anon failed");
 
-	binding2 = p->binding;
+	binding2 = dcerpc_binding_handle_get_binding(p->binding_handle);
 	status = dcerpc_secondary_auth_connection(p, binding2, &ndr_table_spoolss,
 						  anon_creds, tctx->lp_ctx,
 						  tctx, &p2);
