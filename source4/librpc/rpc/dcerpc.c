@@ -176,6 +176,14 @@ struct dcerpc_bh_state {
 	struct dcerpc_pipe *p;
 };
 
+static const struct dcerpc_binding *dcerpc_bh_get_binding(struct dcerpc_binding_handle *h)
+{
+	struct dcerpc_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct dcerpc_bh_state);
+
+	return hs->p->binding;
+}
+
 static bool dcerpc_bh_is_connected(struct dcerpc_binding_handle *h)
 {
 	struct dcerpc_bh_state *hs = dcerpc_binding_handle_data(h,
@@ -692,6 +700,7 @@ static NTSTATUS dcerpc_bh_ndr_validate_out(struct dcerpc_binding_handle *h,
 
 static const struct dcerpc_binding_handle_ops dcerpc_bh_ops = {
 	.name			= "dcerpc",
+	.get_binding		= dcerpc_bh_get_binding,
 	.is_connected		= dcerpc_bh_is_connected,
 	.set_timeout		= dcerpc_bh_set_timeout,
 	.transport_encrypted	= dcerpc_bh_transport_encrypted,
