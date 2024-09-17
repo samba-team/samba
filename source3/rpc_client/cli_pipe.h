@@ -109,6 +109,10 @@ NTSTATUS cli_rpc_pipe_open_with_creds(struct cli_state *cli,
 				      struct cli_credentials *creds,
 				      struct rpc_pipe_client **presult);
 
+NTSTATUS cli_rpc_pipe_client_auth_schannel(
+	struct rpc_pipe_client *rpccli,
+	const struct ndr_interface_table *table,
+	struct netlogon_creds_cli_context *netlogon_creds);
 NTSTATUS cli_rpc_pipe_open_bind_schannel(
 	struct cli_state *cli,
 	const struct ndr_interface_table *table,
