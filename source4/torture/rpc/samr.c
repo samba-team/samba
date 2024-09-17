@@ -9034,7 +9034,7 @@ static bool test_samr_ValidatePassword(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing samr_ValidatePassword\n");
 
-	if (p->conn->transport.transport != NCACN_IP_TCP) {
+	if (dcerpc_binding_handle_get_transport(b) != NCACN_IP_TCP) {
 		torture_comment(tctx, "samr_ValidatePassword only should succeed over NCACN_IP_TCP!\n");
 	}
 
