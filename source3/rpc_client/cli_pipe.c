@@ -2105,7 +2105,16 @@ bool rpccli_is_connected(struct rpc_pipe_client *rpc_cli)
 
 struct rpccli_bh_state {
 	struct rpc_pipe_client *rpc_cli;
+	struct dcerpc_binding *binding;
 };
+
+static const struct dcerpc_binding *rpccli_bh_get_binding(struct dcerpc_binding_handle *h)
+{
+	struct rpccli_bh_state *hs = dcerpc_binding_handle_data(h,
+				     struct rpccli_bh_state);
+
+	return hs->binding;
+}
 
 static bool rpccli_bh_is_connected(struct dcerpc_binding_handle *h)
 {
@@ -2401,6 +2410,7 @@ static void rpccli_bh_do_ndr_print(struct dcerpc_binding_handle *h,
 
 static const struct dcerpc_binding_handle_ops rpccli_bh_ops = {
 	.name			= "rpccli",
+	.get_binding		= rpccli_bh_get_binding,
 	.is_connected		= rpccli_bh_is_connected,
 	.set_timeout		= rpccli_bh_set_timeout,
 	.transport_session_key	= rpccli_bh_transport_session_key,
@@ -2420,8 +2430,10 @@ struct dcerpc_binding_handle *rpccli_bh_create(struct rpc_pipe_client *c,
 					const struct GUID *object,
 					const struct ndr_interface_table *table)
 {
-	struct dcerpc_binding_handle *h;
-	struct rpccli_bh_state *hs;
+	struct dcerpc_binding_handle *h = NULL;
+	struct rpccli_bh_state *hs = NULL;
+	struct dcerpc_binding *b = NULL;
+	NTSTATUS status;
 
 	h = dcerpc_binding_handle_create(c,
 					 &rpccli_bh_ops,
@@ -2434,6 +2446,34 @@ struct dcerpc_binding_handle *rpccli_bh_create(struct rpc_pipe_client *c,
 		return NULL;
 	}
 	hs->rpc_cli = c;
+
+	status = dcerpc_parse_binding(hs, "", &b);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(h);
+		return NULL;
+	}
+	status = dcerpc_binding_set_transport(b, c->transport->transport);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(h);
+		return NULL;
+	}
+	status = dcerpc_binding_set_string_option(b, "host", c->desthost);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(h);
+		return NULL;
+	}
+	status = dcerpc_binding_set_string_option(b, "target_hostname", c->desthost);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(h);
+		return NULL;
+	}
+	status = dcerpc_binding_set_abstract_syntax(b, &table->syntax_id);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(h);
+		return NULL;
+	}
+
+	hs->binding = b;
 
 	return h;
 }
