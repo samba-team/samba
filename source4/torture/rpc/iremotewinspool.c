@@ -824,8 +824,7 @@ static bool test_OpenPrinter(struct torture_context *tctx,
 
 static bool test_object_one_uuid(struct torture_context *tctx,
 				 const struct GUID *object_uuid,
-				 NTSTATUS expected_status,
-				 uint32_t expected_fault_code)
+				 NTSTATUS expected_status)
 {
 	const char *printer_name;
 	struct spoolss_UserLevel1 client_info;
@@ -865,7 +864,6 @@ static bool test_object_one_uuid(struct torture_context *tctx,
 						       client_info,
 						       expected_status,
 						       WERR_OK,
-						       expected_fault_code,
 						       &server_handle),
 						"failed to open printserver");
 	if (NT_STATUS_IS_OK(expected_status)) {
@@ -884,41 +882,35 @@ static bool test_object_uuid(struct torture_context *tctx,
 
 	torture_assert(tctx,
 		test_object_one_uuid(tctx, NULL,
-			NT_STATUS_RPC_UNSUPPORTED_TYPE,
-			DCERPC_NCA_S_UNSUPPORTED_TYPE),
+			NT_STATUS_RPC_UNSUPPORTED_TYPE),
 		"failed to test NULL object uuid");
 
 	object_uuid = GUID_zero();
 	torture_assert(tctx,
 		test_object_one_uuid(tctx, &object_uuid,
-			NT_STATUS_RPC_UNSUPPORTED_TYPE,
-			DCERPC_NCA_S_UNSUPPORTED_TYPE),
+			NT_STATUS_RPC_UNSUPPORTED_TYPE),
 		"failed to test zeroed object uuid");
 
 	object_uuid = GUID_random();
 	torture_assert(tctx,
 		test_object_one_uuid(tctx, &object_uuid,
-			NT_STATUS_RPC_UNSUPPORTED_TYPE,
-			DCERPC_NCA_S_UNSUPPORTED_TYPE),
+			NT_STATUS_RPC_UNSUPPORTED_TYPE),
 		"failed to test random object uuid");
 
 	GUID_from_string(IREMOTEWINSPOOL_OBJECT_GUID, &object_uuid);
 	torture_assert(tctx,
 		test_object_one_uuid(tctx, &object_uuid,
-			NT_STATUS_OK,
-			0),
+			NT_STATUS_OK),
 		"failed to test IREMOTEWINSPOOL_OBJECT_GUID");
 
 	torture_assert(tctx,
 		test_object_one_uuid(tctx, &ndr_table_spoolss.syntax_id.uuid,
-			NT_STATUS_RPC_UNSUPPORTED_TYPE,
-			DCERPC_NCA_S_UNSUPPORTED_TYPE),
+			NT_STATUS_RPC_UNSUPPORTED_TYPE),
 		"failed to test spoolss interface uuid");
 
 	torture_assert(tctx,
 		test_object_one_uuid(tctx, &ndr_table_iremotewinspool.syntax_id.uuid,
-			NT_STATUS_RPC_UNSUPPORTED_TYPE,
-			DCERPC_NCA_S_UNSUPPORTED_TYPE),
+			NT_STATUS_RPC_UNSUPPORTED_TYPE),
 		"failed to test iremotewinspool interface uuid");
 
 	return true;

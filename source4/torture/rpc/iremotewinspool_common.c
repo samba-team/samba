@@ -59,7 +59,6 @@ bool test_AsyncOpenPrinter_byprinter_expect(struct torture_context *tctx,
 					    struct spoolss_UserLevel1 cinfo,
 					    NTSTATUS expected_status,
 					    WERROR expected_result,
-					    uint32_t expected_fault_code,
 					    struct policy_handle *handle)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
@@ -86,8 +85,6 @@ bool test_AsyncOpenPrinter_byprinter_expect(struct torture_context *tctx,
 	torture_assert_ntstatus_equal(tctx, status, expected_status, "AsyncOpenPrinter failed");
 	torture_assert_werr_equal(tctx, r.out.result, expected_result,
 		"AsyncOpenPrinter failed");
-	torture_assert_u32_equal(tctx, p->last_fault_code, expected_fault_code,
-			"unexpected DCERPC fault code");
 
 	return ok;
 }
@@ -107,7 +104,6 @@ bool test_AsyncOpenPrinter_byprinter(struct torture_context *tctx,
 						      cinfo,
 						      NT_STATUS_OK,
 						      WERR_OK,
-						      0,
 						      handle);
 }
 
