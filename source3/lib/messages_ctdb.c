@@ -22,7 +22,6 @@
 #include "lib/util/server_id.h"
 #include "messages.h"
 #include "util_tdb.h"
-#include "lib/util/iov_buf.h"
 #include "lib/messages_util.h"
 #include "ctdbd_conn.h"
 #include "lib/cluster_support.h"
