@@ -672,18 +672,17 @@ sub provision_raw_prepare($$$$$$$$$$$$$$)
 		push (@provision_options, "OPENSSL_FORCE_FIPS_MODE=1");
 	}
 
-	if (defined($ENV{GDB_PROVISION})) {
-		push (@provision_options, "gdb --args");
-		if (!defined($ENV{PYTHON})) {
-		    push (@provision_options, "env");
-		    push (@provision_options, "python");
+	if (defined($ENV{GDB_PROVISION}) ||
+	    defined($ENV{VALGRIND_PROVISION})) {
+		if (defined($ENV{GDB_PROVISION})) {
+			push (@provision_options, "gdb --args");
 		}
-	}
-	if (defined($ENV{VALGRIND_PROVISION})) {
-		push (@provision_options, "valgrind");
+		if (defined($ENV{VALGRIND_PROVISION})) {
+			push (@provision_options, "valgrind");
+		}
 		if (!defined($ENV{PYTHON})) {
-		    push (@provision_options, "env");
-		    push (@provision_options, "python");
+			push (@provision_options, "env");
+			push (@provision_options, "python");
 		}
 	}
 
