@@ -1357,6 +1357,10 @@ static void dcerpc_bind_recv_handler(struct rpc_request *subreq,
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+	status = dcerpc_binding_set_abstract_syntax(b, &state->p->syntax);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
 
 	tevent_req_done(req);
 }
@@ -2307,6 +2311,7 @@ static void dcerpc_alter_context_recv_handler(struct rpc_request *subreq,
 		struct dcerpc_alter_context_state);
 	struct dcecli_connection *conn = state->p->conn;
 	struct dcecli_security *sec = &conn->security_state;
+	struct dcerpc_binding *b = NULL;
 	NTSTATUS status;
 
 	/*
@@ -2382,6 +2387,15 @@ static void dcerpc_alter_context_recv_handler(struct rpc_request *subreq,
 		if (tevent_req_nterror(req, status)) {
 			return;
 		}
+	}
+
+	/*
+	 * We're the owner of the binding, so we're allowed to modify it.
+	 */
+	b = discard_const_p(struct dcerpc_binding, state->p->binding);
+	status = dcerpc_binding_set_abstract_syntax(b, &state->p->syntax);
+	if (tevent_req_nterror(req, status)) {
+		return;
 	}
 
 	tevent_req_done(req);
