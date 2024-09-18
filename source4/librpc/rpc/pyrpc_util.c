@@ -20,6 +20,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define SOURCE4_LIBRPC_INTERNALS 1
+
 #include "lib/replace/system/python.h"
 #include "python/py3compat.h"
 #include "includes.h"

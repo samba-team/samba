@@ -20,6 +20,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define SOURCE4_LIBRPC_INTERNALS 1
+
 #include "includes.h"
 #include <tevent.h>
 #include "rpc_server/dcerpc_server.h"
