@@ -25,6 +25,12 @@ keytabs_sync_kvno="keytab0k keytab1k keytab2k keytab3k"
 keytabs_nosync_kvno="keytab0 keytab1 keytab2 keytab3"
 keytabs_all="$keytabs_sync_kvno $keytabs_nosync_kvno"
 
+check_net_ads_testjoin()
+{
+	UID_WRAPPER_ROOT=1 UID_WRAPPER_INITIAL_RUID=0 UID_WRAPPER_INITIAL_EUID=0 $samba_net ads testjoin
+	return $?
+}
+
 # find the biggest vno and store it into global variable vno
 get_biggest_vno()
 {
@@ -133,6 +139,8 @@ global_inject_conf=$(dirname $SMB_CONF_PATH)/global_inject.conf
 echo "sync machine password script = $PREFIX_ABS/clusteredmember/updatekeytab.sh" >$global_inject_conf
 UID_WRAPPER_ROOT=1 $smbcontrol winbindd reload-config
 
+testit "net_ads_testjoin_initial" check_net_ads_testjoin || failed=$((failed + 1))
+
 # To have both old and older password we do one unnecessary password change:
 testit "wbinfo_change_secret_initial" \
 	"$samba_wbinfo" --change-secret --domain="${DOMAIN}" \
@@ -145,12 +153,14 @@ testit "wbinfo_check_secret_initial" \
 # Create/sync all keytabs
 testit "net_ads_keytab_sync" test_keytab_create || failed=$((failed + 1))
 
-testit "wbinfo_change_secret" \
+testit "net_ads_testjoin_after_sync" check_net_ads_testjoin || failed=$((failed + 1))
+
+testit "wbinfo_change_secret_after_sync" \
 	test_pwd_change "wbinfo_changesecret" \
 	"$samba_wbinfo --change-secret --domain=${DOMAIN}" \
 	|| failed=$((failed + 1))
 
-testit "wbinfo_check_secret" \
+testit "wbinfo_check_secret_after_sync" \
 	"$samba_wbinfo" --check-secret --domain="${DOMAIN}" \
 	|| failed=$((failed + 1))
 
@@ -158,6 +168,8 @@ test_smbclient "Test machine login with the changed secret" \
 	"ls" "${SMBCLIENT_UNC}" \
 	--machine-pass ||
 	failed=$((failed + 1))
+
+testit "net_ads_testjoin_final" check_net_ads_testjoin || failed=$((failed + 1))
 
 echo "" >$global_inject_conf
 UID_WRAPPER_ROOT=1 $smbcontrol winbindd reload-config
