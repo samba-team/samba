@@ -132,7 +132,7 @@ class SamDB(samba.Ldb):
         """Disables an account
 
         :param search_filter: LDAP filter to find the user (eg
-            samccountname=name)
+            sAMAccountName=name)
         """
 
         flags = samba.dsdb.UF_ACCOUNTDISABLE
@@ -142,7 +142,7 @@ class SamDB(samba.Ldb):
         """Enables an account
 
         :param search_filter: LDAP filter to find the user (eg
-            samccountname=name)
+            sAMAccountName=name)
         """
 
         flags = samba.dsdb.UF_ACCOUNTDISABLE | samba.dsdb.UF_PASSWD_NOTREQD
@@ -153,7 +153,7 @@ class SamDB(samba.Ldb):
         """Toggle_userAccountFlags
 
         :param search_filter: LDAP filter to find the user (eg
-            samccountname=name)
+            sAMAccountName=name)
         :param flags: samba.dsdb.UF_* flags
         :param on: on=True (default) => set, on=False => unset
         :param strict: strict=False (default) ignore if no action is needed
@@ -197,7 +197,7 @@ userAccountControl: %u
         """Forces a password change at next login
 
         :param search_filter: LDAP filter to find the user (eg
-            samccountname=name)
+            sAMAccountName=name)
         """
         res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
                           expression=search_filter, attrs=[])
@@ -875,7 +875,7 @@ member: %s
         """Sets the password for a user
 
         :param search_filter: LDAP filter to find the user (eg
-            samccountname=name)
+            sAMAccountName=name)
         :param password: Password for the user
         :param force_change_at_next_login: Force password change
         """
@@ -918,7 +918,7 @@ unicodePwd:: %s
         """Sets the account expiry for a user
 
         :param search_filter: LDAP filter to find the user (eg
-            samaccountname=name)
+            sAMAccountName=name)
         :param expiry_seconds: expiry time from now in seconds
         :param no_expiry_req: if set, then don't expire password
         """
