@@ -674,6 +674,7 @@ sub provision_raw_prepare($$$$$$$$$$$$$$)
 
 	if (defined($ENV{GDB_PROVISION}) ||
 	    defined($ENV{RR_PROVISION}) ||
+	    defined($ENV{PY_DEV_PROVISION}) ||
 	    defined($ENV{VALGRIND_PROVISION})) {
 		if (defined($ENV{GDB_PROVISION})) {
 			push (@provision_options, "gdb --args");
@@ -687,6 +688,11 @@ sub provision_raw_prepare($$$$$$$$$$$$$$)
 		if (!defined($ENV{PYTHON})) {
 			push (@provision_options, "env");
 			push (@provision_options, "python");
+		}
+		if (defined($ENV{PY_DEV_PROVISION})) {
+			# makes Python more likely to emit warnings
+			# and debug info.
+			push (@provision_options, "-X dev");
 		}
 	}
 
