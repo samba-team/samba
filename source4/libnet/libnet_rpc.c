@@ -582,7 +582,8 @@ static void continue_dci_rpc_connect(struct composite_context *ctx)
 
 	s->attr.sec_qos = &s->qos;
 
-	transport = dcerpc_binding_get_transport(s->lsa_pipe->binding);
+	transport = dcerpc_binding_handle_get_transport(
+			s->lsa_pipe->binding_handle);
 	if (transport == NCACN_IP_TCP) {
 		/*
 		 * Skip to creating the actual connection. We can't open a
