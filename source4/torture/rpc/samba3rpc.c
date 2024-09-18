@@ -1153,7 +1153,6 @@ static bool schan(struct torture_context *tctx,
 				    "\\netlogon", &ndr_table_netlogon, &net_pipe);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"pipe_bind_smb_auth failed");
-	net_pipe->conn->flags |= (DCERPC_SIGN | DCERPC_SEAL);
 #else
 	status = pipe_bind_smb(tctx, mem_ctx, cli->tree,
 			       "\\netlogon", &ndr_table_netlogon, &net_pipe);
