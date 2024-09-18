@@ -151,7 +151,10 @@ static void continue_pipe_connect(struct composite_context *ctx)
 	if (s->monitor_fn) {
 		struct monitor_msg msg;
 		struct msg_net_rpc_connect data;
-		const struct dcerpc_binding *b = s->r.out.dcerpc_pipe->binding;
+		struct dcerpc_binding_handle *bh =
+			s->r.out.dcerpc_pipe->binding_handle;
+		const struct dcerpc_binding *b =
+			dcerpc_binding_handle_get_binding(bh);
 
 		/* prepare monitor message and post it */
 		data.host        = dcerpc_binding_get_string_option(b, "host");
@@ -367,7 +370,10 @@ static void continue_rpc_connect(struct composite_context *ctx)
 	if (s->monitor_fn) {
 		struct monitor_msg msg;
 		struct msg_net_rpc_connect data;
-		const struct dcerpc_binding *b = s->r.out.dcerpc_pipe->binding;
+		struct dcerpc_binding_handle *bh =
+			s->r.out.dcerpc_pipe->binding_handle;
+		const struct dcerpc_binding *b =
+			dcerpc_binding_handle_get_binding(bh);
 
 		data.host        = dcerpc_binding_get_string_option(b, "host");
 		data.endpoint    = dcerpc_binding_get_string_option(b, "endpoint");
@@ -550,7 +556,10 @@ static void continue_dci_rpc_connect(struct composite_context *ctx)
 	if (s->monitor_fn) {
 		struct monitor_msg msg;
 		struct msg_net_rpc_connect data;
-		const struct dcerpc_binding *b = s->r.out.dcerpc_pipe->binding;
+		struct dcerpc_binding_handle *bh =
+			s->r.out.dcerpc_pipe->binding_handle;
+		const struct dcerpc_binding *b =
+			dcerpc_binding_handle_get_binding(bh);
 
 		data.host        = dcerpc_binding_get_string_option(b, "host");
 		data.endpoint    = dcerpc_binding_get_string_option(b, "endpoint");
@@ -784,11 +793,13 @@ static void continue_epm_map_binding_send(struct composite_context *c)
 	struct rpc_connect_dci_state *s;
 	struct composite_context *epm_map_req;
 	struct cli_credentials *epm_creds = NULL;
+	const struct dcerpc_binding *b = NULL;
 
 	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
 
 	/* prepare to get endpoint mapping for the requested interface */
-	s->final_binding = dcerpc_binding_dup(s, s->lsa_pipe->binding);
+	b = dcerpc_binding_handle_get_binding(s->lsa_pipe->binding_handle);
+	s->final_binding = dcerpc_binding_dup(s, b);
 	if (composite_nomem(s->final_binding, c)) return;
 
 	/*
@@ -871,7 +882,10 @@ static void continue_secondary_conn(struct composite_context *ctx)
 	if (s->monitor_fn) {
 		struct monitor_msg msg;
 		struct msg_net_rpc_connect data;
-		const struct dcerpc_binding *b = s->r.out.dcerpc_pipe->binding;
+		struct dcerpc_binding_handle *bh =
+			s->r.out.dcerpc_pipe->binding_handle;
+		const struct dcerpc_binding *b =
+			dcerpc_binding_handle_get_binding(bh);
 
 		/* prepare monitor message and post it */
 		data.host        = dcerpc_binding_get_string_option(b, "host");
