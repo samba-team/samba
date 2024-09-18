@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # This script attempts to find processes holding locks on a particular
-# CTDB database and dumps a stack trace for each such processe.
+# CTDB database and dumps a stack trace for each such process.
 #
 # There are 2 cases:
 #
