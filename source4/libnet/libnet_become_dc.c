@@ -2303,6 +2303,7 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 	struct composite_context *c = s->creq;
 	struct drsuapi_DsAddEntry *r = talloc_get_type_abort(s->ndr_struct_ptr,
 				       struct drsuapi_DsAddEntry);
+	const struct dcerpc_binding *bd1 = NULL;
 	char *binding_str;
 	uint32_t assoc_group_id;
 
@@ -2493,7 +2494,8 @@ static void becomeDC_drsuapi1_add_entry_recv(struct tevent_req *subreq)
 	}
 
 	/* w2k3 uses the same assoc_group_id as on the first connection, so we do */
-	assoc_group_id = dcerpc_binding_get_assoc_group_id(s->drsuapi1.pipe->binding);
+	bd1 = dcerpc_binding_handle_get_binding(s->drsuapi1.pipe->binding_handle);
+	assoc_group_id = dcerpc_binding_get_assoc_group_id(bd1);
 	c->status = dcerpc_binding_set_assoc_group_id(s->drsuapi2.binding, assoc_group_id);
 	if (!composite_is_ok(c)) return;
 
@@ -2541,6 +2543,7 @@ static void becomeDC_drsuapi2_bind_recv(struct tevent_req *subreq)
 	struct libnet_BecomeDC_state *s = tevent_req_callback_data(subreq,
 					  struct libnet_BecomeDC_state);
 	struct composite_context *c = s->creq;
+	const struct dcerpc_binding *bd1 = NULL;
 	char *binding_str;
 	uint32_t assoc_group_id;
 	WERROR status;
@@ -2571,7 +2574,8 @@ static void becomeDC_drsuapi2_bind_recv(struct tevent_req *subreq)
 	}
 
 	/* w2k3 uses the same assoc_group_id as on the first connection, so we do */
-	assoc_group_id = dcerpc_binding_get_assoc_group_id(s->drsuapi1.pipe->binding);
+	bd1 = dcerpc_binding_handle_get_binding(s->drsuapi1.pipe->binding_handle);
+	assoc_group_id = dcerpc_binding_get_assoc_group_id(bd1);
 	c->status = dcerpc_binding_set_assoc_group_id(s->drsuapi3.binding, assoc_group_id);
 	if (!composite_is_ok(c)) return;
 	/* w2k3 uses the concurrent multiplex feature on the 3rd connection, so we do */
