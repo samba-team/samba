@@ -52,6 +52,8 @@
 static bool test_fsrvp_is_path_supported(struct torture_context *tctx,
 					 struct dcerpc_pipe *p)
 {
+	uint32_t SupportedByThisProvider;
+	const char *OwnerMachineName = NULL;
 	struct fss_IsPathSupported r;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	NTSTATUS status;
@@ -60,6 +62,8 @@ static bool test_fsrvp_is_path_supported(struct torture_context *tctx,
 	r.in.ShareName = talloc_asprintf(tctx,"\\\\%s\\%s\\",
 					 dcerpc_server_name(p),
 					 FSHARE);
+	r.out.SupportedByThisProvider = &SupportedByThisProvider;
+	r.out.OwnerMachineName = &OwnerMachineName;
 	status = dcerpc_fss_IsPathSupported_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "IsPathSupported failed");
@@ -76,11 +80,15 @@ static bool test_fsrvp_is_path_supported(struct torture_context *tctx,
 static bool test_fsrvp_get_version(struct torture_context *tctx,
 				   struct dcerpc_pipe *p)
 {
+	uint32_t MinVersion = 0;
+	uint32_t MaxVersion = 0;
 	struct fss_GetSupportedVersion r;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	NTSTATUS status;
 
 	ZERO_STRUCT(r);
+	r.out.MinVersion = &MinVersion;
+	r.out.MaxVersion = &MaxVersion;
 	status = dcerpc_fss_GetSupportedVersion_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "GetSupportedVersion failed");
@@ -123,15 +131,23 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 				 enum test_fsrvp_inject inject,
 				 struct fssagent_share_mapping_1 **sc_map)
 {
+	uint32_t SupportedByThisProvider = 0;
+	const char *OwnerMachineName = NULL;
 	struct fss_IsPathSupported r_pathsupport_get;
+	uint32_t MinVersion = 0;
+	uint32_t MaxVersion = 0;
 	struct fss_GetSupportedVersion r_version_get;
 	struct fss_SetContext r_context_set;
+	struct GUID pShadowCopySetId = GUID_zero();
 	struct fss_StartShadowCopySet r_scset_start;
+	struct GUID pShadowCopyId1 = GUID_zero();
 	struct fss_AddToShadowCopySet r_scset_add1;
+	struct GUID pShadowCopyId2 = GUID_zero();
 	struct fss_AddToShadowCopySet r_scset_add2;
 	struct fss_PrepareShadowCopySet r_scset_prep;
 	struct fss_CommitShadowCopySet r_scset_commit;
 	struct fss_ExposeShadowCopySet r_scset_expose;
+	union fssagent_share_mapping ShareMapping = { .ShareMapping1 = NULL, };
 	struct fss_GetShareMapping r_sharemap_get;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	NTSTATUS status;
@@ -148,6 +164,8 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 
 	ZERO_STRUCT(r_pathsupport_get);
 	r_pathsupport_get.in.ShareName = share;
+	r_pathsupport_get.out.SupportedByThisProvider = &SupportedByThisProvider;
+	r_pathsupport_get.out.OwnerMachineName = &OwnerMachineName;
 	status = dcerpc_fss_IsPathSupported_r(b, tmp_ctx, &r_pathsupport_get);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "IsPathSupported failed");
@@ -157,6 +175,8 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 		       "path not supported");
 
 	ZERO_STRUCT(r_version_get);
+	r_version_get.out.MinVersion = &MinVersion;
+	r_version_get.out.MaxVersion = &MaxVersion;
 	status = dcerpc_fss_GetSupportedVersion_r(b, tmp_ctx, &r_version_get);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "GetSupportedVersion failed");
@@ -179,6 +199,7 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 
 	ZERO_STRUCT(r_scset_start);
 	r_scset_start.in.ClientShadowCopySetId = GUID_random();
+	r_scset_start.out.pShadowCopySetId = &pShadowCopySetId;
 	status = dcerpc_fss_StartShadowCopySet_r(b, tmp_ctx, &r_scset_start);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "StartShadowCopySet failed");
@@ -205,6 +226,7 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 	r_scset_add1.in.ClientShadowCopyId = GUID_random();
 	r_scset_add1.in.ShadowCopySetId = *r_scset_start.out.pShadowCopySetId;
 	r_scset_add1.in.ShareName = share;
+	r_scset_add1.out.pShadowCopyId = &pShadowCopyId1;
 	status = dcerpc_fss_AddToShadowCopySet_r(b, tmp_ctx, &r_scset_add1);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "AddToShadowCopySet failed");
@@ -226,6 +248,7 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 	r_scset_add2.in.ClientShadowCopyId = GUID_random();
 	r_scset_add2.in.ShadowCopySetId = *r_scset_start.out.pShadowCopySetId;
 	r_scset_add2.in.ShareName = share;
+	r_scset_add2.out.pShadowCopyId = &pShadowCopyId2;
 	status = dcerpc_fss_AddToShadowCopySet_r(b, tmp_ctx, &r_scset_add2);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "AddToShadowCopySet failed");
@@ -323,6 +346,7 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 	r_sharemap_get.in.ShadowCopySetId = *r_scset_start.out.pShadowCopySetId;
 	r_sharemap_get.in.ShareName = r_scset_add1.in.ShareName;
 	r_sharemap_get.in.Level = 1;
+	r_sharemap_get.out.ShareMapping = &ShareMapping;
 	status = dcerpc_fss_GetShareMapping_r(b, tmp_ctx, &r_sharemap_get);
 	torture_assert_ntstatus_ok(tctx, status, "GetShareMapping failed");
 	torture_assert_int_equal(tctx, r_sharemap_get.out.result, 0,
@@ -399,17 +423,25 @@ static bool test_fsrvp_sc_set_abort(struct torture_context *tctx,
 	char *share_unc = talloc_asprintf(tctx, "\\\\%s\\%s\\",
 					  dcerpc_server_name(p), FSHARE);
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	uint32_t SupportedByThisProvider = 0;
+	const char *OwnerMachineName = NULL;
 	struct fss_IsPathSupported r_pathsupport_get;
+	uint32_t MinVersion = 0;
+	uint32_t MaxVersion = 0;
 	struct fss_GetSupportedVersion r_version_get;
 	struct fss_SetContext r_context_set;
+	struct GUID pShadowCopySetId = GUID_zero();
 	struct fss_StartShadowCopySet r_scset_start;
 	struct fss_AbortShadowCopySet r_scset_abort;
+	struct GUID pShadowCopyId = GUID_zero();
 	struct fss_AddToShadowCopySet r_scset_add;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
 
 	ZERO_STRUCT(r_pathsupport_get);
 	r_pathsupport_get.in.ShareName = share_unc;
+	r_pathsupport_get.out.SupportedByThisProvider = &SupportedByThisProvider;
+	r_pathsupport_get.out.OwnerMachineName = &OwnerMachineName;
 	status = dcerpc_fss_IsPathSupported_r(b, tmp_ctx, &r_pathsupport_get);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "IsPathSupported failed");
@@ -417,6 +449,8 @@ static bool test_fsrvp_sc_set_abort(struct torture_context *tctx,
 		       "path not supported");
 
 	ZERO_STRUCT(r_version_get);
+	r_version_get.out.MinVersion = &MinVersion;
+	r_version_get.out.MaxVersion = &MaxVersion;
 	status = dcerpc_fss_GetSupportedVersion_r(b, tmp_ctx, &r_version_get);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "GetSupportedVersion failed");
@@ -428,6 +462,7 @@ static bool test_fsrvp_sc_set_abort(struct torture_context *tctx,
 
 	ZERO_STRUCT(r_scset_start);
 	r_scset_start.in.ClientShadowCopySetId = GUID_random();
+	r_scset_start.out.pShadowCopySetId = &pShadowCopySetId;
 	status = dcerpc_fss_StartShadowCopySet_r(b, tmp_ctx, &r_scset_start);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "StartShadowCopySet failed");
@@ -442,6 +477,7 @@ static bool test_fsrvp_sc_set_abort(struct torture_context *tctx,
 	r_scset_add.in.ClientShadowCopyId = GUID_random();
 	r_scset_add.in.ShadowCopySetId = *r_scset_start.out.pShadowCopySetId;
 	r_scset_add.in.ShareName = share_unc;
+	r_scset_add.out.pShadowCopyId = & pShadowCopyId;
 	status = dcerpc_fss_AddToShadowCopySet_r(b, tmp_ctx, &r_scset_add);
 	torture_assert_ntstatus_ok(tctx, status, "AddToShadowCopySet failed "
 				   "following abort");
@@ -730,11 +766,15 @@ static bool test_fsrvp_share_sd(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *srvsvc_p;
+	union srvsvc_NetShareInfo q_info = { .info0 = NULL, };
 	struct srvsvc_NetShareGetInfo q;
+	uint32_t s_parm_error = 0;
 	struct srvsvc_NetShareSetInfo s;
 	struct srvsvc_NetShareInfo502 *info502;
 	struct fssagent_share_mapping_1 *sc_map;
 	struct fss_ExposeShadowCopySet r_scset_expose;
+	union fssagent_share_mapping r_sharemap_get_ShareMapping =
+		{ .ShareMapping1 = NULL, };
 	struct fss_GetShareMapping r_sharemap_get;
 	struct security_descriptor *sd_old;
 	struct security_descriptor *sd_base;
@@ -748,12 +788,10 @@ static bool test_fsrvp_share_sd(struct torture_context *tctx,
 	q.in.server_unc = dcerpc_server_name(p);
 	q.in.share_name = FSHARE;
 	q.in.level = 502;
+	q.out.info = &q_info;
 
 	status = torture_rpc_connection(tctx, &srvsvc_p, &ndr_table_srvsvc);
 	torture_assert_ntstatus_ok(tctx, status, "srvsvc rpc conn failed");
-
-	/* ensure srvsvc out pointers are allocated during unmarshalling */
-	srvsvc_p->conn->flags |= DCERPC_NDR_REF_ALLOC;
 
 	/* obtain the existing DACL for the base share */
 	status = dcerpc_srvsvc_NetShareGetInfo_r(srvsvc_p->binding_handle,
@@ -798,6 +836,7 @@ static bool test_fsrvp_share_sd(struct torture_context *tctx,
 	s.in.share_name = FSHARE;
 	s.in.level = 502;
 	s.in.info = q.out.info;
+	s.out.parm_error = &s_parm_error;
 
 	status = dcerpc_srvsvc_NetShareSetInfo_r(srvsvc_p->binding_handle,
 						 tctx, &s);
@@ -832,6 +871,7 @@ static bool test_fsrvp_share_sd(struct torture_context *tctx,
 	s.in.share_name = FSHARE;
 	s.in.level = 502;
 	s.in.info = q.out.info;
+	s.out.parm_error = &s_parm_error;
 
 	status = dcerpc_srvsvc_NetShareSetInfo_r(srvsvc_p->binding_handle,
 						 tctx, &s);
@@ -854,6 +894,7 @@ static bool test_fsrvp_share_sd(struct torture_context *tctx,
 	r_sharemap_get.in.ShadowCopySetId = sc_map->ShadowCopySetId;
 	r_sharemap_get.in.ShareName = share_unc;
 	r_sharemap_get.in.Level = 1;
+	r_sharemap_get.out.ShareMapping = &r_sharemap_get_ShareMapping;
 	status = dcerpc_fss_GetShareMapping_r(p->binding_handle, tctx,
 					      &r_sharemap_get);
 	torture_assert_ntstatus_ok(tctx, status, "GetShareMapping failed");
@@ -875,6 +916,7 @@ static bool test_fsrvp_share_sd(struct torture_context *tctx,
 	q.in.server_unc = dcerpc_server_name(p);
 	q.in.share_name = sc_map->ShadowCopyShareName;
 	q.in.level = 502;
+	q.out.info = &q_info;
 	status = dcerpc_srvsvc_NetShareGetInfo_r(srvsvc_p->binding_handle,
 						 tctx, &q);
 	torture_assert_ntstatus_ok(tctx, status, "NetShareGetInfo failed");
@@ -913,28 +955,6 @@ static bool test_fsrvp_share_sd(struct torture_context *tctx,
 	return true;
 }
 
-static bool fsrvp_rpc_setup(struct torture_context *tctx, void **data)
-{
-	NTSTATUS status;
-	struct torture_rpc_tcase *tcase = talloc_get_type(
-						tctx->active_tcase, struct torture_rpc_tcase);
-	struct torture_rpc_tcase_data *tcase_data;
-
-	*data = tcase_data = talloc_zero(tctx, struct torture_rpc_tcase_data);
-	tcase_data->credentials = samba_cmdline_get_creds();
-
-	status = torture_rpc_connection(tctx,
-				&(tcase_data->pipe),
-				tcase->table);
-
-	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
-
-	/* XXX required, otherwise ndr out ptrs are not allocated */
-	tcase_data->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
-
-	return true;
-}
-
 /*
    testing of FSRVP (FSS agent)
 */
@@ -945,8 +965,6 @@ struct torture_suite *torture_rpc_fsrvp(TALLOC_CTX *mem_ctx)
 	struct torture_rpc_tcase *tcase
 		= torture_suite_add_rpc_iface_tcase(suite, "fsrvp",
 						&ndr_table_FileServerVssAgent);
-	/* override torture_rpc_setup() to set DCERPC_NDR_REF_ALLOC */
-	tcase->tcase.setup = fsrvp_rpc_setup;
 
 	torture_rpc_tcase_add_test(tcase, "share_sd",
 				   test_fsrvp_share_sd);
