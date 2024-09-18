@@ -30,14 +30,31 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	struct dcerpc_pipe *p, *p2, *p3;
 	struct policy_handle *handle;
 	struct ndr_interface_table tmptbl;
+	const struct dcerpc_binding *bd = NULL;
+	const struct dcerpc_binding *bd2 = NULL;
+	struct ndr_syntax_id syntax = { .if_version = 0, };
+	struct ndr_syntax_id syntax2 = { .if_version = 0, };
+	const struct ndr_syntax_id *transfer_syntax = NULL;
+	const struct ndr_syntax_id *transfer_syntax2 = NULL;
+	uint32_t flags = 0;
+	uint32_t flags2 = 0;
 	bool ret = true;
 
 	torture_comment(torture, "opening LSA connection\n");
 	status = torture_rpc_connection(torture, &p, &ndr_table_lsarpc);
 	torture_assert_ntstatus_ok(torture, status, "connecting");
 
+	bd = dcerpc_binding_handle_get_binding(p->binding_handle);
+	syntax = dcerpc_binding_get_abstract_syntax(bd);
+	flags = dcerpc_binding_get_flags(bd);
+	if (flags & DCERPC_NDR64) {
+		transfer_syntax = &ndr_transfer_syntax_ndr64;
+	} else {
+		transfer_syntax = &ndr_transfer_syntax_ndr;
+	}
+
 	torture_comment(torture, "Testing change of primary context\n");
-	status = dcerpc_alter_context(p, torture, &p->syntax, &p->transfer_syntax);
+	status = dcerpc_alter_context(p, torture, &syntax, transfer_syntax);
 	torture_assert_ntstatus_ok(torture, status, "dcerpc_alter_context failed");
 
 	if (!test_lsa_OpenPolicy2(p->binding_handle, torture, &handle)) {
@@ -45,15 +62,24 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	}
 
 	torture_comment(torture, "Testing change of primary context\n");
-	status = dcerpc_alter_context(p, torture, &p->syntax, &p->transfer_syntax);
+	status = dcerpc_alter_context(p, torture, &syntax, transfer_syntax);
 	torture_assert_ntstatus_ok(torture, status, "dcerpc_alter_context failed");
 
 	torture_comment(torture, "Opening secondary DSSETUP context\n");
 	status = dcerpc_secondary_context(p, &p2, &ndr_table_dssetup);
 	torture_assert_ntstatus_ok(torture, status, "dcerpc_alter_context failed");
 
+	bd2 = dcerpc_binding_handle_get_binding(p2->binding_handle);
+	syntax2 = dcerpc_binding_get_abstract_syntax(bd2);
+	flags2 = dcerpc_binding_get_flags(bd2);
+	if (flags2 & DCERPC_NDR64) {
+		transfer_syntax2 = &ndr_transfer_syntax_ndr64;
+	} else {
+		transfer_syntax2 = &ndr_transfer_syntax_ndr;
+	}
+
 	torture_comment(torture, "Testing change of primary context\n");
-	status = dcerpc_alter_context(p2, torture, &p2->syntax, &p2->transfer_syntax);
+	status = dcerpc_alter_context(p2, torture, &syntax2, transfer_syntax2);
 	torture_assert_ntstatus_ok(torture, status, "dcerpc_alter_context failed");
 
 	tmptbl = ndr_table_dssetup;
@@ -71,7 +97,7 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	}
 
 	torture_comment(torture, "Testing change of primary context\n");
-	status = dcerpc_alter_context(p, torture, &p->syntax, &p->transfer_syntax);
+	status = dcerpc_alter_context(p, torture, &syntax, transfer_syntax);
 	torture_assert_ntstatus_ok(torture, status, "dcerpc_alter_context failed");
 
 	ret &= test_lsa_OpenPolicy2(p->binding_handle, torture, &handle);
@@ -81,7 +107,7 @@ bool torture_rpc_alter_context(struct torture_context *torture)
 	}
 
 	torture_comment(torture, "Testing change of primary context\n");
-	status = dcerpc_alter_context(p, torture, &p2->syntax, &p2->transfer_syntax);
+	status = dcerpc_alter_context(p, torture, &syntax2, transfer_syntax2);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTOCOL_ERROR)) {
 
 		ret &= test_lsa_OpenPolicy2_ex(p->binding_handle, torture, &handle,
