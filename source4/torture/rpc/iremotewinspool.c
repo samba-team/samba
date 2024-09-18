@@ -884,21 +884,21 @@ static bool test_object_uuid(struct torture_context *tctx,
 
 	torture_assert(tctx,
 		test_object_one_uuid(tctx, NULL,
-			NT_STATUS_RPC_NOT_RPC_ERROR,
+			NT_STATUS_RPC_UNSUPPORTED_TYPE,
 			DCERPC_NCA_S_UNSUPPORTED_TYPE),
 		"failed to test NULL object uuid");
 
 	object_uuid = GUID_zero();
 	torture_assert(tctx,
 		test_object_one_uuid(tctx, &object_uuid,
-			NT_STATUS_RPC_NOT_RPC_ERROR,
+			NT_STATUS_RPC_UNSUPPORTED_TYPE,
 			DCERPC_NCA_S_UNSUPPORTED_TYPE),
 		"failed to test zeroed object uuid");
 
 	object_uuid = GUID_random();
 	torture_assert(tctx,
 		test_object_one_uuid(tctx, &object_uuid,
-			NT_STATUS_RPC_NOT_RPC_ERROR,
+			NT_STATUS_RPC_UNSUPPORTED_TYPE,
 			DCERPC_NCA_S_UNSUPPORTED_TYPE),
 		"failed to test random object uuid");
 
@@ -911,13 +911,13 @@ static bool test_object_uuid(struct torture_context *tctx,
 
 	torture_assert(tctx,
 		test_object_one_uuid(tctx, &ndr_table_spoolss.syntax_id.uuid,
-			NT_STATUS_RPC_NOT_RPC_ERROR,
+			NT_STATUS_RPC_UNSUPPORTED_TYPE,
 			DCERPC_NCA_S_UNSUPPORTED_TYPE),
 		"failed to test spoolss interface uuid");
 
 	torture_assert(tctx,
 		test_object_one_uuid(tctx, &ndr_table_iremotewinspool.syntax_id.uuid,
-			NT_STATUS_RPC_NOT_RPC_ERROR,
+			NT_STATUS_RPC_UNSUPPORTED_TYPE,
 			DCERPC_NCA_S_UNSUPPORTED_TYPE),
 		"failed to test iremotewinspool interface uuid");
 
