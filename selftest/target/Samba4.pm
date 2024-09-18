@@ -673,9 +673,13 @@ sub provision_raw_prepare($$$$$$$$$$$$$$)
 	}
 
 	if (defined($ENV{GDB_PROVISION}) ||
+	    defined($ENV{RR_PROVISION}) ||
 	    defined($ENV{VALGRIND_PROVISION})) {
 		if (defined($ENV{GDB_PROVISION})) {
 			push (@provision_options, "gdb --args");
+		}
+		if (defined($ENV{RR_PROVISION})) {
+			push (@provision_options, "rr");
 		}
 		if (defined($ENV{VALGRIND_PROVISION})) {
 			push (@provision_options, "valgrind");
