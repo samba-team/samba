@@ -1556,6 +1556,12 @@ static ADS_STATUS net_ads_join_ok(struct net_context *c)
 
 	net_use_krb_machine_account(c);
 
+	if (!cli_credentials_authentication_requested(c->creds)) {
+		DBG_ERR("Failed to get machine credentials\n");
+		TALLOC_FREE(tmp_ctx);
+		return ADS_ERROR_NT(NT_STATUS_ACCESS_DENIED);
+	}
+
 	get_dc_name(lp_workgroup(), lp_realm(), dc_name, &dcip);
 
 	status = ads_startup(c, true, tmp_ctx, &ads);
