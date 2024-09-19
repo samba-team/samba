@@ -55,6 +55,7 @@ struct rpc_pipe_client {
 	struct ndr_syntax_id transfer_syntax;
 	bool verified_pcontext;
 
+	char *printer_username;
 	char *desthost;
 	char *srv_name_slash;
 

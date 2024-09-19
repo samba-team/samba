@@ -43,7 +43,6 @@ static WERROR cmd_iremotewinspool_async_open_printer(struct rpc_pipe_client *cli
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 	struct GUID uuid;
 	struct winspool_AsyncOpenPrinter r;
-	struct cli_credentials *creds = gensec_get_credentials(cli->auth->auth_ctx);
 
 	if (argc < 2) {
 		printf("Usage: %s <printername> [access_mask]\n", argv[0]);
@@ -62,7 +61,7 @@ static WERROR cmd_iremotewinspool_async_open_printer(struct rpc_pipe_client *cli
 	ZERO_STRUCT(devmode_ctr);
 
         werror = spoolss_init_spoolss_UserLevel1(mem_ctx,
-						 cli_credentials_get_username(creds),
+						 cli->printer_username,
 						 &level1);
 	if (!W_ERROR_IS_OK(werror)) {
 		return werror;
