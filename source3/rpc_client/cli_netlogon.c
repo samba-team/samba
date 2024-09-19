@@ -153,7 +153,7 @@ NTSTATUS rpccli_create_netlogon_creds_ctx(
 					    creds_ctx);
 }
 
-NTSTATUS rpccli_setup_netlogon_creds_locked(
+static NTSTATUS rpccli_setup_netlogon_creds_locked(
 	struct cli_state *cli,
 	enum dcerpc_transport_t transport,
 	struct netlogon_creds_cli_context *creds_ctx,
