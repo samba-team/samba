@@ -396,13 +396,17 @@ static NTSTATUS cmd_set_transport(struct dcerpc_binding *b)
 		struct cmd_set *tmp_set;
 
 		for (tmp_set = tmp->cmd_set; tmp_set->name; tmp_set++) {
+			struct dcerpc_binding_handle *tmp_b = NULL;
+			enum dcerpc_transport_t tmp_t;
+
 			if (tmp_set->rpc_pipe == NULL) {
 				continue;
 			}
 
-			if (tmp_set->rpc_pipe->transport->transport != t) {
+			tmp_b = tmp_set->rpc_pipe->binding_handle;
+			tmp_t = dcerpc_binding_handle_get_transport(tmp_b);
+			if (tmp_t != t) {
 				TALLOC_FREE(tmp_set->rpc_pipe);
-				tmp_set->rpc_pipe = NULL;
 			}
 		}
 	}
