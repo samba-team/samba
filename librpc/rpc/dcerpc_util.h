@@ -36,9 +36,9 @@ uint8_t dcerpc_get_endian_flag(DATA_BLOB *blob);
 uint8_t dcerpc_get_auth_type(const DATA_BLOB *blob);
 uint8_t dcerpc_get_auth_level(const DATA_BLOB *blob);
 uint32_t dcerpc_get_auth_context_id(const DATA_BLOB *blob);
-const char *dcerpc_default_transport_endpoint(TALLOC_CTX *mem_ctx,
-					      enum dcerpc_transport_t transport,
-					      const struct ndr_interface_table *table);
+char *dcerpc_default_transport_endpoint(TALLOC_CTX *mem_ctx,
+					enum dcerpc_transport_t transport,
+					const struct ndr_interface_table *table);
 
 NTSTATUS dcerpc_pull_ncacn_packet(TALLOC_CTX *mem_ctx,
 				  const DATA_BLOB *blob,
