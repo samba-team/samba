@@ -557,6 +557,7 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 	bool skip;
 	char *keystr;
 	const char **args;
+	bool ok;
 
 	lock_ctx = talloc_get_type_abort(private_data, struct lock_context);
 	ctdb = lock_ctx->ctdb;
@@ -595,26 +596,28 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 
 lock_debug:
 
-	if (ctdb_set_helper("lock debugging helper",
-			    debug_locks, sizeof(debug_locks),
-			    "CTDB_DEBUG_LOCKS",
-			    getenv("CTDB_BASE"), "debug_locks.sh")) {
-		args = debug_locks_args(lock_ctx, lock_ctx);
-		if (args != NULL) {
-			pid = vfork();
-			if (pid == 0) {
-				execvp(debug_locks, discard_const(args));
-				_exit(0);
-			}
-			talloc_free(args);
-			ctdb_track_child(ctdb, pid);
-		} else {
-			D_WARNING("No memory for debug locks args\n");
+	ok = ctdb_set_helper("lock debugging helper",
+			     debug_locks,
+			     sizeof(debug_locks),
+			     "CTDB_DEBUG_LOCKS",
+			     getenv("CTDB_BASE"),
+			     "debug_locks.sh");
+	if (!ok) {
+		DBG_WARNING("Unable to setup lock debugging\n");
+		goto skip_lock_debug;
+	}
+
+	args = debug_locks_args(lock_ctx, lock_ctx);
+	if (args != NULL) {
+		pid = vfork();
+		if (pid == 0) {
+			execvp(debug_locks, discard_const(args));
+			_exit(0);
 		}
+		talloc_free(args);
+		ctdb_track_child(ctdb, pid);
 	} else {
-		DEBUG(DEBUG_WARNING,
-		      (__location__
-		       " Unable to setup lock debugging\n"));
+		D_WARNING("No memory for debug locks args\n");
 	}
 
 skip_lock_debug:
