@@ -163,7 +163,10 @@ static NTSTATUS pipe_cm_find(struct client_ipc_connection *ipc,
 	struct client_pipe_connection *p;
 
 	for (p = ipc->pipe_connections; p; p = p->next) {
+		struct dcerpc_binding_handle *bh = NULL;
+		const struct dcerpc_binding *bd = NULL;
 		const char *ipc_remote_name;
+		struct ndr_syntax_id syntax;
 
 		if (!rpccli_is_connected(p->pipe)) {
 			return NT_STATUS_PIPE_EMPTY;
@@ -171,9 +174,15 @@ static NTSTATUS pipe_cm_find(struct client_ipc_connection *ipc,
 
 		ipc_remote_name = smbXcli_conn_remote_name(ipc->cli->conn);
 
-		if (strequal(ipc_remote_name, p->pipe->desthost)
-		    && ndr_syntax_id_equal(&p->pipe->abstract_syntax,
-					   &table->syntax_id)) {
+		if (!strequal(ipc_remote_name, p->pipe->desthost)) {
+			continue;
+		}
+
+		bh = p->pipe->binding_handle;
+		bd = dcerpc_binding_handle_get_binding(bh);
+		syntax = dcerpc_binding_get_abstract_syntax(bd);
+
+		if (ndr_syntax_id_equal(&syntax, &table->syntax_id)) {
 			*presult = p->pipe;
 			return NT_STATUS_OK;
 		}
