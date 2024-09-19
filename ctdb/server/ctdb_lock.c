@@ -606,68 +606,39 @@ skip_lock_debug:
 					    (void *)lock_ctx);
 }
 
-static bool lock_helper_args(TALLOC_CTX *mem_ctx,
-			     struct lock_context *lock_ctx, int fd,
-			     int *argc, const char ***argv)
+static char **lock_helper_args(TALLOC_CTX *mem_ctx,
+			       struct lock_context *lock_ctx,
+			       int fd)
 {
-	const char **args = NULL;
-	int nargs = 0, i;
+	int tdb_flags = tdb_get_flags(lock_ctx->ctdb_db->ltdb->tdb);
+	char **args = str_list_make_empty(mem_ctx);
 
-	switch (lock_ctx->type) {
-	case LOCK_RECORD:
-		nargs = 6;
-		break;
+	str_list_add_printf(&args, "%d", getpid());
+	str_list_add_printf(&args, "%d", fd);
+	str_list_add_printf(&args,
+			    "%s",
+			    (lock_ctx->type == LOCK_RECORD) ? "RECORD" : "DB");
 
-	case LOCK_DB:
-		nargs = 5;
-		break;
-	}
+	str_list_add_printf(&args, "%s", lock_ctx->ctdb_db->db_path);
+	str_list_add_printf(&args, "0x%x", tdb_flags);
 
-	/* Add extra argument for null termination */
-	nargs++;
-
-	args = talloc_array(mem_ctx, const char *, nargs);
-	if (args == NULL) {
-		return false;
-	}
-
-	args[0] = talloc_asprintf(args, "%d", getpid());
-	args[1] = talloc_asprintf(args, "%d", fd);
-
-	switch (lock_ctx->type) {
-	case LOCK_RECORD:
-		args[2] = talloc_strdup(args, "RECORD");
-		args[3] = talloc_strdup(args, lock_ctx->ctdb_db->db_path);
-		args[4] = talloc_asprintf(args, "0x%x",
-				tdb_get_flags(lock_ctx->ctdb_db->ltdb->tdb));
+	if (lock_ctx->type == LOCK_RECORD) {
 		if (lock_ctx->key.dsize == 0) {
-			args[5] = talloc_strdup(args, "NULL");
+			str_list_add_printf(&args, "NULL");
 		} else {
-			args[5] = hex_encode_talloc(args, lock_ctx->key.dptr, lock_ctx->key.dsize);
-		}
-		break;
-
-	case LOCK_DB:
-		args[2] = talloc_strdup(args, "DB");
-		args[3] = talloc_strdup(args, lock_ctx->ctdb_db->db_path);
-		args[4] = talloc_asprintf(args, "0x%x",
-				tdb_get_flags(lock_ctx->ctdb_db->ltdb->tdb));
-		break;
-	}
-
-	/* Make sure last argument is NULL */
-	args[nargs-1] = NULL;
-
-	for (i=0; i<nargs-1; i++) {
-		if (args[i] == NULL) {
-			talloc_free(args);
-			return false;
+			char *hex = hex_encode_talloc(mem_ctx,
+						      lock_ctx->key.dptr,
+						      lock_ctx->key.dsize);
+			if (hex == NULL) {
+				TALLOC_FREE(args);
+				return NULL;
+			}
+			str_list_add_printf(&args, "%s", hex);
+			TALLOC_FREE(hex);
 		}
 	}
 
-	*argc = nargs;
-	*argv = args;
-	return true;
+	return args;
 }
 
 /*
@@ -733,10 +704,10 @@ static struct lock_context *ctdb_find_lock_context(struct ctdb_context *ctdb)
 static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 {
 	struct lock_context *lock_ctx;
-	int ret, argc;
+	int ret;
 	TALLOC_CTX *tmp_ctx;
 	static char prog[PATH_MAX+1] = "";
-	const char **args;
+	char **args = NULL;
 
 	if (!ctdb_set_helper("lock helper",
 			     prog, sizeof(prog),
@@ -779,8 +750,8 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 	}
 
 	/* Create arguments for lock helper */
-	if (!lock_helper_args(tmp_ctx, lock_ctx, lock_ctx->fd[1],
-			      &argc, &args)) {
+	args = lock_helper_args(tmp_ctx, lock_ctx, lock_ctx->fd[1]);
+	if (args == NULL) {
 		DEBUG(DEBUG_ERR, ("Failed to create lock helper args\n"));
 		close(lock_ctx->fd[0]);
 		close(lock_ctx->fd[1]);
@@ -788,8 +759,11 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 		return;
 	}
 
-	lock_ctx->child = ctdb_vfork_exec(lock_ctx, ctdb, prog, argc,
-					  (const char **)args);
+	lock_ctx->child = ctdb_vfork_exec(lock_ctx,
+					  ctdb,
+					  prog,
+					  talloc_array_length(args),
+					  (const char *const *)args);
 	if (lock_ctx->child == -1) {
 		DEBUG(DEBUG_ERR, ("Failed to create a child in ctdb_lock_schedule\n"));
 		close(lock_ctx->fd[0]);
