@@ -647,13 +647,13 @@ NTSTATUS dcerpc_read_ncacn_packet_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-const char *dcerpc_default_transport_endpoint(TALLOC_CTX *mem_ctx,
-					      enum dcerpc_transport_t transport,
-					      const struct ndr_interface_table *table)
+char *dcerpc_default_transport_endpoint(TALLOC_CTX *mem_ctx,
+					enum dcerpc_transport_t transport,
+					const struct ndr_interface_table *table)
 {
 	NTSTATUS status;
 	const char *p = NULL;
-	const char *endpoint = NULL;
+	char *endpoint = NULL;
 	uint32_t i;
 	struct dcerpc_binding *default_binding = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
