@@ -1154,19 +1154,16 @@ update_tickles()
 	tickledir="${CTDB_SCRIPT_VARDIR}/tickles"
 	mkdir -p "$tickledir"
 
-	# What public IPs do I hold?
-	_pnn=$(ctdb_get_pnn)
-	_ips=$($CTDB -X ip | awk -F'|' -v pnn="$_pnn" '$3 == pnn {print $2}')
 	# If not hosting any public IPs then can't have any connections...
-	if [ -z "$_ips" ]; then
+	if [ ! -s "$CTDB_MY_PUBLIC_IPS_CACHE" ]; then
 		return
 	fi
 
 	# IPs and port as ss filters
 	_ip_filter=""
-	for _ip in $_ips; do
+	while read -r _ip; do
 		_ip_filter="${_ip_filter}${_ip_filter:+ || }src [${_ip}]"
-	done
+	done <"$CTDB_MY_PUBLIC_IPS_CACHE"
 	_port_filter="sport == :${_port}"
 
 	# Record connections to our public IPs in a temporary file.
@@ -1190,10 +1187,10 @@ update_tickles()
 
 	# Record our current tickles in a temporary file
 	_my_tickles="${tickledir}/${_port}.tickles.$$"
-	for _i in $_ips; do
+	while read -r _i; do
 		$CTDB -X gettickles "$_i" "$_port" |
 			awk -F'|' 'NR > 1 { printf "%s:%s %s:%s\n", $2, $3, $4, $5 }'
-	done |
+	done <"$CTDB_MY_PUBLIC_IPS_CACHE" |
 		sort >"$_my_tickles"
 
 	# Add tickles for connections that we haven't already got tickles for
