@@ -1807,8 +1807,6 @@ enum search_kind get_kind(const char* kind_str)
 
 struct wsp_client_ctx
 {
-	struct rpc_pipe_client *rpccli;
-	struct cli_state *cli_state;
 	struct dcerpc_binding_handle *h;
 };
 
@@ -1832,6 +1830,33 @@ static NTSTATUS wsp_resp_pdu_complete(struct tstream_context *stream,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS wsp_rpc_transport_np_connect(struct cli_state *cli,
+			  const struct ndr_interface_table *table,
+			  TALLOC_CTX *mem_ctx,
+			  struct rpc_cli_transport **presult)
+{
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = samba_tevent_context_init(mem_ctx);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = rpc_transport_np_init_send(ev, ev, cli, table);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = rpc_transport_np_init_recv(req, mem_ctx, presult);
+fail:
+	TALLOC_FREE(req);
+	TALLOC_FREE(ev);
+	return status;
+}
+
 NTSTATUS wsp_server_connect(TALLOC_CTX *mem_ctx,
 			    const char *servername,
 			    struct tevent_context *ev_ctx,
@@ -1841,7 +1866,7 @@ NTSTATUS wsp_server_connect(TALLOC_CTX *mem_ctx,
 			    struct wsp_client_ctx **wsp_ctx)
 {
 	struct wsp_client_ctx *ctx = NULL;
-	struct dcerpc_binding_handle *h = NULL;
+	struct rpc_cli_transport *transport = NULL;
 	struct tstream_context *stream = NULL;
 	NTSTATUS status;
 
@@ -1857,9 +1882,6 @@ NTSTATUS wsp_server_connect(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ctx->cli_state = cli;
-
-
 	status = smb2cli_ioctl_pipe_wait(
 			cli->conn,
 			cli->timeout,
@@ -1867,49 +1889,47 @@ NTSTATUS wsp_server_connect(TALLOC_CTX *mem_ctx,
 			cli->smb2.tcon,
 			"MsFteWds",
 			1);
-
-
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("wait for pipe failed: %s)\n",
 			nt_errstr(status));
+		TALLOC_FREE(ctx);
 		return status;
 	}
 
-	status = rpc_pipe_open_np(cli,
+	status = wsp_rpc_transport_np_connect(cli,
 			&ndr_table_msftewds,
-			&ctx->rpccli);
-
+			cli,
+			&transport);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("failed to int the pipe)\n");
+		TALLOC_FREE(ctx);
 		return status;
 	}
 
-	stream = rpc_transport_get_tstream(ctx->rpccli->transport);
-	h = tstream_binding_handle_create(ctx->rpccli,
-					  NULL,
-					  &stream,
-					  MSG_HDR_SIZE,
-					  wsp_resp_pdu_complete,
-					  ctx, 42280);
-
-	if (!h) {
+	stream = rpc_transport_get_tstream(transport);
+	ctx->h = tstream_binding_handle_create(ctx,
+					       NULL,
+					       &stream,
+					       MSG_HDR_SIZE,
+					       wsp_resp_pdu_complete,
+					       ctx, 42280);
+	if (ctx->h == NULL) {
 		DBG_ERR("failed to create the pipe handle)\n");
+		TALLOC_FREE(ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	ctx->rpccli->binding_handle = h;
 	*wsp_ctx = ctx;
 
 	return status;
 }
 
 static NTSTATUS write_something(TALLOC_CTX* ctx,
-				struct rpc_pipe_client *p,
+				struct dcerpc_binding_handle *handle,
 				DATA_BLOB *blob_in,
 				DATA_BLOB *blob_out)
 {
 	uint32_t outflags;
-	struct dcerpc_binding_handle *handle = p->binding_handle;
 	NTSTATUS status;
 
 	status = dcerpc_binding_handle_raw_call(handle,
@@ -2037,7 +2057,6 @@ NTSTATUS wsp_request_response(TALLOC_CTX* ctx,
 			      struct wsp_response *response,
 			      DATA_BLOB *unread)
 {
-	struct rpc_pipe_client *p = wsp_ctx->rpccli;
 	NTSTATUS status = NT_STATUS_OK;
 
 	ndr_flags_type ndr_flags = NDR_SCALARS | NDR_BUFFERS;
@@ -2186,7 +2205,7 @@ NTSTATUS wsp_request_response(TALLOC_CTX* ctx,
 
 	dump_data(5, req_blob.data, req_blob.length);
 
-	status = write_something(ctx, p, &req_blob, &resp_blob);
+	status = write_something(ctx, wsp_ctx->h, &req_blob, &resp_blob);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to write message\n");
@@ -2217,5 +2236,5 @@ out:
 
 struct dcerpc_binding_handle* get_wsp_pipe(struct wsp_client_ctx *ctx)
 {
-	return ctx->rpccli->binding_handle;
+	return ctx->h;
 }
