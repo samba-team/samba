@@ -1181,23 +1181,13 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 						    struct cli_state *cli)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct rpc_pipe_client *authenticate_pipe = NULL;
 	struct rpc_pipe_client *passwordset_pipe = NULL;
 	struct cli_credentials *cli_creds;
 	struct netlogon_creds_cli_context *netlogon_creds = NULL;
-	struct netlogon_creds_CredentialState *creds = NULL;
-	uint32_t netlogon_flags = 0;
 	size_t len = 0;
 	bool ok;
 	DATA_BLOB new_trust_blob = data_blob_null;
 	NTSTATUS status;
-
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon,
-					  &authenticate_pipe);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
-		return status;
-	}
 
 	if (!r->in.machine_password) {
 		int security = r->in.ads ? SEC_ADS : SEC_DOMAIN;
@@ -1230,50 +1220,25 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 				     r->in.passed_machine_password,
 				     CRED_SPECIFIED);
 
-	status = rpccli_create_netlogon_creds_ctx(
-		cli_creds, authenticate_pipe->desthost, r->in.msg_ctx,
-		frame, &netlogon_creds);
+	status = rpccli_create_netlogon_creds_ctx(cli_creds,
+						  r->in.dc_name,
+						  r->in.msg_ctx,
+						  frame,
+						  &netlogon_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
 	}
 
-	status = rpccli_setup_netlogon_creds(
-		cli, NCACN_NP, netlogon_creds, true /* force_reauth */,
-		cli_creds);
+	status = rpccli_connect_netlogon(cli,
+					 NCACN_NP,
+					 netlogon_creds,
+					 true, /* force_reauth */
+					 cli_creds,
+					 &passwordset_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
-	}
-
-	status = netlogon_creds_cli_get(netlogon_creds, frame, &creds);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
-		return status;
-	}
-
-	netlogon_flags = creds->negotiate_flags;
-	TALLOC_FREE(creds);
-
-	if (netlogon_flags & NETLOGON_NEG_AUTHENTICATED_RPC) {
-		const char *remote_name = smbXcli_conn_remote_name(cli->conn);
-		const struct sockaddr_storage *remote_sockaddr =
-			smbXcli_conn_remote_sockaddr(cli->conn);
-
-		status = cli_rpc_pipe_open_schannel_with_creds(
-				cli,
-				&ndr_table_netlogon,
-				NCACN_NP,
-				netlogon_creds,
-				remote_name,
-				remote_sockaddr,
-				&passwordset_pipe);
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(frame);
-			return status;
-		}
-	} else {
-		passwordset_pipe = authenticate_pipe;
 	}
 
 	len = strlen(r->in.machine_password);
@@ -1663,12 +1628,8 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct cli_credentials *cli_creds = NULL;
 	struct netlogon_creds_cli_context *netlogon_creds = NULL;
-	struct netlogon_creds_CredentialState *creds = NULL;
-	uint32_t netlogon_flags = 0;
 	NTSTATUS status;
 	int flags = CLI_FULL_CONNECTION_IPC;
-	const char *remote_name = NULL;
-	const struct sockaddr_storage *remote_sockaddr = NULL;
 
 	if (!dc_name) {
 		TALLOC_FREE(frame);
@@ -1738,60 +1699,23 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 		return status;
 	}
 
-	status = rpccli_setup_netlogon_creds(cli, NCACN_NP,
-					     netlogon_creds,
-					     true, /* force_reauth */
-					     cli_creds);
+	status = rpccli_connect_netlogon(cli,
+					 NCACN_NP,
+					 netlogon_creds,
+					 true, /* force_reauth */
+					 cli_creds,
+					 &netlogon_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("connect_to_domain_password_server: "
-			 "unable to open the domain client session to "
-			 "machine %s. Flags[0x%08X] Error was : %s.\n",
-			 dc_name, (unsigned)netlogon_flags,
-			 nt_errstr(status)));
-		cli_shutdown(cli);
-		TALLOC_FREE(frame);
-		return status;
-	}
-
-	status = netlogon_creds_cli_get(netlogon_creds,
-					talloc_tos(),
-					&creds);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_shutdown(cli);
-		TALLOC_FREE(frame);
-		return status;
-	}
-	netlogon_flags = creds->negotiate_flags;
-	TALLOC_FREE(creds);
-
-	if (!(netlogon_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
-		cli_shutdown(cli);
-		TALLOC_FREE(frame);
-		return NT_STATUS_OK;
-	}
-
-	remote_name = smbXcli_conn_remote_name(cli->conn);
-	remote_sockaddr = smbXcli_conn_remote_sockaddr(cli->conn);
-
-	status = cli_rpc_pipe_open_schannel_with_creds(
-		cli, &ndr_table_netlogon, NCACN_NP,
-		netlogon_creds,
-		remote_name,
-		remote_sockaddr,
-		&netlogon_pipe);
-
-	TALLOC_FREE(netlogon_pipe);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("libnet_join_ok: failed to open schannel session "
+		DBG_ERR("failed to open schannel session "
 			"on netlogon pipe to server %s for domain %s. "
 			"Error was %s\n",
-			remote_name,
-			netbios_domain_name, nt_errstr(status)));
+			dc_name, netbios_domain_name, nt_errstr(status));
 		cli_shutdown(cli);
 		TALLOC_FREE(frame);
 		return status;
 	}
+
+	TALLOC_FREE(netlogon_pipe);
 
 	cli_shutdown(cli);
 	TALLOC_FREE(frame);
