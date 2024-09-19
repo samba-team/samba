@@ -981,7 +981,7 @@ NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
 
 	b = cli->binding_handle;
 
-	if (cli->transport->transport == NCACN_IP_TCP) {
+	if (dcerpc_binding_handle_get_transport(b) == NCACN_IP_TCP) {
 		use_lookupsids3 = true;
 	}
 
@@ -1063,7 +1063,7 @@ static NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 
 	b = cli->binding_handle;
 
-	if (cli->transport->transport == NCACN_IP_TCP) {
+	if (dcerpc_binding_handle_get_transport(b) == NCACN_IP_TCP) {
 		use_lookupnames4 = true;
 	}
 

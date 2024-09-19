@@ -809,6 +809,7 @@ NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
 {
 	struct lsa_TransNameArray *names = *pnames;
 	struct rpc_pipe_client *cli = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 	struct policy_handle lsa_policy;
 	uint32_t count;
 	uint32_t i;
@@ -819,12 +820,14 @@ NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	if (cli->transport->transport == NCACN_IP_TCP) {
+	b = cli->binding_handle;
+
+	if (dcerpc_binding_handle_get_transport(b) == NCACN_IP_TCP) {
 		return rpc_try_lookup_sids3(mem_ctx, domain, cli, sids,
 					    pdomains, pnames);
 	}
 
-	status = dcerpc_lsa_LookupSids(cli->binding_handle, mem_ctx,
+	status = dcerpc_lsa_LookupSids(b, mem_ctx,
 				       &lsa_policy, sids, pdomains,
 				       names, LSA_LOOKUP_NAMES_ALL,
 				       &count, &result);
