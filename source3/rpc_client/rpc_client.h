@@ -29,14 +29,29 @@
 #include "../librpc/ndr/libndr.h"
 #include "rpc_client/rpc_transport.h"
 
+#ifdef SOURCE3_LIBRPC_INTERNALS
+#define SOURCE3_LIBRPC_INTERNALS_BEGIN
+#define SOURCE3_LIBRPC_INTERNALS_END
+#else /* SOURCE3_LIBRPC_INTERNALS */
+#define SOURCE3_LIBRPC_INTERNALS_BEGIN struct {
+#define SOURCE3_LIBRPC_INTERNALS_END } internal;
+#endif /* not SOURCE3_LIBRPC_INTERNALS */
+
 struct dcerpc_binding_handle;
 
 struct rpc_pipe_client {
 	struct rpc_pipe_client *prev, *next;
 
+	char *printer_username;
+	char *desthost;
+	char *srv_name_slash;
+
+	struct dcerpc_binding_handle *binding_handle;
+
+	SOURCE3_LIBRPC_INTERNALS_BEGIN
+
 	DATA_BLOB transport_session_key;
 	struct rpc_cli_transport *transport;
-	struct dcerpc_binding_handle *binding_handle;
 
 	/*
 	 * This is per connection
@@ -55,13 +70,11 @@ struct rpc_pipe_client {
 	struct ndr_syntax_id transfer_syntax;
 	bool verified_pcontext;
 
-	char *printer_username;
-	char *desthost;
-	char *srv_name_slash;
-
 	uint16_t max_xmit_frag;
 
 	struct pipe_auth_data *auth;
+
+	SOURCE3_LIBRPC_INTERNALS_END;
 };
 
 #endif /* _RPC_CLIENT_H */

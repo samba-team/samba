@@ -19,6 +19,8 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#define SOURCE3_LIBRPC_INTERNALS 1
+
 #include "includes.h"
 #include "libsmb/namequery.h"
 #include "../lib/util/tevent_ntstatus.h"
