@@ -921,15 +921,6 @@ bool is_visible_fsp(struct files_struct *fsp)
 	int hide_new_files_timeout = 0;
 	const char *last_component = NULL;
 
-	/*
-	 * If the file does not exist, there's no point checking
-	 * the configuration options. We succeed, on the basis that the
-	 * checks *might* have passed if the file was present.
-	 */
-	if (fsp == NULL) {
-		return true;
-	}
-
 	hide_unreadable = lp_hide_unreadable(SNUM(fsp->conn));
 	hide_unwriteable = lp_hide_unwriteable_files(SNUM(fsp->conn));
 	hide_special = lp_hide_special_files(SNUM(fsp->conn));
