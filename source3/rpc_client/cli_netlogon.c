@@ -425,7 +425,7 @@ again:
 						    true,
 						    trust_creds,
 						    NULL,
-						    NULL,
+						    &rpccli,
 						    &negotiate_flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("rpccli_setup_netlogon_creds failed for %s, "
@@ -435,6 +435,7 @@ again:
 			  nt_errstr(status));
 		goto fail;
 	}
+	talloc_steal(frame, rpccli);
 
 	if (!(negotiate_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
 		if (lp_winbind_sealed_pipes() || lp_require_strong_key()) {
@@ -450,29 +451,28 @@ again:
 			goto fail;
 		}
 
-		status = cli_rpc_pipe_open_noauth_transport(cli,
-							    transport,
-							    &ndr_table_netlogon,
-							    remote_name,
-							    remote_sockaddr,
-							    &rpccli);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("cli_rpc_pipe_open_noauth_transport "
-				  "failed: %s\n", nt_errstr(status));
-			goto fail;
-		}
+		/*
+		 * we keep the AUTH_TYPE_NONE rpccli for the
+		 * caller...
+		 */
 		goto done;
 	}
 
-	status = cli_rpc_pipe_open_bind_schannel(cli,
-						 &ndr_table_netlogon,
-						 transport,
-						 creds_ctx,
-						 remote_name,
-						 remote_sockaddr,
-						 &rpccli);
+	status = cli_rpc_pipe_client_prepare_alter(rpccli,
+						   true, /* new_auth_context */
+						   &ndr_table_netlogon,
+						   false); /* new_pres_context */
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("cli_rpc_pipe_open_bind_schannel "
+		DBG_WARNING("cli_rpc_pipe_client_prepare_alter "
+			    "failed: %s\n", nt_errstr(status));
+		goto fail;
+	}
+
+	status = cli_rpc_pipe_client_auth_schannel(rpccli,
+						   &ndr_table_netlogon,
+						   creds_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("cli_rpc_pipe_client_auth_schannel "
 			  "failed: %s\n", nt_errstr(status));
 		goto fail;
 	}
@@ -486,7 +486,7 @@ again:
 	}
 
 done:
-	*_rpccli = rpccli;
+	*_rpccli = talloc_move(NULL, &rpccli);
 	status = NT_STATUS_OK;
 fail:
 	ZERO_STRUCT(found_session_key);
