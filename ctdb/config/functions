@@ -1189,6 +1189,10 @@ update_tickles()
 	# What public IPs do I hold?
 	_pnn=$(ctdb_get_pnn)
 	_ips=$($CTDB -X ip | awk -F'|' -v pnn="$_pnn" '$3 == pnn {print $2}')
+	# If not hosting any public IPs then can't have any connections...
+	if [ -z "$_ips" ]; then
+		return
+	fi
 
 	# IPs and port as ss filters
 	_ip_filter=""
