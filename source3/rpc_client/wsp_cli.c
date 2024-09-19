@@ -1831,7 +1831,6 @@ static NTSTATUS wsp_resp_pdu_complete(struct tstream_context *stream,
 }
 
 static NTSTATUS wsp_rpc_transport_np_connect(struct cli_state *cli,
-			  const struct ndr_interface_table *table,
 			  TALLOC_CTX *mem_ctx,
 			  struct rpc_cli_transport **presult)
 {
@@ -1843,7 +1842,7 @@ static NTSTATUS wsp_rpc_transport_np_connect(struct cli_state *cli,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = rpc_transport_np_init_send(ev, ev, cli, table);
+	req = rpc_transport_np_init_send(ev, ev, cli, "MsFteWds");
 	if (req == NULL) {
 		goto fail;
 	}
@@ -1897,7 +1896,6 @@ NTSTATUS wsp_server_connect(TALLOC_CTX *mem_ctx,
 	}
 
 	status = wsp_rpc_transport_np_connect(cli,
-			&ndr_table_msftewds,
 			cli,
 			&transport);
 	if (!NT_STATUS_IS_OK(status)) {
