@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "librpc/rpc/dcerpc.h"
+#include "librpc/rpc/dcerpc_internal.h"
 #include "librpc/rpc/dcerpc_util.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/crypto/gse.h"

@@ -32,18 +32,7 @@
 
 struct NL_AUTH_MESSAGE;
 struct gensec_security;
-
-/* auth state for all bind types. */
-
-struct pipe_auth_data {
-	enum dcerpc_AuthType auth_type;
-	enum dcerpc_AuthLevel auth_level;
-	uint32_t auth_context_id;
-	bool hdr_signing;
-	bool verified_bitmask1;
-
-	struct gensec_security *auth_ctx;
-};
+struct pipe_auth_data;
 
 /* The following definitions come from librpc/rpc/dcerpc_helpers.c  */
 NTSTATUS dcerpc_push_ncacn_packet(TALLOC_CTX *mem_ctx,
