@@ -704,8 +704,7 @@ static bool net_spoolss_open_printer_ex(struct rpc_pipe_client *pipe_hnd,
 					uint32_t access_required,
 					struct policy_handle *hnd)
 {
-	struct cli_credentials *creds = gensec_get_credentials(pipe_hnd->auth->auth_ctx);
-	const char *username = cli_credentials_get_username(creds);
+	const char *username = pipe_hnd->printer_username;
 	WERROR result;
 	fstring printername2;
 

@@ -1807,6 +1807,8 @@ struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct rpc_pipe_bind_state *state;
+	struct cli_credentials *creds = NULL;
+	const char *username = NULL;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state, struct rpc_pipe_bind_state);
@@ -1826,6 +1828,13 @@ struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 	cli->client_hdr_signing = true;
 
 	cli->auth = talloc_move(cli, &auth);
+
+	creds = gensec_get_credentials(cli->auth->auth_ctx);
+	username = cli_credentials_get_username(creds);
+	cli->printer_username = talloc_strdup(cli, username);
+	if (tevent_req_nomem(cli->printer_username, req)) {
+		return tevent_req_post(req, ev);
+	}
 
 	/* Marshall the outgoing data. */
 	status = create_rpc_bind_req(state, cli,

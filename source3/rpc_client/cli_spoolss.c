@@ -46,12 +46,11 @@ WERROR rpccli_spoolss_openprinter_ex(struct rpc_pipe_client *cli,
 	struct spoolss_UserLevelCtr userlevel_ctr;
 	struct spoolss_UserLevel1 level1;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
-	struct cli_credentials *creds = gensec_get_credentials(cli->auth->auth_ctx);
 
 	ZERO_STRUCT(devmode_ctr);
 
 	werror = spoolss_init_spoolss_UserLevel1(mem_ctx,
-						 cli_credentials_get_username(creds),
+						 cli->printer_username,
 						 &level1);
 	if (!W_ERROR_IS_OK(werror)) {
 		return werror;
@@ -223,13 +222,12 @@ WERROR rpccli_spoolss_addprinterex(struct rpc_pipe_client *cli,
 	struct spoolss_UserLevel1 level1;
 	struct policy_handle handle;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
-	struct cli_credentials *creds = gensec_get_credentials(cli->auth->auth_ctx);
 
 	ZERO_STRUCT(devmode_ctr);
 	ZERO_STRUCT(secdesc_ctr);
 
 	result = spoolss_init_spoolss_UserLevel1(mem_ctx,
-						 cli_credentials_get_username(creds),
+						 cli->printer_username,
 						 &level1);
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
