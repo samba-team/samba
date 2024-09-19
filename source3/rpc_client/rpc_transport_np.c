@@ -47,7 +47,7 @@ static void rpc_transport_np_init_pipe_open(struct tevent_req *subreq);
 struct tevent_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 					      struct tevent_context *ev,
 					      struct cli_state *cli,
-					      const struct ndr_interface_table *table)
+					      const char *pipe_name)
 {
 	struct tevent_req *req;
 	struct rpc_transport_np_init_state *state;
@@ -72,8 +72,7 @@ struct tevent_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 	state->conn = cli->conn;
 	state->timeout = cli->timeout;
 	state->abs_timeout = timeval_current_ofs_msec(cli->timeout);
-	state->pipe_name = dcerpc_default_transport_endpoint(state, NCACN_NP,
-							     table);
+	state->pipe_name = talloc_strdup(state, pipe_name);
 	if (tevent_req_nomem(state->pipe_name, req)) {
 		return tevent_req_post(req, ev);
 	}

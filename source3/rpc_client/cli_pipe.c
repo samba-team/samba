@@ -3325,6 +3325,7 @@ struct tevent_req *rpc_pipe_open_np_send(
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct rpc_pipe_open_np_state *state = NULL;
 	struct rpc_pipe_client *result = NULL;
+	const char *pipe_name = NULL;
 
 	req = tevent_req_create(
 		mem_ctx, &state, struct rpc_pipe_open_np_state);
@@ -3357,7 +3358,14 @@ struct tevent_req *rpc_pipe_open_np_send(
 
 	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
 
-	subreq = rpc_transport_np_init_send(state, ev, cli, table);
+	pipe_name = dcerpc_default_transport_endpoint(state,
+						      NCACN_NP,
+						      table);
+	if (tevent_req_nomem(pipe_name, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = rpc_transport_np_init_send(state, ev, cli, pipe_name);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
