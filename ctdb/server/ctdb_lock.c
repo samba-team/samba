@@ -496,47 +496,22 @@ fail:
 
 }
 
-static const char **debug_locks_args(TALLOC_CTX *mem_ctx, struct lock_context *lock_ctx)
+static char **debug_locks_args(TALLOC_CTX *mem_ctx,
+			       struct lock_context *lock_ctx)
 {
-	const char **args = NULL;
-	int tdb_flags;
-	int nargs, i;
+	int tdb_flags = tdb_get_flags(lock_ctx->ctdb_db->ltdb->tdb);
+	char **args = str_list_make_empty(mem_ctx);
 
-	/* Program, lock helper PID, db|record, tdb path, fcntl|mutex, NULL */
-	nargs = 6;
+	str_list_add_printf(&args, "debug_locks");
+	str_list_add_printf(&args, "%d", lock_ctx->child);
+	str_list_add_printf(&args,
+			    "%s",
+			    (lock_ctx->type == LOCK_RECORD) ? "RECORD" : "DB");
+	str_list_add_printf(&args, "%s", lock_ctx->ctdb_db->db_path);
 
-	args = talloc_array(mem_ctx, const char *, nargs);
-	if (args == NULL) {
-		return NULL;
-	}
-
-	args[0] = talloc_strdup(args, "debug_locks");
-	args[1] = talloc_asprintf(args, "%d", lock_ctx->child);
-
-	if (lock_ctx->type == LOCK_RECORD) {
-		args[2] = talloc_strdup(args, "RECORD");
-	} else {
-		args[2] = talloc_strdup(args, "DB");
-	}
-
-	args[3] = talloc_strdup(args, lock_ctx->ctdb_db->db_path);
-
-	tdb_flags = tdb_get_flags(lock_ctx->ctdb_db->ltdb->tdb);
-	if (tdb_flags & TDB_MUTEX_LOCKING) {
-		args[4] = talloc_strdup(args, "MUTEX");
-	} else {
-		args[4] = talloc_strdup(args, "FCNTL");
-	}
-
-	args[5] = NULL;
-
-	for (i=0; i<nargs-1; i++) {
-		if (args[i] == NULL) {
-			talloc_free(args);
-			return NULL;
-		}
-	}
-
+	str_list_add_printf(&args,
+			    (tdb_flags & TDB_MUTEX_LOCKING) ? "MUTEX"
+							    : "FCNTL");
 	return args;
 }
 
@@ -556,7 +531,7 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 	double elapsed_time;
 	bool skip;
 	char *keystr;
-	const char **args;
+	char **args;
 	bool ok;
 
 	lock_ctx = talloc_get_type_abort(private_data, struct lock_context);
@@ -611,7 +586,7 @@ lock_debug:
 	if (args != NULL) {
 		pid = vfork();
 		if (pid == 0) {
-			execvp(debug_locks, discard_const(args));
+			execvp(debug_locks, args);
 			_exit(0);
 		}
 		talloc_free(args);
