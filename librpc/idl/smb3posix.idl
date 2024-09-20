@@ -8,7 +8,8 @@ import "security.idl";
 
 [
   version(0.0),
-  pointer_default(unique)
+  pointer_default(unique),
+  headerhelper("../lib/util/time.h")
 ]
 interface smb3posix
 {
