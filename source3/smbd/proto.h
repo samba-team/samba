@@ -1088,17 +1088,9 @@ bool map_info2_flags_to_sbuf(const SMB_STRUCT_STAT *psbuf,
 			     const uint32_t smb_fmask,
 			     int *stat_fflags);
 
-enum perm_type {
-	PERM_NEW_FILE,
-	PERM_NEW_DIR,
-	PERM_EXISTING_FILE,
-	PERM_EXISTING_DIR
-};
-
 NTSTATUS unix_perms_from_wire(connection_struct *conn,
 			      const SMB_STRUCT_STAT *psbuf,
 			      uint32_t perms,
-			      enum perm_type ptype,
 			      mode_t *ret_perms);
 struct ea_list *read_ea_list(TALLOC_CTX *ctx, const char *pdata,
 			     size_t data_size);

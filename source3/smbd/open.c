@@ -7031,9 +7031,6 @@ NTSTATUS create_file_default(connection_struct *conn,
 		uint32_t wire_mode_bits = 0;
 		mode_t mode_bits = 0;
 		SMB_STRUCT_STAT sbuf = { 0 };
-		enum perm_type ptype =
-			(create_options & FILE_DIRECTORY_FILE) ?
-			PERM_NEW_DIR : PERM_NEW_FILE;
 
 		if (posx->data.length != 4) {
 			status = NT_STATUS_INVALID_PARAMETER;
@@ -7041,10 +7038,17 @@ NTSTATUS create_file_default(connection_struct *conn,
 		}
 
 		wire_mode_bits = IVAL(posx->data.data, 0);
-		status = unix_perms_from_wire(
-			conn, &sbuf, wire_mode_bits, ptype, &mode_bits);
+		status = unix_perms_from_wire(conn,
+					      &sbuf,
+					      wire_mode_bits,
+					      &mode_bits);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
+		}
+		if (create_options & FILE_DIRECTORY_FILE) {
+			mode_bits = apply_conf_dir_mask(conn, mode_bits);
+		} else {
+			mode_bits = apply_conf_file_mask(conn, mode_bits);
 		}
 		/*
 		 * Remove type info from mode, leaving only the

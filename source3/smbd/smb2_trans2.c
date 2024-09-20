@@ -894,7 +894,6 @@ static struct ea_list *ea_list_union(struct ea_list *name_list, struct ea_list *
 NTSTATUS unix_perms_from_wire(connection_struct *conn,
 			      const SMB_STRUCT_STAT *psbuf,
 			      uint32_t perms,
-			      enum perm_type ptype,
 			      mode_t *ret_perms)
 {
 	mode_t ret = 0;
@@ -908,20 +907,6 @@ NTSTATUS unix_perms_from_wire(connection_struct *conn,
 	}
 
 	ret = wire_perms_to_unix(perms);
-
-	if (ptype == PERM_NEW_FILE) {
-		/*
-		 * "create mask"/"force create mode" are
-		 * only applied to new files, not existing ones.
-		 */
-		ret = apply_conf_file_mask(conn, ret);
-	} else if (ptype == PERM_NEW_DIR) {
-		/*
-		 * "directory mask"/"force directory mode" are
-		 * only applied to new directories, not existing ones.
-		 */
-		ret = apply_conf_dir_mask(conn, ret);
-	}
 
 	*ret_perms = ret;
 	return NT_STATUS_OK;

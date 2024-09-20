@@ -3170,11 +3170,14 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 	raw_unixmode = IVAL(pdata,8);
 	/* Next 4 bytes are not yet defined. */
 
-	status = unix_perms_from_wire(conn, &smb_fname->st, raw_unixmode,
-				      PERM_NEW_DIR, &unixmode);
+	status = unix_perms_from_wire(conn,
+				      &smb_fname->st,
+				      raw_unixmode,
+				      &unixmode);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+	unixmode = apply_conf_dir_mask(conn, unixmode);
 
 	status = make_smb2_posix_create_ctx(talloc_tos(), &posx, unixmode);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3389,13 +3392,16 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	raw_unixmode = IVAL(pdata,8);
 	/* Next 4 bytes are not yet defined. */
 
-	status = unix_perms_from_wire(conn, &smb_fname->st, raw_unixmode,
-				      (VALID_STAT(smb_fname->st) ?
-					  PERM_EXISTING_FILE : PERM_NEW_FILE),
+	status = unix_perms_from_wire(conn,
+				      &smb_fname->st,
+				      raw_unixmode,
 				      &unixmode);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+	if (!VALID_STAT(smb_fname->st)) {
+		unixmode = apply_conf_dir_mask(conn, unixmode);
 	}
 
 	status = make_smb2_posix_create_ctx(talloc_tos(), &posx, unixmode);
@@ -3843,11 +3849,14 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = unix_perms_from_wire(conn, &smb_fname->st, raw_unixmode,
-				      PERM_NEW_FILE, &unixmode);
+	status = unix_perms_from_wire(conn,
+				      &smb_fname->st,
+				      raw_unixmode,
+				      &unixmode);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+	unixmode = apply_conf_file_mask(conn, unixmode);
 
 #if defined(HAVE_MAKEDEV)
 	dev = makedev(dev_major, dev_minor);
@@ -3951,7 +3960,6 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	uid_t set_owner = (uid_t)SMB_UID_NO_CHANGE;
 	gid_t set_grp = (uid_t)SMB_GID_NO_CHANGE;
 	NTSTATUS status = NT_STATUS_OK;
-	enum perm_type ptype;
 	files_struct *all_fsps = NULL;
 	bool modify_mtime = true;
 	struct file_id id;
@@ -3979,20 +3987,15 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	set_grp = (gid_t)IVAL(pdata,48);
 	raw_unixmode = IVAL(pdata,84);
 
-	if (VALID_STAT(smb_fname->st)) {
-		if (S_ISDIR(smb_fname->st.st_ex_mode)) {
-			ptype = PERM_EXISTING_DIR;
-		} else {
-			ptype = PERM_EXISTING_FILE;
-		}
-	} else {
-		ptype = PERM_NEW_FILE;
-	}
-
-	status = unix_perms_from_wire(conn, &smb_fname->st, raw_unixmode,
-				      ptype, &unixmode);
+	status = unix_perms_from_wire(conn,
+				      &smb_fname->st,
+				      raw_unixmode,
+				      &unixmode);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+	if (!VALID_STAT(smb_fname->st)) {
+		unixmode = apply_conf_file_mask(conn, unixmode);
 	}
 
 	DBG_DEBUG("SMB_SET_FILE_UNIX_BASIC: name = "
