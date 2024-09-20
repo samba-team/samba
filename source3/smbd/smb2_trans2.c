@@ -888,41 +888,6 @@ static struct ea_list *ea_list_union(struct ea_list *name_list, struct ea_list *
 }
 
 /****************************************************************************
- Return the filetype for UNIX extensions.
-****************************************************************************/
-
-static uint32_t unix_filetype(mode_t mode)
-{
-	if(S_ISREG(mode))
-		return UNIX_TYPE_FILE;
-	else if(S_ISDIR(mode))
-		return UNIX_TYPE_DIR;
-#ifdef S_ISLNK
-	else if(S_ISLNK(mode))
-		return UNIX_TYPE_SYMLINK;
-#endif
-#ifdef S_ISCHR
-	else if(S_ISCHR(mode))
-		return UNIX_TYPE_CHARDEV;
-#endif
-#ifdef S_ISBLK
-	else if(S_ISBLK(mode))
-		return UNIX_TYPE_BLKDEV;
-#endif
-#ifdef S_ISFIFO
-	else if(S_ISFIFO(mode))
-		return UNIX_TYPE_FIFO;
-#endif
-#ifdef S_ISSOCK
-	else if(S_ISSOCK(mode))
-		return UNIX_TYPE_SOCKET;
-#endif
-
-	DEBUG(0,("unix_filetype: unknown filetype %u\n", (unsigned)mode));
-	return UNIX_TYPE_UNKNOWN;
-}
-
-/****************************************************************************
  Map wire perms onto standard UNIX permissions. Obey share restrictions.
 ****************************************************************************/
 
@@ -2797,7 +2762,7 @@ char *store_file_unix_basic(connection_struct *conn,
 	SIVAL(pdata,4,0);
 	pdata += 8;
 
-	SIVAL(pdata,0,unix_filetype(psbuf->st_ex_mode));
+	SIVAL(pdata, 0, unix_filetype_to_wire(psbuf->st_ex_mode));
 	pdata += 4;
 
 	if (S_ISBLK(psbuf->st_ex_mode) || S_ISCHR(psbuf->st_ex_mode)) {

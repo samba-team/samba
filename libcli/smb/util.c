@@ -182,6 +182,19 @@ mode_t wire_filetype_to_unix(uint32_t wire_type)
 	return unix_filetypes[wire_type];
 }
 
+uint32_t unix_filetype_to_wire(mode_t mode)
+{
+	mode_t type = mode & S_IFMT;
+	size_t i;
+
+	for (i = 0; i < ARRAY_SIZE(unix_filetypes); i++) {
+		if (type == unix_filetypes[i]) {
+			return i;
+		}
+	}
+	return UNIX_TYPE_UNKNOWN;
+}
+
 bool smb_buffer_oob(uint32_t bufsize, uint32_t offset, uint32_t length)
 {
 	if ((offset + length < offset) || (offset + length < length)) {
