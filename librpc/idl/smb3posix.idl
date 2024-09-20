@@ -13,6 +13,37 @@ import "security.idl";
 ]
 interface smb3posix
 {
+	const int UNIX_TYPE_FILE		= 0;
+	const int UNIX_TYPE_DIR			= 1;
+	const int UNIX_TYPE_SYMLINK		= 2;
+	const int UNIX_TYPE_CHARDEV		= 3;
+	const int UNIX_TYPE_BLKDEV		= 4;
+	const int UNIX_TYPE_FIFO		= 5;
+	const int UNIX_TYPE_SOCKET		= 6;
+	const int UNIX_TYPE_UNKNOWN		= 0xFFFFFFFF;
+
+	const int UNIX_X_OTH			= 0000001;
+	const int UNIX_W_OTH			= 0000002;
+	const int UNIX_R_OTH			= 0000004;
+	const int UNIX_X_GRP			= 0000010;
+	const int UNIX_W_GRP			= 0000020;
+	const int UNIX_R_GRP			= 0000040;
+	const int UNIX_X_USR			= 0000100;
+	const int UNIX_W_USR			= 0000200;
+	const int UNIX_R_USR			= 0000400;
+	const int UNIX_STICKY			= 0001000;
+	const int UNIX_SET_GID			= 0002000;
+	const int UNIX_SET_UID			= 0004000;
+
+	const int UNIX_OTH_MASK			= 0000007;
+	const int UNIX_GRP_MASK			= 0000070;
+	const int UNIX_USR_MASK			= 0000700;
+	const int UNIX_PERM_MASK		= 0000777;
+	const int UNIX_EXTRA_MASK		= 0007000;
+	const int UNIX_FILETYPE_MASK		= 0070000;
+	const int UNIX_FILETYPE_SHIFT		= 12;
+	const int UNIX_ALL_MASK			= 0077777;
+
 	typedef [public,flag(NDR_NOALIGN)] struct {
 		uint32 nlinks;
 		uint32 reparse_tag;

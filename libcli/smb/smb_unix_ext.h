@@ -24,6 +24,9 @@
 #ifndef __SMB_UNIX_EXT_H__
 #define __SMB_UNIX_EXT_H__
 
+#include <replace.h>
+#include "librpc/gen_ndr/smb3posix.h"
+
 /* UNIX CIFS Extensions - created by HP */
 /*
  * UNIX CIFS Extensions have the range 0x200 - 0x2FF reserved.
@@ -79,47 +82,6 @@ Offset Size         Name
 */
 
 #define SMB_FILE_UNIX_BASIC_SIZE 100
-
-/* UNIX filetype mappings. */
-
-#define UNIX_TYPE_FILE 0
-#define UNIX_TYPE_DIR 1
-#define UNIX_TYPE_SYMLINK 2
-#define UNIX_TYPE_CHARDEV 3
-#define UNIX_TYPE_BLKDEV 4
-#define UNIX_TYPE_FIFO 5
-#define UNIX_TYPE_SOCKET 6
-#define UNIX_TYPE_UNKNOWN 0xFFFFFFFF
-
-/*
- * Oh this is fun. "Standard UNIX permissions" has no
- * meaning in POSIX. We need to define the mapping onto
- * and off the wire as this was not done in the original HP
- * spec. JRA.
- */
-
-#define UNIX_X_OTH			0000001
-#define UNIX_W_OTH			0000002
-#define UNIX_R_OTH			0000004
-#define UNIX_X_GRP			0000010
-#define UNIX_W_GRP                      0000020
-#define UNIX_R_GRP                      0000040
-#define UNIX_X_USR                      0000100
-#define UNIX_W_USR                      0000200
-#define UNIX_R_USR                      0000400
-#define UNIX_STICKY                     0001000
-#define UNIX_SET_GID                    0002000
-#define UNIX_SET_UID                    0004000
-
-/* Masks for the above */
-#define UNIX_OTH_MASK                   0000007
-#define UNIX_GRP_MASK                   0000070
-#define UNIX_USR_MASK                   0000700
-#define UNIX_PERM_MASK                  0000777
-#define UNIX_EXTRA_MASK                 0007000
-#define UNIX_FILETYPE_MASK              0070000
-#define UNIX_FILETYPE_SHIFT             12
-#define UNIX_ALL_MASK                   0077777
 
 /* Flags for chflags (CIFS_UNIX_EXTATTR_CAP capability) and
  * SMB_QUERY_FILE_UNIX_INFO2.
