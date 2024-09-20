@@ -20,7 +20,7 @@ BraceWrapping:
     AfterControlStatement: MultiLine
 BreakBeforeBinaryOperators: None
 BreakBeforeBraces: Custom
-ColumnLimit: 80
+ColumnLimit: 79
 ContinuationIndentWidth: 8
 IndentCaseLabels: false
 IndentGotoLabels: false
