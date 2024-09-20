@@ -3059,7 +3059,8 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 {
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(dce_call);
-	const char *sidstr, *sidndrstr;
+	struct dom_sid_buf sidbuf;
+	const char *sidndrstr = NULL;
 	struct ldb_message *msg;
 	struct ldb_message_element *el;
 	int ret;
@@ -3084,13 +3085,7 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sidstr = dom_sid_string(msg, sid);
-	if (sidstr == NULL) {
-		TALLOC_FREE(msg);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	dnstr = talloc_asprintf(msg, "sid=%s", sidstr);
+	dnstr = talloc_asprintf(msg, "sid=%s", dom_sid_str_buf(sid, &sidbuf));
 	if (dnstr == NULL) {
 		TALLOC_FREE(msg);
 		return NT_STATUS_NO_MEMORY;
