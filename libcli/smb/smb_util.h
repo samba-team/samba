@@ -34,6 +34,8 @@ uint32_t unix_perms_to_wire(mode_t perms);
 mode_t wire_perms_to_unix(uint32_t perms);
 mode_t wire_filetype_to_unix(uint32_t wire_type);
 uint32_t unix_filetype_to_wire(mode_t mode);
+mode_t wire_mode_to_unix(uint32_t wire);
+uint32_t unix_mode_to_wire(mode_t mode);
 
 bool smb_buffer_oob(uint32_t bufsize, uint32_t offset, uint32_t length);
 

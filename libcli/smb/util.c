@@ -195,6 +195,19 @@ uint32_t unix_filetype_to_wire(mode_t mode)
 	return UNIX_TYPE_UNKNOWN;
 }
 
+mode_t wire_mode_to_unix(uint32_t wire)
+{
+	uint32_t wire_type = (wire & UNIX_FILETYPE_MASK) >>
+			     UNIX_FILETYPE_SHIFT;
+	return wire_perms_to_unix(wire) | wire_filetype_to_unix(wire_type);
+}
+
+uint32_t unix_mode_to_wire(mode_t mode)
+{
+	uint32_t wire_type = unix_filetype_to_wire(mode);
+	return unix_perms_to_wire(mode) | (wire_type << UNIX_FILETYPE_SHIFT);
+}
+
 bool smb_buffer_oob(uint32_t bufsize, uint32_t offset, uint32_t length)
 {
 	if ((offset + length < offset) || (offset + length < length)) {

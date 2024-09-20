@@ -117,7 +117,9 @@ Offset Size         Name
 #define UNIX_USR_MASK                   0000700
 #define UNIX_PERM_MASK                  0000777
 #define UNIX_EXTRA_MASK                 0007000
-#define UNIX_ALL_MASK                   0007777
+#define UNIX_FILETYPE_MASK              0070000
+#define UNIX_FILETYPE_SHIFT             12
+#define UNIX_ALL_MASK                   0077777
 
 /* Flags for chflags (CIFS_UNIX_EXTATTR_CAP capability) and
  * SMB_QUERY_FILE_UNIX_INFO2.
