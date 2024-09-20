@@ -902,10 +902,9 @@ NTSTATUS unix_perms_from_wire(connection_struct *conn,
 	if (perms == SMB_MODE_NO_CHANGE) {
 		if (!VALID_STAT(*psbuf)) {
 			return NT_STATUS_INVALID_PARAMETER;
-		} else {
-			*ret_perms = psbuf->st_ex_mode;
-			return NT_STATUS_OK;
 		}
+		*ret_perms = psbuf->st_ex_mode;
+		return NT_STATUS_OK;
 	}
 
 	ret = wire_perms_to_unix(perms);
