@@ -301,6 +301,8 @@ NTSTATUS rpccli_setup_netlogon_creds(
 NTSTATUS rpccli_connect_netlogon(
 	struct cli_state *cli,
 	enum dcerpc_transport_t transport,
+	const char *remote_name,
+	const struct sockaddr_storage *remote_sockaddr,
 	struct netlogon_creds_cli_context *creds_ctx,
 	bool force_reauth,
 	struct cli_credentials *trust_creds,
@@ -318,8 +320,6 @@ NTSTATUS rpccli_connect_netlogon(
 	struct rpc_pipe_client *rpccli;
 	NTSTATUS status;
 	bool retry = false;
-	const char *remote_name = NULL;
-	const struct sockaddr_storage *remote_sockaddr = NULL;
 
 	sec_chan_type = cli_credentials_get_secure_channel_type(trust_creds);
 	if (sec_chan_type == SEC_CHAN_NULL) {
@@ -379,9 +379,6 @@ again:
 			TALLOC_FREE(creds);
 		}
 	}
-
-	remote_name = smbXcli_conn_remote_name(cli->conn);
-	remote_sockaddr = smbXcli_conn_remote_sockaddr(cli->conn);
 
 	do_serverauth = force_reauth || !found_existing_creds;
 

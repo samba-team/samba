@@ -3201,6 +3201,8 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 	NTSTATUS result;
 	enum netr_SchannelType sec_chan_type;
 	struct cli_credentials *creds = NULL;
+	const char *remote_name = NULL;
+	const struct sockaddr_storage *remote_sockaddr = NULL;
 
 	*cli = NULL;
 
@@ -3230,6 +3232,9 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 	TALLOC_FREE(conn->netlogon_pipe);
 	TALLOC_FREE(conn->netlogon_creds_ctx);
 
+	remote_name = smbXcli_conn_remote_name(conn->cli->conn);
+	remote_sockaddr = smbXcli_conn_remote_sockaddr(conn->cli->conn);
+
 	result = winbindd_get_trust_credentials(domain,
 						talloc_tos(),
 						true, /* netlogon */
@@ -3250,11 +3255,6 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 
 	sec_chan_type = cli_credentials_get_secure_channel_type(creds);
 	if (sec_chan_type == SEC_CHAN_NULL) {
-		const char *remote_name =
-			smbXcli_conn_remote_name(conn->cli->conn);
-		const struct sockaddr_storage *remote_sockaddr =
-			smbXcli_conn_remote_sockaddr(conn->cli->conn);
-
 		if (transport == NCACN_IP_TCP) {
 			DBG_NOTICE("get_secure_channel_type gave SEC_CHAN_NULL "
 				   "for %s, deny NCACN_IP_TCP and let the "
@@ -3295,10 +3295,13 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 		return result;
 	}
 
-	result = rpccli_connect_netlogon(
-		conn->cli, transport,
-		conn->netlogon_creds_ctx, conn->netlogon_force_reauth, creds,
-		&conn->netlogon_pipe);
+	result = rpccli_connect_netlogon(conn->cli,
+					 transport,
+					 remote_name,
+					 remote_sockaddr,
+					 conn->netlogon_creds_ctx,
+					 conn->netlogon_force_reauth, creds,
+					 &conn->netlogon_pipe);
 	conn->netlogon_force_reauth = false;
 	if (!NT_STATUS_IS_OK(result)) {
 		DBG_DEBUG("rpccli_connect_netlogon failed: %s\n",

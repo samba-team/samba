@@ -1184,6 +1184,7 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 	struct rpc_pipe_client *passwordset_pipe = NULL;
 	struct cli_credentials *cli_creds;
 	struct netlogon_creds_cli_context *netlogon_creds = NULL;
+	const struct sockaddr_storage *remote_sockaddr = NULL;
 	size_t len = 0;
 	bool ok;
 	DATA_BLOB new_trust_blob = data_blob_null;
@@ -1220,6 +1221,8 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 				     r->in.passed_machine_password,
 				     CRED_SPECIFIED);
 
+	remote_sockaddr = smbXcli_conn_remote_sockaddr(cli->conn);
+
 	status = rpccli_create_netlogon_creds_ctx(cli_creds,
 						  r->in.dc_name,
 						  r->in.msg_ctx,
@@ -1232,6 +1235,8 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 
 	status = rpccli_connect_netlogon(cli,
 					 NCACN_NP,
+					 r->in.dc_name,
+					 remote_sockaddr,
 					 netlogon_creds,
 					 true, /* force_reauth */
 					 cli_creds,
@@ -1630,6 +1635,7 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 	struct netlogon_creds_cli_context *netlogon_creds = NULL;
 	NTSTATUS status;
 	int flags = CLI_FULL_CONNECTION_IPC;
+	const struct sockaddr_storage *remote_sockaddr = NULL;
 
 	if (!dc_name) {
 		TALLOC_FREE(frame);
@@ -1688,6 +1694,8 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 		return status;
 	}
 
+	remote_sockaddr = smbXcli_conn_remote_sockaddr(cli->conn);
+
 	status = rpccli_create_netlogon_creds_ctx(cli_creds,
 						  dc_name,
 						  msg_ctx,
@@ -1701,6 +1709,8 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 
 	status = rpccli_connect_netlogon(cli,
 					 NCACN_NP,
+					 dc_name,
+					 remote_sockaddr,
 					 netlogon_creds,
 					 true, /* force_reauth */
 					 cli_creds,
