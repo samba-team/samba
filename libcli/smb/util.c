@@ -162,40 +162,24 @@ mode_t wire_perms_to_unix(uint32_t perms)
         return ret;
 }
 
-/****************************************************************************
- Return the file type from the wire filetype for UNIX extensions.
-****************************************************************************/
 
-mode_t unix_filetype_from_wire(uint32_t wire_type)
+/****************************************************************************
+ * Return the file type from the wire filetype for UNIX extensions.
+ *
+ * This uses the fact that the unix file types are numbered from
+ * FILE=0 to SOCKET=6. This is an accepted protocol element that will
+ * never change.
+ ****************************************************************************/
+
+static mode_t unix_filetypes[] =
+	{S_IFREG, S_IFDIR, S_IFLNK, S_IFCHR, S_IFBLK, S_IFIFO, S_IFSOCK};
+
+mode_t wire_filetype_to_unix(uint32_t wire_type)
 {
-	switch (wire_type) {
-		case UNIX_TYPE_FILE:
-			return S_IFREG;
-		case UNIX_TYPE_DIR:
-			return S_IFDIR;
-#ifdef S_IFLNK
-		case UNIX_TYPE_SYMLINK:
-			return S_IFLNK;
-#endif
-#ifdef S_IFCHR
-		case UNIX_TYPE_CHARDEV:
-			return S_IFCHR;
-#endif
-#ifdef S_IFBLK
-		case UNIX_TYPE_BLKDEV:
-			return S_IFBLK;
-#endif
-#ifdef S_IFIFO
-		case UNIX_TYPE_FIFO:
-			return S_IFIFO;
-#endif
-#ifdef S_IFSOCK
-		case UNIX_TYPE_SOCKET:
-			return S_IFSOCK;
-#endif
-		default:
-			return (mode_t)0;
+	if (wire_type > ARRAY_SIZE(unix_filetypes)) {
+		return (mode_t)0;
 	}
+	return unix_filetypes[wire_type];
 }
 
 bool smb_buffer_oob(uint32_t bufsize, uint32_t offset, uint32_t length)

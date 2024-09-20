@@ -862,7 +862,7 @@ static void cli_posix_stat_done(struct tevent_req *subreq)
 
 	sbuf->st_ex_uid = (uid_t) IVAL(data, 40); /* user ID of owner */
 	sbuf->st_ex_gid = (gid_t) IVAL(data, 48); /* group ID of owner */
-	sbuf->st_ex_mode = unix_filetype_from_wire(IVAL(data, 56));
+	sbuf->st_ex_mode = wire_filetype_to_unix(IVAL(data, 56));
 
 #if defined(HAVE_MAKEDEV)
 	{
