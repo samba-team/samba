@@ -87,6 +87,20 @@ static uint32_t filter_mode_by_protocol(enum protocol_types protocol,
 	return mode;
 }
 
+mode_t apply_conf_file_mask(struct connection_struct *conn, mode_t mode)
+{
+	mode &= lp_create_mask(SNUM(conn));
+	mode |= lp_force_create_mode(SNUM(conn));
+	return mode;
+}
+
+mode_t apply_conf_dir_mask(struct connection_struct *conn, mode_t mode)
+{
+	mode &= lp_directory_mask(SNUM(conn));
+	mode |= lp_force_directory_mode(SNUM(conn));
+	return mode;
+}
+
 /****************************************************************************
  Change a dos mode to a unix mode.
     Base permission for files:
@@ -158,11 +172,7 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 		} else {
 			/* Provisionally add all 'x' bits */
 			result |= (S_IXUSR | S_IXGRP | S_IXOTH);
-
-			/* Apply directory mask */
-			result &= lp_directory_mask(SNUM(conn));
-			/* Add in force bits */
-			result |= lp_force_directory_mode(SNUM(conn));
+			result = apply_conf_dir_mask(conn, result);
 		}
 	} else {
 		if ((dosmode & FILE_ATTRIBUTE_ARCHIVE) &&
@@ -184,10 +194,7 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 			/* Inherit 666 component of parent directory mode */
 			result |= dir_mode & (S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR | S_IWGRP | S_IWOTH);
 		} else {
-			/* Apply mode mask */
-			result &= lp_create_mask(SNUM(conn));
-			/* Add in force bits */
-			result |= lp_force_create_mode(SNUM(conn));
+			result = apply_conf_file_mask(conn, result);
 		}
 	}
 

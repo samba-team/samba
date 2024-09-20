@@ -914,17 +914,13 @@ NTSTATUS unix_perms_from_wire(connection_struct *conn,
 		 * "create mask"/"force create mode" are
 		 * only applied to new files, not existing ones.
 		 */
-		ret &= lp_create_mask(SNUM(conn));
-		/* Add in force bits */
-		ret |= lp_force_create_mode(SNUM(conn));
+		ret = apply_conf_file_mask(conn, ret);
 	} else if (ptype == PERM_NEW_DIR) {
 		/*
 		 * "directory mask"/"force directory mode" are
 		 * only applied to new directories, not existing ones.
 		 */
-		ret &= lp_directory_mask(SNUM(conn));
-		/* Add in force bits */
-		ret |= lp_force_directory_mode(SNUM(conn));
+		ret = apply_conf_dir_mask(conn, ret);
 	}
 
 	*ret_perms = ret;

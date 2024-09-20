@@ -193,6 +193,9 @@ bool smbd_setup_mdns_registration(struct tevent_context *ev,
 
 /* The following definitions come from smbd/dosmode.c  */
 
+mode_t apply_conf_file_mask(struct connection_struct *conn, mode_t mode);
+mode_t apply_conf_dir_mask(struct connection_struct *conn, mode_t mode);
+
 mode_t unix_mode(connection_struct *conn, int dosmode,
 		 const struct smb_filename *smb_fname,
 		 struct files_struct *parent_dirfsp);
