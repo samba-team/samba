@@ -275,8 +275,6 @@ NTSTATUS cli_posix_hardlink_recv(struct tevent_req *req);
 NTSTATUS cli_posix_hardlink(struct cli_state *cli,
 			const char *oldname,
 			const char *newname);
-uint32_t unix_perms_to_wire(mode_t perms);
-mode_t wire_perms_to_unix(uint32_t perms);
 struct tevent_req *cli_posix_getacl_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct cli_state *cli,
