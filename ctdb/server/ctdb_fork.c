@@ -105,9 +105,11 @@ pid_t ctdb_fork(struct ctdb_context *ctdb)
 /*
  * vfork + exec
  */
-pid_t ctdb_vfork_exec(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-		      const char *helper, int helper_argc,
-		      const char **helper_argv)
+pid_t ctdb_vfork_exec(TALLOC_CTX *mem_ctx,
+		      struct ctdb_context *ctdb,
+		      const char *helper,
+		      int helper_argc,
+		      const char *const *helper_argv)
 {
 	pid_t pid;
 	struct timeval before;

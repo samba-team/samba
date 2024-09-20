@@ -609,9 +609,11 @@ int switch_from_server_to_client(struct ctdb_context *ctdb);
 void ctdb_track_child(struct ctdb_context *ctdb, pid_t pid);
 
 pid_t ctdb_fork(struct ctdb_context *ctdb);
-pid_t ctdb_vfork_exec(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-		      const char *helper, int helper_argc,
-		      const char **helper_argv);
+pid_t ctdb_vfork_exec(TALLOC_CTX *mem_ctx,
+		      struct ctdb_context *ctdb,
+		      const char *helper,
+		      int helper_argc,
+		      const char *const *helper_argv);
 
 struct tevent_signal *ctdb_init_sigchld(struct ctdb_context *ctdb);
 
