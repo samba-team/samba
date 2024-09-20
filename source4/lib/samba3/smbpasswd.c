@@ -60,31 +60,27 @@
 
 struct samr_Password *smbpasswd_gethexpwd(TALLOC_CTX *mem_ctx, const char *p)
 {
-	int i;
-	unsigned char   lonybble, hinybble;
-	const char     *hexchars = "0123456789ABCDEF";
-	const char     *p1, *p2;
-        struct samr_Password *pwd = talloc(mem_ctx, struct samr_Password);
+	struct samr_Password *pwd = NULL;
+	size_t len;
 
-	if (!p) return NULL;
-	
-	for (i = 0; i < (sizeof(pwd->hash) * 2); i += 2)
-	{
-		hinybble = toupper(p[i]);
-		lonybble = toupper(p[i + 1]);
-		
-		p1 = strchr_m(hexchars, hinybble);
-		p2 = strchr_m(hexchars, lonybble);
-		
-		if (!p1 || !p2)	{
-                        return NULL;
-		}
-		
-		hinybble = PTR_DIFF(p1, hexchars);
-		lonybble = PTR_DIFF(p2, hexchars);
-		
-		pwd->hash[i / 2] = (hinybble << 4) | lonybble;
+	if (p == NULL) {
+		return NULL;
 	}
+
+	pwd = talloc(mem_ctx, struct samr_Password);
+	if (pwd == NULL) {
+		return NULL;
+	}
+
+	len = strhex_to_str((char *)pwd->hash,
+			    sizeof(pwd->hash),
+			    p,
+			    sizeof(pwd->hash) * 2);
+	if (len != sizeof(pwd->hash)) {
+		TALLOC_FREE(pwd);
+		return NULL;
+	}
+
 	return pwd;
 }
 
