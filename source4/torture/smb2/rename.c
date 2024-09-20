@@ -1693,6 +1693,74 @@ static bool test_smb2_close_full_information(struct torture_context *torture,
 	return ret;
 }
 
+static bool torture_smb2_rename_open(struct torture_context *torture,
+				     struct smb2_tree *tree1,
+				     struct smb2_tree *tree2)
+{
+	struct smb2_create c1 = {};
+	struct smb2_create c2 = {};
+	union smb_setfileinfo sinfo = {};
+	struct smb2_handle h1 = {};
+	struct smb2_handle h2 = {};
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_deltree(tree1, BASEDIR);
+	smb2_util_mkdir(tree1, BASEDIR);
+
+	/* Create testfile */
+
+	c1.in.desired_access = SEC_STD_DELETE;
+	c1.in.create_options = NTCREATEX_OPTIONS_NON_DIRECTORY_FILE;
+	c1.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	c1.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE | NTCREATEX_SHARE_ACCESS_DELETE;
+	c1.in.create_disposition = NTCREATEX_DISP_CREATE;
+	c1.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	c1.in.fname = BASEDIR "\\file.txt";
+
+	status = smb2_create(tree1, torture, &c1);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c1.out.file.handle;
+
+	/* 2nd open on testfile */
+
+	c2.in.desired_access = SEC_FILE_READ_DATA;
+	c2.in.create_options = NTCREATEX_OPTIONS_NON_DIRECTORY_FILE;
+	c2.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	c2.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE | NTCREATEX_SHARE_ACCESS_DELETE;
+	c2.in.create_disposition = NTCREATEX_DISP_OPEN;
+	c2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	c2.in.fname = BASEDIR "\\file.txt";
+
+	status = smb2_create(tree2, torture, &c2);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_create failed\n");
+	h2 = c2.out.file.handle;
+
+	torture_comment(torture, "Renaming test file\n");
+
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.handle = h1;
+	sinfo.rename_information.in.new_name =
+		BASEDIR "\\newname.txt";
+	status = smb2_setinfo_file(tree1, &sinfo);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"Rename failed\n");
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree1, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree2, h2);
+	}
+	smb2_deltree(tree1, BASEDIR);
+	return ret;
+}
+
 /*
    basic testing of SMB2 rename
  */
@@ -1744,6 +1812,10 @@ struct torture_suite *torture_smb2_rename_init(TALLOC_CTX *ctx)
 	torture_suite_add_2smb2_test(suite,
 		"close-full-information",
 		test_smb2_close_full_information);
+
+	torture_suite_add_2smb2_test(suite,
+		"rename-open",
+		torture_smb2_rename_open);
 
 	suite->description = talloc_strdup(suite, "smb2.rename tests");
 
