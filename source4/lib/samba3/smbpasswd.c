@@ -89,14 +89,11 @@ char *smbpasswd_sethexpwd(TALLOC_CTX *mem_ctx, struct samr_Password *pwd, uint16
 {
 	char *p;
 	if (pwd != NULL) {
-		int i;
 		p = talloc_array(mem_ctx, char, 33);
 		if (!p) {
 			return NULL;
 		}
-
-		for (i = 0; i < sizeof(pwd->hash); i++)
-			slprintf(&p[i*2], 3, "%02X", pwd->hash[i]);
+		hex_encode_buf(p, pwd->hash, sizeof(pwd->hash));
 	} else {
 		if (acb_info & ACB_PWNOTREQ)
 			p = talloc_strdup(mem_ctx, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
