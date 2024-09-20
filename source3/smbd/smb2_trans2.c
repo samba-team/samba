@@ -4289,22 +4289,26 @@ static NTSTATUS smb_file_mode_information(connection_struct *conn,
  Deal with SMB2_FILE_RENAME_INFORMATION_INTERNAL
 ****************************************************************************/
 
-static NTSTATUS smb2_file_rename_information(connection_struct *conn,
+NTSTATUS smb2_parse_file_rename_information(TALLOC_CTX *ctx,
+					    struct connection_struct *conn,
 					    struct smb_request *req,
 					    const char *pdata,
 					    int total_data,
 					    files_struct *fsp,
-					    struct smb_filename *smb_fname_src)
+					    struct smb_filename *smb_fname_src,
+					    bool *_overwrite,
+					    struct files_struct **_dst_dirfsp,
+					    struct smb_filename **_smb_fname_dst,
+					    char **_dst_original_lcomp)
 {
-	bool overwrite;
-	uint32_t len;
 	char *newname = NULL;
 	struct files_struct *dst_dirfsp = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
-	const char *dst_original_lcomp = NULL;
+	char *dst_original_lcomp = NULL;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
-	NTSTATUS status = NT_STATUS_OK;
-	TALLOC_CTX *ctx = talloc_tos();
+	bool overwrite = false;
+	uint32_t len;
+	NTSTATUS status;
 
 	if (!fsp) {
 		return NT_STATUS_INVALID_HANDLE;
@@ -4340,6 +4344,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 	status = check_path_syntax(newname,
 			fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(newname);
 		return status;
 	}
 
@@ -4354,9 +4359,10 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 					fsp->base_fsp->fsp_name->twrp,
 					fsp->base_fsp->fsp_name->flags);
 		if (smb_fname_dst == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto out;
+			TALLOC_FREE(newname);
+			return NT_STATUS_NO_MEMORY;
 		}
+		goto done;
 	} else {
 		status = filename_convert_dirfsp(ctx,
 						 conn,
@@ -4366,7 +4372,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 						 &dst_dirfsp,
 						 &smb_fname_dst);
 		if (!NT_STATUS_IS_OK(status)) {
-			goto out;
+			return status;
 		}
 	}
 
@@ -4379,8 +4385,46 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 					newname,
 					ucf_flags);
 	if (dst_original_lcomp == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
+		TALLOC_FREE(newname);
+		TALLOC_FREE(smb_fname_dst);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+done:
+	*_overwrite = overwrite;
+	*_dst_dirfsp = dst_dirfsp;
+	*_smb_fname_dst = smb_fname_dst;
+	*_dst_original_lcomp = dst_original_lcomp;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS smb2_file_rename_information(connection_struct *conn,
+					    struct smb_request *req,
+					    const char *pdata,
+					    int total_data,
+					    files_struct *fsp,
+					    struct smb_filename *smb_fname_src)
+{
+	bool overwrite;
+	struct files_struct *dst_dirfsp = NULL;
+	struct smb_filename *smb_fname_dst = NULL;
+	char *dst_original_lcomp = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+	TALLOC_CTX *ctx = talloc_tos();
+
+	status = smb2_parse_file_rename_information(ctx,
+						    conn,
+						    req,
+						    pdata,
+						    total_data,
+						    fsp,
+						    smb_fname_src,
+						    &overwrite,
+						    &dst_dirfsp,
+						    &smb_fname_dst,
+						    &dst_original_lcomp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	DBG_DEBUG("SMB_FILE_RENAME_INFORMATION (%s) %s -> %s\n",
@@ -4395,7 +4439,6 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 				(FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM),
 				overwrite);
 
- out:
 	TALLOC_FREE(smb_fname_dst);
 	return status;
 }
