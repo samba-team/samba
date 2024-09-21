@@ -56,7 +56,17 @@ class smb_pipe_socket(object):
         return
 
     def close(self):
-        self.smbconn.close(self.smbfid)
+        try:
+            self.smbconn.close(self.smbfid)
+        except NTSTATUSError as e:
+            if e.args[0] == NT_STATUS_CONNECTION_DISCONNECTED:
+                pass
+            elif e.args[0] == NT_STATUS_PIPE_DISCONNECTED:
+                pass
+            elif e.args[0] == NT_STATUS_IO_TIMEOUT:
+                pass
+            else:
+                raise e
         del self.smbconn
 
     def settimeout(self, timeo):
