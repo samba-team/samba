@@ -1265,6 +1265,42 @@ static PyObject *py_cli_close(struct py_cli_state *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_wire_mode_to_unix(struct py_cli_state *self,
+				      PyObject *args)
+{
+	unsigned long long wire = 0;
+	mode_t mode;
+	bool ok;
+	PyObject *v = NULL;
+
+	ok = PyArg_ParseTuple(args, "K", &wire);
+	if (!ok) {
+		return NULL;
+	}
+	mode = wire_mode_to_unix(wire);
+
+	v = Py_BuildValue("I", (unsigned)mode);
+	return v;
+}
+
+static PyObject *py_unix_mode_to_wire(struct py_cli_state *self,
+				      PyObject *args)
+{
+	unsigned long long mode = 0;
+	uint32_t wire;
+	bool ok;
+	PyObject *v = NULL;
+
+	ok = PyArg_ParseTuple(args, "K", &mode);
+	if (!ok) {
+		return NULL;
+	}
+	wire = unix_mode_to_wire(mode);
+
+	v = Py_BuildValue("I", (unsigned)wire);
+	return v;
+}
+
 static PyObject *py_cli_qfileinfo(struct py_cli_state *self, PyObject *args)
 {
 	struct tevent_req *req = NULL;
@@ -2871,6 +2907,18 @@ static PyTypeObject py_cli_state_type = {
 };
 
 static PyMethodDef py_libsmb_methods[] = {
+	{
+		"unix_mode_to_wire",
+		(PyCFunction)py_unix_mode_to_wire,
+		METH_VARARGS,
+		"Convert mode_t to posix extensions wire format",
+	},
+	{
+		"wire_mode_to_unix",
+		(PyCFunction)py_wire_mode_to_unix,
+		METH_VARARGS,
+		"Convert posix wire format mode to mode_t",
+	},
 	{0},
 };
 
