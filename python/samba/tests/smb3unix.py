@@ -372,10 +372,13 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
                 posix=True)
             self.assertTrue(c.have_posix())
 
+            wire_mode = libsmb.unix_mode_to_wire(
+                stat.S_IFREG|stat.S_IWUSR|stat.S_IRUSR)
+
             f,_,cc_out = c.create_ex('\\test_create_context_basic1_file',
                                      DesiredAccess=security.SEC_STD_ALL,
                                      CreateDisposition=libsmb.FILE_CREATE,
-                                     CreateContexts=[posix_context(0o600)])
+                                     CreateContexts=[posix_context(wire_mode)])
             c.close(f)
 
             cc = ndr_unpack(smb3posix.smb3_posix_cc_info, cc_out[0][1])
@@ -386,11 +389,14 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
             self.assertEqual(cc.owner, dom_sid(self.samsid + "-1000"))
             self.assertTrue(str(cc.group).startswith("S-1-22-2-"))
 
+            wire_mode = libsmb.unix_mode_to_wire(
+                stat.S_IFREG|stat.S_IRUSR|stat.S_IWUSR|stat.S_IXUSR)
+
             f,_,cc_out = c.create_ex('\\test_create_context_basic1_dir',
                                      DesiredAccess=security.SEC_STD_ALL,
                                      CreateDisposition=libsmb.FILE_CREATE,
                                      CreateOptions=libsmb.FILE_DIRECTORY_FILE,
-                                     CreateContexts=[posix_context(0o700)])
+                                     CreateContexts=[posix_context(wire_mode)])
 
             c.close(f)
 
