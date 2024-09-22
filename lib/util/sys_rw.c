@@ -216,7 +216,7 @@ ssize_t sys_pread_full(int fd, void *buf, size_t count, off_t off)
 			break;
 		}
 
-		if (ret > curr_count) {
+		if ((size_t)ret > curr_count) {
 			errno = EIO;
 			return -1;
 		}
@@ -279,7 +279,7 @@ ssize_t sys_pwrite_full(int fd, const void *buf, size_t count, off_t off)
 			return -1;
 		}
 
-		if (ret > curr_count) {
+		if ((size_t)ret > curr_count) {
 			errno = EIO;
 			return -1;
 		}
@@ -318,7 +318,7 @@ ssize_t sys_write_full(int fd, const void *buf, size_t count)
 			return -1;
 		}
 
-		if (ret > curr_count) {
+		if ((size_t)ret > curr_count) {
 			errno = EIO;
 			return -1;
 		}
