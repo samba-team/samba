@@ -26,6 +26,7 @@ from samba.dcerpc.security import dom_sid
 from samba import reparse_symlink
 import os
 import subprocess
+import stat
 
 def posix_context(mode):
     return (libsmb.SMB2_CREATE_TAG_POSIX, mode.to_bytes(4, 'little'))
@@ -68,6 +69,13 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
             posix=posix2)
 
         return (conn1, conn2)
+
+    def wire_mode_to_unix(self, wire):
+        mode = libsmb.wire_mode_to_unix(wire)
+        type = stat.S_IFMT(mode)
+        perms = mode & (stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO|
+                        stat.S_ISUID|stat.S_ISGID|stat.S_ISVTX)
+        return (type, perms)
 
     def test_negotiate_context_posix(self):
         c = libsmb.Conn(
@@ -384,7 +392,11 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
                 self.assertEqual(cc.nlinks, 2)
 
             self.assertEqual(cc.reparse_tag, libsmb.IO_REPARSE_TAG_RESERVED_ZERO)
-            self.assertEqual(cc.posix_mode, 0o700)
+
+            (type, perms) = self.wire_mode_to_unix(cc.posix_mode);
+            self.assertEqual(type, stat.S_IFDIR)
+            self.assertEqual(perms, 0o700)
+
             self.assertEqual(cc.owner, dom_sid(self.samsid + "-1000"))
             self.assertTrue(str(cc.group).startswith("S-1-22-2-"))
 
