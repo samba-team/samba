@@ -305,6 +305,7 @@ struct dcesrv_connection {
 	struct dcesrv_auth *default_auth_state;
 	size_t max_auth_states;
 	struct dcesrv_auth *auth_states;
+	bool got_explicit_auth_level_non_connect;
 	bool got_explicit_auth_level_connect;
 	struct dcesrv_auth *default_auth_level_connect;
 	bool client_hdr_signing;
