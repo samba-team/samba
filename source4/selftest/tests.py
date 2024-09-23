@@ -1368,14 +1368,19 @@ planoldpythontestsuite(
 planoldpythontestsuite("ad_dc_ntvfs", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("ad_dc", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
 
-for env in ["chgdcpass", "ad_member"]:
-    planoldpythontestsuite(env, "samba.tests.dcerpc.raw_protocol",
-                           environ={"MAX_NUM_AUTH": "8",
-                                    "ALLOW_BIND_AUTH_PAD": "1",
-                                    "AUTH_LEVEL_CONNECT_LSA": "1",
-                                    "LEGACY_BIND_NACK_NO_REASON": "1",
-                                    "USERNAME": "$DC_USERNAME",
-                                    "PASSWORD": "$DC_PASSWORD"})
+planoldpythontestsuite("chgdcpass", "samba.tests.dcerpc.raw_protocol",
+                       environ={"MAX_NUM_AUTH": "8",
+                                "ALLOW_BIND_AUTH_PAD": "1",
+                                "LEGACY_BIND_NACK_NO_REASON": "1",
+                                "USERNAME": "$DC_USERNAME",
+                                "PASSWORD": "$DC_PASSWORD"})
+planoldpythontestsuite("ad_member", "samba.tests.dcerpc.raw_protocol",
+                       environ={"MAX_NUM_AUTH": "8",
+                                "ALLOW_BIND_AUTH_PAD": "1",
+                                "AUTH_LEVEL_CONNECT_LSA": "1",
+                                "LEGACY_BIND_NACK_NO_REASON": "1",
+                                "USERNAME": "$DC_USERNAME",
+                                "PASSWORD": "$DC_PASSWORD"})
 
 if have_heimdal_support:
     planoldpythontestsuite("ad_dc_smb1:local", "samba.tests.auth_log", extra_args=['-U"$USERNAME%$PASSWORD"'],
