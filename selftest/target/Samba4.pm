@@ -2208,7 +2208,6 @@ sub provision_chgdcpass($$)
 
 	my $extra_smb_conf = "
 	check password script = $self->{srcdir}/selftest/checkpassword_arg1.sh ${unacceptable_password}
-	allow dcerpc auth level connect:lsarpc = yes
 	dcesrv:max auth states = 8
         drs:broken_samba_4.5_get_anc_emulation = true
         drs:get_tgt_support = false
