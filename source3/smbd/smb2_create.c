@@ -1683,8 +1683,7 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 		struct stat_ex *psbuf = &state->result->fsp_name->st;
 		struct smb3_posix_cc_info cc = {
 			.nlinks = psbuf->st_ex_nlink,
-			.posix_mode = unix_perms_to_wire(psbuf->st_ex_mode &
-							 ~S_IFMT),
+			.posix_mode = unix_mode_to_wire(psbuf->st_ex_mode),
 		};
 		uint8_t buf[sizeof(struct smb3_posix_cc_info)];
 		struct ndr_push ndr = {
