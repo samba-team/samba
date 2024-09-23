@@ -42,7 +42,7 @@ void smb3_file_posix_information_init(
 		.change_time = unix_timespec_to_nt_time(st->st_ex_ctime),
 		.cc.nlinks = st->st_ex_nlink,
 		.cc.reparse_tag = reparse_tag,
-		.cc.posix_perms = unix_perms_to_wire(st->st_ex_mode & ~S_IFMT),
+		.cc.posix_mode = unix_perms_to_wire(st->st_ex_mode & ~S_IFMT),
 		.cc.owner = global_sid_NULL,
 		.cc.group = global_sid_NULL,
 	};

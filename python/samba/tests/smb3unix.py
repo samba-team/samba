@@ -363,7 +363,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
 
             self.assertEqual(cc.nlinks, 1)
             self.assertEqual(cc.reparse_tag, libsmb.IO_REPARSE_TAG_RESERVED_ZERO)
-            self.assertEqual(cc.posix_perms, 0o600)
+            self.assertEqual(cc.posix_mode, 0o600)
             self.assertEqual(cc.owner, dom_sid(self.samsid + "-1000"))
             self.assertTrue(str(cc.group).startswith("S-1-22-2-"))
 
@@ -384,7 +384,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
                 self.assertEqual(cc.nlinks, 2)
 
             self.assertEqual(cc.reparse_tag, libsmb.IO_REPARSE_TAG_RESERVED_ZERO)
-            self.assertEqual(cc.posix_perms, 0o700)
+            self.assertEqual(cc.posix_mode, 0o700)
             self.assertEqual(cc.owner, dom_sid(self.samsid + "-1000"))
             self.assertTrue(str(cc.group).startswith("S-1-22-2-"))
 

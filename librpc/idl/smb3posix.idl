@@ -47,7 +47,7 @@ interface smb3posix
 	typedef [public,flag(NDR_NOALIGN)] struct {
 		uint32 nlinks;
 		uint32 reparse_tag;
-		uint32 posix_perms;
+		uint32 posix_mode;
 		dom_sid owner;
 		dom_sid group;
 	} smb3_posix_cc_info;
