@@ -2006,6 +2006,16 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 				  auth->auth_level,
 				  derpc_transport_string_by_transport(transport),
 				  addr));
+			if (!call->conn->got_explicit_auth_level_non_connect) {
+				/*
+				 * If there was is no auth context with
+				 * a level higher than DCERPC_AUTH_LEVEL_CONNECT,
+				 * the connection should be disconnected
+				 * after sending the fault.
+				 */
+				return dcesrv_fault_disconnect0(call,
+						DCERPC_FAULT_ACCESS_DENIED);
+			}
 			return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
 		}
 		break;
@@ -2026,6 +2036,16 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 			  auth->auth_level,
 			  derpc_transport_string_by_transport(transport),
 			  addr));
+		if (!call->conn->got_explicit_auth_level_non_connect) {
+			/*
+			 * If there was is no auth context with
+			 * a level higher than DCERPC_AUTH_LEVEL_CONNECT,
+			 * the connection should be disconnected
+			 * after sending the fault.
+			 */
+			return dcesrv_fault_disconnect0(call,
+					DCERPC_FAULT_ACCESS_DENIED);
+		}
 		return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
 	}
 
@@ -2197,6 +2217,8 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 			dce_conn->default_auth_level_connect = NULL;
 			if (auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
 				dce_conn->got_explicit_auth_level_connect = true;
+			} else if (auth_level >= DCERPC_AUTH_LEVEL_PACKET) {
+				dce_conn->got_explicit_auth_level_non_connect = true;
 			}
 		}
 
