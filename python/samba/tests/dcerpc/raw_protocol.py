@@ -358,12 +358,22 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_NAK, req.call_id,
                         auth_length=0)
-        self.assertEqual(rep.u.reject_reason,
-                          dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
+        if self.legacy_bind_nak_no_reason:
+            # legacy e.g. w2012r2
+            expected_reject_reason = dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED
+        else:
+            # modern (e.g. w2022)
+            expected_reject_reason = dcerpc.DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED
+        self.assertEqual(rep.u.reject_reason, expected_reject_reason)
         self.assertEqual(rep.u.num_versions, 1)
         self.assertEqual(rep.u.versions[0].rpc_vers, req.rpc_vers)
         self.assertEqual(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
         self.assertPadding(rep.u._pad, 3)
+
+        # wait for a disconnect
+        rep = self.recv_pdu()
+        self.assertIsNone(rep)
+        self.assertNotConnected()
 
     def test_invalid_auth_noctx(self):
         req = self.generate_bind(call_id=0)
@@ -378,6 +388,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEqual(rep.u.versions[0].rpc_vers, req.rpc_vers)
         self.assertEqual(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
         self.assertPadding(rep.u._pad, 3)
+        # wait for a disconnect
+        rep = self.recv_pdu()
+        self.assertIsNone(rep)
+        self.assertNotConnected()
 
     def test_no_auth_valid_valid_request(self):
         ndr32 = base.transfer_syntax_ndr()
@@ -440,8 +454,13 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_NAK, req.call_id,
                         auth_length=0)
-        self.assertEqual(rep.u.reject_reason,
-                          dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
+        if self.legacy_bind_nak_no_reason:
+            # legacy e.g. w2012r2
+            expected_reject_reason = dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED
+        else:
+            # modern (e.g. w2022)
+            expected_reject_reason = dcerpc.DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED
+        self.assertEqual(rep.u.reject_reason, expected_reject_reason)
         self.assertEqual(rep.u.num_versions, 1)
         self.assertEqual(rep.u.versions[0].rpc_vers, req.rpc_vers)
         self.assertEqual(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
@@ -5200,6 +5219,21 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                  auth_info=auth_info)
         self.send_pdu(req)
         rep = self.recv_pdu()
+        if not self.allow_bind_auth_pad:
+            # modern server (e.g. 2022)
+            self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_NAK, req.call_id,
+                            auth_length=0)
+            self.assertEqual(rep.u.reject_reason,
+                              dcerpc.DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED)
+            self.assertEqual(rep.u.num_versions, 1)
+            self.assertEqual(rep.u.versions[0].rpc_vers, req.rpc_vers)
+            self.assertEqual(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
+            self.assertPadding(rep.u._pad, 3)
+            # wait for a disconnect
+            rep = self.recv_pdu()
+            self.assertIsNone(rep)
+            self.assertNotConnected()
+            return
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
@@ -5414,6 +5448,21 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                  auth_info=auth_info)
         self.send_pdu(req)
         rep = self.recv_pdu()
+        if not self.allow_bind_auth_pad:
+            # modern server (e.g. 2022)
+            self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_NAK, req.call_id,
+                            auth_length=0)
+            self.assertEqual(rep.u.reject_reason,
+                              dcerpc.DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED)
+            self.assertEqual(rep.u.num_versions, 1)
+            self.assertEqual(rep.u.versions[0].rpc_vers, req.rpc_vers)
+            self.assertEqual(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
+            self.assertPadding(rep.u._pad, 3)
+            # wait for a disconnect
+            rep = self.recv_pdu()
+            self.assertIsNone(rep)
+            self.assertNotConnected()
+            return
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
@@ -5526,6 +5575,21 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                  auth_info=auth_info)
         self.send_pdu(req)
         rep = self.recv_pdu()
+        if not self.allow_bind_auth_pad:
+            # modern server (e.g. 2022)
+            self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_NAK, req.call_id,
+                            auth_length=0)
+            self.assertEqual(rep.u.reject_reason,
+                              dcerpc.DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED)
+            self.assertEqual(rep.u.num_versions, 1)
+            self.assertEqual(rep.u.versions[0].rpc_vers, req.rpc_vers)
+            self.assertEqual(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
+            self.assertPadding(rep.u._pad, 3)
+            # wait for a disconnect
+            rep = self.recv_pdu()
+            self.assertIsNone(rep)
+            self.assertNotConnected()
+            return
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
@@ -5645,6 +5709,21 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                  auth_info=auth_info)
         self.send_pdu(req)
         rep = self.recv_pdu()
+        if not self.allow_bind_auth_pad:
+            # modern server (e.g. 2022)
+            self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_NAK, req.call_id,
+                            auth_length=0)
+            self.assertEqual(rep.u.reject_reason,
+                              dcerpc.DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED)
+            self.assertEqual(rep.u.num_versions, 1)
+            self.assertEqual(rep.u.versions[0].rpc_vers, req.rpc_vers)
+            self.assertEqual(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
+            self.assertPadding(rep.u._pad, 3)
+            # wait for a disconnect
+            rep = self.recv_pdu()
+            self.assertIsNone(rep)
+            self.assertNotConnected()
+            return
         self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
         self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
         self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
@@ -6631,13 +6710,29 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                     auth_context=auth_context1)
 
         #
+        # Note modern servers don't allow
+        # DCERPC_AUTH_LEVEL_CONNECT for lsa anymore
+        #
+        if self.auth_level_connect_lsa:
+            expected_fault_status = None
+        else:
+            expected_fault_status = dcerpc.DCERPC_FAULT_ACCESS_DENIED
+
+        #
         # With just one explicit auth context and that
         # uses AUTH_LEVEL_CONNECT context.
         #
         # We always get that by default instead of the one default one
         # inherited from the transport
         #
-        self.do_single_request(call_id=1, ctx=ctx1, io=get_user_name)
+        self.do_single_request(call_id=1, ctx=ctx1, io=get_user_name,
+                               fault_status=expected_fault_status)
+        if not self.auth_level_connect_lsa:
+            # wait for a disconnect
+            rep = self.recv_pdu()
+            self.assertIsNone(rep)
+            self.assertNotConnected()
+            return
         self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
         self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
         self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
@@ -6765,13 +6860,29 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                     start_with_alter=True)
 
         #
+        # Note modern servers don't allow
+        # DCERPC_AUTH_LEVEL_CONNECT for lsa anymore
+        #
+        if self.auth_level_connect_lsa:
+            expected_fault_status = None
+        else:
+            expected_fault_status = dcerpc.DCERPC_FAULT_ACCESS_DENIED
+
+        #
         # With just one explicit auth context and that
         # uses AUTH_LEVEL_CONNECT context.
         #
         # We always get that by default instead of the one default one
         # inherited from the transport
         #
-        self.do_single_request(call_id=3, ctx=ctx1, io=get_user_name)
+        self.do_single_request(call_id=3, ctx=ctx1, io=get_user_name,
+                               fault_status=expected_fault_status)
+        if not self.auth_level_connect_lsa:
+            # wait for a disconnect
+            rep = self.recv_pdu()
+            self.assertIsNone(rep)
+            self.assertNotConnected()
+            return
         self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
         self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
         self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
@@ -6899,6 +7010,15 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                     start_with_alter=True)
 
         #
+        # Note modern servers don't allow
+        # DCERPC_AUTH_LEVEL_CONNECT for lsa anymore
+        #
+        if self.auth_level_connect_lsa:
+            expected_fault_status = None
+        else:
+            expected_fault_status = dcerpc.DCERPC_FAULT_ACCESS_DENIED
+
+        #
         # With just one explicit auth context and that
         # uses AUTH_LEVEL_CONNECT context.
         #
@@ -6907,7 +7027,14 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #
         # Until an explicit usage resets that mode
         #
-        self.do_single_request(call_id=3, ctx=ctx1, io=get_user_name)
+        self.do_single_request(call_id=3, ctx=ctx1, io=get_user_name,
+                               fault_status=expected_fault_status)
+        if not self.auth_level_connect_lsa:
+            # wait for a disconnect
+            rep = self.recv_pdu()
+            self.assertIsNone(rep)
+            self.assertNotConnected()
+            return
         self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
         self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
         self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
@@ -7065,6 +7192,15 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                     start_with_alter=True)
 
         #
+        # Note modern servers don't allow
+        # DCERPC_AUTH_LEVEL_CONNECT for lsa anymore
+        #
+        if self.auth_level_connect_lsa:
+            expected_fault_status = None
+        else:
+            expected_fault_status = dcerpc.DCERPC_FAULT_ACCESS_DENIED
+
+        #
         # With just one explicit auth context and that
         # uses AUTH_LEVEL_CONNECT context.
         #
@@ -7073,7 +7209,14 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #
         # Until a new explicit context resets the mode
         #
-        self.do_single_request(call_id=3, ctx=ctx1, io=get_user_name)
+        self.do_single_request(call_id=3, ctx=ctx1, io=get_user_name,
+                               fault_status=expected_fault_status)
+        if not self.auth_level_connect_lsa:
+            # wait for a disconnect
+            rep = self.recv_pdu()
+            self.assertIsNone(rep)
+            self.assertNotConnected()
+            return
         self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
         self.assertEqualsStrLower(get_user_name.out_account_name, account_name1)
         self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name1)
@@ -7090,9 +7233,25 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                     start_with_alter=True)
 
         #
+        # Note modern servers don't allow
+        # DCERPC_AUTH_LEVEL_CONNECT for lsa anymore
+        #
+        if self.auth_level_connect_lsa:
+            expected_fault_status = None
+        else:
+            expected_fault_status = dcerpc.DCERPC_FAULT_ACCESS_DENIED
+
+        #
         # A new auth context with LEVEL_CONNECT resets the default.
         #
-        self.do_single_request(call_id=6, ctx=ctx1, io=get_user_name)
+        self.do_single_request(call_id=6, ctx=ctx1, io=get_user_name,
+                               fault_status=expected_fault_status)
+        if not self.auth_level_connect_lsa:
+            # wait for a disconnect
+            rep = self.recv_pdu()
+            self.assertIsNone(rep)
+            self.assertNotConnected()
+            return
         self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
         self.assertEqualsStrLower(get_user_name.out_account_name, account_name2)
         self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name2)
@@ -7266,6 +7425,15 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                     auth_context=auth_context1)
 
         #
+        # Note modern servers don't allow
+        # DCERPC_AUTH_LEVEL_CONNECT for lsa anymore
+        #
+        if self.auth_level_connect_lsa:
+            expected_fault_status = None
+        else:
+            expected_fault_status = dcerpc.DCERPC_FAULT_ACCESS_DENIED
+
+        #
         # With just one explicit auth context and that
         # *not* uses AUTH_LEVEL_CONNECT context.
         #
@@ -7336,15 +7504,19 @@ class TestDCERPC_BIND(RawDCERPCTest):
         #
         # Until an explicit usage of any auth context reset that mode.
         #
-        self.do_single_request(call_id=10, ctx=ctx1, io=get_user_name)
-        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
-        self.assertEqualsStrLower(get_user_name.out_account_name, account_name3)
-        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name3)
+        self.do_single_request(call_id=10, ctx=ctx1, io=get_user_name,
+                               fault_status=expected_fault_status)
+        if self.auth_level_connect_lsa:
+            self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+            self.assertEqualsStrLower(get_user_name.out_account_name, account_name3)
+            self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name3)
 
-        self.do_single_request(call_id=11, ctx=ctx1, io=get_user_name)
-        self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
-        self.assertEqualsStrLower(get_user_name.out_account_name, account_name3)
-        self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name3)
+        self.do_single_request(call_id=11, ctx=ctx1, io=get_user_name,
+                               fault_status=expected_fault_status)
+        if self.auth_level_connect_lsa:
+            self.assertEqual(get_user_name.result[0], NT_STATUS_SUCCESS)
+            self.assertEqualsStrLower(get_user_name.out_account_name, account_name3)
+            self.assertEqualsStrLower(get_user_name.out_authority_name.value, authority_name3)
 
         self.do_single_request(call_id=12, ctx=ctx1, io=get_user_name,
                                auth_context=auth_context1)

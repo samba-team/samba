@@ -162,6 +162,12 @@ class RawDCERPCTest(TestCase):
 
         self.ignore_random_pad = samba.tests.env_get_var_value('IGNORE_RANDOM_PAD',
                                                                allow_missing=True)
+        self.auth_level_connect_lsa = samba.tests.env_get_var_value('AUTH_LEVEL_CONNECT_LSA',
+                                                                    allow_missing=True)
+        self.allow_bind_auth_pad = samba.tests.env_get_var_value('ALLOW_BIND_AUTH_PAD',
+                                                                 allow_missing=True)
+        self.legacy_bind_nak_no_reason = samba.tests.env_get_var_value('LEGACY_BIND_NACK_NO_REASON',
+                                                                       allow_missing=True)
         self.host = samba.tests.env_get_var_value('SERVER')
         self.target_hostname = samba.tests.env_get_var_value('TARGET_HOSTNAME', allow_missing=True)
         if self.target_hostname is None:
