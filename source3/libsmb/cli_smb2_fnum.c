@@ -1266,7 +1266,7 @@ static NTSTATUS parse_finfo_posix_info(const uint8_t *dir_data,
 	finfo->st_ex_dev = info.device;
 	finfo->st_ex_nlink = info.cc.nlinks;
 	finfo->reparse_tag = info.cc.reparse_tag;
-	finfo->st_ex_mode = wire_perms_to_unix(info.cc.posix_mode);
+	finfo->st_ex_mode = wire_mode_to_unix(info.cc.posix_mode);
 	sid_copy(&finfo->owner_sid, &info.cc.owner);
 	sid_copy(&finfo->group_sid, &info.cc.group);
 
