@@ -1141,7 +1141,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 
 	if (call->pkt.u.bind.num_contexts < 1) {
-		return dcesrv_bind_nak(call, 0);
+		return dcesrv_bind_nak(call,
+			DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED);
 	}
 
 	ack_ctx_list = talloc_zero_array(call, struct dcerpc_ack_ctx,
