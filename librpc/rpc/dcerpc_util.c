@@ -324,11 +324,20 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 	 * protection for REQUEST and RESPONSE pdus, where the
 	 * auth_pad_length field is actually used by the caller.
 	 */
-	tmp_length = DCERPC_REQUEST_LENGTH;
-	tmp_length += DCERPC_AUTH_TRAILER_LENGTH;
-	tmp_length += pkt->auth_length;
-	if (tmp_length < pkt->frag_length) {
-		max_pad_len = pkt->frag_length - tmp_length;
+	switch (pkt->ptype) {
+	case DCERPC_PKT_BIND:
+	case DCERPC_PKT_ALTER:
+	case DCERPC_PKT_AUTH3:
+		max_pad_len = 0;
+		break;
+	default:
+		tmp_length = DCERPC_REQUEST_LENGTH;
+		tmp_length += DCERPC_AUTH_TRAILER_LENGTH;
+		tmp_length += pkt->auth_length;
+		if (tmp_length < pkt->frag_length) {
+			max_pad_len = pkt->frag_length - tmp_length;
+		}
+		break;
 	}
 	if (max_pad_len < auth->auth_pad_length) {
 		DEBUG(1, (__location__ ": ERROR: pad length too large. "
