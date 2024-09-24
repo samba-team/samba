@@ -1171,6 +1171,8 @@ NTSTATUS vfs_fstreaminfo(struct files_struct *fsp,
 void init_smb_file_time(struct smb_file_time *ft);
 int vfs_fake_fd(void);
 int vfs_fake_fd_close(int fd);
+uint32_t vfs_get_fs_capabilities(struct connection_struct *conn,
+				 enum timestamp_set_resolution *ts_res);
 
 /* The following definitions come from smbd/avahi_register.c */
 
