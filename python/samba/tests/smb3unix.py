@@ -321,7 +321,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
                     self.assertTrue(stat.S_ISREG(found_unixmode))
                     self.assertEqual(found_files[fname]['nlink'], 1)
                     self.assertEqual(found_files[fname]['size'], 4)
-                    self.assertEqual(found_files[fname]['allocaction_size'],
+                    self.assertEqual(found_files[fname]['allocation_size'],
                                      4096)
                     self.assertEqual(found_files[fname]['attrib'],
                                      libsmb.FILE_ATTRIBUTE_ARCHIVE)
