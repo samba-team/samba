@@ -34,20 +34,16 @@ def configure(conf):
             Logs.warn("NOTE: Some AD DC parts of selftest will fail")
 
         conf.env.REQUIRE_LMDB = False
-    else:
-        if Options.options.without_ad_dc:
-            conf.env.REQUIRE_LMDB = False
-        else:
-            if Options.options.without_ldb_lmdb:
-                if not Options.options.without_ad_dc and \
-                   conf.CONFIG_GET('ENABLE_SELFTEST'):
-                    raise Errors.WafError('--without-ldb-lmdb conflicts '
-                                         'with --enable-selftest while '
-                                         'building the AD DC')
+    elif Options.options.without_ldb_lmdb:
+        if not Options.options.without_ad_dc and \
+           conf.CONFIG_GET('ENABLE_SELFTEST'):
+            raise Errors.WafError('--without-ldb-lmdb conflicts '
+                                 'with --enable-selftest while '
+                                 'building the AD DC')
 
-                conf.env.REQUIRE_LMDB = False
-            else:
-                conf.env.REQUIRE_LMDB = True
+        conf.env.REQUIRE_LMDB = False
+    else:
+        conf.env.REQUIRE_LMDB = True
 
     # if lmdb support is enabled then we require lmdb
     # is present, build the mdb back end and enable lmdb support in
