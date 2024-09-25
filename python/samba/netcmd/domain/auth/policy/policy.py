@@ -26,7 +26,13 @@ from samba.domain.models import (MAX_TGT_LIFETIME, MIN_TGT_LIFETIME,
 from samba.domain.models.exceptions import ModelError
 from samba.netcmd import Command, CommandError, Option
 from samba.netcmd.validators import Range
+from samba.nt_time import NT_TICKS_PER_SEC
 
+def mins_to_tgt_lifetime(minutes):
+    """Convert minutes to the tgt_lifetime attributes unit which is 10^-7 seconds"""
+    if minutes is not None:
+        return minutes * 60 * NT_TICKS_PER_SEC
+    return minutes
 
 class UserOptions(options.OptionGroup):
     """User options used by policy create and policy modify commands."""
@@ -238,14 +244,14 @@ class cmd_domain_auth_policy_create(Command):
             description=description,
             strong_ntlm_policy=StrongNTLMPolicy[strong_ntlm_policy.upper()],
             user_allow_ntlm_auth=useropts.allow_ntlm_auth,
-            user_tgt_lifetime=useropts.tgt_lifetime,
+            user_tgt_lifetime=mins_to_tgt_lifetime(useropts.tgt_lifetime),
             user_allowed_to_authenticate_from=useropts.allowed_to_authenticate_from,
             user_allowed_to_authenticate_to=useropts.allowed_to_authenticate_to,
             service_allow_ntlm_auth=serviceopts.allow_ntlm_auth,
-            service_tgt_lifetime=serviceopts.tgt_lifetime,
+            service_tgt_lifetime=mins_to_tgt_lifetime(serviceopts.tgt_lifetime),
             service_allowed_to_authenticate_from=serviceopts.allowed_to_authenticate_from,
             service_allowed_to_authenticate_to=serviceopts.allowed_to_authenticate_to,
-            computer_tgt_lifetime=computeropts.tgt_lifetime,
+            computer_tgt_lifetime=mins_to_tgt_lifetime(computeropts.tgt_lifetime),
             computer_allowed_to_authenticate_to=computeropts.allowed_to_authenticate_to,
         )
 
@@ -346,7 +352,7 @@ class cmd_domain_auth_policy_modify(Command):
                 StrongNTLMPolicy[strong_ntlm_policy.upper()]
 
         if useropts.tgt_lifetime is not None:
-            policy.user_tgt_lifetime = useropts.tgt_lifetime
+            policy.user_tgt_lifetime = mins_to_tgt_lifetime(useropts.tgt_lifetime)
 
         if useropts.allowed_to_authenticate_from is not None:
             policy.user_allowed_to_authenticate_from = \
@@ -360,7 +366,7 @@ class cmd_domain_auth_policy_modify(Command):
         ##################
 
         if serviceopts.tgt_lifetime is not None:
-            policy.service_tgt_lifetime = serviceopts.tgt_lifetime
+            policy.service_tgt_lifetime = mins_to_tgt_lifetime(serviceopts.tgt_lifetime)
 
         if serviceopts.allowed_to_authenticate_from is not None:
             policy.service_allowed_to_authenticate_from = \
@@ -374,7 +380,7 @@ class cmd_domain_auth_policy_modify(Command):
         ###########
 
         if computeropts.tgt_lifetime is not None:
-            policy.computer_tgt_lifetime = computeropts.tgt_lifetime
+            policy.computer_tgt_lifetime = mins_to_tgt_lifetime(computeropts.tgt_lifetime)
 
         if computeropts.allowed_to_authenticate_to is not None:
             policy.computer_allowed_to_authenticate_to = \
