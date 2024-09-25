@@ -945,7 +945,7 @@ static int ldb_modules_load_path(const char *path, const char *version)
 	int dlopen_flags;
 
 #ifdef RTLD_DEEPBIND
-	bool deepbind_enabled = (getenv("LDB_MODULES_DISABLE_DEEPBIND") == NULL);
+	bool deepbind_enabled = (getenv("LDB_MODULES_ENABLE_DEEPBIND") != NULL);
 #endif
 
 	ret = stat(path, &st);
@@ -981,21 +981,12 @@ static int ldb_modules_load_path(const char *path, const char *version)
 	dlopen_flags = RTLD_NOW;
 #ifdef RTLD_DEEPBIND
 	/*
-	 * use deepbind if possible, to avoid issues with different
-	 * system library variants, for example ldb modules may be linked
-	 * against Heimdal while the application may use MIT kerberos.
+	 * On systems where e.g. different kerberos libraries are used, like a
+	 * mix of Heimdal and MIT Kerberos, LDB_MODULES_ENABLE_DEEPBIND should
+	 * be set to avoid issues.
 	 *
-	 * See the dlopen manpage for details.
-	 *
-	 * One typical user is the bind_dlz module of Samba,
-	 * but symbol versioning might be enough...
-	 *
-	 * We need a way to disable this in order to allow the
-	 * ldb_*ldap modules to work with a preloaded socket wrapper.
-	 *
-	 * So in future we may remove this completely
-	 * or at least invert the default behavior.
-	*/
+	 * By default Linux distributions only have one Kerberos library.
+	 */
 	if (deepbind_enabled) {
 		dlopen_flags |= RTLD_DEEPBIND;
 	}

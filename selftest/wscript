@@ -333,9 +333,8 @@ def cmd_testonly(opt):
         asan_options += ":suppressions=${srcdir}/selftest/sanitizer/asan.supp"
         asan_options += " "
 
-        # And we need to disable RTLD_DEEPBIND in ldb and socket wrapper
-        no_leak_check = "LDB_MODULES_DISABLE_DEEPBIND=1 "
-        no_leak_check += "SOCKET_WRAPPER_DISABLE_DEEP_BIND=1"
+        # We need to disable RTLD_DEEPBIND in socket wrapper
+        no_leak_check = "SOCKET_WRAPPER_DISABLE_DEEP_BIND=1"
         no_leak_check += " "
         env.CORE_COMMAND = asan_options + no_leak_check + env.CORE_COMMAND
 
