@@ -62,6 +62,7 @@ conf.define('USING_SYSTEM_HEIMDAL', 1)
 conf.CHECK_FUNCS('''
        krb5_get_init_creds_opt_set_fast_ccache
        krb5_get_init_creds_opt_set_fast_flags
+       krb5_init_creds_step
        ''',
      lib='krb5',
      headers='krb5.h')

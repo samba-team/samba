@@ -13,3 +13,5 @@ conf.RECURSE('third_party/heimdal_build')
 # when this will be available also in
 # system libraries...
 conf.define('HAVE_CLIENT_GSS_C_CHANNEL_BOUND_FLAG', 1)
+
+conf.define('HAVE_KRB5_INIT_CREDS_STEP', 1)
