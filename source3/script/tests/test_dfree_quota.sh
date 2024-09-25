@@ -191,9 +191,13 @@ test_smbcquotas()
 		mproto="-m SMB1"
 	fi
 
-	output=$($VALGRIND $smbcquotas $mproto //$SERVER/dfq "$@" 2>/dev/null)
+	smbcquotas_stderr="$(mktemp "${PREFIX_ABS}/smbcquotas.XXXXXXXXXX")"
+
+	output=$($VALGRIND $smbcquotas $mproto //$SERVER/dfq "$@" 2>"${smbcquotas_stderr}")
 	status=$?
 	if [ "$status" = "0" ]; then
+		rm "${smbcquotas_stderr}"
+
 		received=$(echo "$output" | tr '\\' '/' | awk "/$SERVER\\/$user/ {print \$3\$4\$5}")
 		if [ "$expected" = "$received" ]; then
 			subunit_pass_test "$name"
@@ -203,6 +207,9 @@ test_smbcquotas()
 			return 1
 		fi
 	else
+		cat "${smbcquotas_stderr}"
+		rm "${smbcquotas_stderr}"
+
 		echo "$output" | subunit_fail_test "$name"
 		return $status
 	fi
