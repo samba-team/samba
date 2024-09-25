@@ -244,6 +244,27 @@ ldb_search(3) manual pages.
 </refsect1>
 
 <refsect1>
+	<title>ENVIRONMENT VARIABLES</title>
+
+	<itemizedlist>
+		<listitem><para>
+			<envar>LDB_URL</envar>
+			 - connect to the provided URL (cmdline tools only)
+		</para></listitem>
+
+		<listitem><para>
+			<envar>LDB_MODULES_PATH</envar>
+			 - path where to load ldb modules from
+		</para></listitem>
+
+		<listitem><para>
+			<envar>LDB_MODULES_ENABLE_DEEPBIND</envar>
+			 - enable RTLD_DEEPBIND when loading ldb modules
+		</para></listitem>
+	</itemizedlist>
+</refsect1>
+
+<refsect1>
 	<title>Author</title>
 
 	<para>
