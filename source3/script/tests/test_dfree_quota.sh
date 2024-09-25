@@ -191,10 +191,10 @@ test_smbcquotas()
 		mproto="-m SMB1"
 	fi
 
-	output=$($VALGRIND $smbcquotas $mproto //$SERVER/dfq "$@" 2>/dev/null | tr '\\' '/')
+	output=$($VALGRIND $smbcquotas $mproto //$SERVER/dfq "$@" 2>/dev/null)
 	status=$?
 	if [ "$status" = "0" ]; then
-		received=$(echo "$output" | awk "/$SERVER\\/$user/ {printf \"%s%s%s\", \$3, \$4, \$5}")
+		received=$(echo "$output" | tr '\\' '/' | awk "/$SERVER\\/$user/ {print \$3\$4\$5}")
 		if [ "$expected" = "$received" ]; then
 			subunit_pass_test "$name"
 			return 0
