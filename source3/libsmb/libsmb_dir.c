@@ -2024,7 +2024,7 @@ SMBC_chmod_ctx(SMBCCTX *context,
 		TALLOC_FREE(frame);
 		return -1;  /* errno set by SMBC_server */
 	}
-	
+
 	creds = context->internal->creds;
 
 	/*d_printf(">>>unlink: resolving %s\n", path);*/
@@ -2415,13 +2415,13 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 		TALLOC_FREE(frame);
 		return -1;
 	}
-	
+
 	/* set the credentials to make DFS work */
 	smbc_set_credentials_with_fallback(ncontext,
 					   workgroup,
 				           user2,
 				           password2);
-	
+
 	/*d_printf(">>>rename: resolved path as %s\n", targetpath1);*/
 	/*d_printf(">>>rename: resolving %s\n", path2);*/
 	ncreds = ncontext->internal->creds;
