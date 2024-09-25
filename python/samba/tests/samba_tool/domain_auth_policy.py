@@ -27,11 +27,18 @@ from unittest.mock import patch
 from samba.dcerpc import security
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.netcmd.domain.models.exceptions import ModelError
+from samba.nt_time import NT_TICKS_PER_SEC
 from samba.samdb import SamDB
 from samba.sd_utils import SDUtils
 
 from .silo_base import SiloTest
 
+
+def mins_to_tgt_lifetime(minutes):
+    """Convert minutes to the tgt_lifetime attributes unit which is 10^-7 seconds"""
+    if minutes is not None:
+        return minutes * 60 * NT_TICKS_PER_SEC
+    return minutes
 
 class AuthPolicyCmdTestCase(SiloTest):
 
@@ -135,7 +142,7 @@ class AuthPolicyCmdTestCase(SiloTest):
         # Check policy fields.
         policy = self.get_authentication_policy(name)
         self.assertEqual(str(policy["cn"]), name)
-        self.assertEqual(str(policy["msDS-UserTGTLifetime"]), "60")
+        self.assertEqual(str(policy["msDS-UserTGTLifetime"]), str(mins_to_tgt_lifetime(60)))
 
         # check lower bounds (45)
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
@@ -254,7 +261,7 @@ class AuthPolicyCmdTestCase(SiloTest):
         # Check policy fields.
         policy = self.get_authentication_policy(name)
         self.assertEqual(str(policy["cn"]), name)
-        self.assertEqual(str(policy["msDS-ServiceTGTLifetime"]), "60")
+        self.assertEqual(str(policy["msDS-ServiceTGTLifetime"]), str(mins_to_tgt_lifetime(60)))
 
         # check lower bounds (45)
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
@@ -373,7 +380,7 @@ class AuthPolicyCmdTestCase(SiloTest):
         # Check policy fields.
         policy = self.get_authentication_policy(name)
         self.assertEqual(str(policy["cn"]), name)
-        self.assertEqual(str(policy["msDS-ComputerTGTLifetime"]), "60")
+        self.assertEqual(str(policy["msDS-ComputerTGTLifetime"]), str(mins_to_tgt_lifetime(60)))
 
         # check lower bounds (45)
         result, out, err = self.runcmd("domain", "auth", "policy", "create",
@@ -840,7 +847,7 @@ class AuthPolicyCmdTestCase(SiloTest):
 
         # Verify field was changed.
         policy = self.get_authentication_policy(name)
-        self.assertEqual(str(policy["msDS-UserTGTLifetime"]), "120")
+        self.assertEqual(str(policy["msDS-UserTGTLifetime"]), str(mins_to_tgt_lifetime(120)))
 
         # check lower bounds (45)
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
@@ -876,7 +883,7 @@ class AuthPolicyCmdTestCase(SiloTest):
 
         # Verify field was changed.
         policy = self.get_authentication_policy(name)
-        self.assertEqual(str(policy["msDS-ServiceTGTLifetime"]), "120")
+        self.assertEqual(str(policy["msDS-ServiceTGTLifetime"]), str(mins_to_tgt_lifetime(120)))
 
         # check lower bounds (45)
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
@@ -912,7 +919,7 @@ class AuthPolicyCmdTestCase(SiloTest):
 
         # Verify field was changed.
         policy = self.get_authentication_policy(name)
-        self.assertEqual(str(policy["msDS-ComputerTGTLifetime"]), "120")
+        self.assertEqual(str(policy["msDS-ComputerTGTLifetime"]), str(mins_to_tgt_lifetime(120)))
 
         # check lower bounds (45)
         result, out, err = self.runcmd("domain", "auth", "policy", "modify",
