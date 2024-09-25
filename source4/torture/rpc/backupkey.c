@@ -888,8 +888,11 @@ static bool test_RestoreGUID_ko(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_PARAMETER, "Wrong error code");
 	} else {
 		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		if (!dcerpc_binding_handle_is_connected(b)) {
+			torture_skip(tctx, "already disconnected");
+		}
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
-			NT_STATUS_ACCESS_DENIED, "Get GUID");
+			NT_STATUS_CONNECTION_DISCONNECTED, "Get GUID");
 	}
 
 	return true;
@@ -918,8 +921,11 @@ static bool test_RestoreGUID_wrongversion(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_PARAMETER, "Wrong error code on wrong version");
 	} else {
 		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		if (!dcerpc_binding_handle_is_connected(b)) {
+			torture_skip(tctx, "already disconnected");
+		}
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
-			NT_STATUS_ACCESS_DENIED, "Get GUID");
+			NT_STATUS_CONNECTION_DISCONNECTED, "Get GUID");
 	}
 
 	return true;
@@ -948,8 +954,11 @@ static bool test_RestoreGUID_wronguser(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_ACCESS, "Restore GUID");
 	} else {
 		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		if (!dcerpc_binding_handle_is_connected(b)) {
+			torture_skip(tctx, "already disconnected");
+		}
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
-			NT_STATUS_ACCESS_DENIED, "Get GUID");
+			NT_STATUS_CONNECTION_DISCONNECTED, "Get GUID");
 	}
 
 	return true;
@@ -979,8 +988,11 @@ static bool test_RestoreGUID_v3(struct torture_context *tctx,
 		torture_assert_str_equal(tctx, (char*)resp.secret.data, secret, "Wrong secret");
 	} else {
 		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		if (!dcerpc_binding_handle_is_connected(b)) {
+			torture_skip(tctx, "already disconnected");
+		}
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
-			NT_STATUS_ACCESS_DENIED, "Get GUID");
+			NT_STATUS_CONNECTION_DISCONNECTED, "Get GUID");
 	}
 
 	return true;
@@ -1012,8 +1024,11 @@ static bool test_RestoreGUID(struct torture_context *tctx,
 		torture_assert_str_equal(tctx, (char*)resp.secret.data, secret, "Wrong secret");
 	} else {
 		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		if (!dcerpc_binding_handle_is_connected(b)) {
+			torture_skip(tctx, "already disconnected");
+		}
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
-			NT_STATUS_ACCESS_DENIED, "Get GUID");
+			NT_STATUS_CONNECTION_DISCONNECTED, "Get GUID");
 	}
 
 	return true;
@@ -1042,8 +1057,11 @@ static bool test_RestoreGUID_badmagiconsecret(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_DATA, "Wrong error code while providing bad magic in secret");
 	} else {
 		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		if (!dcerpc_binding_handle_is_connected(b)) {
+			torture_skip(tctx, "already disconnected");
+		}
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
-			NT_STATUS_ACCESS_DENIED, "Get GUID");
+			NT_STATUS_CONNECTION_DISCONNECTED, "Get GUID");
 	}
 
 	return true;
@@ -1072,8 +1090,11 @@ static bool test_RestoreGUID_emptyrequest(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_PARAMETER, "Bad error code on wrong has in access check");
 	} else {
 		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		if (!dcerpc_binding_handle_is_connected(b)) {
+			torture_skip(tctx, "already disconnected");
+		}
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
-			NT_STATUS_ACCESS_DENIED, "Get GUID");
+			NT_STATUS_CONNECTION_DISCONNECTED, "Get GUID");
 	}
 
 	return true;
@@ -1109,8 +1130,11 @@ static bool test_RestoreGUID_badcertguid(struct torture_context *tctx,
 		}
 	} else {
 		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		if (!dcerpc_binding_handle_is_connected(b)) {
+			torture_skip(tctx, "already disconnected");
+		}
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
-			NT_STATUS_ACCESS_DENIED, "Get GUID");
+			NT_STATUS_CONNECTION_DISCONNECTED, "Get GUID");
 	}
 
 	return true;
@@ -1139,8 +1163,11 @@ static bool test_RestoreGUID_badmagicaccesscheck(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_DATA, "Bad error code on wrong has in access check");
 	} else {
 		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		if (!dcerpc_binding_handle_is_connected(b)) {
+			torture_skip(tctx, "already disconnected");
+		}
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
-			NT_STATUS_ACCESS_DENIED, "Get GUID");
+			NT_STATUS_CONNECTION_DISCONNECTED, "Get GUID");
 	}
 
 	return true;
@@ -1169,8 +1196,11 @@ static bool test_RestoreGUID_badhashaccesscheck(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_DATA, "Bad error code on wrong has in access check");
 	} else {
 		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
+		if (!dcerpc_binding_handle_is_connected(b)) {
+			torture_skip(tctx, "already disconnected");
+		}
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
-			NT_STATUS_ACCESS_DENIED, "Get GUID");
+			NT_STATUS_CONNECTION_DISCONNECTED, "Get GUID");
 	}
 
 	return true;
@@ -1369,9 +1399,12 @@ static bool test_RetrieveBackupKeyGUID_validate(struct torture_context *tctx,
 						2048,
 						"RSA Key doesn't have 2048 bits");
 	} else {
+		if (!dcerpc_binding_handle_is_connected(b)) {
+			torture_skip(tctx, "already disconnected");
+		}
 		torture_assert_ntstatus_equal(tctx,
 						dcerpc_bkrp_BackupKey_r(b, tctx, r),
-						NT_STATUS_ACCESS_DENIED,
+						NT_STATUS_CONNECTION_DISCONNECTED,
 						"Get GUID");
 	}
 
@@ -1411,9 +1444,12 @@ static bool test_ServerWrap_encrypt_decrypt(struct torture_context *tctx,
 					   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
 					   "encrypt");
 	} else {
+		if (!dcerpc_binding_handle_is_connected(b)) {
+			torture_skip(tctx, "already disconnected");
+		}
 		torture_assert_ntstatus_equal(tctx,
 					      dcerpc_bkrp_BackupKey_r(b, tctx, &r),
-					      NT_STATUS_ACCESS_DENIED,
+					      NT_STATUS_CONNECTION_DISCONNECTED,
 					      "encrypt");
 		return true;
 	}
@@ -1503,9 +1539,12 @@ static bool test_ServerWrap_decrypt_wrong_keyGUID(struct torture_context *tctx,
 					   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
 					   "encrypt");
 	} else {
+		if (!dcerpc_binding_handle_is_connected(b)) {
+			torture_skip(tctx, "already disconnected");
+		}
 		torture_assert_ntstatus_equal(tctx,
 					      dcerpc_bkrp_BackupKey_r(b, tctx, &r),
-					      NT_STATUS_ACCESS_DENIED,
+					      NT_STATUS_CONNECTION_DISCONNECTED,
 					      "encrypt");
 		return true;
 	}
@@ -1597,9 +1636,12 @@ static bool test_ServerWrap_decrypt_empty_request(struct torture_context *tctx,
 					   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
 					   "encrypt");
 	} else {
+		if (!dcerpc_binding_handle_is_connected(b)) {
+			torture_skip(tctx, "already disconnected");
+		}
 		torture_assert_ntstatus_equal(tctx,
 					      dcerpc_bkrp_BackupKey_r(b, tctx, &r),
-					      NT_STATUS_ACCESS_DENIED,
+					      NT_STATUS_CONNECTION_DISCONNECTED,
 					      "encrypt");
 		return true;
 	}
@@ -1694,9 +1736,12 @@ static bool test_ServerWrap_decrypt_short_request(struct torture_context *tctx,
 					   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
 					   "encrypt");
 	} else {
+		if (!dcerpc_binding_handle_is_connected(b)) {
+			torture_skip(tctx, "already disconnected");
+		}
 		torture_assert_ntstatus_equal(tctx,
 					      dcerpc_bkrp_BackupKey_r(b, tctx, &r),
-					      NT_STATUS_ACCESS_DENIED,
+					      NT_STATUS_CONNECTION_DISCONNECTED,
 					      "encrypt");
 		return true;
 	}
@@ -2107,9 +2152,12 @@ static bool test_ServerWrap_decrypt_wrong_stuff(struct torture_context *tctx,
 					   dcerpc_bkrp_BackupKey_r(b, tctx, &r),
 					   "encrypt");
 	} else {
+		if (!dcerpc_binding_handle_is_connected(b)) {
+			torture_skip(tctx, "already disconnected");
+		}
 		torture_assert_ntstatus_equal(tctx,
 					      dcerpc_bkrp_BackupKey_r(b, tctx, &r),
-					      NT_STATUS_ACCESS_DENIED,
+					      NT_STATUS_CONNECTION_DISCONNECTED,
 					      "encrypt");
 		return true;
 	}
