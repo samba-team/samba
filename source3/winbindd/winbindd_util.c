@@ -253,7 +253,6 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 	domain->domain_flags = trust_flags;
 	domain->domain_type = trust_type;
 	domain->domain_trust_attribs = trust_attribs;
-	domain->secure_channel_type = secure_channel_type;
 	domain->routing_domain = routing_domain;
 	sid_copy(&domain->sid, sid);
 
