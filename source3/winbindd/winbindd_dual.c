@@ -701,8 +701,6 @@ static void wb_domain_request_initialized(struct tevent_req *subreq)
 		}
 	}
 
-	state->domain->native_mode =
-			(*state->r.out.flags & WB_DOMINFO_DOMAIN_NATIVE);
 	state->domain->active_directory =
 			(*state->r.out.flags & WB_DOMINFO_DOMAIN_AD);
 	state->domain->initialized = true;

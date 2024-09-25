@@ -130,7 +130,6 @@ struct winbindd_domain {
 	uint32_t domain_trust_attribs;           /* Trust attribs from netlogon.h */
 	struct winbindd_domain *routing_domain;
 	bool initialized;		       /* Did we already ask for the domain mode? */
-	bool native_mode;                      /* is this a win2k domain in native mode ? */
 	bool active_directory;                 /* is this a win2k active directory ? */
 	bool primary;                          /* is this our primary domain ? */
 	bool internal;                         /* BUILTIN and member SAM */

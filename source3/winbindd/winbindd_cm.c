@@ -2157,16 +2157,6 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 			if ( domain->domain_type == LSA_TRUST_TYPE_UPLEVEL )
 				domain->active_directory = True;
 
-			/* This flag is only set if the domain is *our*
-			   primary domain and the primary domain is in
-			   native mode */
-
-			domain->native_mode = (domain->domain_flags & NETR_TRUST_FLAG_NATIVE);
-
-			DEBUG(5, ("set_dc_type_and_flags_trustinfo: domain %s is %sin "
-				  "native mode.\n", domain->name,
-				  domain->native_mode ? "" : "NOT "));
-
 			DEBUG(5,("set_dc_type_and_flags_trustinfo: domain %s is %s"
 				 "running active directory.\n", domain->name,
 				 domain->active_directory ? "" : "NOT "));
@@ -2196,11 +2186,9 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 {
 	NTSTATUS status, result;
 	NTSTATUS close_status = NT_STATUS_UNSUCCESSFUL;
-	WERROR werr;
 	TALLOC_CTX              *mem_ctx = NULL;
 	struct rpc_pipe_client  *cli = NULL;
 	struct policy_handle pol = { .handle_type = 0 };
-	union dssetup_DsRoleInfo info;
 	union lsa_PolicyInformation *lsa_info = NULL;
 	union lsa_revision_info out_revision_info = {
 		.info1 = {
@@ -2222,63 +2210,6 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 
 	DEBUG(5, ("set_dc_type_and_flags_connect: domain %s\n", domain->name ));
 
-	if (domain->internal) {
-		status = wb_open_internal_pipe(mem_ctx,
-					       &ndr_table_dssetup,
-					       &cli);
-	} else {
-		status = cli_rpc_pipe_open_noauth(domain->conn.cli,
-						  &ndr_table_dssetup,
-						  &cli);
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5, ("set_dc_type_and_flags_connect: Could not bind to "
-			  "PI_DSSETUP on domain %s: (%s)\n",
-			  domain->name, nt_errstr(status)));
-
-		/* if this is just a non-AD domain we need to continue
-		 * identifying so that we can in the end return with
-		 * domain->initialized = True - gd */
-
-		goto no_dssetup;
-	}
-
-	status = dcerpc_dssetup_DsRoleGetPrimaryDomainInformation(cli->binding_handle, mem_ctx,
-								  DS_ROLE_BASIC_INFORMATION,
-								  &info,
-								  &werr);
-	TALLOC_FREE(cli);
-
-	if (NT_STATUS_IS_OK(status)) {
-		result = werror_to_ntstatus(werr);
-	}
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5, ("set_dc_type_and_flags_connect: rpccli_ds_getprimarydominfo "
-			  "on domain %s failed: (%s)\n",
-			  domain->name, nt_errstr(status)));
-
-		/* older samba3 DCs will return DCERPC_FAULT_OP_RNG_ERROR for
-		 * every opcode on the DSSETUP pipe, continue with
-		 * no_dssetup mode here as well to get domain->initialized
-		 * set - gd */
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
-			goto no_dssetup;
-		}
-
-		TALLOC_FREE(mem_ctx);
-		return;
-	}
-
-	if ((info.basic.flags & DS_ROLE_PRIMARY_DS_RUNNING) &&
-	    !(info.basic.flags & DS_ROLE_PRIMARY_DS_MIXED_MODE)) {
-		domain->native_mode = True;
-	} else {
-		domain->native_mode = False;
-	}
-
-no_dssetup:
 	if (domain->internal) {
 		status = wb_open_internal_pipe(mem_ctx,
 					       &ndr_table_lsarpc,
@@ -2476,9 +2407,6 @@ done:
 				 &pol,
 				 &close_status);
 	}
-
-	DEBUG(5, ("set_dc_type_and_flags_connect: domain %s is %sin native mode.\n",
-		  domain->name, domain->native_mode ? "" : "NOT "));
 
 	DEBUG(5,("set_dc_type_and_flags_connect: domain %s is %srunning active directory.\n",
 		  domain->name, domain->active_directory ? "" : "NOT "));

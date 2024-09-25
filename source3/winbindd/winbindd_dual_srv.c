@@ -91,11 +91,9 @@ NTSTATUS _wbint_InitConnection(struct pipes_struct *p,
 	}
 
 	*r->out.flags = 0;
-	if (domain->native_mode) {
-		*r->out.flags |= WB_DOMINFO_DOMAIN_NATIVE;
-	}
 	if (domain->active_directory) {
 		*r->out.flags |= WB_DOMINFO_DOMAIN_AD;
+		*r->out.flags |= WB_DOMINFO_DOMAIN_NATIVE;
 	}
 	if (domain->primary) {
 		*r->out.flags |= WB_DOMINFO_DOMAIN_PRIMARY;

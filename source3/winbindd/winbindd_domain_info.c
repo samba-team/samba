@@ -133,7 +133,7 @@ NTSTATUS winbindd_domain_info_recv(struct tevent_req *req,
 	fstrcpy(response->data.domain_info.alt_name, domain->alt_name);
 	sid_to_fstring(response->data.domain_info.sid, &domain->sid);
 
-	response->data.domain_info.native_mode = domain->native_mode;
+	response->data.domain_info.native_mode = domain->active_directory;
 	response->data.domain_info.active_directory = domain->active_directory;
 	response->data.domain_info.primary = domain->primary;
 
