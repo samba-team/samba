@@ -2436,11 +2436,18 @@ static void set_dc_type_and_flags( struct winbindd_domain *domain )
 	}
 
 	/* we always have to contact our primary domain */
-
-	if ( domain->primary || domain->internal) {
-		DEBUG(10,("set_dc_type_and_flags: setting up flags for "
-			  "primary or internal domain\n"));
-		set_dc_type_and_flags_connect( domain );
+	if (domain->primary || domain->internal) {
+		/*
+		 * primary and internal domains are
+		 * are already completely
+		 * setup via init_domain_list()
+		 * calling add_trusted_domain()
+		 *
+		 * There's no need to ask the
+		 * server again, if it hosts an AD
+		 * domain...
+		 */
+		domain->initialized = true;
 		return;
 	}
 
