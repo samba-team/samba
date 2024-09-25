@@ -631,9 +631,9 @@ int ldb_next_start_trans(struct ldb_module *module)
 		/* Set a default error string, to place the blame somewhere */
 		ldb_asprintf_errstring(module->ldb, "start_trans error in module %s: %s (%d)", module->ops->name, ldb_strerror(ret), ret);
 	}
-	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { 
-		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "ldb_next_start_trans error: %s", 
-			  ldb_errstring(module->ldb));				
+	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "ldb_next_start_trans error: %s",
+			  ldb_errstring(module->ldb));
 	}
 	return ret;
 }
@@ -650,9 +650,9 @@ int ldb_next_end_trans(struct ldb_module *module)
 		/* Set a default error string, to place the blame somewhere */
 		ldb_asprintf_errstring(module->ldb, "end_trans error in module %s: %s (%d)", module->ops->name, ldb_strerror(ret), ret);
 	}
-	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { 
-		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "ldb_next_end_trans error: %s", 
-			  ldb_errstring(module->ldb));				
+	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "ldb_next_end_trans error: %s",
+			  ldb_errstring(module->ldb));
 	}
 	return ret;
 }
@@ -720,9 +720,9 @@ int ldb_next_prepare_commit(struct ldb_module *module)
 		/* Set a default error string, to place the blame somewhere */
 		ldb_asprintf_errstring(module->ldb, "prepare_commit error in module %s: %s (%d)", module->ops->name, ldb_strerror(ret), ret);
 	}
-	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { 
-		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "ldb_next_prepare_commit error: %s", 
-			  ldb_errstring(module->ldb));				
+	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "ldb_next_prepare_commit error: %s",
+			  ldb_errstring(module->ldb));
 	}
 	return ret;
 }
@@ -739,9 +739,9 @@ int ldb_next_del_trans(struct ldb_module *module)
 		/* Set a default error string, to place the blame somewhere */
 		ldb_asprintf_errstring(module->ldb, "del_trans error in module %s: %s (%d)", module->ops->name, ldb_strerror(ret), ret);
 	}
-	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { 
-		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "ldb_next_del_trans error: %s", 
-			  ldb_errstring(module->ldb));				
+	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
+		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "ldb_next_del_trans error: %s",
+			  ldb_errstring(module->ldb));
 	}
 	return ret;
 }
@@ -777,17 +777,17 @@ int ldb_module_send_entry(struct ldb_request *req,
 	    req->handle->nesting == 0) {
 		char *s;
 		struct ldb_ldif ldif;
-		
+
 		ldif.changetype = LDB_CHANGETYPE_NONE;
 		ldif.msg = discard_const_p(struct ldb_message, msg);
 
 		ldb_debug_add(req->handle->ldb, "ldb_trace_response: ENTRY\n");
 
-		/* 
+		/*
 		 * The choice to call
 		 * ldb_ldif_write_redacted_trace_string() is CRITICAL
 		 * for security.  It ensures that we do not output
-		 * passwords into debug logs 
+		 * passwords into debug logs
 		 */
 
 		s = ldb_ldif_write_redacted_trace_string(req->handle->ldb, msg, &ldif);
@@ -1104,8 +1104,8 @@ static int ldb_modules_load_dir(const char *modules_dir, const char *version)
 	return LDB_SUCCESS;
 }
 
-/* 
-   load any additional modules from the given directory 
+/*
+   load any additional modules from the given directory
 */
 void ldb_set_modules_dir(struct ldb_context *ldb, const char *path)
 {
