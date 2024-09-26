@@ -85,7 +85,7 @@ static NTSTATUS copy_reg(vfs_handle_struct *handle,
 				    dstfsp,
 				    dest,
 				    0);
-	if (ret == -1) {
+	if (ret == -1 && errno != ENOENT) {
 		status = map_nt_error_from_unix(errno);
 		goto out;
 	}
