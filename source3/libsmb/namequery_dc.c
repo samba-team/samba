@@ -60,7 +60,7 @@ static bool ads_dc_name(const char *domain,
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	bool ok = false;
 	ADS_STRUCT *ads;
-	char *sitename;
+	const char *sitename;
 	int i;
 	char addr[INET6_ADDRSTRLEN];
 
@@ -94,6 +94,11 @@ static bool ads_dc_name(const char *domain,
 		   has changed. If so, we need to re-do the DNS query
 		   to ensure we only find servers in our site. */
 
+#ifdef HAVE_ADS
+		if (ads_closest_dc(ads)) {
+			sitename = ads->config.client_site_name;
+		} else
+#endif
 		if (stored_sitename_changed(realm, sitename)) {
 			sitename = sitename_fetch(tmp_ctx, realm);
 			TALLOC_FREE(ads);
