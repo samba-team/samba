@@ -151,7 +151,11 @@ static void ads_dns_lookup_srv_done(struct tevent_req *subreq)
 			struct dns_rr_srv *srv = &state->srvs[j];
 			struct sockaddr_storage *tmp;
 
-			if (strcmp(srv->hostname, ar->name) != 0) {
+			/*
+			 * sometimes the name gets messed up
+			 * with upper and lower case...
+			 */
+			if (!strequal(srv->hostname, ar->name)) {
 				continue;
 			}
 			/* uint16_t can't wrap here. */
