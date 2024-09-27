@@ -156,6 +156,8 @@ NTSTATUS rpccli_create_netlogon_creds_ctx(
 static NTSTATUS rpccli_setup_netlogon_creds_locked(
 	struct cli_state *cli,
 	enum dcerpc_transport_t transport,
+	const char *remote_name,
+	const struct sockaddr_storage *remote_sockaddr,
 	struct netlogon_creds_cli_context *creds_ctx,
 	bool force_reauth,
 	struct cli_credentials *cli_creds,
@@ -170,8 +172,6 @@ static NTSTATUS rpccli_setup_netlogon_creds_locked(
 	const struct samr_Password *nt_hashes[2] = { NULL, NULL };
 	uint8_t idx_nt_hashes = 0;
 	NTSTATUS status;
-	const char *remote_name = NULL;
-	const struct sockaddr_storage *remote_sockaddr = NULL;
 
 	status = netlogon_creds_cli_get(creds_ctx, frame, &creds);
 	if (NT_STATUS_IS_OK(status)) {
@@ -209,9 +209,6 @@ static NTSTATUS rpccli_setup_netlogon_creds_locked(
 	if (nt_hashes[1] != NULL) {
 		num_nt_hashes = 2;
 	}
-
-	remote_name = smbXcli_conn_remote_name(cli->conn);
-	remote_sockaddr = smbXcli_conn_remote_sockaddr(cli->conn);
 
 	status = cli_rpc_pipe_open_noauth_transport(cli,
 						    transport,
@@ -266,6 +263,8 @@ done:
 NTSTATUS rpccli_setup_netlogon_creds(
 	struct cli_state *cli,
 	enum dcerpc_transport_t transport,
+	const char *remote_name,
+	const struct sockaddr_storage *remote_sockaddr,
 	struct netlogon_creds_cli_context *creds_ctx,
 	bool force_reauth,
 	struct cli_credentials *cli_creds)
@@ -286,6 +285,8 @@ NTSTATUS rpccli_setup_netlogon_creds(
 
 	status = rpccli_setup_netlogon_creds_locked(cli,
 						    transport,
+						    remote_name,
+						    remote_sockaddr,
 						    creds_ctx,
 						    force_reauth,
 						    cli_creds,
@@ -418,6 +419,8 @@ again:
 
 	status = rpccli_setup_netlogon_creds_locked(cli,
 						    transport,
+						    remote_name,
+						    remote_sockaddr,
 						    creds_ctx,
 						    true,
 						    trust_creds,

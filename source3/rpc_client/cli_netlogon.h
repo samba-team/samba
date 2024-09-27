@@ -42,6 +42,8 @@ NTSTATUS rpccli_create_netlogon_creds_ctx(
 NTSTATUS rpccli_setup_netlogon_creds(
 	struct cli_state *cli,
 	enum dcerpc_transport_t transport,
+	const char *remote_name,
+	const struct sockaddr_storage *remote_sockaddr,
 	struct netlogon_creds_cli_context *creds_ctx,
 	bool force_reauth,
 	struct cli_credentials *cli_creds);

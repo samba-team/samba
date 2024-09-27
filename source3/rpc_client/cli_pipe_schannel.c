@@ -89,7 +89,10 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 		goto done;
 	}
 
-	status = rpccli_setup_netlogon_creds(cli, transport,
+	status = rpccli_setup_netlogon_creds(cli,
+					     transport,
+					     remote_name,
+					     remote_sockaddr,
 					     netlogon_creds,
 					     false, /* force_reauth */
 					     cli_creds);

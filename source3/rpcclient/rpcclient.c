@@ -1035,6 +1035,8 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				ntresult = rpccli_setup_netlogon_creds(
 					cli,
 					NCACN_NP,
+					remote_name,
+					remote_sockaddr,
 					rpcclient_netlogon_creds,
 					false, /* force_reauth */
 					trust_creds);
