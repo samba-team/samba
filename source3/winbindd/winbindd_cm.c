@@ -1201,7 +1201,7 @@ out:
 
 static bool dcip_check_name(TALLOC_CTX *mem_ctx,
 			    const struct winbindd_domain *domain,
-			    struct sockaddr_storage *pss,
+			    const struct sockaddr_storage *pss,
 			    char **name, uint32_t request_flags)
 {
 	struct samba_sockaddr sa = {0};
