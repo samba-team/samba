@@ -3983,6 +3983,7 @@ static NTSTATUS cli_rpc_pipe_open(struct cli_state *cli,
 					       table,
 					       &port);
 		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
 			return status;
 		}
 
