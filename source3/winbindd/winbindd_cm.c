@@ -2927,6 +2927,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	const struct sockaddr_storage *remote_sockaddr = NULL;
 	bool sealed_pipes = true;
 	bool strong_key = true;
+	bool require_schannel = false;
 
 retry:
 	result = init_dc_connection_rpc(domain, false);
@@ -2941,10 +2942,14 @@ retry:
 
 	TALLOC_FREE(conn->lsa_pipe);
 
-	if (IS_DC) {
+	if (IS_DC ||
+	    domain->secure_channel_type != SEC_CHAN_NULL)
+	{
 		/*
-		 * Make sure we only use schannel as AD DC.
+		 * Make sure we only use schannel as DC
+		 * or with a direct trust
 		 */
+		require_schannel = true;
 		goto schannel;
 	}
 
@@ -3071,9 +3076,10 @@ retry:
 		goto done;
 	}
 
-	if (IS_DC) {
+	if (require_schannel) {
 		/*
-		 * Make sure we only use schannel as AD DC.
+		 * Make sure we only use schannel as DC
+		 * or with a direct trust
 		 */
 		goto done;
 	}
@@ -3085,9 +3091,10 @@ retry:
 
  anonymous:
 
-	if (IS_DC) {
+	if (require_schannel) {
 		/*
-		 * Make sure we only use schannel as AD DC.
+		 * Make sure we only use schannel as DC
+		 * or with a direct trust
 		 */
 		goto done;
 	}
