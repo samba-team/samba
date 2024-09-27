@@ -1661,18 +1661,13 @@ static char *current_dc_key(TALLOC_CTX *mem_ctx, const char *domain_name)
 
 static void store_current_dc_in_gencache(const char *domain_name,
 					 const char *dc_name,
-					 struct cli_state *cli)
+					 const struct sockaddr_storage *dc_addr)
 {
 	char addr[INET6_ADDRSTRLEN];
 	char *key = NULL;
 	char *value = NULL;
 
-	if (!cli_state_is_connected(cli)) {
-		return;
-	}
-
-	print_sockaddr(addr, sizeof(addr),
-		       smbXcli_conn_remote_sockaddr(cli->conn));
+	print_sockaddr(addr, sizeof(addr), dc_addr);
 
 	key = current_dc_key(talloc_tos(), domain_name);
 	if (key == NULL) {
@@ -1836,8 +1831,9 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 	 * once we start to connect to multiple DCs, wbcDcInfo is
 	 * already prepared for that.
 	 */
-	store_current_dc_in_gencache(domain->name, domain->dcname,
-				     new_conn->cli);
+	store_current_dc_in_gencache(domain->name,
+				     domain->dcname,
+				     &domain->dcaddr);
 
 	seal_pipes = lp_winbind_sealed_pipes();
 	seal_pipes = lp_parm_bool(-1, "winbind sealed pipes",
