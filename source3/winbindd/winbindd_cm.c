@@ -1499,7 +1499,7 @@ static bool connect_preferred_dc(TALLOC_CTX *mem_ctx,
 	}
 
 	status = smbsock_connect(&domain->dcaddr, 0,
-				 NULL, -1, NULL, -1,
+				 domain->dcname, -1, NULL, -1,
 				 fd, NULL, 10);
 	if (!NT_STATUS_IS_OK(status)) {
 		winbind_add_failed_connection_entry(domain,
