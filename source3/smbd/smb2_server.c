@@ -1721,12 +1721,21 @@ static NTSTATUS smbXsrv_connection_shutdown_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
+struct smbd_server_connection_terminate_state {
+	struct smbXsrv_connection *xconn;
+	char *reason;
+};
+
 static void smbd_server_connection_terminate_done(struct tevent_req *subreq)
 {
-	struct smbXsrv_connection *xconn =
-		tevent_req_callback_data(subreq,
-		struct smbXsrv_connection);
+	struct smbd_server_connection_terminate_state *state =
+		tevent_req_callback_data(
+			subreq,
+			struct smbd_server_connection_terminate_state);
+	struct smbXsrv_connection *xconn = state->xconn;
 	struct smbXsrv_client *client = xconn->client;
+	const char *reason = state->reason;
+	size_t num_ok;
 	NTSTATUS status;
 
 	status = smbXsrv_connection_shutdown_recv(subreq);
@@ -1737,14 +1746,36 @@ static void smbd_server_connection_terminate_done(struct tevent_req *subreq)
 
 	DLIST_REMOVE(client->connections, xconn);
 	TALLOC_FREE(xconn);
+
+	num_ok = smbXsrv_client_valid_connections(client);
+	if (num_ok > 0) {
+		return;
+	}
+
+	/*
+	 * The last connection was disconnected
+	 */
+	exit_server_cleanly(reason);
 }
 
 void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 					 const char *reason,
 					 const char *location)
 {
+	struct smbd_server_connection_terminate_state *state = NULL;
 	struct smbXsrv_client *client = xconn->client;
+	struct tevent_req *subreq = NULL;
 	size_t num_ok = 0;
+
+	state = talloc_zero(xconn, struct smbd_server_connection_terminate_state);
+	if (state == NULL) {
+		exit_server("smbXsrv_connection_shutdown_send failed");
+	}
+	state->xconn = xconn;
+	state->reason = talloc_strdup(state, reason);
+	if (state->reason == NULL) {
+		exit_server("talloc_strdup failed");
+	}
 
 	/*
 	 * Make sure that no new request will be able to use this session.
@@ -1785,25 +1816,16 @@ void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 		return;
 	}
 
-	if (num_ok != 0) {
-		struct tevent_req *subreq = NULL;
-
-		subreq = smbXsrv_connection_shutdown_send(client,
-							  client->raw_ev_ctx,
-							  xconn);
-		if (subreq == NULL) {
-			exit_server("smbXsrv_connection_shutdown_send failed");
-		}
-		tevent_req_set_callback(subreq,
-					smbd_server_connection_terminate_done,
-					xconn);
-		return;
+	subreq = smbXsrv_connection_shutdown_send(client,
+						  client->raw_ev_ctx,
+						  xconn);
+	if (subreq == NULL) {
+		exit_server("smbXsrv_connection_shutdown_send failed");
 	}
-
-	/*
-	 * The last connection was disconnected
-	 */
-	exit_server_cleanly(reason);
+	tevent_req_set_callback(subreq,
+				smbd_server_connection_terminate_done,
+				state);
+	return;
 }
 
 void smbd_server_disconnect_client_ex(struct smbXsrv_client *client,
