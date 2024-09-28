@@ -26,6 +26,7 @@
 #include "auth.h"
 #include "lib/param/loadparm.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "smbd/smbXsrv_session.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
@@ -662,6 +663,19 @@ struct smbd_smb2_tdis_state {
 
 static void smbd_smb2_tdis_wait_done(struct tevent_req *subreq);
 
+struct check_for_lease_break_fsp_cmp_state {
+	struct smbXsrv_tcon *tcon;
+};
+
+static bool check_for_lease_break_fsp_cmp_fn(struct files_struct *fsp,
+					     void *private_data)
+{
+	struct check_for_lease_break_fsp_cmp_state *state =
+		(struct check_for_lease_break_fsp_cmp_state *)private_data;
+
+	return (fsp->conn == state->tcon->compat);
+}
+
 static struct tevent_req *smbd_smb2_tdis_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct smbd_smb2_request *smb2req)
@@ -670,6 +684,7 @@ static struct tevent_req *smbd_smb2_tdis_send(TALLOC_CTX *mem_ctx,
 	struct smbd_smb2_tdis_state *state;
 	struct tevent_req *subreq;
 	struct smbXsrv_connection *xconn = NULL;
+	struct check_for_lease_break_fsp_cmp_state fsp_cmp_state;
 
 	req = tevent_req_create(mem_ctx, &state,
 			struct smbd_smb2_tdis_state);
@@ -718,6 +733,20 @@ static struct tevent_req *smbd_smb2_tdis_send(TALLOC_CTX *mem_ctx,
 				return tevent_req_post(req, ev);
 			}
 		}
+	}
+
+	fsp_cmp_state = (struct check_for_lease_break_fsp_cmp_state) {
+		.tcon = smb2req->tcon,
+	};
+
+	smbXsrv_wait_for_handle_lease_break(req,
+					    ev,
+					    smb2req->xconn->client,
+					    state->wait_queue,
+					    check_for_lease_break_fsp_cmp_fn,
+					    &fsp_cmp_state);
+	if (!tevent_req_is_in_progress(req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	/*
