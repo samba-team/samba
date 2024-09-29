@@ -160,10 +160,7 @@ bool ctdb_sys_local_ip_check(const struct ctdb_sys_local_ips_context *ips_ctx,
 	return false;
 }
 
-/*
- * See if the given IP is currently on an interface
- */
-bool ctdb_sys_have_ip(const ctdb_sock_addr *_addr)
+bool ctdb_sys_bind_ip_check(const ctdb_sock_addr *_addr)
 {
 	int s;
 	int ret;
@@ -191,6 +188,28 @@ bool ctdb_sys_have_ip(const ctdb_sock_addr *_addr)
 
 	close(s);
 	return ret == 0;
+}
+
+/*
+ * See if the given IP is currently on an interface
+ */
+bool ctdb_sys_have_ip(const ctdb_sock_addr *addr)
+{
+	struct ctdb_sys_local_ips_context *ips_ctx = NULL;
+	bool have_ip;
+	int ret;
+
+	ret = ctdb_sys_local_ips_init(NULL, &ips_ctx);
+	if (ret != 0) {
+		DBG_DEBUG("Failed to get local addresses, depending on bind\n");
+		have_ip = ctdb_sys_bind_ip_check(addr);
+		return have_ip;
+	}
+
+	have_ip = ctdb_sys_local_ip_check(ips_ctx, addr);
+	talloc_free(ips_ctx);
+
+	return have_ip;
 }
 
 /*
