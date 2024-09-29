@@ -2356,18 +2356,19 @@ static int verify_local_ip_allocation(struct ctdb_recoverd *rec)
 	}
 
 	for (j=0; j<ips->num; j++) {
+		ctdb_sock_addr *addr = &ips->ips[j].addr;
+		bool have_ip = ctdb_sys_have_ip(addr);
+
 		if (ips->ips[j].pnn == rec->pnn) {
-			if (!ctdb_sys_have_ip(&ips->ips[j].addr)) {
-				DEBUG(DEBUG_ERR,
-				      ("Assigned IP %s not on an interface\n",
-				       ctdb_addr_to_str(&ips->ips[j].addr)));
+			if (!have_ip) {
+				D_ERR("Assigned IP %s not on an interface\n",
+				      ctdb_addr_to_str(addr));
 				need_takeover_run = true;
 			}
 		} else {
-			if (ctdb_sys_have_ip(&ips->ips[j].addr)) {
-				DEBUG(DEBUG_ERR,
-				      ("IP %s incorrectly on an interface\n",
-				       ctdb_addr_to_str(&ips->ips[j].addr)));
+			if (have_ip) {
+				D_ERR("IP %s incorrectly on an interface\n",
+				      ctdb_addr_to_str(addr));
 				need_takeover_run = true;
 			}
 		}
