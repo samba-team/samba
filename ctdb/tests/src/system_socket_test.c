@@ -222,12 +222,30 @@ static void test_tcp(const char *src_str,
 	assert(ret == 0);
 }
 
+static void test_haveip(const char *ipaddr_str)
+{
+	ctdb_sock_addr addr;
+	bool have_ip;
+	int ret;
+
+	ret = ctdb_sock_addr_from_string(ipaddr_str, &addr, false);
+	assert(ret == 0);
+
+	have_ip = ctdb_sys_have_ip(&addr);
+	if (have_ip) {
+		printf("true\n");
+	} else {
+		printf("false\n");
+	}
+}
+
 static void usage(const char *prog)
 {
 	fprintf(stderr, "usage: %s <cmd> [<arg> ...]\n", prog);
 	fprintf(stderr, "  commands:\n");
 	fprintf(stderr, "    types\n");
 	fprintf(stderr, "    arp <ipaddr> <hwaddr> [reply]\n");
+	fprintf(stderr, "    haveip <ipaddr>\n");
 	fprintf(stderr, "    tcp <src> <dst> <seq> <ack> <rst>\n");
 
 	exit(1);
@@ -258,6 +276,11 @@ int main(int argc, char **argv)
 			usage(argv[0]);
 		}
 		test_tcp(argv[2], argv[3], argv[4], argv[5], argv[6]);
+	} else if (strcmp(argv[1], "haveip") == 0) {
+		if (argc != 3) {
+			usage(argv[0]);
+		}
+		test_haveip(argv[2]);
 	} else {
 		usage(argv[0]);
 	}
