@@ -20,8 +20,16 @@
 #ifndef __CTDB_SYSTEM_SOCKET_H__
 #define __CTDB_SYSTEM_SOCKET_H__
 
+#include <talloc.h>
+
 #include "protocol/protocol.h"
 
+struct ctdb_sys_local_ips_context;
+
+int ctdb_sys_local_ips_init(TALLOC_CTX *ctx,
+			    struct ctdb_sys_local_ips_context **ips_ctx);
+bool ctdb_sys_local_ip_check(const struct ctdb_sys_local_ips_context *ips_ctx,
+			     const ctdb_sock_addr *addr);
 bool ctdb_sys_have_ip(ctdb_sock_addr *addr);
 
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface);
