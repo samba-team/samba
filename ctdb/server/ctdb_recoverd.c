@@ -2285,6 +2285,7 @@ static int verify_local_ip_allocation(struct ctdb_recoverd *rec)
 	int ret;
 	bool need_takeover_run = false;
 	struct ctdb_public_ip_list_old *ips = NULL;
+	struct ctdb_sys_local_ips_context *ips_ctx = NULL;
 
 	/* If we are not the leader then do some housekeeping */
 	if (!this_node_is_leader(rec)) {
@@ -2355,9 +2356,30 @@ static int verify_local_ip_allocation(struct ctdb_recoverd *rec)
 		return -1;
 	}
 
+	ret = ctdb_sys_local_ips_init(mem_ctx, &ips_ctx);
+	if (ret != 0) {
+		/*
+		 * What to do?  The point here is to allow public
+		 * addresses to be checked when
+		 * net.ipv4.ip_nonlocal_bind = 1, which is probably
+		 * just Linux... though other platforms may have a
+		 * similar setting.  For non-Linux platforms without a
+		 * usable getifaddrs(3) function/replacement, fall
+		 * back to bind() below...
+		 */
+		DBG_DEBUG("Failed to get local addresses, depending on bind\n");
+		ips_ctx = NULL; /* Just in case */
+	}
+
 	for (j=0; j<ips->num; j++) {
 		ctdb_sock_addr *addr = &ips->ips[j].addr;
-		bool have_ip = ctdb_sys_have_ip(addr);
+		bool have_ip;
+
+		if (ips_ctx != NULL) {
+			have_ip = ctdb_sys_local_ip_check(ips_ctx, addr);
+		} else {
+			have_ip = ctdb_sys_bind_ip_check(addr);
+		}
 
 		if (ips->ips[j].pnn == rec->pnn) {
 			if (!have_ip) {
@@ -2373,6 +2395,8 @@ static int verify_local_ip_allocation(struct ctdb_recoverd *rec)
 			}
 		}
 	}
+
+	TALLOC_FREE(ips_ctx);
 
 done:
 	if (need_takeover_run) {
