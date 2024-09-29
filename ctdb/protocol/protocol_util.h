@@ -44,6 +44,8 @@ int ctdb_sock_addr_from_string(const char *str,
 int ctdb_sock_addr_mask_from_string(const char *str,
 				    ctdb_sock_addr *addr,
 				    unsigned int *mask);
+int ctdb_sock_addr_from_sockaddr(struct sockaddr *addr,
+				 ctdb_sock_addr *sock_addr);
 unsigned int ctdb_sock_addr_port(ctdb_sock_addr *addr);
 void ctdb_sock_addr_set_port(ctdb_sock_addr *addr, unsigned int port);
 int ctdb_sock_addr_cmp_ip(const ctdb_sock_addr *addr1,

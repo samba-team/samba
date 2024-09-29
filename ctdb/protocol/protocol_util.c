@@ -379,6 +379,25 @@ int ctdb_sock_addr_mask_from_string(const char *str,
 	return ret;
 }
 
+int ctdb_sock_addr_from_sockaddr(struct sockaddr *addr,
+				 ctdb_sock_addr *sock_addr)
+{
+	switch (addr->sa_family) {
+	case AF_INET:
+		ZERO_STRUCTP(sock_addr);
+		sock_addr->ip = *(struct sockaddr_in *)addr;
+		break;
+	case AF_INET6:
+		ZERO_STRUCTP(sock_addr);
+		sock_addr->ip6 = *(struct sockaddr_in6 *)addr;
+		break;
+	default:
+		return EINVAL;
+	}
+
+	return 0;
+}
+
 unsigned int ctdb_sock_addr_port(ctdb_sock_addr *addr)
 {
 	switch (addr->sa.sa_family) {
