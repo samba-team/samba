@@ -176,7 +176,7 @@ static mode_t unix_filetypes[] =
 
 mode_t wire_filetype_to_unix(uint32_t wire_type)
 {
-	if (wire_type > ARRAY_SIZE(unix_filetypes)) {
+	if (wire_type >= ARRAY_SIZE(unix_filetypes)) {
 		return (mode_t)0;
 	}
 	return unix_filetypes[wire_type];
