@@ -1726,19 +1726,23 @@ static enum ndr_err_code ndr_push_relative_ptr2(struct ndr_push *ndr, const void
 	if (p == NULL) {
 		return NDR_ERR_SUCCESS;
 	}
-	save_offset = ndr->offset;
+	if (ndr->offset < ndr->relative_base_offset) {
+		return ndr_push_error(
+			ndr,
+			NDR_ERR_BUFSIZE,
+			"ndr_push_relative_ptr2 ndr->offset(%" PRIu32 ") "
+			"< ndr->relative_base_offset(%" PRIu32 ")",
+			ndr->offset,
+			ndr->relative_base_offset);
+	}
 	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &ptr_offset));
 	if (ptr_offset > ndr->offset) {
 		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
 				      "ndr_push_relative_ptr2 ptr_offset(%"PRIu32") > ndr->offset(%"PRIu32")",
 				      ptr_offset, ndr->offset);
 	}
+	save_offset = ndr->offset;
 	ndr->offset = ptr_offset;
-	if (save_offset < ndr->relative_base_offset) {
-		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
-				      "ndr_push_relative_ptr2 save_offset(%"PRIu32") < ndr->relative_base_offset(%"PRIu32")",
-				      save_offset, ndr->relative_base_offset);
-	}
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, save_offset - ndr->relative_base_offset));
 	ndr->offset = save_offset;
 	return NDR_ERR_SUCCESS;
