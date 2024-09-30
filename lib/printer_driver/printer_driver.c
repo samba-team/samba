@@ -22,15 +22,7 @@
 #include "rpc_client/init_spoolss.h"
 #include "libgpo/gpo_ini.h"
 #include "printer_driver.h"
-
-#define ADD_TO_ARRAY(mem_ctx, type, elem, array, num) \
-do { \
-	*(array) = talloc_realloc(mem_ctx, (*(array)), type, (*(num))+1); \
-	SMB_ASSERT((*(array)) != NULL); \
-	(*(array))[*(num)] = (elem); \
-	(*(num)) += 1; \
-} while (0)
-
+#include "source3/include/smb_macros.h"
 
 /* GetPrinterDriverDirectory  -> drivers and dependent files */
 #define PRINTER_INF_DIRID_66000
