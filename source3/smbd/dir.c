@@ -30,6 +30,7 @@
 #include "lib/util/string_wrappers.h"
 #include "libcli/smb/reparse.h"
 #include "source3/smbd/dir.h"
+#include "source3/include/serverid.h"
 
 /*
    This module implements directory related functions for Samba.
@@ -1256,97 +1257,33 @@ void RewindDir(struct smb_Dir *dir_hnd)
 	dir_hnd->file_number = 0;
 }
 
-struct files_below_forall_state {
-	char *dirpath;
-	ssize_t dirpath_len;
-	int (*fn)(struct file_id fid, const struct share_mode_data *data,
-		  void *private_data);
-	void *private_data;
-};
-
-static int files_below_forall_fn(struct file_id fid,
-				 const struct share_mode_data *data,
-				 void *private_data)
-{
-	struct files_below_forall_state *state = private_data;
-	char tmpbuf[PATH_MAX];
-	char *fullpath, *to_free;
-	ssize_t len;
-
-	len = full_path_tos(data->servicepath, data->base_name,
-			    tmpbuf, sizeof(tmpbuf),
-			    &fullpath, &to_free);
-	if (len == -1) {
-		return 0;
-	}
-	if (state->dirpath_len >= len) {
-		/*
-		 * Filter files above dirpath
-		 */
-		goto out;
-	}
-	if (fullpath[state->dirpath_len] != '/') {
-		/*
-		 * Filter file that don't have a path separator at the end of
-		 * dirpath's length
-		 */
-		goto out;
-	}
-
-	if (memcmp(state->dirpath, fullpath, state->dirpath_len) != 0) {
-		/*
-		 * Not a parent
-		 */
-		goto out;
-	}
-
-	TALLOC_FREE(to_free);
-	return state->fn(fid, data, state->private_data);
-
-out:
-	TALLOC_FREE(to_free);
-	return 0;
-}
-
-static int files_below_forall(connection_struct *conn,
-			      const struct smb_filename *dir_name,
-			      int (*fn)(struct file_id fid,
-					const struct share_mode_data *data,
-					void *private_data),
-			      void *private_data)
-{
-	struct files_below_forall_state state = {
-			.fn = fn,
-			.private_data = private_data,
-	};
-	int ret;
-	char tmpbuf[PATH_MAX];
-	char *to_free;
-
-	state.dirpath_len = full_path_tos(conn->connectpath,
-					  dir_name->base_name,
-					  tmpbuf, sizeof(tmpbuf),
-					  &state.dirpath, &to_free);
-	if (state.dirpath_len == -1) {
-		return -1;
-	}
-
-	ret = share_mode_forall_read(files_below_forall_fn, &state);
-	TALLOC_FREE(to_free);
-	return ret;
-}
-
 struct have_file_open_below_state {
 	bool found_one;
 };
 
-static int have_file_open_below_fn(struct file_id fid,
-				   const struct share_mode_data *data,
+static int have_file_open_below_fn(const struct share_mode_data *data,
+				   const struct share_mode_entry *e,
 				   void *private_data)
 {
 	struct have_file_open_below_state *state = private_data;
+	bool exists;
+
+	if (e->stale) {
+		return 0;
+	}
+
+	if (e->flags & SHARE_MODE_FLAG_POSIX_OPEN) {
+		/* Ignore POSIX opens */
+		return 0;
+	}
+
+	exists = serverid_exists(&e->pid);
+	if (!exists) {
+		return 0;
+	}
+
 	state->found_one = true;
-	return 1;
+	return -1;
 }
 
 bool have_file_open_below(connection_struct *conn,
@@ -1364,7 +1301,7 @@ bool have_file_open_below(connection_struct *conn,
 		return false;
 	}
 
-	ret = files_below_forall(conn, name, have_file_open_below_fn, &state);
+	ret = opens_below_forall_read(conn, name, have_file_open_below_fn, &state);
 	if (ret == -1) {
 		return false;
 	}
