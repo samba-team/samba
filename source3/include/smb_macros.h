@@ -273,23 +273,26 @@ copy an IP address from one buffer to another
 
 #endif
 
-#define ADD_TO_ARRAY(mem_ctx, type, elem, array, num)    \
-	do {                                             \
-		*(array) = talloc_realloc(mem_ctx,       \
-					  (*(array)),    \
-					  type,          \
-					  (*(num)) + 1); \
-		SMB_ASSERT((*(array)) != NULL);          \
-		(*(array))[*(num)] = (elem);             \
-		(*(num)) += 1;                           \
+#define ADD_TO_ARRAY(mem_ctx, type, elem, array, num)                    \
+	do {                                                             \
+		type *__add_to_array_tmp = talloc_realloc(mem_ctx,       \
+							  (*(array)),    \
+							  type,          \
+							  (*(num)) + 1); \
+		SMB_ASSERT(__add_to_array_tmp != NULL);                  \
+		__add_to_array_tmp[*(num)] = (elem);                     \
+		(*(num)) += 1;                                           \
+		(*(array)) = __add_to_array_tmp;                         \
 	} while (0)
 
-#define ADD_TO_MALLOC_ARRAY(type, elem, array, num)                           \
-	do {                                                                  \
-		*(array) = SMB_REALLOC_ARRAY((*(array)), type, (*(num)) + 1); \
-		SMB_ASSERT((*(array)) != NULL);                               \
-		(*(array))[*(num)] = (elem);                                  \
-		(*(num)) += 1;                                                \
+#define ADD_TO_MALLOC_ARRAY(type, elem, array, num)                  \
+	do {                                                         \
+		type *__add_to_malloc_array_tmp = SMB_REALLOC_ARRAY( \
+			(*(array)), type, (*(num)) + 1);             \
+		SMB_ASSERT(__add_to_malloc_array_tmp != NULL);       \
+		__add_to_malloc_array_tmp[*(num)] = (elem);          \
+		(*(num)) += 1;                                       \
+		(*(array)) = __add_to_malloc_array_tmp;              \
 	} while (0)
 
 #define ADD_TO_LARGE_ARRAY(mem_ctx, type, elem, array, num, size) \
