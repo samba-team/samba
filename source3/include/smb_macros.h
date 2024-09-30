@@ -273,15 +273,24 @@ copy an IP address from one buffer to another
 
 #endif
 
-#define ADD_TO_ARRAY(mem_ctx, type, elem, array, num) \
-do { \
-	*(array) = ((mem_ctx) != NULL) ? \
-		talloc_realloc(mem_ctx, (*(array)), type, (*(num))+1) : \
-		SMB_REALLOC_ARRAY((*(array)), type, (*(num))+1); \
-	SMB_ASSERT((*(array)) != NULL); \
-	(*(array))[*(num)] = (elem); \
-	(*(num)) += 1; \
-} while (0)
+#define ADD_TO_ARRAY(mem_ctx, type, elem, array, num)    \
+	do {                                             \
+		*(array) = talloc_realloc(mem_ctx,       \
+					  (*(array)),    \
+					  type,          \
+					  (*(num)) + 1); \
+		SMB_ASSERT((*(array)) != NULL);          \
+		(*(array))[*(num)] = (elem);             \
+		(*(num)) += 1;                           \
+	} while (0)
+
+#define ADD_TO_MALLOC_ARRAY(type, elem, array, num)                           \
+	do {                                                                  \
+		*(array) = SMB_REALLOC_ARRAY((*(array)), type, (*(num)) + 1); \
+		SMB_ASSERT((*(array)) != NULL);                               \
+		(*(array))[*(num)] = (elem);                                  \
+		(*(num)) += 1;                                                \
+	} while (0)
 
 #define ADD_TO_LARGE_ARRAY(mem_ctx, type, elem, array, num, size) \
 	add_to_large_array((mem_ctx), sizeof(type), &(elem), (void *)(array), (num), (size));

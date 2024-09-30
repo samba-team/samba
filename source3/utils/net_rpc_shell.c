@@ -52,7 +52,7 @@ static char **completion_fn(const char *text, int start, int end)
 		return NULL;
 	}
 
-	ADD_TO_ARRAY(NULL, char *, SMB_STRDUP(text), &cmds, &n_cmds);
+	ADD_TO_MALLOC_ARRAY(char *, SMB_STRDUP(text), &cmds, &n_cmds);
 
 	for (c = this_ctx->cmds; c->name != NULL; c++) {
 		bool match = (strncmp(text, c->name, strlen(text)) == 0);
@@ -69,7 +69,7 @@ static char **completion_fn(const char *text, int start, int end)
 		n_cmds -= 1;
 	}
 
-	ADD_TO_ARRAY(NULL, char *, NULL, &cmds, &n_cmds);
+	ADD_TO_MALLOC_ARRAY(char *, NULL, &cmds, &n_cmds);
 	return cmds;
 }
 

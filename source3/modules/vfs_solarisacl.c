@@ -609,8 +609,10 @@ static bool solaris_add_to_acl(SOLARIS_ACL_T *solaris_acl, int *count,
 		if (!_IS_OF_TYPE(add_acl[i], type)) {
 			continue;
 		}
-		ADD_TO_ARRAY(NULL, SOLARIS_ACE_T, add_acl[i], 
-			     solaris_acl, count);
+		ADD_TO_MALLOC_ARRAY(SOLARIS_ACE_T,
+				    add_acl[i],
+				    solaris_acl,
+				    count);
 		if (solaris_acl == NULL) {
 			DEBUG(10, ("error enlarging acl.\n"));
 			errno = ENOMEM;
