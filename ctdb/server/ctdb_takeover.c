@@ -1629,7 +1629,7 @@ static void ctdb_remove_connection(struct ctdb_vnn *vnn,
 
 	tcpp = ctdb_tcp_find(vnn->tcp_array, conn);
 	if (tcpp == NULL) {
-		D_INFO("Attempt to remove untracked connection %s\n", conn_str);
+		D_DEBUG("Attempt to remove untracked connection %s\n", conn_str);
 		return;
 	}
 
