@@ -1512,26 +1512,39 @@ static struct ctdb_connection *ctdb_tcp_find(struct ctdb_tcp_array *array,
   clients managing that should tickled with an ACK when IP takeover is
   done
  */
-int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata, bool tcp_update_needed)
+int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb,
+			     TDB_DATA indata,
+			     bool tcp_update_needed)
 {
 	struct ctdb_connection *p = (struct ctdb_connection *)indata.dptr;
 	struct ctdb_tcp_array *tcparray;
 	struct ctdb_connection tcp;
 	struct ctdb_vnn *vnn;
+	char conn_str[132] = { 0, };
+	int ret;
 
 	/* If we don't have public IPs, tickles are useless */
 	if (ctdb->vnn == NULL) {
 		return 0;
 	}
 
+	ret = ctdb_connection_to_buf(conn_str,
+				     sizeof(conn_str),
+				     p,
+				     false,
+				     " -> ");
+	if (ret != 0) {
+		strlcpy(conn_str, "UNKNOWN", sizeof(conn_str));
+	}
+
 	vnn = find_public_ip_vnn(ctdb, &p->dst);
 	if (vnn == NULL) {
-		DEBUG(DEBUG_INFO,(__location__ " got TCP_ADD control for an address which is not a public address '%s'\n",
-			ctdb_addr_to_str(&p->dst)));
+		DBG_INFO("Attempt to add connection %s "
+			 "but destination is not a public address\n",
+			 conn_str);
 
 		return -1;
 	}
-
 
 	tcparray = vnn->tcp_array;
 
@@ -1542,7 +1555,8 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata, bool tc
 		vnn->tcp_array = tcparray;
 
 		tcparray->num = 0;
-		tcparray->connections = talloc_size(tcparray, sizeof(struct ctdb_connection));
+		tcparray->connections = talloc_size(tcparray,
+						    sizeof(struct ctdb_connection));
 		CTDB_NO_MEMORY(ctdb, tcparray->connections);
 
 		tcparray->connections[tcparray->num].src = p->src;
@@ -1560,27 +1574,22 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata, bool tc
 	tcp.src = p->src;
 	tcp.dst = p->dst;
 	if (ctdb_tcp_find(tcparray, &tcp) != NULL) {
-		DEBUG(DEBUG_DEBUG,("Already had tickle info for %s:%u for vnn:%u\n",
-			ctdb_addr_to_str(&tcp.dst),
-			ntohs(tcp.dst.ip.sin_port),
-			vnn->pnn));
+		DBG_DEBUG("Already had connection %s\n", conn_str);
 		return 0;
 	}
 
 	/* A new tickle, we must add it to the array */
-	tcparray->connections = talloc_realloc(tcparray, tcparray->connections,
-					struct ctdb_connection,
-					tcparray->num+1);
+	tcparray->connections = talloc_realloc(tcparray,
+					       tcparray->connections,
+					       struct ctdb_connection,
+					       tcparray->num + 1);
 	CTDB_NO_MEMORY(ctdb, tcparray->connections);
 
 	tcparray->connections[tcparray->num].src = p->src;
 	tcparray->connections[tcparray->num].dst = p->dst;
 	tcparray->num++;
 
-	DEBUG(DEBUG_INFO,("Added tickle info for %s:%u from vnn %u\n",
-		ctdb_addr_to_str(&tcp.dst),
-		ntohs(tcp.dst.ip.sin_port),
-		vnn->pnn));
+	D_INFO("Added connection %s\n", conn_str);
 
 	if (tcp_update_needed) {
 		vnn->tcp_update_needed = true;
@@ -1590,58 +1599,59 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata, bool tc
 }
 
 
-static void ctdb_remove_connection(struct ctdb_vnn *vnn, struct ctdb_connection *conn)
+static void ctdb_remove_connection(struct ctdb_vnn *vnn,
+				   struct ctdb_connection *conn)
 {
 	struct ctdb_connection *tcpp;
+	char conn_str[132] = { 0, };
+	int ret;
 
 	if (vnn == NULL) {
 		return;
 	}
 
-	/* if the array is empty we can't remove it
-	   and we don't need to do anything
-	 */
+	ret = ctdb_connection_to_buf(conn_str,
+				     sizeof(conn_str),
+				     conn,
+				     false,
+				     " -> ");
+	if (ret != 0) {
+		strlcpy(conn_str, "UNKNOWN", sizeof(conn_str));
+	}
+
+	/* If the array is empty there is nothing to remove */
 	if (vnn->tcp_array == NULL) {
-		DEBUG(DEBUG_INFO,("Trying to remove tickle that doesn't exist (array is empty) %s:%u\n",
-			ctdb_addr_to_str(&conn->dst),
-			ntohs(conn->dst.ip.sin_port)));
+		D_INFO("Attempt to remove untracked connection %s (empty)\n",
+		       conn_str);
 		return;
 	}
 
 
-	/* See if we know this connection
-	   if we don't know this connection  then we don't need to do anything
-	 */
 	tcpp = ctdb_tcp_find(vnn->tcp_array, conn);
 	if (tcpp == NULL) {
-		DEBUG(DEBUG_INFO,("Trying to remove tickle that doesn't exist %s:%u\n",
-			ctdb_addr_to_str(&conn->dst),
-			ntohs(conn->dst.ip.sin_port)));
+		D_INFO("Attempt to remove untracked connection %s\n", conn_str);
 		return;
 	}
 
 
-	/* We need to remove this entry from the array.
-           Instead of allocating a new array and copying data to it
-	   we cheat and just copy the last entry in the existing array
-	   to the entry that is to be removed and just shring the 
-	   ->num field
+	/*
+	 * We need to remove this entry from the array.  Instead of
+	 * allocating a new array and copying data to it, cheat and
+	 * just copy the last entry in the existing array to the entry
+	 * that is to be removed and just shrink the size.
 	 */
 	*tcpp = vnn->tcp_array->connections[vnn->tcp_array->num - 1];
 	vnn->tcp_array->num--;
 
-	/* If we deleted the last entry we also need to remove the entire array
-	 */
+	/* Last entry deleted, so remove the entire array */
 	if (vnn->tcp_array->num == 0) {
 		talloc_free(vnn->tcp_array);
 		vnn->tcp_array = NULL;
-	}		
+	}
 
 	vnn->tcp_update_needed = true;
 
-	DEBUG(DEBUG_INFO,("Removed tickle info for %s:%u\n",
-		ctdb_addr_to_str(&conn->src),
-		ntohs(conn->src.ip.sin_port)));
+	D_INFO("Removed connection %s\n", conn_str);
 }
 
 
@@ -1661,9 +1671,21 @@ int32_t ctdb_control_tcp_remove(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	vnn = find_public_ip_vnn(ctdb, &conn->dst);
 	if (vnn == NULL) {
-		DEBUG(DEBUG_ERR,
-		      (__location__ " unable to find public address %s\n",
-		       ctdb_addr_to_str(&conn->dst)));
+		char conn_str[132] = { 0, };
+		int ret;
+
+		ret = ctdb_connection_to_buf(conn_str,
+					     sizeof(conn_str),
+					     conn,
+					     false,
+					     " -> ");
+		if (ret != 0) {
+			strlcpy(conn_str, "UNKNOWN", sizeof(conn_str));
+		}
+
+		DBG_ERR("Attempt to remove connection %s "
+			"but destination is not a public address\n",
+			conn_str);
 		return 0;
 	}
 
