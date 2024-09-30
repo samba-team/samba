@@ -485,6 +485,138 @@ fail:
 	return status;
 }
 
+struct cli_get_posix_fs_info_state {
+	uint16_t setup[1];
+	uint8_t param[2];
+	uint32_t optimal_transfer_size;
+	uint32_t block_size;
+	uint64_t total_blocks;
+	uint64_t blocks_available;
+	uint64_t user_blocks_available;
+	uint64_t total_file_nodes;
+	uint64_t free_file_nodes;
+	uint64_t fs_identifier;
+};
+
+static void cli_get_posix_fs_info_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_get_posix_fs_info_send(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct cli_state *cli)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_get_posix_fs_info_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_get_posix_fs_info_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	SSVAL(state->setup, 0, TRANSACT2_QFSINFO);
+	SSVAL(state->param, 0, SMB_QUERY_POSIX_FS_INFO);
+
+	subreq = cli_trans_send(talloc_tos(),           /* mem ctx. */
+				ev,                     /* event ctx. */
+				cli,                    /* cli_state. */
+				0,			/* additional_flags2 */
+				SMBtrans2,              /* cmd. */
+				NULL,                   /* pipe name. */
+				0,                      /* fid. */
+				0,                      /* function. */
+				0,                      /* flags. */
+				state->setup,           /* setup. */
+				1,                      /* num setup uint16_t words. */
+				0,                      /* max returned setup. */
+				state->param,           /* param. */
+				2,                      /* num param. */
+				0,                      /* max returned param. */
+				NULL,	                /* data. */
+				0,                      /* num data. */
+				560);                   /* max returned data. */
+
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_get_posix_fs_info_done, req);
+	return req;
+}
+
+static void cli_get_posix_fs_info_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_get_posix_fs_info_state *state = tevent_req_data(
+		req, struct cli_get_posix_fs_info_state);
+	uint8_t *data = NULL;
+	uint32_t num_data;
+	NTSTATUS status;
+
+	status = cli_trans_recv(subreq, state, NULL, NULL, 0, NULL,
+				NULL, 0, NULL, &data, 56, &num_data);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	state->optimal_transfer_size = IVAL(data, 0);
+	state->block_size = IVAL(data,4);
+	state->total_blocks = BIG_UINT(data,8);
+	state->blocks_available = BIG_UINT(data,16);
+	state->user_blocks_available = BIG_UINT(data,24);
+	state->total_file_nodes = BIG_UINT(data,32);
+	state->free_file_nodes = BIG_UINT(data,40);
+	state->fs_identifier = BIG_UINT(data,48);
+	TALLOC_FREE(data);
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_get_posix_fs_info_recv(struct tevent_req *req,
+			            uint32_t *optimal_transfer_size,
+			            uint32_t *block_size,
+			            uint64_t *total_blocks,
+			            uint64_t *blocks_available,
+			            uint64_t *user_blocks_available,
+			            uint64_t *total_file_nodes,
+			            uint64_t *free_file_nodes,
+			            uint64_t *fs_identifier)
+{
+	struct cli_get_posix_fs_info_state *state = tevent_req_data(
+			req, struct cli_get_posix_fs_info_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	if (optimal_transfer_size) {
+		*optimal_transfer_size = state->optimal_transfer_size;
+	}
+	if (block_size) {
+		*block_size = state->block_size;
+	}
+	if (total_blocks) {
+		*total_blocks = state->total_blocks;
+	}
+	if (blocks_available) {
+		*blocks_available = state->blocks_available;
+	}
+	if (user_blocks_available) {
+		*user_blocks_available = state->user_blocks_available;
+	}
+	if (total_file_nodes) {
+		*total_file_nodes = state->total_file_nodes;
+	}
+	if (free_file_nodes) {
+		*free_file_nodes = state->free_file_nodes;
+	}
+	if (fs_identifier) {
+		*fs_identifier = state->fs_identifier;
+	}
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS cli_get_posix_fs_info(struct cli_state *cli,
 			       uint32_t *optimal_transfer_size,
 			       uint32_t *block_size,
@@ -495,52 +627,45 @@ NTSTATUS cli_get_posix_fs_info(struct cli_state *cli,
 			       uint64_t *free_file_nodes,
 			       uint64_t *fs_identifier)
 {
-	uint16_t setup[1];
-	uint8_t param[2];
-	uint8_t *rdata = NULL;
-	uint32_t rdata_count;
-	NTSTATUS status;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	SSVAL(setup, 0, TRANSACT2_QFSINFO);
-	SSVAL(param,0,SMB_QUERY_POSIX_FS_INFO);
-
-	status = cli_trans(talloc_tos(), cli, SMBtrans2, NULL, 0, 0, 0,
-			   setup, 1, 0,
-			   param, 2, 0,
-			   NULL, 0, 560,
-			   NULL,
-			   NULL, 0, NULL, /* rsetup */
-			   NULL, 0, NULL, /* rparam */
-			   &rdata, 56, &rdata_count);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		* Can't use sync call while an async call is in flight
+		*/
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
 
-	if (optimal_transfer_size) {
-                *optimal_transfer_size = IVAL(rdata, 0);
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
 	}
-	if (block_size) {
-		*block_size = IVAL(rdata,4);
+
+	req = cli_get_posix_fs_info_send(frame, ev, cli);
+	if (req == NULL) {
+		goto fail;
 	}
-	if (total_blocks) {
-		*total_blocks = BIG_UINT(rdata,8);
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
 	}
-	if (blocks_available) {
-		*blocks_available = BIG_UINT(rdata,16);
-	}
-	if (user_blocks_available) {
-		*user_blocks_available = BIG_UINT(rdata,24);
-	}
-	if (total_file_nodes) {
-		*total_file_nodes = BIG_UINT(rdata,32);
-	}
-	if (free_file_nodes) {
-		*free_file_nodes = BIG_UINT(rdata,40);
-	}
-	if (fs_identifier) {
-		*fs_identifier = BIG_UINT(rdata,48);
-	}
-	return NT_STATUS_OK;
+
+	status = cli_get_posix_fs_info_recv(req,
+					    optimal_transfer_size,
+					    block_size,
+					    total_blocks,
+					    blocks_available,
+					    user_blocks_available,
+					    total_file_nodes,
+					    free_file_nodes,
+					    fs_identifier);
+
+ fail:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 /****************************************************************************

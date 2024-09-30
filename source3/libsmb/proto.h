@@ -738,6 +738,18 @@ NTSTATUS cli_get_posix_fs_info(struct cli_state *cli,
 			       uint64_t *total_file_nodes,
 			       uint64_t *free_file_nodes,
 			       uint64_t *fs_identifier);
+struct tevent_req *cli_get_posix_fs_info_send(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct cli_state *cli);
+NTSTATUS cli_get_posix_fs_info_recv(struct tevent_req *req,
+				    uint32_t *optimal_transfer_size,
+				    uint32_t *block_size,
+				    uint64_t *total_blocks,
+				    uint64_t *blocks_available,
+				    uint64_t *user_blocks_available,
+				    uint64_t *total_file_nodes,
+				    uint64_t *free_file_nodes,
+				    uint64_t *fs_identifier);
 struct tevent_req *cli_posix_whoami_send(TALLOC_CTX *mem_ctx,
 			struct tevent_context *ev,
 			struct cli_state *cli);
