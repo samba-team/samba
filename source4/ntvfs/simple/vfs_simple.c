@@ -414,7 +414,10 @@ do_open:
 	}
 
 	status = ntvfs_handle_new(ntvfs, req, &handle);
-	NT_STATUS_NOT_OK_RETURN(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		close(fd);
+		return status;
+	}
 
 	f = talloc(handle, struct svfs_file);
 	if (f == NULL) {
