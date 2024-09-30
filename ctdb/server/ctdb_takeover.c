@@ -1518,7 +1518,6 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb,
 {
 	struct ctdb_connection *p = (struct ctdb_connection *)indata.dptr;
 	struct ctdb_tcp_array *tcparray;
-	struct ctdb_connection tcp;
 	struct ctdb_vnn *vnn;
 	char conn_str[132] = { 0, };
 	int ret;
@@ -1571,9 +1570,7 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb,
 
 
 	/* Do we already have this tickle ?*/
-	tcp.src = p->src;
-	tcp.dst = p->dst;
-	if (ctdb_tcp_find(tcparray, &tcp) != NULL) {
+	if (ctdb_tcp_find(tcparray, p) != NULL) {
 		DBG_DEBUG("Already had connection %s\n", conn_str);
 		return 0;
 	}
