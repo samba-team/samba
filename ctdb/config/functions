@@ -1166,6 +1166,14 @@ update_tickles()
 	done <"$CTDB_MY_PUBLIC_IPS_CACHE"
 	_port_filter="sport == :${_port}"
 
+	# Record our current tickles in a temporary file
+	_my_tickles="${tickledir}/${_port}.tickles.$$"
+	while read -r _i; do
+		$CTDB -X gettickles "$_i" "$_port" |
+			awk -F'|' 'NR > 1 { printf "%s:%s %s:%s\n", $2, $3, $4, $5 }'
+	done <"$CTDB_MY_PUBLIC_IPS_CACHE" |
+		sort >"$_my_tickles"
+
 	# Record connections to our public IPs in a temporary file.
 	# This temporary file is in CTDB's private state directory and
 	# $$ is used to avoid a very rare race involving CTDB's script
@@ -1178,14 +1186,6 @@ update_tickles()
 		"${_port_filter:+( ${_port_filter} )}" |
 		awk '{print $4, $3}' |
 		sort >"$_my_connections"
-
-	# Record our current tickles in a temporary file
-	_my_tickles="${tickledir}/${_port}.tickles.$$"
-	while read -r _i; do
-		$CTDB -X gettickles "$_i" "$_port" |
-			awk -F'|' 'NR > 1 { printf "%s:%s %s:%s\n", $2, $3, $4, $5 }'
-	done <"$CTDB_MY_PUBLIC_IPS_CACHE" |
-		sort >"$_my_tickles"
 
 	# Add tickles for connections that we haven't already got tickles for
 	comm -23 "$_my_connections" "$_my_tickles" |
