@@ -922,6 +922,7 @@ ssize_t sendfile_short_send(struct smbXsrv_connection *xconn,
 			    size_t smb_maxcnt);
 NTSTATUS rename_internals_fsp(connection_struct *conn,
 			files_struct *fsp,
+			struct share_mode_lock **lck,
 			struct smb_filename *smb_fname_dst_in,
 			const char *dst_original_lcomp,
 			uint32_t attrs,

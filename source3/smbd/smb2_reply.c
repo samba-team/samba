@@ -1389,6 +1389,7 @@ static NTSTATUS parent_dirname_compatible_open(connection_struct *conn,
 
 NTSTATUS rename_internals_fsp(connection_struct *conn,
 			files_struct *fsp,
+			struct share_mode_lock **_lck,
 			struct smb_filename *smb_fname_dst_in,
 			const char *dst_original_lcomp,
 			uint32_t attrs,
@@ -1737,7 +1738,11 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	 */
 	parent_dir_fname_src_atname->st = fsp->fsp_name->st;
 
-	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
+	if (_lck != NULL) {
+		lck = talloc_move(talloc_tos(), _lck);
+	} else {
+		lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
+	}
 
 	/*
 	 * We have the file open ourselves, so not being able to get the
@@ -1963,6 +1968,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 
 	status = rename_internals_fsp(conn,
 					fsp,
+					NULL,
 					smb_fname_dst,
 					dst_original_lcomp,
 					attrs,

@@ -4406,6 +4406,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 					    const char *pdata,
 					    int total_data,
 					    files_struct *fsp,
+					    struct share_mode_lock **lck,
 					    struct smb_filename *smb_fname_src)
 {
 	bool overwrite;
@@ -4437,6 +4438,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 
 	status = rename_internals_fsp(conn,
 				fsp,
+				lck,
 				smb_fname_dst,
 				dst_original_lcomp,
 				(FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM),
@@ -4810,6 +4812,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 
 		status = rename_internals_fsp(conn,
 					fsp,
+					NULL,
 					smb_fname_dst,
 					dst_original_lcomp,
 					0,
@@ -5087,11 +5090,20 @@ static NTSTATUS smb_set_file_end_of_file_info(connection_struct *conn,
 				fail_after_createfile);
 }
 
+/**
+ * Set an info_level
+ *
+ * Called from the SMB1 and SMB2 code. For the path-based SMB1 code, there may
+ * not be a full fsp from the FSA layer.
+ *
+ * lck may be NULL, currently only passed for SMB2 rename requests.
+ **/
 NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 				struct smb_request *req,
 				TALLOC_CTX *mem_ctx,
 				uint16_t info_level,
 				files_struct *fsp,
+				struct share_mode_lock **lck,
 				struct smb_filename *smb_fname,
 				char *pdata,
 				int total_data,
@@ -5234,9 +5246,13 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 		case SMB2_FILE_RENAME_INFORMATION_INTERNAL:
 		{
 			/* SMB2 rename information. */
-			status = smb2_file_rename_information(conn, req,
-							     pdata, total_data,
-							     fsp, smb_fname);
+			status = smb2_file_rename_information(conn,
+							      req,
+							      pdata,
+							      total_data,
+							      fsp,
+							      lck,
+							      smb_fname);
 			break;
 		}
 
