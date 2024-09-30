@@ -1547,6 +1547,12 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb,
 
 	tcparray = vnn->tcp_array;
 
+	/* Do we already have this tickle ?*/
+	if (ctdb_tcp_find(tcparray, p) != NULL) {
+		DBG_DEBUG("Already had connection %s\n", conn_str);
+		return 0;
+	}
+
 	/* If this is the first tickle */
 	if (tcparray == NULL) {
 		tcparray = talloc(vnn, struct ctdb_tcp_array);
@@ -1565,13 +1571,6 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb,
 		if (tcp_update_needed) {
 			vnn->tcp_update_needed = true;
 		}
-		return 0;
-	}
-
-
-	/* Do we already have this tickle ?*/
-	if (ctdb_tcp_find(tcparray, p) != NULL) {
-		DBG_DEBUG("Already had connection %s\n", conn_str);
 		return 0;
 	}
 
