@@ -2018,6 +2018,14 @@ _PUBLIC_ enum ndr_err_code ndr_pull_relative_ptr1(struct ndr_pull *ndr, const vo
 {
 	enum ndr_err_code ret;
 	rel_offset += ndr->relative_base_offset;
+	if (rel_offset < ndr->relative_base_offset) {
+		return ndr_pull_error(ndr,
+				      NDR_ERR_INVALID_POINTER,
+				      "Overflow rel_offset=%" PRIu32 " + "
+				      "relative_base_offset=%" PRIu32,
+				      rel_offset,
+				      ndr->relative_base_offset);
+	}
 	if (rel_offset > ndr->data_size) {
 		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE,
 				      "ndr_pull_relative_ptr1 rel_offset(%"PRIu32") > ndr->data_size(%"PRIu32")",
