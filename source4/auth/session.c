@@ -365,6 +365,7 @@ struct auth_session_info *auth_session_info_from_transport(TALLOC_CTX *mem_ctx,
 
 		creds = cli_credentials_init(session_info);
 		if (!creds) {
+			gss_release_cred(&minor_status, &cred_handle);
 			*reason = "Out of memory in cli_credentials_init()";
 			return NULL;
 		}
@@ -372,6 +373,7 @@ struct auth_session_info *auth_session_info_from_transport(TALLOC_CTX *mem_ctx,
 
 		ok = cli_credentials_set_conf(creds, lp_ctx);
 		if (!ok) {
+			gss_release_cred(&minor_status, &cred_handle);
 			*reason = "Failed to load smb.conf";
 			return NULL;
 		}
@@ -385,6 +387,7 @@ struct auth_session_info *auth_session_info_from_transport(TALLOC_CTX *mem_ctx,
 							   CRED_SPECIFIED,
 							   &error_string);
 		if (ret) {
+			gss_release_cred(&minor_status, &cred_handle);
 			*reason = talloc_asprintf(mem_ctx,
 						  "Failed to set pipe forwarded "
 						  "creds: %s\n", error_string);
