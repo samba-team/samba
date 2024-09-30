@@ -1497,8 +1497,7 @@ static struct ctdb_connection *ctdb_tcp_find(struct ctdb_tcp_array *array,
 	}
 
 	for (i=0;i<array->num;i++) {
-		if (ctdb_same_sockaddr(&array->connections[i].src, &tcp->src) &&
-		    ctdb_same_sockaddr(&array->connections[i].dst, &tcp->dst)) {
+		if (ctdb_connection_same(&array->connections[i], tcp)) {
 			return &array->connections[i];
 		}
 	}
