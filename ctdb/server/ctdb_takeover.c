@@ -1560,18 +1560,7 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb,
 		vnn->tcp_array = tcparray;
 
 		tcparray->num = 0;
-		tcparray->connections = talloc_size(tcparray,
-						    sizeof(struct ctdb_connection));
-		CTDB_NO_MEMORY(ctdb, tcparray->connections);
-
-		tcparray->connections[tcparray->num].src = p->src;
-		tcparray->connections[tcparray->num].dst = p->dst;
-		tcparray->num++;
-
-		if (tcp_update_needed) {
-			vnn->tcp_update_needed = true;
-		}
-		return 0;
+		tcparray->connections = NULL;
 	}
 
 	/* A new tickle, we must add it to the array */
