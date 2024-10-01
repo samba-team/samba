@@ -1560,7 +1560,7 @@ static int shadow_copy2_openat(vfs_handle_struct *handle,
 	int ret;
 	bool ok;
 
-	if (how.resolve != 0) {
+	if ((how.resolve & ~VFS_OPEN_HOW_WITH_BACKUP_INTENT) != 0) {
 		errno = ENOSYS;
 		return -1;
 	}
