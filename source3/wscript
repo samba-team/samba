@@ -1637,6 +1637,10 @@ int main(void) {
                                 headers='cephfs/libcephfs.h')):
             conf.DEFINE('HAVE_CEPH', '1')
 
+        if (conf.CHECK_FUNCS_IN('ceph_ll_nonblocking_readv_writev', 'cephfs',
+                                headers='cephfs/libcephfs.h')):
+            conf.DEFINE('HAVE_CEPH_ASYNCIO', '1')
+
     if conf.CONFIG_SET('HAVE_CEPH'):
         Logs.info("building ceph vfs modules")
     else:
