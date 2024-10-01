@@ -1072,11 +1072,14 @@ static bool add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
 	}
 
 	/* Make sure there's no duplicates in the list */
-	for (i=0; i<*num; i++)
-		if (sockaddr_equal(
-			    (struct sockaddr *)(void *)&(*dcs)[i].ss,
-			    (struct sockaddr *)(void *)pss))
+	for (i=0; i<*num; i++) {
+		struct samba_sockaddr ss1 = { .u = { .ss = (*dcs)[i].ss, }};
+		struct samba_sockaddr ss2 = { .u = { .ss = *pss, }};
+
+		if (sockaddr_equal(&ss1.u.sa, &ss2.u.sa)) {
 			return False;
+		}
+	}
 
 	*dcs = talloc_realloc(mem_ctx, *dcs, struct dc_name_ip, (*num)+1);
 
