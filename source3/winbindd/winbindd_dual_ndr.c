@@ -463,23 +463,24 @@ fail:
 static NTSTATUS set_remote_addresses(struct dcesrv_connection *conn,
 				     int sock)
 {
-	struct sockaddr_storage st = { 0 };
-	struct sockaddr *sar = (struct sockaddr *)&st;
+	struct samba_sockaddr ssa;
 	struct tsocket_address *remote = NULL;
 	struct tsocket_address *local = NULL;
-	socklen_t sa_len = sizeof(st);
 	NTSTATUS status;
 	int ret;
 
-	ZERO_STRUCT(st);
-	ret = getpeername(sock, sar, &sa_len);
+	ssa = (struct samba_sockaddr) { .sa_socklen = sizeof(ssa.u.ss), };
+	ret = getpeername(sock, &ssa.u.sa, &ssa.sa_socklen);
 	if (ret != 0) {
 		status = map_nt_error_from_unix(ret);
 		DBG_ERR("getpeername failed: %s\n", nt_errstr(status));
 		return status;
 	}
 
-	ret = tsocket_address_bsd_from_sockaddr(conn, sar, sa_len, &remote);
+	ret = tsocket_address_bsd_from_sockaddr(conn,
+						&ssa.u.sa,
+						ssa.sa_socklen,
+						&remote);
 	if (ret != 0) {
 		status = map_nt_error_from_unix(ret);
 		DBG_ERR("tsocket_address_bsd_from_sockaddr failed: %s\n",
@@ -487,15 +488,18 @@ static NTSTATUS set_remote_addresses(struct dcesrv_connection *conn,
 		return status;
 	}
 
-	ZERO_STRUCT(st);
-	ret = getsockname(sock, sar, &sa_len);
+	ssa = (struct samba_sockaddr) { .sa_socklen = sizeof(ssa.u.ss), };
+	ret = getsockname(sock, &ssa.u.sa, &ssa.sa_socklen);
 	if (ret != 0) {
 		status = map_nt_error_from_unix(ret);
 		DBG_ERR("getsockname failed: %s\n", nt_errstr(status));
 		return status;
 	}
 
-	ret = tsocket_address_bsd_from_sockaddr(conn, sar, sa_len, &local);
+	ret = tsocket_address_bsd_from_sockaddr(conn,
+						&ssa.u.sa,
+						ssa.sa_socklen,
+						&local);
 	if (ret != 0) {
 		status = map_nt_error_from_unix(ret);
 		DBG_ERR("tsocket_address_bsd_from_sockaddr failed: %s\n",
