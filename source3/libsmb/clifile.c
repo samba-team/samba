@@ -6648,7 +6648,7 @@ NTSTATUS cli_posix_rmdir(struct cli_state *cli, const char *fname)
 
 struct cli_notify_state {
 	struct tevent_req *subreq;
-	uint8_t setup[8];
+	uint16_t setup[4];
 	uint32_t num_changes;
 	struct notify_change *changes;
 };
