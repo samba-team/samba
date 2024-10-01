@@ -2251,7 +2251,7 @@ static void cli_smb2_qpathinfo_opened(struct tevent_req *subreq)
 					       state->ev,
 					       state->cli,
 					       state->fnum,
-					       1, /* in_info_type */
+					       SMB2_0_INFO_FILE,
 					       state->level,
 					       state->max_rdata,
 					       NULL, /* in_input_buffer */
