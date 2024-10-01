@@ -80,6 +80,7 @@ static NTSTATUS rpc_client_association_create(TALLOC_CTX *mem_ctx,
 {
 	struct rpc_client_association *assoc = NULL;
 	struct dcerpc_binding *bd = NULL;
+	char addrstr[INET6_ADDRSTRLEN] = { 0, };
 	NTSTATUS status;
 
 	assoc = talloc_zero(mem_ctx, struct rpc_client_association);
@@ -106,12 +107,29 @@ static NTSTATUS rpc_client_association_create(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(assoc);
 		return status;
 	}
-	status = dcerpc_binding_set_string_option(bd,
-						  "host",
-						  target_hostname);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(assoc);
-		return status;
+	switch (addr->u.sa.sa_family) {
+	case AF_INET:
+	case AF_INET6:
+		print_sockaddr(addrstr,
+			       sizeof(addrstr),
+			       &addr->u.ss);
+		status = dcerpc_binding_set_string_option(bd,
+							  "host",
+							  addrstr);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(assoc);
+			return status;
+		}
+		break;
+	default:
+		status = dcerpc_binding_set_string_option(bd,
+							  "host",
+							  target_hostname);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(assoc);
+			return status;
+		}
+		break;
 	}
 	status = dcerpc_binding_set_string_option(bd,
 						  "target_hostname",
@@ -143,6 +161,7 @@ static NTSTATUS rpc_client_association_create(TALLOC_CTX *mem_ctx,
 struct rpc_client_connection {
 	DATA_BLOB transport_session_key;
 	struct rpc_cli_transport *transport;
+	struct samba_sockaddr localaddr;
 
 	struct {
 		uint16_t max_xmit_frag;
@@ -2749,6 +2768,7 @@ struct dcerpc_binding_handle *rpccli_bh_create(struct rpc_pipe_client *c,
 	struct dcerpc_binding_handle *h = NULL;
 	struct rpccli_bh_state *hs = NULL;
 	struct dcerpc_binding *b = NULL;
+	char localaddr[INET6_ADDRSTRLEN] = { 0, };
 	uint32_t a_flags = 0;
 	uint32_t c_flags = 0;
 	NTSTATUS status;
@@ -2836,6 +2856,22 @@ struct dcerpc_binding_handle *rpccli_bh_create(struct rpc_pipe_client *c,
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(h);
 		return NULL;
+	}
+
+	switch (c->conn->localaddr.u.sa.sa_family) {
+	case AF_INET:
+	case AF_INET6:
+		print_sockaddr(localaddr,
+			       sizeof(localaddr),
+			       &c->conn->localaddr.u.ss);
+		status = dcerpc_binding_set_string_option(b,
+							  "localaddress",
+							  localaddr);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(h);
+			return NULL;
+		}
+		break;
 	}
 
 	hs->binding = b;
@@ -3061,6 +3097,7 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx,
 	uint16_t port;
 	NTSTATUS status;
 	int fd;
+	int ret;
 
 	transport = dcerpc_binding_get_transport(assoc->binding);
 	if (transport != NCACN_IP_TCP) {
@@ -3091,6 +3128,15 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 	set_socket_options(fd, lp_socket_options());
+
+	conn->localaddr.sa_socklen = sizeof(conn->localaddr.u.ss);
+	ret = getsockname(fd, &conn->localaddr.u.sa, &conn->localaddr.sa_socklen);
+	if (ret != 0) {
+		status = map_nt_error_from_unix_common(errno);
+		close(fd);
+		TALLOC_FREE(conn);
+		return status;
+	}
 
 	status = rpc_transport_sock_init(conn, fd, &conn->transport);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3700,6 +3746,7 @@ static struct tevent_req *rpc_client_connection_np_send(
 	struct rpc_client_connection_np_state *state = NULL;
 	enum dcerpc_transport_t transport;
 	const char *endpoint = NULL;
+	const struct sockaddr_storage *local_sockaddr = NULL;
 	struct smbXcli_session *session = NULL;
 	NTSTATUS status;
 
@@ -3729,6 +3776,9 @@ static struct tevent_req *rpc_client_connection_np_send(
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
+
+	local_sockaddr = smbXcli_conn_local_sockaddr(cli->conn);
+	state->conn->localaddr.u.ss = *local_sockaddr;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		session = cli->smb2.session;
