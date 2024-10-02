@@ -407,6 +407,7 @@ struct auth_schannel_state {
 	struct netr_Authenticator return_auth;
 	union netr_Capabilities capabilities;
 	struct netr_LogonGetCapabilities c;
+	union netr_CONTROL_QUERY_INFORMATION ctrl_info;
 };
 
 
@@ -503,6 +504,8 @@ static void continue_bind_auth(struct composite_context *ctx)
 	composite_done(c);
 }
 
+static void continue_logon_control_do(struct composite_context *c);
+
 /*
   Stage 4 of auth_schannel: Get the Logon Capabilities and verify them.
 */
@@ -519,13 +522,18 @@ static void continue_get_capabilities(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (NT_STATUS_EQUAL(c->status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
 		if (s->creds_state->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-			composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			DBG_ERR("%s: NT_STATUS_DOWNGRADE_DETECTED\n", __location__);
+			composite_error(c, NT_STATUS_DOWNGRADE_DETECTED);
 			return;
-		} else {
-			/* This is probably NT */
-			composite_done(c);
+		} else if (s->creds_state->negotiate_flags & NETLOGON_NEG_STRONG_KEYS) {
+			DBG_ERR("%s: NT_STATUS_DOWNGRADE_DETECTED\n", __location__);
+			composite_error(c, NT_STATUS_DOWNGRADE_DETECTED);
 			return;
 		}
+
+		/* This is probably NT */
+		continue_logon_control_do(c);
+		return;
 	} else if (!composite_is_ok(c)) {
 		return;
 	}
@@ -533,7 +541,8 @@ static void continue_get_capabilities(struct tevent_req *subreq)
 	if (NT_STATUS_EQUAL(s->c.out.result, NT_STATUS_NOT_IMPLEMENTED)) {
 		if (s->creds_state->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 			/* This means AES isn't supported. */
-			composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
+			DBG_ERR("%s: NT_STATUS_DOWNGRADE_DETECTED\n", __location__);
+			composite_error(c, NT_STATUS_DOWNGRADE_DETECTED);
 			return;
 		}
 
@@ -559,11 +568,11 @@ static void continue_get_capabilities(struct tevent_req *subreq)
 
 	/* compare capabilities */
 	if (s->creds_state->negotiate_flags != s->capabilities.server_capabilities) {
-		DEBUG(2, ("The client capabilities don't match the server "
-			  "capabilities: local[0x%08X] remote[0x%08X]\n",
-			  s->creds_state->negotiate_flags,
-			  s->capabilities.server_capabilities));
-		composite_error(c, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		DBG_ERR("The client capabilities don't match the server "
+			"capabilities: local[0x%08X] remote[0x%08X]\n",
+			s->creds_state->negotiate_flags,
+			s->capabilities.server_capabilities);
+		composite_error(c, NT_STATUS_DOWNGRADE_DETECTED);
 		return;
 	}
 
@@ -572,6 +581,53 @@ static void continue_get_capabilities(struct tevent_req *subreq)
 	composite_done(c);
 }
 
+static void continue_logon_control_done(struct tevent_req *subreq);
+
+static void continue_logon_control_do(struct composite_context *c)
+{
+	struct auth_schannel_state *s = NULL;
+	struct tevent_req *subreq = NULL;
+
+	s = talloc_get_type(c->private_data, struct auth_schannel_state);
+
+	subreq = dcerpc_netr_LogonControl_send(s,
+					       c->event_ctx,
+					       s->pipe->binding_handle,
+					       s->c.in.server_name,
+					       NETLOGON_CONTROL_QUERY,
+					       2,
+					       &s->ctrl_info);
+	if (composite_nomem(subreq, c)) return;
+
+	tevent_req_set_callback(subreq, continue_logon_control_done, c);
+}
+
+static void continue_logon_control_done(struct tevent_req *subreq)
+{
+	struct composite_context *c = NULL;
+	struct auth_schannel_state *s = NULL;
+	WERROR werr;
+
+	c = tevent_req_callback_data(subreq, struct composite_context);
+	s = talloc_get_type(c->private_data, struct auth_schannel_state);
+
+	/* receive rpc request result */
+	c->status = dcerpc_netr_LogonControl_recv(subreq, s, &werr);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(c->status)) {
+		DBG_ERR("%s: NT_STATUS_DOWNGRADE_DETECTED\n", __location__);
+		composite_error(c, NT_STATUS_DOWNGRADE_DETECTED);
+		return;
+	}
+
+	if (!W_ERROR_EQUAL(werr, WERR_NOT_SUPPORTED)) {
+		DBG_ERR("%s: NT_STATUS_DOWNGRADE_DETECTED\n", __location__);
+		composite_error(c, NT_STATUS_DOWNGRADE_DETECTED);
+		return;
+	}
+
+	composite_done(c);
+}
 
 /*
   Initiate schannel authentication request
