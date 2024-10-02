@@ -5066,6 +5066,342 @@ done:
 	return ret;
 }
 
+struct rename_tcase_open {
+	bool hlease;
+	bool close_on_break;
+};
+
+struct rename_tcase {
+	const char *name;
+	bool disabled;
+	struct rename_tcase_open o1;
+	struct rename_tcase_open o2;
+	bool do_o3;
+	struct rename_tcase_open o3;
+	NTSTATUS status;
+};
+
+static bool torture_rename_dir_openfile_do(struct torture_context *tctx,
+					   struct smb2_tree *tree1,
+					   struct smb2_tree *tree2,
+					   struct rename_tcase *t)
+{
+	struct smb2_create c = {};
+	union smb_setfileinfo sinfo = {};
+	struct smb2_handle d1 = {};
+	struct smb2_handle h1 = {};
+	struct smb2_handle h2 = {};
+	struct smb2_handle h3 = {};
+	struct smb2_handle *h = NULL;
+	struct smb2_lease *please1 = NULL;
+	struct smb2_lease *please2 = NULL;
+	struct smb2_lease *please3 = NULL;
+	struct smb2_lease lease1 = {};
+	struct smb2_lease lease2 = {};
+	struct smb2_lease lease3 = {};
+	struct smb2_request *req = NULL;
+	struct smb2_lease_break_ack ack = {};
+	struct rename_tcase_open *to = NULL;
+	const char *dname = "torture_rename_dir_openfile_dir";
+	const char *fname1 = "torture_rename_dir_openfile_dir\\torture_rename_dir_openfile_file1";
+	const char *fname2 = "torture_rename_dir_openfile_dir\\torture_rename_dir_openfile_file2";
+	const char *fname3 = "torture_rename_dir_openfile_dir\\torture_rename_dir_openfile_file3";
+	const char *new_dname = "torture_rename_dir_openfile_dir-renamed";
+	bool expect_immediate_fail = false;
+	bool ret = true;
+	NTSTATUS status;
+
+	torture_comment(tctx, "Subtest: %s\n", t->name);
+	if (t->disabled) {
+		torture_comment(tctx, "...skipped\n");
+		return true;
+	}
+
+	tree2->session->transport->lease.handler = torture_lease_handler;
+	tree2->session->transport->lease.private_data = tree2;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	smb2_deltree(tree1, dname);
+	smb2_deltree(tree1, new_dname);
+
+	torture_comment(tctx, "Creating base directory\n");
+
+	smb2_lease_v2_create_share(&c, NULL, true, dname,
+				   smb2_util_share_access("RWD"),
+				   0,
+				   NULL,
+				   smb2_util_lease_state(""),
+				   0);
+	status = smb2_create(tree1, tree1, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	d1 = c.out.file.handle;
+
+	torture_comment(tctx, "Creating test file1\n");
+
+	if (t->o1.hlease) {
+		please1 = &lease1;
+	}
+	smb2_lease_v2_create_share(&c, please1, false, fname1,
+				   smb2_util_share_access("RWD"),
+				   LEASE1,
+				   NULL,
+				   smb2_util_lease_state("RH"),
+				   0);
+	status = smb2_create(tree2, tree2, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+
+	torture_comment(tctx, "Creating test file2\n");
+
+	if (t->o2.hlease) {
+		please2 = &lease2;
+	}
+	smb2_lease_v2_create_share(&c, please2, false, fname2,
+				   smb2_util_share_access("RWD"),
+				   LEASE2,
+				   NULL,
+				   smb2_util_lease_state("RH"),
+				   0);
+	status = smb2_create(tree2, tree2, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h2 = c.out.file.handle;
+
+	torture_comment(tctx, "Renaming directory\n");
+
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.handle = d1;
+	sinfo.rename_information.in.new_name = new_dname;
+
+	req = smb2_setinfo_file_send(tree1, &sinfo);
+	torture_assert_goto(tctx, req != NULL, ret, done,
+			    "smb2_setinfo_file_send");
+
+	torture_assert(tctx, req->state == SMB2_REQUEST_RECV, "bad req state");
+
+	if (t->o1.hlease || t->o2.hlease) {
+		/* Get the first break */
+		torture_wait_for_lease_break(tctx);
+
+		if (lease_break_info.count == 0) {
+			/*
+			 * If one of the two opens was without a h-lease, the
+			 * scan for opens might hit the open without h-lease
+			 * first triggering an immediate STATUS_ACCESS_DENIED
+			 * for the rename without sending out any lease break.
+			 */
+			torture_assert_goto(tctx, (!t->o1.hlease || !t->o2.hlease),
+					    ret, done,
+					    "Expected only one hlease when getting no hlease break\n");
+
+			status = smb2_setinfo_recv(req);
+			torture_assert_ntstatus_equal_goto(tctx, status, t->status, ret, done,
+							   "Rename didn't work as expected\n");
+			goto done;
+		}
+
+		if (lease_break_info.lease_break.current_lease.lease_key.data[0] == LEASE1 &&
+		    lease_break_info.lease_break.current_lease.lease_key.data[1] == ~LEASE1)
+		{
+			torture_comment(tctx, "Got break for file 1\n");
+			please1 = &lease1;
+			h = &h1;
+			to = &t->o1;
+		} else {
+			torture_comment(tctx, "Got break for file 2\n");
+			please1 = &lease2;
+			h = &h2;
+			to = &t->o2;
+		}
+		please1->lease_epoch += 2;
+
+		CHECK_BREAK_INFO_V2_NOWAIT(tree2->session->transport,
+					   "RH", "R",
+					   please1->lease_key.data[0],
+					   please1->lease_epoch);
+
+		ack.in.lease.lease_key = lease_break_info.lease_break.current_lease.lease_key;
+		ack.in.lease.lease_state = lease_break_info.lease_break.new_lease_state;
+		torture_reset_lease_break_info(tctx, &lease_break_info);
+		lease_break_info.lease_skip_ack = true;
+
+		if (to->close_on_break) {
+			status = smb2_util_close(tree2, *h);
+			torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+							"smb2_util_close failed\n");
+			ZERO_STRUCTP(h);
+		} else {
+			status = smb2_lease_break_ack(tree2, &ack);
+			torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+							"ack failed\n");
+			expect_immediate_fail = true;
+		}
+	}
+
+	if (t->do_o3) {
+		torture_comment(tctx, "Doing additional open after first break\n");
+
+		if (t->o3.hlease) {
+			please3 = &lease3;
+		}
+		smb2_lease_v2_create_share(&c, please3, false, fname3,
+					   smb2_util_share_access("RWD"),
+					   LEASE3,
+					   NULL,
+					   smb2_util_lease_state("RH"),
+					   0);
+		status = smb2_create(tree2, tree2, &c);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_create failed\n");
+		h3 = c.out.file.handle;
+	}
+
+	if (!expect_immediate_fail && t->o1.hlease && t->o2.hlease) {
+		/* Get the second break */
+		torture_wait_for_lease_break(tctx);
+
+		if (lease_break_info.lease_break.current_lease.lease_key.data[0] == LEASE1 &&
+		    lease_break_info.lease_break.current_lease.lease_key.data[1] == ~LEASE1)
+		{
+			torture_comment(tctx, "Got break for file 1\n");
+			please1 = &lease1;
+			h = &h1;
+			to = &t->o1;
+		} else {
+			torture_comment(tctx, "Got break for file 2\n");
+			please1 = &lease2;
+			h = &h2;
+			to = &t->o2;
+		}
+		please1->lease_epoch += 2;
+
+		CHECK_BREAK_INFO_V2_NOWAIT(tree2->session->transport,
+					   "RH", "R",
+					   please1->lease_key.data[0],
+					   please1->lease_epoch);
+
+		ack.in.lease.lease_key = lease_break_info.lease_break.current_lease.lease_key;
+		ack.in.lease.lease_state = lease_break_info.lease_break.new_lease_state;
+		torture_reset_lease_break_info(tctx, &lease_break_info);
+		lease_break_info.lease_skip_ack = true;
+
+		if (to->close_on_break) {
+			status = smb2_util_close(tree2, *h);
+			torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+							"smb2_util_close failed\n");
+			ZERO_STRUCTP(h);
+		} else {
+			status = smb2_lease_break_ack(tree2, &ack);
+			torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+							"ack failed\n");
+		}
+	}
+
+	status = smb2_setinfo_recv(req);
+	torture_assert_ntstatus_equal_goto(tctx, status, t->status, ret, done,
+					   "Rename didn't work as expected\n");
+
+done:
+	if (!smb2_util_handle_empty(d1)) {
+		smb2_util_close(tree1, d1);
+	}
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree2, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree2, h2);
+	}
+	if (!smb2_util_handle_empty(h3)) {
+		smb2_util_close(tree2, h3);
+	}
+	smb2_deltree(tree1, dname);
+	smb2_deltree(tree1, new_dname);
+	return ret;
+}
+
+static bool torture_rename_dir_openfile(struct torture_context *tctx,
+					struct smb2_tree *tree1,
+					struct smb2_tree *tree2)
+{
+	struct rename_tcase tcases[] = {
+		{
+			.name = "two-hleases-two-closes",
+			.o1 = { .hlease = true, .close_on_break = true },
+			.o2 = { .hlease = true, .close_on_break = true },
+			.do_o3 = false,
+			.status = NT_STATUS_OK,
+		},
+		{
+			.name = "no-hleases",
+			.o1 = { .hlease = false, },
+			.o2 = { .hlease = false, },
+			.do_o3 = false,
+			.status = NT_STATUS_ACCESS_DENIED,
+		},
+		{
+			.name = "two-hleases-second-hlease-close",
+			.o1 = { .hlease = true, .close_on_break = false },
+			.o2 = { .hlease = true, .close_on_break = true },
+			.do_o3 = false,
+			.status = NT_STATUS_ACCESS_DENIED,
+		},
+		{
+			.name = "two-hleases-first-hlease-close",
+			.o1 = { .hlease = true, .close_on_break = true },
+			.o2 = { .hlease = true, .close_on_break = false },
+			.do_o3 = false,
+			.status = NT_STATUS_ACCESS_DENIED,
+		},
+		{
+			.name = "first-hlease-close",
+			.o1 = { .hlease = true, .close_on_break = true },
+			.o2 = { .hlease = false, },
+			.do_o3 = false,
+			.status = NT_STATUS_ACCESS_DENIED,
+		},
+		{
+			.name = "second-hlease-close",
+			.o1 = { .hlease = false, },
+			.o2 = { .hlease = true, .close_on_break = true },
+			.do_o3 = false,
+			.status = NT_STATUS_ACCESS_DENIED,
+		},
+		{
+			.name = "two-hleases-two-closes-addopen-w-hlease",
+			.o1 = { .hlease = true, .close_on_break = true },
+			.o2 = { .hlease = true, .close_on_break = true },
+			.do_o3 = true,
+			.o3 = { .hlease = true, .close_on_break = true },
+			.status = NT_STATUS_ACCESS_DENIED,
+		},
+		{
+			.name = "two-hleases-two-closes-addopen-wo-hlease",
+			.o1 = { .hlease = true, .close_on_break = true },
+			.o2 = { .hlease = true, .close_on_break = true },
+			.do_o3 = true,
+			.o3 = { .hlease = false, },
+			.status = NT_STATUS_ACCESS_DENIED,
+		},
+	};
+	size_t i;
+	bool ret;
+
+	tree1->session->transport->lease.handler = torture_lease_handler;
+	tree1->session->transport->lease.private_data = tree2;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	for (i = 0; i < ARRAY_SIZE(tcases); i++) {
+		ret = torture_rename_dir_openfile_do(tctx, tree1, tree2, &tcases[i]);
+		torture_assert_goto(tctx, ret, ret, done, "test failed\n");
+	}
+
+done:
+	return ret;
+}
+
 struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -5126,6 +5462,8 @@ struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 				     test_initial_delete_logoff);
 	torture_suite_add_1smb2_test(suite, "initial_delete_disconnect",
 				     test_initial_delete_disconnect);
+	torture_suite_add_2smb2_test(suite, "rename_dir_openfile",
+				     torture_rename_dir_openfile);
 
 	suite->description = talloc_strdup(suite, "SMB2-LEASE tests");
 

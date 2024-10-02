@@ -100,6 +100,22 @@ struct lease_break_info {
 		}							\
 	} while(0)
 
+#define _CHECK_BREAK_INFO_NOWAIT(__oldstate, __state, __key)			\
+	do {								\
+		CHECK_VAL(lease_break_info.failures, 0);			\
+		CHECK_VAL(lease_break_info.count, 1);				\
+		CHECK_LEASE_BREAK(&lease_break_info.lease_break, (__oldstate), \
+		    (__state), (__key));				\
+		if (!lease_break_info.lease_skip_ack && \
+		    (lease_break_info.lease_break.break_flags &		\
+		     SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED))	\
+		{	\
+			torture_wait_for_lease_break(tctx);		\
+			CHECK_LEASE_BREAK_ACK(&lease_break_info.lease_break_ack, \
+				              (__state), (__key));	\
+		}							\
+	} while(0)
+
 #define CHECK_BREAK_INFO(__oldstate, __state, __key)			\
 	do {								\
 		_CHECK_BREAK_INFO(__oldstate, __state, __key);		\
@@ -109,6 +125,16 @@ struct lease_break_info {
 #define CHECK_BREAK_INFO_V2(__transport, __oldstate, __state, __key, __epoch) \
 	do {								\
 		_CHECK_BREAK_INFO(__oldstate, __state, __key);		\
+		CHECK_VAL(lease_break_info.lease_break.new_epoch, __epoch);	\
+		if (!TARGET_IS_SAMBA3(tctx)) {				\
+			CHECK_VAL((uintptr_t)lease_break_info.lease_transport, \
+				  (uintptr_t)__transport);		\
+		} \
+	} while(0)
+
+#define CHECK_BREAK_INFO_V2_NOWAIT(__transport, __oldstate, __state, __key, __epoch) \
+	do {								\
+		_CHECK_BREAK_INFO_NOWAIT(__oldstate, __state, __key);		\
 		CHECK_VAL(lease_break_info.lease_break.new_epoch, __epoch);	\
 		if (!TARGET_IS_SAMBA3(tctx)) {				\
 			CHECK_VAL((uintptr_t)lease_break_info.lease_transport, \
