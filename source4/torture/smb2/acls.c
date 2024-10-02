@@ -2993,7 +2993,7 @@ static bool test_overwrite_read_only_file(struct torture_context *tctx,
 					  struct smb2_tree *tree)
 {
 	NTSTATUS status;
-	struct smb2_create c;
+	struct smb2_create c = {};
 	const char *fname = BASEDIR "\\test_overwrite_read_only_file.txt";
 	struct smb2_handle handle = {{0}};
 	union smb_fileinfo q;
@@ -3007,12 +3007,15 @@ static bool test_overwrite_read_only_file(struct torture_context *tctx,
 		int disposition;
 		const char *disposition_string;
 		NTSTATUS expected_status;
-	} tcases[] = {
+	};
+
 #define TCASE(d, s) {				\
 		.disposition = d,		\
 		.disposition_string = #d,	\
 		.expected_status = s,		\
 	}
+
+	struct tcase fs_tcases[] = {
 		TCASE(NTCREATEX_DISP_OPEN, NT_STATUS_OK),
 		TCASE(NTCREATEX_DISP_SUPERSEDE, NT_STATUS_ACCESS_DENIED),
 		TCASE(NTCREATEX_DISP_OVERWRITE, NT_STATUS_ACCESS_DENIED),
@@ -3075,12 +3078,12 @@ static bool test_overwrite_read_only_file(struct torture_context *tctx,
 	smb2_util_close(tree, handle);
 	ZERO_STRUCT(handle);
 
-	for (i = 0; i < ARRAY_SIZE(tcases); i++) {
+	for (i = 0; i < ARRAY_SIZE(fs_tcases); i++) {
 		torture_comment(tctx, "Verify open with %s disposition\n",
-				tcases[i].disposition_string);
+				fs_tcases[i].disposition_string);
 
 		c = (struct smb2_create) {
-			.in.create_disposition = tcases[i].disposition,
+			.in.create_disposition = fs_tcases[i].disposition,
 			.in.desired_access = SEC_FILE_READ_DATA,
 			.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
 			.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
@@ -3091,7 +3094,7 @@ static bool test_overwrite_read_only_file(struct torture_context *tctx,
 		status = smb2_create(tree, tctx, &c);
 		smb2_util_close(tree, c.out.file.handle);
 		torture_assert_ntstatus_equal_goto(
-			tctx, status, tcases[i].expected_status, ret, done,
+			tctx, status, fs_tcases[i].expected_status, ret, done,
 			"smb2_create failed\n");
 	};
 
