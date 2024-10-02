@@ -22,6 +22,8 @@ interface schannel
 		 * On the server we use CLEAR_IF_FIRST,
 		 * so db layout changes don't matter there.
 		 */
+		netr_NegotiateFlags client_requested_flags;
+		NTTIME auth_time;
 		dom_sid client_sid;
 	} netlogon_creds_CredentialState_extra_info;
 
