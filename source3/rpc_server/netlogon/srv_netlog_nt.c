@@ -1321,6 +1321,7 @@ NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 	size_t i;
 	struct netlogon_creds_CredentialState *creds = NULL;
 	struct _samr_Credentials_t cr = { CRED_TYPE_NT_HASH, {0}};
+	const struct dom_sid *client_sid = NULL;
 
 	DEBUG(5,("_netr_ServerPasswordSet: %d\n", __LINE__));
 
@@ -1345,6 +1346,7 @@ NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 		TALLOC_FREE(creds);
 		return status;
 	}
+	client_sid = creds->sid;
 
 	DEBUG(3,("_netr_ServerPasswordSet: Server Password Set by remote machine:[%s] on account [%s]\n",
 			r->in.computer_name, creds->computer_name));
@@ -1363,7 +1365,7 @@ NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 	status = netr_set_machine_account_password(p->mem_ctx,
 						   session_info,
 						   p->msg_ctx,
-						   creds->sid,
+						   client_sid,
 						   &cr);
 	return status;
 }
@@ -1380,6 +1382,7 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 		dcesrv_call_session_info(dce_call);
 	NTSTATUS status;
 	struct netlogon_creds_CredentialState *creds = NULL;
+	const struct dom_sid *client_sid = NULL;
 	DATA_BLOB plaintext = data_blob_null;
 	DATA_BLOB new_password = data_blob_null;
 	size_t confounder_len;
@@ -1405,6 +1408,7 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 		TALLOC_FREE(creds);
 		return status;
 	}
+	client_sid = creds->sid;
 
 	DBG_NOTICE("Server Password Set2 by remote "
 		   "machine:[%s] on account [%s]\n",
@@ -1525,7 +1529,7 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 	status = netr_set_machine_account_password(p->mem_ctx,
 						   session_info,
 						   p->msg_ctx,
-						   creds->sid,
+						   client_sid,
 						   &cr);
 	TALLOC_FREE(creds);
 	return status;
