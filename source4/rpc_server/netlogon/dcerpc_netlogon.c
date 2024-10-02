@@ -768,6 +768,11 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	*sid = samdb_result_dom_sid(mem_ctx, msgs[0], "objectSid");
+	if (*sid == NULL) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	creds = netlogon_creds_server_init(mem_ctx,
 					   r->in.account_name,
 					   r->in.computer_name,
@@ -777,6 +782,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 					   curNtHash,
 					   r->in.credentials,
 					   r->out.return_credentials,
+					   *sid,
 					   negotiate_flags);
 	if (creds == NULL && prevNtHash != NULL) {
 		/*
@@ -794,14 +800,13 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 						   prevNtHash,
 						   r->in.credentials,
 						   r->out.return_credentials,
+						   *sid,
 						   negotiate_flags);
 	}
 
 	if (creds == NULL) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	creds->sid = samdb_result_dom_sid(creds, msgs[0], "objectSid");
-	*sid = talloc_memdup(mem_ctx, creds->sid, sizeof(struct dom_sid));
 
 	nt_status = schannel_save_creds_state(mem_ctx,
 					      dce_call->conn->dce_ctx->lp_ctx,
