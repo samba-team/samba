@@ -1591,6 +1591,8 @@ struct netlogon_creds_cli_check_state {
 	struct netlogon_creds_CredentialState *creds;
 	struct netr_Authenticator req_auth;
 	struct netr_Authenticator rep_auth;
+
+	union netr_CONTROL_QUERY_INFORMATION ctrl_info;
 };
 
 static void netlogon_creds_cli_check_cleanup(struct tevent_req *req,
@@ -1709,6 +1711,8 @@ static void netlogon_creds_cli_check_cleanup(struct tevent_req *req,
 	TALLOC_FREE(state->creds);
 }
 
+static void netlogon_creds_cli_check_control_do(struct tevent_req *req);
+
 static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
@@ -1769,9 +1773,10 @@ static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
 		 * we should detect a faked NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE
 		 * with the next request as the sequence number processing
 		 * gets out of sync.
+		 *
+		 * So we'll do a LogonControl message to check that...
 		 */
-		netlogon_creds_cli_check_cleanup(req, status);
-		tevent_req_done(req);
+		netlogon_creds_cli_check_control_do(req);
 		return;
 	}
 	if (tevent_req_nterror(req, status)) {
@@ -1848,6 +1853,73 @@ static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
 	status = netlogon_creds_cli_store_internal(state->context,
 						   state->creds);
 	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static void netlogon_creds_cli_check_control_done(struct tevent_req *subreq);
+
+static void netlogon_creds_cli_check_control_do(struct tevent_req *req)
+{
+	struct netlogon_creds_cli_check_state *state =
+		tevent_req_data(req,
+		struct netlogon_creds_cli_check_state);
+	struct tevent_req *subreq = NULL;
+
+	/*
+	 * In case we got a downgrade based on a FAULT
+	 * we use a LogonControl that is supposed to
+	 * return WERR_NOT_SUPPORTED (without a DCERPC FAULT)
+	 * to verify that the connection is still ok and didn't
+	 * get out of sync.
+	 */
+	subreq = dcerpc_netr_LogonControl_send(state,
+					       state->ev,
+					       state->binding_handle,
+					       state->srv_name_slash,
+					       NETLOGON_CONTROL_QUERY,
+					       2,
+					       &state->ctrl_info);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+
+	tevent_req_set_callback(subreq,
+				netlogon_creds_cli_check_control_done,
+				req);
+	return;
+}
+
+static void netlogon_creds_cli_check_control_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct netlogon_creds_cli_check_state *state =
+		tevent_req_data(req,
+		struct netlogon_creds_cli_check_state);
+	NTSTATUS status;
+	WERROR result;
+
+	status = dcerpc_netr_LogonControl_recv(subreq, state, &result);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		/*
+		 * We want to delete the creds,
+		 * so we pass NT_STATUS_DOWNGRADE_DETECTED
+		 * to netlogon_creds_cli_check_cleanup()
+		 */
+		status = NT_STATUS_DOWNGRADE_DETECTED;
+		netlogon_creds_cli_check_cleanup(req, status);
+		return;
+	}
+
+	if (!W_ERROR_EQUAL(result, WERR_NOT_SUPPORTED)) {
+		status = NT_STATUS_DOWNGRADE_DETECTED;
+		tevent_req_nterror(req, status);
+		netlogon_creds_cli_check_cleanup(req, status);
 		return;
 	}
 
