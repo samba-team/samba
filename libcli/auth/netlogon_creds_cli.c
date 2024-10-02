@@ -1478,14 +1478,16 @@ static void netlogon_creds_cli_auth_srvauth_done(struct tevent_req *subreq)
 	}
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED)) {
-		uint32_t tmp_flags = state->context->client.proposed_flags;
-		if ((state->current_flags == tmp_flags) &&
-		    (state->creds->negotiate_flags != tmp_flags))
-		{
+		uint32_t prop_f = state->context->client.proposed_flags;
+		uint32_t cli_f = state->current_flags;
+		uint32_t srv_f = state->creds->negotiate_flags;
+		uint32_t nego_f = cli_f & srv_f;
+
+		if (cli_f == prop_f && nego_f != prop_f) {
 			/*
 			 * lets retry with the negotiated flags
 			 */
-			state->current_flags = state->creds->negotiate_flags;
+			state->current_flags = nego_f;
 			netlogon_creds_cli_auth_challenge_start(req);
 			return;
 		}
