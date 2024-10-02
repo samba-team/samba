@@ -243,6 +243,14 @@ static void continue_srv_auth2(struct tevent_req *subreq)
 		uint32_t rf = s->remote_negotiate_flags;
 		const char *rn = NULL;
 
+		if ((lf & rf) == lf) {
+			/*
+			 * without a change in flags
+			 * there's no need to retry...
+			 */
+			s->dcerpc_schannel_auto = false;
+		}
+
 		if (!s->dcerpc_schannel_auto) {
 			composite_error(c, s->a.out.result);
 			return;
@@ -277,7 +285,7 @@ static void continue_srv_auth2(struct tevent_req *subreq)
 			  "and retry! local[0x%08X] remote[0x%08X]\n",
 			  ln, rn, lf, rf));
 
-		s->local_negotiate_flags = s->remote_negotiate_flags;
+		s->local_negotiate_flags &= s->remote_negotiate_flags;
 
 		generate_random_buffer(s->credentials1.data,
 				       sizeof(s->credentials1.data));
@@ -292,13 +300,13 @@ static void continue_srv_auth2(struct tevent_req *subreq)
 		return;
 	}
 
-	s->creds->negotiate_flags = s->remote_negotiate_flags;
-
 	/* verify credentials */
 	if (!netlogon_creds_client_check(s->creds, s->a.out.return_credentials)) {
 		composite_error(c, NT_STATUS_UNSUCCESSFUL);
 		return;
 	}
+
+	s->creds->negotiate_flags &= s->remote_negotiate_flags;
 
 	composite_done(c);
 }
