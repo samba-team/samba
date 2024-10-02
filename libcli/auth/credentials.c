@@ -657,6 +657,7 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 								  const struct samr_Password *machine_password,
 								  const struct netr_Credential *credentials_in,
 								  struct netr_Credential *credentials_out,
+								  const struct dom_sid *client_sid,
 								  uint32_t negotiate_flags)
 {
 
@@ -696,6 +697,12 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 	}
 	creds->account_name = talloc_strdup(creds, client_account);
 	if (!creds->account_name) {
+		talloc_free(creds);
+		return NULL;
+	}
+
+	creds->sid = dom_sid_dup(creds, client_sid);
+	if (creds->sid == NULL) {
 		talloc_free(creds);
 		return NULL;
 	}

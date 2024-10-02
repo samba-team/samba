@@ -69,6 +69,7 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 								  const struct samr_Password *machine_password,
 								  const struct netr_Credential *credentials_in,
 								  struct netr_Credential *credentials_out,
+								  const struct dom_sid *client_sid,
 								  uint32_t negotiate_flags);
 NTSTATUS netlogon_creds_server_step_check(struct netlogon_creds_CredentialState *creds,
 				 const struct netr_Authenticator *received_authenticator,
