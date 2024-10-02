@@ -1097,7 +1097,9 @@ static bool auth2(struct torture_context *tctx,
 						 a.in.secure_channel_type,
 						 r.in.credentials,
 						 r.out.return_credentials, &mach_pw,
-						 &netr_cred, negotiate_flags);
+						 &netr_cred,
+						 negotiate_flags,
+						 negotiate_flags);
 	torture_assert(tctx, (creds_state != NULL), "memory allocation failed");
 
 	status = dcerpc_netr_ServerAuthenticate2_r(net_handle, mem_ctx, &a);
@@ -2163,7 +2165,9 @@ static bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 						 a.in.secure_channel_type,
 						 r.in.credentials,
 						 r.out.return_credentials, &mach_pw,
-						 &netr_cred, negotiate_flags);
+						 &netr_cred,
+						 negotiate_flags,
+						 negotiate_flags);
 	torture_assert(torture, (creds_state != NULL), "memory allocation failed");
 
 	status = dcerpc_netr_ServerAuthenticate2_r(net_handle, mem_ctx, &a);

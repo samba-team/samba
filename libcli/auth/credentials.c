@@ -491,16 +491,19 @@ struct netlogon_creds_CredentialState *netlogon_creds_client_init(TALLOC_CTX *me
 								  const struct netr_Credential *server_challenge,
 								  const struct samr_Password *machine_password,
 								  struct netr_Credential *initial_credential,
+								  uint32_t client_requested_flags,
 								  uint32_t negotiate_flags)
 {
 	struct netlogon_creds_CredentialState *creds = talloc_zero(mem_ctx, struct netlogon_creds_CredentialState);
+	struct timeval tv = timeval_current();
+	NTTIME now = timeval_to_nttime(&tv);
 	NTSTATUS status;
 
 	if (!creds) {
 		return NULL;
 	}
 
-	creds->sequence = time(NULL);
+	creds->sequence = tv.tv_sec;
 	creds->negotiate_flags = negotiate_flags;
 	creds->secure_channel_type = secure_channel_type;
 
@@ -514,6 +517,16 @@ struct netlogon_creds_CredentialState *netlogon_creds_client_init(TALLOC_CTX *me
 		talloc_free(creds);
 		return NULL;
 	}
+
+	creds->ex = talloc_zero(creds,
+			struct netlogon_creds_CredentialState_extra_info);
+	if (creds->ex == NULL) {
+		talloc_free(creds);
+		return NULL;
+	}
+	creds->ex->client_requested_flags = client_requested_flags;
+	creds->ex->auth_time = now;
+	creds->ex->client_sid = global_sid_NULL;
 
 	dump_data_pw("Client chall", client_challenge->data, sizeof(client_challenge->data));
 	dump_data_pw("Server chall", server_challenge->data, sizeof(server_challenge->data));

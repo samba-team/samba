@@ -1355,6 +1355,7 @@ static void netlogon_creds_cli_auth_challenge_done(struct tevent_req *subreq)
 						  &state->server_challenge,
 						  state->used_nt_hash,
 						  &state->client_credential,
+						  state->context->client.proposed_flags,
 						  state->current_flags);
 	if (tevent_req_nomem(state->creds, req)) {
 		return;
@@ -1558,6 +1559,7 @@ static void netlogon_creds_cli_auth_srvauth_done(struct tevent_req *subreq)
 		return;
 	}
 
+	state->creds->ex->client_sid.sub_auths[0] = state->rid;
 	status = netlogon_creds_cli_store_internal(state->context,
 						   state->creds);
 	if (tevent_req_nterror(req, status)) {
@@ -1935,6 +1937,7 @@ static void netlogon_creds_cli_check_client_caps(struct tevent_req *subreq)
 	struct netlogon_creds_cli_check_state *state =
 		tevent_req_data(req,
 		struct netlogon_creds_cli_check_state);
+	uint32_t requested_flags;
 	NTSTATUS status;
 	NTSTATUS result;
 	bool ok;
@@ -1986,9 +1989,13 @@ static void netlogon_creds_cli_check_client_caps(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->client_caps.requested_flags !=
-	    state->context->client.proposed_flags)
-	{
+	if (state->creds->ex != NULL) {
+		requested_flags = state->creds->ex->client_requested_flags;
+	} else {
+		requested_flags = state->context->client.proposed_flags;
+	}
+
+	if (state->client_caps.requested_flags != requested_flags) {
 		status = NT_STATUS_DOWNGRADE_DETECTED;
 		tevent_req_nterror(req, status);
 		netlogon_creds_cli_check_cleanup(req, status);
