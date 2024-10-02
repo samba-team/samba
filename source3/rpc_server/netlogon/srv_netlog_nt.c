@@ -1331,7 +1331,7 @@ NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 		TALLOC_FREE(creds);
 		return status;
 	}
-	client_sid = creds->sid;
+	client_sid = &creds->ex->client_sid;
 
 	DEBUG(3,("_netr_ServerPasswordSet: Server Password Set by remote machine:[%s] on account [%s]\n",
 			r->in.computer_name, creds->computer_name));
@@ -1393,7 +1393,7 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 		TALLOC_FREE(creds);
 		return status;
 	}
-	client_sid = creds->sid;
+	client_sid = &creds->ex->client_sid;
 
 	DBG_NOTICE("Server Password Set2 by remote "
 		   "machine:[%s] on account [%s]\n",
