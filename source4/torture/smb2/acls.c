@@ -2994,8 +2994,10 @@ static bool test_overwrite_read_only_file(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct smb2_create c = {};
+	struct smb2_create c2 = {};
 	const char *fname = BASEDIR "\\test_overwrite_read_only_file.txt";
 	struct smb2_handle handle = {{0}};
+	struct smb2_handle h2 = {};
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
 	struct security_descriptor *sd = NULL, *sd_orig = NULL;
@@ -3020,6 +3022,12 @@ static bool test_overwrite_read_only_file(struct torture_context *tctx,
 		TCASE(NTCREATEX_DISP_SUPERSEDE, NT_STATUS_ACCESS_DENIED),
 		TCASE(NTCREATEX_DISP_OVERWRITE, NT_STATUS_ACCESS_DENIED),
 		TCASE(NTCREATEX_DISP_OVERWRITE_IF, NT_STATUS_ACCESS_DENIED),
+	};
+
+	struct tcase sharing_tcases[] = {
+		TCASE(NTCREATEX_DISP_SUPERSEDE, NT_STATUS_SHARING_VIOLATION),
+		TCASE(NTCREATEX_DISP_OVERWRITE, NT_STATUS_SHARING_VIOLATION),
+		TCASE(NTCREATEX_DISP_OVERWRITE_IF, NT_STATUS_SHARING_VIOLATION),
 	};
 #undef TCASE
 
@@ -3124,11 +3132,108 @@ static bool test_overwrite_read_only_file(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_setinfo_file failed\n");
 
-	smb2_util_close(tree, handle);
+	status = smb2_util_close(tree, handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
 	ZERO_STRUCT(handle);
 
+	for (i = 0; i < ARRAY_SIZE(sharing_tcases); i++) {
+		struct tcase *tcase = &sharing_tcases[i];
+
+		torture_comment(tctx, "Verify %s disposition\n",
+				tcase->disposition_string);
+
+		torture_comment(tctx, "Read-nonly open file with SHARE_READ\n");
+
+		c = (struct smb2_create) {
+			.in.desired_access = SEC_FILE_READ_DATA,
+			.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+			.in.share_access = NTCREATEX_SHARE_ACCESS_READ,
+			.in.create_disposition = NTCREATEX_DISP_OPEN_IF,
+			.in.impersonation_level = NTCREATEX_IMPERSONATION_ANONYMOUS,
+			.in.fname = fname,
+		};
+
+		status = smb2_create(tree, tctx, &c);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_create failed\n");
+		handle = c.out.file.handle;
+
+		torture_comment(tctx, "A second open with %s must return %s\n",
+			tcase->disposition_string, nt_errstr(tcase->expected_status));
+
+		c2 = (struct smb2_create) {
+			.in.desired_access = SEC_FILE_READ_DATA,
+			.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+			.in.share_access = NTCREATEX_SHARE_ACCESS_READ,
+			.in.create_disposition = tcase->disposition,
+			.in.impersonation_level = NTCREATEX_IMPERSONATION_ANONYMOUS,
+			.in.fname = fname,
+		};
+
+		status = smb2_create(tree, tctx, &c2);
+		torture_assert_ntstatus_equal_goto(tctx, status,
+						   tcase->expected_status,
+						   ret, done,
+						   "Wrong status code\n");
+
+		status = smb2_util_close(tree, handle);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_util_close failed\n");
+		ZERO_STRUCT(handle);
+
+		torture_comment(tctx, "First open with %s\n",
+				tcase->disposition_string);
+
+		c = (struct smb2_create) {
+			.in.desired_access = SEC_FILE_READ_DATA,
+			.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+			.in.share_access = NTCREATEX_SHARE_ACCESS_READ,
+			.in.create_disposition = tcase->disposition,
+			.in.impersonation_level = NTCREATEX_IMPERSONATION_ANONYMOUS,
+			.in.fname = fname,
+		};
+
+		status = smb2_create(tree, tctx, &c);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_create failed\n");
+		handle = c.out.file.handle;
+
+		torture_comment(tctx, "A second read-only open with SHARE_READ "
+				"must work\n");
+
+		c = (struct smb2_create) {
+			.in.desired_access = SEC_FILE_READ_DATA,
+			.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+			.in.share_access = NTCREATEX_SHARE_ACCESS_READ,
+			.in.create_disposition = NTCREATEX_DISP_OPEN,
+			.in.impersonation_level = NTCREATEX_IMPERSONATION_ANONYMOUS,
+			.in.fname = fname,
+		};
+
+		status = smb2_create(tree, tctx, &c);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_create failed\n");
+		h2 = c.out.file.handle;
+
+		status = smb2_util_close(tree, handle);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_util_close failed\n");
+		ZERO_STRUCT(handle);
+
+		status = smb2_util_close(tree, h2);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_util_close failed\n");
+		ZERO_STRUCT(h2);
+	}
+
 done:
-	smb2_util_close(tree, handle);
+	if (!smb2_util_handle_empty(handle)) {
+		smb2_util_close(tree, handle);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree, h2);
+	}
 	smb2_util_unlink(tree, fname);
 	smb2_deltree(tree, BASEDIR);
 	return ret;
