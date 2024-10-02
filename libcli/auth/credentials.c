@@ -701,11 +701,15 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 		return NULL;
 	}
 
-	creds->sid = dom_sid_dup(creds, client_sid);
-	if (creds->sid == NULL) {
+	creds->ex = talloc_zero(creds,
+			struct netlogon_creds_CredentialState_extra_info);
+	if (creds->ex == NULL) {
 		talloc_free(creds);
 		return NULL;
 	}
+	creds->ex->client_sid = *client_sid;
+
+	creds->sid = &creds->ex->client_sid;
 
 	if (negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 		status = netlogon_creds_init_hmac_sha256(creds,
@@ -1193,12 +1197,20 @@ struct netlogon_creds_CredentialState *netlogon_creds_copy(
 		return NULL;
 	}
 
-	if (creds_in->sid) {
-		creds->sid = dom_sid_dup(creds, creds_in->sid);
-		if (!creds->sid) {
+	if (creds_in->ex != NULL) {
+		creds->ex = talloc_zero(creds,
+			struct netlogon_creds_CredentialState_extra_info);
+		if (creds->ex == NULL) {
 			talloc_free(creds);
 			return NULL;
 		}
+		*creds->ex = *creds_in->ex;
+	}
+
+	if (creds->ex != NULL) {
+		creds->sid = &creds->ex->client_sid;
+	} else {
+		creds->sid = NULL;
 	}
 
 	memcpy(creds->session_key, creds_in->session_key, sizeof(creds->session_key));
