@@ -20,8 +20,53 @@ interface schannel
 		 * with a single dom_sid for the client_sid.
 		 *
 		 * On the server we use CLEAR_IF_FIRST,
-		 * so db layout changes don't matter there.
+		 * so db layout changes don't matter there,
+		 * but on the client side we need to handle
+		 * the ctdb case were CLEAR_IF_FIRST only
+		 * works if all cluster nodes are restarted.
+		 *
+		 * As this was a single dom_sid before,
+		 * we add some magic in order to let
+		 * old code (on other nodes to parse the new layout).
+		 *
+		 * We have basically this definition of dom_sid:
+		 *
+		 * typedef struct {
+		 *    uint8 sid_rev_num;
+		 *    [range(0,15)] int8 num_auths;
+		 *    uint8  id_auth[6];
+		 *    uint32 sub_auths[num_auths];
+		 * } dom_sid;
+		 *
+		 * It means it consumes at least 8 bytes while
+		 * and it's also 4 byte aligned (before sid_rev_num).
+		 * The largest sid would have 68 bytes.
+		 *
+		 * The old client side code would see a sid like
+		 * this: S-1-RSV-CRF-ATL-ATH-257-0-RID
+		 *
+		 * RSV => reserved (the last 4 bytes of id_auth)
+		 *
+		 * CRF => client_requested_flags (sub_auths[0]
+		 *
+		 * Note NTTIME used ndr_pull_udlong, it's not NTTIME_hyper!
+		 * ATL => low 4 bytes of auth_time (sub_auths[1])
+		 * ATH => high 4 bytes of auth_time (sub_auths[2])
+		 *
+		 * From client_sid (S-1-0-RID): sub_auth[3-5]
+		 *
+		 * 257 => 0x01 0x01 0x00 0x00 =
+		 *        (sid_rev_num = 1, num_auths =1,
+		 *         id_auth[0] = 0, id_auth[1] = 0)
+		 * 0   => id_auth[2-6]
+		 *
+		 * RID => the RID of the client
+		 *
+		 * It means the magic needs to simulate
+		 * num_auths = 6
 		 */
+		[value(0x00000601)] uint32 magic;
+		[value(0)] uint32 reserved;
 		netr_NegotiateFlags client_requested_flags;
 		NTTIME auth_time;
 		dom_sid client_sid;

@@ -119,6 +119,7 @@ static bool test_ntp_signd(struct torture_context *tctx,
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2, 
 					   pwhash, &credentials3,
+					   negotiate_flags,
 					   negotiate_flags);
 	
 	torture_assert(tctx, creds != NULL, "memory allocation");

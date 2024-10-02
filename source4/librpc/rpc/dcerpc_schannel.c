@@ -197,6 +197,7 @@ static void continue_srv_challenge(struct tevent_req *subreq)
 					      s->a.in.secure_channel_type,
 					      &s->credentials1, &s->credentials2,
 					      s->mach_pwd, &s->credentials3,
+					      s->requested_negotiate_flags,
 					      s->local_negotiate_flags);
 	if (composite_nomem(s->creds, c)) {
 		return;

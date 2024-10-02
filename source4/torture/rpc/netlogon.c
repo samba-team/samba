@@ -180,6 +180,7 @@ bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context *tctx,
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   mach_password, &credentials3,
+					   0,
 					   0);
 	torture_assert(tctx, creds != NULL, "memory allocation");
 
@@ -251,6 +252,7 @@ bool test_SetupCredentials2ex(struct dcerpc_pipe *p, struct torture_context *tct
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   mach_password, &credentials3,
+					   negotiate_flags,
 					   negotiate_flags);
 
 	torture_assert(tctx, creds != NULL, "memory allocation");
@@ -349,6 +351,7 @@ bool test_SetupCredentials3(struct dcerpc_pipe *p, struct torture_context *tctx,
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   &mach_password, &credentials3,
+					   negotiate_flags,
 					   negotiate_flags);
 
 	torture_assert(tctx, creds != NULL, "memory allocation");
@@ -421,6 +424,7 @@ bool test_SetupCredentialsDowngrade(struct torture_context *tctx,
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   &mach_password, &credentials3,
+					   negotiate_flags,
 					   negotiate_flags);
 
 	torture_assert(tctx, creds != NULL, "memory allocation");
@@ -437,6 +441,7 @@ bool test_SetupCredentialsDowngrade(struct torture_context *tctx,
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   &mach_password, &credentials3,
+					   negotiate_flags,
 					   negotiate_flags);
 
 	torture_assert(tctx, creds != NULL, "memory allocation");
@@ -541,6 +546,7 @@ static bool test_ServerReqChallenge(
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   mach_password, &credentials3,
+					   in_negotiate_flags,
 					   in_negotiate_flags);
 
 	torture_assert(tctx, creds != NULL, "memory allocation");
@@ -618,6 +624,7 @@ static bool test_ServerReqChallenge_zero_challenge(
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   mach_password, &credentials3,
+					   in_negotiate_flags,
 					   in_negotiate_flags);
 
 	torture_assert(tctx, creds != NULL, "memory allocation");
@@ -702,6 +709,7 @@ static bool test_ServerReqChallenge_5_repeats(
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   mach_password, &credentials3,
+					   in_negotiate_flags,
 					   in_negotiate_flags);
 
 	torture_assert(tctx, creds != NULL, "memory allocation");
@@ -788,6 +796,7 @@ static bool test_ServerReqChallenge_4_repeats(
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   mach_password, &credentials3,
+					   in_negotiate_flags,
 					   in_negotiate_flags);
 
 	torture_assert(tctx, creds != NULL, "memory allocation");
@@ -881,6 +890,7 @@ static bool test_ServerAuthenticate2_encrypts_to_zero(
 			&credentials2,
 			mach_password,
 			&credentials3,
+			flags,
 			flags);
 
 		torture_assert(tctx, creds != NULL, "memory allocation");
@@ -2272,6 +2282,7 @@ static bool test_ServerReqChallengeGlobal(struct torture_context *tctx,
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   &mach_password, &credentials3,
+					   flags,
 					   flags);
 
 	torture_assert(tctx, creds != NULL, "memory allocation");
@@ -2361,6 +2372,7 @@ static bool test_ServerReqChallengeReuseGlobal(struct torture_context *tctx,
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   &mach_password, &credentials3,
+					   flags,
 					   flags);
 
 	torture_assert(tctx, creds != NULL, "memory allocation");
@@ -2378,6 +2390,7 @@ static bool test_ServerReqChallengeReuseGlobal(struct torture_context *tctx,
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   &mach_password, &credentials3,
+					   flags,
 					   flags);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerAuthenticate3_r(b3, tctx, &a),
@@ -2450,6 +2463,7 @@ static bool test_ServerReqChallengeReuseGlobal2(struct torture_context *tctx,
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   &mach_password, &credentials3,
+					   flags,
 					   flags);
 
 	torture_assert(tctx, creds != NULL, "memory allocation");
@@ -2467,6 +2481,7 @@ static bool test_ServerReqChallengeReuseGlobal2(struct torture_context *tctx,
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   &mach_password, &credentials3,
+					   flags,
 					   flags);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerAuthenticate3_r(b2, tctx, &a),
@@ -2540,6 +2555,7 @@ static bool test_ServerReqChallengeReuseGlobal3(struct torture_context *tctx,
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   &mach_password, &credentials3,
+					   flags,
 					   flags);
 
 	torture_assert(tctx, creds != NULL, "memory allocation");
@@ -2557,6 +2573,7 @@ static bool test_ServerReqChallengeReuseGlobal3(struct torture_context *tctx,
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   &mach_password, &credentials3,
+					   flags,
 					   flags);
 
 	torture_assert(tctx, creds != NULL, "memory allocation");
@@ -2655,6 +2672,7 @@ static bool test_ServerReqChallengeReuseGlobal4(struct torture_context *tctx,
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   &mach_password, &credentials3,
+					   flags,
 					   flags);
 
 	torture_assert(tctx, creds != NULL, "memory allocation");
@@ -2672,6 +2690,7 @@ static bool test_ServerReqChallengeReuseGlobal4(struct torture_context *tctx,
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   &mach_password, &credentials3,
+					   flags,
 					   flags);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerAuthenticate3_r(b1, tctx, &a),
@@ -2731,6 +2750,7 @@ static bool test_ServerReqChallengeReuse(struct torture_context *tctx,
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   &mach_password, &credentials3,
+					   flags,
 					   flags);
 
 	torture_assert(tctx, creds != NULL, "memory allocation");
@@ -2748,6 +2768,7 @@ static bool test_ServerReqChallengeReuse(struct torture_context *tctx,
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   &mach_password, &credentials3,
+					   flags,
 					   flags);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerAuthenticate3_r(b, tctx, &a),
@@ -2762,6 +2783,7 @@ static bool test_ServerReqChallengeReuse(struct torture_context *tctx,
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   &mach_password, &credentials3,
+					   flags,
 					   flags);
 
 	torture_assert(tctx, creds != NULL, "memory allocation");
