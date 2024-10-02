@@ -951,12 +951,6 @@ bool add_trusted_domains_dc(void)
 				   nt_errstr(status));
 			return false;
 		}
-
-		if (domains[i]->trust_type == LSA_TRUST_TYPE_UPLEVEL) {
-			domain->active_directory = true;
-		}
-		domain->domain_type = domains[i]->trust_type;
-		domain->domain_trust_attribs = domains[i]->trust_attributes;
 	}
 
 	for (i = 0; i < num_domains; i++) {
