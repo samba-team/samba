@@ -1215,6 +1215,7 @@ struct netlogon_creds_cli_auth_state {
 	struct netlogon_creds_CredentialState *creds;
 	struct netr_Credential client_credential;
 	struct netr_Credential server_credential;
+	uint32_t negotiate_flags;
 	uint32_t rid;
 	bool try_auth3;
 	bool try_auth2;
@@ -1360,6 +1361,17 @@ static void netlogon_creds_cli_auth_challenge_done(struct tevent_req *subreq)
 	}
 
 	if (state->try_auth3) {
+		/*
+		 * We always need to send our proposed flags,
+		 * even if state->current_flags we passed to
+		 * netlogon_creds_client_init() is already downgraded,
+		 *
+		 * An old server will just ignore the bits it doesn't
+		 * know about, but LogonGetCapabilities(level=2) will
+		 * report what we proposed.
+		 */
+		state->negotiate_flags = state->context->client.proposed_flags;
+
 		subreq = dcerpc_netr_ServerAuthenticate3_send(state, state->ev,
 						state->binding_handle,
 						state->srv_name_slash,
@@ -1368,12 +1380,22 @@ static void netlogon_creds_cli_auth_challenge_done(struct tevent_req *subreq)
 						state->context->client.computer,
 						&state->client_credential,
 						&state->server_credential,
-						&state->creds->negotiate_flags,
+						&state->negotiate_flags,
 						&state->rid);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
 	} else if (state->try_auth2) {
+		/*
+		 * We always need to send our proposed flags,
+		 * even if state->current_flags we passed to
+		 * netlogon_creds_client_init() is already downgraded,
+		 *
+		 * An old server will just ignore the bits it doesn't
+		 * know about, but LogonGetCapabilities(level=2) will
+		 * report what we proposed.
+		 */
+		state->negotiate_flags = state->context->client.proposed_flags;
 		state->rid = 0;
 
 		subreq = dcerpc_netr_ServerAuthenticate2_send(state, state->ev,
@@ -1384,11 +1406,12 @@ static void netlogon_creds_cli_auth_challenge_done(struct tevent_req *subreq)
 						state->context->client.computer,
 						&state->client_credential,
 						&state->server_credential,
-						&state->creds->negotiate_flags);
+						&state->negotiate_flags);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
 	} else {
+		state->negotiate_flags = 0;
 		state->rid = 0;
 
 		subreq = dcerpc_netr_ServerAuthenticate_send(state, state->ev,
@@ -1467,7 +1490,7 @@ static void netlogon_creds_cli_auth_srvauth_done(struct tevent_req *subreq)
 	}
 
 	downgraded = netlogon_creds_cli_downgraded(
-			state->creds->negotiate_flags,
+			state->negotiate_flags,
 			state->context->client.proposed_flags,
 			state->context->client.required_flags);
 	if (downgraded) {
@@ -1482,7 +1505,7 @@ static void netlogon_creds_cli_auth_srvauth_done(struct tevent_req *subreq)
 	if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED)) {
 		uint32_t prop_f = state->context->client.proposed_flags;
 		uint32_t cli_f = state->current_flags;
-		uint32_t srv_f = state->creds->negotiate_flags;
+		uint32_t srv_f = state->negotiate_flags;
 		uint32_t nego_f = cli_f & srv_f;
 
 		if (cli_f == prop_f && nego_f != prop_f) {
@@ -1516,6 +1539,22 @@ static void netlogon_creds_cli_auth_srvauth_done(struct tevent_req *subreq)
 					 &state->server_credential);
 	if (!ok) {
 		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return;
+	}
+
+	if (state->current_flags == state->context->client.proposed_flags) {
+		/*
+		 * Without a downgrade in the crypto we proposed
+		 * we can adjust the otherwise downgraded flags
+		 * before storing.
+		 */
+		state->creds->negotiate_flags &= state->negotiate_flags;
+	} else if (state->current_flags != state->negotiate_flags) {
+		/*
+		 * We downgraded our crypto once, we should not
+		 * allow any additional downgrade!
+		 */
+		tevent_req_nterror(req, NT_STATUS_DOWNGRADE_DETECTED);
 		return;
 	}
 
@@ -1587,6 +1626,7 @@ struct netlogon_creds_cli_check_state {
 	char *srv_name_slash;
 
 	union netr_Capabilities caps;
+	union netr_Capabilities client_caps;
 
 	struct netlogon_creds_CredentialState *creds;
 	struct netr_Authenticator req_auth;
@@ -1597,7 +1637,8 @@ struct netlogon_creds_cli_check_state {
 
 static void netlogon_creds_cli_check_cleanup(struct tevent_req *req,
 					     NTSTATUS status);
-static void netlogon_creds_cli_check_caps(struct tevent_req *subreq);
+static void netlogon_creds_cli_check_negotiate_caps(struct tevent_req *subreq);
+static void netlogon_creds_cli_check_client_caps(struct tevent_req *subreq);
 
 struct tevent_req *netlogon_creds_cli_check_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
@@ -1681,7 +1722,7 @@ struct tevent_req *netlogon_creds_cli_check_send(TALLOC_CTX *mem_ctx,
 	}
 
 	tevent_req_set_callback(subreq,
-				netlogon_creds_cli_check_caps,
+				netlogon_creds_cli_check_negotiate_caps,
 				req);
 
 	return req;
@@ -1713,7 +1754,7 @@ static void netlogon_creds_cli_check_cleanup(struct tevent_req *req,
 
 static void netlogon_creds_cli_check_control_do(struct tevent_req *req);
 
-static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
+static void netlogon_creds_cli_check_negotiate_caps(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
@@ -1844,6 +1885,110 @@ static void netlogon_creds_cli_check_caps(struct tevent_req *subreq)
 	 * server should always have returned it.
 	 */
 	if (!(state->caps.server_capabilities & NETLOGON_NEG_SUPPORTS_AES)) {
+		status = NT_STATUS_DOWNGRADE_DETECTED;
+		tevent_req_nterror(req, status);
+		netlogon_creds_cli_check_cleanup(req, status);
+		return;
+	}
+
+	status = netlogon_creds_cli_store_internal(state->context,
+						   state->creds);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	/*
+	 * Now try to verify our client proposed flags
+	 * arrived at the server, using query_level = 2
+	 */
+
+	status = netlogon_creds_client_authenticator(state->creds,
+						     &state->req_auth);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	ZERO_STRUCT(state->rep_auth);
+
+	subreq = dcerpc_netr_LogonGetCapabilities_send(state, state->ev,
+						state->binding_handle,
+						state->srv_name_slash,
+						state->context->client.computer,
+						&state->req_auth,
+						&state->rep_auth,
+						2,
+						&state->client_caps);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+
+	tevent_req_set_callback(subreq,
+				netlogon_creds_cli_check_client_caps,
+				req);
+	return;
+}
+
+static void netlogon_creds_cli_check_client_caps(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct netlogon_creds_cli_check_state *state =
+		tevent_req_data(req,
+		struct netlogon_creds_cli_check_state);
+	NTSTATUS status;
+	NTSTATUS result;
+	bool ok;
+
+	status = dcerpc_netr_LogonGetCapabilities_recv(subreq, state,
+						       &result);
+	TALLOC_FREE(subreq);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_BAD_STUB_DATA)) {
+		/*
+		 * unpatched Samba server, see
+		 * https://bugzilla.samba.org/show_bug.cgi?id=15418
+		 */
+		status = NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE;
+	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE)) {
+		/*
+		 * Here we know the negotiated flags were already
+		 * verified with query_level=1, which means
+		 * the server supported NETLOGON_NEG_SUPPORTS_AES
+		 * and also NETLOGON_NEG_AUTHENTICATED_RPC
+		 *
+		 * As we're using DCERPC_AUTH_TYPE_SCHANNEL with
+		 * DCERPC_AUTH_LEVEL_INTEGRITY or DCERPC_AUTH_LEVEL_PRIVACY
+		 * we should detect a faked
+		 * NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE
+		 * with the next request as the sequence number processing
+		 * gets out of sync.
+		 *
+		 * So we'll do a LogonControl message to check that...
+		 */
+		netlogon_creds_cli_check_control_do(req);
+		return;
+	}
+	if (tevent_req_nterror(req, status)) {
+		netlogon_creds_cli_check_cleanup(req, status);
+		return;
+	}
+
+	ok = netlogon_creds_client_check(state->creds,
+					 &state->rep_auth.cred);
+	if (!ok) {
+		status = NT_STATUS_ACCESS_DENIED;
+		tevent_req_nterror(req, status);
+		netlogon_creds_cli_check_cleanup(req, status);
+		return;
+	}
+	if (tevent_req_nterror(req, result)) {
+		netlogon_creds_cli_check_cleanup(req, result);
+		return;
+	}
+
+	if (state->client_caps.requested_flags !=
+	    state->context->client.proposed_flags)
+	{
 		status = NT_STATUS_DOWNGRADE_DETECTED;
 		tevent_req_nterror(req, status);
 		netlogon_creds_cli_check_cleanup(req, status);
