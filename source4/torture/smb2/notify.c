@@ -944,6 +944,7 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 			       notify.smb2.out.changes[0].action, \
 			       notify.smb2.in.completion_filter); \
 			ret = false; \
+			goto done; \
 		} else if (notify.smb2.out.changes[0].action != Action) { \
 			torture_result(torture, TORTURE_FAIL, \
 			       "ERROR: nchanges=%d action=%d " \
@@ -953,6 +954,7 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 			       Action, \
 			       notify.smb2.in.completion_filter); \
 			ret = false; \
+			goto done; \
 		} else if (strcmp(notify.smb2.out.changes[0].name.s, \
 			   "tname1") != 0) { \
 			torture_result(torture, TORTURE_FAIL, \
@@ -963,6 +965,7 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 			       notify.smb2.in.completion_filter, \
 			       notify.smb2.out.changes[0].name.s);	\
 			ret = false; \
+			goto done; \
 		} \
 	} \
 	} while (0); \
@@ -1016,14 +1019,12 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 	torture_comment(torture, "Testing rename file\n");
 	ZERO_STRUCT(sinfo);
 	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
-	sinfo.rename_information.in.file.handle = h1;
 	sinfo.rename_information.in.overwrite = true;
 	sinfo.rename_information.in.root_fid = 0;
 	sinfo.rename_information.in.new_name = BASEDIR_MSK "\\tname2";
 	NOTIFY_MASK_TEST("Testing rename file",
-			 smb2_util_close(tree2, custom_smb2_create(tree2,
-						torture, &(io1.smb2)));,
-			 smb2_setinfo_file(tree2, &sinfo);,
+			 torture_smb2_testfile(tree2, BASEDIR_MSK "\\tname1", &h2);,
+			 (sinfo.rename_information.in.file.handle = h2, smb2_setinfo_file(tree2, &sinfo));,
 			 smb2_util_unlink(tree2, BASEDIR_MSK "\\tname2");,
 			 NOTIFY_ACTION_OLD_NAME,
 			 FILE_NOTIFY_CHANGE_FILE_NAME, 2);
@@ -1031,21 +1032,19 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 	torture_comment(torture, "Testing rename dir\n");
 	ZERO_STRUCT(sinfo);
 	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
-	sinfo.rename_information.in.file.handle = h1;
 	sinfo.rename_information.in.overwrite = true;
 	sinfo.rename_information.in.root_fid = 0;
 	sinfo.rename_information.in.new_name = BASEDIR_MSK "\\tname2";
 	NOTIFY_MASK_TEST("Testing rename dir",
-		smb2_util_mkdir(tree2, BASEDIR_MSK "\\tname1");,
-		smb2_setinfo_file(tree2, &sinfo);,
-		smb2_util_rmdir(tree2, BASEDIR_MSK "\\tname2");,
+		torture_smb2_testdir(tree2, BASEDIR_MSK "\\tname1", &h2);,
+		(sinfo.rename_information.in.file.handle = h2, smb2_setinfo_file(tree2, &sinfo));,
+		(smb2_util_close(tree2, h2), smb2_util_rmdir(tree2, BASEDIR_MSK "\\tname2"));,
 		NOTIFY_ACTION_OLD_NAME,
 		FILE_NOTIFY_CHANGE_DIR_NAME, 2);
 
 	torture_comment(torture, "Testing set path attribute\n");
 	NOTIFY_MASK_TEST("Testing set path attribute",
-		smb2_util_close(tree2, custom_smb2_create(tree2,
-				       torture, &(io.smb2)));,
+		torture_setup_simple_file(torture, tree2, BASEDIR_MSK "\\tname1");,
 		smb2_util_setatr(tree2, BASEDIR_MSK "\\tname1",
 				 FILE_ATTRIBUTE_HIDDEN);,
 		smb2_util_unlink(tree2, BASEDIR_MSK "\\tname1");,
@@ -1055,12 +1054,10 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 	torture_comment(torture, "Testing set path write time\n");
 	ZERO_STRUCT(sinfo);
 	sinfo.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
-	sinfo.generic.in.file.handle = h1;
 	sinfo.basic_info.in.write_time = 1000;
 	NOTIFY_MASK_TEST("Testing set path write time",
-		smb2_util_close(tree2, custom_smb2_create(tree2,
-				       torture, &(io1.smb2)));,
-		smb2_setinfo_file(tree2, &sinfo);,
+		torture_setup_simple_file(torture, tree2, BASEDIR_MSK "\\tname1");,
+		(sinfo.generic.in.file.handle = h2, smb2_setinfo_file(tree2, &sinfo));,
 		smb2_util_unlink(tree2, BASEDIR_MSK "\\tname1");,
 		NOTIFY_ACTION_MODIFIED,
 		FILE_NOTIFY_CHANGE_LAST_WRITE, 1);
@@ -1073,13 +1070,12 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 	else {
 		ZERO_STRUCT(sinfo);
 	        sinfo.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
-		sinfo.generic.in.file.handle = h1;
 	        sinfo.basic_info.in.create_time = 0;
 		torture_comment(torture, "Testing set file create time\n");
 		NOTIFY_MASK_TEST("Testing set file create time",
 			smb2_create_complex_file(torture, tree2,
 			BASEDIR_MSK "\\tname1", &h2);,
-			smb2_setinfo_file(tree2, &sinfo);,
+			(sinfo.generic.in.file.handle = h2, smb2_setinfo_file(tree2, &sinfo));,
 			(smb2_util_close(tree2, h2),
 			 smb2_util_unlink(tree2, BASEDIR_MSK "\\tname1"));,
 			NOTIFY_ACTION_MODIFIED,
@@ -1088,7 +1084,6 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 
 	ZERO_STRUCT(sinfo);
 	sinfo.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
-	sinfo.generic.in.file.handle = h1;
 	sinfo.basic_info.in.access_time = 0;
 	torture_comment(torture, "Testing set file access time\n");
 	NOTIFY_MASK_TEST("Testing set file access time",
@@ -1096,7 +1091,7 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 			tree2,
 			BASEDIR_MSK "\\tname1",
 			&h2);,
-		smb2_setinfo_file(tree2, &sinfo);,
+		(sinfo.generic.in.file.handle = h2, smb2_setinfo_file(tree2, &sinfo));,
 		(smb2_util_close(tree2, h2),
 		smb2_util_unlink(tree2, BASEDIR_MSK "\\tname1"));,
 		NOTIFY_ACTION_MODIFIED,
@@ -1104,7 +1099,6 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 
 	ZERO_STRUCT(sinfo);
 	sinfo.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
-	sinfo.generic.in.file.handle = h1;
 	sinfo.basic_info.in.change_time = 0;
 	torture_comment(torture, "Testing set file change time\n");
 	NOTIFY_MASK_TEST("Testing set file change time",
@@ -1112,7 +1106,7 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 			tree2,
 			BASEDIR_MSK "\\tname1",
 			&h2);,
-		smb2_setinfo_file(tree2, &sinfo);,
+		(sinfo.generic.in.file.handle = h2, smb2_setinfo_file(tree2, &sinfo));,
 		(smb2_util_close(tree2, h2),
 		smb2_util_unlink(tree2, BASEDIR_MSK "\\tname1"));,
 		NOTIFY_ACTION_MODIFIED,
