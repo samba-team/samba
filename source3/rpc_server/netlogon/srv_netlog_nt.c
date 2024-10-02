@@ -1020,6 +1020,7 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 					   &mach_pwd,
 					   r->in.credentials,
 					   r->out.return_credentials,
+					   &sid,
 					   neg_flags);
 	if (!creds) {
 		DEBUG(0,("%s: netlogon_creds_server_check failed. Rejecting auth "
@@ -1027,12 +1028,6 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 			fn, r->in.computer_name,
 			r->in.account_name));
 		status = NT_STATUS_ACCESS_DENIED;
-		goto out;
-	}
-
-	creds->sid = dom_sid_dup(creds, &sid);
-	if (!creds->sid) {
-		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 
