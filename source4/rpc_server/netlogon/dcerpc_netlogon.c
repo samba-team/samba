@@ -927,6 +927,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 				       struct netr_ServerPasswordSet *r)
 {
 	struct netlogon_creds_CredentialState *creds;
+	const struct dom_sid *client_sid = NULL;
 	struct ldb_context *sam_ctx;
 	NTSTATUS nt_status;
 
@@ -936,6 +937,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 							r->in.credential, r->out.return_authenticator,
 							&creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
+	client_sid = creds->sid;
 
 	sam_ctx = dcesrv_samdb_connect_as_system(mem_ctx, dce_call);
 	if (sam_ctx == NULL) {
@@ -947,7 +949,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 
 	/* Using the sid for the account as the key, set the password */
 	nt_status = samdb_set_password_sid(sam_ctx, mem_ctx,
-					   creds->sid,
+					   client_sid,
 					   NULL, /* Don't have version */
 					   NULL, /* Don't have plaintext */
 					   r->in.new_password,
@@ -964,6 +966,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 				       struct netr_ServerPasswordSet2 *r)
 {
 	struct netlogon_creds_CredentialState *creds;
+	const struct dom_sid *client_sid = NULL;
 	struct ldb_context *sam_ctx;
 	struct NL_PASSWORD_VERSION version = {};
 	const uint32_t *new_version = NULL;
@@ -980,6 +983,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 							r->in.credential, r->out.return_authenticator,
 							&creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
+	client_sid = creds->sid;
 
 	sam_ctx = dcesrv_samdb_connect_as_system(mem_ctx, dce_call);
 	if (sam_ctx == NULL) {
@@ -1088,7 +1092,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 
 	/* Using the sid for the account as the key, set the password */
 	nt_status = samdb_set_password_sid(sam_ctx, mem_ctx,
-					   creds->sid,
+					   client_sid,
 					   new_version,
 					   &new_password, /* we have plaintext */
 					   NULL,
@@ -2624,6 +2628,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	TALLOC_CTX *mem_ctx, struct netr_LogonGetDomainInfo *r)
 {
 	struct netlogon_creds_CredentialState *creds;
+	const struct dom_sid *client_sid = NULL;
 	static const char *const trusts_attrs[] = {"securityIdentifier",
 						   "flatName",
 						   "trustPartner",
@@ -2672,6 +2677,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		talloc_free(frame);
 	}
 	NT_STATUS_NOT_OK_RETURN(status);
+	client_sid = creds->sid;
 
 	/* We want to avoid connecting as system. */
 	sam_ctx = dcesrv_samdb_connect_as_user(mem_ctx, dce_call);
@@ -2688,7 +2694,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 
 		/* Prepares the workstation DN */
 		workstation_dn = ldb_dn_new_fmt(mem_ctx, sam_ctx, "<SID=%s>",
-						dom_sid_string(mem_ctx, creds->sid));
+						dom_sid_string(mem_ctx, client_sid));
 		NT_STATUS_HAVE_NO_MEMORY(workstation_dn);
 
 		/* Get the workstation's session info from the database. */
@@ -2997,7 +3003,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordGet(struct dcesrv_call_state *dce_call
 
 static bool sam_rodc_access_check(struct ldb_context *sam_ctx,
 				  TALLOC_CTX *mem_ctx,
-				  struct dom_sid *user_sid,
+				  const struct dom_sid *user_sid,
 				  struct ldb_dn *obj_dn)
 {
 	static const char *rodc_attrs[] = {"msDS-NeverRevealGroup",
@@ -3052,6 +3058,7 @@ static NTSTATUS dcesrv_netr_NetrLogonSendToSam(struct dcesrv_call_state *dce_cal
 					       struct netr_NetrLogonSendToSam *r)
 {
 	struct netlogon_creds_CredentialState *creds;
+	const struct dom_sid *client_sid = NULL;
 	struct ldb_context *sam_ctx;
 	NTSTATUS nt_status;
 	DATA_BLOB decrypted_blob;
@@ -3066,6 +3073,7 @@ static NTSTATUS dcesrv_netr_NetrLogonSendToSam(struct dcesrv_call_state *dce_cal
 							&creds);
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);
+	client_sid = creds->sid;
 
 	switch (creds->secure_channel_type) {
 	case SEC_CHAN_BDC:
@@ -3137,7 +3145,7 @@ static NTSTATUS dcesrv_netr_NetrLogonSendToSam(struct dcesrv_call_state *dce_cal
 		}
 
 		if (creds->secure_channel_type == SEC_CHAN_RODC &&
-		    !sam_rodc_access_check(sam_ctx, mem_ctx, creds->sid, dn)) {
+		    !sam_rodc_access_check(sam_ctx, mem_ctx, client_sid, dn)) {
 			DEBUG(1, ("Client asked to reset bad password on "
 				  "an arbitrary user: %s\n",
 				  ldb_dn_get_linearized(dn)));
@@ -4422,6 +4430,7 @@ static NTSTATUS dcesrv_netr_ServerGetTrustInfo(struct dcesrv_call_state *dce_cal
 {
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 	struct netlogon_creds_CredentialState *creds = NULL;
+	const struct dom_sid *client_sid = NULL;
 	struct ldb_context *sam_ctx = NULL;
 	const char * const attrs[] = {
 		"unicodePwd",
@@ -4456,6 +4465,7 @@ static NTSTATUS dcesrv_netr_ServerGetTrustInfo(struct dcesrv_call_state *dce_cal
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
+	client_sid = creds->sid;
 
 	/* TODO: check r->in.server_name is our name */
 
@@ -4476,7 +4486,7 @@ static NTSTATUS dcesrv_netr_ServerGetTrustInfo(struct dcesrv_call_state *dce_cal
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
-	asid = ldap_encode_ndr_dom_sid(mem_ctx, creds->sid);
+	asid = ldap_encode_ndr_dom_sid(mem_ctx, client_sid);
 	if (asid == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -4631,6 +4641,7 @@ static NTSTATUS dcesrv_netr_DsrUpdateReadOnlyServerDnsRecords(struct dcesrv_call
 	struct tevent_req *subreq;
 	struct imessaging_context *imsg_ctx =
 		dcesrv_imessaging_context(dce_call->conn);
+	struct dom_sid *client_sid = NULL;
 
 	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
 							mem_ctx,
@@ -4639,6 +4650,7 @@ static NTSTATUS dcesrv_netr_DsrUpdateReadOnlyServerDnsRecords(struct dcesrv_call
 							r->out.return_authenticator,
 							&creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
+	client_sid = creds->sid;
 
 	if (creds->secure_channel_type != SEC_CHAN_RODC) {
 		return NT_STATUS_ACCESS_DENIED;
@@ -4652,7 +4664,7 @@ static NTSTATUS dcesrv_netr_DsrUpdateReadOnlyServerDnsRecords(struct dcesrv_call
 	st->r2 = talloc_zero(st, struct dnsupdate_RODC);
 	NT_STATUS_HAVE_NO_MEMORY(st->r2);
 
-	st->r2->in.dom_sid = creds->sid;
+	st->r2->in.dom_sid = client_sid;
 	st->r2->in.site_name = r->in.site_name;
 	st->r2->in.dns_ttl = r->in.dns_ttl;
 	st->r2->in.dns_names = r->in.dns_names;
