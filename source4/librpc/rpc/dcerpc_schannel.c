@@ -42,6 +42,7 @@ struct schannel_key_state {
 	bool dcerpc_schannel_auto;
 	struct cli_credentials *credentials;
 	struct netlogon_creds_CredentialState *creds;
+	uint32_t requested_negotiate_flags;
 	uint32_t required_negotiate_flags;
 	uint32_t local_negotiate_flags;
 	uint32_t remote_negotiate_flags;
@@ -58,7 +59,8 @@ static void continue_secondary_connection(struct composite_context *ctx);
 static void continue_bind_auth_none(struct composite_context *ctx);
 static void continue_srv_challenge(struct tevent_req *subreq);
 static void continue_srv_auth2(struct tevent_req *subreq);
-static void continue_get_capabilities(struct tevent_req *subreq);
+static void continue_get_negotiated_capabilities(struct tevent_req *subreq);
+static void continue_get_client_capabilities(struct tevent_req *subreq);
 
 
 /*
@@ -186,7 +188,7 @@ static void continue_srv_challenge(struct tevent_req *subreq)
 	s->a.in.secure_channel_type =
 		cli_credentials_get_secure_channel_type(s->credentials);
 	s->a.in.computer_name    = cli_credentials_get_workstation(s->credentials);
-	s->a.in.negotiate_flags  = &s->local_negotiate_flags;
+	s->a.in.negotiate_flags  = &s->requested_negotiate_flags;
 	s->a.in.credentials      = &s->credentials3;
 	s->a.out.negotiate_flags = &s->remote_negotiate_flags;
 	s->a.out.return_credentials     = &s->credentials3;
@@ -332,7 +334,22 @@ static void continue_srv_auth2(struct tevent_req *subreq)
 		return;
 	}
 
-	s->creds->negotiate_flags &= s->remote_negotiate_flags;
+	if (s->requested_negotiate_flags == s->local_negotiate_flags) {
+		/*
+		 * Without a downgrade in the crypto we proposed
+		 * we can adjust the otherwise downgraded flags
+		 * before storing.
+		 */
+		s->creds->negotiate_flags &= s->remote_negotiate_flags;
+	} else if (s->local_negotiate_flags != s->remote_negotiate_flags) {
+		/*
+		 * We downgraded our crypto once, we should not
+		 * allow any additional downgrade!
+		 */
+		DBG_ERR("%s: NT_STATUS_DOWNGRADE_DETECTED\n", __location__);
+		composite_error(c, NT_STATUS_DOWNGRADE_DETECTED);
+		return;
+	}
 
 	composite_done(c);
 }
@@ -415,6 +432,8 @@ static struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 		s->local_negotiate_flags |= NETLOGON_NEG_RODC_PASSTHROUGH;
 	}
 
+	s->requested_negotiate_flags = s->local_negotiate_flags;
+
 	epm_creds = cli_credentials_init_anon(s);
 	if (composite_nomem(epm_creds, c)) return c;
 
@@ -440,7 +459,8 @@ static struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
  */
 static NTSTATUS dcerpc_schannel_key_recv(struct composite_context *c,
 				TALLOC_CTX *mem_ctx,
-				struct netlogon_creds_CredentialState **creds)
+				struct netlogon_creds_CredentialState **creds,
+				uint32_t *requested_negotiate_flags)
 {
 	NTSTATUS status = composite_wait(c);
 
@@ -449,6 +469,7 @@ static NTSTATUS dcerpc_schannel_key_recv(struct composite_context *c,
 			talloc_get_type_abort(c->private_data,
 			struct schannel_key_state);
 		*creds = talloc_move(mem_ctx, &s->creds);
+		*requested_negotiate_flags = s->requested_negotiate_flags;
 	}
 
 	talloc_free(c);
@@ -459,6 +480,7 @@ static NTSTATUS dcerpc_schannel_key_recv(struct composite_context *c,
 struct auth_schannel_state {
 	struct dcerpc_pipe *pipe;
 	struct cli_credentials *credentials;
+	uint32_t requested_negotiate_flags;
 	const struct ndr_interface_table *table;
 	struct loadparm_context *lp_ctx;
 	uint8_t auth_level;
@@ -467,6 +489,7 @@ struct auth_schannel_state {
 	struct netr_Authenticator auth;
 	struct netr_Authenticator return_auth;
 	union netr_Capabilities capabilities;
+	union netr_Capabilities client_caps;
 	struct netr_LogonGetCapabilities c;
 	union netr_CONTROL_QUERY_INFORMATION ctrl_info;
 };
@@ -489,7 +512,11 @@ static void continue_schannel_key(struct composite_context *ctx)
 	NTSTATUS status;
 
 	/* receive schannel key */
-	status = c->status = dcerpc_schannel_key_recv(ctx, s, &s->creds_state);
+	c->status = dcerpc_schannel_key_recv(ctx,
+					     s,
+					     &s->creds_state,
+					     &s->requested_negotiate_flags);
+	status = c->status;
 	if (!composite_is_ok(c)) {
 		DEBUG(1, ("Failed to setup credentials: %s\n", nt_errstr(status)));
 		return;
@@ -558,7 +585,9 @@ static void continue_bind_auth(struct composite_context *ctx)
 								 &s->c);
 		if (composite_nomem(subreq, c)) return;
 
-		tevent_req_set_callback(subreq, continue_get_capabilities, c);
+		tevent_req_set_callback(subreq,
+					continue_get_negotiated_capabilities,
+					c);
 		return;
 	}
 
@@ -570,10 +599,11 @@ static void continue_logon_control_do(struct composite_context *c);
 /*
   Stage 4 of auth_schannel: Get the Logon Capabilities and verify them.
 */
-static void continue_get_capabilities(struct tevent_req *subreq)
+static void continue_get_negotiated_capabilities(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct auth_schannel_state *s;
+	NTSTATUS status;
 
 	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct auth_schannel_state);
@@ -637,7 +667,106 @@ static void continue_get_capabilities(struct tevent_req *subreq)
 		return;
 	}
 
-	/* TODO: Add downgrade detection. */
+	if ((s->requested_negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) &&
+	    (!(s->creds_state->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES)))
+	{
+		DBG_ERR("%s: NT_STATUS_DOWNGRADE_DETECTED\n", __location__);
+		composite_error(c, NT_STATUS_DOWNGRADE_DETECTED);
+		return;
+	}
+
+	ZERO_STRUCT(s->return_auth);
+
+	s->save_creds_state = *s->creds_state;
+	status = netlogon_creds_client_authenticator(&s->save_creds_state,
+						     &s->auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		composite_error(c, status);
+		return;
+	}
+
+	s->c.in.credential            = &s->auth;
+	s->c.in.return_authenticator  = &s->return_auth;
+	s->c.in.query_level           = 2;
+
+	s->c.out.capabilities         = &s->client_caps;
+	s->c.out.return_authenticator = &s->return_auth;
+
+	subreq = dcerpc_netr_LogonGetCapabilities_r_send(s,
+							 c->event_ctx,
+							 s->pipe->binding_handle,
+							 &s->c);
+	if (composite_nomem(subreq, c)) return;
+
+	tevent_req_set_callback(subreq, continue_get_client_capabilities, c);
+	return;
+}
+
+static void continue_get_client_capabilities(struct tevent_req *subreq)
+{
+	struct composite_context *c;
+	struct auth_schannel_state *s;
+
+	c = tevent_req_callback_data(subreq, struct composite_context);
+	s = talloc_get_type(c->private_data, struct auth_schannel_state);
+
+	/* receive rpc request result */
+	c->status = dcerpc_netr_LogonGetCapabilities_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
+	if (NT_STATUS_EQUAL(c->status, NT_STATUS_RPC_BAD_STUB_DATA)) {
+		/*
+		 * unpatched Samba server, see
+		 * https://bugzilla.samba.org/show_bug.cgi?id=15418
+		 */
+		c->status = NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE;
+	}
+	if (NT_STATUS_EQUAL(c->status, NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE)) {
+		/*
+		 * Here we know the negotiated flags were already
+		 * verified with query_level=1, which means
+		 * the server supported NETLOGON_NEG_SUPPORTS_AES
+		 * and also NETLOGON_NEG_AUTHENTICATED_RPC
+		 *
+		 * As we're using DCERPC_AUTH_TYPE_SCHANNEL with
+		 * DCERPC_AUTH_LEVEL_INTEGRITY or DCERPC_AUTH_LEVEL_PRIVACY
+		 * we should detect a faked
+		 * NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE
+		 * with the next request as the sequence number processing
+		 * gets out of sync.
+		 *
+		 * So we'll do a LogonControl message to check that...
+		 */
+		continue_logon_control_do(c);
+		return;
+	}
+	if (!composite_is_ok(c)) {
+		return;
+	}
+
+	/* verify credentials */
+	if (!netlogon_creds_client_check(&s->save_creds_state,
+					 &s->c.out.return_authenticator->cred)) {
+		composite_error(c, NT_STATUS_UNSUCCESSFUL);
+		return;
+	}
+
+	if (!NT_STATUS_IS_OK(s->c.out.result)) {
+		composite_error(c, s->c.out.result);
+		return;
+	}
+
+	/* compare capabilities */
+	if (s->requested_negotiate_flags != s->client_caps.requested_flags) {
+		DBG_ERR("The client requested capabilities did not reach"
+			"the server! local[0x%08X] remote[0x%08X]\n",
+			s->requested_negotiate_flags,
+			s->client_caps.requested_flags);
+		composite_error(c, NT_STATUS_DOWNGRADE_DETECTED);
+		return;
+	}
+
+	*s->creds_state = s->save_creds_state;
+	cli_credentials_set_netlogon_creds(s->credentials, s->creds_state);
 
 	composite_done(c);
 }
