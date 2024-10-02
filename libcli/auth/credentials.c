@@ -564,25 +564,6 @@ struct netlogon_creds_CredentialState *netlogon_creds_client_init(TALLOC_CTX *me
 }
 
 /*
-  initialise the credentials structure with only a session key.  The caller better know what they are doing!
- */
-
-struct netlogon_creds_CredentialState *netlogon_creds_client_init_session_key(TALLOC_CTX *mem_ctx,
-									      const uint8_t session_key[16])
-{
-	struct netlogon_creds_CredentialState *creds;
-
-	creds = talloc_zero(mem_ctx, struct netlogon_creds_CredentialState);
-	if (!creds) {
-		return NULL;
-	}
-
-	memcpy(creds->session_key, session_key, 16);
-
-	return creds;
-}
-
-/*
   step the credentials to the next element in the chain, updating the
   current client and server credentials and the seed
 
