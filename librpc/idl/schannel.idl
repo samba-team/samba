@@ -35,7 +35,6 @@ interface schannel
 		netr_SchannelType secure_channel_type;
 		[string,charset(UTF8)] uint8 computer_name[];
 		[string,charset(UTF8)] uint8 account_name[];
-		[skip] dom_sid *sid;
 		netlogon_creds_CredentialState_extra_info *ex;
 	} netlogon_creds_CredentialState;
 
