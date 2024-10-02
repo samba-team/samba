@@ -47,8 +47,6 @@ struct netlogon_creds_CredentialState *netlogon_creds_client_init(TALLOC_CTX *me
 								  const struct samr_Password *machine_password,
 								  struct netr_Credential *initial_credential,
 								  uint32_t negotiate_flags);
-struct netlogon_creds_CredentialState *netlogon_creds_client_init_session_key(TALLOC_CTX *mem_ctx,
-									      const uint8_t session_key[16]);
 NTSTATUS
 netlogon_creds_client_authenticator(struct netlogon_creds_CredentialState *creds,
 				    struct netr_Authenticator *next);
