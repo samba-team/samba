@@ -1010,6 +1010,7 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 					   &mach_pwd,
 					   r->in.credentials,
 					   r->out.return_credentials,
+					   in_neg_flags,
 					   &sid,
 					   neg_flags);
 	if (!creds) {

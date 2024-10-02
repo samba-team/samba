@@ -416,6 +416,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 				      "samAccountName",
 				      NULL};
 	uint32_t server_flags = 0;
+	uint32_t client_flags = 0;
 	uint32_t negotiate_flags = 0;
 
 	ZERO_STRUCTP(r->out.return_credentials);
@@ -509,7 +510,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 	 * NETLOGON_NEG_STRONG_KEYS from server_flags...
 	 */
 
-	negotiate_flags = *r->in.negotiate_flags & server_flags;
+	client_flags = *r->in.negotiate_flags;
+	negotiate_flags = client_flags & server_flags;
 
 	switch (r->in.secure_channel_type) {
 	case SEC_CHAN_WKSTA:
@@ -782,6 +784,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 					   curNtHash,
 					   r->in.credentials,
 					   r->out.return_credentials,
+					   client_flags,
 					   *sid,
 					   negotiate_flags);
 	if (creds == NULL && prevNtHash != NULL) {
@@ -800,6 +803,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 						   prevNtHash,
 						   r->in.credentials,
 						   r->out.return_credentials,
+						   client_flags,
 						   *sid,
 						   negotiate_flags);
 	}
