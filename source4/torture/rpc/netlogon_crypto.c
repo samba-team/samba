@@ -124,6 +124,7 @@ static bool test_ServerAuth3Crypto(struct dcerpc_pipe *p,
 						 &netr_creds2,
 						 &machine_password,
 						 &netr_creds3,
+						 negotiate_flags,
 						 negotiate_flags);
 	GNUTLS_FIPS140_SET_STRICT_MODE();
 	/* Test that we fail to encrypt with RC4 */

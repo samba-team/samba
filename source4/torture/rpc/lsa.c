@@ -2951,6 +2951,7 @@ static bool check_pw_with_ServerAuthenticate3(struct dcerpc_pipe *p,
 					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   new_password, &credentials3,
+					   negotiate_flags,
 					   negotiate_flags);
 
 	torture_assert(tctx, creds != NULL, "memory allocation");
@@ -2976,6 +2977,7 @@ static bool check_pw_with_ServerAuthenticate3(struct dcerpc_pipe *p,
 						   a.in.secure_channel_type,
 						   &credentials1, &credentials2,
 						   old_password, &credentials3,
+						   negotiate_flags,
 						   negotiate_flags);
 
 		torture_assert(tctx, creds != NULL, "memory allocation");
