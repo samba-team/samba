@@ -3376,6 +3376,7 @@ static NTSTATUS check_and_store_share_mode(
 	struct share_mode_lock *lck,
 	uint32_t create_disposition,
 	uint32_t access_mask,
+	uint32_t open_access_mask,
 	uint32_t share_access,
 	int oplock_request,
 	const struct smb2_lease *lease,
@@ -3402,7 +3403,7 @@ static NTSTATUS check_and_store_share_mode(
 	status = handle_share_mode_lease(fsp,
 					 lck,
 					 create_disposition,
-					 access_mask,
+					 open_access_mask,
 					 share_access,
 					 oplock_request,
 					 lease,
@@ -3732,6 +3733,7 @@ struct open_ntcreate_lock_state {
 	struct smb_request *req;
 	uint32_t create_disposition;
 	uint32_t access_mask;
+	uint32_t open_access_mask;
 	uint32_t share_access;
 	int oplock_request;
 	const struct smb2_lease *lease;
@@ -3760,6 +3762,7 @@ static void open_ntcreate_lock_add_entry(struct share_mode_lock *lck,
 						   lck,
 						   state->create_disposition,
 						   state->access_mask,
+						   state->open_access_mask,
 						   state->share_access,
 						   state->oplock_request,
 						   state->lease,
@@ -4394,6 +4397,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		.req			= req,
 		.create_disposition	= create_disposition,
 		.access_mask		= access_mask,
+		.open_access_mask	= open_access_mask,
 		.share_access		= share_access,
 		.oplock_request		= oplock_request,
 		.lease			= lease,
