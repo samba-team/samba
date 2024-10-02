@@ -42,6 +42,7 @@ struct schannel_key_state {
 	bool dcerpc_schannel_auto;
 	struct cli_credentials *credentials;
 	struct netlogon_creds_CredentialState *creds;
+	uint32_t required_negotiate_flags;
 	uint32_t local_negotiate_flags;
 	uint32_t remote_negotiate_flags;
 	struct netr_Credential credentials1;
@@ -235,6 +236,29 @@ static void continue_srv_auth2(struct tevent_req *subreq)
 		return;
 	}
 
+	{
+		uint32_t rqf = s->required_negotiate_flags;
+		uint32_t rf = s->remote_negotiate_flags;
+		uint32_t lf = s->local_negotiate_flags;
+
+		if ((rf & NETLOGON_NEG_SUPPORTS_AES) &&
+		    (lf & NETLOGON_NEG_SUPPORTS_AES))
+		{
+			rqf &= ~NETLOGON_NEG_ARCFOUR;
+			rqf &= ~NETLOGON_NEG_STRONG_KEYS;
+		}
+
+		if ((rqf & rf) != rqf) {
+			rqf = s->required_negotiate_flags;
+			DBG_ERR("The client capabilities don't match "
+				"the server capabilities: local[0x%08X] "
+				"required[0x%08X] remote[0x%08X]\n",
+				lf, rqf, rf);
+			composite_error(c, NT_STATUS_DOWNGRADE_DETECTED);
+			return;
+		}
+	}
+
 	/*
 	 * Strong keys could be unsupported (NT4) or disabled. So retry with the
 	 * flags returned by the server. - asn
@@ -327,6 +351,8 @@ static struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 	struct composite_context *epm_map_req;
 	enum netr_SchannelType schannel_type = cli_credentials_get_secure_channel_type(credentials);
 	struct cli_credentials *epm_creds = NULL;
+	bool reject_md5_servers = false;
+	bool require_strong_key = false;
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, p->conn->event_ctx);
@@ -340,28 +366,53 @@ static struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 	s->pipe        = p;
 	s->credentials = credentials;
 	s->local_negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
+	s->required_negotiate_flags = NETLOGON_NEG_AUTHENTICATED_RPC;
 
 	/* allocate credentials */
 	if (s->pipe->conn->flags & DCERPC_SCHANNEL_128) {
 		s->local_negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+		require_strong_key = true;
 	}
 	if (s->pipe->conn->flags & DCERPC_SCHANNEL_AES) {
 		s->local_negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
-		s->local_negotiate_flags |= NETLOGON_NEG_SUPPORTS_AES;
+		reject_md5_servers = true;
 	}
 	if (s->pipe->conn->flags & DCERPC_SCHANNEL_AUTO) {
 		s->local_negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 		s->local_negotiate_flags |= NETLOGON_NEG_SUPPORTS_AES;
 		s->dcerpc_schannel_auto = true;
+		reject_md5_servers = lpcfg_reject_md5_servers(lp_ctx);
+		require_strong_key = lpcfg_require_strong_key(lp_ctx);
+	}
+
+	if (lpcfg_weak_crypto(lp_ctx) == SAMBA_WEAK_CRYPTO_DISALLOWED) {
+		reject_md5_servers = true;
+	}
+
+	if (reject_md5_servers) {
+		require_strong_key = true;
+	}
+
+	if (require_strong_key) {
+		s->required_negotiate_flags |= NETLOGON_NEG_ARCFOUR;
+		s->required_negotiate_flags |= NETLOGON_NEG_STRONG_KEYS;
+	}
+
+	if (reject_md5_servers) {
+		s->required_negotiate_flags |= NETLOGON_NEG_PASSWORD_SET2;
+		s->required_negotiate_flags |= NETLOGON_NEG_SUPPORTS_AES;
+	}
+
+	s->local_negotiate_flags |= s->required_negotiate_flags;
+
+	if (s->required_negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		s->required_negotiate_flags &= ~NETLOGON_NEG_ARCFOUR;
+		s->required_negotiate_flags &= ~NETLOGON_NEG_STRONG_KEYS;
 	}
 
 	/* type of authentication depends on schannel type */
 	if (schannel_type == SEC_CHAN_RODC) {
 		s->local_negotiate_flags |= NETLOGON_NEG_RODC_PASSTHROUGH;
-	}
-
-	if (lpcfg_weak_crypto(lp_ctx) == SAMBA_WEAK_CRYPTO_DISALLOWED) {
-		s->local_negotiate_flags &= ~NETLOGON_NEG_ARCFOUR;
 	}
 
 	epm_creds = cli_credentials_init_anon(s);
