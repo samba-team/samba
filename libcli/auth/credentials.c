@@ -657,11 +657,14 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 								  const struct samr_Password *machine_password,
 								  const struct netr_Credential *credentials_in,
 								  struct netr_Credential *credentials_out,
+								  uint32_t client_requested_flags,
 								  const struct dom_sid *client_sid,
 								  uint32_t negotiate_flags)
 {
 
 	struct netlogon_creds_CredentialState *creds = talloc_zero(mem_ctx, struct netlogon_creds_CredentialState);
+	struct timeval tv = timeval_current();
+	NTTIME now = timeval_to_nttime(&tv);
 	NTSTATUS status;
 	bool ok;
 
@@ -707,6 +710,8 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 		talloc_free(creds);
 		return NULL;
 	}
+	creds->ex->client_requested_flags = client_requested_flags;
+	creds->ex->auth_time = now;
 	creds->ex->client_sid = *client_sid;
 
 	if (negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
