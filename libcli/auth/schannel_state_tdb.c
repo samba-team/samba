@@ -92,10 +92,6 @@ NTSTATUS schannel_store_session_key_tdb(struct db_context *db_sc,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	if (creds->sid == NULL) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
 	if (strlen(creds->computer_name) > 15) {
 		/*
 		 * We may want to check for a completely
@@ -207,8 +203,6 @@ NTSTATUS schannel_fetch_session_key_tdb(struct db_context *db_sc,
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto done;
 	}
-
-	creds->sid = &creds->ex->client_sid;
 
 	DEBUG(3,("schannel_fetch_session_key_tdb: restored schannel info key %s\n",
 		keystr));
