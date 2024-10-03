@@ -1903,6 +1903,9 @@ static int vfs_ceph_statvfs(struct vfs_handle_struct *handle,
 	statbuf->TotalFileNodes = statvfs_buf.f_files;
 	statbuf->FreeFileNodes = statvfs_buf.f_ffree;
 	statbuf->FsIdentifier = statvfs_buf.f_fsid;
+	statbuf->FsCapabilities =
+		FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
+
 	DBG_DEBUG("[CEPH] f_bsize: %ld, f_blocks: %ld, f_bfree: %ld, "
 		  "f_bavail: %ld\n",
 		  (long int)statvfs_buf.f_bsize,
