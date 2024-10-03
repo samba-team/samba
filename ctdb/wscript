@@ -400,7 +400,13 @@ def build(bld):
                         source=bld.SUBDIR('tcp',
                                           'tcp_connect.c tcp_init.c tcp_io.c'),
                         includes='include',
-                        deps='replace tdb talloc tevent ctdb-protocol-util')
+                        deps='''ctdb-protocol-util
+                                ctdb-system
+                                replace
+                                talloc
+                                tdb
+                                tevent
+                             ''')
 
     ib_deps = ''
     if bld.env.HAVE_INFINIBAND:

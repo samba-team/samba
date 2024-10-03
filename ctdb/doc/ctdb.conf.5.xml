@@ -241,9 +241,11 @@
 	    This option is only required when automatic address
 	    detection can not be used.  This can be the case when
 	    running multiple ctdbd daemons/nodes on the same physical
-	    host (usually for testing), using InfiniBand for the
-	    private network or on Linux when sysctl
-	    net.ipv4.ip_nonlocal_bind=1.
+	    host (usually for testing) or using InfiniBand for the
+	    private network.  Another unlikely possibility would be
+	    running on a platform with a feature like Linux's
+	    net.ipv4.ip_nonlocal_bind=1 enabled and no usable
+	    getifaddrs(3) implementation (or replacement) available.
 	  </para>
 	  <para>
 	    Default: CTDB selects the first address from the nodes

@@ -32,6 +32,7 @@
 #include "ctdb_private.h"
 
 #include "common/system.h"
+#include "common/system_socket.h"
 #include "common/common.h"
 #include "common/logging.h"
 #include "common/path.h"
@@ -490,6 +491,7 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	unsigned int i;
 	char *lock_path = NULL;
 	struct flock lock;
+	struct ctdb_sys_local_ips_context *ips_ctx = NULL;
 	int ret;
 
 	/*
@@ -534,9 +536,36 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	}
 	talloc_free(lock_path);
 
+	ret = ctdb_sys_local_ips_init(ctdb, &ips_ctx);
+	if (ret != 0) {
+		/*
+		 * What to do?  The point here is to allow CTDB to
+		 * bind to the local IP address from the nodes list if
+		 * net.ipv4.ip_nonlocal_bind = 1, which probably just
+		 * Linux... though other platforms may have a similar
+		 * setting.  Let's go ahead and skip checking
+		 * addresses this way.  That way, a platform with a
+		 * replacement implementation of getifaddrs() that
+		 * just returns, say, ENOSYS can still proceed and see
+		 * if it can bind/listen on each address.
+		 */
+		DBG_WARNING(
+			"Failed to get local addresses, depending on bind\n");
+		ips_ctx = NULL; /* Just in case */
+	}
+
 	for (i=0; i < ctdb->num_nodes; i++) {
 		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
 			continue;
+		}
+
+		if (ips_ctx != NULL) {
+			bool have_ip = ctdb_sys_local_ip_check(
+				ips_ctx, &ctdb->nodes[i]->address);
+
+			if (!have_ip) {
+				continue;
+			}
 		}
 
 		ret = ctdb_tcp_listen_addr(ctdb,
@@ -546,6 +575,8 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 			break;
 		}
 	}
+
+	TALLOC_FREE(ips_ctx);
 
 	if (i == ctdb->num_nodes) {
 		D_ERR("Unable to bind to any node address - giving up\n");
