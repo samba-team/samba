@@ -500,7 +500,8 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	 * process.
 	 */
 	if (ctdb->num_nodes == 0) {
-		DEBUG(DEBUG_CRIT,("No nodes available to attempt bind to - is the nodes file empty?\n"));
+		D_ERR("No nodes available to attempt bind to - "
+		      "is the nodes file empty?\n");
 		return -1;
 	}
 
