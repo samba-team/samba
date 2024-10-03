@@ -83,12 +83,17 @@ static int tdb_validate_child(struct tdb_context *tdb,
 	ret = 0; /* Cache is good. */
 
 out:
-	DEBUG(10,   ("tdb_validate_child: summary of validation status:\n"));
-	DEBUGADD(10,(" * tdb error: %s\n", v_status.tdb_error ? "yes" : "no"));
-	DEBUGADD(10,(" * bad freelist: %s\n",v_status.bad_freelist?"yes":"no"));
-	DEBUGADD(10,(" * bad entry: %s\n", v_status.bad_entry ? "yes" : "no"));
-	DEBUGADD(10,(" * unknown key: %s\n", v_status.unknown_key?"yes":"no"));
-	DEBUGADD(10,(" => overall success: %s\n", v_status.success?"yes":"no"));
+	DBG_DEBUG("summary of validation status:\n"
+		  " * tdb error: %s\n"
+		  " * bad freelist: %s\n"
+		  " * bad entry: %s\n"
+		  " * unknown key: %s\n"
+		  " => overall success: %s\n",
+		  v_status.tdb_error ? "yes" : "no",
+		  v_status.bad_freelist ? "yes" : "no",
+		  v_status.bad_entry ? "yes" : "no",
+		  v_status.unknown_key ? "yes" : "no",
+		  v_status.success ? "yes" : "no");
 
 	return ret;
 }
