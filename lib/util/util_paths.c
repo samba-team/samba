@@ -95,7 +95,7 @@ static char *get_user_home_dir(TALLOC_CTX *mem_ctx)
 			goto done;
 		}
 		len = newlen;
-		tmp = talloc_realloc_size(mem_ctx, buf, len);
+		tmp = talloc_realloc(mem_ctx, buf, char, len);
 		if (tmp == NULL) {
 			goto done;
 		}
