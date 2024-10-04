@@ -1154,6 +1154,7 @@ next:
 				  '/',
 				  &target);
 	if (ret != 0) {
+		TALLOC_FREE(symlink_err);
 		return map_nt_error_from_unix(ret);
 	}
 
