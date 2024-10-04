@@ -1508,7 +1508,7 @@ static void call_trans2findnext(connection_struct *conn,
 	 */
 
 	if(!continue_bit && resume_name && *resume_name) {
-		bool posix_open = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN);
+		bool posix_open = fsp->fsp_flags.posix_open;
 		char *last_name_sent = NULL;
 		bool sequential;
 

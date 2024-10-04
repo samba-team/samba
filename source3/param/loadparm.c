@@ -4686,7 +4686,7 @@ enum brl_flavour lp_posix_cifsu_locktype(files_struct *fsp)
 	if (posix_default_lock_was_set) {
 		return posix_cifsx_locktype;
 	} else {
-		return (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) ?
+		return fsp->fsp_flags.posix_open ?
 			POSIX_LOCK : WINDOWS_LOCK;
 	}
 }

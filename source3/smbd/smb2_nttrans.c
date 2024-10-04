@@ -189,7 +189,7 @@ static bool check_smb2_posix_chmod_ace(const struct files_struct *fsp,
 		return false;
 	}
 
-	if (!(fsp->posix_flags & FSP_POSIX_FLAGS_OPEN)) {
+	if (!fsp->fsp_flags.posix_open) {
 		return false;
 	}
 

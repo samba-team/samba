@@ -1960,7 +1960,7 @@ static bool fsinfo_unix_valid_level(connection_struct *conn,
 				    uint16_t info_level)
 {
 	if (conn_using_smb2(conn->sconn) &&
-	    (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) &&
+	    fsp->fsp_flags.posix_open &&
 	    info_level == SMB2_FS_POSIX_INFORMATION_INTERNAL)
 	{
 		return true;
@@ -3006,7 +3006,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		}
 
 		if (conn_using_smb2(conn->sconn) &&
-		    (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN))
+		    fsp->fsp_flags.posix_open)
 		{
 			DBG_DEBUG("SMB2 posix open\n");
 			ok = true;
@@ -3677,7 +3677,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			if (fsp == NULL) {
 				return NT_STATUS_INVALID_HANDLE;
 			}
-			if (!(fsp->posix_flags & FSP_POSIX_FLAGS_OPEN)) {
+			if (!fsp->fsp_flags.posix_open) {
 				return NT_STATUS_INVALID_LEVEL;
 			}
 

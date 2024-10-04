@@ -384,6 +384,9 @@
  * Change to Version 50 - will ship with 4.22
  * Version 50 - Change SMB_VFS_RENAMEAT() add vfs_rename_how
  * Version 50 - Add VFS_RENAME_HOW_NO_REPLACE to vfs_rename_how
+ * Version 50 - Remove FSP_POSIX_FLAGS_PATHNAMES, remove FSP_POSIX_FLAGS_RENAME
+ *              and convert struct files_struct.posix_flags to
+ *              struct files_struct.fsp_flags.posix_open
  */
 
 #define SMB_VFS_INTERFACE_VERSION 50
@@ -458,6 +461,7 @@ typedef struct files_struct {
 		bool lock_failure_seen : 1;
 		bool encryption_required : 1;
 		bool fstat_before_close : 1;
+		bool posix_open : 1;
 	} fsp_flags;
 
 	struct tevent_timer *update_write_time_event;
@@ -684,11 +688,6 @@ typedef struct files_struct {
  * In any other case use fsp_get_io_fd().
  */
 
-#define FSP_POSIX_FLAGS_OPEN		0x01
-
-#define FSP_POSIX_FLAGS_ALL			\
-	FSP_POSIX_FLAGS_OPEN
-
 struct vuid_cache_entry {
 	struct auth_session_info *session_info;
 	struct name_compare_entry *hide_list;
@@ -886,12 +885,7 @@ struct smb_filename {
 	struct fsp_smb_fname_link *fsp_link;
 };
 
-/*
- * smb_filename flags. Define in terms of the FSP_POSIX_FLAGS_XX
- * to keep the numeric values consistent.
- */
-
-#define SMB_FILENAME_POSIX_PATH		FSP_POSIX_FLAGS_OPEN
+#define SMB_FILENAME_POSIX_PATH		0x01
 
 enum vfs_translate_direction {
 	vfs_translate_to_unix = 0,

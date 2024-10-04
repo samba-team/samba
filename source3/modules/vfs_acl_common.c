@@ -1172,7 +1172,7 @@ int unlink_acl_common(struct vfs_handle_struct *handle,
 int fchmod_acl_module_common(struct vfs_handle_struct *handle,
 			     struct files_struct *fsp, mode_t mode)
 {
-	if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN
+	if (fsp->fsp_flags.posix_open
 	    || fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH) {
 		/* Only allow this on POSIX opens. */
 		return SMB_VFS_NEXT_FCHMOD(handle, fsp, mode);

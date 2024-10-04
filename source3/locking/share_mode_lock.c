@@ -2022,7 +2022,7 @@ bool set_share_mode(struct share_mode_lock *lck,
 		.time.tv_usec = fsp->open_time.tv_usec,
 		.share_file_id = fh_get_gen_id(fsp->fh),
 		.uid = (uint32_t)uid,
-		.flags = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) ?
+		.flags = fsp->fsp_flags.posix_open ?
 			SHARE_MODE_FLAG_POSIX_OPEN : 0,
 		.name_hash = fsp->name_hash,
 	};

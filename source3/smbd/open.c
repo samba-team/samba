@@ -866,7 +866,7 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 	 * client should be doing this.
 	 */
 
-	if ((fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) || !lp_follow_symlinks(SNUM(conn))) {
+	if (fsp->fsp_flags.posix_open || !lp_follow_symlinks(SNUM(conn))) {
 		how.flags |= O_NOFOLLOW;
 	}
 
@@ -1270,7 +1270,7 @@ static NTSTATUS open_file(
 		SEC_FLAG_SYSTEM_SECURITY;
 	bool creating = !file_existed && (how.flags & O_CREAT);
 	bool open_fd = false;
-	bool posix_open = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN);
+	bool posix_open = fsp->fsp_flags.posix_open;
 
 	/*
 	 * Catch early an attempt to open an existing
@@ -4223,7 +4223,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					      * requested access_mask after
 					      * the open is done. */
 	if (posix_open) {
-		fsp->posix_flags |= FSP_POSIX_FLAGS_ALL;
+		fsp->fsp_flags.posix_open = true;
 	}
 
 	if ((create_options & FILE_DELETE_ON_CLOSE) && (flags & O_CREAT) &&
@@ -5349,7 +5349,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->fsp_flags.is_directory = true;
 	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
-		fsp->posix_flags |= FSP_POSIX_FLAGS_ALL;
+		fsp->fsp_flags.posix_open = true;
 	}
 
 	/* Don't store old timestamps for directory

@@ -2625,7 +2625,7 @@ static bool fsp_generic_ask_sharemode(struct files_struct *fsp)
 		return false;
 	}
 
-	if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
+	if (fsp->fsp_flags.posix_open) {
 		/* Always use filesystem for UNIX mtime query. */
 		return false;
 	}

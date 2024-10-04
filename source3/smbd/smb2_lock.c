@@ -381,7 +381,7 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i<in_lock_count; i++) {
 		bool invalid = false;
-		bool posix_handle =(fsp->posix_flags & FSP_POSIX_FLAGS_OPEN);
+		bool posix_handle = fsp->fsp_flags.posix_open;
 
 		switch (in_locks[i].flags) {
 		case SMB2_LOCK_FLAG_SHARED:

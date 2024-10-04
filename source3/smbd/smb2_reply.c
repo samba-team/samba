@@ -1409,9 +1409,9 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	uint32_t access_mask = SEC_DIR_ADD_FILE;
 	bool dst_exists, old_is_stream, new_is_stream;
 	int ret;
-	bool case_sensitive = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) ?
+	bool case_sensitive = fsp->fsp_flags.posix_open ?
 				true : conn->case_sensitive;
-	bool case_preserve = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) ?
+	bool case_preserve = fsp->fsp_flags.posix_open ?
 				true : conn->case_preserve;
 	struct vfs_rename_how rhow = { .flags = 0, };
 
@@ -1470,7 +1470,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		 * can check them separately.
 		 */
 
-		if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
+		if (fsp->fsp_flags.posix_open) {
 			/* POSIX - no stream component. */
 			orig_lcomp_path = talloc_strdup(ctx,
 						dst_original_lcomp);

@@ -339,7 +339,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 			break;
 
 		case SMB2_FILE_POSIX_INFORMATION:
-			if (!(fsp->posix_flags & FSP_POSIX_FLAGS_OPEN)) {
+			if (!fsp->fsp_flags.posix_open) {
 				tevent_req_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return tevent_req_post(req, ev);
 			}

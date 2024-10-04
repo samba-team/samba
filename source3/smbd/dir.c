@@ -1133,7 +1133,7 @@ static NTSTATUS OpenDir_fsp(
 		goto fail;
 	}
 	dir_hnd->fsp = fsp;
-	if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
+	if (fsp->fsp_flags.posix_open) {
 		dir_hnd->case_sensitive = true;
 	} else {
 		dir_hnd->case_sensitive = conn->case_sensitive;

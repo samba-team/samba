@@ -273,7 +273,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 	char *p;
 	bool stop = false;
 	bool ok;
-	bool posix_dir_handle = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN);
+	bool posix_dir_handle = fsp->fsp_flags.posix_open;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_query_directory_state);
@@ -368,7 +368,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 		break;
 
 	case SMB2_FIND_POSIX_INFORMATION:
-		if (!(fsp->posix_flags & FSP_POSIX_FLAGS_OPEN)) {
+		if (!fsp->fsp_flags.posix_open) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_LEVEL);
 			return tevent_req_post(req, ev);
 		}

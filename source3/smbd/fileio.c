@@ -148,7 +148,7 @@ void trigger_write_time_update(struct files_struct *fsp)
 {
 	int delay;
 
-	if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
+	if (fsp->fsp_flags.posix_open) {
 		/* Don't use delayed writes on POSIX files. */
 		return;
 	}
@@ -195,7 +195,7 @@ void trigger_write_time_update_immediate(struct files_struct *fsp)
 
 	init_smb_file_time(&ft);
 
-	if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
+	if (fsp->fsp_flags.posix_open) {
 		/* Don't use delayed writes on POSIX files. */
 		return;
 	}
