@@ -58,8 +58,8 @@ static char **completion_fn(const char *text, int start, int end)
 		bool match = (strncmp(text, c->name, strlen(text)) == 0);
 
 		if (match) {
-			ADD_TO_ARRAY(NULL, char *, SMB_STRDUP(c->name),
-				     &cmds, &n_cmds);
+			ADD_TO_MALLOC_ARRAY(char *, SMB_STRDUP(c->name),
+					    &cmds, &n_cmds);
 		}
 	}
 
