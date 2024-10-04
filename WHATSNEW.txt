@@ -23,6 +23,20 @@ REMOVED FEATURES
 The "nmbd proxy logon" feature was removed. This was used before
 Samba4 acquired a NBT server.
 
+fruit:posix_rename
+------------------
+
+This option of the vfs_fruit VFS module that could be used to enable POSIX
+directory rename behaviour for OS X clients has been removed as it could result
+in severe problems for Windows clients.
+
+As a possible workaround it is possible to prevent creation of .DS_Store files
+(a Finder thingy to store directory view settings) on network mounts by running
+
+  $ defaults write com.apple.desktopservices DSDontWriteNetworkStores true
+
+on the Mac.
+
 
 smb.conf changes
 ================
@@ -30,7 +44,7 @@ smb.conf changes
   Parameter Name                          Description     Default
   --------------                          -----------     -------
   vfs mkdir use tmp name                  New             Auto
-
+  fruit:posix_rename                      Removed
 
 KNOWN ISSUES
 ============

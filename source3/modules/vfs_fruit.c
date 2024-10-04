@@ -128,7 +128,6 @@ struct fruit_config_data {
 	bool unix_info_enabled;
 	bool copyfile_enabled;
 	bool veto_appledouble;
-	bool posix_rename;
 	bool aapl_zero_file_id;
 	const char *model;
 	bool time_machine;
@@ -341,9 +340,6 @@ static int init_fruit_config(vfs_handle_struct *handle)
 
 	config->use_copyfile = lp_parm_bool(-1, FRUIT_PARAM_TYPE_NAME,
 					   "copyfile", false);
-
-	config->posix_rename = lp_parm_bool(
-		SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME, "posix_rename", true);
 
 	config->aapl_zero_file_id =
 	    lp_parm_bool(SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
@@ -4348,15 +4344,6 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	}
 
 	fsp = *result;
-
-	if (global_fruit_config.nego_aapl) {
-		if (config->posix_rename && fsp->fsp_flags.is_directory) {
-			/*
-			 * Enable POSIX directory rename behaviour
-			 */
-			fsp->posix_flags |= FSP_POSIX_FLAGS_RENAME;
-		}
-	}
 
 	/*
 	 * If this is a plain open for existing files, opening an 0

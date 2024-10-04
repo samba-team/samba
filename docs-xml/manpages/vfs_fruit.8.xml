@@ -329,17 +329,6 @@
 	  </varlistentry>
 
 	  <varlistentry>
-	    <term>fruit:posix_rename = yes | no</term>
-	    <listitem>
-	      <para>Whether to enable POSIX directory rename behaviour
-	      for OS X clients. Without this, directories can't be
-	      renamed if any client has any file inside it
-	      (recursive!) open.</para>
-	      <para>The default is <emphasis>yes</emphasis>.</para>
-	    </listitem>
-	  </varlistentry>
-
-	  <varlistentry>
 	    <term>readdir_attr:aapl_rsize = yes | no</term>
 	    <listitem>
 	      <para>Return resource fork size in SMB2 FIND responses.</para>

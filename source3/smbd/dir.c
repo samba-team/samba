@@ -1540,8 +1540,7 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 		return status;
 	}
 
-	if (!(fsp->posix_flags & FSP_POSIX_FLAGS_RENAME) &&
-	    lp_strict_rename(SNUM(conn)) &&
+	if (lp_strict_rename(SNUM(conn)) &&
 	    have_file_open_below(fsp->conn, fsp->fsp_name))
 	{
 		return NT_STATUS_ACCESS_DENIED;
