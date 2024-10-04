@@ -1470,7 +1470,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		 * can check them separately.
 		 */
 
-		if (fsp->posix_flags & FSP_POSIX_FLAGS_PATHNAMES) {
+		if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
 			/* POSIX - no stream component. */
 			orig_lcomp_path = talloc_strdup(ctx,
 						dst_original_lcomp);

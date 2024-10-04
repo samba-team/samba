@@ -685,11 +685,9 @@ typedef struct files_struct {
  */
 
 #define FSP_POSIX_FLAGS_OPEN		0x01
-#define FSP_POSIX_FLAGS_PATHNAMES	0x04
 
 #define FSP_POSIX_FLAGS_ALL			\
-	(FSP_POSIX_FLAGS_OPEN |			\
-	 FSP_POSIX_FLAGS_PATHNAMES)
+	FSP_POSIX_FLAGS_OPEN
 
 struct vuid_cache_entry {
 	struct auth_session_info *session_info;
@@ -893,7 +891,7 @@ struct smb_filename {
  * to keep the numeric values consistent.
  */
 
-#define SMB_FILENAME_POSIX_PATH		FSP_POSIX_FLAGS_PATHNAMES
+#define SMB_FILENAME_POSIX_PATH		FSP_POSIX_FLAGS_OPEN
 
 enum vfs_translate_direction {
 	vfs_translate_to_unix = 0,
