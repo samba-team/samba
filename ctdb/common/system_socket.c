@@ -163,7 +163,7 @@ bool ctdb_sys_local_ip_check(const struct ctdb_sys_local_ips_context *ips_ctx,
 /*
  * See if the given IP is currently on an interface
  */
-bool ctdb_sys_have_ip(ctdb_sock_addr *_addr)
+bool ctdb_sys_have_ip(const ctdb_sock_addr *_addr)
 {
 	int s;
 	int ret;
