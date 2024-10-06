@@ -2121,7 +2121,8 @@ struct files_struct *file_find_one_fsp_from_lease_key(
 }
 
 /****************************************************************************
- Find any fsp open with a pathname below that of an already open path.
+ Find any fsp open with a pathname below that of an already open path,
+ ignoring POSIX opens.
 ****************************************************************************/
 
 bool file_find_subpath(files_struct *dir_fsp)
@@ -2144,6 +2145,9 @@ bool file_find_subpath(files_struct *dir_fsp)
 		char *d1_fullname;
 
 		if (fsp == dir_fsp) {
+			continue;
+		}
+		if (fsp->fsp_flags.posix_open) {
 			continue;
 		}
 
