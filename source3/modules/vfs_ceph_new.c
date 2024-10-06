@@ -673,6 +673,7 @@ struct vfs_ceph_fh {
 	struct Fh *fh;
 	struct dirent *de;
 	int fd;
+	int o_flags;
 };
 
 static int cephmount_next_fd(struct cephmount_cached *cme)
@@ -710,7 +711,8 @@ static int vfs_ceph_release_fh(struct vfs_ceph_fh *cfh)
 	int ret = 0;
 
 	if (cfh->fh != NULL) {
-		DBG_DEBUG("[ceph] ceph_ll_close: fd=%d\n", cfh->fd);
+		DBG_DEBUG("[ceph] ceph_ll_close: fd=%d o_flags=0x%x\n",
+			  cfh->fd, cfh->o_flags);
 		ret = cfh->config->ceph_ll_close_fn(cfh->cme->mount, cfh->fh);
 		cfh->fh = NULL;
 	}
@@ -1075,6 +1077,7 @@ static int vfs_ceph_ll_create(const struct vfs_handle_struct *handle,
 	cfh->iref.ino = (long)stx.stx_ino;
 	cfh->iref.owner = true;
 	cfh->fh = fh;
+	cfh->o_flags = oflags;
 	vfs_ceph_assign_fh_fd(cfh);
 
 	return 0;
@@ -1210,6 +1213,7 @@ static int vfs_ceph_ll_open(const struct vfs_handle_struct *handle,
 				      cfh->uperm);
 	if (ret == 0) {
 		cfh->fh = fh;
+		cfh->o_flags = flags;
 		vfs_ceph_assign_fh_fd(cfh);
 	}
 	return ret;
@@ -2172,6 +2176,7 @@ static int vfs_ceph_openat(struct vfs_handle_struct *handle,
 			 * Cephfs' Inode* from the above lookup so there is no
 			 * need to go via expensive ceph_ll_open for Fh*.
 			 */
+			cfh->o_flags = flags;
 			vfs_ceph_assign_fh_fd(cfh);
 			result = cfh->fd;
 			goto out;
