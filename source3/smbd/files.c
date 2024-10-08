@@ -404,20 +404,16 @@ static int smb_fname_fsp_destructor(struct smb_filename *smb_fname)
 static NTSTATUS openat_pathref_fullname(
 	struct connection_struct *conn,
 	const struct files_struct *dirfsp,
-	struct files_struct *basefsp,
 	struct smb_filename **full_fname,
 	struct smb_filename *smb_fname,
 	const struct vfs_open_how *how)
 {
 	struct files_struct *fsp = NULL;
-	bool have_dirfsp = (dirfsp != NULL);
-	bool have_basefsp = (basefsp != NULL);
 	NTSTATUS status;
 
 	DBG_DEBUG("smb_fname [%s]\n", smb_fname_str_dbg(smb_fname));
 
 	SMB_ASSERT(smb_fname->fsp == NULL);
-	SMB_ASSERT(have_dirfsp != have_basefsp);
 
 	status = fsp_new(conn, conn, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -434,7 +430,6 @@ static NTSTATUS openat_pathref_fullname(
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
-	fsp_set_base_fsp(fsp, basefsp);
 
 	status = fd_openat(dirfsp, smb_fname, fsp, how);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -493,7 +488,6 @@ fail:
 		  smb_fname_str_dbg(smb_fname),
 		  nt_errstr(status));
 
-	fsp_set_base_fsp(fsp, NULL);
 	fd_close(fsp);
 	file_free(NULL, fsp);
 	return status;
@@ -546,7 +540,7 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 			goto fail;
 		}
 		status = openat_pathref_fullname(
-			conn, dirfsp, NULL, &full_fname, smb_fname, &how);
+			conn, dirfsp, &full_fname, smb_fname, &how);
 		TALLOC_FREE(full_fname);
 		return status;
 	}
@@ -569,7 +563,7 @@ NTSTATUS openat_pathref_fsp(const struct files_struct *dirfsp,
 	}
 
 	status = openat_pathref_fullname(
-		conn, dirfsp, NULL, &full_fname, base_fname, &how);
+		conn, dirfsp, &full_fname, base_fname, &how);
 	TALLOC_FREE(full_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("openat_pathref_fullname() failed: %s\n",
