@@ -402,6 +402,7 @@ def build(bld):
                         includes='include',
                         deps='''ctdb-protocol-util
                                 ctdb-system
+                                ctdb-util
                                 replace
                                 talloc
                                 tdb
