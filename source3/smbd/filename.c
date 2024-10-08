@@ -1033,6 +1033,13 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 	}
 
 done:
+	if (S_ISLNK(smb_fname->st.st_ex_mode) &&
+	    !(ucf_flags & UCF_LCOMP_LNK_OK)) {
+		status = NT_STATUS_STOPPED_ON_SYMLINK;
+		*_symlink_err = symlink_err;
+		goto fail;
+	}
+
 	*_dirfsp = smb_dirname->fsp;
 	*_smb_fname = smb_fname;
 	*_symlink_err = symlink_err;
@@ -1089,18 +1096,6 @@ next:
 						   _dirfsp,
 						   _smb_fname,
 						   &symlink_err);
-
-	if (NT_STATUS_IS_OK(status) && S_ISLNK((*_smb_fname)->st.st_ex_mode)) {
-		/*
-		 * lcomp is a symlink
-		 */
-		if (ucf_flags & UCF_LCOMP_LNK_OK) {
-			TALLOC_FREE(symlink_err);
-			return NT_STATUS_OK;
-		}
-		close_file_free(NULL, _dirfsp, ERROR_CLOSE);
-		status = NT_STATUS_STOPPED_ON_SYMLINK;
-	}
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
 		return status;
