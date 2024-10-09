@@ -60,19 +60,19 @@ static uint32_t generate_volume_serial_number(
  Check if an open file handle is a symlink.
 ****************************************************************************/
 
-NTSTATUS refuse_symlink_fsp(const files_struct *fsp)
+bool refuse_symlink_fsp(const files_struct *fsp)
 {
 
 	if (!VALID_STAT(fsp->fsp_name->st)) {
-		return NT_STATUS_ACCESS_DENIED;
+		return true;
 	}
 	if (S_ISLNK(fsp->fsp_name->st.st_ex_mode)) {
-		return NT_STATUS_ACCESS_DENIED;
+		return true;
 	}
 	if (fsp_get_pathref_fd(fsp) == -1) {
-		return NT_STATUS_ACCESS_DENIED;
+		return true;
 	}
-	return NT_STATUS_OK;
+	return false;
 }
 
 /**
@@ -194,14 +194,14 @@ NTSTATUS get_ea_value_fsp(TALLOC_CTX *mem_ctx,
 	char *val = NULL;
 	ssize_t sizeret;
 	size_t max_xattr_size = 0;
-	NTSTATUS status;
+	bool refuse;
 
 	if (fsp == NULL) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
-	status = refuse_symlink_fsp(fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	refuse = refuse_symlink_fsp(fsp);
+	if (refuse) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	max_xattr_size = lp_smbd_max_xattr_size(SNUM(fsp->conn));
@@ -263,7 +263,7 @@ NTSTATUS get_ea_names_from_fsp(TALLOC_CTX *mem_ctx,
 	}
 	*pnum_names = 0;
 
-	if ((fsp == NULL) || !NT_STATUS_IS_OK(refuse_symlink_fsp(fsp))) {
+	if ((fsp == NULL) || refuse_symlink_fsp(fsp)) {
 		/*
 		 * Callers may pass fsp == NULL when passing smb_fname->fsp of a
 		 * symlink. This is ok, handle it here, by just return no EA's
@@ -711,6 +711,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 {
 	NTSTATUS status;
 	bool posix_pathnames = false;
+	bool refuse;
 
 	if (!lp_ea_support(SNUM(conn))) {
 		return NT_STATUS_EAS_NOT_SUPPORTED;
@@ -722,9 +723,9 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 
 	posix_pathnames = (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
 
-	status = refuse_symlink_fsp(fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	refuse = refuse_symlink_fsp(fsp);
+	if (refuse) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	status = check_any_access_fsp(fsp, FILE_WRITE_EA);

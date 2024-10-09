@@ -83,6 +83,7 @@ NTSTATUS set_sd(files_struct *fsp, struct security_descriptor *psd,
 {
 	files_struct *sd_fsp = NULL;
 	NTSTATUS status;
+	bool refuse;
 
 	if (!CAN_WRITE(fsp->conn)) {
 		return NT_STATUS_ACCESS_DENIED;
@@ -92,11 +93,11 @@ NTSTATUS set_sd(files_struct *fsp, struct security_descriptor *psd,
 		return NT_STATUS_OK;
 	}
 
-	status = refuse_symlink_fsp(fsp);
-	if (!NT_STATUS_IS_OK(status)) {
+	refuse = refuse_symlink_fsp(fsp);
+	if (refuse) {
 		DBG_DEBUG("ACL set on symlink %s denied.\n",
 			fsp_str_dbg(fsp));
-		return status;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (psd->owner_sid == NULL) {
@@ -480,6 +481,7 @@ static NTSTATUS smbd_fetch_security_desc(connection_struct *conn,
 	NTSTATUS status;
 	struct security_descriptor *psd = NULL;
 	bool need_to_read_sd = false;
+	bool refuse;
 
 	/*
 	 * Get the permissions to return.
@@ -501,11 +503,11 @@ static NTSTATUS smbd_fetch_security_desc(connection_struct *conn,
 		}
 	}
 
-	status = refuse_symlink_fsp(fsp);
-	if (!NT_STATUS_IS_OK(status)) {
+	refuse = refuse_symlink_fsp(fsp);
+	if (refuse) {
 		DBG_DEBUG("ACL get on symlink %s denied.\n",
 			fsp_str_dbg(fsp));
-		return status;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (security_info_wanted & (SECINFO_DACL|SECINFO_OWNER|

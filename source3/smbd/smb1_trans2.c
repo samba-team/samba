@@ -2389,7 +2389,7 @@ static NTSTATUS smb_q_posix_acl(
 	uint16_t num_def_acls = 0;
 	unsigned int size_needed = 0;
 	NTSTATUS status;
-	bool ok;
+	bool ok, refuse;
 	bool close_fsp = false;
 
 	/*
@@ -2415,8 +2415,9 @@ static NTSTATUS smb_q_posix_acl(
 
 	SMB_ASSERT(fsp != NULL);
 
-	status = refuse_symlink_fsp(fsp);
-	if (!NT_STATUS_IS_OK(status)) {
+	refuse = refuse_symlink_fsp(fsp);
+	if (refuse) {
+		status = NT_STATUS_ACCESS_DENIED;
 		goto out;
 	}
 
@@ -4273,6 +4274,7 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	unsigned int size_needed;
 	unsigned int total_data;
 	bool close_fsp = false;
+	bool refuse;
 
 	if (total_data_in < 0) {
 		status = NT_STATUS_INVALID_PARAMETER;
@@ -4359,8 +4361,9 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	/* Here we know fsp != NULL */
 	SMB_ASSERT(fsp != NULL);
 
-	status = refuse_symlink_fsp(fsp);
-	if (!NT_STATUS_IS_OK(status)) {
+	refuse = refuse_symlink_fsp(fsp);
+	if (refuse) {
+		status = NT_STATUS_ACCESS_DENIED;
 		goto out;
 	}
 

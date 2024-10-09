@@ -1061,7 +1061,7 @@ NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
 				       int total_data,
 				       files_struct *fsp,
 				       struct smb_filename *smb_fname);
-NTSTATUS refuse_symlink_fsp(const struct files_struct *fsp);
+bool refuse_symlink_fsp(const struct files_struct *fsp);
 NTSTATUS check_any_access_fsp(struct files_struct *fsp,
 			      uint32_t access_requested);
 uint64_t smb_roundup(connection_struct *conn, uint64_t val);
