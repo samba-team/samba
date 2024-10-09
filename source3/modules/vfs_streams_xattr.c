@@ -373,7 +373,7 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 		}
 
 		if (!(how->flags & O_CREAT)) {
-			errno = ENOATTR;
+			errno = ENOENT;
 			goto fail;
 		}
 
