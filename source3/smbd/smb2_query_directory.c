@@ -381,21 +381,17 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 
 	if (in_flags & SMB2_CONTINUE_FLAG_REOPEN) {
 		struct vfs_open_how how = { .flags = O_RDONLY, };
-
-		status = fd_close(fsp);
-		if (tevent_req_nterror(req, status)) {
-			return tevent_req_post(req, ev);
-		}
-
-		/*
-		 * fd_close() will close and invalidate the fsp's file
-		 * descriptor. So we have to reopen it.
-		 */
+		bool file_was_created;
 
 #ifdef O_DIRECTORY
 		how.flags |= O_DIRECTORY;
 #endif
-		status = fd_openat(conn->cwd_fsp, fsp->fsp_name, fsp, &how);
+
+		status = reopen_from_fsp(conn->cwd_fsp,
+					 fsp->fsp_name,
+					 fsp,
+					 &how,
+					 &file_was_created);
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}
