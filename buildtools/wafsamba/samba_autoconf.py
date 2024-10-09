@@ -784,8 +784,9 @@ def SAMBA_CONFIG_H(conf, path=None):
 
         conf.ADD_CFLAGS('-Werror=address', testflags=True)
         # we add these here to ensure that -Wstrict-prototypes is not set during configure
-        conf.ADD_CFLAGS('-Werror=strict-prototypes -Wstrict-prototypes',
-                        testflags=True)
+        if not Options.options.disable_warnings_as_errors:
+            conf.ADD_CFLAGS('-Werror=strict-prototypes -Wstrict-prototypes',
+                            testflags=True)
         conf.ADD_CFLAGS('-Werror=write-strings -Wwrite-strings',
                         testflags=True)
         conf.ADD_CFLAGS('-Werror-implicit-function-declaration',
