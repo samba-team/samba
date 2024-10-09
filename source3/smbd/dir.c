@@ -1550,8 +1550,7 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 	struct connection_struct *conn = fsp->conn;
 	struct smb_Dir *dir_hnd = NULL;
 
-	status = OpenDir(
-		talloc_tos(), conn, fsp->fsp_name, NULL, 0, &dir_hnd);
+	status = OpenDir_from_pathref(talloc_tos(), fsp, NULL, 0, &dir_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
