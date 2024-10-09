@@ -669,6 +669,11 @@ NTSTATUS fd_openat(const struct files_struct *dirfsp,
 		   files_struct *fsp,
 		   const struct vfs_open_how *how);
 NTSTATUS fd_close(files_struct *fsp);
+NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
+			 struct smb_filename *smb_fname,
+			 struct files_struct *fsp,
+			 const struct vfs_open_how *how,
+			 bool *p_file_created);
 bool is_oplock_stat_open(uint32_t access_mask);
 bool is_lease_stat_open(uint32_t access_mask);
 NTSTATUS send_break_message(struct messaging_context *msg_ctx,

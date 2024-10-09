@@ -1153,11 +1153,11 @@ static NTSTATUS fd_open_atomic(struct files_struct *dirfsp,
 	return status;
 }
 
-static NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
-				struct smb_filename *smb_fname,
-				struct files_struct *fsp,
-				const struct vfs_open_how *how,
-				bool *p_file_created)
+NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
+			 struct smb_filename *smb_fname,
+			 struct files_struct *fsp,
+			 const struct vfs_open_how *how,
+			 bool *p_file_created)
 {
 	NTSTATUS status;
 	int old_fd;
