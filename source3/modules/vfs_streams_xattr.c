@@ -48,15 +48,12 @@ struct stream_io {
 static ssize_t get_xattr_size_fsp(struct files_struct *fsp,
 			          const char *xattr_name)
 {
-	NTSTATUS status;
+	int ret;
 	struct ea_struct ea;
 	ssize_t result;
 
-	status = get_ea_value_fsp(talloc_tos(),
-				  fsp,
-				  xattr_name,
-				  &ea);
-	if (!NT_STATUS_IS_OK(status)) {
+	ret = get_ea_value_fsp(talloc_tos(), fsp, xattr_name, &ea);
+	if (ret != 0) {
 		return -1;
 	}
 
@@ -352,12 +349,11 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	status = get_ea_value_fsp(talloc_tos(),
-				  fsp->base_fsp,
-				  xattr_name,
-				  &ea);
-
-	DBG_DEBUG("get_ea_value_fsp returned %s\n", nt_errstr(status));
+	ret = get_ea_value_fsp(talloc_tos(), fsp->base_fsp, xattr_name, &ea);
+	if (ret != 0) {
+		DBG_DEBUG("get_ea_value_fsp returned %s\n", strerror(ret));
+		status = map_nt_error_from_unix(ret);
+	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
@@ -629,12 +625,12 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	}
 
 	/* Read the old stream from the base file fsp. */
-	status = get_ea_value_fsp(talloc_tos(),
-				  pathref_src->fsp,
-				  src_xattr_name,
-				  &ea);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	ret = get_ea_value_fsp(talloc_tos(),
+			       pathref_src->fsp,
+			       src_xattr_name,
+			       &ea);
+	if (ret != 0) {
+		errno = ret;
 		goto fail;
 	}
 
@@ -716,6 +712,7 @@ static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
 
 	for (i=0; i<num_names; i++) {
 		struct ea_struct ea;
+		int ret;
 
 		/*
 		 * We want to check with samba_private_attr_name()
@@ -740,15 +737,12 @@ static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
 			continue;
 		}
 
-		status = get_ea_value_fsp(names,
-					  smb_fname->fsp,
-					  names[i],
-					  &ea);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("Could not get ea %s for file %s: %s\n",
-				names[i],
-				smb_fname->base_name,
-				nt_errstr(status)));
+		ret = get_ea_value_fsp(names, smb_fname->fsp, names[i], &ea);
+		if (ret != 0) {
+			DBG_DEBUG("Could not get ea %s for file %s: %s\n",
+				  names[i],
+				  smb_fname->base_name,
+				  strerror(ret));
 			continue;
 		}
 
@@ -922,7 +916,6 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
         struct stream_io *sio =
 		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	struct ea_struct ea;
-	NTSTATUS status;
 	int ret;
 
 	DEBUG(10, ("streams_xattr_pwrite called for %d bytes\n", (int)n));
@@ -956,11 +949,12 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	status = get_ea_value_fsp(talloc_tos(),
-				  fsp->base_fsp,
-				  sio->xattr_name,
-				  &ea);
-	if (!NT_STATUS_IS_OK(status)) {
+	ret = get_ea_value_fsp(talloc_tos(),
+			       fsp->base_fsp,
+			       sio->xattr_name,
+			       &ea);
+	if (ret != 0) {
+		errno = ret;
 		return -1;
 	}
 
@@ -1003,7 +997,7 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
         struct stream_io *sio =
 		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	struct ea_struct ea;
-	NTSTATUS status;
+	int ret;
 	size_t length, overlap;
 
 	DEBUG(10, ("streams_xattr_pread: offset=%d, size=%d\n",
@@ -1017,11 +1011,12 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	status = get_ea_value_fsp(talloc_tos(),
-				  fsp->base_fsp,
-				  sio->xattr_name,
-				  &ea);
-	if (!NT_STATUS_IS_OK(status)) {
+	ret = get_ea_value_fsp(talloc_tos(),
+			       fsp->base_fsp,
+			       sio->xattr_name,
+			       &ea);
+	if (ret != 0) {
+		errno = ret;
 		return -1;
 	}
 
@@ -1209,7 +1204,6 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 	int ret;
 	uint8_t *tmp;
 	struct ea_struct ea;
-	NTSTATUS status;
         struct stream_io *sio =
 		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 
@@ -1224,11 +1218,12 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	status = get_ea_value_fsp(talloc_tos(),
-				  fsp->base_fsp,
-				  sio->xattr_name,
-				  &ea);
-	if (!NT_STATUS_IS_OK(status)) {
+	ret = get_ea_value_fsp(talloc_tos(),
+			       fsp->base_fsp,
+			       sio->xattr_name,
+			       &ea);
+	if (ret != 0) {
+		errno = ret;
 		return -1;
 	}
 

@@ -184,10 +184,10 @@ bool samba_private_attr_name(const char *unix_ea_name)
  Get one EA value. Fill in a struct ea_struct.
 ****************************************************************************/
 
-NTSTATUS get_ea_value_fsp(TALLOC_CTX *mem_ctx,
-			  files_struct *fsp,
-			  const char *ea_name,
-			  struct ea_struct *pea)
+int get_ea_value_fsp(TALLOC_CTX *mem_ctx,
+		     files_struct *fsp,
+		     const char *ea_name,
+		     struct ea_struct *pea)
 {
 	/* Get the value of this xattr. Max size is 64k. */
 	size_t attr_size = 256;
@@ -197,11 +197,11 @@ NTSTATUS get_ea_value_fsp(TALLOC_CTX *mem_ctx,
 	bool refuse;
 
 	if (fsp == NULL) {
-		return NT_STATUS_INVALID_HANDLE;
+		return EINVAL;
 	}
 	refuse = refuse_symlink_fsp(fsp);
 	if (refuse) {
-		return NT_STATUS_ACCESS_DENIED;
+		return EACCES;
 	}
 
 	max_xattr_size = lp_smbd_max_xattr_size(SNUM(fsp->conn));
@@ -210,7 +210,7 @@ NTSTATUS get_ea_value_fsp(TALLOC_CTX *mem_ctx,
 
 	val = talloc_realloc(mem_ctx, val, char, attr_size);
 	if (!val) {
-		return NT_STATUS_NO_MEMORY;
+		return ENOMEM;
 	}
 
 	sizeret = SMB_VFS_FGETXATTR(fsp, ea_name, val, attr_size);
@@ -220,7 +220,7 @@ NTSTATUS get_ea_value_fsp(TALLOC_CTX *mem_ctx,
 	}
 
 	if (sizeret == -1) {
-		return map_nt_error_from_unix(errno);
+		return errno;
 	}
 
 	DBG_DEBUG("EA %s is of length %zd\n", ea_name, sizeret);
@@ -234,11 +234,11 @@ NTSTATUS get_ea_value_fsp(TALLOC_CTX *mem_ctx,
 	}
 	if (pea->name == NULL) {
 		TALLOC_FREE(val);
-		return NT_STATUS_NO_MEMORY;
+		return ENOMEM;
 	}
 	pea->value.data = (unsigned char *)val;
 	pea->value.length = (size_t)sizeret;
-	return NT_STATUS_OK;
+	return 0;
 }
 
 NTSTATUS get_ea_names_from_fsp(TALLOC_CTX *mem_ctx,
@@ -410,6 +410,7 @@ static NTSTATUS get_ea_list_from_fsp(TALLOC_CTX *mem_ctx,
 	for (i=0; i<num_names; i++) {
 		struct ea_list *listp;
 		fstring dos_ea_name;
+		int ret;
 
 		/*
 		 * POSIX EA names are divided into several namespaces by
@@ -441,14 +442,11 @@ static NTSTATUS get_ea_list_from_fsp(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		status = get_ea_value_fsp(listp,
-					  fsp,
-					  names[i],
-					  &listp->ea);
+		ret = get_ea_value_fsp(listp, fsp, names[i], &listp->ea);
 
-		if (!NT_STATUS_IS_OK(status)) {
+		if (ret != 0) {
 			TALLOC_FREE(listp);
-			return status;
+			return map_nt_error_from_unix(ret);
 		}
 
 		if (listp->ea.value.length == 0) {
