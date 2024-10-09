@@ -316,7 +316,6 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 				files_struct *fsp,
 				const struct vfs_open_how *how)
 {
-	NTSTATUS status;
 	struct streams_xattr_config *config = NULL;
 	struct stream_io *sio = NULL;
 	struct ea_struct ea;
@@ -360,11 +359,8 @@ static int streams_xattr_openat(struct vfs_handle_struct *handle,
 	ret = get_ea_value_fsp(talloc_tos(), fsp->base_fsp, xattr_name, &ea);
 	if (ret != 0) {
 		DBG_DEBUG("get_ea_value_fsp returned %s\n", strerror(ret));
-		status = map_nt_error_from_unix(ret);
-	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		if (ret != ENOATTR) {
 			/*
 			 * The base file is not there. This is an error even if
 			 * we got O_CREAT, the higher levels should have created
