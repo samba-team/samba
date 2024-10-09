@@ -1172,8 +1172,6 @@ NTSTATUS reopen_from_fsp(struct files_struct *dirfsp,
 		mode_t mode = fsp->fsp_name->st.st_ex_mode;
 		int new_fd;
 
-		SMB_ASSERT(fsp->fsp_flags.is_pathref);
-
 		if (S_ISLNK(mode)) {
 			return NT_STATUS_STOPPED_ON_SYMLINK;
 		}
