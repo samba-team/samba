@@ -1183,12 +1183,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 	 * files non-visible to the client. If not, fail the delete.
 	 */
 
-	status = OpenDir(talloc_tos(),
-			 conn,
-			 smb_dname,
-			 NULL,
-			 0,
-			 &dir_hnd);
+	status = OpenDir_from_pathref(talloc_tos(), fsp, NULL, 0, &dir_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
 		 * Note, we deliberately squash the error here
