@@ -667,6 +667,7 @@ fail:
 static NTSTATUS filename_convert_dirfsp_nosymlink(
 	TALLOC_CTX *mem_ctx,
 	connection_struct *conn,
+	struct files_struct *basedir,
 	const char *name_in,
 	uint32_t ucf_flags,
 	NTTIME twrp,
@@ -704,7 +705,7 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 			.st_ex_ctime = omit,
 		};
 
-		*_dirfsp = conn->cwd_fsp;
+		*_dirfsp = basedir;
 		*_smb_fname = smb_fname;
 		return NT_STATUS_OK;
 	}
@@ -750,15 +751,14 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 	}
 
 	if (dirname[0] == '\0') {
-		status = synthetic_pathref(
-			mem_ctx,
-			conn->cwd_fsp,
-			".",
-			NULL,
-			NULL,
-			0,
-			posix ? SMB_FILENAME_POSIX_PATH : 0,
-			&smb_dirname);
+		status = synthetic_pathref(mem_ctx,
+					   basedir,
+					   ".",
+					   NULL,
+					   NULL,
+					   0,
+					   posix ? SMB_FILENAME_POSIX_PATH : 0,
+					   &smb_dirname);
 	} else {
 		status = normalize_filename_case(conn, dirname, ucf_flags);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -770,7 +770,7 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 
 		status = openat_pathref_fsp_nosymlink(mem_ctx,
 						      conn,
-						      conn->cwd_fsp,
+						      basedir,
 						      dirname,
 						      twrp,
 						      posix,
@@ -1090,6 +1090,7 @@ next:
 
 	status = filename_convert_dirfsp_nosymlink(mem_ctx,
 						   conn,
+						   conn->cwd_fsp,
 						   name_in,
 						   ucf_flags,
 						   twrp,
