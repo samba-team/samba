@@ -497,12 +497,17 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 		       NETLOGON_NEG_AUTHENTICATED_RPC;
 
 	/*
-	 * If weak crypto is disabled, do not announce that we support RC4.
+	 * With SAMBA_WEAK_CRYPTO_DISALLOWED
+	 * dcesrv_netr_ServerAuthenticate3_check_downgrade() will return
+	 * DOWNGRADE_DETECTED with negotiate_flags = 0,
+	 * if NETLOGON_NEG_SUPPORTS_AES was not negotiated...
+	 *
+	 * And if NETLOGON_NEG_SUPPORTS_AES was negotiated there's no harm in
+	 * returning the NETLOGON_NEG_ARCFOUR flag too...
+	 *
+	 * So there's no reason to remove NETLOGON_NEG_ARCFOUR nor
+	 * NETLOGON_NEG_STRONG_KEYS from server_flags...
 	 */
-	if (lpcfg_weak_crypto(dce_call->conn->dce_ctx->lp_ctx) ==
-	    SAMBA_WEAK_CRYPTO_DISALLOWED) {
-		server_flags &= ~NETLOGON_NEG_ARCFOUR;
-	}
 
 	negotiate_flags = *r->in.negotiate_flags & server_flags;
 
