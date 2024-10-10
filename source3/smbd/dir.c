@@ -1077,6 +1077,8 @@ NTSTATUS OpenDir_from_pathref(TALLOC_CTX *mem_ctx,
 
 	status = OpenDir_fsp(mem_ctx, fsp->conn, fsp, mask, attr, &dir_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
+		fd_close(fsp);
+		file_free(NULL, fsp);
 		return status;
 	}
 
