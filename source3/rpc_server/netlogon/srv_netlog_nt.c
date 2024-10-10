@@ -928,6 +928,18 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 		   NETLOGON_NEG_SCHANNEL;
 
 	/*
+	 * With SAMBA_WEAK_CRYPTO_DISALLOWED we will return DOWNGRADE_DETECTED
+	 * with negotiate_flags = 0 below, if NETLOGON_NEG_SUPPORTS_AES was not
+	 * negotiated...
+	 *
+	 * And if NETLOGON_NEG_SUPPORTS_AES was negotiated there's no harm in
+	 * returning the NETLOGON_NEG_ARCFOUR flag too...
+	 *
+	 * So there's no reason to remove NETLOGON_NEG_ARCFOUR nor
+	 * NETLOGON_NEG_STRONG_KEYS from srv_flgs...
+	 */
+
+	/*
 	 * Support authentication of trusted domains.
 	 *
 	 * These flags are the minimum required set which works with win2k3
@@ -938,13 +950,6 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 			    NETLOGON_NEG_DNS_DOMAIN_TRUSTS |
 			    NETLOGON_NEG_CROSS_FOREST_TRUSTS |
 			    NETLOGON_NEG_NEUTRALIZE_NT4_EMULATION;
-	}
-
-	/*
-	 * If weak crypto is disabled, do not announce that we support RC4.
-	 */
-	if (lp_weak_crypto() == SAMBA_WEAK_CRYPTO_DISALLOWED) {
-		srv_flgs &= ~NETLOGON_NEG_ARCFOUR;
 	}
 
 	neg_flags = in_neg_flags & srv_flgs;
