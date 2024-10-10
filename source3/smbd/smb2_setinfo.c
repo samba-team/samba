@@ -242,10 +242,6 @@ static struct tevent_req *delay_rename_for_lease_break(struct tevent_req *req,
 	struct timeval timeout;
 	bool ok;
 
-	if (fsp->oplock_type != LEASE_OPLOCK) {
-		return NULL;
-	}
-
 	ok = share_mode_forall_leases(
 		lck, delay_rename_lease_break_fn, &state);
 	if (!ok) {
