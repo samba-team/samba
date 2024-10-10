@@ -2412,52 +2412,6 @@ struct files_struct *file_fsp_smb2(struct smbd_smb2_request *smb2req,
 	return fsp;
 }
 
-/****************************************************************************
- Duplicate the file handle part for a DOS or FCB open.
-****************************************************************************/
-
-NTSTATUS dup_file_fsp(
-	files_struct *from,
-	uint32_t access_mask,
-	files_struct *to)
-{
-	size_t new_refcount;
-
-	/* this can never happen for print files */
-	SMB_ASSERT(from->print_file == NULL);
-
-	TALLOC_FREE(to->fh);
-
-	to->fh = from->fh;
-	new_refcount = fh_get_refcount(to->fh) + 1;
-	fh_set_refcount(to->fh, new_refcount);
-
-	to->file_id = from->file_id;
-	to->initial_allocation_size = from->initial_allocation_size;
-	to->file_pid = from->file_pid;
-	to->vuid = from->vuid;
-	to->open_time = from->open_time;
-	to->access_mask = access_mask;
-	to->oplock_type = from->oplock_type;
-	to->fsp_flags.can_lock = from->fsp_flags.can_lock;
-	to->fsp_flags.can_read = ((access_mask & FILE_READ_DATA) != 0);
-	to->fsp_flags.can_write =
-		CAN_WRITE(from->conn) &&
-		((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) != 0);
-	if (from->fsp_name->twrp != 0) {
-		to->fsp_flags.can_write = false;
-	}
-	to->fsp_flags.modified = from->fsp_flags.modified;
-	to->fsp_flags.is_directory = from->fsp_flags.is_directory;
-	to->fsp_flags.aio_write_behind = from->fsp_flags.aio_write_behind;
-	to->fsp_flags.is_fsa = from->fsp_flags.is_fsa;
-	to->fsp_flags.is_pathref = from->fsp_flags.is_pathref;
-	to->fsp_flags.have_proc_fds = from->fsp_flags.have_proc_fds;
-	to->fsp_flags.is_dirfsp = from->fsp_flags.is_dirfsp;
-
-	return fsp_set_smb_fname(to, from->fsp_name);
-}
-
 /**
  * Return a jenkins hash of a pathname on a connection.
  */

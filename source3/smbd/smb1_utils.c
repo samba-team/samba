@@ -41,6 +41,7 @@ struct files_struct *fcb_or_dos_open(
 	struct connection_struct *conn = req->conn;
 	struct file_id id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 	struct files_struct *fsp = NULL, *new_fsp = NULL;
+	size_t new_refcount;
 	NTSTATUS status;
 
 	if ((private_flags &
@@ -97,10 +98,35 @@ struct files_struct *fcb_or_dos_open(
 		return NULL;
 	}
 
-	status = dup_file_fsp(fsp, access_mask, new_fsp);
+	/*
+	 * Share the fsp->fh between old and new
+	 */
+	TALLOC_FREE(new_fsp->fh);
+	new_fsp->fh = fsp->fh;
+	new_refcount = fh_get_refcount(new_fsp->fh) + 1;
+	fh_set_refcount(new_fsp->fh, new_refcount);
+
+	new_fsp->file_id = fsp->file_id;
+	new_fsp->initial_allocation_size = fsp->initial_allocation_size;
+	new_fsp->file_pid = fsp->file_pid;
+	new_fsp->vuid = fsp->vuid;
+	new_fsp->open_time = fsp->open_time;
+	new_fsp->access_mask = access_mask;
+	new_fsp->oplock_type = fsp->oplock_type;
+	new_fsp->fsp_flags = fsp->fsp_flags;
+	new_fsp->fsp_flags.can_read = ((access_mask & FILE_READ_DATA) != 0);
+	new_fsp->fsp_flags.can_write = CAN_WRITE(fsp->conn) &&
+				       ((access_mask & (FILE_WRITE_DATA |
+							FILE_APPEND_DATA)) !=
+					0);
+	if (fsp->fsp_name->twrp != 0) {
+		new_fsp->fsp_flags.can_write = false;
+	}
+
+	status = fsp_set_smb_fname(new_fsp, fsp->fsp_name);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("dup_file_fsp failed: %s\n", nt_errstr(status));
+		DBG_DEBUG("fsp_set_smb_fname failed: %s\n", nt_errstr(status));
 		file_free(req, new_fsp);
 		return NULL;
 	}
