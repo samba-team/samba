@@ -502,13 +502,15 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 	 * require AES.
 	 */
 	if (lpcfg_weak_crypto(lp_ctx) == SAMBA_WEAK_CRYPTO_DISALLOWED) {
-		required_flags &= ~NETLOGON_NEG_ARCFOUR;
 		required_flags |= NETLOGON_NEG_SUPPORTS_AES;
-		proposed_flags &= ~NETLOGON_NEG_ARCFOUR;
-		proposed_flags |= NETLOGON_NEG_SUPPORTS_AES;
 	}
 
 	proposed_flags |= required_flags;
+
+	if (required_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		required_flags &= ~NETLOGON_NEG_ARCFOUR;
+		required_flags &= ~NETLOGON_NEG_STRONG_KEYS;
+	}
 
 	if (seal_secure_channel) {
 		auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
