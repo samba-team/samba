@@ -1066,19 +1066,55 @@ NTSTATUS OpenDir_from_pathref(TALLOC_CTX *mem_ctx,
 			      uint32_t attr,
 			      struct smb_Dir **_dir_hnd)
 {
-	struct files_struct *fsp = NULL;
+	struct connection_struct *conn = dirfsp->conn;
+	struct files_struct *new_fsp = NULL;
 	struct smb_Dir *dir_hnd = NULL;
+	const struct vfs_open_how how = {.flags = O_RDONLY | O_DIRECTORY};
+	int old_fd;
 	NTSTATUS status;
 
-	status = openat_internal_dir_from_pathref(dirfsp, O_RDONLY, &fsp);
+	status = create_internal_dirfsp(conn, dirfsp->fsp_name, &new_fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = OpenDir_fsp(mem_ctx, fsp->conn, fsp, mask, attr, &dir_hnd);
+	if (dirfsp->fsp_flags.have_proc_fds &&
+	    ((old_fd = fsp_get_pathref_fd(dirfsp)) != -1))
+	{
+		struct sys_proc_fd_path_buf buf;
+		struct smb_filename proc_fname = {
+			.base_name = sys_proc_fd_path(old_fd, &buf),
+		};
+		int new_fd;
+
+		new_fd = SMB_VFS_OPENAT(
+			conn, conn->cwd_fsp, &proc_fname, new_fsp, &how);
+		if (new_fd == -1) {
+			status = map_nt_error_from_unix(errno);
+			DBG_DEBUG("SMB_VFS_OPENAT(%s) returned %s\n",
+				  proc_fname.base_name, strerror(errno));
+			file_free(NULL, new_fsp);
+			return status;
+		}
+		fsp_set_fd(new_fsp, new_fd);
+	} else {
+		status = fd_openat(conn->cwd_fsp,
+				   dirfsp->fsp_name,
+				   new_fsp,
+				   &how);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("fd_openat(%s) returned %s\n",
+				  dirfsp->fsp_name->base_name,
+				  nt_errstr(status));
+			file_free(NULL, new_fsp);
+			return status;
+		}
+	}
+
+	status = OpenDir_fsp(mem_ctx, conn, new_fsp, mask, attr, &dir_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
-		fd_close(fsp);
-		file_free(NULL, fsp);
+		fd_close(new_fsp);
+		file_free(NULL, new_fsp);
 		return status;
 	}
 

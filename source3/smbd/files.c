@@ -287,52 +287,6 @@ NTSTATUS open_internal_dirfsp(connection_struct *conn,
 }
 
 /*
- * Convert a pathref dirfsp into a real fsp. No need to do any cwd
- * tricks, we just open ".".
- */
-NTSTATUS openat_internal_dir_from_pathref(
-	struct files_struct *dirfsp,
-	int _open_flags,
-	struct files_struct **_fsp)
-{
-	struct connection_struct *conn = dirfsp->conn;
-	struct smb_filename *smb_dname = dirfsp->fsp_name;
-	struct files_struct *fsp = NULL;
-	char dot[] = ".";
-	struct smb_filename smb_dot = {
-		.base_name = dot,
-		.flags = smb_dname->flags,
-		.twrp = smb_dname->twrp,
-	};
-	struct vfs_open_how how = { .flags = _open_flags, };
-	NTSTATUS status;
-
-	status = create_internal_dirfsp(conn, smb_dname, &fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/*
-	 * Pointless for opening ".", but you never know...
-	 */
-	how.flags |= O_NOFOLLOW;
-
-	status = fd_openat(dirfsp, &smb_dot, fsp, &how);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_INFO("fd_openat(\"%s\", \".\") failed: %s\n",
-			 fsp_str_dbg(dirfsp),
-			 nt_errstr(status));
-		file_free(NULL, fsp);
-		return status;
-	}
-
-	fsp->fsp_name->st = smb_dname->st;
-	fsp->file_id = vfs_file_id_from_sbuf(conn, &fsp->fsp_name->st);
-	*_fsp = fsp;
-	return NT_STATUS_OK;
-}
-
-/*
  * The "link" in the name doesn't imply link in the filesystem
  * sense. It's a object that "links" together an fsp and an smb_fname
  * and the link allocated as talloc child of an fsp.
