@@ -747,6 +747,7 @@ static NTSTATUS netlogon_creds_cli_store_internal(
 	struct netlogon_creds_cli_context *context,
 	struct netlogon_creds_CredentialState *creds)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
@@ -756,10 +757,11 @@ static NTSTATUS netlogon_creds_cli_store_internal(
 		NDR_PRINT_DEBUG(netlogon_creds_CredentialState, creds);
 	}
 
-	ndr_err = ndr_push_struct_blob(&blob, creds, creds,
+	ndr_err = ndr_push_struct_blob(&blob, frame, creds,
 		(ndr_push_flags_fn_t)ndr_push_netlogon_creds_CredentialState);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
+		TALLOC_FREE(frame);
 		return status;
 	}
 
@@ -769,11 +771,12 @@ static NTSTATUS netlogon_creds_cli_store_internal(
 	status = dbwrap_store(context->db.ctx,
 			      context->db.key_data,
 			      data, TDB_REPLACE);
-	TALLOC_FREE(data.dptr);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
 		return status;
 	}
 
+	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
