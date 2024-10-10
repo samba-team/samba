@@ -169,8 +169,8 @@ static bool test_ServerAuth3Crypto(struct dcerpc_pipe *p,
 
 	if (!weak_crypto_allowed) {
 		torture_assert(tctx,
-			       (negotiate_flags & NETLOGON_NEG_ARCFOUR) == 0,
-			       "Server should not announce RC4 support");
+			       (negotiate_flags & NETLOGON_NEG_SUPPORTS_AES),
+			       "Server negotiate AES support");
 	}
 
 	/* Prove that requesting a challenge again won't break it */
