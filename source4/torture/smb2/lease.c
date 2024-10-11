@@ -133,9 +133,7 @@ static bool test_lease_request(struct torture_context *tctx,
 	uint32_t caps;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	smb2_util_unlink(tree, fname);
 	smb2_util_unlink(tree, fname2);
@@ -218,9 +216,7 @@ static bool test_lease_upgrade(struct torture_context *tctx,
 	uint32_t caps;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	smb2_util_unlink(tree, fname);
 
@@ -344,9 +340,7 @@ static bool test_lease_upgrade2(struct torture_context *tctx,
 	uint32_t caps;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	for (i = 0; i < NUM_UPGRADE_TESTS; i++) {
 		struct lease_upgrade2_test t = lease_upgrade2_tests[i];
@@ -462,9 +456,7 @@ static bool test_lease_upgrade3(struct torture_context *tctx,
 	uint32_t caps;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	tree->session->transport->lease.handler	= torture_lease_handler;
 	tree->session->transport->lease.private_data = tree;
@@ -577,9 +569,7 @@ static bool test_lease_break(struct torture_context *tctx,
 	uint32_t caps;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	tree->session->transport->lease.handler	= torture_lease_handler;
 	tree->session->transport->lease.private_data = tree;
@@ -670,9 +660,7 @@ static bool test_lease_nobreakself(struct torture_context *tctx,
 
 	caps = smb2cli_conn_server_capabilities(
 		tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	smb2_util_unlink(tree, fname);
 
@@ -749,9 +737,7 @@ static bool test_lease_statopen(struct torture_context *tctx,
 
 	caps = smb2cli_conn_server_capabilities(
 		tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	smb2_util_unlink(tree, fname);
 
@@ -827,9 +813,7 @@ static bool test_lease_statopen2(struct torture_context *tctx,
 
 	caps = smb2cli_conn_server_capabilities(
 		tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	smb2_util_unlink(tree, fname);
 	torture_reset_lease_break_info(tctx, &lease_break_info);
@@ -908,9 +892,7 @@ static bool test_lease_statopen3(struct torture_context *tctx,
 
 	caps = smb2cli_conn_server_capabilities(
 		tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	smb2_util_unlink(tree, fname);
 	torture_reset_lease_break_info(tctx, &lease_break_info);
@@ -1105,9 +1087,7 @@ static bool test_lease_statopen4(struct torture_context *tctx,
 	};
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	smb2_util_unlink(tree, fname);
 	tree->session->transport->lease.handler	= torture_lease_handler;
@@ -1234,9 +1214,7 @@ static bool test_lease_oplock(struct torture_context *tctx,
 	uint32_t caps;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	tree->session->transport->lease.handler	= torture_lease_handler;
 	tree->session->transport->lease.private_data = tree;
@@ -1356,9 +1334,7 @@ static bool test_lease_multibreak(struct torture_context *tctx,
 	uint32_t caps;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	tree->session->transport->lease.handler	= torture_lease_handler;
 	tree->session->transport->lease.private_data = tree;
@@ -1476,9 +1452,7 @@ static bool test_lease_v2_request_parent(struct torture_context *tctx,
 	enum protocol_types protocol;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 	if (!(caps & SMB2_CAP_DIRECTORY_LEASING)) {
 		torture_skip(tctx, "directory leases are not supported");
 	}
@@ -1532,9 +1506,7 @@ static bool test_lease_break_twice(struct torture_context *tctx,
 
 	caps = smb2cli_conn_server_capabilities(
 		tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	protocol = smbXcli_conn_protocol(tree->session->transport->conn);
 	if (protocol < PROTOCOL_SMB3_00) {
@@ -1611,9 +1583,7 @@ static bool test_lease_v2_request(struct torture_context *tctx,
 	enum protocol_types protocol;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 	if (!(caps & SMB2_CAP_DIRECTORY_LEASING)) {
 		torture_skip(tctx, "directory leases are not supported");
 	}
@@ -1758,9 +1728,7 @@ static bool test_lease_v2_epoch1(struct torture_context *tctx,
 	enum protocol_types protocol;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	protocol = smbXcli_conn_protocol(tree->session->transport->conn);
 	if (protocol < PROTOCOL_SMB3_00) {
@@ -1823,9 +1791,7 @@ static bool test_lease_v2_epoch2(struct torture_context *tctx,
 	enum protocol_types protocol;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	protocol = smbXcli_conn_protocol(tree->session->transport->conn);
 	if (protocol < PROTOCOL_SMB3_00) {
@@ -1928,9 +1894,7 @@ static bool test_lease_v2_epoch3(struct torture_context *tctx,
 	enum protocol_types protocol;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	protocol = smbXcli_conn_protocol(tree->session->transport->conn);
 	if (protocol < PROTOCOL_SMB3_00) {
@@ -2035,9 +1999,7 @@ static bool test_lease_breaking1(struct torture_context *tctx,
 	uint32_t caps;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	smb2_util_unlink(tree, fname);
 
@@ -2142,9 +2104,7 @@ static bool test_lease_breaking2(struct torture_context *tctx,
 	uint32_t caps;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	smb2_util_unlink(tree, fname);
 
@@ -2297,9 +2257,7 @@ static bool test_lease_breaking3(struct torture_context *tctx,
 	uint32_t caps;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	smb2_util_unlink(tree, fname);
 
@@ -2486,9 +2444,7 @@ static bool test_lease_v2_breaking3(struct torture_context *tctx,
 	enum protocol_types protocol;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	protocol = smbXcli_conn_protocol(tree->session->transport->conn);
 	if (protocol < PROTOCOL_SMB3_00) {
@@ -2690,9 +2646,7 @@ static bool test_lease_breaking4(struct torture_context *tctx,
 	uint32_t caps;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	smb2_util_unlink(tree, fname);
 
@@ -2835,9 +2789,7 @@ static bool test_lease_breaking5(struct torture_context *tctx,
 	uint32_t caps;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	smb2_util_unlink(tree, fname);
 
@@ -2951,9 +2903,7 @@ static bool test_lease_breaking6(struct torture_context *tctx,
 	uint32_t caps;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	smb2_util_unlink(tree, fname);
 
@@ -3066,9 +3016,7 @@ static bool test_lease_lock1(struct torture_context *tctx,
 	options1 = tree1a->session->transport->options;
 
 	caps = smb2cli_conn_server_capabilities(tree1a->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	/* Set up handlers. */
 	tree2->session->transport->lease.handler = torture_lease_handler;
@@ -3234,9 +3182,7 @@ static bool test_lease_complex1(struct torture_context *tctx,
 	options1 = tree1a->session->transport->options;
 
 	caps = smb2cli_conn_server_capabilities(tree1a->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	tree1a->session->transport->lease.handler = torture_lease_handler;
 	tree1a->session->transport->lease.private_data = tree1a;
@@ -3363,9 +3309,7 @@ static bool test_lease_v2_complex1(struct torture_context *tctx,
 	options1 = tree1a->session->transport->options;
 
 	caps = smb2cli_conn_server_capabilities(tree1a->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	protocol = smbXcli_conn_protocol(tree1a->session->transport->conn);
 	if (protocol < PROTOCOL_SMB3_00) {
@@ -3510,9 +3454,7 @@ static bool test_lease_v2_complex2(struct torture_context *tctx,
 	options1 = tree1a->session->transport->options;
 
 	caps = smb2cli_conn_server_capabilities(tree1a->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	protocol = smbXcli_conn_protocol(tree1a->session->transport->conn);
 	if (protocol < PROTOCOL_SMB3_00) {
@@ -3617,9 +3559,7 @@ static bool test_lease_timeout(struct torture_context *tctx,
 	uint32_t caps;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	smb2_util_unlink(tree, fname);
 
@@ -3750,9 +3690,7 @@ static bool test_lease_rename_wait(struct torture_context *tctx,
 	unsigned int i;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	smb2_util_unlink(tree, fname_src);
 	smb2_util_unlink(tree, fname_dst);
@@ -3889,9 +3827,7 @@ static bool test_lease_v2_rename(struct torture_context *tctx,
 	enum protocol_types protocol;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	protocol = smbXcli_conn_protocol(tree->session->transport->conn);
 	if (protocol < PROTOCOL_SMB3_00) {
@@ -4028,9 +3964,7 @@ static bool test_lease_v2_rename_target_overwrite(struct torture_context *tctx,
 	enum protocol_types protocol;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	protocol = smbXcli_conn_protocol(tree->session->transport->conn);
 	if (protocol < PROTOCOL_SMB3_00) {
@@ -4127,9 +4061,7 @@ static bool test_lease_dynamic_share(struct torture_context *tctx,
 	options.client_guid = GUID_random();
 
 	caps = smb2cli_conn_server_capabilities(tree1a->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	/*
 	 * Save off original share name and change it to dynamic_share.
@@ -4331,9 +4263,7 @@ static bool test_lease_unlink(struct torture_context *tctx,
 
 	caps = smb2cli_conn_server_capabilities(
 			tree1->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	/* Connect 2nd connection */
 	transport2_options = transport1->options;
@@ -4415,9 +4345,7 @@ static bool test_lease_timeout_disconnect(struct torture_context *tctx,
 
 	caps = smb2cli_conn_server_capabilities(
 			tree1->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	smb2_util_unlink(tree1, fname);
 
@@ -4554,9 +4482,7 @@ static bool test_lease_duplicate_create(struct torture_context *tctx,
 
 	caps = smb2cli_conn_server_capabilities(
 		tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	/* Ensure files don't exist. */
 	smb2_util_unlink(tree, fname1);
@@ -4606,9 +4532,7 @@ static bool test_lease_duplicate_open(struct torture_context *tctx,
 
 	caps = smb2cli_conn_server_capabilities(
 		tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	/* Ensure files don't exist. */
 	smb2_util_unlink(tree, fname1);
@@ -4675,9 +4599,7 @@ static bool test_lease_v1_bug_15148(struct torture_context *tctx,
 	uint32_t caps;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	tree->session->transport->lease.handler = torture_lease_handler;
 	tree->session->transport->lease.private_data = tree;
@@ -4771,9 +4693,7 @@ static bool test_lease_v2_bug_15148(struct torture_context *tctx,
 	enum protocol_types protocol;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
-	if (!(caps & SMB2_CAP_LEASING)) {
-		torture_skip(tctx, "leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
 
 	protocol = smbXcli_conn_protocol(tree->session->transport->conn);
 	if (protocol < PROTOCOL_SMB3_00) {
