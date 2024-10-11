@@ -590,6 +590,62 @@ fail:
 	return status;
 }
 
+NTSTATUS open_rootdir_pathref_fsp(connection_struct *conn,
+				  struct files_struct **_fsp)
+{
+	struct smb_filename slash = { .base_name = discard_const_p(char, "/") };
+	struct vfs_open_how how = { .flags = O_RDONLY|O_DIRECTORY, };
+	struct files_struct *fsp = NULL;
+	NTSTATUS status;
+	int fd;
+
+	status = fsp_new(conn, conn, &fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+	GetTimeOfDay(&fsp->open_time);
+	fsp_set_gen_id(fsp);
+	ZERO_STRUCT(conn->sconn->fsp_fi_cache);
+	fsp->fsp_flags.is_pathref = true;
+
+	status = fsp_set_smb_fname(fsp, &slash);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	fd = SMB_VFS_OPENAT(conn,
+			    conn->cwd_fsp,
+			    fsp->fsp_name,
+			    fsp,
+			    &how);
+	if (fd == -1) {
+		status = map_nt_error_from_unix(errno);
+		goto fail;
+	}
+	fsp_set_fd(fsp, fd);
+
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("vfs_stat_fsp(\"/\") failed: %s\n", nt_errstr(status));
+		goto close_fail;
+	}
+	fsp->fsp_flags.is_directory = S_ISDIR(fsp->fsp_name->st.st_ex_mode);
+	if (!fsp->fsp_flags.is_directory) {
+		DBG_DEBUG("\"/\" not a directory\n");
+		status = NT_STATUS_UNEXPECTED_IO_ERROR;
+		goto close_fail;
+	}
+	fsp->file_id = vfs_file_id_from_sbuf(conn, &fsp->fsp_name->st);
+	*_fsp = fsp;
+	return NT_STATUS_OK;
+
+close_fail:
+	fd_close(fsp);
+fail:
+	file_free(NULL, fsp);
+	return status;
+}
+
 /*
  * Open a stream given an already opened base_fsp. Avoid
  * non_widelink_open: This is only valid for the case where we have a
