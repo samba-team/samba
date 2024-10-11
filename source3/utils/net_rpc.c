@@ -502,6 +502,7 @@ int net_rpc_testjoin(struct net_context *c, int argc, const char **argv)
 
 	if (!dc) {
 		struct netr_DsRGetDCNameInfo *info;
+		uint32_t flags = DS_RETURN_DNS_NAME;
 
 		if (!c->msg_ctx) {
 			d_fprintf(stderr, _("Could not initialise message context. "
@@ -510,13 +511,31 @@ int net_rpc_testjoin(struct net_context *c, int argc, const char **argv)
 			return -1;
 		}
 
+		if (strequal(domain, lp_workgroup())) {
+			flags |= DS_IS_FLAT_NAME;
+		}
+
 		status = dsgetdcname(mem_ctx,
 				     c->msg_ctx,
 				     domain,
 				     NULL,
 				     NULL,
-				     DS_RETURN_DNS_NAME,
+				     flags,
 				     &info);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) &&
+		    strequal(domain, lp_workgroup()) &&
+		    lp_realm() != NULL)
+		{
+			flags &= ~DS_IS_FLAT_NAME;
+			flags |= DS_IS_DNS_NAME;
+			status = dsgetdcname(mem_ctx,
+					     c->msg_ctx,
+					     lp_realm(),
+					     NULL,
+					     NULL,
+					     flags,
+					     &info);
+		}
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_destroy(mem_ctx);
 			return -1;
