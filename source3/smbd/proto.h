@@ -1043,6 +1043,10 @@ char *store_file_unix_basic_info2(connection_struct *conn,
 				  char *pdata,
 				  files_struct *fsp,
 				  const SMB_STRUCT_STAT *psbuf);
+NTSTATUS smb_check_file_disposition_info(struct files_struct *fsp,
+					 const char *data,
+					 int total_data,
+					 bool *_delete_on_close);
 NTSTATUS smb_set_file_disposition_info(connection_struct *conn,
 				       const char *pdata,
 				       int total_data,
