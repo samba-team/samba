@@ -752,14 +752,19 @@ static NTSTATUS filename_convert_dirfsp_nosymlink(
 	}
 
 	if (dirname[0] == '\0') {
-		status = synthetic_pathref(mem_ctx,
-					   basedir,
-					   ".",
-					   NULL,
-					   NULL,
-					   0,
-					   posix ? SMB_FILENAME_POSIX_PATH : 0,
-					   &smb_dirname);
+		smb_dirname = synthetic_smb_fname(
+			mem_ctx,
+			".",
+			NULL,
+			NULL,
+			0,
+			posix ? SMB_FILENAME_POSIX_PATH : 0);
+		if (smb_dirname == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		status = openat_pathref_fsp_lcomp(basedir,
+						  smb_dirname,
+						  UCF_POSIX_PATHNAMES);
 	} else {
 		status = normalize_filename_case(conn, dirname, ucf_flags);
 		if (!NT_STATUS_IS_OK(status)) {

@@ -1487,7 +1487,8 @@ NTSTATUS openat_pathref_fsp_lcomp(struct files_struct *dirfsp,
 	 */
 
 	SMB_ASSERT((smb_fname_rel->fsp == NULL) &&
-		   (dirfsp != dirfsp->conn->cwd_fsp) &&
+		   ((dirfsp != dirfsp->conn->cwd_fsp) ||
+		    ISDOT(smb_fname_rel->base_name)) &&
 		   (strchr_m(smb_fname_rel->base_name, '/') == NULL) &&
 		   !is_named_stream(smb_fname_rel));
 
