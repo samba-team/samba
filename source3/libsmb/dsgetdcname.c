@@ -435,7 +435,19 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 					&count,
 					resolve_order);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("discover_dc_netbios: failed to find DC\n"));
+		NTSTATUS raw_status = status;
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+			status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_ADDRESS)) {
+			status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		}
+
+		DBG_DEBUG("failed to find DC for %s: %s => %s\n",
+			  domain_name,
+			  nt_errstr(raw_status),
+			  nt_errstr(status));
 		return status;
 	}
 
