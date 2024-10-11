@@ -713,6 +713,15 @@ NTSTATUS safe_symlink_target_path(TALLOC_CTX *mem_ctx,
 				  const char *target,
 				  size_t unparsed,
 				  char **_relative);
+NTSTATUS filename_convert_dirfsp_rel(TALLOC_CTX *mem_ctx,
+				     connection_struct *conn,
+				     struct files_struct *basedir,
+				     const char *name_in,
+				     uint32_t ucf_flags,
+				     NTTIME twrp,
+				     struct files_struct **_dirfsp,
+				     struct smb_filename **_smb_fname,
+				     struct smb_filename **_smb_fname_rel);
 NTSTATUS filename_convert_dirfsp(
 	TALLOC_CTX *ctx,
 	connection_struct *conn,
