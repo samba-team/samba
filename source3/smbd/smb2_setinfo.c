@@ -346,7 +346,7 @@ static void defer_rename_done(struct tevent_req *subreq)
 				SMB2_FILE_RENAME_INFORMATION_INTERNAL,
 				state->fsp,
 				state->fsp->fsp_name,
-				&state->data,
+				state->data,
 				state->data_size,
 				&ret_size);
 
@@ -514,7 +514,7 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 						 file_info_level,
 						 fsp,
 						 fsp->fsp_name,
-						 &data,
+						 data,
 						 data_size,
 						 &ret_size);
 		TALLOC_FREE(lck);

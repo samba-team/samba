@@ -5015,11 +5015,10 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 				uint16_t info_level,
 				files_struct *fsp,
 				struct smb_filename *smb_fname,
-				char **ppdata,
+				char *pdata,
 				int total_data,
 				int *ret_data_size)
 {
-	char *pdata = *ppdata;
 	NTSTATUS status = NT_STATUS_OK;
 	int data_return_size = 0;
 

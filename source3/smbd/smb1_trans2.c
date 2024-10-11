@@ -4596,7 +4596,7 @@ static void call_trans2setpathinfo(
 		info_level,
 		fsp,
 		smb_fname,
-		ppdata,
+		*ppdata,
 		total_data,
 		&data_return_size);
 
@@ -4772,7 +4772,7 @@ static void call_trans2setfileinfo(
 		info_level,
 		fsp,
 		smb_fname,
-		ppdata,
+		*ppdata,
 		total_data,
 		&data_return_size);
 
