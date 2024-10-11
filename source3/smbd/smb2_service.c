@@ -785,22 +785,26 @@ NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	   I have disabled this chdir check (tridge) */
 	/* the alternative is just to check the directory exists */
 
-	if ((ret = SMB_VFS_STAT(conn, smb_fname_cpath)) != 0 ||
-	    !S_ISDIR(smb_fname_cpath->st.st_ex_mode)) {
-		if (ret == 0 && !S_ISDIR(smb_fname_cpath->st.st_ex_mode)) {
-			DBG_ERR("'%s' is not a directory, when connecting to "
-				 "[%s]\n", conn->connectpath,
-				 lp_const_servicename(snum));
-		} else {
-			DBG_ERR("'%s' does not exist or permission denied "
-				 "when connecting to [%s] Error was %s\n",
-				 conn->connectpath,
-				 lp_const_servicename(snum),
-				 strerror(errno));
-		}
+	ret = SMB_VFS_STAT(conn, smb_fname_cpath);
+	if (ret != 0) {
+		DBG_ERR("'%s' does not exist or permission denied "
+			"when connecting to [%s] Error was %s\n",
+			conn->connectpath,
+			lp_const_servicename(snum),
+			strerror(errno));
 		status = NT_STATUS_BAD_NETWORK_NAME;
 		goto err_root_exit;
 	}
+
+	if (!S_ISDIR(smb_fname_cpath->st.st_ex_mode)) {
+		DBG_ERR("'%s' is not a directory, when connecting to "
+			"[%s]\n",
+			conn->connectpath,
+			lp_const_servicename(snum));
+		status = NT_STATUS_BAD_NETWORK_NAME;
+		goto err_root_exit;
+	}
+
 	conn->base_share_dev = smb_fname_cpath->st.st_ex_dev;
 
 	/* Figure out the characteristics of the underlying filesystem. This
