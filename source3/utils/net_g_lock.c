@@ -191,7 +191,7 @@ static int net_g_lock_dumpall(
 		goto done;
 	}
 
-	ret = g_lock_locks(g_ctx, net_g_lock_dumpall_fn, g_ctx);
+	ret = g_lock_locks_read(g_ctx, net_g_lock_dumpall_fn, g_ctx);
 done:
 	TALLOC_FREE(g_ctx);
 	TALLOC_FREE(msg);
@@ -221,7 +221,7 @@ static int net_g_lock_locks(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
-	ret = g_lock_locks(g_ctx, net_g_lock_locks_fn, NULL);
+	ret = g_lock_locks_read(g_ctx, net_g_lock_locks_fn, NULL);
 done:
 	TALLOC_FREE(g_ctx);
 	TALLOC_FREE(msg);

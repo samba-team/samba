@@ -92,6 +92,9 @@ NTSTATUS g_lock_writev_data(
 NTSTATUS g_lock_write_data(struct g_lock_ctx *ctx, TDB_DATA key,
 			   const uint8_t *buf, size_t buflen);
 
+int g_lock_locks_read(struct g_lock_ctx *ctx,
+		      int (*fn)(TDB_DATA key, void *private_data),
+		      void *private_data);
 int g_lock_locks(struct g_lock_ctx *ctx,
 		 int (*fn)(TDB_DATA key, void *private_data),
 		 void *private_data);

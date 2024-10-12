@@ -1558,6 +1558,29 @@ static int g_lock_locks_fn(struct db_record *rec, void *priv)
 	return state->fn(key, state->private_data);
 }
 
+int g_lock_locks_read(struct g_lock_ctx *ctx,
+		      int (*fn)(TDB_DATA key, void *private_data),
+		      void *private_data)
+{
+	struct g_lock_locks_state state;
+	NTSTATUS status;
+	int count;
+
+	SMB_ASSERT(!ctx->busy);
+
+	state.fn = fn;
+	state.private_data = private_data;
+
+	status = dbwrap_traverse_read(ctx->db,
+				      g_lock_locks_fn,
+				      &state,
+				      &count);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+	return count;
+}
+
 int g_lock_locks(struct g_lock_ctx *ctx,
 		 int (*fn)(TDB_DATA key, void *private_data),
 		 void *private_data)
@@ -1571,7 +1594,7 @@ int g_lock_locks(struct g_lock_ctx *ctx,
 	state.fn = fn;
 	state.private_data = private_data;
 
-	status = dbwrap_traverse_read(ctx->db, g_lock_locks_fn, &state, &count);
+	status = dbwrap_traverse(ctx->db, g_lock_locks_fn, &state, &count);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}

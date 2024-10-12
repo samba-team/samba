@@ -1821,7 +1821,7 @@ int share_mode_forall(int (*fn)(struct file_id fid,
 		return 0;
 	}
 
-	ret = g_lock_locks(
+	ret = g_lock_locks_read(
 		lock_ctx, share_mode_forall_fn, &state);
 	if (ret < 0) {
 		DBG_ERR("g_lock_locks failed\n");
