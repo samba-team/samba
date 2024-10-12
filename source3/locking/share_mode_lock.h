@@ -93,9 +93,13 @@ int share_entry_forall(
 NTSTATUS share_mode_count_entries(struct file_id fid, size_t *num_share_modes);
 int share_mode_forall(
 	int (*fn)(struct file_id fid,
-		  const struct share_mode_data *data,
+		  struct share_mode_data *data,
 		  void *private_data),
 	void *private_data);
+int share_mode_forall_read(int (*fn)(struct file_id fid,
+				     const struct share_mode_data *data,
+				     void *private_data),
+			   void *private_data);
 bool share_mode_forall_entries(
 	struct share_mode_lock *lck,
 	bool (*fn)(struct share_mode_entry *e,

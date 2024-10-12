@@ -1743,9 +1743,12 @@ NTSTATUS fetch_share_mode_recv(struct tevent_req *req,
 
 struct share_mode_forall_state {
 	TDB_DATA key;
-	int (*fn)(struct file_id fid,
-		  const struct share_mode_data *data,
-		  void *private_data);
+	int (*ro_fn)(struct file_id fid,
+		     const struct share_mode_data *data,
+		     void *private_data);
+	int (*rw_fn)(struct file_id fid,
+		     struct share_mode_data *data,
+		     void *private_data);
 	void *private_data;
 };
 
@@ -1785,7 +1788,11 @@ static void share_mode_forall_dump_fn(
 		return;
 	}
 
-	state->fn(fid, d, state->private_data);
+	if (state->ro_fn != NULL) {
+		state->ro_fn(fid, d, state->private_data);
+	} else {
+		state->rw_fn(fid, d, state->private_data);
+	}
 	TALLOC_FREE(d);
 }
 
@@ -1806,13 +1813,13 @@ static int share_mode_forall_fn(TDB_DATA key, void *private_data)
 	return 0;
 }
 
-int share_mode_forall(int (*fn)(struct file_id fid,
-				const struct share_mode_data *data,
-				void *private_data),
-		      void *private_data)
+int share_mode_forall_read(int (*fn)(struct file_id fid,
+				     const struct share_mode_data *data,
+				     void *private_data),
+			   void *private_data)
 {
 	struct share_mode_forall_state state = {
-		.fn = fn,
+		.ro_fn = fn,
 		.private_data = private_data
 	};
 	int ret;
@@ -1822,6 +1829,29 @@ int share_mode_forall(int (*fn)(struct file_id fid,
 	}
 
 	ret = g_lock_locks_read(
+		lock_ctx, share_mode_forall_fn, &state);
+	if (ret < 0) {
+		DBG_ERR("g_lock_locks failed\n");
+	}
+	return ret;
+}
+
+int share_mode_forall(int (*fn)(struct file_id fid,
+				struct share_mode_data *data,
+				void *private_data),
+		      void *private_data)
+{
+	struct share_mode_forall_state state = {
+		.rw_fn = fn,
+		.private_data = private_data
+	};
+	int ret;
+
+	if (lock_ctx == NULL) {
+		return 0;
+	}
+
+	ret = g_lock_locks(
 		lock_ctx, share_mode_forall_fn, &state);
 	if (ret < 0) {
 		DBG_ERR("g_lock_locks failed\n");
@@ -1890,7 +1920,7 @@ int share_entry_forall(int (*fn)(struct file_id fid,
 	struct share_entry_forall_state state = {
 		.fn = fn, .private_data = private_data };
 
-	return share_mode_forall(share_entry_traverse_fn, &state);
+	return share_mode_forall_read(share_entry_traverse_fn, &state);
 }
 
 static int share_mode_entry_cmp(

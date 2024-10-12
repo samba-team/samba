@@ -1331,7 +1331,7 @@ static int files_below_forall(connection_struct *conn,
 		return -1;
 	}
 
-	ret = share_mode_forall(files_below_forall_fn, &state);
+	ret = share_mode_forall_read(files_below_forall_fn, &state);
 	TALLOC_FREE(to_free);
 	return ret;
 }
