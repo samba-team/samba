@@ -49,6 +49,18 @@ void dptr_set_priv(struct dptr_struct *dptr);
 const char *dptr_wcard(struct smbd_server_connection *sconn, int key);
 bool have_file_open_below(connection_struct *conn,
 			  const struct smb_filename *name);
+bool opens_below_forall(struct connection_struct *conn,
+			const struct smb_filename *dir_name,
+			int (*fn)(struct share_mode_data *data,
+				  struct share_mode_entry *e,
+				  void *private_data),
+			void *private_data);
+bool opens_below_forall_read(struct connection_struct *conn,
+			     const struct smb_filename *dir_name,
+			     int (*fn)(const struct share_mode_data *data,
+				       const struct share_mode_entry *e,
+				       void *private_data),
+			     void *private_data);
 bool init_dptrs(struct smbd_server_connection *sconn);
 bool is_visible_fsp(files_struct *fsp);
 NTSTATUS OpenDir(TALLOC_CTX *mem_ctx,

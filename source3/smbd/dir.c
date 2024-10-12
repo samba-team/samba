@@ -1372,6 +1372,188 @@ bool have_file_open_below(connection_struct *conn,
 	return state.found_one;
 }
 
+struct opens_below_forall_read_state {
+	char *dirpath;
+	ssize_t dirpath_len;
+	int (*fn)(const struct share_mode_data *data,
+		  const struct share_mode_entry *e,
+		  void *private_data);
+	void *private_data;
+};
+
+static int opens_below_forall_read_fn(struct file_id fid,
+				      const struct share_mode_data *data,
+				      const struct share_mode_entry *entry,
+				      void *private_data)
+{
+	struct opens_below_forall_read_state *state = private_data;
+	char tmpbuf[PATH_MAX];
+	char *fullpath = NULL;
+	char *to_free = NULL;
+	ssize_t len;
+
+	len = full_path_tos(data->servicepath,
+			    data->base_name,
+			    tmpbuf,
+			    sizeof(tmpbuf),
+			    &fullpath,
+			    &to_free);
+	if (len == -1) {
+		return -1;
+	}
+	if (state->dirpath_len >= len) {
+		/*
+		 * Filter files above dirpath
+		 */
+		goto out;
+	}
+	if (fullpath[state->dirpath_len] != '/') {
+		/*
+		 * Filter file that don't have a path separator at the end of
+		 * dirpath's length
+		 */
+		goto out;
+	}
+
+	if (memcmp(state->dirpath, fullpath, state->dirpath_len) != 0) {
+		/*
+		 * Not a parent
+		 */
+		goto out;
+	}
+
+	TALLOC_FREE(to_free);
+	return state->fn(data, entry, state->private_data);
+
+out:
+	TALLOC_FREE(to_free);
+	return 1;
+}
+
+bool opens_below_forall_read(struct connection_struct *conn,
+			     const struct smb_filename *dir_name,
+			     int (*fn)(const struct share_mode_data *data,
+				       const struct share_mode_entry *e,
+				       void *private_data),
+			     void *private_data)
+{
+	struct opens_below_forall_read_state state = {
+		.fn = fn,
+		.private_data = private_data,
+	};
+	int ret;
+	char tmpbuf[PATH_MAX];
+	char *to_free = NULL;
+
+	state.dirpath_len = full_path_tos(conn->connectpath,
+					  dir_name->base_name,
+					  tmpbuf,
+					  sizeof(tmpbuf),
+					  &state.dirpath,
+					  &to_free);
+	if (state.dirpath_len == -1) {
+		return false;
+	}
+
+	ret = share_entry_forall_read(opens_below_forall_read_fn, &state);
+	TALLOC_FREE(to_free);
+	if (ret == -1) {
+		return false;
+	}
+	return true;
+}
+
+struct opens_below_forall_state {
+	char *dirpath;
+	ssize_t dirpath_len;
+	int (*fn)(struct share_mode_data *data,
+		  struct share_mode_entry *e,
+		  void *private_data);
+	void *private_data;
+};
+
+static int opens_below_forall_fn(struct file_id fid,
+				 struct share_mode_data *data,
+				 struct share_mode_entry *entry,
+				 void *private_data)
+{
+	struct opens_below_forall_state *state = private_data;
+	char tmpbuf[PATH_MAX];
+	char *fullpath = NULL;
+	char *to_free = NULL;
+	ssize_t len;
+
+	len = full_path_tos(data->servicepath,
+			    data->base_name,
+			    tmpbuf,
+			    sizeof(tmpbuf),
+			    &fullpath,
+			    &to_free);
+	if (len == -1) {
+		return -1;
+	}
+	if (state->dirpath_len >= len) {
+		/*
+		 * Filter files above dirpath
+		 */
+		goto out;
+	}
+	if (fullpath[state->dirpath_len] != '/') {
+		/*
+		 * Filter file that don't have a path separator at the end of
+		 * dirpath's length
+		 */
+		goto out;
+	}
+
+	if (memcmp(state->dirpath, fullpath, state->dirpath_len) != 0) {
+		/*
+		 * Not a parent
+		 */
+		goto out;
+	}
+
+	TALLOC_FREE(to_free);
+	return state->fn(data, entry, state->private_data);
+
+out:
+	TALLOC_FREE(to_free);
+	return 1;
+}
+
+bool opens_below_forall(struct connection_struct *conn,
+			const struct smb_filename *dir_name,
+			int (*fn)(struct share_mode_data *data,
+				  struct share_mode_entry *e,
+				  void *private_data),
+			void *private_data)
+{
+	struct opens_below_forall_state state = {
+		.fn = fn,
+		.private_data = private_data,
+	};
+	int ret;
+	char tmpbuf[PATH_MAX];
+	char *to_free = NULL;
+
+	state.dirpath_len = full_path_tos(conn->connectpath,
+					  dir_name->base_name,
+					  tmpbuf,
+					  sizeof(tmpbuf),
+					  &state.dirpath,
+					  &to_free);
+	if (state.dirpath_len == -1) {
+		return false;
+	}
+
+	ret = share_entry_forall(opens_below_forall_fn, &state);
+	TALLOC_FREE(to_free);
+	if (ret == -1) {
+		return false;
+	}
+	return true;
+}
+
 /*****************************************************************
  Is this directory empty ?
 *****************************************************************/
