@@ -1876,10 +1876,22 @@ static bool share_entry_traverse_walker(
 	void *private_data)
 {
 	struct share_entry_forall_state *state = private_data;
+	int ret;
 
-	state->ret = state->fn(
-		state->fid, state->data, e, state->private_data);
-	return (state->ret != 0);
+	ret = state->fn(state->fid, state->data, e, state->private_data);
+	if (ret == 0) {
+		/* Continue the whole traverse */
+		return 0;
+	} else if (ret == 1) {
+		/*
+		 * Just stop share_mode_entry loop: by not setting
+		 * state->ret (which was initialized to 0), the
+		 * share_mode_data traverse will continue.
+		 */
+		return 1;
+	}
+	state->ret = ret;
+	return 1;
 }
 
 static int share_entry_traverse_fn(struct file_id fid,
@@ -1895,6 +1907,7 @@ static int share_entry_traverse_fn(struct file_id fid,
 
 	state->fid = fid;
 	state->data = data;
+	state->ret = 0;
 
 	ok = share_mode_forall_entries(
 		&lck, share_entry_traverse_walker, state);
@@ -1908,7 +1921,13 @@ static int share_entry_traverse_fn(struct file_id fid,
 
 /*******************************************************************
  Call the specified function on each entry under management by the
- share mode system.
+ share mode system.  If the callback function returns:
+
+  0 ... continue traverse
+  1 ... stop loop over share_mode_entries, but continue share_mode_data traverse
+ -1 ... stop whole share_mode_data traverse
+
+ Any other return value is treated as -1.
 ********************************************************************/
 
 int share_entry_forall(int (*fn)(struct file_id fid,
@@ -1918,7 +1937,9 @@ int share_entry_forall(int (*fn)(struct file_id fid,
 		      void *private_data)
 {
 	struct share_entry_forall_state state = {
-		.fn = fn, .private_data = private_data };
+		.fn = fn,
+		.private_data = private_data,
+	};
 
 	return share_mode_forall_read(share_entry_traverse_fn, &state);
 }
