@@ -16550,6 +16550,8 @@ static void usage(void)
 		}
 	}
 
+	reopen_logs();
+
 	printf("host=%s share=%s user=%s myname=%s\n",
 	       host, share, username, myname);
 
