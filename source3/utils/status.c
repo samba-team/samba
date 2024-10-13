@@ -1270,7 +1270,7 @@ int main(int argc, const char *argv[])
 		}
 
 		prepare_share_mode(&state);
-		result = share_entry_forall(print_share_mode, &state);
+		result = share_entry_forall_read(print_share_mode, &state);
 
 		if (result == 0 && !state.json_output) {
 			fprintf(stderr, "No locked files\n");

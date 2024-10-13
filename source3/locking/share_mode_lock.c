@@ -1861,11 +1861,15 @@ int share_mode_forall(int (*fn)(struct file_id fid,
 
 struct share_entry_forall_state {
 	struct file_id fid;
-	const struct share_mode_data *data;
-	int (*fn)(struct file_id fid,
-		  const struct share_mode_data *data,
-		  const struct share_mode_entry *entry,
-		  void *private_data);
+	struct share_mode_data *data;
+	int (*ro_fn)(struct file_id fid,
+		     const struct share_mode_data *data,
+		     const struct share_mode_entry *entry,
+		     void *private_data);
+	int (*rw_fn)(struct file_id fid,
+		     struct share_mode_data *data,
+		     struct share_mode_entry *entry,
+		     void *private_data);
 	void *private_data;
 	int ret;
 };
@@ -1878,7 +1882,17 @@ static bool share_entry_traverse_walker(
 	struct share_entry_forall_state *state = private_data;
 	int ret;
 
-	ret = state->fn(state->fid, state->data, e, state->private_data);
+	if (state->ro_fn != NULL) {
+		ret = state->ro_fn(state->fid,
+				   state->data,
+				   e,
+				   state->private_data);
+	} else {
+		ret = state->rw_fn(state->fid,
+				   state->data,
+				   e,
+				   state->private_data);
+	}
 	if (ret == 0) {
 		/* Continue the whole traverse */
 		return 0;
@@ -1894,14 +1908,39 @@ static bool share_entry_traverse_walker(
 	return 1;
 }
 
-static int share_entry_traverse_fn(struct file_id fid,
-				   const struct share_mode_data *data,
-				   void *private_data)
+static int share_entry_ro_traverse_fn(struct file_id fid,
+				      const struct share_mode_data *data,
+				      void *private_data)
 {
 	struct share_entry_forall_state *state = private_data;
 	struct share_mode_lock lck = {
 		.id = fid,
 		.cached_data = discard_const_p(struct share_mode_data, data)
+	};
+	bool ok;
+
+	state->fid = fid;
+	state->data = discard_const_p(struct share_mode_data, data);
+	state->ret = 0;
+
+	ok = share_mode_forall_entries(
+		&lck, share_entry_traverse_walker, state);
+	if (!ok) {
+		DBG_ERR("share_mode_forall_entries failed\n");
+		return false;
+	}
+
+	return state->ret;
+}
+
+static int share_entry_rw_traverse_fn(struct file_id fid,
+				      struct share_mode_data *data,
+				      void *private_data)
+{
+	struct share_entry_forall_state *state = private_data;
+	struct share_mode_lock lck = {
+		.id = fid,
+		.cached_data = data,
 	};
 	bool ok;
 
@@ -1930,18 +1969,32 @@ static int share_entry_traverse_fn(struct file_id fid,
  Any other return value is treated as -1.
 ********************************************************************/
 
+int share_entry_forall_read(int (*fn)(struct file_id fid,
+				      const struct share_mode_data *data,
+				      const struct share_mode_entry *entry,
+				      void *private_data),
+			    void *private_data)
+{
+	struct share_entry_forall_state state = {
+		.ro_fn = fn,
+		.private_data = private_data,
+	};
+
+	return share_mode_forall_read(share_entry_ro_traverse_fn, &state);
+}
+
 int share_entry_forall(int (*fn)(struct file_id fid,
-				 const struct share_mode_data *data,
-				 const struct share_mode_entry *entry,
+				 struct share_mode_data *data,
+				 struct share_mode_entry *entry,
 				 void *private_data),
 		      void *private_data)
 {
 	struct share_entry_forall_state state = {
-		.fn = fn,
+		.rw_fn = fn,
 		.private_data = private_data,
 	};
 
-	return share_mode_forall_read(share_entry_traverse_fn, &state);
+	return share_mode_forall(share_entry_rw_traverse_fn, &state);
 }
 
 static int share_mode_entry_cmp(

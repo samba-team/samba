@@ -83,12 +83,16 @@ NTSTATUS fetch_share_mode_recv(
 	TALLOC_CTX *mem_ctx,
 	struct share_mode_lock **_lck);
 
-int share_entry_forall(
-	int (*fn)(struct file_id fid,
-		  const struct share_mode_data *data,
-		  const struct share_mode_entry *entry,
-		  void *private_data),
-	void *private_data);
+int share_entry_forall_read(int (*ro_fn)(struct file_id fid,
+					 const struct share_mode_data *data,
+					 const struct share_mode_entry *entry,
+					 void *private_data),
+			    void *private_data);
+int share_entry_forall(int (*fn)(struct file_id fid,
+				 struct share_mode_data *data,
+				 struct share_mode_entry *entry,
+				 void *private_data),
+		       void *private_data);
 
 NTSTATUS share_mode_count_entries(struct file_id fid, size_t *num_share_modes);
 int share_mode_forall(
