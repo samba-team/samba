@@ -1500,7 +1500,7 @@ static void delay_for_handle_lease_break_fsp_check(struct tevent_req *req)
 
 		subreq = share_mode_watch_send(state,
 					       state->ev,
-					       state->lck,
+					       &state->fsp->file_id,
 					       (struct server_id){0});
 		if (tevent_req_nomem(subreq, req)) {
 			return;

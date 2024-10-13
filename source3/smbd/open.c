@@ -3020,7 +3020,7 @@ static void defer_open(struct share_mode_lock *lck,
 	watch_req = share_mode_watch_send(
 		watch_state,
 		req->sconn->ev_ctx,
-		lck,
+		&id,
 		(struct server_id){0});
 	if (watch_req == NULL) {
 		exit_server("Could not watch share mode record");
@@ -3096,6 +3096,7 @@ struct poll_open_setup_watcher_state {
 	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev_ctx;
 	struct tevent_req *watch_req;
+	struct file_id id;
 };
 
 static void poll_open_setup_watcher_fn(struct share_mode_lock *lck,
@@ -3111,7 +3112,7 @@ static void poll_open_setup_watcher_fn(struct share_mode_lock *lck,
 	state->watch_req = share_mode_watch_send(
 			state->mem_ctx,
 			state->ev_ctx,
-			lck,
+			&state->id,
 			(struct server_id) {0});
 	if (state->watch_req == NULL) {
 		DBG_WARNING("share_mode_watch_send failed\n");
@@ -3171,6 +3172,7 @@ static bool setup_poll_open(
 		struct poll_open_setup_watcher_state wstate = {
 			.mem_ctx = open_rec,
 			.ev_ctx = req->sconn->ev_ctx,
+			.id = *id,
 		};
 		NTSTATUS status;
 
