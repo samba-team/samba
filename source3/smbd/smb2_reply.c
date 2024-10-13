@@ -1169,17 +1169,7 @@ static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 		/* If no pathnames are open below this
 		   directory, allow the rename. */
 
-		if (lp_strict_rename(SNUM(conn))) {
-			/*
-			 * Strict rename, check open file db.
-			 */
-			if (have_file_open_below(fsp->conn, fsp->fsp_name)) {
-				return NT_STATUS_ACCESS_DENIED;
-			}
-		} else if (file_find_subpath(fsp)) {
-			/*
-			 * No strict rename, just look in local process.
-			 */
+		if (have_file_open_below(fsp)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		return NT_STATUS_OK;

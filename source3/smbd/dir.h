@@ -47,8 +47,7 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx, struct dptr_struct *dptr);
 void dptr_RewindDir(struct dptr_struct *dptr);
 void dptr_set_priv(struct dptr_struct *dptr);
 const char *dptr_wcard(struct smbd_server_connection *sconn, int key);
-bool have_file_open_below(connection_struct *conn,
-			  const struct smb_filename *name);
+bool have_file_open_below(struct files_struct *fsp);
 bool opens_below_forall(struct connection_struct *conn,
 			const struct smb_filename *dir_name,
 			int (*fn)(struct share_mode_data *data,

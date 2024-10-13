@@ -1286,22 +1286,31 @@ static int have_file_open_below_fn(const struct share_mode_data *data,
 	return -1;
 }
 
-bool have_file_open_below(connection_struct *conn,
-				 const struct smb_filename *name)
+bool have_file_open_below(struct files_struct *fsp)
 {
 	struct have_file_open_below_state state = {
 		.found_one = false,
 	};
 	int ret;
 
-	if (!VALID_STAT(name->st)) {
-		return false;
-	}
-	if (!S_ISDIR(name->st.st_ex_mode)) {
+	if (!lp_strict_rename(SNUM(fsp->conn))) {
+		if (file_find_subpath(fsp)) {
+			return true;
+		}
 		return false;
 	}
 
-	ret = opens_below_forall_read(conn, name, have_file_open_below_fn, &state);
+	if (!VALID_STAT(fsp->fsp_name->st)) {
+		return false;
+	}
+	if (!S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
+		return false;
+	}
+
+	ret = opens_below_forall_read(fsp->conn,
+				      fsp->fsp_name,
+				      have_file_open_below_fn,
+				      &state);
 	if (ret == -1) {
 		return false;
 	}
@@ -1659,9 +1668,7 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 		return status;
 	}
 
-	if (lp_strict_rename(SNUM(conn)) &&
-	    have_file_open_below(fsp->conn, fsp->fsp_name))
-	{
+	if (have_file_open_below(fsp)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
