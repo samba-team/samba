@@ -3962,6 +3962,7 @@ static bool test_lease_v2_rename_target_overwrite(struct torture_context *tctx,
 	NTSTATUS status;
 	uint32_t caps;
 	enum protocol_types protocol;
+	struct smb2_request *rename_req = NULL;
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
 	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
@@ -4022,6 +4023,65 @@ static bool test_lease_v2_rename_target_overwrite(struct torture_context *tctx,
 
 	CHECK_BREAK_INFO_V2(tree->session->transport,
 			    "RWH", "RW", LEASE2, ls_dst.lease_epoch + 1);
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	/*
+	 * Do the rename again, this time there's no h-lease on the dst anymore,
+	 * so we should get no break and the rename should still fail.
+	 */
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	status = smb2_setinfo_file(tree, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	CHECK_NO_BREAK(tctx);
+
+	/*
+	 * Do the rename again, but this time close the handle on the
+	 * destination when receiving the h-lease break.
+	 */
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	status = smb2_util_close(tree, h_dst);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(h_dst);
+
+	status = smb2_create(tree, mem_ctx, &io_dst);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_dst = io_dst.out.file.handle;
+	ls_dst.lease_epoch += 1;
+
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.handle = h;
+	sinfo.rename_information.in.overwrite = true;
+	sinfo.rename_information.in.new_name = fname_dst;
+	rename_req = smb2_setinfo_file_send(tree, &sinfo);
+
+	torture_assert(tctx,
+			rename_req != NULL,
+			"smb2_setinfo_file_send");
+	torture_assert(tctx,
+			rename_req->state == SMB2_REQUEST_RECV,
+			"rename pending");
+
+	CHECK_BREAK_INFO_V2(tree->session->transport,
+			    "RWH", "RW", LEASE2, ls_dst.lease_epoch + 1);
+
+	status = smb2_util_close(tree, h_dst);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed\n");
+	ZERO_STRUCT(h_dst);
+
+	/* Get the rename reply. */
+	status = smb2_setinfo_recv(rename_req);
+	CHECK_STATUS(status, NT_STATUS_OK);
 
 done:
 
