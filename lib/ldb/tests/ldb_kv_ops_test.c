@@ -196,7 +196,9 @@ static int parse(struct ldb_val key,
 {
 	struct ldb_val* read = private_data;
 
-	/* Yes, we leak this.  That is OK */
+	/*
+	 * This should not leak if possible, please check with Leak Sanitizer.
+	 */
 	read->data = talloc_size(NULL,
 				 data.length);
 	assert_non_null(read->data);
@@ -238,7 +240,7 @@ static void test_add_get(void **state)
 		.length = sizeof(value)
 	};
 
-	struct ldb_val read;
+	struct ldb_val read = {};
 	int rcode;
 
 	int flags = 0;
@@ -276,6 +278,7 @@ static void test_add_get(void **state)
 
 	assert_int_equal(sizeof(value), read.length);
 	assert_memory_equal(value, read.data, sizeof(value));
+	TALLOC_FREE(read.data);
 
 	/*
 	 * Now check that the error code we return in the
@@ -314,7 +317,7 @@ static void test_read_outside_transaction(void **state)
 		.length = sizeof(value)
 	};
 
-	struct ldb_val read;
+	struct ldb_val read = {};
 
 	int flags = 0;
 	TALLOC_CTX *tmp_ctx;
@@ -346,6 +349,7 @@ static void test_read_outside_transaction(void **state)
 	 */
 	ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &read);
 	assert_int_equal(ret, LDB_ERR_PROTOCOL_ERROR);
+	TALLOC_FREE(read.data);
 
 	talloc_free(tmp_ctx);
 }
@@ -371,7 +375,7 @@ static void test_delete(void **state)
 		.length = sizeof(value)
 	};
 
-	struct ldb_val read;
+	struct ldb_val read = {};
 
 	int flags = 0;
 	TALLOC_CTX *tmp_ctx;
@@ -406,6 +410,7 @@ static void test_delete(void **state)
 	assert_int_equal(ret, 0);
 	assert_int_equal(sizeof(value), read.length);
 	assert_memory_equal(value, read.data, sizeof(value));
+	TALLOC_FREE(read.data);
 	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
 
@@ -434,6 +439,7 @@ static void test_delete(void **state)
 	assert_int_equal(ret, 0);
 	ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &read);
 	assert_int_equal(ret, LDB_ERR_NO_SUCH_OBJECT);
+	TALLOC_FREE(read.data);
 	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
 
@@ -462,7 +468,7 @@ static void test_transaction_abort_write(void **state)
 		.length = sizeof(value)
 	};
 
-	struct ldb_val read;
+	struct ldb_val read = {};
 
 	int flags = 0;
 	TALLOC_CTX *tmp_ctx;
@@ -489,6 +495,7 @@ static void test_transaction_abort_write(void **state)
 	assert_int_equal(ret, 0);
 	assert_int_equal(sizeof(value), read.length);
 	assert_memory_equal(value, read.data, sizeof(value));
+	TALLOC_FREE(read.data);
 
 
 	/*
@@ -504,6 +511,7 @@ static void test_transaction_abort_write(void **state)
 	assert_int_equal(ret, 0);
 	ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &read);
 	assert_int_equal(ret, LDB_ERR_NO_SUCH_OBJECT);
+	TALLOC_FREE(read.data);
 	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
 
@@ -532,7 +540,7 @@ static void test_transaction_abort_delete(void **state)
 		.length = sizeof(value)
 	};
 
-	struct ldb_val read;
+	struct ldb_val read = {};
 
 	int flags = 0;
 	TALLOC_CTX *tmp_ctx;
@@ -567,6 +575,7 @@ static void test_transaction_abort_delete(void **state)
 	assert_int_equal(ret, 0);
 	assert_int_equal(sizeof(value), read.length);
 	assert_memory_equal(value, read.data, sizeof(value));
+	TALLOC_FREE(read.data);
 	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
 
@@ -587,6 +596,7 @@ static void test_transaction_abort_delete(void **state)
 	 */
 	ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &read);
 	assert_int_equal(ret, LDB_ERR_NO_SUCH_OBJECT);
+	TALLOC_FREE(read.data);
 
 	/*
 	 * Abort the transaction
@@ -603,6 +613,7 @@ static void test_transaction_abort_delete(void **state)
 	assert_int_equal(ret, 0);
 	assert_int_equal(sizeof(value), read.length);
 	assert_memory_equal(value, read.data, sizeof(value));
+	TALLOC_FREE(read.data);
 	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
 
@@ -667,7 +678,7 @@ static void test_delete_outside_transaction(void **state)
 		.length = sizeof(value)
 	};
 
-	struct ldb_val read;
+	struct ldb_val read = {};
 
 	int flags = 0;
 	TALLOC_CTX *tmp_ctx;
@@ -702,6 +713,7 @@ static void test_delete_outside_transaction(void **state)
 	assert_int_equal(ret, 0);
 	assert_int_equal(sizeof(value), read.length);
 	assert_memory_equal(value, read.data, sizeof(value));
+	TALLOC_FREE(read.data);
 	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
 
@@ -720,6 +732,7 @@ static void test_delete_outside_transaction(void **state)
 	assert_int_equal(ret, 0);
 	assert_int_equal(sizeof(value), read.length);
 	assert_memory_equal(value, read.data, sizeof(value));
+	TALLOC_FREE(read.data);
 	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
 
@@ -1163,6 +1176,7 @@ static void test_write_transaction_isolation(void **state)
 		}
 
 		if ((strlen(VAL1) + 1) != val.length) {
+			TALLOC_FREE(val.data);
 			print_error(__location__": KEY1 value lengths different"
 				    ", expected (%d) actual(%d)\n",
 				    (int)(strlen(VAL1) + 1), (int)val.length);
@@ -1173,8 +1187,10 @@ static void test_write_transaction_isolation(void **state)
 				    "expected (%s) actual(%s)\n",
 				    VAL1,
 				    val.data);
+			TALLOC_FREE(val.data);
 			exit(LDB_ERR_OPERATIONS_ERROR);
 		}
+		TALLOC_FREE(val.data);
 
 		ret = ldb_kv->kv_ops->unlock_read(ldb->modules);
 		if (ret != LDB_SUCCESS) {
@@ -1197,6 +1213,7 @@ static void test_write_transaction_isolation(void **state)
 		}
 
 		ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &val);
+		TALLOC_FREE(val.data);
 		if (ret != LDB_ERR_NO_SUCH_OBJECT) {
 			print_error(__location__": fetch_and_parse returned "
 				    "(%d)\n",
@@ -1252,6 +1269,7 @@ static void test_write_transaction_isolation(void **state)
 		}
 
 		if ((strlen(VAL1) + 1) != val.length) {
+			TALLOC_FREE(val.data);
 			print_error(__location__": KEY1 value lengths different"
 				    ", expected (%d) actual(%d)\n",
 				    (int)(strlen(VAL1) + 1), (int)val.length);
@@ -1262,8 +1280,10 @@ static void test_write_transaction_isolation(void **state)
 				    "expected (%s) actual(%s)\n",
 				    VAL1,
 				    val.data);
+			TALLOC_FREE(val.data);
 			exit(LDB_ERR_OPERATIONS_ERROR);
 		}
+		TALLOC_FREE(val.data);
 
 		ret = ldb_kv->kv_ops->unlock_read(ldb->modules);
 		if (ret != LDB_SUCCESS) {
@@ -1298,6 +1318,7 @@ static void test_write_transaction_isolation(void **state)
 			print_error(__location__": KEY2 value lengths different"
 				    ", expected (%d) actual(%d)\n",
 				    (int)(strlen(VAL2) + 1), (int)val.length);
+			TALLOC_FREE(val.data);
 			exit(LDB_ERR_OPERATIONS_ERROR);
 		}
 		if (memcmp(VAL2, val.data, strlen(VAL2)) != 0) {
@@ -1305,8 +1326,10 @@ static void test_write_transaction_isolation(void **state)
 				    "expected (%s) actual(%s)\n",
 				    VAL2,
 				    val.data);
+			TALLOC_FREE(val.data);
 			exit(LDB_ERR_OPERATIONS_ERROR);
 		}
+		TALLOC_FREE(val.data);
 
 		ret = ldb_kv->kv_ops->unlock_read(ldb->modules);
 		if (ret != LDB_SUCCESS) {
@@ -1490,6 +1513,7 @@ static void test_delete_transaction_isolation(void **state)
 		}
 
 		if ((strlen(VAL1) + 1) != val.length) {
+			TALLOC_FREE(val.data);
 			print_error(__location__": KEY1 value lengths different"
 				    ", expected (%d) actual(%d)\n",
 				    (int)(strlen(VAL1) + 1), (int)val.length);
@@ -1502,6 +1526,7 @@ static void test_delete_transaction_isolation(void **state)
 				    val.data);
 			exit(LDB_ERR_OPERATIONS_ERROR);
 		}
+		TALLOC_FREE(val.data);
 
 		/*
 		 * Check that KEY2 is there
@@ -1519,6 +1544,7 @@ static void test_delete_transaction_isolation(void **state)
 		}
 
 		if ((strlen(VAL2) + 1) != val.length) {
+			TALLOC_FREE(val.data);
 			print_error(__location__": KEY2 value lengths different"
 				    ", expected (%d) actual(%d)\n",
 				    (int)(strlen(VAL2) + 1), (int)val.length);
@@ -1531,6 +1557,7 @@ static void test_delete_transaction_isolation(void **state)
 				    val.data);
 			exit(LDB_ERR_OPERATIONS_ERROR);
 		}
+		TALLOC_FREE(val.data);
 
 		ret = ldb_kv->kv_ops->unlock_read(ldb->modules);
 		if (ret != LDB_SUCCESS) {
@@ -1613,6 +1640,7 @@ static void test_delete_transaction_isolation(void **state)
 		}
 
 		ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &val);
+		TALLOC_FREE(val.data);
 		if (ret != LDB_ERR_NO_SUCH_OBJECT) {
 			print_error(__location__": fetch_and_parse returned "
 				    "(%d)\n",
