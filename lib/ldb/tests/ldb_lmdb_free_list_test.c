@@ -198,7 +198,9 @@ static int parse(struct ldb_val key, struct ldb_val data, void *private_data)
 {
 	struct ldb_val *read = private_data;
 
-	/* Yes, we leak this.  That is OK */
+	/*
+	 * This should not leak if possible, please check with Leak Sanitizer.
+	 */
 	read->data = talloc_size(NULL, data.length);
 	assert_non_null(read->data);
 
@@ -218,8 +220,8 @@ static void test_free_list_no_read_lock(void **state)
 	struct test_ctx *test_ctx =
 	    talloc_get_type_abort(*state, struct test_ctx);
 	struct ldb_kv_private *ldb_kv = get_ldb_kv(test_ctx->ldb);
-	struct ldb_val key;
-	struct ldb_val val;
+	struct ldb_val key = {};
+	struct ldb_val val = {};
 
 	const char *KEY1 = "KEY01";
 
@@ -341,6 +343,7 @@ static void test_free_list_no_read_lock(void **state)
 
 	ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &val);
 	assert_int_equal(ret, LDB_SUCCESS);
+	TALLOC_FREE(val.data);
 
 	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, LDB_SUCCESS);
@@ -361,8 +364,8 @@ static void test_free_list_read_lock(void **state)
 	struct test_ctx *test_ctx =
 	    talloc_get_type_abort(*state, struct test_ctx);
 	struct ldb_kv_private *ldb_kv = get_ldb_kv(test_ctx->ldb);
-	struct ldb_val key;
-	struct ldb_val val;
+	struct ldb_val key = {};
+	struct ldb_val val = {};
 
 	const char *KEY1 = "KEY01";
 
@@ -450,6 +453,7 @@ static void test_free_list_read_lock(void **state)
 
 		ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &val);
 		assert_int_equal(ret, LDB_SUCCESS);
+		TALLOC_FREE(val.data);
 
 		ret = ldb_kv->kv_ops->unlock_read(ldb->modules);
 		assert_int_equal(ret, LDB_SUCCESS);
@@ -492,6 +496,7 @@ static void test_free_list_read_lock(void **state)
 
 	ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &val);
 	assert_int_equal(ret, LDB_ERR_NO_SUCH_OBJECT);
+	TALLOC_FREE(val.data);
 	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
 
@@ -510,8 +515,8 @@ static void test_free_list_stale_reader(void **state)
 	struct test_ctx *test_ctx =
 	    talloc_get_type_abort(*state, struct test_ctx);
 	struct ldb_kv_private *ldb_kv = get_ldb_kv(test_ctx->ldb);
-	struct ldb_val key;
-	struct ldb_val val;
+	struct ldb_val key = {};
+	struct ldb_val val = {};
 
 	const char *KEY1 = "KEY01";
 
@@ -639,6 +644,7 @@ static void test_free_list_stale_reader(void **state)
 
 	ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key, parse, &val);
 	assert_int_equal(ret, LDB_SUCCESS);
+	TALLOC_FREE(val.data);
 
 	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, LDB_SUCCESS);
