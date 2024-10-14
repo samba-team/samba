@@ -441,10 +441,23 @@ static void smbd_smb2_setinfo_lease_break_fsp_check(struct tevent_req *req)
 	struct tevent_req *subreq = NULL;
 	struct timeval timeout;
 	bool rename;
+	bool delete_on_close;
 	NTSTATUS status;
 
 	rename = (file_info_level == SMB2_FILE_RENAME_INFORMATION_INTERNAL);
-	if (!rename) {
+
+	if (file_info_level == SMB_FILE_DISPOSITION_INFORMATION) {
+		status = smb_check_file_disposition_info(
+			fsp,
+			(char *)state->data.data,
+			state->data.length,
+			&delete_on_close);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+	}
+
+	if (!rename && !delete_on_close) {
 		return;
 	}
 
@@ -507,7 +520,7 @@ static void smbd_smb2_setinfo_lease_break_fsp_done(struct tevent_req *subreq)
 		return;
 	}
 
-	/* Do the rename under the lock. */
+	/* Do the setinfo again under the lock. */
 	status = smbd_do_setfilepathinfo(state->fsp->conn,
 				state->smb2req->smb1req,
 				state,
