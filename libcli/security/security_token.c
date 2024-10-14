@@ -80,16 +80,21 @@ struct security_token *security_token_duplicate(TALLOC_CTX *mem_ctx, const struc
 ****************************************************************************/
 void security_token_debug(int dbg_class, int dbg_lev, const struct security_token *token)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
+	TALLOC_CTX *frame = NULL;
 	char *sids = NULL;
 	char *privs = NULL;
 	uint32_t i;
 
-	if (!token) {
-		DEBUGC(dbg_class, dbg_lev, ("Security token: (NULL)\n"));
-		TALLOC_FREE(frame);
+	if (!CHECK_DEBUGLVLC(dbg_class, dbg_lev)) {
 		return;
 	}
+
+	if (!token) {
+		DEBUGC(dbg_class, dbg_lev, ("Security token: (NULL)\n"));
+		return;
+	}
+
+	frame = talloc_stackframe();
 
 	sids = talloc_asprintf(frame,
 			       "Security token SIDs (%" PRIu32 "):\n",
