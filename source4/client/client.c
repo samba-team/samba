@@ -3416,8 +3416,8 @@ int main(int argc, char *argv[])
 				false /* require_smbconf */);
 	if (!ok) {
 		DBG_ERR("Failed to init cmdline parser!\n");
-		TALLOC_FREE(ctx);
-		exit(1);
+		rc = 1;
+		goto done;
 	}
 
 	pc = samba_popt_get_context(getprogname(),
@@ -3428,7 +3428,8 @@ int main(int argc, char *argv[])
 	if (pc == NULL) {
 		DBG_ERR("Failed to setup popt context!\n");
 		TALLOC_FREE(ctx);
-		exit(1);
+		rc = 1;
+		goto done;
 	}
 	poptSetOtherOptionHelp(pc, "[OPTIONS] service <password>");
 
@@ -3440,7 +3441,7 @@ int main(int argc, char *argv[])
 			 * to port 139 instead of port 445. srl,crh
 			 */
 			name_type = 0x03;
-			desthost = strdup(poptGetOptArg(pc));
+			desthost = talloc_strdup(mem_ctx, poptGetOptArg(pc));
 			if( 0 == port ) port = 139;
  			message = true;
  			break;
@@ -3448,10 +3449,10 @@ int main(int argc, char *argv[])
 			dest_ip = poptGetOptArg(pc);
 			break;
 		case 'L':
-			query_host = strdup(poptGetOptArg(pc));
+			query_host = talloc_strdup(mem_ctx, poptGetOptArg(pc));
 			break;
 		case 'D':
-			base_directory = strdup(poptGetOptArg(pc));
+			base_directory = talloc_strdup(mem_ctx, poptGetOptArg(pc));
 			break;
 		case 'b':
 			ctx->io_bufsize = MAX(1, atoi(poptGetOptArg(pc)));
@@ -3460,14 +3461,15 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "\nInvalid option %s: %s\n\n",
 				poptBadOption(pc, 0), poptStrerror(opt));
 			poptPrintUsage(pc, stderr, 0);
-			exit(1);
+			rc = 1;
+			goto done;
 		}
 	}
 
 	gensec_init();
 
 	if(poptPeekArg(pc)) {
-		char *s = strdup(poptGetArg(pc));
+		char *s = talloc_strdup(mem_ctx, poptGetArg(pc));
 
 		/* Convert any '/' characters in the service name to '\' characters */
 		string_replace(s, '/','\\');
@@ -3477,7 +3479,8 @@ int main(int argc, char *argv[])
 		if (count_chars(s,'\\') < 3) {
 			d_printf("\n%s: Not enough '\\' characters in service\n",s);
 			poptPrintUsage(pc, stderr, 0);
-			exit(1);
+			rc = 1;
+			goto done;
 		}
 	}
 
@@ -3491,7 +3494,8 @@ int main(int argc, char *argv[])
 
 	if (!query_host && !service && !message) {
 		poptPrintUsage(pc, stderr, 0);
-		exit(1);
+		rc = 1;
+		goto done;
 	}
 
 	poptFreeContext(pc);
@@ -3513,7 +3517,7 @@ int main(int argc, char *argv[])
 	if (query_host) {
 		rc = do_host_query(lp_ctx, ev_ctx, query_host,
 				   lpcfg_workgroup(lp_ctx));
-		return rc;
+		goto done;
 	}
 
 	if (message) {
@@ -3523,7 +3527,7 @@ int main(int argc, char *argv[])
 				   lpcfg_resolve_context(lp_ctx),
 				   &smb_options,
                    lpcfg_socket_options(lp_ctx));
-		return rc;
+		goto done;
 	}
 
 	if (!do_connect(ctx, ev_ctx, lpcfg_resolve_context(lp_ctx),
@@ -3532,11 +3536,13 @@ int main(int argc, char *argv[])
 			creds,
 			&smb_options, &smb_session_options,
 			lpcfg_gensec_settings(ctx, lp_ctx)))
-		return 1;
+	{
+		rc = 1;
+		goto done;
+	}
 
 	if (base_directory) {
 		do_cd(ctx, base_directory);
-		free(base_directory);
 	}
 
 	if (cmdstr) {
@@ -3545,7 +3551,7 @@ int main(int argc, char *argv[])
 		rc = process_stdin(ctx);
 	}
 
-	free(desthost);
+done:
 	talloc_free(mem_ctx);
 
 	return rc;
