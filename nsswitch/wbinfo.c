@@ -1656,9 +1656,9 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32_t flags)
 	char *local_cctype = NULL;
 	uid_t uid;
 	struct wbcLogonUserParams params;
-	struct wbcLogonUserInfo *info;
-	struct wbcAuthErrorInfo *error;
-	struct wbcUserPasswordPolicyInfo *policy;
+	struct wbcLogonUserInfo *info = NULL;
+	struct wbcAuthErrorInfo *error = NULL;
+	struct wbcUserPasswordPolicyInfo *policy = NULL;
 	TALLOC_CTX *frame = talloc_tos();
 
 	if ((s = talloc_strdup(frame, username)) == NULL) {
@@ -1762,7 +1762,9 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32_t flags)
 		}
 	}
  done:
-
+	wbcFreeMemory(error);
+	wbcFreeMemory(policy);
+	wbcFreeMemory(info);
 	wbcFreeMemory(params.blobs);
 
 	return WBC_ERROR_IS_OK(wbc_status);
