@@ -34,7 +34,7 @@
 struct security_acl *make_sec_acl(
 	TALLOC_CTX *ctx,
 	enum security_acl_revision revision,
-	int num_aces,
+	size_t num_aces,
 	const struct security_ace *ace_list)
 {
 	struct security_acl *dst;
