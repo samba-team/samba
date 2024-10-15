@@ -121,12 +121,6 @@ ctdb_check_args "$@"
 
 case "$1" in
 init)
-	# make sure that we only respond to ARP messages from the NIC where
-	# a particular ip address is associated.
-	get_proc sys/net/ipv4/conf/all/arp_filter >/dev/null 2>&1 && {
-	    set_proc sys/net/ipv4/conf/all/arp_filter 1
-	}
-
 	_promote="sys/net/ipv4/conf/all/promote_secondaries"
 	get_proc "$_promote" >/dev/null 2>&1 || \
 	    die "Public IPs only supported if promote_secondaries is available"
