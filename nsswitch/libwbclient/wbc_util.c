@@ -549,6 +549,7 @@ static void wbcDomainInfoListDestructor(void *ptr)
 	while (i->short_name != NULL) {
 		free(i->short_name);
 		free(i->dns_name);
+		free(i->trust_routing);
 		i += 1;
 	}
 }
