@@ -395,6 +395,7 @@ static void nss_test_initgroups(char *name, gid_t gid)
 		printf("%lu, ", (unsigned long)groups[i]);
 	}
 	printf("%lu\n", (unsigned long)groups[i]);
+	SAFE_FREE(groups);
 }
 
 
