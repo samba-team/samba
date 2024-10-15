@@ -500,6 +500,8 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
         tf = tarfile.open(backup_file)
         tf.extractall(targetdir)
         tf.close()
+        # set the permissions on the target dir strict but also relaxed enough
+        os.chmod(targetdir, mode=0o755)
 
         # use the smb.conf that got backed up, by default (save what was
         # actually backed up, before we mess with it)
