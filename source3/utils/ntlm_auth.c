@@ -2803,7 +2803,7 @@ enum {
 		opt_workstation = "";
 	}
 
-	lp_ctx = loadparm_init_s3(NULL, loadparm_s3_helpers());
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
 		fprintf(stderr, "loadparm_init_s3() failed!\n");
 		exit(1);
