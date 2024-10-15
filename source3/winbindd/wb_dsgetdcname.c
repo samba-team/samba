@@ -79,6 +79,22 @@ struct tevent_req *wb_dsgetdcname_send(TALLOC_CTX *mem_ctx,
 		 * We have to figure out the DC ourselves
 		 */
 		child_binding_handle = locator_child_handle();
+
+		if (IS_AD_DC) {
+			struct winbindd_domain *domain = NULL;
+
+			/*
+			 * If we know about the domain
+			 * we replace a possible netbios domain name to
+			 * a dns domain name, which means we'll always use
+			 * dns+cldap because we have a fixed known number
+			 * of trusted domains on a DC.
+			 */
+			domain = find_domain_from_name_noinit(domain_name);
+			if (domain != NULL && domain->active_directory) {
+				domain_name = domain->alt_name;
+			}
+		}
 	} else {
 		struct winbindd_domain *domain = find_our_domain();
 		child_binding_handle = dom_child_handle(domain);
