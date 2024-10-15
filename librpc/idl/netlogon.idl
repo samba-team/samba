@@ -48,6 +48,7 @@ cpp_quote("#define DS_DNS_FOREST_ROOT NBT_SERVER_FOREST_ROOT")
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\netlogon]","ncacn_ip_tcp:","ncalrpc:"),
   helper("../librpc/ndr/ndr_netlogon.h"),
+  authservice("netlogon"),
   ms_union,
   pointer_default(unique)
 ]
