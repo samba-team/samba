@@ -388,14 +388,23 @@ return_downgrade:
 	return orig_status;
 }
 
-/*
- * Do the actual processing of a netr_ServerAuthenticate3 message.
- * called from dcesrv_netr_ServerAuthenticate3, which handles the logging.
- */
-static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
+typedef NTSTATUS (*dcesrv_netr_ServerAuthenticateGenericCallback_fn)(
+	struct dcesrv_call_state *dce_call,
+	const struct netlogon_server_pipe_state *challenge,
+	const struct netr_ServerAuthenticate3 *r,
+	uint32_t client_flags,
+	const struct dom_sid *client_sid,
+	uint32_t negotiate_flags,
+	const struct ldb_message *sam_msg,
+	const struct ldb_message *tdo_msg,
+	TALLOC_CTX *mem_ctx,
+	struct netlogon_creds_CredentialState **_creds);
+
+static NTSTATUS dcesrv_netr_ServerAuthenticateGeneric(
 	struct dcesrv_call_state *dce_call,
 	TALLOC_CTX *mem_ctx,
 	struct netr_ServerAuthenticate3 *r,
+	dcesrv_netr_ServerAuthenticateGenericCallback_fn auth_fn,
 	const char **trust_account_for_search,
 	const char **trust_account_in_db,
 	struct dom_sid **sid)
@@ -405,10 +414,9 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 	struct netlogon_server_pipe_state challenge;
 	struct netlogon_creds_CredentialState *creds;
 	struct ldb_context *sam_ctx;
-	struct samr_Password *curNtHash = NULL;
-	struct samr_Password *prevNtHash = NULL;
 	uint32_t user_account_control;
 	struct ldb_message **msgs;
+	struct ldb_message *tdo_msg = NULL;
 	NTSTATUS nt_status;
 	static const char *attrs[] = {
 		"unicodePwd",
@@ -551,7 +559,6 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 	if (r->in.secure_channel_type == SEC_CHAN_DOMAIN ||
 	    r->in.secure_channel_type == SEC_CHAN_DNS_DOMAIN)
 	{
-		struct ldb_message *tdo_msg = NULL;
 		static const char *const tdo_attrs[] = {"trustAuthIncoming",
 							"trustAttributes",
 							"flatName",
@@ -608,22 +615,6 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 				  "but there's no tdo for [%s] => [%s] \n",
 				  log_escape(mem_ctx, r->in.account_name),
 				  encoded_name));
-			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
-				dce_call, r, pipe_state, negotiate_flags,
-				NULL, /* trust_account_in_db */
-				NT_STATUS_NO_TRUST_SAM_ACCOUNT);
-		}
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
-				dce_call, r, pipe_state, negotiate_flags,
-				NULL, /* trust_account_in_db */
-				nt_status);
-		}
-
-		nt_status = dsdb_trust_get_incoming_passwords(tdo_msg, mem_ctx,
-							      &curNtHash,
-							      &prevNtHash);
-		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCOUNT_DISABLED)) {
 			return dcesrv_netr_ServerAuthenticate3_check_downgrade(
 				dce_call, r, pipe_state, negotiate_flags,
 				NULL, /* trust_account_in_db */
@@ -760,24 +751,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 	}
 
 	if (!(user_account_control & UF_INTERDOMAIN_TRUST_ACCOUNT)) {
-		nt_status = samdb_result_passwords_no_lockout(mem_ctx,
-					dce_call->conn->dce_ctx->lp_ctx,
-					msgs[0], &curNtHash);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-	}
-
-	if (curNtHash == NULL) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (!challenge_valid) {
-		DEBUG(1, ("No challenge requested by client [%s/%s], "
-			  "cannot authenticate\n",
-			  log_escape(mem_ctx, r->in.computer_name),
-			  log_escape(mem_ctx, r->in.account_name)));
-		return NT_STATUS_ACCESS_DENIED;
+		tdo_msg = NULL;
 	}
 
 	*sid = samdb_result_dom_sid(mem_ctx, msgs[0], "objectSid");
@@ -785,41 +759,19 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	creds = netlogon_creds_server_init(mem_ctx,
-					   r->in.account_name,
-					   r->in.computer_name,
-					   r->in.secure_channel_type,
-					   &challenge.client_challenge,
-					   &challenge.server_challenge,
-					   curNtHash,
-					   r->in.credentials,
-					   r->out.return_credentials,
-					   client_flags,
-					   *sid,
-					   negotiate_flags);
-	if (creds == NULL && prevNtHash != NULL) {
-		/*
-		 * We fallback to the previous password for domain trusts.
-		 *
-		 * Note that lpcfg_old_password_allowed_period() doesn't
-		 * apply here.
-		 */
-		creds = netlogon_creds_server_init(mem_ctx,
-						   r->in.account_name,
-						   r->in.computer_name,
-						   r->in.secure_channel_type,
-						   &challenge.client_challenge,
-						   &challenge.server_challenge,
-						   prevNtHash,
-						   r->in.credentials,
-						   r->out.return_credentials,
-						   client_flags,
-						   *sid,
-						   negotiate_flags);
-	}
-
-	if (creds == NULL) {
-		return NT_STATUS_ACCESS_DENIED;
+	nt_status = auth_fn(dce_call,
+			    challenge_valid ? &challenge : NULL,
+			    r,
+			    client_flags,
+			    *sid,
+			    negotiate_flags,
+			    msgs[0],
+			    tdo_msg,
+			    mem_ctx,
+			    &creds);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		ZERO_STRUCTP(r->out.return_credentials);
+		return nt_status;
 	}
 
 	nt_status = schannel_save_creds_state(mem_ctx,
@@ -834,6 +786,125 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
 						"objectSid", 0);
 
 	return NT_STATUS_OK;
+}
+
+static NTSTATUS dcesrv_netr_ServerAuthenticateNTHash_cb(
+	struct dcesrv_call_state *dce_call,
+	const struct netlogon_server_pipe_state *challenge,
+	const struct netr_ServerAuthenticate3 *r,
+	uint32_t client_flags,
+	const struct dom_sid *client_sid,
+	uint32_t negotiate_flags,
+	const struct ldb_message *sam_msg,
+	const struct ldb_message *tdo_msg,
+	TALLOC_CTX *mem_ctx,
+	struct netlogon_creds_CredentialState **_creds)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	struct netlogon_creds_CredentialState *creds = NULL;
+	struct samr_Password *curNtHash = NULL;
+	struct samr_Password *prevNtHash = NULL;
+	NTSTATUS status;
+
+	if (tdo_msg != NULL) {
+		status = dsdb_trust_get_incoming_passwords(tdo_msg,
+							   frame,
+							   &curNtHash,
+							   &prevNtHash);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCOUNT_DISABLED)) {
+			status = NT_STATUS_NO_TRUST_SAM_ACCOUNT;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+	} else {
+		status = samdb_result_passwords_no_lockout(frame,
+							   lp_ctx,
+							   sam_msg,
+							   &curNtHash);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	if (curNtHash == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (challenge == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	creds = netlogon_creds_server_init(mem_ctx,
+					   r->in.account_name,
+					   r->in.computer_name,
+					   r->in.secure_channel_type,
+					   &challenge->client_challenge,
+					   &challenge->server_challenge,
+					   curNtHash,
+					   r->in.credentials,
+					   r->out.return_credentials,
+					   client_flags,
+					   client_sid,
+					   negotiate_flags);
+	if (creds == NULL && prevNtHash != NULL) {
+		/*
+		 * We fallback to the previous password for domain trusts.
+		 *
+		 * Note that lpcfg_old_password_allowed_period() doesn't
+		 * apply here.
+		 */
+		creds = netlogon_creds_server_init(mem_ctx,
+						   r->in.account_name,
+						   r->in.computer_name,
+						   r->in.secure_channel_type,
+						   &challenge->client_challenge,
+						   &challenge->server_challenge,
+						   prevNtHash,
+						   r->in.credentials,
+						   r->out.return_credentials,
+						   client_flags,
+						   client_sid,
+						   negotiate_flags);
+	}
+
+	if (creds == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	*_creds = creds;
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
+/*
+ * Do the actual processing of a netr_ServerAuthenticate3 message.
+ * called from dcesrv_netr_ServerAuthenticate3, which handles the logging.
+ */
+static NTSTATUS dcesrv_netr_ServerAuthenticate3_helper(
+	struct dcesrv_call_state *dce_call,
+	TALLOC_CTX *mem_ctx,
+	struct netr_ServerAuthenticate3 *r,
+	const char **trust_account_for_search,
+	const char **trust_account_in_db,
+	struct dom_sid **sid)
+{
+	dcesrv_netr_ServerAuthenticateGenericCallback_fn auth_fn =
+		dcesrv_netr_ServerAuthenticateNTHash_cb;
+
+	return dcesrv_netr_ServerAuthenticateGeneric(dce_call,
+						     mem_ctx,
+						     r,
+						     auth_fn,
+						     trust_account_for_search,
+						     trust_account_in_db,
+						     sid);
 }
 
 /*
