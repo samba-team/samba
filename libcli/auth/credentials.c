@@ -473,37 +473,27 @@ NTSTATUS netlogon_creds_aes_decrypt(struct netlogon_creds_CredentialState *creds
 	return NT_STATUS_OK;
 }
 
-/*****************************************************************
-The above functions are common to the client and server interface
-next comes the client specific functions
-******************************************************************/
-
-/*
-  initialise the credentials chain and return the first client
-  credentials
-*/
-
-struct netlogon_creds_CredentialState *netlogon_creds_client_init(TALLOC_CTX *mem_ctx,
-								  const char *client_account,
-								  const char *client_computer_name,
-								  uint16_t secure_channel_type,
-								  const struct netr_Credential *client_challenge,
-								  const struct netr_Credential *server_challenge,
-								  const struct samr_Password *machine_password,
-								  struct netr_Credential *initial_credential,
-								  uint32_t client_requested_flags,
-								  uint32_t negotiate_flags)
+static struct netlogon_creds_CredentialState *
+netlogon_creds_alloc(TALLOC_CTX *mem_ctx,
+		     const char *client_account,
+		     const char *client_computer_name,
+		     uint16_t secure_channel_type,
+		     uint32_t client_requested_flags,
+		     const struct dom_sid *client_sid,
+		     uint32_t negotiate_flags)
 {
-	struct netlogon_creds_CredentialState *creds = talloc_zero(mem_ctx, struct netlogon_creds_CredentialState);
+	struct netlogon_creds_CredentialState *creds = NULL;
 	struct timeval tv = timeval_current();
 	NTTIME now = timeval_to_nttime(&tv);
-	NTSTATUS status;
 
-	if (!creds) {
+	creds = talloc_zero(mem_ctx, struct netlogon_creds_CredentialState);
+	if (creds == NULL) {
 		return NULL;
 	}
 
-	creds->sequence = tv.tv_sec;
+	if (client_sid == NULL) {
+		creds->sequence = tv.tv_sec;
+	}
 	creds->negotiate_flags = negotiate_flags;
 	creds->secure_channel_type = secure_channel_type;
 
@@ -526,7 +516,49 @@ struct netlogon_creds_CredentialState *netlogon_creds_client_init(TALLOC_CTX *me
 	}
 	creds->ex->client_requested_flags = client_requested_flags;
 	creds->ex->auth_time = now;
-	creds->ex->client_sid = global_sid_NULL;
+	if (client_sid != NULL) {
+		creds->ex->client_sid = *client_sid;
+	} else {
+		creds->ex->client_sid = global_sid_NULL;
+	}
+
+	return creds;
+}
+
+/*****************************************************************
+The above functions are common to the client and server interface
+next comes the client specific functions
+******************************************************************/
+
+/*
+  initialise the credentials chain and return the first client
+  credentials
+*/
+
+struct netlogon_creds_CredentialState *netlogon_creds_client_init(TALLOC_CTX *mem_ctx,
+								  const char *client_account,
+								  const char *client_computer_name,
+								  uint16_t secure_channel_type,
+								  const struct netr_Credential *client_challenge,
+								  const struct netr_Credential *server_challenge,
+								  const struct samr_Password *machine_password,
+								  struct netr_Credential *initial_credential,
+								  uint32_t client_requested_flags,
+								  uint32_t negotiate_flags)
+{
+	struct netlogon_creds_CredentialState *creds = NULL;
+	NTSTATUS status;
+
+	creds = netlogon_creds_alloc(mem_ctx,
+				     client_account,
+				     client_computer_name,
+				     secure_channel_type,
+				     client_requested_flags,
+				     NULL, /* client_sid */
+				     negotiate_flags);
+	if (!creds) {
+		return NULL;
+	}
 
 	dump_data_pw("Client chall", client_challenge->data, sizeof(client_challenge->data));
 	dump_data_pw("Server chall", server_challenge->data, sizeof(server_challenge->data));
@@ -674,19 +706,20 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 								  const struct dom_sid *client_sid,
 								  uint32_t negotiate_flags)
 {
-
-	struct netlogon_creds_CredentialState *creds = talloc_zero(mem_ctx, struct netlogon_creds_CredentialState);
-	struct timeval tv = timeval_current();
-	NTTIME now = timeval_to_nttime(&tv);
+	struct netlogon_creds_CredentialState *creds = NULL;
 	NTSTATUS status;
 	bool ok;
 
+	creds = netlogon_creds_alloc(mem_ctx,
+				     client_account,
+				     client_computer_name,
+				     secure_channel_type,
+				     client_requested_flags,
+				     client_sid,
+				     negotiate_flags);
 	if (!creds) {
 		return NULL;
 	}
-
-	creds->negotiate_flags = negotiate_flags;
-	creds->secure_channel_type = secure_channel_type;
 
 	dump_data_pw("Client chall", client_challenge->data, sizeof(client_challenge->data));
 	dump_data_pw("Server chall", server_challenge->data, sizeof(server_challenge->data));
@@ -705,27 +738,6 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 		talloc_free(creds);
 		return NULL;
 	}
-
-	creds->computer_name = talloc_strdup(creds, client_computer_name);
-	if (!creds->computer_name) {
-		talloc_free(creds);
-		return NULL;
-	}
-	creds->account_name = talloc_strdup(creds, client_account);
-	if (!creds->account_name) {
-		talloc_free(creds);
-		return NULL;
-	}
-
-	creds->ex = talloc_zero(creds,
-			struct netlogon_creds_CredentialState_extra_info);
-	if (creds->ex == NULL) {
-		talloc_free(creds);
-		return NULL;
-	}
-	creds->ex->client_requested_flags = client_requested_flags;
-	creds->ex->auth_time = now;
-	creds->ex->client_sid = *client_sid;
 
 	if (negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 		status = netlogon_creds_init_hmac_sha256(creds,
