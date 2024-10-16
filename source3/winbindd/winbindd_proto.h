@@ -414,6 +414,7 @@ bool lp_scan_idmap_domains(bool (*fn)(const char *domname,
 
 NTSTATUS init_locator_child(TALLOC_CTX *mem_ctx);
 struct winbindd_child *locator_child(void);
+bool is_locator_child(const struct winbindd_child *child);
 struct dcerpc_binding_handle *locator_child_handle(void);
 
 /* The following definitions come from winbindd/winbindd_misc.c  */

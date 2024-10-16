@@ -1788,6 +1788,8 @@ static bool fork_domain_child(struct winbindd_child *child)
 		process_set_title("wb[%s]", "domain child [%s]", child_domain->name);
 	} else if (is_idmap_child(child)) {
 		process_set_title("wb-idmap", "idmap child");
+	} else if (is_locator_child(child)) {
+		process_set_title("wb-locator", "locator child");
 	}
 
 	/* Handle online/offline messages. */

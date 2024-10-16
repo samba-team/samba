@@ -34,6 +34,15 @@ struct winbindd_child *locator_child(void)
 	return static_locator_child;
 }
 
+bool is_locator_child(const struct winbindd_child *child)
+{
+	if (child == static_locator_child) {
+		return true;
+	}
+
+	return false;
+}
+
 struct dcerpc_binding_handle *locator_child_handle(void)
 {
 	return static_locator_child->binding_handle;
