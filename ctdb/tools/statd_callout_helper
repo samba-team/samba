@@ -207,12 +207,6 @@ notify)
 	# conflicting locks through other nodes before all locks have been
 	# reclaimed)
 
-	# we need these settings to make sure that no tcp connections survive
-	# across a very fast failover/failback
-	#echo 10 > /proc/sys/net/ipv4/tcp_fin_timeout
-	#echo 0 > /proc/sys/net/ipv4/tcp_max_tw_buckets
-	#echo 0 > /proc/sys/net/ipv4/tcp_max_orphans
-
 	# Delete the notification list for statd, we don't want it to
 	# ping any clients
 	dir=$(find_statd_sm_dir)
