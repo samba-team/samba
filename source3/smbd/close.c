@@ -239,17 +239,19 @@ static bool has_other_nonposix_opens_fn(
 	struct has_other_nonposix_opens_state *state = private_data;
 	struct files_struct *fsp = state->fsp;
 
-	if (e->name_hash != fsp->name_hash) {
-		return false;
-	}
 	if (e->flags & SHARE_MODE_FLAG_POSIX_OPEN) {
 		return false;
 	}
-	if (e->share_file_id == fh_get_gen_id(fsp->fh)) {
-		struct server_id self = messaging_server_id(
-			fsp->conn->sconn->msg_ctx);
-		if (server_id_equal(&self, &e->pid)) {
+	if (fsp != NULL) {
+		if (e->name_hash != fsp->name_hash) {
 			return false;
+		}
+		if (e->share_file_id == fh_get_gen_id(fsp->fh)) {
+			struct server_id self = messaging_server_id(
+				fsp->conn->sconn->msg_ctx);
+			if (server_id_equal(&self, &e->pid)) {
+				return false;
+			}
 		}
 	}
 	if (share_entry_stale_pid(e)) {
@@ -264,6 +266,19 @@ bool has_other_nonposix_opens(struct share_mode_lock *lck,
 			      struct files_struct *fsp)
 {
 	struct has_other_nonposix_opens_state state = { .fsp = fsp };
+	bool ok;
+
+	ok = share_mode_forall_entries(
+		lck, has_other_nonposix_opens_fn, &state);
+	if (!ok) {
+		return false;
+	}
+	return state.found_another;
+}
+
+bool has_nonposix_opens(struct share_mode_lock *lck)
+{
+	struct has_other_nonposix_opens_state state = {};
 	bool ok;
 
 	ok = share_mode_forall_entries(

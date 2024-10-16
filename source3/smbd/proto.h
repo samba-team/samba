@@ -137,6 +137,7 @@ NTSTATUS recursive_rmdir(TALLOC_CTX *ctx,
 		     struct smb_filename *smb_dname);
 bool has_other_nonposix_opens(struct share_mode_lock *lck,
 			      struct files_struct *fsp);
+bool has_nonposix_opens(struct share_mode_lock *lck);
 
 /* The following definitions come from smbd/conn.c  */
 
