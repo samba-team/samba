@@ -31,6 +31,9 @@
 
 #undef strcasecmp
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_LDB
+
 static int ldb_eval_transitive_filter_helper(TALLOC_CTX *mem_ctx,
 					     struct ldb_context *ldb,
 					     const char *attr,

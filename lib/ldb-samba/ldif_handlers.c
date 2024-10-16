@@ -38,6 +38,9 @@
 #include "../lib/util/asn1.h"
 #include "lib/util/smb_strtox.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_LDB
+
 /*
   use ndr_print_* to convert a NDR formatted blob to a ldif formatted blob
 
