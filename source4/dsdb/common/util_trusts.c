@@ -2646,7 +2646,7 @@ NTSTATUS dsdb_trust_search_tdo_by_sid(struct ldb_context *sam_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dsdb_trust_get_incoming_passwords(struct ldb_message *msg,
+NTSTATUS dsdb_trust_get_incoming_passwords(const struct ldb_message *msg,
 					   TALLOC_CTX *mem_ctx,
 					   struct samr_Password **_current,
 					   struct samr_Password **_previous)
