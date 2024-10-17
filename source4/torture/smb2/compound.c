@@ -37,12 +37,13 @@
 		goto done; \
 	}} while (0)
 
-#define CHECK_VALUE(v, correct) do { \
+#define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
 		torture_result(tctx, TORTURE_FAIL, \
 		    "(%s) Incorrect value %s=%d - should be %d\n", \
 		    __location__, #v, (int)v, (int)correct); \
 		ret = false; \
+		goto done; \
 	}} while (0)
 
 #define WAIT_FOR_ASYNC_RESPONSE(req) \
@@ -1191,7 +1192,7 @@ static bool test_compound_padding(struct torture_context *tctx,
 	 * size must be 24: 16 byte read response header plus 3
 	 * requested bytes padded to an 8 byte boundary.
 	 */
-	CHECK_VALUE(req[1]->in.body_size, 24);
+	CHECK_VAL(req[1]->in.body_size, 24);
 
 	status = smb2_read_recv(req[1], tree, &r);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -1262,7 +1263,7 @@ static bool test_compound_padding(struct torture_context *tctx,
 	 * size must be 24: 16 byte read response header plus 3
 	 * requested bytes padded to an 8 byte boundary.
 	 */
-	CHECK_VALUE(req[1]->in.body_size, 24);
+	CHECK_VAL(req[1]->in.body_size, 24);
 
 	status = smb2_read_recv(req[1], tree, &r);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -1303,8 +1304,8 @@ static bool test_compound_padding(struct torture_context *tctx,
 	 * size must be 24: 16 byte read response header plus 3
 	 * requested bytes padded to an 8 byte boundary.
 	 */
-	CHECK_VALUE(req[0]->in.body_size, 24);
-	CHECK_VALUE(req[1]->in.body_size, 24);
+	CHECK_VAL(req[0]->in.body_size, 24);
+	CHECK_VAL(req[1]->in.body_size, 24);
 
 	status = smb2_read_recv(req[0], tree, &r);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -1336,7 +1337,7 @@ static bool test_compound_padding(struct torture_context *tctx,
 	 * size must be 19: 16 byte read response header plus 3
 	 * requested bytes without padding.
 	 */
-	CHECK_VALUE(req[0]->in.body_size, 19);
+	CHECK_VAL(req[0]->in.body_size, 19);
 
 	status = smb2_read_recv(req[0], tree, &r);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -2392,7 +2393,7 @@ static bool test_compound_async_write_write(struct torture_context *tctx,
 		 * as it's the last element of a compound.
 		 */
 		WAIT_FOR_ASYNC_RESPONSE(req[1]);
-		CHECK_VALUE(req[1]->cancel.can_cancel, true);
+		CHECK_VAL(req[1]->cancel.can_cancel, true);
 		/*
 		 * Now pick up the real return.
 		 */
@@ -2496,7 +2497,7 @@ static bool test_compound_async_read_read(struct torture_context *tctx,
 		 * as it's the last element of a compound.
 		 */
 		WAIT_FOR_ASYNC_RESPONSE(req[1]);
-		CHECK_VALUE(req[1]->cancel.can_cancel, true);
+		CHECK_VAL(req[1]->cancel.can_cancel, true);
 		/*
 		 * Now pick up the real return.
 		 */
