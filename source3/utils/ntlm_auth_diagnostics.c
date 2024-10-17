@@ -1,22 +1,22 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Winbind status program.
 
    Copyright (C) Tim Potter      2000-2003
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003-2004
-   Copyright (C) Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it> 2000 
+   Copyright (C) Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it> 2000
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -37,12 +37,12 @@ enum ntlm_break {
 	NO_NT
 };
 
-/* 
+/*
    Authenticate a user with a challenge/response, checking session key
    and valid authentication types
 */
 
-/* 
+/*
  * Test the normal 'LM and NTLM' combination
  */
 
@@ -62,7 +62,7 @@ static bool test_lm_ntlm_broken(enum ntlm_break break_which,
 	uchar nt_hash[16];
 	DATA_BLOB chall = get_challenge();
 	char *error_string;
-	
+
 	ZERO_STRUCT(lm_key);
 	ZERO_STRUCT(user_session_key);
 
@@ -70,7 +70,7 @@ static bool test_lm_ntlm_broken(enum ntlm_break break_which,
 	flags |= WBFLAG_PAM_USER_SESSION_KEY;
 
 	SMBencrypt(opt_password,chall.data,lm_response.data);
-	E_deshash(opt_password, lm_hash); 
+	E_deshash(opt_password, lm_hash);
 
 	SMBNTencrypt(opt_password,chall.data,nt_response.data);
 
@@ -94,21 +94,21 @@ static bool test_lm_ntlm_broken(enum ntlm_break break_which,
 		break;
 	}
 
-	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
+	nt_status = contact_winbind_auth_crap(opt_username, opt_domain,
 					      opt_workstation,
 					      &chall,
 					      &lm_response,
 					      &nt_response,
 					      flags, 0,
-					      lm_key, 
+					      lm_key,
 					      user_session_key,
 					      &authoritative,
 					      &error_string, NULL);
-	
+
 	data_blob_free(&lm_response);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		d_printf("%s (0x%x)\n", 
+		d_printf("%s (0x%x)\n",
 			 error_string,
 			 NT_STATUS_V(nt_status));
 		SAFE_FREE(error_string);
@@ -138,7 +138,7 @@ static bool test_lm_ntlm_broken(enum ntlm_break break_which,
 	}
 
 	if (break_which == NO_NT) {
-		if (memcmp(lm_hash, user_session_key, 
+		if (memcmp(lm_hash, user_session_key,
 			   8) != 0) {
 			DEBUG(1, ("NT Session Key does not match expectations (should be LM hash)!\n"));
 			DEBUG(1, ("user_session_key:\n"));
@@ -147,8 +147,8 @@ static bool test_lm_ntlm_broken(enum ntlm_break break_which,
 			dump_data(1, lm_hash, sizeof(lm_hash));
 			pass = False;
 		}
-	} else {		
-		if (memcmp(session_key.data, user_session_key, 
+	} else {
+		if (memcmp(session_key.data, user_session_key,
 			   sizeof(user_session_key)) != 0) {
 			DEBUG(1, ("NT Session Key does not match expectations!\n"));
 			DEBUG(1, ("user_session_key:\n"));
@@ -161,7 +161,7 @@ static bool test_lm_ntlm_broken(enum ntlm_break break_which,
         return pass;
 }
 
-/* 
+/*
  * Test LM authentication, no NT response supplied
  */
 
@@ -171,7 +171,7 @@ static bool test_lm(bool lanman_support_expected)
 	return test_lm_ntlm_broken(NO_NT, lanman_support_expected);
 }
 
-/* 
+/*
  * Test the NTLM response only, no LM.
  */
 
@@ -180,7 +180,7 @@ static bool test_ntlm(bool lanman_support_expected)
 	return test_lm_ntlm_broken(NO_LM, lanman_support_expected);
 }
 
-/* 
+/*
  * Test the NTLM response only, but in the LM field.
  */
 
@@ -196,7 +196,7 @@ static bool test_ntlm_in_lm(bool lanman_support_expected)
 	uchar user_session_key[16];
 	DATA_BLOB chall = get_challenge();
 	char *error_string;
-	
+
 	ZERO_STRUCT(user_session_key);
 
 	flags |= WBFLAG_PAM_LMKEY;
@@ -204,9 +204,9 @@ static bool test_ntlm_in_lm(bool lanman_support_expected)
 
 	SMBNTencrypt(opt_password,chall.data,nt_response.data);
 
-	E_deshash(opt_password, lm_hash); 
+	E_deshash(opt_password, lm_hash);
 
-	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
+	nt_status = contact_winbind_auth_crap(opt_username, opt_domain,
 					      opt_workstation,
 					      &chall,
 					      &nt_response,
@@ -216,11 +216,11 @@ static bool test_ntlm_in_lm(bool lanman_support_expected)
 					      user_session_key,
 					      &authoritative,
 					      &error_string, NULL);
-	
+
 	data_blob_free(&nt_response);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		d_printf("%s (0x%x)\n", 
+		d_printf("%s (0x%x)\n",
 			 error_string,
 			 NT_STATUS_V(nt_status));
 		SAFE_FREE(error_string);
@@ -267,7 +267,7 @@ static bool test_ntlm_in_lm(bool lanman_support_expected)
         return pass;
 }
 
-/* 
+/*
  * Test the NTLM response only, but in the both the NT and LM fields.
  */
 
@@ -285,7 +285,7 @@ static bool test_ntlm_in_both(bool lanman_support_expected)
 	uint8_t nt_hash[16];
 	DATA_BLOB chall = get_challenge();
 	char *error_string;
-	
+
 	ZERO_STRUCT(lm_key);
 	ZERO_STRUCT(user_session_key);
 
@@ -296,9 +296,9 @@ static bool test_ntlm_in_both(bool lanman_support_expected)
 	E_md4hash(opt_password, nt_hash);
 	SMBsesskeygen_ntv1(nt_hash, session_key.data);
 
-	E_deshash(opt_password, lm_hash); 
+	E_deshash(opt_password, lm_hash);
 
-	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
+	nt_status = contact_winbind_auth_crap(opt_username, opt_domain,
 					      opt_workstation,
 					      &chall,
 					      &nt_response,
@@ -308,11 +308,11 @@ static bool test_ntlm_in_both(bool lanman_support_expected)
 					      user_session_key,
 					      &authoritative,
 					      &error_string, NULL);
-	
+
 	data_blob_free(&nt_response);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		d_printf("%s (0x%x)\n", 
+		d_printf("%s (0x%x)\n",
 			 error_string,
 			 NT_STATUS_V(nt_status));
 		SAFE_FREE(error_string);
@@ -340,7 +340,7 @@ static bool test_ntlm_in_both(bool lanman_support_expected)
 			pass = False;
 		}
 	}
-	if (memcmp(session_key.data, user_session_key, 
+	if (memcmp(session_key.data, user_session_key,
 		   sizeof(user_session_key)) != 0) {
 		DEBUG(1, ("NT Session Key does not match expectations!\n"));
  		DEBUG(1, ("user_session_key:\n"));
@@ -354,11 +354,11 @@ static bool test_ntlm_in_both(bool lanman_support_expected)
         return pass;
 }
 
-/* 
+/*
  * Test the NTLMv2 and LMv2 responses
  */
 
-static bool test_lmv2_ntlmv2_broken(enum ntlm_break break_which) 
+static bool test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
 {
 	bool pass = True;
 	NTSTATUS nt_status;
@@ -373,7 +373,7 @@ static bool test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
 	char *error_string;
 
 	ZERO_STRUCT(user_session_key);
-	
+
 	flags |= WBFLAG_PAM_USER_SESSION_KEY;
 
 	if (!SMBNTLMv2encrypt(NULL, opt_username, opt_domain, opt_password, &chall,
@@ -402,29 +402,29 @@ static bool test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
 		break;
 	}
 
-	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
+	nt_status = contact_winbind_auth_crap(opt_username, opt_domain,
 					      opt_workstation,
 					      &chall,
 					      &lmv2_response,
 					      &ntlmv2_response,
 					      flags, 0,
-					      NULL, 
+					      NULL,
 					      user_session_key,
 					      &authoritative,
 					      &error_string, NULL);
-	
+
 	data_blob_free(&lmv2_response);
 	data_blob_free(&ntlmv2_response);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		d_printf("%s (0x%x)\n", 
+		d_printf("%s (0x%x)\n",
 			 error_string,
 			 NT_STATUS_V(nt_status));
 		SAFE_FREE(error_string);
 		return break_which == BREAK_NT;
 	}
 
-	if (break_which != NO_NT && break_which != BREAK_NT && memcmp(ntlmv2_session_key.data, user_session_key, 
+	if (break_which != NO_NT && break_which != BREAK_NT && memcmp(ntlmv2_session_key.data, user_session_key,
 		   sizeof(user_session_key)) != 0) {
 		DEBUG(1, ("USER (NTLMv2) Session Key does not match expectations!\n"));
  		DEBUG(1, ("user_session_key:\n"));
@@ -436,7 +436,7 @@ static bool test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
         return pass;
 }
 
-/* 
+/*
  * Test the NTLMv2 and LMv2 responses
  */
 
@@ -445,7 +445,7 @@ static bool test_lmv2_ntlmv2(bool lanman_support_expected)
 	return test_lmv2_ntlmv2_broken(BREAK_NONE);
 }
 
-/* 
+/*
  * Test the LMv2 response only
  */
 
@@ -454,7 +454,7 @@ static bool test_lmv2(bool lanman_support_expected)
 	return test_lmv2_ntlmv2_broken(NO_NT);
 }
 
-/* 
+/*
  * Test the NTLMv2 response only
  */
 
@@ -505,7 +505,7 @@ static bool test_plaintext(enum ntlm_break break_which)
 	char *error_string;
 
 	ZERO_STRUCT(user_session_key);
-	
+
 	flags |= WBFLAG_PAM_LMKEY;
 	flags |= WBFLAG_PAM_USER_SESSION_KEY;
 
@@ -526,7 +526,7 @@ static bool test_plaintext(enum ntlm_break break_which)
 
 	if (!convert_string_talloc(talloc_tos(), CH_UNIX,
 				   CH_DOS, password,
-				   strlen(password)+1, 
+				   strlen(password)+1,
 				   &lm_response.data,
 				   &lm_response.length)) {
 		DEBUG(0, ("convert_string_talloc failed!\n"));
@@ -554,7 +554,7 @@ static bool test_plaintext(enum ntlm_break break_which)
 		break;
 	}
 
-	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
+	nt_status = contact_winbind_auth_crap(opt_username, opt_domain,
 					      opt_workstation,
 					      &chall,
 					      &lm_response,
@@ -564,13 +564,13 @@ static bool test_plaintext(enum ntlm_break break_which)
 					      user_session_key,
 					      &authoritative,
 					      &error_string, NULL);
-	
+
 	TALLOC_FREE(nt_response.data);
 	TALLOC_FREE(lm_response.data);
 	data_blob_free(&chall);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		d_printf("%s (0x%x)\n", 
+		d_printf("%s (0x%x)\n",
 			 error_string,
 			 NT_STATUS_V(nt_status));
 		SAFE_FREE(error_string);
@@ -600,11 +600,11 @@ static bool test_plaintext_lm_only(bool lanman_support_expected) {
 	return test_plaintext(NO_NT);
 }
 
-/* 
+/*
    Tests:
-   
+
    - LM only
-   - NT and LM		   
+   - NT and LM
    - NT
    - NT in LM field
    - NT in both fields
@@ -612,10 +612,10 @@ static bool test_plaintext_lm_only(bool lanman_support_expected) {
    - NTLMv2 and LMv2
    - LMv2
    - plaintext tests (in challenge-response fields)
-  
+
    check we get the correct session key in each case
    check what values we get for the LM session key
-   
+
 */
 
 static const struct ntlm_tests {
