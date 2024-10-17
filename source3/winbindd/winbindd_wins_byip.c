@@ -108,7 +108,8 @@ static void winbindd_wins_byip_done(struct tevent_req *subreq)
 
 		D_DEBUG("Got name '%s'.\n", names[i].name);
 
-		size = strlen(names[i].name + strlen(state->response));
+		/* len(name) + len(" ") + len(response) */
+		size = strlen(names[i].name) + 1 + strlen(state->response);
 		if (size > sizeof(state->response) - 1) {
 			D_WARNING("Too much data!\n");
 			tevent_req_nterror(req, STATUS_BUFFER_OVERFLOW);
