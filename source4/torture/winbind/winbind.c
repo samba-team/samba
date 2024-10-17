@@ -193,6 +193,8 @@ static bool torture_decode_compare_pac(struct torture_context *tctx,
 	sid_idx++;
 	torture_assert_int_equal(tctx, sid_idx, info->num_sids, "some SIDs still unaccounted for");
 
+	wbcFreeMemory(info);
+
 	return true;
 }
 
