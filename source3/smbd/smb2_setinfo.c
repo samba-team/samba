@@ -474,6 +474,7 @@ static void smbd_smb2_setinfo_lease_break_fsp_check(struct tevent_req *req)
 						   state->ev,
 						   timeout,
 						   fsp,
+						   rename,
 						   &state->lck);
 	if (tevent_req_nomem(subreq, req)) {
 		return;

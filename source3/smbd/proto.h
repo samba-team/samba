@@ -1214,6 +1214,7 @@ struct tevent_req *delay_for_handle_lease_break_send(
 	struct tevent_context *ev,
 	struct timeval timeout,
 	struct files_struct *fsp,
+	bool recursive,
 	struct share_mode_lock **lck);
 
 NTSTATUS delay_for_handle_lease_break_recv(struct tevent_req *req,

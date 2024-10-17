@@ -4752,6 +4752,16 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 			  "SMB_FILE_RENAME_INFORMATION (%s) %s -> %s\n",
 			  fsp_fnum_dbg(fsp), fsp_str_dbg(fsp),
 			  smb_fname_str_dbg(smb_fname_dst)));
+
+		/*
+		 * If no pathnames are open below this directory,
+		 * allow the rename.
+		 */
+		if (have_file_open_below(fsp)) {
+			status = NT_STATUS_ACCESS_DENIED;
+			goto out;
+		}
+
 		status = rename_internals_fsp(conn,
 					fsp,
 					smb_fname_dst,

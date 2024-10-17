@@ -1165,16 +1165,6 @@ static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 		}
 	}
 
-	if (S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
-		/* If no pathnames are open below this
-		   directory, allow the rename. */
-
-		if (have_file_open_below(fsp)) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		return NT_STATUS_OK;
-	}
-
 	status = check_any_access_fsp(fsp, DELETE_ACCESS | FILE_WRITE_ATTRIBUTES);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1933,6 +1923,15 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		DBG_NOTICE("Could not open rename source %s: %s\n",
 			  smb_fname_str_dbg(smb_fname_src),
 			  nt_errstr(status));
+		goto out;
+	}
+
+	/*
+	 * If no pathnames are open below this directory, allow the rename.
+	 */
+	if (have_file_open_below(fsp)) {
+		status = NT_STATUS_ACCESS_DENIED;
+		close_file_free(req, &fsp, NORMAL_CLOSE);
 		goto out;
 	}
 
