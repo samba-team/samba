@@ -1,4 +1,60 @@
                    ==============================
+                   Release Notes for Samba 4.19.9
+                          October 17, 2024
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.19 release series.
+
+
+Changes since 4.19.8
+--------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15590: libldb: performance issue with indexes (ldb 2.8.2 is already
+     released).
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15624: DH reconnect error handling can lead to stale sharemode entries.
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 15699: Incorrect FSCTL_QUERY_ALLOCATED_RANGES response when truncated.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15280: irpc_destructor may crash during shutdown.
+   * BUG 15624: DH reconnect error handling can lead to stale sharemode entries.
+   * BUG 15696: Compound SMB2 requests don't return
+     NT_STATUS_NETWORK_SESSION_EXPIRED for all requests, confuses
+     MacOSX clients.
+
+o  Shachar Sharon <ssharon@redhat.com>
+   * BUG 15700: Crash when readlinkat fails.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.19.8
                           August 15, 2024
                    ==============================
@@ -97,8 +153,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.19.7
                            June 10, 2024
