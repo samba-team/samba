@@ -106,12 +106,15 @@ static bool test_lm_ntlm_broken(enum ntlm_break break_which,
 					      &error_string, NULL);
 
 	data_blob_free(&lm_response);
+	data_blob_free(&nt_response);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_printf("%s (0x%x)\n",
 			 error_string,
 			 NT_STATUS_V(nt_status));
 		SAFE_FREE(error_string);
+		data_blob_free(&session_key);
+
 		return break_which == BREAK_NT;
 	}
 
@@ -158,6 +161,8 @@ static bool test_lm_ntlm_broken(enum ntlm_break break_which,
 			pass = False;
 		}
 	}
+	data_blob_free(&session_key);
+
         return pass;
 }
 
