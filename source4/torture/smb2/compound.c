@@ -28,6 +28,7 @@
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "lease_break_handler.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
@@ -46,12 +47,59 @@
 		goto done; \
 	}} while (0)
 
+#define CHECK_LEASE(__io, __state, __oplevel, __key, __flags)		\
+	do {								\
+		CHECK_VAL((__io)->out.lease_response.lease_version, 1); \
+		if (__oplevel) {					\
+			CHECK_VAL((__io)->out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE); \
+			CHECK_VAL((__io)->out.lease_response.lease_key.data[0], (__key)); \
+			CHECK_VAL((__io)->out.lease_response.lease_key.data[1], ~(__key)); \
+			CHECK_VAL((__io)->out.lease_response.lease_state, smb2_util_lease_state(__state)); \
+		} else {						\
+			CHECK_VAL((__io)->out.oplock_level, SMB2_OPLOCK_LEVEL_NONE); \
+			CHECK_VAL((__io)->out.lease_response.lease_key.data[0], 0); \
+			CHECK_VAL((__io)->out.lease_response.lease_key.data[1], 0); \
+			CHECK_VAL((__io)->out.lease_response.lease_state, 0); \
+		}							\
+									\
+		CHECK_VAL((__io)->out.lease_response.lease_flags, (__flags));	\
+		CHECK_VAL((__io)->out.lease_response.lease_duration, 0); \
+		CHECK_VAL((__io)->out.lease_response.lease_epoch, 0); \
+	} while(0)
+
+#define CHECK_LEASE_V2(__io, __state, __oplevel, __key, __flags, __parent, __epoch) \
+	do {								\
+		CHECK_VAL((__io)->out.lease_response_v2.lease_version, 2); \
+		if (__oplevel) {					\
+			CHECK_VAL((__io)->out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE); \
+			CHECK_VAL((__io)->out.lease_response_v2.lease_key.data[0], (__key)); \
+			CHECK_VAL((__io)->out.lease_response_v2.lease_key.data[1], ~(__key)); \
+			CHECK_VAL((__io)->out.lease_response_v2.lease_state, smb2_util_lease_state(__state)); \
+		} else {						\
+			CHECK_VAL((__io)->out.oplock_level, SMB2_OPLOCK_LEVEL_NONE); \
+			CHECK_VAL((__io)->out.lease_response_v2.lease_key.data[0], 0); \
+			CHECK_VAL((__io)->out.lease_response_v2.lease_key.data[1], 0); \
+			CHECK_VAL((__io)->out.lease_response_v2.lease_state, 0); \
+		}							\
+									\
+		CHECK_VAL((__io)->out.lease_response_v2.lease_flags, __flags); \
+		if (__flags & SMB2_LEASE_FLAG_PARENT_LEASE_KEY_SET) { \
+			CHECK_VAL((__io)->out.lease_response_v2.parent_lease_key.data[0], (__parent)); \
+			CHECK_VAL((__io)->out.lease_response_v2.parent_lease_key.data[1], ~(__parent)); \
+		} \
+		CHECK_VAL((__io)->out.lease_response_v2.lease_duration, 0); \
+		CHECK_VAL((__io)->out.lease_response_v2.lease_epoch, (__epoch)); \
+	} while(0)
+
 #define WAIT_FOR_ASYNC_RESPONSE(req) \
 	while (!req->cancel.can_cancel && req->state <= SMB2_REQUEST_RECV) { \
 		if (tevent_loop_once(tctx->ev) != 0) { \
 			break; \
 		} \
 	}
+
+static const uint64_t LEASE1 = 0xBADC0FFEE0DDF00Dull;
+static const uint64_t LEASE2 = 0xDEADBEEFFEEDBEADull;
 
 static struct {
 	struct smb2_handle handle;
@@ -1930,6 +1978,111 @@ done:
     return ret;
 }
 
+/*
+ * Send a compound related series of CREATE+CLOSE+CREATE+NOTIFY and check
+ * CREATE+CLOSE+CREATE responses come in a separate compound response before the
+ * STATUS_PENDING for the NOTIFY.
+ */
+static bool test_compound_interim3(struct torture_context *tctx,
+				   struct smb2_tree *tree)
+{
+	const char *dname = "test_compound_interim3";
+	struct smb2_handle hd = {};
+	struct smb2_create cr = {};
+	struct smb2_handle h1 = {};
+	struct smb2_notify nt = {};
+	struct smb2_request *req[6] = {};
+	struct smb2_close cl = {};
+	NTSTATUS status;
+	int rc;
+	bool ret = true;
+
+	smb2_deltree(tree, dname);
+	smb2_transport_compound_start(tree->session->transport, 4);
+
+	hd.data[0] = UINT64_MAX;
+	hd.data[1] = UINT64_MAX;
+
+	cr.in.desired_access	= SEC_RIGHTS_FILE_ALL;
+	cr.in.create_options	= NTCREATEX_OPTIONS_DIRECTORY;
+	cr.in.file_attributes	= FILE_ATTRIBUTE_DIRECTORY;
+	cr.in.share_access	= NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE |
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	cr.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	cr.in.fname		= dname;
+
+	nt.in.recursive          = true;
+	nt.in.buffer_size        = 0x1000;
+	nt.in.file.handle        = hd;
+	nt.in.completion_filter  = FILE_NOTIFY_CHANGE_NAME;
+	nt.in.unknown            = 0x00000000;
+
+	req[0] = smb2_create_send(tree, &cr);
+	torture_assert_not_null_goto(tctx, req[0], ret, done,
+				     "smb2_create_send failed\n");
+
+	smb2_transport_compound_set_related(tree->session->transport, true);
+
+	cl.in.file.handle = hd;
+
+	req[1] = smb2_close_send(tree, &cl);
+	torture_assert_not_null_goto(tctx, req[1], ret, done,
+				     "smb2_close_send failed\n");
+
+	req[2] = smb2_create_send(tree, &cr);
+	torture_assert_not_null_goto(tctx, req[2], ret, done,
+				     "smb2_create_send failed\n");
+
+	req[3] = smb2_notify_send(tree, &nt);
+	torture_assert_not_null_goto(tctx, req[3], ret, done,
+				     "smb2_create_send failed\n");
+
+	while (req[2]->state < SMB2_REQUEST_DONE) {
+		rc = tevent_loop_once(tctx->ev);
+		torture_assert_goto(tctx, rc == 0, ret, done,
+				    "tevent_loop_once failed\n");
+	}
+
+	torture_assert_goto(tctx, req[0]->state == SMB2_REQUEST_DONE, ret, done,
+			    "state not SMB2_REQUEST_DONE");
+	torture_assert_goto(tctx, req[1]->state == SMB2_REQUEST_DONE, ret, done,
+			    "state not SMB2_REQUEST_DONE");
+	torture_assert_goto(tctx, req[2]->state == SMB2_REQUEST_DONE, ret, done,
+			    "state not SMB2_REQUEST_DONE");
+	torture_assert_goto(tctx, req[3]->state == SMB2_REQUEST_RECV, ret, done,
+			    "state not SMB2_REQUEST_RECV");
+
+	WAIT_FOR_ASYNC_RESPONSE(req[3]);
+	torture_assert_goto(tctx, req[3]->state == SMB2_REQUEST_RECV, ret, done,
+			    "state not SMB2_REQUEST_RECV");
+	torture_assert_goto(tctx, req[3]->cancel.can_cancel, ret, done, "pending");
+
+	status = smb2_create_recv(req[0], tree, &cr);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_recv failed\n");
+
+	status = smb2_close_recv(req[1], &cl);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_recv failed\n");
+
+	status = smb2_create_recv(req[2], tree, &cr);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create_recv failed\n");
+	h1 = cr.out.file.handle;
+
+	smb2_cancel(req[3]);
+	status = smb2_notify_recv(req[3], tree, &nt);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_CANCELLED,
+					   ret, done,
+					   "smb2_notify_recv failed\n");
+
+done:
+	smb2_util_close(tree, h1);
+	smb2_deltree(tree, dname);
+	return ret;
+}
+
 /* Test compound related finds */
 static bool test_compound_find_related(struct torture_context *tctx,
 				       struct smb2_tree *tree)
@@ -2524,6 +2677,728 @@ static bool test_compound_async_read_read(struct torture_context *tctx,
 	return ret;
 }
 
+/*
+ * Checks a lease break by a create triggers an pending async response.
+ */
+static bool test_create_lease_break_async(struct torture_context *tctx,
+					  struct smb2_tree *tree1,
+					  struct smb2_tree *tree2)
+{
+	struct smb2_request *req = NULL;
+	struct smb2_create c1 = {};
+	struct smb2_create c2 = {};
+	struct smb2_lease ls1 = {};
+	struct smb2_lease ls2 = {};
+	struct smb2_handle h1 = {};
+	struct smb2_handle h2 = {};
+	struct smb2_lease_break_ack ack = {};
+	const char *fname_src = "test_create_lease_break_async.dat";
+	uint32_t caps;
+	NTSTATUS status;
+	bool ret = true;
+
+	caps = smb2cli_conn_server_capabilities(tree1->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	smb2_util_unlink(tree1, fname_src);
+
+	tree1->session->transport->lease.handler = torture_lease_handler;
+	tree1->session->transport->lease.private_data = tree1;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	/* First open with a RWH lease. */
+	smb2_lease_create(&c1,
+			  &ls1,
+			  false,
+			  fname_src,
+			  LEASE1,
+			  smb2_util_lease_state("RWH"));
+
+	status = smb2_create(tree1, tree1, &c1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	CHECK_LEASE(&c1, "RWH", true, LEASE1, 0);
+	h1 = c1.out.file.handle;
+
+	/* Second open, triggers lease break to "RH" */
+
+	smb2_lease_create(&c2,
+			  &ls2,
+			  false,
+			  fname_src,
+			  LEASE2,
+			  smb2_util_lease_state("RH"));
+
+	req = smb2_create_send(tree2, &c2);
+	torture_assert_not_null_goto(tctx, req, ret, done,
+				     "smb2_create_send failed\n");
+
+	/*
+	 * Check we got the lease break, but defer the ack.
+	 */
+	CHECK_BREAK_INFO("RWH", "RH", LEASE1);
+
+	ack.in.lease.lease_key =
+		lease_break_info.lease_break.current_lease.lease_key;
+	ack.in.lease.lease_state =
+		lease_break_info.lease_break.new_lease_state;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	/* Wait for STATUS_PENDING response */
+	WAIT_FOR_ASYNC_RESPONSE(req);
+	torture_assert_goto(tctx, req->cancel.can_cancel, ret, done, "pending");
+
+	status = smb2_lease_break_ack(tree1, &ack);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_lease_break_ack failed\n");
+	CHECK_LEASE_BREAK_ACK(&ack, "RH", LEASE1);
+
+
+	status = smb2_create_recv(req, tree2, &c2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create_recv failed\n");
+	h2 = c2.out.file.handle;
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree1, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree2, h2);
+	}
+
+	smb2_util_unlink(tree1, fname_src);
+
+	return ret;
+}
+
+/*
+ * Basic test compound related CREATE+GETINFO+CLOSE where
+ * the CREATE triggers a lease break. Verifies CREATE sees
+ * an async interim response.
+ */
+static bool test_compound_getinfo_middle(struct torture_context *tctx,
+					 struct smb2_tree *tree1,
+					 struct smb2_tree *tree2)
+{
+	struct smb2_create c1 = {};
+	struct smb2_create c2 = {};
+	struct smb2_lease ls1 = {};
+	struct smb2_handle h1 = {};
+	struct smb2_request *req[3] = {};
+	union smb_fileinfo info = {};
+	struct smb2_getinfo rinfo = {};
+	struct smb2_lease_break_ack ack = {};
+	struct smb2_close cl = {};
+	const char *fname_src = "test_compound_getinfo_middle.dat";
+	uint32_t caps;
+	NTSTATUS status;
+	bool ret = true;
+
+	caps = smb2cli_conn_server_capabilities(tree1->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	smb2_util_unlink(tree1, fname_src);
+
+	tree1->session->transport->lease.handler = torture_lease_handler;
+	tree1->session->transport->lease.private_data = tree1;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	/* First open with a RWH lease. */
+	smb2_lease_create(&c1,
+			  &ls1,
+			  false,
+			  fname_src,
+			  LEASE1,
+			  smb2_util_lease_state("RWH"));
+
+	status = smb2_create(tree1, tree1, &c1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	CHECK_LEASE(&c1, "RWH", true, LEASE1, 0);
+	h1 = c1.out.file.handle;
+
+	/* Second open, triggers a lease break */
+
+	smb2_transport_compound_start(tree2->session->transport, 3);
+
+	smb2_lease_create(&c2,
+			  NULL,
+			  false,
+			  fname_src,
+			  0,
+			  smb2_util_lease_state(""));
+	req[0] = smb2_create_send(tree2, &c2);
+	torture_assert_not_null_goto(tctx, req[0], ret, done,
+				     "smb2_create_send failed\n");
+
+	smb2_transport_compound_set_related(tree2->session->transport, true);
+
+	ZERO_STRUCT(info);
+	info.generic.level = RAW_FILEINFO_BASIC_INFORMATION;
+	info.generic.in.file.handle.data[0] = UINT64_MAX;
+	info.generic.in.file.handle.data[0] = UINT64_MAX;
+	req[1] = smb2_getinfo_file_send(tree2, &info);
+	torture_assert(tctx, req[1] != NULL, "smb2_setinfo_file_send");
+
+	cl.in.file.handle.data[0] = UINT64_MAX;
+	cl.in.file.handle.data[1] = UINT64_MAX;
+
+	req[2] = smb2_close_send(tree2, &cl);
+	torture_assert(tctx, req[2] != NULL, "smb2_close_send");
+
+	/*
+	 * Check we got the lease break, but defer the ack.
+	 */
+	CHECK_BREAK_INFO("RWH", "RH", LEASE1);
+
+	ack.in.lease.lease_key =
+		lease_break_info.lease_break.current_lease.lease_key;
+	ack.in.lease.lease_state =
+		lease_break_info.lease_break.new_lease_state;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	/* Wait for async response */
+	WAIT_FOR_ASYNC_RESPONSE(req[0]);
+
+	torture_assert_goto(tctx, req[0]->state == SMB2_REQUEST_RECV, ret, done,
+			    "smb2_create finished");
+	torture_assert_goto(tctx, req[1]->state == SMB2_REQUEST_RECV, ret, done,
+			    "smb2_getinfo finished");
+	torture_assert_goto(tctx, req[2]->state == SMB2_REQUEST_RECV, ret, done,
+			    "smb2_close finished");
+	torture_assert_goto(tctx, req[0]->cancel.can_cancel, ret, done, "pending");
+	torture_assert_goto(tctx, !req[1]->cancel.can_cancel, ret, done, "pending");
+	torture_assert_goto(tctx, !req[2]->cancel.can_cancel, ret, done, "pending");
+
+	status = smb2_lease_break_ack(tree1, &ack);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_lease_break_ack failed\n");
+	CHECK_LEASE_BREAK_ACK(&ack, "RH", LEASE1);
+
+	status = smb2_create_recv(req[0], tree2, &c2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create_recv failed\n");
+
+	status = smb2_getinfo_recv(req[1], tree2, &rinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_recv failed\n");
+
+	status = smb2_close_recv(req[2], &cl);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_close_recv failed\n");
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree1, h1);
+	}
+	smb2_util_unlink(tree1, fname_src);
+
+	return ret;
+}
+
+/*
+ * Checks a lease break by a rename where src and dst name are the same does not
+ * trigger a pending async response, but does trigger a h-lease break.
+ */
+static bool test_rename_same_srcdst_non_compound_no_async(
+	struct torture_context *tctx,
+	struct smb2_tree *tree1,
+	struct smb2_tree *tree2)
+{
+	struct smb2_create c1 = {};
+	struct smb2_create c2 = {};
+	struct smb2_lease ls1 = {};
+	struct smb2_lease ls2 = {};
+	struct smb2_handle h1 = {};
+	struct smb2_handle h2 = {};
+	struct smb2_request *req = NULL;
+	struct smb2_lease_break_ack ack = {};
+	union smb_setfileinfo sinfo = {};
+	const char *fname_src = "test_rename_non_compound_no_async.dat";
+	const char *fname_dst = "test_rename_non_compound_no_async.dat";
+	uint32_t caps;
+	NTSTATUS status;
+	bool ret = true;
+
+	caps = smb2cli_conn_server_capabilities(tree1->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	smb2_util_unlink(tree1, fname_src);
+	smb2_util_unlink(tree1, fname_dst);
+
+	tree1->session->transport->lease.handler = torture_lease_handler;
+	tree1->session->transport->lease.private_data = tree1;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	/* First open with a RH lease. */
+	smb2_lease_create(&c1,
+			  &ls1,
+			  false,
+			  fname_src,
+			  LEASE1,
+			  smb2_util_lease_state("RH"));
+
+	status = smb2_create(tree1, tree1, &c1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	CHECK_LEASE(&c1, "RH", true, LEASE1, 0);
+	h1 = c1.out.file.handle;
+
+	/* Second open, also with a RH lease, this will do the rename */
+
+	smb2_lease_create(&c2,
+			  &ls2,
+			  false,
+			  fname_src,
+			  LEASE2,
+			  smb2_util_lease_state("RH"));
+	status = smb2_create(tree2, tree2, &c2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	CHECK_LEASE(&c2, "RH", true, LEASE2, 0);
+	h2 = c2.out.file.handle;
+
+	/* Break with a rename. */
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.handle = h2;
+	sinfo.rename_information.in.new_name = fname_dst;
+	req = smb2_setinfo_file_send(tree2, &sinfo);
+	torture_assert(tctx, req != NULL, "smb2_setinfo_file_send");
+
+	/*
+	 * Check we got the lease break, but defer the ack.
+	 */
+	CHECK_BREAK_INFO("RH", "R", LEASE1);
+
+	ack.in.lease.lease_key =
+		lease_break_info.lease_break.current_lease.lease_key;
+	ack.in.lease.lease_state =
+		lease_break_info.lease_break.new_lease_state;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	/* Give the server enough time to possibly send a pending response */
+	smb_msleep(1000);
+
+	status = smb2_lease_break_ack(tree1, &ack);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_lease_break_ack failed\n");
+	CHECK_LEASE_BREAK_ACK(&ack, "R", LEASE1);
+
+	/*
+	 * Sending the lease break ACK would have also read the
+	 * NT_STATUS_PENDING interim response if any, but a Windows server
+	 * doesn't send one, check this. This is in contract to a lease break
+	 * triggered by an SMB2-CREATE.
+	 */
+	torture_assert_goto(tctx, !req->cancel.can_cancel, ret, done, "pending");
+
+	/* Get the rename reply. */
+	status = smb2_setinfo_recv(req);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_recv failed\n");
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree1, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree2, h2);
+	}
+
+	smb2_util_unlink(tree1, fname_src);
+	smb2_util_unlink(tree1, fname_dst);
+
+	return ret;
+}
+
+/*
+ * Checks a lease break by a rename does not trigger a pending async response.
+ */
+static bool test_rename_non_compound_no_async(struct torture_context *tctx,
+					      struct smb2_tree *tree1,
+					      struct smb2_tree *tree2)
+{
+	struct smb2_create c1 = {};
+	struct smb2_create c2 = {};
+	struct smb2_lease ls1 = {};
+	struct smb2_lease ls2 = {};
+	struct smb2_handle h1 = {};
+	struct smb2_handle h2 = {};
+	struct smb2_request *req = NULL;
+	struct smb2_lease_break_ack ack = {};
+	union smb_setfileinfo sinfo = {};
+	const char *fname_src = "test_rename_non_compound_no_async_src.dat";
+	const char *fname_dst = "test_rename_non_compound_no_async_dst.dat";
+	uint32_t caps;
+	NTSTATUS status;
+	bool ret = true;
+
+	caps = smb2cli_conn_server_capabilities(tree1->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	smb2_util_unlink(tree1, fname_src);
+	smb2_util_unlink(tree1, fname_dst);
+
+	tree1->session->transport->lease.handler = torture_lease_handler;
+	tree1->session->transport->lease.private_data = tree1;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	/* First open with a RH lease. */
+	smb2_lease_create(&c1,
+			  &ls1,
+			  false,
+			  fname_src,
+			  LEASE1,
+			  smb2_util_lease_state("RH"));
+
+	status = smb2_create(tree1, tree1, &c1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	CHECK_LEASE(&c1, "RH", true, LEASE1, 0);
+	h1 = c1.out.file.handle;
+
+	/* Second open, also with a RH lease, this will to the rename */
+
+	smb2_lease_create(&c2,
+			  &ls2,
+			  false,
+			  fname_src,
+			  LEASE2,
+			  smb2_util_lease_state("RH"));
+	status = smb2_create(tree2, tree2, &c2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	CHECK_LEASE(&c2, "RH", true, LEASE2, 0);
+	h2 = c2.out.file.handle;
+
+	/* Break with a rename. */
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.handle = h2;
+	sinfo.rename_information.in.new_name = fname_dst;
+	req = smb2_setinfo_file_send(tree2, &sinfo);
+	torture_assert(tctx, req != NULL, "smb2_setinfo_file_send");
+
+	/*
+	 * Check we got the lease break, but defer the ack.
+	 */
+	CHECK_BREAK_INFO("RH", "R", LEASE1);
+
+	ack.in.lease.lease_key =
+		lease_break_info.lease_break.current_lease.lease_key;
+	ack.in.lease.lease_state =
+		lease_break_info.lease_break.new_lease_state;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	/* Give the server enough time to possibly send a pending response */
+	smb_msleep(1000);
+
+	status = smb2_lease_break_ack(tree1, &ack);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_lease_break_ack failed\n");
+	CHECK_LEASE_BREAK_ACK(&ack, "R", LEASE1);
+
+	/*
+	 * Sending the lease break ACK would have also read the
+	 * NT_STATUS_PENDING interim response if any, but a Windows server
+	 * doesn't send one, check this. This is in contract to a lease break
+	 * triggered by an SMB2-CREATE.
+	 */
+	torture_assert_goto(tctx, !req->cancel.can_cancel, ret, done, "pending");
+
+	/* Get the rename reply. */
+	status = smb2_setinfo_recv(req);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_recv failed\n");
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree1, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree2, h2);
+	}
+
+	smb2_util_unlink(tree1, fname_src);
+	smb2_util_unlink(tree1, fname_dst);
+
+	return ret;
+}
+
+/*
+ * Test a compound SMB2-CREATE+SMB2-SETINFO(rename) works and doesn't trigger a
+ * pending async response.
+ */
+static bool test_compound_rename_last(struct torture_context *tctx,
+					struct smb2_tree *tree1,
+					struct smb2_tree *tree2)
+{
+	struct smb2_create c1 = {};
+	struct smb2_create c2 = {};
+	struct smb2_lease ls1 = {};
+	struct smb2_lease ls2 = {};
+	struct smb2_handle h1 = {};
+	struct smb2_handle h2 = {};
+	struct smb2_request *req[2] = {};
+	union smb_setfileinfo sinfo = {};
+	struct smb2_lease_break_ack ack = {};
+	const char *fname_src = "test_compound_rename_last_src.dat";
+	const char *fname_dst = "test_compound_rename_last_dst.dat";
+	uint32_t caps;
+	NTSTATUS status;
+	bool ret = true;
+
+	caps = smb2cli_conn_server_capabilities(tree1->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	smb2_util_unlink(tree1, fname_src);
+	smb2_util_unlink(tree1, fname_dst);
+
+	tree1->session->transport->lease.handler = torture_lease_handler;
+	tree1->session->transport->lease.private_data = tree1;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	/* First open with a RH lease. */
+	smb2_lease_create(&c1,
+			  &ls1,
+			  false,
+			  fname_src,
+			  LEASE1,
+			  smb2_util_lease_state("RH"));
+
+	status = smb2_create(tree1, tree1, &c1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	CHECK_LEASE(&c1, "RH", true, LEASE1, 0);
+	h1 = c1.out.file.handle;
+
+	/* Second open, also with a RH lease, this will to the rename */
+
+	smb2_transport_compound_start(tree2->session->transport, 2);
+
+	smb2_lease_create(&c2,
+			  &ls2,
+			  false,
+			  fname_src,
+			  LEASE2,
+			  smb2_util_lease_state(""));
+	req[0] = smb2_create_send(tree2, &c2);
+	torture_assert_not_null_goto(tctx, req[0], ret, done,
+				     "smb2_create_send failed\n");
+
+	smb2_transport_compound_set_related(tree2->session->transport, true);
+
+	/* Break with a rename. */
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.handle.data[0] = UINT64_MAX;
+	sinfo.rename_information.in.file.handle.data[1] = UINT64_MAX;
+	sinfo.rename_information.in.new_name = fname_dst;
+	req[1] = smb2_setinfo_file_send(tree2, &sinfo);
+	torture_assert(tctx, req[1] != NULL, "smb2_setinfo_file_send");
+
+	/*
+	 * Check we got the lease break, but defer the ack.
+	 */
+	CHECK_BREAK_INFO("RH", "R", LEASE1);
+
+	ack.in.lease.lease_key =
+		lease_break_info.lease_break.current_lease.lease_key;
+	ack.in.lease.lease_state =
+		lease_break_info.lease_break.new_lease_state;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	/* Give the server enough time to possibly send a pending response */
+	smb_msleep(1000);
+
+	status = smb2_lease_break_ack(tree1, &ack);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_lease_break_ack failed\n");
+	CHECK_LEASE_BREAK_ACK(&ack, "R", LEASE1);
+
+	/*
+	 * Sending the lease break ACK would have also read the
+	 * NT_STATUS_PENDING interim response if any, but a Windows server
+	 * doesn't send one, check this. This is in contract to a lease break
+	 * triggered by an SMB2-CREATE.
+	 */
+	torture_assert_goto(tctx, req[0]->state == SMB2_REQUEST_RECV, ret, done,
+			    "state not SMB2_REQUEST_RECV");
+	torture_assert_goto(tctx, req[1]->state == SMB2_REQUEST_RECV, ret, done,
+			    "state not SMB2_REQUEST_RECV");
+	torture_assert_goto(tctx, !req[1]->cancel.can_cancel, ret, done, "pending");
+
+	status = smb2_create_recv(req[0], tree2, &c2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_recv failed\n");
+	h2 = c2.out.file.handle;
+
+	/* Get the rename reply. */
+	status = smb2_setinfo_recv(req[1]);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_recv failed\n");
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree1, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree2, h2);
+	}
+
+	smb2_util_unlink(tree1, fname_src);
+	smb2_util_unlink(tree1, fname_dst);
+
+	return ret;
+}
+
+/*
+ * Compound related CREATE + SETINFO(rename) + CLOSE, rename triggers a lease
+ * break. Verify we don't get an async interim response for the SETINFO and all
+ * responses are received in a single compound response.
+ */
+static bool test_compound_rename_middle(struct torture_context *tctx,
+					struct smb2_tree *tree1,
+					struct smb2_tree *tree2)
+{
+	struct smb2_create c1 = {};
+	struct smb2_create c2 = {};
+	struct smb2_lease ls1 = {};
+	struct smb2_handle h1 = {};
+	struct smb2_request *req[3] = {};
+	union smb_setfileinfo sinfo = {};
+	struct smb2_lease_break_ack ack = {};
+	struct smb2_close cl = {};
+	const char *fname_src = "test_compound_rename_middle_src.dat";
+	const char *fname_dst = "test_compound_rename_middle_dst.dat";
+	uint32_t caps;
+	NTSTATUS status;
+	bool ret = true;
+
+	caps = smb2cli_conn_server_capabilities(tree1->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	smb2_util_unlink(tree1, fname_src);
+	smb2_util_unlink(tree1, fname_dst);
+
+	tree1->session->transport->lease.handler = torture_lease_handler;
+	tree1->session->transport->lease.private_data = tree1;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	/* First open with a RH lease. */
+	smb2_lease_create(&c1,
+			  &ls1,
+			  false,
+			  fname_src,
+			  LEASE1,
+			  smb2_util_lease_state("RH"));
+
+	status = smb2_create(tree1, tree1, &c1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	CHECK_LEASE(&c1, "RH", true, LEASE1, 0);
+	h1 = c1.out.file.handle;
+
+	/* Second open, this will to the rename */
+
+	smb2_transport_compound_start(tree2->session->transport, 3);
+
+	smb2_lease_create(&c2,
+			  NULL,
+			  false,
+			  fname_src,
+			  0,
+			  smb2_util_lease_state(""));
+	req[0] = smb2_create_send(tree2, &c2);
+	torture_assert_not_null_goto(tctx, req[0], ret, done,
+				     "smb2_create_send failed\n");
+
+	smb2_transport_compound_set_related(tree2->session->transport, true);
+
+	/* Break with a rename. */
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.handle.data[0] = UINT64_MAX;
+	sinfo.rename_information.in.file.handle.data[1] = UINT64_MAX;
+	sinfo.rename_information.in.new_name = fname_dst;
+	req[1] = smb2_setinfo_file_send(tree2, &sinfo);
+	torture_assert(tctx, req[1] != NULL, "smb2_setinfo_file_send");
+
+	cl.in.file.handle.data[0] = UINT64_MAX;
+	cl.in.file.handle.data[1] = UINT64_MAX;
+
+	req[2] = smb2_close_send(tree2, &cl);
+	torture_assert(tctx, req[2] != NULL, "smb2_close_send");
+
+	/* Give the server enough time to possibly send a pending response */
+	smb_msleep(1000);
+
+	/*
+	 * Check we got the lease break, but defer the ack.
+	 */
+	CHECK_BREAK_INFO("RH", "R", LEASE1);
+
+	ack.in.lease.lease_key =
+		lease_break_info.lease_break.current_lease.lease_key;
+	ack.in.lease.lease_state =
+		lease_break_info.lease_break.new_lease_state;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	torture_assert_goto(tctx, !req[0]->cancel.can_cancel, ret, done, "pending");
+	torture_assert_goto(tctx, !req[1]->cancel.can_cancel, ret, done, "pending");
+	torture_assert_goto(tctx, !req[2]->cancel.can_cancel, ret, done, "pending");
+	torture_assert_goto(tctx, req[0]->state == SMB2_REQUEST_RECV, ret, done,
+			    "state not SMB2_REQUEST_RECV");
+	torture_assert_goto(tctx, req[1]->state == SMB2_REQUEST_RECV, ret, done,
+			    "state not SMB2_REQUEST_RECV");
+	torture_assert_goto(tctx, req[2]->state == SMB2_REQUEST_RECV, ret, done,
+			    "state not SMB2_REQUEST_RECV");
+
+	status = smb2_lease_break_ack(tree1, &ack);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_lease_break_ack failed\n");
+	CHECK_LEASE_BREAK_ACK(&ack, "R", LEASE1);
+
+
+	status = smb2_create_recv(req[0], tree2, &c2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_recv failed\n");
+
+	/* Get the rename reply. */
+	status = smb2_setinfo_recv(req[1]);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_recv failed\n");
+
+	status = smb2_close_recv(req[2], &cl);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_recv failed\n");
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree1, h1);
+	}
+
+	smb2_util_unlink(tree1, fname_src);
+	smb2_util_unlink(tree1, fname_dst);
+
+	return ret;
+}
 
 struct torture_suite *torture_smb2_compound_init(TALLOC_CTX *ctx)
 {
@@ -2553,6 +3428,7 @@ struct torture_suite *torture_smb2_compound_init(TALLOC_CTX *ctx)
 		suite, "invalid4", test_compound_invalid4);
 	torture_suite_add_1smb2_test(suite, "interim1",  test_compound_interim1);
 	torture_suite_add_1smb2_test(suite, "interim2",  test_compound_interim2);
+	torture_suite_add_1smb2_test(suite, "interim3",  test_compound_interim3);
 	torture_suite_add_1smb2_test(suite, "compound-break", test_compound_break);
 	torture_suite_add_1smb2_test(suite, "compound-padding", test_compound_padding);
 	torture_suite_add_1smb2_test(suite, "create-write-close",
@@ -2589,6 +3465,18 @@ struct torture_suite *torture_smb2_compound_async_init(TALLOC_CTX *ctx)
 		test_compound_async_write_write);
 	torture_suite_add_1smb2_test(suite, "read_read",
 		test_compound_async_read_read);
+	torture_suite_add_2smb2_test(suite, "create_lease_break_async",
+		test_create_lease_break_async);
+	torture_suite_add_2smb2_test(suite, "getinfo_middle",
+		test_compound_getinfo_middle);
+	torture_suite_add_2smb2_test(suite, "rename_same_srcdst_non_compound_no_async",
+		test_rename_same_srcdst_non_compound_no_async);
+	torture_suite_add_2smb2_test(suite, "rename_non_compound_no_async",
+		test_rename_non_compound_no_async);
+	torture_suite_add_2smb2_test(suite, "rename_last",
+		test_compound_rename_last);
+	torture_suite_add_2smb2_test(suite, "rename_middle",
+		test_compound_rename_middle);
 
 	suite->description = talloc_strdup(suite, "SMB2-COMPOUND-ASYNC tests");
 

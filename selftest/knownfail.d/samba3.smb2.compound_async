@@ -1,0 +1,4 @@
+^samba3.smb2.compound_async.rename_non_compound_no_async\(fileserver\)
+^samba3.smb2.compound_async.rename_same_srcdst_non_compound_no_async\(fileserver\)
+^samba3.smb2.compound_async.rename_last\(fileserver\)
+^samba3.smb2.compound_async.rename_middle\(fileserver\)
