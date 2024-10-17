@@ -1062,6 +1062,27 @@ static enum ndr_err_code ndr_token_find(struct ndr_token_list *list,
 	return NDR_ERR_TOKEN;
 }
 
+/*
+ * retrieve a token from a ndr context, matching by key address.
+ */
+static enum ndr_err_code ndr_token_find_by_key_address(struct ndr_token_list *list,
+						       const void *key,
+						       uint32_t *v,
+						       unsigned *_i)
+{
+	struct ndr_token *tokens = list->tokens;
+	unsigned i;
+	for (i = list->count - 1; i < list->count; i--) {
+		if (tokens[i].key == key) {
+			*_i = i;
+			*v = tokens[i].value;
+			return NDR_ERR_SUCCESS;
+		}
+	}
+	return NDR_ERR_TOKEN;
+}
+
+
 _PUBLIC_ enum ndr_err_code ndr_token_peek_cmp_fn(struct ndr_token_list *list,
 						 const void *key,
 						 uint32_t *v,
@@ -1069,11 +1090,6 @@ _PUBLIC_ enum ndr_err_code ndr_token_peek_cmp_fn(struct ndr_token_list *list,
 {
 	unsigned i;
 	return ndr_token_find(list, key, v, _cmp_fn, &i);
-}
-
-static int token_cmp_ptr(const void *a, const void *b)
-{
-	return (a == b) ? 0 : 1;
 }
 
 /*
@@ -1086,7 +1102,7 @@ _PUBLIC_ enum ndr_err_code ndr_token_retrieve(struct ndr_token_list *list,
 	uint32_t last;
 	unsigned i;
 
-	err = ndr_token_find(list, key, v, token_cmp_ptr, &i);
+	err = ndr_token_find_by_key_address(list, key, v, &i);
 	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
 		return err;
 	}
@@ -1107,7 +1123,7 @@ _PUBLIC_ enum ndr_err_code ndr_token_peek(struct ndr_token_list *list,
 					  const void *key, uint32_t *v)
 {
 	unsigned i;
-	return ndr_token_find(list, key, v, token_cmp_ptr, &i);
+	return ndr_token_find_by_key_address(list, key, v, &i);
 }
 
 /*
