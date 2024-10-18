@@ -1489,6 +1489,104 @@ static bool test_lease_v2_request_parent(struct torture_context *tctx,
 	return ret;
 }
 
+/*
+ * Checks server accepts "RWH", "RH" and "R" lease request and grants at most
+ * (lease_request & "RH"), so no "W", but "R" without "H" if requested.
+ */
+static bool test_dirlease_leases(struct torture_context *tctx,
+				 struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io;
+	struct smb2_lease ls;
+	struct smb2_handle h1 = {};
+	NTSTATUS status;
+	const char *dname = "test_dirlease_leases_dir";
+	bool ret = true;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
+	torture_assert_goto(tctx, caps & SMB2_CAP_DIRECTORY_LEASING, ret, done,
+		"SMB3 Directory Leases are not supported\n");
+
+	smb2_deltree(tree, dname);
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	/* Request "RWH" -> grant "RH" */
+
+	ZERO_STRUCT(io);
+	smb2_lease_v2_create_share(&io, &ls, true, dname,
+				   smb2_util_share_access("RWD"),
+				   LEASE1, NULL,
+				   smb2_util_lease_state("RWH"),
+				   0x11);
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.out.file.handle;
+	CHECK_LEASE_V2(&io, "RH", true, LEASE1,
+		       0, 0, ++ls.lease_epoch);
+	smb2_util_close(tree, h1);
+
+	/* Request "RW" -> grant "R" */
+
+	ZERO_STRUCT(io);
+	smb2_lease_v2_create_share(&io, &ls, true, dname,
+				   smb2_util_share_access("RWD"),
+				   LEASE1, NULL,
+				   smb2_util_lease_state("RW"),
+				   0x11);
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.out.file.handle;
+	CHECK_LEASE_V2(&io, "R", true, LEASE1,
+		       0, 0, ++ls.lease_epoch);
+	smb2_util_close(tree, h1);
+
+	/* Request "RH" -> grant "RH" */
+
+	ZERO_STRUCT(io);
+	smb2_lease_v2_create_share(&io, &ls, true, dname,
+				   smb2_util_share_access("RWD"),
+				   LEASE1, NULL,
+				   smb2_util_lease_state("RH"),
+				   0x11);
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.out.file.handle;
+	CHECK_LEASE_V2(&io, "RH", true, LEASE1,
+		       0, 0, ++ls.lease_epoch);
+	smb2_util_close(tree, h1);
+
+	/* Request "R" -> grant "R" */
+
+	ZERO_STRUCT(io);
+	smb2_lease_v2_create_share(&io, &ls, true, dname,
+				   smb2_util_share_access("RWD"),
+				   LEASE1, NULL,
+				   smb2_util_lease_state("R"),
+				   0x11);
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.out.file.handle;
+	CHECK_LEASE_V2(&io, "R", true, LEASE1,
+		       0, 0, ++ls.lease_epoch);
+	smb2_util_close(tree, h1);
+
+done:
+	smb2_util_close(tree, h1);
+	smb2_deltree(tree, dname);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 static bool test_lease_break_twice(struct torture_context *tctx,
 				   struct smb2_tree *tree)
 {
@@ -5534,5 +5632,6 @@ struct torture_suite *torture_smb2_dirlease_init(TALLOC_CTX *ctx)
 
 	torture_suite_add_1smb2_test(suite, "v2_request_parent", test_lease_v2_request_parent);
 	torture_suite_add_1smb2_test(suite, "v2_request", test_lease_v2_request);
+	torture_suite_add_1smb2_test(suite, "leases", test_dirlease_leases);
 	return suite;
 }
