@@ -5845,6 +5845,244 @@ struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 	return suite;
 }
 
+enum dirlease_test {
+	DLT_SETEOF,
+};
+
+static void prepare_setinfo(enum dirlease_test t,
+			    union smb_setfileinfo *s,
+			    struct smb2_handle *h)
+{
+	s->generic.in.file.handle = *h;
+
+	switch (t) {
+	case DLT_SETEOF:
+		s->end_of_file_info.in.size++;
+		break;
+	}
+}
+
+static bool test_dirlease_setinfo(struct torture_context *tctx,
+				  TALLOC_CTX *mem_ctx,
+				  enum dirlease_test t,
+				  struct smb2_tree *tree,
+				  struct smb2_tree *tree2,
+				  const char *dname,
+				  const char *dnamefname,
+				  struct smb2_handle *dirh,
+				  struct smb2_lease *dirlease,
+				  union smb_setfileinfo *s)
+{
+	struct smb2_create c;
+	struct smb2_lease ls1;
+	struct smb2_handle h1 = {};
+	NTSTATUS status;
+	bool ret = true;
+
+	/* 1. Same client */
+
+	/* 1.1. Handle with correct parent lease key -> no break */
+	smb2_lease_v2_create_share(&c, &ls1, false, dnamefname,
+				   smb2_util_share_access("RWD"),
+				   LEASE2, &LEASE1,
+				   smb2_util_lease_state("RHW"), 0);
+	status = smb2_create(tree, mem_ctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+
+	prepare_setinfo(t, s, &h1);
+	status = smb2_setinfo_file(tree, s);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_filefailed");
+	CHECK_NO_BREAK(tctx);
+
+	smb2_util_close(tree, h1);
+	ZERO_STRUCT(h1);
+
+	/* 1.2. Handle with bad parent lease key -> break */
+	smb2_lease_v2_create_share(&c, &ls1, false, dnamefname,
+				   smb2_util_share_access("RWD"),
+				   LEASE2, &LEASE3,
+				   smb2_util_lease_state("RHW"), 0);
+	status = smb2_create(tree, mem_ctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+
+	prepare_setinfo(t, s, &h1);
+	status = smb2_setinfo_file(tree, s);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_filefailed");
+	CHECK_BREAK_INFO_V2(tree->session->transport,
+			    "RH", "", LEASE1, ++(dirlease->lease_epoch));
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	ret = test_rearm_dirlease(mem_ctx, tctx, tree, dname,
+				  LEASE1, &dirlease->lease_epoch);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "Rearm dirlease failed\n");
+
+	smb2_util_close(tree, h1);
+	ZERO_STRUCT(h1);
+
+	/* 1.3. Handle with no parent lease key -> break */
+	smb2_lease_v2_create_share(&c, &ls1, false, dnamefname,
+				   smb2_util_share_access("RWD"),
+				   LEASE2, NULL,
+				   smb2_util_lease_state("RHW"), 0);
+	status = smb2_create(tree, mem_ctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+
+	prepare_setinfo(t, s, &h1);
+	status = smb2_setinfo_file(tree, s);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_filefailed");
+	CHECK_BREAK_INFO_V2(tree->session->transport,
+			    "RH", "", LEASE1, ++(dirlease->lease_epoch));
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	ret = test_rearm_dirlease(mem_ctx, tctx, tree, dname,
+				  LEASE1, &dirlease->lease_epoch);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "Rearm dirlease failed\n");
+
+	smb2_util_close(tree, h1);
+	ZERO_STRUCT(h1);
+
+	/* 2. Second client */
+
+	/* 2.1. Handle with correct parent lease key -> no break */
+	smb2_lease_v2_create_share(&c, &ls1, false, dnamefname,
+				   smb2_util_share_access("RWD"),
+				   LEASE2, &LEASE1,
+				   smb2_util_lease_state("RHW"), 0);
+	status = smb2_create(tree2, mem_ctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+
+	prepare_setinfo(t, s, &h1);
+	status = smb2_setinfo_file(tree2, s);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_filefailed");
+	CHECK_NO_BREAK(tctx);
+
+	smb2_util_close(tree2, h1);
+	ZERO_STRUCT(h1);
+
+	/* 2.2. Handle with bad parent lease key -> break */
+	smb2_lease_v2_create_share(&c, &ls1, false, dnamefname,
+				   smb2_util_share_access("RWD"),
+				   LEASE2, &LEASE3,
+				   smb2_util_lease_state("RHW"), 0);
+	status = smb2_create(tree2, mem_ctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+
+	prepare_setinfo(t, s, &h1);
+	status = smb2_setinfo_file(tree2, s);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_filefailed");
+	CHECK_BREAK_INFO_V2(tree->session->transport,
+			    "RH", "", LEASE1, ++(dirlease->lease_epoch));
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	ret = test_rearm_dirlease(mem_ctx, tctx, tree, dname,
+				  LEASE1, &dirlease->lease_epoch);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "Rearm dirlease failed\n");
+
+	smb2_util_close(tree2, h1);
+	ZERO_STRUCT(h1);
+
+	/* 2.3. Handle with no parent lease key -> break */
+	smb2_lease_v2_create_share(&c, &ls1, false, dnamefname,
+				   smb2_util_share_access("RWD"),
+				   LEASE2, NULL,
+				   smb2_util_lease_state("RHW"), 0);
+	status = smb2_create(tree2, mem_ctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+
+	prepare_setinfo(t, s, &h1);
+	status = smb2_setinfo_file(tree2, s);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_filefailed");
+	CHECK_BREAK_INFO_V2(tree->session->transport,
+			    "RH", "", LEASE1, ++(dirlease->lease_epoch));
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	ret = test_rearm_dirlease(mem_ctx, tctx, tree, dname,
+				  LEASE1, &dirlease->lease_epoch);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "Rearm dirlease failed\n");
+
+	smb2_util_close(tree2, h1);
+	ZERO_STRUCT(h1);
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree2, h1);
+	}
+	return ret;
+}
+
+static bool test_dirlease_seteof(struct torture_context *tctx,
+				 struct smb2_tree *tree,
+				 struct smb2_tree *tree2)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create c;
+	struct smb2_lease dirlease;
+	struct smb2_handle dirh = {};
+	const char *dname = "test_dirlease_seteof_dir";
+	const char *dnamefname = "test_dirlease_seteof_dir\\lease.dat";
+	union smb_setfileinfo sfinfo = {};
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_deltree(tree, dname);
+
+	tree->session->transport->lease.handler	= torture_lease_handler;
+	tree->session->transport->lease.private_data = tree;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	/* Get an RH directory lease on the test directory */
+
+	smb2_lease_v2_create_share(&c, &dirlease, true, dname,
+				   smb2_util_share_access("RWD"),
+				   LEASE1, NULL,
+				   smb2_util_lease_state("RHW"), 0);
+	status = smb2_create(tree, mem_ctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	dirh = c.out.file.handle;
+	CHECK_LEASE_V2(&c, "RH", true, LEASE1, 0, 0, ++dirlease.lease_epoch);
+
+	/*
+	 * TEST: test setting EOF
+	 *
+	 * Test from same and second client, and test with correct, bad and no
+	 * parent lease key.
+	 */
+
+	sfinfo.generic.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
+
+	ret = test_dirlease_setinfo(tctx, mem_ctx, DLT_SETEOF, tree, tree2,
+				    dname, dnamefname,
+				    &dirh, &dirlease, &sfinfo);
+	torture_assert_goto(tctx, ret, ret, done, "seteof test failed\n");
+
+done:
+	if (!smb2_util_handle_empty(dirh)) {
+		smb2_util_close(tree, dirh);
+	}
+	smb2_deltree(tree, dname);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_dirlease_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -5855,5 +6093,6 @@ struct torture_suite *torture_smb2_dirlease_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "v2_request_parent", test_lease_v2_request_parent);
 	torture_suite_add_2smb2_test(suite, "v2_request", test_lease_v2_request);
 	torture_suite_add_1smb2_test(suite, "leases", test_dirlease_leases);
+	torture_suite_add_2smb2_test(suite, "seteof", test_dirlease_seteof);
 	return suite;
 }
