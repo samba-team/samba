@@ -1695,7 +1695,8 @@ done:
 }
 
 static bool test_lease_v2_request(struct torture_context *tctx,
-				  struct smb2_tree *tree)
+				  struct smb2_tree *tree,
+				  struct smb2_tree *tree2)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_create io;
@@ -1706,6 +1707,8 @@ static bool test_lease_v2_request(struct torture_context *tctx,
 	struct smb2_handle h4 = {};
 	struct smb2_handle h5 = {};
 	struct smb2_write w;
+	struct smb2_lease tr2_ls1;
+	struct smb2_request *req = NULL;
 	NTSTATUS status;
 	const char *fname = "lease_v2_request.dat";
 	const char *dname = "lease_v2_request.dir";
@@ -1759,6 +1762,71 @@ static bool test_lease_v2_request(struct torture_context *tctx,
 	h2 = io.out.file.handle;
 	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_DIRECTORY);
 	CHECK_LEASE_V2(&io, "RH", true, LEASE2, 0, 0, ++dirlease.lease_epoch);
+
+	/*
+	 * TEST: second client opens the same directory as first client,
+	 * triggering a sharing violation
+	 */
+	ZERO_STRUCT(io);
+	smb2_lease_v2_create_share(&io, &tr2_ls1, true, dname,
+				   smb2_util_share_access(""),
+				   LEASE3, NULL,
+				   smb2_util_lease_state("RHW"),
+				   0x22);
+	status = smb2_create(tree2, mem_ctx, &io);
+	torture_assert_ntstatus_equal_goto(
+		tctx, status, NT_STATUS_SHARING_VIOLATION, ret, done,
+		"CREATE didn't fail with NT_STATUS_SHARING_VIOLATION\n");
+
+	CHECK_BREAK_INFO_V2(tree->session->transport,
+			    "RH", "R", LEASE2, ++dirlease.lease_epoch);
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	ret = test_rearm_dirlease(mem_ctx, tctx, tree, dname, LEASE2, &dirlease.lease_epoch);
+	torture_assert_goto(tctx, ret == true, ret, done, "Rearm dirlease failed\n");
+
+	/*
+	 * TEST: second client opens the same directory as first client,
+	 * triggering a sharing violation, first client closes his handle, open
+	 * should pass.
+	 */
+	lease_break_info.lease_skip_ack = true;
+
+	ZERO_STRUCT(io);
+	smb2_lease_v2_create_share(&io, &tr2_ls1, true, dname,
+				   smb2_util_share_access(""),
+				   LEASE3, NULL,
+				   smb2_util_lease_state("RHW"),
+				   0x22);
+	req = smb2_create_send(tree2, &io);
+	torture_assert(tctx, req != NULL, "smb2_create_send");
+
+	CHECK_BREAK_INFO_V2(tree->session->transport,
+			    "RH", "R", LEASE2, ++dirlease.lease_epoch);
+
+	status = smb2_util_close(tree, h2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_create_recv(req, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h2 = io.out.file.handle;
+
+	status = smb2_util_close(tree2, h2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Reopen directory for subsequent tests */
+	ZERO_STRUCT(io);
+	smb2_lease_v2_create_share(&io, &dirlease, true, dname,
+				   smb2_util_share_access("RWD"),
+				   LEASE2, NULL,
+				   smb2_util_lease_state("RHW"),
+				   0x22);
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h2 = io.out.file.handle;
+	CHECK_LEASE_V2(&io, "RH", true, LEASE2, 0, 0, ++dirlease.lease_epoch);
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
 
 	/*
 	 * TEST: create file in a directory with dirlease with valid parent key
@@ -1833,6 +1901,28 @@ static bool test_lease_v2_request(struct torture_context *tctx,
 
 	CHECK_BREAK_INFO_V2(tree->session->transport,
 			    "RH", "", LEASE2, ++dirlease.lease_epoch);
+
+	/*
+	 * TEST: Write on handle with valid parent key -> no break
+	 */
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	ret = test_rearm_dirlease(mem_ctx, tctx, tree, dname, LEASE2, &dirlease.lease_epoch);
+	torture_assert_goto(tctx, ret == true, ret, done, "Rearm dirlease failed\n");
+
+	ZERO_STRUCT(w);
+	w.in.file.handle = h3;
+	w.in.offset      = 0;
+	w.in.data        = data_blob_talloc(mem_ctx, NULL, 4096);
+	memset(w.in.data.data, 'o', w.in.data.length);
+	status = smb2_write(tree, &w);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smb_msleep(4000);
+	CHECK_NO_BREAK(tctx);
+	smb2_util_close(tree, h3);
+	ZERO_STRUCT(h3);
+	CHECK_NO_BREAK(tctx);
 
  done:
 	smb2_util_close(tree, h1);
@@ -5670,7 +5760,7 @@ struct torture_suite *torture_smb2_dirlease_init(TALLOC_CTX *ctx)
 	suite->description = talloc_strdup(suite, "SMB3 Directory Lease tests");
 
 	torture_suite_add_1smb2_test(suite, "v2_request_parent", test_lease_v2_request_parent);
-	torture_suite_add_1smb2_test(suite, "v2_request", test_lease_v2_request);
+	torture_suite_add_2smb2_test(suite, "v2_request", test_lease_v2_request);
 	torture_suite_add_1smb2_test(suite, "leases", test_dirlease_leases);
 	return suite;
 }
