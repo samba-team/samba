@@ -30,6 +30,7 @@
 #include "source3/lib/dbwrap/dbwrap_watch.h"
 #include "messages.h"
 #include "librpc/gen_ndr/ndr_quota.h"
+#include "libcli/security/security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
@@ -173,9 +174,11 @@ struct smbd_smb2_setinfo_state {
 	struct smbd_smb2_request *smb2req;
 	struct files_struct *fsp;
 	struct share_mode_lock *lck;
+	struct files_struct *dstfsp;
 	uint16_t file_info_level;
 	DATA_BLOB data;
 	bool delay;
+	bool rename_dst_check_done;
 };
 
 static void smbd_smb2_setinfo_lease_break_check(struct tevent_req *req);
@@ -389,6 +392,8 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 
 static void smbd_smb2_setinfo_lease_break_fsp_check(struct tevent_req *req);
 static void smbd_smb2_setinfo_lease_break_fsp_done(struct tevent_req *subreq);
+static void smbd_smb2_setinfo_rename_dst_check(struct tevent_req *req);
+static void smbd_smb2_setinfo_rename_dst_delay_done(struct tevent_req *subreq);
 
 static void smbd_smb2_setinfo_lease_break_check(struct tevent_req *req)
 {
@@ -398,6 +403,15 @@ static void smbd_smb2_setinfo_lease_break_check(struct tevent_req *req)
 	NTSTATUS status;
 
 	state->delay = false;
+
+	smbd_smb2_setinfo_rename_dst_check(req);
+	if (!tevent_req_is_in_progress(req)) {
+		return;
+	}
+	if (state->delay) {
+		DBG_DEBUG("Waiting for h-lease breaks on rename destination\n");
+		return;
+	}
 
 	smbd_smb2_setinfo_lease_break_fsp_check(req);
 	if (!tevent_req_is_in_progress(req)) {
@@ -537,6 +551,216 @@ static void smbd_smb2_setinfo_lease_break_fsp_done(struct tevent_req *subreq)
 	}
 
 	tevent_req_done(req);
+}
+
+static void smbd_smb2_setinfo_rename_dst_check(struct tevent_req *req)
+{
+	struct smbd_smb2_setinfo_state *state = tevent_req_data(
+		req, struct smbd_smb2_setinfo_state);
+	struct tevent_req *subreq = NULL;
+	struct timeval timeout;
+	bool overwrite = false;
+	struct files_struct *fsp = state->fsp;
+	struct files_struct *dst_dirfsp = NULL;
+	struct smb_filename *smb_fname_dst = NULL;
+	char *dst_original_lcomp = NULL;
+	bool has_other_open;
+	NTSTATUS status;
+	NTSTATUS close_status;
+
+	if (state->file_info_level != SMB2_FILE_RENAME_INFORMATION_INTERNAL) {
+		return;
+	}
+
+	if (state->rename_dst_check_done) {
+		return;
+	}
+
+	status = smb2_parse_file_rename_information(state,
+						    fsp->conn,
+						    state->smb2req->smb1req,
+						    (char *)state->data.data,
+						    state->data.length,
+						    fsp,
+						    fsp->fsp_name,
+						    &overwrite,
+						    &dst_dirfsp,
+						    &smb_fname_dst,
+						    &dst_original_lcomp);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	TALLOC_FREE(dst_original_lcomp);
+
+	if (!VALID_STAT(smb_fname_dst->st)) {
+		/* Doesn't exist, nothing to do here */
+		return;
+	}
+	if (strequal(fsp->fsp_name->base_name, smb_fname_dst->base_name) &&
+	    strequal(fsp->fsp_name->stream_name, smb_fname_dst->stream_name))
+	{
+		return;
+	}
+	if (!overwrite) {
+		/* Return the correct error */
+		tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_COLLISION);
+		return;
+	}
+
+	status = SMB_VFS_CREATE_FILE(
+		fsp->conn,
+		NULL,
+		dst_dirfsp,
+		smb_fname_dst,
+		FILE_READ_ATTRIBUTES,
+		FILE_SHARE_READ
+		| FILE_SHARE_WRITE
+		| FILE_SHARE_DELETE,
+		FILE_OPEN,		/* create_disposition*/
+		0,			/* create_options */
+		FILE_ATTRIBUTE_NORMAL,
+		INTERNAL_OPEN_ONLY,	/* oplock_request */
+		NULL,			/* lease */
+		0,			/* allocation_size */
+		0,			/* private_flags */
+		NULL,			/* sd */
+		NULL,			/* ea_list */
+		&state->dstfsp,		/* result */
+		NULL,			/* psbuf */
+		NULL,
+		NULL);			/* create context */
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			/* A race, file was deleted */
+			return;
+		}
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	state->lck = get_existing_share_mode_lock(state, state->dstfsp->file_id);
+	if (state->lck == NULL) {
+		close_status = close_file_free(NULL, &state->dstfsp, ERROR_CLOSE);
+		if (!NT_STATUS_IS_OK(close_status)) {
+			DBG_ERR("close_file_free failed\n");
+		}
+		return;
+	}
+
+	timeout = tevent_timeval_set(OPLOCK_BREAK_TIMEOUT, 0);
+	timeout = timeval_sum(&state->smb2req->request_time, &timeout);
+
+	subreq = delay_for_handle_lease_break_send(state,
+						   state->ev,
+						   timeout,
+						   state->dstfsp,
+						   false,
+						   &state->lck);
+	if (subreq == NULL) {
+		close_status = close_file_free(NULL, &state->dstfsp, ERROR_CLOSE);
+		if (!NT_STATUS_IS_OK(close_status)) {
+			DBG_ERR("close_file_free failed\n");
+		}
+		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+	if (tevent_req_is_in_progress(subreq)) {
+		state->delay = true;
+		tevent_req_set_callback(subreq,
+					smbd_smb2_setinfo_rename_dst_delay_done,
+					req);
+		return;
+	}
+
+	status = delay_for_handle_lease_break_recv(subreq, state, &state->lck);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		close_status = close_file_free(NULL, &state->dstfsp, ERROR_CLOSE);
+		if (!NT_STATUS_IS_OK(close_status)) {
+			DBG_ERR("close_file_free failed\n");
+		}
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	has_other_open = has_other_nonposix_opens(state->lck, state->dstfsp);
+	TALLOC_FREE(state->lck);
+
+	status = close_file_free(NULL, &state->dstfsp, NORMAL_CLOSE);
+	if (tevent_req_nterror(req, status)) {
+		DBG_ERR("close_file_free failed\n");
+		return;
+	}
+
+	if (has_other_open) {
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return;
+	}
+	state->rename_dst_check_done = true;
+	return;
+}
+
+static void smbd_smb2_setinfo_rename_dst_delay_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smbd_smb2_setinfo_state *state = tevent_req_data(
+		req, struct smbd_smb2_setinfo_state);
+	struct smbXsrv_session *session = state->smb2req->session;
+	bool has_other_open;
+	NTSTATUS close_status;
+	NTSTATUS status;
+	bool ok;
+
+	status = delay_for_handle_lease_break_recv(subreq, state, &state->lck);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		close_status = close_file_free(NULL,
+					       &state->dstfsp,
+					       NORMAL_CLOSE);
+		if (!NT_STATUS_IS_OK(close_status)) {
+			DBG_ERR("close_file_free failed\n");
+		}
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/*
+	 * Make sure we run as the user again
+	 */
+	ok = change_to_user_and_service(state->dstfsp->conn,
+					session->global->session_wire_id);
+	if (!ok) {
+		close_status = close_file_free(NULL,
+					       &state->dstfsp,
+					       NORMAL_CLOSE);
+		if (!NT_STATUS_IS_OK(close_status)) {
+			DBG_ERR("close_file_free failed\n");
+		}
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return;
+	}
+
+	has_other_open = has_other_nonposix_opens(state->lck, state->dstfsp);
+	TALLOC_FREE(state->lck);
+
+	status = close_file_free(NULL, &state->dstfsp, NORMAL_CLOSE);
+	if (tevent_req_nterror(req, status)) {
+		DBG_ERR("close_file_free failed\n");
+		return;
+	}
+
+	if (has_other_open) {
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return;
+	}
+
+	/*
+	 * We've finished breaking H-lease on the rename destination, now
+	 * trigger the fsp check.
+	 */
+	state->rename_dst_check_done = true;
+	smbd_smb2_setinfo_lease_break_check(req);
 }
 
 static NTSTATUS smbd_smb2_setinfo_recv(struct tevent_req *req)
