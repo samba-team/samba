@@ -1453,9 +1453,8 @@ static bool test_lease_v2_request_parent(struct torture_context *tctx,
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
 	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
-	if (!(caps & SMB2_CAP_DIRECTORY_LEASING)) {
-		torture_skip(tctx, "directory leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_DIRECTORY_LEASING, ret, done,
+		"SMB3 Directory Leases are not supported\n");
 
 	protocol = smbXcli_conn_protocol(tree->session->transport->conn);
 	if (protocol < PROTOCOL_SMB3_00) {
@@ -1584,9 +1583,8 @@ static bool test_lease_v2_request(struct torture_context *tctx,
 
 	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
 	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
-	if (!(caps & SMB2_CAP_DIRECTORY_LEASING)) {
-		torture_skip(tctx, "directory leases are not supported");
-	}
+	torture_assert_goto(tctx, caps & SMB2_CAP_DIRECTORY_LEASING, ret, done,
+		"SMB3 Directory Leases are not supported\n");
 
 	protocol = smbXcli_conn_protocol(tree->session->transport->conn);
 	if (protocol < PROTOCOL_SMB3_00) {
@@ -5491,9 +5489,6 @@ struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "breaking6", test_lease_breaking6);
 	torture_suite_add_2smb2_test(suite, "lock1", test_lease_lock1);
 	torture_suite_add_1smb2_test(suite, "complex1", test_lease_complex1);
-	torture_suite_add_1smb2_test(suite, "v2_request_parent",
-				     test_lease_v2_request_parent);
-	torture_suite_add_1smb2_test(suite, "v2_request", test_lease_v2_request);
 	torture_suite_add_1smb2_test(suite, "v2_epoch1", test_lease_v2_epoch1);
 	torture_suite_add_1smb2_test(suite, "v2_epoch2", test_lease_v2_epoch2);
 	torture_suite_add_1smb2_test(suite, "v2_epoch3", test_lease_v2_epoch3);
@@ -5527,5 +5522,17 @@ struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 
 	suite->description = talloc_strdup(suite, "SMB2-LEASE tests");
 
+	return suite;
+}
+
+struct torture_suite *torture_smb2_dirlease_init(TALLOC_CTX *ctx)
+{
+	struct torture_suite *suite =
+	    torture_suite_create(ctx, "dirlease");
+
+	suite->description = talloc_strdup(suite, "SMB3 Directory Lease tests");
+
+	torture_suite_add_1smb2_test(suite, "v2_request_parent", test_lease_v2_request_parent);
+	torture_suite_add_1smb2_test(suite, "v2_request", test_lease_v2_request);
 	return suite;
 }

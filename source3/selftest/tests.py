@@ -1380,6 +1380,8 @@ for t in tests:
         plansmbtorture4testsuite(t, "fileserver", '//$SERVER_IP/nfs4acl_simple_40 -U$USERNAME%$PASSWORD')
     elif t == "smb2.lease":
         plansmbtorture4testsuite(t, "fileserver", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
+    elif t == "smb2.dirlease":
+        plansmbtorture4testsuite(t, "fileserver", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
     elif t == "rpc.wkssvc":
         plansmbtorture4testsuite(t, "ad_member", '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
     elif t == "rpc.srvsvc":
