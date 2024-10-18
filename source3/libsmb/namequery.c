@@ -321,39 +321,63 @@ static int generate_trn_id(void)
  Parse a node status response into an array of structures.
 ****************************************************************************/
 
-static struct node_status *parse_node_status(TALLOC_CTX *mem_ctx, char *p,
-				size_t *num_names,
-				struct node_status_extra *extra)
+static struct node_status *parse_node_status(TALLOC_CTX *mem_ctx,
+					     const char *rdata,
+					     size_t rdlen,
+					     size_t *num_names,
+					     struct node_status_extra *extra)
 {
 	struct node_status *ret;
 	size_t i;
+	size_t len = 0;
 	size_t result_count = 0;
+	const size_t result_len = MAX_NETBIOSNAME_LEN + sizeof(uint8_t) +
+				  sizeof(char);
+	const char *r = NULL;
 
-	result_count = CVAL(p,0);
-
-	if (result_count == 0)
+	*num_names = 0;
+	if (rdlen == 0) {
 		return NULL;
+	}
 
-	ret = talloc_array(mem_ctx, struct node_status,result_count);
+	result_count = PULL_LE_U8(rdata, 0);
+	if (result_count == 0) {
+		return NULL;
+	}
+	r = rdata + 1;
+
+	len = result_len * result_count + sizeof(uint8_t);
+	if (len > rdlen) {
+		return NULL;
+	}
+
+	ret = talloc_zero_array(mem_ctx, struct node_status, result_count);
 	if (!ret)
 		return NULL;
 
-	p++;
-	for (i=0;i< result_count;i++) {
-		strlcpy(ret[i].name,p,16);
+	for (i = 0; i < result_count; i++) {
+		strlcpy(ret[i].name, r, MAX_NETBIOSNAME_LEN);
 		trim_char(ret[i].name,'\0',' ');
-		ret[i].type = CVAL(p,15);
-		ret[i].flags = p[16];
-		p += 18;
+		ret[i].type = PULL_LE_U8(r, 15);
+		ret[i].flags = r[16];
+
+		r += result_len;
+
 		DEBUG(10, ("%s#%02x: flags = 0x%02x\n", ret[i].name,
 			   ret[i].type, ret[i].flags));
 	}
+
 	/*
 	 * Also, pick up the MAC address ...
 	 */
 	if (extra) {
-		memcpy(&extra->mac_addr, p, 6); /* Fill in the mac addr */
+		if (len + 6 > rdlen) {
+			TALLOC_FREE(ret);
+			return NULL;
+		}
+		memcpy(&extra->mac_addr, r, 6); /* Fill in the mac addr */
 	}
+
 	*num_names = result_count;
 	return ret;
 }
@@ -919,8 +943,11 @@ NTSTATUS node_status_query_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		return status;
 	}
 	node_status = parse_node_status(
-		mem_ctx, &state->packet->packet.nmb.answers->rdata[0],
-		&num_names, extra);
+		mem_ctx,
+		state->packet->packet.nmb.answers->rdata,
+		state->packet->packet.nmb.answers->rdlength,
+		&num_names,
+		extra);
 	if (node_status == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
