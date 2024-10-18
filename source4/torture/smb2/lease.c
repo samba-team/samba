@@ -5847,6 +5847,7 @@ struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 
 enum dirlease_test {
 	DLT_SETEOF,
+	DLT_SETDOS,
 };
 
 static void prepare_setinfo(enum dirlease_test t,
@@ -5858,6 +5859,12 @@ static void prepare_setinfo(enum dirlease_test t,
 	switch (t) {
 	case DLT_SETEOF:
 		s->end_of_file_info.in.size++;
+		break;
+	case DLT_SETDOS:
+		s->basic_info.in.attrib ^= FILE_ATTRIBUTE_HIDDEN;
+		if (s->basic_info.in.attrib == 0) {
+			s->basic_info.in.attrib = FILE_ATTRIBUTE_NORMAL;
+		}
 		break;
 	}
 }
@@ -6083,6 +6090,62 @@ done:
 	return ret;
 }
 
+static bool test_dirlease_setdos(struct torture_context *tctx,
+				 struct smb2_tree *tree,
+				 struct smb2_tree *tree2)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create c;
+	struct smb2_lease dirlease;
+	struct smb2_handle dirh = {};
+	const char *dname = "test_dirlease_setdos_dir";
+	const char *dnamefname = "test_dirlease_setdos_dir\\lease.dat";
+	union smb_setfileinfo sfinfo = {};
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_deltree(tree, dname);
+
+	tree->session->transport->lease.handler	= torture_lease_handler;
+	tree->session->transport->lease.private_data = tree;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	/* Get an RH directory lease on the test directory */
+
+	smb2_lease_v2_create_share(&c, &dirlease, true, dname,
+				   smb2_util_share_access("RWD"),
+				   LEASE1, NULL,
+				   smb2_util_lease_state("RHW"), 0);
+	status = smb2_create(tree, mem_ctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	dirh = c.out.file.handle;
+	CHECK_LEASE_V2(&c, "RH", true, LEASE1, 0, 0, ++dirlease.lease_epoch);
+
+	/*
+	 * TEST: Test setting DOS attributes
+	 *
+	 * Test from same and second client, and test with correct, bad and no
+	 * parent lease key.
+	 */
+
+	sfinfo.basic_info.in.attrib = FILE_ATTRIBUTE_HIDDEN;
+	sfinfo.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
+
+	ret = test_dirlease_setinfo(tctx, mem_ctx, DLT_SETDOS, tree, tree2,
+				    dname, dnamefname,
+				    &dirh, &dirlease, &sfinfo);
+	torture_assert_goto(tctx, ret, ret, done, "setdos test failed\n");
+
+done:
+	if (!smb2_util_handle_empty(dirh)) {
+		smb2_util_close(tree, dirh);
+	}
+	smb2_deltree(tree, dname);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_dirlease_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -6094,5 +6157,6 @@ struct torture_suite *torture_smb2_dirlease_init(TALLOC_CTX *ctx)
 	torture_suite_add_2smb2_test(suite, "v2_request", test_lease_v2_request);
 	torture_suite_add_1smb2_test(suite, "leases", test_dirlease_leases);
 	torture_suite_add_2smb2_test(suite, "seteof", test_dirlease_seteof);
+	torture_suite_add_2smb2_test(suite, "setdos", test_dirlease_setdos);
 	return suite;
 }
