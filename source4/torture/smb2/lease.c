@@ -6628,6 +6628,147 @@ done:
 	return ret;
 }
 
+static bool test_overwrite(struct torture_context *tctx,
+			   struct smb2_tree *tree,
+			   struct smb2_tree *tree2)
+{
+	struct smb2_create c = {};
+	struct smb2_lease dirlease1 = {};
+	struct smb2_handle dirh1 = {};
+	struct smb2_lease lease1 = {};
+	struct smb2_handle h1 = {};
+	struct smb2_handle h2 = {};
+	struct smb2_request *req = NULL;
+	struct smb2_lease_break_ack ack = {};
+	struct smb2_lease *expected_lease1 = NULL;
+	struct smb2_lease *expected_lease2 = NULL;
+	uint64_t expected_leasekey1;
+	uint64_t expected_leasekey2;
+	const char *dname = "test_overwrite_dir";
+	const char *fname = "test_overwrite_dir\\fname";
+	int n;
+	NTSTATUS status;
+	bool ret = true;
+
+	tree->session->transport->lease.handler	= torture_lease_handler;
+	tree->session->transport->lease.private_data = tree;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	n = smb2_deltree(tree, dname);
+	torture_assert_goto(tctx, n != -1, ret, done, "smb2_deltree failed\n");
+
+	/* Get an RH directory lease on the directory */
+	smb2_lease_v2_create_share(&c, &dirlease1, true, dname,
+				   smb2_util_share_access("RWD"),
+				   LEASE1, NULL,
+				   smb2_util_lease_state("RH"), 0);
+	c.in.desired_access &= ~DELETE_ACCESS;
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	dirh1 = c.out.file.handle;
+	CHECK_LEASE_V2(&c, "RH", true, LEASE1, 0, 0, ++dirlease1.lease_epoch);
+
+	/* Create a file with parent leasekey set*/
+	smb2_lease_v2_create_share(&c, &lease1, false, fname,
+				   smb2_util_share_access("RWD"),
+				   LEASE2, &LEASE1,
+				   smb2_util_lease_state("RH"), 0);
+	c.in.desired_access &= ~DELETE_ACCESS;
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+	CHECK_LEASE_V2(&c, "RH", true, LEASE2,
+		       SMB2_LEASE_FLAG_PARENT_LEASE_KEY_SET, LEASE1,
+		       ++lease1.lease_epoch);
+
+	CHECK_NO_BREAK(tctx);
+
+	/* Second client opens with overwrite disposition */
+	c = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_READ_DATA,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OVERWRITE,
+		.in.file_attributes = FILE_ATTRIBUTE_ARCHIVE,
+		.in.fname = fname,
+	};
+	req = smb2_create_send(tree2, &c);
+	torture_assert(tctx, req != NULL, "smb2_create_send failed\n");
+	torture_assert(tctx, req->state == SMB2_REQUEST_RECV, "req2 pending");
+
+	torture_wait_for_lease_break(tctx);
+
+	/*
+	 * Expect two lease breaks (dir and file) and accept the lease breaks in
+	 * any order.
+	 */
+	ack.in.lease.lease_key = lease_break_info.lease_break.current_lease.lease_key;
+	ack.in.lease.lease_state = lease_break_info.lease_break.new_lease_state;
+	if (ack.in.lease.lease_key.data[0] == LEASE1) {
+		expected_leasekey1 = LEASE1;
+		expected_lease1 = &dirlease1;
+		expected_leasekey2 = LEASE2;
+		expected_lease2 = &lease1;
+	} else {
+		expected_leasekey1 = LEASE2;
+		expected_lease1 = &lease1;
+		expected_leasekey2 = LEASE1;
+		expected_lease2 = &dirlease1;
+	}
+
+	/* Break 1 */
+
+	CHECK_BREAK_INFO_V2_NOWAIT(tree->session->transport,
+				   "RH", "", expected_leasekey1,
+				   ++(expected_lease1->lease_epoch));
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	status = smb2_lease_break_ack(tree, &ack);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_lease_break_ack failed\n");
+	CHECK_LEASE_BREAK_ACK(&ack, "", expected_leasekey1);
+
+	/* Break 2 */
+
+	CHECK_BREAK_INFO_V2(tree->session->transport,
+			    "RH", "", expected_leasekey2,
+			    ++(expected_lease2->lease_epoch));
+	ack.in.lease.lease_key = lease_break_info.lease_break.current_lease.lease_key;
+	ack.in.lease.lease_state = lease_break_info.lease_break.new_lease_state;
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	status = smb2_lease_break_ack(tree, &ack);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_lease_break_ack failed\n");
+	CHECK_LEASE_BREAK_ACK(&ack, "", expected_leasekey2);
+
+	status = smb2_create_recv(req, tctx, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create_recv failed\n");
+	h2 = c.out.file.handle;
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree, h2);
+	}
+	if (!smb2_util_handle_empty(dirh1)) {
+		smb2_util_close(tree, dirh1);
+	}
+
+	n = smb2_deltree(tree, dname);
+	torture_assert(tctx, n != -1, "smb2_deltree failed\n");
+	return ret;
+}
+
 struct torture_suite *torture_smb2_dirlease_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -6645,5 +6786,6 @@ struct torture_suite *torture_smb2_dirlease_init(TALLOC_CTX *ctx)
 	torture_suite_add_2smb2_test(suite, "setctime", test_dirlease_setctime);
 	torture_suite_add_2smb2_test(suite, "setatime", test_dirlease_setatime);
 	torture_suite_add_1smb2_test(suite, "rename", test_rename);
+	torture_suite_add_2smb2_test(suite, "overwrite", test_overwrite);
 	return suite;
 }
