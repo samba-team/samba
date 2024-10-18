@@ -438,6 +438,8 @@ static bool test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
 		dump_data(1, ntlmv2_session_key.data, ntlmv2_session_key.length);
 		pass = False;
 	}
+
+	data_blob_free(&ntlmv2_session_key);
         return pass;
 }
 
