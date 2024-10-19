@@ -655,7 +655,7 @@ again:
 		int cmp = strcmp(connpath, smb_fname->base_name);
 		if (cmp == 0) {
 			SMB_ASSERT(dirfsp == conn->cwd_fsp);
-			smb_fname->base_name = talloc_strdup(smb_fname, "");
+			smb_fname->base_name = talloc_strdup(smb_fname, ".");
 			if (smb_fname->base_name == NULL) {
 				status = NT_STATUS_NO_MEMORY;
 				goto out;
