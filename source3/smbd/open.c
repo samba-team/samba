@@ -4656,11 +4656,12 @@ unlock:
 	}
 	if (truncated) {
 		notify_fname(fsp->conn,
-			     NOTIFY_ACTION_MODIFIED,
+			     NOTIFY_ACTION_MODIFIED |
+			     NOTIFY_ACTION_DIRLEASE_BREAK,
 			     FILE_NOTIFY_CHANGE_SIZE |
 			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
 			     fsp->fsp_name,
-			     NULL);
+			     fsp_get_smb2_lease(fsp));
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		fd_close(fsp);
