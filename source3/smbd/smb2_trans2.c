@@ -3812,10 +3812,11 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 	}
 
 	notify_fname(conn,
-		     NOTIFY_ACTION_ADDED,
+		     NOTIFY_ACTION_ADDED |
+		     NOTIFY_ACTION_DIRLEASE_BREAK,
 		     FILE_NOTIFY_CHANGE_FILE_NAME,
 		     smb_fname_new,
-		     NULL);
+		     fsp_get_smb2_lease(smb_fname_old->fsp));
 
   out:
 
