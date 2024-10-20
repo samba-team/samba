@@ -178,23 +178,23 @@ static struct cephmount_cached {
 	uint64_t fd_index;
 } *cephmount_cached;
 
-static int cephmount_cache_add(const char *cookie,
-			       struct ceph_mount_info *mount,
-			       struct cephmount_cached **out_entry)
+static bool cephmount_cache_add(const char *cookie,
+				struct ceph_mount_info *mount,
+				struct cephmount_cached **out_entry)
 {
 	struct cephmount_cached *entry = NULL;
 
 	entry = talloc_zero(NULL, struct cephmount_cached);
 	if (entry == NULL) {
 		errno = ENOMEM;
-		return -1;
+		return false;
 	}
 
 	entry->cookie = talloc_strdup(entry, cookie);
 	if (entry->cookie == NULL) {
 		talloc_free(entry);
 		errno = ENOMEM;
-		return -1;
+		return false;
 	}
 
 	entry->mount = mount;
@@ -204,7 +204,7 @@ static int cephmount_cache_add(const char *cookie,
 	DLIST_ADD(cephmount_cached, entry);
 
 	*out_entry = entry;
-	return 0;
+	return true;
 }
 
 static bool cephmount_cache_change_ref(struct cephmount_cached *entry, int n)
@@ -525,8 +525,9 @@ static int vfs_ceph_connect(struct vfs_handle_struct *handle,
 		goto connect_fail;
 	}
 
-	ret = cephmount_cache_add(cookie, mount, &entry);
-	if (ret != 0) {
+	ok = cephmount_cache_add(cookie, mount, &entry);
+	if (!ok) {
+		ret = -1;
 		goto connect_fail;
 	}
 
