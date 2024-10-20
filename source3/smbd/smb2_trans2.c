@@ -3808,7 +3808,14 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		DEBUG(3,("hardlink_internals: Error %s hard link %s -> %s\n",
 			 nt_errstr(status), smb_fname_old->base_name,
 			 smb_fname_new->base_name));
+		goto out;
 	}
+
+	notify_fname(conn,
+		     NOTIFY_ACTION_ADDED,
+		     FILE_NOTIFY_CHANGE_FILE_NAME,
+		     smb_fname_new,
+		     NULL);
 
   out:
 
