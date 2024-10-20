@@ -507,7 +507,7 @@ static NTSTATUS chdir_below_conn(
 		".",
 		NULL,
 		NULL,
-		dir_fname->twrp,
+		0,
 		dir_fname->flags);
 	if (smb_fname_dot == NULL) {
 		status = NT_STATUS_NO_MEMORY;
@@ -625,7 +625,7 @@ static NTSTATUS non_widelink_open(const struct files_struct *dirfsp,
 			     const struct vfs_open_how *_how)
 {
 	struct connection_struct *conn = fsp->conn;
-	const char *connpath = SMB_VFS_CONNECTPATH(conn, dirfsp, smb_fname);
+	const char *connpath = conn->connectpath;
 	size_t connpath_len;
 	NTSTATUS status = NT_STATUS_OK;
 	int fd = -1;
