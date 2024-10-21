@@ -1279,10 +1279,12 @@ static bool rename_path_prefix_equal(const struct smb_filename *smb_fname_src,
  * Do the notify calls from a rename
  */
 
-static void notify_rename(connection_struct *conn, bool is_dir,
+static void notify_rename(struct connection_struct *conn,
+			  struct files_struct *fsp,
 			  const struct smb_filename *smb_fname_src,
 			  const struct smb_filename *smb_fname_dst)
 {
+	bool is_dir = fsp->fsp_flags.is_directory;
 	char *parent_dir_src = NULL;
 	char *parent_dir_dst = NULL;
 	uint32_t mask;
@@ -1801,7 +1803,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		TALLOC_FREE(lck);
 
 		notify_rename(conn,
-			      fsp->fsp_flags.is_directory,
+			      fsp,
 			      old_fname,
 			      smb_fname_dst);
 
