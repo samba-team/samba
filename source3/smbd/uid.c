@@ -453,9 +453,8 @@ static void print_impersonation_info(connection_struct *conn)
 		return;
 	}
 
-	cwdfname = vfs_GetWd(talloc_tos(), conn);
-	if (cwdfname == NULL) {
-		return;
+	if (conn->tcon_done) {
+		cwdfname = vfs_GetWd(talloc_tos(), conn);
 	}
 
 	DBG_INFO("Impersonated user: uid=(%d,%d), gid=(%d,%d), cwd=[%s]\n",
@@ -463,7 +462,7 @@ static void print_impersonation_info(connection_struct *conn)
 		 (int)geteuid(),
 		 (int)getgid(),
 		 (int)getegid(),
-		 cwdfname->base_name);
+		 cwdfname ? cwdfname->base_name : "no cwd");
 	TALLOC_FREE(cwdfname);
 }
 
