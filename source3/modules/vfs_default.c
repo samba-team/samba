@@ -607,6 +607,7 @@ static int vfswrap_openat(vfs_handle_struct *handle,
 			  files_struct *fsp,
 			  const struct vfs_open_how *how)
 {
+	int dirfd = fsp_get_pathref_fd(dirfsp);
 	int flags = how->flags;
 	mode_t mode = how->mode;
 	bool have_opath = false;
@@ -614,6 +615,8 @@ static int vfswrap_openat(vfs_handle_struct *handle,
 	int result;
 
 	START_PROFILE(syscall_openat);
+
+	SMB_ASSERT((dirfd != -1) || (smb_fname->base_name[0] == '/'));
 
 	if (how->resolve & ~(VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS |
 			     VFS_OPEN_HOW_WITH_BACKUP_INTENT)) {
@@ -656,7 +659,7 @@ static int vfswrap_openat(vfs_handle_struct *handle,
 			.resolve = RESOLVE_NO_SYMLINKS,
 		};
 
-		result = openat2(fsp_get_pathref_fd(dirfsp),
+		result = openat2(dirfd,
 				 smb_fname->base_name,
 				 &linux_how,
 				 sizeof(linux_how));
@@ -683,7 +686,7 @@ static int vfswrap_openat(vfs_handle_struct *handle,
 		became_root = true;
 	}
 
-	result = openat(fsp_get_pathref_fd(dirfsp),
+	result = openat(dirfd,
 			smb_fname->base_name,
 			flags,
 			mode);
