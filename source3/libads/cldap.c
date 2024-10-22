@@ -157,9 +157,9 @@ struct tevent_req *cldap_multi_netlogon_send(
 		return tevent_req_post(req, ev);
 	}
 
-	state->ios = talloc_zero_array(state->responses,
-				       struct cldap_netlogon,
-				       num_servers);
+	state->ios = talloc_array(state->responses,
+				  struct cldap_netlogon,
+				  num_servers);
 	if (tevent_req_nomem(state->ios, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -188,16 +188,8 @@ struct tevent_req *cldap_multi_netlogon_send(
 				nt_errstr(status));
 		}
 
-		state->ios[i].in.dest_address	= NULL;
-		state->ios[i].in.dest_port	= 0;
-		state->ios[i].in.realm		= domain;
-		state->ios[i].in.host		= NULL;
-		state->ios[i].in.user		= NULL;
-		state->ios[i].in.domain_guid	= NULL;
-		state->ios[i].in.domain_sid	= NULL;
-		state->ios[i].in.acct_control	= 0;
-		state->ios[i].in.version	= ntversion;
-		state->ios[i].in.map_response	= false;
+		state->ios[i] = (struct cldap_netlogon){
+			.in.realm = domain, .in.version = ntversion};
 	}
 
 	for (i=0; i<min_servers; i++) {
