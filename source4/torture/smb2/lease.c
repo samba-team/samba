@@ -7021,6 +7021,534 @@ done:
 	return ret;
 }
 
+/*
+ * If the parent key of handle on which delete-on-close was set is the same as
+ * the parent key of last handle closed, don't break this parent lease but all
+ * others.
+ */
+static bool test_unlink_same_set_and_close(struct torture_context *tctx,
+					   struct smb2_tree *tree)
+{
+	struct smb2_create c = {};
+	struct smb2_handle d1 = {};
+	struct smb2_handle d2 = {};
+	struct smb2_handle h1 = {};
+	struct smb2_handle h2 = {};
+	struct smb2_lease dlease1 = {};
+	struct smb2_lease dlease2 = {};
+	const uint64_t dlk1 = DLEASE1;
+	const uint64_t dlk2 = DLEASE2;
+	struct smb2_lease flease1 = {};
+	struct smb2_lease flease2 = {};
+	const char *dname = "test_unlink";
+	const char *fname = "test_unlink\\test_unlink.dat";
+	union smb_setfileinfo sfinfo = {};
+	NTSTATUS status;
+	bool ret = true;
+
+	tree->session->transport->lease.handler = torture_lease_handler;
+	tree->session->transport->lease.private_data = tree;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	smb2_deltree(tree, dname);
+	smb2_util_mkdir(tree, dname);
+	torture_setup_simple_file(tctx, tree, fname);
+
+	torture_comment(tctx, "First open test directory with RH-dirlease\n");
+
+	smb2_lease_v2_create(&c, &dlease1, true, dname,
+			     DLEASE1, NULL,
+			     smb2_util_lease_state("RH"), 0);
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	d1 = c.out.file.handle;
+	CHECK_LEASE_V2(&c, "RH", true, DLEASE1, 0, 0, ++dlease1.lease_epoch);
+
+	torture_comment(tctx, "Second open test directory with RH-dirlease\n");
+
+	smb2_lease_v2_create(&c, &dlease2, true, dname,
+			     DLEASE2, NULL,
+			     smb2_util_lease_state("RH"), 0);
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	d2 = c.out.file.handle;
+	CHECK_LEASE_V2(&c, "RH", true, DLEASE2, 0, 0, ++dlease2.lease_epoch);
+
+	torture_comment(tctx, "First open test file\n");
+
+	smb2_lease_v2_create(&c, &flease1, false, fname,
+			     LEASE1, &dlk1,
+			     smb2_util_lease_state("R"), 0);
+
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+
+	torture_comment(tctx, "Second open test file\n");
+
+	smb2_lease_v2_create(&c, &flease2, false, fname,
+			     LEASE2, &dlk2,
+			     smb2_util_lease_state("R"), 0);
+
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h2 = c.out.file.handle;
+
+	torture_comment(tctx, "Sets delete on close on open 2\n");
+
+	sfinfo.disposition_info.in.delete_on_close = 1;
+	sfinfo.generic.level = RAW_SFILEINFO_DISPOSITION_INFORMATION;
+	sfinfo.generic.in.file.handle = h2;
+
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	torture_comment(tctx, "Closing first handle that has not set delete-on-close, "
+			"this should not trigger a break\n");
+
+	smb2_util_close(tree, h1);
+	ZERO_STRUCT(h1);
+	CHECK_NO_BREAK(tctx);
+
+	torture_comment(tctx, "Closing second and last handle will remove the file, "
+			"trigger a break on first directory with different "
+			"parent lease key\n");
+
+	smb2_util_close(tree, h2);
+	ZERO_STRUCT(h2);
+
+	CHECK_BREAK_INFO_V2(tree->session->transport,
+			    "RH", "", DLEASE1,
+			    ++dlease1.lease_epoch);
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree, h2);
+	}
+	if (!smb2_util_handle_empty(d1)) {
+		smb2_util_close(tree, d1);
+	}
+	if (!smb2_util_handle_empty(d2)) {
+		smb2_util_close(tree, d2);
+	}
+	return ret;
+}
+
+/*
+ * When the parent key of handle on which delete-on-close was set differs from
+ * the parent key of last handle closed, which actually does delete the file,
+ * all directory leases must be broken.
+ */
+static bool test_unlink_different_set_and_close(struct torture_context *tctx,
+						struct smb2_tree *tree)
+{
+	struct smb2_create c = {};
+	struct smb2_handle d1 = {};
+	struct smb2_handle d2 = {};
+	struct smb2_handle h1 = {};
+	struct smb2_handle h2 = {};
+	struct smb2_lease dlease1 = {};
+	struct smb2_lease dlease2 = {};
+	const uint64_t dlk1 = DLEASE1;
+	const uint64_t dlk2 = DLEASE2;
+	struct smb2_lease flease1 = {};
+	struct smb2_lease flease2 = {};
+	const char *dname = "test_unlink";
+	const char *fname = "test_unlink\\test_unlink.dat";
+	union smb_setfileinfo sfinfo = {};
+	struct smb2_lease_break_ack ack = {};
+	struct smb2_lease *expected_lease1 = NULL;
+	struct smb2_lease *expected_lease2 = NULL;
+	uint64_t expected_leasekey1;
+	uint64_t expected_leasekey2;
+	NTSTATUS status;
+	bool ret = true;
+
+	tree->session->transport->lease.handler = torture_lease_handler;
+	tree->session->transport->lease.private_data = tree;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	smb2_deltree(tree, dname);
+	smb2_util_mkdir(tree, dname);
+	torture_setup_simple_file(tctx, tree, fname);
+
+	torture_comment(tctx, "First open test directory with RH-dirlease\n");
+
+	smb2_lease_v2_create(&c, &dlease1, true, dname,
+			     DLEASE1, NULL,
+			     smb2_util_lease_state("RH"), 0);
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	d1 = c.out.file.handle;
+	CHECK_LEASE_V2(&c, "RH", true, DLEASE1, 0, 0, ++dlease1.lease_epoch);
+
+	torture_comment(tctx, "Second open test directory with RH-dirlease\n");
+
+	smb2_lease_v2_create(&c, &dlease2, true, dname,
+			     DLEASE2, NULL,
+			     smb2_util_lease_state("RH"), 0);
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	d2 = c.out.file.handle;
+	CHECK_LEASE_V2(&c, "RH", true, DLEASE2, 0, 0, ++dlease2.lease_epoch);
+
+	torture_comment(tctx, "First open test file\n");
+
+	smb2_lease_v2_create(&c, &flease1, false, fname,
+			     LEASE1, &dlk1,
+			     smb2_util_lease_state("R"), 0);
+
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+
+	torture_comment(tctx, "Second open test file\n");
+
+	smb2_lease_v2_create(&c, &flease2, false, fname,
+			     LEASE2, &dlk2,
+			     smb2_util_lease_state("R"), 0);
+
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h2 = c.out.file.handle;
+
+	torture_comment(tctx, "Client 1 sets delete on close\n");
+
+	sfinfo.disposition_info.in.delete_on_close = 1;
+	sfinfo.generic.level = RAW_SFILEINFO_DISPOSITION_INFORMATION;
+	sfinfo.generic.in.file.handle = h1;
+
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	torture_comment(tctx, "Closing first handle that has set delete-on-close, "
+			"will not delete the file and not trigger a break\n");
+
+	smb2_util_close(tree, h1);
+	ZERO_STRUCT(h1);
+	CHECK_NO_BREAK(tctx);
+
+	torture_comment(tctx, "Closing second and last handle will remove the file, "
+			"and trigger a break as the parent lease keys don't match\n");
+
+	smb2_util_close(tree, h2);
+	ZERO_STRUCT(h2);
+
+	torture_wait_for_lease_break(tctx);
+	ack.in.lease.lease_key = lease_break_info.lease_break.current_lease.lease_key;
+	ack.in.lease.lease_state = lease_break_info.lease_break.new_lease_state;
+
+	if (ack.in.lease.lease_key.data[0] == DLEASE1) {
+		expected_leasekey1 = DLEASE1;
+		expected_lease1 = &dlease1;
+		expected_leasekey2 = DLEASE2;
+		expected_lease2 = &dlease2;
+	} else {
+		expected_leasekey1 = DLEASE2;
+		expected_lease1 = &dlease2;
+		expected_leasekey2 = DLEASE1;
+		expected_lease2 = &dlease1;
+	}
+
+	CHECK_BREAK_INFO_V2_NOWAIT(tree->session->transport,
+				   "RH", "", expected_leasekey1,
+				   ++(expected_lease1->lease_epoch));
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	status = smb2_lease_break_ack(tree, &ack);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_lease_break_ack failed\n");
+	CHECK_LEASE_BREAK_ACK(&ack, "", expected_leasekey1);
+
+	CHECK_BREAK_INFO_V2_NOWAIT(tree->session->transport,
+				   "RH", "", expected_leasekey2,
+				   ++(expected_lease2->lease_epoch));
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree, h2);
+	}
+	if (!smb2_util_handle_empty(d1)) {
+		smb2_util_close(tree, d1);
+	}
+	if (!smb2_util_handle_empty(d2)) {
+		smb2_util_close(tree, d2);
+	}
+	return ret;
+}
+
+/*
+ * If the parent key of handle on which initial delete-on-close was requested is
+ * the same as the parent key of last handle closed, don't break that parent
+ * lease but all others.
+ */
+static bool test_unlink_same_initial_and_close(struct torture_context *tctx,
+					       struct smb2_tree *tree)
+{
+	struct smb2_create c = {};
+	struct smb2_handle d1 = {};
+	struct smb2_handle d2 = {};
+	struct smb2_handle h1 = {};
+	struct smb2_handle h2 = {};
+	struct smb2_lease dlease1 = {};
+	struct smb2_lease dlease2 = {};
+	const uint64_t dlk1 = DLEASE1;
+	const uint64_t dlk2 = DLEASE2;
+	struct smb2_lease flease1 = {};
+	struct smb2_lease flease2 = {};
+	const char *dname = "test_unlink";
+	const char *fname = "test_unlink\\test_unlink.dat";
+	NTSTATUS status;
+	bool ret = true;
+
+	tree->session->transport->lease.handler = torture_lease_handler;
+	tree->session->transport->lease.private_data = tree;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	smb2_deltree(tree, dname);
+	smb2_util_mkdir(tree, dname);
+	torture_setup_simple_file(tctx, tree, fname);
+
+	torture_comment(tctx, "First open test directory with RH-dirlease\n");
+
+	smb2_lease_v2_create(&c, &dlease1, true, dname,
+			     DLEASE1, NULL,
+			     smb2_util_lease_state("RH"), 0);
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	d1 = c.out.file.handle;
+	CHECK_LEASE_V2(&c, "RH", true, DLEASE1, 0, 0, ++dlease1.lease_epoch);
+
+	torture_comment(tctx, "Second open test directory with RH-dirlease\n");
+
+	smb2_lease_v2_create(&c, &dlease2, true, dname,
+			     DLEASE2, NULL,
+			     smb2_util_lease_state("RH"), 0);
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	d2 = c.out.file.handle;
+	CHECK_LEASE_V2(&c, "RH", true, DLEASE2, 0, 0, ++dlease2.lease_epoch);
+
+	torture_comment(tctx, "First open test file with initial delete-on-close\n");
+
+	smb2_lease_v2_create(&c, &flease1, false, fname,
+			     LEASE1, &dlk1,
+			     smb2_util_lease_state("R"), 0);
+	c.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+
+	torture_comment(tctx, "Second open test file\n");
+
+	smb2_lease_v2_create(&c, &flease2, false, fname,
+			     LEASE2, &dlk2,
+			     smb2_util_lease_state("R"), 0);
+
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h2 = c.out.file.handle;
+
+	torture_comment(tctx, "Closing second handle should not trigger a lease break\n");
+
+	smb2_util_close(tree, h2);
+	ZERO_STRUCT(h2);
+
+	torture_comment(tctx, "Closing first handle that had initial delete-on-close, "
+			"must trigger single break on directory handle 2\n");
+
+	smb2_util_close(tree, h1);
+	ZERO_STRUCT(h1);
+
+	CHECK_BREAK_INFO_V2(tree->session->transport,
+			    "RH", "", DLEASE2,
+			    ++dlease2.lease_epoch);
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree, h2);
+	}
+	if (!smb2_util_handle_empty(d1)) {
+		smb2_util_close(tree, d1);
+	}
+	if (!smb2_util_handle_empty(d2)) {
+		smb2_util_close(tree, d2);
+	}
+	return ret;
+}
+
+/*
+ * When the parent key of handle on which initial delete-on-close was set
+ * differs from the parent key of last handle closed, which actually does delete
+ * the file, all directory leases must be broken.
+ */
+static bool test_unlink_different_initial_and_close(struct torture_context *tctx,
+						    struct smb2_tree *tree)
+{
+	struct smb2_create c = {};
+	struct smb2_handle d1 = {};
+	struct smb2_handle d2 = {};
+	struct smb2_handle h1 = {};
+	struct smb2_handle h2 = {};
+	struct smb2_lease dlease1 = {};
+	struct smb2_lease dlease2 = {};
+	const uint64_t dlk1 = DLEASE1;
+	const uint64_t dlk2 = DLEASE2;
+	struct smb2_lease flease1 = {};
+	struct smb2_lease flease2 = {};
+	const char *dname = "test_unlink";
+	const char *fname = "test_unlink\\test_unlink.dat";
+	struct smb2_lease_break_ack ack = {};
+	struct smb2_lease *expected_lease1 = NULL;
+	struct smb2_lease *expected_lease2 = NULL;
+	uint64_t expected_leasekey1;
+	uint64_t expected_leasekey2;
+	NTSTATUS status;
+	bool ret = true;
+
+	tree->session->transport->lease.handler = torture_lease_handler;
+	tree->session->transport->lease.private_data = tree;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	smb2_deltree(tree, dname);
+	smb2_util_mkdir(tree, dname);
+	torture_setup_simple_file(tctx, tree, fname);
+
+	torture_comment(tctx, "First open test directory with RH-dirlease\n");
+
+	smb2_lease_v2_create(&c, &dlease1, true, dname,
+			     DLEASE1, NULL,
+			     smb2_util_lease_state("RH"), 0);
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	d1 = c.out.file.handle;
+	CHECK_LEASE_V2(&c, "RH", true, DLEASE1, 0, 0, ++dlease1.lease_epoch);
+
+	torture_comment(tctx, "Second open test directory with RH-dirlease\n");
+
+	smb2_lease_v2_create(&c, &dlease2, true, dname,
+			     DLEASE2, NULL,
+			     smb2_util_lease_state("RH"), 0);
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	d2 = c.out.file.handle;
+	CHECK_LEASE_V2(&c, "RH", true, DLEASE2, 0, 0, ++dlease2.lease_epoch);
+
+	torture_comment(tctx, "First open test file\n");
+
+	smb2_lease_v2_create(&c, &flease1, false, fname,
+			     LEASE1, &dlk1,
+			     smb2_util_lease_state("R"), 0);
+	c.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = c.out.file.handle;
+
+	torture_comment(tctx, "Second open test file\n");
+
+	smb2_lease_v2_create(&c, &flease2, false, fname,
+			     LEASE2, &dlk2,
+			     smb2_util_lease_state("R"), 0);
+
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h2 = c.out.file.handle;
+
+	torture_comment(tctx, "Closing first handle that requested initial delete-on-close, "
+			"will not delete the file and not trigger a break\n");
+
+	smb2_util_close(tree, h1);
+	ZERO_STRUCT(h1);
+	CHECK_NO_BREAK(tctx);
+
+	torture_comment(tctx, "Closing second and last handle will remove the file, "
+			"and trigger a break as the parent lease keys don't match\n");
+
+	smb2_util_close(tree, h2);
+	ZERO_STRUCT(h2);
+
+	torture_wait_for_lease_break(tctx);
+	ack.in.lease.lease_key = lease_break_info.lease_break.current_lease.lease_key;
+	ack.in.lease.lease_state = lease_break_info.lease_break.new_lease_state;
+
+	if (ack.in.lease.lease_key.data[0] == DLEASE1) {
+		expected_leasekey1 = DLEASE1;
+		expected_lease1 = &dlease1;
+		expected_leasekey2 = DLEASE2;
+		expected_lease2 = &dlease2;
+	} else {
+		expected_leasekey1 = DLEASE2;
+		expected_lease1 = &dlease2;
+		expected_leasekey2 = DLEASE1;
+		expected_lease2 = &dlease1;
+	}
+
+	CHECK_BREAK_INFO_V2_NOWAIT(tree->session->transport,
+				   "RH", "", expected_leasekey1,
+				   ++(expected_lease1->lease_epoch));
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_skip_ack = true;
+
+	status = smb2_lease_break_ack(tree, &ack);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_lease_break_ack failed\n");
+	CHECK_LEASE_BREAK_ACK(&ack, "", expected_leasekey1);
+
+	CHECK_BREAK_INFO_V2_NOWAIT(tree->session->transport,
+				   "RH", "", expected_leasekey2,
+				   ++(expected_lease2->lease_epoch));
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree, h2);
+	}
+	if (!smb2_util_handle_empty(d1)) {
+		smb2_util_close(tree, d1);
+	}
+	if (!smb2_util_handle_empty(d2)) {
+		smb2_util_close(tree, d2);
+	}
+	return ret;
+}
+
 struct torture_suite *torture_smb2_dirlease_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -7040,5 +7568,9 @@ struct torture_suite *torture_smb2_dirlease_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "rename", test_rename);
 	torture_suite_add_2smb2_test(suite, "overwrite", test_overwrite);
 	torture_suite_add_1smb2_test(suite, "hardlink", test_hardlink);
+	torture_suite_add_1smb2_test(suite, "unlink_same_set_and_close", test_unlink_same_set_and_close);
+	torture_suite_add_1smb2_test(suite, "unlink_different_set_and_close", test_unlink_different_set_and_close);
+	torture_suite_add_1smb2_test(suite, "unlink_same_initial_and_close", test_unlink_same_initial_and_close);
+	torture_suite_add_1smb2_test(suite, "unlink_different_initial_and_close", test_unlink_different_initial_and_close);
 	return suite;
 }
