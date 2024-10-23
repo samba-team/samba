@@ -144,6 +144,7 @@ static int net_vfs_init(struct net_context *c, int argc, const char **argv)
 	sec_init();
 	setup_logging("net", DEBUG_STDOUT);
 	lpcfg_set_cmdline(c->lp_ctx, "log level", "0");
+	mangle_change_to_posix();
 
 	ok = lp_load_with_registry_shares(get_dyn_CONFIGFILE());
 	if (!ok) {
