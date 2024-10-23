@@ -45,6 +45,7 @@ interface open_files
 
 	typedef [public] struct {
 		uint32		name_hash;
+		smb2_lease_key	parent_lease_key;
 		security_token *delete_nt_token;
 		security_unix_token *delete_token;
 	} delete_token;

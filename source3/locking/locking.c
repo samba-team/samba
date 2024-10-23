@@ -782,11 +782,12 @@ bool share_entry_stale_pid(struct share_mode_entry *e)
 ****************************************************************************/
 
 static bool add_delete_on_close_token(struct share_mode_data *d,
-			uint32_t name_hash,
+			struct files_struct *fsp,
 			const struct security_token *nt_tok,
 			const struct security_unix_token *tok)
 {
 	struct delete_token *tmp, *dtl;
+	const struct smb2_lease *lease = NULL;
 
 	tmp = talloc_realloc(d, d->delete_tokens, struct delete_token,
 			     d->num_delete_tokens+1);
@@ -796,7 +797,13 @@ static bool add_delete_on_close_token(struct share_mode_data *d,
 	d->delete_tokens = tmp;
 	dtl = &d->delete_tokens[d->num_delete_tokens];
 
-	dtl->name_hash = name_hash;
+	dtl->name_hash = fsp->name_hash;
+
+	lease = fsp_get_smb2_lease(fsp);
+	if (lease != NULL) {
+		dtl->parent_lease_key = lease->parent_lease_key;
+	}
+
 	dtl->delete_nt_token = security_token_duplicate(d->delete_tokens, nt_tok);
 	if (dtl->delete_nt_token == NULL) {
 		return false;
@@ -910,9 +917,17 @@ void set_delete_on_close_lck(files_struct *fsp,
 	for (i=0; i<d->num_delete_tokens; i++) {
 		struct delete_token *dt = &d->delete_tokens[i];
 		if (dt->name_hash == fsp->name_hash) {
+			const struct smb2_lease *lease = NULL;
+
 			d->modified = true;
 
 			/* Replace this token with the given tok. */
+			ZERO_STRUCT(dt->parent_lease_key);
+			lease = fsp_get_smb2_lease(fsp);
+			if (lease != NULL) {
+				dt->parent_lease_key = lease->parent_lease_key;
+			}
+
 			TALLOC_FREE(dt->delete_nt_token);
 			dt->delete_nt_token = security_token_duplicate(dt, nt_tok);
 			SMB_ASSERT(dt->delete_nt_token != NULL);
@@ -924,7 +939,7 @@ void set_delete_on_close_lck(files_struct *fsp,
 		}
 	}
 
-	ret = add_delete_on_close_token(d, fsp->name_hash, nt_tok, tok);
+	ret = add_delete_on_close_token(d, fsp, nt_tok, tok);
 	SMB_ASSERT(ret);
 
 	ndr_err = ndr_push_struct_blob(
