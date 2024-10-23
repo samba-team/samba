@@ -1079,6 +1079,7 @@ NTSTATUS filename_convert_dirfsp(
 	struct symlink_reparse_struct *lnk = NULL;
 	NTSTATUS status;
 	char *target = NULL;
+	char *base_name = NULL;
 	char *safe_target = NULL;
 	size_t symlink_redirects = 0;
 	int ret;
@@ -1146,9 +1147,13 @@ next:
 		return map_nt_error_from_unix(ret);
 	}
 
+	if (basedir != conn->cwd_fsp) {
+		base_name = basedir->fsp_name->base_name;
+	}
+
 	status = safe_symlink_target_path(mem_ctx,
 					  conn->connectpath,
-					  NULL,
+					  base_name,
 					  target,
 					  lnk->unparsed_path_length,
 					  &safe_target);
@@ -1157,6 +1162,7 @@ next:
 		return status;
 	}
 	name_in = safe_target;
+	basedir = conn->cwd_fsp;
 
 	symlink_redirects += 1;
 
