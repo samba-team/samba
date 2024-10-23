@@ -296,6 +296,7 @@ struct close_share_mode_lock_state {
 	enum file_close_type close_type;
 	bool delete_object;
 	bool got_tokens;
+	struct smb2_lease_key parent_lease_key;
 	const struct security_unix_token *del_token;
 	const struct security_token *del_nt_token;
 	bool reset_delete_on_close;
@@ -397,8 +398,11 @@ static void close_share_mode_lock_prepare(struct share_mode_lock *lck,
 	 */
 	*keep_locked = true;
 
-	state->got_tokens = get_delete_on_close_token(lck, fsp->name_hash,
-					&state->del_nt_token, &state->del_token);
+	state->got_tokens = get_delete_on_close_token(lck,
+						      fsp->name_hash,
+						      &state->del_nt_token,
+						      &state->del_token,
+						      &state->parent_lease_key);
 	if (state->close_type != ERROR_CLOSE) {
 		SMB_ASSERT(state->got_tokens);
 	}

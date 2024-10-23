@@ -37,6 +37,7 @@
 
 #include "includes.h"
 #include "lib/util/time_basic.h"
+#include "smbd/proto.h"
 #include "system/filesys.h"
 #include "lib/util/server_id.h"
 #include "share_mode_lock.h"
@@ -1046,7 +1047,8 @@ static struct delete_token *find_delete_on_close_token(
 bool get_delete_on_close_token(struct share_mode_lock *lck,
 					uint32_t name_hash,
 					const struct security_token **pp_nt_tok,
-					const struct security_unix_token **pp_tok)
+					const struct security_unix_token **pp_tok,
+					struct smb2_lease_key *parent_lease_key)
 {
 	struct share_mode_data *d = NULL;
 	struct delete_token *dt;
@@ -1070,6 +1072,7 @@ bool get_delete_on_close_token(struct share_mode_lock *lck,
 	}
 	*pp_nt_tok = dt->delete_nt_token;
 	*pp_tok =  dt->delete_token;
+	*parent_lease_key = dt->parent_lease_key;
 	return true;
 }
 

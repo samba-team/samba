@@ -148,7 +148,8 @@ NTSTATUS remove_lease_if_stale(struct share_mode_lock *lck,
 bool get_delete_on_close_token(struct share_mode_lock *lck,
 				uint32_t name_hash,
 				const struct security_token **pp_nt_tok,
-				const struct security_unix_token **pp_tok);
+				const struct security_unix_token **pp_tok,
+				struct smb2_lease_key *parent_lease_key);
 void reset_delete_on_close_lck(files_struct *fsp,
 			       struct share_mode_lock *lck);
 void set_delete_on_close_lck(files_struct *fsp,
