@@ -228,7 +228,7 @@ static void cldap_multi_netlogon_done(struct tevent_req *subreq)
 	struct cldap_multi_netlogon_state *state = tevent_req_data(
 		req, struct cldap_multi_netlogon_state);
 	NTSTATUS status;
-	struct netlogon_samlogon_response *response;
+	struct netlogon_samlogon_response *response = NULL;
 	int i;
 
 	for (i=0; i<state->num_sent; i++) {
