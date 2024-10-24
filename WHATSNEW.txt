@@ -16,6 +16,18 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+SMB3 Directory Leases
+---------------------
+
+Starting with Samba 4.22 SMB3 Directory Leases are supported. The new global
+option "smb3 directory leases" controls whether the feature is enabled or
+not. By default, SMB3 Directory Leases are enabled on non-clustered Samba and
+disabled on clustered Samba, based on the "clustering" option. See man smb.conf
+for more details.
+
+SMB3 Directory Leases allow clients to cache directory listings and, depending
+on the workload, result in a decent reduction in SMB requests from clients.
+
 
 REMOVED FEATURES
 ================
@@ -43,6 +55,7 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
+  smb3 directory leases                   New             Auto
   vfs mkdir use tmp name                  New             Auto
   fruit:posix_rename                      Removed
 
