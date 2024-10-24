@@ -445,18 +445,17 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	char *kdc_str = NULL;
 	char *canon_sockaddr = NULL;
 
+	kdc_str = talloc_strdup(frame, "");
+
 	if (pss != NULL) {
 		canon_sockaddr = print_canonical_sockaddr_with_port(frame, pss);
 		if (canon_sockaddr == NULL) {
 			goto out;
 		}
 
-		kdc_str = talloc_asprintf(frame,
-					  "\t\tkdc = %s\n",
-					  canon_sockaddr);
-		if (kdc_str == NULL) {
-			goto out;
-		}
+		talloc_asprintf_addbuf(&kdc_str,
+				       "\t\tkdc = %s\n",
+				       canon_sockaddr);
 
 		ok = sockaddr_storage_to_samba_sockaddr(&sa, pss);
 		if (!ok) {
@@ -579,22 +578,15 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	}
 
 	for (i=0; i<num_dcs; i++) {
-		char *new_kdc_str;
-
 		if (responses[i] == NULL) {
 			continue;
 		}
 
 		/* Append to the string - inefficient but not done often. */
-		new_kdc_str = talloc_asprintf_append(
-				kdc_str,
-				"\t\tkdc = %s\n",
-				print_canonical_sockaddr_with_port(
-					mem_ctx, &dc_addrs[i]));
-		if (new_kdc_str == NULL) {
-			goto out;
-		}
-		kdc_str = new_kdc_str;
+		talloc_asprintf_addbuf(&kdc_str,
+				       "\t\tkdc = %s\n",
+				       print_canonical_sockaddr_with_port(
+					       mem_ctx, &dc_addrs[i]));
 	}
 
 	result = talloc_move(mem_ctx, &kdc_str);
