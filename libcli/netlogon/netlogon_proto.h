@@ -9,6 +9,12 @@
  * to this subsystem or library. These functions should not be 
  * used outside this particular subsystem! */
 
+#include "replace.h"
+#include "lib/util/data_blob.h"
+#include "libcli/util/ntstatus.h"
+
+struct netlogon_samlogon_response;
+struct nbt_netlogon_response;
 
 /* The following definitions come from ../libcli/netlogon.c  */
 
