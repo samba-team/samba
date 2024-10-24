@@ -265,6 +265,14 @@ enum acl_claims_evaluation {
 	ACL_CLAIMS_EVALUATION_NEVER
 };
 
+/* Controlling the protocol for netlogon ping */
+enum client_netlogon_ping_protocol {
+	CLIENT_NETLOGON_PING_CLDAP,
+	CLIENT_NETLOGON_PING_LDAP,
+	CLIENT_NETLOGON_PING_LDAPS,
+	CLIENT_NETLOGON_PING_STARTTLS
+};
+
 /*
  * Default passwd chat script.
  */

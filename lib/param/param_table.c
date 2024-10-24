@@ -449,6 +449,14 @@ static const struct enum_list enum_acl_claims_evaluation[] = {
 	{-1, NULL}
 };
 
+static const struct enum_list enum_client_netlogon_ping_protocol[] = {
+	{CLIENT_NETLOGON_PING_CLDAP, "cldap"},
+	{CLIENT_NETLOGON_PING_LDAP, "ldap"},
+	{CLIENT_NETLOGON_PING_LDAPS, "ldaps"},
+	{CLIENT_NETLOGON_PING_STARTTLS, "starttls"},
+	{-1, NULL}
+};
+
 /* Note: We do not initialise the defaults union - it is not allowed in ANSI C
  *
  * NOTE: Handling of duplicated (synonym) parameters:
