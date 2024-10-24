@@ -1939,6 +1939,48 @@ static bool test_lease_v2_request(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_lease_v2_flags_breaking(struct torture_context *tctx,
+					 struct smb2_tree *tree)
+{
+	struct smb2_create c = {};
+	struct smb2_lease ls = {};
+	struct smb2_handle h = {};
+	const char *fname = "lease_v2_epoch1.dat";
+	enum protocol_types protocol;
+	uint32_t caps;
+	NTSTATUS status;
+	bool ret = true;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
+
+	protocol = smbXcli_conn_protocol(tree->session->transport->conn);
+	if (protocol < PROTOCOL_SMB3_00) {
+		torture_skip(tctx, "v2 leases are not supported");
+	}
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_lease_v2_create_share(&c, &ls, false, fname,
+				   smb2_util_share_access("RWD"),
+				   LEASE1, NULL,
+				   smb2_util_lease_state("RHW"),
+				   0x4711);
+	ls.lease_flags |= SMB2_LEASE_FLAG_BREAK_IN_PROGRESS;
+
+	status = smb2_create(tree, tree, &c);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = c.out.file.handle;
+
+	CHECK_CREATED(&c, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE_V2(&c, "RHW", true, LEASE1, 0, 0, ls.lease_epoch + 1);
+
+done:
+	smb2_util_close(tree, h);
+	smb2_util_unlink(tree, fname);
+	return ret;
+}
+
 static bool test_lease_v2_epoch1(struct torture_context *tctx,
 				 struct smb2_tree *tree)
 {
@@ -5716,6 +5758,7 @@ struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "breaking6", test_lease_breaking6);
 	torture_suite_add_2smb2_test(suite, "lock1", test_lease_lock1);
 	torture_suite_add_1smb2_test(suite, "complex1", test_lease_complex1);
+	torture_suite_add_1smb2_test(suite, "v2_flags_breaking", test_lease_v2_flags_breaking);
 	torture_suite_add_1smb2_test(suite, "v2_epoch1", test_lease_v2_epoch1);
 	torture_suite_add_1smb2_test(suite, "v2_epoch2", test_lease_v2_epoch2);
 	torture_suite_add_1smb2_test(suite, "v2_epoch3", test_lease_v2_epoch3);
