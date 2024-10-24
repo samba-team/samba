@@ -120,12 +120,15 @@ static int net_ads_cldap_netlogon_json
 				sizeof(response_type));
 			break;
 		case LOGON_SAM_LOGON_RESPONSE_EX:
-			strncpy(response_type, "LOGON_SAM_LOGON_RESPONSE_EX",
-	      sizeof(response_type));
+			strncpy(response_type,
+				"LOGON_SAM_LOGON_RESPONSE_EX",
+				sizeof(response_type));
 			break;
 		default:
-			snprintf(response_type, sizeof(response_type), "0x%x",
-	       reply->command);
+			snprintf(response_type,
+				 sizeof(response_type),
+				 "0x%x",
+				 reply->command);
 			break;
 	}
 
