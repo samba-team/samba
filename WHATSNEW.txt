@@ -20,6 +20,9 @@ NEW FEATURES/CHANGES
 REMOVED FEATURES
 ================
 
+The "nmbd proxy logon" feature was removed. This was used before
+Samba4 acquired a NBT server.
+
 
 smb.conf changes
 ================

@@ -1069,11 +1069,6 @@ static bool open_sockets(bool isdaemon, int port)
 		exit_daemon( "NMBD failed when creating my workgroup.", EACCES);
 	}
 
-	if (!initialize_nmbd_proxy_logon()) {
-		kill_async_dns_child();
-		exit_daemon( "NMBD failed to setup nmbd_proxy_logon.", EACCES);
-	}
-
 	if (!nmbd_init_packet_server()) {
 		kill_async_dns_child();
 		exit_daemon( "NMBD failed to setup packet server.", EACCES);
