@@ -11,6 +11,7 @@
 import "misc.idl", "security.idl";
 [
 	helper("../librpc/ndr/ndr_nbt.h"),
+	headerhelper("lib/util/time.h"),
 	helpstring("NBT messages"),
 	uuid("6def41b6-86e4-4c32-997c-ed33af7bcd8e")
 ]
