@@ -469,9 +469,13 @@ bld.SAMBA3_LIBRARY('libsmb',
                         ''',
                    private_library=True)
 
+bld.SAMBA3_SUBSYSTEM('NETLOGON_PING',
+                     source='libads/netlogon_ping.c',
+                     deps='TLDAP cli_cldap')
+
 bld.SAMBA3_SUBSYSTEM('CLDAP',
                     source='libads/cldap.c',
-                    deps='cli-ldap-common cli_cldap LIBTSOCKET')
+                    deps='cli-ldap-common cli_cldap LIBTSOCKET NETLOGON_PING')
 
 # NOTE: The secrets3 library is a low level library used by several subsystems.
 # PLEASE DO NOT make it depend on high level libraries like PDB, if you are
