@@ -401,12 +401,12 @@ bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 				timeval_current_ofs(MAX(3,lp_ldap_timeout()/2), 0),
 				&responses);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2, ("ads_cldap_netlogon: cldap_multi_netlogon "
-			  "failed: %s\n", nt_errstr(status)));
+		DBG_NOTICE("cldap_multi_netlogon failed: %s\n",
+			   nt_errstr(status));
 		return false;
 	}
 	if (responses == NULL || responses[0] == NULL) {
-		DEBUG(2, ("ads_cldap_netlogon: did not get a reply\n"));
+		DBG_NOTICE("did not get a reply\n");
 		TALLOC_FREE(responses);
 		return false;
 	}
