@@ -1069,7 +1069,7 @@ NTSTATUS cldap_netlogon(struct cldap_socket *cldap,
 	TALLOC_CTX *frame;
 	struct tevent_req *req;
 	struct tevent_context *ev;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	if (cldap->searches.list) {
 		return NT_STATUS_PIPE_BUSY;
@@ -1083,29 +1083,22 @@ NTSTATUS cldap_netlogon(struct cldap_socket *cldap,
 
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
+		goto done;
 	}
-
 	req = cldap_netlogon_send(mem_ctx, ev, cldap, io);
 	if (req == NULL) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
+		goto done;
 	}
-
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
-		TALLOC_FREE(frame);
-		return status;
+		goto done;
 	}
-
 	status = cldap_netlogon_recv(req, mem_ctx, io);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
-		return status;
+		goto done;
 	}
-
+done:
 	TALLOC_FREE(frame);
-	return NT_STATUS_OK;
+	return status;
 }
 
 
