@@ -1093,8 +1093,7 @@ NTSTATUS cldap_netlogon(struct cldap_socket *cldap,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!tevent_req_poll(req, ev)) {
-		status = map_nt_error_from_unix_common(errno);
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		TALLOC_FREE(frame);
 		return status;
 	}
