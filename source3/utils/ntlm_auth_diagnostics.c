@@ -314,15 +314,12 @@ static bool test_ntlm_in_both(bool lanman_support_expected)
 					      user_session_key,
 					      &authoritative,
 					      &error_string, NULL);
-
-	data_blob_free(&nt_response);
-
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_printf("%s (0x%x)\n",
 			 error_string,
 			 NT_STATUS_V(nt_status));
-		SAFE_FREE(error_string);
-		return False;
+		pass = false;
+		goto done;
 	}
 	SAFE_FREE(error_string);
 
@@ -357,6 +354,11 @@ static bool test_ntlm_in_both(bool lanman_support_expected)
 		pass = False;
 	}
 
+
+done:
+	SAFE_FREE(error_string);
+	data_blob_free(&nt_response);
+	data_blob_free(&session_key);
 
         return pass;
 }
