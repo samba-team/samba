@@ -30,23 +30,6 @@
 bool check_cldap_reply_required_flags(uint32_t ret_flags,
 				      uint32_t req_flags);
 
-struct tevent_req *cldap_multi_netlogon_send(
-	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-	const struct tsocket_address * const *servers,
-	int num_servers,
-	const char *domain, const char *hostname, unsigned ntversion,
-	int min_servers);
-NTSTATUS cldap_multi_netlogon_recv(
-	struct tevent_req *req, TALLOC_CTX *mem_ctx,
-	struct netlogon_samlogon_response ***responses);
-NTSTATUS cldap_multi_netlogon(
-	TALLOC_CTX *mem_ctx,
-	const struct tsocket_address * const *servers,
-	int num_servers,
-	const char *domain, const char *hostname, unsigned ntversion,
-	int min_servers, struct timeval timeout,
-	struct netlogon_samlogon_response ***responses);
-
 bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 			struct sockaddr_storage *ss,
 			const char *realm,
