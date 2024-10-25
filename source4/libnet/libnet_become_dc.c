@@ -821,7 +821,7 @@ static void becomeDC_recv_cldap(struct tevent_req *req)
 	DEBUG(0,("CLDAP response: forest=%s dns=%s netbios=%s server_site=%s  client_site=%s\n",
 		 s->forest.dns_name, s->domain.dns_name, s->domain.netbios_name,
 		 s->source_dsa.site_name, s->dest_dsa.site_name));
-	if (!s->dest_dsa.site_name || strcmp(s->dest_dsa.site_name, "") == 0) {
+	if (!s->dest_dsa.site_name || (s->dest_dsa.site_name[0] == '\0')) {
 		DEBUG(0,("Got empty client site - using server site name %s\n",
 			 s->source_dsa.site_name));
 		s->dest_dsa.site_name = s->source_dsa.site_name;
