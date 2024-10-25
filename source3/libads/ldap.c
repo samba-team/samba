@@ -25,6 +25,7 @@
 #include "ads.h"
 #include "libads/sitename_cache.h"
 #include "libads/cldap.h"
+#include "libads/netlogon_ping.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/addns/dnsquery.h"
 #include "../libds/common/flags.h"
@@ -423,7 +424,6 @@ static NTSTATUS cldap_ping_list(ADS_STRUCT *ads,
 	struct timeval endtime = timeval_current_ofs(MAX(3,lp_ldap_timeout()/2), 0);
 	uint32_t nt_version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
 	struct tsocket_address **ts_list = NULL;
-	const struct tsocket_address * const *ts_list_const = NULL;
 	struct samba_sockaddr **req_sa_list = NULL;
 	struct netlogon_samlogon_response **responses = NULL;
 	size_t num_requests = 0;
@@ -499,15 +499,22 @@ again:
 		return status;
 	}
 
-	ts_list_const = (const struct tsocket_address * const *)ts_list;
-
-	status = cldap_multi_netlogon(frame,
-				      ts_list_const, num_requests,
-				      ads->server.realm, NULL,
-				      nt_version,
-				      1, endtime, &responses);
+	status = netlogon_pings(frame, /* mem_ctx */
+				lp_client_netlogon_ping_protocol(), /* proto */
+				ts_list,      /* servers */
+				num_requests, /* num_servers */
+				(struct netlogon_ping_filter){
+					.ntversion = nt_version,
+					.domain = ads->server.realm,
+					.acct_ctrl = -1,
+					.required_flags = ads->config.flags |
+							  DS_ONLY_LDAP_NEEDED,
+				},
+				1,	 /* min_servers */
+				endtime, /* timeout */
+				&responses);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("cldap_multi_netlogon(realm=%s, num_requests=%zu) "
+		DBG_WARNING("netlogon_pings(realm=%s, num_requests=%zu) "
 			    "for count[%zu] - %s\n",
 			    ads->server.realm,
 			    num_requests, count,
