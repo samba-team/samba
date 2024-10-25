@@ -27,10 +27,11 @@
 #include "smb_krb5.h"
 #include "../librpc/gen_ndr/ndr_misc.h"
 #include "libads/kerberos_proto.h"
-#include "libads/cldap.h"
+#include "libads/netlogon_ping.h"
 #include "secrets.h"
 #include "../lib/tsocket/tsocket.h"
 #include "lib/util/asn1.h"
+#include "librpc/gen_ndr/netlogon.h"
 
 #ifdef HAVE_KRB5
 
@@ -437,7 +438,6 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	size_t num_dcs;
 	struct sockaddr_storage *dc_addrs = NULL;
 	struct tsocket_address **dc_addrs2 = NULL;
-	const struct tsocket_address * const *dc_addrs3 = NULL;
 	char *result = NULL;
 	struct netlogon_samlogon_response **responses = NULL;
 	NTSTATUS status;
@@ -561,19 +561,25 @@ static char *get_kdc_ip_string(char *mem_ctx,
 		}
 	}
 
-	dc_addrs3 = (const struct tsocket_address * const *)dc_addrs2;
-
-	status = cldap_multi_netlogon(talloc_tos(),
-			dc_addrs3, num_dcs,
-			realm, lp_netbios_name(),
-			NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX,
-			MIN(num_dcs, 3), timeval_current_ofs(3, 0), &responses);
+	status = netlogon_pings(talloc_tos(), /* mem_ctx */
+				lp_client_netlogon_ping_protocol(), /* proto */
+				dc_addrs2, /* servers */
+				num_dcs,   /* num_servers */
+				(struct netlogon_ping_filter){
+					.ntversion = NETLOGON_NT_VERSION_5 |
+						     NETLOGON_NT_VERSION_5EX,
+					.domain = realm,
+					.hostname = lp_netbios_name(),
+					.acct_ctrl = -1,
+					.required_flags = DS_KDC_REQUIRED,
+				},
+				MIN(num_dcs, 3),	   /* min_servers */
+				timeval_current_ofs(3, 0), /* timeout */
+				&responses);
 	TALLOC_FREE(dc_addrs2);
-	dc_addrs3 = NULL;
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("get_kdc_ip_string: cldap_multi_netlogon failed: "
-			  "%s\n", nt_errstr(status)));
+		DBG_DEBUG("netlogon_pings failed: %s\n", nt_errstr(status));
 		goto out;
 	}
 
