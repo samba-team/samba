@@ -26,6 +26,7 @@
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "libads/cldap.h"
+#include "libads/netlogon_ping.h"
 
 struct cldap_multi_netlogon_state {
 	struct tevent_context *ev;
@@ -376,7 +377,6 @@ bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 	char addrstr[INET6_ADDRSTRLEN];
 	const char *dest_str;
 	struct tsocket_address *dest_addr;
-	const struct tsocket_address * const *dest_addrs;
 	struct netlogon_samlogon_response **responses = NULL;
 	int ret;
 
@@ -392,17 +392,21 @@ bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	dest_addrs = (const struct tsocket_address * const *)&dest_addr;
-
-	status = cldap_multi_netlogon(talloc_tos(),
-				dest_addrs, 1,
-				realm, NULL,
-				nt_version, 1,
-				timeval_current_ofs(MAX(3,lp_ldap_timeout()/2), 0),
-				&responses);
+	status = netlogon_pings(
+		talloc_tos(),			    /* mem_ctx */
+		lp_client_netlogon_ping_protocol(), /*proto */
+		&dest_addr,			    /* servers */
+		1,				    /* num_servers */
+		(struct netlogon_ping_filter) {
+			.ntversion = nt_version,
+			.domain = realm,
+			.acct_ctrl = -1,
+		},
+		1,				    /* min_servers */
+		timeval_current_ofs(MAX(3, lp_ldap_timeout() / 2), 0),
+		&responses);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_NOTICE("cldap_multi_netlogon failed: %s\n",
-			   nt_errstr(status));
+		DBG_NOTICE("netlogon_pings failed: %s\n", nt_errstr(status));
 		return false;
 	}
 	if (responses == NULL || responses[0] == NULL) {
