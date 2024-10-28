@@ -357,10 +357,6 @@ void cli_credentials_dump(struct cli_credentials *creds);
  */
 struct netlogon_creds_CredentialState *cli_credentials_get_netlogon_creds(struct cli_credentials *cred);
 
-NTSTATUS netlogon_creds_session_encrypt(
-	struct netlogon_creds_CredentialState *state,
-	DATA_BLOB data);
-
 /**
  * Kerberos FAST handling
  */
