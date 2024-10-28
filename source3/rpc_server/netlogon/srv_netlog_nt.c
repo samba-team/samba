@@ -1755,7 +1755,9 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 
 	status = netlogon_creds_decrypt_samlogon_logon(creds,
 						       r->in.logon_level,
-						       logon);
+						       logon,
+						       auth_type,
+						       auth_level);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

@@ -2738,7 +2738,9 @@ static void netlogon_creds_cli_LogonSamLogon_start(struct tevent_req *req)
 
 			status = netlogon_creds_encrypt_samlogon_logon(state->ro_creds,
 								       state->logon_level,
-								       state->logon);
+								       state->logon,
+								       auth_type,
+								       auth_level);
 			if (!NT_STATUS_IS_OK(status)) {
 				status = NT_STATUS_ACCESS_DENIED;
 				tevent_req_nterror(req, status);
@@ -2802,7 +2804,9 @@ static void netlogon_creds_cli_LogonSamLogon_start(struct tevent_req *req)
 
 	status = netlogon_creds_encrypt_samlogon_logon(&state->tmp_creds,
 						       state->logon_level,
-						       state->logon);
+						       state->logon,
+						       auth_type,
+						       auth_level);
 	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_LogonSamLogon_cleanup(req, status);
 		return;
