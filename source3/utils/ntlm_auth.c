@@ -2001,8 +2001,11 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			SAFE_FREE(error_string);
 		}
 		/* clear out the state */
+		data_blob_free(&challenge);
 		challenge = data_blob_null;
+		data_blob_free(&nt_response);
 		nt_response = data_blob_null;
+		data_blob_free(&lm_response);
 		lm_response = data_blob_null;
 		SAFE_FREE(full_username);
 		SAFE_FREE(username);
