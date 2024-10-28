@@ -4079,22 +4079,14 @@ static void netlogon_creds_cli_SendToSam_locked(struct tevent_req *subreq)
 	}
 	ZERO_STRUCT(state->rep_auth);
 
-	if (state->tmp_creds.negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		status = netlogon_creds_aes_encrypt(&state->tmp_creds,
-						    state->opaque.data,
-						    state->opaque.length);
-		if (tevent_req_nterror(req, status)) {
-			netlogon_creds_cli_SendToSam_cleanup(req, status);
-			return;
-		}
-	} else {
-		status = netlogon_creds_arcfour_crypt(&state->tmp_creds,
-						      state->opaque.data,
-						      state->opaque.length);
-		if (tevent_req_nterror(req, status)) {
-			netlogon_creds_cli_SendToSam_cleanup(req, status);
-			return;
-		}
+	status = netlogon_creds_encrypt_SendToSam(&state->tmp_creds,
+						  state->opaque.data,
+						  state->opaque.length,
+						  state->auth_type,
+						  state->auth_level);
+	if (tevent_req_nterror(req, status)) {
+		netlogon_creds_cli_SendToSam_cleanup(req, status);
+		return;
 	}
 
 	subreq = dcerpc_netr_NetrLogonSendToSam_send(state, state->ev,
