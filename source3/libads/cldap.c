@@ -85,11 +85,11 @@ bool check_cldap_reply_required_flags(uint32_t ret_flags,
   do a cldap netlogon query.  Always 389/udp
 *******************************************************************/
 
-bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
-			struct sockaddr_storage *ss,
-			const char *realm,
-			uint32_t nt_version,
-			struct netlogon_samlogon_response **_reply)
+static bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
+			       struct sockaddr_storage *ss,
+			       const char *realm,
+			       uint32_t nt_version,
+			       struct netlogon_samlogon_response **_reply)
 {
 	NTSTATUS status;
 	char addrstr[INET6_ADDRSTRLEN];
