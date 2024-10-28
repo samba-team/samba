@@ -1387,7 +1387,9 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base_call(struct dcesrv_netr_LogonSamL
 
 	nt_status = netlogon_creds_decrypt_samlogon_logon(creds,
 							  r->in.logon_level,
-							  r->in.logon);
+							  r->in.logon,
+							  auth_type,
+							  auth_level);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	switch (r->in.logon_level) {
