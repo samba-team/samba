@@ -3607,6 +3607,8 @@ static bool test_SamLogon(struct torture_context *tctx,
 	struct netlogon_creds_CredentialState *creds;
 	struct netr_Authenticator a;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
 
 	torture_assert(tctx, (creds = cli_credentials_get_netlogon_creds(machine_credentials)), "");
 
@@ -3635,17 +3637,6 @@ static bool test_SamLogon(struct torture_context *tctx,
 			ZERO_STRUCT(pinfo.lmpassword.hash);
 		}
 		E_md4hash(cli_credentials_get_password(test_credentials), pinfo.ntpassword.hash);
-
-		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-			netlogon_creds_aes_encrypt(creds, pinfo.lmpassword.hash, 16);
-			netlogon_creds_aes_encrypt(creds, pinfo.ntpassword.hash, 16);
-		} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
-			netlogon_creds_arcfour_crypt(creds, pinfo.lmpassword.hash, 16);
-			netlogon_creds_arcfour_crypt(creds, pinfo.ntpassword.hash, 16);
-		} else {
-			netlogon_creds_des_encrypt(creds, &pinfo.lmpassword);
-			netlogon_creds_des_encrypt(creds, &pinfo.ntpassword);
-		}
 
 		pinfo.identity_info = identity;
 		logon.password = &pinfo;
@@ -3692,6 +3683,14 @@ static bool test_SamLogon(struct torture_context *tctx,
 	torture_comment(tctx, "Testing LogonSamLogon with name %s\n", identity.account_name.string);
 
 	r.in.validation_level = 6;
+
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+	status = netlogon_creds_encrypt_samlogon_logon(creds,
+						       r.in.logon_level,
+						       r.in.logon,
+						       auth_type,
+						       auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "encrypt_samlogon_logon");
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogonEx_r(b, tctx, &r),
 		"netr_LogonSamLogonEx failed");
