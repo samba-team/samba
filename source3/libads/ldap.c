@@ -274,13 +274,6 @@ static bool ads_fill_cldap_reply(ADS_STRUCT *ads,
 
 	/* Check the CLDAP reply flags */
 
-	if (!(cldap_reply->server_type & NBT_SERVER_LDAP)) {
-		DBG_WARNING("%s's CLDAP reply says it is not an LDAP server!\n",
-			    addr);
-		ret = false;
-		goto out;
-	}
-
 	/* Fill in the ads->config values */
 
 	ADS_TALLOC_CONST_FREE(ads->config.workgroup);
@@ -289,12 +282,6 @@ static bool ads_fill_cldap_reply(ADS_STRUCT *ads,
 	ADS_TALLOC_CONST_FREE(ads->config.ldap_server_name);
 	ADS_TALLOC_CONST_FREE(ads->config.server_site_name);
 	ADS_TALLOC_CONST_FREE(ads->config.client_site_name);
-
-	if (!check_cldap_reply_required_flags(cldap_reply->server_type,
-					      ads->config.flags)) {
-		ret = false;
-		goto out;
-	}
 
 	ads->config.ldap_server_name = talloc_strdup(ads,
 						     cldap_reply->pdc_dns_name);
@@ -389,8 +376,11 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 	DBG_INFO("ads_try_connect: sending CLDAP request to %s (realm: %s)\n",
 		 addr, ads->server.realm);
 
-	ok = ads_cldap_netlogon_5(
-		frame, ss, ads->server.realm, 0, &cldap_reply);
+	ok = ads_cldap_netlogon_5(frame,
+				  ss,
+				  ads->server.realm,
+				  ads->config.flags | DS_ONLY_LDAP_NEEDED,
+				  &cldap_reply);
 	if (!ok) {
 		DBG_NOTICE("ads_cldap_netlogon_5(%s, %s) failed.\n",
 			   addr, ads->server.realm);
