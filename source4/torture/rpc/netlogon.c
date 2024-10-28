@@ -1114,6 +1114,9 @@ static bool test_SetPassword2_with_flags(struct torture_context *tctx,
 	struct netr_CryptPassword new_password;
 	struct dcerpc_pipe *p = NULL;
 	struct dcerpc_binding_handle *b = NULL;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
 
 	if (!test_SetupCredentials2(p1, tctx, flags, machine_credentials,
 				    cli_credentials_get_secure_channel_type(machine_credentials),
@@ -1136,11 +1139,12 @@ static bool test_SetPassword2_with_flags(struct torture_context *tctx,
 
 	password = generate_random_password(tctx, 8, 255);
 	encode_pw_buffer(password_buf.data, password, STR_UNICODE);
-	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		netlogon_creds_aes_encrypt(creds, password_buf.data, 516);
-	} else {
-		netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
-	}
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+	status = netlogon_creds_encrypt_samr_CryptPassword(creds,
+							   &password_buf,
+							   auth_type,
+							   auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "encrypt_samr_CryptPassword");
 
 	memcpy(new_password.data, password_buf.data, 512);
 	new_password.length = IVAL(password_buf.data, 512);
@@ -1170,11 +1174,12 @@ static bool test_SetPassword2_with_flags(struct torture_context *tctx,
 	 */
 	password = "";
 	encode_pw_buffer(password_buf.data, password, STR_UNICODE);
-	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		netlogon_creds_aes_encrypt(creds, password_buf.data, 516);
-	} else {
-		netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
-	}
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+	status = netlogon_creds_encrypt_samr_CryptPassword(creds,
+							   &password_buf,
+							   auth_type,
+							   auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "encrypt_samr_CryptPassword");
 	memcpy(new_password.data, password_buf.data, 512);
 	new_password.length = IVAL(password_buf.data, 512);
 
@@ -1197,11 +1202,12 @@ static bool test_SetPassword2_with_flags(struct torture_context *tctx,
 	/* now try a random password */
 	password = generate_random_password(tctx, 8, 255);
 	encode_pw_buffer(password_buf.data, password, STR_UNICODE);
-	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		netlogon_creds_aes_encrypt(creds, password_buf.data, 516);
-	} else {
-		netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
-	}
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+	status = netlogon_creds_encrypt_samr_CryptPassword(creds,
+							   &password_buf,
+							   auth_type,
+							   auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "encrypt_samr_CryptPassword");
 	memcpy(new_password.data, password_buf.data, 512);
 	new_password.length = IVAL(password_buf.data, 512);
 
@@ -1248,11 +1254,12 @@ static bool test_SetPassword2_with_flags(struct torture_context *tctx,
 	/* now try a random stream of bytes for a password */
 	set_pw_in_buffer(password_buf.data, &new_random_pass);
 
-	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		netlogon_creds_aes_encrypt(creds, password_buf.data, 516);
-	} else {
-		netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
-	}
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+	status = netlogon_creds_encrypt_samr_CryptPassword(creds,
+							   &password_buf,
+							   auth_type,
+							   auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "encrypt_samr_CryptPassword");
 
 	memcpy(new_password.data, password_buf.data, 512);
 	new_password.length = IVAL(password_buf.data, 512);
@@ -1301,6 +1308,9 @@ static bool test_SetPassword2_encrypted_to_all_zeros(
 	struct netr_CryptPassword new_password;
 	struct dcerpc_pipe *p = NULL;
 	struct dcerpc_binding_handle *b = NULL;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
 
 	if (!test_ServerAuthenticate2_encrypts_to_zero(
 		tctx,
@@ -1340,7 +1350,12 @@ static bool test_SetPassword2_encrypted_to_all_zeros(
 	if (!(creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES)) {
 		torture_fail(tctx, "NETLOGON_NEG_SUPPORTS_AES not set");
 	}
-	netlogon_creds_aes_encrypt(creds, password_buf.data, 516);
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+	status = netlogon_creds_encrypt_samr_CryptPassword(creds,
+							   &password_buf,
+							   auth_type,
+							   auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "encrypt_samr_CryptPassword");
 	if(!all_zero(password_buf.data, 516)) {
 		torture_fail(tctx, "Password did not encrypt to all zeros\n");
 	}
@@ -1387,6 +1402,9 @@ static bool test_SetPassword2_password_encrypts_to_zero(
 	struct netr_CryptPassword new_password;
 	struct dcerpc_pipe *p = NULL;
 	struct dcerpc_binding_handle *b = NULL;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
 
 	if (!test_ServerAuthenticate2_encrypts_to_zero(
 		tctx,
@@ -1427,7 +1445,12 @@ static bool test_SetPassword2_password_encrypts_to_zero(
 	if (!(creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES)) {
 		torture_fail(tctx, "NETLOGON_NEG_SUPPORTS_AES not set");
 	}
-	netlogon_creds_aes_encrypt(creds, password_buf.data, 516);
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+	status = netlogon_creds_encrypt_samr_CryptPassword(creds,
+							   &password_buf,
+							   auth_type,
+							   auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "encrypt_samr_CryptPassword");
 
 	memcpy(new_password.data, password_buf.data, 512);
 	new_password.length = IVAL(password_buf.data, 512);
@@ -1463,6 +1486,9 @@ static bool test_SetPassword2_confounder(
 	struct netr_CryptPassword new_password;
 	struct dcerpc_pipe *p = NULL;
 	struct dcerpc_binding_handle *b = NULL;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
 
 	if (!test_ServerAuthenticate2_encrypts_to_zero(
 		tctx,
@@ -1504,7 +1530,12 @@ static bool test_SetPassword2_confounder(
 	if (!(creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES)) {
 		torture_fail(tctx, "NETLOGON_NEG_SUPPORTS_AES not set");
 	}
-	netlogon_creds_aes_encrypt(creds, password_buf.data, 516);
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+	status = netlogon_creds_encrypt_samr_CryptPassword(creds,
+							   &password_buf,
+							   auth_type,
+							   auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "encrypt_samr_CryptPassword");
 
 	memcpy(new_password.data, password_buf.data, 512);
 	new_password.length = IVAL(password_buf.data, 512);
@@ -1540,6 +1571,9 @@ static bool test_SetPassword2_all_zeros(
 	struct dcerpc_pipe *p = NULL;
 	struct dcerpc_binding_handle *b = NULL;
 	uint32_t flags = NETLOGON_NEG_AUTH2_ADS_FLAGS; /* no AES desired here */
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
 
 	if (!test_SetupCredentials2(
 		p1,
@@ -1578,7 +1612,12 @@ static bool test_SetPassword2_all_zeros(
 	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 		torture_fail(tctx, "NETLOGON_NEG_SUPPORTS_AES enabled\n");
 	}
-	netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+	status = netlogon_creds_encrypt_samr_CryptPassword(creds,
+							   &password_buf,
+							   auth_type,
+							   auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "encrypt_samr_CryptPassword");
 
 	memcpy(new_password.data, password_buf.data, 512);
 	new_password.length = IVAL(password_buf.data, 512);
@@ -1617,6 +1656,9 @@ static bool test_SetPassword2_maximum_length_password(
 	struct dcerpc_binding_handle *b = NULL;
 	uint32_t flags = NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES;
 	DATA_BLOB new_random_pass = data_blob_null;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
 
 	if (!test_SetupCredentials2(
 		p1,
@@ -1654,11 +1696,12 @@ static bool test_SetPassword2_maximum_length_password(
 	new_random_pass = netlogon_very_rand_pass(tctx, 256);
 	set_pw_in_buffer(password_buf.data, &new_random_pass);
 	SIVAL(password_buf.data, 512, 512);
-	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		netlogon_creds_aes_encrypt(creds, password_buf.data, 516);
-	} else {
-		netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
-	}
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+	status = netlogon_creds_encrypt_samr_CryptPassword(creds,
+							   &password_buf,
+							   auth_type,
+							   auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "encrypt_samr_CryptPassword");
 
 	memcpy(new_password.data, password_buf.data, 512);
 	new_password.length = IVAL(password_buf.data, 512);
@@ -1699,6 +1742,9 @@ static bool test_SetPassword2_all_zero_password(
 	struct dcerpc_pipe *p = NULL;
 	struct dcerpc_binding_handle *b = NULL;
 	uint32_t flags = NETLOGON_NEG_AUTH2_ADS_FLAGS; /* no AES desired here */
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
 
 	if (!test_SetupCredentials2(
 		p1,
@@ -1738,7 +1784,12 @@ static bool test_SetPassword2_all_zero_password(
 	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 		torture_fail(tctx, "NETLOGON_NEG_SUPPORTS_AES set");
 	}
-	netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+	status = netlogon_creds_encrypt_samr_CryptPassword(creds,
+							   &password_buf,
+							   auth_type,
+							   auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "encrypt_samr_CryptPassword");
 
 	memcpy(new_password.data, password_buf.data, 512);
 	new_password.length = IVAL(password_buf.data, 512);

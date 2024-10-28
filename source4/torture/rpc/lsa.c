@@ -4372,6 +4372,8 @@ static bool check_dom_trust_pw(struct dcerpc_pipe *p,
 	struct tsocket_address *dest_addr;
 	struct cldap_socket *cldap;
 	struct cldap_netlogon cldap1;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
 
 	incoming_creds = cli_credentials_init(tctx);
 	torture_assert(tctx, incoming_creds, "cli_credentials_init");
@@ -4527,15 +4529,14 @@ static bool check_dom_trust_pw(struct dcerpc_pipe *p,
 	netlogon_creds_client_authenticator(creds, &req_auth);
 	ZERO_STRUCT(rep_auth);
 
-	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		netlogon_creds_aes_encrypt(creds,
-					   samr_crypt_password.data,
-					   516);
-	} else {
-		netlogon_creds_arcfour_crypt(creds,
-					     samr_crypt_password.data,
-					     516);
-	}
+	dcerpc_binding_handle_auth_info(p2->binding_handle,
+					&auth_type,
+					&auth_level);
+	status = netlogon_creds_encrypt_samr_CryptPassword(creds,
+							   &samr_crypt_password,
+							   auth_type,
+							   auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "encrypt_samr_CryptPassword");
 
 	memcpy(netr_crypt_password.data,
 	       samr_crypt_password.data, 512);
