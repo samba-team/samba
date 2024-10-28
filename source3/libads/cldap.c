@@ -89,6 +89,7 @@ static bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 			       struct sockaddr_storage *ss,
 			       const char *realm,
 			       uint32_t nt_version,
+			       uint32_t required_flags,
 			       struct netlogon_samlogon_response **_reply)
 {
 	NTSTATUS status;
@@ -119,6 +120,7 @@ static bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 			.ntversion = nt_version,
 			.domain = realm,
 			.acct_ctrl = -1,
+			.required_flags = required_flags,
 		},
 		1,				    /* min_servers */
 		timeval_current_ofs(MAX(3, lp_ldap_timeout() / 2), 0),
@@ -150,7 +152,7 @@ bool ads_cldap_netlogon_5(TALLOC_CTX *mem_ctx,
 	struct netlogon_samlogon_response *reply = NULL;
 	bool ret;
 
-	ret = ads_cldap_netlogon(mem_ctx, ss, realm, nt_version, &reply);
+	ret = ads_cldap_netlogon(mem_ctx, ss, realm, nt_version, 0, &reply);
 	if (!ret) {
 		return false;
 	}
