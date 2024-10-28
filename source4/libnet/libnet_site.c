@@ -33,7 +33,7 @@
 NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct libnet_JoinSite *r)
 {
 	NTSTATUS status;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = NULL;
 
 	char *site_name_str;
 	char *config_dn_str;
@@ -47,7 +47,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 	tmp_ctx = talloc_named(ctx, 0, "libnet_FindSite temp context");
 	if (!tmp_ctx) {
 		r->out.error_string = NULL;
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 
 	/* Resolve the site name. */
@@ -62,16 +62,14 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 	if (ret != 0) {
 		r->out.error_string = NULL;
 		status = map_nt_error_from_unix_common(errno);
-		talloc_free(tmp_ctx);
-		return status;
+		goto fail;
 	}
 
 	/* we want to use non async calls, so we're not passing an event context */
 	status = cldap_socket_init(tmp_ctx, NULL, dest_address, &cldap);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tmp_ctx);
 		r->out.error_string = NULL;
-		return status;
+		goto fail;
 	}
 	status = cldap_netlogon(cldap, tmp_ctx, &search);
 	if (NT_STATUS_IS_OK(status)) {
@@ -89,8 +87,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 						"Default-First-Site-Name");
 		if (!site_name_str) {
 			r->out.error_string = NULL;
-			talloc_free(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
+			goto nomem;
 		}
 	} else {
 		site_name_str = talloc_asprintf(
@@ -99,8 +96,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 			search.out.netlogon->data.nt5_ex.client_site);
 		if (!site_name_str) {
 			r->out.error_string = NULL;
-			talloc_free(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
+			goto nomem;
 		}
 	}
 
@@ -109,8 +105,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 	config_dn_str = talloc_asprintf(tmp_ctx, "CN=Configuration,%s", r->in.domain_dn_str);
 	if (!config_dn_str) {
 		r->out.error_string = NULL;
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 
 	/* Generate the CN=Servers,... DN. */
@@ -118,8 +113,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 						 r->in.netbios_name, site_name_str, config_dn_str);
 	if (!server_dn_str) {
 		r->out.error_string = NULL;
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
+		goto nomem;
 	}
 
 	r->out.site_name_str = talloc_move(r, &site_name_str);
@@ -128,6 +122,11 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
+nomem:
+	status = NT_STATUS_NO_MEMORY;
+fail:
+	TALLOC_FREE(tmp_ctx);
+	return status;
 }
 
 /*
