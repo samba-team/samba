@@ -290,7 +290,7 @@ static NTSTATUS netlogon_creds_step(struct netlogon_creds_CredentialState *creds
 /*
   DES encrypt a 8 byte LMSessionKey buffer using the Netlogon session key
 */
-NTSTATUS netlogon_creds_des_encrypt_LMKey(struct netlogon_creds_CredentialState *creds,
+static NTSTATUS netlogon_creds_des_encrypt_LMKey(struct netlogon_creds_CredentialState *creds,
 					  struct netr_LMSessionKey *key)
 {
 	int rc;
@@ -308,7 +308,7 @@ NTSTATUS netlogon_creds_des_encrypt_LMKey(struct netlogon_creds_CredentialState 
 /*
   DES decrypt a 8 byte LMSessionKey buffer using the Netlogon session key
 */
-NTSTATUS netlogon_creds_des_decrypt_LMKey(struct netlogon_creds_CredentialState *creds,
+static NTSTATUS netlogon_creds_des_decrypt_LMKey(struct netlogon_creds_CredentialState *creds,
 					  struct netr_LMSessionKey *key)
 {
 	int rc;
