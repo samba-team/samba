@@ -932,6 +932,9 @@ static bool test_SetPassword(struct torture_context *tctx,
 	struct netr_Authenticator credential, return_authenticator;
 	struct samr_Password new_password;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
+	NTSTATUS status;
 
 	if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
 		return false;
@@ -948,7 +951,12 @@ static bool test_SetPassword(struct torture_context *tctx,
 	password = generate_random_password(tctx, 8, 255);
 	E_md4hash(password, new_password.hash);
 
-	netlogon_creds_des_encrypt(creds, &new_password);
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+	status = netlogon_creds_encrypt_samr_Password(creds,
+						      &new_password,
+						      auth_type,
+						      auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "encrypt_samr_Password");
 
 	torture_comment(tctx, "Testing ServerPasswordSet on machine account\n");
 	torture_comment(tctx, "Changing machine account password to '%s'\n",
@@ -1007,6 +1015,9 @@ static bool test_SetPassword_flags(struct torture_context *tctx,
 	struct samr_Password new_password;
 	struct dcerpc_pipe *p = NULL;
 	struct dcerpc_binding_handle *b = NULL;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
 
 	if (!test_SetupCredentials2(p1, tctx, negotiate_flags,
 				    machine_credentials,
@@ -1031,7 +1042,12 @@ static bool test_SetPassword_flags(struct torture_context *tctx,
 	password = generate_random_password(tctx, 8, 255);
 	E_md4hash(password, new_password.hash);
 
-	netlogon_creds_des_encrypt(creds, &new_password);
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+	status = netlogon_creds_encrypt_samr_Password(creds,
+						      &new_password,
+						      auth_type,
+						      auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "encrypt_samr_Password");
 
 	torture_comment(tctx, "Testing ServerPasswordSet on machine account\n");
 	torture_comment(tctx, "Changing machine account password to '%s'\n",
@@ -5038,6 +5054,9 @@ static bool test_netr_ServerGetTrustInfo_flags(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = NULL;
 
 	struct samr_Password nt_hash;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
+	NTSTATUS status;
 
 	if (!test_SetupCredentials3(p1, tctx, negotiate_flags,
 				    machine_credentials, &creds)) {
@@ -5069,7 +5088,17 @@ static bool test_netr_ServerGetTrustInfo_flags(struct torture_context *tctx,
 
 	E_md4hash(cli_credentials_get_password(machine_credentials), nt_hash.hash);
 
-	netlogon_creds_des_decrypt(creds, &new_owf_password);
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+	status = netlogon_creds_decrypt_samr_Password(creds,
+						      &new_owf_password,
+						      auth_type,
+						      auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "decrypt_samr_Password");
+	status = netlogon_creds_decrypt_samr_Password(creds,
+						      &old_owf_password,
+						      auth_type,
+						      auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "decrypt_samr_Password");
 
 	dump_data(1, new_owf_password.hash, 16);
 	dump_data(1, nt_hash.hash, 16);

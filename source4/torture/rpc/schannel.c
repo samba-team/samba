@@ -1286,6 +1286,8 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 		struct dcerpc_pipe *net_pipe;
 		struct netr_Authenticator credential, return_authenticator;
 		struct samr_Password new_password;
+		enum dcerpc_AuthType auth_type;
+		enum dcerpc_AuthLevel auth_level;
 
 		status = dcerpc_pipe_connect_b(s, &net_pipe, s->b,
 					       &ndr_table_netlogon,
@@ -1310,7 +1312,14 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 
 		creds_state = cli_credentials_get_netlogon_creds(
 			s->wks_creds1);
-		netlogon_creds_des_encrypt(creds_state, &new_password);
+		dcerpc_binding_handle_auth_info(net_pipe->binding_handle,
+						&auth_type,
+						&auth_level);
+		status = netlogon_creds_encrypt_samr_Password(creds_state,
+							      &new_password,
+							      auth_type,
+							      auth_level);
+		torture_assert_ntstatus_ok(torture, status, "encrypt_samr_Password");
 		netlogon_creds_client_authenticator(creds_state, &credential);
 
 		torture_assert_ntstatus_ok(torture, dcerpc_netr_ServerPasswordSet_r(net_pipe->binding_handle, torture, &pwset),

@@ -1305,6 +1305,8 @@ static bool schan(struct torture_context *tctx,
 		struct netlogon_creds_CredentialState *creds_state;
 		struct netr_Authenticator credential, return_authenticator;
 		struct samr_Password new_password;
+		enum dcerpc_AuthType auth_type;
+		enum dcerpc_AuthLevel auth_level;
 
 		s.in.server_name = talloc_asprintf(
 			mem_ctx, "\\\\%s", dcerpc_server_name(net_pipe));
@@ -1319,7 +1321,14 @@ static bool schan(struct torture_context *tctx,
 		E_md4hash(password, new_password.hash);
 
 		creds_state = cli_credentials_get_netlogon_creds(wks_creds);
-		netlogon_creds_des_encrypt(creds_state, &new_password);
+		dcerpc_binding_handle_auth_info(net_handle,
+						&auth_type,
+						&auth_level);
+		status = netlogon_creds_encrypt_samr_Password(creds_state,
+							      &new_password,
+							      auth_type,
+							      auth_level);
+		torture_assert_ntstatus_ok(tctx, status, "encrypt_samr_Password");
 		netlogon_creds_client_authenticator(creds_state, &credential);
 
 		status = dcerpc_netr_ServerPasswordSet_r(net_handle, mem_ctx, &s);
