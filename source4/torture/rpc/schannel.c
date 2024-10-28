@@ -64,6 +64,7 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	struct netr_SamBaseInfo *base = NULL;
 	const char *crypto_alg = "";
 	bool can_do_validation_6 = true;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
 	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
 
 	if (lpcfg_client_lanman_auth(tctx->lp_ctx)) {
@@ -137,7 +138,7 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 		}
 	}
 
-	dcerpc_binding_handle_auth_info(b, NULL, &auth_level);
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
 	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		r.in.validation_level = 6;
 
@@ -208,13 +209,12 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 		dump_data(1, base->key.key, 16);
 		dump_data(1, base->LMSessKey.key, 8);
 
-		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-			netlogon_creds_aes_decrypt(creds, base->key.key, 16);
-			netlogon_creds_aes_decrypt(creds, base->LMSessKey.key, 8);
-		} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
-			netlogon_creds_arcfour_crypt(creds, base->key.key, 16);
-			netlogon_creds_arcfour_crypt(creds, base->LMSessKey.key, 8);
-		}
+		status = netlogon_creds_decrypt_samlogon_validation(creds,
+								    r.in.validation_level,
+								    r.out.validation,
+								    auth_type,
+								    auth_level);
+		torture_assert_ntstatus_ok(tctx, status, "decrypt_samlogon_validation");
 
 		DEBUG(1,("decrypted keys validation_level %d\n",
 			validation_levels[i]));
@@ -281,6 +281,7 @@ static bool test_netlogon_ex_bug14932(struct dcerpc_pipe *p,
 	struct netr_SamBaseInfo *base = NULL;
 	const char *crypto_alg = "";
 	bool can_do_validation_6 = true;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
 	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
 
 	flags |= CLI_CRED_NTLMv2_AUTH;
@@ -346,7 +347,7 @@ static bool test_netlogon_ex_bug14932(struct dcerpc_pipe *p,
 		}
 	}
 
-	dcerpc_binding_handle_auth_info(b, NULL, &auth_level);
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
 	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		r.in.validation_level = 6;
 
@@ -417,13 +418,12 @@ static bool test_netlogon_ex_bug14932(struct dcerpc_pipe *p,
 		dump_data(1, base->key.key, 16);
 		dump_data(1, base->LMSessKey.key, 8);
 
-		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-			netlogon_creds_aes_decrypt(creds, base->key.key, 16);
-			netlogon_creds_aes_decrypt(creds, base->LMSessKey.key, 8);
-		} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
-			netlogon_creds_arcfour_crypt(creds, base->key.key, 16);
-			netlogon_creds_arcfour_crypt(creds, base->LMSessKey.key, 8);
-		}
+		status = netlogon_creds_decrypt_samlogon_validation(creds,
+								    r.in.validation_level,
+								    r.out.validation,
+								    auth_type,
+								    auth_level);
+		torture_assert_ntstatus_ok(tctx, status, "decrypt_samlogon_validation");
 
 		DEBUG(1,("decrypted keys validation_level %d\n",
 			validation_levels[i]));
