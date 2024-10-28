@@ -26,10 +26,12 @@
 #include "libads/sitename_cache.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "libads/cldap.h"
+#include "libads/netlogon_ping.h"
 #include "lib/addns/dnsquery_srv.h"
 #include "libsmb/clidgram.h"
 #include "lib/gencache.h"
 #include "lib/util/util_net.h"
+#include "lib/tsocket/tsocket.h"
 
 /* 15 minutes */
 #define DSGETDCNAME_CACHE_TTL	60*15
@@ -252,56 +254,6 @@ static NTSTATUS store_cldap_reply(TALLOC_CTX *mem_ctx,
 	data_blob_free(&blob);
 
 	return status;
-}
-
-/****************************************************************
-****************************************************************/
-
-static uint32_t get_cldap_reply_server_flags(struct netlogon_samlogon_response *r,
-					     uint32_t nt_version)
-{
-	switch (nt_version & 0x0000001f) {
-		case 0:
-		case 1:
-		case 16:
-		case 17:
-			return 0;
-		case 2:
-		case 3:
-		case 18:
-		case 19:
-			return r->data.nt5.server_type;
-		case 4:
-		case 5:
-		case 6:
-		case 7:
-			return r->data.nt5_ex.server_type;
-		case 8:
-		case 9:
-		case 10:
-		case 11:
-		case 12:
-		case 13:
-		case 14:
-		case 15:
-			return r->data.nt5_ex.server_type;
-		case 20:
-		case 21:
-		case 22:
-		case 23:
-		case 24:
-		case 25:
-		case 26:
-		case 27:
-		case 28:
-			return r->data.nt5_ex.server_type;
-		case 29:
-		case 30:
-		case 31:
-			return r->data.nt5_ex.server_type;
-		default:
-			return 0;
-	}
 }
 
 /****************************************************************
@@ -870,50 +822,74 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 			       struct netr_DsRGetDCNameInfo **info)
 {
 	size_t i = 0;
-	bool valid_dc = false;
-	struct netlogon_samlogon_response *r = NULL;
-	uint32_t nt_version = NETLOGON_NT_VERSION_5 |
-			      NETLOGON_NT_VERSION_5EX;
-	uint32_t ret_flags = 0;
+	struct tsocket_address **addrs = NULL;
+	struct netlogon_samlogon_response **responses = NULL;
+	const uint32_t nt_version = NETLOGON_NT_VERSION_5 |
+				    NETLOGON_NT_VERSION_5EX;
 	NTSTATUS status;
 
-	nt_version |= map_ds_flags_to_nt_version(flags);
+	addrs = talloc_array(mem_ctx, struct tsocket_address *, num_dcs);
+	if (addrs == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	for (i=0; i<num_dcs; i++) {
-		char addr[INET6_ADDRSTRLEN];
-
-		print_sockaddr(addr, sizeof(addr), &dclist[i].sa.u.ss);
-
-		DEBUG(10,("LDAP ping to %s (%s)\n", dclist[i].hostname, addr));
-
-		if (ads_cldap_netlogon(mem_ctx, &dclist[i].sa.u.ss,
-					domain_name,
-					nt_version,
-					&r))
-		{
-			nt_version = r->ntver;
-			ret_flags = get_cldap_reply_server_flags(r, nt_version);
-
-			if (check_cldap_reply_required_flags(ret_flags, flags)) {
-				valid_dc = true;
-				break;
-			}
+		int ret = tsocket_address_bsd_from_samba_sockaddr(
+			addrs, &dclist[i].sa, &addrs[i]);
+		if (ret != 0) {
+			status = map_nt_error_from_unix(errno);
+			goto done;
 		}
-
-		continue;
 	}
 
-	if (!valid_dc) {
-		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	status = netlogon_pings(
+		addrs,				    /* mem_ctx */
+		lp_client_netlogon_ping_protocol(), /* proto */
+		addrs,				    /* servers */
+		num_dcs,			    /* num_servers */
+		(struct netlogon_ping_filter){
+			.ntversion = nt_version,
+			.acct_ctrl = -1,
+			.domain = domain_name,
+			.required_flags = flags,
+		},
+		1, /* min_servers */
+		timeval_current_ofs(MAX(3, lp_ldap_timeout() / 2), 0),
+		&responses);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		goto done;
 	}
 
-	status = make_dc_info_from_cldap_reply(mem_ctx, flags, &dclist[i].sa,
-					       &r->data.nt5_ex, info);
-	if (NT_STATUS_IS_OK(status)) {
-		return store_cldap_reply(mem_ctx, flags, &dclist[i].sa,
-					 nt_version, &r->data.nt5_ex);
+	for (i = 0; i < num_dcs; i++) {
+		struct netlogon_samlogon_response *r = responses[i];
+
+		if (r == NULL) {
+			continue;
+		}
+		if (r->ntver != NETLOGON_NT_VERSION_5EX) {
+			continue;
+		}
+		status = make_dc_info_from_cldap_reply(
+			mem_ctx, flags, &dclist[i].sa, &r->data.nt5_ex, info);
+		if (!NT_STATUS_IS_OK(status)) {
+			continue;
+		}
+		status = store_cldap_reply(mem_ctx,
+					   flags,
+					   &dclist[i].sa,
+					   nt_version,
+					   &r->data.nt5_ex);
+		if (!NT_STATUS_IS_OK(status)) {
+			continue;
+		}
+		goto done;
 	}
 
+	status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+done:
+	TALLOC_FREE(addrs);
 	return status;
 }
 
