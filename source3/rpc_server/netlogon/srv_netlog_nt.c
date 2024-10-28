@@ -1394,6 +1394,10 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 	struct samr_CryptPassword password_buf;
 	struct _samr_Credentials_t cr = { CRED_TYPE_PLAIN_TEXT, {0}};
 	bool ok;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
+
+	dcesrv_call_auth_info(dce_call, &auth_type, &auth_level);
 
 	become_root();
 	status = dcesrv_netr_creds_server_step_check(p->dce_call,
@@ -1422,15 +1426,10 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 	memcpy(password_buf.data, r->in.new_password->data, 512);
 	SIVAL(password_buf.data, 512, r->in.new_password->length);
 
-	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		status = netlogon_creds_aes_decrypt(creds,
-						    password_buf.data,
-						    516);
-	} else {
-		status = netlogon_creds_arcfour_crypt(creds,
-						      password_buf.data,
-						      516);
-	}
+	status = netlogon_creds_decrypt_samr_CryptPassword(creds,
+							   &password_buf,
+							   auth_type,
+							   auth_level);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(creds);
 		return status;
