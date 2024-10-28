@@ -17,6 +17,7 @@
 #ifndef __LIBCLI_AUTH_H__
 #define __LIBCLI_AUTH_H__
 
+#include "librpc/gen_ndr/dcerpc.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "librpc/gen_ndr/wkssvc.h"
 #include "librpc/gen_ndr/schannel.h"
