@@ -271,10 +271,8 @@ static void unbecomeDC_send_cldap(struct libnet_UnbecomeDC_state *s)
 	s->cldap.io.in.acct_control	= -1;
 	s->cldap.io.in.version		= NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
 
-	ret = tsocket_address_inet_from_strings(s, "ip",
-						s->source_dsa.address,
-						lpcfg_cldap_port(s->libnet->lp_ctx),
-						&dest_address);
+	ret = tsocket_address_inet_from_strings(
+		s, "ip", s->source_dsa.address, 389, &dest_address);
 	if (ret != 0) {
 		c->status = map_nt_error_from_unix_common(errno);
 		if (!composite_is_ok(c)) return;

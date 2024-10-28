@@ -35,6 +35,12 @@ REMOVED FEATURES
 The "nmbd proxy logon" feature was removed. This was used before
 Samba4 acquired a NBT server.
 
+The parameter "cldap port" has been removed. CLDAP runs over UDP port
+389, we don't see a reason why this should ever be changed to a
+different port. Moreover, we had several places in the code where
+Samba did not respect this parameter, so the behaviour was at least
+inconsistent.
+
 fruit:posix_rename
 ------------------
 
@@ -58,6 +64,7 @@ smb.conf changes
   smb3 directory leases                   New             Auto
   vfs mkdir use tmp name                  New             Auto
   fruit:posix_rename                      Removed
+  cldap port                              Removed
 
 KNOWN ISSUES
 ============

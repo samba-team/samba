@@ -4421,14 +4421,17 @@ static bool check_dom_trust_pw(struct dcerpc_pipe *p,
 			talloc_asprintf(tctx,"Failed to resolve %s: %s",
 					nbt_name.name, nt_errstr(status)));
 
-	rc = tsocket_address_inet_from_strings(tctx, "ip",
-					       ip,
-					       lpcfg_cldap_port(tctx->lp_ctx),
-					       &dest_addr);
-	torture_assert_int_equal(tctx, rc, 0,
-				 talloc_asprintf(tctx,
-						 "tsocket_address_inet_from_strings failed parsing %s:%d",
-						 host, lpcfg_cldap_port(tctx->lp_ctx)));
+	rc = tsocket_address_inet_from_strings(
+		tctx, "ip", ip, 389, &dest_addr);
+	torture_assert_int_equal(
+		tctx,
+		rc,
+		0,
+		talloc_asprintf(tctx,
+				"tsocket_address_inet_from_strings failed "
+				"parsing %s:%d",
+				host,
+				389));
 
 	/* cldap_socket_init should now know about the dest. address */
 	status = cldap_socket_init(tctx, NULL, dest_addr, &cldap);

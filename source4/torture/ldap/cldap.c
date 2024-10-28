@@ -100,10 +100,8 @@ static bool test_cldap_generic(struct torture_context *tctx, const char *dest)
 			talloc_asprintf(tctx,"Failed to resolve %s: %s",
 					nbt_name.name, nt_errstr(status)));
 
-	ret = tsocket_address_inet_from_strings(tctx, "ip",
-						ip,
-						lpcfg_cldap_port(tctx->lp_ctx),
-						&dest_addr);
+	ret = tsocket_address_inet_from_strings(
+		tctx, "ip", ip, 389, &dest_addr);
 	CHECK_VAL(ret, 0);
 
 	/* cldap_socket_init should now know about the dest. address */

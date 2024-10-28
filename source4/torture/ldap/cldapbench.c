@@ -67,10 +67,8 @@ static bool bench_cldap_netlogon(struct torture_context *tctx, const char *addre
 	struct tsocket_address *dest_addr;
 	int ret;
 
-	ret = tsocket_address_inet_from_strings(tctx, "ip",
-						address,
-						lpcfg_cldap_port(tctx->lp_ctx),
-						&dest_addr);
+	ret = tsocket_address_inet_from_strings(
+		tctx, "ip", address, 389, &dest_addr);
 	CHECK_VAL(ret, 0);
 
 	status = cldap_socket_init(tctx, NULL, dest_addr, &cldap);
@@ -151,10 +149,8 @@ static bool bench_cldap_rootdse(struct torture_context *tctx, const char *addres
 	struct tsocket_address *dest_addr;
 	int ret;
 
-	ret = tsocket_address_inet_from_strings(tctx, "ip",
-						address,
-						lpcfg_cldap_port(tctx->lp_ctx),
-						&dest_addr);
+	ret = tsocket_address_inet_from_strings(
+		tctx, "ip", address, 389, &dest_addr);
 	CHECK_VAL(ret, 0);
 
 	/* cldap_socket_init should now know about the dest. address */

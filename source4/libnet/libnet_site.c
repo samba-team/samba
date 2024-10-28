@@ -57,10 +57,8 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 	search.in.acct_control = -1;
 	search.in.version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
 
-	ret = tsocket_address_inet_from_strings(tmp_ctx, "ip",
-						r->in.dest_address,
-						r->in.cldap_port,
-						&dest_address);
+	ret = tsocket_address_inet_from_strings(
+		tmp_ctx, "ip", r->in.dest_address, 389, &dest_address);
 	if (ret != 0) {
 		r->out.error_string = NULL;
 		status = map_nt_error_from_unix_common(errno);
@@ -189,7 +187,6 @@ NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 	r->in.dest_address = dest_addr;
 	r->in.netbios_name = libnet_r->in.netbios_name;
 	r->in.domain_dn_str = libnet_r->out.domain_dn_str;
-	r->in.cldap_port = lpcfg_cldap_port(ctx->lp_ctx);
 
 	status = libnet_FindSite(tmp_ctx, ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {

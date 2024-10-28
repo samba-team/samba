@@ -106,15 +106,12 @@ static NTSTATUS cldapd_add_socket(struct cldapd_server *cldapd, struct loadparm_
 	NTSTATUS status;
 	int ret;
 
-	ret = tsocket_address_inet_from_strings(cldapd,
-						"ip",
-						address,
-						lpcfg_cldap_port(lp_ctx),
-						&socket_address);
+	ret = tsocket_address_inet_from_strings(
+		cldapd, "ip", address, 389, &socket_address);
 	if (ret != 0) {
 		status = map_nt_error_from_unix_common(errno);
 		DEBUG(0,("invalid address %s:%d - %s:%s\n",
-			 address, lpcfg_cldap_port(lp_ctx),
+			 address, 389,
 			 gai_strerror(ret), nt_errstr(status)));
 		return status;
 	}
