@@ -30,6 +30,12 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
+#undef netlogon_creds_des_encrypt
+#undef netlogon_creds_des_decrypt
+#undef netlogon_creds_arcfour_crypt
+#undef netlogon_creds_aes_encrypt
+#undef netlogon_creds_aes_decrypt
+
 bool netlogon_creds_is_random_challenge(const struct netr_Credential *challenge)
 {
 	/*

@@ -27,6 +27,8 @@
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "lib/crypto/gnutls_helpers.h"
 
+#undef netlogon_creds_arcfour_crypt
+
 /**
  * Decrypt and extract the user's passwords.
  *

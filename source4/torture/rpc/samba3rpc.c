@@ -1278,7 +1278,9 @@ static bool schan(struct torture_context *tctx,
 		 *
 		 * in order to detect bugs
 		 */
+#undef netlogon_creds_aes_encrypt
 		netlogon_creds_aes_encrypt(creds_state, pinfo.ntpassword.hash, 16);
+#define netlogon_creds_aes_encrypt __DO_NOT_USE_netlogon_creds_aes_encrypt
 
 		r.in.logon_level = NetlogonInteractiveInformation;
 		r.in.logon = &logon;

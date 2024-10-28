@@ -30,6 +30,13 @@ NTSTATUS netlogon_creds_aes_decrypt(struct netlogon_creds_CredentialState *creds
 				    uint8_t *data,
 				    size_t len);
 
+/* These should not be used directly! */
+#define netlogon_creds_des_encrypt __DO_NOT_USE_netlogon_creds_des_encrypt
+#define netlogon_creds_des_decrypt __DO_NOT_USE_netlogon_creds_des_decrypt
+#define netlogon_creds_arcfour_crypt __DO_NOT_USE_netlogon_creds_arcfour_crypt
+#define netlogon_creds_aes_encrypt __DO_NOT_USE_netlogon_creds_aes_encrypt
+#define netlogon_creds_aes_decrypt __DO_NOT_USE_netlogon_creds_aes_decrypt
+
 /*****************************************************************
 The above functions are common to the client and server interface
 next comes the client specific functions
