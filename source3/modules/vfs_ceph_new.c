@@ -155,7 +155,6 @@ struct vfs_ceph_config {
 	CEPH_FN(ceph_userperm_destroy);
 	CEPH_FN(ceph_userperm_new);
 	CEPH_FN(ceph_version);
-	CEPH_FN(ceph_readdir);
 	CEPH_FN(ceph_rewinddir);
 	CEPH_FN(ceph_readdir_r);
 };
@@ -442,7 +441,6 @@ static bool vfs_cephfs_load_lib(struct vfs_ceph_config *config)
 	CHECK_CEPH_FN(libhandle, ceph_userperm_destroy);
 	CHECK_CEPH_FN(libhandle, ceph_userperm_new);
 	CHECK_CEPH_FN(libhandle, ceph_version);
-	CHECK_CEPH_FN(libhandle, ceph_readdir);
 	CHECK_CEPH_FN(libhandle, ceph_rewinddir);
 	CHECK_CEPH_FN(libhandle, ceph_readdir_r);
 
