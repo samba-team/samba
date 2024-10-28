@@ -830,6 +830,8 @@ NTSTATUS netlogon_creds_server_step_check(struct netlogon_creds_CredentialState 
 static NTSTATUS netlogon_creds_crypt_samlogon_validation(struct netlogon_creds_CredentialState *creds,
 							 uint16_t validation_level,
 							 union netr_Validation *validation,
+							 enum dcerpc_AuthType auth_type,
+							 enum dcerpc_AuthLevel auth_level,
 							 bool do_encrypt)
 {
 	struct netr_SamBaseInfo *base = NULL;
@@ -945,21 +947,29 @@ static NTSTATUS netlogon_creds_crypt_samlogon_validation(struct netlogon_creds_C
 
 NTSTATUS netlogon_creds_decrypt_samlogon_validation(struct netlogon_creds_CredentialState *creds,
 						    uint16_t validation_level,
-						    union netr_Validation *validation)
+						    union netr_Validation *validation,
+						    enum dcerpc_AuthType auth_type,
+						    enum dcerpc_AuthLevel auth_level)
 {
 	return netlogon_creds_crypt_samlogon_validation(creds,
 							validation_level,
 							validation,
+							auth_type,
+							auth_level,
 							false);
 }
 
 NTSTATUS netlogon_creds_encrypt_samlogon_validation(struct netlogon_creds_CredentialState *creds,
 						    uint16_t validation_level,
-						    union netr_Validation *validation)
+						    union netr_Validation *validation,
+						    enum dcerpc_AuthType auth_type,
+						    enum dcerpc_AuthLevel auth_level)
 {
 	return netlogon_creds_crypt_samlogon_validation(creds,
 							validation_level,
 							validation,
+							auth_type,
+							auth_level,
 							true);
 }
 

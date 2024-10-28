@@ -1673,9 +1673,16 @@ static void dcesrv_netr_LogonSamLogon_base_reply(
 	NTSTATUS status;
 
 	if (NT_STATUS_IS_OK(r->out.result)) {
+		enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+		enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
+
+		dcesrv_call_auth_info(state->dce_call, &auth_type, &auth_level);
+
 		status = netlogon_creds_encrypt_samlogon_validation(state->creds,
 								    r->in.validation_level,
-								    r->out.validation);
+								    r->out.validation,
+								    auth_type,
+								    auth_level);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("netlogon_creds_encrypt_samlogon_validation() "
 				"failed - %s\n",

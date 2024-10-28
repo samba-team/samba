@@ -2862,9 +2862,15 @@ static void netlogon_creds_cli_LogonSamLogon_done(struct tevent_req *subreq)
 	struct netlogon_creds_cli_LogonSamLogon_state *state =
 		tevent_req_data(req,
 		struct netlogon_creds_cli_LogonSamLogon_state);
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
 	NTSTATUS status;
 	NTSTATUS result;
 	bool ok;
+
+	dcerpc_binding_handle_auth_info(state->binding_handle,
+					&auth_type,
+					&auth_level);
 
 	if (state->try_logon_ex) {
 		status = dcerpc_netr_LogonSamLogonEx_recv(subreq,
@@ -2918,7 +2924,9 @@ static void netlogon_creds_cli_LogonSamLogon_done(struct tevent_req *subreq)
 
 		status = netlogon_creds_decrypt_samlogon_validation(state->ro_creds,
 								    state->validation_level,
-								    state->validation);
+								    state->validation,
+								    auth_type,
+								    auth_level);
 		if (tevent_req_nterror(req, status)) {
 			netlogon_creds_cli_LogonSamLogon_cleanup(req, status);
 			return;
@@ -2992,7 +3000,9 @@ static void netlogon_creds_cli_LogonSamLogon_done(struct tevent_req *subreq)
 
 	status = netlogon_creds_decrypt_samlogon_validation(&state->tmp_creds,
 							    state->validation_level,
-							    state->validation);
+							    state->validation,
+							    auth_type,
+							    auth_level);
 	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_LogonSamLogon_cleanup(req, result);
 		return;
