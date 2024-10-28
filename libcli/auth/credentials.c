@@ -1114,6 +1114,7 @@ static NTSTATUS netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Creden
 			}
 		} else {
 			/* Using DES to verify kerberos tickets makes no sense */
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 		break;
 	}
