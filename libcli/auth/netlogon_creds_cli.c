@@ -2346,22 +2346,13 @@ static void netlogon_creds_cli_ServerPasswordSet_locked(struct tevent_req *subre
 
 	if (state->tmp_creds.negotiate_flags & NETLOGON_NEG_PASSWORD_SET2) {
 
-		if (state->tmp_creds.negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-			status = netlogon_creds_aes_encrypt(&state->tmp_creds,
-							    state->samr_crypt_password.data,
-							    516);
-			if (tevent_req_nterror(req, status)) {
-				netlogon_creds_cli_ServerPasswordSet_cleanup(req, status);
-				return;
-			}
-		} else {
-			status = netlogon_creds_arcfour_crypt(&state->tmp_creds,
-							      state->samr_crypt_password.data,
-							      516);
-			if (tevent_req_nterror(req, status)) {
-				netlogon_creds_cli_ServerPasswordSet_cleanup(req, status);
-				return;
-			}
+		status = netlogon_creds_encrypt_samr_CryptPassword(&state->tmp_creds,
+								   &state->samr_crypt_password,
+								   state->auth_type,
+								   state->auth_level);
+		if (tevent_req_nterror(req, status)) {
+			netlogon_creds_cli_ServerPasswordSet_cleanup(req, status);
+			return;
 		}
 
 		memcpy(state->netr_crypt_password.data,
