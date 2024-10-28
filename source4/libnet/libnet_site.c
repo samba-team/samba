@@ -122,14 +122,9 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r->out.site_name_str = site_name_str;
-	talloc_steal(r, site_name_str);
-
-	r->out.config_dn_str = config_dn_str;
-	talloc_steal(r, config_dn_str);
-
-	r->out.server_dn_str = server_dn_str;
-	talloc_steal(r, server_dn_str);
+	r->out.site_name_str = talloc_move(r, &site_name_str);
+	r->out.config_dn_str = talloc_move(r, &config_dn_str);
+	r->out.server_dn_str = talloc_move(r, &server_dn_str);
 
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
