@@ -146,13 +146,15 @@ static bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 bool ads_cldap_netlogon_5(TALLOC_CTX *mem_ctx,
 			  struct sockaddr_storage *ss,
 			  const char *realm,
+			  uint32_t required_flags,
 			  struct NETLOGON_SAM_LOGON_RESPONSE_EX *reply5)
 {
 	uint32_t nt_version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
 	struct netlogon_samlogon_response *reply = NULL;
 	bool ret;
 
-	ret = ads_cldap_netlogon(mem_ctx, ss, realm, nt_version, 0, &reply);
+	ret = ads_cldap_netlogon(
+		mem_ctx, ss, realm, nt_version, required_flags, &reply);
 	if (!ret) {
 		return false;
 	}

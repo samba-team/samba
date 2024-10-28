@@ -389,7 +389,8 @@ static bool ads_try_connect(ADS_STRUCT *ads, bool gc,
 	DBG_INFO("ads_try_connect: sending CLDAP request to %s (realm: %s)\n",
 		 addr, ads->server.realm);
 
-	ok = ads_cldap_netlogon_5(frame, ss, ads->server.realm, &cldap_reply);
+	ok = ads_cldap_netlogon_5(
+		frame, ss, ads->server.realm, 0, &cldap_reply);
 	if (!ok) {
 		DBG_NOTICE("ads_cldap_netlogon_5(%s, %s) failed.\n",
 			   addr, ads->server.realm);
