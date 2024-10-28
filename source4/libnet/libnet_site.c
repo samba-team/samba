@@ -35,14 +35,14 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = NULL;
 
-	char *site_name_str;
-	char *config_dn_str;
-	char *server_dn_str;
+	char *site_name_str = NULL;
+	char *config_dn_str = NULL;
+	char *server_dn_str = NULL;
 
 	struct cldap_socket *cldap = NULL;
-	struct cldap_netlogon search;
+	struct cldap_netlogon search = {};
 	int ret;
-	struct tsocket_address *dest_address;
+	struct tsocket_address *dest_address = NULL;
 
 	tmp_ctx = talloc_named(ctx, 0, "libnet_FindSite temp context");
 	if (!tmp_ctx) {
