@@ -16,10 +16,6 @@
 bool netlogon_creds_is_random_challenge(const struct netr_Credential *challenge);
 void netlogon_creds_random_challenge(struct netr_Credential *challenge);
 
-NTSTATUS netlogon_creds_des_encrypt_LMKey(struct netlogon_creds_CredentialState *creds,
-					  struct netr_LMSessionKey *key);
-NTSTATUS netlogon_creds_des_decrypt_LMKey(struct netlogon_creds_CredentialState *creds,
-					  struct netr_LMSessionKey *key);
 NTSTATUS netlogon_creds_des_encrypt(struct netlogon_creds_CredentialState *creds,
 				    struct samr_Password *pass);
 NTSTATUS netlogon_creds_des_decrypt(struct netlogon_creds_CredentialState *creds,
