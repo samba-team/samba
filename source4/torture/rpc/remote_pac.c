@@ -406,6 +406,9 @@ static bool netlogon_validate_pac(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = NULL;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB payload, pac_wrapped;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
+	NTSTATUS status;
 
 	if (!test_SetupCredentials2(p1, tctx, negotiate_flags,
 				    server_creds, secure_channel_type,
@@ -437,11 +440,6 @@ static bool netlogon_validate_pac(struct torture_context *tctx,
 	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), "ndr_push_struct_blob of PACValidate structure failed");
 
 	torture_assert(tctx, (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR), "not willing to even try a PACValidate without RC4 encryption");
-	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		netlogon_creds_aes_encrypt(creds, pac_wrapped.data, pac_wrapped.length);
-	} else {
-		netlogon_creds_arcfour_crypt(creds, pac_wrapped.data, pac_wrapped.length);
-	}
 
 	generic.length = pac_wrapped.length;
 	generic.data = pac_wrapped.data;
@@ -470,6 +468,14 @@ static bool netlogon_validate_pac(struct torture_context *tctx,
 	r.out.validation = &validation;
 	r.out.authoritative = &authoritative;
 	r.out.return_authenticator = &return_authenticator;
+
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+	status = netlogon_creds_encrypt_samlogon_logon(creds,
+						       r.in.logon_level,
+						       r.in.logon,
+						       auth_type,
+						       auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "encrypt_samlogon_logon");
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
 		"LogonSamLogon failed");
@@ -546,11 +552,6 @@ static bool netlogon_validate_pac(struct torture_context *tctx,
 	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), "ndr_push_struct_blob of PACValidate structure failed");
 
 	torture_assert(tctx, (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR), "not willing to even try a PACValidate without RC4 encryption");
-	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		netlogon_creds_aes_encrypt(creds, pac_wrapped.data, pac_wrapped.length);
-	} else {
-		netlogon_creds_arcfour_crypt(creds, pac_wrapped.data, pac_wrapped.length);
-	}
 
 	generic.length = pac_wrapped.length;
 	generic.data = pac_wrapped.data;
@@ -566,6 +567,14 @@ static bool netlogon_validate_pac(struct torture_context *tctx,
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = cli_credentials_get_workstation(server_creds);
 	r.in.validation_level = NetlogonValidationGenericInfo2;
+
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+	status = netlogon_creds_encrypt_samlogon_logon(creds,
+						       r.in.logon_level,
+						       r.in.logon,
+						       auth_type,
+						       auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "encrypt_samlogon_logon");
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
 		"LogonSamLogon failed");
@@ -598,11 +607,6 @@ static bool netlogon_validate_pac(struct torture_context *tctx,
 	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), "ndr_push_struct_blob of PACValidate structure failed");
 
 	torture_assert(tctx, (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR), "not willing to even try a PACValidate without RC4 encryption");
-	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		netlogon_creds_aes_encrypt(creds, pac_wrapped.data, pac_wrapped.length);
-	} else {
-		netlogon_creds_arcfour_crypt(creds, pac_wrapped.data, pac_wrapped.length);
-	}
 
 	generic.length = pac_wrapped.length;
 	generic.data = pac_wrapped.data;
@@ -618,6 +622,14 @@ static bool netlogon_validate_pac(struct torture_context *tctx,
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = cli_credentials_get_workstation(server_creds);
 	r.in.validation_level = NetlogonValidationGenericInfo2;
+
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+	status = netlogon_creds_encrypt_samlogon_logon(creds,
+						       r.in.logon_level,
+						       r.in.logon,
+						       auth_type,
+						       auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "encrypt_samlogon_logon");
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
 		"LogonSamLogon failed");
