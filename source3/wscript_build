@@ -283,6 +283,10 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
                      source='libads/kerberos.c libads/ads_status.c',
                      public_deps='krb5samba asn1util k5crypto gssapi LIBTSOCKET CLDAP LIBNMB')
 
+bld.SAMBA3_SUBSYSTEM('util_tsock',
+                     source='lib/util_tsock.c',
+                     deps='tevent-util LIBTSOCKET')
+
 bld.SAMBA3_SUBSYSTEM('samba3util',
                    source='''
                           lib/system.c
@@ -297,7 +301,6 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
                           lib/util_matching.c
                           lib/util_procid.c
                           lib/util_sock.c
-                          lib/util_tsock.c
                           lib/util_transfer_file.c
                           lib/util_macstreams.c
                           ''',
@@ -305,6 +308,7 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
                         CHARSET3
                         ndr
                         LIBTSOCKET
+                        util_tsock
                         samba-security
                         NDR_SECURITY
                         samba-util
