@@ -1244,6 +1244,59 @@ NTSTATUS netlogon_creds_encrypt_samr_CryptPassword(struct netlogon_creds_Credent
 						       true);
 }
 
+static NTSTATUS netlogon_creds_crypt_SendToSam(
+		struct netlogon_creds_CredentialState *creds,
+		uint8_t *opaque_data,
+		size_t opaque_length,
+		enum dcerpc_AuthType auth_type,
+		enum dcerpc_AuthLevel auth_level,
+		bool do_encrypt)
+{
+	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		if (do_encrypt) {
+			return netlogon_creds_aes_encrypt(creds,
+							  opaque_data,
+							  opaque_length);
+		}
+
+		return netlogon_creds_aes_decrypt(creds,
+						  opaque_data,
+						  opaque_length);
+	}
+
+	return netlogon_creds_arcfour_crypt(creds,
+					    opaque_data,
+					    opaque_length);
+}
+
+NTSTATUS netlogon_creds_decrypt_SendToSam(struct netlogon_creds_CredentialState *creds,
+					  uint8_t *opaque_data,
+					  size_t opaque_length,
+					  enum dcerpc_AuthType auth_type,
+					  enum dcerpc_AuthLevel auth_level)
+{
+	return netlogon_creds_crypt_SendToSam(creds,
+					      opaque_data,
+					      opaque_length,
+					      auth_type,
+					      auth_level,
+					      false);
+}
+
+NTSTATUS netlogon_creds_encrypt_SendToSam(struct netlogon_creds_CredentialState *creds,
+					  uint8_t *opaque_data,
+					  size_t opaque_length,
+					  enum dcerpc_AuthType auth_type,
+					  enum dcerpc_AuthLevel auth_level)
+{
+	return netlogon_creds_crypt_SendToSam(creds,
+					      opaque_data,
+					      opaque_length,
+					      auth_type,
+					      auth_level,
+					      true);
+}
+
 union netr_LogonLevel *netlogon_creds_shallow_copy_logon(TALLOC_CTX *mem_ctx,
 					enum netr_LogonInfoClass level,
 					const union netr_LogonLevel *in)
