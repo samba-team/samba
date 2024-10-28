@@ -1551,6 +1551,10 @@ bool test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	union netr_Validation validation;
 	uint8_t authoritative = 1;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
 
 	ZERO_STRUCT(a);
 	ZERO_STRUCT(r);
@@ -1586,13 +1590,15 @@ bool test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 	E_md4hash(plain_pass, pinfo.ntpassword.hash);
 
-	if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
-		netlogon_creds_arcfour_crypt(creds, pinfo.lmpassword.hash, 16);
-		netlogon_creds_arcfour_crypt(creds, pinfo.ntpassword.hash, 16);
-	} else {
-		netlogon_creds_des_encrypt(creds, &pinfo.lmpassword);
-		netlogon_creds_des_encrypt(creds, &pinfo.ntpassword);
-	}
+	status = netlogon_creds_encrypt_samlogon_logon(creds,
+						       r.in.logon_level,
+						       r.in.logon,
+						       auth_type,
+						       auth_level);
+	torture_assert_ntstatus_ok_goto(tctx,
+		status,
+		ret, failed,
+		"netlogon_creds_encrypt_samlogon_logon");
 
 	torture_comment(tctx, "Testing netr_LogonSamLogonWithFlags '%s' (Interactive Logon)\n", comment);
 
