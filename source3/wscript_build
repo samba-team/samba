@@ -103,8 +103,9 @@ bld.SAMBA3_SUBSYSTEM('TLDAP',
                     deps='''
                          asn1util
                          LIBTSOCKET
-                         samba3util
+                         util_tsock
                          LIBTLS
+                         gensec
                          ''')
 
 bld.SAMBA3_BINARY('test_tldap',
