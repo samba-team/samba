@@ -54,6 +54,7 @@ from samba.credentials import (
 from samba.crypto import des_crypt_blob_16, md4_hash_blob
 from samba.dcerpc import (
     claims,
+    dcerpc,
     drsblobs,
     drsuapi,
     krb5ccache,
@@ -3702,10 +3703,12 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         workstation = domain_joined_mach_creds.get_username()
 
         # Calling this initializes netlogon_creds on mach_creds, as is required
-        # before calling mach_creds.encrypt_samr_password().
+        # before calling mach_creds.encrypt_netr_PasswordInfo().
         conn = netlogon.netlogon(f'ncacn_ip_tcp:{dc_server}[schannel,seal]',
                                  self.get_lp(),
                                  domain_joined_mach_creds)
+        auth_type = dcerpc.DCERPC_AUTH_TYPE_SCHANNEL
+        auth_level = dcerpc.DCERPC_AUTH_LEVEL_PRIVACY
 
         if logon_type == netlogon.NetlogonInteractiveInformation:
             logon = netlogon.netr_PasswordInfo()
@@ -3715,10 +3718,13 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
             nt_pass = samr.Password()
             nt_pass.hash = list(creds.get_nt_hash())
-            domain_joined_mach_creds.encrypt_samr_password(nt_pass)
 
             logon.lmpassword = lm_pass
             logon.ntpassword = nt_pass
+
+            domain_joined_mach_creds.encrypt_netr_PasswordInfo(info=logon,
+                                                               auth_type=auth_type,
+                                                               auth_level=auth_level)
 
         elif logon_type == netlogon.NetlogonNetworkInformation:
             computername = ntlmssp.AV_PAIR()
