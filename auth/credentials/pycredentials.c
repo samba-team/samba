@@ -1024,9 +1024,11 @@ static PyObject *py_creds_get_aes256_key(PyObject *self, PyObject *args)
 static PyObject *py_creds_encrypt_netr_crypt_password(PyObject *self,
 						      PyObject *args)
 {
-	DATA_BLOB data = data_blob_null;
 	struct cli_credentials    *creds  = NULL;
 	struct netr_CryptPassword *pwd    = NULL;
+	struct samr_CryptPassword spwd;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
 	NTSTATUS status;
 	PyObject *py_cp = Py_None;
 
@@ -1045,9 +1047,18 @@ static PyObject *py_creds_encrypt_netr_crypt_password(PyObject *self,
 		/* pytalloc_get_type sets TypeError */
 		return NULL;
 	}
-	data.length = sizeof(struct netr_CryptPassword);
-	data.data   = (uint8_t *)pwd;
-	status = netlogon_creds_session_encrypt(creds->netlogon_creds, data);
+
+	memcpy(spwd.data, pwd->data, 512);
+	PUSH_LE_U32(spwd.data, 512, pwd->length);
+
+	status = netlogon_creds_encrypt_samr_CryptPassword(creds->netlogon_creds,
+							   &spwd,
+							   auth_type,
+							   auth_level);
+
+	memcpy(pwd->data, spwd.data, 512);
+	pwd->length = PULL_LE_U32(spwd.data, 512);
+	ZERO_STRUCT(spwd);
 
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
