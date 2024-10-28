@@ -1020,6 +1020,10 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 	const struct dom_sid *client_sid = NULL;
 	struct ldb_context *sam_ctx;
 	NTSTATUS nt_status;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
+
+	dcesrv_call_auth_info(dce_call, &auth_type, &auth_level);
 
 	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
 							mem_ctx,
@@ -1034,7 +1038,10 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
-	nt_status = netlogon_creds_des_decrypt(creds, r->in.new_password);
+	nt_status = netlogon_creds_decrypt_samr_Password(creds,
+							 r->in.new_password,
+							 auth_type,
+							 auth_level);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	/* Using the sid for the account as the key, set the password */
@@ -4560,6 +4567,10 @@ static NTSTATUS dcesrv_netr_ServerGetTrustInfo(struct dcesrv_call_state *dce_cal
 		NULL
 	};
 	struct netr_TrustInfo *trust_info = NULL;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
+
+	dcesrv_call_auth_info(dce_call, &auth_type, &auth_level);
 
 	ZERO_STRUCTP(r->out.new_owf_password);
 	ZERO_STRUCTP(r->out.old_owf_password);
@@ -4691,14 +4702,20 @@ static NTSTATUS dcesrv_netr_ServerGetTrustInfo(struct dcesrv_call_state *dce_cal
 
 	if (curNtHash != NULL) {
 		*r->out.new_owf_password = *curNtHash;
-		nt_status = netlogon_creds_des_encrypt(creds, r->out.new_owf_password);
+		nt_status = netlogon_creds_encrypt_samr_Password(creds,
+						r->out.new_owf_password,
+						auth_type,
+						auth_level);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
 		}
 	}
 	if (prevNtHash != NULL) {
 		*r->out.old_owf_password = *prevNtHash;
-		nt_status = netlogon_creds_des_encrypt(creds, r->out.old_owf_password);
+		nt_status = netlogon_creds_encrypt_samr_Password(creds,
+						r->out.old_owf_password,
+						auth_type,
+						auth_level);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
 		}
