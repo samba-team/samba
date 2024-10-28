@@ -1308,6 +1308,10 @@ NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 	struct netlogon_creds_CredentialState *creds = NULL;
 	struct _samr_Credentials_t cr = { CRED_TYPE_NT_HASH, {0}};
 	const struct dom_sid *client_sid = NULL;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
+
+	dcesrv_call_auth_info(dce_call, &auth_type, &auth_level);
 
 	DEBUG(5,("_netr_ServerPasswordSet: %d\n", __LINE__));
 
@@ -1337,7 +1341,10 @@ NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 	DEBUG(3,("_netr_ServerPasswordSet: Server Password Set by remote machine:[%s] on account [%s]\n",
 			r->in.computer_name, creds->computer_name));
 
-	status = netlogon_creds_des_decrypt(creds, r->in.new_password);
+	status = netlogon_creds_decrypt_samr_Password(creds,
+						      r->in.new_password,
+						      auth_type,
+						      auth_level);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2741,7 +2748,9 @@ static NTSTATUS get_password_from_trustAuth(TALLOC_CTX *mem_ctx,
 					    const DATA_BLOB *trustAuth_blob,
 					    struct netlogon_creds_CredentialState *creds,
 					    struct samr_Password *current_pw_enc,
-					    struct samr_Password *previous_pw_enc)
+					    struct samr_Password *previous_pw_enc,
+					    enum dcerpc_AuthType auth_type,
+					    enum dcerpc_AuthLevel auth_level)
 {
 	enum ndr_err_code ndr_err;
 	struct trustAuthInOutBlob trustAuth;
@@ -2758,7 +2767,10 @@ static NTSTATUS get_password_from_trustAuth(TALLOC_CTX *mem_ctx,
 		mdfour(current_pw_enc->hash,
 		       trustAuth.current.array[0].AuthInfo.clear.password,
 		       trustAuth.current.array[0].AuthInfo.clear.size);
-		status = netlogon_creds_des_encrypt(creds, current_pw_enc);
+		status = netlogon_creds_encrypt_samr_Password(creds,
+							      current_pw_enc,
+							      auth_type,
+							      auth_level);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -2772,7 +2784,10 @@ static NTSTATUS get_password_from_trustAuth(TALLOC_CTX *mem_ctx,
 		mdfour(previous_pw_enc->hash,
 		       trustAuth.previous.array[0].AuthInfo.clear.password,
 		       trustAuth.previous.array[0].AuthInfo.clear.size);
-		status = netlogon_creds_des_encrypt(creds, previous_pw_enc);
+		status = netlogon_creds_encrypt_samr_Password(creds,
+							      previous_pw_enc,
+							      auth_type,
+							      auth_level);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -2797,6 +2812,10 @@ NTSTATUS _netr_ServerGetTrustInfo(struct pipes_struct *p,
 	bool trusted;
 	struct netr_TrustInfo *trust_info;
 	struct pdb_trusted_domain *td;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
+
+	dcesrv_call_auth_info(p->dce_call, &auth_type, &auth_level);
 
 	/* TODO: check server name */
 
@@ -2873,8 +2892,9 @@ NTSTATUS _netr_ServerGetTrustInfo(struct pipes_struct *p,
 						     &td->trust_auth_incoming,
 						     creds,
 						     r->out.new_owf_password,
-						     r->out.old_owf_password);
-
+						     r->out.old_owf_password,
+						     auth_type,
+						     auth_level);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
