@@ -976,6 +976,8 @@ NTSTATUS netlogon_creds_encrypt_samlogon_validation(struct netlogon_creds_Creden
 static NTSTATUS netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_CredentialState *creds,
 						    enum netr_LogonInfoClass level,
 						    union netr_LogonLevel *logon,
+						    enum dcerpc_AuthType auth_type,
+						    enum dcerpc_AuthLevel auth_level,
 						    bool do_encrypt)
 {
 	NTSTATUS status;
@@ -1121,16 +1123,30 @@ static NTSTATUS netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Creden
 
 NTSTATUS netlogon_creds_decrypt_samlogon_logon(struct netlogon_creds_CredentialState *creds,
 					       enum netr_LogonInfoClass level,
-					       union netr_LogonLevel *logon)
+					       union netr_LogonLevel *logon,
+					       enum dcerpc_AuthType auth_type,
+					       enum dcerpc_AuthLevel auth_level)
 {
-	return netlogon_creds_crypt_samlogon_logon(creds, level, logon, false);
+	return netlogon_creds_crypt_samlogon_logon(creds,
+						   level,
+						   logon,
+						   auth_type,
+						   auth_level,
+						   false);
 }
 
 NTSTATUS netlogon_creds_encrypt_samlogon_logon(struct netlogon_creds_CredentialState *creds,
 					       enum netr_LogonInfoClass level,
-					       union netr_LogonLevel *logon)
+					       union netr_LogonLevel *logon,
+					       enum dcerpc_AuthType auth_type,
+					       enum dcerpc_AuthLevel auth_level)
 {
-	return netlogon_creds_crypt_samlogon_logon(creds, level, logon, true);
+	return netlogon_creds_crypt_samlogon_logon(creds,
+						   level,
+						   logon,
+						   auth_type,
+						   auth_level,
+						   true);
 }
 
 union netr_LogonLevel *netlogon_creds_shallow_copy_logon(TALLOC_CTX *mem_ctx,
