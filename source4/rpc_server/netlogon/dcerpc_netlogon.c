@@ -3171,6 +3171,10 @@ static NTSTATUS dcesrv_netr_NetrLogonSendToSam(struct dcesrv_call_state *dce_cal
 	DATA_BLOB decrypted_blob;
 	enum ndr_err_code ndr_err;
 	struct netr_SendToSamBase base_msg = { 0 };
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
+
+	dcesrv_call_auth_info(dce_call, &auth_type, &auth_level);
 
 	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
 							mem_ctx,
@@ -3203,15 +3207,12 @@ static NTSTATUS dcesrv_netr_NetrLogonSendToSam(struct dcesrv_call_state *dce_cal
 	}
 
 	/* Buffer is meant to be 16-bit aligned */
-	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		nt_status = netlogon_creds_aes_decrypt(creds,
-						       r->in.opaque_buffer,
-						       r->in.buffer_len);
-	} else {
-		nt_status = netlogon_creds_arcfour_crypt(creds,
-							 r->in.opaque_buffer,
-							 r->in.buffer_len);
-	}
+
+	nt_status = netlogon_creds_decrypt_SendToSam(creds,
+						     r->in.opaque_buffer,
+						     r->in.buffer_len,
+						     auth_type,
+						     auth_level);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
