@@ -658,6 +658,8 @@ static bool test_validate_trust(struct torture_context *tctx,
 	struct samr_Password *old_nt_hash;
 	char *dummy;
 	uint32_t trust_attributes = LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
 
 	status = dcerpc_parse_binding(tctx, binding, &b);
 	torture_assert_ntstatus_ok(tctx, status, "Bad binding string");
@@ -733,8 +735,19 @@ static bool test_validate_trust(struct torture_context *tctx,
 	old_nt_hash = cli_credentials_get_old_nt_hash(credentials, tctx);
 	torture_assert(tctx, old_nt_hash != NULL, "cli_credentials_get_old_nt_hash()");
 
-	netlogon_creds_des_decrypt(creds, &new_owf_password);
-	netlogon_creds_des_decrypt(creds, &old_owf_password);
+	dcerpc_binding_handle_auth_info(p->binding_handle,
+					&auth_type,
+					&auth_level);
+	status = netlogon_creds_decrypt_samr_Password(creds,
+						      &new_owf_password,
+						      auth_type,
+						      auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "decrypt_samr_Password");
+	status = netlogon_creds_decrypt_samr_Password(creds,
+						      &old_owf_password,
+						      auth_type,
+						      auth_level);
+	torture_assert_ntstatus_ok(tctx, status, "decrypt_samr_Password");
 
 	dump_data(1, new_owf_password.hash, 16);
 	dump_data(1, new_nt_hash->hash, 16);
