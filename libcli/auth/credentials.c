@@ -1196,6 +1196,54 @@ NTSTATUS netlogon_creds_encrypt_samr_Password(struct netlogon_creds_CredentialSt
 						  true);
 }
 
+static NTSTATUS netlogon_creds_crypt_samr_CryptPassword(
+		struct netlogon_creds_CredentialState *creds,
+		struct samr_CryptPassword *pass,
+		enum dcerpc_AuthType auth_type,
+		enum dcerpc_AuthLevel auth_level,
+		bool do_encrypt)
+{
+	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		if (do_encrypt) {
+			return netlogon_creds_aes_encrypt(creds,
+							  pass->data,
+							  ARRAY_SIZE(pass->data));
+		}
+
+		return netlogon_creds_aes_decrypt(creds,
+						  pass->data,
+						  ARRAY_SIZE(pass->data));
+	}
+
+	return netlogon_creds_arcfour_crypt(creds,
+					    pass->data,
+					    ARRAY_SIZE(pass->data));
+}
+
+NTSTATUS netlogon_creds_decrypt_samr_CryptPassword(struct netlogon_creds_CredentialState *creds,
+						   struct samr_CryptPassword *pass,
+						   enum dcerpc_AuthType auth_type,
+						   enum dcerpc_AuthLevel auth_level)
+{
+	return netlogon_creds_crypt_samr_CryptPassword(creds,
+						       pass,
+						       auth_type,
+						       auth_level,
+						       false);
+}
+
+NTSTATUS netlogon_creds_encrypt_samr_CryptPassword(struct netlogon_creds_CredentialState *creds,
+						   struct samr_CryptPassword *pass,
+						   enum dcerpc_AuthType auth_type,
+						   enum dcerpc_AuthLevel auth_level)
+{
+	return netlogon_creds_crypt_samr_CryptPassword(creds,
+						       pass,
+						       auth_type,
+						       auth_level,
+						       true);
+}
+
 union netr_LogonLevel *netlogon_creds_shallow_copy_logon(TALLOC_CTX *mem_ctx,
 					enum netr_LogonInfoClass level,
 					const union netr_LogonLevel *in)
