@@ -91,6 +91,12 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 	struct netr_NetworkInfo ninfo;
 	struct netr_SamBaseInfo *base = NULL;
 	uint16_t validation_level = 0;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+
+	dcerpc_binding_handle_auth_info(samlogon_state->p->binding_handle,
+					&auth_type,
+					&auth_level);
 
 	samlogon_state->r.in.logon->network = &ninfo;
 	samlogon_state->r_ex.in.logon->network = &ninfo;
@@ -178,7 +184,9 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 
 		status = netlogon_creds_decrypt_samlogon_validation(samlogon_state->creds,
 								    validation_level,
-								    r->out.validation);
+								    r->out.validation,
+								    auth_type,
+								    auth_level);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (error_string) {
 				*error_string = strdup(nt_errstr(status));
@@ -218,7 +226,9 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 
 		status = netlogon_creds_decrypt_samlogon_validation(samlogon_state->creds,
 								    validation_level,
-								    r_ex->out.validation);
+								    r_ex->out.validation,
+								    auth_type,
+								    auth_level);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (error_string) {
 				*error_string = strdup(nt_errstr(status));
@@ -266,7 +276,9 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 
 		status = netlogon_creds_decrypt_samlogon_validation(samlogon_state->creds,
 								    validation_level,
-								    r_flags->out.validation);
+								    r_flags->out.validation,
+								    auth_type,
+								    auth_level);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (error_string) {
 				*error_string = strdup(nt_errstr(status));
