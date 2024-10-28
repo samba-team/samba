@@ -28,59 +28,6 @@
 #include "libads/cldap.h"
 #include "libads/netlogon_ping.h"
 
-/****************************************************************
-****************************************************************/
-
-#define RETURN_ON_FALSE(x) if (!(x)) return false;
-
-bool check_cldap_reply_required_flags(uint32_t ret_flags,
-				      uint32_t req_flags)
-{
-	if (req_flags == 0) {
-		return true;
-	}
-
-	if (req_flags & DS_PDC_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & NBT_SERVER_PDC);
-
-	if (req_flags & DS_GC_SERVER_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & NBT_SERVER_GC);
-
-	if (req_flags & DS_ONLY_LDAP_NEEDED)
-		RETURN_ON_FALSE(ret_flags & NBT_SERVER_LDAP);
-
-	if ((req_flags & DS_DIRECTORY_SERVICE_REQUIRED) ||
-	    (req_flags & DS_DIRECTORY_SERVICE_PREFERRED))
-		RETURN_ON_FALSE(ret_flags & NBT_SERVER_DS);
-
-	if (req_flags & DS_KDC_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & NBT_SERVER_KDC);
-
-	if (req_flags & DS_TIMESERV_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & NBT_SERVER_TIMESERV);
-
-	if (req_flags & DS_WEB_SERVICE_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & NBT_SERVER_ADS_WEB_SERVICE);
-
-	if (req_flags & DS_WRITABLE_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & NBT_SERVER_WRITABLE);
-
-	if (req_flags & DS_DIRECTORY_SERVICE_6_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & (NBT_SERVER_SELECT_SECRET_DOMAIN_6
-					     |NBT_SERVER_FULL_SECRET_DOMAIN_6));
-
-	if (req_flags & DS_DIRECTORY_SERVICE_8_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & NBT_SERVER_DS_8);
-
-	if (req_flags & DS_DIRECTORY_SERVICE_9_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & NBT_SERVER_DS_9);
-
-	if (req_flags & DS_DIRECTORY_SERVICE_10_REQUIRED)
-		RETURN_ON_FALSE(ret_flags & NBT_SERVER_DS_10);
-
-	return true;
-}
-
 /*******************************************************************
   do a cldap netlogon query.  Always 389/udp
 *******************************************************************/

@@ -24,6 +24,8 @@
 #include "libcli/util/ntstatus.h"
 #include "lib/param/loadparm.h"
 
+bool check_cldap_reply_required_flags(uint32_t ret_flags, uint32_t req_flags);
+
 struct netlogon_samlogon_response;
 
 struct netlogon_ping_filter {
