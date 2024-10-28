@@ -39,12 +39,12 @@ testit "name-to-sid.realm-user" \
 # that this does not change subsequent sid-to-name
 # queries.
 sid=$($wbinfo -n $REALM/$DC_USERNAME | sed -e 's/ .*//')
-out=$($wbinfo -s $sid | sed -e 's/ .//')
 # winbindd returns usernames in lowercase
 lcuser=$(echo $DC_USERNAME | tr A-Z a-z)
-testit "Verify DOMAIN/USER output" \
-	test "$out" = "$DOMAIN/$lcuser" ||
-	failed=$(expr $failed + 1)
+testit_grep "Verify DOMAIN/USER output" \
+	"${DOMAIN}/${lcuser}" \
+	${wbinfo} -s "${sid}" ||
+	failed=$((failed + 1))
 
 # Two separator characters should fail
 testit_expect_failure "name-to-sid.double-separator" \
