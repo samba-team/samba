@@ -1149,6 +1149,53 @@ NTSTATUS netlogon_creds_encrypt_samlogon_logon(struct netlogon_creds_CredentialS
 						   true);
 }
 
+static NTSTATUS netlogon_creds_crypt_samr_Password(
+		struct netlogon_creds_CredentialState *creds,
+		struct samr_Password *pass,
+		enum dcerpc_AuthType auth_type,
+		enum dcerpc_AuthLevel auth_level,
+		bool do_encrypt)
+{
+	if (all_zero(pass->hash, ARRAY_SIZE(pass->hash))) {
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * Even with NETLOGON_NEG_SUPPORTS_AES or
+	 * NETLOGON_NEG_ARCFOUR this uses DES
+	 */
+
+	if (do_encrypt) {
+		return netlogon_creds_des_encrypt(creds, pass);
+	}
+
+	return netlogon_creds_des_decrypt(creds, pass);
+}
+
+NTSTATUS netlogon_creds_decrypt_samr_Password(struct netlogon_creds_CredentialState *creds,
+					      struct samr_Password *pass,
+					      enum dcerpc_AuthType auth_type,
+					      enum dcerpc_AuthLevel auth_level)
+{
+	return netlogon_creds_crypt_samr_Password(creds,
+						  pass,
+						  auth_type,
+						  auth_level,
+						  false);
+}
+
+NTSTATUS netlogon_creds_encrypt_samr_Password(struct netlogon_creds_CredentialState *creds,
+					      struct samr_Password *pass,
+					      enum dcerpc_AuthType auth_type,
+					      enum dcerpc_AuthLevel auth_level)
+{
+	return netlogon_creds_crypt_samr_Password(creds,
+						  pass,
+						  auth_type,
+						  auth_level,
+						  true);
+}
+
 union netr_LogonLevel *netlogon_creds_shallow_copy_logon(TALLOC_CTX *mem_ctx,
 					enum netr_LogonInfoClass level,
 					const union netr_LogonLevel *in)
