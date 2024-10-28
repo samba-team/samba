@@ -2375,8 +2375,10 @@ static void netlogon_creds_cli_ServerPasswordSet_locked(struct tevent_req *subre
 			return;
 		}
 	} else {
-		status = netlogon_creds_des_encrypt(&state->tmp_creds,
-						    &state->samr_password);
+		status = netlogon_creds_encrypt_samr_Password(&state->tmp_creds,
+							      &state->samr_password,
+							      state->auth_type,
+							      state->auth_level);
 		if (tevent_req_nterror(req, status)) {
 			netlogon_creds_cli_ServerPasswordSet_cleanup(req, status);
 			return;
@@ -3518,8 +3520,6 @@ static void netlogon_creds_cli_ServerGetTrustInfo_done(struct tevent_req *subreq
 		struct netlogon_creds_cli_ServerGetTrustInfo_state);
 	NTSTATUS status;
 	NTSTATUS result;
-	const struct samr_Password zero = {};
-	bool cmp;
 	bool ok;
 
 	/*
@@ -3545,25 +3545,21 @@ static void netlogon_creds_cli_ServerGetTrustInfo_done(struct tevent_req *subreq
 		return;
 	}
 
-	cmp = mem_equal_const_time(state->new_owf_password.hash,
-				   zero.hash, sizeof(zero.hash));
-	if (!cmp) {
-		status = netlogon_creds_des_decrypt(&state->tmp_creds,
-						    &state->new_owf_password);
-		if (tevent_req_nterror(req, status)) {
-			netlogon_creds_cli_ServerGetTrustInfo_cleanup(req, status);
-			return;
-		}
+	status = netlogon_creds_decrypt_samr_Password(&state->tmp_creds,
+						      &state->new_owf_password,
+						      state->auth_type,
+						      state->auth_level);
+	if (tevent_req_nterror(req, status)) {
+		netlogon_creds_cli_ServerGetTrustInfo_cleanup(req, status);
+		return;
 	}
-	cmp = mem_equal_const_time(state->old_owf_password.hash,
-				   zero.hash, sizeof(zero.hash));
-	if (!cmp) {
-		status = netlogon_creds_des_decrypt(&state->tmp_creds,
-						    &state->old_owf_password);
-		if (tevent_req_nterror(req, status)) {
-			netlogon_creds_cli_ServerGetTrustInfo_cleanup(req, status);
-			return;
-		}
+	status = netlogon_creds_decrypt_samr_Password(&state->tmp_creds,
+						      &state->old_owf_password,
+						      state->auth_type,
+						      state->auth_level);
+	if (tevent_req_nterror(req, status)) {
+		netlogon_creds_cli_ServerGetTrustInfo_cleanup(req, status);
+		return;
 	}
 
 	*state->creds = state->tmp_creds;
