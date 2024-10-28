@@ -24,6 +24,7 @@
 #include "param/param.h"
 #include "auth/credentials/credentials_internal.h"
 #include "auth/credentials/credentials_krb5.h"
+#include "librpc/gen_ndr/dcerpc.h"
 #include "librpc/gen_ndr/samr.h" /* for struct samr_Password */
 #include "librpc/gen_ndr/netlogon.h"
 #include "libcli/util/pyerrors.h"
@@ -1120,48 +1121,6 @@ static PyObject *py_creds_encrypt_netr_crypt_password(PyObject *self,
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_creds_encrypt_samr_password(PyObject *self,
-						PyObject *args)
-{
-	DATA_BLOB data = data_blob_null;
-	struct cli_credentials *creds  = NULL;
-	struct samr_Password   *pwd    = NULL;
-	NTSTATUS status;
-	PyObject *py_cp = Py_None;
-
-	creds = PyCredentials_AsCliCredentials(self);
-	if (creds == NULL) {
-		PyErr_Format(PyExc_TypeError, "Credentials expected");
-		return NULL;
-	}
-
-	if (creds->netlogon_creds == NULL) {
-		PyErr_Format(PyExc_ValueError, "NetLogon credentials not set");
-		return NULL;
-	}
-
-	if (!PyArg_ParseTuple(args, "O", &py_cp)) {
-		return NULL;
-	}
-
-	if (!py_check_dcerpc_type(py_cp, "samba.dcerpc.samr", "Password")) {
-		/* py_check_dcerpc_type sets TypeError */
-		return NULL;
-	}
-
-	pwd = pytalloc_get_type(py_cp, struct samr_Password);
-	if (pwd == NULL) {
-		/* pytalloc_get_type sets TypeError */
-		return NULL;
-	}
-	data = data_blob_const(pwd->hash, sizeof(pwd->hash));
-	status = netlogon_creds_session_encrypt(creds->netlogon_creds, data);
-
-	PyErr_NTSTATUS_IS_ERR_RAISE(status);
-
-	Py_RETURN_NONE;
-}
-
 static PyObject *py_creds_encrypt_netr_PasswordInfo(PyObject *self,
 						    PyObject *args,
 						    PyObject *kwargs)
@@ -1748,15 +1707,6 @@ static PyMethodDef py_creds_methods[] = {
 			    "Encrypt the supplied password using the session key and\n"
 			    "the negotiated encryption algorithm in place\n"
 			    "i.e. it overwrites the original data"},
-	{
-		.ml_name  = "encrypt_samr_password",
-		.ml_meth  = py_creds_encrypt_samr_password,
-		.ml_flags = METH_VARARGS,
-		.ml_doc   = "S.encrypt_samr_password(password) -> None\n"
-			    "Encrypt the supplied password using the session key and\n"
-			    "the negotiated encryption algorithm in place\n"
-			    "i.e. it overwrites the original data"
-	},
 	{
 		.ml_name  = "encrypt_netr_PasswordInfo",
 		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
