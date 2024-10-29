@@ -2110,10 +2110,10 @@ bool test_netlogon_capabilities(struct dcerpc_pipe *p, struct torture_context *t
 	netlogon_creds_client_authenticator(&tmp_creds, &auth);
 
 	status = dcerpc_netr_LogonGetCapabilities_r(b, tctx, &r);
-	torture_assert_ntstatus_ok(tctx, status, "LogonGetCapabilities failed");
-	if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_NOT_IMPLEMENTED)) {
-		return true;
-	}
+	torture_assert_ntstatus_ok(tctx, status,
+			"LogonGetCapabilities query_level=1 failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+			"LogonGetCapabilities query_level=1 failed");
 
 	*creds = tmp_creds;
 
@@ -2141,15 +2141,10 @@ bool test_netlogon_capabilities(struct dcerpc_pipe *p, struct torture_context *t
 	netlogon_creds_client_authenticator(&tmp_creds, &auth);
 
 	status = dcerpc_netr_LogonGetCapabilities_r(b, tctx, &r);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE)) {
-		/*
-		 * an server without KB5028166 returns
-		 * DCERPC_NCA_S_FAULT_INVALID_TAG =>
-		 * NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE
-		 */
-		return true;
-	}
-	torture_assert_ntstatus_ok(tctx, status, "LogonGetCapabilities query_level=2 failed");
+	torture_assert_ntstatus_ok(tctx, status,
+			"LogonGetCapabilities query_level=2 failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+			"LogonGetCapabilities query_level=2 failed");
 
 	*creds = tmp_creds;
 
