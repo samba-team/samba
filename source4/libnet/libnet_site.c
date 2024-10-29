@@ -56,7 +56,6 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 	search.in.dest_port = 0;
 	search.in.acct_control = -1;
 	search.in.version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
-	search.in.map_response = true;
 
 	ret = tsocket_address_inet_from_strings(tmp_ctx, "ip",
 						r->in.dest_address,
@@ -77,6 +76,9 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 		return status;
 	}
 	status = cldap_netlogon(cldap, tmp_ctx, &search);
+	if (NT_STATUS_IS_OK(status)) {
+		map_netlogon_samlogon_response(&search.out.netlogon);
+	}
 	if (!NT_STATUS_IS_OK(status)
 	    || search.out.netlogon.data.nt5_ex.client_site == NULL
 	    || search.out.netlogon.data.nt5_ex.client_site[0] == '\0') {
