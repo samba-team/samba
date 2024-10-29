@@ -663,14 +663,34 @@ netlogon_creds_client_authenticator(struct netlogon_creds_CredentialState *creds
 /*
   check that a credentials reply from a server is correct
 */
-bool netlogon_creds_client_check(struct netlogon_creds_CredentialState *creds,
-			const struct netr_Credential *received_credentials)
+NTSTATUS netlogon_creds_client_verify(struct netlogon_creds_CredentialState *creds,
+			const struct netr_Credential *received_credentials,
+			enum dcerpc_AuthType auth_type,
+			enum dcerpc_AuthLevel auth_level)
 {
 	if (!received_credentials ||
 	    !mem_equal_const_time(received_credentials->data, creds->server.data, 8)) {
 		DEBUG(2,("credentials check failed\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+	return NT_STATUS_OK;
+}
+
+bool netlogon_creds_client_check(struct netlogon_creds_CredentialState *creds,
+			const struct netr_Credential *received_credentials)
+{
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
+	NTSTATUS status;
+
+	status = netlogon_creds_client_verify(creds,
+					      received_credentials,
+					      auth_type,
+					      auth_level);
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
+
 	return true;
 }
 
