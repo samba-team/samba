@@ -79,6 +79,7 @@ struct auth_usersupplied_info
 
 	struct {
 		uint32_t negotiate_flags;
+		bool authenticate_kerberos;
 		enum netr_SchannelType secure_channel_type;
 		const char *computer_name; /* [charset(UTF8)] */
 		const char *account_name; /* [charset(UTF8)] */

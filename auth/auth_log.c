@@ -754,8 +754,10 @@ static const char* get_password_type(const struct auth_usersupplied_info *ui)
 	} else if (ui->auth_description != NULL &&
 		   strncmp("ServerAuthenticate", ui->auth_description, 18) == 0)
 	{
-		if (ui->netlogon_trust_account.negotiate_flags
-		    & NETLOGON_NEG_SUPPORTS_AES) {
+		if (ui->netlogon_trust_account.authenticate_kerberos) {
+			password_type = "Kerberos";
+		} else if (ui->netlogon_trust_account.negotiate_flags
+			   & NETLOGON_NEG_SUPPORTS_AES) {
 			password_type = "HMAC-SHA256";
 		} else if (ui->netlogon_trust_account.negotiate_flags
 		           & NETLOGON_NEG_STRONG_KEYS) {
