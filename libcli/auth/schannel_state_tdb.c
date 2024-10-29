@@ -569,6 +569,8 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 				    const char *computer_name,
 				    struct netr_Authenticator *received_authenticator,
 				    struct netr_Authenticator *return_authenticator,
+				    enum dcerpc_AuthType auth_type,
+				    enum dcerpc_AuthLevel auth_level,
 				    struct netlogon_creds_CredentialState **creds_out)
 {
 	TALLOC_CTX *tmpctx;
