@@ -68,7 +68,6 @@ static bool test_ldap_netlogon(struct torture_context *tctx,
 	search.in.dest_port = 0;
 	search.in.acct_control = -1;
 	search.in.version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
-	search.in.map_response = true;
 
 	empty_search = search;
 
@@ -308,7 +307,6 @@ static bool test_ldap_netlogon_flags(struct torture_context *tctx,
 	search.in.dest_port = 0;
 	search.in.acct_control = -1;
 	search.in.version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
-	search.in.map_response = true;
 
 	status = request_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -465,9 +463,7 @@ static NTSTATUS tcp_ldap_netlogon(void *conn,
 		return status;
 	}
 
-	if (io->in.map_response) {
-		map_netlogon_samlogon_response(&io->out.netlogon);
-	}
+	map_netlogon_samlogon_response(&io->out.netlogon);
 
 	return NT_STATUS_OK;
 }
@@ -626,8 +622,11 @@ static NTSTATUS udp_ldap_netlogon(void *data,
 {
 	struct cldap_socket *cldap = talloc_get_type(data,
 						     struct cldap_socket);
-
-	return cldap_netlogon(cldap, mem_ctx, io);
+	NTSTATUS status = cldap_netlogon(cldap, mem_ctx, io);
+	if (NT_STATUS_IS_OK(status)) {
+		map_netlogon_samlogon_response(&io->out.netlogon);
+	}
+	return status;
 }
 
 bool torture_netlogon_udp(struct torture_context *tctx)
