@@ -548,6 +548,8 @@ NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dce_call,
 					       computer_name,
 					       received_authenticator,
 					       return_authenticator,
+					       auth_type,
+					       auth_level,
 					       &creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		ZERO_STRUCTP(return_authenticator);
