@@ -178,15 +178,22 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_check_downgrade(
 	bool global_reject_md5_client = lpcfg_reject_md5_clients(lp_ctx);
 	bool account_reject_md5_client = global_reject_md5_client;
 	const char *explicit_md5_opt = NULL;
+	bool global_reject_aes_client = lpcfg_server_reject_aes_schannel(lp_ctx);
+	bool account_reject_aes_client = global_reject_aes_client;
+	const char *explicit_aes_opt = NULL;
 	bool reject_des_client;
 	bool allow_nt4_crypto;
 	bool reject_md5_client;
+	bool reject_aes_client;
 	bool need_des = true;
 	bool need_md5 = true;
+	bool need_aes = true;
 	int CVE_2022_38023_warn_level = lpcfg_parm_int(lp_ctx, NULL,
 			"CVE_2022_38023", "warn_about_unused_debug_level", DBGLVL_ERR);
 	int CVE_2022_38023_error_level = lpcfg_parm_int(lp_ctx, NULL,
 			"CVE_2022_38023", "error_debug_level", DBGLVL_ERR);
+	int NETLOGON_AES_usage_level = lpcfg_parm_int(lp_ctx, NULL,
+			"NETLOGON_AES", "usage_debug_level", DBGLVL_INFO);
 
 	/*
 	 * We don't use lpcfg_parm_bool(), as we
@@ -215,6 +222,17 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_check_downgrade(
 	}
 	reject_md5_client = account_reject_md5_client;
 
+	if (trust_account_in_db != NULL) {
+		explicit_aes_opt = lpcfg_get_parametric(lp_ctx,
+							NULL,
+							"server reject aes schannel",
+							trust_account_in_db);
+	}
+	if (explicit_aes_opt != NULL) {
+		account_reject_aes_client = lp_bool(explicit_aes_opt);
+	}
+	reject_aes_client = account_reject_aes_client;
+
 	reject_des_client = !allow_nt4_crypto;
 
 	/*
@@ -238,10 +256,19 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_check_downgrade(
 		reject_md5_client = false;
 	}
 
-	if (reject_des_client || reject_md5_client) {
+	if (dce_call->pkt.u.request.opnum == NDR_NETR_SERVERAUTHENTICATEKERBEROS) {
+		need_des = false;
+		need_md5 = false;
+		need_aes = false;
+		reject_des_client = false;
+		reject_md5_client = false;
+		reject_aes_client = false;
+	}
+
+	if (reject_des_client || reject_md5_client || reject_aes_client) {
 		TALLOC_CTX *frame = talloc_stackframe();
 
-		if (lpcfg_weak_crypto(lp_ctx) == SAMBA_WEAK_CRYPTO_DISALLOWED) {
+		if (need_aes && lpcfg_weak_crypto(lp_ctx) == SAMBA_WEAK_CRYPTO_DISALLOWED) {
 			if (CVE_2022_38023_error_level < DBGLVL_NOTICE) {
 				CVE_2022_38023_error_level = DBGLVL_NOTICE;
 			}
@@ -270,7 +297,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_check_downgrade(
 		      "client_negotiate_flags[0x%x] "
 		      "%s%s%s "
 		      "NT_STATUS_DOWNGRADE_DETECTED "
-		      "reject_des[%u] reject_md5[%u]\n",
+		      "reject_des[%u] reject_md5[%u] "
+		      "reject_aes[%u]\n",
 		      log_escape(frame, r->in.account_name),
 		      log_escape(frame, r->in.computer_name),
 		      r->in.secure_channel_type,
@@ -279,11 +307,19 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3_check_downgrade(
 		      trust_account_in_db ? trust_account_in_db : "",
 		      trust_account_in_db ? "]" : "",
 		      reject_des_client,
-		      reject_md5_client));
+		      reject_md5_client,
+		      reject_aes_client));
 		if (trust_account_in_db == NULL) {
 			goto return_downgrade;
 		}
 
+		if (reject_aes_client && explicit_aes_opt == NULL) {
+			DEBUG(CVE_2022_38023_error_level, (
+			      "CVE-2022-38023: Check if option "
+			      "'server reject aes schannel:%s = no' "
+			      "might be needed for a legacy client.\n",
+			      trust_account_in_db));
+		}
 		if (reject_md5_client && explicit_md5_opt == NULL) {
 			DEBUG(CVE_2022_38023_error_level, (
 			      "CVE-2022-38023: Check if option "
@@ -339,6 +375,28 @@ return_downgrade:
 
 	if (!NT_STATUS_IS_OK(orig_status) || trust_account_in_db == NULL) {
 		return orig_status;
+	}
+
+	if (global_reject_aes_client && account_reject_aes_client && explicit_aes_opt) {
+		D_INFO("NETLOGON-AES: Check if option "
+		       "'server reject aes schannel:%s = yes' not needed!?\n",
+		       trust_account_in_db);
+	} else if (need_aes && !account_reject_aes_client && explicit_aes_opt) {
+		D_INFO("NETLOGON-AES: Check if option "
+			 "'server reject aes schannel:%s = no' "
+			 "still needed for a client.\n",
+			 trust_account_in_db);
+	} else if (need_aes && explicit_aes_opt == NULL) {
+		DEBUG(NETLOGON_AES_usage_level, (
+		      "NETLOGON-AES: Check if option "
+		      "'server reject aes schannel:%s = no' "
+		      "might be needed for a client.\n",
+		      trust_account_in_db));
+	} else if (!account_reject_aes_client && explicit_aes_opt) {
+		DEBUG(CVE_2022_38023_warn_level, (
+		      "CVE-2022-38023: Check if option "
+		      "'server reject aes schannel:%s = no' not needed!?\n",
+		      trust_account_in_db));
 	}
 
 	if (global_reject_md5_client && account_reject_md5_client && explicit_md5_opt) {
@@ -432,6 +490,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticateGeneric(
 	uint32_t server_flags = 0;
 	uint32_t client_flags = 0;
 	uint32_t negotiate_flags = 0;
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	bool server_support_krb5_netlogon = lpcfg_server_support_krb5_netlogon(lp_ctx);
 
 	ZERO_STRUCTP(r->out.return_credentials);
 	*r->out.negotiate_flags = 0;
@@ -510,6 +570,9 @@ static NTSTATUS dcesrv_netr_ServerAuthenticateGeneric(
 		       NETLOGON_NEG_SUPPORTS_AES |
 		       NETLOGON_NEG_AUTHENTICATED_RPC_LSASS |
 		       NETLOGON_NEG_AUTHENTICATED_RPC;
+	if (server_support_krb5_netlogon) {
+		server_flags |= NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH;
+	}
 
 	/*
 	 * With SAMBA_WEAK_CRYPTO_DISALLOWED
@@ -4888,6 +4951,72 @@ DCESRV_NOT_USED_ON_WIRE(netr_Opnum56NotUsedOnWire)
 DCESRV_NOT_USED_ON_WIRE(netr_Opnum57NotUsedOnWire)
 DCESRV_NOT_USED_ON_WIRE(netr_Opnum58NotUsedOnWire)
 
+static NTSTATUS dcesrv_netr_ServerAuthenticateKerberos_cb(
+	struct dcesrv_call_state *dce_call,
+	const struct netlogon_server_pipe_state *challenge,
+	const struct netr_ServerAuthenticate3 *r,
+	uint32_t client_flags,
+	const struct dom_sid *client_sid,
+	uint32_t negotiate_flags,
+	const struct ldb_message *sam_msg,
+	const struct ldb_message *tdo_msg,
+	TALLOC_CTX *mem_ctx,
+	struct netlogon_creds_CredentialState **_creds)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct netlogon_creds_CredentialState *creds = NULL;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
+	const struct dom_sid *auth_sid =
+		&session_info->security_token->sids[0];
+
+	dcesrv_call_auth_info(dce_call, &auth_type, &auth_level);
+
+	/*
+	 * The client needs to come via a
+	 * connection encrypted with kerberos.
+	 *
+	 * And the SID from the PAC needs to
+	 * match the sid for the requested
+	 * account name
+	 */
+
+	if (auth_type != DCERPC_AUTH_TYPE_KRB5) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+	if (auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!dom_sid_equal(client_sid, auth_sid)) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	SMB_ASSERT(r->in.credentials == NULL);
+	SMB_ASSERT(r->out.return_credentials == NULL);
+
+	creds = netlogon_creds_kerberos_init(mem_ctx,
+					     r->in.account_name,
+					     r->in.computer_name,
+					     r->in.secure_channel_type,
+					     client_flags,
+					     client_sid,
+					     negotiate_flags);
+	if (creds == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	*_creds = creds;
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
 /*
   netr_ServerAuthenticateKerberos
  */
@@ -4895,7 +5024,76 @@ static NTSTATUS dcesrv_netr_ServerAuthenticateKerberos(struct dcesrv_call_state 
 						       TALLOC_CTX *mem_ctx,
 						       struct netr_ServerAuthenticateKerberos *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	NTSTATUS status;
+	struct dom_sid *sid = NULL;
+	const char *trust_account_for_search = NULL;
+	const char *trust_account_in_db = NULL;
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(dce_call->conn);
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	bool server_support_krb5_netlogon = lpcfg_server_support_krb5_netlogon(lp_ctx);
+	struct auth_usersupplied_info ui = {
+		.local_host = dce_call->conn->local_address,
+		.remote_host = dce_call->conn->remote_address,
+		.client = {
+			.account_name = r->in.account_name,
+			.domain_name = lpcfg_workgroup(dce_call->conn->dce_ctx->lp_ctx),
+		},
+		.service_description = "NETLOGON",
+		.auth_description = "ServerAuthenticate",
+		.netlogon_trust_account = {
+			.computer_name = r->in.computer_name,
+			.negotiate_flags = *r->in.negotiate_flags,
+			.authenticate_kerberos = true,
+			.secure_channel_type = r->in.account_type,
+		},
+	};
+	struct netr_ServerAuthenticate3 r3 = {
+		.in = {
+			.server_name = r->in.server_name,
+			.account_name = r->in.account_name,
+			.secure_channel_type = r->in.account_type,
+			.computer_name = r->in.computer_name,
+			.credentials = NULL,
+			.negotiate_flags = r->in.negotiate_flags,
+		},
+		.out = {
+			.return_credentials = NULL,
+			.rid = r->out.rid,
+			.negotiate_flags = r->out.negotiate_flags,
+			.result = NT_STATUS_INTERNAL_ERROR,
+		},
+	};
+	dcesrv_netr_ServerAuthenticateGenericCallback_fn auth_fn =
+		dcesrv_netr_ServerAuthenticateKerberos_cb;
+
+	if (!server_support_krb5_netlogon) {
+		DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	}
+
+	status = dcesrv_netr_ServerAuthenticateGeneric(dce_call,
+						       mem_ctx,
+						       &r3,
+						       auth_fn,
+						       &trust_account_for_search,
+						       &trust_account_in_db,
+						       &sid);
+	ui.netlogon_trust_account.sid = sid;
+	ui.netlogon_trust_account.account_name = trust_account_in_db;
+	ui.mapped.account_name = trust_account_for_search;
+	log_authentication_event(
+		imsg_ctx,
+		dce_call->conn->dce_ctx->lp_ctx,
+		NULL,
+		&ui,
+		status,
+		lpcfg_workgroup(dce_call->conn->dce_ctx->lp_ctx),
+		trust_account_in_db,
+		sid,
+		NULL /* client_audit_info */,
+		NULL /* server_audit_info */);
+
+	return status;
 }
 
 /* include the generated boilerplate */
