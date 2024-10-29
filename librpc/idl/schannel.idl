@@ -58,7 +58,22 @@ interface schannel
 		NTTIME auth_time;
 		[value(0xFFFFFFFF)] uint32 magic3;
 		dom_sid28 client_sid;
-		[value(0)] boolean8 reserved1;
+		/*
+		 * NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH is not
+		 * enough to implement the logic
+		 * for netr_ServerAuthenticateKerberos()
+		 * as NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH
+		 * was also used as dummy flag in
+		 * some Windows versions.
+		 *
+		 * NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH
+		 * also indicates no encryption for
+		 * application buffers, even if it's
+		 * used via netr_ServerAuthenticate3()
+		 * and aes, arcfour or des are
+		 * otherwise in use.
+		 */
+		boolean8 authenticate_kerberos;
 		/* here's some padding ... */
 		[value(0)] hyper reserved2;
 		[value(NULL)] netlogon_creds_CredentialState_extra_info *ex;

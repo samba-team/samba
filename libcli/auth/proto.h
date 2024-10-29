@@ -37,6 +37,14 @@ NTSTATUS netlogon_creds_aes_decrypt(struct netlogon_creds_CredentialState *creds
 #define netlogon_creds_aes_encrypt __DO_NOT_USE_netlogon_creds_aes_encrypt
 #define netlogon_creds_aes_decrypt __DO_NOT_USE_netlogon_creds_aes_decrypt
 
+struct netlogon_creds_CredentialState *netlogon_creds_kerberos_init(TALLOC_CTX *mem_ctx,
+								    const char *client_account,
+								    const char *client_computer_name,
+								    uint16_t secure_channel_type,
+								    uint32_t client_requested_flags,
+								    const struct dom_sid *client_sid,
+								    uint32_t negotiate_flags);
+
 /*****************************************************************
 The above functions are common to the client and server interface
 next comes the client specific functions
