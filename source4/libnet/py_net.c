@@ -757,6 +757,8 @@ static PyObject *py_net_finddc(py_net_Object *self, PyObject *args, PyObject *kw
 		io->in.server_address = address;
 	}
 	io->in.minimum_dc_flags = server_type;
+	io->in.proto = lpcfg_client_netlogon_ping_protocol(
+		self->libnet_ctx->lp_ctx);
 
 	status = finddcs_cldap(io, io,
 			       lpcfg_resolve_context(self->libnet_ctx->lp_ctx), self->ev);

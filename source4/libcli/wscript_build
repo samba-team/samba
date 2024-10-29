@@ -72,7 +72,7 @@ bld.SAMBA_SUBSYSTEM('LP_RESOLVE',
 bld.SAMBA_SUBSYSTEM('LIBCLI_FINDDCS',
 	source='finddcs_cldap.c',
 	autoproto='finddcs_proto.h',
-	public_deps='cli_cldap'
+	public_deps='NETLOGON_PING'
 	)
 
 

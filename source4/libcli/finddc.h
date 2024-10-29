@@ -22,9 +22,11 @@
 #include "lib/messaging/messaging.h"
 #include "libcli/libcli.h"
 #include "libcli/netlogon/netlogon.h"
+#include "lib/param/loadparm.h"
 
 struct finddcs {
 	struct {
+		enum client_netlogon_ping_protocol proto;
 		const char *domain_name;
 		const char *site_name; /* optional */
 		struct dom_sid *domain_sid; /* optional */

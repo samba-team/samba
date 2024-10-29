@@ -201,6 +201,7 @@ struct tevent_req *libnet_LookupDCs_send(struct libnet_context *ctx,
 		finddcs_io.in.domain_name = io->in.domain_name;
 	}
 	finddcs_io.in.minimum_dc_flags = NBT_SERVER_LDAP | NBT_SERVER_DS | NBT_SERVER_WRITABLE;
+	finddcs_io.in.proto = lpcfg_client_netlogon_ping_protocol(ctx->lp_ctx);
 	finddcs_io.in.server_address = ctx->server_address;
 
 	req = finddcs_cldap_send(mem_ctx, &finddcs_io, ctx->resolve_ctx, ctx->event_ctx);

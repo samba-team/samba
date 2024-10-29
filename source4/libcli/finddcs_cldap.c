@@ -30,6 +30,7 @@
 #include "lib/tsocket/tsocket.h"
 #include "libcli/composite/composite.h"
 #include "lib/util/util_net.h"
+#include "source3/libads/netlogon_ping.h"
 
 struct finddcs_cldap_state {
 	struct tevent_context *ev;
@@ -39,9 +40,9 @@ struct finddcs_cldap_state {
 	const char *srv_name;
 	const char **srv_addresses;
 	uint32_t minimum_dc_flags;
+	enum client_netlogon_ping_protocol proto;
 	uint32_t srv_address_index;
-	struct cldap_socket *cldap;
-	struct cldap_netlogon *netlogon;
+	struct netlogon_samlogon_response *response;
 	NTSTATUS status;
 };
 
@@ -84,6 +85,7 @@ struct tevent_req *finddcs_cldap_send(TALLOC_CTX *mem_ctx,
 	state->req = req;
 	state->ev = event_ctx;
 	state->minimum_dc_flags = io->in.minimum_dc_flags;
+	state->proto = io->in.proto;
 
 	if (io->in.domain_name) {
 		state->domain_name = talloc_strdup(state, io->in.domain_name);
@@ -244,83 +246,57 @@ static bool finddcs_cldap_name_lookup(struct finddcs_cldap_state *state,
 static void finddcs_cldap_next_server(struct finddcs_cldap_state *state)
 {
 	struct tevent_req *subreq;
-	struct tsocket_address *dest;
+	struct tsocket_address **servers = NULL;
+	const char *realm = NULL;
+	size_t i, num_servers;
 	int ret;
 
-	TALLOC_FREE(state->cldap);
+	num_servers = str_list_length(state->srv_addresses);
 
-	if (state->srv_addresses[state->srv_address_index] == NULL) {
-		if (NT_STATUS_IS_OK(state->status)) {
-			tevent_req_nterror(state->req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-		} else {
-			tevent_req_nterror(state->req, state->status);
-		}
-		DEBUG(2,("finddcs: No matching CLDAP server found\n"));
+	servers = talloc_array(state, struct tsocket_address *, num_servers);
+	if (tevent_req_nomem(servers, state->req)) {
 		return;
 	}
 
-	/* we should get the port from the SRV response */
-	ret = tsocket_address_inet_from_strings(state, "ip",
-						state->srv_addresses[state->srv_address_index],
-						389,
-						&dest);
-	if (ret == 0) {
-		state->status = NT_STATUS_OK;
-	} else {
-		state->status = map_nt_error_from_unix_common(errno);
-	}
-	if (!NT_STATUS_IS_OK(state->status)) {
-		state->srv_address_index++;
-		finddcs_cldap_next_server(state);
-		return;
-	}
-
-	state->status = cldap_socket_init(state, NULL, dest, &state->cldap);
-	if (!NT_STATUS_IS_OK(state->status)) {
-		state->srv_address_index++;
-		finddcs_cldap_next_server(state);
-		return;
-	}
-
-	TALLOC_FREE(state->netlogon);
-	state->netlogon = talloc_zero(state, struct cldap_netlogon);
-	if (state->netlogon == NULL) {
-		state->status = NT_STATUS_NO_MEMORY;
-		state->srv_address_index++;
-		finddcs_cldap_next_server(state);
-		return;
-	}
-
-	if ((state->domain_name != NULL) && (strchr(state->domain_name, '.'))) {
-		state->netlogon->in.realm = state->domain_name;
-	}
-	if (state->domain_sid) {
-		state->netlogon->in.domain_sid = dom_sid_string(state, state->domain_sid);
-		if (state->netlogon->in.domain_sid == NULL) {
-			state->status = NT_STATUS_NO_MEMORY;
-			state->srv_address_index++;
-			finddcs_cldap_next_server(state);
+	for (i = 0; i < num_servers; i++) {
+		ret = tsocket_address_inet_from_strings(
+			servers,
+			"ip",
+			state->srv_addresses[i],
+			389,
+			&servers[i]);
+		if (ret == -1) {
+			NTSTATUS status = map_nt_error_from_unix_common(errno);
+			tevent_req_nterror(state->req, status);
 			return;
 		}
 	}
-	state->netlogon->in.acct_control = -1;
-	state->netlogon->in.version =
-		NETLOGON_NT_VERSION_5 |
-		NETLOGON_NT_VERSION_5EX |
-		NETLOGON_NT_VERSION_IP;
 
-	DEBUG(4,("finddcs: performing CLDAP query on %s\n",
-		 state->srv_addresses[state->srv_address_index]));
-
-	subreq = cldap_netlogon_send(state, state->ev,
-				     state->cldap, state->netlogon);
-	if (subreq == NULL) {
-		state->status = NT_STATUS_NO_MEMORY;
-		state->srv_address_index++;
-		finddcs_cldap_next_server(state);
-		return;
+	if ((state->domain_name != NULL) && (strchr(state->domain_name, '.'))) {
+		realm = state->domain_name;
 	}
 
+	subreq = netlogon_pings_send(
+		state,
+		state->ev,
+		state->proto,
+		servers,
+		num_servers,
+		(struct netlogon_ping_filter){
+			.ntversion = NETLOGON_NT_VERSION_5 |
+				     NETLOGON_NT_VERSION_5EX |
+				     NETLOGON_NT_VERSION_IP,
+
+			.acct_ctrl = -1,
+			.domain = realm,
+			.domain_sid = state->domain_sid,
+			.required_flags = state->minimum_dc_flags,
+		},
+		1, /* min_servers */
+		tevent_timeval_current_ofs(2, 0));
+	if (tevent_req_nomem(subreq, state->req)) {
+		return;
+	}
 	tevent_req_set_callback(subreq, finddcs_cldap_netlogon_replied, state);
 }
 
@@ -331,38 +307,38 @@ static void finddcs_cldap_next_server(struct finddcs_cldap_state *state)
 static void finddcs_cldap_netlogon_replied(struct tevent_req *subreq)
 {
 	struct finddcs_cldap_state *state;
+	struct netlogon_samlogon_response **responses = NULL;
+	size_t i, num_responses;
 	NTSTATUS status;
 
 	state = tevent_req_callback_data(subreq, struct finddcs_cldap_state);
 
-	status = cldap_netlogon_recv(subreq, state->netlogon, state->netlogon);
+	status = netlogon_pings_recv(subreq, state, &responses);
 	TALLOC_FREE(subreq);
-	TALLOC_FREE(state->cldap);
-	if (!NT_STATUS_IS_OK(status)) {
-		state->status = status;
-		state->srv_address_index++;
-		finddcs_cldap_next_server(state);
+	if (tevent_req_nterror(state->req, status)) {
 		return;
 	}
-	map_netlogon_samlogon_response(state->netlogon->out.netlogon);
 
-	if (state->minimum_dc_flags !=
-	    (state->minimum_dc_flags &
-	     state->netlogon->out.netlogon->data.nt5_ex.server_type))
-	{
-		/* the server didn't match the minimum requirements */
-		DEBUG(4,("finddcs: Skipping DC %s with server_type=0x%08x - required 0x%08x\n",
-			 state->srv_addresses[state->srv_address_index],
-			 state->netlogon->out.netlogon->data.nt5_ex.server_type,
-			 state->minimum_dc_flags));
-		state->srv_address_index++;
-		finddcs_cldap_next_server(state);
+	num_responses = talloc_array_length(responses);
+
+	for (i = 0; i < num_responses; i++) {
+		if (responses[i] != NULL) {
+			state->srv_address_index = i;
+			state->response = responses[i];
+		}
+	}
+
+	if (state->response == NULL) {
+		tevent_req_nterror(state->req,
+				   NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return;
 	}
+
+	map_netlogon_samlogon_response(state->response);
 
 	DEBUG(4,("finddcs: Found matching DC %s with server_type=0x%08x\n",
 		 state->srv_addresses[state->srv_address_index],
-		 state->netlogon->out.netlogon->data.nt5_ex.server_type));
+		 state->response->data.nt5_ex.server_type));
 
 	tevent_req_done(state->req);
 }
@@ -461,7 +437,7 @@ NTSTATUS finddcs_cldap_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx, struct 
 		return status;
 	}
 
-	io->out.netlogon = talloc_move(mem_ctx, &state->netlogon->out.netlogon);
+	io->out.netlogon = talloc_move(mem_ctx, &state->response);
 	io->out.address = talloc_steal(
 		mem_ctx, state->srv_addresses[state->srv_address_index]);
 
