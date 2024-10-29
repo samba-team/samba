@@ -1220,6 +1220,8 @@ struct netlogon_creds_cli_auth_state {
 	struct tevent_context *ev;
 	struct netlogon_creds_cli_context *context;
 	struct dcerpc_binding_handle *binding_handle;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
 	uint8_t num_nt_hashes;
 	uint8_t idx_nt_hashes;
 	const struct samr_Password * const *nt_hashes;
@@ -1283,6 +1285,10 @@ struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(state->srv_name_slash, req)) {
 		return tevent_req_post(req, ev);
 	}
+
+	dcerpc_binding_handle_auth_info(state->binding_handle,
+					&state->auth_type,
+					&state->auth_level);
 
 	state->try_auth3 = true;
 	state->try_auth2 = true;
@@ -1458,7 +1464,6 @@ static void netlogon_creds_cli_auth_srvauth_done(struct tevent_req *subreq)
 		struct netlogon_creds_cli_auth_state);
 	NTSTATUS status;
 	NTSTATUS result;
-	bool ok;
 	bool downgraded;
 
 	if (state->try_auth3) {
@@ -1552,10 +1557,11 @@ static void netlogon_creds_cli_auth_srvauth_done(struct tevent_req *subreq)
 		return;
 	}
 
-	ok = netlogon_creds_client_check(state->creds,
-					 &state->server_credential);
-	if (!ok) {
-		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+	status = netlogon_creds_client_verify(state->creds,
+					      &state->server_credential,
+					      state->auth_type,
+					      state->auth_level);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
@@ -1640,6 +1646,8 @@ struct netlogon_creds_cli_check_state {
 	struct tevent_context *ev;
 	struct netlogon_creds_cli_context *context;
 	struct dcerpc_binding_handle *binding_handle;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
 
 	char *srv_name_slash;
 
@@ -1666,8 +1674,6 @@ struct tevent_req *netlogon_creds_cli_check_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct netlogon_creds_cli_check_state *state;
 	struct tevent_req *subreq;
-	enum dcerpc_AuthType auth_type;
-	enum dcerpc_AuthLevel auth_level;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -1698,14 +1704,15 @@ struct tevent_req *netlogon_creds_cli_check_send(TALLOC_CTX *mem_ctx,
 	}
 
 	dcerpc_binding_handle_auth_info(state->binding_handle,
-					&auth_type, &auth_level);
+					&state->auth_type,
+					&state->auth_level);
 
-	if (auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
+	if (state->auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
 		return tevent_req_post(req, ev);
 	}
 
-	switch (auth_level) {
+	switch (state->auth_level) {
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		break;
@@ -1782,7 +1789,6 @@ static void netlogon_creds_cli_check_negotiate_caps(struct tevent_req *subreq)
 		struct netlogon_creds_cli_check_state);
 	NTSTATUS status;
 	NTSTATUS result;
-	bool ok;
 
 	status = dcerpc_netr_LogonGetCapabilities_recv(subreq, state,
 						       &result);
@@ -1874,10 +1880,11 @@ static void netlogon_creds_cli_check_negotiate_caps(struct tevent_req *subreq)
 		return;
 	}
 
-	ok = netlogon_creds_client_check(state->creds, &state->rep_auth.cred);
-	if (!ok) {
-		status = NT_STATUS_ACCESS_DENIED;
-		tevent_req_nterror(req, status);
+	status = netlogon_creds_client_verify(state->creds,
+					      &state->rep_auth.cred,
+					      state->auth_type,
+					      state->auth_level);
+	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_check_cleanup(req, status);
 		return;
 	}
@@ -1956,7 +1963,6 @@ static void netlogon_creds_cli_check_client_caps(struct tevent_req *subreq)
 	uint32_t requested_flags;
 	NTSTATUS status;
 	NTSTATUS result;
-	bool ok;
 
 	status = dcerpc_netr_LogonGetCapabilities_recv(subreq, state,
 						       &result);
@@ -1992,11 +1998,11 @@ static void netlogon_creds_cli_check_client_caps(struct tevent_req *subreq)
 		return;
 	}
 
-	ok = netlogon_creds_client_check(state->creds,
-					 &state->rep_auth.cred);
-	if (!ok) {
-		status = NT_STATUS_ACCESS_DENIED;
-		tevent_req_nterror(req, status);
+	status = netlogon_creds_client_verify(state->creds,
+					      &state->rep_auth.cred,
+					      state->auth_type,
+					      state->auth_level);
+	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_check_cleanup(req, status);
 		return;
 	}
@@ -2415,7 +2421,6 @@ static void netlogon_creds_cli_ServerPasswordSet_done(struct tevent_req *subreq)
 		struct netlogon_creds_cli_ServerPasswordSet_state);
 	NTSTATUS status;
 	NTSTATUS result;
-	bool ok;
 
 	if (state->tmp_creds.negotiate_flags & NETLOGON_NEG_PASSWORD_SET2) {
 		status = dcerpc_netr_ServerPasswordSet2_recv(subreq, state,
@@ -2435,11 +2440,11 @@ static void netlogon_creds_cli_ServerPasswordSet_done(struct tevent_req *subreq)
 		}
 	}
 
-	ok = netlogon_creds_client_check(&state->tmp_creds,
-					 &state->rep_auth.cred);
-	if (!ok) {
-		status = NT_STATUS_ACCESS_DENIED;
-		tevent_req_nterror(req, status);
+	status = netlogon_creds_client_verify(&state->tmp_creds,
+					      &state->rep_auth.cred,
+					      state->auth_type,
+					      state->auth_level);
+	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_ServerPasswordSet_cleanup(req, status);
 		return;
 	}
@@ -2971,11 +2976,11 @@ static void netlogon_creds_cli_LogonSamLogon_done(struct tevent_req *subreq)
 		}
 	}
 
-	ok = netlogon_creds_client_check(&state->tmp_creds,
-					 &state->rep_auth.cred);
-	if (!ok) {
-		status = NT_STATUS_ACCESS_DENIED;
-		tevent_req_nterror(req, status);
+	status = netlogon_creds_client_verify(&state->tmp_creds,
+					      &state->rep_auth.cred,
+					      auth_type,
+					      auth_level);
+	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_LogonSamLogon_cleanup(req, status);
 		return;
 	}
@@ -3263,7 +3268,6 @@ static void netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_done(struct tev
 		struct netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_state);
 	NTSTATUS status;
 	NTSTATUS result;
-	bool ok;
 
 	/*
 	 * We use state->dns_names as the memory context, as this is
@@ -3280,11 +3284,11 @@ static void netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_done(struct tev
 		return;
 	}
 
-	ok = netlogon_creds_client_check(&state->tmp_creds,
-					 &state->rep_auth.cred);
-	if (!ok) {
-		status = NT_STATUS_ACCESS_DENIED;
-		tevent_req_nterror(req, status);
+	status = netlogon_creds_client_verify(&state->tmp_creds,
+					      &state->rep_auth.cred,
+					      state->auth_type,
+					      state->auth_level);
+	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_cleanup(req, status);
 		return;
 	}
@@ -3520,7 +3524,6 @@ static void netlogon_creds_cli_ServerGetTrustInfo_done(struct tevent_req *subreq
 		struct netlogon_creds_cli_ServerGetTrustInfo_state);
 	NTSTATUS status;
 	NTSTATUS result;
-	bool ok;
 
 	/*
 	 * We use state->dns_names as the memory context, as this is
@@ -3536,11 +3539,11 @@ static void netlogon_creds_cli_ServerGetTrustInfo_done(struct tevent_req *subreq
 		return;
 	}
 
-	ok = netlogon_creds_client_check(&state->tmp_creds,
-					 &state->rep_auth.cred);
-	if (!ok) {
-		status = NT_STATUS_ACCESS_DENIED;
-		tevent_req_nterror(req, status);
+	status = netlogon_creds_client_verify(&state->tmp_creds,
+					      &state->rep_auth.cred,
+					      state->auth_type,
+					      state->auth_level);
+	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_ServerGetTrustInfo_cleanup(req, status);
 		return;
 	}
@@ -3824,7 +3827,6 @@ static void netlogon_creds_cli_GetForestTrustInformation_done(struct tevent_req 
 		struct netlogon_creds_cli_GetForestTrustInformation_state);
 	NTSTATUS status;
 	NTSTATUS result;
-	bool ok;
 
 	/*
 	 * We use state->dns_names as the memory context, as this is
@@ -3840,11 +3842,11 @@ static void netlogon_creds_cli_GetForestTrustInformation_done(struct tevent_req 
 		return;
 	}
 
-	ok = netlogon_creds_client_check(&state->tmp_creds,
-					 &state->rep_auth.cred);
-	if (!ok) {
-		status = NT_STATUS_ACCESS_DENIED;
-		tevent_req_nterror(req, status);
+	status = netlogon_creds_client_verify(&state->tmp_creds,
+					      &state->rep_auth.cred,
+					      state->auth_type,
+					      state->auth_level);
+	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_GetForestTrustInformation_cleanup(req, status);
 		return;
 	}
@@ -4114,7 +4116,6 @@ static void netlogon_creds_cli_SendToSam_done(struct tevent_req *subreq)
 		struct netlogon_creds_cli_SendToSam_state);
 	NTSTATUS status;
 	NTSTATUS result;
-	bool ok;
 
 	status = dcerpc_netr_NetrLogonSendToSam_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
@@ -4123,11 +4124,11 @@ static void netlogon_creds_cli_SendToSam_done(struct tevent_req *subreq)
 		return;
 	}
 
-	ok = netlogon_creds_client_check(&state->tmp_creds,
-					 &state->rep_auth.cred);
-	if (!ok) {
-		status = NT_STATUS_ACCESS_DENIED;
-		tevent_req_nterror(req, status);
+	status = netlogon_creds_client_verify(&state->tmp_creds,
+					      &state->rep_auth.cred,
+					      state->auth_type,
+					      state->auth_level);
+	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_SendToSam_cleanup(req, status);
 		return;
 	}
@@ -4382,7 +4383,6 @@ static void netlogon_creds_cli_LogonGetDomainInfo_done(struct tevent_req *subreq
 		struct netlogon_creds_cli_LogonGetDomainInfo_state);
 	NTSTATUS status;
 	NTSTATUS result;
-	bool ok;
 
 	/*
 	 * We use state->dns_names as the memory context, as this is
@@ -4398,11 +4398,11 @@ static void netlogon_creds_cli_LogonGetDomainInfo_done(struct tevent_req *subreq
 		return;
 	}
 
-	ok = netlogon_creds_client_check(&state->tmp_creds,
-					 &state->rep_auth.cred);
-	if (!ok) {
-		status = NT_STATUS_ACCESS_DENIED;
-		tevent_req_nterror(req, status);
+	status = netlogon_creds_client_verify(&state->tmp_creds,
+					      &state->rep_auth.cred,
+					      state->auth_type,
+					      state->auth_level);
+	if (tevent_req_nterror(req, status)) {
 		netlogon_creds_cli_LogonGetDomainInfo_cleanup(req, status);
 		return;
 	}
