@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "auth/auth.h"
 #include "schannel_util.h"
 #include "param/param.h"
 #include "libcli/security/dom_sid.h"
@@ -34,6 +35,8 @@ struct dcesrv_netr_check_schannel_state {
 	struct dom_sid account_sid;
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
+
+	bool kerberos_required;
 
 	bool schannel_global_required;
 	bool schannel_required;
@@ -65,6 +68,25 @@ static NTSTATUS dcesrv_netr_check_schannel_get_state(struct dcesrv_call_state *d
 	NTSTATUS status;
 
 	*_s = NULL;
+
+	if (creds->authenticate_kerberos) {
+		struct auth_session_info *session_info =
+			dcesrv_call_session_info(dce_call);
+		const struct dom_sid *auth_sid =
+			&session_info->security_token->sids[0];
+
+		if (auth_type != DCERPC_AUTH_TYPE_KRB5) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		if (auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		if (!dom_sid_equal(auth_sid, &creds->client_sid)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
 
 	s = dcesrv_iface_state_find_conn(dce_call,
 			DCESRV_NETR_CHECK_SCHANNEL_STATE_MAGIC,
@@ -131,6 +153,11 @@ new_state:
 	s->seal_required = require_seal;
 	s->seal_explicitly_set = explicit_seal_opt != NULL;
 
+	if (creds->authenticate_kerberos) {
+		s->kerberos_required = true;
+		s->seal_required = true;
+	}
+
 	status = dcesrv_iface_state_store_conn(dce_call,
 			DCESRV_NETR_CHECK_SCHANNEL_STATE_MAGIC,
 			s);
@@ -165,7 +192,22 @@ static NTSTATUS dcesrv_netr_check_schannel_once(struct dcesrv_call_state *dce_ca
 		opname = ndr_table_netlogon.calls[opnum].name;
 	}
 
-	if (s->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
+	if (s->auth_type == DCERPC_AUTH_TYPE_KRB5) {
+		if (s->auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+			reason = "KRB5 WITH SEALED";
+		} else if (s->auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
+			reason = "KRB5 ONLY WITH SIGNED";
+			dbg_lvl = DBGLVL_ERR;
+			s->result = NT_STATUS_ACCESS_DENIED;
+		} else {
+			reason = "KRB5 WITH INVALID";
+			dbg_lvl = DBGLVL_ERR;
+			s->result = NT_STATUS_ACCESS_DENIED;
+		}
+	} else if (s->kerberos_required) {
+		s->result = NT_STATUS_ACCESS_DENIED;
+		reason = "WITHOUT KRB5";
+	} else if (s->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
 		if (s->auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 			reason = "WITH SEALED";
 		} else if (s->auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
@@ -192,6 +234,14 @@ static NTSTATUS dcesrv_netr_check_schannel_once(struct dcesrv_call_state *dce_ca
 		      log_escape(frame, creds->account_name),
 		      log_escape(frame, creds->computer_name),
 		      nt_errstr(s->result)));
+		TALLOC_FREE(frame);
+		return s->result;
+	}
+
+	if (s->auth_type == DCERPC_AUTH_TYPE_KRB5 &&
+	    s->auth_level == DCERPC_AUTH_LEVEL_PRIVACY)
+	{
+		s->result = NT_STATUS_OK;
 		TALLOC_FREE(frame);
 		return s->result;
 	}
