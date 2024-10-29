@@ -224,9 +224,16 @@ static void continue_srv_auth2(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct schannel_key_state *s;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
 
 	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct schannel_key_state);
+
+	dcerpc_binding_handle_auth_info(s->pipe2->binding_handle,
+					&auth_type,
+					&auth_level);
 
 	/* receive rpc request result - auth2 credentials */ 
 	c->status = dcerpc_netr_ServerAuthenticate2_r_recv(subreq, s);
@@ -330,8 +337,12 @@ static void continue_srv_auth2(struct tevent_req *subreq)
 	}
 
 	/* verify credentials */
-	if (!netlogon_creds_client_check(s->creds, s->a.out.return_credentials)) {
-		composite_error(c, NT_STATUS_UNSUCCESSFUL);
+	status = netlogon_creds_client_verify(s->creds,
+					      s->a.out.return_credentials,
+					      auth_type,
+					      auth_level);
+	if (!NT_STATUS_IS_OK(status)) {
+		composite_error(c, status);
 		return;
 	}
 
@@ -604,10 +615,16 @@ static void continue_get_negotiated_capabilities(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct auth_schannel_state *s;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
 	NTSTATUS status;
 
 	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct auth_schannel_state);
+
+	dcerpc_binding_handle_auth_info(s->pipe->binding_handle,
+					&auth_type,
+					&auth_level);
 
 	/* receive rpc request result */
 	c->status = dcerpc_netr_LogonGetCapabilities_r_recv(subreq, s);
@@ -644,9 +661,12 @@ static void continue_get_negotiated_capabilities(struct tevent_req *subreq)
 	}
 
 	/* verify credentials */
-	if (!netlogon_creds_client_check(&s->save_creds_state,
-					 &s->c.out.return_authenticator->cred)) {
-		composite_error(c, NT_STATUS_UNSUCCESSFUL);
+	status = netlogon_creds_client_verify(&s->save_creds_state,
+					      &s->c.out.return_authenticator->cred,
+					      auth_type,
+					      auth_level);
+	if (!NT_STATUS_IS_OK(status)) {
+		composite_error(c, status);
 		return;
 	}
 
@@ -707,9 +727,16 @@ static void continue_get_client_capabilities(struct tevent_req *subreq)
 {
 	struct composite_context *c;
 	struct auth_schannel_state *s;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
 
 	c = tevent_req_callback_data(subreq, struct composite_context);
 	s = talloc_get_type(c->private_data, struct auth_schannel_state);
+
+	dcerpc_binding_handle_auth_info(s->pipe->binding_handle,
+					&auth_type,
+					&auth_level);
 
 	/* receive rpc request result */
 	c->status = dcerpc_netr_LogonGetCapabilities_r_recv(subreq, s);
@@ -745,9 +772,12 @@ static void continue_get_client_capabilities(struct tevent_req *subreq)
 	}
 
 	/* verify credentials */
-	if (!netlogon_creds_client_check(&s->save_creds_state,
-					 &s->c.out.return_authenticator->cred)) {
-		composite_error(c, NT_STATUS_UNSUCCESSFUL);
+	status = netlogon_creds_client_verify(&s->save_creds_state,
+					      &s->c.out.return_authenticator->cred,
+					      auth_type,
+					      auth_level);
+	if (!NT_STATUS_IS_OK(status)) {
+		composite_error(c, status);
 		return;
 	}
 
