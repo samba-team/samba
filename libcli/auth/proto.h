@@ -47,6 +47,10 @@ struct netlogon_creds_CredentialState *netlogon_creds_client_init(TALLOC_CTX *me
 NTSTATUS
 netlogon_creds_client_authenticator(struct netlogon_creds_CredentialState *creds,
 				    struct netr_Authenticator *next);
+NTSTATUS netlogon_creds_client_verify(struct netlogon_creds_CredentialState *creds,
+			const struct netr_Credential *received_credentials,
+			enum dcerpc_AuthType auth_type,
+			enum dcerpc_AuthLevel auth_level);
 bool netlogon_creds_client_check(struct netlogon_creds_CredentialState *creds,
 			const struct netr_Credential *received_credentials);
 struct netlogon_creds_CredentialState *netlogon_creds_copy(
