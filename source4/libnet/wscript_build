@@ -10,7 +10,7 @@ bld.SAMBA_LIBRARY('samba-net',
         source='libnet.c libnet_passwd.c libnet_time.c libnet_rpc.c libnet_site.c libnet_become_dc.c libnet_unbecome_dc.c libnet_user.c libnet_group.c libnet_share.c libnet_lookup.c libnet_domain.c userinfo.c groupinfo.c userman.c groupman.c prereq_domain.c',
         autoproto=auto_proto,
         deps='INIT_SAMR',
-        public_deps='samba-credentials dcerpc dcerpc-samr RPC_NDR_LSA RPC_NDR_SRVSVC RPC_NDR_DRSUAPI cli_composite LIBCLI_RESOLVE LIBCLI_FINDDCS cli_cldap LIBCLI_FINDDCS gensec_schannel LIBCLI_AUTH ndr smbpasswdparser LIBCLI_SAMSYNC LIBTSOCKET GNUTLS_HELPERS',
+        public_deps='samba-credentials dcerpc dcerpc-samr RPC_NDR_LSA RPC_NDR_SRVSVC RPC_NDR_DRSUAPI cli_composite LIBCLI_RESOLVE LIBCLI_FINDDCS NETLOGON_PING LIBCLI_FINDDCS gensec_schannel LIBCLI_AUTH ndr smbpasswdparser LIBCLI_SAMSYNC LIBTSOCKET GNUTLS_HELPERS',
         private_library=True
         )
 

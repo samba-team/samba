@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 #include "libcli/cldap/cldap.h"
+#include "source3/libads/netlogon_ping.h"
 #include <ldb.h>
 #include <ldb_errors.h>
 #include "libcli/resolve/resolve.h"
@@ -39,10 +40,9 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 	char *config_dn_str = NULL;
 	char *server_dn_str = NULL;
 
-	struct cldap_socket *cldap = NULL;
-	struct cldap_netlogon search = {};
 	int ret;
 	struct tsocket_address *dest_address = NULL;
+	struct netlogon_samlogon_response **responses = NULL;
 
 	tmp_ctx = talloc_named(ctx, 0, "libnet_FindSite temp context");
 	if (!tmp_ctx) {
@@ -50,12 +50,11 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 		goto nomem;
 	}
 
-	/* Resolve the site name. */
-	ZERO_STRUCT(search);
-	search.in.dest_address = NULL;
-	search.in.dest_port = 0;
-	search.in.acct_control = -1;
-	search.in.version = NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
+	site_name_str = talloc_strdup(tmp_ctx, "Default-First-Site-Name");
+	if (site_name_str == NULL) {
+		r->out.error_string = NULL;
+		goto nomem;
+	}
 
 	ret = tsocket_address_inet_from_strings(
 		tmp_ctx, "ip", r->in.dest_address, 389, &dest_address);
@@ -65,38 +64,36 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 		goto fail;
 	}
 
-	/* we want to use non async calls, so we're not passing an event context */
-	status = cldap_socket_init(tmp_ctx, NULL, dest_address, &cldap);
-	if (!NT_STATUS_IS_OK(status)) {
-		r->out.error_string = NULL;
-		goto fail;
-	}
-	status = cldap_netlogon(cldap, tmp_ctx, &search);
+	status = netlogon_pings(tmp_ctx, /* mem_ctx */
+				lpcfg_client_netlogon_ping_protocol(
+					lctx->lp_ctx), /* proto */
+				&dest_address,	       /* servers*/
+				1,		       /* num_servers */
+				(struct netlogon_ping_filter){
+					.ntversion = NETLOGON_NT_VERSION_5 |
+						     NETLOGON_NT_VERSION_5EX,
+					.acct_ctrl = -1,
+				},
+				1, /* min_servers */
+				tevent_timeval_current_ofs(2, 0), /* timeout */
+				&responses);
+
 	if (NT_STATUS_IS_OK(status)) {
-		map_netlogon_samlogon_response(search.out.netlogon);
-	}
-	if (!NT_STATUS_IS_OK(status) ||
-	    search.out.netlogon->data.nt5_ex.client_site == NULL ||
-	    search.out.netlogon->data.nt5_ex.client_site[0] == '\0')
-	{
-		/*
-		  If cldap_netlogon() returns in error,
-		  default to using Default-First-Site-Name.
-		*/
-		site_name_str = talloc_asprintf(tmp_ctx, "%s",
-						"Default-First-Site-Name");
-		if (!site_name_str) {
-			r->out.error_string = NULL;
-			goto nomem;
-		}
-	} else {
-		site_name_str = talloc_asprintf(
-			tmp_ctx,
-			"%s",
-			search.out.netlogon->data.nt5_ex.client_site);
-		if (!site_name_str) {
-			r->out.error_string = NULL;
-			goto nomem;
+		struct netlogon_samlogon_response *resp = responses[0];
+		struct NETLOGON_SAM_LOGON_RESPONSE_EX
+			*nt5ex = &resp->data.nt5_ex;
+
+		map_netlogon_samlogon_response(resp);
+
+		if ((nt5ex->client_site != NULL) ||
+		    (nt5ex->client_site[0] != '\0'))
+		{
+			site_name_str = talloc_strdup(tmp_ctx,
+						      nt5ex->client_site);
+			if (site_name_str == NULL) {
+				r->out.error_string = NULL;
+				goto nomem;
+			}
 		}
 	}
 
