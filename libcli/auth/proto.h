@@ -78,7 +78,9 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 								  uint32_t negotiate_flags);
 NTSTATUS netlogon_creds_server_step_check(struct netlogon_creds_CredentialState *creds,
 				 const struct netr_Authenticator *received_authenticator,
-				 struct netr_Authenticator *return_authenticator) ;
+				 struct netr_Authenticator *return_authenticator,
+				 enum dcerpc_AuthType auth_type,
+				 enum dcerpc_AuthLevel auth_level);
 NTSTATUS netlogon_creds_decrypt_samlogon_validation(struct netlogon_creds_CredentialState *creds,
 						    uint16_t validation_level,
 						    union netr_Validation *validation,
