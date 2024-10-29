@@ -630,7 +630,9 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 
 	status = netlogon_creds_server_step_check(creds,
 						  received_authenticator,
-						  return_authenticator);
+						  return_authenticator,
+						  auth_type,
+						  auth_level);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
