@@ -763,7 +763,6 @@ static void becomeDC_send_cldap(struct libnet_BecomeDC_state *s)
 	s->cldap.io.in.domain_sid	= NULL;
 	s->cldap.io.in.acct_control	= -1;
 	s->cldap.io.in.version		= NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
-	s->cldap.io.in.map_response	= true;
 
 	ret = tsocket_address_inet_from_strings(s, "ip",
 						s->source_dsa.address,
@@ -800,6 +799,8 @@ static void becomeDC_recv_cldap(struct tevent_req *req)
 			 nt_errstr(c->status)));
 		return;
 	}
+
+	map_netlogon_samlogon_response(&s->cldap.io.out.netlogon);
 	s->cldap.netlogon = s->cldap.io.out.netlogon.data.nt5_ex;
 
 	s->domain.dns_name		= s->cldap.netlogon.dns_domain;
