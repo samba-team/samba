@@ -308,7 +308,6 @@ static void finddcs_cldap_next_server(struct finddcs_cldap_state *state)
 		NETLOGON_NT_VERSION_5 |
 		NETLOGON_NT_VERSION_5EX |
 		NETLOGON_NT_VERSION_IP;
-	state->netlogon->in.map_response = true;
 
 	DEBUG(4,("finddcs: performing CLDAP query on %s\n",
 		 state->srv_addresses[state->srv_address_index]));
@@ -345,6 +344,8 @@ static void finddcs_cldap_netlogon_replied(struct tevent_req *subreq)
 		finddcs_cldap_next_server(state);
 		return;
 	}
+	map_netlogon_samlogon_response(&state->netlogon->out.netlogon);
+
 	if (state->minimum_dc_flags !=
 	    (state->minimum_dc_flags & state->netlogon->out.netlogon.data.nt5_ex.server_type)) {
 		/* the server didn't match the minimum requirements */
