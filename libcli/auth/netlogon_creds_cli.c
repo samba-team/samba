@@ -756,7 +756,6 @@ static NTSTATUS netlogon_creds_cli_store_internal(
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	TDB_DATA data;
-	struct netlogon_creds_CredentialState_legacy lc = { .sequence = 0, };
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_DEBUG(netlogon_creds_CredentialState, creds);
@@ -768,18 +767,6 @@ static NTSTATUS netlogon_creds_cli_store_internal(
 		status = ndr_map_error2ntstatus(ndr_err);
 		TALLOC_FREE(frame);
 		return status;
-	}
-
-	ndr_err = ndr_pull_struct_blob_all(&blob, frame, &lc,
-		(ndr_pull_flags_fn_t)ndr_pull_netlogon_creds_CredentialState_legacy);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		status = ndr_map_error2ntstatus(ndr_err);
-		TALLOC_FREE(frame);
-		return status;
-	}
-
-	if (DEBUGLEVEL >= 11) {
-		NDR_PRINT_DEBUG(netlogon_creds_CredentialState_legacy, &lc);
 	}
 
 	data.dptr = blob.data;

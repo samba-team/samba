@@ -85,19 +85,6 @@ interface schannel
 		netlogon_creds_CredentialState_extra_info *ex;
 	} netlogon_creds_CredentialState;
 
-	typedef [public,flag(NDR_PAHEX)] struct {
-		netr_NegotiateFlags negotiate_flags;
-		uint8 session_key[16];
-		uint32 sequence;
-		netr_Credential seed;
-		netr_Credential client;
-		netr_Credential server;
-		netr_SchannelType secure_channel_type;
-		[string,charset(UTF8)] uint8 computer_name[];
-		[string,charset(UTF8)] uint8 account_name[];
-		dom_sid *sid;
-	} netlogon_creds_CredentialState_legacy;
-
 	/* This is used in the schannel_store.tdb */
 	typedef [public] struct {
 		[string,charset(UTF16)] uint16 *computer_name;
