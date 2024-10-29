@@ -1049,10 +1049,6 @@ NTSTATUS cldap_netlogon_recv(struct tevent_req *req,
 		goto failed;
 	}
 
-	if (io->in.map_response) {
-		map_netlogon_samlogon_response(&io->out.netlogon);
-	}
-
 	status =  NT_STATUS_OK;
 failed:
 	tevent_req_received(req);

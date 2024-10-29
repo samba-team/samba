@@ -106,7 +106,6 @@ struct cldap_netlogon {
 		const char *domain_sid;
 		int acct_control;
 		uint32_t version;
-		bool map_response;
 	} in;
 	struct {
 		struct netlogon_samlogon_response netlogon;
