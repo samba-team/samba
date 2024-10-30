@@ -461,8 +461,7 @@ NTSTATUS finddcs_cldap_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx, struct 
 		return status;
 	}
 
-	talloc_steal(mem_ctx, state->netlogon);
-	io->out.netlogon = *state->netlogon->out.netlogon;
+	io->out.netlogon = talloc_move(mem_ctx, &state->netlogon->out.netlogon);
 	io->out.address = talloc_steal(
 		mem_ctx, state->srv_addresses[state->srv_address_index]);
 

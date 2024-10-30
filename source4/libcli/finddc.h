@@ -34,7 +34,7 @@ struct finddcs {
 	} in;
 	struct {
 		const char *address; /* IP address of server */
-		struct netlogon_samlogon_response netlogon;
+		struct netlogon_samlogon_response *netlogon;
 	} out;
 };
 

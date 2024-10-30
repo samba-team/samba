@@ -227,7 +227,7 @@ NTSTATUS libnet_LookupDCs_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	io->out.dcs = talloc(mem_ctx, struct nbt_dc_name);
 	NT_STATUS_HAVE_NO_MEMORY(io->out.dcs);
 	io->out.dcs[0].address = finddcs_io.out.address;
-	io->out.dcs[0].name = finddcs_io.out.netlogon.data.nt5_ex.pdc_dns_name;
+	io->out.dcs[0].name = finddcs_io.out.netlogon->data.nt5_ex.pdc_dns_name;
 	return status;
 }
 
