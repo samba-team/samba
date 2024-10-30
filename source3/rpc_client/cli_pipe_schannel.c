@@ -28,6 +28,7 @@
 #include "libsmb/libsmb.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "libcli/auth/netlogon_creds_cli.h"
+#include "auth/gensec/gensec.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
@@ -62,6 +63,10 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 		TALLOC_FREE(frame);
 		return status;
 	}
+
+	cli_credentials_add_gensec_features(cli_creds,
+					    GENSEC_FEATURE_NO_DELEGATION,
+					    CRED_SPECIFIED);
 
 	status = rpccli_create_netlogon_creds_ctx(cli_creds,
 						  remote_name,
