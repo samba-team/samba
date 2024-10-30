@@ -301,9 +301,9 @@ static void unbecomeDC_recv_cldap(struct tevent_req *req)
 	talloc_free(req);
 	if (!composite_is_ok(c)) return;
 
-	map_netlogon_samlogon_response(&s->cldap.io.out.netlogon);
+	map_netlogon_samlogon_response(s->cldap.io.out.netlogon);
 
-	s->cldap.netlogon = s->cldap.io.out.netlogon.data.nt5_ex;
+	s->cldap.netlogon = s->cldap.io.out.netlogon->data.nt5_ex;
 
 	s->domain.dns_name		= s->cldap.netlogon.dns_domain;
 	s->domain.netbios_name		= s->cldap.netlogon.domain_name;

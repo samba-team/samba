@@ -4446,20 +4446,25 @@ static bool check_dom_trust_pw(struct dcerpc_pipe *p,
 	}
 	status = cldap_netlogon(cldap, tctx, &cldap1);
 	torture_assert_ntstatus_ok(tctx, status, "cldap_netlogon");
-	torture_assert_int_equal(tctx, cldap1.out.netlogon.ntver,
+	torture_assert_int_equal(tctx,
+				 cldap1.out.netlogon->ntver,
 				 NETLOGON_NT_VERSION_5EX,
 				 "ntver");
-	torture_assert_int_equal(tctx, cldap1.out.netlogon.data.nt5_ex.nt_version,
-				 NETLOGON_NT_VERSION_1 | NETLOGON_NT_VERSION_5EX,
+	torture_assert_int_equal(tctx,
+				 cldap1.out.netlogon->data.nt5_ex.nt_version,
+				 NETLOGON_NT_VERSION_1 |
+					 NETLOGON_NT_VERSION_5EX,
 				 "nt_version");
-	torture_assert_int_equal(tctx, cldap1.out.netlogon.data.nt5_ex.command,
+	torture_assert_int_equal(tctx,
+				 cldap1.out.netlogon->data.nt5_ex.command,
 				 LOGON_SAM_LOGON_RESPONSE_EX,
 				 "command");
-	torture_assert_str_equal(tctx, cldap1.out.netlogon.data.nt5_ex.user_name,
+	torture_assert_str_equal(tctx,
+				 cldap1.out.netlogon->data.nt5_ex.user_name,
 				 cldap1.in.user,
 				 "user_name");
-	server_name = talloc_asprintf(tctx, "\\\\%s",
-			cldap1.out.netlogon.data.nt5_ex.pdc_dns_name);
+	server_name = talloc_asprintf(
+		tctx, "\\\\%s", cldap1.out.netlogon->data.nt5_ex.pdc_dns_name);
 	torture_assert(tctx, server_name, __location__);
 
 	status = dcerpc_parse_binding(tctx, binding, &b2);

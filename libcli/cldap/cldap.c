@@ -1043,8 +1043,15 @@ NTSTATUS cldap_netlogon_recv(struct tevent_req *req,
 	}
 	data = state->search.out.response->attributes[0].values;
 
-	status = pull_netlogon_samlogon_response(data, mem_ctx,
-						 &io->out.netlogon);
+	io->out.netlogon = talloc(mem_ctx, struct netlogon_samlogon_response);
+	if (io->out.netlogon == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	status = pull_netlogon_samlogon_response(data,
+						 io->out.netlogon,
+						 io->out.netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto failed;
 	}

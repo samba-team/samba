@@ -800,8 +800,8 @@ static void becomeDC_recv_cldap(struct tevent_req *req)
 		return;
 	}
 
-	map_netlogon_samlogon_response(&s->cldap.io.out.netlogon);
-	s->cldap.netlogon = s->cldap.io.out.netlogon.data.nt5_ex;
+	map_netlogon_samlogon_response(s->cldap.io.out.netlogon);
+	s->cldap.netlogon = s->cldap.io.out.netlogon->data.nt5_ex;
 
 	s->domain.dns_name		= s->cldap.netlogon.dns_domain;
 	s->domain.netbios_name		= s->cldap.netlogon.domain_name;

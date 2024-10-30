@@ -344,14 +344,16 @@ static void finddcs_cldap_netlogon_replied(struct tevent_req *subreq)
 		finddcs_cldap_next_server(state);
 		return;
 	}
-	map_netlogon_samlogon_response(&state->netlogon->out.netlogon);
+	map_netlogon_samlogon_response(state->netlogon->out.netlogon);
 
 	if (state->minimum_dc_flags !=
-	    (state->minimum_dc_flags & state->netlogon->out.netlogon.data.nt5_ex.server_type)) {
+	    (state->minimum_dc_flags &
+	     state->netlogon->out.netlogon->data.nt5_ex.server_type))
+	{
 		/* the server didn't match the minimum requirements */
 		DEBUG(4,("finddcs: Skipping DC %s with server_type=0x%08x - required 0x%08x\n",
 			 state->srv_addresses[state->srv_address_index],
-			 state->netlogon->out.netlogon.data.nt5_ex.server_type,
+			 state->netlogon->out.netlogon->data.nt5_ex.server_type,
 			 state->minimum_dc_flags));
 		state->srv_address_index++;
 		finddcs_cldap_next_server(state);
@@ -360,7 +362,7 @@ static void finddcs_cldap_netlogon_replied(struct tevent_req *subreq)
 
 	DEBUG(4,("finddcs: Found matching DC %s with server_type=0x%08x\n",
 		 state->srv_addresses[state->srv_address_index],
-		 state->netlogon->out.netlogon.data.nt5_ex.server_type));
+		 state->netlogon->out.netlogon->data.nt5_ex.server_type));
 
 	tevent_req_done(state->req);
 }
@@ -460,7 +462,7 @@ NTSTATUS finddcs_cldap_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx, struct 
 	}
 
 	talloc_steal(mem_ctx, state->netlogon);
-	io->out.netlogon = state->netlogon->out.netlogon;
+	io->out.netlogon = *state->netlogon->out.netlogon;
 	io->out.address = talloc_steal(
 		mem_ctx, state->srv_addresses[state->srv_address_index]);
 

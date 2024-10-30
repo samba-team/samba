@@ -256,7 +256,7 @@ static void cldap_multi_netlogon_done(struct tevent_req *subreq)
 	state->num_received += 1;
 
 	if (NT_STATUS_IS_OK(status)) {
-		*response = state->ios[i].out.netlogon;
+		*response = *state->ios[i].out.netlogon;
 		state->responses[i] = talloc_move(state->responses,
 						  &response);
 		state->num_good_received += 1;

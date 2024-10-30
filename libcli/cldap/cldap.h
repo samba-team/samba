@@ -108,7 +108,7 @@ struct cldap_netlogon {
 		uint32_t version;
 	} in;
 	struct {
-		struct netlogon_samlogon_response netlogon;
+		struct netlogon_samlogon_response *netlogon;
 	} out;
 };
 
