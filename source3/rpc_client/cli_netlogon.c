@@ -397,6 +397,7 @@ again:
 		if (!retry && NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
 			DBG_DEBUG("Retrying with serverauthenticate\n");
 			TALLOC_FREE(lck);
+			force_reauth = true;
 			retry = true;
 			goto again;
 		}
