@@ -1,24 +1,24 @@
-/* 
+/*
    Unix SMB/CIFS Implementation.
 
    test CLDAP/LDAP netlogon operations
-   
+
    Copyright (C) Andrew Tridgell 2005
    Copyright (C) Matthias Dieter Wallnöfer 2009
-    
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
+
 */
 
 #include "includes.h"
@@ -315,7 +315,7 @@ static bool test_ldap_netlogon_flags(struct torture_context *tctx,
 	if (n1.ntver == NETLOGON_NT_VERSION_5)
 		server_type = n1.data.nt5.server_type;
 	else if (n1.ntver == NETLOGON_NT_VERSION_5EX)
-		server_type = n1.data.nt5_ex.server_type;	
+		server_type = n1.data.nt5_ex.server_type;
 
 	printf("The word is: %i\n", server_type);
 	if (server_type & NBT_SERVER_PDC)

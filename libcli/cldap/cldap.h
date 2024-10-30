@@ -93,7 +93,7 @@ NTSTATUS cldap_error_reply(struct cldap_socket *cldap,
 			   const char *errormessage);
 
 /*
-  a netlogon cldap request  
+  a netlogon cldap request
 */
 struct cldap_netlogon {
 	struct {
@@ -130,4 +130,3 @@ NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap,
 			      struct tsocket_address *dst,
 			      uint32_t version,
 			      struct netlogon_samlogon_response *netlogon);
-
