@@ -500,10 +500,14 @@ class GetPasswordCommand(Command):
                         calculated["Primary:CLEARTEXT"] = cv
 
                 except Exception as e:
+                    if gpg_decrypt is None:
+                        message = decrypt_samba_gpg_help
+                    else:
+                        message = str(e)
                     self.outf.write(
                         "WARNING: '%s': SambaGPG can't be decrypted "
                         "into CLEARTEXT: %s\n" % (
-                            username or account_name, e))
+                            username or account_name, message))
 
         def get_utf8(a, b, username):
             creds_for_charcnv = credentials.Credentials()
