@@ -172,6 +172,12 @@ static NTSTATUS rpccli_setup_netlogon_creds_locked(
 	const struct samr_Password *nt_hashes[2] = { NULL, NULL };
 	uint8_t idx_nt_hashes = 0;
 	NTSTATUS status;
+	bool client_use_krb5_netlogon = true;
+	bool reject_aes_servers = true;
+
+	netlogon_creds_cli_use_kerberos(creds_ctx,
+					&client_use_krb5_netlogon,
+					&reject_aes_servers);
 
 	status = netlogon_creds_cli_get(creds_ctx, frame, &creds);
 	if (NT_STATUS_IS_OK(status)) {
@@ -204,6 +210,32 @@ static NTSTATUS rpccli_setup_netlogon_creds_locked(
 		num_nt_hashes = 2;
 	}
 
+	if (client_use_krb5_netlogon) {
+		status = cli_rpc_pipe_open_with_creds(cli,
+						      &ndr_table_netlogon,
+						      transport,
+						      DCERPC_AUTH_TYPE_KRB5,
+						      DCERPC_AUTH_LEVEL_PRIVACY,
+						      "netlogon",
+						      remote_name,
+						      remote_sockaddr,
+						      cli_creds,
+						      &netlogon_pipe);
+		if (NT_STATUS_IS_OK(status)) {
+			goto do_auth;
+		}
+
+		if (reject_aes_servers) {
+			DBG_ERR("failed to open krb5 netlogon connection to %s - %s\n",
+				 remote_name,
+				 nt_errstr(status));
+			TALLOC_FREE(frame);
+			return status;
+		}
+
+		/* Fall back to noauth */
+	}
+
 	status = cli_rpc_pipe_open_noauth_transport(cli,
 						    transport,
 						    &ndr_table_netlogon,
@@ -218,6 +250,8 @@ static NTSTATUS rpccli_setup_netlogon_creds_locked(
 		TALLOC_FREE(frame);
 		return status;
 	}
+
+do_auth:
 	talloc_steal(frame, netlogon_pipe);
 
 	status = netlogon_creds_cli_auth(creds_ctx,
@@ -309,6 +343,7 @@ NTSTATUS rpccli_connect_netlogon(
 	enum netr_SchannelType sec_chan_type;
 	struct netlogon_creds_cli_lck *lck = NULL;
 	uint32_t negotiate_flags;
+	bool authenticate_kerberos = false;
 	uint8_t found_session_key[16] = {0};
 	bool found_existing_creds = false;
 	bool do_serverauth;
@@ -341,6 +376,7 @@ again:
 		       creds->session_key,
 		       sizeof(found_session_key));
 
+		authenticate_kerberos = creds->authenticate_kerberos;
 		TALLOC_FREE(creds);
 	}
 
@@ -371,6 +407,7 @@ again:
 			memcpy(found_session_key, creds->session_key,
 			       sizeof(found_session_key));
 
+			authenticate_kerberos = creds->authenticate_kerberos;
 			TALLOC_FREE(creds);
 		}
 	}
@@ -378,6 +415,36 @@ again:
 	do_serverauth = force_reauth || !found_existing_creds;
 
 	if (!do_serverauth) {
+		if (authenticate_kerberos) {
+			/*
+			 * Do the quick krb5 bind without a reauth
+			 */
+			status = cli_rpc_pipe_open_with_creds(cli,
+							      &ndr_table_netlogon,
+							      transport,
+							      DCERPC_AUTH_TYPE_KRB5,
+							      DCERPC_AUTH_LEVEL_PRIVACY,
+							      "netlogon",
+							      remote_name,
+							      remote_sockaddr,
+							      trust_creds,
+							      &rpccli);
+			if (NT_STATUS_IS_OK(status)) {
+				goto done;
+			}
+
+			if (!retry) {
+				DBG_DEBUG("Retrying with serverauthenticate\n");
+				TALLOC_FREE(lck);
+				force_reauth = true;
+				retry = true;
+				goto again;
+			}
+			DBG_DEBUG("cli_rpc_pipe_open_with_creds(krb5) "
+				  "failed: %s\n", nt_errstr(status));
+			goto fail;
+		}
+
 		/*
 		 * Do the quick schannel bind without a reauth
 		 */
@@ -453,6 +520,14 @@ again:
 		goto done;
 	}
 
+	if (negotiate_flags & NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH) {
+		/*
+		 * we keep the AUTH_TYPE_KRB5 rpccli for the
+		 * caller...
+		 */
+		goto check;
+	}
+
 	status = cli_rpc_pipe_client_prepare_alter(rpccli,
 						   true, /* new_auth_context */
 						   &ndr_table_netlogon,
@@ -472,6 +547,7 @@ again:
 		goto fail;
 	}
 
+check:
 	status = netlogon_creds_cli_check(creds_ctx, rpccli->binding_handle,
 					  NULL);
 	if (!NT_STATUS_IS_OK(status)) {
