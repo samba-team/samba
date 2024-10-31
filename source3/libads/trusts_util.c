@@ -24,6 +24,7 @@
 #include "rpc_client/cli_netlogon.h"
 #include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
+#include "lib/krb5_wrap/krb5_samba.h"
 #include "librpc/gen_ndr/secrets.h"
 #include "secrets.h"
 #include "ads.h"
@@ -144,6 +145,34 @@ static NTSTATUS netlogon_creds_cli_lck_auth(
 	return status;
 }
 
+static NTSTATUS extract_nt_hash_and_pwd(TALLOC_CTX *mem_ctx,
+					const struct secrets_domain_info1_password *pw,
+					const struct samr_Password **nt_hash,
+					const char **_pwd)
+{
+	char *pwd = NULL;
+	size_t pwd_len = 0;
+	bool ok;
+
+	ok = convert_string_talloc(mem_ctx,
+				   CH_UTF16MUNGED, CH_UTF8,
+				   pw->cleartext_blob.data,
+				   pw->cleartext_blob.length,
+				   &pwd, &pwd_len);
+	if (!ok) {
+		NTSTATUS status = NT_STATUS_UNMAPPABLE_CHARACTER;
+		if (errno == ENOMEM) {
+			status = NT_STATUS_NO_MEMORY;
+		}
+		return status;
+	}
+	talloc_keep_secret(pwd);
+
+	*_pwd = pwd;
+	*nt_hash = &pw->nt_hash;
+	return NT_STATUS_OK;
+}
+
 NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 			 struct messaging_context *msg_ctx,
 			 struct dcerpc_binding_handle *b,
@@ -164,7 +193,9 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	const struct samr_Password *nt_hashes[1+3] = { NULL, };
 	uint8_t idx_passwords = 0;
 	uint8_t idx_current = UINT8_MAX;
+	const char *passwords[1+3] = { NULL, };
 	enum netr_SchannelType sec_channel_type = SEC_CHAN_NULL;
+	struct netlogon_creds_CredentialState *ncreds = NULL;
 	time_t pass_last_set_time;
 	uint32_t old_version = 0;
 	struct pdb_trusted_domain *td = NULL;
@@ -176,6 +207,10 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	DATA_BLOB new_trust_pw_blob = data_blob_null;
 	uint32_t new_version = 0;
 	uint32_t *new_trust_version = NULL;
+	const char *account_principal = NULL;
+	const char *explicit_kdc = NULL;
+	char *cache_name = NULL;
+	const char *check_password = NULL;
 	NTSTATUS status;
 	bool ok;
 
@@ -341,7 +376,18 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 			/*
 			 * We had a failure before we changed the password.
 			 */
-			nt_hashes[idx++] = &prev->password->nt_hash;
+			status = extract_nt_hash_and_pwd(frame,
+							 prev->password,
+							 &nt_hashes[idx],
+							 &passwords[idx]);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0, ("extract_nt_hash_and_pwd(%s) failed "
+					  "for prev->password - %s!\n",
+					  domain, nt_errstr(status)));
+				TALLOC_FREE(frame);
+				return status;
+			}
+			idx += 1;
 
 			DEBUG(0,("%s : %s(%s): A password change was already "
 				 "started against '%s' at %s. Trying to "
@@ -363,12 +409,45 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		}
 
 		idx_current = idx;
-		nt_hashes[idx++] = &info->password->nt_hash;
+		status = extract_nt_hash_and_pwd(frame,
+						 info->password,
+						 &nt_hashes[idx],
+						 &passwords[idx]);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("extract_nt_hash_and_pwd(%s) failed "
+				  "for info->password - %s!\n",
+				  domain, nt_errstr(status)));
+			TALLOC_FREE(frame);
+			return status;
+		}
+		idx += 1;
 		if (info->old_password != NULL) {
-			nt_hashes[idx++] = &info->old_password->nt_hash;
+			status = extract_nt_hash_and_pwd(frame,
+							 info->old_password,
+							 &nt_hashes[idx],
+							 &passwords[idx]);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0, ("extract_nt_hash_and_pwd(%s) failed "
+					  "for info->old_password - %s!\n",
+					  domain, nt_errstr(status)));
+				TALLOC_FREE(frame);
+				return status;
+			}
+			idx += 1;
 		}
 		if (info->older_password != NULL) {
-			nt_hashes[idx++] = &info->older_password->nt_hash;
+			status = extract_nt_hash_and_pwd(frame,
+							 info->older_password,
+							 &nt_hashes[idx],
+							 &passwords[idx]);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0, ("extract_nt_hash_and_pwd(%s) failed "
+					  "for info->older_password - %s!\n",
+					  domain, nt_errstr(status)));
+				TALLOC_FREE(frame);
+				return status;
+			}
+			idx += 1;
 		}
 
 		/*
@@ -382,9 +461,13 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	case SEC_CHAN_DNS_DOMAIN:
 	case SEC_CHAN_DOMAIN:
 		idx_current = idx;
-		nt_hashes[idx++] = current_nt_hash;
+		nt_hashes[idx] = current_nt_hash;
+		passwords[idx] = cli_credentials_get_password(creds);
+		idx += 1;
 		if (previous_nt_hash != NULL) {
-			nt_hashes[idx++] = previous_nt_hash;
+			nt_hashes[idx] = previous_nt_hash;
+			passwords[idx] = cli_credentials_get_old_password(creds);
+			idx += 1;
 		}
 		break;
 
@@ -416,6 +499,104 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 			  context_name, num_passwords, nt_errstr(status)));
 		TALLOC_FREE(frame);
 		return status;
+	}
+
+	status = netlogon_creds_cli_get(context, frame, &ncreds);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("netlogon_creds_cli_get(%s) failed  %s!\n",
+			context_name, nt_errstr(status));
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	if (ncreds->authenticate_kerberos) {
+		const struct dcerpc_binding *bd =
+			dcerpc_binding_handle_get_binding(b);
+		const char *host = NULL;
+		krb5_context kctx = NULL;
+		krb5_ccache kccid = NULL;
+		int ret;
+
+		SMB_ASSERT(idx_passwords == 0);
+
+		account_principal = cli_credentials_get_principal(creds,
+								  frame);
+		if (account_principal == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			DEBUG(0, ("cli_credentials_get_principal[%s] %s!\n",
+				  context_name,
+				  nt_errstr(status)));
+			TALLOC_FREE(frame);
+			return status;
+		}
+
+		host = dcerpc_binding_get_string_option(bd, "host");
+		if (host == NULL) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			DEBUG(0, ("dcerpc_binding_get_string_option(host)[%s] %s!\n",
+				  context_name,
+				  nt_errstr(status)));
+			TALLOC_FREE(frame);
+			return status;
+		}
+		if (!is_ipaddress(host)) {
+			status = NT_STATUS_INTERNAL_ERROR;
+			DEBUG(0, ("is_ipaddress(%s)[%s] => false %s!\n",
+				  host,
+				  context_name,
+				  nt_errstr(status)));
+			TALLOC_FREE(frame);
+			return status;
+		}
+		explicit_kdc = host;
+
+		ret = smb_krb5_init_context_common(&kctx);
+		if (ret != 0) {
+			status = krb5_to_nt_status(ret);
+			DEBUG(0, ("smb_krb5_init_context_common[%s] %s!\n",
+				  context_name,
+				  nt_errstr(status)));
+			TALLOC_FREE(frame);
+			return status;
+		}
+
+		ret = smb_krb5_cc_new_unique_memory(kctx,
+						    frame,
+						    &cache_name,
+						    &kccid);
+		if (ret != 0) {
+			krb5_free_context(kctx);
+			status = krb5_to_nt_status(ret);
+			DEBUG(0, ("smb_krb5_cc_new_unique_memory[%s] %s!\n",
+				  context_name,
+				  nt_errstr(status)));
+			TALLOC_FREE(frame);
+			return status;
+		}
+
+		ret = kerberos_kinit_passwords_ext(account_principal,
+						   num_passwords,
+						   passwords,
+						   nt_hashes,
+						   &idx_passwords,
+						   explicit_kdc,
+						   cache_name,
+						   NULL,
+						   NULL,
+						   NULL,
+						   &status);
+		krb5_cc_destroy(kctx, kccid);
+		krb5_free_context(kctx);
+		if (ret != 0) {
+			DEBUG(0, ("kerberos_kinit_passwords_ext(%s)[%s] "
+				  "failed for old passwords (%u) - %s!\n",
+				  account_principal,
+				  context_name,
+				  num_passwords,
+				  nt_errstr(status)));
+			TALLOC_FREE(frame);
+			return status;
+		}
 	}
 
 	if (prev != NULL && idx_passwords == 0) {
@@ -624,21 +805,84 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		return NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
 	}
 
+	check_password = cli_credentials_get_password(creds);
+	if (check_password == NULL) {
+		DEBUG(0, ("cli_credentials_get_password failed for domain %s!\n",
+			  domain));
+		TALLOC_FREE(frame);
+		return NT_STATUS_TRUSTED_RELATIONSHIP_FAILURE;
+	}
+
 	/*
 	 * Now we verify the new password.
 	 */
 	idx = 0;
-	nt_hashes[idx++] = current_nt_hash;
+	nt_hashes[idx] = current_nt_hash;
+	passwords[idx] = check_password;
+	idx += 1;
 	num_passwords = idx;
-	status = netlogon_creds_cli_lck_auth(context, b,
-					     num_passwords,
-					     nt_hashes,
-					     &idx_passwords);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("netlogon_creds_cli_auth(%s) failed for new password - %s!\n",
-			  context_name, nt_errstr(status)));
-		TALLOC_FREE(frame);
-		return status;
+	if (ncreds->authenticate_kerberos) {
+		krb5_context kctx = NULL;
+		krb5_ccache kccid = NULL;
+		int ret;
+
+		ret = smb_krb5_init_context_common(&kctx);
+		if (ret != 0) {
+			status = krb5_to_nt_status(ret);
+			DEBUG(0, ("smb_krb5_init_context_common[%s] %s!\n",
+				  context_name,
+				  nt_errstr(status)));
+			TALLOC_FREE(frame);
+			return status;
+		}
+
+		ret = smb_krb5_cc_new_unique_memory(kctx,
+						    frame,
+						    &cache_name,
+						    &kccid);
+		if (ret != 0) {
+			krb5_free_context(kctx);
+			status = krb5_to_nt_status(ret);
+			DEBUG(0, ("smb_krb5_cc_new_unique_memory[%s] %s!\n",
+				  context_name,
+				  nt_errstr(status)));
+			TALLOC_FREE(frame);
+			return status;
+		}
+
+		ret = kerberos_kinit_passwords_ext(account_principal,
+						   num_passwords,
+						   passwords,
+						   nt_hashes,
+						   &idx_passwords,
+						   explicit_kdc,
+						   cache_name,
+						   NULL,
+						   NULL,
+						   NULL,
+						   &status);
+		krb5_cc_destroy(kctx, kccid);
+		krb5_free_context(kctx);
+		if (ret != 0) {
+			DEBUG(0, ("kerberos_kinit_passwords_ext(%s)[%s] "
+				  "failed for new password - %s!\n",
+				  account_principal,
+				  context_name,
+				  nt_errstr(status)));
+			TALLOC_FREE(frame);
+			return status;
+		}
+	} else {
+		status = netlogon_creds_cli_lck_auth(context, b,
+						     num_passwords,
+						     nt_hashes,
+						     &idx_passwords);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("netlogon_creds_cli_auth(%s) failed for new password - %s!\n",
+				  context_name, nt_errstr(status)));
+			TALLOC_FREE(frame);
+			return status;
+		}
 	}
 
 	DEBUG(0,("%s : %s(%s): Verified new password remotely using %s\n",
