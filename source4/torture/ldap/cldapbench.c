@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "libcli/cldap/cldap.h"
+#include "source3/libads/netlogon_ping.h"
 #include "libcli/resolve/resolve.h"
 #include "libcli/ldap/ldap_client.h"
 #include "torture/torture.h"
@@ -37,12 +38,11 @@ struct bench_state {
 
 static void request_netlogon_handler(struct tevent_req *req)
 {
-	struct cldap_netlogon io = {};
 	struct bench_state *state = tevent_req_callback_data(req, struct bench_state);
 	NTSTATUS status;
+	struct netlogon_samlogon_response **responses = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
-	io.in.version = 6;
-	status = cldap_netlogon_recv(req, tmp_ctx, &io);
+	status = netlogon_pings_recv(req, tmp_ctx, &responses);
 	talloc_free(req);
 	if (NT_STATUS_IS_OK(status)) {
 		state->pass_count++;
@@ -57,13 +57,10 @@ static void request_netlogon_handler(struct tevent_req *req)
 */
 static bool bench_cldap_netlogon(struct torture_context *tctx, const char *address)
 {
-	struct cldap_socket *cldap;
 	int num_sent=0;
 	struct timeval tv = timeval_current();
 	int timelimit = torture_setting_int(tctx, "timelimit", 10);
-	struct cldap_netlogon search;
 	struct bench_state *state;
-	NTSTATUS status;
 	struct tsocket_address *dest_addr;
 	int ret;
 
@@ -71,24 +68,26 @@ static bool bench_cldap_netlogon(struct torture_context *tctx, const char *addre
 		tctx, "ip", address, 389, &dest_addr);
 	CHECK_VAL(ret, 0);
 
-	status = cldap_socket_init(tctx, NULL, dest_addr, &cldap);
-	torture_assert_ntstatus_ok(tctx, status, "cldap_socket_init");
-
 	state = talloc_zero(tctx, struct bench_state);
 	state->tctx = tctx;
-
-	ZERO_STRUCT(search);
-	search.in.dest_address = NULL;
-	search.in.dest_port = 0;
-	search.in.acct_control = -1;
-	search.in.version = 6;
 
 	printf("Running CLDAP/netlogon for %d seconds\n", timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
 		while (num_sent - (state->pass_count+state->fail_count) < 10) {
 			struct tevent_req *req;
-			req = cldap_netlogon_send(state, tctx->ev,
-						  cldap, &search);
+			req = netlogon_pings_send(
+				state,
+				tctx->ev,
+				lpcfg_client_netlogon_ping_protocol(
+					tctx->lp_ctx),
+				&dest_addr,
+				1,
+				(struct netlogon_ping_filter){
+					.ntversion = 6,
+					.acct_ctrl = -1,
+				},
+				1,
+				tevent_timeval_current_ofs(2, 0));
 
 			tevent_req_set_callback(req, request_netlogon_handler, state);
 
@@ -114,7 +113,6 @@ static bool bench_cldap_netlogon(struct torture_context *tctx, const char *addre
 	       state->pass_count / timeval_elapsed(&tv),
 	       state->fail_count);
 
-	talloc_free(cldap);
 	return true;
 }
 
