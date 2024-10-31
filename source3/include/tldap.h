@@ -122,6 +122,9 @@ typedef uint8_t TLDAPRC;
 bool tevent_req_ldap_error(struct tevent_req *req, TLDAPRC rc);
 bool tevent_req_is_ldap_error(struct tevent_req *req, TLDAPRC *perr);
 
+struct tstream_context;
+struct tldap_context *tldap_context_create_from_plain_stream(
+	TALLOC_CTX *mem_ctx, struct tstream_context **stream);
 struct tldap_context *tldap_context_create(TALLOC_CTX *mem_ctx, int fd);
 struct tstream_context *tldap_get_plain_tstream(struct tldap_context *ld);
 bool tldap_has_tls_tstream(struct tldap_context *ld);
