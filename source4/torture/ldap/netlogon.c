@@ -29,6 +29,8 @@
 #include "librpc/gen_ndr/netlogon.h"
 #include "param/param.h"
 #include "../lib/tsocket/tsocket.h"
+#include "source3/libads/netlogon_ping.h"
+#include "libcli/security/dom_sid.h"
 
 #include "torture/torture.h"
 #include "torture/ldap/proto.h"
@@ -729,5 +731,101 @@ bool torture_netlogon_udp(struct torture_context *tctx)
 	ret &= test_netlogon_extra_attrs(tctx, udp_ldap_rootdse, cldap);
 	ret &= test_netlogon_huawei(tctx, udp_ldap_rootdse, cldap);
 
+	return ret;
+}
+
+struct test_netlogon_ping_state {
+	struct tsocket_address *dest;
+	enum client_netlogon_ping_protocol proto;
+};
+
+static NTSTATUS test_netlogon_ping(void *data,
+				   TALLOC_CTX *mem_ctx,
+				   struct cldap_netlogon *io)
+{
+	struct test_netlogon_ping_state *state = data;
+	struct netlogon_samlogon_response **responses = NULL;
+	struct GUID guid;
+	struct GUID *pguid = NULL;
+	struct dom_sid sid;
+	struct dom_sid *psid = NULL;
+	NTSTATUS status;
+
+	if (io->in.domain_guid != NULL) {
+		GUID_from_string(io->in.domain_guid, &guid);
+		pguid = &guid;
+	}
+	if (io->in.domain_sid != NULL) {
+		dom_sid_parse(io->in.domain_sid, &sid);
+		psid = &sid;
+	}
+
+	status = netlogon_pings(mem_ctx,
+				state->proto,
+				&state->dest,
+				1,
+				(struct netlogon_ping_filter){
+					.acct_ctrl = io->in.acct_control,
+					.ntversion = io->in.version,
+					.domain = io->in.realm,
+					.hostname = io->in.host,
+					.user = io->in.user,
+					.domain_sid = psid,
+					.domain_guid = pguid,
+				},
+				1,
+				tevent_timeval_current_ofs(2, 0),
+				&responses);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	map_netlogon_samlogon_response(responses[0]);
+	io->out.netlogon = responses[0];
+	return NT_STATUS_OK;
+}
+
+bool torture_netlogon_ping(struct torture_context *tctx)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	struct test_netlogon_ping_state state = {};
+	const char *ip;
+	struct nbt_name nbt_name;
+	bool ret = true;
+	int r;
+	NTSTATUS status;
+
+	make_nbt_name_server(&nbt_name, host);
+
+	status = resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx),
+				 0,
+				 0,
+				 &nbt_name,
+				 tctx,
+				 &ip,
+				 tctx->ev);
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   talloc_asprintf(tctx,
+						   "Failed to resolve %s: %s",
+						   nbt_name.name,
+						   nt_errstr(status)));
+
+	r = tsocket_address_inet_from_strings(
+		tctx, "ip", ip, 389, &state.dest);
+	CHECK_VAL(r, 0);
+
+	state.proto = CLIENT_NETLOGON_PING_CLDAP;
+	ret &= test_ldap_netlogon(tctx, test_netlogon_ping, &state, host);
+	ret &= test_ldap_netlogon_flags(tctx,
+					test_netlogon_ping,
+					&state,
+					host);
+
+	state.proto = CLIENT_NETLOGON_PING_LDAP;
+	ret &= test_ldap_netlogon(tctx, test_netlogon_ping, &state, host);
+	ret &= test_ldap_netlogon_flags(tctx,
+					test_netlogon_ping,
+					&state,
+					host);
 	return ret;
 }
