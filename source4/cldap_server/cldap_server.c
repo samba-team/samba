@@ -39,6 +39,34 @@
 NTSTATUS server_service_cldapd_init(TALLOC_CTX *);
 
 /*
+  send an error reply (used on any error, so the client doesn't keep waiting
+  or send the bad request again)
+*/
+static NTSTATUS cldap_error_reply(struct cldap_socket *cldap,
+				  uint32_t message_id,
+				  struct tsocket_address *dest,
+				  int resultcode,
+				  const char *errormessage)
+{
+	NTSTATUS status;
+	struct cldap_reply reply;
+	struct ldap_Result result;
+
+	reply.messageid    = message_id;
+	reply.dest         = dest;
+	reply.response     = NULL;
+	reply.result       = &result;
+
+	ZERO_STRUCT(result);
+	result.resultcode	= resultcode;
+	result.errormessage	= errormessage;
+
+	status = cldap_reply_send(cldap, &reply);
+
+	return status;
+}
+
+/*
   handle incoming cldap requests
 */
 static void cldapd_request_handler(struct cldap_socket *cldap,

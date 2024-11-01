@@ -82,9 +82,3 @@ struct cldap_reply {
 };
 
 NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io);
-
-NTSTATUS cldap_error_reply(struct cldap_socket *cldap,
-			   uint32_t message_id,
-			   struct tsocket_address *dst,
-			   int resultcode,
-			   const char *errormessage);
