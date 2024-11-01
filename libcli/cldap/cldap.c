@@ -899,30 +899,6 @@ NTSTATUS cldap_search(struct cldap_socket *cldap,
 }
 
 /*
-  send an empty reply (used on any error, so the client doesn't keep waiting
-  or send the bad request again)
-*/
-NTSTATUS cldap_empty_reply(struct cldap_socket *cldap,
-			   uint32_t message_id,
-			   struct tsocket_address *dest)
-{
-	NTSTATUS status;
-	struct cldap_reply reply;
-	struct ldap_Result result;
-
-	reply.messageid    = message_id;
-	reply.dest         = dest;
-	reply.response     = NULL;
-	reply.result       = &result;
-
-	ZERO_STRUCT(result);
-
-	status = cldap_reply_send(cldap, &reply);
-
-	return status;
-}
-
-/*
   send an error reply (used on any error, so the client doesn't keep waiting
   or send the bad request again)
 */
@@ -949,49 +925,3 @@ NTSTATUS cldap_error_reply(struct cldap_socket *cldap,
 
 	return status;
 }
-
-
-/*
-  send a netlogon reply 
-*/
-NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap,
-			      uint32_t message_id,
-			      struct tsocket_address *dest,
-			      uint32_t version,
-			      struct netlogon_samlogon_response *netlogon)
-{
-	NTSTATUS status;
-	struct cldap_reply reply;
-	struct ldap_SearchResEntry response;
-	struct ldap_Result result;
-	TALLOC_CTX *tmp_ctx = talloc_new(cldap);
-	DATA_BLOB blob;
-
-	status = push_netlogon_samlogon_response(&blob, tmp_ctx,
-						 netlogon);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tmp_ctx);
-		return status;
-	}
-	reply.messageid    = message_id;
-	reply.dest         = dest;
-	reply.response     = &response;
-	reply.result       = &result;
-
-	ZERO_STRUCT(result);
-
-	response.dn = "";
-	response.num_attributes = 1;
-	response.attributes = talloc(tmp_ctx, struct ldb_message_element);
-	NT_STATUS_HAVE_NO_MEMORY(response.attributes);
-	response.attributes->name = "netlogon";
-	response.attributes->num_values = 1;
-	response.attributes->values = &blob;
-
-	status = cldap_reply_send(cldap, &reply);
-
-	talloc_free(tmp_ctx);
-
-	return status;
-}
-

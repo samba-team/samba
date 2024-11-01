@@ -83,17 +83,8 @@ struct cldap_reply {
 
 NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io);
 
-NTSTATUS cldap_empty_reply(struct cldap_socket *cldap,
-			   uint32_t message_id,
-			   struct tsocket_address *dst);
 NTSTATUS cldap_error_reply(struct cldap_socket *cldap,
 			   uint32_t message_id,
 			   struct tsocket_address *dst,
 			   int resultcode,
 			   const char *errormessage);
-
-NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap,
-			      uint32_t message_id,
-			      struct tsocket_address *dst,
-			      uint32_t version,
-			      struct netlogon_samlogon_response *netlogon);
