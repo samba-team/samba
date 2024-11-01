@@ -43,6 +43,23 @@
 
 #define CHECK_STRING(v, correct) torture_assert_str_equal(tctx, v, correct, "incorrect value");
 
+struct cldap_netlogon {
+	struct {
+		const char *dest_address;
+		uint16_t dest_port;
+		const char *realm;
+		const char *host;
+		const char *user;
+		const char *domain_guid;
+		const char *domain_sid;
+		int acct_control;
+		uint32_t version;
+	} in;
+	struct {
+		struct netlogon_samlogon_response *netlogon;
+	} out;
+};
+
 typedef NTSTATUS (*request_netlogon_t)(void *con,
 				       TALLOC_CTX *mem_ctx,
 				       struct cldap_netlogon *io);

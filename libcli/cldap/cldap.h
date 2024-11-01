@@ -92,26 +92,6 @@ NTSTATUS cldap_error_reply(struct cldap_socket *cldap,
 			   int resultcode,
 			   const char *errormessage);
 
-/*
-  a netlogon cldap request
-*/
-struct cldap_netlogon {
-	struct {
-		const char *dest_address;
-		uint16_t dest_port;
-		const char *realm;
-		const char *host;
-		const char *user;
-		const char *domain_guid;
-		const char *domain_sid;
-		int acct_control;
-		uint32_t version;
-	} in;
-	struct {
-		struct netlogon_samlogon_response *netlogon;
-	} out;
-};
-
 NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap,
 			      uint32_t message_id,
 			      struct tsocket_address *dst,
