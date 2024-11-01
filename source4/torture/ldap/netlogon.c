@@ -487,58 +487,6 @@ static NTSTATUS tcp_ldap_rootdse(void *data,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS tcp_ldap_netlogon(void *conn,
-				  TALLOC_CTX *mem_ctx,
-				  struct cldap_netlogon *io)
-{
-	struct cldap_search search;
-	struct ldap_SearchResEntry *res;
-	NTSTATUS status;
-	DATA_BLOB *blob;
-
-	ZERO_STRUCT(search);
-	search.in.attributes = (const char *[]) { "netlogon", NULL };
-	search.in.filter =  cldap_netlogon_create_filter(mem_ctx, io);
-	if (search.in.filter == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = tcp_ldap_rootdse(conn, mem_ctx, &search);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	res = search.out.response;
-	if (res == NULL) {
-		return NT_STATUS_NOT_FOUND;
-	}
-
-	if (res->num_attributes != 1 ||
-	    strcasecmp(res->attributes[0].name, "netlogon") != 0 ||
-	    res->attributes[0].num_values != 1 ||
-	    res->attributes[0].values->length < 2) {
-		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
-	}
-
-	blob = res->attributes[0].values;
-
-	io->out.netlogon = talloc(mem_ctx, struct netlogon_samlogon_response);
-	if (io->out.netlogon == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = pull_netlogon_samlogon_response(blob,
-						 io->out.netlogon,
-						 io->out.netlogon);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	map_netlogon_samlogon_response(io->out.netlogon);
-
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS udp_ldap_rootdse(void *data, TALLOC_CTX *mem_ctx,
 				 struct cldap_search *io)
 {
@@ -680,24 +628,9 @@ bool torture_netlogon_tcp(struct torture_context *tctx)
 		return false;
 	}
 
-	ret &= test_ldap_netlogon(tctx, tcp_ldap_netlogon, conn, host);
-	ret &= test_ldap_netlogon_flags(tctx, tcp_ldap_netlogon, conn, host);
 	ret &= test_netlogon_extra_attrs(tctx, tcp_ldap_rootdse, conn);
 
 	return ret;
-}
-
-static NTSTATUS udp_ldap_netlogon(void *data,
-				  TALLOC_CTX *mem_ctx,
-				  struct cldap_netlogon *io)
-{
-	struct cldap_socket *cldap = talloc_get_type(data,
-						     struct cldap_socket);
-	NTSTATUS status = cldap_netlogon(cldap, mem_ctx, io);
-	if (NT_STATUS_IS_OK(status)) {
-		map_netlogon_samlogon_response(io->out.netlogon);
-	}
-	return status;
 }
 
 bool torture_netlogon_udp(struct torture_context *tctx)
@@ -726,8 +659,6 @@ bool torture_netlogon_udp(struct torture_context *tctx)
 	status = cldap_socket_init(tctx, NULL, dest_addr, &cldap);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	ret &= test_ldap_netlogon(tctx, udp_ldap_netlogon, cldap, host);
-	ret &= test_ldap_netlogon_flags(tctx, udp_ldap_netlogon, cldap, host);
 	ret &= test_netlogon_extra_attrs(tctx, udp_ldap_rootdse, cldap);
 	ret &= test_netlogon_huawei(tctx, udp_ldap_rootdse, cldap);
 
