@@ -26,13 +26,8 @@
 #include "torture/util.h"
 #include "torture/raw/proto.h"
 
-#define CHECK_STATUS(status, correct) do { \
-	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%s) Incorrect status %s - should be %s\n", \
-		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = false; \
-		goto done; \
-	}} while (0)
+#define CHECK_STATUS(status, correct) \
+	torture_assert_ntstatus_equal_goto(tctx, status, correct, ret, done, __location__)
 
 #define BASEDIR "\\testunlink"
 
