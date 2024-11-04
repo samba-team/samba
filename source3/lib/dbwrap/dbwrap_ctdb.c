@@ -1107,6 +1107,7 @@ static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 		return NULL;
 	}
 
+	result->flags = (struct db_record_flags) {};
 	result->db = ctx->db;
 	result->private_data = (void *)crec;
 	crec->ctdb_ctx = ctx;

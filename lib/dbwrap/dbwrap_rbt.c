@@ -380,6 +380,7 @@ static struct db_record *db_rbt_fetch_locked(struct db_context *db_ctx,
 	rec_priv = (struct db_rbt_rec *)
 		((char *)result + DBWRAP_RBT_ALIGN(sizeof(struct db_record)));
 
+	result->flags = (struct db_record_flags) {};
 	result->storev = db_rbt_storev;
 	result->delete_rec = db_rbt_delete;
 	result->private_data = rec_priv;

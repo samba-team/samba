@@ -33,6 +33,7 @@ struct db_record {
 	NTSTATUS (*storev)(struct db_record *rec, const TDB_DATA *dbufs,
 			   int num_dbufs, int flag);
 	NTSTATUS (*delete_rec)(struct db_record *rec);
+	struct db_record_flags flags;
 	void *private_data;
 };
 

@@ -70,6 +70,10 @@ enum dbwrap_req_state {
 	DBWRAP_REQ_ERROR
 };
 
+struct db_record_flags {
+	bool persistent : 1;
+};
+
 /* The following definitions come from lib/dbwrap.c  */
 
 TDB_DATA dbwrap_record_get_key(const struct db_record *rec);
