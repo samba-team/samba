@@ -3883,6 +3883,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	bool def_acl = False;
 	bool posix_open = False;
 	bool new_file_created = False;
+	bool truncated = false;
 	bool first_open_attempt = true;
 	bool is_twrp = (smb_fname_atname->twrp != 0);
 	NTSTATUS fsp_open = NT_STATUS_ACCESS_DENIED;
@@ -4468,10 +4469,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				open_ntcreate_lock_cleanup_entry;
 			goto unlock;
 		}
-		notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
-			     FILE_NOTIFY_CHANGE_SIZE
-			     | FILE_NOTIFY_CHANGE_ATTRIBUTES,
-			     fsp->fsp_name->base_name);
+		truncated = true;
 	}
 
 	/*
@@ -4654,7 +4652,13 @@ unlock:
 			     FILE_NOTIFY_CHANGE_FILE_NAME,
 			     smb_fname->base_name);
 	}
-
+	if (truncated) {
+		notify_fname(fsp->conn,
+			     NOTIFY_ACTION_MODIFIED,
+			     FILE_NOTIFY_CHANGE_SIZE |
+			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
+			     fsp->fsp_name->base_name);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		fd_close(fsp);
 		return status;
