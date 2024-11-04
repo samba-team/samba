@@ -4170,8 +4170,11 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 				&ft,
 				false);
 	if (modify_mtime) {
-		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
-			FILE_NOTIFY_CHANGE_LAST_WRITE, smb_fname->base_name);
+		notify_fname(conn,
+			     NOTIFY_ACTION_MODIFIED,
+			     FILE_NOTIFY_CHANGE_LAST_WRITE,
+			     smb_fname,
+			     NULL);
 	}
 	return status;
 }

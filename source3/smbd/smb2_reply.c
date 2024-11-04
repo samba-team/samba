@@ -1300,26 +1300,40 @@ static void notify_rename(struct connection_struct *conn,
 	}
 
 	if (strcmp(parent_dir_src, parent_dir_dst) == 0) {
-		notify_fname(conn, NOTIFY_ACTION_OLD_NAME, mask,
-			     smb_fname_src->base_name);
-		notify_fname(conn, NOTIFY_ACTION_NEW_NAME, mask,
-			     smb_fname_dst->base_name);
+		notify_fname(conn,
+			     NOTIFY_ACTION_OLD_NAME,
+			     mask,
+			     smb_fname_src,
+			     NULL);
+		notify_fname(conn,
+			     NOTIFY_ACTION_NEW_NAME,
+			     mask,
+			     smb_fname_dst,
+			     NULL);
 	}
 	else {
-		notify_fname(conn, NOTIFY_ACTION_REMOVED, mask,
-			     smb_fname_src->base_name);
-		notify_fname(conn, NOTIFY_ACTION_ADDED, mask,
-			     smb_fname_dst->base_name);
+		notify_fname(conn,
+			     NOTIFY_ACTION_REMOVED,
+			     mask,
+			     smb_fname_src,
+			     NULL);
+		notify_fname(conn,
+			     NOTIFY_ACTION_ADDED,
+			     mask,
+			     smb_fname_dst,
+			     NULL);
 	}
 
 	/* this is a strange one. w2k3 gives an additional event for
 	   CHANGE_ATTRIBUTES and CHANGE_CREATION on the new file when renaming
 	   files, but not directories */
 	if (!is_dir) {
-		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
-			     FILE_NOTIFY_CHANGE_ATTRIBUTES
-			     |FILE_NOTIFY_CHANGE_CREATION,
-			     smb_fname_dst->base_name);
+		notify_fname(conn,
+			     NOTIFY_ACTION_MODIFIED,
+			     FILE_NOTIFY_CHANGE_ATTRIBUTES |
+				     FILE_NOTIFY_CHANGE_CREATION,
+			     smb_fname_dst,
+			     NULL);
 	}
  out:
 	TALLOC_FREE(parent_dir_src);

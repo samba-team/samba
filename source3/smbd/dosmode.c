@@ -1071,9 +1071,11 @@ int file_set_dosmode(connection_struct *conn,
 
 done:
 	if (!newfile) {
-		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
+		notify_fname(conn,
+			     NOTIFY_ACTION_MODIFIED,
 			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
-			     smb_fname->base_name);
+			     smb_fname,
+			     NULL);
 	}
 	if (ret == 0) {
 		smb_fname->st.st_ex_mode = unixmode;
@@ -1173,9 +1175,11 @@ NTSTATUS file_set_sparse(connection_struct *conn,
 		return status;
 	}
 
-	notify_fname(conn, NOTIFY_ACTION_MODIFIED,
+	notify_fname(conn,
+		     NOTIFY_ACTION_MODIFIED,
 		     FILE_NOTIFY_CHANGE_ATTRIBUTES,
-		     fsp->fsp_name->base_name);
+		     fsp->fsp_name,
+		     NULL);
 
 	fsp->fsp_name->st.cached_dos_attributes = new_dosmode;
 	fsp->fsp_flags.is_sparse = sparse;

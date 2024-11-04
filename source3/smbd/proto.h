@@ -558,8 +558,11 @@ bool remove_pending_change_notify_requests_by_mid(
 	struct smbd_server_connection *sconn, uint64_t mid);
 void remove_pending_change_notify_requests_by_fid(files_struct *fsp,
 						  NTSTATUS status);
-void notify_fname(connection_struct *conn, uint32_t action, uint32_t filter,
-		  const char *path);
+void notify_fname(struct connection_struct *conn,
+		  uint32_t action,
+		  uint32_t filter,
+		  const struct smb_filename *smb_fname,
+		  const struct smb2_lease *lease);
 char *notify_filter_string(TALLOC_CTX *mem_ctx, uint32_t filter);
 struct sys_notify_context *sys_notify_context_create(TALLOC_CTX *mem_ctx,
 						     struct tevent_context *ev);

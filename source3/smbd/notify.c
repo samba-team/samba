@@ -577,10 +577,14 @@ void remove_pending_change_notify_requests_by_fid(files_struct *fsp,
 	}
 }
 
-void notify_fname(connection_struct *conn, uint32_t action, uint32_t filter,
-		  const char *path)
+void notify_fname(struct connection_struct *conn,
+		  uint32_t action,
+		  uint32_t filter,
+		  const struct smb_filename *smb_fname,
+		  const struct smb2_lease *lease)
 {
 	struct notify_context *notify_ctx = conn->sconn->notify_ctx;
+	const char *path = smb_fname->base_name;
 
 	if (path[0] == '.' && path[1] == '/') {
 		path += 2;

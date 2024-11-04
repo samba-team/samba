@@ -648,9 +648,11 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	}
 
 	if (lck_state.delete_object) {
-		notify_fname(conn, NOTIFY_ACTION_REMOVED,
+		notify_fname(conn,
+			     NOTIFY_ACTION_REMOVED,
 			     FILE_NOTIFY_CHANGE_FILE_NAME,
-			     fsp->fsp_name->base_name);
+			     fsp->fsp_name,
+			     NULL);
 	}
 
 	return status;
@@ -1596,7 +1598,8 @@ done:
 		notify_fname(conn,
 			     NOTIFY_ACTION_REMOVED,
 			     FILE_NOTIFY_CHANGE_DIR_NAME,
-			     fsp->fsp_name->base_name);
+			     fsp->fsp_name,
+			     NULL);
 	}
 
 	status1 = fd_close(fsp);

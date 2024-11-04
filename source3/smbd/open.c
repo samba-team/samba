@@ -4650,14 +4650,16 @@ unlock:
 		notify_fname(conn,
 			     NOTIFY_ACTION_ADDED,
 			     FILE_NOTIFY_CHANGE_FILE_NAME,
-			     smb_fname->base_name);
+			     smb_fname,
+			     NULL);
 	}
 	if (truncated) {
 		notify_fname(fsp->conn,
 			     NOTIFY_ACTION_MODIFIED,
 			     FILE_NOTIFY_CHANGE_SIZE |
 			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
-			     fsp->fsp_name->base_name);
+			     fsp->fsp_name,
+			     NULL);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		fd_close(fsp);
@@ -5531,7 +5533,8 @@ unlock:
 		notify_fname(conn,
 			     NOTIFY_ACTION_ADDED,
 			     FILE_NOTIFY_CHANGE_DIR_NAME,
-			     smb_dname->base_name);
+			     smb_dname,
+			     NULL);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {

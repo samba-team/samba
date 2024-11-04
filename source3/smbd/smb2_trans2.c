@@ -3907,8 +3907,11 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		return map_nt_error_from_unix(errno);
 	}
 
-	notify_fname(conn, NOTIFY_ACTION_MODIFIED, action,
-		     smb_fname->base_name);
+	notify_fname(conn,
+		     NOTIFY_ACTION_MODIFIED,
+		     action,
+		     smb_fname,
+		     NULL);
 	return NT_STATUS_OK;
 }
 
