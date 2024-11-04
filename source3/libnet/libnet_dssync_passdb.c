@@ -77,7 +77,7 @@ static NTSTATUS dssync_insert_obj(struct dssync_passdb *pctx,
 		abort();
 	}
 
-	status = dbwrap_record_store(rec, obj->data, TDB_INSERT);
+	status = dbwrap_record_store(rec, obj->data, DBWRAP_INSERT);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(rec);
 		return status;
@@ -177,7 +177,7 @@ static NTSTATUS dssync_insert_mem(struct dssync_passdb *pctx,
 		abort();
 	}
 
-	status = dbwrap_record_store(rec, mem->data, TDB_INSERT);
+	status = dbwrap_record_store(rec, mem->data, DBWRAP_INSERT);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(rec);
 		return status;

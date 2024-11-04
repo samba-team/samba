@@ -954,7 +954,7 @@ static NTSTATUS smbXsrv_session_global_store(struct smbXsrv_session_global0 *glo
 	}
 
 	val = make_tdb_data(blob.data, blob.length);
-	status = dbwrap_record_store(global->db_rec, val, TDB_REPLACE);
+	status = dbwrap_record_store(global->db_rec, val, DBWRAP_REPLACE);
 	TALLOC_FREE(blob.data);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("key '%s' store - %s\n",
@@ -1367,7 +1367,7 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 
 	ptr = session;
 	val = make_tdb_data((uint8_t const *)&ptr, sizeof(ptr));
-	status = dbwrap_record_store(local_rec, val, TDB_REPLACE);
+	status = dbwrap_record_store(local_rec, val, DBWRAP_REPLACE);
 	TALLOC_FREE(local_rec);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(session);

@@ -178,7 +178,7 @@ static void test_store_records(struct db_context *db, struct tevent_context *ev)
 		counters[pnn]++;
 
 		if (verbose) DEBUG(1, ("storing data\n"));
-		status = dbwrap_record_store(rec, data, TDB_REPLACE);
+		status = dbwrap_record_store(rec, data, DBWRAP_REPLACE);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Failed to store record\n"));
 			if (!no_trans) {

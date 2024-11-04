@@ -386,7 +386,7 @@ static NTSTATUS smbXsrv_open_global_store(
 	}
 
 	val = make_tdb_data(blob.data, blob.length);
-	status = dbwrap_record_store(rec, val, TDB_REPLACE);
+	status = dbwrap_record_store(rec, val, DBWRAP_REPLACE);
 	TALLOC_FREE(blob.data);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("key '%s' store - %s\n",

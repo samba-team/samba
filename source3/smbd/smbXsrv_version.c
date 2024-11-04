@@ -233,7 +233,7 @@ NTSTATUS smbXsrv_version_global_init(const struct server_id *server_id)
 	}
 
 	val = make_tdb_data(blob.data, blob.length);
-	status = dbwrap_record_store(db_rec, val, TDB_REPLACE);
+	status = dbwrap_record_store(db_rec, val, DBWRAP_REPLACE);
 	TALLOC_FREE(db_rec);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("dbwrap_record_store - %s\n", nt_errstr(status));

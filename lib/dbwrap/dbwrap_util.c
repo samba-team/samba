@@ -184,7 +184,7 @@ static void dbwrap_change_uint32_atomic_action_fn(struct db_record *rec,
 	val += state->change_val;
 	PUSH_LE_U32(v_store, 0, val);
 
-	state->status = dbwrap_record_store(rec, data, TDB_REPLACE);
+	state->status = dbwrap_record_store(rec, data, DBWRAP_REPLACE);
 }
 
 static NTSTATUS dbwrap_change_uint32_atomic_action(struct db_context *db,
@@ -285,7 +285,7 @@ static void dbwrap_change_int32_atomic_action_fn(struct db_record *rec,
 	val += state->change_val;
 	PUSH_LE_U32(v_store, 0, val);
 
-	state->status = dbwrap_record_store(rec, data, TDB_REPLACE);
+	state->status = dbwrap_record_store(rec, data, DBWRAP_REPLACE);
 }
 
 static NTSTATUS dbwrap_change_int32_atomic_action(struct db_context *db,

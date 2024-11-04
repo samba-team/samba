@@ -150,7 +150,7 @@ static int tdbsam_convert_one(struct db_record *rec, void *priv)
 		return -1;
 	}
 
-	status = dbwrap_record_store(rec, data, TDB_MODIFY);
+	status = dbwrap_record_store(rec, data, DBWRAP_MODIFY);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Could not store the new record: %s\n",
 			  nt_errstr(status)));
@@ -188,7 +188,7 @@ static int backup_copy_fn(struct db_record *orig_rec, void *state)
 
 	value = dbwrap_record_get_value(orig_rec);
 
-	status = dbwrap_record_store(new_rec, value, TDB_INSERT);
+	status = dbwrap_record_store(new_rec, value, DBWRAP_INSERT);
 
 	TALLOC_FREE(new_rec);
 

@@ -1619,7 +1619,9 @@ static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 		};
 		NTSTATUS status;
 
-		status = dbwrap_record_store(br_lck->record, data, TDB_REPLACE);
+		status = dbwrap_record_store(br_lck->record,
+					     data,
+					     DBWRAP_REPLACE);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("store returned %s\n", nt_errstr(status)));
 			smb_panic("Could not store byte range mode entry");

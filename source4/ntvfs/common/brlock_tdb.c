@@ -373,7 +373,7 @@ static NTSTATUS brl_tdb_lock(struct brl_context *brl,
 	dbuf.dptr = (unsigned char *)locks;
 	dbuf.dsize += sizeof(lock);
 
-	status = dbwrap_record_store(locked, dbuf, TDB_REPLACE);
+	status = dbwrap_record_store(locked, dbuf, DBWRAP_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
@@ -525,7 +525,9 @@ found:
 			
 			dbuf.dsize = count * sizeof(*locks);
 
-			status = dbwrap_record_store(locked, dbuf, TDB_REPLACE);
+			status = dbwrap_record_store(locked,
+						     dbuf,
+						     DBWRAP_REPLACE);
 			if (!NT_STATUS_IS_OK(status)) {
 				goto fail;
 			}
@@ -596,8 +598,9 @@ static NTSTATUS brl_tdb_remove_pending(struct brl_context *brl,
 				}
 				count--;
 				dbuf.dsize = count * sizeof(*locks);
-				status = dbwrap_record_store(locked, dbuf,
-							     TDB_REPLACE);
+				status = dbwrap_record_store(locked,
+							     dbuf,
+							     DBWRAP_REPLACE);
 				if (!NT_STATUS_IS_OK(status)) {
 					goto fail;
 				}
@@ -727,7 +730,7 @@ static NTSTATUS brl_tdb_close(struct brl_context *brl,
 
 		dbuf.dsize = count * sizeof(*locks);
 
-		status = dbwrap_record_store(locked, dbuf, TDB_REPLACE);
+		status = dbwrap_record_store(locked, dbuf, DBWRAP_REPLACE);
 	}
 	talloc_free(locked);
 

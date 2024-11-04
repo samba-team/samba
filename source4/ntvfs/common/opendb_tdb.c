@@ -267,7 +267,7 @@ static NTSTATUS odb_push_record(struct odb_lock *lck, struct opendb_file *file)
 	dbuf.dptr = blob.data;
 	dbuf.dsize = blob.length;
 		
-	status = dbwrap_record_store(lck->locked, dbuf, TDB_REPLACE);
+	status = dbwrap_record_store(lck->locked, dbuf, DBWRAP_REPLACE);
 	data_blob_free(&blob);
 	return status;
 }

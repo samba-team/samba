@@ -449,7 +449,7 @@ static NTSTATUS smbXsrv_client_global_store(struct smbXsrv_client_global0 *globa
 	}
 
 	val = make_tdb_data(blob.data, blob.length);
-	status = dbwrap_record_store(global->db_rec, val, TDB_REPLACE);
+	status = dbwrap_record_store(global->db_rec, val, DBWRAP_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("key '%s' store - %s\n",
 			tdb_data_dbg(key),
