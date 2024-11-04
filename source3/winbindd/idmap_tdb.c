@@ -109,7 +109,7 @@ static int convert_fn(struct db_record *rec, void *private_data)
 
 	value = dbwrap_record_get_value(rec);
 
-	status = dbwrap_store(s->db, key2, value, TDB_INSERT);
+	status = dbwrap_store(s->db, key2, value, DBWRAP_INSERT);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Unable to add record %s:%s\n",
 			(const char *)key2.dptr,
@@ -118,7 +118,7 @@ static int convert_fn(struct db_record *rec, void *private_data)
 		return -1;
 	}
 
-	status = dbwrap_store(s->db, value, key2, TDB_REPLACE);
+	status = dbwrap_store(s->db, value, key2, DBWRAP_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Unable to update record %s:%s\n",
 			(const char *)value.dptr,

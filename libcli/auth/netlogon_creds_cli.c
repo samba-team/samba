@@ -894,7 +894,7 @@ static NTSTATUS netlogon_creds_cli_store_internal(
 
 	status = dbwrap_store(context->db.ctx,
 			      context->db.key_data,
-			      data, TDB_REPLACE);
+			      data, DBWRAP_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;

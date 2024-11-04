@@ -84,7 +84,7 @@ NTSTATUS dbwrap_store_int32_bystring(struct db_context *db, const char *keystr,
 	SIVAL(v_store, 0, v);
 
 	status = dbwrap_store(db, string_term_tdb_data(keystr), data,
-			      TDB_REPLACE);
+			      DBWRAP_REPLACE);
 	return status;
 }
 
@@ -140,7 +140,7 @@ NTSTATUS dbwrap_store_uint32_bystring(struct db_context *db,
 	SIVAL(v_store, 0, v);
 
 	status = dbwrap_store(db, string_term_tdb_data(keystr), data,
-			      TDB_REPLACE);
+			      DBWRAP_REPLACE);
 	return status;
 }
 

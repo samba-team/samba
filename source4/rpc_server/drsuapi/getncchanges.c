@@ -1987,7 +1987,7 @@ static WERROR dcesrv_drsuapi_obj_cache_add(struct db_context *obj_cache,
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	status = dbwrap_store(obj_cache, key, val, TDB_REPLACE);
+	status = dbwrap_store(obj_cache, key, val, DBWRAP_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}

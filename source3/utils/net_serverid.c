@@ -104,7 +104,7 @@ static struct wipedbs_server_data *get_server_data(struct wipedbs_state *state,
 		ret->exists = true;
 		val = make_tdb_data((const void*)&ret, sizeof(ret));
 		status = dbwrap_store(state->id2server_data,
-				      key, val, TDB_INSERT);
+				      key, val, DBWRAP_INSERT);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Failed to store server entry for %s: %s\n",
 				  idbuf.buf, nt_errstr(status)));

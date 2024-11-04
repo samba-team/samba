@@ -82,7 +82,7 @@ static int collect_sessions_fn(struct smbXsrv_session_global0 *global,
 	status = dbwrap_store(state->session_by_pid,
 			      make_tdb_data((void*)&id, sizeof(id)),
 			      make_tdb_data((void*)&sess, sizeof(sess)),
-			      TDB_INSERT);
+			      DBWRAP_INSERT);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to store record: %s\n", nt_errstr(status)));
 	}

@@ -117,7 +117,7 @@ static int upgrade_v2_to_v3(struct db_record *rec, void *priv)
 	status = dbwrap_store(share_db,
 				string_term_tdb_data(newkey),
 				value,
-				TDB_REPLACE);
+				DBWRAP_REPLACE);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("upgrade_v2_to_v3: Failed to store secdesc for "
