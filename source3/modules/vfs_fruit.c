@@ -413,34 +413,22 @@ static bool add_fruit_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
 	return true;
 }
 
-static bool filter_empty_rsrc_stream(unsigned int *num_streams,
+static void filter_empty_rsrc_stream(unsigned int *num_streams,
 				     struct stream_struct **streams)
 {
-	struct stream_struct *tmp = *streams;
 	unsigned int i;
 
-	if (*num_streams == 0) {
-		return true;
-	}
-
 	for (i = 0; i < *num_streams; i++) {
-		if (strequal_m(tmp[i].name, AFPRESOURCE_STREAM)) {
-			break;
+		struct stream_struct *s = &(*streams)[i];
+
+		if (strequal_m(s->name, AFPRESOURCE_STREAM) &&
+		    (s->size == 0)) {
+			TALLOC_FREE(s->name);
+			ARRAY_DEL_ELEMENT(streams, i, *num_streams);
+			*num_streams -= 1;
+			return;
 		}
 	}
-
-	if (i == *num_streams) {
-		return true;
-	}
-
-	if (tmp[i].size > 0) {
-		return true;
-	}
-
-	TALLOC_FREE(tmp[i].name);
-	ARRAY_DEL_ELEMENT(tmp, i, *num_streams);
-	*num_streams -= 1;
-	return true;
 }
 
 static bool del_fruit_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
@@ -3880,13 +3868,7 @@ static NTSTATUS fruit_streaminfo_rsrc_stream(
 	unsigned int *pnum_streams,
 	struct stream_struct **pstreams)
 {
-	bool ok;
-
-	ok = filter_empty_rsrc_stream(pnum_streams, pstreams);
-	if (!ok) {
-		DBG_ERR("Filtering resource stream failed\n");
-		return NT_STATUS_INTERNAL_ERROR;
-	}
+	filter_empty_rsrc_stream(pnum_streams, pstreams);
 	return NT_STATUS_OK;
 }
 
@@ -3898,13 +3880,7 @@ static NTSTATUS fruit_streaminfo_rsrc_xattr(
 	unsigned int *pnum_streams,
 	struct stream_struct **pstreams)
 {
-	bool ok;
-
-	ok = filter_empty_rsrc_stream(pnum_streams, pstreams);
-	if (!ok) {
-		DBG_ERR("Filtering resource stream failed\n");
-		return NT_STATUS_INTERNAL_ERROR;
-	}
+	filter_empty_rsrc_stream(pnum_streams, pstreams);
 	return NT_STATUS_OK;
 }
 
