@@ -3733,8 +3733,7 @@ static NTSTATUS fruit_streaminfo_meta_stream(
 	struct stream_struct **pstreams)
 {
 	struct stream_struct *stream = *pstreams;
-	unsigned int num_streams = *pnum_streams;
-	int i;
+	unsigned int i, num_streams = *pnum_streams;
 
 	for (i = 0; i < num_streams; i++) {
 		if (strequal_m(stream[i].name, AFPINFO_STREAM)) {
@@ -3771,10 +3770,9 @@ static NTSTATUS fruit_streaminfo_meta_netatalk(
 	struct stream_struct **pstreams)
 {
 	struct stream_struct *stream = *pstreams;
-	unsigned int num_streams = *pnum_streams;
+	unsigned int i, num_streams = *pnum_streams;
 	struct adouble *ad = NULL;
 	bool is_fi_empty;
-	int i;
 	bool ok;
 
 	/* Remove the Netatalk xattr from the list */
@@ -3893,11 +3891,10 @@ static NTSTATUS fruit_streaminfo_rsrc_adouble(
 	struct stream_struct **pstreams)
 {
 	struct stream_struct *stream = *pstreams;
-	unsigned int num_streams = *pnum_streams;
+	unsigned int i, num_streams = *pnum_streams;
 	struct adouble *ad = NULL;
 	bool ok;
 	size_t rlen;
-	int i;
 
 	/*
 	 * Check if there's a AFPRESOURCE_STREAM from the VFS streams backend
