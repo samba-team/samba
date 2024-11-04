@@ -299,7 +299,7 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	len = strlen(new_trust_pw_str);
 	ok = convert_string_talloc(frame, CH_UNIX, CH_UTF16,
 				   new_trust_pw_str, len,
-				   (void **)&new_trust_pw_blob.data,
+				   &new_trust_pw_blob.data,
 				   &new_trust_pw_blob.length);
 	if (!ok) {
 		status = NT_STATUS_UNMAPPABLE_CHARACTER;
