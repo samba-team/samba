@@ -132,6 +132,10 @@ int kerberos_kinit_password_ext(const char *given_principal,
 
 	ZERO_STRUCT(my_creds);
 
+	if (ntstatus) {
+		*ntstatus = NT_STATUS_INTERNAL_ERROR;
+	}
+
 	if (cache_name == NULL) {
 		DBG_DEBUG("Missing ccache for [%s] and config [%s]\n",
 			  given_principal,
