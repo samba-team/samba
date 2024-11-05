@@ -43,6 +43,9 @@
 #ifdef HAVE_SYS_ID_H
 #include <sys/id.h>
 #endif
+#ifdef HAVE_GRP_H
+#include <grp.h>
+#endif
 
 /* autoconf tests don't include setid.h */
 int samba_setresuid(uid_t ruid, uid_t euid, uid_t suid);
