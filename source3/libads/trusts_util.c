@@ -159,10 +159,10 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	struct secrets_domain_info1_change *prev = NULL;
 	const struct samr_Password *current_nt_hash = NULL;
 	const struct samr_Password *previous_nt_hash = NULL;
-	uint8_t num_nt_hashes = 0;
+	uint8_t num_passwords = 0;
 	uint8_t idx = 0;
 	const struct samr_Password *nt_hashes[1+3] = { NULL, };
-	uint8_t idx_nt_hashes = 0;
+	uint8_t idx_passwords = 0;
 	uint8_t idx_current = UINT8_MAX;
 	enum netr_SchannelType sec_channel_type = SEC_CHAN_NULL;
 	time_t pass_last_set_time;
@@ -392,7 +392,7 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		smb_panic("Unsupported secure channel type");
 		break;
 	}
-	num_nt_hashes = idx;
+	num_passwords = idx;
 
 	DEBUG(0,("%s : %s(%s): Verifying passwords remotely %s.\n",
 		 current_timestring(talloc_tos(), false),
@@ -408,17 +408,17 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	 * local secrets before doing the change.
 	 */
 	status = netlogon_creds_cli_lck_auth(context, b,
-					     num_nt_hashes,
+					     num_passwords,
 					     nt_hashes,
-					     &idx_nt_hashes);
+					     &idx_passwords);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("netlogon_creds_cli_auth(%s) failed for old passwords (%u) - %s!\n",
-			  context_name, num_nt_hashes, nt_errstr(status)));
+			  context_name, num_passwords, nt_errstr(status)));
 		TALLOC_FREE(frame);
 		return status;
 	}
 
-	if (prev != NULL && idx_nt_hashes == 0) {
+	if (prev != NULL && idx_passwords == 0) {
 		DEBUG(0,("%s : %s(%s): Verified new password remotely "
 			 "without changing %s\n",
 			 current_timestring(talloc_tos(), false),
@@ -447,7 +447,7 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		return NT_STATUS_OK;
 	}
 
-	if (idx_nt_hashes != idx_current) {
+	if (idx_passwords != idx_current) {
 		DEBUG(0,("%s : %s(%s): Verified older password remotely "
 			 "skip changing %s\n",
 			 current_timestring(talloc_tos(), false),
@@ -629,11 +629,11 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	 */
 	idx = 0;
 	nt_hashes[idx++] = current_nt_hash;
-	num_nt_hashes = idx;
+	num_passwords = idx;
 	status = netlogon_creds_cli_lck_auth(context, b,
-					     num_nt_hashes,
+					     num_passwords,
 					     nt_hashes,
-					     &idx_nt_hashes);
+					     &idx_passwords);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("netlogon_creds_cli_auth(%s) failed for new password - %s!\n",
 			  context_name, nt_errstr(status)));
