@@ -958,6 +958,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 					transport,
 					auth_type,
 					auth_level,
+					NULL, /* target_service */
 					remote_name,
 					remote_sockaddr,
 					creds,

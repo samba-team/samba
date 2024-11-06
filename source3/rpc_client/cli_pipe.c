@@ -4265,20 +4265,24 @@ NTSTATUS cli_rpc_pipe_open_with_creds(struct cli_state *cli,
 				      enum dcerpc_transport_t transport,
 				      enum dcerpc_AuthType auth_type,
 				      enum dcerpc_AuthLevel auth_level,
-				      const char *server,
+				      const char *target_service,
+				      const char *target_hostname,
 				      const struct sockaddr_storage *remote_sockaddr,
 				      struct cli_credentials *creds,
 				      struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
 	struct pipe_auth_data *auth = NULL;
-	const char *target_service = table->authservices->names[0];
 	NTSTATUS status;
+
+	if (target_service == NULL) {
+		target_service = table->authservices->names[0];
+	}
 
 	status = cli_rpc_pipe_open(cli,
 				   transport,
 				   table,
-				   server,
+				   target_hostname,
 				   remote_sockaddr,
 				   &result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4286,8 +4290,10 @@ NTSTATUS cli_rpc_pipe_open_with_creds(struct cli_state *cli,
 	}
 
 	status = rpccli_generic_bind_data_from_creds(result,
-						     auth_type, auth_level,
-						     server, target_service,
+						     auth_type,
+						     auth_level,
+						     target_hostname,
+						     target_service,
 						     creds,
 						     &auth);
 	if (!NT_STATUS_IS_OK(status)) {

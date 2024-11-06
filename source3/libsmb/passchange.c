@@ -163,6 +163,7 @@ NTSTATUS remote_password_change(const char *remote_machine,
 						      NCACN_NP,
 						      DCERPC_AUTH_TYPE_NTLMSSP,
 						      DCERPC_AUTH_LEVEL_PRIVACY,
+						      NULL, /* target_service */
 						      remote_machine,
 						      remote_sockaddr,
 						      creds,
