@@ -2497,6 +2497,80 @@ static NTSTATUS cm_get_schannel_creds(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS cm_connect_schannel_or_krb5(struct cli_state *cli,
+					    const struct ndr_interface_table *table,
+					    enum dcerpc_transport_t transport,
+				            struct cli_credentials *cli_creds,
+					    struct netlogon_creds_cli_context *netlogon_creds,
+					    const char *remote_name,
+					    const struct sockaddr_storage *remote_sockaddr,
+					    struct rpc_pipe_client **_rpccli)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	enum netr_SchannelType sec_chan_type;
+	struct netlogon_creds_CredentialState *creds = NULL;
+	bool authenticate_kerberos;
+	NTSTATUS status;
+
+	if (cli_credentials_is_anonymous(cli_creds)) {
+		DBG_WARNING("anonymous credentials "
+			    "unable to make secure connection to %s\n",
+			    remote_name);
+		TALLOC_FREE(frame);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	sec_chan_type = cli_credentials_get_secure_channel_type(cli_creds);
+	if (sec_chan_type == SEC_CHAN_NULL) {
+		DBG_WARNING("SEC_CHAN_NULL credentials "
+			    "unable to make secure connection to %s\n",
+			    remote_name);
+		TALLOC_FREE(frame);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	status = netlogon_creds_cli_get(netlogon_creds, frame, &creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+	authenticate_kerberos = creds->authenticate_kerberos;
+	TALLOC_FREE(creds);
+
+	if (authenticate_kerberos) {
+		status = cli_rpc_pipe_open_with_creds(cli,
+						      table,
+						      transport,
+						      DCERPC_AUTH_TYPE_KRB5,
+						      DCERPC_AUTH_LEVEL_PRIVACY,
+						      "netlogon",
+						      remote_name,
+						      remote_sockaddr,
+						      cli_creds,
+						      _rpccli);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	status = cli_rpc_pipe_open_schannel_with_creds(cli,
+						       table,
+						       transport,
+						       netlogon_creds,
+						       remote_name,
+						       remote_sockaddr,
+						       _rpccli);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 			bool need_rw_dc,
 			struct rpc_pipe_client **cli, struct policy_handle *sam_handle)
@@ -2646,8 +2720,21 @@ retry:
 		goto anonymous;
 	}
 	TALLOC_FREE(creds);
-	status = cli_rpc_pipe_open_schannel_with_creds(
-		conn->cli, &ndr_table_samr, NCACN_NP, p_creds,
+	result = winbindd_get_trust_credentials(domain,
+						talloc_tos(),
+						true, /* netlogon */
+						false, /* ipc_fallback */
+						&creds);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	status = cm_connect_schannel_or_krb5(
+		conn->cli,
+		&ndr_table_samr,
+		NCACN_NP,
+		creds,
+		p_creds,
 		remote_name,
 		remote_sockaddr,
 		&conn->samr_pipe);
@@ -2800,6 +2887,7 @@ static NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 				   struct rpc_pipe_client **cli)
 {
 	struct winbindd_cm_conn *conn;
+	struct cli_credentials *cli_creds = NULL;
 	struct netlogon_creds_cli_context *p_creds = NULL;
 	NTSTATUS status;
 	const char *remote_name = NULL;
@@ -2831,10 +2919,20 @@ static NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 	remote_name = smbXcli_conn_remote_name(conn->cli->conn);
 	remote_sockaddr = smbXcli_conn_remote_sockaddr(conn->cli->conn);
 
-	status = cli_rpc_pipe_open_schannel_with_creds(
+	status = winbindd_get_trust_credentials(domain,
+						talloc_tos(),
+						true, /* netlogon */
+						false, /* ipc_fallback */
+						&cli_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = cm_connect_schannel_or_krb5(
 			conn->cli,
 			&ndr_table_lsarpc,
 			NCACN_IP_TCP,
+			cli_creds,
 			p_creds,
 			remote_name,
 			remote_sockaddr,
@@ -2981,8 +3079,21 @@ retry:
 	}
 
 	TALLOC_FREE(creds);
-	result = cli_rpc_pipe_open_schannel_with_creds(
-		conn->cli, &ndr_table_lsarpc, NCACN_NP, p_creds,
+	result = winbindd_get_trust_credentials(domain,
+						talloc_tos(),
+						true, /* netlogon */
+						false, /* ipc_fallback */
+						&creds);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = cm_connect_schannel_or_krb5(
+		conn->cli,
+		&ndr_table_lsarpc,
+		NCACN_NP,
+		creds,
+		p_creds,
 		remote_name,
 		remote_sockaddr,
 		&conn->lsa_pipe);
