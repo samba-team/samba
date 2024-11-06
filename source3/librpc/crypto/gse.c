@@ -196,7 +196,6 @@ static NTSTATUS gse_context_init(struct gensec_security *gensec_security,
 	memcpy(&gse_ctx->gss_mech, mech, sizeof(gss_OID_desc));
 
 	gse_ctx->gss_want_flags = GSS_C_MUTUAL_FLAG |
-				GSS_C_DELEG_POLICY_FLAG |
 				GSS_C_REPLAY_FLAG |
 				GSS_C_SEQUENCE_FLAG;
 	if (do_sign) {
@@ -1135,6 +1134,10 @@ static NTSTATUS gensec_gse_client_start(struct gensec_security *gensec_security)
 	}
 	if (gensec_security->want_features & GENSEC_FEATURE_DCE_STYLE) {
 		want_flags |= GSS_C_DCE_STYLE;
+	}
+
+	if (!(gensec_security->want_features & GENSEC_FEATURE_NO_DELEGATION)) {
+		want_flags |= GSS_C_DELEG_POLICY_FLAG;
 	}
 
 #ifdef HAVE_CLIENT_GSS_C_CHANNEL_BOUND_FLAG

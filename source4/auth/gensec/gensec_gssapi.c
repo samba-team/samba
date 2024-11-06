@@ -200,6 +200,10 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "sequence", true)) {
 		gensec_gssapi_state->gss_want_flags |= GSS_C_SEQUENCE_FLAG;
 	}
+	if (!(gensec_security->want_features & GENSEC_FEATURE_NO_DELEGATION)) {
+		gensec_gssapi_state->gss_want_flags &= ~GSS_C_DELEG_FLAG;
+		gensec_gssapi_state->gss_want_flags &= ~GSS_C_DELEG_POLICY_FLAG;
+	}
 
 	if (gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {
 		gensec_gssapi_state->gss_want_flags |= GSS_C_INTEG_FLAG;
