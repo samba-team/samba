@@ -3748,32 +3748,12 @@ static void netlogon_creds_cli_GetForestTrustInformation_locked(struct tevent_re
 		return;
 	}
 
-	if (state->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
-		switch (state->auth_level) {
-		case DCERPC_AUTH_LEVEL_INTEGRITY:
-		case DCERPC_AUTH_LEVEL_PRIVACY:
-			break;
-		default:
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
-			return;
-		}
-	} else {
-		uint32_t tmp = state->creds->negotiate_flags;
-
-		if (tmp & NETLOGON_NEG_AUTHENTICATED_RPC) {
-			/*
-			 * if DCERPC_AUTH_TYPE_SCHANNEL is supported
-			 * it should be used, which means
-			 * we had a chance to verify no downgrade
-			 * happened.
-			 *
-			 * This relies on netlogon_creds_cli_check*
-			 * being called before, as first request after
-			 * the DCERPC bind.
-			 */
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
-			return;
-		}
+	status = netlogon_creds_cli_check_transport(state->auth_type,
+						    state->auth_level,
+						    state->creds,
+						    DCERPC_AUTH_LEVEL_NONE);
+	if (tevent_req_nterror(req, status)) {
+		return;
 	}
 
 	/*
@@ -4027,32 +4007,12 @@ static void netlogon_creds_cli_SendToSam_locked(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
-		switch (state->auth_level) {
-		case DCERPC_AUTH_LEVEL_INTEGRITY:
-		case DCERPC_AUTH_LEVEL_PRIVACY:
-			break;
-		default:
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
-			return;
-		}
-	} else {
-		uint32_t tmp = state->creds->negotiate_flags;
-
-		if (tmp & NETLOGON_NEG_AUTHENTICATED_RPC) {
-			/*
-			 * if DCERPC_AUTH_TYPE_SCHANNEL is supported
-			 * it should be used, which means
-			 * we had a chance to verify no downgrade
-			 * happened.
-			 *
-			 * This relies on netlogon_creds_cli_check*
-			 * being called before, as first request after
-			 * the DCERPC bind.
-			 */
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
-			return;
-		}
+	status = netlogon_creds_cli_check_transport(state->auth_type,
+						    state->auth_level,
+						    state->creds,
+						    DCERPC_AUTH_LEVEL_NONE);
+	if (tevent_req_nterror(req, status)) {
+		return;
 	}
 
 	/*
@@ -4303,32 +4263,12 @@ static void netlogon_creds_cli_LogonGetDomainInfo_locked(struct tevent_req *subr
 		return;
 	}
 
-	if (state->auth_type == DCERPC_AUTH_TYPE_SCHANNEL) {
-		switch (state->auth_level) {
-		case DCERPC_AUTH_LEVEL_INTEGRITY:
-		case DCERPC_AUTH_LEVEL_PRIVACY:
-			break;
-		default:
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
-			return;
-		}
-	} else {
-		uint32_t tmp = state->creds->negotiate_flags;
-
-		if (tmp & NETLOGON_NEG_AUTHENTICATED_RPC) {
-			/*
-			 * if DCERPC_AUTH_TYPE_SCHANNEL is supported
-			 * it should be used, which means
-			 * we had a chance to verify no downgrade
-			 * happened.
-			 *
-			 * This relies on netlogon_creds_cli_check*
-			 * being called before, as first request after
-			 * the DCERPC bind.
-			 */
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
-			return;
-		}
+	status = netlogon_creds_cli_check_transport(state->auth_type,
+						    state->auth_level,
+						    state->creds,
+						    DCERPC_AUTH_LEVEL_NONE);
+	if (tevent_req_nterror(req, status)) {
+		return;
 	}
 
 	/*
