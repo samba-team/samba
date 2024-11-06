@@ -898,7 +898,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	} samr_UserInfo17;
 
 	typedef [public, flag(NDR_PAHEX)] struct {
-		uint8 hash[16];
+		[flag(NDR_SECRET)] uint8 hash[16];
 	} samr_Password;
 
 	typedef struct {
@@ -989,7 +989,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	} samr_UserInfo21;
 
 	typedef [public, flag(NDR_PAHEX)] struct {
-		uint8 data[516];
+		[flag(NDR_SECRET)] uint8 data[516];
 	} samr_CryptPassword;
 
 	typedef struct {
@@ -1003,7 +1003,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	} samr_UserInfo24;
 
 	typedef [flag(NDR_PAHEX)] struct {
-		uint8 data[532];
+		[flag(NDR_SECRET)] uint8 data[532];
 	} samr_CryptPasswordEx;
 
 	typedef struct {

@@ -240,11 +240,11 @@ interface netlogon
 	} netr_LogonLevel;
 
 	typedef [public,flag(NDR_PAHEX)] struct {
-		uint8 key[16];
+		[flag(NDR_SECRET)] uint8 key[16];
 	} netr_UserSessionKey;
 
 	typedef [public,flag(NDR_PAHEX)] struct {
-		uint8 key[8];
+		[flag(NDR_SECRET)] uint8 key[8];
 	} netr_LMSessionKey;
 
 	/* Flags for user_flags below */
@@ -281,11 +281,11 @@ interface netlogon
 		uint32 primary_gid;
 		samr_RidWithAttributeArray groups;
 		netr_UserFlags user_flags;
-		[flag(NDR_SECRET)] netr_UserSessionKey key;
+		netr_UserSessionKey key;
 		lsa_StringLarge logon_server;
 		lsa_StringLarge logon_domain;
 		dom_sid2 *domain_sid;
-		[flag(NDR_SECRET)] netr_LMSessionKey LMSessKey;
+		netr_LMSessionKey LMSessKey;
 		samr_AcctFlags acct_flags;
 		uint32 sub_auth_status;
 		NTTIME last_successful_logon;
@@ -1558,7 +1558,7 @@ interface netlogon
 	} NL_PASSWORD_VERSION;
 
 	typedef [flag(NDR_PAHEX)] struct {
-		uint8 data[512];
+		[flag(NDR_SECRET)] uint8 data[512];
 		uint32 length;
 	} netr_CryptPassword;
 
@@ -1621,7 +1621,7 @@ interface netlogon
 		[in]  [string,charset(UTF16)] uint16 *computer_name,
 		[in,ref] netr_Authenticator *credential,
 		[out,ref] netr_Authenticator *return_authenticator,
-		[in,ref]  [size_is(buffer_len)] uint8 *opaque_buffer,
+		[in,ref]  [size_is(buffer_len)][flag(NDR_SECRET)] uint8 *opaque_buffer,
 		[in] uint32 buffer_len
 		);
 
