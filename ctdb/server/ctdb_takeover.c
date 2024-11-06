@@ -1555,12 +1555,9 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb,
 
 	/* If this is the first tickle */
 	if (tcparray == NULL) {
-		tcparray = talloc(vnn, struct ctdb_tcp_array);
+		tcparray = talloc_zero(vnn, struct ctdb_tcp_array);
 		CTDB_NO_MEMORY(ctdb, tcparray);
 		vnn->tcp_array = tcparray;
-
-		tcparray->num = 0;
-		tcparray->connections = NULL;
 	}
 
 	/* A new tickle, we must add it to the array */
