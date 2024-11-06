@@ -2573,6 +2573,7 @@ retry:
 					      NCACN_NP,
 					      DCERPC_AUTH_TYPE_SPNEGO,
 					      conn->auth_level,
+					      NULL, /* target_service */
 					      remote_name,
 					      remote_sockaddr,
 					      creds,
@@ -2913,6 +2914,7 @@ retry:
 		(conn->cli, &ndr_table_lsarpc, NCACN_NP,
 		 DCERPC_AUTH_TYPE_SPNEGO,
 		 conn->auth_level,
+		 NULL, /* target_service */
 		 remote_name,
 		 remote_sockaddr,
 		 creds,

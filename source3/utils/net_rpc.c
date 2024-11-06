@@ -214,6 +214,7 @@ int run_rpc_command(struct net_context *c,
 					NCACN_IP_TCP : NCACN_NP,
 					DCERPC_AUTH_TYPE_NTLMSSP,
 					DCERPC_AUTH_LEVEL_PRIVACY,
+					NULL, /* target_service */
 					smbXcli_conn_remote_name(cli->conn),
 					smbXcli_conn_remote_sockaddr(cli->conn),
 					c->creds, &pipe_hnd);
