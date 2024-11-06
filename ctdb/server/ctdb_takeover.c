@@ -1517,6 +1517,7 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb,
 			     bool tcp_update_needed)
 {
 	struct ctdb_connection *p = (struct ctdb_connection *)indata.dptr;
+	struct ctdb_connection *tmp = NULL;
 	struct ctdb_tcp_array *tcparray;
 	struct ctdb_vnn *vnn;
 	char conn_str[132] = { 0, };
@@ -1561,11 +1562,12 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb,
 	}
 
 	/* A new tickle, we must add it to the array */
-	tcparray->connections = talloc_realloc(tcparray,
-					       tcparray->connections,
-					       struct ctdb_connection,
-					       tcparray->num + 1);
-	CTDB_NO_MEMORY(ctdb, tcparray->connections);
+	tmp = talloc_realloc(tcparray,
+			     tcparray->connections,
+			     struct ctdb_connection,
+			     tcparray->num + 1);
+	CTDB_NO_MEMORY(ctdb, tmp);
+	tcparray->connections = tmp;
 
 	tcparray->connections[tcparray->num].src = p->src;
 	tcparray->connections[tcparray->num].dst = p->dst;
