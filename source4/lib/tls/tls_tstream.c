@@ -892,6 +892,12 @@ bool tstream_tls_params_enabled(struct tstream_tls_params *tls_params)
 	return tlsp->tls_enabled;
 }
 
+const char *tstream_tls_params_peer_name(
+	const struct tstream_tls_params *params)
+{
+	return params->internal->peer_name;
+}
+
 static NTSTATUS tstream_tls_setup_channel_bindings(struct tstream_tls *tlss)
 {
 	gnutls_datum_t cb = { .size = 0 };
