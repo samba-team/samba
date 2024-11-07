@@ -124,8 +124,6 @@ bool tevent_req_is_ldap_error(struct tevent_req *req, TLDAPRC *perr);
 
 struct tldap_context *tldap_context_create(TALLOC_CTX *mem_ctx, int fd);
 struct tstream_context *tldap_get_plain_tstream(struct tldap_context *ld);
-void tldap_set_starttls_needed(struct tldap_context *ld, bool needed);
-bool tldap_get_starttls_needed(struct tldap_context *ld);
 bool tldap_has_tls_tstream(struct tldap_context *ld);
 const DATA_BLOB *tldap_tls_channel_bindings(struct tldap_context *ld);
 void tldap_set_tls_tstream(struct tldap_context *ld,

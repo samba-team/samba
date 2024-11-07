@@ -32,8 +32,6 @@ struct tldap_tls_connect_state {
 	struct tstream_tls_params *tls_params;
 };
 
-static void tldap_tls_connect_starttls_done(struct tevent_req *subreq);
-static void tldap_tls_connect_crypto_start(struct tevent_req *req);
 static void tldap_tls_connect_crypto_done(struct tevent_req *subreq);
 
 struct tevent_req *tldap_tls_connect_send(TALLOC_CTX *mem_ctx,
@@ -41,8 +39,9 @@ struct tevent_req *tldap_tls_connect_send(TALLOC_CTX *mem_ctx,
 					  struct tldap_context *ctx,
 					  struct tstream_tls_params *tls_params)
 {
-	struct tevent_req *req = NULL;
+	struct tevent_req *req = NULL, *subreq = NULL;
 	struct tldap_tls_connect_state *state = NULL;
+	struct tstream_context *plain_stream = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct tldap_tls_connect_state);
@@ -65,72 +64,11 @@ struct tevent_req *tldap_tls_connect_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (tldap_get_starttls_needed(ctx)) {
-		struct tevent_req *subreq = NULL;
-		static const char *start_tls_oid = "1.3.6.1.4.1.1466.20037";
-
-		subreq = tldap_extended_send(state,
-					     state->ev,
-					     state->ctx,
-					     start_tls_oid,
-					     NULL, /* in_blob */
-					     NULL, /* sctrls */
-					     0, /* num_sctrls */
-					     NULL, /* cctrls */
-					     0); /* num_cctrls */
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq,
-					tldap_tls_connect_starttls_done,
-					req);
-
-		return req;
-	}
-
-	tldap_tls_connect_crypto_start(req);
-	if (!tevent_req_is_in_progress(req)) {
-		return tevent_req_post(req, ev);
-	}
-
-	return req;
-}
-
-static void tldap_tls_connect_starttls_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct tldap_tls_connect_state *state = tevent_req_data(
-		req, struct tldap_tls_connect_state);
-	TLDAPRC rc;
-
-	rc = tldap_extended_recv(subreq, state, NULL, NULL);
-	TALLOC_FREE(subreq);
-	if (!TLDAP_RC_IS_SUCCESS(rc)) {
-		DBG_ERR("tldap_extended_recv(STARTTLS, %s): %s\n",
-			tstream_tls_params_peer_name(state->tls_params),
-			tldap_rc2string(rc));
-		tevent_req_ldap_error(req, rc);
-		return;
-	}
-
-	tldap_set_starttls_needed(state->ctx, false);
-
-	tldap_tls_connect_crypto_start(req);
-}
-
-static void tldap_tls_connect_crypto_start(struct tevent_req *req)
-{
-	struct tldap_tls_connect_state *state = tevent_req_data(
-		req, struct tldap_tls_connect_state);
-	struct tstream_context *plain_stream = NULL;
-	struct tevent_req *subreq = NULL;
-
 	plain_stream = tldap_get_plain_tstream(state->ctx);
 	if (plain_stream == NULL) {
 		DBG_ERR("tldap_get_plain_tstream() = NULL\n");
 		tevent_req_ldap_error(req, TLDAP_LOCAL_ERROR);
-		return;
+		return req;
 	}
 
 	subreq = tstream_tls_connect_send(state,
@@ -138,11 +76,12 @@ static void tldap_tls_connect_crypto_start(struct tevent_req *req)
 					  plain_stream,
 					  state->tls_params);
 	if (tevent_req_nomem(subreq, req)) {
-		return;
+		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq,
 				tldap_tls_connect_crypto_done,
 				req);
+	return req;
 }
 
 static void tldap_tls_connect_crypto_done(struct tevent_req *subreq)

@@ -86,7 +86,6 @@ struct tldap_ctx_attribute {
 struct tldap_context {
 	int ld_version;
 	struct tstream_context *plain;
-	bool starttls_needed;
 	struct tstream_context *tls;
 	struct tstream_context *gensec;
 	struct tstream_context *active;
@@ -228,24 +227,6 @@ static size_t tldap_pending_reqs(struct tldap_context *ld)
 struct tstream_context *tldap_get_plain_tstream(struct tldap_context *ld)
 {
 	return ld->plain;
-}
-
-void tldap_set_starttls_needed(struct tldap_context *ld, bool needed)
-{
-	if (ld == NULL) {
-		return;
-	}
-
-	ld->starttls_needed = needed;
-}
-
-bool tldap_get_starttls_needed(struct tldap_context *ld)
-{
-	if (ld == NULL) {
-		return false;
-	}
-
-	return ld->starttls_needed;
 }
 
 bool tldap_has_tls_tstream(struct tldap_context *ld)
