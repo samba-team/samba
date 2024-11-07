@@ -54,6 +54,10 @@
 	'<smbconfoption name="allow nt4 crypto"/>' options and implies
 	'<smbconfoption name="allow nt4 crypto:COMPUTERACCOUNT">no</smbconfoption>'.
 	</para>
+
+	<para>This option is over-ridden by the effective value of 'yes' from
+	the '<smbconfoption name="server reject aes schannel:COMPUTERACCOUNT"/>'
+	and/or '<smbconfoption name="server reject aes schannel"/>' options.</para>
 </description>
 
 <value type="default">yes</value>
@@ -100,10 +104,19 @@
     '<smbconfoption name="allow nt4 crypto:COMPUTERACCOUNT">no</smbconfoption>'.
     </para>
 
+    <para>This option is over-ridden by the effective value of 'yes' from
+    the '<smbconfoption name="server reject aes schannel:COMPUTERACCOUNT"/>'
+    and/or '<smbconfoption name="server reject aes schannel"/>' options.</para>
+    <para>Which means '<smbconfoption name="server reject md5 schannel:COMPUTERACCOUNT">no</smbconfoption>'
+    is only useful in combination with '<smbconfoption name="server reject aes schannel:COMPUTERACCOUNT">no</smbconfoption>'.</para>
+
     <programlisting>
 	server reject md5 schannel:LEGACYCOMPUTER1$ = no
+	server reject aes schannel:LEGACYCOMPUTER1$ = no
 	server reject md5 schannel:NASBOX$ = no
+	server reject aes schannel:NASBOX$ = no
 	server reject md5 schannel:LEGACYCOMPUTER2$ = no
+	server reject aes schannel:LEGACYCOMPUTER2$ = no
     </programlisting>
 </description>
 

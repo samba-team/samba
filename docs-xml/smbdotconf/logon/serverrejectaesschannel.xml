@@ -1,0 +1,113 @@
+<samba:parameter name="server reject aes schannel"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para><emphasis>This option is experimental for now!</emphasis>
+	</para>
+
+	<para>This option controls whether the netlogon server (currently
+	only in 'active directory domain controller' mode), will
+	reject clients which do not support ServerAuthenticateKerberos.</para>
+
+	<para>Support for ServerAuthenticateKerberos was added in Windows
+	starting with Server 2025, it's available in Samba starting with 4.22
+	(but disabled by default).
+	</para>
+
+	<para>Note this options is not really related to security problems
+	behind CVE_2022_38023, but it still uses the debug level related
+	logic and options.</para>
+
+	<para>
+	Samba will log an error in the log files at log level 0
+	if legacy a client is rejected without an explicit,
+	'<smbconfoption name="server reject aes schannel:COMPUTERACCOUNT">no</smbconfoption>' option
+	for the client. The message will indicate
+	the explicit '<smbconfoption name="server reject aes schannel:COMPUTERACCOUNT">no</smbconfoption>'
+	line to be added, if the client software requires it. (The log level can be adjusted with
+	'<smbconfoption name="CVE_2022_38023:error_debug_level">1</smbconfoption>'
+	in order to complain only at a higher log level).
+	</para>
+
+	<para>
+	Samba will log a message in the log files at log level 5
+	if a client is allowed without an explicit,
+	'<smbconfoption name="server reject aes schannel:COMPUTERACCOUNT">no</smbconfoption>' option
+	for the client. The message will indicate
+	the explicit '<smbconfoption name="server reject aes schannel:COMPUTERACCOUNT">no</smbconfoption>'
+	line to be added, if the client software requires it. (The log level can be adjusted with
+	'<smbconfoption name="NETLOGON_AES:usage_debug_level">0</smbconfoption>'
+	in order to complain only at a lower or higher log level).
+	This can we used to prepare the configuration before changing to
+	'<smbconfoption name="server reject aes schannel">yes</smbconfoption>'
+	</para>
+
+	<para>Admins can use
+	'<smbconfoption name="server reject aes schannel:COMPUTERACCOUNT">no/yes</smbconfoption>' options in
+	order to have more control</para>
+
+	<para>When set to 'yes' this option overrides the
+	'<smbconfoption name="server reject md5 schannel:COMPUTERACCOUNT"/>' and
+	'<smbconfoption name="reject md5 clients"/>' options and implies
+	'<smbconfoption name="server reject md5 schannel:COMPUTERACCOUNT">no</smbconfoption>'.
+	</para>
+
+	<para>For now '<smbconfoption name="server reject aes schannel"/>'
+	is EXPERIMENTAL and should not be configured explicitly.</para>
+</description>
+
+<value type="default">no</value>
+<value type="example">yes</value>
+</samba:parameter>
+
+<samba:parameter name="server reject aes schannel:COMPUTERACCOUNT"
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+
+    <para>If the time has come and most domain members or trusted domains
+	support ServerAuthenticateKerberos, admins may want to use "server reject aes schannel = yes".
+	It is possible to specify an explicit exception per computer account
+	by setting 'server reject aes schannel:COMPUTERACCOUNT = no'.
+	Note that COMPUTERACCOUNT has to be the sAMAccountName value of
+	the computer account (including the trailing '$' sign).
+    </para>
+
+    <para>Note this options is not really related to security problems
+	behind CVE_2022_38023, but it still uses the debug level related
+	logic and options.
+    </para>
+
+    <para>
+	Samba will log a complaint in the log files at log level 0
+	about the security problem if the option is set to "no",
+	but the related computer does not require it.
+	(The log level can be adjusted with
+	'<smbconfoption name="CVE_2022_38023:warn_about_unused_debug_level">1</smbconfoption>'
+	in order to complain only at a higher log level).
+    </para>
+
+    <para>
+	Samba will log a warning in the log files at log level 5
+	if a setting is still needed for the specified computer account.
+    </para>
+
+    <para>This option overrides the <smbconfoption name="server reject aes schannel"/> option.</para>
+
+    <para>When set to 'yes' this option overrides the
+    '<smbconfoption name="server reject md5 schannel:COMPUTERACCOUNT"/>' and
+    '<smbconfoption name="reject md5 clients"/>' options and implies
+    '<smbconfoption name="server reject md5 schannel:COMPUTERACCOUNT">no</smbconfoption>'.
+    </para>
+
+    <programlisting>
+	server reject aes schannel:LEGACYCOMPUTER1$ = no
+	server reject aes schannel:NASBOX$ = no
+	server reject aes schannel:LEGACYCOMPUTER2$ = no
+	server reject aes schannel:HIGHPRIVACYSRV$ = yes
+    </programlisting>
+</description>
+
+</samba:parameter>
