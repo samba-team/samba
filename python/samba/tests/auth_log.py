@@ -1134,8 +1134,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         messages = self.waitForMessages(isLastExpectedMessage)
         messages = self.remove_netlogon_messages(messages)
         received = len(messages)
-        self.assertIs(True,
-                      (received == 4 or received == 5),
+        self.assertIn(received, [4, 5],
                       "Did not receive the expected number of messages")
 
     def test_samlogon_interactive_bad_password(self):
@@ -1167,8 +1166,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         messages = self.waitForMessages(isLastExpectedMessage)
         messages = self.remove_netlogon_messages(messages)
         received = len(messages)
-        self.assertIs(True,
-                      (received == 4 or received == 5),
+        self.assertIn(received, [4, 5],
                       "Did not receive the expected number of messages")
 
     def test_samlogon_interactive_bad_user(self):
@@ -1200,8 +1198,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         messages = self.waitForMessages(isLastExpectedMessage)
         messages = self.remove_netlogon_messages(messages)
         received = len(messages)
-        self.assertIs(True,
-                      (received == 4 or received == 5),
+        self.assertIn(received, [4, 5],
                       "Did not receive the expected number of messages")
 
     def test_samlogon_network(self):
@@ -1231,8 +1228,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         messages = self.waitForMessages(isLastExpectedMessage)
         messages = self.remove_netlogon_messages(messages)
         received = len(messages)
-        self.assertIs(True,
-                      (received == 4 or received == 5),
+        self.assertIn(received, [4, 5],
                       "Did not receive the expected number of messages")
 
     def test_samlogon_network_bad_password(self):
@@ -1263,8 +1259,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         messages = self.waitForMessages(isLastExpectedMessage)
         messages = self.remove_netlogon_messages(messages)
         received = len(messages)
-        self.assertIs(True,
-                      (received == 4 or received == 5),
+        self.assertIn(received, [4, 5],
                       "Did not receive the expected number of messages")
 
     def test_samlogon_network_bad_user(self):
@@ -1295,8 +1290,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         messages = self.waitForMessages(isLastExpectedMessage)
         messages = self.remove_netlogon_messages(messages)
         received = len(messages)
-        self.assertIs(True,
-                      (received == 4 or received == 5),
+        self.assertIn(received, [4, 5],
                       "Did not receive the expected number of messages")
 
     def test_samlogon_network_mschap(self):
@@ -1328,8 +1322,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         messages = self.waitForMessages(isLastExpectedMessage)
         messages = self.remove_netlogon_messages(messages)
         received = len(messages)
-        self.assertIs(True,
-                      (received == 4 or received == 5),
+        self.assertIn(received, [4, 5],
                       "Did not receive the expected number of messages")
 
     def test_samlogon_network_mschap_bad_password(self):
@@ -1362,8 +1355,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         messages = self.waitForMessages(isLastExpectedMessage)
         messages = self.remove_netlogon_messages(messages)
         received = len(messages)
-        self.assertIs(True,
-                      (received == 4 or received == 5),
+        self.assertIn(received, [4, 5],
                       "Did not receive the expected number of messages")
 
     def test_samlogon_network_mschap_bad_user(self):
@@ -1396,8 +1388,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         messages = self.waitForMessages(isLastExpectedMessage)
         messages = self.remove_netlogon_messages(messages)
         received = len(messages)
-        self.assertIs(True,
-                      (received == 4 or received == 5),
+        self.assertIn(received, [4, 5],
                       "Did not receive the expected number of messages")
 
     def test_samlogon_schannel_seal(self):
@@ -1427,8 +1418,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         messages = self.waitForMessages(isLastExpectedMessage)
         messages = self.remove_netlogon_messages(messages)
         received = len(messages)
-        self.assertIs(True,
-                      (received == 4 or received == 5),
+        self.assertIn(received, [4, 5],
                       "Did not receive the expected number of messages")
 
         # Check the second to last message it should be an Authorization
@@ -1470,8 +1460,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         messages = self.waitForMessages(isLastExpectedMessage)
         messages = self.remove_netlogon_messages(messages)
         received = len(messages)
-        self.assertIs(True,
-                      (received == 4 or received == 5),
+        self.assertIn(received, [4, 5],
                       "Did not receive the expected number of messages")
 
         # Check the second to last message it should be an Authorization
