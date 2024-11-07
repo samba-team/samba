@@ -48,8 +48,7 @@ class NetS3JoinTests(samba.tests.TestCaseInTempDir):
     def test_net_join(self):
         netbios_name = "S3NetJoinTest"
         machinepass  = "abcdefghij"
-        creds = self.insta_creds(template=self.get_credentials(),
-                                 kerberos_state=DONT_USE_KERBEROS)
+        creds = self.insta_creds(template=self.get_credentials())
         s3_lp = s3param.get_context()
         s3_lp.load(self.lp.configfile)
 
