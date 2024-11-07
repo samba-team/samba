@@ -2932,6 +2932,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "client schannel", "True");
 
+	lpcfg_do_global_parameter(lp_ctx, "client use krb5 netlogon", "default");
+
 	lpcfg_do_global_parameter(lp_ctx, "smb encrypt", "default");
 
 	lpcfg_do_global_parameter(lp_ctx, "max log size", "5000");
@@ -3679,6 +3681,17 @@ bool lpcfg_server_signing_allowed(struct loadparm_context *lp_ctx, bool *mandato
 	}
 
 	return allowed;
+}
+
+int lpcfg_client_use_krb5_netlogon(struct loadparm_context *lp_ctx)
+{
+	int val = lpcfg__client_use_krb5_netlogon(lp_ctx);
+
+	if (val == LP_ENUM_Default) {
+		val = false;
+	}
+
+	return val;
 }
 
 int lpcfg_tdb_hash_size(struct loadparm_context *lp_ctx, const char *name)

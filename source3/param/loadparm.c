@@ -670,6 +670,7 @@ void loadparm_s3_init_globals(struct loadparm_context *lp_ctx,
 	Globals.winbind_sealed_pipes = true;
 	Globals.require_strong_key = true;
 	Globals.reject_md5_servers = true;
+	Globals._client_use_krb5_netlogon = LP_ENUM_Default;
 	Globals.server_schannel = true;
 	Globals.server_schannel_require_seal = true;
 	Globals.reject_md5_clients = true;

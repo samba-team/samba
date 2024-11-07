@@ -23,6 +23,7 @@
 	by using 'reject aes netlogon servers:NETBIOSDOMAIN = no' as option.</para>
 
 	<para>This option overrides the <smbconfoption name="reject md5 servers"/> option.</para>
+	<para>This option overrides the <smbconfoption name="client use krb5 netlogon"/> option (if it is effectively off).</para>
 </description>
 
 <value type="default">no</value>

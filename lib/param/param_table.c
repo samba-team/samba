@@ -91,6 +91,18 @@ static const struct enum_list enum_bool_auto[] = {
 	{-1, NULL}
 };
 
+static const struct enum_list enum_bool_auto_default[] = {
+	{false, "No"},
+	{false, "False"},
+	{false, "0"},
+	{true, "Yes"},
+	{true, "True"},
+	{true, "1"},
+	{Auto, "Auto"},
+	{LP_ENUM_Default, "default"},
+	{-1, NULL}
+};
+
 static const struct enum_list enum_csc_policy[] = {
 	{CSC_POLICY_MANUAL, "manual"},
 	{CSC_POLICY_DOCUMENTS, "documents"},

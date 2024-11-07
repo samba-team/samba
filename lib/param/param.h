@@ -41,6 +41,7 @@ struct param_context;
 struct smbsrv_connection;
 
 #define Auto (2)
+#define LP_ENUM_Default (-2)
 
 struct loadparm_context;
 struct loadparm_service;
