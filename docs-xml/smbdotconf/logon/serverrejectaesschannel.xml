@@ -11,8 +11,10 @@
 	reject clients which do not support ServerAuthenticateKerberos.</para>
 
 	<para>Support for ServerAuthenticateKerberos was added in Windows
-	starting with Server 2025, it's available in Samba starting with 4.22
-	(but disabled by default).
+	starting with Server 2025, it's available in Samba starting with 4.22 with the
+	'<smbconfoption name="server support krb5 netlogon">yes</smbconfoption>' and
+	'<smbconfoption name="client use krb5 netlogon">yes</smbconfoption>' options,
+	which are disabled by default.
 	</para>
 
 	<para>Note this options is not really related to security problems
@@ -51,6 +53,9 @@
 	'<smbconfoption name="server reject md5 schannel:COMPUTERACCOUNT"/>' and
 	'<smbconfoption name="reject md5 clients"/>' options and implies
 	'<smbconfoption name="server reject md5 schannel:COMPUTERACCOUNT">no</smbconfoption>'.
+	</para>
+
+	<para>This option interacts with the '<smbconfoption name="server support krb5 netlogon"/>' option.
 	</para>
 
 	<para>For now '<smbconfoption name="server reject aes schannel"/>'

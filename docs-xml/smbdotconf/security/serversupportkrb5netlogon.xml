@@ -1,0 +1,28 @@
+<samba:parameter name="server support krb5 netlogon"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para><emphasis>This option is experimental for now!</emphasis>
+	</para>
+
+	<para>This option controls whether the netlogon server (currently
+	only in 'active directory domain controller' mode), will
+	provide support for ServerAuthenticateKerberos.</para>
+
+	<para>Support for ServerAuthenticateKerberos was added in Windows
+	starting with Server 2025, it's available in Samba starting with 4.22 with the
+	'<smbconfoption name="server support krb5 netlogon">yes</smbconfoption>' and
+	'<smbconfoption name="client use krb5 netlogon">yes</smbconfoption>' options,
+	which are disabled by default.
+	</para>
+
+	<para>This option interacts with the
+	'<smbconfoption name="server reject aes schannel:COMPUTERACCOUNT">yes</smbconfoption>' and
+	'<smbconfoption name="server reject aes schannel">yes</smbconfoption>' options.
+	</para>
+</description>
+
+<value type="default">no</value>
+<value type="example">yes</value>
+</samba:parameter>
