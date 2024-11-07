@@ -666,6 +666,12 @@ static void netlogon_creds_cli_fetch_parser(TDB_DATA key, TDB_DATA data,
 		NDR_PRINT_DEBUG(netlogon_creds_CredentialState, state->creds);
 	}
 
+	if (state->proposed_flags != state->creds->client_requested_flags) {
+		TALLOC_FREE(state->creds);
+		state->status = NT_STATUS_RESOURCE_REQUIREMENTS_CHANGED;
+		return;
+	}
+
 	downgraded = netlogon_creds_cli_downgraded(
 			state->creds->negotiate_flags,
 			state->proposed_flags,
