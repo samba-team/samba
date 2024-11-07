@@ -456,7 +456,7 @@ static void smbd_smb2_setinfo_lease_break_fsp_check(struct tevent_req *req)
 	struct tevent_req *subreq = NULL;
 	struct timeval timeout;
 	bool rename;
-	bool delete_on_close;
+	bool delete_on_close = false;
 	NTSTATUS status;
 
 	rename = (file_info_level == SMB2_FILE_RENAME_INFORMATION_INTERNAL);
