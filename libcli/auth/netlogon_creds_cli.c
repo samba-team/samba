@@ -518,6 +518,10 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 		auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 	}
 
+	if (server_dns_domain == NULL) {
+		server_dns_domain = "";
+	}
+
 	status = netlogon_creds_cli_context_common(client_computer,
 						   client_account,
 						   type,
@@ -526,7 +530,7 @@ NTSTATUS netlogon_creds_cli_context_global(struct loadparm_context *lp_ctx,
 						   required_flags,
 						   server_computer,
 						   server_netbios_domain,
-						   "",
+						   server_dns_domain,
 						   mem_ctx,
 						   &context);
 	if (!NT_STATUS_IS_OK(status)) {
