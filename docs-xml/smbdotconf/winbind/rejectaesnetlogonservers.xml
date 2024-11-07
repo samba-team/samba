@@ -1,0 +1,29 @@
+<samba:parameter name="reject aes netlogon servers"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option controls whether winbindd requires support
+	for ServerAuthenticateKerberos support for the netlogon secure channel.</para>
+
+	<para>Support for ServerAuthenticateKerberos was added in Windows
+	starting with Server 2025, it's available in Samba active directory domain controllers
+	starting with 4.22 with the '<smbconfoption name="server support krb5 netlogon">yes</smbconfoption>' option,
+	which is disabled by default.
+	</para>
+
+	<para>The following flags will be required: NETLOGON_NEG_PASSWORD_SET2,
+	NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH and NETLOGON_NEG_AUTHENTICATED_RPC.</para>
+
+	<para>You can set this to yes if all domain controllers support
+	ServerAuthenticateKerberos.
+	This will prevent downgrade attacks.</para>
+
+	<para>The behavior can be controlled per netbios domain
+	by using 'reject aes netlogon servers:NETBIOSDOMAIN = no' as option.</para>
+
+	<para>This option overrides the <smbconfoption name="reject md5 servers"/> option.</para>
+</description>
+
+<value type="default">no</value>
+</samba:parameter>

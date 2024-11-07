@@ -18,6 +18,8 @@
 	<para>The default changed from 'no' to 'yes, with the patches for CVE-2022-38023,
 	see https://bugzilla.samba.org/show_bug.cgi?id=15240</para>
 
+	<para>This option is over-ridden by the <smbconfoption name="reject aes netlogon servers"/> option.</para>
+
 	<para>This option overrides the <smbconfoption name="require strong key"/> option.</para>
 </description>
 
