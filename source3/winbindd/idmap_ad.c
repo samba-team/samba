@@ -38,6 +38,7 @@
 #include "source3/librpc/gen_ndr/ads.h"
 #include "source3/lib/global_contexts.h"
 #include <ldb.h>
+#include "source4/lib/tls/tls.h"
 
 struct idmap_ad_schema_names;
 
@@ -428,9 +429,22 @@ static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 	}
 
 	if (use_tls && !tldap_has_tls_tstream(ld)) {
+		struct tstream_tls_params *tls_params = NULL;
+
 		tldap_set_starttls_needed(ld, use_starttls);
 
-		rc = tldap_tls_connect(ld, lp_ctx, dcinfo->dc_unc);
+		status = tstream_tls_params_client_lpcfg(talloc_tos(),
+							 lp_ctx,
+							 dcinfo->dc_unc,
+							 &tls_params);
+		if (!NT_STATUS_IS_OK(status)) {
+		       DBG_ERR("tstream_tls_params_client_lpcfg failed: %s\n",
+			       nt_errstr(status));
+		       TALLOC_FREE(dcinfo);
+		       return status;
+		}
+
+		rc = tldap_tls_connect(ld, tls_params);
 		if (!TLDAP_RC_IS_SUCCESS(rc)) {
 			DBG_ERR("tldap_gensec_bind(%s) failed: %s\n",
 				dcinfo->dc_unc,

@@ -23,17 +23,15 @@
 struct tevent_context;
 struct tldap_context;
 struct loadparm_context;
+struct tstream_tls_params;
 
 struct tevent_req *tldap_tls_connect_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
 	struct tldap_context *ctx,
-	struct loadparm_context *lp_ctx,
-	const char *peer_name);
+	struct tstream_tls_params *tls_params);
 TLDAPRC tldap_tls_connect_recv(struct tevent_req *req);
-TLDAPRC tldap_tls_connect(
-	struct tldap_context *ctx,
-	struct loadparm_context *lp_ctx,
-	const char *peer_name);
+TLDAPRC tldap_tls_connect(struct tldap_context *ctx,
+			  struct tstream_tls_params *tls_params);
 
 #endif
