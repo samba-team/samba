@@ -436,7 +436,7 @@ test_smbclient "Test machine login with the changed secret" \
 
 
 testit "rpcclient_changetrustpw" test_pwd_change "rpcclient_changetrustpw"	"$samba_rpcclient --machine-pass ncacn_np:${DC_DNSNAME}[schannel] -c change_trust_pw" || failed=$((failed + 1))
-testit "net_rpc_changetrustpw"   test_pwd_change "net_rpc_changetrustpw"	"$samba_net rpc changetrustpw -I ${DC_DNSNAME}" || failed=$((failed + 1))
+testit "net_rpc_changetrustpw"   test_pwd_change "net_rpc_changetrustpw"	"$samba_net rpc changetrustpw --server ${DC_DNSNAME}" || failed=$((failed + 1))
 testit "net_ads_changetrustpw"   test_pwd_change "net_ads_changetrustpw"	"$samba_net ads changetrustpw -I ${DC_DNSNAME}" || failed=$((failed + 1))
 
 test_smbclient "Test machine login with the changed secret end" \
