@@ -1219,7 +1219,8 @@ static void smb2srv_open_recreate_fn(
 		DBG_NOTICE("global owner %s not in our token in %s\n",
 			   dom_sid_str_buf(&global->open_owner, &buf),
 			   tdb_data_dbg(key));
-		goto not_found;
+		state->status = NT_STATUS_ACCESS_DENIED;
+		return;
 	}
 
 	if (!global->durable) {
