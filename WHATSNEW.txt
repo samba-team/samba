@@ -28,6 +28,16 @@ for more details.
 SMB3 Directory Leases allow clients to cache directory listings and, depending
 on the workload, result in a decent reduction in SMB requests from clients.
 
+Netlogon Ping over LDAP and LDAPS
+---------------------------------
+
+Samba must query domain controller information via simple queries on
+the AD rootdse's netlogon attribute. Typically this is done via
+connectionless LDAP, using UDP on port 389. The same information is
+also available via classic LDAP rootdse queries over TCP. Samba can
+now be configured to use TCP via the new "client netlogon ping
+protocol" parameter to enable running in environments where firewalls
+completely block port 389 or UDP traffic to domain controllers.
 
 REMOVED FEATURES
 ================
@@ -63,6 +73,7 @@ smb.conf changes
   --------------                          -----------     -------
   smb3 directory leases                   New             Auto
   vfs mkdir use tmp name                  New             Auto
+  client netlogon ping protocol           New             cldap
   fruit:posix_rename                      Removed
   cldap port                              Removed
 
