@@ -621,6 +621,19 @@ static bool test_schannel(struct torture_context *tctx,
 	status = dcerpc_binding_set_flags(b, dcerpc_flags, DCERPC_AUTH_OPTIONS);
 	torture_assert_ntstatus_ok(tctx, status, "set flags");
 
+	transport = dcerpc_binding_get_transport(b);
+
+	if (transport == NCALRPC &&
+	    dcerpc_flags & DCERPC_SCHANNEL_KRB5)
+	{
+		torture_skip(tctx, "Skip DCERPC_SCHANNEL_KRB5 for ncalrpc");
+	}
+	if (cli_credentials_get_realm(credentials) == NULL &&
+	    dcerpc_flags & DCERPC_SCHANNEL_KRB5)
+	{
+		torture_skip(tctx, "Skip DCERPC_SCHANNEL_KRB5 for NT4 Domain");
+	}
+
 	status = dcerpc_pipe_connect_b(tctx, &p, b, &ndr_table_samr,
 				       credentials, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status,
@@ -667,7 +680,6 @@ static bool test_schannel(struct torture_context *tctx,
 		       "Failed to process schannel secured NETLOGON EX for BUG 14932");
 
 	/* we *MUST* use ncacn_np for openpolicy etc. */
-	transport = dcerpc_binding_get_transport(b);
 	status = dcerpc_binding_set_transport(b, NCACN_NP);
 	torture_assert_ntstatus_ok(tctx, status, "set transport");
 
@@ -873,6 +885,12 @@ bool torture_rpc_schannel(struct torture_context *torture)
 		uint16_t acct_flags;
 		uint32_t dcerpc_flags;
 	} tests[] = {
+		/*
+		 * Note the order of these combinations is important
+		 * otherwise exceptions like:
+		 * 'server schannel require seal:schannel2$ = no'
+		 * in selftest/target/Samba4.pm get out of sync.
+		 */
 		{ ACB_WSTRUST,   DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_AUTO},
 		{ ACB_WSTRUST,   DCERPC_SCHANNEL | DCERPC_SEAL | DCERPC_SCHANNEL_AUTO},
 		{ ACB_WSTRUST,   DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128},
@@ -884,7 +902,11 @@ bool torture_rpc_schannel(struct torture_context *torture)
 		{ ACB_SVRTRUST,  DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128 },
 		{ ACB_SVRTRUST,  DCERPC_SCHANNEL | DCERPC_SEAL | DCERPC_SCHANNEL_128 },
 		{ ACB_SVRTRUST,  DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_AES },
-		{ ACB_SVRTRUST,  DCERPC_SCHANNEL | DCERPC_SEAL | DCERPC_SCHANNEL_AES }
+		{ ACB_SVRTRUST,  DCERPC_SCHANNEL | DCERPC_SEAL | DCERPC_SCHANNEL_AES },
+		{ ACB_WSTRUST,   DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_KRB5},
+		{ ACB_WSTRUST,   DCERPC_SCHANNEL | DCERPC_SEAL | DCERPC_SCHANNEL_KRB5},
+		{ ACB_SVRTRUST,  DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_KRB5},
+		{ ACB_SVRTRUST,  DCERPC_SCHANNEL | DCERPC_SEAL | DCERPC_SCHANNEL_KRB5},
 	};
 	int i;
 
