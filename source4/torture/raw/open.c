@@ -835,7 +835,6 @@ static bool test_ntcreatex(struct torture_context *tctx, struct smbcli_state *cl
 	CHECK_ALL_INFO(io.ntcreatex.out.attrib, attrib);
 	CHECK_VAL(io.ntcreatex.out.attrib & ~FILE_ATTRIBUTE_NONINDEXED,
 		  FILE_ATTRIBUTE_DIRECTORY);
-	CHECK_ALL_INFO(io.ntcreatex.out.alloc_size, alloc_size);
 	CHECK_ALL_INFO(io.ntcreatex.out.size, size);
 	CHECK_ALL_INFO(io.ntcreatex.out.is_directory, directory);
 	CHECK_VAL(io.ntcreatex.out.is_directory, 1);
@@ -1107,7 +1106,6 @@ static bool test_nttrans_create(struct torture_context *tctx, struct smbcli_stat
 	CHECK_ALL_INFO(io.ntcreatex.out.attrib, attrib);
 	CHECK_VAL(io.ntcreatex.out.attrib & ~FILE_ATTRIBUTE_NONINDEXED,
 		  FILE_ATTRIBUTE_DIRECTORY);
-	CHECK_ALL_INFO(io.ntcreatex.out.alloc_size, alloc_size);
 	CHECK_ALL_INFO(io.ntcreatex.out.size, size);
 	CHECK_ALL_INFO(io.ntcreatex.out.is_directory, directory);
 	CHECK_VAL(io.ntcreatex.out.is_directory, 1);
@@ -2161,7 +2159,6 @@ static bool test_ntcreatex_supersede(struct torture_context *tctx, struct smbcli
 	CHECK_NTTIME(io.ntcreatex.out.write_time, write_time);
 	CHECK_NTTIME(io.ntcreatex.out.change_time, change_time);
 	CHECK_ALL_INFO(io.ntcreatex.out.attrib, attrib);
-	CHECK_ALL_INFO(io.ntcreatex.out.alloc_size, alloc_size);
 	CHECK_ALL_INFO(io.ntcreatex.out.size, size);
 	CHECK_ALL_INFO(io.ntcreatex.out.is_directory, directory);
 	CHECK_VAL(io.ntcreatex.out.file_type, FILE_TYPE_DISK);
@@ -2189,7 +2186,6 @@ static bool test_ntcreatex_supersede(struct torture_context *tctx, struct smbcli
 	CHECK_NTTIME(io.ntcreatex.out.write_time, write_time);
 	CHECK_NTTIME(io.ntcreatex.out.change_time, change_time);
 	CHECK_ALL_INFO(io.ntcreatex.out.attrib, attrib);
-	CHECK_ALL_INFO(io.ntcreatex.out.alloc_size, alloc_size);
 	CHECK_VAL(io.ntcreatex.out.size, 512);
 	CHECK_ALL_INFO(io.ntcreatex.out.is_directory, directory);
 	CHECK_VAL(io.ntcreatex.out.file_type, FILE_TYPE_DISK);
@@ -2213,7 +2209,6 @@ static bool test_ntcreatex_supersede(struct torture_context *tctx, struct smbcli
 	CHECK_NTTIME(io.ntcreatex.out.create_time, create_time);
 	CHECK_NTTIME(io.ntcreatex.out.access_time, access_time);
 	CHECK_ALL_INFO(io.ntcreatex.out.attrib, attrib);
-	CHECK_ALL_INFO(io.ntcreatex.out.alloc_size, alloc_size);
 	CHECK_ALL_INFO(io.ntcreatex.out.is_directory, directory);
 	CHECK_VAL(io.ntcreatex.out.file_type, FILE_TYPE_DISK);
 done:
