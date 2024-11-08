@@ -1239,7 +1239,8 @@ for t in tests:
     elif t == "rpc.mdssvc":
         plansmbtorture4testsuite(t, "fileserver", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
     elif t == "smb2.durable-open" or t == "smb2.durable-v2-open" or t == "smb2.replay" or t == "smb2.durable-v2-delay":
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/durable -U$USERNAME%$PASSWORD')
+        creds = " --option=torture:user2name=user1 --option=torture:user2password=$PASSWORD"
+        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/durable -U$USERNAME%$PASSWORD' + creds)
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER_IP/durable -U$USERNAME%$PASSWORD')
     elif t == "base.rw1":
         plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')

@@ -26,7 +26,11 @@
 #include "../libcli/smb/smbXcli_base.h"
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
+#include "torture/util.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "lib/param/param.h"
+#include "libcli/resolve/resolve.h"
+#include "auth/credentials/credentials.h"
 
 #define CHECK_VAL(v, correct) \
 	torture_assert_u64_equal_goto(tctx, v, correct, ret, done, __location__)
@@ -1694,6 +1698,100 @@ done:
 	return ret;
 }
 
+/**
+ * basic test for doing a durable open:
+ * logoff, create a new session, do a durable reopen (fails with EACCESS)
+ */
+static bool test_durable_open_reopen6(struct torture_context *tctx,
+				      struct smb2_tree *tree)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct cli_credentials *creds2 = torture_user2_credentials(tctx, tctx);
+	struct smbcli_options options = tree->session->transport->options;
+	struct smb2_tree *tree2 = NULL;
+	char fname[256];
+	struct smb2_handle h, d;
+	struct smb2_create c;
+	NTSTATUS status;
+	bool anon;
+	bool ret = true;
+
+	torture_assert(tctx, (creds2 != NULL), "talloc error");
+	anon = cli_credentials_is_anonymous(creds2);
+	if (anon) {
+		torture_skip(tctx, "valid user2 credentials are required");
+	}
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "durable_open_reopen4_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&c, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	c.in.durable_open = true;
+
+	status = smb2_create(tree, tree, &c);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = d = c.out.file.handle;
+
+	CHECK_CREATED(&c, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(c.out.durable_open, true);
+	CHECK_VAL(c.out.oplock_level, smb2_util_oplock_level("b"));
+
+	/* Disconnect */
+	TALLOC_FREE(tree);
+	ZERO_STRUCT(h);
+
+	/* Reconnect with a different user */
+	status = smb2_connect(tctx,
+			      host,
+			      share,
+			      tctx->lp_ctx,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      creds2,
+			      &tree2,
+			      tctx->ev,
+			      &options,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_connect failed");
+
+	ZERO_STRUCT(c);
+	c.in.fname = fname;
+	c.in.durable_handle = &d;
+
+	status = smb2_create(tree2, tree2, &c);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_ACCESS_DENIED,
+					   ret, done, "failed\n");
+
+	ret = torture_smb2_connection_ext(tctx, 0, &options, &tree);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h = c.out.file.handle;
+
+done:
+	if (tree != NULL) {
+		if (!smb2_util_handle_empty(h)) {
+			smb2_util_close(tree, h);
+		}
+		smb2_util_unlink(tree, fname);
+		talloc_free(tree);
+	}
+
+	talloc_free(tree2);
+	return ret;
+}
+
 static bool test_durable_open_delete_on_close1(struct torture_context *tctx,
 					       struct smb2_tree *tree)
 {
@@ -3025,6 +3123,7 @@ struct torture_suite *torture_smb2_durable_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "reopen3", test_durable_open_reopen3);
 	torture_suite_add_1smb2_test(suite, "reopen4", test_durable_open_reopen4);
 	torture_suite_add_1smb2_test(suite, "reopen5", test_durable_open_reopen5);
+	torture_suite_add_1smb2_test(suite, "reopen6", test_durable_open_reopen6);
 	torture_suite_add_1smb2_test(suite, "delete_on_close1",
 				     test_durable_open_delete_on_close1);
 	torture_suite_add_1smb2_test(suite, "delete_on_close2",
