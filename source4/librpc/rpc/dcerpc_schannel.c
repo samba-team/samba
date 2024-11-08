@@ -471,8 +471,7 @@ static struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
  */
 static NTSTATUS dcerpc_schannel_key_recv(struct composite_context *c,
 				TALLOC_CTX *mem_ctx,
-				struct netlogon_creds_CredentialState **creds,
-				uint32_t *requested_negotiate_flags)
+				struct netlogon_creds_CredentialState **creds)
 {
 	NTSTATUS status = composite_wait(c);
 
@@ -481,7 +480,6 @@ static NTSTATUS dcerpc_schannel_key_recv(struct composite_context *c,
 			talloc_get_type_abort(c->private_data,
 			struct schannel_key_state);
 		*creds = talloc_move(mem_ctx, &s->creds);
-		*requested_negotiate_flags = s->requested_negotiate_flags;
 	}
 
 	talloc_free(c);
@@ -526,13 +524,15 @@ static void continue_schannel_key(struct composite_context *ctx)
 	/* receive schannel key */
 	c->status = dcerpc_schannel_key_recv(ctx,
 					     s,
-					     &s->creds_state,
-					     &s->requested_negotiate_flags);
+					     &s->creds_state);
 	status = c->status;
 	if (!composite_is_ok(c)) {
 		DEBUG(1, ("Failed to setup credentials: %s\n", nt_errstr(status)));
 		return;
 	}
+
+	s->requested_negotiate_flags =
+		s->creds_state->client_requested_flags;
 
 	/* send bind auth request with received creds */
 	cli_credentials_set_netlogon_creds(s->credentials, s->creds_state);
