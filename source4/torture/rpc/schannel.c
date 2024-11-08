@@ -636,22 +636,7 @@ static bool test_schannel(struct torture_context *tctx,
 	creds = cli_credentials_get_netlogon_creds(credentials);
 	torture_assert(tctx, (creds != NULL), "schannel creds");
 
-	requested_flags = NETLOGON_NEG_AUTH2_FLAGS;
-	if (dcerpc_flags & DCERPC_SCHANNEL_128) {
-		requested_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
-	}
-	if (dcerpc_flags & DCERPC_SCHANNEL_AES) {
-		requested_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
-		requested_flags |= NETLOGON_NEG_SUPPORTS_AES;
-	}
-	if (dcerpc_flags & DCERPC_SCHANNEL_AUTO) {
-		requested_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
-		requested_flags |= NETLOGON_NEG_SUPPORTS_AES;
-	}
-	if (lpcfg_weak_crypto(tctx->lp_ctx) == SAMBA_WEAK_CRYPTO_DISALLOWED) {
-		requested_flags &= ~NETLOGON_NEG_ARCFOUR;
-		requested_flags |= NETLOGON_NEG_SUPPORTS_AES;
-	}
+	requested_flags = creds->client_requested_flags;
 
 	/* checks the capabilities */
 	torture_assert(tctx,
@@ -743,22 +728,7 @@ static bool test_schannel(struct torture_context *tctx,
 						  tctx, &p_netlogon2);
 	torture_assert_ntstatus_ok(tctx, status, "Failed to create secondary connection");
 
-	requested_flags = NETLOGON_NEG_AUTH2_FLAGS;
-	if (dcerpc_flags & DCERPC_SCHANNEL_128) {
-		requested_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
-	}
-	if (dcerpc_flags & DCERPC_SCHANNEL_AES) {
-		requested_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
-		requested_flags |= NETLOGON_NEG_SUPPORTS_AES;
-	}
-	if (dcerpc_flags & DCERPC_SCHANNEL_AUTO) {
-		requested_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
-		requested_flags |= NETLOGON_NEG_SUPPORTS_AES;
-	}
-	if (lpcfg_weak_crypto(tctx->lp_ctx) == SAMBA_WEAK_CRYPTO_DISALLOWED) {
-		requested_flags &= ~NETLOGON_NEG_ARCFOUR;
-		requested_flags |= NETLOGON_NEG_SUPPORTS_AES;
-	}
+	requested_flags = creds->client_requested_flags;
 
 	/* checks the capabilities */
 	torture_assert(tctx,
