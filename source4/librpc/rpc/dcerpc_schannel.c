@@ -36,6 +36,7 @@
 #include "lib/param/loadparm.h"
 
 struct schannel_key_state {
+	struct loadparm_context *lp_ctx;
 	struct dcerpc_pipe *pipe;
 	struct dcerpc_pipe *pipe2;
 	struct dcerpc_binding *binding;
@@ -51,12 +52,17 @@ struct schannel_key_state {
 	struct netr_Credential credentials3;
 	struct netr_ServerReqChallenge r;
 	struct netr_ServerAuthenticate2 a;
+	uint32_t rid;
+	struct netr_ServerAuthenticateKerberos k;
 	const struct samr_Password *mach_pwd;
 };
 
 
 static void continue_secondary_connection(struct composite_context *ctx);
+static void continue_bind_auth_krb5(struct composite_context *ctx);
+static void continue_srv_auth_krb5(struct tevent_req *subreq);
 static void continue_bind_auth_none(struct composite_context *ctx);
+static void start_srv_challenge(struct composite_context *c);
 static void continue_srv_challenge(struct tevent_req *subreq);
 static void continue_srv_auth2(struct tevent_req *subreq);
 static void continue_get_negotiated_capabilities(struct tevent_req *subreq);
@@ -113,6 +119,27 @@ static void continue_secondary_connection(struct composite_context *ctx)
 
 	talloc_steal(s, s->pipe2);
 
+	s->r.in.server_name   = talloc_asprintf(c, "\\\\%s", dcerpc_server_name(s->pipe));
+	if (composite_nomem(s->r.in.server_name, c)) return;
+	s->r.in.computer_name = cli_credentials_get_workstation(s->credentials);
+
+	if (s->requested_negotiate_flags & NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH) {
+		struct composite_context *auth_krb5_req = NULL;
+		const char *target_service =
+			ndr_table_netlogon.authservices->names[0];
+
+		auth_krb5_req = dcerpc_bind_auth_send(c,
+						      s->pipe2,
+						      &ndr_table_netlogon,
+						      s->credentials,
+						      lpcfg_gensec_settings(c, s->lp_ctx),
+						      DCERPC_AUTH_TYPE_KRB5,
+						      DCERPC_AUTH_LEVEL_PRIVACY,
+						      target_service);
+		composite_continue(c, auth_krb5_req, continue_bind_auth_krb5, c);
+		return;
+	}
+
 	/* initiate a non-authenticated bind */
 	auth_none_req = dcerpc_bind_auth_none_send(c, s->pipe2, &ndr_table_netlogon);
 	if (composite_nomem(auth_none_req, c)) return;
@@ -120,6 +147,139 @@ static void continue_secondary_connection(struct composite_context *ctx)
 	composite_continue(c, auth_none_req, continue_bind_auth_none, c);
 }
 
+static void continue_bind_auth_krb5(struct composite_context *ctx)
+{
+	struct composite_context *c;
+	struct schannel_key_state *s;
+	struct tevent_req *subreq;
+	NTSTATUS status;
+
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct schannel_key_state);
+
+	/* receive result of krb5 bind request */
+	status = dcerpc_bind_auth_recv(ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		struct composite_context *auth_none_req = NULL;
+
+		if (s->required_negotiate_flags & NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH) {
+			composite_error(c, status);
+			return;
+		}
+
+		/* initiate a non-authenticated bind */
+		auth_none_req = dcerpc_bind_auth_none_send(c, s->pipe2, &ndr_table_netlogon);
+		if (composite_nomem(auth_none_req, c)) return;
+
+		composite_continue(c, auth_none_req, continue_bind_auth_none, c);
+		return;
+	}
+
+	/* AuthenticateKerberos request arguments */
+	s->k.in.server_name      = talloc_asprintf(c, "\\\\%s", dcerpc_server_name(s->pipe2));
+	if (composite_nomem(s->k.in.server_name, c)) return;
+	s->k.in.account_name     = cli_credentials_get_username(s->credentials);
+	s->k.in.account_type     =
+		cli_credentials_get_secure_channel_type(s->credentials);
+	s->k.in.computer_name    = cli_credentials_get_workstation(s->credentials);
+	s->k.in.negotiate_flags  = &s->requested_negotiate_flags;
+	s->k.out.rid             = &s->rid;
+	s->k.out.negotiate_flags = &s->remote_negotiate_flags;
+
+	s->creds = netlogon_creds_kerberos_init(s,
+					        s->k.in.account_name,
+					        s->k.in.computer_name,
+					        s->k.in.account_type,
+					        s->requested_negotiate_flags,
+						NULL, /* client_sid */
+					        s->local_negotiate_flags);
+	if (composite_nomem(s->creds, c)) {
+		return;
+	}
+
+	/*
+	  authenticate on the netlogon pipe - a rpc request over secondary pipe
+	*/
+	subreq = dcerpc_netr_ServerAuthenticateKerberos_r_send(s, c->event_ctx,
+							       s->pipe2->binding_handle,
+							       &s->k);
+	if (composite_nomem(subreq, c)) return;
+
+	tevent_req_set_callback(subreq, continue_srv_auth_krb5, c);
+}
+
+static void continue_srv_auth_krb5(struct tevent_req *subreq)
+{
+	struct composite_context *c;
+	struct schannel_key_state *s;
+
+	c = tevent_req_callback_data(subreq, struct composite_context);
+	s = talloc_get_type(c->private_data, struct schannel_key_state);
+
+	c->status = dcerpc_netr_ServerAuthenticateKerberos_r_recv(subreq, s);
+	TALLOC_FREE(subreq);
+	if (NT_STATUS_EQUAL(c->status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
+		if (s->required_negotiate_flags & NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH) {
+			DBG_ERR("%s: NT_STATUS_DOWNGRADE_DETECTED\n", __location__);
+			composite_error(c, NT_STATUS_DOWNGRADE_DETECTED);
+			return;
+		}
+
+		if (!s->dcerpc_schannel_auto) {
+			composite_error(c, c->status);
+			return;
+		}
+
+		/*
+		 * Fallback to ServerReqChallenge
+		 * and ServerAuthenticate2
+		 */
+		start_srv_challenge(c);
+		return;
+	}
+
+	if (!composite_is_ok(c)) return;
+
+	if (!NT_STATUS_IS_OK(s->k.out.result)) {
+		composite_error(c, s->k.out.result);
+		return;
+	}
+
+	SMB_ASSERT(s->requested_negotiate_flags == s->local_negotiate_flags);
+
+	{
+		uint32_t rqf = s->required_negotiate_flags;
+		uint32_t rf = s->remote_negotiate_flags;
+		uint32_t lf = s->local_negotiate_flags;
+
+		rqf |= NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH;
+
+		if (rf & NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH) {
+			rqf &= ~NETLOGON_NEG_ARCFOUR;
+			rqf &= ~NETLOGON_NEG_STRONG_KEYS;
+			rqf &= ~NETLOGON_NEG_SUPPORTS_AES;
+		}
+
+		if ((rqf & rf) != rqf) {
+			rqf = s->required_negotiate_flags;
+			DBG_ERR("The client capabilities don't match "
+				"the server capabilities: local[0x%08X] "
+				"required[0x%08X] remote[0x%08X]\n",
+				lf, rqf, rf);
+			composite_error(c, NT_STATUS_DOWNGRADE_DETECTED);
+			return;
+		}
+	}
+
+	/*
+	 * Without a downgrade in the crypto we proposed
+	 * we can adjust the otherwise downgraded flags
+	 * before storing.
+	 */
+	s->creds->negotiate_flags &= s->remote_negotiate_flags;
+
+	composite_done(c);
+}
 
 /*
   Stage 4 of schannel_key: Receive non-authenticated bind and get
@@ -128,16 +288,23 @@ static void continue_secondary_connection(struct composite_context *ctx)
 static void continue_bind_auth_none(struct composite_context *ctx)
 {
 	struct composite_context *c;
-	struct schannel_key_state *s;
-	struct tevent_req *subreq;
 
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
-	s = talloc_get_type(c->private_data, struct schannel_key_state);
 
 	/* receive result of non-authenticated bind request */
 	c->status = dcerpc_bind_auth_none_recv(ctx);
 	if (!composite_is_ok(c)) return;
-	
+
+	start_srv_challenge(c);
+}
+
+static void start_srv_challenge(struct composite_context *c)
+{
+	struct schannel_key_state *s = NULL;
+	struct tevent_req *subreq = NULL;
+
+	s = talloc_get_type(c->private_data, struct schannel_key_state);
+
 	/* prepare a challenge request */
 	s->r.in.server_name   = talloc_asprintf(c, "\\\\%s", dcerpc_server_name(s->pipe));
 	if (composite_nomem(s->r.in.server_name, c)) return;
@@ -379,9 +546,17 @@ static struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 	struct schannel_key_state *s;
 	struct composite_context *epm_map_req;
 	enum netr_SchannelType schannel_type = cli_credentials_get_secure_channel_type(credentials);
+	enum credentials_use_kerberos krb5_state =
+		cli_credentials_get_kerberos_state(credentials);
 	struct cli_credentials *epm_creds = NULL;
+	bool reject_aes_servers = false;
 	bool reject_md5_servers = false;
 	bool require_strong_key = false;
+#if defined(HAVE_ADS) && defined(HAVE_KRB5_INIT_CREDS_STEP)
+	const bool support_krb5_netlogon = true;
+#else
+	const bool support_krb5_netlogon = false;
+#endif
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, p->conn->event_ctx);
@@ -392,6 +567,7 @@ static struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 	c->private_data = s;
 
 	/* store parameters in the state structure */
+	s->lp_ctx      = lp_ctx;
 	s->pipe        = p;
 	s->credentials = credentials;
 	s->local_negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
@@ -406,15 +582,63 @@ static struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 		s->local_negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 		reject_md5_servers = true;
 	}
+	if (s->pipe->conn->flags & DCERPC_SCHANNEL_KRB5) {
+		s->local_negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+		reject_aes_servers = true;
+	}
 	if (s->pipe->conn->flags & DCERPC_SCHANNEL_AUTO) {
+		bool trust_support_kerberos = false;
+		int use_krb5_netlogon = true;
+		enum dcerpc_transport_t transport =
+			dcerpc_binding_get_transport(s->pipe->binding);
+
+		if (schannel_type != SEC_CHAN_DOMAIN) {
+			if (krb5_state != CRED_USE_KERBEROS_DISABLED) {
+				trust_support_kerberos = true;
+			}
+		}
+
+		switch (transport) {
+		case NCACN_NP:
+		case NCACN_IP_TCP:
+			break;
+		default:
+			/*
+			 * Things like NCALRPC don't support
+			 * kerberos.
+			 */
+			trust_support_kerberos = false;
+			break;
+		}
+
 		s->local_negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 		s->local_negotiate_flags |= NETLOGON_NEG_SUPPORTS_AES;
 		s->dcerpc_schannel_auto = true;
+
+		use_krb5_netlogon = lpcfg_client_use_krb5_netlogon(lp_ctx);
+		if (use_krb5_netlogon == Auto) {
+			if (support_krb5_netlogon) {
+				use_krb5_netlogon = trust_support_kerberos;
+			} else {
+				use_krb5_netlogon = false;
+			}
+		}
+
+		if (use_krb5_netlogon) {
+			s->local_negotiate_flags |=
+				NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH;
+		}
+
+		reject_aes_servers = lpcfg_reject_aes_netlogon_servers(lp_ctx);
 		reject_md5_servers = lpcfg_reject_md5_servers(lp_ctx);
 		require_strong_key = lpcfg_require_strong_key(lp_ctx);
 	}
 
 	if (lpcfg_weak_crypto(lp_ctx) == SAMBA_WEAK_CRYPTO_DISALLOWED) {
+		reject_md5_servers = true;
+	}
+
+	if (reject_aes_servers) {
 		reject_md5_servers = true;
 	}
 
@@ -432,11 +656,28 @@ static struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 		s->required_negotiate_flags |= NETLOGON_NEG_SUPPORTS_AES;
 	}
 
+	if (reject_aes_servers) {
+		s->required_negotiate_flags |= NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH;
+	}
+
 	s->local_negotiate_flags |= s->required_negotiate_flags;
+
+	if (s->local_negotiate_flags & NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH) {
+		if (!support_krb5_netlogon) {
+			DBG_ERR("No support for ServerAuthenticateKerberos!\n");
+			composite_error(c, NT_STATUS_DEVICE_FEATURE_NOT_SUPPORTED);
+			return c;
+		}
+		s->pipe->conn->flags |= DCERPC_SEAL;
+	}
 
 	if (s->required_negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 		s->required_negotiate_flags &= ~NETLOGON_NEG_ARCFOUR;
 		s->required_negotiate_flags &= ~NETLOGON_NEG_STRONG_KEYS;
+	}
+
+	if (s->required_negotiate_flags & NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH) {
+		s->required_negotiate_flags &= ~NETLOGON_NEG_SUPPORTS_AES;
 	}
 
 	/* type of authentication depends on schannel type */
@@ -519,6 +760,7 @@ static void continue_schannel_key(struct composite_context *ctx)
 						      struct composite_context);
 	struct auth_schannel_state *s = talloc_get_type(c->private_data,
 							struct auth_schannel_state);
+	enum dcerpc_AuthType auth_type;
 	NTSTATUS status;
 
 	/* receive schannel key */
@@ -534,12 +776,19 @@ static void continue_schannel_key(struct composite_context *ctx)
 	s->requested_negotiate_flags =
 		s->creds_state->client_requested_flags;
 
+	if (s->creds_state->authenticate_kerberos) {
+		auth_type = DCERPC_AUTH_TYPE_KRB5;
+		s->auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
+	} else {
+		auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
+	}
+
 	/* send bind auth request with received creds */
 	cli_credentials_set_netlogon_creds(s->credentials, s->creds_state);
 
 	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table, s->credentials, 
 					 lpcfg_gensec_settings(c, s->lp_ctx),
-					 DCERPC_AUTH_TYPE_SCHANNEL, s->auth_level,
+					 auth_type, s->auth_level,
 					 NULL);
 	if (composite_nomem(auth_req, c)) return;
 	
@@ -630,6 +879,12 @@ static void continue_get_negotiated_capabilities(struct tevent_req *subreq)
 	c->status = dcerpc_netr_LogonGetCapabilities_r_recv(subreq, s);
 	TALLOC_FREE(subreq);
 	if (NT_STATUS_EQUAL(c->status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
+		if (s->creds_state->authenticate_kerberos) {
+			DBG_ERR("%s: NT_STATUS_DOWNGRADE_DETECTED\n", __location__);
+			composite_error(c, NT_STATUS_DOWNGRADE_DETECTED);
+			return;
+		}
+
 		if (s->creds_state->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 			DBG_ERR("%s: NT_STATUS_DOWNGRADE_DETECTED\n", __location__);
 			composite_error(c, NT_STATUS_DOWNGRADE_DETECTED);
@@ -648,6 +903,12 @@ static void continue_get_negotiated_capabilities(struct tevent_req *subreq)
 	}
 
 	if (NT_STATUS_EQUAL(s->c.out.result, NT_STATUS_NOT_IMPLEMENTED)) {
+		if (s->creds_state->authenticate_kerberos) {
+			DBG_ERR("%s: NT_STATUS_DOWNGRADE_DETECTED\n", __location__);
+			composite_error(c, NT_STATUS_DOWNGRADE_DETECTED);
+			return;
+		}
+
 		if (s->creds_state->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 			/* This means AES isn't supported. */
 			DBG_ERR("%s: NT_STATUS_DOWNGRADE_DETECTED\n", __location__);
@@ -688,7 +949,8 @@ static void continue_get_negotiated_capabilities(struct tevent_req *subreq)
 		return;
 	}
 
-	if ((s->requested_negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) &&
+	if (!s->creds_state->authenticate_kerberos &&
+	    (s->requested_negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) &&
 	    (!(s->creds_state->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES)))
 	{
 		DBG_ERR("%s: NT_STATUS_DOWNGRADE_DETECTED\n", __location__);
@@ -749,6 +1011,12 @@ static void continue_get_client_capabilities(struct tevent_req *subreq)
 		c->status = NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE;
 	}
 	if (NT_STATUS_EQUAL(c->status, NT_STATUS_RPC_ENUM_VALUE_OUT_OF_RANGE)) {
+		if (s->creds_state->authenticate_kerberos) {
+			DBG_ERR("%s: NT_STATUS_DOWNGRADE_DETECTED\n", __location__);
+			composite_error(c, NT_STATUS_DOWNGRADE_DETECTED);
+			return;
+		}
+
 		/*
 		 * Here we know the negotiated flags were already
 		 * verified with query_level=1, which means

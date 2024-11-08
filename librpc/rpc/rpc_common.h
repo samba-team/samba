@@ -114,6 +114,8 @@ struct dcerpc_binding;
 
 #define DCERPC_SMB1                    (1<<27)
 
+#define DCERPC_SCHANNEL_KRB5           (1<<28)
+
 /* The following definitions come from ../librpc/rpc/dcerpc_error.c  */
 
 const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);

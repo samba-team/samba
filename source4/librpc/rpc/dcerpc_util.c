@@ -30,6 +30,7 @@
 #include "librpc/gen_ndr/ndr_epmapper_c.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "librpc/gen_ndr/ndr_schannel.h"
 #include "librpc/rpc/dcerpc_proto.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
@@ -635,7 +636,20 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 		auth_type = DCERPC_AUTH_TYPE_KRB5;
 
 	} else if (conn->flags & DCERPC_SCHANNEL) {
-		auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
+		struct netlogon_creds_CredentialState *ncreds = NULL;
+
+		ncreds = cli_credentials_get_netlogon_creds(s->credentials);
+		if (ncreds->authenticate_kerberos) {
+			conn->flags |= DCERPC_SCHANNEL_KRB5;
+		}
+
+		if (conn->flags & DCERPC_SCHANNEL_KRB5) {
+			conn->flags &= ~DCERPC_SCHANNEL_AUTO;
+			conn->flags |= DCERPC_SEAL;
+			auth_type = DCERPC_AUTH_TYPE_KRB5;
+		} else {
+			auth_type = DCERPC_AUTH_TYPE_SCHANNEL;
+		}
 
 	} else if (conn->flags & DCERPC_AUTH_NTLM) {
 		auth_type = DCERPC_AUTH_TYPE_NTLMSSP;

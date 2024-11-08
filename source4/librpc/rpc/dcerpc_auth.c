@@ -380,6 +380,12 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 		return c;
 	}
 
+	if (p->conn->flags & DCERPC_SCHANNEL) {
+		service = "netlogon";
+		gensec_want_feature(sec->generic_state,
+				    GENSEC_FEATURE_NO_DELEGATION);
+	}
+
 	if (service != NULL) {
 		c->status = gensec_set_target_service(sec->generic_state,
 						      service);
