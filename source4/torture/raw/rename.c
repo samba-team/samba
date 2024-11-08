@@ -303,39 +303,6 @@ static bool test_ntrename(struct torture_context *tctx,
 
 	torture_set_file_attribute(cli->tree, fname1, FILE_ATTRIBUTE_NORMAL);
 
-	torture_comment(tctx, "Checking hard link\n");
-	io.ntrename.in.old_name = fname1;
-	io.ntrename.in.new_name = fname2;
-	io.ntrename.in.attrib = 0;
-	io.ntrename.in.flags = RENAME_FLAG_HARD_LINK;
-	status = smb_raw_rename(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	torture_set_file_attribute(cli->tree, fname1, FILE_ATTRIBUTE_SYSTEM);
-
-	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
-	finfo.generic.in.file.path = fname2;
-	status = smb_raw_pathinfo(cli->tree, tctx, &finfo);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(finfo.all_info.out.nlink, 2);
-	CHECK_VALUE(finfo.all_info.out.attrib, FILE_ATTRIBUTE_SYSTEM);
-
-	finfo.generic.in.file.path = fname1;
-	status = smb_raw_pathinfo(cli->tree, tctx, &finfo);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(finfo.all_info.out.nlink, 2);
-	CHECK_VALUE(finfo.all_info.out.attrib, FILE_ATTRIBUTE_SYSTEM);
-
-	torture_set_file_attribute(cli->tree, fname1, FILE_ATTRIBUTE_NORMAL);
-
-	smbcli_unlink(cli->tree, fname2);
-
-	finfo.generic.in.file.path = fname1;
-	status = smb_raw_pathinfo(cli->tree, tctx, &finfo);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VALUE(finfo.all_info.out.nlink, 1);
-	CHECK_VALUE(finfo.all_info.out.attrib, FILE_ATTRIBUTE_NORMAL);
-
 	torture_comment(tctx, "Checking copy\n");
 	io.ntrename.in.old_name = fname1;
 	io.ntrename.in.new_name = fname2;
@@ -493,6 +460,68 @@ static bool test_ntrename(struct torture_context *tctx,
 			}
 		}
 	}
+
+done:
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+	return ret;
+}
+
+/*
+  test SMBntrename ops
+*/
+static bool test_nthardlink(struct torture_context *tctx,
+			    struct smbcli_state *cli)
+{
+	union smb_rename io = {};
+	NTSTATUS status;
+	bool ret = true;
+	int fnum;
+	const char *fname1 = BASEDIR "\\test1.txt";
+	const char *fname2 = BASEDIR "\\test2.txt";
+	union smb_fileinfo finfo = {};
+
+	torture_comment(tctx, "Testing SMBnthardlink\n");
+
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
+
+	fnum = create_complex_file(cli, tctx, fname1);
+	status = smbcli_close(cli->tree, fnum);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	torture_comment(tctx, "Checking hard link\n");
+	io.generic.level = RAW_RENAME_NTRENAME;
+	io.ntrename.in.old_name = fname1;
+	io.ntrename.in.new_name = fname2;
+	io.ntrename.in.attrib = 0;
+	io.ntrename.in.flags = RENAME_FLAG_HARD_LINK;
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	torture_set_file_attribute(cli->tree, fname1, FILE_ATTRIBUTE_SYSTEM);
+
+	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
+	finfo.generic.in.file.path = fname2;
+	status = smb_raw_pathinfo(cli->tree, tctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(finfo.all_info.out.nlink, 2);
+	CHECK_VALUE(finfo.all_info.out.attrib, FILE_ATTRIBUTE_SYSTEM);
+
+	finfo.generic.in.file.path = fname1;
+	status = smb_raw_pathinfo(cli->tree, tctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(finfo.all_info.out.nlink, 2);
+	CHECK_VALUE(finfo.all_info.out.attrib, FILE_ATTRIBUTE_SYSTEM);
+
+	torture_set_file_attribute(cli->tree, fname1, FILE_ATTRIBUTE_NORMAL);
+
+	smbcli_unlink(cli->tree, fname2);
+
+	finfo.generic.in.file.path = fname1;
+	status = smb_raw_pathinfo(cli->tree, tctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VALUE(finfo.all_info.out.nlink, 1);
+	CHECK_VALUE(finfo.all_info.out.attrib, FILE_ATTRIBUTE_NORMAL);
 
 done:
 	smb_raw_exit(cli->session);
@@ -685,6 +714,7 @@ struct torture_suite *torture_raw_rename(TALLOC_CTX *mem_ctx)
 	torture_suite_add_2smb_test(suite, "trans2rename", test_trans2rename);
 	torture_suite_add_1smb_test(suite, "nttransrename", test_nttransrename);
 	torture_suite_add_1smb_test(suite, "ntrename", test_ntrename);
+	torture_suite_add_1smb_test(suite, "nthardlink", test_nthardlink);
 	torture_suite_add_1smb_test(suite, "osxrename", test_osxrename);
 	torture_suite_add_1smb_test(suite, "directory rename", test_dir_rename);
 
