@@ -347,6 +347,135 @@ done:
 	return ret;
 }
 
+static bool test_append(struct torture_context *tctx,
+			struct smb2_tree *tree)
+{
+	struct smb2_handle h = {};
+	uint8_t buf[1] = {};
+	struct smb2_create c = {};
+	union smb_fileinfo finfo = {};
+	off_t off;
+	uint64_t expected_size = 0;
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_util_unlink(tree, FNAME);
+
+	torture_comment(tctx, "Create file with 1 byte\n");
+
+	status = torture_smb2_testfile(tree, FNAME, &h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Incorrect status\n");
+
+	expected_size = 0;
+
+	status = smb2_util_write(tree, h, buf, 0, ARRAY_SIZE(buf));
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Incorrect status\n");
+	expected_size += ARRAY_SIZE(buf);
+
+	status = smb2_util_close(tree, h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Incorrect status\n");
+	ZERO_STRUCT(h);
+
+	torture_comment(tctx, "Open file with SEC_FILE_APPEND_DATA"
+			"|SEC_STD_SYNCHRONIZE\n");
+
+	c.in.desired_access = SEC_FILE_APPEND_DATA | SEC_STD_SYNCHRONIZE;
+	c.in.create_disposition = NTCREATEX_DISP_OPEN;
+	c.in.share_access =
+		NTCREATEX_SHARE_ACCESS_DELETE|
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	c.in.fname = FNAME;
+
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Incorrect status\n");
+
+	h = c.out.file.handle;
+
+	torture_comment(tctx, "Write one byte at offset 0 and verify "
+			"written data was not appended but written at "
+			"requested offset\n");
+
+	status = smb2_util_write(tree, h, buf, 0, ARRAY_SIZE(buf));
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Incorrect status\n");
+
+	status = smb2_util_close(tree, h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Incorrect status\n");
+	ZERO_STRUCT(h);
+
+	status = torture_smb2_testfile(tree, FNAME, &h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Incorrect status\n");
+
+	finfo.generic.level = RAW_FILEINFO_ALL_INFORMATION;
+	finfo.generic.in.file.handle = h;
+	status = smb2_getinfo_file(tree, tree, &finfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Incorrect status\n");
+
+	torture_assert_u64_equal_goto(tctx, finfo.all_info.out.size,
+				      expected_size,
+				      ret, done, "wrong size");
+
+	status = smb2_util_close(tree, h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Incorrect status\n");
+	ZERO_STRUCT(h);
+
+	torture_comment(tctx, "Open file in write-data only mode "
+			"and check if we can append\n");
+
+	c.in.desired_access = SEC_FILE_WRITE_DATA | SEC_FILE_READ_ATTRIBUTE;
+	c.in.create_disposition = NTCREATEX_DISP_OPEN;
+	c.in.share_access =
+		NTCREATEX_SHARE_ACCESS_DELETE|
+		NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	c.in.fname = FNAME;
+
+	status = smb2_create(tree, tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Incorrect status\n");
+	h = c.out.file.handle;
+
+	off = 1000;
+
+	status = smb2_util_write(tree, h, buf, off, ARRAY_SIZE(buf));
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Incorrect status\n");
+
+	expected_size = off + ARRAY_SIZE(buf);
+
+	finfo.generic.level = RAW_FILEINFO_ALL_INFORMATION;
+	finfo.generic.in.file.handle = h;
+	status = smb2_getinfo_file(tree, tree, &finfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Incorrect status\n");
+
+	torture_assert_u64_equal_goto(tctx, finfo.all_info.out.size,
+				      expected_size,
+				      ret, done, "wrong size");
+
+	status = smb2_util_close(tree, h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"Incorrect status\n");
+	ZERO_STRUCT(h);
+
+done:
+	if (!smb2_util_handle_empty(h)) {
+		smb2_util_close(tree, h);
+	}
+	smb2_util_unlink(tree, FNAME);
+	return ret;
+}
+
+
 struct torture_suite *torture_smb2_readwrite_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "rw");
@@ -354,6 +483,7 @@ struct torture_suite *torture_smb2_readwrite_init(TALLOC_CTX *ctx)
 	torture_suite_add_2smb2_test(suite, "rw1", run_smb2_readwritetest);
 	torture_suite_add_2smb2_test(suite, "rw2", run_smb2_wrap_readwritetest);
 	torture_suite_add_1smb2_test(suite, "invalid", test_rw_invalid);
+	torture_suite_add_1smb2_test(suite, "append", test_append);
 
 	suite->description = talloc_strdup(suite, "SMB2 Samba4 Read/Write");
 
