@@ -3868,7 +3868,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 #endif /* O_SYNC */
 
-	if (posix_open && (access_mask & FILE_APPEND_DATA)) {
+	if (posix_open &&
+	    ((access_mask & FILE_APPEND_DATA) &&
+	     !(access_mask & FILE_WRITE_DATA)))
+	{
 		flags |= O_APPEND;
 	}
 
