@@ -26,6 +26,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "replace.h"
+
 /*
  * A configuration file, created by statd_callout_helper, containing
  * at least 1 line of text.
