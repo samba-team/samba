@@ -970,7 +970,7 @@ int rep_memset_s(void *dest, size_t destsz, int ch, size_t count)
 	}
 
 #if defined(HAVE_MEMSET_EXPLICIT)
-	memset_explicit(dest, destsz, ch, count);
+	memset_explicit(dest, ch, count);
 #else /* HAVE_MEMSET_EXPLICIT */
 	memset(dest, ch, count);
 # if defined(HAVE_GCC_VOLATILE_MEMORY_PROTECTION)
