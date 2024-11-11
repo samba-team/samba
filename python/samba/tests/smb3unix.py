@@ -510,3 +510,36 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
             winconn.get_posix_fs_info()
         e = cm.exception
         self.assertEqual(e.args[0], ntstatus.NT_STATUS_INVALID_INFO_CLASS)
+
+    def test_copy_chunk_posix(self):
+        """
+        Test copy-chunk works with a destination handle opened in POSIX mode
+        """
+        (_, c) = self.connections()
+
+        self.clean_file(c, '\\test_copy_chunk_posix_src')
+        self.clean_file(c, '\\test_copy_chunk_posix_dst')
+
+        wire_mode = libsmb.unix_mode_to_wire(0o644)
+
+        sh,*_ = c.create_ex('\\test_copy_chunk_posix_src',
+                          DesiredAccess=security.SEC_GENERIC_ALL,
+                          CreateDisposition=libsmb.FILE_CREATE,
+                          CreateContexts=[posix_context(wire_mode)])
+
+        dh,*_ = c.create_ex('\\test_copy_chunk_posix_dst',
+                          DesiredAccess=security.SEC_GENERIC_WRITE,
+                          CreateDisposition=libsmb.FILE_CREATE,
+                          CreateContexts=[posix_context(wire_mode)])
+
+        c.write(sh, buffer=b"data", offset=0)
+
+        try:
+            written = c.copy_chunk(sh, dh, 4, 0, 0)
+        except Exception as e:
+            self.fail(str(e))
+        finally:
+            c.close(sh)
+            c.close(dh)
+            self.clean_file(c, '\\test_copy_chunk_posix_src')
+            self.clean_file(c, '\\test_copy_chunk_posix_dst')
