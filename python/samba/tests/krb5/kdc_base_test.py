@@ -3707,8 +3707,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         conn = netlogon.netlogon(f'ncacn_ip_tcp:{dc_server}[schannel,seal]',
                                  self.get_lp(),
                                  domain_joined_mach_creds)
-        auth_type = dcerpc.DCERPC_AUTH_TYPE_SCHANNEL
-        auth_level = dcerpc.DCERPC_AUTH_LEVEL_PRIVACY
+        (auth_type, auth_level) = conn.auth_info()
 
         if logon_type == netlogon.NetlogonInteractiveInformation:
             logon = netlogon.netr_PasswordInfo()
