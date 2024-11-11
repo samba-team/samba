@@ -521,17 +521,27 @@ static bool test_samr_ops(struct torture_context *tctx,
 /*
   do some lsa ops using the schannel connection
  */
-static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
+static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p,
+		         struct cli_credentials *credentials)
 {
 	struct lsa_GetUserName r;
 	bool ret = true;
 	struct lsa_String *account_name_p = NULL;
 	struct lsa_String *authority_name_p = NULL;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
 	const char *expected_account_name = "ANONYMOUS LOGON";
 	const char *expected_authority_name = "NT AUTHORITY";
 
 	torture_comment(tctx, "\nTesting GetUserName\n");
+
+	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
+
+	if (auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
+		expected_account_name = cli_credentials_get_username(credentials);
+		expected_authority_name = cli_credentials_get_domain(credentials);
+	}
 
 	r.in.system_name = "\\";
 	r.in.account_name = &account_name_p;
@@ -670,7 +680,7 @@ static bool test_schannel(struct torture_context *tctx,
 				      credentials, tctx->ev, tctx->lp_ctx),
 		"failed to connect lsarpc with schannel");
 
-	torture_assert(tctx, test_lsa_ops(tctx, p_lsa),
+	torture_assert(tctx, test_lsa_ops(tctx, p_lsa, credentials),
 		"Failed to process schannel secured LSA ops");
 
 	talloc_free(p_lsa);
