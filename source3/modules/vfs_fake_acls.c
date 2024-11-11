@@ -126,12 +126,20 @@ static int fake_acls_stat(vfs_handle_struct *handle,
 			return -1;
 		}
 
-		/* Recursion guard. */
-		prd->calling_pathref_fsp = true;
-		status = openat_pathref_fsp(handle->conn->cwd_fsp,
-					    smb_fname_cp);
-		/* End recursion guard. */
-		prd->calling_pathref_fsp = false;
+		if (fsp_get_pathref_fd(handle->conn->cwd_fsp) == -1) {
+			/*
+			 * No tcon around, fail as if we don't have
+			 * the EAs
+			 */
+			status = NT_STATUS_INVALID_HANDLE;
+		} else {
+			/* Recursion guard. */
+			prd->calling_pathref_fsp = true;
+			status = openat_pathref_fsp(handle->conn->cwd_fsp,
+						    smb_fname_cp);
+			/* End recursion guard. */
+			prd->calling_pathref_fsp = false;
+		}
 
 		if (!NT_STATUS_IS_OK(status)) {
 			/*
