@@ -132,14 +132,6 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
         e = cm.exception
         self.assertEqual(e.args[0], ntstatus.NT_STATUS_INVALID_PARAMETER)
 
-    def delete_test_file(self, c, fname, mode=0):
-        f,_,cc_out = c.create_ex(fname,
-                        DesiredAccess=security.SEC_STD_ALL,
-                        CreateDisposition=libsmb.FILE_OPEN,
-                        CreateContexts=[posix_context(mode)])
-        c.delete_on_close(f, True)
-        c.close(f)
-
     def test_posix_query_dir(self):
         test_files = []
         try:
@@ -170,7 +162,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
         finally:
             if len(test_files) > 0:
                 for fname in test_files:
-                    self.delete_test_file(c, fname)
+                    self.clean_file(c, fname)
 
     def test_posix_reserved_char(self):
         c = libsmb.Conn(
@@ -242,7 +234,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
             self.assertFalse(fail, "Opening uppercase file didn't fail")
 
         finally:
-            self.delete_test_file(c, '\\xx')
+            self.clean_file(c, '\\xx')
 
     def test_posix_perm_files(self):
         test_files = {}
@@ -331,7 +323,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
         finally:
             if len(test_files) > 0:
                 for fname in test_files.keys():
-                    self.delete_test_file(c, '\\%s' % fname)
+                    self.clean_file(c, '\\%s' % fname)
 
     def test_share_root_null_sids_fid(self):
         c = libsmb.Conn(
@@ -411,8 +403,8 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
             self.assertTrue(str(cc.group).startswith("S-1-22-2-"))
 
         finally:
-            self.delete_test_file(c, '\\test_create_context_basic1_file')
-            self.delete_test_file(c, '\\test_create_context_basic1_dir')
+            self.clean_file(c, '\\test_create_context_basic1_file')
+            self.clean_file(c, '\\test_create_context_basic1_dir')
 
     def test_create_context_reparse(self):
         """
@@ -452,7 +444,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
             self.assertEqual(cc.reparse_tag, tag)
 
         finally:
-            self.delete_test_file(c, '\\reparse')
+            self.clean_file(c, '\\reparse')
 
     def test_delete_on_close(self):
         """
