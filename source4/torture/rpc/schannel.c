@@ -528,6 +528,8 @@ static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
 	struct lsa_String *account_name_p = NULL;
 	struct lsa_String *authority_name_p = NULL;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *expected_account_name = "ANONYMOUS LOGON";
+	const char *expected_authority_name = "NT AUTHORITY";
 
 	torture_comment(tctx, "\nTesting GetUserName\n");
 
@@ -550,9 +552,9 @@ static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
 			return false;
 		}
 
-		if (strcmp(account_name_p->string, "ANONYMOUS LOGON") != 0) {
+		if (!strequal(account_name_p->string, expected_account_name)) {
 			torture_comment(tctx, "GetUserName returned wrong user: %s, expected %s\n",
-			       account_name_p->string, "ANONYMOUS LOGON");
+			       account_name_p->string, expected_account_name);
 			/* FIXME: gd */
 			if (!torture_setting_bool(tctx, "samba3", false)) {
 				return false;
@@ -562,9 +564,9 @@ static bool test_lsa_ops(struct torture_context *tctx, struct dcerpc_pipe *p)
 			return false;
 		}
 
-		if (strcmp(authority_name_p->string, "NT AUTHORITY") != 0) {
+		if (!strequal(authority_name_p->string, expected_authority_name)) {
 			torture_comment(tctx, "GetUserName returned wrong user: %s, expected %s\n",
-			       authority_name_p->string, "NT AUTHORITY");
+			       authority_name_p->string, expected_authority_name);
 			/* FIXME: gd */
 			if (!torture_setting_bool(tctx, "samba3", false)) {
 				return false;
