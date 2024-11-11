@@ -1086,7 +1086,7 @@ struct smb_filename *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 		goto out;
 	}
 
-	if (lp_getwd_cache() && VALID_STAT(smb_fname_dot->st)) {
+	if ((smb_fname_dot != NULL) && VALID_STAT(smb_fname_dot->st)) {
 		key = vfs_file_id_from_sbuf(conn, &smb_fname_dot->st);
 
 		/*
