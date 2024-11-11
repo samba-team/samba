@@ -2935,6 +2935,82 @@ static PyObject *py_cli_fsctl(
 	return result;
 }
 
+static int copy_chunk_cb(off_t n, void *priv)
+{
+	return 1;
+}
+
+static PyObject *py_cli_copy_chunk(struct py_cli_state *self,
+				   PyObject *args,
+				   PyObject *kwds)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_req *req = NULL;
+	PyObject *result = NULL;
+	int fnum_src;
+	int fnum_dst;
+	unsigned long long size;
+	unsigned long long src_offset;
+	unsigned long long dst_offset;
+	off_t written;
+	static const char *kwlist[] = {
+		"fnum_src",
+		"fnum_dst",
+		"size",
+		"src_offset",
+		"dst_offset",
+		NULL,
+	};
+	NTSTATUS status;
+	bool ok;
+
+	if (smbXcli_conn_protocol(self->cli->conn) < PROTOCOL_SMB2_02) {
+		errno = EINVAL;
+		PyErr_SetFromErrno(PyExc_RuntimeError);
+		goto err;
+	}
+
+	ok = ParseTupleAndKeywords(
+		    args,
+		    kwds,
+		    "iiKKK",
+		    kwlist,
+		    &fnum_src,
+		    &fnum_dst,
+		    &size,
+		    &src_offset,
+		    &dst_offset);
+	if (!ok) {
+		goto err;
+	}
+
+	req = cli_smb2_splice_send(frame,
+				   self->ev,
+				   self->cli,
+				   fnum_src,
+				   fnum_dst,
+				   size,
+				   src_offset,
+				   dst_offset,
+				   copy_chunk_cb,
+				   NULL);
+	if (!py_tevent_req_wait_exc(self, req)) {
+		goto err;
+	}
+
+	status = cli_smb2_splice_recv(req, &written);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		goto err;
+	}
+
+	result = Py_BuildValue("K", written);
+
+err:
+	TALLOC_FREE(frame);
+	return result;
+}
+
 static PyMethodDef py_cli_state_methods[] = {
 	{ "settimeout", (PyCFunction)py_cli_settimeout, METH_VARARGS,
 	  "settimeout(new_timeout_msecs) => return old_timeout_msecs" },
@@ -3060,6 +3136,11 @@ static PyMethodDef py_cli_state_methods[] = {
 	  PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_mknod),
 	  METH_VARARGS|METH_KEYWORDS,
 	  "mknod(path, mode | major, minor)",
+	},
+	{ "copy_chunk",
+	  PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_copy_chunk),
+	  METH_VARARGS|METH_KEYWORDS,
+	  "copy_chunk(fnum_src, fnum_dst, size, src_offset, dst_offset) -> written",
 	},
 	{ NULL, NULL, 0, NULL }
 };
