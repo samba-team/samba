@@ -311,6 +311,27 @@ static PyObject *py_iface_transport_encrypted(PyObject *self)
 	Py_RETURN_FALSE;
 }
 
+static PyObject *py_iface_auth_info(PyObject *self)
+{
+	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)self;
+	enum dcerpc_AuthType auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
+	PyObject *result = Py_None;
+
+	dcerpc_binding_handle_auth_info(iface->binding_handle,
+					&auth_type,
+					&auth_level);
+
+	result = Py_BuildValue("(I,I)",
+			       (unsigned)auth_type,
+			       (unsigned)auth_level);
+	if (result == NULL) {
+		return NULL;
+	}
+
+	return result;
+}
+
 static PyMethodDef dcerpc_interface_methods[] = {
 	{ "request", PY_DISCARD_FUNC_SIG(PyCFunction, py_iface_request),
 		METH_VARARGS|METH_KEYWORDS,
@@ -319,6 +340,9 @@ static PyMethodDef dcerpc_interface_methods[] = {
 	{ "transport_encrypted", PY_DISCARD_FUNC_SIG(PyCFunction, py_iface_transport_encrypted),
 		METH_NOARGS,
 		"Check if the DCE transport is encrypted" },
+	{ "auth_info", PY_DISCARD_FUNC_SIG(PyCFunction, py_iface_auth_info),
+		METH_NOARGS,
+		"Returns tuple of DCERPC auth type and auth level" },
 	{ NULL, NULL, 0, NULL },
 };
 
