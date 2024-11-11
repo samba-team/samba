@@ -410,6 +410,28 @@ static bool netlogon_validate_pac(struct torture_context *tctx,
 	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
 	NTSTATUS status;
 
+	if (negotiate_flags & NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH) {
+		const struct dcerpc_binding *b1 =
+			dcerpc_binding_handle_get_binding(p1->binding_handle);
+		struct dcerpc_binding *b2 = NULL;
+
+		b2 = dcerpc_binding_dup(tctx, b1);
+		torture_assert(tctx, b2 != NULL, "dcerpc_binding_dup");
+		dcerpc_binding_set_flags(b2,
+					 DCERPC_SCHANNEL | DCERPC_SCHANNEL_KRB5,
+					 DCERPC_AUTH_OPTIONS);
+
+		cli_credentials_set_netlogon_creds(server_creds, NULL);
+		status = dcerpc_pipe_connect_b(tctx, &p, b2,
+					       &ndr_table_netlogon,
+					       server_creds,
+					       tctx->ev, tctx->lp_ctx);
+		torture_assert_ntstatus_ok(tctx, status,
+				"dcerpc_pipe_connect_b(DCERPC_SCHANNEL_KRB5)\n");
+		creds = cli_credentials_get_netlogon_creds(server_creds);
+		goto connected;
+	}
+
 	if (!test_SetupCredentials2(p1, tctx, negotiate_flags,
 				    server_creds, secure_channel_type,
 				    &creds)) {
@@ -419,6 +441,7 @@ static bool netlogon_validate_pac(struct torture_context *tctx,
 				       DCERPC_SIGN | DCERPC_SEAL, &p)) {
 		return false;
 	}
+connected:
 	b = p->binding_handle;
 
 	pac_wrapped_struct.ChecksumLength = pac_data->pac_srv_sig->signature.length;
@@ -502,7 +525,11 @@ static bool netlogon_validate_pac(struct torture_context *tctx,
 
 	torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_LOGON_FAILURE, "LogonSamLogon failed");
 
-	torture_assert(tctx, netlogon_creds_client_check(creds, &r.out.return_authenticator->cred),
+	status = netlogon_creds_client_verify(creds,
+					      &r.out.return_authenticator->cred,
+					      auth_type,
+					      auth_level);
+	torture_assert_ntstatus_ok(tctx, status,
 		       "Credential chaining failed");
 
 	/* This will break the parsing nicely (even in the crypto wrapping), check we get INVALID_PARAMETER */
@@ -525,8 +552,11 @@ static bool netlogon_validate_pac(struct torture_context *tctx,
 
 	torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_INVALID_PARAMETER, "LogonSamLogon failed");
 
-	torture_assert(tctx, netlogon_creds_client_check(creds,
-							 &r.out.return_authenticator->cred),
+	status = netlogon_creds_client_verify(creds,
+					      &r.out.return_authenticator->cred,
+					      auth_type,
+					      auth_level);
+	torture_assert_ntstatus_ok(tctx, status,
 		       "Credential chaining failed");
 
 	pac_wrapped_struct.ChecksumLength = pac_data->pac_srv_sig->signature.length;
@@ -581,7 +611,11 @@ static bool netlogon_validate_pac(struct torture_context *tctx,
 
 	torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_LOGON_FAILURE, "LogonSamLogon failed");
 
-	torture_assert(tctx, netlogon_creds_client_check(creds, &r.out.return_authenticator->cred),
+	status = netlogon_creds_client_verify(creds,
+					      &r.out.return_authenticator->cred,
+					      auth_type,
+					      auth_level);
+	torture_assert_ntstatus_ok(tctx, status,
 		       "Credential chaining failed");
 
 	pac_wrapped_struct.ChecksumLength = pac_data->pac_srv_sig->signature.length;
@@ -636,7 +670,11 @@ static bool netlogon_validate_pac(struct torture_context *tctx,
 
 	torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_INVALID_PARAMETER, "LogonSamLogon failed");
 
-	torture_assert(tctx, netlogon_creds_client_check(creds, &r.out.return_authenticator->cred),
+	status = netlogon_creds_client_verify(creds,
+					      &r.out.return_authenticator->cred,
+					      auth_type,
+					      auth_level);
+	torture_assert_ntstatus_ok(tctx, status,
 		       "Credential chaining failed");
 
 	return true;
@@ -660,6 +698,15 @@ static bool test_PACVerify_bdc_aes(struct torture_context *tctx,
 			      NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES);
 }
 
+static bool test_PACVerify_bdc_krb5(struct torture_context *tctx,
+				    struct dcerpc_pipe *p,
+				    struct cli_credentials *credentials)
+{
+	return test_PACVerify(tctx, p, credentials, SEC_CHAN_BDC,
+			      TEST_MACHINE_NAME_BDC,
+			      NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH);
+}
+
 static bool test_PACVerify_workstation_arcfour(struct torture_context *tctx,
 					       struct dcerpc_pipe *p,
 					       struct cli_credentials *credentials)
@@ -676,6 +723,15 @@ static bool test_PACVerify_workstation_aes(struct torture_context *tctx,
 	return test_PACVerify(tctx, p, credentials, SEC_CHAN_WKSTA,
 			      TEST_MACHINE_NAME_WKSTA,
 			      NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES);
+}
+
+static bool test_PACVerify_workstation_krb5(struct torture_context *tctx,
+					    struct dcerpc_pipe *p,
+					    struct cli_credentials *credentials)
+{
+	return test_PACVerify(tctx, p, credentials, SEC_CHAN_WKSTA,
+			      TEST_MACHINE_NAME_WKSTA,
+			      NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH);
 }
 
 #ifdef SAMBA4_USES_HEIMDAL
@@ -1400,6 +1456,10 @@ struct torture_suite *torture_rpc_remote_pac(TALLOC_CTX *mem_ctx)
 							      &ndr_table_netlogon, TEST_MACHINE_NAME_BDC);
 	torture_rpc_tcase_add_test_creds(tcase, "verify-sig-aes", test_PACVerify_bdc_aes);
 
+	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netr-bdc-krb5",
+							      &ndr_table_netlogon, TEST_MACHINE_NAME_BDC);
+	torture_rpc_tcase_add_test_creds(tcase, "verify-sig-krb5", test_PACVerify_bdc_krb5);
+
 	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netr-mem-arcfour",
 								      &ndr_table_netlogon, TEST_MACHINE_NAME_WKSTA);
 	torture_rpc_tcase_add_test_creds(tcase, "verify-sig-arcfour", test_PACVerify_workstation_arcfour);
@@ -1407,6 +1467,10 @@ struct torture_suite *torture_rpc_remote_pac(TALLOC_CTX *mem_ctx)
 	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netr-mem-aes",
 								      &ndr_table_netlogon, TEST_MACHINE_NAME_WKSTA);
 	torture_rpc_tcase_add_test_creds(tcase, "verify-sig-aes", test_PACVerify_workstation_aes);
+
+	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netr-mem-krb5",
+								      &ndr_table_netlogon, TEST_MACHINE_NAME_WKSTA);
+	torture_rpc_tcase_add_test_creds(tcase, "verify-sig-krb5", test_PACVerify_workstation_krb5);
 
 #ifdef SAMBA4_USES_HEIMDAL
 	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netr-bdc-arcfour",

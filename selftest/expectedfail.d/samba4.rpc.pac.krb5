@@ -1,0 +1,5 @@
+# fl2000dc and fl2003dc don't have 'server support krb5 netlogon = yes'
+^samba4.rpc.pac.on.ncacn_np.netr-bdc-krb5.verify-sig-krb5\(fl2000dc\)
+^samba4.rpc.pac.on.ncacn_np.netr-mem-krb5.verify-sig-krb5\(fl2000dc\)
+^samba4.rpc.pac.on.ncacn_np.netr-bdc-krb5.verify-sig-krb5\(fl2003dc\)
+^samba4.rpc.pac.on.ncacn_np.netr-mem-krb5.verify-sig-krb5\(fl2003dc\)
