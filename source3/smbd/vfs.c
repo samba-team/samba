@@ -1022,6 +1022,9 @@ struct smb_filename *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 	if (!lp_getwd_cache()) {
 		goto nocache;
 	}
+	if (fsp_get_pathref_fd(conn->cwd_fsp) == -1) {
+		goto nocache;
+	}
 
 	smb_fname_dot = synthetic_smb_fname(ctx,
 					    ".",
