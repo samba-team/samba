@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ $# -lt 1 ]; then
+if [ $# -lt 2 ]; then
 cat <<EOF
 Usage: test_update_keytab.sh DOMAIN CONFIGURATION
 EOF

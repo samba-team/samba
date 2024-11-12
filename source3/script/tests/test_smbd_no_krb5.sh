@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ $# -lt 1 ]; then
+if [ $# -lt 5 ]; then
 	cat <<EOF
 Usage: test_smbd_no_krb5.sh SERVER USERNAME PASSWORD PREFIX
 EOF

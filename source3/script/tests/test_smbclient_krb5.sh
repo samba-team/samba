@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ $# -lt 1 ]; then
+if [ $# -lt 3 ]; then
 	cat <<EOF
 Usage: test_smbclient_krb5.sh ccache smbclient3 server <smbclient args>
 EOF

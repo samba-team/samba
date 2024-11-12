@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ $# -lt 1 ]; then
+if [ $# -lt 4 ]; then
 	cat <<EOF
 Usage: test_smbclient_large_file.sh ccache smbclient3 server prefix <smbclient args>
 EOF

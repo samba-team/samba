@@ -2,7 +2,7 @@
 
 # regression test for dfs access with wide links enabled on dfs share
 
-if [ $# -lt 5 ]; then
+if [ $# -lt 6 ]; then
 	cat <<EOF
 Usage: test_bug15435_widelink_dfs.sh SERVER SERVER_IP USERNAME PASSWORD SMBCLIENT CONFIGURATION <smbclient arguments>
 EOF

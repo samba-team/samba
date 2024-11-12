@@ -9,7 +9,7 @@
 #
 # Copyright (C) 2017 Christof Schmitt
 
-if [ $# -lt 7 ]; then
+if [ $# -lt 8 ]; then
 	cat <<EOF
 Usage: $0 SMBCLIENT SERVER SHARE USER PASS CONFIGURATION LOCALPATH LOCKDIR
 EOF

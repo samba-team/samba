@@ -2,7 +2,7 @@
 
 # this test checks whether smbclient can log into -l log-basename
 
-if [ $# -lt 2 ]; then
+if [ $# -lt 3 ]; then
 	cat <<EOF
 Usage: test_smbclient_log_basename.sh SERVER SMBCLIENT PREFIX <smbclient arguments>
 EOF

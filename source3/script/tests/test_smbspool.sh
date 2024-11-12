@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ $# -lt 4 ]; then
+if [ $# -lt 5 ]; then
 	cat <<EOF
 Usage: test_smbspool.sh SERVER SERVER_IP USERNAME PASSWORD TARGET_ENV
 EOF

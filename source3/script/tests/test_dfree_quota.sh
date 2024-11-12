@@ -3,7 +3,7 @@
 # Blackbox test for disk-free, quota, and their interaction
 #
 
-if [ $# -lt 6 ]; then
+if [ $# -lt 9 ]; then
 	cat <<EOF
 Usage: test_dfree_quota.sh SERVER DOMAIN USERNAME PASSWORD LOCAL_PATH SMBCLIENT SMBCQUOTAS SMBCACLS
 EOF

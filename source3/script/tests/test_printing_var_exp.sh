@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ $# -lt 4 ]; then
+if [ $# -lt 5 ]; then
 	cat <<EOF
 Usage: test_printing_var_exp.sh SERVER SERVER_IP DOMAIN USERNAME PASSWORD
 EOF

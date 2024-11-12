@@ -4,7 +4,7 @@
 # command disk free printout.
 #
 
-if [ $# -lt 6 ]; then
+if [ $# -lt 7 ]; then
 	cat <<EOF
 Usage: test_dfree_command.sh SERVER DOMAIN USERNAME PASSWORD PREFIX SMBCLIENT
 EOF

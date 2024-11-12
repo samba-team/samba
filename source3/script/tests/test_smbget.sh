@@ -3,7 +3,7 @@
 # Blackbox test for smbget.
 #
 
-if [ $# -lt 8 ]; then
+if [ $# -lt 10 ]; then
 	cat <<EOF
 Usage: test_smbget SERVER SERVER_IP DOMAIN REALM USERNAME PASSWORD WORKDIR SMBGET
 EOF

@@ -2,7 +2,7 @@
 
 # this runs a smbclient based authentication tests
 
-if [ $# -lt 6 ]; then
+if [ $# -lt 7 ]; then
 	cat <<EOF
 Usage: test_smbclient_ntlm.sh SERVER USERNAME PASSWORD MAPTOGUEST SMBCLIENT PROTOCOL CONFIGURATION <smbclient arguments>
 EOF

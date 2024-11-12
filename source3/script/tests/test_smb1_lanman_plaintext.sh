@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ $# -lt 3 ]; then
+if [ $# -lt 4 ]; then
 	cat <<EOF
 Usage: test_smb1_lanman_plaintext.sh SERVER USERNAME PASSWORD
 EOF

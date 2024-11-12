@@ -2,7 +2,7 @@
 
 # this runs the file serving tests that are expected to pass with samba3 against shares with various options
 
-if [ $# -lt 2 ]; then
+if [ $# -lt 3 ]; then
 	cat <<EOF
 Usage: test_smbclient_machine_auth.sh SERVER SMBCLIENT CONFIGURATION <smbclient arguments>
 EOF

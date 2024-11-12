@@ -2,7 +2,7 @@
 
 # this runs the file serving tests that are expected to pass with samba3 against shares with various options
 
-if [ $# -lt 5 ]; then
+if [ $# -lt 6 ]; then
 	cat <<EOF
 Usage: test_smbclient_basic.sh SERVER SERVER_IP DOMAIN USERNAME PASSWORD SMBCLIENT <smbclient arguments>
 EOF
