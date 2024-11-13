@@ -68,7 +68,6 @@ static int CreatePipesSA()
 		.Trustee = {
 			.TrusteeForm = TRUSTEE_IS_SID,
 			.TrusteeType = TRUSTEE_IS_GROUP,
-			.ptstrName = (LPTSTR)pAdminSID,
 		},
 	};
 	SID_IDENTIFIER_AUTHORITY SIDAuthNT = {SECURITY_NT_AUTHORITY};
@@ -85,6 +84,8 @@ static int CreatePipesSA()
 		dbg("AllocateAndInitializeSid Error %lu\n", GetLastError());
 		return 0;
 	}
+
+	ea.Trustee.ptstrName = (LPTSTR)pAdminSID;
 
 	/* Create a new ACL that contains the new ACEs */
 	dwRes = SetEntriesInAcl(1, &ea, NULL, &pACL);
