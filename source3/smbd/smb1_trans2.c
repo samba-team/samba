@@ -2527,13 +2527,13 @@ static NTSTATUS smb_q_posix_acl(
 #endif
 }
 
-static NTSTATUS smb_q_posix_symlink(
-	struct connection_struct *conn,
-	struct smb_request *req,
-	struct files_struct *dirfsp,
-	struct smb_filename *smb_fname,
-	char **ppdata,
-	int *ptotal_data)
+static NTSTATUS smb_q_posix_symlink(struct connection_struct *conn,
+				    struct smb_request *req,
+				    struct files_struct *dirfsp,
+				    struct smb_filename *smb_fname,
+				    struct smb_filename *smb_fname_rel,
+				    char **ppdata,
+				    int *ptotal_data)
 {
 	char *target = NULL;
 	size_t needed, len;
@@ -2557,16 +2557,9 @@ static NTSTATUS smb_q_posix_symlink(
 					 NULL,
 					 &target);
 	} else {
-		struct smb_filename smb_fname_rel = *smb_fname;
-		char *slash = NULL;
-
-		slash = strrchr_m(smb_fname->base_name, '/');
-		if (slash != NULL) {
-			smb_fname_rel.base_name = slash + 1;
-		}
 		status = readlink_talloc(talloc_tos(),
 					 dirfsp,
-					 &smb_fname_rel,
+					 smb_fname_rel,
 					 &target);
 	}
 
@@ -2613,6 +2606,7 @@ static void call_trans2qpathinfo(
 	char *params = *pparams;
 	uint16_t info_level;
 	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *smb_fname_rel = NULL;
 	bool delete_pending = False;
 	struct timespec write_time_ts = { .tv_sec = 0, };
 	struct files_struct *dirfsp = NULL;
@@ -2682,13 +2676,15 @@ static void call_trans2qpathinfo(
 		reply_nterror(req, status);
 		return;
 	}
-	status = filename_convert_dirfsp(req,
-					 conn,
-					 fname,
-					 ucf_flags,
-					 twrp,
-					 &dirfsp,
-					 &smb_fname);
+	status = filename_convert_dirfsp_rel(req,
+					     conn,
+					     conn->cwd_fsp,
+					     fname,
+					     ucf_flags,
+					     twrp,
+					     &dirfsp,
+					     &smb_fname,
+					     &smb_fname_rel);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
 			reply_botherror(req,
@@ -2779,13 +2775,13 @@ static void call_trans2qpathinfo(
 		break;
 
 	case SMB_QUERY_FILE_UNIX_LINK:
-		status = smb_q_posix_symlink(
-			conn,
-			req,
-			dirfsp,
-			smb_fname,
-			ppdata,
-			&total_data);
+		status = smb_q_posix_symlink(conn,
+					     req,
+					     dirfsp,
+					     smb_fname,
+					     smb_fname_rel,
+					     ppdata,
+					     &total_data);
 		break;
 	}
 
