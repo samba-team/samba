@@ -445,7 +445,6 @@ char *debug_conditional_ace(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < program->length; i++) {
 		struct ace_condition_token *tok = &program->tokens[i];
 		struct sddl_data s = sddl_strings[tok->type];
-		char hex[21];
 		char *utf8 = NULL;
 		int utf8_len;
 		char type;
@@ -535,7 +534,8 @@ char *debug_conditional_ace(TALLOC_CTX *mem_ctx,
 			type = 'u';
 			break;
 
-		case CONDITIONAL_ACE_TOKEN_OCTET_STRING:
+		case CONDITIONAL_ACE_TOKEN_OCTET_STRING: {
+			char hex[21];
 			utf8_len = MIN(tok->data.bytes.length, 9);
 			hex_encode_buf(hex, tok->data.bytes.data, utf8_len);
 
@@ -544,6 +544,7 @@ char *debug_conditional_ace(TALLOC_CTX *mem_ctx,
 				 nom, utf8_len * 2, hex, utf8_len);
 			type = 'o';
 			break;
+		}
 		case CONDITIONAL_ACE_TOKEN_SID:
 			utf8 = sddl_encode_sid(mem_ctx,
 					       &tok->data.sid.sid,
