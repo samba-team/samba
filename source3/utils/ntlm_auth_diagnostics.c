@@ -513,7 +513,7 @@ static bool test_plaintext(enum ntlm_break break_which)
 	uchar lm_key[16];
 	static const uchar zeros[8] = { 0, };
 	DATA_BLOB chall = data_blob(zeros, sizeof(zeros));
-	char *error_string;
+	char *error_string = NULL;
 
 	ZERO_STRUCT(user_session_key);
 
@@ -587,6 +587,7 @@ static bool test_plaintext(enum ntlm_break break_which)
 		SAFE_FREE(error_string);
 		return break_which == BREAK_NT;
 	}
+	SAFE_FREE(error_string);
 
         return break_which != BREAK_NT;
 }
