@@ -481,7 +481,6 @@ typedef struct files_struct {
 	struct tevent_timer *oplock_timeout;
 	int current_lock_count; /* Count the number of outstanding locks and pending locks. */
 
-	uint64_t posix_flags;
 	struct smb_filename *fsp_name;
 	uint32_t name_hash;		/* Jenkins hash of full pathname. */
 	uint64_t mid;			/* Mid of the operation that created us. */
