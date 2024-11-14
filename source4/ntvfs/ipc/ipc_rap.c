@@ -253,7 +253,7 @@ static NTSTATUS rap_push_string(struct ndr_push *data_push,
 
 static NTSTATUS _rap_netshareenum(struct rap_call *call)
 {
-	struct rap_NetShareEnum r;
+	struct rap_NetShareEnum r = {};
 	NTSTATUS result;
 	uint32_t offset_save = 0;
 	struct rap_heap_save heap_save = {0};
