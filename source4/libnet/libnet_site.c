@@ -85,7 +85,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 
 		map_netlogon_samlogon_response(resp);
 
-		if ((nt5ex->client_site != NULL) ||
+		if ((nt5ex->client_site != NULL) &&
 		    (nt5ex->client_site[0] != '\0'))
 		{
 			site_name_str = talloc_strdup(tmp_ctx,
