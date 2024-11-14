@@ -289,7 +289,7 @@ static bool test_ntlm_in_both(bool lanman_support_expected)
 	uint8_t user_session_key[16];
 	uint8_t nt_hash[16];
 	DATA_BLOB chall = get_challenge();
-	char *error_string;
+	char *error_string = NULL;
 
 	ZERO_STRUCT(lm_key);
 	ZERO_STRUCT(user_session_key);
@@ -323,6 +323,7 @@ static bool test_ntlm_in_both(bool lanman_support_expected)
 		SAFE_FREE(error_string);
 		return False;
 	}
+	SAFE_FREE(error_string);
 
 	/* If we are told the DC is Samba4, expect an LM key of zeros */
 	if (!lanman_support_expected) {
