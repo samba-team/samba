@@ -375,7 +375,7 @@ static bool test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
 	uint8_t authoritative = 1;
 	uchar user_session_key[16];
 	DATA_BLOB chall = get_challenge();
-	char *error_string;
+	char *error_string = NULL;
 
 	ZERO_STRUCT(user_session_key);
 
@@ -428,6 +428,8 @@ static bool test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
 		SAFE_FREE(error_string);
 		return break_which == BREAK_NT;
 	}
+
+	SAFE_FREE(error_string);
 
 	if (break_which != NO_NT && break_which != BREAK_NT && memcmp(ntlmv2_session_key.data, user_session_key,
 		   sizeof(user_session_key)) != 0) {
