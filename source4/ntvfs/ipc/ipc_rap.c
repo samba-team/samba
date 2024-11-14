@@ -333,7 +333,7 @@ static NTSTATUS _rap_netshareenum(struct rap_call *call)
 
 static NTSTATUS _rap_netserverenum2(struct rap_call *call)
 {
-	struct rap_NetServerEnum2 r;
+	struct rap_NetServerEnum2 r = {};
 	NTSTATUS result;
 	uint32_t offset_save = 0;
 	struct rap_heap_save heap_save = {0};
