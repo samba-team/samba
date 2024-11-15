@@ -1704,6 +1704,12 @@ static void dcesrv_netr_LogonSamLogon_base_reply(
 			DBG_ERR("netlogon_creds_encrypt_samlogon_validation() "
 				"failed - %s\n",
 				nt_errstr(status));
+			if (r->out.validation != NULL) {
+				ZERO_STRUCTP(r->out.validation);
+			}
+			*r->out.authoritative = true;
+			*r->out.flags = 0;
+			r->out.result = status;
 		}
 	}
 
