@@ -1031,7 +1031,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 							r->in.credential, r->out.return_authenticator,
 							&creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
-	client_sid = &creds->ex->client_sid;
+	client_sid = &creds->client_sid;
 
 	sam_ctx = dcesrv_samdb_connect_as_system(mem_ctx, dce_call);
 	if (sam_ctx == NULL) {
@@ -1084,7 +1084,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 							r->in.credential, r->out.return_authenticator,
 							&creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
-	client_sid = &creds->ex->client_sid;
+	client_sid = &creds->client_sid;
 
 	sam_ctx = dcesrv_samdb_connect_as_system(mem_ctx, dce_call);
 	if (sam_ctx == NULL) {
@@ -1431,7 +1431,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base_call(struct dcesrv_netr_LogonSamL
 		user_info->netlogon_trust_account.account_name
 			= creds->account_name;
 		user_info->netlogon_trust_account.sid
-			= &creds->ex->client_sid;
+			= &creds->client_sid;
 
 		break;
 	default:
@@ -2527,7 +2527,7 @@ static NTSTATUS dcesrv_netr_LogonGetCapabilities(struct dcesrv_call_state *dce_c
 		break;
 	case 2:
 		r->out.capabilities->requested_flags =
-					creds->ex->client_requested_flags;
+					creds->client_requested_flags;
 		break;
 	}
 
@@ -2784,7 +2784,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		talloc_free(frame);
 	}
 	NT_STATUS_NOT_OK_RETURN(status);
-	client_sid = &creds->ex->client_sid;
+	client_sid = &creds->client_sid;
 
 	/* We want to avoid connecting as system. */
 	sam_ctx = dcesrv_samdb_connect_as_user(mem_ctx, dce_call);
@@ -3184,7 +3184,7 @@ static NTSTATUS dcesrv_netr_NetrLogonSendToSam(struct dcesrv_call_state *dce_cal
 							&creds);
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);
-	client_sid = &creds->ex->client_sid;
+	client_sid = &creds->client_sid;
 
 	switch (creds->secure_channel_type) {
 	case SEC_CHAN_BDC:
@@ -4583,7 +4583,7 @@ static NTSTATUS dcesrv_netr_ServerGetTrustInfo(struct dcesrv_call_state *dce_cal
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
-	client_sid = &creds->ex->client_sid;
+	client_sid = &creds->client_sid;
 
 	/* TODO: check r->in.server_name is our name */
 
@@ -4788,7 +4788,7 @@ static NTSTATUS dcesrv_netr_DsrUpdateReadOnlyServerDnsRecords(struct dcesrv_call
 							r->out.return_authenticator,
 							&creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
-	client_sid = &creds->ex->client_sid;
+	client_sid = &creds->client_sid;
 
 	if (creds->secure_channel_type != SEC_CHAN_RODC) {
 		return NT_STATUS_ACCESS_DENIED;

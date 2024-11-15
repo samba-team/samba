@@ -1615,7 +1615,7 @@ static void netlogon_creds_cli_auth_srvauth_done(struct tevent_req *subreq)
 		return;
 	}
 
-	state->creds->ex->client_sid.sub_auths[0] = state->rid;
+	state->creds->client_sid.sub_auths[0] = state->rid;
 	status = netlogon_creds_cli_store_internal(state->context,
 						   state->creds);
 	if (tevent_req_nterror(req, status)) {
@@ -2039,11 +2039,7 @@ static void netlogon_creds_cli_check_client_caps(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->creds->ex != NULL) {
-		requested_flags = state->creds->ex->client_requested_flags;
-	} else {
-		requested_flags = state->context->client.proposed_flags;
-	}
+	requested_flags = state->creds->client_requested_flags;
 
 	if (state->client_caps.requested_flags != requested_flags) {
 		status = NT_STATUS_DOWNGRADE_DETECTED;

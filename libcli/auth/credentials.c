@@ -515,18 +515,12 @@ netlogon_creds_alloc(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	creds->ex = talloc_zero(creds,
-			struct netlogon_creds_CredentialState_extra_info);
-	if (creds->ex == NULL) {
-		talloc_free(creds);
-		return NULL;
-	}
-	creds->ex->client_requested_flags = client_requested_flags;
-	creds->ex->auth_time = now;
+	creds->client_requested_flags = client_requested_flags;
+	creds->auth_time = now;
 	if (client_sid != NULL) {
-		creds->ex->client_sid = *client_sid;
+		creds->client_sid = *client_sid;
 	} else {
-		creds->ex->client_sid = global_sid_NULL;
+		creds->client_sid = global_sid_NULL;
 	}
 
 	return creds;
