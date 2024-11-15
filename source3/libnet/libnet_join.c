@@ -893,11 +893,10 @@ static bool libnet_join_derive_salting_principal(TALLOC_CTX *mem_ctx,
 	}
 
 	salt = talloc_strdup(mem_ctx, std_salt);
+	SAFE_FREE(std_salt);
 	if (!salt) {
 		return false;
 	}
-
-	SAFE_FREE(std_salt);
 
 	/* if it's a Windows functional domain, we have to look for the UPN */
 
