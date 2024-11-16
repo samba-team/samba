@@ -338,13 +338,13 @@ static int print_sam_info (struct samu *sam_pwent, bool verbosity, bool smbpwdst
 		pdb_sethexpwd(lm_passwd, pdb_get_lanman_passwd(sam_pwent), pdb_get_acct_ctrl(sam_pwent));
 		pdb_sethexpwd(nt_passwd, pdb_get_nt_passwd(sam_pwent), pdb_get_acct_ctrl(sam_pwent));
 
-		printf("%s:%lu:%s:%s:%s:LCT-%08X:\n",
+		printf("%s:%lu:%s:%s:%s:LCT-%08" PRIX64 ":\n",
 		       pdb_get_username(sam_pwent),
 		       (unsigned long)uid,
 		       lm_passwd,
 		       nt_passwd,
 		       pdb_encode_acct_ctrl(pdb_get_acct_ctrl(sam_pwent),NEW_PW_FORMAT_SPACE_PADDED_LEN),
-		       (uint32_t)convert_time_t_to_uint32_t(pdb_get_pass_last_set_time(sam_pwent)));
+		       (int64_t)pdb_get_pass_last_set_time(sam_pwent));
 	} else {
 		uid = nametouid(pdb_get_username(sam_pwent));
 		printf ("%s:%lu:%s\n", pdb_get_username(sam_pwent), (unsigned long)uid,
