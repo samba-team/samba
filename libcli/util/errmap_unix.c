@@ -277,10 +277,7 @@ int map_errno_from_nt_status(NTSTATUS status)
 {
 	size_t i;
 
-	DBG_DEBUG("32 bit codes: code=%08x\n", NT_STATUS_V(status));
-
 	/* Status codes without this bit set are not errors */
-
 	if (!(NT_STATUS_V(status) & 0xc0000000)) {
 		return 0;
 	}
