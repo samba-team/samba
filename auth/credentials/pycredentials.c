@@ -1902,12 +1902,1124 @@ PyTypeObject PyCredentialCacheContainer = {
 	.tp_methods = py_ccache_container_methods,
 };
 
+static PyObject *py_netlogon_creds_random_challenge(PyObject *module,
+						    PyObject *unused)
+{
+	struct netr_Credential *challenge = NULL;
+	PyObject *py_challenge = Py_None;
+
+	challenge = talloc(NULL, struct netr_Credential);
+	if (challenge == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	netlogon_creds_random_challenge(challenge);
+
+	py_challenge = py_return_ndr_struct("samba.dcerpc.netlogon",
+					    "netr_Credential",
+					    challenge,
+					    challenge);
+	if (py_challenge == NULL) {
+		TALLOC_FREE(challenge);
+		return NULL;
+	}
+
+	return py_challenge;
+}
+
+static PyObject *py_netlogon_creds_client_init(PyObject *module,
+					       PyObject *args,
+					       PyObject *kwargs)
+{
+	const char * const kwnames[] = {
+		"client_account",
+		"client_computer_name",
+		"secure_channel_type",
+		"client_challenge",
+		"server_challenge",
+		"machine_password",
+		"client_requested_flags",
+		"negotiate_flags",
+		NULL,
+	};
+	const char *client_account = NULL;
+	const char *client_computer_name = NULL;
+	unsigned short secure_channel_type = 0;
+	unsigned int client_requested_flags = 0;
+	unsigned int negotiate_flags = 0;
+	PyObject *py_client_challenge = Py_None;
+	const struct netr_Credential *client_challenge = NULL;
+	PyObject *py_server_challenge = Py_None;
+	const struct netr_Credential *server_challenge = NULL;
+	PyObject *py_machine_password = Py_None;
+	const struct samr_Password *machine_password = NULL;
+	struct netlogon_creds_CredentialState *ncreds = NULL;
+	PyObject *py_ncreds = Py_None;
+	struct netr_Credential *initial_credential = NULL;
+	PyObject *py_initial_credential = Py_None;
+	PyObject *py_result = Py_None;
+	bool ok;
+
+	ok = PyArg_ParseTupleAndKeywords(args, kwargs, "ssHOOOII",
+					 discard_const_p(char *, kwnames),
+					 &client_account,
+					 &client_computer_name,
+					 &secure_channel_type,
+					 &py_client_challenge,
+					 &py_server_challenge,
+					 &py_machine_password,
+					 &client_requested_flags,
+					 &negotiate_flags);
+	if (!ok) {
+		return NULL;
+	}
+
+	ok = py_check_dcerpc_type(py_client_challenge,
+				  "samba.dcerpc.netlogon",
+				  "netr_Credential");
+	if (!ok) {
+		/* py_check_dcerpc_type sets TypeError */
+		return NULL;
+	}
+
+	client_challenge = pytalloc_get_type(py_client_challenge,
+					     struct netr_Credential);
+	if (client_challenge == NULL) {
+		/* pytalloc_get_type sets TypeError */
+		return NULL;
+	}
+
+	ok = py_check_dcerpc_type(py_server_challenge,
+				  "samba.dcerpc.netlogon",
+				  "netr_Credential");
+	if (!ok) {
+		/* py_check_dcerpc_type sets TypeError */
+		return NULL;
+	}
+
+	/*
+	 * we can't use pytalloc_get_type as
+	 * NDR_PULL_ALLOC()/talloc_ptrtype() doesn't set the
+	 * correct talloc name because of old
+	 * compilers.
+	 */
+	server_challenge = pytalloc_get_ptr(py_server_challenge);
+	if (server_challenge == NULL) {
+		return NULL;
+	}
+
+	ok = py_check_dcerpc_type(py_machine_password,
+				  "samba.dcerpc.samr",
+				  "Password");
+	if (!ok) {
+		/* py_check_dcerpc_type sets TypeError */
+		return NULL;
+	}
+
+	machine_password = pytalloc_get_type(py_machine_password,
+					     struct samr_Password);
+	if (machine_password == NULL) {
+		/* pytalloc_get_type sets TypeError */
+		return NULL;
+	}
+
+	initial_credential = talloc_zero(NULL, struct netr_Credential);
+	if (initial_credential == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	ncreds = netlogon_creds_client_init(NULL,
+					    client_account,
+					    client_computer_name,
+					    secure_channel_type,
+					    client_challenge,
+					    server_challenge,
+					    machine_password,
+					    initial_credential,
+					    client_requested_flags,
+					    negotiate_flags);
+	if (ncreds == NULL) {
+		TALLOC_FREE(initial_credential);
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	py_ncreds = py_return_ndr_struct("samba.dcerpc.schannel",
+					 "netlogon_creds_CredentialState",
+					 ncreds,
+					 ncreds);
+	if (py_ncreds == NULL) {
+		TALLOC_FREE(initial_credential);
+		TALLOC_FREE(ncreds);
+		return NULL;
+	}
+
+	py_initial_credential = py_return_ndr_struct("samba.dcerpc.netlogon",
+						     "netr_Credential",
+						     initial_credential,
+						     initial_credential);
+	if (py_ncreds == NULL) {
+		Py_DECREF(py_ncreds);
+		TALLOC_FREE(initial_credential);
+		return NULL;
+	}
+
+	py_result = Py_BuildValue("(OO)",
+				  py_ncreds,
+				  py_initial_credential);
+	if (py_result == NULL) {
+		Py_DECREF(py_ncreds);
+		Py_DECREF(py_initial_credential);
+		return NULL;
+	}
+
+	return py_result;
+}
+
+static PyObject *py_netlogon_creds_client_update(PyObject *module,
+						 PyObject *args,
+						 PyObject *kwargs)
+{
+	const char * const kwnames[] = {
+		"netlogon_creds",
+		"negotiated_flags",
+		"client_rid",
+		NULL,
+	};
+	PyObject *py_ncreds = Py_None;
+	struct netlogon_creds_CredentialState *ncreds = NULL;
+	unsigned int negotiated_flags = 0;
+	unsigned int client_rid = 0;
+	bool ok;
+
+	ok = PyArg_ParseTupleAndKeywords(args, kwargs, "OII",
+					 discard_const_p(char *, kwnames),
+					 &py_ncreds,
+					 &negotiated_flags,
+					 &client_rid);
+	if (!ok) {
+		return NULL;
+	}
+
+	ok = py_check_dcerpc_type(py_ncreds,
+				  "samba.dcerpc.schannel",
+				  "netlogon_creds_CredentialState");
+	if (!ok) {
+		/* py_check_dcerpc_type sets TypeError */
+		return NULL;
+	}
+
+	ncreds = pytalloc_get_type(py_ncreds,
+				   struct netlogon_creds_CredentialState);
+	if (ncreds == NULL) {
+		/* pytalloc_get_type sets TypeError */
+		return NULL;
+	}
+
+	ncreds->negotiate_flags = negotiated_flags;
+	ncreds->client_sid.sub_auths[0] = client_rid;
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_netlogon_creds_client_authenticator(PyObject *module,
+							PyObject *args,
+							PyObject *kwargs)
+{
+	const char * const kwnames[] = {
+		"netlogon_creds",
+		NULL,
+	};
+	PyObject *py_ncreds = Py_None;
+	struct netlogon_creds_CredentialState *ncreds = NULL;
+	struct netlogon_creds_CredentialState _ncreds;
+	struct netr_Authenticator _auth;
+	struct netr_Authenticator *auth = NULL;
+	PyObject *py_auth = Py_None;
+	NTSTATUS status;
+	bool ok;
+
+	ok = PyArg_ParseTupleAndKeywords(args, kwargs, "O",
+					 discard_const_p(char *, kwnames),
+					 &py_ncreds);
+	if (!ok) {
+		return NULL;
+	}
+
+	ok = py_check_dcerpc_type(py_ncreds,
+				  "samba.dcerpc.schannel",
+				  "netlogon_creds_CredentialState");
+	if (!ok) {
+		/* py_check_dcerpc_type sets TypeError */
+		return NULL;
+	}
+
+	ncreds = pytalloc_get_type(py_ncreds,
+				   struct netlogon_creds_CredentialState);
+	if (ncreds == NULL) {
+		/* pytalloc_get_type sets TypeError */
+		return NULL;
+	}
+
+	_ncreds = *ncreds;
+	status = netlogon_creds_client_authenticator(&_ncreds, &_auth);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	auth = talloc(NULL, struct netr_Authenticator);
+	if (auth == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	*auth = _auth;
+
+	py_auth = py_return_ndr_struct("samba.dcerpc.netlogon",
+				       "netr_Authenticator",
+				       auth,
+				       auth);
+	if (py_auth == NULL) {
+		TALLOC_FREE(auth);
+		return NULL;
+	}
+
+	*ncreds = _ncreds;
+	return py_auth;
+}
+
+static PyObject *py_netlogon_creds_client_verify(PyObject *module,
+						 PyObject *args,
+						 PyObject *kwargs)
+{
+	const char * const kwnames[] = {
+		"netlogon_creds",
+		"received_credentials",
+		"auth_type",
+		"auth_level",
+		NULL,
+	};
+	PyObject *py_ncreds = Py_None;
+	struct netlogon_creds_CredentialState *ncreds = NULL;
+	PyObject *py_rcreds = Py_None;
+	const struct netr_Credential *rcreds = NULL;
+	uint8_t _auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthType auth_type;
+	uint8_t _auth_level = DCERPC_AUTH_LEVEL_NONE;
+	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
+	bool ok;
+
+	ok = PyArg_ParseTupleAndKeywords(args, kwargs, "OObb",
+					 discard_const_p(char *, kwnames),
+					 &py_ncreds,
+					 &py_rcreds,
+					 &_auth_type,
+					 &_auth_level);
+	if (!ok) {
+		return NULL;
+	}
+	auth_type = _auth_type;
+	auth_level = _auth_level;
+
+	ok = py_check_dcerpc_type(py_ncreds,
+				  "samba.dcerpc.schannel",
+				  "netlogon_creds_CredentialState");
+	if (!ok) {
+		/* py_check_dcerpc_type sets TypeError */
+		return NULL;
+	}
+
+	ncreds = pytalloc_get_type(py_ncreds,
+				   struct netlogon_creds_CredentialState);
+	if (ncreds == NULL) {
+		/* pytalloc_get_type sets TypeError */
+		return NULL;
+	}
+
+	ok = py_check_dcerpc_type(py_rcreds,
+				  "samba.dcerpc.netlogon",
+				  "netr_Credential");
+	if (!ok) {
+		/* py_check_dcerpc_type sets TypeError */
+		return NULL;
+	}
+
+	/*
+	 * we can't use pytalloc_get_type as
+	 * NDR_PULL_ALLOC()/talloc_ptrtype() doesn't set the
+	 * correct talloc name because of old
+	 * compilers.
+	 */
+	rcreds = pytalloc_get_ptr(py_rcreds);
+	if (rcreds == NULL) {
+		return NULL;
+	}
+
+	status = netlogon_creds_client_verify(ncreds,
+					      rcreds,
+					      auth_type,
+					      auth_level);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_netlogon_creds_encrypt_netr_LogonLevel(PyObject *module,
+							   PyObject *args,
+							   PyObject *kwargs)
+{
+	const char * const kwnames[] = {
+		"netlogon_creds",
+		"level",
+		"info",
+		"auth_type",
+		"auth_level",
+		NULL,
+	};
+	PyObject *py_ncreds = Py_None;
+	struct netlogon_creds_CredentialState *ncreds = NULL;
+	uint8_t _level = 0;
+	enum netr_LogonInfoClass level = NetlogonInteractiveInformation;
+	PyObject *py_info = Py_None;
+	union netr_LogonLevel logon = { .password = NULL, };
+	const void *info_ptr = NULL;
+	uint8_t _auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthType auth_type;
+	uint8_t _auth_level = DCERPC_AUTH_LEVEL_NONE;
+	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
+	bool ok;
+
+	ok = PyArg_ParseTupleAndKeywords(args, kwargs, "ObObb",
+					 discard_const_p(char *, kwnames),
+					 &py_ncreds,
+					 &_level,
+					 &py_info,
+					 &_auth_type,
+					 &_auth_level);
+	if (!ok) {
+		return NULL;
+	}
+	level = _level;
+	auth_type = _auth_type;
+	auth_level = _auth_level;
+
+	ok = py_check_dcerpc_type(py_ncreds,
+				  "samba.dcerpc.schannel",
+				  "netlogon_creds_CredentialState");
+	if (!ok) {
+		/* py_check_dcerpc_type sets TypeError */
+		return NULL;
+	}
+
+	ncreds = pytalloc_get_type(py_ncreds,
+				   struct netlogon_creds_CredentialState);
+	if (ncreds == NULL) {
+		/* pytalloc_get_type sets TypeError */
+		return NULL;
+	}
+
+	switch (level) {
+	case NetlogonInteractiveInformation:
+	case NetlogonInteractiveTransitiveInformation:
+	case NetlogonServiceInformation:
+	case NetlogonServiceTransitiveInformation:
+		ok = py_check_dcerpc_type(py_info,
+					  "samba.dcerpc.netlogon",
+					  "netr_PasswordInfo");
+		if (!ok) {
+			/* py_check_dcerpc_type sets TypeError */
+			return NULL;
+		}
+
+		logon.password = pytalloc_get_type(py_info,
+						   struct netr_PasswordInfo);
+		if (logon.password == NULL) {
+			/* pytalloc_get_type sets TypeError */
+			return NULL;
+		}
+		info_ptr = logon.password;
+		break;
+
+	case NetlogonNetworkInformation:
+	case NetlogonNetworkTransitiveInformation:
+		ok = py_check_dcerpc_type(py_info,
+					  "samba.dcerpc.netlogon",
+					  "netr_NetworkInfo");
+		if (!ok) {
+			/* py_check_dcerpc_type sets TypeError */
+			return NULL;
+		}
+
+		logon.network = pytalloc_get_type(py_info,
+						   struct netr_NetworkInfo);
+		if (logon.network == NULL) {
+			/* pytalloc_get_type sets TypeError */
+			return NULL;
+		}
+		info_ptr = logon.network;
+		break;
+
+	case NetlogonGenericInformation:
+		ok = py_check_dcerpc_type(py_info,
+					  "samba.dcerpc.netlogon",
+					  "netr_GenericInfo");
+		if (!ok) {
+			/* py_check_dcerpc_type sets TypeError */
+			return NULL;
+		}
+
+		logon.generic = pytalloc_get_type(py_info,
+						   struct netr_GenericInfo);
+		if (logon.generic == NULL) {
+			/* pytalloc_get_type sets TypeError */
+			return NULL;
+		}
+		info_ptr = logon.generic;
+		break;
+
+	case NetlogonTicketLogonInformation:
+		ok = py_check_dcerpc_type(py_info,
+					  "samba.dcerpc.netlogon",
+					  "netr_TicketLogonInfo");
+		if (!ok) {
+			/* py_check_dcerpc_type sets TypeError */
+			return NULL;
+		}
+
+		logon.ticket = pytalloc_get_type(py_info,
+						   struct netr_TicketLogonInfo);
+		if (logon.ticket == NULL) {
+			/* pytalloc_get_type sets TypeError */
+			return NULL;
+		}
+		info_ptr = logon.ticket;
+		break;
+	}
+
+	if (info_ptr == NULL) {
+		PyErr_SetString(PyExc_ValueError,
+				"Invalid netr_LogonInfoClass value");
+		return NULL;
+	}
+
+	status = netlogon_creds_encrypt_samlogon_logon(ncreds,
+						       level,
+						       &logon,
+						       auth_type,
+						       auth_level);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_netlogon_creds_decrypt_netr_Validation(PyObject *module,
+							   PyObject *args,
+							   PyObject *kwargs)
+{
+	const char * const kwnames[] = {
+		"netlogon_creds",
+		"level",
+		"validation",
+		"auth_type",
+		"auth_level",
+		NULL,
+	};
+	PyObject *py_ncreds = Py_None;
+	struct netlogon_creds_CredentialState *ncreds = NULL;
+	uint8_t _level = 0;
+	enum netr_ValidationInfoClass level = NetlogonValidationUasInfo;
+	PyObject *py_validation = Py_None;
+	union netr_Validation validation = { .generic = NULL, };
+	const void *validation_ptr = NULL;
+	uint8_t _auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthType auth_type;
+	uint8_t _auth_level = DCERPC_AUTH_LEVEL_NONE;
+	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
+	bool ok;
+
+	ok = PyArg_ParseTupleAndKeywords(args, kwargs, "ObObb",
+					 discard_const_p(char *, kwnames),
+					 &py_ncreds,
+					 &_level,
+					 &py_validation,
+					 &_auth_type,
+					 &_auth_level);
+	if (!ok) {
+		return NULL;
+	}
+	level = _level;
+	auth_type = _auth_type;
+	auth_level = _auth_level;
+
+	ok = py_check_dcerpc_type(py_ncreds,
+				  "samba.dcerpc.schannel",
+				  "netlogon_creds_CredentialState");
+	if (!ok) {
+		/* py_check_dcerpc_type sets TypeError */
+		return NULL;
+	}
+
+	ncreds = pytalloc_get_type(py_ncreds,
+				   struct netlogon_creds_CredentialState);
+	if (ncreds == NULL) {
+		/* pytalloc_get_type sets TypeError */
+		return NULL;
+	}
+
+	switch (level) {
+	case NetlogonValidationUasInfo:
+		break;
+
+	case NetlogonValidationSamInfo:
+		ok = py_check_dcerpc_type(py_validation,
+					  "samba.dcerpc.netlogon",
+					  "netr_SamInfo2");
+		if (!ok) {
+			/* py_check_dcerpc_type sets TypeError */
+			return NULL;
+		}
+
+		/*
+		 * we can't use pytalloc_get_type as
+		 * NDR_PULL_ALLOC()/talloc_ptrtype() doesn't set the
+		 * correct talloc name because of old
+		 * compilers.
+		 */
+		validation.sam2 = pytalloc_get_ptr(py_validation);
+		if (validation.sam2 == NULL) {
+			return NULL;
+		}
+		validation_ptr = validation.sam2;
+		break;
+
+	case NetlogonValidationSamInfo2:
+		ok = py_check_dcerpc_type(py_validation,
+					  "samba.dcerpc.netlogon",
+					  "netr_SamInfo3");
+		if (!ok) {
+			/* py_check_dcerpc_type sets TypeError */
+			return NULL;
+		}
+
+		/*
+		 * we can't use pytalloc_get_type as
+		 * NDR_PULL_ALLOC()/talloc_ptrtype() doesn't set the
+		 * correct talloc name because of old
+		 * compilers.
+		 */
+		validation.sam3 = pytalloc_get_ptr(py_validation);
+		if (validation.sam3 == NULL) {
+			return NULL;
+		}
+		validation_ptr = validation.sam3;
+		break;
+
+	case NetlogonValidationGenericInfo2:
+		ok = py_check_dcerpc_type(py_validation,
+					  "samba.dcerpc.netlogon",
+					  "netr_GenericInfo2");
+		if (!ok) {
+			/* py_check_dcerpc_type sets TypeError */
+			return NULL;
+		}
+
+		/*
+		 * we can't use pytalloc_get_type as
+		 * NDR_PULL_ALLOC()/talloc_ptrtype() doesn't set the
+		 * correct talloc name because of old
+		 * compilers.
+		 */
+		validation.generic = pytalloc_get_ptr(py_validation);
+		if (validation.generic == NULL) {
+			return NULL;
+		}
+		validation_ptr = validation.generic;
+		break;
+
+	case NetlogonValidationSamInfo4:
+		ok = py_check_dcerpc_type(py_validation,
+					  "samba.dcerpc.netlogon",
+					  "netr_SamInfo6");
+		if (!ok) {
+			/* py_check_dcerpc_type sets TypeError */
+			return NULL;
+		}
+
+		/*
+		 * we can't use pytalloc_get_type as
+		 * NDR_PULL_ALLOC()/talloc_ptrtype() doesn't set the
+		 * correct talloc name because of old
+		 * compilers.
+		 */
+		validation.sam6 = pytalloc_get_ptr(py_validation);
+		if (validation.sam6 == NULL) {
+			return NULL;
+		}
+		validation_ptr = validation.sam6;
+		break;
+
+	case NetlogonValidationTicketLogon:
+		ok = py_check_dcerpc_type(py_validation,
+					  "samba.dcerpc.netlogon",
+					  "netr_ValidationTicketLogon");
+		if (!ok) {
+			/* py_check_dcerpc_type sets TypeError */
+			return NULL;
+		}
+
+		/*
+		 * we can't use pytalloc_get_type as
+		 * NDR_PULL_ALLOC()/talloc_ptrtype() doesn't set the
+		 * correct talloc name because of old
+		 * compilers.
+		 */
+		validation.ticket = pytalloc_get_ptr(py_validation);
+		if (validation.ticket == NULL) {
+			return NULL;
+		}
+		validation_ptr = validation.ticket;
+		break;
+
+	}
+
+	if (validation_ptr == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Unexpected netr_Validation value");
+		return NULL;
+	}
+
+	status = netlogon_creds_decrypt_samlogon_validation(ncreds,
+							    level,
+							    &validation,
+							    auth_type,
+							    auth_level);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_netlogon_creds_decrypt_samr_Password(PyObject *module,
+							 PyObject *args,
+							 PyObject *kwargs)
+{
+	const char * const kwnames[] = {
+		"netlogon_creds",
+		"pwd",
+		"auth_type",
+		"auth_level",
+		NULL,
+	};
+	PyObject *py_ncreds = Py_None;
+	struct netlogon_creds_CredentialState *ncreds = NULL;
+	PyObject *py_pwd = Py_None;
+	struct samr_Password *pwd = NULL;
+	uint8_t _auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthType auth_type;
+	uint8_t _auth_level = DCERPC_AUTH_LEVEL_NONE;
+	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
+	bool ok;
+
+	ok = PyArg_ParseTupleAndKeywords(args, kwargs, "OObb",
+					 discard_const_p(char *, kwnames),
+					 &py_ncreds,
+					 &py_pwd,
+					 &_auth_type,
+					 &_auth_level);
+	if (!ok) {
+		return NULL;
+	}
+	auth_type = _auth_type;
+	auth_level = _auth_level;
+
+	ok = py_check_dcerpc_type(py_ncreds,
+				  "samba.dcerpc.schannel",
+				  "netlogon_creds_CredentialState");
+	if (!ok) {
+		/* py_check_dcerpc_type sets TypeError */
+		return NULL;
+	}
+
+	ncreds = pytalloc_get_type(py_ncreds,
+				   struct netlogon_creds_CredentialState);
+	if (ncreds == NULL) {
+		/* pytalloc_get_type sets TypeError */
+		return NULL;
+	}
+
+	ok = py_check_dcerpc_type(py_pwd,
+				  "samba.dcerpc.samr",
+				  "Password");
+	if (!ok) {
+		/* py_check_dcerpc_type sets TypeError */
+		return NULL;
+	}
+
+	/*
+	 * we can't use pytalloc_get_type as
+	 * NDR_PULL_ALLOC()/talloc_ptrtype() doesn't set the
+	 * correct talloc name because of old
+	 * compilers.
+	 */
+	pwd = pytalloc_get_ptr(py_pwd);
+	if (pwd == NULL) {
+		/* pytalloc_get_type sets TypeError */
+		return NULL;
+	}
+
+	status = netlogon_creds_decrypt_samr_Password(ncreds,
+						      pwd,
+						      auth_type,
+						      auth_level);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_netlogon_creds_encrypt_samr_Password(PyObject *module,
+							 PyObject *args,
+							 PyObject *kwargs)
+{
+	const char * const kwnames[] = {
+		"netlogon_creds",
+		"pwd",
+		"auth_type",
+		"auth_level",
+		NULL,
+	};
+	PyObject *py_ncreds = Py_None;
+	struct netlogon_creds_CredentialState *ncreds = NULL;
+	PyObject *py_pwd = Py_None;
+	struct samr_Password *pwd = NULL;
+	uint8_t _auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthType auth_type;
+	uint8_t _auth_level = DCERPC_AUTH_LEVEL_NONE;
+	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
+	bool ok;
+
+	ok = PyArg_ParseTupleAndKeywords(args, kwargs, "OObb",
+					 discard_const_p(char *, kwnames),
+					 &py_ncreds,
+					 &py_pwd,
+					 &_auth_type,
+					 &_auth_level);
+	if (!ok) {
+		return NULL;
+	}
+	auth_type = _auth_type;
+	auth_level = _auth_level;
+
+	ok = py_check_dcerpc_type(py_ncreds,
+				  "samba.dcerpc.schannel",
+				  "netlogon_creds_CredentialState");
+	if (!ok) {
+		/* py_check_dcerpc_type sets TypeError */
+		return NULL;
+	}
+
+	ncreds = pytalloc_get_type(py_ncreds,
+				   struct netlogon_creds_CredentialState);
+	if (ncreds == NULL) {
+		/* pytalloc_get_type sets TypeError */
+		return NULL;
+	}
+
+	ok = py_check_dcerpc_type(py_pwd,
+				  "samba.dcerpc.samr",
+				  "Password");
+	if (!ok) {
+		/* py_check_dcerpc_type sets TypeError */
+		return NULL;
+	}
+
+	pwd = pytalloc_get_type(py_pwd,
+				struct samr_Password);
+	if (pwd == NULL) {
+		/* pytalloc_get_type sets TypeError */
+		return NULL;
+	}
+
+	status = netlogon_creds_encrypt_samr_Password(ncreds,
+						      pwd,
+						      auth_type,
+						      auth_level);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_netlogon_creds_encrypt_netr_CryptPassword(PyObject *module,
+							      PyObject *args,
+							      PyObject *kwargs)
+{
+	const char * const kwnames[] = {
+		"netlogon_creds",
+		"pwd",
+		"auth_type",
+		"auth_level",
+		NULL,
+	};
+	PyObject *py_ncreds = Py_None;
+	struct netlogon_creds_CredentialState *ncreds = NULL;
+	PyObject *py_pwd = Py_None;
+	struct netr_CryptPassword *pwd = NULL;
+	struct samr_CryptPassword spwd;
+	uint8_t _auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthType auth_type;
+	uint8_t _auth_level = DCERPC_AUTH_LEVEL_NONE;
+	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
+	bool ok;
+
+	ok = PyArg_ParseTupleAndKeywords(args, kwargs, "OObb",
+					 discard_const_p(char *, kwnames),
+					 &py_ncreds,
+					 &py_pwd,
+					 &_auth_type,
+					 &_auth_level);
+	if (!ok) {
+		return NULL;
+	}
+	auth_type = _auth_type;
+	auth_level = _auth_level;
+
+	ok = py_check_dcerpc_type(py_ncreds,
+				  "samba.dcerpc.schannel",
+				  "netlogon_creds_CredentialState");
+	if (!ok) {
+		/* py_check_dcerpc_type sets TypeError */
+		return NULL;
+	}
+
+	ncreds = pytalloc_get_type(py_ncreds,
+				   struct netlogon_creds_CredentialState);
+	if (ncreds == NULL) {
+		/* pytalloc_get_type sets TypeError */
+		return NULL;
+	}
+
+	ok = py_check_dcerpc_type(py_pwd,
+				  "samba.dcerpc.netlogon",
+				  "netr_CryptPassword");
+	if (!ok) {
+		/* py_check_dcerpc_type sets TypeError */
+		return NULL;
+	}
+
+	pwd = pytalloc_get_type(py_pwd,
+				struct netr_CryptPassword);
+	if (pwd == NULL) {
+		/* pytalloc_get_type sets TypeError */
+		return NULL;
+	}
+
+	memcpy(spwd.data, pwd->data, 512);
+	PUSH_LE_U32(spwd.data, 512, pwd->length);
+
+	status = netlogon_creds_encrypt_samr_CryptPassword(ncreds,
+							   &spwd,
+							   auth_type,
+							   auth_level);
+
+	memcpy(pwd->data, spwd.data, 512);
+	pwd->length = PULL_LE_U32(spwd.data, 512);
+	ZERO_STRUCT(spwd);
+
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_netlogon_creds_encrypt_SendToSam(PyObject *module,
+						     PyObject *args,
+						     PyObject *kwargs)
+{
+	const char * const kwnames[] = {
+		"netlogon_creds",
+		"opaque_buffer",
+		"auth_type",
+		"auth_level",
+		NULL,
+	};
+	PyObject *py_ncreds = Py_None;
+	struct netlogon_creds_CredentialState *ncreds = NULL;
+	PyObject *py_opaque = Py_None;
+	uint8_t *opaque_data = NULL;
+	size_t opaque_length = 0;
+	uint8_t _auth_type = DCERPC_AUTH_TYPE_NONE;
+	enum dcerpc_AuthType auth_type;
+	uint8_t _auth_level = DCERPC_AUTH_LEVEL_NONE;
+	enum dcerpc_AuthLevel auth_level;
+	NTSTATUS status;
+	bool ok;
+
+	ok = PyArg_ParseTupleAndKeywords(args, kwargs, "OSbb",
+					 discard_const_p(char *, kwnames),
+					 &py_ncreds,
+					 &py_opaque,
+					 &_auth_type,
+					 &_auth_level);
+	if (!ok) {
+		return NULL;
+	}
+	auth_type = _auth_type;
+	auth_level = _auth_level;
+
+	ok = py_check_dcerpc_type(py_ncreds,
+				  "samba.dcerpc.schannel",
+				  "netlogon_creds_CredentialState");
+	if (!ok) {
+		/* py_check_dcerpc_type sets TypeError */
+		return NULL;
+	}
+
+	ncreds = pytalloc_get_type(py_ncreds,
+				   struct netlogon_creds_CredentialState);
+	if (ncreds == NULL) {
+		/* pytalloc_get_type sets TypeError */
+		return NULL;
+	}
+
+	opaque_data = (uint8_t *)PyBytes_AsString(py_opaque);
+	opaque_length = PyBytes_Size(py_opaque);
+
+	status = netlogon_creds_encrypt_SendToSam(ncreds,
+						  opaque_data,
+						  opaque_length,
+						  auth_type,
+						  auth_level);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
+static PyMethodDef py_module_methods[] = {
+	{
+		.ml_name  = "netlogon_creds_random_challenge",
+		.ml_meth  = py_netlogon_creds_random_challenge,
+		.ml_flags = METH_NOARGS,
+		.ml_doc   = "credentials.netlogon_creds_random_challenge()"
+			    "-> netr_Credential\n"
+			    "Create a new random netr_Credential",
+	},
+	{
+		.ml_name  = "netlogon_creds_client_init",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+					py_netlogon_creds_client_init),
+		.ml_flags = METH_VARARGS | METH_KEYWORDS,
+		.ml_doc   = "credentials.netlogon_creds_client_init("
+			    "client_account, client_computer_name,"
+			    "secure_channel_type, "
+			    "client_challenge, server_challenge, "
+			    "machine_password, "
+			    "client_requested_flags, negotiate_flags)"
+			    "-> (netlogon_creds_CredentialState, initial_credential)\n"
+			    "Create a new state for netr_ServerAuthenticate3()",
+	},
+	{
+		.ml_name  = "netlogon_creds_client_update",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+					py_netlogon_creds_client_update),
+		.ml_flags = METH_VARARGS | METH_KEYWORDS,
+		.ml_doc   = "credentials.netlogon_creds_client_update("
+			    "netlogon_creds, negotiated_flags, client_rid)"
+			    "-> None\n"
+			    "Update the negotiated flags and client rid",
+	},
+	{
+		.ml_name  = "netlogon_creds_client_authenticator",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+					py_netlogon_creds_client_authenticator),
+		.ml_flags = METH_VARARGS | METH_KEYWORDS,
+		.ml_doc   = "credentials.netlogon_creds_client_authenticator(netlogon_creds) -> Authenticator\n"
+			    "Get a new client NETLOGON_AUTHENTICATOR"
+	},
+	{
+		.ml_name  = "netlogon_creds_client_verify",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+					py_netlogon_creds_client_verify),
+		.ml_flags = METH_VARARGS | METH_KEYWORDS,
+		.ml_doc   = "credentials.py_netlogon_creds_client_verify(netlogon_creds, "
+			    "received_credentials, auth_type, auth_level) -> None\n"
+			    "Verify the NETLOGON_AUTHENTICATOR.credentials from a server"
+	},
+	{
+		.ml_name  = "netlogon_creds_encrypt_netr_LogonLevel",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+					py_netlogon_creds_encrypt_netr_LogonLevel),
+		.ml_flags = METH_VARARGS | METH_KEYWORDS,
+		.ml_doc   = "credentials.netlogon_creds_encrypt_netr_LogonLevel(netlogon_creds, "
+			    "level, info, auth_type, auth_level) -> None\n"
+			    "Encrypt the supplied logon info using the session key and\n"
+			    "the negotiated encryption algorithm in place\n"
+			    "i.e. it overwrites the original data",
+	},
+	{
+		.ml_name  = "netlogon_creds_decrypt_netr_Validation",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+					py_netlogon_creds_decrypt_netr_Validation),
+		.ml_flags = METH_VARARGS | METH_KEYWORDS,
+		.ml_doc   = "credentials.netlogon_creds_decrypt_netr_Validation(netlogon_creds, "
+			    "level, validation, auth_type, auth_level) -> None\n"
+			    "Encrypt the supplied validation info using the session key and\n"
+			    "the negotiated encryption algorithm in place\n"
+			    "i.e. it overwrites the original data",
+	},
+	{
+		.ml_name  = "netlogon_creds_decrypt_samr_Password",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+					py_netlogon_creds_decrypt_samr_Password),
+		.ml_flags = METH_VARARGS | METH_KEYWORDS,
+		.ml_doc   = "credentials.netlogon_creds_decrypt_samr_Password(netlogon_creds, "
+			    "pwd, auth_type, auth_level) -> None\n"
+			    "Encrypt the supplied samr_Password using the session key and\n"
+			    "the negotiated encryption algorithm in place\n"
+			    "i.e. it overwrites the original data",
+	},
+	{
+		.ml_name  = "netlogon_creds_encrypt_samr_Password",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+					py_netlogon_creds_encrypt_samr_Password),
+		.ml_flags = METH_VARARGS | METH_KEYWORDS,
+		.ml_doc   = "credentials.netlogon_creds_encrypt_samr_Password(netlogon_creds, "
+			    "pwd, auth_type, auth_level) -> None\n"
+			    "Encrypt the supplied samr_Password using the session key and\n"
+			    "the negotiated encryption algorithm in place\n"
+			    "i.e. it overwrites the original data",
+	},
+	{
+		.ml_name  = "netlogon_creds_encrypt_netr_CryptPassword",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+					py_netlogon_creds_encrypt_netr_CryptPassword),
+		.ml_flags = METH_VARARGS | METH_KEYWORDS,
+		.ml_doc   = "credentials.netlogon_creds_encrypt_netr_CryptPassword(netlogon_creds, "
+			    "pwd, auth_type, auth_level) -> None\n"
+			    "Encrypt the supplied netr_CryptPassword using the session key and\n"
+			    "the negotiated encryption algorithm in place\n"
+			    "i.e. it overwrites the original data",
+	},
+	{
+		.ml_name  = "netlogon_creds_encrypt_SendToSam",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+					py_netlogon_creds_encrypt_SendToSam),
+		.ml_flags = METH_VARARGS | METH_KEYWORDS,
+		.ml_doc   = "credentials.netlogon_creds_encrypt_SendToSam(netlogon_creds, "
+			    "opaque_buffer, auth_type, auth_level) -> None\n"
+			    "Encrypt the supplied opaque_buffer using the session key and\n"
+			    "the negotiated encryption algorithm in place\n"
+			    "i.e. it overwrites the original data",
+	},
+	{ .ml_name = NULL }
+};
+
 static struct PyModuleDef moduledef = {
 	PyModuleDef_HEAD_INIT,
 	.m_name = "credentials",
 	.m_doc = "Credentials management.",
 	.m_size = -1,
-	.m_methods = NULL,
+	.m_methods = py_module_methods,
 };
 
 MODULE_INIT_FUNC(credentials)
