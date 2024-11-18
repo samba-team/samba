@@ -171,7 +171,7 @@ mode_t wire_perms_to_unix(uint32_t perms)
  * never change.
  ****************************************************************************/
 
-static mode_t unix_filetypes[] =
+static const mode_t unix_filetypes[] =
 	{S_IFREG, S_IFDIR, S_IFLNK, S_IFCHR, S_IFBLK, S_IFIFO, S_IFSOCK};
 
 mode_t wire_filetype_to_unix(uint32_t wire_type)
