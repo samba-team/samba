@@ -223,7 +223,7 @@ out:
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		/* Hide the evidence. */
-		memset_s(KO, KO_len, 0, KO_idx);
+		ZERO_ARRAY_LEN(KO, KO_idx);
 	}
 
 	return status;

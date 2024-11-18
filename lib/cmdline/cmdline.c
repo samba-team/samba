@@ -358,7 +358,7 @@ bool samba_cmdline_burn(int argc, char *argv[])
 				p += ulen;
 			}
 
-			memset_s(p, strlen(p), '\0', strlen(p));
+			BURN_PTR_SIZE(p, strlen(p));
 			burnt = true;
 		}
 	}

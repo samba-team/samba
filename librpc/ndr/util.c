@@ -32,5 +32,5 @@ _PUBLIC_ void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name
 
 _PUBLIC_ void ndr_zero_memory(void *ptr, size_t len)
 {
-	memset_s(ptr, len, 0, len);
+	ZERO_ARRAY_LEN(ptr, len);
 }

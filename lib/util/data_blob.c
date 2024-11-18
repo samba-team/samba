@@ -95,7 +95,7 @@ clear a DATA_BLOB's contents
 _PUBLIC_ void data_blob_clear(DATA_BLOB *d)
 {
 	if (d->data) {
-		memset_s(d->data, d->length, 0, d->length);
+		ZERO_ARRAY_LEN(d->data, d->length);
 	}
 }
 
