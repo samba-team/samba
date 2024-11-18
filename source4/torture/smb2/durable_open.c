@@ -1577,6 +1577,123 @@ done:
 	return ret;
 }
 
+/*
+ * Test for failing RH reconnect not clobbering the open record state of a DH
+ * handle of another process:
+ * 1. Get a DH handle in tree and keep tree connected for now
+ * 2. New connection tree2 that attempts a DH reconnect. This fails as the
+ *    handle is still connected in "tree".
+ * 3. Disconnect "tree": this stores the DH state on disk, ready for reconnect.
+ * 4. Disconnect "tree2": this overwrites the on-disk DH state
+ * 5. Connect "tree3" and attempt a DH reconnect. This fails as the on-disk
+ *    DH state was clobbered in step 4.
+ */
+static bool test_durable_open_reopen5(struct torture_context *tctx,
+				      struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_create io1, io2;
+	struct smb2_tree *tree2 = NULL;
+	struct smb2_tree *tree3 = NULL;
+	struct smbcli_options options = tree->session->transport->options;
+	struct GUID orig_client_guid = options.client_guid;
+	bool ret = true;
+	NTSTATUS status;
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "durable_open_reopen4_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&io1, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io1.in.durable_open = true;
+
+	status = smb2_create(tree, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h = io1.out.file.handle;
+	h = &_h;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.durable_open, true);
+	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+
+	/*
+	 * A second connection: again issue a DH reconnect and see what happens,
+	 * should fail, as the handle is currently active in tree.
+	 */
+
+	options.client_guid = GUID_random();
+
+	ret = torture_smb2_connection_ext(tctx, 0, &options, &tree2);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	ZERO_STRUCT(io2);
+	io2.in.fname = fname;
+	io2.in.durable_handle = h;
+
+	status = smb2_create(tree2, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	/*
+	 * Now disconnect the first connection which currently has the handle
+	 * open (tree), this prepares the on-disk DH state for reconnect
+	 */
+
+	TALLOC_FREE(tree);
+
+	/*
+	 * Disconnect tree2 which had the failing DH reconnect above. As the
+	 * open succeeded and has an smbXsrv_open_destructor(), once we free
+	 * tree2 the destructor will overwrite the record with a cookie where
+	 * cookie.allow_reconnect is false, which causes the DH reconnect to
+	 * fail in the VFS.
+	 */
+
+	sleep(3);
+	TALLOC_FREE(tree2);
+
+	options.client_guid = orig_client_guid;
+
+	ret = torture_smb2_connection_ext(tctx, 0, &options, &tree3);
+	torture_assert_goto(tctx, ret, ret, done,
+			    "torture_smb2_connection_ext failed\n");
+
+	ZERO_STRUCT(io2);
+	io2.in.fname = fname;
+	io2.in.durable_handle = h;
+	h = NULL;
+
+	status = smb2_create(tree3, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	TALLOC_FREE(tree3);
+
+done:
+	if (tree != NULL) {
+		if (h != NULL) {
+			smb2_util_close(tree, *h);
+		}
+		smb2_util_unlink(tree, fname);
+	}
+	if (tree3 != NULL) {
+		if (h != NULL) {
+			smb2_util_close(tree, *h);
+		}
+		smb2_util_unlink(tree3, fname);
+		TALLOC_FREE(tree3);
+	}
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 static bool test_durable_open_delete_on_close1(struct torture_context *tctx,
 					       struct smb2_tree *tree)
 {
@@ -2907,6 +3024,7 @@ struct torture_suite *torture_smb2_durable_open_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "reopen2a", test_durable_open_reopen2a);
 	torture_suite_add_1smb2_test(suite, "reopen3", test_durable_open_reopen3);
 	torture_suite_add_1smb2_test(suite, "reopen4", test_durable_open_reopen4);
+	torture_suite_add_1smb2_test(suite, "reopen5", test_durable_open_reopen5);
 	torture_suite_add_1smb2_test(suite, "delete_on_close1",
 				     test_durable_open_delete_on_close1);
 	torture_suite_add_1smb2_test(suite, "delete_on_close2",
