@@ -1772,14 +1772,6 @@ static PyMethodDef py_creds_methods[] = {
 	{ .ml_name = NULL }
 };
 
-static struct PyModuleDef moduledef = {
-    PyModuleDef_HEAD_INIT,
-    .m_name = "credentials",
-    .m_doc = "Credentials management.",
-    .m_size = -1,
-    .m_methods = py_creds_methods,
-};
-
 PyTypeObject PyCredentials = {
 	.tp_name = "credentials.Credentials",
 	.tp_new = py_creds_new,
@@ -1819,6 +1811,14 @@ PyTypeObject PyCredentialCacheContainer = {
 	.tp_name = "credentials.CredentialCacheContainer",
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_methods = py_ccache_container_methods,
+};
+
+static struct PyModuleDef moduledef = {
+	PyModuleDef_HEAD_INIT,
+	.m_name = "credentials",
+	.m_doc = "Credentials management.",
+	.m_size = -1,
+	.m_methods = NULL,
 };
 
 MODULE_INIT_FUNC(credentials)
