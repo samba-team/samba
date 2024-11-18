@@ -972,6 +972,85 @@ static PyObject *py_creds_get_secure_channel_type(PyObject *self, PyObject *args
 	return PyLong_FromLong(channel_type);
 }
 
+static PyObject *py_creds_get_netlogon_creds(PyObject *self, PyObject *unused)
+{
+	struct cli_credentials *creds = NULL;
+	struct netlogon_creds_CredentialState *ncreds = NULL;
+	PyObject *py_ncreds = Py_None;
+
+	creds = PyCredentials_AsCliCredentials(self);
+	if (creds == NULL) {
+		PyErr_Format(PyExc_TypeError, "Credentials expected");
+		return NULL;
+	}
+
+	if (creds->netlogon_creds == NULL) {
+		Py_RETURN_NONE;
+	}
+
+	ncreds = netlogon_creds_copy(NULL, creds->netlogon_creds);
+	if (ncreds == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	py_ncreds = py_return_ndr_struct("samba.dcerpc.schannel",
+					 "netlogon_creds_CredentialState",
+					 ncreds,
+					 ncreds);
+	if (py_ncreds == NULL) {
+		TALLOC_FREE(ncreds);
+		return NULL;
+	}
+
+	return py_ncreds;
+}
+
+static PyObject *py_creds_set_netlogon_creds(PyObject *self, PyObject *args)
+{
+	struct cli_credentials *creds = NULL;
+	const struct netlogon_creds_CredentialState *ncreds = NULL;
+	PyObject *py_ncreds = Py_None;
+
+	creds = PyCredentials_AsCliCredentials(self);
+	if (creds == NULL) {
+		PyErr_Format(PyExc_TypeError, "Credentials expected");
+		return NULL;
+	}
+
+	if (!PyArg_ParseTuple(args, "O", &py_ncreds))
+		return NULL;
+
+	if (py_ncreds == Py_None) {
+		ncreds = NULL;
+	} else {
+		bool ok;
+
+		ok = py_check_dcerpc_type(py_ncreds,
+				  "samba.dcerpc.schannel",
+				  "netlogon_creds_CredentialState");
+		if (!ok) {
+			/* py_check_dcerpc_type sets TypeError */
+			return NULL;
+		}
+
+		ncreds = pytalloc_get_type(py_ncreds,
+					   struct netlogon_creds_CredentialState);
+		if (ncreds == NULL) {
+			/* pytalloc_get_type sets TypeError */
+			return NULL;
+		}
+	}
+
+	cli_credentials_set_netlogon_creds(creds, ncreds);
+	if (ncreds != NULL && creds->netlogon_creds == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_creds_set_kerberos_salt_principal(PyObject *self, PyObject *args)
 {
 	char *salt_principal = NULL;
@@ -1671,6 +1750,16 @@ static PyMethodDef py_creds_methods[] = {
 	{
 		.ml_name  = "get_secure_channel_type",
 		.ml_meth  = py_creds_get_secure_channel_type,
+		.ml_flags = METH_VARARGS,
+	},
+	{
+		.ml_name  = "get_netlogon_creds",
+		.ml_meth  = py_creds_get_netlogon_creds,
+		.ml_flags = METH_NOARGS,
+	},
+	{
+		.ml_name  = "set_netlogon_creds",
+		.ml_meth  = py_creds_set_netlogon_creds,
 		.ml_flags = METH_VARARGS,
 	},
 	{
