@@ -875,6 +875,33 @@ static NTSTATUS netlogon_creds_crypt_samlogon_validation(struct netlogon_creds_C
 			base = &validation->sam3->base;
 		}
 		break;
+	case 5:
+		/* NetlogonValidationGenericInfo2 */
+		if (validation->generic != NULL &&
+		    validation->generic->length == 0)
+		{
+			/*
+			 * For "Kerberos"
+			 * KERB_VERIFY_PAC_REQUEST there's
+			 * not response, so there's nothing
+			 * to encrypt.
+			 */
+			return NT_STATUS_OK;
+		}
+
+		/*
+		 * We don't know if encryption is
+		 * required or not yet.
+		 *
+		 * We would have to do tests
+		 * with DIGEST_VALIDATION_RESP
+		 *
+		 * But as we don't support that
+		 * yet, we just return an error
+		 * for now.
+		 */
+		log_stack_trace();
+		return NT_STATUS_INTERNAL_ERROR;
 	case 6:
 		if (validation->sam6) {
 			base = &validation->sam6->base;
