@@ -123,7 +123,7 @@ uint32_t *ip_key(ctdb_sock_addr *ip)
 {
 	static uint32_t key[IP_KEYLEN];
 
-	bzero(key, sizeof(key));
+	ZERO_ARRAY(key);
 
 	switch (ip->sa.sa_family) {
 	case AF_INET:

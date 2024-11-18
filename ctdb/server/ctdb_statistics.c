@@ -42,7 +42,7 @@ static void ctdb_statistics_update(struct tevent_context *ev,
 	ctdb->statistics_history[0].statistics_current_time = timeval_current();
 
 
-	bzero(&ctdb->statistics_current, sizeof(struct ctdb_statistics));
+	ZERO_STRUCT(ctdb->statistics_current);
 	ctdb->statistics_current.statistics_start_time = timeval_current();
 
 	tevent_add_timer(ctdb->ev, ctdb,
@@ -52,13 +52,13 @@ static void ctdb_statistics_update(struct tevent_context *ev,
 
 int ctdb_statistics_init(struct ctdb_context *ctdb)
 {
-	bzero(&ctdb->statistics, sizeof(struct ctdb_statistics));
+	ZERO_STRUCT(ctdb->statistics);
 	ctdb->statistics.statistics_start_time = timeval_current();
 
-	bzero(&ctdb->statistics_current, sizeof(struct ctdb_statistics));
+	ZERO_STRUCT(ctdb->statistics_current);
 	ctdb->statistics_current.statistics_start_time = timeval_current();
 
-	bzero(ctdb->statistics_history, sizeof(ctdb->statistics_history));
+	ZERO_ARRAY(ctdb->statistics_history);
 
 	tevent_add_timer(ctdb->ev, ctdb,
 			 timeval_current_ofs(ctdb->tunable.stat_history_interval, 0),

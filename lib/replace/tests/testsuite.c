@@ -451,12 +451,6 @@ static int test_chroot(void)
 	return true;
 }
 
-static int test_bzero(void)
-{
-	/* FIXME: bzero */
-	return true;
-}
-
 static int test_strerror(void)
 {
 	/* FIXME */
@@ -1200,7 +1194,6 @@ bool torture_local_replace(struct torture_context *ctx)
 	ret &= test_seekdir();
 	ret &= test_dlopen();
 	ret &= test_chroot();
-	ret &= test_bzero();
 	ret &= test_strerror();
 	ret &= test_errno();
 	ret &= test_mkdtemp();

@@ -397,7 +397,7 @@ def configure(conf):
                     msg='Checking for fallthrough attribute')
 
     # these may be builtins, so we need the link=False strategy
-    conf.CHECK_FUNCS('strdup memmem printf memset memcpy memmove strcpy strncpy bzero', link=False)
+    conf.CHECK_FUNCS('strdup memmem printf memcpy memmove strcpy strncpy', link=False)
 
     # See https://bugzilla.samba.org/show_bug.cgi?id=1097
     #

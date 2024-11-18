@@ -5597,7 +5597,7 @@ static int control_checktcpport(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return errno;
 	}
 
-	bzero(&sin, sizeof(sin));
+	ZERO_STRUCT(sin);
 	sin.sin_family = AF_INET;
 	sin.sin_port = htons(port);
 	ret = bind(s, (struct sockaddr *)&sin, sizeof(sin));

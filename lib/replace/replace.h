@@ -414,10 +414,6 @@ int rep_ftruncate(int,off_t);
 int rep_initgroups(char *name, gid_t id);
 #endif
 
-#if !defined(HAVE_BZERO) && defined(HAVE_MEMSET)
-#define bzero(a,b) memset((a),'\0',(b))
-#endif
-
 #ifndef HAVE_DLERROR
 #define dlerror rep_dlerror
 char *rep_dlerror(void);
