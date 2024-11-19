@@ -721,16 +721,28 @@ uint32_t fdos_mode(struct files_struct *fsp)
 	}
 
 	switch (fsp->fsp_name->st.st_ex_mode & S_IFMT) {
-	case S_IFLNK:
-		return FILE_ATTRIBUTE_NORMAL;
+	case S_IFREG:
+	case S_IFDIR:
 		break;
-	case S_IFIFO:
-	case S_IFSOCK:
-	case S_IFBLK:
-	case S_IFCHR:
-		return FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_REPARSE_POINT;
+	case S_IFLNK:
+		if (fsp->fsp_flags.posix_open &&
+		    !conn_using_smb2(fsp->conn->sconn)) {
+			/*
+			 * SMB1 posix doesn't like the reparse point flag
+			 */
+			result = FILE_ATTRIBUTE_NORMAL;
+		} else {
+			/*
+			 * Everybody else wants to see symlinks as
+			 * reparse points
+			 */
+			result = FILE_ATTRIBUTE_NORMAL |
+				 FILE_ATTRIBUTE_REPARSE_POINT;
+		}
+
 		break;
 	default:
+		return FILE_ATTRIBUTE_NORMAL|FILE_ATTRIBUTE_REPARSE_POINT;
 		break;
 	}
 
