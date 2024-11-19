@@ -283,10 +283,10 @@ static NTSTATUS smbXsrv_open_global_verify_record(
 	*_global0 = global0;
 
 	if (server_id_is_disconnected(&global0->server_id)) {
-		return NT_STATUS_OK;
+		return NT_STATUS_REMOTE_DISCONNECT;
 	}
 	if (serverid_exists(&global0->server_id)) {
-		return NT_STATUS_OK;
+		return NT_STATUS_OBJECTID_EXISTS;
 	}
 
 	DBG_WARNING("smbd %s did not clean up record %s\n",
@@ -368,7 +368,7 @@ static void smbXsrv_open_global_allocate_fn(
 	state->status = smbXsrv_open_global_verify_record(
 		key, oldval, talloc_tos(), &tmp_global0);
 
-	if (NT_STATUS_IS_OK(state->status)) {
+	if (!NT_STATUS_EQUAL(state->status, NT_STATUS_NOT_FOUND)) {
 		/*
 		 * Found an existing record
 		 */
@@ -1179,7 +1179,7 @@ static void smb2srv_open_recreate_fn(
 
 	state->status = smbXsrv_open_global_verify_record(
 		key, oldval, state->op, &state->op->global);
-	if (!NT_STATUS_IS_OK(state->status)) {
+	if (!NT_STATUS_EQUAL(state->status, NT_STATUS_REMOTE_DISCONNECT)) {
 		DBG_WARNING("smbXsrv_open_global_verify_record for %s "
 			    "failed: %s\n",
 			    tdb_data_dbg(key),
