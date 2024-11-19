@@ -192,7 +192,7 @@ interface netlogon
 		lsa_String  workstation;
 	} netr_IdentityInfo;
 
-	typedef struct {
+	typedef [public,flag(NDR_PAHEX)] struct {
 		netr_IdentityInfo identity_info;
 		samr_Password lmpassword;
 		samr_Password ntpassword;
@@ -204,14 +204,14 @@ interface netlogon
 		[size_is(length),length_is(length)] uint8 *data;
 	} netr_ChallengeResponse;
 
-	typedef [flag(NDR_PAHEX)] struct {
+	typedef [public,flag(NDR_PAHEX)] struct {
 		netr_IdentityInfo identity_info;
 		uint8 challenge[8];
 		netr_ChallengeResponse nt;
 		netr_ChallengeResponse lm;
 	} netr_NetworkInfo;
 
-	typedef [flag(NDR_PAHEX)] struct {
+	typedef [public,flag(NDR_PAHEX)] struct {
 		netr_IdentityInfo identity_info;
 		lsa_String  package_name;
 		uint32 length;
@@ -294,7 +294,7 @@ interface netlogon
 		uint32 reserved;
 	} netr_SamBaseInfo;
 
-	typedef struct {
+	typedef [public] struct {
 		netr_SamBaseInfo base;
 	} netr_SamInfo2;
 
@@ -309,7 +309,7 @@ interface netlogon
 		[size_is(sidcount)] netr_SidAttr *sids;
 	} netr_SamInfo3;
 
-	typedef struct {
+	typedef [public] struct {
 		netr_SamBaseInfo base;
 		uint32 sidcount;
 		[size_is(sidcount)] netr_SidAttr *sids;
@@ -326,7 +326,7 @@ interface netlogon
 		uint32 unknown4[20];
 	} netr_SamInfo6;
 
-	typedef struct {
+	typedef [public,flag(NDR_PAHEX)] struct {
 		uint32 pac_size;
 		[size_is(pac_size)] uint8 *pac;
 		lsa_String logon_domain;
@@ -342,7 +342,7 @@ interface netlogon
 		lsa_String unknown4;
 	} netr_PacInfo;
 
-	typedef [flag(NDR_PAHEX)] struct {
+	typedef [public,flag(NDR_PAHEX)] struct {
 		uint32 length;
 		[size_is(length)] uint8 *data;
 	} netr_GenericInfo2;
@@ -1557,7 +1557,7 @@ interface netlogon
 		uint32 PasswordVersionPresent;
 	} NL_PASSWORD_VERSION;
 
-	typedef [flag(NDR_PAHEX)] struct {
+	typedef [public,flag(NDR_PAHEX)] struct {
 		[flag(NDR_SECRET)] uint8 data[512];
 		uint32 length;
 	} netr_CryptPassword;
