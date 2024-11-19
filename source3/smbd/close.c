@@ -892,7 +892,6 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 					  "proceeding with normal close\n",
 					  fsp_str_dbg(fsp), nt_errstr(tmp)));
 			}
-			scavenger_schedule_disconnected(fsp);
 		} else {
 			DEBUG(1, ("Failed to disconnect durable handle for "
 				  "file %s: %s - proceeding with normal "
@@ -912,6 +911,7 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 		DEBUG(10, ("%s disconnected durable handle for file %s\n",
 			   conn->session_info->unix_info->unix_name,
 			   fsp_str_dbg(fsp)));
+		scavenger_schedule_disconnected(fsp);
 		return NT_STATUS_OK;
 	}
 
