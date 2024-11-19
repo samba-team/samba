@@ -53,7 +53,7 @@ bool py_check_dcerpc_type(PyObject *obj, const char *module, const char *type_na
 	Py_DECREF(mod);
 	if (type == NULL) {
 		PyErr_Format(PyExc_RuntimeError, "Unable to find type %s in module %s",
-			module, type_name);
+			     type_name, module);
 		return false;
 	}
 
