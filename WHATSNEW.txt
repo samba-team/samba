@@ -1,4 +1,75 @@
                    ==============================
+                   Release Notes for Samba 4.20.6
+                         November 19, 2024
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.20 release series.
+
+
+Changes since 4.20.5
+--------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15590: libldb: performance issue with indexes (ldb 2.9.2 is already
+     released).
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15624: DH reconnect error handling can lead to stale sharemode entries.
+   * BUG 15732: smbd fails to correctly check sharemode against OVERWRITE
+     dispositions.
+
+o  Andréas Leroux <aleroux@tranquil.it>
+   * BUG 15692: Missing conversion for msDS-UserTGTLifetime, msDS-
+     ComputerTGTLifetime and msDS-ServiceTGTLifetime on "samba-tool
+     domain auth policy modify".
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14356: Protocol error - Unclear debug message "pad length mismatch" for
+     invalid bind packet.
+   * BUG 15280: irpc_destructor may crash during shutdown.
+   * BUG 15425: NetrGetLogonCapabilities QueryLevel 2 needs to be implemented.
+   * BUG 15624: DH reconnect error handling can lead to stale sharemode entries.
+   * BUG 15649: Durable handle is not granted when a previous OPEN exists with
+     NoOplock.
+   * BUG 15651: Durable handle is granted but reconnect fails.
+   * BUG 15708: Disconnected durable handles with RH lease should not be purged
+     by a new non conflicting open.
+   * BUG 15740: gss_accept_sec_context() from Heimdal does not imply
+     GSS_C_MUTUAL_FLAG with GSS_C_DCE_STYLE.
+   * BUG 15749: winbindd should call process_set_title() for locator child.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 15730: VFS_OPEN_HOW_WITH_BACKUP_INTENT  breaks shadow_copy2.
+
+o  Jones Syue <jonessyue@qnap.com>
+   * BUG 15706: Consistent log level for sighup handler.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.20.5
                          September 17, 2024
                    ==============================
@@ -57,8 +128,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.20.4
                            August 06, 2024
