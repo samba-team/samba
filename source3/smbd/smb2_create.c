@@ -136,7 +136,8 @@ static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
 			uint32_t *out_file_attributes,
 			uint64_t *out_file_id_persistent,
 			uint64_t *out_file_id_volatile,
-			struct smb2_create_blobs *out_context_blobs);
+			struct smb2_create_blobs *out_context_blobs,
+			struct reparse_data_buffer **symlink_reparse);
 
 static void smbd_smb2_request_create_done(struct tevent_req *tsubreq);
 NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
@@ -338,6 +339,7 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 	struct smb2_create_blobs out_context_blobs;
 	DATA_BLOB out_context_buffer;
 	uint16_t out_context_buffer_offset = 0;
+	struct reparse_data_buffer *symlink_reparse = NULL;
 	NTSTATUS status;
 	NTSTATUS error; /* transport error */
 
@@ -354,7 +356,8 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 				       &out_file_attributes,
 				       &out_file_id_persistent,
 				       &out_file_id_volatile,
-				       &out_context_blobs);
+				       &out_context_blobs,
+				       &symlink_reparse);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (smbd_smb2_is_compound(smb2req)) {
 			smb2req->compound_create_err = status;
@@ -1796,7 +1799,8 @@ static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
 			uint32_t *out_file_attributes,
 			uint64_t *out_file_id_persistent,
 			uint64_t *out_file_id_volatile,
-			struct smb2_create_blobs *out_context_blobs)
+			struct smb2_create_blobs *out_context_blobs,
+			struct reparse_data_buffer **symlink_reparse)
 {
 	NTSTATUS status;
 	struct smbd_smb2_create_state *state = tevent_req_data(req,
@@ -1819,6 +1823,7 @@ static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
 	*out_file_id_persistent	= state->out_file_id_persistent;
 	*out_file_id_volatile	= state->out_file_id_volatile;
 	*out_context_blobs	= *(state->out_context_blobs);
+	*symlink_reparse	= NULL;
 
 	talloc_steal(mem_ctx, state->out_context_blobs->blobs);
 
