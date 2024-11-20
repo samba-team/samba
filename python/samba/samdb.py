@@ -375,6 +375,9 @@ lockoutTime: 0
         :param members: list of group members
         :param add_members_operation: Defines if its an add or remove
             operation
+        :param member_types: List of object types, used to filter the search
+            for the specified members
+        :param member_base_dn: Base dn for member search
         """
         if member_types is None:
             member_types = ['user', 'group', 'computer']
