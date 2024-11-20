@@ -1126,6 +1126,41 @@ sAMAccountName: %s
             self.assertCmdSuccess(result, out, err, "Error running user unlock")
             self.assertEqual(err, "", "Shouldn't be any error messages")
 
+    def test_disable_remove_supplemental_groups(self):
+        """disable user and remove supplemental groups"""
+        username = "userRemoveGroups"
+        user = self._randomUser({"name": username})
+        self._create_user(user)
+
+        usergroups = self._get_groups(username)
+        self.assertTrue(len(usergroups) == 1, "exactly one membership expected")
+        self.assertEqual(usergroups[0],
+                         "Domain Users",
+                         "Unexpected groupmembership")
+
+        self._add_groupmember("Domain Admins", username)
+        self._add_groupmember("Print Operators", username)
+
+        usergroups = self._get_groups(username)
+        self.assertTrue(len(usergroups) == 3, "exactly 3 memberships expected")
+
+        (result, out, err) = self.runsubcmd(
+            "user", "disable", username,
+            "--remove-supplemental-groups",
+            "-H", "ldap://%s" % os.environ["DC_SERVER"],
+            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+            os.environ["DC_PASSWORD"]))
+        self.assertCmdSuccess(
+            result, out, err,
+            "Error running user disable --remove-supplemental-groups")
+        self.assertEqual(err, "",
+                         "Shouldn't be any error messages from user disable")
+
+        usergroups = self._get_groups(username)
+        self.assertTrue(len(usergroups) == 1, "exactly one membership expected")
+        self.assertEqual(usergroups[0], "Domain Users",
+                         "Unexpected groupmembership")
+
     def _randomUser(self, base=None):
         """create a user with random attribute values, you can specify base attributes"""
         if base is None:
@@ -1271,3 +1306,46 @@ template """
             return userlist[0]
         else:
             return None
+
+    def _add_groupmember(self, group, user):
+        (result, out, err) =  self.runsubcmd(
+            "group", "addmembers", group, user,
+            "-H", "ldap://%s" % os.environ["DC_SERVER"],
+            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                          os.environ["DC_PASSWORD"]))
+        self.assertCmdSuccess(
+            result, out, err, "Error running group addmembers")
+        self.assertEqual(
+            err,
+            "",
+            "Shouldn't be any error messages from group addmembers")
+
+        return out.rstrip().split("\n")
+
+    def _remove_groupmember(self, group, user):
+        (result, out, err) = self.runsubcmd(
+            "group", "removemembers", group, user,
+            "-H", "ldap://%s" % os.environ["DC_SERVER"],
+            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                          os.environ["DC_PASSWORD"]))
+        self.assertCmdSuccess(
+            result, out, err, "Error running group removemembers")
+        self.assertEqual(
+            err,
+            "",
+            "Shouldn't be any error messages from group removemembers")
+
+        return out.rstrip().split("\n")
+
+    def _get_groups(self, user):
+        (result, out, err) = self.runsubcmd(
+            "user", "getgroups", user,
+            "-H", "ldap://%s" % os.environ["DC_SERVER"],
+            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+            os.environ["DC_PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, "Error running user getgroups")
+        self.assertEqual(err,
+                         "",
+                         "Shouldn't be any error messages from user getgroups")
+
+        return out.rstrip().split("\n")

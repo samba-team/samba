@@ -35,6 +35,7 @@ from samba.common import normalise_int32
 from samba.common import get_bytes, cmp
 from samba.dcerpc import security
 from samba import is_ad_dc_built
+from samba import NTSTATUSError, ntstatus
 import binascii
 
 __docformat__ = "restructuredText"
@@ -365,13 +366,13 @@ lockoutTime: 0
 
         return filter
 
-    def add_remove_group_members(self, groupname, members,
+    def add_remove_group_members(self, group, members,
                                  add_members_operation=True,
                                  member_types=None,
                                  member_base_dn=None):
         """Adds or removes group members
 
-        :param groupname: Name of the target group
+        :param group: sAMAccountName, DN, SID or GUID of the target group
         :param members: list of group members
         :param add_members_operation: Defines if its an add or remove
             operation
@@ -385,26 +386,92 @@ lockoutTime: 0
         if member_base_dn is None:
             member_base_dn = self.domain_dn()
 
-        groupfilter = "(&(sAMAccountName=%s)(objectCategory=%s,%s))" % (
-            ldb.binary_encode(groupname), "CN=Group,CN=Schema,CN=Configuration", self.domain_dn())
+        partial_groupfilter = None
+
+        group_sid = None
+        try:
+            group_sid = security.dom_sid(group)
+        except ValueError:
+            pass
+        if group_sid is not None:
+            partial_groupfilter = "(objectClass=*)"
+
+        group_guid = None
+        if partial_groupfilter is None:
+            try:
+                group_guid = misc.GUID(group)
+            except NTSTATUSError as e:
+                (status, _) = e.args
+                if status != ntstatus.NT_STATUS_INVALID_PARAMETER:
+                    raise e
+            if group_guid is not None:
+                partial_groupfilter = "(objectClass=*)"
+
+        if partial_groupfilter is None:
+            group_dn = None
+            try:
+                if isinstance(group, ldb.Dn):
+                    group_dn = ldb.Dn(self, group.extended_str(1))
+                else:
+                    group_dn = ldb.Dn(self, str(group))
+            except ValueError:
+                pass
+            if group_dn is not None:
+                group_b_sid = group_dn.get_extended_component("SID")
+                group_b_guid = group_dn.get_extended_component("GUID")
+                if group_b_sid is not None:
+                    group_sid = ndr_unpack(security.dom_sid, group_b_sid)
+                    partial_groupfilter = "(objectClass=*)"
+                elif group_b_guid is not None:
+                    group_guid = ndr_unpack(misc.GUID, group_b_guid)
+                    partial_groupfilter = "(objectClass=*)"
+                else:
+                    search_base = str(group_dn)
+                    search_scope = ldb.SCOPE_BASE
+
+        if group_sid is not None:
+            search_base = '<SID=%s>' % group_sid
+            search_scope = ldb.SCOPE_BASE
+
+        if group_guid is not None:
+            search_base = '<GUID=%s>' % group_guid
+            search_scope = ldb.SCOPE_BASE
+
+        if partial_groupfilter is None:
+            search_base = self.domain_dn()
+            search_scope = ldb.SCOPE_SUBTREE
+            partial_groupfilter = "(sAMAccountName=%s)" % (
+                ldb.binary_encode(group))
+
+        groupfilter = "(&%s(objectCategory=%s,%s))" % (
+            partial_groupfilter,
+            "CN=Group,CN=Schema,CN=Configuration",
+            self.domain_dn())
 
         self.transaction_start()
         try:
-            targetgroup = self.search(base=self.domain_dn(),
-                                      scope=ldb.SCOPE_SUBTREE,
+            targetgroup = self.search(base=search_base,
+                                      scope=search_scope,
                                       expression=groupfilter,
                                       controls=["extended_dn:1:1"],
                                       attrs=['member'])
             if len(targetgroup) == 0:
-                raise Exception('Unable to find group "%s"' % groupname)
+                raise Exception('Unable to find group "%s"' % group)
             assert(len(targetgroup) == 1)
 
             modified = False
 
+            if group_sid is not None:
+                targetgroup_dn = '<SID=%s>' % group_sid
+            elif group_guid is not None:
+                targetgroup_dn = '<GUID=%s>' % group_guid
+            else:
+                targetgroup_dn = str(targetgroup[0].dn)
+
             addtargettogroup = """
 dn: %s
 changetype: modify
-""" % (str(targetgroup[0].dn))
+""" % (targetgroup_dn)
 
             for member in members:
                 targetmember_dn = None

@@ -2816,6 +2816,14 @@
 <refsect3>
 	<title>user disable <replaceable>username</replaceable></title>
 	<para>Disable a user account.</para>
+	<variablelist>
+	<varlistentry>
+	<term>--remove-supplemental-groups</term>
+	<listitem><para>
+	Remove user from all groups, but keep the primary group.
+	</para></listitem>
+	</varlistentry>
+	</variablelist>
 </refsect3>
 
 <refsect3>

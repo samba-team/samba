@@ -24,6 +24,8 @@ from samba import ldb
 from samba.auth import system_session
 from samba.netcmd import Command, CommandError, Option
 from samba.samdb import SamDB
+from samba.dcerpc import security
+from samba.ndr import ndr_unpack
 
 
 class cmd_user_disable(Command):
@@ -38,6 +40,9 @@ class cmd_user_disable(Command):
                help="LDAP filter to select user",
                type=str,
                dest="search_filter"),
+        Option("--remove-supplemental-groups",
+               help="Remove user's supplemental groups",
+               action="store_true"),
     ]
 
     takes_args = ["username?"]
@@ -49,7 +54,8 @@ class cmd_user_disable(Command):
     }
 
     def run(self, username=None, sambaopts=None, credopts=None,
-            versionopts=None, search_filter=None, H=None):
+            versionopts=None, search_filter=None, H=None,
+            remove_supplemental_groups=False):
         if username is None and search_filter is None:
             raise CommandError("Either the username or '--filter' must be specified!")
 
@@ -63,18 +69,46 @@ class cmd_user_disable(Command):
         samdb = SamDB(url=H, session_info=system_session(),
                       credentials=creds, lp=lp)
 
-        res = samdb.search(base=samdb.domain_dn(),
-                           expression=search_filter,
-                           scope=ldb.SCOPE_SUBTREE)
-        if len(res) < 1:
-            raise CommandError("Unable to find user for '%s'" % (
+        samdb.transaction_start()
+        try:
+            res = samdb.search(base=samdb.domain_dn(),
+                               expression=search_filter,
+                               scope=ldb.SCOPE_SUBTREE,
+                               controls=["extended_dn:1:1"],
+                               attrs=["objectSid", "memberOf"])
+            user_groups = res[0].get("memberOf")
+            if user_groups is None:
+                user_groups = []
+            user_binary_sid = res[0].get("objectSid", idx=0)
+            user_sid = ndr_unpack(security.dom_sid, user_binary_sid)
+        except IndexError:
+            samdb.transaction_cancel()
+            raise CommandError("Unable to find user '%s'" % (
                                username or search_filter))
+        except Exception as msg:
+            samdb.transaction_cancel()
+            raise CommandError("Failed to find user '%s': '%s'" % (
+                               username or search_filter, msg))
         if len(res) > 1:
+            samdb.transaction_cancel()
             raise CommandError("Found more than one user '%s'" % (
                                username or search_filter))
+
+        if remove_supplemental_groups:
+            for user_group in user_groups:
+                try:
+                    samdb.add_remove_group_members(str(user_group),
+                                                   [str(user_sid)],
+                                                   add_members_operation=False)
+                except Exception as msg:
+                    samdb.transaction_cancel()
+                    raise CommandError("Failed to remove user from group "
+                                       "'%s': %s" % (user_group, msg))
 
         try:
             samdb.disable_account(search_filter)
         except Exception as msg:
+            samdb.transaction_cancel()
             raise CommandError("Failed to disable user '%s': %s" % (
                 username or search_filter, msg))
+        samdb.transaction_commit()
