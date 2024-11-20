@@ -33,6 +33,7 @@
 #include "lib/util_ea.h"
 #include "source3/passdb/lookup_sid.h"
 #include "source3/modules/util_reparse.h"
+#include "libcli/smb/reparse.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2
@@ -318,6 +319,122 @@ static uint64_t get_mid_from_smb2req(struct smbd_smb2_request *smb2req)
 	return BVAL(reqhdr, SMB2_HDR_MESSAGE_ID);
 }
 
+/*
+ * [MS-SMB2] 2.2.2.1 SMB2 ERROR Context Response
+ */
+static bool smbd_smb2_create_symlink_error_context_response(
+	TALLOC_CTX *mem_ctx,
+	struct reparse_data_buffer *symlink_reparse,
+	uint8_t **_resp,
+	size_t *_resplen)
+{
+	ssize_t symlink_buffer_len;
+	size_t symlink_error_response_len, error_context_response_len;
+	uint8_t *resp = NULL;
+
+	SMB_ASSERT(symlink_reparse->tag == IO_REPARSE_TAG_SYMLINK);
+
+	symlink_buffer_len = reparse_data_buffer_marshall(symlink_reparse,
+							  NULL,
+							  0);
+	if (symlink_buffer_len < 0) {
+		DBG_DEBUG("reparse_data_buffer_marshall() failed\n");
+		goto fail;
+	}
+
+	/* 2.2.2.2.1 Symbolic Link Error Response */
+	symlink_error_response_len = symlink_buffer_len + 8;
+	if (symlink_error_response_len < (size_t)symlink_buffer_len) {
+		goto fail;
+	}
+
+	/* 2.2.2.1 SMB2 ERROR Context Response */
+	error_context_response_len = symlink_error_response_len + 8;
+	if (error_context_response_len < symlink_error_response_len) {
+		goto fail;
+	}
+
+	resp = talloc_array(mem_ctx, uint8_t, error_context_response_len);
+	if (resp == NULL) {
+		goto fail;
+	}
+	PUSH_LE_U32(resp, 0, symlink_error_response_len); /* ErrorDataLength */
+	PUSH_LE_U32(resp, 4, 0);			  /* ErrorId */
+	PUSH_LE_U32(resp,
+		    8,
+		    symlink_error_response_len - 4); /* SymLinkLength */
+	PUSH_LE_U32(resp, 12, 0x4C4D5953);
+
+	reparse_data_buffer_marshall(symlink_reparse,
+				     resp + 16,
+				     symlink_buffer_len);
+
+	*_resp = resp;
+	*_resplen = error_context_response_len;
+	return true;
+fail:
+	TALLOC_FREE(resp);
+	return false;
+}
+
+static NTSTATUS smbd_smb2_create_error(
+	struct smbd_smb2_request *smb2req,
+	NTSTATUS status,
+	struct reparse_data_buffer *symlink_reparse)
+{
+	struct smbXsrv_connection *xconn = smb2req->xconn;
+	NTSTATUS error;
+	DATA_BLOB resp = {
+		.data = NULL,
+	};
+	bool ok;
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+		error = smbd_smb2_request_error(smb2req, status);
+		return error;
+	}
+
+	ok = smbd_smb2_create_symlink_error_context_response(smb2req,
+							     symlink_reparse,
+							     &resp.data,
+							     &resp.length);
+	if (!ok) {
+		error = smbd_smb2_request_error(smb2req, NT_STATUS_NO_MEMORY);
+		return error;
+	}
+
+	if (xconn->protocol < PROTOCOL_SMB3_11) {
+		/*
+		 * smbd_smb2_create_symlink_error_context_response()
+		 * has created a smb3.11 SMB2 ERROR Context from
+		 * [MS-SMB2] 2.2.2.1. This has an 8-byte header before
+		 * the symlink response.
+		 */
+		DATA_BLOB symlink_error = {
+			.data = resp.data + 8,
+			.length = resp.length - 8,
+		};
+
+		SMB_ASSERT(resp.length >= 8);
+
+		error = smbd_smb2_request_error_ex(
+			smb2req,
+			NT_STATUS_STOPPED_ON_SYMLINK,
+			0,
+			&symlink_error,
+			__location__);
+	} else {
+		error = smbd_smb2_request_error_ex(
+			smb2req,
+			NT_STATUS_STOPPED_ON_SYMLINK,
+			1,
+			&resp,
+			__location__);
+	}
+
+	return error;
+}
+
 static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 {
 	struct smbd_smb2_request *smb2req = tevent_req_callback_data(tsubreq,
@@ -362,7 +479,7 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 		if (smbd_smb2_is_compound(smb2req)) {
 			smb2req->compound_create_err = status;
 		}
-		error = smbd_smb2_request_error(smb2req, status);
+		error = smbd_smb2_create_error(smb2req, status, NULL);
 		if (!NT_STATUS_IS_OK(error)) {
 			smbd_server_connection_terminate(smb2req->xconn,
 							 nt_errstr(error));
