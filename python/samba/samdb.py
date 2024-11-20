@@ -423,10 +423,10 @@ changetype: modify
                         pass
 
                 if targetmember_dn is None:
-                    filter = self.group_member_filter(member, member_types)
+                    search_filter = self.group_member_filter(member, member_types)
                     targetmember = self.search(base=member_base_dn,
                                                scope=ldb.SCOPE_SUBTREE,
-                                               expression=filter,
+                                               expression=search_filter,
                                                attrs=[])
 
                     if len(targetmember) > 1:
