@@ -77,6 +77,10 @@ uint32_t filename_create_ucf_flags(struct smb_request *req,
 		break;
 	}
 
+	if (create_options & FILE_OPEN_REPARSE_POINT) {
+		ucf_flags |= UCF_LCOMP_LNK_OK;
+	}
+
 	return ucf_flags;
 }
 
