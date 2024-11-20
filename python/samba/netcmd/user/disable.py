@@ -62,6 +62,17 @@ class cmd_user_disable(Command):
 
         samdb = SamDB(url=H, session_info=system_session(),
                       credentials=creds, lp=lp)
+
+        res = samdb.search(base=samdb.domain_dn(),
+                           expression=search_filter,
+                           scope=ldb.SCOPE_SUBTREE)
+        if len(res) < 1:
+            raise CommandError("Unable to find user for '%s'" % (
+                               username or search_filter))
+        if len(res) > 1:
+            raise CommandError("Found more than one user '%s'" % (
+                               username or search_filter))
+
         try:
             samdb.disable_account(search_filter)
         except Exception as msg:
