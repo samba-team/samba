@@ -36,7 +36,8 @@ class cmd_user_disable(Command):
                metavar="URL", dest="H"),
         Option("--filter",
                help="LDAP filter to select user",
-               type=str),
+               type=str,
+               dest="search_filter"),
     ]
 
     takes_args = ["username?"]
@@ -48,12 +49,13 @@ class cmd_user_disable(Command):
     }
 
     def run(self, username=None, sambaopts=None, credopts=None,
-            versionopts=None, filter=None, H=None):
-        if username is None and filter is None:
+            versionopts=None, search_filter=None, H=None):
+        if username is None and search_filter is None:
             raise CommandError("Either the username or '--filter' must be specified!")
 
-        if filter is None:
-            filter = "(&(objectClass=user)(sAMAccountName=%s))" % (ldb.binary_encode(username))
+        if search_filter is None:
+            search_filter = "(&(objectClass=user)(sAMAccountName=%s))" % (
+                ldb.binary_encode(username))
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
@@ -61,6 +63,7 @@ class cmd_user_disable(Command):
         samdb = SamDB(url=H, session_info=system_session(),
                       credentials=creds, lp=lp)
         try:
-            samdb.disable_account(filter)
+            samdb.disable_account(search_filter)
         except Exception as msg:
-            raise CommandError("Failed to disable user '%s': %s" % (username or filter, msg))
+            raise CommandError("Failed to disable user '%s': %s" % (
+                username or search_filter, msg))
