@@ -1216,17 +1216,6 @@ static NTSTATUS open_file(
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 
-		if (S_ISLNK(smb_fname->st.st_ex_mode) &&
-		    !posix_open)
-		{
-			/*
-			 * Don't allow stat opens on symlinks directly unless
-			 * it's a POSIX open. Match the return code from
-			 * openat_pathref_fsp().
-			 */
-			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		}
-
 		if (!fsp->fsp_flags.is_pathref) {
 			/*
 			 * There is only one legit case where end up here:
@@ -1236,11 +1225,6 @@ static NTSTATUS open_file(
 			 * pathref fsp at this point. The subsequent checks
 			 * assert this.
 			 */
-			if (!(smb_fname->flags & SMB_FILENAME_POSIX_PATH)) {
-				DBG_ERR("[%s] is not a POSIX pathname\n",
-					smb_fname_str_dbg(smb_fname));
-				return NT_STATUS_INTERNAL_ERROR;
-			}
 			if (!S_ISLNK(smb_fname->st.st_ex_mode)) {
 				DBG_ERR("[%s] is not a symlink\n",
 					smb_fname_str_dbg(smb_fname));
@@ -1290,13 +1274,19 @@ static NTSTATUS open_file(
 	fsp->file_id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
 	fsp->file_pid = req ? req->smbpid : 0;
-	fsp->fsp_flags.can_lock = true;
-	fsp->fsp_flags.can_read = ((access_mask & FILE_READ_DATA) != 0);
-	fsp->fsp_flags.can_write =
-		CAN_WRITE(conn) &&
-		((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) != 0);
-	if (fsp->fsp_name->twrp != 0) {
+	if (file_existed && S_ISLNK(smb_fname->st.st_ex_mode)) {
+		fsp->fsp_flags.can_lock = false;
+		fsp->fsp_flags.can_read = false;
 		fsp->fsp_flags.can_write = false;
+	} else {
+		fsp->fsp_flags.can_lock = true;
+		fsp->fsp_flags.can_read = ((access_mask & FILE_READ_DATA) !=
+					   0);
+		fsp->fsp_flags.can_write = CAN_WRITE(conn) &&
+					   ((access_mask &
+					     (FILE_WRITE_DATA |
+					      FILE_APPEND_DATA)) != 0) &&
+					   (fsp->fsp_name->twrp == 0);
 	}
 	fsp->print_file = NULL;
 	fsp->fsp_flags.modified = false;

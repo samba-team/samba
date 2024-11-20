@@ -479,7 +479,9 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 		if (smbd_smb2_is_compound(smb2req)) {
 			smb2req->compound_create_err = status;
 		}
-		error = smbd_smb2_create_error(smb2req, status, NULL);
+		error = smbd_smb2_create_error(smb2req,
+					       status,
+					       symlink_reparse);
 		if (!NT_STATUS_IS_OK(error)) {
 			smbd_server_connection_terminate(smb2req->xconn,
 							 nt_errstr(error));
@@ -732,6 +734,9 @@ struct smbd_smb2_create_state {
 	uint64_t out_file_id_persistent;
 	uint64_t out_file_id_volatile;
 	struct smb2_create_blobs *out_context_blobs;
+
+	/* symlink error data */
+	struct reparse_data_buffer *symlink_err;
 };
 
 static void smbd_smb2_create_purge_replay_cache(struct tevent_req *req,
@@ -1187,14 +1192,42 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					      state->in_create_disposition,
 					      state->in_create_options);
 
-	status = filename_convert_dirfsp(
-		req,
-		smb1req->conn,
-		state->fname,
-		ucf_flags,
-		state->twrp_time,
-		&dirfsp,
-		&smb_fname);
+	if (lp_follow_symlinks(SNUM(smb1req->conn)) &&
+	    (state->posx == NULL)) {
+		status = filename_convert_dirfsp(mem_ctx,
+						 smb1req->conn,
+						 state->fname,
+						 ucf_flags,
+						 state->twrp_time,
+						 &dirfsp,
+						 &smb_fname);
+	} else {
+		struct smb_filename *smb_fname_rel = NULL;
+
+		status = filename_convert_dirfsp_nosymlink(
+			mem_ctx,
+			smb1req->conn,
+			smb1req->conn->cwd_fsp,
+			state->fname,
+			ucf_flags,
+			state->twrp_time,
+			&dirfsp,
+			&smb_fname,
+			&smb_fname_rel,
+			&state->symlink_err);
+		TALLOC_FREE(smb_fname_rel);
+
+		if ((state->symlink_err != NULL) &&
+		    !(state->in_create_options & FILE_OPEN_REPARSE_POINT))
+		{
+			if (dirfsp != NULL) {
+				close_file_free(NULL, &dirfsp, ERROR_CLOSE);
+			}
+			TALLOC_FREE(smb_fname);
+			TALLOC_FREE(smb_fname_rel);
+			status = NT_STATUS_STOPPED_ON_SYMLINK;
+		}
+	}
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, state->ev);
 	}
@@ -1636,6 +1669,56 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 
 	state->out_file_attributes = fdos_mode(state->result);
 
+	if ((state->out_file_attributes & FILE_ATTRIBUTE_REPARSE_POINT) &&
+	    (!(state->in_create_options & FILE_OPEN_REPARSE_POINT)))
+	{
+
+		uint32_t tag;
+		uint8_t *data = NULL;
+		uint32_t len = 0;
+
+		status = fsctl_get_reparse_point(
+			state->result, talloc_tos(), &tag, &data, 65536, &len);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+
+		if (tag != IO_REPARSE_TAG_SYMLINK) {
+			status = NT_STATUS_IO_REPARSE_TAG_NOT_HANDLED;
+			goto fail;
+		}
+
+		state->symlink_err = talloc_zero(state,
+						 struct reparse_data_buffer);
+		if (state->symlink_err == NULL) {
+			TALLOC_FREE(data);
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+
+		status = reparse_data_buffer_parse(state->symlink_err,
+						   state->symlink_err,
+						   data,
+						   len);
+		TALLOC_FREE(data);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("reparse_data_buffer_parse failed: %s\n",
+				  nt_errstr(status));
+			goto fail;
+		}
+
+		/*
+		 * Checked above, just to make sure
+		 */
+		SMB_ASSERT(state->symlink_err->tag == IO_REPARSE_TAG_SYMLINK);
+
+		DBG_DEBUG("Redirecting to %s\n",
+			  state->symlink_err->parsed.lnk.substitute_name);
+
+		status = NT_STATUS_STOPPED_ON_SYMLINK;
+		goto fail;
+	}
+
 	if (state->mxac != NULL) {
 		NTTIME last_write_time;
 
@@ -1919,11 +2002,57 @@ static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
 			struct smb2_create_blobs *out_context_blobs,
 			struct reparse_data_buffer **symlink_reparse)
 {
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 	struct smbd_smb2_create_state *state = tevent_req_data(req,
 					       struct smbd_smb2_create_state);
+	bool error;
 
-	if (tevent_req_is_nterror(req, &status)) {
+	error = tevent_req_is_nterror(req, &status);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
+		struct symlink_reparse_struct *lnk = &state->symlink_err
+							      ->parsed.lnk;
+		size_t fname_len = strlen(state->fname);
+
+		/*
+		 * filename_convert_dirfsp_nosymlink() calculates
+		 * unparsed_path_length. Just assert it did not mess up big
+		 * time.
+		 */
+		SMB_ASSERT(lnk->unparsed_path_length <= fname_len);
+
+		if (lnk->unparsed_path_length != 0) {
+			bool ok;
+			char *unparsed_unix = NULL;
+			char *utf_16 = NULL;
+			size_t utf_16_len;
+
+			unparsed_unix = state->fname + fname_len -
+					lnk->unparsed_path_length;
+
+			ok = convert_string_talloc(talloc_tos(),
+						   CH_UNIX,
+						   CH_UTF16,
+						   unparsed_unix,
+						   lnk->unparsed_path_length,
+						   &utf_16,
+						   &utf_16_len);
+			if (!ok) {
+				tevent_req_received(req);
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+			TALLOC_FREE(utf_16);
+
+			if (utf_16_len > UINT16_MAX) {
+				tevent_req_received(req);
+				return NT_STATUS_BUFFER_OVERFLOW;
+			}
+			lnk->unparsed_path_length = utf_16_len;
+		}
+		*symlink_reparse = talloc_move(mem_ctx, &state->symlink_err);
+	}
+
+	if (error) {
 		tevent_req_received(req);
 		return status;
 	}

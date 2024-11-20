@@ -1,4 +1,0 @@
-^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_symlinkerror_directory
-^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_symlinkerror_file
-^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_symlinkerror_absolute_outside_share
-^samba.tests.smb2symlink.samba.tests.smb2symlink.Smb2SymlinkTests.test_symlinkerror_absolute_inshare

@@ -1343,11 +1343,17 @@ EOF
 		return 1
 	fi
 
-	echo "$out" | grep 'NT_STATUS_OBJECT_NAME_NOT_FOUND'
+	if [ "$PROTOCOL" = "SMB3" ]; then
+	    expected_error="NT_STATUS_STOPPED_ON_SYMLINK"
+	else
+	    expected_error="NT_STATUS_OBJECT_NAME_NOT_FOUND"
+	fi
+
+	echo "$out" | grep "$expected_error"
 	ret=$?
 	if [ $ret -ne 0 ]; then
 		echo "$out"
-		echo "failed - should get NT_STATUS_OBJECT_NAME_NOT_FOUND getting \\nosymlinks\\source"
+		echo "failed - should get ${expected_error} getting \\nosymlinks\\source"
 		return 1
 	fi
 
