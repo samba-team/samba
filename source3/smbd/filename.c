@@ -808,8 +808,6 @@ filename_convert_dirfsp_nosymlink(TALLOC_CTX *mem_ctx,
 			}
 
 			lnk->unparsed_path_length = unparsed;
-			*_symlink_err = symlink_err;
-
 			goto fail;
 		}
 	}
@@ -1054,6 +1052,8 @@ done:
 	return NT_STATUS_OK;
 
 fail:
+	*_symlink_err = symlink_err;
+
 	/*
 	 * If open_stream_pathref_fsp() returns an error, smb_fname_rel->fsp
 	 * has been set to NULL, so we must free base_fsp separately
