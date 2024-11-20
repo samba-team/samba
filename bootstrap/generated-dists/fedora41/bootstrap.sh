@@ -92,6 +92,7 @@ dnf install -y \
     procps-ng \
     psmisc \
     python3 \
+    python3-crypt-r \
     python3-cryptography \
     python3-dateutil \
     python3-devel \

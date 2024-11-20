@@ -3,7 +3,7 @@
 # See also bootstrap/config.py
 #
 
-FROM quay.io/fedora/fedora:40
+FROM quay.io/fedora/fedora:41
 
 # pass in with --build-arg while build
 ARG SHA1SUM

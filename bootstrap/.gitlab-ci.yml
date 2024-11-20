@@ -98,7 +98,7 @@ debian11:
 debian12:
   extends: .build_image_template
 
-fedora40:
+fedora41:
   extends: .build_image_template
 
 debian11-32bit:
