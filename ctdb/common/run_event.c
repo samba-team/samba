@@ -268,8 +268,27 @@ static int run_event_script_status(struct run_event_script *script)
 	if (script->result.sig > 0) {
 		ret = -EINTR;
 	} else if (script->result.err > 0) {
-		if (script->result.err == EACCES) {
-			/* Map EACCESS to ENOEXEC */
+		if (script->result.err == EACCES ||
+		    script->result.err == ENOENT) {
+			/*
+			 * Map EACCESS/ENOENT to ENOEXEC
+			 *
+			 * ENOENT: Disabling a standard event script
+			 * by removing its symlink can result in
+			 * ENOENT.  This happens when the script list
+			 * is built while the link exists, but the
+			 * link is removed before the attempt to run
+			 * it.  Map it to ENOEXEC (which causes a
+			 * script to be shown as DISABLED).  This
+			 * makes it impossible to distinguish a
+			 * removed symlink from a dangling
+			 * symlink... but the latter can just be
+			 * defined as disabled.  It should be rare
+			 * because it shouldn't happen if event
+			 * scripts are properly managed.  If someone
+			 * is doing weird things then they can easily
+			 * debug such issues by looking at the link.
+			 */
 			ret = -ENOEXEC;
 		} else {
 			ret = -script->result.err;

@@ -153,3 +153,40 @@ ok <<EOF
 * 03.notalink
 EOF
 simple_test script list data
+
+#
+# Test disabling of scripts after the script list has been
+# built. Normally this would be an admin racing with eventd instead of
+# one script disabling subsequent ones.
+#
+
+# First enable all scripts - this might repeat some previous stuff
+ok_null
+simple_test script enable data 01.dummy
+ok_null
+simple_test script enable data 02.disabled
+ok_null
+simple_test script enable data 03.notalink
+
+# Confirm expected state
+ok <<EOF
+* 01.dummy
+* 02.disabled
+
+* 03.notalink
+EOF
+simple_test script list data
+
+# Now run the event that disables the subsequent scripts:
+# - 02.disabled has its link removed
+# - 03.notalink effectively has "chmod -x" applied
+ok_null
+simple_test run 10 data disablehack
+
+# Confirm that both subsequent scripts were disabled
+ok <<EOF
+01.dummy             OK         DURATION DATETIME
+02.disabled          DISABLED  
+03.notalink          DISABLED  
+EOF
+simple_test status data disablehack
