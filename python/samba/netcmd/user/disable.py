@@ -34,7 +34,9 @@ class cmd_user_disable(Command):
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
-        Option("--filter", help="LDAP Filter to set password on", type=str),
+        Option("--filter",
+               help="LDAP filter to select user",
+               type=str),
     ]
 
     takes_args = ["username?"]
