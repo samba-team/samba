@@ -407,6 +407,7 @@ class KerberosCredentials(Credentials):
         'forced_salt',
         'kvno',
         'sid',
+        'guid',
         'spn',
         'tgs_supported_enctypes',
         'upn',
@@ -440,6 +441,7 @@ class KerberosCredentials(Credentials):
         self.upn = None
         self.spn = None
         self.sid = None
+        self.guid = None
         self.account_type = None
 
         self.user_account_control = None
@@ -588,6 +590,12 @@ class KerberosCredentials(Credentials):
 
     def get_sid(self):
         return self.sid
+
+    def set_guid(self, guid):
+        self.guid = guid
+
+    def get_guid(self):
+        return self.guid
 
     def get_rid(self):
         sid = self.get_sid()

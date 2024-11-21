@@ -929,7 +929,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         res = samdb.search(base=dn,
                            scope=ldb.SCOPE_BASE,
                            attrs=['msDS-KeyVersionNumber',
-                                  'objectSid'])
+                                  'objectSid',
+                                  'objectGUID'])
 
         kvno = res[0].get('msDS-KeyVersionNumber', idx=0)
         if kvno is not None:
@@ -940,6 +941,10 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         sid = samdb.schema_format_value('objectSID', sid)
         sid = sid.decode('utf-8')
         creds.set_sid(sid)
+        guid = res[0].get('objectGUID', idx=0)
+        guid = samdb.schema_format_value('objectGUID', guid)
+        guid = guid.decode('utf-8')
+        creds.set_guid(guid)
 
         return (creds, dn)
 
