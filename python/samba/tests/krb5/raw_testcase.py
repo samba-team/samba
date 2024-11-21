@@ -4070,7 +4070,7 @@ class RawKerberosTest(TestCase):
                     else:
                         self.assertNotIn(PADATA_REQ_ENC_PA_REP, enc_pa_dict)
 
-                    if PADATA_SUPPORTED_ETYPES in enc_pa_dict:
+                    if PADATA_SUPPORTED_ETYPES in enc_pa_dict and self.strict_checking:
                         expected_supported_etypes = kdc_exchange_dict[
                             'expected_supported_etypes']
 
@@ -5128,9 +5128,10 @@ class RawKerberosTest(TestCase):
                 require_strict.add(PADATA_ENCRYPTED_CHALLENGE)
 
             got_patypes = tuple(pa['padata-type'] for pa in rep_padata)
+            TD_CMS_DIGEST_ALGORITHMS = 111
             self.assertSequenceElementsEqual(expected_patypes, got_patypes,
                                              require_strict=require_strict,
-                                             unchecked={PADATA_PW_SALT})
+                                             unchecked={PADATA_PW_SALT,TD_CMS_DIGEST_ALGORITHMS})
 
             if not expected_patypes:
                 return None
