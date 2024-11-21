@@ -291,8 +291,8 @@ static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_
 
 	/* very basic sanity check */
 	if (*seq_num <= 0) {
-		DEBUG(3,("ldapsam_get_seq_num: invalid sequence number: %d\n",
-			(int)*seq_num));
+		DBG_NOTICE("invalid sequence number: %" PRIi64 "\n",
+			   (int64_t)(*seq_num));
 		goto done;
 	}
 
