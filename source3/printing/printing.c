@@ -1231,10 +1231,13 @@ static bool print_cache_expired(const char *sharename, bool check_pending)
 		uint32_t u;
 		time_t msg_pending_time;
 
-		DEBUG(4, ("print_cache_expired: cache expired for queue %s "
-			"(last_qscan_time = %d, time now = %d, qcachetime = %d)\n",
-			sharename, (int)last_qscan_time, (int)time_now,
-			(int)lp_lpq_cache_time() ));
+		DBG_INFO("cache expired for queue %s "
+			 "(last_qscan_time = %" PRIu64 ", time now = %" PRIu64
+			 ", qcachetime = %d)\n",
+			 sharename,
+			 (uint64_t)last_qscan_time,
+			 (uint64_t)time_now,
+			 lp_lpq_cache_time());
 
 		/* check if another smbd has already sent a message to update the
 		   queue.  Give the pending message one minute to clear and
