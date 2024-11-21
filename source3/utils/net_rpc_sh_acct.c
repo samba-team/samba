@@ -295,8 +295,8 @@ static int account_set_lockduration(struct net_context *c,
 	}
 
 	unix_to_nt_time_abs(&i12->lockout_duration, atoi(argv[0]));
-	d_printf(_("Setting lockout duration to %d seconds\n"),
-		 (int)nt_time_to_unix_abs(&i12->lockout_duration));
+	d_printf(_("Setting lockout duration to %" PRIi64 " seconds\n"),
+		 (int64_t)nt_time_to_unix_abs(&i12->lockout_duration));
 
 	return 12;
 }
