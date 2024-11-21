@@ -1288,7 +1288,7 @@ _PUBLIC_ void ndr_print_NTTIME_hyper(struct ndr_print *ndr, const char *name, NT
 _PUBLIC_ void ndr_print_time_t(struct ndr_print *ndr, const char *name, time_t t)
 {
 	if (t == (time_t)-1 || t == 0) {
-		ndr->print(ndr, "%-25s: (time_t)%d", name, (int)t);
+		ndr->print(ndr, "%-25s: (time_t)%" PRIi64, name, (int64_t)t);
 	} else {
 		ndr->print(ndr, "%-25s: %s", name, timestring(ndr, t));
 	}
