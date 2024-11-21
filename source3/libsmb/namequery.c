@@ -149,8 +149,10 @@ bool saf_store( const char *domain, const char *servername )
 	}
 	expire = time( NULL ) + lp_parm_int(-1, "saf","ttl", SAF_TTL);
 
-	DEBUG(10,("saf_store: domain = [%s], server = [%s], expire = [%u]\n",
-		domain, servername, (unsigned int)expire ));
+	DBG_DEBUG("domain = [%s], server = [%s], expire = [%" PRIu64 "]\n",
+		  domain,
+		  servername,
+		  (uint64_t)expire);
 
 	ret = gencache_set( key, servername, expire );
 
