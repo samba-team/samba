@@ -2178,8 +2178,11 @@ bool pdb_update_bad_password_count(struct samu *sampass, bool *updated)
 	}
 
 	LastBadPassword = pdb_get_bad_password_time(sampass);
-	DEBUG(7, ("LastBadPassword=%d, resettime=%d, current time=%d.\n",
-		   (uint32_t) LastBadPassword, resettime, (uint32_t)time(NULL)));
+	DBG_INFO("LastBadPassword=%" PRIu64 ", resettime=%d, "
+		 "current time=%" PRIu64 ".\n",
+		 (uint64_t)LastBadPassword,
+		 resettime,
+		 (uint64_t)time(NULL));
 	if (time(NULL) > (LastBadPassword + convert_uint32_t_to_time_t(resettime)*60)){
 		pdb_set_bad_password_count(sampass, 0, PDB_CHANGED);
 		pdb_set_bad_password_time(sampass, 0, PDB_CHANGED);
