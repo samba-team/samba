@@ -967,10 +967,12 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		   Don't delete the job if it was submitted after the lpq_time. */
 
 		if (pjob.starttime < ts->lpq_time) {
-			DEBUG(10,("traverse_fn_delete: pjob %u deleted due to pjob.starttime (%u) < ts->lpq_time (%u)\n",
-						(unsigned int)jobid,
-						(unsigned int)pjob.starttime,
-						(unsigned int)ts->lpq_time ));
+			DBG_DEBUG("pjob %u deleted due to pjob.starttime "
+				  "(%" PRIu64 ") < ts->lpq_time (%" PRIu64
+				  ")\n",
+				  (unsigned int)jobid,
+				  (uint64_t)pjob.starttime,
+				  (uint64_t)ts->lpq_time);
 			pjob_delete(ts->ev, ts->msg_ctx,
 				    ts->sharename, jobid);
 		} else
