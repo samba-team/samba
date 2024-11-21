@@ -2624,6 +2624,7 @@ struct tevent_req *netlogon_creds_cli_LogonSamLogon_send(TALLOC_CTX *mem_ctx,
 
 	case NetlogonNetworkInformation:
 	case NetlogonNetworkTransitiveInformation:
+	case NetlogonTicketLogonInformation:
 		break;
 	}
 

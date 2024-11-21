@@ -219,6 +219,54 @@ interface netlogon
 		[size_is(length)] uint8 *data;
 	} netr_GenericInfo;
 
+	typedef [bitmap64bit] bitmap {
+		/*
+		 * These are documented in strange ways!
+		 *
+		 * Following [MS-ADPS] 2.2.2.1 NETLOGON_TICKET_LOGON_INFO Message,
+		 * would mean this, but these are not really flags...
+		 * they document the number of the bit in the 64 bit value.
+		 *
+		 * CriticalOptions:
+		 * NO_AUTHORIZATION_DATA  = 0x0000
+		 *
+		 * ComputerDomainOptions:
+		 * SKIP_RESOURCE_GROUPS   = 0x0010
+		 * SKIP_A2A_CHECKS        = 0x0011
+		 *
+		 * TransitOptions:
+		 * SKIP_SID_FILTER        = 0x0020
+		 * SKIP_NAMESPACE_FILTER  = 0x0021
+		 *
+		 * KerberosOptions:
+		 * SKIP_PAC_SIGNATURES    = 0x0030
+		 * REMOVE_RESOURCE_GROUPS = 0x0031
+		 *
+		 * Following [MS-NPRPC] 2.2.1.4.19 NETLOGON_TICKET_LOGON_INFO
+		 * and its DUMMYSTRUCTNAME definition
+		 */
+		NETLOGON_TICKET_LOGON_CRITICAL_OPTIONS        = 0x000000000000FFFF,
+		NETLOGON_TICKET_LOGON_NO_AUTHORIZATION_DATA   = 0x0000000000000001,
+		NETLOGON_TICKET_LOGON_COMPUTER_DOMAIN_OPTIONS = 0x00000000FFFF0000,
+		NETLOGON_TICKET_LOGON_SKIP_RESOURCE_GROUPS    = 0x0000000000010000,
+		NETLOGON_TICKET_LOGON_SKIP_A2A_CHECKS         = 0x0000000000020000,
+		NETLOGON_TICKET_LOGON_TRANSIT_OPTIONS         = 0x0000FFFF00000000,
+		NETLOGON_TICKET_LOGON_SKIP_SID_FILTER         = 0x0000000100000000,
+		NETLOGON_TICKET_LOGON_SKIP_NAMESPACE_FILTER   = 0x0000000200000000,
+		NETLOGON_TICKET_LOGON_KERBEROS_OPTIONS        = 0xFFFF000000000000,
+		NETLOGON_TICKET_LOGON_SKIP_PAC_SIGNATURES     = 0x0001000000000000,
+		NETLOGON_TICKET_LOGON_REMOVE_RESOURCE_GROUPS  = 0x0002000000000000
+	} netr_TicketLogonInfoRequestOptions;
+
+	typedef [public,flag(NDR_PAHEX)] struct {
+		netr_IdentityInfo identity_info;
+		netr_TicketLogonInfoRequestOptions request_options;
+		uint32 service_ticket_length;
+		[size_is(service_ticket_length)] uint8 *service_ticket;
+		uint32 additional_ticket_length;
+		[size_is(additional_ticket_length)] uint8 *additional_ticket;
+	} netr_TicketLogonInfo;
+
 	typedef [public] enum {
 		NetlogonInteractiveInformation = 1,
 		NetlogonNetworkInformation = 2,
@@ -226,7 +274,8 @@ interface netlogon
 		NetlogonGenericInformation = 4,
 		NetlogonInteractiveTransitiveInformation = 5,
 		NetlogonNetworkTransitiveInformation = 6,
-		NetlogonServiceTransitiveInformation = 7
+		NetlogonServiceTransitiveInformation = 7,
+		NetlogonTicketLogonInformation = 8
 	} netr_LogonInfoClass;
 
 	typedef [public,switch_type(netr_LogonInfoClass)] union {
@@ -237,6 +286,7 @@ interface netlogon
 		[case(NetlogonInteractiveTransitiveInformation)] netr_PasswordInfo *password;
 		[case(NetlogonNetworkTransitiveInformation)]     netr_NetworkInfo  *network;
 		[case(NetlogonServiceTransitiveInformation)]     netr_PasswordInfo *password;
+		[case(NetlogonTicketLogonInformation)]           netr_TicketLogonInfo *ticket;
 		[default];
 	} netr_LogonLevel;
 
@@ -348,12 +398,82 @@ interface netlogon
 		[size_is(length)] uint8 *data;
 	} netr_GenericInfo2;
 
-	typedef enum {
+	typedef [bitmap64bit] bitmap {
+		/*
+		 * These are documented in strange ways!
+		 *
+		 * Following [MS-ADPS] 2.2.3.1 NETLOGON_VALIDATION_TICKET_LOGON
+		 * message would mean this, but these are not really flags...
+		 * they document the number of the bit in the relative 16-bit
+		 * space.
+		 *
+		 * CriticalResults:
+		 * LogonFailed = 0x0000
+		 *
+		 * SourceInformation:
+		 * TicketDecryptionFailed = 0x0000
+		 * PacValidationFailed = 0x0001
+		 * CompoundSource = 0x0002
+		 * SourceUserClaims = 0x0003
+		 * SourceDeviceClaims = 0x0004
+		 * FullSignaturePresent = 0x0005
+		 * ResourceGroupsRemoved = 0x0006
+		 *
+		 * TransitInformation:
+		 * UserSidsFailed = 0x0000
+		 * UserNamespaceFailed = 0x0001
+		 * UserFailedA2A = 0x0002
+		 * DeviceSidsFailed = 0x0003
+		 * DeviceNamespaceFailed = 0x0004
+		 * UserSidsFiltered = 0x0005
+		 * DeviceSidsFiltered = 0x0006
+		 *
+		 * Following [MS-NPRPC] 2.2.1.4.20 NETLOGON_VALIDATION_TICKET_LOGON
+		 * and its DUMMYSTRUCTNAME definition
+		 */
+		NETLOGON_TICKET_LOGON_CRITICAL_RESULTS                 = 0x00000000000000FF,
+		NETLOGON_TICKET_LOGON_FAILED_LOGON                     = 0x0000000000000001,
+		NETLOGON_TICKET_LOGON_CRITICAL_CLIENT_RESULTS          = 0x000000000000FF00,
+		NETLOGON_TICKET_LOGON_CRITICAL_COMPUTER_DOMAIN_RESULTS = 0x0000000000FF0000,
+		NETLOGON_TICKET_LOGON_CRITICAL_TRANSIT_RESULTS         = 0x00000000FF000000,
+		NETLOGON_TICKET_LOGON_SOURCE_INFORMATION               = 0x0000FFFF00000000,
+		NETLOGON_TICKET_LOGON_TICKET_DECRYPTION_FAILED         = 0x0000000100000000,
+		NETLOGON_TICKET_LOGON_PAC_VALIDATION_FAILED            = 0x0000000200000000,
+		NETLOGON_TICKET_LOGON_COMPOUND_SOURCE                  = 0x0000000400000000,
+		NETLOGON_TICKET_LOGON_SOURCE_USER_CLAIMS               = 0x0000000800000000,
+		NETLOGON_TICKET_LOGON_SOURCE_DEVICE_CLAIMS             = 0x0000001000000000,
+		NETLOGON_TICKET_LOGON_FULL_SIGNATURE_PRESENT           = 0x0000002000000000,
+		NETLOGON_TICKET_LOGON_RESOURCE_GROUPS_REMOVED          = 0x0000004000000000,
+		NETLOGON_TICKET_LOGON_TRANSIT_INFORMATION              = 0xFFFF000000000000,
+		NETLOGON_TICKET_LOGON_USER_SIDS_FAILED                 = 0x0001000000000000,
+		NETLOGON_TICKET_LOGON_USER_NAMESPACE_FAILED            = 0x0002000000000000,
+		NETLOGON_TICKET_LOGON_USER_FAILED_A2A                  = 0x0004000000000000,
+		NETLOGON_TICKET_LOGON_DEVICE_SIDS_FAILED               = 0x0008000000000000,
+		NETLOGON_TICKET_LOGON_DEVICE_NAMESPACE_FAILED          = 0x0010000000000000,
+		NETLOGON_TICKET_LOGON_USER_SIDS_FILTERED               = 0x0020000000000000,
+		NETLOGON_TICKET_LOGON_DEVICE_SIDS_FILTERED             = 0x0040000000000000
+	} netr_TicketLogonResults;
+
+	typedef [public,flag(NDR_PAHEX)] struct {
+		netr_TicketLogonResults results;
+		NTSTATUS kerberos_status;
+		NTSTATUS netlogon_status;
+		lsa_String source_of_status;
+		netr_SamInfo6 *user_information;
+		netr_SamInfo6 *device_information;
+		uint32 user_claims_length;
+		[size_is(user_claims_length)] uint8 *user_claims;
+		uint32 device_claims_length;
+		[size_is(device_claims_length)] uint8 *device_claims;
+	} netr_ValidationTicketLogon;
+
+	typedef [public] enum {
 		NetlogonValidationUasInfo = 1,
 		NetlogonValidationSamInfo = 2,
 		NetlogonValidationSamInfo2 = 3,
 		NetlogonValidationGenericInfo2 = 5,
-		NetlogonValidationSamInfo4 = 6
+		NetlogonValidationSamInfo4 = 6,
+		NetlogonValidationTicketLogon = 7
 	} netr_ValidationInfoClass;
 
 	typedef [public,switch_type(uint16)] union {
@@ -362,6 +482,7 @@ interface netlogon
 		[case(4)] netr_PacInfo  *pac;
 		[case(NetlogonValidationGenericInfo2)] netr_GenericInfo2  *generic;
 		[case(NetlogonValidationSamInfo4)] netr_SamInfo6 *sam6;
+		[case(NetlogonValidationTicketLogon)] netr_ValidationTicketLogon *ticket;
 		[default];
 	} netr_Validation;
 

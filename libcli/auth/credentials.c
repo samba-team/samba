@@ -886,6 +886,9 @@ static NTSTATUS netlogon_creds_crypt_samlogon_validation(struct netlogon_creds_C
 			base = &validation->sam6->base;
 		}
 		break;
+	case 7:
+		/* NetlogonValidationTicketLogon */
+		return NT_STATUS_OK;
 	default:
 		/* If we can't find it, we can't very well decrypt it */
 		return NT_STATUS_INVALID_INFO_CLASS;
@@ -1146,6 +1149,9 @@ static NTSTATUS netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Creden
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		break;
+
+	case NetlogonTicketLogonInformation:
+		break;
 	}
 
 	return NT_STATUS_OK;
@@ -1395,6 +1401,9 @@ union netr_LogonLevel *netlogon_creds_shallow_copy_logon(TALLOC_CTX *mem_ctx,
 		}
 
 		return out;
+
+	case NetlogonTicketLogonInformation:
+		break;
 	}
 
 	return out;
