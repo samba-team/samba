@@ -49,11 +49,11 @@ def ndr_unpack(cls, data, allow_remaining=False):
     return object
 
 
-def ndr_print(object):
+def ndr_print(object, print_secrets=False):
     ndr_print = getattr(object, "__ndr_print__", None)
     if ndr_print is None:
         raise TypeError(f"{object} is not a NDR object")
-    return ndr_print()
+    return ndr_print(print_secrets=print_secrets)
 
 
 def ndr_deepcopy(object):
@@ -107,11 +107,11 @@ def ndr_unpack_in(object, data, bigendian=False, ndr64=False, allow_remaining=Fa
     return object
 
 
-def ndr_print_in(object):
+def ndr_print_in(object, print_secrets=False):
     ndr_print_in_fn = getattr(object, "__ndr_print_in__", None)
     if ndr_print_in_fn is None:
         raise TypeError("%r is not a NDR function object" % object)
-    return ndr_print_in_fn()
+    return ndr_print_in_fn(print_secrets=print_secrets)
 
 
 def ndr_pack_out(object, bigendian=False, ndr64=False):
@@ -146,8 +146,8 @@ def ndr_unpack_out(object, data, bigendian=False, ndr64=False, allow_remaining=F
     return object
 
 
-def ndr_print_out(object):
+def ndr_print_out(object, print_secrets=False):
     ndr_print_out_fn = getattr(object, "__ndr_print_out__", None)
     if ndr_print_out_fn is None:
         raise TypeError("%r is not a NDR function object" % object)
-    return ndr_print_out_fn()
+    return ndr_print_out_fn(print_secrets=print_secrets)
