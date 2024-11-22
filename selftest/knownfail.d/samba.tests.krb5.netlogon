@@ -1,6 +1,4 @@
-# Without AES we currently get DOWNGRADE_DETECTED
-^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_.*_auth3_00004000
-^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_.*_auth3_00004004
-^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_.*_auth3_603fffff
+# This doesn't enforce that a krb5 connection can't be used by aes creds
+^samba.tests.krb5.netlogon.*.test_wks1_authenticate_flags
 # This is not implemented yet
 ^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_ticket_samlogon

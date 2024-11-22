@@ -1995,6 +1995,8 @@ for env in ["ad_dc"]:
                            environ={
                                **krb5_environ,
                                'FAST_SUPPORT': fast_support,
+                               'NETLOGON_STRONG_KEY_SUPPORT': '0',
+                               'NETLOGON_AUTH_KRB5_SUPPORT': '0',
                            })
 
 planoldpythontestsuite('fl2008r2dc', 'samba.tests.krb5.salt_tests',

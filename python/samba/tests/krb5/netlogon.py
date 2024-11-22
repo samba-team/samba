@@ -32,7 +32,7 @@ from samba import (
 from samba.dcerpc import netlogon, samr, misc, ntlmssp, krb5pac
 from samba.ndr import ndr_deepcopy, ndr_print, ndr_pack
 from samba.crypto import md4_hash_blob
-from samba.tests import DynamicTestCase
+from samba.tests import DynamicTestCase, env_get_var_value
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
 from samba.tests.krb5.rfc4120_constants import KU_NON_KERB_CKSUM_SALT
@@ -64,10 +64,16 @@ class NetlogonSchannel(KDCBaseTest):
 
         for test in tests:
             for trust in ["wks", "bdc"]:
-                for auth3_flags in [0x603fffff, 0x613fffff]:
+                for auth3_flags in [0x603fffff, 0x613fffff, 0xe13fffff]:
                     setup_test(test, trust, "auth3", auth3_flags)
                 for auth3_flags in [0x00004004, 0x00004000, 0x01000000]:
                     setup_test(test, trust, "auth3", auth3_flags)
+                for authK_flags in [0xe13fffff, 0x80000000, 0x00000000, 0x603fbffb]:
+                    setup_test(test, trust, "authK", authK_flags)
+                for authK_flags in [0x01004004, 0x01000000, 0x00004000, 0x00000004]:
+                    setup_test(test, trust, "authK", authK_flags)
+                for authK_flags in [0x613fffff, 0x413fffff, 0x400001ff]:
+                    setup_test(test, trust, "authK", authK_flags)
 
     def setUp(self):
         super().setUp()
@@ -76,6 +82,20 @@ class NetlogonSchannel(KDCBaseTest):
         self.do_hexdump = global_hexdump
 
         self.empty_pwd_nt4_hash = self.get_samr_Password(md4_hash_blob(b''))
+
+        strong_key_support = env_get_var_value(
+            'NETLOGON_STRONG_KEY_SUPPORT',
+            allow_missing=True)
+        if strong_key_support is None:
+            strong_key_support = '1'
+        self.strong_key_support = bool(int(strong_key_support))
+
+        auth_krb5_support = env_get_var_value(
+            'NETLOGON_AUTH_KRB5_SUPPORT',
+            allow_missing=True)
+        if auth_krb5_support is None:
+            auth_krb5_support = '1'
+        self.auth_krb5_support = bool(int(auth_krb5_support))
 
         self.user_creds = self.get_cached_creds(
                 account_type=self.AccountType.USER,
@@ -114,6 +134,13 @@ class NetlogonSchannel(KDCBaseTest):
                                  self.get_lp(),
                                  trust_creds)
         trust_creds.set_netlogon_creds(None)
+        return conn
+
+    def get_krb5_conn(self, trust_creds):
+        dc_server = self.dc_server
+        conn = netlogon.netlogon(f'ncacn_ip_tcp:{dc_server}[krb5,seal]',
+                                 self.get_lp(),
+                                 trust_creds)
         return conn
 
     def get_samr_Password(self, nt_hash):
@@ -195,6 +222,46 @@ class NetlogonSchannel(KDCBaseTest):
                                                  return_credentials,
                                                  auth_type,
                                                  auth_level)
+
+        self.assertEqual((negotiated_flags & required_flags), required_flags)
+        self.assertEqual((negotiated_flags & negotiate_flags), negotiated_flags)
+        credentials.netlogon_creds_client_update(ncreds,
+                                                 negotiated_flags,
+                                                 client_rid)
+
+        return ncreds
+
+    def do_AuthenticateKerberos(self, conn, trust_creds,
+            negotiate_flags, required_flags,
+            expect_error=None):
+        (auth_type, auth_level) = conn.auth_info()
+
+        trust_account_name = trust_creds.get_username()
+        trust_computer_name = trust_creds.get_workstation()
+
+        ncreds = \
+            credentials.netlogon_creds_kerberos_init(
+                client_account=trust_account_name,
+                client_computer_name=trust_computer_name,
+                secure_channel_type=trust_creds.get_secure_channel_type(),
+                client_requested_flags=negotiate_flags,
+                negotiate_flags=negotiate_flags)
+
+        try:
+            (negotiated_flags, client_rid) = \
+                conn.netr_ServerAuthenticateKerberos(self.dc_server,
+                                                     ncreds.account_name,
+                                                     ncreds.secure_channel_type,
+                                                     ncreds.computer_name,
+                                                     ncreds.client_requested_flags)
+        except NTSTATUSError as err:
+            status, _ = err.args
+            self.assertIsNotNone(expect_error,
+                                 f'unexpectedly failed with {status:08X}')
+            self.assertEqual(expect_error, status, 'got wrong status code')
+            return
+
+        self.assertIsNone(expect_error, 'expected error')
 
         self.assertEqual((negotiated_flags & required_flags), required_flags)
         self.assertEqual((negotiated_flags & negotiate_flags), negotiated_flags)
@@ -899,14 +966,49 @@ class NetlogonSchannel(KDCBaseTest):
             creds = self.get_bdc1_creds()
         self.assertIsNotNone(creds)
 
+        proposed_flags = flags
+        required_flags = flags
+
         if authX == "auth3":
             anon_conn = self.get_anon_conn()
-            ncreds = self.do_Authenticate3(anon_conn, creds, flags, flags)
+            expect_error = None
+            if flags & 0x80000000 and not self.auth_krb5_support:
+                required_flags &= ~0x80000000
+            if not (flags & 0x01000000) and not self.strong_key_support:
+                expect_error = ntstatus.NT_STATUS_DOWNGRADE_DETECTED
+            ncreds = self.do_Authenticate3(anon_conn, creds,
+                                           proposed_flags,
+                                           required_flags,
+                                           expect_error=expect_error)
+            if expect_error is not None:
+                self.skipTest('Requires NETLOGON_STRONG_KEY_SUPPORT')
+                return (None, None, None, None)
+            if proposed_flags != required_flags:
+                self.assertEqual(ncreds.negotiate_flags, required_flags)
+                self.skipTest('Requires NETLOGON_AUTH_KRB5_SUPPORT')
+                return (None, None, None, None)
             conn = self.get_schannel_conn(creds, ncreds)
+        elif authX == "authK":
+            conn = self.get_krb5_conn(creds)
+            expect_error = None
+            if not self.auth_krb5_support:
+                expect_error = ntstatus.NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE
+            ncreds = self.do_AuthenticateKerberos(conn, creds,
+                                                  proposed_flags,
+                                                  required_flags,
+                                                  expect_error=expect_error)
+            if expect_error is not None:
+                self.skipTest('Requires NETLOGON_AUTH_KRB5_SUPPORT')
+                return (None, None, None, None)
         self.assertIsNotNone(ncreds)
         self.assertIsNotNone(conn)
 
-        expect_encrypted = True
+        if ncreds.authenticate_kerberos:
+            expect_encrypted = False
+        elif flags & 0x80000000:
+            expect_encrypted = False
+        else:
+            expect_encrypted = True
 
         return (creds, ncreds, conn, expect_encrypted)
 
@@ -926,6 +1028,26 @@ class NetlogonSchannel(KDCBaseTest):
 
         expect_broken_crypto = False
         expect_broken_set2_crypto = False
+        if ncreds.authenticate_kerberos:
+            self.assertEqual(expect_encrypted, False)
+            if ncreds.negotiate_flags & 0x80000000:
+                # This is the expected case of a sane client
+                pass
+            elif ncreds.negotiate_flags & 0x01000004:
+                # This fails as there is aes or arfour
+                # encryption with a random key
+                expect_broken_crypto = True
+                expect_broken_set2_crypto = True
+            else:
+                # This fails as there is des
+                # encryption with a random key
+                # This applies to things using
+                # the NT-HASH (samr_Password)
+                #
+                # But for {samr,netr}_CryptPassword
+                # there's no encryption for
+                # ServerPasswordSet2
+                expect_broken_crypto = True
 
         if expect_broken_crypto:
             expect_encrypted = True
@@ -986,6 +1108,66 @@ class NetlogonSchannel(KDCBaseTest):
                                   new_set_password,
                                   encryption_ncreds=encryption_set_ncreds,
                                   expect_error=expect_set_error)
+        if expect_broken_crypto and expect_set_error is None:
+            #
+            # This is tricky!
+            #
+            # As the encryption works with a random key,
+            # ServerPasswordSet and ServerGetTrustInfo
+            # both use the same key to decrypt
+            # -> store -> retrieve -> encrypt
+            # As a result we get back the same value we passed
+            # to ServerPasswordSet.
+            #
+            #
+            self.do_ServerGetTrustInfo(ncreds, conn,
+                                       False, # expect_encrypted
+                                       new_set_password, # expect_new_password
+                                       None,  # expect_old_password
+                                       decryption_ncreds=False)
+            # For the old password we're not able to
+            # decrypt it...
+            self.do_ServerGetTrustInfo(ncreds, conn,
+                                       expect_encrypted,
+                                       None, #expect_new_password,
+                                       expect_old_password,
+                                       expect_broken_crypto=expect_broken_crypto)
+            self.do_CheckCapabilities(ncreds, conn)
+            # We re-negotiate the flags with
+            # NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH, so that
+            # we can get the value the server stored.
+            orig_flags = ncreds.negotiate_flags
+            krb5_flags = orig_flags | 0x80000000
+            ncreds = self.do_AuthenticateKerberos(conn, trust_creds, krb5_flags, krb5_flags)
+            self.do_CheckCapabilities(ncreds, conn)
+            # The value store should not be the one
+            # we passed to ServerPasswordSet...
+            self.do_ServerGetTrustInfo(ncreds, conn,
+                                       True, # expect_encrypted
+                                       new_set_password, # expect_new_password
+                                       None,  # expect_old_password
+                                       expect_broken_crypto=expect_broken_crypto)
+            # We get the old one fixed self.empty_pwd_nt4_hash now
+            self.do_ServerGetTrustInfo(ncreds, conn,
+                                       False, # expect_encrypted
+                                       None, # expect_new_password,
+                                       expect_old_password)
+            # Now we reset the password using ServerPasswordSet2
+            # in order to do useful testing below...
+            fix_set2_password = self.get_netr_CryptPassword(new_utf8)
+            self.do_ServerPasswordSet2(ncreds, conn,
+                                       False, # expect__encrypted
+                                       fix_set2_password)
+            self.do_ServerGetTrustInfo(ncreds, conn,
+                                       False, # expect_encrypted
+                                       new_set_password, # expect_new_password
+                                       expect_old_password)
+            self.do_CheckCapabilities(ncreds, conn)
+            #
+            # Now we test with the original flags again
+            krb5_flags = orig_flags
+            ncreds = self.do_AuthenticateKerberos(conn, trust_creds, krb5_flags, krb5_flags)
+            self.do_CheckCapabilities(ncreds, conn)
 
         if old_utf8:
             trust_creds.set_old_password(old_utf8)
@@ -1049,12 +1231,41 @@ class NetlogonSchannel(KDCBaseTest):
                                    expect_old_password,
                                    expect_broken_crypto=expect_broken_crypto)
 
+        if expect_broken_crypto and not expect_broken_set2_crypto:
+            #
+            # This is tricky!
+            #
+            # ServerPasswordSet2 isn't affected by
+            # broken crypto, so we can get
+            # back the nthashes related to
+            # the unencrypted plaintext password
+            # set passed to ServerPasswordSet2
+            orig_flags = ncreds.negotiate_flags
+            krb5_flags = orig_flags | 0x80000000
+            ncreds = self.do_AuthenticateKerberos(conn, trust_creds, krb5_flags, krb5_flags)
+            self.do_CheckCapabilities(ncreds, conn)
+            self.do_ServerPasswordGet(ncreds, conn,
+                                      False, # expect_encrypted
+                                      expect_new_password,
+                                      expect_error=expect_get_error)
+            self.do_ServerTrustPasswordsGet(ncreds, conn,
+                                            False, # expect_encrypted
+                                            expect_new_password,
+                                            expect_old_password)
+            self.do_ServerGetTrustInfo(ncreds, conn,
+                                       False, # expect_encrypted
+                                       expect_new_password,
+                                       expect_old_password)
+
         self.do_CheckCapabilities(ncreds, conn)
         return
 
     def _test_check_passwords_with_args(self, trust, authX, flags):
         (creds, ncreds, conn, expect_encrypted) = \
             self._prepare_ncreds_conn_with_args(trust, authX, flags)
+
+        if conn is None:
+            return
 
         return self._test_check_passwords(creds,
                                           ncreds,
@@ -1066,6 +1277,19 @@ class NetlogonSchannel(KDCBaseTest):
         self.do_CheckCapabilities(ncreds, conn)
 
         expect_broken_crypto = False
+        if ncreds.authenticate_kerberos:
+            self.assertEqual(expect_encrypted, False)
+            if ncreds.negotiate_flags & 0x80000000:
+                # This is the expected case of a sane client
+                pass
+            elif ncreds.negotiate_flags & 0x01000004:
+                # This fails as there is aes or arfour
+                # encryption with a random key
+                expect_broken_crypto = True
+                expect_encrypted = True
+            else:
+                # There's no encryption with des
+                pass
 
         if not (ncreds.negotiate_flags & 0x01000004):
             # Without aes or arcfour this uses no encryption
@@ -1121,6 +1345,9 @@ class NetlogonSchannel(KDCBaseTest):
         (creds, ncreds, conn, expect_encrypted) = \
             self._prepare_ncreds_conn_with_args(trust, authX, flags)
 
+        if conn is None:
+            return
+
         return self._test_send_to_sam(creds,
                                       ncreds,
                                       conn,
@@ -1132,6 +1359,23 @@ class NetlogonSchannel(KDCBaseTest):
 
         expect_broken_nt_crypto = False
         expect_broken_lm_crypto = False
+        if ncreds.authenticate_kerberos:
+            self.assertEqual(expect_encrypted, False)
+            if ncreds.negotiate_flags & 0x80000000:
+                # This is the expected case of a sane client
+                pass
+            elif ncreds.negotiate_flags & 0x01000004:
+                # This fails as there is aes or arfour
+                # encryption with a random key
+                expect_broken_nt_crypto = True
+                expect_broken_lm_crypto = True
+                expect_encrypted = True
+            else:
+                # This fails as there is des
+                # encryption with a random key
+                # but it only encrypts the LMSessKey
+                expect_encrypted = True
+                expect_broken_lm_crypto = True
 
         validation_level6 = netlogon.NetlogonValidationSamInfo4
         validation_level3 = netlogon.NetlogonValidationSamInfo2
@@ -1247,6 +1491,9 @@ class NetlogonSchannel(KDCBaseTest):
         (creds, ncreds, conn, expect_encrypted) = \
             self._prepare_ncreds_conn_with_args(trust, authX, flags)
 
+        if conn is None:
+            return
+
         return self._test_network_samlogon(creds,
                                            ncreds,
                                            conn,
@@ -1266,6 +1513,16 @@ class NetlogonSchannel(KDCBaseTest):
                                               self.user_creds)
 
         expect_broken_crypto = False
+        if ncreds.authenticate_kerberos:
+            self.assertEqual(expect_encrypted, False)
+            if ncreds.negotiate_flags & 0x80000000:
+                # This is the expected case of a sane client
+                pass
+            else:
+                # This fails as there is aes, arcfour or des
+                # encryption with a random key
+                expect_broken_crypto = True
+                expect_encrypted = True
 
         if expect_broken_crypto:
             expect_error = ntstatus.NT_STATUS_WRONG_PASSWORD
@@ -1351,6 +1608,9 @@ class NetlogonSchannel(KDCBaseTest):
         (creds, ncreds, conn, expect_encrypted) = \
             self._prepare_ncreds_conn_with_args(trust, authX, flags)
 
+        if conn is None:
+            return
+
         return self._test_interactive_samlogon(creds,
                                                ncreds,
                                                conn,
@@ -1361,6 +1621,19 @@ class NetlogonSchannel(KDCBaseTest):
         self.do_CheckCapabilities(ncreds, conn)
 
         expect_broken_crypto = False
+        if ncreds.authenticate_kerberos:
+            self.assertEqual(expect_encrypted, False)
+            if ncreds.negotiate_flags & 0x80000000:
+                # This is the expected case of a sane client
+                pass
+            elif ncreds.negotiate_flags & 0x01000004:
+                # This fails as there is aes or arfour
+                # encryption with a random key
+                expect_broken_crypto = True
+                expect_encrypted = True
+            else:
+                # There's no aes nor arcfour, so no encryption
+                pass
 
         if expect_broken_crypto:
             expect_error = ntstatus.NT_STATUS_INVALID_PARAMETER
@@ -1422,6 +1695,9 @@ class NetlogonSchannel(KDCBaseTest):
         (creds, ncreds, conn, expect_encrypted) = \
             self._prepare_ncreds_conn_with_args(trust, authX, flags)
 
+        if conn is None:
+            return
+
         return self._test_generic_samlogon(creds,
                                            ncreds,
                                            conn,
@@ -1481,10 +1757,198 @@ class NetlogonSchannel(KDCBaseTest):
         (creds, ncreds, conn, expect_encrypted) = \
             self._prepare_ncreds_conn_with_args(trust, authX, flags)
 
+        if conn is None:
+            return
+
         return self._test_ticket_samlogon(creds,
                                           ncreds,
                                           conn,
                                           expect_encrypted)
+
+    def test_wks1_authenticate_flags(self):
+
+        wks1_creds = self.get_wks1_creds()
+
+        anon_conn = self.get_anon_conn()
+
+        des_flags = 0
+        self.do_Authenticate3(anon_conn, wks1_creds,
+                              des_flags, des_flags,
+                              expect_error=ntstatus.NT_STATUS_DOWNGRADE_DETECTED)
+
+        strong_flags = 0x00004000
+        if self.strong_key_support:
+            strong_ncreds = self.do_Authenticate3(anon_conn, wks1_creds,
+                                                  strong_flags, strong_flags)
+            strong_conn = self.get_schannel_conn(wks1_creds, strong_ncreds)
+            tmp_ncreds = ndr_deepcopy(strong_ncreds)
+            self.do_CheckCapabilities(tmp_ncreds, anon_conn,
+                                      expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+            self.do_CheckCapabilities(strong_ncreds, strong_conn)
+        else:
+            self.do_Authenticate3(anon_conn, wks1_creds,
+                                  strong_flags, strong_flags,
+                                  expect_error=ntstatus.NT_STATUS_DOWNGRADE_DETECTED)
+            strong_conn = None
+
+        aes_flags = 0x01000000
+        aes_ncreds = self.do_Authenticate3(anon_conn, wks1_creds,
+                                           aes_flags, aes_flags)
+        aes_conn = self.get_schannel_conn(wks1_creds, aes_ncreds)
+        tmp_ncreds = ndr_deepcopy(aes_ncreds)
+        self.do_CheckCapabilities(tmp_ncreds, anon_conn,
+                                  expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+        self.do_CheckCapabilities(aes_ncreds, aes_conn)
+        if strong_conn:
+            self.do_CheckCapabilities(aes_ncreds, strong_conn)
+
+        krb5_flags = 0x80000000
+        krb5_ncreds = self.do_Authenticate3(anon_conn, wks1_creds,
+                                            krb5_flags, krb5_flags,
+                                            expect_error=ntstatus.NT_STATUS_DOWNGRADE_DETECTED)
+
+        if strong_conn:
+            aes_ncreds = self.do_Authenticate3(strong_conn, wks1_creds,
+                                               aes_flags, aes_flags)
+            tmp_ncreds = ndr_deepcopy(aes_ncreds)
+            self.do_CheckCapabilities(tmp_ncreds, anon_conn,
+                                      expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+            self.do_CheckCapabilities(aes_ncreds, aes_conn)
+            self.do_CheckCapabilities(strong_ncreds, anon_conn,
+                                      expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+            self.do_CheckCapabilities(aes_ncreds, strong_conn)
+
+        aes_ncreds = self.do_Authenticate3(aes_conn, wks1_creds,
+                                           aes_flags, aes_flags)
+        tmp_ncreds = ndr_deepcopy(aes_ncreds)
+        self.do_CheckCapabilities(tmp_ncreds, anon_conn,
+                                  expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+        self.do_CheckCapabilities(aes_ncreds, aes_conn)
+        if strong_conn:
+            self.do_CheckCapabilities(aes_ncreds, strong_conn)
+
+        krb5_conn = self.get_krb5_conn(wks1_creds)
+
+        des_flags = 0
+        self.do_Authenticate3(krb5_conn, wks1_creds,
+                              des_flags, des_flags,
+                              expect_error=ntstatus.NT_STATUS_DOWNGRADE_DETECTED)
+        strong_flags = 0x00004000
+        if self.strong_key_support:
+            strong_ncreds = self.do_Authenticate3(krb5_conn, wks1_creds,
+                                                  strong_flags, strong_flags)
+            tmp_ncreds = ndr_deepcopy(strong_ncreds)
+            self.do_CheckCapabilities(tmp_ncreds, anon_conn,
+                                      expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+            if self.auth_krb5_support:
+                self.do_CheckCapabilities(strong_ncreds, krb5_conn)
+            else:
+                tmp_ncreds = ndr_deepcopy(strong_ncreds)
+                self.do_CheckCapabilities(tmp_ncreds, krb5_conn,
+                                          expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+            self.do_CheckCapabilities(strong_ncreds, strong_conn)
+            self.do_CheckCapabilities(strong_ncreds, aes_conn)
+            self.do_CheckCapabilities(aes_ncreds, strong_conn,
+                                      expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+            self.do_CheckCapabilities(strong_ncreds, aes_conn,
+                                      expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+        else:
+            self.do_Authenticate3(krb5_conn, wks1_creds,
+                                  strong_flags, strong_flags,
+                                  expect_error=ntstatus.NT_STATUS_DOWNGRADE_DETECTED)
+        aes_flags = 0x01000000
+        aes_ncreds = self.do_Authenticate3(krb5_conn, wks1_creds,
+                                           aes_flags, aes_flags)
+        tmp_ncreds = ndr_deepcopy(aes_ncreds)
+        self.do_CheckCapabilities(tmp_ncreds, anon_conn,
+                                  expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+        if self.auth_krb5_support:
+            self.do_CheckCapabilities(aes_ncreds, krb5_conn)
+        else:
+            tmp_ncreds = ndr_deepcopy(aes_ncreds)
+            self.do_CheckCapabilities(tmp_ncreds, krb5_conn,
+                                      expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+        if strong_conn:
+            self.do_CheckCapabilities(aes_ncreds, strong_conn)
+        self.do_CheckCapabilities(aes_ncreds, aes_conn)
+        krb5_flags = 0x80000000
+        self.do_Authenticate3(krb5_conn, wks1_creds,
+                              krb5_flags, krb5_flags,
+                              expect_error=ntstatus.NT_STATUS_DOWNGRADE_DETECTED)
+
+        tmp_ncreds = ndr_deepcopy(aes_ncreds)
+        self.do_CheckCapabilities(tmp_ncreds, anon_conn,
+                                  expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+        if self.auth_krb5_support:
+            self.do_CheckCapabilities(aes_ncreds, krb5_conn)
+        else:
+            tmp_ncreds = ndr_deepcopy(aes_ncreds)
+            self.do_CheckCapabilities(tmp_ncreds, krb5_conn,
+                                      expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+        if strong_conn:
+            self.do_CheckCapabilities(aes_ncreds, strong_conn)
+        self.do_CheckCapabilities(aes_ncreds, aes_conn)
+        self.do_CheckCapabilities(tmp_ncreds, aes_conn,
+                                  expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+        self.do_CheckCapabilities(aes_ncreds, aes_conn,
+                                  expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+
+        krb5_flags = 0
+        if not self.auth_krb5_support:
+            self.do_AuthenticateKerberos(krb5_conn, wks1_creds,
+                                         krb5_flags, krb5_flags,
+                                         expect_error=ntstatus.NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)
+            return
+        krb5_ncreds = self.do_AuthenticateKerberos(krb5_conn, wks1_creds,
+                                                   krb5_flags, krb5_flags)
+        self.do_CheckCapabilities(krb5_ncreds, anon_conn,
+                                  expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+        self.do_CheckCapabilities(krb5_ncreds, krb5_conn)
+        if strong_conn:
+            self.do_CheckCapabilities(krb5_ncreds, strong_conn,
+                                      expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+        self.do_CheckCapabilities(krb5_ncreds, aes_conn,
+                                  expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+        self.do_CheckCapabilities(krb5_ncreds, krb5_conn)
+        return
+
+    def test_wks1_vs_bdc1_authK(self):
+
+        if not self.auth_krb5_support:
+            self.skipTest('Required NETLOGON_AUTH_KRB5_SUPPORT')
+
+        wks1_creds = self.get_wks1_creds()
+        bdc1_creds = self.get_bdc1_creds()
+
+        wks1_conn = self.get_krb5_conn(wks1_creds)
+        bdc1_conn = self.get_krb5_conn(bdc1_creds)
+
+        krb5_flags = 0xe13fffff
+        wks1_ncreds = self.do_AuthenticateKerberos(wks1_conn, wks1_creds,
+                                                   krb5_flags, krb5_flags)
+        self.do_CheckCapabilities(wks1_ncreds, wks1_conn)
+        bdc1_ncreds = self.do_AuthenticateKerberos(bdc1_conn, bdc1_creds,
+                                                   krb5_flags, krb5_flags)
+        self.do_CheckCapabilities(bdc1_ncreds, bdc1_conn)
+
+        self.do_CheckCapabilities(wks1_ncreds, bdc1_conn,
+                                  expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+        self.do_CheckCapabilities(bdc1_ncreds, wks1_conn,
+                                  expect_error1=ntstatus.NT_STATUS_ACCESS_DENIED)
+
+        self.do_CheckCapabilities(wks1_ncreds, wks1_conn)
+        self.do_CheckCapabilities(bdc1_ncreds, bdc1_conn)
+
+        self.do_AuthenticateKerberos(wks1_conn, bdc1_creds,
+                                     krb5_flags, krb5_flags,
+                                     expect_error=ntstatus.NT_STATUS_ACCESS_DENIED)
+        self.do_AuthenticateKerberos(bdc1_conn, wks1_creds,
+                                     krb5_flags, krb5_flags,
+                                     expect_error=ntstatus.NT_STATUS_ACCESS_DENIED)
+
+        self.do_CheckCapabilities(wks1_ncreds, wks1_conn)
+        self.do_CheckCapabilities(bdc1_ncreds, bdc1_conn)
+        return
 
 
 if __name__ == "__main__":
