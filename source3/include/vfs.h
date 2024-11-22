@@ -387,6 +387,7 @@
  * Version 50 - Remove FSP_POSIX_FLAGS_PATHNAMES, remove FSP_POSIX_FLAGS_RENAME
  *              and convert struct files_struct.posix_flags to
  *              struct files_struct.fsp_flags.posix_open
+ * Version 50 - Add struct files_struct.fsp_flags.posix_append
  */
 
 #define SMB_VFS_INTERFACE_VERSION 50
@@ -462,6 +463,7 @@ typedef struct files_struct {
 		bool encryption_required : 1;
 		bool fstat_before_close : 1;
 		bool posix_open : 1;
+		bool posix_append : 1;
 	} fsp_flags;
 
 	struct tevent_timer *update_write_time_event;
