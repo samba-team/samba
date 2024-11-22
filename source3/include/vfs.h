@@ -918,6 +918,8 @@ struct vfs_rename_how {
 	int flags;
 };
 
+#define VFS_PWRITE_APPEND_OFFSET -1
+
 /*
     Available VFS operations. These values must be in sync with vfs_ops struct
     (struct vfs_fn_pointers and struct vfs_handle_pointers inside of struct vfs_ops).
