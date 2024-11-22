@@ -60,6 +60,7 @@ c = libsmb.Conn("127.0.0.1",
 #include "trans2.h"
 #include "libsmb/clirap.h"
 #include "librpc/rpc/pyrpc_util.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 #define LIST_ATTRIBUTE_MASK \
 	(FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_HIDDEN)
@@ -1386,6 +1387,129 @@ static PyObject *py_cli_qfileinfo(struct py_cli_state *self, PyObject *args)
 				       (unsigned long long)mode,
 				       "tag",
 				       (unsigned long long)tag);
+		break;
+	}
+	case FSCC_FILE_POSIX_INFORMATION: {
+		size_t data_off = 0;
+		time_t btime;
+		time_t atime;
+		time_t mtime;
+		time_t ctime;
+		uint64_t size;
+		uint64_t alloc_size;
+		uint32_t attr;
+		uint64_t ino;
+		uint32_t dev;
+		uint32_t nlinks;
+		uint32_t reparse_tag;
+		uint32_t mode;
+		size_t sid_size;
+		enum ndr_err_code ndr_err;
+		struct dom_sid owner, group;
+		struct dom_sid_buf owner_buf, group_buf;
+
+		if (num_rdata < 80) {
+			PyErr_SetNTSTATUS(NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return NULL;
+		}
+
+		btime = nt_time_to_unix(PULL_LE_U64(rdata, data_off));
+		data_off += 8;
+		atime = nt_time_to_unix(PULL_LE_U64(rdata, data_off));
+		data_off += 8;
+		mtime = nt_time_to_unix(PULL_LE_U64(rdata, data_off));
+		data_off += 8;
+		ctime = nt_time_to_unix(PULL_LE_U64(rdata, data_off));
+		data_off += 8;
+		size = PULL_LE_U64(rdata, data_off);
+		data_off += 8;
+		alloc_size = PULL_LE_U64(rdata, data_off);
+		data_off += 8;
+		attr = PULL_LE_U32(rdata, data_off);
+		data_off += 4;
+		ino = PULL_LE_U64(rdata, data_off);
+		data_off += 8;
+		dev = PULL_LE_U32(rdata, data_off);
+		data_off += 4;
+		/* 4 bytes reserved */
+		data_off += 4;
+		nlinks = PULL_LE_U32(rdata, data_off);
+		data_off += 4;
+		reparse_tag = PULL_LE_U32(rdata, data_off);
+		data_off += 4;
+		mode = PULL_LE_U32(rdata, data_off);
+		data_off += 4;
+
+		ndr_err = ndr_pull_struct_blob_noalloc(
+			rdata + data_off,
+			num_rdata - data_off,
+			&owner,
+			(ndr_pull_flags_fn_t)ndr_pull_dom_sid,
+			&sid_size);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			PyErr_SetNTSTATUS(NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return NULL;
+		}
+		if (data_off + sid_size < data_off ||
+		    data_off + sid_size > num_rdata)
+		{
+			PyErr_SetNTSTATUS(NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return NULL;
+		}
+		data_off += sid_size;
+
+		ndr_err = ndr_pull_struct_blob_noalloc(
+			rdata + data_off,
+			num_rdata - data_off,
+			&group,
+			(ndr_pull_flags_fn_t)ndr_pull_dom_sid,
+			&sid_size);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			PyErr_SetNTSTATUS(NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return NULL;
+		}
+
+		result = Py_BuildValue(
+			"{s:i,"			/* attr */
+			"s:K,s:K,s:K,s:K,"	/* dates */
+			"s:K,s:K,"		/* sizes */
+			"s:K,s:K,s:K,"		/* ino, dev, nlinks */
+			"s:K,s:K,"		/* tag, mode */
+			"s:s,s:s}",		/* owner, group */
+
+			"attrib",
+			attr,
+
+			"btime",
+			(unsigned long long)btime,
+			"atime",
+			(unsigned long long)atime,
+			"mtime",
+			(unsigned long long)mtime,
+			"ctime",
+			(unsigned long long)ctime,
+
+			"allocation_size",
+			(unsigned long long)alloc_size,
+			"size",
+			(unsigned long long)size,
+
+			"ino",
+			(unsigned long long)ino,
+			"dev",
+			(unsigned long long)dev,
+			"nlink",
+			(unsigned long long)nlinks,
+
+			"reparse_tag",
+			(unsigned long long)reparse_tag,
+			"perms",
+			(unsigned long long)mode,
+
+			"owner_sid",
+			dom_sid_str_buf(&owner, &owner_buf),
+			"group_sid",
+			dom_sid_str_buf(&group, &group_buf));
 		break;
 	}
 	default:
@@ -3222,6 +3346,7 @@ MODULE_INIT_FUNC(libsmb_samba_cwrapper)
 	ADD_FLAGS(FSCC_FILE_ID_GLOBAL_TX_DIRECTORY_INFORMATION);
 	ADD_FLAGS(FSCC_FILE_STANDARD_LINK_INFORMATION);
 	ADD_FLAGS(FSCC_FILE_MAXIMUM_INFORMATION);
+	ADD_FLAGS(FSCC_FILE_POSIX_INFORMATION);
 
 #define ADD_STRING(val) PyModule_AddObject(m, #val, PyBytes_FromString(val))
 
