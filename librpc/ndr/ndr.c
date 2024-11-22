@@ -523,41 +523,12 @@ _PUBLIC_ void ndr_print_function_debug(ndr_print_function_t fn,
 	TALLOC_FREE(ndr);
 }
 
-/*
-  a useful helper function for printing idl structures to a string
-*/
-_PUBLIC_ char *ndr_print_struct_string(TALLOC_CTX *mem_ctx,
-				       ndr_print_fn_t fn,
-				       const char *name,
-				       const void *ptr)
-{
-	struct ndr_print *ndr;
-	char *ret = NULL;
-
-	ndr = talloc_zero(mem_ctx, struct ndr_print);
-	if (!ndr) return NULL;
-	ndr->private_data = talloc_strdup(ndr, "");
-	if (!ndr->private_data) {
-		goto failed;
-	}
-	ndr->print = ndr_print_string_helper;
-	ndr->depth = 1;
-	ndr->flags = 0;
-
-	fn(ndr, name, ptr);
-	ret = talloc_steal(mem_ctx, (char *)ndr->private_data);
-failed:
-	TALLOC_FREE(ndr);
-	return ret;
-}
-
-/*
-  a useful helper function for printing idl unions to a string
-*/
-_PUBLIC_ char *ndr_print_union_string(TALLOC_CTX *mem_ctx,
-				      ndr_print_fn_t fn,
+static char *ndr_print_generic_string(TALLOC_CTX *mem_ctx,
+				      ndr_print_function_t inout_fn,
+				      ndr_flags_type inout_flags,
+				      ndr_print_fn_t single_fn,
 				      const char *name,
-				      uint32_t level,
+				      const uint32_t *level,
 				      const void *ptr)
 {
 	struct ndr_print *ndr;
@@ -572,12 +543,53 @@ _PUBLIC_ char *ndr_print_union_string(TALLOC_CTX *mem_ctx,
 	ndr->print = ndr_print_string_helper;
 	ndr->depth = 1;
 	ndr->flags = 0;
-	ndr_print_set_switch_value(ndr, ptr, level);
-	fn(ndr, name, ptr);
+	if (level != NULL) {
+		ndr_print_set_switch_value(ndr, ptr, *level);
+	}
+	if (inout_fn != NULL) {
+		inout_fn(ndr, name, inout_flags, ptr);
+	} else {
+		single_fn(ndr, name, ptr);
+	}
 	ret = talloc_steal(mem_ctx, (char *)ndr->private_data);
 failed:
 	TALLOC_FREE(ndr);
 	return ret;
+}
+
+/*
+  a useful helper function for printing idl structures to a string
+*/
+_PUBLIC_ char *ndr_print_struct_string(TALLOC_CTX *mem_ctx,
+				       ndr_print_fn_t fn,
+				       const char *name,
+				       const void *ptr)
+{
+	return ndr_print_generic_string(mem_ctx,
+					NULL, /* inout_fn */
+					0,    /* inout_flags */
+					fn,   /* single_fn */
+					name,
+					NULL, /* level */
+					ptr);
+}
+
+/*
+  a useful helper function for printing idl unions to a string
+*/
+_PUBLIC_ char *ndr_print_union_string(TALLOC_CTX *mem_ctx,
+				      ndr_print_fn_t fn,
+				      const char *name,
+				      uint32_t level,
+				      const void *ptr)
+{
+	return ndr_print_generic_string(mem_ctx,
+					NULL, /* inout_fn */
+					0,    /* inout_flags */
+					fn,   /* single_fn */
+					name,
+					&level,
+					ptr);
 }
 
 /*
@@ -589,23 +601,13 @@ _PUBLIC_ char *ndr_print_function_string(TALLOC_CTX *mem_ctx,
 					 ndr_flags_type flags,
 					 const void *ptr)
 {
-	struct ndr_print *ndr;
-	char *ret = NULL;
-
-	ndr = talloc_zero(mem_ctx, struct ndr_print);
-	if (!ndr) return NULL;
-	ndr->private_data = talloc_strdup(ndr, "");
-	if (!ndr->private_data) {
-		goto failed;
-	}
-	ndr->print = ndr_print_string_helper;
-	ndr->depth = 1;
-	ndr->flags = 0;
-	fn(ndr, name, flags, ptr);
-	ret = talloc_steal(mem_ctx, (char *)ndr->private_data);
-failed:
-	TALLOC_FREE(ndr);
-	return ret;
+	return ndr_print_generic_string(mem_ctx,
+					fn,    /* inout_fn */
+					flags, /* inout_flags */
+					NULL,  /* single_fn */
+					name,
+					NULL,  /* level */
+					ptr);
 }
 
 _PUBLIC_ void ndr_set_flags(libndr_flags *pflags, libndr_flags new_flags)
