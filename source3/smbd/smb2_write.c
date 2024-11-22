@@ -346,6 +346,18 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	if (state->in_offset == VFS_PWRITE_APPEND_OFFSET &&
+	    !fsp->fsp_flags.posix_append)
+	{
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	} else if (fsp->fsp_flags.posix_append &&
+		   state->in_offset != VFS_PWRITE_APPEND_OFFSET)
+	{
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
 	/* Try and do an asynchronous write. */
 	status = schedule_aio_smb2_write(conn,
 					smbreq,
