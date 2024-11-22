@@ -1989,6 +1989,14 @@ for env in ["fl2008r2dc", "fl2003dc"]:
                                'FAST_SUPPORT': fast_support,
                            })
 
+for env in ["ad_dc"]:
+    fast_support = have_fast_support
+    planoldpythontestsuite(env, "samba.tests.krb5.netlogon",
+                           environ={
+                               **krb5_environ,
+                               'FAST_SUPPORT': fast_support,
+                           })
+
 planoldpythontestsuite('fl2008r2dc', 'samba.tests.krb5.salt_tests',
                        environ=krb5_environ)
 
