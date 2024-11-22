@@ -1902,6 +1902,62 @@ PyTypeObject PyCredentialCacheContainer = {
 	.tp_methods = py_ccache_container_methods,
 };
 
+static PyObject *py_netlogon_creds_kerberos_init(PyObject *module,
+						 PyObject *args,
+						 PyObject *kwargs)
+{
+	const char * const kwnames[] = {
+		"client_account",
+		"client_computer_name",
+		"secure_channel_type",
+		"client_requested_flags",
+		"negotiate_flags",
+		NULL,
+	};
+	const char *client_account = NULL;
+	const char *client_computer_name = NULL;
+	unsigned short secure_channel_type = 0;
+	unsigned int client_requested_flags = 0;
+	unsigned int negotiate_flags = 0;
+	struct netlogon_creds_CredentialState *ncreds = NULL;
+	PyObject *py_ncreds = Py_None;
+	bool ok;
+
+	ok = PyArg_ParseTupleAndKeywords(args, kwargs, "ssHII",
+					 discard_const_p(char *, kwnames),
+					 &client_account,
+					 &client_computer_name,
+					 &secure_channel_type,
+					 &client_requested_flags,
+					 &negotiate_flags);
+	if (!ok) {
+		return NULL;
+	}
+
+	ncreds = netlogon_creds_kerberos_init(NULL,
+					      client_account,
+					      client_computer_name,
+					      secure_channel_type,
+					      client_requested_flags,
+					      NULL, /* client_sid */
+					      negotiate_flags);
+	if (ncreds == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	py_ncreds = py_return_ndr_struct("samba.dcerpc.schannel",
+					 "netlogon_creds_CredentialState",
+					 ncreds,
+					 ncreds);
+	if (py_ncreds == NULL) {
+		TALLOC_FREE(ncreds);
+		return NULL;
+	}
+
+	return py_ncreds;
+}
+
 static PyObject *py_netlogon_creds_random_challenge(PyObject *module,
 						    PyObject *unused)
 {
@@ -2896,6 +2952,18 @@ static PyObject *py_netlogon_creds_encrypt_SendToSam(PyObject *module,
 }
 
 static PyMethodDef py_module_methods[] = {
+	{
+		.ml_name  = "netlogon_creds_kerberos_init",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+					py_netlogon_creds_kerberos_init),
+		.ml_flags = METH_VARARGS | METH_KEYWORDS,
+		.ml_doc   = "credentials.netlogon_creds_kerberos_init("
+			    "client_account, client_computer_name,"
+			    "secure_channel_type, "
+			    "client_requested_flags, negotiate_flags)"
+			    "-> netlogon_creds_CredentialState\n"
+			    "Create a new state for netr_ServerAuthenticateKerberos()",
+	},
 	{
 		.ml_name  = "netlogon_creds_random_challenge",
 		.ml_meth  = py_netlogon_creds_random_challenge,
