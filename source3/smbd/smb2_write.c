@@ -34,7 +34,7 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 					       struct smbd_smb2_request *smb2req,
 					       struct files_struct *in_fsp,
 					       DATA_BLOB in_data,
-					       uint64_t in_offset,
+					       off_t in_offset,
 					       uint32_t in_flags);
 static NTSTATUS smbd_smb2_write_recv(struct tevent_req *req,
 				     uint32_t *out_count);
@@ -48,7 +48,7 @@ NTSTATUS smbd_smb2_request_process_write(struct smbd_smb2_request *req)
 	uint16_t in_data_offset;
 	uint32_t in_data_length;
 	DATA_BLOB in_data_buffer;
-	uint64_t in_offset;
+	off_t in_offset;
 	uint64_t in_file_id_persistent;
 	uint64_t in_file_id_volatile;
 	struct files_struct *in_fsp;
@@ -65,7 +65,7 @@ NTSTATUS smbd_smb2_request_process_write(struct smbd_smb2_request *req)
 
 	in_data_offset		= SVAL(inbody, 0x02);
 	in_data_length		= IVAL(inbody, 0x04);
-	in_offset		= BVAL(inbody, 0x08);
+	in_offset		= PULL_LE_I64(inbody, 0x08);
 	in_file_id_persistent	= BVAL(inbody, 0x10);
 	in_file_id_volatile	= BVAL(inbody, 0x18);
 	in_flags		= IVAL(inbody, 0x2C);
@@ -178,7 +178,7 @@ struct smbd_smb2_write_state {
 	files_struct *fsp;
 	bool write_through;
 	uint32_t in_length;
-	uint64_t in_offset;
+	off_t in_offset;
 	uint32_t out_count;
 };
 
@@ -266,7 +266,7 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 					       struct smbd_smb2_request *smb2req,
 					       struct files_struct *fsp,
 					       DATA_BLOB in_data,
-					       uint64_t in_offset,
+					       off_t in_offset,
 					       uint32_t in_flags)
 {
 	NTSTATUS status;
