@@ -783,7 +783,18 @@ static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, cons
 
 #if defined(HAVE_PWRITE) || defined(HAVE_PRWITE64)
 	START_PROFILE_BYTES(syscall_pwrite, n);
-	result = sys_pwrite_full(fsp_get_io_fd(fsp), data, n, offset);
+
+	if (fsp->fsp_flags.posix_append) {
+		SMB_ASSERT(offset == VFS_PWRITE_APPEND_OFFSET);
+	} else {
+		SMB_ASSERT(offset >= 0);
+	}
+
+	if (fsp->fsp_flags.posix_append) {
+		result = sys_write_full(fsp_get_io_fd(fsp), data, n);
+	} else {
+		result = sys_pwrite_full(fsp_get_io_fd(fsp), data, n, offset);
+	}
 	END_PROFILE_BYTES(syscall_pwrite);
 
 	if (result == -1 && errno == ESPIPE) {
@@ -933,6 +944,7 @@ struct vfswrap_pwrite_state {
 	const void *buf;
 	size_t count;
 	off_t offset;
+	bool posix_append;
 
 	struct vfs_aio_state vfs_aio_state;
 	SMBPROFILE_BYTES_ASYNC_STATE(profile_bytes);
@@ -963,6 +975,13 @@ static struct tevent_req *vfswrap_pwrite_send(struct vfs_handle_struct *handle,
 	state->count = n;
 	state->offset = offset;
 
+	if (fsp->fsp_flags.posix_append) {
+		SMB_ASSERT(state->offset == VFS_PWRITE_APPEND_OFFSET);
+		state->posix_append = true;
+	} else {
+		SMB_ASSERT(state->offset >= 0);
+	}
+
 	SMBPROFILE_BYTES_ASYNC_START(syscall_asys_pwrite, profile_p,
 				     state->profile_bytes, n);
 	SMBPROFILE_BYTES_ASYNC_SET_IDLE(state->profile_bytes);
@@ -991,10 +1010,16 @@ static void vfs_pwrite_do(void *private_data)
 
 	PROFILE_TIMESTAMP(&start_time);
 
-	state->ret = sys_pwrite_full(state->fd,
-				     state->buf,
-				     state->count,
-				     state->offset);
+	if (state->posix_append) {
+		state->ret = sys_write_full(state->fd,
+					    state->buf,
+					    state->count);
+	} else {
+		state->ret = sys_pwrite_full(state->fd,
+					     state->buf,
+					     state->count,
+					     state->offset);
+	}
 
 	if (state->ret == -1) {
 		state->vfs_aio_state.error = errno;
