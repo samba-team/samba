@@ -187,12 +187,12 @@ static sbcErr smbconf_txt_load_file(struct smbconf_ctx *ctx)
 	int rc;
 	struct timespec mt = {0};
 
-	if (!file_exist(ctx->path)) {
-		return SBC_ERR_BADFILE;
-	}
-
 	rc = file_modtime(ctx->path, &mt);
 	if (rc != 0) {
+		if (rc == ENOENT) {
+			return SBC_ERR_BADFILE;
+		}
+
 		/*
 		 * Not worth mapping errno returned
 		 * in rc to SBC_ERR_XXX. Just assume
