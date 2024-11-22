@@ -1772,7 +1772,7 @@ void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 		exit_server("smbXsrv_connection_shutdown_send failed");
 	}
 	state->xconn = xconn;
-	state->reason = talloc_strdup(state, reason);
+	state->reason = talloc_strdup(NULL, reason);
 	if (state->reason == NULL) {
 		exit_server("talloc_strdup failed");
 	}
