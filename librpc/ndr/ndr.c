@@ -527,6 +527,7 @@ static char *ndr_print_generic_string(TALLOC_CTX *mem_ctx,
 				      ndr_print_function_t inout_fn,
 				      ndr_flags_type inout_flags,
 				      ndr_print_fn_t single_fn,
+				      bool print_secrets,
 				      const char *name,
 				      const uint32_t *level,
 				      const void *ptr)
@@ -543,6 +544,7 @@ static char *ndr_print_generic_string(TALLOC_CTX *mem_ctx,
 	ndr->print = ndr_print_string_helper;
 	ndr->depth = 1;
 	ndr->flags = 0;
+	ndr->print_secrets = print_secrets;
 	if (level != NULL) {
 		ndr_print_set_switch_value(ndr, ptr, *level);
 	}
@@ -552,6 +554,9 @@ static char *ndr_print_generic_string(TALLOC_CTX *mem_ctx,
 		single_fn(ndr, name, ptr);
 	}
 	ret = talloc_steal(mem_ctx, (char *)ndr->private_data);
+	if (print_secrets) {
+		talloc_keep_secret(ret);
+	}
 failed:
 	TALLOC_FREE(ndr);
 	return ret;
@@ -569,6 +574,26 @@ _PUBLIC_ char *ndr_print_struct_string(TALLOC_CTX *mem_ctx,
 					NULL, /* inout_fn */
 					0,    /* inout_flags */
 					fn,   /* single_fn */
+					false, /* print_secrets */
+					name,
+					NULL, /* level */
+					ptr);
+}
+
+/*
+  a useful helper function for printing idl structures to a string
+  This includes values marked with NDR_SECRET
+*/
+_PUBLIC_ char *ndr_print_struct_secret_string(TALLOC_CTX *mem_ctx,
+					      ndr_print_fn_t fn,
+					      const char *name,
+					      const void *ptr)
+{
+	return ndr_print_generic_string(mem_ctx,
+					NULL, /* inout_fn */
+					0,    /* inout_flags */
+					fn,   /* single_fn */
+					true, /* print_secrets */
 					name,
 					NULL, /* level */
 					ptr);
@@ -587,6 +612,27 @@ _PUBLIC_ char *ndr_print_union_string(TALLOC_CTX *mem_ctx,
 					NULL, /* inout_fn */
 					0,    /* inout_flags */
 					fn,   /* single_fn */
+					false, /* print_secrets */
+					name,
+					&level,
+					ptr);
+}
+
+/*
+  a useful helper function for printing idl unions to a string
+  This includes values marked with NDR_SECRET
+*/
+_PUBLIC_ char *ndr_print_union_secret_string(TALLOC_CTX *mem_ctx,
+					     ndr_print_fn_t fn,
+					     const char *name,
+					     uint32_t level,
+					     const void *ptr)
+{
+	return ndr_print_generic_string(mem_ctx,
+					NULL, /* inout_fn */
+					0,    /* inout_flags */
+					fn,   /* single_fn */
+					true, /* print_secrets */
 					name,
 					&level,
 					ptr);
@@ -605,6 +651,27 @@ _PUBLIC_ char *ndr_print_function_string(TALLOC_CTX *mem_ctx,
 					fn,    /* inout_fn */
 					flags, /* inout_flags */
 					NULL,  /* single_fn */
+					false, /* print_secrets */
+					name,
+					NULL,  /* level */
+					ptr);
+}
+
+/*
+  a useful helper function for printing idl function calls to a string
+  This includes values marked with NDR_SECRET
+*/
+_PUBLIC_ char *ndr_print_function_secret_string(TALLOC_CTX *mem_ctx,
+						ndr_print_function_t fn,
+						const char *name,
+						ndr_flags_type flags,
+						const void *ptr)
+{
+	return ndr_print_generic_string(mem_ctx,
+					fn,    /* inout_fn */
+					flags, /* inout_flags */
+					NULL,  /* single_fn */
+					true, /* print_secrets */
 					name,
 					NULL,  /* level */
 					ptr);

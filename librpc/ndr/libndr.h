@@ -685,16 +685,30 @@ char *ndr_print_struct_string(TALLOC_CTX *mem_ctx,
 			      ndr_print_fn_t fn,
 			      const char *name,
 			      const void *ptr);
+char *ndr_print_struct_secret_string(TALLOC_CTX *mem_ctx,
+				     ndr_print_fn_t fn,
+				     const char *name,
+				     const void *ptr);
 char *ndr_print_union_string(TALLOC_CTX *mem_ctx,
 			     ndr_print_fn_t fn,
 			     const char *name,
 			     uint32_t level,
 			     const void *ptr);
+char *ndr_print_union_secret_string(TALLOC_CTX *mem_ctx,
+				    ndr_print_fn_t fn,
+				    const char *name,
+				    uint32_t level,
+				    const void *ptr);
 char *ndr_print_function_string(TALLOC_CTX *mem_ctx,
 				ndr_print_function_t fn,
 				const char *name,
 				ndr_flags_type flags,
 				const void *ptr);
+char *ndr_print_function_secret_string(TALLOC_CTX *mem_ctx,
+				       ndr_print_function_t fn,
+				       const char *name,
+				       ndr_flags_type flags,
+				       const void *ptr);
 void ndr_set_flags(libndr_flags *pflags, libndr_flags new_flags);
 enum ndr_err_code _ndr_pull_error(struct ndr_pull *ndr,
 				  enum ndr_err_code ndr_err,
