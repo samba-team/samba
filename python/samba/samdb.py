@@ -382,6 +382,9 @@ lockoutTime: 0
         if member_types is None:
             member_types = ['user', 'group', 'computer']
 
+        if member_base_dn is None:
+            member_base_dn = self.domain_dn()
+
         groupfilter = "(&(sAMAccountName=%s)(objectCategory=%s,%s))" % (
             ldb.binary_encode(groupname), "CN=Group,CN=Schema,CN=Configuration", self.domain_dn())
 
@@ -405,9 +408,6 @@ changetype: modify
 
             for member in members:
                 targetmember_dn = None
-                if member_base_dn is None:
-                    member_base_dn = self.domain_dn()
-
                 membersid = None
                 try:
                     membersid = security.dom_sid(member)
