@@ -540,7 +540,7 @@ class ConditionalAceTests(ConditionalAceBaseTests):
         client_creds = self._get_creds(account_type=self.AccountType.USER,
                                        assigned_policy=policy)
 
-        # As the policy is unenforced, the ‘ad://ext/AuthenticationSilo’ claim
+        # As the silo is unenforced, the ‘ad://ext/AuthenticationSilo’ claim
         # will not be present in the TGT, and the ACE will never allow access.
 
         armor_tgt = self.get_tgt(self._mach_creds)
