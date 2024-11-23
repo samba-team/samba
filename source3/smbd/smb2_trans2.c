@@ -4962,8 +4962,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	allocation_size = (uint64_t)IVAL(pdata,0);
-	allocation_size |= (((uint64_t)IVAL(pdata,4)) << 32);
+	allocation_size = PULL_LE_U64(pdata, 0);
 	DEBUG(10,("smb_set_file_allocation_info: Set file allocation info for "
 		  "file %s to %.0f\n", smb_fname_str_dbg(smb_fname),
 		  (double)allocation_size));
