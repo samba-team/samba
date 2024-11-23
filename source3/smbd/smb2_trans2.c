@@ -4976,10 +4976,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 		  "allocation size to %.0f\n", smb_fname_str_dbg(smb_fname),
 		  (double)allocation_size));
 
-	if (fsp &&
-	    !fsp->fsp_flags.is_pathref &&
-	    fsp_get_io_fd(fsp) != -1)
-	{
+	if (!fsp->fsp_flags.is_pathref && (fsp_get_io_fd(fsp) != -1)) {
 		/* Open file handle. */
 		status = check_any_access_fsp(fsp, FILE_WRITE_DATA);
 		if (!NT_STATUS_IS_OK(status)) {
