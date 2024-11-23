@@ -211,7 +211,7 @@ NTSTATUS dptr_create(connection_struct *conn,
 	DBG_INFO("dir=%s\n", fsp_str_dbg(fsp));
 
 	if (sconn == NULL) {
-		DEBUG(0,("dptr_create: called with fake connection_struct\n"));
+		DBG_ERR("called with fake connection_struct\n");
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -221,9 +221,8 @@ NTSTATUS dptr_create(connection_struct *conn,
 
 	status = check_any_access_fsp(fsp, SEC_DIR_LIST);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_INFO("dptr_create: directory %s "
-			"not open for LIST access\n",
-			fsp_str_dbg(fsp));
+		DBG_INFO("directory %s not open for LIST access\n",
+			 fsp_str_dbg(fsp));
 		return status;
 	}
 	status = OpenDir_fsp(NULL, conn, fsp, wcard, attr, &dir_hnd);
@@ -233,7 +232,7 @@ NTSTATUS dptr_create(connection_struct *conn,
 
 	dptr = talloc_zero(NULL, struct dptr_struct);
 	if(!dptr) {
-		DEBUG(0,("talloc fail in dptr_create.\n"));
+		DBG_ERR("talloc failed\n");
 		TALLOC_FREE(dir_hnd);
 		return NT_STATUS_NO_MEMORY;
 	}

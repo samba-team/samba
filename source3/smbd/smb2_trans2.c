@@ -4248,9 +4248,9 @@ static NTSTATUS smb_file_position_information(connection_struct *conn,
 
 	position_information = PULL_LE_U64(pdata, 0);
 
-	DEBUG(10,("smb_file_position_information: Set file position "
-		  "information for file %s to %.0f\n", fsp_str_dbg(fsp),
-		  (double)position_information));
+	DBG_DEBUG("Set file position information for file %s to %" PRIu64 "\n",
+		  fsp_str_dbg(fsp),
+		  position_information);
 	fh_set_position_information(fsp->fh, position_information);
 	return NT_STATUS_OK;
 }
@@ -4675,8 +4675,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		return status;
 	}
 
-	DEBUG(10,("smb_file_rename_information: got name |%s|\n",
-				newname));
+	DBG_DEBUG("got name |%s|\n", newname);
 
 	/* Check the new name has no '/' characters. */
 	if (strchr_m(newname, '/')) {
@@ -4783,10 +4782,10 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	}
 
 	if (fsp != NULL && fsp->fsp_flags.is_fsa) {
-		DEBUG(10,("smb_file_rename_information: "
-			  "SMB_FILE_RENAME_INFORMATION (%s) %s -> %s\n",
-			  fsp_fnum_dbg(fsp), fsp_str_dbg(fsp),
-			  smb_fname_str_dbg(smb_fname_dst)));
+		DBG_DEBUG("SMB_FILE_RENAME_INFORMATION (%s) %s -> %s\n",
+			  fsp_fnum_dbg(fsp),
+			  fsp_str_dbg(fsp),
+			  smb_fname_str_dbg(smb_fname_dst));
 
 		/*
 		 * If no pathnames are open below this directory,
@@ -4805,10 +4804,9 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 					0,
 					overwrite);
 	} else {
-		DEBUG(10,("smb_file_rename_information: "
-			  "SMB_FILE_RENAME_INFORMATION %s -> %s\n",
+		DBG_DEBUG("SMB_FILE_RENAME_INFORMATION %s -> %s\n",
 			  smb_fname_str_dbg(smb_fname_src),
-			  smb_fname_str_dbg(smb_fname_dst)));
+			  smb_fname_str_dbg(smb_fname_dst));
 		status = rename_internals(ctx,
 					conn,
 					req,
@@ -4914,8 +4912,7 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 	/* write time */
 	ft.mtime = time_t_to_full_timespec(srv_make_unix_date2(pdata+8));
 
-	DEBUG(10,("smb_set_info_standard: file %s\n",
-		smb_fname_str_dbg(smb_fname)));
+	DBG_DEBUG("file %s\n", smb_fname_str_dbg(smb_fname));
 
 	status = check_any_access_fsp(fsp, FILE_WRITE_ATTRIBUTES);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4957,17 +4954,17 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	}
 
 	allocation_size = PULL_LE_U64(pdata, 0);
-	DEBUG(10,("smb_set_file_allocation_info: Set file allocation info for "
-		  "file %s to %.0f\n", smb_fname_str_dbg(smb_fname),
-		  (double)allocation_size));
+	DBG_DEBUG("Set file allocation info for file %s to %" PRIu64 "\n",
+		  smb_fname_str_dbg(smb_fname),
+		  allocation_size);
 
 	if (allocation_size) {
 		allocation_size = smb_roundup(conn, allocation_size);
 	}
 
-	DEBUG(10,("smb_set_file_allocation_info: file %s : setting new "
-		  "allocation size to %.0f\n", smb_fname_str_dbg(smb_fname),
-		  (double)allocation_size));
+	DBG_DEBUG("file %s : setting new allocation size to %" PRIu64 "\n",
+		  smb_fname_str_dbg(smb_fname),
+		  allocation_size);
 
 	if (!fsp->fsp_flags.is_pathref && (fsp_get_io_fd(fsp) != -1)) {
 		/* Open file handle. */

@@ -103,10 +103,9 @@ bool can_delete_file_in_directory(connection_struct *conn,
 		if ((get_current_uid(conn) !=
 			smb_fname_parent->st.st_ex_uid) &&
 		    (get_current_uid(conn) != smb_fname->st.st_ex_uid)) {
-			DEBUG(10,("can_delete_file_in_directory: not "
-				  "owner of file %s or directory %s\n",
+			DBG_DEBUG("not owner of file %s or directory %s\n",
 				  smb_fname_str_dbg(smb_fname),
-				  smb_fname_str_dbg(smb_fname_parent)));
+				  smb_fname_str_dbg(smb_fname_parent));
 			ret = false;
 			goto out;
 		}
