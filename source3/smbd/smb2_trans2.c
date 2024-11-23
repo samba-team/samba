@@ -4251,8 +4251,7 @@ static NTSTATUS smb_file_position_information(connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	position_information = (uint64_t)IVAL(pdata,0);
-	position_information |= (((uint64_t)IVAL(pdata,4)) << 32);
+	position_information = PULL_LE_U64(pdata, 0);
 
 	DEBUG(10,("smb_file_position_information: Set file position "
 		  "information for file %s to %.0f\n", fsp_str_dbg(fsp),
