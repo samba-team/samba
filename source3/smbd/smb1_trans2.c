@@ -347,10 +347,8 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 	}
 
 	smblctx = (uint64_t)IVAL(pdata, POSIX_LOCK_PID_OFFSET);
-	offset = (((uint64_t) IVAL(pdata,(POSIX_LOCK_START_OFFSET+4))) << 32) |
-			((uint64_t) IVAL(pdata,POSIX_LOCK_START_OFFSET));
-	count = (((uint64_t) IVAL(pdata,(POSIX_LOCK_LEN_OFFSET+4))) << 32) |
-			((uint64_t) IVAL(pdata,POSIX_LOCK_LEN_OFFSET));
+	offset = PULL_LE_U64(pdata, POSIX_LOCK_START_OFFSET);
+	count = PULL_LE_U64(pdata, POSIX_LOCK_LEN_OFFSET);
 
 	DBG_DEBUG("file %s, lock_type = %u, smblctx = %"PRIu64", "
 		  "count = %"PRIu64", offset = %"PRIu64"\n",
