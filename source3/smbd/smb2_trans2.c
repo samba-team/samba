@@ -4246,11 +4246,6 @@ static NTSTATUS smb_file_position_information(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (fsp == NULL) {
-		/* Ignore on pathname based set. */
-		return NT_STATUS_OK;
-	}
-
 	position_information = PULL_LE_U64(pdata, 0);
 
 	DEBUG(10,("smb_file_position_information: Set file position "
