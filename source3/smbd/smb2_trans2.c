@@ -4913,10 +4913,6 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (fsp == NULL) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
 	/* create time */
 	ft.create_time = time_t_to_full_timespec(srv_make_unix_date2(pdata));
 	/* access time */
