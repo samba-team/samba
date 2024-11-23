@@ -3146,6 +3146,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 				struct smb_request *req,
 				char **ppdata,
 				int total_data,
+				struct files_struct *dirfsp,
 				struct smb_filename *smb_fname,
 				int *pdata_return_size)
 {
@@ -3187,7 +3188,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
         status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
-		NULL,					/* dirfsp */
+		dirfsp,					/* dirfsp */
 		smb_fname,				/* fname */
 		FILE_READ_ATTRIBUTES,			/* access_mask */
 		FILE_SHARE_NONE,			/* share_access */
@@ -3300,11 +3301,13 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	wire_open_mode = IVAL(pdata,4);
 
 	if (wire_open_mode == (SMB_O_CREAT|SMB_O_DIRECTORY)) {
-		return smb_posix_mkdir(conn, req,
-					ppdata,
-					total_data,
-					smb_fname,
-					pdata_return_size);
+		return smb_posix_mkdir(conn,
+				       req,
+				       ppdata,
+				       total_data,
+				       dirfsp,
+				       smb_fname,
+				       pdata_return_size);
 	}
 
 	switch (wire_open_mode & SMB_ACCMODE) {
