@@ -98,6 +98,7 @@ fail:
 
 enum cmd_type {
 	READ_CMD,
+	PWRITE_CMD,
 	WRITE_CMD,
 	FSYNC_CMD
 };
@@ -110,8 +111,11 @@ static const char *cmd_type_str(enum cmd_type cmd)
 	case READ_CMD:
 		result = "READ";
 		break;
+	case PWRITE_CMD:
+		result = "PWRITE";
+		break;
 	case WRITE_CMD:
-		result = "WRITE";
+		result = "PRITE";
 		break;
 	case FSYNC_CMD:
 		result = "FSYNC";
@@ -353,10 +357,14 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 #endif
 #endif
 			break;
-		case WRITE_CMD:
+		case PWRITE_CMD:
 			ret_struct.size = sys_pwrite_full(
 				fd, discard_const(map->ptr), cmd_struct.n,
 				cmd_struct.offset);
+			break;
+		case WRITE_CMD:
+			ret_struct.size = sys_write_full(
+				fd, discard_const(map->ptr), cmd_struct.n);
 			break;
 		case FSYNC_CMD:
 			ret_struct.size = fsync(fd);
@@ -709,7 +717,11 @@ static struct tevent_req *aio_fork_pwrite_send(
 	ZERO_STRUCT(cmd);
 	cmd.n = n;
 	cmd.offset = offset;
-	cmd.cmd = WRITE_CMD;
+	if (fsp->fsp_flags.posix_append) {
+		cmd.cmd = WRITE_CMD;
+	} else {
+		cmd.cmd = PWRITE_CMD;
+	}
 	cmd.erratic_testing_mode = config->erratic_testing_mode;
 
 	DEBUG(10, ("sending fd %d to child %d\n", fsp_get_io_fd(fsp),
