@@ -520,9 +520,14 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
 	}
 
 	while (total < N) {
-		ret = SMB_VFS_PWRITE(fsp, buffer + total, N - total,
-				     offset + total);
-
+		off_t pwrite_offset = offset;
+		if (offset != VFS_PWRITE_APPEND_OFFSET) {
+			pwrite_offset += total;
+		}
+		ret = SMB_VFS_PWRITE(fsp,
+				     buffer + total,
+				     N - total,
+				     pwrite_offset);
 		if (ret == -1)
 			return -1;
 		if (ret == 0)
