@@ -132,9 +132,9 @@ static NTSTATUS smbd_check_access_rights_fname(
 
 	if (!use_privs && get_current_uid(conn) == (uid_t)0) {
 		/* I'm sorry sir, I didn't know you were root... */
-		DBG_DEBUG("root override on %s. Granting 0x%x\n",
+		DBG_DEBUG("root override on %s. Granting 0x%" PRIx32 "\n",
 			  smb_fname_str_dbg(smb_fname),
-			  (unsigned int)access_mask);
+			  access_mask);
 		return NT_STATUS_OK;
 	}
 
