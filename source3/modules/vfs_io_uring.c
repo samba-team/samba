@@ -416,6 +416,22 @@ static void vfs_io_uring_fd_handler(struct tevent_context *ev,
 	vfs_io_uring_queue_run(config);
 }
 
+static int vfs_io_uring_openat(struct vfs_handle_struct *handle,
+			       const struct files_struct *dirfsp,
+			       const struct smb_filename *smb_fname,
+			       struct files_struct *fsp,
+			       const struct vfs_open_how *how)
+{
+#ifndef HAVE_IO_URING_PREP_WRITEV2
+	if (fsp->fsp_flags.posix_append) {
+		DBG_ERR("POSIX append-IO not supported without writev2 support");
+		errno = EINVAL;
+		return -1;
+	}
+#endif
+	return SMB_VFS_NEXT_OPENAT(handle, dirfsp, smb_fname, fsp, how);
+}
+
 struct vfs_io_uring_pread_state {
 	struct files_struct *fsp;
 	off_t offset;
@@ -606,6 +622,7 @@ static struct tevent_req *vfs_io_uring_pwrite_send(struct vfs_handle_struct *han
 	SMBPROFILE_BYTES_ASYNC_SET_IDLE(state->ur.profile_bytes);
 
 	ok = sys_valid_io_range(offset, n);
+	ok |= offset == VFS_PWRITE_APPEND_OFFSET;
 	if (!ok) {
 		tevent_req_error(req, EINVAL);
 		return tevent_req_post(req, ev);
@@ -627,10 +644,24 @@ static struct tevent_req *vfs_io_uring_pwrite_send(struct vfs_handle_struct *han
 
 static void vfs_io_uring_pwrite_submit(struct vfs_io_uring_pwrite_state *state)
 {
-	io_uring_prep_writev(&state->ur.sqe,
-			     fsp_get_io_fd(state->fsp),
-			     &state->iov, 1,
-			     state->offset);
+	if (!state->fsp->fsp_flags.posix_append) {
+		io_uring_prep_writev(&state->ur.sqe,
+				     fsp_get_io_fd(state->fsp),
+				     &state->iov, 1,
+				     state->offset);
+	}
+	else {
+#ifdef HAVE_IO_URING_PREP_WRITEV2
+		io_uring_prep_writev2(&state->ur.sqe,
+				      fsp_get_io_fd(state->fsp),
+				      &state->iov, 1,
+				      -1,
+				      RWF_APPEND);
+#else
+		/* This should have been caught by vfs_io_uring_openat() */
+		smb_panic("Unexpected POSIX append-IO");
+#endif
+	}
 	vfs_io_uring_request_submit(&state->ur);
 }
 
@@ -806,6 +837,7 @@ static int vfs_io_uring_fsync_recv(struct tevent_req *req,
 
 static struct vfs_fn_pointers vfs_io_uring_fns = {
 	.connect_fn = vfs_io_uring_connect,
+	.openat_fn = vfs_io_uring_openat,
 	.pread_send_fn = vfs_io_uring_pread_send,
 	.pread_recv_fn = vfs_io_uring_pread_recv,
 	.pwrite_send_fn = vfs_io_uring_pwrite_send,

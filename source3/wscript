@@ -1680,7 +1680,7 @@ int main(void) {
                       msg='Checking for liburing package', uselib_store="URING"):
         if (conf.CHECK_HEADERS('liburing.h', lib='uring')
                                       and conf.CHECK_LIB('uring', shlib=True)):
-            conf.CHECK_FUNCS_IN('io_uring_ring_dontfork', 'uring',
+            conf.CHECK_FUNCS_IN('io_uring_ring_dontfork io_uring_prep_writev2', 'uring',
                                 headers='liburing.h')
             # There are a few distributions, which
             # don't seem to have linux/openat2.h available
