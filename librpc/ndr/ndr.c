@@ -406,7 +406,10 @@ _PUBLIC_ void ndr_print_string_helper(struct ndr_print *ndr, const char *format,
 /*
   a useful helper function for printing idl structures via DEBUGC()
 */
-_PUBLIC_ void ndr_print_debugc(int dbgc_class, ndr_print_fn_t fn, const char *name, void *ptr)
+_PUBLIC_ void ndr_print_debugc(int dbgc_class,
+			       ndr_print_fn_t fn,
+			       const char *name,
+			       const void *ptr)
 {
 	struct ndr_print *ndr;
 
@@ -434,7 +437,7 @@ _PUBLIC_ void ndr_print_debugc(int dbgc_class, ndr_print_fn_t fn, const char *na
 _PUBLIC_ bool ndr_print_debug(int level,
 			      ndr_print_fn_t fn,
 			      const char *name,
-			      void *ptr,
+			      const void *ptr,
 			      const char *location,
 			      const char *function)
 {
@@ -468,7 +471,10 @@ fail:
 /*
   a useful helper function for printing idl unions via DEBUG()
 */
-_PUBLIC_ void ndr_print_union_debug(ndr_print_fn_t fn, const char *name, uint32_t level, void *ptr)
+_PUBLIC_ void ndr_print_union_debug(ndr_print_fn_t fn,
+				    const char *name,
+				    uint32_t level,
+				    const void *ptr)
 {
 	struct ndr_print *ndr;
 
@@ -493,7 +499,10 @@ _PUBLIC_ void ndr_print_union_debug(ndr_print_fn_t fn, const char *name, uint32_
 /*
   a useful helper function for printing idl function calls via DEBUG()
 */
-_PUBLIC_ void ndr_print_function_debug(ndr_print_function_t fn, const char *name, ndr_flags_type flags, void *ptr)
+_PUBLIC_ void ndr_print_function_debug(ndr_print_function_t fn,
+				       const char *name,
+				       ndr_flags_type flags,
+				       const void *ptr)
 {
 	struct ndr_print *ndr;
 
@@ -517,7 +526,10 @@ _PUBLIC_ void ndr_print_function_debug(ndr_print_function_t fn, const char *name
 /*
   a useful helper function for printing idl structures to a string
 */
-_PUBLIC_ char *ndr_print_struct_string(TALLOC_CTX *mem_ctx, ndr_print_fn_t fn, const char *name, void *ptr)
+_PUBLIC_ char *ndr_print_struct_string(TALLOC_CTX *mem_ctx,
+				       ndr_print_fn_t fn,
+				       const char *name,
+				       const void *ptr)
 {
 	struct ndr_print *ndr;
 	char *ret = NULL;
@@ -542,7 +554,11 @@ failed:
 /*
   a useful helper function for printing idl unions to a string
 */
-_PUBLIC_ char *ndr_print_union_string(TALLOC_CTX *mem_ctx, ndr_print_fn_t fn, const char *name, uint32_t level, void *ptr)
+_PUBLIC_ char *ndr_print_union_string(TALLOC_CTX *mem_ctx,
+				      ndr_print_fn_t fn,
+				      const char *name,
+				      uint32_t level,
+				      const void *ptr)
 {
 	struct ndr_print *ndr;
 	char *ret = NULL;
@@ -568,8 +584,10 @@ failed:
   a useful helper function for printing idl function calls to a string
 */
 _PUBLIC_ char *ndr_print_function_string(TALLOC_CTX *mem_ctx,
-				ndr_print_function_t fn, const char *name,
-				ndr_flags_type flags, void *ptr)
+					 ndr_print_function_t fn,
+					 const char *name,
+					 ndr_flags_type flags,
+					 const void *ptr)
 {
 	struct ndr_print *ndr;
 	char *ret = NULL;
