@@ -198,8 +198,6 @@ static NTSTATUS smbd_check_access_rights_sd(
 		}
 	}
 
-	TALLOC_FREE(sd);
-
 	if (NT_STATUS_IS_OK(status) ||
 	    !NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED))
 	{
@@ -327,13 +325,15 @@ NTSTATUS smbd_check_access_rights_fsp(struct files_struct *dirfsp,
 		return status;
 	}
 
-	return smbd_check_access_rights_sd(fsp->conn,
-					   dirfsp,
-					   fsp->fsp_name,
-					   sd,
-					   use_privs,
-					   access_mask,
-					   do_not_check_mask);
+	status = smbd_check_access_rights_sd(fsp->conn,
+					     dirfsp,
+					     fsp->fsp_name,
+					     sd,
+					     use_privs,
+					     access_mask,
+					     do_not_check_mask);
+	TALLOC_FREE(sd);
+	return status;
 }
 
 /*
