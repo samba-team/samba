@@ -293,3 +293,41 @@ ssize_t sys_pwrite_full(int fd, const void *buf, size_t count, off_t off)
 
 	return total_written;
 }
+
+/*******************************************************************
+ A write wrapper that will deal with EINTR and never allow a short
+ write unless the file system returns an error.
+********************************************************************/
+
+ssize_t sys_write_full(int fd, const void *buf, size_t count)
+{
+	ssize_t total_written = 0;
+	const uint8_t *curr_buf = (const uint8_t *)buf;
+	size_t curr_count = count;
+
+	while (curr_count != 0) {
+		ssize_t ret = sys_write(fd,
+					curr_buf,
+					curr_count);
+		if (ret == -1) {
+			return -1;
+		}
+		if (ret == 0) {
+			/* Ensure we can never spin. */
+			errno = ENOSPC;
+			return -1;
+		}
+
+		if (ret > curr_count) {
+			errno = EIO;
+			return -1;
+		}
+
+		curr_buf += ret;
+		curr_count -= ret;
+
+		total_written += ret;
+	}
+
+	return total_written;
+}
