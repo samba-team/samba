@@ -1,7 +1,5 @@
 # Without AES we currently get DOWNGRADE_DETECTED
 ^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_.*_auth3_00004004
 ^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_.*_auth3_603fffff
-# These need to be checked
-^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_send_to_sam
 # This is not implemented yet
 ^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_ticket_samlogon

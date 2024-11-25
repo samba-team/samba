@@ -3234,7 +3234,7 @@ static NTSTATUS dcesrv_netr_NetrLogonSendToSam(struct dcesrv_call_state *dce_cal
 	case SEC_CHAN_DNS_DOMAIN:
 	case SEC_CHAN_DOMAIN:
 	case SEC_CHAN_NULL:
-		return NT_STATUS_INVALID_PARAMETER;
+		return NT_STATUS_ACCESS_DENIED;
 	default:
 		DEBUG(1, ("Client asked for an invalid secure channel type: %d\n",
 			  creds->secure_channel_type));
@@ -3264,8 +3264,7 @@ static NTSTATUS dcesrv_netr_NetrLogonSendToSam(struct dcesrv_call_state *dce_cal
 				       (ndr_pull_flags_fn_t)ndr_pull_netr_SendToSamBase);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		/* We only partially implement SendToSam */
-		return NT_STATUS_NOT_IMPLEMENTED;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* Now 'send' to SAM */
@@ -3289,7 +3288,7 @@ static NTSTATUS dcesrv_netr_NetrLogonSendToSam(struct dcesrv_call_state *dce_cal
 					   &dn);
 		if (ret != LDB_SUCCESS) {
 			ldb_transaction_cancel(sam_ctx);
-			return NT_STATUS_INVALID_PARAMETER;
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 
 		if (creds->secure_channel_type == SEC_CHAN_RODC &&
