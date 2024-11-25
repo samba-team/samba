@@ -298,7 +298,8 @@ static NTSTATUS security_descriptor_acl_add(struct security_descriptor *sd,
 
 	if (idx < 0) {
 		return NT_STATUS_ARRAY_BOUNDS_EXCEEDED;
-	} else if (idx > acl->num_aces) {
+	}
+	if (idx > acl->num_aces) {
 		return NT_STATUS_ARRAY_BOUNDS_EXCEEDED;
 	}
 
