@@ -1059,7 +1059,7 @@ tasks = {
 
         # build with all modules static
             ("allstatic-configure", "./configure.developer " + samba_configure_params + " --with-static-modules=ALL"),
-            ("allstatic-make", "make -j"),
+            ("allstatic-make", "nice -n 19 make -j 2"),
             ("allstatic-test", make_test(TESTS="samba3.smb2.create.*nt4_dc")),
             ("allstatic-lcov", LCOV_CMD),
             ("allstatic-def-check-clean-tree", CLEAN_SOURCE_TREE_CMD),
@@ -1068,7 +1068,7 @@ tasks = {
         # force all libraries as private
             ("allprivate-def-distclean", "make distclean"),
             ("allprivate-def-configure", "./configure.developer " + samba_configure_params + " --private-libraries=ALL"),
-            ("allprivate-def-make", "make -j"),
+            ("allprivate-def-make", "nice -n 19 make -j 2"),
             # note wrapper libraries need to be public
             ("allprivate-def-no-public", "ls ./bin/shared | egrep -v '^private$|lib[nprsu][saeoi][smscd].*-wrapper.so$|pam_set_items.so|pam_matrix.so' | wc -l | grep -q '^0'"),
             ("allprivate-def-only-private-ext", "ls ./bin/shared/private | egrep 'private-samba' | wc -l | grep -q '^0' && exit 1; exit 0"),
@@ -1082,7 +1082,7 @@ tasks = {
         # extension and 2 exceptions
             ("allprivate-ext-distclean", "make distclean"),
             ("allprivate-ext-configure", "./configure.developer " + samba_configure_params + " --private-libraries=ALL --private-library-extension=private-library --private-extension-exception=pac,ndr"),
-            ("allprivate-ext-make", "make -j"),
+            ("allprivate-ext-make", "nice -n 19 make -j 2"),
             # note wrapper libraries need to be public
             ("allprivate-ext-no-public", "ls ./bin/shared | egrep -v '^private$|lib[nprsu][saeoi][smscd].*-wrapper.so$|pam_set_items.so|pam_matrix.so' | wc -l | grep -q '^0'"),
             ("allprivate-ext-no-private-default-ext", "ls ./bin/shared/private | grep 'private-samba' | wc -l | grep -q '^0'"),
@@ -1097,7 +1097,7 @@ tasks = {
         # retry with nonshared smbd and smbtorture
             ("nonshared-distclean", "make distclean"),
             ("nonshared-configure", "./configure.developer " + samba_configure_params + " --bundled-libraries=ALL --with-static-modules=ALL --nonshared-binary=smbtorture,smbd/smbd"),
-            ("nonshared-make", "make -j"),
+            ("nonshared-make", "nice -n 19 make -j 2"),
             ("nonshared-test", make_test(TESTS="samba3.smb2.create.*nt4_dc")),
             ("nonshared-lcov", LCOV_CMD),
             ("nonshared-check-clean-tree", CLEAN_SOURCE_TREE_CMD),
@@ -1106,7 +1106,7 @@ tasks = {
         # retry without winbindd
             ("nonwinbind-distclean", "make distclean"),
             ("nonwinbind-configure", "./configure.developer " + samba_configure_params + " --bundled-libraries=ALL --with-static-modules=ALL --without-winbind"),
-            ("nonwinbind-make", "make -j"),
+            ("nonwinbind-make", "nice -n 19 make -j 2"),
             ("nonwinbind-test", make_test(TESTS="samba3.smb2.*.simpleserver")),
             ("nonwinbind-lcov", LCOV_CMD),
             ("nonwinbind-check-clean-tree", CLEAN_SOURCE_TREE_CMD),
