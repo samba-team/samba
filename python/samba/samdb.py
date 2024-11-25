@@ -439,7 +439,7 @@ changetype: modify
                         raise Exception('Unable to find "%s". Operation cancelled.' % member)
                     targetmember_dn = targetmember[0].dn.extended_str(1)
 
-                if add_members_operation is True and (targetgroup[0].get('member') is None or get_bytes(targetmember_dn) not in [str(x) for x in targetgroup[0]['member']]):
+                if add_members_operation is True and (targetgroup[0].get('member') is None or get_bytes(targetmember_dn) not in targetgroup[0]['member']):
                     modified = True
                     addtargettogroup += """add: member
 member: %s
