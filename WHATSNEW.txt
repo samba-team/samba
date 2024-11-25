@@ -1,4 +1,59 @@
                    ==============================
+                   Release Notes for Samba 4.21.2
+                         November 25, 2024
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.21 release series.
+
+
+Changes since 4.21.1
+--------------------
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15732: smbd fails to correctly check sharemode against OVERWRITE
+     dispositions.
+   * BUG 15754: Panic in close_directory.
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15752: winexe no longer works with samba 4.21.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14356: protocol error - Unclear debug message "pad length mismatch" for
+     invalid bind packet.
+   * BUG 15425: NetrGetLogonCapabilities QueryLevel 2 needs to be implemented.
+   * BUG 15740: gss_accept_sec_context() from Heimdal does not imply
+     GSS_C_MUTUAL_FLAG with GSS_C_DCE_STYLE.
+   * BUG 15749: winbindd should call process_set_title() for locator child.
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15320: Update CTDB to track all TCP connections to public IP addresses.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.21.1
                           October 14, 2024
                    ==============================
@@ -68,8 +123,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.21.0
                          September 02, 2024
