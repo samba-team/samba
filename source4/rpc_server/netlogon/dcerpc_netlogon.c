@@ -3105,13 +3105,47 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 }
 
 
+static NTSTATUS dcesrv_netr_ServerGetTrustInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_ServerGetTrustInfo *r);
+
 /*
   netr_ServerPasswordGet
 */
 static NTSTATUS dcesrv_netr_ServerPasswordGet(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_ServerPasswordGet *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct netr_ServerGetTrustInfo r2 = {};
+	struct samr_Password old_owf_password = {};
+	struct netr_TrustInfo *_ti = NULL;
+	NTSTATUS status;
+
+	r2.in.server_name = r->in.server_name;
+	r2.in.account_name = r->in.account_name;
+	r2.in.secure_channel_type = r->in.secure_channel_type;
+	r2.in.computer_name = r->in.computer_name;
+	r2.in.credential = r->in.credential;
+
+	r2.out.return_authenticator = r->out.return_authenticator;
+	r2.out.new_owf_password = r->out.password;
+	r2.out.old_owf_password = &old_owf_password;
+	r2.out.trust_info = &_ti;
+
+	status = dcesrv_netr_ServerGetTrustInfo(dce_call, mem_ctx, &r2);
+
+	r->out.return_authenticator = r2.out.return_authenticator;
+	r->out.password = r2.out.new_owf_password;
+
+	ZERO_STRUCT(old_owf_password);
+	switch (r->in.secure_channel_type) {
+	case SEC_CHAN_BDC:
+	case SEC_CHAN_RODC:
+		break;
+	default:
+		ZERO_STRUCTP(r->out.password);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return status;
 }
 
 static bool sam_rodc_access_check(struct ldb_context *sam_ctx,
@@ -4280,9 +4314,6 @@ static WERROR dcesrv_netr_DsrDeregisterDNSHostRecords(struct dcesrv_call_state *
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
-
-static NTSTATUS dcesrv_netr_ServerGetTrustInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_ServerGetTrustInfo *r);
 
 /*
   netr_ServerTrustPasswordsGet
