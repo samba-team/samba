@@ -936,6 +936,14 @@ _PUBLIC_ enum ndr_err_code ndr_push_subcontext_end(struct ndr_push *ndr,
 		break;
 
 	case 2:
+		if (subndr->offset > UINT16_MAX) {
+			return ndr_push_error(
+				ndr,
+				NDR_ERR_BUFSIZE,
+				"Subcontext (PUSH) too large: %" PRIu32
+				" does not fit into 16 bits",
+				subndr->offset);
+		}
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, subndr->offset));
 		break;
 
