@@ -34,18 +34,17 @@ struct security_descriptor *security_descriptor_initialise(TALLOC_CTX *mem_ctx)
 	if (!sd) {
 		return NULL;
 	}
+	*sd = (struct security_descriptor){
+		.revision = SD_REVISION,
 
-	sd->revision = SD_REVISION;
-	/* we mark as self relative, even though it isn't while it remains
-	   a pointer in memory because this simplifies the ndr code later.
-	   All SDs that we store/emit are in fact SELF_RELATIVE
-	*/
-	sd->type = SEC_DESC_SELF_RELATIVE;
-
-	sd->owner_sid = NULL;
-	sd->group_sid = NULL;
-	sd->sacl = NULL;
-	sd->dacl = NULL;
+		/*
+		 * we mark as self relative, even though it isn't
+		 * while it remains a pointer in memory because this
+		 * simplifies the ndr code later.  All SDs that we
+		 * store/emit are in fact SELF_RELATIVE
+		 */
+		.type = SEC_DESC_SELF_RELATIVE,
+	};
 
 	return sd;
 }
