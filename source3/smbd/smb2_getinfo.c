@@ -465,8 +465,15 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		int data_size = 0;
 		size_t fixed_portion;
 
-		/* the levels directly map to the passthru levels */
-		file_info_level = in_file_info_class + NT_PASSTHROUGH_OFFSET;
+		switch (in_file_info_class) {
+		case FSCC_FS_POSIX_INFORMATION:
+			file_info_level = in_file_info_class;
+			break;
+		default:
+			/* the levels directly map to the passthru levels */
+			file_info_level = in_file_info_class + NT_PASSTHROUGH_OFFSET;
+			break;
+		}
 
 		status = smbd_do_qfsinfo(smb2req->xconn, conn, state,
 					 file_info_level,

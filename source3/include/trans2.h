@@ -342,7 +342,6 @@ Byte offset   Type     name                description
 
 /* As yet undefined FSCC_ code for POSIX info level. */
 #define FSCC_FILE_POSIX_INFORMATION			100
-#define SMB2_FS_POSIX_INFORMATION			100
 
 /* MS-FSCC 2.4 File System Information Classes */
 
@@ -355,6 +354,9 @@ Byte offset   Type     name                description
 #define FSCC_FS_FULL_SIZE_INFORMATION			7
 #define FSCC_FS_OBJECTID_INFORMATION			8
 #define FSCC_FS_SECTOR_SIZE_INFORMATION			11
+
+/* As yet undefined FSCC_ code for POSIX info level. */
+#define FSCC_FS_POSIX_INFORMATION			100
 
 /* NT passthrough levels... */
 
@@ -412,7 +414,6 @@ Byte offset   Type     name                description
 #define SMB2_FILE_RENAME_INFORMATION_INTERNAL		(FSCC_FILE_RENAME_INFORMATION + SMB2_INFO_SPECIAL)
 #define SMB2_FILE_FULL_EA_INFORMATION			(FSCC_FILE_FULL_EA_INFORMATION + SMB2_INFO_SPECIAL)
 #define SMB2_FILE_ALL_INFORMATION			(FSCC_FILE_ALL_INFORMATION + SMB2_INFO_SPECIAL)
-#define SMB2_FS_POSIX_INFORMATION_INTERNAL		(SMB2_FS_POSIX_INFORMATION + NT_PASSTHROUGH_OFFSET)
 
 /* NT passthrough levels for qfsinfo. */
 

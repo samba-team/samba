@@ -5145,7 +5145,7 @@ static void cli_smb2_get_posix_fs_info_opened(struct tevent_req *subreq)
 			state->cli,
 			state->fnum,
 			SMB2_0_INFO_FILESYSTEM,	   /* in_info_type */
-			SMB2_FS_POSIX_INFORMATION, /* in_file_info_class */
+			FSCC_FS_POSIX_INFORMATION, /* in_file_info_class */
 			0xFFFF,			   /* in_max_output_length */
 			NULL,			   /* in_input_buffer */
 			0,			   /* in_additional_info */

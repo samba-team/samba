@@ -1960,7 +1960,7 @@ static bool fsinfo_unix_valid_level(connection_struct *conn,
 {
 	if (conn_using_smb2(conn->sconn) &&
 	    fsp->fsp_flags.posix_open &&
-	    info_level == SMB2_FS_POSIX_INFORMATION_INTERNAL)
+	    info_level == FSCC_FS_POSIX_INFORMATION)
 	{
 		return true;
 	}
@@ -2473,7 +2473,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 #endif
 
 		case SMB_QUERY_POSIX_FS_INFO:
-		case SMB2_FS_POSIX_INFORMATION_INTERNAL:
+		case FSCC_FS_POSIX_INFORMATION:
 		{
 			int rc;
 			struct vfs_statvfs_struct svfs;
