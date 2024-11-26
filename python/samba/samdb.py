@@ -387,8 +387,11 @@ lockoutTime: 0
 
         self.transaction_start()
         try:
-            targetgroup = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
-                                      expression=groupfilter, attrs=['member'])
+            targetgroup = self.search(base=self.domain_dn(),
+                                      scope=ldb.SCOPE_SUBTREE,
+                                      expression=groupfilter,
+                                      controls=["extended_dn:1:1"],
+                                      attrs=['member'])
             if len(targetgroup) == 0:
                 raise Exception('Unable to find group "%s"' % groupname)
             assert(len(targetgroup) == 1)
@@ -405,6 +408,7 @@ changetype: modify
                 if member_base_dn is None:
                     member_base_dn = self.domain_dn()
 
+                membersid = None
                 try:
                     membersid = security.dom_sid(member)
                     targetmember_dn = "<SID=%s>" % str(membersid)
@@ -439,13 +443,33 @@ changetype: modify
                         raise Exception('Unable to find "%s". Operation cancelled.' % member)
                     targetmember_dn = targetmember[0].dn.extended_str(1)
 
-                if add_members_operation is True and (targetgroup[0].get('member') is None or get_bytes(targetmember_dn) not in targetgroup[0]['member']):
+                def _is_member(samdb, group, member_dn, member_sid):
+                    if group.get('member') is None:
+                        return False
+
+                    for m in group.get('member'):
+                        m_ext_dn = ldb.Dn(samdb, str(m))
+                        m_binary_sid = m_ext_dn.get_extended_component("SID")
+                        if m_binary_sid:
+                            m_sid = ndr_unpack(security.dom_sid, m_binary_sid)
+                            if member_sid == m_sid:
+                                return True
+                        if member_dn == str(m_ext_dn):
+                            return True
+
+                    return False
+
+                is_member = _is_member(self,
+                                       targetgroup[0],
+                                       targetmember_dn,
+                                       membersid)
+                if add_members_operation is True and not is_member:
                     modified = True
                     addtargettogroup += """add: member
 member: %s
 """ % (str(targetmember_dn))
 
-                elif add_members_operation is False and (targetgroup[0].get('member') is not None and get_bytes(targetmember_dn) in targetgroup[0]['member']):
+                elif add_members_operation is False and is_member:
                     modified = True
                     addtargettogroup += """delete: member
 member: %s
