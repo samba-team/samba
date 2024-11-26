@@ -24,6 +24,7 @@ from samba import credentials
 from samba import (ntstatus,NTSTATUSError)
 import samba.tests
 import os
+import stat
 
 class LibsmbTests(samba.tests.TestCase):
 
@@ -53,3 +54,10 @@ class LibsmbTests(samba.tests.TestCase):
             elif not (e.args[0] == ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND or
                       e.args[0] == ntstatus.NT_STATUS_OBJECT_PATH_NOT_FOUND):
                 raise
+
+    def wire_mode_to_unix(self, wire):
+        mode = libsmb.wire_mode_to_unix(wire)
+        type = stat.S_IFMT(mode)
+        perms = mode & (stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO|
+                        stat.S_ISUID|stat.S_ISGID|stat.S_ISVTX)
+        return (type, perms)

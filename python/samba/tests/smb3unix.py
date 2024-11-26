@@ -70,13 +70,6 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
 
         return (conn1, conn2)
 
-    def wire_mode_to_unix(self, wire):
-        mode = libsmb.wire_mode_to_unix(wire)
-        type = stat.S_IFMT(mode)
-        perms = mode & (stat.S_IRWXU|stat.S_IRWXG|stat.S_IRWXO|
-                        stat.S_ISUID|stat.S_ISGID|stat.S_ISVTX)
-        return (type, perms)
-
     def test_negotiate_context_posix(self):
         c = libsmb.Conn(
             self.server_ip,
