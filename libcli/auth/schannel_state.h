@@ -39,6 +39,11 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 				    struct netr_Authenticator *return_authenticator,
 				    enum dcerpc_AuthType auth_type,
 				    enum dcerpc_AuthLevel auth_level,
+				    NTSTATUS (*access_check_cb)(struct netlogon_creds_CredentialState *creds,
+								NTSTATUS step_status,
+								bool *store,
+								void *access_check_private),
+				    void *access_check_private,
 				    struct netlogon_creds_CredentialState **creds_out);
 
 NTSTATUS schannel_get_challenge(struct loadparm_context *lp_ctx,

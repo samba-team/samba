@@ -600,6 +600,8 @@ NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dce_call,
 					       return_authenticator,
 					       auth_type,
 					       auth_level,
+					       NULL, /* access_check_cb */
+					       NULL, /* access_check_private */
 					       &creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		ZERO_STRUCTP(return_authenticator);

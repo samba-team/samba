@@ -562,6 +562,11 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 				    struct netr_Authenticator *return_authenticator,
 				    enum dcerpc_AuthType auth_type,
 				    enum dcerpc_AuthLevel auth_level,
+				    NTSTATUS (*access_check_cb)(struct netlogon_creds_CredentialState *creds,
+								NTSTATUS step_status,
+								bool *store,
+								void *access_check_private),
+				    void *access_check_private,
 				    struct netlogon_creds_CredentialState **creds_out)
 {
 	TALLOC_CTX *tmpctx;
@@ -572,6 +577,7 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 	char *keystr = NULL;
 	struct db_record *record;
 	TDB_DATA key;
+	bool store = true;
 
 	if (creds_out != NULL) {
 		*creds_out = NULL;
@@ -624,13 +630,22 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 						  return_authenticator,
 						  auth_type,
 						  auth_level);
+	if (access_check_cb != NULL) {
+		NTSTATUS step_status = status;
+		status = access_check_cb(creds,
+					 step_status,
+					 &store,
+					 access_check_private);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	status = schannel_store_session_key_tdb(db_sc, tmpctx, creds);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
+	if (store) {
+		status = schannel_store_session_key_tdb(db_sc, tmpctx, creds);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
 	}
 
 	if (creds_out) {
