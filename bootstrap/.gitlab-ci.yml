@@ -10,6 +10,7 @@
   variables:
     SAMBA_CI_IS_BROKEN_IMAGE: "no"
     SAMBA_CI_TEST_JOB: "samba-o3"
+    SAMBA_CI_PLATFORM: "linux/amd64"
   before_script:
     # install prerequisites
     - dnf install -qy diffutils
@@ -27,7 +28,7 @@
   script: |
     set -xueo pipefail
     ci_image_name=samba-ci-${CI_JOB_NAME}
-    podman build -t ${ci_image_name} --build-arg SHA1SUM=${SAMBA_CI_CONTAINER_TAG} bootstrap/generated-dists/${CI_JOB_NAME}
+    podman build --platform ${SAMBA_CI_PLATFORM} --tag ${ci_image_name} --build-arg SHA1SUM=${SAMBA_CI_CONTAINER_TAG} bootstrap/generated-dists/${CI_JOB_NAME}
     ci_image_path="${SAMBA_CI_CONTAINER_REGISTRY}/${ci_image_name}"
     timestamp=$(date +%Y%m%d%H%M%S)
     container_hash=$(podman image inspect --format='{{ .Id }}' ${ci_image_name} | cut -c 1-9)
@@ -105,6 +106,7 @@ debian11-32bit:
   extends: .build_image_template
   variables:
     SAMBA_CI_TEST_JOB: "samba-32bit"
+    SAMBA_CI_PLATFORM: "linux/i386"
 
 rocky8:
   extends: .build_image_template

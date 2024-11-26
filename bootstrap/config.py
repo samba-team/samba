@@ -461,7 +461,7 @@ DEB_DISTS = {
         }
     },
     'debian11-32bit': {
-        'docker_image': 'registry-1.docker.io/i386/debian:11',
+        'docker_image': 'debian:11',  # specify the platform in .gitlab-ci.yaml
         'vagrant_box': 'debian/bullseye32',
         'replace': {
             'language-pack-en': '',   # included in locales
