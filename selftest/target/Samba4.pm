@@ -1650,6 +1650,16 @@ sub provision_ad_dc_ntvfs($$$)
 	server reject md5 schannel:tests4u2selfwk\$ = no
 	server reject md5 schannel:torturepacbdc\$ = no
 	server reject md5 schannel:torturepacwksta\$ = no
+	server reject aes schannel:schannel2\$ = no
+	server reject aes schannel:schannel3\$ = no
+	server reject aes schannel:schannel8\$ = no
+	server reject aes schannel:schannel9\$ = no
+	server reject aes schannel:torturetest\$ = no
+	server reject aes schannel:tests4u2proxywk\$ = no
+	server reject aes schannel:tests4u2selfbdc\$ = no
+	server reject aes schannel:tests4u2selfwk\$ = no
+	server reject aes schannel:torturepacbdc\$ = no
+	server reject aes schannel:torturepacwksta\$ = no
 	server require schannel:schannel0\$ = no
 	server require schannel:schannel1\$ = no
 	server require schannel:schannel2\$ = no
@@ -1727,6 +1737,11 @@ sub provision_fl2000dc($$)
 	server reject md5 schannel:tests4u2selfwk\$ = no
 	server reject md5 schannel:torturepacbdc\$ = no
 	server reject md5 schannel:torturepacwksta\$ = no
+	server reject aes schannel:tests4u2proxywk\$ = no
+	server reject aes schannel:tests4u2selfbdc\$ = no
+	server reject aes schannel:tests4u2selfwk\$ = no
+	server reject aes schannel:torturepacbdc\$ = no
+	server reject aes schannel:torturepacwksta\$ = no
 ";
 	my $extra_provision_options = ["--base-schema=2008_R2"];
 	# This environment uses plain text secrets
@@ -1782,6 +1797,11 @@ sub provision_fl2003dc($$$)
 	server reject md5 schannel:tests4u2selfwk\$ = no
 	server reject md5 schannel:torturepacbdc\$ = no
 	server reject md5 schannel:torturepacwksta\$ = no
+	server reject aes schannel:tests4u2proxywk\$ = no
+	server reject aes schannel:tests4u2selfbdc\$ = no
+	server reject aes schannel:tests4u2selfwk\$ = no
+	server reject aes schannel:torturepacbdc\$ = no
+	server reject aes schannel:torturepacwksta\$ = no
 ";
 
 	my $extra_provision_options = ["--base-schema=2008_R2"];
@@ -1845,6 +1865,11 @@ sub provision_fl2008r2dc($$$)
 	server reject md5 schannel:tests4u2selfwk\$ = no
 	server reject md5 schannel:torturepacbdc\$ = no
 	server reject md5 schannel:torturepacwksta\$ = no
+	server reject aes schannel:tests4u2proxywk\$ = no
+	server reject aes schannel:tests4u2selfbdc\$ = no
+	server reject aes schannel:tests4u2selfwk\$ = no
+	server reject aes schannel:torturepacbdc\$ = no
+	server reject aes schannel:torturepacwksta\$ = no
 ";
 	my $extra_provision_options = ["--base-schema=2008_R2"];
 	my $ret = $self->provision($prefix,
@@ -2085,6 +2110,17 @@ sub provision_ad_dc()
 	server reject md5 schannel:torturepacbdc\$ = no
 	server reject md5 schannel:torturepacwksta\$ = no
 	server reject md5 schannel:samlogontest\$ = no
+	server reject aes schannel:schannel2\$ = no
+	server reject aes schannel:schannel3\$ = no
+	server reject aes schannel:schannel8\$ = no
+	server reject aes schannel:schannel9\$ = no
+	server reject aes schannel:torturetest\$ = no
+	server reject aes schannel:tests4u2proxywk\$ = no
+	server reject aes schannel:tests4u2selfbdc\$ = no
+	server reject aes schannel:tests4u2selfwk\$ = no
+	server reject aes schannel:torturepacbdc\$ = no
+	server reject aes schannel:torturepacwksta\$ = no
+	server reject aes schannel:samlogontest\$ = no
 	server require schannel:schannel0\$ = no
 	server require schannel:schannel1\$ = no
 	server require schannel:schannel2\$ = no
