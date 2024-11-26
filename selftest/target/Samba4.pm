@@ -2096,6 +2096,7 @@ sub provision_ad_dc()
 	lpq cache time = 0
 	print notify backchannel = yes
 
+	server support krb5 netlogon = yes
 	CVE_2020_1472:warn_about_unused_debug_level = 3
 	CVE_2022_38023:warn_about_unused_debug_level = 3
 	CVE_2022_38023:error_debug_level = 2
