@@ -1,5 +1,3 @@
-# This doesn't enforce that a krb5 connection can't be used by aes creds
-^samba.tests.krb5.netlogon.*.test_wks1_authenticate_flags
 # This is not implemented yet
 ^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_ticket_samlogon
 # These will be fixed in the next commits
