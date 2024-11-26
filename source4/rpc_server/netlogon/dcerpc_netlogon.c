@@ -1101,6 +1101,10 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
+	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
 	nt_status = netlogon_creds_decrypt_samr_Password(creds,
 							 r->in.new_password,
 							 auth_type,
@@ -1190,7 +1194,38 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 
 	if (!extract_pw_from_buffer(mem_ctx, password_buf.data, &new_password)) {
 		DEBUG(3,("samr: failed to decode password buffer\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/*
+	 * We don't allow empty passwords for machine accounts.
+	 */
+	if (new_password.length < 2) {
+		DBG_WARNING("Empty password Length[%zu]\n",
+			    new_password.length);
 		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH) {
+		/*
+		 * netlogon_creds_decrypt_samr_CryptPassword
+		 * already checked for DCERPC_AUTH_LEVEL_PRIVACY
+		 */
+		goto checked_encryption;
+	} else if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		/*
+		 * check it's encrypted
+		 */
+	} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
+		/*
+		 * check it's encrypted
+		 */
+	} else {
+		/*
+		 * netlogon_creds_decrypt_samr_CryptPassword
+		 * already checked for DCERPC_AUTH_LEVEL_PRIVACY
+		 */
+		goto checked_encryption;
 	}
 
 	/*
@@ -1199,15 +1234,6 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 	 */
 	if (new_password.length == r->in.new_password->length) {
 		DBG_WARNING("Length[%zu] field not encrypted\n",
-			    new_password.length);
-		return NT_STATUS_WRONG_PASSWORD;
-	}
-
-	/*
-	 * We don't allow empty passwords for machine accounts.
-	 */
-	if (new_password.length < 2) {
-		DBG_WARNING("Empty password Length[%zu]\n",
 			    new_password.length);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
@@ -1238,6 +1264,8 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 			    new_password.length);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
+
+checked_encryption:
 
 	/*
 	 * don't allow zero buffers
