@@ -1,4 +1,2 @@
 # This is not implemented yet
 ^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_ticket_samlogon
-# These will be fixed in the next commits
-^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_.*_samlogon_.*_authK

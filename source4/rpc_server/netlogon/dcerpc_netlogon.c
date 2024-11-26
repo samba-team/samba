@@ -1445,10 +1445,6 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base_call(struct dcesrv_netr_LogonSamL
 		break;
 	case NDR_NETR_LOGONSAMLOGONEX:
 	default:
-		if (auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-
 		nt_status = dcesrv_netr_check_schannel(dce_call,
 						       creds,
 						       auth_type,
@@ -1457,6 +1453,13 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base_call(struct dcesrv_netr_LogonSamL
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
 		}
+
+		if (!creds->authenticate_kerberos &&
+		    auth_type != DCERPC_AUTH_TYPE_SCHANNEL)
+		{
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
 		break;
 	}
 
@@ -1598,7 +1601,9 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base_call(struct dcesrv_netr_LogonSamL
 
 	case NetlogonGenericInformation:
 	{
-		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		if (creds->authenticate_kerberos) {
+			/* OK */
+		} else if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 			/* OK */
 		} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 			/* OK */
