@@ -66,7 +66,7 @@ class NetlogonSchannel(KDCBaseTest):
             for trust in ["wks", "bdc"]:
                 for auth3_flags in [0x603fffff, 0x613fffff]:
                     setup_test(test, trust, "auth3", auth3_flags)
-                for auth3_flags in [0x00004004, 0x01000000]:
+                for auth3_flags in [0x00004004, 0x00004000, 0x01000000]:
                     setup_test(test, trust, "auth3", auth3_flags)
 
     def setUp(self):
@@ -939,6 +939,10 @@ class NetlogonSchannel(KDCBaseTest):
             expect_set2_encrypted = expect_encrypted
             encryption_set2_ncreds = ncreds
 
+        if not (ncreds.negotiate_flags & 0x01000004):
+            # Without aes or arcfour this uses no encryption
+            expect_set2_encrypted = False
+
         if ncreds.secure_channel_type == misc.SEC_CHAN_WKSTA:
             expect_get_error = ntstatus.NT_STATUS_ACCESS_DENIED
         else:
@@ -1062,6 +1066,10 @@ class NetlogonSchannel(KDCBaseTest):
         self.do_CheckCapabilities(ncreds, conn)
 
         expect_broken_crypto = False
+
+        if not (ncreds.negotiate_flags & 0x01000004):
+            # Without aes or arcfour this uses no encryption
+            expect_encrypted = False
 
         opaque_buffer = b'invalid_opaque_buffer'
         if ncreds.secure_channel_type == misc.SEC_CHAN_WKSTA:
@@ -1358,6 +1366,10 @@ class NetlogonSchannel(KDCBaseTest):
             expect_error = ntstatus.NT_STATUS_INVALID_PARAMETER
         else:
             expect_error = None
+
+        if not (ncreds.negotiate_flags & 0x01000004):
+            # Without aes or arcfour this uses no encryption
+            expect_encrypted = False
 
         krbtgt_creds = self.get_krbtgt_creds()
         krbtgt_key = self.TicketDecryptionKey_from_creds(krbtgt_creds)
