@@ -31,6 +31,21 @@ void smb3_file_posix_information_init(
 	uint32_t dos_attributes,
 	struct smb3_file_posix_information *dst)
 {
+	switch (st->st_ex_mode & S_IFMT) {
+	case S_IFREG:
+	case S_IFDIR:
+		break;
+	default:
+		/*
+		 * All non-directory or regular files are reported
+		 * as reparse points. Client may or may not be able
+		 * to access these. This should already be set by
+		 * fdos_mode(), assert this.
+		 */
+		SMB_ASSERT(dos_attributes & FILE_ATTRIBUTE_REPARSE_POINT);
+		break;
+	}
+
 	*dst = (struct smb3_file_posix_information) {
 		.end_of_file = get_file_size_stat(st),
 		.allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn,NULL,st),
@@ -40,6 +55,7 @@ void smb3_file_posix_information_init(
 		.last_access_time = unix_timespec_to_nt_time(st->st_ex_atime),
 		.last_write_time = unix_timespec_to_nt_time(st->st_ex_mtime),
 		.change_time = unix_timespec_to_nt_time(st->st_ex_ctime),
+		.file_attributes = dos_attributes,
 		.cc.nlinks = st->st_ex_nlink,
 		.cc.reparse_tag = reparse_tag,
 		.cc.posix_mode = unix_mode_to_wire(st->st_ex_mode),
@@ -52,22 +68,5 @@ void smb3_file_posix_information_init(
 	}
 	if (st->st_ex_gid != (uid_t)-1) {
 		gid_to_sid(&dst->cc.group, st->st_ex_gid);
-	}
-
-	switch (st->st_ex_mode & S_IFMT) {
-	case S_IFREG:
-		dst->file_attributes = dos_attributes;
-		break;
-	case S_IFDIR:
-		dst->file_attributes = dos_attributes | FILE_ATTRIBUTE_DIRECTORY;
-		break;
-	default:
-		/*
-		 * All non-directory or regular files are reported
-		 * as reparse points. Client may or may not be able
-		 * to access these.
-		 */
-		dst->file_attributes = FILE_ATTRIBUTE_REPARSE_POINT;
-		break;
 	}
 }
