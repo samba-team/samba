@@ -1,6 +1,7 @@
 #!/bin/sh
 
-# statd must be configured to use this script as its high availability call-out.
+# statd must be configured to use statd_callout, CTDB's binary
+# counterpart to this script, as its availability call-out.
 #
 # Modern NFS utils versions use /etc/nfs.conf:
 #
@@ -24,7 +25,7 @@
 # silently if /proc/fs/lockd/nlm_end_grace is not found.
 #
 
-if [ -z "$CTDB_BASE" ] ; then
+if [ -z "$CTDB_BASE" ]; then
 	export CTDB_BASE="/usr/local/etc/ctdb"
 fi
 
@@ -226,28 +227,6 @@ notify)
 	"$CTDB_NFS_CALLOUT" "stop" "nlockmgr" >/dev/null 2>&1
 	sleep 2
 	"$CTDB_NFS_CALLOUT" "start" "nlockmgr" >/dev/null 2>&1
-
-	# we now need to send out additional statd notifications to ensure
-	# that clients understand that the lockmanager has restarted.
-	# we have three cases:
-	# 1, clients that ignore the ip address the stat notification came from
-	#    and ONLY care about the 'name' in the notify packet.
-	#    these clients ONLY work with lock failover IFF that name
-	#    can be resolved into an ipaddress that matches the one used
-	#    to mount the share.  (==linux clients)
-	#    This is handled when starting lockmanager above,  but those
-	#    packets are sent from the "wrong" ip address, something linux
-	#    clients are ok with, buth other clients will barf at.
-	# 2, Some clients only accept statd packets IFF they come from the
-	#    'correct' ip address.
-	#    Send out the notification using the 'correct' ip address and also
-	#    specify the 'correct' hostname in the statd packet.
-	#    Some clients require both the correct source address and also the
-	#    correct name. (these clients also ONLY work if the ip addresses
-	#    used to map the share can be resolved into the name returned in
-	#    the notify packet.)
-	#
-	# For all IPs we serve, collect info and push to the config database
 
 	# Construct a sed expression to take catdb output and produce pairs of:
 	#   server-IP client-IP
