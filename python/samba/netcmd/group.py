@@ -584,7 +584,7 @@ Example2 shows how to remove a single user account, User2, from the supergroup A
                                            member_base_dn=member_base_dn)
         except Exception as e:
             # FIXME: Catch more specific exception
-            raise CommandError('Failed to remove members %r from group "%s"' % (listofmembers, groupname), e)
+            raise CommandError('Failed to remove members %r from group "%s" - %s' % (listofmembers, groupname, e))
         self.outf.write("Removed members from group %s\n" % groupname)
 
 
