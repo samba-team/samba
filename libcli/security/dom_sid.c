@@ -39,20 +39,27 @@ int dom_sid_compare_auth(const struct dom_sid *sid1,
 {
 	int i;
 
-	if (sid1 == sid2)
+	if (sid1 == sid2) {
 		return 0;
-	if (!sid1)
+	}
+
+	if (sid1 == NULL) {
 		return -1;
-	if (!sid2)
+	}
+
+	if (sid2 == NULL) {
 		return 1;
+	}
 
-	if (sid1->sid_rev_num != sid2->sid_rev_num)
+	if (sid1->sid_rev_num != sid2->sid_rev_num) {
 		return NUMERIC_CMP(sid1->sid_rev_num, sid2->sid_rev_num);
+	}
 
-	for (i = 0; i < 6; i++)
+	for (i = 0; i < 6; i++) {
 		if (sid1->id_auth[i] != sid2->id_auth[i]) {
 			return NUMERIC_CMP(sid1->id_auth[i], sid2->id_auth[i]);
 		}
+	}
 
 	return 0;
 }
@@ -65,12 +72,17 @@ int dom_sid_compare(const struct dom_sid *sid1, const struct dom_sid *sid2)
 {
 	int i;
 
-	if (sid1 == sid2)
+	if (sid1 == sid2) {
 		return 0;
-	if (!sid1)
+	}
+
+	if (sid1 == NULL) {
 		return -1;
-	if (!sid2)
+	}
+
+	if (sid2 == NULL) {
 		return 1;
+	}
 
 	/* Compare most likely different rids, first: i.e start at end */
 	if (sid1->num_auths != sid2->num_auths) {
