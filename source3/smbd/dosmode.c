@@ -687,7 +687,9 @@ static uint32_t dos_mode_post(uint32_t dosmode,
 	dosmode |= dos_mode_from_name(fsp->conn, smb_fname->base_name, dosmode);
 
 	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
-		dosmode |= FILE_ATTRIBUTE_DIRECTORY;
+		if (!(dosmode & FILE_ATTRIBUTE_REPARSE_POINT)) {
+			dosmode |= FILE_ATTRIBUTE_DIRECTORY;
+		}
 	} else if (dosmode == 0) {
 		dosmode = FILE_ATTRIBUTE_NORMAL;
 	}
@@ -736,13 +738,12 @@ uint32_t fdos_mode(struct files_struct *fsp)
 			 * Everybody else wants to see symlinks as
 			 * reparse points
 			 */
-			result = FILE_ATTRIBUTE_NORMAL |
-				 FILE_ATTRIBUTE_REPARSE_POINT;
+			result = FILE_ATTRIBUTE_REPARSE_POINT;
 		}
 
 		break;
 	default:
-		return FILE_ATTRIBUTE_NORMAL|FILE_ATTRIBUTE_REPARSE_POINT;
+		return FILE_ATTRIBUTE_REPARSE_POINT;
 		break;
 	}
 
