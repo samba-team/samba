@@ -237,10 +237,14 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
             err = e.args[0]
             if (err != ntstatus.NT_STATUS_ACCESS_DENIED):
                 raise
+        finally:
+            conn.close(dir_fd)
+            self.clean_file(conn, dirname)
 
         if (err == ntstatus.NT_STATUS_ACCESS_DENIED):
             self.fail("Could not set reparse point on directory")
-            conn.delete_on_close(fd, 1)
+            conn.close(dir_fd)
+            self.clean_file(conn, dirname)
             return
 
         with self.assertRaises(NTSTATUSError) as e:
