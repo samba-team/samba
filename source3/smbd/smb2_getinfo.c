@@ -338,12 +338,12 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 			file_info_level = SMB2_FILE_ALL_INFORMATION;
 			break;
 
-		case SMB2_FILE_POSIX_INFORMATION:
+		case FSCC_FILE_POSIX_INFORMATION:
 			if (!fsp->fsp_flags.posix_open) {
 				tevent_req_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return tevent_req_post(req, ev);
 			}
-			file_info_level = SMB2_FILE_POSIX_INFORMATION_INTERNAL;
+			file_info_level = in_file_info_class;
 			break;
 
 		default:

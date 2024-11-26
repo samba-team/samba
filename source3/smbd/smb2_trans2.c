@@ -1680,7 +1680,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 
 	/* SMB2 UNIX Extension. */
 
-	case SMB2_FILE_POSIX_INFORMATION:
+	case FSCC_FILE_POSIX_INFORMATION:
 		{
 			struct smb3_file_posix_information info = {};
 			uint8_t buf[sizeof(info)];
@@ -1692,7 +1692,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 			enum ndr_err_code ndr_err;
 			uint32_t tag = 0;
 
-			DBG_DEBUG("SMB2_FILE_POSIX_INFORMATION\n");
+			DBG_DEBUG("FSCC_FILE_POSIX_INFORMATION\n");
 
 			p+= 4;
 			SIVAL(p,0,reskey); p+= 4;
@@ -3648,7 +3648,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		/*
 		 * SMB2 UNIX Extensions.
 		 */
-		case SMB2_FILE_POSIX_INFORMATION_INTERNAL:
+		case FSCC_FILE_POSIX_INFORMATION:
 		{
 			struct smb3_file_posix_information info = {};
 			uint8_t buf[sizeof(info)];

@@ -372,7 +372,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 			tevent_req_nterror(req, NT_STATUS_INVALID_LEVEL);
 			return tevent_req_post(req, ev);
 		}
-		state->info_level = SMB2_FILE_POSIX_INFORMATION;
+		state->info_level = FSCC_FILE_POSIX_INFORMATION;
 		break;
 	default:
 		tevent_req_nterror(req, NT_STATUS_INVALID_INFO_CLASS);

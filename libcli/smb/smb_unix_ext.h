@@ -417,6 +417,6 @@ enum smb_whoami_flags {
 
 #define INFO_LEVEL_IS_UNIX(level) ((((level) >= MIN_UNIX_INFO_LEVEL) && \
 			((level) <= MAX_UNIX_INFO_LEVEL)) || \
-			((level) == SMB2_FILE_POSIX_INFORMATION_INTERNAL))
+			((level) == FSCC_FILE_POSIX_INFORMATION))
 
 #endif /* __SMB_UNIX_EXT_H__ */
