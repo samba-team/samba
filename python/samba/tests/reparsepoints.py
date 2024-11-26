@@ -22,9 +22,12 @@ from samba import reparse_symlink
 import samba.tests.libsmb
 import stat
 
+def posix_context(mode):
+    return (libsmb.SMB2_CREATE_TAG_POSIX, mode.to_bytes(4, 'little'))
+
 class ReparsePoints(samba.tests.libsmb.LibsmbTests):
 
-    def connection(self):
+    def connection(self, posix=False):
         share = samba.tests.env_get_var_value("SHARENAME", allow_missing=True)
         if not share:
             share = "tmp"
@@ -34,6 +37,7 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
             share,
             self.lp,
             self.creds,
+            posix=posix,
             force_smb1=smb1)
         return conn
 
