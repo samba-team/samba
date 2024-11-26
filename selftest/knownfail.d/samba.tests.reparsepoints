@@ -1,0 +1,2 @@
+^samba.tests.reparsepoints.samba.tests.reparsepoints.ReparsePoints.test_fifo_reparse\(fileserver_smb1\)
+^samba.tests.reparsepoints.samba.tests.reparsepoints.ReparsePoints.test_sock_reparse\(fileserver_smb1\)

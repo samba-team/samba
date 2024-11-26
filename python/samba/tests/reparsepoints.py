@@ -405,21 +405,29 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
 
     def do_test_nfs_reparse(self, filename, filetype, nfstype):
         """Test special file reparse tag"""
-        smb2 = self.connection()
+        smb2 = self.connection(posix=True)
         smb1 = self.connection_posix()
 
         self.clean_file(smb2, filename)
         smb1.mknod(filename, filetype | 0o755)
 
-        fd = smb2.create(
+        fd,_,_ = smb2.create_ex(
             filename,
             DesiredAccess=sec.SEC_FILE_READ_ATTRIBUTE|sec.SEC_STD_DELETE,
             CreateOptions=libsmb.FILE_OPEN_REPARSE_POINT,
-            CreateDisposition=libsmb.FILE_OPEN)
+            CreateDisposition=libsmb.FILE_OPEN,
+            ShareAccess=(libsmb.FILE_SHARE_READ|libsmb.FILE_SHARE_WRITE|libsmb.FILE_SHARE_DELETE),
+            CreateContexts=[posix_context(0o600)])
         smb2.delete_on_close(fd, 1)
 
         info = smb2.qfileinfo(fd, libsmb.FSCC_FILE_ATTRIBUTE_TAG_INFORMATION);
         self.assertEqual(info['tag'], libsmb.IO_REPARSE_TAG_NFS)
+
+        info = smb2.qfileinfo(fd, libsmb.FSCC_FILE_POSIX_INFORMATION);
+        self.assertEqual(info['reparse_tag'], libsmb.IO_REPARSE_TAG_NFS)
+
+        type, perms = self.wire_mode_to_unix(info['perms'])
+        self.assertEqual(type, filetype)
 
         reparse = smb2.fsctl(fd, libsmb.FSCTL_GET_REPARSE_POINT, b'', 1024)
         (tag, ) = reparse_symlink.get(reparse)
