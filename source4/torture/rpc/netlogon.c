@@ -1996,6 +1996,16 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 
 		torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
 			"LogonSamLogon failed");
+		if (creds->authenticate_kerberos &&
+		    auth_type != DCERPC_AUTH_TYPE_KRB5 &&
+		    auth_level != DCERPC_AUTH_LEVEL_PRIVACY)
+		{
+			torture_assert_ntstatus_equal(tctx,
+						      r.out.result,
+						      NT_STATUS_ACCESS_DENIED,
+						      "LogonSamLogon auth none krb5");
+			continue;
+		}
 		torture_assert_ntstatus_ok(tctx, r.out.result, "LogonSamLogon failed");
 
 		status = netlogon_creds_client_verify(creds,
@@ -2037,6 +2047,16 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 
 		torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
 			"LogonSamLogon failed");
+		if (creds->authenticate_kerberos &&
+		    auth_type != DCERPC_AUTH_TYPE_KRB5 &&
+		    auth_level != DCERPC_AUTH_LEVEL_PRIVACY)
+		{
+			torture_assert_ntstatus_equal(tctx,
+						      r.out.result,
+						      NT_STATUS_ACCESS_DENIED,
+						      "LogonSamLogon auth none krb5");
+			continue;
+		}
 		torture_assert_ntstatus_ok(tctx, r.out.result, "LogonSamLogon failed");
 
 		status = netlogon_creds_client_verify(creds,
@@ -2104,6 +2124,16 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 
 		torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
 			"LogonSamLogon failed");
+		if (creds->authenticate_kerberos &&
+		    auth_type != DCERPC_AUTH_TYPE_KRB5 &&
+		    auth_level != DCERPC_AUTH_LEVEL_PRIVACY)
+		{
+			torture_assert_ntstatus_equal(tctx,
+						      r.out.result,
+						      NT_STATUS_ACCESS_DENIED,
+						      "LogonSamLogon auth none krb5");
+			continue;
+		}
 		torture_assert_ntstatus_ok(tctx, r.out.result, "LogonSamLogon failed");
 
 		status = netlogon_creds_client_verify(creds,
