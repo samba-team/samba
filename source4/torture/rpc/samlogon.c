@@ -2112,11 +2112,17 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 		 * session key encryption) */
 
 		for (i=0; i < ARRAY_SIZE(credential_flags); i++) {
-			/* TODO:  Somehow we lost setting up the different credential flags here! */
-
 			torture_comment(torture,
 					"Testing with flags: 0x%08x\n",
 					credential_flags[i]);
+
+			ret = test_SetupCredentials2(p,
+						     torture,
+						     credential_flags[i],
+						     machine_credentials,
+						     SEC_CHAN_WKSTA,
+						     &creds);
+			torture_assert_goto(torture, ret, ret, failed, "test_SetupCredentials2()\n");
 
 			torture_assert_goto(torture,
 					    test_InteractiveLogon(p, mem_ctx, torture, creds,

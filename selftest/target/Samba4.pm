@@ -2110,6 +2110,7 @@ sub provision_ad_dc()
 	CVE_2020_1472:warn_about_unused_debug_level = 3
 	CVE_2022_38023:warn_about_unused_debug_level = 3
 	CVE_2022_38023:error_debug_level = 2
+	allow nt4 crypto:samlogontest\$ = yes
 	server reject md5 schannel:schannel2\$ = no
 	server reject md5 schannel:schannel3\$ = no
 	server reject md5 schannel:schannel8\$ = no
