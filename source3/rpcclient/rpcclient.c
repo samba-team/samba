@@ -1018,6 +1018,11 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 					return ntresult;
 				}
 
+				cli_credentials_add_gensec_features(
+					trust_creds,
+					GENSEC_FEATURE_NO_DELEGATION,
+					CRED_SPECIFIED);
+
 				ntresult = rpccli_create_netlogon_creds_ctx(
 					trust_creds,
 					dc_name,
