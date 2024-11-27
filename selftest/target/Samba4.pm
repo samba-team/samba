@@ -1869,6 +1869,7 @@ sub provision_fl2008r2dc($$$)
         # delay by 10 seconds, 10^7 usecs
 	ldap_server:delay_expire_disconnect = 10000
 
+	server support krb5 netlogon = yes
 	CVE_2022_38023:warn_about_unused_debug_level = 3
 	server reject md5 schannel:tests4u2proxywk\$ = no
 	server reject md5 schannel:tests4u2selfbdc\$ = no
