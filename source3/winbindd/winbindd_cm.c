@@ -655,6 +655,12 @@ NTSTATUS winbindd_get_trust_credentials(struct winbindd_domain *domain,
 		goto ipc_fallback;
 	}
 
+	if (netlogon) {
+		cli_credentials_add_gensec_features(creds,
+						    GENSEC_FEATURE_NO_DELEGATION,
+						    CRED_SPECIFIED);
+	}
+
 	if (creds_domain != domain) {
 		/*
 		 * We can only use schannel against a direct trust
