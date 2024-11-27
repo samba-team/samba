@@ -2158,6 +2158,61 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 			}
 		}
 
+		torture_comment(torture, "Testing with krb5\n");
+
+		cli_credentials_set_netlogon_creds(machine_credentials, NULL);
+		status = dcerpc_binding_set_flags(b,
+						  DCERPC_SCHANNEL |
+						  DCERPC_SIGN | DCERPC_SEAL |
+						  DCERPC_SCHANNEL_KRB5,
+						  DCERPC_AUTH_OPTIONS);
+		torture_assert_ntstatus_ok(torture, status, "set flags");
+
+		status = dcerpc_pipe_connect_b(mem_ctx, &p, b,
+					       &ndr_table_netlogon,
+					       machine_credentials, torture->ev, torture->lp_ctx);
+
+		torture_assert_ntstatus_ok_goto(torture, status, ret, failed,
+			talloc_asprintf(torture, "RPC pipe connect as domain member failed: %s\n", nt_errstr(status)));
+
+		torture_assert_not_null_goto(torture,
+					     creds = cli_credentials_get_netlogon_creds(machine_credentials),
+					     ret,
+					     failed,
+					     "obtaining credentials");
+
+		torture_assert_goto(torture,
+				    test_InteractiveLogon(p, mem_ctx, torture, creds,
+							  usercreds[0].comment,
+							  TEST_MACHINE_NAME,
+							  usercreds[0].domain,
+							  usercreds[0].username,
+							  usercreds[0].password,
+							  usercreds[0].parameter_control,
+							  usercreds[0].expected_interactive_error),
+				    ret,
+				    failed,
+				    talloc_asprintf(mem_ctx,
+						    "Testing InteractiveLogon with krb5\n"
+						    ));
+
+		if (usercreds[0].network_login) {
+			torture_assert_goto(torture,
+					    test_SamLogon(p, mem_ctx, torture, creds,
+							  usercreds[0].comment,
+							  usercreds[0].domain,
+							  usercreds[0].username,
+							  usercreds[0].password,
+							  usercreds[0].parameter_control,
+							  usercreds[0].expected_network_error,
+							  usercreds[0].old_password,
+							  1),
+					    ret,
+					    failed,
+					    talloc_asprintf(mem_ctx,
+							    "Testing SamLogon with krb5\n"
+							    ));
+		}
 	}
 failed:
 	torture_assert(torture, handle_minPwdAge(torture, mem_ctx, false),
