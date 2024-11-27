@@ -455,6 +455,10 @@ if ($opt_mitkrb5 == 1) {
 	$ENV{KRB5RCACHETYPE} = "none";
 }
 
+# Enable support for SHA1 in OpenSSL
+# This is required e.g. for pkinit sha1 tests
+$ENV{OPENSSL_ENABLE_SHA1_SIGNATURES} = 1;
+
 # After this many seconds, the server will self-terminate.  All tests
 # must terminate in this time, and testenv will only stay alive this
 # long
