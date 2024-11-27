@@ -103,7 +103,7 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 	struct tdb_logging_context lctx;
 	struct stat st;
 
-	if (stat(path, &st) == 0) {
+	if (path != NULL && stat(path, &st) == 0) {
 		for (w=tdb_list;w;w=w->next) {
 			if (st.st_dev == w->device && st.st_ino == w->inode) {
 				pid_t pid = getpid();
