@@ -1493,8 +1493,7 @@ class PkInitTests(KDCBaseTest):
             x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, 'SambaState'),
             x509.NameAttribute(NameOID.ORGANIZATION_NAME, 'SambaSelfTesting'),
             x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, 'Users'),
-            x509.NameAttribute(NameOID.COMMON_NAME,
-                               f'{cert_name}/emailAddress={cert_name}'),
+            x509.NameAttribute(NameOID.COMMON_NAME, f'{cert_name}'),
         ]))
 
         # The new certificate must be issued by the root CA.
