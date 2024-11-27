@@ -230,13 +230,6 @@ static struct dom_sid *sddl_transition_decode_sid(TALLOC_CTX *mem_ctx, const cha
 		if (sid_str == NULL) {
 			return NULL;
 		}
-		if (sid_str[0] == 's') {
-			/*
-			 * In SDDL, but not in the dom_sid parsers, a
-			 * lowercase "s-1-1-0" is accepted.
-			 */
-			sid_str[0] = 'S';
-		}
 		sid = talloc(mem_ctx, struct dom_sid);
 		if (sid == NULL) {
 			TALLOC_FREE(sid_str);
