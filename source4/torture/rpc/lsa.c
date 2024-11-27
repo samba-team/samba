@@ -1123,7 +1123,7 @@ static bool test_LookupSids3_fail(struct dcerpc_binding_handle *b,
 	if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_ACCESS_DENIED) ||
 	    NT_STATUS_EQUAL(r.out.result, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
 		torture_comment(tctx,
-				"LookupNames4 correctly returned with "
+				"LookupSids3 correctly returned with "
 				"result: %s\n",
 				nt_errstr(r.out.result));
 		return true;
@@ -1212,6 +1212,15 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 
 		if (auth_type == DCERPC_AUTH_TYPE_SCHANNEL &&
 		    auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
+			if (!test_LookupSids3(b, tctx, level, &sids)) {
+				return false;
+			}
+			if (!test_LookupNames4(b, tctx, level, &names, true)) {
+				return false;
+			}
+		} else if (auth_type == DCERPC_AUTH_TYPE_KRB5 &&
+			   auth_level == DCERPC_AUTH_LEVEL_PRIVACY)
+		{
 			if (!test_LookupSids3(b, tctx, level, &sids)) {
 				return false;
 			}
