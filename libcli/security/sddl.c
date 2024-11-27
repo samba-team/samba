@@ -923,12 +923,10 @@ struct security_descriptor *sddl_decode_err_msg(TALLOC_CTX *mem_ctx, const char 
 	*msg = NULL;
 	*msg_offset = 0;
 
-	sd = talloc_zero(mem_ctx, struct security_descriptor);
+	sd = security_descriptor_initialise(mem_ctx);
 	if (sd == NULL) {
 		return NULL;
 	}
-	sd->revision = SECURITY_DESCRIPTOR_REVISION_1;
-	sd->type     = SEC_DESC_SELF_RELATIVE;
 
 	while (*sddl) {
 		uint32_t flags;
