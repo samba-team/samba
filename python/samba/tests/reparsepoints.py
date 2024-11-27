@@ -441,6 +441,34 @@ class ReparsePoints(samba.tests.libsmb.LibsmbTests):
         """Test SOCK reparse tag"""
         self.do_test_nfs_reparse('sock', stat.S_IFSOCK, 'NFS_SPECFILE_SOCK')
 
+    def test_reparsepoint_posix_type(self):
+        conn = self.connection(posix=True)
+        filename = 'reparse'
+        self.clean_file(conn, filename)
+
+        fd,_,_ = conn.create_ex(
+            filename,
+            DesiredAccess=sec.SEC_FILE_WRITE_ATTRIBUTE,
+            CreateDisposition=libsmb.FILE_CREATE,
+            CreateContexts=[posix_context(0o600)])
+        b = reparse_symlink.symlink_put("y", "y", 0, 0)
+        conn.fsctl(fd, libsmb.FSCTL_SET_REPARSE_POINT, b, 0)
+        conn.close(fd)
+
+        dirents = conn.list("", filename,info_level=libsmb.SMB2_FIND_POSIX_INFORMATION)
+        self.assertEqual(
+            dirents[0]["attrib"],
+            libsmb.FILE_ATTRIBUTE_REPARSE_POINT|
+            libsmb.FILE_ATTRIBUTE_ARCHIVE)
+        self.assertEqual(
+            dirents[0]["reparse_tag"],
+            libsmb.IO_REPARSE_TAG_SYMLINK)
+
+        type, perms = self.wire_mode_to_unix(dirents[0]['perms'])
+        self.assertEqual(type, stat.S_IFLNK)
+
+        self.clean_file(conn, filename)
+
 if __name__ == '__main__':
     import unittest
     unittest.main()
