@@ -43,6 +43,7 @@
 #include "lib/param/loadparm.h"
 #include "libcli/auth/netlogon_creds_cli.h"
 #include "auth/credentials/credentials.h"
+#include "auth/gensec/gensec.h"
 #include "libsmb/dsgetdcname.h"
 #include "rpc_client/util_netlogon.h"
 #include "libnet/libnet_join_offline.h"
@@ -1220,6 +1221,10 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 				     r->in.passed_machine_password,
 				     CRED_SPECIFIED);
 
+	cli_credentials_add_gensec_features(cli_creds,
+					    GENSEC_FEATURE_NO_DELEGATION,
+					    CRED_SPECIFIED);
+
 	remote_sockaddr = smbXcli_conn_remote_sockaddr(cli->conn);
 
 	status = rpccli_create_netlogon_creds_ctx(cli_creds,
@@ -1659,6 +1664,10 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 	cli_credentials_set_kerberos_state(cli_creds,
 					   kerberos_state,
 					   CRED_SPECIFIED);
+
+	cli_credentials_add_gensec_features(cli_creds,
+					    GENSEC_FEATURE_NO_DELEGATION,
+					    CRED_SPECIFIED);
 
 	status = cli_full_connection_creds(frame,
 					   &cli,
