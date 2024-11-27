@@ -1223,10 +1223,9 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 				       DATA_BLOB *new_cookie);
 
 struct smb3_file_posix_information;
-void smb3_file_posix_information_init(
+NTSTATUS smb3_file_posix_information_init(
 	connection_struct *conn,
-	const struct stat_ex *st,
-	uint32_t reparse_tag,
+	const struct smb_filename *smb_fname,
 	uint32_t dos_attributes,
 	struct smb3_file_posix_information *dst);
 

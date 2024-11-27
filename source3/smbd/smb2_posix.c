@@ -23,14 +23,18 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/smb3posix.h"
 #include "libcli/security/security.h"
+#include "source3/modules/util_reparse.h"
 
-void smb3_file_posix_information_init(
+NTSTATUS smb3_file_posix_information_init(
 	connection_struct *conn,
-	const struct stat_ex *st,
-	uint32_t reparse_tag,
+	const struct smb_filename *smb_fname,
 	uint32_t dos_attributes,
 	struct smb3_file_posix_information *dst)
 {
+	const struct stat_ex *st = &smb_fname->st;
+	uint32_t reparse_tag = 0;
+	NTSTATUS status;
+
 	switch (st->st_ex_mode & S_IFMT) {
 	case S_IFREG:
 	case S_IFDIR:
@@ -44,6 +48,18 @@ void smb3_file_posix_information_init(
 		 */
 		SMB_ASSERT(dos_attributes & FILE_ATTRIBUTE_REPARSE_POINT);
 		break;
+	}
+
+	if (dos_attributes & FILE_ATTRIBUTE_REPARSE_POINT) {
+		status = fsctl_get_reparse_tag(smb_fname->fsp,
+					       &reparse_tag);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("Could not get reparse "
+				  "tag for %s: %s\n",
+				  smb_fname_str_dbg(smb_fname),
+				  nt_errstr(status));
+			return status;
+		}
 	}
 
 	*dst = (struct smb3_file_posix_information) {
@@ -69,4 +85,5 @@ void smb3_file_posix_information_init(
 	if (st->st_ex_gid != (uid_t)-1) {
 		gid_to_sid(&dst->cc.group, st->st_ex_gid);
 	}
+	return NT_STATUS_OK;
 }

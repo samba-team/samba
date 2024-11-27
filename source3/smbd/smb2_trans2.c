@@ -1690,7 +1690,6 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				.fixed_buf_size = true,
 			};
 			enum ndr_err_code ndr_err;
-			uint32_t tag = 0;
 
 			DBG_DEBUG("FSCC_FILE_POSIX_INFORMATION\n");
 
@@ -1701,20 +1700,11 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 				return NT_STATUS_INVALID_LEVEL;
 			}
 
-			if (mode & FILE_ATTRIBUTE_REPARSE_POINT) {
-				status = fsctl_get_reparse_tag(smb_fname->fsp,
-							       &tag);
-				if (!NT_STATUS_IS_OK(status)) {
-					DBG_DEBUG("Could not get reparse "
-						  "tag for %s: %s\n",
-						  smb_fname_str_dbg(smb_fname),
-						  nt_errstr(status));
-					return status;
-				}
+			status = smb3_file_posix_information_init(
+				conn, smb_fname, mode, &info);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
 			}
-
-			smb3_file_posix_information_init(
-				conn, &smb_fname->st, tag, mode, &info);
 
 			ndr_err = ndr_push_smb3_file_posix_information(
 				&ndr, NDR_SCALARS|NDR_BUFFERS, &info);
@@ -3669,8 +3659,11 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 				return NT_STATUS_INVALID_LEVEL;
 			}
 
-			smb3_file_posix_information_init(
-				conn, &smb_fname->st, 0, mode, &info);
+			status = smb3_file_posix_information_init(
+				conn, smb_fname, mode, &info);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 
 			ndr_err = ndr_push_smb3_file_posix_information(
 				&ndr, NDR_SCALARS|NDR_BUFFERS, &info);
