@@ -201,21 +201,21 @@ static const struct {
   decode a SID
   It can either be a special 2 letter code, or in S-* format
 */
-static struct dom_sid *sddl_transition_decode_sid(TALLOC_CTX *mem_ctx, const char **sddlp,
-						  struct sddl_transition_state *state)
+static bool sddl_transition_decode_sid(const char **sddlp,
+				       struct sddl_transition_state *state,
+				       struct dom_sid *sid)
 {
 	const char *sddl = (*sddlp);
 	size_t i;
 
 	/* see if its in the numeric format */
 	if (strncasecmp(sddl, "S-", 2) == 0) {
-		struct dom_sid *sid = NULL;
-		char *sid_str = NULL;
-		const char *end = NULL;
-		bool ok;
 		size_t len = strspn(sddl + 2, "-0123456789ABCDEFabcdefxX") + 2;
 		if (len < 5) { /* S-1-x */
-			return NULL;
+			return false;
+		}
+		if (len > DOM_SID_STR_BUFLEN) { /* Invalid SID */
+			return false;
 		}
 		if (sddl[len - 1] == 'D' && sddl[len] == ':') {
 			/*
@@ -226,31 +226,28 @@ static struct dom_sid *sddl_transition_decode_sid(TALLOC_CTX *mem_ctx, const cha
 			len--;
 		}
 
-		sid_str = talloc_strndup(mem_ctx, sddl, len);
-		if (sid_str == NULL) {
-			return NULL;
+		{
+			const char *end = NULL;
+			char sid_str[DOM_SID_STR_BUFLEN + 1];
+			bool ok;
+
+			memcpy(sid_str, sddl, len);
+			sid_str[len] = '\0';
+
+			ok = dom_sid_parse_endp(sid_str, sid, &end);
+			if (!ok) {
+				DBG_WARNING("could not parse SID '%s'\n",
+					    sid_str);
+				return false;
+			}
+			if (sid_str + len != end) {
+				DBG_WARNING("trailing junk after SID '%s'\n",
+					    sid_str);
+				return false;
+			}
 		}
-		sid = talloc(mem_ctx, struct dom_sid);
-		if (sid == NULL) {
-			TALLOC_FREE(sid_str);
-			return NULL;
-		};
-		ok = dom_sid_parse_endp(sid_str, sid, &end);
-		if (!ok) {
-			DBG_WARNING("could not parse SID '%s'\n", sid_str);
-			TALLOC_FREE(sid_str);
-			TALLOC_FREE(sid);
-			return NULL;
-		}
-		if (end - sid_str != len) {
-			DBG_WARNING("trailing junk after SID '%s'\n", sid_str);
-			TALLOC_FREE(sid_str);
-			TALLOC_FREE(sid);
-			return NULL;
-		}
-		TALLOC_FREE(sid_str);
 		(*sddlp) += len;
-		return sid;
+		return true;
 	}
 
 	/* now check for one of the special codes */
@@ -259,28 +256,46 @@ static struct dom_sid *sddl_transition_decode_sid(TALLOC_CTX *mem_ctx, const cha
 	}
 	if (i == ARRAY_SIZE(sid_codes)) {
 		DEBUG(1,("Unknown sddl sid code '%2.2s'\n", sddl));
-		return NULL;
+		return false;
 	}
 
 	(*sddlp) += 2;
 
 
 	if (sid_codes[i].machine_rid != 0) {
-		return dom_sid_add_rid(mem_ctx, state->machine_sid,
-				       sid_codes[i].machine_rid);
+		return sid_compose(sid,
+				   state->machine_sid,
+				   sid_codes[i].machine_rid);
 	}
 
 	if (sid_codes[i].domain_rid != 0) {
-		return dom_sid_add_rid(mem_ctx, state->domain_sid,
-				       sid_codes[i].domain_rid);
+		return sid_compose(sid,
+				   state->domain_sid,
+				   sid_codes[i].domain_rid);
 	}
 
 	if (sid_codes[i].forest_rid != 0) {
-		return dom_sid_add_rid(mem_ctx, state->forest_sid,
-				       sid_codes[i].forest_rid);
+		return sid_compose(sid,
+				   state->forest_sid,
+				   sid_codes[i].forest_rid);
 	}
 
-	return dom_sid_parse_talloc(mem_ctx, sid_codes[i].sid);
+	return dom_sid_parse(sid_codes[i].sid, sid);
+}
+
+static struct dom_sid *sddl_transition_decode_sid_talloc(
+	TALLOC_CTX *mem_ctx,
+	const char **sddlp,
+	struct sddl_transition_state *state)
+{
+	struct dom_sid sid;
+	bool ok;
+
+	ok = sddl_transition_decode_sid(sddlp, state, &sid);
+	if (!ok) {
+		return NULL;
+	}
+	return dom_sid_dup(mem_ctx, &sid);
 }
 
 struct dom_sid *sddl_decode_sid(TALLOC_CTX *mem_ctx, const char **sddlp,
@@ -296,7 +311,8 @@ struct dom_sid *sddl_decode_sid(TALLOC_CTX *mem_ctx, const char **sddlp,
 		.domain_sid = domain_sid,
 		.forest_sid = domain_sid,
 	};
-	return sddl_transition_decode_sid(mem_ctx, sddlp, &state);
+
+	return sddl_transition_decode_sid_talloc(mem_ctx, sddlp, &state);
 }
 
 
@@ -521,7 +537,6 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 	const char *tok[7];
 	const char *s;
 	uint32_t v;
-	struct dom_sid *sid;
 	bool ok;
 	size_t len;
 	size_t count = 0;
@@ -675,16 +690,14 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx,
 
 	/* trustee */
 	s = tok[5];
-	sid = sddl_transition_decode_sid(mem_ctx, &s, state);
-	if (sid == NULL) {
+	ok = sddl_transition_decode_sid(&s, state, &ace->trustee);
+	if (!ok) {
 		*msg = talloc_strdup(
 			mem_ctx,
 			"could not parse trustee SID");
 		*msg_offset = tok[5] - *sddl_copy;
 		return false;
 	}
-	ace->trustee = *sid;
-	talloc_free(sid);
 	if (*s != '\0') {
 		*msg = talloc_strdup(
 			mem_ctx,
@@ -948,12 +961,14 @@ struct security_descriptor *sddl_decode_err_msg(TALLOC_CTX *mem_ctx, const char 
 			break;
 		case 'O':
 			if (sd->owner_sid != NULL) goto failed;
-			sd->owner_sid = sddl_transition_decode_sid(sd, &sddl, &state);
+			sd->owner_sid = sddl_transition_decode_sid_talloc(
+				sd, &sddl, &state);
 			if (sd->owner_sid == NULL) goto failed;
 			break;
 		case 'G':
 			if (sd->group_sid != NULL) goto failed;
-			sd->group_sid = sddl_transition_decode_sid(sd, &sddl, &state);
+			sd->group_sid = sddl_transition_decode_sid_talloc(
+				sd, &sddl, &state);
 			if (sd->group_sid == NULL) goto failed;
 			break;
 		default:
