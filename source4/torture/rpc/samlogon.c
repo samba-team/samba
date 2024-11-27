@@ -169,9 +169,22 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 			}
 			return status;
 		}
-		if (!r->out.return_authenticator ||
-		    !netlogon_creds_client_check(samlogon_state->creds, &r->out.return_authenticator->cred)) {
-			torture_comment(samlogon_state->tctx, "Credential chaining failed\n");
+		if (r->out.return_authenticator == NULL) {
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			if (error_string) {
+				*error_string = strdup(nt_errstr(status));
+			}
+			return status;
+		}
+		status = netlogon_creds_client_verify(samlogon_state->creds,
+						      &r->out.return_authenticator->cred,
+						      auth_type,
+						      auth_level);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (error_string) {
+				*error_string = strdup(nt_errstr(status));
+			}
+			return status;
 		}
 		if (!NT_STATUS_IS_OK(r->out.result)) {
 			if (error_string) {
@@ -261,9 +274,22 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 			}
 			return status;
 		}
-		if (!r_flags->out.return_authenticator ||
-		    !netlogon_creds_client_check(samlogon_state->creds, &r_flags->out.return_authenticator->cred)) {
-			torture_comment(samlogon_state->tctx, "Credential chaining failed\n");
+		if (r_flags->out.return_authenticator == NULL) {
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			if (error_string) {
+				*error_string = strdup(nt_errstr(status));
+			}
+			return status;
+		}
+		status = netlogon_creds_client_verify(samlogon_state->creds,
+						      &r_flags->out.return_authenticator->cred,
+						      auth_type,
+						      auth_level);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (error_string) {
+				*error_string = strdup(nt_errstr(status));
+			}
+			return status;
 		}
 		if (!NT_STATUS_IS_OK(r_flags->out.result)) {
 			if (error_string) {
@@ -1614,9 +1640,11 @@ bool test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		torture_fail(tctx, "no authenticator returned");
 	}
 
-	torture_assert_goto(tctx,
-		netlogon_creds_client_check(creds, &r.out.return_authenticator->cred),
-		ret, failed,
+	status = netlogon_creds_client_verify(creds,
+					      &r.out.return_authenticator->cred,
+					      auth_type,
+					      auth_level);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, failed,
 		"Credential chaining failed\n");
 
 	torture_assert_ntstatus_equal(tctx, r.out.result, expected_error,
