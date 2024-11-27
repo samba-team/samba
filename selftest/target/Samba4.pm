@@ -1646,6 +1646,7 @@ sub provision_ad_dc_ntvfs($$$)
 	client min protocol = CORE
 	server min protocol = LANMAN1
 
+	server support krb5 netlogon = yes
 	CVE_2020_1472:warn_about_unused_debug_level = 3
 	CVE_2022_38023:warn_about_unused_debug_level = 3
 	allow nt4 crypto:torturetest\$ = yes
