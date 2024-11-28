@@ -105,7 +105,7 @@ static bool object_in_list(const struct GUID *object_list, const struct GUID *ob
 	return false;
 }
 
-/* returns true if the ACE gontains generic information
+/* returns true if the ACE contains generic information
  * that needs to be processed additionally */
 
 static bool desc_ace_has_generic(const struct security_ace *ace)
