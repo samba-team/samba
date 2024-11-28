@@ -135,7 +135,7 @@ static bool blob_string_sid_to_sid(DATA_BLOB *blob,
 		return false;
 	}
 
-	if (end - str != len) {
+	if (str + len != end) {
 		return false;
 	}
 	return true;
