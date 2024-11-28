@@ -51,52 +51,27 @@ struct security_token *security_token_initialise(TALLOC_CTX *mem_ctx,
 
 struct security_token *security_token_duplicate(TALLOC_CTX *mem_ctx, const struct security_token *src)
 {
-	TALLOC_CTX *frame = NULL;
 	struct security_token *dst = NULL;
-	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 
 	if (src == NULL) {
 		return NULL;
 	}
 
-	frame = talloc_stackframe();
-
-	ndr_err = ndr_push_struct_blob(
-		&blob,
-		frame,
-		src,
-		(ndr_push_flags_fn_t)ndr_push_security_token);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DBG_ERR("Failed to duplicate security_token ndr_push_security_token failed: %s\n",
-			ndr_errstr(ndr_err));
-		TALLOC_FREE(frame);
-		return NULL;
-	}
-
 	dst = talloc_zero(mem_ctx, struct security_token);
 	if (dst == NULL) {
 		DBG_ERR("talloc failed\n");
-		TALLOC_FREE(frame);
 		return NULL;
 	}
 
-	ndr_err = ndr_pull_struct_blob(
-		&blob,
-		dst,
-		dst,
-		(ndr_pull_flags_fn_t)ndr_pull_security_token);
-
+	ndr_err = ndr_deepcopy_struct(security_token, src, dst, dst);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DBG_ERR("Failed to duplicate security_token ndr_pull_security_token "
-			"failed: %s\n",
+		DBG_ERR("Failed to duplicate security_token: %s\n",
 			ndr_errstr(ndr_err));
 		TALLOC_FREE(dst);
-		TALLOC_FREE(frame);
 		return NULL;
 	}
 
-	TALLOC_FREE(frame);
 	return dst;
 }
 
