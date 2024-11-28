@@ -211,6 +211,7 @@ static int crossrename_renameat(vfs_handle_struct *handle,
 					   smb_fname_src,
 					   dstfsp,
 					   smb_fname_dst);
+		result = 0;
 		if (!NT_STATUS_IS_OK(status)) {
 			errno = map_errno_from_nt_status(status);
 			result = -1;
