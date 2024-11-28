@@ -264,12 +264,20 @@ static bool test_mangled_mask(struct torture_context *tctx,
 
 	smb2_deltree(tree, dname);
 
+	/* Create dname and fname */
 	status = torture_smb2_testdir(tree, dname, &dh);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"torture_smb2_testdir failed");
 
 	status = torture_smb2_testfile(tree, fname, &fh);
 	smb2_util_close(tree, fh);
+
+	smb2_util_close(tree, dh);
+
+	/* Update the directory handle, that readdir() can see the testfile */
+	status = torture_smb2_testdir(tree, dname, &dh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed");
 
 	ZERO_STRUCT(f);
 	f.in.file.handle	= dh;
