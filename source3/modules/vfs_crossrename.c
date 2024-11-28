@@ -54,10 +54,12 @@ static NTSTATUS copy_reg(vfs_handle_struct *handle,
 			 struct files_struct *dstfsp,
 			 const struct smb_filename *dest)
 {
-	NTSTATUS status;
-	struct smb_filename *full_fname_src = NULL;
-	struct smb_filename *full_fname_dst = NULL;
+	NTSTATUS status = NT_STATUS_OK;
 	int ret;
+	off_t off;
+	int ifd = -1;
+	int ofd = -1;
+	struct timespec ts[2];
 
 	if (!VALID_STAT(source->st)) {
 		status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
@@ -79,21 +81,6 @@ static NTSTATUS copy_reg(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	full_fname_src = full_path_from_dirfsp_atname(talloc_tos(),
-						      srcfsp,
-						      source);
-	if (full_fname_src == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
-	full_fname_dst = full_path_from_dirfsp_atname(talloc_tos(),
-						      dstfsp,
-						      dest);
-	if (full_fname_dst == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
-
 	ret = SMB_VFS_NEXT_UNLINKAT(handle,
 				    dstfsp,
 				    dest,
@@ -103,40 +90,96 @@ static NTSTATUS copy_reg(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	/*
-	 * copy_internals() takes attribute values from the NTrename call.
-	 *
-	 * From MS-CIFS:
-	 *
-	 * "If the attribute is 0x0000, then only normal files are renamed.
-	 * If the system file or hidden attributes are specified, then the
-	 * rename is inclusive of both special types."
-	 */
-	status = copy_internals(talloc_tos(),
-				handle->conn,
-				NULL,
-				srcfsp, /* src_dirfsp */
-				full_fname_src,
-				dstfsp, /* dst_dirfsp */
-				full_fname_dst,
-				FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
-	ret = SMB_VFS_NEXT_UNLINKAT(handle,
-				    srcfsp,
-				    source,
-				    0);
-	if (ret == -1) {
+	ifd = openat(fsp_get_pathref_fd(srcfsp),
+		     source->base_name,
+		     O_RDONLY,
+		     0);
+	if (ifd < 0) {
 		status = map_nt_error_from_unix(errno);
 		goto out;
 	}
 
-  out:
+	ofd = openat(fsp_get_pathref_fd(dstfsp),
+		     dest->base_name,
+		     O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW,
+		     0600);
+	if (ofd < 0) {
+		status = map_nt_error_from_unix(errno);
+		goto out;
+	}
 
-	TALLOC_FREE(full_fname_src);
-	TALLOC_FREE(full_fname_dst);
+	off = transfer_file(ifd, ofd, source->st.st_ex_size);
+	if (off == -1) {
+		status = map_nt_error_from_unix(errno);
+		goto out;
+	}
+
+	ret = fchown(ofd, source->st.st_ex_uid, source->st.st_ex_gid);
+	if (ret == -1 && errno != EPERM) {
+		status = map_nt_error_from_unix(errno);
+		goto out;
+	}
+
+	/*
+	 * fchown turns off set[ug]id bits for non-root,
+	 * so do the chmod last.
+	 */
+	ret = fchmod(ofd, source->st.st_ex_mode & 07777);
+	if (ret == -1 && errno != EPERM) {
+		status = map_nt_error_from_unix(errno);
+		goto out;
+	}
+
+	/* Try to copy the old file's modtime and access time.  */
+	ts[0] = source->st.st_ex_atime;
+	ts[1] = source->st.st_ex_mtime;
+	ret = futimens(ofd, ts);
+	if (ret == -1) {
+		DBG_DEBUG("Updating the time stamp on destinaton '%s' failed "
+			  "with '%s'. Rename operation can continue.\n",
+			  dest->base_name,
+			  strerror(errno));
+	}
+
+	ret = close(ifd);
+	if (ret == -1) {
+		status = map_nt_error_from_unix(errno);
+		goto out;
+	}
+	ifd = -1;
+
+	ret = close(ofd);
+	if (ret == -1) {
+		status = map_nt_error_from_unix(errno);
+		goto out;
+	}
+	ofd = -1;
+
+	ret = SMB_VFS_NEXT_UNLINKAT(handle, srcfsp, source, 0);
+	if (ret == -1) {
+		status = map_nt_error_from_unix(errno);
+	}
+
+out:
+	if (ifd != -1) {
+		ret = close(ifd);
+		if (ret == -1) {
+			DBG_DEBUG("Failed to close %s (%d): %s.\n",
+				  source->base_name,
+				  ifd,
+				  strerror(errno));
+		}
+	}
+	if (ofd != -1) {
+		ret = close(ofd);
+		if (ret == -1) {
+			DBG_DEBUG("Failed to close %s (%d): %s.\n",
+				  dest->base_name,
+				  ofd,
+				  strerror(errno));
+		}
+	}
+
 	return status;
 }
 
