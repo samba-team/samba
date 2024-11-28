@@ -109,10 +109,9 @@ static bool check_integer_range(const struct ace_condition_token *tok)
 	return true;
 }
 
-
-static ssize_t pull_integer(TALLOC_CTX *mem_ctx,
-			uint8_t *data, size_t length,
-			struct ace_condition_int *tok)
+static ssize_t pull_integer(uint8_t *data,
+			    size_t length,
+			    struct ace_condition_int *tok)
 {
 	size_t consumed;
 	enum ndr_err_code ndr_err;
@@ -333,8 +332,7 @@ static ssize_t pull_composite(TALLOC_CTX *mem_ctx,
 		case CONDITIONAL_ACE_TOKEN_INT16:
 		case CONDITIONAL_ACE_TOKEN_INT32:
 		case CONDITIONAL_ACE_TOKEN_INT64:
-			consumed = pull_integer(mem_ctx,
-						el_data,
+			consumed = pull_integer(el_data,
 						available,
 						&el->data.int64);
 			ok = check_integer_range(el);
@@ -590,8 +588,7 @@ struct ace_condition_script *parse_conditional_ace(TALLOC_CTX *mem_ctx,
 		case CONDITIONAL_ACE_TOKEN_INT16:
 		case CONDITIONAL_ACE_TOKEN_INT32:
 		case CONDITIONAL_ACE_TOKEN_INT64:
-			consumed = pull_integer(program,
-						tok_data,
+			consumed = pull_integer(tok_data,
 						available,
 						&tok->data.int64);
 			ok = check_integer_range(tok);
