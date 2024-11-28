@@ -543,3 +543,49 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
             c.close(dh)
             self.clean_file(c, '\\test_copy_chunk_posix_src')
             self.clean_file(c, '\\test_copy_chunk_posix_dst')
+
+    def test_append(self):
+        """
+        Test append-io behaviour
+        """
+        (wc, pc) = self.connections()
+
+        self.clean_file(pc, '\\test_append')
+        wire_mode = libsmb.unix_mode_to_wire(0o644)
+
+        ph,*_ = pc.create_ex('\\test_append',
+                             DesiredAccess=security.SEC_FILE_APPEND_DATA | security.SEC_FILE_READ_DATA,
+                             CreateDisposition=libsmb.FILE_CREATE,
+                             ShareAccess=libsmb.FILE_SHARE_READ|libsmb.FILE_SHARE_WRITE,
+                             CreateContexts=[posix_context(wire_mode)])
+
+        wh,*_ = wc.create_ex('\\test_append',
+                             DesiredAccess=security.SEC_FILE_APPEND_DATA,
+                             ShareAccess=libsmb.FILE_SHARE_READ|libsmb.FILE_SHARE_WRITE,
+                             CreateDisposition=libsmb.FILE_OPEN)
+
+        wc.write(wh, buffer=b"hello", offset=0)
+        wc.write(wh, buffer=b"h", offset=0)
+
+        try:
+            pc.write(ph, buffer=b"world", offset=0)
+        except Exception as e:
+            self.assertEqual(e.args[0], ntstatus.NT_STATUS_INVALID_PARAMETER)
+            pass
+        else:
+            pc.close(ph)
+            wc.close(wh)
+            self.clean_file(pc, '\\test_append')
+            self.fail("Write with offset=0 must fail on POSIX handle in append mode")
+
+        pc.write(ph, buffer=b" world", offset=libsmb.VFS_PWRITE_APPEND_OFFSET)
+
+        info = pc.qfileinfo(ph, libsmb.FSCC_FILE_POSIX_INFORMATION);
+        self.assertEqual(info['size'], 11)
+
+        data = pc.read(ph, 0, 11)
+        self.assertEqual(data, b'hello world')
+
+        pc.close(ph)
+        wc.close(wh)
+        self.clean_file(pc, '\\test_append')
