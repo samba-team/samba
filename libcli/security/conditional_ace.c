@@ -114,21 +114,19 @@ static ssize_t pull_integer(TALLOC_CTX *mem_ctx,
 			uint8_t *data, size_t length,
 			struct ace_condition_int *tok)
 {
-	ssize_t bytes_used;
+	size_t consumed;
 	enum ndr_err_code ndr_err;
-	DATA_BLOB v = data_blob_const(data, length);
-	struct ndr_pull *ndr = ndr_pull_init_blob(&v, mem_ctx);
-	if (ndr == NULL) {
-		return -1;
-	}
-	ndr_err = ndr_pull_ace_condition_int(ndr, NDR_SCALARS|NDR_BUFFERS, tok);
+
+	ndr_err = ndr_pull_struct_blob_noalloc(
+		data,
+		length,
+		tok,
+		(ndr_pull_flags_fn_t)ndr_pull_ace_condition_int,
+		&consumed);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		TALLOC_FREE(ndr);
 		return -1;
 	}
-	bytes_used = ndr->offset;
-	TALLOC_FREE(ndr);
-	return bytes_used;
+	return consumed;
 }
 
 static ssize_t push_integer(uint8_t *data, size_t available,
