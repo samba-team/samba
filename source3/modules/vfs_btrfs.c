@@ -261,6 +261,12 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 
 	state->handle = handle;
 
+	status = vfs_offload_token_ctx_init(handle->conn->sconn->client,
+					    &btrfs_offload_ctx);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
 	tevent_req_set_cleanup_fn(req, btrfs_offload_write_cleanup);
 
 	status = vfs_offload_token_db_fetch_fsp(btrfs_offload_ctx,
