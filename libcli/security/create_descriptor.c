@@ -124,8 +124,8 @@ static bool desc_ace_has_generic(const struct security_ace *ace)
 /* creates an ace in which the generic information is expanded */
 
 static void desc_expand_generic(struct security_ace *new_ace,
-				struct dom_sid *owner,
-				struct dom_sid *group)
+				const struct dom_sid *owner,
+				const struct dom_sid *group)
 {
 	new_ace->access_mask = map_generic_rights_ds(new_ace->access_mask);
 	if (dom_sid_equal(&new_ace->trustee, &global_sid_Creator_Owner)) {
@@ -137,12 +137,13 @@ static void desc_expand_generic(struct security_ace *new_ace,
 	new_ace->flags = 0x0;
 }
 
-static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
-							    struct security_acl *acl,
-							    bool is_container,
-							    struct dom_sid *owner,
-							    struct dom_sid *group,
-							    struct GUID *object_list)
+static struct security_acl *calculate_inherited_from_parent(
+	TALLOC_CTX *mem_ctx,
+	struct security_acl *acl,
+	bool is_container,
+	const struct dom_sid *owner,
+	const struct dom_sid *group,
+	struct GUID *object_list)
 {
 	uint32_t i;
 	struct security_acl *tmp_acl = NULL;
@@ -408,8 +409,8 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 static struct security_acl *process_user_acl(TALLOC_CTX *mem_ctx,
 					     struct security_acl *acl,
 					     bool is_container,
-					     struct dom_sid *owner,
-					     struct dom_sid *group,
+					     const struct dom_sid *owner,
+					     const struct dom_sid *group,
 					     struct GUID *object_list,
 					     bool is_protected)
 {
@@ -599,20 +600,23 @@ static bool compute_acl(struct security_descriptor *parent_sd,
 	return true;
 }
 
-struct security_descriptor *create_security_descriptor(TALLOC_CTX *mem_ctx,
-						       struct security_descriptor *parent_sd,
-						       struct security_descriptor *creator_sd,
-						       bool is_container,
-						       struct GUID *object_list,
-						       uint32_t inherit_flags,
-						       struct security_token *token,
-						       struct dom_sid *default_owner, /* valid only for DS, NULL for the other RSs */
-						       struct dom_sid *default_group, /* valid only for DS, NULL for the other RSs */
-						       uint32_t (*generic_map)(uint32_t access_mask))
+struct security_descriptor *create_security_descriptor(
+	TALLOC_CTX *mem_ctx,
+	struct security_descriptor *parent_sd,
+	struct security_descriptor *creator_sd,
+	bool is_container,
+	struct GUID *object_list,
+	uint32_t inherit_flags,
+	struct security_token *token,
+	const struct dom_sid
+		*default_owner, /* valid only for DS, NULL for the other RSs */
+	const struct dom_sid
+		*default_group, /* valid only for DS, NULL for the other RSs */
+	uint32_t (*generic_map)(uint32_t access_mask))
 {
 	struct security_descriptor *new_sd;
-	struct dom_sid *new_owner = NULL;
-	struct dom_sid *new_group = NULL;
+	const struct dom_sid *new_owner = NULL;
+	const struct dom_sid *new_group = NULL;
 
 	new_sd = security_descriptor_initialise(mem_ctx);
 	if (!new_sd) {
