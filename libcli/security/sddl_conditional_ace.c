@@ -2053,9 +2053,8 @@ static bool parse_sid(struct ace_condition_sddl_compiler_context *comp)
 	    comp->sddl[comp->offset + 3] != '(') {
 		comp_error(comp, "malformed SID() constructor");
 		return false;
-	} else {
-		comp->offset += 4;
 	}
+	comp->offset += 4;
 
 	sidstr = comp->sddl + comp->offset;
 
