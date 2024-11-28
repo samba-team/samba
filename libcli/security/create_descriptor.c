@@ -652,8 +652,8 @@ struct security_descriptor *create_security_descriptor(
 		new_group = creator_sd->group_sid;
 	}
 
-	new_sd->owner_sid = talloc_memdup(new_sd, new_owner, sizeof(struct dom_sid));
-	new_sd->group_sid = talloc_memdup(new_sd, new_group, sizeof(struct dom_sid));
+	new_sd->owner_sid = dom_sid_dup(new_sd, new_owner);
+	new_sd->group_sid = dom_sid_dup(new_sd, new_group);
 	if (!new_sd->owner_sid || !new_sd->group_sid){
 		talloc_free(new_sd);
 		return NULL;
