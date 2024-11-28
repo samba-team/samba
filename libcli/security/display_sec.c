@@ -184,8 +184,9 @@ void display_sec_acl(struct security_acl *sec_acl)
 {
 	uint32_t i;
 
-	printf("\tACL\tNum ACEs:\t%u\trevision:\t%x\n",
-	       sec_acl->num_aces, sec_acl->revision);
+	printf("\tACL\tNum ACEs:\t%" PRIu32 "\trevision:\t%x\n",
+	       sec_acl->num_aces,
+	       sec_acl->revision);
 	printf("\t---\n");
 
 	if (sec_acl->size != 0 && sec_acl->num_aces != 0) {
