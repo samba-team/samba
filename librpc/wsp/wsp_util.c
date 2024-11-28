@@ -241,7 +241,7 @@ static bool parse_properties_line(TALLOC_CTX *ctx,
 	for (pos = 0; pos < talloc_array_length(csv_line); pos++) {
 		t = strv_next(strv, t);
 		/* the scraped property file can have a non ascii char */
-		if (strlen(t) == 1 && *t == 0xa0) {
+		if (strlen(t) == 1 && *(unsigned char *)t == 0xa0) {
 			csv_line[pos] = talloc_strdup(csv_line,
 					"");
 		} else {
