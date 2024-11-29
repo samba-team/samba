@@ -598,10 +598,10 @@ NTSTATUS se_file_access_check(const struct security_descriptor *sd,
 			access_desired |= SEC_RIGHTS_PRIV_RESTORE;
 		}
 
-		DEBUG(10,("se_file_access_check: MAX desired = 0x%x "
-			"mapped to 0x%x\n",
-			orig_access_desired,
-			access_desired));
+		DBG_DEBUG("MAX desired = 0x%0" PRIx32 " mapped to 0x%" PRIx32
+			  "\n ",
+			  orig_access_desired,
+			  access_desired);
 	}
 
 	status = se_access_check_implicit_owner(sd,
