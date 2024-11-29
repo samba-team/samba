@@ -449,8 +449,19 @@ bool vfs_valid_allocation_range(off_t offset, size_t length)
 	return true;
 }
 
-bool vfs_valid_pwrite_range(off_t offset, size_t length)
+bool vfs_valid_pwrite_range(const struct files_struct *fsp,
+			    off_t offset,
+			    size_t length)
 {
+	if (fsp->fsp_flags.posix_append) {
+		if (offset != VFS_PWRITE_APPEND_OFFSET) {
+			return false;
+		}
+		return true;
+	} else if (offset == VFS_PWRITE_APPEND_OFFSET) {
+		return false;
+	}
+
 	return vfs_valid_allocation_range(offset, length);
 }
 
@@ -464,7 +475,7 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
 	ssize_t ret;
 	bool ok;
 
-	ok = vfs_valid_pwrite_range(offset, N);
+	ok = vfs_valid_pwrite_range(fsp, offset, N);
 	if (!ok) {
 		errno = EINVAL;
 		return -1;

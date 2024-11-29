@@ -80,7 +80,7 @@ static ssize_t real_write_file(struct smb_request *req,
 	ssize_t ret;
 	bool ok;
 
-	ok = vfs_valid_pwrite_range(pos, n);
+	ok = vfs_valid_pwrite_range(fsp, pos, n);
 	if (!ok) {
 		errno = EINVAL;
 		return -1;

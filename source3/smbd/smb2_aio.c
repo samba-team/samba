@@ -188,7 +188,7 @@ struct tevent_req *pwrite_fsync_send(TALLOC_CTX *mem_ctx,
 	state->fsp = fsp;
 	state->write_through = write_through;
 
-	ok = vfs_valid_pwrite_range(offset, n);
+	ok = vfs_valid_pwrite_range(fsp, offset, n);
 	if (!ok) {
 		tevent_req_error(req, EINVAL);
 		return tevent_req_post(req, ev);
