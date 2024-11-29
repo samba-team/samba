@@ -63,7 +63,7 @@ static ssize_t default_sys_recvfile(int fromfd,
 		return 0;
 	}
 
-	if (tofd != -1 && offset != (off_t)-1) {
+	if (tofd != -1 && offset != (off_t)VFS_PWRITE_APPEND_OFFSET) {
 		if (lseek(tofd, offset, SEEK_SET) == -1) {
 			if (errno != ESPIPE) {
 				return -1;
