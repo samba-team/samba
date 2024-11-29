@@ -1166,6 +1166,7 @@ bool smbd_vfs_init(connection_struct *conn);
 NTSTATUS vfs_file_exist(connection_struct *conn, struct smb_filename *smb_fname);
 bool vfs_valid_pread_range(off_t offset, size_t length);
 bool vfs_valid_pwrite_range(off_t offset, size_t length);
+bool vfs_valid_allocation_range(off_t offset, size_t length);
 ssize_t vfs_pwrite_data(struct smb_request *req,
 			files_struct *fsp,
 			const char *buffer,

@@ -2894,7 +2894,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	SMB_STRUCT_STAT *pst;
 	bool ok;
 
-	ok = vfs_valid_pwrite_range(len, 0);
+	ok = vfs_valid_allocation_range(len, 0);
 	if (!ok) {
 		errno = EINVAL;
 		return -1;
