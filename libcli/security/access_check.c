@@ -245,8 +245,9 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 		if (security_token_has_sid(token, sd->owner_sid)) {
 			switch (implicit_owner_rights) {
 			case IMPLICIT_OWNER_READ_CONTROL_AND_WRITE_DAC_RIGHTS:
-				granted |= SEC_STD_WRITE_DAC;
-				FALL_THROUGH;
+				granted |= (SEC_STD_READ_CONTROL |
+					    SEC_STD_WRITE_DAC);
+				break;
 			case IMPLICIT_OWNER_READ_CONTROL_RIGHTS:
 				granted |= SEC_STD_READ_CONTROL;
 				break;
@@ -282,8 +283,8 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 	if (am_owner && !have_owner_rights_ace) {
 		switch (implicit_owner_rights) {
 		case IMPLICIT_OWNER_READ_CONTROL_AND_WRITE_DAC_RIGHTS:
-			granted |= SEC_STD_WRITE_DAC;
-			FALL_THROUGH;
+			granted |= (SEC_STD_READ_CONTROL | SEC_STD_WRITE_DAC);
+			break;
 		case IMPLICIT_OWNER_READ_CONTROL_RIGHTS:
 			granted |= SEC_STD_READ_CONTROL;
 			break;
@@ -436,8 +437,9 @@ static NTSTATUS se_access_check_implicit_owner(const struct security_descriptor 
 	if (am_owner && !have_owner_rights_ace) {
 		switch (implicit_owner_rights) {
 		case IMPLICIT_OWNER_READ_CONTROL_AND_WRITE_DAC_RIGHTS:
-			bits_remaining &= ~SEC_STD_WRITE_DAC;
-			FALL_THROUGH;
+			bits_remaining &= ~(SEC_STD_WRITE_DAC |
+					    SEC_STD_READ_CONTROL);
+			break;
 		case IMPLICIT_OWNER_READ_CONTROL_RIGHTS:
 			bits_remaining &= ~SEC_STD_READ_CONTROL;
 			break;
@@ -751,8 +753,9 @@ NTSTATUS sec_access_check_ds_implicit_owner(const struct security_descriptor *sd
 	    security_token_has_sid(token, sd->owner_sid)) {
 		switch (implicit_owner_rights) {
 		case IMPLICIT_OWNER_READ_CONTROL_AND_WRITE_DAC_RIGHTS:
-			bits_remaining &= ~SEC_STD_WRITE_DAC;
-			FALL_THROUGH;
+			bits_remaining &= ~(SEC_STD_WRITE_DAC |
+					    SEC_STD_READ_CONTROL);
+			break;
 		case IMPLICIT_OWNER_READ_CONTROL_RIGHTS:
 			bits_remaining &= ~SEC_STD_READ_CONTROL;
 			break;
