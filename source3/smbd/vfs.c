@@ -731,6 +731,10 @@ int vfs_fill_sparse(files_struct *fsp, off_t len)
 	size_t num_to_write;
 	bool ok;
 
+	if (len == VFS_PWRITE_APPEND_OFFSET) {
+		return 0;
+	}
+
 	ok = vfs_valid_allocation_range(len, 0);
 	if (!ok) {
 		errno = EINVAL;
