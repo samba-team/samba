@@ -870,24 +870,24 @@ bool samba_krb5_pac_is_trusted(const struct samba_kdc_entry_pac pac)
 #ifdef HAVE_KRB5_PAC_IS_TRUSTED /* Heimdal */
 struct samba_kdc_entry_pac samba_kdc_entry_pac(krb5_const_pac pac,
 					       struct samba_kdc_entry *entry,
-					       bool is_from_trust)
+					       const struct samba_kdc_entry *krbtgt)
 {
 	return (struct samba_kdc_entry_pac) {
 		.entry = entry,
+		.krbtgt = krbtgt,
 		.pac = pac,
-		.is_from_trust = is_from_trust,
 	};
 }
 #else /* MIT */
 struct samba_kdc_entry_pac samba_kdc_entry_pac_from_trusted(krb5_const_pac pac,
 							    struct samba_kdc_entry *entry,
-							    bool is_from_trust,
+							    const struct samba_kdc_entry *krbtgt,
 							    bool is_trusted)
 {
 	return (struct samba_kdc_entry_pac) {
 		.entry = entry,
+		.krbtgt = krbtgt,
 		.pac = pac,
-		.is_from_trust = is_from_trust,
 		.pac_is_trusted = is_trusted,
 	};
 }
@@ -895,7 +895,7 @@ struct samba_kdc_entry_pac samba_kdc_entry_pac_from_trusted(krb5_const_pac pac,
 
 static bool samba_kdc_entry_pac_issued_by_trust(const struct samba_kdc_entry_pac entry)
 {
-	return entry.pac != NULL && entry.is_from_trust;
+	return entry.pac != NULL && samba_kdc_entry_is_trust(entry.krbtgt);
 }
 
 NTSTATUS samba_kdc_get_logon_info_blob(TALLOC_CTX *mem_ctx,

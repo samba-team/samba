@@ -355,7 +355,7 @@ hdb_samba4_check_rbcd(krb5_context context, HDB *db,
 
 	client_pac_entry = samba_kdc_entry_pac(header_pac,
 					       client_skdc_entry,
-					       samba_kdc_entry_is_trust(client_krbtgt_skdc_entry));
+					       client_krbtgt_skdc_entry);
 
 	code = samba_kdc_get_user_info_dc(mem_ctx,
 					  context,
@@ -391,7 +391,7 @@ hdb_samba4_check_rbcd(krb5_context context, HDB *db,
 
 		device_pac_entry = samba_kdc_entry_pac(device_pac,
 						       device_skdc_entry,
-						       samba_kdc_entry_is_trust(device_krbtgt_skdc_entry));
+						       device_krbtgt_skdc_entry);
 
 		code = samba_kdc_get_user_info_dc(mem_ctx,
 						  context,

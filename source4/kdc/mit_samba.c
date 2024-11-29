@@ -717,7 +717,7 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 
 	client_pac_entry = samba_kdc_entry_pac_from_trusted(old_pac,
 							    client_skdc_entry,
-							    samba_kdc_entry_is_trust(krbtgt_skdc_entry),
+							    krbtgt_skdc_entry,
 							    is_trusted);
 
 	code = samba_kdc_verify_pac(tmp_ctx,

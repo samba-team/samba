@@ -216,7 +216,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 
 			device_pac_entry = samba_kdc_entry_pac(device_pac,
 							       device_skdc_entry,
-							       samba_kdc_entry_is_trust(device_krbtgt_skdc_entry));
+							       device_krbtgt_skdc_entry);
 
 			ret = samba_kdc_get_user_info_dc(mem_ctx,
 							 context,
@@ -396,7 +396,7 @@ static krb5_error_code samba_wdc_verify_pac2(astgs_request_t r,
 	krb5_pac_set_trusted(pac, is_trusted);
 	client_pac_entry = samba_kdc_entry_pac(pac,
 					       client_skdc_entry,
-					       samba_kdc_entry_is_trust(krbtgt_skdc_entry));
+					       krbtgt_skdc_entry);
 
 	if (is_s4u2self) {
 		flags |= SAMBA_KDC_FLAG_PROTOCOL_TRANSITION;
@@ -515,7 +515,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 							 * not have been signed
 							 * or issued by a krbtgt
 							 * trust account. */
-							false /* is_from_trust */);
+							NULL /* krbtgt */);
 
 	if (client != NULL) {
 		client_skdc_entry = talloc_get_type_abort(client->context,
@@ -532,7 +532,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 
 	client_pac_entry = samba_kdc_entry_pac(*pac,
 					       client_skdc_entry,
-					       samba_kdc_entry_is_trust(krbtgt_skdc_entry));
+					       krbtgt_skdc_entry);
 
 	ret = samba_kdc_update_pac(mem_ctx,
 				   context,
