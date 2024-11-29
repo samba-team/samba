@@ -29,6 +29,9 @@
 #if defined(HAVE_UNISTD_H)
 #include <unistd.h>
 #endif
+#if defined(HAVE_GRP_H)
+#include <grp.h> /* setgroups() */
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
