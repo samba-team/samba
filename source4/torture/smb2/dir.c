@@ -53,6 +53,7 @@ static NTSTATUS populate_tree(struct torture_context *tctx,
 			      struct smb2_handle *h_out)
 {
 	struct smb2_create create;
+	struct smb2_handle dirh;
 	char **strs = NULL;
 	NTSTATUS status;
 	bool ret = true;
@@ -72,7 +73,7 @@ static NTSTATUS populate_tree(struct torture_context *tctx,
 
 	status = smb2_create(tree, mem_ctx, &create);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
-	*h_out = create.out.file.handle;
+	dirh = create.out.file.handle;
 
 	ZERO_STRUCT(create);
 	create.in.desired_access = SEC_RIGHTS_FILE_ALL;
@@ -93,6 +94,29 @@ static NTSTATUS populate_tree(struct torture_context *tctx,
 		files[i].create_time = create.out.create_time;
 		smb2_util_close(tree, create.out.file.handle);
 	}
+	/* Close the dir handle */
+	smb2_util_close(tree, dirh);
+
+	/*
+	 * Reopen the directory handle that the readdir() in smbd will see the
+	 * created files.
+	 */
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_RIGHTS_DIR_ALL;
+	create.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	create.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+				 NTCREATEX_SHARE_ACCESS_WRITE |
+				 NTCREATEX_SHARE_ACCESS_DELETE;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.fname = DNAME;
+
+	status = smb2_create(tree, mem_ctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
+	dirh = create.out.file.handle;
+
+	*h_out = dirh;
+
  done:
 	if (!ret) {
 		return status;
@@ -1204,6 +1228,16 @@ static bool test_file_index(struct torture_context *tctx,
 		smb2_util_close(tree, create.out.file.handle);
 	}
 
+	/* Close the dir handle */
+	smb2_util_close(tree, h);
+
+	/*
+	 * Reopen the directory handle, that the readdir() in smbd will see the
+	 * created files.
+	 */
+	status = torture_smb2_testdir(tree, DNAME, &h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
+
 	ZERO_STRUCT(result);
 	result.tctx = tctx;
 
@@ -1341,6 +1375,27 @@ static bool test_large_files(struct torture_context *tctx,
 		torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 		smb2_util_close(tree, create.out.file.handle);
 	}
+
+	/* Close dir handle */
+	smb2_util_close(tree, h);
+
+	/*
+	 * Reopen the directory handle that the readdir() in smbd will see the
+	 * created files.
+	 */
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_RIGHTS_DIR_ALL;
+	create.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	create.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+				 NTCREATEX_SHARE_ACCESS_WRITE |
+				 NTCREATEX_SHARE_ACCESS_DELETE;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.fname = DNAME;
+
+	status = smb2_create(tree, mem_ctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
+	h = create.out.file.handle;
 
 	ZERO_STRUCT(f);
 	f.in.file.handle        = h;
