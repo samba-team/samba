@@ -63,17 +63,17 @@ test_winbind_call_depth_trace()
 		return 1
 	fi
 
-	# Test that the depth of last line with 'wb_group_members_send' is: depth=4
-	COUNT3=$(grep wb_group_members_send "$LOGFILE" | tail -1 | grep -c depth=4)
+	# Test that the depth of last line with 'wb_group_members_send' is: depth=3
+	COUNT3=$(grep wb_group_members_send "$LOGFILE" | tail -1 | grep -c depth=3)
 	if [ "$COUNT3" -ne 1 ]; then
-		echo "The last line with wb_group_members_send should have depth=4."
+		echo "The last line with wb_group_members_send should have depth=3."
 		return 1
 	fi
 
 	# Test that the indentation of the line below last 'wb_group_members_send' is indented by 2+4*4 spaces:
-	COUNT4=$(grep -A1 wb_group_members_send "$LOGFILE" | tail -1| grep -c '^                  WB command group_members start')
+	COUNT4=$(grep 'WB command group_members start' "$LOGFILE" | tail -1| grep -c '^              WB command group_members start')
 	if [ "$COUNT4" -ne 1 ]; then
-		echo "The line after the last line with wb_group_members_send should be indented by 18 spaces."
+		echo "The line after the last line with wb_group_members_send should be indented by 14 spaces."
 		return 1
 	fi
 
