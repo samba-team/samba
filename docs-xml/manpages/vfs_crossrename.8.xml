@@ -62,7 +62,10 @@
 		</varlistentry>
 	</variablelist>
 
-	<para>This module is stackable.</para>
+	<para> This module is not fully stackable. It can be combined with other
+	modules, but should be the last module in the <command>vfs objects</command>
+	list. It directly access the files in the OS filesystem.
+	</para>
 
 </refsect1>
 
