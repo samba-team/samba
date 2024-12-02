@@ -701,6 +701,9 @@ class KerberosTicketCreds:
         self.ticket['sname'] = sname
         self.sname = sname
 
+    def set_srealm(self, srealm):
+        self.ticket['realm'] = srealm
+        self.srealm = srealm
 
 class PkInit(Enum):
     NOT_USED = object()
