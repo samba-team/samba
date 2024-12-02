@@ -120,6 +120,7 @@ from samba.tests.krb5.rfc4120_constants import (
     AD_WIN2K_PAC,
     AES256_CTS_HMAC_SHA1_96,
     ARCFOUR_HMAC_MD5,
+    KDC_ERR_POLICY,
     KDC_ERR_PREAUTH_REQUIRED,
     KDC_ERR_TGT_REVOKED,
     KRB_AS_REP,
@@ -3249,6 +3250,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                            sname=None,
                            target_name=None, till=None, rc4_support=True,
                            to_rodc=False, kdc_options=None,
+                           expected_status=None,
                            expected_flags=None, unexpected_flags=None,
                            expected_groups=None,
                            unexpected_groups=None,
@@ -3287,7 +3289,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                      expect_pac_attrs,
                      expect_pac_attrs_pac_request)
 
-        if not fresh:
+        if not fresh and expected_status is None:
             ticket = self.tkt_cache.get(cache_key)
 
             if ticket is not None:
@@ -3309,6 +3311,15 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
         decryption_key = self.TicketDecryptionKey_from_creds(target_creds)
 
+        if expected_status is not None:
+            check_rep_fn = None
+            check_error_fn = self.generic_check_kdc_error
+            expected_error_mode = KDC_ERR_POLICY
+        else:
+            check_rep_fn = self.generic_check_kdc_rep
+            check_error_fn = None
+            expected_error_mode = 0
+
         kdc_exchange_dict = self.tgs_exchange_dict(
             expected_crealm=tgt.crealm,
             expected_cname=tgt.cname,
@@ -3327,7 +3338,10 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             unexpected_device_claims=unexpected_device_claims,
             ticket_decryption_key=decryption_key,
             expect_ticket_kvno=(not expect_krbtgt_referral),
-            check_rep_fn=self.generic_check_kdc_rep,
+            check_rep_fn=check_rep_fn,
+            check_error_fn=check_error_fn,
+            expected_error_mode=expected_error_mode,
+            expected_status=expected_status,
             check_kdc_private_fn=self.generic_check_kdc_private,
             tgt=tgt,
             authenticator_subkey=authenticator_subkey,
@@ -3346,6 +3360,9 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                                          sname=sname,
                                          till_time=till,
                                          etypes=etype)
+        if expected_status is not None:
+            self.check_error_rep(rep, expected_error_mode)
+            return None
         self.check_tgs_reply(rep)
 
         service_ticket_creds = kdc_exchange_dict['rep_ticket_creds']
