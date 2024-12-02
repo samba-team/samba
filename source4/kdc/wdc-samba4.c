@@ -126,7 +126,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	}
 
 	ret = samba_kdc_get_user_info_from_db(mem_ctx,
-					      server_entry->kdc_db_ctx->samdb,
+					      server_entry->kdc_db_ctx,
 					      skdc_entry,
 					      skdc_entry->msg,
 					      &user_info_dc_const);
@@ -220,7 +220,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 
 			ret = samba_kdc_get_user_info_dc(mem_ctx,
 							 context,
-							 server_entry->kdc_db_ctx->samdb,
+							 server_entry->kdc_db_ctx,
 							 device_pac_entry,
 							 &device_info,
 							 NULL /* resource_groups_out */);
@@ -231,7 +231,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 
 			ret = samba_kdc_get_claims_data(mem_ctx,
 							context,
-							server_entry->kdc_db_ctx->samdb,
+							server_entry->kdc_db_ctx,
 							device_pac_entry,
 							&auth_claims.device_claims);
 			if (ret) {
@@ -241,8 +241,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 		}
 
 		ret = samba_kdc_allowed_to_authenticate_to(mem_ctx,
-							   server_entry->kdc_db_ctx->samdb,
-							   server_entry->kdc_db_ctx->lp_ctx,
+							   server_entry->kdc_db_ctx,
 							   skdc_entry,
 							   user_info_dc_shallow_copy,
 							   device_info,
@@ -451,7 +450,7 @@ static krb5_error_code samba_wdc_verify_pac2(astgs_request_t r,
 
 	ret = samba_kdc_verify_pac(mem_ctx,
 				   context,
-				   krbtgt_skdc_entry->kdc_db_ctx->samdb,
+				   krbtgt_skdc_entry->kdc_db_ctx,
 				   flags,
 				   client_pac_entry,
 				   krbtgt_skdc_entry);
@@ -536,8 +535,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 
 	ret = samba_kdc_update_pac(mem_ctx,
 				   context,
-				   krbtgt_skdc_entry->kdc_db_ctx->samdb,
-				   krbtgt_skdc_entry->kdc_db_ctx->lp_ctx,
+				   krbtgt_skdc_entry->kdc_db_ctx,
 				   flags,
 				   client_pac_entry,
 				   server->principal,
@@ -784,8 +782,7 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 
 	ret = samba_kdc_check_device(tmp_ctx,
 				     context,
-				     kdc_entry->kdc_db_ctx->samdb,
-				     kdc_entry->kdc_db_ctx->lp_ctx,
+				     kdc_entry->kdc_db_ctx,
 				     device,
 				     kdc_entry->client_policy,
 				     &client_audit_info,

@@ -359,7 +359,7 @@ hdb_samba4_check_rbcd(krb5_context context, HDB *db,
 
 	code = samba_kdc_get_user_info_dc(mem_ctx,
 					  context,
-					  kdc_db_ctx->samdb,
+					  kdc_db_ctx,
 					  client_pac_entry,
 					  &client_info,
 					  NULL /* resource_groups_out */);
@@ -369,7 +369,7 @@ hdb_samba4_check_rbcd(krb5_context context, HDB *db,
 
 	code = samba_kdc_get_claims_data(mem_ctx,
 					 context,
-					 kdc_db_ctx->samdb,
+					 kdc_db_ctx,
 					 client_pac_entry,
 					 &auth_claims.user_claims);
 	if (code) {
@@ -395,7 +395,7 @@ hdb_samba4_check_rbcd(krb5_context context, HDB *db,
 
 		code = samba_kdc_get_user_info_dc(mem_ctx,
 						  context,
-						  kdc_db_ctx->samdb,
+						  kdc_db_ctx,
 						  device_pac_entry,
 						  &device_info,
 						  NULL /* resource_groups_out */);
@@ -405,7 +405,7 @@ hdb_samba4_check_rbcd(krb5_context context, HDB *db,
 
 		code = samba_kdc_get_claims_data(mem_ctx,
 						 context,
-						 kdc_db_ctx->samdb,
+						 kdc_db_ctx,
 						 device_pac_entry,
 						 &auth_claims.device_claims);
 		if (code) {

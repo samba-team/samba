@@ -100,13 +100,13 @@ krb5_error_code samba_krbtgt_is_in_db(const struct samba_kdc_entry *skdc_entry,
 
 krb5_error_code samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 					   krb5_context context,
-					   struct ldb_context *samdb,
+					   struct samba_kdc_db_context *kdc_db_ctx,
 					   const struct samba_kdc_entry_pac entry,
 					   const struct auth_user_info_dc **info_out,
 					   const struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups_out);
 
 krb5_error_code samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
-						struct ldb_context *samdb,
+						struct samba_kdc_db_context *kdc_db_ctx,
 						struct samba_kdc_entry *entry,
 						const struct ldb_message *msg,
 						const struct auth_user_info_dc **info_out);
@@ -120,7 +120,7 @@ NTSTATUS samba_kdc_check_client_access(struct samba_kdc_entry *kdc_entry,
 
 krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 				     krb5_context context,
-				     struct ldb_context *samdb,
+				     struct samba_kdc_db_context *kdc_db_ctx,
 				     uint32_t flags,
 				     const struct samba_kdc_entry_pac client,
 				     const struct samba_kdc_entry *krbtgt);
@@ -128,8 +128,7 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 struct authn_audit_info;
 krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     krb5_context context,
-				     struct ldb_context *samdb,
-				     struct loadparm_context *lp_ctx,
+				     struct samba_kdc_db_context *kdc_db_ctx,
 				     uint32_t flags,
 				     const struct samba_kdc_entry_pac client,
 				     const krb5_const_principal server_principal,
@@ -162,8 +161,7 @@ NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 				   const DATA_BLOB **_claims_blob);
 
 krb5_error_code samba_kdc_allowed_to_authenticate_to(TALLOC_CTX *mem_ctx,
-						     struct ldb_context *samdb,
-						     struct loadparm_context *lp_ctx,
+						     struct samba_kdc_db_context *kdc_db_ctx,
 						     const struct samba_kdc_entry *client,
 						     const struct auth_user_info_dc *client_info,
 						     const struct auth_user_info_dc *device_info,
@@ -174,8 +172,7 @@ krb5_error_code samba_kdc_allowed_to_authenticate_to(TALLOC_CTX *mem_ctx,
 
 krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 				       krb5_context context,
-				       struct ldb_context *samdb,
-				       struct loadparm_context *lp_ctx,
+				       struct samba_kdc_db_context *kdc_db_ctx,
 				       const struct samba_kdc_entry_pac device,
 				       const struct authn_kerberos_client_policy *client_policy,
 				       struct authn_audit_info **client_audit_info_out,
@@ -183,7 +180,7 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 
 krb5_error_code samba_kdc_get_claims_data(TALLOC_CTX *mem_ctx,
 					  krb5_context context,
-					  struct ldb_context *samdb,
+					  struct samba_kdc_db_context *kdc_db_ctx,
 					  struct samba_kdc_entry_pac entry,
 					  struct claims_data **claims_data_out);
 
