@@ -503,7 +503,7 @@ static ssize_t pull_end_padding(uint8_t *data, size_t length)
 	 *
 	 * zero is also called CONDITIONAL_ACE_TOKEN_INVALID_OR_PADDING.
 	 */
-	ssize_t i;
+	size_t i;
 	if (length > 2) {
 		return -1;
 	}
