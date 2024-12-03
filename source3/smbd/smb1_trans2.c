@@ -2193,10 +2193,6 @@ static NTSTATUS get_posix_fsp(connection_struct *conn,
 			      files_struct **ret_fsp)
 {
 	NTSTATUS status;
-	uint32_t create_disposition = FILE_OPEN;
-	uint32_t share_access = FILE_SHARE_READ|
-				FILE_SHARE_WRITE|
-				FILE_SHARE_DELETE;
 	struct smb2_create_blobs *posx = NULL;
 
 	/*
@@ -2204,7 +2200,6 @@ static NTSTATUS get_posix_fsp(connection_struct *conn,
 	 * but set reasonable defaults.
 	 */
 	uint32_t file_attributes = 0664;
-	uint32_t oplock = NO_OPLOCK;
 	uint32_t create_options = FILE_NON_DIRECTORY_FILE;
 
 	/* File or directory must exist. */
@@ -2234,25 +2229,26 @@ static NTSTATUS get_posix_fsp(connection_struct *conn,
 	}
 
 	status = SMB_VFS_CREATE_FILE(
-		conn,           /* conn */
-		req,            /* req */
-		NULL,		/* dirfsp */
-		smb_fname,      /* fname */
-		access_mask,    /* access_mask */
-		share_access,   /* share_access */
-		create_disposition,/* create_disposition*/
-		create_options, /* create_options */
-		file_attributes,/* file_attributes */
-		oplock,         /* oplock_request */
-		NULL,           /* lease */
-		0,              /* allocation_size */
-		0,              /* private_flags */
-		NULL,           /* sd */
-		NULL,           /* ea_list */
-		ret_fsp,	/* result */
-		NULL,           /* pinfo */
-		posx,           /* in_context */
-		NULL);          /* out_context */
+		conn,	     /* conn */
+		req,	     /* req */
+		NULL,	     /* dirfsp */
+		smb_fname,   /* fname */
+		access_mask, /* access_mask */
+		FILE_SHARE_READ | FILE_SHARE_WRITE |
+			FILE_SHARE_DELETE, /* share_access */
+		FILE_OPEN,		   /* create_disposition*/
+		create_options,		   /* create_options */
+		file_attributes,	   /* file_attributes */
+		NO_OPLOCK,		   /* oplock_request */
+		NULL,			   /* lease */
+		0,			   /* allocation_size */
+		0,			   /* private_flags */
+		NULL,			   /* sd */
+		NULL,			   /* ea_list */
+		ret_fsp,		   /* result */
+		NULL,			   /* pinfo */
+		posx,			   /* in_context */
+		NULL);			   /* out_context */
 
 done:
 	TALLOC_FREE(posx);
