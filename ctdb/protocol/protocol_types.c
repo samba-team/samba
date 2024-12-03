@@ -5346,3 +5346,94 @@ fail:
 	talloc_free(val);
 	return ret;
 }
+
+size_t ctdb_push_record_data_len(struct ctdb_push_record_data *in)
+{
+	return ctdb_uint32_len(&in->generation) +
+		ctdb_uint32_len(&in->db_id) +
+		ctdb_ltdb_header_len(&in->hdr) +
+		ctdb_tdb_datan_len(&in->key) +
+		ctdb_tdb_datan_len(&in->value);
+}
+
+void ctdb_push_record_data_push(struct ctdb_push_record_data *in,
+				uint8_t *buf,
+				size_t *npush)
+{
+	size_t offset = 0;
+	size_t np = 0;
+
+	ctdb_uint32_push(&in->generation, buf+offset, &np);
+	offset += np;
+
+	ctdb_uint32_push(&in->db_id, buf+offset, &np);
+	offset += np;
+
+	ctdb_ltdb_header_push(&in->hdr, buf+offset, &np);
+	offset += np;
+
+	ctdb_tdb_datan_push(&in->key, buf+offset, &np);
+	offset += np;
+
+	ctdb_tdb_datan_push(&in->value, buf+offset, &np);
+	offset += np;
+
+	*npush = offset;
+}
+
+int ctdb_push_record_data_pull(uint8_t *buf,
+			       size_t buflen,
+			       TALLOC_CTX *mem_ctx,
+			       struct ctdb_push_record_data **out,
+			       size_t *npull)
+{
+	struct ctdb_push_record_data *val;
+	size_t offset = 0;
+	size_t np = 0;
+	int ret = 0;
+
+	val = talloc(mem_ctx, struct ctdb_push_record_data);
+	if (val == NULL) {
+		return ENOMEM;
+	}
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->generation, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_uint32_pull(buf+offset, buflen-offset, &val->db_id, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_ltdb_header_pull(buf+offset, buflen-offset, &val->hdr, &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_tdb_datan_pull(buf+offset, buflen-offset, val, &val->key,
+				  &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	ret = ctdb_tdb_datan_pull(buf+offset, buflen-offset, val, &val->value,
+				  &np);
+	if (ret != 0) {
+		goto fail;
+	}
+	offset += np;
+
+	*out = val;
+	*npull = offset;
+	return 0;
+
+fail:
+	talloc_free(val);
+	return ret;
+}

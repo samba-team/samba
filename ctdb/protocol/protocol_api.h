@@ -80,6 +80,17 @@ void ctdb_g_lock_list_push(struct ctdb_g_lock_list *in, uint8_t *buf,
 int ctdb_g_lock_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			  struct ctdb_g_lock_list **out, size_t *npull);
 
+size_t ctdb_push_record_data_len(struct ctdb_push_record_data *in);
+void ctdb_push_record_data_push(struct ctdb_push_record_data *in,
+				uint8_t *buf,
+				size_t *npush);
+int ctdb_push_record_data_pull(uint8_t *buf,
+			       size_t buflen,
+			       TALLOC_CTX *mem_ctx,
+			       struct ctdb_push_record_data **out,
+			       size_t *npull);
+
+
 /* From protocol/protocol_header.c */
 
 void ctdb_req_header_fill(struct ctdb_req_header *h, uint32_t generation,
@@ -610,6 +621,8 @@ int ctdb_reply_control_enable_node(struct ctdb_reply_control *reply);
 
 void ctdb_req_control_start_ipreallocate(struct ctdb_req_control *request);
 int ctdb_reply_control_start_ipreallocate(struct ctdb_reply_control *reply);
+void ctdb_req_control_push_record(struct ctdb_req_control *request,
+				  struct ctdb_push_record_data *push_record_data);
 
 /* From protocol/protocol_debug.c */
 

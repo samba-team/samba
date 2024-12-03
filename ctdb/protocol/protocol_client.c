@@ -2369,3 +2369,16 @@ int ctdb_reply_control_start_ipreallocate(struct ctdb_reply_control *reply)
 	return ctdb_reply_control_generic(reply,
 					  CTDB_CONTROL_START_IPREALLOCATE);
 }
+
+void ctdb_req_control_push_record(struct ctdb_req_control *request,
+				  struct ctdb_push_record_data *push_record_data)
+{
+	request->opcode = CTDB_CONTROL_PUSH_RECORD;
+	request->pad = 0;
+	request->srvid = 0;
+	request->client_id = 0;
+	request->flags = CTDB_CTRL_FLAG_NOREPLY;
+
+	request->rdata.opcode = CTDB_CONTROL_PUSH_RECORD;
+	request->rdata.data.push_record = push_record_data;
+}

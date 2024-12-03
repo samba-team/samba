@@ -421,6 +421,10 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 
 	case CTDB_CONTROL_START_IPREALLOCATE:
 		break;
+
+	case CTDB_CONTROL_PUSH_RECORD:
+		len  = ctdb_push_record_data_len(cd->data.push_record);
+		break;
 	}
 
 	return len;
@@ -703,6 +707,10 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 
 	case CTDB_CONTROL_TCP_CLIENT_PASSED:
 		ctdb_connection_push(cd->data.conn, buf, &np);
+		break;
+
+	case CTDB_CONTROL_PUSH_RECORD:
+		ctdb_push_record_data_push(cd->data.push_record, buf, &np);
 		break;
 	}
 
@@ -1050,6 +1058,14 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 					   mem_ctx,
 					   &cd->data.conn,
 					   &np);
+		break;
+
+	case CTDB_CONTROL_PUSH_RECORD:
+		ret = ctdb_push_record_data_pull(buf,
+						 buflen,
+						 mem_ctx,
+						 &cd->data.push_record,
+						 &np);
 		break;
 	}
 
