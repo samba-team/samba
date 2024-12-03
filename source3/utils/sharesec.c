@@ -409,7 +409,6 @@ int main(int argc, const char *argv[])
 	static char *the_acl = NULL;
 	fstring sharename;
 	bool force_acl = False;
-	int snum;
 	poptContext pc;
 	bool initialize_sid = False;
 	bool ok;
@@ -604,7 +603,10 @@ int main(int argc, const char *argv[])
 
 	setlinebuf(stdout);
 
-	lp_load_with_registry_shares(get_dyn_CONFIGFILE());
+	if (mode == SMB_ACL_VIEW_ALL)
+		lp_load_with_registry_shares(get_dyn_CONFIGFILE());
+	else
+		lp_load_with_registry_without_shares(get_dyn_CONFIGFILE());
 
 	/* check for initializing secrets.tdb first */
 
@@ -631,7 +633,6 @@ int main(int argc, const char *argv[])
 
 	if (mode == SMB_ACL_VIEW_ALL) {
 		int i;
-
 		for (i=0; i<lp_numservices(); i++) {
 			TALLOC_CTX *frame = talloc_stackframe();
 			const struct loadparm_substitution *lp_sub =
@@ -661,9 +662,7 @@ int main(int argc, const char *argv[])
 
 	fstrcpy(sharename, poptGetArg(pc));
 
-	snum = lp_servicenumber( sharename );
-
-	if ( snum == -1 && !force_acl ) {
+	if (!share_exists(sharename)) {
 		fprintf( stderr, "Invalid sharename: %s\n", sharename);
 		retval = -1;
 		goto done;
