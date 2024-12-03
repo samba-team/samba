@@ -2042,6 +2042,55 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
         return pac
 
+    # Replace the Names in a PAC.
+    def set_pac_names(self,
+                      pac,
+                      *,
+                      account_name=False,
+                      logon_server=False,
+                      logon_domain=False,
+                      logon_name=False,
+                      upn_name=False,
+                      logon_dns_domain=False,
+                      samaccountname=False):
+
+        found_logon_info = False
+
+        pac_buffers = pac.buffers
+        for pac_buffer in pac_buffers:
+            # Find the LOGON_INFO PAC buffer.
+            if pac_buffer.type == krb5pac.PAC_TYPE_LOGON_INFO:
+                logon_info = pac_buffer.info.info
+
+                if account_name is not False:
+                    logon_info.info3.base.account_name.string = account_name
+                if logon_server is not False:
+                    logon_info.info3.base.logon_server.string = logon_server
+                if logon_domain is not False:
+                    logon_info.info3.base.logon_domain.string = logon_domain
+
+                found_logon_info = True
+
+            elif pac_buffer.type == krb5pac.PAC_TYPE_LOGON_NAME:
+                if logon_name is not False:
+                    pac_buffer.info.account_name = logon_name
+
+            elif pac_buffer.type == krb5pac.PAC_TYPE_UPN_DNS_INFO:
+                upn_dns_info = pac_buffer.info
+
+                if upn_name is not False:
+                    upn_dns_info.upn_name = upn_name
+                if logon_dns_domain is not False:
+                    upn_dns_info.dns_domain_name = logon_dns_domain
+                if samaccountname is not False:
+                    upn_dns_info.ex.samaccountname = samaccountname
+
+        self.assertTrue(found_logon_info, 'no LOGON_INFO PAC buffer')
+
+        pac.buffers = pac_buffers
+
+        return pac
+
     # Replace the device SIDs in a PAC with 'new_sids'.
     def set_pac_device_sids(self,
                             pac,
