@@ -165,6 +165,7 @@ bool lp_load_global_no_reinit(const char *file_name);
 bool lp_load_no_reinit(const char *file_name);
 bool lp_load_client_no_reinit(const char *file_name);
 bool lp_load_with_registry_shares(const char *pszFname);
+bool lp_load_with_registry_without_shares(const char *pszFname);
 int lp_numservices(void);
 void lp_dump(FILE *f, bool show_defaults, int maxtoprint);
 void lp_dump_one(FILE * f, bool show_defaults, int snum);
