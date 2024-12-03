@@ -7073,6 +7073,103 @@ static int control_reloadips(TALLOC_CTX *mem_ctx,
 	return ipreallocate(mem_ctx, ctdb);
 }
 
+static int control_push_record(TALLOC_CTX *mem_ctx,
+			       struct ctdb_context *ctdb,
+			       int argc,
+			       const char **argv)
+{
+	const char *db_name = NULL;
+	struct ctdb_db_context *db = NULL;
+	struct ctdb_record_handle *h = NULL;
+	struct ctdb_ltdb_header header;
+	uint8_t db_flags;
+	TDB_DATA key, data;
+	int ret, status;
+
+	if (argc != 3) {
+		usage("pushrecord");
+		return 1;
+	}
+
+	if (!db_exists(mem_ctx, ctdb, argv[0], NULL, &db_name, &db_flags)) {
+		return 1;
+	}
+
+	if (db_flags & (CTDB_DB_FLAGS_PERSISTENT | CTDB_DB_FLAGS_REPLICATED)) {
+		fprintf(stderr, "DB %s is not a volatile database\n",
+			db_name);
+		return 1;
+	}
+
+	ret = ctdb_attach(ctdb->ev, ctdb->client, TIMEOUT(), db_name,
+			  db_flags, &db);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to attach to DB %s\n", db_name);
+		return ret;
+	}
+
+	ret = str_to_data(argv[1], strlen(argv[1]), mem_ctx, &key);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to parse key %s\n", argv[1]);
+		return ret;
+	}
+
+	ret = str_to_data(argv[2], strlen(argv[2]), mem_ctx, &data);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to parse value %s\n", argv[2]);
+		return ret;
+	}
+
+	ret = ctdb_fetch_lock(mem_ctx, ctdb->ev, ctdb->client,
+			      db, key, false, &h, &header, NULL);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to fetch record for key %s\n",
+			argv[1]);
+		return ret;
+	}
+
+	/*
+	 * The combination of ctdb_store_record() and ctdb_ctrl_push_record()
+	 * below causes the record to be written to all active nodes in the
+	 * cluster.  This needs to be done carefully, otherwise it will interact
+	 * badly with vacuuming.  The behaviour needs to simulate what happens
+	 * during CTDB recovery, since this is the only other time the same
+	 * record in a volatile database may be written to all nodes.
+	 *
+	 * MIGRATED_WITH_DATA: All records need to be written with this flag.
+	 * For other nodes, this is handled by the ctdbd push record
+	 * implementation.  For this (dmaster) node this flag needs to be
+	 * explicitly set.
+	 *
+	 * dmaster has rsn++: The current dmaster needs to have the highest
+	 * RSN so CTDB vacuuming recognises copies elsewhere as out-of-date,
+	 * causing them to be deleted.  This would normally be done when
+	 * ctdb_ltdb_store() calls ctdb_ltdb_store_server().  However, the
+	 * record is stored directly here, so the RSN increment needs to be
+	 * done here.
+	 */
+
+	header.rsn++;
+	header.flags |= CTDB_REC_FLAG_MIGRATED_WITH_DATA;
+	ctdb_record_set_header(h, &header);
+
+	ret = ctdb_store_record(h, data);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to store record for key %s\n",
+			argv[1]);
+	}
+
+	ret = ctdb_ctrl_push_record(mem_ctx, ctdb->ev, ctdb->client,
+				    TIMEOUT(), h, data, &status);
+	if (ret != 0) {
+		fprintf(stderr, "Failed to push record for key %s\n",
+			argv[1]);
+		return ret;
+	}
+
+	return status;
+}
+
 static const struct ctdb_cmd {
 	const char *name;
 	int (*fn)(TALLOC_CTX *, struct ctdb_context *, int, const char **);
@@ -7538,6 +7635,13 @@ static const struct ctdb_cmd {
 	 false,
 	 "delete a database key",
 	 "<dbname|dbid> <key>"},
+	{ "pushrecord",
+	  control_push_record,
+	  false,
+	  false,
+	  false,
+	  "push a record to all nodes",
+	  "<dbname|dbid> <key> <value>"},
 	{"checktcpport",
 	 control_checktcpport,
 	 true,
