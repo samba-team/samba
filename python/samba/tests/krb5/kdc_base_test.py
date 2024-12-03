@@ -1906,6 +1906,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                      new_sids,
                      domain_sid=None,
                      user_rid=None,
+                     requester_sid=None,
                      set_user_flags=0,
                      reset_user_flags=0):
         if domain_sid is None:
@@ -2033,8 +2034,9 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                     upn_dns_info_ex.objectsid = security.dom_sid(
                         f'{domain_sid}-{user_rid}')
 
-            # But don't replace the user's SID in the Requester SID buffer, or
-            # we'll get a SID mismatch.
+            elif pac_buffer.type == krb5pac.PAC_TYPE_REQUESTER_SID:
+                if requester_sid is not None:
+                    pac_buffer.info.sid = requester_sid
 
         self.assertTrue(found_logon_info, 'no LOGON_INFO PAC buffer')
 
