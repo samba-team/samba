@@ -2115,6 +2115,60 @@ int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb, uint32_t clien
 	return 0;
 }
 
+int32_t ctdb_control_push_record(struct ctdb_context *ctdb,
+				  TDB_DATA indata)
+{
+	struct ctdb_push_record_data *data = NULL;
+	struct ctdb_db_context *ctdb_db = NULL;
+	size_t np = 0;
+	int ret = 0;
+
+	ret = ctdb_push_record_data_pull(indata.dptr,
+					 indata.dsize,
+					 ctdb,
+					 &data,
+					 &np);
+	if (ret != 0) {
+		DBG_ERR("Invalid data\n");
+		return -1;
+	}
+
+	if (ctdb->vnn_map->generation != data->generation) {
+		DBG_INFO("Ignoring outdated push-record\n");
+		return 0;
+	}
+
+	/*
+	 * Do not store on the dmaster.  This will have already been
+	 * written by smbd.  Storing here would overwrite the already
+	 * written record, which has an incremented RSN.
+	 */
+	if (data->hdr.dmaster == ctdb->pnn) {
+		return 0;
+	}
+
+
+	ctdb_db = find_ctdb_db(ctdb, data->db_id);
+	if (ctdb_db == NULL) {
+		DBG_ERR(" Unknown db id 0x%08x\n", data->db_id);
+		return -1;
+	}
+
+	data->hdr.flags |= CTDB_REC_FLAG_MIGRATED_WITH_DATA;
+
+	ret = ctdb_ltdb_store(ctdb_db, data->key, &data->hdr, data->value);
+	if (ret != 0) {
+		return -1;
+	}
+
+	ret = ctdb_ltdb_sync(ctdb_db);
+	if (ret != 0) {
+		return -1;
+	}
+
+	return 0;
+}
+
 struct ctdb_client *ctdb_find_client_by_pid(struct ctdb_context *ctdb, pid_t pid)
 {
 	struct ctdb_client_pid_list *client_pid;

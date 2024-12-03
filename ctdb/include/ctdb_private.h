@@ -592,6 +592,8 @@ int32_t ctdb_control_register_notify(struct ctdb_context *ctdb,
 int32_t ctdb_control_deregister_notify(struct ctdb_context *ctdb,
 				       uint32_t client_id, TDB_DATA indata);
 
+int32_t ctdb_control_push_record(struct ctdb_context *ctdb, TDB_DATA indata);
+
 struct ctdb_client *ctdb_find_client_by_pid(struct ctdb_context *ctdb,
 					    pid_t pid);
 
