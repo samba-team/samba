@@ -47,6 +47,7 @@ import pyasn1.type.univ
 from pyasn1.error import PyAsn1Error
 
 from samba import unix2nttime
+from samba.common import get_string
 from samba.credentials import Credentials
 from samba.dcerpc import claims, krb5pac, netlogon, samr, security, krb5ccache
 from samba.gensec import FEATURE_SEAL
@@ -5864,13 +5865,20 @@ class RawKerberosTest(TestCase):
     def modified_ticket(self,
                         ticket, *,
                         new_ticket_key=None,
-                        modify_fn=None,
+                        modify_fn=None, # legacy version of modify_enc_fn
+                        modify_tkt_fn=None,
+                        modify_enc_fn=None,
                         modify_pac_fn=None,
                         exclude_pac=False,
                         allow_empty_authdata=False,
                         update_pac_checksums=None,
                         checksum_keys=None,
                         include_checksums=None):
+        if modify_enc_fn is not None:
+            self.assertIsNone(modify_fn)
+        else:
+            modify_enc_fn = modify_fn
+
         if checksum_keys is None:
             # A dict containing a key for each checksum type to be created in
             # the PAC.
@@ -5944,10 +5952,10 @@ class RawKerberosTest(TestCase):
             enc_part, asn1Spec=krb5_asn1.EncTicketPart())
 
         # Modify the ticket here.
-        if callable(modify_fn):
-            enc_part = modify_fn(enc_part)
-        elif modify_fn:
-            for fn in modify_fn:
+        if callable(modify_enc_fn):
+            enc_part = modify_enc_fn(enc_part)
+        elif modify_enc_fn:
+            for fn in modify_enc_fn:
                 enc_part = fn(enc_part)
 
         auth_data = enc_part.get('authorization-data')
@@ -6019,13 +6027,29 @@ class RawKerberosTest(TestCase):
         new_ticket = ticket.ticket.copy()
         new_ticket['enc-part'] = enc_part_new
 
+        # Modify the ticket here.
+        if callable(modify_tkt_fn):
+            new_ticket = modify_tkt_fn(new_ticket)
+        elif modify_tkt_fn:
+            for fn in modify_tkt_fn:
+                new_ticket = fn(new_ticket)
+
+        crealm = get_string(enc_part['crealm'])
+        cname = dict(enc_part['cname'])
+        for i in range(0, len(cname['name-string'])):
+            cname['name-string'][i] = get_string(cname['name-string'][i])
+        srealm = get_string(new_ticket['realm'])
+        sname = dict(new_ticket['sname'])
+        for i in range(0, len(sname['name-string'])):
+            sname['name-string'][i] = get_string(sname['name-string'][i])
+
         new_ticket_creds = KerberosTicketCreds(
             new_ticket,
             session_key=ticket.session_key,
-            crealm=ticket.crealm,
-            cname=ticket.cname,
-            srealm=ticket.srealm,
-            sname=ticket.sname,
+            crealm=crealm,
+            cname=cname,
+            srealm=srealm,
+            sname=sname,
             decryption_key=new_ticket_key,
             ticket_private=enc_part,
             encpart_private=ticket.encpart_private)
