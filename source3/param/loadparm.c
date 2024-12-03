@@ -4291,6 +4291,17 @@ bool lp_load_with_registry_shares(const char *pszFname)
 			  true); /* load_all_shares*/
 }
 
+bool lp_load_with_registry_without_shares(const char *pszFname)
+{
+	return lp_load_ex(pszFname,
+			  false, /* global_only */
+			  true,  /* save_defaults */
+			  false, /* add_ipc */
+			  true, /* reinit_globals */
+			  true,  /* allow_include_registry */
+			  false); /* load_all_shares*/
+}
+
 /***************************************************************************
  Return the max number of services.
 ***************************************************************************/
