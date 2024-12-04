@@ -829,12 +829,6 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		goto error_exit;
 	}
 
-	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		ret = 1;
-		goto done;
-	}
-
 	status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
@@ -888,13 +882,6 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 	/* Get file version info (if available) for new file */
 	status = driver_unix_convert(conn, new_file, &dirfsp, &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto error_exit;
-	}
-
-	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_NOTICE("Can't open new file [%s], errno = %d\n",
-			   smb_fname_str_dbg(smb_fname), errno);
 		goto error_exit;
 	}
 
@@ -1107,15 +1094,6 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("get_correct_cversion: vfs_file_exist failed\n"));
 		*perr = WERR_FILE_NOT_FOUND;
-		goto error_exit;
-	}
-
-	nt_status = openat_pathref_fsp(conn->cwd_fsp, smb_fname);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_NOTICE("Can't open file [%s]: %s\n",
-			   smb_fname_str_dbg(smb_fname),
-			   nt_errstr(nt_status));
-		*perr = WERR_ACCESS_DENIED;
 		goto error_exit;
 	}
 
