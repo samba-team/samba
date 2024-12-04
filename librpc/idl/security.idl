@@ -251,7 +251,7 @@ interface security
 	const string SID_NT_RESTRICTED            = "S-1-5-12";
 	const string SID_NT_TERMINAL_SERVER_USERS = "S-1-5-13";
 	const string SID_NT_REMOTE_INTERACTIVE    = "S-1-5-14";
-	const string SID_NT_THIS_ORGANISATION     = "S-1-5-15";
+	const string SID_NT_THIS_ORGANIZATION     = "S-1-5-15";
 	const string SID_NT_IUSR                  = "S-1-5-17";
 	const string SID_NT_SYSTEM                = "S-1-5-18";
 	const string SID_NT_LOCAL_SERVICE         = "S-1-5-19";
@@ -259,7 +259,7 @@ interface security
 	const string SID_NT_DIGEST_AUTHENTICATION = "S-1-5-64-21";
 	const string SID_NT_NTLM_AUTHENTICATION   = "S-1-5-64-10";
 	const string SID_NT_SCHANNEL_AUTHENTICATION = "S-1-5-64-14";
-	const string SID_NT_OTHER_ORGANISATION    = "S-1-5-1000";
+	const string SID_NT_OTHER_ORGANIZATION    = "S-1-5-1000";
 
 	/* SECURITY_BUILTIN_DOMAIN_RID */
 	const string NAME_BUILTIN                  = "BUILTIN";

@@ -133,7 +133,7 @@ class LdapTests(KDCBaseTest):
             self.assertEqual(security.SID_NT_NETWORK, str(token_sid))
             if len(token_groups) >= 3:
                 token_sid = ndr_unpack(security.dom_sid, token_groups[2])
-                self.assertEqual(security.SID_NT_THIS_ORGANISATION,
+                self.assertEqual(security.SID_NT_THIS_ORGANIZATION,
                                  str(token_sid))
         else:
             # Ensure that they match.
