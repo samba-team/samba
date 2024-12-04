@@ -29,7 +29,8 @@ export SAMBA_DEPRECATED_SUPPRESS
 
 # Define the test environment/filenames.
 #
-share_test_dir="$LOCAL_PATH"
+share_test_dir="$LOCAL_PATH/recycle"
+share_test_dir2="$LOCAL_PATH/recycle2"
 
 #
 # Cleanup function.
@@ -43,6 +44,13 @@ do_cleanup()
 		rm -f testfile2.tmp
 		rm -rf .trash
 	)
+	(
+		#subshell.
+		cd "$share_test_dir2" || return
+		rm -f testfile3
+		rm -f testfile4.tmp
+		rm -rf .trash
+	)
 }
 
 #
@@ -50,6 +58,25 @@ do_cleanup()
 #
 do_cleanup
 
+# Setup .trash on a different filesystem to test crossrename
+# /tmp or /dev/shm should provide tmpfs
+#
+for T in /tmp /dev/shm
+do
+	if df --portability --print-type $T 2>/dev/null | grep -q tmpfs; then
+		TRASHDIR=$T
+		break
+	fi
+done
+
+if [ -z $TRASHDIR ]; then
+	echo "No tmpfs filesystem found."
+	exit 1
+fi
+
+TRASHDIR=$(mktemp -d /$TRASHDIR/.trash_XXXXXX)
+chmod 0755 $TRASHDIR
+ln -s $TRASHDIR $share_test_dir2/.trash
 
 test_recycle()
 {
@@ -90,10 +117,59 @@ quit
 	return 0
 }
 
+test_recycle_crossrename()
+{
+	tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+	echo "
+put $tmpfile testfile3
+put $tmpfile testfile4.tmp
+del testfile3
+del testfile4.tmp
+quit
+" > $tmpfile
+	cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT -U$USERNAME%$PASSWORD //$SERVER/recycle2 -I$SERVER_IP $ADDARGS < $tmpfile 2>&1'
+	eval echo "$cmd"
+	out=$(eval "$cmd")
+	ret=$?
+	rm -f "$tmpfile"
+
+	if [ $ret != 0 ]; then
+		printf "%s\n" "$out"
+		printf "failed recycle smbclient run with error %s\n" "$ret"
+		return 1
+	fi
+
+	test -e "$share_test_dir2/.trash/testfile3" || {
+		printf ".trash/testfile3 expected to exist but does NOT exist\n"
+		return 1
+	}
+	test -e "$share_test_dir2/.trash/testfile4.tmp" && {
+		printf ".trash/testfile4.tmp not expected to exist but DOES exist\n"
+		return 1
+	}
+	deviceid1=`stat -c '%d' "$share_test_dir2/"`
+	deviceid2=`stat -c '%d' "$share_test_dir2/.trash/"`
+	test "$deviceid1=" != "$deviceid2" || {
+		printf ".trash/ should be on a different filesystem!\n"
+		return 1
+	}
+	perm_want=755
+	perm_is=`stat -c '%a' "$share_test_dir2/.trash/"`
+	test "$perm_is" = "$perm_want" || {
+		printf ".trash/ permission should be $perm_want but is $perm_is\n"
+		return 1
+	}
+	return 0
+}
+
 panic_count_0=$(grep -c PANIC $SMBD_TEST_LOG)
 
 testit "recycle" \
 	test_recycle ||
+	failed=$((failed + 1))
+
+testit "recycle_crossrename" \
+	test_recycle_crossrename ||
 	failed=$((failed + 1))
 
 panic_count_1=$(grep -c PANIC $SMBD_TEST_LOG)
@@ -103,5 +179,7 @@ testit "check_panic" test $panic_count_0 -eq $panic_count_1 || failed=$(expr $fa
 #
 # Cleanup.
 do_cleanup
+# Cleanup above only deletes a symlink, delete also /tmp/.trash_XXXXXX dir
+rm -rf "$TRASHDIR"
 
 testok "$0" "$failed"
