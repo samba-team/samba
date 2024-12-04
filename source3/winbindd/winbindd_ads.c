@@ -59,9 +59,11 @@ static void ads_cached_connection_reuse(ADS_STRUCT **adsp)
 
 		expire = nt_time_to_unix(ads->auth.expire_time);
 
-		DEBUG(7, ("Current tickets expire in %d seconds (at %d, time "
-			  "is now %d)\n", (uint32_t)expire - (uint32_t)now,
-			  (uint32_t) expire, (uint32_t) now));
+		DBG_INFO("Current tickets expire in %" PRIu64 " seconds "
+			 "(at %" PRIu64 ", time is now %" PRIu64 ")\n",
+			 (uint64_t)expire - (uint64_t)now,
+			 (uint64_t)expire,
+			 (uint64_t)now);
 
 		if ( ads->config.realm && (expire > now)) {
 			return;
