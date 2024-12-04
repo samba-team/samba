@@ -3971,9 +3971,9 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	}
 
 	DBG_DEBUG("SMB_SET_FILE_UNIX_BASIC: name = "
-		  "%s size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
+		  "%s size = %jd, uid = %u, gid = %u, raw perms = 0%o\n",
 		  smb_fname_str_dbg(smb_fname),
-		  (double)size,
+		  (intmax_t)size,
 		  (unsigned int)set_owner,
 		  (unsigned int)set_grp,
 		  (int)raw_unixmode);
