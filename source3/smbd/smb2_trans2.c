@@ -5054,9 +5054,9 @@ static NTSTATUS smb_set_file_end_of_file_info(connection_struct *conn,
 
 	size = IVAL(pdata,0);
 	size |= (((off_t)IVAL(pdata,4)) << 32);
-	DEBUG(10,("smb_set_file_end_of_file_info: Set end of file info for "
-		  "file %s to %.0f\n", smb_fname_str_dbg(smb_fname),
-		  (double)size));
+	DBG_DEBUG("Set end of file info for file %s to %ju\n",
+		  smb_fname_str_dbg(smb_fname),
+		  (uintmax_t)size);
 
 	return smb_set_file_size(conn, req,
 				fsp,

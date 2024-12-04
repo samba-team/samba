@@ -3408,10 +3408,10 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		create_options |= FILE_DIRECTORY_FILE;
 	}
 
-	DEBUG(10,("smb_posix_open: file %s, smb_posix_flags = %u, mode 0%o\n",
-		smb_fname_str_dbg(smb_fname),
-		(unsigned int)wire_open_mode,
-		(unsigned int)unixmode ));
+	DBG_DEBUG("file %s, smb_posix_flags = %" PRIu32 ", mode 0%o\n",
+		  smb_fname_str_dbg(smb_fname),
+		  wire_open_mode,
+		  (unsigned int)unixmode);
 
         status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
@@ -4021,10 +4021,10 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 
-		DEBUG(10,("smb_set_file_unix_basic: SMB_SET_FILE_UNIX_BASIC "
+		DBG_DEBUG("SMB_SET_FILE_UNIX_BASIC "
 			  "setting mode 0%o for file %s\n",
 			  (unsigned int)unixmode,
-			  smb_fname_str_dbg(smb_fname)));
+			  smb_fname_str_dbg(smb_fname));
 		ret = SMB_VFS_FCHMOD(fsp, unixmode);
 		if (ret != 0) {
 			return map_nt_error_from_unix(errno);
