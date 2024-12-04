@@ -2780,6 +2780,9 @@ sub provision($$)
 	my $recycle_shrdir="$shrdir/recycle";
 	push(@dirs,$recycle_shrdir);
 
+	my $recycle_shrdir2="$shrdir/recycle2";
+	push(@dirs,$recycle_shrdir2);
+
 	my $fakedircreatetimes_shrdir="$shrdir/fakedircreatetimes";
 	push(@dirs,$fakedircreatetimes_shrdir);
 
@@ -3714,6 +3717,15 @@ sub provision($$)
 	recycle : repository = .trash
 	recycle : exclude = *.tmp
 	recycle : directory_mode = 755
+
+[recycle2]
+	copy = tmp
+	path = $recycle_shrdir2
+	vfs objects = recycle crossrename
+	recycle : repository = .trash
+	recycle : exclude = *.tmp
+	recycle : directory_mode = 755
+	wide links = yes
 
 [fakedircreatetimes]
 	copy = tmp
