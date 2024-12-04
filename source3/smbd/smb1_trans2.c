@@ -2187,6 +2187,7 @@ static NTSTATUS smb_q_unix_info2(
 
 static NTSTATUS get_posix_fsp(connection_struct *conn,
 			      struct smb_request *req,
+			      struct files_struct *dirfsp,
 			      struct smb_filename *smb_fname,
 			      uint32_t access_mask,
 			      files_struct **ret_fsp)
@@ -2230,7 +2231,7 @@ static NTSTATUS get_posix_fsp(connection_struct *conn,
 	status = SMB_VFS_CREATE_FILE(
 		conn,	     /* conn */
 		req,	     /* req */
-		NULL,	     /* dirfsp */
+		dirfsp,	     /* dirfsp */
 		smb_fname,   /* fname */
 		access_mask, /* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE |
@@ -2730,6 +2731,7 @@ static void call_trans2qpathinfo(
 
 		status = get_posix_fsp(conn,
 				       req,
+				       dirfsp,
 				       smb_fname,
 				       SEC_STD_READ_CONTROL |
 					       FILE_READ_ATTRIBUTES |
@@ -4517,6 +4519,7 @@ static void call_trans2setpathinfo(
 
 		status = get_posix_fsp(conn,
 				       req,
+				       dirfsp,
 				       smb_fname,
 				       SEC_STD_WRITE_OWNER |
 					       SEC_STD_WRITE_DAC |
