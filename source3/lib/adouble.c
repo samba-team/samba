@@ -2584,11 +2584,8 @@ static struct adouble *ad_get_internal(TALLOC_CTX *ctx,
 	int mode;
 
 	if (fsp != NULL) {
-		if (fsp_is_alternate_stream(fsp)) {
-			smb_fname = fsp->base_fsp->fsp_name;
-		} else {
-			smb_fname = fsp->fsp_name;
-		}
+		struct files_struct *meta_fsp = metadata_fsp(fsp);
+		smb_fname = meta_fsp->fsp_name;
 	}
 
 	DEBUG(10, ("ad_get(%s) called for %s\n",
