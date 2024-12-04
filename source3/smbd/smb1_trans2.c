@@ -4242,7 +4242,6 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	NTSTATUS status;
 	unsigned int size_needed;
 	unsigned int total_data;
-	bool close_fsp = false;
 	bool refuse;
 
 	if (total_data_in < 0) {
@@ -4304,32 +4303,6 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 		goto out;
 	}
 
-	/*
-	 * Ensure we always operate on a file descriptor, not just
-	 * the filename.
-	 */
-	if (fsp == NULL || !fsp->fsp_flags.is_fsa) {
-		uint32_t access_mask = SEC_STD_WRITE_OWNER|
-					SEC_STD_WRITE_DAC|
-					SEC_STD_READ_CONTROL|
-					FILE_READ_ATTRIBUTES|
-					FILE_WRITE_ATTRIBUTES;
-
-		status = get_posix_fsp(conn,
-					req,
-					smb_fname,
-					access_mask,
-					&fsp);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			goto out;
-		}
-		close_fsp = true;
-	}
-
-	/* Here we know fsp != NULL */
-	SMB_ASSERT(fsp != NULL);
-
 	refuse = refuse_symlink_fsp(fsp);
 	if (refuse) {
 		status = NT_STATUS_ACCESS_DENIED;
@@ -4379,10 +4352,6 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	status = NT_STATUS_OK;
 
   out:
-
-	if (close_fsp) {
-		(void)close_file_free(req, &fsp, NORMAL_CLOSE);
-	}
 	return status;
 #endif
 }
@@ -4543,10 +4512,27 @@ static void call_trans2setpathinfo(
 						 smb_fname->fsp,
 						 smb_fname);
 		break;
-	case SMB_SET_POSIX_ACL:
+	case SMB_SET_POSIX_ACL: {
+		struct files_struct *posix_fsp = NULL;
+
+		status = get_posix_fsp(conn,
+				       req,
+				       smb_fname,
+				       SEC_STD_WRITE_OWNER |
+					       SEC_STD_WRITE_DAC |
+					       SEC_STD_READ_CONTROL |
+					       FILE_READ_ATTRIBUTES |
+					       FILE_WRITE_ATTRIBUTES,
+				       &posix_fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			break;
+		}
+
 		status = smb_set_posix_acl(
-			conn, req, *ppdata, total_data, NULL, smb_fname);
+			conn, req, *ppdata, total_data, posix_fsp, smb_fname);
+		(void)close_file_free(req, &posix_fsp, NORMAL_CLOSE);
 		break;
+	}
 	}
 
 	if (info_level_handled) {
