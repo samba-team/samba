@@ -4666,10 +4666,10 @@ static void call_trans2setfileinfo(
 				*ppdata, 0,
 				max_data_bytes);
 			return;
-		} else {
-			reply_nterror(req, NT_STATUS_OBJECT_PATH_NOT_FOUND);
-			return;
 		}
+
+		reply_nterror(req, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+		return;
 	} else {
 		/*
 		 * Original code - this is an open file.
