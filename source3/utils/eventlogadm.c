@@ -342,8 +342,12 @@ static int DoWriteCommand( int argc, char **argv, bool debugflag, char *exename 
 			fixup_eventlog_record_tdb( &ee );
 
 			if ( opt_debug )
-				printf( "record number [%d], tg [%d] , tw [%d]\n",
-					ee.record_number, (int)ee.time_generated, (int)ee.time_written );
+				printf("record number [%" PRIu32 "], "
+				       "tg [%" PRIu64 "] , "
+				       "tw [%" PRIu64 "]\n",
+				       ee.record_number,
+				       (uint64_t)ee.time_generated,
+				       (uint64_t)ee.time_written);
 
 			if ( ee.time_generated != 0 ) {
 
