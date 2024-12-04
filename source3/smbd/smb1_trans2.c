@@ -2181,7 +2181,6 @@ static NTSTATUS smb_q_unix_info2(
 	return NT_STATUS_OK;
 }
 
-#if defined(HAVE_POSIX_ACLS)
 /****************************************************************************
  Utility function to open a fsp for a POSIX handle operation.
 ****************************************************************************/
@@ -2254,6 +2253,8 @@ done:
 	TALLOC_FREE(posx);
 	return status;
 }
+
+#if defined(HAVE_POSIX_ACLS)
 
 /****************************************************************************
  Utility function to count the number of entries in a POSIX acl.
@@ -2384,30 +2385,6 @@ static NTSTATUS smb_q_posix_acl(
 	unsigned int size_needed = 0;
 	NTSTATUS status;
 	bool ok, refuse;
-	bool close_fsp = false;
-
-	/*
-	 * Ensure we always operate on a file descriptor, not just
-	 * the filename.
-	 */
-	if (fsp == NULL || !fsp->fsp_flags.is_fsa) {
-		uint32_t access_mask = SEC_STD_READ_CONTROL|
-					FILE_READ_ATTRIBUTES|
-					FILE_WRITE_ATTRIBUTES;
-
-		status = get_posix_fsp(conn,
-					req,
-					smb_fname,
-					access_mask,
-					&fsp);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			goto out;
-		}
-		close_fsp = true;
-	}
-
-	SMB_ASSERT(fsp != NULL);
 
 	refuse = refuse_symlink_fsp(fsp);
 	if (refuse) {
@@ -2505,16 +2482,6 @@ static NTSTATUS smb_q_posix_acl(
 	status = NT_STATUS_OK;
 
   out:
-
-	if (close_fsp) {
-		/*
-		 * Ensure the stat struct in smb_fname is up to
-		 * date. Structure copy.
-		 */
-		smb_fname->st = fsp->fsp_name->st;
-		(void)close_file_free(req, &fsp, NORMAL_CLOSE);
-	}
-
 	TALLOC_FREE(file_acl);
 	TALLOC_FREE(def_acl);
 	return status;
@@ -2758,15 +2725,24 @@ static void call_trans2qpathinfo(
 			&total_data);
 		break;
 
-	case SMB_QUERY_POSIX_ACL:
+	case SMB_QUERY_POSIX_ACL: {
+		struct files_struct *posix_fsp = NULL;
+
+		status = get_posix_fsp(conn,
+				       req,
+				       smb_fname,
+				       SEC_STD_READ_CONTROL |
+					       FILE_READ_ATTRIBUTES |
+					       FILE_WRITE_ATTRIBUTES,
+				       &posix_fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			break;
+		}
 		status = smb_q_posix_acl(
-			conn,
-			req,
-			smb_fname,
-			smb_fname->fsp,
-			ppdata,
-			&total_data);
+			conn, req, smb_fname, posix_fsp, ppdata, &total_data);
+		(void)close_file_free(req, &posix_fsp, NORMAL_CLOSE);
 		break;
+	}
 
 	case SMB_QUERY_FILE_UNIX_LINK:
 		status = smb_q_posix_symlink(conn,
