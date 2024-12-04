@@ -176,8 +176,8 @@ static void display_sam_dom_info_2(struct samr_DomGeneralInformation *general)
 
 static void display_sam_dom_info_3(struct samr_DomInfo3 *info3)
 {
-	printf("Force Logoff:\t%d\n",
-		(int)nt_time_to_unix_abs(&info3->force_logoff_time));
+	printf("Force Logoff:\t%" PRIu64 "\n",
+	       (uint64_t)nt_time_to_unix_abs(&info3->force_logoff_time));
 }
 
 static void display_sam_dom_info_4(struct samr_DomOEMInformation *oem)
