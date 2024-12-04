@@ -4542,11 +4542,6 @@ static void call_trans2setpathinfo(
 		goto done;
 	}
 
-	/*
-	 * smb_fname->fsp may be NULL if smb_fname points at a symlink
-	 * and we're in POSIX context, so be careful when using fsp
-	 * below, it can still be NULL.
-	 */
 	fsp = smb_fname->fsp;
 	if (fsp == NULL) {
 		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
