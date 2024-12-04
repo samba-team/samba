@@ -5475,8 +5475,7 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 		goto fail;
 	}
 
-	DEBUG(10, ("open_streams_for_delete found %d streams\n",
-		   num_streams));
+	DBG_DEBUG("open_streams_for_delete found %u streams\n", num_streams);
 
 	if (num_streams == 0) {
 		TALLOC_FREE(frame);
