@@ -5423,6 +5423,7 @@ void msg_file_was_renamed(struct messaging_context *msg_ctx,
  */
 
 static NTSTATUS open_streams_for_delete(connection_struct *conn,
+					struct files_struct *dirfsp,
 					const struct smb_filename *smb_fname)
 {
 	struct stream_struct *stream_info = NULL;
@@ -5521,7 +5522,7 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 		status = SMB_VFS_CREATE_FILE(
 			 conn,			/* conn */
 			 NULL,			/* req */
-			 NULL,			/* dirfsp */
+			 dirfsp,		/* dirfsp */
 			 smb_fname_cp,		/* fname */
 			 DELETE_ACCESS,		/* access_mask */
 			 (FILE_SHARE_READ |	/* share_access */
@@ -6221,7 +6222,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		 * We can't open a file with DELETE access if any of the
 		 * streams is open without FILE_SHARE_DELETE
 		 */
-		status = open_streams_for_delete(conn, smb_fname);
+		status = open_streams_for_delete(conn, dirfsp, smb_fname);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
