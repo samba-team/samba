@@ -1547,11 +1547,13 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 	struct connection_struct *conn = fsp->conn;
 	bool delete_veto = lp_delete_veto_files(SNUM(conn));
 	struct smb_Dir *dir_hnd = NULL;
+	struct files_struct *dirfsp = NULL;
 
 	status = OpenDir_from_pathref(talloc_tos(), fsp, NULL, 0, &dir_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+	dirfsp = dir_hnd_fetch_fsp(dir_hnd);
 
 	while ((dname = ReadDirName(dir_hnd, &talloced))) {
 		struct smb_filename *direntry_fname = NULL;
@@ -1569,8 +1571,8 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 						     dname,
 						     NULL,
 						     NULL,
-						     fsp->fsp_name->twrp,
-						     fsp->fsp_name->flags);
+						     dirfsp->fsp_name->twrp,
+						     dirfsp->fsp_name->flags);
 		TALLOC_FREE(talloced);
 		dname = NULL;
 
@@ -1580,7 +1582,7 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 		}
 
 		status = openat_pathref_fsp_lcomp(
-			fsp,
+			dirfsp,
 			direntry_fname,
 			UCF_POSIX_PATHNAMES /* no ci fallback */);
 
@@ -1604,13 +1606,13 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 			int ret;
 
 			if (lp_host_msdfs() && lp_msdfs_root(SNUM(conn)) &&
-			    is_msdfs_link(fsp, direntry_fname))
+			    is_msdfs_link(dirfsp, direntry_fname))
 			{
 
 				DBG_DEBUG("got msdfs link name %s "
 					  "- can't delete directory %s\n",
 					  direntry_fname->base_name,
-					  fsp_str_dbg(fsp));
+					  fsp_str_dbg(dirfsp));
 
 				status = NT_STATUS_DIRECTORY_NOT_EMPTY;
 
@@ -1620,7 +1622,7 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 
 			/* Not a DFS link - could it be a dangling symlink ? */
 			ret = SMB_VFS_FSTATAT(conn,
-					      fsp,
+					      dirfsp,
 					      direntry_fname,
 					      &direntry_fname->st,
 					      0 /* 0 means follow symlink */);
@@ -1654,15 +1656,17 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 		status = NT_STATUS_DIRECTORY_NOT_EMPTY;
 		break;
 	}
-	TALLOC_FREE(dir_hnd);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(dir_hnd);
 		return status;
 	}
 
-	if (have_file_open_below(fsp)) {
+	if (have_file_open_below(dirfsp)) {
+		TALLOC_FREE(dir_hnd);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	TALLOC_FREE(dir_hnd);
 	return NT_STATUS_OK;
 }
