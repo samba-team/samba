@@ -3873,6 +3873,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	     !(access_mask & FILE_WRITE_DATA)))
 	{
 		flags |= O_APPEND;
+		fsp->fsp_flags.posix_append = true;
 	}
 
 	if (!posix_open && !CAN_WRITE(conn)) {
