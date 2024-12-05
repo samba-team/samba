@@ -973,10 +973,6 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 
 	return status;
 }
-/****************************************************************************
- Function used by reply_rmdir to delete an entire directory
- tree recursively. Return True on ok, False on fail.
-****************************************************************************/
 
 NTSTATUS recursive_rmdir(TALLOC_CTX *ctx,
 		     connection_struct *conn,
