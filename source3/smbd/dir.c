@@ -1222,7 +1222,7 @@ const char *ReadDirName(struct smb_Dir *dir_hnd, char **ptalloced)
 			continue;
 		}
 		/*
-		 * ignore tmp directories, see mkdir_internals()
+		 * ignore tmp directories, see mkdir_internal()
 		 */
 		if (IS_SMBD_TMPNAME(n, &unlink_flags)) {
 			struct files_struct *dirfsp = dir_hnd->fsp;

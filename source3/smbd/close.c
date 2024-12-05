@@ -1179,7 +1179,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 	}
 
 	/*
-	 * Check to see if the only thing in this directory are
+	 * Check to see if the only things in this directory are
 	 * files non-visible to the client. If not, fail the delete.
 	 */
 
