@@ -145,9 +145,10 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
 
             for i in range(10):
                 fname = '\\test%d' % i
+                wire_mode = libsmb.unix_mode_to_wire(0o744)
                 f,_,cc_out = c.create_ex(fname,
                                 CreateDisposition=libsmb.FILE_OPEN_IF,
-                                CreateContexts=[posix_context(0o744)])
+                                CreateContexts=[posix_context(wire_mode)])
                 c.close(f)
                 test_files.append(fname)
 
@@ -178,10 +179,11 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
 
         for fname in test_files:
             try:
+                wire_mode = libsmb.unix_mode_to_wire(0o744)
                 f,_,cc_out = c.create_ex('\\%s' % fname,
                                 CreateDisposition=libsmb.FILE_CREATE,
                                 DesiredAccess=security.SEC_STD_DELETE,
-                                CreateContexts=[posix_context(0o744)])
+                                CreateContexts=[posix_context(wire_mode)])
             except NTSTATUSError as e:
                 self.fail(e)
             c.delete_on_close(f, True)
@@ -196,10 +198,11 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
             posix=True)
         self.assertTrue(c.have_posix())
 
+        wire_mode = libsmb.unix_mode_to_wire(0o744)
         f,_,cc_out = c.create_ex('\\TESTING999',
                         DesiredAccess=security.SEC_STD_ALL,
                         CreateDisposition=libsmb.FILE_CREATE,
-                        CreateContexts=[posix_context(0o744)])
+                        CreateContexts=[posix_context(wire_mode)])
         c.delete_on_close(f, True)
         c.close(f)
 
@@ -213,18 +216,20 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
                 posix=True)
             self.assertTrue(c.have_posix())
 
+            wire_mode = libsmb.unix_mode_to_wire(0o644)
             f,_,cc_out = c.create_ex('\\xx',
                             DesiredAccess=security.SEC_STD_ALL,
                             CreateDisposition=libsmb.FILE_CREATE,
-                            CreateContexts=[posix_context(0o644)])
+                            CreateContexts=[posix_context(wire_mode)])
             c.close(f)
 
             fail = False
+            wire_mode = libsmb.unix_mode_to_wire(0)
             try:
                 f,_,cc_out = c.create_ex('\\XX',
                                 DesiredAccess=security.SEC_STD_ALL,
                                 CreateDisposition=libsmb.FILE_OPEN,
-                                CreateContexts=[posix_context(0)])
+                                CreateContexts=[posix_context(wire_mode)])
             except NTSTATUSError:
                 pass
             else:
@@ -259,10 +264,11 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
 
                 fname = 'testfile%04o' % perm
                 test_files[fname] = perm
+                wire_mode = libsmb.unix_mode_to_wire(perm)
                 f,_,cc_out = c.create_ex('\\%s' % fname,
                                 DesiredAccess=security.SEC_FILE_ALL,
                                 CreateDisposition=libsmb.FILE_CREATE,
-                                CreateContexts=[posix_context(perm)])
+                                CreateContexts=[posix_context(wire_mode)])
                 if perm & 0o200 == 0o200:
                     c.write(f, buffer=b"data", offset=0)
                 c.close(f)
@@ -273,7 +279,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
                                 DesiredAccess=security.SEC_STD_ALL,
                                 CreateDisposition=libsmb.FILE_CREATE,
                                 CreateOptions=libsmb.FILE_DIRECTORY_FILE,
-                                CreateContexts=[posix_context(perm)])
+                                CreateContexts=[posix_context(wire_mode)])
                 c.close(f)
 
             res = c.list("", info_level=libsmb.SMB2_FIND_POSIX_INFORMATION)
@@ -421,10 +427,11 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
 
             tag = 0x80000025
 
+            wire_mode = libsmb.unix_mode_to_wire(0o600)
             f,_,cc_out = c.create_ex('\\reparse',
                                      DesiredAccess=security.SEC_STD_ALL,
                                      CreateDisposition=libsmb.FILE_CREATE,
-                                     CreateContexts=[posix_context(0o600)])
+                                     CreateContexts=[posix_context(wire_mode)])
 
             cc = ndr_unpack(smb3posix.smb3_posix_cc_info, cc_out[0][1])
             self.assertEqual(cc.reparse_tag, libsmb.IO_REPARSE_TAG_RESERVED_ZERO)
@@ -434,10 +441,11 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
 
             c.close(f)
 
+            wire_mode = libsmb.unix_mode_to_wire(0o600)
             f,_,cc_out = c.create_ex('\\reparse',
                                      DesiredAccess=security.SEC_STD_ALL,
                                      CreateDisposition=libsmb.FILE_OPEN,
-                                     CreateContexts=[posix_context(0o600)])
+                                     CreateContexts=[posix_context(wire_mode)])
             c.close(f)
 
             cc = ndr_unpack(smb3posix.smb3_posix_cc_info, cc_out[0][1])
@@ -465,12 +473,13 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
             CreateDisposition=libsmb.FILE_CREATE)
         self.addCleanup(self.clean_file, winconn, 'test_delete_on_close')
 
+        wire_mode = libsmb.unix_mode_to_wire(0o600)
         fdp,_,_ = posixconn.create_ex(
             'test_delete_on_close',
             DesiredAccess=security.SEC_FILE_WRITE_ATTRIBUTE | security.SEC_STD_DELETE,
             ShareAccess=0x07,
             CreateDisposition=libsmb.FILE_OPEN,
-            CreateContexts=[posix_context(0o600)])
+            CreateContexts=[posix_context(wire_mode)])
 
         winconn.delete_on_close(fdw, 1)
         posixconn.delete_on_close(fdp, 1)
