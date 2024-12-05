@@ -253,6 +253,12 @@ else:
                       private_library=True,
                       local_include=False)
 
+    bld.SAMBA_LIBRARY('util_crypt',
+                      source='util_crypt.c',
+                      deps='talloc crypt',
+                      private_library=True,
+                      local_include=False)
+
 
     bld.SAMBA_SUBSYSTEM('UNIX_PRIVS',
                         source='unix_privs.c',
