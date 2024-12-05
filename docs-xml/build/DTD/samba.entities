@@ -170,7 +170,7 @@
 
 <!ENTITY cmdline.common.debug.client '
 <varlistentry>
-	<term>-d|--debuglevel=DEBUGLEVEL</term>
+	<term>-d|--debuglevel=level</term>
 	<listitem>
 		<para>
 			<replaceable>level</replaceable> is an integer from 0
@@ -216,7 +216,7 @@
 
 <!ENTITY cmdline.common.debug.server '
 <varlistentry>
-	<term>-d|--debuglevel=DEBUGLEVEL</term>
+	<term>-d|--debuglevel=level</term>
 
 	<listitem>
 		<para>
