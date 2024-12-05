@@ -248,7 +248,9 @@
 			&smb.conf; file.
 		</para>
 	</listitem>
+</varlistentry>
 
+<varlistentry>
 	<term>--debug-stdout</term>
 	<listitem>
 		<para>
