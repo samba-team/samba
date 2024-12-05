@@ -1553,10 +1553,7 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 	}
 
 	while ((dname = ReadDirName(dir_hnd, &talloced))) {
-		struct smb_filename *smb_dname_full = NULL;
 		struct smb_filename *direntry_fname = NULL;
-		char *fullname = NULL;
-		int ret;
 
 		if (ISDOT(dname) || (ISDOTDOT(dname))) {
 			TALLOC_FREE(talloced);
@@ -1567,109 +1564,75 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 			continue;
 		}
 
-		fullname = talloc_asprintf(talloc_tos(),
-					   "%s/%s",
-					   fsp->fsp_name->base_name,
-					   dname);
-		if (fullname == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-                        break;
-		}
-
-		smb_dname_full = synthetic_smb_fname(talloc_tos(),
-						     fullname,
+		direntry_fname = synthetic_smb_fname(talloc_tos(),
+						     dname,
 						     NULL,
 						     NULL,
 						     fsp->fsp_name->twrp,
 						     fsp->fsp_name->flags);
-		if (smb_dname_full == NULL) {
-			TALLOC_FREE(talloced);
-			TALLOC_FREE(fullname);
+		TALLOC_FREE(talloced);
+		dname = NULL;
+
+		if (direntry_fname == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			break;
 		}
 
-		ret = SMB_VFS_LSTAT(conn, smb_dname_full);
-		if (ret != 0) {
-			status = map_nt_error_from_unix(errno);
-			TALLOC_FREE(talloced);
-			TALLOC_FREE(fullname);
-			TALLOC_FREE(smb_dname_full);
+		status = openat_pathref_fsp_lcomp(
+			fsp,
+			direntry_fname,
+			UCF_POSIX_PATHNAMES /* no ci fallback */);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("Could not open %s: %s\n",
+				  direntry_fname->base_name,
+				  nt_errstr(status));
+
+			TALLOC_FREE(direntry_fname);
+
+			if (NT_STATUS_EQUAL(status,
+					    NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+				/* race between readdir and unlink */
+				continue;
+			}
+			status = NT_STATUS_DIRECTORY_NOT_EMPTY;
 			break;
 		}
 
-		if (S_ISLNK(smb_dname_full->st.st_ex_mode)) {
-			/* Could it be an msdfs link ? */
-			if (lp_host_msdfs() &&
-			    lp_msdfs_root(SNUM(conn))) {
-				struct smb_filename *smb_dname;
-				smb_dname = synthetic_smb_fname(talloc_tos(),
-							dname,
-							NULL,
-							&smb_dname_full->st,
-							fsp->fsp_name->twrp,
-							fsp->fsp_name->flags);
-				if (smb_dname == NULL) {
-					TALLOC_FREE(talloced);
-					TALLOC_FREE(fullname);
-					TALLOC_FREE(smb_dname_full);
-					status = NT_STATUS_NO_MEMORY;
-					break;
-				}
-				if (is_msdfs_link(fsp, smb_dname)) {
-					TALLOC_FREE(talloced);
-					TALLOC_FREE(fullname);
-					TALLOC_FREE(smb_dname_full);
-					TALLOC_FREE(smb_dname);
-					DBG_DEBUG("got msdfs link name %s "
-						"- can't delete directory %s\n",
-						dname,
-						fsp_str_dbg(fsp));
-					status = NT_STATUS_DIRECTORY_NOT_EMPTY;
-					break;
-				}
-				TALLOC_FREE(smb_dname);
+		if (S_ISLNK(direntry_fname->st.st_ex_mode)) {
+			int ret;
+
+			if (lp_host_msdfs() && lp_msdfs_root(SNUM(conn)) &&
+			    is_msdfs_link(fsp, direntry_fname))
+			{
+
+				DBG_DEBUG("got msdfs link name %s "
+					  "- can't delete directory %s\n",
+					  direntry_fname->base_name,
+					  fsp_str_dbg(fsp));
+
+				status = NT_STATUS_DIRECTORY_NOT_EMPTY;
+
+				TALLOC_FREE(direntry_fname);
+				break;
 			}
+
 			/* Not a DFS link - could it be a dangling symlink ? */
-			ret = SMB_VFS_STAT(conn, smb_dname_full);
+			ret = SMB_VFS_FSTATAT(conn,
+					      fsp,
+					      direntry_fname,
+					      &direntry_fname->st,
+					      0 /* 0 means follow symlink */);
 			if (ret == -1 && (errno == ENOENT || errno == ELOOP)) {
 				/*
 				 * Dangling symlink.
 				 * Allow if "delete veto files = yes"
 				 */
 				if (lp_delete_veto_files(SNUM(conn))) {
-					TALLOC_FREE(talloced);
-					TALLOC_FREE(fullname);
-					TALLOC_FREE(smb_dname_full);
+					TALLOC_FREE(direntry_fname);
 					continue;
 				}
 			}
-			DBG_DEBUG("got symlink name %s - "
-				"can't delete directory %s\n",
-				dname,
-				fsp_str_dbg(fsp));
-			TALLOC_FREE(talloced);
-			TALLOC_FREE(fullname);
-			TALLOC_FREE(smb_dname_full);
-			status = NT_STATUS_DIRECTORY_NOT_EMPTY;
-			break;
-		}
-
-		/* Not a symlink, get a pathref. */
-		status = synthetic_pathref(talloc_tos(),
-					   fsp,
-					   dname,
-					   NULL,
-					   &smb_dname_full->st,
-					   fsp->fsp_name->twrp,
-					   fsp->fsp_name->flags,
-					   &direntry_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			status = map_nt_error_from_unix(errno);
-			TALLOC_FREE(talloced);
-			TALLOC_FREE(fullname);
-			TALLOC_FREE(smb_dname_full);
-			break;
 		}
 
 		if (!is_visible_fsp(direntry_fname->fsp)) {
@@ -1678,24 +1641,18 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 			 * Allow if "delete veto files = yes"
 			 */
 			if (lp_delete_veto_files(SNUM(conn))) {
-				TALLOC_FREE(talloced);
-				TALLOC_FREE(fullname);
-				TALLOC_FREE(smb_dname_full);
 				TALLOC_FREE(direntry_fname);
 				continue;
 			}
 		}
 
-		TALLOC_FREE(talloced);
-		TALLOC_FREE(fullname);
-		TALLOC_FREE(smb_dname_full);
+		DBG_DEBUG("got name %s - can't delete\n",
+			  direntry_fname->base_name);
 		TALLOC_FREE(direntry_fname);
 
-		DBG_DEBUG("got name %s - can't delete\n", dname);
 		status = NT_STATUS_DIRECTORY_NOT_EMPTY;
 		break;
 	}
-	TALLOC_FREE(talloced);
 	TALLOC_FREE(dir_hnd);
 
 	if (!NT_STATUS_IS_OK(status)) {
