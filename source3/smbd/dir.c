@@ -1539,21 +1539,14 @@ bool opens_below_forall(struct connection_struct *conn,
  Is this directory empty ?
 *****************************************************************/
 
-NTSTATUS can_delete_directory_fsp(files_struct *fsp)
+NTSTATUS can_delete_directory_hnd(struct smb_Dir *dir_hnd)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	const char *dname = NULL;
 	char *talloced = NULL;
-	struct connection_struct *conn = fsp->conn;
+	struct files_struct *dirfsp = dir_hnd_fetch_fsp(dir_hnd);
+	struct connection_struct *conn = dirfsp->conn;
 	bool delete_veto = lp_delete_veto_files(SNUM(conn));
-	struct smb_Dir *dir_hnd = NULL;
-	struct files_struct *dirfsp = NULL;
-
-	status = OpenDir_from_pathref(talloc_tos(), fsp, NULL, 0, &dir_hnd);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	dirfsp = dir_hnd_fetch_fsp(dir_hnd);
 
 	while ((dname = ReadDirName(dir_hnd, &talloced))) {
 		struct smb_filename *direntry_fname = NULL;
@@ -1658,15 +1651,26 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(dir_hnd);
 		return status;
 	}
 
 	if (have_file_open_below(dirfsp)) {
-		TALLOC_FREE(dir_hnd);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	TALLOC_FREE(dir_hnd);
 	return NT_STATUS_OK;
+}
+
+NTSTATUS can_delete_directory_fsp(files_struct *fsp)
+{
+	struct smb_Dir *dir_hnd = NULL;
+	NTSTATUS status;
+
+	status = OpenDir_from_pathref(talloc_tos(), fsp, NULL, 0, &dir_hnd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	status = can_delete_directory_hnd(dir_hnd);
+	TALLOC_FREE(dir_hnd);
+	return status;
 }

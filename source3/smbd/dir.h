@@ -23,6 +23,7 @@
 struct smb_Dir;
 struct dptr_struct;
 
+NTSTATUS can_delete_directory_hnd(struct smb_Dir *dir_hnd);
 NTSTATUS can_delete_directory_fsp(files_struct *fsp);
 struct files_struct *dir_hnd_fetch_fsp(struct smb_Dir *dir_hnd);
 uint16_t dptr_attr(struct smbd_server_connection *sconn, int key);
