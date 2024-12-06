@@ -1098,8 +1098,6 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 	struct smb_filename *smb_dname = fsp->fsp_name;
 	struct smb_filename *parent_fname = NULL;
 	struct smb_filename *at_fname = NULL;
-	const char *dname = NULL;
-	char *talloced = NULL;
 	struct smb_Dir *dir_hnd = NULL;
 	struct files_struct *dirfsp = NULL;
 	int unlink_flags = 0;
@@ -1196,125 +1194,11 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 		goto err;
 	}
 
-	/* Do a recursive delete. */
-	RewindDir(dir_hnd);
-
-	while ((dname = ReadDirName(dir_hnd, &talloced)) != NULL) {
-		struct smb_filename *direntry_fname = NULL;
-		struct smb_filename *smb_dname_full = NULL;
-		char *fullname = NULL;
-		bool do_break = true;
-		int retval;
-
-		if (ISDOT(dname) || ISDOTDOT(dname)) {
-			TALLOC_FREE(talloced);
-			continue;
-		}
-
-		fullname = talloc_asprintf(ctx,
-					   "%s/%s",
-					   smb_dname->base_name,
-					   dname);
-
-		if (fullname == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto err_break;
-		}
-
-		smb_dname_full = synthetic_smb_fname(talloc_tos(),
-						     fullname,
-						     NULL,
-						     NULL,
-						     smb_dname->twrp,
-						     smb_dname->flags);
-		if (smb_dname_full == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto err_break;
-		}
-
-		/*
-		 * Todo: use SMB_VFS_STATX() once that's available.
-		 */
-
-		retval = SMB_VFS_LSTAT(conn, smb_dname_full);
-		if (retval != 0) {
-			status = map_nt_error_from_unix(errno);
-			goto err_break;
-		}
-
-		/*
-		 * We are only dealing with VETO'ed objects
-		 * here. If it's a symlink, just delete the
-		 * link without caring what it is pointing
-		 * to.
-		 */
-		if (S_ISLNK(smb_dname_full->st.st_ex_mode)) {
-			direntry_fname = synthetic_smb_fname(talloc_tos(),
-							dname,
-							NULL,
-							&smb_dname_full->st,
-							smb_dname->twrp,
-							smb_dname->flags);
-			if (direntry_fname == NULL) {
-				status = NT_STATUS_NO_MEMORY;
-				goto err_break;
-			}
-		} else {
-			status = synthetic_pathref(talloc_tos(),
-						   dirfsp,
-						   dname,
-						   NULL,
-						   &smb_dname_full->st,
-						   smb_dname->twrp,
-						   smb_dname->flags,
-						   &direntry_fname);
-			if (!NT_STATUS_IS_OK(status)) {
-				goto err_break;
-			}
-
-			if (!is_visible_fsp(direntry_fname->fsp)) {
-				TALLOC_FREE(fullname);
-				TALLOC_FREE(smb_dname_full);
-				TALLOC_FREE(talloced);
-				TALLOC_FREE(direntry_fname);
-				continue;
-			}
-		}
-
-		unlink_flags = 0;
-
-		if (smb_dname_full->st.st_ex_mode & S_IFDIR) {
-			status = recursive_rmdir(ctx, conn, smb_dname_full);
-			if (!NT_STATUS_IS_OK(status)) {
-				goto err_break;
-			}
-			unlink_flags = AT_REMOVEDIR;
-		}
-
-		retval = SMB_VFS_UNLINKAT(conn,
-					  dirfsp,
-					  direntry_fname,
-					  unlink_flags);
-		if (retval != 0) {
-			status = map_nt_error_from_unix(errno);
-			goto err_break;
-		}
-
-		/* Successful iteration. */
-		do_break = false;
-
-	err_break:
-		TALLOC_FREE(fullname);
-		TALLOC_FREE(smb_dname_full);
-		TALLOC_FREE(talloced);
-		TALLOC_FREE(direntry_fname);
-		if (do_break) {
-			break;
-		}
+	status = recursive_rmdir_fsp(dirfsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		status = NT_STATUS_DIRECTORY_NOT_EMPTY;
+		goto err;
 	}
-
-	/* If we get here, we know NT_STATUS_IS_OK(status) */
-	SMB_ASSERT(NT_STATUS_IS_OK(status));
 
 	/* Retry the rmdir */
 	ret = SMB_VFS_UNLINKAT(conn,
