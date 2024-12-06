@@ -1545,6 +1545,7 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 	const char *dname = NULL;
 	char *talloced = NULL;
 	struct connection_struct *conn = fsp->conn;
+	bool delete_veto = lp_delete_veto_files(SNUM(conn));
 	struct smb_Dir *dir_hnd = NULL;
 
 	status = OpenDir_from_pathref(talloc_tos(), fsp, NULL, 0, &dir_hnd);
@@ -1559,7 +1560,7 @@ NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 			TALLOC_FREE(talloced);
 			continue;
 		}
-		if (IS_VETO_PATH(conn, dname)) {
+		if (delete_veto && IS_VETO_PATH(conn, dname)) {
 			TALLOC_FREE(talloced);
 			continue;
 		}
