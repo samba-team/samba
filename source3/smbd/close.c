@@ -974,10 +974,9 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 	return status;
 }
 
-NTSTATUS recursive_rmdir(TALLOC_CTX *ctx,
-		     connection_struct *conn,
-		     struct smb_filename *smb_dname)
+static NTSTATUS recursive_rmdir_fsp(struct files_struct *fsp)
 {
+	struct connection_struct *conn = fsp->conn;
 	const char *dname = NULL;
 	char *talloced = NULL;
 	struct smb_Dir *dir_hnd = NULL;
@@ -985,14 +984,7 @@ NTSTATUS recursive_rmdir(TALLOC_CTX *ctx,
 	int retval;
 	NTSTATUS status = NT_STATUS_OK;
 
-	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
-
-	status = OpenDir(talloc_tos(),
-			 conn,
-			 smb_dname,
-			 NULL,
-			 0,
-			 &dir_hnd);
+	status = OpenDir_from_pathref(talloc_tos(), fsp, NULL, 0, &dir_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1001,9 +993,6 @@ NTSTATUS recursive_rmdir(TALLOC_CTX *ctx,
 
 	while ((dname = ReadDirName(dir_hnd, &talloced))) {
 		struct smb_filename *atname = NULL;
-		struct smb_filename *smb_dname_full = NULL;
-		char *fullname = NULL;
-		bool do_break = true;
 		int unlink_flags = 0;
 
 		if (ISDOT(dname) || ISDOTDOT(dname)) {
@@ -1011,56 +1000,56 @@ NTSTATUS recursive_rmdir(TALLOC_CTX *ctx,
 			continue;
 		}
 
-		/* Construct the full name. */
-		fullname = talloc_asprintf(ctx,
-				"%s/%s",
-				smb_dname->base_name,
-				dname);
-		if (!fullname) {
+		atname = synthetic_smb_fname(talloc_tos(),
+					     dname,
+					     NULL,
+					     NULL,
+					     dirfsp->fsp_name->twrp,
+					     dirfsp->fsp_name->flags);
+		TALLOC_FREE(talloced);
+		dname = NULL;
+
+		if (atname == NULL) {
 			status = NT_STATUS_NO_MEMORY;
-			goto err_break;
+			break;
 		}
 
-		smb_dname_full = synthetic_smb_fname(talloc_tos(),
-						fullname,
-						NULL,
-						NULL,
-						smb_dname->twrp,
-						smb_dname->flags);
-		if (smb_dname_full == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto err_break;
+		{
+			struct name_compare_entry *veto_list = conn->veto_list;
+
+			/*
+			 * Sneaky hack to be able to open veto files
+			 * with openat_pathref_fsp
+			 */
+
+			conn->veto_list = NULL;
+			status = openat_pathref_fsp_lcomp(
+				dirfsp,
+				atname,
+				UCF_POSIX_PATHNAMES /* no ci fallback */);
+			conn->veto_list = veto_list;
 		}
 
-		if (SMB_VFS_LSTAT(conn, smb_dname_full) != 0) {
-			status = map_nt_error_from_unix(errno);
-			goto err_break;
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(atname);
+			if (NT_STATUS_EQUAL(status,
+					    NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+				/* race between readdir and unlink */
+				continue;
+			}
+			break;
 		}
 
-		if (smb_dname_full->st.st_ex_mode & S_IFDIR) {
-			status = recursive_rmdir(ctx, conn, smb_dname_full);
+		if (atname->st.st_ex_mode & S_IFDIR) {
+			status = recursive_rmdir_fsp(atname->fsp);
 			if (!NT_STATUS_IS_OK(status)) {
-				goto err_break;
+				TALLOC_FREE(atname);
+				break;
 			}
 			unlink_flags = AT_REMOVEDIR;
 		}
 
-		status = synthetic_pathref(talloc_tos(),
-					   dirfsp,
-					   dname,
-					   NULL,
-					   &smb_dname_full->st,
-					   smb_dname_full->twrp,
-					   smb_dname_full->flags,
-					   &atname);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto err_break;
-		}
-
 		if (!is_visible_fsp(atname->fsp)) {
-			TALLOC_FREE(smb_dname_full);
-			TALLOC_FREE(fullname);
-			TALLOC_FREE(talloced);
 			TALLOC_FREE(atname);
 			continue;
 		}
@@ -1071,22 +1060,31 @@ NTSTATUS recursive_rmdir(TALLOC_CTX *ctx,
 					  unlink_flags);
 		if (retval != 0) {
 			status = map_nt_error_from_unix(errno);
-			goto err_break;
-		}
-
-		/* Successful iteration. */
-		do_break = false;
-
-	 err_break:
-		TALLOC_FREE(smb_dname_full);
-		TALLOC_FREE(fullname);
-		TALLOC_FREE(talloced);
-		TALLOC_FREE(atname);
-		if (do_break) {
+			TALLOC_FREE(atname);
 			break;
 		}
-	 }
+
+		TALLOC_FREE(atname);
+	}
+
 	TALLOC_FREE(dir_hnd);
+	return status;
+}
+
+NTSTATUS recursive_rmdir(TALLOC_CTX *ctx,
+			 connection_struct *conn,
+			 struct smb_filename *smb_dname)
+{
+	NTSTATUS status;
+
+	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
+
+	status = openat_pathref_fsp(conn->cwd_fsp, smb_dname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = recursive_rmdir_fsp(smb_dname->fsp);
 	return status;
 }
 
