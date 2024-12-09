@@ -158,10 +158,10 @@ static char *stream_dir(vfs_handle_struct *handle,
 	SMB_STRUCT_STAT base_sbuf_tmp;
 	char *tmp = NULL;
 	uint8_t first, second;
-	char *id_hex;
 	struct file_id id;
 	uint8_t id_buf[16];
 	bool check_valid;
+	char id_hex[sizeof(id_buf) * 2 + 1];
 	char *rootdir = NULL;
 	struct smb_filename *rootdir_fname = NULL;
 	struct smb_filename *tmp_fname = NULL;
@@ -223,17 +223,10 @@ static char *stream_dir(vfs_handle_struct *handle,
 	first = hash & 0xff;
 	second = (hash >> 8) & 0xff;
 
-	id_hex = hex_encode_talloc(talloc_tos(), id_buf, sizeof(id_buf));
-
-	if (id_hex == NULL) {
-		errno = ENOMEM;
-		goto fail;
-	}
+	hex_encode_buf(id_hex, id_buf, sizeof(id_buf));
 
 	result = talloc_asprintf(talloc_tos(), "%s/%2.2X/%2.2X/%s", rootdir,
 				 first, second, id_hex);
-
-	TALLOC_FREE(id_hex);
 
 	if (result == NULL) {
 		errno = ENOMEM;
