@@ -160,16 +160,12 @@ static char *stream_dir(vfs_handle_struct *handle,
 	uint8_t first, second;
 	struct file_id id;
 	uint8_t id_buf[16];
-	bool check_valid;
 	char id_hex[sizeof(id_buf) * 2 + 1];
 	char *rootdir = NULL;
 	struct smb_filename *rootdir_fname = NULL;
 	struct smb_filename *tmp_fname = NULL;
 	struct vfs_rename_how rhow = { .flags = 0, };
 	int ret;
-
-	check_valid = lp_parm_bool(SNUM(handle->conn),
-		      "streams_depot", "check_valid", true);
 
 	rootdir = stream_rootdir(handle,
 				 talloc_tos());
@@ -247,12 +243,17 @@ static char *stream_dir(vfs_handle_struct *handle,
 	if (SMB_VFS_NEXT_STAT(handle, smb_fname_hash) == 0) {
 		struct smb_filename *smb_fname_new = NULL;
 		char *newname;
-		bool delete_lost;
+		bool check_valid, delete_lost;
 
 		if (!S_ISDIR(smb_fname_hash->st.st_ex_mode)) {
 			errno = EINVAL;
 			goto fail;
 		}
+
+		check_valid = lp_parm_bool(SNUM(handle->conn),
+					   "streams_depot",
+					   "check_valid",
+					   true);
 
 		if (!check_valid ||
 		    file_is_valid(handle, smb_fname)) {
