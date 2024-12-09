@@ -277,9 +277,9 @@ static char *stream_dir(vfs_handle_struct *handle,
 					   "delete_lost", false);
 
 		if (delete_lost) {
-			DEBUG(3, ("Someone has recreated a file under an "
-			      "existing inode. Removing: %s\n",
-			      smb_fname_hash->base_name));
+			DBG_NOTICE("Someone has recreated a file under an "
+				   "existing inode. Removing: %s\n",
+				   smb_fname_hash->base_name);
 			recursive_rmdir(talloc_tos(), handle->conn,
 					smb_fname_hash);
 			SMB_VFS_NEXT_UNLINKAT(handle,
@@ -289,10 +289,10 @@ static char *stream_dir(vfs_handle_struct *handle,
 		} else {
 			newname = talloc_asprintf(talloc_tos(), "lost-%lu",
 						  random());
-			DEBUG(3, ("Someone has recreated a file under an "
-			      "existing inode. Renaming: %s to: %s\n",
-			      smb_fname_hash->base_name,
-			      newname));
+			DBG_NOTICE("Someone has recreated a file under an "
+				   "existing inode. Renaming: %s to: %s\n",
+				   smb_fname_hash->base_name,
+				   newname);
 			if (newname == NULL) {
 				errno = ENOMEM;
 				goto fail;
