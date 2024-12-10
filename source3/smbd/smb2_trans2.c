@@ -2474,25 +2474,30 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 
 			rc = SMB_VFS_STATVFS(conn, &smb_fname, &svfs);
 
-			if (!rc) {
-				data_len = 56;
-				SIVAL(pdata,0,svfs.OptimalTransferSize);
-				SIVAL(pdata,4,svfs.BlockSize);
-				SBIG_UINT(pdata,8,svfs.TotalBlocks);
-				SBIG_UINT(pdata,16,svfs.BlocksAvail);
-				SBIG_UINT(pdata,24,svfs.UserBlocksAvail);
-				SBIG_UINT(pdata,32,svfs.TotalFileNodes);
-				SBIG_UINT(pdata,40,svfs.FreeFileNodes);
-				SBIG_UINT(pdata,48,svfs.FsIdentifier);
-				DEBUG(5,("smbd_do_qfsinfo : SMB_QUERY_POSIX_FS_INFO successful\n"));
 #ifdef EOPNOTSUPP
-			} else if (rc == EOPNOTSUPP) {
+			if (rc == EOPNOTSUPP) {
 				return NT_STATUS_INVALID_LEVEL;
-#endif /* EOPNOTSUPP */
-			} else {
-				DEBUG(0,("vfs_statvfs() failed for service [%s]\n",lp_servicename(talloc_tos(), lp_sub, SNUM(conn))));
+			}
+#endif
+			if (rc != 0) {
+				DBG_ERR("vfs_statvfs() failed for service "
+					"[%s]\n",
+					lp_servicename(talloc_tos(),
+						       lp_sub,
+						       SNUM(conn)));
 				return NT_STATUS_DOS(ERRSRV, ERRerror);
 			}
+
+			data_len = 56;
+			PUSH_LE_U32(pdata, 0, svfs.OptimalTransferSize);
+			PUSH_LE_U32(pdata, 4, svfs.BlockSize);
+			PUSH_LE_U64(pdata, 8, svfs.TotalBlocks);
+			PUSH_LE_U64(pdata, 16, svfs.BlocksAvail);
+			PUSH_LE_U64(pdata, 24, svfs.UserBlocksAvail);
+			PUSH_LE_U64(pdata, 32, svfs.TotalFileNodes);
+			PUSH_LE_U64(pdata, 40, svfs.FreeFileNodes);
+			PUSH_LE_U64(pdata, 48, svfs.FsIdentifier);
+			DBG_INFO("SMB_QUERY_POSIX_FS_INFO successful\n");
 			break;
 		}
 
