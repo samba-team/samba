@@ -647,6 +647,8 @@ _PUBLIC_ NTSTATUS dcesrv_interface_bind_reject_connect(struct dcesrv_connection_
 _PUBLIC_ NTSTATUS dcesrv_interface_bind_allow_connect(struct dcesrv_connection_context *context,
 						      const struct dcesrv_interface *iface);
 
+_PUBLIC_ void dcesrv_assoc_group_common_destructor(struct dcesrv_assoc_group *assoc_group);
+
 _PUBLIC_ NTSTATUS _dcesrv_iface_state_store_assoc(
 		struct dcesrv_call_state *call,
 		uint64_t magic,
