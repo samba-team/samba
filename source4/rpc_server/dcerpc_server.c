@@ -75,6 +75,9 @@ static struct dcesrv_assoc_group *dcesrv_assoc_group_reference(struct dcesrv_con
 static int dcesrv_assoc_group_destructor(struct dcesrv_assoc_group *assoc_group)
 {
 	int ret;
+
+	dcesrv_assoc_group_common_destructor(assoc_group);
+
 	ret = idr_remove(assoc_group->dce_ctx->assoc_groups_idr, assoc_group->id);
 	if (ret != 0) {
 		DEBUG(0,(__location__ ": Failed to remove assoc_group 0x%08x\n",
