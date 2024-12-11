@@ -195,7 +195,7 @@ bld.SAMBA_MODULE('ldb_password_hash',
 	init_function='ldb_password_hash_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc samdb LIBCLI_AUTH NDR_DRSBLOBS authkrb5 krb5 gpgme DSDB_MODULE_HELPERS crypt db-glue'
+	deps='talloc samdb LIBCLI_AUTH NDR_DRSBLOBS authkrb5 krb5 gpgme DSDB_MODULE_HELPERS util_crypt db-glue'
 	)
 
 
