@@ -1649,6 +1649,13 @@ static int setup_primary_userPassword_hash(
 		}
 	}
 
+	hash_blob = talloc_zero(ctx, DATA_BLOB);
+
+	if (hash_blob == NULL) {
+		TALLOC_FREE(frame);
+		return ldb_oom(ldb);
+	}
+
 	/*
 	 * Relies on the assertion that cleartext_utf8->data is a zero
 	 * terminated UTF-8 string
@@ -1712,15 +1719,10 @@ static int setup_primary_userPassword_hash(
 			scheme,
 			reason);
 		TALLOC_FREE(frame);
+		TALLOC_FREE(hash_blob);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	hash_blob = talloc_zero(ctx, DATA_BLOB);
-
-	if (hash_blob == NULL) {
-		TALLOC_FREE(frame);
-		return ldb_oom(ldb);
-	}
 
 	*hash_blob =  data_blob_talloc(hash_blob,
 				       (const uint8_t *)hash,
