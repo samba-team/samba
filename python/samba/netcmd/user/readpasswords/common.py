@@ -26,6 +26,7 @@ import datetime
 import errno
 import io
 import os
+from hashlib import sha1
 
 import ldb
 from samba import credentials, nttime2float
@@ -141,17 +142,8 @@ def get_crypt_value(alg, utf8pw, rounds=0):
     return crypt_value
 
 
-try:
-    import hashlib
-    hashlib.sha1()
-    virtual_attributes["virtualSSHA"] = {
-    }
-except ImportError as e:
-    reason = "hashlib.sha1()"
-    reason += " required"
-    disabled_virtual_attributes["virtualSSHA"] = {
-        "reason": reason,
-    }
+
+virtual_attributes["virtualSSHA"] = {}
 
 for (alg, attr) in [("5", "virtualCryptSHA256"), ("6", "virtualCryptSHA512")]:
     try:
@@ -740,7 +732,7 @@ class GetPasswordCommand(Command):
                 if u8 is None:
                     continue
                 salt = os.urandom(4)
-                h = hashlib.sha1()
+                h = sha1()
                 h.update(u8)
                 h.update(salt)
                 bv = h.digest() + salt
