@@ -138,6 +138,9 @@ void dcesrv_log_successful_authz(
 static int dcesrv_assoc_group_destructor(struct dcesrv_assoc_group *assoc_group)
 {
 	int ret;
+
+	dcesrv_assoc_group_common_destructor(assoc_group);
+
 	ret = idr_remove(assoc_group->dce_ctx->assoc_groups_idr,
 			 assoc_group->id);
 	if (ret != 0) {
