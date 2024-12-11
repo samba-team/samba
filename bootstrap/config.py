@@ -159,10 +159,6 @@ PKGS = [
     ('', 'python3-libsemanage'),
     ('', 'python3-policycoreutils'),
 
-    # A copy of the `crypt` module that was removed in Python 3.13
-    # See also https://bugzilla.samba.org/show_bug.cgi?id=15756
-    ('', 'python3-crypt-r'),
-
     # perl
     ('libparse-yapp-perl', 'perl-Parse-Yapp'),
     ('perl-modules', ''),
@@ -538,7 +534,6 @@ RPM_DISTS = {
             'ShellCheck': '',
             'shfmt': '',
             'codespell': '',
-            'python3-crypt-r': '',
         }
     },
     'centos9s': {
@@ -558,7 +553,6 @@ RPM_DISTS = {
             'codespell': '',
             'libcephfs-devel': '',  # not available anymore
             'curl': '',  # Use installed curl-minimal
-            'python3-crypt-r': '',
         }
     },
     'fedora41': {
@@ -587,7 +581,6 @@ RPM_DISTS = {
             'keyutils-libs-devel': 'keyutils-devel',
             'krb5-workstation': 'krb5-client',
             'python3-libsemanage': 'python3-semanage',
-            'python3-crypt-r': '',
             'openldap-devel': 'openldap2-devel',
             'perl-Archive-Tar': 'perl-Archive-Tar-Wrapper',
             'perl-JSON-Parse': 'perl-JSON-XS',
