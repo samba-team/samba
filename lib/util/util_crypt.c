@@ -88,3 +88,27 @@ int talloc_crypt_blob(TALLOC_CTX *mem_ctx,
 	}
 	return 0;
 }
+
+
+char *talloc_crypt_errstring(TALLOC_CTX *mem_ctx, int error)
+{
+	char buf[1024];
+	int err;
+	if (error == ERANGE) {
+		return talloc_strdup(
+			mem_ctx,
+			"Password exceeds maximum length allowed for crypt() hashing");
+	}
+	if (error == ENOTRECOVERABLE) {
+		/* probably weird RHEL7 crypt, see crypt_as_best_we_can() */
+		goto unknown;
+	}
+
+	err = strerror_r(error, buf, sizeof(buf));
+	if (err != 0) {
+		goto unknown;
+	}
+	return talloc_strndup(mem_ctx, buf, sizeof(buf));
+unknown:
+	return talloc_strdup(mem_ctx, "Unknown error");
+}

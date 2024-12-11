@@ -1661,21 +1661,7 @@ static int setup_primary_userPassword_hash(
 				cmd,
 				hash_blob);
 	if (ret != 0) {
-		char buf[1024];
-		const char *reason = NULL;
-		if (ret == ERANGE) {
-			reason = "Password exceeds maximum length allowed for crypt() hashing";
-		} else if (ret == ENOTRECOVERABLE) {
-			/* probably weird RHEL7 crypt, see talloc_crypt_blob() */
-			reason = "Unknown error";
-		} else {
-			int err = strerror_r(ret, buf, sizeof(buf));
-			if (err == 0) {
-				reason = buf;
-			} else {
-				reason = "Unknown error";
-			}
-		}
+		const char *reason = talloc_crypt_errstring(frame, ret);
 		ldb_asprintf_errstring(
 			ldb,
 			"setup_primary_userPassword: generation of a %s "
