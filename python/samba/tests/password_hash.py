@@ -30,11 +30,11 @@ from samba.dcerpc.samr import DOMAIN_PASSWORD_STORE_CLEARTEXT
 from samba.dsdb import UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED
 from samba.tests import delete_force
 from samba.tests.password_test import PasswordCommon
+from samba._glue import crypt
 import ldb
 import samba
 import binascii
 from hashlib import md5
-import crypt
 
 
 USER_NAME = "PasswordHashTestUser"
@@ -321,7 +321,7 @@ class PassWordHashTests(TestCase):
                 cmd = "$%s$rounds=%d$%s" % (alg, rounds, data[3])
 
             # Calculate the expected hash value
-            expected = crypt.crypt(USER_PASS, cmd)
+            expected = crypt(USER_PASS, cmd)
             self.assertEqual(expected, up.hashes[i].value.decode('utf8'))
             i += 1
 
