@@ -88,3 +88,68 @@ class GlueTests(samba.tests.TestCase):
         self.assertEqual(_glue.strstr_m(string, '_'), '_string_num__one')
         self.assertEqual(_glue.strstr_m(string, '__'), '__one')
         self.assertEqual(_glue.strstr_m(string, 'ring'), 'ring_num__one')
+
+    def test_crypt(self):
+        # We hopefully only use schemes 5 and 6 (sha256 and sha512),
+        # which are OK and also quite widely supported according to
+        # https://en.wikipedia.org/wiki/Crypt_(C)
+        for phrase, setting, expected in [
+                ("a", "$5$aaaaaa",
+                 "$5$aaaaaa$F4lxguL7mZR7TGlvukPTJIxoRhVmHMZs8ZdH8oDP0.6"),
+                # with scheme 5, 5000 rounds is default, so hash is the same as above
+                ('a', '$5$rounds=5000$aaaaaa',
+                 '$5$rounds=5000$aaaaaa$F4lxguL7mZR7TGlvukPTJIxoRhVmHMZs8ZdH8oDP0.6'),
+                ('a',
+                 '$5$rounds=4999$aaaaaa',
+                 '$5$rounds=4999$aaaaaa$FiP70gtxOJUFLokUJvET06E7jbL6aNmF6Wtv2ddzjY8'),
+                ('a', '$5$aaaaab',
+                 '$5$aaaaab$e9qR2F833/JyuMu.nkQc9kn184vBWLo0ODqnCe./mj0'),
+
+                ('', '$5$aaaaaa', '$5$aaaaaa$5B4WTdWp5n/v/aNUw2N8RsEitqvlZJEaAKhH/pOkGg4'),
+
+                ("a", "$6$aaaaaa",
+                 "$6$aaaaaa$KHs/Ez7X/I5/K.V8FR7kEsx9rOvjXnEDUmGC.dLBWP87XWy.oUEAM7QYcZQRVhiDwGepOF2pKrCVETYLyASh60"),
+
+                ('', '$5$', '$5$$3c2QQ0KjIU1OLtB29cl8Fplc2WN7X89bnoEjaR7tWu.'),
+
+                # scheme 1 (md5) should be supported if not used
+                ('a', '$1$aaaaaa',
+                 '$1$aaaaaa$MUMWPbGfzrHFCNm7ZHg31.'),
+
+                ('', '$6$',
+                 '$6$$/chiBau24cE26QQVW3IfIe68Xu5.JQ4E8Ie7lcRLwqxO5cxGuBhqF2HmTL.zWJ9zjChg3yJYFXeGBQ2y3Ba1d1'),
+                (' ',
+                 '$6$6',
+                 '$6$6$asLnbxf0obyuv3ybNvDE9ZcdwGFkDhLe7uW.wzdOdKCm4/M3vGFKq4Ttk1tBQrOn4wALZ3tj1L8IarIu5i8hR/'),
+
+                # original DES scheme, 12 bits of salt
+                ("a", "lalala", "laKGbFzgh./R2"),
+                ("a", "lalalaLALALAla", "laKGbFzgh./R2"),
+                ("a", "arrgh", "ar7VUiUvDhX2c"),
+                ("a", "arrggghhh", "ar7VUiUvDhX2c"),
+                ]:
+            hash = _glue.crypt(phrase, setting)
+            self.assertEqual(hash, expected)
+
+    def test_crypt_bad(self):
+        # We can't be too strident in our assertions, because every
+        # system allows a different set of algorithms, and some have
+        # different ideas of how to parse.
+        for phrase, setting, exception in [
+                ("a", "$5", ValueError),
+                ("a", "$0$", ValueError),
+                ("a", None, TypeError),
+                (None, "", TypeError),
+                ('a', '$66$', ValueError),
+                ('a', '$$', ValueError),
+                ('a', '*0', ValueError),
+                ('a', '*', ValueError),
+                ('a', '++', ValueError),
+                # this next one is too long, except on Rocky Linux 8.
+                #('a' * 10000, '$5$5', ValueError),
+                # this is invalid, except on Debian 11.
+                # (' ', '$6$ ', ValueError),
+                ]:
+            with self.assertRaises(exception,
+                                   msg=f"crypt({phrase!r}, {setting!r}) didn't fail"):
+                _glue.crypt(phrase, setting)
