@@ -652,6 +652,8 @@ static int rpc_worker_assoc_group_destructor(
 {
 	int ret;
 
+	dcesrv_assoc_group_common_destructor(assoc_group);
+
 	ret = idr_remove(
 		assoc_group->dce_ctx->assoc_groups_idr,
 		assoc_group->id & UINT16_MAX);
