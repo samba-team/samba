@@ -4749,7 +4749,7 @@ mkdir_first:
 			       &rhow);
 	if (ret == -1 && errno == EINVAL) {
 		/*
-		 * This is the strategie we use without having
+		 * This is the strategy we use without having
 		 * renameat2(RENAME_NOREPLACE):
 		 *
 		 * renameat() is able to replace a directory if the source is
