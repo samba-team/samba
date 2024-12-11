@@ -163,8 +163,23 @@ struct dcesrv_iface_state {
 
 static int dcesrv_iface_state_destructor(struct dcesrv_iface_state *istate)
 {
-	DLIST_REMOVE(istate->assoc->iface_states, istate);
+	if (istate->assoc != NULL) {
+		DLIST_REMOVE(istate->assoc->iface_states, istate);
+		istate->assoc = NULL;
+	}
 	return 0;
+}
+
+void dcesrv_assoc_group_common_destructor(struct dcesrv_assoc_group *assoc_group)
+{
+	struct dcesrv_iface_state *cur = NULL;
+	struct dcesrv_iface_state *next = NULL;
+
+	for (cur = assoc_group->iface_states; cur != NULL; cur = next) {
+		next = cur->next;
+		cur->assoc = NULL;
+		DLIST_REMOVE(assoc_group->iface_states, cur);
+	}
 }
 
 static void *dcesrv_iface_state_find(struct dcesrv_assoc_group *assoc,
