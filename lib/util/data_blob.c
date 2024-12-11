@@ -286,7 +286,7 @@ _PUBLIC_ bool data_blob_pad(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 	size_t old_len = blob->length;
 	size_t new_len = (old_len + pad - 1) & ~(pad - 1);
 
-	if (new_len < old_len) {
+	if (new_len < old_len || (pad & (pad - 1)) != 0) {
 		return false;
 	}
 
