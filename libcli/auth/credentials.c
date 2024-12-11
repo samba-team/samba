@@ -492,6 +492,7 @@ netlogon_creds_alloc(TALLOC_CTX *mem_ctx,
 	struct netlogon_creds_CredentialState *creds = NULL;
 	struct timeval tv = timeval_current();
 	NTTIME now = timeval_to_nttime(&tv);
+	const char *name = NULL;
 
 	creds = talloc_zero(mem_ctx, struct netlogon_creds_CredentialState);
 	if (creds == NULL) {
@@ -523,6 +524,8 @@ netlogon_creds_alloc(TALLOC_CTX *mem_ctx,
 		creds->client_sid = global_sid_NULL;
 	}
 
+	name = talloc_get_name(creds);
+	_talloc_keep_secret(creds, name);
 	return creds;
 }
 
