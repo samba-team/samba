@@ -137,4 +137,12 @@ testit "Check for default ACL" \
 	test "$ACL" = "ACL:S-1-1-0:ALLOWED/0x0/FULL" ||
 	failed=$(expr $failed + 1)
 
+testit "Create 2nd share" $NET_CMD conf addshare tmp_share2 /tmp ||
+        failed=$(expr $failed + 1)
+COUNT=$($CMD --view-all | grep ACL: | sed -e 's/^ACL://' | wc -l)
+testit "Verify standard ACL counts" test $COUNT -gt 2 ||
+        failed=$(expr $failed + 1)
+testit "Delete share" $NET_CMD conf delshare tmp_share2 ||
+        failed=$(expr $failed + 1)
+
 testok $0 $failed
