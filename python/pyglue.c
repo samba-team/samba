@@ -18,6 +18,7 @@
 */
 
 #include "lib/replace/system/python.h"
+#include "pyerrors.h"
 #include "python/py3compat.h"
 #include "includes.h"
 #include "python/modules.h"
@@ -25,6 +26,7 @@
 #include "param/pyparam.h"
 #include "lib/socket/netif.h"
 #include "lib/util/debug.h"
+#include "lib/util/util_crypt.h"
 #include "librpc/ndr/ndr_private.h"
 #include "lib/cmdline/cmdline.h"
 #include "lib/crypto/gkdi.h"
@@ -529,6 +531,42 @@ static PyObject *py_get_burnt_commandline(PyObject *self, PyObject *args)
 	return ret;
 }
 
+static PyObject *py_crypt(PyObject *self, PyObject *args)
+{
+	PyObject *py_hash = NULL;
+	char *phrase = NULL;
+	char *setting = NULL;
+	TALLOC_CTX *frame = NULL;
+	int ret;
+	DATA_BLOB hash = {};
+
+	if (!PyArg_ParseTuple(args, "ss", &phrase, &setting)) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+	frame = talloc_stackframe();
+	ret = talloc_crypt_blob(frame, phrase, setting, &hash);
+	if (ret != 0) {
+		const char *errstr = talloc_crypt_errstring(frame, ret);
+		if (ret == EINVAL || ret == ERANGE || ret == ENOTRECOVERABLE) {
+			PyErr_Format(PyExc_ValueError,
+				     "could not crypt(): %s",
+				     errstr);
+		} else {
+			PyErr_Format(PyExc_OSError,
+				     "could not crypt(): %s",
+				     errstr);
+		}
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	py_hash = PyUnicode_FromStringAndSize((char *)hash.data, hash.length);
+	TALLOC_FREE(frame);
+	return py_hash;
+}
+
+
 static PyMethodDef py_misc_methods[] = {
 	{ "generate_random_str", (PyCFunction)py_generate_random_str, METH_VARARGS,
 		"generate_random_str(len) -> string\n"
@@ -590,6 +628,9 @@ static PyMethodDef py_misc_methods[] = {
 		METH_NOARGS, "How many NDR internal tokens is too many for this build?" },
 	{ "get_burnt_commandline", (PyCFunction)py_get_burnt_commandline,
 		METH_VARARGS, "Return a redacted commandline to feed to setproctitle (None if no redaction required)" },
+	{ "crypt", (PyCFunction)py_crypt,
+		METH_VARARGS,
+		"encrypt as phrase, per crypt(3), as determined by setting." },
 	{ "is_rust_built", (PyCFunction)py_is_rust_built, METH_NOARGS,
 		"is Samba built with Rust?" },
 	{0}

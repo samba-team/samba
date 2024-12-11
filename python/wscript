@@ -119,6 +119,7 @@ def build(bld):
                               ndr
                               cmdline
                               gkdi
+                              util_crypt
                               %s
                               ''' % (pyparam_util, pytalloc_util),
                      realname='samba/_glue.so')
