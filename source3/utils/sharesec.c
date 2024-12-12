@@ -563,6 +563,7 @@ int main(int argc, const char *argv[])
 			const char *service = lp_servicename(frame, lp_sub, i);
 
 			if (service == NULL) {
+				TALLOC_FREE(frame);
 				continue;
 			}
 
