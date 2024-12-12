@@ -33,11 +33,11 @@ struct ea_list *read_ea_list_entry(TALLOC_CTX *ctx, const char *pdata, size_t da
 	size_t converted_size;
 
 	if (!eal) {
-		return NULL;
+		goto fail;
 	}
 
 	if (data_size < 6) {
-		return NULL;
+		goto fail;
 	}
 
 	eal->ea.flags = CVAL(pdata,0);
@@ -45,23 +45,23 @@ struct ea_list *read_ea_list_entry(TALLOC_CTX *ctx, const char *pdata, size_t da
 	val_len = SVAL(pdata,2);
 
 	if (4 + namelen + 1 + val_len > data_size) {
-		return NULL;
+		goto fail;
 	}
 
 	/* Ensure the name is null terminated. */
 	if (pdata[namelen + 4] != '\0') {
-		return NULL;
+		goto fail;
 	}
 	if (!pull_ascii_talloc(ctx, &eal->ea.name, pdata + 4, &converted_size)) {
 		DBG_ERR("pull_ascii_talloc failed: %s\n", strerror(errno));
 	}
 	if (!eal->ea.name) {
-		return NULL;
+		goto fail;
 	}
 
 	eal->ea.value = data_blob_talloc(eal, NULL, (size_t)val_len + 1);
 	if (!eal->ea.value.data) {
-		return NULL;
+		goto fail;
 	}
 
 	memcpy(eal->ea.value.data, pdata + 4 + namelen + 1, val_len);
@@ -79,6 +79,9 @@ struct ea_list *read_ea_list_entry(TALLOC_CTX *ctx, const char *pdata, size_t da
 	dump_data(10, eal->ea.value.data, eal->ea.value.length);
 
 	return eal;
+fail:
+	TALLOC_FREE(eal);
+	return NULL;
 }
 
 /****************************************************************************
