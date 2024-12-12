@@ -607,7 +607,10 @@ struct ea_list {
 	struct ea_struct ea;
 };
 
-/* EA names used internally in Samba. KEEP UP TO DATE with prohibited_ea_names in trans2.c !. */
+/*
+ * EA names used internally in Samba. KEEP UP TO DATE with
+ * samba_private_attr_name() in smb2_trans2.c !.
+ */
 #define SAMBA_POSIX_INHERITANCE_EA_NAME "user.SAMBA_PAI"
 /* EA to use for DOS attributes */
 #define SAMBA_XATTR_DOS_ATTRIB "user.DOSATTRIB"
