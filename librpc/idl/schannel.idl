@@ -59,6 +59,11 @@ interface schannel
 		[value(0xFFFFFFFF)] uint32 magic3;
 		dom_sid28 client_sid;
 		/*
+		 * objectGUID of the trustedDomain object
+		 * for SEC_CHAN_DOMAIN and SEC_CHAN_DNS_DOMAIN
+		 */
+		GUID tdo_guid;
+		/*
 		 * NETLOGON_NEG_SUPPORTS_KERBEROS_AUTH is not
 		 * enough to implement the logic
 		 * for netr_ServerAuthenticateKerberos()
