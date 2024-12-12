@@ -625,6 +625,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticateGeneric(
 		static const char *const tdo_attrs[] = {"trustAuthIncoming",
 							"trustAttributes",
 							"flatName",
+							"objectGUID",
 							NULL};
 		char *encoded_name = NULL;
 		size_t len;
@@ -869,6 +870,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticateNTHash_cb(
 	struct samr_Password *curNtHash = NULL;
 	struct samr_Password *prevNtHash = NULL;
 	NTSTATUS status;
+	struct GUID tdo_guid = { 0, };
 
 	if (tdo_msg != NULL) {
 		status = dsdb_trust_get_incoming_passwords(tdo_msg,
@@ -882,6 +884,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticateNTHash_cb(
 			TALLOC_FREE(frame);
 			return status;
 		}
+
+		tdo_guid = samdb_result_guid(tdo_msg, "objectGUID");
 	} else {
 		status = samdb_result_passwords_no_lockout(frame,
 							   lp_ctx,
@@ -940,6 +944,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticateNTHash_cb(
 		TALLOC_FREE(frame);
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	creds->tdo_guid = tdo_guid;
 
 	*_creds = creds;
 	TALLOC_FREE(frame);
@@ -5004,6 +5010,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticateKerberos_cb(
 		dcesrv_call_session_info(dce_call);
 	const struct dom_sid *auth_sid =
 		&session_info->security_token->sids[0];
+	struct GUID tdo_guid = { 0, };
 
 	dcesrv_call_auth_info(dce_call, &auth_type, &auth_level);
 
@@ -5033,6 +5040,10 @@ static NTSTATUS dcesrv_netr_ServerAuthenticateKerberos_cb(
 	SMB_ASSERT(r->in.credentials == NULL);
 	SMB_ASSERT(r->out.return_credentials == NULL);
 
+	if (tdo_msg != NULL) {
+		tdo_guid = samdb_result_guid(tdo_msg, "objectGUID");
+	}
+
 	creds = netlogon_creds_kerberos_init(mem_ctx,
 					     r->in.account_name,
 					     r->in.computer_name,
@@ -5044,6 +5055,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticateKerberos_cb(
 		TALLOC_FREE(frame);
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	creds->tdo_guid = tdo_guid;
 
 	*_creds = creds;
 	TALLOC_FREE(frame);
