@@ -53,6 +53,7 @@ from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc.misc import (
     SEC_CHAN_WKSTA,
     SEC_CHAN_BDC,
+    SEC_CHAN_RODC,
 )
 from samba.dsdb import (
     UF_SMARTCARD_REQUIRED
@@ -408,6 +409,7 @@ class KerberosCredentials(Credentials):
         'kvno',
         'sid',
         'guid',
+        'rodc_computer_creds',
         'spn',
         'tgs_supported_enctypes',
         'upn',
@@ -447,6 +449,8 @@ class KerberosCredentials(Credentials):
         self.user_account_control = None
 
         self._private_key = None
+
+        self.rodc_computer_creds = None
 
     def set_as_supported_enctypes(self, value):
         self.as_supported_enctypes = int(value)
@@ -554,7 +558,7 @@ class KerberosCredentials(Credentials):
             salt_name = self.get_username()
 
         secure_schannel_type = self.get_secure_channel_type()
-        if secure_schannel_type in [SEC_CHAN_WKSTA,SEC_CHAN_BDC]:
+        if secure_schannel_type in [SEC_CHAN_WKSTA,SEC_CHAN_BDC,SEC_CHAN_RODC]:
             salt_name = self.get_username().lower()
             if salt_name[-1] == '$':
                 salt_name = salt_name[:-1]
@@ -629,6 +633,11 @@ class KerberosCredentials(Credentials):
     def get_public_key(self):
         return self.get_private_key().public_key()
 
+    def set_rodc_computer_creds(self, computer_creds):
+        self.rodc_computer_creds = computer_creds
+
+    def get_rodc_computer_creds(self):
+        return self.rodc_computer_creds
 
 class KerberosTicketCreds:
     __slots__ = [
