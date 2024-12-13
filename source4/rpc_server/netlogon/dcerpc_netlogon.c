@@ -3389,6 +3389,9 @@ static NTSTATUS dcesrv_netr_NetrLogonSendToSam(struct dcesrv_call_state *dce_cal
 					   &dn);
 		if (ret != LDB_SUCCESS) {
 			ldb_transaction_cancel(sam_ctx);
+			if (creds->secure_channel_type == SEC_CHAN_RODC) {
+				return NT_STATUS_INTERNAL_ERROR;
+			}
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 
@@ -3398,7 +3401,7 @@ static NTSTATUS dcesrv_netr_NetrLogonSendToSam(struct dcesrv_call_state *dce_cal
 				  "an arbitrary user: %s\n",
 				  ldb_dn_get_linearized(dn)));
 			ldb_transaction_cancel(sam_ctx);
-			return NT_STATUS_INVALID_PARAMETER;
+			return NT_STATUS_ACCESS_DENIED;
 		}
 
 		msg->dn = dn;
