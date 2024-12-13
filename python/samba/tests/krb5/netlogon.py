@@ -1722,8 +1722,13 @@ class NetlogonSchannel(KDCBaseTest):
                                        validation_level,
                                        expect_send_encrypted,
                                        expect_recv_encrypted)
-        self.assertEqual(validationEx.results,
-                         netlogon.NETLOGON_TICKET_LOGON_FULL_SIGNATURE_PRESENT)
+        if validationEx.results & netlogon.NETLOGON_TICKET_LOGON_SOURCE_USER_CLAIMS:
+            self.assertEqual(validationEx.results,
+                netlogon.NETLOGON_TICKET_LOGON_SOURCE_USER_CLAIMS |
+                netlogon.NETLOGON_TICKET_LOGON_FULL_SIGNATURE_PRESENT)
+        else:
+            self.assertEqual(validationEx.results,
+                netlogon.NETLOGON_TICKET_LOGON_FULL_SIGNATURE_PRESENT)
         self.assertEqual(validationEx.kerberos_status[0], ntstatus.NT_STATUS_OK)
         self.assertEqual(validationEx.netlogon_status[0], ntstatus.NT_STATUS_OK)
         self.assertIsNone(validationEx.source_of_status.string)
@@ -1739,8 +1744,7 @@ class NetlogonSchannel(KDCBaseTest):
                                               validation_level,
                                               expect_send_encrypted,
                                               expect_recv_encrypted)
-        self.assertEqual(validationWF.results,
-                         netlogon.NETLOGON_TICKET_LOGON_FULL_SIGNATURE_PRESENT)
+        self.assertEqual(validationWF.results, validationEx.results)
         self.assertEqual(validationWF.kerberos_status[0], ntstatus.NT_STATUS_OK)
         self.assertEqual(validationWF.netlogon_status[0], ntstatus.NT_STATUS_OK)
         self.assertIsNone(validationWF.source_of_status.string)
