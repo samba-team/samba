@@ -1,2 +1,25 @@
 # This is not implemented yet
 ^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_ticket_samlogon
+# The RODC handling is wrong
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_check_passwords_rodc_auth3_01000000
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_check_passwords_rodc_auth3_613fffff
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_check_passwords_rodc_auth3_e13fffff
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_check_passwords_rodc_authK_00000000
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_check_passwords_rodc_authK_00000004
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_check_passwords_rodc_authK_00004000
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_check_passwords_rodc_authK_01000000
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_check_passwords_rodc_authK_01004004
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_check_passwords_rodc_authK_400001ff
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_check_passwords_rodc_authK_413fffff
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_check_passwords_rodc_authK_603fbffb
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_check_passwords_rodc_authK_613fffff
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_check_passwords_rodc_authK_80000000
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_check_passwords_rodc_authK_e13fffff
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_send_to_sam_rodc_auth3_01000000
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_send_to_sam_rodc_auth3_613fffff
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_send_to_sam_rodc_auth3_e13fffff
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_send_to_sam_rodc_authK_00000000
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_send_to_sam_rodc_authK_00004000
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_send_to_sam_rodc_authK_603fbffb
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_send_to_sam_rodc_authK_80000000
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_send_to_sam_rodc_authK_e13fffff

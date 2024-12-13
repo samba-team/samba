@@ -63,7 +63,7 @@ class NetlogonSchannel(KDCBaseTest):
         ]
 
         for test in tests:
-            for trust in ["wks", "bdc"]:
+            for trust in ["wks", "bdc", "rodc"]:
                 for auth3_flags in [0x603fffff, 0x613fffff, 0xe13fffff]:
                     setup_test(test, trust, "auth3", auth3_flags)
                 for auth3_flags in [0x00004004, 0x00004000, 0x01000000]:
@@ -120,6 +120,11 @@ class NetlogonSchannel(KDCBaseTest):
                 opts={'name_prefix': 'b1_',
                       'supported_enctypes': 0x18,
                       'secure_channel_type': misc.SEC_CHAN_BDC})
+
+    def get_rodc1_creds(self):
+        krbtgt_creds = self.get_mock_rodc_krbtgt_creds(preserve=False)
+        computer_creds = krbtgt_creds.get_rodc_computer_creds()
+        return computer_creds
 
     def get_anon_conn(self):
         dc_server = self.dc_server
@@ -964,6 +969,8 @@ class NetlogonSchannel(KDCBaseTest):
             creds = self.get_wks1_creds()
         elif trust == "bdc":
             creds = self.get_bdc1_creds()
+        elif trust == "rodc":
+            creds = self.get_rodc1_creds()
         self.assertIsNotNone(creds)
 
         proposed_flags = flags
@@ -1066,6 +1073,8 @@ class NetlogonSchannel(KDCBaseTest):
             expect_set2_encrypted = False
 
         if ncreds.secure_channel_type == misc.SEC_CHAN_WKSTA:
+            expect_get_error = ntstatus.NT_STATUS_ACCESS_DENIED
+        elif ncreds.secure_channel_type == misc.SEC_CHAN_RODC:
             expect_get_error = ntstatus.NT_STATUS_ACCESS_DENIED
         else:
             expect_get_error = None
@@ -1315,6 +1324,8 @@ class NetlogonSchannel(KDCBaseTest):
             expect_not_found_error = ntstatus.NT_STATUS_ACCESS_DENIED
         elif expect_broken_crypto:
             expect_not_found_error = ntstatus.NT_STATUS_INVALID_PARAMETER
+        elif ncreds.secure_channel_type == misc.SEC_CHAN_RODC:
+            expect_not_found_error = ntstatus.NT_STATUS_INTERNAL_ERROR
         else:
             expect_not_found_error = ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND
         self.do_SendToSam(ncreds, conn, opaque_buffer,
@@ -1332,6 +1343,8 @@ class NetlogonSchannel(KDCBaseTest):
             expect_no_error = ntstatus.NT_STATUS_ACCESS_DENIED
         elif expect_broken_crypto:
             expect_no_error = ntstatus.NT_STATUS_INVALID_PARAMETER
+        elif ncreds.secure_channel_type == misc.SEC_CHAN_RODC:
+            expect_no_error = ntstatus.NT_STATUS_ACCESS_DENIED
         else:
             expect_no_error = None
         self.do_SendToSam(ncreds, conn, opaque_buffer,
