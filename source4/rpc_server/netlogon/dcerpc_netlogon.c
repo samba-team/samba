@@ -3240,7 +3240,6 @@ static NTSTATUS dcesrv_netr_ServerPasswordGet(struct dcesrv_call_state *dce_call
 	ZERO_STRUCT(old_owf_password);
 	switch (r->in.secure_channel_type) {
 	case SEC_CHAN_BDC:
-	case SEC_CHAN_RODC:
 		break;
 	default:
 		ZERO_STRUCTP(r->out.password);
