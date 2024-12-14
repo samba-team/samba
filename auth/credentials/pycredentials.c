@@ -581,6 +581,49 @@ static PyObject *py_creds_set_nt_hash(PyObject *self, PyObject *args)
 	return PyBool_FromLong(cli_credentials_set_nt_hash(creds, pwd, obt));
 }
 
+static PyObject *py_creds_get_old_nt_hash(PyObject *self, PyObject *unused)
+{
+	PyObject *ret;
+	struct samr_Password *ntpw = NULL;
+	struct cli_credentials *creds = PyCredentials_AsCliCredentials(self);
+	if (creds == NULL) {
+		PyErr_Format(PyExc_TypeError, "Credentials expected");
+		return NULL;
+	}
+	ntpw = cli_credentials_get_old_nt_hash(creds, creds);
+	if (ntpw == NULL) {
+		Py_RETURN_NONE;
+	}
+
+	ret = PyBytes_FromStringAndSize(discard_const_p(char, ntpw->hash), 16);
+	TALLOC_FREE(ntpw);
+	return ret;
+}
+
+static PyObject *py_creds_set_old_nt_hash(PyObject *self, PyObject *args)
+{
+	PyObject *py_cp = Py_None;
+	const struct samr_Password *pwd = NULL;
+	struct cli_credentials *creds = PyCredentials_AsCliCredentials(self);
+	if (creds == NULL) {
+		PyErr_Format(PyExc_TypeError, "Credentials expected");
+		return NULL;
+	}
+
+	if (!PyArg_ParseTuple(args, "O", &py_cp)) {
+		return NULL;
+	}
+
+	if (!py_check_dcerpc_type(py_cp, "samba.dcerpc.samr", "Password")) {
+		/* py_check_dcerpc_type sets TypeError */
+		return NULL;
+	}
+
+	pwd = pytalloc_get_ptr(py_cp);
+
+	return PyBool_FromLong(cli_credentials_set_old_nt_hash(creds, pwd));
+}
+
 static PyObject *py_creds_get_kerberos_state(PyObject *self, PyObject *unused)
 {
 	int state;
@@ -1668,8 +1711,20 @@ static PyMethodDef py_creds_methods[] = {
 		.ml_name  = "set_nt_hash",
 		.ml_meth  = py_creds_set_nt_hash,
 		.ml_flags = METH_VARARGS,
-		.ml_doc = "S.set_net_sh(samr_Password[, credentials.SPECIFIED]) -> bool\n"
+		.ml_doc = "S.set_nt_hash(samr_Password[, credentials.SPECIFIED]) -> bool\n"
 			"Change NT hash.",
+	},
+	{
+		.ml_name  = "get_old_nt_hash",
+		.ml_meth  = py_creds_get_old_nt_hash,
+		.ml_flags = METH_NOARGS,
+	},
+	{
+		.ml_name  = "set_old_nt_hash",
+		.ml_meth  = py_creds_set_old_nt_hash,
+		.ml_flags = METH_VARARGS,
+		.ml_doc = "S.set_old_nt_hash(samr_Password) -> bool\n"
+			"Change old NT hash.",
 	},
 	{
 		.ml_name  = "get_kerberos_state",
