@@ -101,7 +101,7 @@ def generateSourceFile(out_file, errors):
     out_file.write("	switch (HRES_ERROR_V(err_code)) {\n")
     for err in errors:
         out_file.write(f'            case 0x{err.err_code:X}:\n')
-        out_file.write(f'                result = \"{err.err_define}\";\n')
+        out_file.write(f'                result = \"{err.err_string}\";\n')
         out_file.write(f'                break;\n')
     out_file.write("	}\n")
     out_file.write("\n")
@@ -120,7 +120,7 @@ def generateSourceFile(out_file, errors):
     out_file.write("	switch (HRES_ERROR_V(err_code)) {\n")
     for err in errors:
         out_file.write(f'            case 0x{err.err_code:X}:\n')
-        out_file.write(f'                return \"{err.err_string}\";\n')
+        out_file.write(f'                return \"{err.err_define}\";\n')
         out_file.write(f'                break;\n')
     out_file.write("	}\n")
     out_file.write("	snprintf(msg, sizeof(msg), \"HRES code 0x%08x\", HRES_ERROR_V(err_code));\n")
