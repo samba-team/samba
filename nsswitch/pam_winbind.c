@@ -2525,6 +2525,7 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 	/* Convert the UPN to a SID */
 
 	wbc_status = wbcCtxLookupName(ctx->wbc_ctx, domain, name, &sid, &type);
+	TALLOC_FREE(name);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return NULL;
 	}
