@@ -36,24 +36,6 @@ testfail()
 	fi
 }
 
-knownfail()
-{
-	name="$1"
-	shift
-	cmdline="$*"
-	echo "test: $name"
-	$cmdline
-	status=$?
-	if [ x$status = x0 ]; then
-		echo "failure: $name [unexpected success]"
-		status=1
-	else
-		echo "knownfail: $name"
-		status=0
-	fi
-	return $status
-}
-
 KRB5CCNAME_PATH="$PREFIX/test_wbinfo_krb5ccache"
 rm -f $KRB5CCNAME_PATH
 
@@ -217,9 +199,6 @@ else
 	echo "failure: wbinfo --own-domain against $TARGET check output"
 	failed=$(expr $failed + 1)
 fi
-
-# this does not work
-knownfail "wbinfo --sequence against $TARGET" $wbinfo --sequence
 
 # this is stubbed out now
 testit "wbinfo -D against $TARGET" $wbinfo -D $DOMAIN || failed=$(expr $failed + 1)
