@@ -410,6 +410,9 @@ class KerberosCredentials(Credentials):
         'sid',
         'guid',
         'rodc_computer_creds',
+        'trust_incoming_creds',
+        'trust_outgoing_creds',
+        'trust_account_creds',
         'spn',
         'tgs_supported_enctypes',
         'upn',
@@ -451,6 +454,10 @@ class KerberosCredentials(Credentials):
         self._private_key = None
 
         self.rodc_computer_creds = None
+
+        self.trust_incoming_creds = None
+        self.trust_outgoing_creds = None
+        self.trust_account_creds = None
 
     def set_as_supported_enctypes(self, value):
         self.as_supported_enctypes = int(value)
@@ -638,6 +645,24 @@ class KerberosCredentials(Credentials):
 
     def get_rodc_computer_creds(self):
         return self.rodc_computer_creds
+
+    def set_trust_incoming_creds(self, incoming_creds):
+        self.trust_incoming_creds = incoming_creds
+
+    def get_trust_incoming_creds(self):
+        return self.trust_incoming_creds
+
+    def set_trust_outgoing_creds(self, outgoing_creds):
+        self.trust_outgoing_creds = outgoing_creds
+
+    def get_trust_outgoing_creds(self):
+        return self.trust_outgoing_creds
+
+    def set_trust_account_creds(self, account_creds):
+        self.trust_account_creds = account_creds
+
+    def get_trust_account_creds(self):
+        return self.trust_account_creds
 
 class KerberosTicketCreds:
     __slots__ = [
