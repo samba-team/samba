@@ -347,6 +347,21 @@ const char *nt_errstr(NTSTATUS nt_code)
 	}
 
 	/*
+	 * NTSTATUS codes have 0xC000 in the upper 16-bit, if the
+	 * upper 16-bit are not 0 and not 0xC000, it's likely
+	 * an HRESULT.
+	 *
+	 * E.g. we should display HRES_SEC_E_WRONG_PRINCIPAL instead of
+	 * 'NT code 0x80090322'
+	 */
+	if ((NT_STATUS_V(nt_code) & 0xFFFF0000) != 0 &&
+	    (NT_STATUS_V(nt_code) & 0xFFFF0000) != 0xC0000000)
+	{
+		HRESULT hres = HRES_ERROR(NT_STATUS_V(nt_code));
+		return hresult_errstr(hres);
+	}
+
+	/*
 	 * This should not really happen, we should have all error codes
 	 * available. We have a problem that this might get wrongly
 	 * overwritten by later calls in the same DEBUG statement.
