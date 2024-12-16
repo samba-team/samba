@@ -102,10 +102,10 @@ static NTSTATUS share_mode_g_lock_writev(TDB_DATA key,
 {
 	if (share_mode_g_lock_within_cb(key)) {
 		return g_lock_lock_cb_writev(current_share_mode_glck,
-					     dbufs, num_dbufs);
+					     dbufs, num_dbufs, 0);
 	}
 
-	return g_lock_writev_data(lock_ctx, key, dbufs, num_dbufs);
+	return g_lock_writev_data(lock_ctx, key, dbufs, num_dbufs, 0);
 }
 
 static bool locking_init_internal(bool read_only)

@@ -377,7 +377,8 @@ NTSTATUS g_lock_lock_cb_dump(struct g_lock_lock_cb_state *cb_state,
 
 NTSTATUS g_lock_lock_cb_writev(struct g_lock_lock_cb_state *cb_state,
 			       const TDB_DATA *dbufs,
-			       size_t num_dbufs)
+			       size_t num_dbufs,
+			       int flags)
 {
 	NTSTATUS status;
 
@@ -1506,7 +1507,8 @@ NTSTATUS g_lock_writev_data(
 	struct g_lock_ctx *ctx,
 	TDB_DATA key,
 	const TDB_DATA *dbufs,
-	size_t num_dbufs)
+	size_t num_dbufs,
+	int flags)
 {
 	struct g_lock_writev_data_state state = {
 		.key = key,
@@ -1541,7 +1543,7 @@ NTSTATUS g_lock_write_data(struct g_lock_ctx *ctx, TDB_DATA key,
 		.dptr = discard_const_p(uint8_t, buf),
 		.dsize = buflen,
 	};
-	return g_lock_writev_data(ctx, key, &dbuf, 1);
+	return g_lock_writev_data(ctx, key, &dbuf, 1, 0);
 }
 
 struct g_lock_locks_state {

@@ -57,7 +57,8 @@ NTSTATUS g_lock_lock_cb_dump(struct g_lock_lock_cb_state *glck,
 			     void *private_data);
 NTSTATUS g_lock_lock_cb_writev(struct g_lock_lock_cb_state *glck,
 			       const TDB_DATA *dbufs,
-			       size_t num_dbufs);
+			       size_t num_dbufs,
+			       int flags);
 void g_lock_lock_cb_unlock(struct g_lock_lock_cb_state *glck);
 struct tevent_req *g_lock_lock_cb_watch_data_send(
 	TALLOC_CTX *mem_ctx,
@@ -88,7 +89,8 @@ NTSTATUS g_lock_writev_data(
 	struct g_lock_ctx *ctx,
 	TDB_DATA key,
 	const TDB_DATA *dbufs,
-	size_t num_dbufs);
+	size_t num_dbufs,
+	int flags);
 NTSTATUS g_lock_write_data(struct g_lock_ctx *ctx, TDB_DATA key,
 			   const uint8_t *buf, size_t buflen);
 
