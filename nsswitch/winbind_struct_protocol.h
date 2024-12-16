@@ -63,8 +63,9 @@ typedef char fstring[FSTRING_LEN];
  * 31: added "client_name" to the request
  * 32: added "traceid" to the request
  *     removed WINBINDD_INIT_CONNECTION
+ * 33: removed WINBINDD_SHOW_SEQUENCE
  */
-#define WINBIND_INTERFACE_VERSION 32
+#define WINBIND_INTERFACE_VERSION 33
 
 /* Have to deal with time_t being 4 or 8 bytes due to structure alignment.
    On a 64bit Linux box, we have to support a constant structure size
@@ -140,8 +141,6 @@ enum winbindd_cmd {
 	WINBINDD_GETDCNAME,	/* Issue a GetDCName Request */
 	WINBINDD_DSGETDCNAME,	/* Issue a DsGetDCName Request */
 	WINBINDD_DC_INFO,	/* Which DC are we connected to? */
-
-	WINBINDD_SHOW_SEQUENCE, /* display sequence numbers of domains */
 
 	/* WINS commands */
 
