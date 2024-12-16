@@ -208,8 +208,6 @@ bld.SAMBA3_SUBSYSTEM('winbindd-lib',
                     wb_lookupusergroups.c
                     wb_getpwsid.c
                     wb_gettoken.c
-                    wb_seqnum.c
-                    wb_seqnums.c
                     wb_group_members.c
                     wb_alias_members.c
                     wb_getgrsid.c
@@ -231,7 +229,6 @@ bld.SAMBA3_SUBSYSTEM('winbindd-lib',
                     winbindd_getsidaliases.c
                     winbindd_getuserdomgroups.c
                     winbindd_getgroups.c
-                    winbindd_show_sequence.c
                     winbindd_getgrgid.c
                     winbindd_getgrnam.c
                     winbindd_getusersids.c

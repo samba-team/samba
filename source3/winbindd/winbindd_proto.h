@@ -742,24 +742,6 @@ struct tevent_req *winbindd_getgroups_send(TALLOC_CTX *mem_ctx,
 NTSTATUS winbindd_getgroups_recv(struct tevent_req *req,
 				 struct winbindd_response *response);
 
-struct tevent_req *wb_seqnum_send(TALLOC_CTX *mem_ctx,
-				  struct tevent_context *ev,
-				  struct winbindd_domain *domain);
-NTSTATUS wb_seqnum_recv(struct tevent_req *req, uint32_t *seqnum);
-
-struct tevent_req *wb_seqnums_send(TALLOC_CTX *mem_ctx,
-				   struct tevent_context *ev);
-NTSTATUS wb_seqnums_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			 int *num_domains, struct winbindd_domain ***domains,
-			 NTSTATUS **statuses, uint32_t **seqnums);
-
-struct tevent_req *winbindd_show_sequence_send(TALLOC_CTX *mem_ctx,
-					       struct tevent_context *ev,
-					       struct winbindd_cli_state *cli,
-					       struct winbindd_request *request);
-NTSTATUS winbindd_show_sequence_recv(struct tevent_req *req,
-				     struct winbindd_response *response);
-
 struct tevent_req *wb_group_members_send(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,
 					 const struct dom_sid *sid,
