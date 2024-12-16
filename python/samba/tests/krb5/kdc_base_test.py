@@ -3250,6 +3250,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                            expect_requester_sid=None,
                            expect_pac_attrs=None,
                            expect_pac_attrs_pac_request=None,
+                           expect_krbtgt_referral=False,
                            fresh=False):
         user_name = tgt.cname['name-string'][0]
         ticket_sname = tgt.sname
@@ -3313,6 +3314,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             expected_device_claims=expected_device_claims,
             unexpected_device_claims=unexpected_device_claims,
             ticket_decryption_key=decryption_key,
+            expect_ticket_kvno=(not expect_krbtgt_referral),
             check_rep_fn=self.generic_check_kdc_rep,
             check_kdc_private_fn=self.generic_check_kdc_private,
             tgt=tgt,
