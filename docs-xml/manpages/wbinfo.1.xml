@@ -62,7 +62,6 @@
 		<arg choice="opt">--remove-uid-mapping uid,sid</arg>
 		<arg choice="opt">-s sid</arg>
 		<arg choice="opt">--separator</arg>
-		<arg choice="opt">--sequence</arg>
 		<arg choice="opt">--set-auth-user user%password</arg>
 		<arg choice="opt">--set-gid-mapping gid,sid</arg>
 		<arg choice="opt">--set-uid-mapping uid,sid</arg>
@@ -455,13 +454,6 @@
 		<varlistentry>
 		<term>--separator</term>
 		<listitem><para>Get the active winbind separator.
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>--sequence</term>
-		<listitem><para>This command has been deprecated.  Please use
-				the --online-status option instead.
 		</para></listitem>
 		</varlistentry>
 
