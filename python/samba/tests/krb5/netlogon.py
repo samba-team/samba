@@ -36,7 +36,7 @@ from samba.crypto import md4_hash_blob
 from samba.tests import DynamicTestCase, env_get_var_value
 from samba.tests.krb5.kdc_base_test import KDCBaseTest
 import samba.tests.krb5.rfc4120_pyasn1 as krb5_asn1
-from samba.tests.krb5.rfc4120_constants import KU_NON_KERB_CKSUM_SALT
+from samba.tests.krb5.rfc4120_constants import KU_NON_KERB_CKSUM_SALT, NT_SRV_INST
 
 global_asn1_print = False
 global_ndr_print = False
@@ -874,7 +874,26 @@ class NetlogonSchannel(KDCBaseTest):
         elif logon_type == netlogon.NetlogonTicketLogonInformation:
             user_tgt = self.get_tgt(user_creds)
 
-            if self.is_domain_trust(ncreds):
+            if ncreds.secure_channel_type == misc.SEC_CHAN_DNS_DOMAIN:
+                #
+                # With an uplevel trust we are able to get
+                # a referral ticket, but even if we pass
+                # that, it will get
+                # NETLOGON_TICKET_LOGON_FAILED_LOGON
+                # with HRES_SEC_E_WRONG_PRINCIPAL
+                #
+                incoming_creds = trust_creds.get_trust_incoming_creds()
+                outgoing_creds = trust_creds.get_trust_outgoing_creds()
+                trealm = outgoing_creds.get_realm()
+                sname = self.PrincipalName_create(name_type=NT_SRV_INST,
+                                                  names=["krbtgt", trealm])
+                referral_ticket = self.get_service_ticket(user_tgt,
+                                                          incoming_creds,
+                                                          sname=sname,
+                                                          expect_krbtgt_referral=True)
+                service_ticket_data = self.der_encode(referral_ticket.ticket,
+                                                      asn1Spec=krb5_asn1.Ticket())
+            elif ncreds.secure_channel_type == misc.SEC_CHAN_DOMAIN:
                 #
                 # We keep it simple for now and
                 # just pass the user_tgt
