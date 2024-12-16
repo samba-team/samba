@@ -502,8 +502,6 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 
 struct winbindd_domain *domain_list(void);
 struct winbindd_domain *wb_next_domain(struct winbindd_domain *domain);
-bool set_routing_domain(struct winbindd_domain *domain,
-			struct winbindd_domain *routing_domain);
 bool add_trusted_domain_from_auth(uint16_t validation_level,
 				  struct info3_text *info3,
 				  struct info6_text *info6);
