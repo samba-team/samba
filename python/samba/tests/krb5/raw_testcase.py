@@ -3357,6 +3357,7 @@ class RawKerberosTest(TestCase):
             'ticket_decryption_key': ticket_decryption_key,
             'expect_ticket_checksum': expect_ticket_checksum,
             'expect_full_checksum': expect_full_checksum,
+            'expect_ticket_kvno': True,
             'generate_fast_fn': generate_fast_fn,
             'generate_fast_armor_fn': generate_fast_armor_fn,
             'generate_fast_padata_fn': generate_fast_padata_fn,
@@ -3433,6 +3434,7 @@ class RawKerberosTest(TestCase):
                           ticket_decryption_key=None,
                           expect_ticket_checksum=None,
                           expect_full_checksum=None,
+                          expect_ticket_kvno=True,
                           generate_fast_fn=None,
                           generate_fast_armor_fn=None,
                           generate_fast_padata_fn=None,
@@ -3512,6 +3514,7 @@ class RawKerberosTest(TestCase):
             'ticket_decryption_key': ticket_decryption_key,
             'expect_ticket_checksum': expect_ticket_checksum,
             'expect_full_checksum': expect_full_checksum,
+            'expect_ticket_kvno': expect_ticket_kvno,
             'generate_fast_fn': generate_fast_fn,
             'generate_fast_armor_fn': generate_fast_armor_fn,
             'generate_fast_padata_fn': generate_fast_padata_fn,
@@ -3580,6 +3583,7 @@ class RawKerberosTest(TestCase):
         rep_encpart_asn1Spec = kdc_exchange_dict['rep_encpart_asn1Spec']
         msg_type = kdc_exchange_dict['rep_msg_type']
         armor_key = kdc_exchange_dict['armor_key']
+        expect_ticket_kvno = kdc_exchange_dict['expect_ticket_kvno']
 
         self.assertElementEqual(rep, 'msg-type', msg_type)  # AS-REP | TGS-REP
         padata = self.getElementValue(rep, 'padata')
@@ -3612,7 +3616,7 @@ class RawKerberosTest(TestCase):
                 pos = len(tuple(krb5_asn1.KDCOptions('enc-tkt-in-skey'))) - 1
                 expect_kvno = (pos >= len(kdc_options)
                                or kdc_options[pos] != '1')
-                if expect_kvno:
+                if expect_ticket_kvno and expect_kvno:
                     # 'unspecified' means present, with any value != 0
                     self.assertElementKVNO(ticket_encpart, 'kvno',
                                            self.unspecified_kvno)
