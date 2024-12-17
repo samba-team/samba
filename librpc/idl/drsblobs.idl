@@ -618,7 +618,7 @@ interface drsblobs {
 		ForestTrustString netbios_name;
 	} ForestTrustDataDomainInfo;
 
-	typedef [flag(NDR_NOALIGN)] struct {
+	typedef [flag(NDR_NOALIGN|NDR_PAHEX)] struct {
 		uint32 size;
 		uint8 data[size];
 	} ForestTrustDataBinaryData;
