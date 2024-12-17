@@ -597,6 +597,15 @@ interface drsblobs {
 
 	/* MS-ADTS 7.1.6.9.3 msDS-TrustForestTrustInfo Attribute */
 
+	/* same as lsa_ForestTrustRecordType, but only 8 bit */
+	typedef [enum8bit] enum {
+		FOREST_TRUST_TOP_LEVEL_NAME = LSA_FOREST_TRUST_TOP_LEVEL_NAME,
+		FOREST_TRUST_TOP_LEVEL_NAME_EX = LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX,
+		FOREST_TRUST_DOMAIN_INFO = LSA_FOREST_TRUST_DOMAIN_INFO,
+		FOREST_TRUST_BINARY_DATA = LSA_FOREST_TRUST_BINARY_DATA,
+		FOREST_TRUST_SCANNER_INFO = LSA_FOREST_TRUST_SCANNER_INFO
+	} ForestTrustInfoRecordType;
+
 	typedef struct {
 		[value(strlen_m(string))] uint32 size;
 		[charset(UTF8)] uint8 string[size];
@@ -620,13 +629,6 @@ interface drsblobs {
 		[case(FOREST_TRUST_DOMAIN_INFO)] ForestTrustDataDomainInfo info;
 		[default] ForestTrustDataBinaryData data;
 	} ForestTrustData;
-
-	/* same as lsa_ForestTrustRecordType, but only 8 bit */
-	typedef [enum8bit] enum {
-		FOREST_TRUST_TOP_LEVEL_NAME = LSA_FOREST_TRUST_TOP_LEVEL_NAME,
-		FOREST_TRUST_TOP_LEVEL_NAME_EX = LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX,
-		FOREST_TRUST_DOMAIN_INFO = LSA_FOREST_TRUST_DOMAIN_INFO
-	} ForestTrustInfoRecordType;
 
 	/* meaning of flags depends on record type and values are
 	   the same as in lsa.idl, see collision record types */

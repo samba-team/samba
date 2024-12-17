@@ -4493,7 +4493,7 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 		exclusion = false;
 
 		switch (nrec->type) {
-		case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
+		case FOREST_TRUST_TOP_LEVEL_NAME_EX:
 			/* exclusions do not conflict by definition */
 			break;
 
@@ -4501,10 +4501,20 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 			dns_name = nrec->data.name.string;
 			break;
 
-		case LSA_FOREST_TRUST_DOMAIN_INFO:
+		case FOREST_TRUST_DOMAIN_INFO:
 			dns_name = nrec->data.info.dns_name.string;
 			nb_name = nrec->data.info.netbios_name.string;
 			sid = &nrec->data.info.sid;
+			break;
+
+		case FOREST_TRUST_BINARY_DATA:
+			break;
+
+		case FOREST_TRUST_SCANNER_INFO:
+			/*
+			 * We don't have a scanner yet,
+			 * so we don't check this here
+			 */
 			break;
 		}
 
