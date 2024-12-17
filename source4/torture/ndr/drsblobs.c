@@ -74,7 +74,7 @@ static bool forest_trust_info_check_out2(struct torture_context *tctx,
 	const struct ForestTrustInfoRecord *rec = NULL;
 	const struct ForestTrustString *n = NULL;
 	const struct ForestTrustDataDomainInfo *d = NULL;
-	const struct ForestTrustDataBinaryData *b = NULL;
+	const struct ForestTrustDataScannerInfo *s = NULL;
 
 	torture_assert_int_equal(tctx, r->version, 1, "version");
 	torture_assert_int_equal(tctx, r->count, 5, "count");
@@ -125,8 +125,14 @@ static bool forest_trust_info_check_out2(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, rec->flags, 0, "record flags");
 	torture_assert_u64_equal(tctx, rec->timestamp, 0xCF71C4FD01DB4CBAULL, "record timestamp");
 	torture_assert_int_equal(tctx, rec->type, FOREST_TRUST_SCANNER_INFO, "record type");
-	b = &rec->data.unknown;
-	torture_assert_int_equal(tctx, b->size, 0x24, "scanner data");
+	s = &rec->data.scanner_info;
+	torture_assert_int_equal(tctx, s->sub_type, FOREST_TRUST_SCANNER_INFO, "record sub type");
+	d = &s->info;
+	torture_assert_int_equal(tctx, d->sid_size, 0x00000000, "record info sid_size");
+	torture_assert_int_equal(tctx, d->dns_name.size, 14, "record name size");
+	torture_assert_str_equal(tctx, d->dns_name.string, "w4edom-l4.base", "record info dns_name string");
+	torture_assert_int_equal(tctx, d->netbios_name.size, 9, "record info netbios_name size");
+	torture_assert_str_equal(tctx, d->netbios_name.string, "W4EDOM-L4", "record info netbios_name string");
 
 	return true;
 }

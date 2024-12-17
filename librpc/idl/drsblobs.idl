@@ -623,11 +623,21 @@ interface drsblobs {
 		uint8 data[size];
 	} ForestTrustDataBinaryData;
 
+	typedef [flag(NDR_NOALIGN)] struct {
+		[value(FOREST_TRUST_SCANNER_INFO)] ForestTrustInfoRecordType sub_type;
+		ForestTrustDataDomainInfo info;
+	} ForestTrustDataScannerInfo;
+
 	typedef [nodiscriminant] union {
 		[case(FOREST_TRUST_TOP_LEVEL_NAME)] ForestTrustString name;
 		[case(FOREST_TRUST_TOP_LEVEL_NAME_EX)] ForestTrustString name;
 		[case(FOREST_TRUST_DOMAIN_INFO)] ForestTrustDataDomainInfo info;
 		[case(FOREST_TRUST_BINARY_DATA)] ForestTrustDataBinaryData binary;
+		/*
+		 * ForestTrustDataScannerInfo would have the same
+		 * definition as ForestTrustDataDomainInfo
+		 */
+		[case(FOREST_TRUST_SCANNER_INFO),subcontext(4)] ForestTrustDataScannerInfo scanner_info;
 		[default] ForestTrustDataBinaryData unknown;
 	} ForestTrustData;
 
