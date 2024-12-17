@@ -613,7 +613,7 @@ interface drsblobs {
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		[value(ndr_size_dom_sid0(&sid, ndr->flags))] uint32 sid_size;
-		[subcontext(0),subcontext_size(sid_size)] dom_sid sid;
+		[subcontext(0),subcontext_size(sid_size)] dom_sid0 sid;
 		ForestTrustString dns_name;
 		ForestTrustString netbios_name;
 	} ForestTrustDataDomainInfo;
