@@ -61,6 +61,76 @@ static bool forest_trust_info_check_out(struct torture_context *tctx,
 	return true;
 }
 
+static const char *forest_trust_info_data_out2 =
+ "AQAAAAUAAAAfAAAAAAAAALpM2wE/1ICrAA4AAAB3NGVkb20tbD"
+ "QuYmFzZUgAAAAAAAAAukzbAT/UgKsCGAAAAAEEAAAAAAAFFQAAAFWTkhD0sKbKlkeXVg4AAAB3NGV"
+ "kb20tbDQuYmFzZQkAAABXNEVET00tTDQiAAAAAQAAALtM2wFbRoxWABEAAAB3NGVkb20tbDQucHJp"
+ "dmF0ZSEAAAABAAAAu0zbAVtGjFYAEAAAAHc0ZWRvbS1sNC5wdWJsaWM1AAAAAAAAALpM2wH9xHHPB"
+ "CQAAAAEAAAAAA4AAAB3NGVkb20tbDQuYmFzZQkAAABXNEVET00tTDQ=";
+
+static bool forest_trust_info_check_out2(struct torture_context *tctx,
+					 struct ForestTrustInfo *r)
+{
+	const struct ForestTrustInfoRecord *rec = NULL;
+	const struct ForestTrustString *n = NULL;
+	const struct ForestTrustDataDomainInfo *d = NULL;
+	const struct ForestTrustDataBinaryData *b = NULL;
+
+	torture_assert_int_equal(tctx, r->version, 1, "version");
+	torture_assert_int_equal(tctx, r->count, 5, "count");
+
+	torture_assert_int_equal(tctx, r->records[0].record_size, 0x0000001f, "record size");
+	rec = &r->records[0].record;
+	torture_assert_int_equal(tctx, rec->flags, 0, "record flags");
+	torture_assert_u64_equal(tctx, rec->timestamp, 0xAB80D43F01DB4CBAULL, "record timestamp");
+	torture_assert_int_equal(tctx, rec->type, FOREST_TRUST_TOP_LEVEL_NAME, "record type");
+	n = &rec->data.name;
+	torture_assert_int_equal(tctx, n->size, 14, "record name size");
+	torture_assert_str_equal(tctx, n->string, "w4edom-l4.base", "record name string");
+
+	torture_assert_int_equal(tctx, r->records[1].record_size, 0x00000048, "record size");
+	rec = &r->records[1].record;
+	torture_assert_int_equal(tctx, rec->flags, 0, "record flags");
+	torture_assert_u64_equal(tctx, rec->timestamp, 0xAB80D43F01DB4CBAULL, "record timestamp");
+	torture_assert_int_equal(tctx, rec->type, FOREST_TRUST_DOMAIN_INFO, "record type");
+	d = &rec->data.info;
+	torture_assert_int_equal(tctx, d->sid_size, 0x00000018, "record info sid_size");
+	torture_assert_sid_equal(tctx, &d->sid,
+		dom_sid_parse_talloc(tctx, "S-1-5-21-278041429-3399921908-1452754838"), "record info sid");
+	torture_assert_int_equal(tctx, d->dns_name.size, 14, "record name size");
+	torture_assert_str_equal(tctx, d->dns_name.string, "w4edom-l4.base", "record info dns_name string");
+	torture_assert_int_equal(tctx, d->netbios_name.size, 9, "record info netbios_name size");
+	torture_assert_str_equal(tctx, d->netbios_name.string, "W4EDOM-L4", "record info netbios_name string");
+
+	torture_assert_int_equal(tctx, r->records[2].record_size, 0x00000022, "record size");
+	rec = &r->records[2].record;
+	torture_assert_int_equal(tctx, rec->flags, LSA_TLN_DISABLED_NEW, "record flags");
+	torture_assert_u64_equal(tctx, rec->timestamp, 0x568C465B01DB4CBBULL, "record timestamp");
+	torture_assert_int_equal(tctx, rec->type, FOREST_TRUST_TOP_LEVEL_NAME, "record type");
+	n = &rec->data.name;
+	torture_assert_int_equal(tctx, n->size, 17, "record name size");
+	torture_assert_str_equal(tctx, n->string, "w4edom-l4.private", "record name string");
+
+	torture_assert_int_equal(tctx, r->records[3].record_size, 0x00000021, "record size");
+	rec = &r->records[3].record;
+	torture_assert_int_equal(tctx, rec->flags, LSA_TLN_DISABLED_NEW, "record flags");
+	torture_assert_u64_equal(tctx, rec->timestamp, 0x568C465B01DB4CBBULL, "record timestamp");
+	torture_assert_int_equal(tctx, rec->type, FOREST_TRUST_TOP_LEVEL_NAME, "record type");
+	n = &rec->data.name;
+	torture_assert_int_equal(tctx, n->size, 16, "record name size");
+	torture_assert_str_equal(tctx, n->string, "w4edom-l4.public", "record name string");
+
+	torture_assert_int_equal(tctx, r->records[4].record_size, 0x00000035, "record size");
+	rec = &r->records[4].record;
+	torture_assert_int_equal(tctx, rec->flags, 0, "record flags");
+	torture_assert_u64_equal(tctx, rec->timestamp, 0xCF71C4FD01DB4CBAULL, "record timestamp");
+	torture_assert_int_equal(tctx, rec->type, FOREST_TRUST_SCANNER_INFO, "record type");
+	b = &rec->data.data;
+	torture_assert_int_equal(tctx, b->size, 0x24, "scanner data");
+
+	return true;
+}
+
 static const uint8_t trust_domain_passwords_in[] = {
 	0x34, 0x1f, 0x6e, 0xcd, 0x5f, 0x14, 0x99, 0xf9, 0xd8, 0x34, 0x9f, 0x1d,
 	0x1c, 0xcf, 0x1f, 0x02, 0xb8, 0x30, 0xcc, 0x77, 0x21, 0xc1, 0xf3, 0xe2,
@@ -511,6 +581,11 @@ struct torture_suite *ndr_drsblobs_suite(TALLOC_CTX *ctx)
 	torture_suite_add_suite(suite, win2012R2_suite);
 	
 	torture_suite_add_ndr_pull_test(suite, ForestTrustInfo, forest_trust_info_data_out, forest_trust_info_check_out);
+	torture_suite_add_ndr_pull_validate_test_b64(suite, ForestTrustInfo,
+						     "with_scanner",
+						     forest_trust_info_data_out2,
+						     forest_trust_info_check_out2);
+
 	torture_suite_add_ndr_pull_test(suite, trustDomainPasswords, trust_domain_passwords_in, trust_domain_passwords_check_in);
 
 	torture_suite_add_ndr_pull_validate_test_blob(suite,
