@@ -627,7 +627,8 @@ interface drsblobs {
 		[case(FOREST_TRUST_TOP_LEVEL_NAME)] ForestTrustString name;
 		[case(FOREST_TRUST_TOP_LEVEL_NAME_EX)] ForestTrustString name;
 		[case(FOREST_TRUST_DOMAIN_INFO)] ForestTrustDataDomainInfo info;
-		[default] ForestTrustDataBinaryData data;
+		[case(FOREST_TRUST_BINARY_DATA)] ForestTrustDataBinaryData binary;
+		[default] ForestTrustDataBinaryData unknown;
 	} ForestTrustData;
 
 	/* meaning of flags depends on record type and values are

@@ -125,7 +125,7 @@ static bool forest_trust_info_check_out2(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, rec->flags, 0, "record flags");
 	torture_assert_u64_equal(tctx, rec->timestamp, 0xCF71C4FD01DB4CBAULL, "record timestamp");
 	torture_assert_int_equal(tctx, rec->type, FOREST_TRUST_SCANNER_INFO, "record type");
-	b = &rec->data.data;
+	b = &rec->data.unknown;
 	torture_assert_int_equal(tctx, b->size, 0x24, "scanner data");
 
 	return true;
