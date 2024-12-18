@@ -1738,7 +1738,7 @@ static int winbind_auth_request(struct pwb_context *ctx,
 	struct wbcAuthUserInfo *user_info = NULL;
 	struct wbcAuthErrorInfo *error = NULL;
 	int ret = PAM_AUTH_ERR;
-	int i;
+	size_t i;
 	const char *codes[] = {
 		"NT_STATUS_PASSWORD_EXPIRED",
 		"NT_STATUS_PASSWORD_MUST_CHANGE",
@@ -1985,7 +1985,7 @@ static int winbind_chauthtok_request(struct pwb_context *ctx,
 	enum wbcPasswordChangeRejectReason reject_reason = -1;
 	uint32_t flags = 0;
 
-	int i;
+	size_t i;
 	const char *codes[] = {
 		"NT_STATUS_BACKUP_CONTROLLER",
 		"NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND",
@@ -3448,7 +3448,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 out:
 	{
 		/* Deal with offline errors. */
-		int i;
+		size_t i;
 		const char *codes[] = {
 			"NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND",
 			"NT_STATUS_NO_LOGON_SERVERS",
