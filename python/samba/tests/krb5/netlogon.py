@@ -118,7 +118,12 @@ class NetlogonSchannel(KDCBaseTest):
         samdb = self.get_samdb()
         self.dc_server = samdb.host_dns_name()
 
+    def download_keys_from_dc(self):
+        self.get_krbtgt_creds()
+        self.get_dc_creds()
+
     def get_wks1_creds(self):
+        self.download_keys_from_dc()
         return self.get_cached_creds(
                 account_type=self.AccountType.COMPUTER,
                 use_cache=False,
@@ -127,6 +132,7 @@ class NetlogonSchannel(KDCBaseTest):
                       'secure_channel_type': misc.SEC_CHAN_WKSTA})
 
     def get_bdc1_creds(self):
+        self.download_keys_from_dc()
         return self.get_cached_creds(
                 account_type=self.AccountType.SERVER,
                 use_cache=False,
@@ -135,11 +141,13 @@ class NetlogonSchannel(KDCBaseTest):
                       'secure_channel_type': misc.SEC_CHAN_BDC})
 
     def get_rodc1_creds(self):
+        self.download_keys_from_dc()
         krbtgt_creds = self.get_mock_rodc_krbtgt_creds(preserve=False)
         computer_creds = krbtgt_creds.get_rodc_computer_creds()
         return computer_creds
 
     def get_uptrust1_creds(self):
+        self.download_keys_from_dc()
 
         # This creates a forest trust
 
@@ -1291,7 +1299,10 @@ class NetlogonSchannel(KDCBaseTest):
         if old_utf8:
             trust_creds.set_old_password(old_utf8)
         if new_utf8:
+            trust_creds.clear_forced_keys()
             trust_creds.set_password(new_utf8)
+            trust_creds.set_kvno(trust_creds.get_kvno()+1)
+            self.remember_creds_for_keytab_export(trust_creds)
             tmp_nt_hash = trust_creds.get_nt_hash()
             expect_new_password = self.get_samr_Password(tmp_nt_hash)
 
@@ -1330,7 +1341,10 @@ class NetlogonSchannel(KDCBaseTest):
         if old_utf8:
             trust_creds.set_old_password(old_utf8)
         if new_utf8:
+            trust_creds.clear_forced_keys()
             trust_creds.set_password(new_utf8)
+            trust_creds.set_kvno(trust_creds.get_kvno()+1)
+            self.remember_creds_for_keytab_export(trust_creds)
             tmp_nt_hash = trust_creds.get_nt_hash()
             expect_new_password = self.get_samr_Password(tmp_nt_hash)
 
