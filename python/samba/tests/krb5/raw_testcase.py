@@ -694,8 +694,8 @@ class RawKerberosTest(TestCase):
 
     etypes_to_test = (
         {"value": -1111, "name": "dummy", },
-        {"value": kcrypto.Enctype.AES256, "name": "aes128", },
-        {"value": kcrypto.Enctype.AES128, "name": "aes256", },
+        {"value": kcrypto.Enctype.AES256, "name": "aes256", },
+        {"value": kcrypto.Enctype.AES128, "name": "aes128", },
         {"value": kcrypto.Enctype.RC4, "name": "rc4", },
     )
 
