@@ -809,6 +809,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                        spn=None, upn=None, additional_details=None,
                        ou=None, account_control=0, add_dollar=None,
                        expired_password=False, force_nt4_hash=False,
+                       export_to_keytab=True,
                        preserve=True):
         """Create an account for testing.
            The dn of the created account is added to self.accounts,
@@ -961,6 +962,9 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         guid = samdb.schema_format_value('objectGUID', guid)
         guid = guid.decode('utf-8')
         creds.set_guid(guid)
+
+        if export_to_keytab:
+            self.remember_creds_for_keytab_export(creds)
 
         return (creds, dn)
 
@@ -2181,6 +2185,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                                         add_dollar=add_dollar,
                                         force_nt4_hash=force_nt4_hash,
                                         expired_password=expired_password,
+                                        export_to_keytab=False, # explicit below
                                         preserve=use_cache)
 
         expected_etypes = None
@@ -2276,6 +2281,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
         if secure_channel_type is not None:
             creds.set_secure_channel_type(secure_channel_type)
+
+        self.remember_creds_for_keytab_export(creds)
 
         return creds
 
@@ -2391,6 +2398,9 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                 claims_support=self.kdc_claims_support,
                 compound_id_support=self.kdc_compound_id_support)
 
+            if type(self).export_existing_creds:
+                self.remember_creds_for_keytab_export(creds)
+
             return creds
 
         c = self._get_krb5_creds(prefix='RODC_KRBTGT',
@@ -2436,6 +2446,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             krbtgt_keys = self.get_keys(krbtgt_creds)
             self.creds_set_keys(krbtgt_creds, krbtgt_keys)
 
+            self.remember_creds_for_keytab_export(krbtgt_creds)
+
             acct_res = samdb.search(base=rodc_ctx.acct_dn,
                                     scope=ldb.SCOPE_BASE,
                                     attrs=['msDS-KeyVersionNumber',
@@ -2471,6 +2483,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             # as computer_creds.set_password() could be
             # used by the caller...
             # self.creds_set_keys(computer_creds, computer_keys)
+
+            self.remember_creds_for_keytab_export(computer_creds)
 
             if self.get_domain_functional_level() >= DS_DOMAIN_FUNCTION_2008:
                 extra_bits = (security.KERB_ENCTYPE_AES128_CTS_HMAC_SHA1_96 |
@@ -2540,6 +2554,9 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                 claims_support=self.kdc_claims_support,
                 compound_id_support=self.kdc_compound_id_support)
 
+            if type(self).export_existing_creds:
+                self.remember_creds_for_keytab_export(creds)
+
             return creds
 
         c = self._get_krb5_creds(prefix='KRBTGT',
@@ -2592,6 +2609,9 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                                     extra_bits=extra_bits,
                                     remove_bits=remove_bits)
 
+            if type(self).export_existing_creds:
+                self.remember_creds_for_keytab_export(creds)
+
             return creds
 
         c = self._get_krb5_creds(prefix='DC',
@@ -2641,6 +2661,9 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             self.creds_set_enctypes(creds,
                                     extra_bits=extra_bits,
                                     remove_bits=remove_bits)
+
+            if type(self).export_existing_creds:
+                self.remember_creds_for_keytab_export(creds)
 
             return creds
 
