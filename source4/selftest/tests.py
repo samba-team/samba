@@ -1990,11 +1990,9 @@ for env in ["fl2008r2dc", "fl2003dc"]:
                            })
 
 for env in ["ad_dc"]:
-    fast_support = have_fast_support
     planoldpythontestsuite(env, "samba.tests.krb5.netlogon",
                            environ={
                                **krb5_environ,
-                               'FAST_SUPPORT': fast_support,
                                'NETLOGON_STRONG_KEY_SUPPORT': '0',
                                'NETLOGON_AUTH_KRB5_SUPPORT': '1',
                            })
