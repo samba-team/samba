@@ -375,13 +375,36 @@ NTSTATUS dom_sid_split_rid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 }
 
 /*
+  return true if the 2nd sid contains or matches the prefix_sid
+*/
+bool dom_sid_match_prefix(const struct dom_sid *prefix_sid,
+			  const struct dom_sid *sid)
+{
+	int i;
+
+	if (!prefix_sid || !sid) {
+		return false;
+	}
+
+	if (prefix_sid->num_auths > sid->num_auths) {
+		return false;
+	}
+
+	for (i = prefix_sid->num_auths-1; i >= 0; --i) {
+		if (prefix_sid->sub_auths[i] != sid->sub_auths[i]) {
+			return false;
+		}
+	}
+
+	return dom_sid_compare_auth(prefix_sid, sid) == 0;
+}
+
+/*
   return true if the 2nd sid is in the domain given by the first sid
 */
 bool dom_sid_in_domain(const struct dom_sid *domain_sid,
 		       const struct dom_sid *sid)
 {
-	int i;
-
 	if (!domain_sid || !sid) {
 		return false;
 	}
@@ -394,13 +417,7 @@ bool dom_sid_in_domain(const struct dom_sid *domain_sid,
 		return false;
 	}
 
-	for (i = domain_sid->num_auths-1; i >= 0; --i) {
-		if (domain_sid->sub_auths[i] != sid->sub_auths[i]) {
-			return false;
-		}
-	}
-
-	return dom_sid_compare_auth(domain_sid, sid) == 0;
+	return dom_sid_match_prefix(domain_sid, sid);
 }
 
 bool dom_sid_has_account_domain(const struct dom_sid *sid)

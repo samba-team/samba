@@ -117,6 +117,8 @@ struct dom_sid *dom_sid_add_rid(TALLOC_CTX *mem_ctx,
 				uint32_t rid);
 NTSTATUS dom_sid_split_rid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 			   struct dom_sid **domain, uint32_t *rid);
+bool dom_sid_match_prefix(const struct dom_sid *prefix_sid,
+			  const struct dom_sid *sid);
 bool dom_sid_in_domain(const struct dom_sid *domain_sid,
 		       const struct dom_sid *sid);
 bool dom_sid_has_account_domain(const struct dom_sid *sid);
