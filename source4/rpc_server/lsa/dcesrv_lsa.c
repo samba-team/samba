@@ -1203,6 +1203,13 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_precheck(
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
+	if (info->trust_attributes & LSA_TRUST_ATTRIBUTE_PIM_TRUST) {
+		/*
+		 * We don't support LSA_TRUST_ATTRIBUTE_PIM_TRUST yet.
+		 */
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
 	/*
 	 * We expect S-1-5-21-A-B-C, but we don't
 	 * allow S-1-5-21-0-0-0 as this is used
