@@ -29,6 +29,14 @@
 static bool is_base_sid(const struct auth_SidAttr *sid,
 			const struct dom_sid *domain_sid)
 {
+	if (sid->origin == AUTH_SID_ORIGIN_BASE) {
+		goto check_domain;
+	}
+
+	if (sid->origin != AUTH_SID_ORIGIN_UNKNOWN) {
+		return false;
+	}
+
 	if (sid->attrs & SE_GROUP_RESOURCE) {
 		/*
 		 * Resource groups don't belong in the base
@@ -37,6 +45,7 @@ static bool is_base_sid(const struct auth_SidAttr *sid,
 		return false;
 	}
 
+check_domain:
 	/*
 	 * This SID belongs in the base structure only if it's in the account's
 	 * domain.
@@ -145,6 +154,13 @@ static NTSTATUS store_sid(struct netr_SidAttr *sids,
 			  const uint32_t allocated_resource_groups,
 			  const enum auth_group_inclusion group_inclusion)
 {
+	if (sid->origin == AUTH_SID_ORIGIN_BASE) {
+		return NT_STATUS_OK;
+	}
+	if (sid->origin == AUTH_SID_ORIGIN_EXTRA) {
+		goto store_in_extra;
+	}
+
 	/* See if it's a resource SID. */
 	if (sid->attrs & SE_GROUP_RESOURCE) {
 		/*
@@ -176,7 +192,7 @@ static NTSTATUS store_sid(struct netr_SidAttr *sids,
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
-
+store_in_extra:
 	/* Just store the SID in Extra SIDs. */
 	return store_extra_sid(sids,
 			       sidcount,
@@ -734,6 +750,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 	user_info_dc->sids[PRIMARY_USER_SID_INDEX] = (struct auth_SidAttr) {
 		.sid = tmpsid,
 		.attrs = SE_GROUP_DEFAULT_FLAGS,
+		.origin = AUTH_SID_ORIGIN_BASE,
 	};
 
 	tmpsid = *base->domain_sid;
@@ -750,6 +767,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 	user_info_dc->sids[PRIMARY_GROUP_SID_INDEX] = (struct auth_SidAttr) {
 		.sid = tmpsid,
 		.attrs = SE_GROUP_DEFAULT_FLAGS,
+		.origin = AUTH_SID_ORIGIN_BASE,
 	};
 
 	user_info_dc->num_sids = PRIMARY_SIDS_COUNT;
@@ -765,6 +783,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 		bgrps[user_info_dc->num_sids] = (struct auth_SidAttr) {
 			.sid = tmpsid,
 			.attrs = base->groups.rids[i].attributes,
+			.origin = AUTH_SID_ORIGIN_BASE,
 		};
 		user_info_dc->num_sids++;
 	}
@@ -779,6 +798,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 		dgrps[user_info_dc->num_sids] = (struct auth_SidAttr) {
 			.sid = *sids[i].sid,
 			.attrs = sids[i].attributes,
+			.origin = AUTH_SID_ORIGIN_EXTRA,
 		};
 		user_info_dc->num_sids++;
 	}
@@ -921,6 +941,7 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 			rgrps[user_info_dc->num_sids] = (struct auth_SidAttr) {
 				.sid = tmpsid,
 				.attrs = rg->groups.rids[i].attributes,
+				.origin = AUTH_SID_ORIGIN_RESOURCE,
 			};
 			user_info_dc->num_sids++;
 		}

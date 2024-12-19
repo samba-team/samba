@@ -116,9 +116,17 @@ interface auth
 		AUTH_EXCLUDE_RESOURCE_GROUPS = 4
 	} auth_group_inclusion;
 
+	typedef [nopush,nopull] enum {
+		AUTH_SID_ORIGIN_UNKNOWN = 0,
+		AUTH_SID_ORIGIN_BASE = 1,
+		AUTH_SID_ORIGIN_EXTRA = 2,
+		AUTH_SID_ORIGIN_RESOURCE = 3
+	} auth_sid_origin;
+
 	typedef [nopush,nopull] struct {
 		dom_sid sid;
 		security_GroupAttrs attrs;
+		auth_sid_origin origin;
 	} auth_SidAttr;
 
 	/* This is the interim product of the auth subsystem, before
