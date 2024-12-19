@@ -1184,6 +1184,13 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_precheck(
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (info->trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
+		/*
+		 * We don't allow additional domains in our forest yet.
+		 */
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
 	/*
 	 * We expect S-1-5-21-A-B-C, but we don't
 	 * allow S-1-5-21-0-0-0 as this is used
