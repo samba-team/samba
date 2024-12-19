@@ -1190,6 +1190,12 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_precheck(
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if ((info->trust_attributes & LSA_TRUST_ATTRIBUTE_PIM_TRUST) &&
+	    !(info->trust_attributes & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE))
+	{
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	if (info->trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
 		/*
 		 * We don't allow additional domains in our forest yet.
