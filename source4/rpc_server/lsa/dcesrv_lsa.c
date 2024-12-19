@@ -1178,6 +1178,12 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_precheck(
 		return NT_STATUS_INVALID_SID;
 	}
 
+	if ((info->trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) &&
+	    (info->trust_attributes & LSA_TRUST_ATTRIBUTE_CROSS_ORGANIZATION))
+	{
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	/*
 	 * We expect S-1-5-21-A-B-C, but we don't
 	 * allow S-1-5-21-0-0-0 as this is used
