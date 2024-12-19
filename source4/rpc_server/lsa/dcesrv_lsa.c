@@ -1179,6 +1179,12 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_precheck(
 	}
 
 	if ((info->trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) &&
+	    (info->trust_attributes & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE))
+	{
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if ((info->trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) &&
 	    (info->trust_attributes & LSA_TRUST_ATTRIBUTE_CROSS_ORGANIZATION))
 	{
 		return NT_STATUS_INVALID_PARAMETER;
