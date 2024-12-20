@@ -2272,6 +2272,24 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		goto out;
 	}
 
+	if (tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
+		/*
+		 * We don't support WITHIN_FOREST yet
+		 */
+		krb5_clear_error_message(context);
+		ret = SDB_ERR_NOENTRY;
+		goto out;
+	}
+
+	if (tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_PIM_TRUST) {
+		/*
+		 * We don't support PIM_TRUST yet
+		 */
+		krb5_clear_error_message(context);
+		ret = SDB_ERR_NOENTRY;
+		goto out;
+	}
+
 	if (tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_CROSS_ORGANIZATION) {
 		/*
 		 * We don't support selective authentication yet.
