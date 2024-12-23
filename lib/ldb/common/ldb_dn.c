@@ -969,7 +969,7 @@ static bool ldb_dn_casefold_internal(struct ldb_dn *dn)
 	 */
 	TALLOC_FREE(dn->components[i].cf_name);
   failed:
-	for (j = 0; j < i; i++) {
+	for (j = 0; j < i; j++) {
 		TALLOC_FREE(dn->components[j].cf_name);
 		TALLOC_FREE(dn->components[j].cf_value.data);
 	}
