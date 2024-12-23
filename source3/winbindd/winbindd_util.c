@@ -1216,7 +1216,26 @@ static bool add_trusted_domains_dc(void)
 		if (domains[i]->trust_direction & LSA_TRUST_DIRECTION_OUTBOUND) {
 			trust_flags |= NETR_TRUST_FLAG_OUTBOUND;
 		}
+		if (domains[i]->trust_attributes & LSA_TRUST_ATTRIBUTE_PIM_TRUST) {
+			/*
+			 * We don't support PIM_TRUST yet.
+			 */
+			DBG_WARNING("Ignoring PIM_TRUST trust to "
+				    "domain[%s/%s]\n",
+				    domains[i]->netbios_name,
+				    domains[i]->domain_name);
+			continue;
+		}
 		if (domains[i]->trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
+			/*
+			 * We don't support WITHIN_FOREST yet.
+			 */
+			DBG_WARNING("Ignoring WITHIN_FOREST trust to "
+				    "domain[%s/%s]\n",
+				    domains[i]->netbios_name,
+				    domains[i]->domain_name);
+			continue;
+
 			trust_flags |= NETR_TRUST_FLAG_IN_FOREST;
 		}
 
