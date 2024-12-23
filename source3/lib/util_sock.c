@@ -709,10 +709,10 @@ static bool matchname(const char *remotehost,
 	if (ailist->ai_canonname == NULL ||
 		(!strequal(remotehost, ailist->ai_canonname) &&
 		 !strequal(remotehost, "localhost"))) {
-		DEBUG(0,("matchname: host name/name mismatch: %s != %s\n",
+		DBG_INFO("host name/name mismatch: %s != %s\n",
 			 remotehost,
 			 ailist->ai_canonname ?
-				 ailist->ai_canonname : "(NULL)"));
+				 ailist->ai_canonname : "(NULL)");
 		freeaddrinfo(ailist);
 		return false;
 	}
@@ -735,12 +735,12 @@ static bool matchname(const char *remotehost,
 	 * it, but that could be dangerous, too.
 	 */
 
-	DEBUG(0,("matchname: host name/address mismatch: %s != %s\n",
+	DBG_INFO("host name/address mismatch: %s != %s\n",
 		print_sockaddr_len(addr_buf,
 			sizeof(addr_buf),
 			pss,
 			len),
-		 ailist->ai_canonname ? ailist->ai_canonname : "(NULL)"));
+		 ailist->ai_canonname ? ailist->ai_canonname : "(NULL)");
 
 	if (ailist) {
 		freeaddrinfo(ailist);
@@ -891,7 +891,7 @@ int get_remote_hostname(const struct tsocket_address *remote_address,
 		TALLOC_FREE(p);
 	} else {
 		if (!matchname(name_buf, (struct sockaddr *)&ss, len)) {
-			DEBUG(0,("matchname failed on %s\n", name_buf));
+			DBG_INFO("failed on %s\n", name_buf);
 			strlcpy(name_buf, "UNKNOWN", sizeof(name_buf));
 		}
 	}
