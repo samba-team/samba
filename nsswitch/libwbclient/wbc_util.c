@@ -305,8 +305,7 @@ wbcErr wbcCtxDcInfo(struct wbcContext *ctx,
 
         wbc_status = WBC_ERR_SUCCESS;
 done:
-	if (response.extra_data.data)
-		free(response.extra_data.data);
+	winbindd_free_response(&response);
 
 	if (WBC_ERROR_IS_OK(wbc_status)) {
 		*num_dcs = response.data.num_entries;
