@@ -243,7 +243,7 @@ wbcErr wbcCtxDcInfo(struct wbcContext *ctx,
 	const char **ips = NULL;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	size_t extra_len;
-	int i;
+	uint32_t i;
 	char *p;
 
 	/* Initialise request */
@@ -563,7 +563,7 @@ wbcErr wbcCtxListTrusts(struct wbcContext *ctx,
 	char *p = NULL;
 	char *extra_data = NULL;
 	struct wbcDomainInfo *d_list = NULL;
-	int i = 0;
+	uint32_t i = 0;
 
 	*domains = NULL;
 	*num_domains = 0;
