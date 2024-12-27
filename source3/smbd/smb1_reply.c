@@ -2573,15 +2573,19 @@ void reply_ctemp(struct smb_request *req)
 	}
 
 	for (i = 0; i < 10; i++) {
+		char rand_str[6];
+
+		generate_random_str_list_buf(rand_str,
+					     sizeof(rand_str),
+					     "0123456789");
+
 		if (*wire_name) {
 			fname = talloc_asprintf(ctx,
-					"%s/TMP%s",
-					wire_name,
-					generate_random_str_list(ctx, 5, "0123456789"));
+						"%s/TMP%s",
+						wire_name,
+						rand_str);
 		} else {
-			fname = talloc_asprintf(ctx,
-					"TMP%s",
-					generate_random_str_list(ctx, 5, "0123456789"));
+			fname = talloc_asprintf(ctx, "TMP%s", rand_str);
 		}
 
 		if (!fname) {
