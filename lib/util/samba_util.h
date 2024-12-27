@@ -170,6 +170,9 @@ _PUBLIC_ char *generate_random_machine_password(TALLOC_CTX *mem_ctx, size_t min,
 /**
  Use the random number generator to generate a random string.
 **/
+_PUBLIC_ char *generate_random_str_list_buf(char *buf,
+					    size_t buflen,
+					    const char *list);
 _PUBLIC_ char *generate_random_str_list(TALLOC_CTX *mem_ctx, size_t len, const char *list);
 
 /**

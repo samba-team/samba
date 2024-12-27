@@ -211,25 +211,42 @@ _PUBLIC_ bool check_password_quality(const char *pwd)
 	return false;
 }
 
+_PUBLIC_ char *generate_random_str_list_buf(char *buf,
+					    size_t buflen,
+					    const char *list)
+{
+	const size_t list_len = strlen(list);
+	size_t i, len;
+
+	if (buflen == 0) {
+		return buf;
+	}
+	buf[buflen-1] = '\0';
+
+	if (buflen == 1) {
+		return buf;
+	}
+
+	len = buflen-1;
+	generate_secret_buffer((uint8_t *)buf, len);
+
+	for (i=0; i<len; i++) {
+		buf[i] = list[buf[i] % list_len];
+	}
+
+	return buf;
+}
+
 /**
  Use the random number generator to generate a random string.
 **/
 
 _PUBLIC_ char *generate_random_str_list(TALLOC_CTX *mem_ctx, size_t len, const char *list)
 {
-	size_t i;
-	size_t list_len = strlen(list);
-
 	char *retstr = talloc_array(mem_ctx, char, len + 1);
 	if (!retstr) return NULL;
 
-	generate_secret_buffer((uint8_t *)retstr, len);
-	for (i = 0; i < len; i++) {
-		retstr[i] = list[retstr[i] % list_len];
-	}
-	retstr[i] = '\0';
-
-	return retstr;
+	return generate_random_str_list_buf(retstr, len+1, list);
 }
 
 /**
