@@ -1111,7 +1111,13 @@ static bool test_sorted(struct torture_context *tctx, struct smbcli_state *cli)
 	printf("Creating %d files\n", num_files);
 
 	for (i=0;i<num_files;i++) {
-		fname = talloc_asprintf(cli, BASEDIR "\\%s.txt", generate_random_str_list(tctx, 10, "abcdefgh"));
+		char randstr[11];
+		fname = talloc_asprintf(
+			cli,
+			BASEDIR "\\%s.txt",
+			generate_random_str_list_buf(randstr,
+						     sizeof(randstr),
+						     "abcdefgh"));
 		fnum = smbcli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
 		if (fnum == -1) {
 			printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
