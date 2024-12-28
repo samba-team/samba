@@ -242,7 +242,7 @@ static struct {
 static const char *level_name(enum smb_search_level level,
 			      enum smb_search_data_level data_level)
 {
-	int i;
+	size_t i;
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		if (level == levels[i].level &&
 		    data_level == levels[i].data_level) {
@@ -258,7 +258,7 @@ static const char *level_name(enum smb_search_level level,
 static const char *extract_name(void *data, enum smb_search_level level,
 				enum smb_search_data_level data_level)
 {
-	int i;
+	size_t i;
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		if (level == levels[i].level &&
 		    data_level == levels[i].data_level) {
@@ -274,7 +274,7 @@ static const char *extract_name(void *data, enum smb_search_level level,
 static uint32_t extract_resume_key(void *data, enum smb_search_level level,
 				   enum smb_search_data_level data_level)
 {
-	int i;
+	size_t i;
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		if (level == levels[i].level &&
 		    data_level == levels[i].data_level) {
@@ -287,7 +287,7 @@ static uint32_t extract_resume_key(void *data, enum smb_search_level level,
 /* find a level in the table by name */
 static union smb_search_data *find(const char *name)
 {
-	int i;
+	size_t i;
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		if (NT_STATUS_IS_OK(levels[i].status) &&
 		    strcmp(levels[i].name, name) == 0) {
@@ -358,7 +358,7 @@ static bool test_one_file(struct torture_context *tctx,
 	const char *fname = "torture_search.txt";
 	const char *fname2 = "torture_search-NOTEXIST.txt";
 	NTSTATUS status;
-	int i;
+	size_t i;
 	union smb_fileinfo all_info, alt_info, name_info, internal_info;
 	bool all_info_supported, alt_info_supported, name_info_supported,
 	    internal_info_supported;
@@ -836,7 +836,8 @@ static bool test_many_files(struct torture_context *tctx,
 			    struct smbcli_state *cli)
 {
 	const int num_files = 700;
-	int i, fnum, t;
+	int i, fnum;
+	size_t t;
 	char *fname;
 	bool ret = true;
 	NTSTATUS status;

@@ -1931,7 +1931,7 @@ static bool test_NetShareGetInfo(struct torture_context *tctx,
 	struct srvsvc_NetShareGetInfo r;
 	union srvsvc_NetShareInfo info;
 	uint32_t levels[] = { 0, 1, 2, 501, 502, 1004, 1005, 1006, 1007, 1501 };
-	int i;
+	size_t i;
 	bool ret = true;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
@@ -1984,7 +1984,7 @@ static bool test_NetShareEnum(struct torture_context *tctx,
 	struct srvsvc_NetShareCtr1007 c1007;
 	uint32_t totalentries = 0;
 	uint32_t levels[] = { 0, 1, 2, 501, 502, 1004, 1005, 1006, 1007 };
-	int i;
+	size_t i;
 	bool ret = true;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
@@ -2582,7 +2582,7 @@ static bool torture_samba3_rpc_lsa(struct torture_context *torture)
 	}
 
 	{
-		int i;
+		size_t i;
 		int levels[] = { 2,3,5,6 };
 
 		for (i=0; i<ARRAY_SIZE(levels); i++) {
@@ -2658,7 +2658,7 @@ static bool find_printers(struct torture_context *tctx,
 	struct srvsvc_NetShareCtr1 c1_in;
 	struct srvsvc_NetShareCtr1 *c1;
 	uint32_t totalentries = 0;
-	int i;
+	uint32_t i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	ZERO_STRUCT(c1_in);
