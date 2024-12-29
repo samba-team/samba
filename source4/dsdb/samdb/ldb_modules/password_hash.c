@@ -1554,7 +1554,7 @@ static bool parse_scheme(const char *scheme, int *algorithm, int *rounds) {
 
 	const char *rp = NULL; /* Pointer to the 'rounds=' option */
 	char digits[21];       /* digits extracted from the rounds option */
-	int i = 0;             /* loop index variable */
+	size_t i = 0;          /* loop index variable */
 
 	if (strncasecmp(SHA_256_SCHEME, scheme, strlen(SHA_256_SCHEME)) == 0) {
 		*algorithm = SHA_256_ALGORITHM_ID;
