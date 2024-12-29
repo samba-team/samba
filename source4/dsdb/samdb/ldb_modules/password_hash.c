@@ -1591,7 +1591,7 @@ static int setup_primary_userPassword_hash(
 	struct package_PrimaryUserPasswordValue *hash_value)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
-	const char *salt = NULL;        /* Randomly generated salt */
+	char salt[SHA_SALT_SIZE + 1];	/* Randomly generated salt */
 	const char *cmd = NULL;         /* command passed to crypt */
 	int algorithm = 0;              /* crypt hash algorithm number */
 	int rounds = 0;                 /* The number of hash rounds */
@@ -1600,13 +1600,9 @@ static int setup_primary_userPassword_hash(
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	/* Generate a random password salt */
-	salt = generate_random_str_list(frame,
-					SHA_SALT_SIZE,
-					SHA_SALT_PERMITTED_CHARS);
-	if (salt == NULL) {
-		TALLOC_FREE(frame);
-		return ldb_oom(ldb);
-	}
+	generate_random_str_list_buf(salt,
+				     sizeof(salt),
+				     SHA_SALT_PERMITTED_CHARS);
 
 	/* determine the hashing algorithm and number of rounds*/
 	if (!parse_scheme(scheme, &algorithm, &rounds)) {
