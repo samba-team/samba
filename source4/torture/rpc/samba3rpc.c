@@ -2094,7 +2094,7 @@ static bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx;
 	struct dcerpc_pipe *net_pipe;
 	struct dcerpc_binding_handle *net_handle;
-	char *wksname;
+	char wksname[15];
 	bool result = false;
 	NTSTATUS status;
 	struct netr_ServerReqChallenge r;
@@ -2112,11 +2112,9 @@ static bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 		return false;
 	}
 
-	if (!(wksname = generate_random_str_list(
-		      mem_ctx, 14, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"))) {
-		torture_comment(torture, "generate_random_str_list failed\n");
-		goto done;
-	}
+	generate_random_str_list_buf(wksname,
+				     sizeof(wksname),
+				     "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
 
 	if (!(torture_open_connection_share(
 		      mem_ctx, &cli,
