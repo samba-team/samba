@@ -1041,17 +1041,10 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 	}
 
 	become_root();
-	if (is_directory) {
-		ret = SMB_VFS_NEXT_UNLINKAT(handle,
-				dirfsp,
-				smb_fname,
-				AT_REMOVEDIR);
-	} else {
-		ret = SMB_VFS_NEXT_UNLINKAT(handle,
-				dirfsp,
-				smb_fname,
-				0);
-	}
+	ret = SMB_VFS_NEXT_UNLINKAT(handle,
+				    dirfsp,
+				    smb_fname,
+				    is_directory ? AT_REMOVEDIR : 0);
 	unbecome_root();
 
 	return ret;
