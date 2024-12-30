@@ -1099,7 +1099,7 @@ int unlink_acl_common(struct vfs_handle_struct *handle,
 		   see if we need to root override. */
 
 		/* Don't do anything fancy for streams. */
-		if (smb_fname->stream_name) {
+		if (is_ntfs_stream_smb_fname(smb_fname)) {
 			return -1;
 		}
 		return acl_common_remove_object(handle,
