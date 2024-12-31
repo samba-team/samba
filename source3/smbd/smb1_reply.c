@@ -720,11 +720,9 @@ void reply_checkpath(struct smb_request *req)
 		goto path_err;
 	}
 
-	if (!VALID_STAT(smb_fname->st) &&
-	    (SMB_VFS_STAT(conn, smb_fname) != 0)) {
-		DEBUG(3,("reply_checkpath: stat of %s failed (%s)\n",
-			smb_fname_str_dbg(smb_fname), strerror(errno)));
-		status = map_nt_error_from_unix(errno);
+	if (!VALID_STAT(smb_fname->st)) {
+		DBG_NOTICE("%s not found\n", smb_fname_str_dbg(smb_fname));
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		goto path_err;
 	}
 
