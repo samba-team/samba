@@ -555,7 +555,9 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	int ret;
 	struct vfs_open_how how = { .flags = 0, };
 	struct file_id file_id;
+	struct files_struct *dirfsp = NULL;
 	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *rel_fname = NULL;
 	enum ndr_err_code ndr_err;
 	struct vfs_default_durable_cookie cookie;
 	DATA_BLOB new_cookie_blob = data_blob_null;
@@ -601,26 +603,21 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	/* Create an smb_filename with stream_name == NULL. */
-	smb_fname = synthetic_smb_fname(talloc_tos(),
-					cookie.base_name,
-					NULL,
-					NULL,
-					0,
-					0);
-	if (smb_fname == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ret = SMB_VFS_LSTAT(conn, smb_fname);
-	if (ret == -1) {
-		status = map_nt_error_from_unix_common(errno);
-		DEBUG(1, ("Unable to lstat stream: %s => %s\n",
-			  smb_fname_str_dbg(smb_fname),
-			  nt_errstr(status)));
+	status = filename_convert_dirfsp_rel(talloc_tos(),
+					     conn,
+					     conn->cwd_fsp,
+					     cookie.base_name,
+					     UCF_LCOMP_LNK_OK,
+					     0,
+					     &dirfsp,
+					     &smb_fname,
+					     &rel_fname);
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-
+	if (!VALID_STAT(smb_fname->st)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 	if (!S_ISREG(smb_fname->st.st_ex_mode)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
@@ -818,7 +815,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		how.flags = O_RDONLY;
 	}
 
-	status = fd_openat(conn->cwd_fsp, fsp->fsp_name, fsp, &how);
+	status = fd_openat(dirfsp, rel_fname, fsp, &how);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("vfs_default_durable_reconnect: failed to open "
 			  "file: %s\n", nt_errstr(status)));
