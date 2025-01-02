@@ -5213,7 +5213,7 @@ static bool fruit_get_num_bands(vfs_handle_struct *handle,
 	TALLOC_FREE(bands_dir);
 
 	*_nbands = nbands;
-	return true;
+	return nbands > 0;
 }
 
 static bool fruit_tmsize_do_dirent(vfs_handle_struct *handle,

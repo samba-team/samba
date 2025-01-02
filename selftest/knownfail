@@ -4,7 +4,6 @@
 # "make test" will not report failures for tests listed here and will consider
 # a successful run for any of these tests an error.
 
-^samba3.vfs.fruit_timemachine # this fails as number of band==0 causes divison by 0
 ^samba3.blackbox.failure.failure # this is designed to fail, for testing our test infrastructure
 .*driver.add_driver_timestamps # we only can store dates, not timestamps
  ^samba3.smbtorture_s3.crypt_server\(nt4_dc\).SMB2-SESSION-REAUTH # expected to give ACCESS_DENIED SMB2.1 doesn't have encryption
