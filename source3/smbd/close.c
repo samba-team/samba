@@ -555,6 +555,15 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		goto done;
 	}
 
+	status = parent_pathref(talloc_tos(),
+				conn->cwd_fsp,
+				fsp->fsp_name,
+				&parent_fname,
+				&base_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
 	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
 	    && !fsp_is_alternate_stream(fsp)) {
 
@@ -580,15 +589,6 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		}
 
 		fsp->fsp_flags.kernel_share_modes_taken = false;
-	}
-
-	status = parent_pathref(talloc_tos(),
-				conn->cwd_fsp,
-				fsp->fsp_name,
-				&parent_fname,
-				&base_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
 	}
 
 	ret = SMB_VFS_UNLINKAT(conn,
