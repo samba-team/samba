@@ -978,7 +978,7 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 	return status;
 }
 
-static NTSTATUS recursive_rmdir_fsp(struct files_struct *fsp)
+NTSTATUS recursive_rmdir_fsp(struct files_struct *fsp)
 {
 	struct connection_struct *conn = fsp->conn;
 	const char *dname = NULL;
