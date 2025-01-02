@@ -1151,9 +1151,9 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 	}
 
 	if (!((errno == ENOTEMPTY) || (errno == EEXIST))) {
-		DEBUG(3,("rmdir_internals: couldn't remove directory %s : "
-			 "%s\n", smb_fname_str_dbg(smb_dname),
-			 strerror(errno)));
+		DBG_NOTICE("couldn't remove directory %s : %s\n",
+			   smb_fname_str_dbg(smb_dname),
+			   strerror(errno));
 		TALLOC_FREE(parent_fname);
 		return map_nt_error_from_unix(errno);
 	}
