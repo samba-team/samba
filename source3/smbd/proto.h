@@ -412,7 +412,7 @@ NTSTATUS reference_smb_fname_fsp_link(struct smb_filename *smb_fname_dst,
 				      const struct smb_filename *smb_fname_src);
 
 NTSTATUS synthetic_pathref(TALLOC_CTX *mem_ctx,
-			   struct files_struct *dirfsp,
+			   const struct files_struct *dirfsp,
 			   const char *base_name,
 			   const char *stream_name,
 			   const SMB_STRUCT_STAT *psbuf,
