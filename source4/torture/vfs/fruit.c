@@ -8125,14 +8125,23 @@ static bool test_timemachine_volsize(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, status, ok, done,
 					"smb2_util_mkdir\n");
 
+	status = smb2_util_roothandle(tree, &h);
+	torture_assert_ntstatus_ok(tctx, status, "Unable to create root handle");
+
+	/* Test that smbd does not crash if number of bands is 0 */
+	ZERO_STRUCT(fsinfo);
+	fsinfo.generic.level = RAW_QFS_SIZE_INFORMATION;
+	fsinfo.generic.handle = h;
+
+	status = smb2_getinfo_fs(tree, tree, &fsinfo);
+	torture_assert_ntstatus_ok(tctx, status, "smb2_getinfo_fs failed");
+
+	/* Setup 2 bands and test again */
 	ok = torture_setup_file(tctx, tree, "test.sparsebundle/bands/1", false);
 	torture_assert_goto(tctx, ok, ok, done, "torture_setup_file failed\n");
 
 	ok = torture_setup_file(tctx, tree, "test.sparsebundle/bands/2", false);
 	torture_assert_goto(tctx, ok, ok, done, "torture_setup_file failed\n");
-
-	status = smb2_util_roothandle(tree, &h);
-	torture_assert_ntstatus_ok(tctx, status, "Unable to create root handle");
 
 	ZERO_STRUCT(fsinfo);
 	fsinfo.generic.level = RAW_QFS_SIZE_INFORMATION;
