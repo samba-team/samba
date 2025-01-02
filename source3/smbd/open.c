@@ -4185,7 +4185,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	if (!new_file_created &&
 	    clear_ads(create_disposition) &&
 	    !fsp_is_alternate_stream(fsp)) {
-		status = delete_all_streams(conn, smb_fname);
+		status = delete_all_streams(fsp,
+					    parent_dir_fname->fsp,
+					    smb_fname_atname);
 		if (!NT_STATUS_IS_OK(status)) {
 			lck_state.cleanup_fn =
 				open_ntcreate_lock_cleanup_entry;
