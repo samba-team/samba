@@ -623,6 +623,7 @@ static int streams_depot_lstat(vfs_handle_struct *handle,
 			       struct smb_filename *smb_fname)
 {
 	struct smb_filename *smb_fname_stream = NULL;
+	struct smb_filename *base_fname = NULL;
 	NTSTATUS status;
 	int ret = -1;
 
@@ -633,9 +634,20 @@ static int streams_depot_lstat(vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_LSTAT(handle, smb_fname);
 	}
 
-	/* Stat the actual stream now. */
+	base_fname = cp_smb_filename_nostream(talloc_tos(), smb_fname);
+	if (base_fname == NULL) {
+		errno = ENOMEM;
+		goto done;
+	}
+
+	ret = SMB_VFS_NEXT_LSTAT(handle, base_fname);
+	if (ret == -1) {
+		goto done;
+	}
+
+	/* lstat the actual stream now. */
 	status = stream_smb_fname(
-		handle, NULL, smb_fname, &smb_fname_stream, false);
+		handle, &base_fname->st, smb_fname, &smb_fname_stream, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = -1;
 		errno = map_errno_from_nt_status(status);
@@ -644,8 +656,17 @@ static int streams_depot_lstat(vfs_handle_struct *handle,
 
 	ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname_stream);
 
+	if (ret == 0) {
+		smb_fname->st = smb_fname_stream->st;
+	}
+
  done:
-	TALLOC_FREE(smb_fname_stream);
+	{
+		int err = errno;
+		TALLOC_FREE(smb_fname_stream);
+		TALLOC_FREE(base_fname);
+		errno = err;
+	}
 	return ret;
 }
 
