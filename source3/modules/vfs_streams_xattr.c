@@ -310,6 +310,84 @@ static int streams_xattr_lstat(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_LSTAT(handle, smb_fname);
 }
 
+static int streams_xattr_fstatat(struct vfs_handle_struct *handle,
+				 const struct files_struct *dirfsp,
+				 const struct smb_filename *smb_fname,
+				 SMB_STRUCT_STAT *sbuf,
+				 int flags)
+{
+	char *xattr_name = NULL;
+	struct smb_filename *pathref = NULL;
+	struct files_struct *fsp = smb_fname->fsp;
+	ssize_t size;
+	NTSTATUS status;
+	int ret = -1;
+
+	DBG_DEBUG("called for [%s/%s]\n",
+		  dirfsp->fsp_name->base_name,
+		  smb_fname_str_dbg(smb_fname));
+
+	if (!is_named_stream(smb_fname)) {
+		return SMB_VFS_NEXT_FSTATAT(
+			handle, dirfsp, smb_fname, sbuf, flags);
+	}
+
+	SET_STAT_INVALID(*sbuf);
+
+	/* Derive the xattr name to lookup. */
+	ret = streams_xattr_get_name(handle,
+				     talloc_tos(),
+				     smb_fname->stream_name,
+				     &xattr_name);
+	if (ret != 0) {
+		errno = ret;
+		ret = -1;
+		goto done;
+	}
+
+	if (fsp == NULL) {
+		status = synthetic_pathref(talloc_tos(),
+					   dirfsp,
+					   smb_fname->base_name,
+					   NULL,
+					   NULL,
+					   smb_fname->twrp,
+					   smb_fname->flags,
+					   &pathref);
+		if (!NT_STATUS_IS_OK(status)) {
+			errno = ENOENT;
+			ret = -1;
+			goto done;
+		}
+		fsp = pathref->fsp;
+	} else {
+		fsp = fsp->base_fsp;
+	}
+
+	*sbuf = fsp->fsp_name->st;
+
+	size = get_xattr_size_fsp(fsp, xattr_name);
+	if (size == -1) {
+		errno = ENOENT;
+		ret = -1;
+		goto done;
+	}
+	sbuf->st_ex_size = size;
+	sbuf->st_ex_ino = hash_inode(sbuf, xattr_name);
+	sbuf->st_ex_mode &= ~S_IFMT;
+	sbuf->st_ex_mode |= S_IFREG;
+	sbuf->st_ex_blocks = sbuf->st_ex_size / STAT_ST_BLOCKSIZE + 1;
+
+done:
+	{
+		int err = errno;
+		TALLOC_FREE(pathref);
+		TALLOC_FREE(xattr_name);
+		errno = err;
+	}
+	return ret;
+}
+
 static int streams_xattr_openat(struct vfs_handle_struct *handle,
 				const struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
@@ -1585,6 +1663,7 @@ static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.stat_fn = streams_xattr_stat,
 	.fstat_fn = streams_xattr_fstat,
 	.lstat_fn = streams_xattr_lstat,
+	.fstatat_fn = streams_xattr_fstatat,
 	.pread_fn = streams_xattr_pread,
 	.pwrite_fn = streams_xattr_pwrite,
 	.pread_send_fn = streams_xattr_pread_send,
