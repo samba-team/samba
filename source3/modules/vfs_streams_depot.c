@@ -670,6 +670,63 @@ static int streams_depot_lstat(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int streams_depot_fstatat(struct vfs_handle_struct *handle,
+				 const struct files_struct *dirfsp,
+				 const struct smb_filename *smb_fname,
+				 SMB_STRUCT_STAT *sbuf,
+				 int flags)
+{
+	struct smb_filename *smb_fname_stream = NULL;
+	struct smb_filename *base_fname = NULL;
+	NTSTATUS status;
+	int ret = -1;
+
+	DBG_DEBUG("called for [%s/%s]\n",
+		  dirfsp->fsp_name->base_name,
+		  smb_fname_str_dbg(smb_fname));
+
+	if (!is_named_stream(smb_fname)) {
+		return SMB_VFS_NEXT_FSTATAT(
+			handle, dirfsp, smb_fname, sbuf, flags);
+	}
+
+	base_fname = cp_smb_filename_nostream(talloc_tos(), smb_fname);
+	if (base_fname == NULL) {
+		errno = ENOMEM;
+		goto done;
+	}
+
+	ret = SMB_VFS_NEXT_FSTATAT(
+		handle, dirfsp, base_fname, &base_fname->st, flags);
+	if (ret == -1) {
+		goto done;
+	}
+
+	/* lstat the actual stream now. */
+	status = stream_smb_fname(
+		handle, &base_fname->st, smb_fname, &smb_fname_stream, false);
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = -1;
+		errno = map_errno_from_nt_status(status);
+		goto done;
+	}
+
+	ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname_stream);
+
+	if (ret == 0) {
+		*sbuf = smb_fname_stream->st;
+	}
+
+ done:
+	{
+		int err = errno;
+		TALLOC_FREE(smb_fname_stream);
+		TALLOC_FREE(base_fname);
+		errno = err;
+	}
+	return ret;
+}
+
 static int streams_depot_openat(struct vfs_handle_struct *handle,
 				const struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
@@ -1223,6 +1280,7 @@ static struct vfs_fn_pointers vfs_streams_depot_fns = {
 	.openat_fn = streams_depot_openat,
 	.stat_fn = streams_depot_stat,
 	.lstat_fn = streams_depot_lstat,
+	.fstatat_fn = streams_depot_fstatat,
 	.unlinkat_fn = streams_depot_unlinkat,
 	.renameat_fn = streams_depot_renameat,
 	.fstreaminfo_fn = streams_depot_fstreaminfo,
