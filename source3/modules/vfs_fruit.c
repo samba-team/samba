@@ -1953,12 +1953,41 @@ static int fruit_unlink_meta_stream(vfs_handle_struct *handle,
 }
 
 static int fruit_unlink_meta_netatalk(vfs_handle_struct *handle,
+				      struct files_struct *dirfsp,
 				      const struct smb_filename *smb_fname)
 {
-	SMB_ASSERT(smb_fname->fsp != NULL);
-	SMB_ASSERT(fsp_is_alternate_stream(smb_fname->fsp));
-	return SMB_VFS_FREMOVEXATTR(smb_fname->fsp->base_fsp,
-				   AFPINFO_EA_NETATALK);
+	struct smb_filename *base_name = NULL;
+	struct files_struct *base_fsp = NULL;
+	int ret = -1;
+
+	if (smb_fname->fsp == NULL) {
+		NTSTATUS status;
+
+		base_name = cp_smb_filename_nostream(talloc_tos(), smb_fname);
+		if (base_name == NULL) {
+			errno = ENOMEM;
+			goto done;
+		}
+
+		status = openat_pathref_fsp(dirfsp, base_name);
+		if (!NT_STATUS_IS_OK(status)) {
+			errno = map_errno_from_nt_status(status);
+			goto done;
+		}
+		base_fsp = base_name->fsp;
+	} else {
+		SMB_ASSERT(fsp_is_alternate_stream(smb_fname->fsp));
+		base_fsp = smb_fname->fsp->base_fsp;
+	}
+
+	ret = SMB_VFS_FREMOVEXATTR(base_fsp, AFPINFO_EA_NETATALK);
+done:
+	{
+		int err = errno;
+		TALLOC_FREE(base_name);
+		errno = err;
+	}
+	return ret;
 }
 
 static int fruit_unlink_meta(vfs_handle_struct *handle,
@@ -1979,7 +2008,7 @@ static int fruit_unlink_meta(vfs_handle_struct *handle,
 		break;
 
 	case FRUIT_META_NETATALK:
-		rc = fruit_unlink_meta_netatalk(handle, smb_fname);
+		rc = fruit_unlink_meta_netatalk(handle, dirfsp, smb_fname);
 		break;
 
 	default:
