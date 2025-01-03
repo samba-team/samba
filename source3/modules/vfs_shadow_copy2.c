@@ -1535,22 +1535,12 @@ static struct smb_filename *shadow_copy2_openat_name(
 	if (fsp_is_alternate_stream(fsp)) {
 		struct smb_filename *base_fname = fsp->base_fsp->fsp_name;
 
-		if (smb_fname_in->base_name[0] == '/') {
-			/*
-			 * Special-case stream names from streams_depot
-			 */
-			result = cp_smb_filename(mem_ctx, smb_fname_in);
-		} else {
-
-			SMB_ASSERT(is_named_stream(smb_fname_in));
-
-			result = synthetic_smb_fname(mem_ctx,
-						     base_fname->base_name,
-						     smb_fname_in->stream_name,
-						     &smb_fname_in->st,
-						     smb_fname_in->twrp,
-						     smb_fname_in->flags);
-		}
+		result = synthetic_smb_fname(mem_ctx,
+					     base_fname->base_name,
+					     smb_fname_in->stream_name,
+					     &smb_fname_in->st,
+					     smb_fname_in->twrp,
+					     smb_fname_in->flags);
 	} else {
 		result = full_path_from_dirfsp_atname(
 			mem_ctx, dirfsp, smb_fname_in);
