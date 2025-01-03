@@ -1099,7 +1099,6 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 	struct smb_filename *parent_fname = NULL;
 	struct smb_filename *at_fname = NULL;
 	struct smb_Dir *dir_hnd = NULL;
-	struct files_struct *dirfsp = NULL;
 	int unlink_flags = 0;
 	NTSTATUS status;
 	int ret;
@@ -1186,15 +1185,15 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 		goto err;
 	}
 
-	dirfsp = dir_hnd_fetch_fsp(dir_hnd);
-
 	status = can_delete_directory_hnd(dir_hnd);
+	TALLOC_FREE(dir_hnd);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		status = NT_STATUS_DIRECTORY_NOT_EMPTY;
 		goto err;
 	}
 
-	status = recursive_rmdir_fsp(dirfsp);
+	status = recursive_rmdir_fsp(fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		status = NT_STATUS_DIRECTORY_NOT_EMPTY;
 		goto err;
@@ -1210,8 +1209,6 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, struct files_struct *fsp)
 	}
 
   err:
-
-	TALLOC_FREE(dir_hnd);
 	TALLOC_FREE(parent_fname);
 
 	if (!NT_STATUS_IS_OK(status)) {
