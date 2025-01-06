@@ -1,4 +1,66 @@
                    ==============================
+                   Release Notes for Samba 4.21.3
+                          January 06, 2025
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.21 release series.
+
+
+Changes since 4.21.2
+--------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15701: More possible replication loops against Azure AD.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15697: Compound rename from Mac clients can fail with
+     NT_STATUS_INTERNAL_ERROR if the file has a lease.
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15724: vfs crossrename seems not work correctly.
+   * BUG 6750: After 'machine password timeout' /etc/krb5.keytab is not updated.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15771: Memory leak wbcCtxLookupSid.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15765: Fix heap-user-after-free with association groups.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15758: Segfault in vfs_btrfs.
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15755: Avoid event failure race when disabling an event script.
+
+o  Jones Syue <jonessyue@qnap.com>
+   * BUG 15724: vfs crossrename seems not work correctly.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.21.2
                          November 25, 2024
                    ==============================
@@ -51,8 +113,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.21.1
                           October 14, 2024
