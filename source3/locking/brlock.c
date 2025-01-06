@@ -1768,29 +1768,18 @@ static void brl_get_locks_readonly_parser(TDB_DATA key, TDB_DATA data,
 	*state->br_lock = br_lck;
 }
 
-struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
+static struct byte_range_lock *brl_get_locks_readonly_parse(TALLOC_CTX *mem_ctx,
+							    files_struct *fsp)
 {
 	struct byte_range_lock *br_lock = NULL;
 	struct brl_get_locks_readonly_state state;
 	NTSTATUS status;
 
-	DEBUG(10, ("seqnum=%d, fsp->brlock_seqnum=%d\n",
-		   dbwrap_get_seqnum(brlock_db), fsp->brlock_seqnum));
-
-	if ((fsp->brlock_rec != NULL)
-	    && (dbwrap_get_seqnum(brlock_db) == fsp->brlock_seqnum)) {
-		/*
-		 * We have cached the brlock_rec and the database did not
-		 * change.
-		 */
-		return fsp->brlock_rec;
-	}
-
 	/*
 	 * Parse the record fresh from the database
 	 */
 
-	state.mem_ctx = fsp;
+	state.mem_ctx = mem_ctx;
 	state.br_lock = &br_lock;
 
 	status = dbwrap_parse_record(
@@ -1803,7 +1792,7 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 		/*
 		 * No locks on this file. Return an empty br_lock.
 		 */
-		br_lock = talloc_zero(fsp, struct byte_range_lock);
+		br_lock = talloc_zero(mem_ctx, struct byte_range_lock);
 		if (br_lock == NULL) {
 			return NULL;
 		}
@@ -1820,6 +1809,30 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 	br_lock->fsp = fsp;
 	br_lock->modified = false;
 	br_lock->record = NULL;
+
+	return br_lock;
+}
+
+struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
+{
+	struct byte_range_lock *br_lock = NULL;
+
+	DEBUG(10, ("seqnum=%d, fsp->brlock_seqnum=%d\n",
+		   dbwrap_get_seqnum(brlock_db), fsp->brlock_seqnum));
+
+	if ((fsp->brlock_rec != NULL)
+	    && (dbwrap_get_seqnum(brlock_db) == fsp->brlock_seqnum)) {
+		/*
+		 * We have cached the brlock_rec and the database did not
+		 * change.
+		 */
+		return fsp->brlock_rec;
+	}
+
+	br_lock = brl_get_locks_readonly_parse(fsp, fsp);
+	if (br_lock == NULL) {
+		return NULL;
+	}
 
 	/*
 	 * Cache the brlock struct, invalidated when the dbwrap_seqnum
