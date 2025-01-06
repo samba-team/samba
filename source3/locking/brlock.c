@@ -84,6 +84,15 @@ struct files_struct *brl_fsp(struct byte_range_lock *brl)
 	return brl->fsp;
 }
 
+
+void brl_req_set(struct byte_range_lock *br_lck,
+		 TALLOC_CTX *req_mem_ctx,
+		 const struct GUID *req_guid)
+{
+	br_lck->req_mem_ctx = req_mem_ctx;
+	br_lck->req_guid = req_guid;
+}
+
 TALLOC_CTX *brl_req_mem_ctx(const struct byte_range_lock *brl)
 {
 	if (brl->req_mem_ctx == NULL) {

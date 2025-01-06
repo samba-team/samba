@@ -32,6 +32,9 @@ void brl_shutdown(void);
 
 unsigned int brl_num_locks(const struct byte_range_lock *brl);
 struct files_struct *brl_fsp(struct byte_range_lock *brl);
+void brl_req_set(struct byte_range_lock *br_lck,
+		 TALLOC_CTX *req_mem_ctx,
+		 const struct GUID *req_guid);
 TALLOC_CTX *brl_req_mem_ctx(const struct byte_range_lock *brl);
 const struct GUID *brl_req_guid(const struct byte_range_lock *brl);
 
