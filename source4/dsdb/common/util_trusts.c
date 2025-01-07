@@ -3038,7 +3038,7 @@ static void dsdb_trust_update_best_tln(
 		return;
 	}
 
-	cmp = dns_cmp(*best_tln, tln);
+	cmp = dns_cmp(tln, *best_tln);
 	if (cmp != DNS_CMP_FIRST_IS_CHILD) {
 		return;
 	}
@@ -3127,10 +3127,6 @@ const struct lsa_TrustDomainInfoInfoEx *dsdb_trust_routing_by_name(
 				continue;
 			}
 
-			if (!transitive) {
-				continue;
-			}
-
 			dsdb_trust_update_best_tln(&best_d, &best_tln, d,
 						   d->tdo->domain_name.string);
 			continue;
@@ -3212,15 +3208,19 @@ const struct lsa_TrustDomainInfoInfoEx *dsdb_trust_routing_by_name(
 			}
 
 			cmp = dns_cmp(name, fti_tln);
-			switch (cmp) {
-			case DNS_CMP_MATCH:
-			case DNS_CMP_FIRST_IS_CHILD:
-				dsdb_trust_update_best_tln(&best_d, &best_tln,
-							   d, fti_tln);
-				break;
-			default:
-				break;
+			if (cmp == DNS_CMP_MATCH) {
+				/*
+				 * exact match
+				 */
+				return d->tdo;
 			}
+			if (cmp != DNS_CMP_FIRST_IS_CHILD) {
+				continue;
+			}
+
+			dsdb_trust_update_best_tln(&best_d, &best_tln,
+						   d, fti_tln);
+			continue;
 		}
 	}
 
