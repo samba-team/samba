@@ -909,6 +909,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
     def create_trust(self, trust_info,
                      trust_enc_types=None,
+                     forest_info=None,
                      trust_incoming_password=None,
                      trust_outgoing_password=None,
                      expect_error=None,
@@ -991,6 +992,22 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             lsa_conn.SetInformationTrustedDomain(tdo_handle,
                                                  lsa.LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES,
                                                  trust_enc_types)
+        trust_dns_nameL = lsa.StringLarge()
+        trust_dns_nameL.string = trust_info.domain_name.string
+        if isinstance(forest_info, lsa.ForestTrustInformation2):
+            local_forest_collision = \
+                lsa_conn.lsaRSetForestTrustInformation2(lsa_policy,
+                                                        trust_dns_nameL,
+                                                        lsa.LSA_FOREST_TRUST_RECORD2_TYPE_LAST,
+                                                        forest_info,
+                                                        0)
+        elif isinstance(forest_info, lsa.ForestTrustInformation):
+            local_forest_collision = \
+                lsa_conn.lsaRSetForestTrustInformation(lsa_policy,
+                                                       trust_dns_nameL,
+                                                       lsa.LSA_FOREST_TRUST_RECORD_TYPE_LAST,
+                                                       forest_info,
+                                                       0)
 
         samdb = self.get_samdb()
 
