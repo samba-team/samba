@@ -1259,6 +1259,9 @@ sub setup_admem_idmap_autorid
 	# Prevent overriding the provisioned lib/krb5.conf which sets certain
 	# values required for tests to succeed
 	create krb5 conf = no
+
+	client use krb5 netlogon = yes
+	reject aes netlogon servers = yes
 ";
 
 	my $ret = $self->provision(
