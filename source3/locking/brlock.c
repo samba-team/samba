@@ -1735,25 +1735,6 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx, files_struct *fsp)
 	return br_lck;
 }
 
-struct byte_range_lock *brl_get_locks_for_locking(TALLOC_CTX *mem_ctx,
-						  files_struct *fsp,
-						  TALLOC_CTX *req_mem_ctx,
-						  const struct GUID *req_guid)
-{
-	struct byte_range_lock *br_lck = NULL;
-
-	br_lck = brl_get_locks(mem_ctx, fsp);
-	if (br_lck == NULL) {
-		return NULL;
-	}
-	SMB_ASSERT(req_mem_ctx != NULL);
-	br_lck->req_mem_ctx = req_mem_ctx;
-	SMB_ASSERT(req_guid != NULL);
-	br_lck->req_guid = req_guid;
-
-	return br_lck;
-}
-
 struct brl_get_locks_readonly_state {
 	TALLOC_CTX *mem_ctx;
 	struct byte_range_lock **br_lock;

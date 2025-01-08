@@ -83,10 +83,6 @@ int brl_forall(void (*fn)(struct file_id id, struct server_id pid,
 			  br_off start, br_off size,
 			  void *private_data),
 	       void *private_data);
-struct byte_range_lock *brl_get_locks_for_locking(TALLOC_CTX *mem_ctx,
-						  files_struct *fsp,
-						  TALLOC_CTX *req_mem_ctx,
-						  const struct GUID *req_guid);
 struct share_mode_lock;
 typedef void (*share_mode_do_locked_brl_fn_t)(
 	struct share_mode_lock *lck,
