@@ -344,19 +344,21 @@ NTSTATUS do_lock(files_struct *fsp,
 			  nt_errstr(status));
 		return status;
 	}
-
-	if (psmblctx != NULL) {
-		*psmblctx = state.blocker_smblctx;
+	if (!NT_STATUS_IS_OK(state.status)) {
+		DBG_DEBUG("do_lock_fn returned %s\n",
+			  nt_errstr(state.status));
+		if (psmblctx != NULL) {
+			*psmblctx = state.blocker_smblctx;
+		}
+		if (pblocker_pid != NULL) {
+			*pblocker_pid = state.blocker_pid;
+		}
+		return state.status;
 	}
-	if (pblocker_pid != NULL) {
-		*pblocker_pid = state.blocker_pid;
-	}
-
-	DBG_DEBUG("returning status=%s\n", nt_errstr(state.status));
 
 	increment_current_lock_count(fsp, lock_flav);
 
-	return state.status;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
