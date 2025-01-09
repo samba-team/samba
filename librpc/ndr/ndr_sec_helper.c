@@ -104,6 +104,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_ace(struct ndr_pull *ndr, ndr_flags
 {
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
 	if (ndr_flags & NDR_SCALARS) {
+		ssize_t sub_size;
 		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_security_ace_type(ndr, NDR_SCALARS, &r->type));
 		NDR_CHECK(ndr_pull_security_ace_flags(ndr, NDR_SCALARS, &r->flags));
@@ -111,12 +112,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_ace(struct ndr_pull *ndr, ndr_flags
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->access_mask));
 		NDR_CHECK(ndr_maybe_pull_security_ace_object_ctr(ndr, NDR_SCALARS, r));
 		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, &r->trustee));
-		if (!sec_ace_has_extra_blob(r->type)) {
+		sub_size = ndr_subcontext_size_of_ace_coda(r, r->size, ndr->flags);
+		if (sub_size == 0 && !sec_ace_has_extra_blob(r->type)) {
 			r->coda.ignored.data = NULL;
 			r->coda.ignored.length = 0;
 		} else {
 			struct ndr_pull *_ndr_coda;
-			ssize_t sub_size = ndr_subcontext_size_of_ace_coda(r, r->size, ndr->flags);
 			NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_coda, 0, sub_size));
 			NDR_CHECK(ndr_pull_set_switch_value(_ndr_coda, &r->coda, r->type));
 			NDR_CHECK(ndr_pull_security_ace_coda(_ndr_coda, NDR_SCALARS|NDR_BUFFERS, &r->coda));
