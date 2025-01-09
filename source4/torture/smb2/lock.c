@@ -3465,6 +3465,288 @@ done:
 	return ret;
 }
 
+struct open_brlock_deadlock_state {
+	bool stop;
+	bool ok;
+	struct torture_context *tctx;
+	struct smb2_tree *tree1;
+	struct smb2_tree *tree2;
+	struct smb2_create cr;
+	struct smb2_request *cr_req;
+	struct smb2_close cl;
+	struct smb2_request *cl_req;
+
+	struct smb2_lock_element el;
+	struct smb2_lock lock;
+	struct smb2_request *lock_req;
+};
+
+static void test_open_brlock_deadlock_loop_opened(struct smb2_request *req);
+
+static void test_open_brlock_deadlock_loop_open(
+	struct open_brlock_deadlock_state *state)
+{
+	if (state->stop) {
+		return;
+	}
+
+	state->cr_req = smb2_create_send(state->tree1, &state->cr);
+	torture_assert_goto(state->tctx, state->cr_req != NULL, state->ok, failed,
+			    "smb2_create_send failed\n");
+
+	state->cr_req->async.fn = test_open_brlock_deadlock_loop_opened;
+	state->cr_req->async.private_data = state;
+	return;
+failed:
+	state->stop = true;
+}
+
+static void test_open_brlock_deadlock_loop_close(
+	struct open_brlock_deadlock_state *state);
+
+static void test_open_brlock_deadlock_loop_opened(struct smb2_request *req)
+{
+	struct open_brlock_deadlock_state *state = req->async.private_data;
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
+
+	status = smb2_create_recv(req, frame, &state->cr);
+	torture_assert_ntstatus_ok_goto(state->tctx, status,
+					state->ok, failed, __location__);
+	state->cr_req = NULL;
+
+	TALLOC_FREE(frame);
+	test_open_brlock_deadlock_loop_close(state);
+	return;
+
+failed:
+	state->stop = true;
+	TALLOC_FREE(frame);
+}
+
+static void test_open_brlock_deadlock_loop_closed(struct smb2_request *req);
+
+static void test_open_brlock_deadlock_loop_close(
+	struct open_brlock_deadlock_state *state)
+{
+	if (state->stop) {
+		return;
+	}
+
+	state->cl.in.file = state->cr.out.file;
+	state->cl_req = smb2_close_send(state->tree1, &state->cl);
+	torture_assert_goto(state->tctx, state->cl_req != NULL, state->ok, failed,
+			    "smb2_create_send failed\n");
+
+	state->cl_req->async.fn = test_open_brlock_deadlock_loop_closed;
+	state->cl_req->async.private_data = state;
+	return;
+failed:
+	state->stop = true;
+}
+
+static void test_open_brlock_deadlock_loop_closed(struct smb2_request *req)
+{
+	struct open_brlock_deadlock_state *state = req->async.private_data;
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
+
+	status = smb2_close_recv(req, &state->cl);
+	torture_assert_ntstatus_ok_goto(state->tctx, status,
+					state->ok, failed, __location__);
+	state->cl_req = NULL;
+
+	TALLOC_FREE(frame);
+	test_open_brlock_deadlock_loop_open(state);
+	return;
+
+failed:
+	state->stop = true;
+	TALLOC_FREE(frame);
+}
+
+static void test_open_brlock_deadlock_loop_locked(struct smb2_request *req);
+
+static void test_open_brlock_deadlock_loop_lock(
+	struct open_brlock_deadlock_state *state)
+{
+	if (state->stop) {
+		return;
+	}
+
+	state->el.flags = SMB2_LOCK_FLAG_EXCLUSIVE;
+
+	state->lock_req = smb2_lock_send(state->tree2, &state->lock);
+	torture_assert_goto(state->tctx, state->lock_req != NULL,
+			    state->ok, failed,
+			    "smb2_create_send failed\n");
+
+	state->lock_req->async.fn = test_open_brlock_deadlock_loop_locked;
+	state->lock_req->async.private_data = state;
+	return;
+failed:
+	state->stop = true;
+}
+
+static void test_open_brlock_deadlock_loop_unlock(
+	struct open_brlock_deadlock_state *state);
+
+static void test_open_brlock_deadlock_loop_locked(struct smb2_request *req)
+{
+	struct open_brlock_deadlock_state *state = req->async.private_data;
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
+
+	status = smb2_lock_recv(req, &state->lock);
+	torture_assert_ntstatus_ok_goto(state->tctx, status,
+					state->ok, failed, __location__);
+	state->lock_req = NULL;
+
+	TALLOC_FREE(frame);
+	test_open_brlock_deadlock_loop_unlock(state);
+	return;
+
+failed:
+	state->stop = true;
+	TALLOC_FREE(frame);
+}
+
+static void test_open_brlock_deadlock_loop_unlocked(struct smb2_request *req);
+
+static void test_open_brlock_deadlock_loop_unlock(
+	struct open_brlock_deadlock_state *state)
+{
+	if (state->stop) {
+		return;
+	}
+
+	state->el.flags = SMB2_LOCK_FLAG_UNLOCK;
+
+	state->lock_req = smb2_lock_send(state->tree2, &state->lock);
+	torture_assert_goto(state->tctx, state->lock_req != NULL,
+			    state->ok, failed,
+			    "smb2_create_send failed\n");
+
+	state->lock_req->async.fn = test_open_brlock_deadlock_loop_unlocked;
+	state->lock_req->async.private_data = state;
+	return;
+failed:
+	state->stop = true;
+}
+
+static void test_open_brlock_deadlock_loop_unlocked(struct smb2_request *req)
+{
+	struct open_brlock_deadlock_state *state = req->async.private_data;
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
+
+	status = smb2_lock_recv(req, &state->lock);
+	torture_assert_ntstatus_ok_goto(state->tctx, status,
+					state->ok, failed, __location__);
+	state->lock_req = NULL;
+
+	TALLOC_FREE(frame);
+	test_open_brlock_deadlock_loop_lock(state);
+	return;
+
+failed:
+	state->stop = true;
+	TALLOC_FREE(frame);
+}
+
+
+static void test_open_brlock_deadlock_timeout(struct tevent_context *ev,
+					      struct tevent_timer *te,
+					      struct timeval current_time,
+					      void *private_data)
+{
+	struct open_brlock_deadlock_state *state = private_data;
+	state->stop = true;
+}
+
+static bool test_open_brlock_deadlock(struct torture_context *tctx,
+				      struct smb2_tree *tree1,
+				      struct smb2_tree *tree2)
+{
+	int timeout_sec = torture_setting_int(tctx, "open_brlock_deadlock_timemout", 0);
+	const char *fname1 = BASEDIR "\\test_open_brlock_deadlock1.txt";
+	const char *fname2 = BASEDIR "\\test_open_brlock_deadlock2.txt";
+	struct open_brlock_deadlock_state state;
+	struct smb2_handle h = {};
+	uint8_t buf[200];
+	struct tevent_timer *te = NULL;
+	NTSTATUS status;
+	bool ret = true;
+
+	if (timeout_sec == 0) {
+		torture_skip_goto(tctx, done, "Test skipped, pass '--option=torture:open_brlock_deadlock_timemout=SEC' to run\n");
+	}
+
+	state = (struct open_brlock_deadlock_state) {
+		.tctx = tctx,
+		.tree1 = tree1,
+		.tree2 = tree2,
+	};
+
+	ret = smb2_util_setup_dir(tctx, tree1, BASEDIR);
+	torture_assert_goto(tctx, ret, ret, done,
+				   "smb2_util_setup_dir failed");
+
+	status = torture_smb2_testfile(tree1, fname1, &h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testfile failed");
+	status = smb2_util_close(tree1, h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_close failed");
+
+	status = torture_smb2_testfile(tree2, fname2, &h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testfile failed");
+
+	status = smb2_util_write(tree2, h, buf, 0, ARRAY_SIZE(buf));
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_write failed");
+
+	state.cr = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_READ_DATA,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.fname = fname1,
+	};
+
+	state.el = (struct smb2_lock_element) {
+		.length = 1,
+		.offset = 0,
+	};
+	state.lock = (struct smb2_lock) {
+		.in.locks = &state.el,
+		.in.lock_count	= 1,
+		.in.file.handle	= h,
+	};
+
+	te = tevent_add_timer(tctx->ev,
+			      tctx,
+			      timeval_current_ofs(timeout_sec, 0),
+			      test_open_brlock_deadlock_timeout,
+			      &state);
+	torture_assert_goto(tctx, te != NULL, ret, done, __location__);
+
+	test_open_brlock_deadlock_loop_open(&state);
+	test_open_brlock_deadlock_loop_lock(&state);
+
+	while (!state.stop) {
+		int rc = tevent_loop_once(tctx->ev);
+		torture_assert_int_equal(tctx, rc, 0, "tevent_loop_once");
+	}
+
+done:
+	if (!smb2_util_handle_empty(h)) {
+		smb2_util_close(tree2, h);
+	}
+	smb2_deltree(tree1, BASEDIR);
+	return ret;
+}
+
 /* basic testing of SMB2 locking
 */
 struct torture_suite *torture_smb2_lock_init(TALLOC_CTX *ctx)
@@ -3506,6 +3788,7 @@ struct torture_suite *torture_smb2_lock_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "replay_smb3_specification_multi",
 				     test_replay_smb3_specification_multi);
 	torture_suite_add_1smb2_test(suite, "ctdb-delrec-deadlock", test_deadlock);
+	torture_suite_add_2smb2_test(suite, "open-brlock-deadlock", test_open_brlock_deadlock);
 
 	suite->description = talloc_strdup(suite, "SMB2-LOCK tests");
 
