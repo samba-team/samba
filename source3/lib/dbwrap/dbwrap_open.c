@@ -80,6 +80,11 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 		base = name;
 	}
 
+	hash_size = lp_parm_int(GLOBAL_SECTION_SNUM,
+				"tdb_hash_size",
+				base,
+				hash_size);
+
 	if (tdb_flags & TDB_CLEAR_IF_FIRST) {
 		bool try_readonly = false;
 
