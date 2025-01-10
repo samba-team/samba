@@ -914,8 +914,8 @@ interface drsuapi
 
 	typedef struct {
 		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
-		GUID source_dra;
-		[charset(UTF16),string] uint16 *source_dra_address;
+		GUID source_dsa;
+		[charset(UTF16),string] uint16 *source_dsa_address;
 		uint8 schedule[84];
 		drsuapi_DrsOptions replica_flags;
 		uint32 modify_fields;
