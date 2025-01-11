@@ -1521,7 +1521,7 @@ static struct smb_filename *shadow_copy2_openat_name(
 {
 	struct smb_filename *result = NULL;
 
-	if (fsp->base_fsp != NULL) {
+	if (fsp_is_alternate_stream(fsp)) {
 		struct smb_filename *base_fname = fsp->base_fsp->fsp_name;
 
 		if (smb_fname_in->base_name[0] == '/') {
