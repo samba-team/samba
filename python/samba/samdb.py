@@ -338,7 +338,7 @@ lockoutTime: 0
         if 'group' in member_types:
             filter += ('(&(sAMAccountName=%s)'
                        '(objectClass=group)'
-                       '(!(groupType:1.2.840.113556.1.4.803:=1)))' %
+                       f'(!(groupType:{ldb.OID_COMPARATOR_AND}:=1)))' %
                        ldb.binary_encode(member))
         if 'computer' in member_types:
             samaccountname = member

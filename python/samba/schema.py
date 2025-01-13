@@ -30,7 +30,7 @@ from samba.ndr import ndr_pack
 from samba.samdb import SamDB
 from samba.common import get_string
 from samba import dsdb
-from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL
+from ldb import OID_COMPARATOR_AND, SCOPE_SUBTREE, SCOPE_ONELEVEL
 
 
 def get_schema_descriptor(domain_sid, name_map=None):
@@ -213,7 +213,7 @@ def get_linked_attributes(schemadn, schemaldb):
     attrs = ["linkID", "lDAPDisplayName"]
     res = schemaldb.search(
         expression="(&(linkID=*)"
-                   "(!(linkID:1.2.840.113556.1.4.803:=1))"
+                   f"(!(linkID:{OID_COMPARATOR_AND}:=1))"
                    "(objectclass=attributeSchema)"
                    "(attributeSyntax=2.5.5.1))",
         base=schemadn, scope=SCOPE_ONELEVEL, attrs=attrs)
