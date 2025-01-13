@@ -1406,7 +1406,6 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	struct smb_filename *smb_fname_dst = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	struct share_mode_lock *lck = NULL;
-	uint32_t access_mask = SEC_DIR_ADD_FILE;
 	bool dst_exists, old_is_stream, new_is_stream;
 	int ret;
 	bool case_sensitive = fsp->fsp_flags.posix_open ?
@@ -1619,12 +1618,6 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		goto out;
 	}
 
-	/* Do we have rights to move into the destination ? */
-	if (S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
-		/* We're moving a directory. */
-		access_mask = SEC_DIR_ADD_SUBDIR;
-	}
-
 	/*
 	 * Get a pathref on the destination parent directory, so
 	 * we can call check_parent_access_fsp().
@@ -1639,7 +1632,9 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	}
 
 	status = check_parent_access_fsp(parent_dir_fname_dst->fsp,
-				access_mask);
+					 S_ISDIR(fsp->fsp_name->st.st_ex_mode)
+						 ? SEC_DIR_ADD_SUBDIR
+						 : SEC_DIR_ADD_FILE);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_INFO("check_parent_access_fsp on "
 			"dst %s returned %s\n",
