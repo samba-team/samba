@@ -9,7 +9,10 @@ bld.SAMBA_LIBRARY('samba-security',
                           'object_tree.c', 'create_descriptor.c',
                           'util_sid.c', 'session.c', 'secdesc.c',
                           'conditional_ace.c', 'sddl_conditional_ace.c',
-                          'claims-conversions.c'],
+                          'claims-conversions.c',
+                          'claims_transformation.l',
+                          'claims_transformation.y',
+                  ],
                   private_library=True,
                   deps='stable_sort talloc ndr NDR_SECURITY NDR_CONDITIONAL_ACE')
 
