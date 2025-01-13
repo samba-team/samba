@@ -33,9 +33,9 @@
     <citerefentry><refentrytitle>samba</refentrytitle>
     <manvolnum>7</manvolnum></citerefentry> suite.</para>
 
-    <para>The <command>vfs_acl_xattr</command> VFS module stores NTFS Access
-    Control Lists (ACLs) in Extended Attributes (EAs/xattrs).  This enables the
-    full mapping of Windows ACLs on Samba servers.
+    <para>The <command>vfs_nfs4acl_xattr</command> VFS module provides
+    an interoperability layer between the SMB ACLs that clients expect
+    and an NFSv4 ACL implementation a file system might provide.
     </para>
 
     <para>This module is stackable.</para>
