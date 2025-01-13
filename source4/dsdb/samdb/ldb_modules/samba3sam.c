@@ -183,17 +183,19 @@ static struct ldb_val lookup_uid(struct ldb_module *module, TALLOC_CTX *ctx, con
 static struct ldb_val encode_sid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	struct ldb_val out = data_blob(NULL, 0);
-	struct dom_sid *sid;
+	struct dom_sid sid = {};
 	enum ndr_err_code ndr_err;
+	bool ok;
 
-	sid = dom_sid_parse_talloc(ctx, (char *)val->data);
-	if (sid == NULL) {
+	ok = dom_sid_parse((char *)val->data, &sid);
+	if (!ok) {
 		return out;
 	}
 
-	ndr_err = ndr_push_struct_blob(&out, ctx, 
-				       sid, (ndr_push_flags_fn_t)ndr_push_dom_sid);
-	talloc_free(sid);
+	ndr_err = ndr_push_struct_blob(&out,
+				       ctx,
+				       &sid,
+				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return out;
 	}
