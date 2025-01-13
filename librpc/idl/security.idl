@@ -375,6 +375,8 @@ interface security
 	const int DOMAIN_RID_PROTECTED_USERS         = 525;
 	const int DOMAIN_RID_KEY_ADMINS              = 526;
 	const int DOMAIN_RID_ENTERPRISE_KEY_ADMINS   = 527;
+	const int DOMAIN_RID_FOREST_TRUST_ACCOUNTS   = 528;
+	const int DOMAIN_RID_EXTERNAL_TRUST_ACCOUNTS = 529;
 	const int DOMAIN_RID_RAS_SERVERS             = 553;
 	const int DOMAIN_RID_RODC_ALLOW              = 571;
 	const int DOMAIN_RID_RODC_DENY               = 572;
