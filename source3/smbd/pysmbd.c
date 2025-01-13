@@ -60,6 +60,8 @@ static connection_struct *get_conn_tos(
 	struct smb_filename cwd_fname = {0};
 	int ret;
 
+	mangle_reset_cache();
+
 	if (!posix_locking_init(false)) {
 		PyErr_NoMemory();
 		return NULL;
