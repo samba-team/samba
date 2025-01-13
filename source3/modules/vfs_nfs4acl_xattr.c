@@ -525,7 +525,7 @@ static int nfs4acl_connect(struct vfs_handle_struct *handle,
 }
 
 /*
-   As long as Samba does not support an exiplicit method for a module
+   As long as Samba does not support an explicit method for a module
    to define conflicting vfs methods, we should override all conflicting
    methods here.  That way, we know we are using the NFSv4 storage
 
