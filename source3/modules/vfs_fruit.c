@@ -631,7 +631,7 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 	/* FIXME: hardcoded data fork, add resource fork */
 	enum apple_fork fork_type = APPLE_FORK_DATA;
 
-	DBG_DEBUG("fruit_check_access: %s, am: %s/%s, sm: 0x%x\n",
+	DBG_DEBUG("%s, am: %s/%s, sm: 0x%x\n",
 		  fsp_str_dbg(fsp),
 		  access_mask & FILE_READ_DATA ? "READ" :"-",
 		  access_mask & FILE_WRITE_DATA ? "WRITE" : "-",
@@ -3203,7 +3203,7 @@ static int fruit_stat_base(vfs_handle_struct *handle,
 	}
 	smb_fname->stream_name = tmp_stream_name;
 
-	DBG_DEBUG("fruit_stat_base [%s] dev [%ju] ino [%ju]\n",
+	DBG_DEBUG("[%s] dev [%ju] ino [%ju]\n",
 		  smb_fname->base_name,
 		  (uintmax_t)smb_fname->st.st_ex_dev,
 		  (uintmax_t)smb_fname->st.st_ex_ino);
