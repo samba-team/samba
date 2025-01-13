@@ -34,6 +34,20 @@ samba_texpect="$BINDIR/texpect"
 
 netbios=$(grep "netbios name" $BASEDIR/$WORKDIR/client.conf | cut -f2 -d= | awk '{$1=$1};1')
 
+# 0. Test with machine_name != lp_netbios_name()
+
+NONLOCALMACHINE=win11
+
+testit "provision with non local machine name" \
+	${VALGRIND} ${net_tool} offlinejoin provision domain="${REALM}" machine_name="${NONLOCALMACHINE}" savefile="${ODJFILE}" -U"${DC_USERNAME}%${DC_PASSWORD}" || \
+	failed=$((failed + 1))
+
+testit "net rpc user delete" \
+	${VALGRIND} ${net_tool} rpc user delete "${NONLOCALMACHINE}$" -U"${DC_USERNAME}%${DC_PASSWORD}" -S "${DC_SERVER}" || \
+	failed=$((failed + 1))
+
+rm -f "${ODJFILE}"
+
 # 1. Test w/o dcname
 
 testit "provision without dcname" $VALGRIND $net_tool offlinejoin provision domain=$REALM machine_name=$netbios savefile=$ODJFILE -U$DC_USERNAME%$DC_PASSWORD || failed=$(expr $failed + 1)
