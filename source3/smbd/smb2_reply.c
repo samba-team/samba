@@ -1557,13 +1557,8 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	new_is_stream = is_ntfs_stream_smb_fname(smb_fname_dst);
 
 	/* Return the correct error code if both names aren't streams. */
-	if (!old_is_stream && new_is_stream) {
+	if (old_is_stream != new_is_stream) {
 		status = NT_STATUS_OBJECT_NAME_INVALID;
-		goto out;
-	}
-
-	if (old_is_stream && !new_is_stream) {
-		status = NT_STATUS_INVALID_PARAMETER;
 		goto out;
 	}
 
