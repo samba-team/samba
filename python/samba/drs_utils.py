@@ -201,15 +201,15 @@ class drs_Replicate(object):
         self.replication_state = self.net.replicate_init(self.samdb, lp, self.drs, invocation_id)
         self.more_flags = 0
 
-    def _should_retry_with_get_tgt(self, error_code, req):
+    @staticmethod
+    def _should_retry_with_get_tgt(error_code, req):
 
         # If the error indicates we fail to resolve a target object for a
         # linked attribute, then we should retry the request with GET_TGT
         # (if we support it and haven't already tried that)
-        supports_ext = self.supports_ext
 
         return (error_code == werror.WERR_DS_DRA_RECYCLED_TARGET and
-                supports_ext & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10 and
+                hasattr(req, "more_flags") and
                 (req.more_flags & drsuapi.DRSUAPI_DRS_GET_TGT) == 0)
 
     @staticmethod
