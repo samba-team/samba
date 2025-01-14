@@ -1968,6 +1968,67 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	return ADS_ERROR(LDAP_SUCCESS);
 }
 
+/*
+  dump a ADS_MODSLIST via DEBUG
+*/
+static void ads_dump_modlist(ADS_MODLIST *mods)
+{
+	LDAPMod **modlist = (LDAPMod **)*mods;
+	const char *op = NULL;
+	size_t i, j;
+	char *buf = NULL;
+
+	if (mods == NULL || DEBUGLEVEL < DBGLVL_DEBUG) {
+		return;
+	}
+
+	buf = talloc_strdup(talloc_tos(), "");
+
+	for (i = 0; modlist[i] != NULL; i++) {
+
+		/* only ever used three ops */
+
+		switch (modlist[i]->mod_op) {
+		case LDAP_MOD_DELETE:
+			op = "LDAP_MOD_DELETE";
+			break;
+		case LDAP_MOD_REPLACE:
+			op = "LDAP_MOD_REPLACE";
+			break;
+		case LDAP_MOD_REPLACE | LDAP_MOD_BVALUES:
+			op = "LDAP_MOD_REPLACE | LDAP_MOD_BVALUES";
+			break;
+		default:
+			op = "unknown";
+			break;
+		}
+
+		talloc_asprintf_addbuf(&buf, "mod[%zu]: mod_op: %s\n", i, op);
+		talloc_asprintf_addbuf(&buf,
+				       "mod[%zu]: mod_type: %s\n",
+				       i,
+				       modlist[i]->mod_type);
+
+		if (modlist[i]->mod_op & LDAP_MOD_BVALUES) {
+			continue;
+		}
+
+		for (j = 0; modlist[i]->mod_values[j] != NULL; j++) {
+			talloc_asprintf_addbuf(
+				&buf,
+				"mod[%zu]: mod_values[%zu]: %s\n",
+				i,
+				j,
+				modlist[i]->mod_values[j]);
+		}
+	}
+
+	if (buf != NULL) {
+		DBG_DEBUG("%s", buf);
+		TALLOC_FREE(buf);
+	}
+}
+
 /**
  * Add a single string value to a mod list
  * @param ctx An initialized TALLOC_CTX
@@ -2075,6 +2136,9 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 	for(i=0;(mods[i]!=0)&&(mods[i]!=(LDAPMod *) -1);i++);
 	/* make sure the end of the list is NULL */
 	mods[i] = NULL;
+
+	ads_dump_modlist(&mods);
+
 	ret = ldap_modify_ext_s(ads->ldap.ld, utf8_dn,
 				(LDAPMod **) mods, controls, NULL);
 	ads_print_error(ret, ads->ldap.ld);
@@ -2106,6 +2170,8 @@ ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ADS_MODLIST mods)
 	for(i=0;(mods[i]!=0)&&(mods[i]!=(LDAPMod *) -1);i++);
 	/* make sure the end of the list is NULL */
 	mods[i] = NULL;
+
+	ads_dump_modlist(&mods);
 
 	ret = ldap_add_ext_s(ads->ldap.ld, utf8_dn, (LDAPMod**)mods, NULL, NULL);
 	ads_print_error(ret, ads->ldap.ld);
