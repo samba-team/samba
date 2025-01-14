@@ -553,7 +553,14 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 	 * Register dns_hostname if needed, add_uniq_spn() will avoid
 	 * duplicates.
 	 */
-	dns_hostname = lp_dns_hostname();
+	if (r->in.dnshostname != NULL) {
+		dns_hostname = talloc_strdup(frame, r->in.dnshostname);
+	} else {
+		dns_hostname = talloc_asprintf(frame,
+					       "%s.%s",
+					       r->in.machine_name,
+					       r->out.dns_domain_name);
+	}
 	if (dns_hostname == NULL) {
 		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 		goto done;
