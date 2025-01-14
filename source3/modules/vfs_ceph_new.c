@@ -2258,10 +2258,35 @@ out:
 	return lstatus_code(result);
 }
 
+struct vfs_ceph_aio_state {
+	struct timespec start_time;
+	struct timespec finish_time;
+	struct vfs_aio_state vfs_aio_state;
+	SMBPROFILE_BYTES_ASYNC_STATE(profile_bytes);
+};
+
 struct vfs_ceph_pread_state {
 	ssize_t bytes_read;
-	struct vfs_aio_state vfs_aio_state;
+	struct vfs_ceph_aio_state ceph_aio_state;
 };
+
+static void vfs_ceph_aio_start(struct vfs_ceph_aio_state *state)
+{
+	SMBPROFILE_BYTES_ASYNC_SET_BUSY(state->profile_bytes);
+	PROFILE_TIMESTAMP(&state->start_time);
+}
+
+static void vfs_ceph_aio_finish(struct vfs_ceph_aio_state *state,
+				ssize_t result)
+{
+	PROFILE_TIMESTAMP(&state->finish_time);
+	state->vfs_aio_state.duration = nsec_time_diff(&state->finish_time,
+						       &state->start_time);
+	if (result < 0) {
+		state->vfs_aio_state.error = (int)result;
+	}
+	SMBPROFILE_BYTES_ASYNC_SET_IDLE(state->profile_bytes);
+}
 
 /*
  * Fake up an async ceph read by calling the synchronous API.
@@ -2295,7 +2320,15 @@ static struct tevent_req *vfs_ceph_pread_send(struct vfs_handle_struct *handle,
 		return tevent_req_post(req, ev);
 	}
 
+	SMBPROFILE_BYTES_ASYNC_START(syscall_asys_pread,
+				     profile_p,
+				     state->ceph_aio_state.profile_bytes,
+				     n);
+	SMBPROFILE_BYTES_ASYNC_SET_IDLE(state->ceph_aio_state.profile_bytes);
+
+	vfs_ceph_aio_start(&state->ceph_aio_state);
 	ret = vfs_ceph_ll_read(handle, cfh, offset, n, data);
+	vfs_ceph_aio_finish(&state->ceph_aio_state, ret);
 	if (ret < 0) {
 		/* ceph returns -errno on error. */
 		tevent_req_error(req, -ret);
@@ -2315,10 +2348,13 @@ static ssize_t vfs_ceph_pread_recv(struct tevent_req *req,
 		tevent_req_data(req, struct vfs_ceph_pread_state);
 
 	DBG_DEBUG("[CEPH] pread_recv: bytes_read=%zd\n", state->bytes_read);
+
+	SMBPROFILE_BYTES_ASYNC_END(state->ceph_aio_state.profile_bytes);
+
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
-	*vfs_aio_state = state->vfs_aio_state;
+	*vfs_aio_state = state->ceph_aio_state.vfs_aio_state;
 	return state->bytes_read;
 }
 
@@ -2352,7 +2388,7 @@ out:
 
 struct vfs_ceph_pwrite_state {
 	ssize_t bytes_written;
-	struct vfs_aio_state vfs_aio_state;
+	struct vfs_ceph_aio_state ceph_aio_state;
 };
 
 /*
@@ -2387,7 +2423,15 @@ static struct tevent_req *vfs_ceph_pwrite_send(struct vfs_handle_struct *handle,
 		return tevent_req_post(req, ev);
 	}
 
+	SMBPROFILE_BYTES_ASYNC_START(syscall_asys_pwrite,
+				     profile_p,
+				     state->ceph_aio_state.profile_bytes,
+				     n);
+	SMBPROFILE_BYTES_ASYNC_SET_IDLE(state->ceph_aio_state.profile_bytes);
+
+	vfs_ceph_aio_start(&state->ceph_aio_state);
 	ret = vfs_ceph_ll_write(handle, cfh, offset, n, data);
+	vfs_ceph_aio_finish(&state->ceph_aio_state, ret);
 	if (ret < 0) {
 		/* ceph returns -errno on error. */
 		tevent_req_error(req, -ret);
@@ -2408,10 +2452,13 @@ static ssize_t vfs_ceph_pwrite_recv(struct tevent_req *req,
 
 	DBG_DEBUG("[CEPH] pwrite_recv: bytes_written=%zd\n",
 		  state->bytes_written);
+
+	SMBPROFILE_BYTES_ASYNC_END(state->ceph_aio_state.profile_bytes);
+
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
-	*vfs_aio_state = state->vfs_aio_state;
+	*vfs_aio_state = state->ceph_aio_state.vfs_aio_state;
 	return state->bytes_written;
 }
 
@@ -2530,6 +2577,10 @@ out:
  * Fake up an async ceph fsync by calling the synchronous API.
  */
 
+struct vfs_ceph_fsync_state {
+	struct vfs_ceph_aio_state ceph_aio_state;
+};
+
 static struct tevent_req *vfs_ceph_fsync_send(struct vfs_handle_struct *handle,
 					TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
@@ -2537,12 +2588,12 @@ static struct tevent_req *vfs_ceph_fsync_send(struct vfs_handle_struct *handle,
 {
 	struct vfs_ceph_fh *cfh = NULL;
 	struct tevent_req *req = NULL;
-	struct vfs_aio_state *state = NULL;
+	struct vfs_ceph_fsync_state *state = NULL;
 	int ret = -1;
 
 	DBG_DEBUG("[CEPH] fsync_send(%p, %p)\n", handle, fsp);
 
-	req = tevent_req_create(mem_ctx, &state, struct vfs_aio_state);
+	req = tevent_req_create(mem_ctx, &state, struct vfs_ceph_fsync_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -2553,8 +2604,16 @@ static struct tevent_req *vfs_ceph_fsync_send(struct vfs_handle_struct *handle,
 		return tevent_req_post(req, ev);
 	}
 
+	SMBPROFILE_BYTES_ASYNC_START(syscall_asys_fsync,
+				     profile_p,
+				     state->ceph_aio_state.profile_bytes,
+				     0);
+	SMBPROFILE_BYTES_ASYNC_SET_IDLE(state->ceph_aio_state.profile_bytes);
+
 	/* Make sync call. */
+	vfs_ceph_aio_start(&state->ceph_aio_state);
 	ret = vfs_ceph_ll_fsync(handle, cfh, false);
+	vfs_ceph_aio_finish(&state->ceph_aio_state, ret);
 	if (ret != 0) {
 		/* ceph_fsync returns -errno on error. */
 		tevent_req_error(req, -ret);
@@ -2570,17 +2629,19 @@ static struct tevent_req *vfs_ceph_fsync_send(struct vfs_handle_struct *handle,
 static int vfs_ceph_fsync_recv(struct tevent_req *req,
 				struct vfs_aio_state *vfs_aio_state)
 {
-	struct vfs_aio_state *state =
-		tevent_req_data(req, struct vfs_aio_state);
+	struct vfs_ceph_fsync_state *state = tevent_req_data(
+		req, struct vfs_ceph_fsync_state);
 
 	DBG_DEBUG("[CEPH] fsync_recv: error=%d duration=%" PRIu64 "\n",
-		  state->error,
-		  state->duration);
+		  state->ceph_aio_state.vfs_aio_state.error,
+		  state->ceph_aio_state.vfs_aio_state.duration);
+
+	SMBPROFILE_BYTES_ASYNC_END(state->ceph_aio_state.profile_bytes);
 
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
-	*vfs_aio_state = *state;
+	*vfs_aio_state = state->ceph_aio_state.vfs_aio_state;
 	return 0;
 }
 
