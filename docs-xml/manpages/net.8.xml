@@ -1549,29 +1549,25 @@ to show in the result.
 
 <para>
 Since Samba 4.21.0, keytab file is created as specified in <smbconfoption
-name="sync machine password to keytab"/>. The keytab is created only for
+name="sync machine password to keytab"/> . The keytab can be created only when
+machine password is available in secrets.tdb, i.e. only for
 <smbconfoption name="kerberos method">secrets only</smbconfoption> and
 <smbconfoption name="kerberos method">secrets and keytab</smbconfoption>. With
 the smb.conf default values for <smbconfoption name="kerberos method"> secrets
 only</smbconfoption> and <smbconfoption name="sync machine password to keytab"/>
 (default is empty) the keytab is not generated at all.  Keytab with a default
-name and SPNs synced from AD is created for <smbconfoption name="kerberos
-method">secrets and keytab</smbconfoption> if <smbconfoption name="sync machine
-password to keytab"/> is missing.
+name containing: SPNs synced from AD, account name COMPUTER$ and principal
+host/dns_hostname is created for <smbconfoption name="kerberos method">secrets
+and keytab</smbconfoption> if <smbconfoption name="sync machine password to
+keytab"/> is missing.
 </para>
 <para>
-Till Samba 4.20.0, two more entries were created by default: the machinename of
-the client (ending with '$') and the UPN (host/domain@REALM).  If these two
-entries are still needed, each must be specified in an own keytab file.
-Example below will generate three keytab files that contain SPNs synced from
-AD, host UPN and machine$ SPN:
+Till Samba 4.20, these entries were created by default: the account name
+COMPUTER$, 'host' principal and SPNs synced from AD. Example below generates
+such keytab ('host' is added implicitly):
 </para>
 <programlisting>
-<smbconfoption name="sync machine password to keytab">
-/etc/krb5.keytab0:sync_spns:machine_password,
-/etc/krb5.keytab1:spns=host/smb.com@SMB.COM:machine_password,
-/etc/krb5.keytab2:account_name:machine_password
-</smbconfoption>
+<smbconfoption name="sync machine password to keytab">/etc/krb5.keytab:account_name:sync_spns:sync_kvno:machine_password</smbconfoption>
 </programlisting>
 <para>
 No changes are made to the computer AD account.
