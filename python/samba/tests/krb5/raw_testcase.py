@@ -4874,18 +4874,36 @@ class RawKerberosTest(TestCase):
 
                 if uncompressed_size < (
                         claims.CLAIM_LOWER_COMPRESSION_THRESHOLD):
-                    self.assertEqual(claims.CLAIMS_COMPRESSION_FORMAT_NONE,
-                                     compression_format,
+                    self.assertEqual(compression_format,
+                                     claims.CLAIMS_COMPRESSION_FORMAT_NONE,
                                      f'{claims_type} unexpectedly '
                                      f'compressed ({uncompressed_size} '
                                      f'bytes uncompressed)')
-                elif uncompressed_size >= (
-                        claims.CLAIM_UPPER_COMPRESSION_THRESHOLD):
-                    self.assertEqual(
-                        claims.CLAIMS_COMPRESSION_FORMAT_XPRESS_HUFF,
-                        compression_format,
-                        f'{claims_type} unexpectedly not compressed '
-                        f'({uncompressed_size} bytes uncompressed)')
+                elif uncompressed_size > claims_metadata.claims_set_size:
+                    self.assertEqual(compression_format,
+                                     claims.CLAIMS_COMPRESSION_FORMAT_XPRESS_HUFF,
+                                     f'{claims_type} unexpectedly not compressed '
+                                     f'({uncompressed_size} bytes uncompressed)')
+                elif compression_format == claims.CLAIMS_COMPRESSION_FORMAT_NONE:
+                    claims_metadata.compression_format = claims.CLAIMS_COMPRESSION_FORMAT_XPRESS_HUFF
+                    tmp_claims_huff = ndr_pack(claims_metadata)
+                    claims_metadata.compression_format = compression_format
+                    tmp_metadata = ndr_unpack(claims.CLAIMS_SET_METADATA,
+                                              tmp_claims_huff)
+                    self.assertEqual(tmp_metadata.uncompressed_claims_set_size,
+                                     uncompressed_size)
+                    if uncompressed_size > tmp_metadata.claims_set_size:
+                        possible_gain = uncompressed_size - tmp_metadata.claims_set_size
+                        self.assertEqual(compression_format,
+                                         claims.CLAIMS_COMPRESSION_FORMAT_XPRESS_HUFF,
+                                         f'{claims_type} unexpectedly not compressed '
+                                         f'({uncompressed_size} bytes uncompressed)'
+                                         f'(could gain {possible_gain} bytes)')
+                else:
+                    self.assertEqual(compression_format,
+                                     claims.CLAIMS_COMPRESSION_FORMAT_XPRESS_HUFF,
+                                     f'{claims_type} unexpectedly not compressed '
+                                     f'({uncompressed_size} bytes uncompressed)')
 
                 claims_set = claims_metadata.claims_set.claims.claims
                 self.assertIsNotNone(claims_set,
