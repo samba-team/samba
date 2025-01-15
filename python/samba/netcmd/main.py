@@ -17,7 +17,6 @@
 
 """The main samba-tool command implementation."""
 
-from samba import getopt as options
 
 from samba.netcmd import SuperCommand
 
@@ -51,10 +50,6 @@ class cache_loader(dict):
 
 class cmd_sambatool(SuperCommand):
     """Main samba administration tool."""
-
-    takes_optiongroups = {
-        "versionopts": options.VersionOptions,
-    }
 
     subcommands = cache_loader()
 
