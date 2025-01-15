@@ -1556,6 +1556,9 @@ class NetlogonSchannel(KDCBaseTest):
                                            expect_send_encrypted,
                                            expect_recv_encrypted)
         self.assertNotEqual(validationRef_n6.base.rid, 0)
+        self.assertEqual(validationRef_n6.base.user_flags &
+                         netlogon.NETLOGON_NTLMV2_ENABLED,
+                         netlogon.NETLOGON_NTLMV2_ENABLED)
         self.assertNotEqual(validationRef_n6.base.key.key, list(b'\x00' *16))
         self.assertEqual(validationRef_n6.base.LMSessKey.key, list(b'\x00' *8))
 
@@ -1567,6 +1570,7 @@ class NetlogonSchannel(KDCBaseTest):
                                                  expect_send_encrypted,
                                                  expect_recv_encrypted)
         self.assertEqual(validationWF_n2.base.rid, validationRef_n6.base.rid)
+        self.assertEqual(validationWF_n2.base.user_flags, validationRef_n6.base.user_flags)
         if expect_broken_nt_crypto:
             self.assertNotEqual(validationWF_n2.base.key.key, list(b'\x00' *16))
             self.assertNotEqual(validationWF_n2.base.key.key, validationRef_n6.base.key.key)
@@ -1583,6 +1587,7 @@ class NetlogonSchannel(KDCBaseTest):
                                           expect_send_encrypted,
                                           expect_recv_encrypted)
         self.assertEqual(validationEx_n2.base.rid, validationRef_n6.base.rid)
+        self.assertEqual(validationEx_n2.base.user_flags, validationRef_n6.base.user_flags)
         if expect_broken_nt_crypto:
             self.assertNotEqual(validationEx_n2.base.key.key, list(b'\x00' *16))
             self.assertNotEqual(validationEx_n2.base.key.key, validationRef_n6.base.key.key)
@@ -1602,6 +1607,7 @@ class NetlogonSchannel(KDCBaseTest):
                                                  expect_send_encrypted,
                                                  expect_recv_encrypted)
         self.assertEqual(validationWF_n3.base.rid, validationRef_n6.base.rid)
+        self.assertEqual(validationWF_n3.base.user_flags, validationRef_n6.base.user_flags)
         if expect_broken_nt_crypto:
             self.assertNotEqual(validationWF_n3.base.key.key, list(b'\x00' *16))
             self.assertNotEqual(validationWF_n3.base.key.key, validationRef_n6.base.key.key)
@@ -1618,6 +1624,7 @@ class NetlogonSchannel(KDCBaseTest):
                                           expect_send_encrypted,
                                           expect_recv_encrypted)
         self.assertEqual(validationEx_n3.base.rid, validationRef_n6.base.rid)
+        self.assertEqual(validationEx_n3.base.user_flags, validationRef_n6.base.user_flags)
         if expect_broken_nt_crypto:
             self.assertNotEqual(validationEx_n3.base.key.key, list(b'\x00' *16))
             self.assertNotEqual(validationEx_n3.base.key.key, validationRef_n6.base.key.key)
@@ -1637,6 +1644,7 @@ class NetlogonSchannel(KDCBaseTest):
                                                  expect_send_encrypted,
                                                  expect_recv_encrypted)
         self.assertEqual(validationWF_n6.base.rid, validationRef_n6.base.rid)
+        self.assertEqual(validationWF_n6.base.user_flags, validationRef_n6.base.user_flags)
         self.assertEqual(validationWF_n6.base.key.key, validationRef_n6.base.key.key)
         validationEx_n6 = self.do_LogonEx(ncreds, conn,
                                           logon_type_n, logon_info_n,
@@ -1644,6 +1652,7 @@ class NetlogonSchannel(KDCBaseTest):
                                           expect_send_encrypted,
                                           expect_recv_encrypted)
         self.assertEqual(validationEx_n6.base.rid, validationRef_n6.base.rid)
+        self.assertEqual(validationEx_n6.base.user_flags, validationRef_n6.base.user_flags)
         self.assertEqual(validationEx_n6.base.key.key, validationRef_n6.base.key.key)
 
         self.do_CheckCapabilities(ncreds, conn)
@@ -1703,6 +1712,9 @@ class NetlogonSchannel(KDCBaseTest):
             self.do_CheckCapabilities(ncreds, conn)
             return
         self.assertNotEqual(validationRef_i6.base.rid, 0)
+        self.assertEqual(validationRef_i6.base.user_flags &
+                         netlogon.NETLOGON_NTLMV2_ENABLED,
+                         netlogon.NETLOGON_NTLMV2_ENABLED)
         self.assertEqual(validationRef_i6.base.key.key, list(b'\x00' *16))
         self.assertEqual(validationRef_i6.base.LMSessKey.key, list(b'\x00' *8))
 
@@ -1714,6 +1726,7 @@ class NetlogonSchannel(KDCBaseTest):
                                                  expect_send_encrypted,
                                                  expect_recv_encrypted)
         self.assertEqual(validationWF_i2.base.rid, validationRef_i6.base.rid)
+        self.assertEqual(validationWF_i2.base.user_flags, validationRef_i6.base.user_flags)
         self.assertEqual(validationWF_i2.base.key.key, validationRef_i6.base.key.key)
         self.assertEqual(validationWF_i2.base.LMSessKey.key, validationRef_i6.base.LMSessKey.key)
         validationEx_i2 = self.do_LogonEx(ncreds, conn,
@@ -1722,6 +1735,7 @@ class NetlogonSchannel(KDCBaseTest):
                                           expect_send_encrypted,
                                           expect_recv_encrypted)
         self.assertEqual(validationEx_i2.base.rid, validationRef_i6.base.rid)
+        self.assertEqual(validationEx_i2.base.user_flags, validationRef_i6.base.user_flags)
         self.assertEqual(validationEx_i2.base.key.key, validationRef_i6.base.key.key)
         self.assertEqual(validationEx_i2.base.LMSessKey.key, validationRef_i6.base.LMSessKey.key)
 
@@ -1733,6 +1747,7 @@ class NetlogonSchannel(KDCBaseTest):
                                                  expect_send_encrypted,
                                                  expect_recv_encrypted)
         self.assertEqual(validationWF_i3.base.rid, validationRef_i6.base.rid)
+        self.assertEqual(validationWF_i3.base.user_flags, validationRef_i6.base.user_flags)
         self.assertEqual(validationWF_i3.base.key.key, validationRef_i6.base.key.key)
         self.assertEqual(validationWF_i3.base.LMSessKey.key, validationRef_i6.base.LMSessKey.key)
         validationEx_i3 = self.do_LogonEx(ncreds, conn,
@@ -1741,6 +1756,7 @@ class NetlogonSchannel(KDCBaseTest):
                                           expect_send_encrypted,
                                           expect_recv_encrypted)
         self.assertEqual(validationEx_i3.base.rid, validationRef_i6.base.rid)
+        self.assertEqual(validationEx_i3.base.user_flags, validationRef_i6.base.user_flags)
         self.assertEqual(validationEx_i3.base.key.key, validationRef_i6.base.key.key)
         self.assertEqual(validationEx_i3.base.LMSessKey.key, validationRef_i6.base.LMSessKey.key)
 
@@ -1752,6 +1768,7 @@ class NetlogonSchannel(KDCBaseTest):
                                                  expect_send_encrypted,
                                                  expect_recv_encrypted)
         self.assertEqual(validationWF_i6.base.rid, validationRef_i6.base.rid)
+        self.assertEqual(validationWF_i6.base.user_flags, validationRef_i6.base.user_flags)
         self.assertEqual(validationWF_i6.base.key.key, validationRef_i6.base.key.key)
         self.assertEqual(validationWF_i6.base.LMSessKey.key, validationRef_i6.base.LMSessKey.key)
         validationEx_i6 = self.do_LogonEx(ncreds, conn,
@@ -1760,6 +1777,7 @@ class NetlogonSchannel(KDCBaseTest):
                                           expect_send_encrypted,
                                           expect_recv_encrypted)
         self.assertEqual(validationEx_i6.base.rid, validationRef_i6.base.rid)
+        self.assertEqual(validationEx_i6.base.user_flags, validationRef_i6.base.user_flags)
         self.assertEqual(validationEx_i6.base.key.key, validationRef_i6.base.key.key)
         self.assertEqual(validationEx_i6.base.LMSessKey.key, validationRef_i6.base.LMSessKey.key)
 
@@ -1911,6 +1929,8 @@ class NetlogonSchannel(KDCBaseTest):
             self.assertIsNotNone(validationEx.user_information)
             self.assertNotEqual(validationEx.user_information.base.rid, 0)
             self.assertEqual(validationEx.user_information.base.key.key, list(b'\x00' *16))
+            self.assertEqual(validationEx.user_information.base.user_flags &
+                             netlogon.NETLOGON_NTLMV2_ENABLED, 0)
             self.assertIsNone(validationEx.device_information)
 
         expect_send_encrypted = False
@@ -1939,6 +1959,8 @@ class NetlogonSchannel(KDCBaseTest):
             self.assertEqual(validationWF.user_information.base.rid,
                              validationEx.user_information.base.rid)
             self.assertEqual(validationWF.user_information.base.key.key, list(b'\x00' *16))
+            self.assertEqual(validationWF.user_information.base.user_flags,
+                             validationEx.user_information.base.user_flags)
             self.assertIsNone(validationWF.device_information)
 
         self.do_CheckCapabilities(ncreds, conn)

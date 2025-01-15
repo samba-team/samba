@@ -1,2 +1,22 @@
 # This is not implemented yet
 ^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_ticket_samlogon
+# We don't add NETLOGON_NTLMV2_ENABLED yet
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_interactive_samlogon_.*_auth3_01000000
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_interactive_samlogon_.*_auth3_613fffff
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_interactive_samlogon_.*_auth3_e13fffff
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_interactive_samlogon_.*_authK_80000000
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_interactive_samlogon_.*_authK_e13fffff
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_network_samlogon_.*_auth3_01000000
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_network_samlogon_.*_auth3_613fffff
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_network_samlogon_.*_auth3_e13fffff
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_network_samlogon_.*_authK_00000000
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_network_samlogon_.*_authK_00000004
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_network_samlogon_.*_authK_00004000
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_network_samlogon_.*_authK_01000000
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_network_samlogon_.*_authK_01004004
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_network_samlogon_.*_authK_400001ff
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_network_samlogon_.*_authK_413fffff
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_network_samlogon_.*_authK_603fbffb
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_network_samlogon_.*_authK_613fffff
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_network_samlogon_.*_authK_80000000
+^samba.tests.krb5.netlogon.*.NetlogonSchannel.test_network_samlogon_.*_authK_e13fffff
