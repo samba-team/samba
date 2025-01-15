@@ -575,6 +575,8 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 		goto done;
 	}
 
+	(*server_info)->info3->base.user_flags |= NETLOGON_NTLMV2_ENABLED;
+
 	(*server_info)->session_key =
 		data_blob_talloc(*server_info, user_sess_key.data,
 				 user_sess_key.length);
