@@ -1,8 +1,6 @@
 ^samba\.tests\.samba_tool\.help\.samba\.tests\.samba_tool\.help\.HelpTestCase\.test_help_version\(none\)
 ^samba\.tests\.samba_tool\.help\.samba\.tests\.samba_tool\.help\.HelpTestCase\.test_sub_command_version\(none\)
-^samba\.tests\.samba_tool\.help\.samba\.tests\.samba_tool\.help\.HelpTestCase\.test_version\(none\)
 ^samba\.tests\.samba_tool\.help\.samba\.tests\.samba_tool\.help\.HelpTestCase\.test_version_beats_help\(none\)
 ^samba\.tests\.samba_tool\.help\.samba\.tests\.samba_tool\.help\.HelpTestCase\.test_help_version\(fileserver\)
 ^samba\.tests\.samba_tool\.help\.samba\.tests\.samba_tool\.help\.HelpTestCase\.test_sub_command_version\(fileserver\)
-^samba\.tests\.samba_tool\.help\.samba\.tests\.samba_tool\.help\.HelpTestCase\.test_version\(fileserver\)
 ^samba\.tests\.samba_tool\.help\.samba\.tests\.samba_tool\.help\.HelpTestCase\.test_version_beats_help\(fileserver\)

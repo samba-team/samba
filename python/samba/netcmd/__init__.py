@@ -427,7 +427,8 @@ class SuperCommand(Command):
             return (self, [])
 
         # We didn't find a subcommand, but maybe we found e.g. --version
-        print("%s: missing subcommand\n" % (path), file=self.outf)
+        if not deferred_args:
+            print("%s: missing subcommand\n" % (path), file=self.outf)
         return (self, deferred_args)
 
     def _run(self, *argv):
