@@ -1124,6 +1124,7 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 		talloc_free(tmp_ctx);
 		return nt_status;
 	}
+	(*user_info_dc)->info->user_flags |= NETLOGON_NTLMV2_ENABLED;
 
 	result = dsdb_is_protected_user(ctx->auth_ctx->sam_ctx,
 					(*user_info_dc)->sids,
