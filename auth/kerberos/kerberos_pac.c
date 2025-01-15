@@ -360,6 +360,7 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 		if (ret) {
 			DEBUG(5, ("PAC Decode: Failed to verify the service "
 				  "signature: %s\n", error_message(ret)));
+			talloc_free(tmp_ctx);
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
