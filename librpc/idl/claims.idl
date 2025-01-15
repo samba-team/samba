@@ -138,8 +138,8 @@ interface claims
 		 * disabled compression entirely.
 		 */
 		[value(ndr_claims_actual_wire_compression_alg(r->compression_format,
-							      ndr_size_CLAIMS_SET_NDR(claims_set,
-										      ndr->flags)))] CLAIMS_COMPRESSION_FORMAT compression_format;
+							      claims_set,
+							      ndr->flags))] CLAIMS_COMPRESSION_FORMAT compression_format;
 		[value(ndr_size_CLAIMS_SET_NDR(claims_set,
 					       ndr->flags))] uint32 uncompressed_claims_set_size;
 		uint16 reserved_type;

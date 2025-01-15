@@ -24,7 +24,8 @@
 
 enum ndr_compression_alg ndr_claims_compression_alg(enum CLAIMS_COMPRESSION_FORMAT wire_alg);
 enum CLAIMS_COMPRESSION_FORMAT ndr_claims_actual_wire_compression_alg(enum CLAIMS_COMPRESSION_FORMAT specified_compression,
-								      size_t uncompressed_claims_size);
+								      struct CLAIMS_SET_NDR *claims_set,
+								      int flags);
 
 size_t ndr_claims_compressed_size(struct CLAIMS_SET_NDR *claims_set,
 				 enum CLAIMS_COMPRESSION_FORMAT wire_alg,

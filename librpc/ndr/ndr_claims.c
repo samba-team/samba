@@ -23,29 +23,24 @@ enum ndr_compression_alg ndr_claims_compression_alg(enum CLAIMS_COMPRESSION_FORM
 	return NDR_COMPRESSION_INVALID;
 }
 
-
-enum CLAIMS_COMPRESSION_FORMAT ndr_claims_actual_wire_compression_alg(enum CLAIMS_COMPRESSION_FORMAT specified_compression,
-								      size_t uncompressed_claims_size) {
-	if (uncompressed_claims_size < CLAIM_UPPER_COMPRESSION_THRESHOLD) {
-		return CLAIMS_COMPRESSION_FORMAT_NONE;
-	}
-
-	return specified_compression;
-}
-
-size_t ndr_claims_compressed_size(struct CLAIMS_SET_NDR *claims_set,
-				  enum CLAIMS_COMPRESSION_FORMAT wire_alg,
-				  int flags)
+static void ndr_claims_compressed_sizes(struct CLAIMS_SET_NDR *claims_set,
+					enum CLAIMS_COMPRESSION_FORMAT wire_alg,
+					int flags,
+					ssize_t *_uncompressed_size,
+					enum CLAIMS_COMPRESSION_FORMAT *_used_alg,
+					ssize_t *_compressed_size)
 {
 	TALLOC_CTX *frame = NULL;
 	DATA_BLOB tmp_blob;
 	uint8_t * tmp_compressed;
 	ssize_t compressed_size;
 	enum ndr_err_code ndr_err;
-	enum CLAIMS_COMPRESSION_FORMAT actual_wire_alg;
 
 	if (claims_set == NULL) {
-		return 0;
+		*_uncompressed_size = 0;
+		*_used_alg = CLAIMS_COMPRESSION_FORMAT_NONE;
+		*_compressed_size = 0;
+		return;
 	}
 
 	frame = talloc_stackframe();
@@ -56,17 +51,28 @@ size_t ndr_claims_compressed_size(struct CLAIMS_SET_NDR *claims_set,
 				       (ndr_push_flags_fn_t)ndr_push_CLAIMS_SET_NDR);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DBG_ERR("Failed to push claims while determining compressed size\n");
+		*_uncompressed_size = -1;
+		*_used_alg = CLAIMS_COMPRESSION_FORMAT_NONE;
+		*_compressed_size = -1;
 		TALLOC_FREE(frame);
-		return 0;
+		return;
 	}
 
-	actual_wire_alg = ndr_claims_actual_wire_compression_alg(wire_alg,
-								 tmp_blob.length);
-
-	switch (actual_wire_alg) {
-	case CLAIMS_COMPRESSION_FORMAT_NONE:
+	if (tmp_blob.length < CLAIM_UPPER_COMPRESSION_THRESHOLD) {
+		*_uncompressed_size = tmp_blob.length;
+		*_used_alg = CLAIMS_COMPRESSION_FORMAT_NONE;
+		*_compressed_size = tmp_blob.length;
 		TALLOC_FREE(frame);
-		return tmp_blob.length;
+		return;
+	}
+
+	switch (wire_alg) {
+	case CLAIMS_COMPRESSION_FORMAT_NONE:
+		*_uncompressed_size = tmp_blob.length;
+		*_used_alg = CLAIMS_COMPRESSION_FORMAT_NONE;
+		*_compressed_size = tmp_blob.length;
+		TALLOC_FREE(frame);
+		return;
 
 	case CLAIMS_COMPRESSION_FORMAT_XPRESS_HUFF:
 		compressed_size = lzxpress_huffman_compress_talloc(frame,
@@ -74,19 +80,76 @@ size_t ndr_claims_compressed_size(struct CLAIMS_SET_NDR *claims_set,
 								   tmp_blob.length,
 								   &tmp_compressed);
 
-		TALLOC_FREE(frame);
-
 		if (compressed_size < 0) {
 			DBG_ERR("Failed to compress claims (for determining compressed size)\n");
-			return 0;
+			*_uncompressed_size = -1;
+			*_used_alg = CLAIMS_COMPRESSION_FORMAT_NONE;
+			*_compressed_size = -1;
+			TALLOC_FREE(frame);
+			return;
 		}
-		return compressed_size;
+		if (compressed_size >= tmp_blob.length) {
+			*_uncompressed_size = tmp_blob.length;
+			*_used_alg = CLAIMS_COMPRESSION_FORMAT_NONE;
+			*_compressed_size = tmp_blob.length;
+			TALLOC_FREE(frame);
+			return;
+		}
+
+		*_uncompressed_size = tmp_blob.length;
+		*_used_alg = CLAIMS_COMPRESSION_FORMAT_XPRESS_HUFF;
+		*_compressed_size = compressed_size;
+		TALLOC_FREE(frame);
+		return;
 
 	default:
-		TALLOC_FREE(frame);
 		DBG_ERR("Invalid chosen compression algorithm while determining compressed claim size\n");
+		*_uncompressed_size = -1;
+		*_used_alg = CLAIMS_COMPRESSION_FORMAT_NONE;
+		*_compressed_size = -1;
+		TALLOC_FREE(frame);
+		return;
+	}
+}
+
+enum CLAIMS_COMPRESSION_FORMAT ndr_claims_actual_wire_compression_alg(enum CLAIMS_COMPRESSION_FORMAT specified_compression,
+								      struct CLAIMS_SET_NDR *claims_set,
+								      int flags)
+{
+	ssize_t uncompressed_size = -1;
+	enum CLAIMS_COMPRESSION_FORMAT used_alg = CLAIMS_COMPRESSION_FORMAT_NONE;
+	ssize_t compressed_size = -1;
+
+	ndr_claims_compressed_sizes(claims_set,
+				    specified_compression,
+				    flags,
+				    &uncompressed_size,
+				    &used_alg,
+				    &compressed_size);
+
+	return used_alg;
+}
+
+size_t ndr_claims_compressed_size(struct CLAIMS_SET_NDR *claims_set,
+				  enum CLAIMS_COMPRESSION_FORMAT wire_alg,
+				  int flags)
+{
+	ssize_t uncompressed_size = -1;
+	enum CLAIMS_COMPRESSION_FORMAT used_alg = CLAIMS_COMPRESSION_FORMAT_NONE;
+	ssize_t compressed_size = -1;
+
+	ndr_claims_compressed_sizes(claims_set,
+				    wire_alg,
+				    flags,
+				    &uncompressed_size,
+				    &used_alg,
+				    &compressed_size);
+	if (uncompressed_size == -1) {
+		DBG_ERR("Failed to push claims while determining compressed size\n");
 		return 0;
 	}
+
+	return compressed_size;
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_claims_tf_rule_set(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct claims_tf_rule_set *r)
