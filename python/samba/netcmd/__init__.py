@@ -446,7 +446,10 @@ class SuperCommand(Command):
                 sub = self.subcommands[a]
                 return sub._resolve(sub_path, *sub_args, outf=outf, errf=errf)
 
-            elif a in ['--help', 'help', None, '-h', '-V', '--version']:
+            if a in ['-V', '--version']:
+                return (self, [a])
+
+            if a in ['--help', 'help', None, '-h']:
                 # we pass these to the leaf node.
                 if a == 'help':
                     a = '--help'
@@ -457,7 +460,7 @@ class SuperCommand(Command):
             print("%s: no such subcommand: %s\n" % (path, a), file=self.outf)
             return (self, [])
 
-        # We didn't find a subcommand, but maybe we found e.g. --version
+        # We didn't find a subcommand, but maybe we found e.g. --help
         if not deferred_args:
             print("%s: missing subcommand\n" % (path), file=self.outf)
         return (self, deferred_args)
