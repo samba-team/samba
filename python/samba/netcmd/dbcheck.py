@@ -74,6 +74,8 @@ class cmd_dbcheck(Command):
         Option("--selftest-check-expired-tombstones",
                dest="selftest_check_expired_tombstones", default=False, action="store_true",
                help=optparse.SUPPRESS_HELP),  # This is only used by tests
+        Option("--check-gpo-links", action="store_true",
+               help="check that GPO related links point to the current domain"),
     ]
 
     def run(self, DN=None, H=None, verbose=False, fix=False, yes=False,
@@ -83,7 +85,7 @@ class cmd_dbcheck(Command):
             quick_membership_checks=False,
             reset_well_known_acls=False,
             selftest_check_expired_tombstones=False,
-            yes_rules=None):
+            yes_rules=None, check_gpo_links=False):
 
         if yes_rules is None:
             yes_rules = []
@@ -146,7 +148,8 @@ class cmd_dbcheck(Command):
                           quick_membership_checks=quick_membership_checks,
                           reset_well_known_acls=reset_well_known_acls,
                           check_expired_tombstones=selftest_check_expired_tombstones,
-                          colour=stdout_colour)
+                          colour=stdout_colour,
+                          check_gpo_links=check_gpo_links)
 
             for option in yes_rules:
                 if hasattr(chk, option):

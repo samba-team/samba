@@ -20,6 +20,7 @@
 import ldb
 import samba
 import time
+import re
 from base64 import b64decode, b64encode
 from samba import dsdb
 from samba import common
@@ -63,7 +64,8 @@ class dbcheck(object):
                  quick_membership_checks=False,
                  reset_well_known_acls=False,
                  check_expired_tombstones=False,
-                 colour=False):
+                 colour=False,
+                 check_gpo_links=False):
         self.samdb = samdb
         self.dict_oid_name = None
         self.samdb_schema = (samdb_schema or samdb)
@@ -72,6 +74,7 @@ class dbcheck(object):
         self.yes = yes
         self.quiet = quiet
         self.colour = colour
+        self.check_gpo_links = check_gpo_links
         self.remove_all_unknown_attributes = False
         self.remove_all_empty_attributes = False
         self.fix_all_normalisation = False
@@ -127,6 +130,9 @@ class dbcheck(object):
         self.fix_replica_locations = False
         self.fix_missing_rid_set_master = False
         self.fix_changes_after_deletion_bug = False
+        # Rather than asking once whether to fix all gplinks, we ask
+        # once for each domain we see.
+        self.fixable_wrong_domains_in_gplinks = {}
 
         self.dn_set = set()
         self.link_id_cache = {}
@@ -2376,6 +2382,50 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         return attrs, lc_attrs
 
+    def check_gplink(self, obj, attrname):
+        """parse a gPLink into an array of dn and options"""
+        val = str(obj[attrname]).strip()
+        if val == '':
+            return 0
+        base_dn = self.samdb.get_default_basedn()
+        policies_dn = base_dn.copy()
+        policies_dn.add_child(ldb.Dn(self.samdb, "CN=Policies,CN=System"))
+        error_count = 0
+        new_values = []
+        changed = False
+        for dnstr, flags in re.findall(r'\[LDAP://([^[;]+);(\d)\]', val, re.I):
+            dn = ldb.Dn(self.samdb, dnstr)
+            newdn = dn.copy()
+            bdn = newdn.parent()
+            if bdn != policies_dn:
+                self.report(f"WARNING: gPLink {dn} does not have base DN "
+                            f"{base_dn}, which may be due to a domain rename")
+                error_count += 1
+                newdn.remove_base_components(len(bdn))
+                newdn += policies_dn
+                replace = self.confirm_and_remember(
+                    (f'replace gplink "{dn}" with "{newdn}" '
+                     f'("all" for all in "{bdn}")'),
+                    self.fixable_wrong_domains_in_gplinks,
+                    str(bdn).lower())
+                if replace:
+                    dn = newdn
+                    changed = True
+            new_values.append((dn, flags))
+
+        if changed:
+            val = ''.join(f"[LDAP://{dn};{flags}]" for dn, flags in new_values)
+            obj[attrname] = val
+            msg = ldb.Message()
+            msg.dn = obj.dn
+            msg[attrname] = ldb.MessageElement(val,
+                                                ldb.FLAG_MOD_REPLACE,
+                                                attrname)
+            self.do_modify(msg, [],
+                           f"resetting gplink {dn} to {newdn}")
+
+        return error_count
+
     def check_object(self, dn, requested_attrs=None):
         """check one object"""
         if self.verbose:
@@ -2615,6 +2665,10 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                 % (attrname, obj.dn, obj[attrname][0]))
                 else:
                     self.attribute_or_class_ids.add(obj[attrname][0])
+
+            if self.check_gpo_links:
+                if attrname.lower() == 'gplink':
+                    self.check_gplink(obj, attrname)
 
             # check for empty attributes
             for val in obj[attrname]:
