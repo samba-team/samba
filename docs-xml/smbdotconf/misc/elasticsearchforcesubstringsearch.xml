@@ -1,0 +1,16 @@
+<samba:parameter name="elasticsearch:force substring search"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+  <description>
+    <para>
+      Force string searches in string attributes likes paths to be prefix
+      searches by prefixing a *. Example: a Spotlight search for '*=="samba*"'
+      would be mapped to "'query': '(*samba*)'" instead of "'query':
+      '(samba*)'".
+    </para>
+  </description>
+
+  <value type="default">no</value>
+  <value type="example">yes</value>
+</samba:parameter>

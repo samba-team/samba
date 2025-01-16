@@ -67,6 +67,7 @@
 		json_t *mime_map;
 		bool ignore_unknown_attribute;
 		bool ignore_unknown_type;
+		bool force_substring_search;
 		bool type_error;
 		YY_BUFFER_STATE s;
 		const char *result;
@@ -392,6 +393,7 @@ static char *map_fts(const struct es_attr_map *attr,
 	struct es_parser_state *s = global_es_parser_state;
 	const char *not = NULL;
 	const char *end = NULL;
+	const char *force_substring = "";
 	char *esval = NULL;
 	char *es = NULL;
 
@@ -414,9 +416,15 @@ static char *map_fts(const struct es_attr_map *attr,
 		DBG_ERR("Mapping fts [%s] unexpected op [%c]\n", val, op);
 		return NULL;
 	}
+
+	if (s->force_substring_search) {
+		force_substring = "*";
+	}
+
 	es = talloc_asprintf(s->frame,
-			     "%s%s%s",
+			     "%s%s%s%s",
 			     not,
+			     force_substring,
 			     esval,
 			     end);
 	if (es == NULL) {
@@ -432,6 +440,7 @@ static char *map_str(const struct es_attr_map *attr,
 	struct es_parser_state *s = global_es_parser_state;
 	char *esval = NULL;
 	char *es = NULL;
+	const char *force_substring = "";
 	const char *not = NULL;
 	const char *end = NULL;
 
@@ -455,10 +464,15 @@ static char *map_str(const struct es_attr_map *attr,
 		return NULL;
 	}
 
+	if (s->force_substring_search) {
+		force_substring = "*";
+	}
+
 	es = talloc_asprintf(s->frame,
-			     "%s%s:%s%s",
+			     "%s%s:%s%s%s",
 			     not,
 			     attr->name,
+			     force_substring,
 			     esval,
 			     end);
 	if (es == NULL) {
@@ -661,6 +675,10 @@ bool map_spotlight_to_es_query(TALLOC_CTX *mem_ctx,
 	s.ignore_unknown_type = lp_parm_bool(GLOBAL_SECTION_SNUM,
 					     "elasticsearch",
 					     "ignore unknown type",
+					     false);
+	s.force_substring_search = lp_parm_bool(GLOBAL_SECTION_SNUM,
+					     "elasticsearch",
+					     "force substring search",
 					     false);
 
 	global_es_parser_state = &s;

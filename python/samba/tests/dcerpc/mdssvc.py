@@ -24,6 +24,7 @@ import threading
 import logging
 import json
 from http.server import HTTPServer, BaseHTTPRequestHandler
+import samba
 from samba.dcerpc import mdssvc
 from samba.tests import RpcInterfaceTestCase
 from samba.samba3 import mdscli
@@ -74,6 +75,11 @@ class MdssvcTests(RpcInterfaceTestCase):
 
     def setUp(self):
         super().setUp()
+
+        # Build the global inject file path
+        server_conf = samba.tests.env_get_var_value("SERVERCONFFILE")
+        server_conf_dir = os.path.dirname(server_conf)
+        self.global_inject = os.path.join(server_conf_dir, "global_inject.conf")
 
         self.pipe = mdssvc.mdssvc('ncacn_np:fileserver[/pipe/mdssvc]', self.get_loadparm())
 
@@ -192,3 +198,31 @@ class MdssvcTests(RpcInterfaceTestCase):
             r"x\x",
         ]
         self.run_test(sl_query, exp_results, exp_json_query, fake_json_response)
+
+    def test_mdscli_search_force_substring(self):
+        with open(self.global_inject, 'w') as f:
+            f.write("elasticsearch:force substring search = yes\n")
+        os.system("killall -SIGHUP rpcd_mdssvc")
+
+        exp_json_query = r'''{
+          "from": 0, "size": 50, "_source": ["path.real"],
+          "query": {
+            "query_string": {
+              "query": "(*samba*) AND path.real.fulltext:\"%BASEPATH%\""
+            }
+          }
+        }'''
+        fake_json_response = '''{
+          "hits" : {
+            "total" : { "value" : 2},
+            "hits" : [
+              {"_source" : {"path" : {"real" : "%BASEPATH%/foo"}}},
+              {"_source" : {"path" : {"real" : "%BASEPATH%/bar"}}}
+            ]
+          }
+        }'''
+        exp_results = ["foo", "bar"]
+        self.run_test('*=="samba*"', exp_results, exp_json_query, fake_json_response)
+
+        os.remove(self.global_inject)
+        os.system("killall -SIGHUP rpcd_mdssvc")
