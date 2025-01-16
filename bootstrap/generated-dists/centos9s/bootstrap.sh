@@ -64,6 +64,7 @@ dnf install -y \
     libblkid-devel \
     libbsd-devel \
     libcap-devel \
+    libevent-devel \
     libicu-devel \
     libpcap-devel \
     libtasn1-devel \

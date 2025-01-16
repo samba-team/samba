@@ -58,6 +58,7 @@ zypper --non-interactive install \
     libbsd-devel \
     libcap-devel \
     libcephfs-devel \
+    libevent-devel \
     libicu-devel \
     libjansson-devel \
     libpcap-devel \

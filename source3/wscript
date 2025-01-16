@@ -77,6 +77,7 @@ def options(opt):
     opt.samba_add_onoff_option('fam', default=None) # None means autodetection
     opt.samba_add_onoff_option('profiling-data', default=False)
     opt.samba_add_onoff_option('libarchive', default=True)
+    opt.samba_add_onoff_option('libevent', default=False)
 
     opt.samba_add_onoff_option('cluster-support', default=False)
 
@@ -204,6 +205,20 @@ long ret = splice(0,0,1,0,400,SPLICE_F_MOVE);
         raise Errors.WafError('libarchive library required for '
                              '--enable-selftest')
 
+    # check for libevent, needed for prometheus http endpoint
+    conf.SET_TARGET_TYPE('event', 'EMPTY')
+    if Options.options.with_libevent is True:
+        Logs.info("Checking for libevent existence")
+        if conf.CHECK_HEADERS('event2/http.h') and conf.CHECK_LIB('event', shlib=True):
+            conf.CHECK_FUNCS_IN('evhttp_new', 'event')
+        if not conf.CONFIG_SET('HAVE_EVHTTP_NEW'):
+            conf.fatal("libevent support not found. "
+                       "Try installing libevent-dev or libevent-devel. "
+                       "libevent support is required for the prometheus "
+                       "endpoint")
+    elif conf.CONFIG_GET('ENABLE_SELFTEST'):
+        raise Errors.WafError('libevent library required for '
+                             '--enable-selftest')
 
     # check for DMAPI libs
     if Options.options.with_dmapi == False:

@@ -176,7 +176,7 @@ builddirs = {
 }
 
 ctdb_configure_params = " --enable-developer ${PREFIX}"
-samba_configure_params = " ${ENABLE_COVERAGE} ${PREFIX} --with-profiling-data"
+samba_configure_params = " ${ENABLE_COVERAGE} ${PREFIX} --with-profiling-data --with-libevent"
 
 # We cannot configure himmelblau on old systems missing openssl 3, with glibc
 # older than version 2.32, or when cargo isn't available.
@@ -879,6 +879,7 @@ tasks = {
          "./configure.developer ${PREFIX} "
          "--with-selftest-prefix=./bin/ab "
          "--with-cluster-support "
+         "--with-libevent "
          "--bundled-libraries=!tdb"),
             ("samba-make", "make"),
             ("samba-check", "./bin/smbd --configfile=/dev/null -b | grep CLUSTER_SUPPORT"),
@@ -1039,7 +1040,7 @@ tasks = {
         "sequence": [
         # build the fuzzers (static) via the oss-fuzz script
             ("fuzzers-mkdir-prefix", "mkdir -p ${PREFIX_DIR}"),
-            ("fuzzers-build", "OUT=${PREFIX_DIR} LIB_FUZZING_ENGINE= SANITIZER=address CXX= CFLAGS= ADDITIONAL_LDFLAGS='-fuse-ld=bfd' ./lib/fuzzing/oss-fuzz/build_samba.sh --enable-afl-fuzzer"),
+            ("fuzzers-build", "OUT=${PREFIX_DIR} LIB_FUZZING_ENGINE= SANITIZER=address CXX= CFLAGS= ADDITIONAL_LDFLAGS='-fuse-ld=bfd' ./lib/fuzzing/oss-fuzz/build_samba.sh --enable-afl-fuzzer  --with-libevent"),
         ],
     },
 
@@ -1118,7 +1119,7 @@ tasks = {
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
 
-            ("configure", "./configure.developer ${ENABLE_COVERAGE} ${PREFIX} --with-profiling-data --disable-python --without-ad-dc"),
+            ("configure", "./configure.developer ${ENABLE_COVERAGE} ${PREFIX} --with-profiling-data --disable-python --without-ad-dc  --with-libevent"),
             ("make", "make -j"),
             ("find-python", "script/find_python.sh ${PREFIX}"),
             ("test", "make test-nopython"),

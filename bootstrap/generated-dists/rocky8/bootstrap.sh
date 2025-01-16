@@ -71,6 +71,7 @@ yum install -y \
     libbsd-devel \
     libcap-devel \
     libcephfs-devel \
+    libevent-devel \
     libicu-devel \
     libpcap-devel \
     libtasn1-devel \
