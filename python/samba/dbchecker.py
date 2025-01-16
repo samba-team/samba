@@ -436,6 +436,39 @@ systemFlags: -1946157056%s""" % (dn, sec_desc_b64, guid_suffix),
             forced = True
         return common.confirm(msg, forced=forced, allow_all=allow_all)
 
+    def confirm_and_remember(self, msg, mapping, key, fail_if_missing=False):
+        """Confirm a change, with support for 'all' and 'none'
+        options. The all and none options work by storing a flag in
+        mapping[key].
+        """
+        if not self.fix:
+            return False
+
+        try:
+            v = mapping[key]
+        except KeyError as e:
+            if fail_if_missing:
+                raise
+            v = None
+
+        if v == 'NONE':
+            return False
+        if v == 'ALL':
+            forced = True
+        else:
+            forced = self.yes
+        if self.quiet:
+            return forced
+
+        c = common.confirm(msg, forced=forced, allow_all=True)
+        if c == 'ALL':
+            mapping[key] = 'ALL'
+            return True
+        if c == 'NONE':
+            mapping[key] = 'NONE'
+            return False
+        return c
+
     ################################################################
     # a local confirm function with support for 'all'
     def confirm_all(self, msg, all_attr):
