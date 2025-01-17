@@ -4715,7 +4715,8 @@ static bool test_winreg_symbolic_link(struct torture_context *tctx,
 	DATA_BLOB blob;
 	const char *str;
 
-	if (torture_setting_bool(tctx, "samba3", false)) {
+	if (torture_setting_bool(tctx, "samba3", false) ||
+	    torture_setting_bool(tctx, "samba4", false)) {
 		torture_skip(tctx, "skip winreg symlink test against samba");
 	}
 
@@ -5565,12 +5566,16 @@ static bool test_SetPrinterDataEx_values(struct torture_context *tctx,
 		struct spoolss_PrinterEnumValues *einfo;
 		uint32_t needed = 0;
 
-		if (torture_setting_bool(tctx, "samba3", false)) {
+		if (torture_setting_bool(tctx, "samba3", false) ||
+		    torture_setting_bool(tctx, "samba4", false)) {
 			char *q;
 			q = strrchr(values[i], ',');
 			if (q) {
-				torture_comment(tctx, "skipping valuename '%s' including ',' character against Samba3\n",
-						values[i]);
+				torture_comment(
+					tctx,
+					"skipping valuename '%s' including ',' "
+					"character against Samba\n",
+					values[i]);
 				continue;
 			}
 		}
@@ -6790,7 +6795,8 @@ static bool test_printer_rename(struct torture_context *tctx,
 		"new printer name was not set");
 
 	/* samba currently cannot fully rename printers */
-	if (!torture_setting_bool(tctx, "samba3", false)) {
+	if (!(torture_setting_bool(tctx, "samba3", false) ||
+	      torture_setting_bool(tctx, "samba4", false))) {
 		torture_assert(tctx,
 			test_OpenPrinter_badname(tctx, b, printer_name_orig),
 			"still can open printer with oldname after rename");
@@ -7809,8 +7815,10 @@ static bool test_printer_info(struct torture_context *tctx,
 
 	bool ret = true;
 
-	if (torture_setting_bool(tctx, "samba3", false)) {
-		torture_skip(tctx, "skipping printer info cross tests against samba 3");
+	if (torture_setting_bool(tctx, "samba3", false) ||
+	    torture_setting_bool(tctx, "samba4", false)) {
+		torture_skip(tctx,
+			     "skipping printer info cross tests against samba");
 	}
 
 	if (!test_PrinterInfo(tctx, b, &t->handle)) {
@@ -8911,7 +8919,8 @@ static bool test_print_test_properties(struct torture_context *tctx,
 	struct dcerpc_pipe *p = t->spoolss_pipe;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (torture_setting_bool(tctx, "samba3", false)) {
+	if (torture_setting_bool(tctx, "samba3", false) ||
+	    torture_setting_bool(tctx, "samba4", false)) {
 		torture_skip(tctx, "skip printer job property tests against samba");
 	}
 
@@ -9240,7 +9249,8 @@ static bool test_printer_ic(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct policy_handle gdi_handle;
 
-	if (torture_setting_bool(tctx, "samba3", false)) {
+	if (torture_setting_bool(tctx, "samba3", false) ||
+	    torture_setting_bool(tctx, "samba4", false)) {
 		torture_skip(tctx, "skip printer information context tests against samba");
 	}
 
@@ -9349,7 +9359,8 @@ static bool test_printer_bidi(struct torture_context *tctx,
 	struct RPC_BIDI_REQUEST_CONTAINER bidi_req;
 	struct RPC_BIDI_RESPONSE_CONTAINER *bidi_rep = NULL;
 
-	if (torture_setting_bool(tctx, "samba3", false)) {
+	if (torture_setting_bool(tctx, "samba3", false) ||
+	    torture_setting_bool(tctx, "samba4", false)) {
 		torture_skip(tctx, "skip printer bidirectional tests against samba");
 	}
 
@@ -11043,7 +11054,8 @@ static bool test_add_driver_arg(struct torture_context *tctx,
 
 	for (i=0; i < ARRAY_SIZE(levels); i++) {
 
-		if (torture_setting_bool(tctx, "samba3", false)) {
+		if (torture_setting_bool(tctx, "samba3", false) ||
+		    torture_setting_bool(tctx, "samba4", false)) {
 			switch (levels[i]) {
 			case 2:
 			case 4:
@@ -11086,7 +11098,8 @@ static bool test_add_driver_arg(struct torture_context *tctx,
 
 	for (i=0; i < ARRAY_SIZE(levels); i++) {
 
-		if (torture_setting_bool(tctx, "samba3", false)) {
+		if (torture_setting_bool(tctx, "samba3", false) ||
+		    torture_setting_bool(tctx, "samba4", false)) {
 			switch (levels[i]) {
 			case 2:
 			case 4:
