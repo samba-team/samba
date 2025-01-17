@@ -410,7 +410,10 @@ static bool test_BackupLog(struct torture_context *tctx,
 	struct eventlog_OpenUnknown0 unknown0;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (torture_setting_bool(tctx, "samba3", false)) {
+	if (torture_setting_bool(tctx, "samba3", false) ||
+	    torture_setting_bool(tctx, "samba4", false) ||
+	    torture_setting_bool(tctx, "samba4-ntvfs", false))
+	{
 		torture_skip(tctx, "skipping BackupLog test against samba");
 	}
 
