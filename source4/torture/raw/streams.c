@@ -586,7 +586,7 @@ static bool test_stream_delete(struct torture_context *tctx,
 
 	/* w2k and w2k3 return 0 and w2k8 returns 1 */
 	if (TARGET_IS_WINXP(tctx) || TARGET_IS_W2K3(tctx) ||
-	    TARGET_IS_SAMBA3(tctx)) {
+	    TARGET_IS_SAMBA3(tctx) || TARGET_IS_SAMBA4(tctx)) {
 		CHECK_VALUE(finfo.all_info.out.delete_pending, 0);
 	} else {
 		CHECK_VALUE(finfo.all_info.out.delete_pending, 1);
@@ -864,7 +864,9 @@ static bool test_stream_names(struct torture_context *tctx,
 		stinfo.generic.in.file.fnum = fnum1;
 		status = smb_raw_fileinfo(cli->tree, tctx, &stinfo);
 		CHECK_STATUS(status, NT_STATUS_OK);
-		if (!torture_setting_bool(tctx, "samba3", false)) {
+		if (!(torture_setting_bool(tctx, "samba3", false) ||
+		      torture_setting_bool(tctx, "samba4", false)))
+		{
 			CHECK_NTTIME(stinfo.all_info.out.create_time,
 				     finfo.all_info.out.create_time);
 			CHECK_NTTIME(stinfo.all_info.out.access_time,
@@ -889,7 +891,8 @@ static bool test_stream_names(struct torture_context *tctx,
 		stinfo.generic.in.file.fnum = fnum1;
 		status = smb_raw_fileinfo(cli->tree, tctx, &stinfo);
 		CHECK_STATUS(status, NT_STATUS_OK);
-		if (!torture_setting_bool(tctx, "samba3", false)) {
+		if (!(torture_setting_bool(tctx, "samba3", false) ||
+		      torture_setting_bool(tctx, "samba4", false))) {
 			CHECK_STR(stinfo.name_info.out.fname.s, rpath);
 		}
 
@@ -919,7 +922,8 @@ static bool test_stream_names(struct torture_context *tctx,
 		stinfo.generic.in.file.fnum = fnum1;
 		status = smb_raw_fileinfo(cli->tree, tctx, &stinfo);
 		CHECK_STATUS(status, NT_STATUS_OK);
-		if (!torture_setting_bool(tctx, "samba3", false)) {
+		if (!(torture_setting_bool(tctx, "samba3", false) ||
+		      torture_setting_bool(tctx, "samba4", false))) {
 			CHECK_NTTIME(stinfo.all_info.out.write_time,
 				     write_time);
 			CHECK_VALUE(stinfo.all_info.out.attrib,
