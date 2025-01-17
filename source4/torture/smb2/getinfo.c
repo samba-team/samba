@@ -588,7 +588,7 @@ static bool torture_smb2_qfs_buffercheck(struct torture_context *tctx)
 	for (i=0; i<ARRAY_SIZE(levels); i++) {
 		struct smb2_getinfo b;
 
-		if (TARGET_IS_SAMBA3(tctx) &&
+		if ((TARGET_IS_SAMBA3(tctx) || TARGET_IS_SAMBA4(tctx)) &&
 		    ((levels[i].level == 6) || (levels[i].level == 11))) {
 			continue;
 		}
