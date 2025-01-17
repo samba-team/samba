@@ -95,7 +95,7 @@ static bool test_path_ex(struct smbcli_state *cli, struct torture_context *tctx,
 	if (path_expected &&
 	    (!finfo.name_info.out.fname.s ||
 	     strcmp(finfo.name_info.out.fname.s, path_expected) != 0)) {
-		if (tctx && torture_setting_bool(tctx, "samba4", false)) {
+		if (tctx && torture_setting_bool(tctx, "samba4-ntvfs", false)) {
 			printf("IGNORE: %-30s => %-20s should be %s\n",
 				path, finfo.name_info.out.fname.s, path_expected);
 			return true;
@@ -304,8 +304,9 @@ static bool test_chkpath_names(struct smbcli_state *cli, struct torture_context 
 		case '?':/*0x3F*/
 		case '|':/*0x7C*/
 			if (i == '/' &&
-			    torture_setting_bool(tctx, "samba3", false)) {
-				/* samba 3 handles '/' as '\\' */
+			    !torture_setting_bool(tctx, "samba4-ntvfs", false))
+			{
+				/* samba fs handles '/' as '\\' */
 				break;
 			}
 			expected = NT_STATUS_OBJECT_NAME_INVALID;
