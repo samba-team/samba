@@ -1060,8 +1060,9 @@ static int streams_depot_renameat(vfs_handle_struct *handle,
 
 	src_is_stream = is_ntfs_stream_smb_fname(smb_fname_src);
 	dst_is_stream = is_ntfs_stream_smb_fname(smb_fname_dst);
+	SMB_ASSERT(src_is_stream == dst_is_stream);
 
-	if (!src_is_stream && !dst_is_stream) {
+	if (!src_is_stream) {
 		return SMB_VFS_NEXT_RENAMEAT(handle,
 					src_dirfsp,
 					smb_fname_src,
