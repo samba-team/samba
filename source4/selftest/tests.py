@@ -35,13 +35,17 @@ print("OPTIONS %s" % " ".join(smbtorture4_options), file=sys.stderr)
 
 
 def plansmbtorture4testsuite(name, env, options, modname=None, environ=None):
+    target = 'samba4'
+    if 'ntvfs' in env:
+        target = 'samba4-ntvfs'
+
     if environ is None:
         environ = {}
 
     return selftesthelpers.plansmbtorture4testsuite(name,
                                                     env,
                                                     options,
-                                                    target='samba4',
+                                                    target=target,
                                                     modname=modname,
                                                     environ=environ)
 
