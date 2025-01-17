@@ -42,13 +42,23 @@ smbtorture4_options.extend([
 
 
 def plansmbtorture4testsuite(name, env, options, description='', environ=None):
+    target = 'samba3'
+    if 'ad_dc_ntvfs' in env:
+        target = 'samba4-ntvfs'
+    elif 'ad_dc' in env:
+        target = 'samba4'
+    elif 'fl200' in env:
+        target = 'samba4'
+    elif 's4member' in env:
+        target = 'samba4'
+
     if description == '':
         modname = "samba3.%s" % (name, )
     else:
         modname = "samba3.%s %s" % (name, description)
 
     selftesthelpers.plansmbtorture4testsuite(
-        name, env, options, target='samba3', modname=modname, environ=environ)
+        name, env, options, target=target, modname=modname, environ=environ)
 
 def compare_versions(version1, version2):
     for i in range(max(len(version1),len(version2))):
