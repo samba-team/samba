@@ -956,9 +956,9 @@ static int streams_depot_unlinkat(vfs_handle_struct *handle,
 }
 
 static int streams_depot_renameat(vfs_handle_struct *handle,
-				files_struct *srcfsp,
+				files_struct *src_dirfsp,
 				const struct smb_filename *smb_fname_src,
-				files_struct *dstfsp,
+				files_struct *dst_dirfsp,
 				const struct smb_filename *smb_fname_dst,
 				const struct vfs_rename_how *how)
 {
@@ -979,9 +979,9 @@ static int streams_depot_renameat(vfs_handle_struct *handle,
 
 	if (!src_is_stream && !dst_is_stream) {
 		return SMB_VFS_NEXT_RENAMEAT(handle,
-					srcfsp,
+					src_dirfsp,
 					smb_fname_src,
-					dstfsp,
+					dst_dirfsp,
 					smb_fname_dst,
 					how);
 	}
@@ -999,7 +999,7 @@ static int streams_depot_renameat(vfs_handle_struct *handle,
 	}
 
 	full_src = full_path_from_dirfsp_atname(talloc_tos(),
-						srcfsp,
+						src_dirfsp,
 						smb_fname_src);
 	if (full_src == NULL) {
 		errno = ENOMEM;
@@ -1007,7 +1007,7 @@ static int streams_depot_renameat(vfs_handle_struct *handle,
 	}
 
 	full_dst = full_path_from_dirfsp_atname(talloc_tos(),
-						dstfsp,
+						dst_dirfsp,
 						smb_fname_dst);
 	if (full_dst == NULL) {
 		errno = ENOMEM;
