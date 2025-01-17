@@ -1,11 +1,13 @@
 #include <replace.h>
 #include "data_blob.h"
+#include "discard.h"
 #include <talloc.h>
 #include <crypt.h>
 #include "util_crypt.h"
 
 
-static int crypt_as_best_we_can(const char *phrase,
+static int crypt_as_best_we_can(TALLOC_CTX *mem_ctx,
+				const char *phrase,
 				const char *setting,
 				const char **hashp)
 {
@@ -63,8 +65,14 @@ static int crypt_as_best_we_can(const char *phrase,
 			ret = ENOTRECOVERABLE;
 		}
 	}
+	if (ret != 0) {
+		return ret;
+	}
 
-	*hashp = hash;
+	*hashp = talloc_strdup(mem_ctx, hash);
+	if (*hashp == NULL) {
+		ret = -1;
+	}
 	return ret;
 }
 
@@ -75,14 +83,14 @@ int talloc_crypt_blob(TALLOC_CTX *mem_ctx,
 		      DATA_BLOB *blob)
 {
 	const char *hash = NULL;
-	int ret = crypt_as_best_we_can(phrase, setting, &hash);
+	int ret = crypt_as_best_we_can(mem_ctx, phrase, setting, &hash);
 	if (ret != 0) {
 		blob->data = NULL;
 		blob->length = 0;
 		return ret;
 	}
 	blob->length = strlen(hash);
-	blob->data = talloc_memdup(mem_ctx, hash, blob->length);
+	blob->data = discard_const_p(uint8_t, hash);
 	if (blob->data == NULL) {
 		return ENOMEM;
 	}
