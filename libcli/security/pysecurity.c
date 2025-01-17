@@ -23,6 +23,8 @@
 #include "python/modules.h"
 #include "libcli/util/pyerrors.h"
 #include "libcli/security/security.h"
+#include "libcli/security/claims_transformation.h"
+#include "source4/librpc/rpc/pyrpc_util.h"
 #include "pytalloc.h"
 
 static PyObject *py_se_access_check(PyObject *module, PyObject *args, PyObject *kwargs)
@@ -68,11 +70,133 @@ static PyObject *py_se_access_check(PyObject *module, PyObject *args, PyObject *
 	return PyLong_FromLong(access_granted);
 }
 
+static PyObject *py_claims_tf_policy_parse_rules(PyObject *self,
+						 PyObject *args,
+						 PyObject *kwargs)
+{
+	TALLOC_CTX *frame = NULL;
+	PyObject *py_rules = NULL;
+	const char * const kwnames[] = {
+		"rules",
+		"strip_xml",
+		NULL
+	};
+	PyObject *py_ret = NULL;
+	int strip_xml = 0;
+	const char *rules_str = NULL;
+	DATA_BLOB rules_blob = { .length = 0, };
+	struct claims_tf_rule_set *rule_set = NULL;
+	char *err_str = NULL;
+	bool ok;
+
+	ok = PyArg_ParseTupleAndKeywords(args, kwargs, "O|$p",
+					 discard_const_p(char *, kwnames),
+					 &py_rules,
+					 &strip_xml);
+	if (!ok) {
+		return NULL;
+	}
+
+	rules_str = PyUnicode_AsUTF8(py_rules);
+	if (rules_str == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	rules_blob = data_blob_string_const(rules_str);
+
+	if (strip_xml != 0) {
+		DATA_BLOB xml_blob = rules_blob;
+
+		ok = claims_tf_policy_unwrap_xml(&xml_blob,
+						 &rules_blob);
+		if (!ok) {
+			PyErr_SetString(PyExc_ValueError,
+					"Invalid XML formatting");
+			return NULL;
+		}
+	}
+
+	frame = talloc_stackframe();
+
+	ok = claims_tf_rule_set_parse_blob(&rules_blob, frame, &rule_set, &err_str);
+	if (!ok) {
+		PyErr_Format(PyExc_RuntimeError,
+			     "Invalid Rules: %s",
+			     err_str != NULL ?
+			     err_str :
+			     "<unknown reason>");
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	py_ret = py_return_ndr_struct("samba.dcerpc.claims",
+				      "tf_rule_set",
+				      rule_set,
+				      rule_set);
+	TALLOC_FREE(frame);
+	return py_ret;
+}
+
+static PyObject *py_claims_tf_policy_wrap_xml(PyObject *self,
+					      PyObject *args,
+					      PyObject *kwargs)
+{
+	PyObject *py_rules = NULL;
+	const char * const kwnames[] = {
+		"rules",
+		NULL
+	};
+	PyObject *py_ret = NULL;
+	const char *rules_str = NULL;
+	char *xml_str = NULL;
+	bool ok;
+
+	ok = PyArg_ParseTupleAndKeywords(args, kwargs, "O",
+					 discard_const_p(char *, kwnames),
+					 &py_rules);
+	if (!ok) {
+		return NULL;
+	}
+
+	rules_str = PyUnicode_AsUTF8(py_rules);
+	if (rules_str == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	xml_str = claims_tf_policy_wrap_xml(NULL, rules_str);
+	if (xml_str == NULL) {
+		if (errno == EINVAL) {
+			PyErr_SetString(PyExc_ValueError,
+					"Invalid Rules String");
+			return NULL;
+		}
+
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	py_ret = PyUnicode_FromString(xml_str);
+	TALLOC_FREE(xml_str);
+	return py_ret;
+}
+
 static PyMethodDef py_security_methods[] = {
 	{ "access_check", PY_DISCARD_FUNC_SIG(PyCFunction,
 					      py_se_access_check),
 	METH_VARARGS|METH_KEYWORDS,
 	"access_check(security_descriptor, token, access_desired) -> access_granted.  Raises NT_STATUS on error, including on access check failure, returns access granted bitmask"},
+	{ "claims_tf_policy_parse_rules",
+	  (PyCFunction)py_claims_tf_policy_parse_rules,
+	  METH_VARARGS | METH_KEYWORDS,
+	  PyDoc_STR("claims_tf_policy_parse_rules(rules_string [, strip_xml])"
+		    " -> samba.dcerpc.claims.tf_rule_set") },
+	{ "claims_tf_policy_wrap_xml",
+	  (PyCFunction)py_claims_tf_policy_wrap_xml,
+	  METH_VARARGS | METH_KEYWORDS,
+	  PyDoc_STR("claims_tf_policy_wrap_xml(rules_string)"
+		    " -> xml_str") },
 	{0},
 };
 

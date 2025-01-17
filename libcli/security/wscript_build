@@ -17,9 +17,10 @@ bld.SAMBA_LIBRARY('samba-security',
                   deps='stable_sort talloc ndr NDR_SECURITY NDR_CONDITIONAL_ACE')
 
 pytalloc_util = bld.pyembed_libname('pytalloc-util')
+pyrpc_util = bld.pyembed_libname('pyrpc_util')
 bld.SAMBA_PYTHON('pysecurity',
                  source='pysecurity.c',
-                 deps='samba-security %s' % pytalloc_util,
+                 deps='samba-security %s %s' % (pytalloc_util, pyrpc_util),
                  realname='samba/security.so'
                  )
 
