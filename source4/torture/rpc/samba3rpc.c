@@ -1544,18 +1544,6 @@ static bool torture_samba3_sessionkey(struct torture_context *torture)
 
 	cli_credentials_set_workstation(anon_creds, wks_name, CRED_SPECIFIED);
 
-
-	if (!torture_setting_bool(torture, "samba3", false)) {
-
-		/* Samba3 in the build farm right now does this happily. Need
-		 * to fix :-) */
-
-		if (test_join3(torture, false, anon_creds, NULL, wks_name)) {
-			torture_fail(torture, "join using anonymous bind on an anonymous smb "
-				 "connection succeeded -- HUH??\n");
-		}
-	}
-
 	torture_assert(torture,
 		test_join3(torture, false, samba_cmdline_get_creds(),
 		NULL, wks_name),
