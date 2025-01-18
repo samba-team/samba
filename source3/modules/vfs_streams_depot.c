@@ -494,7 +494,6 @@ static NTSTATUS stream_smb_fname(vfs_handle_struct *handle,
 
 static NTSTATUS walk_streams(vfs_handle_struct *handle,
 			     struct smb_filename *smb_fname_base,
-			     char **pdirname,
 			     bool (*fn)(const struct smb_filename *dirname,
 					const char *dirent,
 					void *private_data),
@@ -581,13 +580,7 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 	TALLOC_FREE(rootdir);
 	TALLOC_FREE(dir_smb_fname);
 	TALLOC_FREE(dir_hnd);
-
-	if (pdirname != NULL) {
-		*pdirname = dirname;
-	}
-	else {
-		TALLOC_FREE(dirname);
-	}
+	TALLOC_FREE(dirname);
 
 	return NT_STATUS_OK;
 }
@@ -1171,7 +1164,6 @@ static NTSTATUS streams_depot_fstreaminfo(vfs_handle_struct *handle,
 
 	status = walk_streams(handle,
 				smb_fname_base,
-				NULL,
 				collect_one_stream,
 				&state);
 
