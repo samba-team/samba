@@ -424,7 +424,7 @@ static void filter_empty_rsrc_stream(unsigned int *num_streams,
 		if (strequal_m(s->name, AFPRESOURCE_STREAM) &&
 		    (s->size == 0)) {
 			TALLOC_FREE(s->name);
-			ARRAY_DEL_ELEMENT(streams, i, *num_streams);
+			ARRAY_DEL_ELEMENT((*streams), i, *num_streams);
 			*num_streams -= 1;
 			return;
 		}
