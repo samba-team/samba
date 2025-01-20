@@ -807,7 +807,8 @@ sub provision_ad_member
 	\"$prefix_abs/keytab2:spn_prefixes=imap,smtp:additional_dns_hostnames:netbios_aliases:machine_password:sync_etypes\", \\
 	\"$prefix_abs/keytab2k:spn_prefixes=imap,smtp:additional_dns_hostnames:sync_kvno:machine_password:sync_etypes\", \\
 	\"$prefix_abs/keytab3:spns=wurst/brot\@$dcvars->{REALM}:machine_password:sync_etypes\", \\
-	\"$prefix_abs/keytab3k:spns=wurst/brot\@$dcvars->{REALM},wurst1/brot\@$dcvars->{REALM},wurst2/brot\@$dcvars->{REALM}:sync_kvno:machine_password:sync_etypes\"
+	\"$prefix_abs/keytab3k:spns=wurst/brot\@$dcvars->{REALM},wurst1/brot\@$dcvars->{REALM},wurst2/brot\@$dcvars->{REALM}:sync_kvno:machine_password:sync_etypes\", \\
+	\"$prefix_abs/keytab4k:account_name:sync_account_name:spn_prefixes=imap,smtp:additional_dns_hostnames:netbios_aliases:spns=wurst/brot\@$dcvars->{REALM},wurst1/brot\@$dcvars->{REALM},wurst2/brot\@$dcvars->{REALM}:sync_kvno:machine_password:sync_etypes\"
 	";
 	}
 
