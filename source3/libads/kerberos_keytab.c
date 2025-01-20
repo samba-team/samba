@@ -30,6 +30,7 @@
 #include "ads.h"
 #include "secrets.h"
 #include "librpc/gen_ndr/ndr_secrets.h"
+#include "lib/util/string_wrappers.h"
 
 #ifdef HAVE_KRB5
 
@@ -41,44 +42,59 @@
 #endif
 
 enum spn_spec_type {
-	SPN_SPEC_DEFAULT,
-	SPN_SPEC_SYNC,
+	SPN_SPEC_ACCOUNT_NAME,
+	SPN_SPEC_SYNC_ACCOUNT_NAME,
+	SPN_SPEC_HOST,
+	SPN_SPEC_SYNC_UPN,
+	SPN_SPEC_SYNC_SPNS,
 	SPN_SPEC_FULL,
-	SPN_SPEC_PREFIX
+	SPN_SPEC_PREFIX,
+	SPN_SPEC_MAX
 };
 
-/* pw2kt_conf contains 1 parsed line from "sync machine password to keytab" */
-struct pw2kt_conf {
-	enum spn_spec_type spn_spec;
+/* Specifier */
+struct pw2kt_specifier {
+	bool is_set;
+	char **spn_spec_vals; /* Array of full SPNs or prefixes */
+};
+
+/* Descriptor contains 1 parsed line from "sync machine password to keytab" */
+struct pw2kt_keytab_desc {
 	char *keytab;
 	bool sync_etypes;
 	bool sync_kvno;
 	bool additional_dns_hostnames;
 	bool netbios_aliases;
 	bool machine_password;
-	char **spn_spec_array;
-	size_t num_spn_spec;
+	struct pw2kt_specifier spec_array[SPN_SPEC_MAX];
 };
 
-/* State used by pw2kt */
-struct pw2kt_state {
+/* Global state - stores initial data */
+struct pw2kt_global_state {
 	/* Array of parsed lines from "sync machine password to keytab" */
-	struct pw2kt_conf *keytabs;
-	size_t num_keytabs;
+	struct pw2kt_keytab_desc *keytabs;
+	/* Accumulated configuration from all keytabs */
 	bool sync_etypes;
 	bool sync_kvno;
 	bool sync_spns;
+	bool sync_upn;
+	bool sync_sam_account;
 	/* These are from DC */
 	krb5_kvno ad_kvno;
 	uint32_t ad_etypes;
+	char *ad_upn;
+	char *ad_sam_account;
 	char **ad_spn_array;
 	size_t ad_num_spns;
 	/* This is from secrets.db */
 	struct secrets_domain_info1 *info;
 };
 
-/* State used by pw2kt_process_keytab */
-struct pw2kt_process_state {
+/*
+ * Manages krb5lib data created during processing of 'global state'.
+ * One instance per keytab.
+ */
+struct pw2kt_keytab_state {
 	krb5_keytab keytab;
 	krb5_context context;
 	krb5_keytab_entry *array1;
@@ -88,150 +104,205 @@ struct pw2kt_process_state {
 	krb5_enctype preferred_etype;
 };
 
-static ADS_STATUS pw2kt_scan_add_spn(TALLOC_CTX *ctx,
-				     const char *spn,
-				     struct pw2kt_conf *conf)
+static ADS_STATUS pw2kt_add_val(TALLOC_CTX *ctx,
+				struct pw2kt_specifier *spec,
+				const char *spn_val)
 {
-	conf->spn_spec_array = talloc_realloc(ctx,
-					      conf->spn_spec_array,
-					      char *,
-					      conf->num_spn_spec + 1);
-	if (conf->spn_spec_array == NULL) {
+	size_t len = talloc_array_length(spec->spn_spec_vals);
+	spec->spn_spec_vals = talloc_realloc(ctx,
+					     spec->spn_spec_vals,
+					     char *,
+					     len + 1);
+	if (spec->spn_spec_vals == NULL) {
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
-	conf->spn_spec_array[conf->num_spn_spec] = talloc_strdup(
-		conf->spn_spec_array, spn);
-	if (conf->spn_spec_array[conf->num_spn_spec] == NULL) {
+	spec->spn_spec_vals[len] = talloc_strdup(spec->spn_spec_vals, spn_val);
+	if (spec->spn_spec_vals[len] == NULL) {
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
-	conf->num_spn_spec++;
 
 	return ADS_SUCCESS;
+}
+
+static ADS_STATUS pw2kt_scan_spec(TALLOC_CTX *ctx,
+				  struct pw2kt_global_state *gstate,
+				  struct pw2kt_keytab_desc *desc,
+				  const char *option)
+{
+	enum spn_spec_type spec_type;
+	struct pw2kt_specifier *spec;
+	char *vals = NULL;
+	char *tmp = NULL;
+	ADS_STATUS status;
+
+	/* First check for options sync_kvno, sync_etypes, ... */
+	if (strequal(option, "sync_kvno")) {
+		desc->sync_kvno = gstate->sync_kvno = true;
+		return ADS_SUCCESS;
+	} else if (strequal(option, "sync_etypes")) {
+		desc->sync_etypes = gstate->sync_etypes = true;
+		return ADS_SUCCESS;
+	} else if (strequal(option, "additional_dns_hostnames")) {
+		desc->additional_dns_hostnames = true;
+		return ADS_SUCCESS;
+	} else if (strequal(option, "netbios_aliases")) {
+		desc->netbios_aliases = true;
+		return ADS_SUCCESS;
+	} else if (strequal(option, "machine_password")) {
+		desc->machine_password = true;
+		return ADS_SUCCESS;
+	}
+
+	vals = strchr_m(option, '=');
+	if (vals != NULL) {
+		*vals = 0;
+		vals++;
+	}
+
+	if (strequal(option, "account_name")) {
+		spec_type = SPN_SPEC_ACCOUNT_NAME;
+	} else if (strequal(option, "sync_account_name")) {
+		spec_type = SPN_SPEC_SYNC_ACCOUNT_NAME;
+		gstate->sync_sam_account = true;
+	} else if (strequal(option, "host")) {
+		spec_type = SPN_SPEC_HOST;
+	} else if (strequal(option, "sync_upn")) {
+		spec_type = SPN_SPEC_SYNC_UPN;
+		gstate->sync_upn = true;
+	} else if (strequal(option, "sync_spns")) {
+		spec_type = SPN_SPEC_SYNC_SPNS;
+		gstate->sync_spns = true;
+	} else if (strequal(option, "spns")) {
+		spec_type = SPN_SPEC_FULL;
+	} else if (strequal(option, "spn_prefixes")) {
+		spec_type = SPN_SPEC_PREFIX;
+	} else {
+		DBG_ERR("Invalid option: '%s'\n", option);
+		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	desc->spec_array[spec_type].is_set = true;
+	if (spec_type != SPN_SPEC_PREFIX && spec_type != SPN_SPEC_FULL) {
+		return ADS_SUCCESS;
+	}
+	if (vals == NULL) {
+		DBG_ERR("SPN specifier: %s is missing '='\n", option);
+		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+	spec = &desc->spec_array[spec_type];
+
+	/* Entries are separated via ',' */
+	while ((tmp = strchr_m(vals, ',')) != NULL) {
+		*tmp = 0;
+		tmp++;
+		status = pw2kt_add_val(ctx, spec, vals);
+		if (!ADS_ERR_OK(status)) {
+			return status;
+		}
+		vals = tmp;
+		if (*vals == 0) {
+			DBG_ERR("Invalid syntax (trailing ','): %s\n", option);
+			return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+	}
+	/* Process the last entry */
+	return pw2kt_add_val(ctx, spec, vals);
 }
 
 /*
  * Parse the smb.conf and find out if it is needed to read from DC:
- *  - servicePrincipalNames
+ *  - servicePrincipalName
  *  - msDs-KeyVersionNumber
+ *  - userPrincipalName
+ *  - sAMAccountName
+ *
+ *  Example of a line:
+ *  /etc/krb5/krb5.keytab:account_name:snps=s1@REALM.COM,spn2@REALM.ORG:host:sync_kvno:machine_password
  */
-static ADS_STATUS pw2kt_scan_line(const char *line, struct pw2kt_state *state)
+static ADS_STATUS pw2kt_scan_line(const char *line,
+				  struct pw2kt_global_state *gstate)
 {
-	char *keytabname = NULL;
-	char *spn_spec = NULL;
-	char *spn_val = NULL;
-	char *option = NULL;
-	struct pw2kt_conf *conf = NULL;
+	char *tmp = NULL;
+	char *olist = NULL;
+	struct pw2kt_keytab_desc *desc = NULL;
 	ADS_STATUS status;
+	size_t num_keytabs = talloc_array_length(gstate->keytabs);
 
-	state->keytabs = talloc_realloc(state,
-					state->keytabs,
-					struct pw2kt_conf,
-					state->num_keytabs + 1);
-	if (state->keytabs == NULL) {
+	gstate->keytabs = talloc_realloc(gstate,
+					 gstate->keytabs,
+					 struct pw2kt_keytab_desc,
+					 num_keytabs + 1);
+	if (gstate->keytabs == NULL) {
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
-	conf = &state->keytabs[state->num_keytabs];
-	state->num_keytabs++;
+	desc = &gstate->keytabs[num_keytabs];
+	ZERO_STRUCT(*desc);
 
-	keytabname = talloc_strdup(state->keytabs, line);
-	if (keytabname == NULL) {
+	desc->keytab = talloc_strdup(gstate->keytabs, line);
+	if (desc->keytab == NULL) {
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
-	ZERO_STRUCT(*conf);
-	conf->keytab = keytabname;
-	spn_spec = strchr_m(keytabname, ':');
-	if (spn_spec == NULL) {
-		DBG_ERR("Invalid format! ':' expected in '%s'\n", keytabname);
+	olist = strchr_m(desc->keytab, ':');
+	if (olist == NULL) {
+		DBG_ERR("Invalid format! ':' expected in '%s'\n", line);
 		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
-	*spn_spec++ = 0;
+	*olist = 0;
+	olist++;
 
-	/* reverse match with strrchr_m() */
-	while ((option = strrchr_m(spn_spec, ':')) != NULL) {
-		*option++ = 0;
-		if (strequal(option, "sync_kvno")) {
-			conf->sync_kvno = state->sync_kvno = true;
-		} else if (strequal(option, "sync_etypes")) {
-			conf->sync_etypes = state->sync_etypes = true;
-		} else if (strequal(option, "additional_dns_hostnames")) {
-			conf->additional_dns_hostnames = true;
-		} else if (strequal(option, "netbios_aliases")) {
-			conf->netbios_aliases = true;
-		} else if (strequal(option, "machine_password")) {
-			conf->machine_password = true;
-		} else {
-			DBG_WARNING("Unknown option '%s'!\n", option);
+	/* Always add 'host' principal */
+	desc->spec_array[SPN_SPEC_HOST].is_set = true;
+
+	/* Entries are separated via ':' */
+	while ((tmp = strchr_m(olist, ':')) != NULL) {
+		*tmp = 0;
+		tmp++;
+		status = pw2kt_scan_spec(gstate->keytabs, gstate, desc, olist);
+		if (!ADS_ERR_OK(status)) {
+			return status;
+		}
+		olist = tmp;
+		if (*olist == 0) {
+			DBG_ERR("Invalid syntax (trailing ':'): %s\n", line);
 			return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 	}
-
-	spn_val = strchr_m(spn_spec, '=');
-	if (spn_val != NULL) {
-		*spn_val++ = 0;
-	}
-
-	if (strcmp(spn_spec, "account_name") == 0) {
-		conf->spn_spec = SPN_SPEC_DEFAULT;
-	} else if (strcmp(spn_spec, "sync_spns") == 0) {
-		conf->spn_spec = SPN_SPEC_SYNC;
-		state->sync_spns = true;
-	} else if (strcmp(spn_spec, "spns") == 0 ||
-		   strcmp(spn_spec, "spn_prefixes") == 0)
-	{
-		char *spn = NULL, *tmp = NULL;
-
-		conf->spn_spec = strcmp(spn_spec, "spns") == 0
-					 ? SPN_SPEC_FULL
-					 : SPN_SPEC_PREFIX;
-		conf->num_spn_spec = 0;
-		spn = spn_val;
-		while ((tmp = strchr_m(spn, ',')) != NULL) {
-			*tmp++ = 0;
-			status = pw2kt_scan_add_spn(state->keytabs, spn, conf);
-			if (!ADS_ERR_OK(status)) {
-				return status;
-			}
-			spn = tmp;
-		}
-		/* Do not forget the last entry */
-		return pw2kt_scan_add_spn(state->keytabs, spn, conf);
-	} else {
-		DBG_WARNING("Invalid SPN specifier: %s\n", spn_spec);
-		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-	}
-
-	return ADS_SUCCESS;
+	/* Process the last entry */
+	return pw2kt_scan_spec(gstate->keytabs, gstate, desc, olist);
 }
 
 /*
- * Fill struct pw2kt_state with defaults if "sync machine password to keytab"
- * is missing in smb.conf
+ * Fill struct pw2kt_global_state with defaults if
+ * "sync machine password to keytab" is missing in smb.conf
+ * Creates 1 keytab with 3 SPN specifiers (sync_spns, account_name, host).
  */
-static ADS_STATUS pw2kt_default_cfg(const char *name, struct pw2kt_state *state)
+static ADS_STATUS pw2kt_default_cfg(const char *name,
+				    struct pw2kt_global_state *state)
 {
 	char *keytabname = NULL;
-	struct pw2kt_conf *conf = NULL;
+	struct pw2kt_keytab_desc *desc = NULL;
 
 	state->keytabs = talloc_zero_array(state->keytabs,
-					   struct pw2kt_conf,
+					   struct pw2kt_keytab_desc,
 					   1);
 	if (state->keytabs == NULL) {
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
-	conf = &state->keytabs[0];
-	state->num_keytabs = 1;
+	desc = &state->keytabs[0];
 
 	keytabname = talloc_strdup(state->keytabs, name);
 	if (keytabname == NULL) {
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
-
-	conf->spn_spec = SPN_SPEC_SYNC;
-	conf->keytab = keytabname;
-	conf->machine_password = true;
-	conf->sync_kvno = state->sync_kvno = true;
+	desc->keytab = keytabname;
+	desc->machine_password = true;
+	desc->sync_kvno = state->sync_kvno = true;
 	state->sync_spns = true;
+
+	desc->spec_array[SPN_SPEC_SYNC_SPNS].is_set = true;
+	desc->spec_array[SPN_SPEC_ACCOUNT_NAME].is_set = true;
+	desc->spec_array[SPN_SPEC_HOST].is_set = true;
 
 	return ADS_SUCCESS;
 }
@@ -240,7 +311,7 @@ static ADS_STATUS pw2kt_default_cfg(const char *name, struct pw2kt_state *state)
  * For the given principal add to the array entries created from all pw->keys[]
  */
 static krb5_error_code pw2kt_process_add_pw(
-	struct pw2kt_process_state *state2,
+	struct pw2kt_keytab_state *state2,
 	krb5_principal princ,
 	krb5_kvno vno,
 	struct secrets_domain_info1_password *pw)
@@ -287,11 +358,10 @@ static krb5_error_code pw2kt_process_add_pw(
  * For the given principal add to the array entries based on password,
  * old_password, older_password and next_change->password.
  */
-static krb5_error_code pw2kt_process_add_info(
-	struct pw2kt_process_state *state2,
-	krb5_kvno kvno,
-	const char *princs,
-	struct secrets_domain_info1 *info)
+static krb5_error_code pw2kt_process_add_info(struct pw2kt_keytab_state *state2,
+					      krb5_kvno kvno,
+					      const char *princs,
+					      struct secrets_domain_info1 *info)
 {
 	krb5_error_code ret;
 	krb5_principal princ = NULL;
@@ -336,7 +406,7 @@ static krb5_error_code pw2kt_process_add_info(
 	return ret;
 }
 
-static int pw2kt_process_state_destructor(struct pw2kt_process_state *state2)
+static int pw2kt_keytab_state_destructor(struct pw2kt_keytab_state *state2)
 {
 	int i;
 	size_t len2 = talloc_array_length(state2->array2);
@@ -356,7 +426,7 @@ static int pw2kt_process_state_destructor(struct pw2kt_process_state *state2)
 }
 
 /* Read the whole keytab to krb5_keytab_entry array */
-static krb5_error_code pw2kt_process_kt2ar(struct pw2kt_process_state *state2)
+static krb5_error_code pw2kt_process_kt2ar(struct pw2kt_keytab_state *state2)
 {
 	krb5_error_code ret = 0, ret2 = 0;
 	krb5_kt_cursor cursor;
@@ -402,18 +472,173 @@ static krb5_error_code pw2kt_process_kt2ar(struct pw2kt_process_state *state2)
 	return ret != 0 ? ret : ret2;
 }
 
-static ADS_STATUS pw2kt_process_keytab(struct pw2kt_state *state,
-				       struct pw2kt_conf *keytabptr)
+#define ADD_INFO(P)                                                    \
+	ret = pw2kt_process_add_info(state2, kvno, (P), gstate->info); \
+	if (ret != 0) {                                                \
+		return ADS_ERROR_KRB5(ret);                            \
+	}
+
+static ADS_STATUS pw2kt_add_prefix(struct pw2kt_global_state *gstate,
+				   struct pw2kt_keytab_state *state2,
+				   struct pw2kt_keytab_desc *keytabptr,
+				   const char *prefix)
 {
 	krb5_error_code ret = 0;
-	krb5_kvno kvno = -1;
-	size_t i, j, len1 = 0, len2 = 0;
+	krb5_kvno kvno = keytabptr->sync_kvno ? gstate->ad_kvno : -1;
 	char *princ_s = NULL;
 	const char **netbios_alias = NULL;
 	const char **addl_hostnames = NULL;
+
+	/* Add prefix/dnshostname@REALM */
+	princ_s = talloc_asprintf(talloc_tos(),
+				  "%s/%s@%s",
+				  prefix,
+				  lp_dns_hostname(),
+				  lp_realm());
+	if (princ_s == NULL) {
+		return ADS_ERROR_KRB5(ENOMEM);
+	}
+	ADD_INFO(princ_s);
+
+	/* Add prefix/NETBIOSNAME@REALM */
+	princ_s = talloc_asprintf(talloc_tos(),
+				  "%s/%s@%s",
+				  prefix,
+				  lp_netbios_name(),
+				  lp_realm());
+	if (princ_s == NULL) {
+		return ADS_ERROR_KRB5(ENOMEM);
+	}
+	ADD_INFO(princ_s);
+
+	if (keytabptr->netbios_aliases) {
+		for (netbios_alias = lp_netbios_aliases();
+		     netbios_alias != NULL && *netbios_alias != NULL;
+		     netbios_alias++)
+		{
+			fstring netbios_lower;
+
+			fstrcpy(netbios_lower, *netbios_alias);
+			if (!strlower_m(netbios_lower)) {
+				return ADS_ERROR_NT(
+					NT_STATUS_INVALID_PARAMETER);
+			}
+
+			/* Add prefix/NETBIOSALIAS@REALM */
+			princ_s = talloc_asprintf(talloc_tos(),
+						  "%s/%s@%s",
+						  prefix,
+						  *netbios_alias,
+						  lp_realm());
+			if (princ_s == NULL) {
+				return ADS_ERROR_KRB5(ENOMEM);
+			}
+			ADD_INFO(princ_s);
+
+			/* Add prefix/netbiosalias.dnsdomain@REALM */
+			princ_s = talloc_asprintf(talloc_tos(),
+						  "%s/%s.%s@%s",
+						  prefix,
+						  netbios_lower,
+						  lp_dnsdomain(),
+						  lp_realm());
+			if (princ_s == NULL) {
+				return ADS_ERROR_KRB5(ENOMEM);
+			}
+			ADD_INFO(princ_s);
+		}
+	}
+
+	if (keytabptr->additional_dns_hostnames) {
+		for (addl_hostnames = lp_additional_dns_hostnames();
+		     addl_hostnames != NULL && *addl_hostnames != NULL;
+		     addl_hostnames++)
+		{
+			/* Add prefix/additionalhostname@REALM */
+			princ_s = talloc_asprintf(talloc_tos(),
+						  "%s/%s@%s",
+						  prefix,
+						  *addl_hostnames,
+						  lp_realm());
+			if (princ_s == NULL) {
+				return ADS_ERROR_KRB5(ENOMEM);
+			}
+			ADD_INFO(princ_s);
+		}
+	}
+	return ADS_SUCCESS;
+}
+
+static ADS_STATUS pw2kt_process_specifier(struct pw2kt_global_state *gstate,
+					  struct pw2kt_keytab_state *state2,
+					  struct pw2kt_keytab_desc *keytabptr,
+					  enum spn_spec_type spec_type)
+{
+	krb5_error_code ret = 0;
+	ADS_STATUS status;
+	krb5_kvno kvno = keytabptr->sync_kvno ? gstate->ad_kvno : -1;
+	struct pw2kt_specifier *spec = &keytabptr->spec_array[spec_type];
+	size_t i, num_spn_spec_vals;
+
+	if (!spec->is_set) {
+		return ADS_SUCCESS;
+	}
+	switch (spec_type) {
+	case SPN_SPEC_ACCOUNT_NAME:
+		ADD_INFO(gstate->info->account_name);
+		break;
+	case SPN_SPEC_SYNC_ACCOUNT_NAME:
+		ADD_INFO(gstate->ad_sam_account);
+		break;
+	case SPN_SPEC_HOST:
+		status = pw2kt_add_prefix(gstate, state2, keytabptr, "host");
+		if (!ADS_ERR_OK(status)) {
+			return status;
+		}
+		break;
+	case SPN_SPEC_SYNC_UPN:
+		if (gstate->ad_upn != NULL) {
+			ADD_INFO(gstate->ad_upn);
+		}
+		break;
+	case SPN_SPEC_SYNC_SPNS:
+		for (i = 0; i < gstate->ad_num_spns; i++) {
+			ADD_INFO(gstate->ad_spn_array[i]);
+		}
+		break;
+	case SPN_SPEC_FULL:
+		num_spn_spec_vals = talloc_array_length(spec->spn_spec_vals);
+		for (i = 0; i < num_spn_spec_vals; i++) {
+			ADD_INFO(spec->spn_spec_vals[i]);
+		}
+		break;
+	case SPN_SPEC_PREFIX:
+		num_spn_spec_vals = talloc_array_length(spec->spn_spec_vals);
+		for (i = 0; i < num_spn_spec_vals; i++) {
+			status = pw2kt_add_prefix(gstate,
+						  state2,
+						  keytabptr,
+						  spec->spn_spec_vals[i]);
+			if (!ADS_ERR_OK(status)) {
+				return status;
+			}
+		}
+		break;
+	default:
+		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+	return ADS_SUCCESS;
+}
+
+static ADS_STATUS pw2kt_process_keytab(struct pw2kt_global_state *state,
+				       struct pw2kt_keytab_desc *keytabptr)
+{
+	krb5_error_code ret = 0;
+	size_t i, j, k, len1 = 0, len2 = 0;
 	size_t *index_array1 = NULL;
 	size_t *index_array2 = NULL;
-	struct pw2kt_process_state *state2 = NULL;
+	struct pw2kt_keytab_state *state2 = NULL;
+	ADS_STATUS status;
 
 	if (!keytabptr->machine_password) {
 		DBG_ERR("No 'machine_password' option for '%s'. Skip it.\n",
@@ -421,11 +646,11 @@ static ADS_STATUS pw2kt_process_keytab(struct pw2kt_state *state,
 		return ADS_SUCCESS;
 	}
 
-	state2 = talloc_zero(state, struct pw2kt_process_state);
+	state2 = talloc_zero(state, struct pw2kt_keytab_state);
 	if (state2 == NULL) {
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
-	talloc_set_destructor(state2, pw2kt_process_state_destructor);
+	talloc_set_destructor(state2, pw2kt_keytab_state_destructor);
 
 	ret = smb_krb5_init_context_common(&state2->context);
 	if (ret != 0) {
@@ -479,100 +704,11 @@ static ADS_STATUS pw2kt_process_keytab(struct pw2kt_state *state,
 		}
 	}
 
-	if (keytabptr->sync_kvno) {
-		kvno = state->ad_kvno;
-	}
-
-#define ADD_INFO(P)                                                   \
-	ret = pw2kt_process_add_info(state2, kvno, (P), state->info); \
-	if (ret != 0) {                                               \
-		return ADS_ERROR_KRB5(ret);                           \
-	}
-
-	/* Add ACCOUNTNAME$ entries */
-	switch (keytabptr->spn_spec) {
-	case SPN_SPEC_DEFAULT:
-		ADD_INFO(state->info->account_name);
-		break;
-	case SPN_SPEC_SYNC:
-		for (i = 0; i < state->ad_num_spns; i++) {
-			ADD_INFO(state->ad_spn_array[i]);
+	for (k = 0; k < SPN_SPEC_MAX; k++) {
+		status = pw2kt_process_specifier(state, state2, keytabptr, k);
+		if (!ADS_ERR_OK(status)) {
+			return status;
 		}
-		break;
-	case SPN_SPEC_FULL:
-		for (i = 0; i < keytabptr->num_spn_spec; i++) {
-			ADD_INFO(keytabptr->spn_spec_array[i]);
-		}
-		break;
-	case SPN_SPEC_PREFIX:
-		for (i = 0; i < keytabptr->num_spn_spec; i++) {
-			princ_s = talloc_asprintf(talloc_tos(),
-						  "%s/%s@%s",
-						  keytabptr->spn_spec_array[i],
-						  lp_netbios_name(),
-						  lp_realm());
-			if (princ_s == NULL) {
-				return ADS_ERROR_KRB5(ENOMEM);
-			}
-			ADD_INFO(princ_s);
-
-			if (!keytabptr->netbios_aliases) {
-				goto additional_dns_hostnames;
-			}
-			for (netbios_alias = lp_netbios_aliases();
-			     netbios_alias != NULL && *netbios_alias != NULL;
-			     netbios_alias++)
-			{
-				/* Add PREFIX/netbiosname@REALM */
-				princ_s = talloc_asprintf(
-					talloc_tos(),
-					"%s/%s@%s",
-					keytabptr->spn_spec_array[i],
-					*netbios_alias,
-					lp_realm());
-				if (princ_s == NULL) {
-					return ADS_ERROR_KRB5(ENOMEM);
-				}
-				ADD_INFO(princ_s);
-
-				/* Add PREFIX/netbiosname.domainname@REALM */
-				princ_s = talloc_asprintf(
-					talloc_tos(),
-					"%s/%s.%s@%s",
-					keytabptr->spn_spec_array[i],
-					*netbios_alias,
-					lp_dnsdomain(),
-					lp_realm());
-				if (princ_s == NULL) {
-					return ADS_ERROR_KRB5(ENOMEM);
-				}
-				ADD_INFO(princ_s);
-			}
-
-additional_dns_hostnames:
-			if (!keytabptr->additional_dns_hostnames) {
-				continue;
-			}
-			for (addl_hostnames = lp_additional_dns_hostnames();
-			     addl_hostnames != NULL && *addl_hostnames != NULL;
-			     addl_hostnames++)
-			{
-				/* Add PREFIX/netbiosname@REALM */
-				princ_s = talloc_asprintf(
-					talloc_tos(),
-					"%s/%s@%s",
-					keytabptr->spn_spec_array[i],
-					*addl_hostnames,
-					lp_realm());
-				if (princ_s == NULL) {
-					return ADS_ERROR_KRB5(ENOMEM);
-				}
-				ADD_INFO(princ_s);
-			}
-		}
-		break;
-	default:
-		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	ret = smb_krb5_kt_open(state2->context,
@@ -718,7 +854,7 @@ sync_kvno:
 	return ADS_ERROR_KRB5(ret);
 }
 
-static ADS_STATUS pw2kt_get_dc_info(struct pw2kt_state *state)
+static ADS_STATUS pw2kt_get_dc_info(struct pw2kt_global_state *state)
 {
 	ADS_STATUS status;
 	LDAPMessage *res = NULL;
@@ -762,7 +898,7 @@ static ADS_STATUS pw2kt_get_dc_info(struct pw2kt_state *state)
 				     "msDS-SupportedEncryptionTypes",
 				     &state->ad_etypes);
 		if (!ok) {
-			DBG_WARNING("Failed to determine encryption types.\n");
+			DBG_ERR("Failed to determine encryption types.\n");
 			ads_msgfree(ads, res);
 			TALLOC_FREE(tmp_ctx);
 			return ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
@@ -773,7 +909,7 @@ static ADS_STATUS pw2kt_get_dc_info(struct pw2kt_state *state)
 		uint32_t kvno = -1;
 		ok = ads_pull_uint32(ads, res, "msDS-KeyVersionNumber", &kvno);
 		if (!ok) {
-			DBG_WARNING("Failed to determine the system's kvno.\n");
+			DBG_ERR("Failed to determine the system's kvno.\n");
 			ads_msgfree(ads, res);
 			TALLOC_FREE(tmp_ctx);
 			return ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
@@ -787,8 +923,34 @@ static ADS_STATUS pw2kt_get_dc_info(struct pw2kt_state *state)
 						       res,
 						       "servicePrincipalName",
 						       &state->ad_num_spns);
-		if (state->ad_spn_array == NULL) {
-			DBG_WARNING("Failed to determine SPNs.\n");
+		if (state->ad_spn_array == NULL || state->ad_num_spns == 0) {
+			DBG_ERR("Failed to determine servicePrincipalName.\n");
+			ads_msgfree(ads, res);
+			TALLOC_FREE(tmp_ctx);
+			return ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
+		}
+	}
+
+	if (state->sync_upn) {
+		state->ad_upn = ads_pull_string(ads,
+						state,
+						res,
+						"userPrincipalName");
+		if (state->ad_upn == NULL) {
+			DBG_ERR("Failed to determine userPrincipalName.\n");
+			ads_msgfree(ads, res);
+			TALLOC_FREE(tmp_ctx);
+			return ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
+		}
+	}
+
+	if (state->sync_sam_account) {
+		state->ad_sam_account = ads_pull_string(ads,
+							state,
+							res,
+							"sAMAccountName");
+		if (state->ad_sam_account == NULL) {
+			DBG_ERR("Failed to determine sAMAccountName.\n");
 			ads_msgfree(ads, res);
 			TALLOC_FREE(tmp_ctx);
 			return ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
@@ -864,13 +1026,14 @@ NTSTATUS sync_pw2keytabs(void)
 	TALLOC_CTX *frame = talloc_stackframe();
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
-	struct pw2kt_state *state = NULL;
+	struct pw2kt_global_state *state = NULL;
 	const char **line = NULL;
 	const char **lp_ptr = NULL;
 	const char *pwsync_script = NULL;
 	NTSTATUS status_nt;
 	ADS_STATUS status_ads;
 	int i;
+	size_t num_keytabs;
 
 	DBG_DEBUG("Syncing machine password from secrets to keytabs.\n");
 
@@ -879,7 +1042,7 @@ NTSTATUS sync_pw2keytabs(void)
 		return NT_STATUS_OK; /* nothing todo */
 	}
 
-	state = talloc_zero(frame, struct pw2kt_state);
+	state = talloc_zero(frame, struct pw2kt_global_state);
 	if (state == NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
@@ -921,7 +1084,9 @@ NTSTATUS sync_pw2keytabs(void)
 	}
 
 params_ready:
-	if (state->sync_etypes || state->sync_kvno || state->sync_spns) {
+	if (state->sync_etypes || state->sync_kvno || state->sync_spns ||
+	    state->sync_upn || state->sync_sam_account)
+	{
 		status_ads = pw2kt_get_dc_info(state);
 		if (!ADS_ERR_OK(status_ads)) {
 			DBG_WARNING("cannot read from DC\n");
@@ -929,9 +1094,10 @@ params_ready:
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 	} else {
-		DBG_DEBUG("No 'sync_etypes', 'sync_kvno' and 'sync_spns' in "
-			  "parameter 'sync machine password to keytab' => "
-			  "no need to talk to DC.\n");
+		DBG_DEBUG("No 'sync_etypes', 'sync_kvno', 'sync_spns', "
+			  "'sync_upn' and 'sync_sam_account' in parameter "
+			  "'sync machine password to keytab' => no need to "
+			  "talk to DC.\n");
 	}
 
 	if (!secrets_init()) {
@@ -951,7 +1117,8 @@ params_ready:
 		return status_nt;
 	}
 
-	for (i = 0; i < state->num_keytabs; i++) {
+	num_keytabs = talloc_array_length(state->keytabs);
+	for (i = 0; i < num_keytabs; i++) {
 		status_ads = pw2kt_process_keytab(state, &state->keytabs[i]);
 		if (!ADS_ERR_OK(status_ads)) {
 			TALLOC_FREE(frame);
