@@ -1406,6 +1406,7 @@ static NTSTATUS vfswrap_parent_pathname(struct vfs_handle_struct *handle,
 		smb_fname_in->twrp,
 		smb_fname_in->flags);
 	if (name == NULL) {
+		TALLOC_FREE(parent);
 		return NT_STATUS_NO_MEMORY;
 	}
 
