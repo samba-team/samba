@@ -1326,9 +1326,10 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 
 	status = rmdir_internals(talloc_tos(), fsp);
 
-	DEBUG(5,("close_directory: %s. Delete on close was set - "
+	DBG_INFO("%s. Delete on close was set - "
 		 "deleting directory returned %s.\n",
-		 fsp_str_dbg(fsp), nt_errstr(status)));
+		 fsp_str_dbg(fsp),
+		 nt_errstr(status));
 
 	/*
 	 * Ensure we remove any change notify requests that would
