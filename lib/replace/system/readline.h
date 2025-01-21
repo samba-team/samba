@@ -46,7 +46,9 @@
 #endif
 
 #ifdef HAVE_NEW_LIBREADLINE
-#ifdef HAVE_CPPFUNCTION
+#if defined(HAVE_RL_COMPLETION_FUNC_T)
+#  define RL_COMPLETION_CAST (rl_completion_func_t *)
+#elif defined(HAVE_CPPFUNCTION)
 #  define RL_COMPLETION_CAST (CPPFunction *)
 #elif defined(HAVE_RL_COMPLETION_T)
 #  define RL_COMPLETION_CAST (rl_completion_t *)
