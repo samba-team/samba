@@ -173,6 +173,11 @@ def options(opt):
                   help=('Build with Azure Entra ID support.'),
                   action='store_true', dest='enable_himmelblau')
 
+    opt.samba_add_onoff_option('systemd-userdb',
+                               help=("Build winbind with support for systemd "
+                                     "User/Group Record Lookup API via "
+                                     "Varlink"),
+                               default=False)
 
 def configure(conf):
     if Options.options.SAMBA_VERSION_VENDOR_SUFFIX:

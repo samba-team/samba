@@ -595,6 +595,16 @@ msg.msg_accrightslen = sizeof(fd);
         conf.env.build_winbind = True
         conf.DEFINE('WITH_WINBIND', '1')
 
+    if Options.options.with_systemd_userdb:
+        conf.CHECK_CFG(package='libvarlink', args='"libvarlink >= 24" --cflags --libs',
+                       msg='Checking for libvarlink >= 24', mandatory=True)
+        if conf.CHECK_HEADERS('varlink.h', lib='varlink') and conf.CHECK_LIB('varlink', shlib=True):
+            if conf.CHECK_FUNCS_IN('varlink_service_new', 'varlink', headers='varlink.h'):
+                conf.env.with_systemd_userdb = True
+                conf.DEFINE('WITH_SYSTEMD_USERDB', '1')
+        if not conf.env.with_systemd_userdb:
+            conf.fatal("libvarlink not found.")
+
     conf.find_program('awk', var='AWK')
 
     conf.CHECK_HEADERS('asm/types.h')
