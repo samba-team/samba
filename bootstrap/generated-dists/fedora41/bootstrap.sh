@@ -69,6 +69,7 @@ dnf install -y \
     libunwind-devel \
     liburing-devel \
     libuuid-devel \
+    libvarlink-devel \
     libxslt \
     lmdb \
     lmdb-devel \
@@ -103,6 +104,7 @@ dnf install -y \
     python3-pyasn1 \
     python3-requests \
     python3-setproctitle \
+    python3-varlink \
     quota-devel \
     readline-devel \
     redhat-lsb \

@@ -178,6 +178,10 @@ PKGS = [
     # spotlight
     ('libtracker-sparql-2.0-dev', 'tracker-devel'),
 
+    # systemd userdb
+    ('', 'libvarlink-devel'),
+    ('', 'python3-varlink'),
+
     # misc
     # @ means group for rpm, use fedora as rpm default
     ('build-essential', '@development-tools'),
@@ -534,6 +538,7 @@ RPM_DISTS = {
             'ShellCheck': '',
             'shfmt': '',
             'codespell': '',
+            'libvarlink-devel': '', # not available
         }
     },
     'centos9s': {
@@ -553,6 +558,8 @@ RPM_DISTS = {
             'codespell': '',
             'libcephfs-devel': '',  # not available anymore
             'curl': '',  # Use installed curl-minimal
+            'libvarlink-devel': '', # not available
+            'python3-varlink': '', # not available
         }
     },
     'fedora41': {
@@ -598,6 +605,7 @@ RPM_DISTS = {
             'mold': '',
             'shfmt': '',
             'yum-utils': '',
+            'libvarlink-devel': '', # not available
         }
     }
 }

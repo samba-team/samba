@@ -98,6 +98,7 @@ zypper --non-interactive install \
     python3-requests \
     python3-semanage \
     python3-setproctitle \
+    python3-varlink \
     readline-devel \
     rng-tools \
     rpcgen \
