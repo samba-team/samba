@@ -1,4 +1,73 @@
                    ==============================
+                   Release Notes for Samba 4.20.7
+                          January 21, 2025
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.20 release series.
+
+
+Changes since 4.20.6
+--------------------
+
+o  Vinit Agnihotri <vagnihot@redhat.com>
+   * BUG 15780: Increasing slowness of sharesec performance with high number of
+     registry shares.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15697: Compound rename from Mac clients can fail with
+     NT_STATUS_INTERNAL_ERROR if the file has a lease.
+   * BUG 15754: Panic in close_directory.
+
+o  Guenther Deschner <gd@samba.org>
+   * BUG 15780: Increasing slowness of sharesec performance with high number of
+     registry shares.
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15724: vfs crossrename seems not work correctly.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15771: Memory leak wbcCtxLookupSid. samba-4.21.2.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15765: Fix heap-user-after-free with association groups.
+   * BUG 15769: The values from hresult_errstr_const and hresult_errstr are
+     reversed in 4.20 and 4.21.
+   * BUG 15778: Kerberos referral tickets are generated for principals in our
+     domain if we have a trust to a top level domain.
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15320: Update CTDB to track all TCP connections to public IP addresses.
+   * BUG 15755: Avoid event failure race when disabling an event script.
+
+o  Jones Syue <jonessyue@qnap.com>
+   * BUG 15724: vfs crossrename seems not work correctly.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.20.6
                          November 19, 2024
                    ==============================
@@ -67,8 +136,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.20.5
                          September 17, 2024
