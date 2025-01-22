@@ -5110,6 +5110,13 @@ static int swrap_setsockopt(int s, int level, int optname,
 	}
 
 	if (level == SOL_SOCKET) {
+		/*
+		 * SO_REUSEPORT is not supported on a unix socket. glibc 2.40
+		 * returns ENOTSUPP now.
+		 */
+		if (optname == SO_REUSEPORT) {
+			return 0;
+		}
 		return libc_setsockopt(s,
 				       level,
 				       optname,
