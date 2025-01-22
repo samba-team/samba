@@ -55,6 +55,7 @@ struct gpfs_config_data {
 	bool acl;
 	bool settimes;
 	bool recalls;
+	bool clamp_invalid_times;
 	struct {
 		bool gpfs_fstat_x;
 	} pathref_ok;
@@ -1588,19 +1589,29 @@ static NTSTATUS vfs_gpfs_fset_dos_attributes(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
-static int timespec_to_gpfs_time(
-	struct timespec ts, gpfs_timestruc_t *gt, int idx, int *flags)
+static int timespec_to_gpfs_time(struct gpfs_config_data *config,
+				 struct timespec ts,
+				 gpfs_timestruc_t *gt,
+				 int idx,
+				 int *flags)
 {
 	if (is_omit_timespec(&ts)) {
 		return 0;
 	}
 
 	if (ts.tv_sec < 0 || ts.tv_sec > UINT32_MAX) {
-		DBG_NOTICE("GPFS uses 32-bit unsigned timestamps "
-			   "and cannot handle %jd.\n",
-			   (intmax_t)ts.tv_sec);
-		errno = ERANGE;
-		return -1;
+		if (!config->clamp_invalid_times) {
+			DBG_NOTICE("GPFS uses 32-bit unsigned timestamps "
+				   "and cannot handle %jd.\n",
+				   (intmax_t)ts.tv_sec);
+			errno = ERANGE;
+			return -1;
+		}
+		if (ts.tv_sec < 0) {
+			ts.tv_sec = 0;
+		} else {
+			ts.tv_sec = UINT32_MAX;
+		}
 	}
 
 	*flags |= 1 << idx;
@@ -1611,7 +1622,8 @@ static int timespec_to_gpfs_time(
 	return 0;
 }
 
-static int smbd_gpfs_set_times(struct files_struct *fsp,
+static int smbd_gpfs_set_times(struct gpfs_config_data *config,
+			       struct files_struct *fsp,
 			       struct smb_file_time *ft)
 {
 	gpfs_timestruc_t gpfs_times[4];
@@ -1619,18 +1631,22 @@ static int smbd_gpfs_set_times(struct files_struct *fsp,
 	int rc;
 
 	ZERO_ARRAY(gpfs_times);
-	rc = timespec_to_gpfs_time(ft->atime, gpfs_times, 0, &flags);
+	rc = timespec_to_gpfs_time(config, ft->atime, gpfs_times, 0, &flags);
 	if (rc != 0) {
 		return rc;
 	}
 
-	rc = timespec_to_gpfs_time(ft->mtime, gpfs_times, 1, &flags);
+	rc = timespec_to_gpfs_time(config, ft->mtime, gpfs_times, 1, &flags);
 	if (rc != 0) {
 		return rc;
 	}
 
 	/* No good mapping from LastChangeTime to ctime, not storing */
-	rc = timespec_to_gpfs_time(ft->create_time, gpfs_times, 3, &flags);
+	rc = timespec_to_gpfs_time(config,
+				   ft->create_time,
+				   gpfs_times,
+				   3,
+				   &flags);
 	if (rc != 0) {
 		return rc;
 	}
@@ -1696,7 +1712,7 @@ static int vfs_gpfs_fntimes(struct vfs_handle_struct *handle,
 
 	/* Try to use gpfs_set_times if it is enabled and available */
 	if (config->settimes) {
-		return smbd_gpfs_set_times(fsp, ft);
+		return smbd_gpfs_set_times(config, fsp, ft);
 	}
 
 	DBG_DEBUG("gpfs_set_times() not available or disabled, "
@@ -2047,6 +2063,9 @@ static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 					"settimes", true);
 	config->recalls = lp_parm_bool(SNUM(handle->conn), "gpfs",
 				       "recalls", true);
+
+	config->clamp_invalid_times = lp_parm_bool(SNUM(handle->conn), "gpfs",
+				       "clamp_invalid_times", false);
 
 	ret = vfs_gpfs_check_pathref(config, handle->conn);
 	if (ret != 0) {

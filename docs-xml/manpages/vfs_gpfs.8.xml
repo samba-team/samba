@@ -317,6 +317,35 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>gpfs:clamp_invalid_times = [ yes | no ]</term>
+		<listitem>
+		<para>
+		GPFS stores timestamps using 32-bit unsigned integers for the
+		seconds component. When using gpfs:settimes = yes, this module
+		validates times that clients attempt to set are within the
+		supported GPFS range between 0 and UINT32_MAX. If a timestamp is
+		outside of this range, the client request is rejected. To cope
+		with clients setting eg temporary timestamps outside the valid
+		range, this parameter can be used to clamp the client timestamp
+		to the allowed range. Times before Thu Jan 1 12:00:00 AM UTC
+		1970 (the UNIX epock) are then set to Thu Jan 1 12:00:00 AM UTC
+		1970, times after Sun Feb 7 06:28:15 AM UTC 2106 will be set to
+		Sun Feb 7 06:28:15 AM UTC 2106.
+		</para>
+
+		<itemizedlist>
+		<listitem><para>
+		<command>no(default)</command> - Fail request with invalid time.
+		</para></listitem>
+		<listitem><para>
+		<command>yes</command> - clamp invalid times to 0 or UINT32_MAX.
+		</para></listitem>
+		</itemizedlist>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
 		<term>gpfs:syncio = [yes|no]</term>
 		<listitem>
 		<para>This parameter makes Samba open all files with O_SYNC.
