@@ -24,6 +24,7 @@ import re
 from base64 import b64decode, b64encode
 from samba import dsdb
 from samba import common
+from samba import parse_unc
 from samba.dcerpc import misc
 from samba.dcerpc import drsuapi
 from samba.ndr import ndr_unpack, ndr_pack
@@ -136,6 +137,8 @@ class dbcheck(object):
         # Rather than asking once whether to fix all gplinks, we ask
         # once for each domain we see.
         self.fixable_wrong_domains_in_gplinks = {}
+        self.fixable_wrong_hosts_in_gpo_file_path = {}
+        self.fixable_wrong_directories_in_gpo_file_path = {}
 
         self.dn_set = set()
         self.link_id_cache = {}
@@ -2415,6 +2418,111 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         return error_count
 
+    def check_gpcfilesyspath(self, obj, attrname):
+        """Check the dns-like portions of a GPO gPCFileSysPath"""
+        if attrname.lower() != 'gpcfilesyspath':
+            return 0
+
+        # gPCFileSysPath looks like
+        # "\\example.com\sysvol\example.com\Policies\{31B2F340-016D-11D2-945F-00C04FB984F9}".
+        # The parts that look like DNS names should *probably* be our
+        # domain's DNS name, but there might be situations where we
+        # don't want that. That's why we query on each instance. This
+        # is likely to have gone awry with a domain rename (from a
+        # backup), and the situation may not be entirely fixed by
+        # this, as the files themselves might contain references
+        # pertaining to the old domain.
+        file_sys_path = str(obj['gPCFileSysPath'])
+
+        dnsname = self.samdb.domain_dns_name().lower()
+        error_count = 0
+        host_changed = False
+        dir_changed = False
+
+        if not file_sys_path.startswith('\\\\'):
+            # Technically an UNC can use forward slashes, which makes
+            # reconstruction annoying (not impossible, but as this is
+            # not expected we will ignore it for now).
+            self.report(
+                "WARNING: "
+                f"fixing gPCFileSysPath like '{file_sys_path}' not supported")
+            return 0
+
+        try:
+            host, service, path = parse_unc(file_sys_path)
+        except ValueError as e:
+            # This is a problem we can't guess our way out of
+            self.report(
+                "ERROR: "
+                f"couldn't parse gPCFileSysPath: '{file_sys_path}' ({e})")
+            return 1
+
+        if service.lower() != 'sysvol':
+            # we don't know what we're dealing with here
+            self.report(
+                "WARNING: "
+                f"gPCFileSysPath is not sysvol: '{file_sys_path}'")
+            return 0
+
+        if host != host.lower():
+            self.report(
+                "WARNING: "
+                f"gPCFileSysPath host not lower case: '{file_sys_path}'")
+
+        if host != dnsname:
+            h = '\\\\' + host
+            error_count += 1
+            self.report(f"WARNING: gPCFileSysPath {file_sys_path} host "
+                        f"does not match domain DNS name {dnsname}, "
+                        "which may be due to a domain rename")
+
+            replace = self.confirm_and_remember(
+                (f'replace host "{h}" at start of gPCFileSysPath "{file_sys_path}" '
+                 f'with "\\\\{dnsname}" ("all" for all "{h}")?'),
+                self.fixable_wrong_hosts_in_gpo_file_path,
+                host)
+            if replace:
+                host_changed = True
+
+        try:
+            topdir, subpath = path.split('\\', 1)
+        except ValueError:
+            # there was only a topdir
+            topdir = path
+            subpath = ''
+
+        if topdir.lower() != dnsname:
+            self.report(f"WARNING: gPCFileSysPath {file_sys_path} directory "
+                        f"does not match domain DNS name {dnsname}, "
+                        "which may be due to a domain rename.")
+
+            replace = self.confirm_and_remember(
+                (f'rename directory "{topdir}" in gPCFileSysPath "{file_sys_path}" '
+                 f'to "{dnsname}" ("all" for all "{topdir}" directories)?\n'
+                 "(This WON'T move or create directories)"),
+                self.fixable_wrong_directories_in_gpo_file_path,
+                topdir)
+            if replace:
+                dir_changed = True
+
+        if host_changed:
+            host = dnsname
+        if dir_changed:
+            topdir = dnsname
+
+        if host_changed or dir_changed:
+            val = f"\\\\{host}\\sysvol\\{topdir}\\{subpath}"
+            obj[attrname] = val
+            msg = ldb.Message()
+            msg.dn = obj.dn
+            msg[attrname] = ldb.MessageElement(val,
+                                               ldb.FLAG_MOD_REPLACE,
+                                               attrname)
+            self.do_modify(msg, [],
+                           f"resetting  gPCFileSysPath {file_sys_path} to {val}")
+
+        return error_count
+
     def check_object(self, dn, requested_attrs=None):
         """check one object"""
         if self.verbose:
@@ -2658,6 +2766,9 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             if self.check_gpo_links:
                 if attrname.lower() == 'gplink':
                     self.check_gplink(obj, attrname)
+
+                elif attrname.lower() == 'gpcfilesyspath':
+                    self.check_gpcfilesyspath(obj, attrname)
 
             # check for empty attributes
             for val in obj[attrname]:

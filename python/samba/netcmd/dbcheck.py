@@ -75,7 +75,7 @@ class cmd_dbcheck(Command):
                dest="selftest_check_expired_tombstones", default=False, action="store_true",
                help=optparse.SUPPRESS_HELP),  # This is only used by tests
         Option("--check-gpo-links", action="store_true",
-               help="check that GPO related links point to the current domain"),
+               help="check that GPO related links and paths point to the current domain"),
     ]
 
     def run(self, DN=None, H=None, verbose=False, fix=False, yes=False,
