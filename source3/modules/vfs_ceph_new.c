@@ -2131,7 +2131,7 @@ static int vfs_ceph_openat(struct vfs_handle_struct *handle,
 	int result = -ENOENT;
 
 	START_PROFILE(syscall_openat);
-	if (how->resolve != 0) {
+	if ((how->resolve & ~VFS_OPEN_HOW_WITH_BACKUP_INTENT) != 0) {
 		result = -ENOSYS;
 		goto err_out;
 	}

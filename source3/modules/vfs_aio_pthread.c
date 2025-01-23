@@ -457,7 +457,7 @@ static int aio_pthread_openat_fn(vfs_handle_struct *handle,
 	bool aio_allow_open = lp_parm_bool(
 		SNUM(handle->conn), "aio_pthread", "aio open", false);
 
-	if (how->resolve != 0) {
+	if ((how->resolve & ~VFS_OPEN_HOW_WITH_BACKUP_INTENT) != 0) {
 		errno = ENOSYS;
 		return -1;
 	}
