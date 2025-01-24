@@ -1090,13 +1090,6 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 		goto error_exit;
 	}
 
-	nt_status = vfs_file_exist(conn, smb_fname);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(3,("get_correct_cversion: vfs_file_exist failed\n"));
-		*perr = WERR_FILE_NOT_FOUND;
-		goto error_exit;
-	}
-
 	nt_status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
@@ -1105,7 +1098,7 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 		FILE_GENERIC_READ,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
 		FILE_OPEN,				/* create_disposition*/
-		0,					/* create_options */
+		FILE_NON_DIRECTORY_FILE,		/* create_options */
 		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
 		INTERNAL_OPEN_ONLY,			/* oplock_request */
 		NULL,					/* lease */

@@ -2004,11 +2004,6 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = vfs_file_exist(conn, smb_fname_src);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
 	status = openat_pathref_fsp(conn->cwd_fsp, smb_fname_src);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
@@ -2023,7 +2018,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		FILE_GENERIC_READ,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
 		FILE_OPEN,				/* create_disposition*/
-		0,					/* create_options */
+		FILE_NON_DIRECTORY_FILE,		/* create_options */
 		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
 		INTERNAL_OPEN_ONLY,			/* oplock_request */
 		NULL,					/* lease */
