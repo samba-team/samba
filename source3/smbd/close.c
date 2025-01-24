@@ -1075,23 +1075,6 @@ NTSTATUS recursive_rmdir_fsp(struct files_struct *fsp)
 	return status;
 }
 
-NTSTATUS recursive_rmdir(TALLOC_CTX *ctx,
-			 connection_struct *conn,
-			 struct smb_filename *smb_dname)
-{
-	NTSTATUS status;
-
-	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
-
-	status = openat_pathref_fsp(conn->cwd_fsp, smb_dname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = recursive_rmdir_fsp(smb_dname->fsp);
-	return status;
-}
-
 /****************************************************************************
  The internals of the rmdir code - called elsewhere.
 ****************************************************************************/

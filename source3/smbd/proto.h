@@ -135,9 +135,6 @@ NTSTATUS delete_all_streams(struct files_struct *fsp,
 			    struct files_struct *dirfsp,
 			    struct smb_filename *fsp_atname);
 NTSTATUS recursive_rmdir_fsp(struct files_struct *fsp);
-NTSTATUS recursive_rmdir(TALLOC_CTX *ctx,
-		     connection_struct *conn,
-		     struct smb_filename *smb_dname);
 bool has_other_nonposix_opens(struct share_mode_lock *lck,
 			      struct files_struct *fsp);
 bool has_nonposix_opens(struct share_mode_lock *lck);
