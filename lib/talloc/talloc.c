@@ -2750,6 +2750,10 @@ _PUBLIC_ char *talloc_asprintf_append_buffer(char *s, const char *fmt, ...)
 	return s;
 }
 
+/*
+ * Function to make string-building simple by handling intermediate
+ * realloc failures. See for example commit a37ea9d750e1.
+ */
 _PUBLIC_ void talloc_asprintf_addbuf(char **ps, const char *fmt, ...)
 {
 	va_list ap;
