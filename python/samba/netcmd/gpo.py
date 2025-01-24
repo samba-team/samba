@@ -416,7 +416,7 @@ class GPOCommand(Command):
         try:
             os.mkdir(gpodir)
         except (IOError, OSError) as e:
-            raise CommandError("Error creating teporary GPO directory", e)
+            raise CommandError("Error creating temporary GPO directory", e)
 
         return tmpdir, gpodir
 
