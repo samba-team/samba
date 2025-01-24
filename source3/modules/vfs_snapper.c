@@ -78,7 +78,7 @@ static const struct {
 
 static NTSTATUS snapper_err_ntstatus_map(const char *snapper_err_str)
 {
-	int i;
+	size_t i;
 
 	if (snapper_err_str == NULL) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -103,7 +103,7 @@ static NTSTATUS snapper_dbus_str_encode(TALLOC_CTX *mem_ctx, const char *in_str,
 {
 	size_t in_len;
 	char *out_str;
-	int i;
+	size_t i;
 	int out_off;
 	int out_len;
 
@@ -155,7 +155,7 @@ static NTSTATUS snapper_dbus_str_decode(TALLOC_CTX *mem_ctx, const char *in_str,
 {
 	size_t in_len;
 	char *out_str;
-	int i;
+	size_t i;
 	int out_off;
 	int out_len;
 
@@ -367,7 +367,7 @@ static NTSTATUS snapper_dict_unpack(TALLOC_CTX *mem_ctx,
 static void snapper_dict_array_print(uint32_t num_dicts,
 				     struct snapper_dict *dicts)
 {
-	int i;
+	size_t i;
 
 	for (i = 0; i < num_dicts; i++) {
 		DEBUG(10, ("dict (key: %s, val: %s)\n",

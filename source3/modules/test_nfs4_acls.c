@@ -42,7 +42,7 @@ struct test_sids {
 static int group_setup(void **state)
 {
 	struct dom_sid *sids = NULL;
-	int i;
+	size_t i;
 
 	sids = talloc_array(NULL, struct dom_sid, ARRAY_SIZE(test_sids));
 	assert_non_null(sids);
@@ -61,7 +61,7 @@ static int group_setup(void **state)
 static int group_teardown(void **state)
 {
 	struct dom_sid *sids = *state;
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(test_sids); i++) {
 		assert_true(idmap_cache_del_sid(&sids[i]));
@@ -80,7 +80,7 @@ static int group_teardown(void **state)
 static void test_cached_id_mappings(void **state)
 {
 	struct dom_sid *sids = *state;
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(test_sids); i++) {
 		struct dom_sid *sid = &sids[i];
@@ -175,7 +175,7 @@ static void test_acl_type_nfs4_to_dacl(void **state)
 {
 	struct dom_sid *sids = *state;
 	TALLOC_CTX *frame = talloc_stackframe();
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(ace_dacl_type_mapping); i++) {
 		struct SMB4ACL_T *nfs4_acl;
@@ -222,7 +222,7 @@ static void test_acl_type_dacl_to_nfs4(void **state)
 {
 	struct dom_sid *sids = *state;
 	TALLOC_CTX *frame = talloc_stackframe();
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(ace_dacl_type_mapping); i++) {
 		struct SMB4ACL_T *nfs4_acl;
@@ -308,7 +308,7 @@ static void test_ace_flags_nfs4_to_dacl(void **state)
 	struct dom_sid *sids = *state;
 	TALLOC_CTX *frame = talloc_stackframe();
 	SMB_ACE4PROP_T nfs4_ace;
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(ace_flags_nfs4_to_dacl); i++) {
 		struct SMB4ACL_T *nfs4_acl;
@@ -393,7 +393,7 @@ static void test_ace_flags_dacl_to_nfs4(void **state)
 {
 	struct dom_sid *sids = *state;
 	TALLOC_CTX *frame = talloc_stackframe();
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(ace_flags_dacl_to_nfs4); i++) {
 		struct SMB4ACL_T *nfs4_acl;
@@ -472,7 +472,7 @@ static void test_nfs4_permissions_to_dacl(void **state)
 {
 	struct dom_sid *sids = *state;
 	TALLOC_CTX *frame = talloc_stackframe();
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(perm_table_nfs4_to_dacl); i++) {
 		struct SMB4ACL_T *nfs4_acl;
@@ -576,7 +576,7 @@ static void test_dacl_permissions_to_nfs4(void **state)
 {
 	struct dom_sid *sids = *state;
 	TALLOC_CTX *frame = talloc_stackframe();
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(perm_table_nfs4_to_dacl); i++) {
 		struct SMB4ACL_T *nfs4_acl;
@@ -902,7 +902,7 @@ struct creator_ace_flags {
 static void test_dacl_creator_to_nfs4(void **state)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(creator_ace_flags); i++) {
 		struct SMB4ACL_T *nfs4_acl;
@@ -1004,7 +1004,7 @@ static void test_nfs4_to_dacl_creator(void **state)
 {
 	struct dom_sid *sids = *state;
 	TALLOC_CTX *frame = talloc_stackframe();
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(creator_owner_nfs4_to_dacl); i++) {
 		struct SMB4ACL_T *nfs4_acl;
@@ -1109,7 +1109,7 @@ static void test_full_control_nfs4_to_dacl(void **state)
 {
 	struct dom_sid *sids = *state;
 	TALLOC_CTX *frame = talloc_stackframe();
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(nfs4_to_dacl_full_control); i++) {
 		struct SMB4ACL_T *nfs4_acl;
@@ -1188,7 +1188,7 @@ static void test_dacl_to_nfs4_acedup_settings(void **state)
 {
 	struct dom_sid *sids = *state;
 	TALLOC_CTX *frame = talloc_stackframe();
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(acedup_settings); i++) {
 		struct SMB4ACL_T *nfs4_acl;
@@ -1345,7 +1345,7 @@ static void test_dacl_to_nfs4_acedup_match(void **state)
 {
 	struct dom_sid *sids = *state;
 	TALLOC_CTX *frame = talloc_stackframe();
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(acedup_match); i++) {
 		struct SMB4ACL_T *nfs4_acl;
@@ -1609,7 +1609,7 @@ static void test_nfs4_to_dacl_idmap_type_both(void **state)
 {
 	struct dom_sid *sids = *state;
 	TALLOC_CTX *frame = talloc_stackframe();
-	int i;
+	size_t i;
 	struct nfs_to_dacl_idmap_both nfs_to_dacl_idmap_both[] = {
 		{ 0,				1002, &sids[2] },
 		{ SMB_ACE4_IDENTIFIER_GROUP,	1002, &sids[2] },
@@ -1681,7 +1681,7 @@ static void test_dacl_to_nfs4_idmap_type_both(void **state)
 {
 	struct dom_sid *sids = *state;
 	TALLOC_CTX *frame = talloc_stackframe();
-	int i;
+	size_t i;
 
 	struct dacl_to_nfs4_idmap_both dacl_to_nfs4_idmap_both[] = {
 	{ &sids[2], 0,
