@@ -777,6 +777,10 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 				 req,
 				 "(ncName=%s)",
 				 ldb_dn_get_linearized(ldb_get_default_basedn(ldb)));
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
 
 	netbios_name = ldb_msg_find_attr_as_string(netbios_res->msgs[0], "nETBIOSName", NULL);
 
