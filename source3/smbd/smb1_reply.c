@@ -829,11 +829,9 @@ void reply_getatr(struct smb_request *req)
 			reply_nterror(req, status);
 			goto out;
 		}
-		if (!VALID_STAT(smb_fname->st) &&
-		    (SMB_VFS_STAT(conn, smb_fname) != 0)) {
-			DEBUG(3,("reply_getatr: stat of %s failed (%s)\n",
-				 smb_fname_str_dbg(smb_fname),
-				 strerror(errno)));
+		if (!VALID_STAT(smb_fname->st)) {
+			DBG_NOTICE("File %s not found\n",
+				   smb_fname_str_dbg(smb_fname));
 			reply_nterror(req,  map_nt_error_from_unix(errno));
 			goto out;
 		}
