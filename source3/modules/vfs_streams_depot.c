@@ -1272,11 +1272,8 @@ static NTSTATUS streams_depot_fstreaminfo(vfs_handle_struct *handle,
 
 	*pnum_streams = state.num_streams;
 	*pstreams = state.streams;
-	status = SMB_VFS_NEXT_FSTREAMINFO(handle,
-				fsp->base_fsp ? fsp->base_fsp : fsp,
-				mem_ctx,
-				pnum_streams,
-				pstreams);
+	status = SMB_VFS_NEXT_FSTREAMINFO(
+		handle, metadata_fsp(fsp), mem_ctx, pnum_streams, pstreams);
 
  out:
 	TALLOC_FREE(smb_fname_base);
