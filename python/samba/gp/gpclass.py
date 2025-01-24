@@ -602,20 +602,16 @@ class gp_file_applier(gp_applier):
         self.cache_add_attribute(guid, attribute, new_value)
 
 
-""" Fetch the hostname of a writable DC """
-
-
 def get_dc_hostname(creds, lp):
+    """Fetch the hostname of a writable DC"""
     net = Net(creds=creds, lp=lp)
     cldap_ret = net.finddc(domain=lp.get('realm'), flags=(nbt.NBT_SERVER_LDAP |
                                                           nbt.NBT_SERVER_DS))
     return cldap_ret.pdc_dns_name
 
 
-""" Fetch a list of GUIDs for applicable GPOs """
-
-
 def get_gpo(samdb, gpo_dn):
+    """Fetch and construct gpo.GROUP_POLICY_OBJECT"""
     g = gpo.GROUP_POLICY_OBJECT()
     attrs = [
         "cn",
