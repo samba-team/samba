@@ -303,6 +303,17 @@ static void close_share_mode_lock_prepare(struct share_mode_lock *lck,
 	 */
 	*keep_locked = false;
 
+	if (fsp->current_lock_count > 0) {
+		/*
+		 * Remove the byte-range locks under the glock
+		 */
+		*keep_locked = true;
+	}
+
+	if (fh_get_refcount(fsp->fh) > 1) {
+		return;
+	}
+
 	if (fsp->oplock_type != NO_OPLOCK) {
 		ok = remove_share_oplock(lck, fsp);
 		if (!ok) {
@@ -451,6 +462,12 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		DBG_ERR("share_mode_entry_prepare_lock_del() failed for %s - %s\n",
 			fsp_str_dbg(fsp), nt_errstr(status));
 		return status;
+	}
+
+	locking_close_file(fsp, close_type);
+
+	if (fh_get_refcount(fsp->fh) > 1) {
+		goto done;
 	}
 
 	/* Remove the oplock before potentially deleting the file. */
@@ -890,13 +907,8 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 	   the same handle we only have one share mode. Ensure we only remove
 	   the share mode on the last close. */
 
-	if (fh_get_refcount(fsp->fh) == 1) {
-		/* Should we return on error here... ? */
-		tmp = close_remove_share_mode(fsp, close_type);
-		status = ntstatus_keeperror(status, tmp);
-	}
-
-	locking_close_file(fsp, close_type);
+	tmp = close_remove_share_mode(fsp, close_type);
+	status = ntstatus_keeperror(status, tmp);
 
 	/*
 	 * Ensure pending modtime is set before closing underlying fd.
