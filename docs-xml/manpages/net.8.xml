@@ -1464,13 +1464,13 @@ against an NT4 Domain Controller.
 <title>ADS DNS</title>
 
 <refsect3>
-<title>ADS DNS REGISTER [HOSTNAME [IP [IP.....]]]</title>
-<para>Add host dns entry to Active Directory.</para>
+<title>ADS DNS REGISTER [FQDN [IP [IP.....]]]</title>
+<para>Add dns record to Active Directory. If FQDN is missing, <smbconfoption name="dns hostname"/> is used. If IP is missing, IPs from all network interfaces are added.</para>
 </refsect3>
 
 <refsect3>
-<title>ADS DNS UNREGISTER &lt;HOSTNAME&gt;</title>
-<para>Remove host dns entry from Active Directory.</para>
+<title>ADS DNS UNREGISTER &lt;FQDN&gt;</title>
+<para>Remove FQDN dns entry from Active Directory.</para>
 </refsect3>
 
 </refsect2>

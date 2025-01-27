@@ -2113,17 +2113,17 @@ static int net_ads_dns(struct net_context *c, int argc, const char *argv[])
 			"register",
 			net_ads_dns_register,
 			NET_TRANSPORT_ADS,
-			N_("Add host dns entry to AD"),
-			N_("net ads dns register\n"
-			   "    Add host dns entry to AD")
+			N_("Add FQDN dns entry to AD"),
+			N_("net ads dns register [FQDN [IP [IP.....]]]\n"
+			   "    Add FQDN dns entry to AD")
 		},
 		{
 			"unregister",
 			net_ads_dns_unregister,
 			NET_TRANSPORT_ADS,
-			N_("Remove host dns entry from AD"),
-			N_("net ads dns unregister\n"
-			   "    Remove host dns entry from AD")
+			N_("Remove FQDN dns entry from AD"),
+			N_("net ads dns unregister <FQDN>\n"
+			   "    Remove FQDN dns entry from AD")
 		},
 		{
 			"async",
