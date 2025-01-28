@@ -1370,14 +1370,14 @@ void brl_close_fnum(struct byte_range_lock *br_lck)
 	}
 }
 
-bool brl_mark_disconnected(struct files_struct *fsp)
+bool brl_mark_disconnected(struct files_struct *fsp,
+			   struct byte_range_lock *br_lck)
 {
 	uint32_t tid = fsp->conn->cnum;
 	uint64_t smblctx;
 	uint64_t fnum = fsp->fnum;
 	unsigned int i;
 	struct server_id self = messaging_server_id(fsp->conn->sconn->msg_ctx);
-	struct byte_range_lock *br_lck = NULL;
 
 	if (fsp->op == NULL) {
 		return false;
@@ -1393,11 +1393,6 @@ bool brl_mark_disconnected(struct files_struct *fsp)
 		return true;
 	}
 
-	br_lck = brl_get_locks(talloc_tos(), fsp);
-	if (br_lck == NULL) {
-		return false;
-	}
-
 	for (i=0; i < br_lck->num_locks; i++) {
 		struct lock_struct *lock = &br_lck->lock_data[i];
 
@@ -1407,22 +1402,18 @@ bool brl_mark_disconnected(struct files_struct *fsp)
 		 */
 
 		if (lock->context.smblctx != smblctx) {
-			TALLOC_FREE(br_lck);
 			return false;
 		}
 
 		if (lock->context.tid != tid) {
-			TALLOC_FREE(br_lck);
 			return false;
 		}
 
 		if (!server_id_equal(&lock->context.pid, &self)) {
-			TALLOC_FREE(br_lck);
 			return false;
 		}
 
 		if (lock->fnum != fnum) {
-			TALLOC_FREE(br_lck);
 			return false;
 		}
 
@@ -1432,7 +1423,6 @@ bool brl_mark_disconnected(struct files_struct *fsp)
 	}
 
 	br_lck->modified = true;
-	TALLOC_FREE(br_lck);
 	return true;
 }
 

@@ -75,7 +75,14 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 		br_off *psize,
 		enum brl_type *plock_type,
 		enum brl_flavour lock_flav);
-bool brl_mark_disconnected(struct files_struct *fsp);
+
+struct brl_connectstate {
+	bool ok;
+	struct files_struct *fsp;
+};
+
+bool brl_mark_disconnected(struct files_struct *fsp,
+			   struct byte_range_lock *br_lck);
 bool brl_reconnect_disconnected(struct files_struct *fsp);
 void brl_close_fnum(struct byte_range_lock *br_lck);
 int brl_forall(void (*fn)(struct file_id id, struct server_id pid,
