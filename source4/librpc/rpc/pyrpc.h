@@ -50,6 +50,7 @@ typedef struct {
 	struct dcerpc_pipe *pipe;
 	struct dcerpc_binding_handle *binding_handle;
 	struct tevent_context *ev;
+	bool raise_result_exceptions;
 } dcerpc_InterfaceObject;
 
 
