@@ -216,6 +216,24 @@ static void dfq_fake_stat(struct vfs_handle_struct *handle,
 	TALLOC_FREE(to_free);
 }
 
+static int dfq_fstatat(struct vfs_handle_struct *handle,
+		       const struct files_struct *dirfsp,
+		       const struct smb_filename *smb_fname,
+		       SMB_STRUCT_STAT *sbuf,
+		       int flags)
+{
+	int ret;
+
+	ret = SMB_VFS_NEXT_FSTATAT(handle, dirfsp, smb_fname, sbuf, flags);
+	if (ret == -1) {
+		return ret;
+	}
+
+	dfq_fake_stat(handle, smb_fname, sbuf);
+
+	return 0;
+}
+
 static int dfq_stat(vfs_handle_struct *handle,
 		    struct smb_filename *smb_fname)
 {
@@ -270,6 +288,7 @@ struct vfs_fn_pointers vfs_fake_dfq_fns = {
 
     .stat_fn = dfq_stat,
     .fstat_fn = dfq_fstat,
+    .fstatat_fn = dfq_fstatat,
     .lstat_fn = dfq_lstat,
 };
 
