@@ -1020,12 +1020,11 @@ sub PythonFunctionUnpackOut($$$)
 	$self->pidl("static PyObject *$outfnname(struct $fn->{NAME} *r)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("PyObject *result;");
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless (grep(/out/,@{$e->{DIRECTION}}));
 		next if (($metadata_args->{in}->{$e->{NAME}} and grep(/in/, @{$e->{DIRECTION}})) or
 		         ($metadata_args->{out}->{$e->{NAME}}) and grep(/out/, @{$e->{DIRECTION}}));
-		$self->pidl("PyObject *py_$e->{NAME};");
+		$self->pidl("PyObject *py_$e->{NAME} = NULL;");
 		$result_size++;
 	}
 
@@ -1038,7 +1037,8 @@ sub PythonFunctionUnpackOut($$$)
 		$result_size++;
 	}
 
-	my $i = 0;
+	$self->pidl("PyObject *result = NULL;");
+	$self->pidl("");
 
 	if ($result_size > 1) {
 		$self->pidl("result = PyTuple_New($result_size);");
@@ -1048,6 +1048,8 @@ sub PythonFunctionUnpackOut($$$)
 		$self->pidl("Py_INCREF(result);");
 		$signature .= "None";
 	}
+
+	my $i = 0;
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next if ($metadata_args->{out}->{$e->{NAME}});
