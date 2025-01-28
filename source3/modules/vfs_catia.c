@@ -213,7 +213,7 @@ static NTSTATUS catia_translate_name(struct vfs_handle_struct *handle,
 	if (NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED)) {
 		*pmapped_name = talloc_move(mem_ctx, &mapped_name);
 		/* we need to return the former translation result here */
-		ret = status;
+		ret = NT_STATUS_OK;
 	} else {
 		TALLOC_FREE(mapped_name);
 	}
