@@ -188,7 +188,7 @@ out:
 }
 
 static void dfq_fake_stat(struct vfs_handle_struct *handle,
-			  struct smb_filename *smb_fname,
+			  const struct smb_filename *smb_fname,
 			  SMB_STRUCT_STAT *sbuf)
 {
 	int snum = SNUM(handle->conn);
