@@ -979,8 +979,13 @@ sub PythonFunctionUnpackOut($$$)
 		$result_size++;
 	}
 
-	if ($fn->{RETURN_TYPE}) {
-		$result_size++ unless ($fn->{RETURN_TYPE} eq "WERROR" or $fn->{RETURN_TYPE} eq "NTSTATUS");
+	my $is_raisable_return = 0;
+	if ($fn->{RETURN_TYPE} and ($fn->{RETURN_TYPE} eq "WERROR" or $fn->{RETURN_TYPE} eq "NTSTATUS")) {
+		$is_raisable_return = 1;
+	}
+
+	if ($fn->{RETURN_TYPE} and not $is_raisable_return) {
+		$result_size++;
 	}
 
 	my $i = 0;
