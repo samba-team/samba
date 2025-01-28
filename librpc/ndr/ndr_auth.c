@@ -41,4 +41,16 @@ _PUBLIC_ enum ndr_err_code ndr_push_cli_credentials(struct ndr_push *ndr, ndr_fl
 	return ndr_push_pointer(ndr, ndr_flags, NULL);
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_auth_SidAttr(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct auth_SidAttr *r)
+{
+	return ndr_push_error(ndr,
+			      NDR_ERR_INVALID_POINTER,
+			      "ndr_push_auth_SidAttr not supported");
+}
 
+_PUBLIC_ enum ndr_err_code ndr_pull_auth_SidAttr(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct auth_SidAttr *r)
+{
+	return ndr_pull_error(ndr,
+			      NDR_ERR_INVALID_POINTER,
+			      "ndr_pull_auth_SidAttr not supported");
+}

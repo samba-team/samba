@@ -109,14 +109,14 @@ interface auth
 	 * resource groups and resource groups in other domains are always
 	 * discarded.
 	 */
-	typedef enum {
+	typedef [nopush,nopull] enum {
 		AUTH_GROUP_INCLUSION_INVALID = 0, /* require invalid values to be handled. */
 		AUTH_INCLUDE_RESOURCE_GROUPS = 2,
 		AUTH_INCLUDE_RESOURCE_GROUPS_COMPRESSED = 3,
 		AUTH_EXCLUDE_RESOURCE_GROUPS = 4
 	} auth_group_inclusion;
 
-	typedef [public] struct {
+	typedef [nopush,nopull] struct {
 		dom_sid sid;
 		security_GroupAttrs attrs;
 	} auth_SidAttr;
