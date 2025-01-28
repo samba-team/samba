@@ -1020,6 +1020,7 @@ sub PythonFunctionUnpackOut($$$)
 	$self->pidl("static PyObject *$outfnname(struct $fn->{NAME} *r)");
 	$self->pidl("{");
 	$self->indent;
+	$self->pidl("_UNUSED_ bool raise_result_exception = true;");
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless (grep(/out/,@{$e->{DIRECTION}}));
 		next if (($metadata_args->{in}->{$e->{NAME}} and grep(/in/, @{$e->{DIRECTION}})) or
@@ -1037,7 +1038,16 @@ sub PythonFunctionUnpackOut($$$)
 		$result_size++;
 	}
 
+	my $max_result_size = $result_size;
+	my $alloc_size = "$result_size";
+	if ($fn->{RETURN_TYPE} and $is_raisable_return) {
+		$max_result_size++;
+	}
 	$self->pidl("PyObject *result = NULL;");
+	if ($max_result_size != $result_size) {
+		$self->pidl("size_t result_size = $result_size;");
+		$alloc_size = "result_size";
+	}
 	$self->pidl("");
 
 	if ($result_size > 1) {
@@ -1047,24 +1057,39 @@ sub PythonFunctionUnpackOut($$$)
 	}
 
 	if ($fn->{RETURN_TYPE} and $is_raisable_return) {
+		$self->pidl("if (raise_result_exception) {");
+		$self->indent;
 		if (defined($fn->{RETURN_TYPE}) and $fn->{RETURN_TYPE} eq "NTSTATUS") {
 			$self->handle_ntstatus("r->out.result", "NULL", undef);
 		} elsif (defined($fn->{RETURN_TYPE}) and $fn->{RETURN_TYPE} eq "WERROR") {
 			$self->handle_werror("r->out.result", "NULL", undef);
 		}
+		$self->deindent;
+		$self->pidl("} else {");
+		$self->indent;
+		$self->pidl("/* $fn->{RETURN_TYPE} will be part of the results */");
+		$self->pidl("result_size += 1;");
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("");
 	}
 
-	if ($result_size > 1) {
-		$self->pidl("result = PyTuple_New($result_size);");
+	if ($max_result_size > 1) {
+		if ($max_result_size != $result_size) {
+			$self->pidl("if (result_size > 1) {");
+			$self->indent;
+		}
+		$self->pidl("result = PyTuple_New($alloc_size);");
 		$self->pidl("if (result == NULL) {");
 		$self->indent;
 		$self->pidl("return NULL;");
 		$self->deindent;
 		$self->pidl("}");
+		if ($max_result_size != $result_size) {
+			$self->deindent;
+			$self->pidl("}");
+		}
 		$self->pidl("");
-	} elsif ($result_size == 0) {
-		$self->pidl("result = Py_None;");
-		$self->pidl("Py_INCREF(result);");
 	}
 
 	my $i = 0;
@@ -1080,23 +1105,59 @@ sub PythonFunctionUnpackOut($$$)
 				$signature .= $e->{NAME};
 			}
 
-			if ($result_size > 1) {
+			if ($max_result_size > 1) {
+				if ($max_result_size != $result_size and $result_size == 1) {
+					$self->pidl("if (result_size > 1) {");
+					$self->indent;
+				}
 				$self->pidl("PyTuple_SetItem(result, $i, $py_name);");
-				$i++;
-			} else {
-				$self->pidl("result = $py_name;");
+				if ($max_result_size != $result_size and $result_size == 1) {
+					$self->deindent;
+					$self->pidl("}");
+				}
 			}
+			if ($result_size == 1) {
+				if ($max_result_size != $result_size) {
+					$self->pidl("if (result_size == 1) {");
+					$self->indent;
+				}
+				$self->pidl("result = $py_name;");
+				if ($max_result_size != $result_size) {
+					$self->deindent;
+					$self->pidl("}");
+				}
+			}
+			$self->pidl("");
+			$i++;
 		}
 	}
 
-	if ($fn->{RETURN_TYPE} and not $is_raisable_return) {
+	if ($fn->{RETURN_TYPE} and $is_raisable_return) {
+		$self->pidl("if (!raise_result_exception) {");
+		$self->indent;
+	}
+
+	if ($fn->{RETURN_TYPE}) {
 		my $conv = $self->ConvertObjectToPythonData("r", $fn->{RETURN_TYPE}, "r->out.result", $fn);
-		if ($result_size > 1) {
+		if ($max_result_size > 1) {
 			$self->pidl("PyTuple_SetItem(result, $i, $conv);");
-		} else {
+		} elsif ($max_result_size == 1) {
 			$self->pidl("result = $conv;");
+		} else {
+			fatal($fn->{ORIGINAL}, "Internal error max_result_size=$max_result_size");
 		}
-		$signature .= "result";
+
+		if (not $is_raisable_return) {
+			$signature .= "result";
+		}
+	}
+
+	if ($fn->{RETURN_TYPE} and $is_raisable_return) {
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("");
+	} elsif ($fn->{RETURN_TYPE}) {
+		$self->pidl("");
 	}
 
 	if (substr($signature, -2) eq ", ") {
@@ -1104,6 +1165,20 @@ sub PythonFunctionUnpackOut($$$)
 	}
 	if ($result_size > 1) {
 		$signature .= ")";
+	}
+
+	if ($result_size == 0) {
+		if ($max_result_size != $result_size) {
+			$self->pidl("if (result_size == 0) {");
+			$self->indent;
+		}
+		$self->pidl("result = Py_None;");
+		$self->pidl("Py_INCREF(result);");
+		if ($max_result_size != $result_size) {
+			$self->deindent;
+			$self->pidl("}");
+		}
+		$self->pidl("");
 	}
 
 	$self->pidl("return result;");
