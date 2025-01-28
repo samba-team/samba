@@ -1467,9 +1467,23 @@ sub Interface($$$)
 		$self->indent;
 		foreach my $d (@fns) {
 			my ($infn, $outfn, $callfn, $prettyname, $docstring, $opnum) = @$d;
-			$self->pidl("{ \"$prettyname\", $docstring, (py_dcerpc_call_fn)$callfn, (py_data_pack_fn)$infn, (py_data_unpack_fn)$outfn, $opnum, &ndr_table_$interface->{NAME} },");
+			$self->pidl("{");
+			$self->indent;
+			$self->pidl(".name = \"$prettyname\",");
+			$self->pidl(".doc = $docstring,");
+			$self->pidl(".call = (py_dcerpc_call_fn)$callfn,");
+			$self->pidl(".pack_in_data = (py_data_pack_fn)$infn,");
+			$self->pidl(".unpack_out_data = (py_data_unpack_fn)$outfn,");
+			$self->pidl(".opnum = $opnum,");
+			$self->pidl(".table = &ndr_table_$interface->{NAME},");
+			$self->deindent;
+			$self->pidl("},");
 		}
-		$self->pidl("{0}");
+		$self->pidl("{");
+		$self->indent;
+		$self->pidl(".name = NULL,");
+		$self->deindent;
+		$self->pidl("},");
 		$self->deindent;
 		$self->pidl("};");
 		$self->pidl("");
