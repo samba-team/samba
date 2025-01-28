@@ -269,6 +269,39 @@ static int cap_renameat(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int cap_fstatat(struct vfs_handle_struct *handle,
+		       const struct files_struct *dirfsp,
+		       const struct smb_filename *smb_fname,
+		       SMB_STRUCT_STAT *sbuf,
+		       int flags)
+{
+	struct smb_filename *tmp = NULL;
+	int ret;
+
+	tmp = cp_smb_filename(talloc_tos(), smb_fname);
+	if (tmp == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	tmp->base_name = capencode(talloc_tos(), smb_fname->base_name);
+	if (tmp->base_name == NULL) {
+		TALLOC_FREE(tmp);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_FSTATAT(handle, dirfsp, tmp, sbuf, flags);
+
+	{
+		int err = errno;
+		TALLOC_FREE(tmp);
+		errno = err;
+	}
+
+	return ret;
+}
+
 static int cap_stat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 {
 	char *cappath;
@@ -873,6 +906,7 @@ static struct vfs_fn_pointers vfs_cap_fns = {
 	.mkdirat_fn = cap_mkdirat,
 	.openat_fn = cap_openat,
 	.renameat_fn = cap_renameat,
+	.fstatat_fn = cap_fstatat,
 	.stat_fn = cap_stat,
 	.lstat_fn = cap_lstat,
 	.unlinkat_fn = cap_unlinkat,
