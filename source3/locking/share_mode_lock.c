@@ -999,6 +999,9 @@ fail:
 	return status;
 }
 
+/*
+ * Store static_share_mode_data and unlock share_mode_lock
+ */
 static NTSTATUS put_share_mode_lock_internal(struct share_mode_lock *lck)
 {
 	NTSTATUS status;
