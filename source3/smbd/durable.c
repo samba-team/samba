@@ -133,6 +133,63 @@ NTSTATUS vfs_default_durable_cookie(struct files_struct *fsp,
 	return NT_STATUS_OK;
 }
 
+struct durable_disconnect_state {
+	NTSTATUS status;
+	struct files_struct *fsp;
+};
+
+static void default_durable_disconnect_fn(struct share_mode_lock *lck,
+					  struct byte_range_lock *br_lck,
+					  void *private_data)
+{
+	struct durable_disconnect_state *state = private_data;
+	struct files_struct *fsp = state->fsp;
+	struct smb_file_time ft;
+	bool ok;
+
+	/* Ensure any pending write time updates are done. */
+	if (fsp->update_write_time_event) {
+		fsp_flush_write_time_update(fsp);
+	}
+
+
+	init_smb_file_time(&ft);
+
+	if (fsp->fsp_flags.write_time_forced) {
+		NTTIME mtime = share_mode_changed_write_time(lck);
+		ft.mtime = nt_time_to_full_timespec(mtime);
+	} else if (fsp->fsp_flags.update_write_time_on_close) {
+		if (is_omit_timespec(&fsp->close_write_time)) {
+			ft.mtime = timespec_current();
+		} else {
+			ft.mtime = fsp->close_write_time;
+		}
+	}
+
+	if (!is_omit_timespec(&ft.mtime)) {
+		round_timespec(fsp->conn->ts_res, &ft.mtime);
+		file_ntimes(fsp->conn, fsp, &ft);
+	}
+
+	ok = mark_share_mode_disconnected(lck, fsp);
+	if (!ok) {
+		state->status = NT_STATUS_UNSUCCESSFUL;
+		return;
+	}
+
+	if (br_lck == NULL) {
+		state->status = NT_STATUS_OK;
+		return;
+	}
+
+	ok = brl_mark_disconnected(fsp, br_lck);
+	if (!ok) {
+		state->status = NT_STATUS_UNSUCCESSFUL;
+		return;
+	}
+	state->status = NT_STATUS_OK;
+}
+
 NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 					const DATA_BLOB old_cookie,
 					TALLOC_CTX *mem_ctx,
@@ -143,8 +200,7 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 	enum ndr_err_code ndr_err;
 	struct vfs_default_durable_cookie cookie;
 	DATA_BLOB new_cookie_blob = data_blob_null;
-	struct share_mode_lock *lck;
-	bool ok;
+	struct durable_disconnect_state state;
 
 	*new_cookie = data_blob_null;
 
@@ -198,52 +254,23 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	/* Ensure any pending write time updates are done. */
-	if (fsp->update_write_time_event) {
-		fsp_flush_write_time_update(fsp);
+	state = (struct durable_disconnect_state) {
+		.fsp = fsp,
+	};
+
+	status = share_mode_do_locked_brl(fsp,
+					  default_durable_disconnect_fn,
+					  &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("share_mode_do_locked_brl [%s] failed: %s\n",
+			fsp_str_dbg(fsp), nt_errstr(status));
+		return status;
 	}
-
-	/*
-	 * The above checks are done in mark_share_mode_disconnected() too
-	 * but we want to avoid getting the lock if possible
-	 */
-	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
-	if (lck != NULL) {
-		struct smb_file_time ft;
-
-		init_smb_file_time(&ft);
-
-		if (fsp->fsp_flags.write_time_forced) {
-			NTTIME mtime = share_mode_changed_write_time(lck);
-			ft.mtime = nt_time_to_full_timespec(mtime);
-		} else if (fsp->fsp_flags.update_write_time_on_close) {
-			if (is_omit_timespec(&fsp->close_write_time)) {
-				ft.mtime = timespec_current();
-			} else {
-				ft.mtime = fsp->close_write_time;
-			}
-		}
-
-		if (!is_omit_timespec(&ft.mtime)) {
-			round_timespec(conn->ts_res, &ft.mtime);
-			file_ntimes(conn, fsp, &ft);
-		}
-
-		ok = mark_share_mode_disconnected(lck, fsp);
-		if (!ok) {
-			TALLOC_FREE(lck);
-		}
+	if (!NT_STATUS_IS_OK(state.status)) {
+		DBG_ERR("default_durable_disconnect_fn [%s] failed: %s\n",
+			fsp_str_dbg(fsp), nt_errstr(state.status));
+		return state.status;
 	}
-	if (lck != NULL) {
-		ok = brl_mark_disconnected(fsp);
-		if (!ok) {
-			TALLOC_FREE(lck);
-		}
-	}
-	if (lck == NULL) {
-		return NT_STATUS_NOT_SUPPORTED;
-	}
-	TALLOC_FREE(lck);
 
 	status = vfs_stat_fsp(fsp);
 	if (!NT_STATUS_IS_OK(status)) {
