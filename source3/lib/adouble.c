@@ -1185,16 +1185,15 @@ static bool ad_convert_xattr(vfs_handle_struct *handle,
 		files_struct *fsp = NULL;
 		ssize_t nwritten;
 
-		status = string_replace_allocate(handle->conn,
-						 e->adx_name,
-						 string_replace_cmaps,
-						 talloc_tos(),
-						 &mapped_name,
-						 vfs_translate_to_windows);
-		if (!NT_STATUS_IS_OK(status) &&
-		    !NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED))
-		{
-			DBG_ERR("string_replace_allocate failed\n");
+		rc = string_replace_allocate(handle->conn,
+					     e->adx_name,
+					     string_replace_cmaps,
+					     talloc_tos(),
+					     &mapped_name,
+					     vfs_translate_to_windows);
+		if (rc != 0) {
+			DBG_ERR("string_replace_allocate failed: %s\n",
+				strerror(rc));
 			ok = false;
 			goto fail;
 		}
@@ -1746,6 +1745,7 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 	ssize_t nread;
 	NTSTATUS status;
 	bool ok;
+	int rc;
 
 	sname = synthetic_smb_fname(ad,
 				    smb_fname->base_name,
@@ -1901,16 +1901,14 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 		*p = '\0';
 	}
 
-	status = string_replace_allocate(handle->conn,
-					 e->adx_name,
-					 cmaps,
-					 ad,
-					 &mapped_name,
-					 vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status) &&
-	    !NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED))
-	{
-		DBG_ERR("string_replace_allocate failed\n");
+	rc = string_replace_allocate(handle->conn,
+				     e->adx_name,
+				     cmaps,
+				     ad,
+				     &mapped_name,
+				     vfs_translate_to_unix);
+	if (rc != 0) {
+		DBG_ERR("string_replace_allocate failed: %s\n", strerror(rc));
 		ok = false;
 		goto out;
 	}

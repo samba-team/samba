@@ -137,7 +137,7 @@ static NTSTATUS catia_string_replace_allocate(connection_struct *conn,
 					enum vfs_translate_direction direction)
 {
 	struct share_mapping_entry *selected;
-	NTSTATUS status;
+	int ret;
 
 	if (!init_mappings(conn, &selected)) {
 		/* No mappings found. Just use the old name */
@@ -149,13 +149,16 @@ static NTSTATUS catia_string_replace_allocate(connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	status = string_replace_allocate(conn,
-					 name_in,
-					 selected->mappings,
-					 talloc_tos(),
-					 mapped_name,
-					 direction);
-	return status;
+	ret = string_replace_allocate(conn,
+				      name_in,
+				      selected->mappings,
+				      talloc_tos(),
+				      mapped_name,
+				      direction);
+	if (ret != 0) {
+		return map_nt_error_from_unix(ret);
+	}
+	return NT_STATUS_OK;
 }
 
 static int catia_connect(struct vfs_handle_struct *handle,

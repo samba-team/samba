@@ -25,11 +25,11 @@ struct char_mappings;
 struct char_mappings **string_replace_init_map(TALLOC_CTX *mem_ctx,
 					       const char **mappings);
 
-NTSTATUS string_replace_allocate(connection_struct *conn,
-				 const char *name_in,
-				 struct char_mappings **cmaps,
-				 TALLOC_CTX *mem_ctx,
-				 char **mapped_name,
-				 enum vfs_translate_direction direction);
+int string_replace_allocate(connection_struct *conn,
+			    const char *name_in,
+			    struct char_mappings **cmaps,
+			    TALLOC_CTX *mem_ctx,
+			    char **mapped_name,
+			    enum vfs_translate_direction direction);
 
 extern const char *macos_string_replace_map;
