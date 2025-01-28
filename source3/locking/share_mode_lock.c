@@ -558,10 +558,10 @@ static NTSTATUS locking_tdb_data_store(
 }
 
 /*******************************************************************
- Get all share mode entries for a dev/inode pair.
+ Get share_mode_data for a dev/inode pair.
 ********************************************************************/
 
-static struct share_mode_data *parse_share_modes(
+static struct share_mode_data *parse_share_mode_data(
 	TALLOC_CTX *mem_ctx,
 	struct file_id id,
 	const uint8_t *buf,
@@ -837,7 +837,7 @@ static void get_static_share_mode_data_fn(
 			return;
 		}
 	} else {
-		d = parse_share_modes(
+		d = parse_share_mode_data(
 			lock_ctx,
 			state->id,
 			ltdb.share_mode_data_buf,
@@ -1485,7 +1485,7 @@ static void fetch_share_mode_unlocked_parser(
 	}
 	state->lck->id = state->id;
 
-	state->lck->cached_data = parse_share_modes(
+	state->lck->cached_data = parse_share_mode_data(
 		state->lck,
 		state->id,
 		ltdb.share_mode_data_buf,
@@ -1624,7 +1624,7 @@ static void fetch_share_mode_fn(
 	}
 	state->lck->id = state->id,
 
-	state->lck->cached_data = parse_share_modes(
+	state->lck->cached_data = parse_share_mode_data(
 		state->lck,
 		state->id,
 		ltdb.share_mode_data_buf,
@@ -1725,7 +1725,7 @@ static void share_mode_forall_dump_fn(
 		return;
 	}
 
-	d = parse_share_modes(
+	d = parse_share_mode_data(
 		talloc_tos(),
 		fid,
 		ltdb.share_mode_data_buf,
