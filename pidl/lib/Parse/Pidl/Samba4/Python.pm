@@ -1042,6 +1042,12 @@ sub PythonFunctionUnpackOut($$$)
 
 	if ($result_size > 1) {
 		$self->pidl("result = PyTuple_New($result_size);");
+		$self->pidl("if (result == NULL) {");
+		$self->indent;
+		$self->pidl("return NULL;");
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("");
 		$signature .= "(";
 	} elsif ($result_size == 0) {
 		$self->pidl("result = Py_None;");
