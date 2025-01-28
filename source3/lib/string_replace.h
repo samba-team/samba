@@ -32,4 +32,4 @@ int string_replace_allocate(connection_struct *conn,
 			    char **mapped_name,
 			    enum vfs_translate_direction direction);
 
-extern const char *macos_string_replace_map;
+extern const char macos_string_replace_map[];
