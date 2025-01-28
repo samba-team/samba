@@ -1041,6 +1041,12 @@ sub PythonFunctionUnpackOut($$$)
 	$self->pidl("");
 
 	if ($result_size > 1) {
+		$signature .= "(";
+	} elsif ($result_size == 0) {
+		$signature .= "None";
+	}
+
+	if ($result_size > 1) {
 		$self->pidl("result = PyTuple_New($result_size);");
 		$self->pidl("if (result == NULL) {");
 		$self->indent;
@@ -1048,11 +1054,9 @@ sub PythonFunctionUnpackOut($$$)
 		$self->deindent;
 		$self->pidl("}");
 		$self->pidl("");
-		$signature .= "(";
 	} elsif ($result_size == 0) {
 		$self->pidl("result = Py_None;");
 		$self->pidl("Py_INCREF(result);");
-		$signature .= "None";
 	}
 
 	my $i = 0;
@@ -1063,12 +1067,16 @@ sub PythonFunctionUnpackOut($$$)
 		if (grep(/out/,@{$e->{DIRECTION}})) {
 			$self->ConvertObjectToPython("r", $env, $e, "r->out.$e->{NAME}", $py_name, "return NULL;");
 			if ($result_size > 1) {
-				$self->pidl("PyTuple_SetItem(result, $i, $py_name);");
-				$i++;
 				$signature .= "$e->{NAME}, ";
 			} else {
-				$self->pidl("result = $py_name;");
 				$signature .= $e->{NAME};
+			}
+
+			if ($result_size > 1) {
+				$self->pidl("PyTuple_SetItem(result, $i, $py_name);");
+				$i++;
+			} else {
+				$self->pidl("result = $py_name;");
 			}
 		}
 	}
