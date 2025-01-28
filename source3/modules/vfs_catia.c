@@ -131,10 +131,11 @@ static bool init_mappings(connection_struct *conn,
 	return False;
 }
 
-static NTSTATUS catia_string_replace_allocate(connection_struct *conn,
-					      const char *name_in,
-					      char **mapped_name,
-					enum vfs_translate_direction direction)
+static int catia_string_replace_allocate(
+	connection_struct *conn,
+	const char *name_in,
+	char **mapped_name,
+	enum vfs_translate_direction direction)
 {
 	struct share_mapping_entry *selected;
 	int ret;
@@ -143,10 +144,9 @@ static NTSTATUS catia_string_replace_allocate(connection_struct *conn,
 		/* No mappings found. Just use the old name */
 		*mapped_name = talloc_strdup(talloc_tos(), name_in);
 		if (!*mapped_name) {
-			errno = ENOMEM;
-			return NT_STATUS_NO_MEMORY;
+			return ENOMEM;
 		}
-		return NT_STATUS_OK;
+		return 0;
 	}
 
 	ret = string_replace_allocate(conn,
@@ -155,10 +155,7 @@ static NTSTATUS catia_string_replace_allocate(connection_struct *conn,
 				      talloc_tos(),
 				      mapped_name,
 				      direction);
-	if (ret != 0) {
-		return map_nt_error_from_unix(ret);
-	}
-	return NT_STATUS_OK;
+	return ret;
 }
 
 static int catia_connect(struct vfs_handle_struct *handle,
@@ -186,7 +183,8 @@ static NTSTATUS catia_translate_name(struct vfs_handle_struct *handle,
 {
 	char *name = NULL;
 	char *mapped_name;
-	NTSTATUS status, ret;
+	NTSTATUS ret;
+	int rc;
 
 	/*
 	 * Copy the supplied name and free the memory for mapped_name,
@@ -199,12 +197,14 @@ static NTSTATUS catia_translate_name(struct vfs_handle_struct *handle,
 		errno = ENOMEM;
 		return NT_STATUS_NO_MEMORY;
 	}
-	status = catia_string_replace_allocate(handle->conn, name,
-			&mapped_name, direction);
+	rc = catia_string_replace_allocate(handle->conn,
+					   name,
+					   &mapped_name,
+					   direction);
 
 	TALLOC_FREE(name);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (rc != 0) {
+		return map_nt_error_from_unix(rc);
 	}
 
 	ret = SMB_VFS_NEXT_TRANSLATE_NAME(handle, mapped_name, direction,
@@ -355,8 +355,8 @@ static int catia_fetch_fsp_pre_next(TALLOC_CTX *mem_ctx,
 	const struct catia_cache * const *busy =
 		(const struct catia_cache * const *)_cc;
 	struct catia_cache *cc = NULL;
-	NTSTATUS status;
 	bool make_tmp_cache = false;
+	int ret;
 
 	*_cc = NULL;
 
@@ -398,27 +398,26 @@ static int catia_fetch_fsp_pre_next(TALLOC_CTX *mem_ctx,
 		mem_ctx = cc;
 	}
 
-
-	status = catia_string_replace_allocate(handle->conn,
-					       fsp->fsp_name->base_name,
-					       &cc->fname,
-					       vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
+	ret = catia_string_replace_allocate(handle->conn,
+					    fsp->fsp_name->base_name,
+					    &cc->fname,
+					    vfs_translate_to_unix);
+	if (ret != 0) {
 		catia_free_cc(&cc, handle, fsp);
-		errno = map_errno_from_nt_status(status);
+		errno = ret;
 		return -1;
 	}
 	talloc_steal(mem_ctx, cc->fname);
 
 	if (fsp_is_alternate_stream(fsp)) {
-		status = catia_string_replace_allocate(
+		ret = catia_string_replace_allocate(
 			handle->conn,
 			fsp->base_fsp->fsp_name->base_name,
 			&cc->base_fname,
 			vfs_translate_to_unix);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (ret != 0) {
 			catia_free_cc(&cc, handle, fsp);
-			errno = map_errno_from_nt_status(status);
+			errno = ret;
 			return -1;
 		}
 		talloc_steal(mem_ctx, cc->base_fname);
@@ -497,15 +496,15 @@ static int catia_openat(vfs_handle_struct *handle,
 	struct smb_filename *smb_fname = NULL;
 	struct catia_cache *cc = NULL;
 	char *mapped_name = NULL;
-	NTSTATUS status;
 	int ret;
 	int saved_errno = 0;
 
-	status = catia_string_replace_allocate(handle->conn,
-					       smb_fname_in->base_name,
-					       &mapped_name,
-					       vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
+	ret = catia_string_replace_allocate(handle->conn,
+					    smb_fname_in->base_name,
+					    &mapped_name,
+					    vfs_translate_to_unix);
+	if (ret != 0) {
+		errno = ret;
 		return -1;
 	}
 
@@ -552,35 +551,40 @@ static int catia_renameat(vfs_handle_struct *handle,
 	struct smb_filename *smb_fname_dst_tmp = NULL;
 	char *src_name_mapped = NULL;
 	char *dst_name_mapped = NULL;
-	NTSTATUS status;
 	int ret = -1;
 
-	status = catia_string_replace_allocate(handle->conn,
-				smb_fname_src->base_name,
-				&src_name_mapped, vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	ret = catia_string_replace_allocate(handle->conn,
+					    smb_fname_src->base_name,
+					    &src_name_mapped,
+					    vfs_translate_to_unix);
+	if (ret != 0) {
+		errno = ret;
 		return -1;
 	}
 
-	status = catia_string_replace_allocate(handle->conn,
-				smb_fname_dst->base_name,
-				&dst_name_mapped, vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
+	ret = catia_string_replace_allocate(handle->conn,
+					    smb_fname_dst->base_name,
+					    &dst_name_mapped,
+					    vfs_translate_to_unix);
+	if (ret != 0) {
+		TALLOC_FREE(src_name_mapped);
+		errno = ret;
+		ret = -1;
+		goto out;
 	}
 
 	/* Setup temporary smb_filename structs. */
 	smb_fname_src_tmp = cp_smb_filename(ctx, smb_fname_src);
 	if (smb_fname_src_tmp == NULL) {
 		errno = ENOMEM;
+		ret = -1;
 		goto out;
 	}
 
 	smb_fname_dst_tmp = cp_smb_filename(ctx, smb_fname_dst);
 	if (smb_fname_dst_tmp == NULL) {
 		errno = ENOMEM;
+		ret = -1;
 		goto out;
 	}
 
@@ -613,13 +617,13 @@ static int catia_stat(vfs_handle_struct *handle,
 	char *name = NULL;
 	char *tmp_base_name;
 	int ret;
-	NTSTATUS status;
 
-	status = catia_string_replace_allocate(handle->conn,
-				smb_fname->base_name,
-				&name, vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	ret = catia_string_replace_allocate(handle->conn,
+					    smb_fname->base_name,
+					    &name,
+					    vfs_translate_to_unix);
+	if (ret != 0) {
+		errno = ret;
 		return -1;
 	}
 
@@ -639,13 +643,13 @@ static int catia_lstat(vfs_handle_struct *handle,
 	char *name = NULL;
 	char *tmp_base_name;
 	int ret;
-	NTSTATUS status;
 
-	status = catia_string_replace_allocate(handle->conn,
-				smb_fname->base_name,
-				&name, vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	ret = catia_string_replace_allocate(handle->conn,
+					    smb_fname->base_name,
+					    &name,
+					    vfs_translate_to_unix);
+	if (ret != 0) {
+		errno = ret;
 		return -1;
 	}
 
@@ -667,7 +671,6 @@ static int catia_unlinkat(vfs_handle_struct *handle,
 	struct catia_cache *cc = NULL;
 	struct smb_filename *smb_fname_tmp = NULL;
 	char *name = NULL;
-	NTSTATUS status;
 	int ret;
 
 	ret = CATIA_FETCH_FSP_PRE_NEXT(talloc_tos(), handle, dirfsp, &cc);
@@ -675,11 +678,12 @@ static int catia_unlinkat(vfs_handle_struct *handle,
 		return ret;
 	}
 
-	status = catia_string_replace_allocate(handle->conn,
-					smb_fname->base_name,
-					&name, vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	ret = catia_string_replace_allocate(handle->conn,
+					    smb_fname->base_name,
+					    &name,
+					    vfs_translate_to_unix);
+	if (ret != 0) {
+		errno = ret;
 		goto out;
 	}
 
@@ -711,17 +715,16 @@ static int catia_lchown(vfs_handle_struct *handle,
 			gid_t gid)
 {
 	char *name = NULL;
-	NTSTATUS status;
 	int ret;
 	int saved_errno;
 	struct smb_filename *catia_smb_fname = NULL;
 
-	status = catia_string_replace_allocate(handle->conn,
-					smb_fname->base_name,
-					&name,
-					vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	ret = catia_string_replace_allocate(handle->conn,
+					    smb_fname->base_name,
+					    &name,
+					    vfs_translate_to_unix);
+	if (ret != 0) {
+		errno = ret;
 		return -1;
 	}
 	catia_smb_fname = synthetic_smb_fname(talloc_tos(),
@@ -750,16 +753,15 @@ static int catia_mkdirat(vfs_handle_struct *handle,
 			mode_t mode)
 {
 	char *name = NULL;
-	NTSTATUS status;
 	int ret;
 	struct smb_filename *catia_smb_fname = NULL;
 
-	status = catia_string_replace_allocate(handle->conn,
-				smb_fname->base_name,
-				&name,
-				vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	ret = catia_string_replace_allocate(handle->conn,
+					    smb_fname->base_name,
+					    &name,
+					    vfs_translate_to_unix);
+	if (ret != 0) {
+		errno = ret;
 		return -1;
 	}
 	catia_smb_fname = synthetic_smb_fname(talloc_tos(),
@@ -789,15 +791,14 @@ static int catia_chdir(vfs_handle_struct *handle,
 {
 	char *name = NULL;
 	struct smb_filename *catia_smb_fname = NULL;
-	NTSTATUS status;
 	int ret;
 
-	status = catia_string_replace_allocate(handle->conn,
-					smb_fname->base_name,
-					&name,
-					vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	ret = catia_string_replace_allocate(handle->conn,
+					    smb_fname->base_name,
+					    &name,
+					    vfs_translate_to_unix);
+	if (ret != 0) {
+		errno = ret;
 		return -1;
 	}
 
@@ -846,13 +847,14 @@ catia_realpath(vfs_handle_struct *handle,
 	char *mapped_name = NULL;
 	struct smb_filename *catia_smb_fname = NULL;
 	struct smb_filename *return_fname = NULL;
-	NTSTATUS status;
+	int ret;
 
-	status = catia_string_replace_allocate(handle->conn,
-					smb_fname->base_name,
-				        &mapped_name, vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	ret = catia_string_replace_allocate(handle->conn,
+					    smb_fname->base_name,
+					    &mapped_name,
+					    vfs_translate_to_unix);
+	if (ret != 0) {
+		errno = ret;
 		return NULL;
 	}
 
@@ -887,17 +889,18 @@ catia_fstreaminfo(struct vfs_handle_struct *handle,
 	struct smb_filename *smb_fname = NULL;
 	unsigned int num_streams = 0;
 	struct stream_struct *streams = NULL;
+	int ret;
 
 	smb_fname = fsp->fsp_name;
 	*_num_streams = 0;
 	*_streams = NULL;
 
-	status = catia_string_replace_allocate(handle->conn,
-				smb_fname->base_name,
-				&mapped_name,
-				vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	ret = catia_string_replace_allocate(handle->conn,
+					    smb_fname->base_name,
+					    &mapped_name,
+					    vfs_translate_to_unix);
+	if (ret != 0) {
+		return map_nt_error_from_unix(ret);
 	}
 
 	status = synthetic_pathref(talloc_tos(),
@@ -942,13 +945,13 @@ catia_fstreaminfo(struct vfs_handle_struct *handle,
 			stream_type += 1;
 		}
 
-		status = catia_string_replace_allocate(handle->conn,
-						stream_name,
-						&mapped_name,
-						vfs_translate_to_windows);
-		if (!NT_STATUS_IS_OK(status)) {
+		ret = catia_string_replace_allocate(handle->conn,
+						    stream_name,
+						    &mapped_name,
+						    vfs_translate_to_windows);
+		if (ret != 0) {
 			TALLOC_FREE(streams);
-			return status;
+			return map_nt_error_from_unix(ret);
 		}
 
 		if (stream_type != NULL) {
@@ -1080,14 +1083,15 @@ static ssize_t catia_fgetxattr(struct vfs_handle_struct *handle,
 			       size_t size)
 {
 	char *mapped_xattr_name = NULL;
-	NTSTATUS status;
 	ssize_t result;
+	int ret;
 
-	status = catia_string_replace_allocate(handle->conn,
-					       name, &mapped_xattr_name,
-					       vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	ret = catia_string_replace_allocate(handle->conn,
+					    name,
+					    &mapped_xattr_name,
+					    vfs_translate_to_unix);
+	if (ret != 0) {
+		errno = ret;
 		return -1;
 	}
 
@@ -1125,13 +1129,14 @@ static int catia_fremovexattr(struct vfs_handle_struct *handle,
 			      const char *name)
 {
 	char *mapped_name = NULL;
-	NTSTATUS status;
 	int ret;
 
-	status = catia_string_replace_allocate(handle->conn,
-				name, &mapped_name, vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	ret = catia_string_replace_allocate(handle->conn,
+					    name,
+					    &mapped_name,
+					    vfs_translate_to_unix);
+	if (ret != 0) {
+		errno = ret;
 		return -1;
 	}
 
@@ -1150,13 +1155,14 @@ static int catia_fsetxattr(struct vfs_handle_struct *handle,
 			   int flags)
 {
 	char *mapped_xattr_name = NULL;
-	NTSTATUS status;
 	int ret;
 
-	status = catia_string_replace_allocate(
-		handle->conn, name, &mapped_xattr_name, vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	ret = catia_string_replace_allocate(handle->conn,
+					    name,
+					    &mapped_xattr_name,
+					    vfs_translate_to_unix);
+	if (ret != 0) {
+		errno = ret;
 		return -1;
 	}
 
@@ -1790,14 +1796,14 @@ static NTSTATUS catia_create_dfs_pathat(struct vfs_handle_struct *handle,
 	const char *path = smb_fname->base_name;
 	struct smb_filename *mapped_smb_fname = NULL;
 	NTSTATUS status;
+	int ret;
 
-	status = catia_string_replace_allocate(handle->conn,
-					path,
-					&mapped_name,
-					vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return status;
+	ret = catia_string_replace_allocate(handle->conn,
+					    path,
+					    &mapped_name,
+					    vfs_translate_to_unix);
+	if (ret != 0) {
+		return map_nt_error_from_unix(ret);
 	}
 	mapped_smb_fname = synthetic_smb_fname(talloc_tos(),
 					mapped_name,
@@ -1831,14 +1837,14 @@ static NTSTATUS catia_read_dfs_pathat(struct vfs_handle_struct *handle,
 	const char *path = smb_fname->base_name;
 	struct smb_filename *mapped_smb_fname = NULL;
 	NTSTATUS status;
+	int ret;
 
-	status = catia_string_replace_allocate(handle->conn,
-					path,
-					&mapped_name,
-					vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return status;
+	ret = catia_string_replace_allocate(handle->conn,
+					    path,
+					    &mapped_name,
+					    vfs_translate_to_unix);
+	if (ret != 0) {
+		return map_nt_error_from_unix(ret);
 	}
 	mapped_smb_fname = synthetic_smb_fname(talloc_tos(),
 					mapped_name,
