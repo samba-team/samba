@@ -20,12 +20,18 @@
 
 """Tests for samba.dcerpc.lsa."""
 
-from samba.dcerpc import lsa
+from samba.dcerpc import lsa, security
 from samba.credentials import Credentials
 from samba.tests import TestCase
 from samba.dcerpc.security import dom_sid
 from samba import NTSTATUSError
-from samba.ntstatus import NT_STATUS_ACCESS_DENIED
+from samba.ntstatus import (
+    NT_STATUS_OK,
+    NT_STATUS_ACCESS_DENIED,
+    NT_STATUS_NONE_MAPPED,
+    NT_STATUS_SOME_NOT_MAPPED,
+    NT_STATUS_INVALID_SID,
+)
 import samba.tests
 
 class LsaTests(TestCase):
@@ -331,3 +337,219 @@ class LsaTests(TestCase):
                           client_revision)
         if (e.exception.args[0] != NT_STATUS_ACCESS_DENIED):
             raise AssertionError("LookupSids3 without schannel must fail with ACCESS_DENIED")
+
+    def test_lsa_LookupSids2_none_mapped(self):
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        c = lsa.lsarpc(
+            "ncacn_np:%s[print]" % self.server,
+            self.lp,
+            machine_creds,
+            raise_result_exceptions=False)
+
+        objectAttr = lsa.ObjectAttribute()
+        objectAttr.sec_qos = lsa.QosInfo()
+
+        (pol_handle, status) = c.OpenPolicy2('',
+                                             objectAttr,
+                                             security.SEC_FLAG_MAXIMUM_ALLOWED)
+        self.assertEqual(status[0], NT_STATUS_OK)
+        self.assertIsNotNone(pol_handle)
+
+        x0 = dom_sid("S-1-3-66")
+        sid0 = lsa.SidPtr()
+        sid0.sid = x0
+        x1 = dom_sid("S-1-3-77")
+        sid1 = lsa.SidPtr()
+        sid1.sid = x1
+        x2 = dom_sid("S-1-3-88")
+        sid2 = lsa.SidPtr()
+        sid2.sid = x2
+        x3 = dom_sid("S-1-3-99")
+        sid3 = lsa.SidPtr()
+        sid3.sid = x3
+        sids = lsa.SidArray()
+        sids.sids = [sid0,sid1,sid2,sid3]
+        sids.num_sids = 4
+
+        names = lsa.TransNameArray2()
+        level = lsa.LSA_LOOKUP_NAMES_ALL
+        count = 0
+        lookup_options = lsa.LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES
+        client_revision = lsa.LSA_CLIENT_REVISION_2
+
+        (domains, names, count, status) = c.LookupSids2(pol_handle,
+                                                        sids,
+                                                        names,
+                                                        level,
+                                                        count,
+                                                        lookup_options,
+                                                        client_revision)
+        self.assertEqual(status[0], NT_STATUS_NONE_MAPPED)
+        self.assertEqual(count, 0)
+        self.assertIsNotNone(domains)
+        self.assertEqual(domains.count, 0)
+        self.assertIsNotNone(names)
+        self.assertEqual(names.count, 4)
+        self.assertEqual(names.names[0].sid_type, lsa.SID_NAME_UNKNOWN)
+        self.assertEqual(names.names[0].name.string, str(x0))
+        self.assertEqual(names.names[0].sid_index, 0xffffffff)
+        self.assertEqual(names.names[1].sid_type, lsa.SID_NAME_UNKNOWN)
+        self.assertEqual(names.names[1].name.string, str(x1))
+        self.assertEqual(names.names[1].sid_index, 0xffffffff)
+        self.assertEqual(names.names[2].sid_type, lsa.SID_NAME_UNKNOWN)
+        self.assertEqual(names.names[2].name.string, str(x2))
+        self.assertEqual(names.names[2].sid_index, 0xffffffff)
+        self.assertEqual(names.names[3].sid_type, lsa.SID_NAME_UNKNOWN)
+        self.assertEqual(names.names[3].name.string, str(x3))
+        self.assertEqual(names.names[3].sid_index, 0xffffffff)
+
+        return
+
+    def test_lsa_LookupSids2_some_not_mapped(self):
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        c = lsa.lsarpc(
+            "ncacn_np:%s[print]" % self.server,
+            self.lp,
+            machine_creds,
+            raise_result_exceptions=False)
+
+        objectAttr = lsa.ObjectAttribute()
+        objectAttr.sec_qos = lsa.QosInfo()
+
+        (pol_handle, status) = c.OpenPolicy2('',
+                                             objectAttr,
+                                             security.SEC_FLAG_MAXIMUM_ALLOWED)
+        self.assertEqual(status[0], NT_STATUS_OK)
+        self.assertIsNotNone(pol_handle)
+
+        dx0 = dom_sid("S-1-3")
+
+        x0 = dom_sid("S-1-3-66")
+        sid0 = lsa.SidPtr()
+        sid0.sid = x0
+        x1 = dom_sid("S-1-3-0")
+        sid1 = lsa.SidPtr()
+        sid1.sid = x1
+        x2 = dom_sid("S-1-3")
+        sid2 = lsa.SidPtr()
+        sid2.sid = x2
+        x3 = dom_sid("S-1-3-99")
+        sid3 = lsa.SidPtr()
+        sid3.sid = x3
+        sids = lsa.SidArray()
+        sids.sids = [sid0,sid1,sid2,sid3]
+        sids.num_sids = 4
+
+        names = lsa.TransNameArray2()
+        level = lsa.LSA_LOOKUP_NAMES_ALL
+        count = 0
+        lookup_options = lsa.LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES
+        client_revision = lsa.LSA_CLIENT_REVISION_2
+
+        (domains, names, count, status) = c.LookupSids2(pol_handle,
+                                                        sids,
+                                                        names,
+                                                        level,
+                                                        count,
+                                                        lookup_options,
+                                                        client_revision)
+        self.assertEqual(status[0], NT_STATUS_SOME_NOT_MAPPED)
+        self.assertEqual(count, 1)
+        self.assertIsNotNone(domains)
+        self.assertEqual(domains.count, 1)
+        self.assertEqual(domains.domains[0].name.string, "")
+        self.assertEqual(domains.domains[0].sid, dx0)
+        self.assertIsNotNone(names)
+        self.assertEqual(names.count, 4)
+        self.assertEqual(names.names[0].sid_type, lsa.SID_NAME_UNKNOWN)
+        self.assertEqual(names.names[0].name.string, str(x0))
+        self.assertEqual(names.names[0].sid_index, 0xffffffff)
+        self.assertEqual(names.names[1].sid_type, lsa.SID_NAME_WKN_GRP)
+        self.assertEqual(names.names[1].name.string, "CREATOR OWNER")
+        self.assertEqual(names.names[1].sid_index, 0)
+        self.assertEqual(names.names[2].sid_type, lsa.SID_NAME_UNKNOWN)
+        self.assertEqual(names.names[2].name.string, str(x2))
+        self.assertEqual(names.names[2].sid_index, 0xffffffff)
+        self.assertEqual(names.names[3].sid_type, lsa.SID_NAME_UNKNOWN)
+        self.assertEqual(names.names[3].name.string, str(x3))
+        self.assertEqual(names.names[3].sid_index, 0xffffffff)
+
+        return
+
+    def test_lsa_LookupSids2_invalid_sid(self):
+        machine_creds = Credentials()
+        machine_creds.guess(self.lp)
+        machine_creds.set_machine_account()
+
+        c = lsa.lsarpc(
+            "ncacn_np:%s[print]" % self.server,
+            self.lp,
+            machine_creds,
+            raise_result_exceptions=False)
+
+        objectAttr = lsa.ObjectAttribute()
+        objectAttr.sec_qos = lsa.QosInfo()
+
+        (pol_handle, status) = c.OpenPolicy2('',
+                                             objectAttr,
+                                             security.SEC_FLAG_MAXIMUM_ALLOWED)
+        self.assertEqual(status[0], NT_STATUS_OK)
+        self.assertIsNotNone(pol_handle)
+
+        dx0 = dom_sid("S-1-3")
+
+        x0 = dom_sid("S-1-3-66")
+        sid0 = lsa.SidPtr()
+        sid0.sid = x0
+        x1 = dom_sid("S-1-3-77")
+        sid1 = lsa.SidPtr()
+        sid1.sid = x1
+        x2 = dom_sid("S-1-3")
+        sid2 = lsa.SidPtr()
+        sid2.sid = x2
+        x3 = dom_sid("S-1-3-99")
+        sid3 = lsa.SidPtr()
+        sid3.sid = x3
+        sids = lsa.SidArray()
+        sids.sids = [sid0,sid1,sid2,sid3]
+        sids.num_sids = 4
+
+        names = lsa.TransNameArray2()
+        level = lsa.LSA_LOOKUP_NAMES_ALL
+        count = 0
+        lookup_options = lsa.LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES
+        client_revision = lsa.LSA_CLIENT_REVISION_2
+
+        (domains, names, count, status) = c.LookupSids2(pol_handle,
+                                                        sids,
+                                                        names,
+                                                        level,
+                                                        count,
+                                                        lookup_options,
+                                                        client_revision)
+        self.assertEqual(status[0], NT_STATUS_INVALID_SID)
+        self.assertEqual(count, 0)
+        self.assertIsNotNone(domains)
+        self.assertEqual(domains.count, 0)
+        self.assertIsNotNone(names)
+        self.assertEqual(names.count, 4)
+        self.assertEqual(names.names[0].sid_type, lsa.SID_NAME_UNKNOWN)
+        self.assertIsNone(names.names[0].name.string)
+        self.assertEqual(names.names[0].sid_index, 0xffffffff)
+        self.assertEqual(names.names[1].sid_type, lsa.SID_NAME_UNKNOWN)
+        self.assertIsNone(names.names[1].name.string)
+        self.assertEqual(names.names[1].sid_index, 0xffffffff)
+        self.assertEqual(names.names[2].sid_type, lsa.SID_NAME_UNKNOWN)
+        self.assertIsNone(names.names[2].name.string)
+        self.assertEqual(names.names[2].sid_index, 0xffffffff)
+        self.assertEqual(names.names[3].sid_type, lsa.SID_NAME_UNKNOWN)
+        self.assertIsNone(names.names[3].name.string)
+        self.assertEqual(names.names[3].sid_index, 0xffffffff)
+
+        return
