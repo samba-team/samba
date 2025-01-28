@@ -195,38 +195,43 @@ static int unlinkat_acl_tdb(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			int flags)
 {
-	struct smb_filename *smb_fname_tmp = NULL;
-	struct db_context *db = acl_db;
-	int ret = -1;
+	struct stat_ex st = {};
+	int ret;
 
-	smb_fname_tmp = cp_smb_filename_nostream(talloc_tos(), smb_fname);
-	if (smb_fname_tmp == NULL) {
-		errno = ENOMEM;
-		goto out;
-	}
-
-	ret = vfs_stat(handle->conn, smb_fname_tmp);
-	if (ret == -1) {
-		goto out;
+	if (!is_named_stream(smb_fname)) {
+		if (VALID_STAT(smb_fname->st)) {
+			st = smb_fname->st;
+		} else {
+			ret = SMB_VFS_NEXT_FSTATAT(handle,
+						   dirfsp,
+						   smb_fname,
+						   &st,
+						   AT_SYMLINK_NOFOLLOW);
+			if (ret == -1) {
+				return ret;
+			}
+		}
 	}
 
 	if (flags & AT_REMOVEDIR) {
-		ret = rmdir_acl_common(handle,
-				dirfsp,
-				smb_fname_tmp);
+		ret = rmdir_acl_common(handle, dirfsp, smb_fname);
 	} else {
-		ret = unlink_acl_common(handle,
-				dirfsp,
-				smb_fname_tmp,
-				flags);
+		ret = unlink_acl_common(handle, dirfsp, smb_fname, flags);
 	}
 
 	if (ret == -1) {
-		goto out;
+		return -1;
 	}
 
-	acl_tdb_delete(handle, db, &smb_fname_tmp->st);
- out:
+	if (is_named_stream(smb_fname)) {
+		/*
+		 * ACLs only stored for basenames
+		 */
+		return ret;
+	}
+
+	acl_tdb_delete(handle, acl_db, &st);
+
 	return ret;
 }
 
