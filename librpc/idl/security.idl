@@ -259,6 +259,7 @@ interface security
 	const string SID_NT_DIGEST_AUTHENTICATION = "S-1-5-64-21";
 	const string SID_NT_NTLM_AUTHENTICATION   = "S-1-5-64-10";
 	const string SID_NT_SCHANNEL_AUTHENTICATION = "S-1-5-64-14";
+	const string SID_NT_THIS_ORGANIZATION_CERTIFICATE = "S-1-5-65-1";
 	const string SID_NT_OTHER_ORGANIZATION    = "S-1-5-1000";
 
 	/* SECURITY_BUILTIN_DOMAIN_RID */
