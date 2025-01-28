@@ -142,7 +142,7 @@ int string_replace_allocate(connection_struct *conn,
 			    char **mapped_name,
 			    enum vfs_translate_direction direction)
 {
-	static smb_ucs2_t *tmpbuf = NULL;
+	smb_ucs2_t *tmpbuf = NULL;
 	smb_ucs2_t *ptr = NULL;
 	struct char_mappings *map = NULL;
 	size_t converted_size;
