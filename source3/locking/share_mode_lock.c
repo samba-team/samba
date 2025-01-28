@@ -399,7 +399,10 @@ struct locking_tdb_data {
 	size_t num_share_entries;
 };
 
-static bool locking_tdb_data_get(
+/*
+ * Parse a buffer into a struct locking_tdb_data object
+ */
+static bool locking_tdb_data_parse(
 	struct locking_tdb_data *data, const uint8_t *buf, size_t buflen)
 {
 	uint32_t share_mode_data_len, share_entries_len;
@@ -486,7 +489,7 @@ static NTSTATUS locking_tdb_data_fetch(
 		goto done;
 	}
 
-	ok = locking_tdb_data_get(result, state.data, state.datalen);
+	ok = locking_tdb_data_parse(result, state.data, state.datalen);
 	if (!ok) {
 		DBG_ERR("locking_tdb_data_get failed for %zu bytes\n",
 			  state.datalen);
@@ -815,7 +818,7 @@ static void get_static_share_mode_data_fn(
 	if (datalen != 0) {
 		bool ok;
 
-		ok = locking_tdb_data_get(&ltdb, data, datalen);
+		ok = locking_tdb_data_parse(&ltdb, data, datalen);
 		if (!ok) {
 			DBG_ERR("locking_tdb_data_get failed\n");
 			state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -1123,7 +1126,7 @@ static void fsp_update_share_mode_flags_fn(
 	struct locking_tdb_data ltdb = { 0 };
 
 	if (datalen != 0) {
-		bool ok = locking_tdb_data_get(&ltdb, data, datalen);
+		bool ok = locking_tdb_data_parse(&ltdb, data, datalen);
 		if (!ok) {
 			DBG_DEBUG("locking_tdb_data_get failed\n");
 			return;
@@ -1466,7 +1469,7 @@ static void fetch_share_mode_unlocked_parser(
 	struct locking_tdb_data ltdb = { 0 };
 
 	if (datalen != 0) {
-		bool ok = locking_tdb_data_get(&ltdb, data, datalen);
+		bool ok = locking_tdb_data_parse(&ltdb, data, datalen);
 		if (!ok) {
 			DBG_DEBUG("locking_tdb_data_get failed\n");
 			return;
@@ -1604,7 +1607,7 @@ static void fetch_share_mode_fn(
 	struct locking_tdb_data ltdb = { 0 };
 
 	if (datalen != 0) {
-		bool ok = locking_tdb_data_get(&ltdb, data, datalen);
+		bool ok = locking_tdb_data_parse(&ltdb, data, datalen);
 		if (!ok) {
 			DBG_DEBUG("locking_tdb_data_get failed\n");
 			return;
@@ -1719,7 +1722,7 @@ static void share_mode_forall_dump_fn(
 	}
 	memcpy(&fid, state->key.dptr, sizeof(fid));
 
-	ok = locking_tdb_data_get(&ltdb, data, datalen);
+	ok = locking_tdb_data_parse(&ltdb, data, datalen);
 	if (!ok) {
 		DBG_DEBUG("locking_tdb_data_get() failed\n");
 		return;
@@ -2373,7 +2376,7 @@ static void share_mode_count_entries_fn(
 	struct locking_tdb_data ltdb = { 0 };
 	bool ok;
 
-	ok = locking_tdb_data_get(&ltdb, data, datalen);
+	ok = locking_tdb_data_parse(&ltdb, data, datalen);
 	if (!ok) {
 		DBG_WARNING("locking_tdb_data_get failed for %zu\n", datalen);
 		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
