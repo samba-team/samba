@@ -1017,10 +1017,9 @@ sub PythonFunctionUnpackOut($$$)
 	my $env = GenerateFunctionOutEnv($fn, "r->");
 	my $result_size = 0;
 
-	$self->pidl("static PyObject *$outfnname(struct $fn->{NAME} *r)");
+	$self->pidl("static PyObject *$outfnname(struct $fn->{NAME} *r, bool raise_result_exception)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("_UNUSED_ bool raise_result_exception = true;");
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless (grep(/out/,@{$e->{DIRECTION}}));
 		next if (($metadata_args->{in}->{$e->{NAME}} and grep(/in/, @{$e->{DIRECTION}})) or
