@@ -996,6 +996,14 @@ sub PythonFunctionUnpackOut($$$)
 		$signature .= "None";
 	}
 
+	if ($fn->{RETURN_TYPE} and $is_raisable_return) {
+		if (defined($fn->{RETURN_TYPE}) and $fn->{RETURN_TYPE} eq "NTSTATUS") {
+			$self->handle_ntstatus("r->out.result", "NULL", undef);
+		} elsif (defined($fn->{RETURN_TYPE}) and $fn->{RETURN_TYPE} eq "WERROR") {
+			$self->handle_werror("r->out.result", "NULL", undef);
+		}
+	}
+
 	if ($result_size > 1) {
 		$self->pidl("result = PyTuple_New($result_size);");
 		$self->pidl("if (result == NULL) {");
@@ -1031,11 +1039,7 @@ sub PythonFunctionUnpackOut($$$)
 		}
 	}
 
-	if (defined($fn->{RETURN_TYPE}) and $fn->{RETURN_TYPE} eq "NTSTATUS") {
-		$self->handle_ntstatus("r->out.result", "NULL", undef);
-	} elsif (defined($fn->{RETURN_TYPE}) and $fn->{RETURN_TYPE} eq "WERROR") {
-		$self->handle_werror("r->out.result", "NULL", undef);
-	} elsif (defined($fn->{RETURN_TYPE})) {
+	if ($fn->{RETURN_TYPE} and not $is_raisable_return) {
 		my $conv = $self->ConvertObjectToPythonData("r", $fn->{RETURN_TYPE}, "r->out.result", $fn);
 		if ($result_size > 1) {
 			$self->pidl("PyTuple_SetItem(result, $i, $conv);");
