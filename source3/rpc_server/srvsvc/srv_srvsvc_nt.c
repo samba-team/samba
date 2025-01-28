@@ -192,17 +192,23 @@ static WERROR net_enum_files(TALLOC_CTX *ctx,
 	/* need to count the number of locks on a file */
 
 	for (i=0; i<(*ctr3)->count; i++) {
-		struct files_struct fsp = { .file_id = f_enum_cnt.fids[i], };
+		struct files_struct *fsp = NULL;
 		struct byte_range_lock *brl = NULL;
 
-		brl = brl_get_locks(ctx, &fsp);
+		fsp = talloc_zero(talloc_tos(), struct files_struct);
+		if (fsp == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+		fsp->file_id = f_enum_cnt.fids[i];
+
+		brl = brl_get_locks_readonly(fsp);
 		if (brl == NULL) {
 			continue;
 		}
 
 		(*ctr3)->array[i].num_locks = brl_num_locks(brl);
-
 		TALLOC_FREE(brl);
+		TALLOC_FREE(fsp);
 	}
 
 	return WERR_OK;
