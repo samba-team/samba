@@ -824,9 +824,17 @@ static void get_static_share_mode_data_fn(
 			state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 			return;
 		}
-	}
 
-	if (ltdb.share_mode_data_len == 0) {
+		d = parse_share_mode_data(
+			lock_ctx,
+			state->id,
+			ltdb.share_mode_data_buf,
+			ltdb.share_mode_data_len);
+		if (d == NULL) {
+			state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+			return;
+		}
+	} else {
 		if (state->smb_fname == NULL) {
 			state->status = NT_STATUS_NOT_FOUND;
 			return;
@@ -837,16 +845,6 @@ static void get_static_share_mode_data_fn(
 			state->smb_fname);
 		if (d == NULL) {
 			state->status = NT_STATUS_NO_MEMORY;
-			return;
-		}
-	} else {
-		d = parse_share_mode_data(
-			lock_ctx,
-			state->id,
-			ltdb.share_mode_data_buf,
-			ltdb.share_mode_data_len);
-		if (d == NULL) {
-			state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 			return;
 		}
 	}
