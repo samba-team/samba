@@ -5,7 +5,7 @@
 
   (c) Alexander Bokovoy, 2007, 2008
   (c) Andrew Tridgell, 2007, 2008
-  
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -59,10 +59,10 @@
 #endif
 
 #ifndef _ISOC99_SOURCE
-#define _ISOC99_SOURCE 
+#define _ISOC99_SOURCE
 #endif
 
-#include <math.h> 
+#include <math.h>
 
 /* optimisation tunables - used to avoid the DMAPI slow path */
 #define FILE_IS_ONLINE_RATIO      0.5
@@ -83,7 +83,7 @@ static void tsmsm_free_data(void **pptr) {
 	TALLOC_FREE(*tsmd);
 }
 
-/* 
+/*
    called when a client connects to a share
 */
 static int tsmsm_connect(struct vfs_handle_struct *handle,
@@ -115,25 +115,25 @@ static int tsmsm_connect(struct vfs_handle_struct *handle,
 	}
 
 	tsmname = (handle->param ? handle->param : "tsmsm");
-	
+
 	/* Get 'hsm script' and 'dmapi attribute' parameters to tsmd context */
 	tsmd->hsmscript = lp_parm_substituted_string(
 		tsmd, lp_sub, SNUM(handle->conn), tsmname,
 		"hsm script", NULL);
 	talloc_steal(tsmd, tsmd->hsmscript);
-	
+
 	tsmd->attrib_name = lp_parm_substituted_string(
 		tsmd, lp_sub, SNUM(handle->conn), tsmname,
 		"dmapi attribute", DM_ATTRIB_OBJECT);
 	talloc_steal(tsmd, tsmd->attrib_name);
-	
+
 	tsmd->attrib_value = lp_parm_substituted_string(
 		tsmd, lp_sub, SNUM(handle->conn), tsmname,
 		"dmapi value", NULL);
 	talloc_steal(tsmd, tsmd->attrib_value);
-	
+
 	/* retrieve 'online ratio'. In case of error default to FILE_IS_ONLINE_RATIO */
-	fres = lp_parm_const_string(SNUM(handle->conn), tsmname, 
+	fres = lp_parm_const_string(SNUM(handle->conn), tsmname,
 				    "online ratio", NULL);
 	if (fres == NULL) {
 		tsmd->online_ratio = FILE_IS_ONLINE_RATIO;
@@ -152,7 +152,7 @@ static int tsmsm_connect(struct vfs_handle_struct *handle,
         return 0;
 }
 
-static bool tsmsm_is_offline(struct vfs_handle_struct *handle, 
+static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 			     const struct smb_filename *fname,
 			     SMB_STRUCT_STAT *stbuf)
 {
@@ -193,8 +193,8 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 		return false;
 	}
 
-        /* using POSIX capabilities does not work here. It's a slow path, so 
-	 * become_root() is just as good anyway (tridge) 
+        /* using POSIX capabilities does not work here. It's a slow path, so
+	 * become_root() is just as good anyway (tridge)
 	 */
 
 	/* Also, AIX has DMAPI but no POSIX capabilities support. In this case,
@@ -204,7 +204,7 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 
 	/* go the slow DMAPI route */
 	if (dm_path_to_handle((char*)path, &dmhandle, &dmhandle_len) != 0) {
-		DEBUG(2,("dm_path_to_handle failed - assuming offline (%s) - %s\n", 
+		DEBUG(2,("dm_path_to_handle failed - assuming offline (%s) - %s\n",
 			 path, strerror(errno)));
 		offline = true;
 		goto done;
@@ -229,7 +229,7 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 	do {
 		lerrno = 0;
 
-		ret = dm_get_dmattr(*dmsession_id, dmhandle, dmhandle_len, 
+		ret = dm_get_dmattr(*dmsession_id, dmhandle, dmhandle_len,
 				    DM_NO_TOKEN, &dmname, buflen, buf, &rlen);
 		if (ret == -1 && errno == EINVAL) {
 			DEBUG(0, ("Stale DMAPI session, re-creating it.\n"));
@@ -237,8 +237,8 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 			if (dmapi_new_session()) {
 				dmsession_id = dmapi_get_current_session();
 			} else {
-				DEBUG(0, 
-				      ("Unable to re-create DMAPI session, assuming offline (%s) - %s\n", 
+				DEBUG(0,
+				      ("Unable to re-create DMAPI session, assuming offline (%s) - %s\n",
 				       path, strerror(errno)));
 				offline = true;
 				dm_handle_free(dmhandle, dmhandle_len);
@@ -249,7 +249,7 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 
 	/* check if we need a specific attribute value */
 	if (tsmd->attrib_value != NULL) {
-		offline = (ret == 0 && rlen == buflen && 
+		offline = (ret == 0 && rlen == buflen &&
 			    memcmp(buf, tsmd->attrib_value, buflen) == 0);
 	} else {
 		/* its offline if the specified DMAPI attribute exists */
@@ -260,7 +260,7 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 
 	ret = 0;
 
-	dm_handle_free(dmhandle, dmhandle_len);	
+	dm_handle_free(dmhandle, dmhandle_len);
 
 done:
 	talloc_free(buf);
@@ -446,20 +446,20 @@ static ssize_t tsmsm_sendfile(vfs_handle_struct *handle, int tofd, files_struct 
 		errno = ENOSYS;
 		return -1;
 	}
-	    
+
 	return SMB_VFS_NEXT_SENDFILE(handle, tofd, fsp, hdr, offset, n);
 }
 
 /* We do overload pread to allow notification when file becomes online after offline status */
 /* We don't intercept SMB_VFS_READ here because all file I/O now goes through SMB_VFS_PREAD instead */
-static ssize_t tsmsm_pread(struct vfs_handle_struct *handle, struct files_struct *fsp, 
+static ssize_t tsmsm_pread(struct vfs_handle_struct *handle, struct files_struct *fsp,
 			   void *data, size_t n, off_t offset) {
 	ssize_t result;
 	bool notify_online = tsmsm_aio_force(handle, fsp);
 
 	result = SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
 	if((result != -1) && notify_online) {
-	    /* We can't actually force AIO at this point (came here not from reply_read_and_X) 
+	    /* We can't actually force AIO at this point (came here not from reply_read_and_X)
 	       what we can do is to send notification that file became online
 	    */
 	    notify_fname(handle->conn,
@@ -472,14 +472,14 @@ static ssize_t tsmsm_pread(struct vfs_handle_struct *handle, struct files_struct
 	return result;
 }
 
-static ssize_t tsmsm_pwrite(struct vfs_handle_struct *handle, struct files_struct *fsp, 
+static ssize_t tsmsm_pwrite(struct vfs_handle_struct *handle, struct files_struct *fsp,
 			    const void *data, size_t n, off_t offset) {
 	ssize_t result;
 	bool notify_online = tsmsm_aio_force(handle, fsp);
 
 	result = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
 	if((result != -1) && notify_online) {
-	    /* We can't actually force AIO at this point (came here not from reply_read_and_X) 
+	    /* We can't actually force AIO at this point (came here not from reply_read_and_X)
 	       what we can do is to send notification that file became online
 	    */
 	    notify_fname(handle->conn,
