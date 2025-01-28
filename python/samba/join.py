@@ -66,7 +66,8 @@ class DCJoinContext(object):
                  promote_existing=False, plaintext_secrets=False,
                  backend_store=None,
                  backend_store_size=None,
-                 forced_local_samdb=None):
+                 forced_local_samdb=None,
+                 filter_secrets=False):
 
         ctx.logger = logger
         ctx.creds = creds
@@ -77,6 +78,7 @@ class DCJoinContext(object):
         ctx.plaintext_secrets = plaintext_secrets
         ctx.backend_store = backend_store
         ctx.backend_store_size = backend_store_size
+        ctx.filter_secrets = filter_secrets
 
         ctx.promote_existing = promote_existing
         ctx.promote_from_dn = None
@@ -961,6 +963,8 @@ class DCJoinContext(object):
             ctx.local_samdb,
             ctx.invocation_id,
         )
+        if ctx.filter_secrets:
+            repl = drs_utils.drs_SecretFilter(repl)
         return repl
 
     def join_replicate(ctx):
@@ -1664,7 +1668,8 @@ class DCCloneContext(DCJoinContext):
                          targetdir=targetdir, domain=domain,
                          dns_backend=dns_backend,
                          backend_store=backend_store,
-                         backend_store_size=backend_store_size)
+                         backend_store_size=backend_store_size,
+                         filter_secrets=not include_secrets)
 
         # As we don't want to create or delete these DNs, we set them to None
         ctx.server_dn = None
