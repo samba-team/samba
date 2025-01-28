@@ -609,6 +609,9 @@ fail:
 	return NULL;
 }
 
+/*
+ * Store share_mode_data from d and share_mode_entrys from ltdb
+ */
 static NTSTATUS share_mode_data_ltdb_store(struct share_mode_data *d,
 					   TDB_DATA key,
 					   struct locking_tdb_data *ltdb,
