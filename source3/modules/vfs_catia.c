@@ -610,6 +610,41 @@ out:
 	return ret;
 }
 
+static int catia_fstatat(struct vfs_handle_struct *handle,
+			 const struct files_struct *dirfsp,
+			 const struct smb_filename *smb_fname,
+			 SMB_STRUCT_STAT *sbuf,
+			 int flags)
+{
+	struct smb_filename *tmp = NULL;
+	int ret;
+
+	tmp = cp_smb_filename(talloc_tos(), smb_fname);
+	if (tmp == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	ret = catia_string_replace_allocate(handle->conn,
+					    smb_fname->base_name,
+					    &tmp->base_name,
+					    vfs_translate_to_unix);
+	if (ret != 0) {
+		TALLOC_FREE(tmp);
+		errno = ret;
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_FSTATAT(handle, dirfsp, tmp, sbuf, flags);
+
+	{
+		int err = errno;
+		TALLOC_FREE(tmp);
+		errno = err;
+	}
+
+	return ret;
+}
 
 static int catia_stat(vfs_handle_struct *handle,
 		      struct smb_filename *smb_fname)
@@ -1893,6 +1928,7 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.fsync_recv_fn = catia_fsync_recv,
 	.stat_fn = catia_stat,
 	.fstat_fn = catia_fstat,
+	.fstatat_fn = catia_fstatat,
 	.lstat_fn = catia_lstat,
 	.unlinkat_fn = catia_unlinkat,
 	.fchmod_fn = catia_fchmod,
