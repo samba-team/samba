@@ -222,7 +222,6 @@ _PUBLIC_ NTSTATUS auth_generate_security_token(TALLOC_CTX *mem_ctx,
 {
 	struct security_token *security_token = NULL;
 	NTSTATUS nt_status;
-	uint32_t i;
 	uint32_t num_sids = 0;
 	uint32_t num_device_sids = 0;
 	struct auth_SidAttr *sids = NULL;
@@ -246,57 +245,26 @@ _PUBLIC_ NTSTATUS auth_generate_security_token(TALLOC_CTX *mem_ctx,
 	}
 
 	if (device_info_dc != NULL) {
-		/*
-		 * Make a copy of the device SIDs in case we need to add extra SIDs on
-		 * the end. One can never have too much copying.
-		 */
-		num_device_sids = device_info_dc->num_sids;
-		device_sids = talloc_array(tmp_ctx,
-				    struct auth_SidAttr,
-				    num_device_sids);
-		if (device_sids == NULL) {
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		for (i = 0; i < num_device_sids; i++) {
-			device_sids[i] = device_info_dc->sids[i];
-		}
+		uint32_t device_info_flags = 0;
 
 		if (session_info_flags & AUTH_SESSION_INFO_DEVICE_DEFAULT_GROUPS) {
-			device_sids = talloc_realloc(tmp_ctx,
-						     device_sids,
-						     struct auth_SidAttr,
-						     num_device_sids + 2);
-			if (device_sids == NULL) {
-				TALLOC_FREE(tmp_ctx);
-				return NT_STATUS_NO_MEMORY;
-			}
-
-			device_sids[num_device_sids++] = (struct auth_SidAttr) {
-				.sid = global_sid_World,
-				.attrs = SE_GROUP_DEFAULT_FLAGS,
-			};
-			device_sids[num_device_sids++] = (struct auth_SidAttr) {
-				.sid = global_sid_Network,
-				.attrs = SE_GROUP_DEFAULT_FLAGS,
-			};
+			device_info_flags |= AUTH_SESSION_INFO_DEFAULT_GROUPS;
 		}
 
 		if (session_info_flags & AUTH_SESSION_INFO_DEVICE_AUTHENTICATED) {
-			device_sids = talloc_realloc(tmp_ctx,
-						     device_sids,
-						     struct auth_SidAttr,
-						     num_device_sids + 1);
-			if (device_sids == NULL) {
-				TALLOC_FREE(tmp_ctx);
-				return NT_STATUS_NO_MEMORY;
-			}
+			device_info_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
+		}
 
-			device_sids[num_device_sids++] = (struct auth_SidAttr) {
-				.sid = global_sid_Authenticated_Users,
-				.attrs = SE_GROUP_DEFAULT_FLAGS,
-			};
+		nt_status = auth_user_info_dc_expand_sids(tmp_ctx,
+							  lp_ctx,
+							  sam_ctx,
+							  device_info_dc,
+							  device_info_flags,
+							  &device_sids,
+							  &num_device_sids);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			TALLOC_FREE(tmp_ctx);
+			return nt_status;
 		}
 	}
 
