@@ -653,6 +653,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 	const struct netr_SamBaseInfo *base = NULL;
 	uint32_t sidcount = 0;
 	const struct netr_SidAttr *sids = NULL;
+	struct dom_sid tmpsid = { 0, };
 	const char *dns_domainname = NULL;
 	const char *principal = NULL;
 	uint32_t i;
@@ -725,15 +726,18 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	user_info_dc->sids[PRIMARY_USER_SID_INDEX].sid = *base->domain_sid;
-	if (!sid_append_rid(&user_info_dc->sids[PRIMARY_USER_SID_INDEX].sid, base->rid)) {
+	tmpsid = *base->domain_sid;
+	if (!sid_append_rid(&tmpsid, base->rid)) {
 		talloc_free(user_info_dc);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	user_info_dc->sids[PRIMARY_USER_SID_INDEX].attrs = SE_GROUP_DEFAULT_FLAGS;
+	user_info_dc->sids[PRIMARY_USER_SID_INDEX] = (struct auth_SidAttr) {
+		.sid = tmpsid,
+		.attrs = SE_GROUP_DEFAULT_FLAGS,
+	};
 
-	user_info_dc->sids[PRIMARY_GROUP_SID_INDEX].sid = *base->domain_sid;
-	if (!sid_append_rid(&user_info_dc->sids[PRIMARY_GROUP_SID_INDEX].sid, base->primary_gid)) {
+	tmpsid = *base->domain_sid;
+	if (!sid_append_rid(&tmpsid, base->primary_gid)) {
 		talloc_free(user_info_dc);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -743,17 +747,25 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 	 * group in the first place, and besides, these attributes will never
 	 * make their way into a PAC.
 	 */
-	user_info_dc->sids[PRIMARY_GROUP_SID_INDEX].attrs = SE_GROUP_DEFAULT_FLAGS;
+	user_info_dc->sids[PRIMARY_GROUP_SID_INDEX] = (struct auth_SidAttr) {
+		.sid = tmpsid,
+		.attrs = SE_GROUP_DEFAULT_FLAGS,
+	};
 
 	user_info_dc->num_sids = PRIMARY_SIDS_COUNT;
 
 	for (i = 0; i < base->groups.count; i++) {
-		user_info_dc->sids[user_info_dc->num_sids].sid = *base->domain_sid;
-		if (!sid_append_rid(&user_info_dc->sids[user_info_dc->num_sids].sid, base->groups.rids[i].rid)) {
+		struct auth_SidAttr *bgrps = user_info_dc->sids;
+
+		tmpsid = *base->domain_sid;
+		if (!sid_append_rid(&tmpsid, base->groups.rids[i].rid)) {
 			talloc_free(user_info_dc);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		user_info_dc->sids[user_info_dc->num_sids].attrs = base->groups.rids[i].attributes;
+		bgrps[user_info_dc->num_sids] = (struct auth_SidAttr) {
+			.sid = tmpsid,
+			.attrs = base->groups.rids[i].attributes,
+		};
 		user_info_dc->num_sids++;
 	}
 
@@ -764,8 +776,10 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		dgrps[user_info_dc->num_sids].sid = *sids[i].sid;
-		dgrps[user_info_dc->num_sids].attrs = sids[i].attributes;
+		dgrps[user_info_dc->num_sids] = (struct auth_SidAttr) {
+			.sid = *sids[i].sid,
+			.attrs = sids[i].attributes,
+		};
 		user_info_dc->num_sids++;
 	}
 
@@ -894,16 +908,20 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 		}
 
 		for (i = 0; i < rg->groups.count; i++) {
+			struct auth_SidAttr *rgrps = user_info_dc->sids;
+			struct dom_sid tmpsid = { 0, };
 			bool ok;
 
-			user_info_dc->sids[user_info_dc->num_sids].sid = *rg->domain_sid;
-			ok = sid_append_rid(&user_info_dc->sids[user_info_dc->num_sids].sid,
-					    rg->groups.rids[i].rid);
+			tmpsid = *rg->domain_sid;
+			ok = sid_append_rid(&tmpsid, rg->groups.rids[i].rid);
 			if (!ok) {
 				talloc_free(user_info_dc);
 				return NT_STATUS_INVALID_PARAMETER;
 			}
-			user_info_dc->sids[user_info_dc->num_sids].attrs = rg->groups.rids[i].attributes;
+			rgrps[user_info_dc->num_sids] = (struct auth_SidAttr) {
+				.sid = tmpsid,
+				.attrs = rg->groups.rids[i].attributes,
+			};
 			user_info_dc->num_sids++;
 		}
 	}
