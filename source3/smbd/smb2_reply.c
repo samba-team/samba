@@ -2131,23 +2131,22 @@ uint64_t get_lock_offset(const uint8_t *data, int data_offset,
 	return offset;
 }
 
-struct smbd_do_unlocking_state {
-	struct files_struct *fsp;
-	uint16_t num_ulocks;
-	struct smbd_lock_element *ulocks;
-	NTSTATUS status;
-};
-
-static void smbd_do_unlocking_fn(
-	struct share_mode_lock *lck,
-	void *private_data)
+static void smbd_do_unlocking_fn(struct share_mode_lock *lck,
+				 struct byte_range_lock *br_lck,
+				 void *private_data)
 {
-	struct smbd_do_unlocking_state *state = private_data;
-	struct files_struct *fsp = state->fsp;
+	struct smbd_do_locks_state *state = private_data;
+	struct files_struct *fsp = brl_fsp(br_lck);
 	uint16_t i;
 
-	for (i = 0; i < state->num_ulocks; i++) {
-		struct smbd_lock_element *e = &state->ulocks[i];
+	/*
+	 * The caller has checked fsp->fsp_flags.can_lock and lp_locking so
+	 * br_lck has to be there!
+	 */
+	SMB_ASSERT(br_lck != NULL);
+
+	for (i = 0; i < state->num_locks; i++) {
+		struct smbd_lock_element *e = &state->locks[i];
 
 		DBG_DEBUG("unlock start=%"PRIu64", len=%"PRIu64" for "
 			  "pid %"PRIu64", file %s\n",
@@ -2163,7 +2162,7 @@ static void smbd_do_unlocking_fn(
 		}
 
 		state->status = do_unlock(
-			fsp, e->smblctx, e->count, e->offset, e->lock_flav);
+			br_lck, e->smblctx, e->count, e->offset, e->lock_flav);
 
 		DBG_DEBUG("do_unlock returned %s\n",
 			  nt_errstr(state->status));
@@ -2181,20 +2180,30 @@ NTSTATUS smbd_do_unlocking(struct smb_request *req,
 			   uint16_t num_ulocks,
 			   struct smbd_lock_element *ulocks)
 {
-	struct smbd_do_unlocking_state state = {
-		.fsp = fsp,
-		.num_ulocks = num_ulocks,
-		.ulocks = ulocks,
+	struct smbd_do_locks_state state = {
+		.num_locks = num_ulocks,
+		.locks = ulocks,
 	};
 	NTSTATUS status;
 
 	DBG_NOTICE("%s num_ulocks=%"PRIu16"\n", fsp_fnum_dbg(fsp), num_ulocks);
 
-	status = share_mode_do_locked_vfs_allowed(
-		fsp->file_id, smbd_do_unlocking_fn, &state);
+	if (!fsp->fsp_flags.can_lock) {
+		if (fsp->fsp_flags.is_directory) {
+			return NT_STATUS_INVALID_DEVICE_REQUEST;
+		}
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
+	if (!lp_locking(fsp->conn->params)) {
+		return NT_STATUS_OK;
+	}
+
+	status = share_mode_do_locked_brl(fsp,
+					  smbd_do_unlocking_fn,
+					  &state);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("share_mode_do_locked_vfs_allowed failed: %s\n",
+		DBG_DEBUG("share_mode_do_locked_brl failed: %s\n",
 			  nt_errstr(status));
 		return status;
 	}

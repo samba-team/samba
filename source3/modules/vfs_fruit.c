@@ -618,11 +618,21 @@ static bool test_netatalk_lock(files_struct *fsp, off_t in_offset)
 	return false;
 }
 
-static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
-				   files_struct *fsp,
-				   uint32_t access_mask,
-				   uint32_t share_mode)
+struct check_access_state {
+	NTSTATUS status;
+	files_struct *fsp;
+	uint32_t access_mask;
+	uint32_t share_mode;
+};
+
+static void fruit_check_access(struct share_mode_lock *lck,
+			       struct byte_range_lock *br_lck,
+			       void *private_data)
 {
+	struct check_access_state *state = private_data;
+	files_struct *fsp = state->fsp;
+	uint32_t access_mask = state->access_mask;
+	uint32_t share_mode = state->share_mode;
 	NTSTATUS status = NT_STATUS_OK;
 	off_t off;
 	bool share_for_read = (share_mode & FILE_SHARE_READ);
@@ -636,6 +646,14 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 	/* FIXME: hardcoded data fork, add resource fork */
 	enum apple_fork fork_type = APPLE_FORK_DATA;
 
+	/*
+	 * The caller has checked fsp->fsp_flags.can_lock and lp_locking so
+	 * br_lck has to be there!
+	 */
+	SMB_ASSERT(br_lck != NULL);
+
+	state->status = NT_STATUS_OK;
+
 	DBG_DEBUG("%s, am: %s/%s, sm: 0x%x\n",
 		  fsp_str_dbg(fsp),
 		  access_mask & FILE_READ_DATA ? "READ" :"-",
@@ -643,7 +661,7 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 		  share_mode);
 
 	if (fsp_get_io_fd(fsp) == -1) {
-		return NT_STATUS_OK;
+		return;
 	}
 
 	/* Read NetATalk opens and deny modes on the file. */
@@ -666,22 +684,26 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 	/* If there are any conflicts - sharing violation. */
 	if ((access_mask & FILE_READ_DATA) &&
 			netatalk_already_open_with_deny_read) {
-		return NT_STATUS_SHARING_VIOLATION;
+		state->status = NT_STATUS_SHARING_VIOLATION;
+		return;
 	}
 
 	if (!share_for_read &&
 			netatalk_already_open_for_reading) {
-		return NT_STATUS_SHARING_VIOLATION;
+		state->status = NT_STATUS_SHARING_VIOLATION;
+		return;
 	}
 
 	if ((access_mask & FILE_WRITE_DATA) &&
 			netatalk_already_open_with_deny_write) {
-		return NT_STATUS_SHARING_VIOLATION;
+		state->status = NT_STATUS_SHARING_VIOLATION;
+		return;
 	}
 
 	if (!share_for_write &&
 			netatalk_already_open_for_writing) {
-		return NT_STATUS_SHARING_VIOLATION;
+		state->status = NT_STATUS_SHARING_VIOLATION;
+		return;
 	}
 
 	if (!(access_mask & FILE_READ_DATA)) {
@@ -689,15 +711,16 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 		 * Nothing we can do here, we need read access
 		 * to set locks.
 		 */
-		return NT_STATUS_OK;
+		return;
 	}
 
 	/* Set NetAtalk locks matching our access */
 	if (access_mask & FILE_READ_DATA) {
 		off = access_to_netatalk_brl(fork_type, FILE_READ_DATA);
 		req_guid.time_hi_and_version = __LINE__;
+
 		status = do_lock(
-			fsp,
+			br_lck,
 			talloc_tos(),
 			&req_guid,
 			fsp->op->global->open_persistent_id,
@@ -707,17 +730,18 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 			POSIX_LOCK,
 			NULL,
 			NULL);
-
 		if (!NT_STATUS_IS_OK(status))  {
-			return status;
+			state->status = status;
+			return;
 		}
 	}
 
 	if (!share_for_read) {
 		off = denymode_to_netatalk_brl(fork_type, DENY_READ);
 		req_guid.time_hi_and_version = __LINE__;
+
 		status = do_lock(
-			fsp,
+			br_lck,
 			talloc_tos(),
 			&req_guid,
 			fsp->op->global->open_persistent_id,
@@ -727,17 +751,18 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 			POSIX_LOCK,
 			NULL,
 			NULL);
-
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			state->status = status;
+			return;
 		}
 	}
 
 	if (access_mask & FILE_WRITE_DATA) {
 		off = access_to_netatalk_brl(fork_type, FILE_WRITE_DATA);
 		req_guid.time_hi_and_version = __LINE__;
+
 		status = do_lock(
-			fsp,
+			br_lck,
 			talloc_tos(),
 			&req_guid,
 			fsp->op->global->open_persistent_id,
@@ -747,17 +772,18 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 			POSIX_LOCK,
 			NULL,
 			NULL);
-
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			state->status = status;
+			return;
 		}
 	}
 
 	if (!share_for_write) {
 		off = denymode_to_netatalk_brl(fork_type, DENY_WRITE);
 		req_guid.time_hi_and_version = __LINE__;
+
 		status = do_lock(
-			fsp,
+			br_lck,
 			talloc_tos(),
 			&req_guid,
 			fsp->op->global->open_persistent_id,
@@ -767,13 +793,11 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 			POSIX_LOCK,
 			NULL,
 			NULL);
-
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			state->status = status;
+			return;
 		}
 	}
-
-	return NT_STATUS_OK;
 }
 
 static NTSTATUS check_aapl(vfs_handle_struct *handle,
@@ -4373,14 +4397,25 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	}
 
 	if ((config->locking == FRUIT_LOCKING_NETATALK) &&
+	    lp_locking(fsp->conn->params) &&
+	    fsp->fsp_flags.can_lock &&
 	    (fsp->op != NULL) &&
 	    !fsp->fsp_flags.is_pathref)
 	{
-		status = fruit_check_access(
-			handle, *result,
-			access_mask,
-			share_access);
+		struct check_access_state state = (struct check_access_state) {
+			.fsp = fsp,
+			.access_mask = access_mask,
+			.share_mode = share_access,
+		};
+
+		status = share_mode_do_locked_brl(fsp,
+						  fruit_check_access,
+						  &state);
 		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+		if (!NT_STATUS_IS_OK(state.status)) {
+			status = state.status;
 			goto fail;
 		}
 	}

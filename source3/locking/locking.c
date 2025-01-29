@@ -242,52 +242,7 @@ static void decrement_current_lock_count(files_struct *fsp,
  Utility function called by locking requests.
 ****************************************************************************/
 
-struct do_lock_state {
-	struct files_struct *fsp;
-	TALLOC_CTX *req_mem_ctx;
-	const struct GUID *req_guid;
-	uint64_t smblctx;
-	uint64_t count;
-	uint64_t offset;
-	enum brl_type lock_type;
-	enum brl_flavour lock_flav;
-
-	struct server_id blocker_pid;
-	uint64_t blocker_smblctx;
-	NTSTATUS status;
-};
-
-static void do_lock_fn(
-	struct share_mode_lock *lck,
-	void *private_data)
-{
-	struct do_lock_state *state = private_data;
-	struct byte_range_lock *br_lck = NULL;
-
-	br_lck = brl_get_locks_for_locking(talloc_tos(),
-					   state->fsp,
-					   state->req_mem_ctx,
-					   state->req_guid);
-	if (br_lck == NULL) {
-		state->status = NT_STATUS_NO_MEMORY;
-		return;
-	}
-
-	state->status = brl_lock(
-		br_lck,
-		state->smblctx,
-		messaging_server_id(state->fsp->conn->sconn->msg_ctx),
-		state->offset,
-		state->count,
-		state->lock_type,
-		state->lock_flav,
-		&state->blocker_pid,
-		&state->blocker_smblctx);
-
-	TALLOC_FREE(br_lck);
-}
-
-NTSTATUS do_lock(files_struct *fsp,
+NTSTATUS do_lock(struct byte_range_lock *br_lck,
 		 TALLOC_CTX *req_mem_ctx,
 		 const struct GUID *req_guid,
 		 uint64_t smblctx,
@@ -298,22 +253,13 @@ NTSTATUS do_lock(files_struct *fsp,
 		 struct server_id *pblocker_pid,
 		 uint64_t *psmblctx)
 {
-	struct do_lock_state state = {
-		.fsp = fsp,
-		.req_mem_ctx = req_mem_ctx,
-		.req_guid = req_guid,
-		.smblctx = smblctx,
-		.count = count,
-		.offset = offset,
-		.lock_type = lock_type,
-		.lock_flav = lock_flav,
-	};
+	files_struct *fsp = brl_fsp(br_lck);
+	struct server_id blocker_pid;
+	uint64_t blocker_smblctx;
 	NTSTATUS status;
 
-	/* silently return ok on print files as we don't do locking there */
-	if (fsp->print_file) {
-		return NT_STATUS_OK;
-	}
+	SMB_ASSERT(req_mem_ctx != NULL);
+	SMB_ASSERT(req_guid != NULL);
 
 	if (!fsp->fsp_flags.can_lock) {
 		if (fsp->fsp_flags.is_directory) {
@@ -337,25 +283,27 @@ NTSTATUS do_lock(files_struct *fsp,
 		  fsp_fnum_dbg(fsp),
 		  fsp_str_dbg(fsp));
 
-	status = share_mode_do_locked_vfs_allowed(fsp->file_id,
-						  do_lock_fn,
-						  &state);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("share_mode_do_locked returned %s\n",
-			  nt_errstr(status));
-		return status;
-	}
-	if (!NT_STATUS_IS_OK(state.status)) {
-		DBG_DEBUG("do_lock_fn returned %s\n",
-			  nt_errstr(state.status));
+	brl_req_set(br_lck, req_mem_ctx, req_guid);
+	status = brl_lock(br_lck,
+			  smblctx,
+			  messaging_server_id(fsp->conn->sconn->msg_ctx),
+			  offset,
+			  count,
+			  lock_type,
+			  lock_flav,
+			  &blocker_pid,
+			  &blocker_smblctx);
+	brl_req_set(br_lck, NULL, NULL);
+        if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("brl_lock failed: %s\n", nt_errstr(status));
 		if (psmblctx != NULL) {
-			*psmblctx = state.blocker_smblctx;
+			*psmblctx = blocker_smblctx;
 		}
 		if (pblocker_pid != NULL) {
-			*pblocker_pid = state.blocker_pid;
+			*pblocker_pid = blocker_pid;
 		}
-		return state.status;
-	}
+		return status;
+        }
 
 	increment_current_lock_count(fsp, lock_flav);
 
@@ -366,14 +314,14 @@ NTSTATUS do_lock(files_struct *fsp,
  Utility function called by unlocking requests.
 ****************************************************************************/
 
-NTSTATUS do_unlock(files_struct *fsp,
+NTSTATUS do_unlock(struct byte_range_lock *br_lck,
 		   uint64_t smblctx,
 		   uint64_t count,
 		   uint64_t offset,
 		   enum brl_flavour lock_flav)
 {
+	files_struct *fsp = brl_fsp(br_lck);
 	bool ok = False;
-	struct byte_range_lock *br_lck = NULL;
 
 	if (!fsp->fsp_flags.can_lock) {
 		return fsp->fsp_flags.is_directory ?
@@ -392,19 +340,12 @@ NTSTATUS do_unlock(files_struct *fsp,
 		  fsp_fnum_dbg(fsp),
 		  fsp_str_dbg(fsp));
 
-	br_lck = brl_get_locks(talloc_tos(), fsp);
-	if (!br_lck) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	ok = brl_unlock(br_lck,
 			smblctx,
 			messaging_server_id(fsp->conn->sconn->msg_ctx),
 			offset,
 			count,
 			lock_flav);
-
-	TALLOC_FREE(br_lck);
 
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
