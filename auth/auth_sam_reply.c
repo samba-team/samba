@@ -715,9 +715,11 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	user_info_dc->num_sids = PRIMARY_SIDS_COUNT;
-
-	user_info_dc->sids = talloc_array(user_info_dc, struct auth_SidAttr,  user_info_dc->num_sids + base->groups.count);
+	user_info_dc->sids = talloc_array(user_info_dc,
+					  struct auth_SidAttr,
+					  PRIMARY_SIDS_COUNT +
+					  base->groups.count +
+					  sidcount);
 	if (user_info_dc->sids == NULL) {
 		talloc_free(user_info_dc);
 		return NT_STATUS_NO_MEMORY;
@@ -743,6 +745,8 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 	 */
 	user_info_dc->sids[PRIMARY_GROUP_SID_INDEX].attrs = SE_GROUP_DEFAULT_FLAGS;
 
+	user_info_dc->num_sids = PRIMARY_SIDS_COUNT;
+
 	for (i = 0; i < base->groups.count; i++) {
 		user_info_dc->sids[user_info_dc->num_sids].sid = *base->domain_sid;
 		if (!sid_append_rid(&user_info_dc->sids[user_info_dc->num_sids].sid, base->groups.rids[i].rid)) {
@@ -753,29 +757,16 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 		user_info_dc->num_sids++;
 	}
 
-	if (sidcount > 0) {
+	for (i = 0; i < sidcount; i++) {
 		struct auth_SidAttr *dgrps = user_info_dc->sids;
-		size_t dgrps_count;
 
-		dgrps_count = user_info_dc->num_sids + sidcount;
-		dgrps = talloc_realloc(user_info_dc, dgrps, struct auth_SidAttr,
-				       dgrps_count);
-		if (dgrps == NULL) {
-			talloc_free(user_info_dc);
-			return NT_STATUS_NO_MEMORY;
+		if (sids[i].sid == NULL) {
+			continue;
 		}
 
-		for (i = 0; i < sidcount; i++) {
-			if (sids[i].sid) {
-				dgrps[user_info_dc->num_sids].sid = *sids[i].sid;
-				dgrps[user_info_dc->num_sids].attrs = sids[i].attributes;
-				user_info_dc->num_sids++;
-			}
-		}
-
-		user_info_dc->sids = dgrps;
-
-		/* Where are the 'global' sids?... */
+		dgrps[user_info_dc->num_sids].sid = *sids[i].sid;
+		dgrps[user_info_dc->num_sids].attrs = sids[i].attributes;
+		user_info_dc->num_sids++;
 	}
 
 	status = make_user_info_SamBaseInfo(user_info_dc, account_name, base, authenticated, &user_info_dc->info);
