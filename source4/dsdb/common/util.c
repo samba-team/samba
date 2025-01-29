@@ -386,7 +386,7 @@ struct auth_SidAttr *samdb_result_dom_sid_attrs(TALLOC_CTX *mem_ctx, const struc
 	if (v == NULL) {
 		return NULL;
 	}
-	sid = talloc(mem_ctx, struct auth_SidAttr);
+	sid = talloc_zero(mem_ctx, struct auth_SidAttr);
 	if (sid == NULL) {
 		return NULL;
 	}
