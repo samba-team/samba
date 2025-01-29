@@ -431,11 +431,15 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	groupsid = *domain_sid;
 	sid_append_rid(&groupsid, group_rid);
 
-	sids[PRIMARY_USER_SID_INDEX].sid = *account_sid;
-	sids[PRIMARY_USER_SID_INDEX].attrs = SE_GROUP_DEFAULT_FLAGS;
+	sids[PRIMARY_USER_SID_INDEX] = (struct auth_SidAttr) {
+		.sid = *account_sid,
+		.attrs = SE_GROUP_DEFAULT_FLAGS,
+	};
 
-	sids[PRIMARY_GROUP_SID_INDEX].sid = groupsid;
-	sids[PRIMARY_GROUP_SID_INDEX].attrs = SE_GROUP_DEFAULT_FLAGS;
+	sids[PRIMARY_GROUP_SID_INDEX] = (struct auth_SidAttr) {
+		.sid = groupsid,
+		.attrs = SE_GROUP_DEFAULT_FLAGS,
+	};
 
 	/*
 	 * Filter out builtin groups from this token. We will search
@@ -666,8 +670,11 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(user_info_dc);
 			return NT_STATUS_NO_MEMORY;
 		}
-		user_info_dc->sids[user_info_dc->num_sids].sid = global_sid_Enterprise_DCs;
-		user_info_dc->sids[user_info_dc->num_sids].attrs = SE_GROUP_DEFAULT_FLAGS;
+
+		user_info_dc->sids[user_info_dc->num_sids] = (struct auth_SidAttr) {
+			.sid = global_sid_Enterprise_DCs,
+			.attrs = SE_GROUP_DEFAULT_FLAGS,
+		};
 		user_info_dc->num_sids++;
 	}
 
@@ -688,8 +695,10 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 		rodcsid = *domain_sid;
 		sid_append_rid(&rodcsid, DOMAIN_RID_ENTERPRISE_READONLY_DCS);
 
-		user_info_dc->sids[user_info_dc->num_sids].sid = rodcsid;
-		user_info_dc->sids[user_info_dc->num_sids].attrs = SE_GROUP_DEFAULT_FLAGS;
+		user_info_dc->sids[user_info_dc->num_sids] = (struct auth_SidAttr) {
+			.sid = rodcsid,
+			.attrs = SE_GROUP_DEFAULT_FLAGS,
+		};
 		user_info_dc->num_sids++;
 	}
 
