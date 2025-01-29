@@ -569,33 +569,32 @@ static void smbd_smb2_lock_update_polling_msecs(
 	state->polling_msecs += v_min;
 }
 
-static void smbd_smb2_lock_try(struct tevent_req *req)
+static void smbd_do_locks_try_fn(struct share_mode_lock *lck,
+				 struct byte_range_lock *br_lck,
+				 void *private_data)
 {
+	struct tevent_req *req = talloc_get_type_abort(
+		private_data, struct tevent_req);
 	struct smbd_smb2_lock_state *state = tevent_req_data(
 		req, struct smbd_smb2_lock_state);
-	struct share_mode_lock *lck = NULL;
-	uint16_t blocker_idx;
-	struct server_id blocking_pid = { 0 };
-	uint64_t blocking_smblctx;
-	NTSTATUS status;
+	struct smbd_do_locks_state brl_state;
 	struct tevent_req *subreq = NULL;
 	struct timeval endtime = { 0 };
+	NTSTATUS status;
 
-	lck = get_existing_share_mode_lock(
-		talloc_tos(), state->fsp->file_id);
-	if (tevent_req_nomem(lck, req)) {
-		return;
-	}
+	/*
+	 * The caller has checked fsp->fsp_flags.can_lock and lp_locking so
+	 * br_lck has to be there!
+	 */
+	SMB_ASSERT(br_lck != NULL);
 
-	status = smbd_do_locks_try(
-		state->fsp,
-		state->lock_count,
-		state->locks,
-		&blocker_idx,
-		&blocking_pid,
-		&blocking_smblctx);
+	brl_state = (struct smbd_do_locks_state) {
+		.num_locks = state->lock_count,
+		.locks = state->locks,
+	};
+
+	status = smbd_do_locks_try(br_lck, &brl_state);
 	if (NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(lck);
 		tevent_req_done(req);
 		return;
 	}
@@ -622,8 +621,8 @@ static void smbd_smb2_lock_try(struct tevent_req *req)
 		 * locking.tdb may cause retries.
 		 */
 
-		if (blocking_smblctx != UINT64_MAX) {
-			SMB_ASSERT(blocking_smblctx == 0);
+		if (brl_state.blocking_smblctx != UINT64_MAX) {
+			SMB_ASSERT(brl_state.blocking_smblctx == 0);
 			goto setup_retry;
 		}
 
@@ -658,7 +657,6 @@ static void smbd_smb2_lock_try(struct tevent_req *req)
 		status = NT_STATUS_LOCK_NOT_GRANTED;
 	}
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED)) {
-		TALLOC_FREE(lck);
 		tevent_req_nterror(req, status);
 		return;
 	}
@@ -670,12 +668,11 @@ static void smbd_smb2_lock_try(struct tevent_req *req)
 	state->retry_msecs = 0;
 
 	if (!state->blocking) {
-		TALLOC_FREE(lck);
 		tevent_req_nterror(req, status);
 		return;
 	}
 
-	if (blocking_smblctx == UINT64_MAX) {
+	if (brl_state.blocking_smblctx == UINT64_MAX) {
 		smbd_smb2_lock_update_polling_msecs(state);
 
 		DBG_DEBUG("Blocked on a posix lock. Retry in %"PRIu32" msecs\n",
@@ -688,8 +685,7 @@ setup_retry:
 	DBG_DEBUG("Watching share mode lock\n");
 
 	subreq = share_mode_watch_send(
-		state, state->ev, lck, blocking_pid);
-	TALLOC_FREE(lck);
+		state, state->ev, lck, brl_state.blocking_pid);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -705,6 +701,35 @@ setup_retry:
 			tevent_req_oom(req);
 			return;
 		}
+	}
+}
+
+static void smbd_smb2_lock_try(struct tevent_req *req)
+{
+	struct smbd_smb2_lock_state *state = tevent_req_data(
+		req, struct smbd_smb2_lock_state);
+	NTSTATUS status;
+
+	if (!state->fsp->fsp_flags.can_lock) {
+		if (state->fsp->fsp_flags.is_directory) {
+			tevent_req_nterror(req,
+					   NT_STATUS_INVALID_DEVICE_REQUEST);
+			return;
+		}
+		tevent_req_nterror(req, NT_STATUS_INVALID_HANDLE);
+		return;
+	}
+
+	if (!lp_locking(state->fsp->conn->params)) {
+		return tevent_req_done(req);
+	}
+
+	status = share_mode_do_locked_brl(state->fsp,
+					  smbd_do_locks_try_fn,
+					  req);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
 	}
 }
 
