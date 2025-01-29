@@ -177,8 +177,10 @@ NTSTATUS dsdb_expand_nested_groups(struct ldb_context *sam_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		(*res_sids)[*num_res_sids].sid = sid;
-		(*res_sids)[*num_res_sids].attrs = sid_attrs;
+		(*res_sids)[*num_res_sids] = (struct auth_SidAttr) {
+			.sid = sid,
+			.attrs = sid_attrs,
+		};
 
 		++(*num_res_sids);
 	}
