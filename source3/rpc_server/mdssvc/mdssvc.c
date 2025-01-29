@@ -157,7 +157,8 @@ static bool add_filemeta(struct mds_ctx *mds_ctx,
 			return false;
 		}
 		if (strcmp(attribute, "kMDItemDisplayName") == 0
-		    || strcmp(attribute, "kMDItemFSName") == 0) {
+		    || strcmp(attribute, "kMDItemFSName") == 0
+		    || strcmp(attribute, "_kMDItemFileName") == 0) {
 			p = strrchr(nfd_path, '/');
 			if (p) {
 				result = dalloc_stradd(meta, p + 1);
@@ -170,7 +171,9 @@ static bool add_filemeta(struct mds_ctx *mds_ctx,
 			if (result != 0) {
 				return false;
 			}
-		} else if (strcmp(attribute, "kMDItemFSSize") == 0) {
+		} else if (strcmp(attribute, "kMDItemFSSize") == 0
+			|| strcmp(attribute, "kMDItemLogicalSize") == 0)
+		{
 			uint64var = sp->st_ex_size;
 			result = dalloc_add_copy(meta, &uint64var, uint64_t);
 			if (result != 0) {
@@ -192,6 +195,18 @@ static bool add_filemeta(struct mds_ctx *mds_ctx,
 			strcmp(attribute, "kMDItemContentModificationDate") == 0)
 		{
 			sl_time = convert_timespec_to_timeval(sp->st_ex_mtime);
+			result = dalloc_add_copy(meta, &sl_time, sl_time_t);
+			if (result != 0) {
+				return false;
+			}
+		} else if (strcmp(attribute, "kMDItemLastUsedDate") == 0) {
+			sl_time = convert_timespec_to_timeval(sp->st_ex_atime);
+			result = dalloc_add_copy(meta, &sl_time, sl_time_t);
+			if (result != 0) {
+				return false;
+			}
+		} else if (strcmp(attribute, "kMDItemContentCreationDate") == 0) {
+			sl_time = convert_timespec_to_timeval(sp->st_ex_btime);
 			result = dalloc_add_copy(meta, &sl_time, sl_time_t);
 			if (result != 0) {
 				return false;
@@ -579,7 +594,9 @@ bool mds_add_result(struct sl_query *slq, const char *path)
 		return true;
 	}
 
-	sb = smb_fname->st;
+	fdos_mode(smb_fname->fsp);
+
+	sb = smb_fname->fsp->fsp_name->st;
 
 	status = smbd_check_access_rights_fsp(slq->mds_ctx->conn->cwd_fsp,
 					      smb_fname->fsp,
