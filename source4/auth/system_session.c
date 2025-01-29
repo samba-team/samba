@@ -138,8 +138,10 @@ NTSTATUS auth_system_user_info_dc(TALLOC_CTX *mem_ctx, const char *netbios_name,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	user_info_dc->sids->sid = global_sid_System;
-	user_info_dc->sids->attrs = SE_GROUP_DEFAULT_FLAGS;
+	user_info_dc->sids[0] = (struct auth_SidAttr) {
+		.sid = global_sid_System,
+		.attrs = SE_GROUP_DEFAULT_FLAGS,
+	};
 
 	/* annoying, but the Anonymous really does have a session key, 
 	   and it is all zeros! */
