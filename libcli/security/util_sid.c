@@ -444,6 +444,10 @@ NTSTATUS add_sid_to_array_attrs(TALLOC_CTX *mem_ctx,
 {
 	struct auth_SidAttr *tmp = NULL;
 
+	if (sid == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	if ((*num) == UINT32_MAX) {
 		return NT_STATUS_INTEGER_OVERFLOW;
 	}
@@ -455,8 +459,10 @@ NTSTATUS add_sid_to_array_attrs(TALLOC_CTX *mem_ctx,
 	}
 	*sids = tmp;
 
-	sid_copy(&((*sids)[*num].sid), sid);
-	(*sids)[*num].attrs = attrs;
+	(*sids)[*num] = (struct auth_SidAttr) {
+		.sid = *sid,
+		.attrs = attrs,
+	};
 	*num += 1;
 
 	return NT_STATUS_OK;
