@@ -747,12 +747,6 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 		user_info_dc->num_sids++;
 	}
 
-	/* Copy 'other' sids.  We need to do sid filtering here to
-	   prevent possible elevation of privileges.  See:
-
-           http://www.microsoft.com/windows2000/techinfo/administration/security/sidfilter.asp
-         */
-
 	/*
 	 * The IDL layer would be a better place to check this, but to
 	 * guard the integer addition below, we double-check
