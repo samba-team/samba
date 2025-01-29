@@ -2032,3 +2032,8 @@ NTSTATUS share_mode_do_locked_brl(files_struct *fsp,
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
+
+void brl_set_modified(struct byte_range_lock *br_lck, bool modified)
+{
+	br_lck->modified = modified;
+}
