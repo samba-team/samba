@@ -686,11 +686,6 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	user_info_dc = talloc_zero(mem_ctx, struct auth_user_info_dc);
-	if (user_info_dc == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	/*
 	   Here is where we should check the list of
 	   trusted domains, and verify that the SID
@@ -698,15 +693,26 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 	*/
 	if (!base->domain_sid) {
 		DEBUG(0, ("Cannot operate on a Netlogon Validation without a domain SID\n"));
-		talloc_free(user_info_dc);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* The IDL layer would be a better place to check this, but to
 	 * guard the integer addition below, we double-check */
-	if (base->groups.count > 65535) {
-		talloc_free(user_info_dc);
+	if (base->groups.count > UINT16_MAX) {
 		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/*
+	 * The IDL layer would be a better place to check this, but to
+	 * guard the integer addition below, we double-check
+	 */
+	if (sidcount > UINT16_MAX) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	user_info_dc = talloc_zero(mem_ctx, struct auth_user_info_dc);
+	if (user_info_dc == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	user_info_dc->num_sids = PRIMARY_SIDS_COUNT;
@@ -745,15 +751,6 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 		}
 		user_info_dc->sids[user_info_dc->num_sids].attrs = base->groups.rids[i].attributes;
 		user_info_dc->num_sids++;
-	}
-
-	/*
-	 * The IDL layer would be a better place to check this, but to
-	 * guard the integer addition below, we double-check
-	 */
-	if (sidcount > UINT16_MAX) {
-		talloc_free(user_info_dc);
-		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (sidcount > 0) {
