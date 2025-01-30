@@ -146,7 +146,7 @@ bool strict_lock_check_default(files_struct *fsp, struct lock_struct *plock)
 	if (!br_lck) {
 		return true;
 	}
-	ret = brl_locktest(br_lck, plock);
+	ret = brl_locktest(br_lck, plock, false);
 
 	if (!ret) {
 		/*
@@ -157,7 +157,7 @@ bool strict_lock_check_default(files_struct *fsp, struct lock_struct *plock)
 		if (br_lck == NULL) {
 			return true;
 		}
-		ret = brl_locktest(br_lck, plock);
+		ret = brl_locktest(br_lck, plock, true);
 		TALLOC_FREE(br_lck);
 	}
 
