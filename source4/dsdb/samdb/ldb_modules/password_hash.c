@@ -1562,6 +1562,9 @@ static bool parse_scheme(const char *scheme, int *algorithm, int *rounds) {
 		   == 0) {
 		*algorithm = SHA_512_ALGORITHM_ID;
 	} else {
+		DBG_ERR("user password scheme '%s' is not SHA_256 or SHA_512 "
+			"('$5$' or '$6$')\n",
+			scheme);
 		return false;
 	}
 
@@ -1577,6 +1580,27 @@ static bool parse_scheme(const char *scheme, int *algorithm, int *rounds) {
 	}
 	digits[i] = '\0';
 	*rounds = atoi(digits);
+	/*
+	 * According to https://www.akkadia.org/drepper/SHA-crypt.txt
+	 * SHA_256 and SHA_512 crypt rounds are restricted to the range
+	 * [1000, 999_999_999]. (thus it is OK to use int and atoi).
+	 *
+	 * As specified crypt() itself will clamp to these values and
+	 * continue, but that leads to confusing situations, like the
+	 * salt not matching.
+	 *
+	 * Rather than let that happen, we complain and bail out. This
+	 * is from smb.conf ("password hash userPassword schemes"),
+	 * and we want to let the admin know it's wrong.
+	 */
+	if (*rounds < 1000 || *rounds > 999999999) {
+		DBG_ERR("user password scheme '%s' specifies a non-standard "
+			"number of rounds (%d)\n",
+			scheme,
+			*rounds);
+		return false;
+	}
+
 	return true;
 }
 
