@@ -1192,7 +1192,8 @@ bool brl_unlock(struct byte_range_lock *br_lck,
 ****************************************************************************/
 
 bool brl_locktest(struct byte_range_lock *br_lck,
-		  const struct lock_struct *rw_probe)
+		  const struct lock_struct *rw_probe,
+		  bool upgradable)
 {
 	bool ret = True;
 	unsigned int i;
@@ -1205,7 +1206,7 @@ bool brl_locktest(struct byte_range_lock *br_lck,
 		 * Our own locks don't conflict.
 		 */
 		if (brl_conflict_other(&locks[i], rw_probe)) {
-			if (br_lck->record == NULL) {
+			if (!upgradable) {
 				/* readonly */
 				return false;
 			}
