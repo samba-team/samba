@@ -75,7 +75,7 @@ dbcheck_fix()
 	# Unlike most calls to dbcheck --fix, this will not trigger an error, as
 	# we do not flag an error count for this old DN string case.
 	$PYTHON $BINDIR/samba-tool dbcheck --cross-ncs --configfile=$PREFIX/renamedc_test/etc/smb.conf --fix \
-		--quiet --yes fix_all_old_dn_string_component_mismatch \
+		--quiet --yes-restricted-to-rule=fix_all_old_dn_string_component_mismatch \
 		--attrs="fsmoRoleOwner interSiteTopologyGenerator msDS-NC-Replica-Locations"
 }
 

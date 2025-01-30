@@ -39,20 +39,6 @@ class cmd_dbcheck(Command):
         "credopts": options.CredentialsOptionsDouble,
     }
 
-    def process_yes(option, opt, value, parser):
-        assert value is None
-        rargs = parser.rargs
-        if rargs:
-            arg = rargs[0]
-            if ((arg[:2] == "--" and len(arg) > 2) or
-                (arg[:1] == "-" and len(arg) > 1 and arg[1] != "-")):
-                setattr(parser.values, "yes", True)
-            else:
-                setattr(parser.values, "yes_rules", arg.split())
-                del rargs[0]
-        else:
-            setattr(parser.values, "yes", True)
-
     takes_args = ["DN?"]
 
     takes_options = [
@@ -60,8 +46,10 @@ class cmd_dbcheck(Command):
                help="Pass search scope that builds DN list. Options: SUB, ONE, BASE"),
         Option("--fix", dest="fix", default=False, action='store_true',
                help='Fix any errors found'),
-        Option("--yes", action='callback', callback=process_yes,
+        Option("--yes", action='store_true',
                help="don't confirm changes individually. Applies all as a single transaction (will not succeed if any errors are found)"),
+        Option("--yes-restricted-to-rule", action='append', dest='yes_rules',
+               help=optparse.SUPPRESS_HELP),  # only used by blackbox tests
         Option("--cross-ncs", dest="cross_ncs", default=False, action='store_true',
                help="cross naming context boundaries"),
         Option("-v", "--verbose", dest="verbose", action="store_true", default=False,
