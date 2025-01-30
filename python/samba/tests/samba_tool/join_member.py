@@ -40,7 +40,7 @@ class JoinMemberCmdTestCase(SambaToolCmdTest):
                                                   os.environ["DC_PASSWORD"]))
         self.assertCmdSuccess(result, out, err, 'Failed to find the record')
 
-        existing_records = re.findall('A:\s+(\d+\.\d+\.\d+\.\d+)\s', out)
+        existing_records = re.findall(r'A:\s+(\d+\.\d+\.\d+\.\d+)\s', out)
 
         # Remove the existing records
         for record in existing_records:
