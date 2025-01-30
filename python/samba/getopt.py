@@ -32,6 +32,7 @@ from samba.credentials import (
     MUST_USE_KERBEROS,
 )
 from samba._glue import get_burnt_commandline
+import samba
 
 
 def check_bytes(option, opt, value):
@@ -310,10 +311,9 @@ class VersionOptions(OptionGroup):
         super().__init__(parser, "Version Options")
         self.add_option("-V", "--version", action="callback",
                         callback=self._display_version,
-                        help="Display version number")
+                        help=f"Display version number ({samba.version})")
 
     def _display_version(self, option, opt_str, arg, parser):
-        import samba
         print(samba.version)
         sys.exit(0)
 
