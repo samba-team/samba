@@ -1214,6 +1214,14 @@ NTSTATUS dsdb_trust_normalize_forest_info_step1(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
+		if (nnb != NULL &&
+		   (nnb->string == NULL ||
+		    strlen(nnb->string) > 15))
+		{
+			TALLOC_FREE(frame);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
 		for (c = 0; c < n; c++) {
 			const struct lsa_ForestTrustRecord *cftr = nfti->entries[c];
 			const struct lsa_ForestTrustDomainInfo *cinfo = NULL;
