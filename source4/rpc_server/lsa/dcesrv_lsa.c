@@ -281,6 +281,8 @@ static NTSTATUS dcesrv_lsa_DeleteObject(struct dcesrv_call_state *dce_call, TALL
 			return NT_STATUS_INVALID_HANDLE;
 		}
 
+		TALLOC_FREE(h);
+
 		ZERO_STRUCTP(r->out.handle);
 
 		return NT_STATUS_OK;
@@ -313,6 +315,8 @@ static NTSTATUS dcesrv_lsa_DeleteObject(struct dcesrv_call_state *dce_call, TALL
 		if (ret != LDB_SUCCESS) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
+
+		TALLOC_FREE(h);
 
 		ZERO_STRUCTP(r->out.handle);
 
@@ -356,6 +360,8 @@ static NTSTATUS dcesrv_lsa_DeleteObject(struct dcesrv_call_state *dce_call, TALL
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+
+		TALLOC_FREE(h);
 
 		ZERO_STRUCTP(r->out.handle);
 
