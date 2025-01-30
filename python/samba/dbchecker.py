@@ -826,11 +826,21 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         """handle a DN string being incorrect"""
         self.report("ERROR: incorrect DN %s component for %s in object %s - %s" % (mismatch_type, attrname, dn, val))
         dsdb_dn.dn = correct_dn
+        confirmation_map = {
+            'string_dn': 'fix_all_string_dn_component_mismatch',
+            'GUID_dn': 'fix_all_GUID_dn_component_mismatch',
+            'SID_dn': 'fix_all_SID_dn_component_mismatch'
+        }
+        try:
+            confirmation_option = confirmation_map[mismatch_type]
+        except KeyError:
+            self.report(f"ERROR: {mismatch_type} is an unknown dn component type")
+            return
 
-        if not self.confirm_all('Change DN to %s?' % str(dsdb_dn),
-                                'fix_all_%s_dn_component_mismatch' % mismatch_type):
+        if not self.confirm_all(f'Change DN to {dsdb_dn}?', confirmation_option):
             self.report("Not fixing %s component mismatch" % mismatch_type)
             return
+
         m = ldb.Message()
         m.dn = dn
         m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
