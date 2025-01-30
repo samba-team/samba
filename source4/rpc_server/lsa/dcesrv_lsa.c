@@ -31,7 +31,6 @@
 #include "dsdb/common/util.h"
 #include "libcli/security/session.h"
 #include "libcli/lsarpc/util_lsarpc.h"
-#include "lib/messaging/irpc.h"
 #include "libds/common/roles.h"
 #include "lib/util/smb_strtox.h"
 #include "lib/param/loadparm.h"
@@ -1222,13 +1221,9 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_common(struct dcesrv_call_state *
 	DATA_BLOB trustAuthIncoming = data_blob_null;
 	DATA_BLOB trustAuthOutgoing = data_blob_null;
 	struct dcesrv_handle *handle = NULL;
-	struct server_id *server_ids = NULL;
-	uint32_t num_server_ids = 0;
 	char *dns_encoded = NULL;
 	char *netbios_encoded = NULL;
 	char *sid_encoded = NULL;
-	struct imessaging_context *imsg_ctx =
-		dcesrv_imessaging_context(dce_call->conn);
 	NTSTATUS status;
 	bool ok;
 	int ret;
@@ -1442,22 +1437,6 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_common(struct dcesrv_call_state *
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-
-	/*
-	 * Notify winbindd that we have a new trust
-	 */
-	status = irpc_servers_byname(imsg_ctx,
-				     mem_ctx,
-				     "winbind_server",
-				     &num_server_ids,
-				     &server_ids);
-	if (NT_STATUS_IS_OK(status) && num_server_ids >= 1) {
-		imessaging_send(imsg_ctx,
-				server_ids[0],
-				MSG_WINBIND_RELOAD_TRUSTED_DOMAINS,
-				NULL);
-	}
-	TALLOC_FREE(server_ids);
 
 	handle = dcesrv_handle_create(dce_call, LSA_HANDLE_TRUSTED_DOMAIN);
 	if (handle == NULL) {
@@ -4535,14 +4514,10 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 	struct lsa_ForestTrustCollisionInfo *c_info = NULL;
 	DATA_BLOB ft_blob = {};
 	struct ldb_message *msg = NULL;
-	struct server_id *server_ids = NULL;
-	uint32_t num_server_ids = 0;
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 	int ret;
 	bool in_transaction = false;
-	struct imessaging_context *imsg_ctx =
-		dcesrv_imessaging_context(dce_call->conn);
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
 
@@ -4771,24 +4746,6 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto done;
 	}
-
-	/*
-	 * Notify winbindd that we have a acquired forest trust info
-	 */
-	status = irpc_servers_byname(imsg_ctx,
-				     mem_ctx,
-				     "winbind_server",
-				     &num_server_ids,
-				     &server_ids);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("irpc_servers_byname failed\n");
-		goto done;
-	}
-
-	imessaging_send(imsg_ctx,
-			server_ids[0],
-			MSG_WINBIND_RELOAD_TRUSTED_DOMAINS,
-			NULL);
 
 	status = NT_STATUS_OK;
 
