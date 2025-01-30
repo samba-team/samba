@@ -108,10 +108,32 @@ void init_strict_lock_struct(files_struct *fsp,
 	};
 }
 
+struct strict_lock_check_state {
+	bool ret;
+	files_struct *fsp;
+	struct lock_struct *plock;
+};
+
+static void strict_lock_check_default_fn(struct share_mode_lock *lck,
+					 struct byte_range_lock *br_lck,
+					 void *private_data)
+{
+	struct strict_lock_check_state *state = private_data;
+
+	/*
+	 * The caller has checked fsp->fsp_flags.can_lock and lp_locking so
+	 * br_lck has to be there!
+	 */
+	SMB_ASSERT(br_lck != NULL);
+
+	state->ret = brl_locktest(br_lck, state->plock, true);
+}
+
 bool strict_lock_check_default(files_struct *fsp, struct lock_struct *plock)
 {
 	struct byte_range_lock *br_lck;
 	int strict_locking = lp_strict_locking(fsp->conn->params);
+	NTSTATUS status;
 	bool ret = False;
 
 	if (plock->size == 0) {
@@ -150,18 +172,27 @@ bool strict_lock_check_default(files_struct *fsp, struct lock_struct *plock)
 		return true;
 	}
 	ret = brl_locktest(br_lck, plock, false);
-
 	if (!ret) {
 		/*
 		 * We got a lock conflict. Retry with rw locks to enable
 		 * autocleanup. This is the slow path anyway.
 		 */
-		br_lck = brl_get_locks(talloc_tos(), fsp);
-		if (br_lck == NULL) {
-			return true;
+
+		struct strict_lock_check_state state =
+			(struct strict_lock_check_state) {
+			.fsp = fsp,
+			.plock = plock,
+		};
+
+		status = share_mode_do_locked_brl(fsp,
+						  strict_lock_check_default_fn,
+						  &state);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("share_mode_do_locked_brl [%s] failed: %s\n",
+				fsp_str_dbg(fsp), nt_errstr(status));
+			state.ret = false;
 		}
-		ret = brl_locktest(br_lck, plock, true);
-		TALLOC_FREE(br_lck);
+		ret = state.ret;
 	}
 
 	DBG_DEBUG("flavour = %s brl start=%" PRIu64 " "
