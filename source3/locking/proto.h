@@ -66,7 +66,8 @@ bool brl_unlock(struct byte_range_lock *br_lck,
 bool brl_unlock_windows_default(struct byte_range_lock *br_lck,
 				const struct lock_struct *plock);
 bool brl_locktest(struct byte_range_lock *br_lck,
-		  const struct lock_struct *rw_probe);
+		  const struct lock_struct *rw_probe,
+		  bool upgradable);
 NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 		uint64_t *psmblctx,
 		struct server_id pid,
