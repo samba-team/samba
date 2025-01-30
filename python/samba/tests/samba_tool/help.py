@@ -22,6 +22,7 @@ from samba.tests.samba_tool.base import SambaToolCmdTest
 from samba.tests import BlackboxProcessError
 from samba.tests import check_help_consistency
 from samba.common import get_string
+from samba import version
 
 
 class HelpTestCase(SambaToolCmdTest):
@@ -88,3 +89,33 @@ class HelpTestCase(SambaToolCmdTest):
                                                "pleeease"])
         self.assertIn("if '--pass-the-salt-please' is not misspelt", err)
         self.assertIn("the appropriate list in is_password_option", err)
+
+    def test_version(self):
+        """Does --version work?"""
+        (result, out, err) = self.run_command(["samba-tool", "--version"])
+        self.assertEqual(version, out.strip())
+
+    def test_sub_command_version(self):
+        """Does --version work in a sub-command?"""
+        (result, out, err) = self.run_command(["samba-tool", "spn", "--version"])
+        self.assertEqual(version, out.strip())
+
+    def test_leaf_command_version(self):
+        """Does --version work in a leaf command?"""
+        (result, out, err) = self.run_command(["samba-tool", "contact", "edit",
+                                               "--version"])
+        self.assertEqual(version, out.strip())
+
+    def test_help_version(self):
+        """Is version mentioned in --help?"""
+        (result, out, err) = self.run_command(["samba-tool", "spn", "--help"])
+        self.assertIn(version, out)
+
+    def test_version_beats_help(self):
+        """Does samba-tool --help --version print version?"""
+        (result, out, err) = self.run_command(["samba-tool", "spn", "--help", "-V"])
+        self.assertEqual(version, out.strip())
+        (result, out, err) = self.run_command(["samba-tool", "--help", "-V"])
+        self.assertEqual(version, out.strip())
+        (result, out, err) = self.run_command(["samba-tool", "dns", "-V", "--help"])
+        self.assertEqual(version, out.strip())
