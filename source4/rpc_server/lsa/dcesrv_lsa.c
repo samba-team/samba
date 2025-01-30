@@ -1198,6 +1198,10 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_precheck(
 		return NT_STATUS_CURRENT_DOMAIN_NOT_ALLOWED;
 	}
 
+	if (strlen(netbios_name) > 15) {
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
+
 	return NT_STATUS_OK;
 }
 
