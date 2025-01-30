@@ -427,11 +427,11 @@ static NTSTATUS parse_user(TALLOC_CTX *mem_ctx,
 	status = store_or_fetch_attribute(mem_ctx,
 					  ctx,
 					  object_dn,
-					  "SAMACCOUNTNAME",
+					  "sAMAccountName",
 					  &name);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("store_or_fetch_attribute(%s, %s, %s): %s\n",
-			object_dn, "SAMACCOUNTNAME", name,
+			object_dn, "sAMAccountName", name,
 			nt_errstr(status));
 		return status;
 	}

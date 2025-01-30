@@ -559,7 +559,7 @@ NTSTATUS dsdb_lookup_rids(struct ldb_context *ldb,
 			talloc_free(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
-		rc = dsdb_search_one(ldb, tmp_ctx, &msg, dn, LDB_SCOPE_BASE, attrs, 0, "samAccountName=*");
+		rc = dsdb_search_one(ldb, tmp_ctx, &msg, dn, LDB_SCOPE_BASE, attrs, 0, "sAMAccountName=*");
 		if (rc == LDB_ERR_NO_SUCH_OBJECT) {
 			continue;
 		} else if (rc != LDB_SUCCESS) {
@@ -567,7 +567,7 @@ NTSTATUS dsdb_lookup_rids(struct ldb_context *ldb,
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		names[i] = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
+		names[i] = ldb_msg_find_attr_as_string(msg, "sAMAccountName", NULL);
 		if (names[i] == NULL) {
 			DEBUG(10, ("no samAccountName\n"));
 			continue;

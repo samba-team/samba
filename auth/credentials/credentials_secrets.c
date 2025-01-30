@@ -129,7 +129,7 @@ static NTSTATUS cli_credentials_set_secrets_lct(struct cli_credentials *cred,
 
 	cli_credentials_set_password_last_changed_time(cred, lct);
 
-	machine_account = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
+	machine_account = ldb_msg_find_attr_as_string(msg, "sAMAccountName", NULL);
 
 	if (!machine_account) {
 		machine_account = ldb_msg_find_attr_as_string(msg, "servicePrincipalName", NULL);

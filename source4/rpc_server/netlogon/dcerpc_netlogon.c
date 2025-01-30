@@ -480,7 +480,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticateGeneric(
 		"unicodePwd",
 		"userAccountControl",
 		"objectSid",
-		"samAccountName",
+		"sAMAccountName",
 		/* Required for Group Managed Service Accounts. */
 		"msDS-ManagedPasswordId",
 		"msDS-ManagedPasswordInterval",
@@ -740,7 +740,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticateGeneric(
 	}
 
 	*trust_account_in_db = ldb_msg_find_attr_as_string(msgs[0],
-							   "samAccountName",
+							   "sAMAccountName",
 							   NULL);
 	if (*trust_account_in_db == NULL) {
 		DEBUG(0,("No samAccountName returned in record matching user [%s]\n",

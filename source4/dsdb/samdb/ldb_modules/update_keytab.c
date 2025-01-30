@@ -432,7 +432,7 @@ static int update_kt_prepare_commit(struct ldb_module *module)
 
 		krb5_ret = smb_krb5_update_keytab(tmp_ctx, smb_krb5_context->krb5_context,
 						  keytab_name_from_msg(tmp_ctx, ldb, p->msg),
-						  ldb_msg_find_attr_as_string(p->msg, "samAccountName", NULL),
+						  ldb_msg_find_attr_as_string(p->msg, "sAMAccountName", NULL),
 						  realm, SPNs, num_SPNs,
 						  ldb_msg_find_attr_as_string(p->msg, "saltPrincipal", NULL),
 						  ldb_msg_find_attr_as_string(p->msg, "secret", NULL),

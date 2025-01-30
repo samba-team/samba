@@ -37,7 +37,7 @@
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
-	if (asprintf(&ldap_exp, "(samAccountName=%s)", escaped_user) == -1) {
+	if (asprintf(&ldap_exp, "(sAMAccountName=%s)", escaped_user) == -1) {
 		TALLOC_FREE(escaped_user);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}

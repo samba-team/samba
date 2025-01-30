@@ -120,7 +120,7 @@ static bool _get_account_name_for_user_rdn(struct torture_context *tctx,
 	struct ldb_result *ldb_res;
 	const char *account_name = NULL;
 	static const char *attrs[] = {
-		"samAccountName",
+		"sAMAccountName",
 		NULL
 	};
 
@@ -142,7 +142,7 @@ static bool _get_account_name_for_user_rdn(struct torture_context *tctx,
 	                     attrs,
 	                     "(&(objectClass=user)(name=%s))", user_rdn);
 	if (LDB_SUCCESS == ldb_ret && 1 == ldb_res->count) {
-		account_name = ldb_msg_find_attr_as_string(ldb_res->msgs[0], "samAccountName", NULL);
+		account_name = ldb_msg_find_attr_as_string(ldb_res->msgs[0], "sAMAccountName", NULL);
 	}
 
 	/* return user_rdn by default */

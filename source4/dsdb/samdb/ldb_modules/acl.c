@@ -645,7 +645,7 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 	const struct ldb_message *search_res = NULL;
 
 	static const char *acl_attrs[] = {
-		"samAccountName",
+		"sAMAccountName",
 		"dnsHostName",
 		"userAccountControl",
 		NULL

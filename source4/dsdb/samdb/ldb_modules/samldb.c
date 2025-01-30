@@ -547,7 +547,7 @@ static int samldb_sam_accountname_valid_check(struct samldb_ctx *ac)
 
 	ret = dsdb_get_expected_new_values(ac,
 					   ac->msg,
-					   "samAccountName",
+					   "sAMAccountName",
 					   &el,
 					   ac->req->operation);
 	if (ret != LDB_SUCCESS) {
@@ -565,7 +565,7 @@ static int samldb_sam_accountname_valid_check(struct samldb_ctx *ac)
 		}
 	}
 
-	ret = samldb_unique_attr_check(ac, "samAccountName", NULL,
+	ret = samldb_unique_attr_check(ac, "sAMAccountName", NULL,
 				       ldb_get_default_basedn(
 					       ldb_module_get_ctx(ac->module)));
 

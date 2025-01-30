@@ -187,7 +187,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser4(struct dcesrv_call_state *dce_call,
 	}
 
 	dn = msg->dn;
-	samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
+	samAccountName = ldb_msg_find_attr_as_string(msg, "sAMAccountName", NULL);
 	objectSid = samdb_result_dom_sid(msg, msg, "objectSid");
 
 	status = samdb_result_passwords(mem_ctx,
@@ -372,7 +372,7 @@ static NTSTATUS dcesrv_samr_ChangePasswordUser_impl(struct dcesrv_call_state *dc
 	}
 
 	user_dn = msg->dn;
-	user_samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
+	user_samAccountName = ldb_msg_find_attr_as_string(msg, "sAMAccountName", NULL);
 	user_objectSid = samdb_result_dom_sid(mem_ctx, msg, "objectSid");
 
 	status = samdb_result_passwords(mem_ctx, lp_ctx,

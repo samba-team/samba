@@ -982,7 +982,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	const char * const _result_attrs_spn[] = { "servicePrincipalName", NULL};
 
 	const char * const _domain_attrs_display[] = { "ncName", "dnsRoot", NULL};
-	const char * const _result_attrs_display[] = { "displayName", "samAccountName", NULL};
+	const char * const _result_attrs_display[] = { "displayName", "sAMAccountName", NULL};
 
 	const char * const _domain_attrs_sid[] = { "ncName", "dnsRoot", NULL};
 	const char * const _result_attrs_sid[] = { "objectSid", NULL};

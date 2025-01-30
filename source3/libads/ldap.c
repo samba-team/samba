@@ -1854,7 +1854,7 @@ char *ads_parent_dn(const char *dn)
 	const char *attrs[] = {
 		/* This is how Windows checks for machine accounts */
 		"objectClass",
-		"SamAccountName",
+		"sAMAccountName",
 		"userAccountControl",
 		"DnsHostName",
 		"ServicePrincipalName",
@@ -1875,7 +1875,7 @@ char *ads_parent_dn(const char *dn)
 
 	/* the easiest way to find a machine account anywhere in the tree
 	   is to look for hostname$ */
-	expr = talloc_asprintf(frame, "(samAccountName=%s$)", machine);
+	expr = talloc_asprintf(frame, "(sAMAccountName=%s$)", machine);
 	if (expr == NULL) {
 		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 		goto done;
@@ -2717,7 +2717,7 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 				   const char *dns_domain_name)
 {
 	ADS_STATUS ret;
-	char *samAccountName = NULL;
+	char *samaccountname = NULL;
 	char *controlstr = NULL;
 	TALLOC_CTX *ctx = NULL;
 	ADS_MODLIST mods;
@@ -2791,8 +2791,8 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 
 	/* Create machine account */
 
-	samAccountName = talloc_asprintf(ctx, "%s$", machine_name);
-	if (samAccountName == NULL) {
+	samaccountname = talloc_asprintf(ctx, "%s$", machine_name);
+	if (samaccountname == NULL) {
 		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto done;
 	}
@@ -2869,7 +2869,7 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 	}
 
 	ads_mod_str(ctx, &mods, "objectClass", "Computer");
-	ads_mod_str(ctx, &mods, "SamAccountName", samAccountName);
+	ads_mod_str(ctx, &mods, "sAMAccountName", samaccountname);
 	ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
 	ads_mod_str(ctx, &mods, "DnsHostName", dns_hostname);
 	ads_mod_strlist(ctx, &mods, "ServicePrincipalName", spn_array);
@@ -2905,7 +2905,7 @@ ADS_STATUS ads_move_machine_acct(ADS_STRUCT *ads, const char *machine_name,
 	char *computer_rdn = NULL;
 	bool need_move = False;
 
-	if (asprintf(&filter, "(samAccountName=%s$)", machine_name) == -1) {
+	if (asprintf(&filter, "(sAMAccountName=%s$)", machine_name) == -1) {
 		rc = ADS_ERROR(LDAP_NO_MEMORY);
 		goto done;
 	}

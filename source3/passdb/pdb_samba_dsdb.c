@@ -197,9 +197,9 @@ static NTSTATUS pdb_samba_dsdb_init_sam_from_priv(struct pdb_methods *m,
 	uint64_t n;
 	const DATA_BLOB *blob;
 
-	str = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
+	str = ldb_msg_find_attr_as_string(msg, "sAMAccountName", NULL);
 	if (str == NULL) {
-		DEBUG(10, ("no samAccountName\n"));
+		DEBUG(10, ("no sAMAccountName\n"));
 		goto fail;
 	}
 	pdb_set_username(sam, str, PDB_SET);
@@ -531,7 +531,7 @@ static int pdb_samba_dsdb_replace_by_sam(struct pdb_samba_dsdb_state *state,
 	}
 
 	if (need_update(sam, PDB_USERNAME)) {
-		ret |= ldb_msg_add_string(msg, "samAccountName",
+		ret |= ldb_msg_add_string(msg, "sAMAccountName",
 					  pdb_get_username(sam));
 	}
 
@@ -742,7 +742,7 @@ static NTSTATUS pdb_samba_dsdb_getsampwnam(struct pdb_methods *m,
 		m->private_data, struct pdb_samba_dsdb_state);
 
 	return pdb_samba_dsdb_getsampwfilter(m, state, sam_acct,
-					 "(&(samaccountname=%s)(objectclass=user))",
+					 "(&(sAMAccountName=%s)(objectclass=user))",
 					 username);
 }
 
@@ -932,7 +932,7 @@ static NTSTATUS pdb_samba_dsdb_getgrfilter(struct pdb_methods *m, GROUP_MAP *map
 {
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_samba_dsdb_state);
-	const char *attrs[] = { "objectClass", "objectSid", "description", "samAccountName", "groupType",
+	const char *attrs[] = { "objectClass", "objectSid", "description", "sAMAccountName", "groupType",
 				NULL };
 	struct ldb_message *msg;
 	va_list ap;
@@ -1015,7 +1015,7 @@ static NTSTATUS pdb_samba_dsdb_getgrfilter(struct pdb_methods *m, GROUP_MAP *map
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	str = ldb_msg_find_attr_as_string(msg, "samAccountName",
+	str = ldb_msg_find_attr_as_string(msg, "sAMAccountName",
 					  NULL);
 	if (str == NULL) {
 		talloc_free(tmp_ctx);
@@ -1095,7 +1095,7 @@ static NTSTATUS pdb_samba_dsdb_getgrnam(struct pdb_methods *m, GROUP_MAP *map,
 	NTSTATUS status;
 
 	filter = talloc_asprintf(talloc_tos(),
-				 "(&(samaccountname=%s)(objectclass=group))",
+				 "(&(sAMAccountName=%s)(objectclass=group))",
 				 name);
 	if (filter == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -1980,7 +1980,7 @@ static bool pdb_samba_dsdb_search_filter(struct pdb_methods *m,
 
 		e->acct_flags = samdb_result_acct_flags(res->msgs[i], "userAccountControl");
 		e->account_name = ldb_msg_find_attr_as_string(
-			res->msgs[i], "samAccountName", NULL);
+			res->msgs[i], "sAMAccountName", NULL);
 		if (e->account_name == NULL) {
 			talloc_free(tmp_ctx);
 			return false;
@@ -3173,7 +3173,7 @@ static NTSTATUS add_trust_user(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = ldb_msg_add_fmt(msg, "samAccountName", "%s$", netbios_name);
+	ret = ldb_msg_add_fmt(msg, "sAMAccountName", "%s$", netbios_name);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -3518,7 +3518,7 @@ static NTSTATUS delete_trust_user(TALLOC_CTX *mem_ctx,
 			   ldb_get_default_basedn(state->ldb),
 			   &msgs,
 			   attrs,
-			   "samAccountName=%s$",
+			   "sAMAccountName=%s$",
 			   trust_user);
 	if (ret > 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;

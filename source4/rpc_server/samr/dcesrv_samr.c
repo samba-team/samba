@@ -3678,12 +3678,12 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		break;
 
 	case 6:
-		SET_STRING(msg, info6.account_name,     "samAccountName");
+		SET_STRING(msg, info6.account_name,     "sAMAccountName");
 		SET_STRING(msg, info6.full_name,        "displayName");
 		break;
 
 	case 7:
-		SET_STRING(msg, info7.account_name,     "samAccountName");
+		SET_STRING(msg, info7.account_name,     "sAMAccountName");
 		break;
 
 	case 8:
@@ -3763,7 +3763,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		IFSET(SAMR_FIELD_ACCT_EXPIRY)
 			SET_UINT64(msg, info21.acct_expiry,    "accountExpires");
 		IFSET(SAMR_FIELD_ACCOUNT_NAME)
-			SET_STRING(msg, info21.account_name,   "samAccountName");
+			SET_STRING(msg, info21.account_name,   "sAMAccountName");
 		IFSET(SAMR_FIELD_FULL_NAME)
 			SET_STRING(msg, info21.full_name,      "displayName");
 		IFSET(SAMR_FIELD_HOME_DIRECTORY)
@@ -3868,7 +3868,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		IFSET(SAMR_FIELD_ACCT_EXPIRY)
 			SET_UINT64(msg, info23.info.acct_expiry,    "accountExpires");
 		IFSET(SAMR_FIELD_ACCOUNT_NAME)
-			SET_STRING(msg, info23.info.account_name,   "samAccountName");
+			SET_STRING(msg, info23.info.account_name,   "sAMAccountName");
 		IFSET(SAMR_FIELD_FULL_NAME)
 			SET_STRING(msg, info23.info.full_name,      "displayName");
 		IFSET(SAMR_FIELD_HOME_DIRECTORY)
@@ -3979,7 +3979,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		IFSET(SAMR_FIELD_ACCT_EXPIRY)
 			SET_UINT64(msg, info25.info.acct_expiry,    "accountExpires");
 		IFSET(SAMR_FIELD_ACCOUNT_NAME)
-			SET_STRING(msg, info25.info.account_name,   "samAccountName");
+			SET_STRING(msg, info25.info.account_name,   "sAMAccountName");
 		IFSET(SAMR_FIELD_FULL_NAME)
 			SET_STRING(msg, info25.info.full_name,      "displayName");
 		IFSET(SAMR_FIELD_HOME_DIRECTORY)
@@ -4150,7 +4150,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		{
 			SET_STRING(msg,
 				   info32.info.account_name,
-				   "samAccountName");
+				   "sAMAccountName");
 		}
 		IFSET(SAMR_FIELD_FULL_NAME)
 		{

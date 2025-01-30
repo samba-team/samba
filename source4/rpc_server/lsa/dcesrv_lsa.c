@@ -1079,7 +1079,7 @@ static NTSTATUS add_trust_user(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = ldb_msg_add_fmt(msg, "samAccountName", "%s$", netbios_name);
+	ret = ldb_msg_add_fmt(msg, "sAMAccountName", "%s$", netbios_name);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1932,7 +1932,7 @@ static NTSTATUS update_trust_user(TALLOC_CTX *mem_ctx,
 
 	ret = gendb_search(sam_ldb, mem_ctx,
 			   base_dn, &msgs, attrs,
-			   "samAccountName=%s$", netbios_name);
+			   "sAMAccountName=%s$", netbios_name);
 	if (ret > 1) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}

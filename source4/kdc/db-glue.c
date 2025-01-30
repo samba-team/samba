@@ -1232,7 +1232,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		config_kdc_enctypes != 0 ?
 		config_kdc_enctypes :
 		ENC_ALL_TYPES;
-	const char *samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
+	const char *samAccountName = ldb_msg_find_attr_as_string(msg, "sAMAccountName", NULL);
 
 	const struct authn_kerberos_client_policy *authn_client_policy = NULL;
 	const struct authn_server_policy *authn_server_policy = NULL;
