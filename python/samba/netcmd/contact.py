@@ -100,14 +100,12 @@ class cmd_add(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
     }
 
     def run(self,
             fullcontactname=None,
             sambaopts=None,
             credopts=None,
-            versionopts=None,
             H=None,
             ou=None,
             surname=None,
@@ -187,14 +185,12 @@ class cmd_delete(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
     }
 
     def run(self,
             contactname,
             sambaopts=None,
             credopts=None,
-            versionopts=None,
             H=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
@@ -267,13 +263,11 @@ class cmd_list(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
     }
 
     def run(self,
             sambaopts=None,
             credopts=None,
-            versionopts=None,
             H=None,
             base_dn=None,
             full_dn=False):
@@ -363,14 +357,12 @@ class cmd_edit(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
     }
 
     def run(self,
             contactname,
             sambaopts=None,
             credopts=None,
-            versionopts=None,
             H=None,
             editor=None):
         lp = sambaopts.get_loadparm()
@@ -500,14 +492,12 @@ class cmd_show(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
     }
 
     def run(self,
             contactname,
             sambaopts=None,
             credopts=None,
-            versionopts=None,
             H=None,
             contact_attrs=None):
 
@@ -604,7 +594,6 @@ class cmd_move(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
     }
 
     def run(self,
@@ -612,7 +601,6 @@ class cmd_move(Command):
             new_parent_dn,
             sambaopts=None,
             credopts=None,
-            versionopts=None,
             H=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
@@ -743,11 +731,10 @@ class cmd_rename(Command):
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "credopts": options.CredentialsOptions,
-        "versionopts": options.VersionOptions,
     }
 
 
-    def run(self, contactname, credopts=None, sambaopts=None, versionopts=None,
+    def run(self, contactname, credopts=None, sambaopts=None,
             H=None, surname=None, given_name=None, initials=None, force_new_cn=None,
             display_name=None, mail_address=None, reset_cn=None):
         # illegal options
