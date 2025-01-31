@@ -1710,35 +1710,37 @@ the following entry types;
 </refsect2>
 
 <refsect2>
-<title>ADS setspn <replaceable>SETSPN LIST [machine]</replaceable></title>
+<title>ADS SETSPN LIST <replaceable>[machine]</replaceable></title>
 
 <para>
    Lists the Windows SPNs stored in the 'machine' Windows AD Computer object.
    If 'machine' is not specified then computer account for this client is used
    instead.
 </para>
+<para>Example: <userinput>net ads setspn list --machine-pass</userinput></para>
 </refsect2>
 
 <refsect2>
-<title>ADS setspn <replaceable>SETSPN ADD SPN [machine]</replaceable></title>
+<title>ADS SETSPN ADD <replaceable>[machine] SPN</replaceable></title>
 
 <para>
    Adds the specified Windows SPN to the 'machine' Windows AD Computer object.
    If 'machine' is not specified then computer account for this client is used
    instead.
 </para>
+<para>Example: <userinput>net ads setspn add computername host/computername.example.com -U Administrator%Passw0rd</userinput></para>
 </refsect2>
 
 
 <refsect2>
-<title>ADS setspn <replaceable>SETSPN DELETE SPN [machine]</replaceable></title>
+<title>ADS SETSPN DELETE <replaceable>[machine] SPN</replaceable></title>
 
 <para>
    DELETE the specified Window SPN from the 'machine' Windows AD Computer
    object. If 'machine' is not specified then computer account for this
-   client is used
-   instead.
+   client is used instead.
 </para>
+<para>Example: <userinput>net ads setspn delete computername host/computername.example.com -U Administrator%Passw0rd</userinput></para>
 
 </refsect2>
 
