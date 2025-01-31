@@ -1579,7 +1579,7 @@ No changes are made to the computer AD account.
 </refsect2>
 
 <refsect2>
-<title>(Removed!) ADS KEYTAB <replaceable>ADD</replaceable> <replaceable>(principal | machine | serviceclass | windows SPN</replaceable></title>
+<title>(Removed!) ADS KEYTAB <replaceable>ADD</replaceable> <replaceable>(principal | machine | serviceclass | windows SPN)</replaceable></title>
 
 <para>
 This command is no longer available in Samba 4.21.0 and newer. See <smbconfoption name="sync machine password to keytab"/> for replacement.
@@ -1641,7 +1641,7 @@ available.
 </refsect2>
 
 <refsect2>
-<title>(Removed!) ADS KEYTAB <replaceable>DELETE</replaceable> <replaceable>(principal | machine | serviceclass | windows SPN</replaceable></title>
+<title>(Removed!) ADS KEYTAB <replaceable>DELETE</replaceable> <replaceable>(principal | machine | serviceclass | windows SPN)</replaceable></title>
 
 <para>
 This command is no longer available in Samba 4.21.0 and newer. See <smbconfoption name="sync machine password to keytab"/> for replacement.
@@ -1661,7 +1661,7 @@ net ads keytab create
 </refsect2>
 
 <refsect2>
-<title>(Removed!) ADS KEYTAB <replaceable>ADD_UPDATE_ADS</replaceable> <replaceable>(principal | machine | serviceclass | windows SPN</replaceable></title>
+<title>(Removed!) ADS KEYTAB <replaceable>ADD_UPDATE_ADS</replaceable> <replaceable>(principal | machine | serviceclass | windows SPN)</replaceable></title>
 <para>
 This command is no longer available in Samba 4.21.0 and newer. See <smbconfoption name="sync machine password to keytab"/> for replacement.
 </para>
