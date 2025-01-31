@@ -1765,6 +1765,8 @@ the following entry types;
 <para>0x00000004 RC4-HMAC</para>
 <para>0x00000008 AES128-CTS-HMAC-SHA1-96</para>
 <para>0x00000010 AES256-CTS-HMAC-SHA1-96</para>
+<para>0x00000020 AES256-CTS-HMAC-SHA1-96-SK</para>
+<para>0x00080000 RESOURCE-SID-COMPRESSION-DISABLED</para>
 
 </refsect2>
 
@@ -1772,10 +1774,10 @@ the following entry types;
 	<title>ADS ENCTYPES LIST <replaceable>&lt;ACCOUNTNAME&gt;</replaceable></title>
 
 <para>
-	List the value of the "msDS-SupportedEncryptionTypes" attribute of a given account.
+	List the value of the "msDS-SupportedEncryptionTypes" attribute of a given account. Computer account needs '$' at the end.
 </para>
 
-<para>Example: <userinput>net ads enctypes list Computername</userinput></para>
+<para>Example: <userinput>net ads enctypes list Computername$ --machine-pass</userinput></para>
 
 </refsect2>
 
@@ -1783,10 +1785,10 @@ the following entry types;
 	<title>ADS ENCTYPES SET <replaceable>&lt;ACCOUNTNAME&gt;</replaceable> <replaceable>[enctypes]</replaceable></title>
 
 <para>
-	Set the value of the "msDS-SupportedEncryptionTypes" attribute of the LDAP object of ACCOUNTNAME to a given value. If the value is omitted, the value is set to 31 which enables all the currently supported encryption types.
+	Set the value of the "msDS-SupportedEncryptionTypes" attribute of the LDAP object of ACCOUNTNAME to a given value. If the value is omitted, the value is set to 28 which enables RC4-HMAC, AES128-CTS-HMAC-SHA1-96 and AES256-CTS-HMAC-SHA1-96 encryption types.
 </para>
 
-<para>Example: <userinput>net ads enctypes set Computername 24</userinput></para>
+<para>Example: <userinput>net ads enctypes set Computername$ 24 --machine-pass</userinput></para>
 
 </refsect2>
 
@@ -1797,7 +1799,7 @@ the following entry types;
 	Deletes the "msDS-SupportedEncryptionTypes" attribute of the LDAP object of ACCOUNTNAME.
 </para>
 
-<para>Example: <userinput>net ads enctypes set Computername 24</userinput></para>
+<para>Example: <userinput>net ads enctypes delete Computername$ --machine-pass</userinput></para>
 
 </refsect2>
 
