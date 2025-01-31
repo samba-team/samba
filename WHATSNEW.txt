@@ -17,6 +17,28 @@ NEW FEATURES/CHANGES
 ====================
 
 
+Undocumented samba-tool dbcheck --yes changes
+---------------------------------------------
+
+The --yes option for samba-tool dbcheck, when combined with --fix,
+tells samba-tool to fix everything it can without asking questions.
+
+There has been an undocumented feature whereby if --yes was followed
+by certain special strings it would assume yes to only some of the
+questions. In addition, if --yes was followed by a less special string
+(including DN strings that dbcheck ought to expect), the failure would
+be quite mysterious. This aspect of --yes has been removed and
+replaced by --yes-restricted-to-rule. The usual sense of --yes works
+as expected.
+
+The use of --yes with special strings was only intended for automated
+tests, so was undocumented and unannounced. --yes-restricted-to-rule
+is also not mentioned by --help or the man page, and the magic strings
+it uses are not considered to be stable. We only mention this change
+in case people have stumbled across and come to rely on the feature.
+Otherwise please ignore this news.
+
+
 REMOVED FEATURES
 ================
 
