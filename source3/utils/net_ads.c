@@ -3561,7 +3561,7 @@ static int net_ads_enctypes_list(struct net_context *c, int argc, const char **a
 
 	if (c->display_usage || (argc < 1)) {
 		d_printf(  "%s\n"
-			   "net ads enctypes list\n"
+			   "net ads enctypes list <account_name>\n"
 			   "    %s\n",
 			 _("Usage:"),
 			 _("List supported enctypes"));
@@ -3743,7 +3743,7 @@ static int net_ads_enctypes(struct net_context *c, int argc, const char **argv)
 			net_ads_enctypes_list,
 			NET_TRANSPORT_ADS,
 			N_("List the supported encryption types"),
-			N_("net ads enctypes list\n"
+			N_("net ads enctypes list <account_name>\n"
 			   "    List the supported encryption types")
 		},
 		{
@@ -3751,16 +3751,16 @@ static int net_ads_enctypes(struct net_context *c, int argc, const char **argv)
 			net_ads_enctypes_set,
 			NET_TRANSPORT_ADS,
 			N_("Set the supported encryption types"),
-			N_("net ads enctypes set\n"
+			N_("net ads enctypes set <account_name> [enctypes]\n"
 			   "    Set the supported encryption types")
 		},
 		{
 			"delete",
 			net_ads_enctypes_delete,
 			NET_TRANSPORT_ADS,
-			N_("Delete the supported encryption types"),
-			N_("net ads enctypes delete\n"
-			   "    Delete the supported encryption types")
+			N_("Delete the msDS-SupportedEncryptionTypes attribute"),
+			N_("net ads enctypes delete <account_name>\n"
+			   "    Delete the LDAP attribute")
 		},
 
 		{NULL, NULL, 0, NULL, NULL}
