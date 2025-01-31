@@ -3345,7 +3345,7 @@ static int net_ads_setspn_list(struct net_context *c,
 	if (c->display_usage) {
 		d_printf("%s\n%s",
 			 _("Usage:"),
-			 _("net ads setspn list <machinename>\n"));
+			 _("net ads setspn list [machinename]\n"));
 		TALLOC_FREE(tmp_ctx);
 		return -1;
 	}
@@ -3378,7 +3378,7 @@ static int net_ads_setspn_add(struct net_context *c, int argc, const char **argv
 	if (c->display_usage || argc < 1) {
 		d_printf("%s\n%s",
 			 _("Usage:"),
-			 _("net ads setspn add <machinename> SPN\n"));
+			 _("net ads setspn add [machinename] spn\n"));
 		TALLOC_FREE(tmp_ctx);
 		return -1;
 	}
@@ -3411,7 +3411,7 @@ static int net_ads_setspn_delete(struct net_context *c, int argc, const char **a
 	if (c->display_usage || argc < 1) {
 		d_printf("%s\n%s",
 			 _("Usage:"),
-			 _("net ads setspn delete <machinename> SPN\n"));
+			 _("net ads setspn delete [machinename] spn\n"));
 		TALLOC_FREE(tmp_ctx);
 		return -1;
 	}
@@ -3441,7 +3441,7 @@ int net_ads_setspn(struct net_context *c, int argc, const char **argv)
 			net_ads_setspn_list,
 			NET_TRANSPORT_ADS,
 			N_("List Service Principal Names (SPN)"),
-			N_("net ads setspn list machine\n"
+			N_("net ads setspn list [machine]\n"
 			   "    List Service Principal Names (SPN)")
 		},
 		{
@@ -3449,7 +3449,7 @@ int net_ads_setspn(struct net_context *c, int argc, const char **argv)
 			net_ads_setspn_add,
 			NET_TRANSPORT_ADS,
 			N_("Add Service Principal Names (SPN)"),
-			N_("net ads setspn add machine spn\n"
+			N_("net ads setspn add [machine] spn\n"
 			   "    Add Service Principal Names (SPN)")
 		},
 		{
@@ -3457,7 +3457,7 @@ int net_ads_setspn(struct net_context *c, int argc, const char **argv)
 			net_ads_setspn_delete,
 			NET_TRANSPORT_ADS,
 			N_("Delete Service Principal Names (SPN)"),
-			N_("net ads setspn delete machine spn\n"
+			N_("net ads setspn delete [machine] spn\n"
 			   "    Delete Service Principal Names (SPN)")
 		},
 		{NULL, NULL, 0, NULL, NULL}
