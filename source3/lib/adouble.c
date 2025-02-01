@@ -493,7 +493,7 @@ static bool ad_pack_move_reso(struct vfs_handle_struct *handle,
 		 * This buffer is already set when converting a resourcefork
 		 * stream from vfs_streams_depot backend via ad_unconvert(). It
 		 * is NULL with vfs_streams_xattr where the resourcefork stream
-		 * is stored in an AppleDouble sidecar file vy vfs_fruit.
+		 * is stored in an AppleDouble sidecar file by vfs_fruit.
 		 */
 		ad->ad_rsrc_data = talloc_size(ad, reso_len);
 		if (ad->ad_rsrc_data == NULL) {
@@ -949,7 +949,7 @@ static bool ad_unpack_xattrs(struct adouble *ad)
 }
 
 /**
- * Unpack an AppleDouble blob into a struct adoble
+ * Unpack an AppleDouble blob into a struct adouble
  **/
 static bool ad_unpack(struct adouble *ad, const size_t nentries,
 		      size_t filesize)
@@ -2451,7 +2451,7 @@ static int adouble_destructor(struct adouble *ad)
 }
 
 /**
- * Allocate a struct adouble without initialiing it
+ * Allocate a struct adouble without initializing it
  *
  * The struct is either hang of the fsp extension context or if fsp is
  * NULL from ctx.
