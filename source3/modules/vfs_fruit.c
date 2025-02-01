@@ -291,7 +291,7 @@ static int init_fruit_config(vfs_handle_struct *handle)
 	if (enumval == -1) {
 		DEBUG(1, ("value for %s: resource type unknown\n",
 			  FRUIT_PARAM_TYPE_NAME));
-		return -1;
+		goto fail;
 	}
 	config->rsrc = (enum fruit_rsrc)enumval;
 
@@ -300,7 +300,7 @@ static int init_fruit_config(vfs_handle_struct *handle)
 	if (enumval == -1) {
 		DEBUG(1, ("value for %s: metadata type unknown\n",
 			  FRUIT_PARAM_TYPE_NAME));
-		return -1;
+		goto fail;
 	}
 	config->meta = (enum fruit_meta)enumval;
 
@@ -309,7 +309,7 @@ static int init_fruit_config(vfs_handle_struct *handle)
 	if (enumval == -1) {
 		DEBUG(1, ("value for %s: locking type unknown\n",
 			  FRUIT_PARAM_TYPE_NAME));
-		return -1;
+		goto fail;
 	}
 	config->locking = (enum fruit_locking)enumval;
 
@@ -318,7 +318,7 @@ static int init_fruit_config(vfs_handle_struct *handle)
 	if (enumval == -1) {
 		DEBUG(1, ("value for %s: encoding type unknown\n",
 			  FRUIT_PARAM_TYPE_NAME));
-		return -1;
+		goto fail;
 	}
 	config->encoding = (enum fruit_encoding)enumval;
 
@@ -385,6 +385,13 @@ static int init_fruit_config(vfs_handle_struct *handle)
 				return -1);
 
 	return 0;
+fail:
+	{
+		int err = errno;
+		TALLOC_FREE(config);
+		errno = err;
+	}
+	return -1;
 }
 
 static bool add_fruit_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
