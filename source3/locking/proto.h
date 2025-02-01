@@ -87,6 +87,14 @@ struct byte_range_lock *brl_get_locks_for_locking(TALLOC_CTX *mem_ctx,
 						  files_struct *fsp,
 						  TALLOC_CTX *req_mem_ctx,
 						  const struct GUID *req_guid);
+struct share_mode_lock;
+typedef void (*share_mode_do_locked_brl_fn_t)(
+	struct share_mode_lock *lck,
+	struct byte_range_lock *br_lck, /* br_lck can be NULL */
+	void *private_data);
+NTSTATUS share_mode_do_locked_brl(files_struct *fsp,
+		 share_mode_do_locked_brl_fn_t fn,
+		 void *private_data);
 struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
 					files_struct *fsp);
 struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp);

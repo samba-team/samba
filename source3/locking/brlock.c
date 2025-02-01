@@ -34,6 +34,7 @@
 #include "serverid.h"
 #include "messages.h"
 #include "util_tdb.h"
+#include "source3/locking/share_mode_lock.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
@@ -1926,4 +1927,106 @@ bool brl_cleanup_disconnected(struct file_id fid, uint64_t open_persistent_id)
 done:
 	talloc_free(frame);
 	return ret;
+}
+
+struct share_mode_do_locked_brl_state {
+	share_mode_do_locked_brl_fn_t cb;
+	void *cb_data;
+	struct files_struct *fsp;
+	NTSTATUS status;
+};
+
+static void share_mode_do_locked_brl_fn(struct share_mode_lock *lck,
+					void *private_data)
+{
+	struct share_mode_do_locked_brl_state *state = private_data;
+	struct byte_range_lock *br_lck = NULL;
+	TDB_DATA key = make_tdb_data((uint8_t *)&state->fsp->file_id,
+				     sizeof(state->fsp->file_id));
+
+	if (lp_locking(state->fsp->conn->params) &&
+	    state->fsp->fsp_flags.can_lock)
+	{
+		br_lck = brl_get_locks_readonly_parse(talloc_tos(),
+						      state->fsp);
+		if (br_lck == NULL) {
+			state->status = NT_STATUS_NO_MEMORY;
+			return;
+		}
+	}
+
+	state->cb(lck, br_lck, state->cb_data);
+
+	if (br_lck == NULL || !br_lck->modified) {
+		TALLOC_FREE(br_lck);
+		return;
+	}
+
+	br_lck->record = dbwrap_fetch_locked(brlock_db, br_lck, key);
+	if (br_lck->record == NULL) {
+		DBG_ERR("Could not lock byte range lock entry for '%s'\n",
+			fsp_str_dbg(state->fsp));
+		TALLOC_FREE(br_lck);
+		state->status = NT_STATUS_INTERNAL_DB_ERROR;
+		return;
+	}
+
+	byte_range_lock_flush(br_lck);
+	share_mode_wakeup_waiters(br_lck->fsp->file_id);
+	TALLOC_FREE(br_lck);
+}
+
+/*
+ * Run cb with a glock'ed locking.tdb record, providing both a share_mode_lock
+ * and a br_lck object. An initial read-only, but upgradable, br_lck object is
+ * fetched from brlock.tdb while holding the glock on the locking.tdb record.
+ *
+ * This function only ever hold one low-level TDB chainlock at a time on either
+ * locking.tdb or brlock.tdb, so it can't run afoul any lock order violations.
+ *
+ * Note that br_lck argument in the callback might be NULL in case lp_locking()
+ * is disabled, the fsp doesn't allow locking or is a directory, so either
+ * the caller or the callback have to check for this.
+ */
+NTSTATUS share_mode_do_locked_brl(files_struct *fsp,
+				  share_mode_do_locked_brl_fn_t cb,
+				  void *cb_data)
+{
+	static bool recursion_guard;
+	TALLOC_CTX *frame = NULL;
+	struct share_mode_do_locked_brl_state state = {
+		.fsp = fsp,
+		.cb = cb,
+		.cb_data = cb_data,
+	};
+	NTSTATUS status;
+
+	SMB_ASSERT(!recursion_guard);
+
+	/* silently return ok on print files as we don't do locking there */
+	if (fsp->print_file) {
+		return NT_STATUS_OK;
+	}
+
+	frame = talloc_stackframe();
+
+	recursion_guard = true;
+	status = share_mode_do_locked_vfs_allowed(
+					fsp->file_id,
+					share_mode_do_locked_brl_fn,
+					&state);
+	recursion_guard = false;
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("share_mode_do_locked_vfs_allowed() failed for %s - %s\n",
+			fsp_str_dbg(fsp), nt_errstr(status));
+		TALLOC_FREE(frame);
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(state.status)) {
+		TALLOC_FREE(frame);
+		return state.status;
+	}
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
 }
