@@ -282,7 +282,7 @@ static bool ad_entry_check_size(uint32_t eid,
 				uint32_t off,
 				uint32_t got_len)
 {
-	struct {
+	static const struct {
 		off_t expected_len;
 		bool fixed_size;
 		bool minimum_size;
