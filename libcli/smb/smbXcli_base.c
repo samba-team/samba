@@ -4909,7 +4909,7 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 		uint32_t offset;
 		DATA_BLOB b;
 		uint8_t p[38];
-		const uint8_t zeros[8] = {0, };
+		static const uint8_t zeros[8] = {0, };
 		size_t pad;
 		bool ok;
 
