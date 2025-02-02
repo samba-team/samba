@@ -2081,19 +2081,7 @@ static int fruit_unlink_rsrc_stream(vfs_handle_struct *handle,
 	int ret;
 
 	if (!force_unlink) {
-		struct smb_filename *full_fname = NULL;
-		off_t size;
-
-		/*
-		 * TODO: use SMB_VFS_STATX() once we have it.
-		 */
-
-		full_fname = full_path_from_dirfsp_atname(talloc_tos(),
-							  dirfsp,
-							  smb_fname);
-		if (full_fname == NULL) {
-			return -1;
-		}
+		struct stat_ex st = {};
 
 		/*
 		 * 0 byte resource fork streams are not listed by
@@ -2101,18 +2089,17 @@ static int fruit_unlink_rsrc_stream(vfs_handle_struct *handle,
 		 * deletion doesn't remove the resourcefork stream.
 		 */
 
-		ret = SMB_VFS_NEXT_STAT(handle, full_fname);
+		ret = SMB_VFS_NEXT_FSTATAT(
+			handle, dirfsp, smb_fname, &st, AT_SYMLINK_NOFOLLOW);
 		if (ret != 0) {
-			TALLOC_FREE(full_fname);
-			DBG_ERR("stat [%s] failed [%s]\n",
-				smb_fname_str_dbg(full_fname), strerror(errno));
+			DBG_ERR("fstatat [%s%s] failed [%s]\n",
+				dirfsp->fsp_name->base_name,
+				smb_fname->base_name,
+				strerror(errno));
 			return -1;
 		}
 
-		size = full_fname->st.st_ex_size;
-		TALLOC_FREE(full_fname);
-
-		if (size > 0) {
+		if (st.st_ex_size > 0) {
 			/* OS X ignores resource fork stream delete requests */
 			return 0;
 		}
