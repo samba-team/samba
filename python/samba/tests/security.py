@@ -18,10 +18,15 @@
 """Tests for samba.dcerpc.security."""
 
 import samba.tests
-from samba.dcerpc import security
-from samba.security import access_check
+from samba.dcerpc import security, claims
+from samba.security import (
+    access_check,
+    claims_tf_policy_parse_rules,
+    claims_tf_policy_wrap_xml,
+)
 from samba import ntstatus
 from samba import NTSTATUSError
+from binascii import a2b_base64
 
 
 class SecurityTokenTests(samba.tests.TestCase):
@@ -207,3 +212,458 @@ class SecurityAceTests(samba.tests.TestCase):
         self.assertEqual(ace_sddl, self.sddl[1:-1])
         ace_new = security.descriptor.from_sddl("D:(" + ace_sddl + ")", self.dom).dacl.aces[0]
         self.assertTrue(ace == ace_new, "Exporting ace as SDDl and reading back should result in same ACE.")
+
+
+class ClaimsTransformationTests(samba.tests.TestCase):
+
+    def test_deny_all_claims(self):
+        rules = ''
+        rs = claims_tf_policy_parse_rules(rules)
+        self.assertEqual(rs.num_rules, 0)
+
+    def test_allow_all_claims1(self):
+        rules = 'C1:[] => ISSUE(Claim=C1);'
+        rs = claims_tf_policy_parse_rules(rules)
+        self.assertEqual(rs.num_rules, 1)
+        self.assertEqual(rs.rules[0].num_condition_sets, 1)
+        self.assertEqual(rs.rules[0].condition_sets[0].opt_identifier, 'C1')
+        self.assertEqual(rs.rules[0].condition_sets[0].num_conditions, 0)
+        self.assertEqual(rs.rules[0].action.type.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[0].action.type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_TYPE)
+        self.assertIsNone(rs.rules[0].action.type.string)
+        self.assertEqual(rs.rules[0].action.value.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[0].action.value.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE)
+        self.assertIsNone(rs.rules[0].action.value.string)
+        self.assertEqual(rs.rules[0].action.value_type.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[0].action.value_type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE_TYPE)
+        self.assertIsNone(rs.rules[0].action.value_type.string)
+
+    def test_allow_all_claims2(self):
+        rules = 'C1:[] => ISSUE(ValueType=C1.ValueType,Value=C1.Value,Type=C1.Type);'
+        rs = claims_tf_policy_parse_rules(rules)
+        self.assertEqual(rs.num_rules, 1)
+        self.assertEqual(rs.rules[0].num_condition_sets, 1)
+        self.assertEqual(rs.rules[0].condition_sets[0].opt_identifier, 'C1')
+        self.assertEqual(rs.rules[0].condition_sets[0].num_conditions, 0)
+        self.assertEqual(rs.rules[0].action.type.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[0].action.type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_TYPE)
+        self.assertIsNone(rs.rules[0].action.type.string)
+        self.assertEqual(rs.rules[0].action.value.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[0].action.value.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE)
+        self.assertIsNone(rs.rules[0].action.value.string)
+        self.assertEqual(rs.rules[0].action.value_type.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[0].action.value_type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE_TYPE)
+        self.assertIsNone(rs.rules[0].action.value_type.string)
+
+    def test_allow_all_switch1(self):
+        rules = 'C1:[] => ISSUE(ValueType=C1.ValueType,Value=C1.Type,Type=C1.Value);'
+        rs = claims_tf_policy_parse_rules(rules)
+        self.assertEqual(rs.num_rules, 1)
+        self.assertEqual(rs.rules[0].num_condition_sets, 1)
+        self.assertEqual(rs.rules[0].condition_sets[0].opt_identifier, 'C1')
+        self.assertEqual(rs.rules[0].condition_sets[0].num_conditions, 0)
+        self.assertEqual(rs.rules[0].action.type.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[0].action.type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE)
+        self.assertIsNone(rs.rules[0].action.type.string)
+        self.assertEqual(rs.rules[0].action.value.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[0].action.value.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_TYPE)
+        self.assertIsNone(rs.rules[0].action.value.string)
+        self.assertEqual(rs.rules[0].action.value_type.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[0].action.value_type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE_TYPE)
+        self.assertIsNone(rs.rules[0].action.value_type.string)
+
+    def test_deny_some_claims(self):
+        rules = 'C1:[type != "Type1"] => ISSUE (Claim = C1);'
+        rs = claims_tf_policy_parse_rules(rules)
+        self.assertEqual(rs.num_rules, 1)
+        self.assertEqual(rs.rules[0].num_condition_sets, 1)
+        self.assertEqual(rs.rules[0].condition_sets[0].opt_identifier, 'C1')
+        self.assertEqual(rs.rules[0].condition_sets[0].num_conditions, 1)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[0].property,
+                         claims.CLAIMS_TF_PROPERTY_TYPE)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[0].operator,
+                         claims.CLAIMS_TF_CONDITION_OPERATOR_NEQ)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[0].string,
+                         'Type1')
+        self.assertEqual(rs.rules[0].action.type.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[0].action.type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_TYPE)
+        self.assertIsNone(rs.rules[0].action.type.string)
+        self.assertEqual(rs.rules[0].action.value.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[0].action.value.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE)
+        self.assertIsNone(rs.rules[0].action.value.string)
+        self.assertEqual(rs.rules[0].action.value_type.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[0].action.value_type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE_TYPE)
+        self.assertIsNone(rs.rules[0].action.value_type.string)
+
+    def test_issue_always(self):
+        rules = '=> ISSUE (type="type1", VALUE="false", VALUETYPE="boolean");'
+        rs = claims_tf_policy_parse_rules(rules)
+        self.assertEqual(rs.num_rules, 1)
+        self.assertEqual(rs.rules[0].num_condition_sets, 0)
+        self.assertIsNone(rs.rules[0].action.type.ref.identifier)
+        self.assertEqual(rs.rules[0].action.type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_INVALID)
+        self.assertEqual(rs.rules[0].action.type.string, 'type1')
+        self.assertIsNone(rs.rules[0].action.value.ref.identifier)
+        self.assertEqual(rs.rules[0].action.value.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_INVALID)
+        self.assertEqual(rs.rules[0].action.value.string, 'false')
+        self.assertIsNone(rs.rules[0].action.value_type.ref.identifier)
+        self.assertEqual(rs.rules[0].action.value_type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_INVALID)
+        self.assertEqual(rs.rules[0].action.value_type.string, 'boolean')
+
+    def test_allow_some_claims1(self):
+        rules = '_1:[value == "Bla",valuetype == "sTring"] => ISSUE (Claim = _1);'
+        rs = claims_tf_policy_parse_rules(rules)
+        self.assertEqual(rs.num_rules, 1)
+        self.assertEqual(rs.rules[0].num_condition_sets, 1)
+        self.assertEqual(rs.rules[0].condition_sets[0].opt_identifier, '_1')
+        self.assertEqual(rs.rules[0].condition_sets[0].num_conditions, 2)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[0].property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[0].operator,
+                         claims.CLAIMS_TF_CONDITION_OPERATOR_EQ)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[0].string,
+                         'Bla')
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[1].property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE_TYPE)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[1].operator,
+                         claims.CLAIMS_TF_CONDITION_OPERATOR_EQ)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[1].string,
+                         'sTring')
+        self.assertEqual(rs.rules[0].action.type.ref.identifier, '_1')
+        self.assertEqual(rs.rules[0].action.type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_TYPE)
+        self.assertIsNone(rs.rules[0].action.type.string)
+        self.assertEqual(rs.rules[0].action.value.ref.identifier, '_1')
+        self.assertEqual(rs.rules[0].action.value.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE)
+        self.assertIsNone(rs.rules[0].action.value.string)
+        self.assertEqual(rs.rules[0].action.value_type.ref.identifier, '_1')
+        self.assertEqual(rs.rules[0].action.value_type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE_TYPE)
+        self.assertIsNone(rs.rules[0].action.value_type.string)
+
+    def test_allow_some_claims2(self):
+        rules = '_1:[value == "Bla",valuetype == "string"] => ISSUE(Type=_1.Type, ValueType=_1.Valuetype, Value=_1.vAlUe);'
+        rs = claims_tf_policy_parse_rules(rules)
+        self.assertEqual(rs.num_rules, 1)
+        self.assertEqual(rs.rules[0].num_condition_sets, 1)
+        self.assertEqual(rs.rules[0].condition_sets[0].opt_identifier, '_1')
+        self.assertEqual(rs.rules[0].condition_sets[0].num_conditions, 2)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[0].property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[0].operator,
+                         claims.CLAIMS_TF_CONDITION_OPERATOR_EQ)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[0].string,
+                         'Bla')
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[1].property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE_TYPE)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[1].operator,
+                         claims.CLAIMS_TF_CONDITION_OPERATOR_EQ)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[1].string,
+                         'string')
+        self.assertEqual(rs.rules[0].action.type.ref.identifier, '_1')
+        self.assertEqual(rs.rules[0].action.type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_TYPE)
+        self.assertIsNone(rs.rules[0].action.type.string)
+        self.assertEqual(rs.rules[0].action.value.ref.identifier, '_1')
+        self.assertEqual(rs.rules[0].action.value.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE)
+        self.assertIsNone(rs.rules[0].action.value.string)
+        self.assertEqual(rs.rules[0].action.value_type.ref.identifier, '_1')
+        self.assertEqual(rs.rules[0].action.value_type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE_TYPE)
+        self.assertIsNone(rs.rules[0].action.value_type.string)
+
+    def test_allow_some_claims3(self):
+        rules = '[tYpE =~ "str*", value == "Bla",valuetype == "string"] => ISSUE(Type="Type", ValueType="string", Value="Val");'
+        rs = claims_tf_policy_parse_rules(rules)
+        self.assertEqual(rs.num_rules, 1)
+        self.assertEqual(rs.rules[0].num_condition_sets, 1)
+        self.assertIsNone(rs.rules[0].condition_sets[0].opt_identifier)
+        self.assertEqual(rs.rules[0].condition_sets[0].num_conditions, 3)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[0].property,
+                         claims.CLAIMS_TF_PROPERTY_TYPE)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[0].operator,
+                         claims.CLAIMS_TF_CONDITION_OPERATOR_REGEXP_MATCH)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[0].string,
+                         'str*')
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[1].property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[1].operator,
+                         claims.CLAIMS_TF_CONDITION_OPERATOR_EQ)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[1].string,
+                         'Bla')
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[2].property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE_TYPE)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[2].operator,
+                         claims.CLAIMS_TF_CONDITION_OPERATOR_EQ)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[2].string,
+                         'string')
+        self.assertIsNone(rs.rules[0].action.type.ref.identifier)
+        self.assertEqual(rs.rules[0].action.type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_INVALID)
+        self.assertEqual(rs.rules[0].action.type.string, 'Type')
+        self.assertIsNone(rs.rules[0].action.value.ref.identifier)
+        self.assertEqual(rs.rules[0].action.value.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_INVALID)
+        self.assertEqual(rs.rules[0].action.value.string, 'Val')
+        self.assertIsNone(rs.rules[0].action.value_type.ref.identifier)
+        self.assertEqual(rs.rules[0].action.value_type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_INVALID)
+        self.assertEqual(rs.rules[0].action.value_type.string, 'string')
+
+    def test_two_condition_sets(self):
+        rules = 'C1:[type != "Type1"] && _1:[valuetype == "string",value !~ "*v*", type == "t1"] => ISSUE(Type=C1.vAluE, ValueType=_1.Valuetype, Value="Val");'
+        rs = claims_tf_policy_parse_rules(rules)
+        self.assertEqual(rs.num_rules, 1)
+        self.assertEqual(rs.rules[0].num_condition_sets, 2)
+        self.assertEqual(rs.rules[0].condition_sets[0].opt_identifier, 'C1')
+        self.assertEqual(rs.rules[0].condition_sets[0].num_conditions, 1)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[0].property,
+                         claims.CLAIMS_TF_PROPERTY_TYPE)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[0].operator,
+                         claims.CLAIMS_TF_CONDITION_OPERATOR_NEQ)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[0].string,
+                         'Type1')
+        self.assertEqual(rs.rules[0].condition_sets[1].opt_identifier, '_1')
+        self.assertEqual(rs.rules[0].condition_sets[1].num_conditions, 3)
+        self.assertEqual(rs.rules[0].condition_sets[1].conditions[0].property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE_TYPE)
+        self.assertEqual(rs.rules[0].condition_sets[1].conditions[0].operator,
+                         claims.CLAIMS_TF_CONDITION_OPERATOR_EQ)
+        self.assertEqual(rs.rules[0].condition_sets[1].conditions[0].string,
+                         'string')
+        self.assertEqual(rs.rules[0].condition_sets[1].conditions[1].property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE)
+        self.assertEqual(rs.rules[0].condition_sets[1].conditions[1].operator,
+                         claims.CLAIMS_TF_CONDITION_OPERATOR_REGEXP_NOT_MATCH)
+        self.assertEqual(rs.rules[0].condition_sets[1].conditions[1].string,
+                         '*v*')
+        self.assertEqual(rs.rules[0].condition_sets[1].conditions[2].property,
+                         claims.CLAIMS_TF_PROPERTY_TYPE)
+        self.assertEqual(rs.rules[0].condition_sets[1].conditions[2].operator,
+                         claims.CLAIMS_TF_CONDITION_OPERATOR_EQ)
+        self.assertEqual(rs.rules[0].condition_sets[1].conditions[2].string,
+                         't1')
+        self.assertEqual(rs.rules[0].action.type.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[0].action.type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE)
+        self.assertIsNone(rs.rules[0].action.type.string)
+        self.assertIsNone(rs.rules[0].action.value.ref.identifier)
+        self.assertEqual(rs.rules[0].action.value.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_INVALID)
+        self.assertEqual(rs.rules[0].action.value.string, 'Val')
+        self.assertEqual(rs.rules[0].action.value_type.ref.identifier, '_1')
+        self.assertEqual(rs.rules[0].action.value_type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE_TYPE)
+        self.assertIsNone(rs.rules[0].action.value_type.string)
+
+    def test_two_rules(self):
+        rules = 'C1:[] => ISSUE(Claim=C1);C1:[] => ISSUE(Claim=C1);'
+        rs = claims_tf_policy_parse_rules(rules)
+        self.assertEqual(rs.num_rules, 2)
+        self.assertEqual(rs.rules[0].num_condition_sets, 1)
+        self.assertEqual(rs.rules[0].condition_sets[0].opt_identifier, 'C1')
+        self.assertEqual(rs.rules[0].condition_sets[0].num_conditions, 0)
+        self.assertEqual(rs.rules[0].action.type.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[0].action.type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_TYPE)
+        self.assertIsNone(rs.rules[0].action.type.string)
+        self.assertEqual(rs.rules[0].action.value.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[0].action.value.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE)
+        self.assertIsNone(rs.rules[0].action.value.string)
+        self.assertEqual(rs.rules[0].action.value_type.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[0].action.value_type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE_TYPE)
+        self.assertIsNone(rs.rules[0].action.value_type.string)
+        self.assertEqual(rs.rules[1].num_condition_sets, 1)
+        self.assertEqual(rs.rules[1].condition_sets[0].opt_identifier, 'C1')
+        self.assertEqual(rs.rules[1].condition_sets[0].num_conditions, 0)
+        self.assertEqual(rs.rules[1].action.type.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[1].action.type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_TYPE)
+        self.assertIsNone(rs.rules[1].action.type.string)
+        self.assertEqual(rs.rules[1].action.value.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[1].action.value.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE)
+        self.assertIsNone(rs.rules[1].action.value.string)
+        self.assertEqual(rs.rules[1].action.value_type.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[1].action.value_type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE_TYPE)
+        self.assertIsNone(rs.rules[1].action.value_type.string)
+
+    def test_invalid_rule1(self):
+        rules = 'C1:[type] => ISSUE (Claim = C1);'
+        errmsg = 'syntax error, unexpected CLAIMS_TF_YY_C_SQ_BRACKET, expecting CLAIMS_TF_YY_EQ or CLAIMS_TF_YY_NEQ or CLAIMS_TF_YY_REGEXP_MATCH or CLAIMS_TF_YY_REGEXP_NOT_MATCH'
+        try:
+            claims_tf_policy_parse_rules(rules)
+            self.fail()
+        except RuntimeError as error:
+            self.assertIn(errmsg, error.args[0])
+        else:
+            self.fail()
+
+    def test_invalid_rule2(self):
+        rules = 'C1:[valuetype== "none", value=="none"] => ISSUE (Claim = C1);'
+        errmsg = 'Invalid ValueType string[none]'
+        try:
+            claims_tf_policy_parse_rules(rules)
+            self.fail()
+        except RuntimeError as error:
+            self.assertIn(errmsg, error.args[0])
+        else:
+            self.fail()
+
+    def test_invalid_rule3(self):
+        rules = 'C1:[valuetype== "int64", value=="none"] => ISSUE (Claim = C3);'
+        errmsg = 'Invalid Rules: rule[0] action.type invalid tidentifier C3'
+        try:
+            claims_tf_policy_parse_rules(rules)
+            self.fail()
+        except RuntimeError as error:
+            self.assertIn(errmsg, error.args[0])
+        else:
+            self.fail()
+
+    def test_invalid_rule4(self):
+        rules = 'C1:[] => ISSUE(Type=C1.vAluE, ValueType=C1.type, Value=C1.Type);'
+        errmsg = 'ValueType requires C1.ValueType'
+        try:
+            claims_tf_policy_parse_rules(rules)
+            self.fail()
+        except RuntimeError as error:
+            self.assertIn(errmsg, error.args[0])
+        else:
+            self.fail()
+
+    def test_invalid_rule5(self):
+        rules = '[] && [] => ISSUE(Type=C1.vAluE, ValueType=C1.Valuetype, Value=C1.Type);'
+        errmsg = 'Invalid Rules: rule[0] action.type invalid tidentifier C1'
+        try:
+            claims_tf_policy_parse_rules(rules)
+            self.fail()
+        except RuntimeError as error:
+            self.assertIn(errmsg, error.args[0])
+        else:
+            self.fail()
+
+    def test_xml_two_rules(self):
+        rules = 'C1:[] => ISSUE(Claim=C1);C1:[] => ISSUE(Claim=C1);'
+        xml_rules = claims_tf_policy_wrap_xml(rules)
+        rs = claims_tf_policy_parse_rules(xml_rules, strip_xml=True)
+        self.assertEqual(rs.num_rules, 2)
+        self.assertEqual(rs.rules[0].num_condition_sets, 1)
+        self.assertEqual(rs.rules[0].condition_sets[0].opt_identifier, 'C1')
+        self.assertEqual(rs.rules[0].condition_sets[0].num_conditions, 0)
+        self.assertEqual(rs.rules[0].action.type.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[0].action.type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_TYPE)
+        self.assertIsNone(rs.rules[0].action.type.string)
+        self.assertEqual(rs.rules[0].action.value.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[0].action.value.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE)
+        self.assertIsNone(rs.rules[0].action.value.string)
+        self.assertEqual(rs.rules[0].action.value_type.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[0].action.value_type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE_TYPE)
+        self.assertIsNone(rs.rules[0].action.value_type.string)
+        self.assertEqual(rs.rules[1].num_condition_sets, 1)
+        self.assertEqual(rs.rules[1].condition_sets[0].opt_identifier, 'C1')
+        self.assertEqual(rs.rules[1].condition_sets[0].num_conditions, 0)
+        self.assertEqual(rs.rules[1].action.type.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[1].action.type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_TYPE)
+        self.assertIsNone(rs.rules[1].action.type.string)
+        self.assertEqual(rs.rules[1].action.value.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[1].action.value.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE)
+        self.assertIsNone(rs.rules[1].action.value.string)
+        self.assertEqual(rs.rules[1].action.value_type.ref.identifier, 'C1')
+        self.assertEqual(rs.rules[1].action.value_type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE_TYPE)
+        self.assertIsNone(rs.rules[1].action.value_type.string)
+
+    def test_xml_from_windows1(self):
+        # a msDS-TransformationRules value from Windows
+        b64 =  'IDxDbGFpbXNUcmFuc2Zvcm1hdGlvblBvbGljeT4gICAgIDxSdWx'
+        b64 += 'lcyB2ZXJzaW9uPSIxIj4gICAgICAgICA8IVtDREFUQVtNMTpbVH'
+        b64 += 'lwZT09ImFkOi8vZXh0L3NBTUFjY291bnROYW1lOjg4ZGQzMTc2M'
+        b64 += 'mQ3MzY1MmQiLCBUeXBlPX4iYmxhXS5dPiIsIFZhbHVlPT0ibWV0'
+        b64 += 'emUiLCBWYWx1ZVR5cGUhfiJpbnQ2NCIsIHR5cGUhPSJub3QiXSA'
+        b64 += 'mJiBNMjpbVHlwZT09Im5vbmUiXSA9PiBJU1NVRShWYWx1ZVR5cG'
+        b64 += 'U9TTEuVmFsdWVUeXBlLFZhbHVlPU0yLlZhbHVlVHlwZSx0WXBFP'
+        b64 += 'U0xLlR5cGUpO11dPiAgICA8L1J1bGVzPjwvQ2xhaW1zVHJhbnNm'
+        b64 += 'b3JtYXRpb25Qb2xpY3k+'
+        bval = a2b_base64(b64)
+        sval = bval.decode('utf8')
+        rs = claims_tf_policy_parse_rules(sval, strip_xml=True)
+        self.assertEqual(rs.num_rules, 1)
+        self.assertEqual(rs.rules[0].num_condition_sets, 2)
+        self.assertEqual(rs.rules[0].condition_sets[0].opt_identifier, 'M1')
+        self.assertEqual(rs.rules[0].condition_sets[0].num_conditions, 5)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[0].property,
+                         claims.CLAIMS_TF_PROPERTY_TYPE)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[0].operator,
+                         claims.CLAIMS_TF_CONDITION_OPERATOR_EQ)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[0].string,
+                         'ad://ext/sAMAccountName:88dd31762d73652d')
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[1].property,
+                         claims.CLAIMS_TF_PROPERTY_TYPE)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[1].operator,
+                         claims.CLAIMS_TF_CONDITION_OPERATOR_REGEXP_MATCH)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[1].string,
+                         'bla].]>')
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[2].property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[2].operator,
+                         claims.CLAIMS_TF_CONDITION_OPERATOR_EQ)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[2].string,
+                         'metze')
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[3].property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE_TYPE)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[3].operator,
+                         claims.CLAIMS_TF_CONDITION_OPERATOR_REGEXP_NOT_MATCH)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[3].string,
+                         'int64')
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[4].property,
+                         claims.CLAIMS_TF_PROPERTY_TYPE)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[4].operator,
+                         claims.CLAIMS_TF_CONDITION_OPERATOR_NEQ)
+        self.assertEqual(rs.rules[0].condition_sets[0].conditions[4].string,
+                         'not')
+        self.assertEqual(rs.rules[0].condition_sets[1].opt_identifier, 'M2')
+        self.assertEqual(rs.rules[0].condition_sets[1].num_conditions, 1)
+        self.assertEqual(rs.rules[0].condition_sets[1].conditions[0].property,
+                         claims.CLAIMS_TF_PROPERTY_TYPE)
+        self.assertEqual(rs.rules[0].condition_sets[1].conditions[0].operator,
+                         claims.CLAIMS_TF_CONDITION_OPERATOR_EQ)
+        self.assertEqual(rs.rules[0].condition_sets[1].conditions[0].string,
+                         'none')
+        self.assertEqual(rs.rules[0].action.type.ref.identifier, 'M1')
+        self.assertEqual(rs.rules[0].action.type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_TYPE)
+        self.assertIsNone(rs.rules[0].action.type.string)
+        self.assertEqual(rs.rules[0].action.value.ref.identifier, 'M2')
+        self.assertEqual(rs.rules[0].action.value.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE_TYPE)
+        self.assertIsNone(rs.rules[0].action.value.string)
+        self.assertEqual(rs.rules[0].action.value_type.ref.identifier, 'M1')
+        self.assertEqual(rs.rules[0].action.value_type.ref.property,
+                         claims.CLAIMS_TF_PROPERTY_VALUE_TYPE)
+        self.assertIsNone(rs.rules[0].action.value_type.string)
