@@ -36,6 +36,7 @@ user_record_reply(VarlinkCall *call, struct winbindd_pw *pw, bool continues)
 
 	WB_VL_ERR_CHECK_GOTO(varlink_object_new(&record), err_free_record);
 	WB_VL_ERR_CHECK_GOTO(varlink_object_set_string(record, "service", service_name), err_free_record);
+	WB_VL_ERR_CHECK_GOTO(varlink_object_set_string(record, "disposition", "regular"), err_free_record);
 	WB_VL_ERR_CHECK_GOTO(varlink_object_set_string(record, "userName", pw->pw_name), err_free_record);
 	WB_VL_ERR_CHECK_GOTO(varlink_object_set_int(record, "uid", pw->pw_uid), err_free_record);
 	WB_VL_ERR_CHECK_GOTO(varlink_object_set_int(record, "gid", pw->pw_gid), err_free_record);

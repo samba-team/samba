@@ -50,7 +50,10 @@ class VarlinkGetUserRecordTests(VarlinkTestCase):
                 self.assertEqual(r.record["gid"], user["gid"])
                 self.assertEqual(r.record["shell"], user["shell"])
                 self.assertEqual(r.record["homeDirectory"], user["dir"])
+                self.assertEqual(r.record["disposition"], "regular")
+
 
 if __name__ == "__main__":
     import unittest
+
     unittest.main()
