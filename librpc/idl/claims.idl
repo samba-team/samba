@@ -146,4 +146,58 @@ interface claims
 		uint32 reserved_field_size;
 		[size_is(reserved_field_size)] uint8 *reserved_field;
 	} CLAIMS_SET_METADATA;
+
+	typedef [nopush,nopull] enum {
+		CLAIMS_TF_CONDITION_OPERATOR_INVALID = 0,
+		CLAIMS_TF_CONDITION_OPERATOR_EQ = 1,
+		CLAIMS_TF_CONDITION_OPERATOR_NEQ = 2,
+		CLAIMS_TF_CONDITION_OPERATOR_REGEXP_MATCH = 3,
+		CLAIMS_TF_CONDITION_OPERATOR_REGEXP_NOT_MATCH = 4
+	} claims_tf_condition_operator;
+
+	typedef [nopush,nopull] enum {
+		CLAIMS_TF_PROPERTY_INVALID = 0,
+		CLAIMS_TF_PROPERTY_TYPE = 1,
+		CLAIMS_TF_PROPERTY_VALUE = 2,
+		CLAIMS_TF_PROPERTY_VALUE_TYPE = 3
+	} claims_tf_property_enum;
+
+	typedef [nopush,nopull] struct {
+		claims_tf_property_enum property;
+		claims_tf_condition_operator operator;
+		[ref,string, charset(UTF8)] char *string;
+	} claims_tf_condition;
+
+	typedef [nopush,nopull] struct {
+		[unique, string, charset(UTF8)] char *opt_identifier;
+		uint32 num_conditions;
+		claims_tf_condition conditions[num_conditions];
+	} claims_tf_condition_set;
+
+	typedef [nopush,nopull] struct claims_tf_property_ref {
+		[unique, string, charset(UTF8)] char *identifier;
+		claims_tf_property_enum property;
+	} claims_tf_property_ref;
+
+	typedef [nopush,nopull] struct claims_tf_property {
+		claims_tf_property_ref ref;
+		[unique, string, charset(UTF8)] char *string;
+	} claims_tf_property;
+
+	typedef [nopush,nopull] struct {
+		claims_tf_property type;
+		claims_tf_property value;
+		claims_tf_property value_type;
+	} claims_tf_rule_action;
+
+	typedef [nopush,nopull] struct claims_tf_rule {
+		uint32 num_condition_sets;
+		claims_tf_condition_set condition_sets[num_condition_sets];
+		claims_tf_rule_action action;
+	} claims_tf_rule;
+
+	typedef [public,nopush,nopull] struct {
+		uint32 num_rules;
+		claims_tf_rule rules[num_rules];
+	} claims_tf_rule_set;
 }

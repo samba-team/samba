@@ -88,3 +88,15 @@ size_t ndr_claims_compressed_size(struct CLAIMS_SET_NDR *claims_set,
 		return 0;
 	}
 }
+
+_PUBLIC_ enum ndr_err_code ndr_push_claims_tf_rule_set(struct ndr_push *ndr, ndr_flags_type ndr_flags, const struct claims_tf_rule_set *r)
+{
+	return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER,
+			      "ndr_push_claims_tf_rule_set() not implemented");
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_claims_tf_rule_set(struct ndr_pull *ndr, ndr_flags_type ndr_flags, struct claims_tf_rule_set *r)
+{
+	return ndr_pull_error(ndr, NDR_ERR_INVALID_POINTER,
+			      "ndr_pull_claims_tf_rule_set() not implemented");
+}
