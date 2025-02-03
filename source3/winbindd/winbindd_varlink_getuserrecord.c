@@ -34,27 +34,39 @@ user_record_reply(VarlinkCall *call, struct winbindd_pw *pw, bool continues)
 					    "service name",
 					    WB_VL_SERVICE_NAME);
 
-	varlink_object_new(&record);
-	varlink_object_set_string(record, "service", service_name);
-	varlink_object_set_string(record, "userName", pw->pw_name);
-	varlink_object_set_int(record, "uid", pw->pw_uid);
-	varlink_object_set_int(record, "gid", pw->pw_gid);
+	WB_VL_ERR_CHECK_GOTO(varlink_object_new(&record), err_free_record);
+	WB_VL_ERR_CHECK_GOTO(varlink_object_set_string(record, "service", service_name), err_free_record);
+	WB_VL_ERR_CHECK_GOTO(varlink_object_set_string(record, "userName", pw->pw_name), err_free_record);
+	WB_VL_ERR_CHECK_GOTO(varlink_object_set_int(record, "uid", pw->pw_uid), err_free_record);
+	WB_VL_ERR_CHECK_GOTO(varlink_object_set_int(record, "gid", pw->pw_gid), err_free_record);
 	if (strlen(pw->pw_dir) > 0) {
-		varlink_object_set_string(record, "homeDirectory", pw->pw_dir);
+		WB_VL_ERR_CHECK_GOTO(varlink_object_set_string(
+			record, "homeDirectory", pw->pw_dir), err_free_record);
 	}
 	if (strlen(pw->pw_shell) > 0) {
-		varlink_object_set_string(record, "shell", pw->pw_shell);
+		WB_VL_ERR_CHECK_GOTO(varlink_object_set_string(
+			record, "shell", pw->pw_shell), err_free_record);
 	}
 	if (strlen(pw->pw_gecos) > 0) {
-		varlink_object_set_string(record, "realName", pw->pw_gecos);
+		WB_VL_ERR_CHECK_GOTO(varlink_object_set_string(
+			record, "realName", pw->pw_gecos), err_free_record);
 	}
 
-	varlink_object_new(&out);
-	varlink_object_set_object(out, "record", record);
-	varlink_object_set_bool(out, "incomplete", false);
+	WB_VL_ERR_CHECK_GOTO(varlink_object_new(&out), err_free_out);
+	WB_VL_ERR_CHECK_GOTO(varlink_object_set_bool(out, "incomplete", false), err_free_out);
+	WB_VL_ERR_CHECK_GOTO(varlink_object_set_object(out, "record", record), err_free_out);
 
 	varlink_call_reply(call, out, continues ? VARLINK_REPLY_CONTINUES : 0);
 	varlink_object_unref(out);
+	return;
+err_free_out:
+	if (out != NULL) {
+		varlink_object_unref(out);
+	}
+err_free_record:
+	if (record != NULL) {
+		varlink_object_unref(record);
+	}
 }
 
 /******************************************************************************

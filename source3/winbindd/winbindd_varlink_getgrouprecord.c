@@ -40,30 +40,52 @@ static void group_record_reply(VarlinkCall *call,
 					    "service name",
 					    WB_VL_SERVICE_NAME);
 
-	varlink_object_new(&record);
-	varlink_object_set_string(record, "service", service_name);
-	varlink_object_set_string(record, "groupName", gr->gr_name);
-	varlink_object_set_int(record, "gid", gr->gr_gid);
+	WB_VL_ERR_CHECK_GOTO(varlink_object_new(&record), err_free_record);
+	WB_VL_ERR_CHECK_GOTO(varlink_object_set_string(
+		record, "service", service_name), err_free_record);
+	WB_VL_ERR_CHECK_GOTO(varlink_object_set_string(
+		record, "groupName", gr->gr_name), err_free_record);
+	WB_VL_ERR_CHECK_GOTO(varlink_object_set_int(
+		record, "gid", gr->gr_gid), err_free_record);
 
 	if (gr->num_gr_mem > 0 && gr_members != NULL) {
-		varlink_array_new(&members);
+		WB_VL_ERR_CHECK_GOTO(varlink_array_new(
+			&members), err_free_members);
 		for ((name = strtok_r(gr_members, ",", &p)), i = 0;
 		     name != NULL;
 		     name = strtok_r(NULL, ",", &p), i++) {
 			if (i == gr->num_gr_mem) {
 				break;
 			}
-			varlink_array_append_string(members, name);
+			WB_VL_ERR_CHECK_GOTO(varlink_array_append_string(
+				members, name), err_free_members);
 		}
-		varlink_object_set_array(record, "members", members);
+		WB_VL_ERR_CHECK_GOTO(varlink_object_set_array(
+			record, "members", members), err_free_members);
 	}
 
-	varlink_object_new(&out);
-	varlink_object_set_object(out, "record", record);
-	varlink_object_set_bool(out, "incomplete", false);
+	WB_VL_ERR_CHECK_GOTO(varlink_object_new(&out), err_free_out);
+	WB_VL_ERR_CHECK_GOTO(varlink_object_set_bool(
+		out, "incomplete", false), err_free_out);
+	WB_VL_ERR_CHECK_GOTO(varlink_object_set_object(
+		out, "record", record), err_free_out);
 
 	varlink_call_reply(call, out, continues ? VARLINK_REPLY_CONTINUES : 0);
 	varlink_object_unref(out);
+	return;
+
+err_free_members:
+	if (members != NULL) {
+		varlink_array_unref(members);
+	}
+err_free_out:
+	if (out != NULL) {
+		varlink_object_unref(out);
+	}
+err_free_record:
+	if (record != NULL) {
+		varlink_object_unref(record);
+	}
 }
 
 /******************************************************************************

@@ -29,12 +29,17 @@ static void membership_reply(VarlinkCall *call,
 {
 	VarlinkObject *out = NULL;
 
-	varlink_object_new(&out);
-	varlink_object_set_string(out, "userName", username);
-	varlink_object_set_string(out, "groupName", groupname);
-
+	WB_VL_ERR_CHECK_GOTO(varlink_object_new(&out), err_free_out);
+	WB_VL_ERR_CHECK_GOTO(varlink_object_set_string(
+		out, "userName", username), err_free_out);
+	WB_VL_ERR_CHECK_GOTO(varlink_object_set_string(
+		out, "groupName", groupname), err_free_out);
 	varlink_call_reply(call, out, continues ? VARLINK_REPLY_CONTINUES : 0);
-	varlink_object_unref(out);
+
+err_free_out:
+	if (out != NULL) {
+		varlink_object_unref(out);
+	}
 }
 
 static void member_list_reply(VarlinkCall *call,

@@ -39,6 +39,13 @@ extern bool vl_active;
 #define WB_VL_REPLY_ERROR_ENUMERATION_NOT_SUPPORTED \
 	"io.systemd.UserDatabase.EnumerationNotSupported"
 
+#define WB_VL_ERR_CHECK_GOTO(p, l) do { \
+	int rc = (p); \
+	if (rc < 0) { \
+		DBG_ERR("'"#p"' failed: %s\n", varlink_error_string(rc)); \
+		goto l; \
+	}} while (0)
+
 NTSTATUS wb_vl_fake_cli_state(VarlinkCall *call,
 			      const char *service,
 			      struct winbindd_cli_state *cli);
