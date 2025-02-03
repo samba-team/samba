@@ -460,3 +460,75 @@ _PUBLIC_ bool claims_tf_rule_set_parse_blob(const DATA_BLOB *blob,
 
 	return true;
 }
+
+/*
+ * This is a bit strange regarding whitespacing,
+ * but it's what the New-ADClaimTransformPolicy
+ * powershell command from Windows 2025 adds
+ * to the msDS-TransformationRules attribute.
+ */
+static const char * const claims_tf_xml_prefix_string =
+			" "
+			"<ClaimsTransformationPolicy>"
+			"     "
+			"<Rules version=\"1\">"
+			"         "
+			"<![CDATA[";
+static const char * const claims_tf_xml_suffix_string =
+			"]]>"
+			"    "
+			"</Rules>"
+			"</ClaimsTransformationPolicy>";
+
+_PUBLIC_ char *claims_tf_policy_wrap_xml(TALLOC_CTX *mem_ctx,
+					 const char *rules_string)
+{
+	if (rules_string == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	if (strstr(rules_string, "]]>") != NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	return talloc_asprintf(mem_ctx, "%s%s%s",
+			       claims_tf_xml_prefix_string,
+			       rules_string,
+			       claims_tf_xml_suffix_string);
+}
+
+_PUBLIC_ bool claims_tf_policy_unwrap_xml(const DATA_BLOB *attr_val,
+					  DATA_BLOB *rules)
+{
+	DATA_BLOB prefix = data_blob_string_const(claims_tf_xml_prefix_string);
+	DATA_BLOB suffix = data_blob_string_const(claims_tf_xml_suffix_string);
+	size_t rules_ofs;
+	size_t suffix_ofs;
+	int cmp;
+
+	if (attr_val->length < (prefix.length + suffix.length)) {
+		return false;
+	}
+	rules_ofs = prefix.length;
+	suffix_ofs = attr_val->length - suffix.length;
+
+	cmp = memcmp(attr_val->data,
+		     prefix.data,
+		     prefix.length);
+	if (cmp != 0) {
+		return false;
+	}
+
+	cmp = memcmp(attr_val->data + suffix_ofs,
+		     suffix.data,
+		     suffix.length);
+	if (cmp != 0) {
+		return false;
+	}
+
+	rules->data = attr_val->data + rules_ofs;
+	rules->length = suffix_ofs - rules_ofs;
+	return true;
+}

@@ -38,6 +38,12 @@ bool claims_tf_rule_set_parse_blob(const DATA_BLOB *blob,
 				   struct claims_tf_rule_set **__rule_set,
 				   char **_error_string);
 
+char *claims_tf_policy_wrap_xml(TALLOC_CTX *mem_ctx,
+				const char *rules_string);
+
+bool claims_tf_policy_unwrap_xml(const DATA_BLOB *attr_val,
+				 DATA_BLOB *rules);
+
 #ifdef CLAIMS_TRANSFORMATION_INTERNALS
 
 struct claims_tf_parser_state {
