@@ -2581,7 +2581,6 @@ static struct adouble *ad_get_internal(TALLOC_CTX *ctx,
 	int rc = 0;
 	ssize_t len;
 	struct adouble *ad = NULL;
-	int mode;
 
 	if (fsp != NULL) {
 		struct files_struct *meta_fsp = metadata_fsp(fsp);
@@ -2599,12 +2598,9 @@ static struct adouble *ad_get_internal(TALLOC_CTX *ctx,
 	}
 
 	/* Try rw first so we can use the fd in ad_convert() */
-	mode = O_RDWR;
-
-	rc = ad_open(handle, ad, fsp, smb_fname, mode, 0);
+	rc = ad_open(handle, ad, fsp, smb_fname, O_RDWR, 0);
 	if (rc == -1 && ((errno == EROFS) || (errno == EACCES))) {
-		mode = O_RDONLY;
-		rc = ad_open(handle, ad, fsp, smb_fname, mode, 0);
+		rc = ad_open(handle, ad, fsp, smb_fname, O_RDONLY, 0);
 	}
 	if (rc == -1) {
 		DBG_DEBUG("ad_open [%s] error [%s]\n",
