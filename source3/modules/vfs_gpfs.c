@@ -1447,8 +1447,6 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 {
 	struct gpfs_config_data *config;
 	int fd = fsp_get_pathref_fd(fsp);
-	struct sys_proc_fd_path_buf buf;
-	const char *p = NULL;
 	struct gpfs_iattr64 iattr = { };
 	unsigned int litemask = 0;
 	struct timespec ts;
@@ -1462,19 +1460,7 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_FGET_DOS_ATTRIBUTES(handle, fsp, dosmode);
 	}
 
-	if (fsp->fsp_flags.is_pathref && !config->pathref_ok.gpfs_fstat_x) {
-		if (fsp->fsp_flags.have_proc_fds) {
-			p = sys_proc_fd_path(fd, &buf);
-		} else {
-			p = fsp->fsp_name->base_name;
-		}
-	}
-
-	if (p != NULL) {
-		ret = gpfswrap_stat_x(p, &litemask, &iattr, sizeof(iattr));
-	} else {
-		ret = gpfswrap_fstat_x(fd, &litemask, &iattr, sizeof(iattr));
-	}
+	ret = gpfswrap_fstat_x(fd, &litemask, &iattr, sizeof(iattr));
 	if (ret == -1 && errno == ENOSYS) {
 		return SMB_VFS_NEXT_FGET_DOS_ATTRIBUTES(handle, fsp, dosmode);
 	}
@@ -1491,17 +1477,7 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 
 		set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 
-		if (p != NULL) {
-			ret = gpfswrap_stat_x(p,
-					      &litemask,
-					      &iattr,
-					      sizeof(iattr));
-		} else {
-			ret = gpfswrap_fstat_x(fd,
-					       &litemask,
-					       &iattr,
-					       sizeof(iattr));
-		}
+		ret = gpfswrap_fstat_x(fd, &litemask, &iattr, sizeof(iattr));
 		if (ret == -1) {
 			saved_errno = errno;
 		}
