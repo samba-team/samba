@@ -1494,6 +1494,31 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
+static int timespec_to_gpfs_timestruc(struct gpfs_config_data *config,
+				      struct timespec ts,
+				      struct gpfs_timestruc *gt)
+{
+	if (ts.tv_sec < 0 || ts.tv_sec > UINT32_MAX) {
+		if (!config->clamp_invalid_times) {
+			DBG_NOTICE("GPFS uses 32-bit unsigned timestamps "
+				   "and cannot handle %jd.\n",
+				   (intmax_t)ts.tv_sec);
+			errno = ERANGE;
+			return -1;
+		}
+		if (ts.tv_sec < 0) {
+			ts.tv_sec = 0;
+		} else {
+			ts.tv_sec = UINT32_MAX;
+		}
+	}
+
+	gt->tv_sec = ts.tv_sec;
+	gt->tv_nsec = ts.tv_nsec;
+
+	return 0;
+}
+
 static NTSTATUS vfs_gpfs_fset_dos_attributes(struct vfs_handle_struct *handle,
 					     struct files_struct *fsp,
 					     uint32_t dosmode)
@@ -1510,9 +1535,17 @@ static NTSTATUS vfs_gpfs_fset_dos_attributes(struct vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_FSET_DOS_ATTRIBUTES(handle, fsp, dosmode);
 	}
 
+	ret = timespec_to_gpfs_timestruc(config,
+					 fsp->fsp_name->st.st_ex_btime,
+					 &attrs.creationTime);
+	if (ret == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+
 	attrs.winAttrs = vfs_gpfs_dosmode_to_winattrs(dosmode);
 
 	ret = gpfswrap_set_winattrs(fsp_get_pathref_fd(fsp),
+				    GPFS_WINATTR_SET_CREATION_TIME|
 				    GPFS_WINATTR_SET_ATTRS,
 				    &attrs);
 	if (ret == -1) {
@@ -1530,28 +1563,18 @@ static int timespec_to_gpfs_time(struct gpfs_config_data *config,
 				 int idx,
 				 int *flags)
 {
+	int ret;
+
 	if (is_omit_timespec(&ts)) {
 		return 0;
 	}
 
-	if (ts.tv_sec < 0 || ts.tv_sec > UINT32_MAX) {
-		if (!config->clamp_invalid_times) {
-			DBG_NOTICE("GPFS uses 32-bit unsigned timestamps "
-				   "and cannot handle %jd.\n",
-				   (intmax_t)ts.tv_sec);
-			errno = ERANGE;
-			return -1;
-		}
-		if (ts.tv_sec < 0) {
-			ts.tv_sec = 0;
-		} else {
-			ts.tv_sec = UINT32_MAX;
-		}
+	ret = timespec_to_gpfs_timestruc(config, ts, &gt[idx]);
+	if (ret == -1) {
+		return ret;
 	}
 
 	*flags |= 1 << idx;
-	gt[idx].tv_sec = ts.tv_sec;
-	gt[idx].tv_nsec = ts.tv_nsec;
 	DBG_DEBUG("Setting GPFS time %d, flags 0x%x\n", idx, *flags);
 
 	return 0;
