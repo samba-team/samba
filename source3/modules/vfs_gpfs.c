@@ -1512,41 +1512,9 @@ static NTSTATUS vfs_gpfs_fset_dos_attributes(struct vfs_handle_struct *handle,
 
 	attrs.winAttrs = vfs_gpfs_dosmode_to_winattrs(dosmode);
 
-	if (!fsp->fsp_flags.is_pathref) {
-		ret = gpfswrap_set_winattrs(fsp_get_io_fd(fsp),
-					    GPFS_WINATTR_SET_ATTRS, &attrs);
-		if (ret == -1) {
-			DBG_WARNING("Setting winattrs failed for %s: %s\n",
-				    fsp_str_dbg(fsp), strerror(errno));
-			return map_nt_error_from_unix(errno);
-		}
-		return NT_STATUS_OK;
-	}
-
-	if (fsp->fsp_flags.have_proc_fds) {
-		int fd = fsp_get_pathref_fd(fsp);
-		struct sys_proc_fd_path_buf buf;
-
-		ret = gpfswrap_set_winattrs_path(sys_proc_fd_path(fd, &buf),
-						 GPFS_WINATTR_SET_ATTRS,
-						 &attrs);
-		if (ret == -1) {
-			DBG_WARNING("Setting winattrs failed for "
-				    "[%s][%s]: %s\n",
-				    buf.buf,
-				    fsp_str_dbg(fsp),
-				    strerror(errno));
-			return map_nt_error_from_unix(errno);
-		}
-		return NT_STATUS_OK;
-	}
-
-	/*
-	 * This is no longer a handle based call.
-	 */
-	ret = gpfswrap_set_winattrs_path(fsp->fsp_name->base_name,
-					 GPFS_WINATTR_SET_ATTRS,
-					 &attrs);
+	ret = gpfswrap_set_winattrs(fsp_get_pathref_fd(fsp),
+				    GPFS_WINATTR_SET_ATTRS,
+				    &attrs);
 	if (ret == -1) {
 		DBG_WARNING("Setting winattrs failed for [%s]: %s\n",
 			    fsp_str_dbg(fsp), strerror(errno));
