@@ -2,7 +2,7 @@
 # script to manage the lvs ip multiplexer for a single public address cluster
 
 [ -n "$CTDB_BASE" ] || \
-	CTDB_BASE=$(d=$(dirname "$0") && cd -P "$d" && dirname "$PWD")
+	CTDB_BASE=$(d="$(dirname "$0")" && cd -P "$d/../../" && pwd)
 
 . "${CTDB_BASE}/functions"
 
