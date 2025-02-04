@@ -65,21 +65,6 @@ struct winbindd_domain *domain_list(void)
 	return _domain_list;
 }
 
-/* Free all entries in the trusted domain list */
-
-static void free_domain_list(void)
-{
-	struct winbindd_domain *domain = _domain_list;
-
-	while(domain) {
-		struct winbindd_domain *next = domain->next;
-
-		DLIST_REMOVE(_domain_list, domain);
-		TALLOC_FREE(domain);
-		domain = next;
-	}
-}
-
 /**
  * Iterator for winbindd's domain list.
  * To be used (e.g.) in tevent based loops.
@@ -1057,8 +1042,8 @@ bool init_domain_list(void)
 	NTSTATUS status;
 	bool ok;
 
-	/* Free existing list */
-	free_domain_list();
+	/* the list should be empty! */
+	SMB_ASSERT(_domain_list == NULL);
 
 	/* BUILTIN domain */
 
