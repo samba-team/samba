@@ -49,7 +49,5 @@ int gpfswrap_init_trace(void);
 int gpfswrap_query_trace(void);
 void gpfswrap_add_trace(int level, const char *msg);
 void gpfswrap_fini_trace(void);
-int gpfswrap_fstat_x(int fd, unsigned int *litemask,
-		     struct gpfs_iattr64 *iattr, size_t len);
 
 #endif

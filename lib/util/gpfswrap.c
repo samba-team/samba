@@ -49,8 +49,6 @@ static int (*gpfs_init_trace_fn)(void);
 static int (*gpfs_query_trace_fn)(void);
 static void (*gpfs_add_trace_fn)(int level, const char *msg);
 static void (*gpfs_fini_trace_fn)(void);
-static int (*gpfs_fstat_x_fn)(int fd, unsigned int *litemask,
-			      struct gpfs_iattr64 *iattr, size_t len);
 
 int gpfswrap_init(void)
 {
@@ -83,7 +81,6 @@ int gpfswrap_init(void)
 	gpfs_query_trace_fn	      = dlsym(l, "gpfs_query_trace");
 	gpfs_add_trace_fn	      = dlsym(l, "gpfs_add_trace");
 	gpfs_fini_trace_fn	      = dlsym(l, "gpfs_fini_trace");
-	gpfs_fstat_x_fn	      = dlsym(l, "gpfs_fstat_x");
 
 	return 0;
 }
@@ -268,15 +265,4 @@ void gpfswrap_fini_trace(void)
 	}
 
 	gpfs_fini_trace_fn();
-}
-
-int gpfswrap_fstat_x(int fd, unsigned int *litemask,
-		     struct gpfs_iattr64 *iattr, size_t len)
-{
-	if (gpfs_fstat_x_fn == NULL) {
-		errno = ENOSYS;
-		return -1;
-	}
-
-	return gpfs_fstat_x_fn(fd, litemask, iattr, len);
 }
