@@ -168,16 +168,6 @@ struct dsdb_class {
 	bool isDefunct;
 	bool systemOnly;
 
-	uint32_t subClassOf_id;
-	uint32_t *systemAuxiliaryClass_ids;
-	uint32_t *auxiliaryClass_ids;
-	uint32_t *systemMayContain_ids;
-	uint32_t *systemMustContain_ids;
-	uint32_t *possSuperiors_ids;
-	uint32_t *mustContain_ids;
-	uint32_t *mayContain_ids;
-	uint32_t *systemPossSuperiors_ids;
-
 	/* An ordered index showing how this subClass fits into the
 	 * subClass tree.  that is, an objectclass that is not
 	 * subClassOf anything is 0 (just in case), and top is 1, and

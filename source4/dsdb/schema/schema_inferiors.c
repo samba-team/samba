@@ -228,92 +228,6 @@ static void schema_fill_possible_inferiors(const struct dsdb_schema *schema,
 	schema_class->possibleInferiors = str_list_unique(poss_inf);
 }
 
-/*
-  fill in a string class name from a governs_ID
- */
-static void schema_fill_from_class_one(const struct dsdb_schema *schema,
-				       const struct dsdb_class *c,
-				       const char **s,
-				       const uint32_t id)
-{
-	if (*s == NULL && id != 0) {
-		const struct dsdb_class *c2 =
-					dsdb_class_by_governsID_id(schema, id);
-		if (c2) {
-			*s = c2->lDAPDisplayName;
-		}
-	}
-}
-
-/*
-  fill in a list of string class names from a governs_ID list
- */
-static void schema_fill_from_class_list(const struct dsdb_schema *schema,
-					const struct dsdb_class *c,
-					const char ***s,
-					const uint32_t *ids)
-{
-	if (*s == NULL && ids != NULL) {
-		unsigned int i;
-		for (i=0;ids[i];i++) ;
-		*s = talloc_array(c, const char *, i+1);
-		for (i=0;ids[i];i++) {
-			const struct dsdb_class *c2 =
-				dsdb_class_by_governsID_id(schema, ids[i]);
-			if (c2) {
-				(*s)[i] = c2->lDAPDisplayName;
-			} else {
-				(*s)[i] = NULL;				
-			}
-		}
-		(*s)[i] = NULL;				
-	}
-}
-
-/*
-  fill in a list of string attribute names from a attributeID list
- */
-static void schema_fill_from_attribute_list(const struct dsdb_schema *schema,
-					    const struct dsdb_class *c,
-					    const char ***s,
-					    const uint32_t *ids)
-{
-	if (*s == NULL && ids != NULL) {
-		unsigned int i;
-		for (i=0;ids[i];i++) ;
-		*s = talloc_array(c, const char *, i+1);
-		for (i=0;ids[i];i++) {
-			const struct dsdb_attribute *a =
-				dsdb_attribute_by_attributeID_id(schema, ids[i]);
-			if (a) {
-				(*s)[i] = a->lDAPDisplayName;
-			} else {
-				(*s)[i] = NULL;				
-			}
-		}
-		(*s)[i] = NULL;				
-	}
-}
-
-/*
-  if the schema came from DRS then some attributes will be setup as IDs
- */
-static void schema_fill_from_ids(const struct dsdb_schema *schema)
-{
-	struct dsdb_class *c;
-	for (c=schema->classes; c; c=c->next) {
-		schema_fill_from_class_one(schema, c, &c->subClassOf, c->subClassOf_id);
-		schema_fill_from_attribute_list(schema, c, &c->systemMayContain, c->systemMayContain_ids);
-		schema_fill_from_attribute_list(schema, c, &c->systemMustContain, c->systemMustContain_ids);
-		schema_fill_from_attribute_list(schema, c, &c->mustContain, c->mustContain_ids);
-		schema_fill_from_attribute_list(schema, c, &c->mayContain, c->mayContain_ids);
-		schema_fill_from_class_list(schema, c, &c->possSuperiors, c->possSuperiors_ids);
-		schema_fill_from_class_list(schema, c, &c->systemPossSuperiors, c->systemPossSuperiors_ids);
-		schema_fill_from_class_list(schema, c, &c->systemAuxiliaryClass, c->systemAuxiliaryClass_ids);
-		schema_fill_from_class_list(schema, c, &c->auxiliaryClass, c->auxiliaryClass_ids);
-	}
-}
-
 int schema_fill_constructed(const struct dsdb_schema *schema)
 {
 	int ret;
@@ -323,8 +237,6 @@ int schema_fill_constructed(const struct dsdb_schema *schema)
 	for (schema_class=schema->classes; schema_class; schema_class=schema_class->next) {
 		ZERO_STRUCT(schema_class->tmp);
 	}
-
-	schema_fill_from_ids(schema);
 
 	ret = schema_create_subclasses(schema);
 	if (ret != LDB_SUCCESS) {
