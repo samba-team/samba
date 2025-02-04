@@ -888,7 +888,7 @@ static void wb_imsg_new_trusted_domain(struct imessaging_context *msg,
 
 	DBG_NOTICE("Rescanning trusted domains\n");
 
-	ok = add_trusted_domains_dc();
+	ok = update_trusted_domains_dc();
 	if (!ok) {
 		DBG_ERR("Failed to reload trusted domains\n");
 	}
@@ -937,13 +937,229 @@ static bool migrate_secrets_tdb_to_ldb(struct winbindd_domain *domain)
 	return true;
 }
 
-bool add_trusted_domains_dc(void)
+static void free_domain(struct winbindd_domain *d)
+{
+	struct winbindd_domain *nd = NULL;
+	struct dom_sid_buf sbuf = {};
+
+	nd = find_domain_from_sid_noinit(&d->sid);
+	if (nd != NULL) {
+		DBG_WARNING("Free updated domain[%p] name[%s] %s "
+			    "replaced by domain[%p] name[%s]\n",
+			    d, d->name, dom_sid_str_buf(&d->sid, &sbuf),
+			    nd, nd->name);
+	} else {
+		DBG_WARNING("Free removed domain[%p] name[%s] %s\n",
+			    d, d->name, dom_sid_str_buf(&d->sid, &sbuf));
+	}
+	talloc_free(d);
+}
+
+static void terminate_child(struct tevent_req *subreq)
+{
+	struct winbindd_child *c =
+		(struct winbindd_child *)
+		tevent_req_callback_data_void(subreq);
+	struct winbindd_domain *d = c->domain;
+	size_t ci;
+	bool ok;
+
+	ok = tevent_queue_wait_recv(subreq);
+	SMB_ASSERT(ok);
+	TALLOC_FREE(subreq);
+
+	if (c->pid != 0) {
+		kill(c->pid, SIGTERM);
+		c->pid = 0;
+		if (c->sock != -1) {
+			close(c->sock);
+		}
+		c->sock = -1;
+		TALLOC_FREE(c->monitor_fde);
+	}
+
+	c = NULL;
+	if (d == NULL) {
+		return;
+	}
+	if (d->internal) {
+		return;
+	}
+
+	for (ci = 0; ci < talloc_array_length(d->children); ci++) {
+		c = &d->children[ci];
+
+		if (c->pid != 0) {
+			/*
+			 * still waiting
+			 */
+			return;
+		}
+	}
+
+	free_domain(d);
+}
+
+static void terminate_domain(struct tevent_req *subreq)
+{
+	struct winbindd_domain *d =
+		tevent_req_callback_data(subreq,
+		struct winbindd_domain);
+	size_t ci;
+	bool ok;
+
+	ok = tevent_queue_wait_recv(subreq);
+	SMB_ASSERT(ok);
+
+	/* NO TALLOC_FREE(subreq); */
+	subreq = NULL;
+
+	for (ci = 0; ci < talloc_array_length(d->children); ci++) {
+		struct winbindd_child *c = &d->children[ci];
+
+		if (c->pid == 0) {
+			continue;
+		}
+
+		subreq = tevent_queue_wait_send(d->children,
+						global_event_context(),
+						c->queue);
+		if (subreq == NULL) {
+			return;
+		}
+		tevent_req_set_callback(subreq,
+					terminate_child,
+					c);
+	}
+
+	if (subreq != NULL) {
+		/*
+		 * still waiting
+		 */
+		return;
+	}
+
+	free_domain(d);
+}
+
+static bool remove_trusted_domains_dc(void)
+{
+	struct winbindd_domain *d = NULL;
+	struct winbindd_domain *n = NULL;
+	struct winbindd_child *c = NULL;
+	struct tevent_req *subreq = NULL;
+
+	SMB_ASSERT(IS_DC);
+
+	/*
+	 * We need to terminate all
+	 * child processes, but we need
+	 * to go through the child and domain
+	 * queues * in order to keep existing
+	 * requests to finish.
+	 *
+	 * First start with the idmap and locator
+	 * children
+	 */
+
+	c = idmap_child();
+	if (c->pid != 0) {
+		subreq = tevent_queue_wait_send(c,
+						global_event_context(),
+						c->queue);
+		if (subreq == NULL) {
+			return false;
+		}
+		tevent_req_set_callback(subreq,
+					terminate_child,
+					c);
+	}
+
+	c = locator_child();
+	if (c->pid != 0) {
+		subreq = tevent_queue_wait_send(c,
+						global_event_context(),
+						c->queue);
+		if (subreq == NULL) {
+			return false;
+		}
+		tevent_req_set_callback(subreq,
+					terminate_child,
+					c);
+	}
+
+	/*
+	 * For internal domains BUILTIN and local SAM
+	 * we just terminate the children, forcing
+	 * a re-fork
+	 */
+	for (d = _domain_list; d != NULL; d = d->next) {
+		size_t ci;
+
+		if (!d->internal) {
+			continue;
+		}
+
+		for (ci = 0; ci < talloc_array_length(d->children); ci++) {
+			c = &d->children[ci];
+
+			if (c->pid == 0) {
+				continue;
+			}
+
+			subreq = tevent_queue_wait_send(d->children,
+							global_event_context(),
+							c->queue);
+			if (subreq == NULL) {
+				return false;
+			}
+			tevent_req_set_callback(subreq,
+						terminate_child,
+						c);
+		}
+	}
+
+	/*
+	 * For trusted domain
+	 * we need to wait in
+	 * the domain queue in order
+	 * to let pending requests
+	 * use the existing domain
+	 * children.
+	 */
+	for (d = _domain_list; d != NULL; d = n) {
+		n = d->next;
+
+		if (d->internal) {
+			continue;
+		}
+
+		subreq = tevent_queue_wait_send(d,
+						global_event_context(),
+						d->queue);
+		if (subreq == NULL) {
+			return false;
+		}
+		tevent_req_set_callback(subreq,
+					terminate_domain,
+					d);
+
+		DLIST_REMOVE(_domain_list, d);
+		domain_list_generation += 1;
+	}
+
+	return true;
+}
+
+static bool add_trusted_domains_dc(void)
 {
 	struct winbindd_domain *domain =  NULL;
 	struct pdb_trusted_domain **domains = NULL;
 	uint32_t num_domains = 0;
 	uint32_t i;
 	NTSTATUS status;
+
+	SMB_ASSERT(IS_DC);
 
 	if (!(pdb_capabilities() & PDB_CAP_TRUSTED_DOMAINS_EX)) {
 		struct trustdom_info **ti = NULL;
@@ -1120,6 +1336,26 @@ bool add_trusted_domains_dc(void)
 	return true;
 }
 
+bool update_trusted_domains_dc(void)
+{
+	bool ok;
+
+	if (!IS_DC) {
+		return true;
+	}
+
+	ok = remove_trusted_domains_dc();
+	if (!ok) {
+		return false;
+	}
+
+	ok = add_trusted_domains_dc();
+	if (!ok) {
+		return false;
+	}
+
+	return true;
+}
 
 /* Look up global info for the winbind daemon */
 bool init_domain_list(void)

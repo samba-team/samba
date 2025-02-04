@@ -372,7 +372,7 @@ void winbindd_msg_reload_services_parent(struct messaging_context *msg,
 NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
 				    const char *logfilename);
 struct winbindd_domain *wb_child_domain(void);
-bool add_trusted_domains_dc(void);
+bool update_trusted_domains_dc(void);
 
 /* The following definitions come from winbindd/winbindd_group.c  */
 bool fill_grent(TALLOC_CTX *mem_ctx, struct winbindd_gr *gr,
