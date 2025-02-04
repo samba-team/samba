@@ -451,6 +451,39 @@ static PyObject *py_dsdb_get_lDAPDisplayName_by_attid(PyObject *self, PyObject *
 	return PyUnicode_FromString(a->lDAPDisplayName);
 }
 
+static PyObject *py_dsdb_get_lDAPDisplayName_by_governsID_id(PyObject *self,
+							     PyObject *args)
+{
+	PyObject *py_ldb = NULL;
+	struct ldb_context *ldb = NULL;
+	struct dsdb_schema *schema = NULL;
+	const struct dsdb_class *c = NULL;
+	uint32_t governs_id;
+
+	if (!PyArg_ParseTuple(args, "OI", &py_ldb, &governs_id)) {
+		return NULL;
+	}
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	schema = dsdb_get_schema(ldb, NULL);
+	if (schema == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Failed to find a schema from ldb");
+		return NULL;
+	}
+
+	c = dsdb_class_by_governsID_id(schema, governs_id);
+	if (c == NULL) {
+		PyErr_Format(PyExc_KeyError,
+			     "Failed to find class '0x%08x'",
+			     governs_id);
+		return NULL;
+	}
+
+	return PyUnicode_FromString(c->lDAPDisplayName);
+}
+
 
 /*
   return the attribute syntax oid as a string from the attribute name
@@ -1589,6 +1622,8 @@ static PyMethodDef py_dsdb_methods[] = {
 	{ "_dsdb_get_lDAPDisplayName_by_attid", (PyCFunction)py_dsdb_get_lDAPDisplayName_by_attid,
 		METH_VARARGS, NULL },
 	{ "_dsdb_get_backlink_from_lDAPDisplayName", (PyCFunction)py_dsdb_get_backlink_from_lDAPDisplayName,
+		METH_VARARGS, NULL },
+	{ "_dsdb_get_lDAPDisplayName_by_governsID_id", (PyCFunction)py_dsdb_get_lDAPDisplayName_by_governsID_id,
 		METH_VARARGS, NULL },
 	{ "_dsdb_set_ntds_invocation_id",
 		(PyCFunction)py_dsdb_set_ntds_invocation_id, METH_VARARGS,

@@ -1116,6 +1116,10 @@ accountExpires: %u
         of a forward link attribute. If there is no backlink return None"""
         return dsdb._dsdb_get_backlink_from_lDAPDisplayName(self, ldap_display_name)
 
+    def get_lDAPDisplayName_by_governsID_id(self, governs_idns_id):
+        """return the lDAPDisplayName from an integer DRS governsID"""
+        return dsdb._dsdb_get_lDAPDisplayName_by_governsID_id(self, governs_idns_id)
+
     def set_ntds_settings_dn(self, ntds_settings_dn):
         """Set the NTDS Settings DN, as would be returned on the dsServiceName
         rootDSE attribute.
