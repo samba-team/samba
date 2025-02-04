@@ -1659,7 +1659,6 @@ static int vfs_gpfs_fntimes(struct vfs_handle_struct *handle,
 		struct smb_file_time *ft)
 {
 
-	struct gpfs_winattr attrs;
 	int ret;
 	struct gpfs_config_data *config;
 
@@ -1673,8 +1672,7 @@ static int vfs_gpfs_fntimes(struct vfs_handle_struct *handle,
 		return smbd_gpfs_set_times(config, fsp, ft);
 	}
 
-	DBG_DEBUG("gpfs_set_times() not available or disabled, "
-		  "use ntimes and winattr\n");
+	DBG_DEBUG("gpfs_set_times() not available or disabled.\n");
 
 	ret = SMB_VFS_NEXT_FNTIMES(handle, fsp, ft);
 	if (ret == -1) {
@@ -1683,56 +1681,6 @@ static int vfs_gpfs_fntimes(struct vfs_handle_struct *handle,
 			DBG_WARNING("SMB_VFS_NEXT_FNTIMES failed: %s\n",
 				    strerror(errno));
 		}
-		return -1;
-	}
-
-	if (is_omit_timespec(&ft->create_time)) {
-		DBG_DEBUG("Create Time is NULL\n");
-		return 0;
-	}
-
-	if (!config->winattr) {
-		return 0;
-	}
-
-	attrs.winAttrs = 0;
-	attrs.creationTime.tv_sec = ft->create_time.tv_sec;
-	attrs.creationTime.tv_nsec = ft->create_time.tv_nsec;
-
-	if (!fsp->fsp_flags.is_pathref) {
-		ret = gpfswrap_set_winattrs(fsp_get_io_fd(fsp),
-					    GPFS_WINATTR_SET_CREATION_TIME,
-					    &attrs);
-		if (ret == -1 && errno != ENOSYS) {
-			DBG_WARNING("Set GPFS ntimes failed %d\n", ret);
-			return -1;
-		}
-		return ret;
-	}
-
-	if (fsp->fsp_flags.have_proc_fds) {
-		int fd = fsp_get_pathref_fd(fsp);
-		struct sys_proc_fd_path_buf buf;
-
-		ret = gpfswrap_set_winattrs_path(
-			sys_proc_fd_path(fd, &buf),
-			GPFS_WINATTR_SET_CREATION_TIME,
-			&attrs);
-		if (ret == -1 && errno != ENOSYS) {
-			DBG_WARNING("Set GPFS ntimes failed %d\n", ret);
-			return -1;
-		}
-		return ret;
-	}
-
-	/*
-	 * This is no longer a handle based call.
-	 */
-	ret = gpfswrap_set_winattrs_path(fsp->fsp_name->base_name,
-					 GPFS_WINATTR_SET_CREATION_TIME,
-					 &attrs);
-	if (ret == -1 && errno != ENOSYS) {
-		DBG_WARNING("Set GPFS ntimes failed %d\n", ret);
 		return -1;
 	}
 
