@@ -150,6 +150,16 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 	if (domain != NULL) {
 		struct winbindd_domain *check_domain = NULL;
 
+		if (!dom_sid_equal(&domain->sid, sid)) {
+			struct dom_sid_buf buf2;
+			DBG_ERR("SID [%s] changed for domain [%s], "
+				"expected [%s]\n",
+				dom_sid_str_buf(sid, &buf),
+				domain->name,
+				dom_sid_str_buf(sid, &buf2));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
 		for (check_domain = _domain_list;
 		     check_domain != NULL;
 		     check_domain = check_domain->next)
@@ -175,6 +185,14 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 
 	if ((domain != NULL) && (dns_name != NULL)) {
 		struct winbindd_domain *check_domain = NULL;
+
+		if (!strequal(domain->alt_name, dns_name)) {
+			DBG_ERR("DNS name [%s] changed for domain [%s], "
+				"expected [%s]\n",
+				dns_name, domain->name,
+				domain->alt_name);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 
 		for (check_domain = _domain_list;
 		     check_domain != NULL;
