@@ -488,7 +488,7 @@ static NTSTATUS trust_forest_record_to_lsa(TALLOC_CTX *mem_ctx,
 		lstr = &lftr->forest_trust_data.top_level_name;
 		str = &ftr->data.name;
 
-		lstr->string = talloc_strdup(mem_ctx, str->string);
+		lstr->string = talloc_strdup(lftr, str->string);
 		if (lstr->string == NULL) {
 			TALLOC_FREE(lftr);
 			return NT_STATUS_NO_MEMORY;
@@ -500,7 +500,7 @@ static NTSTATUS trust_forest_record_to_lsa(TALLOC_CTX *mem_ctx,
 		lstr = &lftr->forest_trust_data.top_level_name_ex;
 		str = &ftr->data.name;
 
-		lstr->string = talloc_strdup(mem_ctx, str->string);
+		lstr->string = talloc_strdup(lftr, str->string);
 		if (lstr->string == NULL) {
 			TALLOC_FREE(lftr);
 			return NT_STATUS_NO_MEMORY;
@@ -520,7 +520,7 @@ static NTSTATUS trust_forest_record_to_lsa(TALLOC_CTX *mem_ctx,
 
 		lstr = &linfo->dns_domain_name;
 		str = &info->dns_name;
-		lstr->string = talloc_strdup(mem_ctx, str->string);
+		lstr->string = talloc_strdup(lftr, str->string);
 		if (lstr->string == NULL) {
 			TALLOC_FREE(lftr);
 			return NT_STATUS_NO_MEMORY;
@@ -528,7 +528,7 @@ static NTSTATUS trust_forest_record_to_lsa(TALLOC_CTX *mem_ctx,
 
 		lstr = &linfo->netbios_domain_name;
 		str = &info->netbios_name;
-		lstr->string = talloc_strdup(mem_ctx, str->string);
+		lstr->string = talloc_strdup(lftr, str->string);
 		if (lstr->string == NULL) {
 			TALLOC_FREE(lftr);
 			return NT_STATUS_NO_MEMORY;
