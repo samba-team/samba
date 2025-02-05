@@ -626,7 +626,7 @@ cli_credentials_get_password_obtained(struct cli_credentials *cred)
  *
  * @param[in]  obtained  A pointer to store the obtained information.
  *
- * return The user name or NULL if an error occurred.
+ * return The password if there is one.
  */
 _PUBLIC_ const char *
 cli_credentials_get_password_and_obtained(struct cli_credentials *cred,
