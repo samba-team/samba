@@ -377,6 +377,9 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 	} else if (session->options.plaintext_auth) {
 		const char *password = cli_credentials_get_password(io->in.credentials);
+		if (password == NULL) {
+			password = "";
+		}
 		state->setup.nt1.in.password1 = data_blob_talloc(state, password, strlen(password));
 		state->setup.nt1.in.password2 = data_blob(NULL, 0);
 	} else {
