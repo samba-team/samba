@@ -1668,7 +1668,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_struct_into_fixed_blob(
 /*
   push a union to a blob using NDR
 */
-_PUBLIC_ enum ndr_err_code ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p,
+_PUBLIC_ enum ndr_err_code ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, const void *p,
 			     uint32_t level, ndr_push_flags_fn_t fn)
 {
 	struct ndr_push *ndr;
