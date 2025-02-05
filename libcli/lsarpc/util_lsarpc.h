@@ -26,6 +26,7 @@ struct lsa_TrustDomainInfoBuffer;
 struct trustAuthInOutBlob;
 struct ForestTrustInfo;
 struct lsa_ForestTrustInformation;
+struct lsa_ForestTrustInformation2;
 
 NTSTATUS auth_blob_2_auth_info(TALLOC_CTX *mem_ctx,
 			       DATA_BLOB incoming, DATA_BLOB outgoing,
@@ -45,6 +46,12 @@ NTSTATUS trust_forest_info_from_lsa(TALLOC_CTX *mem_ctx,
 NTSTATUS trust_forest_info_to_lsa(TALLOC_CTX *mem_ctx,
 				  const struct ForestTrustInfo *fti,
 				  struct lsa_ForestTrustInformation **_lfti);
+NTSTATUS trust_forest_info_from_lsa2(TALLOC_CTX *mem_ctx,
+				const struct lsa_ForestTrustInformation2 *lfti,
+				struct ForestTrustInfo **_fti);
+NTSTATUS trust_forest_info_to_lsa2(TALLOC_CTX *mem_ctx,
+				   const struct ForestTrustInfo *fti,
+				   struct lsa_ForestTrustInformation2 **_lfti);
 
 bool trust_forest_info_tln_match(
 		const struct lsa_ForestTrustInformation *info,

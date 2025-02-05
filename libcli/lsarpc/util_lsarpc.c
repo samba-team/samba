@@ -723,6 +723,100 @@ NTSTATUS trust_forest_info_to_lsa(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS trust_forest_info_from_lsa2(TALLOC_CTX *mem_ctx,
+				const struct lsa_ForestTrustInformation2 *lfti,
+				struct ForestTrustInfo **_fti)
+{
+	struct ForestTrustInfo *fti;
+	uint32_t i;
+
+	*_fti = NULL;
+
+	fti = talloc_zero(mem_ctx, struct ForestTrustInfo);
+	if (fti == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	fti->version = 1;
+	fti->count = lfti->count;
+	fti->records = talloc_zero_array(fti,
+					 struct ForestTrustInfoRecordArmor,
+					 fti->count);
+	if (fti->records == NULL) {
+		TALLOC_FREE(fti);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < fti->count; i++) {
+		const struct lsa_ForestTrustRecord2 *lftr2 = lfti->entries[i];
+		struct ForestTrustInfoRecord *ftr = &fti->records[i].record;
+		NTSTATUS status;
+
+		status = trust_forest_record_from_lsa(fti->records,
+						      lftr2,
+						      ftr);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(fti);
+			return status;
+		}
+	}
+
+	*_fti = fti;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS trust_forest_info_to_lsa2(TALLOC_CTX *mem_ctx,
+				   const struct ForestTrustInfo *fti,
+				   struct lsa_ForestTrustInformation2 **_lfti)
+{
+	struct lsa_ForestTrustInformation2 *lfti;
+	uint32_t i;
+
+	*_lfti = NULL;
+
+	if (fti->version != 1) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	lfti = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation2);
+	if (lfti == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	lfti->count = fti->count;
+	lfti->entries = talloc_zero_array(mem_ctx,
+					  struct lsa_ForestTrustRecord2 *,
+					  lfti->count);
+	if (lfti->entries == NULL) {
+		TALLOC_FREE(lfti);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < fti->count; i++) {
+		struct ForestTrustInfoRecord *ftr = &fti->records[i].record;
+		struct lsa_ForestTrustRecord2 *lftr2 = NULL;
+		NTSTATUS status;
+
+		lftr2 = talloc_zero(lfti->entries,
+				    struct lsa_ForestTrustRecord2);
+		if (lftr2 == NULL) {
+			TALLOC_FREE(lfti);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		status = trust_forest_record_to_lsa(lftr2, ftr, lftr2);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(lfti);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		lfti->entries[i] = lftr2;
+	}
+
+	*_lfti = lfti;
+	return NT_STATUS_OK;
+}
+
 static int trust_forest_info_tln_match_internal(
 		const struct lsa_ForestTrustInformation *info,
 		enum lsa_ForestTrustRecordType type,
