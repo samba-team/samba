@@ -486,6 +486,93 @@ static PyObject *py_dsdb_get_lDAPDisplayName_by_governsID_id(PyObject *self,
 
 
 /*
+  return the set of mandatory attributes from the class name
+ */
+static PyObject *py_dsdb_get_must_contain_from_lDAPDisplayName(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb = NULL;
+	struct ldb_context *ldb = NULL;
+	struct dsdb_schema *schema = NULL;
+	const char *ldap_display_name = NULL;
+	const struct dsdb_class *cls = NULL;
+	const char **must_contain = NULL;
+	int ret;
+
+	if (!PyArg_ParseTuple(args, "Os", &py_ldb, &ldap_display_name)) {
+		return NULL;
+	}
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	schema = dsdb_get_schema(ldb, NULL);
+	if (schema == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"Failed to find a schema from ldb");
+		return NULL;
+	}
+
+	cls = dsdb_class_by_lDAPDisplayName(schema, ldap_display_name);
+	if (cls == NULL) {
+		PyErr_Format(PyExc_KeyError,
+			     "Failed to find class '%s'",
+			     ldap_display_name);
+		return NULL;
+	}
+
+	{
+		PyObject *set = NULL;
+
+		set = PySet_New(NULL);
+		if (set == NULL) {
+			return PyErr_NoMemory();
+		}
+
+		must_contain = cls->systemMustContain;
+		if (must_contain != NULL) {
+			for (; *must_contain != NULL; ++must_contain) {
+				PyObject *attr = NULL;
+
+				attr = PyUnicode_FromString(*must_contain);
+				if (attr == NULL) {
+					Py_DECREF(set);
+					return NULL;
+				}
+
+				ret = PySet_Add(set, attr);
+				if (ret) {
+					Py_DECREF(attr);
+					Py_DECREF(set);
+					return NULL;
+				}
+			}
+		}
+
+		must_contain = cls->mustContain;
+		if (must_contain != NULL) {
+			for (; *must_contain != NULL; ++must_contain) {
+				PyObject *attr = NULL;
+
+				attr = PyUnicode_FromString(*must_contain);
+				if (attr == NULL) {
+					Py_DECREF(set);
+					return NULL;
+				}
+
+				ret = PySet_Add(set, attr);
+				if (ret) {
+					Py_DECREF(attr);
+					Py_DECREF(set);
+					return NULL;
+				}
+			}
+		}
+
+		return set;
+	}
+}
+
+
+/*
   return the attribute syntax oid as a string from the attribute name
  */
 static PyObject *py_dsdb_get_syntax_oid_from_lDAPDisplayName(PyObject *self, PyObject *args)
@@ -1624,6 +1711,8 @@ static PyMethodDef py_dsdb_methods[] = {
 	{ "_dsdb_get_backlink_from_lDAPDisplayName", (PyCFunction)py_dsdb_get_backlink_from_lDAPDisplayName,
 		METH_VARARGS, NULL },
 	{ "_dsdb_get_lDAPDisplayName_by_governsID_id", (PyCFunction)py_dsdb_get_lDAPDisplayName_by_governsID_id,
+		METH_VARARGS, NULL },
+	{ "_dsdb_get_must_contain_from_lDAPDisplayName", (PyCFunction)py_dsdb_get_must_contain_from_lDAPDisplayName,
 		METH_VARARGS, NULL },
 	{ "_dsdb_set_ntds_invocation_id",
 		(PyCFunction)py_dsdb_set_ntds_invocation_id, METH_VARARGS,

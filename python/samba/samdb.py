@@ -1120,6 +1120,10 @@ accountExpires: %u
         """return the lDAPDisplayName from an integer DRS governsID"""
         return dsdb._dsdb_get_lDAPDisplayName_by_governsID_id(self, governs_idns_id)
 
+    def get_must_contain_from_lDAPDisplayName(self, ldap_display_name):
+        """return the mandatory attributes for a LDAP class as a set of strings"""
+        return dsdb._dsdb_get_must_contain_from_lDAPDisplayName(self, ldap_display_name)
+
     def set_ntds_settings_dn(self, ntds_settings_dn):
         """Set the NTDS Settings DN, as would be returned on the dsServiceName
         rootDSE attribute.
