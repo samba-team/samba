@@ -2471,10 +2471,19 @@ static NTSTATUS fill_trust_domain_ex(TALLOC_CTX *mem_ctx,
 {
 	info_ex->domain_name.string
 		= ldb_msg_find_attr_as_string(msg, "trustPartner", NULL);
+	if (info_ex->domain_name.string == NULL) {
+		return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
+	}
 	info_ex->netbios_name.string
 		= ldb_msg_find_attr_as_string(msg, "flatname", NULL);
+	if (info_ex->netbios_name.string == NULL) {
+		return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
+	}
 	info_ex->sid
 		= samdb_result_dom_sid(mem_ctx, msg, "securityIdentifier");
+	if (info_ex->sid == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	info_ex->trust_direction
 		= ldb_msg_find_attr_as_int(msg, "trustDirection", 0);
 	info_ex->trust_type
