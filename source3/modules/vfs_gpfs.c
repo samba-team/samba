@@ -524,7 +524,7 @@ again:
 }
 
 /* Tries to get nfs4 acls and returns SMB ACL allocated.
- * On failure returns 1 if it got non-NFSv4 ACL to prompt 
+ * On failure returns 1 if it got non-NFSv4 ACL to prompt
  * retry with POSIX ACL checks.
  * On failure returns -1 if there is system (GPFS) error, check errno.
  * Returns 0 on success
