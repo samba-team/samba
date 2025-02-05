@@ -441,6 +441,10 @@ static NTSTATUS session_setup_old(struct composite_context *c,
 	 */
 	DATA_BLOB session_key;
 
+	if (password == NULL) {
+		password = "";
+	}
+
 	state->setup.old.level      = RAW_SESSSETUP_OLD;
 	state->setup.old.in.bufsize = session->transport->options.max_xmit;
 	state->setup.old.in.mpx_max = session->transport->options.max_mux;
