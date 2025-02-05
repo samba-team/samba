@@ -77,6 +77,10 @@ static NTSTATUS dcesrv_interface_lsarpc_init_server(struct dcesrv_context *dce_c
 	return lsarpc__op_init_server(dce_ctx, ep_server);
 }
 
+static NTSTATUS fill_trust_domain_ex(TALLOC_CTX *mem_ctx,
+				     struct ldb_message *msg,
+				     struct lsa_TrustDomainInfoInfoEx *info_ex);
+
 /*
   this type allows us to distinguish handle types
 */
@@ -1243,6 +1247,40 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_precheck(
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS dcesrv_lsa_default_forest_trust_info(TALLOC_CTX *mem_ctx,
+						     const struct dom_sid *sid,
+						     const char *dns_name,
+						     const char *nbt_name,
+						     DATA_BLOB *_ft_blob)
+{
+	struct ForestTrustInfo *trust_fti = NULL;
+	DATA_BLOB ft_blob = {};
+	enum ndr_err_code ndr_err;
+	struct timeval tv = timeval_current();
+	NTTIME now = timeval_to_nttime(&tv);
+	NTSTATUS status;
+
+	status = dsdb_trust_default_forest_info(mem_ctx,
+						sid,
+						dns_name,
+						nbt_name,
+						now,
+						&trust_fti);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	ndr_err = ndr_push_struct_blob(&ft_blob, mem_ctx, trust_fti,
+				       (ndr_push_flags_fn_t)ndr_push_ForestTrustInfo);
+	TALLOC_FREE(trust_fti);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	*_ft_blob = ft_blob;
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS dcesrv_lsa_CreateTrustedDomain_common(struct dcesrv_call_state *dce_call,
 						    TALLOC_CTX *mem_ctx,
 						    struct dcesrv_handle *policy_handle,
@@ -1422,6 +1460,29 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_common(struct dcesrv_call_state *
 		ret = ldb_msg_add_value(msg,
 					"trustAuthOutgoing",
 					&trustAuthOutgoing,
+					NULL);
+		if (ret != LDB_SUCCESS) {
+			ldb_transaction_cancel(sam_ldb);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (info->trust_attributes & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
+		DATA_BLOB ft_blob = {};
+
+		status = dcesrv_lsa_default_forest_trust_info(mem_ctx,
+							      info->sid,
+							      dns_name,
+							      netbios_name,
+							      &ft_blob);
+		if (!NT_STATUS_IS_OK(status)) {
+			ldb_transaction_cancel(sam_ldb);
+			return status;
+		}
+
+		ret = ldb_msg_add_value(msg,
+					"msDS-TrustForestTrustInfo",
+					&ft_blob,
 					NULL);
 		if (ret != LDB_SUCCESS) {
 			ldb_transaction_cancel(sam_ldb);
@@ -2066,6 +2127,7 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 	bool del_outgoing = false;
 	bool del_incoming = false;
 	bool del_forest_info = false;
+	bool add_forest_info = false;
 	bool in_transaction = false;
 	int ret;
 	bool am_rodc;
@@ -2288,6 +2350,14 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 			if (orig_forest_el != NULL) {
 				del_forest_info = true;
 			}
+		} else if (changed_attrs & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
+			struct ldb_message_element *orig_forest_el = NULL;
+
+			orig_forest_el = ldb_msg_find_element(dom_msg,
+						"msDS-TrustForestTrustInfo");
+			if (orig_forest_el == NULL) {
+				add_forest_info = true;
+			}
 		}
 	}
 
@@ -2334,6 +2404,34 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 	if (del_forest_info) {
 		ret = ldb_msg_add_empty(msg, "msDS-TrustForestTrustInfo",
 					LDB_FLAG_MOD_REPLACE, NULL);
+		if (ret != LDB_SUCCESS) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	if (add_forest_info) {
+		struct lsa_TrustDomainInfoInfoEx tmp = {};
+		DATA_BLOB ft_blob = {};
+
+		nt_status = fill_trust_domain_ex(mem_ctx,
+						 dom_msg,
+						 &tmp);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+
+		nt_status = dcesrv_lsa_default_forest_trust_info(mem_ctx,
+							tmp.sid,
+							tmp.domain_name.string,
+							tmp.netbios_name.string,
+							&ft_blob);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+
+		ret = ldb_msg_add_value(msg,
+					"msDS-TrustForestTrustInfo",
+					&ft_blob,
+					NULL);
 		if (ret != LDB_SUCCESS) {
 			return NT_STATUS_NO_MEMORY;
 		}
