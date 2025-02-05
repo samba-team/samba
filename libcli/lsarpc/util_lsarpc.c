@@ -375,7 +375,7 @@ NTSTATUS trust_forest_info_from_lsa(TALLOC_CTX *mem_ctx,
 
 	fti->version = 1;
 	fti->count = lfti->count;
-	fti->records = talloc_zero_array(mem_ctx,
+	fti->records = talloc_zero_array(fti,
 					 struct ForestTrustInfoRecordArmor,
 					 fti->count);
 	if (fti->records == NULL) {
@@ -405,7 +405,7 @@ NTSTATUS trust_forest_info_from_lsa(TALLOC_CTX *mem_ctx,
 			lstr = &lftr->forest_trust_data.top_level_name;
 			str = &ftr->data.name;
 
-			str->string = talloc_strdup(mem_ctx, lstr->string);
+			str->string = talloc_strdup(fti->records, lstr->string);
 			if (str->string == NULL) {
 				TALLOC_FREE(fti);
 				return NT_STATUS_NO_MEMORY;
@@ -417,7 +417,7 @@ NTSTATUS trust_forest_info_from_lsa(TALLOC_CTX *mem_ctx,
 			lstr = &lftr->forest_trust_data.top_level_name_ex;
 			str = &ftr->data.name;
 
-			str->string = talloc_strdup(mem_ctx, lstr->string);
+			str->string = talloc_strdup(fti->records, lstr->string);
 			if (str->string == NULL) {
 				TALLOC_FREE(fti);
 				return NT_STATUS_NO_MEMORY;
@@ -437,7 +437,7 @@ NTSTATUS trust_forest_info_from_lsa(TALLOC_CTX *mem_ctx,
 
 			lstr = &linfo->dns_domain_name;
 			str = &info->dns_name;
-			str->string = talloc_strdup(mem_ctx, lstr->string);
+			str->string = talloc_strdup(fti->records, lstr->string);
 			if (str->string == NULL) {
 				TALLOC_FREE(fti);
 				return NT_STATUS_NO_MEMORY;
@@ -445,7 +445,7 @@ NTSTATUS trust_forest_info_from_lsa(TALLOC_CTX *mem_ctx,
 
 			lstr = &linfo->netbios_domain_name;
 			str = &info->netbios_name;
-			str->string = talloc_strdup(mem_ctx, lstr->string);
+			str->string = talloc_strdup(fti->records, lstr->string);
 			if (str->string == NULL) {
 				TALLOC_FREE(fti);
 				return NT_STATUS_NO_MEMORY;
