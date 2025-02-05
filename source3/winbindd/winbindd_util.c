@@ -903,7 +903,8 @@ static void wb_imsg_new_trusted_domain(struct imessaging_context *msg,
 static bool migrate_secrets_tdb_to_ldb(struct winbindd_domain *domain)
 {
 	bool ok;
-	struct cli_credentials *creds;
+	struct cli_credentials *creds = NULL;
+	const char *password = NULL;
 	NTSTATUS can_migrate = pdb_get_trust_credentials(domain->name,
 							 NULL, domain, &creds);
 	if (!NT_STATUS_IS_OK(can_migrate)) {
@@ -919,7 +920,13 @@ static bool migrate_secrets_tdb_to_ldb(struct winbindd_domain *domain)
 	 * oldpass, because a new password is created at
 	 * classicupgrade, so this is not a concern.
 	 */
-	ok = secrets_store_machine_pw_sync(cli_credentials_get_password(creds),
+	password = cli_credentials_get_password(creds);
+	if (password == NULL) {
+		DBG_ERR("No password was provided for local AD domain join\n");
+		return false;
+	}
+
+	ok = secrets_store_machine_pw_sync(password,
 		   NULL /* oldpass */,
 		   cli_credentials_get_domain(creds),
 		   cli_credentials_get_realm(creds),
