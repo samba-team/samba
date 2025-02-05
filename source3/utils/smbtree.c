@@ -47,6 +47,7 @@ static void get_auth_data_with_context_fn(
 {
 	struct cli_credentials *creds = samba_cmdline_get_creds();
 	size_t len;
+	const char *pwd = NULL;
 
 	len = strlcpy(domain, cli_credentials_get_domain(creds), domain_len);
 	if ((int)len >= domain_len) {
@@ -57,8 +58,12 @@ static void get_auth_data_with_context_fn(
 	if ((int)len >= user_len) {
 		return;
 	}
-	len = strlcpy(
-		password, cli_credentials_get_password(creds), password_len);
+	pwd = cli_credentials_get_password(creds);
+	if (pwd == NULL) {
+		pwd = "";
+	}
+
+	len = strlcpy(password, pwd, password_len);
 	if ((int)len >= password_len) {
 		/* pointless, but what can you do... */
 		return;
