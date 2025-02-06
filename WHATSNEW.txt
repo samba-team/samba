@@ -1,12 +1,12 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.22.  This is *not*
+This is the first pre release of Samba 4.23.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.22 will be the next version of the Samba suite.
+Samba 4.23 will be the next version of the Samba suite.
 
 
 UPGRADING
@@ -16,54 +16,9 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
-SMB3 Directory Leases
----------------------
-
-Starting with Samba 4.22 SMB3 Directory Leases are supported. The new global
-option "smb3 directory leases" controls whether the feature is enabled or
-not. By default, SMB3 Directory Leases are enabled on non-clustered Samba and
-disabled on clustered Samba, based on the "clustering" option. See man smb.conf
-for more details.
-
-SMB3 Directory Leases allow clients to cache directory listings and, depending
-on the workload, result in a decent reduction in SMB requests from clients.
-
-Netlogon Ping over LDAP and LDAPS
----------------------------------
-
-Samba must query domain controller information via simple queries on
-the AD rootdse's netlogon attribute. Typically this is done via
-connectionless LDAP, using UDP on port 389. The same information is
-also available via classic LDAP rootdse queries over TCP. Samba can
-now be configured to use TCP via the new "client netlogon ping
-protocol" parameter to enable running in environments where firewalls
-completely block port 389 or UDP traffic to domain controllers.
 
 REMOVED FEATURES
 ================
-
-The "nmbd proxy logon" feature was removed. This was used before
-Samba4 acquired a NBT server.
-
-The parameter "cldap port" has been removed. CLDAP runs over UDP port
-389, we don't see a reason why this should ever be changed to a
-different port. Moreover, we had several places in the code where
-Samba did not respect this parameter, so the behaviour was at least
-inconsistent.
-
-fruit:posix_rename
-------------------
-
-This option of the vfs_fruit VFS module that could be used to enable POSIX
-directory rename behaviour for OS X clients has been removed as it could result
-in severe problems for Windows clients.
-
-As a possible workaround it is possible to prevent creation of .DS_Store files
-(a Finder thingy to store directory view settings) on network mounts by running
-
-  $ defaults write com.apple.desktopservices DSDontWriteNetworkStores true
-
-on the Mac.
 
 
 smb.conf changes
@@ -71,16 +26,11 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
-  smb3 directory leases                   New             Auto
-  vfs mkdir use tmp name                  New             Auto
-  client netlogon ping protocol           New             cldap
-  fruit:posix_rename                      Removed
-  cldap port                              Removed
 
 KNOWN ISSUES
 ============
 
-https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.22#Release_blocking_bugs
+https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.23#Release_blocking_bugs
 
 
 #######################################
