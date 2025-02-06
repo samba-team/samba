@@ -726,31 +726,42 @@ static bool _shadow_copy2_strip_snapshot_converted(TALLOC_CTX *mem_ctx,
 static char *shadow_copy2_find_mount_point(TALLOC_CTX *mem_ctx,
 					   vfs_handle_struct *handle)
 {
-	char *path = talloc_strdup(mem_ctx, handle->conn->connectpath);
+	struct smb_filename *smb_fname_cpath = NULL;
 	dev_t dev;
-	struct stat st;
 	char *p;
 
-	if (stat(path, &st) != 0) {
-		talloc_free(path);
+	smb_fname_cpath = synthetic_smb_fname(mem_ctx,
+					      handle->conn->connectpath,
+					      NULL,
+					      NULL,
+					      0,
+					      0);
+	if (smb_fname_cpath == NULL) {
+		errno = ENOMEM;
 		return NULL;
 	}
 
-	dev = st.st_dev;
+	if (SMB_VFS_NEXT_STAT(handle, smb_fname_cpath) != 0) {
+		TALLOC_FREE(smb_fname_cpath);
+		return NULL;
+	}
 
-	while ((p = strrchr(path, '/')) && p > path) {
+	dev = smb_fname_cpath->st.st_ex_dev;
+
+	while ((p = strrchr(smb_fname_cpath->base_name, '/')) &&
+			p > smb_fname_cpath->base_name) {
 		*p = 0;
-		if (stat(path, &st) != 0) {
-			talloc_free(path);
+		if (SMB_VFS_NEXT_STAT(handle, smb_fname_cpath) != 0) {
+			TALLOC_FREE(smb_fname_cpath);
 			return NULL;
 		}
-		if (st.st_dev != dev) {
+		if (smb_fname_cpath->st.st_ex_dev != dev) {
 			*p = '/';
 			break;
 		}
 	}
 
-	return path;
+	return smb_fname_cpath->base_name;
 }
 
 /**
