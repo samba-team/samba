@@ -435,6 +435,15 @@ bld.SAMBA_MODULE('ldb_dsdb_notification',
 	deps='talloc samba-security samdb DSDB_MODULE_HELPERS'
 	)
 
+bld.SAMBA_MODULE('ldb_trust_notify',
+	source='trust_notify.c',
+	subsystem='ldb',
+	init_function='ldb_trust_notify_module_init',
+	module_init_name='ldb_init_module',
+	internal_module=False,
+	deps='talloc samdb DSDB_MODULE_HELPERS MESSAGING RPC_NDR_IRPC'
+	)
+
 bld.SAMBA_MODULE('ldb_dns_notify',
 	source='dns_notify.c',
 	subsystem='ldb',

@@ -231,11 +231,14 @@ static int samba_dsdb_init(struct ldb_module *module)
 	const char *extended_dn_module_ldb = "extended_dn_out_ldb";
 	const char *extended_dn_in_module = "extended_dn_in";
 
-	static const char *modules_list2[] = {"dns_notify",
-					      "show_deleted",
-					      "new_partition",
-					      "partition",
-					      NULL };
+	static const char *modules_list2[] = {
+		"trust_notify",
+		"dns_notify",
+		"show_deleted",
+		"new_partition",
+		"partition",
+		NULL
+	};
 
 	const char **backend_modules;
 	static const char *samba_dsdb_attrs[] = { SAMBA_COMPATIBLE_FEATURES_ATTR,
