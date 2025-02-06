@@ -1084,15 +1084,20 @@ static bool winbindd_setup_listeners(void)
 	}
 	tevent_fd_set_auto_close(fde);
 
-#if defined(WITH_SYSTEMD_USERDB)
 	if (lp_winbind_varlink_service()) {
+#if defined(WITH_SYSTEMD_USERDB)
 		/* Setup varlink socket */
 		if (!winbind_setup_varlink(global_event_context(),
 					   global_event_context())) {
 			goto failed;
 		}
-	}
+#else
+		DBG_WARNING("\"winbind varlink service\" is enabled but "
+			    "samba was built without systemd's userdb "
+			    "support. This option will not have any "
+			    "effect\n");
 #endif
+	}
 
 	winbindd_scrub_clients_handler(global_event_context(), NULL,
 				       timeval_current(), NULL);
