@@ -81,6 +81,8 @@ static NTSTATUS fill_trust_domain_ex(TALLOC_CTX *mem_ctx,
 				     struct ldb_message *msg,
 				     struct lsa_TrustDomainInfoInfoEx *info_ex);
 
+#define FOREST_TRUST_RECORD_TYPE_LAST_SUPPORTED LSA_FOREST_TRUST_RECORD2_TYPE_LAST
+
 /*
   this type allows us to distinguish handle types
 */
@@ -4606,7 +4608,7 @@ static NTSTATUS dcesrv_lsa_QueryFTI(
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (highest_record_type >= LSA_FOREST_TRUST_RECORD_TYPE_LAST) {
+	if (highest_record_type > FOREST_TRUST_RECORD_TYPE_LAST_SUPPORTED) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -4742,7 +4744,7 @@ static NTSTATUS dcesrv_lsa_SetFTI(
 		goto done;
 	}
 
-	if (highest_record_type >= LSA_FOREST_TRUST_RECORD_TYPE_LAST) {
+	if (highest_record_type > FOREST_TRUST_RECORD_TYPE_LAST_SUPPORTED) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto done;
 	}
@@ -4948,6 +4950,11 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 
 	p_state = talloc_get_type_abort(h->data, struct lsa_policy_state);
 
+	/*
+	 * Note his also upgrades binary records
+	 * to scanner records and downgrades unknown records
+	 * to binary records.
+	 */
 	status = trust_forest_info_lsa_1to2(mem_ctx,
 					    r->in.forest_trust_info,
 					    &in_lfti2);
@@ -5558,8 +5565,33 @@ static NTSTATUS dcesrv_lsa_lsaRQueryForestTrustInformation2(
 		TALLOC_CTX *mem_ctx,
 		struct lsa_lsaRQueryForestTrustInformation2 *r)
 {
-	/* TODO */
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h = NULL;
+	struct lsa_policy_state *p_state = NULL;
+	struct ForestTrustInfo *trust_fti = NULL;
+	struct lsa_ForestTrustInformation2 *trust_lfti = NULL;
+	NTSTATUS status;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+
+	p_state = talloc_get_type_abort(h->data, struct lsa_policy_state);
+
+	status = dcesrv_lsa_QueryFTI(dce_call,
+				     mem_ctx,
+				     p_state,
+				     r->in.trusted_domain_name->string,
+				     r->in.highest_record_type,
+				     &trust_fti);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = trust_forest_info_to_lsa2(mem_ctx, trust_fti, &trust_lfti);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*r->out.forest_trust_info = trust_lfti;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -5569,8 +5601,42 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation2(struct dcesrv_call_sta
 							  TALLOC_CTX *mem_ctx,
 							  struct lsa_lsaRSetForestTrustInformation2 *r)
 {
-	/* TODO */
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h = NULL;
+	struct lsa_policy_state *p_state = NULL;
+	struct lsa_ForestTrustCollisionInfo *c_info = NULL;
+	struct lsa_ForestTrustInformation2 *in_lfti2 = NULL;
+	NTSTATUS status;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+
+	p_state = talloc_get_type_abort(h->data, struct lsa_policy_state);
+
+	/*
+	 * We need this in order to upgrade binary records
+	 * to scanner records, depending on the sub_type.
+	 */
+	status = trust_forest_info_lsa_2to2(mem_ctx,
+					    r->in.forest_trust_info,
+					    &in_lfti2);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = dcesrv_lsa_SetFTI(dce_call,
+				   mem_ctx,
+				   p_state,
+				   r->in.trusted_domain_name->string,
+				   r->in.highest_record_type,
+				   in_lfti2,
+				   r->in.check_only,
+				   &c_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*r->out.collision_info = talloc_move(r->out.collision_info, &c_info);
+
+	return NT_STATUS_OK;
 }
 
 /* include the generated boilerplate */
