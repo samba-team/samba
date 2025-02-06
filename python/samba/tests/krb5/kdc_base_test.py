@@ -2295,26 +2295,31 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
             claims_arrays.append(claims_array)
 
-        claims_set = claims.CLAIMS_SET()
-        claims_set.claims_arrays = claims_arrays
-        claims_set.claims_array_count = len(claims_arrays)
+        if len(claims_arrays) != 0:
+            claims_set = claims.CLAIMS_SET()
+            claims_set.claims_arrays = claims_arrays
+            claims_set.claims_array_count = len(claims_arrays)
 
-        claims_ctr = claims.CLAIMS_SET_CTR()
-        claims_ctr.claims = claims_set
+            claims_ctr = claims.CLAIMS_SET_CTR()
+            claims_ctr.claims = claims_set
 
-        claims_ndr = claims.CLAIMS_SET_NDR()
-        claims_ndr.claims = claims_ctr
+            claims_ndr = claims.CLAIMS_SET_NDR()
+            claims_ndr.claims = claims_ctr
 
-        metadata = claims.CLAIMS_SET_METADATA()
-        metadata.claims_set = claims_ndr
-        metadata.compression_format = (
-            claims.CLAIMS_COMPRESSION_FORMAT_XPRESS_HUFF)
+            metadata = claims.CLAIMS_SET_METADATA()
+            metadata.claims_set = claims_ndr
+            metadata.compression_format = (
+                claims.CLAIMS_COMPRESSION_FORMAT_XPRESS_HUFF)
 
-        metadata_ctr = claims.CLAIMS_SET_METADATA_CTR()
-        metadata_ctr.metadata = metadata
+            metadata_ctr = claims.CLAIMS_SET_METADATA_CTR()
+            metadata_ctr.metadata = metadata
 
-        metadata_ndr = claims.CLAIMS_SET_METADATA_NDR()
-        metadata_ndr.claims = metadata_ctr
+            metadata_ndr = claims.CLAIMS_SET_METADATA_NDR()
+            metadata_ndr.claims = metadata_ctr
+
+            claims_buffer = ndr_pack(metadata_ndr)
+        else:
+            claims_buffer = b''
 
         pac_buffers = pac.buffers
         for pac_buffer in pac_buffers:
@@ -2327,7 +2332,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
             pac_buffers.append(pac_buffer)
 
-        pac_buffer.info.remaining = ndr_pack(metadata_ndr)
+        pac_buffer.info.remaining = claims_buffer
 
         pac.buffers = pac_buffers
         pac.num_buffers = len(pac_buffers)
