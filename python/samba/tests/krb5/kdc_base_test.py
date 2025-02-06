@@ -2362,6 +2362,19 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
         return pac
 
+    def remove_pac_buffers(self, pac, *, pac_buffer_type=None):
+
+        old_buffers = pac.buffers
+        new_buffers = []
+        for pac_buffer in old_buffers:
+            if pac_buffer.type != pac_buffer_type:
+                new_buffers.append(pac_buffer)
+
+        pac.buffers = new_buffers
+        pac.num_buffers = len(new_buffers)
+
+        return pac
+
     def get_cached_creds(self, *,
                          account_type: AccountType,
                          opts: Optional[dict]=None,
