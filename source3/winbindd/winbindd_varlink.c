@@ -86,9 +86,9 @@ NTSTATUS wb_vl_fake_cli_state(VarlinkCall *call,
 {
 	int fd;
 	int ret;
-	uid_t uid;
-	gid_t gid;
-	pid_t pid;
+	uid_t uid = (uid_t)-1;
+	gid_t gid = (gid_t)-1;
+	pid_t pid = (pid_t)-1;
 
 	fd = varlink_call_get_connection_fd(call);
 	if (fd < 0) {
