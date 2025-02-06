@@ -808,6 +808,16 @@ static int do_global_checks(void)
 		}
 	}
 
+	if (lp_winbind_varlink_service()) {
+#ifndef WITH_SYSTEMD_USERDB
+		fprintf(stderr,
+			"WARNING: \"winbind varlink service\" is enabled but "
+			"samba was built without system'd userdb support "
+			"(--with-systemd-userdb). This option will not "
+			"have any effect.\n\n");
+#endif
+	}
+
 	return ret;
 }
 
