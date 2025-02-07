@@ -38,7 +38,7 @@
 #include "lib/tsocket/tsocket.h"
 
 struct wbint_bh_state {
-	struct winbindd_domain *domain;
+	struct winbindd_domain *domain; /* if valid also talloc (grant) parent */
 	struct winbindd_child *child;
 	const struct dcerpc_binding *binding;
 };
@@ -517,6 +517,8 @@ struct dcerpc_binding_handle *wbint_binding_handle(TALLOC_CTX *mem_ctx,
 	struct wbint_bh_state *hs = NULL;
 	struct dcerpc_binding *b = NULL;
 	NTSTATUS status;
+
+	SMB_ASSERT(mem_ctx != NULL);
 
 	SMB_ASSERT((domain != NULL && child == NULL) ||
 		  (domain == NULL && child != NULL));
