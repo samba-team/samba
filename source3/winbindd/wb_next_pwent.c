@@ -38,22 +38,37 @@ static void wb_next_pwent_send_do(struct tevent_req *req,
 {
 	struct tevent_req *subreq;
 	struct dom_sid_buf buf, buf1;
+	struct winbindd_domain *domain = NULL;
+	bool valid;
+
+	valid = winbindd_domain_ref_get(&state->gstate->domain,
+					&domain);
+	if (!valid) {
+		/*
+		 * winbindd_domain_ref_get() already generated
+		 * a debug message for the stale domain!
+		 */
+		tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
+		return;
+	}
 
 	if (state->gstate->next_user >= state->gstate->rids.num_rids) {
+
 		TALLOC_FREE(state->gstate->rids.rids);
 		state->gstate->rids.num_rids = 0;
 
-		state->gstate->domain = wb_next_domain(state->gstate->domain);
-		if (state->gstate->domain == NULL) {
+		domain = wb_next_domain(domain);
+		winbindd_domain_ref_set(&state->gstate->domain, domain);
+		if (domain == NULL) {
 			tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
 			return;
 		}
 
 		D_DEBUG("Query user RID list for domain %s.\n",
-			state->gstate->domain->name);
+			domain->name);
 		subreq = dcerpc_wbint_QueryUserRidList_send(
 			state, state->ev,
-			dom_child_handle(state->gstate->domain),
+			dom_child_handle(domain),
 			&state->gstate->rids);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
@@ -63,12 +78,12 @@ static void wb_next_pwent_send_do(struct tevent_req *req,
 		return;
 	}
 
-	sid_compose(&state->next_sid, &state->gstate->domain->sid,
+	sid_compose(&state->next_sid, &domain->sid,
 		    state->gstate->rids.rids[state->gstate->next_user]);
 
 	D_DEBUG("Get pw for SID %s composed from domain SID %s and RID %"PRIu32".\n",
 		dom_sid_str_buf(&state->next_sid, &buf),
-		dom_sid_str_buf(&state->gstate->domain->sid, &buf1),
+		dom_sid_str_buf(&domain->sid, &buf1),
 		state->gstate->rids.rids[state->gstate->next_user]);
 	subreq = wb_getpwsid_send(state, state->ev, &state->next_sid,
 				  state->pw);
@@ -116,10 +131,24 @@ static void wb_next_pwent_fetch_done(struct tevent_req *subreq)
 						    &result);
 	TALLOC_FREE(subreq);
 	if (any_nt_status_not_ok(status, result, &status)) {
+		struct winbindd_domain *domain = NULL;
+		bool valid;
+
+		valid = winbindd_domain_ref_get(&state->gstate->domain,
+						&domain);
+		if (!valid) {
+			/*
+			 * winbindd_domain_ref_get() already generated
+			 * a debug message for the stale domain!
+			 */
+			tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
+			return;
+		}
+
 		/* Ignore errors here, just log it */
 		D_DEBUG("query_user_list for domain %s returned %s\n",
-			   state->gstate->domain->name,
-			   nt_errstr(status));
+			domain->name,
+			nt_errstr(status));
 		state->gstate->rids.num_rids = 0;
 	}
 

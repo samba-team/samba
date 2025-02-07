@@ -97,7 +97,7 @@ bool _winbindd_domain_ref_get(struct winbindd_domain_ref *ref,
 	_winbindd_domain_ref_get(__ref, __domain, __location__, __func__)
 
 struct getpwent_state {
-	struct winbindd_domain *domain;
+	struct winbindd_domain_ref domain;
 	uint32_t next_user;
 	struct wbint_RidArray rids;
 };
