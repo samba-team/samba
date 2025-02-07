@@ -26,7 +26,7 @@
 #include "lsa.h"
 
 struct wb_lookupsids_domain {
-	struct winbindd_domain *domain;
+	struct winbindd_domain_ref domain;
 
 	/*
 	 * Array of sids to be passed into wbint_LookupSids. Preallocated with
@@ -192,12 +192,25 @@ static bool wb_lookupsids_next(struct tevent_req *req,
 	struct tevent_req *subreq;
 
 	if (state->domains_done < talloc_array_length(state->domains)) {
-		struct wb_lookupsids_domain *d;
+		struct wb_lookupsids_domain *d =
+			&state->domains[state->domains_done];
 		uint32_t i;
+		struct winbindd_domain *d_domain = NULL;
+		bool valid;
 
-		d = &state->domains[state->domains_done];
+		valid = winbindd_domain_ref_get(&d->domain, &d_domain);
+		if (!valid) {
+			/*
+			 * winbindd_domain_ref_get() already generated
+			 * a debug message for the stale domain!
+			 *
+			 * Just ignore the domain
+			 */
+			state->domains_done += 1;
+			return wb_lookupsids_next(req, state);
+		}
 
-		if (d->domain->internal) {
+		if (d_domain->internal) {
 			/*
 			 * This is only our local SAM,
 			 * see wb_lookupsids_bulk() and
@@ -214,8 +227,8 @@ static bool wb_lookupsids_next(struct tevent_req *req,
 					     &state->rids.rids[i]);
 			}
 			subreq = dcerpc_wbint_LookupRids_send(
-				state, state->ev, dom_child_handle(d->domain),
-				&d->domain->sid, &state->rids, &state->domain_name,
+				state, state->ev, dom_child_handle(d_domain),
+				&d_domain->sid, &state->rids, &state->domain_name,
 				&state->rid_names);
 			if (tevent_req_nomem(subreq, req)) {
 				return false;
@@ -226,7 +239,7 @@ static bool wb_lookupsids_next(struct tevent_req *req,
 		}
 
 		subreq = dcerpc_wbint_LookupSids_send(
-			state, state->ev, dom_child_handle(d->domain),
+			state, state->ev, dom_child_handle(d_domain),
 			&d->sids, &state->tmp_domains,	&state->tmp_names);
 		if (tevent_req_nomem(subreq, req)) {
 			return false;
@@ -347,11 +360,26 @@ static struct wb_lookupsids_domain *wb_lookupsids_get_domain(
 	D_DEBUG("Searching %"PRIu32" domain(s) for domain '%s'\n",
 		num_domains, wb_domain->name);
 	for (i=0; i<num_domains; i++) {
-		if (domains[i].domain != wb_domain) {
+		struct wb_lookupsids_domain *d = &domains[i];
+		struct winbindd_domain *d_domain = NULL;
+		bool valid;
+
+		valid = winbindd_domain_ref_get(&d->domain, &d_domain);
+		if (!valid) {
+			/*
+			 * winbindd_domain_ref_get() already generated
+			 * a debug message for the stale domain!
+			 *
+			 * Just ignore the domain
+			 */
 			continue;
 		}
 
-		if (!domains[i].domain->internal) {
+		if (d_domain != wb_domain) {
+			continue;
+		}
+
+		if (!d_domain->internal) {
 			/*
 			 * If it's not our local sam,
 			 * we can re-use the domain without
@@ -361,14 +389,14 @@ static struct wb_lookupsids_domain *wb_lookupsids_get_domain(
 			 * already caught special SIDs,
 			 * e.g. the unix and builtin domains.
 			 */
-			return &domains[i];
+			return d;
 		}
 
-		if (dom_sid_compare_domain(sid, &domains[i].domain->sid) == 0) {
+		if (dom_sid_compare_domain(sid, &d_domain->sid) == 0) {
 			/*
 			 * If it's out local sam we can also use it.
 			 */
-			return &domains[i];
+			return d;
 		}
 
 		/*
@@ -388,7 +416,7 @@ static struct wb_lookupsids_domain *wb_lookupsids_get_domain(
 	*pdomains = domains;
 
 	domain = &domains[num_domains];
-	domain->domain = wb_domain;
+	winbindd_domain_ref_set(&domain->domain, wb_domain);
 
 	domain->sids.sids = talloc_zero_array(domains, struct lsa_SidPtr, num_sids);
 	if (domains->sids.sids == NULL) {
