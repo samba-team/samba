@@ -24,7 +24,6 @@
 
 struct wb_lookupsid_state {
 	struct tevent_context *ev;
-	struct winbindd_domain *lookup_domain;
 	struct dom_sid sid;
 	enum lsa_SidType type;
 	const char *domname;
@@ -39,6 +38,7 @@ struct tevent_req *wb_lookupsid_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct wb_lookupsid_state *state;
+	struct winbindd_domain *lookup_domain = NULL;
 	struct dom_sid_buf buf;
 
 	req = tevent_req_create(mem_ctx, &state, struct wb_lookupsid_state);
@@ -50,8 +50,8 @@ struct tevent_req *wb_lookupsid_send(TALLOC_CTX *mem_ctx,
 	sid_copy(&state->sid, sid);
 	state->ev = ev;
 
-	state->lookup_domain = find_lookup_domain_from_sid(sid);
-	if (state->lookup_domain == NULL) {
+	lookup_domain = find_lookup_domain_from_sid(sid);
+	if (lookup_domain == NULL) {
 		D_WARNING("Could not find domain for sid %s\n",
 			  dom_sid_str_buf(sid, &buf));
 		tevent_req_nterror(req, NT_STATUS_NONE_MAPPED);
@@ -60,9 +60,9 @@ struct tevent_req *wb_lookupsid_send(TALLOC_CTX *mem_ctx,
 
 	D_DEBUG("Looking up SID %s in domain %s.\n",
 		dom_sid_str_buf(&state->sid, &buf),
-		state->lookup_domain->name);
+		lookup_domain->name);
 	subreq = dcerpc_wbint_LookupSid_send(
-		state, ev, dom_child_handle(state->lookup_domain),
+		state, ev, dom_child_handle(lookup_domain),
 		&state->sid, &state->type, &state->domname, &state->name);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
