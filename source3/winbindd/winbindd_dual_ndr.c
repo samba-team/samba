@@ -176,11 +176,6 @@ static void wbint_bh_raw_call_child_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->domain != NULL) {
-		wcache_store_ndr(state->domain, state->opnum,
-				 &state->in_data, &state->out_data);
-	}
-
 	tevent_req_done(req);
 }
 
@@ -522,6 +517,9 @@ struct dcerpc_binding_handle *wbint_binding_handle(TALLOC_CTX *mem_ctx,
 	struct wbint_bh_state *hs = NULL;
 	struct dcerpc_binding *b = NULL;
 	NTSTATUS status;
+
+	SMB_ASSERT((domain != NULL && child == NULL) ||
+		  (domain == NULL && child != NULL));
 
 	h = dcerpc_binding_handle_create(mem_ctx,
 					 &wbint_bh_ops,
