@@ -446,7 +446,7 @@ bool domain_is_forest_root(const struct winbindd_domain *domain)
 ********************************************************************/
 
 struct trustdom_state {
-	struct winbindd_domain *domain;
+	struct winbindd_domain_ref domain;
 	struct netr_DomainTrustList trusts;
 };
 
@@ -467,7 +467,7 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 		DEBUG(0, ("talloc failed\n"));
 		return;
 	}
-	state->domain = domain;
+	winbindd_domain_ref_set(&state->domain, domain);
 
 	/* Called from timer, not from a real client */
 	client_name = getprogname();
@@ -494,6 +494,18 @@ static void trustdom_list_done(struct tevent_req *req)
 	bool within_forest = false;
 	NTSTATUS status, result;
 	uint32_t i;
+	struct winbindd_domain *domain = NULL;
+	bool valid;
+
+	valid = winbindd_domain_ref_get(&state->domain, &domain);
+	if (!valid) {
+		/*
+		 * winbindd_domain_ref_get() already generated
+		 * a debug message for the stale domain!
+		 */
+		TALLOC_FREE(state);
+		return;
+	}
 
 	/*
 	 * Only when we enumerate our primary domain
@@ -502,16 +514,16 @@ static void trustdom_list_done(struct tevent_req *req)
 	 * all other cases we need to clear it as the domain
 	 * is not part of our forest.
 	 */
-	if (state->domain->primary) {
+	if (domain->primary) {
 		within_forest = true;
-	} else if (domain_is_forest_root(state->domain)) {
+	} else if (domain_is_forest_root(domain)) {
 		within_forest = true;
 	}
 
 	status = dcerpc_wbint_ListTrustedDomains_recv(req, state, &result);
 	if (any_nt_status_not_ok(status, result, &status)) {
 		DBG_WARNING("Could not receive trusts for domain %s: %s-%s\n",
-			    state->domain->name, nt_errstr(status),
+			    domain->name, nt_errstr(status),
 			    nt_errstr(result));
 		TALLOC_FREE(state);
 		return;
@@ -519,13 +531,13 @@ static void trustdom_list_done(struct tevent_req *req)
 
 	for (i=0; i<state->trusts.count; i++) {
 		struct netr_DomainTrust *trust = &state->trusts.array[i];
-		struct winbindd_domain *domain = NULL;
+		struct winbindd_domain *new_domain = NULL;
 
 		if (!within_forest) {
 			trust->trust_flags &= ~NETR_TRUST_FLAG_IN_FOREST;
 		}
 
-		if (!state->domain->primary) {
+		if (!domain->primary) {
 			trust->trust_flags &= ~NETR_TRUST_FLAG_PRIMARY;
 		}
 
@@ -543,12 +555,13 @@ static void trustdom_list_done(struct tevent_req *req)
 					    trust->trust_attributes,
 					    SEC_CHAN_NULL,
 					    find_default_route_domain(),
-					    &domain);
+					    &new_domain);
 		if (!NT_STATUS_IS_OK(status) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_DOMAIN))
 		{
 			DBG_NOTICE("add_trusted_domain returned %s\n",
 				   nt_errstr(status));
+			TALLOC_FREE(state);
 			return;
 		}
 	}
@@ -561,16 +574,16 @@ static void trustdom_list_done(struct tevent_req *req)
 	       && !forest_root)
 	*/
 
-	if (state->domain->primary) {
+	if (domain->primary) {
 		/* If this is our primary domain and we are not in the
 		   forest root, we have to scan the root trusts first */
 
-		if (!domain_is_forest_root(state->domain))
+		if (!domain_is_forest_root(domain))
 			rescan_forest_root_trusts();
 		else
 			rescan_forest_trusts();
 
-	} else if (domain_is_forest_root(state->domain)) {
+	} else if (domain_is_forest_root(domain)) {
 		/* Once we have done root forest trust search, we can
 		   go on to search the trusted forests */
 
