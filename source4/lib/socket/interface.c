@@ -331,8 +331,13 @@ void load_interface_list(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, s
 		ptr++;
 	}
 
-	if (!*local_interfaces) {
-		DEBUG(0,("WARNING: no network interfaces found\n"));
+	if (*local_interfaces == NULL) {
+		const char **first_ptr = lpcfg_interfaces(lp_ctx);
+		if (first_ptr != NULL && *first_ptr != NULL) {
+			DBG_ERR("None of the interfaces listed in smb.conf "
+				"'interfaces = ...' seem to exist\n");
+		}
+		DBG_ERR("WARNING: no network interfaces found\n");
 	}
 	talloc_free(ifaces);
 }
@@ -356,7 +361,7 @@ int iface_list_count(struct interface *ifaces)
 const char *iface_list_n_ip(struct interface *ifaces, int n)
 {
 	struct interface *i;
-  
+
 	for (i=ifaces;i && n;i=i->next)
 		n--;
 
