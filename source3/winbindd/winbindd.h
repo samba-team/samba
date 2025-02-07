@@ -103,7 +103,7 @@ struct getpwent_state {
 };
 
 struct getgrent_state {
-	struct winbindd_domain *domain;
+	struct winbindd_domain_ref domain;
 	uint32_t next_group;
 	uint32_t num_groups;
 	struct wbint_Principal *groups;

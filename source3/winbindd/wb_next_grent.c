@@ -37,18 +37,32 @@ static void wb_next_grent_send_do(struct tevent_req *req,
 				  struct wb_next_grent_state *state)
 {
 	struct tevent_req *subreq;
+	struct winbindd_domain *domain = NULL;
+	bool valid;
+
+	valid = winbindd_domain_ref_get(&state->gstate->domain,
+					&domain);
+	if (!valid) {
+		/*
+		 * winbindd_domain_ref_get() already generated
+		 * a debug message for the stale domain!
+		 */
+		tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
+		return;
+	}
 
 	if (state->gstate->next_group >= state->gstate->num_groups) {
 		TALLOC_FREE(state->gstate->groups);
 
-		state->gstate->domain = wb_next_domain(state->gstate->domain);
-		if (state->gstate->domain == NULL) {
+		domain = wb_next_domain(domain);
+		winbindd_domain_ref_set(&state->gstate->domain, domain);
+		if (domain == NULL) {
 			tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
 			return;
 		}
 
 		subreq = wb_query_group_list_send(state, state->ev,
-						  state->gstate->domain);
+						  domain);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
@@ -108,9 +122,23 @@ static void wb_next_grent_fetch_done(struct tevent_req *subreq)
 					  &state->gstate->groups);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
+		struct winbindd_domain *domain = NULL;
+		bool valid;
+
+		valid = winbindd_domain_ref_get(&state->gstate->domain,
+						&domain);
+		if (!valid) {
+			/*
+			 * winbindd_domain_ref_get() already generated
+			 * a debug message for the stale domain!
+			 */
+			tevent_req_nterror(req, NT_STATUS_NO_MORE_ENTRIES);
+			return;
+		}
+
 		/* Ignore errors here, just log it */
 		D_DEBUG("query_group_list for domain %s returned %s\n",
-			state->gstate->domain->name, nt_errstr(status));
+			domain->name, nt_errstr(status));
 		state->gstate->num_groups = 0;
 	}
 
