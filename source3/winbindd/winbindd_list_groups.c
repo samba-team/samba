@@ -24,7 +24,7 @@
 
 struct winbindd_list_groups_domstate {
 	struct tevent_req *subreq;
-	struct winbindd_domain *domain;
+	struct winbindd_domain_ref domain;
 	struct wbint_Principals groups;
 };
 
@@ -89,27 +89,37 @@ struct tevent_req *winbindd_list_groups_send(TALLOC_CTX *mem_ctx,
 	if (request->domain_name[0] != '\0') {
 		ZERO_STRUCT(state->domains[0].groups);
 
-		state->domains[0].domain = find_domain_from_name_noinit(
+		domain = find_domain_from_name_noinit(
 			request->domain_name);
-		if (state->domains[0].domain == NULL) {
+		if (domain == NULL) {
 			tevent_req_nterror(req, NT_STATUS_NO_SUCH_DOMAIN);
 			return tevent_req_post(req, ev);
 		}
+		winbindd_domain_ref_set(&state->domains[0].domain,
+					domain);
 	} else {
 		i = 0;
 		for (domain = domain_list(); domain; domain = domain->next) {
 			ZERO_STRUCT(state->domains[i].groups);
 
-			state->domains[i].domain = domain;
+			winbindd_domain_ref_set(&state->domains[i].domain,
+						domain);
 			i++;
 		}
 	}
 
 	for (i=0; i<state->num_domains; i++) {
 		struct winbindd_list_groups_domstate *d = &state->domains[i];
+		bool valid;
+
+		/*
+		 * We set the ref a few lines above, it must be valid!
+		 */
+		valid = winbindd_domain_ref_get(&d->domain, &domain);
+		SMB_ASSERT(valid);
 
 		d->subreq = dcerpc_wbint_QueryGroupList_send(
-			state->domains, ev, dom_child_handle(d->domain),
+			state->domains, ev, dom_child_handle(domain),
 			&d->groups);
 		if (tevent_req_nomem(d->subreq, req)) {
 			TALLOC_FREE(state->domains);
@@ -141,19 +151,33 @@ static void winbindd_list_groups_done(struct tevent_req *subreq)
 	}
 	if (i < state->num_domains) {
 		struct winbindd_list_groups_domstate *d = &state->domains[i];
+		struct winbindd_domain *domain = NULL;
+		bool valid;
 
-		D_DEBUG("Domain %s returned %"PRIu32" groups\n", d->domain->name,
+		valid = winbindd_domain_ref_get(&d->domain, &domain);
+		if (!valid) {
+			/*
+			 * winbindd_domain_ref_get() already generated
+			 * a debug message for the stale domain!
+			 */
+			d->subreq = NULL;
+			d->groups.num_principals = 0;
+			goto skip;
+		}
+
+		D_DEBUG("Domain %s returned %"PRIu32" groups\n", domain->name,
 			   d->groups.num_principals);
 
 		d->subreq = NULL;
 
 		if (!NT_STATUS_IS_OK(status) || !NT_STATUS_IS_OK(result)) {
 			D_WARNING("list_groups for domain %s failed\n",
-				   d->domain->name);
+				   domain->name);
 			d->groups.num_principals = 0;
 		}
 	}
 
+skip:
 	TALLOC_FREE(subreq);
 
 	state->num_received += 1;
@@ -183,10 +207,22 @@ NTSTATUS winbindd_list_groups_recv(struct tevent_req *req,
 	response->data.num_entries = 0;
 	for (i=0; i<state->num_domains; i++) {
 		struct winbindd_list_groups_domstate *d = &state->domains[i];
+		struct winbindd_domain *domain = NULL;
+		bool valid;
+
+		valid = winbindd_domain_ref_get(&d->domain, &domain);
+		if (!valid) {
+			/*
+			 * winbindd_domain_ref_get() already generated
+			 * a debug message for the stale domain!
+			 */
+			d->groups.num_principals = 0;
+			continue;
+		}
 
 		for (j=0; j<d->groups.num_principals; j++) {
 			const char *name;
-			name = fill_domain_username_talloc(response, d->domain->name,
+			name = fill_domain_username_talloc(response, domain->name,
 					     d->groups.principals[j].name,
 					     True);
 			if (name == NULL) {
@@ -205,11 +241,23 @@ NTSTATUS winbindd_list_groups_recv(struct tevent_req *req,
 	len = 0;
 	for (i=0; i<state->num_domains; i++) {
 		struct winbindd_list_groups_domstate *d = &state->domains[i];
+		struct winbindd_domain *domain = NULL;
+		bool valid;
+
+		valid = winbindd_domain_ref_get(&d->domain, &domain);
+		if (!valid) {
+			/*
+			 * winbindd_domain_ref_get() already generated
+			 * a debug message for the stale domain!
+			 */
+			d->groups.num_principals = 0;
+			continue;
+		}
 
 		for (j=0; j<d->groups.num_principals; j++) {
 			const char *name;
 			size_t this_len;
-			name = fill_domain_username_talloc(response, d->domain->name,
+			name = fill_domain_username_talloc(response, domain->name,
 					     d->groups.principals[j].name,
 					     True);
 			if (name == NULL) {
