@@ -105,7 +105,7 @@ struct winbindd_domain;
 
 struct winbindd_child {
 	pid_t pid;
-	struct winbindd_domain *domain;
+	struct winbindd_domain *domain; /* if valid also talloc (grant) parent */
 	char *logfilename;
 
 	int sock;
