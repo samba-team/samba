@@ -583,6 +583,11 @@ static void user_by_name_getpwnam_done(struct tevent_req *req)
 		goto out;
 	}
 
+	// The systemd multiplexer service expects the returned username to
+	// match the requested one. If we were asked for an UPN like
+	// user1@aforest.ad don't reply with AFOREST\\user1 or the record will
+	// be ignored.
+	fstrcpy(response->data.pw.pw_name, s->fake_req->data.username);
 	user_record_reply(s->call, &response->data.pw, false);
 out:
 	TALLOC_FREE(s);
