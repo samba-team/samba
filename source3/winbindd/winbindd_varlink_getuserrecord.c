@@ -57,6 +57,15 @@ user_record_reply(VarlinkCall *call, struct winbindd_pw *pw, bool continues)
 	WB_VL_ERR_CHECK_GOTO(varlink_object_set_bool(out, "incomplete", false), err_free_out);
 	WB_VL_ERR_CHECK_GOTO(varlink_object_set_object(out, "record", record), err_free_out);
 
+	if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
+		char *json = NULL;
+		varlink_object_to_json(out, &json);
+		if (json != NULL) {
+			DBG_DEBUG("Sending user record reply: '%s'", json);
+			free(json);
+		}
+	}
+
 	varlink_call_reply(call, out, continues ? VARLINK_REPLY_CONTINUES : 0);
 	varlink_object_unref(out);
 	return;

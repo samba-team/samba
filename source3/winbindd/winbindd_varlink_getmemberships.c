@@ -34,6 +34,17 @@ static void membership_reply(VarlinkCall *call,
 		out, "userName", username), err_free_out);
 	WB_VL_ERR_CHECK_GOTO(varlink_object_set_string(
 		out, "groupName", groupname), err_free_out);
+
+	if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
+		char *json = NULL;
+		varlink_object_to_json(out, &json);
+		if (json != NULL) {
+			DBG_DEBUG("Sending membership reply (continues='%s'): '%s'",
+				  continues ? "y":"n", json);
+			free(json);
+		}
+	}
+
 	varlink_call_reply(call, out, continues ? VARLINK_REPLY_CONTINUES : 0);
 
 err_free_out:
