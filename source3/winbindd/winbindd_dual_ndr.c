@@ -71,7 +71,7 @@ static uint32_t wbint_bh_set_timeout(struct dcerpc_binding_handle *h,
 }
 
 struct wbint_bh_raw_call_state {
-	struct winbindd_domain *domain;
+	struct winbindd_domain_ref domain;
 	uint32_t opnum;
 	DATA_BLOB in_data;
 	struct winbindd_request request;
@@ -104,7 +104,7 @@ static struct tevent_req *wbint_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	state->domain = hs->domain;
+	winbindd_domain_ref_set(&state->domain, hs->domain);
 	state->opnum = opnum;
 	state->in_data.data = discard_const_p(uint8_t, in_data);
 	state->in_data.length = in_length;
@@ -115,11 +115,11 @@ static struct tevent_req *wbint_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if ((state->domain != NULL)
-	    && wcache_fetch_ndr(state, state->domain, state->opnum,
+	if ((hs->domain != NULL)
+	    && wcache_fetch_ndr(state, hs->domain, state->opnum,
 				&state->in_data, &state->out_data)) {
 		DBG_DEBUG("Got opnum %"PRIu32" for domain %s from cache\n",
-			  state->opnum, state->domain->name);
+			  state->opnum, hs->domain->name);
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
@@ -188,6 +188,8 @@ static void wbint_bh_raw_call_domain_done(struct tevent_req *subreq)
 		tevent_req_data(req,
 		struct wbint_bh_raw_call_state);
 	int ret, err;
+	struct winbindd_domain *domain = NULL;
+	bool valid;
 
 	ret = wb_domain_request_recv(subreq, state, &state->response, &err);
 	TALLOC_FREE(subreq);
@@ -205,8 +207,16 @@ static void wbint_bh_raw_call_domain_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->domain != NULL) {
-		wcache_store_ndr(state->domain, state->opnum,
+	valid = winbindd_domain_ref_get(&state->domain, &domain);
+	if (!valid) {
+		/*
+		 * winbindd_domain_ref_get() already generated
+		 * a debug message for the stale domain!
+		 *
+		 * Just don't fill the cache
+		 */
+	} else {
+		wcache_store_ndr(domain, state->opnum,
 				 &state->in_data, &state->out_data);
 	}
 
