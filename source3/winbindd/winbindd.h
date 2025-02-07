@@ -67,6 +67,35 @@ struct winbindd_cli_state {
 	struct getgrent_state *grent_state; /* State for getgrent() */
 };
 
+struct winbindd_domain;
+
+struct winbindd_domain_ref_internals {
+	const char *location;
+	const char *func;
+	bool stale;
+	struct dom_sid sid;
+	uint64_t generation;
+	struct winbindd_domain *domain; /* might be stale */
+};
+
+struct winbindd_domain_ref {
+	struct winbindd_domain_ref_internals internals;
+};
+
+void _winbindd_domain_ref_set(struct winbindd_domain_ref *ref,
+			      struct winbindd_domain *domain,
+			      const char *location,
+			      const char *func);
+#define winbindd_domain_ref_set(__ref, __domain) \
+	_winbindd_domain_ref_set(__ref, __domain, __location__, __func__)
+
+bool _winbindd_domain_ref_get(struct winbindd_domain_ref *ref,
+			      struct winbindd_domain **_domain,
+			      const char *location,
+			      const char *func);
+#define winbindd_domain_ref_get(__ref, __domain) \
+	_winbindd_domain_ref_get(__ref, __domain, __location__, __func__)
+
 struct getpwent_state {
 	struct winbindd_domain *domain;
 	uint32_t next_user;
@@ -100,8 +129,6 @@ struct winbindd_cm_conn {
 };
 
 /* Async child */
-
-struct winbindd_domain;
 
 struct winbindd_child {
 	pid_t pid;

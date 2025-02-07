@@ -53,6 +53,7 @@
    the domain name instead. */
 
 static struct winbindd_domain *_domain_list = NULL;
+static uint64_t domain_list_generation;
 
 struct winbindd_domain *domain_list(void)
 {
@@ -85,6 +86,79 @@ struct winbindd_domain *wb_next_domain(struct winbindd_domain *domain)
 	}
 
 	return domain;
+}
+
+void _winbindd_domain_ref_set(struct winbindd_domain_ref *ref,
+			      struct winbindd_domain *domain,
+			      const char *location,
+			      const char *func)
+{
+	if (domain == NULL) {
+		ref->internals = (struct winbindd_domain_ref_internals) {
+			.location = location,
+			.func = func,
+		};
+		return;
+	}
+
+	ref->internals = (struct winbindd_domain_ref_internals) {
+		.location = location,
+		.func = func,
+		.sid = domain->sid,
+		.generation = domain_list_generation,
+		.domain = domain,
+	};
+}
+
+bool _winbindd_domain_ref_get(struct winbindd_domain_ref *ref,
+			      struct winbindd_domain **_domain,
+			      const char *location,
+			      const char *func)
+{
+	struct winbindd_domain *domain = NULL;
+
+	if (ref->internals.stale) {
+		goto stale;
+	}
+
+	if (ref->internals.domain == NULL) {
+		*_domain = NULL;
+		return true;
+	}
+
+	if (ref->internals.generation == domain_list_generation) {
+		*_domain = ref->internals.domain;
+		return true;
+	}
+
+	domain = find_domain_from_sid_noinit(&ref->internals.sid);
+stale:
+	if (domain == NULL) {
+		struct dom_sid_buf sbuf = {};
+
+		D_ERR("%s:%s: stale domain %s, set in %s\n",
+		      func,
+		      location,
+		      dom_sid_str_buf(&ref->internals.sid, &sbuf),
+		      ref->internals.location);
+
+		ref->internals.stale = true;
+		ref->internals.domain = NULL;
+
+		*_domain = NULL;
+		return false;
+	}
+
+	ref->internals = (struct winbindd_domain_ref_internals) {
+		.location = location,
+		.func = func,
+		.sid = domain->sid,
+		.generation = domain_list_generation,
+		.domain = domain,
+	};
+
+	*_domain = domain;
+	return true;
 }
 
 static bool is_internal_domain(const struct dom_sid *sid)
@@ -292,6 +366,7 @@ static NTSTATUS add_trusted_domain(const char *domain_name,
 
 	/* Link to domain list */
 	DLIST_ADD_END(_domain_list, domain);
+	domain_list_generation += 1;
 
 	wcache_tdc_add_domain( domain );
 
