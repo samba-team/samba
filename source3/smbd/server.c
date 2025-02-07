@@ -2552,8 +2552,11 @@ quic_disabled:
 		smbd_init_addrchange(NULL, ev_ctx, msg_ctx, parent);
 	}
 
-	if (!open_sockets_smbd(parent, ev_ctx, msg_ctx))
-		exit_server("open_sockets_smbd() failed");
+	if (!open_sockets_smbd(parent, ev_ctx, msg_ctx)) {
+		DBG_ERR("smbd could not bind to a socket, which can be caused "
+			"by a bad 'interfaces' line in smb.conf\n");
+		exit_server("Could not bind to any sockets\n");
+	}
 
 	TALLOC_FREE(frame);
 	/* make sure we always have a valid stackframe */
