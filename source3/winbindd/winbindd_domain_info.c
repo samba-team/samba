@@ -24,7 +24,7 @@
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 
 struct winbindd_domain_info_state {
-	struct winbindd_domain *domain;
+	struct winbindd_domain_ref domain;
 	uint32_t in;
 	uint32_t out;
 };
@@ -39,6 +39,7 @@ struct tevent_req *winbindd_domain_info_send(
 {
 	struct tevent_req *req, *subreq;
 	struct winbindd_domain_info_state *state;
+	struct winbindd_domain *domain = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_domain_info_state);
@@ -49,17 +50,18 @@ struct tevent_req *winbindd_domain_info_send(
 	DEBUG(3, ("[%5lu]: domain_info [%s]\n", (unsigned long)cli->pid,
 		  cli->request->domain_name));
 
-	state->domain = find_domain_from_name_noinit(
+	domain = find_domain_from_name_noinit(
 		cli->request->domain_name);
 
-	if (state->domain == NULL) {
+	if (domain == NULL) {
 		DEBUG(3, ("Did not find domain [%s]\n",
 			  cli->request->domain_name));
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_DOMAIN);
 		return tevent_req_post(req, ev);
 	}
+	winbindd_domain_ref_set(&state->domain, domain);
 
-	if (state->domain->initialized) {
+	if (domain->initialized) {
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
@@ -72,7 +74,7 @@ struct tevent_req *winbindd_domain_info_send(
 	state->out = 0;
 	subreq = dcerpc_wbint_Ping_send(state,
 					global_event_context(),
-					dom_child_handle(state->domain),
+					dom_child_handle(domain),
 					state->in,
 					&state->out);
 	if (tevent_req_nomem(subreq, req)) {
@@ -90,6 +92,8 @@ static void winbindd_domain_info_done(struct tevent_req *subreq)
 	struct winbindd_domain_info_state *state = tevent_req_data(
 		req, struct winbindd_domain_info_state);
 	NTSTATUS status, result;
+	struct winbindd_domain *domain = NULL;
+	bool valid;
 
 	status = dcerpc_wbint_Ping_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
@@ -105,9 +109,19 @@ static void winbindd_domain_info_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (!state->domain->initialized) {
+	valid = winbindd_domain_ref_get(&state->domain, &domain);
+	if (!valid) {
+		/*
+		 * winbindd_domain_ref_get() already generated
+		 * a debug message for the stale domain!
+		 */
+		tevent_req_nterror(req, NT_STATUS_NO_SUCH_DOMAIN);
+		return;
+	}
+
+	if (!domain->initialized) {
 		DBG_INFO("dcerpc_wbint_Ping did not initialize domain %s\n",
-			 state->domain->name);
+			 domain->name);
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
@@ -120,13 +134,23 @@ NTSTATUS winbindd_domain_info_recv(struct tevent_req *req,
 {
 	struct winbindd_domain_info_state *state = tevent_req_data(
 		req, struct winbindd_domain_info_state);
-	struct winbindd_domain *domain = state->domain;
+	struct winbindd_domain *domain = NULL;
+	bool valid;
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		DBG_NOTICE("winbindd_domain_info failed: %s\n",
 			   nt_errstr(status));
 		return status;
+	}
+
+	valid = winbindd_domain_ref_get(&state->domain, &domain);
+	if (!valid) {
+		/*
+		 * winbindd_domain_ref_get() already generated
+		 * a debug message for the stale domain!
+		 */
+		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
 	fstrcpy(response->data.domain_info.name, domain->name);
