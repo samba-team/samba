@@ -223,6 +223,9 @@ NTSTATUS libnet_LookupDCs_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct finddcs finddcs_io;
 	status = finddcs_cldap_recv(req, mem_ctx, &finddcs_io);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	talloc_free(req);
 	io->out.num_dcs = 1;
 	io->out.dcs = talloc(mem_ctx, struct nbt_dc_name);
