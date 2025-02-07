@@ -24,7 +24,7 @@
 
 struct winbindd_list_users_domstate {
 	struct tevent_req *subreq;
-	struct winbindd_domain *domain;
+	struct winbindd_domain_ref domain;
 	char *users;
 };
 
@@ -85,21 +85,31 @@ struct tevent_req *winbindd_list_users_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (request->domain_name[0] != '\0') {
-		state->domains[0].domain = find_domain_from_name_noinit(
+		domain = find_domain_from_name_noinit(
 			request->domain_name);
-		if (state->domains[0].domain == NULL) {
+		if (domain == NULL) {
 			tevent_req_nterror(req, NT_STATUS_NO_SUCH_DOMAIN);
 			return tevent_req_post(req, ev);
 		}
+		winbindd_domain_ref_set(&state->domains[0].domain, domain);
 	} else {
 		i = 0;
 		for (domain = domain_list(); domain; domain = domain->next) {
-			state->domains[i++].domain = domain;
+			winbindd_domain_ref_set(&state->domains[i++].domain,
+						domain);
 		}
 	}
 
 	for (i=0; i<state->num_domains; i++) {
 		struct winbindd_list_users_domstate *d = &state->domains[i];
+		bool valid;
+
+		/*
+		 * We set the ref a few lines above, it must be valid!
+		 */
+		valid = winbindd_domain_ref_get(&d->domain, &domain);
+		SMB_ASSERT(valid);
+
 		/*
 		 * Use "state" as a talloc memory context since it has type
 		 * "struct tevent_req". This is needed to make tevent call depth
@@ -107,7 +117,7 @@ struct tevent_req *winbindd_list_users_send(TALLOC_CTX *mem_ctx,
 		 * After calling wb_query_user_list_send(), re-parent back to
 		 * "state->domains" to make TALLOC_FREE(state->domains) working.
 		 */
-		d->subreq = wb_query_user_list_send(state, ev, d->domain);
+		d->subreq = wb_query_user_list_send(state, ev, domain);
 		d->subreq = talloc_reparent(state, state->domains, d->subreq);
 		if (tevent_req_nomem(d->subreq, req)) {
 			TALLOC_FREE(state->domains);
