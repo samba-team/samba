@@ -802,6 +802,7 @@ void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
+	TALLOC_CTX *mem_ctx = NULL;
 
 	if (logprefix && logname) {
 		char *logbase = NULL;
@@ -834,13 +835,19 @@ void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
 			  "logname == NULL");
 	}
 
+	if (domain != NULL) {
+		mem_ctx = domain->children;
+	} else {
+		mem_ctx = child;
+	}
+
 	child->pid = 0;
 	child->sock = -1;
 	child->domain = domain;
-	child->queue = tevent_queue_create(NULL, "winbind_child");
+	child->queue = tevent_queue_create(mem_ctx, "winbind_child");
 	SMB_ASSERT(child->queue != NULL);
 
-	child->binding_handle = wbint_binding_handle(NULL, NULL, child);
+	child->binding_handle = wbint_binding_handle(mem_ctx, NULL, child);
 	SMB_ASSERT(child->binding_handle != NULL);
 }
 
