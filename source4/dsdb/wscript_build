@@ -69,6 +69,20 @@ bld.SAMBA_MODULE('service_dns_update',
 	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
+bld.SAMBA_MODULE('service_ft_scanner',
+    source='''
+        ft_scanner/ft_scanner_service.c
+        ft_scanner/ft_scanner_periodic.c
+        ft_scanner/ft_scanner_tdos.c
+    ''',
+    autoproto='ft_scanner/ft_scanner_service_proto.h',
+    subsystem='service',
+    init_function='server_service_ft_scanner_init',
+    deps='samdb process_model',
+    internal_module=False,
+    enabled=bld.AD_DC_BUILD_IS_ENABLED()
+)
+
 pyldb_util = bld.pyembed_libname('pyldb-util')
 pyrpc_util = bld.pyembed_libname('pyrpc_util')
 pyparam_util = bld.pyembed_libname('pyparam_util')
