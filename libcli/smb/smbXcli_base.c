@@ -1063,12 +1063,7 @@ void smbXcli_req_unset_pending(struct tevent_req *req)
 		return;
 	}
 
-	/*
-	 * Remove ourselves from the conn->pending array
-	 */
-	for (; i < (num_pending - 1); i++) {
-		conn->pending[i] = conn->pending[i+1];
-	}
+	ARRAY_DEL_ELEMENT(conn->pending, i, num_pending);
 
 	/*
 	 * No NULL check here, we're shrinking by sizeof(void *), and
