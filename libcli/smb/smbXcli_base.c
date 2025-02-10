@@ -1149,17 +1149,13 @@ bool smbXcli_req_set_pending(struct tevent_req *req)
 	struct smbXcli_req_state *state =
 		tevent_req_data(req,
 		struct smbXcli_req_state);
-	struct smbXcli_conn *conn;
-	struct tevent_req **pending;
-	size_t num_pending;
-
-	conn = state->conn;
+	struct smbXcli_conn *conn = state->conn;
+	struct tevent_req **pending = NULL;
+	size_t num_pending = talloc_array_length(conn->pending);
 
 	if (!smbXcli_conn_is_connected(conn)) {
 		return false;
 	}
-
-	num_pending = talloc_array_length(conn->pending);
 
 	pending = talloc_realloc(conn, conn->pending, struct tevent_req *,
 				 num_pending+1);
