@@ -480,10 +480,118 @@ static NTSTATUS trust_forest_record_from_lsa(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
+static NTSTATUS trust_forest_record_lsa_resolve_binary(TALLOC_CTX *mem_ctx,
+				uint32_t flags,
+				NTTIME time,
+				const struct lsa_ForestTrustBinaryData *binary,
+				struct lsa_ForestTrustRecord2 *lftr2)
+{
+	enum ForestTrustInfoRecordType sub_type = FOREST_TRUST_BINARY_DATA;
+	DATA_BLOB blob = { .length = 0, };
+
+	if (binary == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/*
+	 * Note 'binary' may points to
+	 * lftr2->forest_trust_data.data
+	 *
+	 * So we remember the relevant
+	 * information in blob and clear
+	 * the binary pointer in order
+	 * to avoid touching it again.
+	 *
+	 * Because we likely change
+	 * the lftr2->forest_trust_data union
+	 */
+	blob.data = binary->data;
+	blob.length = binary->length;
+	binary = NULL;
+
+	/*
+	 * We need at least size and subtype
+	 */
+	if (blob.length < 5) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	sub_type = PULL_LE_U8(blob.data, 4);
+
+	/*
+	 * Only levels above LSA_FOREST_TRUST_DOMAIN_INFO
+	 * are handled as binary.
+	 */
+	if (sub_type <= FOREST_TRUST_BINARY_DATA) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	lftr2->flags = flags;
+	lftr2->time = time;
+
+	/*
+	 * Depending if the sub_type is wellknown the information is upgraded,
+	 * currently only for the LSA_FOREST_TRUST_SCANNER_INFO records.
+	 */
+
+	if (sub_type == FOREST_TRUST_SCANNER_INFO) {
+		struct lsa_ForestTrustDomainInfo *d_sdi = NULL;
+		union ForestTrustData fta = { .unknown = { .size = 0, }, };
+		const struct ForestTrustDataDomainInfo *s_sdi = NULL;
+		enum ndr_err_code ndr_err;
+
+		ndr_err = ndr_pull_union_blob(&blob,
+					      mem_ctx,
+					      &fta,
+					      FOREST_TRUST_SCANNER_INFO,
+					      (ndr_pull_flags_fn_t)ndr_pull_ForestTrustData);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return ndr_map_error2ntstatus(ndr_err);
+		}
+
+		if (fta.scanner_info.sub_type != FOREST_TRUST_SCANNER_INFO) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		s_sdi = &fta.scanner_info.info;
+		d_sdi = &lftr2->forest_trust_data.scanner_info;
+
+		d_sdi->dns_domain_name.string = s_sdi->dns_name.string;
+		d_sdi->netbios_domain_name.string = s_sdi->netbios_name.string;
+
+		if (s_sdi->sid_size != 0) {
+			d_sdi->domain_sid = dom_sid_dup(mem_ctx,
+							&s_sdi->sid);
+			if (d_sdi->domain_sid == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		} else {
+			d_sdi->domain_sid = NULL;
+		}
+
+		lftr2->type = LSA_FOREST_TRUST_SCANNER_INFO;
+
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * In all other cases lftr->type is downgraded to
+	 * LSA_FOREST_TRUST_BINARY_DATA.
+	 */
+
+	lftr2->type = LSA_FOREST_TRUST_BINARY_DATA;
+	lftr2->forest_trust_data.data.data = blob.data;
+	lftr2->forest_trust_data.data.length = blob.length;
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS trust_forest_record_lsa_1to2(TALLOC_CTX *mem_ctx,
 				const struct lsa_ForestTrustRecord *lftr,
 				struct lsa_ForestTrustRecord2 *lftr2)
 {
+	const struct lsa_ForestTrustBinaryData *binary = NULL;
+
 	if (lftr == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -514,18 +622,28 @@ static NTSTATUS trust_forest_record_lsa_1to2(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 
 	case LSA_FOREST_TRUST_BINARY_DATA:
-		lftr2->type = LSA_FOREST_TRUST_BINARY_DATA;
-		lftr2->forest_trust_data.data =
-			lftr->forest_trust_data.data;
-
-		return NT_STATUS_OK;
-
 	case LSA_FOREST_TRUST_SCANNER_INFO:
-		/* TODO */
+		/* just to avoid the missing enum switch warning */
 		break;
 	}
 
-	return NT_STATUS_NOT_SUPPORTED;
+	/*
+	 * All levels above LSA_FOREST_TRUST_DOMAIN_INFO are handled as binary.
+	 *
+	 * Depending if the sub_type is wellknown the information is upgraded,
+	 * currently only for the LSA_FOREST_TRUST_SCANNER_INFO records.
+	 *
+	 * In all other cases lftr->type is downgraded to
+	 * LSA_FOREST_TRUST_BINARY_DATA.
+	 */
+
+	binary = &lftr->forest_trust_data.data;
+
+	return trust_forest_record_lsa_resolve_binary(mem_ctx,
+						      lftr->flags,
+						      lftr->time,
+						      binary,
+						      lftr2);
 }
 
 NTSTATUS trust_forest_info_from_lsa(TALLOC_CTX *mem_ctx,
