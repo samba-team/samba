@@ -703,6 +703,7 @@ static int tldap_msg_msgid(struct tevent_req *req)
 
 static void tldap_msg_received(struct tevent_req *subreq)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct tldap_context *ld = tevent_req_callback_data(
 		subreq, struct tldap_context);
 	struct tevent_req *req;
@@ -718,7 +719,7 @@ static void tldap_msg_received(struct tevent_req *subreq)
 	uint8_t type;
 	bool ok;
 
-	received = read_ldap_recv(subreq, talloc_tos(), &inbuf, &err);
+	received = read_ldap_recv(subreq, frame, &inbuf, &err);
 	TALLOC_FREE(subreq);
 	ld->read_req = NULL;
 	if (received == -1) {
@@ -726,7 +727,7 @@ static void tldap_msg_received(struct tevent_req *subreq)
 		goto fail;
 	}
 
-	data = asn1_init(talloc_tos(), ASN1_MAX_TREE_DEPTH);
+	data = asn1_init(frame, ASN1_MAX_TREE_DEPTH);
 	if (data == NULL) {
 		/*
 		 * We have to disconnect all, we can't tell which of
@@ -757,8 +758,8 @@ static void tldap_msg_received(struct tevent_req *subreq)
 			"tldap_msg_received: got msgid 0 of "
 			"type %"PRIu8", disconnecting\n",
 			type);
-		tldap_context_disconnect(ld, TLDAP_SERVER_DOWN);
-		return;
+		status = TLDAP_SERVER_DOWN;
+		goto fail;
 	}
 
 	num_pending = talloc_array_length(ld->pending);
@@ -791,6 +792,7 @@ static void tldap_msg_received(struct tevent_req *subreq)
 
  done:
 	if (num_pending == 0) {
+		TALLOC_FREE(frame);
 		return;
 	}
 
@@ -801,10 +803,12 @@ static void tldap_msg_received(struct tevent_req *subreq)
 		goto fail;
 	}
 	tevent_req_set_callback(ld->read_req, tldap_msg_received, ld);
+	TALLOC_FREE(frame);
 	return;
 
  fail:
 	tldap_context_disconnect(ld, status);
+	TALLOC_FREE(frame);
 }
 
 static TLDAPRC tldap_msg_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
@@ -1415,13 +1419,16 @@ static bool tldap_unescape_inplace(char *value, size_t *val_len)
 
 static bool tldap_push_filter_basic(struct tldap_context *ld,
 				    struct asn1_data *data,
+				    TALLOC_CTX *tmpctx,
 				    const char **_s);
 static bool tldap_push_filter_substring(struct tldap_context *ld,
 					struct asn1_data *data,
+					TALLOC_CTX *tmpctx,
 					const char *val,
 					const char **_s);
 static bool tldap_push_filter_int(struct tldap_context *ld,
 				  struct asn1_data *data,
+				  TALLOC_CTX *tmpctx,
 				  const char **_s)
 {
 	const char *s = *_s;
@@ -1453,7 +1460,7 @@ static bool tldap_push_filter_int(struct tldap_context *ld,
 		tldap_debug(ld, TLDAP_DEBUG_TRACE, "Filter op: NOT\n");
 		if (!asn1_push_tag(data, TLDAP_FILTER_NOT)) return false;
 		s++;
-		ret = tldap_push_filter_int(ld, data, &s);
+		ret = tldap_push_filter_int(ld, data, tmpctx, &s);
 		if (!ret) {
 			return false;
 		}
@@ -1472,7 +1479,7 @@ static bool tldap_push_filter_int(struct tldap_context *ld,
 		return false;
 
 	default:
-		ret = tldap_push_filter_basic(ld, data, &s);
+		ret = tldap_push_filter_basic(ld, data, tmpctx, &s);
 		if (!ret) {
 			return false;
 		}
@@ -1489,7 +1496,7 @@ static bool tldap_push_filter_int(struct tldap_context *ld,
 	}
 
 	while (*s) {
-		ret = tldap_push_filter_int(ld, data, &s);
+		ret = tldap_push_filter_int(ld, data, tmpctx, &s);
 		if (!ret) {
 			return false;
 		}
@@ -1520,9 +1527,9 @@ done:
 
 static bool tldap_push_filter_basic(struct tldap_context *ld,
 				    struct asn1_data *data,
+				    TALLOC_CTX *tmpctx,
 				    const char **_s)
 {
-	TALLOC_CTX *tmpctx = talloc_tos();
 	const char *s = *_s;
 	const char *e;
 	const char *eq;
@@ -1693,7 +1700,7 @@ static bool tldap_push_filter_basic(struct tldap_context *ld,
 			/* substring */
 			if (!asn1_push_tag(data, TLDAP_FILTER_SUB)) return false;
 			if (!asn1_write_OctetString(data, s, e - s)) return false;
-			ret = tldap_push_filter_substring(ld, data, val, &s);
+			ret = tldap_push_filter_substring(ld, data, tmpctx, val, &s);
 			if (!ret) {
 				return false;
 			}
@@ -1731,10 +1738,10 @@ static bool tldap_push_filter_basic(struct tldap_context *ld,
 
 static bool tldap_push_filter_substring(struct tldap_context *ld,
 					struct asn1_data *data,
+					TALLOC_CTX *tmpctx,
 					const char *val,
 					const char **_s)
 {
-	TALLOC_CTX *tmpctx = talloc_tos();
 	bool initial = true;
 	const char *star;
 	char *chunk;
@@ -1830,15 +1837,18 @@ static bool tldap_push_filter(struct tldap_context *ld,
 			      struct asn1_data *data,
 			      const char *filter)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	const char *s = filter;
 	bool ret;
 
-	ret = tldap_push_filter_int(ld, data, &s);
+	ret = tldap_push_filter_int(ld, data, frame, &s);
 	if (ret && *s) {
 		tldap_debug(ld, TLDAP_DEBUG_ERROR,
 			    "Incomplete or malformed filter\n");
+		TALLOC_FREE(frame);
 		return false;
 	}
+	TALLOC_FREE(frame);
 	return ret;
 }
 

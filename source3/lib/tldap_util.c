@@ -179,7 +179,7 @@ bool tldap_add_mod_blobs(TALLOC_CTX *mem_ctx,
 	}
 
 	if ((i == num_mods) && (talloc_array_length(mods) < num_mods + 1)) {
-		mods = talloc_realloc(talloc_tos(), mods, struct tldap_mod,
+		mods = talloc_realloc(mem_ctx, mods, struct tldap_mod,
 				      num_mods+1);
 		if (mods == NULL) {
 			return false;
@@ -196,17 +196,19 @@ bool tldap_add_mod_str(TALLOC_CTX *mem_ctx,
 		       struct tldap_mod **pmods, int *pnum_mods,
 		       int mod_op, const char *attrib, const char *str)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	DATA_BLOB utf8;
 	bool ret;
 
-	if (!convert_string_talloc(talloc_tos(), CH_UNIX, CH_UTF8, str,
+	if (!convert_string_talloc(frame, CH_UNIX, CH_UTF8, str,
 				   strlen(str), &utf8.data, &utf8.length)) {
+		TALLOC_FREE(frame);
 		return false;
 	}
 
 	ret = tldap_add_mod_blobs(mem_ctx, pmods, pnum_mods, mod_op, attrib,
 				  &utf8, 1);
-	TALLOC_FREE(utf8.data);
+	TALLOC_FREE(frame);
 	return ret;
 }
 
@@ -287,24 +289,25 @@ bool tldap_make_mod_blob(struct tldap_message *existing, TALLOC_CTX *mem_ctx,
 
 static int compare_utf8_blobs(const DATA_BLOB *d1, const DATA_BLOB *d2)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	char *s1, *s2;
 	size_t s1len, s2len;
 	int ret;
 
-	if (!convert_string_talloc(talloc_tos(), CH_UTF8, CH_UNIX, d1->data,
+	if (!convert_string_talloc(frame, CH_UTF8, CH_UNIX, d1->data,
 				   d1->length, &s1, &s1len)) {
 		/* can't do much here */
+		TALLOC_FREE(frame);
 		return 0;
 	}
-	if (!convert_string_talloc(talloc_tos(), CH_UTF8, CH_UNIX, d2->data,
+	if (!convert_string_talloc(frame, CH_UTF8, CH_UNIX, d2->data,
 				   d2->length, &s2, &s2len)) {
 		/* can't do much here */
-		TALLOC_FREE(s1);
+		TALLOC_FREE(frame);
 		return 0;
 	}
 	ret = strcasecmp_m(s1, s2);
-	TALLOC_FREE(s2);
-	TALLOC_FREE(s1);
+	TALLOC_FREE(frame);
 	return ret;
 }
 
@@ -312,16 +315,18 @@ bool tldap_make_mod_fmt(struct tldap_message *existing, TALLOC_CTX *mem_ctx,
 			struct tldap_mod **pmods, int *pnum_mods,
 			const char *attrib, const char *fmt, ...)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	va_list ap;
 	char *newval;
 	bool ret;
 	DATA_BLOB blob = data_blob_null;
 
 	va_start(ap, fmt);
-	newval = talloc_vasprintf(talloc_tos(), fmt, ap);
+	newval = talloc_vasprintf(frame, fmt, ap);
 	va_end(ap);
 
 	if (newval == NULL) {
+		TALLOC_FREE(frame);
 		return false;
 	}
 
@@ -331,7 +336,7 @@ bool tldap_make_mod_fmt(struct tldap_message *existing, TALLOC_CTX *mem_ctx,
 	}
 	ret = tldap_make_mod_blob_int(existing, mem_ctx, pmods, pnum_mods,
 				      attrib, blob, compare_utf8_blobs);
-	TALLOC_FREE(newval);
+	TALLOC_FREE(frame);
 	return ret;
 }
 
@@ -355,11 +360,13 @@ TLDAPRC tldap_search_va(struct tldap_context *ld, const char *base, int scope,
 			TALLOC_CTX *mem_ctx, struct tldap_message ***res,
 			const char *fmt, va_list ap)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	char *filter;
 	TLDAPRC rc;
 
-	filter = talloc_vasprintf(talloc_tos(), fmt, ap);
+	filter = talloc_vasprintf(frame, fmt, ap);
 	if (filter == NULL) {
+		TALLOC_FREE(frame);
 		return TLDAP_NO_MEMORY;
 	}
 
@@ -368,7 +375,7 @@ TLDAPRC tldap_search_va(struct tldap_context *ld, const char *base, int scope,
 			  NULL /*sctrls*/, 0, NULL /*cctrls*/, 0,
 			  0 /*timelimit*/, 0 /*sizelimit*/, 0 /*deref*/,
 			  mem_ctx, res);
-	TALLOC_FREE(filter);
+	TALLOC_FREE(frame);
 	return rc;
 }
 
@@ -390,13 +397,15 @@ TLDAPRC tldap_search_fmt(struct tldap_context *ld, const char *base, int scope,
 bool tldap_pull_uint64(struct tldap_message *msg, const char *attr,
 		       uint64_t *presult)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	char *str;
 	uint64_t result;
 	int error = 0;
 
-	str = tldap_talloc_single_attribute(msg, attr, talloc_tos());
+	str = tldap_talloc_single_attribute(msg, attr, frame);
 	if (str == NULL) {
 		DEBUG(10, ("Could not find attribute %s\n", attr));
+		TALLOC_FREE(frame);
 		return false;
 	}
 
@@ -404,11 +413,11 @@ bool tldap_pull_uint64(struct tldap_message *msg, const char *attr,
 	if (error != 0) {
 		DBG_DEBUG("Attribute conversion failed (%s)\n",
 			  strerror(error));
-		TALLOC_FREE(str);
+		TALLOC_FREE(frame);
 		return false;
 	}
 
-	TALLOC_FREE(str);
+	TALLOC_FREE(frame);
 	*presult = result;
 	return true;
 }
@@ -784,7 +793,7 @@ static void tldap_search_paged_done(struct tevent_req *subreq)
 
 	TALLOC_FREE(state->cookie.data);
 
-	asn1 = asn1_init(talloc_tos(), ASN1_MAX_TREE_DEPTH);
+	asn1 = asn1_init(state, ASN1_MAX_TREE_DEPTH);
 	if (tevent_req_nomem(asn1, req)) {
 		return;
 	}
