@@ -822,6 +822,12 @@ static NTSTATUS trust_forest_record_lsa_2to1(TALLOC_CTX *mem_ctx,
 				const struct lsa_ForestTrustRecord2 *lftr2,
 				struct lsa_ForestTrustRecord *lftr)
 {
+	const struct lsa_ForestTrustDomainInfo *s_sdi = NULL;
+	union ForestTrustData fta = { .unknown = { .size = 0, }, };
+	struct ForestTrustDataDomainInfo *d_sdi = NULL;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob = { .length = 0, };
+
 	if (lftr2 == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -859,8 +865,33 @@ static NTSTATUS trust_forest_record_lsa_2to1(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 
 	case LSA_FOREST_TRUST_SCANNER_INFO:
-		/* TODO */
-		break;
+		fta.scanner_info.sub_type = FOREST_TRUST_SCANNER_INFO;
+		s_sdi = &lftr2->forest_trust_data.scanner_info;
+		d_sdi = &fta.scanner_info.info;
+
+		if (s_sdi->domain_sid != NULL) {
+			d_sdi->sid = *s_sdi->domain_sid;
+		} else {
+			d_sdi->sid = (struct dom_sid) { .sid_rev_num = 0, };
+		}
+
+		d_sdi->dns_name.string = s_sdi->dns_domain_name.string;
+		d_sdi->netbios_name.string = s_sdi->netbios_domain_name.string;
+
+		ndr_err = ndr_push_union_blob(&blob,
+					      mem_ctx,
+					      &fta,
+					      FOREST_TRUST_SCANNER_INFO,
+					      (ndr_push_flags_fn_t)ndr_push_ForestTrustData);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return ndr_map_error2ntstatus(ndr_err);
+		}
+
+		lftr->type = LSA_FOREST_TRUST_SCANNER_INFO;
+		lftr->forest_trust_data.data.data = blob.data;
+		lftr->forest_trust_data.data.length = blob.length;
+
+		return NT_STATUS_OK;
 	}
 
 	return NT_STATUS_NOT_SUPPORTED;
