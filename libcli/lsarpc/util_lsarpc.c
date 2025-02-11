@@ -543,7 +543,7 @@ NTSTATUS trust_forest_info_from_lsa(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS trust_forest_record_to_lsa(TALLOC_CTX *mem_ctx,
 					const struct ForestTrustInfoRecord *ftr,
-					struct lsa_ForestTrustRecord *lftr)
+					struct lsa_ForestTrustRecord2 *lftr)
 {
 	const struct ForestTrustString *str = NULL;
 	struct lsa_StringLarge *lstr = NULL;
@@ -616,6 +616,54 @@ static NTSTATUS trust_forest_record_to_lsa(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
+static NTSTATUS trust_forest_record_lsa_2to1(TALLOC_CTX *mem_ctx,
+				const struct lsa_ForestTrustRecord2 *lftr2,
+				struct lsa_ForestTrustRecord *lftr)
+{
+	if (lftr2 == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	lftr->flags = lftr2->flags;
+	lftr->time = lftr2->time;
+
+	switch (lftr2->type) {
+	case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
+		lftr->type = LSA_FOREST_TRUST_TOP_LEVEL_NAME;
+		lftr->forest_trust_data.top_level_name =
+			lftr2->forest_trust_data.top_level_name;
+
+		return NT_STATUS_OK;
+
+	case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
+		lftr->type = LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX;
+		lftr->forest_trust_data.top_level_name_ex =
+			lftr2->forest_trust_data.top_level_name_ex;
+
+		return NT_STATUS_OK;
+
+	case LSA_FOREST_TRUST_DOMAIN_INFO:
+		lftr->type = LSA_FOREST_TRUST_DOMAIN_INFO;
+		lftr->forest_trust_data.domain_info =
+			lftr2->forest_trust_data.domain_info;
+
+		return NT_STATUS_OK;
+
+	case LSA_FOREST_TRUST_BINARY_DATA:
+		lftr->type = LSA_FOREST_TRUST_BINARY_DATA;
+		lftr->forest_trust_data.data =
+			lftr2->forest_trust_data.data;
+
+		return NT_STATUS_OK;
+
+	case LSA_FOREST_TRUST_SCANNER_INFO:
+		/* TODO */
+		break;
+	}
+
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
 NTSTATUS trust_forest_info_to_lsa(TALLOC_CTX *mem_ctx,
 				  const struct ForestTrustInfo *fti,
 				  struct lsa_ForestTrustInformation **_lfti)
@@ -645,6 +693,7 @@ NTSTATUS trust_forest_info_to_lsa(TALLOC_CTX *mem_ctx,
 
 	for (i = 0; i < fti->count; i++) {
 		struct ForestTrustInfoRecord *ftr = &fti->records[i].record;
+		struct lsa_ForestTrustRecord2 lftr2 = { .flags = 0, };
 		struct lsa_ForestTrustRecord *lftr = NULL;
 		NTSTATUS status;
 
@@ -655,11 +704,18 @@ NTSTATUS trust_forest_info_to_lsa(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		status = trust_forest_record_to_lsa(lftr, ftr, lftr);
+		status = trust_forest_record_to_lsa(lftr, ftr, &lftr2);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(lfti);
 			return NT_STATUS_NO_MEMORY;
 		}
+
+		status = trust_forest_record_lsa_2to1(lftr, &lftr2, lftr);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(lfti);
+			return NT_STATUS_NO_MEMORY;
+		}
+
 		lfti->entries[i] = lftr;
 	}
 
