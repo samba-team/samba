@@ -498,10 +498,11 @@ static NTSTATUS trust_forest_record_to_lsa(TALLOC_CTX *mem_ctx,
 
 	lftr->flags = ftr->flags;
 	lftr->time = ftr->timestamp;
-	lftr->type = (enum lsa_ForestTrustRecordType)ftr->type;
 
-	switch (lftr->type) {
-	case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
+	switch (ftr->type) {
+	case FOREST_TRUST_TOP_LEVEL_NAME:
+		lftr->type = LSA_FOREST_TRUST_TOP_LEVEL_NAME;
+
 		lstr = &lftr->forest_trust_data.top_level_name;
 		str = &ftr->data.name;
 
@@ -511,9 +512,12 @@ static NTSTATUS trust_forest_record_to_lsa(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		break;
+		*_lftr = lftr;
+		return NT_STATUS_OK;
 
-	case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
+	case FOREST_TRUST_TOP_LEVEL_NAME_EX:
+		lftr->type = LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX;
+
 		lstr = &lftr->forest_trust_data.top_level_name_ex;
 		str = &ftr->data.name;
 
@@ -523,9 +527,12 @@ static NTSTATUS trust_forest_record_to_lsa(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		break;
+		*_lftr = lftr;
+		return NT_STATUS_OK;
 
-	case LSA_FOREST_TRUST_DOMAIN_INFO:
+	case FOREST_TRUST_DOMAIN_INFO:
+		lftr->type = LSA_FOREST_TRUST_DOMAIN_INFO;
+
 		linfo = &lftr->forest_trust_data.domain_info;
 		info = &ftr->data.info;
 
@@ -551,14 +558,16 @@ static NTSTATUS trust_forest_record_to_lsa(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		break;
+		*_lftr = lftr;
+		return NT_STATUS_OK;
 
-	default:
-		return NT_STATUS_NOT_SUPPORTED;
+	case FOREST_TRUST_BINARY_DATA:
+	case FOREST_TRUST_SCANNER_INFO:
+		/* TODO */
+		break;
 	}
 
-	*_lftr = lftr;
-	return NT_STATUS_OK;
+	return NT_STATUS_NOT_SUPPORTED;
 }
 
 NTSTATUS trust_forest_info_to_lsa(TALLOC_CTX *mem_ctx,
