@@ -360,6 +360,85 @@ NTSTATUS auth_info_2_auth_blob(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS trust_forest_record_from_lsa(TALLOC_CTX *mem_ctx,
+				const struct lsa_ForestTrustRecord *lftr,
+				struct ForestTrustInfoRecord *ftr)
+{
+	struct ForestTrustString *str = NULL;
+	const struct lsa_StringLarge *lstr = NULL;
+	const struct lsa_ForestTrustDomainInfo *linfo = NULL;
+	struct ForestTrustDataDomainInfo *info = NULL;
+
+	if (lftr == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ftr->flags = lftr->flags;
+	ftr->timestamp = lftr->time;
+
+	switch (lftr->type) {
+	case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
+		ftr->type = FOREST_TRUST_TOP_LEVEL_NAME;
+
+		lstr = &lftr->forest_trust_data.top_level_name;
+		str = &ftr->data.name;
+
+		str->string = talloc_strdup(mem_ctx, lstr->string);
+		if (str->string == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		return NT_STATUS_OK;
+
+	case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
+		ftr->type = FOREST_TRUST_TOP_LEVEL_NAME_EX;
+
+		lstr = &lftr->forest_trust_data.top_level_name_ex;
+		str = &ftr->data.name;
+
+		str->string = talloc_strdup(mem_ctx, lstr->string);
+		if (str->string == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		return NT_STATUS_OK;
+
+	case LSA_FOREST_TRUST_DOMAIN_INFO:
+		ftr->type = FOREST_TRUST_DOMAIN_INFO;
+
+		linfo = &lftr->forest_trust_data.domain_info;
+		info = &ftr->data.info;
+
+		if (linfo->domain_sid == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		info->sid = *linfo->domain_sid;
+
+		lstr = &linfo->dns_domain_name;
+		str = &info->dns_name;
+		str->string = talloc_strdup(mem_ctx, lstr->string);
+		if (str->string == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		lstr = &linfo->netbios_domain_name;
+		str = &info->netbios_name;
+		str->string = talloc_strdup(mem_ctx, lstr->string);
+		if (str->string == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		return NT_STATUS_OK;
+
+	case LSA_FOREST_TRUST_BINARY_DATA:
+	case LSA_FOREST_TRUST_SCANNER_INFO:
+		/* TODO */
+		break;
+	}
+
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
 NTSTATUS trust_forest_info_from_lsa(TALLOC_CTX *mem_ctx,
 				const struct lsa_ForestTrustInformation *lfti,
 				struct ForestTrustInfo **_fti)
@@ -387,75 +466,12 @@ NTSTATUS trust_forest_info_from_lsa(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < fti->count; i++) {
 		const struct lsa_ForestTrustRecord *lftr = lfti->entries[i];
 		struct ForestTrustInfoRecord *ftr = &fti->records[i].record;
-		struct ForestTrustString *str = NULL;
-		const struct lsa_StringLarge *lstr = NULL;
-		const struct lsa_ForestTrustDomainInfo *linfo = NULL;
-		struct ForestTrustDataDomainInfo *info = NULL;
+		NTSTATUS status;
 
-		if (lftr == NULL) {
+		status = trust_forest_record_from_lsa(fti->records, lftr, ftr);
+		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(fti);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		ftr->flags = lftr->flags;
-		ftr->timestamp = lftr->time;
-		ftr->type = (enum ForestTrustInfoRecordType)lftr->type;
-
-		switch (lftr->type) {
-		case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
-			lstr = &lftr->forest_trust_data.top_level_name;
-			str = &ftr->data.name;
-
-			str->string = talloc_strdup(fti->records, lstr->string);
-			if (str->string == NULL) {
-				TALLOC_FREE(fti);
-				return NT_STATUS_NO_MEMORY;
-			}
-
-			break;
-
-		case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
-			lstr = &lftr->forest_trust_data.top_level_name_ex;
-			str = &ftr->data.name;
-
-			str->string = talloc_strdup(fti->records, lstr->string);
-			if (str->string == NULL) {
-				TALLOC_FREE(fti);
-				return NT_STATUS_NO_MEMORY;
-			}
-
-			break;
-
-		case LSA_FOREST_TRUST_DOMAIN_INFO:
-			linfo = &lftr->forest_trust_data.domain_info;
-			info = &ftr->data.info;
-
-			if (linfo->domain_sid == NULL) {
-				TALLOC_FREE(fti);
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-			info->sid = *linfo->domain_sid;
-
-			lstr = &linfo->dns_domain_name;
-			str = &info->dns_name;
-			str->string = talloc_strdup(fti->records, lstr->string);
-			if (str->string == NULL) {
-				TALLOC_FREE(fti);
-				return NT_STATUS_NO_MEMORY;
-			}
-
-			lstr = &linfo->netbios_domain_name;
-			str = &info->netbios_name;
-			str->string = talloc_strdup(fti->records, lstr->string);
-			if (str->string == NULL) {
-				TALLOC_FREE(fti);
-				return NT_STATUS_NO_MEMORY;
-			}
-
-			break;
-
-		default:
-			return NT_STATUS_NOT_SUPPORTED;
+			return status;
 		}
 	}
 
