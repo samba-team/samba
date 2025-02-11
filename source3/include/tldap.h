@@ -284,6 +284,7 @@ TLDAPRC tldap_extended(struct tldap_context *ld,
 
 int tldap_msg_id(const struct tldap_message *msg);
 int tldap_msg_type(const struct tldap_message *msg);
+TLDAPRC tldap_msg_rc(const struct tldap_message *msg);
 const char *tldap_msg_matcheddn(struct tldap_message *msg);
 const char *tldap_msg_diagnosticmessage(struct tldap_message *msg);
 const char *tldap_msg_referral(struct tldap_message *msg);

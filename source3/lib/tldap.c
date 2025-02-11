@@ -2801,6 +2801,15 @@ int tldap_msg_type(const struct tldap_message *msg)
 	return msg->type;
 }
 
+TLDAPRC tldap_msg_rc(const struct tldap_message *msg)
+{
+	if (msg == NULL) {
+		return TLDAP_LOCAL_ERROR;
+	}
+
+	return msg->lderr;
+}
+
 const char *tldap_msg_matcheddn(struct tldap_message *msg)
 {
 	if (msg == NULL) {
