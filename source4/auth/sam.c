@@ -673,6 +673,8 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 
 	if ((info->acct_flags & (ACB_PARTIAL_SECRETS_ACCOUNT | ACB_WSTRUST)) ==
 	    (ACB_PARTIAL_SECRETS_ACCOUNT | ACB_WSTRUST)) {
+		struct dom_sid rodcsid = {};
+
 		/* the DOMAIN_RID_ENTERPRISE_READONLY_DCS PAC */
 		user_info_dc->sids = talloc_realloc(user_info_dc,
 						   user_info_dc->sids,
@@ -682,9 +684,11 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(user_info_dc);
 			return NT_STATUS_NO_MEMORY;
 		}
-		user_info_dc->sids[user_info_dc->num_sids].sid = *domain_sid;
-		sid_append_rid(&user_info_dc->sids[user_info_dc->num_sids].sid,
-			    DOMAIN_RID_ENTERPRISE_READONLY_DCS);
+
+		rodcsid = *domain_sid;
+		sid_append_rid(&rodcsid, DOMAIN_RID_ENTERPRISE_READONLY_DCS);
+
+		user_info_dc->sids[user_info_dc->num_sids].sid = rodcsid;
 		user_info_dc->sids[user_info_dc->num_sids].attrs = SE_GROUP_DEFAULT_FLAGS;
 		user_info_dc->num_sids++;
 	}
