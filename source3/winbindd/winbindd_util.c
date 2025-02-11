@@ -1234,9 +1234,8 @@ static bool add_trusted_domains_dc(void)
 				    "domain[%s/%s]\n",
 				    domains[i]->netbios_name,
 				    domains[i]->domain_name);
+			/* trust_flags |= NETR_TRUST_FLAG_IN_FOREST; */
 			continue;
-
-			trust_flags |= NETR_TRUST_FLAG_IN_FOREST;
 		}
 
 		if (domains[i]->trust_attributes & LSA_TRUST_ATTRIBUTE_CROSS_ORGANIZATION) {
