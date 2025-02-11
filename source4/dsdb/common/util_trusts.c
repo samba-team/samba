@@ -804,6 +804,64 @@ NTSTATUS dsdb_trust_parse_forest_info(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS dsdb_trust_default_forest_info(TALLOC_CTX *mem_ctx,
+					const struct dom_sid *sid,
+					const char *dns_name,
+					const char *nbt_name,
+					NTTIME now,
+					struct ForestTrustInfo **_fti)
+{
+	struct ForestTrustInfo *trust_fti = NULL;
+	struct ForestTrustInfoRecordArmor *ra = NULL;
+	struct ForestTrustInfoRecord *r = NULL;
+
+	trust_fti = talloc_zero(mem_ctx, struct ForestTrustInfo);
+	if (trust_fti == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ra = talloc_zero_array(trust_fti,
+			       struct ForestTrustInfoRecordArmor,
+			       2);
+	if (ra == NULL) {
+		TALLOC_FREE(trust_fti);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	r = &ra[0].record;
+	r->type = FOREST_TRUST_TOP_LEVEL_NAME;
+	r->timestamp = now;
+	r->flags = 0;
+	r->data.name.string = talloc_strdup(ra, dns_name);
+	if (r->data.name.string == NULL) {
+		TALLOC_FREE(trust_fti);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	r = &ra[1].record;
+	r->type = FOREST_TRUST_DOMAIN_INFO;
+	r->timestamp = now;
+	r->flags = 0;
+	r->data.info.sid = *sid;
+	r->data.info.dns_name.string = talloc_strdup(ra, dns_name);
+	if (r->data.info.dns_name.string == NULL) {
+		TALLOC_FREE(trust_fti);
+		return NT_STATUS_NO_MEMORY;
+	}
+	r->data.info.netbios_name.string = talloc_strdup(ra, nbt_name);
+	if (r->data.info.netbios_name.string == NULL) {
+		TALLOC_FREE(trust_fti);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	trust_fti->version = 1;
+	trust_fti->records = ra;
+	trust_fti->count = 2;
+
+	*_fti = trust_fti;
+	return NT_STATUS_OK;
+}
+
 NTSTATUS dsdb_trust_normalize_forest_info_step1(TALLOC_CTX *mem_ctx,
 				const struct lsa_ForestTrustInformation *gfti,
 				struct lsa_ForestTrustInformation **_nfti)
