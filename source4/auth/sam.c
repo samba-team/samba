@@ -383,6 +383,8 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	uint32_t num_sids = 0;
 	unsigned int i;
 	struct dom_sid *domain_sid;
+	uint32_t group_rid;
+	struct dom_sid groupsid = {};
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_message_element *el;
 	static const char * const group_type_attrs[] = { "groupType", NULL };
@@ -425,10 +427,14 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
+	group_rid = ldb_msg_find_attr_as_uint(msg, "primaryGroupID", ~0);
+	groupsid = *domain_sid;
+	sid_append_rid(&groupsid, group_rid);
+
 	sids[PRIMARY_USER_SID_INDEX].sid = *account_sid;
 	sids[PRIMARY_USER_SID_INDEX].attrs = SE_GROUP_DEFAULT_FLAGS;
-	sids[PRIMARY_GROUP_SID_INDEX].sid = *domain_sid;
-	sid_append_rid(&sids[PRIMARY_GROUP_SID_INDEX].sid, ldb_msg_find_attr_as_uint(msg, "primaryGroupID", ~0));
+
+	sids[PRIMARY_GROUP_SID_INDEX].sid = groupsid;
 	sids[PRIMARY_GROUP_SID_INDEX].attrs = SE_GROUP_DEFAULT_FLAGS;
 
 	/*
