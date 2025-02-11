@@ -590,6 +590,7 @@ static NTSTATUS trust_forest_record_to_lsa(TALLOC_CTX *mem_ctx,
 	struct lsa_StringLarge *lstr = NULL;
 	const struct ForestTrustDataDomainInfo *info = NULL;
 	struct lsa_ForestTrustDomainInfo *linfo = NULL;
+	DATA_BLOB blob = { .length = 0, };
 
 	lftr->flags = ftr->flags;
 	lftr->time = ftr->timestamp;
@@ -649,9 +650,51 @@ static NTSTATUS trust_forest_record_to_lsa(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 
 	case FOREST_TRUST_BINARY_DATA:
+		lftr->type = LSA_FOREST_TRUST_BINARY_DATA;
+
+		blob = data_blob_talloc_named(mem_ctx,
+					      ftr->data.binary.data,
+					      ftr->data.binary.size,
+					      "BINARY_DATA");
+		if (blob.length != ftr->data.binary.size) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		lftr->forest_trust_data.data.data = blob.data;
+		lftr->forest_trust_data.data.length = blob.length;
+
+		return NT_STATUS_OK;
+
 	case FOREST_TRUST_SCANNER_INFO:
-		/* TODO */
-		break;
+		lftr->type = LSA_FOREST_TRUST_SCANNER_INFO;
+
+		linfo = &lftr->forest_trust_data.scanner_info;
+		info = &ftr->data.scanner_info.info;
+
+		if (info->sid_size != 0) {
+			linfo->domain_sid = dom_sid_dup(mem_ctx,
+							&info->sid);
+			if (linfo->domain_sid == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		} else {
+			linfo->domain_sid = NULL;
+		}
+
+		lstr = &linfo->dns_domain_name;
+		str = &info->dns_name;
+		lstr->string = talloc_strdup(mem_ctx, str->string);
+		if (lstr->string == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		lstr = &linfo->netbios_domain_name;
+		str = &info->netbios_name;
+		lstr->string = talloc_strdup(mem_ctx, str->string);
+		if (lstr->string == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		return NT_STATUS_OK;
 	}
 
 	return NT_STATUS_NOT_SUPPORTED;
