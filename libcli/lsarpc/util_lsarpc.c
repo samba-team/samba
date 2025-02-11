@@ -956,6 +956,61 @@ NTSTATUS trust_forest_info_to_lsa(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS trust_forest_record_lsa_2to2(TALLOC_CTX *mem_ctx,
+				const struct lsa_ForestTrustRecord2 *in,
+				struct lsa_ForestTrustRecord2 *out)
+{
+	const struct lsa_ForestTrustBinaryData *binary = NULL;
+
+	if (in == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	out->flags = in->flags;
+	out->time = in->time;
+
+	switch (in->type) {
+	case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
+		out->type = LSA_FOREST_TRUST_TOP_LEVEL_NAME;
+		out->forest_trust_data.top_level_name =
+			in->forest_trust_data.top_level_name;
+
+		return NT_STATUS_OK;
+
+	case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
+		out->type = LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX;
+		out->forest_trust_data.top_level_name_ex =
+			in->forest_trust_data.top_level_name_ex;
+
+		return NT_STATUS_OK;
+
+	case LSA_FOREST_TRUST_DOMAIN_INFO:
+		out->type = LSA_FOREST_TRUST_DOMAIN_INFO;
+		out->forest_trust_data.domain_info =
+			in->forest_trust_data.domain_info;
+
+		return NT_STATUS_OK;
+
+	case LSA_FOREST_TRUST_BINARY_DATA:
+		binary = &in->forest_trust_data.data;
+
+		return trust_forest_record_lsa_resolve_binary(mem_ctx,
+							      in->flags,
+							      in->time,
+							      binary,
+							      out);
+
+	case LSA_FOREST_TRUST_SCANNER_INFO:
+		out->type = LSA_FOREST_TRUST_SCANNER_INFO;
+		out->forest_trust_data.domain_info =
+			in->forest_trust_data.domain_info;
+
+		return NT_STATUS_OK;
+	}
+
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
 NTSTATUS trust_forest_info_from_lsa2(TALLOC_CTX *mem_ctx,
 				const struct lsa_ForestTrustInformation2 *lfti,
 				struct ForestTrustInfo **_fti)
@@ -982,12 +1037,24 @@ NTSTATUS trust_forest_info_from_lsa2(TALLOC_CTX *mem_ctx,
 
 	for (i = 0; i < fti->count; i++) {
 		const struct lsa_ForestTrustRecord2 *lftr2 = lfti->entries[i];
+		struct lsa_ForestTrustRecord2 _lftr2 = { .flags = 0, };
 		struct ForestTrustInfoRecord *ftr = &fti->records[i].record;
+		TALLOC_CTX *frame = talloc_stackframe();
 		NTSTATUS status;
 
-		status = trust_forest_record_from_lsa(fti->records,
+		status = trust_forest_record_lsa_2to2(frame,
 						      lftr2,
+						      &_lftr2);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			TALLOC_FREE(fti);
+			return status;
+		}
+
+		status = trust_forest_record_from_lsa(fti->records,
+						      &_lftr2,
 						      ftr);
+		TALLOC_FREE(frame);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(fti);
 			return status;
