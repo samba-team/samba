@@ -507,7 +507,7 @@ static NTSTATUS rpc_rights_grant_internal(struct net_context *c,
 	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	status = dcerpc_lsa_open_policy_fallback(b,
+	status = dcerpc_lsa_open_policy_fallback(pipe_hnd,
 						 mem_ctx,
 						 pipe_hnd->srv_name_slash,
 						 true,
@@ -593,7 +593,7 @@ static NTSTATUS rpc_rights_revoke_internal(struct net_context *c,
 	if (!NT_STATUS_IS_OK(status))
 		return status;
 
-	status = dcerpc_lsa_open_policy_fallback(b,
+	status = dcerpc_lsa_open_policy_fallback(pipe_hnd,
 						 mem_ctx,
 						 pipe_hnd->srv_name_slash,
 						 true,
