@@ -22,6 +22,7 @@ import os
 from samba.tests.samba_tool.base import SambaToolCmdTest
 from samba.tests import env_loadparm
 import random
+import secrets
 
 
 class NtACLCmdSysvolTestCase(SambaToolCmdTest):
@@ -122,6 +123,24 @@ class NtACLCmdGetSetTestCase(SambaToolCmdTest):
         self.assertCmdSuccess(result, out, err)
         self.assertEqual(err, "", "Shouldn't be any error messages")
         self.assertEqual(out, "", "Shouldn't be any output messages")
+
+    def test_set_expect_file_not_found(self):
+        path = os.environ['SELFTEST_PREFIX']
+        tempf_basename = f"{self.unique_name()}-{secrets.token_hex(10)}"
+        tempf = os.path.join(path, tempf_basename)
+
+        for fs_arg in ["--use-s3fs", "--use-ntvfs"]:
+            (result, out, err) = self.runsubcmd("ntacl",
+                                                "set",
+                                                self.acl,
+                                                tempf_basename,
+                                                fs_arg)
+
+            self.assertCmdFail(result, "succeeded with non-existent file")
+            self.assertIn("No such file or directory",
+                          err,
+                          "No such file or directory expected")
+            self.assertEqual(out, "", "Shouldn't be any output messages")
 
     def test_ntvfs_check(self):
         path = os.environ['SELFTEST_PREFIX']
