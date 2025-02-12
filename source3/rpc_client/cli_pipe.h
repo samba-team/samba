@@ -81,6 +81,8 @@ NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
 				  const struct ndr_interface_table *table,
 				  struct rpc_pipe_client **presult);
 
+NTSTATUS cli_rpc_pipe_reopen_np_noauth(struct rpc_pipe_client *rpccli);
+
 NTSTATUS cli_rpc_pipe_client_prepare_alter(struct rpc_pipe_client *p,
 					   bool new_auth_context,
 					   const struct ndr_interface_table *table,
