@@ -1,0 +1,3 @@
+samba.tests.ndr.sd.samba.tests.ndr.sd.SDTestCase.test_sd_sd_04_object_ace_with_trailing_zeros
+samba.tests.ndr.sd.samba.tests.ndr.sd.SDTestCase.test_sd_sd_07_object_ace_with_trailing_zeros
+samba.tests.ndr.sd.samba.tests.ndr.sd.SDTestCase.test_sd_sd_10_object_ace_with_trailing_zeros

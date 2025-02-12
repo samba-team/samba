@@ -238,6 +238,7 @@ planpythontestsuite("none", "samba.tests.samdb")
 planpythontestsuite("none", "samba.tests.samdb_api")
 planpythontestsuite("none", "samba.tests.ndr.gkdi")
 planpythontestsuite("none", "samba.tests.ndr.gmsa")
+planpythontestsuite("none", "samba.tests.ndr.sd")
 planpythontestsuite("none", "samba.tests.ndr.wbint")
 
 if with_pam:
