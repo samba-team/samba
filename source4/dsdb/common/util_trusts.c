@@ -2189,6 +2189,56 @@ NTSTATUS dsdb_trust_merge_forest_info(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	/*
+	 * Finally we readd scanner info records
+	 */
+	for (oi = 0; oi < ofti->count; oi++) {
+		const struct lsa_ForestTrustRecord2 *oftr =
+			ofti->entries[oi];
+
+		if (oftr == NULL) {
+			/*
+			 * broken record => ignore...
+			 */
+			continue;
+		}
+
+		if (oftr->type != LSA_FOREST_TRUST_SCANNER_INFO) {
+			continue;
+		}
+
+		status = dsdb_trust_forest_info_add_record(mfti, oftr);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+	}
+
+	/*
+	 * Finally we readd binary info records
+	 */
+	for (oi = 0; oi < ofti->count; oi++) {
+		const struct lsa_ForestTrustRecord2 *oftr =
+			ofti->entries[oi];
+
+		if (oftr == NULL) {
+			/*
+			 * broken record => ignore...
+			 */
+			continue;
+		}
+
+		if (oftr->type != LSA_FOREST_TRUST_BINARY_DATA) {
+			continue;
+		}
+
+		status = dsdb_trust_forest_info_add_record(mfti, oftr);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+	}
+
 	*_mfti = talloc_move(mem_ctx, &mfti);
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
