@@ -874,7 +874,7 @@ NTSTATUS trust_forest_info_lsa_2to1(TALLOC_CTX *mem_ctx,
 }
 
 static int trust_forest_info_tln_match_internal(
-		const struct lsa_ForestTrustInformation *info,
+		const struct lsa_ForestTrustInformation2 *info,
 		enum lsa_ForestTrustRecordType type,
 		uint32_t disable_mask,
 		const char *tln)
@@ -882,7 +882,7 @@ static int trust_forest_info_tln_match_internal(
 	uint32_t i;
 
 	for (i = 0; i < info->count; i++) {
-		struct lsa_ForestTrustRecord *e = info->entries[i];
+		struct lsa_ForestTrustRecord2 *e = info->entries[i];
 		struct lsa_StringLarge *t = NULL;
 		int cmp;
 
@@ -925,7 +925,7 @@ static int trust_forest_info_tln_match_internal(
 }
 
 bool trust_forest_info_tln_match(
-		const struct lsa_ForestTrustInformation *info,
+		const struct lsa_ForestTrustInformation2 *info,
 		const char *tln)
 {
 	int m;
@@ -942,7 +942,7 @@ bool trust_forest_info_tln_match(
 }
 
 bool trust_forest_info_tln_ex_match(
-		const struct lsa_ForestTrustInformation *info,
+		const struct lsa_ForestTrustInformation2 *info,
 		const char *tln)
 {
 	int m;

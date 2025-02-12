@@ -39,12 +39,11 @@
 
 #undef strcasecmp
 
-
-static NTSTATUS dsdb_trust_forest_info_add_record(struct lsa_ForestTrustInformation *fti,
-						  const struct lsa_ForestTrustRecord *ftr)
+static NTSTATUS dsdb_trust_forest_info_add_record(struct lsa_ForestTrustInformation2 *fti,
+						  const struct lsa_ForestTrustRecord2 *ftr)
 {
-	struct lsa_ForestTrustRecord **es = NULL;
-	struct lsa_ForestTrustRecord *e = NULL;
+	struct lsa_ForestTrustRecord2 **es = NULL;
+	struct lsa_ForestTrustRecord2 *e = NULL;
 	const struct lsa_StringLarge *dns1 = NULL;
 	struct lsa_StringLarge *dns2 = NULL;
 	const struct lsa_ForestTrustDomainInfo *d1 = NULL;
@@ -52,14 +51,14 @@ static NTSTATUS dsdb_trust_forest_info_add_record(struct lsa_ForestTrustInformat
 	size_t len = 0;
 
 	es = talloc_realloc(fti, fti->entries,
-			    struct lsa_ForestTrustRecord *,
+			    struct lsa_ForestTrustRecord2 *,
 			    fti->count + 1);
 	if (!es) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	fti->entries = es;
 
-	e = talloc_zero(es, struct lsa_ForestTrustRecord);
+	e = talloc_zero(es, struct lsa_ForestTrustRecord2);
 	if (e == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -459,10 +458,10 @@ static int dsdb_trust_xref_sort_vals(struct ldb_val *v1,
 
 NTSTATUS dsdb_trust_xref_forest_info(TALLOC_CTX *mem_ctx,
 				     struct ldb_context *sam_ctx,
-				     struct lsa_ForestTrustInformation **_info)
+				     struct lsa_ForestTrustInformation2 **_info)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct lsa_ForestTrustInformation *info = NULL;
+	struct lsa_ForestTrustInformation2 *info = NULL;
 	struct ldb_dn *partitions_dn = NULL;
 	const char * const cross_attrs1[] = {
 		"uPNSuffixes",
@@ -488,7 +487,7 @@ NTSTATUS dsdb_trust_xref_forest_info(TALLOC_CTX *mem_ctx,
 	bool restart = false;
 
 	*_info = NULL;
-	info = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation);
+	info = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation2);
 	if (info == NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
@@ -557,7 +556,7 @@ NTSTATUS dsdb_trust_xref_forest_info(TALLOC_CTX *mem_ctx,
 		struct dom_sid sid = {
 			.num_auths = 0,
 		};
-		struct lsa_ForestTrustRecord e = {
+		struct lsa_ForestTrustRecord2 e = {
 			.flags = 0,
 		};
 		struct lsa_ForestTrustDomainInfo *d = NULL;
@@ -594,7 +593,7 @@ NTSTATUS dsdb_trust_xref_forest_info(TALLOC_CTX *mem_ctx,
 			/*
 			 * First the TOP_LEVEL_NAME, if required
 			 */
-			e = (struct lsa_ForestTrustRecord) {
+			e = (struct lsa_ForestTrustRecord2) {
 				.flags = 0,
 				.type = LSA_FOREST_TRUST_TOP_LEVEL_NAME,
 				.time = 0, /* so far always 0 in traces. */
@@ -613,7 +612,7 @@ NTSTATUS dsdb_trust_xref_forest_info(TALLOC_CTX *mem_ctx,
 		/*
 		 * Then the DOMAIN_INFO
 		 */
-		e = (struct lsa_ForestTrustRecord) {
+		e = (struct lsa_ForestTrustRecord2) {
 			.flags = 0,
 			.type = LSA_FOREST_TRUST_DOMAIN_INFO,
 			.time = 0, /* so far always 0 in traces. */
@@ -633,7 +632,7 @@ NTSTATUS dsdb_trust_xref_forest_info(TALLOC_CTX *mem_ctx,
 	for (i=0; (tln_el != NULL) && i < tln_el->num_values; i++) {
 		const struct ldb_val *v = &tln_el->values[i];
 		const char *dns = (const char *)v->data;
-		struct lsa_ForestTrustRecord e = {
+		struct lsa_ForestTrustRecord2 e = {
 			.flags = 0,
 		};
 		struct lsa_StringLarge *t = NULL;
@@ -653,7 +652,7 @@ NTSTATUS dsdb_trust_xref_forest_info(TALLOC_CTX *mem_ctx,
 		/*
 		 * an additional the TOP_LEVEL_NAME
 		 */
-		e = (struct lsa_ForestTrustRecord) {
+		e = (struct lsa_ForestTrustRecord2) {
 			.flags = 0,
 			.type = LSA_FOREST_TRUST_TOP_LEVEL_NAME,
 			.time = 0, /* so far always 0 in traces. */
@@ -669,7 +668,7 @@ NTSTATUS dsdb_trust_xref_forest_info(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i=0; i < info->count; restart ? i=0 : i++) {
-		struct lsa_ForestTrustRecord *tr = info->entries[i];
+		struct lsa_ForestTrustRecord2 *tr = info->entries[i];
 		const struct lsa_StringLarge *ts = NULL;
 		uint32_t c;
 
@@ -682,7 +681,7 @@ NTSTATUS dsdb_trust_xref_forest_info(TALLOC_CTX *mem_ctx,
 		ts = &tr->forest_trust_data.top_level_name;
 
 		for (c = i + 1; c < info->count; c++) {
-			struct lsa_ForestTrustRecord *cr = info->entries[c];
+			struct lsa_ForestTrustRecord2 *cr = info->entries[c];
 			const struct lsa_StringLarge *cs = NULL;
 			uint32_t j;
 			int cmp;
@@ -863,16 +862,16 @@ NTSTATUS dsdb_trust_default_forest_info(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS dsdb_trust_normalize_forest_info_step1(TALLOC_CTX *mem_ctx,
-				const struct lsa_ForestTrustInformation *gfti,
-				struct lsa_ForestTrustInformation **_nfti)
+				const struct lsa_ForestTrustInformation2 *gfti,
+				struct lsa_ForestTrustInformation2 **_nfti)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct lsa_ForestTrustInformation *nfti;
+	struct lsa_ForestTrustInformation2 *nfti;
 	uint32_t n;
 
 	*_nfti = NULL;
 
-	nfti = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation);
+	nfti = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation2);
 	if (nfti == NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
@@ -888,8 +887,8 @@ NTSTATUS dsdb_trust_normalize_forest_info_step1(TALLOC_CTX *mem_ctx,
 	 * provide the correct index for collision records.
 	 */
 	for (n = 0; n < gfti->count; n++) {
-		const struct lsa_ForestTrustRecord *gftr = gfti->entries[n];
-		struct lsa_ForestTrustRecord *nftr = NULL;
+		const struct lsa_ForestTrustRecord2 *gftr = gfti->entries[n];
+		struct lsa_ForestTrustRecord2 *nftr = NULL;
 		struct lsa_ForestTrustDomainInfo *ninfo = NULL;
 		struct lsa_StringLarge *ntln = NULL;
 		struct lsa_StringLarge *nnb = NULL;
@@ -971,7 +970,7 @@ NTSTATUS dsdb_trust_normalize_forest_info_step1(TALLOC_CTX *mem_ctx,
 		}
 
 		for (c = 0; c < n; c++) {
-			const struct lsa_ForestTrustRecord *cftr = nfti->entries[c];
+			const struct lsa_ForestTrustRecord2 *cftr = nfti->entries[c];
 			const struct lsa_ForestTrustDomainInfo *cinfo = NULL;
 			const struct lsa_StringLarge *ctln = NULL;
 			const struct lsa_StringLarge *cnb = NULL;
@@ -1038,7 +1037,7 @@ NTSTATUS dsdb_trust_normalize_forest_info_step1(TALLOC_CTX *mem_ctx,
 	 * Now we check that only true top level names are provided
 	 */
 	for (n = 0; n < nfti->count; n++) {
-		const struct lsa_ForestTrustRecord *nftr = nfti->entries[n];
+		const struct lsa_ForestTrustRecord2 *nftr = nfti->entries[n];
 		const struct lsa_StringLarge *ntln = NULL;
 		uint32_t c;
 
@@ -1053,7 +1052,7 @@ NTSTATUS dsdb_trust_normalize_forest_info_step1(TALLOC_CTX *mem_ctx,
 		ntln = &nftr->forest_trust_data.top_level_name;
 
 		for (c = 0; c < nfti->count; c++) {
-			const struct lsa_ForestTrustRecord *cftr = nfti->entries[c];
+			const struct lsa_ForestTrustRecord2 *cftr = nfti->entries[c];
 			const struct lsa_StringLarge *ctln = NULL;
 			int cmp;
 
@@ -1085,7 +1084,7 @@ NTSTATUS dsdb_trust_normalize_forest_info_step1(TALLOC_CTX *mem_ctx,
 	 * Now we check that only true sub level excludes are provided
 	 */
 	for (n = 0; n < nfti->count; n++) {
-		const struct lsa_ForestTrustRecord *nftr = nfti->entries[n];
+		const struct lsa_ForestTrustRecord2 *nftr = nfti->entries[n];
 		const struct lsa_StringLarge *ntln = NULL;
 		uint32_t c;
 		bool found_tln = false;
@@ -1101,7 +1100,7 @@ NTSTATUS dsdb_trust_normalize_forest_info_step1(TALLOC_CTX *mem_ctx,
 		ntln = &nftr->forest_trust_data.top_level_name;
 
 		for (c = 0; c < nfti->count; c++) {
-			const struct lsa_ForestTrustRecord *cftr = nfti->entries[c];
+			const struct lsa_ForestTrustRecord2 *cftr = nfti->entries[c];
 			const struct lsa_StringLarge *ctln = NULL;
 			int cmp;
 
@@ -1138,7 +1137,7 @@ NTSTATUS dsdb_trust_normalize_forest_info_step1(TALLOC_CTX *mem_ctx,
 	 * Now we check that there's a top level name for each domain
 	 */
 	for (n = 0; n < nfti->count; n++) {
-		const struct lsa_ForestTrustRecord *nftr = nfti->entries[n];
+		const struct lsa_ForestTrustRecord2 *nftr = nfti->entries[n];
 		const struct lsa_ForestTrustDomainInfo *ninfo = NULL;
 		const struct lsa_StringLarge *ntln = NULL;
 		uint32_t c;
@@ -1156,7 +1155,7 @@ NTSTATUS dsdb_trust_normalize_forest_info_step1(TALLOC_CTX *mem_ctx,
 		ntln = &ninfo->dns_domain_name;
 
 		for (c = 0; c < nfti->count; c++) {
-			const struct lsa_ForestTrustRecord *cftr = nfti->entries[c];
+			const struct lsa_ForestTrustRecord2 *cftr = nfti->entries[c];
 			const struct lsa_StringLarge *ctln = NULL;
 			int cmp;
 
@@ -1199,18 +1198,18 @@ NTSTATUS dsdb_trust_normalize_forest_info_step1(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS dsdb_trust_normalize_forest_info_step2(TALLOC_CTX *mem_ctx,
-				const struct lsa_ForestTrustInformation *gfti,
-				struct lsa_ForestTrustInformation **_nfti)
+				const struct lsa_ForestTrustInformation2 *gfti,
+				struct lsa_ForestTrustInformation2 **_nfti)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct timeval tv = timeval_current();
 	NTTIME now = timeval_to_nttime(&tv);
-	struct lsa_ForestTrustInformation *nfti;
+	struct lsa_ForestTrustInformation2 *nfti;
 	uint32_t g;
 
 	*_nfti = NULL;
 
-	nfti = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation);
+	nfti = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation2);
 	if (nfti == NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
@@ -1225,8 +1224,8 @@ NTSTATUS dsdb_trust_normalize_forest_info_step2(TALLOC_CTX *mem_ctx,
 	 */
 
 	for (g = 0; g < gfti->count; g++) {
-		const struct lsa_ForestTrustRecord *gftr = gfti->entries[gfti->count - (g+1)];
-		struct lsa_ForestTrustRecord tftr;
+		const struct lsa_ForestTrustRecord2 *gftr = gfti->entries[gfti->count - (g+1)];
+		struct lsa_ForestTrustRecord2 tftr;
 		bool skip = false;
 		NTSTATUS status;
 
@@ -1266,8 +1265,8 @@ NTSTATUS dsdb_trust_normalize_forest_info_step2(TALLOC_CTX *mem_ctx,
 	}
 
 	for (g = 0; g < gfti->count; g++) {
-		const struct lsa_ForestTrustRecord *gftr = gfti->entries[gfti->count - (g+1)];
-		struct lsa_ForestTrustRecord tftr;
+		const struct lsa_ForestTrustRecord2 *gftr = gfti->entries[gfti->count - (g+1)];
+		struct lsa_ForestTrustRecord2 tftr;
 		bool skip = false;
 		NTSTATUS status;
 
@@ -1345,15 +1344,15 @@ static NTSTATUS dsdb_trust_add_collision(
 }
 
 NTSTATUS dsdb_trust_verify_forest_info(const struct lsa_TrustDomainInfoInfoEx *ref_tdo,
-				const struct lsa_ForestTrustInformation *ref_fti,
+				const struct lsa_ForestTrustInformation2 *ref_fti,
 				enum lsa_ForestTrustCollisionRecordType collision_type,
 				struct lsa_ForestTrustCollisionInfo *c_info,
-				struct lsa_ForestTrustInformation *new_fti)
+				struct lsa_ForestTrustInformation2 *new_fti)
 {
 	uint32_t n;
 
 	for (n = 0; n < new_fti->count; n++) {
-		struct lsa_ForestTrustRecord *nftr = new_fti->entries[n];
+		struct lsa_ForestTrustRecord2 *nftr = new_fti->entries[n];
 		struct lsa_StringLarge *ntln = NULL;
 		bool ntln_excluded = false;
 		uint32_t flags = 0;
@@ -1378,7 +1377,7 @@ NTSTATUS dsdb_trust_verify_forest_info(const struct lsa_TrustDomainInfoInfoEx *r
 
 		/* check if this is already taken and not excluded */
 		for (r = 0; r < ref_fti->count; r++) {
-			const struct lsa_ForestTrustRecord *rftr =
+			const struct lsa_ForestTrustRecord2 *rftr =
 				ref_fti->entries[r];
 			const struct lsa_StringLarge *rtln = NULL;
 			int cmp;
@@ -1454,7 +1453,7 @@ NTSTATUS dsdb_trust_verify_forest_info(const struct lsa_TrustDomainInfoInfoEx *r
 	}
 
 	for (n = 0; n < new_fti->count; n++) {
-		struct lsa_ForestTrustRecord *nftr = new_fti->entries[n];
+		struct lsa_ForestTrustRecord2 *nftr = new_fti->entries[n];
 		struct lsa_ForestTrustDomainInfo *ninfo = NULL;
 		struct lsa_StringLarge *ntln = NULL;
 		struct lsa_StringLarge *nnb = NULL;
@@ -1490,7 +1489,7 @@ NTSTATUS dsdb_trust_verify_forest_info(const struct lsa_TrustDomainInfoInfoEx *r
 
 		/* check if this is already taken and not excluded */
 		for (r = 0; r < ref_fti->count; r++) {
-			const struct lsa_ForestTrustRecord *rftr =
+			const struct lsa_ForestTrustRecord2 *rftr =
 				ref_fti->entries[r];
 			const struct lsa_ForestTrustDomainInfo *rinfo = NULL;
 			const struct lsa_StringLarge *rtln = NULL;
@@ -1624,19 +1623,19 @@ NTSTATUS dsdb_trust_verify_forest_info(const struct lsa_TrustDomainInfoInfoEx *r
 
 NTSTATUS dsdb_trust_merge_forest_info(TALLOC_CTX *mem_ctx,
 				const struct lsa_TrustDomainInfoInfoEx *tdo,
-				const struct lsa_ForestTrustInformation *ofti,
-				const struct lsa_ForestTrustInformation *nfti,
-				struct lsa_ForestTrustInformation **_mfti)
+				const struct lsa_ForestTrustInformation2 *ofti,
+				const struct lsa_ForestTrustInformation2 *nfti,
+				struct lsa_ForestTrustInformation2 **_mfti)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct lsa_ForestTrustInformation *mfti = NULL;
+	struct lsa_ForestTrustInformation2 *mfti = NULL;
 	uint32_t ni;
 	uint32_t oi;
 	NTSTATUS status;
 	int cmp;
 
 	*_mfti = NULL;
-	mfti = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation);
+	mfti = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation2);
 	if (mfti == NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
@@ -1651,8 +1650,8 @@ NTSTATUS dsdb_trust_merge_forest_info(TALLOC_CTX *mem_ctx,
 	 * may keep the flags and time values.
 	 */
 	for (ni = 0; ni < nfti->count; ni++) {
-		const struct lsa_ForestTrustRecord *nftr = nfti->entries[ni];
-		struct lsa_ForestTrustRecord tftr = {
+		const struct lsa_ForestTrustRecord2 *nftr = nfti->entries[ni];
+		struct lsa_ForestTrustRecord2 tftr = {
 			.flags = 0,
 		};
 		const char *ndns = NULL;
@@ -1685,7 +1684,7 @@ NTSTATUS dsdb_trust_merge_forest_info(TALLOC_CTX *mem_ctx,
 		}
 
 		for (mi = 0; mi < mfti->count; mi++) {
-			const struct lsa_ForestTrustRecord *mftr =
+			const struct lsa_ForestTrustRecord2 *mftr =
 				mfti->entries[mi];
 			const char *mdns = NULL;
 
@@ -1718,7 +1717,7 @@ NTSTATUS dsdb_trust_merge_forest_info(TALLOC_CTX *mem_ctx,
 		tftr = *nftr;
 
 		for (oi = 0; oi < ofti->count; oi++) {
-			const struct lsa_ForestTrustRecord *oftr =
+			const struct lsa_ForestTrustRecord2 *oftr =
 				ofti->entries[oi];
 			const char *odns = NULL;
 
@@ -1768,8 +1767,8 @@ NTSTATUS dsdb_trust_merge_forest_info(TALLOC_CTX *mem_ctx,
 	 * and may keep the flags and time values.
 	 */
 	for (ni = 0; ni < nfti->count; ni++) {
-		const struct lsa_ForestTrustRecord *nftr = nfti->entries[ni];
-		struct lsa_ForestTrustRecord tftr = {
+		const struct lsa_ForestTrustRecord2 *nftr = nfti->entries[ni];
+		struct lsa_ForestTrustRecord2 tftr = {
 			.flags = 0,
 		};
 		const struct lsa_ForestTrustDomainInfo *nd = NULL;
@@ -1805,7 +1804,7 @@ NTSTATUS dsdb_trust_merge_forest_info(TALLOC_CTX *mem_ctx,
 		}
 
 		for (mi = 0; mi < mfti->count; mi++) {
-			const struct lsa_ForestTrustRecord *mftr =
+			const struct lsa_ForestTrustRecord2 *mftr =
 				mfti->entries[mi];
 			const struct lsa_ForestTrustDomainInfo *md = NULL;
 
@@ -1836,7 +1835,7 @@ NTSTATUS dsdb_trust_merge_forest_info(TALLOC_CTX *mem_ctx,
 		tftr = *nftr;
 
 		for (oi = 0; oi < ofti->count; oi++) {
-			const struct lsa_ForestTrustRecord *oftr =
+			const struct lsa_ForestTrustRecord2 *oftr =
 				ofti->entries[oi];
 			const struct lsa_ForestTrustDomainInfo *od = NULL;
 			const char *onbt = NULL;
@@ -1888,7 +1887,7 @@ NTSTATUS dsdb_trust_merge_forest_info(TALLOC_CTX *mem_ctx,
 	 * if not already in the list.
 	 */
 	for (oi = 0; oi < ofti->count; oi++) {
-		const struct lsa_ForestTrustRecord *oftr =
+		const struct lsa_ForestTrustRecord2 *oftr =
 			ofti->entries[oi];
 		const struct lsa_ForestTrustDomainInfo *od = NULL;
 		const char *odns = NULL;
@@ -1936,7 +1935,7 @@ NTSTATUS dsdb_trust_merge_forest_info(TALLOC_CTX *mem_ctx,
 		}
 
 		for (mi = 0; mi < mfti->count; mi++) {
-			const struct lsa_ForestTrustRecord *mftr =
+			const struct lsa_ForestTrustRecord2 *mftr =
 				mfti->entries[mi];
 			const struct lsa_ForestTrustDomainInfo *md = NULL;
 
@@ -1973,7 +1972,7 @@ NTSTATUS dsdb_trust_merge_forest_info(TALLOC_CTX *mem_ctx,
 	 * if they still match a top level name.
 	 */
 	for (oi = 0; oi < ofti->count; oi++) {
-		const struct lsa_ForestTrustRecord *oftr =
+		const struct lsa_ForestTrustRecord2 *oftr =
 			ofti->entries[oi];
 		const char *odns = NULL;
 		bool ignore_old = false;
@@ -1999,7 +1998,7 @@ NTSTATUS dsdb_trust_merge_forest_info(TALLOC_CTX *mem_ctx,
 		}
 
 		for (mi = 0; mi < mfti->count; mi++) {
-			const struct lsa_ForestTrustRecord *mftr =
+			const struct lsa_ForestTrustRecord2 *mftr =
 				mfti->entries[mi];
 			const char *mdns = NULL;
 
@@ -2444,7 +2443,7 @@ struct dsdb_trust_routing_domain {
 
 	struct lsa_ForestTrustDomainInfo di;
 
-	struct lsa_ForestTrustInformation *fti;
+	struct lsa_ForestTrustInformation2 *fti;
 };
 
 NTSTATUS dsdb_trust_routing_table_load(struct ldb_context *sam_ctx,
@@ -2582,7 +2581,7 @@ NTSTATUS dsdb_trust_routing_table_load(struct ldb_context *sam_ctx,
 				continue;
 			}
 
-			status = trust_forest_info_to_lsa(d, fti, &d->fti);
+			status = trust_forest_info_to_lsa2(d, fti, &d->fti);
 			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(frame);
 				return status;
@@ -2743,7 +2742,7 @@ const struct lsa_TrustDomainInfoInfoEx *dsdb_trust_routing_by_name(
 		}
 
 		for (i = 0; i < d->fti->count; i++ ) {
-			const struct lsa_ForestTrustRecord *f = d->fti->entries[i];
+			const struct lsa_ForestTrustRecord2 *f = d->fti->entries[i];
 			const struct lsa_ForestTrustDomainInfo *di = NULL;
 			const char *fti_nbt = NULL;
 			int cmp;
@@ -2785,8 +2784,8 @@ const struct lsa_TrustDomainInfoInfoEx *dsdb_trust_routing_by_name(
 		}
 
 		for (i = 0; i < d->fti->count; i++ ) {
-			const struct lsa_ForestTrustRecord *f = d->fti->entries[i];
-			const union lsa_ForestTrustData *u = NULL;
+			const struct lsa_ForestTrustRecord2 *f = d->fti->entries[i];
+			const union lsa_ForestTrustData2 *u = NULL;
 			const char *fti_tln = NULL;
 			int cmp;
 
@@ -2888,7 +2887,7 @@ const struct lsa_TrustDomainInfoInfoEx *dsdb_trust_domain_by_sid(
 		}
 
 		for (i = 0; i < d->fti->count; i++ ) {
-			const struct lsa_ForestTrustRecord *f = d->fti->entries[i];
+			const struct lsa_ForestTrustRecord2 *f = d->fti->entries[i];
 			const struct lsa_ForestTrustDomainInfo *di = NULL;
 			const struct dom_sid *fti_sid = NULL;
 			bool match = false;
@@ -2998,7 +2997,7 @@ const struct lsa_TrustDomainInfoInfoEx *dsdb_trust_domain_by_name(
 		}
 
 		for (i = 0; i < d->fti->count; i++ ) {
-			const struct lsa_ForestTrustRecord *f = d->fti->entries[i];
+			const struct lsa_ForestTrustRecord2 *f = d->fti->entries[i];
 			const struct lsa_ForestTrustDomainInfo *di = NULL;
 			bool match = false;
 

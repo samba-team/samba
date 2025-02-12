@@ -60,9 +60,9 @@ NTSTATUS trust_forest_info_lsa_2to1(TALLOC_CTX *mem_ctx,
 				struct lsa_ForestTrustInformation **_lfti);
 
 bool trust_forest_info_tln_match(
-		const struct lsa_ForestTrustInformation *info,
+		const struct lsa_ForestTrustInformation2 *info,
 		const char *tln);
 bool trust_forest_info_tln_ex_match(
-		const struct lsa_ForestTrustInformation *info,
+		const struct lsa_ForestTrustInformation2 *info,
 		const char *tln);
 #endif /* _LIBCLI_AUTH_UTIL_LSARPC_H_ */

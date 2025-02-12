@@ -47,6 +47,7 @@
 #include "lib/socket/netif.h"
 #include "lib/util/util_str_escape.h"
 #include "lib/param/loadparm.h"
+#include "libcli/lsarpc/util_lsarpc.h"
 
 #define DCESRV_INTERFACE_NETLOGON_BIND(context, iface) \
        dcesrv_interface_netlogon_bind(context, iface)
@@ -4522,13 +4523,20 @@ static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state 
 	}
 
 	if (r->in.trusted_domain_name == NULL) {
+		struct lsa_ForestTrustInformation2 *lfti2 = NULL;
 		NTSTATUS status;
 
 		/*
 		 * information about our own domain
 		 */
-		status = dsdb_trust_xref_forest_info(mem_ctx, sam_ctx,
-						r->out.forest_trust_info);
+		status = dsdb_trust_xref_forest_info(mem_ctx, sam_ctx, &lfti2);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ntstatus_to_werror(status);
+		}
+
+		status = trust_forest_info_lsa_2to1(r->out.forest_trust_info,
+						    lfti2,
+						    r->out.forest_trust_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ntstatus_to_werror(status);
 		}
@@ -4614,6 +4622,7 @@ static NTSTATUS dcesrv_netr_GetForestTrustInformation(struct dcesrv_call_state *
 	struct ldb_context *sam_ctx = NULL;
 	struct ldb_dn *domain_dn = NULL;
 	struct ldb_dn *forest_dn = NULL;
+	struct lsa_ForestTrustInformation2 *lfti2 = NULL;
 	int cmp;
 	int forest_level;
 	NTSTATUS status;
@@ -4660,8 +4669,17 @@ static NTSTATUS dcesrv_netr_GetForestTrustInformation(struct dcesrv_call_state *
 		return NT_STATUS_INVALID_DOMAIN_STATE;
 	}
 
-	status = dsdb_trust_xref_forest_info(mem_ctx, sam_ctx,
-					     r->out.forest_trust_info);
+	/*
+	 * information about our own domain
+	 */
+	status = dsdb_trust_xref_forest_info(mem_ctx, sam_ctx, &lfti2);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = trust_forest_info_lsa_2to1(r->out.forest_trust_info,
+					    lfti2,
+					    r->out.forest_trust_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

@@ -39,6 +39,7 @@
 #include "rpc_client/util_netlogon.h"
 #include "libsmb/dsgetdcname.h"
 #include "lib/global_contexts.h"
+#include "libcli/lsarpc/util_lsarpc.h"
 
 NTSTATUS _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
 {
@@ -1519,17 +1520,37 @@ reconnect:
 	}
 
 	if (new_fti != NULL) {
-		struct lsa_ForestTrustInformation old_fti = {};
+		struct lsa_ForestTrustInformation2 old_fti = {};
+		struct lsa_ForestTrustInformation2 *new_fti2 = NULL;
+		struct lsa_ForestTrustInformation2 *merged_fti2 = NULL;
 		struct lsa_ForestTrustInformation *merged_fti = NULL;
 		struct lsa_ForestTrustCollisionInfo *collision_info = NULL;
 
-		status = dsdb_trust_merge_forest_info(frame, local_tdo,
-						      &old_fti, new_fti,
-						      &merged_fti);
+		status = trust_forest_info_lsa_1to2(frame,
+						    new_fti,
+						    &new_fti2);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return ntstatus_to_werror(status);
+		}
+
+		status = dsdb_trust_merge_forest_info(frame,
+						      local_tdo,
+						      &old_fti,
+						      new_fti2,
+						      &merged_fti2);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("%s:%s: dsdb_trust_merge_forest_info(%s) failed %s\n",
 				 __location__, __func__,
 				 domain->name, nt_errstr(status)));
+			TALLOC_FREE(frame);
+			return ntstatus_to_werror(status);
+		}
+
+		status = trust_forest_info_lsa_2to1(frame,
+						    merged_fti2,
+						    &merged_fti);
+		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(frame);
 			return ntstatus_to_werror(status);
 		}
@@ -1815,6 +1836,9 @@ WERROR _winbind_GetForestTrustInformation(struct pipes_struct *p,
 	struct lsa_ForestTrustInformation *old_fti = NULL;
 	struct lsa_ForestTrustInformation *new_fti = NULL;
 	struct lsa_ForestTrustInformation *merged_fti = NULL;
+	struct lsa_ForestTrustInformation2 *old_fti2 = NULL;
+	struct lsa_ForestTrustInformation2 *new_fti2 = NULL;
+	struct lsa_ForestTrustInformation2 *merged_fti2 = NULL;
 	struct lsa_ForestTrustCollisionInfo *collision_info = NULL;
 	bool update_fti = false;
 	struct rpc_pipe_client *local_lsa_pipe;
@@ -1975,11 +1999,37 @@ reconnect:
 		goto done;
 	}
 
-	status = dsdb_trust_merge_forest_info(frame, tdo, old_fti, new_fti,
-					      &merged_fti);
+	status = trust_forest_info_lsa_1to2(frame,
+					    old_fti,
+					    &old_fti2);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return ntstatus_to_werror(status);
+	}
+	status = trust_forest_info_lsa_1to2(frame,
+					    new_fti,
+					    &new_fti2);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return ntstatus_to_werror(status);
+	}
+
+	status = dsdb_trust_merge_forest_info(frame,
+					      tdo,
+					      old_fti2,
+					      new_fti2,
+					      &merged_fti2);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("%s:%s: dsdb_trust_merge_forest_info(%s) failed %s\n",
 			 __location__, __func__, domain->name, nt_errstr(status)));
+		TALLOC_FREE(frame);
+		return ntstatus_to_werror(status);
+	}
+
+	status = trust_forest_info_lsa_2to1(frame,
+					    merged_fti2,
+					    &merged_fti);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return ntstatus_to_werror(status);
 	}

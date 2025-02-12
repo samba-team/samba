@@ -4662,7 +4662,7 @@ static NTSTATUS dcesrv_lsa_SetFTI(
 		struct lsa_policy_state *p_state,
 		const char *trusted_domain_name,
 		enum lsa_ForestTrustRecordType highest_record_type,
-		const struct lsa_ForestTrustInformation *forest_trust_info,
+		const struct lsa_ForestTrustInformation2 *forest_trust_info,
 		uint8_t check_only,
 		struct lsa_ForestTrustCollisionInfo **_c_info)
 {
@@ -4678,13 +4678,13 @@ static NTSTATUS dcesrv_lsa_SetFTI(
 	};
 	struct ldb_message *trust_tdo_msg = NULL;
 	struct lsa_TrustDomainInfoInfoEx *trust_tdo = NULL;
-	struct lsa_ForestTrustInformation *step1_lfti = NULL;
-	struct lsa_ForestTrustInformation *step2_lfti = NULL;
+	struct lsa_ForestTrustInformation2 *step1_lfti = NULL;
+	struct lsa_ForestTrustInformation2 *step2_lfti = NULL;
 	struct ForestTrustInfo *trust_fti = NULL;
 	struct ldb_result *trusts_res = NULL;
 	unsigned int i;
 	struct lsa_TrustDomainInfoInfoEx *xref_tdo = NULL;
-	struct lsa_ForestTrustInformation *xref_lfti = NULL;
+	struct lsa_ForestTrustInformation2 *xref_lfti = NULL;
 	struct lsa_ForestTrustCollisionInfo *c_info = NULL;
 	DATA_BLOB ft_blob = {};
 	struct ldb_message *msg = NULL;
@@ -4811,7 +4811,7 @@ static NTSTATUS dcesrv_lsa_SetFTI(
 	for (i = 0; i < trusts_res->count; i++) {
 		struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
 		struct ForestTrustInfo *fti = NULL;
-		struct lsa_ForestTrustInformation *lfti = NULL;
+		struct lsa_ForestTrustInformation2 *lfti = NULL;
 
 		status = dsdb_trust_parse_tdo_info(mem_ctx,
 						   trusts_res->msgs[i],
@@ -4830,7 +4830,7 @@ static NTSTATUS dcesrv_lsa_SetFTI(
 			goto done;
 		}
 
-		status = trust_forest_info_to_lsa(tdo, fti, &lfti);
+		status = trust_forest_info_to_lsa2(tdo, fti, &lfti);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
@@ -4867,7 +4867,7 @@ static NTSTATUS dcesrv_lsa_SetFTI(
 		goto done;
 	}
 
-	status = trust_forest_info_from_lsa(mem_ctx, step2_lfti, &trust_fti);
+	status = trust_forest_info_from_lsa2(mem_ctx, step2_lfti, &trust_fti);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -4941,18 +4941,26 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 	struct dcesrv_handle *h = NULL;
 	struct lsa_policy_state *p_state = NULL;
 	struct lsa_ForestTrustCollisionInfo *c_info = NULL;
+	struct lsa_ForestTrustInformation2 *in_lfti2 = NULL;
 	NTSTATUS status;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
 
 	p_state = talloc_get_type_abort(h->data, struct lsa_policy_state);
 
+	status = trust_forest_info_lsa_1to2(mem_ctx,
+					    r->in.forest_trust_info,
+					    &in_lfti2);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	status = dcesrv_lsa_SetFTI(dce_call,
 				   mem_ctx,
 				   p_state,
 				   r->in.trusted_domain_name->string,
 				   r->in.highest_record_type,
-				   r->in.forest_trust_info,
+				   in_lfti2,
 				   r->in.check_only,
 				   &c_info);
 	if (!NT_STATUS_IS_OK(status)) {
