@@ -958,6 +958,19 @@ NTSTATUS dsdb_trust_normalize_forest_info_step1(TALLOC_CTX *mem_ctx,
 			nsid = ninfo->domain_sid;
 			break;
 
+		case LSA_FOREST_TRUST_BINARY_DATA:
+			continue;
+
+		case LSA_FOREST_TRUST_SCANNER_INFO:
+			if (nftr->flags & ~LSA_TLN_DISABLED_NEW) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			ninfo = &nftr->forest_trust_data.scanner_info;
+			ntln = &ninfo->dns_domain_name;
+			nnb = &ninfo->netbios_domain_name;
+			nsid = ninfo->domain_sid;
+			break;
+
 		default:
 			TALLOC_FREE(frame);
 			return NT_STATUS_INVALID_PARAMETER;
@@ -1032,6 +1045,13 @@ NTSTATUS dsdb_trust_normalize_forest_info_step1(TALLOC_CTX *mem_ctx,
 				csid = cinfo->domain_sid;
 				break;
 
+			case LSA_FOREST_TRUST_SCANNER_INFO:
+				cinfo = &cftr->forest_trust_data.scanner_info;
+				ctln = &cinfo->dns_domain_name;
+				cnb = &cinfo->netbios_domain_name;
+				csid = cinfo->domain_sid;
+				break;
+
 			default:
 				TALLOC_FREE(frame);
 				return NT_STATUS_INVALID_PARAMETER;
@@ -1053,6 +1073,13 @@ NTSTATUS dsdb_trust_normalize_forest_info_step1(TALLOC_CTX *mem_ctx,
 				nftr = NULL;
 				TALLOC_FREE(nfti->entries[n]);
 				break;
+			}
+
+			if (cftr->type == LSA_FOREST_TRUST_SCANNER_INFO) {
+				/*
+				 * ignore the sid
+				 */
+				continue;
 			}
 
 			cmp = dom_sid_compare(nsid, csid);
