@@ -984,7 +984,7 @@ static NTSTATUS libnetapi_lsa_lookup_names3(TALLOC_CTX *mem_ctx,
 	init_lsa_String(&names, name);
 
 	status = dcerpc_lsa_open_policy_fallback(
-		b,
+		lsa_pipe,
 		mem_ctx,
 		lsa_pipe->srv_name_slash,
 		false,

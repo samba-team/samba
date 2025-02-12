@@ -235,7 +235,7 @@ static NTSTATUS connect_and_get_info(TALLOC_CTX *mem_ctx,
 	}
 
 	status = dcerpc_lsa_open_policy_fallback(
-		(*pipe_hnd)->binding_handle,
+		(*pipe_hnd),
 		mem_ctx,
 		(*pipe_hnd)->srv_name_slash,
 		false,

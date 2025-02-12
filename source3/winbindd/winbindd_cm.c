@@ -2296,7 +2296,7 @@ no_dssetup:
 		return;
 	}
 
-	status = dcerpc_lsa_open_policy_fallback(cli->binding_handle,
+	status = dcerpc_lsa_open_policy_fallback(cli,
 						 mem_ctx,
 						 cli->srv_name_slash,
 						 true,

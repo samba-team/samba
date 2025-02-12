@@ -1037,7 +1037,7 @@ bld.SAMBA3_SUBSYSTEM('LIBCLI_SAMR',
 
 bld.SAMBA3_LIBRARY('libcli_lsa3',
                    source='rpc_client/cli_lsarpc.c',
-                   deps='RPC_NDR_LSA INIT_LSA',
+                   deps='RPC_NDR_LSA INIT_LSA msrpc3',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('libcli_netlogon3',

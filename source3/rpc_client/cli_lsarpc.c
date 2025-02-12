@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "rpc_client/rpc_client.h"
+#include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "rpc_client/init_lsa.h"
@@ -167,7 +168,7 @@ NTSTATUS dcerpc_lsa_open_policy3(struct dcerpc_binding_handle *h,
 				      result);
 }
 
-NTSTATUS dcerpc_lsa_open_policy_fallback(struct dcerpc_binding_handle *h,
+NTSTATUS dcerpc_lsa_open_policy_fallback(struct rpc_pipe_client *rpccli,
 					 TALLOC_CTX *mem_ctx,
 					 const char *srv_name_slash,
 					 bool sec_qos,
@@ -177,7 +178,9 @@ NTSTATUS dcerpc_lsa_open_policy_fallback(struct dcerpc_binding_handle *h,
 					 struct policy_handle *pol,
 					 NTSTATUS *result)
 {
+	struct dcerpc_binding_handle *h = rpccli->binding_handle;
 	NTSTATUS status;
+	bool policy2 = false;
 
 	status = dcerpc_lsa_open_policy3(h,
 					 mem_ctx,
@@ -189,6 +192,16 @@ NTSTATUS dcerpc_lsa_open_policy_fallback(struct dcerpc_binding_handle *h,
 					 pol,
 					 result);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
+		policy2 = true;
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		status = cli_rpc_pipe_reopen_np_noauth(rpccli);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		policy2 = true;
+	}
+
+	if (policy2) {
 		*out_version = 1;
 		*out_revision_info = (union lsa_revision_info) {
 			.info1 = {
