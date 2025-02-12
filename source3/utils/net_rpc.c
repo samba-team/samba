@@ -6653,7 +6653,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 
 	b = pipe_hnd->binding_handle;
 
-	nt_status = dcerpc_lsa_open_policy_fallback(b,
+	nt_status = dcerpc_lsa_open_policy_fallback(pipe_hnd,
 						    frame,
 						    pipe_hnd->srv_name_slash,
 						    true,
@@ -6938,7 +6938,7 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 
 	b = pipe_hnd->binding_handle;
 
-	nt_status = dcerpc_lsa_open_policy_fallback(b,
+	nt_status = dcerpc_lsa_open_policy_fallback(pipe_hnd,
 						    mem_ctx,
 						    pipe_hnd->srv_name_slash,
 						    false,
@@ -7131,7 +7131,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 
 	b = pipe_hnd->binding_handle;
 
-	nt_status = dcerpc_lsa_open_policy_fallback(b,
+	nt_status = dcerpc_lsa_open_policy_fallback(pipe_hnd,
 						    mem_ctx,
 						    pipe_hnd->srv_name_slash,
 						    true,

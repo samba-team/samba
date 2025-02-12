@@ -120,7 +120,7 @@ NTSTATUS dcerpc_lsa_open_policy3(struct dcerpc_binding_handle *h,
  * This first calls lsa_open_policy3 and falls back to lsa_open_policy2 in case
  * it isn't implemented.
  *
- * @param[in]  h        The dcerpc binding handle to use.
+ * @param[in]  rpccli   The rpc pipe client structure to use.
  *
  * @param[in]  mem_ctx  The memory context to use.
  *
@@ -139,7 +139,7 @@ NTSTATUS dcerpc_lsa_open_policy3(struct dcerpc_binding_handle *h,
  *
  * @return              A corresponding NTSTATUS error code for the connection.
  */
-NTSTATUS dcerpc_lsa_open_policy_fallback(struct dcerpc_binding_handle *h,
+NTSTATUS dcerpc_lsa_open_policy_fallback(struct rpc_pipe_client *rpccli,
 					 TALLOC_CTX *mem_ctx,
 					 const char *srv_name_slash,
 					 bool sec_qos,

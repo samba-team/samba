@@ -2232,7 +2232,7 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 		return;
 	}
 
-	status = dcerpc_lsa_open_policy_fallback(cli->binding_handle,
+	status = dcerpc_lsa_open_policy_fallback(cli,
 						 mem_ctx,
 						 cli->srv_name_slash,
 						 true,
