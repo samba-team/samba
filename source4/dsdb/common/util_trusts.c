@@ -1278,6 +1278,9 @@ NTSTATUS dsdb_trust_normalize_forest_info_step2(TALLOC_CTX *mem_ctx,
 	 * Now we add TOP_LEVEL_NAME[_EX] in reverse order
 	 * followed by LSA_FOREST_TRUST_DOMAIN_INFO in reverse order.
 	 *
+	 * LSA_FOREST_TRUST_SCANNER_INFO and LSA_FOREST_TRUST_BINARY_DATA
+	 * are added last.
+	 *
 	 * This also removes the possible NULL entries generated in step1.
 	 */
 
@@ -1297,6 +1300,8 @@ NTSTATUS dsdb_trust_normalize_forest_info_step2(TALLOC_CTX *mem_ctx,
 			break;
 
 		case LSA_FOREST_TRUST_DOMAIN_INFO:
+		case LSA_FOREST_TRUST_BINARY_DATA:
+		case LSA_FOREST_TRUST_SCANNER_INFO:
 			skip = true;
 			break;
 
@@ -1335,10 +1340,98 @@ NTSTATUS dsdb_trust_normalize_forest_info_step2(TALLOC_CTX *mem_ctx,
 		switch (gftr->type) {
 		case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
 		case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
+		case LSA_FOREST_TRUST_BINARY_DATA:
+		case LSA_FOREST_TRUST_SCANNER_INFO:
 			skip = true;
 			break;
 
 		case LSA_FOREST_TRUST_DOMAIN_INFO:
+			break;
+
+		default:
+			TALLOC_FREE(frame);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		if (skip) {
+			continue;
+		}
+
+		/* make a copy in order to update the time. */
+		tftr = *gftr;
+		if (tftr.time == 0) {
+			tftr.time = now;
+		}
+
+		status = dsdb_trust_forest_info_add_record(nfti, &tftr);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+	}
+
+	for (g = 0; g < gfti->count; g++) {
+		const struct lsa_ForestTrustRecord2 *gftr = gfti->entries[gfti->count - (g+1)];
+		struct lsa_ForestTrustRecord2 tftr;
+		bool skip = false;
+		NTSTATUS status;
+
+		if (gftr == NULL) {
+			continue;
+		}
+
+		switch (gftr->type) {
+		case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
+		case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
+		case LSA_FOREST_TRUST_DOMAIN_INFO:
+		case LSA_FOREST_TRUST_BINARY_DATA:
+			skip = true;
+			break;
+
+		case LSA_FOREST_TRUST_SCANNER_INFO:
+			break;
+
+		default:
+			TALLOC_FREE(frame);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		if (skip) {
+			continue;
+		}
+
+		/* make a copy in order to update the time. */
+		tftr = *gftr;
+		if (tftr.time == 0) {
+			tftr.time = now;
+		}
+
+		status = dsdb_trust_forest_info_add_record(nfti, &tftr);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+	}
+
+	for (g = 0; g < gfti->count; g++) {
+		const struct lsa_ForestTrustRecord2 *gftr = gfti->entries[gfti->count - (g+1)];
+		struct lsa_ForestTrustRecord2 tftr;
+		bool skip = false;
+		NTSTATUS status;
+
+		if (gftr == NULL) {
+			continue;
+		}
+
+		switch (gftr->type) {
+		case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
+		case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
+		case LSA_FOREST_TRUST_DOMAIN_INFO:
+		case LSA_FOREST_TRUST_SCANNER_INFO:
+			skip = true;
+			break;
+
+		case LSA_FOREST_TRUST_BINARY_DATA:
 			break;
 
 		default:
