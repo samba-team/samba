@@ -4656,15 +4656,16 @@ static NTSTATUS dcesrv_lsa_lsaRQueryForestTrustInformation(struct dcesrv_call_st
 	return NT_STATUS_OK;
 }
 
-/*
-  lsa_lsaRSetForestTrustInformation
-*/
-static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_state *dce_call,
-							 TALLOC_CTX *mem_ctx,
-							 struct lsa_lsaRSetForestTrustInformation *r)
+static NTSTATUS dcesrv_lsa_SetFTI(
+		struct dcesrv_call_state *dce_call,
+		TALLOC_CTX *mem_ctx,
+		struct lsa_policy_state *p_state,
+		const char *trusted_domain_name,
+		enum lsa_ForestTrustRecordType highest_record_type,
+		const struct lsa_ForestTrustInformation *forest_trust_info,
+		uint8_t check_only,
+		struct lsa_ForestTrustCollisionInfo **_c_info)
 {
-	struct dcesrv_handle *h;
-	struct lsa_policy_state *p_state;
 	const char * const trust_attrs[] = {
 		"securityIdentifier",
 		"flatName",
@@ -4692,15 +4693,11 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 	int ret;
 	bool in_transaction = false;
 
-	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
-
-	p_state = h->data;
-
 	if (strcmp(p_state->domain_dns, p_state->forest_dns)) {
 		return NT_STATUS_INVALID_DOMAIN_STATE;
 	}
 
-	if (r->in.check_only == 0) {
+	if (check_only == 0) {
 		ret = ldb_transaction_start(p_state->sam_ldb);
 		if (ret != LDB_SUCCESS) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -4718,14 +4715,14 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 		goto done;
 	}
 
-	if (r->in.trusted_domain_name->string == NULL) {
+	if (trusted_domain_name == NULL) {
 		status = NT_STATUS_NO_SUCH_DOMAIN;
 		goto done;
 	}
 
 	status = dsdb_trust_search_tdo(p_state->sam_ldb,
-				       r->in.trusted_domain_name->string,
-				       r->in.trusted_domain_name->string,
+				       trusted_domain_name,
+				       trusted_domain_name,
 				       trust_attrs, mem_ctx, &trust_tdo_msg);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		status = NT_STATUS_NO_SUCH_DOMAIN;
@@ -4745,7 +4742,7 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 		goto done;
 	}
 
-	if (r->in.highest_record_type >= LSA_FOREST_TRUST_RECORD_TYPE_LAST) {
+	if (highest_record_type >= LSA_FOREST_TRUST_RECORD_TYPE_LAST) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto done;
 	}
@@ -4758,13 +4755,13 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 	 * can generate collision entries with the callers index.
 	 */
 	status = dsdb_trust_normalize_forest_info_step1(mem_ctx,
-							r->in.forest_trust_info,
+							forest_trust_info,
 							&step1_lfti);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	c_info = talloc_zero(r->out.collision_info,
+	c_info = talloc_zero(mem_ctx,
 			     struct lsa_ForestTrustCollisionInfo);
 	if (c_info == NULL) {
 		status = NT_STATUS_NO_MEMORY;
@@ -4848,7 +4845,7 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 		TALLOC_FREE(tdo);
 	}
 
-	if (r->in.check_only != 0) {
+	if (check_only != 0) {
 		status = NT_STATUS_OK;
 		goto done;
 	}
@@ -4922,8 +4919,9 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 	status = NT_STATUS_OK;
 
 done:
+	*_c_info = NULL;
 	if (NT_STATUS_IS_OK(status) && c_info->count != 0) {
-		*r->out.collision_info = c_info;
+		*_c_info = c_info;
 	}
 
 	if (in_transaction) {
@@ -4931,6 +4929,39 @@ done:
 	}
 
 	return status;
+}
+
+/*
+  lsa_lsaRSetForestTrustInformation
+*/
+static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_state *dce_call,
+							 TALLOC_CTX *mem_ctx,
+							 struct lsa_lsaRSetForestTrustInformation *r)
+{
+	struct dcesrv_handle *h = NULL;
+	struct lsa_policy_state *p_state = NULL;
+	struct lsa_ForestTrustCollisionInfo *c_info = NULL;
+	NTSTATUS status;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+
+	p_state = talloc_get_type_abort(h->data, struct lsa_policy_state);
+
+	status = dcesrv_lsa_SetFTI(dce_call,
+				   mem_ctx,
+				   p_state,
+				   r->in.trusted_domain_name->string,
+				   r->in.highest_record_type,
+				   r->in.forest_trust_info,
+				   r->in.check_only,
+				   &c_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*r->out.collision_info = talloc_move(r->out.collision_info, &c_info);
+
+	return NT_STATUS_OK;
 }
 
 /*
