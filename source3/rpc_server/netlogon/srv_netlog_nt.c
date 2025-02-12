@@ -460,7 +460,7 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 		return status;
 	}
 
-	status = dcerpc_lsa_open_policy_fallback(
+	status = dcerpc_lsa_open_policy3(
 		h,
 		p->mem_ctx,
 		NULL,
