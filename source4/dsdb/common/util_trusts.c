@@ -48,7 +48,9 @@ static NTSTATUS dsdb_trust_forest_info_add_record(struct lsa_ForestTrustInformat
 	struct lsa_StringLarge *dns2 = NULL;
 	const struct lsa_ForestTrustDomainInfo *d1 = NULL;
 	struct lsa_ForestTrustDomainInfo *d2 = NULL;
+	DATA_BLOB blob = { .length = 0, };
 	size_t len = 0;
+	bool scanner = false;
 
 	es = talloc_realloc(fti, fti->entries,
 			    struct lsa_ForestTrustRecord2 *,
@@ -84,6 +86,27 @@ static NTSTATUS dsdb_trust_forest_info_add_record(struct lsa_ForestTrustInformat
 		d1 = &ftr->forest_trust_data.domain_info;
 		d2 = &e->forest_trust_data.domain_info;
 		break;
+
+	case LSA_FOREST_TRUST_BINARY_DATA:
+		blob = data_blob_talloc_named(e,
+					      ftr->forest_trust_data.data.data,
+					      ftr->forest_trust_data.data.length,
+					      "BINARY_DATA");
+		if (blob.length != ftr->forest_trust_data.data.length) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		e->forest_trust_data.data.data = blob.data;
+		e->forest_trust_data.data.length = blob.length;
+		goto done;
+
+	case LSA_FOREST_TRUST_SCANNER_INFO:
+		dns1 = &ftr->forest_trust_data.scanner_info.dns_domain_name;
+		dns2 = &e->forest_trust_data.scanner_info.dns_domain_name;
+		d1 = &ftr->forest_trust_data.scanner_info;
+		d2 = &e->forest_trust_data.scanner_info;
+		scanner = true;
+		break;
+
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -131,17 +154,25 @@ static NTSTATUS dsdb_trust_forest_info_add_record(struct lsa_ForestTrustInformat
 		}
 
 		if (d1->domain_sid == NULL) {
-			TALLOC_FREE(e);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
+			/*
+			 * scanner records typically don't have
+			 * a sid, but it's just ignored if present.
+			 */
+			if (!scanner) {
+				TALLOC_FREE(e);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
 
-		d2->domain_sid = dom_sid_dup(e, d1->domain_sid);
-		if (d2->domain_sid == NULL) {
-			TALLOC_FREE(e);
-			return NT_STATUS_NO_MEMORY;
+		} else {
+			d2->domain_sid = dom_sid_dup(e, d1->domain_sid);
+			if (d2->domain_sid == NULL) {
+				TALLOC_FREE(e);
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 	}
 
+done:
 	fti->entries[fti->count++] = e;
 	return NT_STATUS_OK;
 }
