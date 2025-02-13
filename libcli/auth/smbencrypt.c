@@ -647,6 +647,96 @@ bool SMBNTLMv2encrypt(TALLOC_CTX *mem_ctx,
 				     lm_response, nt_response, lm_session_key, user_session_key);
 }
 
+static NTSTATUS NTLMv2_RESPONSE_verify_workstation(const char *account_name,
+			const char *account_domain,
+			const struct NTLMv2_RESPONSE *v2_resp,
+			const struct netlogon_creds_CredentialState *creds,
+			const char *workgroup)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	const struct AV_PAIR *av_nb_cn = NULL;
+	const struct AV_PAIR *av_nb_dn = NULL;
+	int cmp;
+
+	/*
+	 * Make sure the netbios computer name in the
+	 * NTLMv2_RESPONSE matches the computer name
+	 * in the secure channel credentials for workstation
+	 * trusts.
+	 *
+	 * And the netbios domain name matches our
+	 * workgroup.
+	 *
+	 * This prevents workstations from requesting
+	 * the session key of NTLMSSP sessions of clients
+	 * to other hosts.
+	 */
+	av_nb_cn = ndr_ntlmssp_find_av(&v2_resp->Challenge.AvPairs,
+				       MsvAvNbComputerName);
+	av_nb_dn = ndr_ntlmssp_find_av(&v2_resp->Challenge.AvPairs,
+				       MsvAvNbDomainName);
+
+	if (av_nb_cn != NULL) {
+		const char *v = NULL;
+		char *a = NULL;
+		size_t len;
+
+		v = av_nb_cn->Value.AvNbComputerName;
+
+		a = talloc_strdup(frame, creds->account_name);
+		if (a == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+		len = strlen(a);
+		if (len > 0 && a[len - 1] == '$') {
+			a[len - 1] = '\0';
+		}
+
+		cmp = strcasecmp_m(a, v);
+		if (cmp != 0) {
+			DEBUG(2,("%s: NTLMv2_RESPONSE with "
+				 "NbComputerName[%s] rejected "
+				 "for user[%s\\%s] "
+				 "against SEC_CHAN_WKSTA[%s/%s] "
+				 "in workgroup[%s]\n",
+				 __func__, v,
+				 account_domain,
+				 account_name,
+				 creds->computer_name,
+				 creds->account_name,
+				 workgroup));
+			TALLOC_FREE(frame);
+			return NT_STATUS_LOGON_FAILURE;
+		}
+	}
+	if (av_nb_dn != NULL) {
+		const char *v = NULL;
+
+		v = av_nb_dn->Value.AvNbDomainName;
+
+		cmp = strcasecmp_m(workgroup, v);
+		if (cmp != 0) {
+			DEBUG(2,("%s: NTLMv2_RESPONSE with "
+				 "NbDomainName[%s] rejected "
+				 "for user[%s\\%s] "
+				 "against SEC_CHAN_WKSTA[%s/%s] "
+				 "in workgroup[%s]\n",
+				 __func__, v,
+				 account_domain,
+				 account_name,
+				 creds->computer_name,
+				 creds->account_name,
+				 workgroup));
+			TALLOC_FREE(frame);
+			return NT_STATUS_LOGON_FAILURE;
+		}
+	}
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS NTLMv2_RESPONSE_verify_netlogon_creds(const char *account_name,
 			const char *account_domain,
 			const DATA_BLOB response,
@@ -659,8 +749,7 @@ NTSTATUS NTLMv2_RESPONSE_verify_netlogon_creds(const char *account_name,
 	int cmp;
 	struct NTLMv2_RESPONSE v2_resp;
 	enum ndr_err_code err;
-	const struct AV_PAIR *av_nb_cn = NULL;
-	const struct AV_PAIR *av_nb_dn = NULL;
+	NTSTATUS status;
 
 	if (response.length < 48) {
 		/*
@@ -745,7 +834,6 @@ NTSTATUS NTLMv2_RESPONSE_verify_netlogon_creds(const char *account_name,
 	err = ndr_pull_struct_blob(&response, frame, &v2_resp,
 		(ndr_pull_flags_fn_t)ndr_pull_NTLMv2_RESPONSE);
 	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
-		NTSTATUS status;
 		status = ndr_map_error2ntstatus(err);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_BUFFER_TOO_SMALL)) {
 			/*
@@ -777,81 +865,45 @@ NTSTATUS NTLMv2_RESPONSE_verify_netlogon_creds(const char *account_name,
 		NDR_PRINT_DEBUG(NTLMv2_RESPONSE, &v2_resp);
 	}
 
-	/*
-	 * Make sure the netbios computer name in the
-	 * NTLMv2_RESPONSE matches the computer name
-	 * in the secure channel credentials for workstation
-	 * trusts.
-	 *
-	 * And the netbios domain name matches our
-	 * workgroup.
-	 *
-	 * This prevents workstations from requesting
-	 * the session key of NTLMSSP sessions of clients
-	 * to other hosts.
-	 */
-	if (creds->secure_channel_type == SEC_CHAN_WKSTA) {
-		av_nb_cn = ndr_ntlmssp_find_av(&v2_resp.Challenge.AvPairs,
-					       MsvAvNbComputerName);
-		av_nb_dn = ndr_ntlmssp_find_av(&v2_resp.Challenge.AvPairs,
-					       MsvAvNbDomainName);
-	}
+	switch (creds->secure_channel_type) {
+	case SEC_CHAN_NULL:
+	case SEC_CHAN_LOCAL:
+	case SEC_CHAN_LANMAN:
+		TALLOC_FREE(frame);
+		return NT_STATUS_NOT_SUPPORTED;
 
-	if (av_nb_cn != NULL) {
-		const char *v = NULL;
-		char *a = NULL;
-		size_t len;
-
-		v = av_nb_cn->Value.AvNbComputerName;
-
-		a = talloc_strdup(frame, creds->account_name);
-		if (a == NULL) {
+	case SEC_CHAN_WKSTA:
+		status = NTLMv2_RESPONSE_verify_workstation(account_name,
+							    account_domain,
+							    &v2_resp,
+							    creds,
+							    workgroup);
+		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(frame);
-			return NT_STATUS_NO_MEMORY;
-		}
-		len = strlen(a);
-		if (len > 0 && a[len - 1] == '$') {
-			a[len - 1] = '\0';
+			return status;
 		}
 
-		cmp = strcasecmp_m(a, v);
-		if (cmp != 0) {
-			DEBUG(2,("%s: NTLMv2_RESPONSE with "
-				 "NbComputerName[%s] rejected "
-				 "for user[%s\\%s] "
-				 "against SEC_CHAN_WKSTA[%s/%s] "
-				 "in workgroup[%s]\n",
-				 __func__, v,
-				 account_domain,
-				 account_name,
-				 creds->computer_name,
-				 creds->account_name,
-				 workgroup));
-			TALLOC_FREE(frame);
-			return NT_STATUS_LOGON_FAILURE;
-		}
-	}
-	if (av_nb_dn != NULL) {
-		const char *v = NULL;
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
 
-		v = av_nb_dn->Value.AvNbDomainName;
+	case SEC_CHAN_DNS_DOMAIN:
+	case SEC_CHAN_DOMAIN:
+		/*
+		 * TODO:
+		 * MS-NRPC 3.5.4.5.1.1 Pass-through domain name validation
+		 */
+		break;
 
-		cmp = strcasecmp_m(workgroup, v);
-		if (cmp != 0) {
-			DEBUG(2,("%s: NTLMv2_RESPONSE with "
-				 "NbDomainName[%s] rejected "
-				 "for user[%s\\%s] "
-				 "against SEC_CHAN_WKSTA[%s/%s] "
-				 "in workgroup[%s]\n",
-				 __func__, v,
-				 account_domain,
-				 account_name,
-				 creds->computer_name,
-				 creds->account_name,
-				 workgroup));
-			TALLOC_FREE(frame);
-			return NT_STATUS_LOGON_FAILURE;
-		}
+	case SEC_CHAN_BDC:
+		/* nothing to check */
+		break;
+
+	case SEC_CHAN_RODC:
+		/*
+		 * TODO:
+		 * MS-NRPC 3.5.4.5.1.2 RODC server cachability validation
+		 */
+		break;
 	}
 
 	TALLOC_FREE(frame);
