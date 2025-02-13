@@ -222,6 +222,7 @@ class DomainTrustCommand(Command):
             b''.decode('utf-8'),
             in_version,
             in_revision_info1,
+            False,
             policy_access
         )
 

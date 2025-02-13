@@ -35,8 +35,8 @@ def OpenPolicyFallback(
     system_name: str,
     in_version: int,
     in_revision_info: lsa.revision_info1,
-    sec_qos: bool = False,
-    access_mask: int = 0,
+    sec_qos: bool,
+    access_mask: int,
 ):
     attr = lsa.ObjectAttribute()
     if sec_qos:
