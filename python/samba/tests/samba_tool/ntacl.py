@@ -142,6 +142,67 @@ class NtACLCmdGetSetTestCase(SambaToolCmdTest):
                           "No such file or directory expected")
             self.assertEqual(out, "", "Shouldn't be any output messages")
 
+    def test_set_with_relative_path(self):
+        path = os.environ['SELFTEST_PREFIX']
+        tempf_basename = f"{self.unique_name()}-{secrets.token_hex(10)}"
+        tempf = os.path.join(path, tempf_basename)
+        workdir = os.getcwd()
+
+        open(tempf, 'w').write("empty")
+
+        os.chdir(path)
+
+        for fs_arg in ["--use-s3fs", "--use-ntvfs"]:
+            (result, out, err) = self.runsubcmd("ntacl",
+                                                "set",
+                                                self.acl,
+                                                tempf_basename,
+                                                fs_arg)
+
+            self.assertCmdSuccess(result, out, err)
+            if fs_arg == "--use-s3fs":
+                self.assertEqual(err, "", "Shouldn't be any error messages")
+            elif fs_arg == "--use-ntvfs":
+                self.assertIn("only the stored NT ACL",
+                              err,
+                              "only the stored NT ACL warning expected")
+            self.assertEqual(out, "", "Shouldn't be any output messages")
+
+        os.chdir(workdir)
+
+    def test_set_with_relative_parent_path(self):
+        path = os.environ['SELFTEST_PREFIX']
+        tempf_basename = f"{self.unique_name()}-{secrets.token_hex(10)}"
+        tempf = os.path.join(path, tempf_basename)
+        subdir_basename = f"{self.unique_name()}-subdir-{secrets.token_hex(10)}"
+        subdir_path = os.path.join(path, subdir_basename)
+        workdir = os.getcwd()
+
+        os.mkdir(subdir_path)
+        open(tempf, 'w').write("empty")
+
+        tempf_relative_path = os.path.join("../", tempf_basename)
+
+        os.chdir(subdir_path)
+
+        for fs_arg in ["--use-s3fs", "--use-ntvfs"]:
+            (result, out, err) = self.runsubcmd("ntacl",
+                                                "set",
+                                                self.acl,
+                                                tempf_relative_path,
+                                                fs_arg)
+
+            self.assertCmdSuccess(result, out, err)
+            if fs_arg == "--use-s3fs":
+                self.assertEqual(err, "", "Shouldn't be any error messages")
+            elif fs_arg == "--use-ntvfs":
+                self.assertIn("only the stored NT ACL",
+                              err,
+                              "only the stored NT ACL warning expected")
+            self.assertEqual(out, "", "Shouldn't be any output messages")
+
+        os.chdir(workdir)
+
     def test_ntvfs_check(self):
         path = os.environ['SELFTEST_PREFIX']
         tempf = os.path.join(path, "pytests" + str(int(100000 * random.random())))
