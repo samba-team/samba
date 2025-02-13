@@ -1106,6 +1106,34 @@ NTSTATUS trust_forest_info_lsa_2to1(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS trust_forest_info_lsa_2to2(TALLOC_CTX *mem_ctx,
+				const struct lsa_ForestTrustInformation2 *in,
+				struct lsa_ForestTrustInformation2 **_out)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct ForestTrustInfo *fti = NULL;
+	struct lsa_ForestTrustInformation2 *out = NULL;
+	NTSTATUS status;
+
+	status = trust_forest_info_from_lsa2(frame, in, &fti);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	status = trust_forest_info_to_lsa2(mem_ctx,
+					   fti,
+					   &out);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	*_out = out;
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
 static int trust_forest_info_tln_match_internal(
 		const struct lsa_ForestTrustInformation2 *info,
 		enum lsa_ForestTrustRecordType type,

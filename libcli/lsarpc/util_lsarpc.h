@@ -58,6 +58,9 @@ NTSTATUS trust_forest_info_lsa_1to2(TALLOC_CTX *mem_ctx,
 NTSTATUS trust_forest_info_lsa_2to1(TALLOC_CTX *mem_ctx,
 				const struct lsa_ForestTrustInformation2 *lfti2,
 				struct lsa_ForestTrustInformation **_lfti);
+NTSTATUS trust_forest_info_lsa_2to2(TALLOC_CTX *mem_ctx,
+				const struct lsa_ForestTrustInformation2 *in,
+				struct lsa_ForestTrustInformation2 **_out);
 
 bool trust_forest_info_tln_match(
 		const struct lsa_ForestTrustInformation2 *info,
