@@ -454,7 +454,8 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                 b''.decode('utf-8'),
                 in_version,
                 in_revision_info1,
-                access_mask=policy_access
+                False,
+                policy_access
             )
 
             info = conn.QueryInfoPolicy2(policy, lsa.LSA_POLICY_INFO_DNS)

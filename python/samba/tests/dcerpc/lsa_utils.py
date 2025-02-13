@@ -79,7 +79,8 @@ class CreateTrustedDomain(TestCase):
             '',
             in_version,
             in_revision_info1,
-            access_mask=security.SEC_FLAG_MAXIMUM_ALLOWED
+            False,
+            security.SEC_FLAG_MAXIMUM_ALLOWED
         )
         self.assertIsNotNone(pol_handle)
 
@@ -168,7 +169,8 @@ class CreateTrustedDomain(TestCase):
             '',
             in_version,
             in_revision_info1,
-            access_mask=security.SEC_FLAG_MAXIMUM_ALLOWED
+            False,
+            security.SEC_FLAG_MAXIMUM_ALLOWED
         )
         self.assertIsNotNone(pol_handle)
 
