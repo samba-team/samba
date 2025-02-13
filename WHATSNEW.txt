@@ -77,6 +77,14 @@ smb.conf changes
   fruit:posix_rename                      Removed
   cldap port                              Removed
 
+
+CHANGES SINCE 4.21.0rc1
+=======================
+
+o  Björn Baumbach <bb@sernet.de>
+   * BUG 15798: libnet4: seg fault after dc lookup failure
+
+
 KNOWN ISSUES
 ============
 
