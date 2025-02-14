@@ -1638,6 +1638,30 @@ static NTSTATUS _netr_LogonSamLogon_check(const struct netr_LogonSamLogonEx *r)
  _netr_LogonSamLogon_base
  *************************************************************************/
 
+static NTSTATUS _netr_NTLMv2_RESPONSE_verify(
+			struct dcesrv_call_state *dce_call,
+			const struct auth_usersupplied_info *user_info,
+			const struct netlogon_creds_CredentialState *creds)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	const char *workgroup = lp_workgroup();
+	NTSTATUS status;
+
+	status = NTLMv2_RESPONSE_verify_netlogon_creds(
+					user_info->client.account_name,
+					user_info->client.domain_name,
+					user_info->password.response.nt,
+					creds,
+					workgroup);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 					 struct netr_LogonSamLogonEx *r,
 					 struct netlogon_creds_CredentialState *creds)
@@ -1788,7 +1812,6 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	case NetlogonNetworkTransitiveInformation:
 	{
 		const char *wksname = nt_workstation;
-		const char *workgroup = lp_workgroup();
 		bool ok;
 
 		ok = auth3_context_set_challenge(
@@ -1819,11 +1842,9 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 		}
 
 		if (NT_STATUS_IS_OK(status)) {
-			status = NTLMv2_RESPONSE_verify_netlogon_creds(
-						user_info->client.account_name,
-						user_info->client.domain_name,
-						user_info->password.response.nt,
-						creds, workgroup);
+			status = _netr_NTLMv2_RESPONSE_verify(dce_call,
+							      user_info,
+							      creds);
 		}
 		break;
 	}
