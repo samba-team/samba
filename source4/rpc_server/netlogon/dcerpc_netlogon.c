@@ -54,6 +54,11 @@
 
 #undef strcasecmp
 
+static bool sam_rodc_access_check(struct ldb_context *sam_ctx,
+				  TALLOC_CTX *mem_ctx,
+				  const struct dom_sid *user_sid,
+				  struct ldb_dn *obj_dn);
+
 /*
  * This #define allows the netlogon interface to accept invalid
  * association groups, because association groups are to coordinate
@@ -1426,6 +1431,7 @@ static NTSTATUS dcesrv_netr_NTLMv2_RESPONSE_verify(
 	NTSTATUS status;
 	size_t num_trusts = 0;
 	struct trust_forest_domain_info *trusts = NULL;
+	char *computer_name = NULL;
 
 	if (creds->secure_channel_type == SEC_CHAN_DNS_DOMAIN ||
 	    creds->secure_channel_type == SEC_CHAN_DOMAIN)
@@ -1556,11 +1562,102 @@ static NTSTATUS dcesrv_netr_NTLMv2_RESPONSE_verify(
 					workgroup,
 					num_trusts,
 					trusts,
-					NULL,  /* mem_ctx */
-					NULL); /* _computer_name */
+					frame,
+					&computer_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
+	}
+
+	/*
+	 * MS-NRPC 3.5.4.5.1.2 RODC server cachability validation
+	 */
+	if (creds->secure_channel_type == SEC_CHAN_RODC &&
+	    computer_name != NULL)
+	{
+		static const char * const no_attrs[] = {
+			NULL
+		};
+		struct ldb_context *sam_ctx = NULL;
+		struct ldb_dn *domain_dn = NULL;
+		struct ldb_result *res = NULL;
+		const char *computer_str = NULL;
+		int ret;
+		bool ok;
+
+		sam_ctx = dcesrv_samdb_connect_as_system(frame,
+							 dce_call);
+		if (sam_ctx == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_DS_UNAVAILABLE;
+		}
+
+		domain_dn = ldb_get_default_basedn(sam_ctx);
+		if (domain_dn == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_DS_UNAVAILABLE;
+		}
+
+		computer_str = ldb_binary_encode_string(frame,
+							computer_name);
+		if (computer_str == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		ret = dsdb_search(sam_ctx,
+				  frame,
+				  &res,
+				  domain_dn,
+				  LDB_SCOPE_SUBTREE,
+				  no_attrs,
+				  DSDB_SEARCH_ONE_ONLY |
+				  DSDB_SEARCH_SHOW_EXTENDED_DN,
+				  "(&(sAMAccountName=%s$)(objectclass=computer))",
+				  computer_str);
+		if (ret != LDB_SUCCESS) {
+			const char *account_name =
+				user_info->client.account_name;
+			const char *account_domain =
+				user_info->client.domain_name;
+
+			DEBUG(2,("%s: NTLMv2_RESPONSE with "
+				 "NbComputerName[%s] rejected "
+				 "for user[%s\\%s] "
+				 "against SEC_CHAN_RODC[%s/%s] "
+				 "computer account not found\n",
+				 __func__, computer_str,
+				 account_domain,
+				 account_name,
+				 creds->computer_name,
+				 creds->account_name));
+			TALLOC_FREE(frame);
+			return NT_STATUS_LOGON_FAILURE;
+		}
+
+		ok = sam_rodc_access_check(sam_ctx,
+					   frame,
+					   &creds->client_sid,
+					   res->msgs[0]->dn);
+		if (!ok) {
+			const char *account_name =
+				user_info->client.account_name;
+			const char *account_domain =
+				user_info->client.domain_name;
+
+			DEBUG(2,("%s: NTLMv2_RESPONSE with "
+				 "NbComputerName[%s] rejected "
+				 "for user[%s\\%s] "
+				 "against SEC_CHAN_RODC[%s/%s] "
+				 "not allowed to cache computer on RODC\n",
+				 __func__, computer_str,
+				 account_domain,
+				 account_name,
+				 creds->computer_name,
+				 creds->account_name));
+			TALLOC_FREE(frame);
+			return NT_STATUS_LOGON_FAILURE;
+		}
 	}
 
 	TALLOC_FREE(frame);
