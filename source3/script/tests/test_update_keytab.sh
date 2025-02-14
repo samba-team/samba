@@ -40,48 +40,18 @@ keytab0="\
  -2  aes256-cts-hmac-sha1-96                     ADMEMIDMAPNSS\$@ADDOM.SAMBA.EXAMPLE.COM
  -3  aes128-cts-hmac-sha1-96                     ADMEMIDMAPNSS\$@ADDOM.SAMBA.EXAMPLE.COM
  -3  aes256-cts-hmac-sha1-96                     ADMEMIDMAPNSS\$@ADDOM.SAMBA.EXAMPLE.COM
- -1  arcfour-hmac-md5                            host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
- -2  arcfour-hmac-md5                            host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
- -3  arcfour-hmac-md5                            host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
- -1  aes128-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
- -1  aes256-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
- -2  aes128-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
- -2  aes256-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
- -3  aes128-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
- -3  aes256-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
- -1  arcfour-hmac-md5                            host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
- -2  arcfour-hmac-md5                            host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
- -3  arcfour-hmac-md5                            host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
- -1  aes128-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
- -1  aes256-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
- -2  aes128-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
- -2  aes256-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
- -3  aes128-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
- -3  aes256-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
 ";
 
 keytab0k="\
   4  aes256-cts-hmac-sha1-96                     ADMEMIDMAPNSS\$@ADDOM.SAMBA.EXAMPLE.COM
   5  aes256-cts-hmac-sha1-96                     ADMEMIDMAPNSS\$@ADDOM.SAMBA.EXAMPLE.COM
   6  aes256-cts-hmac-sha1-96                     ADMEMIDMAPNSS\$@ADDOM.SAMBA.EXAMPLE.COM
-  4  aes256-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
-  5  aes256-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
-  6  aes256-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
-  4  aes256-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
-  5  aes256-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
-  6  aes256-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
 ";
 
 keytab1="\
- -1  aes256-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
- -2  aes256-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
- -3  aes256-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
  -1  aes256-cts-hmac-sha1-96                     HOST/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
  -2  aes256-cts-hmac-sha1-96                     HOST/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
  -3  aes256-cts-hmac-sha1-96                     HOST/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
- -1  aes256-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
- -2  aes256-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
- -3  aes256-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
  -1  aes256-cts-hmac-sha1-96                     HOST/ADMEMIDMAPNSS.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
  -2  aes256-cts-hmac-sha1-96                     HOST/ADMEMIDMAPNSS.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
  -3  aes256-cts-hmac-sha1-96                     HOST/ADMEMIDMAPNSS.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
@@ -118,15 +88,9 @@ keytab1="\
 ";
 
 keytab1k="\
-  4  aes256-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
-  5  aes256-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
-  6  aes256-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
   4  aes256-cts-hmac-sha1-96                     HOST/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
   5  aes256-cts-hmac-sha1-96                     HOST/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
   6  aes256-cts-hmac-sha1-96                     HOST/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
-  4  aes256-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
-  5  aes256-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
-  6  aes256-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
   4  aes256-cts-hmac-sha1-96                     HOST/ADMEMIDMAPNSS.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
   5  aes256-cts-hmac-sha1-96                     HOST/ADMEMIDMAPNSS.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
   6  aes256-cts-hmac-sha1-96                     HOST/ADMEMIDMAPNSS.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
@@ -295,24 +259,12 @@ keytab2k="\
 ";
 
 keytab3="\
- -1  aes256-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
- -2  aes256-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
- -3  aes256-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
- -1  aes256-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
- -2  aes256-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
- -3  aes256-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
  -1  aes256-cts-hmac-sha1-96                     wurst/brot@ADDOM.SAMBA.EXAMPLE.COM
  -2  aes256-cts-hmac-sha1-96                     wurst/brot@ADDOM.SAMBA.EXAMPLE.COM
  -3  aes256-cts-hmac-sha1-96                     wurst/brot@ADDOM.SAMBA.EXAMPLE.COM
 ";
 
 keytab3k="\
-  4  aes256-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
-  5  aes256-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
-  6  aes256-cts-hmac-sha1-96                     host/ADMEMIDMAPNSS@ADDOM.SAMBA.EXAMPLE.COM
-  4  aes256-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
-  5  aes256-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
-  6  aes256-cts-hmac-sha1-96                     host/admemidmapnss.addom.samba.example.com@ADDOM.SAMBA.EXAMPLE.COM
   4  aes256-cts-hmac-sha1-96                     wurst1/brot@ADDOM.SAMBA.EXAMPLE.COM
   5  aes256-cts-hmac-sha1-96                     wurst1/brot@ADDOM.SAMBA.EXAMPLE.COM
   6  aes256-cts-hmac-sha1-96                     wurst1/brot@ADDOM.SAMBA.EXAMPLE.COM
