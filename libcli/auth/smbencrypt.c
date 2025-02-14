@@ -737,6 +737,412 @@ static NTSTATUS NTLMv2_RESPONSE_verify_workstation(const char *account_name,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS NTLMv2_RESPONSE_verify_trust(const char *account_name,
+			const char *account_domain,
+			const struct NTLMv2_RESPONSE *v2_resp,
+			const struct netlogon_creds_CredentialState *creds,
+			size_t num_domains,
+			const struct trust_forest_domain_info *domains)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	const struct trust_forest_domain_info *ld = NULL;
+	const struct trust_forest_domain_info *rd = NULL;
+	const struct AV_PAIR *av_nbt = NULL;
+	const char *nbt = NULL;
+	const struct AV_PAIR *av_dns = NULL;
+	const char *dns = NULL;
+	size_t di;
+	size_t fi;
+	bool match;
+	const struct lsa_ForestTrustDomainInfo *nbt_match_rd = NULL;
+	size_t nbt_matches = 0;
+	const struct lsa_ForestTrustDomainInfo *dns_match_rd = NULL;
+	size_t dns_matches = 0;
+	const char *schan_name = NULL;
+
+	switch (creds->secure_channel_type) {
+	case SEC_CHAN_DNS_DOMAIN:
+		schan_name = "SEC_CHAN_DNS_DOMAIN";
+		break;
+	case SEC_CHAN_DOMAIN:
+		schan_name = "SEC_CHAN_DOMAIN";
+		break;
+
+	default:
+		smb_panic(__location__);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	/*
+	 * MS-NRPC 3.5.4.5.1.1 Pass-through domain name validation
+	 */
+
+	av_nbt = ndr_ntlmssp_find_av(&v2_resp->Challenge.AvPairs,
+				     MsvAvNbDomainName);
+	if (av_nbt != NULL) {
+		nbt = av_nbt->Value.AvNbDomainName;
+	}
+
+	if (nbt == NULL) {
+		/*
+		 * Nothing to check
+		 */
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	av_dns = ndr_ntlmssp_find_av(&v2_resp->Challenge.AvPairs,
+				     MsvAvDnsDomainName);
+	if (av_dns != NULL) {
+		dns = av_dns->Value.AvDnsDomainName;
+	}
+
+	for (di = 0; di < num_domains; di++) {
+		const struct trust_forest_domain_info *d =
+				&domains[di];
+
+		if (d->is_local_forest) {
+			SMB_ASSERT(!d->is_checked_trust);
+			SMB_ASSERT(ld == NULL);
+			ld = d;
+			continue;
+		}
+
+		if (d->is_checked_trust) {
+			SMB_ASSERT(rd == NULL);
+			rd = d;
+			continue;
+		}
+	}
+
+	SMB_ASSERT(ld != NULL);
+	SMB_ASSERT(rd != NULL);
+
+	/*
+	 * All logic below doesn't handle WITHIN_FOREST trusts,
+	 * but we don't supported them overall yet...
+	 *
+	 * Give an early error, so that the one
+	 * implementing WITHIN_FOREST support will
+	 * hit it easily...
+	 */
+	if (rd->tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_WITHIN_FOREST) {
+		DBG_ERR("remote tdo[%s/%s] WITHIN_FOREST not supported yet\n",
+			rd->tdo->netbios_name.string,
+			rd->tdo->domain_name.string);
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	/*
+	 * Check the names doesn't match
+	 * anything in our local domain/forest
+	 */
+
+	match = strequal(nbt, ld->tdo->netbios_name.string);
+	if (match) {
+		DEBUG(2,("%s: NTLMv2_RESPONSE with "
+			 "NbDomainName[%s] rejected "
+			 "for user[%s\\%s] "
+			 "against %s[%s/%s] "
+			 "matches local tdo[%s/%s]\n",
+			 __func__, nbt,
+			 account_domain,
+			 account_name,
+			 schan_name,
+			 creds->computer_name,
+			 creds->account_name,
+			 ld->tdo->netbios_name.string,
+			 ld->tdo->domain_name.string));
+		TALLOC_FREE(frame);
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	if (dns != NULL) {
+		match = strequal(dns, ld->tdo->domain_name.string);
+		if (match) {
+			DEBUG(2,("%s: NTLMv2_RESPONSE with "
+				 "DnsDomainName[%s] rejected "
+				 "for user[%s\\%s] "
+				 "against %s[%s/%s] "
+				 "matches local tdo[%s/%s]\n",
+				 __func__, dns,
+				 account_domain,
+				 account_name,
+				 schan_name,
+				 creds->computer_name,
+				 creds->account_name,
+				 ld->tdo->netbios_name.string,
+				 ld->tdo->domain_name.string));
+			TALLOC_FREE(frame);
+			return NT_STATUS_LOGON_FAILURE;
+		}
+	}
+
+	for (fi = 0; ld->fti != NULL && fi < ld->fti->count; fi++) {
+		const struct lsa_ForestTrustRecord2 *r = ld->fti->entries[fi];
+		const struct lsa_ForestTrustDomainInfo *ldi = NULL;
+
+		if (r == NULL) {
+			continue;
+		}
+
+		if (r->type != LSA_FOREST_TRUST_DOMAIN_INFO) {
+			continue;
+		}
+		ldi = &r->forest_trust_data.domain_info;
+
+		match = strequal(nbt, ldi->netbios_domain_name.string);
+		if (match) {
+			DEBUG(2,("%s: NTLMv2_RESPONSE with "
+				 "NbDomainName[%s] rejected "
+				 "for user[%s\\%s] "
+				 "against %s[%s/%s] "
+				 "matches local forest tdi[%s/%s]\n",
+				 __func__, nbt,
+				 account_domain,
+				 account_name,
+				 schan_name,
+				 creds->computer_name,
+				 creds->account_name,
+				 ldi->netbios_domain_name.string,
+				 ldi->dns_domain_name.string));
+			TALLOC_FREE(frame);
+			return NT_STATUS_LOGON_FAILURE;
+		}
+
+		if (dns == NULL) {
+			continue;
+		}
+
+		match = strequal(dns, ldi->dns_domain_name.string);
+		if (match) {
+			DEBUG(2,("%s: NTLMv2_RESPONSE with "
+				 "DnsDomainName[%s] rejected "
+				 "for user[%s\\%s] "
+				 "against %s[%s/%s] "
+				 "matches local forest tdi[%s/%s]\n",
+				 __func__, dns,
+				 account_domain,
+				 account_name,
+				 schan_name,
+				 creds->computer_name,
+				 creds->account_name,
+				 ldi->netbios_domain_name.string,
+				 ldi->dns_domain_name.string));
+			TALLOC_FREE(frame);
+			return NT_STATUS_LOGON_FAILURE;
+		}
+	}
+
+	if (!(rd->tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE)) {
+		/*
+		 * Now check it's from the external trust
+		 */
+
+		match = strequal(nbt, rd->tdo->netbios_name.string);
+		if (!match) {
+			DEBUG(2,("%s: NTLMv2_RESPONSE with "
+				 "NbDomainName[%s] rejected "
+				 "for user[%s\\%s] "
+				 "against %s[%s/%s] "
+				 "not matching remote tdo[%s/%s]\n",
+				 __func__, nbt,
+				 account_domain,
+				 account_name,
+				 schan_name,
+				 creds->computer_name,
+				 creds->account_name,
+				 rd->tdo->netbios_name.string,
+				 rd->tdo->domain_name.string));
+			TALLOC_FREE(frame);
+			return NT_STATUS_LOGON_FAILURE;
+		}
+
+		if (dns == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_OK;
+		}
+
+		match = strequal(dns, rd->tdo->domain_name.string);
+		if (!match) {
+			DEBUG(2,("%s: NTLMv2_RESPONSE with "
+				 "DnsDomainName[%s] rejected "
+				 "for user[%s\\%s] "
+				 "against %s[%s/%s] "
+				 "not matching remote tdo[%s/%s]\n",
+				 __func__, dns,
+				 account_domain,
+				 account_name,
+				 schan_name,
+				 creds->computer_name,
+				 creds->account_name,
+				 rd->tdo->netbios_name.string,
+				 rd->tdo->domain_name.string));
+			TALLOC_FREE(frame);
+			return NT_STATUS_LOGON_FAILURE;
+		}
+
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * Now we check the SCANNER_INFO records
+	 * and make sure the values are missing
+	 * or unique.
+	 */
+
+	for (di = 0; di < num_domains; di++) {
+		const struct trust_forest_domain_info *d =
+				&domains[di];
+
+		if (d == ld) {
+			/*
+			 * Checked above
+			 */
+			continue;
+		}
+
+		if (ld->fti == NULL) {
+			/*
+			 * Nothing to check
+			 * waiting for the
+			 * forest trust scanner
+			 * to catch it
+			 */
+			continue;
+		}
+
+		for (fi = 0; fi < ld->fti->count; fi++) {
+			const struct lsa_ForestTrustRecord2 *r = ld->fti->entries[fi];
+			const struct lsa_ForestTrustDomainInfo *lsi = NULL;
+
+			if (r == NULL) {
+				continue;
+			}
+
+			if (r->type != LSA_FOREST_TRUST_SCANNER_INFO) {
+				continue;
+			}
+			lsi = &r->forest_trust_data.scanner_info;
+
+			match = strequal(nbt, lsi->netbios_domain_name.string);
+			if (match) {
+				if (d == rd) {
+					nbt_match_rd = lsi;
+				}
+				nbt_matches += 1;
+			}
+
+			if (dns == NULL) {
+				continue;
+			}
+
+			match = strequal(dns, lsi->dns_domain_name.string);
+			if (match) {
+				if (d == rd) {
+					dns_match_rd = lsi;
+				}
+				dns_matches += 1;
+			}
+		}
+	}
+
+	if (nbt_matches == 0) {
+		/*
+		 * No match of the netbios name at all,
+		 * maybe the forest trust scanner did
+		 * not run yet to catch it.
+		 */
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	if (nbt_match_rd != NULL && nbt_matches == 1) {
+		/*
+		 * Exactly one match and that's from the
+		 * remote trust that made the request.
+		 */
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	if (nbt_match_rd == NULL) {
+		/*
+		 * There are matches only from other
+		 * domains.
+		 */
+		DEBUG(2,("%s: NTLMv2_RESPONSE with "
+			 "NbDomainName[%s] rejected "
+			 "for user[%s\\%s] "
+			 "against %s[%s/%s] "
+			 "nbt_matches[%zu] dns_matches[%zu], "
+			 "but not from forest[%s/%s]\n",
+			 __func__, nbt,
+			 account_domain,
+			 account_name,
+			 schan_name,
+			 creds->computer_name,
+			 creds->account_name,
+			 nbt_matches,
+			 dns_matches,
+			 rd->tdo->netbios_name.string,
+			 rd->tdo->domain_name.string));
+		TALLOC_FREE(frame);
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	if (dns_match_rd == nbt_match_rd && dns_matches == 1) {
+		/*
+		 * We had a match in a scanner record of
+		 * the remote trust and the dns part
+		 * of that scanner record had a unique
+		 * match.
+		 */
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	if (dns != NULL) {
+		DEBUG(2,("%s: NTLMv2_RESPONSE with "
+			 "NbDomainName[%s] DnsDomainName[%s] rejected "
+			 "for user[%s\\%s] "
+			 "against %s[%s/%s] "
+			 "nbt_matches[%zu] dns_matches[%zu], "
+			 "but not from forest[%s/%s]\n",
+			 __func__, nbt, dns,
+			 account_domain,
+			 account_name,
+			 schan_name,
+			 creds->computer_name,
+			 creds->account_name,
+			 nbt_matches,
+			 dns_matches,
+			 rd->tdo->netbios_name.string,
+			 rd->tdo->domain_name.string));
+	} else {
+		DEBUG(2,("%s: NTLMv2_RESPONSE with "
+			 "NbDomainName[%s] rejected "
+			 "for user[%s\\%s] "
+			 "against %s[%s/%s] "
+			 "nbt_matches[%zu] dns_matches[%zu], "
+			 "but not from forest[%s/%s]\n",
+			 __func__, nbt,
+			 account_domain,
+			 account_name,
+			 schan_name,
+			 creds->computer_name,
+			 creds->account_name,
+			 nbt_matches,
+			 dns_matches,
+			 rd->tdo->netbios_name.string,
+			 rd->tdo->domain_name.string));
+	}
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_LOGON_FAILURE;
+}
+
 NTSTATUS NTLMv2_RESPONSE_verify_netlogon_creds(const char *account_name,
 			const char *account_domain,
 			const DATA_BLOB response,
@@ -890,11 +1296,19 @@ NTSTATUS NTLMv2_RESPONSE_verify_netlogon_creds(const char *account_name,
 
 	case SEC_CHAN_DNS_DOMAIN:
 	case SEC_CHAN_DOMAIN:
-		/*
-		 * TODO:
-		 * MS-NRPC 3.5.4.5.1.1 Pass-through domain name validation
-		 */
-		break;
+		status = NTLMv2_RESPONSE_verify_trust(account_name,
+						      account_domain,
+						      &v2_resp,
+						      creds,
+						      num_domains,
+						      domains);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
 
 	case SEC_CHAN_BDC:
 		/* nothing to check */
