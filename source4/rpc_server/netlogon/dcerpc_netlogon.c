@@ -1424,13 +1424,17 @@ static NTSTATUS dcesrv_netr_NTLMv2_RESPONSE_verify(
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 	const char *workgroup = lpcfg_workgroup(lp_ctx);
 	NTSTATUS status;
+	size_t num_trusts = 0;
+	struct trust_forest_domain_info *trusts = NULL;
 
 	status = NTLMv2_RESPONSE_verify_netlogon_creds(
 					user_info->client.account_name,
 					user_info->client.domain_name,
 					user_info->password.response.nt,
 					creds,
-					workgroup);
+					workgroup,
+					num_trusts,
+					trusts);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;

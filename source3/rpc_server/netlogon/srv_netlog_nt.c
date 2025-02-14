@@ -1646,13 +1646,17 @@ static NTSTATUS _netr_NTLMv2_RESPONSE_verify(
 	TALLOC_CTX *frame = talloc_stackframe();
 	const char *workgroup = lp_workgroup();
 	NTSTATUS status;
+	size_t num_trusts = 0;
+	struct trust_forest_domain_info *trusts = NULL;
 
 	status = NTLMv2_RESPONSE_verify_netlogon_creds(
 					user_info->client.account_name,
 					user_info->client.domain_name,
 					user_info->password.response.nt,
 					creds,
-					workgroup);
+					workgroup,
+					num_trusts,
+					trusts);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;

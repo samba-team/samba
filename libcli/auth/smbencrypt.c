@@ -741,7 +741,9 @@ NTSTATUS NTLMv2_RESPONSE_verify_netlogon_creds(const char *account_name,
 			const char *account_domain,
 			const DATA_BLOB response,
 			const struct netlogon_creds_CredentialState *creds,
-			const char *workgroup)
+			const char *workgroup,
+			size_t num_domains,
+			const struct trust_forest_domain_info *domains)
 {
 	TALLOC_CTX *frame = NULL;
 	/* RespType + HiRespType */

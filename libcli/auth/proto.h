@@ -217,11 +217,21 @@ bool SMBNTLMv2encrypt(TALLOC_CTX *mem_ctx,
 		      const DATA_BLOB *names_blob,
 		      DATA_BLOB *lm_response, DATA_BLOB *nt_response,
 		      DATA_BLOB *lm_session_key, DATA_BLOB *user_session_key) ;
+struct lsa_TrustDomainInfoInfoEx;
+struct lsa_ForestTrustInformation2;
+struct trust_forest_domain_info {
+	bool is_local_forest;
+	bool is_checked_trust;
+	struct lsa_TrustDomainInfoInfoEx *tdo;
+	struct lsa_ForestTrustInformation2 *fti;
+};
 NTSTATUS NTLMv2_RESPONSE_verify_netlogon_creds(const char *account_name,
 			const char *account_domain,
 			const DATA_BLOB response,
 			const struct netlogon_creds_CredentialState *creds,
-			const char *workgroup);
+			const char *workgroup,
+			size_t num_domains,
+			const struct trust_forest_domain_info *domains);
 
 /***********************************************************
  encode a password buffer with a unicode password.  The buffer
