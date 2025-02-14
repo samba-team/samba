@@ -628,7 +628,9 @@ static int vfswrap_openat(vfs_handle_struct *handle,
 	SMB_ASSERT((dirfd != -1) || (smb_fname->base_name[0] == '/'));
 
 	if (how->resolve & ~(VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS |
-			     VFS_OPEN_HOW_WITH_BACKUP_INTENT)) {
+			     VFS_OPEN_HOW_WITH_BACKUP_INTENT |
+			     VFS_OPEN_HOW_RESOLVE_NO_XDEV))
+	{
 		errno = ENOSYS;
 		result = -1;
 		goto out;
@@ -661,12 +663,20 @@ static int vfswrap_openat(vfs_handle_struct *handle,
 	}
 #endif
 
-	if (how->resolve & VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS) {
+	if (how->resolve & VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS ||
+	    how->resolve & VFS_OPEN_HOW_RESOLVE_NO_XDEV)
+	{
 		struct open_how linux_how = {
 			.flags = flags,
 			.mode = mode,
-			.resolve = RESOLVE_NO_SYMLINKS,
+			.resolve = 0,
 		};
+		if (how->resolve & VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS) {
+			linux_how.resolve |= RESOLVE_NO_SYMLINKS;
+		}
+		if (how->resolve & VFS_OPEN_HOW_RESOLVE_NO_XDEV) {
+			linux_how.resolve |= RESOLVE_NO_XDEV;
+		}
 
 		result = openat2(dirfd,
 				 smb_fname->base_name,
@@ -679,10 +689,13 @@ static int vfswrap_openat(vfs_handle_struct *handle,
 				 * openat2(), so indicate to
 				 * the callers that
 				 * VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS
+				 * or VFS_OPEN_HOW_RESOLVE_NO_XDEV
 				 * would just be a waste of time.
 				 */
 				fsp->conn->open_how_resolve &=
 					~VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS;
+				fsp->conn->open_how_resolve &=
+					~VFS_OPEN_HOW_RESOLVE_NO_XDEV;
 			}
 			goto out;
 		}
