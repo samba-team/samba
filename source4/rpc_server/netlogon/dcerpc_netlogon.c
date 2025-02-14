@@ -1415,6 +1415,31 @@ static void dcesrv_netr_LogonSamLogon_base_krb5_done(struct tevent_req *subreq);
 static void dcesrv_netr_LogonSamLogon_base_reply(
 	struct dcesrv_netr_LogonSamLogon_base_state *state);
 
+static NTSTATUS dcesrv_netr_NTLMv2_RESPONSE_verify(
+			struct dcesrv_call_state *dce_call,
+			const struct auth_usersupplied_info *user_info,
+			const struct netlogon_creds_CredentialState *creds)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	const char *workgroup = lpcfg_workgroup(lp_ctx);
+	NTSTATUS status;
+
+	status = NTLMv2_RESPONSE_verify_netlogon_creds(
+					user_info->client.account_name,
+					user_info->client.domain_name,
+					user_info->password.response.nt,
+					creds,
+					workgroup);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
 /*
   netr_LogonSamLogon_base
 
@@ -1431,8 +1456,6 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base_call(struct dcesrv_netr_LogonSamL
 	TALLOC_CTX *mem_ctx = state->mem_ctx;
 	struct netr_LogonSamLogonEx *r = &state->r;
 	struct netlogon_creds_CredentialState *creds = state->creds;
-	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
-	const char *workgroup = lpcfg_workgroup(lp_ctx);
 	struct auth4_context *auth_context = NULL;
 	struct auth_usersupplied_info *user_info = NULL;
 	NTSTATUS nt_status;
@@ -1596,11 +1619,9 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base_call(struct dcesrv_netr_LogonSamL
 		user_info->logon_id
 		    = r->in.logon->network->identity_info.logon_id;
 
-		nt_status = NTLMv2_RESPONSE_verify_netlogon_creds(
-					user_info->client.account_name,
-					user_info->client.domain_name,
-					user_info->password.response.nt,
-					creds, workgroup);
+		nt_status = dcesrv_netr_NTLMv2_RESPONSE_verify(dce_call,
+							       user_info,
+							       creds);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
 		break;
