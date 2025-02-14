@@ -507,7 +507,7 @@ def _read_ntacl_file(src):
 
 def backup_online(smb_conn, dest_tarfile_path, dom_sid):
     """
-    Backup all files and dirs with ntacl for the serive behind smb_conn.
+    Backup all files and dirs with ntacl for the service behind smb_conn.
 
     1. Create a temp dir as container dir
     2. Backup all files with dir structure into container dir
