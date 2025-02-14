@@ -1427,6 +1427,127 @@ static NTSTATUS dcesrv_netr_NTLMv2_RESPONSE_verify(
 	size_t num_trusts = 0;
 	struct trust_forest_domain_info *trusts = NULL;
 
+	if (creds->secure_channel_type == SEC_CHAN_DNS_DOMAIN ||
+	    creds->secure_channel_type == SEC_CHAN_DOMAIN)
+	{
+		static const char * const trust_attrs[] = {
+			"objectGUID",
+			"securityIdentifier",
+			"flatName",
+			"trustPartner",
+			"trustType",
+			"trustAttributes",
+			"trustDirection",
+			"msDS-TrustForestTrustInfo",
+			NULL
+		};
+		struct trust_forest_domain_info *remote_d = NULL;
+		struct ldb_result *trusts_res = NULL;
+		struct ldb_context *sam_ctx = NULL;
+		size_t ti;
+
+		sam_ctx = dcesrv_samdb_connect_as_system(frame,
+							 dce_call);
+		if (sam_ctx == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_DS_UNAVAILABLE;
+		}
+
+		/* fetch all trusted domain objects */
+		status = dsdb_trust_search_tdos(sam_ctx,
+						NULL,
+						trust_attrs,
+						frame,
+						&trusts_res);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+
+		trusts = talloc_zero_array(frame,
+					   struct trust_forest_domain_info,
+					   trusts_res->count + 1);
+		if (trusts == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		/*
+		 * information about our own forest/domain
+		 */
+		status = dsdb_trust_local_tdo_info(trusts,
+						   sam_ctx,
+						   &trusts[0].tdo);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+		status = dsdb_trust_xref_forest_info(trusts,
+						     sam_ctx,
+						     &trusts[0].fti);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+		trusts[0].is_local_forest = true;
+
+		for (ti = 0; ti < trusts_res->count; ti++) {
+			struct trust_forest_domain_info *d =
+				&trusts[ti+1];
+			struct ldb_message *msg = trusts_res->msgs[ti];
+			struct ForestTrustInfo *fti = NULL;
+			struct GUID tdo_guid;
+
+			tdo_guid = samdb_result_guid(msg, "objectGUID");
+
+			status = dsdb_trust_parse_tdo_info(trusts,
+							   msg,
+							   &d->tdo);
+			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(frame);
+				return status;
+			}
+
+			status = dsdb_trust_parse_forest_info(trusts,
+							      msg,
+							      &fti);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+				fti = NULL;
+				status = NT_STATUS_OK;
+			}
+			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(frame);
+				return status;
+			}
+
+			if (fti != NULL) {
+				status = trust_forest_info_to_lsa2(trusts,
+								   fti,
+								   &d->fti);
+				if (!NT_STATUS_IS_OK(status)) {
+					TALLOC_FREE(frame);
+					return status;
+				}
+			}
+
+			if (GUID_equal(&creds->tdo_guid, &tdo_guid)) {
+				d->is_checked_trust = true;
+				remote_d = d;
+			}
+		}
+
+		if (remote_d == NULL) {
+			/*
+			 * We should at least find the tdo
+			 * of the remote domain
+			 */
+			TALLOC_FREE(frame);
+			return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
+		}
+
+		num_trusts = trusts_res->count + 1;
+	}
+
 	status = NTLMv2_RESPONSE_verify_netlogon_creds(
 					user_info->client.account_name,
 					user_info->client.domain_name,
