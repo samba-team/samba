@@ -1564,10 +1564,10 @@ keytab"/> is missing.
 <para>
 Till Samba 4.20, these entries were created by default: the account name
 COMPUTER$, 'host' principal and SPNs synced from AD. Example below generates
-such keytab ('host' is added implicitly):
+such keytab:
 </para>
 <programlisting>
-<smbconfoption name="sync machine password to keytab">/etc/krb5.keytab:account_name:sync_spns:sync_kvno:machine_password</smbconfoption>
+<smbconfoption name="sync machine password to keytab">/etc/krb5.keytab:spn_prefixes=host:account_name:sync_spns:sync_kvno:machine_password</smbconfoption>
 </programlisting>
 <para>
 No changes are made to the computer AD account.
