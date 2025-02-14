@@ -44,7 +44,6 @@
 enum spn_spec_type {
 	SPN_SPEC_ACCOUNT_NAME,
 	SPN_SPEC_SYNC_ACCOUNT_NAME,
-	SPN_SPEC_HOST,
 	SPN_SPEC_SYNC_UPN,
 	SPN_SPEC_SYNC_SPNS,
 	SPN_SPEC_FULL,
@@ -164,8 +163,6 @@ static ADS_STATUS pw2kt_scan_spec(TALLOC_CTX *ctx,
 	} else if (strequal(option, "sync_account_name")) {
 		spec_type = SPN_SPEC_SYNC_ACCOUNT_NAME;
 		gstate->sync_sam_account = true;
-	} else if (strequal(option, "host")) {
-		spec_type = SPN_SPEC_HOST;
 	} else if (strequal(option, "sync_upn")) {
 		spec_type = SPN_SPEC_SYNC_UPN;
 		gstate->sync_upn = true;
@@ -251,9 +248,6 @@ static ADS_STATUS pw2kt_scan_line(const char *line,
 	*olist = 0;
 	olist++;
 
-	/* Always add 'host' principal */
-	desc->spec_array[SPN_SPEC_HOST].is_set = true;
-
 	/* Entries are separated via ':' */
 	while ((tmp = strchr_m(olist, ':')) != NULL) {
 		*tmp = 0;
@@ -275,7 +269,8 @@ static ADS_STATUS pw2kt_scan_line(const char *line,
 /*
  * Fill struct pw2kt_global_state with defaults if
  * "sync machine password to keytab" is missing in smb.conf
- * Creates 1 keytab with 3 SPN specifiers (sync_spns, account_name, host).
+ * Creates 1 keytab with these SPN specifiers:
+ *   sync_spns:account_name:spn_prefixes=host:sync_kvno:machine_password
  */
 static ADS_STATUS pw2kt_default_cfg(const char *name,
 				    struct pw2kt_global_state *state)
@@ -302,9 +297,11 @@ static ADS_STATUS pw2kt_default_cfg(const char *name,
 
 	desc->spec_array[SPN_SPEC_SYNC_SPNS].is_set = true;
 	desc->spec_array[SPN_SPEC_ACCOUNT_NAME].is_set = true;
-	desc->spec_array[SPN_SPEC_HOST].is_set = true;
+	desc->spec_array[SPN_SPEC_PREFIX].is_set = true;
 
-	return ADS_SUCCESS;
+	return pw2kt_add_val(state->keytabs,
+			     &desc->spec_array[SPN_SPEC_PREFIX],
+			     "host");
 }
 
 /*
@@ -589,12 +586,6 @@ static ADS_STATUS pw2kt_process_specifier(struct pw2kt_global_state *gstate,
 		break;
 	case SPN_SPEC_SYNC_ACCOUNT_NAME:
 		ADD_INFO(gstate->ad_sam_account);
-		break;
-	case SPN_SPEC_HOST:
-		status = pw2kt_add_prefix(gstate, state2, keytabptr, "host");
-		if (!ADS_ERR_OK(status)) {
-			return status;
-		}
 		break;
 	case SPN_SPEC_SYNC_UPN:
 		if (gstate->ad_upn != NULL) {
