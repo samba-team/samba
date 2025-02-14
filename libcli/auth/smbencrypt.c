@@ -1341,10 +1341,18 @@ NTSTATUS NTLMv2_RESPONSE_verify_netlogon_creds(const char *account_name,
 
 	case SEC_CHAN_RODC:
 		/*
-		 * TODO:
 		 * MS-NRPC 3.5.4.5.1.2 RODC server cachability validation
+		 *
+		 * The caller must check based on
+		 * the computer name!
 		 */
-		break;
+		if (_computer_name == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
 	}
 
 	TALLOC_FREE(frame);
