@@ -52,9 +52,13 @@
 #include "lib/util/util_str_escape.h"
 #include "source3/lib/substitute.h"
 #include "librpc/rpc/server/netlogon/schannel_util.h"
+#include "libcli/lsarpc/util_lsarpc.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
+
+static NTSTATUS fill_forest_trust_array(TALLOC_CTX *mem_ctx,
+					struct lsa_ForestTrustInformation *info);
 
 /*************************************************************************
  _netr_LogonControl
@@ -1648,6 +1652,227 @@ static NTSTATUS _netr_NTLMv2_RESPONSE_verify(
 	NTSTATUS status;
 	size_t num_trusts = 0;
 	struct trust_forest_domain_info *trusts = NULL;
+
+	if (creds->secure_channel_type == SEC_CHAN_DNS_DOMAIN ||
+	    creds->secure_channel_type == SEC_CHAN_DOMAIN)
+	{
+		struct trust_forest_domain_info *remote_d = NULL;
+		struct pdb_trusted_domain **dex = NULL;
+		struct trustdom_info **dlg = NULL;
+		uint32_t num_domains = 0;
+		char *creds_trust = NULL;
+		char *p = NULL;
+		size_t ti;
+
+		creds_trust = talloc_strdup(frame, creds->account_name);
+		if (creds_trust == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		p = strrchr(creds_trust, '$');
+		if (p != NULL) {
+			*p = '\0';
+		}
+
+		if (pdb_capabilities() & PDB_CAP_TRUSTED_DOMAINS_EX) {
+			status = pdb_enum_trusted_domains(frame,
+							  &num_domains,
+							  &dex);
+			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(frame);
+				return status;
+			}
+		} else {
+			status = pdb_enum_trusteddoms(frame,
+						      &num_domains,
+						      &dlg);
+			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(frame);
+				return status;
+			}
+		}
+
+		trusts = talloc_zero_array(frame,
+					   struct trust_forest_domain_info,
+					   num_domains + 1);
+		if (trusts == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		trusts[0].tdo = talloc_zero(trusts,
+					    struct lsa_TrustDomainInfoInfoEx);
+		if (trusts[0].tdo == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		/*
+		 * information about our own forest/domain
+		 */
+
+		if (pdb_capabilities() & PDB_CAP_TRUSTED_DOMAINS_EX) {
+			struct lsa_ForestTrustInformation *fti = NULL;
+			const struct lsa_ForestTrustDomainInfo *ftd = NULL;
+
+			fti = talloc_zero(trusts,
+					  struct lsa_ForestTrustInformation);
+			if (fti == NULL) {
+				TALLOC_FREE(frame);
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			status = fill_forest_trust_array(fti, fti);
+			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(frame);
+				return status;
+			}
+
+			SMB_ASSERT(fti->count == 2);
+			SMB_ASSERT(fti->entries[1] != NULL);
+			ftd = &fti->entries[1]->forest_trust_data.domain_info;
+
+			trusts[0].tdo->sid = ftd->domain_sid;
+			trusts[0].tdo->domain_name.string =
+				ftd->dns_domain_name.string;
+			trusts[0].tdo->netbios_name.string =
+				ftd->netbios_domain_name.string;
+
+			status = trust_forest_info_lsa_1to2(trusts,
+							    fti,
+							    &trusts[0].fti);
+			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(frame);
+				return status;
+			}
+		} else {
+			trusts[0].tdo->sid = get_global_sam_sid();
+			trusts[0].tdo->netbios_name.string = workgroup;
+		}
+
+		trusts[0].is_local_forest = true;
+
+		for (ti = 0; ti < num_domains; ti++) {
+			struct trust_forest_domain_info *d =
+				&trusts[ti+1];
+			struct ForestTrustInfo *fti = NULL;
+			enum ndr_err_code ndr_err;
+			size_t fi;
+
+			d->tdo = talloc_zero(trusts,
+					     struct lsa_TrustDomainInfoInfoEx);
+			if (d->tdo == NULL) {
+				TALLOC_FREE(frame);
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			if (pdb_capabilities() & PDB_CAP_TRUSTED_DOMAINS_EX) {
+				d->tdo->sid = &dex[ti]->security_identifier;
+				d->tdo->domain_name.string = dex[ti]->domain_name;
+				d->tdo->netbios_name.string = dex[ti]->netbios_name;
+				d->tdo->trust_type = dex[ti]->trust_type;
+				d->tdo->trust_direction = dex[ti]->trust_direction;
+				d->tdo->trust_attributes = dex[ti]->trust_attributes;
+			} else {
+				d->tdo->sid = &dlg[ti]->sid;
+				d->tdo->netbios_name.string = dlg[ti]->name;
+			}
+
+			if (!(pdb_capabilities() & PDB_CAP_TRUSTED_DOMAINS_EX)) {
+				continue;
+			}
+
+			if (dex[ti]->trust_forest_trust_info.length == 0) {
+				continue;
+			}
+
+			fti = talloc_zero(trusts,
+					  struct ForestTrustInfo);
+			if (fti == NULL) {
+				TALLOC_FREE(frame);
+				return NT_STATUS_NO_MEMORY;
+			}
+			ndr_err = ndr_pull_struct_blob_all(
+				&dex[ti]->trust_forest_trust_info,
+				fti, fti,
+				(ndr_pull_flags_fn_t)ndr_pull_ForestTrustInfo);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				TALLOC_FREE(frame);
+				return ndr_map_error2ntstatus(ndr_err);
+			}
+
+			status = trust_forest_info_to_lsa2(trusts,
+							   fti,
+							   &d->fti);
+			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(frame);
+				return status;
+			}
+
+			/*
+			 * We do not have a forest trust scanner
+			 * backgroup task, so we need
+			 * to change the LSA_FOREST_TRUST_DOMAIN_INFO
+			 * records into
+			 * LSA_FOREST_TRUST_SCANNER_INFO
+			 * records.
+			 *
+			 * They are both of type
+			 * struct lsa_ForestTrustDomainInfo
+			 * so it's easy to do that.
+			 */
+			for (fi = 0; fi < d->fti->count; fi++) {
+				struct lsa_ForestTrustRecord2 *r =
+					d->fti->entries[fi];
+
+				if (r == NULL) {
+					continue;
+				}
+
+				if (r->type != LSA_FOREST_TRUST_DOMAIN_INFO) {
+					continue;
+				}
+
+				r->type = LSA_FOREST_TRUST_SCANNER_INFO;
+			}
+		}
+
+		num_trusts = num_domains + 1;
+		for (ti = 0; ti < num_trusts; ti++) {
+			struct trust_forest_domain_info *d =
+				&trusts[ti];
+
+			if (strequal(d->tdo->netbios_name.string, creds_trust)) {
+				if (remote_d != NULL) {
+					/*
+					 * We should only find one
+					 */
+					TALLOC_FREE(frame);
+					return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
+				}
+
+				if (d->is_local_forest) {
+					/*
+					 * Something is completely broken
+					 */
+					TALLOC_FREE(frame);
+					return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
+				}
+				d->is_checked_trust = true;
+				remote_d = d;
+			}
+		}
+
+		if (remote_d == NULL) {
+			/*
+			 * We should at least find the tdo
+			 * of the remote domain
+			 */
+			TALLOC_FREE(frame);
+			return NT_STATUS_TRUSTED_DOMAIN_FAILURE;
+		}
+	}
 
 	status = NTLMv2_RESPONSE_verify_netlogon_creds(
 					user_info->client.account_name,
