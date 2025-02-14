@@ -76,6 +76,17 @@ static int vfswrap_connect(vfs_handle_struct *handle, const char *service, const
 #ifdef DISABLE_VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS
 	handle->conn->open_how_resolve &= ~VFS_OPEN_HOW_RESOLVE_NO_SYMLINKS;
 #endif
+	bval = lp_parm_bool(SNUM(handle->conn),
+			    "vfs_default",
+			    "VFS_OPEN_HOW_RESOLVE_NO_XDEV",
+			    true);
+	if (bval) {
+		handle->conn->open_how_resolve |=
+			VFS_OPEN_HOW_RESOLVE_NO_XDEV;
+	}
+#ifdef DISABLE_VFS_OPEN_HOW_RESOLVE_NO_XDEV
+	handle->conn->open_how_resolve &= ~VFS_OPEN_HOW_RESOLVE_NO_XDEV;
+#endif
 
 	return 0;    /* Return >= 0 for success */
 }
