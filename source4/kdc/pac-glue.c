@@ -1121,8 +1121,66 @@ static bool claims_tf_rule_set_is_deny_all(const struct claims_tf_rule_set *rs)
 	return true;
 }
 
+static bool claims_tf_rule_set_is_allow_all(const struct claims_tf_rule_set *rs)
+{
+	const struct claims_tf_rule *r = NULL;
+	const struct claims_tf_condition_set *cs = NULL;
+	const struct claims_tf_rule_action *a = NULL;
+	bool match;
+
+	if (rs->num_rules != 1) {
+		return false;
+	}
+	r = &rs->rules[0];
+
+	if (r->num_condition_sets != 1) {
+		return false;
+	}
+	cs = &r->condition_sets[0];
+	a = &r->action;
+
+	if (cs->num_conditions != 0) {
+		return false;
+	}
+
+	if (cs->opt_identifier == NULL) {
+		return false;
+	}
+
+	if (a->type.ref.property != CLAIMS_TF_PROPERTY_TYPE) {
+		return false;
+	}
+	match = strequal(a->type.ref.identifier,
+			 cs->opt_identifier);
+	if (!match) {
+		return false;
+	}
+
+	if (a->value.ref.property != CLAIMS_TF_PROPERTY_VALUE) {
+		return false;
+	}
+	match = strequal(a->value.ref.identifier,
+			 cs->opt_identifier);
+	if (!match) {
+		return false;
+	}
+
+	if (a->value_type.ref.property != CLAIMS_TF_PROPERTY_VALUE_TYPE) {
+		return false;
+	}
+	match = strequal(a->value_type.ref.identifier,
+			 cs->opt_identifier);
+	if (!match) {
+		return false;
+	}
+
+	return true;
+}
+
 static
 NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
+				   struct samba_kdc_db_context *kdc_db_ctx,
+				   const struct samba_kdc_entry *server,
 				   struct claims_data *claims_data,
 				   const DATA_BLOB **_claims_blob)
 {
@@ -1136,6 +1194,68 @@ NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 	claims_blob = talloc_zero(mem_ctx, DATA_BLOB);
 	if (claims_blob == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (samba_kdc_entry_is_trust(server)) {
+		const char *tdo_attr = "msDS-EgressClaimsTransformationPolicy";
+		struct claims_tf_rule_set *rule_set = NULL;
+		NTSTATUS status;
+		bool keep_claims = false;
+		bool clear_claims = false;
+
+		status = dsdb_trust_get_claims_tf_policy(kdc_db_ctx->samdb,
+							 server->msg,
+							 tdo_attr,
+							 mem_ctx,
+							 &rule_set);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_DS_NO_ATTRIBUTE_OR_VALUE)) {
+			/*
+			 * No msDS-EgressClaimsTransformationPolicy
+			 * or no msDS-TransformationRules attribute
+			 *
+			 * This is the default and matches
+			 * an explicit rule of:
+			 * 'C1:[] => ISSUE(Claim=C1);'
+			 */
+			keep_claims = true;
+		} else if (NT_STATUS_IS_OK(status)) {
+			/*
+			 * There's a policy defined.
+			 *
+			 * For now we only allow it an
+			 * empty rule set, which is deny
+			 * all claims policy. Or a single
+			 * allow all policy.
+			 *
+			 * All others result in an error
+			 * in order to avoid unexpected behavior
+			 *
+			 * TODO apply the transformation completely:
+			 * only apply everything from rule_set
+			 */
+
+			clear_claims = claims_tf_rule_set_is_deny_all(rule_set);
+			keep_claims = claims_tf_rule_set_is_allow_all(rule_set);
+			if (!clear_claims && !keep_claims) {
+				/* TODO: is there some better status ? */
+				return NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER;
+			}
+		} else {
+			/*
+			 * We hit an error, which means we need to
+			 * clear the claims
+			 */
+			DBG_WARNING("dsdb_trust_get_claims_tf_policy() %s\n",
+				    nt_errstr(status));
+			clear_claims = true;
+		}
+
+		if (clear_claims) {
+			SMB_ASSERT(!keep_claims);
+			claims_data = NULL;
+		} else {
+			SMB_ASSERT(keep_claims);
+		}
 	}
 
 	nt_status = claims_data_encoded_claims_set(claims_blob,
@@ -2444,6 +2564,8 @@ krb5_error_code samba_kdc_get_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	nt_status = samba_kdc_get_claims_blob(frame,
+					      kdc_db_ctx,
+					      server,
 					      auth_claims.user_claims,
 					      &client_claims_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -2915,12 +3037,24 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 	if (regenerate_client_claims) {
 		nt_status = samba_kdc_get_claims_blob(tmp_ctx,
+						      kdc_db_ctx,
+						      server,
 						      pac_claims.user_claims,
 						      &client_claims_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("samba_kdc_get_claims_blob failed: %s\n",
 				nt_errstr(nt_status));
-			code = map_errno_from_nt_status(nt_status);
+			if (NT_STATUS_EQUAL(nt_status,
+				NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER))
+			{
+				code = KRB5KDC_ERR_POLICY;
+				if (status_out != NULL) {
+					/* TODO: s there some better status ? */
+					*status_out = nt_status;
+				}
+			} else {
+				code = map_errno_from_nt_status(nt_status);
+			}
 			goto done;
 		}
 	}
@@ -2937,12 +3071,24 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 		if (regenerate_device_claims) {
 			nt_status = samba_kdc_get_claims_blob(tmp_ctx,
+							      kdc_db_ctx,
+							      server,
 							      pac_claims.device_claims,
 							      &device_claims_blob);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DBG_ERR("samba_kdc_get_claims_blob() failed: %s\n",
 					nt_errstr(nt_status));
-				code = map_errno_from_nt_status(nt_status);
+				if (NT_STATUS_EQUAL(nt_status,
+					NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER))
+				{
+					code = KRB5KDC_ERR_POLICY;
+					if (status_out != NULL) {
+						/* TODO: s there some better status ? */
+						*status_out = nt_status;
+					}
+				} else {
+					code = map_errno_from_nt_status(nt_status);
+				}
 				goto done;
 			}
 		}
