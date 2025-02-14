@@ -1555,7 +1555,9 @@ static NTSTATUS dcesrv_netr_NTLMv2_RESPONSE_verify(
 					creds,
 					workgroup,
 					num_trusts,
-					trusts);
+					trusts,
+					NULL,  /* mem_ctx */
+					NULL); /* _computer_name */
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;

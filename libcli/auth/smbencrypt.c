@@ -1149,7 +1149,9 @@ NTSTATUS NTLMv2_RESPONSE_verify_netlogon_creds(const char *account_name,
 			const struct netlogon_creds_CredentialState *creds,
 			const char *workgroup,
 			size_t num_domains,
-			const struct trust_forest_domain_info *domains)
+			const struct trust_forest_domain_info *domains,
+			TALLOC_CTX *mem_ctx,
+			char **_computer_name)
 {
 	TALLOC_CTX *frame = NULL;
 	/* RespType + HiRespType */
@@ -1158,6 +1160,10 @@ NTSTATUS NTLMv2_RESPONSE_verify_netlogon_creds(const char *account_name,
 	struct NTLMv2_RESPONSE v2_resp;
 	enum ndr_err_code err;
 	NTSTATUS status;
+
+	if (_computer_name != NULL) {
+		*_computer_name = NULL;
+	}
 
 	if (response.length < 48) {
 		/*
@@ -1271,6 +1277,25 @@ NTSTATUS NTLMv2_RESPONSE_verify_netlogon_creds(const char *account_name,
 
 	if (DEBUGLVL(10)) {
 		NDR_PRINT_DEBUG(NTLMv2_RESPONSE, &v2_resp);
+	}
+
+	if (_computer_name != NULL) {
+		const struct AV_PAIR *av_nb_cn = NULL;
+		const char *nb_cn = NULL;
+
+		av_nb_cn = ndr_ntlmssp_find_av(&v2_resp.Challenge.AvPairs,
+					       MsvAvNbComputerName);
+		if (av_nb_cn != NULL) {
+			nb_cn = av_nb_cn->Value.AvNbComputerName;
+		}
+
+		if (nb_cn != NULL) {
+			*_computer_name = talloc_strdup(mem_ctx, nb_cn);
+			if (*_computer_name == NULL) {
+				TALLOC_FREE(frame);
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
 	}
 
 	switch (creds->secure_channel_type) {

@@ -231,7 +231,9 @@ NTSTATUS NTLMv2_RESPONSE_verify_netlogon_creds(const char *account_name,
 			const struct netlogon_creds_CredentialState *creds,
 			const char *workgroup,
 			size_t num_domains,
-			const struct trust_forest_domain_info *domains);
+			const struct trust_forest_domain_info *domains,
+			TALLOC_CTX *mem_ctx,
+			char **_computer_name);
 
 /***********************************************************
  encode a password buffer with a unicode password.  The buffer
