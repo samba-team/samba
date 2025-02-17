@@ -1547,11 +1547,30 @@ sub Interface($$$)
 		$self->pidl("");
 
 		my $signature =
-"\"$interface->{NAME}(binding, lp_ctx=None, credentials=None) -> connection\\n\"
-\"\\n\"
-\"binding should be a DCE/RPC binding string (for example: ncacn_ip_tcp:127.0.0.1)\\n\"
-\"lp_ctx should be a path to a smb.conf file or a param.LoadParm object\\n\"
-\"credentials should be a credentials.Credentials object.\\n\\n\"";
+"\"$interface->{NAME}(binding, lp_ctx=None, credentials=None, basis_connection=None) -> connection\\n\"
+\"\\n\\n\"
+\"Parameters\\n\"
+\"----------\\n\"
+\"binding : str\\n\"
+\"    A DCE/RPC binding string (for example: ncacn_ip_tcp:127.0.0.1)\\n\"
+\"lp_ctx : param.LoadParm\\n\"
+\"    Should be a path to a smb.conf file or a param.LoadParm object\\n\"
+\"credentials : credentials.Credentials, optional\\n\"
+\"    A credentials.Credentials object (default is None).\\n\"
+\"basis_connection : samba.dcerpc.ClientConnection, optional\\n\"
+\"    A $interface->{NAME} client connection object (default is None).\\n\"
+\"\\n\\n\"
+\"Returns\\n\"
+\"-------\\n\"
+\"samba.dcerpc.ClientConnection\\n\"
+\"    A ClientConnection object\\n\"
+\"\\n\\n\"
+\"Raises\\n\"
+\"------\\n\"
+\"samba.NTSTATUSError\\n\"
+\"    An NTSTATUS error\\n\"
+\"\\n\"";
+
 
 		my $docstring = $self->DocString($interface, $interface->{NAME});
 
