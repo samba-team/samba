@@ -1,4 +1,91 @@
                    ==============================
+                   Release Notes for Samba 4.21.4
+                         February 17, 2025
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.21 release series.
+
+
+Changes since 4.21.3
+--------------------
+
+o  Vinit Agnihotri <vagnihot@redhat.com>
+   * BUG 15780: Increasing slowness of sharesec performance with high number of
+     registry shares.
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15782: winbindd shows memleak in kerberos_decode_pac.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15738: Creation of GPOs applicable to more than one group is impossible
+     with Samba 4.20.0 and later.
+   * BUG 15756: Replace `crypt` module in
+     python/samba/netcmd/user/readpasswords/common.py.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15151: vfs_gpfs silently garbles timestamps > year 2106.
+   * BUG 15796: Spotlight search results don't show file size and creation date.
+
+o  Guenther Deschner <gd@samba.org>
+   * BUG 15703: General improvements for vfs_ceph_new module.
+   * BUG 15777: net offlinejoin not working correctly.
+   * BUG 15780: Increasing slowness of sharesec performance with high number of
+     registry shares.
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15759: net ads create/join/winbind producing unix dysfunctional
+     keytabs.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14213: Windows Explorer crashes on S-1-22-* Unix-SIDs when accessing
+     security tab.
+   * BUG 15769: The values from hresult_errstr_const and hresult_errstr are
+     reversed in 4.20 and 4.21.
+   * BUG 15778: Kerberos referral tickets are generated for principals in our
+     domain if we have a trust to a top level domain.
+   * BUG 15783: NETLOGON_NTLMV2_ENABLED is missing in the SamLogon* user_flags
+     field.
+
+o  Anoop C S <anoopcs@samba.org>
+   * BUG 15703: General improvements for vfs_ceph_new module.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15784: Regression: stack-use-after-return in crypt_as_best_we_can().
+   * BUG 15788: libreplace:readline: gcc 15 complains about incompatible pointer
+     types.
+
+o  Shachar Sharon <ssharon@redhat.com>
+   * BUG 15703: General improvements for vfs_ceph_new module.
+
+o  Shweta Sodani <ssodani@redhat.com>
+   * BUG 15703: General improvements for vfs_ceph_new module.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.21.3
                           January 06, 2025
                    ==============================
@@ -58,8 +145,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.21.2
                          November 25, 2024
