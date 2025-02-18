@@ -3783,7 +3783,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         msg[name] = ldb.MessageElement([], flag, name)
         samdb.modify(msg)
 
-    def create_ccache(self, cname, ticket, enc_part):
+    def create_ccache(self, crealm, cname, ticket, enc_part):
         """ Lay out a version 4 on-disk credentials cache, to be read using the
             FILE: protocol.
         """
@@ -3808,7 +3808,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
         cprincipal = krb5ccache.PRINCIPAL()
         cprincipal.name_type = cname['name-type']
         cprincipal.component_count = len(cname_string)
-        cprincipal.realm = ticket['realm']
+        cprincipal.realm = crealm
         cprincipal.components = cname_string
 
         sname = ticket['sname']
@@ -3901,7 +3901,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
         # Write the ticket into a credentials cache file that can be ingested
         # by the main credentials code.
-        cachefile = self.create_ccache(cname, ticket.ticket,
+        cachefile = self.create_ccache(realm, cname, ticket.ticket,
                                        ticket.encpart_private)
 
         # Create a credentials object to reference the credentials cache.
