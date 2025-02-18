@@ -3811,7 +3811,9 @@ samba-tool gpo manage motd set {31B2F340-016D-11D2-945F-00C04FB984F9} "Message f
             return
 
         try:
-            xml_data = ET.fromstring(conn.loadfile(vgp_xml))
+            xml_data = ET.ElementTree(ET.fromstring(conn.loadfile(vgp_xml)))
+            policysetting = xml_data.getroot().find('policysetting')
+            data = policysetting.find('data')
         except NTSTATUSError as e:
             if e.args[0] in [NT_STATUS_OBJECT_NAME_INVALID,
                              NT_STATUS_OBJECT_NAME_NOT_FOUND,
@@ -3837,7 +3839,9 @@ samba-tool gpo manage motd set {31B2F340-016D-11D2-945F-00C04FB984F9} "Message f
             else:
                 raise
 
-        text = ET.SubElement(data, 'text')
+        text = data.find('text')
+        if text is None:
+            text = ET.SubElement(data, 'text')
         text.text = value
 
         out = BytesIO()
