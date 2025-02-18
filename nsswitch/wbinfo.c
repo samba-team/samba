@@ -1031,93 +1031,101 @@ static bool wbinfo_sid_to_gid(const char *sid_str)
 
 static bool wbinfo_sids_to_unix_ids(const char *arg)
 {
-	char sidstr[WBC_SID_STRING_BUFLEN];
+	TALLOC_CTX *frame = talloc_stackframe();
+	char *sidstr = NULL;
 	struct wbcDomainSid *sids;
 	struct wbcUnixId *unix_ids;
 	int i, num_sids;
 	const char *p;
 	wbcErr wbc_status;
-
+	bool ret = false;
 
 	num_sids = 0;
 	sids = NULL;
 	p = arg;
 
-	while (next_token(&p, sidstr, LIST_SEP, sizeof(sidstr))) {
-		sids = talloc_realloc(talloc_tos(), sids, struct wbcDomainSid,
-				      num_sids+1);
+	while (next_token_talloc(frame, &p, &sidstr, LIST_SEP)) {
+		sids = talloc_realloc(frame,
+				      sids,
+				      struct wbcDomainSid,
+				      num_sids + 1);
 		if (sids == NULL) {
 			d_fprintf(stderr, "talloc failed\n");
-			return false;
+			goto fail;
 		}
 		wbc_status = wbcStringToSid(sidstr, &sids[num_sids]);
 		if (!WBC_ERROR_IS_OK(wbc_status)) {
 			d_fprintf(stderr, "wbcSidToString(%s) failed: %s\n",
 				  sidstr, wbcErrorString(wbc_status));
-			TALLOC_FREE(sids);
-			return false;
+			goto fail;
 		}
+		TALLOC_FREE(sidstr);
 		num_sids += 1;
 	}
 
-	unix_ids = talloc_array(talloc_tos(), struct wbcUnixId, num_sids);
+	unix_ids = talloc_array(frame, struct wbcUnixId, num_sids);
 	if (unix_ids == NULL) {
-		TALLOC_FREE(sids);
-		return false;
+		goto fail;
 	}
 
 	wbc_status = wbcSidsToUnixIds(sids, num_sids, unix_ids);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		d_fprintf(stderr, "wbcSidsToUnixIds failed: %s\n",
 			  wbcErrorString(wbc_status));
-		TALLOC_FREE(sids);
-		return false;
+		goto fail;
 	}
 
 	for (i=0; i<num_sids; i++) {
+		fstring sidbuf;
 
-		wbcSidToStringBuf(&sids[i], sidstr, sizeof(sidstr));
+		wbcSidToStringBuf(&sids[i], sidbuf, sizeof(sidbuf));
 
 		switch(unix_ids[i].type) {
 		case WBC_ID_TYPE_UID:
-			d_printf("%s -> uid %d\n", sidstr, unix_ids[i].id.uid);
+			d_printf("%s -> uid %d\n", sidbuf, unix_ids[i].id.uid);
 			break;
 		case WBC_ID_TYPE_GID:
-			d_printf("%s -> gid %d\n", sidstr, unix_ids[i].id.gid);
+			d_printf("%s -> gid %d\n", sidbuf, unix_ids[i].id.gid);
 			break;
 		case WBC_ID_TYPE_BOTH:
-			d_printf("%s -> uid/gid %d\n", sidstr, unix_ids[i].id.uid);
+			d_printf("%s -> uid/gid %d\n",
+				 sidbuf,
+				 unix_ids[i].id.uid);
 			break;
 		default:
-			d_printf("%s -> unmapped\n", sidstr);
+			d_printf("%s -> unmapped\n", sidbuf);
 			break;
 		}
 	}
 
-	TALLOC_FREE(sids);
-	TALLOC_FREE(unix_ids);
-
-	return true;
+	ret = true;
+fail:
+	TALLOC_FREE(frame);
+	return ret;
 }
 
 static bool wbinfo_xids_to_sids(const char *arg)
 {
-	fstring idstr;
+	TALLOC_CTX *frame = talloc_stackframe();
+	char *idstr = NULL;
 	struct wbcUnixId *xids = NULL;
 	struct wbcDomainSid *sids;
 	wbcErr wbc_status;
 	int num_xids = 0;
 	const char *p;
 	int i;
+	bool ret = false;
 
 	p = arg;
 
-	while (next_token(&p, idstr, LIST_SEP, sizeof(idstr))) {
-		xids = talloc_realloc(talloc_tos(), xids, struct wbcUnixId,
-				      num_xids+1);
+	while (next_token_talloc(frame, &p, &idstr, LIST_SEP)) {
+		xids = talloc_realloc(xids,
+				      xids,
+				      struct wbcUnixId,
+				      num_xids + 1);
 		if (xids == NULL) {
 			d_fprintf(stderr, "talloc failed\n");
-			return false;
+			goto fail;
 		}
 
 		switch (idstr[0]) {
@@ -1135,26 +1143,23 @@ static bool wbinfo_xids_to_sids(const char *arg)
 			break;
 		default:
 			d_fprintf(stderr, "%s is an invalid id\n", idstr);
-			TALLOC_FREE(xids);
-			return false;
+			goto fail;
 		}
+		TALLOC_FREE(idstr);
 		num_xids += 1;
 	}
 
-	sids = talloc_array(talloc_tos(), struct wbcDomainSid, num_xids);
+	sids = talloc_array(frame, struct wbcDomainSid, num_xids);
 	if (sids == NULL) {
 		d_fprintf(stderr, "talloc failed\n");
-		TALLOC_FREE(xids);
-		return false;
+		goto fail;
 	}
 
 	wbc_status = wbcUnixIdsToSids(xids, num_xids, sids);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		d_fprintf(stderr, "wbcUnixIdsToSids failed: %s\n",
 			  wbcErrorString(wbc_status));
-		TALLOC_FREE(sids);
-		TALLOC_FREE(xids);
-		return false;
+		goto fail;
 	}
 
 	for (i=0; i<num_xids; i++) {
@@ -1169,7 +1174,10 @@ static bool wbinfo_xids_to_sids(const char *arg)
 		d_printf("%s\n", str);
 	}
 
-	return true;
+	ret = true;
+fail:
+	TALLOC_FREE(frame);
+	return ret;
 }
 
 static bool wbinfo_allocate_uid(void)
@@ -1502,7 +1510,8 @@ done:
 
 static bool wbinfo_lookup_sids(const char *arg)
 {
-	char sidstr[WBC_SID_STRING_BUFLEN];
+	TALLOC_CTX *frame = talloc_stackframe();
+	char *sidstr = NULL;
 	struct wbcDomainSid *sids;
 	struct wbcDomainInfo *domains;
 	struct wbcTranslatedName *names;
@@ -1510,26 +1519,28 @@ static bool wbinfo_lookup_sids(const char *arg)
 	int i, num_sids;
 	const char *p;
 	wbcErr wbc_status;
-
+	bool ret;
 
 	num_sids = 0;
 	sids = NULL;
 	p = arg;
 
-	while (next_token(&p, sidstr, LIST_SEP, sizeof(sidstr))) {
-		sids = talloc_realloc(talloc_tos(), sids, struct wbcDomainSid,
-				      num_sids+1);
+	while (next_token_talloc(frame, &p, &sidstr, LIST_SEP)) {
+		sids = talloc_realloc(frame,
+				      sids,
+				      struct wbcDomainSid,
+				      num_sids + 1);
 		if (sids == NULL) {
 			d_fprintf(stderr, "talloc failed\n");
-			return false;
+			goto fail;
 		}
 		wbc_status = wbcStringToSid(sidstr, &sids[num_sids]);
 		if (!WBC_ERROR_IS_OK(wbc_status)) {
 			d_fprintf(stderr, "wbcSidToString(%s) failed: %s\n",
 				  sidstr, wbcErrorString(wbc_status));
-			TALLOC_FREE(sids);
-			return false;
+			goto fail;
 		}
+		TALLOC_FREE(sidstr);
 		num_sids += 1;
 	}
 
@@ -1538,8 +1549,7 @@ static bool wbinfo_lookup_sids(const char *arg)
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		d_fprintf(stderr, "wbcLookupSids failed: %s\n",
 			  wbcErrorString(wbc_status));
-		TALLOC_FREE(sids);
-		return false;
+		goto fail;
 	}
 
 	for (i=0; i<num_sids; i++) {
@@ -1568,7 +1578,11 @@ static bool wbinfo_lookup_sids(const char *arg)
 	}
 	wbcFreeMemory(names);
 	wbcFreeMemory(domains);
-	return true;
+
+	ret = true;
+fail:
+	TALLOC_FREE(frame);
+	return ret;
 }
 
 /* Convert string to sid */
