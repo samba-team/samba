@@ -2700,6 +2700,26 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS_COMPRESSED;
 	}
 
+	/*
+	 * If we are creating a TGT, resource groups from our domain are not to
+	 * be put into the PAC. Instead, we take the resource groups directly
+	 * from the original PAC and copy them unmodified into the new one.
+	 */
+	code = samba_kdc_get_user_info_dc(tmp_ctx,
+					  context,
+					  kdc_db_ctx,
+					  client,
+					  &user_info_dc_const,
+					  is_tgs ? &_resource_groups : NULL);
+	if (code != 0) {
+		const char *err_str = krb5_get_error_message(context, code);
+		DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
+			err_str != NULL ? err_str : "<unknown>");
+		krb5_free_error_message(context, err_str);
+
+		goto done;
+	}
+
 	if (!is_tgs) {
 		server_restrictions_present = authn_policy_restrictions_present(
 							server->server_policy);
@@ -2772,26 +2792,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			code = map_errno_from_nt_status(nt_status);
 			goto done;
 		}
-	}
-
-	/*
-	 * If we are creating a TGT, resource groups from our domain are not to
-	 * be put into the PAC. Instead, we take the resource groups directly
-	 * from the original PAC and copy them unmodified into the new one.
-	 */
-	code = samba_kdc_get_user_info_dc(tmp_ctx,
-					  context,
-					  kdc_db_ctx,
-					  client,
-					  &user_info_dc_const,
-					  is_tgs ? &_resource_groups : NULL);
-	if (code != 0) {
-		const char *err_str = krb5_get_error_message(context, code);
-		DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
-			err_str != NULL ? err_str : "<unknown>");
-		krb5_free_error_message(context, err_str);
-
-		goto done;
 	}
 
 	/*
