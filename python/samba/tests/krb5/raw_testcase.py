@@ -705,6 +705,10 @@ class KerberosTicketCreds:
         self.ticket['realm'] = srealm
         self.srealm = srealm
 
+    def __str__(self):
+        return "KerberosTicketCreds(crealm=%s, cname=%s, srealm=%s, sname=%s)" %(
+                self.crealm, self.cname, self.srealm, self.sname)
+
 class PkInit(Enum):
     NOT_USED = object()
     PUBLIC_KEY = object()
