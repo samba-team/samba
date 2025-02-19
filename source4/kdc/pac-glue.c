@@ -2636,7 +2636,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	const DATA_BLOB *client_claims_blob = NULL;
 	DATA_BLOB device_claims_blob = {};
 	const DATA_BLOB *device_claims_blob_ptr = NULL;
-	struct auth_claims auth_claims = {};
+	struct auth_claims pac_claims = {};
 	DATA_BLOB *device_info_blob = NULL;
 	bool is_tgs = false;
 	bool server_restrictions_present = false;
@@ -2702,6 +2702,16 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	/* Fetch the user’s claims. */
+	code = samba_kdc_get_claims_data(tmp_ctx,
+					 context,
+					 kdc_db_ctx,
+					 client,
+					 &pac_claims.user_claims);
+	if (code) {
+		goto done;
+	}
+
 	if (!is_tgs) {
 		server_restrictions_present = authn_policy_restrictions_present(
 							server->server_policy);
@@ -2735,14 +2745,14 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 						 context,
 						 kdc_db_ctx,
 						 device,
-						 &auth_claims.device_claims);
+						 &pac_claims.device_claims);
 		if (code) {
 			goto done;
 		}
 
 		if (compounded_auth) {
 			nt_status = claims_data_encoded_claims_set(tmp_ctx,
-								   auth_claims.device_claims,
+								   pac_claims.device_claims,
 								   &device_claims_blob);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DBG_ERR("claims_data_encoded_claims_set failed: %s\n",
@@ -2793,6 +2803,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	if (server_restrictions_present) {
 		struct samba_kdc_entry_pac auth_entry;
 		const struct auth_user_info_dc *auth_user_info_dc = NULL;
+		struct auth_claims auth_claims = {};
 
 		if (samba_kdc_entry_pac_valid_principal(delegated_proxy)) {
 			auth_entry = delegated_proxy;
@@ -2806,19 +2817,22 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			if (code) {
 				goto done;
 			}
+
+			/* Fetch the delegated proxy claims. */
+			code = samba_kdc_get_claims_data(tmp_ctx,
+							 context,
+							 kdc_db_ctx,
+							 auth_entry,
+							 &auth_claims.user_claims);
+			if (code) {
+				goto done;
+			}
+
+			auth_claims.device_claims = pac_claims.device_claims;
 		} else {
 			auth_entry = client;
 			auth_user_info_dc = user_info_dc_const;
-		}
-
-		/* Fetch the user’s claims. */
-		code = samba_kdc_get_claims_data(tmp_ctx,
-						 context,
-						 kdc_db_ctx,
-						 auth_entry,
-						 &auth_claims.user_claims);
-		if (code) {
-			goto done;
+			auth_claims = pac_claims;
 		}
 
 		/*
