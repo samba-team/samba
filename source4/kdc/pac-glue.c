@@ -2623,8 +2623,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	DATA_BLOB *deleg_blob = NULL;
 	DATA_BLOB *requester_sid_blob = NULL;
 	const DATA_BLOB *client_claims_blob = NULL;
-	DATA_BLOB device_claims_blob = {};
-	const DATA_BLOB *device_claims_blob_ptr = NULL;
+	const DATA_BLOB *device_claims_blob = NULL;
 	struct auth_claims pac_claims = {};
 	DATA_BLOB *device_info_blob = NULL;
 	bool is_tgs = false;
@@ -2637,6 +2636,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	bool compounded_auth = false;
 	bool need_device = false;
 	bool regenerate_client_claims = false;
+	bool regenerate_device_claims = false;
 	size_t i = 0;
 
 	if (server_audit_info_out != NULL) {
@@ -2737,32 +2737,9 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 						 kdc_db_ctx,
 						 device,
 						 &pac_claims.device_claims,
-						 NULL); /* _need_regeneration */
+						 &regenerate_device_claims);
 		if (code) {
 			goto done;
-		}
-
-		if (compounded_auth) {
-			nt_status = claims_data_encoded_claims_set(tmp_ctx,
-								   pac_claims.device_claims,
-								   &device_claims_blob);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				DBG_ERR("claims_data_encoded_claims_set failed: %s\n",
-					nt_errstr(nt_status));
-				code = map_errno_from_nt_status(nt_status);
-				goto done;
-			}
-
-			device_claims_blob_ptr = &device_claims_blob;
-
-			code = samba_kdc_get_device_info_blob(tmp_ctx,
-							      context,
-							      kdc_db_ctx,
-							      device_info_dc,
-							      &device_info_blob);
-			if (code != 0) {
-				goto done;
-			}
 		}
 	}
 
@@ -2942,6 +2919,29 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	if (compounded_auth) {
+		code = samba_kdc_get_device_info_blob(tmp_ctx,
+						      context,
+						      kdc_db_ctx,
+						      device_info_dc,
+						      &device_info_blob);
+		if (code != 0) {
+			goto done;
+		}
+
+		if (regenerate_device_claims) {
+			nt_status = samba_kdc_get_claims_blob(tmp_ctx,
+							      pac_claims.device_claims,
+							      &device_claims_blob);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				DBG_ERR("samba_kdc_get_claims_blob() failed: %s\n",
+					nt_errstr(nt_status));
+				code = map_errno_from_nt_status(nt_status);
+				goto done;
+			}
+		}
+	}
+
 	/* Check the types of the given PAC */
 	code = pac_blobs_from_krb5_pac(tmp_ctx,
 				       context,
@@ -3012,7 +3012,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 	code = pac_blobs_add_blob(pac_blobs,
 				  PAC_TYPE_DEVICE_CLAIMS_INFO,
-				  device_claims_blob_ptr);
+				  device_claims_blob);
 	if (code != 0) {
 		goto done;
 	}
