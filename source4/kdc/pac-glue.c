@@ -2794,7 +2794,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		struct samba_kdc_entry_pac auth_entry;
 		const struct auth_user_info_dc *auth_user_info_dc = NULL;
 
-		if (delegated_proxy.entry != NULL) {
+		if (samba_kdc_entry_pac_valid_principal(delegated_proxy)) {
 			auth_entry = delegated_proxy;
 
 			code = samba_kdc_get_user_info_dc(tmp_ctx,
