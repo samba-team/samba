@@ -68,7 +68,7 @@ enum trust_direction {
 	OUTBOUND = LSA_TRUST_DIRECTION_OUTBOUND
 };
 
-static const char *trust_attrs[] = {
+static const char * const trust_attrs[] = {
 	"securityIdentifier",
 	"flatName",
 	"trustPartner",
@@ -80,6 +80,8 @@ static const char *trust_attrs[] = {
 	"trustAuthOutgoing",
 	"whenCreated",
 	"msDS-SupportedEncryptionTypes",
+	"msDS-IngressClaimsTransformationPolicy",
+	"msDS-EgressClaimsTransformationPolicy",
 	NULL
 };
 
