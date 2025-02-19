@@ -36,6 +36,7 @@
 #include "../lib/util/dlinklist.h"
 #include "lib/crypto/md4.h"
 #include "libcli/ldap/ldap_ndr.h"
+#include "libcli/security/claims_transformation.h"
 
 #undef strcasecmp
 
@@ -3245,4 +3246,113 @@ const struct lsa_TrustDomainInfoInfoEx *dsdb_trust_domain_by_name(
 	}
 
 	return NULL;
+}
+
+NTSTATUS dsdb_trust_get_claims_tf_policy(struct ldb_context *samldb,
+					 const struct ldb_message *tdo_msg,
+					 const char *tdo_attr,
+					 TALLOC_CTX *mem_ctx,
+					 struct claims_tf_rule_set **_rule_set)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	const struct ldb_val *tdo_link_val = NULL;
+	struct ldb_dn *config_dn = NULL;
+	struct ldb_dn *claims_tf_dn = NULL;
+	struct ldb_dn *policy_dn = NULL;
+	struct ldb_message *policy_msg = NULL;
+	static const char * const policy_attrs[] = {
+		"msDS-TransformationRules",
+		NULL
+	};
+	const struct ldb_val *xml_blob = NULL;
+	DATA_BLOB rules_blob = { .length = 0, };
+	struct claims_tf_rule_set *rule_set = NULL;
+	int cmp;
+	bool ok;
+	int ret;
+
+	*_rule_set = NULL;
+
+	tdo_link_val = ldb_msg_find_ldb_val(tdo_msg, tdo_attr);
+	if (tdo_link_val == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_DS_NO_ATTRIBUTE_OR_VALUE;
+	}
+
+	config_dn = ldb_get_config_basedn(samldb);
+	if (config_dn == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_DS_INIT_FAILURE;
+	}
+
+	claims_tf_dn = ldb_dn_copy(frame, config_dn);
+	if (claims_tf_dn == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ok = ldb_dn_add_child_fmt(claims_tf_dn,
+				  "%s,%s,%s",
+				  "CN=Claims Transformation Policies",
+				  "CN=Claims Configuration",
+				  "CN=Services");
+	if (!ok) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	policy_dn = ldb_msg_find_attr_as_dn(samldb, frame, tdo_msg, tdo_attr);
+	if (policy_dn == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/*
+	 * The policy dn needs to be a child of
+	 * the CN=Claims Transformation Policies container
+	 */
+	cmp = ldb_dn_compare_base(claims_tf_dn, policy_dn);
+	if (cmp != 0) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_DS_OBJ_CLASS_VIOLATION;
+	}
+
+	ret = dsdb_search_one(samldb,
+			      frame,
+			      &policy_msg,
+			      policy_dn,
+			      LDB_SCOPE_BASE,
+			      policy_attrs,
+			      DSDB_SEARCH_ONE_ONLY,
+			      "(objectClass=msDS-ClaimsTransformationPolicyType)");
+	if (ret != LDB_SUCCESS) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_POLICY_OBJECT_NOT_FOUND;
+	}
+
+	xml_blob = ldb_msg_find_ldb_val(policy_msg, "msDS-TransformationRules");
+	if (xml_blob == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_DS_NO_ATTRIBUTE_OR_VALUE;
+	}
+
+	ok = claims_tf_policy_unwrap_xml(xml_blob,
+					 &rules_blob);
+	if (!ok) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_DS_INVALID_ATTRIBUTE_SYNTAX;
+	}
+
+	ok = claims_tf_rule_set_parse_blob(&rules_blob,
+					   frame,
+					   &rule_set,
+					   NULL); /* _error_string */
+	if (!ok) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_DS_INVALID_ATTRIBUTE_SYNTAX;
+	}
+
+	*_rule_set = talloc_move(mem_ctx, &rule_set);
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
 }

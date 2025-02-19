@@ -35,6 +35,7 @@ struct gmsa_update_pwd_part;
 struct gmsa_update;
 struct gmsa_return_pwd;
 struct KeyEnvelope;
+struct claims_tf_rule_set;
 
 enum dsdb_password_checked {
 	DSDB_PASSWORD_NOT_CHECKED = 0, /* unused */
