@@ -2663,7 +2663,8 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	struct auth_user_info_dc *user_info_dc_shallow_copy = NULL;
 	const struct PAC_DOMAIN_GROUP_MEMBERSHIP *_resource_groups = NULL;
 	enum auth_group_inclusion group_inclusion;
-	bool compounded_auth;
+	bool compounded_auth = false;
+	bool need_device = false;
 	size_t i = 0;
 
 	if (server_audit_info_out != NULL) {
@@ -2690,8 +2691,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		is_tgs = result;
 	}
 
-	server_restrictions_present = !is_tgs && authn_policy_restrictions_present(server->server_policy);
-
 	/* Only include resource groups in a service ticket. */
 	if (is_tgs) {
 		group_inclusion = AUTH_EXCLUDE_RESOURCE_GROUPS;
@@ -2701,10 +2700,21 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS_COMPRESSED;
 	}
 
-	compounded_auth = device.entry != NULL && !is_tgs
-		&& server->supported_enctypes & KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED;
+	if (!is_tgs) {
+		server_restrictions_present = authn_policy_restrictions_present(
+							server->server_policy);
 
-	if (compounded_auth || (server_restrictions_present && device.entry != NULL)) {
+		if (samba_kdc_entry_pac_valid_principal(device)) {
+			compounded_auth = server->supported_enctypes &
+				KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED;
+
+			if (server_restrictions_present || compounded_auth) {
+				need_device = true;
+			}
+		}
+	}
+
+	if (need_device) {
 		/*
 		 * [MS-KILE] 3.3.5.7.4 Compound Identity: the client claims from
 		 * the device PAC become the device claims in the new PAC.
