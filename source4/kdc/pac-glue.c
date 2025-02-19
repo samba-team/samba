@@ -927,6 +927,7 @@ static bool samba_kdc_entry_pac_valid_principal(
 static
 NTSTATUS samba_kdc_get_logon_info_blob(TALLOC_CTX *mem_ctx,
 				       const struct auth_user_info_dc *user_info_dc,
+				       const struct PAC_DOMAIN_GROUP_MEMBERSHIP *override_resource_groups,
 				       const enum auth_group_inclusion group_inclusion,
 				       DATA_BLOB **_logon_info_blob)
 {
@@ -942,7 +943,7 @@ NTSTATUS samba_kdc_get_logon_info_blob(TALLOC_CTX *mem_ctx,
 
 	nt_status = samba_get_logon_info_pac_blob(logon_blob,
 						  user_info_dc,
-						  NULL,
+						  override_resource_groups,
 						  group_inclusion,
 						  logon_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -2493,6 +2494,7 @@ krb5_error_code samba_kdc_get_pac(TALLOC_CTX *mem_ctx,
 
 	nt_status = samba_kdc_get_logon_info_blob(frame,
 						  user_info_dc,
+						  NULL, /* resource_groups */
 						  group_inclusion,
 						  &logon_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -2875,6 +2877,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	} else {
 		nt_status = samba_kdc_get_logon_info_blob(tmp_ctx,
 							  user_info_dc_const,
+							  _resource_groups,
 							  group_inclusion,
 							  &pac_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
