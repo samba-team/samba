@@ -2855,38 +2855,19 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		user_info_dc_const = user_info_dc_shallow_copy;
 	}
 
+	nt_status = samba_kdc_get_logon_info_blob(tmp_ctx,
+						  user_info_dc_const,
+						  _resource_groups,
+						  group_inclusion,
+						  &pac_blob);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DBG_ERR("samba_kdc_get_logon_info_blob failed: %s\n",
+			nt_errstr(nt_status));
+		code = KRB5KDC_ERR_TGT_REVOKED;
+		goto done;
+	}
+
 	if (samba_krb5_pac_is_trusted(client)) {
-		pac_blob = talloc_zero(tmp_ctx, DATA_BLOB);
-		if (pac_blob == NULL) {
-			code = ENOMEM;
-			goto done;
-		}
-
-		nt_status = samba_get_logon_info_pac_blob(tmp_ctx,
-							  user_info_dc_const,
-							  _resource_groups,
-							  group_inclusion,
-							  pac_blob);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DBG_ERR("samba_get_logon_info_pac_blob failed: %s\n",
-				nt_errstr(nt_status));
-
-			code = map_errno_from_nt_status(nt_status);
-			goto done;
-		}
-	} else {
-		nt_status = samba_kdc_get_logon_info_blob(tmp_ctx,
-							  user_info_dc_const,
-							  _resource_groups,
-							  group_inclusion,
-							  &pac_blob);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DBG_ERR("samba_kdc_get_logon_info_blob failed: %s\n",
-				nt_errstr(nt_status));
-			code = KRB5KDC_ERR_TGT_REVOKED;
-			goto done;
-		}
-
 		nt_status = samba_kdc_get_upn_info_blob(tmp_ctx,
 							user_info_dc_const,
 							&upn_blob);
