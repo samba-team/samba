@@ -448,60 +448,26 @@ krb5_error_code mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 				  krb5_pac *pac)
 {
 	TALLOC_CTX *tmp_ctx;
-	const struct auth_user_info_dc *user_info_dc = NULL;
-	struct auth_user_info_dc *user_info_dc_shallow_copy = NULL;
-	DATA_BLOB *logon_info_blob = NULL;
-	DATA_BLOB *upn_dns_info_blob = NULL;
-	DATA_BLOB *cred_ndr = NULL;
-	DATA_BLOB **cred_ndr_ptr = NULL;
-	DATA_BLOB cred_blob = data_blob_null;
-	DATA_BLOB *pcred_blob = NULL;
-	DATA_BLOB *pac_attrs_blob = NULL;
-	DATA_BLOB *requester_sid_blob = NULL;
-	const DATA_BLOB *client_claims_blob = NULL;
-	NTSTATUS nt_status;
 	krb5_error_code code;
-	struct samba_kdc_entry *skdc_entry;
+	struct samba_kdc_entry *client_entry = NULL;
 	struct samba_kdc_entry *server_entry = NULL;
-	bool is_krbtgt;
-	/* Only include resource groups in a service ticket. */
-	enum auth_group_inclusion group_inclusion;
-	enum samba_asserted_identity asserted_identity =
-		(flags & KRB5_KDB_FLAG_PROTOCOL_TRANSITION) ?
-			SAMBA_ASSERTED_IDENTITY_SERVICE :
-			SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY;
+	uint32_t samba_flags = 0;
+	uint64_t pac_attributes = PAC_ATTRIBUTE_FLAG_PAC_WAS_GIVEN_IMPLICITLY;
 
 	if (client == NULL) {
 		return EINVAL;
 	}
-	skdc_entry = talloc_get_type_abort(client->e_data,
-					   struct samba_kdc_entry);
+	client_entry = talloc_get_type_abort(client->e_data,
+					     struct samba_kdc_entry);
 
        /* This sets the time into the DSDB opaque */
-	*smb_ctx->db_ctx->current_nttime_ull = skdc_entry->current_nttime;
+	*smb_ctx->db_ctx->current_nttime_ull = client_entry->current_nttime;
 
 	if (server == NULL) {
 		return EINVAL;
 	}
-	{
-		int result = smb_krb5_principal_is_tgs(smb_ctx->context, server->princ);
-		if (result == -1) {
-			return ENOMEM;
-		}
-
-		is_krbtgt = result;
-	}
 	server_entry = talloc_get_type_abort(server->e_data,
 					     struct samba_kdc_entry);
-
-	/* Only include resource groups in a service ticket. */
-	if (is_krbtgt) {
-		group_inclusion = AUTH_EXCLUDE_RESOURCE_GROUPS;
-	} else if (server_entry->supported_enctypes & KERB_ENCTYPE_RESOURCE_SID_COMPRESSION_DISABLED) {
-		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS;
-	} else {
-		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS_COMPRESSED;
-	}
 
 	tmp_ctx = talloc_named(smb_ctx,
 			       0,
@@ -510,132 +476,27 @@ krb5_error_code mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 		return ENOMEM;
 	}
 
-	/* Check if we have a PREAUTH key */
-	if (replaced_reply_key != NULL) {
-		cred_ndr_ptr = &cred_ndr;
+	if (flags & KRB5_KDB_FLAG_PROTOCOL_TRANSITION) {
+		samba_flags |= SAMBA_KDC_FLAG_PROTOCOL_TRANSITION;
 	}
 
-	code = samba_kdc_get_user_info_from_db(tmp_ctx,
-					       server_entry->kdc_db_ctx,
-					       skdc_entry,
-					       skdc_entry->msg,
-					       &user_info_dc);
+	code = samba_kdc_get_pac(tmp_ctx,
+				 context,
+				 server_entry->kdc_db_ctx,
+				 samba_flags,
+				 client_entry,
+				 server->princ,
+				 server_entry,
+				 (struct samba_kdc_entry_pac) {} /* device */,
+				 replaced_reply_key,
+				 pac_attributes,
+				 *pac,
+				 NULL /* server_audit_info_out */,
+				 NULL /* status_out */);
 	if (code) {
 		talloc_free(tmp_ctx);
 		return code;
 	}
-
-	/* Make a shallow copy of the user_info_dc structure. */
-	nt_status = authsam_shallow_copy_user_info_dc(tmp_ctx,
-						      user_info_dc,
-						      &user_info_dc_shallow_copy);
-	user_info_dc = NULL;
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to allocate shallow copy of user_info_dc: %s\n",
-			nt_errstr(nt_status));
-		talloc_free(tmp_ctx);
-		return map_errno_from_nt_status(nt_status);
-	}
-
-
-	nt_status = samba_kdc_add_asserted_identity(asserted_identity,
-						    user_info_dc_shallow_copy);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to add asserted identity: %s\n",
-			nt_errstr(nt_status));
-		talloc_free(tmp_ctx);
-		return EINVAL;
-	}
-
-	nt_status = samba_kdc_add_claims_valid(user_info_dc_shallow_copy);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to add Claims Valid: %s\n",
-			nt_errstr(nt_status));
-		talloc_free(tmp_ctx);
-		return EINVAL;
-	}
-
-	/* We no longer need to modify this, so assign to const variable */
-	user_info_dc = user_info_dc_shallow_copy;
-
-	nt_status = samba_kdc_get_logon_info_blob(tmp_ctx,
-						  user_info_dc,
-						  group_inclusion,
-						  &logon_info_blob);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(tmp_ctx);
-		return EINVAL;
-	}
-
-	if (cred_ndr_ptr != NULL) {
-		nt_status = samba_kdc_get_cred_ndr_blob(tmp_ctx,
-							skdc_entry,
-							cred_ndr_ptr);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			talloc_free(tmp_ctx);
-			return EINVAL;
-		}
-	}
-
-	nt_status = samba_kdc_get_upn_info_blob(tmp_ctx,
-						user_info_dc,
-						&upn_dns_info_blob);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(tmp_ctx);
-		return EINVAL;
-	}
-
-	if (is_krbtgt) {
-		nt_status = samba_kdc_get_pac_attrs_blob(tmp_ctx,
-							 PAC_ATTRIBUTE_FLAG_PAC_WAS_GIVEN_IMPLICITLY,
-							 &pac_attrs_blob);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			talloc_free(tmp_ctx);
-			return EINVAL;
-		}
-
-		nt_status = samba_kdc_get_requester_sid_blob(tmp_ctx,
-							     user_info_dc,
-							     &requester_sid_blob);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			talloc_free(tmp_ctx);
-			return EINVAL;
-		}
-	}
-
-	nt_status = samba_kdc_get_claims_blob(tmp_ctx,
-					      skdc_entry,
-					      &client_claims_blob);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(tmp_ctx);
-		return EINVAL;
-	}
-
-	if (replaced_reply_key != NULL && cred_ndr != NULL) {
-		code = samba_kdc_encrypt_pac_credentials(context,
-							 replaced_reply_key,
-							 cred_ndr,
-							 tmp_ctx,
-							 &cred_blob);
-		if (code != 0) {
-			talloc_free(tmp_ctx);
-			return code;
-		}
-		pcred_blob = &cred_blob;
-	}
-
-	code = samba_make_krb5_pac(context,
-				   logon_info_blob,
-				   pcred_blob,
-				   upn_dns_info_blob,
-				   pac_attrs_blob,
-				   requester_sid_blob,
-				   NULL /* deleg_blob */,
-				   client_claims_blob,
-				   NULL /* device_info_blob */,
-				   NULL /* device_claims_blob */,
-				   *pac);
 
 	talloc_free(tmp_ctx);
 	return code;
