@@ -165,7 +165,6 @@ int strncasecmp_ldb(const char *s1,
 int strncasecmp_m(const char *s1, const char *s2, size_t n);
 int strncasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 			 const char *s1, const char *s2, size_t n);
-bool next_token(const char **ptr,char *buff, const char *sep, size_t bufsize);
 int strcasecmp_m_handle(struct smb_iconv_handle *iconv_handle,
 			const char *s1, const char *s2);
 int strcasecmp_m(const char *s1, const char *s2);

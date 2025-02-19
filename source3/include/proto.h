@@ -521,7 +521,6 @@ int poll_intr_one_fd(int fd, int events, int timeout, int *revents);
 
 /* The following definitions come from lib/util_str.c  */
 
-bool next_token(const char **ptr, char *buff, const char *sep, size_t bufsize);
 bool strnequal(const char *s1,const char *s2,size_t n);
 bool strcsequal(const char *s1,const char *s2);
 char *skip_string(const char *base, size_t len, char *buf);
