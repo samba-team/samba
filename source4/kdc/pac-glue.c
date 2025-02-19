@@ -2327,7 +2327,7 @@ krb5_error_code samba_kdc_get_pac(TALLOC_CTX *mem_ctx,
 	DATA_BLOB *upn_blob = NULL;
 	DATA_BLOB *pac_attrs_blob = NULL;
 	DATA_BLOB *requester_sid_blob = NULL;
-	DATA_BLOB client_claims_blob = {};
+	const DATA_BLOB *client_claims_blob = NULL;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	bool is_krbtgt = false;
@@ -2431,9 +2431,9 @@ krb5_error_code samba_kdc_get_pac(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
-	nt_status = claims_data_encoded_claims_set(frame,
-						   auth_claims.user_claims,
-						   &client_claims_blob);
+	nt_status = samba_kdc_get_claims_blob(frame,
+					      auth_claims.user_claims,
+					      &client_claims_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return map_errno_from_nt_status(nt_status);
@@ -2554,7 +2554,7 @@ krb5_error_code samba_kdc_get_pac(TALLOC_CTX *mem_ctx,
 				  pac_attrs_blob,
 				  requester_sid_blob,
 				  NULL, /* deleg_blob */
-				  &client_claims_blob,
+				  client_claims_blob,
 				  NULL, /* device_info_blob */
 				  NULL, /* device_claims_blob */
 				  new_pac);
