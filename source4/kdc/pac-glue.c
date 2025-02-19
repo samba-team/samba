@@ -2661,6 +2661,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	struct pac_blobs *pac_blobs = NULL;
 	const struct auth_user_info_dc *user_info_dc_const = NULL;
 	struct auth_user_info_dc *user_info_dc_shallow_copy = NULL;
+	const struct auth_user_info_dc *device_info_dc = NULL;
 	const struct PAC_DOMAIN_GROUP_MEMBERSHIP *_resource_groups = NULL;
 	enum auth_group_inclusion group_inclusion;
 	bool compounded_auth = false;
@@ -2735,6 +2736,16 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	if (need_device) {
+		code = samba_kdc_get_user_info_dc(tmp_ctx,
+						  context,
+						  kdc_db_ctx,
+						  device,
+						  &device_info_dc,
+						  NULL /* resource_groups_out */);
+		if (code) {
+			goto done;
+		}
+
 		/*
 		 * [MS-KILE] 3.3.5.7.4 Compound Identity: the client claims from
 		 * the device PAC become the device claims in the new PAC.
@@ -2801,7 +2812,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	if (server_restrictions_present) {
 		struct samba_kdc_entry_pac auth_entry;
 		const struct auth_user_info_dc *auth_user_info_dc = NULL;
-		const struct auth_user_info_dc *device_info = NULL;
 
 		if (delegated_proxy.entry != NULL) {
 			auth_entry = delegated_proxy;
@@ -2830,18 +2840,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		if (device.entry != NULL) {
-			code = samba_kdc_get_user_info_dc(tmp_ctx,
-							  context,
-							  kdc_db_ctx,
-							  device,
-							  &device_info,
-							  NULL /* resource_groups_out */);
-			if (code) {
-				goto done;
-			}
-		}
-
 		/*
 		 * Allocate the audit info and output status on to the parent
 		 * mem_ctx, not the temporary context.
@@ -2850,7 +2848,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 							    kdc_db_ctx,
 							    auth_entry.entry,
 							    auth_user_info_dc,
-							    device_info,
+							    device_info_dc,
 							    auth_claims,
 							    server,
 							    server_audit_info_out,
