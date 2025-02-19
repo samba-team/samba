@@ -43,6 +43,7 @@ enum samba_asserted_identity {
 enum {
 	SAMBA_KDC_FLAG_PROTOCOL_TRANSITION    = 0x00000001,
 	SAMBA_KDC_FLAG_CONSTRAINED_DELEGATION = 0x00000002,
+	SAMBA_KDC_FLAG_PKINIT_FRESHNESS_USED  = 0x00000004,
 };
 
 bool samba_kdc_entry_is_trust(const struct samba_kdc_entry *entry);
@@ -126,6 +127,19 @@ krb5_error_code samba_kdc_verify_pac(TALLOC_CTX *mem_ctx,
 				     const struct samba_kdc_entry *krbtgt);
 
 struct authn_audit_info;
+krb5_error_code samba_kdc_get_pac(TALLOC_CTX *mem_ctx,
+				  krb5_context context,
+				  struct samba_kdc_db_context *kdc_db_ctx,
+				  uint32_t flags,
+				  struct samba_kdc_entry *client,
+				  const krb5_const_principal server_principal,
+				  const struct samba_kdc_entry *server,
+				  const struct samba_kdc_entry_pac device,
+				  const krb5_keyblock *pk_reply_key,
+				  uint64_t pac_attributes,
+				  krb5_pac new_pac,
+				  struct authn_audit_info **server_audit_info_out,
+				  NTSTATUS *status_out);
 krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     krb5_context context,
 				     struct samba_kdc_db_context *kdc_db_ctx,

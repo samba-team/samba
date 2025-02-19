@@ -76,44 +76,30 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 {
 	krb5_context context = kdc_request_get_context((kdc_request_t)r);
 	TALLOC_CTX *mem_ctx;
-	DATA_BLOB *logon_blob = NULL;
-	DATA_BLOB *cred_ndr = NULL;
-	DATA_BLOB **cred_ndr_ptr = NULL;
-	DATA_BLOB _cred_blob = data_blob_null;
-	DATA_BLOB *cred_blob = NULL;
-	DATA_BLOB *upn_blob = NULL;
-	DATA_BLOB *pac_attrs_blob = NULL;
-	DATA_BLOB *requester_sid_blob = NULL;
-	DATA_BLOB client_claims_blob = {};
 	krb5_error_code ret;
-	NTSTATUS nt_status;
-	struct samba_kdc_entry *skdc_entry =
+	struct samba_kdc_entry *client_entry =
 		talloc_get_type_abort(client->context,
 		struct samba_kdc_entry);
 	const struct samba_kdc_entry *server_entry =
 		talloc_get_type_abort(server->context,
 		struct samba_kdc_entry);
-	bool is_krbtgt = krb5_principal_is_krbtgt(context, server->principal);
-	enum auth_group_inclusion group_inclusion;
+	const hdb_entry *device = kdc_request_get_armor_client(r);
+	struct samba_kdc_entry_pac device_pac_entry = {};
 	bool is_s4u2self = samba_wdc_is_s4u2self_req(r);
-	enum samba_asserted_identity asserted_identity =
-		(is_s4u2self) ?
-			SAMBA_ASSERTED_IDENTITY_SERVICE :
-			SAMBA_ASSERTED_IDENTITY_AUTHENTICATION_AUTHORITY;
+	uint32_t flags = 0;
 	struct authn_audit_info *server_audit_info = NULL;
 	NTSTATUS reply_status = NT_STATUS_OK;
 
-	const struct auth_user_info_dc *user_info_dc_const = NULL;
-	struct auth_user_info_dc *user_info_dc_shallow_copy = NULL;
-	struct auth_claims auth_claims = {};
+	if (pac == NULL) {
+		return EINVAL;
+	}
 
-	/* Only include resource groups in a service ticket. */
-	if (is_krbtgt) {
-		group_inclusion = AUTH_EXCLUDE_RESOURCE_GROUPS;
-	} else if (server_entry->supported_enctypes & KERB_ENCTYPE_RESOURCE_SID_COMPRESSION_DISABLED) {
-		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS;
-	} else {
-		group_inclusion = AUTH_INCLUDE_RESOURCE_GROUPS_COMPRESSED;
+	if (is_s4u2self) {
+		flags |= SAMBA_KDC_FLAG_PROTOCOL_TRANSITION;
+	}
+
+	if (kdc_request_get_pkinit_freshness_used(r)) {
+		flags |= SAMBA_KDC_FLAG_PKINIT_FRESHNESS_USED;
 	}
 
 	mem_ctx = talloc_named(client->context, 0, "samba_wdc_get_pac context");
@@ -121,212 +107,24 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 		return ENOMEM;
 	}
 
-	if (pk_reply_key != NULL) {
-		cred_ndr_ptr = &cred_ndr;
-	}
+	if (device != NULL) {
+		const hdb_entry *device_krbtgt = NULL;
+		struct samba_kdc_entry *device_skdc_entry = NULL;
+		const struct samba_kdc_entry *device_krbtgt_skdc_entry = NULL;
+		const krb5_const_pac device_pac = kdc_request_get_armor_pac(r);
 
-	ret = samba_kdc_get_user_info_from_db(mem_ctx,
-					      server_entry->kdc_db_ctx,
-					      skdc_entry,
-					      skdc_entry->msg,
-					      &user_info_dc_const);
-	if (ret) {
-		talloc_free(mem_ctx);
-		return ret;
-	}
+		device_skdc_entry = talloc_get_type_abort(device->context,
+							  struct samba_kdc_entry);
 
-	/* Make a shallow copy of the user_info_dc structure. */
-	nt_status = authsam_shallow_copy_user_info_dc(mem_ctx,
-						      user_info_dc_const,
-						      &user_info_dc_shallow_copy);
-	user_info_dc_const = NULL;
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to allocate user_info_dc SIDs: %s\n",
-			nt_errstr(nt_status));
-		talloc_free(mem_ctx);
-		return map_errno_from_nt_status(nt_status);
-	}
-
-	nt_status = samba_kdc_add_asserted_identity(asserted_identity,
-						    user_info_dc_shallow_copy);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to add asserted identity: %s\n",
-			nt_errstr(nt_status));
-		talloc_free(mem_ctx);
-		return map_errno_from_nt_status(nt_status);
-	}
-
-	nt_status = samba_kdc_add_claims_valid(user_info_dc_shallow_copy);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DBG_ERR("Failed to add Claims Valid: %s\n",
-			nt_errstr(nt_status));
-		talloc_free(mem_ctx);
-		return map_errno_from_nt_status(nt_status);
-	}
-
-	if (kdc_request_get_pkinit_freshness_used(r)) {
-		nt_status = samba_kdc_add_fresh_public_key_identity(user_info_dc_shallow_copy);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DBG_ERR("Failed to add Fresh Public Key Identity: %s\n",
-				nt_errstr(nt_status));
-			talloc_free(mem_ctx);
-			return map_errno_from_nt_status(nt_status);
-		}
-	}
-
-	ret = samba_kdc_get_claims_data_from_db(server_entry->kdc_db_ctx->samdb,
-						skdc_entry,
-						&auth_claims.user_claims);
-	if (ret) {
-		talloc_free(mem_ctx);
-		return ret;
-	}
-
-	nt_status = claims_data_encoded_claims_set(mem_ctx,
-						   auth_claims.user_claims,
-						   &client_claims_blob);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(mem_ctx);
-		return map_errno_from_nt_status(nt_status);
-	}
-
-	/*
-	 * For an S4U2Self request, the authentication policy is not enforced.
-	 */
-	if (!is_s4u2self && authn_policy_restrictions_present(server_entry->server_policy)) {
-		const hdb_entry *device = kdc_request_get_armor_client(r);
-		const struct auth_user_info_dc *device_info = NULL;
-
-		if (device != NULL) {
-			const hdb_entry *device_krbtgt = NULL;
-			struct samba_kdc_entry *device_skdc_entry = NULL;
-			const struct samba_kdc_entry *device_krbtgt_skdc_entry = NULL;
-			const krb5_const_pac device_pac = kdc_request_get_armor_pac(r);
-			struct samba_kdc_entry_pac device_pac_entry = {};
-
-			device_skdc_entry = talloc_get_type_abort(device->context,
-								  struct samba_kdc_entry);
-
-			device_krbtgt = kdc_request_get_armor_server(r);
-			if (device_krbtgt != NULL) {
-				device_krbtgt_skdc_entry = talloc_get_type_abort(device_krbtgt->context,
-										 struct samba_kdc_entry);
-			}
-
-			device_pac_entry = samba_kdc_entry_pac(device_pac,
-							       device_skdc_entry,
-							       device_krbtgt_skdc_entry);
-
-			ret = samba_kdc_get_user_info_dc(mem_ctx,
-							 context,
-							 server_entry->kdc_db_ctx,
-							 device_pac_entry,
-							 &device_info,
-							 NULL /* resource_groups_out */);
-			if (ret) {
-				talloc_free(mem_ctx);
-				return ret;
-			}
-
-			ret = samba_kdc_get_claims_data(mem_ctx,
-							context,
-							server_entry->kdc_db_ctx,
-							device_pac_entry,
-							&auth_claims.device_claims);
-			if (ret) {
-				talloc_free(mem_ctx);
-				return ret;
-			}
+		device_krbtgt = kdc_request_get_armor_server(r);
+		if (device_krbtgt != NULL) {
+			device_krbtgt_skdc_entry = talloc_get_type_abort(device_krbtgt->context,
+									 struct samba_kdc_entry);
 		}
 
-		ret = samba_kdc_allowed_to_authenticate_to(mem_ctx,
-							   server_entry->kdc_db_ctx,
-							   skdc_entry,
-							   user_info_dc_shallow_copy,
-							   device_info,
-							   auth_claims,
-							   server_entry,
-							   &server_audit_info,
-							   &reply_status);
-		if (server_audit_info != NULL) {
-			krb5_error_code ret2;
-
-			ret2 = hdb_samba4_set_steal_server_audit_info(r, server_audit_info);
-			if (ret == 0) {
-				ret = ret2;
-			}
-		}
-		if (!NT_STATUS_IS_OK(reply_status)) {
-			krb5_error_code ret2;
-
-			ret2 = hdb_samba4_set_ntstatus(r, reply_status, ret);
-			if (ret == 0) {
-				ret = ret2;
-			}
-		}
-		if (ret) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
-	}
-
-	nt_status = samba_kdc_get_logon_info_blob(mem_ctx,
-						  user_info_dc_shallow_copy,
-						  group_inclusion,
-						  &logon_blob);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(mem_ctx);
-		return map_errno_from_nt_status(nt_status);
-	}
-
-	if (cred_ndr_ptr != NULL) {
-		nt_status = samba_kdc_get_cred_ndr_blob(mem_ctx,
-							skdc_entry,
-							cred_ndr_ptr);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			talloc_free(mem_ctx);
-			return map_errno_from_nt_status(nt_status);
-		}
-	}
-
-	nt_status = samba_kdc_get_upn_info_blob(mem_ctx,
-						user_info_dc_shallow_copy,
-						&upn_blob);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(mem_ctx);
-		return map_errno_from_nt_status(nt_status);
-	}
-
-	if (is_krbtgt) {
-		nt_status = samba_kdc_get_pac_attrs_blob(mem_ctx,
-							 pac_attributes,
-							 &pac_attrs_blob);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			talloc_free(mem_ctx);
-			return map_errno_from_nt_status(nt_status);
-		}
-
-		nt_status = samba_kdc_get_requester_sid_blob(mem_ctx,
-							     user_info_dc_shallow_copy,
-							     &requester_sid_blob);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			talloc_free(mem_ctx);
-			return map_errno_from_nt_status(nt_status);
-		}
-	}
-
-	if (pk_reply_key != NULL && cred_ndr != NULL) {
-		ret = samba_kdc_encrypt_pac_credentials(context,
-							pk_reply_key,
-							cred_ndr,
-							mem_ctx,
-							&_cred_blob);
-		if (ret != 0) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
-		cred_blob = &_cred_blob;
+		device_pac_entry = samba_kdc_entry_pac(device_pac,
+						       device_skdc_entry,
+						       device_krbtgt_skdc_entry);
 	}
 
 	ret = krb5_pac_init(context, pac);
@@ -335,11 +133,41 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 		return ret;
 	}
 
-	ret = samba_make_krb5_pac(context, logon_blob, cred_blob,
-				  upn_blob, pac_attrs_blob,
-				  requester_sid_blob, NULL,
-				  &client_claims_blob, NULL, NULL,
-				  *pac);
+	ret = samba_kdc_get_pac(mem_ctx,
+				context,
+				server_entry->kdc_db_ctx,
+				flags,
+				client_entry,
+				server->principal,
+				server_entry,
+				device_pac_entry,
+				pk_reply_key,
+				pac_attributes,
+				*pac,
+				&server_audit_info,
+				&reply_status);
+	if (server_audit_info != NULL) {
+		krb5_error_code ret2;
+
+		ret2 = hdb_samba4_set_steal_server_audit_info(r, server_audit_info);
+		if (ret == 0) {
+			ret = ret2;
+		}
+	}
+	if (!NT_STATUS_IS_OK(reply_status)) {
+		krb5_error_code ret2;
+
+		ret2 = hdb_samba4_set_ntstatus(r, reply_status, ret);
+		if (ret == 0) {
+			ret = ret2;
+		}
+	}
+	if (ret) {
+		krb5_pac_free(context, *pac);
+		*pac = NULL;
+		talloc_free(mem_ctx);
+		return ret;
+	}
 
 	talloc_free(mem_ctx);
 	return ret;
