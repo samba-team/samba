@@ -759,8 +759,11 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 {
 	krb5_context context = kdc_request_get_context((kdc_request_t)r);
 	TALLOC_CTX *tmp_ctx = NULL;
-	const hdb_entry *client = NULL;
-	struct samba_kdc_entry *kdc_entry;
+	const hdb_entry *_client = NULL;
+	struct samba_kdc_entry *client = NULL;
+	struct samba_kdc_db_context *kdc_db_ctx = NULL;
+	const hdb_entry *_server = NULL;
+	struct samba_kdc_entry *server = NULL;
 	struct samba_kdc_entry_pac device = {};
 	struct authn_audit_info *client_audit_info = NULL;
 	bool password_change;
@@ -769,22 +772,31 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 	NTSTATUS check_device_status = NT_STATUS_OK;
 	krb5_error_code ret = 0;
 
-	client = kdc_request_get_client(r);
+	/*
+	 * Note _kdc_as_rep() calls _kdc_check_access()
+	 * only after client and server are found
+	 * in the database!
+	 */
+	_client = kdc_request_get_client(r);
+	client = talloc_get_type_abort(_client->context, struct samba_kdc_entry);
+	kdc_db_ctx = client->kdc_db_ctx;
+	_server = kdc_request_get_server(r);
+	server = talloc_get_type_abort(_server->context, struct samba_kdc_entry);
+	/* We only have a single database! */
+	SMB_ASSERT(server->kdc_db_ctx == kdc_db_ctx);
 
-	tmp_ctx = talloc_named(client->context, 0, "samba_wdc_check_client_access");
+	tmp_ctx = talloc_named(client, 0, "samba_wdc_check_client_access");
 	if (tmp_ctx == NULL) {
 		return ENOMEM;
 	}
-
-	kdc_entry = talloc_get_type_abort(client->context, struct samba_kdc_entry);
 
 	device = samba_kdc_get_device_pac(r);
 
 	ret = samba_kdc_check_device(tmp_ctx,
 				     context,
-				     kdc_entry->kdc_db_ctx,
+				     kdc_db_ctx,
 				     device,
-				     kdc_entry->client_policy,
+				     client->client_policy,
 				     &client_audit_info,
 				     &check_device_status);
 	if (client_audit_info != NULL) {
@@ -795,7 +807,7 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 			ret = ret2;
 		}
 	}
-	kdc_entry->reject_status = check_device_status;
+	client->reject_status = check_device_status;
 	if (!NT_STATUS_IS_OK(check_device_status)) {
 		krb5_error_code ret2;
 
@@ -822,14 +834,14 @@ static krb5_error_code samba_wdc_check_client_access(void *priv,
 
 	workstation = get_netbios_name(tmp_ctx,
 				       kdc_request_get_req(r)->req_body.addresses);
-	password_change = (kdc_request_get_server(r) && kdc_request_get_server(r)->flags.change_pw);
+	password_change = _server->flags.change_pw;
 
-	nt_status = samba_kdc_check_client_access(kdc_entry,
+	nt_status = samba_kdc_check_client_access(client,
 						  kdc_request_get_cname((kdc_request_t)r),
 						  workstation,
 						  password_change);
 
-	kdc_entry->reject_status = nt_status;
+	client->reject_status = nt_status;
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		krb5_error_code ret2;
 
