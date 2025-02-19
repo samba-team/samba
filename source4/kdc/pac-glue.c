@@ -1112,13 +1112,11 @@ krb5_error_code samba_kdc_get_claims_data_from_db(struct ldb_context *samdb,
 
 static
 NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
-				   struct samba_kdc_entry *p,
+				   struct claims_data *claims_data,
 				   const DATA_BLOB **_claims_blob)
 {
 	DATA_BLOB *claims_blob = NULL;
-	struct claims_data *claims_data = NULL;
 	NTSTATUS nt_status;
-	int ret;
 
 	SMB_ASSERT(_claims_blob != NULL);
 
@@ -1127,17 +1125,6 @@ NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 	claims_blob = talloc_zero(mem_ctx, DATA_BLOB);
 	if (claims_blob == NULL) {
 		return NT_STATUS_NO_MEMORY;
-	}
-
-	ret = samba_kdc_get_claims_data_from_db(p->kdc_db_ctx->samdb,
-						p,
-						&claims_data);
-	if (ret != LDB_SUCCESS) {
-		nt_status = dsdb_ldb_err_to_ntstatus(ret);
-		DBG_ERR("Building claims failed: %s\n",
-			nt_errstr(nt_status));
-		talloc_free(claims_blob);
-		return nt_status;
 	}
 
 	nt_status = claims_data_encoded_claims_set(claims_blob,
@@ -2946,7 +2933,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 		/* Don't trust RODC-issued claims. Regenerate them. */
 		nt_status = samba_kdc_get_claims_blob(tmp_ctx,
-						      client.entry,
+						      pac_claims.user_claims,
 						      &client_claims_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DBG_ERR("samba_kdc_get_claims_blob failed: %s\n",
