@@ -2771,6 +2771,9 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	bool need_device = false;
 	bool regenerate_client_claims = false;
 	bool regenerate_device_claims = false;
+	bool need_access_check = false;
+	const struct auth_user_info_dc *deleg_info_dc = NULL;
+	struct auth_claims deleg_claims = {};
 	size_t i = 0;
 
 	if (server_audit_info_out != NULL) {
@@ -2848,11 +2851,15 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		server_restrictions_present = authn_policy_restrictions_present(
 							server->server_policy);
 
+		if (server_restrictions_present) {
+			need_access_check = true;
+		}
+
 		if (samba_kdc_entry_pac_valid_principal(device)) {
 			compounded_auth = server->supported_enctypes &
 				KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED;
 
-			if (server_restrictions_present || compounded_auth) {
+			if (need_access_check || compounded_auth) {
 				need_device = true;
 			}
 		}
@@ -2913,6 +2920,33 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	if (need_access_check &&
+	    samba_kdc_entry_pac_valid_principal(delegated_proxy))
+	{
+		code = samba_kdc_get_user_info_dc(tmp_ctx,
+						  context,
+						  kdc_db_ctx,
+						  delegated_proxy,
+						  &deleg_info_dc,
+						  NULL /* resource_groups_out */);
+		if (code) {
+			goto done;
+		}
+
+		/* Fetch the delegated proxy claims. */
+		code = samba_kdc_get_claims_data(tmp_ctx,
+						 context,
+						 kdc_db_ctx,
+						 delegated_proxy,
+						 &deleg_claims.user_claims,
+						 NULL); /* _need_regeneration */
+		if (code) {
+			goto done;
+		}
+
+		deleg_claims.device_claims = pac_claims.device_claims;
+	}
+
 	/*
 	 * Enforce the AllowedToAuthenticateTo part of an authentication policy,
 	 * if one is present.
@@ -2924,29 +2958,8 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 
 		if (samba_kdc_entry_pac_valid_principal(delegated_proxy)) {
 			auth_entry = delegated_proxy;
-
-			code = samba_kdc_get_user_info_dc(tmp_ctx,
-							  context,
-							  kdc_db_ctx,
-							  delegated_proxy,
-							  &auth_user_info_dc,
-							  NULL /* resource_groups_out */);
-			if (code) {
-				goto done;
-			}
-
-			/* Fetch the delegated proxy claims. */
-			code = samba_kdc_get_claims_data(tmp_ctx,
-							 context,
-							 kdc_db_ctx,
-							 auth_entry,
-							 &auth_claims.user_claims,
-							 NULL); /* _need_regeneration */
-			if (code) {
-				goto done;
-			}
-
-			auth_claims.device_claims = pac_claims.device_claims;
+			auth_user_info_dc = deleg_info_dc;
+			auth_claims = deleg_claims;
 		} else {
 			auth_entry = client;
 			auth_user_info_dc = user_info_dc_const;
