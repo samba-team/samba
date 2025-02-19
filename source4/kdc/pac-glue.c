@@ -2102,36 +2102,18 @@ static krb5_error_code samba_kdc_get_device_info_pac_blob(TALLOC_CTX *mem_ctx,
 static krb5_error_code samba_kdc_get_device_info_blob(TALLOC_CTX *mem_ctx,
 						      krb5_context context,
 						      struct samba_kdc_db_context *kdc_db_ctx,
-						      const struct samba_kdc_entry_pac device,
+						      const struct auth_user_info_dc *device_info,
 						      DATA_BLOB **device_info_blob)
 {
 	TALLOC_CTX *frame = NULL;
 	krb5_error_code code = EINVAL;
 	NTSTATUS nt_status;
-
-	const struct auth_user_info_dc *device_info = NULL;
 	struct netr_SamInfo3 *info3 = NULL;
 	struct PAC_DOMAIN_GROUP_MEMBERSHIP *resource_groups = NULL;
 
 	union PAC_INFO info;
 
 	frame = talloc_stackframe();
-
-	code = samba_kdc_get_user_info_dc(frame,
-					  context,
-					  kdc_db_ctx,
-					  device,
-					  &device_info,
-					  NULL /* resource_groups_out */);
-	if (code) {
-		const char *krb5_err = krb5_get_error_message(context, code);
-		DBG_ERR("samba_kdc_get_user_info_dc failed: %s\n",
-			krb5_err != NULL ? krb5_err : "<unknown>");
-		krb5_free_error_message(context, krb5_err);
-
-		talloc_free(frame);
-		return KRB5KDC_ERR_TGT_REVOKED;
-	}
 
 	nt_status = auth_convert_user_info_dc_saminfo3(frame, device_info,
 						       AUTH_INCLUDE_RESOURCE_GROUPS_COMPRESSED,
@@ -2774,7 +2756,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			code = samba_kdc_get_device_info_blob(tmp_ctx,
 							      context,
 							      kdc_db_ctx,
-							      device,
+							      device_info_dc,
 							      &device_info_blob);
 			if (code != 0) {
 				goto done;
