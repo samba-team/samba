@@ -46,8 +46,6 @@ enum {
 	SAMBA_KDC_FLAG_PKINIT_FRESHNESS_USED  = 0x00000004,
 };
 
-bool samba_kdc_entry_is_trust(const struct samba_kdc_entry *entry);
-
 struct samba_kdc_entry_pac {
 	struct samba_kdc_entry *entry;
 	const struct samba_kdc_entry *krbtgt;
@@ -56,13 +54,6 @@ struct samba_kdc_entry_pac {
 	bool pac_is_trusted : 1;
 #endif /* HAVE_KRB5_PAC_IS_TRUSTED */
 };
-
-/*
- * Return true if this entry has an associated PAC issued or signed by a KDC
- * that our KDC trusts. We trust the main krbtgt account, but we don’t trust any
- * RODC krbtgt besides ourselves.
- */
-bool samba_krb5_pac_is_trusted(const struct samba_kdc_entry_pac pac);
 
 #ifdef HAVE_KRB5_PAC_IS_TRUSTED /* Heimdal */
 struct samba_kdc_entry_pac samba_kdc_entry_pac(krb5_const_pac pac,
@@ -74,24 +65,6 @@ struct samba_kdc_entry_pac samba_kdc_entry_pac_from_trusted(krb5_const_pac pac,
 							    const struct samba_kdc_entry *krbtgt_entry,
 							    bool is_trusted);
 #endif /* HAVE_KRB5_PAC_IS_TRUSTED */
-
-krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
-						  const krb5_keyblock *pkreplykey,
-						  const DATA_BLOB *cred_ndr_blob,
-						  TALLOC_CTX *mem_ctx,
-						  DATA_BLOB *cred_info_blob);
-
-krb5_error_code samba_make_krb5_pac(krb5_context context,
-				    const DATA_BLOB *logon_blob,
-				    const DATA_BLOB *cred_blob,
-				    const DATA_BLOB *upn_blob,
-				    const DATA_BLOB *pac_attrs_blob,
-				    const DATA_BLOB *requester_sid_blob,
-				    const DATA_BLOB *deleg_blob,
-				    const DATA_BLOB *client_claims_blob,
-				    const DATA_BLOB *device_info_blob,
-				    const DATA_BLOB *device_claims_blob,
-				    krb5_pac pac);
 
 bool samba_princ_needs_pac(const struct samba_kdc_entry *skdc_entry);
 
@@ -154,36 +127,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     struct authn_audit_info **server_audit_info_out,
 				     NTSTATUS *status_out);
 
-NTSTATUS samba_kdc_get_logon_info_blob(TALLOC_CTX *mem_ctx,
-				       const struct auth_user_info_dc *user_info_dc,
-				       enum auth_group_inclusion group_inclusion,
-				       DATA_BLOB **_logon_info_blob);
-NTSTATUS samba_kdc_get_cred_ndr_blob(TALLOC_CTX *mem_ctx,
-				     const struct samba_kdc_entry *p,
-				     DATA_BLOB **_cred_ndr_blob);
-NTSTATUS samba_kdc_get_upn_info_blob(TALLOC_CTX *mem_ctx,
-				     const struct auth_user_info_dc *user_info_dc,
-				     DATA_BLOB **_upn_info_blob);
-NTSTATUS samba_kdc_get_pac_attrs_blob(TALLOC_CTX *mem_ctx,
-				      uint64_t pac_attributes,
-				      DATA_BLOB **_pac_attrs_blob);
-NTSTATUS samba_kdc_get_requester_sid_blob(TALLOC_CTX *mem_ctx,
-					  const struct auth_user_info_dc *user_info_dc,
-					  DATA_BLOB **_requester_sid_blob);
-NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
-				   struct samba_kdc_entry *p,
-				   const DATA_BLOB **_claims_blob);
-
-krb5_error_code samba_kdc_allowed_to_authenticate_to(TALLOC_CTX *mem_ctx,
-						     struct samba_kdc_db_context *kdc_db_ctx,
-						     const struct samba_kdc_entry *client,
-						     const struct auth_user_info_dc *client_info,
-						     const struct auth_user_info_dc *device_info,
-						     const struct auth_claims auth_claims,
-						     const struct samba_kdc_entry *server,
-						     struct authn_audit_info **server_audit_info_out,
-						     NTSTATUS *status_out);
-
 krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 				       krb5_context context,
 				       struct samba_kdc_db_context *kdc_db_ctx,
@@ -197,18 +140,3 @@ krb5_error_code samba_kdc_get_claims_data(TALLOC_CTX *mem_ctx,
 					  struct samba_kdc_db_context *kdc_db_ctx,
 					  struct samba_kdc_entry_pac entry,
 					  struct claims_data **claims_data_out);
-
-krb5_error_code samba_kdc_get_claims_data_from_pac(TALLOC_CTX *mem_ctx,
-						   krb5_context context,
-						   struct samba_kdc_entry_pac entry,
-						   struct claims_data **claims_data_out);
-
-krb5_error_code samba_kdc_get_claims_data_from_db(struct ldb_context *samdb,
-						  struct samba_kdc_entry *entry,
-						  struct claims_data **claims_data_out);
-
-NTSTATUS samba_kdc_add_asserted_identity(enum samba_asserted_identity ai,
-					 struct auth_user_info_dc *user_info_dc);
-
-NTSTATUS samba_kdc_add_claims_valid(struct auth_user_info_dc *user_info_dc);
-NTSTATUS samba_kdc_add_fresh_public_key_identity(struct auth_user_info_dc *user_info_dc);

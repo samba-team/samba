@@ -314,6 +314,7 @@ NTSTATUS samba_get_cred_info_ndr_blob(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static
 krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 						  const krb5_keyblock *pkreplykey,
 						  const DATA_BLOB *cred_ndr_blob,
@@ -523,6 +524,7 @@ out:
  *
  * @returns 0 on success or a corresponding KRB5 error.
  */
+static
 krb5_error_code samba_make_krb5_pac(krb5_context context,
 				    const DATA_BLOB *logon_blob,
 				    const DATA_BLOB *cred_blob,
@@ -788,6 +790,7 @@ krb5_error_code samba_krbtgt_is_in_db(const struct samba_kdc_entry *p,
  *
  * https://docs.microsoft.com/en-us/windows-server/security/kerberos/kerberos-constrained-delegation-overview
  */
+static
 NTSTATUS samba_kdc_add_asserted_identity(enum samba_asserted_identity ai,
 					 struct auth_user_info_dc *user_info_dc)
 {
@@ -814,6 +817,7 @@ NTSTATUS samba_kdc_add_asserted_identity(enum samba_asserted_identity ai,
 		&user_info_dc->num_sids);
 }
 
+static
 NTSTATUS samba_kdc_add_claims_valid(struct auth_user_info_dc *user_info_dc)
 {
 	return add_sid_to_array_attrs_unique(
@@ -824,6 +828,7 @@ NTSTATUS samba_kdc_add_claims_valid(struct auth_user_info_dc *user_info_dc)
 		&user_info_dc->num_sids);
 }
 
+static
 NTSTATUS samba_kdc_add_fresh_public_key_identity(struct auth_user_info_dc *user_info_dc)
 {
 	return add_sid_to_array_attrs_unique(
@@ -844,7 +849,7 @@ static NTSTATUS samba_kdc_add_compounded_auth(struct auth_user_info_dc *user_inf
 		&user_info_dc->num_sids);
 }
 
-bool samba_kdc_entry_is_trust(const struct samba_kdc_entry *entry)
+static bool samba_kdc_entry_is_trust(const struct samba_kdc_entry *entry)
 {
 	return entry != NULL && entry->is_trust;
 }
@@ -854,7 +859,7 @@ bool samba_kdc_entry_is_trust(const struct samba_kdc_entry *entry)
  * that our KDC trusts. We trust the main krbtgt account, but we don’t trust any
  * RODC krbtgt besides ourselves.
  */
-bool samba_krb5_pac_is_trusted(const struct samba_kdc_entry_pac pac)
+static bool samba_krb5_pac_is_trusted(const struct samba_kdc_entry_pac pac)
 {
 	if (pac.pac == NULL) {
 		return false;
@@ -918,6 +923,7 @@ static bool samba_kdc_entry_pac_valid_principal(
 	return entry.pac != NULL || entry.entry != NULL || entry.krbtgt != NULL;
 }
 
+static
 NTSTATUS samba_kdc_get_logon_info_blob(TALLOC_CTX *mem_ctx,
 				       const struct auth_user_info_dc *user_info_dc,
 				       const enum auth_group_inclusion group_inclusion,
@@ -950,6 +956,7 @@ NTSTATUS samba_kdc_get_logon_info_blob(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static
 NTSTATUS samba_kdc_get_cred_ndr_blob(TALLOC_CTX *mem_ctx,
 				     const struct samba_kdc_entry *p,
 				     DATA_BLOB **_cred_ndr_blob)
@@ -981,6 +988,7 @@ NTSTATUS samba_kdc_get_cred_ndr_blob(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static
 NTSTATUS samba_kdc_get_upn_info_blob(TALLOC_CTX *mem_ctx,
 				     const struct auth_user_info_dc *user_info_dc,
 				     DATA_BLOB **_upn_info_blob)
@@ -1010,6 +1018,7 @@ NTSTATUS samba_kdc_get_upn_info_blob(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static
 NTSTATUS samba_kdc_get_pac_attrs_blob(TALLOC_CTX *mem_ctx,
 				      uint64_t pac_attributes,
 				      DATA_BLOB **_pac_attrs_blob)
@@ -1051,6 +1060,7 @@ NTSTATUS samba_kdc_get_pac_attrs_blob(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static
 NTSTATUS samba_kdc_get_requester_sid_blob(TALLOC_CTX *mem_ctx,
 					  const struct auth_user_info_dc *user_info_dc,
 					  DATA_BLOB **_requester_sid_blob)
@@ -1094,6 +1104,12 @@ NTSTATUS samba_kdc_get_requester_sid_blob(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static
+krb5_error_code samba_kdc_get_claims_data_from_db(struct ldb_context *samdb,
+						  struct samba_kdc_entry *entry,
+						  struct claims_data **claims_data_out);
+
+static
 NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
 				   struct samba_kdc_entry *p,
 				   const DATA_BLOB **_claims_blob)
@@ -1802,6 +1818,7 @@ static WERROR samba_rodc_confirm_user_is_allowed(uint32_t num_object_sids,
  * server. ‘client_info’ must be talloc-allocated so that we can make a
  * reference to it.
  */
+static
 krb5_error_code samba_kdc_allowed_to_authenticate_to(TALLOC_CTX *mem_ctx,
 						     struct samba_kdc_db_context *kdc_db_ctx,
 						     const struct samba_kdc_entry *client,
@@ -3120,6 +3137,12 @@ done:
 	return code;
 }
 
+static
+krb5_error_code samba_kdc_get_claims_data_from_pac(TALLOC_CTX *mem_ctx,
+						   krb5_context context,
+						   struct samba_kdc_entry_pac entry,
+						   struct claims_data **claims_data_out);
+
 krb5_error_code samba_kdc_get_claims_data(TALLOC_CTX *mem_ctx,
 					  krb5_context context,
 					  struct samba_kdc_db_context *kdc_db_ctx,
@@ -3155,6 +3178,7 @@ krb5_error_code samba_kdc_get_claims_data(TALLOC_CTX *mem_ctx,
 						 claims_data_out);
 }
 
+static
 krb5_error_code samba_kdc_get_claims_data_from_pac(TALLOC_CTX *mem_ctx,
 						   krb5_context context,
 						   struct samba_kdc_entry_pac entry,
@@ -3232,6 +3256,7 @@ out:
 	return code;
 }
 
+static
 krb5_error_code samba_kdc_get_claims_data_from_db(struct ldb_context *samdb,
 						  struct samba_kdc_entry *entry,
 						  struct claims_data **claims_data_out)
