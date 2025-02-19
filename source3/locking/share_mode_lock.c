@@ -99,14 +99,15 @@ static NTSTATUS share_mode_g_lock_dump(TDB_DATA key,
 
 static NTSTATUS share_mode_g_lock_writev(TDB_DATA key,
 					 const TDB_DATA *dbufs,
-					 size_t num_dbufs)
+					 size_t num_dbufs,
+					 int flags)
 {
 	if (share_mode_g_lock_within_cb(key)) {
 		return g_lock_lock_cb_writev(current_share_mode_glck,
-					     dbufs, num_dbufs, 0);
+					     dbufs, num_dbufs, flags);
 	}
 
-	return g_lock_writev_data(lock_ctx, key, dbufs, num_dbufs, 0);
+	return g_lock_writev_data(lock_ctx, key, dbufs, num_dbufs, flags);
 }
 
 static bool locking_init_internal(bool read_only)
@@ -535,7 +536,7 @@ static NTSTATUS locking_tdb_data_store(
 		/*
 		 * Nothing to write
 		 */
-		status = share_mode_g_lock_writev(key, NULL, 0);
+		status = share_mode_g_lock_writev(key, NULL, 0, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("share_mode_g_lock_writev(NULL) failed: %s\n",
 				nt_errstr(status));
@@ -569,7 +570,7 @@ static NTSTATUS locking_tdb_data_store(
 		       num_share_mode_dbufs * sizeof(TDB_DATA));
 	}
 
-	status = share_mode_g_lock_writev(key, dbufs, ARRAY_SIZE(dbufs));
+	status = share_mode_g_lock_writev(key, dbufs, ARRAY_SIZE(dbufs), 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("share_mode_g_lock_writev() failed: %s\n",
 			nt_errstr(status));
