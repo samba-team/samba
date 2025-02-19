@@ -2636,6 +2636,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	enum auth_group_inclusion group_inclusion;
 	bool compounded_auth = false;
 	bool need_device = false;
+	bool regenerate_client_claims = false;
 	size_t i = 0;
 
 	if (server_audit_info_out != NULL) {
@@ -2697,7 +2698,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 					 kdc_db_ctx,
 					 client,
 					 &pac_claims.user_claims,
-					 NULL); /* _need_regeneration */
+					 &regenerate_client_claims);
 	if (code) {
 		goto done;
 	}
@@ -2894,14 +2895,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			code = map_errno_from_nt_status(nt_status);
 			goto done;
 		}
-
-		/*
-		 * TODO: we need claim translation over trusts,
-		 * for now we just clear them...
-		 */
-		if (samba_kdc_entry_pac_issued_by_trust(client)) {
-			client_claims_blob = &data_blob_null;
-		}
 	} else {
 		nt_status = samba_kdc_get_logon_info_blob(tmp_ctx,
 							  user_info_dc_const,
@@ -2935,8 +2928,9 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				goto done;
 			}
 		}
+	}
 
-		/* Don't trust RODC-issued claims. Regenerate them. */
+	if (regenerate_client_claims) {
 		nt_status = samba_kdc_get_claims_blob(tmp_ctx,
 						      pac_claims.user_claims,
 						      &client_claims_blob);
