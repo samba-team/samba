@@ -707,9 +707,6 @@ NTSTATUS claims_data_encoded_claims_set(TALLOC_CTX *mem_ctx,
 					struct claims_data *claims_data,
 					DATA_BLOB *encoded_claims_set_out)
 {
-	uint8_t *data = NULL;
-	size_t len;
-
 	if (encoded_claims_set_out == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -738,15 +735,16 @@ NTSTATUS claims_data_encoded_claims_set(TALLOC_CTX *mem_ctx,
 		claims_data->flags |= CLAIMS_DATA_ENCODED_CLAIMS_PRESENT;
 	}
 
-	if (claims_data->encoded_claims_set.data != NULL) {
-		data = talloc_reference(mem_ctx, claims_data->encoded_claims_set.data);
-		if (data == NULL) {
+	if (claims_data->encoded_claims_set.length != 0) {
+		*encoded_claims_set_out = data_blob_dup_talloc(mem_ctx,
+						claims_data->encoded_claims_set);
+		if (encoded_claims_set_out->length !=
+		    claims_data->encoded_claims_set.length)
+		{
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
-	len = claims_data->encoded_claims_set.length;
 
-	*encoded_claims_set_out = data_blob_const(data, len);
 	return NT_STATUS_OK;
 }
 
