@@ -2660,7 +2660,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	bool server_restrictions_present = false;
 	struct pac_blobs *pac_blobs = NULL;
 	const struct auth_user_info_dc *user_info_dc_const = NULL;
-	struct auth_user_info_dc *user_info_dc_shallow_copy = NULL;
 	const struct auth_user_info_dc *device_info_dc = NULL;
 	const struct PAC_DOMAIN_GROUP_MEMBERSHIP *_resource_groups = NULL;
 	enum auth_group_inclusion group_inclusion;
@@ -2859,6 +2858,8 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	if (compounded_auth) {
+		struct auth_user_info_dc *user_info_dc_shallow_copy = NULL;
+
 		/* Make a shallow copy of the user_info_dc structure. */
 		nt_status = authsam_shallow_copy_user_info_dc(tmp_ctx,
 							      user_info_dc_const,
