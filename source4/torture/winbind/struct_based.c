@@ -300,7 +300,7 @@ static bool get_trusted_domains(struct torture_context *torture,
 	struct winbindd_response rep;
 	struct torture_trust_domain *d = NULL;
 	uint32_t dcount = 0;
-	char line[256];
+	char *line = NULL;
 	const char *extra_data;
 
 	ZERO_STRUCT(req);
@@ -314,7 +314,7 @@ static bool get_trusted_domains(struct torture_context *torture,
 		       "should be returned, with at least 2 entries "
 		       "(BUILTIN, and the local domain)");
 
-	while (next_token(&extra_data, line, "\n", sizeof(line))) {
+	while (next_token_talloc(torture, &extra_data, &line, "\n")) {
 		char *p, *lp;
 
 		d = talloc_realloc(torture, d,
@@ -343,6 +343,7 @@ static bool get_trusted_domains(struct torture_context *torture,
 			       "failed to parse sid");
 
 		dcount++;
+		TALLOC_FREE(line);
 	}
 	SAFE_FREE(rep.extra_data.data);
 
@@ -630,7 +631,7 @@ static bool get_user_list(struct torture_context *torture, char ***users)
 	struct winbindd_response rep;
 	char **u = NULL;
 	uint32_t count;
-	char name[256];
+	char *name = NULL;
 	const char *extra_data;
 
 	ZERO_STRUCT(req);
@@ -642,12 +643,12 @@ static bool get_user_list(struct torture_context *torture, char ***users)
 	torture_assert(torture, extra_data, "NULL extra data");
 
 	for(count = 0;
-	    next_token(&extra_data, name, ",", sizeof(name));
+	    next_token_talloc(torture, &extra_data, &name, ",");
 	    count++)
 	{
 		u = talloc_realloc(torture, u, char *, count + 2);
 		u[count+1] = NULL;
-		u[count] = talloc_strdup(u, name);
+		u[count] = talloc_move(u, &name);
 	}
 
 	SAFE_FREE(rep.extra_data.data);
@@ -682,7 +683,7 @@ static bool get_group_list(struct torture_context *torture,
 	struct winbindd_response rep;
 	char **g = NULL;
 	uint32_t count;
-	char name[256];
+	char *name = NULL;
 	const char *extra_data;
 
 	ZERO_STRUCT(req);
@@ -703,12 +704,12 @@ static bool get_group_list(struct torture_context *torture,
 	torture_assert(torture, extra_data, "NULL extra data");
 
 	for(count = 0;
-	    next_token(&extra_data, name, ",", sizeof(name));
+	    next_token_talloc(torture, &extra_data, &name, ",");
 	    count++)
 	{
 		g = talloc_realloc(torture, g, char *, count + 2);
 		g[count+1] = NULL;
-		g[count] = talloc_strdup(g, name);
+		g[count] = talloc_move(g, &name);
 	}
 
 	SAFE_FREE(rep.extra_data.data);
