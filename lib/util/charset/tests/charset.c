@@ -182,88 +182,130 @@ static bool test_strncasecmp_m(struct torture_context *tctx)
 
 static bool test_next_token_null(struct torture_context *tctx)
 {
-	char buf[20];
-	torture_assert(tctx, !next_token(NULL, buf, " ", 20), "null ptr works");
+	char *buf = NULL;
+	torture_assert(tctx,
+		       !next_token_talloc(tctx, NULL, &buf, " "),
+		       "null ptr works");
 	return true;
 }
 
 static bool test_next_token(struct torture_context *tctx)
 {
 	const char *teststr = "foo bar bla";
-	char buf[20];
-	torture_assert(tctx, next_token(&teststr, buf, " ", 20), "finding token works");
+	char *buf = NULL;
+	torture_assert(tctx,
+		       next_token_talloc(tctx, &teststr, &buf, " "),
+		       "finding token works");
 	torture_assert_str_equal(tctx, buf, "foo", "token matches");
 	torture_assert_str_equal(tctx, teststr, "bar bla", "ptr modified correctly");
+	TALLOC_FREE(buf);
 
-	torture_assert(tctx, next_token(&teststr, buf, " ", 20), "finding token works");
+	torture_assert(tctx,
+		       next_token_talloc(tctx, &teststr, &buf, " "),
+		       "finding token works");
 	torture_assert_str_equal(tctx, buf, "bar", "token matches");
 	torture_assert_str_equal(tctx, teststr, "bla", "ptr modified correctly");
+	TALLOC_FREE(buf);
 
-	torture_assert(tctx, next_token(&teststr, buf, " ", 20), "finding token works");
+	torture_assert(tctx,
+		       next_token_talloc(tctx, &teststr, &buf, " "),
+		       "finding token works");
 	torture_assert_str_equal(tctx, buf, "bla", "token matches");
 	torture_assert_str_equal(tctx, teststr, "", "ptr modified correctly");
+	TALLOC_FREE(buf);
 
-	torture_assert(tctx, !next_token(&teststr, buf, " ", 20), "finding token doesn't work");
+	torture_assert(tctx,
+		       !next_token_talloc(tctx, &teststr, &buf, " "),
+		       "finding token doesn't work");
 	return true;
 }
 
 static bool test_next_token_implicit_sep(struct torture_context *tctx)
 {
 	const char *teststr = "foo\tbar\n bla";
-	char buf[20];
-	torture_assert(tctx, next_token(&teststr, buf, NULL, 20), "finding token works");
+	char *buf = NULL;
+
+	torture_assert(tctx,
+		       next_token_talloc(tctx, &teststr, &buf, NULL),
+		       "finding token works");
 	torture_assert_str_equal(tctx, buf, "foo", "token matches");
 	torture_assert_str_equal(tctx, teststr, "bar\n bla", "ptr modified correctly");
+	TALLOC_FREE(buf);
 
-	torture_assert(tctx, next_token(&teststr, buf, NULL, 20), "finding token works");
+	torture_assert(tctx,
+		       next_token_talloc(tctx, &teststr, &buf, NULL),
+		       "finding token works");
 	torture_assert_str_equal(tctx, buf, "bar", "token matches");
 	torture_assert_str_equal(tctx, teststr, " bla", "ptr modified correctly");
+	TALLOC_FREE(buf);
 
-	torture_assert(tctx, next_token(&teststr, buf, NULL, 20), "finding token works");
+	torture_assert(tctx,
+		       next_token_talloc(tctx, &teststr, &buf, NULL),
+		       "finding token works");
 	torture_assert_str_equal(tctx, buf, "bla", "token matches");
 	torture_assert_str_equal(tctx, teststr, "", "ptr modified correctly");
+	TALLOC_FREE(buf);
 
-	torture_assert(tctx, !next_token(&teststr, buf, NULL, 20), "finding token doesn't work");
+	torture_assert(tctx,
+		       !next_token_talloc(tctx, &teststr, &buf, NULL),
+		       "finding token doesn't work");
 	return true;
 }
 
 static bool test_next_token_seps(struct torture_context *tctx)
 {
 	const char *teststr = ",foo bla";
-	char buf[20];
-	torture_assert(tctx, next_token(&teststr, buf, ",", 20), "finding token works");
+	char *buf = NULL;
+	torture_assert(tctx,
+		       next_token_talloc(tctx, &teststr, &buf, ","),
+		       "finding token works");
 	torture_assert_str_equal(tctx, buf, "foo bla", "token matches");
 	torture_assert_str_equal(tctx, teststr, "", "ptr modified correctly");
+	TALLOC_FREE(buf);
 
-	torture_assert(tctx, !next_token(&teststr, buf, ",", 20), "finding token doesn't work");
+	torture_assert(tctx,
+		       !next_token_talloc(tctx, &teststr, &buf, ","),
+		       "finding token doesn't work");
 	return true;
 }
 
 static bool test_next_token_quotes(struct torture_context *tctx)
 {
 	const char *teststr = "\"foo bar\" bla";
-	char buf[20];
-	torture_assert(tctx, next_token(&teststr, buf, " ", 20), "finding token works");
+	char *buf = NULL;
+	torture_assert(tctx,
+		       next_token_talloc(tctx, &teststr, &buf, " "),
+		       "finding token works");
 	torture_assert_str_equal(tctx, buf, "foo bar", "token matches");
 	torture_assert_str_equal(tctx, teststr, "bla", "ptr modified correctly");
+	TALLOC_FREE(buf);
 
-	torture_assert(tctx, next_token(&teststr, buf, " ", 20), "finding token works");
+	torture_assert(tctx,
+		       next_token_talloc(tctx, &teststr, &buf, " "),
+		       "finding token works");
 	torture_assert_str_equal(tctx, buf, "bla", "token matches");
 	torture_assert_str_equal(tctx, teststr, "", "ptr modified correctly");
+	TALLOC_FREE(buf);
 
-	torture_assert(tctx, !next_token(&teststr, buf, " ", 20), "finding token doesn't work");
+	torture_assert(tctx,
+		       !next_token_talloc(tctx, &teststr, &buf, " "),
+		       "finding token doesn't work");
 	return true;
 }
 
 static bool test_next_token_quote_wrong(struct torture_context *tctx)
 {
 	const char *teststr = "\"foo bar bla";
-	char buf[20];
-	torture_assert(tctx, next_token(&teststr, buf, " ", 20), "finding token works");
+	char *buf = NULL;
+	torture_assert(tctx,
+		       next_token_talloc(tctx, &teststr, &buf, " "),
+		       "finding token works");
 	torture_assert_str_equal(tctx, buf, "foo bar bla", "token matches");
 	torture_assert_str_equal(tctx, teststr, "", "ptr modified correctly");
 
-	torture_assert(tctx, !next_token(&teststr, buf, " ", 20), "finding token doesn't work");
+	torture_assert(tctx,
+		       !next_token_talloc(tctx, &teststr, &buf, " "),
+		       "finding token doesn't work");
 	return true;
 }
 
