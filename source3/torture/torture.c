@@ -11363,7 +11363,7 @@ static bool run_windows_write(int dummy)
 	kbytes = (double)torture_blocksize * torture_numops;
 	kbytes /= 1024;
 
-	printf("Wrote %d kbytes in %.2f seconds: %d kb/sec\n", (int)kbytes,
+	printf("Wrote %d kbytes in %.2f seconds: %d kB/sec\n", (int)kbytes,
 	       (double)seconds, (int)(kbytes/seconds));
 
 	ret = true;
