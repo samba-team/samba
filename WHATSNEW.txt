@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.22.  This is *not*
+This is the third release candidate of Samba 4.22.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -76,6 +76,38 @@ smb.conf changes
   client netlogon ping protocol           New             cldap
   fruit:posix_rename                      Removed
   cldap port                              Removed
+
+
+CHANGES SINCE 4.22.0rc2
+=======================
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15738: Creation of GPOs applicable to more than one group is impossible
+     with Samba 4.20.0 and later.
+
+o  Björn Baumbach <bb@sernet.de>
+   * BUG 15806: samba-tool acl commands broken for relative path names
+   * BUG 15807: pysmbd seg faults when file is not found.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15796: Spotlight search results don't show file size and creation date.
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15759: net ads create/join/winbind producing unix dysfunctional
+     keytabs.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15806: samba-tool acl commands broken for relative path names.
+   * BUG 15807: pysmbd seg faults when file is not found.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15680: Trust domains are not created.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15680: Trust domains are not created.
+
+o  Shweta Sodani <ssodani@redhat.com>
+   * BUG 15703: General improvements for vfs_ceph_new module.
 
 
 CHANGES SINCE 4.21.0rc1
