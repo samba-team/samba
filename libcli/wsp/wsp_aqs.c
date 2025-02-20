@@ -831,8 +831,8 @@ t_value_holder *create_size_range_shortcut(TALLOC_CTX *ctx,
 	};
 	int i;
 	t_value_holder *result = NULL;
-	uint32_t lower_size;
-	uint32_t upper_size;
+	uint32_t lower_size = 0;
+	uint32_t upper_size = 0;
 	bool rangefound = false;
 	t_value_holder *left = NULL;
 	t_value_holder *right = NULL;
