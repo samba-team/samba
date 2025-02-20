@@ -1516,7 +1516,6 @@ NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 	if (ret != 0) {
 		DBG_ERR("dbwrap_transaction_commit() failed for %s\n",
 			domain);
-		dbwrap_transaction_cancel(db);
 		TALLOC_FREE(frame);
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
@@ -1711,6 +1710,7 @@ NTSTATUS secrets_prepare_password_change(const char *domain, const char *dcname,
 	next = talloc_zero(frame, struct secrets_domain_info1_change);
 	if (next == NULL) {
 		DBG_ERR("talloc_zero failed\n");
+		dbwrap_transaction_cancel(db);
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1773,7 +1773,6 @@ NTSTATUS secrets_prepare_password_change(const char *domain, const char *dcname,
 		status = sync_pw2keytabs_fn();
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("Sync of machine password failed.\n");
-			dbwrap_transaction_cancel(db);
 			TALLOC_FREE(frame);
 			return status;
 		}
