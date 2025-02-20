@@ -2302,7 +2302,8 @@ krb5_error_code samba_kdc_get_claims_data(TALLOC_CTX *mem_ctx,
 					  krb5_context context,
 					  struct samba_kdc_db_context *kdc_db_ctx,
 					  struct samba_kdc_entry_pac entry,
-					  struct claims_data **claims_data_out);
+					  struct claims_data **claims_data_out,
+					  bool *_need_regeneration);
 
 krb5_error_code samba_kdc_get_pac(TALLOC_CTX *mem_ctx,
 				  krb5_context context,
@@ -2463,7 +2464,8 @@ krb5_error_code samba_kdc_get_pac(TALLOC_CTX *mem_ctx,
 							context,
 							kdc_db_ctx,
 							device,
-							&auth_claims.device_claims);
+							&auth_claims.device_claims,
+							NULL); /* _need_regeneration */
 			if (ret) {
 				TALLOC_FREE(frame);
 				return ret;
@@ -2694,7 +2696,8 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 					 context,
 					 kdc_db_ctx,
 					 client,
-					 &pac_claims.user_claims);
+					 &pac_claims.user_claims,
+					 NULL); /* _need_regeneration */
 	if (code) {
 		goto done;
 	}
@@ -2732,7 +2735,8 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 						 context,
 						 kdc_db_ctx,
 						 device,
-						 &pac_claims.device_claims);
+						 &pac_claims.device_claims,
+						 NULL); /* _need_regeneration */
 		if (code) {
 			goto done;
 		}
@@ -2810,7 +2814,8 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 							 context,
 							 kdc_db_ctx,
 							 auth_entry,
-							 &auth_claims.user_claims);
+							 &auth_claims.user_claims,
+							 NULL); /* _need_regeneration */
 			if (code) {
 				goto done;
 			}
@@ -3150,12 +3155,21 @@ krb5_error_code samba_kdc_get_claims_data(TALLOC_CTX *mem_ctx,
 					  krb5_context context,
 					  struct samba_kdc_db_context *kdc_db_ctx,
 					  struct samba_kdc_entry_pac entry,
-					  struct claims_data **claims_data_out)
+					  struct claims_data **claims_data_out,
+					  bool *_need_regeneration)
 {
 	bool was_found = false;
 	krb5_error_code code;
 
+	if (_need_regeneration != NULL) {
+		*_need_regeneration = false;
+	}
+
 	if (!samba_krb5_pac_is_trusted(entry)) {
+		if (_need_regeneration != NULL) {
+			*_need_regeneration = true;
+		}
+
 		return samba_kdc_get_claims_data_from_db(kdc_db_ctx->samdb,
 							 entry.entry,
 							 claims_data_out);
@@ -3190,6 +3204,10 @@ krb5_error_code samba_kdc_get_claims_data(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			return map_errno_from_nt_status(status);
 		}
+	}
+
+	if (_need_regeneration != NULL) {
+		*_need_regeneration = was_found;
 	}
 
 	return 0;
@@ -3415,7 +3433,8 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 					 context,
 					 kdc_db_ctx,
 					 device,
-					 &auth_claims.user_claims);
+					 &auth_claims.user_claims,
+					 NULL); /* _need_regeneration */
 	if (code) {
 		goto out;
 	}
@@ -3509,7 +3528,8 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 					 context,
 					 kdc_db_ctx,
 					 client,
-					 &auth_claims.user_claims);
+					 &auth_claims.user_claims,
+					 NULL); /* _need_regeneration */
 	if (code) {
 		goto out;
 	}
@@ -3529,7 +3549,8 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 						 context,
 						 kdc_db_ctx,
 						 device,
-						 &auth_claims.device_claims);
+						 &auth_claims.device_claims,
+						 NULL); /* _need_regeneration */
 		if (code) {
 			goto out;
 		}
