@@ -2123,6 +2123,11 @@ bool set_share_mode(struct share_mode_lock *lck,
 		e.lease_key = *lease_key;
 	}
 
+	if (e.flags & SHARE_ENTRY_FLAG_PERSISTENT_OPEN) {
+		d->num_persistent++;
+		d->modified = true;
+	}
+
 	ok = share_mode_entry_put(&e, &e_buf);
 	if (!ok) {
 		DBG_DEBUG("share_mode_entry_put failed\n");
