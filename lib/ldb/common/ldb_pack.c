@@ -1131,7 +1131,7 @@ int ldb_filter_attrs(struct ldb_context *ldb,
 		     const char *const *attrs,
 		     struct ldb_message *filtered_msg)
 {
-	unsigned int i;
+	unsigned int i = 0;
 	bool keep_all = false;
 	bool add_dn = false;
 	uint32_t num_elements;
