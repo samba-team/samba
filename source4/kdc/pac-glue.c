@@ -3152,35 +3152,47 @@ krb5_error_code samba_kdc_get_claims_data(TALLOC_CTX *mem_ctx,
 					  struct samba_kdc_entry_pac entry,
 					  struct claims_data **claims_data_out)
 {
-	if (samba_kdc_entry_pac_issued_by_trust(entry)) {
+	bool was_found = false;
+	krb5_error_code code;
+
+	if (!samba_krb5_pac_is_trusted(entry)) {
+		return samba_kdc_get_claims_data_from_db(kdc_db_ctx->samdb,
+							 entry.entry,
+							 claims_data_out);
+	}
+
+	code = samba_kdc_get_claims_data_from_pac(mem_ctx,
+						  context,
+						  entry,
+						  claims_data_out,
+						  &was_found);
+	if (code != 0) {
+		return code;
+	}
+
+	if (was_found && samba_kdc_entry_pac_issued_by_trust(entry)) {
 		NTSTATUS status;
 
 		/*
-		 * TODO: we need claim translation over trusts; for now we just
-		 * clear them…
+		 * TODO: We need to evalate
+		 * msDS-IngressClaimsTransformationPolicy
+		 *
+		 * For now we just clear them, which
+		 * is the default policy for incoming
+		 * trusts. That is the same as an
+		 * explicit empty rule, that filters out
+		 * all claims.
 		 */
+		TALLOC_FREE(*claims_data_out);
 		status = claims_data_from_encoded_claims_set(mem_ctx,
 							     NULL,
 							     claims_data_out);
 		if (!NT_STATUS_IS_OK(status)) {
 			return map_errno_from_nt_status(status);
 		}
-
-		return 0;
 	}
 
-	if (samba_krb5_pac_is_trusted(entry)) {
-		bool was_found = false;
-		return samba_kdc_get_claims_data_from_pac(mem_ctx,
-							  context,
-							  entry,
-							  claims_data_out,
-							  &was_found);
-	}
-
-	return samba_kdc_get_claims_data_from_db(kdc_db_ctx->samdb,
-						 entry.entry,
-						 claims_data_out);
+	return 0;
 }
 
 static
@@ -3199,11 +3211,6 @@ krb5_error_code samba_kdc_get_claims_data_from_pac(TALLOC_CTX *mem_ctx,
 	*was_found = false;
 
 	if (!samba_krb5_pac_is_trusted(entry)) {
-		code = EINVAL;
-		goto out;
-	}
-
-	if (samba_kdc_entry_pac_issued_by_trust(entry)) {
 		code = EINVAL;
 		goto out;
 	}
