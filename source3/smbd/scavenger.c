@@ -477,7 +477,11 @@ static bool cleanup_disconnected_share_mode_entry_fn(
 		return false;
 	}
 
-	disconnected = server_id_is_disconnected(&e->pid);
+	if (e->flags & SHARE_ENTRY_FLAG_PERSISTENT_OPEN) {
+		disconnected = !serverid_exists(&e->pid);
+	} else {
+		disconnected = server_id_is_disconnected(&e->pid);
+	}
 	if (!disconnected) {
 		char *name = share_mode_filename(talloc_tos(), state->lck);
 		struct file_id_buf tmp1;
@@ -489,7 +493,7 @@ static bool cleanup_disconnected_share_mode_entry_fn(
 			name,
 			server_id_str_buf(e->pid, &tmp2));
 		TALLOC_FREE(name);
-		smb_panic(__location__);
+		return false;
 	}
 
 	/*
