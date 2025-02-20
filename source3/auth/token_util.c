@@ -888,9 +888,15 @@ NTSTATUS finalize_local_nt_token(struct security_token *result,
 void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
 			   int n_groups, gid_t *groups)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
+	TALLOC_CTX *frame = NULL;
 	char *s = NULL;
 	int     i;
+
+	if (!CHECK_DEBUGLVLC(dbg_class, dbg_lev)) {
+		return;
+	}
+
+	frame = talloc_stackframe();
 
 	s = talloc_asprintf(frame,
 			    "UNIX token of user %ld\n",
