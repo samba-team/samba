@@ -1959,7 +1959,7 @@ static int do_put(const char *rname, const char *lname, bool reput)
 		put_total_time_ms += this_time;
 		put_total_size += state.nread;
 
-		DEBUG(1,("(%3.1f kb/s) (average %3.1f kb/s)\n",
+		DEBUG(1,("(%3.1f kB/s) (average %3.1f kB/s)\n",
 			 state.nread / (1.024*this_time + 1.0e-4),
 			 put_total_size / (1.024*put_total_time_ms)));
 	}
@@ -4379,7 +4379,7 @@ static int scopy_status(off_t written, void *priv)
 	clock_gettime_mono(&tp_end);
 	scopy_total_time_ms = nsec_time_diff(&tp_end,&st->tp_start)/1000000;
 
-	DEBUG(5,("Copied %jd bytes at an average %3.1f kb/s\n",
+	DEBUG(5,("Copied %jd bytes at an average %3.1f kB/s\n",
 		 (intmax_t)written, written / (1.024*scopy_total_time_ms)));
 
 	return true;
