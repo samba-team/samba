@@ -3142,7 +3142,8 @@ static
 krb5_error_code samba_kdc_get_claims_data_from_pac(TALLOC_CTX *mem_ctx,
 						   krb5_context context,
 						   struct samba_kdc_entry_pac entry,
-						   struct claims_data **claims_data_out);
+						   struct claims_data **claims_data_out,
+						   bool *was_found);
 
 static
 krb5_error_code samba_kdc_get_claims_data(TALLOC_CTX *mem_ctx,
@@ -3169,10 +3170,12 @@ krb5_error_code samba_kdc_get_claims_data(TALLOC_CTX *mem_ctx,
 	}
 
 	if (samba_krb5_pac_is_trusted(entry)) {
+		bool was_found = false;
 		return samba_kdc_get_claims_data_from_pac(mem_ctx,
 							  context,
 							  entry,
-							  claims_data_out);
+							  claims_data_out,
+							  &was_found);
 	}
 
 	return samba_kdc_get_claims_data_from_db(kdc_db_ctx->samdb,
@@ -3184,13 +3187,16 @@ static
 krb5_error_code samba_kdc_get_claims_data_from_pac(TALLOC_CTX *mem_ctx,
 						   krb5_context context,
 						   struct samba_kdc_entry_pac entry,
-						   struct claims_data **claims_data_out)
+						   struct claims_data **claims_data_out,
+						   bool *was_found)
 {
 	TALLOC_CTX *frame = NULL;
 	krb5_data claims_info = {};
 	struct claims_data *claims_data = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	krb5_error_code code;
+
+	*was_found = false;
 
 	if (!samba_krb5_pac_is_trusted(entry)) {
 		code = EINVAL;
@@ -3225,10 +3231,15 @@ krb5_error_code samba_kdc_get_claims_data_from_pac(TALLOC_CTX *mem_ctx,
 		/* OK. */
 		krb5_clear_error_message(context);
 		code = 0;
+		claims_info.length = 0;
 	} else if (code != 0) {
 		DBG_ERR("Error getting CLIENT_CLAIMS_INFO from PAC\n");
 		goto out;
-	} else if (claims_info.length) {
+	} else {
+		*was_found = true;
+	}
+
+	if (claims_info.length) {
 		DATA_BLOB claims_blob = data_blob_const(claims_info.data,
 							claims_info.length);
 
