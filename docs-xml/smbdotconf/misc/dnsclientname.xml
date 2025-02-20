@@ -4,12 +4,13 @@
                  function="_dns_hostname"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-    This value is used either register with AD during a join or by calling
-    <programlisting>
-        net ads dns register
-    </programlisting>
-    or during Kerberos authentication to create service principal names. This
-    is not supported in samba-tool yet.
+    This value is used:
+    <itemizedlist>
+    <listitem><para>to register DNS record with AD during a join or by calling <programlisting>net ads dns register</programlisting></para></listitem>
+    <listitem><para>during Kerberos authentication to create service principal names</para></listitem>
+    <listitem><para>during keytab creation - see the <smbconfoption name="sync machine password to keytab"/> parameter</para></listitem>
+    </itemizedlist>
+    This is not supported in samba-tool yet.
 </description>
 
 <value type="default">[netbios name].[realm]</value>
