@@ -832,8 +832,9 @@ static void fmtint(char *buffer, size_t *currlen, size_t maxlen,
 	if (flags & DP_F_UP) caps = 1; /* Should characters be upper case? */
 
 	do {
-		convert[place++] = (caps ? hex_upper
-					 : hex_lower)[uvalue % (unsigned)base];
+		convert[place++] =
+			(caps ? hexchars_upper
+			      : hexchars_lower)[uvalue % (unsigned)base];
 		uvalue = (uvalue / (unsigned)base );
 	} while(uvalue && (place < sizeof(convert)));
 	if (place == sizeof(convert)) place--;
