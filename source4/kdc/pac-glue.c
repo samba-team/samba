@@ -36,6 +36,7 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libds/common/flags.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
+#include "librpc/gen_ndr/claims.h"
 #include "param/param.h"
 #include "source4/auth/auth.h"
 #include "source4/dsdb/common/util.h"
@@ -1110,6 +1111,15 @@ static
 krb5_error_code samba_kdc_get_claims_data_from_db(struct ldb_context *samdb,
 						  struct samba_kdc_entry *entry,
 						  struct claims_data **claims_data_out);
+
+static bool claims_tf_rule_set_is_deny_all(const struct claims_tf_rule_set *rs)
+{
+	if (rs->num_rules != 0) {
+		return false;
+	}
+
+	return true;
+}
 
 static
 NTSTATUS samba_kdc_get_claims_blob(TALLOC_CTX *mem_ctx,
@@ -2702,6 +2712,13 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 					 &pac_claims.user_claims,
 					 &regenerate_client_claims);
 	if (code) {
+		if (code == KRB5KDC_ERR_POLICY) {
+			if (status_out != NULL) {
+				/* TODO: is there some better status ? */
+				*status_out =
+				NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER;
+			}
+		}
 		goto done;
 	}
 
@@ -2741,6 +2758,13 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 						 &pac_claims.device_claims,
 						 &regenerate_device_claims);
 		if (code) {
+			if (code == KRB5KDC_ERR_POLICY) {
+				if (status_out != NULL) {
+					/* TODO: is there some better status ? */
+					*status_out =
+					NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER;
+				}
+			}
 			goto done;
 		}
 	}
@@ -3161,18 +3185,59 @@ krb5_error_code samba_kdc_get_claims_data(TALLOC_CTX *mem_ctx,
 	}
 
 	if (was_found && samba_kdc_entry_pac_issued_by_trust(entry)) {
+		const char *tdo_attr = "msDS-IngressClaimsTransformationPolicy";
+		struct claims_tf_rule_set *rule_set = NULL;
 		NTSTATUS status;
+		bool clear_claims = false;
 
-		/*
-		 * TODO: We need to evalate
-		 * msDS-IngressClaimsTransformationPolicy
-		 *
-		 * For now we just clear them, which
-		 * is the default policy for incoming
-		 * trusts. That is the same as an
-		 * explicit empty rule, that filters out
-		 * all claims.
-		 */
+		status = dsdb_trust_get_claims_tf_policy(kdc_db_ctx->samdb,
+							 entry.krbtgt->msg,
+							 tdo_attr,
+							 mem_ctx,
+							 &rule_set);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_DS_NO_ATTRIBUTE_OR_VALUE)) {
+			/*
+			 * No msDS-IngressClaimsTransformationPolicy
+			 * or no msDS-TransformationRules attribute
+			 *
+			 * The default is to clear all claims
+			 */
+			clear_claims = true;
+		} else if (NT_STATUS_IS_OK(status)) {
+			/*
+			 * There's a policy defined,
+			 *
+			 * For now we only allow it an
+			 * empty rule set, which is deny
+			 * all claims policy.
+			 *
+			 * All others result in an error
+			 * in order to avoid unexpected behavior
+			 *
+			 * TODO apply the transformation completely:
+			 * 1. apply everything from rule_set
+			 * 2. validate and filter based on
+			 *    the defined claims in our forest
+			 *    (unknown claims or wrong value types
+			 *    cause a claim to be removed, instead
+			 *    of generating errors)
+			 */
+
+			clear_claims = claims_tf_rule_set_is_deny_all(rule_set);
+			if (!clear_claims) {
+				return KRB5KDC_ERR_POLICY;
+			}
+		} else {
+			/*
+			 * We hit an error, which means we need to
+			 * clear the claims
+			 */
+			DBG_WARNING("dsdb_trust_get_claims_tf_policy() %s\n",
+				    nt_errstr(status));
+			clear_claims = true;
+		}
+
+		SMB_ASSERT(clear_claims);
 		TALLOC_FREE(*claims_data_out);
 		status = claims_data_from_encoded_claims_set(mem_ctx,
 							     NULL,
