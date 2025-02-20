@@ -730,46 +730,42 @@ krb5_error_code mit_samba_check_allowed_to_delegate_from(
 {
 	struct samba_kdc_entry *proxy_skdc_entry =
 		talloc_get_type_abort(proxy->e_data, struct samba_kdc_entry);
-	struct auth_user_info_dc *user_info_dc = NULL;
-	TALLOC_CTX *mem_ctx = NULL;
+	struct samba_kdc_entry_pac client_pac_entry = {};
 	krb5_error_code code;
 
 	/* This sets the time into the DSDB opaque */
 	*ctx->db_ctx->current_nttime_ull = proxy_skdc_entry->current_nttime;
-
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		return ENOMEM;
-	}
 
 	/*
 	 * FIXME: If ever we support RODCs, we must check that the PAC has not
 	 * been issued by an RODC (other than ourselves) — otherwise the PAC
 	 * cannot be trusted. Because the plugin interface does not give us the
 	 * client entry, we cannot look up its groups in the database.
+	 *
+	 * We would have to call
+	 * code = samba_krbtgt_is_in_db(krbtgt_skdc_entry,
+	 *                              &is_in_db,
+	 *                              &is_trusted);
+	 *
+	 * But we don't have krbtgt_skdc_entry nor client_skdc_entry here,
+	 * only a pac, which we need to trust without additional information.
+	 *
+	 * We also don't know if the pac comes from a trusted domain...
 	 */
-	code = kerberos_pac_to_user_info_dc(mem_ctx,
-					    header_pac,
-					    ctx->context,
-					    &user_info_dc,
-					    AUTH_INCLUDE_RESOURCE_GROUPS,
-					    NULL,
-					    NULL,
-					    NULL);
-	if (code != 0) {
-		goto out;
-	}
+
+	client_pac_entry = samba_kdc_entry_pac_from_trusted(header_pac,
+							    NULL, /* client_skdc_entry */
+							    NULL, /* krbtgt_skdc_entry */
+							    true); /* is_trusted */
 
 	code = samba_kdc_check_s4u2proxy_rbcd(ctx->context,
 					      ctx->db_ctx,
 					      client_principal,
 					      server_principal,
-					      user_info_dc,
-					      NULL /* device_info_dc */,
-					      (struct auth_claims) {},
+					      client_pac_entry,
+					      (struct samba_kdc_entry_pac) {} /* device */,
 					      proxy_skdc_entry);
-out:
-	talloc_free(mem_ctx);
+
 	return code;
 }
 

@@ -3436,9 +3436,8 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 		struct samba_kdc_db_context *kdc_db_ctx,
 		krb5_const_principal client_principal,
 		krb5_const_principal server_principal,
-		const struct auth_user_info_dc *user_info_dc,
-		const struct auth_user_info_dc *device_info_dc,
-		const struct auth_claims auth_claims,
+		struct samba_kdc_entry_pac client,
+		struct samba_kdc_entry_pac device,
 		struct samba_kdc_entry *proxy_skdc_entry)
 {
 	krb5_error_code code;
@@ -3447,6 +3446,9 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 	char *server_name = NULL;
 	const char *proxy_dn = NULL;
 	const DATA_BLOB *data = NULL;
+	const struct auth_user_info_dc *user_info_dc = NULL;
+	const struct auth_user_info_dc *device_info_dc = NULL;
+	struct auth_claims auth_claims = {};
 	struct security_descriptor *rbcd_security_descriptor = NULL;
 	struct security_token *security_token = NULL;
 	uint32_t session_info_flags =
@@ -3472,6 +3474,46 @@ krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 		code = errno;
 
 		return code;
+	}
+
+	code = samba_kdc_get_user_info_dc(mem_ctx,
+					  context,
+					  kdc_db_ctx,
+					  client,
+					  &user_info_dc,
+					  NULL /* resource_groups_out */);
+	if (code != 0) {
+		goto out;
+	}
+
+	code = samba_kdc_get_claims_data(mem_ctx,
+					 context,
+					 kdc_db_ctx,
+					 client,
+					 &auth_claims.user_claims);
+	if (code) {
+		goto out;
+	}
+
+	if (samba_kdc_entry_pac_valid_principal(device)) {
+		code = samba_kdc_get_user_info_dc(mem_ctx,
+						  context,
+						  kdc_db_ctx,
+						  device,
+						  &device_info_dc,
+						  NULL /* resource_groups_out */);
+		if (code) {
+			goto out;
+		}
+
+		code = samba_kdc_get_claims_data(mem_ctx,
+						 context,
+						 kdc_db_ctx,
+						 device,
+						 &auth_claims.device_claims);
+		if (code) {
+			goto out;
+		}
 	}
 
 	proxy_dn = ldb_dn_get_linearized(proxy_skdc_entry->msg->dn);
