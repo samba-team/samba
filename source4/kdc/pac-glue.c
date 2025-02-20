@@ -2918,6 +2918,8 @@ krb5_error_code samba_kdc_get_claims_data_from_pac(TALLOC_CTX *mem_ctx,
 				   &claims_info);
 	if (code == ENOENT) {
 		/* OK. */
+		krb5_clear_error_message(context);
+		code = 0;
 	} else if (code != 0) {
 		DBG_ERR("Error getting CLIENT_CLAIMS_INFO from PAC\n");
 		goto out;
