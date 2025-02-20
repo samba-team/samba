@@ -1359,6 +1359,7 @@ out:
 	return ret;
 }
 
+static
 krb5_error_code samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
 					   krb5_context context,
 					   struct samba_kdc_db_context *kdc_db_ctx,
@@ -2327,6 +2328,13 @@ done:
 	return code;
 }
 
+static
+krb5_error_code samba_kdc_get_claims_data(TALLOC_CTX *mem_ctx,
+					  krb5_context context,
+					  struct samba_kdc_db_context *kdc_db_ctx,
+					  struct samba_kdc_entry_pac entry,
+					  struct claims_data **claims_data_out);
+
 krb5_error_code samba_kdc_get_pac(TALLOC_CTX *mem_ctx,
 				  krb5_context context,
 				  struct samba_kdc_db_context *kdc_db_ctx,
@@ -3144,6 +3152,7 @@ krb5_error_code samba_kdc_get_claims_data_from_pac(TALLOC_CTX *mem_ctx,
 						   struct samba_kdc_entry_pac entry,
 						   struct claims_data **claims_data_out);
 
+static
 krb5_error_code samba_kdc_get_claims_data(TALLOC_CTX *mem_ctx,
 					  krb5_context context,
 					  struct samba_kdc_db_context *kdc_db_ctx,

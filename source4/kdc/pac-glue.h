@@ -72,13 +72,6 @@ krb5_error_code samba_krbtgt_is_in_db(const struct samba_kdc_entry *skdc_entry,
 				      bool *is_in_db,
 				      bool *is_trusted);
 
-krb5_error_code samba_kdc_get_user_info_dc(TALLOC_CTX *mem_ctx,
-					   krb5_context context,
-					   struct samba_kdc_db_context *kdc_db_ctx,
-					   const struct samba_kdc_entry_pac entry,
-					   const struct auth_user_info_dc **info_out,
-					   const struct PAC_DOMAIN_GROUP_MEMBERSHIP **resource_groups_out);
-
 krb5_error_code samba_kdc_get_user_info_from_db(TALLOC_CTX *mem_ctx,
 						struct samba_kdc_db_context *kdc_db_ctx,
 						struct samba_kdc_entry *entry,
@@ -134,12 +127,6 @@ krb5_error_code samba_kdc_check_device(TALLOC_CTX *mem_ctx,
 				       const struct authn_kerberos_client_policy *client_policy,
 				       struct authn_audit_info **client_audit_info_out,
 				       NTSTATUS *status_out);
-
-krb5_error_code samba_kdc_get_claims_data(TALLOC_CTX *mem_ctx,
-					  krb5_context context,
-					  struct samba_kdc_db_context *kdc_db_ctx,
-					  struct samba_kdc_entry_pac entry,
-					  struct claims_data **claims_data_out);
 
 krb5_error_code samba_kdc_check_s4u2proxy_rbcd(
 		krb5_context context,
