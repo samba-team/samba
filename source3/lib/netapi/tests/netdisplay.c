@@ -34,7 +34,7 @@ static NET_API_STATUS test_netquerydisplayinformation(const char *hostname,
 	NET_API_STATUS status;
 	uint32_t entries_read = 0;
 	int found_name = 0;
-	const char *current_name;
+	const char *current_name = NULL;
 	uint8_t *buffer = NULL;
 	uint32_t idx = 0;
 	int i;
