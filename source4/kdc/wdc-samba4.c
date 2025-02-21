@@ -737,12 +737,9 @@ static krb5_error_code samba_wdc_finalize_reply(void *priv,
 		md.padata_type = KRB5_PADATA_SUPPORTED_ETYPES;
 
 		ret = kdc_request_add_encrypted_padata(r, &md);
+		krb5_data_free(&md.padata_value);
 		if (ret != 0) {
-			/*
-			 * So we do not leak the allocated
-			 * memory on md in the error case
-			 */
-			krb5_data_free(&md.padata_value);
+			return ret;
 		}
 	}
 
