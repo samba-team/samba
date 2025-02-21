@@ -1844,6 +1844,8 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		 */
 #ifdef SAMBA4_USES_HEIMDAL
 		if (is_krbtgt) {
+			unsigned int i = 0;
+
 			/*
 			 * The krbtgt account, having no reason to
 			 * issue tickets encrypted in weaker keys,
@@ -1875,11 +1877,20 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 			 * management.
 			 */
 
+			for (i = 1; i < entry->keys.len; i++) {
+				sdb_key_free(&entry->keys.val[i]);
+			}
 			entry->keys.len = 1;
 			if (entry->etypes != NULL) {
 				entry->etypes->len = MIN(entry->etypes->len, 1);
 			}
+			for (i = 1; i < entry->old_keys.len; i++) {
+				sdb_key_free(&entry->old_keys.val[i]);
+			}
 			entry->old_keys.len = MIN(entry->old_keys.len, 1);
+			for (i = 1; i < entry->older_keys.len; i++) {
+				sdb_key_free(&entry->older_keys.val[i]);
+			}
 			entry->older_keys.len = MIN(entry->older_keys.len, 1);
 		}
 #endif
