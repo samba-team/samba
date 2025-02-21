@@ -82,6 +82,10 @@ void sdb_entry_free(struct sdb_entry *s)
 	krb5_free_principal(NULL, s->principal);
 
 	sdb_keys_free(&s->keys);
+
+	if (s->etypes != NULL) {
+		SAFE_FREE(s->etypes->val);
+	}
 	SAFE_FREE(s->etypes);
 	sdb_keys_free(&s->old_keys);
 	sdb_keys_free(&s->older_keys);
