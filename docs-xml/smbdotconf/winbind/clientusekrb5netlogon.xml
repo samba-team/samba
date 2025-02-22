@@ -39,6 +39,11 @@
 	is detected as active directory domain, e.g.
 	with 'SECURITY = ADS' or on an active directory domain controller.
 	</para>
+
+	<para><emphasis>
+	WARNING: This option is experimental in this Samba version
+	(see VERSION section below) and should not be used in production!
+	</emphasis></para>
 </description>
 
 <value type="default">default</value>
