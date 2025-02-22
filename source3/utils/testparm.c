@@ -359,6 +359,7 @@ static int do_global_checks(void)
 	const char **lp_ptr = NULL;
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
+	int ival;
 
 	fprintf(stderr, "\n");
 
@@ -782,6 +783,18 @@ static int do_global_checks(void)
 			"If required use individual "
 			"'winbind sealed pipes:NETBIOSDOMAIN = no' "
 			"options\n\n");
+	}
+
+	ival = lp__client_use_krb5_netlogon();
+	if (ival > 0) {
+		fprintf(stderr,
+			"ERROR: You have configured "
+			"'client use krb5 netlogon = %s'.\n"
+			"This is experimental in Samba %s "
+			"and should not be used in production!\n\n",
+			ival == Auto ? "auto" : "yes",
+			samba_version_string());
+		ret = 1;
 	}
 
 	if (lp_kerberos_encryption_types() == KERBEROS_ETYPES_LEGACY) {
