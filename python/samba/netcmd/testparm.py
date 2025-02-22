@@ -191,6 +191,16 @@ class cmd_testparm(Command):
                 "'allow_sasl_without_tls_channel_bindings' "
                 "(if really needed).")
 
+        cli_krb5_netlogon = lp.get("client use krb5 netlogon")
+        if cli_krb5_netlogon not in ["no", "default"]:
+            logger.error(
+                "You have configured "
+                "'client use krb5 netlogon = %s'.\n"
+                "This is experimental in Samba %s "
+                "and should not be used in production!\n\n" %
+                (cli_krb5_netlogon, samba.version))
+            valid = False
+
         return valid
 
     def allow_access(self, deny_list, allow_list, cname, caddr):
