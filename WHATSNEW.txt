@@ -74,6 +74,10 @@ smb.conf changes
   smb3 directory leases                   New             Auto
   vfs mkdir use tmp name                  New             Auto
   client netlogon ping protocol           New             cldap
+  client use krb5 netlogon                Experimental    no
+  reject aes netlogon servers             Experimental    no
+  server reject aes schannel              Experimental    no
+  server support krb5 netlogon            Experimental    no
   fruit:posix_rename                      Removed
   cldap port                              Removed
 
