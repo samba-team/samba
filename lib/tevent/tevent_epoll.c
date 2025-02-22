@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    main select loop and event handling - epoll implementation
@@ -565,7 +565,7 @@ static void epoll_update_event(struct epoll_event_context *epoll_ev, struct teve
 			epoll_mod_event(epoll_ev, primary);
 			return;
 		}
-		/* 
+		/*
 		 * if we want to match the select behavior, we need to remove the epoll_event
 		 * when the caller isn't interested in events.
 		 *
