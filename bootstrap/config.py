@@ -151,7 +151,6 @@ PKGS = [
     ('python3-gpg', 'python3-gpg'),  # defaults to ubuntu/fedora latest
     ('python3-markdown', 'python3-markdown'),
     ('python3-dnspython', 'python3-dns'),
-    ('python3-pexpect', ''),  # for wintest only
     ('python3-pyasn1', 'python3-pyasn1'), # for krb5 tests
     ('python3-setproctitle', 'python3-setproctitle'),
     ('python3-requests', 'python3-requests'), # for cert auto enroll
