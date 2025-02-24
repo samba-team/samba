@@ -144,7 +144,7 @@ PKGS = [
     ('', 'crypto-policies-scripts'),
 
     ('python3', 'python3'),
-    ('python3-cryptography', 'python3-cryptography'), # for krb5 tests
+    ('python3-cryptography', 'python3-cryptography'),
     ('python3-dev', 'python3-devel'),
     ('python3-dbg', ''),
     ('python3-iso8601', 'python3-iso8601'),
