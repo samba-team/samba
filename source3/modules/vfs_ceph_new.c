@@ -707,10 +707,7 @@ static struct dirent *vfs_ceph_get_fh_dirent(struct vfs_ceph_fh *cfh)
 
 static void vfs_ceph_put_fh_dirent(struct vfs_ceph_fh *cfh)
 {
-	if (cfh->de != NULL) {
-		TALLOC_FREE(cfh->de);
-		cfh->de = NULL;
-	}
+	TALLOC_FREE(cfh->de);
 }
 
 static int vfs_ceph_release_fh(struct vfs_ceph_fh *cfh)
