@@ -280,7 +280,6 @@ static struct ceph_mount_info *cephmount_mount_fs(
 	struct vfs_ceph_config *config)
 {
 	int ret;
-	char buf[256];
 	struct ceph_mount_info *mnt = NULL;
 	/* if config_file and/or user_id are NULL, ceph will use defaults */
 
@@ -297,12 +296,6 @@ static struct ceph_mount_info *cephmount_mount_fs(
 					      : config->conf_file);
 	ret = config->ceph_conf_read_file_fn(mnt, config->conf_file);
 	if (ret) {
-		goto out;
-	}
-
-	DBG_DEBUG("[CEPH] calling ceph_conf_get: option='%s'\n", "log_file");
-	ret = config->ceph_conf_get_fn(mnt, "log_file", buf, sizeof(buf));
-	if (ret < 0) {
 		goto out;
 	}
 
