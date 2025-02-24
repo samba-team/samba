@@ -1783,7 +1783,10 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 	uint32_t mode = 0;
 	char *fname = NULL;
 	struct smb_filename *smb_fname = NULL;
-	struct smbd_dirptr_lanman2_state state;
+	struct smbd_dirptr_lanman2_state state = {
+		.conn = conn,
+		.info_level = info_level,
+	};
 	bool ok;
 	uint64_t last_entry_off = 0;
 	NTSTATUS status;
@@ -1792,9 +1795,6 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 
 	mangled_names = lp_mangled_names(conn->params);
 
-	ZERO_STRUCT(state);
-	state.conn = conn;
-	state.info_level = info_level;
 	if (mangled_names != MANGLED_NAMES_NO) {
 		state.check_mangled_names = true;
 	}
