@@ -822,9 +822,30 @@ static int vfs_ceph_ll_walk(const struct vfs_handle_struct *handle,
 	struct UserPerm *uperm = NULL;
 	int ret = -1;
 	struct vfs_ceph_config *config = NULL;
+	const char *cwd = NULL;
+	size_t cwdlen;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct vfs_ceph_config,
 				return -ENOMEM);
+
+	cwd = config->ceph_getcwd_fn(config->mount);
+	cwdlen = strlen(cwd);
+
+	/*
+	 * ceph_ll_walk() always operate on "name" relative to current working
+	 * directory even if it starts with a '/' i.e, absolute path is never
+	 * honoured. But why?? For now stick to the current behaviour and ensure
+	 * that the "name" is always relative when it contains current working
+	 * directory path with an exception to "/".
+	 */
+	if ((strcmp(cwd, "/") != 0) &&
+	    (strncmp(name, cwd, cwdlen) == 0)) {
+		if (name[cwdlen] == '/') {
+			name += cwdlen + 1;
+		} else if (name[cwdlen] == '\0') {
+			name = ".";
+		}
+	}
 
 	DBG_DEBUG("[CEPH] ceph_ll_walk: name=%s\n", name);
 
@@ -1860,21 +1881,7 @@ static int vfs_ceph_iget_by_fname(const struct vfs_handle_struct *handle,
 				  const struct smb_filename *smb_fname,
 				  struct vfs_ceph_iref *iref)
 {
-	const char *name = smb_fname->base_name;
-	const char *cwd = NULL;
-	int ret = -1;
-	struct vfs_ceph_config *config = NULL;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config, struct vfs_ceph_config,
-				return -ENOMEM);
-
-	cwd = config->ceph_getcwd_fn(config->mount);
-	if (!strcmp(name, cwd)) {
-		ret = vfs_ceph_iget(handle, 0, "./", 0, iref);
-	} else {
-		ret = vfs_ceph_iget(handle, 0, name, 0, iref);
-	}
-	return ret;
+	return vfs_ceph_iget(handle, 0, smb_fname->base_name, 0, iref);
 }
 
 static int vfs_ceph_igetl(const struct vfs_handle_struct *handle,
