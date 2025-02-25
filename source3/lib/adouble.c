@@ -2547,7 +2547,6 @@ exit:
  **/
 struct adouble *ad_init(TALLOC_CTX *ctx, adouble_type_t type)
 {
-	int rc = 0;
 	const struct ad_entry_order  *eid;
 	struct adouble *ad = NULL;
 	time_t t = time(NULL);
@@ -2580,9 +2579,6 @@ struct adouble *ad_init(TALLOC_CTX *ctx, adouble_type_t type)
 	ad_setdate(ad, AD_DATE_ACCESS | AD_DATE_UNIX, t);
 	ad_setdate(ad, AD_DATE_BACKUP, htonl(AD_DATE_START));
 
-	if (rc != 0) {
-		TALLOC_FREE(ad);
-	}
 	return ad;
 }
 
