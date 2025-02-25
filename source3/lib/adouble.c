@@ -2510,21 +2510,22 @@ static struct adouble *ad_alloc(TALLOC_CTX *ctx,
 		return NULL;
 	}
 
-	ad = talloc_zero(ctx, struct adouble);
+	ad = talloc(ctx, struct adouble);
 	if (ad == NULL) {
 		rc = -1;
 		goto exit;
 	}
 
-	ad->ad_data = talloc_zero_array(ad, char, adsize);
+	*ad = (struct adouble){
+		.ad_type = type,
+		.ad_magic = AD_MAGIC,
+		.ad_version = AD_VERSION,
+		.ad_data = talloc_zero_array(ad, char, adsize),
+	};
 	if (ad->ad_data == NULL) {
 		rc = -1;
 		goto exit;
 	}
-
-	ad->ad_type = type;
-	ad->ad_magic = AD_MAGIC;
-	ad->ad_version = AD_VERSION;
 
 	talloc_set_destructor(ad, adouble_destructor);
 
