@@ -1,181 +1,185 @@
 # This file is distributed under the same license as the package.
 #
 # Copyright (C) 2009 Lars Mueller <lars@samba.org>
+# SPDX-FileCopyrightText: 2024, 2025 Alevtina <karashokovaaa@basealt.ru>
 msgid ""
 msgstr ""
 "Project-Id-Version: pam_winbind\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-09-15 02:26+0300\n"
-"PO-Revision-Date: 2009-02-05 08:14\n"
-"Last-Translator: Mikhail Novosyolov <m.novosyolov@rosalinux.ru>\n"
-"Language-Team: Novell Language <language@novell.com>\n"
-"Language: \n"
+"POT-Creation-Date: 2025-02-04 16:19+0300\n"
+"PO-Revision-Date: 2025-01-31 14:30+0300\n"
+"Last-Translator: Alevtina <karashokovaaa@basealt.ru>\n"
+"Language-Team: Basealt Translation Team\n"
+"Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Generator: Lokalize 23.08.5\n"
 
-#: ../../../nsswitch/pam_winbind.c:630
+#: ../../../nsswitch/pam_winbind.c:636
 msgid "Success"
 msgstr "успешно"
 
-#: ../../../nsswitch/pam_winbind.c:632
+#: ../../../nsswitch/pam_winbind.c:638
 msgid "No primary Domain Controller available"
 msgstr "Нет доступных основных контроллеров домена"
 
-#: ../../../nsswitch/pam_winbind.c:634
+#: ../../../nsswitch/pam_winbind.c:640
 msgid "No domain controllers found"
 msgstr "Контроллеры домена не найдены"
 
-#: ../../../nsswitch/pam_winbind.c:636
+#: ../../../nsswitch/pam_winbind.c:642
 msgid "No logon servers"
 msgstr "Нет серверов входа"
 
-#: ../../../nsswitch/pam_winbind.c:638
+#: ../../../nsswitch/pam_winbind.c:644
 msgid "Password too short"
 msgstr "Пароль слишком короткий"
 
-#: ../../../nsswitch/pam_winbind.c:640
-msgid "The password of this user is too recent to change"
-msgstr "Пароль этого пользователя слишком новый, чтобы его менять"
+#: ../../../nsswitch/pam_winbind.c:646
+#, c-format
+msgid "The password was recently changed and cannot be changed again before %s"
+msgstr "Пароль был недавно изменён и не может быть изменён снова до %s"
 
-#: ../../../nsswitch/pam_winbind.c:642
+#: ../../../nsswitch/pam_winbind.c:648
 msgid "Password is already in password history"
 msgstr "Пароль уже в истории паролей"
 
-#: ../../../nsswitch/pam_winbind.c:644
+#: ../../../nsswitch/pam_winbind.c:650
 msgid "Your password has expired"
-msgstr "Срок действия Вашего пароля истёк"
+msgstr "Срок действия пароля истёк"
 
-#: ../../../nsswitch/pam_winbind.c:646
+#: ../../../nsswitch/pam_winbind.c:652
 msgid "You need to change your password now"
-msgstr "Вам необходимо изменить Ваш пароль сейчас"
+msgstr "Необходимо изменить пароль сейчас"
 
-#: ../../../nsswitch/pam_winbind.c:648
+#: ../../../nsswitch/pam_winbind.c:654
 msgid "You are not allowed to logon from this workstation"
 msgstr "Вам не разрешается входить с этой рабочей станции"
 
-#: ../../../nsswitch/pam_winbind.c:650
+#: ../../../nsswitch/pam_winbind.c:656
 msgid "You are not allowed to logon at this time"
 msgstr "Вам не разрешается входить в это время"
 
-#: ../../../nsswitch/pam_winbind.c:652
-msgid "Your account has expired. Please contact your System administrator"
-msgstr "Срок действия Вашей учетной записи истёк. Пожалуйста, обратитесь к системному администратору"
-
-#: ../../../nsswitch/pam_winbind.c:655
-msgid "Your account is disabled. Please contact your System administrator"
-msgstr "Ваша учетная запись заблокирована. Обратитесь к системному администратору"
-
 #: ../../../nsswitch/pam_winbind.c:658
-msgid "Your account has been locked. Please contact your System administrator"
-msgstr "Ваша учётная запись заблокирована. Пожалуйста, обратитесь к системному администратору"
+msgid "Your account has expired. Please contact your System administrator"
+msgstr "Срок действия вашей учётной записи истёк. Обратитесь к системному администратору"
 
-#: ../../../nsswitch/pam_winbind.c:661 ../../../nsswitch/pam_winbind.c:663 ../../../nsswitch/pam_winbind.c:665
+#: ../../../nsswitch/pam_winbind.c:661
+msgid "Your account is disabled. Please contact your System administrator"
+msgstr "Ваша учётная запись отключена. Обратитесь к системному администратору"
+
+#: ../../../nsswitch/pam_winbind.c:664
+msgid "Your account has been locked. Please contact your System administrator"
+msgstr "Ваша учётная запись заблокирована. Обратитесь к системному администратору"
+
+#: ../../../nsswitch/pam_winbind.c:667 ../../../nsswitch/pam_winbind.c:669 ../../../nsswitch/pam_winbind.c:671
 msgid "Invalid Trust Account"
 msgstr "Неверная доверенная учётная запись"
 
-#: ../../../nsswitch/pam_winbind.c:667
+#: ../../../nsswitch/pam_winbind.c:673
 msgid "Access is denied"
 msgstr "Доступ запрещён"
 
-#: ../../../nsswitch/pam_winbind.c:882
+#: ../../../nsswitch/pam_winbind.c:888
 msgid "Do you want to change your password now?"
 msgstr "Хотите изменить свой пароль сейчас?"
 
-#: ../../../nsswitch/pam_winbind.c:963
+#: ../../../nsswitch/pam_winbind.c:969
 msgid "Your password expires today.\n"
-msgstr "Срок действия Вашего пароля истекает сегодня.\n"
+msgstr "Срок действия вашего пароля истекает сегодня.\n"
 
-#: ../../../nsswitch/pam_winbind.c:993
+#: ../../../nsswitch/pam_winbind.c:1000
 #, c-format
 msgid "Your password will expire in %d %s.\n"
-msgstr "Срок действия Вашего пароля истечет через %d %s.\n"
+msgstr "Срок действия пароля истечёт через %d %s.\n"
 
-#: ../../../nsswitch/pam_winbind.c:994
+#: ../../../nsswitch/pam_winbind.c:1001
 msgid "days"
 msgstr "Дней"
 
-#: ../../../nsswitch/pam_winbind.c:994
+#: ../../../nsswitch/pam_winbind.c:1001
 msgid "day"
 msgstr "День"
 
-#: ../../../nsswitch/pam_winbind.c:1201 ../../../nsswitch/pam_winbind.c:1225
+#: ../../../nsswitch/pam_winbind.c:1209 ../../../nsswitch/pam_winbind.c:1233
 #, c-format
 msgid "Cannot convert group %s to sid, please contact your administrator to see if group %s is valid."
-msgstr "Невозможно конвертировать группу %s в sid, пожалуйста, свяжитесь со своим администратором, чтобы проверить, верна ли группа %s."
+msgstr "Невозможно конвертировать группу %s в sid. Свяжитесь со своим администратором, чтобы проверить, верна ли группа %s."
 
-#: ../../../nsswitch/pam_winbind.c:1428
+#: ../../../nsswitch/pam_winbind.c:1436
 msgid "Grace login. Please change your password as soon you're online again"
-msgstr "Вход разрешён. Пожалуйста, измените Ваш пароль, как только Вы снова будете в сети"
+msgstr "Вход разрешён. Измените пароль, как только снова будете в сети"
 
-#: ../../../nsswitch/pam_winbind.c:1438
+#: ../../../nsswitch/pam_winbind.c:1446
 msgid "Domain Controller unreachable, using cached credentials instead. Network resources may be unavailable"
-msgstr "Контроллер домена недоступен, используются кэшированные учетные данные входа. Сетевые ресурсы могут быть недоступны"
+msgstr "Контроллер домена недоступен, используются кэшированные учётные данные входа. Сетевые ресурсы могут быть недоступны"
 
-#: ../../../nsswitch/pam_winbind.c:1463
+#: ../../../nsswitch/pam_winbind.c:1471
 msgid ""
 "Failed to establish your Kerberos Ticket cache due time differences\n"
 "with the domain controller.  Please verify the system time.\n"
 msgstr ""
-"Не удалось создать кеш билетов Kerberos из-за разницы во времени\n"
-"с контроллером домена.  Пожалуйста, проверьте системное время.\n"
+"Не удалось создать кэш билетов Kerberos из-за разницы во времени\n"
+"с контроллером домена. Проверьте системное время.\n"
 
-#: ../../../nsswitch/pam_winbind.c:1531
+#: ../../../nsswitch/pam_winbind.c:1539
 msgid "Your password "
 msgstr "Ваш пароль "
 
-#: ../../../nsswitch/pam_winbind.c:1538
+#: ../../../nsswitch/pam_winbind.c:1546
 #, c-format
 msgid "must be at least %d characters; "
-msgstr "должен иметь хотя бы %d символов;"
+msgstr "должен иметь хотя бы %d символов; "
 
-#: ../../../nsswitch/pam_winbind.c:1547
+#: ../../../nsswitch/pam_winbind.c:1555
 #, c-format
 msgid "cannot repeat any of your previous %d passwords; "
-msgstr "не может повторять любой из ваших предыдущих %d паролей;"
+msgstr "не может повторять любой из предыдущих %d паролей; "
 
-#: ../../../nsswitch/pam_winbind.c:1557
+#: ../../../nsswitch/pam_winbind.c:1565
 msgid "must contain capitals, numerals or punctuation; and cannot contain your account or full name; "
-msgstr "должен содержать заглавные буквы, цифры или знаки препинания; и не может содержать Вашу учётную запись или полное имя; "
+msgstr "должен содержать заглавные буквы, цифры или знаки препинания; и не может содержать вашу учётную запись или полное имя; "
 
-#: ../../../nsswitch/pam_winbind.c:1567
+#: ../../../nsswitch/pam_winbind.c:1575
 msgid "Please type a different password. Type a password which meets these requirements in both text boxes."
-msgstr "Пожалуйста, введите другой пароль. Введите пароль, соответствующий этим требованиям, в оба текстовых поля."
+msgstr "Введите другой пароль. Введите пароль, соответствующий этим требованиям, в оба текстовых поля."
 
-#: ../../../nsswitch/pam_winbind.c:1603
+#: ../../../nsswitch/pam_winbind.c:1611
 #, c-format
 msgid "Creating directory: %s failed: %s"
 msgstr "Ошибка создания директории %s: %s"
 
-#: ../../../nsswitch/pam_winbind.c:2066
+#: ../../../nsswitch/pam_winbind.c:2084
 msgid "Password does not meet complexity requirements"
 msgstr "Пароль не соответствует требованиям сложности"
 
 #.
 #. * First get the name of a user
 #.
-#: ../../../nsswitch/pam_winbind.c:2552 ../../../nsswitch/pam_winbind.c:3177
+#: ../../../nsswitch/pam_winbind.c:2574 ../../../nsswitch/pam_winbind.c:3199
 msgid "Username: "
 msgstr "Имя пользователя: "
 
-#: ../../../nsswitch/pam_winbind.c:2803
+#: ../../../nsswitch/pam_winbind.c:2825
 msgid "Password: "
-msgstr "Пароль:"
+msgstr "Пароль: "
 
 #. instruct user what is happening
-#: ../../../nsswitch/pam_winbind.c:3215
+#: ../../../nsswitch/pam_winbind.c:3245
 msgid "Changing password for"
 msgstr "Изменение пароля для"
 
-#: ../../../nsswitch/pam_winbind.c:3228
+#: ../../../nsswitch/pam_winbind.c:3258
 msgid "(current) NT password: "
 msgstr "(текущий) пароль NT: "
 
-#: ../../../nsswitch/pam_winbind.c:3301
+#: ../../../nsswitch/pam_winbind.c:3331
 msgid "Enter new NT password: "
 msgstr "Введите новый пароль NT: "
 
-#: ../../../nsswitch/pam_winbind.c:3302
+#: ../../../nsswitch/pam_winbind.c:3332
 msgid "Retype new NT password: "
 msgstr "Повторите новый пароль NT: "
 
@@ -183,377 +187,276 @@ msgstr "Повторите новый пароль NT: "
 #. * here is the string to inform the user that the new passwords they
 #. * typed were not the same.
 #.
-#: ../../../nsswitch/pam_winbind.h:128
+#: ../../../nsswitch/pam_winbind.h:175
 msgid "Sorry, passwords do not match"
-msgstr "Извините, пароли не совпадают"
-
-#: ../../libsmb/nterr.c:559
-msgid "Undetermined error"
-msgstr ""
-
-#: ../../libsmb/nterr.c:560
-#, fuzzy
-msgid "Access denied"
-msgstr "Доступ запрещён"
-
-#: ../../libsmb/nterr.c:561
-msgid "Account locked out"
-msgstr ""
-
-#: ../../libsmb/nterr.c:562
-#, fuzzy
-msgid "Must change password"
-msgstr "Вам необходимо изменить Ваш пароль сейчас"
-
-#: ../../libsmb/nterr.c:563
-#, fuzzy
-msgid "Password is too short"
-msgstr "Пароль слишком короткий"
-
-#: ../../libsmb/nterr.c:564
-#, fuzzy
-msgid "Password is too recent"
-msgstr "Пароль слишком короткий"
-
-#: ../../libsmb/nterr.c:565
-#, fuzzy
-msgid "Password history conflict"
-msgstr "Пароль слишком короткий"
-
-#: ../../libsmb/nterr.c:567
-msgid "Improperly formed account name"
-msgstr ""
-
-#: ../../libsmb/nterr.c:568
-msgid "User exists"
-msgstr ""
-
-#: ../../libsmb/nterr.c:569
-msgid "No such user"
-msgstr ""
-
-#: ../../libsmb/nterr.c:570
-msgid "Group exists"
-msgstr ""
-
-#: ../../libsmb/nterr.c:571
-msgid "No such group"
-msgstr ""
-
-#: ../../libsmb/nterr.c:572
-msgid "Member not in group"
-msgstr ""
-
-#: ../../libsmb/nterr.c:573
-#, fuzzy
-msgid "Wrong Password"
-msgstr "Пароль:"
-
-#: ../../libsmb/nterr.c:574
-#, fuzzy
-msgid "Ill formed password"
-msgstr "Ваш пароль "
-
-#: ../../libsmb/nterr.c:575
-#, fuzzy
-msgid "Password restriction"
-msgstr "Пароль слишком короткий"
-
-#: ../../libsmb/nterr.c:576
-msgid "Logon failure"
-msgstr ""
-
-#: ../../libsmb/nterr.c:577
-msgid "Account restriction"
-msgstr ""
-
-#: ../../libsmb/nterr.c:578
-msgid "Invalid logon hours"
-msgstr ""
-
-#: ../../libsmb/nterr.c:579
-#, fuzzy
-msgid "Invalid workstation"
-msgstr "Неверная доверенная учётная запись"
-
-#: ../../libsmb/nterr.c:580
-#, fuzzy
-msgid "Password expired"
-msgstr "Срок действия Вашего пароля истёк"
-
-#: ../../libsmb/nterr.c:581
-msgid "Account disabled"
-msgstr ""
-
-#: ../../libsmb/nterr.c:582
-msgid "Memory allocation error"
-msgstr ""
-
-#: ../../libsmb/nterr.c:583
-#, fuzzy
-msgid "No domain controllers located"
-msgstr "Контроллеры домена не найдены"
-
-#: ../../libsmb/nterr.c:584
-msgid "Named pipe not available"
-msgstr ""
-
-#: ../../libsmb/nterr.c:585
-msgid "Not implemented"
-msgstr ""
-
-#: ../../libsmb/nterr.c:586
-msgid "Invalid information class"
-msgstr ""
-
-#: ../../libsmb/nterr.c:587
-msgid "Information length mismatch"
-msgstr ""
-
-#: ../../libsmb/nterr.c:588
-msgid "Access violation"
-msgstr ""
-
-#: ../../libsmb/nterr.c:589
-msgid "Invalid handle"
-msgstr ""
-
-#: ../../libsmb/nterr.c:590
-msgid "Invalid parameter"
-msgstr ""
-
-#: ../../libsmb/nterr.c:591
-msgid "No memory"
-msgstr ""
-
-#: ../../libsmb/nterr.c:592
-msgid "Buffer too small"
-msgstr ""
-
-#: ../../libsmb/nterr.c:593
-msgid "Revision mismatch"
-msgstr ""
-
-#: ../../libsmb/nterr.c:594
-#, fuzzy
-msgid "No such logon session"
-msgstr "Нет серверов входа"
-
-#: ../../libsmb/nterr.c:595
-msgid "No such privilege"
-msgstr ""
-
-#: ../../libsmb/nterr.c:596
-msgid "Procedure not found"
-msgstr ""
-
-#: ../../libsmb/nterr.c:597
-msgid "Server disabled"
-msgstr ""
-
-#: ../../libsmb/nterr.c:598
-msgid "Invalid pipe state"
-msgstr ""
-
-#: ../../libsmb/nterr.c:599
-msgid "Named pipe busy"
-msgstr ""
-
-#: ../../libsmb/nterr.c:600
-msgid "Illegal function"
-msgstr ""
-
-#: ../../libsmb/nterr.c:601
-msgid "Named pipe disconnected"
-msgstr ""
-
-#: ../../libsmb/nterr.c:602
-msgid "Named pipe closing"
-msgstr ""
-
-#: ../../libsmb/nterr.c:603
-msgid "Remote host not listening"
-msgstr ""
-
-#: ../../libsmb/nterr.c:604
-msgid "Duplicate name on network"
-msgstr ""
-
-#: ../../libsmb/nterr.c:605
-msgid "Print queue is full"
-msgstr ""
-
-#: ../../libsmb/nterr.c:606
-#, fuzzy
-msgid "No print spool space available"
-msgstr "Нет доступных основных контроллеров домена"
-
-#: ../../libsmb/nterr.c:607
-msgid "The network name cannot be found"
-msgstr ""
-
-#: ../../libsmb/nterr.c:608
-msgid "The connection was refused"
-msgstr ""
-
-#: ../../libsmb/nterr.c:609
-msgid "Too many names"
-msgstr ""
-
-#: ../../libsmb/nterr.c:610
-msgid "Too many sessions"
-msgstr ""
-
-#: ../../libsmb/nterr.c:611
-msgid "Invalid server state"
-msgstr ""
-
-#: ../../libsmb/nterr.c:612
-msgid "Invalid domain state"
-msgstr ""
-
-#: ../../libsmb/nterr.c:613
-msgid "Invalid domain role"
-msgstr ""
-
-#: ../../libsmb/nterr.c:614
-msgid "No such domain"
-msgstr ""
-
-#: ../../libsmb/nterr.c:615
-msgid "Domain exists"
-msgstr ""
-
-#: ../../libsmb/nterr.c:616
-msgid "Domain limit exceeded"
-msgstr ""
-
-#: ../../libsmb/nterr.c:617
-msgid "Bad logon session state"
-msgstr ""
-
-#: ../../libsmb/nterr.c:618
-msgid "Logon session collision"
-msgstr ""
-
-#: ../../libsmb/nterr.c:619
-msgid "Invalid logon type"
-msgstr ""
-
-#: ../../libsmb/nterr.c:620
-msgid "Cancelled"
-msgstr ""
-
-#: ../../libsmb/nterr.c:621
-msgid "Invalid computer name"
-msgstr ""
-
-#: ../../libsmb/nterr.c:622
-msgid "Logon server conflict"
-msgstr ""
-
-#: ../../libsmb/nterr.c:623
-msgid "Time difference at domain controller"
-msgstr ""
-
-#: ../../libsmb/nterr.c:624
-msgid "Pipe broken"
-msgstr ""
-
-#: ../../libsmb/nterr.c:625
-msgid "Registry corrupt"
-msgstr ""
-
-#: ../../libsmb/nterr.c:626
-msgid "Too many secrets"
-msgstr ""
-
-#: ../../libsmb/nterr.c:627
-msgid "Too many SIDs"
-msgstr ""
-
-#: ../../libsmb/nterr.c:628
-msgid "Lanmanager cross encryption required"
-msgstr ""
-
-#: ../../libsmb/nterr.c:629
-msgid "Log file full"
-msgstr ""
-
-#: ../../libsmb/nterr.c:630
-msgid "No trusted LSA secret"
-msgstr ""
-
-#: ../../libsmb/nterr.c:631
-#, fuzzy
-msgid "No trusted SAM account"
-msgstr "Неверная доверенная учётная запись"
-
-#: ../../libsmb/nterr.c:632
-msgid "Trusted domain failure"
-msgstr ""
-
-#: ../../libsmb/nterr.c:633
-msgid "Trust relationship failure"
-msgstr ""
-
-#: ../../libsmb/nterr.c:634
-msgid "Trust failure"
-msgstr ""
-
-#: ../../libsmb/nterr.c:635
-msgid "Netlogon service not started"
-msgstr ""
-
-#: ../../libsmb/nterr.c:636
-msgid "Account expired"
-msgstr ""
-
-#: ../../libsmb/nterr.c:637
-msgid "Network credential conflict"
-msgstr ""
-
-#: ../../libsmb/nterr.c:638
-msgid "Remote session limit"
-msgstr ""
-
-#: ../../libsmb/nterr.c:639
-msgid "No logon interdomain trust account"
-msgstr ""
-
-#: ../../libsmb/nterr.c:640
-msgid "No logon workstation trust account"
-msgstr ""
-
-#: ../../libsmb/nterr.c:641
-#, fuzzy
-msgid "No logon server trust account"
-msgstr "Нет серверов входа"
-
-#: ../../libsmb/nterr.c:642
-msgid "Domain trust inconsistent"
-msgstr ""
-
-#: ../../libsmb/nterr.c:643
-msgid "No user session key available"
-msgstr ""
-
-#: ../../libsmb/nterr.c:644
-msgid "User session deleted"
-msgstr ""
-
-#: ../../libsmb/nterr.c:645
-msgid "Insufficient server resources"
-msgstr ""
-
-#: ../../libsmb/nterr.c:646
-msgid "Insufficient logon information"
-msgstr ""
-
-#: ../../libsmb/nterr.c:648
-msgid "License quota exceeded"
-msgstr ""
-
-#: ../../libsmb/nterr.c:649
-msgid "No more files"
-msgstr ""
+msgstr "Пароли не совпадают"
+
+#~ msgid "The password of this user is too recent to change"
+#~ msgstr "Пароль этого пользователя слишком новый, чтобы его менять"
+
+#~ msgid "Undetermined error"
+#~ msgstr "Неизвестная ошибка"
+
+#~ msgid "Access denied"
+#~ msgstr "Доступ запрещён"
+
+#~ msgid "Account locked out"
+#~ msgstr "Учётная запись заблокирована"
+
+#~ msgid "Must change password"
+#~ msgstr "Необходимо изменить пароль"
+
+#~ msgid "Password is too short"
+#~ msgstr "Пароль слишком короткий"
+
+#~ msgid "Password is too recent"
+#~ msgstr "Пароль слишком новый"
+
+#~ msgid "Password history conflict"
+#~ msgstr "Конфликт журнала паролей"
+
+#~ msgid "Improperly formed account name"
+#~ msgstr "Неправильно сформированное имя учётной записи"
+
+#~ msgid "User exists"
+#~ msgstr "Пользователь существует"
+
+#~ msgid "No such user"
+#~ msgstr "Такой пользователь не существует"
+
+#~ msgid "Group exists"
+#~ msgstr "Группа существует"
+
+#~ msgid "No such group"
+#~ msgstr "Такая группа не существует"
+
+#~ msgid "Member not in group"
+#~ msgstr "Участник не входит в группу"
+
+#~ msgid "Wrong Password"
+#~ msgstr "Неверный пароль"
+
+#~ msgid "Ill formed password"
+#~ msgstr "Неправильно сформированный пароль"
+
+#~ msgid "Password restriction"
+#~ msgstr "Ограничения пароля"
+
+#~ msgid "Logon failure"
+#~ msgstr "Проблема входа"
+
+#~ msgid "Account restriction"
+#~ msgstr "Ограничения по учётной записи"
+
+#~ msgid "Invalid logon hours"
+#~ msgstr "Недопустимое время входа"
+
+#~ msgid "Invalid workstation"
+#~ msgstr "Недопустимая рабочая станция"
+
+#~ msgid "Password expired"
+#~ msgstr "Пароль устарел"
+
+#~ msgid "Account disabled"
+#~ msgstr "Учётная запись отключена"
+
+#~ msgid "Memory allocation error"
+#~ msgstr "Ошибка выделения памяти"
+
+#~ msgid "No domain controllers located"
+#~ msgstr "Контроллеры домена отсутствуют"
+
+#~ msgid "Named pipe not available"
+#~ msgstr "Именованный канал недоступен"
+
+#~ msgid "Not implemented"
+#~ msgstr "Не реализовано"
+
+#~ msgid "Invalid information class"
+#~ msgstr "Недопустимый класс информации"
+
+#~ msgid "Information length mismatch"
+#~ msgstr "Несоответствие длины информации"
+
+#~ msgid "Access violation"
+#~ msgstr "Нарушение доступа"
+
+#~ msgid "Invalid handle"
+#~ msgstr "Недопустимый обработчик"
+
+#~ msgid "Invalid parameter"
+#~ msgstr "Недопустимый параметр"
+
+#~ msgid "No memory"
+#~ msgstr "Нет памяти"
+
+#~ msgid "Buffer too small"
+#~ msgstr "Слишком маленький буфер"
+
+#~ msgid "Revision mismatch"
+#~ msgstr "Несоответствие ревизии"
+
+#~ msgid "No such logon session"
+#~ msgstr "Такой сеанс входа не существует"
+
+#~ msgid "No such privilege"
+#~ msgstr "Такая привилегия не существует"
+
+#~ msgid "Procedure not found"
+#~ msgstr "Процедура не найдена"
+
+#~ msgid "Server disabled"
+#~ msgstr "Сервер отключён"
+
+#~ msgid "Invalid pipe state"
+#~ msgstr "Недопустимое состояние канала"
+
+#~ msgid "Named pipe busy"
+#~ msgstr "Именованный канал занят"
+
+#~ msgid "Illegal function"
+#~ msgstr "Недопустимая функция"
+
+#~ msgid "Named pipe disconnected"
+#~ msgstr "Именованный канал отсоединён"
+
+#~ msgid "Named pipe closing"
+#~ msgstr "Закрытие именованного канала"
+
+#~ msgid "Remote host not listening"
+#~ msgstr "Удалённый сервер не слушает"
+
+#~ msgid "Duplicate name on network"
+#~ msgstr "Повторяющееся имя в сети"
+
+#~ msgid "Print queue is full"
+#~ msgstr "Очередь печати заполнена"
+
+#~ msgid "No print spool space available"
+#~ msgstr "Пространство буфера печати недоступно"
+
+#~ msgid "The network name cannot be found"
+#~ msgstr "Не удалось найти имя сети"
+
+#~ msgid "The connection was refused"
+#~ msgstr "Соединение было отклонено"
+
+#~ msgid "Too many names"
+#~ msgstr "Слишком много имён"
+
+#~ msgid "Too many sessions"
+#~ msgstr "Слишком много сеансов"
+
+#~ msgid "Invalid server state"
+#~ msgstr "Недопустимое состояние сервера"
+
+#~ msgid "Invalid domain state"
+#~ msgstr "Недопустимое состояние домена"
+
+#~ msgid "Invalid domain role"
+#~ msgstr "Недопустимая роль домена"
+
+#~ msgid "No such domain"
+#~ msgstr "Такой домен не существует"
+
+#~ msgid "Domain exists"
+#~ msgstr "Домен существует"
+
+#~ msgid "Domain limit exceeded"
+#~ msgstr "Превышен лимит доменов"
+
+#~ msgid "Bad logon session state"
+#~ msgstr "Недопустимое состояние сеанса входа"
+
+#~ msgid "Logon session collision"
+#~ msgstr "Конфликт сеанса входа"
+
+#~ msgid "Invalid logon type"
+#~ msgstr "Недопустимый тип входа"
+
+#~ msgid "Cancelled"
+#~ msgstr "Отменено"
+
+#~ msgid "Invalid computer name"
+#~ msgstr "Недопустимое имя компьютера"
+
+#~ msgid "Logon server conflict"
+#~ msgstr "Конфликт сервера входа"
+
+#~ msgid "Time difference at domain controller"
+#~ msgstr "Разница во времени на контроллере домена"
+
+#~ msgid "Pipe broken"
+#~ msgstr "Канал повреждён"
+
+#~ msgid "Registry corrupt"
+#~ msgstr "Реестр повреждён"
+
+#~ msgid "Too many secrets"
+#~ msgstr "Слишком много секретный ключей"
+
+#~ msgid "Too many SIDs"
+#~ msgstr "Слишком много SID"
+
+#~ msgid "Lanmanager cross encryption required"
+#~ msgstr "Требуется перекрёстное шифрование Lanmanager"
+
+#~ msgid "Log file full"
+#~ msgstr "Файл журнала заполнен"
+
+#~ msgid "No trusted LSA secret"
+#~ msgstr "Нет доверенного LSA секрета"
+
+#~ msgid "No trusted SAM account"
+#~ msgstr "Нет доверенной учётной записи SAM"
+
+#~ msgid "Trusted domain failure"
+#~ msgstr "Сбой доверенного домена"
+
+#~ msgid "Trust relationship failure"
+#~ msgstr "Сбой доверительных отношений"
+
+#~ msgid "Trust failure"
+#~ msgstr "Сбой доверительных отношений"
+
+#~ msgid "Netlogon service not started"
+#~ msgstr "Служба сетевого входа не запущена"
+
+#~ msgid "Account expired"
+#~ msgstr "Срок действия учётной записи истёк"
+
+#~ msgid "Network credential conflict"
+#~ msgstr "Конфликт сетевых учётных данных"
+
+#~ msgid "Remote session limit"
+#~ msgstr "Лимит удалённых сеансов"
+
+#~ msgid "No logon interdomain trust account"
+#~ msgstr "Нет доверенной междоменной учётной записи"
+
+#~ msgid "No logon workstation trust account"
+#~ msgstr "Нет доверенной учётной записи рабочей станции для входа"
+
+#~ msgid "No logon server trust account"
+#~ msgstr "Нет доверенной учётной записи сервера входа"
+
+#~ msgid "Domain trust inconsistent"
+#~ msgstr "Доверительные отношения домена не согласованы"
+
+#~ msgid "No user session key available"
+#~ msgstr "Ключ сеанса пользователя недоступен"
+
+#~ msgid "User session deleted"
+#~ msgstr "Сеанс пользователя удалён"
+
+#~ msgid "Insufficient server resources"
+#~ msgstr "Недостаточно ресурсов сервера"
+
+#~ msgid "Insufficient logon information"
+#~ msgstr "Недостаточно данных для входа в систему"
+
+#~ msgid "License quota exceeded"
+#~ msgstr "Превышены лицензионные квоты"
+
+#~ msgid "No more files"
+#~ msgstr "Файлов больше нет"
