@@ -2060,4 +2060,7 @@ int main(void) {
                    "found. Use --with-shared-modules='!vfs_snapper' to disable "
                    "vfs_snapper support.")
 
+    if not Options.options.disable_gettext:
+        conf.load('gnu_dirs intltool')
+
     conf.SAMBA_CONFIG_H('include/config.h')

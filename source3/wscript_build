@@ -1331,6 +1331,7 @@ bld.RECURSE('utils')
 bld.RECURSE('nmbd')
 bld.RECURSE('lib/util')
 bld.RECURSE('torture')
+bld.RECURSE('locale')
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()

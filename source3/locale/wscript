@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+from waflib import Options
+
+def build(bld):
+    if (not Options.options.disable_gettext) and ('MSGFMT' in bld.env):
+        bld(features='intltool_po', appname='net', podir='net', install_path="${LOCALEDIR}")
+        bld(features='intltool_po', appname='pam_winbind', podir='pam_winbind', install_path="${LOCALEDIR}")
