@@ -680,6 +680,7 @@ static int streams_depot_fstatat(struct vfs_handle_struct *handle,
 {
 	struct smb_filename *smb_fname_stream = NULL;
 	struct smb_filename *base_fname = NULL;
+	struct smb_filename *full_basename = NULL;
 	NTSTATUS status;
 	int ret = -1;
 
@@ -698,6 +699,14 @@ static int streams_depot_fstatat(struct vfs_handle_struct *handle,
 		goto done;
 	}
 
+	full_basename = full_path_from_dirfsp_atname(base_fname,
+						     dirfsp,
+						     smb_fname);
+	if (full_basename == NULL) {
+		errno = ENOMEM;
+		goto done;
+	}
+
 	ret = SMB_VFS_NEXT_FSTATAT(
 		handle, dirfsp, base_fname, &base_fname->st, flags);
 	if (ret == -1) {
@@ -705,8 +714,11 @@ static int streams_depot_fstatat(struct vfs_handle_struct *handle,
 	}
 
 	/* lstat the actual stream now. */
-	status = stream_smb_fname(
-		handle, &base_fname->st, smb_fname, &smb_fname_stream, false);
+	status = stream_smb_fname(handle,
+				  &base_fname->st,
+				  full_basename,
+				  &smb_fname_stream,
+				  false);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = -1;
 		errno = map_errno_from_nt_status(status);
