@@ -2516,12 +2516,10 @@ static struct adouble *ad_alloc(TALLOC_CTX *ctx,
 		goto exit;
 	}
 
-	if (adsize) {
-		ad->ad_data = talloc_zero_array(ad, char, adsize);
-		if (ad->ad_data == NULL) {
-			rc = -1;
-			goto exit;
-		}
+	ad->ad_data = talloc_zero_array(ad, char, adsize);
+	if (ad->ad_data == NULL) {
+		rc = -1;
+		goto exit;
 	}
 
 	ad->ad_type = type;
