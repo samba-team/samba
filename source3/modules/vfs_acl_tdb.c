@@ -58,7 +58,7 @@ static bool acl_tdb_init(void)
 
 	become_root();
 	acl_db = db_open(NULL, dbname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600,
-			 DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
+			 DBWRAP_LOCK_ORDER_2, DBWRAP_FLAG_NONE);
 	unbecome_root();
 
 	if (acl_db == NULL) {
