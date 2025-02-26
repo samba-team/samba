@@ -1135,6 +1135,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				   nt_errstr(status),
 				   nt_errstr(return_status));
 
+			TALLOC_FREE(state->op);
 			tevent_req_nterror(req, return_status);
 			return tevent_req_post(req, state->ev);
 		}
