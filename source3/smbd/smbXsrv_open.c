@@ -282,6 +282,9 @@ static NTSTATUS smbXsrv_open_global_verify_record(
 	if (serverid_exists(&global0->server_id)) {
 		return NT_STATUS_OBJECTID_EXISTS;
 	}
+	if (global0->persistent) {
+		return NT_STATUS_REMOTE_DISCONNECT;
+	}
 
 	DBG_WARNING("smbd %s did not clean up record %s\n",
 		    server_id_str_buf(global0->server_id, &buf),
