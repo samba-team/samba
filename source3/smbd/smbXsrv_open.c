@@ -361,6 +361,7 @@ static NTSTATUS smbXsrv_open_global_store(
 	TDB_DATA val = { .dptr = NULL, };
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
+	int dbwrap_flags = DBWRAP_REPLACE;
 
 	/*
 	 * TODO: if we use other versions than '0'
@@ -388,7 +389,11 @@ static NTSTATUS smbXsrv_open_global_store(
 	}
 
 	val = make_tdb_data(blob.data, blob.length);
-	status = dbwrap_record_store(rec, val, DBWRAP_REPLACE);
+
+	if (global->persistent) {
+		dbwrap_flags |= DBWRAP_STORE_PERSISTENT;
+	}
+	status = dbwrap_record_store(rec, val, dbwrap_flags);
 	TALLOC_FREE(blob.data);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("key '%s' store - %s\n",
