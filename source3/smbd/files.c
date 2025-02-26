@@ -1982,11 +1982,12 @@ static struct files_struct *file_close_conn_fn(
 		return NULL;
 	}
 
-	if (fsp->op != NULL && fsp->op->global->durable) {
+	if (fsp->op != NULL) {
 		/*
-		 * A tree disconnect closes a durable handle
+		 * A tree disconnect closes a durable or persistent handle
 		 */
 		fsp->op->global->durable = false;
+		fsp->op->global->persistent = false;
 	}
 
 	did_close = close_file_in_loop(fsp, state->close_type);
