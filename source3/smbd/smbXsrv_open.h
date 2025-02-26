@@ -58,10 +58,12 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 					  const char *name,
 					  NTTIME now,
 					  struct smbXsrv_open **_open);
+struct smb2_lease_key;
 NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 			       struct auth_session_info *session_info,
 			       uint64_t persistent_id,
 			       const struct GUID *create_guid,
+			       const struct smb2_lease_key *lease_key,
 			       NTTIME now,
 			       struct smbXsrv_open **_open);
 

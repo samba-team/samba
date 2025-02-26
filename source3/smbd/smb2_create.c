@@ -1096,11 +1096,16 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	if (state->do_durable_reconnect) {
 		DATA_BLOB new_cookie = data_blob_null;
 		NTTIME now = timeval_to_nttime(&smb2req->request_time);
+		const struct smb2_lease_key *lease_key = NULL;
 
+		if (state->lease_ptr != NULL) {
+			lease_key = &state->lease_ptr->lease_key;
+		}
 		status = smb2srv_open_recreate(smb2req->xconn,
 					       smb1req->conn->session_info,
 					       state->persistent_id,
 					       state->create_guid,
+					       lease_key,
 					       now,
 					       &state->op);
 		if (tevent_req_nterror(req, status)) {

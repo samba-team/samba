@@ -35,6 +35,7 @@
 #include "source3/include/util_tdb.h"
 #include "lib/util/idtree_random.h"
 #include "lib/util/time_basic.h"
+#include "../librpc/gen_ndr/ndr_smb2_lease_struct.h"
 
 struct smbXsrv_open_table {
 	struct {
@@ -1159,7 +1160,9 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 
 struct smb2srv_open_recreate_state {
 	struct smbXsrv_open *op;
+	const struct GUID *client_guid;
 	const struct GUID *create_guid;
+	const struct smb2_lease_key *lease_key;
 	struct security_token *current_token;
 	struct server_id me;
 
@@ -1172,6 +1175,7 @@ static void smb2srv_open_recreate_fn(
 	struct smb2srv_open_recreate_state *state = private_data;
 	TDB_DATA key = dbwrap_record_get_key(rec);
 	struct smbXsrv_open_global0 *global = NULL;
+	struct GUID_txt_buf buf1, buf2;
 
 	state->status = smbXsrv_open_global_verify_record(
 		key, oldval, state->op, &state->op->global);
@@ -1184,6 +1188,16 @@ static void smb2srv_open_recreate_fn(
 	}
 	global = state->op->global;
 
+	if (state->lease_key != NULL &&
+	    !GUID_equal(&global->client_guid, state->client_guid))
+	{
+		DBG_NOTICE("client guid: %s != %s in %s\n",
+			   GUID_buf_string(&global->client_guid, &buf1),
+			   GUID_buf_string(state->client_guid, &buf2),
+			   tdb_data_dbg(key));
+		goto not_found;
+	}
+
 	/*
 	 * If the provided create_guid is NULL, this means that
 	 * the reconnect request was a v1 request. In that case
@@ -1192,7 +1206,6 @@ static void smb2srv_open_recreate_fn(
 	 */
 	if ((state->create_guid != NULL) &&
 	    !GUID_equal(&global->create_guid, state->create_guid)) {
-		struct GUID_txt_buf buf1, buf2;
 		DBG_NOTICE("%s != %s in %s\n",
 			   GUID_buf_string(&global->create_guid, &buf1),
 			   GUID_buf_string(state->create_guid, &buf2),
@@ -1237,12 +1250,15 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 			       struct auth_session_info *session_info,
 			       uint64_t persistent_id,
 			       const struct GUID *create_guid,
+			       const struct smb2_lease_key *lease_key,
 			       NTTIME now,
 			       struct smbXsrv_open **_open)
 {
 	struct smbXsrv_open_table *table = conn->client->open_table;
 	struct smb2srv_open_recreate_state state = {
+		.client_guid = &conn->client->global->client_guid,
 		.create_guid = create_guid,
+		.lease_key = lease_key,
 		.me = messaging_server_id(conn->client->msg_ctx),
 	};
 	struct smbXsrv_open_global_key_buf key_buf;
