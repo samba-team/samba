@@ -49,12 +49,6 @@
 #endif
 
 /*
- * Use %llu whenever we have a 64bit unsigned int, and cast to (long long
- * unsigned)
- */
-#define llu(_var) ((long long unsigned)_var)
-
-/*
  * Note, libcephfs's return code model is to return -errno. Thus we have to
  * convert to what Samba expects: set errno to non-negative value and return -1.
  *
@@ -1984,10 +1978,11 @@ static uint64_t vfs_ceph_disk_free(struct vfs_handle_struct *handle,
 	*dfree = (uint64_t)statvfs_buf.f_bavail;
 	*dsize = (uint64_t)statvfs_buf.f_blocks;
 
-	DBG_DEBUG("[CEPH] bsize: %llu, dfree: %llu, dsize: %llu\n",
-		  llu(*bsize),
-		  llu(*dfree),
-		  llu(*dsize));
+	DBG_DEBUG("[CEPH] bsize: %" PRIu64 ", dfree: %" PRIu64
+		  ", dsize: %" PRIu64 "\n",
+		  *bsize,
+		  *dfree,
+		  *dsize);
 	return *dfree;
 }
 
@@ -2285,12 +2280,12 @@ static ssize_t vfs_ceph_pread(struct vfs_handle_struct *handle,
 	ssize_t result;
 
 	START_PROFILE_BYTES(syscall_pread, n);
-	DBG_DEBUG("[CEPH] pread(%p, %p, %p, %llu, %llu)\n",
+	DBG_DEBUG("[CEPH] pread(%p, %p, %p, %zu, %jd)\n",
 		  handle,
 		  fsp,
 		  data,
-		  llu(n),
-		  llu(offset));
+		  n,
+		  (intmax_t)offset);
 
 	result = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
 	if (result != 0) {
@@ -2299,7 +2294,7 @@ static ssize_t vfs_ceph_pread(struct vfs_handle_struct *handle,
 
 	result = vfs_ceph_ll_read(handle, cfh, offset, n, data);
 out:
-	DBG_DEBUG("[CEPH] pread(...) = %llu\n", llu(result));
+	DBG_DEBUG("[CEPH] pread(...) = %zd\n", result);
 	END_PROFILE_BYTES(syscall_pread);
 	return lstatus_code(result);
 }
@@ -2632,12 +2627,12 @@ static ssize_t vfs_ceph_pwrite(struct vfs_handle_struct *handle,
 	ssize_t result;
 
 	START_PROFILE_BYTES(syscall_pwrite, n);
-	DBG_DEBUG("[CEPH] pwrite(%p, %p, %p, %llu, %llu)\n",
+	DBG_DEBUG("[CEPH] pwrite(%p, %p, %p, %zu, %jd)\n",
 		  handle,
 		  fsp,
 		  data,
-		  llu(n),
-		  llu(offset));
+		  n,
+		  (intmax_t)offset);
 
 	result = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
 	if (result != 0) {
@@ -2645,7 +2640,7 @@ static ssize_t vfs_ceph_pwrite(struct vfs_handle_struct *handle,
 	}
 	result = vfs_ceph_ll_write(handle, cfh, offset, n, data);
 out:
-	DBG_DEBUG("[CEPH] pwrite(...) = %llu\n", llu(result));
+	DBG_DEBUG("[CEPH] pwrite(...) = %zd\n", result);
 	END_PROFILE_BYTES(syscall_pwrite);
 	return lstatus_code(result);
 }
@@ -3270,7 +3265,7 @@ static int vfs_ceph_ftruncate(struct vfs_handle_struct *handle,
 	int result = -1;
 
 	START_PROFILE(syscall_ftruncate);
-	DBG_DEBUG("[CEPH] ftruncate(%p, %p, %llu\n", handle, fsp, llu(len));
+	DBG_DEBUG("[CEPH] ftruncate(%p, %p, %zd\n", handle, fsp, (intmax_t)len);
 
 	if (lp_strict_allocate(SNUM(fsp->conn))) {
 		END_PROFILE(syscall_ftruncate);
@@ -3297,8 +3292,12 @@ static int vfs_ceph_fallocate(struct vfs_handle_struct *handle,
 	int result;
 
 	START_PROFILE(syscall_fallocate);
-	DBG_DEBUG("[CEPH] fallocate(%p, %p, %u, %llu, %llu\n",
-		  handle, fsp, mode, llu(offset), llu(len));
+	DBG_DEBUG("[CEPH] fallocate(%p, %p, %u, %jd, %jd\n",
+		  handle,
+		  fsp,
+		  mode,
+		  (intmax_t)offset,
+		  (intmax_t)len);
 	result = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
 	if (result != 0) {
 		goto out;
@@ -3435,11 +3434,11 @@ static int vfs_ceph_readlinkat(struct vfs_handle_struct *handle,
 	struct vfs_ceph_fh *dircfh = NULL;
 
 	START_PROFILE(syscall_readlinkat);
-	DBG_DEBUG("[CEPH] readlinkat(%p, %s, %p, %llu)\n",
+	DBG_DEBUG("[CEPH] readlinkat(%p, %s, %p, %zu)\n",
 		  handle,
 		  smb_fname->base_name,
 		  buf,
-		  llu(bufsiz));
+		  bufsiz);
 
 	result = vfs_ceph_fetch_fh(handle, dirfsp, &dircfh);
 	if (result != 0) {
@@ -3668,12 +3667,12 @@ static ssize_t vfs_ceph_fgetxattr(struct vfs_handle_struct *handle,
 {
 	int ret;
 
-	DBG_DEBUG("[CEPH] fgetxattr(%p, %p, %s, %p, %llu)\n",
+	DBG_DEBUG("[CEPH] fgetxattr(%p, %p, %s, %p, %zu)\n",
 		  handle,
 		  fsp,
 		  name,
 		  value,
-		  llu(size));
+		  size);
 
 	if (!fsp->fsp_flags.is_pathref) {
 		struct vfs_ceph_fh *cfh = NULL;
@@ -3708,8 +3707,11 @@ static ssize_t vfs_ceph_flistxattr(struct vfs_handle_struct *handle,
 	size_t list_size = 0;
 	int ret;
 
-	DBG_DEBUG("[CEPH] flistxattr(%p, %p, %p, %llu)\n",
-		  handle, fsp, list, llu(size));
+	DBG_DEBUG("[CEPH] flistxattr(%p, %p, %p, %zd)\n",
+		  handle,
+		  fsp,
+		  list,
+		  size);
 
 	if (!fsp->fsp_flags.is_pathref) {
 		struct vfs_ceph_fh *cfh = NULL;
@@ -3791,12 +3793,12 @@ static int vfs_ceph_fsetxattr(struct vfs_handle_struct *handle,
 {
 	int ret;
 
-	DBG_DEBUG("[CEPH] fsetxattr(%p, %p, %s, %p, %llu, %d)\n",
+	DBG_DEBUG("[CEPH] fsetxattr(%p, %p, %s, %p, %zd, %d)\n",
 		  handle,
 		  fsp,
 		  name,
 		  value,
-		  llu(size),
+		  size,
 		  flags);
 
 	if (!fsp->fsp_flags.is_pathref) {
