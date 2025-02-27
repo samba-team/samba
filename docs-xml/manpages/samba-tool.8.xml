@@ -2653,6 +2653,51 @@
 </refsect3>
 
 <refsect3>
+	<title>gpo cse register <replaceable>cse_file</replaceable> <replaceable>cse_name</replaceable> [options]</title>
+
+<para>Register a Client Side Extension (CSE) on the current host.</para>
+
+<para>
+This command takes a CSE filename as an argument, and registers it for
+applying policy on the current host. This is not necessary for CSEs which
+are distributed with the current version of Samba, but is useful for installing
+experimental CSEs or custom built CSEs.
+</para>
+<para>
+The <replaceable>cse_file</replaceable> argument MUST be a permanent
+location for the CSE. The register command does not copy the file to
+some other directory. The samba-gpupdate command will execute the CSE
+from the exact location specified from this command.
+</para>
+
+<variablelist>
+	  <varlistentry>
+	    <term>--machine</term>
+	    <listitem><para>Whether to register the CSE as Machine policy</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--user</term>
+	    <listitem><para>Whether to register the CSE as User policy</para></listitem>
+	  </varlistentry>
+</variablelist>
+</refsect3>
+
+
+<refsect3>
+	<title>gpo cse unregister <replaceable>GUID</replaceable></title>
+
+<para>Unregister a Client Side Extension (CSE) from the current host.</para>
+
+<para>
+This command takes a unique GUID as an argument (representing a registered
+CSE), and unregisters it for applying policy on the current host. Use the
+`samba-tool gpo cse list` command to determine the unique GUIDs of CSEs.
+</para>
+
+</refsect3>
+
+
+<refsect3>
 	<title>gpo del <replaceable>gpo</replaceable> [options]</title>
 	<para>Delete GPO.</para>
 </refsect3>
