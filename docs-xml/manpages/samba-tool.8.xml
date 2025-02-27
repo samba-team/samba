@@ -2420,6 +2420,44 @@
 </refsect3>
 
 <refsect3>
+  <title>drs clone-dc-database <replaceable>dnsdomain</replaceable>
+  --targetdir=<replaceable>DIR</replaceable> [options]</title>
+
+	<para>Replicate an initial clone of domain, but DO NOT JOIN it.
+	</para>
+
+	<variablelist>
+	  <varlistentry>
+	    <term>--server=DC</term>
+	    <listitem><para>Clone this DC.</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--targetdir=TARGETDIR</term>
+	    <listitem><para>where to store provision (required).</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>-q, --quiet</term>
+	    <listitem><para>Be quiet.</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--include-secrets</term>
+	    <listitem><para>Also replicate secret values.</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--backend-store=BACKENDSTORE</term>
+	    <listitem><para>Specify the database backend to be used
+	    (default is tdb).</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--backend-store-size=SIZE</term>
+	    <listitem><para>Specify the size of the backend database,
+	    currentlyonly supported by lmdb backends (default is 8
+	    GB).</para></listitem>
+	  </varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
 	<title>drs kcc</title>
 	<para>Trigger knowledge consistency center run.</para>
 </refsect3>
