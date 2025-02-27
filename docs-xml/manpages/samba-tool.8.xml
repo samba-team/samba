@@ -844,7 +844,7 @@
 					keywords.
 				</para>
 				<para>
-					Example: O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AU)}))
+					Example: <constant>O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AU)}))</constant>
 				</para>
 			</listitem>
 		</varlistentry>
@@ -951,7 +951,7 @@
 					bare (user) and Device conditions.
 				</para>
 				<para>
-					SDDL Example: O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AO)}))
+					SDDL Example: <constant>O:SYG:SYD:(XA;OICI;CR;;;WD;(Member_of {SID(AO)}))</constant>
 				</para>
 			</listitem>
 		</varlistentry>
