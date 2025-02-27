@@ -2993,6 +2993,31 @@
 </refsect3>
 
 <refsect2>
+	<title>processes</title>
+	<para>List samba server processes.</para>
+	<para>If no processes are show, but Samba is running, it is
+	possible that samba-tool has not found the correct smb.conf,
+	and the use of -s/--configfile is required.
+	</para>
+	<variablelist>
+	<varlistentry>
+	<term>--name=NAME</term>
+	<listitem><para>
+	Show processes associated with the given name.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--pid=PID</term>
+	<listitem><para>
+	  Show names associated with the PID.
+	</para></listitem>
+	</varlistentry>
+	</variablelist>
+</refsect2>
+
+
+<refsect2>
 	<title>rodc</title>
 	<para>Manage Read-Only Domain Controller (RODC).</para>
 </refsect2>
