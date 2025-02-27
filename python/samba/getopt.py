@@ -171,6 +171,58 @@ class OptionParser(optparse.OptionParser):
 
         return super().check_values(values, args)
 
+    def format_help(self, formatter=None):
+        # if a magic environment variable is set, we print a docbook
+        # template to add to the samba-tool manpage. Otherwise, we do
+        # normal help.
+        if not os.getenv("SAMBATOOL_HELP_IS_XML"):
+            return super().format_help(formatter=None)
+
+        formatter = SambaDocBookFormatter(1, 9999, 999, True)
+        result = []
+        if self.usage:
+            result.append(self.get_usage() + "\n")
+        if self.description:
+            result.append(self.format_description(formatter) + "\n")
+        result.append("<variablelist>\n")
+        result.append(self.format_option_help(formatter))
+        result.append("</variablelist>\n")
+        result.append(self.format_epilog(formatter))
+        return "".join(result)
+
+
+class SambaDocBookFormatter(optparse.HelpFormatter):
+
+    def _indent(self, s):
+        return '\t' * self.current_indent + s
+
+    def format_usage(self, usage):
+        return self._indent(f"<constant>{usage}</constant>\n")
+
+    def format_heading(self, heading):
+        return self._indent(f"<!--{heading}-->\n")
+
+    def _format_text(self, text):
+        """
+        Format a paragraph of free-form text for inclusion in the
+        help output at the current indentation level.
+        """
+        return self._indent(f"<para>{text}</para>")
+
+    def format_option(self, option):
+        # we don't worry about width (man handles that),
+        # but we try to indent the xml a bit
+        indent = self._indent('  ')
+        result = [indent]
+        result.append('<varlistentry>\n')
+        opts = self.option_strings[option]
+        result.append(f"{indent}  <term>{opts}</term>\n")
+        if option.help:
+            help_text = self.expand_default(option)
+            result.append(f"{indent}  <listitem><para>{help_text}</para></listitem>\n")
+        result.append(f'{indent}</varlistentry>\n')
+        return "".join(result)
+
 
 class OptionGroup(optparse.OptionGroup):
     """Samba OptionGroup base class.
