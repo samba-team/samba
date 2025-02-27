@@ -2737,6 +2737,91 @@ CSE), and unregisters it for applying policy on the current host. Use the
 	<para>List all linked containers for a GPO.</para>
 </refsect3>
 
+
+<refsect3>
+	<title>gpo load <replaceable>gpo</replaceable> [options]</title>
+
+<para>Load policies onto a GPO.</para>
+
+<para>
+Reads json from standard input until EOF, unless a json formatted
+file is provided via --content.
+</para>
+  <para>
+    Example json_input:
+    <programlisting>
+[
+    {
+        "keyname": "Software\Policies\Mozilla\Firefox\Homepage",
+        "valuename": "StartPage",
+        "class": "USER",
+        "type": "REG_SZ",
+        "data": "homepage"
+    },
+    {
+        "keyname": "Software\Policies\Mozilla\Firefox\Homepage",
+        "valuename": "URL",
+        "class": "USER",
+        "type": "REG_SZ",
+        "data": "google.com"
+    },
+    {
+        "keyname": "Software\Microsoft\Internet Explorer\Toolbar",
+        "valuename": "IEToolbar",
+        "class": "USER",
+        "type": "REG_BINARY",
+        "data": [0]
+    },
+    {
+        "keyname": "Software\Policies\Microsoft\InputPersonalization",
+        "valuename": "RestrictImplicitTextCollection",
+        "class": "USER",
+        "type": "REG_DWORD",
+        "data": 1
+    }
+    ]
+    </programlisting>
+  </para>
+    <para>
+Valid class attributes: MACHINE|USER|BOTH
+Data arrays are interpreted as bytes.
+    </para>
+    <para>
+The --machine-ext-name and --user-ext-name options are multi-value inputs
+which respectively set the gPCMachineExtensionNames and gPCUserExtensionNames
+ldap attributes on the GPO. These attributes must be set to the correct GUID
+names for Windows Group Policy to work correctly. These GUIDs represent
+the client side extensions to apply on the machine. Linux Group Policy does
+not enforce this constraint.
+{35378EAC-683F-11D2-A89A-00C04FBBCFA2} is provided by default, which
+enables most Registry policies.
+</para>
+
+<variablelist>
+	  <varlistentry>
+	    <term>-H H</term>
+	    <listitem><para>LDB URL for database or target server</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--content=CONTENT</term>
+	    <listitem><para>JSON file of policy inputs</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--machine-ext-name=MACHINE_EXTS</term>
+	    <listitem><para>A machine extension name to add to gPCMachineExtensionNames</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--user-ext-name=USER_EXTS</term>
+	    <listitem><para>A user extension name to add to gPCUserExtensionNames</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--replace</term>
+	    <listitem><para>Replace the existing Group Policies, rather than merging</para></listitem>
+	  </varlistentry>
+</variablelist>
+</refsect3>
+
+
 <refsect3>
 	<title>gpo setinheritance <replaceable>container_dn</replaceable> <replaceable>block|inherit</replaceable> [options]</title>
 	<para>Set inheritance flag on a container.</para>
@@ -2746,6 +2831,97 @@ CSE), and unregisters it for applying policy on the current host. Use the
 	<title>gpo setlink <replaceable>container_dn</replaceable> <replaceable>gpo</replaceable> [options]</title>
 	<para>Add or Update a GPO link to a container.</para>
 </refsect3>
+
+<refsect3>
+	<title>gpo remove<replaceable>gpo</replaceable> [options]</title>
+	<para>Show information for a GPO.</para>
+<para>Remove policies from a GPO.</para>
+
+<para>
+Reads json from standard input until EOF, unless a json formatted
+file is provided via --content.
+</para>
+
+<para>
+<programlisting>
+Example json_input:
+[
+    {
+        "keyname": "Software\Policies\Mozilla\Firefox\Homepage",
+        "valuename": "StartPage",
+        "class": "USER",
+    },
+    {
+        "keyname": "Software\Policies\Mozilla\Firefox\Homepage",
+        "valuename": "URL",
+        "class": "USER",
+    },
+    {
+        "keyname": "Software\Microsoft\Internet Explorer\Toolbar",
+        "valuename": "IEToolbar",
+        "class": "USER"
+    },
+    {
+        "keyname": "Software\Policies\Microsoft\InputPersonalization",
+        "valuename": "RestrictImplicitTextCollection",
+        "class": "USER"
+    }
+]
+</programlisting>
+
+Valid class attributes: MACHINE|USER|BOTH
+</para>
+
+<variablelist>
+	  <varlistentry>
+	    <term>-H H</term>
+	    <listitem><para>LDB URL for database or target server</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--content=CONTENT</term>
+	    <listitem><para>JSON file of policy inputs</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--machine-ext-name=MACHINE_EXTS</term>
+	    <listitem><para>A machine extension name to remove from gPCMachineExtensionNames</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--user-ext-name=USER_EXTS</term>
+	    <listitem><para>A user extension name to remove from gPCUserExtensionNames</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--color=always|never|auto</term>
+	    <listitem><para>use colour if available (default: auto)</para></listitem>
+	  </varlistentry>
+</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>gpo restor <replaceable>displayname</replaceable> <replaceable>backup location</replaceable> [options]</title>
+
+<para>Restore a GPO to a new container.</para>
+
+<variablelist>
+	  <varlistentry>
+	    <term>-H H</term>
+	    <listitem><para>LDB URL for database or target server</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--tmpdir=TMPDIR</term>
+	    <listitem><para>Temporary directory for copying policy files</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--entities=ENTITIES</term>
+	    <listitem><para>File defining XML entities to insert into DOCTYPE header</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--restore-metadata</term>
+	    <listitem><para>Keep the old GPT.INI file and associated version number</para></listitem>
+	  </varlistentry>
+</variablelist>
+
+</refsect3>
+
 
 <refsect3>
 	<title>gpo show <replaceable>gpo</replaceable> [options]</title>
