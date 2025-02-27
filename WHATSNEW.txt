@@ -39,6 +39,17 @@ now be configured to use TCP via the new "client netlogon ping
 protocol" parameter to enable running in environments where firewalls
 completely block port 389 or UDP traffic to domain controllers.
 
+Experimental Himmelblaud Authentication in Samba
+------------------------------------------------
+
+Samba now includes experimental support for Azure Entra ID authentication via
+`himmelblaud`, located in the `rust/` directory. This implementation provides
+basic authentication and is configured through `smb.conf`, utilizing options
+such as `realm`, `winbindd_socket_directory`, and `template_homedir`. New global
+parameters include `himmelblaud_sfa_fallback`, `himmelblaud_hello_enabled`, and
+`himmelblaud_hsm_pin_path`.
+To enable, configure Samba with `--enable-rust --with-himmelblau`.
+
 REMOVED FEATURES
 ================
 
@@ -74,6 +85,9 @@ smb.conf changes
   smb3 directory leases                   New             Auto
   vfs mkdir use tmp name                  New             Auto
   client netlogon ping protocol           New             cldap
+  himmelblaud hello enabled               New             no
+  himmelblaud hsm pin path                New             default hsm pin path
+  himmelblaud sfa fallback                New             no
   client use krb5 netlogon                Experimental    no
   reject aes netlogon servers             Experimental    no
   server reject aes schannel              Experimental    no
