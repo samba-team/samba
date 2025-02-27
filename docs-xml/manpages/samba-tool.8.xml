@@ -592,6 +592,70 @@
 	<para>List zones.</para>
 </refsect3>
 
+<refsect3>
+	<title>dns zoneoptions <replaceable>server</replaceable> <replaceable>zone</replaceable> [options]</title>
+	<para>Manipulate aging options. This is useful in zones using dynamic DNS.</para>
+	<para>There are options to change records from static to
+	dynamic based on regular expressions or age, which is useful
+	in some cases where the values got mixed up in old versions of
+	Samba.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-n, --dry-run</term>
+			<listitem><para> Do not actually change
+			anything, but show what would happen.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--client-version=w2k|dotnet|longhorn</term>
+			<listitem><para> Windows client protocol
+			version. The default is
+			<constant>longhorn</constant>, which is
+			probably what you want.</para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--mark-old-records-static=YYYY-MM-DD</term>
+			<listitem><para> Mark records older than the
+			specified date as static.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--mark-records-static-regex=REGEXP</term>
+			<listitem><para> Mark records that match the
+			given perl-compatible regular expression as
+			static.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--mark-records-dynamic-regex=REGEXP</term>
+			<listitem><para> Mark records that match the
+			given perl-compatible regular expression as
+			dynamic.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--aging=0|1</term>
+			<listitem>
+			  <para>--aging=1 to enable aging for this zone.</para>
+			<para>--aging=0 to disable aging for this zone.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--norefreshinterval=HOURS</term>
+			<listitem><para>avoid further refreshes for
+			this long after a dynamic update. Set to zero
+			to use the default.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+		  <term>--refreshinterval=HOURS</term>
+		  <listitem><para>Dynamic refresh interval in hours (0: use default)</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term></term>
+			<listitem><para></para></listitem>
+		</varlistentry>
+	</variablelist>
+
+
+
+</refsect3>
+
 <refsect2>
 	<title>domain</title>
 	<para>Manage Domain.</para>
