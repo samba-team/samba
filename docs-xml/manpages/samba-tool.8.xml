@@ -2299,6 +2299,55 @@
 	<para>Promote an existing domain member or NT4 PDC to an AD DC.</para>
 </refsect3>
 
+
+<refsect3>
+	<title>domain schemaupgrade [options]</title>
+	<para>Upgrade the schema.
+	</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--schema [2012|2012_R2|2016|2019]</term>
+			<listitem><para>
+			  Upgrade to this Windows schema level. The default is 2019.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--ldf-file</term>
+			<listitem><para> Apply the schema changes in
+			this LDIF file, rather than updating to a
+			standard schema level. </para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--base-dir</term>
+			<listitem><para>
+			  Specify an alternate location to find schema LDIF files.
+			</para></listitem>
+		</varlistentry>
+		<?ignore
+		  <!-- these are currently ignored by the tool, so let's not document them. -->
+		<varlistentry>
+			<term>-q, --quiet</term>
+			<listitem><para>
+				Be quieter.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>-v, --verbose</term>
+			<listitem><para>
+				Be more verbose.
+			</para></listitem>
+			</varlistentry>
+		?>
+	</variablelist>
+
+
+</refsect3>
 <refsect3>
 	<title>domain trust</title>
 	<para>Domain and forest trust management.</para>
