@@ -2014,6 +2014,59 @@
 </refsect3>
 
 <refsect3>
+	<title>domain functionalprep [options]</title>
+	<para>Prepare a domain for functional level upgrade. If <constant>--functional-level</constant> is not used, the latest supported version is used (currently 2016).</para>
+	<para>
+	  There are two aspects to this preparation, relating to the forest and the domain. By default both are run.
+	  If either of <constant>--forest-prep</constant> or <constant>--domain-prep</constant> are used, only the corresponding preparation is made.
+	  If both arguments are used together, all preparation is done, just as when neither is used.
+	</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--functional-level [2008_R2|2012|2012_R2|2016]</term>
+			<listitem><para>
+			  The functional level to prepare for. The default is 2016.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--forest-prep</term>
+			<listitem><para>
+				Run forest preparation only (unless --domain-prep is also used).
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--domain-prep</term>
+			<listitem><para>
+				Run domain preparation only (unless --forest-prep is also used).
+			</para></listitem>
+		</varlistentry>
+		<?ignore
+		  <!-- these are ignored by the tool, so let's not document them. -->
+		<varlistentry>
+			<term>-q, --quiet</term>
+			<listitem><para>
+				Be quieter.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>-v, --verbose</term>
+			<listitem><para>
+				Be more verbose.
+			</para></listitem>
+			</varlistentry>
+		?>
+	</variablelist>
+
+
+</refsect3>
+
+<refsect3>
 	<title>domain info <replaceable>ip_address</replaceable> [options]</title>
 	<para>Print basic info about a domain and the specified DC.
 </para>
