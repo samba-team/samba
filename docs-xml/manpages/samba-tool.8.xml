@@ -2615,6 +2615,33 @@
 
 
 <refsect3>
+	<title>gpo backup <replaceable>gpo</replaceable>[options]</title>
+	<para>Backup a GPO.
+	</para>
+
+	<variablelist>
+	  <varlistentry>
+	    <term>-H H</term>
+	    <listitem><para>LDB URL for database or target server</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--tmpdir=TMPDIR</term>
+	    <listitem><para>Temporary directory for copying policy files</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--generalize</term>
+	    <listitem><para>Generalize XML entities to restore</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--entities=ENT_FILE</term>
+	    <listitem><para>File to export defining XML entities for the restore</para></listitem>
+	  </varlistentry>
+	</variablelist>
+
+</refsect3>
+
+
+<refsect3>
 	<title>gpo create <replaceable>displayname</replaceable> [options]</title>
 	<para>Create an empty GPO.</para>
 </refsect3>
