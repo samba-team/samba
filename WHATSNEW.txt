@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the third release candidate of Samba 4.22.  This is *not*
+This is the fourth release candidate of Samba 4.22.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -94,6 +94,14 @@ smb.conf changes
   server support krb5 netlogon            Experimental    no
   fruit:posix_rename                      Removed
   cldap port                              Removed
+
+
+CHANGES SINCE 4.22.0rc3
+=======================
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15815: client use krb5 netlogon is experimental and should not be used
+     in production.
 
 
 CHANGES SINCE 4.22.0rc2
