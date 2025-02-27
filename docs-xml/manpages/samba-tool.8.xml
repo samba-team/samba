@@ -2458,6 +2458,41 @@
 </refsect3>
 
 <refsect3>
+	<title>drs uptodateness [options]</title>
+	<para>Show uptodateness status.
+	</para>
+
+	<variablelist>
+	  <varlistentry>
+	    <term>-H URL, --URL=URL</term>
+	    <listitem><para>LDB URL for database or target server</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>-p PARTITION, --partition=PARTITION</term>
+	    <listitem><para>restrict to this partition</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--json</term>
+	    <listitem><para>Print data in json format</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--maximum</term>
+	    <listitem><para>Print maximum out-of-date-ness only</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--median</term>
+	    <listitem><para>Print median out-of-date-ness only</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--full</term>
+	    <listitem><para>Print full out-of-date-ness data</para></listitem>
+	  </varlistentry>
+	</variablelist>
+
+</refsect3>
+
+
+<refsect3>
 	<title>drs kcc</title>
 	<para>Trigger knowledge consistency center run.</para>
 </refsect3>
