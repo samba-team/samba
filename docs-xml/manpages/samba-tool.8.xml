@@ -536,6 +536,17 @@
 	<para>Add a DNS record.</para>
 </refsect3>
 
+
+<refsect3>
+	<title>dns cleanup <replaceable>server</replaceable> <replaceable>name</replaceable> </title>
+	<para>Clean up DNS records for a host, so that DNS queries no
+	longer return results. Usually this works by marking the
+	records as deleted in the database.</para>
+	<para>
+	  Example: <constant>samba-tool dns cleanup dc1 computer.samdom.test.site</constant>
+	</para>
+</refsect3>
+
 <refsect3>
 	<title>dns delete <replaceable>server</replaceable> <replaceable>zone</replaceable> <replaceable>name</replaceable> <replaceable>A|AAAA|PTR|CNAME|NS|MX|SRV|TXT</replaceable> <replaceable>data</replaceable></title>
 	<para>Delete a DNS record.</para>
