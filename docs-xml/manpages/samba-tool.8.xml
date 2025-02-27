@@ -489,6 +489,18 @@
 </refsect2>
 
 <refsect3>
+	<title>delegation add-principal <replaceable>accountname</replaceable> <replaceable>principal</replaceable> [options]</title>
+	<para>Add a principal to msDS-AllowedToActOnBehalfOfOtherIdentity that may delegate to an account.
+	</para>
+</refsect3>
+
+<refsect3>
+	<title>delegation del-principal <replaceable>accountname</replaceable> <replaceable>principal</replaceable> [options]</title>
+	<para>Delete a principal from msDS-AllowedToActOnBehalfOfOtherIdentity so that it may no longer delegate to an account.
+	</para>
+</refsect3>
+
+<refsect3>
 	<title>delegation add-service <replaceable>accountname</replaceable> <replaceable>principal</replaceable> [options]</title>
 	<para>Add a service principal as msDS-AllowedToDelegateTo.</para>
 </refsect3>
