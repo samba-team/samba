@@ -2078,6 +2078,168 @@
 </refsect3>
 
 <refsect3>
+	<title>domain kds root-key</title>
+	<para>Manage Key Distribution Service root keys.</para>
+</refsect3>
+
+<refsect3>
+	<title>domain kds root-key create [options]</title>
+	<para>Create KDS root keys</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--use-start-time=["now"|iso8601 or LDIF time string]</term>
+			<listitem><para> The key will be valid from
+			this time. </para>
+			<para> Valid time format are
+			the string "now", the LDIF format
+			<constant>YYYYmmddHHMMSS.0Z</constant>, or the
+			ISO format <constant>YYYY-mm-dd[*HH[:MM[:SS[.fff[fff]]]][+HH:MM[:SS[.ffffff]]]]</constant>
+			where the '*' can be any character, and the optional last
+			'[+HH:MM[:SS[.ffffff]]]' is a timezone offset (e.g. '+00:00' for
+			UTC).
+		      </para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--json</term>
+			<listitem><para>
+				Output results in JSON format.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain kds root-key delete --name={GUID}</title>
+	<para>Delete the named KDS root key. Use <constant>samba-tool domain kds root-key list</constant> to find the name of the key.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name=NAME</term>
+			<listitem><para> The name of the key to delete. It will be a GUID.
+		      </para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>-v, --verbose</term>
+			<listitem><para>
+				Print all attributes (except secret ones, unless --show secrets is used).
+			</para></listitem>
+			</varlistentry>
+		<varlistentry>
+			<term>--json</term>
+			<listitem><para>
+				Output results in JSON format.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain kds root-key list [options]</title>
+	<para>List KDS root keys. The newest keys are listed first.</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--show-secrets</term>
+			<listitem><para> Print secret or potentially
+			sensitive attributes, namely msKds-RootKeyData
+			and msKds-SecretAgreementParam.
+		      </para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>-v, --verbose</term>
+			<listitem><para>
+				Print more attributes (but not secret ones, unless --show secrets is also used).
+			</para></listitem>
+			</varlistentry>
+		<varlistentry>
+			<term>--json</term>
+			<listitem><para>
+				Output results in JSON format.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain kds root-key view [options]</title>
+	<para>View a KDS root key. The default output is similar to
+	that of <constant>samba-tool domain kds root-key list
+	--verbose</constant>, but with only one key show. The key can
+	be selected by using <constant>--latest</constant> for the
+	most recent key, or <constant>--name</constant> to select a key
+	by name.
+	</para>
+	<variablelist>
+		<varlistentry>
+			<term>-H, --URL</term>
+			<listitem><para>
+				LDB URL for database or target server.
+			</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--latest</term>
+			<listitem><para> View the most recent root key.
+		      </para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>--name=NAME</term>
+			<listitem><para> The name of the key to view. It will be a GUID.
+		      </para>
+			</listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>-v, --verbose</term>
+			<listitem><para> Print all attributes (except
+			secret ones, unless --show secrets is used).
+			This includes attributes that are only useful
+			for LDB bookkeeping. </para></listitem>
+			</varlistentry>
+		<varlistentry>
+			<term>--json</term>
+			<listitem><para>
+				Output results in JSON format.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+
+<refsect3>
+	<title>domain leave [options]</title>
+	<para>Run on a domain member, this will cause it to leave the domain.</para>
+	<para>To remove a domain server from the domain, you first need <constant>samba-tool domain demote</constant>.</para>
+	<variablelist>
+		<varlistentry>
+			<term>--keep-account</term>
+			<listitem><para>
+				Disable the machine account instead of deleting it.
+			</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect3>
+
+
+<refsect3>
 	<title>domain level <replaceable>show|raise</replaceable> <replaceable>options</replaceable> [options]</title>
 	<para>Show/raise domain and forest function levels.</para>
 </refsect3>
