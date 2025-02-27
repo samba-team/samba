@@ -2647,6 +2647,12 @@
 </refsect3>
 
 <refsect3>
+	<title>gpo cse list </title>
+
+<para>List the registered Client Side Extensions (CSEs) on the current host.</para>
+</refsect3>
+
+<refsect3>
 	<title>gpo del <replaceable>gpo</replaceable> [options]</title>
 	<para>Delete GPO.</para>
 </refsect3>
