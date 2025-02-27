@@ -2597,6 +2597,24 @@
 </refsect3>
 
 <refsect3>
+	<title>gpo admxload [options]</title>
+	<para>Loads samba admx files to sysvol
+	</para>
+
+	<variablelist>
+	<varlistentry>
+	<term>-H URL, --URL=URL</term>
+	<listitem><para>LDB URL for database or target server</para></listitem>
+	</varlistentry>
+	<varlistentry>
+	<term>--admx-dir=ADMX_DIR</term>
+	<listitem><para>Directory where admx templates are stored</para></listitem>
+	</varlistentry>
+</variablelist>
+</refsect3>
+
+
+<refsect3>
 	<title>gpo create <replaceable>displayname</replaceable> [options]</title>
 	<para>Create an empty GPO.</para>
 </refsect3>
