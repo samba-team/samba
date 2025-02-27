@@ -2583,6 +2583,20 @@
 </refsect2>
 
 <refsect3>
+	<title>gpo aclcheck [options]</title>
+	<para>Create an empty GPO.</para>
+	<para>Check all GPOs have matching LDAP and DS ACLs.
+	</para>
+
+	<variablelist>
+	<varlistentry>
+	<term>-H URL, --URL=URL</term>
+	<listitem><para>LDB URL for database or target server</para></listitem>
+	</varlistentry>
+</variablelist>
+</refsect3>
+
+<refsect3>
 	<title>gpo create <replaceable>displayname</replaceable> [options]</title>
 	<para>Create an empty GPO.</para>
 </refsect3>
