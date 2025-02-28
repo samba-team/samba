@@ -112,6 +112,24 @@ bool test_durable_v2_open_create_blob(struct torture_context *tctx,
 	struct GUID create_guid = GUID_random();
 	bool ret = true;
 	struct smbcli_options options;
+	uint32_t share_capabilities;
+	bool share_is_so;
+	uint8_t expected_oplock_granted;
+	bool expected_dhv2_granted;
+	uint32_t expected_dhv2_timeout;
+
+	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
+	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
+
+	if (share_is_so) {
+		expected_oplock_granted = SMB2_OPLOCK_LEVEL_II;
+		expected_dhv2_granted = false;
+		expected_dhv2_timeout = 0;
+	} else {
+		expected_oplock_granted = SMB2_OPLOCK_LEVEL_BATCH;
+		expected_dhv2_granted = true;
+		expected_dhv2_timeout = 300*1000;
+}
 
 	options = tree->session->transport->options;
 
@@ -135,11 +153,11 @@ bool test_durable_v2_open_create_blob(struct torture_context *tctx,
 	_h = io.out.file.handle;
 	h = &_h;
 	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io.out.oplock_level, expected_oplock_granted);
 	CHECK_VAL(io.out.durable_open, false);
-	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.durable_open_v2, expected_dhv2_granted);
 	CHECK_VAL(io.out.persistent_open, false);
-	CHECK_VAL(io.out.timeout, 300*1000);
+	CHECK_VAL(io.out.timeout, expected_dhv2_timeout);
 
 	/* disconnect */
 	TALLOC_FREE(tree);
