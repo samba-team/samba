@@ -66,6 +66,8 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
 int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 		    struct ctdb_ltdb_header *header, TDB_DATA data);
 
+int ctdb_ltdb_sync(struct ctdb_db_context *ctdb_db);
+
 int ctdb_ltdb_lock(struct ctdb_db_context *ctdb_db, TDB_DATA key);
 
 int ctdb_ltdb_unlock(struct ctdb_db_context *ctdb_db, TDB_DATA key);

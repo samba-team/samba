@@ -309,6 +309,22 @@ int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 }
 
 /*
+  Sync a volatile database to disk
+ */
+int ctdb_ltdb_sync(struct ctdb_db_context *ctdb_db)
+{
+	TDB_CONTEXT *tdb = ctdb_db->ltdb->tdb;
+	int ret;
+
+	ret = fdatasync(tdb_fd(tdb));
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Failed to sync db [%s]\n",
+				  ctdb_db->db_name));
+	}
+	return ret;
+}
+
+/*
   lock a record in the ltdb, given a key
  */
 int ctdb_ltdb_lock(struct ctdb_db_context *ctdb_db, TDB_DATA key)
