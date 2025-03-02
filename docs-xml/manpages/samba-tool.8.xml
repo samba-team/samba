@@ -2323,8 +2323,74 @@
 </refsect3>
 
 <refsect3>
-	<title>domain passwordsettings <replaceable>show|set</replaceable> <replaceable>options</replaceable> [options]</title>
-	<para>Show/set password settings.</para>
+	<title>domain passwordsettings set <replaceable>options</replaceable> [options]</title>
+
+	<para>Set password settings, including complexity
+	requirements, lockout policy, history length, minimum password
+	length, and minimum and maximum password age on a Samba AD DC
+	server.</para>
+
+	<para>Use against a Windows DC is possible, but group policy will override it.
+	</para>
+
+<variablelist>
+	  <varlistentry>
+	    <term>-H URL, --URL=URL</term>
+	    <listitem><para>LDB URL for database or target server</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>-q, --quiet</term>
+	    <listitem><para>Be quiet</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--complexity=COMPLEXITY</term>
+	    <listitem><para>The password complexity (on | off | default). Default is 'on'</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--store-plaintext=STORE_PLAINTEXT</term>
+	    <listitem><para>Store plaintext passwords where account have 'store passwords with reversible encryption' set (on | off | default). Default is 'off'</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--history-length=HISTORY_LENGTH</term>
+	    <listitem><para>The password history length (<replaceable>integer</replaceable> | default).  Default is 24.</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--min-pwd-length=MIN_PWD_LENGTH</term>
+	    <listitem><para>The minimum password length (<replaceable>integer</replaceable> | default).  Default is 7.</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--min-pwd-age=MIN_PWD_AGE</term>
+	    <listitem><para>The minimum password age (<replaceable>number of days</replaceable> | default).  Default is 1.</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--max-pwd-age=MAX_PWD_AGE</term>
+	    <listitem><para>The maximum password age (<replaceable>number of days</replaceable> | default).  Default is 43.</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--account-lockout-duration=ACCOUNT_LOCKOUT_DURATION</term>
+	    <listitem><para>The length of time an account is locked out after exceeding the limit on bad password attempts (<replaceable>number of minutes</replaceable> | default).  Default is 30 mins.</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--account-lockout-threshold=ACCOUNT_LOCKOUT_THRESHOLD</term>
+	    <listitem><para>The number of bad password attempts allowed before locking out the account (<replaceable>integer</replaceable> | default).  Default is 0 (never lock out).</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--reset-account-lockout-after=RESET_ACCOUNT_LOCKOUT_AFTER</term>
+	    <listitem><para>After this time is elapsed, the recorded number of attempts restarts from zero (<replaceable>integer</replaceable> | default).  Default is 30.</para></listitem>
+	  </varlistentry>
+</variablelist>
+</refsect3>
+
+<refsect3>
+	<title>domain passwordsettings show <replaceable>options</replaceable> [options]</title>
+	<para>Display current password settings for the domain.</para>
+
+	<variablelist>
+	  <varlistentry>
+	    <term>-H URL, --URL=URL</term>
+	    <listitem><para>LDB URL for database or target server</para></listitem>
+	  </varlistentry>
+	</variablelist>
 </refsect3>
 
 <refsect3>
