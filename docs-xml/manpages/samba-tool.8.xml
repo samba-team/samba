@@ -3306,6 +3306,43 @@ Valid class attributes: MACHINE|USER|BOTH
 </refsect3>
 
 <refsect3>
+	<title>group addunixattrs <replaceable>groupname</replaceable> <replaceable>gidnumber</replaceable> [options]</title>
+
+	<para> Add RFC2307 Unix attributes to a group account in the Active
+Directory domain.
+The groupname specified on the command is the sAMaccountName.</para>
+
+<para>Unix (RFC2307) attributes will be added to the group account.</para>
+<para>Add 'idmap_ldb:use rfc2307 = Yes' to smb.conf to use these attributes for UID/GID mapping.</para>
+
+<para>The command may be run from the root userid or another authorized userid.
+The -H or --URL= option can be used to execute the command against a
+remote server.</para>
+
+<para>
+Example1:
+<programlisting>samba-tool group addunixattrs Group1 10000</programlisting>
+</para>
+<para>
+Example1 shows how to add RFC2307 attributes to a domain enabled group
+account.
+</para>
+<para>
+The groups Unix ID will be set to '10000', provided this ID isn't already
+in use.
+</para>
+
+<variablelist>
+	  <varlistentry>
+	    <term>-H URL, --URL=URL</term>
+	    <listitem><para>LDB URL for database or target server</para></listitem>
+	  </varlistentry>
+</variablelist>
+
+
+</refsect3>
+
+<refsect3>
 	<title>group delete <replaceable>groupname</replaceable> [options]</title>
 	<para>Delete an AD group.</para>
 </refsect3>
