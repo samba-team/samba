@@ -2986,6 +2986,91 @@ enables most Registry policies.
 	  </varlistentry>
       </variablelist>
 </refsect3>
+
+<refsect3>
+	<title>gpo manage security set <replaceable>gpo</replaceable> [options]</title>
+
+	<para>Set Samba Security Group Policy to the sysvol.</para>
+
+	<para>This command sets a security setting to the sysvol for
+	applying to winbind clients. Not providing a value will unset
+	the policy. These settings only apply to the AD DC.</para>
+
+	<para>Example:
+	<programlisting>samba-tool gpo manage security set {31B2F340-016D-11D2-945F-00C04FB984F9} MaxTicketAge 10</programlisting>
+	</para>
+	<para>
+	  Possible policies:
+	  <variablelist>
+	    <varlistentry>
+	      <term>MaxTicketAge</term>
+	      <listitem><para>Maximum lifetime for user ticket (hours).</para></listitem>
+	    </varlistentry>
+
+	    <varlistentry>
+	      <term>MaxServiceAge</term>
+	      <listitem><para>Maximum lifetime for service ticket in minutes.
+              Defined in minutes</para></listitem>
+	    </varlistentry>
+
+	    <varlistentry>
+	      <term>MaxRenewAge</term>
+	      <listitem><para>Maximum lifetime for user ticket renewal, in minutes.
+              </para></listitem>
+	    </varlistentry>
+
+	    <varlistentry>
+	      <term>MinimumPasswordAge</term>
+	      <listitem><para>Minimum password age, in days.
+              </para></listitem>
+	    </varlistentry>
+
+	    <varlistentry>
+	      <term>MaximumPasswordAge</term>
+	      <listitem><para>Maximum password age, in days.</para></listitem>
+	    </varlistentry>
+
+	    <varlistentry>
+	      <term>MinimumPasswordLength</term>
+	      <listitem><para>Minimum password length, in characters.
+	      </para></listitem>
+	    </varlistentry>
+
+	    <varlistentry>
+	      <term>PasswordComplexity</term>
+	      <listitem><para>Password must meet complexity requirements.
+              1 is Enabled, 0 is Disabled.</para></listitem>
+	    </varlistentry>
+	  </variablelist>
+	</para>
+
+<variablelist>
+	  <varlistentry>
+	    <term>-H URL, --URL=URL</term>
+	    <listitem><para>LDB URL for database or target server</para></listitem>
+	  </varlistentry>
+</variablelist>
+
+
+	<para>List Samba Security Group Policy from the sysvol.</para>
+
+	<para>This command lists security settings from the sysvol that will
+	be applied to winbind clients. These settings only apply to the
+	AD DC.</para>
+	<para>
+	Example:
+	<programlisting>samba-tool gpo manage security list {31B2F340-016D-11D2-945F-00C04FB984F9}</programlisting>
+      </para>
+
+      <variablelist>
+	  <varlistentry>
+	    <term>-H URL, --URL=URL</term>
+	    <listitem><para>LDB URL for database or target server</para></listitem>
+	  </varlistentry>
+      </variablelist>
+</refsect3>
+
+
 <refsect3>
 	<title>gpo setinheritance <replaceable>container_dn</replaceable> <replaceable>block|inherit</replaceable> [options]</title>
 	<para>Set inheritance flag on a container.</para>
