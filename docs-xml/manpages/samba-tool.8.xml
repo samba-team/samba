@@ -69,10 +69,77 @@
 	&cmdline.common.credentials.authenticationfile;
 
 	<varlistentry>
+	  <term>-H URL, --URL=URL</term>
+	  <listitem>
+	    <para>LDB URL for database or target server.</para>
+	    <para>The URL can either be a plain file path, or use one
+	    of the schemes listed here. If a plain path is used, it is
+	    treated as if 'tdb://' was used.
+	    <variablelist>
+	      <varlistentry>
+		<term>tdb://PATH</term>
+		<listitem>
+		  <para>
+		    PATH is the location of a TDB database.
+		  </para>
+		</listitem>
+	      </varlistentry>
+	      <varlistentry>
+		<term>mdb://PATH</term>
+		<listitem>
+		  <para>
+		    PATH is the location of an LMDB database.
+		  </para>
+		</listitem>
+	      </varlistentry>
+	      <varlistentry>
+		<term>ldb://PATH</term>
+		<listitem>
+		  <para>
+		    PATH is the location of an LDB database, in either
+		    LMDB or TDB format. The formats will be tried one
+		    after another until one succeeds or all fail. It
+		    is safe to use this if you don't know the format
+		    of the file.
+		  </para>
+		</listitem>
+	      </varlistentry>
+	      <varlistentry>
+		<term>ldap://HOSTNAME, ldaps://HOSTNAME</term>
+		<listitem>
+		  <para>
+		    The LDB backend is the named ldap server. ldaps:// wraps the connection in TLS.
+		  </para>
+		</listitem>
+	      </varlistentry>
+	      <varlistentry>
+		<term>ldapi://SOCKET</term>
+		<listitem>
+		  <para>
+		    The backend server is a local ldap server using a unix domain socket.
+		  </para>
+		</listitem>
+	      </varlistentry>
+
+	    </variablelist>
+	    </para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>--color=always|never|auto</term>
+	  <listitem><para>use colour if available (default: auto)</para></listitem>
+	</varlistentry>
+
+
+	<varlistentry>
 	<term>--ipaddress=IPADDRESS</term>
 	<listitem><para>
 	IP address of the server
 	</para></listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>-s FILE, --configfile=FILE</term>
+	  <listitem><para>Use this smb.conf configuration file.</para></listitem>
 	</varlistentry>
 
 	<varlistentry>
