@@ -3846,6 +3846,112 @@ in use.
 	<para>Add a new user to the Active Directory Domain.</para>
 </refsect3>
 
+
+<refsect3>
+	<title>user addunixattrs <replaceable>username</replaceable> <replaceable>uid-number</replaceable> [options]</title>
+
+	<para>Add RFC2307 attributes to a user.</para>
+
+	<para>This command adds Unix attributes to a user account in the Active
+	Directory domain.</para>
+
+	<para>The username specified on the command is the sAMaccountName.</para>
+
+	<para>You must supply a unique uid.</para>
+
+	<para>Unix (RFC2307) attributes will be added to the user account.</para>
+
+	<para>If you supply a group id with '--gid-number', this will be used for the
+	users Unix 'gidNumber' attribute.</para>
+
+	<para>If '--gid-number' is not supplied, the users Unix gidNumber will be set to the
+	one found in 'Domain Users', this means Domain Users must have a gidNumber
+	attribute.</para>
+
+	<para>If '--unix-home' is not supplied, the users Unix home directory will be
+	set to /home/DOMAIN/username.</para>
+
+	<para>If '--login-shell' is not supplied, the users Unix login shell will be
+	set to '/bin/sh'</para>
+
+	<para>If ---gecos' is not supplied, the users Unix gecos field will be set to the
+	user's 'CN' attribute.</para>
+
+	<para>Add 'idmap_ldb:use rfc2307 = Yes' to the smb.conf on DCs to use these
+	attributes for UID/GID mapping.</para>
+
+	<para>The command may be run from the root userid or another authorised userid.
+	The -H or --URL= option can be used to execute the command against a
+	remote server.</para>
+
+	<para>Example1:
+	<programlisting>samba-tool user addunixattrs User1 10001</programlisting>
+
+
+	Example1 shows how to add RFC2307 attributes to a domain enabled user
+	account, Domain Users will be set as the users gidNumber.</para>
+
+	<para>The users Unix ID will be set to '10001', provided this ID isn't already
+in use.</para>
+
+	<para>Example2:
+	<programlisting>samba-tool user addunixattrs User2 10002 --gid-number=10001 --unix-home=/home/User2</programlisting>
+      </para>
+
+	<para>Example2 shows how to add RFC2307 attributes to a domain enabled user
+account.</para>
+
+	<para>The users Unix ID will be set to '10002', provided this ID isn't already
+in use.</para>
+
+	<para>The users gidNumber attribute will be set to '10001'</para>
+
+	<para>The users Unix home directory will be set to '/home/user2'</para>
+
+	<para>Example3:
+	<programlisting>samba-tool user addunixattrs User3 10003 --gid-number=10001 --login-shell=/bin/false --gecos='User3 test'</programlisting>
+      </para>
+
+	<para>Example3 shows how to add RFC2307 attributes to a domain enabled user
+	account.</para>
+
+	<para>The users Unix ID will be set to '10003', provided this
+	ID isn't already in use. The users gidNumber attribute will be
+	set to '10001'. The users Unix login shell will be set to
+	'/bin/false'. The users gecos field will be set to 'User3
+	test'.
+      </para>
+
+<variablelist>
+	  <varlistentry>
+	    <term>-H URL, --URL=URL</term>
+	    <listitem><para>LDB URL for database or target server</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--gid-number=GROUP_ID</term>
+	    <listitem><para>User's Unix/RFC2307 GID</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--unix-home=DIR</term>
+	    <listitem><para>User's Unix/RFC2307 home directory</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--login-shell=SHELL</term>
+	    <listitem><para>User's Unix/RFC2307 login shell</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--gecos=GECOS</term>
+	    <listitem><para>User's Unix/RFC2307 GECOS field</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--uid=USER_ID</term>
+	    <listitem><para>User's Unix/RFC2307 user id</para></listitem>
+	  </varlistentry>
+</variablelist>
+
+
+</refsect3>
+
 <refsect3>
 	<title>user create <replaceable>username</replaceable> [<replaceable>password</replaceable>]</title>
 	<para>Add a new user. This is a synonym for the
