@@ -36,7 +36,11 @@
 
 <refsect1>
 	<title>OPTIONS</title>
-
+	<para>
+	  Samba-tool consists of many sub-commands, each of which have
+	  their own set of options. The options listed in this section
+	  are common across several sub-commands.
+	</para>
 	<variablelist>
 
 	<varlistentry>
