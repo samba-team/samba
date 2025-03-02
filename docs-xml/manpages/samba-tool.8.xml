@@ -4159,6 +4159,19 @@ in use.</para>
 </refsect3>
 
 <refsect3>
+	<title>user sensitive <replaceable>accountname</replaceable> [show|on|off] [options]</title>
+	<para>Set/unset or show UF_NOT_DELEGATED for an account.</para>
+
+<variablelist>
+	  <varlistentry>
+	    <term>-H URL, --URL=URL</term>
+	    <listitem><para>LDB URL for database or target server</para></listitem>
+	  </varlistentry>
+</variablelist>
+
+</refsect3>
+
+<refsect3>
 	<title>user setexpiry <replaceable>username</replaceable> [options]</title>
 	<para>Set the expiration of a user account.</para>
 </refsect3>
