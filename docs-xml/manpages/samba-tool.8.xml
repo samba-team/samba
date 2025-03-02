@@ -165,6 +165,13 @@
         </listitem>
 	</varlistentry>
 
+	<varlistentry>
+	  <term>-V, --version</term>
+	  <listitem><para>Display the version number and exit.</para></listitem>
+
+
+	</varlistentry>
+
 	&cmdline.common.debug.client;
 
 	</variablelist>
