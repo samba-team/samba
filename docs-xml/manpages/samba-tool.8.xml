@@ -2967,6 +2967,26 @@ enables most Registry policies.
 
 
 <refsect3>
+	<title>gpo manage security list <replaceable>gpo</replaceable> [options]</title>
+
+	<para>List Samba Security Group Policy from the sysvol.</para>
+
+	<para>This command lists security settings from the sysvol that will
+	be applied to winbind clients. These settings only apply to the
+	AD DC.</para>
+	<para>
+	Example:
+	<programlisting>samba-tool gpo manage security list {31B2F340-016D-11D2-945F-00C04FB984F9}</programlisting>
+      </para>
+
+      <variablelist>
+	  <varlistentry>
+	    <term>-H URL, --URL=URL</term>
+	    <listitem><para>LDB URL for database or target server</para></listitem>
+	  </varlistentry>
+      </variablelist>
+</refsect3>
+<refsect3>
 	<title>gpo setinheritance <replaceable>container_dn</replaceable> <replaceable>block|inherit</replaceable> [options]</title>
 	<para>Set inheritance flag on a container.</para>
 </refsect3>
