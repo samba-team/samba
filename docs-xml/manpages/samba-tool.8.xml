@@ -3542,6 +3542,10 @@ in use.
 	</variablelist>
 </refsect3>
 
+<refsect3>
+	<title>ntacl getdosinfo <replaceable>file</replaceable> [options]</title>
+	<para>Get DOS info of a file from xattr.</para>
+</refsect3>
 
 <refsect3>
 	<title>ntacl get <replaceable>file</replaceable> [options]</title>
