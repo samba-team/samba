@@ -3146,7 +3146,7 @@ Valid class attributes: MACHINE|USER|BOTH
 </refsect3>
 
 <refsect3>
-	<title>gpo restor <replaceable>displayname</replaceable> <replaceable>backup location</replaceable> [options]</title>
+	<title>gpo restore <replaceable>displayname</replaceable> <replaceable>backup location</replaceable> [options]</title>
 
 <para>Restore a GPO to a new container.</para>
 
