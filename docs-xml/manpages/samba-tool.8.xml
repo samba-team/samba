@@ -46,7 +46,7 @@
 	<varlistentry>
 	<term>-h|--help</term>
 	<listitem><para>
-	Show this help message and exit
+	Show a help message and exit.
 	</para></listitem>
 	</varlistentry>
 
