@@ -22,7 +22,7 @@ The main features that separate ldb from other solutions are:
  - Safe multi-reader, multi-writer, using byte range locking
  - LDAP-like API
  - fast operation
- - choice of local tdb, local sqlite3 or remote LDAP backends
+ - choice of local tdb, lmdb or remote LDAP backends
  - integration with <a href="http://talloc.samba.org">talloc</a>
  - schema-less operation, for trivial setup
  - modules for extensions (such as schema support)
