@@ -35,7 +35,7 @@
 	<title>DESCRIPTION</title>
 
 	<para>ldbedit is a utility that allows you to edit LDB entries (in 
-	    tdb files, sqlite files or LDAP servers) using your preferred editor.
+	    database files or LDAP servers) using your preferred editor.
 	    ldbedit generates an LDIF file based on your query, allows you to edit
 	    the LDIF, and then merges that LDIF back into the LDB backend.
 	</para>
@@ -72,17 +72,21 @@
 		<term>-H &lt;ldb-url&gt;</term>
 		<listitem>
 		    <para>
-			LDB URL to connect to. For a tdb database,
-			this will be of the form
-			tdb://<replaceable>filename</replaceable>.
+			LDB URL to connect to. For tdb and lmdb
+			databases, this will be of the form
+			tdb://<replaceable>filename</replaceable> or
+			mdb://<replaceable>filename</replaceable>,
+			respectively. The URL
+			ldb://<replaceable>filename</replaceable> will
+			try to detect the file format automatically.
 			For a LDAP connection over unix domain
 			sockets, this will be of the form
 			ldapi://<replaceable>socket</replaceable>. For
 			a (potentially remote) LDAP connection over
 			TCP, this will be of the form
-			ldap://<replaceable>hostname</replaceable>. For
-			an SQLite database, this will be of the form
-			sqlite://<replaceable>filename</replaceable>.
+			ldap://<replaceable>hostname</replaceable>, or
+			ldaps://<replaceable>hostname</replaceable>
+			for a TLS protected connection.
 		    </para>
 		</listitem>
 	    </varlistentry>
