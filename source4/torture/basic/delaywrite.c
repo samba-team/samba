@@ -1206,16 +1206,9 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 		goto done;
 	}
 
-	if (finfo1.basic_info.out.access_time !=
-	    finfo2.basic_info.out.access_time) {
-		torture_result(tctx, TORTURE_FAIL, __location__": access_time changed");
-		ret = false;
-		goto done;
-	}
-
-	if (finfo1.basic_info.out.write_time !=
+	if (finfo1.basic_info.out.write_time ==
 	    finfo2.basic_info.out.write_time) {
-		torture_result(tctx, TORTURE_FAIL, __location__": write_time changed:\n"
+		torture_result(tctx, TORTURE_FAIL, __location__": write_time unchanged:\n"
 					   "write time conn 1 = %s, conn 2 = %s", 
 		       nt_time_string(tctx, finfo1.basic_info.out.write_time),
 		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
@@ -1223,9 +1216,9 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 		goto done;
 	}
 
-	if (finfo1.basic_info.out.change_time !=
+	if (finfo1.basic_info.out.change_time ==
 	    finfo2.basic_info.out.change_time) {
-		torture_result(tctx, TORTURE_FAIL, __location__": change_time changed");
+		torture_result(tctx, TORTURE_FAIL, __location__": change_time unchanged");
 		ret = false;
 		goto done;
 	}
