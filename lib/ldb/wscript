@@ -221,15 +221,6 @@ def build(bld):
                      deps='ldb',
                      subsystem='ldb')
 
-    bld.SAMBA_MODULE('ldb_sqlite3',
-                     'sqlite3/ldb_sqlite3.c',
-                     init_function='ldb_sqlite3_init',
-                     internal_module=False,
-                     module_init_name='ldb_init_module',
-                     enabled=False,
-                     deps='ldb',
-                     subsystem='ldb')
-
     bld.SAMBA_MODULE('ldb_tdb',
                      bld.SUBDIR('ldb_tdb',
                                 '''ldb_tdb_init.c'''),

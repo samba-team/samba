@@ -1094,7 +1094,7 @@ struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx)
     - tdb://path
     - ldapi://path
     - ldap://host
-    - sqlite://path
+    - mdb://path
 
    \param ldb the context associated with the database (from ldb_init())
    \param url the URL of the database to connect to, as noted above
