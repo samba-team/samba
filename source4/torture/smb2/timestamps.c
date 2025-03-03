@@ -1154,6 +1154,310 @@ done:
 	return ret;
 }
 
+static bool getinfo_both(struct torture_context *tctx,
+			 struct smb2_tree *tree,
+			 struct smb2_handle *h1,
+			 const char *p,
+			 NTTIME *mtime,
+			 NTTIME *ctime)
+{
+	union smb_fileinfo finfo;
+	union smb_fileinfo pinfo;
+	struct smb2_create cr;
+	struct smb2_handle h2;
+	NTSTATUS status;
+	bool ret = true;
+
+	if (h1 != NULL) {
+		finfo = (union smb_fileinfo) {
+			.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
+			.generic.in.file.handle = *h1,
+		};
+		status = smb2_getinfo_file(tree, tree, &finfo);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"getinfo failed\n");
+	}
+
+	cr = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_READ_ATTRIBUTE,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.fname = p,
+	};
+	status = smb2_create(tree, tree, &cr);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"create failed\n");
+	h2 = cr.out.file.handle;
+
+	pinfo = (union smb_fileinfo) {
+		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
+		.generic.in.file.handle = h2,
+	};
+	status = smb2_getinfo_file(tree, tree, &pinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"getinfo failed\n");
+
+	status = smb2_util_close(tree, h2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"close failed\n");
+	ZERO_STRUCT(h2);
+
+	if (h1 != NULL) {
+		torture_assert_nttime_equal_goto(tctx,
+						 finfo.all_info.out.write_time,
+						 pinfo.all_info.out.write_time,
+						 ret, done,
+						 "times don't match");
+	}
+
+	*mtime = pinfo.all_info.out.write_time;
+	if (ctime != NULL) {
+		*ctime = pinfo.all_info.out.change_time;
+	}
+
+done:
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree, h2);
+	}
+	return ret;
+}
+
+/*
+ * | Time | Handle 1               | Handle 2               |
+ * |------+------------------------+------------------------|
+ * |    1 | Create file            | Open file              |
+ * |      | Check Handle Time = 1  | Check Handle Time = 1  |
+ * |      | Check Path Time = 1    | Check Path Time = 1    |
+ * |    2 | Write                  |                        |
+ * |    3 | Check Handle Time = 2  | Check Handle Time = 2  |
+ * |      | Check Path Time = 2    | Check Path Time = 2    |
+ * |    4 | Set Sticky Time = 99   |                        |
+ * |    5 | Check Handle Time = 99 | Check Handle Time = 99 |
+ * |      | Check Path Time = 99   | Check Path Time = 99   |
+ * |    6 | Write                  |                        |
+ * |    7 | Check Handle Time = 99 | Check Handle Time = 99 |
+ * |      | Check Path Time = 99   | Check Path Time = 99   |
+ * |    8 |                        | Write                  |
+ * |    9 | Check Handle Time = 8  | Check Handle Time = 8  |
+ * |      | Check Path Time = 8    | Check Path Time = 8    |
+ * |   10 | Write                  |                        |
+ * |   11 | Check Handle Time = 8  | Check Handle Time = 8  |
+ * |      | Check Path Time = 8    | Check Path Time = 8    |
+ * |   12 | Close                  | Close                  |
+ * |   13 | Check Path Time = 8    | Check Path Time = 8    |
+ */
+static bool test_modern_write_time_update1(struct torture_context *tctx,
+					   struct smb2_tree *tree1,
+					   struct smb2_tree *tree2)
+{
+	const char *fname = BASEDIR "\\test_modern_write_time_update1";
+	struct smb2_create cr;
+	struct smb2_handle h1 = {};
+	struct smb2_handle h2 = {};
+	union smb_setfileinfo setinfo;
+	NTTIME lasttime, currenttime1, currenttime2;
+	time_t stickytime = time(NULL) + 86400;
+	NTTIME stickynttime;
+	NTSTATUS status;
+	bool ret = true;
+
+	unix_to_nt_time(&stickynttime, stickytime);
+
+	smb2_deltree(tree1, BASEDIR);
+	status = torture_smb2_testdir(tree1, BASEDIR, &h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"create failed\n");
+	status = smb2_util_close(tree1, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"close failed\n");
+
+	/* 1 */
+
+	smb2_generic_create(&cr, NULL, false, fname,
+			    NTCREATEX_DISP_CREATE,
+			    smb2_util_oplock_level(""), 0, 0);
+	status = smb2_create(tree1, tree1, &cr);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"create failed\n");
+	h1 = cr.out.file.handle;
+
+	smb2_generic_create(&cr, NULL, false, fname,
+			    NTCREATEX_DISP_OPEN,
+			    smb2_util_oplock_level(""), 0, 0);
+	status = smb2_create(tree2, tree2, &cr);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"create failed\n");
+	h2 = cr.out.file.handle;
+
+	ret = getinfo_both(tctx, tree1, &h1, fname, &currenttime1, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	ret = getinfo_both(tctx, tree2, &h2, fname, &currenttime2, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	torture_assert_nttime_equal_goto(tctx, currenttime1, currenttime2,
+					 ret, done, "bad times");
+	lasttime = currenttime1;
+
+	/* 2 */
+
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
+
+	status = smb2_util_write(tree1, h1, "1", 0, 1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"write failed\n");
+
+	/* 3 */
+
+	ret = getinfo_both(tctx, tree1, &h1, fname, &currenttime1, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	ret = getinfo_both(tctx, tree2, &h2, fname, &currenttime2, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	torture_assert_nttime_equal_goto(tctx, currenttime1, currenttime2,
+					 ret, done, "bad times");
+
+	torture_assert_nttime_not_equal_goto(tctx,
+					     currenttime1,
+					     lasttime,
+					     ret, done,
+					     "bad time\n");
+	lasttime = currenttime1;
+
+	/* 4 */
+
+	setinfo = (union smb_setfileinfo) {
+		.generic.level = SMB_QFILEINFO_BASIC_INFORMATION,
+	};
+	setinfo.basic_info.in.file.handle = h1;
+	setinfo.basic_info.in.write_time = stickynttime;
+
+	status = smb2_setinfo_file(tree1, &setinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	/* 5 */
+
+	ret = getinfo_both(tctx, tree1, &h1, fname, &currenttime1, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	ret = getinfo_both(tctx, tree2, &h2, fname, &currenttime2, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	torture_assert_nttime_equal_goto(tctx, currenttime1, currenttime2,
+					 ret, done, "bad times");
+
+	torture_assert_nttime_equal_goto(tctx,
+					 currenttime1,
+					 stickynttime,
+					 ret, done,
+					 "bad time\n");
+	lasttime = currenttime1;
+
+	/* 6 */
+
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
+
+	status = smb2_util_write(tree1, h1, "1", 0, 1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"write failed\n");
+
+	/* 7 */
+
+	ret = getinfo_both(tctx, tree1, &h1, fname, &currenttime1, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	ret = getinfo_both(tctx, tree2, &h2, fname, &currenttime2, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	torture_assert_nttime_equal_goto(tctx, currenttime1, currenttime2,
+					 ret, done, "bad times");
+
+	torture_assert_nttime_equal_goto(tctx,
+					 currenttime1,
+					 stickynttime,
+					 ret, done,
+					 "bad time\n");
+
+	/* 8 */
+
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
+
+	status = smb2_util_write(tree2, h2, "1", 0, 1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"write failed\n");
+
+	/* 9 */
+
+	ret = getinfo_both(tctx, tree1, &h1, fname, &currenttime1, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	ret = getinfo_both(tctx, tree2, &h2, fname, &currenttime2, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	torture_assert_nttime_equal_goto(tctx, currenttime1, currenttime2,
+					 ret, done, "bad times");
+
+	torture_assert_nttime_not_equal_goto(tctx,
+					     currenttime1,
+					     stickynttime,
+					     ret, done,
+					     "bad time\n");
+	lasttime = currenttime1;
+
+	/* 10 */
+
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
+
+	status = smb2_util_write(tree1, h1, "1", 0, 1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"write failed\n");
+
+	/* 11 */
+
+	ret = getinfo_both(tctx, tree1, &h1, fname, &currenttime1, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	ret = getinfo_both(tctx, tree2, &h2, fname, &currenttime2, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	torture_assert_nttime_equal_goto(tctx, currenttime1, currenttime2,
+					 ret, done, "bad times");
+
+	torture_assert_nttime_equal_goto(tctx,
+					 currenttime1,
+					 lasttime,
+					 ret, done,
+					 "bad time\n");
+
+	/* 12 */
+
+	status = smb2_util_close(tree1, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"close failed\n");
+	status = smb2_util_close(tree2, h2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"close failed\n");
+
+	/* 13 */
+
+	ret = getinfo_both(tctx, tree1, NULL, fname, &currenttime1, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	ret = getinfo_both(tctx, tree2, NULL, fname, &currenttime2, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	torture_assert_nttime_equal_goto(tctx, currenttime1, currenttime2,
+					 ret, done, "bad times");
+
+	torture_assert_nttime_equal_goto(tctx,
+					 currenttime1,
+					 lasttime,
+					 ret, done,
+					 "bad time\n");
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree1, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree2, h2);
+	}
+	smb2_deltree(tree1, BASEDIR);
+	return ret;
+}
+
 /*
    basic testing of SMB2 timestamps
 */
@@ -1180,6 +1484,7 @@ struct torture_suite *torture_smb2_timestamps_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "delayed-write-vs-setbasic", test_delayed_write_vs_setbasic);
 	torture_suite_add_1smb2_test(suite, "delayed-1write", test_delayed_1write);
 	torture_suite_add_1smb2_test(suite, "delayed-2write", test_delayed_2write);
+	torture_suite_add_2smb2_test(suite, "modern_write_time_update-1", test_modern_write_time_update1);
 
 	suite->description = talloc_strdup(suite, "SMB2 timestamp tests");
 
