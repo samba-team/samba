@@ -4564,6 +4564,19 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		need_tmpname = true;
 	}
 
+#ifdef OPENBSD
+	/*
+	 * OpenBSD requires to have write permissions
+	 * on both source and destimation of renameat(),
+	 * see https://bugzilla.samba.org/show_bug.cgi?id=15801
+	 *
+	 * For now just disable the new code by default.
+	 */
+	if (vfs_use_tmp == Auto) {
+		vfs_use_tmp = false;
+	}
+#endif
+
 	if (vfs_use_tmp != Auto) {
 		need_tmpname = vfs_use_tmp;
 	}

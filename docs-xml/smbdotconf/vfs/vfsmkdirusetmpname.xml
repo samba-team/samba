@@ -31,6 +31,8 @@
 	<smbconfoption name="inherit permissions"/>,
 	<smbconfoption name="nt acl support"/> or
 	<smbconfoption name="store dos attributes"/>.
+	Note on OpenBSD Auto (the default) is mapped to <constant>no</constant>,
+	see <ulink url="https://bugzilla.samba.org/show_bug.cgi?id=15801">https://bugzilla.samba.org/show_bug.cgi?id=15801</ulink>.
 	</para>
 
 	<para>
