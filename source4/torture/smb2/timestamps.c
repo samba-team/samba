@@ -524,6 +524,7 @@ static bool test_delayed_write_vs_seteof(struct torture_context *tctx,
 	struct smb2_handle h2 = {{0}};
 	NTTIME create_time;
 	NTTIME set_time;
+	NTTIME latest_time;
 	union smb_fileinfo finfo;
 	union smb_setfileinfo setinfo;
 	struct smb2_close c;
@@ -553,13 +554,47 @@ static bool test_delayed_write_vs_seteof(struct torture_context *tctx,
 	create_time = cr.out.create_time;
 	sleep(1);
 
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
+
+	torture_comment(tctx, "Setinfo EOF on file-handle 1,"
+			" should update writetime\n");
+
+	setinfo = (union smb_setfileinfo) {
+		.generic.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION,
+	};
+	setinfo.end_of_file_info.in.file.handle = h1;
+	setinfo.end_of_file_info.in.size = 0; /* same size! */
+
+	status = smb2_setinfo_file(tree, &setinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"close failed\n");
+
+	torture_comment(tctx, "Check writetime has been updated "
+			"by the setinfo EOF\n");
+
+	finfo = (union smb_fileinfo) {
+		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
+		.generic.in.file.handle = h1,
+	};
+	status = smb2_getinfo_file(tree, tree, &finfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"getinfo failed\n");
+	if (!(finfo.all_info.out.write_time > create_time)) {
+		ret = false;
+		torture_fail_goto(tctx, done, "setinfo EOF hasn't updated writetime\n");
+	}
+
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
+
 	torture_comment(tctx, "Write to file-handle 1\n");
 
 	status = smb2_util_write(tree, h1, "s", 0, 1);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"write failed\n");
 
-	torture_comment(tctx, "Check writetime hasn't been updated\n");
+	torture_comment(tctx, "Check writetime has been updated\n");
 
 	finfo = (union smb_fileinfo) {
 		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
@@ -569,13 +604,17 @@ static bool test_delayed_write_vs_seteof(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"getinfo failed\n");
 
-	torture_assert_nttime_equal(tctx,
-				    finfo.all_info.out.write_time,
-				    create_time,
-				    "Writetime != set_time (wrong!)\n");
+	torture_assert_nttime_not_equal(tctx,
+					finfo.all_info.out.write_time,
+					create_time,
+					"Writetime not updated\n");
+	latest_time = finfo.all_info.out.write_time;
 
 	torture_comment(tctx, "Setinfo EOF on file-handle 1,"
-			" should flush pending writetime update\n");
+			" should update writetime\n");
+
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
 
 	setinfo = (union smb_setfileinfo) {
 		.generic.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION,
@@ -597,7 +636,7 @@ static bool test_delayed_write_vs_seteof(struct torture_context *tctx,
 	status = smb2_getinfo_file(tree, tree, &finfo);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"getinfo failed\n");
-	if (!(finfo.all_info.out.write_time > create_time)) {
+	if (!(finfo.all_info.out.write_time > latest_time)) {
 		ret = false;
 		torture_fail_goto(tctx, done, "setinfo EOF hasn't updated writetime\n");
 	}
