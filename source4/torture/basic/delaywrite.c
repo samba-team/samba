@@ -185,11 +185,12 @@ static bool test_delayed_write_update1(struct torture_context *tctx, struct smbc
 	fflush(stdout);
 	smb_msleep(2 * msec);
 
-	/* Do a non-zero length SMBwrite and make sure it doesn't update the write time. */
+	/* Do a non-zero length SMBwrite and make sure it updates the write time. */
 	written = smbcli_smbwrite(cli->tree, fnum1, "x", 0, 1);
 	torture_assert_int_equal(tctx, written, 1,
 				 "unexpected number of bytes written");
 
+	updated = false;
 	start = timeval_current();
 	end = timeval_add(&start, (10*sec), 0);
 	while (!timeval_expired(&end)) {
@@ -204,42 +205,34 @@ static bool test_delayed_write_update1(struct torture_context *tctx, struct smbc
 		torture_comment(tctx, "write time %s\n",
 			nt_time_string(tctx, finfo3.all_info.out.write_time));
 
-		torture_assert_u64_equal(tctx,
-					 finfo3.all_info.out.write_time,
-					 finfo2.all_info.out.write_time,
-					 talloc_asprintf(tctx,
-						"Server updated write time "
-						"after %.2f seconds (wrong!)",
-						timeval_elapsed(&start)));
-
+		if (finfo3.all_info.out.write_time !=
+		    finfo2.all_info.out.write_time)
+		{
+			updated = true;
+			break;
+		}
 		fflush(stdout);
 		smb_msleep(1 * msec);
 	}
 
-	torture_comment(tctx, "Server did not update write time within 10 "
-			"seconds. Good!\n");
+	torture_assert(tctx, updated,
+		       "Server did not update write time within 10 seconds");
 
 	fflush(stdout);
 	smb_msleep(2 * msec);
 
-	/* the close should trigger an write time update */
+	/* the close should not trigger an write time update */
 	smbcli_close(cli->tree, fnum1);
 	fnum1 = -1;
 
 	status = smb_raw_pathinfo(cli->tree, tctx, &pinfo4);
 	torture_assert_ntstatus_ok(tctx, status, "pathinfo failed");
 
-	torture_assert_u64_not_equal(tctx,
-				     pinfo4.all_info.out.write_time,
-				     finfo3.all_info.out.write_time,
-				     "Server did not update write time on "
+	torture_assert_u64_equal(tctx,
+				 pinfo4.all_info.out.write_time,
+				 finfo3.all_info.out.write_time,
+				 "Server did update write time on "
 				     "close (wrong!)");
-	torture_assert(tctx,
-		pinfo4.all_info.out.write_time > finfo3.all_info.out.write_time,
-		"Server updated write time on close, but to an earlier point "
-		"in time");
-
-	torture_comment(tctx, "Server updated write time on close (correct)\n");
 
 	if (fnum1 != -1)
 		smbcli_close(cli->tree, fnum1);
