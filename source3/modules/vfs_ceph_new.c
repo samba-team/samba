@@ -107,6 +107,15 @@ struct vfs_ceph_config {
 	enum vfs_cephfs_proxy_mode proxy;
 	void *libhandle;
 
+	/*
+	* This field stores the Samba capabilities for the share represented
+	* by this struct. The share capabilities are computed once during the
+	* module startup and then cached here for future references.
+	*
+	* It's completely independent of the CephFS capabilities concept.
+	*/
+	uint32_t capabilities;
+
 	CEPH_FN(ceph_ll_walk);
 	CEPH_FN(ceph_ll_getattr);
 	CEPH_FN(ceph_ll_setattr);
@@ -1927,12 +1936,79 @@ static uint64_t vfs_ceph_disk_free(struct vfs_handle_struct *handle,
 	return *dfree;
 }
 
+static int vfs_ceph_check_case_sensitivity(struct vfs_handle_struct *handle,
+					   uint32_t *capabilities)
+{
+	struct vfs_ceph_iref iref = {0};
+	char value[8] = {0};
+	struct vfs_ceph_config *config = NULL;
+	uint32_t caps;
+	int ret;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct vfs_ceph_config,
+				return -ENOMEM);
+
+	if (config->capabilities != 0) {
+		*capabilities = config->capabilities;
+		return 0;
+	}
+
+	/*
+	 * In CephFS, case sensitivity configuration is inherited by default,
+	 * but it can be manually overridden by an administrator. Samba assumes
+	 * that all directories inherit the configuration from the root of the
+	 * share and the administrator doesn't change it manually.
+	 */
+	ret = vfs_ceph_iget(handle, handle->conn->connectpath, 0, &iref);
+	if (ret != 0) {
+		return ret;
+	}
+
+	caps = FILE_CASE_PRESERVED_NAMES;
+
+	ret = vfs_ceph_ll_getxattr(handle, &iref, "ceph.dir.casesensitive",
+				   value, sizeof(value) - 1);
+	if (ret < 0) {
+		if (ret != -ENODATA) {
+			DBG_ERR("[CEPH] failed to get case sensitivity "
+				"settings: path='%s' %s",
+				handle->conn->connectpath, strerror(-ret));
+			goto out;
+		}
+
+		/*
+		 * The xattr is not defined, so the filesystem is case sensitive
+		 * by default.
+		 */
+		caps |= FILE_CASE_SENSITIVE_SEARCH;
+	} else {
+		/*
+		 * We only accept "0" as 'false' (as defined in the CephFS
+		 * documentation). All other values are interpreted as 'true'
+		 */
+		if (strcmp(value, "0") != 0) {
+			caps |= FILE_CASE_SENSITIVE_SEARCH;
+		}
+	}
+
+	config->capabilities = caps;
+	*capabilities = caps;
+
+	ret = 0;
+
+out:
+	vfs_ceph_iput(handle, &iref);
+
+	return ret;
+}
+
 static int vfs_ceph_statvfs(struct vfs_handle_struct *handle,
 			    const struct smb_filename *smb_fname,
 			    struct vfs_statvfs_struct *statbuf)
 {
 	struct statvfs statvfs_buf = { 0 };
 	struct vfs_ceph_iref iref = {0};
+	uint32_t caps = 0;
 	int ret;
 
 	ret = vfs_ceph_iget(handle, smb_fname->base_name, 0, &iref);
@@ -1945,6 +2021,11 @@ static int vfs_ceph_statvfs(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
+	ret = vfs_ceph_check_case_sensitivity(handle, &caps);
+	if (ret < 0) {
+		goto out;
+	}
+
 	statbuf->OptimalTransferSize = statvfs_buf.f_frsize;
 	statbuf->BlockSize = statvfs_buf.f_bsize;
 	statbuf->TotalBlocks = statvfs_buf.f_blocks;
@@ -1953,8 +2034,7 @@ static int vfs_ceph_statvfs(struct vfs_handle_struct *handle,
 	statbuf->TotalFileNodes = statvfs_buf.f_files;
 	statbuf->FreeFileNodes = statvfs_buf.f_ffree;
 	statbuf->FsIdentifier = statvfs_buf.f_fsid;
-	statbuf->FsCapabilities =
-		FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
+	statbuf->FsCapabilities = caps;
 
 	DBG_DEBUG("[CEPH] f_bsize: %ld, f_blocks: %ld, f_bfree: %ld, "
 		  "f_bavail: %ld\n",
