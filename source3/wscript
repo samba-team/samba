@@ -457,6 +457,9 @@ vsyslog
             conf.DEFINE('HAVE_FREEBSD_SUNACL_H', '1')
             conf.CHECK_FUNCS_IN(['acl'], 'sunacl')
         conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
+    elif (host_os.rfind('openbsd') > -1):
+        conf.DEFINE('OPENBSD', 1)
+        conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
     elif (host_os.rfind('irix') > -1):
         conf.DEFINE('IRIX', 1)
         conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
