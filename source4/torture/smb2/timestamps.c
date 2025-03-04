@@ -709,7 +709,7 @@ static bool test_delayed_write_vs_flush(struct torture_context *tctx,
 	struct smb2_flush f;
 	struct smb2_close c;
 	NTTIME create_time;
-	NTTIME flush_time;
+	NTTIME write_time;
 	NTSTATUS status;
 	bool ret = true;
 
@@ -742,7 +742,35 @@ static bool test_delayed_write_vs_flush(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"write failed\n");
 
-	torture_comment(tctx, "Check writetime hasn't been updated\n");
+	torture_comment(tctx, "Check writetime has been updated\n");
+
+	finfo = (union smb_fileinfo) {
+		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
+		.generic.in.file.handle = h1,
+	};
+	status = smb2_getinfo_file(tree, tree, &finfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"getinfo failed\n");
+
+	torture_assert_nttime_not_equal(tctx,
+					finfo.all_info.out.write_time,
+					create_time,
+					"Writetime not updated\n");
+	write_time = finfo.all_info.out.write_time;
+
+	torture_comment(tctx, "Flush file, "
+			"there should be no pending writetime update\n");
+
+	f = (struct smb2_flush) {
+		.in.file.handle = h1,
+	};
+
+	status = smb2_flush(tree, &f);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"flush failed\n");
+
+	torture_comment(tctx, "Check writetime has not been updated "
+			"by the flush\n");
 
 	finfo = (union smb_fileinfo) {
 		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
@@ -754,36 +782,8 @@ static bool test_delayed_write_vs_flush(struct torture_context *tctx,
 
 	torture_assert_nttime_equal(tctx,
 				    finfo.all_info.out.write_time,
-				    create_time,
-				    "Writetime != create_time (wrong!)\n");
-
-	torture_comment(tctx, "Flush file, "
-			"should flush pending writetime update\n");
-
-	f = (struct smb2_flush) {
-		.in.file.handle = h1,
-	};
-
-	status = smb2_flush(tree, &f);
-	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
-					"flush failed\n");
-
-	torture_comment(tctx, "Check writetime has been updated "
-			"by the setinfo EOF\n");
-
-	finfo = (union smb_fileinfo) {
-		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
-		.generic.in.file.handle = h1,
-	};
-	status = smb2_getinfo_file(tree, tree, &finfo);
-	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
-					"getinfo failed\n");
-
-	flush_time = finfo.all_info.out.write_time;
-	if (!(flush_time > create_time)) {
-		ret = false;
-		torture_fail_goto(tctx, done, "flush hasn't updated writetime\n");
-	}
+				    write_time,
+				    "Writetime updated\n");
 
 	torture_comment(tctx, "Close file-handle 1, write-time should not be updated\n");
 
@@ -799,8 +799,8 @@ static bool test_delayed_write_vs_flush(struct torture_context *tctx,
 
 	torture_assert_nttime_equal(tctx,
 				    c.out.write_time,
-				    flush_time,
-				    "writetime != flushtime (wrong!)\n");
+				    write_time,
+				    "writetime updated\n");
 
 done:
 	if (!smb2_util_handle_empty(h1)) {
