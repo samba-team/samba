@@ -14,3 +14,4 @@
 ^samba3.base.delaywrite.delayed update of write time 6\(fileserver_smb1\)
 ^samba3.smb2.timestamps.delayed-write-vs-seteof\(.*\)
 ^samba3.smb2.timestamps.delayed-write-vs-flush\(.*\)
+^samba3.smb2.timestamps.delayed-write-vs-setbasic\(.*\)

@@ -812,13 +812,13 @@ done:
 
 static bool test_delayed_write_vs_setbasic_do(struct torture_context *tctx,
 					      struct smb2_tree *tree,
-					      union smb_setfileinfo *setinfo,
-					      bool expect_update)
+					      union smb_setfileinfo *setinfo)
 {
 	char *path = NULL;
 	struct smb2_create cr;
 	struct smb2_handle h1 = {{0}};
 	NTTIME create_time;
+	NTTIME write_time;
 	union smb_fileinfo finfo;
 	NTSTATUS status;
 	bool ret = true;
@@ -841,6 +841,9 @@ static bool test_delayed_write_vs_setbasic_do(struct torture_context *tctx,
 	h1 = cr.out.file.handle;
 	create_time = cr.out.create_time;
 
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
+
 	torture_comment(tctx, "Write to file\n");
 
 	status = smb2_util_write(tree, h1, "s", 0, 1);
@@ -857,14 +860,15 @@ static bool test_delayed_write_vs_setbasic_do(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"getinfo failed\n");
 
-	torture_assert_nttime_equal(tctx,
-				    finfo.all_info.out.write_time,
-				    create_time,
-				    "Writetime != create_time (wrong!)\n");
-
+	write_time = finfo.all_info.out.write_time;
+	torture_assert_nttime_not_equal_goto(tctx,
+					     write_time,
+					     create_time,
+					     ret, done,
+					     "Writetime == create_time (wrong!)\n");
 	torture_comment(tctx, "Set timestamps\n");
 
-	setinfo->end_of_file_info.in.file.handle = h1;
+	setinfo->basic_info.in.file.handle = h1;
 	status = smb2_setinfo_file(tree, setinfo);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"close failed\n");
@@ -879,19 +883,11 @@ static bool test_delayed_write_vs_setbasic_do(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"getinfo failed\n");
 
-	if (expect_update) {
-		if (!(finfo.all_info.out.write_time > create_time)) {
-			ret = false;
-			torture_fail_goto(tctx, done, "setinfo basicinfo "
-					  "hasn't updated writetime\n");
-		}
-	} else {
-		if (finfo.all_info.out.write_time != create_time) {
-			ret = false;
-			torture_fail_goto(tctx, done, "setinfo basicinfo "
-					  "hasn't updated writetime\n");
-		}
-	}
+	torture_assert_nttime_equal_goto(tctx,
+					 finfo.all_info.out.write_time,
+					 write_time,
+					 ret, done,
+					 "Writetime changed\n");
 
 	status = smb2_util_close(tree, h1);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
@@ -928,39 +924,33 @@ static bool test_delayed_write_vs_setbasic(struct torture_context *tctx,
 					"close failed\n");
 
 	/*
-	 * Yes, this is correct, tested against Windows 2016: even if all
-	 * timestamp fields are 0, a pending write time is flushed.
+	 * As there are no delayed updated with modern write behaviour,
+	 * setting atime/ctime/btime doesn't trigger anything.
 	 */
-	torture_comment(tctx, "Test: setting all-0 timestamps flushes?\n");
+	torture_comment(tctx, "Test: setting all-0 timestamps\n");
 
 	setinfo = (union smb_setfileinfo) {
 		.generic.level = RAW_SFILEINFO_BASIC_INFORMATION,
 	};
-	ret = test_delayed_write_vs_setbasic_do(tctx, tree, &setinfo, true);
-	if (ret != true) {
-		goto done;
-	}
+	ret = test_delayed_write_vs_setbasic_do(tctx, tree, &setinfo);
+	torture_assert_goto(tctx, ret, ret, done, "failed");
 
 	torture_comment(tctx, "Test: setting create_time flushes?\n");
 	unix_to_nt_time(&setinfo.basic_info.in.create_time, t);
-	ret = test_delayed_write_vs_setbasic_do(tctx, tree, &setinfo, true);
-	if (ret != true) {
-		goto done;
-	}
+	ret = test_delayed_write_vs_setbasic_do(tctx, tree, &setinfo);
+	torture_assert_goto(tctx, ret, ret, done, "failed");
 
 	torture_comment(tctx, "Test: setting access_time flushes?\n");
+	setinfo.basic_info.in.create_time = 0;
 	unix_to_nt_time(&setinfo.basic_info.in.access_time, t);
-	ret = test_delayed_write_vs_setbasic_do(tctx, tree, &setinfo, true);
-	if (ret != true) {
-		goto done;
-	}
+	ret = test_delayed_write_vs_setbasic_do(tctx, tree, &setinfo);
+	torture_assert_goto(tctx, ret, ret, done, "failed");
 
 	torture_comment(tctx, "Test: setting change_time flushes?\n");
+	setinfo.basic_info.in.access_time = 0;
 	unix_to_nt_time(&setinfo.basic_info.in.change_time, t);
-	ret = test_delayed_write_vs_setbasic_do(tctx, tree, &setinfo, true);
-	if (ret != true) {
-		goto done;
-	}
+	ret = test_delayed_write_vs_setbasic_do(tctx, tree, &setinfo);
+	torture_assert_goto(tctx, ret, ret, done, "failed");
 
 done:
 	smb2_deltree(tree, BASEDIR);
