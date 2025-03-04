@@ -544,11 +544,11 @@ class BlackboxTestCase(TestCaseInTempDir):
         return stdoutdata
 
     @classmethod
-    def check_output(cls, line):
+    def check_output(cls, line, env=None):
         use_shell = not isinstance(line, list)
         line = cls._make_cmdline(line)
         p = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                             shell=use_shell, close_fds=True)
+                             shell=use_shell, close_fds=True, env=env)
         stdoutdata, stderrdata = p.communicate()
         retcode = p.returncode
         if retcode:
