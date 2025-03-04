@@ -620,9 +620,8 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	torture_comment(tctx, "Initial write time %s\n",
 	       nt_time_string(tctx, finfo1.basic_info.out.write_time));
 
-	/* 3 second delay to ensure we get past any 2 second time
-	   granularity (older systems may have that) */
-	smb_msleep(3 * msec);
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
 
 	{
 		/* Try using setfileinfo instead of write to update write time. */
@@ -659,12 +658,11 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	torture_comment(tctx, "write time %s\n",
 	       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 
-	if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
-		torture_comment(tctx, "Server updated write_time (correct)\n");
-	} else {
-		torture_result(tctx, TORTURE_FAIL, "Server did not update write time (wrong!)\n");
-		ret = false;
-	}
+	torture_assert_u64_not_equal(tctx,
+				     finfo2.all_info.out.write_time,
+				     finfo1.all_info.out.write_time,
+				     "Server did not update write time "
+				     "immediately");
 
 	/* Now try a write to see if the write time gets reset. */
 
@@ -709,7 +707,7 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	/* Once the time was set using setfileinfo then it stays set - writes
 	   don't have any effect. But make sure. */
 	start = timeval_current();
-	end = timeval_add(&start, (15*sec), 0);
+	end = timeval_add(&start, (4*sec), 0);
 	while (!timeval_expired(&end)) {
 		status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
 
@@ -720,20 +718,14 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 		}
 		torture_comment(tctx, "write time %s\n",
 		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
-		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
-			double diff = timeval_elapsed(&start);
-			torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds"
-					"(wrong!)\n",
-					diff);
-			ret = false;
-			break;
-		}
+
+		torture_assert_u64_equal(tctx,
+					 finfo2.all_info.out.write_time,
+					 finfo1.all_info.out.write_time,
+					 "Server updated write time");
+
 		fflush(stdout);
 		smb_msleep(1 * msec);
-	}
-
-	if (finfo1.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
-		torture_comment(tctx, "Server did not update write time (correct)\n");
 	}
 
 	fflush(stdout);
@@ -763,10 +755,11 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	}
 	torture_comment(tctx, "write time %s\n",
 	       nt_time_string(tctx, finfo2.basic_info.out.write_time));
-	if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
-		torture_result(tctx, TORTURE_FAIL, "Server updated write_time (wrong!)\n");
-		ret = false;
-	}
+
+	torture_assert_u64_not_equal(tctx,
+				     finfo2.all_info.out.write_time,
+				     finfo1.all_info.out.write_time,
+				     "Server did not update write time");
 
 	torture_comment(tctx, "Closing the first fd to see if write time updated.\n");
 	smbcli_close(cli->tree, fnum1);
@@ -793,15 +786,19 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	}
 	torture_comment(tctx, "write time %s\n",
 	       nt_time_string(tctx, finfo2.basic_info.out.write_time));
-	if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
-		torture_result(tctx, TORTURE_FAIL, "Server updated write_time (wrong!)\n");
-		ret = false;
-	}
 
-	/* Once the time was set using setfileinfo then it stays set - writes
-	   don't have any effect. But make sure. */
+	torture_assert_u64_not_equal(tctx,
+				     finfo2.all_info.out.write_time,
+				     finfo1.all_info.out.write_time,
+				     "Server did not update write time "
+				     "immediately");
+
+	/*
+	 * Sticky write time only applied to the handle
+	 * that was used to set the write time.
+	 */
 	start = timeval_current();
-	end = timeval_add(&start, (15*sec), 0);
+	end = timeval_add(&start, (4*sec), 0);
 	while (!timeval_expired(&end)) {
 		status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
 
@@ -813,20 +810,17 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 		torture_comment(tctx, "write time %s\n",
 		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
 		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
-			double diff = timeval_elapsed(&start);
-			torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
-					"(wrong!)\n",
-					diff);
-			ret = false;
 			break;
 		}
 		fflush(stdout);
 		smb_msleep(1 * msec);
 	}
 
-	if (finfo1.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
-		torture_comment(tctx, "Server did not update write time (correct)\n");
-	}
+	torture_assert_u64_not_equal(tctx,
+				     finfo2.all_info.out.write_time,
+				     finfo1.all_info.out.write_time,
+				     "Server did not update write time "
+				     "immediately");
 
 	torture_comment(tctx, "Closing second fd to see if write time updated.\n");
 
@@ -875,48 +869,12 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 	}
 	torture_comment(tctx, "write time %s\n",
 	       nt_time_string(tctx, finfo2.basic_info.out.write_time));
-	if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
-		torture_result(tctx, TORTURE_FAIL, "Server updated write_time (wrong!)\n");
-		ret = false;
-	}
 
-	/* Now the write time should be updated again */
-	start = timeval_current();
-	end = timeval_add(&start, (15*sec), 0);
-	while (!timeval_expired(&end)) {
-		status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("fileinfo failed: %s\n", nt_errstr(status)));
-			ret = false;
-			break;
-		}
-		torture_comment(tctx, "write time %s\n",
-		       nt_time_string(tctx, finfo2.basic_info.out.write_time));
-		if (finfo1.basic_info.out.write_time != finfo2.basic_info.out.write_time) {
-			double diff = timeval_elapsed(&start);
-			if (diff < (used_delay / (double)1000000)) {
-				torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds"
-						"(expected > %.2f) (wrong!)\n",
-						diff, used_delay / (double)1000000);
-				ret = false;
-				break;
-			}
-
-			torture_comment(tctx, "Server updated write_time after %.2f seconds"
-					"(correct)\n",
-					diff);
-			break;
-		}
-		fflush(stdout);
-		smb_msleep(1*msec);
-	}
-
-	if (finfo1.basic_info.out.write_time == finfo2.basic_info.out.write_time) {
-		torture_result(tctx, TORTURE_FAIL, "Server did not update write time (wrong!)\n");
-		ret = false;
-	}
-
+	torture_assert_u64_not_equal(tctx,
+				     finfo2.all_info.out.write_time,
+				     finfo1.all_info.out.write_time,
+				     "Server did not update write time "
+				     "immediately");
 
 	/* One more test to do. We should read the filetime via findfirst on the
 	   second connection to ensure it's the same. This is very easy for a Windows
