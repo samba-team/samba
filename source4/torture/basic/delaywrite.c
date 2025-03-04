@@ -41,12 +41,6 @@ static bool test_delayed_write_update(struct torture_context *tctx, struct smbcl
 	int fnum1 = -1;
 	bool ret = true;
 	ssize_t written;
-	struct timeval start;
-	struct timeval end;
-	double used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
-	int normal_delay = 2000000;
-	double sec = ((double)used_delay) / ((double)normal_delay);
-	int msec = 1000 * sec;
 
 	torture_comment(tctx, "\nRunning test_delayed_write_update\n");
 
@@ -66,45 +60,23 @@ static bool test_delayed_write_update(struct torture_context *tctx, struct smbcl
 	torture_comment(tctx, "Initial write time %s\n",
 			nt_time_string(tctx, finfo1.basic_info.out.write_time));
 
+	/* Bypass coarse timesources resolution */
+	smb_msleep(10);
+
 	written =  smbcli_write(cli->tree, fnum1, 0, "x", 0, 1);
 	torture_assert_int_equal(tctx, written, 1,
 				 "unexpected number of bytes written");
 
-	start = timeval_current();
-	end = timeval_add(&start, (120 * sec), 0);
-	while (!timeval_expired(&end)) {
-		status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
+	status = smb_raw_fileinfo(cli->tree, tctx, &finfo2);
+	torture_assert_ntstatus_ok(tctx, status, "fileinfo failed");
 
-		torture_assert_ntstatus_ok(tctx, status, "fileinfo failed");
-
-		torture_comment(tctx, "write time %s\n",
+	torture_comment(tctx, "write time %s\n",
 			nt_time_string(tctx, finfo2.basic_info.out.write_time));
-
-		if (finfo1.basic_info.out.write_time !=
-		    finfo2.basic_info.out.write_time)
-		{
-			double diff = timeval_elapsed(&start);
-
-			torture_assert(tctx,
-				       diff >= (used_delay / (double)1000000),
-				       talloc_asprintf(tctx,
-					"Server updated write_time after %.2f "
-					"seconds (expected >= %.2f)\n",
-					diff, used_delay/(double)1000000));
-
-			torture_comment(tctx, "Server updated write_time after %.2f seconds (correct)\n",
-					diff);
-			break;
-		}
-		fflush(stdout);
-		smb_msleep(1 * msec);
-	}
 
 	torture_assert_u64_not_equal(tctx,
 				     finfo2.basic_info.out.write_time,
 				     finfo1.basic_info.out.write_time,
-				     "Server did not update write time within "
-				     "120 seconds");
+				     "Server did not update write time");
 
 	if (fnum1 != -1)
 		smbcli_close(cli->tree, fnum1);

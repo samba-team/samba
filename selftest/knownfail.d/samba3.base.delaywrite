@@ -1,1 +1,2 @@
 ^samba3.base.delaywrite.finfo update on close\(fileserver_smb1\)
+^samba3.base.delaywrite.delayed update of write time\(fileserver_smb1\)
