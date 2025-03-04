@@ -8,3 +8,4 @@
 ^samba3.base.delaywrite.delayed update of write time 3\(fileserver_smb1\)
 ^samba3.base.delaywrite.delayed update of write time 3a\(fileserver_smb1\)
 ^samba3.base.delaywrite.delayed update of write time 3b\(fileserver_smb1\)
+^samba3.base.delaywrite.delayed update of write time 3c\(fileserver_smb1\)
