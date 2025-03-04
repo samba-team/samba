@@ -940,21 +940,11 @@ static int ceph_snap_gmt_openat(vfs_handle_struct *handle,
 {
 	time_t timestamp = 0;
 	struct smb_filename *smb_fname = NULL;
-	char stripped[PATH_MAX + 1];
 	char conv[PATH_MAX + 1];
 	int ret;
 	int saved_errno = 0;
 
-	ret = ceph_snap_gmt_strip_snapshot(handle,
-					   smb_fname_in,
-					   &timestamp,
-					   stripped,
-					   sizeof(stripped));
-	if (ret < 0) {
-		errno = -ret;
-		return -1;
-	}
-	if (timestamp == 0) {
+	if (smb_fname_in->twrp == 0) {
 		return SMB_VFS_NEXT_OPENAT(handle,
 					   dirfsp,
 					   smb_fname_in,
@@ -962,8 +952,18 @@ static int ceph_snap_gmt_openat(vfs_handle_struct *handle,
 					   how);
 	}
 
+	timestamp = nt_time_to_unix(smb_fname_in->twrp);
+
+	smb_fname = full_path_from_dirfsp_atname(talloc_tos(),
+						 dirfsp,
+						 smb_fname_in);
+	if (smb_fname == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
 	ret = ceph_snap_gmt_convert(handle,
-				    stripped,
+				    smb_fname->base_name,
 				    timestamp,
 				    conv,
 				    sizeof(conv));
@@ -971,10 +971,7 @@ static int ceph_snap_gmt_openat(vfs_handle_struct *handle,
 		errno = -ret;
 		return -1;
 	}
-	smb_fname = cp_smb_filename(talloc_tos(), smb_fname_in);
-	if (smb_fname == NULL) {
-		return -1;
-	}
+
 	smb_fname->base_name = conv;
 
 	ret = SMB_VFS_NEXT_OPENAT(handle,
