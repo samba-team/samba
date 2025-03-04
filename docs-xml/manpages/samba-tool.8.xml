@@ -3070,6 +3070,49 @@ enables most Registry policies.
       </variablelist>
 </refsect3>
 
+<refsect3>
+  <title>gpo manage smb_conf list</title>
+
+  <para>List smb.conf settings from the sysvol that will be applied to winbind clients.</para>
+
+  <para>
+    Example:
+    <programlisting>samba-tool gpo manage smb_conf list {31B2F340-016D-11D2-945F-00C04FB984F9}</programlisting>
+  </para>
+
+<variablelist>
+	  <varlistentry>
+	    <term>-H URL, --URL=URL</term>
+	    <listitem><para>LDB URL for database or target server</para></listitem>
+	  </varlistentry>
+</variablelist>
+
+</refsect3>
+
+
+<refsect3>
+  <title>gpo manage smb_conf set <replaceable>gpo</replaceable> <replaceable>[value]</replaceable> [options]</title>
+
+<para>Set or unset an smb.conf setting to the sysvol for applying to winbind clients.
+</para>
+<para>If a value is provided, that is the smb.conf value used; if no value is provided, the policy is removed.
+</para>
+
+  <para>
+    Example:
+    <programlisting>samba-tool gpo manage smb_conf set {31B2F340-016D-11D2-945F-00C04FB984F9} 'apply gpo policies' yes</programlisting>
+</para>
+
+<variablelist>
+	  <varlistentry>
+	    <term>-H URL, --URL=URL</term>
+	    <listitem><para>LDB URL for database or target server</para></listitem>
+	  </varlistentry>
+</variablelist>
+
+
+</refsect3>
+
 
 <refsect3>
 	<title>gpo setinheritance <replaceable>container_dn</replaceable> <replaceable>block|inherit</replaceable> [options]</title>
