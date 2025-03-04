@@ -531,10 +531,13 @@ static int ceph_snap_gmt_convert_dir(struct vfs_handle_struct *handle,
 	 * Temporally use the caller's return buffer for this.
 	 */
 	if (strlen(name) == 0) {
-		ret = strlcpy(_converted_buf, snapdir, buflen);
+		ret = snprintf(_converted_buf, buflen, "%s/%s",
+			       handle->conn->connectpath, snapdir);
 	} else {
-		ret = snprintf(_converted_buf, buflen, "%s/%s", name, snapdir);
+		ret = snprintf(_converted_buf, buflen, "%s/%s/%s",
+			       handle->conn->connectpath, name, snapdir);
 	}
+
 	if (ret >= buflen) {
 		ret = -EINVAL;
 		goto err_out;
