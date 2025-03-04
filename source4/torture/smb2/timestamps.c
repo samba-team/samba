@@ -1110,7 +1110,7 @@ static bool test_delayed_2write(struct torture_context *tctx,
 					"write failed\n");
 	sleep(3);
 
-	torture_comment(tctx, "Check writetime has NOT been updated\n");
+	torture_comment(tctx, "Check writetime has also been updated\n");
 
 	finfo = (union smb_fileinfo) {
 		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
@@ -1121,13 +1121,13 @@ static bool test_delayed_2write(struct torture_context *tctx,
 					"getinfo failed\n");
 	write_time2 = finfo.all_info.out.write_time;
 
-	torture_assert_nttime_equal(tctx, write_time2, write_time,
-				    "second write updated write-time (wrong!)\n");
+	torture_assert_nttime_not_equal(tctx, write_time2, write_time,
+					"second write updated write-time (wrong!)\n");
 
 	torture_comment(tctx, "Close file-handle 1\n");
 	sleep(2);
 
-	torture_comment(tctx, "Check writetime has been updated\n");
+	torture_comment(tctx, "Check writetime has not been updated\n");
 
 	c = (struct smb2_close) {
 		.in.file.handle = h1,
@@ -1140,10 +1140,10 @@ static bool test_delayed_2write(struct torture_context *tctx,
 	ZERO_STRUCT(h1);
 	close_time = c.out.write_time;
 
-	if (!(close_time > write_time)) {
+	if (close_time != write_time2) {
 		ret = false;
 		torture_fail_goto(tctx, done,
-				  "Write-time not updated (wrong!)\n");
+				  "Write-time updated (wrong!)\n");
 	}
 
 done:

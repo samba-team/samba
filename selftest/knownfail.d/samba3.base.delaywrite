@@ -15,3 +15,4 @@
 ^samba3.smb2.timestamps.delayed-write-vs-seteof\(.*\)
 ^samba3.smb2.timestamps.delayed-write-vs-flush\(.*\)
 ^samba3.smb2.timestamps.delayed-write-vs-setbasic\(.*\)
+^samba3.smb2.timestamps.delayed-2write\(.*\)
