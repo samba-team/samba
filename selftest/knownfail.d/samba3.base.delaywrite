@@ -5,3 +5,4 @@
 ^samba3.base.delaywrite.update of write time using SET_END_OF_FILE\(fileserver_smb1\)
 ^samba3.base.delaywrite.update of write time using SET_ALLOCATION_SIZE\(fileserver_smb1\)
 ^samba3.base.delaywrite.delayed update of write time using 2 connections\(fileserver_smb1\)
+^samba3.base.delaywrite.delayed update of write time 3\(fileserver_smb1\)

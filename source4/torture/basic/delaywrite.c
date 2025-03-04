@@ -1177,7 +1177,6 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 	double used_delay = torture_setting_int(tctx, "writetimeupdatedelay", 2000000);
 	int normal_delay = 2000000;
 	double sec = ((double)used_delay) / ((double)normal_delay);
-	int msec = 1000 * sec;
 
 	torture_comment(tctx, "\nRunning test_delayed_write_update3\n");
 
@@ -1206,13 +1205,14 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 	/* get the initial times */
 	GET_INFO_BOTH(finfo0,pinfo0);
 
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
+
 	/*
-	 * make sure the write time is updated 2 seconds later
-	 * calculated from the first write
-	 * (but expect up to 5 seconds extra time for a busy server)
+	 * make sure the write time is updated immediately
 	 */
 	start = timeval_current();
-	end = timeval_add(&start, 7 * sec, 0);
+	end = timeval_add(&start, 4 * sec, 0);
 	while (!timeval_expired(&end)) {
 		/* do a write */
 		torture_comment(tctx, "Do a write on the file handle\n");
@@ -1225,30 +1225,25 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 		/* get the times after the write */
 		GET_INFO_FILE(finfo1);
 
-		if (finfo1.basic_info.out.write_time > finfo0.basic_info.out.write_time) {
-			double diff = timeval_elapsed(&start);
-			if (diff < (used_delay / (double)1000000)) {
-				torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
-						"(write time update delay == %.2f) (wrong!)\n",
-						diff, used_delay / (double)1000000);
-				ret = false;
-				break;
-			}
-
-			torture_comment(tctx, "Server updated write_time after %.2f seconds "
-					"(correct)\n",
-					diff);
-			break;
-		}
-		smb_msleep(0.5 * msec);
+		torture_assert_u64_not_equal(tctx,
+					     finfo1.all_info.out.write_time,
+					     finfo0.all_info.out.write_time,
+					     "Server did not update write time "
+					     "immediately");
+		finfo0 = finfo1;
+		/* Bypass possible filesystem granularity */
+		smb_msleep(20);
 	}
 
 	GET_INFO_BOTH(finfo1,pinfo1);
 	COMPARE_WRITE_TIME_GREATER(pinfo1, pinfo0);
 
-	/* sure any further write doesn't update the write time */
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
+
+	/* any further write also updates the write time */
 	start = timeval_current();
-	end = timeval_add(&start, 15 * sec, 0);
+	end = timeval_add(&start, 4 * sec, 0);
 	while (!timeval_expired(&end)) {
 		/* do a write */
 		torture_comment(tctx, "Do a write on the file handle\n");
@@ -1261,43 +1256,37 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 		/* get the times after the write */
 		GET_INFO_BOTH(finfo2,pinfo2);
 
-		if (finfo2.basic_info.out.write_time > finfo1.basic_info.out.write_time) {
-			double diff = timeval_elapsed(&start);
-			torture_result(tctx, TORTURE_FAIL, "Server updated write_time after %.2f seconds "
-					"(wrong!)\n",
-					diff);
-			ret = false;
-			break;
-		}
-		smb_msleep(1 * msec);
+		torture_assert_u64_not_equal(tctx,
+					     finfo2.all_info.out.write_time,
+					     finfo1.all_info.out.write_time,
+					     "Server did not update write time "
+					     "immediately");
+		finfo1 = finfo2;
+		/* Bypass possible filesystem granularity */
+		smb_msleep(20);
 	}
-
-	GET_INFO_BOTH(finfo2,pinfo2);
-	COMPARE_WRITE_TIME_EQUAL(finfo2, finfo1);
-	if (finfo2.basic_info.out.write_time == finfo1.basic_info.out.write_time) {
-		torture_comment(tctx, "Server did not update write_time (correct)\n");
-	}
-
-	/* sleep */
-	smb_msleep(5 * msec);
 
 	GET_INFO_BOTH(finfo3,pinfo3);
-	COMPARE_WRITE_TIME_EQUAL(finfo3, finfo2);
+
+	torture_assert_u64_equal(tctx,
+				 finfo3.all_info.out.write_time,
+				 finfo2.all_info.out.write_time,
+				 "Server unexpectedly updated write time");
 
 	/*
-	 * the close updates the write time to the time of the close
-	 * and not to the time of the last write!
+	 * the close doesn't update the write time
 	 */
 	torture_comment(tctx, "Close the file handle\n");
 	smbcli_close(cli->tree, fnum1);
 	fnum1 = -1;
 
 	GET_INFO_PATH(pinfo4);
-	COMPARE_WRITE_TIME_GREATER(pinfo4, pinfo3);
 
-	if (pinfo4.basic_info.out.write_time > pinfo3.basic_info.out.write_time) {
-		torture_comment(tctx, "Server updated the write_time on close (correct)\n");
-	}
+	torture_assert_u64_equal(tctx,
+				 pinfo4.all_info.out.write_time,
+				 pinfo3.all_info.out.write_time,
+				 "Server updated write time "
+				 "on close");
 
  done:
 	if (fnum1 != -1)
