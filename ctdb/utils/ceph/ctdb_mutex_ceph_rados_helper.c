@@ -311,6 +311,7 @@ int main(int argc, char *argv[])
 	int ret;
 	int opt;
 	struct ctdb_mutex_rados_state *cmr_state;
+	bool skip_registering = false;
 
 	progname = argv[0];
 
@@ -339,10 +340,13 @@ int main(int argc, char *argv[])
 	cmr_state->object = argv[4];
 
 	optind = 5;
-	while ((opt = getopt(argc, argv, "n:")) != -1) {
+	while ((opt = getopt(argc, argv, "n:R")) != -1) {
 		switch(opt) {
 		case 'n':
 			cmr_state->namespace = optarg;
+			break;
+		case 'R':
+			skip_registering = true;
 			break;
 		default:
 			usage();
@@ -439,10 +443,12 @@ int main(int argc, char *argv[])
 		goto err_ctx_cleanup;
 	}
 
-	ret = ctdb_mutex_rados_mgr_reg(cmr_state->ceph_cluster);
-	if (ret < 0) {
-		fprintf(stderr, "Failed to register with ceph-mgr\n");
-		/* ignore: ceph-mgr service registration is informational */
+	if (!skip_registering) {
+		ret = ctdb_mutex_rados_mgr_reg(cmr_state->ceph_cluster);
+		if (ret < 0) {
+			fprintf(stderr, "Failed to register with ceph-mgr\n");
+			/* ignore: ceph-mgr service registration is informational */
+		}
 	}
 
 	ret = ctdb_mutex_rados_lock(cmr_state->ioctx, cmr_state->object,
