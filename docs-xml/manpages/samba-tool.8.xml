@@ -2348,6 +2348,27 @@
 
 
 </refsect3>
+
+<refsect3>
+	<title>domain tombstones expunge NC [NC [...]] [options]</title>
+	<variablelist>
+	  <varlistentry>
+	    <term>-H URL, --URL=URL</term>
+	    <listitem><para>LDB URL for database or target server</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--current-time=YYYY-MM-DD</term>
+	    <listitem><para>The current time to evaluate the tombstone lifetime from, expressed as YYYY-MM-DD</para></listitem>
+	  </varlistentry>
+	  <varlistentry>
+	    <term>--tombstone-lifetime=DAYS</term>
+	    <listitem><para>Number of days a tombstone should be preserved for</para></listitem>
+	  </varlistentry>
+	</variablelist>
+
+
+</refsect3>
+
 <refsect3>
 	<title>domain trust</title>
 	<para>Domain and forest trust management.</para>
