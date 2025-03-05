@@ -253,7 +253,7 @@ bool ipalloc_can_host_ips(struct ipalloc_state *ipalloc_state)
 /* The calculation part of the IP allocation algorithm. */
 struct public_ip_list *ipalloc(struct ipalloc_state *ipalloc_state)
 {
-	bool ret = false;
+	bool status = false;
 
 	ipalloc_state->all_ips = create_merged_ip_list(ipalloc_state);
 	if (ipalloc_state->all_ips == NULL) {
@@ -266,19 +266,19 @@ struct public_ip_list *ipalloc(struct ipalloc_state *ipalloc_state)
 
 	switch (ipalloc_state->algorithm) {
 	case IPALLOC_LCP2:
-		ret = ipalloc_lcp2(ipalloc_state);
+		status = ipalloc_lcp2(ipalloc_state);
 		break;
 	case IPALLOC_DETERMINISTIC:
-		ret = ipalloc_deterministic(ipalloc_state);
+		status = ipalloc_deterministic(ipalloc_state);
 		break;
 	case IPALLOC_NONDETERMINISTIC:
-		ret = ipalloc_nondeterministic(ipalloc_state);
-               break;
+		status = ipalloc_nondeterministic(ipalloc_state);
+		break;
 	}
 
 	/* at this point ->pnn is the node which will own each IP
 	   or CTDB_UNKNOWN_PNN if there is no node that can cover this ip
 	*/
 
-	return (ret ? ipalloc_state->all_ips : NULL);
+	return (status ? ipalloc_state->all_ips : NULL);
 }
