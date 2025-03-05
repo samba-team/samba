@@ -3080,6 +3080,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "smb3 directory leases", "Auto");
 
+	lpcfg_do_global_parameter(lp_ctx, "smb3 unix extensions", "yes");
+
 	lpcfg_do_global_parameter(lp_ctx, "server multi channel support", "yes");
 
 	lpcfg_do_global_parameter(lp_ctx, "kerberos encryption types", "all");

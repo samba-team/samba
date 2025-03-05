@@ -3,7 +3,7 @@
                  type="boolean"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
   <description>
-    <para>Experimental SMB 3.1.1 Unix Extensions.</para>
+    <para>Support for SMB 3.1.1 Unix Extensions.</para>
   </description>
-  <value type="default">no</value>
+  <value type="default">yes</value>
 </samba:parameter>

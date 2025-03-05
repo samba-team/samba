@@ -259,6 +259,7 @@ static const struct loadparm_service _sDefault =
 	.spotlight_backend = SPOTLIGHT_BACKEND_NOINDEX,
 	.honor_change_notify_privilege = false,
 	.volume_serial_number = -1,
+	.smb3_unix_extensions = true,
 	.dummy = ""
 };
 
