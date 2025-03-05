@@ -50,6 +50,14 @@ parameters include `himmelblaud_sfa_fallback`, `himmelblaud_hello_enabled`, and
 `himmelblaud_hsm_pin_path`.
 To enable, configure Samba with `--enable-rust --with-himmelblau`.
 
+AD DC schema upgrade and provision performance improvements
+-----------------------------------------------------------
+
+By increasing the LDB index cache size for certain offline operations
+that are likely to require large transactions, these are now several
+times faster.
+
+
 REMOVED FEATURES
 ================
 
