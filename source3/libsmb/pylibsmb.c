@@ -2499,14 +2499,6 @@ static PyObject *py_smb_posix_whoami(struct py_cli_state *self,
 		PyErr_SetNTSTATUS(status);
 		goto fail;
 	}
-	if (num_gids > PY_SSIZE_T_MAX) {
-		PyErr_SetString(PyExc_OverflowError, "posix_whoami: Too many GIDs");
-		goto fail;
-	}
-	if (num_sids > PY_SSIZE_T_MAX) {
-		PyErr_SetString(PyExc_OverflowError, "posix_whoami: Too many SIDs");
-		goto fail;
-	}
 
 	py_gids = PyList_New(num_gids);
 	if (!py_gids) {
