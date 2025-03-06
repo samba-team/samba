@@ -66,6 +66,8 @@ static NTSTATUS auth_user_info_dc_expand_sids(TALLOC_CTX *mem_ctx,
 	uint32_t num_sids = 0;
 	uint32_t i;
 	const char *filter = NULL;
+	bool has_other_organization = false;
+	bool add_this_organization = false;
 
 	sids = talloc_array(mem_ctx,
 			    struct auth_SidAttr,
@@ -80,6 +82,21 @@ static NTSTATUS auth_user_info_dc_expand_sids(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i < user_info_dc->num_sids; i++) {
 		sids[i] = user_info_dc->sids[i];
+
+		if (!has_other_organization &&
+		    dom_sid_equal(&sids[i].sid, &global_sid_Other_Organization))
+		{
+			has_other_organization = true;
+			continue;
+		}
+
+		if (dom_sid_equal(&sids[i].sid, &global_sid_This_Organization)) {
+			/*
+			 * The caller should not pass this
+			 */
+			TALLOC_FREE(frame);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 	}
 
 	/*
@@ -123,6 +140,27 @@ static NTSTATUS auth_user_info_dc_expand_sids(TALLOC_CTX *mem_ctx,
 
 		sids[num_sids] = (struct auth_SidAttr) {
 			.sid = global_sid_Authenticated_Users,
+			.attrs = SE_GROUP_DEFAULT_FLAGS,
+		};
+		num_sids++;
+
+		if (!has_other_organization) {
+			add_this_organization = true;
+		}
+	}
+
+	if (add_this_organization) {
+		sids = talloc_realloc(frame,
+				      sids,
+				      struct auth_SidAttr,
+				      num_sids + 1);
+		if (sids == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		sids[num_sids] = (struct auth_SidAttr) {
+			.sid = global_sid_This_Organization,
 			.attrs = SE_GROUP_DEFAULT_FLAGS,
 		};
 		num_sids++;
