@@ -143,6 +143,7 @@ class StaticTokenTest(samba.tests.TestCase):
         extra_sids.append(security.SID_WORLD)
         extra_sids.append(security.SID_NT_NETWORK)
         extra_sids.append(security.SID_NT_AUTHENTICATED_USERS)
+        extra_sids.append(security.SID_NT_THIS_ORGANIZATION)
         extra_sids.append(security.SID_BUILTIN_PREW2K)
         if creds.get_kerberos_state() == MUST_USE_KERBEROS:
             extra_sids.append(security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY)
@@ -417,6 +418,7 @@ class DynamicTokenTest(samba.tests.TestCase):
         extra_sids.append(security.SID_WORLD)
         extra_sids.append(security.SID_NT_NETWORK)
         extra_sids.append(security.SID_NT_AUTHENTICATED_USERS)
+        extra_sids.append(security.SID_NT_THIS_ORGANIZATION)
         extra_sids.append(security.SID_BUILTIN_PREW2K)
         if creds.get_kerberos_state() == MUST_USE_KERBEROS:
             extra_sids.append(security.SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY)
@@ -644,7 +646,9 @@ class DynamicTokenTest(samba.tests.TestCase):
                                            domain_sid)
         user_handle = samr_conn.OpenUser(samr_domain, security.SEC_FLAG_MAXIMUM_ALLOWED, user_rid)
         rids = samr_conn.GetGroupsForUser(user_handle)
+        user_info = samr_conn.QueryUserInfo(user_handle, 1)
         samr_dns = set()
+        found_primary_gid = False
         for rid in rids.rids:
             self.assertEqual(rid.attributes, security.SE_GROUP_DEFAULT_FLAGS)
             sid = "%s-%d" % (domain_sid, rid.rid)
@@ -652,8 +656,13 @@ class DynamicTokenTest(samba.tests.TestCase):
                                         attrs=[])
             samr_dns.add(res[0].dn.get_casefold())
 
-        user_info = samr_conn.QueryUserInfo(user_handle, 1)
-        self.assertEqual(rids.rids[0].rid, user_info.primary_gid)
+            # Note Windows 2025 has the primary_group_rid as
+            # the last element in the rids array
+            if rid.rid == user_info.primary_gid:
+                self.assertFalse(found_primary_gid)
+                found_primary_gid = True
+
+        self.assertTrue(found_primary_gid)
 
         tokenGroupsSet = set()
         res = self.ldb.search(self.user_sid_dn, scope=ldb.SCOPE_BASE, attrs=["tokenGroupsGlobalAndUniversal"])
