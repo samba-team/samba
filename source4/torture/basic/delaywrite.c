@@ -2169,9 +2169,9 @@ static bool test_delayed_write_update5b(struct torture_context *tctx,
 	GET_INFO_BOTH(finfo2,pinfo2);
 	COMPARE_WRITE_TIME_LESS(finfo2, finfo1);
 
-	/* make sure the 2 second delay from the first write are canceled */
+	/* make sure there's no delayed update pending */
 	start = timeval_current();
-	end = timeval_add(&start, 15 * sec, 0);
+	end = timeval_add(&start, 4 * sec, 0);
 	while (!timeval_expired(&end)) {
 
 		/* get the times after the first write */
@@ -2196,7 +2196,7 @@ static bool test_delayed_write_update5b(struct torture_context *tctx,
 
 	/* Do any further write (truncates) update the write time ? */
 	start = timeval_current();
-	end = timeval_add(&start, 15 * sec, 0);
+	end = timeval_add(&start, 4 * sec, 0);
 	while (!timeval_expired(&end)) {
 		/* do a write */
 		torture_comment(tctx, "Do a truncate write on the file handle\n");
