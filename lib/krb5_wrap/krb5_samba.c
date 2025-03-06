@@ -837,23 +837,48 @@ krb5_error_code smb_krb5_parse_name(krb5_context context,
 				    const char *name,
 				    krb5_principal *principal)
 {
+	return smb_krb5_parse_name_flags(context, name, 0, principal);
+}
+
+/**
+ * @brief Convert a string principal name to a Kerberos principal.
+ *
+ * @param[in]  context  The library context
+ *
+ * @param[in]  name     The principal as a unix charset string.
+ *
+ * @param[in]  flags    Flags for krb5_parse_name_flags()
+ *
+ * @param[out] principal The newly allocated principal.
+ *
+ * Use krb5_free_principal() to free a principal when it is no longer needed.
+ *
+ * @return 0 on success, a Kerberos error code otherwise.
+ */
+krb5_error_code smb_krb5_parse_name_flags(krb5_context context,
+					  const char *name,
+					  int flags,
+					  krb5_principal *principal)
+{
 	krb5_error_code ret;
 	char *utf8_name;
 	size_t converted_size;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!push_utf8_talloc(frame, &utf8_name, name, &converted_size)) {
-		talloc_free(frame);
+		TALLOC_FREE(frame);
 		return ENOMEM;
 	}
-
-	ret = krb5_parse_name(context, utf8_name, principal);
-	if (ret == KRB5_PARSE_MALFORMED) {
-		ret = krb5_parse_name_flags(context, utf8_name,
-					    KRB5_PRINCIPAL_PARSE_ENTERPRISE,
-					    principal);
-	}
 	TALLOC_FREE(frame);
+
+	ret = krb5_parse_name_flags(context, utf8_name, flags, principal);
+	if (ret != KRB5_PARSE_MALFORMED) {
+		return ret;
+	}
+
+	flags |= KRB5_PRINCIPAL_PARSE_ENTERPRISE;
+	ret = krb5_parse_name_flags(context, utf8_name, flags, principal);
+
 	return ret;
 }
 
