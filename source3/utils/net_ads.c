@@ -2947,9 +2947,6 @@ out:
 
 static int net_ads_keytab_create(struct net_context *c, int argc, const char **argv)
 {
-	TALLOC_CTX *tmp_ctx = talloc_stackframe();
-	ADS_STRUCT *ads = NULL;
-	ADS_STATUS status;
 	NTSTATUS ntstatus;
 	int ret = -1;
 
@@ -2959,7 +2956,6 @@ static int net_ads_keytab_create(struct net_context *c, int argc, const char **a
 			   "    %s\n",
 			 _("Usage:"),
 			 _("Create (sync) new default keytab"));
-		TALLOC_FREE(tmp_ctx);
 		return -1;
 	}
 
@@ -2969,15 +2965,8 @@ static int net_ads_keytab_create(struct net_context *c, int argc, const char **a
 		net_use_krb_machine_account(c);
 	}
 
-	status = ads_startup(c, true, tmp_ctx, &ads);
-	if (!ADS_ERR_OK(status)) {
-		goto out;
-	}
-
 	ntstatus = sync_pw2keytabs();
 	ret = NT_STATUS_IS_OK(ntstatus) ? 0 : 1;
-out:
-	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
 
