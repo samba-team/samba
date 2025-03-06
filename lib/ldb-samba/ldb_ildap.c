@@ -916,6 +916,12 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct cli_credentials *creds;
 	struct loadparm_context *lp_ctx;
+	const char *no_debug_str = ldb_get_opaque(ldb, "backend_no_debug_connect");
+	bool no_debug = false;
+
+	if (no_debug_str != NULL && no_debug_str[0] == '1') {
+		no_debug = true;
+	}
 
 	lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
 				 struct loadparm_context);
@@ -948,6 +954,10 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 
 	status = ldap_connect(ildb->ldap, url);
 	if (!NT_STATUS_IS_OK(status)) {
+		if (no_debug) {
+			goto failed;
+		}
+
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to connect to ldap URL '%s' - %s",
 			  url, ldap_errstr(ildb->ldap, module, status));
 		goto failed;
@@ -970,6 +980,10 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 			const char *password = cli_credentials_get_password(creds);
 			status = ldap_bind_simple(ildb->ldap, bind_dn, password);
 			if (!NT_STATUS_IS_OK(status)) {
+				if (no_debug) {
+					goto failed;
+				}
+
 				ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to bind - %s",
 					  ldap_errstr(ildb->ldap, module, status));
 				goto failed;
@@ -977,6 +991,10 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 		} else {
 			status = ldap_bind_sasl(ildb->ldap, creds, lp_ctx);
 			if (!NT_STATUS_IS_OK(status)) {
+				if (no_debug) {
+					goto failed;
+				}
+
 				ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to bind - %s",
 					  ldap_errstr(ildb->ldap, module, status));
 				goto failed;
