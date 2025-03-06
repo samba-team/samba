@@ -223,6 +223,12 @@ int ldb_module_connect_backend(struct ldb_context *ldb,
 	ret = be->ops->connect_fn(ldb, url, ldb->flags, options, backend_module);
 
 	if (ret != LDB_SUCCESS) {
+		const char *no_debug = ldb_get_opaque(ldb, "backend_no_debug_connect");
+
+		if (no_debug != NULL && no_debug[0] == '1') {
+			return ret;
+		}
+
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			  "Failed to connect to '%s' with backend '%s': %s", url, be->ops->name, ldb_errstring(ldb));
 		return ret;
