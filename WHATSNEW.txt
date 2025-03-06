@@ -1,16 +1,11 @@
-Release Announcements
-=====================
-
-This is the fourth release candidate of Samba 4.22.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
-
-Samba 4.22 will be the next version of the Samba suite.
+                   ==============================
+                   Release Notes for Samba 4.22.0
+                          March 06, 2025
+                   ==============================
 
 
-UPGRADING
-=========
+This is the first stable release of the Samba 4.22 release series.
+Please read the release notes carefully before upgrading.
 
 
 NEW FEATURES/CHANGES
@@ -104,6 +99,26 @@ smb.conf changes
   cldap port                              Removed
 
 
+CHANGES SINCE 4.22.0rc4
+=======================
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15801: `NT_STATUS_ACCESS_DENIED making remote directory` on OpenBSD.
+
+o  Anoop C S <anoopcs@samba.org>
+   * BUG 15797: Unable to connect to CephFS subvolume shares with
+     vfs_shadow_copy2.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15801: `NT_STATUS_ACCESS_DENIED making remote directory` on OpenBSD.
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15820: Incorrect FSF address in ctdb pcp scripts.
+
+o  Andrea Venturoli <ml@netfence.it>
+   * BUG 15804: "samba-tool domain backup offline" hangs.
+
+
 CHANGES SINCE 4.22.0rc3
 =======================
 
@@ -144,7 +159,7 @@ o  Shweta Sodani <ssodani@redhat.com>
    * BUG 15703: General improvements for vfs_ceph_new module.
 
 
-CHANGES SINCE 4.21.0rc1
+CHANGES SINCE 4.22.0rc1
 =======================
 
 o  Björn Baumbach <bb@sernet.de>
