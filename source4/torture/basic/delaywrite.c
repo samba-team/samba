@@ -1102,9 +1102,32 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 			nt_time_string(tctx, finfo.basic_info.out.access_time), \
 			nt_time_string(tctx, finfo.basic_info.out.write_time)); \
 } while (0)
+#define GET_INFO_FILE_EX(cli,_fnum,finfo) do { \
+	NTSTATUS _status; \
+	finfo.basic_info.in.file.fnum = (_fnum);		   \
+	_status = smb_raw_fileinfo((cli)->tree, tctx, &(finfo)); \
+	torture_assert_ntstatus_ok_goto(tctx, _status, ret, done,\
+					 "smb_raw_fileinfo failed"); \
+	torture_comment(tctx, "fileinfo: Access(%s) Write(%s)\n", \
+			nt_time_string(tctx, (finfo).basic_info.out.access_time), \
+			nt_time_string(tctx, (finfo).basic_info.out.write_time)); \
+} while (0)
 #define GET_INFO_PATH(pinfo) do { \
 	NTSTATUS _status; \
 	_status = smb_raw_pathinfo(cli2->tree, tctx, &pinfo); \
+	if (!NT_STATUS_IS_OK(_status)) { \
+		torture_result(tctx, TORTURE_FAIL, __location__": pathinfo failed: %s", \
+			       nt_errstr(_status)); \
+		ret = false; \
+		goto done; \
+	} \
+	torture_comment(tctx, "pathinfo: Access(%s) Write(%s)\n", \
+			nt_time_string(tctx, pinfo.basic_info.out.access_time), \
+			nt_time_string(tctx, pinfo.basic_info.out.write_time)); \
+} while (0)
+#define GET_INFO_PATH_EX(cli, pinfo) do { \
+	NTSTATUS _status; \
+	_status = smb_raw_pathinfo((cli)->tree, tctx, &pinfo); \
 	if (!NT_STATUS_IS_OK(_status)) { \
 		torture_result(tctx, TORTURE_FAIL, __location__": pathinfo failed: %s", \
 			       nt_errstr(_status)); \
@@ -1119,6 +1142,12 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 	GET_INFO_FILE(finfo); \
 	GET_INFO_PATH(pinfo); \
 	COMPARE_BOTH_TIMES_EQUAL(finfo,pinfo); \
+} while (0)
+
+#define GET_INFO_BOTH_EX(cli, fnum, finfo, pinfo) do { \
+	GET_INFO_FILE_EX(cli, fnum, finfo); \
+	GET_INFO_PATH_EX(cli, pinfo); \
+	COMPARE_BOTH_TIMES_EQUAL(finfo, pinfo); \
 } while (0)
 
 #define SET_INFO_FILE_EX(finfo, wrtime, tree, tfnum) do { \
@@ -2729,6 +2758,287 @@ static bool test_directory_update8(struct torture_context *tctx, struct smbcli_s
 }
 
 /*
+ * | Time | Handle 1               | Handle 2               |
+ * |------+------------------------+------------------------|
+ * |    1 | Create file            | Open file              |
+ * |      | Check Handle Time = 1  | Check Handle Time = 1  |
+ * |      | Check Path Time = 1    | Check Path Time = 1    |
+ * |    2 | Write                  |                        |
+ * |    3 | Check Handle Time = 2  | Check Handle Time = 2  |
+ * |      | Check Path Time = 2    | Check Path Time = 2    |
+ * |    4 | Set Sticky Time = 99   |                        |
+ * |    5 | Check Handle Time = 99 | Check Handle Time = 99 |
+ * |      | Check Path Time = 99   | Check Path Time = 99   |
+ * |    6 | Write                  |                        |
+ * |    7 | Check Handle Time = 99 | Check Handle Time = 99 |
+ * |      | Check Path Time = 99   | Check Path Time = 99   |
+ * |    8 |                        | Write                  |
+ * |    9 | Check Handle Time = 8  | Check Handle Time = 8  |
+ * |      | Check Path Time = 8    | Check Path Time = 8    |
+ * |   10 | Write                  |                        |
+ * |   11 | Check Handle Time = 8  | Check Handle Time = 8  |
+ * |      | Check Path Time = 8    | Check Path Time = 8    |
+ * |   12 | Close                  | Close                  |
+ * |   13 | Check Path Time = 8    | Check Path Time = 8    |
+ */
+static bool test_modern_write_time1(struct torture_context *tctx,
+				    struct smbcli_state *cli,
+				    struct smbcli_state *cli2)
+{
+	union smb_fileinfo finfo_prev, finfo_curr;
+	union smb_fileinfo pinfo_prev, pinfo_curr;
+	const char *fname = BASEDIR "\\torture_file_modern1.txt";
+	time_t stickytime = time(NULL) + 86400;
+	NTTIME stickynttime;
+	int fnum1 = -1;
+	int fnum2 = -1;
+	ssize_t written;
+	NTSTATUS status;
+	bool ret = true;
+
+	unix_to_nt_time(&stickynttime, stickytime);
+
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
+
+	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum1 == -1) {
+		ret = false;
+		torture_result(tctx, TORTURE_FAIL, __location__": unable to open %s", fname);
+		goto done;
+	}
+
+	fnum2 = smbcli_open(cli2->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum2 == -1) {
+		ret = false;
+		torture_result(tctx, TORTURE_FAIL, __location__": unable to open %s", fname);
+		goto done;
+	}
+
+	finfo_prev.basic_info.level = RAW_FILEINFO_BASIC_INFO;
+	finfo_curr = finfo_prev;
+
+	pinfo_prev.basic_info.level = RAW_FILEINFO_BASIC_INFO;
+	pinfo_prev.basic_info.in.file.path = fname;
+	pinfo_curr = pinfo_prev;
+
+	/* get the initial times */
+	GET_INFO_BOTH_EX(cli, fnum1, finfo_prev, pinfo_prev);
+
+	/* 2 */
+	torture_comment(tctx, "Do a write on the file handle\n");
+	written = smbcli_write(cli->tree, fnum1, 0, "x", 0, 1);
+	if (written != 1) {
+		torture_result(tctx, TORTURE_FAIL, __location__": written gave %d - should have been 1", (int)written);
+		ret = false;
+		goto done;
+	}
+
+	/* 3 */
+	GET_INFO_BOTH_EX(cli, fnum1, finfo_curr, pinfo_curr);
+	torture_assert_u64_not_equal_goto(tctx,
+					  finfo_curr.basic_info.out.write_time,
+					  finfo_prev.basic_info.out.write_time,
+					  ret, done,
+					  "Server did not update write time "
+					  "immediately");
+	torture_assert_u64_not_equal_goto(tctx,
+					  pinfo_curr.basic_info.out.write_time,
+					  pinfo_prev.basic_info.out.write_time,
+					  ret, done,
+					  "Server did not update write time "
+					  "immediately");
+
+	GET_INFO_BOTH_EX(cli2, fnum2, finfo_curr, pinfo_curr);
+	torture_assert_u64_not_equal_goto(tctx,
+					  finfo_curr.basic_info.out.write_time,
+					  finfo_prev.basic_info.out.write_time,
+					  ret, done,
+					  "Server did not update write time "
+					  "immediately");
+	torture_assert_u64_not_equal_goto(tctx,
+					  pinfo_curr.basic_info.out.write_time,
+					  pinfo_prev.basic_info.out.write_time,
+					  ret, done,
+					  "Server did not update write time "
+					  "immediately");
+	finfo_prev = finfo_curr;
+	pinfo_prev = pinfo_curr;
+
+	/* 4 */
+	torture_comment(tctx, "Set write time in the future on the 1st file handle\n");
+	SET_INFO_FILE_EX(finfo_curr, stickytime, cli->tree, fnum1);
+
+
+	/* 5 */
+	GET_INFO_BOTH_EX(cli, fnum1, finfo_curr, pinfo_curr);
+	torture_assert_u64_equal_goto(tctx,
+				      finfo_curr.basic_info.out.write_time,
+				      stickynttime,
+				      ret, done,
+				      "Server did not return sticky time");
+	torture_assert_u64_equal_goto(tctx,
+				      pinfo_curr.basic_info.out.write_time,
+				      stickynttime,
+				      ret, done,
+				      "Server did not return sticky time");
+	GET_INFO_BOTH_EX(cli2, fnum2, finfo_curr, pinfo_curr);
+	torture_assert_u64_equal_goto(tctx,
+				      finfo_curr.basic_info.out.write_time,
+				      stickynttime,
+				      ret, done,
+				      "Server did not return sticky time");
+	torture_assert_u64_equal_goto(tctx,
+				      pinfo_curr.basic_info.out.write_time,
+				      stickynttime,
+				      ret, done,
+				      "Server did not return sticky time");
+
+	/* 6 */
+	written = smbcli_write(cli->tree, fnum1, 0, "xx", 0, 2);
+	if (written != 2) {
+		torture_result(tctx, TORTURE_FAIL, __location__": written gave %d - should have been 2", (int)written);
+		ret = false;
+		goto done;
+	}
+
+	/* 7 */
+	GET_INFO_BOTH_EX(cli, fnum1, finfo_curr, pinfo_curr);
+	torture_assert_u64_equal_goto(tctx,
+				      finfo_curr.basic_info.out.write_time,
+				      stickynttime,
+				      ret, done,
+				      "Server did not return sticky time");
+	torture_assert_u64_equal_goto(tctx,
+				      pinfo_curr.basic_info.out.write_time,
+				      stickynttime,
+				      ret, done,
+				      "Server did not return sticky time");
+	GET_INFO_BOTH_EX(cli2, fnum2, finfo_curr, pinfo_curr);
+	torture_assert_u64_equal_goto(tctx,
+				      finfo_curr.basic_info.out.write_time,
+				      stickynttime,
+				      ret, done,
+				      "Server did not return sticky time");
+	torture_assert_u64_equal_goto(tctx,
+				      pinfo_curr.basic_info.out.write_time,
+				      stickynttime,
+				      ret, done,
+				      "Server did not return sticky time");
+
+	/* 8 */
+	written = smbcli_write(cli2->tree, fnum2, 0, "xxx", 0, 3);
+	if (written != 3) {
+		torture_result(tctx, TORTURE_FAIL, __location__": written gave %d - should have been 3", (int)written);
+		ret = false;
+		goto done;
+	}
+
+	/* 9 */
+	GET_INFO_BOTH_EX(cli2, fnum2, finfo_curr, pinfo_curr);
+	torture_assert_goto(tctx,
+			    finfo_curr.basic_info.out.write_time < stickynttime,
+			    ret, done,
+			    "Write did not update timestamp");
+	torture_assert_goto(tctx,
+			    finfo_curr.basic_info.out.write_time >
+			    finfo_prev.basic_info.out.write_time,
+			    ret, done,
+			    "Write did not update timestamp");
+	torture_assert_u64_equal_goto(tctx,
+				      finfo_curr.basic_info.out.write_time,
+				      pinfo_curr.basic_info.out.write_time,
+				      ret, done,
+				      "Write did not update timestamp");
+
+	GET_INFO_BOTH_EX(cli, fnum1, finfo_curr, pinfo_curr);
+	torture_assert_goto(tctx,
+			    finfo_curr.basic_info.out.write_time < stickynttime,
+			    ret, done,
+			    "Write did not update timestamp");
+	torture_assert_goto(tctx,
+			    finfo_curr.basic_info.out.write_time >
+			    finfo_prev.basic_info.out.write_time,
+			    ret, done,
+			    "Write did not update timestamp");
+	torture_assert_u64_equal_goto(tctx,
+				      finfo_curr.basic_info.out.write_time,
+				      pinfo_curr.basic_info.out.write_time,
+				      ret, done,
+				      "Write did not update timestamp");
+	finfo_prev = finfo_curr;
+	pinfo_prev = pinfo_curr;
+
+	/* 10 */
+	written = smbcli_write(cli->tree, fnum1, 0, "xxxx", 0, 4);
+	if (written != 4) {
+		torture_result(tctx, TORTURE_FAIL, __location__": written gave %d - should have been 4", (int)written);
+		ret = false;
+		goto done;
+	}
+
+	/* 11 */
+	GET_INFO_BOTH_EX(cli, fnum1, finfo_curr, pinfo_curr);
+	torture_assert_u64_equal_goto(tctx,
+				      finfo_curr.basic_info.out.write_time,
+				      finfo_prev.basic_info.out.write_time,
+				      ret, done,
+				      "Server update write time");
+	torture_assert_u64_equal_goto(tctx,
+				      pinfo_curr.basic_info.out.write_time,
+				      pinfo_prev.basic_info.out.write_time,
+				      ret, done,
+				      "Server update write time");
+
+	GET_INFO_BOTH_EX(cli2, fnum2, finfo_curr, pinfo_curr);
+	torture_assert_u64_equal_goto(tctx,
+				      finfo_curr.basic_info.out.write_time,
+				      finfo_prev.basic_info.out.write_time,
+				      ret, done,
+				      "Server update write time");
+	torture_assert_u64_equal_goto(tctx,
+				      pinfo_curr.basic_info.out.write_time,
+				      pinfo_prev.basic_info.out.write_time,
+				      ret, done,
+				      "Server update write time");
+
+	/* 12 */
+
+	status = smbcli_close(cli->tree, fnum1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smbcli_close failed");
+	fnum1 = -1;
+
+	status = smbcli_close(cli2->tree, fnum2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smbcli_close failed");
+	fnum2 = -1;
+
+	/* 13 */
+	GET_INFO_PATH_EX(cli, pinfo_curr);
+	torture_assert_u64_equal_goto(tctx,
+				      pinfo_curr.basic_info.out.write_time,
+				      pinfo_prev.basic_info.out.write_time,
+				      ret, done,
+				      "Server update write time");
+	GET_INFO_PATH_EX(cli2, pinfo_curr);
+	torture_assert_u64_equal_goto(tctx,
+				      pinfo_curr.basic_info.out.write_time,
+				      pinfo_prev.basic_info.out.write_time,
+				      ret, done,
+				      "Server update write time");
+
+done:
+	if (fnum1 != -1)
+		smbcli_close(cli->tree, fnum1);
+	if (fnum2 != -1)
+		smbcli_close(cli2->tree, fnum2);
+	smbcli_unlink(cli->tree, fname);
+	smbcli_deltree(cli->tree, BASEDIR);
+
+	return ret;
+}
+
+/*
    testing of delayed update of write_time
 */
 struct torture_suite *torture_delay_write(TALLOC_CTX *ctx)
@@ -2750,9 +3060,9 @@ struct torture_suite *torture_delay_write(TALLOC_CTX *ctx)
 	torture_suite_add_2smb_test(suite, "delayed update of write time 5", test_delayed_write_update5);
 	torture_suite_add_2smb_test(suite, "delayed update of write time 5b", test_delayed_write_update5b);
 	torture_suite_add_2smb_test(suite, "delayed update of write time 6", test_delayed_write_update6);
-	torture_suite_add_2smb_test(suite, "modern delayed update of write time", test_delayed_write_update_modern;
 	torture_suite_add_1smb_test(suite, "timestamp resolution test", test_delayed_write_update7);
 	torture_suite_add_1smb_test(suite, "directory timestamp update test", test_directory_update8);
+	torture_suite_add_2smb_test(suite, "modern_write_time_update-1", test_modern_write_time1);
 
 	return suite;
 }

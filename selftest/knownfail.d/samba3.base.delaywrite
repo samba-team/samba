@@ -16,3 +16,4 @@
 ^samba3.smb2.timestamps.delayed-write-vs-flush\(.*\)
 ^samba3.smb2.timestamps.delayed-write-vs-setbasic\(.*\)
 ^samba3.smb2.timestamps.delayed-2write\(.*\)
+^samba3.base.delaywrite.modern_write_time_update-1\(fileserver_smb1\)
