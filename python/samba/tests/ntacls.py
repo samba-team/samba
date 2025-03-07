@@ -20,7 +20,7 @@
 
 import os
 
-from samba.ntacls import setntacl, getntacl, XattrBackendError
+from samba.ntacls import setntacl, getntacl, XattrBackendError, dsacl2fsacl
 from samba.param import LoadParm
 from samba.dcerpc import security
 from samba.tests import TestCaseInTempDir, SkipTest
@@ -85,3 +85,76 @@ class NtaclsTests(TestCaseInTempDir):
         lp.set("posix:eadb", os.path.join(self.tempdir, "eadbtest.tdb"))
         self.assertRaises(PermissionError, setntacl, lp, self.tempf, NTACL_SDDL,
                           DOMAIN_SID, self.session_info, "native")
+
+    def test_dsacl2fsacl(self):
+        for comment, dssddl, sid, as_sddl, expected in (
+                ("simple ACE should be unchanged",
+                 'O:BAD:(A;OICI;;;;WD)',
+                 DOMAIN_SID, True,
+                 'O:BAD:(A;OICI;;;;WD)'),
+                ("simple ACE, unchanged, without SDDL conversion",
+                 'O:BAD:(A;OICI;;;;WD)',
+                 DOMAIN_SID, False,
+                 'O:BAD:(A;OICI;;;;WD)'),
+                ("simple ACE with DS mask",
+                 'O:BAD:(A;;CR;;;WD)',
+                 DOMAIN_SID, True,
+                 'O:BAD:(A;OICI;;;;WD)'),
+                ("simple ACE with no mask without SDDL conversion",
+                 'O:BAD:(A;;;;;WD)',
+                 DOMAIN_SID, False,
+                 'O:BAD:(A;OICI;;;;WD)'),
+
+                ("simple deny ACE should be unchanged",
+                 'O:BAD:(D;OICI;;;;WD)',
+                 DOMAIN_SID, True,
+                 'O:BAD:(D;OICI;;;;WD)'),
+                ("simple deny ACE, unchanged, without SDDL conversion",
+                 'O:BAD:(D;OICI;;;;WD)',
+                 DOMAIN_SID, False,
+                 'O:BAD:(D;OICI;;;;WD)'),
+                ("simple deny ACE with DS mask",
+                 'O:BAD:(D;;CR;;;WD)',
+                 DOMAIN_SID, True,
+                 'O:BAD:(D;OICI;;;;WD)'),
+                ("simple deny ACE with no mask without SDDL conversion",
+                 'O:BAD:(D;;;;;WD)',
+                 DOMAIN_SID, False,
+                 'O:BAD:(D;OICI;;;;WD)'),
+                ("simple ACE with fancy mask",
+                 'O:BAD:(A;NPIOIDSA;;;;WD)',
+                 DOMAIN_SID, False,
+                 'O:BAD:(A;OICINPIOIDSA;;;;WD)'),
+                ("simple ACE with different domain SID and GR mask",
+                 'O:BAD:(A;;GR;;;WD)',
+                 "S-1-2-3-4-5", False,
+                 'O:BAD:(A;OICI;;;;WD)'),
+                ("compound ACL, allow only",
+                 "O:LAG:BAD:P(A;OICI;FA;;;BA)"
+                 "(A;OICI;0x1200a9;;;SO)(A;OICI;FA;;;SY)"
+                 "(A;OICI;0x1200a9;;;AU)(A;OICI;0x1301bf;;;PA)",
+                 DOMAIN_SID, True,
+                 "O:LAG:BAD:P(A;OICI;FA;;;BA)"
+                 "(A;OICI;FW;;;SO)(A;OICI;FA;;;SY)"
+                 "(A;OICI;FW;;;AU)(A;OICI;0x1301ff;;;PA)"),
+                ("compound ACL with object ACES",
+                 "D:(OD;;CR;00299570-246d-11d0-a768-00aa006e0529;;WD)(A;;RPWPCRCCDCLCLORCWOWDSDD"
+                 "TSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;AO)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;"
+                 "SY)(A;;RPCRLCLORCSDDT;;;CO)(OD;;WP;4c164200-20c0-11d0-a768-00aa006e0529;;CO)(O"
+                 "A;;SW;72e39547-7b18-11d1-adef-00c04fd8d5cd;;CO)(OA;;SW;f3a64788-5306-11d1-a9c5"
+                 "-0000f80367c1;;CO)",
+                 DOMAIN_SID, True,
+                 "D:(A;OICI;FA;;;DA)(A;OICI;FA;;;AO)(A;OICI;FA;;;SY)(A;OICIIO;0x1300a9;;;CO)"),
+        ):
+            domsid = security.dom_sid(sid)
+            result = dsacl2fsacl(dssddl, domsid, as_sddl=as_sddl)
+            if as_sddl:
+                self.assertIsInstance(result, str,
+                                      f"expected sddl in '{comment}' test")
+            else:
+                self.assertNotIsInstance(result, str,
+                                         f"did not expect sddl in '{comment}' test")
+                # convert to SDDL to compare the result
+                result = result.as_sddl(domsid)
+
+            self.assertEqual(result, expected)
