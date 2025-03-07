@@ -2337,7 +2337,6 @@ static NTSTATUS vfswrap_offload_fast_copy(struct tevent_req *req, int fsctl)
 				state->src_off,
 				state->remaining,
 				READ_LOCK,
-				lp_posix_cifsu_locktype(state->src_fsp),
 				&lck);
 
 	ok = SMB_VFS_STRICT_LOCK_CHECK(state->src_fsp->conn,
@@ -2357,7 +2356,6 @@ static NTSTATUS vfswrap_offload_fast_copy(struct tevent_req *req, int fsctl)
 				state->dst_off,
 				state->remaining,
 				WRITE_LOCK,
-				lp_posix_cifsu_locktype(state->dst_fsp),
 				&lck);
 
 	ok = SMB_VFS_STRICT_LOCK_CHECK(state->dst_fsp->conn,
@@ -2453,7 +2451,6 @@ static NTSTATUS vfswrap_offload_write_loop(struct tevent_req *req)
 				state->src_off,
 				state->next_io_size,
 				READ_LOCK,
-				lp_posix_cifsu_locktype(state->src_fsp),
 				&read_lck);
 
 	ok = SMB_VFS_STRICT_LOCK_CHECK(state->src_fsp->conn,
@@ -2517,7 +2514,6 @@ static void vfswrap_offload_write_read_done(struct tevent_req *subreq)
 				state->dst_off,
 				state->next_io_size,
 				WRITE_LOCK,
-				lp_posix_cifsu_locktype(state->dst_fsp),
 				&write_lck);
 
 	ok = SMB_VFS_STRICT_LOCK_CHECK(state->dst_fsp->conn,

@@ -387,7 +387,6 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 				in_offset,
 				in_data.length,
 				WRITE_LOCK,
-				lp_posix_cifsu_locktype(fsp),
 				&lock);
 
 	if (!SMB_VFS_STRICT_LOCK_CHECK(conn, fsp, &lock)) {

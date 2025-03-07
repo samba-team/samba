@@ -460,7 +460,6 @@ static NTSTATUS fsctl_zero_data(TALLOC_CTX *mem_ctx,
 				zdata_info.file_off,
 				len,
 				WRITE_LOCK,
-				lp_posix_cifsu_locktype(fsp),
 				&lck);
 
 	if (!SMB_VFS_STRICT_LOCK_CHECK(fsp->conn, fsp, &lck)) {

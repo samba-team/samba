@@ -91,7 +91,6 @@ void init_strict_lock_struct(files_struct *fsp,
 				br_off start,
 				br_off size,
 				enum brl_type lock_type,
-				enum brl_flavour lock_flav,
 				struct lock_struct *plock)
 {
 	SMB_ASSERT(lock_type == READ_LOCK || lock_type == WRITE_LOCK);

@@ -86,7 +86,6 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 			(uint64_t)startpos,
 			(uint64_t)smb_maxcnt,
 			READ_LOCK,
-			lp_posix_cifsu_locktype(fsp),
 			&aio_ex->lock);
 
 	/* Take the lock until the AIO completes. */
@@ -250,7 +249,6 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 			(uint64_t)startpos,
 			(uint64_t)numtowrite,
 			WRITE_LOCK,
-			lp_posix_cifsu_locktype(fsp),
 			&aio_ex->lock);
 
 	/* Take the lock until the AIO completes. */

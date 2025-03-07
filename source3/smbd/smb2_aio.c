@@ -368,7 +368,6 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 			(uint64_t)startpos,
 			(uint64_t)smb_maxcnt,
 			READ_LOCK,
-			lp_posix_cifsu_locktype(fsp),
 			&aio_ex->lock);
 
 	/* Take the lock until the AIO completes. */
@@ -517,7 +516,6 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 			in_offset,
 			(uint64_t)in_data.length,
 			WRITE_LOCK,
-			lp_posix_cifsu_locktype(fsp),
 			&aio_ex->lock);
 
 	/* Take the lock until the AIO completes. */
