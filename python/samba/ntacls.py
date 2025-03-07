@@ -299,19 +299,17 @@ def dsacl2fsacl(dssddl, sid, as_sddl=True):
     fdescr.group_sid = ref.group_sid
     fdescr.type = ref.type
     fdescr.revision = ref.revision
-    aces = ref.dacl.aces
 
-    for i in range(0, len(aces)):
-        ace = aces[i]
+    # Only apply allowed and deny ACEs, as they are the only ones
+    # we can map to filesystem aces.
+    #
+    # In future we may need to include resource based aces...
+    allowed_ace_types = [
+        security.SEC_ACE_TYPE_ACCESS_ALLOWED,
+        security.SEC_ACE_TYPE_ACCESS_DENIED,
+    ]
 
-        # Only apply allowed and deny ACEs, as they are the only ones
-        # we can map to filesystem aces.
-        #
-        # In future we may need to include resource based aces...
-        allowed_ace_types = [
-            security.SEC_ACE_TYPE_ACCESS_ALLOWED,
-            security.SEC_ACE_TYPE_ACCESS_DENIED,
-        ]
+    for ace in ref.dacl.aces:
         if not ace.type in allowed_ace_types:
             continue
 
