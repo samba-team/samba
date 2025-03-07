@@ -2203,7 +2203,9 @@ bool file_find_subpath(files_struct *dir_fsp)
 		if (fsp == dir_fsp) {
 			continue;
 		}
-		if (fsp->fsp_flags.posix_open) {
+		if (dir_fsp->fsp_flags.posix_open &&
+		    fsp->fsp_flags.posix_open)
+		{
 			continue;
 		}
 
