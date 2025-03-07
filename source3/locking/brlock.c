@@ -757,6 +757,8 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 	bool break_oplocks = false;
 	NTSTATUS status;
 
+	SMB_ASSERT(plock->lock_flav == POSIX_LOCK);
+
 	/* No zero-zero locks for POSIX. */
 	if (plock->start == 0 && plock->size == 0) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1023,6 +1025,8 @@ static bool brl_unlock_posix(struct byte_range_lock *br_lck,
 	struct lock_struct *tp;
 	struct lock_struct *locks = br_lck->lock_data;
 	bool overlap_found = False;
+
+	SMB_ASSERT(plock->lock_flav == POSIX_LOCK);
 
 	/* No zero-zero locks for POSIX. */
 	if (plock->start == 0 && plock->size == 0) {
