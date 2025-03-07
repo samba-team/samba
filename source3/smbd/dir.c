@@ -1293,6 +1293,7 @@ void RewindDir(struct smb_Dir *dir_hnd)
 }
 
 struct have_file_open_below_state {
+	bool dirfsp_is_posix;
 	bool found_one;
 };
 
@@ -1307,7 +1308,9 @@ static int have_file_open_below_fn(const struct share_mode_data *data,
 		return 0;
 	}
 
-	if (e->flags & SHARE_MODE_FLAG_POSIX_OPEN) {
+	if (state->dirfsp_is_posix &&
+	    e->flags & SHARE_MODE_FLAG_POSIX_OPEN)
+	{
 		/* Ignore POSIX opens */
 		return 0;
 	}
@@ -1324,7 +1327,7 @@ static int have_file_open_below_fn(const struct share_mode_data *data,
 bool have_file_open_below(struct files_struct *fsp)
 {
 	struct have_file_open_below_state state = {
-		.found_one = false,
+		.dirfsp_is_posix = fsp->fsp_flags.posix_open,
 	};
 	int ret;
 
