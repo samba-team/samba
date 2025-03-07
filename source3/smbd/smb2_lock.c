@@ -460,7 +460,6 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 		} else {
 			locks[i].brltype = UNLOCK_LOCK;
 		}
-		locks[i].lock_flav = WINDOWS_LOCK;
 
 		DBG_DEBUG("index %"PRIu16" offset=%"PRIu64", count=%"PRIu64", "
 			  "smblctx = %"PRIu64" type %d\n",
