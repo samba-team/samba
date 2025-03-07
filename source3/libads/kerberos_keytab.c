@@ -364,12 +364,29 @@ static krb5_error_code pw2kt_process_add_info(struct pw2kt_keytab_state *state2,
 	krb5_principal princ = NULL;
 	krb5_principal *a = NULL;
 	size_t len;
+	const char *realm = NULL;
 
-	ret = smb_krb5_parse_name(state2->context, princs, &princ);
+	ret = smb_krb5_parse_name_flags(state2->context,
+					princs,
+					KRB5_PRINCIPAL_PARSE_NO_DEF_REALM,
+					&princ);
 	if (ret != 0) {
 		DBG_ERR("Failed to parse principal: %s\n", princs);
 		return ret;
 	}
+	/* Add realm part if missing (e.g. SPNs synced from DC) */
+	realm = smb_krb5_principal_get_realm(state2, state2->context, princ);
+	if (realm == NULL || *realm == 0) {
+		ret = smb_krb5_principal_set_realm(state2->context,
+						   princ,
+						   lp_realm());
+		if (ret != 0) {
+			DBG_ERR("Failed to add realm to principal: %s\n",
+				princs);
+			return ret;
+		}
+	}
+
 	len = talloc_array_length(state2->princ_array);
 	a = talloc_realloc(state2,
 			   state2->princ_array,
