@@ -125,6 +125,7 @@ struct fruit_config_data {
 	bool use_aapl;		/* config from smb.conf */
 	bool use_copyfile;
 	bool readdir_attr_enabled;
+	bool posix_opens;
 	bool unix_info_enabled;
 	bool copyfile_enabled;
 	bool veto_appledouble;
@@ -338,6 +339,9 @@ static int init_fruit_config(vfs_handle_struct *handle)
 
 	config->use_copyfile = lp_parm_bool(-1, FRUIT_PARAM_TYPE_NAME,
 					   "copyfile", false);
+
+	config->posix_opens = lp_parm_bool(
+		SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME, "posix_opens", true);
 
 	config->aapl_zero_file_id =
 	    lp_parm_bool(SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
@@ -1754,16 +1758,27 @@ static int fruit_openat(vfs_handle_struct *handle,
 			files_struct *fsp,
 			const struct vfs_open_how *how)
 {
+	struct fruit_config_data *config = NULL;
 	int fd;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data, return -1);
 
 	DBG_DEBUG("Path [%s]\n", smb_fname_str_dbg(smb_fname));
 
 	if (!is_named_stream(smb_fname)) {
-		return SMB_VFS_NEXT_OPENAT(handle,
-					   dirfsp,
-					   smb_fname,
-					   fsp,
-					   how);
+		fd = SMB_VFS_NEXT_OPENAT(handle,
+					 dirfsp,
+					 smb_fname,
+					 fsp,
+					 how);
+		if (fd == -1) {
+			return -1;
+		}
+		if (config->posix_opens && global_fruit_config.nego_aapl) {
+			fsp->fsp_flags.posix_open = true;
+		}
+		return fd;
 	}
 
 	if (how->resolve != 0) {
@@ -1798,7 +1813,13 @@ static int fruit_openat(vfs_handle_struct *handle,
 	DBG_DEBUG("Path [%s] fd [%d]\n", smb_fname_str_dbg(smb_fname), fd);
 
 	/* Prevent reopen optimisation */
+	if (fd == -1) {
+		return -1;
+	}
 	fsp->fsp_flags.have_proc_fds = false;
+	if (config->posix_opens && global_fruit_config.nego_aapl) {
+		fsp->fsp_flags.posix_open = true;
+	}
 	return fd;
 }
 
