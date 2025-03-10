@@ -426,6 +426,21 @@
 	    </listitem>
 	  </varlistentry>
 
+	  <varlistentry>
+	    <term>fruit:posix_opens = yes | no</term>
+	    <listitem>
+
+	      <para>When <parameter>fruit:posix_opens</parameter> is set to
+	      <parameter>yes</parameter>, vfs_fruit will internally translate
+	      all filesystem semantics to use POSIX behaviour instead of Windows
+	      behaviour. As Macs are closer to POSIX than Windows with regard
+	      to filesystem semantics, this improves access semantics for
+	      a lot of corner cases.</para>
+	      <para>The default is <emphasis>yes</emphasis>.</para>
+
+            </listitem>
+	  </varlistentry>
+
 	</variablelist>
 </refsect1>
 

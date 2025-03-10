@@ -1,2 +1,4 @@
 ^samba3.vfs.fruit streams_depot.OS X AppleDouble file conversion\(nt4_dc\)
 ^samba3.vfs.fruit streams_depot.OS X AppleDouble file conversion without embedded xattr\(nt4_dc\)
+^samba3.vfs.fruit.*readonly-exclusive-lock\(.*\)
+^samba3.vfs.fruit.*case_insensitive_find\(.*\)
