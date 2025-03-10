@@ -2519,6 +2519,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             'delegation_to_spn': None,
             'delegation_from_dn': None,
             'trusted_to_auth_for_delegation': False,
+            'selective_auth_allowed_sid': None,
             'fast_support': False,
             'claims_support': False,
             'compound_id_support': False,
@@ -2578,6 +2579,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                             delegation_to_spn,
                             delegation_from_dn,
                             trusted_to_auth_for_delegation,
+                            selective_auth_allowed_sid,
                             fast_support,
                             claims_support,
                             compound_id_support,
@@ -2597,6 +2599,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             self.assertIsNone(delegation_to_spn)
             self.assertIsNone(delegation_from_dn)
             self.assertFalse(trusted_to_auth_for_delegation)
+            self.assertIsNone(selective_auth_allowed_sid)
         else:
             self.assertFalse(not_delegated)
 
@@ -2661,6 +2664,30 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
 
         if assigned_silo is not None:
             details['msDS-AssignedAuthNPolicySilo'] = assigned_silo
+
+        if selective_auth_allowed_sid is not None:
+            if account_type is self.AccountType.GROUP_MANAGED_SERVICE:
+                oclass = "msDS-GroupManagedServiceAccount"
+            elif account_type is self.AccountType.MANAGED_SERVICE:
+                oclass = "msDS-ManagedServiceAccount"
+            else: # COMPUTER, SERVER, RODC
+                oclass = "computer"
+            schema_dn = samdb.get_schema_basedn()
+            domain_sid = samdb.get_domain_sid()
+            domain_sid = security.dom_sid(domain_sid)
+            res = samdb.search(base=schema_dn, scope=ldb.SCOPE_ONELEVEL,
+                               expression="(lDAPDisplayName=%s)" % oclass,
+                               attrs=["defaultSecurityDescriptor"])
+            self.assertEqual(len(res), 1)
+            self.assertIn("defaultSecurityDescriptor", res[0])
+            self.assertEqual(len(res[0]["defaultSecurityDescriptor"]), 1)
+            sd = str(res[0]["defaultSecurityDescriptor"][0])
+            sd += "(OA;;CR;%s;;%s)" % (
+                security.GUID_DRS_ALLOWED_TO_AUTHENTICATE,
+                selective_auth_allowed_sid)
+
+            sd = security.descriptor.from_sddl(sd, domain_sid)
+            details['nTSecurityDescriptor'] = ndr_pack(sd)
 
         if logon_hours is not None:
             details['logonHours'] = logon_hours
