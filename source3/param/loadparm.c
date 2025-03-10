@@ -2948,7 +2948,7 @@ bool lp_do_section(const char *pszSectionName, void *userdata)
 	if (bRetval) {
 		/* We put this here to avoid an odd message order if messages are */
 		/* issued by the post-processing of a previous section. */
-		DEBUG(2, ("Processing section \"[%s]\"\n", pszSectionName));
+		DBG_INFO("Processing section \"[%s]\"\n", pszSectionName);
 
 		iServiceIndex = add_a_service(&sDefault, pszSectionName);
 		if (iServiceIndex < 0) {
