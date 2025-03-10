@@ -1458,6 +1458,451 @@ done:
 	return ret;
 }
 
+
+/*
+ * Test setting filesize and allocation info vs sticky mtime
+ *
+ * | Time | Handle 1               | Handle 2               |
+ * |------+------------------------+------------------------|
+ * |    1 | Create file            | Open file              |
+ * |      | Check Handle Time = 1  | Check Handle Time = 1  |
+ * |      | Check Path Time = 1    | Check Path Time = 1    |
+ * |    2 | Set Filesize 0         |                        |
+ * |    3 | Check Handle Time = 2  | Check Handle Time = 2  |
+ * |      | Check Path Time = 2    | Check Path Time = 2    |
+ * |    4 | Set Allocation Size = 0|                        |
+ * |    5 | Check Handle Time = 4  | Check Handle Time = 4  |
+ * |      | Check Path Time = 4    | Check Path Time = 4    |
+ * |    6 | Set Filesize 1         |                        |
+ * |    7 | Check Handle Time = 6  | Check Handle Time = 6  |
+ * |      | Check Path Time = 6    | Check Path Time = 6    |
+ * |    8 | Set Allocation Size = 4096|                     |
+ * |    9 | Check Handle Time = 8  | Check Handle Time = 8  |
+ * |      | Check Path Time = 8    | Check Path Time = 8    |
+ * |   10 | Set Sticky Time = 99   |                        |
+ * |   11 | Check Handle Time = 99 | Check Handle Time = 99 |
+ * |      | Check Path Time = 99   | Check Path Time = 99   |
+ * |   12 | Set Filesize           |                        |
+ * |   13 | Check Handle Time = 99 | Check Handle Time = 99 |
+ * |      | Check Path Time = 99   | Check Path Time = 99   |
+ * |   14 | Set Allocation Size    |                        |
+ * |   15 | Check Handle Time = 99 | Check Handle Time = 99 |
+ * |      | Check Path Time = 99   | Check Path Time = 99   |
+ * |   16 |                        | Set Filesize           |
+ * |   17 | Check Handle Time = 16 | Check Handle Time = 16 |
+ * |      | Check Path Time = 16   | Check Path Time = 16   |
+ * |   18 |                        | Set Allocation Size    |
+ * |   19 | Check Handle Time = 18 | Check Handle Time = 18 |
+ * |      | Check Path Time = 18   | Check Path Time = 18   |
+ * |   20 |                        | Shrink Allocation Size |
+ * |   21 | Check Handle Time = 20 | Check Handle Time = 20 |
+ * |      | Check Path Time = 20   | Check Path Time = 20   |
+ * |   22 | Close                  | Close                  |
+ * |   23 | Check Path Time = 20   | Check Path Time = 20   |
+ */
+static bool test_modern_write_time_update2(struct torture_context *tctx,
+					   struct smb2_tree *tree1,
+					   struct smb2_tree *tree2)
+{
+	const char *fname = BASEDIR "\\test_modern_write_time_update2";
+	struct smb2_create cr;
+	struct smb2_handle h1 = {};
+	struct smb2_handle h2 = {};
+	union smb_setfileinfo basicinfo;
+	union smb_setfileinfo eofinfo;
+	union smb_setfileinfo allocinfo;
+	NTTIME lasttime, currenttime1, currenttime2, ctime1, ctime2;
+	off_t size = 0;
+	size_t alloccount = 0;
+	off_t allocsize = 4096;
+	time_t stickytime = time(NULL) + 86400;
+	NTTIME stickynttime;
+	NTSTATUS status;
+	bool ret = true;
+
+	unix_to_nt_time(&stickynttime, stickytime);
+	basicinfo = (union smb_setfileinfo) {
+		.generic.level = SMB_SFILEINFO_BASIC_INFORMATION,
+	};
+	eofinfo = (union smb_setfileinfo) {
+		.generic.level = SMB_SFILEINFO_END_OF_FILE_INFORMATION,
+	};
+	allocinfo = (union smb_setfileinfo) {
+		.generic.level = SMB_SFILEINFO_ALLOCATION_INFORMATION,
+	};
+
+	smb2_deltree(tree1, BASEDIR);
+	status = torture_smb2_testdir(tree1, BASEDIR, &h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"create failed\n");
+	status = smb2_util_close(tree1, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"close failed\n");
+
+	/* 1 */
+
+	smb2_generic_create(&cr, NULL, false, fname,
+			    NTCREATEX_DISP_CREATE,
+			    smb2_util_oplock_level(""), 0, 0);
+	status = smb2_create(tree1, tree1, &cr);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"create failed\n");
+	h1 = cr.out.file.handle;
+
+	smb2_generic_create(&cr, NULL, false, fname,
+			    NTCREATEX_DISP_OPEN,
+			    smb2_util_oplock_level(""), 0, 0);
+	status = smb2_create(tree2, tree2, &cr);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"create failed\n");
+	h2 = cr.out.file.handle;
+
+	ret = getinfo_both(tctx, tree1, &h1, fname, &currenttime1, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	ret = getinfo_both(tctx, tree2, &h2, fname, &currenttime2, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	torture_assert_nttime_equal_goto(tctx, currenttime1, currenttime2,
+					 ret, done, "bad times");
+	lasttime = currenttime1;
+
+	/* 2: same size */
+
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
+
+	eofinfo.end_of_file_info.in.file.handle = h1;
+	eofinfo.end_of_file_info.in.size = size;
+
+	status = smb2_setinfo_file(tree1, &eofinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	/* 3 */
+
+	ret = getinfo_both(tctx, tree1, &h1, fname, &currenttime1, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	ret = getinfo_both(tctx, tree2, &h2, fname, &currenttime2, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	torture_assert_nttime_equal_goto(tctx, currenttime1, currenttime2,
+					 ret, done, "bad times");
+
+	torture_assert_nttime_not_equal_goto(tctx,
+					     currenttime1,
+					     lasttime,
+					     ret, done,
+					     "bad time\n");
+	lasttime = currenttime1;
+
+	/* 4: same size */
+
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
+
+	allocinfo.allocation_info.in.file.handle = h1;
+	allocinfo.allocation_info.in.alloc_size = 0;
+
+	status = smb2_setinfo_file(tree1, &allocinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	/* 5 */
+
+	ret = getinfo_both(tctx, tree1, &h1, fname, &currenttime1, &ctime1);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	ret = getinfo_both(tctx, tree2, &h2, fname, &currenttime2, &ctime2);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	torture_assert_nttime_equal_goto(tctx, currenttime1, currenttime2,
+					 ret, done, "bad times");
+	torture_assert_nttime_equal_goto(tctx, ctime1, ctime2,
+					 ret, done, "bad times");
+
+	torture_assert_nttime_equal_goto(tctx,
+					 currenttime1,
+					 lasttime,
+					 ret, done,
+					 "bad time\n");
+	torture_assert_nttime_not_equal_goto(tctx,
+					     ctime1,
+					     lasttime,
+					     ret, done,
+					     "bad time\n");
+	lasttime = currenttime1;
+
+	/* 6: grow size */
+
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
+
+	eofinfo.end_of_file_info.in.file.handle = h1;
+	eofinfo.end_of_file_info.in.size = ++size;
+
+	status = smb2_setinfo_file(tree1, &eofinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	/* 7 */
+
+	ret = getinfo_both(tctx, tree1, &h1, fname, &currenttime1, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	ret = getinfo_both(tctx, tree2, &h2, fname, &currenttime2, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	torture_assert_nttime_equal_goto(tctx, currenttime1, currenttime2,
+					 ret, done, "bad times");
+
+	torture_assert_nttime_not_equal_goto(tctx,
+					     currenttime1,
+					     lasttime,
+					     ret, done,
+					     "bad time\n");
+	lasttime = currenttime1;
+
+	/* 8: grow size */
+
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
+
+	allocinfo.allocation_info.in.file.handle = h1;
+	allocinfo.allocation_info.in.alloc_size = ++alloccount * allocsize;
+
+	status = smb2_setinfo_file(tree1, &allocinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	/* 9 */
+
+	ret = getinfo_both(tctx, tree1, &h1, fname, &currenttime1, &ctime1);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	ret = getinfo_both(tctx, tree2, &h2, fname, &currenttime2, &ctime2);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	torture_assert_nttime_equal_goto(tctx, currenttime1, currenttime2,
+					 ret, done, "bad times");
+	torture_assert_nttime_equal_goto(tctx, ctime1, ctime2,
+					 ret, done, "bad times");
+
+	torture_assert_nttime_equal_goto(tctx,
+					 currenttime1,
+					 lasttime,
+					 ret, done,
+					 "bad time\n");
+	torture_assert_nttime_not_equal_goto(tctx,
+					     ctime1,
+					     lasttime,
+					     ret, done,
+					     "bad time\n");
+	lasttime = currenttime1;
+
+	/* 10 */
+
+	basicinfo.basic_info.in.file.handle = h1;
+	basicinfo.basic_info.in.write_time = stickynttime;
+
+	status = smb2_setinfo_file(tree1, &basicinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	/* 11 */
+
+	ret = getinfo_both(tctx, tree1, &h1, fname, &currenttime1, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	ret = getinfo_both(tctx, tree2, &h2, fname, &currenttime2, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	torture_assert_nttime_equal_goto(tctx, currenttime1, currenttime2,
+					 ret, done, "bad times");
+
+	torture_assert_nttime_equal_goto(tctx,
+					 currenttime1,
+					 stickynttime,
+					 ret, done,
+					 "bad time\n");
+	lasttime = currenttime1;
+
+	/* 12 */
+
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
+
+	eofinfo.end_of_file_info.in.file.handle = h1;
+	eofinfo.end_of_file_info.in.size = ++size;
+
+	status = smb2_setinfo_file(tree1, &eofinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	/* 13 */
+
+	ret = getinfo_both(tctx, tree1, &h1, fname, &currenttime1, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	ret = getinfo_both(tctx, tree2, &h2, fname, &currenttime2, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	torture_assert_nttime_equal_goto(tctx, currenttime1, currenttime2,
+					 ret, done, "bad times");
+
+	torture_assert_nttime_equal_goto(tctx,
+					 currenttime1,
+					 stickynttime,
+					 ret, done,
+					 "bad time\n");
+
+	/* 14 */
+
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
+
+	allocinfo.allocation_info.in.file.handle = h1;
+	allocinfo.allocation_info.in.alloc_size = ++alloccount * allocsize;
+
+	status = smb2_setinfo_file(tree1, &allocinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	/* 15 */
+
+	ret = getinfo_both(tctx, tree1, &h1, fname, &currenttime1, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	ret = getinfo_both(tctx, tree2, &h2, fname, &currenttime2, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	torture_assert_nttime_equal_goto(tctx, currenttime1, currenttime2,
+					 ret, done, "bad times");
+
+	torture_assert_nttime_equal_goto(tctx,
+					 currenttime1,
+					 stickynttime,
+					 ret, done,
+					 "bad time\n");
+
+	/* 16 */
+
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
+
+	eofinfo.end_of_file_info.in.file.handle = h2;
+	eofinfo.end_of_file_info.in.size = ++size;
+
+	status = smb2_setinfo_file(tree2, &eofinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	/* 17 */
+
+	ret = getinfo_both(tctx, tree1, &h1, fname, &currenttime1, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	ret = getinfo_both(tctx, tree2, &h2, fname, &currenttime2, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	torture_assert_nttime_equal_goto(tctx, currenttime1, currenttime2,
+					 ret, done, "bad times");
+
+	torture_assert_nttime_not_equal_goto(tctx,
+					     currenttime1,
+					     stickynttime,
+					     ret, done,
+					     "bad time\n");
+	lasttime = currenttime1;
+
+	/* 18 */
+
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
+
+	allocinfo.allocation_info.in.file.handle = h2;
+	allocinfo.allocation_info.in.alloc_size = ++alloccount * allocsize;
+
+	status = smb2_setinfo_file(tree2, &allocinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	/* 19 */
+
+	ret = getinfo_both(tctx, tree1, &h1, fname, &currenttime1, &ctime1);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	ret = getinfo_both(tctx, tree2, &h2, fname, &currenttime2, &ctime2);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	torture_assert_nttime_equal_goto(tctx, currenttime1, currenttime2,
+					 ret, done, "bad times");
+	torture_assert_nttime_equal_goto(tctx, ctime1, ctime2,
+					 ret, done, "bad times");
+
+	torture_assert_nttime_equal_goto(tctx,
+					 currenttime1,
+					 lasttime,
+					 ret, done,
+					 "bad time\n");
+	torture_assert_nttime_not_equal_goto(tctx,
+					     ctime1,
+					     lasttime,
+					     ret, done,
+					     "bad time\n");
+	lasttime = currenttime1;
+
+	/* 20: shrink allocation size, should update mtime+ctime */
+
+	/* Bypass possible filesystem granularity */
+	smb_msleep(20);
+
+	allocinfo.allocation_info.in.file.handle = h2;
+	allocinfo.allocation_info.in.alloc_size = 0;
+
+	status = smb2_setinfo_file(tree2, &allocinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	/* 21 */
+
+	ret = getinfo_both(tctx, tree1, &h1, fname, &currenttime1, &ctime1);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	ret = getinfo_both(tctx, tree2, &h2, fname, &currenttime2, &ctime2);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	torture_assert_nttime_equal_goto(tctx, currenttime1, currenttime2,
+					 ret, done, "bad times");
+	torture_assert_nttime_equal_goto(tctx, ctime1, ctime2,
+					 ret, done, "bad times");
+
+	torture_assert_nttime_not_equal_goto(tctx,
+					     currenttime1,
+					     lasttime,
+					     ret, done,
+					     "bad time\n");
+	torture_assert_nttime_not_equal_goto(tctx,
+					     ctime1,
+					     lasttime,
+					     ret, done,
+					     "bad time\n");
+	lasttime = currenttime1;
+
+	/* 22 */
+
+	status = smb2_util_close(tree1, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"close failed\n");
+	status = smb2_util_close(tree2, h2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"close failed\n");
+
+	/* 23 */
+
+	ret = getinfo_both(tctx, tree1, NULL, fname, &currenttime1, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	ret = getinfo_both(tctx, tree2, NULL, fname, &currenttime2, NULL);
+	torture_assert_goto(tctx, ret, ret, done, "getinfo_both failed");
+	torture_assert_nttime_equal_goto(tctx, currenttime1, currenttime2,
+					 ret, done, "bad times");
+
+	torture_assert_nttime_equal_goto(tctx,
+					 currenttime1,
+					 lasttime,
+					 ret, done,
+					 "bad time\n");
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree1, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree2, h2);
+	}
+	smb2_deltree(tree1, BASEDIR);
+	return ret;
+}
+
 /*
    basic testing of SMB2 timestamps
 */
@@ -1485,6 +1930,7 @@ struct torture_suite *torture_smb2_timestamps_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "delayed-1write", test_delayed_1write);
 	torture_suite_add_1smb2_test(suite, "delayed-2write", test_delayed_2write);
 	torture_suite_add_2smb2_test(suite, "modern_write_time_update-1", test_modern_write_time_update1);
+	torture_suite_add_2smb2_test(suite, "modern_write_time_update-2", test_modern_write_time_update2);
 
 	suite->description = talloc_strdup(suite, "SMB2 timestamp tests");
 

@@ -18,3 +18,4 @@
 ^samba3.smb2.timestamps.delayed-2write\(.*\)
 ^samba3.base.delaywrite.modern_write_time_update-1\(fileserver_smb1\)
 ^samba3.smb2.timestamps.modern_write_time_update-1\(.*\)
+^samba3.smb2.timestamps.modern_write_time_update-2\(.*\)
