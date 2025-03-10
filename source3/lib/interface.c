@@ -624,8 +624,11 @@ static void interpret_interface(char *token)
 				}
 				add_interface(&probed_ifaces[i]);
 				probed_ifaces[i].netmask = saved_mask;
-				return;
+				added = true;
 			}
+		}
+		if (added) {
+			return;
 		}
 		DEBUG(2,("interpret_interface: Can't determine ip for "
 			"broadcast address %s\n",
