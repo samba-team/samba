@@ -729,6 +729,7 @@ class RawKerberosTest(TestCase):
         EXTRA_SID = object()  # in info3.sids
         RESOURCE_SID = object()  # in resource_groups
         PRIMARY_GID = object()  # the (sole) primary group
+        EXTRA_DOMAIN_SID = object()  # in device_info.extra_domain
 
         def __repr__(self):
             return self.__str__()
@@ -4590,19 +4591,31 @@ class RawKerberosTest(TestCase):
                     got_sid = f'{resource_group_sid}-{resource_group.rid}'
 
                     device_sid = (got_sid,
-                                  self.SidType.RESOURCE_SID,
+                                  self.SidType.EXTRA_DOMAIN_SID,
                                   resource_group.attributes)
-                    self.assertNotIn(device_sid, got_domain_sids, 'got duplicated SID')
-                    got_domain_sids.add(device_sid)
-
-                got_domain_sids = frozenset(got_domain_sids)
-                self.assertNotIn(got_domain_sids, got_sids)
-                got_sids.add(got_domain_sids)
+                    self.assertNotIn(device_sid, got_sids, 'got duplicated SID')
+                    got_sids.add(device_sid)
 
         # Compare the aggregated device SIDs against the set of expected device
         # SIDs.
         if expected_device_groups is not None:
-            self.assertEqual(expected_device_groups, got_sids,
+            _expected_device_groups = set()
+            for _g in expected_device_groups:
+                if isinstance(_g, frozenset):
+                    gset = _g
+                else:
+                    gset = frozenset([_g])
+                for g in gset:
+                    stype = g[1]
+                    if g[1] == self.SidType.RESOURCE_SID:
+                        stype = self.SidType.EXTRA_DOMAIN_SID
+                    elif g[1] == self.SidType.EXTRA_SID and g[0].startswith('S-1-5-21-'):
+                        tsid = security.dom_sid(g[0])
+                        if tsid.num_auths == 5:
+                            stype = self.SidType.EXTRA_DOMAIN_SID
+                    tmp_extra = (g[0], stype, g[2])
+                    _expected_device_groups.add(tmp_extra)
+            self.assertEqual(_expected_device_groups, got_sids,
                              'expected != got')
 
     def check_pac_buffers(self, pac_data, kdc_exchange_dict):
