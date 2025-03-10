@@ -2592,6 +2592,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                             logon_hours,
                             smartcard_required,
                             enabled):
+        self.assertNotEqual(account_type, self.AccountType.TRUST)
         if account_type is self.AccountType.USER:
             self.assertIsNone(delegation_to_spn)
             self.assertIsNone(delegation_from_dn)
