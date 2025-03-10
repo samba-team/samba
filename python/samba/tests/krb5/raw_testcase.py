@@ -3354,6 +3354,7 @@ class RawKerberosTest(TestCase):
             'expected_sname': expected_sname,
             'expected_account_name': expected_account_name,
             'expected_groups': expected_groups,
+            'expected_duplicated_groups': None,
             'unexpected_groups': unexpected_groups,
             'expected_upn_name': expected_upn_name,
             'expected_sid': expected_sid,
@@ -3413,6 +3414,7 @@ class RawKerberosTest(TestCase):
             'unexpected_device_claims': unexpected_device_claims,
             'expect_resource_groups_flag': expect_resource_groups_flag,
             'expected_device_groups': expected_device_groups,
+            'expected_device_duplicated_groups': None,
             'expected_extra_pac_buffers': expected_extra_pac_buffers,
             'expect_matching_nt_hash_in_pac': expect_matching_nt_hash_in_pac,
             'to_rodc': to_rodc
@@ -3431,6 +3433,7 @@ class RawKerberosTest(TestCase):
                           expected_sname=None,
                           expected_account_name=None,
                           expected_groups=None,
+                          expected_duplicated_groups=None,
                           unexpected_groups=None,
                           expected_upn_name=None,
                           expected_sid=None,
@@ -3490,6 +3493,7 @@ class RawKerberosTest(TestCase):
                           unexpected_device_claims=None,
                           expect_resource_groups_flag=None,
                           expected_device_groups=None,
+                          expected_device_duplicated_groups=None,
                           expected_extra_pac_buffers=None,
                           to_rodc=False):
         if expected_error_mode == 0:
@@ -3511,6 +3515,7 @@ class RawKerberosTest(TestCase):
             'expected_sname': expected_sname,
             'expected_account_name': expected_account_name,
             'expected_groups': expected_groups,
+            'expected_duplicated_groups': expected_duplicated_groups,
             'unexpected_groups': unexpected_groups,
             'expected_upn_name': expected_upn_name,
             'expected_sid': expected_sid,
@@ -3570,6 +3575,7 @@ class RawKerberosTest(TestCase):
             'unexpected_device_claims': unexpected_device_claims,
             'expect_resource_groups_flag': expect_resource_groups_flag,
             'expected_device_groups': expected_device_groups,
+            'expected_device_duplicated_groups': expected_device_duplicated_groups,
             'expected_extra_pac_buffers': expected_extra_pac_buffers,
             'to_rodc': to_rodc
         }
@@ -4394,6 +4400,7 @@ class RawKerberosTest(TestCase):
         resource_groups = logon_info_buffer.info.info.resource_groups
 
         expected_groups = kdc_exchange_dict['expected_groups']
+        expected_duplicated_groups = kdc_exchange_dict['expected_duplicated_groups']
         unexpected_groups = kdc_exchange_dict['unexpected_groups']
         expected_domain_sid = kdc_exchange_dict['expected_domain_sid']
         expected_sid = kdc_exchange_dict['expected_sid']
@@ -4409,6 +4416,11 @@ class RawKerberosTest(TestCase):
         if expected_groups is None and unexpected_groups is None:
             # Nothing more to do.
             return
+
+        if expected_duplicated_groups:
+            expected_duplicated_groups = set(expected_duplicated_groups)
+        else:
+            expected_duplicated_groups = frozenset()
 
         # Check the SIDs in the PAC.
 
@@ -4434,6 +4446,10 @@ class RawKerberosTest(TestCase):
                 pac_sid = (got_sid,
                            self.SidType.EXTRA_SID,
                            sid_attr.attributes)
+                if pac_sid in pac_sids:
+                    if pac_sid in expected_duplicated_groups:
+                        expected_duplicated_groups.remove(pac_sid)
+                        continue
                 self.assertNotIn(pac_sid, pac_sids, 'got duplicated SID')
                 pac_sids.add(pac_sid)
         else:
@@ -4451,6 +4467,10 @@ class RawKerberosTest(TestCase):
                     self.assertNotIn(got_sid, unexpected_groups)
 
                 pac_sid = (got_sid, self.SidType.BASE_SID, group.attributes)
+                if pac_sid in pac_sids:
+                    if pac_sid in expected_duplicated_groups:
+                        expected_duplicated_groups.remove(pac_sid)
+                        continue
                 self.assertNotIn(pac_sid, pac_sids, 'got duplicated SID')
                 pac_sids.add(pac_sid)
 
@@ -4489,6 +4509,8 @@ class RawKerberosTest(TestCase):
                 self.assertNotIn(pac_sid, pac_sids, 'got duplicated SID')
                 pac_sids.add(pac_sid)
 
+        self.assertEqual(len(expected_duplicated_groups), 0)
+
         # Compare the aggregated SIDs against the set of expected SIDs.
         if expected_groups is not None:
             if ... in expected_groups:
@@ -4522,6 +4544,7 @@ class RawKerberosTest(TestCase):
 
         device_domain_sid = kdc_exchange_dict['expected_device_domain_sid']
         expected_device_groups = kdc_exchange_dict['expected_device_groups']
+        expected_device_duplicated_groups = kdc_exchange_dict['expected_device_duplicated_groups']
         if kdc_exchange_dict['expect_device_info']:
             self.assertIsNotNone(device_domain_sid)
             self.assertIsNotNone(expected_device_groups)
@@ -4530,6 +4553,11 @@ class RawKerberosTest(TestCase):
             self.assertEqual(device_domain_sid, str(device_info.domain_sid))
         else:
             device_domain_sid = str(device_info.domain_sid)
+
+        if expected_device_duplicated_groups:
+            expected_device_duplicated_groups = set(expected_device_duplicated_groups)
+        else:
+            expected_device_duplicated_groups = frozenset()
 
         # Check the device info SIDs.
 
@@ -4547,6 +4575,10 @@ class RawKerberosTest(TestCase):
                 got_sid = f'{device_domain_sid}-{group.rid}'
 
                 device_sid = (got_sid, self.SidType.BASE_SID, group.attributes)
+                if device_sid in got_sids:
+                    if device_sid in expected_device_duplicated_groups:
+                        expected_device_duplicated_groups.remove(device_sid)
+                        continue
                 self.assertNotIn(device_sid, got_sids, 'got duplicated SID')
                 got_sids.add(device_sid)
 
@@ -4566,6 +4598,10 @@ class RawKerberosTest(TestCase):
                 device_sid = (got_sid,
                               self.SidType.EXTRA_SID,
                               sid_attr.attributes)
+                if device_sid in got_sids:
+                    if device_sid in expected_device_duplicated_groups:
+                        expected_device_duplicated_groups.remove(device_sid)
+                        continue
                 self.assertNotIn(device_sid, got_sids, 'got duplicated SID')
                 got_sids.add(device_sid)
 
@@ -4593,8 +4629,14 @@ class RawKerberosTest(TestCase):
                     device_sid = (got_sid,
                                   self.SidType.EXTRA_DOMAIN_SID,
                                   resource_group.attributes)
+                    if device_sid in got_sids:
+                        if device_sid in expected_device_duplicated_groups:
+                            expected_device_duplicated_groups.remove(device_sid)
+                            continue
                     self.assertNotIn(device_sid, got_sids, 'got duplicated SID')
                     got_sids.add(device_sid)
+
+        self.assertEqual(len(expected_device_duplicated_groups), 0)
 
         # Compare the aggregated device SIDs against the set of expected device
         # SIDs.
