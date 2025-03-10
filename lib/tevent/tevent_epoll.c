@@ -590,13 +590,8 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 	int ret, i;
 #define MAXEVENTS 1
 	struct epoll_event events[MAXEVENTS];
-	int timeout = -1;
+	int timeout = tevent_common_timeout_msec(tvalp);
 	int wait_errno;
-
-	if (tvalp) {
-		/* it's better to trigger timed events a bit later than too early */
-		timeout = ((tvalp->tv_usec+999) / 1000) + (tvalp->tv_sec*1000);
-	}
 
 	if (epoll_ev->ev->signal_events &&
 	    tevent_common_check_signal(epoll_ev->ev)) {
@@ -620,6 +615,14 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 	}
 
 	if (ret == 0 && tvalp) {
+		/*
+		 * tevent_context_set_wait_timeout(0) was used.
+		 */
+		if (tevent_common_no_timeout(tvalp)) {
+			errno = EAGAIN;
+			return -1;
+		}
+
 		/* we don't care about a possible delay here */
 		tevent_common_loop_timer_delay(epoll_ev->ev);
 		return 0;

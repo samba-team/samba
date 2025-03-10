@@ -417,6 +417,7 @@ struct tevent_context {
 	 * tevent_common_add_timer_v2()
 	 */
 	struct tevent_timer *last_zero_timer;
+	struct timeval wait_timeout;
 
 #ifdef HAVE_PTHREAD
 	struct tevent_context *prev, *next;
@@ -466,6 +467,34 @@ struct tevent_timer *tevent_common_add_timer_v2(struct tevent_context *ev,
 					        const char *handler_name,
 					        const char *location);
 struct timeval tevent_common_loop_timer_delay(struct tevent_context *);
+
+/* timeout values for poll(2) / epoll_wait(2) */
+static inline bool tevent_common_no_timeout(const struct timeval *tv)
+{
+	if ((tv->tv_sec == 0) && (tv->tv_usec == INT32_MAX)) {
+		/*
+		 * This is special from
+		 * tevent_context_set_wait_timeout(0)
+		 */
+		return true;
+	}
+	return false;
+}
+static inline int tevent_common_timeout_msec(const struct timeval *tv)
+{
+	if (tv->tv_sec == INT32_MAX) {
+		return -1;
+	}
+	if (tevent_common_no_timeout(tv)) {
+		/*
+		 * This is special from
+		 * tevent_context_set_wait_timeout(0)
+		 */
+		return 0;
+	}
+	return ((tv->tv_usec + 999) / 1000) + (tv->tv_sec * 1000);
+}
+
 int tevent_common_invoke_timer_handler(struct tevent_timer *te,
 				       struct timeval current_time,
 				       bool *removed);

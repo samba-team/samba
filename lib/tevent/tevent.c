@@ -544,6 +544,13 @@ struct tevent_context *tevent_context_init_ops(TALLOC_CTX *mem_ctx,
 	ev->ops = ops;
 	ev->additional_data = additional_data;
 
+	/*
+	 * have a default tick time of 30 seconds. This guarantees
+	 * that code that uses its own timeout checking will be
+	 * able to proceed eventually
+	 */
+	tevent_context_set_wait_timeout(ev, 30);
+
 	ret = ev->ops->context_init(ev);
 	if (ret != 0) {
 		talloc_free(ev);
@@ -580,6 +587,31 @@ struct tevent_context *tevent_context_init_byname(TALLOC_CTX *mem_ctx,
 struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx)
 {
 	return tevent_context_init_byname(mem_ctx, NULL);
+}
+
+uint32_t tevent_context_set_wait_timeout(struct tevent_context *ev,
+					 uint32_t secs)
+{
+	time_t ret = ev->wait_timeout.tv_sec;
+
+	/*
+	 * Cut to signed 32-bit time_t. This is the maximum that we
+	 * can reasonably expect to fit into time_t. Use that as magic
+	 * value for "wait forever". Nobody wants to wait 68 years....
+	 */
+	secs = MIN(secs, INT32_MAX);
+
+	/*
+	 * "secs == 0" and thus wait_timeout==tevent_timeval_zero()
+	 * might have a special meaning for custom tevent loop_once
+	 * backend functions. Make this an invalid value, our
+	 * internal poll and epoll backends deal with this properly,
+	 * see tevent_common_no_timeout()
+	 */
+	ev->wait_timeout = tevent_timeval_set((time_t)secs,
+					      (secs == 0) ?  INT32_MAX: 0);
+
+	return ret;
 }
 
 /*

@@ -174,6 +174,25 @@ const char **tevent_backend_list(TALLOC_CTX *mem_ctx);
  */
 void tevent_set_default_backend(const char *backend);
 
+/**
+ * @brief Set the default time to wait without tevent_timers pending
+ *
+ * Setting the wait timeout to 0 means polling behaviour, e.g.
+ * tevent_loop_once will return -1/errno=EAGAIN, when all
+ * currently available events were processes.
+ *
+ * Setting it to UINT32_MAX makes tevent_loop_once wait forever.
+ * The default is 30 seconds.
+ *
+ * @param[in]  ev       The tevent context to set this on
+ *
+ * @param[in]  secs     The number of seconds to wait without timers
+ *
+ * @return     secs     The previous wait_timeout value
+ */
+uint32_t tevent_context_set_wait_timeout(struct tevent_context *ev,
+					 uint32_t secs);
+
 #ifdef DOXYGEN
 /**
  * @brief Add a file descriptor based event.

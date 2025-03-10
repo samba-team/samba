@@ -480,7 +480,7 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 	struct poll_event_context *poll_ev = talloc_get_type_abort(
 		ev->additional_data, struct poll_event_context);
 	int pollrtn;
-	int timeout = -1;
+	int timeout = tevent_common_timeout_msec(tvalp);
 	int poll_errno;
 	struct tevent_fd *fde = NULL;
 	struct tevent_fd *next = NULL;
@@ -489,11 +489,6 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 
 	if (ev->signal_events && tevent_common_check_signal(ev)) {
 		return 0;
-	}
-
-	if (tvalp != NULL) {
-		timeout = tvalp->tv_sec * 1000;
-		timeout += (tvalp->tv_usec + 999) / 1000;
 	}
 
 	ok = poll_event_sync_arrays(ev, poll_ev);
@@ -512,6 +507,14 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 	}
 
 	if (pollrtn == 0 && tvalp) {
+		/*
+		 * tevent_context_set_wait_timeout(0) was used.
+		 */
+		if (tevent_common_no_timeout(tvalp)) {
+			errno = EAGAIN;
+			return -1;
+		}
+
 		/* we don't care about a possible delay here */
 		tevent_common_loop_timer_delay(ev);
 		return 0;

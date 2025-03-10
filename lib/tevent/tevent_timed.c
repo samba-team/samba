@@ -421,10 +421,7 @@ struct timeval tevent_common_loop_timer_delay(struct tevent_context *ev)
 	int ret;
 
 	if (!te) {
-		/* have a default tick time of 30 seconds. This guarantees
-		   that code that uses its own timeout checking will be
-		   able to proceed eventually */
-		return tevent_timeval_set(30, 0);
+		return ev->wait_timeout;
 	}
 
 	/*
@@ -443,6 +440,9 @@ struct timeval tevent_common_loop_timer_delay(struct tevent_context *ev)
 
 		delay = tevent_timeval_until(&current_time, &te->next_event);
 		if (!tevent_timeval_is_zero(&delay)) {
+			if (tevent_common_no_timeout(&ev->wait_timeout)) {
+				return ev->wait_timeout;
+			}
 			return delay;
 		}
 	}
