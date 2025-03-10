@@ -1354,15 +1354,15 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 
 #define SET_INFO_FILE_EX(finfo, wrtime, tree, tfnum) do { \
 	NTSTATUS _status; \
-	union smb_setfileinfo sfinfo; \
-	sfinfo.basic_info.level = RAW_SFILEINFO_BASIC_INFO; \
-	sfinfo.basic_info.in.file.fnum = tfnum; \
-	sfinfo.basic_info.in.create_time = 0; \
-	sfinfo.basic_info.in.access_time = 0; \
-	unix_to_nt_time(&sfinfo.basic_info.in.write_time, (wrtime)); \
-	sfinfo.basic_info.in.change_time = 0; \
-	sfinfo.basic_info.in.attrib = finfo.basic_info.out.attrib; \
-	_status = smb_raw_setfileinfo(tree, &sfinfo); \
+	union smb_setfileinfo _sfinfo; \
+	_sfinfo.basic_info.level = RAW_SFILEINFO_BASIC_INFO; \
+	_sfinfo.basic_info.in.file.fnum = tfnum; \
+	_sfinfo.basic_info.in.create_time = 0; \
+	_sfinfo.basic_info.in.access_time = 0; \
+	unix_to_nt_time(&_sfinfo.basic_info.in.write_time, (wrtime)); \
+	_sfinfo.basic_info.in.change_time = 0; \
+	_sfinfo.basic_info.in.attrib = finfo.basic_info.out.attrib; \
+	_status = smb_raw_setfileinfo(tree, &_sfinfo); \
 	if (!NT_STATUS_IS_OK(_status)) { \
 		torture_result(tctx, TORTURE_FAIL, __location__": setfileinfo failed: %s", \
 			       nt_errstr(_status)); \
