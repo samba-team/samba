@@ -465,6 +465,15 @@ typedef struct files_struct {
 		bool lock_failure_seen : 1;
 		bool encryption_required : 1;
 		bool fstat_before_close : 1;
+		/*
+		 * For POSIX clients struct files_struct.fsp_flags.posix_open
+		 * and struct smb_filename.flags SMB_FILENAME_POSIX_PATH will
+		 * always be set to the same value.
+		 *
+		 * For macOS clients vfs_fruit with fruit:posix_open=yes, we
+		 * deliberately set both flags to fsp_flags.posix_open=true
+		 * while SMB_FILENAME_POSIX_PATH will not be set.
+		 */
 		bool posix_open : 1;
 		bool posix_append : 1;
 		bool ntcreatex_deny_dos : 1;
@@ -892,6 +901,15 @@ struct smb_filename {
 	struct fsp_smb_fname_link *fsp_link;
 };
 
+/*
+ * For POSIX clients struct files_struct.fsp_flags.posix_open
+ * and struct smb_filename.flags SMB_FILENAME_POSIX_PATH will
+ * always be set to the same value.
+ *
+ * For macOS clients vfs_fruit with fruit:posix_open=yes, we
+ * deliberately set both flags to fsp_flags.posix_open=true
+ * while SMB_FILENAME_POSIX_PATH will not be set.
+ */
 #define SMB_FILENAME_POSIX_PATH		0x01
 
 enum vfs_translate_direction {
