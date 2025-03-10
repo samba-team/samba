@@ -4979,7 +4979,9 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 		}
 
 		/* Only change if needed. */
-		if (allocation_size != get_file_size_stat(&smb_fname->st)) {
+		if (allocation_size !=
+		    SMB_VFS_GET_ALLOC_SIZE(conn, new_fsp, &new_fsp->fsp_name->st))
+		{
 			if (vfs_allocate_file_space(fsp, allocation_size) == -1) {
 				return map_nt_error_from_unix(errno);
 			}
@@ -5021,7 +5023,9 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	}
 
 	/* Only change if needed. */
-	if (allocation_size != get_file_size_stat(&smb_fname->st)) {
+	if (allocation_size !=
+	    SMB_VFS_GET_ALLOC_SIZE(conn, new_fsp, &new_fsp->fsp_name->st))
+	{
 		if (vfs_allocate_file_space(new_fsp, allocation_size) == -1) {
 			status = map_nt_error_from_unix(errno);
 			close_file_free(req, &new_fsp, NORMAL_CLOSE);
