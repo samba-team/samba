@@ -777,7 +777,6 @@ static NTSTATUS get_lanman2_dir_entry(TALLOC_CTX *ctx,
 				int info_level,
 				bool requires_resume_key,
 				bool dont_descend,
-				bool ask_sharemode,
 				char **ppdata,
 				char *base_data,
 				char *end_data,
@@ -795,7 +794,7 @@ static NTSTATUS get_lanman2_dir_entry(TALLOC_CTX *ctx,
 
 	return smbd_dirptr_lanman2_entry(ctx, conn, dirptr, flags2,
 					 path_mask, dirtype, info_level,
-					 requires_resume_key, dont_descend, ask_sharemode,
+					 requires_resume_key, dont_descend,
 					 true, align, do_pad,
 					 ppdata, base_data, end_data,
 					 space_remaining,
@@ -842,7 +841,6 @@ static void call_trans2findfirst(connection_struct *conn,
 	int space_remaining;
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
-	bool ask_sharemode;
 	struct smbXsrv_connection *xconn = req->xconn;
 	struct smbd_server_connection *sconn = req->sconn;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
@@ -1107,8 +1105,6 @@ static void call_trans2findfirst(connection_struct *conn,
 	space_remaining = max_data_bytes;
 	out_of_space = False;
 
-	ask_sharemode = fsp_search_ask_sharemode(fsp);
-
 	for (i=0;(i<maxentries) && !finished && !out_of_space;i++) {
 
 		ntstatus = get_lanman2_dir_entry(talloc_tos(),
@@ -1120,7 +1116,6 @@ static void call_trans2findfirst(connection_struct *conn,
 						 info_level,
 						 requires_resume_key,
 						 dont_descend,
-						 ask_sharemode,
 						 &p,
 						 pdata,
 						 data_end,
@@ -1286,7 +1281,6 @@ static void call_trans2findnext(connection_struct *conn,
 	int space_remaining;
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
-	bool ask_sharemode;
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smbd_server_connection *sconn = req->sconn;
 	bool backup_priv = false;
@@ -1571,8 +1565,6 @@ static void call_trans2findnext(connection_struct *conn,
 		}
 	} /* end if resume_name && !continue_bit */
 
-	ask_sharemode = fsp_search_ask_sharemode(fsp);
-
 	for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++) {
 
 		ntstatus = get_lanman2_dir_entry(ctx,
@@ -1584,7 +1576,6 @@ static void call_trans2findnext(connection_struct *conn,
 						 info_level,
 						 requires_resume_key,
 						 dont_descend,
-						 ask_sharemode,
 						 &p,
 						 pdata,
 						 data_end,
@@ -2045,7 +2036,6 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 				     struct smb_filename *smb_fname,
 				     struct files_struct *fsp,
 				     bool delete_pending,
-				     struct timespec write_time_ts,
 				     char **pparams, int total_params,
 				     char **ppdata, int total_data,
 				     unsigned int max_data_bytes)
@@ -2122,7 +2112,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 	status = smbd_do_qfilepathinfo(conn, req, req, info_level,
 				       fsp, smb_fname,
-				       delete_pending, write_time_ts,
+				       delete_pending,
 				       ea_list,
 				       req->flags2, max_data_bytes,
 				       &fixed_portion,
@@ -2570,7 +2560,6 @@ static void call_trans2qpathinfo(
 	struct smb_filename *smb_fname = NULL;
 	struct smb_filename *smb_fname_rel = NULL;
 	bool delete_pending = False;
-	struct timespec write_time_ts = { .tv_sec = 0, };
 	struct files_struct *dirfsp = NULL;
 	files_struct *fsp = NULL;
 	char *fname = NULL;
@@ -2678,8 +2667,7 @@ static void call_trans2qpathinfo(
 
 		get_file_infos(base_fsp->file_id,
 			       base_fsp->name_hash,
-			       &delete_pending,
-			       NULL);
+			       &delete_pending);
 		if (delete_pending) {
 			reply_nterror(req, NT_STATUS_DELETE_PENDING);
 			return;
@@ -2689,8 +2677,7 @@ static void call_trans2qpathinfo(
 	if (fsp_getinfo_ask_sharemode(fsp)) {
 		get_file_infos(fsp->file_id,
 			       fsp->name_hash,
-			       &delete_pending,
-			       &write_time_ts);
+			       &delete_pending);
 	}
 
 	if (delete_pending) {
@@ -2778,7 +2765,6 @@ static void call_trans2qpathinfo(
 		smb_fname,
 		fsp,
 		false,
-		write_time_ts,
 		pparams,
 		total_params,
 		ppdata,
@@ -2874,7 +2860,6 @@ static void call_trans2qfileinfo(
 	uint16_t info_level;
 	struct smb_filename *smb_fname = NULL;
 	bool delete_pending = False;
-	struct timespec write_time_ts = { .tv_sec = 0, };
 	files_struct *fsp = NULL;
 	struct file_id fileid;
 	bool info_level_handled;
@@ -2956,8 +2941,7 @@ static void call_trans2qfileinfo(
 			fileid = vfs_file_id_from_sbuf(
 				conn, &smb_fname->st);
 			get_file_infos(fileid, fsp->name_hash,
-				       &delete_pending,
-				       &write_time_ts);
+				       &delete_pending);
 		}
 	} else {
 		/*
@@ -2974,8 +2958,7 @@ static void call_trans2qfileinfo(
 			fileid = vfs_file_id_from_sbuf(
 				conn, &smb_fname->st);
 			get_file_infos(fileid, fsp->name_hash,
-				       &delete_pending,
-				       &write_time_ts);
+				       &delete_pending);
 		}
 	}
 
@@ -3028,7 +3011,6 @@ static void call_trans2qfileinfo(
 		smb_fname,
 		fsp,
 		delete_pending,
-		write_time_ts,
 		pparams,
 		total_params,
 		ppdata,
@@ -3932,9 +3914,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	uid_t set_owner = (uid_t)SMB_UID_NO_CHANGE;
 	gid_t set_grp = (uid_t)SMB_GID_NO_CHANGE;
 	NTSTATUS status = NT_STATUS_OK;
-	files_struct *all_fsps = NULL;
 	bool modify_mtime = true;
-	struct file_id id;
 	SMB_STRUCT_STAT sbuf;
 
 	if (!CAN_WRITE(conn)) {
@@ -4113,17 +4093,6 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	if (is_omit_timespec(&ft.mtime) && is_omit_timespec(&ft.atime)) {
 		/* No change, don't cancel anything. */
 		return status;
-	}
-
-	id = vfs_file_id_from_sbuf(conn, &sbuf);
-	for(all_fsps = file_find_di_first(conn->sconn, id, true); all_fsps;
-			all_fsps = file_find_di_next(all_fsps, true)) {
-		/*
-		 * We're setting the time explicitly for UNIX.
-		 * Cancel any pending changes over all handles.
-		 */
-		all_fsps->fsp_flags.update_write_time_on_close = false;
-		TALLOC_FREE(all_fsps->update_write_time_event);
 	}
 
 	/*

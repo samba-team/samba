@@ -526,6 +526,7 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 
 	aio_ex->nbyte = in_data.length;
 	aio_ex->offset = in_offset;
+	prepare_file_modified(fsp, &aio_ex->modified_state);
 
 	req = pwrite_fsync_send(aio_ex, fsp->conn->sconn->ev_ctx, fsp,
 				in_data.data, in_data.length, in_offset,
@@ -586,7 +587,7 @@ static void aio_pwrite_smb2_done(struct tevent_req *req)
 	DEBUG(10, ("pwrite_recv returned %d, err = %s\n", (int)nwritten,
 		   (nwritten == -1) ? strerror(err) : "no error"));
 
-	mark_file_modified(fsp);
+	mark_file_modified(fsp, true, &aio_ex->modified_state);
 
         status = smb2_write_complete_nosync(subreq, nwritten, err);
 

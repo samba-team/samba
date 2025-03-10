@@ -707,13 +707,11 @@ static NTSTATUS share_mode_data_store(struct share_mode_data *d)
 
 static struct share_mode_data *fresh_share_mode_lock(
 	TALLOC_CTX *mem_ctx, const char *servicepath,
-	const struct smb_filename *smb_fname,
-	const struct timespec *old_write_time)
+	const struct smb_filename *smb_fname)
 {
 	struct share_mode_data *d;
 
-	if ((servicepath == NULL) || (smb_fname == NULL) ||
-	    (old_write_time == NULL)) {
+	if ((servicepath == NULL) || (smb_fname == NULL)) {
 		return NULL;
 	}
 
@@ -737,7 +735,6 @@ static struct share_mode_data *fresh_share_mode_lock(
 	if (d->servicepath == NULL) {
 		goto fail;
 	}
-	d->old_write_time = full_timespec_to_nt_time(old_write_time);
 	d->flags = SHARE_MODE_SHARE_DELETE |
 		SHARE_MODE_SHARE_WRITE |
 		SHARE_MODE_SHARE_READ;
@@ -800,7 +797,6 @@ struct get_static_share_mode_data_state {
 	struct file_id id;
 	const char *servicepath;
 	const struct smb_filename *smb_fname;
-	const struct timespec *old_write_time;
 	NTSTATUS status;
 };
 
@@ -835,8 +831,7 @@ static void get_static_share_mode_data_fn(
 		d = fresh_share_mode_lock(
 			state->mem_ctx,
 			state->servicepath,
-			state->smb_fname,
-			state->old_write_time);
+			state->smb_fname);
 		if (d == NULL) {
 			state->status = NT_STATUS_NO_MEMORY;
 			return;
@@ -860,15 +855,13 @@ static void get_static_share_mode_data_fn(
 static NTSTATUS get_static_share_mode_data(
 	struct file_id id,
 	const char *servicepath,
-	const struct smb_filename *smb_fname,
-	const struct timespec *old_write_time)
+	const struct smb_filename *smb_fname)
 {
 	struct get_static_share_mode_data_state state = {
 		.mem_ctx = lock_ctx,
 		.id = id,
 		.servicepath = servicepath,
 		.smb_fname = smb_fname,
-		.old_write_time = old_write_time,
 	};
 	NTSTATUS status;
 
@@ -923,7 +916,6 @@ static NTSTATUS get_share_mode_lock_internal(
 	struct file_id id,
 	const char *servicepath,
 	const struct smb_filename *smb_fname,
-	const struct timespec *old_write_time,
 	struct share_mode_lock *lck)
 {
 	NTSTATUS status;
@@ -973,8 +965,7 @@ static NTSTATUS get_share_mode_lock_internal(
 	status = get_static_share_mode_data(
 		id,
 		servicepath,
-		smb_fname,
-		old_write_time);
+		smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("get_static_share_mode_data failed: %s\n",
 			  nt_errstr(status));
@@ -1081,7 +1072,6 @@ struct share_mode_lock *get_existing_share_mode_lock(TALLOC_CTX *mem_ctx,
 	status = get_share_mode_lock_internal(id,
 					      NULL, /* servicepath */
 					      NULL, /* smb_fname */
-					      NULL, /* old_write_time */
 					      lck);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_GET_SHARE_MODE_LOCK(status,
@@ -1238,48 +1228,6 @@ static struct share_mode_data *_share_mode_lock_assert_private_data(
 	}
 
 	return d;
-}
-
-NTTIME share_mode_changed_write_time(struct share_mode_lock *lck)
-{
-	struct share_mode_data *d = share_mode_lock_assert_private_data(lck);
-	return d->changed_write_time;
-}
-
-void share_mode_set_changed_write_time(struct share_mode_lock *lck, struct timespec write_time)
-{
-	struct file_id fileid = share_mode_lock_file_id(lck);
-	struct share_mode_data *d = share_mode_lock_assert_private_data(lck);
-	struct file_id_buf ftmp;
-	struct timeval_buf tbuf;
-	NTTIME nt = full_timespec_to_nt_time(&write_time);
-
-	DBG_INFO("%s id=%s\n",
-		 timespec_string_buf(&write_time, true, &tbuf),
-		 file_id_str_buf(fileid, &ftmp));
-
-	if (d->changed_write_time != nt) {
-		d->modified = true;
-		d->changed_write_time = nt;
-	}
-}
-
-void share_mode_set_old_write_time(struct share_mode_lock *lck, struct timespec write_time)
-{
-	struct file_id fileid = share_mode_lock_file_id(lck);
-	struct share_mode_data *d = share_mode_lock_assert_private_data(lck);
-	struct file_id_buf ftmp;
-	struct timeval_buf tbuf;
-	NTTIME nt = full_timespec_to_nt_time(&write_time);
-
-	DBG_INFO("%s id=%s\n",
-		 timespec_string_buf(&write_time, true, &tbuf),
-		 file_id_str_buf(fileid, &ftmp));
-
-	if (d->changed_write_time != nt) {
-		d->modified = true;
-		d->old_write_time = nt;
-	}
 }
 
 const char *share_mode_servicepath(struct share_mode_lock *lck)
@@ -3178,7 +3126,6 @@ static void share_mode_do_locked_vfs_denied_fn(struct g_lock_lock_cb_state *glck
 	state->status = get_share_mode_lock_internal(state->id,
 						     NULL,  /* servicepath */
 						     NULL,  /* smb_fname */
-						     NULL,  /* old_write_time */
 						     &lck);
 	if (!NT_STATUS_IS_OK(state->status)) {
 		DBG_GET_SHARE_MODE_LOCK(state->status,
@@ -3289,7 +3236,6 @@ NTSTATUS _share_mode_do_locked_vfs_allowed(
 	status = get_share_mode_lock_internal(id,
 					      NULL,  /* servicepath */
 					      NULL,  /* smb_fname */
-					      NULL,  /* old_write_time */
 					      &lck);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_GET_SHARE_MODE_LOCK(status,
@@ -3315,7 +3261,6 @@ struct share_mode_entry_prepare_lock_state {
 	struct file_id id;
 	const char *servicepath;
 	const struct smb_filename *smb_fname;
-	const struct timespec *old_write_time;
 	share_mode_entry_prepare_lock_fn_t fn;
 	void *private_data;
 	const char *location;
@@ -3337,7 +3282,6 @@ static void share_mode_entry_prepare_lock_fn(struct g_lock_lock_cb_state *glck,
 	state->status = get_share_mode_lock_internal(state->id,
 						     state->servicepath,
 						     state->smb_fname,
-						     state->old_write_time,
 						     state->lck);
 	if (!NT_STATUS_IS_OK(state->status)) {
 		/* no DBG_GET_SHARE_MODE_LOCK here! */
@@ -3375,7 +3319,6 @@ NTSTATUS _share_mode_entry_prepare_lock(
 	struct file_id id,
 	const char *servicepath,
 	const struct smb_filename *smb_fname,
-	const struct timespec *old_write_time,
 	share_mode_entry_prepare_lock_fn_t fn,
 	void *private_data,
 	const char *location)
@@ -3384,7 +3327,6 @@ NTSTATUS _share_mode_entry_prepare_lock(
 		.id = id,
 		.servicepath = servicepath,
 		.smb_fname = smb_fname,
-		.old_write_time = old_write_time,
 		.fn = fn,
 		.private_data = private_data,
 		.location = location,
@@ -3468,7 +3410,6 @@ static void share_mode_entry_prepare_unlock_relock_fn(struct g_lock_lock_cb_stat
 	state->status = get_share_mode_lock_internal(state->id,
 						     NULL,  /* servicepath */
 						     NULL,  /* smb_fname */
-						     NULL,  /* old_write_time */
 						     state->lck);
 	if (!NT_STATUS_IS_OK(state->status)) {
 		/* no DBG_GET_SHARE_MODE_LOCK here! */

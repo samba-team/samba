@@ -1766,7 +1766,6 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 			       int info_level,
 			       int requires_resume_key,
 			       bool dont_descend,
-			       bool ask_sharemode,
 			       bool get_dosmode,
 			       uint8_t align,
 			       bool do_pad,
@@ -1817,7 +1816,6 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 				   mask,
 				   dirtype,
 				   dont_descend,
-				   ask_sharemode,
 				   get_dosmode,
 				   smbd_dirptr_lanman2_match_fn,
 				   &state,
@@ -2964,7 +2962,6 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			       files_struct *fsp,
 			       struct smb_filename *smb_fname,
 			       bool delete_pending,
-			       struct timespec write_time_ts,
 			       struct ea_list *ea_list,
 			       uint16_t flags2,
 			       unsigned int max_data_bytes,
@@ -3045,12 +3042,6 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	pdata = *ppdata;
 	dstart = pdata;
 	dend = dstart + data_size - 1;
-
-	if (!is_omit_timespec(&write_time_ts) &&
-	    !INFO_LEVEL_IS_UNIX(info_level))
-	{
-		update_stat_ex_mtime(psbuf, write_time_ts);
-	}
 
 	create_time_ts = get_create_timespec(conn, fsp, smb_fname);
 	mtime_ts = psbuf->st_ex_mtime;
@@ -3978,6 +3969,7 @@ NTSTATUS smb_set_file_size(connection_struct *conn,
 			   bool fail_after_createfile)
 {
 	NTSTATUS status = NT_STATUS_OK;
+	struct file_modified_state state;
 	files_struct *new_fsp = NULL;
 
 	if (!VALID_STAT(*psbuf)) {
@@ -3989,13 +3981,11 @@ NTSTATUS smb_set_file_size(connection_struct *conn,
 		 get_file_size_stat(psbuf));
 
 	if (size == get_file_size_stat(psbuf)) {
-		if (fsp == NULL) {
-			return NT_STATUS_OK;
-		}
-		if (!fsp->fsp_flags.modified) {
-			return NT_STATUS_OK;
-		}
-		trigger_write_time_update_immediate(fsp);
+		/*
+		 * MS-FSA 2.1.5.15.4 FileEndOfFileInformation tells us not to
+		 * update the timestamps, but Windows Server 2022 does it.
+		 */
+		trigger_write_time_update_immediate(fsp, true, false);
 		return NT_STATUS_OK;
 	}
 
@@ -4012,10 +4002,11 @@ NTSTATUS smb_set_file_size(connection_struct *conn,
 			return status;
 		}
 
+		prepare_file_modified(fsp, &state);
 		if (vfs_set_filelen(fsp, size) == -1) {
 			return map_nt_error_from_unix(errno);
 		}
-		trigger_write_time_update_immediate(fsp);
+		mark_file_modified(fsp, false, &state);
 		return NT_STATUS_OK;
 	}
 
@@ -4051,13 +4042,14 @@ NTSTATUS smb_set_file_size(connection_struct *conn,
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
+	prepare_file_modified(fsp, &state);
 	if (vfs_set_filelen(new_fsp, size) == -1) {
 		status = map_nt_error_from_unix(errno);
 		close_file_free(req, &new_fsp, NORMAL_CLOSE);
 		return status;
 	}
+	mark_file_modified(fsp, false, &state);
 
-	trigger_write_time_update_immediate(new_fsp);
 	close_file_free(req, &new_fsp, NORMAL_CLOSE);
 	return NT_STATUS_OK;
 }
@@ -4885,9 +4877,6 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 		return status;
 	}
 
-	if (fsp->fsp_flags.modified) {
-		trigger_write_time_update_immediate(fsp);
-	}
 	return NT_STATUS_OK;
 }
 
@@ -4929,9 +4918,6 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 		return status;
 	}
 
-	if (fsp->fsp_flags.modified) {
-		trigger_write_time_update_immediate(fsp);
-	}
 	return NT_STATUS_OK;
 }
 
@@ -4980,18 +4966,13 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 
 		/* Only change if needed. */
 		if (allocation_size !=
-		    SMB_VFS_GET_ALLOC_SIZE(conn, new_fsp, &new_fsp->fsp_name->st))
+		    SMB_VFS_GET_ALLOC_SIZE(conn, fsp, &fsp->fsp_name->st))
 		{
 			if (vfs_allocate_file_space(fsp, allocation_size) == -1) {
 				return map_nt_error_from_unix(errno);
 			}
 		}
-		/* But always update the time. */
-		/*
-		 * This is equivalent to a write. Ensure it's seen immediately
-		 * if there are no pending writes.
-		 */
-		trigger_write_time_update_immediate(fsp);
+		trigger_write_time_update_immediate(fsp, false, true);
 		return NT_STATUS_OK;
 	}
 
@@ -5033,12 +5014,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 		}
 	}
 
-	/* Changing the allocation size should set the last mod time. */
-	/*
-	 * This is equivalent to a write. Ensure it's seen immediately
-	 * if there are no pending writes.
-	 */
-	trigger_write_time_update_immediate(new_fsp);
+	trigger_write_time_update_immediate(new_fsp, false, true);
 	close_file_free(req, &new_fsp, NORMAL_CLOSE);
 	return NT_STATUS_OK;
 }

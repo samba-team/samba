@@ -98,13 +98,7 @@ NTSTATUS vfs_default_durable_cookie(struct files_struct *fsp,
 	cookie.base_name = fsp->fsp_name->base_name;
 	cookie.initial_allocation_size = fsp->initial_allocation_size;
 	cookie.position_information = fh_get_position_information(fsp->fh);
-	cookie.update_write_time_triggered =
-		fsp->fsp_flags.update_write_time_triggered;
-	cookie.update_write_time_on_close =
-		fsp->fsp_flags.update_write_time_on_close;
 	cookie.write_time_forced = fsp->fsp_flags.write_time_forced;
-	cookie.close_write_time = full_timespec_to_nt_time(
-		&fsp->close_write_time);
 
 	cookie.stat_info.st_ex_dev = fsp->fsp_name->st.st_ex_dev;
 	cookie.stat_info.st_ex_ino = fsp->fsp_name->st.st_ex_ino;
@@ -198,37 +192,12 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	/* Ensure any pending write time updates are done. */
-	if (fsp->update_write_time_event) {
-		fsp_flush_write_time_update(fsp);
-	}
-
 	/*
 	 * The above checks are done in mark_share_mode_disconnected() too
 	 * but we want to avoid getting the lock if possible
 	 */
 	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 	if (lck != NULL) {
-		struct smb_file_time ft;
-
-		init_smb_file_time(&ft);
-
-		if (fsp->fsp_flags.write_time_forced) {
-			NTTIME mtime = share_mode_changed_write_time(lck);
-			ft.mtime = nt_time_to_full_timespec(mtime);
-		} else if (fsp->fsp_flags.update_write_time_on_close) {
-			if (is_omit_timespec(&fsp->close_write_time)) {
-				ft.mtime = timespec_current();
-			} else {
-				ft.mtime = fsp->close_write_time;
-			}
-		}
-
-		if (!is_omit_timespec(&ft.mtime)) {
-			round_timespec(conn->ts_res, &ft.mtime);
-			file_ntimes(conn, fsp, &ft);
-		}
-
 		ok = mark_share_mode_disconnected(lck, fsp);
 		if (!ok) {
 			TALLOC_FREE(lck);
@@ -257,13 +226,7 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 	cookie.base_name = fsp_str_dbg(fsp);
 	cookie.initial_allocation_size = fsp->initial_allocation_size;
 	cookie.position_information = fh_get_position_information(fsp->fh);
-	cookie.update_write_time_triggered =
-		fsp->fsp_flags.update_write_time_triggered;
-	cookie.update_write_time_on_close =
-		fsp->fsp_flags.update_write_time_on_close;
 	cookie.write_time_forced = fsp->fsp_flags.write_time_forced;
-	cookie.close_write_time = full_timespec_to_nt_time(
-		&fsp->close_write_time);
 
 	cookie.stat_info.st_ex_dev = fsp->fsp_name->st.st_ex_dev;
 	cookie.stat_info.st_ex_ino = fsp->fsp_name->st.st_ex_ino;
@@ -762,13 +725,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 
 	fsp->initial_allocation_size = cookie.initial_allocation_size;
 	fh_set_position_information(fsp->fh, cookie.position_information);
-	fsp->fsp_flags.update_write_time_triggered =
-		cookie.update_write_time_triggered;
-	fsp->fsp_flags.update_write_time_on_close =
-		cookie.update_write_time_on_close;
 	fsp->fsp_flags.write_time_forced = cookie.write_time_forced;
-	fsp->close_write_time = nt_time_to_full_timespec(
-		cookie.close_write_time);
 
 	status = fsp_set_smb_fname(fsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {

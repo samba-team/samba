@@ -70,8 +70,6 @@ interface open_files
 		[string,charset(UTF8)] char *stream_name;
 		uint32 num_delete_tokens;
 		[size_is(num_delete_tokens)] delete_token delete_tokens[];
-		NTTIME old_write_time;
-		NTTIME changed_write_time;
 		[skip] boolean8 not_stored;
 		[skip] boolean8 modified;
 		[ignore] file_id id; /* In memory key used to lookup cache. */
@@ -111,10 +109,7 @@ interface open_files
 		[string,charset(UTF8)] char *base_name;
 		hyper initial_allocation_size;
 		hyper position_information;
-		boolean8 update_write_time_triggered;
-		boolean8 update_write_time_on_close;
 		boolean8 write_time_forced;
-		NTTIME close_write_time;
 		vfs_default_durable_stat stat_info;
 	} vfs_default_durable_cookie;
 

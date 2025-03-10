@@ -111,9 +111,6 @@ bool share_mode_forall_entries(
 		   void *private_data),
 	void *private_data);
 
-NTTIME share_mode_changed_write_time(struct share_mode_lock *lck);
-void share_mode_set_changed_write_time(struct share_mode_lock *lck, struct timespec write_time);
-void share_mode_set_old_write_time(struct share_mode_lock *lck, struct timespec write_time);
 const char *share_mode_servicepath(struct share_mode_lock *lck);
 char *share_mode_filename(TALLOC_CTX *mem_ctx, struct share_mode_lock *lck);
 char *share_mode_data_dump(
@@ -179,20 +176,19 @@ NTSTATUS _share_mode_entry_prepare_lock(
 	struct file_id id,
 	const char *servicepath,
 	const struct smb_filename *smb_fname,
-	const struct timespec *old_write_time,
 	share_mode_entry_prepare_lock_fn_t fn,
 	void *private_data,
 	const char *location);
 #define share_mode_entry_prepare_lock_add(__prepare_state, __id, \
-		__servicepath, __smb_fname, __old_write_time, \
+		__servicepath, __smb_fname, \
 		__fn, __private_data) \
 	_share_mode_entry_prepare_lock(__prepare_state, __id, \
-		__servicepath, __smb_fname, __old_write_time, \
+		__servicepath, __smb_fname, \
 		__fn, __private_data, __location__);
 #define share_mode_entry_prepare_lock_del(__prepare_state, __id, \
 		__fn, __private_data) \
 	_share_mode_entry_prepare_lock(__prepare_state, __id, \
-		NULL, NULL, NULL, \
+		NULL, NULL, \
 		__fn, __private_data, __location__);
 
 typedef void (*share_mode_entry_prepare_unlock_fn_t)(

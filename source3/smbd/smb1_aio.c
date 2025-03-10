@@ -259,6 +259,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 
 	aio_ex->nbyte = numtowrite;
 	aio_ex->offset = startpos;
+	prepare_file_modified(fsp, &aio_ex->modified_state);
 
 	req = pwrite_fsync_send(aio_ex, fsp->conn->sconn->ev_ctx, fsp,
 				data, numtowrite, startpos,
@@ -335,7 +336,7 @@ static void aio_pwrite_smb1_done(struct tevent_req *req)
 		return;
 	}
 
-	mark_file_modified(fsp);
+	mark_file_modified(fsp, true, &aio_ex->modified_state);
 
 	if (fsp->fsp_flags.aio_write_behind) {
 

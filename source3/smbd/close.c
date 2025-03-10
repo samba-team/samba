@@ -334,28 +334,6 @@ static void close_share_mode_lock_prepare(struct share_mode_lock *lck,
 		}
 	}
 
-	if (fsp->fsp_flags.write_time_forced) {
-		NTTIME mtime = share_mode_changed_write_time(lck);
-		struct timespec ts = nt_time_to_full_timespec(mtime);
-
-		DBG_DEBUG("write time forced for %s %s\n",
-			  state->object_type, fsp_str_dbg(fsp));
-		set_close_write_time(fsp, ts);
-	} else if (fsp->fsp_flags.update_write_time_on_close) {
-		/* Someone had a pending write. */
-		if (is_omit_timespec(&fsp->close_write_time)) {
-			DBG_DEBUG("update to current time for %s %s\n",
-				  state->object_type, fsp_str_dbg(fsp));
-			/* Update to current time due to "normal" write. */
-			set_close_write_time(fsp, timespec_current());
-		} else {
-			DBG_DEBUG("write time pending for %s %s\n",
-				  state->object_type, fsp_str_dbg(fsp));
-			/* Update to time set on close call. */
-			set_close_write_time(fsp, fsp->close_write_time);
-		}
-	}
-
 	if (fsp->fsp_flags.initial_delete_on_close &&
 			!is_delete_on_close_set(lck, fsp->name_hash)) {
 		/* Initial delete on close was set and no one else
@@ -447,11 +425,6 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	struct smb_filename *base_fname = NULL;
 	int ret;
 
-	/* Ensure any pending write time updates are done. */
-	if (fsp->update_write_time_event) {
-		fsp_flush_write_time_update(fsp);
-	}
-
 	/*
 	 * Lock the share entries, and determine if we should delete
 	 * on close. If so delete whilst the lock is still in effect.
@@ -496,11 +469,6 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 
 	DBG_INFO("%s. Delete on close was set - deleting file.\n",
 		 fsp_str_dbg(fsp));
-
-	/*
-	 * Don't try to update the write time when we delete the file
-	 */
-	fsp->fsp_flags.update_write_time_on_close = false;
 
 	if (lck_state.got_tokens &&
 	    !unix_token_equal(lck_state.del_token, get_current_utok(conn)))
@@ -682,6 +650,10 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	return status;
 }
 
+/*
+ * This is now only used for SMB1 closes that send an
+ * explicit write time.
+ */
 void set_close_write_time(struct files_struct *fsp, struct timespec ts)
 {
 	DEBUG(6,("close_write_time: %s" , time_to_asc(convert_timespec_to_time_t(ts))));
@@ -690,33 +662,13 @@ void set_close_write_time(struct files_struct *fsp, struct timespec ts)
 		return;
 	}
 	fsp->fsp_flags.write_time_forced = false;
-	fsp->fsp_flags.update_write_time_on_close = true;
 	fsp->close_write_time = ts;
 }
 
-static void update_write_time_on_close_share_mode_fn(struct share_mode_lock *lck,
-						     void *private_data)
-{
-	struct files_struct *fsp =
-		talloc_get_type_abort(private_data,
-		struct files_struct);
-	NTTIME share_mtime = share_mode_changed_write_time(lck);
-
-	/*
-	 * On close if we're changing the real file time we
-	 * must update it in the open file db too.
-	 */
-	share_mode_set_old_write_time(lck, fsp->close_write_time);
-
-	/*
-	 * Close write times overwrite sticky write times
-	 * so we must replace any sticky write time here.
-	 */
-	if (!null_nttime(share_mtime)) {
-		share_mode_set_changed_write_time(lck, fsp->close_write_time);
-	}
-}
-
+/*
+ * This is now only used for SMB1 closes that send an
+ * explicit write time.
+ */
 static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 {
 	struct smb_file_time ft;
@@ -724,12 +676,8 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 
 	init_smb_file_time(&ft);
 
-	if (!(fsp->fsp_flags.update_write_time_on_close)) {
-		return NT_STATUS_OK;
-	}
-
 	if (is_omit_timespec(&fsp->close_write_time)) {
-		fsp->close_write_time = timespec_current();
+		return NT_STATUS_OK;
 	}
 
 	/* Ensure we have a valid stat struct for the source. */
@@ -743,19 +691,8 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 		return NT_STATUS_OK;
 	}
 
-	/*
-	 * We're being called after close_remove_share_mode() inside
-	 * close_normal_file() so it's quite normal to not have an
-	 * existing share. So just ignore the result of
-	 * share_mode_do_locked_vfs_denied()...
-	 */
-	share_mode_do_locked_vfs_denied(fsp->file_id,
-					update_write_time_on_close_share_mode_fn,
-					fsp);
-
 	ft.mtime = fsp->close_write_time;
-	/* As this is a close based update, we are not directly changing the
-	   file attributes from a client call, but indirectly from a write. */
+
 	status = smb_set_file_time(fsp->conn, fsp, fsp->fsp_name, &ft, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("update_write_time_on_close: smb_set_file_time "

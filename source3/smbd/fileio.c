@@ -118,85 +118,19 @@ static ssize_t real_write_file(struct smb_request *req,
 	return ret;
 }
 
-void fsp_flush_write_time_update(struct files_struct *fsp)
-{
-	/*
-	 * Note this won't expect any impersonation!
-	 * So don't call any SMB_VFS operations here!
-	 */
-
-	DEBUG(5, ("Update write time on %s\n", fsp_str_dbg(fsp)));
-
-	trigger_write_time_update_immediate(fsp);
-}
-
-static void update_write_time_handler(struct tevent_context *ctx,
-				      struct tevent_timer *te,
-				      struct timeval now,
-				      void *private_data)
-{
-	files_struct *fsp = (files_struct *)private_data;
-	fsp_flush_write_time_update(fsp);
-}
-
 /*********************************************************
- Schedule a write time update for WRITE_TIME_UPDATE_USEC_DELAY
- in the future.
+ Immediately update write time
 *********************************************************/
 
-void trigger_write_time_update(struct files_struct *fsp)
-{
-	int delay;
-
-	if (fsp->fsp_flags.posix_open) {
-		/* Don't use delayed writes on POSIX files. */
-		return;
-	}
-
-	if (fsp->fsp_flags.write_time_forced) {
-		/* No point - "sticky" write times
-		 * in effect.
-		 */
-		return;
-	}
-
-	/* We need to remember someone did a write
-	 * and update to current time on close. */
-
-	fsp->fsp_flags.update_write_time_on_close = true;
-
-	if (fsp->fsp_flags.update_write_time_triggered) {
-		/*
-		 * We only update the write time after 2 seconds
-		 * on the first normal write. After that
-		 * no other writes affect this until close.
-		 */
-		return;
-	}
-	fsp->fsp_flags.update_write_time_triggered = true;
-
-	delay = lp_parm_int(SNUM(fsp->conn),
-			    "smbd", "writetimeupdatedelay",
-			    WRITE_TIME_UPDATE_USEC_DELAY);
-
-	DEBUG(5, ("Update write time %d usec later on %s\n",
-		  delay, fsp_str_dbg(fsp)));
-
-	/* trigger the update 2 seconds later */
-	fsp->update_write_time_event =
-		tevent_add_timer(fsp->conn->sconn->ev_ctx, NULL,
-				 timeval_current_ofs_usec(delay),
-				 update_write_time_handler, fsp);
-}
-
-void trigger_write_time_update_immediate(struct files_struct *fsp)
+void trigger_write_time_update_immediate(struct files_struct *fsp,
+					 bool update_mtime,
+					 bool update_ctime)
 {
 	struct smb_file_time ft;
 
 	init_smb_file_time(&ft);
 
 	if (fsp->fsp_flags.posix_open) {
-		/* Don't use delayed writes on POSIX files. */
 		return;
 	}
 
@@ -208,34 +142,101 @@ void trigger_write_time_update_immediate(struct files_struct *fsp)
                 return;
         }
 
-	TALLOC_FREE(fsp->update_write_time_event);
 	DEBUG(5, ("Update write time immediate on %s\n",
 		  fsp_str_dbg(fsp)));
 
-	/* After an immediate update, reset the trigger. */
-	fsp->fsp_flags.update_write_time_triggered = true;
-        fsp->fsp_flags.update_write_time_on_close = false;
-
-	ft.mtime = timespec_current();
-
-	/* Update the time in the open file db. */
-	(void)set_write_time(fsp->file_id, ft.mtime);
+	if (update_mtime) {
+		/*
+		 * Changing mtime would also update ctime and so implicitly
+		 * handle the update_ctime=true case.
+		 */
+		ft.mtime = timespec_current();
+	} else if (update_ctime && !update_mtime) {
+		/*
+		 * The only way to update ctime is by changing *something* in
+		 * the inode, atime being the only file metadata I could come up
+		 * with we can fiddle with to achieve this.
+		 */
+		ft.atime.tv_nsec = UTIME_NOW;
+	}
 
 	/* Now set on disk - takes care of notify. */
 	(void)smb_set_file_time(fsp->conn, fsp, fsp->fsp_name, &ft, false);
 }
 
-void mark_file_modified(files_struct *fsp)
+/*
+ * If this is a sticky-write time handle, refresh the current mtime
+ * so we can restore it after a modification.
+ */
+void prepare_file_modified(files_struct *fsp,
+			   struct file_modified_state *state)
+{
+	int ret;
+
+	if (!fsp->fsp_flags.write_time_forced) {
+		return;
+	}
+
+	ZERO_STRUCTP(state);
+
+	ret = SMB_VFS_FSTAT(fsp, &state->st);
+	if (ret != 0) {
+		DBG_ERR("Prepare [%s] failed: %s\n",
+			fsp_str_dbg(fsp), strerror(errno));
+		return;
+	}
+
+	state->valid = true;
+	return;
+}
+
+void mark_file_modified(files_struct *fsp,
+			bool modified,
+			struct file_modified_state *modified_state)
 {
 	int dosmode;
+	NTSTATUS status;
 
-	trigger_write_time_update(fsp);
+	if (fsp->fsp_flags.write_time_forced &&
+	    modified_state->valid)
+	{
+		struct smb_file_time ft;
+
+		init_smb_file_time(&ft);
+		ft.mtime = modified_state->st.st_ex_mtime;
+
+		/*
+		 * Pave over the "cached" stat info mtime in the fsp,
+		 * vfs_default checks this and if the existing time matches what
+		 * we're trying to set, it skips setting the time. file_ntimes()
+		 * will fill the value with what we've set.
+		 */
+		fsp->fsp_name->st.st_ex_mtime = (struct timespec){};
+
+		status = smb_set_file_time(fsp->conn,
+					   fsp,
+					   fsp->fsp_name,
+					   &ft,
+					   false);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("smb_set_file_time [%s] failed: %s\n",
+				fsp_str_dbg(fsp), nt_errstr(status));
+		}
+	}
 
 	if (fsp->fsp_flags.modified) {
 		return;
 	}
 
-	fsp->fsp_flags.modified = true;
+	/*
+	 * The modified fsp_flag triggers a directory lease breaks when closing
+	 * the handle and this must only happen after writing to a
+	 * file. Modifying a file by other means that affect the file state
+	 * causing directory lease breaks is handled in the corresponding
+	 * functions explicitly by calling notify_fname() with
+	 * NOTIFY_ACTION_DIRLEASE_BREAK.
+	 */
+	fsp->fsp_flags.modified = modified;
 
 	if (!(lp_store_dos_attributes(SNUM(fsp->conn)) ||
 	      MAP_ARCHIVE(fsp->conn))) {
@@ -260,6 +261,7 @@ ssize_t write_file(struct smb_request *req,
 			off_t pos,
 			size_t n)
 {
+	struct file_modified_state state;
 	ssize_t total_written = 0;
 
 	if (fsp->print_file) {
@@ -279,21 +281,16 @@ ssize_t write_file(struct smb_request *req,
 		return -1;
 	}
 
-	mark_file_modified(fsp);
-
-	/*
-	 * If this file is level II oplocked then we need
-	 * to grab the shared memory lock and inform all
-	 * other files with a level II lock that they need
-	 * to flush their read caches. We keep the lock over
-	 * the shared memory area whilst doing this.
-	 */
-
 	/* This should actually be improved to span the write. */
 	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_WRITE);
 	contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_WRITE);
 
+	prepare_file_modified(fsp, &state);
+
 	total_written = real_write_file(req, fsp, data, pos, n);
+	if (total_written != -1) {
+		mark_file_modified(fsp, true, &state);
+	}
 	return total_written;
 }
 

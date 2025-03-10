@@ -512,7 +512,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			   const char *mask,
 			   uint32_t dirtype,
 			   bool dont_descend,
-			   bool ask_sharemode,
 			   bool get_dosmode_in,
 			   bool (*match_fn)(TALLOC_CTX *ctx,
 					    void *private_data,
@@ -643,7 +642,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 
 			mode = dos_mode_msdfs(conn, dname, &smb_fname->st);
 			get_dosmode = false;
-			ask_sharemode = false;
 			goto done;
 		}
 
@@ -651,7 +649,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			/*
 			 * Posix always wants to see symlinks.
 			 */
-			ask_sharemode = false;
 			goto done;
 		}
 
@@ -706,19 +703,6 @@ done:
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
 			continue;
-		}
-
-		if (ask_sharemode && !S_ISDIR(smb_fname->st.st_ex_mode)) {
-			struct timespec write_time_ts;
-			struct file_id fileid;
-
-			fileid = vfs_file_id_from_sbuf(conn,
-						       &smb_fname->st);
-			get_file_infos(fileid, 0, NULL, &write_time_ts);
-			if (!is_omit_timespec(&write_time_ts)) {
-				update_stat_ex_mtime(&smb_fname->st,
-						     write_time_ts);
-			}
 		}
 
 		if (toplevel_dotdot) {

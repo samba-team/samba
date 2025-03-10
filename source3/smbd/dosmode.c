@@ -1275,19 +1275,13 @@ done:
  returned on all future write time queries and set on close.
 ******************************************************************/
 
-bool set_sticky_write_time_fsp(struct files_struct *fsp, struct timespec mtime)
+void set_sticky_write_time_fsp(struct files_struct *fsp, struct timespec mtime)
 {
-	bool ok;
-
 	if (is_omit_timespec(&mtime)) {
-		return true;
+		return;
 	}
 
 	fsp->fsp_flags.write_time_forced = true;
-	TALLOC_FREE(fsp->update_write_time_event);
-
-	ok = set_sticky_write_time(fsp->file_id, mtime);
-	return ok;
 }
 
 /******************************************************************

@@ -295,11 +295,9 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		char *data = NULL;
 		unsigned int data_size = 0;
 		bool delete_pending = false;
-		struct timespec write_time_ts;
 		struct file_id fileid;
 		size_t fixed_portion;
 
-		ZERO_STRUCT(write_time_ts);
 
 		/*
 		 * MS-SMB2 3.3.5.20.1 "Handling SMB2_0_INFO_FILE"
@@ -388,8 +386,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 				fileid = vfs_file_id_from_sbuf(
 					conn, &fsp->fsp_name->st);
 				get_file_infos(fileid, fsp->name_hash,
-					       &delete_pending,
-					       &write_time_ts);
+					       &delete_pending);
 			}
 		} else {
 			/*
@@ -408,8 +405,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 				fileid = vfs_file_id_from_sbuf(
 					conn, &fsp->fsp_name->st);
 				get_file_infos(fileid, fsp->name_hash,
-					       &delete_pending,
-					       &write_time_ts);
+					       &delete_pending);
 			}
 		}
 
@@ -419,7 +415,6 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 					       fsp,
 					       fsp->fsp_name,
 					       delete_pending,
-					       write_time_ts,
 					       NULL,
 					       STR_UNICODE,
 					       in_output_buffer_length,

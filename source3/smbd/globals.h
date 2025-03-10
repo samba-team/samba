@@ -124,7 +124,6 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			       files_struct *fsp,
 			       struct smb_filename *smb_fname,
 			       bool delete_pending,
-			       struct timespec write_time_ts,
 			       struct ea_list *ea_list,
 			       uint16_t flags2,
 			       unsigned int max_data_bytes,
@@ -171,7 +170,6 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 			       int info_level,
 			       int requires_resume_key,
 			       bool dont_descend,
-			       bool ask_sharemode,
 			       bool get_dosmode,
 			       uint8_t align,
 			       bool do_pad,
@@ -834,6 +832,11 @@ void smbd_init_globals(void);
  The buffer we keep around whilst an aio request is in process.
 *****************************************************************************/
 
+struct file_modified_state {
+	bool valid;
+	struct stat_ex st;
+};
+
 struct aio_extra {
 	files_struct *fsp;
 	struct smb_request *smbreq;
@@ -842,6 +845,7 @@ struct aio_extra {
 	size_t nbyte;
 	off_t offset;
 	bool write_through;
+	struct file_modified_state modified_state;
 };
 
 #define SMBD_TMPNAME_PREFIX ".::TMPNAME:"

@@ -137,8 +137,7 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 			const struct smb_filename *smb_fname);
 void get_file_infos(struct file_id id,
 		    uint32_t name_hash,
-		    bool *delete_on_close,
-		    struct timespec *write_time);
+		    bool *delete_on_close);
 bool is_valid_share_mode_entry(const struct share_mode_entry *e);
 bool share_entry_stale_pid(struct share_mode_entry *e);
 NTSTATUS remove_lease_if_stale(struct share_mode_lock *lck,
@@ -159,9 +158,6 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close,
 			const struct security_token *nt_tok,
 			const struct security_unix_token *tok);
 bool is_delete_on_close_set(struct share_mode_lock *lck, uint32_t name_hash);
-bool set_sticky_write_time(struct file_id fileid, struct timespec write_time);
-bool set_write_time(struct file_id fileid, struct timespec write_time);
-struct timespec get_share_mode_write_time(struct share_mode_lock *lck);
 bool file_has_open_streams(files_struct *fsp);
 bool share_mode_forall_leases(
 	struct share_mode_lock *lck,

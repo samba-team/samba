@@ -220,7 +220,7 @@ NTSTATUS file_set_sparse(connection_struct *conn,
 int file_ntimes(connection_struct *conn,
 		files_struct *fsp,
 		struct smb_file_time *ft);
-bool set_sticky_write_time_fsp(struct files_struct *fsp,
+void set_sticky_write_time_fsp(struct files_struct *fsp,
 			       struct timespec mtime);
 
 NTSTATUS fget_ea_dos_attribute(struct files_struct *fsp,
@@ -270,10 +270,15 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32_t dosmode);
 /* The following definitions come from smbd/fileio.c  */
 
 ssize_t read_file(files_struct *fsp,char *data,off_t pos,size_t n);
-void fsp_flush_write_time_update(struct files_struct *fsp);
-void trigger_write_time_update(struct files_struct *fsp);
-void trigger_write_time_update_immediate(struct files_struct *fsp);
-void mark_file_modified(files_struct *fsp);
+void trigger_write_time_update_immediate(struct files_struct *fsp,
+					 bool update_mtime,
+					 bool update_ctime);
+struct file_modified_state;
+void prepare_file_modified(files_struct *fsp,
+			   struct file_modified_state *state);
+void mark_file_modified(files_struct *fsp,
+			bool modified,
+			struct file_modified_state *state);
 ssize_t write_file(struct smb_request *req,
 			files_struct *fsp,
 			const char *data,

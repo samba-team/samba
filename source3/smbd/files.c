@@ -2305,9 +2305,6 @@ void fsp_unbind_smb(struct smb_request *req, files_struct *fsp)
 		TALLOC_FREE(fsp->notify);
 	}
 
-	/* Ensure this event will never fire. */
-	TALLOC_FREE(fsp->update_write_time_event);
-
 	if (fsp->op != NULL) {
 		fsp->op->compat = NULL;
 	}

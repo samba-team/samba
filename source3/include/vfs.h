@@ -443,8 +443,6 @@ typedef struct files_struct {
 		bool is_fsa : 1;     /* See below */
 		bool have_proc_fds : 1;
 		bool kernel_share_modes_taken : 1;
-		bool update_write_time_triggered : 1;
-		bool update_write_time_on_close : 1;
 		bool write_time_forced : 1;
 		bool can_lock : 1;
 		bool can_read : 1;
@@ -466,7 +464,7 @@ typedef struct files_struct {
 		bool posix_append : 1;
 	} fsp_flags;
 
-	struct tevent_timer *update_write_time_event;
+	/* Only used for SMB1 close with explicit time */
 	struct timespec close_write_time;
 
 	int oplock_type;
