@@ -10,6 +10,7 @@ Usage: ctdb_diagnostics [OPTION] ...
   options:
     -n <nodes>  Comma separated list of nodes to operate on
     -c          Ignore comment lines (starting with '#') in file comparisons
+    -l          Run in local mode
     -w          Ignore whitespace in file comparisons
     --no-ads    Do not use commands that assume an Active Directory Server
 EOF
@@ -18,13 +19,14 @@ EOF
 }
 
 nodes=$(ctdb listnodes -X | cut -d'|' -f2)
+local_mode=false
 bad_nodes=""
 diff_opts=
 no_ads=false
 
 parse_options ()
 {
-    temp=$(getopt -n "ctdb_diagnostics" -o "n:cwh" -l no-ads,help -- "$@")
+    temp=$(getopt -n "ctdb_diagnostics" -o "n:clwh" -l no-ads,help -- "$@")
 
     # No! Checking the exit code afterwards is actually clearer...
     # shellcheck disable=SC2181
@@ -36,6 +38,7 @@ parse_options ()
 	case "$1" in
 	    -n) nodes=$(echo "$2" | sed -e 's@,@ @g') ; shift 2 ;;
 	    -c) diff_opts="${diff_opts} -I ^#.*" ; shift ;;
+	    -l) local_mode=true ; shift ;;
 	    -w) diff_opts="${diff_opts} -w" ; shift ;;
 	    --no-ads) no_ads=true ; shift ;;
 	    --) shift ; break ;;
@@ -57,7 +60,9 @@ esac
 
 # Filter nodes.  Remove any nodes we can't contact from $node and add
 # them to $bad_nodes.
+
 _nodes=""
+if ! $local_mode ; then
 for _i in $nodes ; do
     if onnode "$_i" true >/dev/null 2>&1 ; then
 	_nodes="${_nodes}${_nodes:+ }${_i}"
@@ -65,6 +70,8 @@ for _i in $nodes ; do
 	bad_nodes="${bad_nodes}${bad_nodes:+,}${_i}"
     fi
 done
+fi
+
 nodes="$_nodes"
 
 nodes_comma=$(echo "$nodes" | sed -e 's@[[:space:]]@,@g')
@@ -113,8 +120,13 @@ show_file() {
 }
 
 show_all() {
-    echo "running $1 on nodes $nodes_comma"
-    onnode "$nodes_comma" "hostname; date; $1 2>&1 | sed 's/^/  /'" 2>&1
+    if $local_mode ; then
+	echo "running on local node"
+	hostname; date; $1 2>&1 | sed 's/^/  /' 2>&1
+    else
+	echo "running $1 on nodes $nodes_comma"
+	onnode "$nodes_comma" "hostname; date; $1 2>&1 | sed 's/^/  /'" 2>&1
+    fi
 }
 
 show_and_compare_files () {
@@ -199,15 +211,28 @@ EOF
 
 # Intentional multi-word splitting on CONFIG_FILES_MUST
 # shellcheck disable=SC2086
-show_and_compare_files \
+
+if ! $local_mode ; then
+	show_and_compare_files \
     "%s is missing on node %d" \
     $CONFIG_FILES_MUST
+else
+   for f in $CONFIG_FILES_MUST ; do
+	show_file $f
+   done
+fi
 
 # Intentional multi-word splitting on CONFIG_FILES_MAY
 # shellcheck disable=SC2086
-show_and_compare_files \
+if ! $local_mode ; then
+	show_and_compare_files \
     "Optional file %s is not present on node %d" \
     $CONFIG_FILES_MAY
+else
+   for f in $CONFIG_FILES_MAY ; do
+	show_file $f
+   done
+fi
 
 cat <<EOF
 --------------------------------------------------------------------
