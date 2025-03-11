@@ -728,9 +728,14 @@ krb5_error_code mit_samba_check_allowed_to_delegate_from(
 		krb5_pac header_pac,
 		const krb5_db_entry *proxy)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct samba_kdc_entry *proxy_skdc_entry =
 		talloc_get_type_abort(proxy->e_data, struct samba_kdc_entry);
 	struct samba_kdc_entry_pac client_pac_entry = {};
+	const char *server_realm = NULL;
+	krb5_principal krbtgt_principal = NULL;
+	struct sdb_entry krbtgt_sentry = {};
+	uint32_t sflags = 0;
 	krb5_error_code code;
 
 	/* This sets the time into the DSDB opaque */
@@ -751,11 +756,49 @@ krb5_error_code mit_samba_check_allowed_to_delegate_from(
 	 * only a pac, which we need to trust without additional information.
 	 *
 	 * We also don't know if the pac comes from a trusted domain...
+	 *
+	 * For now fetch our local (the servers) krbtgt_entry
+	 * as samba_kdc_entry_pac_from_trusted() asserts a valid
+	 * krbtgt_entry.
 	 */
+
+	server_realm = smb_krb5_principal_get_realm(frame,
+						    ctx->context,
+						    server_principal);
+	if (server_realm == NULL) {
+		TALLOC_FREE(frame);
+		return ENOMEM;
+	}
+
+	code = smb_krb5_make_principal(ctx->context,
+				       &krbtgt_principal,
+				       server_realm,
+				       KRB5_TGS_NAME,
+				       server_realm,
+				       NULL);
+	if (code != 0) {
+		TALLOC_FREE(frame);
+		return code;
+	}
+
+	sflags |= SDB_F_FORCE_CANON;
+	sflags |= SDB_F_GET_KRBTGT;
+	sflags |= SDB_F_ADMIN_DATA;
+
+	code = samba_kdc_fetch(ctx->context,
+			       ctx->db_ctx,
+			       krbtgt_principal,
+			       sflags,
+			       0,
+			       &krbtgt_sentry);
+	if (code != 0) {
+		TALLOC_FREE(frame);
+		return code;
+	}
 
 	client_pac_entry = samba_kdc_entry_pac_from_trusted(header_pac,
 							    NULL, /* client_skdc_entry */
-							    NULL, /* krbtgt_skdc_entry */
+							    krbtgt_sentry.skdc_entry,
 							    true); /* is_trusted */
 
 	code = samba_kdc_check_s4u2proxy_rbcd(ctx->context,
@@ -766,6 +809,8 @@ krb5_error_code mit_samba_check_allowed_to_delegate_from(
 					      (struct samba_kdc_entry_pac) {} /* device */,
 					      proxy_skdc_entry);
 
+	sdb_entry_free(&krbtgt_sentry);
+	TALLOC_FREE(frame);
 	return code;
 }
 
