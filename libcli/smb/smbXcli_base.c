@@ -485,7 +485,7 @@ bool smbXcli_conn_is_connected(struct smbXcli_conn *conn)
 	}
 
 	ret = samba_socket_poll_or_sock_error(conn->sock_fd);
-	if ( ret < 0) {
+	if (ret < 0) {
 		return false;
 	}
 
