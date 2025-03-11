@@ -357,16 +357,26 @@ hdb_samba4_check_rbcd(krb5_context context, HDB *db,
 					       client_skdc_entry,
 					       client_krbtgt_skdc_entry);
 
-	if (device != NULL) {
+	if (device_pac != NULL) {
 		struct samba_kdc_entry *device_skdc_entry = NULL;
 		const struct samba_kdc_entry *device_krbtgt_skdc_entry = NULL;
 
-		device_skdc_entry = talloc_get_type_abort(device->context,
-							  struct samba_kdc_entry);
+		/*
+		 * If we have a armor_pac we also have armor_server,
+		 * otherwise we can't decrypt the ticket and get to
+		 * the pac.
+		 */
+		device_krbtgt_skdc_entry = talloc_get_type_abort(device_krbtgt->context,
+								 struct samba_kdc_entry);
 
-		if (device_krbtgt != NULL) {
-			device_krbtgt_skdc_entry = talloc_get_type_abort(device_krbtgt->context,
-									 struct samba_kdc_entry);
+		/*
+		 * The armor ticket might be from a different
+		 * domain, so we may not have a local db entry
+		 * for the device.
+		 */
+		if (device != NULL) {
+			device_skdc_entry = talloc_get_type_abort(device->context,
+								  struct samba_kdc_entry);
 		}
 
 		device_pac_entry = samba_kdc_entry_pac(device_pac,
