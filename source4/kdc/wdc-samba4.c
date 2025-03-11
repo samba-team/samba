@@ -304,6 +304,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 {
 	krb5_context context = kdc_request_get_context((kdc_request_t)r);
 	struct samba_kdc_entry *delegated_proxy_skdc_entry = NULL;
+	const struct samba_kdc_entry *delegated_proxy_krbtgt_entry = NULL;
 	krb5_const_principal delegated_proxy_principal = NULL;
 	struct samba_kdc_entry_pac delegated_proxy_pac_entry = {};
 	struct samba_kdc_entry *client_skdc_entry = NULL;
@@ -333,16 +334,23 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 		delegated_proxy_skdc_entry = talloc_get_type_abort(delegated_proxy->context,
 								   struct samba_kdc_entry);
 		delegated_proxy_principal = delegated_proxy->principal;
+
+		/*
+		 * The S4U2Proxy
+		 * evidence ticket could
+		 * not have been signed
+		 * or issued by a krbtgt
+		 * trust account.
+		 */
+		if (!krbtgt_skdc_entry->is_krbtgt) {
+			return EINVAL;
+		}
+		delegated_proxy_krbtgt_entry = krbtgt_skdc_entry;
 	}
 
 	delegated_proxy_pac_entry = samba_kdc_entry_pac(delegated_proxy_pac,
 							delegated_proxy_skdc_entry,
-							/* The S4U2Proxy
-							 * evidence ticket could
-							 * not have been signed
-							 * or issued by a krbtgt
-							 * trust account. */
-							NULL /* krbtgt */);
+							delegated_proxy_krbtgt_entry);
 
 	if (client != NULL) {
 		client_skdc_entry = talloc_get_type_abort(client->context,
