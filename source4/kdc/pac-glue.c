@@ -879,6 +879,10 @@ struct samba_kdc_entry_pac samba_kdc_entry_pac(krb5_const_pac pac,
 					       struct samba_kdc_entry *entry,
 					       const struct samba_kdc_entry *krbtgt)
 {
+	if (pac != NULL) {
+		SMB_ASSERT(krbtgt != NULL);
+	}
+
 	return (struct samba_kdc_entry_pac) {
 		.entry = entry,
 		.krbtgt = krbtgt,
@@ -891,6 +895,10 @@ struct samba_kdc_entry_pac samba_kdc_entry_pac_from_trusted(krb5_const_pac pac,
 							    const struct samba_kdc_entry *krbtgt,
 							    bool is_trusted)
 {
+	if (pac != NULL) {
+		SMB_ASSERT(krbtgt != NULL);
+	}
+
 	return (struct samba_kdc_entry_pac) {
 		.entry = entry,
 		.krbtgt = krbtgt,
