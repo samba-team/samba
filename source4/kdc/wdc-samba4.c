@@ -83,7 +83,6 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 	const struct samba_kdc_entry *server_entry =
 		talloc_get_type_abort(server->context,
 		struct samba_kdc_entry);
-	const hdb_entry *device = kdc_request_get_armor_client(r);
 	struct samba_kdc_entry_pac device_pac_entry = {};
 	bool is_s4u2self = samba_wdc_is_s4u2self_req(r);
 	uint32_t flags = 0;
@@ -107,25 +106,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 		return ENOMEM;
 	}
 
-	if (device != NULL) {
-		const hdb_entry *device_krbtgt = NULL;
-		struct samba_kdc_entry *device_skdc_entry = NULL;
-		const struct samba_kdc_entry *device_krbtgt_skdc_entry = NULL;
-		const krb5_const_pac device_pac = kdc_request_get_armor_pac(r);
-
-		device_skdc_entry = talloc_get_type_abort(device->context,
-							  struct samba_kdc_entry);
-
-		device_krbtgt = kdc_request_get_armor_server(r);
-		if (device_krbtgt != NULL) {
-			device_krbtgt_skdc_entry = talloc_get_type_abort(device_krbtgt->context,
-									 struct samba_kdc_entry);
-		}
-
-		device_pac_entry = samba_kdc_entry_pac(device_pac,
-						       device_skdc_entry,
-						       device_krbtgt_skdc_entry);
-	}
+	device_pac_entry = samba_kdc_get_device_pac(r);
 
 	ret = krb5_pac_init(context, pac);
 	if (ret != 0) {
