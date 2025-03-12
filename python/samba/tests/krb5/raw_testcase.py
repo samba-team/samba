@@ -4569,7 +4569,8 @@ class RawKerberosTest(TestCase):
 
         # Collect the groups.
         if device_info.groups.rids is not None:
-            self.assertTrue(device_info.groups.rids, 'got empty RIDs')
+            self.assertEqual(len(device_info.groups.rids),
+                             device_info.groups.count)
 
             for group in device_info.groups.rids:
                 got_sid = f'{device_domain_sid}-{group.rid}'
@@ -4581,6 +4582,8 @@ class RawKerberosTest(TestCase):
                         continue
                 self.assertNotIn(device_sid, got_sids, 'got duplicated SID')
                 got_sids.add(device_sid)
+        else:
+            self.assertEqual(device_info.groups.count, 0)
 
         # Collect the SIDs.
         if device_info.sids is not None:
