@@ -969,6 +969,40 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 		if (pac_upn_dns_info->flags & PAC_UPN_DNS_FLAG_CONSTRUCTED) {
 			user_info_dc->info->user_principal_constructed = true;
 		}
+
+		if (pac_upn_dns_info->flags & PAC_UPN_DNS_FLAG_HAS_SAM_NAME_AND_SID) {
+			const struct PAC_UPN_DNS_INFO_SAM_NAME_AND_SID *ei =
+				&pac_upn_dns_info->ex.sam_name_and_sid;
+			const struct auth_SidAttr *psid =
+				&user_info_dc->sids[PRIMARY_USER_SID_INDEX];
+			bool match = true;
+
+			if (ei->objectsid != NULL) {
+				match = dom_sid_equal(ei->objectsid, &psid->sid);
+			}
+			if (!match) {
+				struct dom_sid_buf sb1 = {};
+				struct dom_sid_buf sb2 = {};
+
+				DBG_WARNING("Mismatching PAC_UPN_DNS "
+					    "objectSid[%s] LOGON_INFO[%s]\n",
+					    dom_sid_str_buf(ei->objectsid, &sb1),
+					    dom_sid_str_buf(&psid->sid, &sb2));
+				talloc_free(user_info_dc);
+				return NT_STATUS_INVALID_TOKEN;
+			}
+
+			match = strequal(ei->samaccountname,
+					 user_info_dc->info->account_name);
+			if (!match) {
+				DBG_WARNING("Mismatching PAC_UPN_DNS "
+					    "sAMAccountName[%s] LOGON_INFO[%s]\n",
+					    ei->samaccountname,
+					    user_info_dc->info->account_name);
+				talloc_free(user_info_dc);
+				return NT_STATUS_INVALID_TOKEN;
+			}
+		}
 	}
 
 	*_user_info_dc = user_info_dc;
