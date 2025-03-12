@@ -3111,6 +3111,7 @@ class KdcTgsTests(KdcTgsBaseTests):
                  allow_empty_authdata=False,
                  can_modify_logon_info=True,
                  can_modify_requester_sid=True,
+                 can_modify_upn_dns_ex=True,
                  remove_pac_attrs=False,
                  remove_requester_sid=False,
                  etype=None,
@@ -3133,6 +3134,7 @@ class KdcTgsTests(KdcTgsBaseTests):
             allow_empty_authdata=allow_empty_authdata,
             can_modify_logon_info=can_modify_logon_info,
             can_modify_requester_sid=can_modify_requester_sid,
+            can_modify_upn_dns_ex=can_modify_upn_dns_ex,
             remove_pac_attrs=remove_pac_attrs,
             remove_requester_sid=remove_requester_sid,
             etype=etype,
@@ -3152,6 +3154,7 @@ class KdcTgsTests(KdcTgsBaseTests):
                     crealm=None,
                     can_modify_logon_info=True,
                     can_modify_requester_sid=True,
+                    can_modify_upn_dns_ex=True,
                     remove_pac_attrs=False,
                     remove_requester_sid=False,
                     etype=None,
@@ -3173,6 +3176,16 @@ class KdcTgsTests(KdcTgsBaseTests):
                             logon_info = pac_buffer.info.info
 
                             logon_info.info3.base.rid = new_rid
+                    elif pac_buffer.type == krb5pac.PAC_TYPE_UPN_DNS_INFO:
+                        if new_rid is not None and can_modify_upn_dns_ex:
+                            upn_dns = pac_buffer.info
+
+                            samdb = self.get_samdb()
+                            domain_sid = samdb.get_domain_sid()
+
+                            new_sid = f'{domain_sid}-{new_rid}'
+                            if upn_dns.flags & krb5pac.PAC_UPN_DNS_FLAG_HAS_SAM_NAME_AND_SID:
+                                upn_dns.ex.objectsid = security.dom_sid(new_sid)
                     elif pac_buffer.type == krb5pac.PAC_TYPE_REQUESTER_SID:
                         if remove_requester_sid:
                             pac.num_buffers -= 1
