@@ -63,6 +63,33 @@ int vxfs_setxattr_fd(int fd, const char *name, const void *value,
 	return ret;
 }
 
+int vxfs_setxattr_path(const char *path, const char *name, const void *value,
+		       size_t len, int flags, bool is_dir)
+{
+	int ret, fd = -1;
+
+	DBG_DEBUG("In vxfs_setxattr_path path %s name %s len %zu flags %d is_dir %d\n",
+		path, name, len, flags, is_dir);
+
+	if (is_dir) {
+		fd = open(path, O_RDONLY|O_DIRECTORY);
+	} else {
+		fd = open(path, O_WRONLY);
+	}
+
+	if (fd == -1) {
+		DBG_DEBUG("error in vxfs_setxattr_path: %s\n",
+		      strerror(errno));
+		return -1;
+	}
+
+	ret = vxfs_setxattr_fd(fd, name, value, len, flags);
+
+	close(fd);
+
+	return ret;
+}
+
 int vxfs_getxattr_fd(int fd, const char *name, void *value, size_t len)
 {
 	int ret;
@@ -130,6 +157,27 @@ int vxfs_removexattr_fd(int fd, const char *name)
 	return ret;
 }
 
+int vxfs_removexattr_path(const char *path, const char *name, bool is_dir)
+{
+	int ret, fd = -1;
+
+	if (is_dir) {
+		fd = open(path, O_RDONLY|O_DIRECTORY);
+	} else {
+		fd = open(path, O_WRONLY);
+	}
+	if (fd == -1) {
+		DBG_DEBUG("file not opened: vxfs_removexattr_path for %s\n",
+			   path);
+		return -1;
+	}
+
+	ret = vxfs_removexattr_fd(fd, name);
+	close(fd);
+
+	return ret;
+}
+
 int vxfs_listxattr_fd(int fd, char *list, size_t size)
 {
 	int ret;
@@ -153,6 +201,26 @@ int vxfs_listxattr_fd(int fd, char *list, size_t size)
 	}
 
 	return len;
+}
+
+int vxfs_listxattr_path(const char *path, char *list, size_t size)
+{
+	int ret, fd = -1;
+
+	DBG_DEBUG("In vxfs_listxattr_path path %s list %s size %zu\n",
+		path, list, size);
+
+	fd = open(path, O_RDONLY);
+	if (fd == -1) {
+		DBG_DEBUG("file not opened: vxfs_listxattr_path for %s\n",
+			   path);
+		return -1;
+	}
+
+	ret = vxfs_listxattr_fd(fd, list, size);
+	close(fd);
+
+	return ret;
 }
 
 int vxfs_setwxattr_fd(int fd)

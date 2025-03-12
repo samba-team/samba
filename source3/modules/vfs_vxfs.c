@@ -520,11 +520,53 @@ static int vxfs_fset_xattr(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, const char *name,
 			   const void *value, size_t size,  int flags){
 	int ret = 0;
-	int tmp_ret = 0;
+	int tmp_ret = 0, tmp = 0;
+	bool is_dir = false;
+	int called = 0, fd = -1;
+	const char *p = NULL;
+	char buf[PATH_MAX];
 
 	DBG_DEBUG("In vxfs_fset_xattr\n");
 
-	ret = vxfs_setxattr_fd(fsp_get_io_fd(fsp), name, value, size, flags);
+	if (!fsp->fsp_flags.is_pathref) {
+		DBG_DEBUG("FD is not a pathref \n");
+		called = 1;
+		ret = vxfs_setxattr_fd(fsp_get_io_fd(fsp), name, value, size, flags);
+	} else {
+		DBG_DEBUG("FD is a pathref \n");
+	}
+
+	if (fsp->fsp_flags.have_proc_fds) {
+		DBG_DEBUG("FD pathref found now get path from fd \n");
+		called = 1;
+		fd = fsp_get_pathref_fd(fsp);
+
+		p = sys_proc_fd_path(fd, buf, sizeof(buf));
+		if (p == NULL) {
+			tmp = errno;
+			DBG_WARNING("Failed to allocate memory errno=%d\n", tmp);
+			errno = tmp;
+		        return -1;
+		}
+
+		DBG_DEBUG("Found path %s from FD and P=%s\n", buf, p);
+		is_dir = fsp->fsp_flags.is_directory;
+
+		ret = vxfs_setxattr_path(buf, name, value, size,
+				 flags, is_dir);
+	}
+
+	/*
+	* This is no longer a handle based call.
+	*/
+
+	if (!called) {
+		DBG_DEBUG("No handle specified using path \n");
+		is_dir = fsp->fsp_flags.is_directory;
+
+		ret = vxfs_setxattr_path(fsp->fsp_name->base_name, name, value, size,
+				 flags, is_dir);
+	}
 	if ((ret == 0) ||
 	    ((ret == -1) && (errno != ENOTSUP) && (errno != ENOSYS))) {
 		/*
@@ -561,16 +603,70 @@ static ssize_t vxfs_fget_xattr(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp, const char *name,
 			       void *value, size_t size){
 	int ret;
+	int tmp = 0, called = 0, fd = -1;
+	const char *p = NULL;
+	char buf[PATH_MAX];
 
-	DEBUG(10, ("In vxfs_fget_xattr\n"));
+	DBG_DEBUG("In vxfs_fget_xattr\n");
 
-	ret = vxfs_getxattr_fd(fsp_get_io_fd(fsp), name, value, size);
-	if ((ret != -1) || ((errno != ENOTSUP) &&
-			    (errno != ENOSYS) && (errno != ENODATA))) {
-		return ret;
+	if (!fsp->fsp_flags.is_pathref) {
+		called = 1;
+		DBG_DEBUG("FD is not a pathref \n");
+		ret = vxfs_getxattr_fd(fsp_get_io_fd(fsp), name, value, size);
+		if ((ret != -1) || ((errno != ENOTSUP) &&
+				    (errno != ENOSYS) && (errno != ENODATA))) {
+
+			tmp = errno;
+			DBG_DEBUG("vxfs_getxattr_fd failed ret=%d, errno=%d\n", ret, tmp);
+			errno = tmp;
+			return ret;
+		}
+	} else {
+		DBG_DEBUG("FD is a pathref \n");
 	}
 
-	DEBUG(10, ("Fallback to xattr\n"));
+	if (fsp->fsp_flags.have_proc_fds) {
+		called = 1;
+		DBG_DEBUG("FD pathref found now get path from fd \n");
+		fd = fsp_get_pathref_fd(fsp);
+
+		p = sys_proc_fd_path(fd, buf, sizeof(buf));
+		if (p == NULL) {
+			tmp = errno;
+			DBG_WARNING("Failed to allocate memory errno=%d\n", tmp);
+			errno = tmp;
+		        return -1;
+		}
+
+		DBG_DEBUG("Found path %s from FD and P=%s\n", buf, p);
+		ret = vxfs_getxattr_path(buf, name, value, size);
+		if ((ret != -1) || ((errno != ENOTSUP) &&
+			    (errno != ENOSYS) && (errno != ENODATA))) {
+			tmp = errno;
+			DBG_DEBUG("vxfs_getxattr_path failed ret=%d, errno=%d\n", ret, tmp);
+			errno = tmp;
+			return ret;
+		}
+	}
+
+	/*
+	* This is no longer a handle based call.
+	*/
+
+	if (!called) {
+		DBG_DEBUG("No handle specified using path %s\n", fsp->fsp_name->base_name);
+		ret = vxfs_getxattr_path(fsp->fsp_name->base_name, name, value, size);
+		if ((ret != -1) || ((errno != ENOTSUP) &&
+			    (errno != ENOSYS) && (errno != ENODATA))) {
+
+			tmp = errno;
+			DBG_DEBUG("vxfs_getxattr_path failed ret=%d, errno=%d\n", ret, tmp);
+			errno = tmp;
+			return ret;
+		}
+	}
+
+	DBG_DEBUG("Fallback to xattr\n");
 	if (strcmp(name, XATTR_NTACL_NAME) == 0) {
 		return SMB_VFS_NEXT_FGETXATTR(handle, fsp, XATTR_USER_NTACL,
 					      value, size);
@@ -588,8 +684,12 @@ static ssize_t vxfs_fget_xattr(struct vfs_handle_struct *handle,
 static int vxfs_fremove_xattr(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp, const char *name){
 	int ret = 0, ret_new = 0, old_errno;
+	int tmp = 0, called = 0, fd = -1;
+	bool is_dir = false;
+	const char *p = NULL;
+	char buf[PATH_MAX];
 
-	DEBUG(10, ("In vxfs_fremove_xattr\n"));
+	DBG_DEBUG("In vxfs_fremove_xattr\n");
 
 	/* Remove with old way */
 	if (strcmp(name, XATTR_NTACL_NAME) == 0) {
@@ -604,8 +704,43 @@ static int vxfs_fremove_xattr(struct vfs_handle_struct *handle,
 	}
 	old_errno = errno;
 
-	/* Remove with new way */
-	ret_new = vxfs_removexattr_fd(fsp_get_io_fd(fsp), name);
+	if (!fsp->fsp_flags.is_pathref) {
+		called = 1;
+		DBG_DEBUG("FD is not a pathref \n");
+		/* Remove with new way */
+		ret_new = vxfs_removexattr_fd(fsp_get_io_fd(fsp), name);
+	} else {
+		DBG_DEBUG("FD is a pathref \n");
+	}
+
+	if (fsp->fsp_flags.have_proc_fds) {
+		called = 1;
+		DBG_DEBUG("FD pathref found now get path from fd \n");
+		fd = fsp_get_pathref_fd(fsp);
+
+		p = sys_proc_fd_path(fd, buf, sizeof(buf));
+		if (p == NULL) {
+			tmp = errno;
+			DBG_WARNING("Failed to allocate memory errno=%d\n", tmp);
+			errno = tmp;
+		        return -1;
+		}
+
+		DBG_DEBUG("Found path %s from FD and P=%s\n", buf, p);
+		is_dir = fsp->fsp_flags.is_directory;
+		ret_new = vxfs_removexattr_path(buf, name, is_dir);
+	}
+
+
+	/*
+	* This is no longer a handle based call.
+	*/
+
+	if (!called) {
+		DBG_DEBUG("No handle specified using path\n");
+		is_dir = fsp->fsp_flags.is_directory;
+		ret_new = vxfs_removexattr_path(fsp->fsp_name->base_name, name, is_dir);
+	}
 	/*
 	 * If both fail, return failure else return whichever succeeded
 	 */
@@ -643,8 +778,39 @@ static ssize_t vxfs_flistxattr(struct vfs_handle_struct *handle,
                                 size_t size)
 {
 	ssize_t result;
+	int tmp = 0, called = 0, fd = -1;
+	const char *p = NULL;
+	char buf[PATH_MAX];
 
-	result = vxfs_listxattr_fd(fsp_get_io_fd(fsp), list, size);
+	DBG_DEBUG("In vxfs_flistxattr\n");
+	if (!fsp->fsp_flags.is_pathref) {
+		called = 1;
+		DBG_DEBUG("FD is not a pathref \n");
+		result = vxfs_listxattr_fd(fsp_get_io_fd(fsp), list, size);
+	} else {
+		DBG_DEBUG("FD is a pathref \n");
+	}
+
+	if (fsp->fsp_flags.have_proc_fds) {
+		called = 1;
+		DBG_DEBUG("FD pathref found now get path from fd \n");
+		fd = fsp_get_pathref_fd(fsp);
+
+		p = sys_proc_fd_path(fd, buf, sizeof(buf));
+		if (p == NULL) {
+			tmp = errno;
+			DBG_WARNING("Failed to allocate memory errno=%d\n", tmp);
+			errno = tmp;
+		        return -1;
+		}
+
+		DBG_DEBUG("Found path %s from FD and P=%s\n", buf, p);
+		result = vxfs_listxattr_path(buf, list, size);
+	}
+	if (!called) {
+		DBG_DEBUG("No handle specified using path\n");
+		result = vxfs_listxattr_path(fsp->fsp_name->base_name, list, size);
+	}
 	if (result >= 0 || ((errno != ENOTSUP) && (errno != ENOSYS))) {
 		return result;
 	}
@@ -666,7 +832,11 @@ static NTSTATUS vxfs_fset_ea_dos_attributes(struct vfs_handle_struct *handle,
 					    uint32_t dosmode)
 {
 	NTSTATUS	err;
-	int		ret = 0;
+	int		ret = 0, called = 0, tmp;
+	int fd = -1;
+	bool is_dir = false;
+	const char *p = NULL;
+	char buf[PATH_MAX];
 
 	DBG_DEBUG("Entered function\n");
 
@@ -676,7 +846,47 @@ static NTSTATUS vxfs_fset_ea_dos_attributes(struct vfs_handle_struct *handle,
 		return err;
 	}
 	if (!(dosmode & FILE_ATTRIBUTE_READONLY)) {
-		ret = vxfs_checkwxattr_fd(fsp_get_io_fd(fsp));
+
+		if (!fsp->fsp_flags.is_pathref) {
+			called = 1;
+			DBG_DEBUG("FD is not a pathref \n");
+			ret = vxfs_checkwxattr_fd(fsp_get_io_fd(fsp));
+			if (ret == -1) {
+				DBG_DEBUG("ret:%d\n", ret);
+				if ((errno != EOPNOTSUPP) && (errno != ENOENT)) {
+					return map_nt_error_from_unix(errno);
+				}
+			}
+		} else {
+			DBG_DEBUG("FD is a pathref \n");
+		}
+
+		if (fsp->fsp_flags.have_proc_fds && called == 0) {
+			called = 1;
+			DBG_DEBUG("FD pathref found now get path from fd \n");
+			fd = fsp_get_pathref_fd(fsp);
+
+			p = sys_proc_fd_path(fd, buf, sizeof(buf));
+			if (p == NULL) {
+				tmp = errno;
+				DBG_WARNING("Failed to allocate memory errno=%d\n", tmp);
+				errno = tmp;
+				return map_nt_error_from_unix(errno);
+			}
+
+			DBG_DEBUG("Found path %s from FD and P=%s\n", buf, p);
+			ret = vxfs_checkwxattr_path(buf);
+		}
+
+		/*
+		* This is no longer a handle based call.
+		*/
+
+		if (!called) {
+			DBG_DEBUG("No handle specified using path %s\n", fsp->fsp_name->base_name);
+			ret = vxfs_checkwxattr_path(fsp->fsp_name->base_name);
+		}
+
 		if (ret == -1) {
 			DBG_DEBUG("ret:%d\n", ret);
 			if ((errno != EOPNOTSUPP) && (errno != ENOENT)) {
@@ -685,8 +895,43 @@ static NTSTATUS vxfs_fset_ea_dos_attributes(struct vfs_handle_struct *handle,
 		}
 	}
 	if (dosmode & FILE_ATTRIBUTE_READONLY) {
-		ret = vxfs_setwxattr_fd(fsp_get_io_fd(fsp));
-		DBG_DEBUG("ret:%d\n", ret);
+		called = 0;
+		if (!fsp->fsp_flags.is_pathref) {
+			DBG_DEBUG("FD is not a pathref \n");
+			called = 1;
+			ret = vxfs_setwxattr_fd(fsp_get_io_fd(fsp));
+		} else {
+			DBG_DEBUG("FD is a pathref \n");
+		}
+
+		if (fsp->fsp_flags.have_proc_fds && called == 0) {
+			DBG_DEBUG("FD pathref found now get path from fd \n");
+			called = 1;
+			fd = fsp_get_pathref_fd(fsp);
+
+			p = sys_proc_fd_path(fd, buf, sizeof(buf));
+			if (p == NULL) {
+				tmp = errno;
+				DBG_WARNING("Failed to allocate memory errno=%d\n", tmp);
+				errno = tmp;
+				return map_nt_error_from_unix(errno);
+			}
+
+			is_dir = fsp->fsp_flags.is_directory;
+			DBG_DEBUG("Found path %s from FD and P=%s\n", buf, p);
+			ret = vxfs_setwxattr_path(buf, is_dir);
+		}
+
+		/*
+		* This is no longer a handle based call.
+		*/
+
+		if (!called) {
+			DBG_DEBUG("No handle specified using path \n");
+
+			is_dir = fsp->fsp_flags.is_directory;
+			ret = vxfs_setwxattr_path(fsp->fsp_name->base_name, is_dir);
+		}
 		if (ret == -1) {
 			if ((errno != EOPNOTSUPP) && (errno != EINVAL)) {
 				return map_nt_error_from_unix(errno);
