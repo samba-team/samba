@@ -843,7 +843,11 @@ NTSTATUS samba_kdc_add_fresh_public_key_identity(struct auth_user_info_dc *user_
 
 static NTSTATUS samba_kdc_add_compounded_auth(struct auth_user_info_dc *user_info_dc)
 {
-	return add_sid_to_array_attrs_unique(
+	/*
+	 * Windows 2025 adds it even if it's
+	 * already there, so we do...
+	 */
+	return add_sid_to_array_attrs(
 		user_info_dc,
 		&global_sid_Compounded_Authentication,
 		SE_GROUP_DEFAULT_FLAGS,
