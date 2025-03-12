@@ -2022,6 +2022,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
                      new_sids,
                      domain_sid=None,
                      user_rid=None,
+                     upn_dns_sid=None,
                      requester_sid=None,
                      set_user_flags=0,
                      reset_user_flags=0):
@@ -2146,9 +2147,12 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             elif pac_buffer.type == krb5pac.PAC_TYPE_UPN_DNS_INFO:
                 upn_dns_info_ex = pac_buffer.info.ex
 
-                if user_rid is not None:
-                    upn_dns_info_ex.objectsid = security.dom_sid(
+                if upn_dns_sid is None and user_rid is not None:
+                    upn_dns_sid = security.dom_sid(
                         f'{domain_sid}-{user_rid}')
+
+                if upn_dns_sid is not None:
+                    upn_dns_info_ex.objectsid = upn_dns_sid
 
             elif pac_buffer.type == krb5pac.PAC_TYPE_REQUESTER_SID:
                 if requester_sid is not None:
