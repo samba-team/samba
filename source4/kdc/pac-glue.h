@@ -47,9 +47,22 @@ enum {
 };
 
 struct samba_kdc_entry_pac {
-	struct samba_kdc_entry *entry;
+	/*
+	 * NULL indicates that no PAC is present.
+	 *
+	 * All other fields below are also NULL.
+	 */
+	krb5_const_pac pac;
+
+	/* valid if pac is valid */
+	krb5_const_principal pac_princ;
+
+	/* valid if pac is valid */
 	const struct samba_kdc_entry *krbtgt;
-	krb5_const_pac pac; /* NULL indicates that no PAC is present. */
+
+	/* valid if pac is valid and principal is local */
+	struct samba_kdc_entry *entry;
+
 #ifndef HAVE_KRB5_PAC_IS_TRUSTED /* MIT */
 	bool pac_is_trusted : 1;
 #endif /* HAVE_KRB5_PAC_IS_TRUSTED */

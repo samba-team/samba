@@ -881,13 +881,19 @@ struct samba_kdc_entry_pac samba_kdc_entry_pac(krb5_const_pac pac,
 					       const struct samba_kdc_entry *krbtgt)
 {
 	if (pac != NULL) {
+		SMB_ASSERT(pac_princ != NULL);
 		SMB_ASSERT(krbtgt != NULL);
+	} else {
+		pac_princ = NULL;
+		krbtgt = NULL;
+		entry = NULL;
 	}
 
 	return (struct samba_kdc_entry_pac) {
-		.entry = entry,
-		.krbtgt = krbtgt,
 		.pac = pac,
+		.pac_princ = pac_princ,
+		.krbtgt = krbtgt,
+		.entry = entry,
 	};
 }
 #else /* MIT */
@@ -898,13 +904,26 @@ struct samba_kdc_entry_pac samba_kdc_entry_pac_from_trusted(krb5_const_pac pac,
 							    bool is_trusted)
 {
 	if (pac != NULL) {
+		/*
+		 * TODO: we can't assert this yet,
+		 * as mit_samba_update_pac() does not
+		 * get this for cross realm clients.
+		 *
+		 * SMB_ASSERT(pac_princ != NULL);
+		 */
 		SMB_ASSERT(krbtgt != NULL);
+	} else {
+		pac_princ = NULL;
+		krbtgt = NULL;
+		entry = NULL;
+		is_trusted = false;
 	}
 
 	return (struct samba_kdc_entry_pac) {
-		.entry = entry,
-		.krbtgt = krbtgt,
 		.pac = pac,
+		.pac_princ = pac_princ,
+		.krbtgt = krbtgt,
+		.entry = entry,
 		.pac_is_trusted = is_trusted,
 	};
 }
