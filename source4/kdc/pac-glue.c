@@ -891,6 +891,7 @@ struct samba_kdc_entry_pac samba_kdc_entry_pac(krb5_const_pac pac,
 }
 #else /* MIT */
 struct samba_kdc_entry_pac samba_kdc_entry_pac_from_trusted(krb5_const_pac pac,
+							    krb5_const_principal pac_princ,
 							    struct samba_kdc_entry *entry,
 							    const struct samba_kdc_entry *krbtgt,
 							    bool is_trusted)

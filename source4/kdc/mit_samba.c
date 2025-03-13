@@ -514,6 +514,7 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 	TALLOC_CTX *tmp_ctx = NULL;
 	krb5_error_code code;
 	struct samba_kdc_entry *client_skdc_entry = NULL;
+	krb5_const_principal client_principal = NULL;
 	struct samba_kdc_entry *server_skdc_entry = NULL;
 	struct samba_kdc_entry *krbtgt_skdc_entry = NULL;
 	struct samba_kdc_entry_pac client_pac_entry = {};
@@ -527,10 +528,18 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 		return ENOMEM;
 	}
 
+	/*
+	 * TODO: pass client_principal from the caller
+	 *
+	 * While krb5_db_entry for 'client' is optional,
+	 * the caller should pass client_principal,
+	 * for cross realm clients.
+	 */
 	if (client != NULL) {
 		client_skdc_entry =
 			talloc_get_type_abort(client->e_data,
 					      struct samba_kdc_entry);
+		client_principal = client->princ;
 	}
 
 	if (krbtgt == NULL) {
@@ -577,6 +586,7 @@ krb5_error_code mit_samba_update_pac(struct mit_samba_context *ctx,
 	}
 
 	client_pac_entry = samba_kdc_entry_pac_from_trusted(old_pac,
+							    client_principal,
 							    client_skdc_entry,
 							    krbtgt_skdc_entry,
 							    is_trusted);
@@ -797,6 +807,7 @@ krb5_error_code mit_samba_check_allowed_to_delegate_from(
 	}
 
 	client_pac_entry = samba_kdc_entry_pac_from_trusted(header_pac,
+							    client_principal,
 							    NULL, /* client_skdc_entry */
 							    krbtgt_sentry.skdc_entry,
 							    true); /* is_trusted */
