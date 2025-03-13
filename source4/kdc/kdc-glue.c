@@ -69,6 +69,7 @@ int kdc_check_pac(krb5_context context,
 
 struct samba_kdc_entry_pac samba_kdc_get_device_pac(const astgs_request_t r)
 {
+	krb5_const_principal device_principal = kdc_request_get_armor_client_principal(r);
 	const hdb_entry *device = kdc_request_get_armor_client(r);
 	struct samba_kdc_entry *device_skdc_entry = NULL;
 	const hdb_entry *device_krbtgt = kdc_request_get_armor_server(r);
@@ -76,7 +77,7 @@ struct samba_kdc_entry_pac samba_kdc_get_device_pac(const astgs_request_t r)
 	const krb5_const_pac device_pac = kdc_request_get_armor_pac(r);
 
 	if (device_pac == NULL) {
-		return samba_kdc_entry_pac(NULL, NULL, NULL);
+		return samba_kdc_entry_pac(NULL, NULL, NULL, NULL);
 	}
 
 	/*
@@ -98,6 +99,7 @@ struct samba_kdc_entry_pac samba_kdc_get_device_pac(const astgs_request_t r)
 	}
 
 	return samba_kdc_entry_pac(device_pac,
+				   device_principal,
 				   device_skdc_entry,
 				   device_krbtgt_skdc_entry);
 }

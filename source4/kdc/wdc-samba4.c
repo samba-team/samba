@@ -155,6 +155,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv,
 }
 
 static krb5_error_code samba_wdc_verify_pac2(astgs_request_t r,
+					     krb5_const_principal client_principal,
 					     const hdb_entry *delegated_proxy,
 					     const hdb_entry *client,
 					     const hdb_entry *krbtgt,
@@ -203,6 +204,7 @@ static krb5_error_code samba_wdc_verify_pac2(astgs_request_t r,
 
 	krb5_pac_set_trusted(pac, is_trusted);
 	client_pac_entry = samba_kdc_entry_pac(pac,
+					       client_principal,
 					       client_skdc_entry,
 					       krbtgt_skdc_entry);
 
@@ -275,7 +277,7 @@ out:
 /* Re-sign (and reform, including possibly new groups) a PAC */
 
 static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
-					   krb5_const_principal _client_principal,
+					   krb5_const_principal client_principal,
 					   hdb_entry *delegated_proxy,
 					   krb5_const_pac delegated_proxy_pac,
 					   hdb_entry *client,
@@ -330,6 +332,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 	}
 
 	delegated_proxy_pac_entry = samba_kdc_entry_pac(delegated_proxy_pac,
+							delegated_proxy_principal,
 							delegated_proxy_skdc_entry,
 							delegated_proxy_krbtgt_entry);
 
@@ -347,6 +350,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 	}
 
 	client_pac_entry = samba_kdc_entry_pac(*pac,
+					       client_principal,
 					       client_skdc_entry,
 					       krbtgt_skdc_entry);
 
@@ -401,7 +405,7 @@ out:
 /* Verify a PAC's SID and signatures */
 
 static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
-					    krb5_const_principal _client_principal,
+					    krb5_const_principal client_principal,
 					    hdb_entry *delegated_proxy,
 					    hdb_entry *client,
 					    hdb_entry *_server,
@@ -526,6 +530,7 @@ static krb5_error_code samba_wdc_verify_pac(void *priv, astgs_request_t r,
 	}
 
 	ret = samba_wdc_verify_pac2(r,
+				    client_principal,
 				    delegated_proxy,
 				    client,
 				    krbtgt,
