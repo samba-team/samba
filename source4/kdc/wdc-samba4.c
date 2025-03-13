@@ -354,6 +354,10 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, astgs_request_t r,
 					       client_skdc_entry,
 					       krbtgt_skdc_entry);
 
+	if (kdc_request_get_explicit_armor_present(r)) {
+		flags |= SAMBA_KDC_FLAG_EXPLICIT_ARMOR_PRESENT;
+	}
+
 	ret = samba_kdc_update_pac(mem_ctx,
 				   context,
 				   krbtgt_skdc_entry->kdc_db_ctx,

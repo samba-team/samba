@@ -2884,6 +2884,10 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 			compounded_auth = server->supported_enctypes &
 				KERB_ENCTYPE_COMPOUND_IDENTITY_SUPPORTED;
 
+			if (!(flags & SAMBA_KDC_FLAG_EXPLICIT_ARMOR_PRESENT)) {
+				compounded_auth = false;
+			}
+
 			if (need_access_check || compounded_auth) {
 				need_device = true;
 			}
