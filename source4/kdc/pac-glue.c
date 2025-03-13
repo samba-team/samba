@@ -2750,10 +2750,6 @@ krb5_error_code samba_kdc_get_pac(TALLOC_CTX *mem_ctx,
  *
  * @param server    The server samba kdc entry.
  *
- * @param delegated_proxy_principal The delegated proxy principal used for
- *                                  updating the constrained delegation PAC
- *                                  buffer.
- *
  * @param delegated_proxy   The delegated proxy kdc PAC entry.
  *
  * @param device    The computer's samba kdc PAC entry; used for compound
@@ -2771,7 +2767,6 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 				     const struct samba_kdc_entry_pac client,
 				     const krb5_const_principal server_principal,
 				     const struct samba_kdc_entry *server,
-				     const krb5_const_principal delegated_proxy_principal,
 				     const struct samba_kdc_entry_pac delegated_proxy,
 				     const struct samba_kdc_entry_pac device,
 				     krb5_pac new_pac,
@@ -2785,6 +2780,7 @@ krb5_error_code samba_kdc_update_pac(TALLOC_CTX *mem_ctx,
 	DATA_BLOB *upn_blob = NULL;
 	DATA_BLOB *deleg_blob = NULL;
 	DATA_BLOB *requester_sid_blob = NULL;
+	krb5_const_principal delegated_proxy_principal = delegated_proxy.pac_princ;
 	const DATA_BLOB *client_claims_blob = NULL;
 	const DATA_BLOB *device_claims_blob = NULL;
 	struct auth_claims pac_claims = {};
