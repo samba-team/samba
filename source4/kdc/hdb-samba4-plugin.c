@@ -52,7 +52,7 @@ static krb5_error_code hdb_samba4_create(krb5_context context, struct HDB **db, 
 	return EINVAL;
 }
 
-#if (HDB_INTERFACE_VERSION != 11)
+#if (HDB_INTERFACE_VERSION != 12)
 #error "Unsupported Heimdal HDB version"
 #endif
 
