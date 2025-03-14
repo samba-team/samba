@@ -1575,6 +1575,42 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  os.environ["PASSWORD"]))
         self.assertNotIn(text, out, 'The test entry was still found!')
 
+    def test_vgp_motd_set_thrice(self):
+        url = f'ldap://{os.environ["SERVER"]}'
+        creds = f'-U{os.environ["USERNAME"]}%{os.environ["PASSWORD"]}'
+        old_version = gpt_ini_version(self.gpo_guid)
+
+        for i in range(1, 4):
+            msg = f"message {i}\n"
+            result, out, err = self.runcmd("gpo", "manage", "motd", "set",
+                                           "-H", url,
+                                           creds,
+                                           self.gpo_guid,
+                                           msg.format(i))
+
+            self.assertCmdSuccess(result, out, err, f'MOTD set {i} failed')
+            self.assertEqual(err, "", f"not expecting errors (round {i})")
+            new_version = gpt_ini_version(self.gpo_guid)
+            self.assertGreater(new_version, old_version,
+                               f'GPT.INI was not updated in round {i}')
+            old_version = new_version
+
+            result, out, err = self.runcmd("gpo", "manage", "motd", "list",
+                                           "-H", url,
+                                           creds,
+                                           self.gpo_guid)
+
+            self.assertCmdSuccess(result, out, err, f'MOTD list {i} failed')
+            self.assertIn(msg, out)
+
+        # unset, by setting with no value
+        result, out, err = self.runcmd("gpo", "manage", "motd", "set",
+                                       "-H", url,
+                                       creds,
+                                       self.gpo_guid)
+        self.assertCmdSuccess(result, out, err, f'MOTD set {i} failed')
+        self.assertEqual(err, "", f"not expecting errors (round {i})")
+
     def test_vgp_motd(self):
         lp = LoadParm()
         lp.load(os.environ['SERVERCONFFILE'])
