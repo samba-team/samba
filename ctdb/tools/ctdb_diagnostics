@@ -1,11 +1,11 @@
 #!/bin/sh
-# a script to test the basic setup of a CTDB/Samba install 
+# a script to test the basic setup of a CTDB/Samba install
 # tridge@samba.org September 2007
 # martin@meltin.net August 2010
 
-usage ()
+usage()
 {
-    cat >&2 <<EOF
+	cat >&2 <<EOF
 Usage: ctdb_diagnostics [OPTION] ...
   options:
     -n <nodes>  Comma separated list of nodes to operate on
@@ -14,7 +14,7 @@ Usage: ctdb_diagnostics [OPTION] ...
     -w          Ignore whitespace in file comparisons
     --no-ads    Do not use commands that assume an Active Directory Server
 EOF
-    exit 1
+	exit 1
 
 }
 
@@ -24,52 +24,71 @@ bad_nodes=""
 diff_opts=
 no_ads=false
 
-parse_options ()
+parse_options()
 {
-    temp=$(getopt -n "ctdb_diagnostics" -o "n:clwh" -l no-ads,help -- "$@")
+	temp=$(getopt -n "ctdb_diagnostics" -o "n:clwh" -l no-ads,help -- "$@")
 
-    # No! Checking the exit code afterwards is actually clearer...
-    # shellcheck disable=SC2181
-    [ $? -eq 0 ] || usage
+	# No! Checking the exit code afterwards is actually clearer...
+	# shellcheck disable=SC2181
+	[ $? -eq 0 ] || usage
 
-    eval set -- "$temp"
+	eval set -- "$temp"
 
-    while true ; do
-	case "$1" in
-	    -n) nodes=$(echo "$2" | sed -e 's@,@ @g') ; shift 2 ;;
-	    -c) diff_opts="${diff_opts} -I ^#.*" ; shift ;;
-	    -l) local_mode=true ; shift ;;
-	    -w) diff_opts="${diff_opts} -w" ; shift ;;
-	    --no-ads) no_ads=true ; shift ;;
-	    --) shift ; break ;;
-	    -h|--help|*) usage ;;
-	esac
-    done
+	while true; do
+		case "$1" in
+		-n)
+			nodes=$(echo "$2" | sed -e 's@,@ @g')
+			shift 2
+			;;
+		-c)
+			diff_opts="${diff_opts} -I ^#.*"
+			shift
+			;;
+		-l)
+			local_mode=true
+			shift
+			;;
+		-w)
+			diff_opts="${diff_opts} -w"
+			shift
+			;;
+		--no-ads)
+			no_ads=true
+			shift
+			;;
+		--)
+			shift
+			break
+			;;
+		-h | --help | *) usage ;;
+		esac
+	done
 
-    [ $# -ne 0 ] && usage
+	[ $# -ne 0 ] && usage
 }
 
 parse_options "$@"
 
 # Use 5s ssh timeout if EXTRA_SSH_OPTS doesn't set a timeout.
 case "$EXTRA_SSH_OPTS" in
-    *ConnectTimeout=*) : ;;
-    *)
+*ConnectTimeout=*) : ;;
+*)
 	export EXTRA_SSH_OPTS="${EXTRA_SSH_OPTS} -o ConnectTimeout=5"
+	;;
 esac
 
 # Filter nodes.  Remove any nodes we can't contact from $node and add
 # them to $bad_nodes.
 
 _nodes=""
-if ! $local_mode ; then
-for _i in $nodes ; do
-    if onnode "$_i" true >/dev/null 2>&1 ; then
-	_nodes="${_nodes}${_nodes:+ }${_i}"
-    else
-	bad_nodes="${bad_nodes}${bad_nodes:+,}${_i}"
-    fi
-done
+if ! $local_mode; then
+	for _i in $nodes; do
+		if onnode "$_i" true >/dev/null 2>&1; then
+			_nodes="${_nodes}${_nodes:+ }${_i}"
+		else
+			bad_nodes="${bad_nodes}${bad_nodes:+,}${_i}"
+		fi
+	done
 fi
 
 nodes="$_nodes"
@@ -78,12 +97,12 @@ nodes_comma=$(echo "$nodes" | sed -e 's@[[:space:]]@,@g')
 
 PATH="$PATH:/sbin:/usr/sbin:/usr/lpp/mmfs/bin"
 
-# list of config files that must exist and that we check are the same 
+# list of config files that must exist and that we check are the same
 # on the nodes
-if [ -d /etc/sysconfig ] ; then
-    CONFIG_FILES_MUST="/etc/krb5.conf /etc/hosts /usr/local/etc/ctdb/nodes /etc/sysconfig/ctdb /etc/resolv.conf /etc/nsswitch.conf /etc/sysctl.conf /etc/samba/smb.conf /etc/fstab /etc/multipath.conf /etc/pam.d/system-auth /etc/sysconfig/nfs /etc/exports /etc/vsftpd/vsftpd.conf"
+if [ -d /etc/sysconfig ]; then
+	CONFIG_FILES_MUST="/etc/krb5.conf /etc/hosts /usr/local/etc/ctdb/nodes /etc/sysconfig/ctdb /etc/resolv.conf /etc/nsswitch.conf /etc/sysctl.conf /etc/samba/smb.conf /etc/fstab /etc/multipath.conf /etc/pam.d/system-auth /etc/sysconfig/nfs /etc/exports /etc/vsftpd/vsftpd.conf"
 else
-    CONFIG_FILES_MUST="/etc/krb5.conf /etc/hosts /usr/local/etc/ctdb/nodes /etc/default/ctdb /etc/resolv.conf /etc/nsswitch.conf /etc/sysctl.conf /etc/samba/smb.conf /etc/fstab /etc/multipath.conf /etc/pam.d/system-auth /etc/default/nfs /etc/exports /etc/vsftpd/vsftpd.conf"
+	CONFIG_FILES_MUST="/etc/krb5.conf /etc/hosts /usr/local/etc/ctdb/nodes /etc/default/ctdb /etc/resolv.conf /etc/nsswitch.conf /etc/sysctl.conf /etc/samba/smb.conf /etc/fstab /etc/multipath.conf /etc/pam.d/system-auth /etc/default/nfs /etc/exports /etc/vsftpd/vsftpd.conf"
 fi
 
 # list of config files that may exist and should be checked that they
@@ -102,83 +121,90 @@ EOF
 
 date
 
-error() {
-    msg="$1"
-    echo "ERROR: $msg"
-    NUM_ERRORS=$((NUM_ERRORS + 1))
-    echo " ERROR[$NUM_ERRORS]: $msg" >> "$ERRORS"
+error()
+{
+	msg="$1"
+	echo "ERROR: $msg"
+	NUM_ERRORS=$((NUM_ERRORS + 1))
+	echo " ERROR[$NUM_ERRORS]: $msg" >>"$ERRORS"
 }
 
-show_file() {
-    fname="$1"
-    _fdetails=$(ls -l "$fname" 2>&1)
-    echo "  ================================"
-    echo "  File: $fname"
-    echo "  $_fdetails"
-    sed 's/^/  /' "$fname" 2>&1
-    echo "  ================================"
+show_file()
+{
+	fname="$1"
+	_fdetails=$(ls -l "$fname" 2>&1)
+	echo "  ================================"
+	echo "  File: $fname"
+	echo "  $_fdetails"
+	sed 's/^/  /' "$fname" 2>&1
+	echo "  ================================"
 }
 
-show_all() {
-    if $local_mode ; then
-	echo "running on local node"
-	hostname; date; $1 2>&1 | sed 's/^/  /' 2>&1
-    else
-	echo "running $1 on nodes $nodes_comma"
-	onnode "$nodes_comma" "hostname; date; $1 2>&1 | sed 's/^/  /'" 2>&1
-    fi
+show_all()
+{
+	if $local_mode; then
+		echo "running on local node"
+		hostname
+		date
+		$1 2>&1 | sed 's/^/  /' 2>&1
+	else
+		echo "running $1 on nodes $nodes_comma"
+		onnode "$nodes_comma" "hostname; date; $1 2>&1 | sed 's/^/  /'" 2>&1
+	fi
 }
 
-show_and_compare_files () {
+show_and_compare_files()
+{
 
-    fmt="$1" ; shift
+	fmt="$1"
+	shift
 
-    for f ; do
-	_bf=$(basename "$f")
-	first=true
+	for f; do
+		_bf=$(basename "$f")
+		first=true
 
-	for n in $nodes ; do
+		for n in $nodes; do
 
-	    if $first ; then
-		onnode "$n" [ -r "$f" ] || {
-		    # This function takes a format string
-		    # shellcheck disable=SC2059
-		    msg=$(printf "$fmt" "$f" "$n")
-		    error "$msg"
-		    continue 2;
-		}
+			if $first; then
+				onnode "$n" [ -r "$f" ] || {
+					# This function takes a format string
+					# shellcheck disable=SC2059
+					msg=$(printf "$fmt" "$f" "$n")
+					error "$msg"
+					continue 2
+				}
 
-		fstf="${tmpdir}/${_bf}.node${n}"
-		onnode "$n" cat "$f" >"$fstf" 2>&1
+				fstf="${tmpdir}/${_bf}.node${n}"
+				onnode "$n" cat "$f" >"$fstf" 2>&1
 
-		_fdetails=$(onnode "$n" ls -l "$f" 2>&1)
-		echo "  ================================"
-		echo "  File (on node $n): $f"
-		echo "  $_fdetails"
-		sed 's/^/  /' "$fstf"
-		echo "  ================================"
-		first=false
-	    else
-		echo "Testing for same config file $f on node $n"
-		tmpf="${tmpdir}/${_bf}.node${n}"
-		onnode "$n" cat "$f" >"$tmpf" 2>&1
-		# Intentional multi-word splitting on diff_opts
-		# shellcheck disable=SC2086
-		diff $diff_opts "$fstf" "$tmpf" >/dev/null 2>&1 || {
-		    error "File $f is different on node $n"
-		    diff -u $diff_opts "$fstf" "$tmpf"
-		}
-		rm -f "$tmpf"
-	    fi
+				_fdetails=$(onnode "$n" ls -l "$f" 2>&1)
+				echo "  ================================"
+				echo "  File (on node $n): $f"
+				echo "  $_fdetails"
+				sed 's/^/  /' "$fstf"
+				echo "  ================================"
+				first=false
+			else
+				echo "Testing for same config file $f on node $n"
+				tmpf="${tmpdir}/${_bf}.node${n}"
+				onnode "$n" cat "$f" >"$tmpf" 2>&1
+				# Intentional multi-word splitting on diff_opts
+				# shellcheck disable=SC2086
+				diff $diff_opts "$fstf" "$tmpf" >/dev/null 2>&1 || {
+					error "File $f is different on node $n"
+					diff -u $diff_opts "$fstf" "$tmpf"
+				}
+				rm -f "$tmpf"
+			fi
+		done
+
+		rm -f "$fstf"
 	done
-
-	rm -f "$fstf"
-    done
 }
 
-if ! tmpdir=$(mktemp -d) ; then
-    echo "Unable to create a temporary directory"
-    exit 1
+if ! tmpdir=$(mktemp -d); then
+	echo "Unable to create a temporary directory"
+	exit 1
 fi
 ERRORS="${tmpdir}/diag_err"
 NUM_ERRORS=0
@@ -188,8 +214,8 @@ Diagnosis started on these nodes:
 $nodes_comma
 EOF
 
-if [ -n "$bad_nodes" ] ; then
-    cat <<EOF
+if [ -n "$bad_nodes" ]; then
+	cat <<EOF
 
 NOT RUNNING DIAGNOSTICS on these uncontactable nodes:
 $bad_nodes
@@ -212,26 +238,26 @@ EOF
 # Intentional multi-word splitting on CONFIG_FILES_MUST
 # shellcheck disable=SC2086
 
-if ! $local_mode ; then
+if ! $local_mode; then
 	show_and_compare_files \
-    "%s is missing on node %d" \
-    $CONFIG_FILES_MUST
+		"%s is missing on node %d" \
+		$CONFIG_FILES_MUST
 else
-   for f in $CONFIG_FILES_MUST ; do
-	show_file $f
-   done
+	for f in $CONFIG_FILES_MUST; do
+		show_file $f
+	done
 fi
 
 # Intentional multi-word splitting on CONFIG_FILES_MAY
 # shellcheck disable=SC2086
-if ! $local_mode ; then
+if ! $local_mode; then
 	show_and_compare_files \
-    "Optional file %s is not present on node %d" \
-    $CONFIG_FILES_MAY
+		"Optional file %s is not present on node %d" \
+		$CONFIG_FILES_MAY
 else
-   for f in $CONFIG_FILES_MAY ; do
-	show_file $f
-   done
+	for f in $CONFIG_FILES_MAY; do
+		show_file $f
+	done
 fi
 
 cat <<EOF
@@ -240,11 +266,11 @@ Checking for clock drift
 EOF
 t=$(date +%s)
 for i in $nodes; do
-    t2=$(onnode "$i" date +%s)
-    d=$((t2 - t))
-    if [ "$d" -gt 30 ] || [ "$d" -lt -30 ]; then
-	error "time on node $i differs by $d seconds"
-    fi
+	t2=$(onnode "$i" date +%s)
+	d=$((t2 - t))
+	if [ "$d" -gt 30 ] || [ "$d" -lt -30 ]; then
+		error "time on node $i differs by $d seconds"
+	fi
 done
 
 cat <<EOF
@@ -253,14 +279,13 @@ Showing software versions
 EOF
 show_all "uname -a"
 [ -x /bin/rpm ] && {
-    show_all "rpm -qa | grep -E 'samba|ctdb|gpfs'"
+	show_all "rpm -qa | grep -E 'samba|ctdb|gpfs'"
 }
 [ -x /usr/bin/dpkg-query ] && {
-    show_all "/usr/bin/dpkg-query --show 'ctdb'"
-    show_all "/usr/bin/dpkg-query --show 'samba'"
-    #show_all "/usr/bin/dpkg-query --show 'gpfs'"
+	show_all "/usr/bin/dpkg-query --show 'ctdb'"
+	show_all "/usr/bin/dpkg-query --show 'samba'"
+	#show_all "/usr/bin/dpkg-query --show 'gpfs'"
 }
-
 
 cat <<EOF
 --------------------------------------------------------------------
@@ -279,7 +304,6 @@ show_all "test -f /usr/local/var/log/log.ctdb && tail -100 /usr/local/var/log/lo
 show_all "tail -200 /var/log/messages"
 show_all "ls -lRs /usr/local/var/lib/ctdb"
 show_all "ls -lRs /usr/local/etc/ctdb"
-
 
 cat <<EOF
 --------------------------------------------------------------------
@@ -312,18 +336,18 @@ show_all "/usr/sbin/showmount -a"
 show_all "/usr/sbin/showmount -e"
 show_all "/usr/sbin/nfsstat -v"
 [ -x /sbin/multipath ] && {
-    show_all "/sbin/multipath -ll"
+	show_all "/sbin/multipath -ll"
 }
 [ -x /sbin/chkconfig ] && {
-    show_all "/sbin/chkconfig --list"
+	show_all "/sbin/chkconfig --list"
 }
 [ -x /usr/sbin/getenforce ] && {
-    show_all "/usr/sbin/getenforce"
+	show_all "/usr/sbin/getenforce"
 }
 [ -d /proc/net/bonding ] && {
-    for f in /proc/net/bonding/*; do
-	show_all "cat $f"
-    done
+	for f in /proc/net/bonding/*; do
+		show_all "cat $f"
+	done
 }
 
 cat <<EOF
@@ -331,27 +355,27 @@ cat <<EOF
 Showing Samba status
 EOF
 show_all "smbstatus -n -B"
-if $no_ads ; then
-    echo
-    echo "Skipping \"net ads testjoin\" as requested"
-    echo
+if $no_ads; then
+	echo
+	echo "Skipping \"net ads testjoin\" as requested"
+	echo
 else
-    show_all "net ads testjoin"
+	show_all "net ads testjoin"
 fi
 show_all "net conf list"
 show_all "lsof -n | grep smbd"
 show_all "lsof -n | grep ctdbd"
 show_all "netstat -tan"
-if $no_ads ; then
-    echo
-    echo "Skipping \"net ads info\" as requested"
-    echo
+if $no_ads; then
+	echo
+	echo "Skipping \"net ads info\" as requested"
+	echo
 else
-    show_all "net ads info"
+	show_all "net ads info"
 fi
 show_all "date"
 show_all "smbclient -U% -L 127.0.0.1"
-WORKGROUP=$(testparm -s --parameter-name=WORKGROUP 2> /dev/null)
+WORKGROUP=$(testparm -s --parameter-name=WORKGROUP 2>/dev/null)
 show_all id "$WORKGROUP/Administrator"
 show_all "wbinfo -p"
 show_all "wbinfo --online-status"
@@ -361,11 +385,10 @@ date
 echo "Diagnostics finished with $NUM_ERRORS errors"
 
 [ -r "$ERRORS" ] && {
-    cat "$ERRORS"
-    rm -f "$ERRORS"
+	cat "$ERRORS"
+	rm -f "$ERRORS"
 }
 
 rm -rf "$tmpdir"
 
 exit $NUM_ERRORS
-
