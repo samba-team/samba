@@ -16,7 +16,7 @@ bld.SAMBA_LIBRARY('samdb-common',
 	source='common/util.c common/util_trusts.c common/util_groups.c common/util_samr.c common/dsdb_dn.c common/dsdb_access.c common/util_links.c common/rodc_helper.c gmsa/gkdi.c gmsa/util.c',
 	autoproto='common/proto.h',
 	private_library=True,
-	deps='ldb NDR_DRSBLOBS util_ldb LIBCLI_AUTH samba-hostconfig samba_socket cli-ldap-common flag_mapping UTIL_RUNCMD SAMBA_VERSION samba-security gkdi gmsa'
+	deps='ldb NDR_DRSBLOBS util_ldb LIBCLI_AUTH samba-hostconfig samba_socket cli-ldap-common flag_mapping UTIL_RUNCMD SAMBA_VERSION samba-security samba-security-trusts gkdi gmsa'
 	)
 
 

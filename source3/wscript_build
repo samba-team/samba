@@ -311,6 +311,7 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
                         LIBTSOCKET
                         util_tsock
                         samba-security
+                        samba-security-trusts
                         NDR_SECURITY
                         samba-util
                         util_tdb
