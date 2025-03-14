@@ -13,9 +13,9 @@ name: "CodeQL Advanced"
 
 on:
   push:
-    branches: [ "master", "v3-0-stable", "v3-0-test", "v3-2-stable", "v3-2-test", "v3-3-stable", "v3-3-test", "v3-4-stable", "v3-4-test", "v3-5-stable", "v3-5-test", "v3-6-stable", "v3-6-test", "v4-0-stable", "v4-0-test", "v4-1-stable", "v4-1-test", "v4-2-stable", "v4-2-test", "v4-3-stable", "v4-3-test" ]
+    branches: [ "master", "v4-21-test", "v4-22-test", "v4-23-test", "v4-24-test", "v4-25-test" ]
   pull_request:
-    branches: [ "master", "v3-0-stable", "v3-0-test", "v3-2-stable", "v3-2-test", "v3-3-stable", "v3-3-test", "v3-4-stable", "v3-4-test", "v3-5-stable", "v3-5-test", "v3-6-stable", "v3-6-test", "v4-0-stable", "v4-0-test", "v4-1-stable", "v4-1-test", "v4-2-stable", "v4-2-test", "v4-3-stable", "v4-3-test" ]
+    branches: [ "master" ]
   schedule:
     - cron: '31 18 * * 6'
 
