@@ -3162,15 +3162,33 @@ static int vfs_ceph_fchown(struct vfs_handle_struct *handle,
 			   gid_t gid)
 {
 	int result;
-	struct vfs_ceph_fh *cfh = NULL;
 
 	START_PROFILE(syscall_fchown);
 	DBG_DEBUG("[CEPH] fchown(%p, %p, %d, %d)\n", handle, fsp, uid, gid);
-	result = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
-	if (result != 0) {
-		goto out;
+
+	if (!fsp->fsp_flags.is_pathref) {
+		struct vfs_ceph_fh *cfh = NULL;
+
+		result = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
+		if (result != 0) {
+			goto out;
+		}
+
+		result = vfs_ceph_ll_fchown(handle, cfh, uid, gid);
+	} else {
+		struct vfs_ceph_iref iref = {0};
+
+		result = vfs_ceph_iget(handle,
+				       fsp->fsp_name->base_name,
+				       0,
+				       &iref);
+		if (result != 0) {
+			goto out;
+		}
+
+		result = vfs_ceph_ll_chown(handle, &iref, uid, gid);
+		vfs_ceph_iput(handle, &iref);
 	}
-	result = vfs_ceph_ll_fchown(handle, cfh, uid, gid);
 out:
 	DBG_DEBUG("[CEPH] fchown(...) = %d\n", result);
 	END_PROFILE(syscall_fchown);
