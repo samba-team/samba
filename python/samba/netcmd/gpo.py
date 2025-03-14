@@ -1323,9 +1323,11 @@ class cmd_backup(GPOCommand):
             self.outf.write('\nAttempting to generalize XML entities:\n')
             entities = cmd_backup.generalize_xml_entities(self.outf, gpodir,
                                                           gpodir)
-            import operator
-            ents = "".join('<!ENTITY {} "{}\n">'.format(ent[1].strip('&;'), ent[0]) \
-                             for ent in sorted(entities.items(), key=operator.itemgetter(1)))
+
+            ent_list = [(v, k) for k, v in entities.items()]
+            ent_list.sort()
+            ents = "".join(f'<!ENTITY {ent.strip("&;")} "{val}">\n'
+                           for ent, val in ent_list)
 
             if ent_file:
                 with open(ent_file, 'w') as f:
