@@ -141,21 +141,27 @@ source_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../
 provision_path = os.path.join(source_path, "source4/selftest/provisions/")
 
 def has_difference(path1, path2, binary=True, xml=True, sortlines=False):
-    """Use this function to determine if the GPO backup differs from another.
+    """Use this function to determine if the GPO backup differs from
+    another. It can compare pairs of files or pairs of directories.
 
     xml=True checks whether any xml files are equal
     binary=True checks whether any .SAMBABACKUP files are equal
+    sortlines=True ignore order of lines in comparison of single
+    files.
+
+    returns None if there is no difference between the paths,
+    otherwise *something*.
     """
     if os.path.isfile(path1):
-        if sortlines:
-            file1 = open(path1).readlines()
-            file1.sort()
-            file2 = open(path1).readlines()
-            file2.sort()
-            if file1 != file2:
-                return path1
+        with open(path1) as f1, open(path2) as f2:
+            lines1 = f1.readlines()
+            lines2 = f2.readlines()
 
-        elif open(path1).read() != open(path2).read():
+        if sortlines:
+            lines1.sort()
+            lines2.sort()
+
+        if lines1 != lines2:
             return path1
 
         return None
