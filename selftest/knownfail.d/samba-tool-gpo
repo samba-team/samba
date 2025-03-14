@@ -1,0 +1,1 @@
+^samba.tests.samba_tool.gpo.+GpoCmdTestCase.test_vgp_motd_set_thrice
