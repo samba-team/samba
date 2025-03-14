@@ -1,0 +1,2 @@
+^samba.tests.samba_tool.gpo.+GpoCmdTestCase.test_backup_restore_generalize
+
