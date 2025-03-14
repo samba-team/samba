@@ -184,8 +184,9 @@ def has_difference(path1, path2, binary=True, xml=True, sortlines=False):
             else:
                 if (l_name.endswith('.xml') and xml or
                     l_name.endswith('.SAMBABACKUP') and binary):
-                    if open(l_name, "rb").read() != open(r_name, "rb").read():
-                        return l_name
+                    with open(l_name, "rb") as f1, open(r_name, "rb") as f2:
+                        if f1.read() != f2.read():
+                            return l_name
 
     return None
 
@@ -711,7 +712,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
 
         self.assertTrue(os.path.exists(reg_pol),
                         'The Registry.pol does not exist')
-        reg_data = ndr_unpack(preg.file, open(reg_pol, 'rb').read())
+        with open(reg_pol, 'rb') as f:
+            reg_data = ndr_unpack(preg.file, f.read())
         ret = any([get_string(e.valuename) == policy and e.data == 1
             for e in reg_data.entries])
         self.assertTrue(ret, 'The sudoers entry was not added')
@@ -729,8 +731,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                               'Failed to unset apply group policies')
         after_vers = gpt_ini_version(self.gpo_guid)
         self.assertGreater(after_vers, before_vers, 'GPT.INI was not updated')
-
-        reg_data = ndr_unpack(preg.file, open(reg_pol, 'rb').read())
+        with open(reg_pol, 'rb') as f:
+            reg_data = ndr_unpack(preg.file, f.read())
         ret = not any([get_string(e.valuename) == policy and e.data == 1
             for e in reg_data.entries])
         self.assertTrue(ret, 'The sudoers entry was not removed')
@@ -804,7 +806,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                  os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err,
                               'Failed to unset MaxTicketAge')
-        inf_pol_contents = open(inf_pol, 'r').read()
+        with open(inf_pol, 'r') as f:
+            inf_pol_contents = f.read()
         self.assertNotIn('MaxTicketAge = 10', inf_pol_contents,
                       'The test entry was still found!')
         after_vers = gpt_ini_version(self.gpo_guid)
