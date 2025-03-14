@@ -342,7 +342,8 @@ def copy_directory_remote_to_local(conn, remotedir, localdir):
                 os.mkdir(l_name)
             else:
                 data = conn.loadfile(r_name)
-                open(l_name, 'wb').write(data)
+                with open(l_name, 'wb') as f:
+                    f.write(data)
 
 
 def copy_directory_local_to_remote(conn, localdir, remotedir,
@@ -378,8 +379,8 @@ def copy_directory_local_to_remote(conn, localdir, remotedir,
                     except NTSTATUSError:
                         pass
 
-                data = open(l_name, 'rb').read()
-                conn.savefile(r_name, data)
+                with open(l_name, 'rb') as f:
+                    conn.savefile(r_name, f.read())
 
 
 class GPOCommand(Command):
@@ -1459,7 +1460,8 @@ class cmd_create(GPOCommand):
             os.mkdir(os.path.join(gpodir, "Machine"))
             os.mkdir(os.path.join(gpodir, "User"))
             gpt_contents = "[General]\r\nVersion=0\r\n"
-            open(os.path.join(gpodir, "GPT.INI"), "w").write(gpt_contents)
+            with open(os.path.join(gpodir, "GPT.INI"), "w") as f:
+                f.write(gpt_contents)
         except Exception as e:
             raise CommandError("Error Creating GPO files", e)
 
@@ -3087,7 +3089,8 @@ samba-tool gpo manage files add {31B2F340-016D-11D2-945F-00C04FB984F9} ./source.
         out = BytesIO()
         xml_data.write(out, encoding='UTF-8', xml_declaration=True)
         out.seek(0)
-        source_data = open(source, 'rb').read()
+        with open(source, 'rb') as f:
+            source_data = f.read()
         sysvol_source = '\\'.join([vgp_dir, os.path.basename(source)])
         try:
             create_directory_hier(conn, vgp_dir)
@@ -3555,7 +3558,8 @@ samba-tool gpo manage scripts startup add {31B2F340-016D-11D2-945F-00C04FB984F9}
             else:
                 raise
 
-        script_data = open(script, 'rb').read()
+        with open(script, 'rb') as f:
+            script_data = f.read()
         listelement = ET.SubElement(data, 'listelement')
         script_elm = ET.SubElement(listelement, 'script')
         script_elm.text = os.path.basename(script)
