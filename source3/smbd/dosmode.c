@@ -1332,14 +1332,3 @@ struct timespec get_create_timespec(connection_struct *conn,
 	}
 	return smb_fname->st.st_ex_btime;
 }
-
-/******************************************************************
- Return a change time (may look at EA in future).
-******************************************************************/
-
-struct timespec get_change_timespec(connection_struct *conn,
-				struct files_struct *fsp,
-				const struct smb_filename *smb_fname)
-{
-	return smb_fname->st.st_ex_mtime;
-}

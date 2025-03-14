@@ -1083,7 +1083,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	mdate_ts = smb_fname->st.st_ex_mtime;
 	adate_ts = smb_fname->st.st_ex_atime;
 	create_date_ts = get_create_timespec(conn, NULL, smb_fname);
-	cdate_ts = get_change_timespec(conn, NULL, smb_fname);
+	cdate_ts = smb_fname->st.st_ex_ctime;
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
 		dos_filetime_timespec(&create_date_ts);
@@ -3055,7 +3055,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	create_time_ts = get_create_timespec(conn, fsp, smb_fname);
 	mtime_ts = psbuf->st_ex_mtime;
 	atime_ts = psbuf->st_ex_atime;
-	ctime_ts = get_change_timespec(conn, fsp, smb_fname);
+	ctime_ts = psbuf->st_ex_ctime;
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
 		dos_filetime_timespec(&create_time_ts);

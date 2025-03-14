@@ -1960,8 +1960,7 @@ static void smbd_smb2_create_finish(struct tevent_req *req)
 					result, result->fsp_name);
 	state->out_last_access_ts = result->fsp_name->st.st_ex_atime;
 	state->out_last_write_ts = result->fsp_name->st.st_ex_mtime;
-	state->out_change_ts = get_change_timespec(smb1req->conn,
-					result, result->fsp_name);
+	state->out_change_ts = result->fsp_name->st.st_ex_ctime;
 
 	if (lp_dos_filetime_resolution(SNUM(smb2req->tcon->compat))) {
 		dos_filetime_timespec(&state->out_creation_ts);

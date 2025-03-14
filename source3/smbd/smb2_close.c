@@ -165,7 +165,7 @@ static void setup_close_full_information(connection_struct *conn,
 	*out_last_write_ts = smb_fname->st.st_ex_mtime;
 	*out_last_access_ts = smb_fname->st.st_ex_atime;
 	*out_creation_ts = get_create_timespec(conn, NULL, smb_fname);
-	*out_change_ts = get_change_timespec(conn, NULL, smb_fname);
+	*out_change_ts = smb_fname->st.st_ex_ctime;
 
 	if (lp_dos_filetime_resolution(SNUM(conn))) {
 		dos_filetime_timespec(out_creation_ts);

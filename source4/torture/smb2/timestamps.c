@@ -76,8 +76,6 @@ static bool test_close_no_attrib(struct torture_context *tctx,
 				      ret, done, "Unexpected access time\n");
 	torture_assert_u64_equal_goto(tctx, c.out.write_time, NTTIME_OMIT,
 				      ret, done, "Unexpected write time\n");
-	torture_assert_u64_equal_goto(tctx, c.out.change_time, NTTIME_OMIT,
-				      ret, done, "Unexpected change time\n");
 	torture_assert_u64_equal_goto(tctx, c.out.size, 0,
 				      ret, done, "Unexpected size\n");
 	torture_assert_u64_equal_goto(tctx, c.out.file_attr, 0,
@@ -142,7 +140,6 @@ static bool test_time_t(struct torture_context *tctx,
 	nttime = full_timespec_to_nt_time(&ts);
 	si.basic_info.in.create_time = nttime;
 	si.basic_info.in.write_time = nttime;
-	si.basic_info.in.change_time = nttime;
 
 	status = smb2_setinfo_file(tree, &si);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
@@ -172,11 +169,6 @@ static bool test_time_t(struct torture_context *tctx,
 				      nttime,
 				      ret, done,
 				      "Wrong write time\n");
-	torture_assert_u64_equal_goto(tctx,
-				      gi.basic_info.out.change_time,
-				      nttime,
-				      ret, done,
-				      "Wrong change time\n");
 
 	find = (struct smb2_find) {
 		.in.file.handle = testdirh,
@@ -199,11 +191,6 @@ static bool test_time_t(struct torture_context *tctx,
 				      nttime,
 				      ret, done,
 				      "Wrong write time\n");
-	torture_assert_u64_equal_goto(tctx,
-				      d[0].id_both_directory_info.change_time,
-				      nttime,
-				      ret, done,
-				      "Wrong change time\n");
 
 	status = smb2_util_close(tree, handle);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
@@ -248,11 +235,6 @@ static bool test_time_t(struct torture_context *tctx,
 				      nttime,
 				      ret, done,
 				      "Wrong write time\n");
-	torture_assert_u64_equal_goto(tctx,
-				      gi.basic_info.out.change_time,
-				      nttime,
-				      ret, done,
-				      "Wrong change time\n");
 
 	find = (struct smb2_find) {
 		.in.continue_flags = SMB2_CONTINUE_FLAG_RESTART,
@@ -276,11 +258,6 @@ static bool test_time_t(struct torture_context *tctx,
 				      nttime,
 				      ret, done,
 				      "Wrong write time\n");
-	torture_assert_u64_equal_goto(tctx,
-				      d[0].id_both_directory_info.change_time,
-				      nttime,
-				      ret, done,
-				      "Wrong change time\n");
 
 	status = smb2_util_close(tree, handle);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
@@ -397,7 +374,6 @@ static bool test_freeze_thaw(struct torture_context *tctx,
 	nttime = full_timespec_to_nt_time(&ts);
 	si.basic_info.in.create_time = nttime;
 	si.basic_info.in.write_time = nttime;
-	si.basic_info.in.change_time = nttime;
 
 	status = smb2_setinfo_file(tree, &si);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
@@ -432,11 +408,6 @@ static bool test_freeze_thaw(struct torture_context *tctx,
 				      nttime,
 				      ret, done,
 				      "Wrong write time\n");
-	torture_assert_u64_equal_goto(tctx,
-				      gi.basic_info.out.change_time,
-				      nttime,
-				      ret, done,
-				      "Wrong change time\n");
 
 	/*
 	 * Step 3:
@@ -446,7 +417,6 @@ static bool test_freeze_thaw(struct torture_context *tctx,
 
 	si.basic_info.in.create_time = NTTIME_FREEZE;
 	si.basic_info.in.write_time = NTTIME_FREEZE;
-	si.basic_info.in.change_time = NTTIME_FREEZE;
 
 	status = smb2_setinfo_file(tree, &si);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
@@ -486,11 +456,6 @@ static bool test_freeze_thaw(struct torture_context *tctx,
 				      nttime,
 				      ret, done,
 				      "Wrong write time\n");
-	torture_assert_u64_equal_goto(tctx,
-				      gi.basic_info.out.change_time,
-				      nttime,
-				      ret, done,
-				      "Wrong change time\n");
 
 	/*
 	 * Step 5:
@@ -500,7 +465,6 @@ static bool test_freeze_thaw(struct torture_context *tctx,
 
 	si.basic_info.in.create_time = NTTIME_THAW;
 	si.basic_info.in.write_time = NTTIME_THAW;
-	si.basic_info.in.change_time = NTTIME_THAW;
 
 	status = smb2_setinfo_file(tree, &si);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
@@ -540,11 +504,6 @@ static bool test_freeze_thaw(struct torture_context *tctx,
 				      nttime,
 				      ret, done,
 				      "Wrong write time\n");
-	torture_assert_u64_equal_goto(tctx,
-				      gi.basic_info.out.change_time,
-				      nttime,
-				      ret, done,
-				      "Wrong change time\n");
 
 done:
 	if (!smb2_util_handle_empty(handle)) {

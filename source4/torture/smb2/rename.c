@@ -1524,9 +1524,6 @@ static bool torture_smb2_rename_simple_modtime(
 	torture_assert_nttime_equal(
 		torture, c1.out.write_time, gi.all_info.out.write_time,
 		"Bad timestamp\n");
-	torture_assert_nttime_equal(
-		torture, c1.out.change_time, gi.all_info.out.change_time,
-		"Bad timestamp\n");
 
 	torture_comment(torture, "Renaming file2.txt --> file1.txt\n");
 
@@ -1555,9 +1552,6 @@ static bool torture_smb2_rename_simple_modtime(
 
 	torture_assert_nttime_equal(
 		torture, c2.out.write_time, gi.all_info.out.write_time,
-		"Bad timestamp\n");
-	torture_assert_nttime_equal(
-		torture, c2.out.change_time, gi.all_info.out.change_time,
 		"Bad timestamp\n");
 
 done:

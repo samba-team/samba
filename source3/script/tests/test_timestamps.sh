@@ -49,7 +49,7 @@ test_time()
 	echo "smbclient allinfo on $file returned: \"$out\""
 
 	# Ignore create_time as that is synthesized
-	for time in access_time write_time change_time; do
+	for time in access_time write_time ; do
 		echo "$out" | grep "$time" | grep "$expected" || {
 			echo "Expected \"$expected\", got: \"$(echo $out | grep $time)\""
 			return 1

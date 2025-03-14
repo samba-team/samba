@@ -1724,7 +1724,6 @@ EOF
 	num_create=$(echo "$out_sorted" | grep -c 'create_time:')
 	num_access=$(echo "$out_sorted" | grep -c 'access_time:')
 	num_write=$(echo "$out_sorted" | grep -c 'write_time:')
-	num_change=$(echo "$out_sorted" | grep -c 'change_time:')
 	if [ "$num_create" != "2" ]; then
 		echo "failed - should get two create_time $out"
 		false
@@ -1737,11 +1736,6 @@ EOF
 	fi
 	if [ "$num_write" != "1" ]; then
 		echo "failed - should only get one write_time $out"
-		false
-		return
-	fi
-	if [ "$num_change" != "1" ]; then
-		echo "failed - should only get one change_time $out"
 		false
 		return
 	fi
