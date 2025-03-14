@@ -2569,6 +2569,7 @@ done:
 
 struct del_share_mode_state {
 	bool ok;
+	bool persistent;
 };
 
 static void del_share_mode_fn(
@@ -2578,6 +2579,10 @@ static void del_share_mode_fn(
 	void *private_data)
 {
 	struct del_share_mode_state *state = private_data;
+
+	if (e->flags & SHARE_ENTRY_FLAG_PERSISTENT_OPEN) {
+		state->persistent = true;
+	}
 	e->stale = true;
 	state->ok = true;
 }
@@ -2610,6 +2615,11 @@ bool del_share_mode_open_id(struct share_mode_lock *lck,
 	if (!state.ok) {
 		DBG_DEBUG("del_share_mode_fn failed\n");
 		return false;
+	}
+	if (state.persistent) {
+		SMB_ASSERT(d->num_persistent > 0);
+		d->num_persistent--;
+		d->modified = true;
 	}
 	return true;
 }
