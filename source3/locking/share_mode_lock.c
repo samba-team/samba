@@ -328,13 +328,13 @@ static struct share_mode_data *share_mode_memcache_fetch(
 }
 
 /*
- * 132 is the sizeof an ndr-encoded struct share_mode_entry_buf.
+ * 124 is the sizeof an ndr-encoded struct share_mode_entry_buf.
  * Reading/writing entries will immediately error out if this
  * size differs (push/pull is done without allocs).
  */
 
 struct share_mode_entry_buf {
-	uint8_t buf[132];
+	uint8_t buf[124];
 };
 #define SHARE_MODE_ENTRY_SIZE (sizeof(struct share_mode_entry_buf))
 
@@ -2072,7 +2072,6 @@ bool set_share_mode(struct share_mode_lock *lck,
 	e = (struct share_mode_entry) {
 		.pid = my_pid,
 		.share_access = share_access,
-		.private_options = fh_get_private_options(fsp->fh),
 		.access_mask = access_mask,
 		.op_mid = mid,
 		.op_type = op_type,

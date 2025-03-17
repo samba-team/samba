@@ -436,12 +436,12 @@ char *share_mode_str(TALLOC_CTX *ctx, int num,
 	struct file_id_buf ftmp;
 
 	return talloc_asprintf(ctx, "share_mode_entry[%d]: "
-		 "pid = %s, share_access = 0x%x, private_options = 0x%x, "
+		 "pid = %s, share_access = 0x%x, "
 		 "access_mask = 0x%x, mid = 0x%llx, type= 0x%x, gen_id = %llu, "
 		 "uid = %u, flags = %u, file_id %s, name_hash = 0x%x",
 		 num,
 		 server_id_str_buf(e->pid, &tmp),
-		 e->share_access, e->private_options,
+		 e->share_access,
 		 e->access_mask, (unsigned long long)e->op_mid,
 		 e->op_type, (unsigned long long)e->share_file_id,
 		 (unsigned int)e->uid, (unsigned int)e->flags,

@@ -36,7 +36,6 @@ interface open_files
 		smb2_lease_key  lease_key;
 		uint32		access_mask;
 		uint32		share_access;
-		uint32		private_options;
 		timeval		time;
 		udlong		share_file_id;
 		uint32		uid;

@@ -264,9 +264,9 @@ static int print_share_mode(struct file_id fid,
 				fprintf(stderr,
 					"unknown-please report ! "
 					"e->share_access = 0x%x, "
-					"e->private_options = 0x%x\n",
+					"e->flags = 0x%x\n",
 					(unsigned int)e->share_access,
-					(unsigned int)e->private_options);
+					(unsigned int)e->flags);
 				break;
 			}
 		}
