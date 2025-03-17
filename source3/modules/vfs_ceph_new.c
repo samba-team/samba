@@ -1023,6 +1023,67 @@ static int vfs_ceph_ll_fchmod(struct vfs_handle_struct *handle,
 					  cfh->uperm);
 }
 
+static void vfs_ceph_fill_statx_mask_from_ft(const struct smb_file_time *ft,
+					     struct ceph_statx *stx,
+					     int *mask)
+{
+	if (!is_omit_timespec(&ft->atime)) {
+		stx->stx_atime = ft->atime;
+		*mask |= CEPH_SETATTR_ATIME;
+	}
+	if (!is_omit_timespec(&ft->mtime)) {
+		stx->stx_mtime = ft->mtime;
+		*mask |= CEPH_SETATTR_MTIME;
+	}
+	if (!is_omit_timespec(&ft->ctime)) {
+		stx->stx_ctime = ft->ctime;
+		*mask |= CEPH_SETATTR_CTIME;
+	}
+	if (!is_omit_timespec(&ft->create_time)) {
+		stx->stx_btime = ft->create_time;
+		*mask |= CEPH_SETATTR_BTIME;
+	}
+}
+
+static int vfs_ceph_ll_utimes(struct vfs_handle_struct *handle,
+			      const struct vfs_ceph_iref *iref,
+			      const struct smb_file_time *ft)
+{
+	struct ceph_statx stx = {0};
+	struct UserPerm *uperm = NULL;
+	int ret = -1;
+	int mask = 0;
+	struct vfs_ceph_config *config = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct vfs_ceph_config,
+				return -ENOMEM);
+
+	vfs_ceph_fill_statx_mask_from_ft(ft, &stx, &mask);
+	if (!mask) {
+		return 0;
+	}
+
+	DBG_DEBUG("[CEPH] ceph_ll_setattr: ino=%" PRIu64 " mtime=%" PRIu64
+		  " atime=%" PRIu64 " ctime=%" PRIu64 " btime=%" PRIu64 "\n",
+		  iref->ino,
+		  full_timespec_to_nt_time(&stx.stx_mtime),
+		  full_timespec_to_nt_time(&stx.stx_atime),
+		  full_timespec_to_nt_time(&stx.stx_ctime),
+		  full_timespec_to_nt_time(&stx.stx_btime));
+
+	uperm = vfs_ceph_userperm_new(config, handle->conn);
+	if (uperm == NULL) {
+		return -ENOMEM;
+	}
+	ret = config->ceph_ll_setattr_fn(config->mount,
+					 iref->inode,
+					 &stx,
+					 mask,
+					 uperm);
+	vfs_ceph_userperm_del(config, uperm);
+	return ret;
+}
+
 static int vfs_ceph_ll_futimes(struct vfs_handle_struct *handle,
 			       const struct vfs_ceph_fh *cfh,
 			       const struct smb_file_time *ft)
@@ -1034,22 +1095,7 @@ static int vfs_ceph_ll_futimes(struct vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct vfs_ceph_config,
 				return -ENOMEM);
 
-	if (!is_omit_timespec(&ft->atime)) {
-		stx.stx_atime = ft->atime;
-		mask |= CEPH_SETATTR_ATIME;
-	}
-	if (!is_omit_timespec(&ft->mtime)) {
-		stx.stx_mtime = ft->mtime;
-		mask |= CEPH_SETATTR_MTIME;
-	}
-	if (!is_omit_timespec(&ft->ctime)) {
-		stx.stx_ctime = ft->ctime;
-		mask |= CEPH_SETATTR_CTIME;
-	}
-	if (!is_omit_timespec(&ft->create_time)) {
-		stx.stx_btime = ft->create_time;
-		mask |= CEPH_SETATTR_BTIME;
-	}
+	vfs_ceph_fill_statx_mask_from_ft(ft, &stx, &mask);
 	if (!mask) {
 		return 0;
 	}
@@ -3110,18 +3156,32 @@ static int vfs_ceph_fntimes(struct vfs_handle_struct *handle,
 			    files_struct *fsp,
 			    struct smb_file_time *ft)
 {
-	struct vfs_ceph_fh *cfh = NULL;
 	int result;
 
 	START_PROFILE(syscall_fntimes);
-	result = vfs_ceph_fetch_fh(handle, fsp, &cfh);
-	if (result != 0) {
-		goto out;
-	}
 
-	result = vfs_ceph_ll_futimes(handle, cfh, ft);
-	if (result != 0) {
-		goto out;
+	if (!fsp->fsp_flags.is_pathref) {
+		struct vfs_ceph_fh *cfh = NULL;
+
+		result = vfs_ceph_fetch_io_fh(handle, fsp, &cfh);
+		if (result != 0) {
+			goto out;
+		}
+
+		result = vfs_ceph_ll_futimes(handle, cfh, ft);
+	} else {
+		struct vfs_ceph_iref iref = {0};
+
+		result = vfs_ceph_iget(handle,
+				       fsp->fsp_name->base_name,
+				       0,
+				       &iref);
+		if (result != 0) {
+			goto out;
+		}
+
+		result = vfs_ceph_ll_utimes(handle, &iref, ft);
+		vfs_ceph_iput(handle, &iref);
 	}
 
 	if (!is_omit_timespec(&ft->create_time)) {
