@@ -12,6 +12,10 @@ import "misc.idl";
 
 interface open_files
 {
+	typedef [public,bitmap16bit] bitmap {
+		SHARE_ENTRY_FLAG_POSIX_OPEN		= 0x0001
+	} share_entry_flags;
+
 	typedef [enum16bit] enum {
 		SHARE_MODE_ENTRY_OP_TYPE_NONE = 0,
 		SHARE_MODE_ENTRY_OP_TYPE_EXCLUSIVE = 1,
@@ -33,7 +37,7 @@ interface open_files
 		timeval		time;
 		udlong		share_file_id;
 		uint32		uid;
-		uint16		flags;
+		share_entry_flags flags;
 		uint32		name_hash;
 
 		/*

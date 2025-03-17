@@ -168,8 +168,6 @@ struct interface {
 	uint32_t options;
 };
 
-#define SHARE_ENTRY_FLAG_POSIX_OPEN	0x1
-
 #include "librpc/gen_ndr/server_id.h"
 
 #define NT_HASH_LEN 16
