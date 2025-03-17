@@ -1293,7 +1293,7 @@ static int have_file_open_below_fn(const struct share_mode_data *data,
 	}
 
 	if (state->dirfsp_is_posix &&
-	    e->flags & SHARE_MODE_FLAG_POSIX_OPEN)
+	    e->flags & SHARE_ENTRY_FLAG_POSIX_OPEN)
 	{
 		/* Ignore POSIX opens */
 		return 0;

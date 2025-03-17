@@ -241,7 +241,7 @@ static bool has_other_nonposix_opens_fn(
 	struct has_other_nonposix_opens_state *state = private_data;
 	struct files_struct *fsp = state->fsp;
 
-	if (e->flags & SHARE_MODE_FLAG_POSIX_OPEN) {
+	if (e->flags & SHARE_ENTRY_FLAG_POSIX_OPEN) {
 		return false;
 	}
 	if (fsp != NULL) {

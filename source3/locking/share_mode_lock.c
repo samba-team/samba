@@ -2081,7 +2081,7 @@ bool set_share_mode(struct share_mode_lock *lck,
 		.share_file_id = fh_get_gen_id(fsp->fh),
 		.uid = (uint32_t)uid,
 		.flags = fsp->fsp_flags.posix_open ?
-			SHARE_MODE_FLAG_POSIX_OPEN : 0,
+			SHARE_ENTRY_FLAG_POSIX_OPEN : 0,
 		.name_hash = fsp->name_hash,
 	};
 

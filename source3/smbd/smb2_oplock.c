@@ -1737,7 +1737,7 @@ static int delay_for_handle_lease_break_below_fn(struct share_mode_data *d,
 	}
 
 	if ((lease & SMB2_LEASE_HANDLE) == 0) {
-		if (e->flags & SHARE_MODE_FLAG_POSIX_OPEN) {
+		if (e->flags & SHARE_ENTRY_FLAG_POSIX_OPEN) {
 			DBG_DEBUG("POSIX open file-id [%s]\n", fid_bufp);
 			/* Ignore POSIX opens. */
 			return 0;
