@@ -3517,9 +3517,13 @@ NTSTATUS _share_mode_entry_prepare_unlock(
 uint16_t fsp_get_share_entry_flags(const struct files_struct *fsp)
 {
 	uint16_t flags = 0;
+	uint32_t private_options = fh_get_private_options(fsp->fh);
 
 	if (fsp->fsp_flags.posix_open) {
 		flags |= SHARE_ENTRY_FLAG_POSIX_OPEN;
+	}
+	if (private_options & NTCREATEX_FLAG_STREAM_BASEOPEN) {
+		flags |= SHARE_ENTRY_FLAG_STREAM_BASEOPEN;
 	}
 	return flags;
 }
@@ -3529,4 +3533,10 @@ void fsp_apply_share_entry_flags(struct files_struct *fsp, uint16_t flags)
 	if (flags & SHARE_ENTRY_FLAG_POSIX_OPEN) {
 		fsp->fsp_flags.posix_open = true;
 	}
+	/*
+	 * This flag is only ever set on the internal base_fsp of a stream
+	 * fsp and we don't expect it to be set when we're called as part
+	 * of restoring an fsp when doing a Durable Handle reconnect.
+	 */
+	SMB_ASSERT(!(flags & SHARE_ENTRY_FLAG_STREAM_BASEOPEN));
 }
