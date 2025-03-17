@@ -166,7 +166,7 @@ static int prepare_share_mode(struct traverse_state *state)
 }
 
 static uint32_t map_share_mode_to_deny_mode(
-	uint32_t share_access, uint32_t private_options)
+	uint32_t share_access, uint16_t flags)
 {
 	switch (share_access & ~FILE_SHARE_DELETE) {
 	case FILE_SHARE_NONE:
@@ -178,9 +178,9 @@ static uint32_t map_share_mode_to_deny_mode(
 	case FILE_SHARE_READ|FILE_SHARE_WRITE:
 		return DENY_NONE;
 	}
-	if (private_options & NTCREATEX_FLAG_DENY_DOS) {
+	if (flags & SHARE_ENTRY_FLAG_DENY_DOS) {
 		return DENY_DOS;
-	} else if (private_options & NTCREATEX_FLAG_DENY_FCB) {
+	} else if (flags & SHARE_ENTRY_FLAG_DENY_FCB) {
 		return DENY_FCB;
 	}
 
@@ -233,7 +233,7 @@ static int print_share_mode(struct file_id fid,
 		}
 
 		denymode_int = map_share_mode_to_deny_mode(e->share_access,
-							   e->private_options);
+							   e->flags);
 		switch (denymode_int) {
 			case DENY_NONE:
 				denymode = "DENY_NONE";

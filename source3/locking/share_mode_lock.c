@@ -3525,6 +3525,12 @@ uint16_t fsp_get_share_entry_flags(const struct files_struct *fsp)
 	if (private_options & NTCREATEX_FLAG_STREAM_BASEOPEN) {
 		flags |= SHARE_ENTRY_FLAG_STREAM_BASEOPEN;
 	}
+	if (private_options & NTCREATEX_FLAG_DENY_DOS) {
+		flags |= SHARE_ENTRY_FLAG_DENY_DOS;
+	}
+	if (private_options & NTCREATEX_FLAG_DENY_FCB) {
+		flags |= SHARE_ENTRY_FLAG_DENY_FCB;
+	}
 	return flags;
 }
 
@@ -3539,4 +3545,12 @@ void fsp_apply_share_entry_flags(struct files_struct *fsp, uint16_t flags)
 	 * of restoring an fsp when doing a Durable Handle reconnect.
 	 */
 	SMB_ASSERT(!(flags & SHARE_ENTRY_FLAG_STREAM_BASEOPEN));
+
+	/*
+	 * SHARE_ENTRY_FLAG_DENY_[DOS|FCB] are only valid for SMB1, so
+	 * they're not supposed to be set when we're called as part
+	 * of restoring an fsp when doing a Durable Handle reconnect.
+	 */
+	SMB_ASSERT(!(flags & SHARE_ENTRY_FLAG_DENY_DOS));
+	SMB_ASSERT(!(flags & SHARE_ENTRY_FLAG_DENY_FCB));
 }

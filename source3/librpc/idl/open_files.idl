@@ -14,7 +14,9 @@ interface open_files
 {
 	typedef [public,bitmap16bit] bitmap {
 		SHARE_ENTRY_FLAG_POSIX_OPEN		= 0x0001,
-		SHARE_ENTRY_FLAG_STREAM_BASEOPEN	= 0x0002
+		SHARE_ENTRY_FLAG_STREAM_BASEOPEN	= 0x0002,
+		SHARE_ENTRY_FLAG_DENY_DOS		= 0x0004,
+		SHARE_ENTRY_FLAG_DENY_FCB		= 0x0008
 	} share_entry_flags;
 
 	typedef [enum16bit] enum {
