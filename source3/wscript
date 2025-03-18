@@ -217,9 +217,6 @@ long ret = splice(0,0,1,0,400,SPLICE_F_MOVE);
                        "Try installing libevent-dev or libevent-devel. "
                        "libevent support is required for the prometheus "
                        "endpoint")
-    elif conf.CONFIG_GET('ENABLE_SELFTEST'):
-        raise Errors.WafError('libevent library required for '
-                             '--enable-selftest')
 
     # check for DMAPI libs
     if Options.options.with_dmapi == False:
