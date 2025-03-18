@@ -438,7 +438,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	if (conn->protocol >= PROTOCOL_SMB3_00 &&
 	    tcon->share_type == SMB2_SHARE_TYPE_DISK)
 	{
-		bool persistent = false; /* persistent handles not implemented yet */
+		bool persistent = lp_persistent_handles();
 		bool cluster = lp_clustering();
 		bool scaleout = cluster;
 		bool witness = cluster && !lp_rpc_start_on_demand_helpers();
@@ -450,6 +450,9 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		 * but windows clients mix this with the global persistent
 		 * handles support.
 		 *
+		 * SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY is only announced if
+		 * SMB2_CAP_PERSISTENT_HANDLES is enabled.
+		 *
 		 * Persistent handles are requested if
 		 * SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY is present
 		 * even without SMB2_CAP_PERSISTENT_HANDLES.
@@ -457,14 +460,20 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		 * And SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY is
 		 * required for SMB2_SHARE_CAP_CLUSTER to have
 		 * an effect.
-		 *
-		 * So we better don't announce this by default
-		 * until we support persistent handles.
 		 */
+
+		persistent &= lp_durable_handles(SNUM(tcon->compat)) &&
+			!lp_posix_locking(tcon->compat->params) &&
+			!lp_kernel_share_modes(SNUM(tcon->compat)) &&
+			!lp_kernel_oplocks(SNUM(tcon->compat));
+
+		announce = persistent && lp_continuous_availability(
+			SNUM(tcon->compat));
+
 		announce = lp_parm_bool(SNUM(tcon->compat),
 					"smb3 share cap",
 					"CONTINUOUS AVAILABILITY",
-					persistent);
+					announce);
 		if (announce) {
 			tcon->capabilities |= SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY;
 		}
