@@ -1633,13 +1633,9 @@ class cmd_restore(cmd_create):
                             self.outf.write('WARNING: Error during parsing for %s\n' % l_name)
                             self.outf.write('WARNING: Falling back to simple copy-restore.\n')
 
-    def run(self, displayname, backup, H=None, tmpdir=None, entities=None, sambaopts=None, credopts=None,
-            versionopts=None, restore_metadata=None):
-
+    @staticmethod
+    def generate_dtd_header(entities):
         dtd_header = ''
-
-        if not os.path.exists(backup):
-            raise CommandError("Backup directory does not exist %s" % backup)
 
         if entities is not None:
             # DOCTYPE name is meant to match root element, but ElementTree does
@@ -1662,6 +1658,16 @@ class cmd_restore(cmd_create):
                 dtd_header += entities_content.strip()
 
             dtd_header += '\n]>\n'
+
+        return dtd_header
+
+    def run(self, displayname, backup, H=None, tmpdir=None, entities=None, sambaopts=None, credopts=None,
+            versionopts=None, restore_metadata=None):
+
+        if not os.path.exists(backup):
+            raise CommandError("Backup directory does not exist %s" % backup)
+
+        dtd_header = self.generate_dtd_header(entities)
 
         super().run(displayname, H, tmpdir, sambaopts, credopts, versionopts)
 
