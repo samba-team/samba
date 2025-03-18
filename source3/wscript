@@ -211,6 +211,7 @@ long ret = splice(0,0,1,0,400,SPLICE_F_MOVE);
         Logs.info("Checking for libevent existence")
         if conf.CHECK_HEADERS('event2/http.h') and conf.CHECK_LIB('event', shlib=True):
             conf.CHECK_FUNCS_IN('evhttp_new', 'event')
+        conf.DEFINE('WITH_PROMETHEUS_EXPORTER', 1)
         if not conf.CONFIG_SET('HAVE_EVHTTP_NEW'):
             conf.fatal("libevent support not found. "
                        "Try installing libevent-dev or libevent-devel. "

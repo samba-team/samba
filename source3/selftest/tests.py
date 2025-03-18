@@ -951,15 +951,18 @@ plantestsuite("samba3.blackbox.smbclient_old_dir", "fileserver_smb1",
                             "script/tests/test_old_dirlisting.sh"),
                timelimit, smbclient3])
 
+with_prometheus_exporter = ("WITH_PROMETHEUS_EXPORTER" in config_hash)
+
 for env in ["fileserver:local"]:
     plantestsuite("samba3.blackbox.net_usershare", env, [os.path.join(samba3srcdir, "script/tests/test_net_usershare.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', smbclient3])
 
     plantestsuite("samba3.blackbox.smbstatus", env, [os.path.join(samba3srcdir, "script/tests/test_smbstatus.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN', '$USERNAME', '$PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', smbclient3, smbstatus, configuration, "SMB3"])
     plantestsuite("samba3.blackbox.net_registry_import", env, [os.path.join(samba3srcdir, "script/tests/test_net_registry_import.sh"), '$SERVER', '$LOCAL_PATH', '$USERNAME', '$PASSWORD'])
-    plantestsuite("samba3.blackbox.smb_prometheus_endpoint", env,
-                  [os.path.join(samba3srcdir, "script/tests/test_smb_prometheus_endpoint.sh"),
-                   '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCK_DIR', '$PREFIX',
-                   smb_prometheus_endpoint, smbclient3, configuration, "SMB3"])
+    if with_prometheus_exporter:
+        plantestsuite("samba3.blackbox.smb_prometheus_endpoint", env,
+                      [os.path.join(samba3srcdir, "script/tests/test_smb_prometheus_endpoint.sh"),
+                      '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$LOCK_DIR', '$PREFIX',
+                      smb_prometheus_endpoint, smbclient3, configuration, "SMB3"])
 
 env = 'ad_member'
 plantestsuite("samba3.blackbox.smbget",
