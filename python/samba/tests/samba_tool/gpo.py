@@ -21,6 +21,7 @@
 import os, pwd, grp
 import ldb
 import samba
+from samba.tests import source_tree_topdir
 from samba.tests.samba_tool.base import SambaToolCmdTest
 import shutil
 from samba.netcmd.gpo import get_gpo_dn, get_gpo_info
@@ -1879,7 +1880,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
         except IndexError:
             self.fail("Failed to find GUID in output: %s" % out)
 
-        self.backup_path = os.path.join(samba.source_tree_topdir(), 'source4',
+        self.backup_path = os.path.join(source_tree_topdir(), 'source4',
                                         'selftest', 'provisions',
                                         'generalized-gpo-backup')
 

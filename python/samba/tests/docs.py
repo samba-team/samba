@@ -240,7 +240,7 @@ class SmbDotConfTests(TestCase):
         finally:
             f.close()
 
-        self.topdir = os.path.abspath(samba.source_tree_topdir())
+        self.topdir = os.path.abspath(samba.tests.source_tree_topdir())
 
         try:
             self.documented = set(get_documented_parameters(self.topdir))

@@ -65,6 +65,16 @@ LDB_ERR_LUT = {v: k for k, v in vars(ldb).items() if k.startswith('ERR_')}
 RE_CAMELCASE = re.compile(r"([_\-])+")
 
 
+def source_tree_topdir():
+    """Return the top level source directory."""
+    paths = ["../../..", "../../../.."]
+    for p in paths:
+        topdir = os.path.normpath(os.path.join(os.path.dirname(__file__), p))
+        if os.path.exists(os.path.join(topdir, 'source4')):
+            return topdir
+    raise RuntimeError("unable to find top level source directory")
+
+
 def ldb_err(v):
     if isinstance(v, ldb.LdbError):
         v = v.args[0]

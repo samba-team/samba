@@ -24,7 +24,7 @@ import time
 import errno
 import samba.ndr as ndr
 from samba import credentials
-from samba.tests import TestCase
+from samba.tests import TestCase, source_tree_topdir
 from samba.dcerpc import dns
 from samba.tests.subunitrun import SubunitOptions, TestProgram
 import samba.getopt as options
@@ -170,7 +170,7 @@ class TestDnsForwarding(DNSTest):
     def start_toy_server(self, host, port, id):
         python = sys.executable
         p = subprocess.Popen([python,
-                              os.path.join(samba.source_tree_topdir(),
+                              os.path.join(source_tree_topdir(),
                                            'python/samba/tests/'
                                            'dns_forwarder_helpers/server.py'),
                              host, str(port), id])
