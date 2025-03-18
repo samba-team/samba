@@ -41,15 +41,6 @@ def source_tree_topdir():
     raise RuntimeError("unable to find top level source directory")
 
 
-def in_source_tree():
-    """Return True if we are running from within the samba source tree"""
-    try:
-        topdir = source_tree_topdir()
-    except RuntimeError:
-        return False
-    return True
-
-
 class Ldb(_Ldb):
     """Simple Samba-specific LDB subclass that takes care
     of setting up the modules dir, credentials pointers, etc.
