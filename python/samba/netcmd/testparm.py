@@ -79,7 +79,8 @@ class cmd_testparm(Command):
             raise CommandError(err)
 
         # We need this to force the output
-        samba.set_debug_level(2)
+        if samba.get_debug_level() < 2:
+            samba.set_debug_level(2)
 
         logger = self.get_logger("testparm")
 
