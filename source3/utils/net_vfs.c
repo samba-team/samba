@@ -316,7 +316,6 @@ static bool do_unfruit(const char *path)
 	struct smb_filename *smb_fname = NULL;
 	char *p = NULL;
 	bool converted;
-	int ret;
 	NTSTATUS status;
 
 	p = strrchr_m(path, '/');
@@ -333,15 +332,6 @@ static bool do_unfruit(const char *path)
 					0,
 					0);
 	if (smb_fname == NULL) {
-		return false;
-	}
-
-	ret = SMB_VFS_STAT(state.conn_tos->conn, smb_fname);
-	if (ret != 0) {
-		fprintf(stderr, "%s: %s\n", path, strerror(errno));
-		if (state.c->opt_continue_on_error) {
-			return true;
-		}
 		return false;
 	}
 

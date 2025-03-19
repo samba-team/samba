@@ -1986,6 +1986,9 @@ NTSTATUS ad_unconvert(TALLOC_CTX *mem_ctx,
 	struct ad_collect_state state;
 	struct stream_struct *streams = NULL;
 	struct smb_filename *adpath = NULL;
+	struct files_struct *dirfsp = NULL;
+	struct smb_filename *fullname = NULL;
+	struct smb_filename *relname = NULL;
 	struct adouble *ad = NULL;
 	unsigned int num_streams = 0;
 	size_t to_convert = 0;
@@ -2010,8 +2013,24 @@ NTSTATUS ad_unconvert(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(mappings);
 	}
 
+	status = filename_convert_dirfsp_rel(frame,
+					     handle->conn,
+					     handle->conn->cwd_fsp,
+					     smb_fname->base_name,
+					     0,
+					     smb_fname->twrp,
+					     &dirfsp,
+					     &fullname,
+					     &relname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (!VALID_STAT(relname->st)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
 	status = ad_unconvert_get_streams(
-		handle, smb_fname, frame, &num_streams, &streams);
+		handle, fullname, frame, &num_streams, &streams);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
@@ -2035,7 +2054,7 @@ NTSTATUS ad_unconvert(TALLOC_CTX *mem_ctx,
 		.adx_data_off = 0,
 	};
 
-	ret = adouble_path(frame, smb_fname, &adpath);
+	ret = adouble_path(frame, fullname, &adpath);
 	if (ret != 0) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
@@ -2070,16 +2089,16 @@ NTSTATUS ad_unconvert(TALLOC_CTX *mem_ctx,
 
 	for (i = 0; i < num_streams; i++) {
 		status = ad_collect_one_stream(
-			handle, cmaps, smb_fname, &streams[i], ad, &state);
+			handle, cmaps, fullname, &streams[i], ad, &state);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
 	}
 
-	status = ad_unconvert_open_ad(frame, handle, smb_fname, adpath, &fsp);
+	status = ad_unconvert_open_ad(frame, handle, fullname, adpath, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to open adfile [%s]\n",
-			smb_fname_str_dbg(smb_fname));
+			smb_fname_str_dbg(fullname));
 		goto out;
 	}
 
@@ -2097,7 +2116,7 @@ out:
 		status = close_file_free(NULL, &fsp, NORMAL_CLOSE);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("close_file_free() [%s] failed: %s\n",
-				smb_fname_str_dbg(smb_fname),
+				smb_fname_str_dbg(fullname),
 				nt_errstr(status));
 		}
 	}
