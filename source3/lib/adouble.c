@@ -1975,11 +1975,11 @@ out:
 /**
  * Convert filesystem metadata to AppleDouble file
  **/
-bool ad_unconvert(TALLOC_CTX *mem_ctx,
-		  struct vfs_handle_struct *handle,
-		  const char *catia_mappings,
-		  struct smb_filename *smb_fname,
-		  bool *converted)
+NTSTATUS ad_unconvert(TALLOC_CTX *mem_ctx,
+		      struct vfs_handle_struct *handle,
+		      const char *catia_mappings,
+		      struct smb_filename *smb_fname,
+		      bool *converted)
 {
 	static struct char_mappings **cmaps = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -1994,7 +1994,6 @@ bool ad_unconvert(TALLOC_CTX *mem_ctx,
 	size_t i;
 	NTSTATUS status;
 	int ret;
-	bool ok;
 
 	*converted = false;
 
@@ -2004,7 +2003,7 @@ bool ad_unconvert(TALLOC_CTX *mem_ctx,
 		mappings = str_list_make_v3_const(
 			frame, catia_mappings, NULL);
 		if (mappings == NULL) {
-			ok = false;
+			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
 		cmaps = string_replace_init_map(mem_ctx, mappings);
@@ -2014,7 +2013,6 @@ bool ad_unconvert(TALLOC_CTX *mem_ctx,
 	status = ad_unconvert_get_streams(
 		handle, smb_fname, frame, &num_streams, &streams);
 	if (!NT_STATUS_IS_OK(status)) {
-		ok = false;
 		goto out;
 	}
 
@@ -2029,7 +2027,7 @@ bool ad_unconvert(TALLOC_CTX *mem_ctx,
 	}
 
 	if (to_convert == 0) {
-		ok = true;
+		status = NT_STATUS_OK;
 		goto out;
 	}
 
@@ -2039,7 +2037,7 @@ bool ad_unconvert(TALLOC_CTX *mem_ctx,
 
 	ret = adouble_path(frame, smb_fname, &adpath);
 	if (ret != 0) {
-		ok = false;
+		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 
@@ -2048,7 +2046,7 @@ bool ad_unconvert(TALLOC_CTX *mem_ctx,
 		state.have_adfile = true;
 	} else {
 		if (errno != ENOENT) {
-			ok = false;
+			status = map_nt_error_from_unix(errno);
 			goto out;
 		}
 		state.have_adfile = false;
@@ -2060,13 +2058,13 @@ bool ad_unconvert(TALLOC_CTX *mem_ctx,
 		 * from an AppleDouble file. Fine, that means there's nothing to
 		 * convert.
 		 */
-		ok = true;
+		status = NT_STATUS_OK;
 		goto out;
 	}
 
 	ad = ad_init(frame, ADOUBLE_RSRC);
 	if (ad == NULL) {
-		ok = false;
+		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 
@@ -2074,7 +2072,6 @@ bool ad_unconvert(TALLOC_CTX *mem_ctx,
 		status = ad_collect_one_stream(
 			handle, cmaps, smb_fname, &streams[i], ad, &state);
 		if (!NT_STATUS_IS_OK(status)) {
-			ok = false;
 			goto out;
 		}
 	}
@@ -2083,18 +2080,17 @@ bool ad_unconvert(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to open adfile [%s]\n",
 			smb_fname_str_dbg(smb_fname));
-		ok = false;
 		goto out;
 	}
 
 	ret = ad_fset(handle, ad, fsp);
 	if (ret != 0) {
-		ok = false;
+		status = NT_STATUS_ACCESS_DENIED; /* probably wrong */
 		goto out;
 	}
 
 	*converted = true;
-	ok = true;
+	status = NT_STATUS_OK;
 
 out:
 	if (fsp != NULL) {
@@ -2103,11 +2099,10 @@ out:
 			DBG_ERR("close_file_free() [%s] failed: %s\n",
 				smb_fname_str_dbg(smb_fname),
 				nt_errstr(status));
-			ok = false;
 		}
 	}
 	TALLOC_FREE(frame);
-	return ok;
+	return status;
 }
 
 /**

@@ -317,7 +317,7 @@ static bool do_unfruit(const char *path)
 	char *p = NULL;
 	bool converted;
 	int ret;
-	bool ok;
+	NTSTATUS status;
 
 	p = strrchr_m(path, '/');
 	if (p != NULL) {
@@ -345,13 +345,16 @@ static bool do_unfruit(const char *path)
 		return false;
 	}
 
-	ok = ad_unconvert(state.mem_ctx,
-			  state.conn_tos->conn->vfs_handles,
-			  macos_string_replace_map,
-			  smb_fname,
-			  &converted);
-	if (!ok) {
-		fprintf(stderr, "Converting failed: %s\n", path);
+	status = ad_unconvert(state.mem_ctx,
+			      state.conn_tos->conn->vfs_handles,
+			      macos_string_replace_map,
+			      smb_fname,
+			      &converted);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr,
+			"Converting \"%s\" failed: %s\n",
+			path,
+			nt_errstr(status));
 		if (state.c->opt_continue_on_error) {
 			return true;
 		}
