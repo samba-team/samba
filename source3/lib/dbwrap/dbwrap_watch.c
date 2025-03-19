@@ -226,6 +226,7 @@ static void db_watched_record_init(struct db_context *db,
 	*rec = (struct db_record) {
 		.db = db,
 		.key = dbwrap_record_get_key(backend_rec),
+		.flags = dbwrap_record_get_flags(backend_rec),
 		.storev = dbwrap_watched_storev,
 		.delete_rec = dbwrap_watched_delete,
 		.private_data = wrec,
@@ -365,6 +366,8 @@ static void db_watched_record_fini(struct db_watched_record *wrec)
 	struct db_context *backend = dbwrap_record_get_db(wrec->backend.rec);
 	struct db_record *rec = wrec->rec;
 	TDB_DATA key = dbwrap_record_get_key(wrec->backend.rec);
+	int flags = dbwrap_record_get_flags(wrec->backend.rec).persistent ?
+		DBWRAP_STORE_PERSISTENT : 0;
 	NTSTATUS status;
 
 	if (!wrec->force_fini_store) {
@@ -409,7 +412,10 @@ static void db_watched_record_fini(struct db_watched_record *wrec)
 		dbwrap_watched_watch_skip_alerting(rec);
 	}
 
-	status = dbwrap_watched_record_storev(wrec, state.dbufs, state.num_dbufs, 0);
+	status = dbwrap_watched_record_storev(wrec,
+					      state.dbufs,
+					      state.num_dbufs,
+					      flags);
 	TALLOC_FREE(state.frame);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("dbwrap_watched_record_storev failed: %s\n",
