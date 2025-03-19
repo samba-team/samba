@@ -137,7 +137,8 @@ static NTSTATUS g_lock_store(
 	struct g_lock *lck,
 	struct server_id *new_shared,
 	const TDB_DATA *new_dbufs,
-	size_t num_new_dbufs)
+	size_t num_new_dbufs,
+	int dbwrap_flags)
 {
 	uint8_t exclusive[SERVER_ID_BUF_LENGTH];
 	uint8_t seqnum_buf[sizeof(uint64_t)*2];
@@ -191,7 +192,7 @@ static NTSTATUS g_lock_store(
 
 	SIVAL(sizebuf, 0, lck->num_shared);
 
-	return dbwrap_record_storev(rec, dbufs, ARRAY_SIZE(dbufs), 0);
+	return dbwrap_record_storev(rec, dbufs, ARRAY_SIZE(dbufs), dbwrap_flags);
 }
 
 struct g_lock_ctx *g_lock_ctx_init_backend(
@@ -349,6 +350,7 @@ struct g_lock_lock_cb_state {
 	bool existed;
 	bool modified;
 	bool unlock;
+	int dbwrap_flags;
 };
 
 NTSTATUS g_lock_lock_cb_dump(struct g_lock_lock_cb_state *cb_state,
@@ -392,6 +394,7 @@ NTSTATUS g_lock_lock_cb_writev(struct g_lock_lock_cb_state *cb_state,
 	cb_state->modified = true;
 	cb_state->lck->data = cb_state->updated_data.dptr;
 	cb_state->lck->datalen = cb_state->updated_data.dsize;
+	cb_state->dbwrap_flags = flags;
 
 	return NT_STATUS_OK;
 }
@@ -648,7 +651,9 @@ static NTSTATUS g_lock_lock_cb_run_and_store(struct g_lock_lock_cb_state *cb_sta
 	status = g_lock_store(cb_state->rec,
 			      cb_state->lck,
 			      cb_state->new_shared,
-			      NULL, 0);
+			      NULL,
+			      0,
+			      cb_state->dbwrap_flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("g_lock_store() failed: %s\n",
 			    nt_errstr(status));
@@ -698,6 +703,8 @@ static NTSTATUS g_lock_trylock(
 		.cb_private = req_state->cb_private,
 		.existed = data.dsize != 0,
 		.update_mem_ctx = talloc_tos(),
+		.dbwrap_flags = dbwrap_record_get_flags(rec).persistent ?
+			DBWRAP_STORE_PERSISTENT : 0,
 	};
 	struct server_id_buf tmp;
 	NTSTATUS status;
@@ -861,6 +868,8 @@ noexclusive:
 
 	if (type == G_LOCK_WRITE) {
 		ssize_t shared_idx = g_lock_find_shared(&lck, &self);
+		int flags = dbwrap_record_get_flags(rec).persistent ?
+			DBWRAP_STORE_PERSISTENT : 0;
 
 		if (shared_idx != -1) {
 			dbwrap_watched_watch_remove_instance(rec,
@@ -899,7 +908,7 @@ noexclusive:
 				dbwrap_watched_watch_add_instance(rec);
 		}
 
-		status = g_lock_store(rec, &lck, NULL, NULL, 0);
+		status = g_lock_store(rec, &lck, NULL, NULL, 0, flags);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("g_lock_store() failed: %s\n",
 				  nt_errstr(status));
@@ -1172,6 +1181,8 @@ static void g_lock_lock_simple_fn(
 		.cb_private = state->cb_private,
 		.existed = value.dsize != 0,
 		.update_mem_ctx = talloc_tos(),
+		.dbwrap_flags = dbwrap_record_get_flags(rec).persistent ?
+			DBWRAP_STORE_PERSISTENT : 0,
 	};
 	bool ok;
 
@@ -1341,6 +1352,8 @@ static void g_lock_unlock_fn(
 	void *private_data)
 {
 	struct g_lock_unlock_state *state = private_data;
+	int flags = dbwrap_record_get_flags(rec).persistent ?
+		DBWRAP_STORE_PERSISTENT : 0;
 	struct server_id_buf tmp1, tmp2;
 	struct g_lock lck;
 	size_t i;
@@ -1408,7 +1421,7 @@ static void g_lock_unlock_fn(
 
 	lck.unique_lock_epoch = generate_unique_u64(lck.unique_lock_epoch);
 
-	state->status = g_lock_store(rec, &lck, NULL, NULL, 0);
+	state->status = g_lock_store(rec, &lck, NULL, NULL, 0, flags);
 }
 
 NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, TDB_DATA key)
@@ -1446,6 +1459,7 @@ struct g_lock_writev_data_state {
 	const TDB_DATA *dbufs;
 	size_t num_dbufs;
 	NTSTATUS status;
+	int dbwrap_flags;
 };
 
 static void g_lock_writev_data_fn(
@@ -1499,8 +1513,13 @@ static void g_lock_writev_data_fn(
 	lck.unique_data_epoch = generate_unique_u64(lck.unique_data_epoch);
 	lck.data = NULL;
 	lck.datalen = 0;
-	state->status = g_lock_store(
-		rec, &lck, NULL, state->dbufs, state->num_dbufs);
+
+	state->status = g_lock_store(rec,
+				     &lck,
+				     NULL,
+				     state->dbufs,
+				     state->num_dbufs,
+				     state->dbwrap_flags);
 }
 
 NTSTATUS g_lock_writev_data(
@@ -1515,6 +1534,7 @@ NTSTATUS g_lock_writev_data(
 		.self = messaging_server_id(ctx->msg),
 		.dbufs = dbufs,
 		.num_dbufs = num_dbufs,
+		.dbwrap_flags = flags,
 	};
 	NTSTATUS status;
 
@@ -1979,6 +1999,8 @@ static void g_lock_wake_watchers_fn(
 	void *private_data)
 {
 	struct g_lock lck = { .exclusive.pid = 0 };
+	int flags = dbwrap_record_get_flags(rec).persistent ?
+		DBWRAP_STORE_PERSISTENT : 0;
 	NTSTATUS status;
 	bool ok;
 
@@ -1990,7 +2012,7 @@ static void g_lock_wake_watchers_fn(
 
 	lck.unique_data_epoch = generate_unique_u64(lck.unique_data_epoch);
 
-	status = g_lock_store(rec, &lck, NULL, NULL, 0);
+	status = g_lock_store(rec, &lck, NULL, NULL, 0, flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("g_lock_store failed: %s\n", nt_errstr(status));
 		return;
