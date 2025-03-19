@@ -24,6 +24,7 @@ import samba.getopt as options
 import ldb
 import re
 import xml.etree.ElementTree as ET
+from xml.parsers import expat
 import shutil
 import tempfile
 
@@ -1635,29 +1636,33 @@ class cmd_restore(cmd_create):
 
     @staticmethod
     def generate_dtd_header(entities):
-        dtd_header = ''
+        # The entities file is a list of XML entities in the form
+        #  <!ENTITY entity "value">
+        #  <!ENTITY entity2 "another value">
+        #
+        # which go within a <!DOCTYPE x [...]> block.
+        #
+        # We check that they are valid in this context using the
+        # Python standard library expat parser.
+        if entities is None:
+            return ""
 
-        if entities is not None:
-            # DOCTYPE name is meant to match root element, but ElementTree does
-            # not seem to care, so this seems to be enough.
+        try:
+            with open(entities) as f:
+                contents = f.read().strip()
+        except:
+            raise CommandError(f"Could not open entities file: '{entities}'")
 
-            dtd_header = '<!DOCTYPE foobar [\n'
+        dtd_header = f'<!DOCTYPE foobar [\n{contents}\n]>\n'
 
-            if not os.path.exists(entities):
-                raise CommandError("Entities file does not exist %s" %
-                                   entities)
-            with open(entities, 'r') as entities_file:
-                entities_content = entities_file.read()
-
-                # Do a basic regex test of the entities file format
-                if re.match(r'(\s*<!ENTITY\s+[a-zA-Z0-9_]+\s+.*?>)+\s*\Z',
-                            entities_content, flags=re.MULTILINE|re.DOTALL) is None:
-                    raise CommandError("Entities file does not appear to "
-                                       "conform to format\n"
-                                       'e.g. <!ENTITY entity "value">')
-                dtd_header += entities_content.strip()
-
-            dtd_header += '\n]>\n'
+        p = expat.ParserCreate()
+        try:
+            p.Parse(dtd_header + '<dummy/>', True)
+        except expat.ExpatError as e:
+            raise CommandError("Entities file does not appear to "
+                               "conform to format\n"
+                               'e.g. <!ENTITY entity "value">\n'
+                               f'Expat error message: {e}')
 
         return dtd_header
 
