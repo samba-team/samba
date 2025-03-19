@@ -59,7 +59,7 @@
 	<programlisting>
 		<command>client acl type = posix_acl</command>
 		<command>fuse default permissions = false</command>
-	</programlisting>
+</programlisting>
 
 	<para>
 	<emphasis role="strong">NOTE</emphasis>:
@@ -85,7 +85,7 @@
 		<smbconfoption name="vfs objects">ceph_new</smbconfoption>
 		<smbconfoption name="path">/non-mounted/cephfs/path</smbconfoption>
 		<smbconfoption name="kernel share modes">no</smbconfoption>
-	</programlisting>
+</programlisting>
 
 	<para>
 		Since <command>vfs_ceph_new</command> does not require a

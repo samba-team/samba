@@ -73,7 +73,7 @@
 	IDTOSID UID xxxx
 	IDTOSID GID xxxx
 	IDTOSID XID xxxx
-	</programlisting>
+</programlisting>
 
 	<para>
 	And it should return one of the following responses as a single line of
@@ -86,7 +86,7 @@
 	XID:yyyy
 	SID:ssss
 	ERR:yyyy
-	</programlisting>
+</programlisting>
 
 	<para>
 	XID indicates that the ID returned should be both a UID and a GID.
@@ -109,7 +109,7 @@
 	idmap config * : backend = script
 	idmap config * : range = 1000000-2000000
 	idmap config * : script = /usr/local/samba/bin/idmap_script.sh
-	</programlisting>
+</programlisting>
 
 	<para>
 	This shows a simple script to partially perform the task:
@@ -131,7 +131,7 @@
 		echo "ERR: No idea what to do"
 		exit 1
 	fi
-	</programlisting>
+</programlisting>
 
 	<para>
 	Clearly, this script is not enough, as it should probably use wbinfo

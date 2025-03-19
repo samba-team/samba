@@ -120,7 +120,7 @@
 			snap_create.sh</smbconfoption>
 		<smbconfoption name="shell_snap:delete command">
 			snap_delete.sh</smbconfoption>
-	</programlisting>
+</programlisting>
 
 	<para>
 		Samba's FSRVP server must be configured in the [global] section:
@@ -130,7 +130,7 @@
 		<smbconfsection name="[global]"/>
 		<smbconfoption name="registry shares">yes</smbconfoption>
 		<smbconfoption name="include">registry</smbconfoption>
-	</programlisting>
+</programlisting>
 </refsect1>
 
 <refsect1>

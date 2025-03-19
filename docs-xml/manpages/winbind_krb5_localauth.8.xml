@@ -54,7 +54,7 @@
 		module = winbind:/usr/lib64/samba/krb5/winbind_krb5_localauth.so
 		enable_only = winbind
 	}
-		</programlisting>
+</programlisting>
 	</para>
 </refsect1>
 

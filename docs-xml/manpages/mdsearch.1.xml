@@ -124,32 +124,32 @@
     <para>Search all indexed metadata attributes, exact match:</para>
     <programlisting>
       '*=="Samba"'
-    </programlisting>
+</programlisting>
 
     <para>Search all indexed metadata attributes, prefix match:</para>
     <programlisting>
       '*=="Samba*"'
-    </programlisting>
+</programlisting>
 
     <para>Search by filename:</para>
     <programlisting>
       'kMDItemFSName=="Samba*"'
-    </programlisting>
+</programlisting>
 
     <para>Search by date:</para>
     <programlisting>
       'kMDItemFSContentChangeDate&lt;$time.iso(2018-10-01T10:00:00Z)'
-    </programlisting>
+</programlisting>
 
     <para>Search files's content:</para>
     <programlisting>
       'kMDItemTextContent=="Samba*"'
-    </programlisting>
+</programlisting>
 
     <para>Expressions:</para>
     <programlisting>
       kMDItemFSName=="Samba*"||kMDItemTextContent=="Tango*"'
-    </programlisting>
+</programlisting>
   </refsect1>
 
   <refsect1>

@@ -82,7 +82,7 @@
 	SIDTOID S-1-xxxx
 	IDTOSID UID xxxx
 	IDTOSID GID xxxx
-	</programlisting>
+</programlisting>
 
 	<para>
 	And it should return one of the following responses as a single line of
@@ -94,7 +94,7 @@
 	GID:yyyy
 	SID:yyyy
 	ERR:yyyy
-	</programlisting>
+</programlisting>
 </refsect1>
 
 <refsect1>
@@ -108,7 +108,7 @@
 	[global]
 	idmap config * : backend = tdb2
 	idmap config * : range = 1000000-2000000
-	</programlisting>
+</programlisting>
 
 	<para>
 	This example shows how tdb2 is used as the default idmap backend
@@ -120,7 +120,7 @@
 	idmap config * : backend = tdb2
 	idmap config * : range = 1000000-2000000
 	idmap config * : script = /usr/local/samba/bin/idmap_script.sh
-	</programlisting>
+</programlisting>
 </refsect1>
 
 <refsect1>

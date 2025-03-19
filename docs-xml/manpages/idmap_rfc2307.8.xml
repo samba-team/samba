@@ -147,7 +147,7 @@
 	idmap config DOMAIN : ldap_user_dn = cn=ldapmanager,dc=example,dc=com
 	idmap config DOMAIN : bind_path_user = ou=People,dc=example,dc=com
 	idmap config DOMAIN : bind_path_group = ou=Group,dc=example,dc=com
-	</programlisting>
+</programlisting>
 </refsect1>
 
 <refsect1>

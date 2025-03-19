@@ -95,7 +95,7 @@
 	idmap config * : ldap_url     = ldap://localhost/
 	idmap config * : ldap_base_dn = ou=idmap,dc=example,dc=com
 	idmap config * : ldap_user_dn = cn=idmap_admin,dc=example,dc=com
-	</programlisting>
+</programlisting>
 
 	<para>
 	This example shows how ldap can be used as a readonly backend while
@@ -117,7 +117,7 @@
 	idmap config DOM1 : ldap_url = ldap://server/
 	idmap config DOM1 : ldap_base_dn = ou=idmap,dc=dom1,dc=example,dc=com
 	idmap config DOM1 : ldap_user_dn = cn=idmap_admin,dc=dom1,dc=example,dc=com
-	</programlisting>
+</programlisting>
 </refsect1>
 
 <refsynopsisdiv>

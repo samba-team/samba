@@ -81,7 +81,7 @@
 
 	idmap config SAMBA : backend  = nss
 	idmap config SAMBA : range = 1000-999999
-	</programlisting>
+</programlisting>
 </refsect1>
 
 <refsect1>

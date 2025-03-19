@@ -65,7 +65,7 @@
 		<smbconfoption name="vfs objects">ceph_snapshots ceph</smbconfoption>
 		<smbconfoption name="path">/non-mounted/cephfs/path</smbconfoption>
 		<smbconfoption name="kernel share modes">no</smbconfoption>
-	</programlisting>
+</programlisting>
 
 	<para>
 		<command>vfs_ceph_snapshots</command> can also be used atop a
@@ -78,7 +78,7 @@
 		<smbconfsection name="[share]"/>
 		<smbconfoption name="vfs objects">ceph_snapshots</smbconfoption>
 		<smbconfoption name="path">/mnt/cephfs/</smbconfoption>
-	</programlisting>
+</programlisting>
 </refsect1>
 
 <refsect1>

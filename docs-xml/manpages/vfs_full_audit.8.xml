@@ -162,7 +162,7 @@
 	format is: </para>
 	<programlisting>
 		smbd_audit: PREFIX|OPERATION|RESULT|FILE
-	</programlisting>
+</programlisting>
 
 	<para>The record fields are:</para>
 

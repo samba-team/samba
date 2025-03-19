@@ -75,7 +75,7 @@
 		<smbconfsection name="[share]"/>
 		<smbconfoption name="vfs objects">glusterfs_fuse</smbconfoption>
 		<smbconfoption name="path">/absolute/path_of_fusemount</smbconfoption>
-	</programlisting>
+</programlisting>
 
 	<para>
 		Note that <command>vfs_glusterfs_fuse</command> requires a Gluster mount. For accessing glusterfs directly

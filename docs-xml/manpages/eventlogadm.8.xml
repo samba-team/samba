@@ -257,20 +257,20 @@
 	SRN: dmlinux
 	STR: (root) CMD ( rm -f /var/spool/cron/lastrun/cron.hourly)
 	DAT:
-	</programlisting>
+</programlisting>
 
 	<para>Set up an eventlog source, specifying a message file DLL:</para>
 	<programlisting>
 	eventlogadm -o addsource Application MyApplication | \\
 	    	%SystemRoot%/system32/MyApplication.dll
-	</programlisting>
+</programlisting>
 
 	<para>Filter messages from the system log into an event log:</para>
 	<programlisting>
 	tail -f /var/log/messages | \\
 		my_program_to_parse_into_eventlog_records | \\
 	      	eventlogadm SystemLogEvents
-	</programlisting>
+</programlisting>
 
 </refsect1>
 

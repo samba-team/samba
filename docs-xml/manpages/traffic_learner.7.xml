@@ -136,7 +136,7 @@
                  "-": 1
              }, <lineannotation>[...]</lineannotation>
           }
-        </programlisting>
+</programlisting>
         <para> This counts the observed continuations after an ldap
         packet with opcode 0 (a bind) followed by a dcerpc packet with
         opcode 11 (also a bind). The most common next packet is

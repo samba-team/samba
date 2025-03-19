@@ -93,7 +93,7 @@
 		<smbconfsection name="[share]"/>
 		<smbconfoption name="vfs objects">btrfs</smbconfoption>
 		<smbconfoption name="btrfs: manipulate snapshots">no</smbconfoption>
-	</programlisting>
+</programlisting>
 	<para>
 		To use the experimental snapshot manipulation functionality
 		provided by this module, it must be explicitly enabled, and
@@ -113,7 +113,7 @@
 		<smbconfsection name="[share]"/>
 		<smbconfoption name="vfs objects">btrfs shadow_copy</smbconfoption>
 		<smbconfoption name="btrfs: manipulate snapshots">yes</smbconfoption>
-	</programlisting>
+</programlisting>
 </refsect1>
 
 <refsect1>

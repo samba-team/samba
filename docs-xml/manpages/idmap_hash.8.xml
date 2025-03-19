@@ -76,7 +76,7 @@
 	winbind nss info = hash
 	winbind normalize names = yes
 	idmap_hash:name_map = /etc/samba/name_map.cfg
-	</programlisting>
+</programlisting>
 </refsect1>
 
 <refsect1>

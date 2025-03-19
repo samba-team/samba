@@ -61,7 +61,7 @@
 	<programlisting>
 		<smbconfsection name="[share]"/>
 		<smbconfoption name="vfs objects">snapper</smbconfoption>
-	</programlisting>
+</programlisting>
 
 	<para>
 		For remote snapshot creation and deletion, Samba's FSRVP
@@ -72,7 +72,7 @@
 		<smbconfsection name="[global]"/>
 		<smbconfoption name="registry shares">yes</smbconfoption>
 		<smbconfoption name="include">registry</smbconfoption>
-	</programlisting>
+</programlisting>
 </refsect1>
 
 <refsect1>

@@ -155,12 +155,12 @@
     <para>Search using a basic phrase:</para>
     <programlisting>
 	'wspsearch -Usomeuser%password //server/share --phrase="cats"'
-    </programlisting>
+</programlisting>
 
     <para>Search using an AQS like query for a picture whose name starts with p403 or p404:</para>
     <programlisting>
 	'wspsearch -Usomeuser%password //server/share --query="ALL:$&lt;p403 OR ALL:$&lt;p404 AND System.Kind:picture"'
-    </programlisting>
+</programlisting>
 
   </refsect1>
 

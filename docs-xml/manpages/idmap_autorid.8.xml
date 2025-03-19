@@ -110,7 +110,7 @@
 		The Unix ID for a RID is calculated this way:
 		<programlisting>
 			ID =  REDUCED RID + IDMAP RANGE LOW VALUE + RANGE NUMBER * RANGE SIZE
-		</programlisting>
+</programlisting>
 		where REDUCED RID = RID % RANGE_SIZE
 		and a DOMAIN RANGE INDEX = RID / RANGE_SIZE is used together with the
 		domain sid to determine the RANGE NUMBER (stored in the database).
@@ -120,7 +120,7 @@
 		given Unix ID is this:
 		<programlisting>
 			RID = (ID - LOW ID) % RANGE SIZE + DOMAIN RANGE INDEX * RANGE SIZE
-		</programlisting>
+</programlisting>
 		Where the DOMAIN RANGE INDEX is retrieved from the database along with the
 		domain sid by the RANGE NUMBER = (ID - LOW ID) / RANGE SIZE .
 	</para>
@@ -143,7 +143,7 @@
 	idmap config * : backend = autorid
 	idmap config * : range = 1000000-1999999
 
-	</programlisting>
+</programlisting>
 
 	<para>
 		This example shows how to configure idmap_autorid as default
@@ -166,7 +166,7 @@
 	idmap config TRUSTED : backend  = ad
 	idmap config TRUSTED : range    = 50000 - 99999
 	idmap config TRUSTED : schema_mode = sfu
-	</programlisting>
+</programlisting>
 
 </refsect1>
 

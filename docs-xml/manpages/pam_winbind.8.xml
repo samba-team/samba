@@ -46,7 +46,7 @@
 			    session   required        pam_unix2.so
 			+++ session   required        pam_winbind.so
 			    ...
-		</programlisting>
+</programlisting>
 
 		Make sure that pam_winbind is one of the first modules in the session part. It may retrieve
 		kerberos tickets which are needed by other modules.

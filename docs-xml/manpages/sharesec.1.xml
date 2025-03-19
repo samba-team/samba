@@ -152,7 +152,7 @@
 	OWNER:&lt;sid or name&gt;
 	GROUP:&lt;sid or name&gt;
 	ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
-	</programlisting></para>
+</programlisting></para>
 
 	<para>The revision of the ACL specifies the internal Windows
 	NT ACL revision for the security descriptor.
@@ -223,7 +223,7 @@
 
 	<programlisting>
 	host:~ # sharesec share -a S-1-5-21-1866488690-1365729215-3963860297-17724:ALLOWED/0/FULL
-	</programlisting>
+</programlisting>
 
 	<para>List all ACEs for <parameter>share</parameter>:
 	</para>
@@ -236,7 +236,7 @@
 	GROUP:
 	ACL:S-1-1-0:ALLOWED/0x0/FULL
 	ACL:S-1-5-21-1866488690-1365729215-3963860297-17724:ALLOWED/0x0/FULL
-	</programlisting>
+</programlisting>
 </refsect1>
 
 <refsect1>

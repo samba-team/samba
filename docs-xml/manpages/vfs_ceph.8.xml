@@ -59,7 +59,7 @@
 	<programlisting>
 		<command>client acl type = posix_acl</command>
 		<command>fuse default permissions = false</command>
-	</programlisting>
+</programlisting>
 </refsect1>
 
 <refsect1>
@@ -75,7 +75,7 @@
 		<smbconfoption name="vfs objects">ceph</smbconfoption>
 		<smbconfoption name="path">/non-mounted/cephfs/path</smbconfoption>
 		<smbconfoption name="kernel share modes">no</smbconfoption>
-	</programlisting>
+</programlisting>
 
 	<para>
 		Since <command>vfs_ceph</command> does not require a filesystem

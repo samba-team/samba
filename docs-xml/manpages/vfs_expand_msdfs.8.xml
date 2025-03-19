@@ -41,7 +41,7 @@
 192.168.234 local.samba.org
 192.168 remote.samba.org
  default.samba.org
-	</programlisting>
+</programlisting>
 
 	<para>With this, clients from network 192.168.234/24 are
 	redirected to host local.samba.org, clients from 192.168/16

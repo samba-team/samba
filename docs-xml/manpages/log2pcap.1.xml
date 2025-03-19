@@ -91,13 +91,13 @@
 
 	<para><programlisting>
 			<prompt>$</prompt> log2pcap &lt; /var/log/* &gt; trace.pcap
-	</programlisting></para>
+</programlisting></para>
 
 	<para>Convert to pcap using text2pcap:</para>
 
 	<para><programlisting>
 	<prompt>$</prompt> log2pcap -h samba.log | text2pcap -T 139,139 - trace.pcap
-	</programlisting></para>
+</programlisting></para>
 </refsect1>
 
 <refsect1>

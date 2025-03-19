@@ -156,7 +156,7 @@
       <smbconfsection name="[samba_gpfs_share]"/>
       <smbconfoption name="vfs objects">nfs4acl_xattr</smbconfoption>
       <smbconfoption name="path">/foo/bar</smbconfoption>
-    </programlisting>
+</programlisting>
   </refsect1>
 
   <refsect1>

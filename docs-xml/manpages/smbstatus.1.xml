@@ -257,7 +257,7 @@
     }
   }
 }
-				</programlisting> </para>
+</programlisting> </para>
 
 			<para>If oplocks are used:
 				<programlisting>
@@ -268,7 +268,7 @@
             "LEASE": false,
             "text": "LEVEL_II"
           }
-				</programlisting> </para>
+</programlisting> </para>
 
 			<para>If leases are used:
 
@@ -281,7 +281,7 @@
             "HANDLE": false,
             "text": "RW"
           }
-			</programlisting> </para>
+</programlisting> </para>
 
 			<para>With byte-range locks (-B, --byterange):
 				<programlisting>
@@ -309,7 +309,7 @@
         }
       ]
     }
-			</programlisting> </para>
+</programlisting> </para>
 
 			<para> With notifies (-N, --notify):
 				<programlisting>
@@ -327,7 +327,7 @@
       "creation_time": "1970-01-01T01:00:14.326582+01:00"
     }
   }
-			</programlisting> </para>
+</programlisting> </para>
 
 			<para> For profiling (-P, --profile):
 				<programlisting>
@@ -396,7 +396,7 @@
     ...
   }
 }
-			</programlisting> </para>
+</programlisting> </para>
 		</listitem>
 		</varlistentry>
 

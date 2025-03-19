@@ -169,7 +169,7 @@
 
 	idmap config CORP : backend  = ad
 	idmap config CORP : range = 1000-999999
-	</programlisting>
+</programlisting>
 </refsect1>
 
 <refsect1>

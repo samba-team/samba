@@ -851,7 +851,7 @@ chmod 1770 /usr/local/samba/lib/usershares
 
 	idmap config TRUSTED : backend  = rid
 	idmap config TRUSTED : range    = 6000000-6999999
-	</programlisting>
+</programlisting>
 </refsect1>
 
 <refsect1>

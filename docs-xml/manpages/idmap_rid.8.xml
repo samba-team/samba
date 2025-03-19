@@ -75,14 +75,14 @@
 		The Unix ID for a RID is calculated this way:
 		<programlisting>
 			ID = RID - BASE_RID + LOW_RANGE_ID.
-		</programlisting>
+</programlisting>
 	</para>
 	<para>
 		Correspondingly, the formula for calculating the RID for a
 		given Unix ID is this:
 		<programlisting>
 			RID = ID + BASE_RID - LOW_RANGE_ID.
-		</programlisting>
+</programlisting>
 	</para>
 </refsect1>
 
@@ -109,7 +109,7 @@
 	idmap config TRUSTED : backend  = rid
 	idmap config TRUSTED : range    = 50000 - 99999
 	idmap config TRUSTED : base_rid = 500000
-	</programlisting>
+</programlisting>
 </refsect1>
 
 <refsect1>

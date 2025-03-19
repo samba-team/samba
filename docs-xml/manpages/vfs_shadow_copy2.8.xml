@@ -124,7 +124,7 @@
 	<manvolnum>1</manvolnum></citerefentry> command:
 	<programlisting>
 	TZ=GMT date +@GMT-%Y.%m.%d-%H.%M.%S
-	</programlisting></para>
+</programlisting></para>
 
 </refsect1>
 

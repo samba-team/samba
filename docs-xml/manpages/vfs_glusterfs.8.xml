@@ -71,7 +71,7 @@
 		<smbconfoption name="path">/relative/base/path</smbconfoption>
 		<smbconfoption name="glusterfs:volume">gv0</smbconfoption>
 		<smbconfoption name="kernel share modes">no</smbconfoption>
-	</programlisting>
+</programlisting>
 
 	<para>
 		Note that since <command>vfs_glusterfs</command> does not
@@ -182,7 +182,7 @@
                 The write-behind translator can easily be disabled via calling
                 <programlisting>
                         gluster volume set &lt;volumename&gt; performance.write-behind off
-                </programlisting> on the commandline.
+</programlisting> on the commandline.
 	</para>
         <para>
                 With GlusterFS versions >= 9, we silently bypass write-behind

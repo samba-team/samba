@@ -111,7 +111,7 @@ options:
 	</para>
 	<programlisting>
 	# samba-log-parser --traceid 1234 --flow /var/log/samba/log.winbind
-	</programlisting>
+</programlisting>
 
 	<para>Show the full traces for winbind client with PID
 	<parameter>999999</parameter>
@@ -120,7 +120,7 @@ options:
 
 	<programlisting>
 	# samba-log-parser --pid 999999 --merge-by-timestamp /var/log/samba
-	</programlisting>
+</programlisting>
 
 	<para>Break down the traces into separate files according to traceid sorted
 	using the timestamp for log files found in the samba log directory:
@@ -128,7 +128,7 @@ options:
 
 	<programlisting>
 	# samba-log-parser --breakdown --merge-by-timestamp /var/log/samba
-	</programlisting>
+</programlisting>
 
 	<para>Sort traces using the timestamp for log files found in the samba log
 	directory. Traces do not need to contain the traceid header field.
@@ -136,7 +136,7 @@ options:
 
 	<programlisting>
 	# samba-log-parser --merge-by-timestamp /var/log/samba
-	</programlisting>
+</programlisting>
 </refsect1>
 
 <refsect1>
