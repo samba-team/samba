@@ -95,5 +95,8 @@ struct db_context {
 	(((order) >= DBWRAP_LOCK_ORDER_MIN) && \
 	 ((order) <= DBWRAP_LOCK_ORDER_MAX))
 
+#define DBWRAP_PERSISTENT_MIGRATION_MARKER_KEY \
+	"DBWRAP_PERSISTENT_MIGRATION_MARKER"
+
 #endif /* __DBWRAP_PRIVATE_H__ */
 
