@@ -246,10 +246,13 @@ class cmd_domain_backup_online(samba.netcmd.Command):
                choices=["tdb", "mdb"],
                help="Specify the database backend to be used "
                "(default is %s)" % get_default_backend_store()),
+        Option("--no-sysvol", action="store_true", default=False,
+              help="Exclude sysvol from the backup created"),
+
     ]
 
     def run(self, sambaopts=None, credopts=None, server=None, targetdir=None,
-            no_secrets=False, backend_store=None):
+            no_secrets=False, backend_store=None, no_sysvol=False):
         logger = self.get_logger()
         logger.setLevel(logging.DEBUG)
 
@@ -282,15 +285,16 @@ class cmd_domain_backup_online(samba.netcmd.Command):
             new_sid = get_sid_for_restore(remote_sam, logger)
             realm = remote_sam.domain_dns_name()
 
-            # Grab the remote DC's sysvol files and bundle them into a tar file
-            logger.info("Backing up sysvol files (via SMB)...")
-            sysvol_tar = os.path.join(tmpdir, 'sysvol.tar.gz')
-            smb_conn = smb_sysvol_conn(server, lp, creds)
-            backup_online(smb_conn, sysvol_tar, remote_sam.get_domain_sid())
+            if not no_sysvol:
+                # Grab the remote DC's sysvol files and bundle them into a tar file
+                logger.info("Backing up sysvol files (via SMB)...")
+                sysvol_tar = os.path.join(tmpdir, 'sysvol.tar.gz')
+                smb_conn = smb_sysvol_conn(server, lp, creds)
+                backup_online(smb_conn, sysvol_tar, remote_sam.get_domain_sid())
 
-            # remove the default sysvol files created by the clone (we want to
-            # make sure we restore the sysvol.tar.gz files instead)
-            shutil.rmtree(paths.sysvol)
+                # remove the default sysvol files created by the clone (we want to
+                # make sure we restore the sysvol.tar.gz files instead)
+                shutil.rmtree(paths.sysvol)
 
             # Edit the downloaded sam.ldb to mark it as a backup
             samdb = SamDB(url=paths.samdb, session_info=system_session(), lp=lp,
