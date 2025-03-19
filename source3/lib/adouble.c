@@ -1730,12 +1730,12 @@ struct ad_collect_state {
 	char *rsrc_data_buf;
 };
 
-static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
-				  struct char_mappings **cmaps,
-				  struct smb_filename *smb_fname,
-				  const struct stream_struct *stream,
-				  struct adouble *ad,
-				  struct ad_collect_state *state)
+static NTSTATUS ad_collect_one_stream(struct vfs_handle_struct *handle,
+				      struct char_mappings **cmaps,
+				      struct smb_filename *smb_fname,
+				      const struct stream_struct *stream,
+				      struct adouble *ad,
+				      struct ad_collect_state *state)
 {
 	struct smb_filename *sname = NULL;
 	files_struct *fsp = NULL;
@@ -1755,19 +1755,18 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 				    smb_fname->twrp,
 				    0);
 	if (sname == NULL) {
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (is_ntfs_default_stream_smb_fname(sname)) {
 		TALLOC_FREE(sname);
-		return true;
+		return NT_STATUS_OK;
 	}
 
 	DBG_DEBUG("Collecting stream [%s]\n", smb_fname_str_dbg(sname));
 
 	status = openat_pathref_fsp(handle->conn->cwd_fsp, sname);
 	if (!NT_STATUS_IS_OK(status)) {
-		ok = false;
 		goto out;
 	}
 
@@ -1793,7 +1792,6 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("SMB_VFS_CREATE_FILE [%s] failed\n",
 			smb_fname_str_dbg(sname));
-		ok = false;
 		goto out;
 	}
 
@@ -1804,7 +1802,7 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 			DBG_ERR("Bad size [%zd] on [%s]\n",
 				(ssize_t)stream->size,
 				smb_fname_str_dbg(sname));
-			ok = false;
+			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 			goto out;
 		}
 
@@ -1813,7 +1811,7 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 			DBG_ERR("Bad size [%zd] on [%s]\n",
 				(ssize_t)stream->size,
 				smb_fname_str_dbg(sname));
-			ok = false;
+			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 			goto out;
 		}
 
@@ -1828,10 +1826,10 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 		if (!ok) {
 			DBG_ERR("Deleting [%s] failed\n",
 				smb_fname_str_dbg(sname));
-			ok = false;
+			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 			goto out;
 		}
-		ok = true;
+		status = NT_STATUS_OK;
 		goto out;
 	}
 
@@ -1850,7 +1848,7 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 			DBG_ERR("Bad size [%zd] on [%s]\n",
 				(ssize_t)stream->size,
 				smb_fname_str_dbg(sname));
-			ok = false;
+			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 			goto out;
 		}
 
@@ -1871,11 +1869,11 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 			if (!ok) {
 				DBG_ERR("Deleting [%s] failed\n",
 					smb_fname_str_dbg(sname));
-				ok = false;
+				status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 				goto out;
 			}
 		}
-		ok = true;
+		status = NT_STATUS_OK;
 		goto out;
 	}
 
@@ -1884,7 +1882,7 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 					 struct ad_xattr_entry,
 					 ad->adx_header.adx_num_attrs + 1);
 	if (ad->adx_entries == NULL) {
-		ok = false;
+		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 
@@ -1894,7 +1892,7 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 	};
 	e->adx_name = talloc_strdup(ad, stream->name + 1);
 	if (e->adx_name == NULL) {
-		ok = false;
+		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 	p = strchr(e->adx_name, ':');
@@ -1910,7 +1908,7 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 				     vfs_translate_to_unix);
 	if (rc != 0) {
 		DBG_ERR("string_replace_allocate failed: %s\n", strerror(rc));
-		ok = false;
+		status = map_nt_error_from_unix(rc);
 		goto out;
 	}
 
@@ -1931,7 +1929,7 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 					      char,
 					      needed_size);
 		if (ad->adx_data == NULL) {
-			ok = false;
+			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
 	}
@@ -1944,7 +1942,7 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 		DBG_ERR("Bad size [%zd] on [%s]\n",
 			(ssize_t)stream->size,
 			smb_fname_str_dbg(sname));
-		ok = false;
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto out;
 	}
 	state->adx_data_off += nread;
@@ -1956,7 +1954,7 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 	if (!ok) {
 		DBG_ERR("Deleting [%s] failed\n",
 			smb_fname_str_dbg(sname));
-		ok = false;
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto out;
 	}
 
@@ -1968,11 +1966,10 @@ out:
 			DBG_ERR("close_file [%s] failed: %s\n",
 				smb_fname_str_dbg(smb_fname),
 				nt_errstr(status));
-			ok = false;
 		}
 	}
 
-	return ok;
+	return status;
 }
 
 /**
@@ -2074,13 +2071,10 @@ bool ad_unconvert(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i = 0; i < num_streams; i++) {
-		ok = ad_collect_one_stream(handle,
-					   cmaps,
-					   smb_fname,
-					   &streams[i],
-					   ad,
-					   &state);
-		if (!ok) {
+		status = ad_collect_one_stream(
+			handle, cmaps, smb_fname, &streams[i], ad, &state);
+		if (!NT_STATUS_IS_OK(status)) {
+			ok = false;
 			goto out;
 		}
 	}
