@@ -1600,11 +1600,11 @@ done:
 	return ret;
 }
 
-static bool ad_unconvert_open_ad(TALLOC_CTX *mem_ctx,
-				 struct vfs_handle_struct *handle,
-				 struct smb_filename *smb_fname,
-				 struct smb_filename *adpath,
-				 files_struct **_fsp)
+static NTSTATUS ad_unconvert_open_ad(TALLOC_CTX *mem_ctx,
+				     struct vfs_handle_struct *handle,
+				     struct smb_filename *smb_fname,
+				     struct smb_filename *adpath,
+				     files_struct **_fsp)
 {
 	files_struct *fsp = NULL;
 	NTSTATUS status;
@@ -1613,7 +1613,7 @@ static bool ad_unconvert_open_ad(TALLOC_CTX *mem_ctx,
 	status = openat_pathref_fsp(handle->conn->cwd_fsp, adpath);
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		return false;
+		return status;
 	}
 
 	status = SMB_VFS_CREATE_FILE(
@@ -1638,7 +1638,7 @@ static bool ad_unconvert_open_ad(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("SMB_VFS_CREATE_FILE [%s] failed: %s\n",
 			smb_fname_str_dbg(adpath), nt_errstr(status));
-		return false;
+		return status;
 	}
 
 	if (fsp->fsp_name->st.st_ex_uid != smb_fname->st.st_ex_uid ||
@@ -1648,15 +1648,16 @@ static bool ad_unconvert_open_ad(TALLOC_CTX *mem_ctx,
 				     smb_fname->st.st_ex_uid,
 				     smb_fname->st.st_ex_gid);
 		if (ret != 0) {
+			status = map_nt_error_from_unix(errno);
 			DBG_ERR("SMB_VFS_FCHOWN [%s] failed: %s\n",
 				fsp_str_dbg(fsp), nt_errstr(status));
 			close_file_free(NULL, &fsp, NORMAL_CLOSE);
-			return false;
+			return status;
 		}
 	}
 
 	*_fsp = fsp;
-	return true;
+	return status;
 }
 
 static NTSTATUS ad_unconvert_get_streams(struct vfs_handle_struct *handle,
@@ -2084,10 +2085,11 @@ bool ad_unconvert(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	ok = ad_unconvert_open_ad(frame, handle, smb_fname, adpath, &fsp);
-	if (!ok) {
+	status = ad_unconvert_open_ad(frame, handle, smb_fname, adpath, &fsp);
+	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to open adfile [%s]\n",
 			smb_fname_str_dbg(smb_fname));
+		ok = false;
 		goto out;
 	}
 
