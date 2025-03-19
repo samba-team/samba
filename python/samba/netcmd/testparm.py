@@ -62,23 +62,13 @@ class cmd_testparm(Command):
                help="Suppress prompt for enter"),
         Option("-v", "--verbose", action="store_true",
                default=False, help="Show default options too"),
-        # We need support for smb.conf macros before this will work again
-        Option("--server", type=str, help="Set %L macro to servername"),
-        # These are harder to do with the new code structure
-        Option("--show-all-parameters", action="store_true", default=False,
-               help="Show the parameters, type, possible values")
     ]
 
     takes_args = []
 
     def run(self, sambaopts, versionopts, section_name=None,
             parameter_name=None, client_ip=None, client_name=None,
-            verbose=False, suppress_prompt=None, show_all_parameters=False,
-            server=None):
-        if server:
-            raise NotImplementedError("--server not yet implemented")
-        if show_all_parameters:
-            raise NotImplementedError("--show-all-parameters not yet implemented")
+            verbose=False, suppress_prompt=None):
         if client_name is not None and client_ip is None:
             raise CommandError("Both a DNS name and an IP address are "
                                "required for the host access check")
