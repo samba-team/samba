@@ -1659,18 +1659,18 @@ static bool ad_unconvert_open_ad(TALLOC_CTX *mem_ctx,
 	return true;
 }
 
-static bool ad_unconvert_get_streams(struct vfs_handle_struct *handle,
-				     struct smb_filename *smb_fname,
-				     TALLOC_CTX *mem_ctx,
-				     unsigned int *num_streams,
-				     struct stream_struct **streams)
+static NTSTATUS ad_unconvert_get_streams(struct vfs_handle_struct *handle,
+					 struct smb_filename *smb_fname,
+					 TALLOC_CTX *mem_ctx,
+					 unsigned int *num_streams,
+					 struct stream_struct **streams)
 {
 	files_struct *fsp = NULL;
 	NTSTATUS status;
 
 	status = openat_pathref_fsp(handle->conn->cwd_fsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		return false;
+		return status;
 	}
 
 	status = SMB_VFS_CREATE_FILE(
@@ -1697,7 +1697,7 @@ static bool ad_unconvert_get_streams(struct vfs_handle_struct *handle,
 		DBG_ERR("Opening [%s] failed: %s\n",
 			smb_fname_str_dbg(smb_fname),
 			nt_errstr(status));
-		return false;
+		return status;
 	}
 
 	status = vfs_fstreaminfo(fsp,
@@ -1709,7 +1709,7 @@ static bool ad_unconvert_get_streams(struct vfs_handle_struct *handle,
 		DBG_ERR("streaminfo on [%s] failed: %s\n",
 			smb_fname_str_dbg(smb_fname),
 			nt_errstr(status));
-		return false;
+		return status;
 	}
 
 	status = close_file_free(NULL, &fsp, NORMAL_CLOSE);
@@ -1717,10 +1717,10 @@ static bool ad_unconvert_get_streams(struct vfs_handle_struct *handle,
 		DBG_ERR("close_file [%s] failed: %s\n",
 			smb_fname_str_dbg(smb_fname),
 			nt_errstr(status));
-		return false;
+		return status;
 	}
 
-	return true;
+	return NT_STATUS_OK;
 }
 
 struct ad_collect_state {
@@ -2013,12 +2013,10 @@ bool ad_unconvert(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(mappings);
 	}
 
-	ok = ad_unconvert_get_streams(handle,
-				      smb_fname,
-				      frame,
-				      &num_streams,
-				      &streams);
-	if (!ok) {
+	status = ad_unconvert_get_streams(
+		handle, smb_fname, frame, &num_streams, &streams);
+	if (!NT_STATUS_IS_OK(status)) {
+		ok = false;
 		goto out;
 	}
 
