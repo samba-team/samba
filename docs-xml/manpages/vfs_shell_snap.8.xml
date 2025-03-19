@@ -114,12 +114,9 @@
 	<programlisting>
 		<smbconfsection name="[share]"/>
 		<smbconfoption name="vfs objects">shell_snap</smbconfoption>
-		<smbconfoption name="shell_snap:check path command">
-			snap_check_path.sh</smbconfoption>
-		<smbconfoption name="shell_snap:create command">
-			snap_create.sh</smbconfoption>
-		<smbconfoption name="shell_snap:delete command">
-			snap_delete.sh</smbconfoption>
+		<smbconfoption name="shell_snap:check path command">snap_check_path.sh</smbconfoption>
+		<smbconfoption name="shell_snap:create command">snap_create.sh</smbconfoption>
+		<smbconfoption name="shell_snap:delete command">snap_delete.sh</smbconfoption>
 </programlisting>
 
 	<para>
