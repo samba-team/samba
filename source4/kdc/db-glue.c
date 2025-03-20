@@ -3401,6 +3401,18 @@ static krb5_error_code samba_kdc_lookup_realm(krb5_context context,
 		if (flags & SDB_F_FOR_AS_REQ) {
 			check_realm = true;
 		}
+		if ((flags & SDB_F_FOR_TGS_REQ) &&
+		    (flags & SDB_F_CROSS_REALM_PRINCIPAL))
+		{
+			/*
+			 * The request is not for us...
+			 * Let the caller ignore that
+			 * the client is remote and
+			 * has no local sdb_entry.
+			 */
+			TALLOC_FREE(frame);
+			return SDB_ERR_NOT_FOUND_HERE;
+		}
 	}
 	if (flags & SDB_F_GET_SERVER) {
 		if (flags & SDB_F_FOR_TGS_REQ) {
