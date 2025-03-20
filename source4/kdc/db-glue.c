@@ -3386,6 +3386,7 @@ static krb5_error_code samba_kdc_lookup_realm(krb5_context context,
 	NTSTATUS status;
 	krb5_error_code ret;
 	bool check_realm = false;
+	bool only_check_main_realm = false;
 	const char *realm = NULL;
 	struct dsdb_trust_routing_table *trt = NULL;
 	const struct lsa_TrustDomainInfoInfoEx *tdo = NULL;
@@ -3418,6 +3419,24 @@ static krb5_error_code samba_kdc_lookup_realm(krb5_context context,
 		if (flags & SDB_F_FOR_TGS_REQ) {
 			check_realm = true;
 		}
+
+		/* For S4U2Proxy the server has to be local */
+		if (flags & SDB_F_S4U2PROXY_PRINCIPAL) {
+			check_realm = true;
+			only_check_main_realm = true;
+		}
+	}
+
+	/*
+	 * For S4U2Self the client has to be local
+	 *
+	 * Currently there's no server lookup,
+	 * but make it strict in case it comes
+	 * along in future.
+	 */
+	if (flags & SDB_F_S4U2SELF_PRINCIPAL) {
+		check_realm = true;
+		only_check_main_realm = true;
 	}
 
 	if (!check_realm) {
@@ -3441,6 +3460,14 @@ static krb5_error_code samba_kdc_lookup_realm(krb5_context context,
 		 */
 		TALLOC_FREE(frame);
 		return SDB_ERR_NOENTRY;
+	}
+
+	if (only_check_main_realm) {
+		/*
+		 * The request is for us.
+		 */
+		TALLOC_FREE(frame);
+		return 0;
 	}
 
 	if (smb_krb5_principal_get_type(context, principal) == KRB5_NT_ENTERPRISE_PRINCIPAL) {
