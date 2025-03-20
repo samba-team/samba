@@ -3757,8 +3757,8 @@ net witness force-response   Force an AsyncNotify response based on json input (
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is complete for version 3 of the Samba
-	suite.</para>
+	<para>This man page is part of version &doc.version;
+	of the Samba suite.</para>
 </refsect1>
 
 <refsect1>
