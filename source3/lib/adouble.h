@@ -184,6 +184,8 @@ bool is_adouble_file(const char *path);
 int adouble_path(TALLOC_CTX *ctx,
 		 const struct smb_filename *smb_fname_in,
 		 struct smb_filename **pp_smb_fname_out);
+struct smb_filename *adouble_name(TALLOC_CTX *mem_ctx,
+				  const struct smb_filename *base);
 
 AfpInfo *afpinfo_new(TALLOC_CTX *ctx);
 ssize_t afpinfo_pack(const AfpInfo *ai, char *buf);

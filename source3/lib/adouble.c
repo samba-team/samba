@@ -2787,6 +2787,22 @@ int adouble_path(TALLOC_CTX *ctx,
 	return 0;
 }
 
+struct smb_filename *adouble_name(TALLOC_CTX *mem_ctx,
+				  const struct smb_filename *base)
+{
+	size_t ad_len = strlen(base->base_name);
+	char ad_name[ad_len + 3];
+	struct smb_filename ad_fname = {
+		.base_name = ad_name,
+		.flags = base->flags,
+		.twrp = base->twrp,
+	};
+
+	snprintf(ad_name, sizeof(ad_name), "._%s", base->base_name);
+
+	return cp_smb_filename(mem_ctx, &ad_fname);
+}
+
 /**
  * Allocate and initialize an AfpInfo struct
  **/
