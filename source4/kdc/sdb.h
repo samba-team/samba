@@ -124,6 +124,9 @@ struct sdb_entry {
 #define SDB_F_FOR_TGS_REQ		0x02000	/* fetch is for a TGS REQ */
 #define SDB_F_ARMOR_PRINCIPAL		0x40000	/* fetch is for the client of an armor ticket */
 #define SDB_F_USER2USER_PRINCIPAL	0x80000	/* fetch is for the server of a user2user tgs-req */
+#define SDB_F_CROSS_REALM_PRINCIPAL	0x100000 /* fetch is cross-realm ticket */
+#define SDB_F_S4U2SELF_PRINCIPAL	0x200000 /* fetch is for S4U2Self */
+#define SDB_F_S4U2PROXY_PRINCIPAL	0x400000 /* fetch is for S4U2Proxy */
 
 #define SDB_F_HDB_MASK		(SDB_F_DECRYPT | \
 				 SDB_F_GET_CLIENT| \
@@ -135,7 +138,10 @@ struct sdb_entry {
 				 SDB_F_FOR_AS_REQ | \
 				 SDB_F_FOR_TGS_REQ | \
 				 SDB_F_ARMOR_PRINCIPAL| \
-				 SDB_F_USER2USER_PRINCIPAL)
+				 SDB_F_USER2USER_PRINCIPAL| \
+				 SDB_F_CROSS_REALM_PRINCIPAL| \
+				 SDB_F_S4U2SELF_PRINCIPAL| \
+				 SDB_F_S4U2PROXY_PRINCIPAL)
 
 /* These are not supported by HDB */
 #define SDB_F_FORCE_CANON		0x4000	/* force canonicalization */
