@@ -31,12 +31,12 @@
   operation is guaranteed to remain in the filesystem after a power
   failure. This is particularly important for some cluster filesystems
   which are participating in a node failover system with clustered
-  Samba
+  Samba.
 
   On those filesystems this module provides a way to perform those
   operations safely.
 
-  most of the performance loss with this module is in fsync on close().
+  Most of the performance loss with this module is in fsync on close().
   You can disable that with
      syncops:onclose = no
   that can be set either globally or per share.
@@ -46,7 +46,7 @@
      syncops:onmeta = no
   This option can be set either globally or per share.
 
-  you can also disable the module completely for a share with
+  You can also disable the module completely for a share with
      syncops:disable = true
 
  */
