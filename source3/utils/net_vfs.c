@@ -36,6 +36,7 @@
 #include "lib/string_replace.h"
 #include "utils/net.h"
 #include "lib/global_contexts.h"
+#include "source3/smbd/smbd.h"
 
 #define NET_VFS_CMD_STREAM_TO_ADOUBLE "stream2adouble"
 
@@ -208,6 +209,7 @@ static int net_vfs_get_ntacl(struct net_context *net,
 			     const char **argv)
 {
 	const char *path = NULL;
+	struct files_struct *dirfsp = NULL;
 	struct smb_filename *smb_fname = NULL;
 	files_struct *fsp = NULL;
 	struct security_descriptor *sd = NULL;
@@ -236,24 +238,25 @@ static int net_vfs_get_ntacl(struct net_context *net,
 		goto done;
 	}
 
-	ret = SMB_VFS_STAT(state.conn_tos->conn, smb_fname);
-	if (ret != 0) {
-		fprintf(stderr, "stat [%s] failed: %s\n",
-			smb_fname_str_dbg(smb_fname), strerror(errno));
-		goto done;
-	}
-
-	status = openat_pathref_fsp(state.conn_tos->conn->cwd_fsp, smb_fname);
+	status = filename_convert_dirfsp(state.mem_ctx,
+					 state.conn_tos->conn,
+					 path,
+					 UCF_POSIX_PATHNAMES |
+						 UCF_LCOMP_LNK_OK,
+					 0,
+					 &dirfsp,
+					 &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("openat_pathref_fsp [%s] failed: %s\n",
-			smb_fname_str_dbg(smb_fname), nt_errstr(status));
+		DBG_ERR("filename_convert_dirfsp() [%s] failed: %s\n",
+			smb_fname_str_dbg(smb_fname),
+			nt_errstr(status));
 		goto done;
 	}
 
 	status = SMB_VFS_CREATE_FILE(
 		state.conn_tos->conn,
 		NULL,				/* req */
-		NULL,
+		dirfsp,
 		smb_fname,
 		FILE_READ_ATTRIBUTES|READ_CONTROL_ACCESS,
 		FILE_SHARE_READ|FILE_SHARE_WRITE,
@@ -269,6 +272,9 @@ static int net_vfs_get_ntacl(struct net_context *net,
 		&fsp,
 		NULL,				/* info */
 		NULL, NULL);			/* create context */
+
+	close_file_free(NULL, &dirfsp, ERROR_CLOSE);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("SMB_VFS_CREATE_FILE [%s] failed: %s\n",
 			smb_fname_str_dbg(smb_fname), nt_errstr(status));
