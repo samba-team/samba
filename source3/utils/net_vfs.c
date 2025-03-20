@@ -278,6 +278,7 @@ static int net_vfs_get_ntacl(struct net_context *net,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("SMB_VFS_CREATE_FILE [%s] failed: %s\n",
 			smb_fname_str_dbg(smb_fname), nt_errstr(status));
+		TALLOC_FREE(smb_fname);
 		goto done;
 	}
 
