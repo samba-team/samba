@@ -1733,6 +1733,7 @@ struct ad_collect_state {
 
 static NTSTATUS ad_collect_one_stream(struct vfs_handle_struct *handle,
 				      struct char_mappings **cmaps,
+				      struct files_struct *dirfsp,
 				      struct smb_filename *smb_fname,
 				      const struct stream_struct *stream,
 				      struct adouble *ad,
@@ -1774,7 +1775,7 @@ static NTSTATUS ad_collect_one_stream(struct vfs_handle_struct *handle,
 	status = SMB_VFS_CREATE_FILE(
 		handle->conn,
 		NULL,				/* req */
-		NULL,				/* dirfsp */
+		dirfsp,				/* dirfsp */
 		sname,
 		FILE_READ_DATA|DELETE_ACCESS,
 		FILE_SHARE_READ,
@@ -1837,7 +1838,7 @@ static NTSTATUS ad_collect_one_stream(struct vfs_handle_struct *handle,
 	if (is_afpresource_stream(stream->name)) {
 		ad->ad_rsrc_data = talloc_size(ad, stream->size);
 		if (ad->ad_rsrc_data == NULL) {
-			ok = false;
+			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
 
@@ -2089,8 +2090,13 @@ NTSTATUS ad_unconvert(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i = 0; i < num_streams; i++) {
-		status = ad_collect_one_stream(
-			handle, cmaps, fullname, &streams[i], ad, &state);
+		status = ad_collect_one_stream(handle,
+					       cmaps,
+					       dirfsp,
+					       fullname,
+					       &streams[i],
+					       ad,
+					       &state);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
