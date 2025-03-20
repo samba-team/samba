@@ -308,6 +308,7 @@ done:
 			rc = 1;
 		}
 	}
+	TALLOC_FREE(smb_fname);
 	return rc;
 }
 
