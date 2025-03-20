@@ -51,10 +51,10 @@
 	<para>Note that this option is only useful if Samba is set up as a domain controller.</para>
 
 	<para>
-	Disable the use of roaming profiles by setting the value of this parameter to the empty string. For
-	example, <smbconfoption name="logon path">""</smbconfoption>. Take note that even if the default setting
-	in the smb.conf file is the empty string, any value specified in the user account settings in the passdb
-	backend will over-ride the effect of setting this parameter to null. Disabling of all roaming profile use
+	Disable the use of roaming profiles by setting the value of this parameter to no value.
+	Take note that even if the default setting in the smb.conf file is the empty string,
+	any value specified in the user account settings in the passdb backend will over-ride the
+	effect of setting this parameter to null. Disabling of all roaming profile use
 	requires that the user account settings must also be blank.
 	</para>
 
@@ -62,6 +62,12 @@
 	An example of use is:
 <programlisting>
 logon path = \\PROFILESERVER\PROFILE\%U
+</programlisting>
+	</para>
+	<para>
+	In this example the use of roaming profiles is disabled (depending also on passdb settings):
+<programlisting>
+logon path =
 </programlisting>
 	</para>
 </description>
