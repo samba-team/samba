@@ -1603,23 +1603,24 @@ done:
 static NTSTATUS ad_unconvert_open_ad(TALLOC_CTX *mem_ctx,
 				     struct vfs_handle_struct *handle,
 				     struct smb_filename *smb_fname,
-				     struct smb_filename *adpath,
+				     struct files_struct *dirfsp,
+				     struct smb_filename *adname,
 				     files_struct **_fsp)
 {
+	struct smb_filename *adpath = NULL;
 	files_struct *fsp = NULL;
 	NTSTATUS status;
 	int ret;
 
-	status = openat_pathref_fsp(handle->conn->cwd_fsp, adpath);
-	if (!NT_STATUS_IS_OK(status) &&
-	    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		return status;
+	adpath = full_path_from_dirfsp_atname(mem_ctx, dirfsp, adname);
+	if (adpath == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = SMB_VFS_CREATE_FILE(
 		handle->conn,
 		NULL,				/* req */
-		NULL,				/* dirfsp */
+		dirfsp,				/* dirfsp */
 		adpath,
 		FILE_READ_DATA|FILE_WRITE_DATA,
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
@@ -1985,7 +1986,7 @@ NTSTATUS ad_unconvert(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct ad_collect_state state;
 	struct stream_struct *streams = NULL;
-	struct smb_filename *adpath = NULL;
+	struct smb_filename *adname = NULL;
 	struct files_struct *dirfsp = NULL;
 	struct smb_filename *fullname = NULL;
 	struct smb_filename *relname = NULL;
@@ -2054,13 +2055,13 @@ NTSTATUS ad_unconvert(TALLOC_CTX *mem_ctx,
 		.adx_data_off = 0,
 	};
 
-	ret = adouble_path(frame, fullname, &adpath);
-	if (ret != 0) {
+	adname = adouble_name(frame, relname);
+	if (adname == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 
-	ret = SMB_VFS_STAT(handle->conn, adpath);
+	ret = SMB_VFS_FSTATAT(handle->conn, dirfsp, adname, &adname->st, 0);
 	if (ret == 0) {
 		state.have_adfile = true;
 	} else {
@@ -2095,7 +2096,8 @@ NTSTATUS ad_unconvert(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	status = ad_unconvert_open_ad(frame, handle, fullname, adpath, &fsp);
+	status = ad_unconvert_open_ad(
+		frame, handle, fullname, dirfsp, adname, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to open adfile [%s]\n",
 			smb_fname_str_dbg(fullname));
