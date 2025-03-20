@@ -52,7 +52,7 @@ import samba.dcerpc.dcerpc
 import samba.dcerpc.epmapper
 
 from unittest import SkipTest
-
+from pathlib import Path
 
 BINDIR = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                       "../../../../bin"))
@@ -66,13 +66,17 @@ RE_CAMELCASE = re.compile(r"([_\-])+")
 
 
 def source_tree_topdir():
-    """Return the top level source directory."""
-    paths = ["../../..", "../../../.."]
-    for p in paths:
-        topdir = os.path.normpath(os.path.join(os.path.dirname(__file__), p))
-        if os.path.exists(os.path.join(topdir, 'source4')):
-            return topdir
-    raise RuntimeError("unable to find top level source directory")
+    """Return the top level source directory if this seems to be a
+    full source tree. Otherwise raise FileNotFoundError."""
+    topdir = Path(__file__) / "../../../.."
+    topdir = topdir.resolve()
+
+    for dirpath in ('source4', 'docs-xml', 'python/samba/tests'):
+        d = topdir / dirpath
+        if not d.is_dir():
+            raise FileNotFoundError(f"missing or not a directory: {d}")
+
+    return topdir
 
 
 def ldb_err(v):
