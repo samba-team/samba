@@ -96,6 +96,10 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 			user_info->password.response.lanman.data;
 	}
 
+	if (auth_context->for_netlogon) {
+		params.flags |= WBC_AUTH_PARAM_FLAGS_FOR_NETLOGON;
+	}
+
 	/* we are contacting the privileged pipe */
 	become_root();
 	wbc_status = wbcAuthenticateUserEx(&params, &info, &err);
