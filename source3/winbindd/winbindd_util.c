@@ -1823,6 +1823,11 @@ struct winbindd_domain *find_our_domain(void)
 	return NULL;
 }
 
+struct winbindd_domain *find_local_sam_domain(void)
+{
+	return find_domain_from_sid(get_global_sam_sid());
+}
+
 struct winbindd_domain *find_default_route_domain(void)
 {
 	if (!IS_DC) {

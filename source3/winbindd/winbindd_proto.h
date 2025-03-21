@@ -522,6 +522,7 @@ struct winbindd_domain *find_domain_from_sid_noinit(const struct dom_sid *sid);
 struct winbindd_domain *find_trust_from_sid_noinit(const struct dom_sid *sid);
 struct winbindd_domain *find_domain_from_sid(const struct dom_sid *sid);
 struct winbindd_domain *find_our_domain(void);
+struct winbindd_domain *find_local_sam_domain(void);
 struct winbindd_domain *find_default_route_domain(void);
 struct winbindd_domain *find_lookup_domain_from_sid(const struct dom_sid *sid);
 struct winbindd_domain *find_lookup_domain_from_name(const char *domain_name);
