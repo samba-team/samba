@@ -1062,6 +1062,7 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 	uint16_t validation_level;
 	union netr_Validation *validation = NULL;
 	bool interactive = false;
+	bool for_netlogon = false;
 
 	/*
 	 * Make sure we start with authoritative=true,
@@ -1081,6 +1082,10 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 		break;
 	default:
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	if (r->in.internal_flags & WB_SAMLOGON_FOR_NETLOGON) {
+		for_netlogon = true;
 	}
 
 	switch (r->in.logon_level) {
@@ -1140,6 +1145,7 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 	}
 
 	status = winbind_dual_SamLogon(domain, p->mem_ctx,
+				       for_netlogon,
 				       interactive,
 				       identity_info->parameter_control,
 				       identity_info->account_name.string,

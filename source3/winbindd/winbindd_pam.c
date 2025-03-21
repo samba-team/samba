@@ -2624,6 +2624,7 @@ done:
 
 NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
+			       bool for_netlogon,
 			       bool interactive,
 			       uint32_t logon_parameters,
 			       const char *name_user,
@@ -2723,6 +2724,13 @@ process_result:
 		struct netr_SamBaseInfo *base_info = NULL;
 		struct netr_SamInfo3 *info3 = NULL;
 
+		if (for_netlogon) {
+			/*
+			 * For netlogon we don't call netsamlogon_cache_store()
+			 */
+			goto done;
+		}
+
 		switch (validation_level) {
 		case 3:
 			base_ctx = validation->sam3;
@@ -2809,6 +2817,7 @@ NTSTATUS _wbint_PamAuthCrap(struct pipes_struct *p, struct wbint_PamAuthCrap *r)
 	const struct tsocket_address *remote = NULL;
 	const struct tsocket_address *local = NULL;
 	struct netr_SamInfo3 *info3 = NULL;
+	bool for_netlogon = false;
 	pid_t client_pid;
 
 	if (domain == NULL) {
@@ -2829,8 +2838,13 @@ NTSTATUS _wbint_PamAuthCrap(struct pipes_struct *p, struct wbint_PamAuthCrap *r)
 	DBG_NOTICE("[%"PRIu32"]: pam auth crap domain: %s user: %s\n",
 		   client_pid, r->in.domain, r->in.user);
 
+	if (r->in.flags & WBFLAG_PAM_FOR_NETLOGON) {
+		for_netlogon = true;
+	}
+
 	result = winbind_dual_SamLogon(domain,
 				       p->mem_ctx,
+				       for_netlogon,
 				       false, /* interactive */
 				       r->in.logon_parameters,
 				       r->in.user,

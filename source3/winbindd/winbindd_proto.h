@@ -479,6 +479,7 @@ NTSTATUS winbindd_pam_auth_pac_verify(struct winbindd_cli_state *state,
 
 NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
+			       bool for_netlogon,
 			       bool interactive,
 			       uint32_t logon_parameters,
 			       const char *name_user,
