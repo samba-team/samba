@@ -228,6 +228,7 @@ typedef struct winbindd_gr {
  * extra_data field */
 #define WBFLAG_BIG_NTLMV2_BLOB		0x00010000
 #define WBFLAG_FROM_NSS                 0x00020000
+#define WBFLAG_PAM_FOR_NETLOGON         0x00040000
 
 #define WINBINDD_MAX_EXTRA_DATA (128*1024)
 
