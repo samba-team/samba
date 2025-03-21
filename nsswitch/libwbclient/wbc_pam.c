@@ -441,6 +441,10 @@ wbcErr wbcCtxAuthenticateUserEx(struct wbcContext *ctx,
 				WBFLAG_PAM_USER_SESSION_KEY |
 				WBFLAG_PAM_LMKEY;
 
+		if (params->flags & WBC_AUTH_PARAM_FLAGS_FOR_NETLOGON) {
+			request.flags |= WBFLAG_PAM_FOR_NETLOGON;
+		}
+
 		if (params->password.response.lm_length &&
 		    !params->password.response.lm_data) {
 			wbc_status = WBC_ERR_INVALID_PARAM;

@@ -334,6 +334,7 @@ struct wbcChangePasswordParams {
 /* wbcAuthUserParams->flags */
 
 #define WBC_AUTH_PARAM_FLAGS_INTERACTIVE_LOGON		0x00000001
+#define WBC_AUTH_PARAM_FLAGS_FOR_NETLOGON		0x00000002
 
 /**
  * @brief Auth User Information
