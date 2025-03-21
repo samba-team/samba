@@ -136,6 +136,8 @@ struct auth4_context {
 	/* Kerberos context, set up on demand */
 	struct smb_krb5_context *smb_krb5_context;
 
+	bool for_netlogon;
+
 	struct tevent_req *(*check_ntlm_password_send)(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct auth4_context *auth_ctx,

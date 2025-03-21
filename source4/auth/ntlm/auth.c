@@ -772,7 +772,12 @@ _PUBLIC_ NTSTATUS auth_context_create_for_netlogon(TALLOC_CTX *mem_ctx,
 	status = auth_context_create_methods(mem_ctx, auth_methods, ev, msg,
 					     lp_ctx, NULL, auth_ctx);
 	talloc_free(_auth_methods);
-	return status;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	(*auth_ctx)->for_netlogon = true;
+	return NT_STATUS_OK;
 }
 
 /* the list of currently registered AUTH backends */
