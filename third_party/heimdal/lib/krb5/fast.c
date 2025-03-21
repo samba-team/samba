@@ -271,7 +271,7 @@ make_fast_ap_fxarmor(krb5_context context,
 	if (ret)
 	    goto out;
 
-	ret = copy_KrbFastArmor(fxarmor, &msg.armor);
+	ret = copy_KrbFastArmor(&msg.armor, fxarmor);
 	if (ret) {
 	    free_KERB_ARMOR_SERVICE_REPLY(&msg);
 	    goto out;

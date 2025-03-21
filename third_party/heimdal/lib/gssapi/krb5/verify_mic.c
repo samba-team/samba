@@ -148,7 +148,7 @@ verify_mic_des3
   u_char *p;
   u_char *seq;
   uint32_t seq_number;
-  OM_uint32 ret;
+  OM_uint32 ret, seq_err;
   krb5_crypto crypto;
   krb5_data seq_data;
   int cmp, docompat;
@@ -226,8 +226,8 @@ retry:
       return GSS_S_BAD_MIC;
   }
 
-  ret = _gssapi_msg_order_check(context_handle->order, seq_number);
-  if (ret) {
+  seq_err = _gssapi_msg_order_check(context_handle->order, seq_number);
+  if (seq_err == GSS_S_FAILURE) {
       krb5_crypto_destroy (context, crypto);
       *minor_status = 0;
       HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
@@ -269,7 +269,7 @@ retry:
   HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
 
   krb5_crypto_destroy (context, crypto);
-  return GSS_S_COMPLETE;
+  return GSS_S_COMPLETE | seq_err;
 }
 
 OM_uint32

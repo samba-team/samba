@@ -40,6 +40,10 @@
 #include "resolve.h"
 #include "roken.h"
 
+#if (__STDC_VERSION__ - 0) < 199901L
+# define restrict /* empty */
+#endif
+
 struct rk_dns_reply *
 rk_dns_lookup(const char *domain, const char *type_name)
 {

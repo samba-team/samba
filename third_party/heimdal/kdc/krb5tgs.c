@@ -550,6 +550,7 @@ tgs_make_reply(astgs_request_t r,
     KDCOptions f = b->kdc_options;
     krb5_error_code ret;
     int is_weak = 0;
+    krb5_boolean check_policy = FALSE;
 
     heim_assert(r->client_princ != NULL, "invalid client name passed to tgs_make_reply");
 
@@ -581,18 +582,30 @@ tgs_make_reply(astgs_request_t r,
     (r->config->trpolicy == TRPOLICY_ALLOW_PER_PRINCIPAL)
 #define GLOBAL_ALLOW_DISABLE_TRANSITED_CHECK			\
     (r->config->trpolicy == TRPOLICY_ALWAYS_HONOUR_REQUEST)
+#define GLOBAL_DISABLE_TRANSITED_CHECK		\
+    (r->config->trpolicy == TRPOLICY_NEVER_CHECK)
 
 /* these will consult the database in future release */
 #define PRINCIPAL_FORCE_TRANSITED_CHECK(P)		0
 #define PRINCIPAL_ALLOW_DISABLE_TRANSITED_CHECK(P)	0
 
+    if (GLOBAL_DISABLE_TRANSITED_CHECK) {
+	check_policy = FALSE;
+    } else if (!f.disable_transited_check) {
+	check_policy = TRUE;
+    } else if (GLOBAL_FORCE_TRANSITED_CHECK) {
+	check_policy = TRUE;
+    } else if (PRINCIPAL_FORCE_TRANSITED_CHECK(r->server)) {
+	check_policy = TRUE;
+    } else if (!((GLOBAL_ALLOW_PER_PRINCIPAL &&
+	       PRINCIPAL_ALLOW_DISABLE_TRANSITED_CHECK(r->server)) ||
+	       GLOBAL_ALLOW_DISABLE_TRANSITED_CHECK))
+    {
+	check_policy = TRUE;
+    }
+
     ret = fix_transited_encoding(r->context, r->config,
-				 !f.disable_transited_check ||
-				 GLOBAL_FORCE_TRANSITED_CHECK ||
-				 PRINCIPAL_FORCE_TRANSITED_CHECK(r->server) ||
-				 !((GLOBAL_ALLOW_PER_PRINCIPAL &&
-				    PRINCIPAL_ALLOW_DISABLE_TRANSITED_CHECK(r->server)) ||
-				   GLOBAL_ALLOW_DISABLE_TRANSITED_CHECK),
+				 check_policy,
 				 &tgt->transited, et,
 				 krb5_principal_get_realm(r->context, r->client_princ),
 				 krb5_principal_get_realm(r->context, r->server->principal),
@@ -687,6 +700,10 @@ tgs_make_reply(astgs_request_t r,
     et->flags.pre_authent = tgt->flags.pre_authent;
     et->flags.hw_authent  = tgt->flags.hw_authent;
     et->flags.ok_as_delegate = r->server->flags.ok_as_delegate;
+
+    /* See MS-KILE 3.3.5.7.5 Cross-Domain Trust and Referrals */
+    if (!r->krbtgt->flags.ok_as_delegate)
+	et->flags.ok_as_delegate = 0;
 
     /* See MS-KILE 3.3.5.1 */
     if (!r->server->flags.forwardable)
@@ -1307,6 +1324,9 @@ _kdc_db_fetch_client(krb5_context context,
 	 * This is OK, we are just trying to find out if they have
 	 * been disabled or deleted in the meantime; missing secrets
 	 * are OK.
+	 *
+	 * If HDB_F_CROSS_REALM_PRINCIPAL was passed this
+	 * indicates the client is remote.
 	 */
     } else if (ret) {
 	/*
@@ -1717,7 +1737,7 @@ server_lookup:
 	     * proper checks.
 	     */
 	    ret = _kdc_db_fetch(context, config, user2user_princ,
-				HDB_F_GET_CLIENT | flags,
+				HDB_F_GET_CLIENT | HDB_F_USER2USER_PRINCIPAL | flags,
 				NULL, &user2user_db, &user2user_client);
 	    if (ret == HDB_ERR_NOENTRY)
 		ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
@@ -1876,6 +1896,9 @@ server_lookup:
 
     if (_kdc_synthetic_princ_used_p(context, priv->ticket))
 	flags |= HDB_F_SYNTHETIC_OK;
+
+    if (!krb5_principal_compare(context, priv->krbtgt->principal, krbtgt_out->principal))
+	flags |= HDB_F_CROSS_REALM_PRINCIPAL;
 
     ret = _kdc_db_fetch_client(context, config, flags, priv->client_princ,
 			       cpn, our_realm, &clientdb, &priv->client);
@@ -2293,6 +2316,10 @@ out:
 	krb5_free_ticket(r->context, r->armor_ticket);
     if (r->armor_server)
 	_kdc_free_ent(r->context, r->armor_serverdb, r->armor_server);
+    if (r->armor_client_principal) {
+	krb5_free_principal(r->context, r->armor_client_principal);
+	r->armor_client_principal = NULL;
+    }
     if (r->armor_client)
 	_kdc_free_ent(r->context,
 		      r->armor_clientdb,

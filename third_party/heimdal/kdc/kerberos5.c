@@ -1384,8 +1384,8 @@ struct kdc_patypes {
 #define PA_SYNTHETIC_OK	4
 #define PA_REPLACE_REPLY_KEY	8   /* PA mech replaces reply key */
 #define PA_USES_LONG_TERM_KEY	16  /* PA mech uses client's long-term key */
-#define PA_USES_FAST_COOKIE	32  /* Multi-step PA mech maintains state in PA-FX-COOKIE */
-#define PA_HARDWARE_AUTH	64  /* PA mech uses hardware authentication */
+#define PA_HARDWARE_AUTH	32  /* PA mech uses hardware authentication */
+#define PA_USES_FAST_COOKIE	64  /* Multi-step PA mech maintains state in PA-FX-COOKIE */
     krb5_error_code (*validate)(astgs_request_t, const PA_DATA *pa);
     krb5_error_code (*finalize_pac)(astgs_request_t r);
     void (*cleanup)(astgs_request_t r);
@@ -1584,7 +1584,7 @@ _kdc_encode_reply(krb5_context context,
 	 * Hide client name for privacy reasons
 	 */
 	if (r->fast.flags.requested_hidden_names) {
-	    Realm anon_realm = KRB5_ANON_REALM;
+	    const Realm anon_realm = KRB5_ANON_REALM;
 
 	    free_Realm(&rep->crealm);
 	    ret = copy_Realm(&anon_realm, &rep->crealm);
@@ -2849,7 +2849,7 @@ _kdc_as_rep(astgs_request_t r)
 
     if (!config->historical_anon_realm &&
         _kdc_is_anonymous(r->context, r->client_princ)) {
-	Realm anon_realm = KRB5_ANON_REALM;
+	const Realm anon_realm = KRB5_ANON_REALM;
 	ret = copy_Realm(&anon_realm, &rep->crealm);
     } else if (f.canonicalize || r->client->flags.force_canonicalize)
 	ret = copy_Realm(&r->canon_client_princ->realm, &rep->crealm);
@@ -3248,6 +3248,16 @@ out:
 	krb5_free_ticket(r->context, r->armor_ticket);
     if (r->armor_server)
 	_kdc_free_ent(r->context, r->armor_serverdb, r->armor_server);
+    if (r->armor_client_principal) {
+	krb5_free_principal(r->context, r->armor_client_principal);
+	r->armor_client_principal = NULL;
+    }
+    if (r->armor_client)
+	_kdc_free_ent(r->context,
+		      r->armor_clientdb,
+		      r->armor_client);
+    if (r->armor_pac)
+	krb5_pac_free(r->context, r->armor_pac);
     krb5_free_keyblock_contents(r->context, &r->reply_key);
     krb5_free_keyblock_contents(r->context, &r->enc_ad_key);
     krb5_free_keyblock_contents(r->context, &r->session_key);

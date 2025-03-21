@@ -748,7 +748,7 @@ _gssapi_unwrap_cfx_iov(OM_uint32 *minor_status,
     gss_iov_buffer_desc *header, *trailer, *padding;
     gss_cfx_wrap_token token, ttoken;
     u_char token_flags;
-    krb5_error_code ret;
+    krb5_error_code ret, seq_err;
     unsigned usage;
     uint16_t ec, rrc;
     krb5_crypto_iov *data = NULL;
@@ -818,17 +818,16 @@ _gssapi_unwrap_cfx_iov(OM_uint32 *minor_status,
     if (seq_number_hi) {
 	/* no support for 64-bit sequence numbers */
 	*minor_status = ERANGE;
-	return GSS_S_UNSEQ_TOKEN;
+	return GSS_S_FAILURE | GSS_S_UNSEQ_TOKEN;
     }
 
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
-    ret = _gssapi_msg_order_check(ctx->order, seq_number_lo);
-    if (ret != 0) {
-	*minor_status = 0;
-	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
-	return ret;
-    }
+    seq_err = _gssapi_msg_order_check(ctx->order, seq_number_lo);
     HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+    if (seq_err == GSS_S_FAILURE) {
+    	*minor_status = 0;
+    	return seq_err;
+    }
 
     /*
      * Decrypt and/or verify checksum
@@ -1025,7 +1024,7 @@ _gssapi_unwrap_cfx_iov(OM_uint32 *minor_status,
     free(data);
 
     *minor_status = 0;
-    return GSS_S_COMPLETE;
+    return GSS_S_COMPLETE | seq_err;
 
  failure:
     if (data)
@@ -1401,7 +1400,7 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 {
     gss_cfx_wrap_token token;
     u_char token_flags;
-    krb5_error_code ret;
+    krb5_error_code ret, seq_err;
     unsigned usage;
     krb5_data data;
     uint16_t ec, rrc;
@@ -1459,18 +1458,16 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
     if (seq_number_hi) {
 	/* no support for 64-bit sequence numbers */
 	*minor_status = ERANGE;
-	return GSS_S_UNSEQ_TOKEN;
+	return GSS_S_FAILURE | GSS_S_UNSEQ_TOKEN;
     }
 
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
-    ret = _gssapi_msg_order_check(ctx->order, seq_number_lo);
-    if (ret != 0) {
-	*minor_status = 0;
-	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
-	_gsskrb5_release_buffer(minor_status, output_message_buffer);
-	return ret;
-    }
+    seq_err = _gssapi_msg_order_check(ctx->order, seq_number_lo);
     HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+    if (seq_err == GSS_S_FAILURE) {
+    	*minor_status = 0;
+    	return seq_err;
+    }
 
     /*
      * Decrypt and/or verify checksum
@@ -1594,7 +1591,7 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
     }
 
     *minor_status = 0;
-    return GSS_S_COMPLETE;
+    return GSS_S_COMPLETE | seq_err;
 }
 
 OM_uint32 _gssapi_mic_cfx(OM_uint32 *minor_status,
@@ -1690,7 +1687,7 @@ OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
 {
     gss_cfx_mic_token token;
     u_char token_flags;
-    krb5_error_code ret;
+    krb5_error_code ret, seq_err;
     unsigned usage;
     OM_uint32 seq_number_lo, seq_number_hi;
     u_char *buf, *p;
@@ -1736,17 +1733,16 @@ OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
     _gss_mg_decode_be_uint32(&token->SND_SEQ[4], &seq_number_lo);
     if (seq_number_hi) {
 	*minor_status = ERANGE;
-	return GSS_S_UNSEQ_TOKEN;
+	return GSS_S_UNSEQ_TOKEN | GSS_S_FAILURE;
     }
 
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
-    ret = _gssapi_msg_order_check(ctx->order, seq_number_lo);
-    if (ret != 0) {
-	*minor_status = 0;
-	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
-	return ret;
-    }
+    seq_err = _gssapi_msg_order_check(ctx->order, seq_number_lo);
     HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+    if (seq_err == GSS_S_FAILURE) {
+    	*minor_status = 0;
+    	return seq_err;
+    }
 
     /*
      * Verify checksum
@@ -1793,5 +1789,5 @@ OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
 	*qop_state = GSS_C_QOP_DEFAULT;
     }
 
-    return GSS_S_COMPLETE;
+    return GSS_S_COMPLETE | seq_err;
 }

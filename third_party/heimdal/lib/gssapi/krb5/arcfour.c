@@ -740,14 +740,14 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 	return GSS_S_BAD_MIC;
     }
 
+    if (conf_state)
+	*conf_state = conf_flag;
+
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
     omret = _gssapi_msg_order_check(context_handle->order, seq_number);
     HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
     if (omret)
 	return omret;
-
-    if (conf_state)
-	*conf_state = conf_flag;
 
     *minor_status = 0;
     return GSS_S_COMPLETE;
@@ -1375,15 +1375,15 @@ _gssapi_unwrap_iov_arcfour(OM_uint32 *minor_status,
 	}
     }
 
+    if (pconf_state) {
+	*pconf_state = conf_state;
+    }
+
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
     ret = _gssapi_msg_order_check(ctx->order, seq_number);
     HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
     if (ret != 0) {
 	return ret;
-    }
-
-    if (pconf_state) {
-	*pconf_state = conf_state;
     }
 
     *minor_status = 0;

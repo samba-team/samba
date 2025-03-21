@@ -7,7 +7,8 @@ dnl AC_HAVE_STRUCT_FIELD(struct, field, headers)
 AC_DEFUN([AC_HAVE_STRUCT_FIELD], [
 define(cache_val, translit(ac_cv_type_$1_$2, [A-Z ], [a-z_]))
 AC_CACHE_CHECK([for $2 in $1], cache_val,[
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[$3]],
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <string.h>
+$3]],
 	[[$1 x; memset(&x, 0, sizeof(x)); x.$2]])],
 	[cache_val=yes],
 	[cache_val=no])

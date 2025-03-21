@@ -84,7 +84,6 @@ struct krb5_kdc_configuration {
     unsigned int allow_anonymous : 1;
     unsigned int historical_anon_realm : 1;
     unsigned int strict_nametypes : 1;
-    enum krb5_kdc_trpolicy trpolicy;
 
     unsigned int disable_pac : 1;
     unsigned int enable_unarmored_pa_enc_timestamp : 1;
@@ -179,6 +178,7 @@ struct astgs_request_desc {
     krb5_ticket *armor_ticket;
     Key *armor_key;
 
+    krb5_principal armor_client_principal;
     hdb_entry *armor_client;
     HDB *armor_clientdb;
     krb5_pac armor_pac;

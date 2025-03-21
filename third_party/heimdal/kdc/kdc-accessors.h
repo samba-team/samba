@@ -359,6 +359,9 @@ kdc_request_get_explicit_armor_clientdb(astgs_request_t);
 KDC_LIB_FUNCTION const hdb_entry * KDC_LIB_CALL
 kdc_request_get_explicit_armor_client(astgs_request_t);
 
+KDC_LIB_FUNCTION const Principal * KDC_LIB_CALL
+kdc_request_get_explicit_armor_client_principal(astgs_request_t);
+
 KDC_LIB_FUNCTION const hdb_entry * KDC_LIB_CALL
 kdc_request_get_explicit_armor_server(astgs_request_t);
 
@@ -377,6 +380,13 @@ ASTGS_REQUEST_GET_ACCESSOR_PTR(HDB *, armor_clientdb)
  * kdc_request_get_armor_client(astgs_request_t);
  */
 ASTGS_REQUEST_GET_ACCESSOR_PTR(hdb_entry *, armor_client);
+
+/*
+ * const Principal *
+ * kdc_request_get_armor_client_principal(astgs_request_t);
+ */
+
+ASTGS_REQUEST_GET_ACCESSOR_PTR(Principal *, armor_client_principal)
 
 /*
  * const hdb_entry *

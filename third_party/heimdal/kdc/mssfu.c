@@ -107,8 +107,10 @@ check_rbcd(krb5_context context,
 	   HDB *clientdb,
 	   krb5_const_principal s4u_principal,
 	   const hdb_entry *client_krbtgt,
+	   krb5_const_principal client_principal,
 	   const hdb_entry *client,
 	   const hdb_entry *device_krbtgt,
+	   krb5_const_principal device_principal,
 	   const hdb_entry *device,
 	   krb5_const_pac client_pac,
 	   krb5_const_pac device_pac,
@@ -120,8 +122,10 @@ check_rbcd(krb5_context context,
 	ret = clientdb->hdb_check_rbcd(context,
 				       clientdb,
 				       client_krbtgt,
+				       client_principal,
 				       client,
 				       device_krbtgt,
+				       device_principal,
 				       device,
 				       s4u_principal,
 				       client_pac,
@@ -150,7 +154,7 @@ _kdc_validate_protocol_transition(astgs_request_t r, const PA_DATA *for_user)
     EncTicketPart *ticket = &r->ticket->ticket;
     hdb_entry *s4u_client = NULL;
     HDB *s4u_clientdb;
-    int flags = HDB_F_FOR_TGS_REQ;
+    int flags = HDB_F_FOR_TGS_REQ | HDB_F_S4U2SELF_PRINCIPAL;
     krb5_principal s4u_client_name = NULL, s4u_canon_client_name = NULL;
     krb5_pac s4u_pac = NULL;
     char *s4ucname = NULL;
@@ -375,7 +379,7 @@ _kdc_validate_constrained_delegation(astgs_request_t r)
 {
     krb5_error_code ret;
     KDC_REQ_BODY *b = &r->req.req_body;
-    int flags = HDB_F_FOR_TGS_REQ;
+    int flags = HDB_F_FOR_TGS_REQ | HDB_F_S4U2PROXY_PRINCIPAL;
     krb5_principal s4u_client_name = NULL, s4u_server_name = NULL;
     krb5_principal s4u_canon_client_name = NULL;
     krb5_pac s4u_pac = NULL;
@@ -542,9 +546,14 @@ _kdc_validate_constrained_delegation(astgs_request_t r)
     if (rbcd_support) {
 	ret = check_rbcd(r->context, r->config, r->clientdb,
 			 s4u_client_name,
-			 r->krbtgt, r->client,
-			 r->armor_server, r->armor_client,
-			 r->pac, r->armor_pac,
+			 r->krbtgt,
+			 r->client_princ,
+			 r->client,
+			 r->armor_server,
+			 r->armor_client_principal,
+			 r->armor_client,
+			 r->pac,
+			 r->armor_pac,
 			 r->server);
     } else {
 	ret = KRB5KDC_ERR_BADOPTION;
@@ -576,6 +585,10 @@ _kdc_validate_constrained_delegation(astgs_request_t r)
 			    "Constrained delegation ticket expired or invalid");
 	goto out;
     }
+
+    /* s4u_client_name can be remote */
+    if (!krb5_realm_compare(r->context, s4u_client_name, s4u_server_name))
+	flags |= HDB_F_CROSS_REALM_PRINCIPAL;
 
     /* Try lookup the delegated client in DB */
     ret = _kdc_db_fetch_client(r->context, r->config, flags,

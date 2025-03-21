@@ -35,6 +35,10 @@
 
 #ifdef HEIM_WEAK_CRYPTO
 
+#if !defined(HAVE_CRYPT)
+# undef ENABLE_AFS_STRING_TO_KEY
+#endif
+
 #ifdef ENABLE_AFS_STRING_TO_KEY
 
 /* This defines the Andrew string_to_key function.  It accepts a password

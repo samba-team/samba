@@ -983,6 +983,17 @@ fcc_get_first(krb5_context context,
     return 0;
 }
 
+/*
+ * Return true if cred is a removed entry.  We assume that any active entry
+ * with endtime=0 (such as a config entry or gssproxy encrypted credential)
+ * will also have authtime=0.
+ */
+static inline krb5_boolean
+cred_removed(krb5_creds *c)
+{
+    return c->times.endtime == 0 && c->times.authtime != 0;
+}
+
 static krb5_error_code KRB5_CALLCONV
 fcc_get_next (krb5_context context,
 	      krb5_ccache id,
@@ -997,15 +1008,25 @@ fcc_get_next (krb5_context context,
     if (FCC_CURSOR(*cursor) == NULL)
         return krb5_einval(context, 3);
 
-    FCC_CURSOR(*cursor)->cred_start =
-        krb5_storage_seek(FCC_CURSOR(*cursor)->sp, 0, SEEK_CUR);
+    while (1) {
+	FCC_CURSOR(*cursor)->cred_start =
+	    krb5_storage_seek(FCC_CURSOR(*cursor)->sp, 0, SEEK_CUR);
 
-    ret = krb5_ret_creds(FCC_CURSOR(*cursor)->sp, creds);
-    if (ret)
-	krb5_clear_error_message(context);
+	ret = krb5_ret_creds(FCC_CURSOR(*cursor)->sp, creds);
 
-    FCC_CURSOR(*cursor)->cred_end =
-        krb5_storage_seek(FCC_CURSOR(*cursor)->sp, 0, SEEK_CUR);
+	FCC_CURSOR(*cursor)->cred_end =
+	    krb5_storage_seek(FCC_CURSOR(*cursor)->sp, 0, SEEK_CUR);
+
+	if (ret) {
+	    krb5_clear_error_message(context);
+	    break;
+	}
+
+	if (!cred_removed(creds))
+	    break;
+
+	krb5_free_cred_contents(context, creds);
+    }
 
     return ret;
 }
@@ -1077,6 +1098,9 @@ cred_delete(krb5_context context,
      * KRB5_TC_MATCH_TIMES, so this should be good enough...
      */
     cred->times.endtime = 0;
+
+    /* For compatibility with MIT d3b39a8bac6206b5ea78b0bf6a2958c1df0b0dd5 */
+    cred->times.authtime = -1;
 
     /* ...except for config creds because we don't check their endtimes */
     if (srealm && strcmp(srealm, "X-CACHECONF:") == 0) {

@@ -49,12 +49,22 @@ string_to_proto(const char *string)
     return -1;
 }
 
+#define YOUR_DNS_NEEDS_IMM_ATTENTION "your-dns-needs-immediate-attention."
 static int
 is_invalid_tld_srv_target(const char *target)
 {
-    return (strncmp("your-dns-needs-immediate-attention.",
-		    target, 35) == 0
-	    && strchr(&target[35], '.') == NULL);
+    if (strncmp(YOUR_DNS_NEEDS_IMM_ATTENTION, target,
+                sizeof(YOUR_DNS_NEEDS_IMM_ATTENTION) - 1) != 0)
+        return 0;
+    target += sizeof(YOUR_DNS_NEEDS_IMM_ATTENTION) - 1;
+    if (target[0] == '\0' || target[0] == '.')
+        return 0; /* malformed; should be followed by a TLD */
+    target = strchr(target, '.');
+    if (target == NULL)
+        return 0; /* malformed; should end in a '.' */
+    if (target[1] != '\0')
+        return 0; /* malformed; should be followed by just one label (the TLD) */
+    return 1;
 }
 
 /*
@@ -138,28 +148,25 @@ srv_find_realm(krb5_context context, krb5_krbhst_info ***res, int *count,
 	if(rr->type == rk_ns_t_srv) {
 	    krb5_krbhst_info *hi = NULL;
 	    size_t len;
-	    int invalid_tld = 1;
 
 	    /* Test for top-level domain controlled interruptions */
-	    if (!is_invalid_tld_srv_target(rr->u.srv->target)) {
-		invalid_tld = 0;
-		len = strlen(rr->u.srv->target);
-		hi = calloc(1, sizeof(*hi) + len);
+	    if (is_invalid_tld_srv_target(rr->u.srv->target)) {
+                krb5_warnx(context,
+                           "Domain lookup failed: "
+                           "Realm %s needs immediate attention "
+                           "see https://icann.org/namecollision",
+                           realm);
+                return KRB5_KDC_UNREACH;
 	    }
+
+            len = strlen(rr->u.srv->target);
+            hi = calloc(1, sizeof(*hi) + len);
 	    if(hi == NULL) {
 		rk_dns_free_data(r);
 		while(--num_srv >= 0)
 		    free((*res)[num_srv]);
 		free(*res);
 		*res = NULL;
-		if (invalid_tld) {
-		    krb5_warnx(context,
-			       "Domain lookup failed: "
-			       "Realm %s needs immediate attention "
-			       "see https://icann.org/namecollision",
-			       realm);
-		    return KRB5_KDC_UNREACH;
-		}
 		return krb5_enomem(context);
 	    }
 	    (*res)[num_srv++] = hi;

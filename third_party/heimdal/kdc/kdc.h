@@ -49,7 +49,8 @@
 enum krb5_kdc_trpolicy {
     TRPOLICY_ALWAYS_CHECK,
     TRPOLICY_ALLOW_PER_PRINCIPAL,
-    TRPOLICY_ALWAYS_HONOUR_REQUEST
+    TRPOLICY_ALWAYS_HONOUR_REQUEST,
+    TRPOLICY_NEVER_CHECK,
 };
 
 struct krb5_kdc_configuration;
@@ -114,7 +115,8 @@ struct krb5_kdc_service {
     unsigned int require_pac : 1;				\
     unsigned int enable_fast : 1;				\
     unsigned int enable_fast_cookie : 1;			\
-    unsigned int enable_armored_pa_enc_timestamp : 1
+    unsigned int enable_armored_pa_enc_timestamp : 1;		\
+    enum krb5_kdc_trpolicy trpolicy
 
 #ifndef __KDC_LOCL_H__
 struct krb5_kdc_configuration {

@@ -79,6 +79,9 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 #define HDB_F_GET_FAST_COOKIE	0x20000	/* fetch the FX-COOKIE key (not a normal principal) */
 #define HDB_F_ARMOR_PRINCIPAL	0x40000	/* fetch is for the client of an armor ticket */
 #define HDB_F_USER2USER_PRINCIPAL	0x80000	/* fetch is for the server of a user2user tgs-req */
+#define HDB_F_CROSS_REALM_PRINCIPAL	0x100000 /* fetch is cross-realm ticket */
+#define HDB_F_S4U2SELF_PRINCIPAL	0x200000 /* fetch is for S4U2Self */
+#define HDB_F_S4U2PROXY_PRINCIPAL	0x400000 /* fetch is for S4U2Proxy */
 
 /* hdb_capability_flags */
 #define HDB_CAP_F_HANDLE_ENTERPRISE_PRINCIPAL 1
@@ -290,7 +293,18 @@ typedef struct HDB {
     /**
      * Check if resource-based constrained delegation (RBCD) is allowed.
      */
-    krb5_error_code (*hdb_check_rbcd)(krb5_context, struct HDB *, const hdb_entry *, const hdb_entry *, const hdb_entry *, const hdb_entry *, krb5_const_principal, krb5_const_pac, krb5_const_pac, const hdb_entry *);
+    krb5_error_code (*hdb_check_rbcd)(krb5_context context,
+				      struct HDB *clientdb,
+				      const hdb_entry *client_krbtgt,
+				      krb5_const_principal client_principal,
+				      const hdb_entry *client,
+				      const hdb_entry *device_krbtgt,
+				      krb5_const_principal device_principal,
+				      const hdb_entry *device,
+				      krb5_const_principal s4u_principal,
+				      krb5_const_pac client_pac,
+				      krb5_const_pac device_pac,
+				      const hdb_entry *target);
 
     /**
      * Check if this name is an alias for the supplied client for PKINIT userPrinicpalName logins
@@ -311,7 +325,7 @@ typedef struct HDB {
     krb5_error_code (*hdb_set_sync)(krb5_context, struct HDB *, int);
 }HDB;
 
-#define HDB_INTERFACE_VERSION	11
+#define HDB_INTERFACE_VERSION	12
 
 struct hdb_method {
     HEIM_PLUGIN_FTABLE_COMMON_ELEMENTS(krb5_context);

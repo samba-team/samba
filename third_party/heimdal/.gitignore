@@ -44,11 +44,14 @@ asn1_*_asn1.c
 /aclocal.m4
 /autom4te.cache
 /compile
+/confdefs.h
 /config.guess
 /config.log
 /config.status
 /config.sub
 /configure
+/conftest.c
+/conftest.err
 /depcomp
 /install-sh
 /libtool
@@ -58,6 +61,7 @@ asn1_*_asn1.c
 /stage1.diff
 /stage2.diff
 /test-driver
+/tmp.h
 /ylwrap
 
 /lib/libedit/aclocal.m4

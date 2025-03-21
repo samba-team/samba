@@ -767,6 +767,12 @@ kdc_request_get_explicit_armor_client(astgs_request_t r)
     return r->explicit_armor_present ? r->armor_client : NULL;
 }
 
+KDC_LIB_FUNCTION const Principal * KDC_LIB_CALL
+kdc_request_get_explicit_armor_client_principal(astgs_request_t r)
+{
+    return r->explicit_armor_present ? r->armor_client_principal : NULL;
+}
+
 KDC_LIB_FUNCTION const hdb_entry * KDC_LIB_CALL
 kdc_request_get_explicit_armor_server(astgs_request_t r)
 {

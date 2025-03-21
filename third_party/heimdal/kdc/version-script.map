@@ -31,6 +31,7 @@ HEIMDAL_KDC_1.0 {
 		kdc_request_get_addr;
 		kdc_request_get_armor_client;
 		kdc_request_get_armor_clientdb;
+		kdc_request_get_armor_client_principal;
 		kdc_request_get_armor_pac;
 		kdc_request_get_armor_server;
 		kdc_request_get_canon_client_princ;
@@ -44,6 +45,7 @@ HEIMDAL_KDC_1.0 {
 		kdc_request_get_explicit_armor_pac;
 		kdc_request_get_explicit_armor_clientdb;
 		kdc_request_get_explicit_armor_client;
+		kdc_request_get_explicit_armor_client_principal;
 		kdc_request_get_explicit_armor_present;
 		kdc_request_get_explicit_armor_server;
 		kdc_request_get_from;

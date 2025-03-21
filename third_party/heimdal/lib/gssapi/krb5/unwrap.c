@@ -57,7 +57,7 @@ unwrap_des
   size_t i;
   uint32_t seq_number;
   size_t padlength;
-  OM_uint32 ret;
+  OM_uint32 ret, seq_err;
   int cstate;
   int cmp;
   int token_len;
@@ -175,10 +175,10 @@ unwrap_des
     return GSS_S_BAD_MIC;
   }
 
-  ret = _gssapi_msg_order_check(context_handle->order, seq_number);
-  if (ret) {
+  seq_err = _gssapi_msg_order_check(context_handle->order, seq_number);
+  if (seq_err == GSS_S_FAILURE) {
     HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
-    return ret;
+    return seq_err;
   }
 
   HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
@@ -194,7 +194,7 @@ unwrap_des
       memcpy (output_message_buffer->value,
 	      p + 24,
 	      output_message_buffer->length);
-  return GSS_S_COMPLETE;
+  return GSS_S_COMPLETE | seq_err;
 }
 #endif
 
@@ -217,7 +217,7 @@ unwrap_des3
   u_char cksum[20];
   uint32_t seq_number;
   size_t padlength;
-  OM_uint32 ret;
+  OM_uint32 ret, seq_err;
   int cstate;
   krb5_crypto crypto;
   Checksum csum;
@@ -349,11 +349,11 @@ unwrap_des3
       return GSS_S_BAD_MIC;
   }
 
-  ret = _gssapi_msg_order_check(context_handle->order, seq_number);
-  if (ret) {
+  seq_err = _gssapi_msg_order_check(context_handle->order, seq_number);
+  if (seq_err == GSS_S_FAILURE) {
       *minor_status = 0;
       HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
-      return ret;
+      return seq_err;
   }
 
   HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
@@ -396,7 +396,7 @@ unwrap_des3
       memcpy (output_message_buffer->value,
 	      p + 36,
 	      output_message_buffer->length);
-  return GSS_S_COMPLETE;
+  return GSS_S_COMPLETE | seq_err;
 }
 
 OM_uint32 GSSAPI_CALLCONV _gsskrb5_unwrap

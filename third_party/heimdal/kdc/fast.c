@@ -953,6 +953,11 @@ _kdc_fast_check_armor_pac(astgs_request_t r, int flags)
     if (r->req.req_body.kdc_options.canonicalize)
 	flags |= HDB_F_CANON;
 
+    if (krb5_principal_is_krbtgt(r->context, r->armor_server->principal) &&
+	!krb5_principal_is_root_krbtgt(r->context, r->armor_server->principal)) {
+	flags |= HDB_F_CROSS_REALM_PRINCIPAL;
+    }
+
     ret = _krb5_principalname2krb5_principal(r->context,
 					     &armor_client_principal,
 					     r->armor_ticket->ticket.cname,
@@ -995,6 +1000,9 @@ _kdc_fast_check_armor_pac(astgs_request_t r, int flags)
 
     r->armor_clientdb = armor_db;
     armor_db = NULL;
+
+    r->armor_client_principal = armor_client_principal;
+    armor_client_principal = NULL;
 
     r->armor_client = armor_client;
     armor_client = NULL;
