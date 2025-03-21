@@ -93,6 +93,8 @@ struct auth_context {
 	/* What order are the various methods in?   Try to stop it changing under us */ 
 	struct auth_methods *auth_method_list;	
 
+	bool for_netlogon;
+
 	prepare_gensec_fn prepare_gensec;
 	make_auth4_context_fn make_auth4_context;
 	const char *forced_samba4_methods;

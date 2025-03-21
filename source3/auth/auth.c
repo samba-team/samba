@@ -582,6 +582,7 @@ NTSTATUS make_auth3_context_for_netlogon(TALLOC_CTX *mem_ctx,
 					 struct auth_context **auth_context)
 {
 	const char *methods = NULL;
+	NTSTATUS status;
 
 	switch (lp_server_role()) {
 	case ROLE_DOMAIN_BDC:
@@ -595,7 +596,13 @@ NTSTATUS make_auth3_context_for_netlogon(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_SERVER_STATE;
 	}
 
-	return make_auth_context_specific(mem_ctx, auth_context, methods);
+	status = make_auth_context_specific(mem_ctx, auth_context, methods);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	(*auth_context)->for_netlogon = true;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS make_auth3_context_for_winbind(TALLOC_CTX *mem_ctx,
