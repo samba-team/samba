@@ -89,6 +89,10 @@ static struct tevent_req *winbind_check_password_send(TALLOC_CTX *mem_ctx,
 	state->user_info = user_info;
 	state->authoritative = true;
 
+	if (ctx->auth_ctx->for_netlogon) {
+		state->req.in.internal_flags |= WB_SAMLOGON_FOR_NETLOGON;
+	}
+
 	msg_ctx = imessaging_client_init(state, ctx->auth_ctx->lp_ctx, ev);
 	if (msg_ctx == NULL) {
 		DEBUG(1, ("imessaging_init failed\n"));
