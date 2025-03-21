@@ -1720,8 +1720,7 @@ static bool open_mode_check_fn(
 	return false;
 }
 
-static NTSTATUS open_mode_check(connection_struct *conn,
-				struct file_id fid,
+static NTSTATUS open_mode_check(struct files_struct *fsp,
 				struct share_mode_lock *lck,
 				uint32_t access_mask,
 				uint32_t share_access)
@@ -1743,9 +1742,9 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 #if defined(DEVELOPER)
 	{
 		struct validate_my_share_entries_state validate_state = {
-			.sconn = conn->sconn,
-			.fid = fid,
-			.self = messaging_server_id(conn->sconn->msg_ctx),
+			.sconn = fsp->conn->sconn,
+			.fid = fsp->file_id,
+			.self = messaging_server_id(fsp->conn->sconn->msg_ctx),
 		};
 		ok = share_mode_forall_entries(
 			lck, validate_my_share_entries_fn, &validate_state);
@@ -1767,7 +1766,7 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	}
 
 	state = (struct open_mode_check_state) {
-		.fid = fid,
+		.fid = fsp->file_id,
 		.share_access = (FILE_SHARE_READ|
 				 FILE_SHARE_WRITE|
 				 FILE_SHARE_DELETE),
@@ -2811,8 +2810,7 @@ static NTSTATUS handle_share_mode_lease(
 	*poplock_type = NO_OPLOCK;
 	*pgranted = 0;
 
-	status = open_mode_check(
-		fsp->conn, fsp->file_id, lck, access_mask, share_access);
+	status = open_mode_check(fsp, lck, access_mask, share_access);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
 		sharing_violation = true;
 		status = NT_STATUS_OK; /* handled later */
