@@ -276,10 +276,15 @@ interface winbind
     typedef [switch_type(uint16)] union netr_LogonLevel netr_LogonLevel;
     typedef [switch_type(uint16)] union netr_Validation netr_Validation;
 
+    typedef [enum16bit] enum {
+        WB_SAMLOGON_FOR_NETLOGON = 0x0001
+    } winbind_SamLogonInternalFlags;
+
     /*
      * do a netr_LogonSamLogon() against the right DC
      */
     NTSTATUS winbind_SamLogon(
+	[in]  winbind_SamLogonInternalFlags internal_flags,
 	[in]  uint16 logon_level,
 	[in]  [switch_is(logon_level)] netr_LogonLevel logon,
 	[in]  uint16 validation_level,
