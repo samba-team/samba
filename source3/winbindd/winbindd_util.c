@@ -1388,6 +1388,26 @@ bool update_trusted_domains_dc(void)
 		return false;
 	}
 
+	if (IS_AD_DC) {
+		struct winbindd_domain *sam_domain = find_local_sam_domain();
+		NTSTATUS status;
+
+		SMB_ASSERT(sam_domain);
+
+		TALLOC_FREE(sam_domain->fti);
+
+		status = pdb_filter_hints(sam_domain,
+					  NULL,  /* p_local_tdo */
+					  &sam_domain->fti,
+					  NULL); /* p_local_functional_level */
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("pdb_filter_hints(%s) - %s\n",
+				sam_domain->name,
+				nt_errstr(status));
+			return false;
+		}
+	}
+
 	ok = add_trusted_domains_dc();
 	if (!ok) {
 		return false;
