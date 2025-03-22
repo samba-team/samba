@@ -1492,6 +1492,63 @@ static bool test_lease_v2_request_parent(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_dirlease_oplocks(struct torture_context *tctx,
+				  struct smb2_tree *tree)
+{
+	const char *dname = "test_dirlease_leases_dir";
+	struct smb2_create c;
+	struct smb2_handle h = {};
+	uint16_t levels[] = {
+		SMB2_OPLOCK_LEVEL_NONE,
+		SMB2_OPLOCK_LEVEL_II,
+		SMB2_OPLOCK_LEVEL_EXCLUSIVE,
+		SMB2_OPLOCK_LEVEL_BATCH
+	};
+	uint32_t caps;
+	int i;
+	NTSTATUS status;
+	bool ret = true;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	torture_assert_goto(tctx, caps & SMB2_CAP_LEASING, ret, done, "leases are not supported");
+	torture_assert_goto(tctx, caps & SMB2_CAP_DIRECTORY_LEASING, ret, done,
+		"SMB3 Directory Leases are not supported\n");
+
+	smb2_deltree(tree, dname);
+
+	for (i = 0; i < sizeof(levels); i++) {
+		c = (struct smb2_create) {
+			.in.oplock_level = levels[i],
+			.in.desired_access = SEC_RIGHTS_DIR_READ,
+			.in.create_options = NTCREATEX_OPTIONS_DIRECTORY,
+			.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY,
+			.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+			.in.create_disposition = NTCREATEX_DISP_OPEN_IF,
+			.in.fname = dname,
+		};
+
+		status = smb2_create(tree, tree, &c);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_create failed\n");
+		h = c.out.file.handle;
+		status = smb2_util_close(tree, h);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_util_close failed\n");
+
+		torture_assert_int_equal_goto(
+			tctx,
+			c.out.oplock_level,
+			SMB2_OPLOCK_LEVEL_NONE,
+			ret, done, "bad level");
+	}
+
+done:
+	smb2_util_close(tree, h);
+	smb2_deltree(tree, dname);
+
+	return ret;
+}
+
 /*
  * Checks server accepts "RWH", "RH" and "R" lease request and grants at most
  * (lease_request & "RH"), so no "W", but "R" without "H" if requested.
@@ -7558,6 +7615,7 @@ struct torture_suite *torture_smb2_dirlease_init(TALLOC_CTX *ctx)
 
 	torture_suite_add_1smb2_test(suite, "v2_request_parent", test_lease_v2_request_parent);
 	torture_suite_add_2smb2_test(suite, "v2_request", test_lease_v2_request);
+	torture_suite_add_1smb2_test(suite, "oplocks", test_dirlease_oplocks);
 	torture_suite_add_1smb2_test(suite, "leases", test_dirlease_leases);
 	torture_suite_add_2smb2_test(suite, "seteof", test_dirlease_seteof);
 	torture_suite_add_2smb2_test(suite, "setdos", test_dirlease_setdos);
