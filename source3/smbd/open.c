@@ -5165,6 +5165,13 @@ static NTSTATUS open_directory(connection_struct *conn,
 		keep_locked = true;
 	}
 
+	if ((oplock_request != NO_OPLOCK) && (oplock_request != LEASE_OPLOCK)) {
+		/*
+		 * No oplocks on directories, only leases
+		 */
+		oplock_request = NO_OPLOCK;
+	}
+
 	lck_state = (struct open_ntcreate_lock_state) {
 		.fsp			= fsp,
 		.object_type		= "directory",
