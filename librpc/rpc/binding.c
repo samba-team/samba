@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    dcerpc utility functions
@@ -55,34 +55,34 @@ static const struct {
 	int num_protocols;
 	enum epm_protocol protseq[MAX_PROTSEQ];
 } transports[] = {
-	{ "ncacn_np",     NCACN_NP, 3, 
+	{ "ncacn_np",     NCACN_NP, 3,
 		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_SMB, EPM_PROTOCOL_NETBIOS }},
-	{ "ncacn_ip_tcp", NCACN_IP_TCP, 3, 
-		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_TCP, EPM_PROTOCOL_IP } }, 
-	{ "ncacn_http", NCACN_HTTP, 3, 
-		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_HTTP, EPM_PROTOCOL_IP } }, 
-	{ "ncadg_ip_udp", NCACN_IP_UDP, 3, 
+	{ "ncacn_ip_tcp", NCACN_IP_TCP, 3,
+		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_TCP, EPM_PROTOCOL_IP } },
+	{ "ncacn_http", NCACN_HTTP, 3,
+		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_HTTP, EPM_PROTOCOL_IP } },
+	{ "ncadg_ip_udp", NCACN_IP_UDP, 3,
 		{ EPM_PROTOCOL_NCADG, EPM_PROTOCOL_UDP, EPM_PROTOCOL_IP } },
-	{ "ncalrpc", NCALRPC, 2, 
+	{ "ncalrpc", NCALRPC, 2,
 		{ EPM_PROTOCOL_NCALRPC, EPM_PROTOCOL_NAMED_PIPE } },
-	{ "ncacn_unix_stream", NCACN_UNIX_STREAM, 2, 
+	{ "ncacn_unix_stream", NCACN_UNIX_STREAM, 2,
 		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_UNIX_DS } },
-	{ "ncadg_unix_dgram", NCADG_UNIX_DGRAM, 2, 
+	{ "ncadg_unix_dgram", NCADG_UNIX_DGRAM, 2,
 		{ EPM_PROTOCOL_NCADG, EPM_PROTOCOL_UNIX_DS } },
-	{ "ncacn_at_dsp", NCACN_AT_DSP, 3, 
+	{ "ncacn_at_dsp", NCACN_AT_DSP, 3,
 		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_APPLETALK, EPM_PROTOCOL_DSP } },
-	{ "ncadg_at_ddp", NCADG_AT_DDP, 3, 
+	{ "ncadg_at_ddp", NCADG_AT_DDP, 3,
 		{ EPM_PROTOCOL_NCADG, EPM_PROTOCOL_APPLETALK, EPM_PROTOCOL_DDP } },
-	{ "ncacn_vns_ssp", NCACN_VNS_SPP, 3, 
+	{ "ncacn_vns_ssp", NCACN_VNS_SPP, 3,
 		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_STREETTALK, EPM_PROTOCOL_VINES_SPP } },
-	{ "ncacn_vns_ipc", NCACN_VNS_IPC, 3, 
+	{ "ncacn_vns_ipc", NCACN_VNS_IPC, 3,
 		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_STREETTALK, EPM_PROTOCOL_VINES_IPC }, },
 	{ "ncadg_ipx", NCADG_IPX, 2,
 		{ EPM_PROTOCOL_NCADG, EPM_PROTOCOL_IPX },
 	},
 	{ "ncacn_spx", NCACN_SPX, 3,
-		/* I guess some MS programmer confused the identifier for 
-		 * EPM_PROTOCOL_UUID (0x0D or 13) with the one for 
+		/* I guess some MS programmer confused the identifier for
+		 * EPM_PROTOCOL_UUID (0x0D or 13) with the one for
 		 * EPM_PROTOCOL_SPX (0x13) here. -- jelmer*/
 		{ EPM_PROTOCOL_NCACN, EPM_PROTOCOL_NCALRPC, EPM_PROTOCOL_UUID },
 	},
@@ -141,11 +141,11 @@ const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 
 				if (GUID_equal(&syntax.uuid, &ndr_transfer_syntax_ndr.uuid)) {
 					return "NDR";
-				} 
+				}
 
 				if (GUID_equal(&syntax.uuid, &ndr_transfer_syntax_ndr64.uuid)) {
 					return "NDR64";
-				} 
+				}
 
 				return talloc_asprintf(
 					mem_ctx,
@@ -153,7 +153,7 @@ const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor)
 					GUID_buf_string(&syntax.uuid, &buf),
 					syntax.if_version);
 			} else { /* IPX */
-				return talloc_asprintf(mem_ctx, "IPX:%s", 
+				return talloc_asprintf(mem_ctx, "IPX:%s",
 						data_blob_hex_string_upper(mem_ctx, &epm_floor->rhs.uuid.unknown));
 			}
 
@@ -1092,8 +1092,8 @@ char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor
 	return NULL;
 }
 
-static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx, 
-					  struct epm_floor *epm_floor,  
+static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx,
+					  struct epm_floor *epm_floor,
 					  const char *data)
 {
 	if (data == NULL) {
@@ -1182,7 +1182,7 @@ enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot)
 
 	/* Find a transport that has 'prot' as 4th protocol */
 	for (i=0;i<ARRAY_SIZE(transports);i++) {
-		if (transports[i].num_protocols >= 2 && 
+		if (transports[i].num_protocols >= 2 &&
 			transports[i].protseq[1] == prot) {
 			return transports[i].transport;
 		}
@@ -1200,7 +1200,7 @@ _PUBLIC_ enum dcerpc_transport_t dcerpc_transport_by_tower(const struct epm_towe
 	for (i=0;i<ARRAY_SIZE(transports);i++) {
 		int j;
 		if (transports[i].num_protocols != tower->num_floors - 2) {
-			continue; 
+			continue;
 		}
 
 		for (j = 0; j < transports[i].num_protocols && j < MAX_PROTSEQ; j++) {
