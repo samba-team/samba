@@ -268,11 +268,6 @@ static struct tevent_req *rpc_server_get_endpoints_send(
 		return tevent_req_post(req, ev);
 	}
 
-	state->argl = talloc_array(state, char *, 4);
-	if (tevent_req_nomem(state->argl, req)) {
-		return tevent_req_post(req, ev);
-	}
-
 	state->argl = str_list_make_empty(state);
 	str_list_add_printf(&state->argl, "%s", rpc_server_exe);
 	str_list_add_printf(&state->argl, "--list-interfaces");
