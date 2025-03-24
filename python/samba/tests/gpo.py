@@ -53,7 +53,9 @@ from samba.gp.gp_centrify_crontab_ext import gp_centrify_crontab_ext, \
 from samba.gp.gp_drive_maps_ext import gp_drive_maps_user_ext
 from samba.common import get_bytes
 from samba.dcerpc import preg
-from samba.ndr import ndr_pack
+from samba.ndr import ndr_pack, ndr_unpack
+from samba.dcerpc import misc
+
 import codecs
 from shutil import copyfile
 import xml.etree.ElementTree as etree
@@ -7654,7 +7656,7 @@ class GPOTests(tests.TestCase):
                           _ldb.SCOPE_BASE, '(objectClass=*)', ['objectGUID'])
         self.assertTrue(len(res2) == 1, 'objectGUID not found')
         objectGUID = b'{%s}' % \
-            cae.octet_string_to_objectGUID(res2[0]['objectGUID'][0]).upper().encode()
+            str(ndr_unpack(misc.GUID, res2[0]['objectGUID'][0])).upper().encode()
         parser = GPPolParser()
         parser.load_xml(etree.fromstring(advanced_enroll_reg_pol.strip() %
             (objectGUID, objectGUID, objectGUID, objectGUID)))

@@ -19,6 +19,9 @@ import operator
 import requests
 from samba.gp.gpclass import gp_pol_ext, gp_applier, GPOSTATE
 from samba import Ldb
+from samba.dcerpc import misc
+from samba.ndr import ndr_unpack
+
 from ldb import SCOPE_SUBTREE, SCOPE_BASE
 from samba.auth import system_session
 from samba.gp.gpclass import get_dc_hostname
@@ -51,14 +54,6 @@ endpoint_re = '(https|HTTPS)://(?P<server>[a-zA-Z0-9.-]+)/ADPolicyProvider' + \
 global_trust_dirs = ['/etc/pki/trust/anchors',           # SUSE
                      '/etc/pki/ca-trust/source/anchors', # RHEL/Fedora
                      '/usr/local/share/ca-certificates'] # Debian/Ubuntu
-
-def octet_string_to_objectGUID(data):
-    """Convert an octet string to an objectGUID."""
-    return '%s-%s-%s-%s-%s' % ('%02x' % struct.unpack('<L', data[0:4])[0],
-                               '%02x' % struct.unpack('<H', data[4:6])[0],
-                               '%02x' % struct.unpack('<H', data[6:8])[0],
-                               '%02x' % struct.unpack('>H', data[8:10])[0],
-                               '%02x%02x' % struct.unpack('>HL', data[10:]))
 
 
 def group_and_sort_end_point_information(end_point_information):
@@ -480,7 +475,7 @@ class gp_cert_auto_enroll_ext(gp_pol_ext, gp_applier):
                 # instance. If the values do not match, continue with the next
                 # group.
                 objectGUID = '{%s}' % \
-                    octet_string_to_objectGUID(res2[0]['objectGUID'][0]).upper()
+                    str(ndr_unpack(misc.GUID, res2[0]['objectGUID'][0])).upper()
                 if objectGUID != e['PolicyID']:
                     continue
 
