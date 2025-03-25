@@ -1,4 +1,86 @@
                    ==============================
+                   Release Notes for Samba 4.20.8
+                           March 25, 2025
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.20 release series.
+
+
+Changes since 4.20.7
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 15782: winbindd shows memleak in kerberos_decode_pac.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15738: Creation of GPOs applicable to more than one group is impossible
+     with Samba 4.20.0 and later.
+   * BUG 15795: ldb index cache is too small on known large transactions
+     (schemaupgrade, provision).
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15151: vfs_gpfs silently garbles timestamps > year 2106.
+   * BUG 15796: Spotlight search results don't show file size and creation date.
+
+o  Guenther Deschner <gd@samba.org>
+   * BUG 15703: General improvements for vfs_ceph_new module.
+
+o  Andréas Leroux <aleroux@tranquil.it>
+   * BUG 15795: ldb index cache is too small on known large transactions
+     (schemaupgrade, provision).
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14213: Windows Explorer crashes on S-1-22-* Unix-SIDs when accessing
+     security tab.
+   * BUG 15783: NETLOGON_NTLMV2_ENABLED is missing in the SamLogon* user_flags
+     field.
+
+o  Anoop C S <anoopcs@samba.org>
+   * BUG 15703: General improvements for vfs_ceph_new module.
+   * BUG 15797: Unable to connect to CephFS subvolume shares with
+     vfs_shadow_copy2.
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15820: Incorrect FSF address in ctdb pcp scripts.
+
+o  Shachar Sharon <ssharon@redhat.com>
+   * BUG 15703: General improvements for vfs_ceph_new module.
+
+o  Shweta Sodani <ssodani@redhat.com>
+   * BUG 15703: General improvements for vfs_ceph_new module.
+
+o  Jo Sutton <josutton@catalyst.net.nz>
+   * BUG 15634: unicodePwd cannot be modified over ldapi.
+
+o  Andrea Venturoli <ml@netfence.it>
+   * BUG 15804: "samba-tool domain backup offline" hangs.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.20.7
                           January 21, 2025
                    ==============================
@@ -65,8 +147,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.20.6
                          November 19, 2024
