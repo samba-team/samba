@@ -691,8 +691,11 @@ class cmd_domain_backup_restore(cmd_fsmo_seize):
         dest_sysvol_dir = lp.get('path', 'sysvol')
         if not os.path.exists(dest_sysvol_dir):
             os.makedirs(dest_sysvol_dir)
-        backup_restore(sysvol_tar, dest_sysvol_dir, samdb, smbconf)
-        os.remove(sysvol_tar)
+        if os.path.isfile(sysvol_tar):
+            backup_restore(sysvol_tar, dest_sysvol_dir, samdb, smbconf)
+            os.remove(sysvol_tar)
+        else:
+            logger.notice("back-up has no sysvol data")
 
         # fix up any stale links to the old DCs we just removed
         logger.info("Fixing up any remaining references to the old DCs...")
