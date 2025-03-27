@@ -388,9 +388,11 @@
  *              and convert struct files_struct.posix_flags to
  *              struct files_struct.fsp_flags.posix_open
  * Version 50 - Add struct files_struct.fsp_flags.posix_append
+ * Change to Version 51 - will ship with 4.23
+ * Version 51 - Add ntcreatex_deny_[dos|fcb] and ntcreatex_stream_baseopen
  */
 
-#define SMB_VFS_INTERFACE_VERSION 50
+#define SMB_VFS_INTERFACE_VERSION 51
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
@@ -462,6 +464,9 @@ typedef struct files_struct {
 		bool fstat_before_close : 1;
 		bool posix_open : 1;
 		bool posix_append : 1;
+		bool ntcreatex_deny_dos : 1;
+		bool ntcreatex_deny_fcb : 1;
+		bool ntcreatex_stream_baseopen : 1;
 	} fsp_flags;
 
 	/* Only used for SMB1 close with explicit time */
