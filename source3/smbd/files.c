@@ -2663,3 +2663,30 @@ bool fsp_getinfo_ask_sharemode(struct files_struct *fsp)
 
 	return lp_smbd_getinfo_ask_sharemode(SNUM(fsp->conn));
 }
+
+void fsp_apply_private_ntcreatex_flags(struct files_struct *fsp,
+				       uint32_t flags)
+{
+	/*
+	 * This might be called twice when first trying to open something as a
+	 * file, which fails for directories, triggering a second open-directory
+	 * attempt via open_directory(). To handle this case make sure to reset
+	 * fsp_flags if the corresponding flag is not set, as we might get passed
+	 * different flags in pass one and pass two.
+	 */
+	if (flags & NTCREATEX_FLAG_DENY_DOS) {
+		fsp->fsp_flags.ntcreatex_deny_dos = true;
+	} else {
+		fsp->fsp_flags.ntcreatex_deny_dos = false;
+	}
+	if (flags & NTCREATEX_FLAG_DENY_FCB) {
+		fsp->fsp_flags.ntcreatex_deny_fcb = true;
+	} else {
+		fsp->fsp_flags.ntcreatex_deny_fcb = false;
+	}
+	if (flags & NTCREATEX_FLAG_STREAM_BASEOPEN) {
+		fsp->fsp_flags.ntcreatex_stream_baseopen = true;
+	} else {
+		fsp->fsp_flags.ntcreatex_stream_baseopen = false;
+	}
+}

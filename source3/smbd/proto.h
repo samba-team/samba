@@ -431,6 +431,9 @@ NTSTATUS parent_pathref(TALLOC_CTX *mem_ctx,
 			struct smb_filename **_parent,
 			struct smb_filename **_atname);
 
+void fsp_apply_private_ntcreatex_flags(struct files_struct *fsp,
+				       uint32_t flags);
+
 /* The following definitions come from smbd/smb2_ipc.c  */
 
 NTSTATUS nt_status_np_pipe(NTSTATUS status);
