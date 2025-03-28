@@ -1751,7 +1751,6 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			parent_dir_fname_dst_atname,
 			&rhow);
 	if (ret == 0) {
-		uint32_t create_options = fh_get_private_options(fsp->fh);
 		struct smb_filename *old_fname = NULL;
 
 		DBG_NOTICE("succeeded doing rename on "
@@ -1790,25 +1789,6 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 						old_dosmode | FILE_ATTRIBUTE_ARCHIVE,
 						NULL,
 						true);
-			}
-		}
-
-		/*
-		 * A rename acts as a new file create w.r.t. allowing an initial delete
-		 * on close, probably because in Windows there is a new handle to the
-		 * new file. If initial delete on close was requested but not
-		 * originally set, we need to set it here. This is probably not 100% correct,
-		 * but will work for the CIFSFS client which in non-posix mode
-		 * depends on these semantics. JRA.
-		 */
-
-		if (create_options & FILE_DELETE_ON_CLOSE) {
-			status = can_set_delete_on_close(fsp, 0);
-
-			if (NT_STATUS_IS_OK(status)) {
-				/* Note that here we set the *initial* delete on close flag,
-				 * not the regular one. The magic gets handled in close. */
-				fsp->fsp_flags.initial_delete_on_close = true;
 			}
 		}
 
