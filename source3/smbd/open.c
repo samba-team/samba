@@ -3917,7 +3917,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 */
 		fsp->file_id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 	}
-	fh_set_private_options(fsp->fh, private_flags);
+	fsp_apply_private_ntcreatex_flags(fsp, private_flags);
 	fsp->access_mask = open_access_mask; /* We change this to the
 					      * requested access_mask after
 					      * the open is done. */
@@ -5069,7 +5069,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	fsp->fsp_flags.can_read = false;
 	fsp->fsp_flags.can_write = false;
 
-	fh_set_private_options(fsp->fh, 0);
+	fsp_apply_private_ntcreatex_flags(fsp, 0);
 	/*
 	 * According to Samba4, SEC_FILE_READ_ATTRIBUTE is always granted,
 	 */

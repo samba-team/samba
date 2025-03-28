@@ -25,12 +25,6 @@ struct fd_handle {
 	int fd;
 	uint64_t position_information;
 	off_t pos;
-	/*
-	 * NT Create options, but we only look at
-	 * NTCREATEX_FLAG_DENY_DOS and
-	 * NTCREATEX_FLAG_DENY_FCB.
-	 */
-	uint32_t private_options;
 	uint64_t gen_id;
 };
 
@@ -83,16 +77,6 @@ off_t fh_get_pos(struct fd_handle *fh)
 void fh_set_pos(struct fd_handle *fh, off_t pos)
 {
 	fh->pos = pos;
-}
-
-uint32_t fh_get_private_options(struct fd_handle *fh)
-{
-	return fh->private_options;
-}
-
-void fh_set_private_options(struct fd_handle *fh, uint32_t private_options)
-{
-	fh->private_options = private_options;
 }
 
 uint64_t fh_get_gen_id(struct fd_handle *fh)

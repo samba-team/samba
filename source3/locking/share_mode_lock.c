@@ -3516,18 +3516,17 @@ NTSTATUS _share_mode_entry_prepare_unlock(
 uint16_t fsp_get_share_entry_flags(const struct files_struct *fsp)
 {
 	uint16_t flags = 0;
-	uint32_t private_options = fh_get_private_options(fsp->fh);
 
 	if (fsp->fsp_flags.posix_open) {
 		flags |= SHARE_ENTRY_FLAG_POSIX_OPEN;
 	}
-	if (private_options & NTCREATEX_FLAG_STREAM_BASEOPEN) {
+	if (fsp->fsp_flags.ntcreatex_stream_baseopen) {
 		flags |= SHARE_ENTRY_FLAG_STREAM_BASEOPEN;
 	}
-	if (private_options & NTCREATEX_FLAG_DENY_DOS) {
+	if (fsp->fsp_flags.ntcreatex_deny_dos) {
 		flags |= SHARE_ENTRY_FLAG_DENY_DOS;
 	}
-	if (private_options & NTCREATEX_FLAG_DENY_FCB) {
+	if (fsp->fsp_flags.ntcreatex_deny_fcb) {
 		flags |= SHARE_ENTRY_FLAG_DENY_FCB;
 	}
 	return flags;

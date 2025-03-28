@@ -57,21 +57,22 @@ struct files_struct *fcb_or_dos_open(
 
 		DBG_DEBUG("Checking file %s, fd = %d, vuid = %"PRIu64", "
 			  "file_pid = %"PRIu16", "
-			  "private_options = 0x%"PRIx32", "
+			  "ntcreatex_deny_dos: %s, "
+			  "ntcreatex_deny_fcb: %s, "
 			  "access_mask = 0x%"PRIx32"\n",
 			  fsp_str_dbg(fsp),
 			  fsp_get_pathref_fd(fsp),
 			  fsp->vuid,
 			  fsp->file_pid,
-			  fh_get_private_options(fsp->fh),
+			  fsp->fsp_flags.ntcreatex_deny_dos ? "yes":"no",
+			  fsp->fsp_flags.ntcreatex_deny_fcb ? "yes":"no",
 			  fsp->access_mask);
 
 		if (fsp_get_pathref_fd(fsp) != -1 &&
 		    fsp->vuid == req->vuid &&
 		    fsp->file_pid == req->smbpid &&
-		    (fh_get_private_options(fsp->fh) &
-		     (NTCREATEX_FLAG_DENY_DOS |
-		      NTCREATEX_FLAG_DENY_FCB)) &&
+		    (fsp->fsp_flags.ntcreatex_deny_dos |
+		     fsp->fsp_flags.ntcreatex_deny_fcb) &&
 		    (fsp->access_mask & FILE_WRITE_DATA) &&
 		    strequal(fsp->fsp_name->base_name, smb_fname->base_name) &&
 		    strequal(fsp->fsp_name->stream_name,
@@ -87,7 +88,7 @@ struct files_struct *fcb_or_dos_open(
 
 	/* quite an insane set of semantics ... */
 	if (is_executable(smb_fname->base_name) &&
-	    (fh_get_private_options(fsp->fh) & NTCREATEX_FLAG_DENY_DOS)) {
+	    fsp->fsp_flags.ntcreatex_deny_dos) {
 		DBG_DEBUG("file fail due to is_executable.\n");
 		return NULL;
 	}

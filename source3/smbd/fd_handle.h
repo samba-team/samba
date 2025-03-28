@@ -36,9 +36,6 @@ void fh_set_position_information(struct fd_handle *fh, uint64_t posinfo);
 off_t fh_get_pos(struct fd_handle *fh);
 void fh_set_pos(struct fd_handle *fh, off_t pos);
 
-uint32_t fh_get_private_options(struct fd_handle *fh);
-void fh_set_private_options(struct fd_handle *fh, uint32_t private_options);
-
 uint64_t fh_get_gen_id(struct fd_handle *fh);
 void fh_set_gen_id(struct fd_handle *fh, uint64_t gen_id);
 
