@@ -595,12 +595,12 @@ static NTSTATUS filename_convert_normalize_new(
 	return NT_STATUS_OK;
 }
 
-NTSTATUS safe_symlink_target_path(TALLOC_CTX *mem_ctx,
-				  const char *connectpath,
-				  const char *dir,
-				  const char *target,
-				  size_t unparsed,
-				  char **_relative)
+static NTSTATUS safe_symlink_target_path(TALLOC_CTX *mem_ctx,
+					 const char *connectpath,
+					 const char *dir,
+					 const char *target,
+					 size_t unparsed,
+					 char **_relative)
 {
 	char *abs_target = NULL;
 	char *abs_target_canon = NULL;
