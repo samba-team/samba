@@ -1,4 +1,82 @@
                    ==============================
+                   Release Notes for Samba 4.21.5
+                           March 31, 2025
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.21 release series.
+
+
+Changes since 4.21.4
+--------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15795: ldb index cache is too small on known large transactions
+     (schemaupgrade, provision).
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15822: Enable support for cephfs case insensitive behavior.
+   * BUG 15823: Subnet based interfaces definition not listening on all covered
+     IP addresses.
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15727: net ad join fails with "Failed to join domain: failed to create
+     kerberos keytab".
+
+o  Xavi Hernandez <xhernandez@redhat.com>
+   * BUG 15822: Enable support for cephfs case insensitive behavior.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 15791: Remove of file or directory not possible with vfs_acl_tdb.
+
+o  Andréas Leroux <aleroux@tranquil.it>
+   * BUG 15795: ldb index cache is too small on known large transactions
+     (schemaupgrade, provision).
+
+o  Anoop C S <anoopcs@samba.org>
+   * BUG 15797: Unable to connect to CephFS subvolume shares with
+     vfs_shadow_copy2.
+   * BUG 15810: Add async io API from libcephfs to ceph_new VFS module.
+   * BUG 15818: vfs_ceph_new module does not work with other modules for
+     snapshot management.
+   * BUG 15822: Enable support for cephfs case insensitive behavior.
+   * BUG 15834: vfs_ceph_new: Add path based fallback for SMB_VFS_FCHOWN,
+     SMB_VFS_FCHMOD and SMB_VFS_FNTIMES.
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15820: Incorrect FSF address in ctdb pcp scripts.
+
+o  Shachar Sharon <ssharon@redhat.com>
+   * BUG 15810: Add async io API from libcephfs to ceph_new VFS module.
+
+o  Andrea Venturoli <ml@netfence.it>
+   * BUG 15804: "samba-tool domain backup offline" hangs.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.21.4
                          February 17, 2025
                    ==============================
@@ -83,8 +161,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.21.3
                           January 06, 2025
