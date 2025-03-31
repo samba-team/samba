@@ -288,14 +288,14 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 
 	if (!smbd_vfs_init(conn)) {
 		NTSTATUS status = map_nt_error_from_unix(errno);
-		DEBUG(0,("create_conn_struct: smbd_vfs_init failed.\n"));
+		DBG_ERR("smbd_vfs_init failed.\n");
 		conn_free(conn);
 		return status;
 	}
 
 	/* this must be the first filesystem operation that we do */
 	if (SMB_VFS_CONNECT(conn, servicename, vfs_user) < 0) {
-		DEBUG(0,("VFS connect failed!\n"));
+		DBG_ERR("VFS connect failed!\n");
 		conn_free(conn);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
