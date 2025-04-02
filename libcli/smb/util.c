@@ -724,3 +724,133 @@ NTSTATUS smb311_capabilities_check(const struct smb311_capabilities *c,
 
 	return NT_STATUS_OK;
 }
+
+static bool smb_transport_parse(const char *_value, struct smb_transport *_t)
+{
+	size_t _value_len = strlen(_value);
+	char value[_value_len+1];
+	const char *vparam = NULL;
+	const char *portstr = NULL;
+	char *p = NULL;
+	struct smb_transport t = {
+		.type = SMB_TRANSPORT_TYPE_UNKNOWN,
+	};
+	bool invalid = false;
+
+	memcpy(value, _value, sizeof(value));
+
+	p = strchr(value, ':');
+	if (p != NULL) {
+		vparam = p + 1;
+		p[0] = '\0';
+	}
+
+	if (strcmp("tcp", value) == 0) {
+		t.type = SMB_TRANSPORT_TYPE_TCP;
+		t.port = 445;
+	} else if (strcmp("nbt", value) == 0) {
+		t.type = SMB_TRANSPORT_TYPE_NBT;
+		t.port = 139;
+	} else if (vparam != NULL) {
+		/*
+		 * a port number should not have
+		 * extra parameter!
+		 */
+		invalid = true;
+	} else {
+		/*
+		 * Could a port number only
+		 */
+		portstr = value;
+	}
+
+	if (!invalid && portstr == NULL) {
+		portstr = vparam;
+	}
+
+	if (portstr != NULL) {
+		char *_end = NULL;
+		int _port = 0;
+		_port = strtol(portstr, &_end, 10);
+		if (*_end != '\0' || _port <= 0 || _port > 65535) {
+			invalid = true;
+		} else {
+			t.port = _port;
+		}
+	}
+
+	if (invalid) {
+		t = (struct smb_transport) {
+			.type = SMB_TRANSPORT_TYPE_UNKNOWN,
+		};
+
+		*_t = t;
+		return false;
+	}
+
+	if (t.type == SMB_TRANSPORT_TYPE_UNKNOWN) {
+		if (t.port == 139) {
+			t.type = SMB_TRANSPORT_TYPE_NBT;
+		} else {
+			t.type = SMB_TRANSPORT_TYPE_TCP;
+		}
+	}
+
+	*_t = t;
+	return true;
+}
+
+struct smb_transports smb_transports_parse(const char *param_name,
+					   const char * const *transports)
+{
+	struct smb_transports ts = {
+		.num_transports = 0,
+	};
+	size_t ti;
+
+	for (ti = 0; transports != NULL && transports[ti] != NULL; ti++) {
+		struct smb_transport t = {
+			.type = SMB_TRANSPORT_TYPE_UNKNOWN,
+		};
+		bool ignore = false;
+		size_t ei;
+		bool ok = false;
+
+		if (ts.num_transports >= SMB_TRANSPORTS_MAX_TRANSPORTS) {
+			DBG_ERR("WARNING: Ignoring trailing value '%s' for parameter '%s'\n",
+				transports[ti], param_name);
+			continue;
+		}
+
+		ok = smb_transport_parse(transports[ti], &t);
+		if (!ok) {
+			DBG_ERR("WARNING: Ignoring invalid value '%s' for parameter '%s'\n",
+				transports[ti], param_name);
+			continue;
+		}
+
+		for (ei = 0; ei < ts.num_transports; ei++) {
+			if (t.type != ts.transports[ei].type) {
+				continue;
+			}
+
+			if (t.port != ts.transports[ei].port) {
+				continue;
+			}
+
+			ignore = true;
+			break;
+		}
+
+		if (ignore) {
+			DBG_ERR("WARNING: Ignoring duplicate value '%s' for parameter '%s'\n",
+				transports[ti], param_name);
+			continue;
+		}
+
+		ts.transports[ts.num_transports] = t;
+		ts.num_transports += 1;
+	}
+
+	return ts;
+}

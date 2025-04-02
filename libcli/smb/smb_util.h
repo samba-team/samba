@@ -57,4 +57,24 @@ NTSTATUS smb_bytes_pull_str(TALLOC_CTX *mem_ctx, char **_str, bool ucs2,
 enum smb_signing_setting smb_signing_setting_translate(const char *str);
 enum smb_encryption_setting smb_encryption_setting_translate(const char *str);
 
+enum smb_transport_type {
+	SMB_TRANSPORT_TYPE_UNKNOWN = 0,
+	SMB_TRANSPORT_TYPE_NBT,
+	SMB_TRANSPORT_TYPE_TCP,
+};
+
+struct smb_transport {
+	enum smb_transport_type type;
+	uint16_t port;
+};
+
+struct smb_transports {
+#define SMB_TRANSPORTS_MAX_TRANSPORTS 10
+	uint8_t num_transports;
+	struct smb_transport transports[SMB_TRANSPORTS_MAX_TRANSPORTS];
+};
+
+struct smb_transports smb_transports_parse(const char *param_name,
+					   const char * const *transports);
+
 #endif /* _SMB_UTIL_H */
