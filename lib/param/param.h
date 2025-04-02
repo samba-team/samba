@@ -47,6 +47,7 @@ struct loadparm_context;
 struct loadparm_service;
 struct smbcli_options;
 struct smbcli_session_options;
+struct smb_transport;
 struct gensec_settings;
 struct bitmap;
 struct file_lists;

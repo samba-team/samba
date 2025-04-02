@@ -67,6 +67,7 @@
 #include "lib/param/s3_param.h"
 #include "lib/util/bitmap.h"
 #include "libcli/smb/smb_constants.h"
+#include "libcli/smb/smb_util.h"
 #include "tdb.h"
 #include "librpc/gen_ndr/nbt.h"
 #include "librpc/gen_ndr/dns.h"
@@ -1381,6 +1382,142 @@ bool handle_smb_ports(struct loadparm_context *lp_ctx, struct loadparm_service *
 	}
 
 	return true;
+}
+
+bool smb_transport_parse(const char *_value, struct smb_transport *_t)
+{
+	size_t _value_len = strlen(_value);
+	char value[_value_len+1];
+	const char *vparam = NULL;
+	const char *portstr = NULL;
+	char *p = NULL;
+	struct smb_transport t = {
+		.type = SMB_TRANSPORT_TYPE_UNKNOWN,
+	};
+	bool invalid = false;
+
+	memcpy(value, _value, sizeof(value));
+
+	p = strchr(value, ':');
+	if (p != NULL) {
+		vparam = p + 1;
+		p[0] = '\0';
+	}
+
+	if (strcmp("tcp", value) == 0) {
+		t.type = SMB_TRANSPORT_TYPE_TCP;
+		t.port = 445;
+	} else if (strcmp("nbt", value) == 0) {
+		t.type = SMB_TRANSPORT_TYPE_NBT;
+		t.port = 139;
+	} else if (vparam != NULL) {
+		/*
+		 * a port number should not have
+		 * extra parameter!
+		 */
+		invalid = true;
+	} else {
+		/*
+		 * Could a port number only
+		 */
+		portstr = value;
+	}
+
+	if (!invalid && portstr == NULL) {
+		portstr = vparam;
+	}
+
+	if (portstr != NULL) {
+		char *_end = NULL;
+		int _port = 0;
+		_port = strtol(portstr, &_end, 10);
+		if (*_end != '\0' || _port <= 0 || _port > 65535) {
+			invalid = true;
+		} else {
+			t.port = _port;
+		}
+	}
+
+	if (invalid) {
+		t = (struct smb_transport) {
+			.type = SMB_TRANSPORT_TYPE_UNKNOWN,
+		};
+
+		*_t = t;
+		return false;
+	}
+
+	if (t.type == SMB_TRANSPORT_TYPE_UNKNOWN) {
+		if (t.port == 139) {
+			t.type = SMB_TRANSPORT_TYPE_NBT;
+		} else {
+			t.type = SMB_TRANSPORT_TYPE_TCP;
+		}
+	}
+
+	*_t = t;
+	return true;
+}
+
+static bool handle_smb_transports(struct loadparm_context *lp_ctx,
+				  struct loadparm_service *service,
+				  const char *pszParmValue,
+				  char **ptr,
+				  const char *optname)
+{
+	const char **list = NULL;
+	static int parm_num = -1;
+	size_t i;
+	bool ok;
+
+	if (!pszParmValue || !*pszParmValue) {
+		return false;
+	}
+
+	if (parm_num == -1) {
+		parm_num = lpcfg_map_parameter(optname);
+		if (parm_num == -1) {
+			return false;
+		}
+	}
+
+	ok = set_variable_helper(lp_ctx->globals->ctx,
+				 parm_num,
+				 ptr,
+				 optname,
+				 pszParmValue);
+	if (!ok) {
+		return false;
+	}
+
+	list = *(const char ***)ptr;
+
+	if (list == NULL) {
+		return false;
+	}
+
+	/* Check that each transport is a valid */
+	for (i = 0; list[i] != NULL; i++) {
+		struct smb_transport t = {
+			.type = SMB_TRANSPORT_TYPE_UNKNOWN,
+		};
+
+		ok = smb_transport_parse(list[i], &t);
+		if (!ok) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool handle_client_smb_transports(struct loadparm_context *lp_ctx,
+				  struct loadparm_service *service,
+				  const char *pszParmValue,
+				  char **ptr)
+{
+	return handle_smb_transports(lp_ctx, service, pszParmValue, ptr,
+				     "client smb transports");
 }
 
 bool handle_rpc_server_dynamic_port_range(struct loadparm_context *lp_ctx,
@@ -2837,6 +2974,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "use mmap", "True");
 
+	lpcfg_do_global_parameter(lp_ctx, "client smb transports", "tcp, nbt");
 	lpcfg_do_global_parameter(lp_ctx, "smb ports", "445 139");
 	lpcfg_do_global_parameter_var(lp_ctx, "nbt port", "%d", NBT_NAME_SERVICE_PORT);
 	lpcfg_do_global_parameter_var(lp_ctx, "dgram port", "%d", NBT_DGRAM_SERVICE_PORT);
