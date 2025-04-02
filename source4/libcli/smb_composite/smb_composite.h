@@ -243,24 +243,6 @@ NTSTATUS smb_composite_appendacl(struct smbcli_tree *tree,
 				TALLOC_CTX *mem_ctx,
 				struct smb_composite_appendacl *io);
 
-/*
-  a composite API to fire connect() calls to multiple targets, picking the
-  first one.
-*/
-
-struct smb_composite_connectmulti {
-	struct {
-		int num_dests;
-		const char **hostnames;
-		const char **addresses;
-		int *ports; 	/* Either NULL for lpcfg_smb_ports() per
-				 * destination or a list of explicit ports */
-	} in;
-	struct {
-		struct smbcli_socket *socket;
-	} out;
-};
-
 struct smbcli_session;
 struct resolve_context;
 
