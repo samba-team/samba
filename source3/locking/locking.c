@@ -118,7 +118,10 @@ bool strict_lock_check_default(files_struct *fsp, struct lock_struct *plock)
 		return True;
 	}
 
-	if (!lp_locking(fsp->conn->params) || !strict_locking) {
+	if (!lp_locking(fsp->conn->params) ||
+	    !strict_locking ||
+	    !fsp->fsp_flags.can_lock)
+	{
 		return True;
 	}
 
