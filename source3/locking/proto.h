@@ -83,7 +83,8 @@ struct brl_connectstate {
 
 bool brl_mark_disconnected(struct files_struct *fsp,
 			   struct byte_range_lock *br_lck);
-bool brl_reconnect_disconnected(struct files_struct *fsp);
+bool brl_reconnect_disconnected(struct files_struct *fsp,
+				struct byte_range_lock *br_lck);
 void brl_close_fnum(struct byte_range_lock *br_lck);
 int brl_forall(void (*fn)(struct file_id id, struct server_id pid,
 			  enum brl_type lock_type,
