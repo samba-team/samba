@@ -847,7 +847,6 @@ void loadparm_s3_init_globals(struct loadparm_context *lp_ctx,
 	Globals.server_signing = SMB_SIGNING_DEFAULT;
 
 	Globals.defer_sharing_violations = true;
-	Globals.smb_ports = str_list_make_v3_const(NULL, SMB_PORTS, NULL);
 	Globals.server_smb_transports = str_list_make_v3_const(NULL, "tcp, nbt", NULL);
 	Globals.client_smb_transports = str_list_make_v3_const(NULL, "tcp, nbt", NULL);
 

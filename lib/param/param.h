@@ -187,7 +187,6 @@ void lpcfg_smbcli_options(struct loadparm_context *lp_ctx,
 			 struct smbcli_options *options);
 void lpcfg_smbcli_session_options(struct loadparm_context *lp_ctx,
 				 struct smbcli_session_options *options);
-const char **lpcfg_smb_ports(struct loadparm_context *);
 const char *lpcfg_socket_options(struct loadparm_context *);
 struct dcerpc_server_info *lpcfg_dcerpc_server_info(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
 struct gensec_settings *lpcfg_gensec_settings(TALLOC_CTX *, struct loadparm_context *);

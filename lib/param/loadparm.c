@@ -1342,48 +1342,6 @@ bool handle_idmap_gid(struct loadparm_context *lp_ctx, struct loadparm_service *
 	return lpcfg_string_set(lp_ctx->globals->ctx, ptr, pszParmValue);
 }
 
-bool handle_smb_ports(struct loadparm_context *lp_ctx, struct loadparm_service *service,
-		      const char *pszParmValue, char **ptr)
-{
-	static int parm_num = -1;
-	int i;
-	const char **list;
-
-	if (!pszParmValue || !*pszParmValue) {
-		return false;
-	}
-
-	if (parm_num == -1) {
-		parm_num = lpcfg_map_parameter("smb ports");
-		if (parm_num == -1) {
-			return false;
-		}
-	}
-
-	if (!set_variable_helper(lp_ctx->globals->ctx, parm_num, ptr, "smb ports",
-			       	pszParmValue)) {
-		return false;
-	}
-
-	list = lp_ctx->globals->smb_ports;
-	if (list == NULL) {
-		return false;
-	}
-
-	/* Check that each port is a valid integer and within range */
-	for (i = 0; list[i] != NULL; i++) {
-		char *end = NULL;
-		int port = 0;
-		port = strtol(list[i], &end, 10);
-		if (*end != '\0' || port <= 0 || port > 65535) {
-			TALLOC_FREE(list);
-			return false;
-		}
-	}
-
-	return true;
-}
-
 bool smb_transport_parse(const char *_value, struct smb_transport *_t)
 {
 	size_t _value_len = strlen(_value);
@@ -2985,7 +2943,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "server smb transports", "tcp, nbt");
 	lpcfg_do_global_parameter(lp_ctx, "client smb transports", "tcp, nbt");
-	lpcfg_do_global_parameter(lp_ctx, "smb ports", "445 139");
 	lpcfg_do_global_parameter_var(lp_ctx, "nbt port", "%d", NBT_NAME_SERVICE_PORT);
 	lpcfg_do_global_parameter_var(lp_ctx, "dgram port", "%d", NBT_DGRAM_SERVICE_PORT);
 	lpcfg_do_global_parameter(lp_ctx, "krb5 port", "88");

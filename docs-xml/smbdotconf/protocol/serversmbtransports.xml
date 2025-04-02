@@ -32,3 +32,17 @@
 
 <value type="default">tcp, nbt</value>
 </samba:parameter>
+
+<samba:parameter name="smb ports"
+                 context="G"
+                 type="list"
+                 handler="handle_server_smb_transports"
+                 function="server_smb_transports"
+                 synonym="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+		This is a synonym for <smbconfoption name="server smb transports"/>.
+	</para>
+</description>
+</samba:parameter>

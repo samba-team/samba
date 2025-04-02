@@ -480,7 +480,7 @@ chmod 1770 /usr/local/samba/lib/usershares
 
 			<para>This parameter is not available when Samba listens on port 445, as clients no longer
 			send this information. If you use this macro in an include statement on a domain that has
-			a Samba domain controller be sure to set in the [global] section <parameter>smb ports =
+			a Samba domain controller be sure to set in the [global] section <parameter>server smb transports =
 			139</parameter>. This will cause Samba to not listen on port 445 and will permit include
 			functionality to function as it did with Samba 2.x.
 			</para></listitem>
