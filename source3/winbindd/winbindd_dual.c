@@ -1312,7 +1312,7 @@ static bool calculate_next_machine_pwd_change(const char *domain,
 		next_change = pass_last_set_time + timeout;
 		DEBUG(10,("machine password still valid until: %s\n",
 			http_timestring(talloc_tos(), next_change)));
-		*t = tevent_timeval_set(next_change, 0);
+		*t = (struct timeval) { .tv_sec = next_change, };
 
 		if (lp_clustering()) {
 			uint8_t randbuf;
