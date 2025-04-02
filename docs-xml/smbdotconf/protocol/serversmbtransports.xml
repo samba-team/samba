@@ -1,0 +1,34 @@
+<samba:parameter name="server smb transports"
+                 context="G"
+                 type="list"
+                 handler="handle_server_smb_transports"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>Specifies which transports and ports the server should listen on for SMB traffic.</para>
+
+	<para>The order matters only for mDNS registrations, the first
+	'tcp' or 'nbt' port is used for that.</para>
+
+	<para>The transport 'tcp' uses raw tcp with a 4 byte length header per SMB PDU.
+	The default port for 'tcp' is 445. Other ports can be specified by adding it
+	after ':', e.g. 'tcp:1445'.
+	</para>
+
+	<para>The transport 'nbt' uses netbios framing on top of tcp per SMB PDU.
+	The default port for 'nbt' is 139. Other ports can be specified by adding it
+	after ':', e.g. 'nbt:1139'.
+	</para>
+
+	<para>Numerical ports are handled as 'tcp' except port '139' is handled as 'nbt'.
+	</para>
+
+	<para>Note that's currently a limit of 10 unique transports, all others will
+	be ignored.</para>
+</description>
+
+<value type="example">445</value>
+<value type="example">tcp, tcp:1445</value>
+<value type="example">8000, nbt:1139</value>
+
+<value type="default">tcp, nbt</value>
+</samba:parameter>

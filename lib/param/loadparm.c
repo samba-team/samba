@@ -1520,6 +1520,15 @@ bool handle_client_smb_transports(struct loadparm_context *lp_ctx,
 				     "client smb transports");
 }
 
+bool handle_server_smb_transports(struct loadparm_context *lp_ctx,
+				  struct loadparm_service *service,
+				  const char *pszParmValue,
+				  char **ptr)
+{
+	return handle_smb_transports(lp_ctx, service, pszParmValue, ptr,
+				     "server smb transports");
+}
+
 bool handle_rpc_server_dynamic_port_range(struct loadparm_context *lp_ctx,
 					  struct loadparm_service *service,
 					  const char *pszParmValue,
@@ -2974,6 +2983,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "use mmap", "True");
 
+	lpcfg_do_global_parameter(lp_ctx, "server smb transports", "tcp, nbt");
 	lpcfg_do_global_parameter(lp_ctx, "client smb transports", "tcp, nbt");
 	lpcfg_do_global_parameter(lp_ctx, "smb ports", "445 139");
 	lpcfg_do_global_parameter_var(lp_ctx, "nbt port", "%d", NBT_NAME_SERVICE_PORT);
