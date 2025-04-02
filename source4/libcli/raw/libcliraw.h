@@ -106,6 +106,7 @@ struct smbcli_options {
 	struct GUID client_guid;
 	uint64_t max_credits;
 	unsigned int only_negprot;
+	struct smb_transports transports;
 	struct smb311_capabilities smb3_capabilities;
 };
 
