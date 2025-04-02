@@ -1907,7 +1907,7 @@ void reply_open_and_X(struct smb_request *req)
 #endif
 	int smb_ofun;
 	uint32_t fattr=0;
-	int mtime=0;
+	time_t mtime=0;
 	int smb_action = 0;
 	struct files_struct *dirfsp = NULL;
 	files_struct *fsp;
