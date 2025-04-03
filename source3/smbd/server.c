@@ -1799,7 +1799,7 @@ extern void build_options(bool screen);
 			.argInfo    = POPT_ARG_STRING,
 			.arg        = &ports,
 			.val        = 0,
-			.descrip    = "Listen on the specified ports",
+			.descrip    = "Listen on the specified transports",
 		},
 		{
 			.longName   = "profiling-level",
@@ -2133,12 +2133,12 @@ extern void build_options(bool screen);
 			exit_server("no valid transport from '--ports'");
 		}
 	} else {
-		const char **ts = lp_smb_ports();
-		parent->transports = smb_transports_parse("smb ports",
+		const char **ts = lp_server_smb_transports();
+		parent->transports = smb_transports_parse("server smb transports",
 							  ts);
 		if (parent->transports.num_transports == 0) {
 			exit_server("no valid transport from "
-				    "'smb ports'");
+				    "'server smb transports'");
 		}
 	}
 
