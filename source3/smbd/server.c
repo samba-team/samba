@@ -1549,16 +1549,16 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
  Open socket communication on given ip address
 ****************************************************************************/
 
-static bool smbd_open_socket_for_ip(struct smbd_parent_context *parent,
-				    struct tevent_context *ev_ctx,
-				    struct messaging_context *msg_ctx,
-				    const char *smb_ports,
-				    const struct sockaddr_storage *ifss)
+static size_t smbd_open_socket_for_ip(struct smbd_parent_context *parent,
+				      struct tevent_context *ev_ctx,
+				      struct messaging_context *msg_ctx,
+				      const char *smb_ports,
+				      const struct sockaddr_storage *ifss)
 {
 	int j;
 	const char **ports;
 	TALLOC_CTX *ctx;
-	bool status = true;
+	size_t num_ok = 0;
 
 	ports = lp_smb_ports();
 	ctx = talloc_stackframe();
@@ -1577,14 +1577,14 @@ static bool smbd_open_socket_for_ip(struct smbd_parent_context *parent,
 					  ev_ctx,
 					  ifss,
 					  port)) {
-			status = false;
-			goto out_free;
+			continue;
 		}
+
+		num_ok += 1;
 	}
 
-out_free:
 	TALLOC_FREE(ctx);
-	return status;
+	return num_ok;
 }
 
 struct smbd_addrchanged_state {
@@ -1721,6 +1721,7 @@ static void smbd_addr_changed(struct tevent_req *req)
 
 	if (type == ADDRCHANGE_ADD) {
 		char addrstr[INET6_ADDRSTRLEN];
+		size_t num_ok;
 
 		print_sockaddr(addrstr, sizeof(addrstr), &addr.u.ss);
 
@@ -1728,11 +1729,12 @@ static void smbd_addr_changed(struct tevent_req *req)
 			   "on if_index %u\n",
 			   addrstr, if_index);
 
-		if (!smbd_open_socket_for_ip(state->parent,
-					     state->ev,
-					     state->msg_ctx,
-					     state->ports,
-					     &addr.u.ss)) {
+		num_ok = smbd_open_socket_for_ip(state->parent,
+						 state->ev,
+						 state->msg_ctx,
+						 state->ports,
+						 &addr.u.ss);
+		if (num_ok == 0) {
 			DBG_NOTICE("smbd: Unable to open socket on %s\n",
 				   addrstr);
 		}
