@@ -1655,27 +1655,27 @@ static void smbd_init_addrchange(TALLOC_CTX *mem_ctx,
 
 static void smbd_close_socket_for_ip(struct smbd_parent_context *parent,
 				     struct messaging_context *msg_ctx,
-				     struct sockaddr_storage *addr)
+				     struct samba_sockaddr *addr)
 {
 	struct smbd_open_socket *s = NULL;
 
 	for (s = parent->sockets; s != NULL; s = s->next) {
-		struct sockaddr_storage a;
-		socklen_t addr_len = sizeof(a);
+		struct samba_sockaddr saddr = {
+			.sa_socklen = sizeof(struct sockaddr_storage),
+		};
 
-		if (getsockname(s->fd, (struct sockaddr *)&a, &addr_len) < 0) {
+		if (getsockname(s->fd, &saddr.u.sa, &saddr.sa_socklen) < 0) {
 			DBG_NOTICE("smbd: Unable to get address - skip\n");
 			continue;
 		}
-		if (sockaddr_equal((struct sockaddr *)&a,
-				   (struct sockaddr *)addr)) {
+		if (sockaddr_equal(&saddr.u.sa, &addr->u.sa)) {
 			char addrstr[INET6_ADDRSTRLEN];
 			DATA_BLOB blob;
 			NTSTATUS status;
 
 			DLIST_REMOVE(parent->sockets, s);
 			TALLOC_FREE(s);
-			print_sockaddr(addrstr, sizeof(addrstr), addr);
+			print_sockaddr(addrstr, sizeof(addrstr), &addr->u.ss);
 			DBG_NOTICE("smbd: Closed listening socket for %s\n",
 				   addrstr);
 
@@ -1699,12 +1699,12 @@ static void smbd_addr_changed(struct tevent_req *req)
 	struct smbd_addrchanged_state *state = tevent_req_callback_data(
 		req, struct smbd_addrchanged_state);
 	enum addrchange_type type;
-	struct sockaddr_storage addr;
+	struct samba_sockaddr addr = { .sa_socklen = 0, };
 	NTSTATUS status;
 	uint32_t if_index;
 	bool match;
 
-	status = addrchange_recv(req, &type, &addr, &if_index);
+	status = addrchange_recv(req, &type, &addr.u.ss, &if_index);
 	TALLOC_FREE(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("addrchange_recv failed: %s, stop listening\n",
@@ -1726,7 +1726,7 @@ static void smbd_addr_changed(struct tevent_req *req)
 	if (type == ADDRCHANGE_DEL) {
 		char addrstr[INET6_ADDRSTRLEN];
 
-		print_sockaddr(addrstr, sizeof(addrstr), &addr);
+		print_sockaddr(addrstr, sizeof(addrstr), &addr.u.ss);
 
 		DBG_NOTICE("smbd: kernel (AF_NETLINK) dropped ip %s "
 			   "on if_index %u\n",
@@ -1740,7 +1740,7 @@ static void smbd_addr_changed(struct tevent_req *req)
 	if (type == ADDRCHANGE_ADD) {
 		char addrstr[INET6_ADDRSTRLEN];
 
-		print_sockaddr(addrstr, sizeof(addrstr), &addr);
+		print_sockaddr(addrstr, sizeof(addrstr), &addr.u.ss);
 
 		DBG_NOTICE("smbd: kernel (AF_NETLINK) added ip %s "
 			   "on if_index %u\n",
@@ -1750,7 +1750,7 @@ static void smbd_addr_changed(struct tevent_req *req)
 					     state->ev,
 					     state->msg_ctx,
 					     state->ports,
-					     &addr)) {
+					     &addr.u.ss)) {
 			DBG_NOTICE("smbd: Unable to open socket on %s\n",
 				   addrstr);
 		}
