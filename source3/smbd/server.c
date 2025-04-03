@@ -1178,6 +1178,13 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 			exit_server_cleanly("Invalid port in the config or on "
 					    "the commandline specified!");
 		}
+
+		/* Keep the first port for mDNS service
+		 * registration.
+		 */
+		if (dns_port == 0) {
+			dns_port = port;
+		}
 	}
 
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
@@ -1200,13 +1207,6 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 
 			for (j = 0; ports && ports[j]; j++) {
 				unsigned port = atoi(ports[j]);
-
-				/* Keep the first port for mDNS service
-				 * registration.
-				 */
-				if (dns_port == 0) {
-					dns_port = port;
-				}
 
 				if (!smbd_open_one_socket(parent,
 							  ev_ctx,
@@ -1235,13 +1235,6 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 			for (j = 0; ports && ports[j]; j++) {
 				struct sockaddr_storage ss;
 				unsigned port = atoi(ports[j]);
-
-				/* Keep the first port for mDNS service
-				 * registration.
-				 */
-				if (dns_port == 0) {
-					dns_port = port;
-				}
 
 				/* open an incoming socket */
 				if (!interpret_string_addr(&ss, sock_tok,
