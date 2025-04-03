@@ -181,7 +181,7 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 	*ret_cli = NULL;
 
 	status = smbcli_tree_full_connection(parent_ctx,
-					     &tree, host, ports, 
+					     &tree, host,
 					     sharename, devtype,
 						 socket_options,
 					     credentials, resolve_ctx, ev,

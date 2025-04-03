@@ -184,7 +184,7 @@ _PUBLIC_ NTSTATUS smb_tree_disconnect(struct smbcli_tree *tree)
 */
 NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 				     struct smbcli_tree **ret_tree,
-				     const char *dest_host, const char **dest_ports,
+				     const char *dest_host,
 				     const char *service, const char *service_type,
 					 const char *socket_options,
 				     struct cli_credentials *credentials,
