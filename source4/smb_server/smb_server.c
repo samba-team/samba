@@ -181,19 +181,45 @@ _PUBLIC_ NTSTATUS smbsrv_add_socket(TALLOC_CTX *mem_ctx,
 				    const char *address,
 				    void *process_context)
 {
-	const char **ports = lpcfg_smb_ports(lp_ctx);
+	struct smb_transports ts =
+		smb_transports_parse("smb ports",
+			lpcfg_smb_ports(lp_ctx));
+	bool found_valid = false;
 	int i;
 	NTSTATUS status;
 
-	for (i=0;ports[i];i++) {
-		uint16_t port = atoi(ports[i]);
-		if (port == 0) continue;
+	for (i=0; i < ts.num_transports;i++) {
+		const struct smb_transport *t = &ts.transports[i];
+		uint16_t port = 0;
+
+		switch (t->type) {
+		case SMB_TRANSPORT_TYPE_NBT:
+		case SMB_TRANSPORT_TYPE_TCP:
+			port = t->port;
+			break;
+		case SMB_TRANSPORT_TYPE_UNKNOWN:
+			break;
+		}
+
+		if (port == 0) {
+			/*
+			 * Ignore unsupported transports
+			 */
+			continue;
+		}
+
 		status = stream_setup_socket(mem_ctx, event_context, lp_ctx,
 					     model_ops, &smb_stream_ops, 
 					     "ip", address, &port,
 					     lpcfg_socket_options(lp_ctx),
 					     NULL, process_context);
 		NT_STATUS_NOT_OK_RETURN(status);
+
+		found_valid = true;
+	}
+
+	if (!found_valid) {
+		return NT_STATUS_NO_IP_ADDRESSES;
 	}
 
 	return NT_STATUS_OK;
