@@ -240,7 +240,6 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 				       conn->in.socket_options,
 				       conn->in.dest_host,
 				       dest_address,
-				       conn->in.dest_ports,
 				       target_hostname,
 				       conn->in.called_name,
 				       calling_name);

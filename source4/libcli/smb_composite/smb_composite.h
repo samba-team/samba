@@ -115,7 +115,6 @@ struct tevent_req *smb_connect_nego_send(TALLOC_CTX *mem_ctx,
 					 const char *socket_options,
 					 const char *dest_hostname,
 					 const char *dest_address, /* optional */
-					 const char **dest_ports,
 					 const char *target_hostname,
 					 const char *called_name,
 					 const char *calling_name);

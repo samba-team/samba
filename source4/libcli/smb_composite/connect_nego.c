@@ -35,7 +35,6 @@ struct smb_connect_nego_state {
 	struct smbcli_options options;
 	const char *dest_hostname;
 	const char *dest_address;
-	const char **dest_ports;
 	const char *target_hostname;
 	struct nbt_name calling, called;
 	struct smbXcli_conn *conn;
@@ -51,7 +50,6 @@ struct tevent_req *smb_connect_nego_send(TALLOC_CTX *mem_ctx,
 					 const char *socket_options,
 					 const char *dest_hostname,
 					 const char *dest_address, /* optional */
-					 const char **dest_ports,
 					 const char *target_hostname,
 					 const char *called_name,
 					 const char *calling_name)
@@ -71,7 +69,6 @@ struct tevent_req *smb_connect_nego_send(TALLOC_CTX *mem_ctx,
 	state->socket_options = socket_options;
 	state->dest_hostname = dest_hostname;
 	state->dest_address = dest_address;
-	state->dest_ports = dest_ports;
 	state->target_hostname = target_hostname;
 
 	make_nbt_name_client(&state->calling, calling_name);
