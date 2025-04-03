@@ -189,7 +189,6 @@ NTSTATUS smb_composite_sesssetup(struct smbcli_session *session, struct smb_comp
 struct smb_composite_fsinfo {
 	struct {
 		const char *dest_host;
-		const char **dest_ports;
 		const char *socket_options;
 		const char *called_name;
 		const char *service;
