@@ -959,12 +959,13 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	struct smbd_open_socket *s = talloc_get_type_abort(private_data,
 				     struct smbd_open_socket);
 	struct messaging_context *msg_ctx = s->parent->msg_ctx;
-	struct sockaddr_storage addr;
-	socklen_t in_addrlen = sizeof(addr);
+	struct samba_sockaddr caddr = {
+		.sa_socklen = sizeof(struct sockaddr_storage),
+	};
 	int fd;
 	pid_t pid = 0;
 
-	fd = accept(s->fd, (struct sockaddr *)(void *)&addr,&in_addrlen);
+	fd = accept(s->fd, &caddr.u.sa, &caddr.sa_socklen);
 	if (fd == -1 && errno == EINTR)
 		return;
 
@@ -1033,7 +1034,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 			smb_panic("reinit_after_fork() failed");
 		}
 
-		print_sockaddr(addrstr, sizeof(addrstr), &addr);
+		print_sockaddr(addrstr, sizeof(addrstr), &caddr.u.ss);
 		process_set_title("smbd[%s]", "client [%s]", addrstr);
 
 		smbd_process(ev, msg_ctx, fd, false);
