@@ -275,6 +275,7 @@ static NTSTATUS smbcli_transport_connect_recv(struct tevent_req *req)
 struct sock_connect_state {
 	struct composite_context *ctx;
 	const char *host_name;
+	struct smbcli_options options;
 	int num_ports;
 	uint16_t *ports;
 	const char *socket_options;
@@ -318,7 +319,7 @@ static void smbcli_sock_connect_recv_conn(struct composite_context *ctx);
 
 struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 						   const char *host_addr,
-						   const char **ports,
+						   const struct smbcli_options *options,
 						   const char *host_name,
 						   struct resolve_context *resolve_ctx,
 						   struct tevent_context *event_ctx,
@@ -328,8 +329,9 @@ struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 {
 	struct composite_context *result, *ctx;
 	struct sock_connect_state *state;
+	const struct smb_transports *ts = NULL;
 	NTSTATUS status;
-	int i;
+	uint8_t ti;
 
 	result = talloc_zero(mem_ctx, struct composite_context);
 	if (result == NULL) goto failed;
@@ -338,7 +340,7 @@ struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 	result->event_ctx = event_ctx;
 	if (result->event_ctx == NULL) goto failed;
 
-	state = talloc(result, struct sock_connect_state);
+	state = talloc_zero(result, struct sock_connect_state);
 	if (state == NULL) goto failed;
 	state->ctx = result;
 	result->private_data = state;
@@ -346,11 +348,29 @@ struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 	state->host_name = talloc_strdup(state, host_name);
 	if (state->host_name == NULL) goto failed;
 
-	state->num_ports = str_list_length(ports);
-	state->ports = talloc_array(state, uint16_t, state->num_ports);
-	if (state->ports == NULL) goto failed;
-	for (i=0;ports[i];i++) {
-		state->ports[i] = atoi(ports[i]);
+	state->options = *options;
+	ts = &state->options.transports;
+
+	state->ports = talloc_array(state, uint16_t, ts->num_transports);
+	if (state->ports == NULL) {
+		goto failed;
+	}
+
+	for (ti = 0; ti < ts->num_transports; ti++) {
+		const struct smb_transport *t = &ts->transports[ti];
+
+		switch (t->type) {
+		case SMB_TRANSPORT_TYPE_NBT:
+		case SMB_TRANSPORT_TYPE_TCP:
+			state->ports[state->num_ports] = t->port;
+			state->num_ports += 1;
+			break;
+		case SMB_TRANSPORT_TYPE_UNKNOWN:
+			break;
+		}
+	}
+	if (state->num_ports == 0) {
+		goto failed;
 	}
 	state->socket_options = talloc_reference(state, socket_options);
 
@@ -441,7 +461,8 @@ NTSTATUS smbcli_sock_connect_recv(struct composite_context *c,
   sync version of the function
 */
 NTSTATUS smbcli_sock_connect(TALLOC_CTX *mem_ctx,
-			     const char *host_addr, const char **ports,
+			     const char *host_addr,
+			     const struct smbcli_options *options,
 			     const char *host_name,
 			     struct resolve_context *resolve_ctx,
 			     struct tevent_context *event_ctx,
@@ -451,8 +472,8 @@ NTSTATUS smbcli_sock_connect(TALLOC_CTX *mem_ctx,
 			     struct smbcli_socket **result)
 {
 	struct composite_context *c =
-		smbcli_sock_connect_send(mem_ctx, host_addr, ports, host_name,
-					 resolve_ctx,
+		smbcli_sock_connect_send(mem_ctx, host_addr, options,
+					 host_name, resolve_ctx,
 					 event_ctx, socket_options,
 					 calling, called);
 	return smbcli_sock_connect_recv(c, mem_ctx, result);

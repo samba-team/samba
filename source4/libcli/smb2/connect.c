@@ -137,7 +137,7 @@ struct tevent_req *smb2_connect_send(TALLOC_CTX *mem_ctx,
 		return req;
 	}
 
-	creq = smbcli_sock_connect_send(state, NULL, state->ports,
+	creq = smbcli_sock_connect_send(state, NULL, &state->options,
 					state->host, state->resolve_ctx,
 					state->ev, state->socket_options,
 					&state->calling,

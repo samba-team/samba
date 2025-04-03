@@ -84,7 +84,7 @@ struct tevent_req *smb_connect_nego_send(TALLOC_CTX *mem_ctx,
 
 	creq = smbcli_sock_connect_send(state,
 					state->dest_address,
-					state->dest_ports,
+					&state->options,
 					state->dest_hostname,
 					state->resolve_ctx,
 					state->ev,

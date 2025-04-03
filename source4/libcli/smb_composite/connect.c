@@ -474,7 +474,7 @@ struct composite_context *smb_composite_connect_send(struct smb_composite_connec
 
 	state->creq = smbcli_sock_connect_send(state, 
 					       NULL,
-					       io->in.dest_ports,
+					       &io->in.options,
 					       io->in.dest_host, 
 					       resolve_ctx, c->event_ctx, 
 					       io->in.socket_options,
