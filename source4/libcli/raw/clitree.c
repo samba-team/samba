@@ -202,7 +202,6 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 	}
 
 	io.in.dest_host = dest_host;
-	io.in.dest_ports = dest_ports;
 	io.in.socket_options = socket_options;
 	io.in.called_name = strupper_talloc(tmp_ctx, dest_host);
 	io.in.service = service;

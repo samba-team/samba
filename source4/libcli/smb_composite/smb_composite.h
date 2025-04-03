@@ -134,7 +134,6 @@ NTSTATUS smb_connect_nego_recv(struct tevent_req *req,
 struct smb_composite_connect {
 	struct {
 		const char *dest_host;
-		const char **dest_ports;
 		const char *socket_options;
 		const char *called_name;
 		const char *service;

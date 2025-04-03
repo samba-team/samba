@@ -132,7 +132,6 @@ static void reopen_connection(struct tevent_context *ev, struct tevent_timer *te
 	}
 
 	io->in.dest_host    = state->dest_host;
-	io->in.dest_ports   = state->dest_ports;
 	io->in.socket_options = lpcfg_socket_options(state->tctx->lp_ctx);
 	io->in.called_name  = state->called_name;
 	io->in.service      = share;

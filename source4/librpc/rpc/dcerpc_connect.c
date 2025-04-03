@@ -170,7 +170,6 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 	   remote rpc server */
 	target_hostname = dcerpc_binding_get_string_option(s->io.binding, "target_hostname");
 	conn->in.dest_host = dcerpc_binding_get_string_option(s->io.binding, "host");
-	conn->in.dest_ports = lpcfg_smb_ports(lp_ctx);
 	conn->in.called_name = target_hostname;
 	if (conn->in.called_name == NULL) {
 		conn->in.called_name = "*SMBSERVER";
