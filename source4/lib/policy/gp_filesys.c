@@ -166,7 +166,6 @@ static NTSTATUS gp_cli_connect(struct gp_context *gp_ctx)
 	return smbcli_full_connection(gp_ctx,
 			&gp_ctx->cli,
 			gp_ctx->active_dc->name,
-			lpcfg_smb_ports(gp_ctx->lp_ctx),
 			"sysvol",
 			NULL,
 			lpcfg_socket_options(gp_ctx->lp_ctx),

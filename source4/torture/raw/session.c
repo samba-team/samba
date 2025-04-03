@@ -267,7 +267,6 @@ static bool test_session_expire1(struct torture_context *tctx)
 
 	status = smbcli_full_connection(tctx, &cli,
 					host,
-					lpcfg_smb_ports(tctx->lp_ctx),
 					share, NULL,
 					lpcfg_socket_options(tctx->lp_ctx),
 					samba_cmdline_get_creds(),

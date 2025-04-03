@@ -85,7 +85,6 @@ static struct smbcli_state *connect_to_server(struct torture_context *tctx,
 	lpcfg_smbcli_session_options(tctx->lp_ctx, &session_options);
 
 	status = smbcli_full_connection(tctx, &cli, host, 
-					lpcfg_smb_ports(tctx->lp_ctx),
 					share, NULL, lpcfg_socket_options(tctx->lp_ctx),
 					creds, lpcfg_resolve_context(tctx->lp_ctx),
 					tctx->ev, &options, &session_options,

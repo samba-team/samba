@@ -163,7 +163,6 @@ out:
 NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 				struct smbcli_state **ret_cli, 
 				const char *host,
-				const char **ports,
 				const char *sharename,
 				const char *devtype,
 				const char *socket_options,

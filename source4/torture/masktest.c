@@ -96,7 +96,6 @@ static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx,
 
 	status = smbcli_full_connection(NULL, &c,
 					server, 
-					ports,
 					share, NULL,
 					socket_options,
 					creds,

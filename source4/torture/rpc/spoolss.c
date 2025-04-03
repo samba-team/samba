@@ -10793,7 +10793,6 @@ static bool connect_printer_driver_share(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx,
 		smbcli_full_connection(tctx, cli, server_name,
-					lpcfg_smb_ports(tctx->lp_ctx),
 					share_name, NULL,
 					lpcfg_socket_options(tctx->lp_ctx),
 					samba_cmdline_get_creds(),

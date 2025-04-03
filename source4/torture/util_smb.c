@@ -457,7 +457,6 @@ _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 	options.use_level2_oplocks = torture_setting_bool(tctx, "use_level2_oplocks", true);
 
 	status = smbcli_full_connection(mem_ctx, c, hostname, 
-					lpcfg_smb_ports(tctx->lp_ctx),
 					sharename, NULL,
 					lpcfg_socket_options(tctx->lp_ctx),
 					samba_cmdline_get_creds(),

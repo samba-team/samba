@@ -3219,7 +3219,7 @@ static bool do_connect(struct smbclient_context *ctx,
 		return false;
 	}
 
-	status = smbcli_full_connection(ctx, &ctx->cli, server, ports,
+	status = smbcli_full_connection(ctx, &ctx->cli, server,
 					share, NULL,
 					socket_options,
 					cred, resolve_ctx,

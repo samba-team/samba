@@ -235,7 +235,7 @@ static struct smbcli_state * init_smb_session(struct resolve_context *resolve_ct
 	/* When we support SMB URLs, we can get different user credentials for
 	 * each connection, but for now, we just use the same one for both.
 	 */
-	ret = smbcli_full_connection(NULL, &cli, host, ports, share,
+	ret = smbcli_full_connection(NULL, &cli, host, share,
 				NULL /* devtype */,
 				socket_options,
 				samba_cmdline_get_creds(),
