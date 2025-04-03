@@ -42,7 +42,6 @@ struct smb2_connect_state {
 	const char *host;
 	const char *share;
 	const char *unc;
-	const char **ports;
 	const char *socket_options;
 	struct nbt_name calling, called;
 	struct gensec_settings *gensec_settings;
@@ -62,7 +61,6 @@ static void smb2_connect_socket_done(struct composite_context *creq);
 struct tevent_req *smb2_connect_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
 				     const char *host,
-				     const char **ports,
 				     const char *share,
 				     struct resolve_context *resolve_ctx,
 				     struct cli_credentials *credentials,
@@ -76,7 +74,6 @@ struct tevent_req *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct smb2_connect_state *state;
 	struct composite_context *creq;
-	static const char *default_ports[] = { "445", "139", NULL };
 	enum smb_encryption_setting encryption_state =
 		cli_credentials_get_smb_encryption(credentials);
 
@@ -92,15 +89,10 @@ struct tevent_req *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	state->previous_session_id = previous_session_id;
 	state->options = *options;
 	state->host = host;
-	state->ports = ports;
 	state->share = share;
 	state->resolve_ctx = resolve_ctx;
 	state->socket_options = socket_options;
 	state->gensec_settings = gensec_settings;
-
-	if (state->ports == NULL) {
-		state->ports = default_ports;
-	}
 
 	if (encryption_state >= SMB_ENCRYPTION_DESIRED) {
 		state->options.signing = SMB_SIGNING_REQUIRED;
@@ -425,7 +417,6 @@ NTSTATUS smb2_connect_ext(TALLOC_CTX *mem_ctx,
 	subreq = smb2_connect_send(frame,
 				   ev,
 				   host,
-				   ports,
 				   share,
 				   resolve_ctx,
 				   credentials,
