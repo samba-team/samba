@@ -469,6 +469,11 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 			break;
 		case SMB_TRANSPORT_TYPE_TCP:
 			break;
+		case SMB_TRANSPORT_TYPE_QUIC:
+			/*
+			 * Not supported yet
+			 */
+			continue;
 		}
 
 		s->req = req;
@@ -594,6 +599,14 @@ static bool smbsock_connect_submit_next(struct tevent_req *req)
 		tevent_req_set_callback(s->subreq,
 					smbsock_connect_tcp_connected,
 					s);
+		break;
+
+	case SMB_TRANSPORT_TYPE_QUIC:
+		/*
+		 * Not supported yet, should already be
+		 * checked above.
+		 */
+		smb_panic(__location__);
 		break;
 	}
 

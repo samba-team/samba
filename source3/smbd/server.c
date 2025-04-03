@@ -1102,6 +1102,11 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 		protocol = IPPROTO_TCP;
 		rebind = true;
 		break;
+	case SMB_TRANSPORT_TYPE_QUIC:
+		/*
+		 * Not supported yet
+		 */
+		break;
 	case SMB_TRANSPORT_TYPE_UNKNOWN:
 		/*
 		 * Should never happen
@@ -1206,6 +1211,12 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 		case SMB_TRANSPORT_TYPE_TCP:
 		case SMB_TRANSPORT_TYPE_NBT:
 			port = t->port;
+			break;
+		case SMB_TRANSPORT_TYPE_QUIC:
+			/*
+			 * Unlikely to be useful
+			 * for mDNS registration
+			 */
 			break;
 		case SMB_TRANSPORT_TYPE_UNKNOWN:
 			/*

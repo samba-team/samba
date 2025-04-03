@@ -340,6 +340,9 @@ static int add_channel_to_json(struct json_object *parent_json,
 	case SMB_TRANSPORT_TYPE_TCP:
 		transport_str = "tcp";
 		break;
+	case SMB_TRANSPORT_TYPE_QUIC:
+		transport_str = "quic";
+		break;
 	}
 
 	if (transport_str == NULL) {

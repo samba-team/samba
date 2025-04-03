@@ -61,6 +61,7 @@ enum smb_transport_type {
 	SMB_TRANSPORT_TYPE_UNKNOWN = 0,
 	SMB_TRANSPORT_TYPE_NBT,
 	SMB_TRANSPORT_TYPE_TCP,
+	SMB_TRANSPORT_TYPE_QUIC,
 };
 
 struct smb_transport {

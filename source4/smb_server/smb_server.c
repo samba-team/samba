@@ -197,6 +197,11 @@ _PUBLIC_ NTSTATUS smbsrv_add_socket(TALLOC_CTX *mem_ctx,
 		case SMB_TRANSPORT_TYPE_TCP:
 			port = t->port;
 			break;
+		case SMB_TRANSPORT_TYPE_QUIC:
+			/*
+			 * Not supported
+			 */
+			break;
 		case SMB_TRANSPORT_TYPE_UNKNOWN:
 			break;
 		}
