@@ -1551,7 +1551,6 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
 
 static size_t smbd_open_socket_for_ip(struct smbd_parent_context *parent,
 				      struct tevent_context *ev_ctx,
-				      struct messaging_context *msg_ctx,
 				      const char *smb_ports,
 				      const struct sockaddr_storage *ifss)
 {
@@ -1731,7 +1730,6 @@ static void smbd_addr_changed(struct tevent_req *req)
 
 		num_ok = smbd_open_socket_for_ip(state->parent,
 						 state->ev,
-						 state->msg_ctx,
 						 state->ports,
 						 &addr.u.ss);
 		if (num_ok == 0) {
