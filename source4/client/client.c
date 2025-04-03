@@ -3253,7 +3253,7 @@ static int do_host_query(struct loadparm_context *lp_ctx,
 handle a message operation
 ****************************************************************************/
 static int do_message_op(const char *netbios_name, const char *desthost,
-			 const char **destports, const char *destip,
+			 const char *destip,
 			 int name_type,
 			 struct tevent_context *ev_ctx,
 			 struct resolve_context *resolve_ctx,
@@ -3522,7 +3522,7 @@ int main(int argc, char *argv[])
 
 	if (message) {
 		rc = do_message_op(lpcfg_netbios_name(lp_ctx), desthost,
-				   lpcfg_smb_ports(lp_ctx), dest_ip,
+				   dest_ip,
 				   name_type, ev_ctx,
 				   lpcfg_resolve_context(lp_ctx),
 				   &smb_options,
