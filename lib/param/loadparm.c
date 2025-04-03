@@ -1368,6 +1368,9 @@ bool smb_transport_parse(const char *_value, struct smb_transport *_t)
 	} else if (strcmp("nbt", value) == 0) {
 		t.type = SMB_TRANSPORT_TYPE_NBT;
 		t.port = 139;
+	} else if (strcmp("quic", value) == 0) {
+		t.type = SMB_TRANSPORT_TYPE_QUIC;
+		t.port = 443;
 	} else if (vparam != NULL) {
 		/*
 		 * a port number should not have
