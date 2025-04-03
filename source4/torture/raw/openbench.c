@@ -70,7 +70,6 @@ struct benchopen_state {
 	struct tevent_timer *te;
 
 	/* these are used for reconnections */
-	const char **dest_ports;
 	const char *dest_host;
 	const char *called_name;
 	const char *service_type;
@@ -394,7 +393,6 @@ bool torture_bench_open(struct torture_context *torture)
 		const struct sockaddr_storage *dest_ss;
 		char addrstr[INET6_ADDRSTRLEN];
 		const char *dest_str;
-		uint16_t dest_port;
 
 		state[i].tctx = torture;
 		state[i].mem_ctx = talloc_new(state);
@@ -409,14 +407,8 @@ bool torture_bench_open(struct torture_context *torture)
 		dest_ss = smbXcli_conn_remote_sockaddr(
 				state[i].tree->session->transport->conn);
 		dest_str = print_sockaddr(addrstr, sizeof(addrstr), dest_ss);
-		dest_port = get_sockaddr_port(dest_ss);
 
 		state[i].dest_host = talloc_strdup(state[i].mem_ctx, dest_str);
-		state[i].dest_ports = talloc_array(state[i].mem_ctx,
-						   const char *, 2);
-		state[i].dest_ports[0] = talloc_asprintf(state[i].dest_ports,
-							 "%u", dest_port);
-		state[i].dest_ports[1] = NULL;
 		state[i].called_name  = talloc_strdup(state[i].mem_ctx,
 				smbXcli_conn_remote_name(state[i].tree->session->transport->conn));
 		state[i].service_type = talloc_strdup(state[i].mem_ctx, "?????");
