@@ -1567,7 +1567,6 @@ static bool smbd_open_socket_for_ip(struct smbd_parent_context *parent,
 {
 	int j;
 	const char **ports;
-	unsigned dns_port = 0;
 	TALLOC_CTX *ctx;
 	bool status = true;
 
@@ -1583,13 +1582,6 @@ static bool smbd_open_socket_for_ip(struct smbd_parent_context *parent,
 
 	for (j = 0; ports && ports[j]; j++) {
 		unsigned port = atoi(ports[j]);
-
-		/* Keep the first port for mDNS service
-		 * registration.
-		 */
-		if (dns_port == 0) {
-			dns_port = port;
-		}
 
 		if (!smbd_open_one_socket(parent,
 					  ev_ctx,
