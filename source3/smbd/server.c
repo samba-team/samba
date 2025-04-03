@@ -1141,6 +1141,11 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 	return true;
 }
 
+static size_t smbd_open_socket_for_ip(struct smbd_parent_context *parent,
+				      struct tevent_context *ev_ctx,
+				      const char *smb_ports,
+				      const struct sockaddr_storage *ifss);
+
 /****************************************************************************
  Open the socket communication.
 ****************************************************************************/
@@ -1198,6 +1203,8 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 		for(i = 0; i < num_interfaces; i++) {
 			const struct sockaddr_storage *ifss =
 					iface_n_sockaddr_storage(i);
+			size_t num_ok;
+
 			if (ifss == NULL) {
 				DEBUG(0,("open_sockets_smbd: "
 					"interface %d has NULL IP address !\n",
@@ -1205,15 +1212,12 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 				continue;
 			}
 
-			for (j = 0; ports && ports[j]; j++) {
-				unsigned port = atoi(ports[j]);
-
-				if (!smbd_open_one_socket(parent,
-							  ev_ctx,
-							  ifss,
-							  port)) {
-					return false;
-				}
+			num_ok = smbd_open_socket_for_ip(parent,
+							 ev_ctx,
+							 smb_ports,
+							 ifss);
+			if (num_ok == 0) {
+				return false;
 			}
 		}
 	} else {
@@ -1229,6 +1233,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 		for (i = 0; i < ARRAY_SIZE(sock_addrs); i++) {
 			const char *sock_tok = sock_addrs[i];
 			struct sockaddr_storage ss;
+			size_t num_ok;
 
 			/* open an incoming socket */
 			if (!interpret_string_addr(&ss, sock_tok,
@@ -1236,19 +1241,16 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 				continue;
 			}
 
-			for (j = 0; ports && ports[j]; j++) {
-				unsigned port = atoi(ports[j]);
-
+			num_ok = smbd_open_socket_for_ip(parent,
+							 ev_ctx,
+							 smb_ports,
+							 &ss);
+			if (num_ok == 0) {
 				/*
 				 * If we fail to open any sockets
 				 * in this loop the parent-sockets == NULL
 				 * case below will prevent us from starting.
 				 */
-
-				(void)smbd_open_one_socket(parent,
-						  ev_ctx,
-						  &ss,
-						  port);
 			}
 		}
 	}
