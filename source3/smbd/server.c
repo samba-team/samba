@@ -1219,28 +1219,25 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	} else {
 		/* Just bind to 0.0.0.0 - accept connections
 		   from anywhere. */
-
-		const char *sock_addr;
-		char *sock_tok;
-		const char *sock_ptr;
-
+		const char * const sock_addrs[] = {
 #ifdef HAVE_IPV6
-		sock_addr = "::,0.0.0.0";
-#else
-		sock_addr = "0.0.0.0";
+			"::",
 #endif
+			"0.0.0.0",
+		};
 
-		for (sock_ptr=sock_addr;
-		     next_token_talloc(talloc_tos(), &sock_ptr, &sock_tok, " \t,"); ) {
+		for (i = 0; i < ARRAY_SIZE(sock_addrs); i++) {
+			const char *sock_tok = sock_addrs[i];
+			struct sockaddr_storage ss;
+
+			/* open an incoming socket */
+			if (!interpret_string_addr(&ss, sock_tok,
+					AI_NUMERICHOST|AI_PASSIVE)) {
+				continue;
+			}
+
 			for (j = 0; ports && ports[j]; j++) {
-				struct sockaddr_storage ss;
 				unsigned port = atoi(ports[j]);
-
-				/* open an incoming socket */
-				if (!interpret_string_addr(&ss, sock_tok,
-						AI_NUMERICHOST|AI_PASSIVE)) {
-					continue;
-				}
 
 				/*
 				 * If we fail to open any sockets
