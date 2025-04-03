@@ -152,6 +152,17 @@ list_samba_ports()
 	testparm_get "smb ports"
 }
 
+normalize_transports_to_tcp_ports()
+{
+	echo "$1" | sed \
+		-e 's!,! !g' \
+		-e 's!\<tcp\>:!!g' \
+		-e 's!\<tcp\>!445!g' \
+		-e 's!\<nbt\>:!!g' \
+		-e 's!\<nbt\>!139!g' \
+		-e 's!\<[a-zA-Z][^ ]*!!g'
+}
+
 ###########################
 
 case "$1" in
@@ -172,9 +183,11 @@ monitor)
 		smb_ports=$(list_samba_ports)
 		[ -n "$smb_ports" ] || die "Failed to set smb ports"
 	fi
+	smb_tcp_ports=$(normalize_transports_to_tcp_ports "$smb_ports")
+	[ -n "$smb_tcp_ports" ] || die "Failed to set smb tcp ports"
 	# Intentionally unquoted multi-word value here
 	# shellcheck disable=SC2086
-	ctdb_check_tcp_ports $smb_ports || exit $?
+	ctdb_check_tcp_ports $smb_tcp_ports || exit $?
 
 	if [ "$CTDB_SAMBA_SKIP_SHARE_CHECK" != "yes" ]; then
 		list_samba_shares | ctdb_check_directories || exit $?
