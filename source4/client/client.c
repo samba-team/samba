@@ -3277,7 +3277,7 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 		return 1;
 	}
 
-	ok = smbcli_socket_connect(cli, server_name, destports,
+	ok = smbcli_socket_connect(cli, server_name,
 				   ev_ctx, resolve_ctx, options,
 				   socket_options,
 				   &calling, &called);

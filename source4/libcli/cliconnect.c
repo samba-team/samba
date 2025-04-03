@@ -32,7 +32,6 @@
   wrapper around smbcli_sock_connect()
 */
 bool smbcli_socket_connect(struct smbcli_state *cli, const char *server, 
-			   const char **ports, 
 			   struct tevent_context *ev_ctx,
 			   struct resolve_context *resolve_ctx,
 			   struct smbcli_options *options,
