@@ -353,47 +353,47 @@ _PUBLIC_ bool cli_credentials_set_utf16_password(struct cli_credentials *cred,
 						 const DATA_BLOB *password_utf16,
 						 enum credentials_obtained obtained)
 {
+	struct samr_Password *nt_hash = NULL;
+	char *password_talloc = NULL;
+	size_t password_len = 0;
+	bool ok;
+
 	cred->password_will_be_nt_hash = false;
 
 	if (password_utf16 == NULL) {
 		return cli_credentials_set_password(cred, NULL, obtained);
 	}
 
-	if (obtained >= cred->password_obtained) {
-		struct samr_Password *nt_hash = NULL;
-		char *password_talloc = NULL;
-		size_t password_len = 0;
-		bool ok;
-
-		nt_hash = talloc(cred, struct samr_Password);
-		if (nt_hash == NULL) {
-			return false;
-		}
-
-		ok = convert_string_talloc(cred,
-					   CH_UTF16MUNGED, CH_UTF8,
-					   password_utf16->data,
-					   password_utf16->length,
-					   &password_talloc,
-					   &password_len);
-		if (!ok) {
-			TALLOC_FREE(nt_hash);
-			return false;
-		}
-
-		ok = cli_credentials_set_password(cred, password_talloc, obtained);
-		TALLOC_FREE(password_talloc);
-		if (!ok) {
-			TALLOC_FREE(nt_hash);
-			return false;
-		}
-
-		mdfour(nt_hash->hash, password_utf16->data, password_utf16->length);
-		cred->nt_hash = nt_hash;
-		return true;
+	if (obtained < cred->password_obtained) {
+		return false;
 	}
 
-	return false;
+	nt_hash = talloc(cred, struct samr_Password);
+	if (nt_hash == NULL) {
+		return false;
+	}
+
+	ok = convert_string_talloc(cred,
+				   CH_UTF16MUNGED, CH_UTF8,
+				   password_utf16->data,
+				   password_utf16->length,
+				   &password_talloc,
+				   &password_len);
+	if (!ok) {
+		TALLOC_FREE(nt_hash);
+		return false;
+	}
+
+	ok = cli_credentials_set_password(cred, password_talloc, obtained);
+	TALLOC_FREE(password_talloc);
+	if (!ok) {
+		TALLOC_FREE(nt_hash);
+		return false;
+	}
+
+	mdfour(nt_hash->hash, password_utf16->data, password_utf16->length);
+	cred->nt_hash = nt_hash;
+	return true;
 }
 
 /*
@@ -469,21 +469,21 @@ _PUBLIC_ bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
 {
 	cred->password_will_be_nt_hash = false;
 
-	if (obtained >= cred->password_obtained) {
-		cli_credentials_set_password(cred, NULL, obtained);
-		if (nt_hash) {
-			cred->nt_hash = talloc(cred, struct samr_Password);
-			if (cred->nt_hash == NULL) {
-				return false;
-			}
-			*cred->nt_hash = *nt_hash;
-		} else {
-			cred->nt_hash = NULL;
-		}
-		return true;
+	if (obtained < cred->password_obtained) {
+		return false;
 	}
 
-	return false;
+	cli_credentials_set_password(cred, NULL, obtained);
+	if (nt_hash) {
+		cred->nt_hash = talloc(cred, struct samr_Password);
+		if (cred->nt_hash == NULL) {
+			return false;
+		}
+		*cred->nt_hash = *nt_hash;
+	} else {
+		cred->nt_hash = NULL;
+	}
+	return true;
 }
 
 _PUBLIC_ bool cli_credentials_set_old_nt_hash(struct cli_credentials *cred,
@@ -510,51 +510,51 @@ _PUBLIC_ bool cli_credentials_set_ntlm_response(struct cli_credentials *cred,
 						const DATA_BLOB *nt_session_key,
 						enum credentials_obtained obtained)
 {
-	if (obtained >= cred->password_obtained) {
-		cli_credentials_set_password(cred, NULL, obtained);
-
-		data_blob_clear_free(&cred->lm_response);
-		data_blob_clear_free(&cred->lm_session_key);
-		data_blob_clear_free(&cred->nt_response);
-		data_blob_clear_free(&cred->nt_session_key);
-
-		if (lm_response != NULL && lm_response->length != 0) {
-			cred->lm_response = data_blob_talloc(cred,
-							lm_response->data,
-							lm_response->length);
-			if (cred->lm_response.data == NULL) {
-				return false;
-			}
-		}
-		if (lm_session_key != NULL && lm_session_key->length != 0) {
-			cred->lm_session_key = data_blob_talloc(cred,
-							lm_session_key->data,
-							lm_session_key->length);
-			if (cred->lm_session_key.data == NULL) {
-				return false;
-			}
-		}
-
-		if (nt_response != NULL && nt_response->length != 0) {
-			cred->nt_response = data_blob_talloc(cred,
-							nt_response->data,
-							nt_response->length);
-			if (cred->nt_response.data == NULL) {
-				return false;
-			}
-		}
-		if (nt_session_key != NULL && nt_session_key->length != 0) {
-			cred->nt_session_key = data_blob_talloc(cred,
-							nt_session_key->data,
-							nt_session_key->length);
-			if (cred->nt_session_key.data == NULL) {
-				return false;
-			}
-		}
-
-		return true;
+	if (obtained < cred->password_obtained) {
+		return false;
 	}
 
-	return false;
+	cli_credentials_set_password(cred, NULL, obtained);
+
+	data_blob_clear_free(&cred->lm_response);
+	data_blob_clear_free(&cred->lm_session_key);
+	data_blob_clear_free(&cred->nt_response);
+	data_blob_clear_free(&cred->nt_session_key);
+
+	if (lm_response != NULL && lm_response->length != 0) {
+		cred->lm_response = data_blob_talloc(cred,
+						     lm_response->data,
+						     lm_response->length);
+		if (cred->lm_response.data == NULL) {
+			return false;
+		}
+	}
+	if (lm_session_key != NULL && lm_session_key->length != 0) {
+		cred->lm_session_key = data_blob_talloc(cred,
+							lm_session_key->data,
+							lm_session_key->length);
+		if (cred->lm_session_key.data == NULL) {
+			return false;
+		}
+	}
+
+	if (nt_response != NULL && nt_response->length != 0) {
+		cred->nt_response = data_blob_talloc(cred,
+						     nt_response->data,
+						     nt_response->length);
+		if (cred->nt_response.data == NULL) {
+			return false;
+		}
+	}
+	if (nt_session_key != NULL && nt_session_key->length != 0) {
+		cred->nt_session_key = data_blob_talloc(cred,
+							nt_session_key->data,
+							nt_session_key->length);
+		if (cred->nt_session_key.data == NULL) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
