@@ -74,7 +74,7 @@ return a connection to a server
 static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx, 
 					struct tevent_context *ev,
 					TALLOC_CTX *mem_ctx,
-					char *share, const char **ports,
+					char *share,
 					const char *socket_options,
 					struct smbcli_options *options,
 					struct smbcli_session_options *session_options,
@@ -396,7 +396,7 @@ int main(int argc, const char *argv[])
 	lpcfg_smbcli_session_options(lp_ctx, &session_options);
 
 	cli = connect_one(lpcfg_resolve_context(lp_ctx), ev, mem_ctx, share,
-			  lpcfg_smb_ports(lp_ctx), lpcfg_socket_options(lp_ctx),
+			  lpcfg_socket_options(lp_ctx),
 			  &options, &session_options,
 			  lpcfg_gensec_settings(mem_ctx, lp_ctx));
 	if (!cli) {
