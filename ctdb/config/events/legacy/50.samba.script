@@ -149,7 +149,11 @@ list_samba_shares()
 
 list_samba_ports()
 {
-	testparm_get "smb ports"
+	{
+		testparm_get "server smb transports"
+		testparm_get "smb ports"
+	# only | head -1 would cause a broken pipe for the 2nd command
+	} | head -2 | head -1
 }
 
 normalize_transports_to_tcp_ports()
