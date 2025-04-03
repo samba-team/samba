@@ -74,6 +74,8 @@ struct smbd_parent_context {
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
 
+	struct smb_transports transports;
+
 	/* the list of listening sockets */
 	struct smbd_open_socket *sockets;
 
@@ -2107,6 +2109,26 @@ extern void build_options(bool screen);
 	parent->ev_ctx = ev_ctx;
 	parent->msg_ctx = msg_ctx;
 	am_parent = parent;
+
+	if (ports != NULL) {
+		const char **ts = NULL;
+		char **l = NULL;
+		l = str_list_make_v3(talloc_tos(), ports, NULL);
+		ts = discard_const_p(const char *, l);
+		parent->transports = smb_transports_parse("--ports",
+							  ts);
+		if (parent->transports.num_transports == 0) {
+			exit_server("no valid transport from '--ports'");
+		}
+	} else {
+		const char **ts = lp_smb_ports();
+		parent->transports = smb_transports_parse("smb ports",
+							  ts);
+		if (parent->transports.num_transports == 0) {
+			exit_server("no valid transport from "
+				    "'smb ports'");
+		}
+	}
 
 	se = tevent_add_signal(parent->ev_ctx,
 			       parent,
