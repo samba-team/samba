@@ -528,7 +528,7 @@ int main(int argc, const char *argv[])
 			lpcfg_set_cmdline(lp_ctx, "torture:async", "Yes");
 			break;
 		case OPT_SMB_PORTS:
-			lpcfg_set_cmdline(lp_ctx, "smb ports", poptGetOptArg(pc));
+			lpcfg_set_cmdline(lp_ctx, "client smb transports", poptGetOptArg(pc));
 			break;
 		case OPT_EXTRA_USER:
 			{
