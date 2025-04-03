@@ -28,6 +28,11 @@
 #include "../libcli/smb/read_smb.h"
 #include "libsmb/nmblib.h"
 #include "libsmb/smbsock_connect.h"
+#include "../source4/lib/tls/tls.h"
+
+#ifdef HAVE_LIBQUIC
+#include <netinet/quic.h>
+#endif
 
 struct cli_session_request_state {
 	struct tevent_context *ev;
@@ -378,10 +383,12 @@ struct smbsock_connect_substate {
 struct smbsock_connect_state {
 	struct tevent_context *ev;
 	const struct sockaddr_storage *addr;
+	const char *target_name;
 	const char *called_name;
 	uint8_t called_type;
 	const char *calling_name;
 	uint8_t calling_type;
+	struct tstream_tls_params *quic_tlsp;
 	struct tevent_req *wake_subreq;
 	uint8_t num_substates;
 	uint8_t submit_idx;
@@ -400,6 +407,10 @@ static bool smbsock_connect_submit_next(struct tevent_req *req);
 static void smbsock_connect_waited(struct tevent_req *subreq);
 static void smbsock_connect_nbt_connected(struct tevent_req *subreq);
 static void smbsock_connect_tcp_connected(struct tevent_req *subreq);
+#ifdef HAVE_LIBQUIC
+static void smbsock_connect_quic_connected(struct tevent_req *subreq);
+static void smbsock_connect_quic_ready(struct tevent_req *subreq);
+#endif /* HAVE_LIBQUIC */
 
 struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
@@ -418,6 +429,8 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 	struct smb_transports ts = *transports;
 	uint8_t ti;
 	bool ok;
+	bool request_quic = false;
+	bool try_quic = false;
 
 	req = tevent_req_create(mem_ctx, &state, struct smbsock_connect_state);
 	if (req == NULL) {
@@ -425,6 +438,7 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 	state->addr = addr;
+	state->target_name = called_name;
 	state->called_name =
 		(called_name != NULL) ? called_name : "*SMBSERVER";
 	state->called_type =
@@ -451,6 +465,38 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 
 	for (ti = 0; ti < ts.num_transports; ti++) {
 		const struct smb_transport *t = &ts.transports[ti];
+
+		if (t->type != SMB_TRANSPORT_TYPE_QUIC) {
+			continue;
+		}
+
+		if (state->target_name != NULL) {
+			request_quic = true;
+			break;
+		}
+	}
+
+	if (request_quic) {
+		NTSTATUS status;
+
+		status = tstream_tls_params_client_lpcfg(state,
+							 lp_ctx,
+							 state->target_name,
+							 &state->quic_tlsp);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+
+		status = tstream_tls_params_quic_prepare(state->quic_tlsp);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+
+		try_quic = tstream_tls_params_quic_enabled(state->quic_tlsp);
+	}
+
+	for (ti = 0; ti < ts.num_transports; ti++) {
+		const struct smb_transport *t = &ts.transports[ti];
 		struct smbsock_connect_substate *s =
 			&state->substates[state->num_substates];
 
@@ -470,8 +516,14 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 		case SMB_TRANSPORT_TYPE_TCP:
 			break;
 		case SMB_TRANSPORT_TYPE_QUIC:
+			if (try_quic) {
+				break;
+			}
+
 			/*
-			 * Not supported yet
+			 * Not supported yet or no
+			 * called_name as peer name
+			 * available.
 			 */
 			continue;
 		}
@@ -602,12 +654,28 @@ static bool smbsock_connect_submit_next(struct tevent_req *req)
 		break;
 
 	case SMB_TRANSPORT_TYPE_QUIC:
+#ifdef HAVE_LIBQUIC
+		s->subreq = open_socket_out_send(state,
+						 state->ev,
+						 IPPROTO_QUIC,
+						 state->addr,
+						 s->transport.port,
+						 5000);
+		if (tevent_req_nomem(s->subreq, req)) {
+			return false;
+		}
+		tevent_req_set_callback(s->subreq,
+					smbsock_connect_quic_connected,
+					s);
+		break;
+#else /* ! HAVE_LIBQUIC */
 		/*
 		 * Not supported yet, should already be
 		 * checked above.
 		 */
 		smb_panic(__location__);
 		break;
+#endif /* ! HAVE_LIBQUIC */
 	}
 
 	if (s->subreq == NULL) {
@@ -775,6 +843,135 @@ static void smbsock_connect_tcp_connected(struct tevent_req *subreq)
 		return;
 	}
 }
+
+#ifdef HAVE_LIBQUIC
+static void smbsock_connect_quic_connected(struct tevent_req *subreq)
+{
+	struct smbsock_connect_substate *s =
+		(struct smbsock_connect_substate *)
+		tevent_req_callback_data_void(subreq);
+	struct tevent_req *req = s->req;
+	struct smbsock_connect_state *state =
+		tevent_req_data(req,
+		struct smbsock_connect_state);
+	NTSTATUS status;
+
+	SMB_ASSERT(s->subreq == subreq);
+	s->subreq = NULL;
+	SMB_ASSERT(state->num_pending > 0);
+	state->num_pending -= 1;
+
+	status = open_socket_out_recv(subreq, &s->sockfd);
+	TALLOC_FREE(subreq);
+	if (NT_STATUS_IS_OK(status)) {
+		s->subreq = tstream_tls_quic_handshake_send(state,
+							    state->ev,
+							    state->quic_tlsp,
+							    false, /* is_server */
+							    5000,
+							    "smb",
+							    s->sockfd);
+		if (s->subreq == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+		tevent_req_set_callback(s->subreq,
+					smbsock_connect_quic_ready,
+					s);
+		state->num_pending += 1;
+		return;
+	}
+
+fail:
+	/*
+	 * Do nothing, wait for the remaining
+	 * requests to come here.
+	 *
+	 * Submit the next requests if there
+	 * are unsubmitted requests remaining.
+	 */
+	if (state->submit_idx < state->num_substates) {
+		bool ok;
+
+		ok = smbsock_connect_submit_next(req);
+		if (!ok) {
+			return;
+		}
+	}
+
+	if (state->num_pending == 0) {
+		/*
+		 * All requests failed
+		 *
+		 * smbsock_connect_cleanup()
+		 * will free all other subreqs
+		 */
+		tevent_req_nterror(req, status);
+		return;
+	}
+}
+
+static void smbsock_connect_quic_ready(struct tevent_req *subreq)
+{
+	struct smbsock_connect_substate *s =
+		(struct smbsock_connect_substate *)
+		tevent_req_callback_data_void(subreq);
+	struct tevent_req *req = s->req;
+	struct smbsock_connect_state *state =
+		tevent_req_data(req,
+		struct smbsock_connect_state);
+	NTSTATUS status;
+
+	SMB_ASSERT(s->subreq == subreq);
+	s->subreq = NULL;
+	SMB_ASSERT(state->num_pending > 0);
+	state->num_pending -= 1;
+
+	status = tstream_tls_quic_handshake_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (NT_STATUS_IS_OK(status)) {
+		/*
+		 * smbsock_connect_cleanup()
+		 * will free all other subreqs
+		 */
+		state->transport = state->create_bsd_transport(state,
+							       &s->sockfd,
+							       &s->transport);
+		if (tevent_req_nomem(state->transport, req)) {
+			return;
+		}
+		tevent_req_done(req);
+		return;
+	}
+
+	/*
+	 * Do nothing, wait for the remaining
+	 * requests to come here.
+	 *
+	 * Submit the next requests if there
+	 * are unsubmitted requests remaining.
+	 */
+	if (state->submit_idx < state->num_substates) {
+		bool ok;
+
+		ok = smbsock_connect_submit_next(req);
+		if (!ok) {
+			return;
+		}
+	}
+
+	if (state->num_pending == 0) {
+		/*
+		 * All requests failed
+		 *
+		 * smbsock_connect_cleanup()
+		 * will free all other subreqs
+		 */
+		tevent_req_nterror(req, status);
+		return;
+	}
+}
+#endif /* HAVE_LIBQUIC */
 
 NTSTATUS smbsock_connect_recv(struct tevent_req *req,
 			      TALLOC_CTX *mem_ctx,
