@@ -2080,8 +2080,7 @@ bool set_share_mode(struct share_mode_lock *lck,
 		.time.tv_usec = fsp->open_time.tv_usec,
 		.share_file_id = fh_get_gen_id(fsp->fh),
 		.uid = (uint32_t)uid,
-		.flags = fsp->fsp_flags.posix_open ?
-			SHARE_ENTRY_FLAG_POSIX_OPEN : 0,
+		.flags = fsp_get_share_entry_flags(fsp),
 		.name_hash = fsp->name_hash,
 	};
 
@@ -3512,4 +3511,22 @@ NTSTATUS _share_mode_entry_prepare_unlock(
 	}
 
 	return state.status;
+}
+
+
+uint16_t fsp_get_share_entry_flags(const struct files_struct *fsp)
+{
+	uint16_t flags = 0;
+
+	if (fsp->fsp_flags.posix_open) {
+		flags |= SHARE_ENTRY_FLAG_POSIX_OPEN;
+	}
+	return flags;
+}
+
+void fsp_apply_share_entry_flags(struct files_struct *fsp, uint16_t flags)
+{
+	if (flags & SHARE_ENTRY_FLAG_POSIX_OPEN) {
+		fsp->fsp_flags.posix_open = true;
+	}
 }

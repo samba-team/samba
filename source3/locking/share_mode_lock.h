@@ -205,3 +205,6 @@ NTSTATUS _share_mode_entry_prepare_unlock(
 		__fn, __private_data, __location__);
 
 #endif
+
+uint16_t fsp_get_share_entry_flags(const struct files_struct *fsp);
+void fsp_apply_share_entry_flags(struct files_struct *fsp, uint16_t flags);

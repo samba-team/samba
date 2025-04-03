@@ -596,6 +596,7 @@ static void vfs_default_durable_reconnect_fn(struct share_mode_lock *lck,
 	}
 
 	fh_set_private_options(fsp->fh, e.private_options);
+	fsp_apply_share_entry_flags(fsp, e.flags);
 	fsp->open_time = e.time;
 	fsp->access_mask = e.access_mask;
 	fsp->fsp_flags.can_read = ((fsp->access_mask & FILE_READ_DATA) != 0);
