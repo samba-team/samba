@@ -399,7 +399,7 @@ static void print_transfer_stats(void)
 
 static struct dd_iohandle * open_file(struct resolve_context *resolve_ctx, 
 				      struct tevent_context *ev,
-				      const char * which, const char **ports,
+				      const char * which,
 				      struct smbcli_options *smb_options,
 				      const char *socket_options,
 				      struct smbcli_session_options *smb_session_options,
@@ -423,7 +423,7 @@ static struct dd_iohandle * open_file(struct resolve_context *resolve_ctx,
 
 	if (strcmp(which, "if") == 0) {
 		path = check_arg_pathname("if");
-		handle = dd_open_path(resolve_ctx, ev, path, ports,
+		handle = dd_open_path(resolve_ctx, ev, path,
 				      check_arg_numeric("ibs"), options,
 				      socket_options,
 				      smb_options, smb_session_options,
@@ -431,7 +431,7 @@ static struct dd_iohandle * open_file(struct resolve_context *resolve_ctx,
 	} else if (strcmp(which, "of") == 0) {
 		options |= DD_WRITE;
 		path = check_arg_pathname("of");
-		handle = dd_open_path(resolve_ctx, ev, path, ports,
+		handle = dd_open_path(resolve_ctx, ev, path,
 				      check_arg_numeric("obs"), options,
 				      socket_options,
 				      smb_options, smb_session_options,
@@ -488,7 +488,7 @@ static int copy_files(struct tevent_context *ev, struct loadparm_context *lp_ctx
 			(unsigned long long)iomax, options.max_xmit));
 
 	if (!(ifile = open_file(lpcfg_resolve_context(lp_ctx), ev, "if",
-				lpcfg_smb_ports(lp_ctx), &options,
+				&options,
 				lpcfg_socket_options(lp_ctx),
 				&session_options, 
 				lpcfg_gensec_settings(lp_ctx, lp_ctx)))) {
@@ -497,7 +497,7 @@ static int copy_files(struct tevent_context *ev, struct loadparm_context *lp_ctx
 	}
 
 	if (!(ofile = open_file(lpcfg_resolve_context(lp_ctx), ev, "of",
-				lpcfg_smb_ports(lp_ctx), &options,
+				&options,
 				lpcfg_socket_options(lp_ctx),
 				&session_options,
 				lpcfg_gensec_settings(lp_ctx, lp_ctx)))) {

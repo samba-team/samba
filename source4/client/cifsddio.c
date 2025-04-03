@@ -222,7 +222,6 @@ static bool smb_write_func(void * handle, uint8_t * buf, uint64_t wanted,
 static struct smbcli_state * init_smb_session(struct resolve_context *resolve_ctx,
 					      struct tevent_context *ev,
 					      const char * host,
-					      const char **ports,
 					      const char * share,
 					      const char *socket_options,
 					      struct smbcli_options *options,
@@ -303,7 +302,6 @@ static int open_smb_file(struct smbcli_state * cli,
 static struct dd_iohandle * open_cifs_handle(struct resolve_context *resolve_ctx,
 					     struct tevent_context *ev,
 					     const char * host,
-					const char **ports,
 					const char * share,
 					const char * path,
 					uint64_t io_size,
@@ -331,7 +329,7 @@ static struct dd_iohandle * open_cifs_handle(struct resolve_context *resolve_ctx
 	smbh->h.io_write = smb_write_func;
 	smbh->h.io_seek = smb_seek_func;
 
-	if ((smbh->cli = init_smb_session(resolve_ctx, ev, host, ports, share,
+	if ((smbh->cli = init_smb_session(resolve_ctx, ev, host, share,
 					  socket_options,
 					  smb_options, smb_session_options,
 					  gensec_settings)) == NULL) {
@@ -352,7 +350,6 @@ static struct dd_iohandle * open_cifs_handle(struct resolve_context *resolve_ctx
 struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx, 
 				  struct tevent_context *ev,
 				  const char * path,
-				  const char **ports,
 				uint64_t io_size,
 				int options,
 				const char *socket_options,
@@ -373,7 +370,7 @@ struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx,
 			/* Skip over leading directory separators. */
 			while (*remain == '/' || *remain == '\\') { remain++; }
 
-			return(open_cifs_handle(resolve_ctx, ev, host, ports,
+			return(open_cifs_handle(resolve_ctx, ev, host,
 						share, remain,
 						io_size, options, 
 						socket_options, smb_options,

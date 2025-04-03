@@ -95,7 +95,6 @@ struct tevent_context;
 struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx, 
 				  struct tevent_context *ev,
 				  const char * path,
-				  const char **ports,
 				uint64_t io_size, int options, 
 				const char *socket_options,
 				struct smbcli_options *smb_options,
