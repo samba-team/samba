@@ -3722,7 +3722,6 @@ static bool torture_rpc_smb2_reauth1(struct torture_context *torture)
 
 	status = smb2_connect(mem_ctx,
 			      host,
-			      lpcfg_smb_ports(torture->lp_ctx),
 			      "IPC$",
 			      lpcfg_resolve_context(torture->lp_ctx),
 			      samba_cmdline_get_creds(),
@@ -3872,7 +3871,6 @@ static bool torture_rpc_smb2_reauth2(struct torture_context *torture)
 
 	status = smb2_connect(mem_ctx,
 			      host,
-			      lpcfg_smb_ports(torture->lp_ctx),
 			      "IPC$",
 			      lpcfg_resolve_context(torture->lp_ctx),
 			      samba_cmdline_get_creds(),
@@ -4239,7 +4237,6 @@ static bool torture_rpc_smb2_pipe_name(struct torture_context *torture)
 
 	status = smb2_connect(mem_ctx,
 			      host,
-			      lpcfg_smb_ports(torture->lp_ctx),
 			      "IPC$",
 			      lpcfg_resolve_context(torture->lp_ctx),
 			      samba_cmdline_get_creds(),
@@ -4333,7 +4330,6 @@ static bool torture_rpc_smb2_pipe_read_close(struct torture_context *torture)
 
 	status = smb2_connect(mem_ctx,
 			      host,
-			      lpcfg_smb_ports(torture->lp_ctx),
 			      "IPC$",
 			      lpcfg_resolve_context(torture->lp_ctx),
 			      samba_cmdline_get_creds(),
@@ -4417,7 +4413,6 @@ static bool torture_rpc_smb2_pipe_read_tdis(struct torture_context *torture)
 
 	status = smb2_connect(mem_ctx,
 			      host,
-			      lpcfg_smb_ports(torture->lp_ctx),
 			      "IPC$",
 			      lpcfg_resolve_context(torture->lp_ctx),
 			      samba_cmdline_get_creds(),
@@ -4501,7 +4496,6 @@ static bool torture_rpc_smb2_pipe_read_logoff(struct torture_context *torture)
 
 	status = smb2_connect(mem_ctx,
 			      host,
-			      lpcfg_smb_ports(torture->lp_ctx),
 			      "IPC$",
 			      lpcfg_resolve_context(torture->lp_ctx),
 			      samba_cmdline_get_creds(),
@@ -4580,7 +4574,6 @@ static bool torture_rpc_lsa_over_netlogon(struct torture_context *torture)
 
 	status = smb2_connect(mem_ctx,
 			      torture_setting_string(torture, "host", NULL),
-			      lpcfg_smb_ports(torture->lp_ctx),
 			      "IPC$",
 			      lpcfg_resolve_context(torture->lp_ctx),
 			      samba_cmdline_get_creds(),
@@ -4651,7 +4644,6 @@ static bool torture_rpc_pipes_supported_interfaces(
 
 	status = smb2_connect(mem_ctx,
 			      torture_setting_string(torture, "host", NULL),
-			      lpcfg_smb_ports(torture->lp_ctx),
 			      "IPC$",
 			      lpcfg_resolve_context(torture->lp_ctx),
 			      samba_cmdline_get_creds(),

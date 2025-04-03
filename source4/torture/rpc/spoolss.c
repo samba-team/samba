@@ -8970,7 +8970,6 @@ static bool test_print_test_smbd(struct torture_context *tctx,
 
 	status = smb2_connect(mem_ctx,
 			      torture_setting_string(tctx, "host", NULL),
-			      lpcfg_smb_ports(tctx->lp_ctx),
 			      share,
 			      lpcfg_resolve_context(tctx->lp_ctx),
 			      samba_cmdline_get_creds(),

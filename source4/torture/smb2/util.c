@@ -471,7 +471,6 @@ bool torture_smb2_con_share(struct torture_context *tctx,
 
 	status = smb2_connect(tctx,
 			      host,
-			      lpcfg_smb_ports(tctx->lp_ctx),
 			      share,
 			      lpcfg_resolve_context(tctx->lp_ctx),
 			      samba_cmdline_get_creds(),

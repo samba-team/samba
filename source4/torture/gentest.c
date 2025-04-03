@@ -230,7 +230,6 @@ static bool connect_servers(struct tevent_context *ev,
 
 			if (options.smb2) {
 				status = smb2_connect(NULL, servers[i].server_name,
-									  lpcfg_smb_ports(lp_ctx),
 						      servers[i].share_name,
 						      lpcfg_resolve_context(lp_ctx),
 						      servers[i].credentials,

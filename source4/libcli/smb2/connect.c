@@ -450,7 +450,6 @@ NTSTATUS smb2_connect_ext(TALLOC_CTX *mem_ctx,
 
 NTSTATUS smb2_connect(TALLOC_CTX *mem_ctx,
 		      const char *host,
-		      const char **ports,
 		      const char *share,
 		      struct resolve_context *resolve_ctx,
 		      struct cli_credentials *credentials,
