@@ -2648,7 +2648,6 @@ static bool test_multichannel_bug_15346(struct torture_context *tctx,
 		options.only_negprot = true;
 		status = smb2_connect_ext(state->conns,
 					  host,
-					  NULL, /* ports */
 					  share,
 					  resolve_ctx,
 					  samba_cmdline_get_creds(),
