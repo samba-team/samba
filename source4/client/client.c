@@ -3180,7 +3180,7 @@ return a connection to a server
 static bool do_connect(struct smbclient_context *ctx,
 		       struct tevent_context *ev_ctx,
 		       struct resolve_context *resolve_ctx,
-		       const char *specified_server, const char **ports,
+		       const char *specified_server,
 		       const char *specified_share,
 			   const char *socket_options,
 		       struct cli_credentials *cred,
@@ -3531,7 +3531,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (!do_connect(ctx, ev_ctx, lpcfg_resolve_context(lp_ctx),
-			desthost, lpcfg_smb_ports(lp_ctx), service,
+			desthost, service,
 			lpcfg_socket_options(lp_ctx),
 			creds,
 			&smb_options, &smb_session_options,
