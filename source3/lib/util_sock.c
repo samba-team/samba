@@ -241,8 +241,9 @@ NTSTATUS receive_smb_raw(int fd, char *buffer, size_t buflen, unsigned int timeo
  * Return sock or -errno
  */
 
-int open_socket_in(
+int open_socket_in_protocol(
 	int type,
+	int protocol,
 	const struct sockaddr_storage *paddr,
 	uint16_t port,
 	bool rebind)
@@ -271,7 +272,7 @@ int open_socket_in(
 		goto fail;
 	}
 
-	sock = socket(addr.u.ss.ss_family, type, 0 );
+	sock = socket(addr.u.ss.ss_family, type, protocol);
 	if (sock == -1) {
 		ret = -errno;
 		DBG_DEBUG("socket() failed: %s\n", strerror(errno));
@@ -352,6 +353,15 @@ fail:
 	}
 	return ret;
  }
+
+int open_socket_in(
+	int type,
+	const struct sockaddr_storage *paddr,
+	uint16_t port,
+	bool rebind)
+{
+	return open_socket_in_protocol(type, 0, paddr, port, rebind);
+}
 
 struct open_socket_out_state {
 	int fd;

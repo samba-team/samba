@@ -483,6 +483,12 @@ NTSTATUS receive_smb_raw(int fd,
 			unsigned int timeout,
 			size_t maxlen,
 			size_t *p_len);
+int open_socket_in_protocol(
+	int type,
+	int protocol,
+	const struct sockaddr_storage *paddr,
+	uint16_t port,
+	bool rebind);
 int open_socket_in(
 	int type,
 	const struct sockaddr_storage *paddr,
