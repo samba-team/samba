@@ -153,7 +153,6 @@ static bool test_fetchfile(struct torture_context *tctx, struct smbcli_state *cl
 	ZERO_STRUCT(io2);
 
 	io2.in.dest_host = torture_setting_string(tctx, "host", NULL);
-	io2.in.ports = lpcfg_smb_ports(tctx->lp_ctx);
 	io2.in.called_name = torture_setting_string(tctx, "host", NULL);
 	io2.in.service = torture_setting_string(tctx, "share", NULL);
 	io2.in.service_type = "A:";

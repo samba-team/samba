@@ -57,7 +57,6 @@ NTSTATUS smb_composite_loadfile(struct smbcli_tree *tree,
 struct smb_composite_fetchfile {
 	struct {
 		const char *dest_host;
-		const char **ports;
 		const char *called_name;
 		const char *service;
 		const char *service_type;
