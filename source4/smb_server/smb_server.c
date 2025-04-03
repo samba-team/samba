@@ -182,8 +182,8 @@ _PUBLIC_ NTSTATUS smbsrv_add_socket(TALLOC_CTX *mem_ctx,
 				    void *process_context)
 {
 	struct smb_transports ts =
-		smb_transports_parse("smb ports",
-			lpcfg_smb_ports(lp_ctx));
+		smb_transports_parse("server smb transports",
+			lpcfg_server_smb_transports(lp_ctx));
 	bool found_valid = false;
 	int i;
 	NTSTATUS status;
