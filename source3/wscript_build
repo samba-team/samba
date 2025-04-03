@@ -764,6 +764,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                         fd_handle
                         cli_spoolss
                         samba3-namearray
+                        LIBTLS
                    ''' +
                    bld.env['dmapi_lib'] +
                    bld.env['legacy_quota_libs'] +

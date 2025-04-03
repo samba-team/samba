@@ -2100,6 +2100,8 @@ void smbd_process(struct tevent_context *ev_ctx,
 
 	messaging_deregister(sconn->msg_ctx, MSG_SMB_TELL_NUM_CHILDREN, NULL);
 
+	messaging_deregister(sconn->msg_ctx, MSG_RELOAD_TLS_CERTIFICATES, NULL);
+
 	/*
 	 * Use the default MSG_DEBUG handler to avoid rebroadcasting
 	 * MSGs to all child processes

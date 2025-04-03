@@ -19,6 +19,27 @@
 	after ':', e.g. 'nbt:1139'.
 	</para>
 
+	<para>The transport 'quic' uses the quic protocol on top of udp.
+	The default port for 'quic' is 443. Other ports can be specified by adding it
+	after ':', e.g. 'quic:1443'.
+	The following options are also relevant:
+	<smbconfoption name="tls enabled"/>,
+	<smbconfoption name="tls cafile"/>,
+	<smbconfoption name="tls certfile"/> and
+	<smbconfoption name="tls keyfile"/>.
+	If the files pointed to by
+	<smbconfoption name="tls cafile"/>,
+	<smbconfoption name="tls certfile"/> and
+	<smbconfoption name="tls keyfile"/> all do not exist,
+	a self-signed tls certificate is generated automatically at startup.
+	</para>
+
+	<para>
+	Note: 'quic' requires the quic.ko kernel module for Linux from
+	https://github.com/lxin/quic (tested with Linux 6.14). Future
+	Linux versions may support it natively.
+	</para>
+
 	<para>Numerical ports are handled as 'tcp' except port '139' is handled as 'nbt'.
 	</para>
 
@@ -29,6 +50,8 @@
 <value type="example">445</value>
 <value type="example">tcp, tcp:1445</value>
 <value type="example">8000, nbt:1139</value>
+<value type="example">tcp, quic, nbt</value>
+<value type="example">+quic</value>
 
 <value type="default">tcp, nbt</value>
 </samba:parameter>

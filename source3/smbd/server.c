@@ -60,6 +60,11 @@
 #include "lib/global_contexts.h"
 #include "source3/lib/substitute.h"
 #include "lib/addrchange.h"
+#include "../source4/lib/tls/tls.h"
+
+#ifdef HAVE_LIBQUIC
+#include <netinet/quic.h>
+#endif
 
 #ifdef CLUSTER_SUPPORT
 #include "ctdb_protocol.h"
@@ -87,6 +92,8 @@ struct smbd_parent_context {
 	struct server_id notifyd;
 
 	struct tevent_timer *cleanup_te;
+
+	struct tstream_tls_params *quic_tlsp;
 };
 
 struct smbd_open_socket {
@@ -242,6 +249,76 @@ static void smb_parent_send_to_children(struct messaging_context *ctx,
 					DATA_BLOB* msg_data)
 {
 	messaging_send_to_children(ctx, msg_type, msg_data);
+}
+
+static NTSTATUS smb_parent_load_tls_certificates(struct smbd_parent_context *parent,
+						 struct loadparm_context *lp_ctx)
+{
+	struct tstream_tls_params *quic_tlsp = NULL;
+	const char *dns_hostname = NULL;
+	NTSTATUS status;
+
+	if (parent == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	dns_hostname = lpcfg_dns_hostname(lp_ctx);
+	if (dns_hostname == NULL) {
+		DBG_ERR("ERROR: lpcfg_dns_hostname() failed\n");
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	status = tstream_tls_params_server_lpcfg(parent,
+						 dns_hostname,
+						 lp_ctx,
+						 &quic_tlsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("tstream_tls_params_server_lpcfg(): %s\n",
+			nt_errstr(status));
+		return status;
+	}
+
+	status = tstream_tls_params_quic_prepare(quic_tlsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("tstream_tls_params_quic_prepare(): %s\n",
+			nt_errstr(status));
+		return status;
+	}
+
+	TALLOC_FREE(parent->quic_tlsp);
+	parent->quic_tlsp = quic_tlsp;
+	return NT_STATUS_OK;
+}
+
+static void smb_parent_reload_tls_certificates(struct messaging_context *ctx,
+					       void *private_data,
+					       uint32_t msg_type,
+					       struct server_id srv_id,
+					       DATA_BLOB* msg_data)
+{
+	struct smbd_parent_context *parent = am_parent;
+	struct loadparm_context *lp_ctx = NULL;
+	NTSTATUS status;
+
+	if (parent == NULL) {
+		return;
+	}
+
+	lp_ctx = loadparm_init_s3(talloc_tos(), loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		DBG_ERR("loadparm_init_s3() failed\n");
+		return;
+	}
+
+	status = smb_parent_load_tls_certificates(parent, lp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("smb_parent_load_tls_certificates(): %s\n",
+			nt_errstr(status));
+		return;
+	}
+
+	DBG_DEBUG("smb_parent_load_tls_certificates(): %s\n",
+		  nt_errstr(status));
 }
 
 /*
@@ -988,6 +1065,26 @@ static void smbd_accept_connection(struct tevent_context *ev,
 			exit_server("reinit_after_fork() failed");
 			return;
 		}
+		if (transport_type == SMB_TRANSPORT_TYPE_QUIC) {
+			struct tstream_tls_params *quic_tlsp =
+				s->parent->quic_tlsp;
+
+			/*
+			 * In interactive mode it's ok to do a
+			 * sync handshake, there's no point in
+			 * doing it async.
+			 */
+			status = tstream_tls_quic_handshake(quic_tlsp,
+							    true, /* is_server */
+							    5000, /* 5 secs */
+							    "smb",
+							    fd);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_WARNING("tstream_tls_quic_handshake(%d): %s\n",
+					    fd, nt_errstr(status));
+				exit_server_cleanly("tstream_tls_quic_handshake");
+			}
+		}
 		smbd_process(ev, msg_ctx, fd, true, transport_type);
 		exit_server_cleanly("end of interactive mode");
 		return;
@@ -1001,8 +1098,14 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	pid = fork();
 	if (pid == 0) {
 		enum smb_transport_type transport_type = s->transport.type;
+		struct tstream_tls_params *quic_tlsp = NULL;
 		char addrstr[INET6_ADDRSTRLEN];
 		NTSTATUS status = NT_STATUS_OK;
+
+		if (transport_type == SMB_TRANSPORT_TYPE_QUIC) {
+			quic_tlsp = talloc_move(talloc_tos(),
+						&s->parent->quic_tlsp);
+		}
 
 		/*
 		 * Can't use TALLOC_FREE here. Nulling out the argument to it
@@ -1042,6 +1145,25 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		print_sockaddr(addrstr, sizeof(addrstr), &caddr.u.ss);
 		process_set_title("smbd[%s]", "client [%s]", addrstr);
 
+		if (transport_type == SMB_TRANSPORT_TYPE_QUIC) {
+			/*
+			 * We just forked and this process only
+			 * handles a single connection, so it's ok
+			 * to do a sync handshake, there's no point in
+			 * doing it async.
+			 */
+			status = tstream_tls_quic_handshake(quic_tlsp,
+							    true, /* is_server */
+							    5000, /* 5 secs */
+							    "smb",
+							    fd);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_WARNING("tstream_tls_quic_handshake(%d): %s\n",
+					    fd, nt_errstr(status));
+				exit_server_cleanly("tstream_tls_quic_handshake");
+			}
+		}
+		TALLOC_FREE(quic_tlsp);
 		smbd_process(ev, msg_ctx, fd, false, transport_type);
 	 exit:
 		exit_server_cleanly("end of child");
@@ -1103,9 +1225,11 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 		rebind = true;
 		break;
 	case SMB_TRANSPORT_TYPE_QUIC:
-		/*
-		 * Not supported yet
-		 */
+#ifdef HAVE_LIBQUIC
+		port = transport->port;
+		protocol = IPPROTO_QUIC;
+		rebind = false;
+#endif
 		break;
 	case SMB_TRANSPORT_TYPE_UNKNOWN:
 		/*
@@ -1122,7 +1246,7 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 		return false;
 	}
 
-	s = talloc(parent, struct smbd_open_socket);
+	s = talloc_zero(parent, struct smbd_open_socket);
 	if (!s) {
 		return false;
 	}
@@ -1142,8 +1266,14 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 	}
 
 	/* ready to listen */
-	set_socket_options(s->fd, "SO_KEEPALIVE");
-	set_socket_options(s->fd, lp_socket_options());
+	if (transport->type == SMB_TRANSPORT_TYPE_QUIC) {
+#ifdef HAVE_LIBQUIC
+		setsockopt(s->fd, SOL_QUIC, QUIC_SOCKOPT_ALPN, "smb", strlen("smb"));
+#endif /* HAVE_LIBQUIC */
+	} else {
+		set_socket_options(s->fd, "SO_KEEPALIVE");
+		set_socket_options(s->fd, lp_socket_options());
+	}
 
 	/* Set server socket to
 	 * non-blocking for the accept. */
@@ -1327,6 +1457,13 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 			   ID_CACHE_KILL, smbd_parent_id_cache_kill);
 	messaging_register(msg_ctx, NULL, MSG_SMB_NOTIFY_STARTED,
 			   smb_parent_send_to_children);
+
+	if (parent->quic_tlsp != NULL) {
+		messaging_register(msg_ctx,
+				   NULL,
+				   MSG_RELOAD_TLS_CERTIFICATES,
+				   smb_parent_reload_tls_certificates);
+	}
 
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
 		messaging_register(msg_ctx,
@@ -1858,6 +1995,8 @@ extern void build_options(bool screen);
 		.exit_server = smbd_exit_server,
 		.exit_server_cleanly = smbd_exit_server_cleanly,
 	};
+	uint8_t ti;
+	bool quic_requested = false;
 	bool ok;
 
 	setproctitle_init(argc, discard_const(argv), environ);
@@ -2163,6 +2302,57 @@ extern void build_options(bool screen);
 			exit_server("no valid transport from "
 				    "'server smb transports'");
 		}
+	}
+
+	for (ti = 0; ti < parent->transports.num_transports; ti++) {
+		const struct smb_transport *t =
+			&parent->transports.transports[ti];
+
+		if (t->type == SMB_TRANSPORT_TYPE_QUIC) {
+			quic_requested = true;
+			break;
+		}
+	}
+
+	if (quic_requested) {
+		status = smb_parent_load_tls_certificates(parent, lp_ctx);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_CANT_ACCESS_DOMAIN_INFO)) {
+			ok = false;
+			goto quic_disabled;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			exit_server("ERROR: smb_parent_load_tls_certificates");
+		}
+
+		ok = tstream_tls_params_quic_enabled(parent->quic_tlsp);
+quic_disabled:
+		if (!ok) {
+			struct smb_transports tt = parent->transports;
+			struct smb_transports *ts = &parent->transports;
+
+			DBG_ERR("WARNING: ignore listening on transport 'quic'\n");
+
+			/*
+			 * Filter out SMB_TRANSPORT_TYPE_QUIC
+			 */
+
+			ts->num_transports = 0;
+			for (ti = 0; ti < tt.num_transports; ti++) {
+				const struct smb_transport *t =
+					&tt.transports[ti];
+
+				if (t->type == SMB_TRANSPORT_TYPE_QUIC) {
+					continue;
+				}
+
+				ts->transports[ts->num_transports] = *t;
+				ts->num_transports += 1;
+			}
+		}
+	}
+
+	if (parent->transports.num_transports == 0) {
+		exit_server("No transports configured for listening");
 	}
 
 	se = tevent_add_signal(parent->ev_ctx,
