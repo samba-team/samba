@@ -192,7 +192,12 @@ static struct tevent_req *nb_connect_send(TALLOC_CTX *mem_ctx,
 
 	tevent_req_set_cleanup_fn(req, nb_connect_cleanup);
 
-	subreq = open_socket_out_send(state, ev, addr, NBT_SMB_PORT, 5000);
+	subreq = open_socket_out_send(state,
+				      ev,
+				      IPPROTO_TCP,
+				      addr,
+				      NBT_SMB_PORT,
+				      5000);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -297,8 +302,12 @@ static void nb_connect_done(struct tevent_req *subreq)
 		state->called_name = "*SMBSERVER";
 		make_nmb_name(&state->called, state->called_name, 0x20);
 
-		subreq = open_socket_out_send(state, state->ev, state->addr,
-					      NBT_SMB_PORT, 5000);
+		subreq = open_socket_out_send(state,
+					      state->ev,
+					      IPPROTO_TCP,
+					      state->addr,
+					      NBT_SMB_PORT,
+					      5000);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
@@ -393,7 +402,11 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 		return req;
 	}
 	if (port != 0) {
-		state->req_445 = open_socket_out_send(state, ev, addr, port,
+		state->req_445 = open_socket_out_send(state,
+						      ev,
+						      IPPROTO_TCP,
+						      addr,
+						      port,
 						      5000);
 		if (tevent_req_nomem(state->req_445, req)) {
 			return tevent_req_post(req, ev);
@@ -407,7 +420,12 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 	 * port==0, try both
 	 */
 
-	state->req_445 = open_socket_out_send(state, ev, addr, TCP_SMB_PORT, 5000);
+	state->req_445 = open_socket_out_send(state,
+					      ev,
+					      IPPROTO_TCP,
+					      addr,
+					      TCP_SMB_PORT,
+					      5000);
 	if (tevent_req_nomem(state->req_445, req)) {
 		return tevent_req_post(req, ev);
 	}

@@ -498,6 +498,7 @@ NTSTATUS open_socket_out(const struct sockaddr_storage *pss, uint16_t port,
 			 int timeout, int *pfd);
 struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
+					int protocol,
 					const struct sockaddr_storage *pss,
 					uint16_t port,
 					int timeout);

@@ -404,6 +404,7 @@ static void open_socket_out_cleanup(struct tevent_req *req,
 
 struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
+					int protocol,
 					const struct sockaddr_storage *pss,
 					uint16_t port,
 					int timeout)
@@ -427,7 +428,7 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 	};
 	state->port = port;
 
-	state->fd = socket(state->saddr.u.sa.sa_family, SOCK_STREAM, 0);
+	state->fd = socket(state->saddr.u.sa.sa_family, SOCK_STREAM, protocol);
 	if (state->fd == -1) {
 		status = map_nt_error_from_unix(errno);
 		tevent_req_nterror(req, status);
@@ -539,7 +540,7 @@ NTSTATUS open_socket_out(const struct sockaddr_storage *pss, uint16_t port,
 		goto fail;
 	}
 
-	req = open_socket_out_send(frame, ev, pss, port, timeout);
+	req = open_socket_out_send(frame, ev, IPPROTO_TCP, pss, port, timeout);
 	if (req == NULL) {
 		goto fail;
 	}
@@ -612,8 +613,12 @@ static void open_socket_out_defer_waited(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = open_socket_out_send(state, state->ev, &state->ss,
-				      state->port, state->timeout);
+	subreq = open_socket_out_send(state,
+				      state->ev,
+				      IPPROTO_TCP,
+				      &state->ss,
+				      state->port,
+				      state->timeout);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
