@@ -262,6 +262,7 @@ int cli_credentials_set_ccache(struct cli_credentials *cred,
 			       const char *name,
 			       enum credentials_obtained obtained,
 			       const char **error_string);
+const char *cli_credentials_get_out_ccache_name(struct cli_credentials *cred);
 bool cli_credentials_parse_password_file(struct cli_credentials *credentials, const char *file, enum credentials_obtained obtained);
 bool cli_credentials_parse_password_fd(struct cli_credentials *credentials,
 				       int fd, enum credentials_obtained obtained);

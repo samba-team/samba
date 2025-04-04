@@ -280,6 +280,11 @@ static int cli_credentials_set_from_ccache(struct cli_credentials *cred,
 	return 0;
 }
 
+_PUBLIC_ const char *cli_credentials_get_out_ccache_name(struct cli_credentials *cred)
+{
+	return cred->ccache_name;
+}
+
 _PUBLIC_ int cli_credentials_set_ccache(struct cli_credentials *cred,
 					struct loadparm_context *lp_ctx,
 					const char *name,
