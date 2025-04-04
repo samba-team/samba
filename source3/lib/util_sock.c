@@ -366,8 +366,7 @@ int open_socket_in(
 struct open_socket_out_state {
 	int fd;
 	struct tevent_context *ev;
-	struct sockaddr_storage ss;
-	socklen_t salen;
+	struct samba_sockaddr saddr;
 	uint16_t port;
 	struct tevent_req *connect_subreq;
 };
@@ -420,11 +419,15 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	state->ev = ev;
-	state->ss = *pss;
+	state->saddr = (struct samba_sockaddr) {
+		.sa_socklen = -1,
+		.u = {
+			.ss = *pss,
+		},
+	};
 	state->port = port;
-	state->salen = -1;
 
-	state->fd = socket(state->ss.ss_family, SOCK_STREAM, 0);
+	state->fd = socket(state->saddr.u.sa.sa_family, SOCK_STREAM, 0);
 	if (state->fd == -1) {
 		status = map_nt_error_from_unix(errno);
 		tevent_req_nterror(req, status);
@@ -443,33 +446,32 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 #if defined(HAVE_IPV6)
 	if (pss->ss_family == AF_INET6) {
 		struct sockaddr_in6 *psa6;
-		psa6 = (struct sockaddr_in6 *)&state->ss;
+		psa6 = &state->saddr.u.in6;
 		psa6->sin6_port = htons(port);
 		if (psa6->sin6_scope_id == 0
 		    && IN6_IS_ADDR_LINKLOCAL(&psa6->sin6_addr)) {
-			setup_linklocal_scope_id(
-				(struct sockaddr *)&(state->ss));
+			setup_linklocal_scope_id(&state->saddr.u.sa);
 		}
-		state->salen = sizeof(struct sockaddr_in6);
+		state->saddr.sa_socklen = sizeof(struct sockaddr_in6);
 	}
 #endif
 	if (pss->ss_family == AF_INET) {
 		struct sockaddr_in *psa;
-		psa = (struct sockaddr_in *)&state->ss;
+		psa = &state->saddr.u.in;
 		psa->sin_port = htons(port);
-		state->salen = sizeof(struct sockaddr_in);
+		state->saddr.sa_socklen = sizeof(struct sockaddr_in);
 	}
 
 	if (pss->ss_family == AF_UNIX) {
-		state->salen = sizeof(struct sockaddr_un);
+		state->saddr.sa_socklen = sizeof(struct sockaddr_un);
 	}
 
-	print_sockaddr(addr, sizeof(addr), &state->ss);
+	print_sockaddr(addr, sizeof(addr), &state->saddr.u.ss);
 	DEBUG(3,("Connecting to %s at port %u\n", addr,	(unsigned int)port));
 
 	state->connect_subreq = async_connect_send(
-		state, state->ev, state->fd, (struct sockaddr *)&state->ss,
-		state->salen, NULL, NULL, NULL);
+		state, state->ev, state->fd, &state->saddr.u.sa,
+		state->saddr.sa_socklen, NULL, NULL, NULL);
 	if (tevent_req_nomem(state->connect_subreq, NULL)) {
 		return tevent_req_post(req, ev);
 	}
