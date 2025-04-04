@@ -503,13 +503,6 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 					uint16_t port,
 					int timeout);
 NTSTATUS open_socket_out_recv(struct tevent_req *req, int *pfd);
-struct tevent_req *open_socket_out_defer_send(TALLOC_CTX *mem_ctx,
-					      struct tevent_context *ev,
-					      struct timeval wait_time,
-					      const struct sockaddr_storage *pss,
-					      uint16_t port,
-					      int timeout);
-NTSTATUS open_socket_out_defer_recv(struct tevent_req *req, int *pfd);
 const char *get_peer_addr(int fd, char *addr, size_t addr_len);
 
 struct tsocket_address;
