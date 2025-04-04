@@ -16,6 +16,7 @@
  */
 
 #include "includes.h"
+#include "auth/credentials/credentials.h"
 #include "lib/param/param.h"
 #include "dynconfig/dynconfig.h"
 #include "auth/gensec/gensec.h"
@@ -930,6 +931,7 @@ static struct poptOption popt_common_connection[] = {
 
 static bool skip_password_callback;
 static bool machine_account_pending;
+static char *krb5_ccache = NULL;
 
 static void popt_common_credentials_callback(poptContext popt_ctx,
 					     enum poptCallbackReason reason,
@@ -1004,6 +1006,31 @@ static void popt_common_credentials_callback(poptContext popt_ctx,
 						     CRED_SPECIFIED);
 		}
 
+		/*
+		 * If --use-krb5-ccache was passed on the command line we need
+		 * to overwrite the values set by cli_credentials_guess().
+		 */
+		if (krb5_ccache != NULL) {
+			const char *error_string = NULL;
+			int rc;
+
+			rc = cli_credentials_set_ccache(creds,
+							lp_ctx,
+							krb5_ccache,
+							CRED_SPECIFIED,
+							&error_string);
+			SAFE_FREE(krb5_ccache);
+			if (rc != 0) {
+				fprintf(stderr,
+					"Error setting krb5 credentials cache: "
+					"'%s'"
+					" - %s\n",
+					krb5_ccache,
+					error_string);
+				exit(1);
+			}
+		}
+
 		if (cli_credentials_get_kerberos_state(creds) ==
 		    CRED_USE_KERBEROS_REQUIRED)
 		{
@@ -1023,10 +1050,10 @@ static void popt_common_credentials_callback(poptContext popt_ctx,
 				skip_password_callback = true;
 			}
 		}
-		if (!skip_password_callback) {
-			(void)cli_credentials_get_password_and_obtained(creds,
-									&password_obtained);
-		}
+
+		(void)cli_credentials_get_password_and_obtained(
+			creds, &password_obtained);
+
 		if (!skip_password_callback &&
 		    password_obtained < CRED_CALLBACK) {
 			ok = cli_credentials_set_cmdline_callbacks(creds);
@@ -1036,6 +1063,15 @@ static void popt_common_credentials_callback(poptContext popt_ctx,
 					"callback\n");
 				exit(1);
 			}
+		}
+
+		/*
+		 * If the user specified a password on the command line always
+		 * do a kinit!
+		 */
+		if (password_obtained == CRED_SPECIFIED) {
+			cli_credentials_invalidate_ccache(creds,
+							  CRED_SPECIFIED);
 		}
 
 		return;
@@ -1138,9 +1174,6 @@ static void popt_common_credentials_callback(poptContext popt_ctx,
 		break;
 	}
 	case OPT_USE_KERBEROS_CCACHE: {
-		const char *error_string = NULL;
-		int rc;
-
 		if (arg == NULL) {
 			fprintf(stderr,
 				"Failed to parse --use-krb5-ccache=CCACHE: "
@@ -1148,26 +1181,24 @@ static void popt_common_credentials_callback(poptContext popt_ctx,
 			exit(1);
 		}
 
-		ok = cli_credentials_set_kerberos_state(creds,
-							CRED_USE_KERBEROS_REQUIRED,
-							CRED_SPECIFIED);
-		if (!ok) {
-			fprintf(stderr,
-				"Failed to set Kerberos state to %s!\n", arg);
-			exit(1);
+		/*
+		 * Remember the value and handle it in
+		 * POPT_CALLBACK_REASON_POST.
+		 */
+		if (arg[0] != '\0') {
+			krb5_ccache = strdup(arg);
+			if (krb5_ccache == NULL) {
+				fprintf(stderr, "Failed allocate memory\n");
+				exit(1);
+			}
 		}
 
-		rc = cli_credentials_set_ccache(creds,
-						lp_ctx,
-						arg,
-						CRED_SPECIFIED,
-						&error_string);
-		if (rc != 0) {
+		ok = cli_credentials_set_kerberos_state(
+			creds, CRED_USE_KERBEROS_REQUIRED, CRED_SPECIFIED);
+		if (!ok) {
 			fprintf(stderr,
-				"Error reading krb5 credentials cache: '%s'"
-				" - %s\n",
-				arg,
-				error_string);
+				"Failed to set Kerberos state to %s!\n",
+				arg);
 			exit(1);
 		}
 
