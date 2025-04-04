@@ -74,6 +74,7 @@ struct cli_credentials {
 	DATA_BLOB nt_response;
 	DATA_BLOB nt_session_key;
 
+	const char *ccache_name;
 	struct ccache_container *ccache;
 	struct gssapi_creds_container *client_gss_creds;
 	struct keytab_container *keytab;

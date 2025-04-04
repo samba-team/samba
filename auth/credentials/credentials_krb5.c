@@ -293,6 +293,14 @@ _PUBLIC_ int cli_credentials_set_ccache(struct cli_credentials *cred,
 		return 0;
 	}
 
+	if (name != NULL) {
+		cred->ccache_name = talloc_strdup(cred, name);
+		if (cred->ccache_name == NULL) {
+			(*error_string) = error_message(ENOMEM);
+			return ENOMEM;
+		}
+	}
+
 	ccc = talloc(cred, struct ccache_container);
 	if (!ccc) {
 		(*error_string) = error_message(ENOMEM);
