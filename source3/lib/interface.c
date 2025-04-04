@@ -319,12 +319,10 @@ static void add_interface(const struct iface_struct *ifs)
 		return;
 	}
 
-	iface = SMB_MALLOC_P(struct interface);
+	iface = SMB_CALLOC_ARRAY(struct interface, 1);
 	if (!iface) {
 		return;
 	}
-
-	ZERO_STRUCTPN(iface);
 
 	iface->name = SMB_STRDUP(ifs->name);
 	if (!iface->name) {

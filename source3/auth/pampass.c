@@ -236,14 +236,12 @@ static struct chat_struct *make_pw_chat(const char *p)
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	while (1) {
-		t = SMB_MALLOC_P(struct chat_struct);
+		t = SMB_CALLOC_ARRAY(struct chat_struct, 1);
 		if (!t) {
 			DEBUG(0,("make_pw_chat: malloc failed!\n"));
 			TALLOC_FREE(frame);
 			return NULL;
 		}
-
-		ZERO_STRUCTP(t);
 
 		DLIST_ADD_END(list, t);
 

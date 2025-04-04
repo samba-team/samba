@@ -85,7 +85,7 @@ static DIR *shadow_copy_fdopendir(vfs_handle_struct *handle, files_struct *fsp, 
 		return NULL;
 	}
 
-	dirp = SMB_MALLOC_P(shadow_copy_Dir);
+	dirp = SMB_CALLOC_ARRAY(shadow_copy_Dir, 1);
 	if (!dirp) {
 		DEBUG(0,("shadow_copy_fdopendir: Out of memory\n"));
 		SMB_VFS_NEXT_CLOSEDIR(handle,p);
@@ -93,8 +93,6 @@ static DIR *shadow_copy_fdopendir(vfs_handle_struct *handle, files_struct *fsp, 
 		fsp_set_fd(fsp, -1);
 		return NULL;
 	}
-
-	ZERO_STRUCTP(dirp);
 
 	while (True) {
 		struct dirent *d;

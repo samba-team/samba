@@ -3467,13 +3467,11 @@ static int traverse_fn_get_credlist(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DAT
 
 	if (strncmp((const char *)kbuf.dptr, "CRED/", 5) == 0) {
 
-		cred = SMB_MALLOC_P(struct cred_list);
+		cred = SMB_CALLOC_ARRAY(struct cred_list, 1);
 		if (cred == NULL) {
 			DBG_ERR("traverse_fn_remove_first_creds: failed to malloc new entry for list\n");
 			return -1;
 		}
-
-		ZERO_STRUCTP(cred);
 
 		/* save a copy of the key */
 

@@ -139,13 +139,12 @@ static int readahead_connect(struct vfs_handle_struct *handle,
 	if (ret < 0) {
 		return ret;
 	}
-	rhd = SMB_MALLOC_P(struct readahead_data);
+	rhd = SMB_CALLOC_ARRAY(struct readahead_data, 1);
 	if (!rhd) {
 		SMB_VFS_NEXT_DISCONNECT(handle);
 		DEBUG(0,("readahead_connect: out of memory\n"));
 		return -1;
 	}
-	ZERO_STRUCTP(rhd);
 
 	rhd->didmsg = False;
 	rhd->off_bound = conv_str_size(lp_parm_const_string(SNUM(handle->conn),

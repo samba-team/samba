@@ -1240,11 +1240,10 @@ out:
 {
 	REGF_FILE *rb;
 
-	if ( !(rb = SMB_MALLOC_P(REGF_FILE)) ) {
+	if (!(rb = SMB_CALLOC_ARRAY(REGF_FILE, 1))) {
 		DEBUG(0,("ERROR allocating memory\n"));
 		return NULL;
 	}
-	ZERO_STRUCTP( rb );
 	rb->fd = -1;
 	rb->ignore_checksums = false;
 
