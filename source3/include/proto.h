@@ -651,6 +651,8 @@ struct AvahiPoll *tevent_avahi_poll(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from libsmb/smbsock_connect.c */
 
+struct smb_transports smbsock_transports_from_port(uint16_t port);
+
 struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					const struct sockaddr_storage *addr,
