@@ -339,6 +339,13 @@ conf.CHECK_CODE('''
     headers='krb5.h', lib='krb5', execute=False,
     msg="Checking whether krb5_creds have flags property")
 
+conf.CHECK_CODE(
+    "gss_key_value_set_desc",
+    "HAVE_GSS_KEY_VALUE_SET_DESC",
+    headers="gssapi/gssapi_ext.h",
+    lib="gssapi",
+)
+
 # Check for MIT KDC
 if conf.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
     Logs.info("Looking for MIT KDC")

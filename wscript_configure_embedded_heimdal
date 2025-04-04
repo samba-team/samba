@@ -15,3 +15,4 @@ conf.RECURSE('third_party/heimdal_build')
 conf.define('HAVE_CLIENT_GSS_C_CHANNEL_BOUND_FLAG', 1)
 
 conf.define('HAVE_KRB5_INIT_CREDS_STEP', 1)
+conf.define('HAVE_GSS_KEY_VALUE_SET_DESC', 1)

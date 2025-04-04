@@ -632,6 +632,71 @@ init_sec_context_done:
 		goto done;
 	}
 
+	/*
+	 * In case we have a ccache specified on the command line we probably
+	 * want to use it to store credentials we got it.
+	 */
+#ifdef HAVE_GSS_KEY_VALUE_SET_DESC
+	if (NT_STATUS_IS_OK(status)) {
+		struct cli_credentials *creds = gensec_get_credentials(
+			gensec_security);
+		bool ccache_valid = false;
+		enum credentials_obtained ccache_obtained = CRED_UNINITIALISED;
+
+		ccache_valid = cli_credentials_get_ccache_name_obtained(
+			creds, gse_ctx, NULL, &ccache_obtained);
+		/*
+		 * In case we don't have a valid ccache yet, try to create it if
+		 * one has been specified.
+		 */
+		if (!ccache_valid) {
+			gss_key_value_set_desc store;
+			const char *ccache_name =
+				cli_credentials_get_out_ccache_name(creds);
+
+			if (ccache_name == NULL) {
+				goto done;
+			}
+
+			store.elements = talloc_zero_array(
+				mem_ctx,
+				struct gss_key_value_element_struct,
+				1);
+			if (store.elements == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
+
+			store.count = 1;
+			store.elements[0] =
+				(struct gss_key_value_element_struct){
+					.key = "ccache",
+					.value = ccache_name,
+				};
+
+			/*
+			 * We attempt to store the cred into the ccache. It
+			 * might fail but we don't need to act on it for the
+			 * purpose of the authentication.
+			 */
+			gss_maj = gss_store_cred_into(&gss_min,
+						      gse_ctx->creds,
+						      GSS_C_INITIATE,
+						      GSS_C_NO_OID,
+						      /* overwrite_cred = */ 1,
+						      /* default_cred = */ 1,
+						      &store,
+						      NULL,
+						      NULL);
+			if (gss_maj != 0) {
+				DBG_ERR("Failed to store Kerberos credentials "
+					"into ccache: %s\n",
+					ccache_name);
+			}
+		}
+	}
+#endif /* HAVE_GSS_KEY_VALUE_SET_DESC */
+
 	/* we may be told to return nothing */
 	if (out_data.length) {
 		blob = data_blob_talloc(mem_ctx, out_data.value, out_data.length);
