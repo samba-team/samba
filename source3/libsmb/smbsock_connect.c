@@ -750,7 +750,8 @@ NTSTATUS smbsock_connect_recv(struct tevent_req *req, int *sock,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS smbsock_connect(const struct sockaddr_storage *addr, uint16_t port,
+NTSTATUS smbsock_connect(const struct sockaddr_storage *addr,
+			 const struct smb_transports *transports,
 			 const char *called_name, int called_type,
 			 const char *calling_name, int calling_type,
 			 int *pfd, uint16_t *ret_port, int sec_timeout)
@@ -759,13 +760,12 @@ NTSTATUS smbsock_connect(const struct sockaddr_storage *addr, uint16_t port,
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
-	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = smbsock_connect_send(frame, ev, addr, &ts,
+	req = smbsock_connect_send(frame, ev, addr, transports,
 				   called_name, called_type,
 				   calling_name, calling_type);
 	if (req == NULL) {

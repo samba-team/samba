@@ -665,10 +665,12 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 
 NTSTATUS smbsock_connect_recv(struct tevent_req *req, int *sock,
 			      uint16_t *ret_port);
-NTSTATUS smbsock_connect(const struct sockaddr_storage *addr, uint16_t port,
+NTSTATUS smbsock_connect(const struct sockaddr_storage *addr,
+			 const struct smb_transports *transports,
 			 const char *called_name, int called_type,
 			 const char *calling_name, int calling_type,
-			 int *pfd, uint16_t *ret_port, int sec_timeout);
+			 int *pfd, uint16_t *ret_port, int sec_timeout)
+	NONNULL(1) NONNULL(2) NONNULL(7);
 
 struct tevent_req *smbsock_any_connect_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,

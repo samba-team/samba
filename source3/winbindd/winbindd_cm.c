@@ -1440,6 +1440,9 @@ static bool connect_preferred_dc(TALLOC_CTX *mem_ctx,
 				 int *fd)
 {
 	char *saf_servername = NULL;
+	struct smb_transports ts =
+		smb_transports_parse("client smb transports",
+			lp_client_smb_transports());
 	NTSTATUS status;
 	bool ok;
 
@@ -1507,7 +1510,7 @@ static bool connect_preferred_dc(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	status = smbsock_connect(&domain->dcaddr, 0,
+	status = smbsock_connect(&domain->dcaddr, &ts,
 				 domain->dcname, -1, NULL, -1,
 				 fd, NULL, 10);
 	if (!NT_STATUS_IS_OK(status)) {
