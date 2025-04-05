@@ -656,11 +656,13 @@ struct smb_transports smbsock_transports_from_port(uint16_t port);
 struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					const struct sockaddr_storage *addr,
-					uint16_t port,
+					const struct smb_transports *transports,
 					const char *called_name,
 					int called_type,
 					const char *calling_name,
-					int calling_type);
+					int calling_type)
+	NONNULL(2) NONNULL(3) NONNULL(4);
+
 NTSTATUS smbsock_connect_recv(struct tevent_req *req, int *sock,
 			      uint16_t *ret_port);
 NTSTATUS smbsock_connect(const struct sockaddr_storage *addr, uint16_t port,

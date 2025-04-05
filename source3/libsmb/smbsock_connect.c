@@ -397,7 +397,7 @@ static void smbsock_connect_tcp_connected(struct tevent_req *subreq);
 struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					const struct sockaddr_storage *addr,
-					uint16_t port,
+					const struct smb_transports *transports,
 					const char *called_name,
 					int called_type,
 					const char *calling_name,
@@ -406,7 +406,7 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct smbsock_connect_state *state;
 	uint8_t num_unsupported = 0;
-	struct smb_transports ts;
+	struct smb_transports ts = *transports;
 	uint8_t ti;
 	bool ok;
 
@@ -428,7 +428,6 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 
 	tevent_req_set_cleanup_fn(req, smbsock_connect_cleanup);
 
-	ts = smbsock_transports_from_port(port);
 	SMB_ASSERT(ts.num_transports <= ARRAY_SIZE(state->substates));
 
 	for (ti = 0; ti < ts.num_transports; ti++) {
@@ -760,12 +759,13 @@ NTSTATUS smbsock_connect(const struct sockaddr_storage *addr, uint16_t port,
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = smbsock_connect_send(frame, ev, addr, port,
+	req = smbsock_connect_send(frame, ev, addr, &ts,
 				   called_name, called_type,
 				   calling_name, calling_type);
 	if (req == NULL) {
@@ -793,7 +793,7 @@ struct smbsock_any_connect_state {
 	const char **calling_names;
 	int *calling_types;
 	size_t num_addrs;
-	uint16_t port;
+	struct smb_transports transports;
 
 	struct tevent_req **requests;
 	size_t num_sent;
@@ -835,7 +835,7 @@ struct tevent_req *smbsock_any_connect_send(TALLOC_CTX *mem_ctx,
 	state->called_types = called_types;
 	state->calling_names = calling_names;
 	state->calling_types = calling_types;
-	state->port = port;
+	state->transports = smbsock_transports_from_port(port);
 	state->fd = -1;
 
 	tevent_req_set_cleanup_fn(req, smbsock_any_connect_cleanup);
@@ -924,7 +924,7 @@ static bool smbsock_any_connect_send_next(
 	}
 	subreq = smbsock_connect_send(
 		state->requests, state->ev, &state->addrs[state->num_sent],
-		state->port,
+		&state->transports,
 		(state->called_names != NULL)
 		? state->called_names[state->num_sent] : NULL,
 		(state->called_types != NULL)
