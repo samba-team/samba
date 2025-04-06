@@ -2417,7 +2417,8 @@ static void cli_connect_sock_done(struct tevent_req *subreq);
 static struct tevent_req *cli_connect_sock_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	const char *host, int name_type, const struct sockaddr_storage *pss,
-	const char *myname, uint16_t port)
+	const char *myname,
+	const struct smb_transports *transports)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_connect_sock_state *state;
@@ -2431,7 +2432,7 @@ static struct tevent_req *cli_connect_sock_send(
 	if (req == NULL) {
 		return NULL;
 	}
-	state->transports = smbsock_transports_from_port(port);
+	state->transports = *transports;
 
 	if ((pss == NULL) || is_zero_addr(pss)) {
 
@@ -2518,6 +2519,7 @@ static NTSTATUS cli_connect_sock_recv(struct tevent_req *req,
 
 struct cli_connect_nb_state {
 	const char *desthost;
+	struct smb_transports transports;
 	enum smb_signing_setting signing_state;
 	int flags;
 	struct cli_state *cli;
@@ -2540,6 +2542,7 @@ static struct tevent_req *cli_connect_nb_send(
 	}
 	state->signing_state = signing_state;
 	state->flags = flags;
+	state->transports = smbsock_transports_from_port(port);
 
 	if (host != NULL) {
 		char *p = strchr(host, '#');
@@ -2565,7 +2568,7 @@ static struct tevent_req *cli_connect_nb_send(
 	}
 
 	subreq = cli_connect_sock_send(state, ev, host, name_type, dest_ss,
-				       myname, port);
+				       myname, &state->transports);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
