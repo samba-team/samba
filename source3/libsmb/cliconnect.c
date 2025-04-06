@@ -2530,7 +2530,8 @@ static void cli_connect_nb_done(struct tevent_req *subreq);
 static struct tevent_req *cli_connect_nb_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	const char *host, const struct sockaddr_storage *dest_ss,
-	uint16_t port, int name_type, const char *myname,
+	const struct smb_transports *transports,
+	int name_type, const char *myname,
 	enum smb_signing_setting signing_state, int flags)
 {
 	struct tevent_req *req, *subreq;
@@ -2542,7 +2543,7 @@ static struct tevent_req *cli_connect_nb_send(
 	}
 	state->signing_state = signing_state;
 	state->flags = flags;
-	state->transports = smbsock_transports_from_port(port);
+	state->transports = *transports;
 
 	if (host != NULL) {
 		char *p = strchr(host, '#');
@@ -2629,12 +2630,13 @@ NTSTATUS cli_connect_nb(TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	ev = samba_tevent_context_init(mem_ctx);
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = cli_connect_nb_send(ev, ev, host, dest_ss, port, name_type,
+	req = cli_connect_nb_send(ev, ev, host, dest_ss, &ts, name_type,
 				  myname, signing_state, flags);
 	if (req == NULL) {
 		goto fail;
@@ -2653,6 +2655,7 @@ fail:
 
 struct cli_start_connection_state {
 	struct tevent_context *ev;
+	struct smb_transports transports;
 	struct cli_state *cli;
 	int min_protocol;
 	int max_protocol;
@@ -2686,6 +2689,7 @@ static struct tevent_req *cli_start_connection_send(
 		return NULL;
 	}
 	state->ev = ev;
+	state->transports = smbsock_transports_from_port(port);
 
 	if (flags & CLI_FULL_CONNECTION_IPC) {
 		state->min_protocol = lp_client_ipc_min_protocol();
@@ -2749,7 +2753,8 @@ static struct tevent_req *cli_start_connection_send(
 		}
 	}
 
-	subreq = cli_connect_nb_send(state, ev, dest_host, dest_ss, port,
+	subreq = cli_connect_nb_send(state, ev, dest_host, dest_ss,
+				     &state->transports,
 				     0x20, my_name, signing_state, flags);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
