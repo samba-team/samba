@@ -2835,20 +2835,20 @@ NTSTATUS cli_start_connection(TALLOC_CTX *mem_ctx,
 			      struct cli_state **output_cli,
 			      const char *my_name,
 			      const char *dest_host,
-			      const struct sockaddr_storage *dest_ss, int port,
+			      const struct sockaddr_storage *dest_ss,
+			      const struct smb_transports *transports,
 			      enum smb_signing_setting signing_state, int flags)
 {
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
-	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	ev = samba_tevent_context_init(mem_ctx);
 	if (ev == NULL) {
 		goto fail;
 	}
 	req = cli_start_connection_send(ev, ev, my_name, dest_host, dest_ss,
-					&ts, signing_state, flags, NULL);
+					transports, signing_state, flags, NULL);
 	if (req == NULL) {
 		goto fail;
 	}

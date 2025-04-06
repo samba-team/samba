@@ -10666,6 +10666,9 @@ static bool run_chain2(int dummy)
 	bool done = false;
 	NTSTATUS status;
 	int flags = CLI_FULL_CONNECTION_FORCE_SMB1;
+	struct smb_transports ts =
+		smb_transports_parse("client smb transports",
+				     lp_client_smb_transports());
 
 	printf("starting chain2 test\n");
 	status = cli_start_connection(talloc_tos(),
@@ -10673,7 +10676,7 @@ static bool run_chain2(int dummy)
 				      lp_netbios_name(),
 				      host,
 				      NULL,
-				      port_to_use,
+				      &ts,
 				      SMB_SIGNING_DEFAULT,
 				      flags);
 	if (!NT_STATUS_IS_OK(status)) {

@@ -96,8 +96,10 @@ NTSTATUS cli_start_connection(TALLOC_CTX *mem_ctx,
 			      struct cli_state **output_cli,
 			      const char *my_name,
 			      const char *dest_host,
-			      const struct sockaddr_storage *dest_ss, int port,
-			      enum smb_signing_setting signing_state, int flags);
+			      const struct sockaddr_storage *dest_ss,
+			      const struct smb_transports *transports,
+			      enum smb_signing_setting signing_state, int flags)
+	NONNULL(2) NONNULL(6);
 NTSTATUS cli_smb1_setup_encryption(struct cli_state *cli,
 				   struct cli_credentials *creds);
 

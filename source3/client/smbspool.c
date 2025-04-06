@@ -542,6 +542,7 @@ smb_complete_connection(struct cli_state **output_cli,
 	struct cli_state *cli;	/* New connection */
 	NTSTATUS        nt_status;
 	struct cli_credentials *creds = NULL;
+	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	/* Start the SMB connection */
 	nt_status = cli_start_connection(talloc_tos(),
@@ -549,7 +550,7 @@ smb_complete_connection(struct cli_state **output_cli,
 					 myname,
 					 server,
 					 NULL,
-					 port,
+					 &ts,
 					 SMB_SIGNING_DEFAULT,
 					 0);
 	if (!NT_STATUS_IS_OK(nt_status)) {
