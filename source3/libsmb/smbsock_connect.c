@@ -818,7 +818,8 @@ struct tevent_req *smbsock_any_connect_send(TALLOC_CTX *mem_ctx,
 					    int *called_types,
 					    const char **calling_names,
 					    int *calling_types,
-					    size_t num_addrs, uint16_t port)
+					    size_t num_addrs,
+					    const struct smb_transports *transports)
 {
 	struct tevent_req *req, *subreq;
 	struct smbsock_any_connect_state *state;
@@ -835,7 +836,7 @@ struct tevent_req *smbsock_any_connect_send(TALLOC_CTX *mem_ctx,
 	state->called_types = called_types;
 	state->calling_names = calling_names;
 	state->calling_types = calling_types;
-	state->transports = smbsock_transports_from_port(port);
+	state->transports = *transports;
 	state->fd = -1;
 
 	tevent_req_set_cleanup_fn(req, smbsock_any_connect_cleanup);
@@ -1037,6 +1038,7 @@ NTSTATUS smbsock_any_connect(const struct sockaddr_storage *addrs,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
 	struct tevent_req *req;
+	struct smb_transports ts = smbsock_transports_from_port(port);
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	ev = samba_tevent_context_init(frame);
@@ -1046,7 +1048,7 @@ NTSTATUS smbsock_any_connect(const struct sockaddr_storage *addrs,
 	req = smbsock_any_connect_send(frame, ev, addrs,
 				       called_names, called_types,
 				       calling_names, calling_types,
-				       num_addrs, port);
+				       num_addrs, &ts);
 	if (req == NULL) {
 		goto fail;
 	}

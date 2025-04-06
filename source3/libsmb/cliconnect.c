@@ -2399,6 +2399,7 @@ fail:
 }
 
 struct cli_connect_sock_state {
+	struct smb_transports transports;
 	const char **called_names;
 	const char **calling_names;
 	int *called_types;
@@ -2430,6 +2431,7 @@ static struct tevent_req *cli_connect_sock_send(
 	if (req == NULL) {
 		return NULL;
 	}
+	state->transports = smbsock_transports_from_port(port);
 
 	if ((pss == NULL) || is_zero_addr(pss)) {
 
@@ -2473,7 +2475,7 @@ static struct tevent_req *cli_connect_sock_send(
 
 	subreq = smbsock_any_connect_send(
 		state, ev, addrs, state->called_names, state->called_types,
-		state->calling_names, NULL, num_addrs, port);
+		state->calling_names, NULL, num_addrs, &state->transports);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
