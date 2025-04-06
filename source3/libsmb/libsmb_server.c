@@ -348,7 +348,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
             SMBCCTX *context,
             bool connect_if_not_found,
             const char *server,
-            uint16_t port,
+            const struct smb_transports *transports,
             const char *share,
             char **pp_workgroup,
             char **pp_username,
@@ -369,7 +369,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 	struct smbXcli_tcon *tcon = NULL;
 	int signing_state = SMB_SIGNING_DEFAULT;
 	struct cli_credentials *creds = NULL;
-	struct smb_transports ats = smbsock_transports_from_port(port);
+	struct smb_transports ats = *transports;
 	uint8_t ati;
 	const struct smb_transports *ts = &ats;
 	struct smb_transports ots = { .num_transports = 0, };
@@ -652,7 +652,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 				creds)) {
 		cli_shutdown(c);
 		srv = SMBC_server_internal(ctx, context, connect_if_not_found,
-				newserver, port, newshare, pp_workgroup,
+				newserver, &ats, newshare, pp_workgroup,
 				pp_username, pp_password, in_cache);
 		TALLOC_FREE(newserver);
 		TALLOC_FREE(newshare);
@@ -762,9 +762,10 @@ SMBC_server(TALLOC_CTX *ctx,
 {
 	SMBCSRV *srv=NULL;
 	bool in_cache = false;
+	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	srv = SMBC_server_internal(ctx, context, connect_if_not_found,
-			server, port, share, pp_workgroup,
+			server, &ts, share, pp_workgroup,
 			pp_username, pp_password, &in_cache);
 
 	if (!srv) {
