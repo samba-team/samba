@@ -73,6 +73,9 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	const char *password = NULL;
 	NET_API_STATUS rc;
 	enum credentials_use_kerberos krb5_state;
+	struct smb_transports ts =
+		smb_transports_parse("client smb transports",
+				     lp_client_smb_transports());
 
 	if (!ctx || !pp || !server_name) {
 		return WERR_INVALID_PARAMETER;
@@ -113,7 +116,7 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	status = cli_cm_open(ctx, NULL,
 			     server_name, "IPC$",
 			     ctx->creds,
-			     NULL, 0, 0x20, &cli_ipc);
+			     NULL, &ts, 0x20, &cli_ipc);
 	if (!NT_STATUS_IS_OK(status)) {
 		cli_ipc = NULL;
 	}

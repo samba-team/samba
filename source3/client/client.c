@@ -5783,6 +5783,7 @@ static int process_command_string(const char *cmd_in)
 	char *cmd = talloc_strdup(ctx, cmd_in);
 	int rc = 0;
 	struct cli_credentials *creds = samba_cmdline_get_creds();
+	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	if (!cmd) {
 		return 1;
@@ -5796,7 +5797,8 @@ static int process_command_string(const char *cmd_in)
 				     desthost,
 				     service,
 				     creds,
-				     have_ip ? &dest_ss : NULL, port,
+				     have_ip ? &dest_ss : NULL,
+				     &ts,
 				     name_type,
 				     &cli);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -6208,12 +6210,14 @@ static int process(const char *base_directory)
 	int rc = 0;
 	NTSTATUS status;
 	struct cli_credentials *creds = samba_cmdline_get_creds();
+	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	status = cli_cm_open(talloc_tos(), NULL,
 			     desthost,
 			     service,
 			     creds,
-			     have_ip ? &dest_ss : NULL, port,
+			     have_ip ? &dest_ss : NULL,
+			     &ts,
 			     name_type, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		return 1;
@@ -6248,12 +6252,14 @@ static int do_host_query(struct loadparm_context *lp_ctx,
 {
 	NTSTATUS status;
 	struct cli_credentials *creds = samba_cmdline_get_creds();
+	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	status = cli_cm_open(talloc_tos(), NULL,
 			     query_host,
 			     "IPC$",
 			     creds,
-			     have_ip ? &dest_ss : NULL, port,
+			     have_ip ? &dest_ss : NULL,
+			     &ts,
 			     name_type, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		return 1;
@@ -6287,6 +6293,9 @@ static int do_host_query(struct loadparm_context *lp_ctx,
 	if (port != NBT_SMB_PORT ||
 	    smbXcli_conn_protocol(cli->conn) > PROTOCOL_NT1)
 	{
+		const char *nbt[] = { "nbt", NULL, };
+		struct smb_transports nbt_ts = smb_transports_parse("forced-nbt",
+								    nbt);
 		/*
 		 * Workgroups simply don't make sense over anything
 		 * else but port 139 and SMB1.
@@ -6299,7 +6308,8 @@ static int do_host_query(struct loadparm_context *lp_ctx,
 				     query_host,
 				     "IPC$",
 				     creds,
-				     have_ip ? &dest_ss : NULL, NBT_SMB_PORT,
+				     have_ip ? &dest_ss : NULL,
+				     &nbt_ts,
 				     name_type, &cli);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("Unable to connect with SMB1 "
@@ -6325,6 +6335,7 @@ static int do_tar_op(const char *base_directory)
 	struct tar *tar_ctx = tar_get_ctx();
 	int ret = 0;
 	struct cli_credentials *creds = samba_cmdline_get_creds();
+	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	/* do we already have a connection? */
 	if (!cli) {
@@ -6334,7 +6345,8 @@ static int do_tar_op(const char *base_directory)
 				     desthost,
 				     service,
 				     creds,
-				     have_ip ? &dest_ss : NULL, port,
+				     have_ip ? &dest_ss : NULL,
+				     &ts,
 				     name_type, &cli);
 		if (!NT_STATUS_IS_OK(status)) {
             ret = 1;

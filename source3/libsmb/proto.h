@@ -139,9 +139,10 @@ NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 		     const char *share,
 		     struct cli_credentials *creds,
 		     const struct sockaddr_storage *dest_ss,
-		     int port,
+		     const struct smb_transports *transports,
 		     int name_type,
-		     struct cli_state **pcli);
+		     struct cli_state **pcli)
+	NONNULL(7) NONNULL(9);
 void cli_cm_display(struct cli_state *c);
 struct client_dfs_referral;
 bool cli_dfs_is_already_full_path(struct cli_state *cli, const char *path);

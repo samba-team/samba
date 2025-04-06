@@ -340,17 +340,16 @@ static NTSTATUS cli_cm_connect(TALLOC_CTX *ctx,
 			       const char *share,
 			       struct cli_credentials *creds,
 			       const struct sockaddr_storage *dest_ss,
-			       int port,
+			       const struct smb_transports *transports,
 			       int name_type,
 			       struct cli_state **pcli)
 {
 	struct cli_state *cli = NULL;
 	NTSTATUS status;
-	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	status = do_connect(ctx, server, share,
 				creds,
-				dest_ss, &ts, name_type, &cli);
+				dest_ss, transports, name_type, &cli);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -434,7 +433,7 @@ NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 		     const char *share,
 		     struct cli_credentials *creds,
 		     const struct sockaddr_storage *dest_ss,
-		     int port,
+		     const struct smb_transports *transports,
 		     int name_type,
 		     struct cli_state **pcli)
 {
@@ -462,7 +461,7 @@ NTSTATUS cli_cm_open(TALLOC_CTX *ctx,
 				share,
 				creds,
 				dest_ss,
-				port,
+				transports,
 				name_type,
 				&c);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -950,6 +949,9 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 	struct cli_dfs_path_split *dfs_refs = NULL;
 	bool ok;
 	bool is_already_dfs = false;
+	struct smb_transports ts =
+		smb_transports_parse("client smb transports",
+				     lp_client_smb_transports());
 
 	if ( !rootcli || !path || !targetcli ) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -1040,7 +1042,7 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 			     "IPC$",
 			     creds,
 			     NULL, /* dest_ss not needed, we reuse the transport */
-			     0,
+			     &ts,
 			     0x20,
 			     &cli_ipc);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1096,7 +1098,7 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 				dfs_refs[count].share,
 				creds,
 				NULL, /* dest_ss */
-				0, /* port */
+				&ts,
 				0x20,
 				targetcli);
 		if (!NT_STATUS_IS_OK(status)) {
