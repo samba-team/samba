@@ -1070,13 +1070,17 @@ static NTSTATUS libnet_join_connect_dc_ipc(TALLOC_CTX *mem_ctx,
 					   struct cli_state **cli)
 {
 	int flags = CLI_FULL_CONNECTION_IPC;
+	struct smb_transports ts =
+		smb_transports_parse("client smb transports",
+				     lp_client_smb_transports());
 	NTSTATUS status;
 
 	status = cli_full_connection_creds(mem_ctx,
 					   cli,
 					   NULL,
 					   dc,
-					   NULL, 0,
+					   NULL,
+					   &ts,
 					   "IPC$", "IPC",
 					   creds,
 					   flags);
@@ -1647,6 +1651,9 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 	NTSTATUS status;
 	int flags = CLI_FULL_CONNECTION_IPC;
 	const struct sockaddr_storage *remote_sockaddr = NULL;
+	struct smb_transports ts =
+		smb_transports_parse("client smb transports",
+				     lp_client_smb_transports());
 
 	if (!dc_name) {
 		TALLOC_FREE(frame);
@@ -1680,7 +1687,8 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 					   &cli,
 					   NULL,
 					   dc_name,
-					   NULL, 0,
+					   NULL,
+					   &ts,
 					   "IPC$", "IPC",
 					   cli_creds,
 					   flags);
@@ -1698,7 +1706,8 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 						   &cli,
 						   NULL,
 						   dc_name,
-						   NULL, 0,
+						   NULL,
+						   &ts,
 						   "IPC$", "IPC",
 						   anon_creds,
 						   flags);

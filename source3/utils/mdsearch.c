@@ -78,6 +78,7 @@ int main(int argc, char **argv)
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
+	struct smb_transports ts = { .num_transports = 0, };
 
 	smb_init_locale();
 
@@ -135,12 +136,15 @@ int main(int argc, char **argv)
 
 	creds = samba_cmdline_get_creds();
 
+	ts = smb_transports_parse("client smb transports",
+				  lp_client_smb_transports());
+
 	status = cli_full_connection_creds(frame,
 					   &cli,
 					   lp_netbios_name(),
 					   server,
 					   NULL,
-					   0,
+					   &ts,
 					   "IPC$",
 					   "IPC",
 					   creds,

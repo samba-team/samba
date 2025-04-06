@@ -121,10 +121,12 @@ NTSTATUS cli_full_connection_creds(TALLOC_CTX *mem_ctx,
 				   struct cli_state **output_cli,
 				   const char *my_name,
 				   const char *dest_host,
-				   const struct sockaddr_storage *dest_ss, int port,
+				   const struct sockaddr_storage *dest_ss,
+				   const struct smb_transports *transports,
 				   const char *service, const char *service_type,
 				   struct cli_credentials *creds,
-				   int flags);
+				   int flags)
+	NONNULL(2) NONNULL(6);
 NTSTATUS cli_raw_tcon(struct cli_state *cli,
 		      const char *service, const char *pass, const char *dev,
 		      uint16_t *max_xmit, uint16_t *tid);

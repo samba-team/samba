@@ -845,13 +845,16 @@ static struct cli_state *connect_one(struct cli_credentials *creds,
 	struct cli_state *c = NULL;
 	NTSTATUS nt_status;
 	uint32_t flags = 0;
+	struct smb_transports ts =
+		smb_transports_parse("client smb transports",
+				     lp_client_smb_transports());
 
 	nt_status = cli_full_connection_creds(talloc_tos(),
 					      &c,
 					      lp_netbios_name(),
 					      server,
 					      NULL,
-					      0,
+					      &ts,
 					      share,
 					      "?????",
 					      creds,

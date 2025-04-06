@@ -3506,6 +3506,9 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 	NTSTATUS nt_status;
 	WERROR werror;
 	struct cli_credentials *creds = samba_cmdline_get_creds();
+	struct smb_transports ts =
+		smb_transports_parse("client smb transports",
+				     lp_client_smb_transports());
 
 	if ( argc != 3 )  {
 		printf("Usage: %s <printer> <server>\n", argv[0]);
@@ -3521,7 +3524,7 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 					      lp_netbios_name(),
 					      argv[2],
 					      NULL,
-					      0,
+					      &ts,
 					      "IPC$",
 					      "IPC",
 					      creds,

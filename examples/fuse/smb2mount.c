@@ -33,13 +33,14 @@ static struct cli_state *connect_one(struct cli_credentials *creds,
 	struct cli_state *c = NULL;
 	NTSTATUS nt_status;
 	uint32_t flags = 0;
+	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	nt_status = cli_full_connection_creds(talloc_tos(),
 					      &c,
 					      lp_netbios_name(),
 					      server,
 					      NULL,
-					      port,
+					      &ts,
 					      share,
 					      "?????",
 					      creds,

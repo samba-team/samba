@@ -3680,7 +3680,8 @@ NTSTATUS cli_full_connection_creds(TALLOC_CTX *mem_ctx,
 				   struct cli_state **output_cli,
 				   const char *my_name,
 				   const char *dest_host,
-				   const struct sockaddr_storage *dest_ss, int port,
+				   const struct sockaddr_storage *dest_ss,
+				   const struct smb_transports *transports,
 				   const char *service, const char *service_type,
 				   struct cli_credentials *creds,
 				   int flags)
@@ -3688,14 +3689,13 @@ NTSTATUS cli_full_connection_creds(TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
-	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	ev = samba_tevent_context_init(mem_ctx);
 	if (ev == NULL) {
 		goto fail;
 	}
 	req = cli_full_connection_creds_send(
-		ev, ev, my_name, dest_host, dest_ss, &ts, service,
+		ev, ev, my_name, dest_host, dest_ss, transports, service,
 		service_type, creds, flags,
 		NULL);
 	if (req == NULL) {
@@ -3837,6 +3837,9 @@ static struct cli_state *get_ipc_connect(TALLOC_CTX *mem_ctx,
         struct cli_state *cli;
 	NTSTATUS nt_status;
 	uint32_t flags = CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK;
+	struct smb_transports ts =
+		smb_transports_parse("client smb transports",
+				     lp_client_smb_transports());
 
 	flags |= CLI_FULL_CONNECTION_FORCE_SMB1;
 	flags |= CLI_FULL_CONNECTION_IPC;
@@ -3846,7 +3849,7 @@ static struct cli_state *get_ipc_connect(TALLOC_CTX *mem_ctx,
 					      NULL,
 					      server,
 					      server_ss,
-					      0,
+					      &ts,
 					      "IPC$",
 					      "IPC",
 					      creds,

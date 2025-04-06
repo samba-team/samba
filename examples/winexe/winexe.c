@@ -293,6 +293,7 @@ static NTSTATUS winexe_svc_upload(
 	uint16_t fnum = 0xffff;
 	NTSTATUS status;
 	const DATA_BLOB *binary = NULL;
+	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	status = cli_full_connection_creds(
 		talloc_tos(),
@@ -300,7 +301,7 @@ static NTSTATUS winexe_svc_upload(
 		NULL,
 		hostname,
 		NULL,
-		port,
+		&ts,
 		"ADMIN$",
 		"?????",
 		credentials,
@@ -1836,6 +1837,7 @@ int main(int argc, char *argv[])
 #else
 	const DATA_BLOB *winexesvc64_exe = NULL;
 #endif
+	struct smb_transports ts;
 	NTSTATUS status;
 	int ret = 1;
 	int return_code = 0;
@@ -1857,13 +1859,14 @@ int main(int argc, char *argv[])
 		goto done;
 	}
 
+	ts = smbsock_transports_from_port(options.port);
 	status = cli_full_connection_creds(
 		talloc_tos(),
 		&cli,
 		lp_netbios_name(),
 		options.hostname,
 		NULL,
-		options.port,
+		&ts,
 		"IPC$",
 		"IPC",
 		options.credentials,

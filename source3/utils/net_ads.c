@@ -2291,6 +2291,9 @@ static int net_ads_printer_publish(struct net_context *c,
 	LDAPMessage *res = NULL;
 	bool ok;
 	int ret = -1;
+	struct smb_transports ts =
+		smb_transports_parse("client smb transports",
+				     lp_client_smb_transports());
 
 	if (argc < 1 || c->display_usage) {
 		d_printf("%s\n%s",
@@ -2340,7 +2343,7 @@ static int net_ads_printer_publish(struct net_context *c,
 					      lp_netbios_name(),
 					      servername,
 					      &server_ss,
-					      0,
+					      &ts,
 					      "IPC$",
 					      "IPC",
 					      c->creds,

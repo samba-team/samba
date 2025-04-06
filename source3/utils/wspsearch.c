@@ -610,6 +610,7 @@ int main(int argc, char **argv)
 	struct cli_state *c = NULL;
 	uint32_t flags = CLI_FULL_CONNECTION_IPC;
 	bool ok;
+	struct smb_transports ts = { .num_transports = 0, };
 
 	ok = samba_cmdline_init(frame,
 				SAMBA_CMDLINE_CONFIG_CLIENT,
@@ -720,12 +721,15 @@ int main(int argc, char **argv)
 			talloc_strdup(select_stmt->cols, default_column);
 	}
 
+	ts = smb_transports_parse("client smb transports",
+				  lp_client_smb_transports());
+
 	status = cli_full_connection_creds(talloc_tos(),
 					   &c,
 					   lp_netbios_name(),
 					   server,
 					   NULL,
-					   0,
+					   &ts,
 					   "IPC$",
 					   "IPC",
 					   samba_cmdline_get_creds(),

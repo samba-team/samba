@@ -63,6 +63,9 @@ static struct con_struct *create_cs(struct net_context *c,
 	NTSTATUS nt_status;
 	struct sockaddr_storage loopback_ss;
 	struct cli_credentials *anon_creds = NULL;
+	struct smb_transports ts =
+		smb_transports_parse("client smb transports",
+				     lp_client_smb_transports());
 
 	*perr = NT_STATUS_OK;
 
@@ -100,7 +103,7 @@ static struct con_struct *create_cs(struct net_context *c,
 					      lp_netbios_name(),
 					      lp_netbios_name(),
 					      &loopback_ss,
-					      0,
+					      &ts,
 					      "IPC$",
 					      "IPC",
 					      anon_creds,

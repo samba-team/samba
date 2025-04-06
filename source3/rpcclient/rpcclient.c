@@ -1324,13 +1324,15 @@ out_free:
 	}
 
 	if (transport == NCACN_NP) {
+		struct smb_transports ts = smbsock_transports_from_port(opt_port);
+
 		nt_status = cli_full_connection_creds(frame,
 						      &cli,
 						      lp_netbios_name(),
 						      host,
 						      opt_ipaddr ? &server_ss
 								 : NULL,
-						      opt_port,
+						      &ts,
 						      "IPC$",
 						      "IPC",
 						      creds,

@@ -819,6 +819,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
         NTSTATUS nt_status;
 	SMBCSRV *srv=NULL;
 	SMBCSRV *ipc_srv=NULL;
+	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	/*
 	 * Use srv->cli->desthost and srv->cli->share instead of
@@ -874,7 +875,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
 						      lp_netbios_name(),
 						      server,
 						      NULL,
-						      0,
+						      &ts,
 						      "IPC$",
 						      "?????",
 						      creds,

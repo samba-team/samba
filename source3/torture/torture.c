@@ -68,7 +68,6 @@ fstring host, workgroup, share, password, username, myname;
 struct cli_credentials *torture_creds;
 static const char *sockops="TCP_NODELAY";
 int torture_nprocs=1;
-static int port_to_use=0;
 int torture_numops=100;
 int torture_blocksize=1024*1024;
 static int procnum; /* records process count number when forking */
@@ -352,6 +351,9 @@ static bool torture_open_connection_share(struct cli_state **c,
 				   const char *sharename,
 				   int flags)
 {
+	struct smb_transports ts =
+		smb_transports_parse("client smb transports",
+				     lp_client_smb_transports());
 	NTSTATUS status;
 
 	status = cli_full_connection_creds(NULL,
@@ -359,14 +361,14 @@ static bool torture_open_connection_share(struct cli_state **c,
 					   myname,
 					   hostname,
 					   NULL, /* dest_ss */
-					   port_to_use,
+					   &ts,
 					   sharename,
 					   "?????",
 					   torture_creds,
 					   flags);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("failed to open share connection: //%s/%s port:%d - %s\n",
-			hostname, sharename, port_to_use, nt_errstr(status));
+		printf("failed to open share connection: //%s/%s - %s\n",
+			hostname, sharename, nt_errstr(status));
 		return False;
 	}
 
@@ -1711,6 +1713,9 @@ static bool run_tcon_devtype_test(int dummy)
 {
 	static struct cli_state *cli1 = NULL;
 	int flags = CLI_FULL_CONNECTION_FORCE_SMB1;
+	struct smb_transports ts =
+		smb_transports_parse("client smb transports",
+				     lp_client_smb_transports());
 	NTSTATUS status;
 	bool ret = True;
 
@@ -1719,7 +1724,7 @@ static bool run_tcon_devtype_test(int dummy)
 					   myname,
 					   host,
 					   NULL, /* dest_ss */
-					   port_to_use,
+					   &ts,
 					   NULL, /* service */
 					   NULL, /* service_type */
 					   torture_creds,
@@ -16492,7 +16497,6 @@ static void usage(void)
 	       != EOF) {
 		switch (opt) {
 		case 'p':
-			port_to_use = atoi(optarg);
 			lpcfg_set_cmdline(lp_ctx, "client smb transports", optarg);
 			break;
 		case 's':
