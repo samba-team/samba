@@ -543,6 +543,7 @@ static void py_cli_got_oplock_break(struct tevent_req *req);
 static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 			     PyObject *kwds)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 	char *host, *share;
 	PyObject *creds = NULL;
@@ -574,6 +575,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	PyTypeObject *py_type_Credentials = get_pytype(
 		"samba.credentials", "Credentials");
 	if (py_type_Credentials == NULL) {
+		TALLOC_FREE(frame);
 		return -1;
 	}
 
@@ -590,6 +592,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	Py_DECREF(py_type_Credentials);
 
 	if (!ret) {
+		TALLOC_FREE(frame);
 		return -1;
 	}
 
@@ -620,6 +623,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 		negotiate_contexts = py_cli_get_negotiate_contexts(
 			talloc_tos(), py_negotiate_contexts);
 		if (negotiate_contexts == NULL) {
+			TALLOC_FREE(frame);
 			return -1;
 		}
 	}
@@ -628,31 +632,35 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 #ifdef HAVE_PTHREAD
 		ret = py_cli_state_setup_mt_ev(self);
 		if (!ret) {
+			TALLOC_FREE(frame);
 			return -1;
 		}
 #else
 		PyErr_SetString(PyExc_RuntimeError,
 				"No PTHREAD support available");
+		TALLOC_FREE(frame);
 		return -1;
 #endif
 	} else {
 		ret = py_cli_state_setup_ev(self);
 		if (!ret) {
+			TALLOC_FREE(frame);
 			return -1;
 		}
 	}
 
 	if (creds == NULL) {
-		cli_creds = cli_credentials_init_anon(NULL);
+		cli_creds = cli_credentials_init_anon(frame);
 	} else {
 		cli_creds = PyCredentials_AsCliCredentials(creds);
 	}
 
 	req = cli_full_connection_creds_send(
-		NULL, self->ev, "myname", host, NULL, 0, share, "?????",
+		frame, self->ev, "myname", host, NULL, 0, share, "?????",
 		cli_creds, flags,
 		negotiate_contexts);
 	if (!py_tevent_req_wait_exc(self, req)) {
+		TALLOC_FREE(frame);
 		return -1;
 	}
 	status = cli_full_connection_creds_recv(req, NULL, &self->cli);
@@ -660,6 +668,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
+		TALLOC_FREE(frame);
 		return -1;
 	}
 
@@ -667,6 +676,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	 * Oplocks require a multi threaded connection
 	 */
 	if (self->thread_state == NULL) {
+		TALLOC_FREE(frame);
 		return 0;
 	}
 
@@ -674,10 +684,12 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 		self->ev, self->ev, self->cli);
 	if (self->oplock_waiter == NULL) {
 		PyErr_NoMemory();
+		TALLOC_FREE(frame);
 		return -1;
 	}
 	tevent_req_set_callback(self->oplock_waiter, py_cli_got_oplock_break,
 				self);
+	TALLOC_FREE(frame);
 	return 0;
 }
 
