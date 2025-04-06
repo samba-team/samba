@@ -690,10 +690,11 @@ NTSTATUS smbsock_any_connect(const struct sockaddr_storage *addrs,
 			     const char **calling_names,
 			     int *calling_types,
 			     size_t num_addrs,
-			     uint16_t port,
+			     const struct smb_transports *transports,
 			     int sec_timeout,
 			     int *pfd, size_t *chosen_index,
-			     uint16_t *chosen_port);
+			     uint16_t *chosen_port)
+	NONNULL(1) NONNULL(7) NONNULL(9);
 
 /* The following definitions come from lib/util_wellknown.c  */
 

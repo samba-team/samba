@@ -1030,7 +1030,7 @@ NTSTATUS smbsock_any_connect(const struct sockaddr_storage *addrs,
 			     const char **calling_names,
 			     int *calling_types,
 			     size_t num_addrs,
-			     uint16_t port,
+			     const struct smb_transports *transports,
 			     int sec_timeout,
 			     int *pfd, size_t *chosen_index,
 			     uint16_t *chosen_port)
@@ -1038,7 +1038,6 @@ NTSTATUS smbsock_any_connect(const struct sockaddr_storage *addrs,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
 	struct tevent_req *req;
-	struct smb_transports ts = smbsock_transports_from_port(port);
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	ev = samba_tevent_context_init(frame);
@@ -1048,7 +1047,7 @@ NTSTATUS smbsock_any_connect(const struct sockaddr_storage *addrs,
 	req = smbsock_any_connect_send(frame, ev, addrs,
 				       called_names, called_types,
 				       calling_names, calling_types,
-				       num_addrs, &ts);
+				       num_addrs, transports);
 	if (req == NULL) {
 		goto fail;
 	}

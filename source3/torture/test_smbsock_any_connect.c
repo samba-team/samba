@@ -25,6 +25,9 @@ bool run_smb_any_connect(int dummy)
 	int fd;
 	NTSTATUS status;
 	struct sockaddr_storage addrs[5];
+	struct smb_transports ts =
+		smb_transports_parse("client smb transports",
+			lp_client_smb_transports());
 	size_t chosen_index;
 	uint16_t port;
 
@@ -35,7 +38,7 @@ bool run_smb_any_connect(int dummy)
 	interpret_string_addr(&addrs[4], "192.168.99.9", 0);
 
 	status = smbsock_any_connect(addrs, NULL, NULL, NULL, NULL,
-				     ARRAY_SIZE(addrs), 0, 0,
+				     ARRAY_SIZE(addrs), &ts, 0,
 				     &fd, &chosen_index, &port);
 
 	d_printf("smbsock_any_connect returned %s (fd %d)\n",

@@ -1551,7 +1551,9 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 
 	struct sockaddr_storage *addrs = NULL;
 	int num_addrs = 0;
-
+	struct smb_transports ts =
+		smb_transports_parse("client smb transports",
+			lp_client_smb_transports());
 	int i;
 	size_t fd_index;
 
@@ -1600,7 +1602,7 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 		"(timeout of 10 sec for each DC).\n",
 		num_dcs);
 	status = smbsock_any_connect(addrs, dcnames, NULL, NULL, NULL,
-				     num_addrs, 0, 10, fd, &fd_index, NULL);
+				     num_addrs, &ts, 10, fd, &fd_index, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		for (i=0; i<num_dcs; i++) {
 			char ab[INET6_ADDRSTRLEN];
