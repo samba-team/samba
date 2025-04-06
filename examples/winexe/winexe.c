@@ -282,7 +282,7 @@ static void parse_args(int argc, const char *argv[],
 
 static NTSTATUS winexe_svc_upload(
 	const char *hostname,
-	int port,
+	const struct smb_transports *transports,
 	const char *service_filename,
 	const DATA_BLOB *svc32_exe,
 	const DATA_BLOB *svc64_exe,
@@ -293,7 +293,6 @@ static NTSTATUS winexe_svc_upload(
 	uint16_t fnum = 0xffff;
 	NTSTATUS status;
 	const DATA_BLOB *binary = NULL;
-	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	status = cli_full_connection_creds(
 		talloc_tos(),
@@ -301,7 +300,7 @@ static NTSTATUS winexe_svc_upload(
 		NULL,
 		hostname,
 		NULL,
-		&ts,
+		transports,
 		"ADMIN$",
 		"?????",
 		credentials,
@@ -386,7 +385,7 @@ done:
 static NTSTATUS winexe_svc_install(
 	struct cli_state *cli,
 	const char *hostname,
-	int port,
+	const struct smb_transports *transports,
 	const char *service_name,
 	const char *service_filename,
 	const DATA_BLOB *svc32_exe,
@@ -601,7 +600,7 @@ static NTSTATUS winexe_svc_install(
 	if (need_start) {
 		status = winexe_svc_upload(
 			hostname,
-			port,
+			transports,
 			service_filename,
 			svc32_exe,
 			svc64_exe,
@@ -1881,7 +1880,7 @@ int main(int argc, char *argv[])
 	status = winexe_svc_install(
 		cli,
 		options.hostname,
-		options.port,
+		&ts,
 		service_name,
 		service_filename,
 		winexesvc32_exe,
