@@ -134,7 +134,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 					const char *share,
 					struct cli_credentials *creds,
 					const struct sockaddr_storage *dest_ss,
-					int port,
+					const struct smb_transports *transports,
 					int name_type,
 					struct cli_state **pcli)
 {
@@ -151,7 +151,6 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		cli_credentials_get_smb_encryption(creds);
 	struct smb2_negotiate_contexts *in_contexts = NULL;
 	struct smb2_negotiate_contexts *out_contexts = NULL;
-	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	if (encryption_state >= SMB_ENCRYPTION_DESIRED) {
 		signing_state = SMB_SIGNING_REQUIRED;
@@ -187,7 +186,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	status = cli_connect_nb(NULL,
 				server,
 				dest_ss,
-				&ts,
+				transports,
 				name_type,
 				NULL,
 				signing_state,
@@ -313,7 +312,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		cli_shutdown(c);
 		return do_connect(ctx, newserver,
 				newshare, creds,
-				NULL, port, name_type, pcli);
+				NULL, transports, name_type, pcli);
 	}
 
 	/* must be a normal share */
@@ -347,10 +346,11 @@ static NTSTATUS cli_cm_connect(TALLOC_CTX *ctx,
 {
 	struct cli_state *cli = NULL;
 	NTSTATUS status;
+	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	status = do_connect(ctx, server, share,
 				creds,
-				dest_ss, port, name_type, &cli);
+				dest_ss, &ts, name_type, &cli);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
