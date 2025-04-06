@@ -27,20 +27,20 @@
 #include "clifuse.h"
 
 static struct cli_state *connect_one(struct cli_credentials *creds,
-				     const char *server, int port,
+				     const char *server,
+				     const struct smb_transports *transports,
 				     const char *share)
 {
 	struct cli_state *c = NULL;
 	NTSTATUS nt_status;
 	uint32_t flags = 0;
-	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	nt_status = cli_full_connection_creds(talloc_tos(),
 					      &c,
 					      lp_netbios_name(),
 					      server,
 					      NULL,
-					      &ts,
+					      transports,
 					      share,
 					      "?????",
 					      creds,
@@ -65,6 +65,7 @@ int main(int argc, char *argv[])
 	char *unc, *mountpoint, *server, *share;
 	struct cli_state *cli;
 	struct cli_credentials *creds = NULL;
+	struct smb_transports ts = { .num_transports = 0, };
 	bool ok;
 
 	struct poptOption long_options[] = {
@@ -150,7 +151,9 @@ int main(int argc, char *argv[])
 
 	creds = samba_cmdline_get_creds();
 
-	cli = connect_one(creds, server, port, share);
+	ts = smbsock_transports_from_port(port);
+
+	cli = connect_one(creds, server, &ts, share);
 	if (cli == NULL) {
 		return -1;
 	}
