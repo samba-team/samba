@@ -2675,7 +2675,8 @@ static void cli_start_connection_done(struct tevent_req *subreq);
 static struct tevent_req *cli_start_connection_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	const char *my_name, const char *dest_host,
-	const struct sockaddr_storage *dest_ss, int port,
+	const struct sockaddr_storage *dest_ss,
+	const struct smb_transports *transports,
 	enum smb_signing_setting signing_state, int flags,
 	struct smb2_negotiate_contexts *negotiate_contexts)
 {
@@ -2688,7 +2689,7 @@ static struct tevent_req *cli_start_connection_send(
 		return NULL;
 	}
 	state->ev = ev;
-	state->transports = smbsock_transports_from_port(port);
+	state->transports = *transports;
 
 	if (flags & CLI_FULL_CONNECTION_IPC) {
 		state->min_protocol = lp_client_ipc_min_protocol();
@@ -2840,13 +2841,14 @@ NTSTATUS cli_start_connection(TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	ev = samba_tevent_context_init(mem_ctx);
 	if (ev == NULL) {
 		goto fail;
 	}
 	req = cli_start_connection_send(ev, ev, my_name, dest_host, dest_ss,
-					port, signing_state, flags, NULL);
+					&ts, signing_state, flags, NULL);
 	if (req == NULL) {
 		goto fail;
 	}
@@ -3284,6 +3286,7 @@ struct cli_full_connection_creds_state {
 	const char *service;
 	const char *service_type;
 	struct cli_credentials *creds;
+	struct smb_transports transports;
 	int flags;
 	struct cli_state *cli;
 };
@@ -3336,6 +3339,7 @@ struct tevent_req *cli_full_connection_creds_send(
 	state->service_type = service_type;
 	state->creds = creds;
 	state->flags = flags;
+	state->transports = smbsock_transports_from_port(port);
 
 	if (flags & CLI_FULL_CONNECTION_IPC) {
 		signing_state = cli_credentials_get_smb_ipc_signing(creds);
@@ -3354,7 +3358,8 @@ struct tevent_req *cli_full_connection_creds_send(
 	}
 
 	subreq = cli_start_connection_send(
-		state, ev, my_name, dest_host, dest_ss, port,
+		state, ev, my_name, dest_host, dest_ss,
+		&state->transports,
 		signing_state, flags,
 		negotiate_contexts);
 	if (tevent_req_nomem(subreq, req)) {
