@@ -369,12 +369,34 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 	struct smbXcli_tcon *tcon = NULL;
 	int signing_state = SMB_SIGNING_DEFAULT;
 	struct cli_credentials *creds = NULL;
+	struct smb_transports ats = smbsock_transports_from_port(port);
+	uint8_t ati;
+	const struct smb_transports *ts = &ats;
+	struct smb_transports ots = { .num_transports = 0, };
+	struct smb_transports nts = { .num_transports = 0, };
 
 	*in_cache = false;
 
 	if (server[0] == 0) {
 		errno = EPERM;
 		return NULL;
+	}
+
+	for (ati = 0; ati < ats.num_transports; ati++) {
+		const struct smb_transport *at =
+			&ats.transports[ati];
+
+		if (at->type == SMB_TRANSPORT_TYPE_NBT) {
+			struct smb_transport *nt =
+				&nts.transports[nts.num_transports];
+			*nt = *at;
+			nts.num_transports += 1;
+		} else {
+			struct smb_transport *ot =
+				&ots.transports[ots.num_transports];
+			*ot = *at;
+			ots.num_transports += 1;
+		}
 	}
 
         /* Look for a cached connection */
@@ -524,15 +546,17 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		signing_state = SMB_SIGNING_REQUIRED;
 	}
 
-	if (port == 0) {
+	if (nts.num_transports != 0 && ots.num_transports != 0) {
 	        if (share == NULL || *share == '\0' || is_ipc) {
 			/*
 			 * Try 139 first for IPC$
 			 */
+			ts = &ots;
+
 			status = cli_connect_nb(NULL,
 						server_n,
 						NULL,
-						NBT_SMB_PORT,
+						&nts,
 						0x20,
 						smbc_getNetbiosName(context),
 						signing_state,
@@ -548,7 +572,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		status = cli_connect_nb(NULL,
 					server_n,
 					NULL,
-					port,
+					ts,
 					0x20,
 					smbc_getNetbiosName(context),
 					signing_state,

@@ -76,6 +76,8 @@ static void sync_child(char *name, int nm_type,
 	struct cli_state *cli;
 	uint32_t local_type = local ? SV_TYPE_LOCAL_LIST_ONLY : 0;
 	struct sockaddr_storage ss;
+	const char *nbt[] = { "nbt", NULL, };
+	struct smb_transports ts = smb_transports_parse("forced-nbt", nbt);
 	NTSTATUS status;
 
 	/* W2K DMB's return empty browse lists on port 445. Use 139.
@@ -87,7 +89,7 @@ static void sync_child(char *name, int nm_type,
 	status = cli_connect_nb(talloc_tos(),
 				name,
 				&ss,
-				NBT_SMB_PORT,
+				&ts,
 				nm_type,
 				get_local_machine_name(),
 				SMB_SIGNING_DEFAULT,

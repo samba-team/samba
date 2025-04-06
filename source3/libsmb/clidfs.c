@@ -151,6 +151,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		cli_credentials_get_smb_encryption(creds);
 	struct smb2_negotiate_contexts *in_contexts = NULL;
 	struct smb2_negotiate_contexts *out_contexts = NULL;
+	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	if (encryption_state >= SMB_ENCRYPTION_DESIRED) {
 		signing_state = SMB_SIGNING_REQUIRED;
@@ -186,7 +187,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	status = cli_connect_nb(NULL,
 				server,
 				dest_ss,
-				port,
+				&ts,
 				name_type,
 				NULL,
 				signing_state,

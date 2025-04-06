@@ -6367,6 +6367,8 @@ static int do_tar_op(const char *base_directory)
 static int do_message_op(struct cli_credentials *creds)
 {
 	NTSTATUS status;
+	struct smb_transports ts =
+		smbsock_transports_from_port(port ? port : NBT_SMB_PORT);
 
 	if (lp_disable_netbios()) {
 		d_printf("NetBIOS over TCP disabled.\n");
@@ -6375,7 +6377,8 @@ static int do_message_op(struct cli_credentials *creds)
 
 	status = cli_connect_nb(talloc_tos(),
 				desthost, have_ip ? &dest_ss : NULL,
-				port ? port : NBT_SMB_PORT, name_type,
+				&ts,
+				name_type,
 				lp_netbios_name(),
 				SMB_SIGNING_OFF,
 				0,

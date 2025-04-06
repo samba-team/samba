@@ -32,12 +32,15 @@ static time_t cli_servertime(const char *host,
 {
 	time_t ret = 0;
 	struct cli_state *cli = NULL;
+	struct smb_transports ts =
+		smb_transports_parse("client smb transports",
+				     lp_client_smb_transports());
 	NTSTATUS status;
 
 	status = cli_connect_nb(talloc_tos(),
 				host,
 				dest_ss,
-				0,
+				&ts,
 				0x20,
 				lp_netbios_name(),
 				SMB_SIGNING_DEFAULT,

@@ -142,6 +142,9 @@ static struct cli_state *open_nbt_connection(void)
 	struct cli_state *c;
 	NTSTATUS status;
 	int flags = 0;
+	struct smb_transports ts =
+		smb_transports_parse("client smb transports",
+				     lp_client_smb_transports());
 
 	if (disable_spnego) {
 		flags |= CLI_FULL_CONNECTION_DONT_SPNEGO;
@@ -162,7 +165,7 @@ static struct cli_state *open_nbt_connection(void)
 	status = cli_connect_nb(NULL,
 				host,
 				NULL,
-				port_to_use,
+				&ts,
 				0x20,
 				myname,
 				signing_state,
@@ -16487,6 +16490,7 @@ static void usage(void)
 		switch (opt) {
 		case 'p':
 			port_to_use = atoi(optarg);
+			lpcfg_set_cmdline(lp_ctx, "client smb transports", optarg);
 			break;
 		case 's':
 			seed = atoi(optarg);

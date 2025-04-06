@@ -2620,7 +2620,7 @@ static NTSTATUS cli_connect_nb_recv(struct tevent_req *req,
 NTSTATUS cli_connect_nb(TALLOC_CTX *mem_ctx,
 			const char *host,
 			const struct sockaddr_storage *dest_ss,
-			uint16_t port,
+			const struct smb_transports *transports,
 			int name_type,
 			const char *myname,
 			enum smb_signing_setting signing_state,
@@ -2630,13 +2630,12 @@ NTSTATUS cli_connect_nb(TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
-	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	ev = samba_tevent_context_init(mem_ctx);
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = cli_connect_nb_send(ev, ev, host, dest_ss, &ts, name_type,
+	req = cli_connect_nb_send(ev, ev, host, dest_ss, transports, name_type,
 				  myname, signing_state, flags);
 	if (req == NULL) {
 		goto fail;

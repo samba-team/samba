@@ -85,12 +85,13 @@ NTSTATUS cli_tdis(struct cli_state *cli);
 NTSTATUS cli_connect_nb(TALLOC_CTX *mem_ctx,
 			const char *host,
 			const struct sockaddr_storage *dest_ss,
-			uint16_t port,
+			const struct smb_transports *transports,
 			int name_type,
 			const char *myname,
 			enum smb_signing_setting signing_state,
 			int flags,
-			struct cli_state **pcli);
+			struct cli_state **pcli)
+	NONNULL(4) NONNULL(9);
 NTSTATUS cli_start_connection(TALLOC_CTX *mem_ctx,
 			      struct cli_state **output_cli,
 			      const char *my_name,
