@@ -49,6 +49,7 @@ c = libsmb.Conn("127.0.0.1",
 #include "includes.h"
 #include "python/py3compat.h"
 #include "python/modules.h"
+#include "param/pyparam.h"
 #include "libcli/smb/smbXcli_base.h"
 #include "libcli/smb/smb2_negotiate_context.h"
 #include "libcli/smb/reparse.h"
@@ -549,6 +550,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	PyObject *creds = NULL;
 	struct cli_credentials *cli_creds;
 	PyObject *py_lp = Py_None;
+	struct loadparm_context *lp_ctx = NULL;
 	PyObject *py_multi_threaded = Py_False;
 	bool multi_threaded = false;
 	PyObject *py_force_smb1 = Py_False;
@@ -557,6 +559,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	PyObject *py_posix = Py_False;
 	PyObject *py_negotiate_contexts = NULL;
 	struct smb2_negotiate_contexts *negotiate_contexts = NULL;
+	struct smb_transports ts = { .num_transports = 0, };
 	bool use_ipc = false;
 	bool request_posix = false;
 	struct tevent_req *req;
@@ -655,8 +658,17 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 		cli_creds = PyCredentials_AsCliCredentials(creds);
 	}
 
+	lp_ctx = lpcfg_from_py_object(frame, py_lp);
+	if (lp_ctx == NULL) {
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	ts = smb_transports_parse("client smb transports",
+				  lpcfg_client_smb_transports(lp_ctx));
+
 	req = cli_full_connection_creds_send(
-		frame, self->ev, "myname", host, NULL, 0, share, "?????",
+		frame, self->ev, "myname", host, NULL, &ts, share, "?????",
 		cli_creds, flags,
 		negotiate_contexts);
 	if (!py_tevent_req_wait_exc(self, req)) {

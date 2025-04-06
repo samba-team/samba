@@ -3315,7 +3315,8 @@ static void cli_full_connection_creds_tcon_done(struct tevent_req *subreq);
 struct tevent_req *cli_full_connection_creds_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	const char *my_name, const char *dest_host,
-	const struct sockaddr_storage *dest_ss, int port,
+	const struct sockaddr_storage *dest_ss,
+	const struct smb_transports *transports,
 	const char *service, const char *service_type,
 	struct cli_credentials *creds,
 	int flags,
@@ -3339,7 +3340,7 @@ struct tevent_req *cli_full_connection_creds_send(
 	state->service_type = service_type;
 	state->creds = creds;
 	state->flags = flags;
-	state->transports = smbsock_transports_from_port(port);
+	state->transports = *transports;
 
 	if (flags & CLI_FULL_CONNECTION_IPC) {
 		signing_state = cli_credentials_get_smb_ipc_signing(creds);
@@ -3687,13 +3688,14 @@ NTSTATUS cli_full_connection_creds(TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	ev = samba_tevent_context_init(mem_ctx);
 	if (ev == NULL) {
 		goto fail;
 	}
 	req = cli_full_connection_creds_send(
-		ev, ev, my_name, dest_host, dest_ss, port, service,
+		ev, ev, my_name, dest_host, dest_ss, &ts, service,
 		service_type, creds, flags,
 		NULL);
 	if (req == NULL) {

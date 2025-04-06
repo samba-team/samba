@@ -107,11 +107,13 @@ struct smb2_negotiate_contexts;
 struct tevent_req *cli_full_connection_creds_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	const char *my_name, const char *dest_host,
-	const struct sockaddr_storage *dest_ss, int port,
+	const struct sockaddr_storage *dest_ss,
+	const struct smb_transports *transports,
 	const char *service, const char *service_type,
 	struct cli_credentials *creds,
 	int flags,
-	struct smb2_negotiate_contexts *negotiate_contexts);
+	struct smb2_negotiate_contexts *negotiate_contexts)
+	NONNULL(2) NONNULL(6);
 NTSTATUS cli_full_connection_creds_recv(struct tevent_req *req,
 					TALLOC_CTX *mem_ctx,
 					struct cli_state **output_cli);
