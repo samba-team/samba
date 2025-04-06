@@ -72,9 +72,9 @@
 
 #ifndef NONNULL
 #if __has_attribute(nonnull) || ( (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 ) )
-#define NONNULL(param) param __attribute__((nonnull))
+#define NONNULL(param) __attribute__((nonnull(param)))
 #else
-#define NONNULL(param) param
+#define NONNULL(param)
 #endif
 #endif
 
