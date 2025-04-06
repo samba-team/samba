@@ -531,7 +531,7 @@ static NTSTATUS
 smb_complete_connection(struct cli_state **output_cli,
 			const char *myname,
 			const char *server,
-			int port,
+			const struct smb_transports *transports,
 			const char *username,
 			const char *password,
 			const char *workgroup,
@@ -542,7 +542,6 @@ smb_complete_connection(struct cli_state **output_cli,
 	struct cli_state *cli;	/* New connection */
 	NTSTATUS        nt_status;
 	struct cli_credentials *creds = NULL;
-	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	/* Start the SMB connection */
 	nt_status = cli_start_connection(talloc_tos(),
@@ -550,7 +549,7 @@ smb_complete_connection(struct cli_state **output_cli,
 					 myname,
 					 server,
 					 NULL,
-					 &ts,
+					 transports,
 					 SMB_SIGNING_DEFAULT,
 					 0);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -676,6 +675,7 @@ smb_connect(struct cli_state **output_cli,
 	bool fallback_after_kerberos = false;
 	const char *user = username;
 	NTSTATUS nt_status;
+	struct smb_transports ts = smbsock_transports_from_port(port);
 
 	/*
          * Get the names and addresses of the client and server...
@@ -730,7 +730,7 @@ smb_connect(struct cli_state **output_cli,
 	nt_status = smb_complete_connection(&cli,
 					    myname,
 					    server,
-					    port,
+					    &ts,
 					    user,
 					    password,
 					    workgroup,
@@ -758,7 +758,7 @@ smb_connect(struct cli_state **output_cli,
 	nt_status = smb_complete_connection(&cli,
 					    myname,
 					    server,
-					    port,
+					    &ts,
 					    pwd->pw_name,
 					    "",
 					    workgroup,
@@ -779,7 +779,7 @@ anonymous:
 	nt_status = smb_complete_connection(&cli,
 					    myname,
 					    server,
-					    port,
+					    &ts,
 					    "",
 					    "",
 					    workgroup,
