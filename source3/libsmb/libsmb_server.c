@@ -119,9 +119,8 @@ SMBC_remove_unused_server(SMBCCTX * context,
 	for (file = context->internal->files; file; file = file->next) {
 		if (file->srv == srv) {
 			/* Still used */
-			DEBUG(3, ("smbc_remove_usused_server: "
-                                  "%p still used by %p.\n",
-				  srv, file));
+			DBG_NOTICE("%p still used by %p.\n",
+				   srv, file);
 			return 1;
 		}
 	}
@@ -131,7 +130,7 @@ SMBC_remove_unused_server(SMBCCTX * context,
 	cli_shutdown(srv->cli);
 	srv->cli = NULL;
 
-	DEBUG(3, ("smbc_remove_usused_server: %p removed.\n", srv));
+	DBG_NOTICE("%p removed.\n", srv);
 
 	smbc_getFunctionRemoveCachedServer(context)(context, srv);
 
