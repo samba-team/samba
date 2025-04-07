@@ -1582,6 +1582,29 @@ NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS tstream_tls_params_server_lpcfg(TALLOC_CTX *mem_ctx,
+					 const char *dns_host_name,
+					 struct loadparm_context *lp_ctx,
+					 struct tstream_tls_params **_tlsp)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
+
+	status = tstream_tls_params_server(mem_ctx,
+					   dns_host_name,
+					   lpcfg_tls_enabled(lp_ctx),
+					   lpcfg_tls_keyfile(frame, lp_ctx),
+					   lpcfg_tls_certfile(frame, lp_ctx),
+					   lpcfg_tls_cafile(frame, lp_ctx),
+					   lpcfg_tls_crlfile(frame, lp_ctx),
+					   lpcfg_tls_dhpfile(frame, lp_ctx),
+					   lpcfg_tls_priority(lp_ctx),
+					   _tlsp);
+
+	TALLOC_FREE(frame);
+	return status;
+}
+
 struct tstream_tls_accept_state {
 	struct tstream_context *tls_stream;
 };
