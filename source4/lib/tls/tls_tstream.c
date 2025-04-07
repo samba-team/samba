@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
 
-   Copyright (C) Stefan Metzmacher 2010
+   Copyright (C) Stefan Metzmacher 2010-2025
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include "system/filesys.h"
 #include "system/time.h"
 #include "lib/util/util_file.h"
+#include "lib/util/tevent_ntstatus.h"
 #include "../util/tevent_unix.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/tsocket/tsocket_internal.h"
@@ -32,6 +33,10 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
 #include "lib/crypto/gnutls_helpers.h"
+
+#ifdef HAVE_LIBQUIC
+#include <netinet/quic.h>
+#endif
 
 #define DH_BITS 2048
 
@@ -865,6 +870,9 @@ struct tstream_tls_params_internal {
 	bool tls_enabled;
 	enum tls_verify_peer_state verify_peer;
 	const char *peer_name;
+#ifdef HAVE_LIBQUIC
+	bool quic;
+#endif /* HAVE_LIBQUIC */
 };
 
 struct tstream_tls_params {
@@ -890,6 +898,17 @@ bool tstream_tls_params_enabled(struct tstream_tls_params *tls_params)
 	struct tstream_tls_params_internal *tlsp = tls_params->internal;
 
 	return tlsp->tls_enabled;
+}
+
+bool tstream_tls_params_quic_enabled(struct tstream_tls_params *tls_params)
+{
+	bool quic = false;
+#ifdef HAVE_LIBQUIC
+	struct tstream_tls_params_internal *tlsp = tls_params->internal;
+
+	quic = tlsp->quic;
+#endif /* HAVE_LIBQUIC */
+	return quic;
 }
 
 const char *tstream_tls_params_peer_name(
@@ -1149,16 +1168,50 @@ NTSTATUS tstream_tls_params_client_lpcfg(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+NTSTATUS tstream_tls_params_quic_prepare(struct tstream_tls_params *tlsp)
+{
+#ifdef HAVE_LIBQUIC
+	const char *tls_priority = NULL;
+
+	if (!tlsp->internal->tls_enabled) {
+		goto disable;
+	}
+
+	if (tlsp->internal->peer_name != NULL &&
+	    is_ipaddress(tlsp->internal->peer_name))
+	{
+		goto disable;
+	}
+
+	tls_priority = talloc_strdup(tlsp->internal, QUIC_PRIORITY);
+	if (tls_priority == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	talloc_free(discard_const(tlsp->internal->tls_priority));
+	tlsp->internal->tls_priority = tls_priority;
+
+	tlsp->internal->quic = true;
+
+	return NT_STATUS_OK;
+disable:
+	tlsp->internal->quic = false;
+#endif /* HAVE_LIBQUIC */
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS tstream_tls_prepare_gnutls(struct tstream_tls_params *_tlsp,
 					   struct tstream_tls *tlss)
 {
 	struct tstream_tls_params_internal *tlsp = NULL;
 	int ret;
 	unsigned int flags;
+	gnutls_certificate_request_t cert_req = GNUTLS_CERT_IGNORE;
 	const char *hostname = NULL;
 
 	if (tlss->is_server) {
 		flags = GNUTLS_SERVER;
+		cert_req = GNUTLS_CERT_REQUEST;
 	} else {
 		flags = GNUTLS_CLIENT;
 		/*
@@ -1187,9 +1240,21 @@ static NTSTATUS tstream_tls_prepare_gnutls(struct tstream_tls_params *_tlsp,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+#ifdef HAVE_LIBQUIC
+	if (tlss->is_server && tlsp->quic) {
+		flags |= GNUTLS_NO_AUTO_SEND_TICKET;
+		cert_req = GNUTLS_CERT_IGNORE;
+	}
+#endif /* HAVE_LIBQUIC */
+
 	tlss->verify_peer = tlsp->verify_peer;
 	if (tlsp->peer_name != NULL) {
 		bool ip = is_ipaddress(tlsp->peer_name);
+#ifdef HAVE_LIBQUIC
+		bool force_name = tlsp->quic;
+#else
+		bool force_name = false;
+#endif /* HAVE_LIBQUIC */
 
 		tlss->peer_name = talloc_strdup(tlss, tlsp->peer_name);
 		if (tlss->peer_name == NULL) {
@@ -1200,7 +1265,9 @@ static NTSTATUS tstream_tls_prepare_gnutls(struct tstream_tls_params *_tlsp,
 			hostname = tlss->peer_name;
 		}
 
-		if (tlss->verify_peer < TLS_VERIFY_PEER_CA_AND_NAME) {
+		if (!force_name &&
+		    tlss->verify_peer < TLS_VERIFY_PEER_CA_AND_NAME)
+		{
 			hostname = NULL;
 		}
 	}
@@ -1257,7 +1324,7 @@ static NTSTATUS tstream_tls_prepare_gnutls(struct tstream_tls_params *_tlsp,
 
 	if (tlss->is_server) {
 		gnutls_certificate_server_set_request(tlss->tls_session,
-						      GNUTLS_CERT_REQUEST);
+						      cert_req);
 		gnutls_dh_set_prime_bits(tlss->tls_session, DH_BITS);
 	}
 
@@ -1921,4 +1988,307 @@ NTSTATUS tstream_tls_sync_setup(struct tstream_tls_params *_tls_params,
 
 	*_tlsss = tlsss;
 	return NT_STATUS_OK;
+}
+
+struct tstream_tls_quic_handshake_state {
+	struct tstream_tls *tlss;
+	int sockfd;
+	struct tevent_fd *fde;
+#ifdef HAVE_LIBQUIC
+	struct quic_handshake_step *step;
+#endif /* HAVE_LIBQUIC */
+};
+
+#ifdef HAVE_LIBQUIC
+static void tstream_tls_quic_handshake_cleanup(struct tevent_req *req,
+					       enum tevent_req_state req_state);
+static void tstream_tls_quic_handshake_run(struct tevent_req *req);
+static void tstream_tls_quic_handshake_fde(struct tevent_context *ev,
+					   struct tevent_fd *fde,
+					   uint16_t flags,
+					   void *private_data);
+static void tstream_tls_quic_handshake_done(struct tevent_req *req);
+#endif /* HAVE_LIBQUIC */
+
+struct tevent_req *tstream_tls_quic_handshake_send(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct tstream_tls_params *tlsp,
+						   bool is_server,
+						   uint32_t timeout_msec,
+						   const char *alpn,
+						   int sockfd)
+{
+	struct tevent_req *req = NULL;
+	struct tstream_tls_quic_handshake_state *state = NULL;
+#ifdef HAVE_LIBQUIC
+	NTSTATUS status;
+	int ret;
+#endif /* HAVE_LIBQUIC */
+	bool ok;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct tstream_tls_quic_handshake_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->sockfd = sockfd;
+
+	ok = tevent_req_set_endtime(req, ev,
+				    timeval_current_ofs_msec(timeout_msec));
+	if (!ok) {
+		tevent_req_oom(req);
+		return tevent_req_post(req, ev);
+	}
+
+	ok = tstream_tls_params_quic_enabled(tlsp);
+	if (!ok) {
+		goto invalid_parameter_mix;
+	}
+
+#ifdef HAVE_LIBQUIC
+	state->tlss = talloc_zero(state, struct tstream_tls);
+	if (tevent_req_nomem(state->tlss, req)) {
+		return tevent_req_post(req, ev);
+	}
+	talloc_set_destructor(state->tlss, tstream_tls_destructor);
+	state->tlss->is_server = is_server;
+
+	status = tstream_tls_prepare_gnutls(tlsp, state->tlss);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	ret = quic_session_set_alpn(state->tlss->tls_session, alpn, strlen(alpn));
+	if (ret != 0) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return tevent_req_post(req, ev);
+	}
+
+	gnutls_transport_set_int(state->tlss->tls_session, state->sockfd);
+
+	ret = quic_handshake_init(state->tlss->tls_session, &state->step);
+	if (ret != 0) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_cleanup_fn(req, tstream_tls_quic_handshake_cleanup);
+
+	state->fde = tevent_add_fd(ev,
+				   state,
+				   state->sockfd,
+				   TEVENT_FD_ERROR | TEVENT_FD_READ,
+				   tstream_tls_quic_handshake_fde,
+				   req);
+	if (tevent_req_nomem(state->fde, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tstream_tls_quic_handshake_run(req);
+	if (!tevent_req_is_in_progress(req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	return req;
+#endif /* HAVE_LIBQUIC */
+invalid_parameter_mix:
+	tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+	return tevent_req_post(req, ev);
+}
+
+#ifdef HAVE_LIBQUIC
+static void tstream_tls_quic_handshake_cleanup(struct tevent_req *req,
+					       enum tevent_req_state req_state)
+{
+	struct tstream_tls_quic_handshake_state *state =
+		tevent_req_data(req,
+		struct tstream_tls_quic_handshake_state);
+
+	if (state->tlss == NULL) {
+		return;
+	}
+
+	TALLOC_FREE(state->fde);
+	quic_handshake_deinit(state->tlss->tls_session);
+	TALLOC_FREE(state->tlss);
+}
+
+static void tstream_tls_quic_handshake_run(struct tevent_req *req)
+{
+	struct tstream_tls_quic_handshake_state *state =
+		tevent_req_data(req,
+		struct tstream_tls_quic_handshake_state);
+	struct tstream_tls *tlss = state->tlss;
+	struct quic_handshake_step_sendmsg *smsg = NULL;
+	struct quic_handshake_step_recvmsg *rmsg = NULL;
+	ssize_t len;
+	int ret;
+
+next_step:
+
+	SMB_ASSERT(state->step != NULL);
+	len = 0;
+
+	switch (state->step->op) {
+	case QUIC_HANDSHAKE_STEP_OP_SENDMSG:
+		smsg = &state->step->s_sendmsg;
+		len = sendmsg(state->sockfd,
+			      smsg->msg,
+			      smsg->flags |
+			      MSG_NOSIGNAL |
+			      MSG_DONTWAIT);
+		if (len == -1 && errno == EINTR) {
+			/* do it again */
+			goto next_step;
+		}
+		if (len == -1 && (
+		    errno == EAGAIN ||
+		    errno == EWOULDBLOCK))
+		{
+			TEVENT_FD_WRITEABLE(state->fde);
+			return;
+		}
+		if (len == -1) {
+			len = -errno;
+		}
+		if (len == 0) {
+			len = -ECONNRESET;
+		}
+		smsg->retval = len;
+		break;
+	case QUIC_HANDSHAKE_STEP_OP_RECVMSG:
+		rmsg = &state->step->s_recvmsg;
+		len = recvmsg(state->sockfd,
+			      rmsg->msg,
+			      rmsg->flags |
+			      MSG_DONTWAIT);
+		if (len == -1 && errno == EINTR) {
+			/* do it again */
+			goto next_step;
+		}
+		if (len == -1 && (
+		    errno == EAGAIN ||
+		    errno == EWOULDBLOCK))
+		{
+			return;
+		}
+		if (len == -1) {
+			len = -errno;
+		}
+		if (len == 0) {
+			len = -ECONNRESET;
+		}
+		rmsg->retval = len;
+		break;
+	}
+
+	if (len == 0) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
+	ret = quic_handshake_step(tlss->tls_session, &state->step);
+	if (ret != 0) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
+	if (state->step == NULL) {
+		tstream_tls_quic_handshake_done(req);
+		return;
+	}
+
+	goto next_step;
+};
+
+static void tstream_tls_quic_handshake_fde(struct tevent_context *ev,
+					   struct tevent_fd *fde,
+					   uint16_t flags,
+					   void *private_data)
+{
+	struct tevent_req *req =
+		talloc_get_type_abort(private_data,
+		struct tevent_req);
+	struct tstream_tls_quic_handshake_state *state =
+		tevent_req_data(req,
+		struct tstream_tls_quic_handshake_state);
+
+	TEVENT_FD_NOT_WRITEABLE(state->fde);
+	tstream_tls_quic_handshake_run(req);
+}
+
+static void tstream_tls_quic_handshake_done(struct tevent_req *req)
+{
+	struct tstream_tls_quic_handshake_state *state =
+		tevent_req_data(req,
+		struct tstream_tls_quic_handshake_state);
+
+	if (!state->tlss->is_server) {
+		struct quic_stream_info info = {};
+		unsigned int optlen = sizeof(info);
+		NTSTATUS status;
+		int ret;
+
+		status = tstream_tls_verify_peer(state->tlss);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+
+		/*
+		 * Use the next stream_id (0) as default
+		 * client stream.
+		 */
+		info.stream_id = -1;
+		ret = getsockopt(state->sockfd,
+				 SOL_QUIC,
+				 QUIC_SOCKOPT_STREAM_OPEN,
+				 &info,
+				 &optlen);
+		if (ret != 0) {
+			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+			return;
+		}
+	}
+
+	tevent_req_done(req);
+}
+#endif /* HAVE_LIBQUIC */
+
+NTSTATUS tstream_tls_quic_handshake_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS tstream_tls_quic_handshake(struct tstream_tls_params *tlsp,
+				    bool is_server,
+				    uint32_t timeout_msec,
+				    const char *alpn,
+				    int sockfd)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = tstream_tls_quic_handshake_send(ev,
+					      ev,
+					      tlsp,
+					      is_server,
+					      timeout_msec,
+					      alpn,
+					      sockfd);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = tstream_tls_quic_handshake_recv(req);
+fail:
+	TALLOC_FREE(frame);
+	return status;
 }

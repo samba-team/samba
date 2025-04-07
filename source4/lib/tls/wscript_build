@@ -13,4 +13,5 @@ bld.SAMBA_SUBSYSTEM('LIBTLS',
                                 LIBTSOCKET
                                 tevent
                                 tevent-util
+                                quic
                                 ''')

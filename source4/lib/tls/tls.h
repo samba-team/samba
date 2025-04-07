@@ -71,6 +71,8 @@ NTSTATUS tstream_tls_params_client_lpcfg(TALLOC_CTX *mem_ctx,
 					 const char *peer_name,
 					 struct tstream_tls_params **tlsp);
 
+NTSTATUS tstream_tls_params_quic_prepare(struct tstream_tls_params *tlsp);
+
 NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 				   const char *dns_host_name,
 				   bool enabled,
@@ -87,6 +89,7 @@ NTSTATUS tstream_tls_params_server_lpcfg(TALLOC_CTX *mem_ctx,
 					 struct tstream_tls_params **_params);
 
 bool tstream_tls_params_enabled(struct tstream_tls_params *params);
+bool tstream_tls_params_quic_enabled(struct tstream_tls_params *params);
 const char *tstream_tls_params_peer_name(
 	const struct tstream_tls_params *params);
 
@@ -135,5 +138,19 @@ NTSTATUS tstream_tls_sync_setup(struct tstream_tls_params *_tls_params,
 				struct tstream_tls_sync **_tlsss);
 
 const DATA_BLOB *tstream_tls_sync_channel_bindings(struct tstream_tls_sync *tlsss);
+
+struct tevent_req *tstream_tls_quic_handshake_send(TALLOC_CTX *mem_ctx,
+						   struct tevent_context *ev,
+						   struct tstream_tls_params *tlsp,
+						   bool is_server,
+						   uint32_t timeout_msec,
+						   const char *alpn,
+						   int sockfd);
+NTSTATUS tstream_tls_quic_handshake_recv(struct tevent_req *req);
+NTSTATUS tstream_tls_quic_handshake(struct tstream_tls_params *tlsp,
+				    bool is_server,
+				    uint32_t timeout_msec,
+				    const char *alpn,
+				    int sockfd);
 
 #endif /* _TLS_H_ */
