@@ -436,14 +436,15 @@ static NTSTATUS fsctl_zero_data(TALLOC_CTX *mem_ctx,
 	ndr_ret = ndr_pull_struct_blob(in_input, mem_ctx, &zdata_info,
 			(ndr_pull_flags_fn_t)ndr_pull_file_zero_data_info);
 	if (ndr_ret != NDR_ERR_SUCCESS) {
-		DEBUG(0, ("failed to unmarshall zero data request\n"));
+		DBG_ERR("failed to unmarshall zero data request\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (zdata_info.beyond_final_zero < zdata_info.file_off) {
-		DEBUG(0, ("invalid zero data params: off %lu, bfz, %lu\n",
-			  (unsigned long)zdata_info.file_off,
-			  (unsigned long)zdata_info.beyond_final_zero));
+		DBG_ERR("invalid zero data params: off %" PRIu64
+			", bfz, %" PRIu64 "\n",
+			zdata_info.file_off,
+			zdata_info.beyond_final_zero);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -451,7 +452,7 @@ static NTSTATUS fsctl_zero_data(TALLOC_CTX *mem_ctx,
 	len = zdata_info.beyond_final_zero - zdata_info.file_off;
 
 	if (len == 0) {
-		DEBUG(2, ("zero data called with zero length range\n"));
+		DBG_NOTICE("zero data called with zero length range\n");
 		return NT_STATUS_OK;
 	}
 
@@ -463,7 +464,7 @@ static NTSTATUS fsctl_zero_data(TALLOC_CTX *mem_ctx,
 				&lck);
 
 	if (!SMB_VFS_STRICT_LOCK_CHECK(fsp->conn, fsp, &lck)) {
-		DEBUG(2, ("failed to lock range for zero-data\n"));
+		DBG_NOTICE("failed to lock range for zero-data\n");
 		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}
 
@@ -480,8 +481,9 @@ static NTSTATUS fsctl_zero_data(TALLOC_CTX *mem_ctx,
 	ret = SMB_VFS_FALLOCATE(fsp, mode, zdata_info.file_off, len);
 	if (ret == -1)  {
 		status = map_nt_error_from_unix_common(errno);
-		DEBUG(2, ("zero-data fallocate(0x%x) failed: %s\n", mode,
-		      strerror(errno)));
+		DBG_NOTICE("zero-data fallocate(0x%x) failed: %s\n",
+			   mode,
+			   strerror(errno));
 		return status;
 	}
 
@@ -499,7 +501,7 @@ static NTSTATUS fsctl_zero_data(TALLOC_CTX *mem_ctx,
 					zdata_info.file_off, len);
 		if (ret == -1)  {
 			status = map_nt_error_from_unix_common(errno);
-			DEBUG(0, ("fallocate failed: %s\n", strerror(errno)));
+			DBG_WARNING("fallocate failed: %s\n", strerror(errno));
 			return status;
 		}
 	}
