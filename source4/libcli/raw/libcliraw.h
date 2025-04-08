@@ -70,10 +70,7 @@ struct smbcli_negotiate {
 	
 /* this is the context for a SMB socket associated with the socket itself */
 struct smbcli_socket {
-	struct socket_context *sock;
-
-	/* what port we ended up connected to */
-	int port;
+	int sockfd;
 
 	/* the hostname we connected to */
 	const char *hostname;
@@ -81,8 +78,6 @@ struct smbcli_socket {
 	/* the event handle for waiting for socket IO */
 	struct {
 		struct tevent_context *ctx;
-		struct tevent_fd *fde;
-		struct tevent_timer *te;
 	} event;
 };
 

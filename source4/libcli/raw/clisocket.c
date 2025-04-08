@@ -406,6 +406,16 @@ failed:
 	return NULL;
 }
 
+static int smbcli_socket_destructor(struct smbcli_socket *sock)
+{
+	if (sock->sockfd != -1) {
+		close(sock->sockfd);
+		sock->sockfd = -1;
+	}
+
+	return 0;
+}
+
 static void smbcli_sock_connect_recv_conn(struct composite_context *ctx)
 {
 	struct sock_connect_state *state =
@@ -426,9 +436,12 @@ static void smbcli_sock_connect_recv_conn(struct composite_context *ctx)
 	state->result = talloc_zero(state, struct smbcli_socket);
 	if (composite_nomem(state->result, state->ctx)) return;
 
-	state->result->sock = talloc_steal(state->result, sock);
-	state->result->port = port;
+	state->result->sockfd = sock->fd;
+	sock->fd = -1;
+	TALLOC_FREE(sock);
 	state->result->hostname = talloc_steal(state->result, state->host_name);
+
+	talloc_set_destructor(state->result, smbcli_socket_destructor);
 
 	state->result->event.ctx = state->ctx->event_ctx;
 	if (composite_nomem(state->result->event.ctx, state->ctx)) return;

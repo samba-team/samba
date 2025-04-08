@@ -63,11 +63,8 @@ struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
 		transport->options.max_protocol = PROTOCOL_LATEST;
 	}
 
-	TALLOC_FREE(sock->event.fde);
-	TALLOC_FREE(sock->event.te);
-
 	transport->conn = smbXcli_conn_create(transport,
-					      sock->sock->fd,
+					      sock->sockfd,
 					      sock->hostname,
 					      options->signing,
 					      0, /* smb1_capabilities */
@@ -78,7 +75,7 @@ struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
 		talloc_free(transport);
 		return NULL;
 	}
-	sock->sock->fd = -1;
+	sock->sockfd = -1;
 	TALLOC_FREE(sock);
 
 	talloc_set_destructor(transport, transport_destructor);

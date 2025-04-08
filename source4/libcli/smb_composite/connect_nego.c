@@ -117,9 +117,6 @@ static void smb_connect_nego_connect_done(struct composite_context *creq)
 		return;
 	}
 
-	TALLOC_FREE(sock->event.fde);
-	TALLOC_FREE(sock->event.te);
-
 	smb1_capabilities = 0;
 	smb1_capabilities |= CAP_LARGE_FILES;
 	smb1_capabilities |= CAP_NT_SMBS | CAP_RPC_REMOTE_APIS;
@@ -145,7 +142,7 @@ static void smb_connect_nego_connect_done(struct composite_context *creq)
 	}
 
 	state->conn = smbXcli_conn_create(state,
-					  sock->sock->fd,
+					  sock->sockfd,
 					  state->target_hostname,
 					  state->options.signing,
 					  smb1_capabilities,
@@ -155,7 +152,7 @@ static void smb_connect_nego_connect_done(struct composite_context *creq)
 	if (tevent_req_nomem(state->conn, req)) {
 		return;
 	}
-	sock->sock->fd = -1;
+	sock->sockfd = -1;
 	TALLOC_FREE(sock);
 
 	subreq = smbXcli_negprot_send(state,
