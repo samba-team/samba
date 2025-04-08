@@ -869,7 +869,8 @@ void process_smb(struct smbXsrv_connection *xconn,
 void smbd_process(struct tevent_context *ev_ctx,
 		  struct messaging_context *msg_ctx,
 		  int sock_fd,
-		  bool interactive);
+		  bool interactive,
+		  enum smb_transport_type transport_type);
 bool valid_smb1_header(const uint8_t *inbuf);
 bool init_smb1_request(struct smb_request *req,
 		      struct smbd_server_connection *sconn,

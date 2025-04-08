@@ -980,6 +980,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	smb_set_close_on_exec(fd);
 
 	if (s->parent->interactive) {
+		enum smb_transport_type transport_type = s->transport.type;
 		NTSTATUS status;
 
 		status = reinit_after_fork(msg_ctx, ev, true);
@@ -987,7 +988,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 			exit_server("reinit_after_fork() failed");
 			return;
 		}
-		smbd_process(ev, msg_ctx, fd, true);
+		smbd_process(ev, msg_ctx, fd, true, transport_type);
 		exit_server_cleanly("end of interactive mode");
 		return;
 	}
@@ -999,6 +1000,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 
 	pid = fork();
 	if (pid == 0) {
+		enum smb_transport_type transport_type = s->transport.type;
 		char addrstr[INET6_ADDRSTRLEN];
 		NTSTATUS status = NT_STATUS_OK;
 
@@ -1040,7 +1042,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		print_sockaddr(addrstr, sizeof(addrstr), &caddr.u.ss);
 		process_set_title("smbd[%s]", "client [%s]", addrstr);
 
-		smbd_process(ev, msg_ctx, fd, false);
+		smbd_process(ev, msg_ctx, fd, false, transport_type);
 	 exit:
 		exit_server_cleanly("end of child");
 		return;
@@ -2347,7 +2349,7 @@ extern void build_options(bool screen);
 	        /* Stop zombies */
 		smbd_setup_sig_chld_handler(parent);
 
-		smbd_process(ev_ctx, msg_ctx, sock, true);
+		smbd_process(ev_ctx, msg_ctx, sock, true, SMB_TRANSPORT_TYPE_TCP);
 
 		exit_server_cleanly(NULL);
 		return(0);

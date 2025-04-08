@@ -1210,6 +1210,7 @@ static int smbXsrv_connection_destructor(struct smbXsrv_connection *xconn)
 }
 
 NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
+			     enum smb_transport_type transport_type,
 			     NTTIME now, struct smbXsrv_connection **_xconn)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -1248,6 +1249,7 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 	}
 
 	xconn->transport.sock = sock_fd;
+	xconn->transport.type = transport_type;
 #if defined(WITH_SMB1SERVER)
 	smbd_echo_init(xconn);
 #endif
@@ -1883,7 +1885,8 @@ static void smbd_tevent_trace_callback_profile(enum tevent_trace_point point,
 void smbd_process(struct tevent_context *ev_ctx,
 		  struct messaging_context *msg_ctx,
 		  int sock_fd,
-		  bool interactive)
+		  bool interactive,
+		  enum smb_transport_type transport_type)
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
@@ -1943,7 +1946,11 @@ void smbd_process(struct tevent_context *ev_ctx,
 		smbd_setup_sig_hup_handler(sconn);
 	}
 
-	status = smbd_add_connection(client, sock_fd, now, &xconn);
+	status = smbd_add_connection(client,
+				     sock_fd,
+				     transport_type,
+				     now,
+				     &xconn);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
 		/*
 		 * send a negative session response "not listening on calling

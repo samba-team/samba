@@ -300,6 +300,7 @@ static NTSTATUS smb2srv_client_connection_pass(struct smbd_smb2_request *smb2req
 		.xconn_connect_time = smb2req->xconn->client->global->initial_connect_time,
 		.dst_server_id = global->server_id,
 		.client_connect_time = global->initial_connect_time,
+		.transport_type = smb2req->xconn->transport.type,
 	};
 
 	reqlen = iov_buflen(smb2req->in.vector, smb2req->in.vector_count);
@@ -1201,6 +1202,7 @@ static void smbXsrv_client_connection_pass_loop(struct tevent_req *subreq)
 
 	status = smbd_add_connection(client,
 				     sock_fd,
+				     pass_info0->transport_type,
 				     pass_info0->xconn_connect_time,
 				     &xconn);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {

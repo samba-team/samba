@@ -211,6 +211,7 @@ bool smbd_smb2_is_compound(const struct smbd_smb2_request *req);
 bool smbd_smb2_is_last_in_compound(const struct smbd_smb2_request *req);
 
 NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
+			     enum smb_transport_type transport_type,
 			     NTTIME now, struct smbXsrv_connection **_xconn);
 
 NTSTATUS reply_smb2002(struct smb_request *req, uint16_t choice);
@@ -345,6 +346,7 @@ struct smbXsrv_connection {
 		struct tevent_queue *shutdown_wait_queue;
 		int sock;
 		struct tevent_fd *fde;
+		enum smb_transport_type type;
 
 		struct {
 			bool got_session;

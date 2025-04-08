@@ -164,6 +164,7 @@ interface smbXsrv
 		NTTIME					xconn_connect_time;
 		server_id				dst_server_id;
 		NTTIME					client_connect_time;
+		uint8					transport_type;
 		DATA_BLOB 				negotiate_request;
 	} smbXsrv_connection_pass0;
 
@@ -229,6 +230,7 @@ interface smbXsrv
 		[ignore] smbXsrv_connection		*connection;
 		uint16					signing_algo;
 		uint16					encryption_cipher;
+		uint8					transport_type;
 	} smbXsrv_channel_global0;
 
 	typedef struct {

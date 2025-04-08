@@ -1432,6 +1432,7 @@ NTSTATUS smbXsrv_session_add_channel(struct smbXsrv_session *session,
 		.channel_id = conn->channel_id,
 		.creation_time = now,
 		.connection = conn,
+		.transport_type = conn->transport.type,
 	};
 
 	c->local_address = tsocket_address_string(conn->local_address,
