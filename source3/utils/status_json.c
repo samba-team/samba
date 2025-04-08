@@ -299,7 +299,31 @@ static int add_channel_to_json(struct json_object *parent_json,
 	struct timeval tv;
 	struct timeval_buf tv_buf;
 	char *time_str = NULL;
+	const char *transport_str = NULL;
+	enum smb_transport_type tt =
+		(enum smb_transport_type)channel->transport_type;
 	int result;
+
+	switch (tt) {
+	case SMB_TRANSPORT_TYPE_UNKNOWN:
+		transport_str = "unknown";
+		break;
+	case SMB_TRANSPORT_TYPE_NBT:
+		transport_str = "nbt";
+		break;
+	case SMB_TRANSPORT_TYPE_TCP:
+		transport_str = "tcp";
+		break;
+	}
+
+	if (transport_str == NULL) {
+		transport_str = talloc_asprintf(frame,
+						"unknown%u",
+						tt);
+		if (transport_str == NULL) {
+			goto failure;
+		}
+	}
 
 	sub_json = json_new_object();
 	if (json_is_invalid(&sub_json)) {
@@ -328,6 +352,10 @@ static int add_channel_to_json(struct json_object *parent_json,
 		goto failure;
 	}
 	result = json_add_string(&sub_json, "remote_address", channel->remote_address);
+	if (result < 0) {
+		goto failure;
+	}
+	result = json_add_string(&sub_json, "transport", transport_str);
 	if (result < 0) {
 		goto failure;
 	}
