@@ -1827,6 +1827,7 @@ extern void build_options(bool screen);
 	struct tevent_signal *se;
 	int profiling_level;
 	char *np_dir = NULL;
+	struct loadparm_context *lp_ctx = NULL;
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	static const struct smbd_shim smbd_shim_fns =
@@ -2027,6 +2028,11 @@ extern void build_options(bool screen);
 		exit(1);
 	}
 
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		exit_server("ERROR: loadparm_init_s3()");
+	}
+
 	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
 		if (!lp_parm_bool(-1, "server role check", "inhibit", false)) {
 			DBG_ERR("server role = 'active directory domain controller' not compatible with running smbd standalone. \n");
@@ -2182,11 +2188,9 @@ extern void build_options(bool screen);
 	}
 
 	if (lp_server_role() == ROLE_DOMAIN_BDC || lp_server_role() == ROLE_DOMAIN_PDC || lp_server_role() == ROLE_IPA_DC) {
-		struct loadparm_context *lp_ctx = loadparm_init_s3(NULL, loadparm_s3_helpers());
 		if (!open_schannel_session_store(NULL, lp_ctx)) {
 			exit_daemon("ERROR: Samba cannot open schannel store for secured NETLOGON operations.", EACCES);
 		}
-		TALLOC_FREE(lp_ctx);
 	}
 
 	if(!get_global_sam_sid()) {
