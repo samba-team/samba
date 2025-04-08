@@ -1323,16 +1323,10 @@ static void ldap_reload_certs(struct imessaging_context *msg_ctx,
 	SMB_ASSERT(msg_ctx == ldap_service->current_msg);
 
 	/* reload certificates */
-	status = tstream_tls_params_server(ldap_service,
-					   ldap_service->dns_host_name,
-					   lpcfg_tls_enabled(ldap_service->lp_ctx),
-					   lpcfg_tls_keyfile(frame, ldap_service->lp_ctx),
-					   lpcfg_tls_certfile(frame, ldap_service->lp_ctx),
-					   lpcfg_tls_cafile(frame, ldap_service->lp_ctx),
-					   lpcfg_tls_crlfile(frame, ldap_service->lp_ctx),
-					   lpcfg_tls_dhpfile(frame, ldap_service->lp_ctx),
-					   lpcfg_tls_priority(ldap_service->lp_ctx),
-					   &new_tls_params);
+	status = tstream_tls_params_server_lpcfg(ldap_service,
+						 ldap_service->dns_host_name,
+						 ldap_service->lp_ctx,
+						 &new_tls_params);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("ldapsrv failed tstream_tls_params_server - %s\n",
 			nt_errstr(status));
@@ -1448,16 +1442,10 @@ static NTSTATUS ldapsrv_task_init(struct task_server *task)
 
 	ldap_service->parent_pid = getpid();
 
-	status = tstream_tls_params_server(ldap_service,
-					   ldap_service->dns_host_name,
-					   lpcfg_tls_enabled(task->lp_ctx),
-					   lpcfg_tls_keyfile(ldap_service, task->lp_ctx),
-					   lpcfg_tls_certfile(ldap_service, task->lp_ctx),
-					   lpcfg_tls_cafile(ldap_service, task->lp_ctx),
-					   lpcfg_tls_crlfile(ldap_service, task->lp_ctx),
-					   lpcfg_tls_dhpfile(ldap_service, task->lp_ctx),
-					   lpcfg_tls_priority(task->lp_ctx),
-					   &ldap_service->tls_params);
+	status = tstream_tls_params_server_lpcfg(ldap_service,
+						 ldap_service->dns_host_name,
+						 ldap_service->lp_ctx,
+						 &ldap_service->tls_params);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("ldapsrv failed tstream_tls_params_server - %s\n",
 			nt_errstr(status));
