@@ -1090,11 +1090,15 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 {
 	struct smbd_open_socket *s;
 	uint16_t port = 0;
+	int protocol = 0;
+	bool rebind = false;
 
 	switch (transport->type) {
 	case SMB_TRANSPORT_TYPE_TCP:
 	case SMB_TRANSPORT_TYPE_NBT:
 		port = transport->port;
+		protocol = IPPROTO_TCP;
+		rebind = true;
 		break;
 	case SMB_TRANSPORT_TYPE_UNKNOWN:
 		/*
@@ -1119,7 +1123,7 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 	s->parent = parent;
 	s->transport = *transport;
 
-	s->fd = open_socket_in(SOCK_STREAM, ifss, port, true);
+	s->fd = open_socket_in_protocol(SOCK_STREAM, protocol, ifss, port, rebind);
 	if (s->fd < 0) {
 		int err = -(s->fd);
 		DBG_ERR("open_socket_in failed: %s\n", strerror(err));
