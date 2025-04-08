@@ -38,11 +38,11 @@ struct fd_handle *fd_handle_create(TALLOC_CTX *mem_ctx)
 {
 	struct fd_handle *fh = NULL;
 
-	fh = talloc_zero(mem_ctx, struct fd_handle);
+	fh = talloc(mem_ctx, struct fd_handle);
 	if (fh == NULL) {
 		return NULL;
 	}
-	fh->fd = -1;
+	*fh = (struct fd_handle) { .fd = -1, };
 
 	talloc_set_destructor(fh, fd_handle_destructor);
 
