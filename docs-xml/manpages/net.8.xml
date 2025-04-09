@@ -3277,7 +3277,7 @@ Requests an offline domain join by providing file-based provisioning data. This 
 
 <para>
 	Example:
-	net offlinejoin requestodj -U administrator%secret loadfile=provisioning.txt
+	net offlinejoin requestodj loadfile=provisioning.txt
 </para>
 
 </refsect3>
