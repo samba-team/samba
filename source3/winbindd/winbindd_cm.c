@@ -88,6 +88,7 @@
 #include "lib/util/string_wrappers.h"
 #include "lib/global_contexts.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
+#include "libsmb/smbsock_connect.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

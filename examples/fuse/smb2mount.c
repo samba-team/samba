@@ -24,6 +24,7 @@
 #include "lib/param/param.h"
 #include "client.h"
 #include "libsmb/proto.h"
+#include "libsmb/smbsock_connect.h"
 #include "clifuse.h"
 
 static struct cli_state *connect_one(struct cli_credentials *creds,

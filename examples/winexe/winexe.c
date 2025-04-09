@@ -32,6 +32,7 @@
 #include "librpc/gen_ndr/ndr_svcctl_c.h"
 #include "rpc_client/cli_pipe.h"
 #include "libcli/smb/smbXcli_base.h"
+#include "libsmb/smbsock_connect.h"
 #include "libcli/util/werror.h"
 #include "lib/async_req/async_sock.h"
 #include "lib/cmdline/cmdline.h"

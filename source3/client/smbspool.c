@@ -27,6 +27,7 @@
 #include "system/passwd.h"
 #include "system/kerberos.h"
 #include "libsmb/libsmb.h"
+#include "libsmb/smbsock_connect.h"
 #include "lib/param/param.h"
 #include "lib/krb5_wrap/krb5_samba.h"
 

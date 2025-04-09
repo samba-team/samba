@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "libsmb/smbsock_connect.h"
 #include "torture/proto.h"
 
 bool run_smb_any_connect(int dummy)

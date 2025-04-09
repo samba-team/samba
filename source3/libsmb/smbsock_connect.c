@@ -25,6 +25,7 @@
 #include "async_smb.h"
 #include "../libcli/smb/read_smb.h"
 #include "libsmb/nmblib.h"
+#include "libsmb/smbsock_connect.h"
 
 struct cli_session_request_state {
 	struct tevent_context *ev;

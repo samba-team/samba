@@ -29,6 +29,7 @@
 #include "secrets.h"
 #include "../libcli/security/security.h"
 #include "libsmb/libsmb.h"
+#include "libsmb/smbsock_connect.h"
 #include "lib/param/param.h"
 #include "auth/gensec/gensec.h"
 #include "libcli/auth/netlogon_creds_cli.h"

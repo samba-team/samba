@@ -33,6 +33,7 @@
 #include "libcli/security/security.h"
 #include "libsmb/nmblib.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "libsmb/smbsock_connect.h"
 
 /*
  * Check a server for being alive and well.

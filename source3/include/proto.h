@@ -649,53 +649,6 @@ NTSTATUS sessionid_traverse_read(int (*fn)(const char *key,
 struct AvahiPoll *tevent_avahi_poll(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev);
 
-/* The following definitions come from libsmb/smbsock_connect.c */
-
-struct smb_transports smbsock_transports_from_port(uint16_t port);
-
-struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
-					struct tevent_context *ev,
-					const struct sockaddr_storage *addr,
-					const struct smb_transports *transports,
-					const char *called_name,
-					int called_type,
-					const char *calling_name,
-					int calling_type)
-	NONNULL(2) NONNULL(3) NONNULL(4);
-
-NTSTATUS smbsock_connect_recv(struct tevent_req *req, int *sock,
-			      uint16_t *ret_port);
-NTSTATUS smbsock_connect(const struct sockaddr_storage *addr,
-			 const struct smb_transports *transports,
-			 const char *called_name, int called_type,
-			 const char *calling_name, int calling_type,
-			 int *pfd, uint16_t *ret_port, int sec_timeout)
-	NONNULL(1) NONNULL(2) NONNULL(7);
-
-struct tevent_req *smbsock_any_connect_send(TALLOC_CTX *mem_ctx,
-					    struct tevent_context *ev,
-					    const struct sockaddr_storage *addrs,
-					    const char **called_names,
-					    int *called_types,
-					    const char **calling_names,
-					    int *calling_types,
-					    size_t num_addrs,
-					    const struct smb_transports *transports)
-	NONNULL(2) NONNULL(3) NONNULL(9);
-NTSTATUS smbsock_any_connect_recv(struct tevent_req *req, int *pfd,
-				  size_t *chosen_index, uint16_t *chosen_port);
-NTSTATUS smbsock_any_connect(const struct sockaddr_storage *addrs,
-			     const char **called_names,
-			     int *called_types,
-			     const char **calling_names,
-			     int *calling_types,
-			     size_t num_addrs,
-			     const struct smb_transports *transports,
-			     int sec_timeout,
-			     int *pfd, size_t *chosen_index,
-			     uint16_t *chosen_port)
-	NONNULL(1) NONNULL(7) NONNULL(9);
-
 /* The following definitions come from lib/util_wellknown.c  */
 
 bool sid_check_is_wellknown_domain(const struct dom_sid *sid, const char **name);

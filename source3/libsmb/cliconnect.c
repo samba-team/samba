@@ -31,6 +31,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
 #include "libsmb/nmblib.h"
+#include "libsmb/smbsock_connect.h"
 #include "librpc/ndr/libndr.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "../libcli/smb/smb_seal.h"

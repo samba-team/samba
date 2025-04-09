@@ -31,6 +31,7 @@
 #include "../libcli/security/security.h"
 #include "passdb.h"
 #include "libsmb/libsmb.h"
+#include "libsmb/smbsock_connect.h"
 #include "auth/gensec/gensec.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "messages.h"
