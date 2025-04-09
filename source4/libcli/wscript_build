@@ -87,7 +87,7 @@ bld.SAMBA_LIBRARY('smbclient-raw',
 	source='raw/rawfile.c raw/smb_signing.c raw/clisocket.c raw/clitransport.c raw/clisession.c raw/clitree.c raw/clierror.c raw/rawrequest.c raw/rawreadwrite.c raw/rawsearch.c raw/rawsetfileinfo.c raw/raweas.c raw/rawtrans.c raw/clioplock.c raw/rawnegotiate.c raw/rawfsinfo.c raw/rawfileinfo.c raw/rawnotify.c raw/rawioctl.c raw/rawacl.c raw/rawdate.c raw/rawlpq.c raw/rawshadow.c',
 	autoproto='raw/raw_proto.h',
 	public_deps='samba_socket LIBPACKET LIBCRYPTO',
-	deps='cli_composite LIBCLI_RESOLVE samba-security ndr samba-util samba-errors charset talloc LIBCLI_SMB_COMPOSITE tevent cli_smb_common',
+	deps='cli_composite LIBCLI_RESOLVE samba-security ndr samba-util samba-errors charset talloc LIBCLI_SMB_COMPOSITE tevent cli_smb_common libsmb',
 	private_headers='raw/request.h:smb_request.h raw/signing.h:smb_raw_signing.h raw/libcliraw.h:smb_cliraw.h raw/interfaces.h:smb_raw_interfaces.h raw/smb.h:smb_raw.h raw/trans2.h:smb_raw_trans2.h',
 	private_library=True,
 	)
