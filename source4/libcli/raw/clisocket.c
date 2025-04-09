@@ -428,7 +428,7 @@ static void smbcli_sock_connect_recv_conn(struct composite_context *ctx)
 
 	state->result->sock = talloc_steal(state->result, sock);
 	state->result->port = port;
-	state->result->hostname = talloc_steal(sock, state->host_name);
+	state->result->hostname = talloc_steal(state->result, state->host_name);
 
 	state->result->event.ctx = state->ctx->event_ctx;
 	if (composite_nomem(state->result->event.ctx, state->ctx)) return;
