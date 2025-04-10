@@ -394,6 +394,7 @@ NTSTATUS smb2_connect_recv(struct tevent_req *req,
 NTSTATUS smb2_connect_ext(TALLOC_CTX *mem_ctx,
 			  const char *host,
 			  const char *share,
+			  struct loadparm_context *lp_ctx,
 			  struct resolve_context *resolve_ctx,
 			  struct cli_credentials *credentials,
 			  struct smbXcli_conn **existing_conn,
@@ -462,7 +463,7 @@ NTSTATUS smb2_connect(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 
-	status = smb2_connect_ext(mem_ctx, host, share, resolve_ctx,
+	status = smb2_connect_ext(mem_ctx, host, share, lp_ctx, resolve_ctx,
 				  credentials,
 				  NULL, /* existing_conn */
 				  0, /* previous_session_id */
