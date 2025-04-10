@@ -88,6 +88,7 @@ ssize_t smbcli_smbwrite(struct smbcli_tree *tree,
 
 bool smbcli_socket_connect(struct smbcli_state *cli, const char *server, 
 			   struct tevent_context *ev_ctx,
+			   struct loadparm_context *lp_ctx,
 			   struct resolve_context *resolve_ctx,
 			   struct smbcli_options *options,
 			   const char *socket_options,

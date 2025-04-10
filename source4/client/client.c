@@ -3256,6 +3256,7 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 			 const char *destip,
 			 int name_type,
 			 struct tevent_context *ev_ctx,
+			 struct loadparm_context *lp_ctx,
 			 struct resolve_context *resolve_ctx,
 			 struct smbcli_options *options,
              const char *socket_options)
@@ -3278,7 +3279,7 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	}
 
 	ok = smbcli_socket_connect(cli, server_name,
-				   ev_ctx, resolve_ctx, options,
+				   ev_ctx, lp_ctx, resolve_ctx, options,
 				   socket_options,
 				   &calling, &called);
 	if (!ok) {
@@ -3524,6 +3525,7 @@ int main(int argc, char *argv[])
 		rc = do_message_op(lpcfg_netbios_name(lp_ctx), desthost,
 				   dest_ip,
 				   name_type, ev_ctx,
+				   lp_ctx,
 				   lpcfg_resolve_context(lp_ctx),
 				   &smb_options,
                    lpcfg_socket_options(lp_ctx));
