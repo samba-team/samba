@@ -2944,7 +2944,7 @@ static int net_ads_keytab_list(struct net_context *c, int argc, const char **arg
 		d_printf("%s\n%s",
 			 _("Usage:"),
 			 _("net ads keytab list [keytab]\n"
-			   "  List a local keytab\n"
+			   "  List a local keytab (default: krb5 default)\n"
 			   "    keytab\tKeytab to list\n"));
 		return -1;
 	}

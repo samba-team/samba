@@ -34,12 +34,12 @@
 
 #ifdef HAVE_KRB5
 
-#ifdef HAVE_ADS
-
 /* This MAX_NAME_LEN is a constant defined in krb5.h */
 #ifndef MAX_KEYTAB_NAME_LEN
 #define MAX_KEYTAB_NAME_LEN 1100
 #endif
+
+#ifdef HAVE_ADS
 
 enum spn_spec_type {
 	SPN_SPEC_ACCOUNT_NAME,
@@ -1152,52 +1152,6 @@ params_ready:
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
-
-static krb5_error_code ads_keytab_open(krb5_context context,
-				       krb5_keytab *keytab)
-{
-	char keytab_str[MAX_KEYTAB_NAME_LEN] = {0};
-	const char *keytab_name = NULL;
-	krb5_error_code ret = 0;
-
-	switch (lp_kerberos_method()) {
-	case KERBEROS_VERIFY_SYSTEM_KEYTAB:
-	case KERBEROS_VERIFY_SECRETS_AND_KEYTAB:
-		ret = krb5_kt_default_name(context,
-					   keytab_str,
-					   sizeof(keytab_str) - 2);
-		if (ret != 0) {
-			DBG_WARNING("Failed to get default keytab name\n");
-			goto out;
-		}
-		keytab_name = keytab_str;
-		break;
-	case KERBEROS_VERIFY_DEDICATED_KEYTAB:
-		keytab_name = lp_dedicated_keytab_file();
-		break;
-	default:
-		DBG_ERR("Invalid kerberos method set (%d)\n",
-			lp_kerberos_method());
-		ret = KRB5_KT_BADNAME;
-		goto out;
-	}
-
-	if (keytab_name == NULL || keytab_name[0] == '\0') {
-		DBG_ERR("Invalid keytab name\n");
-		ret = KRB5_KT_BADNAME;
-		goto out;
-	}
-
-	ret = smb_krb5_kt_open(context, keytab_name, true, keytab);
-	if (ret != 0) {
-		DBG_WARNING("smb_krb5_kt_open failed (%s)\n",
-			    error_message(ret));
-		goto out;
-	}
-
-out:
-	return ret;
-}
 #endif /* HAVE_ADS */
 
 /**********************************************************************
@@ -1211,6 +1165,7 @@ int ads_keytab_list(const char *keytab_name)
 	krb5_keytab keytab = NULL;
 	krb5_kt_cursor cursor;
 	krb5_keytab_entry kt_entry;
+	char default_keytab[MAX_KEYTAB_NAME_LEN] = {0};
 
 	ZERO_STRUCT(kt_entry);
 	ZERO_STRUCT(cursor);
@@ -1223,14 +1178,22 @@ int ads_keytab_list(const char *keytab_name)
 	}
 
 	if (keytab_name == NULL) {
-#ifdef HAVE_ADS
-		ret = ads_keytab_open(context, &keytab);
-#else
-		ret = ENOENT;
-#endif
-	} else {
-		ret = smb_krb5_kt_open(context, keytab_name, False, &keytab);
+		/*
+		 * If you don't specify a keytab, assume we want the default
+		 * keytab.
+		 */
+		ret = krb5_kt_default_name(context,
+					   default_keytab,
+					   sizeof(default_keytab) - 2);
+		if (ret != 0) {
+			DBG_WARNING("Failed to get default keytab name\n");
+			goto out;
+		}
+
+		keytab_name = default_keytab;
 	}
+
+	ret = smb_krb5_kt_open(context, keytab_name, false, &keytab);
 	if (ret) {
 		DEBUG(1, ("smb_krb5_kt_open failed (%s)\n",
 			  error_message(ret)));
