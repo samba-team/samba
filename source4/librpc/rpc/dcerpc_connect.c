@@ -279,6 +279,7 @@ static void continue_smbXcli_connect(struct tevent_req *subreq)
 		subreq = smb2_connect_send(s, c->event_ctx,
 				conn->in.dest_host,
 				conn->in.service,
+				s->lp_ctx,
 				s->io.resolve_ctx,
 				conn->in.credentials,
 				conn->in.fallback_to_anonymous,
