@@ -213,6 +213,7 @@ static bool torture_smb2_scan(struct torture_context *tctx)
 
 	status = smb2_connect(mem_ctx, host,
 			      share,
+			      tctx->lp_ctx,
 			      lpcfg_resolve_context(tctx->lp_ctx),
 			      samba_cmdline_get_creds(),
 			      &tree, tctx->ev, &options,
@@ -230,6 +231,7 @@ static bool torture_smb2_scan(struct torture_context *tctx)
 			talloc_free(tree);
 			status = smb2_connect(mem_ctx, host,
 					      share,
+					      tctx->lp_ctx,
 					      lpcfg_resolve_context(tctx->lp_ctx),
 					      samba_cmdline_get_creds(),
 					      &tree, tctx->ev, &options,

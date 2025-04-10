@@ -292,6 +292,7 @@ static bool open_smb2_connection_no_level2_oplocks(struct torture_context *tctx,
 	options.use_level2_oplocks = false;
 
 	status = smb2_connect(tctx, host, share,
+			      tctx->lp_ctx,
 			      lpcfg_resolve_context(tctx->lp_ctx),
 			      samba_cmdline_get_creds(),
 			      tree, tctx->ev, &options,
