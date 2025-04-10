@@ -48,6 +48,7 @@ bool smbcli_socket_connect(struct smbcli_state *cli, const char *server,
 				     NULL, /* host_addr */
 				     &cli->options,
 				     server,
+				     lp_ctx,
 				     resolve_ctx,
 				     ev_ctx,
 				     socket_options,
