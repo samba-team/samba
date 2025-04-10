@@ -1444,6 +1444,7 @@ static bool connect_preferred_dc(TALLOC_CTX *mem_ctx,
 	struct smb_transports ts =
 		smb_transports_parse("client smb transports",
 			lp_client_smb_transports());
+	struct loadparm_context *lp_ctx = NULL;
 	NTSTATUS status;
 	bool ok;
 
@@ -1511,7 +1512,13 @@ static bool connect_preferred_dc(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	status = smbsock_connect(&domain->dcaddr, &ts,
+	lp_ctx = loadparm_init_s3(talloc_tos(), loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		DBG_ERR("loadparm_init_s3 failed\n");
+		return false;
+	}
+
+	status = smbsock_connect(&domain->dcaddr, lp_ctx, &ts,
 				 domain->dcname, -1, NULL, -1,
 				 fd, NULL, 10);
 	if (!NT_STATUS_IS_OK(status)) {

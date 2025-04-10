@@ -752,6 +752,7 @@ NTSTATUS smbsock_connect_recv(struct tevent_req *req, int *sock,
 }
 
 NTSTATUS smbsock_connect(const struct sockaddr_storage *addr,
+			 struct loadparm_context *lp_ctx,
 			 const struct smb_transports *transports,
 			 const char *called_name, int called_type,
 			 const char *calling_name, int calling_type,
