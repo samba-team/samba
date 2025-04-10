@@ -814,6 +814,7 @@ static void smbsock_any_connect_connected(struct tevent_req *subreq);
 
 struct tevent_req *smbsock_any_connect_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
+					    struct loadparm_context *lp_ctx,
 					    const struct sockaddr_storage *addrs,
 					    const char **called_names,
 					    int *called_types,
@@ -1046,7 +1047,7 @@ NTSTATUS smbsock_any_connect(const struct sockaddr_storage *addrs,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = smbsock_any_connect_send(frame, ev, addrs,
+	req = smbsock_any_connect_send(frame, ev, lp_ctx, addrs,
 				       called_names, called_types,
 				       calling_names, calling_types,
 				       num_addrs, transports);

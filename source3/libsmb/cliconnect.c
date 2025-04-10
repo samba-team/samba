@@ -2423,6 +2423,7 @@ static struct tevent_req *cli_connect_sock_send(
 {
 	struct tevent_req *req, *subreq;
 	struct cli_connect_sock_state *state;
+	struct loadparm_context *lp_ctx = NULL;
 	struct sockaddr_storage *addrs = NULL;
 	unsigned i;
 	unsigned num_addrs = 0;
@@ -2434,6 +2435,11 @@ static struct tevent_req *cli_connect_sock_send(
 		return NULL;
 	}
 	state->transports = *transports;
+
+	lp_ctx = loadparm_init_s3(talloc_tos(), loadparm_s3_helpers());
+	if (tevent_req_nomem(lp_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
 
 	if ((pss == NULL) || is_zero_addr(pss)) {
 
@@ -2476,7 +2482,8 @@ static struct tevent_req *cli_connect_sock_send(
 	}
 
 	subreq = smbsock_any_connect_send(
-		state, ev, addrs, state->called_names, state->called_types,
+		state, ev, lp_ctx, addrs,
+		state->called_names, state->called_types,
 		state->calling_names, NULL, num_addrs, &state->transports);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
