@@ -321,6 +321,7 @@ struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 						   const char *host_addr,
 						   const struct smbcli_options *options,
 						   const char *host_name,
+						   struct loadparm_context *lp_ctx,
 						   struct resolve_context *resolve_ctx,
 						   struct tevent_context *event_ctx,
 						   const char *socket_options,
@@ -487,7 +488,7 @@ NTSTATUS smbcli_sock_connect(TALLOC_CTX *mem_ctx,
 {
 	struct composite_context *c =
 		smbcli_sock_connect_send(mem_ctx, host_addr, options,
-					 host_name, resolve_ctx,
+					 host_name, lp_ctx, resolve_ctx,
 					 event_ctx, socket_options,
 					 calling, called);
 	return smbcli_sock_connect_recv(c, mem_ctx, result);

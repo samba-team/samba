@@ -477,6 +477,7 @@ struct composite_context *smb_composite_connect_send(struct smb_composite_connec
 					       NULL,
 					       &io->in.options,
 					       io->in.dest_host, 
+					       lp_ctx,
 					       resolve_ctx, c->event_ctx, 
 					       io->in.socket_options,
 					       &state->calling,
