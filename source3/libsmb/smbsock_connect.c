@@ -397,6 +397,7 @@ static void smbsock_connect_tcp_connected(struct tevent_req *subreq);
 
 struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
+					struct loadparm_context *lp_ctx,
 					const struct sockaddr_storage *addr,
 					const struct smb_transports *transports,
 					const char *called_name,
@@ -767,7 +768,7 @@ NTSTATUS smbsock_connect(const struct sockaddr_storage *addr,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = smbsock_connect_send(frame, ev, addr, transports,
+	req = smbsock_connect_send(frame, ev, lp_ctx, addr, transports,
 				   called_name, called_type,
 				   calling_name, calling_type);
 	if (req == NULL) {
@@ -789,6 +790,7 @@ NTSTATUS smbsock_connect(const struct sockaddr_storage *addr,
 
 struct smbsock_any_connect_state {
 	struct tevent_context *ev;
+	struct loadparm_context *lp_ctx;
 	const struct sockaddr_storage *addrs;
 	const char **called_names;
 	int *called_types;
@@ -833,6 +835,7 @@ struct tevent_req *smbsock_any_connect_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	state->ev = ev;
+	state->lp_ctx = lp_ctx;
 	state->addrs = addrs;
 	state->num_addrs = num_addrs;
 	state->called_names = called_names;
@@ -927,7 +930,10 @@ static bool smbsock_any_connect_send_next(
 		return false;
 	}
 	subreq = smbsock_connect_send(
-		state->requests, state->ev, &state->addrs[state->num_sent],
+		state->requests,
+		state->ev,
+		state->lp_ctx,
+		&state->addrs[state->num_sent],
 		&state->transports,
 		(state->called_names != NULL)
 		? state->called_names[state->num_sent] : NULL,
