@@ -79,8 +79,6 @@ struct composite_context *smb_composite_fetchfile_send(struct smb_composite_fetc
 						       struct tevent_context *event_ctx);
 NTSTATUS smb_composite_fetchfile_recv(struct composite_context *c,
 				      TALLOC_CTX *mem_ctx);
-NTSTATUS smb_composite_fetchfile(struct smb_composite_fetchfile *io,
-				 TALLOC_CTX *mem_ctx);
 
 /*
   a composite open/write(s)/close request that saves a whole file from

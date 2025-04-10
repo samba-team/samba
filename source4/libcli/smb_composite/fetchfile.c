@@ -184,10 +184,3 @@ NTSTATUS smb_composite_fetchfile_recv(struct composite_context *c,
 	talloc_free(c);
 	return status;
 }
-
-NTSTATUS smb_composite_fetchfile(struct smb_composite_fetchfile *io,
-				 TALLOC_CTX *mem_ctx)
-{
-	struct composite_context *c = smb_composite_fetchfile_send(io, NULL);
-	return smb_composite_fetchfile_recv(c, mem_ctx);
-}
