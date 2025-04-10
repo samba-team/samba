@@ -196,18 +196,3 @@ NTSTATUS smb_composite_fsinfo_recv(struct composite_context *c, TALLOC_CTX *mem_
 	talloc_free(c);
 	return status;
 }
-
-
-/*
-  composite fsinfo call - sync interface
-*/
-NTSTATUS smb_composite_fsinfo(struct smbcli_tree *tree, 
-			      TALLOC_CTX *mem_ctx,
-			      struct smb_composite_fsinfo *io,
-			      struct resolve_context *resolve_ctx,
-			      struct tevent_context *ev)
-{
-	struct composite_context *c = smb_composite_fsinfo_send(tree, io, resolve_ctx, ev);
-	return smb_composite_fsinfo_recv(c, mem_ctx);
-}
-

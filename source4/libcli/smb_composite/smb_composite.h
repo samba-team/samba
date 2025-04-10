@@ -211,11 +211,6 @@ struct composite_context *smb_composite_fsinfo_send(struct smbcli_tree *tree,
 						    struct resolve_context *resolve_ctx,
 						    struct tevent_context *event_ctx);
 NTSTATUS smb_composite_fsinfo_recv(struct composite_context *c, TALLOC_CTX *mem_ctx);
-NTSTATUS smb_composite_fsinfo(struct smbcli_tree *tree, 
-			      TALLOC_CTX *mem_ctx,
-			      struct smb_composite_fsinfo *io,
-			      struct resolve_context *resolve_ctx,
-			      struct tevent_context *ev);
 
 /*
   composite call for appending new acl to the file's security descriptor and get 
