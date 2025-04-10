@@ -109,6 +109,7 @@ NTSTATUS smb_composite_savefile(struct smbcli_tree *tree,
 */
 struct tevent_req *smb_connect_nego_send(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,
+					 struct loadparm_context *lp_ctx,
 					 struct resolve_context *resolve_ctx,
 					 const struct smbcli_options *options,
 					 const char *socket_options,

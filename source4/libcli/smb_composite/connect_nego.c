@@ -45,6 +45,7 @@ static void smb_connect_nego_nego_done(struct tevent_req *subreq);
 
 struct tevent_req *smb_connect_nego_send(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,
+					 struct loadparm_context *lp_ctx,
 					 struct resolve_context *resolve_ctx,
 					 const struct smbcli_options *options,
 					 const char *socket_options,

@@ -61,6 +61,7 @@ struct dcerpc_pipe_connect {
 struct pipe_np_smb_state {
 	struct smb_composite_connect conn;
 	struct dcerpc_pipe_connect io;
+	struct loadparm_context *lp_ctx;
 };
 
 
@@ -154,6 +155,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 	c->private_data = s;
 
 	s->io  = *io;
+	s->lp_ctx = lp_ctx;
 	conn   = &s->conn;
 
 	if (smbXcli_conn_is_connected(s->io.smb.conn)) {
@@ -234,6 +236,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 
 	subreq = smb_connect_nego_send(s,
 				       c->event_ctx,
+				       s->lp_ctx,
 				       s->io.resolve_ctx,
 				       &conn->in.options,
 				       conn->in.socket_options,
