@@ -1544,6 +1544,7 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 		    uint32_t request_flags,
 		    int *fd)
 {
+	struct loadparm_context *lp_ctx = NULL;
 	struct dc_name_ip *dcs = NULL;
 	int num_dcs = 0;
 
@@ -1575,6 +1576,12 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
+	lp_ctx = loadparm_init_s3(talloc_tos(), loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		DBG_ERR("loadparm_init_s3 failed\n");
+		return false;
+	}
+
  again:
 	D_DEBUG("Retrieving a list of IP addresses for DCs.\n");
 	if (!get_dcs(mem_ctx, domain, &dcs, &num_dcs, request_flags) || (num_dcs == 0))
@@ -1603,7 +1610,8 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 		"(timeout of 10 sec for each DC).\n",
 		num_dcs);
 	status = smbsock_any_connect(addrs, dcnames, NULL, NULL, NULL,
-				     num_addrs, &ts, 10, fd, &fd_index, NULL);
+				     num_addrs, lp_ctx, &ts,
+				     10, fd, &fd_index, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		for (i=0; i<num_dcs; i++) {
 			char ab[INET6_ADDRSTRLEN];

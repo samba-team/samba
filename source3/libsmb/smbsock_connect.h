@@ -60,10 +60,11 @@ NTSTATUS smbsock_any_connect(const struct sockaddr_storage *addrs,
 			     const char **calling_names,
 			     int *calling_types,
 			     size_t num_addrs,
+			     struct loadparm_context *lp_ctx,
 			     const struct smb_transports *transports,
 			     int sec_timeout,
 			     int *pfd, size_t *chosen_index,
 			     uint16_t *chosen_port)
-	NONNULL(1) NONNULL(7) NONNULL(9);
+	NONNULL(1) NONNULL(7) NONNULL(8) NONNULL(10);
 
 #endif /* _LIBSMB_SMBSOCK_CONNECT_H_ */

@@ -18,6 +18,8 @@
 */
 
 #include "includes.h"
+#include "lib/param/param.h"
+#include "source3/param/loadparm.h"
 #include "libsmb/smbsock_connect.h"
 #include "torture/proto.h"
 
@@ -30,7 +32,13 @@ bool run_smb_any_connect(int dummy)
 		smb_transports_parse("client smb transports",
 			lp_client_smb_transports());
 	size_t chosen_index;
+	struct loadparm_context *lp_ctx = NULL;
 	uint16_t port;
+
+	lp_ctx = loadparm_init_s3(NULL, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		return false;
+	}
 
 	interpret_string_addr(&addrs[0], "192.168.99.5", 0);
 	interpret_string_addr(&addrs[1], "192.168.99.6", 0);
@@ -39,8 +47,9 @@ bool run_smb_any_connect(int dummy)
 	interpret_string_addr(&addrs[4], "192.168.99.9", 0);
 
 	status = smbsock_any_connect(addrs, NULL, NULL, NULL, NULL,
-				     ARRAY_SIZE(addrs), &ts, 0,
+				     ARRAY_SIZE(addrs), lp_ctx, &ts, 0,
 				     &fd, &chosen_index, &port);
+	TALLOC_FREE(lp_ctx);
 
 	d_printf("smbsock_any_connect returned %s (fd %d)\n",
 		 nt_errstr(status), NT_STATUS_IS_OK(status) ? fd : -1);
