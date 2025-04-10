@@ -153,6 +153,7 @@ struct smb_composite_connect {
 
 struct composite_context *smb_composite_connect_send(struct smb_composite_connect *io,
 						     TALLOC_CTX *mem_ctx,
+						     struct loadparm_context *lp_ctx,
 						     struct resolve_context *resolve_ctx,
 						     struct tevent_context *event_ctx);
 NTSTATUS smb_composite_connect_recv(struct composite_context *c, TALLOC_CTX *mem_ctx);

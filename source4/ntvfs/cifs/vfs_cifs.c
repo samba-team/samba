@@ -304,6 +304,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	}
 
 	creq = smb_composite_connect_send(&io, p,
+					  ntvfs->ctx->lp_ctx,
 					  lpcfg_resolve_context(ntvfs->ctx->lp_ctx),
 					  ntvfs->ctx->event_ctx);
 	status = smb_composite_connect_recv(creq, p);

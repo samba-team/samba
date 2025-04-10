@@ -153,7 +153,7 @@ struct composite_context *smb_composite_fetchfile_send(struct smb_composite_fetc
 	state->connect->in.options	= io->in.options;
 	state->connect->in.session_options = io->in.session_options;
 
-	state->creq = smb_composite_connect_send(state->connect, state, 
+	state->creq = smb_composite_connect_send(state->connect, state, lp_ctx,
 						 io->in.resolve_ctx, event_ctx);
 	if (state->creq == NULL) goto failed;
 

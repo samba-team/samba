@@ -298,6 +298,7 @@ static void continue_smbXcli_connect(struct tevent_req *subreq)
 	 * on the established connection.
 	 */
 	creq = smb_composite_connect_send(conn, s->io.conn,
+					  s->lp_ctx,
 					  s->io.resolve_ctx,
 					  c->event_ctx);
 	if (composite_nomem(creq, c)) return;
