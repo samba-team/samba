@@ -3179,6 +3179,7 @@ return a connection to a server
 *******************************************************/
 static bool do_connect(struct smbclient_context *ctx,
 		       struct tevent_context *ev_ctx,
+		       struct loadparm_context *lp_ctx,
 		       struct resolve_context *resolve_ctx,
 		       const char *specified_server,
 		       const char *specified_share,
@@ -3222,7 +3223,7 @@ static bool do_connect(struct smbclient_context *ctx,
 	status = smbcli_full_connection(ctx, &ctx->cli, server,
 					share, NULL,
 					socket_options,
-					cred, resolve_ctx,
+					cred, lp_ctx, resolve_ctx,
 					ev_ctx, options, session_options,
 					gensec_settings);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3532,7 +3533,8 @@ int main(int argc, char *argv[])
 		goto done;
 	}
 
-	if (!do_connect(ctx, ev_ctx, lpcfg_resolve_context(lp_ctx),
+	if (!do_connect(ctx, ev_ctx, lp_ctx,
+			lpcfg_resolve_context(lp_ctx),
 			desthost, service,
 			lpcfg_socket_options(lp_ctx),
 			creds,

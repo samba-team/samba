@@ -170,6 +170,7 @@ static NTSTATUS gp_cli_connect(struct gp_context *gp_ctx)
 			NULL,
 			lpcfg_socket_options(gp_ctx->lp_ctx),
 			gp_ctx->credentials,
+			gp_ctx->lp_ctx,
 			lpcfg_resolve_context(gp_ctx->lp_ctx),
 			gp_ctx->ev_ctx,
 			&options,

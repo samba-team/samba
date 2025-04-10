@@ -270,6 +270,7 @@ static bool test_session_expire1(struct torture_context *tctx)
 					share, NULL,
 					lpcfg_socket_options(tctx->lp_ctx),
 					samba_cmdline_get_creds(),
+					tctx->lp_ctx,
 					lpcfg_resolve_context(tctx->lp_ctx),
 					tctx->ev, &options, &session_options,
 					lpcfg_gensec_settings(tctx, tctx->lp_ctx));

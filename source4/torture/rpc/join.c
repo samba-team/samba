@@ -38,6 +38,7 @@ bool torture_rpc_join(struct torture_context *torture)
 					"IPC$", NULL,
 					lpcfg_socket_options(torture->lp_ctx),
 					machine_account,
+					torture->lp_ctx,
 					lpcfg_resolve_context(torture->lp_ctx),
 					torture->ev, &options, &session_options,
 					lpcfg_gensec_settings(torture, torture->lp_ctx));
@@ -65,6 +66,7 @@ bool torture_rpc_join(struct torture_context *torture)
 					"IPC$", NULL,
 					lpcfg_socket_options(torture->lp_ctx),
 					machine_account,
+					torture->lp_ctx,
 					lpcfg_resolve_context(torture->lp_ctx),
 					torture->ev, &options, &session_options,
 					lpcfg_gensec_settings(torture, torture->lp_ctx));

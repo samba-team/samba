@@ -238,6 +238,7 @@ static struct smbcli_state * init_smb_session(struct resolve_context *resolve_ct
 				NULL /* devtype */,
 				socket_options,
 				samba_cmdline_get_creds(),
+				samba_cmdline_get_lp_ctx(),
 				resolve_ctx,
 				ev, options,
 				session_options,
