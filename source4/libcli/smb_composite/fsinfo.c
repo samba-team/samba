@@ -127,6 +127,7 @@ static void fsinfo_composite_handler(struct composite_context *creq)
 */
 struct composite_context *smb_composite_fsinfo_send(struct smbcli_tree *tree, 
 						    struct smb_composite_fsinfo *io,
+						    struct loadparm_context *lp_ctx,
 						    struct resolve_context *resolve_ctx,
 						    struct tevent_context *event_ctx)
 {

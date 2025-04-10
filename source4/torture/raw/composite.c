@@ -358,7 +358,8 @@ static bool test_fsinfo(struct torture_context *tctx, struct smbcli_state *cli)
 	c = talloc_array(tctx, struct composite_context *, torture_numops);
 
 	for (i=0; i<torture_numops; i++) {
-		c[i] = smb_composite_fsinfo_send(cli->tree, &io1, lpcfg_resolve_context(tctx->lp_ctx), event_ctx);
+		c[i] = smb_composite_fsinfo_send(cli->tree, &io1, tctx->lp_ctx,
+				lpcfg_resolve_context(tctx->lp_ctx), event_ctx);
 		torture_assert(tctx, c[i], "smb_composite_fsinfo_send failed!");
 		c[i]->async.fn = loadfile_complete;
 		c[i]->async.private_data = count;
