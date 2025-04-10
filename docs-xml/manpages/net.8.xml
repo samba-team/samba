@@ -1637,6 +1637,15 @@ available.
 </refsect2>
 
 <refsect2>
+    <title>ADS KEYTAB <replaceable>LIST</replaceable> <replaceable>[keytab]</replaceable></title>
+
+    <para>
+        The command will list the contents of a keytab. If no keytab is
+        specified it will display the default keytab configured by KRB5.
+    </para>
+</refsect2>
+
+<refsect2>
 <title>(Removed!) ADS KEYTAB <replaceable>DELETE</replaceable> <replaceable>(principal | machine | serviceclass | windows SPN)</replaceable></title>
 
 <para>
