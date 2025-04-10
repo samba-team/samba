@@ -123,6 +123,7 @@ static void fetchfile_composite_handler(struct composite_context *creq)
 }
 
 struct composite_context *smb_composite_fetchfile_send(struct smb_composite_fetchfile *io,
+						       struct loadparm_context *lp_ctx,
 						       struct tevent_context *event_ctx)
 {
 	struct composite_context *c;

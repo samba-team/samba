@@ -172,7 +172,7 @@ static bool test_fetchfile(struct torture_context *tctx, struct smbcli_state *cl
 	c = talloc_array(tctx, struct composite_context *, torture_numops);
 
 	for (i=0; i<torture_numops; i++) {
-		c[i] = smb_composite_fetchfile_send(&io2, event_ctx);
+		c[i] = smb_composite_fetchfile_send(&io2, tctx->lp_ctx, event_ctx);
 		c[i]->async.fn = loadfile_complete;
 		c[i]->async.private_data = count;
 	}

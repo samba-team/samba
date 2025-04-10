@@ -76,6 +76,7 @@ struct smb_composite_fetchfile {
 };
 
 struct composite_context *smb_composite_fetchfile_send(struct smb_composite_fetchfile *io,
+						       struct loadparm_context *lp_ctx,
 						       struct tevent_context *event_ctx);
 NTSTATUS smb_composite_fetchfile_recv(struct composite_context *c,
 				      TALLOC_CTX *mem_ctx);
