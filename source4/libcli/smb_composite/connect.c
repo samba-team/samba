@@ -517,6 +517,7 @@ NTSTATUS smb_composite_connect_recv(struct composite_context *c, TALLOC_CTX *mem
   sync version of smb_composite_connect 
 */
 NTSTATUS smb_composite_connect(struct smb_composite_connect *io, TALLOC_CTX *mem_ctx,
+			       struct loadparm_context *lp_ctx,
 			       struct resolve_context *resolve_ctx,
 			       struct tevent_context *ev)
 {

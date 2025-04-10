@@ -219,7 +219,7 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 	io.in.options = *options;
 	io.in.session_options = *session_options;
 
-	status = smb_composite_connect(&io, parent_ctx, resolve_ctx, ev);
+	status = smb_composite_connect(&io, parent_ctx, lp_ctx, resolve_ctx, ev);
 	if (NT_STATUS_IS_OK(status)) {
 		*ret_tree = io.out.tree;
 	}
