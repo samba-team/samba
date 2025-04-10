@@ -1198,62 +1198,6 @@ static krb5_error_code ads_keytab_open(krb5_context context,
 out:
 	return ret;
 }
-
-/**********************************************************************
- Flushes all entries from the system keytab.
-***********************************************************************/
-
-int ads_keytab_flush(ADS_STRUCT *ads)
-{
-	krb5_error_code ret = 0;
-	krb5_context context = NULL;
-	krb5_keytab keytab = NULL;
-	ADS_STATUS aderr;
-
-	ret = smb_krb5_init_context_common(&context);
-	if (ret) {
-		DBG_ERR("kerberos init context failed (%s)\n",
-			error_message(ret));
-		return ret;
-	}
-
-	ret = ads_keytab_open(context, &keytab);
-	if (ret != 0) {
-		goto out;
-	}
-
-	/* Seek and delete all old keytab entries */
-	ret = smb_krb5_kt_seek_and_delete_old_entries(context,
-						      keytab,
-						      false, /* keep_old_kvno */
-						      -1,
-						      false, /* enctype_only */
-						      ENCTYPE_NULL,
-						      NULL,
-						      NULL,
-						      true); /* flush */
-	if (ret) {
-		goto out;
-	}
-
-	aderr = ads_clear_service_principal_names(ads, lp_netbios_name());
-	if (!ADS_ERR_OK(aderr)) {
-		DEBUG(1, (__location__ ": Error while clearing service "
-			  "principal listings in LDAP.\n"));
-		ret = -1;
-		goto out;
-	}
-
-out:
-	if (keytab) {
-		krb5_kt_close(context, keytab);
-	}
-	if (context) {
-		krb5_free_context(context);
-	}
-	return ret;
-}
-
 #endif /* HAVE_ADS */
 
 /**********************************************************************

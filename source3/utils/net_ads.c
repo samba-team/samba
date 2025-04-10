@@ -2911,40 +2911,6 @@ out:
 	return ret;
 }
 
-static int net_ads_keytab_flush(struct net_context *c,
-				int argc,
-				const char **argv)
-{
-	TALLOC_CTX *tmp_ctx = talloc_stackframe();
-	ADS_STRUCT *ads = NULL;
-	ADS_STATUS status;
-	int ret = -1;
-
-	if (c->display_usage) {
-		d_printf(  "%s\n"
-			   "net ads keytab flush\n"
-			   "    %s\n",
-			 _("Usage:"),
-			 _("Delete the whole keytab"));
-		TALLOC_FREE(tmp_ctx);
-		return -1;
-	}
-
-	if (!c->explicit_credentials) {
-		net_use_krb_machine_account(c);
-	}
-
-	status = ads_startup(c, true, tmp_ctx, &ads);
-	if (!ADS_ERR_OK(status)) {
-		goto out;
-	}
-
-	ret = ads_keytab_flush(ads);
-out:
-	TALLOC_FREE(tmp_ctx);
-	return ret;
-}
-
 static int net_ads_keytab_create(struct net_context *c, int argc, const char **argv)
 {
 	NTSTATUS ntstatus;
@@ -3000,14 +2966,6 @@ int net_ads_keytab(struct net_context *c, int argc, const char **argv)
 			N_("Create (sync) a fresh keytab"),
 			N_("net ads keytab create\n"
 			   "    Create (sync) a fresh keytab or update existing one (see also smb.conf 'sync machine password to keytab'.")
-		},
-		{
-			"flush",
-			net_ads_keytab_flush,
-			NET_TRANSPORT_ADS,
-			N_("Remove all keytab entries"),
-			N_("net ads keytab flush\n"
-			   "    Remove all keytab entries")
 		},
 		{
 			"list",
