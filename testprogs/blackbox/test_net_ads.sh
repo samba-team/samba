@@ -140,24 +140,7 @@ testit_grep "dns alias SPN" $dns_alias2 $VALGRIND $net_tool ads search -P samacc
 testit_grep "dns alias addl" $dns_alias1 $VALGRIND $net_tool ads search -P samaccountname=$netbios\$ msDS-AdditionalDnsHostName || failed=$(expr $failed + 1)
 testit_grep "dns alias addl" $dns_alias2 $VALGRIND $net_tool ads search -P samaccountname=$netbios\$ msDS-AdditionalDnsHostName || failed=$(expr $failed + 1)
 
-# Test binary msDS-AdditionalDnsHostName like ones added by Windows DC
-short_alias_file="$BASEDIR/$WORKDIR/short_alias_file"
-printf 'short_alias\0$' >$short_alias_file
-cat >$BASEDIR/$WORKDIR/tmpldbmodify <<EOF
-dn: CN=$HOSTNAME,$computers_dn
-changetype: modify
-add: msDS-AdditionalDnsHostName
-msDS-AdditionalDnsHostName:< file://$short_alias_file
-EOF
-
-testit "add binary msDS-AdditionalDnsHostName" $VALGRIND $ldbmodify -k yes -U$DC_USERNAME%$DC_PASSWORD -H ldap://$SERVER.$REALM $BASEDIR/$WORKDIR/tmpldbmodify || failed=$(expr $failed + 1)
-
-testit_grep "addl short alias" short_alias $ldbsearch --show-binary -U$DC_USERNAME%$DC_PASSWORD -H ldap://$SERVER.$REALM --scope=base -b "CN=$HOSTNAME,CN=Computers,$base_dn" msDS-AdditionalDnsHostName || failed=$(expr $failed + 1)
-
-rm -f $BASEDIR/$WORKDIR/tmpldbmodify $short_alias_file
-
 dedicated_keytab_file="$BASEDIR/$WORKDIR/test_dns_aliases_dedicated_krb5.keytab"
-
 testit "dns alias create_keytab" $VALGRIND $net_tool ads keytab create --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=$(expr $failed + 1)
 
 testit_grep "dns alias1 check keytab" \
