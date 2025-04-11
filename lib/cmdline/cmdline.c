@@ -1202,7 +1202,10 @@ static void popt_common_credentials_callback(poptContext popt_ctx,
 			exit(1);
 		}
 
-		skip_password_callback = true;
+		/*
+		 * The password callback will be skipped, if we have a valid
+		 * ccache. This is handled in POPT_CALLBACK_REASON_POST.
+		 */
 		break;
 	}
 	case OPT_USE_WINBIND_CCACHE:

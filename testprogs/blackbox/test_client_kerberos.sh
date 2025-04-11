@@ -147,7 +147,7 @@ testit "test rpcclient kerberos" \
 	failed=$(expr $failed + 1)
 
 cmd='echo ${PASSWORD} | $samba_rpcclient ncacn_np:${SERVER} -U${USERNAME} --use-krb5-ccache=$KRB5CCNAME --configfile=${CONFIGURATION} -c getusername 2>&1'
-testit_expect_failure "test rpcclient kerberos interactive (negative test)" \
+testit "test rpcclient kerberos interactive" \
 	test_rpc_getusername ||
 	failed=$(expr $failed + 1)
 
