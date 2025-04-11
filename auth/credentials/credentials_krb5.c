@@ -669,36 +669,30 @@ _PUBLIC_ int cli_credentials_get_named_ccache(struct cli_credentials *cred,
 	if (cred->ccache_obtained >= cred->ccache_threshold &&
 	    cred->ccache_obtained > CRED_UNINITIALISED) {
 		time_t lifetime;
-		bool expired = false;
+		enum credentials_obtained pass_obtained =
+			cli_credentials_get_password_obtained(cred);
+		bool kinit_required = false;
 		ret = smb_krb5_cc_get_lifetime(cred->ccache->smb_krb5_context->krb5_context,
 					       cred->ccache->ccache, &lifetime);
 		if (ret == KRB5_CC_END || ret == ENOENT) {
-			/* If we have a particular ccache set, without
-			 * an initial ticket, then assume there is a
-			 * good reason */
+			kinit_required = true;
 		} else if (ret == 0) {
 			if (lifetime == 0) {
-				DEBUG(3, ("Ticket in credentials cache for %s expired, will refresh\n",
-					  cli_credentials_get_principal(cred, cred)));
-				expired = true;
+				kinit_required = true;
 			} else if (lifetime < 300) {
-				DEBUG(3, ("Ticket in credentials cache for %s will shortly expire (%u secs), will refresh\n",
-					  cli_credentials_get_principal(cred, cred), (unsigned int)lifetime));
-				expired = true;
+				kinit_required = true;
 			}
 		} else {
-			(*error_string) = talloc_asprintf(cred, "failed to get ccache lifetime: %s\n",
-							  smb_get_krb5_error_message(cred->ccache->smb_krb5_context->krb5_context,
-										     ret, cred));
-			return ret;
+			kinit_required = true;
 		}
 
-		DEBUG(5, ("Ticket in credentials cache for %s will expire in %u secs\n",
-			  cli_credentials_get_principal(cred, cred), (unsigned int)lifetime));
-
-		if (!expired) {
+		if (!kinit_required) {
 			*ccc = cred->ccache;
 			return 0;
+		}
+		if (pass_obtained < cred->ccache_obtained) {
+			(*error_string) = "The credential cache is invalid";
+			return EINVAL;
 		}
 	}
 	if (cli_credentials_is_anonymous(cred)) {
