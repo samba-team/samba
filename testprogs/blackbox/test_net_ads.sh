@@ -141,7 +141,9 @@ testit_grep "dns alias addl" $dns_alias1 $VALGRIND $net_tool ads search -P samac
 testit_grep "dns alias addl" $dns_alias2 $VALGRIND $net_tool ads search -P samaccountname=$netbios\$ msDS-AdditionalDnsHostName || failed=$(expr $failed + 1)
 
 dedicated_keytab_file="$BASEDIR/$WORKDIR/test_dns_aliases_dedicated_krb5.keytab"
-testit "dns alias create_keytab" $VALGRIND $net_tool ads keytab create --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=$(expr $failed + 1)
+testit "dns alias create_keytab" \
+	$VALGRIND $net_tool ads keytab create --option="syncmachinepasswordtokeytab=${dedicated_keytab_file}:sync_spns:machine_password" || \
+	failed=$(expr $failed + 1)
 
 testit_grep "dns alias1 check keytab" \
 	"HOST/${dns_alias1}@$REALM" \
