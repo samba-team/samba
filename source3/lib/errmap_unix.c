@@ -125,6 +125,9 @@ static const struct {
 #ifdef ENXIO
 	{ ENXIO, NT_STATUS_ILLEGAL_FUNCTION },
 #endif
+#ifdef EPROTONOSUPPORT
+	{ EPROTONOSUPPORT, NT_STATUS_PROTOCOL_NOT_SUPPORTED },
+#endif
 };
 
 /*********************************************************************
