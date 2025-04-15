@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+
+import sys
+from waflib import Logs
+
+def configure(conf):
+    if not sys.platform.startswith('linux'):
+        Logs.warn('libquic requires linux')
+        conf.SET_TARGET_TYPE('quic', 'EMPTY')
+        return
+
+    if not conf.CONFIG_GET('HAVE_GNUTLS_CB_TLS_SERVER_END_POINT'):
+        Logs.warn('libquic requires gnutls 3.7.2')
+        conf.SET_TARGET_TYPE('quic', 'EMPTY')
+        return
+
+    if not conf.CHECK_HEADERS('linux/tls.h'):
+        Logs.warn('libquic requires linux/tls.h')
+        conf.SET_TARGET_TYPE('quic', 'EMPTY')
+        return
+
+    if not conf.CHECK_DECLS('TLS_CIPHER_CHACHA20_POLY1305', headers='linux/tls.h'):
+        conf.DEFINE('TLS_CIPHER_CHACHA20_POLY1305', 54)
+
+    if conf.CHECK_LIBQUIC():
+        conf.CHECK_HEADERS('netinet/quic.h', lib='quic')
+        conf.CHECK_LIB('quic', shlib=True)
+        conf.CHECK_FUNCS_IN('quic_handshake_step', 'quic', headers='netinet/quic.h')
+        conf.DEFINE('HAVE_LIBQUIC', '1')
+        conf.define('USING_SYSTEM_LIBQUIC', 1)
+        return
+
+    conf.ADD_NAMED_CFLAGS('LIBQUIC_UNPICKY_CFLAGS',
+                          '-Wno-cast-qual',
+                          testflags=True)
+    conf.ADD_NAMED_CFLAGS('LIBQUIC_UNPICKY_CFLAGS',
+                          '-Wno-error=cast-qual',
+                          testflags=True)
+
+    conf.DEFINE('HAVE_LIBQUIC', '1')
+    return
+
+def build(bld):
+    if bld.CONFIG_SET('USING_SYSTEM_LIBQUIC'):
+        return
+
+    bld.SAMBA_LIBRARY('quic',
+                      source='''
+                      libquic/handshake.c
+                      ''',
+                      includes='libquic modules/include/uapi',
+                      deps='replace',
+                      public_deps='gnutls',
+                      cflags_end=bld.env.LIBQUIC_UNPICKY_CFLAGS,
+                      private_library=True,
+                      enabled=bld.CONFIG_SET('HAVE_LIBQUIC'))
+    bld.SAMBA_SUBSYSTEM('libquic', source='', public_deps='quic',
+                        enabled=bld.CONFIG_SET('HAVE_LIBQUIC'))

@@ -1,0 +1,1462 @@
+.TH QUIC  7 2024-01-15 "Linux Man Page" "Linux Programmer's Manual"
+.SH NAME
+quic \- QUIC protocol.
+.SH SYNOPSIS
+.nf
+.B #include <netinet/in.h>
+.B #include <netinet/quic.h>
+.sp
+.B quic_socket = socket(PF_INET, SOCK_STREAM, IPPROTO_QUIC);
+.B quic_socket = socket(PF_INET, SOCK_DGRAM, \ IPPROTO_QUIC);
+.fi
+.SH DESCRIPTION
+This is an implementation of the QUIC protocol as defined in RFC9000 (QUIC: A
+UDP-Based Multiplexed and Secure Transport). QUIC provides applications with
+flow-controlled streams for structured communication, low-latency connection
+establishment, and network path migration. QUIC includes security measures that
+ensure confidentiality, integrity, and availability in a range of deployment
+circumstances.
+
+.PP
+This implementation of QUIC in the kernel space enables users to utilize
+the QUIC protocol through common socket APIs in user space. Additionally,
+kernel subsystems like SMB and NFS can seamlessly operate over the QUIC
+protocol after handshake using net/handshake APIs.
+
+.PP
+In userspace, similar to TCP and SCTP, a typical server and client use the
+following system call sequence to communicate:
+.PP
+       Client                             Server
+    ------------------------------------------------------------------
+    sockfd = socket(IPPROTO_QUIC)      listenfd = socket(IPPROTO_QUIC)
+    bind(sockfd)                       bind(listenfd)
+                                       listen(listenfd)
+    connect(sockfd)
+    quic_client_handshake(sockfd)
+                                       sockfd = accept(listenfd)
+                                       quic_server_handshake(sockfd, cert)
+
+    sendmsg(sockfd)                    recvmsg(sockfd)
+    close(sockfd)                      close(sockfd)
+                                       close(listenfd)
+.PP
+On the client side, the `connect()` function initializes the keys and route,
+while `quic_client_handshake()` sends the initial packet to the server. Upon
+receiving the initial packet on the listen socket, the server creates a request
+socket, processes it through `accept()`, and subsequently generates a new common
+socket, returning it to the user. Meanwhile, the `quic_server_handshake()`
+function manages the reception and processing of the initial packet on the
+server, ensuring the handshake proceeds seamlessly until completion.
+
+.PP
+For kernel consumers, activating the tlshd service in userspace is essential.
+This service is responsible for receiving and managing kernel handshake requests
+for kernel sockets. Within the kernel space, the APIs mirror those used in
+userspace:
+
+       Client                                 Server
+    ---------------------------------------------------------------------------
+    __sock_create(IPPROTO_QUIC, &sock)     __sock_create(IPPROTO_QUIC, &sock)
+    kernel_bind(sock)                      kernel_bind(sock)
+                                           kernel_listen(sock)
+    kernel_connect(sock)
+    tls_client_hello_x509(args:{sock})
+                                           kernel_accept(sock, &newsock)
+                                           tls_server_hello_x509(args:{newsock})
+
+    kernel_sendmsg(sock)                   kernel_recvmsg(newsock)
+    sock_release(sock)                     sock_release(newsock)
+                                           sock_release(sock)
+
+Please note that `tls_client_hello_x509()` and `tls_server_hello_x509()` are
+kernel APIs located in net/handshake/. These APIs are utilized to dispatch
+handshake requests to the userspace tlshd service and wait until the operation
+is successfully completed.
+
+.SH SYSCTLS
+These variables can be accessed by the
+.B /proc/sys/net/quic/*
+files or with the
+.BR sysctl (2)
+interface.  In addition, most IP sysctls also apply to QUIC. See
+.BR ip (7).
+Please check kernel documentation for this, at
+Documentation/networking/ip-sysctl.rst.
+.PP
+Upon loading the QUIC module, it also creates /proc/net/quic under procfs,
+enabling users to access and inspect information regarding existing QUIC
+connections.
+
+.SH MSG_CONTROL STRUCTURES
+This section describes key data structures specific to QUIC that are used
+with `sendmsg()` and `recvmsg()` calls. These structures control QUIC endpoint
+operations and provide access to ancillary information and notifications.
+
+.SS The msghdr and cmsghdr Structures
+The `msghdr` structure is used in
+.B sendmsg(2)
+and
+.B recvmsg(2)
+calls to carry various control information to and from the QUIC endpoint.
+The related `cmsghdr` structure defines the format of ancillary data used
+within `msghdr`, see
+.B cmsg(3).
+
+.nf
+struct msghdr {
+  void *msg_name;           /* pointer to socket address structure */
+  socklen_t msg_namelen;    /* size of socket address structure */
+  struct iovec *msg_iov;    /* scatter/gather array */
+  int msg_iovlen;           /* number of elements in msg_iov */
+  void *msg_control;        /* ancillary data */
+  socklen_t msg_controllen; /* ancillary data buffer length */
+  int msg_flags;            /* flags on message */
+};
+
+struct cmsghdr {
+  socklen_t cmsg_len; /* number of bytes, including this header */
+  int cmsg_level;     /* originating protocol */
+  int cmsg_type;      /* protocol-specific type */
+                      /* followed by unsigned char cmsg_data[]; */
+};
+.fi
+
+.PP
+The `msg_name` field is not used when sending a message with `sendmsg()`. The
+scatter/gather buffers, or I/O vectors (pointed to by the `msg_iov` field),
+are treated by QUIC as a single user message in both `sendmsg()`
+and `recvmsg()` calls.
+
+.PP
+The QUIC stack uses the ancillary data (in the `msg_control` field) to
+communicate the attributes of the message stored in `msg_iov` to the socket
+endpoint. These attributes may include QUIC-specific information,
+such as `QUIC_STREAM_INFO` discribed in
+.B Stream Information,
+and `QUIC_HANDSHAKE_INFO` discribed in
+.B Handshake Information.
+
+.TP
+.B On Send Side:
+
+.RS 4
+.PP
+The `flags` parameter in `sendmsg()` can be set to the following values:
+
+.IP \[bu] 4
+.B `MSG_NOSIGNAL`:
+See
+.BR sendmsg (2).
+
+.IP \[bu] 4
+.B `MSG_MORE`:
+Indicates that the data will be held until the next data is sent without
+this flag.
+
+.IP \[bu] 4
+.B `MSG_DONTWAIT`:
+Prevents blocking if there is no send buffer available.
+
+.IP \[bu] 4
+.B `MSG_DATAGRAM`:
+Sends the data as an unreliable datagram.
+
+.PP
+Additionally, the `flags` can be set to values from the `stream_flags` on the
+send side if Stream `msg_control` is not being used. See
+.B Stream Information
+below.
+In this case, the most recently opened stream will be used for sending data.
+
+.PP
+Note that the `msg_flags` field of the `msghdr` structure passed to the kernel
+is ignored during sending.
+.RE
+
+.TP
+.B On Receive Side:
+
+.RS 4
+.PP
+The `flags` parameter in `recvmsg()` can be set to the following values:
+
+.IP \[bu] 4
+.B `MSG_DONTWAIT`:
+Prevents blocking if there is no data available in the receive buffer.
+
+.PP
+The `msg_flags` field of the `msghdr` structure returned from the kernel
+may be set to:
+
+.IP \[bu] 4
+.B `MSG_EOR`:
+Indicates that the received data is read completely.
+
+.IP \[bu] 4
+.B `MSG_DATAGRAM`:
+Indicates that the received data is an unreliable datagram.
+
+.IP \[bu] 4
+.B `MSG_NOTIFICATION`:
+Indicates that the received data is a notification message.
+
+.PP
+These flags might also be set to values from the `stream_flags` on the
+receive side if Stream `msg_control` is not being used. See
+.B Stream Information
+below.
+In such cases, the stream ID for the received data will not be visible
+to the user space.
+.RE
+
+.SS Stream Information
+This control message (`QUIC_STREAM_INFO` cmsg_type and `SOL_QUIC` cmsg_level)
+specifies QUIC stream options for `sendmsg()` and describes QUIC stream
+information about a received message via `recvmsg()`. It uses struct
+quic_stream_info
+
+.nf
+struct quic_stream_info {
+  uint64_t stream_id;
+  uint32_t stream_flags;
+};
+.fi
+
+The fields in the `quic_stream_info` structure are defined as follows:
+
+.TP
+.B On Send Side:
+
+.PP
+.B stream_id
+
+.RS 4
+.PP
+Value -1 is special handling based on the flags:
+
+.IP \[bu] 4
+.B If `MSG_STREAM_NEW` is set:
+Opens the next bidirectional stream and uses it for sending data.
+.IP \[bu] 4
+.B If both `MSG_STREAM_NEW` and `MSG_STREAM_UNI` are set:
+Opens the next unidirectional stream and uses it for sending data.
+.IP \[bu] 4
+.B Otherwise:
+Uses the latest opened stream for sending data.
+
+.PP
+Any other value for `stream_id` is treated as a specific stream ID, with the
+first two bits used to indicate stream type:
+
+.IP \[bu] 4
+.B `QUIC_STREAM_TYPE_SERVER_MASK` (0x1):
+Indicates a server-side stream.
+.IP \[bu] 4
+.B `QUIC_STREAM_TYPE_UNI_MASK` (0x2):
+Indicates a unidirectional stream.
+.RE
+
+.PP
+.B stream_flags
+
+.RS 4
+.IP \[bu] 4
+.B `MSG_STREAM_NEW`:
+Opens a stream and sends the first data.
+.IP \[bu] 4
+.B `MSG_STREAM_FIN`:
+Sends the last data and closes the stream.
+.IP \[bu] 4
+.B `MSG_STREAM_UNI`:
+Opens the next unidirectional stream.
+.IP \[bu] 4
+.B `MSG_STREAM_DONTWAIT`:
+Opens the stream without blocking.
+.IP \[bu] 4
+.B `MSG_STREAM_SNDBLOCK`:
+Send streams blocked when no capacity.
+.RE
+
+.TP
+.B On Receive Side:
+.PP
+.B stream_id
+
+.RS 4
+.PP
+Identifies the stream to which the received data belongs.
+.RE
+
+.PP
+.B stream_flags
+
+.RS 4
+.IP \[bu] 4
+.B `MSG_STREAM_FIN`:
+Indicates that the data received is the last one for this stream.
+.RE
+
+.PP
+This control message is specifically used for sending user stream data,
+including early or 0-RTT data. When sending unreliable user datagrams,
+this control message should not be set.
+
+.SS Handshake Information
+This control message (`QUIC_HANDSHAKE_INFO` cmsg_type and `SOL_QUIC` cmsg_level)
+provides information for sending and receiving handshake/TLS messages via
+`sendmsg()` or `recvmsg()`. It uses struct quic_handshake_info
+
+.nf
+struct quic_handshake_info {
+  uint8_t crypto_level;
+};
+.fi
+
+The fields in the `quic_handshake_info` structure are defined as follows:
+
+.PP
+.B crypto_level
+
+.PP
+Specifies the level of cryptographic data:
+
+.RS 4
+.IP \[bu] 4
+.B `QUIC_CRYPTO_INITIAL`:
+Initial level data.
+.IP \[bu] 4
+.B `QUIC_CRYPTO_HANDSHAKE`:
+Handshake level data.
+.RE
+
+.PP
+This control message is used exclusively during the handshake process and is
+critical for managing the transmission of handshake-related messages in a QUIC
+connection.
+
+
+.SH MESSAGE AND HANDSHAKE INTERFACE
+This session describes a couple of advanced functions that are used to send and
+receive user data message with stream information, or used to start a handshake
+from either from client or server side.
+
+.SS quic_sendmsg() and quic_recvmsg()
+These functions are used to send and receive data over a QUIC connection, with
+support for specifying stream IDs and flags.
+
+.PP
+.B quic_sendmsg()
+.RS 4
+.PP
+is used to transmit data to a peer over a specific stream in a QUIC connection.
+
+.nf
+ssize_t quic_sendmsg(int sd,
+                     const void *msg,
+                     size_t len,
+                     int64_t sid,
+                     uint32_t flags);
+.fi
+
+.PP
+The arguments are:
+
+.TP
+.B sd
+The socket descriptor.
+
+.TP
+.B msg
+A pointer to the message buffer that contains the data to be sent.
+
+.TP
+.B len
+The length of the message buffer.
+
+.TP
+.B sid
+The stream ID (`stream_id`) indicating the stream over which the data should
+be sent.
+
+.TP
+.B flags
+The flags controlling the behavior of the function, which include
+stream-specific flags as defined in
+.B Stream Information
+and general message flags as defined in
+.B The msghdr and cmsghdr Structures.
+
+.PP
+The function returns the number of bytes accepted by the kernel for
+transmission, or `-1` in case of an error.
+.RE
+
+.PP
+.B quic_recvmsg()
+.RS 4
+.PP
+is used to receive data from a peer over a specific stream in a QUIC connection.
+
+.nf
+ssize_t quic_recvmsg(int sd,
+                     void *msg,
+                     size_t len,
+                     int64_t *sid,
+                     uint32_t *flags);
+.fi
+
+.PP
+The arguments are:
+
+.TP
+.B sd
+The socket descriptor.
+
+.TP
+.B msg
+A pointer to the message buffer where the received data will be stored.
+
+.TP
+.B len
+The length of the message buffer.
+
+.TP
+.B sid
+A pointer to the stream ID (`stream_id`) that indicates the stream from which
+the data was received.
+
+.TP
+.B flags
+A pointer to the flags that were used when the data was received, which include
+stream-specific flags as defined in
+.B Stream Information
+and general message flags as defined in
+.B The msghdr and cmsghdr Structures.
+
+.PP
+The function returns the number of bytes received, or `-1` in case of an error.
+.RE
+
+.PP
+These two functions wrap the standard `sendmsg()` and `recvmsg()` system calls,
+adding support for stream-specific information through the use of `msg_control`.
+They are essential for applications utilizing QUIC's multiple stream
+capabilities.
+
+.SS quic_client_handshake() and quic_server_handshake()
+These functions are used to initiate a QUIC handshake either from the client or
+server side. They support both Certificate and PSK modes.
+
+.PP
+.B quic_server_handshake()
+.RS 4
+.PP
+An application uses `quic_server_handshake()` to start a QUIC handshake from the
+server side.
+
+.nf
+int quic_server_handshake(int sd,
+                          const char *pkey_file,
+                          const char *cert_file,
+                          const char *alpns);
+.fi
+
+.PP
+The arguments are:
+
+.TP
+.B sd
+The socket descriptor.
+
+.TP
+.B pkey_file
+The private key file for Certificate mode or the pre-shared key file for PSK
+mode.
+
+.TP
+.B cert_file
+The certificate file for Certificate mode or `NULL` for PSK mode.
+
+.TP
+.B alpns
+The Application-Layer Protocol Negotiation (ALPN) strings supported, separated
+by commas.
+
+.PP
+The function returns `0` on success and an error code on failure.
+.RE
+
+.PP
+.B quic_client_handshake()
+.RS 4
+.PP
+An application uses `quic_client_handshake()` to start a QUIC handshake from the
+client side.
+
+.nf
+int quic_client_handshake(int sd,
+                          const char *pkey_file,
+                          const char *hostname,
+                          const char *alpns);
+.fi
+
+.PP
+The arguments are:
+
+.TP
+.B sd
+The socket descriptor.
+
+.TP
+.B pkey_file
+The pre-shared key file for PSK mode.
+
+.TP
+.B hostname
+The server name for Certificate mode.
+
+.TP
+.B alpns
+The Application-Layer Protocol Negotiation (ALPN) strings supported, separated
+by commas.
+
+.PP
+The function returns `0` on success and an error code on failure.
+.RE
+
+.SS quic_handshake_init(), quic_handshake_step() \
+and quic_handshake_deinit()
+This group of APIs provide greater control over the configuration of the
+handshake session, allowing more detailed management of the TLS session
+and also the sendmsg(2) and recvmsg(2) scheduling.
+
+Without the need to integrate sendmsg(2) and recvmsg(3) calls into an
+existing event loop `quic_handshake()` can be used instead.
+
+.PP
+.B Step work to be done by the caller
+
+.RS 4
+The following structures represend work required to
+be one by the caller in order to step forward
+in the handshake processing:
+
+.nf
+enum quic_handshake_step_op {
+  QUIC_HANDSHAKE_STEP_OP_SENDMSG = 1,
+  QUIC_HANDSHAKE_STEP_OP_RECVMSG,
+};
+
+struct quic_handshake_step_sendmsg {
+  const struct msghdr *msg;
+  int flags;
+  ssize_t retval;
+};
+
+struct quic_handshake_step_recvmsg {
+  struct msghdr *msg;
+  int flags;
+  ssize_t retval;
+};
+
+struct quic_handshake_step {
+  enum quic_handshake_step_op op;
+
+  union {
+    struct quic_handshake_step_sendmsg s_sendmsg;
+    struct quic_handshake_step_recvmsg s_recvmsg;
+  };
+};
+.fi
+
+The callers needs to do the work described by the step
+(sendmsg(2) or recvmsg(2)) and set the `retval` to the
+return value of the syscall if it's greater or equal to zero,
+or set it to -errno on failure. Note `EINTR`, `EAGAIN` and `EWOULDBLOCK`
+should never be set, instead the operation should be retried by the caller.
+
+When the step work is done the caller needs to pass
+`struct quic_handshake_step` pointer reference back to `quic_handshake_step()`.
+.RE
+
+.PP
+.B quic_handshake_init()
+
+.RS 4
+It prepares the usage of `quic_handshake_step()` and requires
+`quic_handshake_deinit()` to cleanup.
+
+.nf
+int quic_handshake_init(void *session, struct quic_handshake_step **pstep);
+.fi
+
+The argument is:
+
+.TP
+.B session
+A pointer to a TLS session object. This is represented differently depending on
+the TLS library being used, such as `gnutls_session_t` in GnuTLS or `SSL *` in
+OpenSSL.
+
+.TP
+.B pstep
+A reference to a `struct quic_handshake_step` pointer,
+the pointer itself needs to be NULL on input. On success
+it is filled with the first step work to be done by the caller.
+
+.PP
+The function returns `0` on success and an error code on failure.
+.RE
+
+.PP
+.B quic_handshake_step()
+
+.RS 4
+It requires `quic_handshake_init()` to prepare the state and the
+first step. It should called until a `NULL` step is returned,
+which indicates the handshake is completed and `quic_handshake_deinit()` can cleanup.
+
+When the step work is done the caller needs to pass the
+`struct quic_handshake_step` pointer to `quic_handshake_step()`.
+
+.nf
+int quic_handshake_step(void *session, struct quic_handshake_step **pstep);
+.fi
+
+The argument is:
+
+.TP
+.B session
+A pointer to a TLS session object. This is represented differently depending on
+the TLS library being used, such as `gnutls_session_t` in GnuTLS or `SSL *` in
+OpenSSL.
+
+.TP
+.B pstep
+A reference to a `struct quic_handshake_step` pointer, on input
+the pointer itself needs to contain a value returned by
+`quic_handshake_init()` or `quic_handshake_step()`. On success
+it is filled with the next work to be done by the caller or
+`NULL` if the handshake is completed.
+
+.PP
+The function returns `0` on success and an error code on failure.
+.RE
+
+.PP
+.B quic_handshake_deinit()
+
+.RS 4
+It cleans up the state created by `quic_handshake_init()`.
+It should be called even if `quic_handshake_step()` returned an error.
+
+.nf
+void quic_handshake_deinit(void *session);
+.fi
+
+The argument is:
+
+.TP
+.B session
+A pointer to a TLS session object. This is represented differently depending on
+the TLS library being used, such as `gnutls_session_t` in GnuTLS or `SSL *` in
+OpenSSL.
+.RE
+
+.SS quic_handshake()
+`quic_handshake()` provides greater control over the configuration of the
+handshake session, allowing more detailed management of the TLS session.
+
+It is a simplified helper arround `quic_handshake_init()`,
+`quic_handshake_step()` and `quic_handshake_deinit()` for callers
+without the need to integrate sendmsg(2) and recvmsg(3) calls into an
+existing event loop.
+
+.PP
+.B quic_handshake()
+
+.RS 4
+.nf
+int quic_handshake(void *session);
+.fi
+
+The argument is:
+
+.TP
+.B session
+A pointer to a TLS session object. This is represented differently depending on
+the TLS library being used, such as `gnutls_session_t` in GnuTLS or `SSL *` in
+OpenSSL.
+
+.PP
+The function returns `0` on success and an error code on failure.
+.RE
+
+.SH EVENTS and NOTIFICATIONS
+A QUIC application MAY need to understand and process events and errors within
+the QUIC stack. The events are categorized under the `quic_event_type` enum:
+
+.nf
+enum quic_event_type {
+  QUIC_EVENT_NONE,
+  QUIC_EVENT_STREAM_UPDATE,
+  QUIC_EVENT_STREAM_MAX_DATA,
+  QUIC_EVENT_STREAM_MAX_STREAM,
+  QUIC_EVENT_CONNECTION_ID,
+  QUIC_EVENT_CONNECTION_CLOSE,
+  QUIC_EVENT_CONNECTION_MIGRATION,
+  QUIC_EVENT_KEY_UPDATE,
+  QUIC_EVENT_NEW_TOKEN,
+  QUIC_EVENT_NEW_SESSION_TICKET,
+};
+.fi
+
+.PP
+When a notification arrives, `recvmsg()` returns the notification in the
+application-supplied data buffer via `msg_iov`, and sets `MSG_NOTIFICATION`
+in `msg_flags` of `msghdr`. The first byte of the received data indicates the
+type of the event, corresponding to one of the values in the `quic_event_type`
+enum. The subsequent bytes contain the content of the event. To manage and
+enable these events, refer to socket option
+.B QUIC_SOCKOPT_EVENT.
+
+.SS QUIC_EVENT_STREAM_UPDATE
+Notifications are delivered to userspace for specific stream states:
+
+.IP QUIC_STREAM_SEND_STATE_RECVD
+An update when all data on the stream has been acknowledged.
+
+.IP QUIC_STREAM_SEND_STATE_RESET_SENT
+An update if a `STOP_SENDING` frame is received and a `STREAM_RESET` frame is
+sent.
+
+.IP QUIC_STREAM_SEND_STATE_RESET_RECVD
+An update when a `STREAM_RESET` frame is received and acknowledged.
+
+.IP QUIC_STREAM_RECV_STATE_RECV
+An update when the last fragment of data has not yet arrived, indicating
+pending data.
+
+.IP QUIC_STREAM_RECV_STATE_SIZE_KNOWN
+An update if data arrives out of order, indicating the size of the data is
+known.
+
+.IP QUIC_STREAM_RECV_STATE_RECVD
+An update when all data on the stream has been fully received.
+
+.IP QUIC_STREAM_RECV_STATE_RESET_RECVD
+An update when a `STREAM_RESET` frame is received, indicating that the peer has
+reset the stream.
+
+.PP
+Data format in the event:
+
+.nf
+struct quic_stream_update {
+  uint64_t id;
+  uint32_t state;
+  uint32_t errcode;
+  uint64_t finalsz;
+};
+.fi
+.TP
+id
+The stream ID.
+.TP
+state
+The new stream state. All valid states are listed above.
+.TP
+errcode
+Error code for the application protocol. It is used for the RESET_SENT or
+RESET_RECVD state update on send side, and for the RESET_RECVD update on
+receive side.
+.TP
+finalsz
+The final size of the stream. It is used for the SIZE_KNOWN, RESET_RECVD,
+or RECVD state updates on receive side.
+
+.SS QUIC_EVENT_STREAM_MAX_DATA
+Delivered when a Stream Max Data frame is received. If a stream is blocked,
+a non-blocking sendmsg() call will return ENOSPC. This event notifies the
+application when additional send space becomes available for a stream,
+allowing applications to adjust stream scheduling accordingly.
+
+.PP
+Data format in the event:
+
+.nf
+struct quic_stream_max_data {
+  int64_t  id;
+  uint64_t max_data;
+};
+.fi
+.TP
+id
+The stream ID.
+.TP
+max_data
+The updated maximum amount of data that can be sent on the stream.
+
+.SS QUIC_EVENT_STREAM_MAX_STREAM
+Delivered when a `MAX_STREAMS` frame is received. Useful when
+using `MSG_STREAM_DONTWAIT` to open a stream whose ID exceeds the current
+maximum stream count. After receiving this notification, the application
+SHOULD attempt to open the stream again.
+
+.PP
+Data format in the event:
+
+.nf
+uint64_t max_stream;
+.fi
+.TP
+max_stream
+Indicates the maximum stream limit for a specific stream byte. The stream
+type is encoded in the first 2 bits, and the maximum stream limit is calculated
+by shifting max_stream right by 2 bits.
+
+.SS QUIC_EVENT_CONNECTION_ID
+Delivered when any source or destination connection IDs are retired. This
+usually occurs during connection migration or when managing connection IDs via
+socket option
+.B QUIC_SOCKOPT_CONNECTION_ID.
+
+.PP
+Data format in the event:
+
+.nf
+struct quic_connection_id_info {
+  uint8_t  dest;
+  uint32_t active;
+  uint32_t prior_to;
+};
+.fi
+.TP
+dest
+Indicates whether to operate on destination connection IDs.
+.TP
+active
+The number of the connection ID in use.
+.TP
+prior_to
+The lowest connection ID number.
+
+.SS QUIC_EVENT_CONNECTION_CLOSE
+Delivered when a `CLOSE` frame is received from the peer. The peer MAY set the
+close information via socket option
+.B QUIC_SOCKOPT_CONNECTION_CLOSE
+before calling `close()`.
+
+.PP
+Data format in the event:
+
+.nf
+struct quic_connection_close {
+  uint32_t errcode;
+  uint8_t frame;
+  uint8_t phrase[];
+};
+.fi
+.TP
+errcode
+Error code for the application protocol.
+.TP
+phrase
+Optional string for additional details.
+.TP
+frame
+Frame type that caused the closure.
+
+.SS QUIC_EVENT_CONNECTION_MIGRATION
+Delivered when either side successfully changes its source address using the
+socket option
+.B QUIC_SOCKOPT_CONNECTION_MIGRATION,
+or when the destination address is changed by the peer's connection migration.
+The parameter indicates whether the migration was local or initiated by the
+peer.
+
+.PP
+Data format in the event:
+
+.nf
+uint8_t local_migration;
+.fi
+.TP
+local_migration
+Indicates whether the migration was local or initiated by the peer. After
+receiving this notification, the new address can be retrieved using
+getsockname() for the local address or getpeername() for the peer's address.
+
+.SS QUIC_EVENT_KEY_UPDATE
+Delivered when both sides have successfully updated to the new key phase after
+a key update via socket option
+.B QUIC_SOCKOPT_KEY_UPDATE.
+The parameter indicates which key phase is currently in use.
+
+.PP
+Data format in the event:
+
+.nf
+uint8_t key_update_phase;
+.fi
+.TP
+key_update_phase
+Indicates which key phase is currently in use.
+
+.SS QUIC_EVENT_NEW_TOKEN
+Delivered whenever a `NEW_TOKEN` frame is received from the peer. Tokens can be
+sent using socket option
+.B QUIC_SOCKOPT_TOKEN.
+
+.PP
+Data format in the event:
+
+.nf
+uint8_t token[];
+.fi
+.TP
+token
+Carries the token data.
+
+.SS QUIC_EVENT_NEW_SESSION_TICKET
+Delivered whenever a `NEW_SESSION_TICKET` message carried in crypto frame is
+received from the peer.
+
+.PP
+Data format in the event:
+
+.nf
+uint8_t ticket[];
+.fi
+.TP
+ticket
+Carries the data of the TLS session ticket message.
+
+.SH SOCKET OPTIONS
+To set or get a QUIC socket option, call
+.BR getsockopt (2)
+to read or
+.BR setsockopt (2)
+to write the option with the option level argument set to
+.BR SOL_QUIC.
+Note that all these macros and structures described for parameters are defined
+in /usr/include/linux/quic.h.
+
+.SS Read/Write Options
+
+.PP
+.B QUIC_SOCKOPT_EVENT
+
+.RS 4
+.PP
+This option is used to enable or disable a specific type of event or
+notification.
+.PP
+The `optval` type is:
+
+.nf
+struct quic_event_option {
+  uint8_t type;
+  uint8_t on;
+};
+.fi
+.IP "type"
+Specifies the event type, as defined in Section 5.1.
+.IP "on"
+Indicates whether the event is enabled or disabled:
+.IP \[bu] 4
+.B `0`:
+disable.
+.IP \[bu] 4
+.B `!0`:
+enable.
+.PP
+By default, all events are disabled.
+.RE
+
+.PP
+.B QUIC_SOCKOPT_TRANSPORT_PARAM
+
+.RS 4
+.PP
+This option is used to configure QUIC transport parameters.
+.PP
+The `optval` type is:
+
+.nf
+struct quic_transport_param {
+  uint8_t  remote;
+  uint8_t  disable_active_migration;         /* 0 by default */
+  uint8_t  grease_quic_bit;                  /* 0 */
+  uint8_t  stateless_reset;                  /* 0 */
+  uint8_t  disable_1rtt_encryption;          /* 0 */
+  uint8_t  disable_compatible_version;       /* 0 */
+  uint8_t  active_connection_id_limit;       /* 7 */
+  uint8_t  ack_delay_exponent;               /* 3 */
+  uint16_t max_datagram_frame_size;          /* 0 */
+  uint16_t max_udp_payload_size;             /* 65527 */
+  uint32_t max_idle_timeout;                 /* 30000000 us */
+  uint32_t max_ack_delay;                    /* 25000 */
+  uint16_t max_streams_bidi;                 /* 100 */
+  uint16_t max_streams_uni;                  /* 100 */
+  uint64_t max_data;                         /* 65536 * 32 */
+  uint64_t max_stream_data_bidi_local;       /* 65536 * 4 */
+  uint64_t max_stream_data_bidi_remote;      /* 65536 * 4 */
+  uint64_t max_stream_data_uni;              /* 65536 * 4 */
+  uint64_t reserved;
+};
+.fi
+.PP
+These parameters and descripted in [RFC9000] and their default values are
+specified in the struct code.
+.PP
+The `remote` member allows users to set remote transport parameters. When used
+in conjunction with session resumption ticket, it enables the configuration of
+remote transport parameters from the previous connection. This configuration
+is crucial for sending 0-RTT data efficiently.
+.RE
+
+.PP
+.B QUIC_SOCKOPT_CONFIG
+
+.RS 4
+.PP
+This option is used to configure various settings for QUIC connections,
+including some handshake-specific options for kernel consumers.
+.PP
+The `optval` type is:
+
+.nf
+struct quic_config {
+  uint32_t version;
+  uint32_t plpmtud_probe_interval;
+  uint32_t initial_smoothed_rtt;
+  uint32_t payload_cipher_type;
+  uint8_t  congestion_control_algo;
+  uint8_t  validate_peer_address;
+  uint8_t  stream_data_nodelay;
+  uint8_t  receive_session_ticket;
+  uint8_t  certificate_request;
+  uint8_t  reserved[3];
+};
+.fi
+.IP "version"
+QUIC version, options include:
+.RS 8
+.IP \[bu] 4
+`QUIC_VERSION_V1` (default)
+.IP \[bu] 4
+`QUIC_VERSION_V2`
+.RE
+.IP "plpmtud_probe_interval (in usec)"
+The probe interval of Packetization Layer Path MTU Discovery. Options include:
+.RS 8
+.IP \[bu] 4
+`0`: disabled (by default)
+.IP \[bu] 4
+`!0`: at least QUIC_MIN_PROBE_TIMEOUT (5000000)
+.RE
+.IP "initial_smoothed_rtt (in usec)"
+The initial smoothed RTT. Options include:
+.RS 8
+.IP \[bu] 4
+`333000` (default)
+.IP \[bu] 4
+At least QUIC_RTO_MIN (100000) and less than QUIC_RTO_MAX (6000000)
+.RE
+.IP "congestion_control_algo"
+Congestion control algorithm. Options may include:
+.RS 8
+.IP \[bu] 4
+`NEW_RENO` (default)
+.IP \[bu] 4
+`CUBIC`
+.IP \[bu] 4
+`BBR`
+.RE
+.IP "validate_peer_address"
+Server-side only. If enabled, the server will send a retry packet to the client
+upon receiving the first handshake request to validate the client's IP address.
+Options include:
+.RS 8
+.IP \[bu] 4
+`0`: disabled (default)
+.IP \[bu] 4
+`!0`: enabled
+.RE
+.IP "payload_cipher_type"
+For kernel consumers only. Allows users to inform userspace handshake of the
+preferred cipher type. Options include:
+.RS 8
+.IP \[bu] 4
+`0`: any type (default)
+.IP \[bu] 4
+`AES_GCM_128`
+.IP \[bu] 4
+`AES_GCM_256`
+.IP \[bu] 4
+`AES_CCM_128`
+.IP \[bu] 4
+`CHACHA20_POLY1305`
+.RE
+.IP "receive_session_ticket (in sec)"
+Client-side only. Enables userspace handshake to receive session tickets either
+via `NEW_SESSION_TICKET` event or socket option `SESSION_TICKET` and then set
+it back to kernel. Options include:
+.RS 8
+.IP \[bu] 4
+`0`: disabled (default)
+.IP \[bu] 4
+`!0`: maximum time (in sec) to wait
+.RE
+.IP "certificate_request"
+Server-side only. Instructs userspace handshake whether to request a certificate
+from the client. Options include:
+.RS 8
+.IP \[bu] 4
+`0`: IGNORE (default)
+.IP \[bu] 4
+`1`: REQUEST
+.IP \[bu] 4
+`2`: REQUIRE
+.RE
+.IP "stream_data_nodelay"
+Disable the Nagle algorithm. Options include:
+.RS 8
+.IP \[bu] 4
+`0`: Enable the Nagle algorithm (default)
+.IP \[bu] 4
+`!0`: Disable the Nagle algorithm
+.RE
+.RE
+
+.PP
+.B QUIC_SOCKOPT_CONNECTION_ID
+
+.RS 4
+.PP
+This option is used to get or set the source and destination connection IDs,
+including `dest`, `active` and `prior_to`. Along with
+the `active_connection_id_limit` in the transport parameters, it helps
+determine the range of available connection IDs.
+
+.PP
+The `optval` type is:
+
+.nf
+struct quic_connection_id_info {
+  uint8_t  dest;
+  uint32_t active;
+  uint32_t prior_to;
+};
+.fi
+.IP "dest"
+Indicates whether to operate on destination connection IDs.
+.IP "active"
+The number of the connection ID in use.
+.IP "prior_to"
+The lowest connection ID number.
+
+.PP
+The `active` is used to switch the connection ID in use. The `prior_to`, for
+source connection IDs, specifies prior to which ID will be retired by
+sending `NEW_CONNECTION_ID` frames; for destination connection IDs, it
+indicates prior to which ID issued by the peer will no longer be used and
+should be retired by sending `RETIRE_CONNECTION_ID` frames.
+.RE
+
+.PP
+.B QUIC_SOCKOPT_CONNECTION_CLOSE
+
+.RS 4
+.PP
+This option is used to get or set the close context, which includes `errcode`,
+`phrase`, and `frame`.
+.IP "On the closing side"
+Set this option before calling `close()` to communicate the closing information
+to the peer.
+.IP "On the receiving side"
+Get this option to retrieve the closing information from the peer.
+.PP
+The `optval` type is:
+
+.nf
+struct quic_connection_close {
+  uint32_t errcode;
+  uint8_t  frame;
+  uint8_t  phrase[];
+};
+.fi
+.IP "errcode"
+Error code for the application protocol. Defaults to 0.
+.IP "frame"
+Frame type that caused the closure. Defaults to 0.
+.IP "phrase"
+Optional string for additional details. Defaults to null.
+.RE
+
+.PP
+.B QUIC_SOCKOPT_TOKEN
+
+.RS 4
+.PP
+Manages tokens for address verification in QUIC connections.
+.IP "Client-Side Usage"
+The client uses this option to set a token provided by the peer server for
+address verification in subsequent connections. The token can be obtained
+from the server during the previous connection, either via `getsockopt()` with
+this option or from `NEW_TOKEN` event.
+.RS 8
+.PP
+The `optval` type is:
+
+.nf
+uint8_t *opt;
+.fi
+.RE
+.IP "Server-Side Usage"
+The server uses this option to issue a new token to the client for address
+verification in the next connection.
+.RS 8
+.PP
+The `optval` type is null.
+.RE
+.RE
+
+.PP
+.B QUIC_SOCKOPT_ALPN
+
+.RS 4
+.PP
+Used on listening sockets for kernel ALPN routing and on regular sockets for
+communicating ALPN identifiers with userspace handshake.
+.IP "On regular sockets"
+Sets the desired ALPNs before sending handshake requests to userspace. Multiple
+ALPNs can be specified, separated by commas (e.g., "smbd,h3,ksmbd"). Userspace
+handshake should return the selected ALPN to the kernel via this socket option.
+.IP "On listening sockets"
+Directs incoming requests to the appropriate application based on ALPNs if
+supported by the kernel. ALPNs must be set before calling `listen()`.
+.PP
+The `optval` type is:
+
+.nf
+char *alpn;
+.fi
+.RE
+
+.PP
+.B QUIC_SOCKOPT_SESSION_TICKET
+
+.RS 4
+.PP
+Used on listening sockets to retrieve the key for enabling session tickets on
+the server, and on regular sockets to receive session ticket messages on the
+client. Also used by client-side kernel consumers to communicate session data
+with userspace handshake.
+.IP "For userspace handshake"
+On the server side, requires a key to enable session tickets. On the client
+side, receives `NEW_SESSION_TICKET` messages to generate session data.
+.IP "For kernel consumers"
+After handling `NEW_SESSION_TICKET` messages, userspace handshake must return
+session data to the kernel via this socket option. During session resumption,
+kernel consumers use this option to inform userspace handshake about session
+data.
+.PP
+The `optval` type is:
+
+.nf
+uint8_t *opt;
+.fi
+.RE
+
+.PP
+.B QUIC_SOCKOPT_CRYPTO_SECRET
+
+.RS 4
+.PP
+Sets cryptographic secrets derived from userspace to the socket in the kernel
+during the QUIC handshake process.
+.PP
+The `optval` type is:
+
+.nf
+struct quic_crypto_secret {
+  uint8_t  level;
+  uint16_t send;
+  uint32_t type;
+  uint8_t  secret[48];
+};
+.fi
+.IP "level"
+Specifies the QUIC cryptographic level:
+.RS 8
+.IP \[bu] 4
+`QUIC_CRYPTO_APP`: Application level
+.IP \[bu] 4
+`QUIC_CRYPTO_HANDSHAKE`: Handshake level
+.IP \[bu] 4
+`QUIC_CRYPTO_EARLY`: Early or 0-RTT level
+.RE
+.IP "send"
+Indicates the direction of the secret:
+.RS 8
+.IP \[bu] 4
+`0`: Set secret for receiving
+.IP \[bu] 4
+`!0`: Set secret for sending
+.RE
+.IP "type"
+Specifies the encryption algorithm used:
+.RS 8
+.IP \[bu] 4
+`AES_GCM_128`
+.IP \[bu] 4
+`AES_GCM_256`
+.IP \[bu] 4
+`AES_CCM_128`
+.IP \[bu] 4
+`CHACHA20_POLY1305`
+.RE
+.IP "secret"
+The cryptographic key material. Length depends on the type and should be filled
+accordingly in the kernel.
+.RE
+
+.PP
+.B QUIC_SOCKOPT_TRANSPORT_PARAM_EXT
+
+.RS 4
+.PP
+Used to retrieve or set the QUIC Transport Parameters Extension, essential for
+building TLS messages and handling extended QUIC transport parameters.
+.IP "Get Operation"
+Retrieves the QUIC Transport Parameters Extension based on local transport
+parameters configured in the kernel.
+.IP "Set Operation"
+Updates the kernel with the QUIC Transport Parameters Extension received from
+the peer's TLS message.
+.PP
+The `optval` type is:
+
+.nf
+uint8_t *opt;
+.fi
+.RE
+
+.SS Read-Only Options
+
+.PP
+.B QUIC_SOCKOPT_STREAM_OPEN
+
+.RS 4
+.PP
+Opens a new QUIC stream for data transmission within a QUIC connection.
+.PP
+The `optval` type is:
+
+.nf
+struct quic_stream_info {
+  uint64_t stream_id;
+  uint32_t stream_flags;
+};
+.fi
+.IP "stream_id"
+Specifies the stream ID for the new stream:
+.RS 8
+.IP \[bu] 4
+`>= 0`: Open a stream with the specific stream ID.
+.IP \[bu] 4
+`-1`: Open the next available stream. The assigned stream ID will be returned to the user.
+.RE
+.IP "stream_flags"
+Specifies flags for stream creation:
+.RS 8
+.IP \[bu] 4
+`QUIC_STREAM_UNI`: Open the next unidirectional stream.
+.IP \[bu] 4
+`QUIC_STREAM_DONTWAIT`: Open the stream without blocking; allows asynchronous processing.
+.RE
+.RE
+
+.SS Write-Only Options
+
+.PP
+.B QUIC_SOCKOPT_STREAM_RESET
+
+.RS 4
+.PP
+Resets a specific QUIC stream, indicating that the endpoint will no longer
+guarantee the delivery of data associated with that stream.
+.PP
+The `optval` type is:
+
+.nf
+struct quic_errinfo {
+  uint64_t stream_id;
+  uint32_t errcode;
+};
+.fi
+.RE
+
+.PP
+.B QUIC_SOCKOPT_STREAM_STOP_SENDING
+
+.RS 4
+.PP
+Requests that the peer stop sending data on a specified QUIC stream.
+.PP
+The `optval` type is:
+
+.nf
+struct quic_errinfo {
+  uint64_t stream_id;
+  uint32_t errcode;
+};
+.fi
+.RE
+
+.PP
+.B QUIC_SOCKOPT_CONNECTION_MIGRATION
+
+.RS 4
+.PP
+Initiates a connection migration, allowing the QUIC connection to switch to a
+new address. Can also be used on the server side to set the preferred address
+transport parameter before the handshake.
+.PP
+The `optval` type is:
+
+.nf
+struct sockaddr_in(6);
+.fi
+.RE
+
+.PP
+.B QUIC_SOCKOPT_KEY_UPDATE
+
+.RS 4
+.PP
+Initiates a key update or rekeying process for the QUIC connection.
+.PP
+The `optval` type is null.
+.fi
+.RE
+
+.SH AUTHORS
+Xin Long <lucien.xin@gmail.com>
+.SH "SEE ALSO"
+.BR socket (7),
+.BR socket (2),
+.BR ip (7),
+.BR bind (2),
+.BR listen (2),
+.BR accept (2),
+.BR connect (2),
+.BR sendmsg (2),
+.BR recvmsg (2),
+.BR sysctl (2),
+.BR getsockopt (2),
+.sp
+RFC9000 for the QUIC specification.

@@ -1,0 +1,37 @@
+This project contains components licensed under different open-source
+licenses.
+
+- modules/net/quic/, modules/include/linux/
+
+  These directories are licensed under the GNU General Public License,
+  version 2 or later (GPL-2.0+).
+
+  License text:
+
+    https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+
+- modules/include/uapi/linux/
+
+  This directory is licensed under the GNU General Public License,
+  version 2 or later, with the Linux-syscall-note exception (GPL-2.0+
+  WITH Linux-syscall-note).
+
+  The Linux-syscall-note clarifies that user-space programs including
+  these headers are not considered derivative works.
+
+  GPL-2.0 license text:
+
+    https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+
+  Linux-syscall-note documentation:
+
+    https://www.kernel.org/doc/html/latest/process/license-rules.html#kernel-headers
+
+- libquic/
+
+  This directory is licensed under the GNU Lesser General Public License,
+  version 2.1 or later (LGPL-2.1+).
+
+  License text:
+
+    https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html

@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: quic
+Description: User-level API library for in-kernel QUIC
+Version: 1.0
+Libs: -L${libdir} -lquic
+Cflags: -I${includedir}

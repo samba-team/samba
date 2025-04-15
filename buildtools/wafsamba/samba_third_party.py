@@ -46,3 +46,8 @@ Build.BuildContext.CHECK_UID_WRAPPER = CHECK_UID_WRAPPER
 def CHECK_PAM_WRAPPER(conf):
     return conf.CHECK_BUNDLED_SYSTEM_PKG('pam_wrapper', minversion='1.1.8')
 Build.BuildContext.CHECK_PAM_WRAPPER = CHECK_PAM_WRAPPER
+
+@conf
+def CHECK_LIBQUIC(conf):
+    return conf.CHECK_BUNDLED_SYSTEM_PKG('libquic', minversion='1.1')
+Build.BuildContext.CHECK_LIBQUIC = CHECK_LIBQUIC
