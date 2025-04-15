@@ -132,6 +132,9 @@ static const struct {
 #ifdef ENOTSUP
         { ENOTSUP,      NT_STATUS_NOT_SUPPORTED},
 #endif
+#ifdef EPROTONOSUPPORT
+	{ EPROTONOSUPPORT, NT_STATUS_PROTOCOL_NOT_SUPPORTED },
+#endif
 
 	{ 0, NT_STATUS_UNSUCCESSFUL }
 };
