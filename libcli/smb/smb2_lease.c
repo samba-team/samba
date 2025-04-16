@@ -87,7 +87,8 @@ bool smb2_lease_push(const struct smb2_lease *lease, uint8_t *buf, size_t len)
 
 	if (version == 2) {
 		memcpy(&buf[32], &lease->parent_lease_key, 16);
-		SIVAL(buf, 48, lease->lease_epoch);
+		SSVAL(buf, 48, lease->lease_epoch);
+		SSVAL(buf, 50, 0); /* reserved */
 	}
 
 	return true;
