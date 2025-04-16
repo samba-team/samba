@@ -17,6 +17,7 @@ conf.CHECK_CFG(package='gnutls',
                      mandatory=True)
 
 gnutls_version_str = conf.cmd_and_log(conf.env.PKGCONFIG + ['--modversion', 'gnutls']).strip()
+conf.msg('Found GnuTLS Version', gnutls_version_str)
 gnutls_version = parse_version(gnutls_version_str)
 
 # Define gnutls as a system library
@@ -32,11 +33,13 @@ conf.SET_TARGET_TYPE('gnutls', 'SYSLIB')
 # 3.6.10 - 3.6.14 have a severe memory leak with AES-CCM
 #     https://gitlab.com/gnutls/gnutls/-/merge_requests/1278
 if (gnutls_version > parse_version('3.6.14')):
+      conf.msg('Defined ALLOW_GNUTLS_AEAD_CIPHER_ENCRYPTV2_AES_CCM', '1')
       conf.DEFINE('ALLOW_GNUTLS_AEAD_CIPHER_ENCRYPTV2_AES_CCM', 1)
 
 # GNUTLS_CB_TLS_SERVER_END_POINT is available with
 # 3.7.2
 if (gnutls_version >= parse_version('3.7.2')):
+      conf.msg('Defined HAVE_GNUTLS_CB_TLS_SERVER_END_POINT', '1')
       conf.DEFINE('HAVE_GNUTLS_CB_TLS_SERVER_END_POINT', 1)
 
 # Check if gnutls has fips mode support
