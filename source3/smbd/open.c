@@ -4625,6 +4625,13 @@ mkdir_first:
 			      mode);
 	if (ret != 0) {
 		status = map_nt_error_from_unix(errno);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)
+		    && need_tmpname)
+		{
+			need_tmpname = false;
+			first_atname = smb_fname_atname;
+			goto mkdir_first;
+		}
 		DBG_NOTICE("MKDIRAT failed for '%s': %s\n",
 			   smb_fname_str_dbg(smb_dname), nt_errstr(status));
 		goto restore_orig;
