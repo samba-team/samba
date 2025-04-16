@@ -45,20 +45,20 @@ ssize_t smb2_lease_pull(const uint8_t *buf, size_t len,
 	}
 
 	memcpy(&lease->lease_key, buf, 16);
-	lease->lease_state = IVAL(buf, 16);
+	lease->lease_state = PULL_LE_U32(buf, 16);
 	lease->lease_version = version;
 
 	switch (version) {
 	case 1:
 		break;
 	case 2:
-		lease->lease_flags = IVAL(buf, 20);
+		lease->lease_flags = PULL_LE_U32(buf, 20);
+		lease->lease_duration = PULL_LE_U64(buf, 24);
 		lease->lease_flags &= SMB2_LEASE_FLAG_PARENT_LEASE_KEY_SET;
 		if (lease->lease_flags & SMB2_LEASE_FLAG_PARENT_LEASE_KEY_SET) {
 			memcpy(&lease->parent_lease_key, buf+32, 16);
 		}
-		lease->lease_duration = BVAL(buf, 24);
-		lease->lease_epoch = SVAL(buf, 48);
+		lease->lease_epoch = PULL_LE_U16(buf, 48);
 		break;
 	}
 
