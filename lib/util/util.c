@@ -698,7 +698,13 @@ _PUBLIC_ void dump_data_diff(int dbgc_class, int level,
 	if (!DEBUGLVLC(dbgc_class, level)) {
 		return;
 	}
-	dump_data_diff_cb(buf1, len1, buf2, len2, true, debugadd_channel_cb, &dcl);
+	dump_data_diff_cb(buf1,
+			  len1,
+			  buf2,
+			  len2,
+			  omit_zero_bytes,
+			  debugadd_channel_cb,
+			  &dcl);
 }
 
 _PUBLIC_ void dump_data_file_diff(FILE *f,
