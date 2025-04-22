@@ -43,6 +43,7 @@ if ($@) {
 my $opt_help = 0;
 my $opt_target = "samba";
 my $opt_quick = 0;
+my $opt_quic_ko_wrapper = 0;
 my $opt_socket_wrapper = 0;
 my $opt_socket_wrapper_pcap = undef;
 my $opt_socket_wrapper_keep_pcap = undef;
@@ -58,6 +59,7 @@ my $opt_mitkrb5 = 0;
 my $opt_default_ldb_backend = "mdb";
 my $opt_resetup_env = undef;
 my $opt_load_list = undef;
+my $opt_libquic_ko_wrapper_so_path = "";
 my $opt_libnss_wrapper_so_path = "";
 my $opt_libresolv_wrapper_so_path = "";
 my $opt_libsocket_wrapper_so_path = "";
@@ -234,6 +236,7 @@ my $result = GetOptions (
 		'help|h|?' => \$opt_help,
 		'target=s' => \$opt_target,
 		'prefix=s' => \$prefix,
+		'quic-ko-wrapper' => \$opt_quic_ko_wrapper,
 		'socket-wrapper' => \$opt_socket_wrapper,
 		'socket-wrapper-pcap' => \$opt_socket_wrapper_pcap,
 		'socket-wrapper-keep-pcap' => \$opt_socket_wrapper_keep_pcap,
@@ -253,6 +256,7 @@ my $result = GetOptions (
 		'testlist=s' => \@testlists,
 		'random-order' => \$opt_random_order,
 		'load-list=s' => \$opt_load_list,
+		'quic_ko_wrapper_so_path=s' => \$opt_libquic_ko_wrapper_so_path,
 		'nss_wrapper_so_path=s' => \$opt_libnss_wrapper_so_path,
 		'resolv_wrapper_so_path=s' => \$opt_libresolv_wrapper_so_path,
 		'socket_wrapper_so_path=s' => \$opt_libsocket_wrapper_so_path,
@@ -373,6 +377,14 @@ if ($opt_libasan_so_path) {
 	}
 }
 
+if ($opt_libquic_ko_wrapper_so_path) {
+	if ($ld_preload) {
+		$ld_preload = "$ld_preload:$opt_libquic_ko_wrapper_so_path";
+	} else {
+		$ld_preload = "$opt_libquic_ko_wrapper_so_path";
+	}
+}
+
 if ($opt_libnss_wrapper_so_path) {
 	if ($ld_preload) {
 		$ld_preload = "$ld_preload:$opt_libnss_wrapper_so_path";
@@ -431,6 +443,10 @@ $ENV{UID_WRAPPER} = 1;
 
 # We are already hitting the limit, so double it.
 $ENV{NSS_WRAPPER_MAX_HOSTENTS} = 200;
+
+if ($opt_quic_ko_wrapper) {
+	$ENV{QUIC_KO_WRAPPER} = 1;
+}
 
 my $socket_wrapper_dir;
 if ($opt_socket_wrapper) {

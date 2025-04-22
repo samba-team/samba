@@ -259,6 +259,8 @@ def cmd_testonly(opt):
     # selftest can optionally use kernel namespaces instead of socket-wrapper
     if os.environ.get('USE_NAMESPACES') is None:
         env.OPTIONS += " --socket_wrapper_so_path=" + CONFIG_GET(opt, 'LIBSOCKET_WRAPPER_SO_PATH')
+        if CONFIG_SET(opt, 'QUIC_KO_WRAPPER'):
+            env.OPTIONS += " --quic_ko_wrapper_so_path=" + CONFIG_GET(opt, 'LIBQUIC_KO_WRAPPER_SO_PATH')
 
     if not CONFIG_SET(opt, 'HAVE_RESOLV_CONF_SUPPORT'):
         env.OPTIONS += " --use-dns-faking"
@@ -357,6 +359,8 @@ def cmd_testonly(opt):
     if Options.options.LIST:
         cmd = '${CORE_COMMAND} --list'
     else:
+        if CONFIG_SET(opt, 'QUIC_KO_WRAPPER'):
+            env.OPTIONS += ' --quic-ko-wrapper'
         env.OPTIONS += ' --socket-wrapper'
         cmd = '(${CORE_COMMAND} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS}'
 
