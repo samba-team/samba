@@ -851,6 +851,7 @@ static PyObject *py_smbd_set_nt_acl(PyObject *self, PyObject *args, PyObject *kw
 			/*
 			 * This will show up as a FileNotFoundError in python.
 			 */
+			errno = ENOENT;
 			PyErr_SetFromErrnoWithFilename(PyExc_OSError, fname);
 		} else {
 			PyErr_SetNTSTATUS(status);
@@ -929,6 +930,7 @@ static PyObject *py_smbd_get_nt_acl(PyObject *self, PyObject *args, PyObject *kw
 			 * from which samba-tool can at least produce a short
 			 * message containing the problematic filename.
 			 */
+			errno = ENOENT;
 			PyErr_SetFromErrnoWithFilename(PyExc_OSError, fname);
 		} else {
 			PyErr_SetNTSTATUS(status);
@@ -1092,7 +1094,9 @@ static PyObject *py_smbd_get_sys_acl(PyObject *self, PyObject *args, PyObject *k
 
 	acl = SMB_VFS_SYS_ACL_GET_FD(smb_fname->fsp, acl_type, frame);
 	if (!acl) {
+		int err = errno;
 		TALLOC_FREE(frame);
+		errno = err;
 		return PyErr_SetFromErrno(PyExc_OSError);
 	}
 
