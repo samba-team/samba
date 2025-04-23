@@ -869,16 +869,17 @@ krb5_error_code smb_krb5_parse_name_flags(krb5_context context,
 		TALLOC_FREE(frame);
 		return ENOMEM;
 	}
-	TALLOC_FREE(frame);
 
 	ret = krb5_parse_name_flags(context, utf8_name, flags, principal);
 	if (ret != KRB5_PARSE_MALFORMED) {
+		TALLOC_FREE(frame);
 		return ret;
 	}
 
 	flags |= KRB5_PRINCIPAL_PARSE_ENTERPRISE;
 	ret = krb5_parse_name_flags(context, utf8_name, flags, principal);
 
+	TALLOC_FREE(frame);
 	return ret;
 }
 
