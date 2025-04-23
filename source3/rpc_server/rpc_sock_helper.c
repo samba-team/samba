@@ -110,32 +110,16 @@ out:
  ********************************************************************/
 
 static NTSTATUS dcesrv_create_ncacn_ip_tcp_socket(
-	const struct sockaddr_storage *ifss, uint16_t *port, int *out_fd)
+	const struct sockaddr_storage *ifss,
+	uint16_t port,
+	bool rebind,
+	int *out_fd)
 {
 	int fd = -1;
 
-	if (*port == 0) {
-		static uint16_t low = 0;
-		uint16_t i;
-
-		if (low == 0) {
-			low = lp_rpc_low_port();
-		}
-
-		for (i = low; i <= lp_rpc_high_port(); i++) {
-			fd = open_socket_in(SOCK_STREAM, ifss, i, false);
-			if (fd >= 0) {
-				*port = i;
-				low = i+1;
-				break;
-			}
-		}
-	} else {
-		fd = open_socket_in(SOCK_STREAM, ifss, *port, true);
-	}
-
+	fd = open_socket_in(SOCK_STREAM, ifss, port, rebind);
 	if (fd < 0) {
-		DBG_ERR("Failed to create socket on port %u!\n", *port);
+		DBG_ERR("Failed to create socket on port %u!\n", port);
 		return map_nt_error_from_unix(-fd);
 	}
 
@@ -143,7 +127,7 @@ static NTSTATUS dcesrv_create_ncacn_ip_tcp_socket(
 	set_socket_options(fd, "SO_KEEPALIVE");
 	set_socket_options(fd, lp_socket_options());
 
-	DBG_DEBUG("Opened ncacn_ip_tcp socket fd %d for port %u\n", fd, *port);
+	DBG_DEBUG("Opened ncacn_ip_tcp socket fd %d for port %u\n", fd, port);
 
 	*out_fd = fd;
 
@@ -156,14 +140,23 @@ static NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
 	size_t *pnum_fds,
 	int **pfds)
 {
+	static uint16_t next_low_port;
+	static uint16_t conf_high_port;
 	uint16_t port = 0;
+	uint16_t highest_port = 0;
 	char port_str[11];
 	const char *endpoint = NULL;
 	size_t i = 0, num_fds;
 	int *fds = NULL;
 	struct samba_sockaddr *addrs = NULL;
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
+	bool rebind = false;
 	bool ok;
+
+	if (next_low_port == 0) {
+		next_low_port = lp_rpc_low_port();
+		conf_high_port = lp_rpc_high_port();
+	}
 
 	endpoint = dcerpc_binding_get_string_option(b, "endpoint");
 	if (endpoint != NULL) {
@@ -181,13 +174,19 @@ static NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
 
 	addrs = talloc_array(mem_ctx, struct samba_sockaddr, num_fds);
 	if (addrs == NULL) {
+		num_fds = 0; /* nothing to close */
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 	fds = talloc_array(mem_ctx, int, num_fds);
 	if (fds == NULL) {
+		num_fds = 0; /* nothing to close */
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
+	}
+
+	for (i=0; i<num_fds; i++) {
+		fds[i] = -1;
 	}
 
 	/*
@@ -202,7 +201,6 @@ static NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
 			ok = sockaddr_storage_to_samba_sockaddr(
 				&addrs[i], ifss);
 			if (!ok) {
-				i = 0; /* nothing to close */
 				goto fail;
 			}
 		}
@@ -234,13 +232,60 @@ static NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
 		}
 	}
 
-	for (i=0; i<num_fds; i++) {
-		status = dcesrv_create_ncacn_ip_tcp_socket(
-			&addrs[i].u.ss, &port, &fds[i]);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
+	if (port != 0) {
+		rebind = true;
+		highest_port = port;
+	} else {
+		rebind = false;
+		port = next_low_port;
+		highest_port = conf_high_port;
+	}
+
+	for (; port <= highest_port; port += 1) {
+		for (i=0; i<num_fds; i++) {
+			status = dcesrv_create_ncacn_ip_tcp_socket(
+						&addrs[i].u.ss,
+						port,
+						rebind,
+						&fds[i]);
+			if (NT_STATUS_EQUAL(status,
+			    NT_STATUS_ADDRESS_ALREADY_ASSOCIATED))
+			{
+				break;
+			}
+			if (!NT_STATUS_IS_OK(status)) {
+				goto fail;
+			}
+			samba_sockaddr_set_port(&addrs[i], port);
 		}
-		samba_sockaddr_set_port(&addrs[i], port);
+
+		if (port == next_low_port) {
+			next_low_port += 1;
+		}
+
+		if (i == num_fds) {
+			/*
+			 * We were able to bind to the same port on all
+			 * addresses
+			 */
+			break;
+		}
+
+		/*
+		 * The port was not available on at least one address, so close
+		 * them all and try the next port or return the error.
+		 */
+		for (i=0; i<num_fds; i++) {
+			if (fds[i] == -1) {
+				continue;
+			}
+			close(fds[i]);
+			fds[i] = -1;
+		}
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
 	}
 
 	/* Set the port in the endpoint */
@@ -261,9 +306,12 @@ static NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
 	return NT_STATUS_OK;
 
 fail:
-	while (i > 0) {
-		close(fds[i-1]);
-		i -= 1;
+	for (i=0; i<num_fds; i++) {
+		if (fds[i] == -1) {
+			continue;
+		}
+		close(fds[i]);
+		fds[i] = -1;
 	}
 	TALLOC_FREE(fds);
 	TALLOC_FREE(addrs);
