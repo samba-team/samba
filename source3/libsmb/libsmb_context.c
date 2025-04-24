@@ -181,15 +181,15 @@ smbc_new_context(void)
         smbc_setOptionFullTimeNames(context, False);
         smbc_setOptionOpenShareMode(context, SMBC_SHAREMODE_DENY_NONE);
         smbc_setOptionSmbEncryptionLevel(context, SMBC_ENCRYPTLEVEL_DEFAULT);
-        smbc_setOptionUseCCache(context, True);
+	{
+		bool no_ccache = (getenv("LIBSMBCLIENT_NO_CCACHE") == NULL);
+		smbc_setOptionUseCCache(context, !no_ccache);
+	}
         smbc_setOptionCaseSensitive(context, False);
         smbc_setOptionBrowseMaxLmbCount(context, 3);    /* # LMBs to query */
         smbc_setOptionUrlEncodeReaddirEntries(context, False);
         smbc_setOptionOneSharePerServer(context, False);
         smbc_setOptionPosixExtensions(context, false);
-	if (getenv("LIBSMBCLIENT_NO_CCACHE") != NULL) {
-		smbc_setOptionUseCCache(context, false);
-	}
 
         smbc_setFunctionAuthData(context, SMBC_get_auth_data);
         smbc_setFunctionCheckServer(context, SMBC_check_server);
