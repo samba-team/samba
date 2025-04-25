@@ -29,6 +29,7 @@ struct wb_getpwsid_state {
 	struct dom_sid sid;
 	struct wbint_userinfo *userinfo;
 	struct winbindd_pw *pw;
+	const char *mapped_name;
 };
 
 static void wb_getpwsid_queryuser_done(struct tevent_req *subreq);
@@ -65,18 +66,14 @@ struct tevent_req *wb_getpwsid_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
+static void wb_getpwsid_normalize_done(struct tevent_req *subreq);
 static void wb_getpwsid_queryuser_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
 	struct wb_getpwsid_state *state = tevent_req_data(
 		req, struct wb_getpwsid_state);
-	struct winbindd_pw *pw = state->pw;
-	struct wbint_userinfo *info;
-	fstring acct_name;
-	const char *output_username = NULL;
-	char *mapped_name = NULL;
-	char *tmp;
+	const char *acct_name_lower = NULL;
 	NTSTATUS status;
 
 	status = wb_queryuser_recv(subreq, state, &state->userinfo);
@@ -84,59 +81,92 @@ static void wb_getpwsid_queryuser_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+
+	acct_name_lower = strlower_talloc(state, state->userinfo->acct_name);
+	if (tevent_req_nomem(acct_name_lower, req)) {
+		return;
+	}
+	state->userinfo->acct_name = talloc_move(state->userinfo, &acct_name_lower);
+
+	subreq = dcerpc_wbint_NormalizeNameMap_send(
+		state,
+		state->ev,
+		idmap_child_handle(),
+		state->userinfo->domain_name,
+		state->userinfo->acct_name,
+		&state->mapped_name);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, wb_getpwsid_normalize_done, req);
+}
+
+static void wb_getpwsid_normalize_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wb_getpwsid_state *state = tevent_req_data(
+		req, struct wb_getpwsid_state);
+	struct winbindd_pw *pw = state->pw;
+	struct wbint_userinfo *info;
+	const char *output_username = NULL;
+	char *tmp;
+	NTSTATUS status;
+	NTSTATUS result;
+
+	status = dcerpc_wbint_NormalizeNameMap_recv(subreq, state, &result);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		DBG_ERR("wbint_NormalizeAndMapToAlias(%s, %s) call failed: %s\n",
+			state->userinfo->domain_name,
+			state->userinfo->acct_name,
+			nt_errstr(status));
+		return;
+	} else if (NT_STATUS_IS_OK(result) ||
+		   NT_STATUS_EQUAL(result, NT_STATUS_FILE_RENAMED))
+	{
+		state->userinfo->acct_name = talloc_steal(state->userinfo,
+							  state->mapped_name);
+	}
+
 	info = state->userinfo;
+
+	output_username = fill_domain_username_talloc(state,
+						      info->domain_name,
+						      info->acct_name,
+						      true);
+	if (tevent_req_nomem(output_username, req)) {
+		return;
+	}
 
 	pw->pw_uid = info->uid;
 	pw->pw_gid = info->primary_gid;
-
-	fstrcpy(acct_name, info->acct_name);
-	if (!strlower_m(acct_name)) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return;
-	}
-
-	/*
-	 * TODO:
-	 * This function should be called in 'idmap winbind child'. It shouldn't
-	 * be a blocking call, but for this we need to add a new function for
-	 * winbind.idl. This is a fix which can be backported for now.
-	 */
-	status = normalize_name_map(state,
-				    info->domain_name,
-				    acct_name,
-				    &mapped_name);
-	if (NT_STATUS_IS_OK(status) ||
-	    NT_STATUS_EQUAL(status, NT_STATUS_FILE_RENAMED)) {
-		fstrcpy(acct_name, mapped_name);
-	}
-	output_username = fill_domain_username_talloc(state,
-						      info->domain_name,
-						      acct_name,
-						      true);
-	if (output_username == NULL) {
-		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
-	}
 
 	strlcpy(pw->pw_name, output_username, sizeof(pw->pw_name));
 
 	strlcpy(pw->pw_gecos, info->full_name ? info->full_name : "",
 		sizeof(pw->pw_gecos));
 
-	tmp = talloc_sub_specified(
-		state, info->homedir, acct_name,
-		info->primary_group_name, info->domain_name,
-		pw->pw_uid, pw->pw_gid);
+	tmp = talloc_sub_specified(state,
+				   info->homedir,
+				   info->acct_name,
+				   info->primary_group_name,
+				   info->domain_name,
+				   pw->pw_uid,
+				   pw->pw_gid);
 	if (tevent_req_nomem(tmp, req)) {
 		return;
 	}
 	strlcpy(pw->pw_dir, tmp, sizeof(pw->pw_dir));
 	TALLOC_FREE(tmp);
 
-	tmp = talloc_sub_specified(
-		state, info->shell, acct_name,
-		info->primary_group_name, info->domain_name,
-		pw->pw_uid, pw->pw_gid);
+	tmp = talloc_sub_specified(state,
+				   info->shell,
+				   info->acct_name,
+				   info->primary_group_name,
+				   info->domain_name,
+				   pw->pw_uid,
+				   pw->pw_gid);
 	if (tevent_req_nomem(tmp, req)) {
 		return;
 	}
