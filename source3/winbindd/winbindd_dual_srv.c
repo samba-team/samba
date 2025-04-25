@@ -2167,4 +2167,16 @@ NTSTATUS _wbint_NormalizeNameMap(struct pipes_struct *p,
 	return status;
 }
 
+NTSTATUS _wbint_NormalizeNameUnmap(struct pipes_struct *p,
+				   struct wbint_NormalizeNameUnmap *r)
+{
+	char *unmapped = NULL;
+	NTSTATUS status;
+
+	status = normalize_name_unmap(p->mem_ctx, r->in.name, &unmapped);
+	*r->out.unmapped_name = unmapped;
+
+	return status;
+}
+
 #include "librpc/gen_ndr/ndr_winbind_scompat.c"

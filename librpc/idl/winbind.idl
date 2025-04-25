@@ -277,6 +277,11 @@ interface winbind
         [out,string,charset(UTF8)] char **mapped_name
     );
 
+    NTSTATUS wbint_NormalizeNameUnmap(
+        [in,string,charset(UTF8)] char *name,
+        [out,string,charset(UTF8)] char **unmapped_name
+    );
+
   /* Public methods available via IRPC */
 
     typedef [switch_type(uint16)] union netr_LogonLevel netr_LogonLevel;
