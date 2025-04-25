@@ -1031,8 +1031,8 @@ static void popt_common_credentials_callback(poptContext popt_ctx,
 			}
 		}
 
-		if (cli_credentials_get_kerberos_state(creds) ==
-		    CRED_USE_KERBEROS_REQUIRED)
+		if (cli_credentials_get_kerberos_state(creds) !=
+		    CRED_USE_KERBEROS_DISABLED)
 		{
 			enum credentials_obtained ccache_obtained =
 				CRED_UNINITIALISED;
