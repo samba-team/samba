@@ -712,14 +712,13 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 	 * Let's allocate a server structure.
 	 */
 
-	srv = SMB_MALLOC_P(SMBCSRV);
+	srv = SMB_CALLOC_ARRAY(SMBCSRV, 1);
 	if (!srv) {
 		cli_shutdown(c);
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	ZERO_STRUCTP(srv);
 	DLIST_ADD(srv->cli, c);
 	srv->dev = (dev_t)(str_checksum(server) ^ str_checksum(share));
         srv->no_pathinfo = False;
@@ -890,14 +889,12 @@ SMBC_attr_server(TALLOC_CTX *ctx,
                 }
 		talloc_steal(ipc_cli, creds);
 
-                ipc_srv = SMB_MALLOC_P(SMBCSRV);
+                ipc_srv = SMB_CALLOC_ARRAY(SMBCSRV, 1);
                 if (!ipc_srv) {
                         errno = ENOMEM;
                         cli_shutdown(ipc_cli);
                         return NULL;
                 }
-
-                ZERO_STRUCTP(ipc_srv);
                 DLIST_ADD(ipc_srv->cli, ipc_cli);
 
                 nt_status = cli_rpc_pipe_open_noauth(

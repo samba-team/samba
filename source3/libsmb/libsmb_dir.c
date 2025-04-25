@@ -111,30 +111,26 @@ add_dirent(SMBCFILE *dir,
 
 	if (dir->dir_list == NULL) {
 
-		dir->dir_list = SMB_MALLOC_P(struct smbc_dir_list);
+		dir->dir_list = SMB_CALLOC_ARRAY(struct smbc_dir_list, 1);
 		if (!dir->dir_list) {
 
 			SAFE_FREE(dirent);
 			dir->dir_error = ENOMEM;
 			return -1;
-
 		}
-		ZERO_STRUCTP(dir->dir_list);
 
 		dir->dir_end = dir->dir_next = dir->dir_list;
 	}
 	else {
 
-		dir->dir_end->next = SMB_MALLOC_P(struct smbc_dir_list);
+		dir->dir_end->next = SMB_CALLOC_ARRAY(struct smbc_dir_list, 1);
 
 		if (!dir->dir_end->next) {
 
 			SAFE_FREE(dirent);
 			dir->dir_error = ENOMEM;
 			return -1;
-
 		}
-		ZERO_STRUCTP(dir->dir_end->next);
 
 		dir->dir_end = dir->dir_end->next;
 	}
@@ -165,22 +161,19 @@ static int add_dirplus(SMBCFILE *dir, struct file_info *finfo)
 	struct smbc_dirplus_list *new_entry = NULL;
 	struct libsmb_file_info *info = NULL;
 
-	new_entry = SMB_MALLOC_P(struct smbc_dirplus_list);
+	new_entry = SMB_CALLOC_ARRAY(struct smbc_dirplus_list, 1);
 	if (new_entry == NULL) {
 		dir->dir_error = ENOMEM;
 		return -1;
 	}
-	ZERO_STRUCTP(new_entry);
 	new_entry->ino = finfo->ino;
 
-	info = SMB_MALLOC_P(struct libsmb_file_info);
+	info = SMB_CALLOC_ARRAY(struct libsmb_file_info, 1);
 	if (info == NULL) {
 		SAFE_FREE(new_entry);
 		dir->dir_error = ENOMEM;
 		return -1;
 	}
-
-	ZERO_STRUCTP(info);
 
 	info->btime_ts = finfo->btime_ts;
 	info->atime_ts = finfo->atime_ts;
@@ -531,15 +524,13 @@ SMBC_opendir_ctx(SMBCCTX *context,
 		}
 	}
 
-	dir = SMB_MALLOC_P(SMBCFILE);
+	dir = SMB_CALLOC_ARRAY(SMBCFILE, 1);
 
 	if (!dir) {
 		TALLOC_FREE(frame);
 		errno = ENOMEM;
 		return NULL;
 	}
-
-	ZERO_STRUCTP(dir);
 
 	dir->cli_fd   = 0;
 	dir->fname    = SMB_STRDUP(fname);

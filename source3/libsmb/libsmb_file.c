@@ -110,14 +110,12 @@ SMBC_open_ctx(SMBCCTX *context,
 		return file;
 	}
 
-	file = SMB_MALLOC_P(SMBCFILE);
+	file = SMB_CALLOC_ARRAY(SMBCFILE, 1);
 	if (!file) {
 		errno = ENOMEM;
 		TALLOC_FREE(frame);
 		return NULL;
 	}
-
-	ZERO_STRUCTP(file);
 
 	creds = context->internal->creds;
 	/*d_printf(">>>open: resolving %s\n", path);*/

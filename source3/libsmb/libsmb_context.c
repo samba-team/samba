@@ -149,25 +149,20 @@ smbc_new_context(void)
          * All newly added context fields should be placed in
          * SMBC_internal_data, not directly in SMBCCTX.
          */
-        context = SMB_MALLOC_P(SMBCCTX);
+        context = SMB_CALLOC_ARRAY(SMBCCTX, 1);
         if (!context) {
 		TALLOC_FREE(frame);
                 errno = ENOMEM;
                 return NULL;
         }
 
-        ZERO_STRUCTP(context);
-
-        context->internal = SMB_MALLOC_P(struct SMBC_internal_data);
+        context->internal = SMB_CALLOC_ARRAY(struct SMBC_internal_data, 1);
         if (!context->internal) {
 		TALLOC_FREE(frame);
                 SAFE_FREE(context);
                 errno = ENOMEM;
                 return NULL;
         }
-
-        /* Initialize the context and establish reasonable defaults */
-        ZERO_STRUCTP(context->internal);
 
 	context->internal->lp_ctx = loadparm_init_s3(NULL,
 						     loadparm_s3_helpers());
