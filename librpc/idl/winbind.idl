@@ -271,6 +271,12 @@ interface winbind
         [out,ref] DomainInfoFlags *flags
         );
 
+    NTSTATUS wbint_NormalizeNameMap(
+        [in,string,charset(UTF8)] char *domain_name,
+        [in,string,charset(UTF8)] char *name,
+        [out,string,charset(UTF8)] char **mapped_name
+    );
+
   /* Public methods available via IRPC */
 
     typedef [switch_type(uint16)] union netr_LogonLevel netr_LogonLevel;

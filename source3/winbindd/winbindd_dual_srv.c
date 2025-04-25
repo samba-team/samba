@@ -2152,4 +2152,19 @@ NTSTATUS _wbint_ListTrustedDomains(struct pipes_struct *p,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS _wbint_NormalizeNameMap(struct pipes_struct *p,
+				 struct wbint_NormalizeNameMap *r)
+{
+	char *mapped = NULL;
+	NTSTATUS status;
+
+	status = normalize_name_map(p->mem_ctx,
+				    r->in.domain_name,
+				    r->in.name,
+				    &mapped);
+	*r->out.mapped_name = mapped;
+
+	return status;
+}
+
 #include "librpc/gen_ndr/ndr_winbind_scompat.c"
