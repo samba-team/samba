@@ -206,11 +206,6 @@ SMBC_creat_ctx(SMBCCTX *context,
                const char *path,
                mode_t mode)
 {
-	if (!context || !context->internal->initialized) {
-		errno = EINVAL;
-		return NULL;
-	}
-
 	return SMBC_open_ctx(context, path,
                              O_WRONLY | O_CREAT | O_TRUNC, mode);
 }
