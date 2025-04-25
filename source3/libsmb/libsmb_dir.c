@@ -354,8 +354,11 @@ net_share_enum_rpc(struct cli_state *cli,
 	WERROR result;
 	uint32_t preferred_len = 0xffffffff;
         uint32_t type;
-	struct srvsvc_NetShareInfoCtr info_ctr;
-	struct srvsvc_NetShareCtr1 ctr1;
+	struct srvsvc_NetShareCtr1 ctr1 = {};
+	struct srvsvc_NetShareInfoCtr info_ctr = {
+		.level = 1,
+		.ctr.ctr1 = &ctr1,
+	};
 	fstring name = "";
         fstring comment = "";
 	struct rpc_pipe_client *pipe_hnd = NULL;
@@ -371,12 +374,6 @@ net_share_enum_rpc(struct cli_state *cli,
                 DEBUG(1, ("net_share_enum_rpc pipe open fail!\n"));
 		goto done;
         }
-
-	ZERO_STRUCT(info_ctr);
-	ZERO_STRUCT(ctr1);
-
-	info_ctr.level = 1;
-	info_ctr.ctr.ctr1 = &ctr1;
 
 	b = pipe_hnd->binding_handle;
 
