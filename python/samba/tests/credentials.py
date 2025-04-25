@@ -403,7 +403,7 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         self.assertEqual(creds.get_username(), "user@samba.org")
         self.assertEqual(creds.get_domain(), "")
         self.assertEqual(creds.get_realm(), "SAMBA.ORG")
-        self.assertEqual(creds.get_principal(), "user@samba.org")
+        self.assertEqual(creds.get_principal(), "user@SAMBA.ORG")
         self.assertEqual(creds.is_anonymous(), False)
         self.assertEqual(creds.authentication_requested(), True)
 
@@ -445,7 +445,7 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         self.assertEqual(creds.get_domain(), "")
         self.assertEqual(creds.get_password(), "pass")
         self.assertEqual(creds.get_realm(), "SAMBA.ORG")
-        self.assertEqual(creds.get_principal(), "user@samba.org")
+        self.assertEqual(creds.get_principal(), "user@SAMBA.ORG")
         self.assertEqual(creds.is_anonymous(), False)
         self.assertEqual(creds.authentication_requested(), True)
 

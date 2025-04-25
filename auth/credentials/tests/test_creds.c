@@ -219,7 +219,7 @@ static void torture_creds_parse_string(void **state)
 	usr_obtained = cli_credentials_get_username_obtained(creds);
 	assert_int_equal(usr_obtained, CRED_SPECIFIED);
 
-	assert_string_equal(creds->principal, "wurst@brot.realm");
+	assert_string_equal(creds->principal, "wurst@BROT.REALM");
 	princ_obtained = cli_credentials_get_principal_obtained(creds);
 	assert_int_equal(princ_obtained, CRED_SPECIFIED);
 

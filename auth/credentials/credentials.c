@@ -1030,6 +1030,8 @@ _PUBLIC_ void cli_credentials_parse_string(struct cli_credentials *credentials, 
 	}
 
 	if ((p = strchr_m(uname,'@'))) {
+		char *x = NULL;
+
 		/*
 		 * We also need to set username and domain
 		 * in order to undo the effect of
@@ -1037,6 +1039,11 @@ _PUBLIC_ void cli_credentials_parse_string(struct cli_credentials *credentials, 
 		 */
 		cli_credentials_set_username(credentials, uname, obtained);
 		cli_credentials_set_domain(credentials, "", obtained);
+
+		/* Make sure the realm is uppercase */
+		for (x = p + 1; x[0] != '\0'; x++) {
+			*x = toupper_m(*x);
+		}
 
 		cli_credentials_set_principal(credentials, uname, obtained);
 		*p = 0;
