@@ -1,0 +1,14 @@
+<samba:parameter name="smbd profiling share"
+                 context="S"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This parameter allows the administrator to enable per-share
+	profiling support. When enabled, profile counters may be collected
+	with per-share granularity a specific shares. Takes affect only
+	when global option
+	<smbconfoption name="smbd profiling level"/> is enabled.
+	</para>
+</description>
+<value type="default">no</value>
+</samba:parameter>
