@@ -242,3 +242,49 @@ size_t smbprofile_collect_tdb(struct tdb_context *tdb,
 
 	return state.num_workers;
 }
+
+struct smbprofile_persvc_collector {
+	int (*cb)(const char *, const struct profile_stats *, void *);
+	void *userp;
+	int ret;
+};
+
+static int smbprofile_persvc_collect_fn(struct tdb_context *tdb,
+					TDB_DATA key,
+					TDB_DATA value,
+					void *private_data)
+{
+
+	const struct profile_stats *stats = NULL;
+	struct smbprofile_persvc_collector *col = NULL;
+
+	if (key.dsize < 5) {
+		return 0;
+	}
+
+	if (value.dsize != sizeof(*stats)) {
+		return 0;
+	}
+
+	col = (struct smbprofile_persvc_collector *)private_data;
+	stats = (const struct profile_stats *)(value.dptr);
+
+	col->ret = col->cb((const char *)key.dptr, stats, col->userp);
+	return (col->ret == 0) ? 0 : -1;
+}
+
+int smbprofile_persvc_collect_tdb(struct tdb_context *tdb,
+				  int (*fn)(const char *,
+					    const struct profile_stats *,
+					    void *),
+				  void *userp)
+{
+	struct smbprofile_persvc_collector col = {
+		.cb = fn,
+		.userp = userp,
+		.ret = 0,
+	};
+
+	tdb_traverse_read(tdb, smbprofile_persvc_collect_fn, &col);
+	return col.ret;
+}
