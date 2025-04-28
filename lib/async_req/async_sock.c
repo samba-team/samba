@@ -459,7 +459,8 @@ struct read_packet_state {
 
 static void read_packet_cleanup(struct tevent_req *req,
 				 enum tevent_req_state req_state);
-static void read_packet_do(struct tevent_req *req);
+static void read_packet_do(struct tevent_req *req,
+			   uint16_t ready_flags);
 static void read_packet_handler(struct tevent_context *ev,
 				struct tevent_fd *fde,
 				uint16_t flags, void *private_data);
@@ -492,6 +493,17 @@ struct tevent_req *read_packet_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	/*
+	 * Call read_packet_do()
+	 * with ready_flags = 0,
+	 * so only recvmsg(MSG_DONTWAIT)
+	 * will be tried.
+	 */
+	read_packet_do(req, 0);
+	if (!tevent_req_is_in_progress(req)) {
+		return tevent_req_post(req, ev);
+	}
+
 	state->fde = tevent_add_fd(ev, state, fd,
 				   TEVENT_FD_READ, read_packet_handler,
 				   req);
@@ -510,14 +522,17 @@ static void read_packet_cleanup(struct tevent_req *req,
 	TALLOC_FREE(state->fde);
 }
 
-static void read_packet_do(struct tevent_req *req)
+static void read_packet_do(struct tevent_req *req,
+			   uint16_t ready_flags)
 {
 	struct read_packet_state *state =
 		tevent_req_data(req, struct read_packet_state);
-	size_t total = talloc_get_size(state->buf);
+	size_t total;
 	ssize_t nread, more;
 	uint8_t *tmp;
 
+retry:
+	total = talloc_get_size(state->buf);
 	if (state->is_sock) {
 		struct iovec iov = {
 			.iov_base = state->buf+state->nread,
@@ -528,17 +543,33 @@ static void read_packet_do(struct tevent_req *req)
 			.msg_iovlen = 1,
 		};
 
-		nread = recvmsg(state->fd, &msg, 0);
+		nread = recvmsg(state->fd, &msg, MSG_DONTWAIT);
 		if ((nread == -1) && (errno == ENOTSOCK)) {
 			state->is_sock = false;
 		}
 	}
 	if (!state->is_sock) {
+		if (!(ready_flags & TEVENT_FD_READ)) {
+			/*
+			 * With out TEVENT_FD_READ read() may block,
+			 * so we just return here and retry via
+			 * fd event handler
+			 */
+			return;
+		}
 		nread = read(state->fd, state->buf+state->nread,
 			     total-state->nread);
 	}
 	if ((nread == -1) && (errno == EINTR)) {
-		/* retry */
+		/* retry directly */
+		goto retry;
+	}
+	if ((nread == -1) && (errno == EAGAIN)) {
+		/* retry later via fd event handler */
+		return;
+	}
+	if ((nread == -1) && (errno == EWOULDBLOCK)) {
+		/* retry later via fd event handler */
 		return;
 	}
 	if (nread == -1) {
@@ -549,6 +580,13 @@ static void read_packet_do(struct tevent_req *req)
 		tevent_req_error(req, EPIPE);
 		return;
 	}
+
+	/*
+	 * We have pulled some data out of the fd!
+	 * A possible retry can't rely
+	 * on TEVENT_FD_READ semantics anymore.
+	 */
+	ready_flags &= ~TEVENT_FD_READ;
 
 	state->nread += nread;
 	if (state->nread < total) {
@@ -588,6 +626,16 @@ static void read_packet_do(struct tevent_req *req)
 	}
 	state->buf = tmp;
 
+	/*
+	 * We already cleared TEVENT_FD_READ,
+	 * we do a retry without it.
+	 *
+	 * We either do recvmsg(MSG_DONTWAIT)
+	 * or return without any further read
+	 * because TEVENT_FD_READ was already
+	 * cleared.
+	 */
+	goto retry;
 }
 
 static void read_packet_handler(struct tevent_context *ev,
@@ -597,7 +645,7 @@ static void read_packet_handler(struct tevent_context *ev,
 	struct tevent_req *req = talloc_get_type_abort(
 		private_data, struct tevent_req);
 
-	read_packet_do(req);
+	read_packet_do(req, flags);
 }
 
 ssize_t read_packet_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
