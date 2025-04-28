@@ -135,14 +135,14 @@ SMBC_stat_ctx(SMBCCTX *context,
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!context || !context->internal->initialized) {
-		errno = EINVAL;  /* Best I can think of ... */
 		TALLOC_FREE(frame);
+		errno = EINVAL;  /* Best I can think of ... */
 		return -1;
 	}
 
 	if (!fname) {
-		errno = EINVAL;
 		TALLOC_FREE(frame);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -159,16 +159,16 @@ SMBC_stat_ctx(SMBCCTX *context,
                             &user,
                             &password,
                             NULL)) {
-		errno = EINVAL;
 		TALLOC_FREE(frame);
+		errno = EINVAL;
                 return -1;
         }
 
 	if (!user || user[0] == (char)0) {
 		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
-			errno = ENOMEM;
 			TALLOC_FREE(frame);
+			errno = ENOMEM;
 			return -1;
 		}
 	}
@@ -176,7 +176,9 @@ SMBC_stat_ctx(SMBCCTX *context,
 	srv = SMBC_server(frame, context, True,
                           server, port, share, &workgroup, &user, &password);
 	if (!srv) {
+		int err = errno;
 		TALLOC_FREE(frame);
+		errno = err;
 		return -1;  /* errno set by SMBC_server */
 	}
 
@@ -219,14 +221,14 @@ SMBC_fstat_ctx(SMBCCTX *context,
 	NTSTATUS status;
 
 	if (!context || !context->internal->initialized) {
-		errno = EINVAL;
 		TALLOC_FREE(frame);
+		errno = EINVAL;
 		return -1;
 	}
 
 	if (!SMBC_dlist_contains(context->internal->files, file)) {
-		errno = EBADF;
 		TALLOC_FREE(frame);
+		errno = EBADF;
 		return -1;
 	}
 
@@ -247,8 +249,8 @@ SMBC_fstat_ctx(SMBCCTX *context,
                             &user,
                             &password,
                             NULL)) {
-                errno = EINVAL;
 		TALLOC_FREE(frame);
+                errno = EINVAL;
                 return -1;
         }
 
@@ -261,8 +263,8 @@ SMBC_fstat_ctx(SMBCCTX *context,
 				  &targetcli, &targetpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Could not resolve %s\n", path);
-                errno = ENOENT;
 		TALLOC_FREE(frame);
+                errno = ENOENT;
 		return -1;
 	}
 	/*d_printf(">>>fstat: resolved path as %s\n", targetpath);*/
@@ -274,8 +276,8 @@ SMBC_fstat_ctx(SMBCCTX *context,
 				     &write_time_ts,
 				     &change_time_ts,
 				     &ino))) {
-		errno = EINVAL;
 		TALLOC_FREE(frame);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -310,7 +312,9 @@ SMBC_statvfs_ctx(SMBCCTX *context,
 
         /* Determine if the provided path is a file or a folder */
         if (SMBC_stat_ctx(context, path, &statbuf) < 0) {
+		int err = errno;
 		TALLOC_FREE(frame);
+		errno = err;
                 return -1;
         }
 
@@ -318,7 +322,9 @@ SMBC_statvfs_ctx(SMBCCTX *context,
         if (S_ISDIR(statbuf.st_mode)) {
                 /* It's a directory. */
                 if ((pFile = SMBC_opendir_ctx(context, path)) == NULL) {
+			int err = errno;
 			TALLOC_FREE(frame);
+			errno = err;
                         return -1;
                 }
                 bIsDir = true;
@@ -326,7 +332,9 @@ SMBC_statvfs_ctx(SMBCCTX *context,
                 /* It's a file. */
                 if ((pFile = SMBC_open_ctx(context, path,
                                            O_RDONLY, 0)) == NULL) {
+			int err = errno;
 			TALLOC_FREE(frame);
+			errno = err;
                         return -1;
                 }
                 bIsDir = false;

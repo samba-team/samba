@@ -1747,14 +1747,14 @@ SMBC_setxattr_ctx(SMBCCTX *context,
         TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!context || !context->internal->initialized) {
-		errno = EINVAL;  /* Best I can think of ... */
 		TALLOC_FREE(frame);
+		errno = EINVAL;  /* Best I can think of ... */
 		return -1;
 	}
 
 	if (!fname) {
-		errno = EINVAL;
 		TALLOC_FREE(frame);
+		errno = EINVAL;
 		return -1;
 	}
 
@@ -1772,16 +1772,16 @@ SMBC_setxattr_ctx(SMBCCTX *context,
                             &user,
                             &password,
                             NULL)) {
-		errno = EINVAL;
 		TALLOC_FREE(frame);
+		errno = EINVAL;
 		return -1;
         }
 
 	if (!user || user[0] == (char)0) {
 		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
-			errno = ENOMEM;
 			TALLOC_FREE(frame);
+			errno = ENOMEM;
 			return -1;
 		}
 	}
@@ -1812,9 +1812,9 @@ SMBC_setxattr_ctx(SMBCCTX *context,
                         talloc_asprintf(talloc_tos(), "%s:%s",
                                         name+7, (const char *) value);
                 if (! namevalue) {
-                        errno = ENOMEM;
                         ret = -1;
 			TALLOC_FREE(frame);
+                        errno = ENOMEM;
                         return -1;
                 }
 
@@ -2031,8 +2031,8 @@ SMBC_setxattr_ctx(SMBCCTX *context,
         }
 
         /* Unsupported attribute name */
-        errno = EINVAL;
 	TALLOC_FREE(frame);
+        errno = EINVAL;
         return -1;
 }
 
@@ -2062,14 +2062,14 @@ SMBC_getxattr_ctx(SMBCCTX *context,
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!context || !context->internal->initialized) {
-                errno = EINVAL;  /* Best I can think of ... */
 		TALLOC_FREE(frame);
+                errno = EINVAL;  /* Best I can think of ... */
                 return -1;
         }
 
         if (!fname) {
-                errno = EINVAL;
 		TALLOC_FREE(frame);
+                errno = EINVAL;
                 return -1;
         }
 
@@ -2086,16 +2086,16 @@ SMBC_getxattr_ctx(SMBCCTX *context,
                             &user,
                             &password,
                             NULL)) {
-		errno = EINVAL;
 		TALLOC_FREE(frame);
+		errno = EINVAL;
 		return -1;
         }
 
         if (!user || user[0] == '\0') {
 		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
-			errno = ENOMEM;
 			TALLOC_FREE(frame);
+			errno = ENOMEM;
 			return -1;
 		}
 	}
@@ -2250,8 +2250,8 @@ SMBC_removexattr_ctx(SMBCCTX *context,
         if (!user || user[0] == (char)0) {
 		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
-			errno = ENOMEM;
 			TALLOC_FREE(frame);
+			errno = ENOMEM;
 			return -1;
 		}
 	}
