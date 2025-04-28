@@ -235,6 +235,7 @@ struct writev_state {
 	struct tevent_context *ev;
 	struct tevent_queue_entry *queue_entry;
 	int fd;
+	bool is_sock;
 	struct tevent_fd *fde;
 	struct iovec *iov;
 	int count;
@@ -264,6 +265,7 @@ struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	}
 	state->ev = ev;
 	state->fd = fd;
+	state->is_sock = true;
 	state->total_size = 0;
 	state->count = count;
 	state->iov = (struct iovec *)talloc_memdup(
@@ -341,7 +343,20 @@ static void writev_do(struct tevent_req *req, struct writev_state *state)
 	ssize_t written;
 	bool ok;
 
-	written = writev(state->fd, state->iov, state->count);
+	if (state->is_sock) {
+		struct msghdr msg = {
+			.msg_iov = state->iov,
+			.msg_iovlen = state->count,
+		};
+
+		written = sendmsg(state->fd, &msg, 0);
+		if ((written == -1) && (errno == ENOTSOCK)) {
+			state->is_sock = false;
+		}
+	}
+	if (!state->is_sock) {
+		written = writev(state->fd, state->iov, state->count);
+	}
 	if ((written == -1) &&
 	    ((errno == EINTR) ||
 	     (errno == EAGAIN) ||
