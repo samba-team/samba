@@ -459,6 +459,7 @@ struct read_packet_state {
 
 static void read_packet_cleanup(struct tevent_req *req,
 				 enum tevent_req_state req_state);
+static void read_packet_do(struct tevent_req *req);
 static void read_packet_handler(struct tevent_context *ev,
 				struct tevent_fd *fde,
 				uint16_t flags, void *private_data);
@@ -509,12 +510,8 @@ static void read_packet_cleanup(struct tevent_req *req,
 	TALLOC_FREE(state->fde);
 }
 
-static void read_packet_handler(struct tevent_context *ev,
-				struct tevent_fd *fde,
-				uint16_t flags, void *private_data)
+static void read_packet_do(struct tevent_req *req)
 {
-	struct tevent_req *req = talloc_get_type_abort(
-		private_data, struct tevent_req);
 	struct read_packet_state *state =
 		tevent_req_data(req, struct read_packet_state);
 	size_t total = talloc_get_size(state->buf);
@@ -590,6 +587,17 @@ static void read_packet_handler(struct tevent_context *ev,
 		return;
 	}
 	state->buf = tmp;
+
+}
+
+static void read_packet_handler(struct tevent_context *ev,
+				struct tevent_fd *fde,
+				uint16_t flags, void *private_data)
+{
+	struct tevent_req *req = talloc_get_type_abort(
+		private_data, struct tevent_req);
+
+	read_packet_do(req);
 }
 
 ssize_t read_packet_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
