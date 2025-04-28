@@ -449,6 +449,7 @@ ssize_t writev_recv(struct tevent_req *req, int *perrno)
 
 struct read_packet_state {
 	int fd;
+	bool is_sock;
 	struct tevent_fd *fde;
 	uint8_t *buf;
 	size_t nread;
@@ -478,6 +479,7 @@ struct tevent_req *read_packet_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	state->fd = fd;
+	state->is_sock = true;
 	state->nread = 0;
 	state->more = more;
 	state->private_data = private_data;
@@ -519,9 +521,22 @@ static void read_packet_handler(struct tevent_context *ev,
 	ssize_t nread, more;
 	uint8_t *tmp;
 
-	nread = recv(state->fd, state->buf+state->nread, total-state->nread,
-		     0);
-	if ((nread == -1) && (errno == ENOTSOCK)) {
+	if (state->is_sock) {
+		struct iovec iov = {
+			.iov_base = state->buf+state->nread,
+			.iov_len = total-state->nread,
+		};
+		struct msghdr msg = {
+			.msg_iov = &iov,
+			.msg_iovlen = 1,
+		};
+
+		nread = recvmsg(state->fd, &msg, 0);
+		if ((nread == -1) && (errno == ENOTSOCK)) {
+			state->is_sock = false;
+		}
+	}
+	if (!state->is_sock) {
 		nread = read(state->fd, state->buf+state->nread,
 			     total-state->nread);
 	}
