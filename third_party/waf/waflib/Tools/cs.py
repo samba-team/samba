@@ -179,7 +179,7 @@ def options(opt):
 
 		$ waf configure --with-csc-binary=/foo/bar/mcs
 	"""
-	opt.add_option('--with-csc-binary', type='string', dest='cscbinary')
+	opt.add_option('--with-csc-binary', type=str, dest='cscbinary')
 
 class fake_csshlib(Task.Task):
 	"""

@@ -683,13 +683,13 @@ def options(opt):
 	opt.add_option('--want-rpath', action='store_true', default=False, dest='want_rpath', help='enable the rpath for qt libraries')
 
 	opt.add_option('--header-ext',
-		type='string',
+		type=str,
 		default='',
 		help='header extension for moc files',
 		dest='qt_header_ext')
 
 	for i in 'qtdir qtbin qtlibs'.split():
-		opt.add_option('--'+i, type='string', default='', dest=i)
+		opt.add_option('--'+i, type=str, default='', dest=i)
 
 	opt.add_option('--translate', action="store_true", help="collect translation strings", dest="trans_qt4", default=False)
 

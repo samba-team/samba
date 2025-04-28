@@ -160,16 +160,16 @@ def ti_dsplink_set_platform_flags(cfg, splat, dsp, dspbios_ver, board):
 
 
 def options(opt):
-	opt.add_option('--with-ti-cgt', type='string', dest='ti-cgt-dir', help = 'Specify alternate cgt root folder', default="")
-	opt.add_option('--with-ti-biosutils', type='string', dest='ti-biosutils-dir', help = 'Specify alternate biosutils folder', default="")
-	opt.add_option('--with-ti-dspbios', type='string', dest='ti-dspbios-dir', help = 'Specify alternate dspbios folder', default="")
-	opt.add_option('--with-ti-dsplink', type='string', dest='ti-dsplink-dir', help = 'Specify alternate dsplink folder', default="")
-	opt.add_option('--with-ti-xdctools', type='string', dest='ti-xdctools-dir', help = 'Specify alternate xdctools folder', default="")
+	opt.add_option('--with-ti-cgt', type=str, dest='ti-cgt-dir', help = 'Specify alternate cgt root folder', default="")
+	opt.add_option('--with-ti-biosutils', type=str, dest='ti-biosutils-dir', help = 'Specify alternate biosutils folder', default="")
+	opt.add_option('--with-ti-dspbios', type=str, dest='ti-dspbios-dir', help = 'Specify alternate dspbios folder', default="")
+	opt.add_option('--with-ti-dsplink', type=str, dest='ti-dsplink-dir', help = 'Specify alternate dsplink folder', default="")
+	opt.add_option('--with-ti-xdctools', type=str, dest='ti-xdctools-dir', help = 'Specify alternate xdctools folder', default="")
 
 class ti_cprogram(cprogram):
 	"""
 	Link object files into a c program
-	
+
 	Changes:
 
 	- the linked executable to have a relative path (because we can)

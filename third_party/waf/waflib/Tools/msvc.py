@@ -21,7 +21,7 @@ Usage::
 or::
 
 	def configure(conf):
-		conf.env.MSVC_VERSIONS = ['msvc 10.0', 'msvc 9.0', 'msvc 8.0', 'msvc 7.1', 'msvc 7.0', 'msvc 6.0', 'wsdk 7.0', 'intel 11', 'PocketPC 9.0', 'Smartphone 8.0']
+		conf.env.MSVC_VERSIONS = ['msvc 10.0', 'msvc 9.0', 'msvc 8.0', 'msvc 7.1', 'msvc 7.0', 'msvc 6.0', 'wsdk 7.0', 'intel 11']
 		conf.env.MSVC_TARGETS = ['x64']
 		conf.load('msvc')
 
@@ -40,16 +40,13 @@ the first good configuration will be used.
 To force testing all the configurations that are not used, use the ``--no-msvc-lazy`` option
 or set ``conf.env.MSVC_LAZY_AUTODETECT=False``.
 
-Supported platforms: ia64, x64, x86, x86_amd64, x86_ia64, x86_arm, amd64_x86, amd64_arm
+Supported platforms: ia64, x64, x86, arm64, x86_amd64, x86_ia64, x86_arm, amd64_x86, amd64_arm, arm64_amd64, arm64_x86
 
 Compilers supported:
 
 * msvc       => Visual Studio, versions 6.0 (VC 98, VC .NET 2002) to 15 (Visual Studio 2017)
 * wsdk       => Windows SDK, versions 6.0, 6.1, 7.0, 7.1, 8.0
 * icl        => Intel compiler, versions 9, 10, 11, 13
-* winphone   => Visual Studio to target Windows Phone 8 native (version 8.0 for now)
-* Smartphone => Compiler/SDK for Smartphone devices (armv4/v4i)
-* PocketPC   => Compiler/SDK for PocketPC devices (armv4/v4i)
 
 To use WAF in a VS2008 Make file project (see http://code.google.com/p/waf/issues/detail?id=894)
 You may consider to set the environment variable "VS_UNICODE_OUTPUT" to nothing before calling waf.
@@ -87,15 +84,13 @@ wintrust wldap32 wmiutils wow32 ws2_32 wsnmp32 wsock32 wst wtsapi32 xaswitch xol
 '''.split()
 """importlibs provided by MSVC/Platform SDK. Do NOT search them"""
 
-all_msvc_platforms = [	('x64', 'amd64'), ('x86', 'x86'), ('ia64', 'ia64'),
+all_msvc_platforms = [	('x64', 'amd64'), ('x86', 'x86'), ('ia64', 'ia64'), ('arm64', 'arm64'),
 						('x86_amd64', 'amd64'), ('x86_ia64', 'ia64'), ('x86_arm', 'arm'), ('x86_arm64', 'arm64'),
-						('amd64_x86', 'x86'), ('amd64_arm', 'arm'), ('amd64_arm64', 'arm64') ]
+						('amd64_x86', 'x86'), ('amd64_arm', 'arm'), ('amd64_arm64', 'arm64'),
+						('arm64_amd64', 'amd64'), ('arm64_x86', 'x86') ]
 """List of msvc platforms"""
 
-all_wince_platforms = [ ('armv4', 'arm'), ('armv4i', 'arm'), ('mipsii', 'mips'), ('mipsii_fp', 'mips'), ('mipsiv', 'mips'), ('mipsiv_fp', 'mips'), ('sh4', 'sh'), ('x86', 'cex86') ]
-"""List of wince platforms"""
-
-all_icl_platforms = [ ('intel64', 'amd64'), ('em64t', 'amd64'), ('ia32', 'x86'), ('Itanium', 'ia64')]
+all_icl_platforms = [('intel64', 'amd64'), ('em64t', 'amd64'), ('ia32', 'x86')]
 """List of icl platforms"""
 
 def options(opt):
@@ -105,8 +100,8 @@ def options(opt):
 		m = re.match(r'(^\d+\.\d+).*', vsver)
 		if m:
 			default_ver = 'msvc %s' % m.group(1)
-	opt.add_option('--msvc_version', type='string', help = 'msvc version, eg: "msvc 10.0,msvc 9.0"', default=default_ver)
-	opt.add_option('--msvc_targets', type='string', help = 'msvc targets, eg: "x64,arm"', default='')
+	opt.add_option('--msvc_version', type=str, help = 'msvc version, eg: "msvc 10.0,msvc 9.0"', default=default_ver)
+	opt.add_option('--msvc_targets', type=str, help = 'msvc targets, eg: "x64,arm"', default='')
 	opt.add_option('--no-msvc-lazy', action='store_false', help = 'lazily check msvc target environments', default=True, dest='msvc_lazy')
 
 class MSVCVersion(object):
@@ -137,7 +132,7 @@ def setup_msvc(conf, versiondict):
 	"""
 	platforms = getattr(Options.options, 'msvc_targets', '').split(',')
 	if platforms == ['']:
-		platforms=Utils.to_list(conf.env.MSVC_TARGETS) or [i for i,j in all_msvc_platforms+all_icl_platforms+all_wince_platforms]
+		platforms=Utils.to_list(conf.env.MSVC_TARGETS) or [i for i,j in all_msvc_platforms + all_icl_platforms]
 	desired_versions = getattr(Options.options, 'msvc_version', '').split(',')
 	if desired_versions == ['']:
 		desired_versions = conf.env.MSVC_VERSIONS or list(sorted(versiondict.keys(), key=MSVCVersion, reverse=True))
@@ -253,52 +248,6 @@ echo LIB=%%LIB%%;%%LIBPATH%%
 		conf.env[compiler_name] = ''
 
 	return (MSVC_PATH, MSVC_INCDIR, MSVC_LIBDIR)
-
-def gather_wince_supported_platforms():
-	"""
-	Checks SmartPhones SDKs
-
-	:param versions: list to modify
-	:type versions: list
-	"""
-	supported_wince_platforms = []
-	try:
-		ce_sdk = Utils.winreg.OpenKey(Utils.winreg.HKEY_LOCAL_MACHINE, 'SOFTWARE\\Wow6432node\\Microsoft\\Windows CE Tools\\SDKs')
-	except OSError:
-		try:
-			ce_sdk = Utils.winreg.OpenKey(Utils.winreg.HKEY_LOCAL_MACHINE, 'SOFTWARE\\Microsoft\\Windows CE Tools\\SDKs')
-		except OSError:
-			ce_sdk = ''
-	if not ce_sdk:
-		return supported_wince_platforms
-
-	index = 0
-	while 1:
-		try:
-			sdk_device = Utils.winreg.EnumKey(ce_sdk, index)
-			sdk = Utils.winreg.OpenKey(ce_sdk, sdk_device)
-		except OSError:
-			break
-		index += 1
-		try:
-			path,type = Utils.winreg.QueryValueEx(sdk, 'SDKRootDir')
-		except OSError:
-			try:
-				path,type = Utils.winreg.QueryValueEx(sdk,'SDKInformation')
-			except OSError:
-				continue
-			path,xml = os.path.split(path)
-		path = str(path)
-		path,device = os.path.split(path)
-		if not device:
-			path,device = os.path.split(path)
-		platforms = []
-		for arch,compiler in all_wince_platforms:
-			if os.path.isdir(os.path.join(path, device, 'Lib', arch)):
-				platforms.append((arch, compiler, os.path.join(path, device, 'Include', arch), os.path.join(path, device, 'Lib', arch)))
-		if platforms:
-			supported_wince_platforms.append((device, platforms))
-	return supported_wince_platforms
 
 def gather_msvc_detected_versions():
 	#Detected MSVC versions!
@@ -435,37 +384,6 @@ def gather_msvc_targets(conf, versions, version, vc_path):
 		versions['msvc %s' % version] = targets
 
 @conf
-def gather_wince_targets(conf, versions, version, vc_path, vsvars, supported_platforms):
-	#Looking for Win CE compilers!
-	for device,platforms in supported_platforms:
-		targets = {}
-		for platform,compiler,include,lib in platforms:
-			winCEpath = os.path.join(vc_path, 'ce')
-			if not os.path.isdir(winCEpath):
-				continue
-
-			if os.path.isdir(os.path.join(winCEpath, 'lib', platform)):
-				bindirs = [os.path.join(winCEpath, 'bin', compiler), os.path.join(winCEpath, 'bin', 'x86_'+compiler)]
-				incdirs = [os.path.join(winCEpath, 'include'), os.path.join(winCEpath, 'atlmfc', 'include'), include]
-				libdirs = [os.path.join(winCEpath, 'lib', platform), os.path.join(winCEpath, 'atlmfc', 'lib', platform), lib]
-				def combine_common(obj, compiler_env):
-					# TODO this is likely broken, remove in waf 2.1
-					(common_bindirs,_1,_2) = compiler_env
-					return (bindirs + common_bindirs, incdirs, libdirs)
-				targets[platform] = target_compiler(conf, 'msvc', platform, version, 'x86', vsvars, combine_common)
-		if targets:
-			versions[device + ' ' + version] = targets
-
-@conf
-def gather_winphone_targets(conf, versions, version, vc_path, vsvars):
-	#Looking for WinPhone compilers
-	targets = {}
-	for target,realtarget in all_msvc_platforms[::-1]:
-		targets[target] = target_compiler(conf, 'winphone', realtarget, version, target, vsvars)
-	if targets:
-		versions['winphone ' + version] = targets
-
-@conf
 def gather_vswhere_versions(conf, versions):
 	try:
 		import json
@@ -517,25 +435,7 @@ def gather_msvc_versions(conf, versions):
 		else:
 			vc_paths.append((version, os.path.abspath(str(path))))
 
-	wince_supported_platforms = gather_wince_supported_platforms()
-
 	for version,vc_path in vc_paths:
-		vs_path = os.path.dirname(vc_path)
-		vsvars = os.path.join(vs_path, 'Common7', 'Tools', 'vsvars32.bat')
-		if wince_supported_platforms and os.path.isfile(vsvars):
-			conf.gather_wince_targets(versions, version, vc_path, vsvars, wince_supported_platforms)
-
-	# WP80 works with 11.0Exp and 11.0, both of which resolve to the same vc_path.
-	# Stop after one is found.
-	for version,vc_path in vc_paths:
-		vs_path = os.path.dirname(vc_path)
-		vsvars = os.path.join(vs_path, 'VC', 'WPSDK', 'WP80', 'vcvarsphoneall.bat')
-		if os.path.isfile(vsvars):
-			conf.gather_winphone_targets(versions, '8.0', vc_path, vsvars)
-			break
-
-	for version,vc_path in vc_paths:
-		vs_path = os.path.dirname(vc_path)
 		conf.gather_msvc_targets(versions, version, vc_path)
 
 @conf
@@ -1014,28 +914,3 @@ def apply_manifest(self):
 		self.link_task.outputs.append(man_node)
 		self.env.DO_MANIFEST = True
 
-def make_winapp(self, family):
-	append = self.env.append_unique
-	append('DEFINES', 'WINAPI_FAMILY=%s' % family)
-	append('CXXFLAGS', ['/ZW', '/TP'])
-	for lib_path in self.env.LIBPATH:
-		append('CXXFLAGS','/AI%s'%lib_path)
-
-@feature('winphoneapp')
-@after_method('process_use')
-@after_method('propagate_uselib_vars')
-def make_winphone_app(self):
-	"""
-	Insert configuration flags for windows phone applications (adds /ZW, /TP...)
-	"""
-	make_winapp(self, 'WINAPI_FAMILY_PHONE_APP')
-	self.env.append_unique('LINKFLAGS', ['/NODEFAULTLIB:ole32.lib', 'PhoneAppModelHost.lib'])
-
-@feature('winapp')
-@after_method('process_use')
-@after_method('propagate_uselib_vars')
-def make_windows_app(self):
-	"""
-	Insert configuration flags for windows applications (adds /ZW, /TP...)
-	"""
-	make_winapp(self, 'WINAPI_FAMILY_DESKTOP_APP')

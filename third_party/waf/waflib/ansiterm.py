@@ -17,7 +17,7 @@ from waflib import Utils
 wlock = Utils.threading.Lock()
 
 try:
-	from ctypes import Structure, windll, c_short, c_ushort, c_ulong, c_int, byref, c_wchar, POINTER, c_long
+	from ctypes import Structure, WinDLL, c_short, c_ushort, c_ulong, c_int, byref, c_wchar, POINTER, c_long
 except ImportError:
 
 	class AnsiTerm(object):
@@ -69,20 +69,21 @@ else:
 	STD_OUTPUT_HANDLE = -11
 	STD_ERROR_HANDLE = -12
 
-	windll.kernel32.GetStdHandle.argtypes = [c_ulong]
-	windll.kernel32.GetStdHandle.restype = c_ulong
-	windll.kernel32.GetConsoleScreenBufferInfo.argtypes = [c_ulong, POINTER(CONSOLE_SCREEN_BUFFER_INFO)]
-	windll.kernel32.GetConsoleScreenBufferInfo.restype = c_long
-	windll.kernel32.SetConsoleTextAttribute.argtypes = [c_ulong, c_ushort]
-	windll.kernel32.SetConsoleTextAttribute.restype = c_long
-	windll.kernel32.FillConsoleOutputCharacterW.argtypes = [c_ulong, c_wchar, c_ulong, POINTER(COORD), POINTER(c_ulong)]
-	windll.kernel32.FillConsoleOutputCharacterW.restype = c_long
-	windll.kernel32.FillConsoleOutputAttribute.argtypes = [c_ulong, c_ushort, c_ulong, POINTER(COORD), POINTER(c_ulong) ]
-	windll.kernel32.FillConsoleOutputAttribute.restype = c_long
-	windll.kernel32.SetConsoleCursorPosition.argtypes = [c_ulong, POINTER(COORD) ]
-	windll.kernel32.SetConsoleCursorPosition.restype = c_long
-	windll.kernel32.SetConsoleCursorInfo.argtypes = [c_ulong, POINTER(CONSOLE_CURSOR_INFO)]
-	windll.kernel32.SetConsoleCursorInfo.restype = c_long
+	kernel32 = WinDLL('kernel32')
+	kernel32.GetStdHandle.argtypes = [c_ulong]
+	kernel32.GetStdHandle.restype = c_ulong
+	kernel32.GetConsoleScreenBufferInfo.argtypes = [c_ulong, POINTER(CONSOLE_SCREEN_BUFFER_INFO)]
+	kernel32.GetConsoleScreenBufferInfo.restype = c_long
+	kernel32.SetConsoleTextAttribute.argtypes = [c_ulong, c_ushort]
+	kernel32.SetConsoleTextAttribute.restype = c_long
+	kernel32.FillConsoleOutputCharacterW.argtypes = [c_ulong, c_wchar, c_ulong, POINTER(COORD), POINTER(c_ulong)]
+	kernel32.FillConsoleOutputCharacterW.restype = c_long
+	kernel32.FillConsoleOutputAttribute.argtypes = [c_ulong, c_ushort, c_ulong, POINTER(COORD), POINTER(c_ulong) ]
+	kernel32.FillConsoleOutputAttribute.restype = c_long
+	kernel32.SetConsoleCursorPosition.argtypes = [c_ulong, POINTER(COORD) ]
+	kernel32.SetConsoleCursorPosition.restype = c_long
+	kernel32.SetConsoleCursorInfo.argtypes = [c_ulong, POINTER(CONSOLE_CURSOR_INFO)]
+	kernel32.SetConsoleCursorInfo.restype = c_long
 
 	class AnsiTerm(object):
 		"""
@@ -98,23 +99,23 @@ else:
 			self.cursor_history = []
 
 			handle = (s.fileno() == 2) and STD_ERROR_HANDLE or STD_OUTPUT_HANDLE
-			self.hconsole = windll.kernel32.GetStdHandle(handle)
+			self.hconsole = kernel32.GetStdHandle(handle)
 
 			self._sbinfo = CONSOLE_SCREEN_BUFFER_INFO()
 
 			self._csinfo = CONSOLE_CURSOR_INFO()
-			windll.kernel32.GetConsoleCursorInfo(self.hconsole, byref(self._csinfo))
+			kernel32.GetConsoleCursorInfo(self.hconsole, byref(self._csinfo))
 
 			# just to double check that the console is usable
 			self._orig_sbinfo = CONSOLE_SCREEN_BUFFER_INFO()
-			r = windll.kernel32.GetConsoleScreenBufferInfo(self.hconsole, byref(self._orig_sbinfo))
+			r = kernel32.GetConsoleScreenBufferInfo(self.hconsole, byref(self._orig_sbinfo))
 			self._isatty = r == 1
 
 		def screen_buffer_info(self):
 			"""
 			Updates self._sbinfo and returns it
 			"""
-			windll.kernel32.GetConsoleScreenBufferInfo(self.hconsole, byref(self._sbinfo))
+			kernel32.GetConsoleScreenBufferInfo(self.hconsole, byref(self._sbinfo))
 			return self._sbinfo
 
 		def clear_line(self, param):
@@ -130,8 +131,8 @@ else:
 				line_start = sbinfo.CursorPosition
 				line_length = sbinfo.Size.X - sbinfo.CursorPosition.X
 			chars_written = c_ulong()
-			windll.kernel32.FillConsoleOutputCharacterW(self.hconsole, c_wchar(' '), line_length, line_start, byref(chars_written))
-			windll.kernel32.FillConsoleOutputAttribute(self.hconsole, sbinfo.Attributes, line_length, line_start, byref(chars_written))
+			kernel32.FillConsoleOutputCharacterW(self.hconsole, c_wchar(' '), line_length, line_start, byref(chars_written))
+			kernel32.FillConsoleOutputAttribute(self.hconsole, sbinfo.Attributes, line_length, line_start, byref(chars_written))
 
 		def clear_screen(self, param):
 			mode = to_int(param, 0)
@@ -142,13 +143,13 @@ else:
 			elif mode == 2: # Clear entire screen and return cursor to home
 				clear_start = COORD(0, 0)
 				clear_length = sbinfo.Size.X * sbinfo.Size.Y
-				windll.kernel32.SetConsoleCursorPosition(self.hconsole, clear_start)
+				kernel32.SetConsoleCursorPosition(self.hconsole, clear_start)
 			else: # Clear from cursor position to end of screen
 				clear_start = sbinfo.CursorPosition
 				clear_length = ((sbinfo.Size.X - sbinfo.CursorPosition.X) + sbinfo.Size.X * (sbinfo.Size.Y - sbinfo.CursorPosition.Y))
 			chars_written = c_ulong()
-			windll.kernel32.FillConsoleOutputCharacterW(self.hconsole, c_wchar(' '), clear_length, clear_start, byref(chars_written))
-			windll.kernel32.FillConsoleOutputAttribute(self.hconsole, sbinfo.Attributes, clear_length, clear_start, byref(chars_written))
+			kernel32.FillConsoleOutputCharacterW(self.hconsole, c_wchar(' '), clear_length, clear_start, byref(chars_written))
+			kernel32.FillConsoleOutputAttribute(self.hconsole, sbinfo.Attributes, clear_length, clear_start, byref(chars_written))
 
 		def push_cursor(self, param):
 			sbinfo = self.screen_buffer_info()
@@ -157,7 +158,7 @@ else:
 		def pop_cursor(self, param):
 			if self.cursor_history:
 				old_pos = self.cursor_history.pop()
-				windll.kernel32.SetConsoleCursorPosition(self.hconsole, old_pos)
+				kernel32.SetConsoleCursorPosition(self.hconsole, old_pos)
 
 		def set_cursor(self, param):
 			y, sep, x = param.partition(';')
@@ -168,7 +169,7 @@ else:
 				min(max(0, x), sbinfo.Size.X),
 				min(max(0, y), sbinfo.Size.Y)
 			)
-			windll.kernel32.SetConsoleCursorPosition(self.hconsole, new_pos)
+			kernel32.SetConsoleCursorPosition(self.hconsole, new_pos)
 
 		def set_column(self, param):
 			x = to_int(param, 1) - 1
@@ -177,7 +178,7 @@ else:
 				min(max(0, x), sbinfo.Size.X),
 				sbinfo.CursorPosition.Y
 			)
-			windll.kernel32.SetConsoleCursorPosition(self.hconsole, new_pos)
+			kernel32.SetConsoleCursorPosition(self.hconsole, new_pos)
 
 		def move_cursor(self, x_offset=0, y_offset=0):
 			sbinfo = self.screen_buffer_info()
@@ -185,7 +186,7 @@ else:
 				min(max(0, sbinfo.CursorPosition.X + x_offset), sbinfo.Size.X),
 				min(max(0, sbinfo.CursorPosition.Y + y_offset), sbinfo.Size.Y)
 			)
-			windll.kernel32.SetConsoleCursorPosition(self.hconsole, new_pos)
+			kernel32.SetConsoleCursorPosition(self.hconsole, new_pos)
 
 		def move_up(self, param):
 			self.move_cursor(y_offset = -to_int(param, 1))
@@ -235,15 +236,15 @@ else:
 				elif c == 7: # negative
 					attr = (attr & 0xff88) | ((attr & 0x70) >> 4) | ((attr & 0x07) << 4)
 
-			windll.kernel32.SetConsoleTextAttribute(self.hconsole, attr)
+			kernel32.SetConsoleTextAttribute(self.hconsole, attr)
 
 		def show_cursor(self,param):
 			self._csinfo.bVisible = 1
-			windll.kernel32.SetConsoleCursorInfo(self.hconsole, byref(self._csinfo))
+			kernel32.SetConsoleCursorInfo(self.hconsole, byref(self._csinfo))
 
 		def hide_cursor(self,param):
 			self._csinfo.bVisible = 0
-			windll.kernel32.SetConsoleCursorInfo(self.hconsole, byref(self._csinfo))
+			kernel32.SetConsoleCursorInfo(self.hconsole, byref(self._csinfo))
 
 		ansi_command_table = {
 			'A': move_up,
@@ -285,9 +286,9 @@ else:
 
 		def writeconsole(self, txt):
 			chars_written = c_ulong()
-			writeconsole = windll.kernel32.WriteConsoleA
+			writeconsole = kernel32.WriteConsoleA
 			if isinstance(txt, _type):
-				writeconsole = windll.kernel32.WriteConsoleW
+				writeconsole = kernel32.WriteConsoleW
 
 			# MSDN says that there is a shared buffer of 64 KB for the console
 			# writes. Attempt to not get ERROR_NOT_ENOUGH_MEMORY, see waf issue #746
@@ -316,10 +317,10 @@ else:
 
 	if sys.stdout.isatty() or sys.stderr.isatty():
 		handle = sys.stdout.isatty() and STD_OUTPUT_HANDLE or STD_ERROR_HANDLE
-		console = windll.kernel32.GetStdHandle(handle)
+		console = kernel32.GetStdHandle(handle)
 		sbinfo = CONSOLE_SCREEN_BUFFER_INFO()
 		def get_term_cols():
-			windll.kernel32.GetConsoleScreenBufferInfo(console, byref(sbinfo))
+			kernel32.GetConsoleScreenBufferInfo(console, byref(sbinfo))
 			# Issue 1401 - the progress bar cannot reach the last character
 			return sbinfo.Size.X - 1
 

@@ -18,13 +18,13 @@ else:
 	import imp
 
 # the following 3 constants are updated on each new release (do not touch)
-HEXVERSION=0x2001b00
+HEXVERSION=0x2010500
 """Constant updated on new releases"""
 
-WAFVERSION="2.0.27"
+WAFVERSION="2.1.5"
 """Constant updated on new releases"""
 
-WAFREVISION="c3e645e395505cb5faa115172b1fc9abdaeaf146"
+WAFREVISION="5360d9c9c2623d1799fe8b0ce35581ff0925993a"
 """Git revision when the waf version is updated"""
 
 WAFNAME="waf"
@@ -188,13 +188,14 @@ class Context(ctx):
 			Logs.free_logger(logger)
 			delattr(self, 'logger')
 
-	def load(self, tool_list, *k, **kw):
+	def load(self, tool_list, **kw):
 		"""
-		Loads a Waf tool as a module, and try calling the function named :py:const:`waflib.Context.Context.fun`
-		from it.  A ``tooldir`` argument may be provided as a list of module paths.
+		Loads a Waf tool as a module, and try calling the function named :py:const:`waflib.Context.Context.fun` from it.
 
 		:param tool_list: list of Waf tool names to load
 		:type tool_list: list of string or space-separated string
+		:param tooldir: paths for the imports
+		:type tooldir: list of string
 		"""
 		tools = Utils.to_list(tool_list)
 		path = Utils.to_list(kw.get('tooldir', ''))

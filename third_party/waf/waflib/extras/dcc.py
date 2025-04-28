@@ -68,5 +68,5 @@ def options(opt):
 	"""
 	Add the ``--with-diab-bindir`` command-line options.
 	"""
-	opt.add_option('--with-diab-bindir', type='string', dest='diabbindir', help = 'Specify alternate diab bin folder', default="")
+	opt.add_option('--with-diab-bindir', type=str, dest='diabbindir', help = 'Specify alternate diab bin folder', default="")
 

@@ -39,7 +39,7 @@ rst_progs = "rst2html rst2xetex rst2latex rst2xml rst2pdf rst2s5 rst2man rst2odt
 def parse_rst_node(task, node, nodes, names, seen, dirs=None):
 	# TODO add extensibility, to handle custom rst include tags...
 	if dirs is None:
-		dirs = (node.parent,node.get_bld().parent)
+		dirs = (node.parent, node.parent.get_bld())
 
 	if node in seen:
 		return

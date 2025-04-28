@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # encoding: utf-8
-# Thomas Nagy, 2006-2018 (ita)
-# Rafaël Kooi, 2023 (RA-Kooi)
+# vim: ts=4 noexpandtab
+# Thomas Nagy, 2006-2024 (ita)
+# Rafaël Kooi, 2023-2024 (RA-Kooi)
 
 """
 This tool helps with finding Qt5 and Qt6 tools and libraries,
@@ -54,7 +55,7 @@ You also need to edit your sources accordingly:
   include the .moc file.
   This is regarded as the best practice (and provides much faster
   compilations).
-  It also implies that the include paths have beenset properly.
+  It also implies that the include paths have been set properly.
 
 - to have the include paths added automatically, use the following::
 
@@ -78,12 +79,10 @@ For Qt6 replace the QT5_ prefix with QT6_.
 
 The detection uses pkg-config on Linux by default. The list of
 libraries to be requested to pkg-config is formulated by scanning
-in the QTLIBS directory (that can be passed via --qtlibs or by
-setting the environment variable QT5_LIBDIR or QT6_LIBDIR otherwise is
-derived by querying qmake for QT_INSTALL_LIBS directory) for
-shared/static libraries present.
-Alternatively the list of libraries to be requested via pkg-config
-can be set using the qt5_vars attribute, ie:
+in the 'mkspecs/modules' directory of the detected Qt installation
+for shared/static libraries present.
+Alternatively the list of libraries to be requested can be set using
+the qt5_vars attribute, ie:
 
       conf.qt5_vars = ['Qt5Core', 'Qt5Gui', 'Qt5Widgets', 'Qt5Test'];
 
@@ -91,18 +90,26 @@ For Qt6 use the qt6_vars attribute.
 
 This can speed up configuration phase if needed libraries are
 known beforehand, can improve detection on systems with a
-sparse QT5/Qt6 libraries installation (ie. NIX) and can improve
-detection of some header-only Qt modules (ie. Qt5UiPlugin).
+sparse QT5/Qt6 libraries installation (ie. NIX). The libraries
+requested are required to be found unless they're also specified in
+the qt5_vars_opt attribute (qt6_vars_opt when using Qt6).
 
 To force static library detection use:
-QT5_XCOMPILE=1 QT5_FORCE_STATIC=1 waf configure
+
+    QT5_FORCE_STATIC=1 waf configure
+
+This should not be needed if your Qt installation is built without
+shared libraries. If you still need this when no shared libraries
+are present, please file a bug report.
+
+To disable pkg-config use:
+
+    QT5_XCOMPILE=1 waf configure
 
 To use Qt6 set the want_qt6 attribute, ie:
 
     conf.want_qt6 = True;
 """
-
-from __future__ import with_statement
 
 try:
 	from xml.sax import make_parser
@@ -113,7 +120,7 @@ except ImportError:
 else:
 	has_xml = True
 
-import os, sys, re
+import os, re
 from waflib.Tools import cxx
 from waflib import Build, Task, Utils, Options, Errors, Context
 from waflib.TaskGen import feature, after_method, extension, before_method
@@ -135,7 +142,7 @@ EXT_UI  = ['.ui']
 File extension for the user interface (.ui) files
 """
 
-EXT_QT5 = ['.cpp', '.cc', '.cxx', '.C']
+EXT_QT5 = ['.cpp', '.cc', '.cxx', '.C', '.c++']
 """
 File extensions of C++ files that may require a .moc processing
 """
@@ -517,10 +524,25 @@ def configure(self):
 	else:
 		self.qt_vars = Utils.to_list(getattr(self, 'qt5_vars', []))
 
+	if self.want_qt6:
+		self.qt_vars_opt = Utils.to_list(getattr(self, 'qt6_vars_opt', []))
+	else:
+		self.qt_vars_opt = Utils.to_list(getattr(self, 'qt5_vars_opt', []))
+
+	qt_ver = '6' if self.want_qt6 else '5'
+
+	if len(self.qt_vars) > 0:
+		core = 'Qt%sCore' % qt_ver
+		if not core in self.qt_vars:
+			self.fatal('%s not found in qt%s_vars, Qt will not work without it.' % (core, qt_ver))
+
 	self.find_qt5_binaries()
+	self.set_qt_env()
 	self.set_qt5_libs_dir()
+	self.set_qt_makespecs_dir()
+	self.set_qt_makespec()
+	self.qt_check_static()
 	self.set_qt5_libs_to_check()
-	self.set_qt5_defines()
 	self.find_qt5_libraries()
 	self.add_qt5_rpath()
 	self.simplify_qt5_libs()
@@ -531,24 +553,62 @@ def configure(self):
 
 	feature = 'qt6' if self.want_qt6 else 'qt5'
 
-	# Qt5 may be compiled with '-reduce-relocations' which requires dependent programs to have -fPIE or -fPIC?
+	# Qt6 requires C++17 (https://www.qt.io/blog/qt-6.0-released)
+	flags_candidates = []
+	if self.env.CXX_NAME == 'msvc':
+		stdflag = '/std:c++17' if self.want_qt6 else '/std:c++11'
+		flags_candidates = [[], ['/Zc:__cplusplus', '/permissive-', stdflag]]
+	else:
+		# Qt5 and fallback: guess the flags
+		stdflag = '-std=c++17' if self.want_qt6 else '-std=c++11'
+		flags_candidates = [[], ['-fPIE'], ['-fPIC'], [stdflag], [stdflag, '-fPIE'], [stdflag, '-fPIC']]
+
+		# Qt6 has a new build option called 'FEATURE_no_direct_extern_access',
+		# which some distros might use. There's no need to do this on Windows
+		# as Windows doesn't have this issue by nature of dllexport and dllimport.
+		#
+		# Qt6 does not raise any build error when PIC and PIE are both
+		# used at the same time which is the default for some compilers
+		if self.want_qt6 and self.env.DEST_BINFMT == 'elf':
+			mkspecsdir = self.env.QTMKSPECSDIR
+
+			qt6_flags = []
+			qconfig_pri = os.path.join(mkspecsdir, 'qconfig.pri')
+
+			qt_config = {}
+			self.start_msg('Reading qconfig.pri')
+			try:
+				qt_config = self.read_pri(qconfig_pri)
+				self.end_msg('ok')
+			except OSError as e:
+				self.end_msg('unavailable (incomplete detection)', 'YELLOW')
+				self.to_log('File %r is unreadable %r' % (qconfig_pri, e))
+			else:
+				if 'no_direct_extern_access' in qt_config['QT_CONFIG']:
+					if self.env.CXX_NAME == 'gcc':
+						qt6_flags.append('-mno-direct-extern-access')
+					elif self.env.CXX_NAME == 'clang':
+						qt6_flags.append('-fno-direct-access-external-data')
+					self.to_log('Qt has been built with `no_direct_extern_access` enabled, this feature has only been tested with ld.bfd as linker.\nUse ld.gold/ld.mold/ld.lld at your own risk. If you do not know what linker you are using, you are most likely using ld.bfd.')
+
+				if 'reduce_relocations' in qt_config['QT_CONFIG']:
+					if self.env.CXX_NAME in ('gcc', 'clang'):
+						qt6_flags.append('-fPIC')
+
+			if qt6_flags:
+				# Try this configuration first
+				qt6_flags.append(stdflag)
+				flags_candidates.insert(0, qt6_flags)
+
 	frag = '#include <QMap>\nint main(int argc, char **argv) {QMap<int,int> m;return m.keys().size();}\n'
 	uses = 'QT6CORE' if self.want_qt6 else 'QT5CORE'
 
-	# Qt6 requires C++17 (https://www.qt.io/blog/qt-6.0-released)
-	flag_list = []
-	if self.env.CXX_NAME == 'msvc':
-		stdflag = '/std:c++17' if self.want_qt6 else '/std:c++11'
-		flag_list = [[], ['/Zc:__cplusplus', '/permissive-', stdflag]]
-	else:
-		stdflag = '-std=c++17' if self.want_qt6 else '-std=c++11'
-		flag_list = [[], '-fPIE', '-fPIC', stdflag, [stdflag, '-fPIE'], [stdflag, '-fPIC']]
-	for flag in flag_list:
+	for flags in flags_candidates:
 		msg = 'See if Qt files compile '
-		if flag:
-			msg += 'with %s' % flag
+		if flags:
+			msg += 'with %r' % (' '.join(flags))
 		try:
-			self.check(features=feature + ' cxx', use=uses, uselib_store=feature, cxxflags=flag, fragment=frag, msg=msg)
+			self.check(features=feature + ' cxx', use=uses, uselib_store=feature, cxxflags=flags, fragment=frag, msg=msg)
 		except self.errors.ConfigurationError:
 			pass
 		else:
@@ -707,67 +767,127 @@ def set_qt5_libs_dir(self):
 	env = self.env
 	qt_ver = '6' if self.want_qt6 else '5'
 
-	qtlibs = getattr(Options.options, 'qtlibs', None) or self.environ.get('QT' + qt_ver + '_LIBDIR')
+	qtlibs = ""
+	try:
+		qtlibs = self.cmd_and_log(env.QMAKE + ['-query', 'QT_INSTALL_LIBS']).strip()
+	except Errors.WafError:
+		# CHECK (Rafaël Kooi): Is this still necessary?
+		qtdir = self.cmd_and_log(env.QMAKE + ['-query', 'QT_INSTALL_PREFIX']).strip()
+		qtlibs = os.path.join(qtdir, 'lib')
 
-	if not qtlibs:
-		try:
-			qtlibs = self.cmd_and_log(env.QMAKE + ['-query', 'QT_INSTALL_LIBS']).strip()
-		except Errors.WafError:
-			qtdir = self.cmd_and_log(env.QMAKE + ['-query', 'QT_INSTALL_PREFIX']).strip()
-			qtlibs = os.path.join(qtdir, 'lib')
+		if not os.path.exists(qtlibs):
+			self.fatal('Unable to find Qt lib directory.')
 
-	self.msg('Found the Qt' + qt_ver + ' library path', qtlibs)
+	self.msg('Checking for Qt' + qt_ver + ' library path', qtlibs)
 
 	env.QTLIBS = qtlibs
 
 @conf
-def find_single_qt5_lib(self, name, uselib, qtlibs, qtincludes, force_static):
+def configure_single_qt_lib(self, name, uselib):
+	env = self.env
+
+	if self.qt_static:
+		prefix = 'STLIB'
+	else:
+		prefix = 'LIB'
+
+	modules_dir = os.path.join(self.env.QTMKSPECSDIR, 'modules')
+
+	filename = os.path.join(modules_dir, 'qt_lib_%s.pri' % name)
+	if not os.path.exists(filename):
+		return False
+
+	this_module = self.read_pri(filename)
+
+	def parse_info(module):
+		deps = list(set(module['depends'])) # Some dependencies can be listed twice
+		includes = module['includes'] if 'includes' in module else []
+		defines = module['DEFINES'] if 'DEFINES' in module else []
+
+		if 'CONFIG' in module and 'no_link' in module['CONFIG']:
+			libs = []
+		else:
+			libs = module['module']
+
+		for dep in deps:
+			filename = os.path.join(modules_dir, 'qt_lib_%s.pri' % dep)
+			dep_mod = self.read_pri(filename)
+
+			dep_info = parse_info(dep_mod)
+			includes += dep_info['includes']
+			libs += dep_info['libs']
+			defines += dep_info['defines']
+
+		info = {}
+		info['includes'] = includes
+		info['libs'] = libs
+		info['defines'] = defines
+
+		return info
+
+	info = parse_info(this_module)
+	includes = [self.env.QTMKSPECPATH] + list(set(info['includes']))
+	libs = list(set(info['libs']))
+	defines = list(set(info['defines']))
+
+	env['HAVE_' + uselib] = 1
+
+	if len(libs) > 0:
+		env.append_unique(prefix + '_' + uselib, libs)
+
+	env.append_unique('INCLUDES_' + uselib, includes)
+	env.append_unique('%sPATH_%s' % (prefix, uselib), this_module['libs'][0])
+	env.append_unique('DEFINES_' + uselib, defines)
+	env.append_unique('DEFINES', 'HAVE_%s=1' % uselib)
+
+	return 'yes'
+
+@conf
+def qt_pkg_config_path(self):
 	env = self.env
 	qt_ver = '6' if self.want_qt6 else '5'
 
-	if force_static:
-		exts = ('.a', '.lib')
-		prefix = 'STLIB'
-	else:
-		exts = ('.so', '.lib')
-		prefix = 'LIB'
+	path = '%s:%s:%s/pkgconfig:/usr/lib/qt%s/lib/pkgconfig:/opt/qt%s/lib/pkgconfig:/usr/lib/qt%s/lib:/opt/qt%s/lib' % (
+		self.environ.get('PKG_CONFIG_PATH', ''),
+		env.QTLIBS,
+		env.QTLIBS,
+		qt_ver,
+		qt_ver,
+		qt_ver,
+		qt_ver
+	)
 
-	def lib_names():
-		for x in exts:
-			for k in ('', qt_ver) if Utils.is_win32 else ['']:
-				for p in ('lib', ''):
-					yield (p, name, k, x)
-
-	for tup in lib_names():
-		k = ''.join(tup)
-		path = os.path.join(qtlibs, k)
-		if os.path.exists(path):
-			if env.DEST_OS == 'win32':
-				libval = ''.join(tup[:-1])
-			else:
-				libval = name
-			env.append_unique(prefix + '_' + uselib, libval)
-			env.append_unique('%sPATH_%s' % (prefix, uselib), qtlibs)
-			env.append_unique('INCLUDES_' + uselib, qtincludes)
-			env.append_unique('INCLUDES_' + uselib, os.path.join(qtincludes, name.replace('Qt' + qt_ver, 'Qt')))
-			return k
-	return False
+	return path
 
 @conf
 def find_qt5_libraries(self):
 	env = self.env
 	qt_ver = '6' if self.want_qt6 else '5'
-
-	qtincludes =  self.environ.get('QT' + qt_ver + '_INCLUDES') or self.cmd_and_log(env.QMAKE + ['-query', 'QT_INSTALL_HEADERS']).strip()
-	force_static = self.environ.get('QT' + qt_ver + '_FORCE_STATIC')
-
 	try:
 		if self.environ.get('QT' + qt_ver + '_XCOMPILE'):
 			self.fatal('QT' + qt_ver + '_XCOMPILE Disables pkg-config detection')
 		self.check_cfg(atleast_pkgconfig_version='0.1')
 	except self.errors.ConfigurationError:
+		pass
+
+	qconfig_pri = os.path.join(self.env.QTMKSPECSDIR, 'qconfig.pri')
+	qt_config = self.read_pri(qconfig_pri)
+
+	if 'pkg-config' in qt_config['enabled_features'] and 'PKGCONFIG' in self.env:
+		self.qt_use_pkg_config = True
+	else:
+		self.qt_use_pkg_config = False
+
+	if not self.qt_use_pkg_config:
 		for i in self.qt_vars:
 			uselib = i.upper()
+
+			if not i in self.qt_var2mod:
+				self.msg('Checking for %s' % i, False)
+				continue
+
+			modname = self.qt_var2mod[i]
+
 			if Utils.unversioned_sys_platform() == 'darwin':
 				# Since at least qt 4.7.3 each library locates in separate directory
 				fwk = i.replace('Qt' + qt_ver, 'Qt')
@@ -782,15 +902,17 @@ def find_qt5_libraries(self):
 					self.msg('Checking for %s' % i, False, 'YELLOW')
 				env.append_unique('INCLUDES_' + uselib, os.path.join(env.QTLIBS, frameworkName, 'Headers'))
 			else:
-				ret = self.find_single_qt5_lib(i, uselib, env.QTLIBS, qtincludes, force_static)
-				if not force_static and not ret:
-					ret = self.find_single_qt5_lib(i, uselib, env.QTLIBS, qtincludes, True)
+				ret = self.configure_single_qt_lib(modname, uselib)
 				self.msg('Checking for %s' % i, ret, 'GREEN' if ret else 'YELLOW')
 	else:
-		path = '%s:%s:%s/pkgconfig:/usr/lib/qt%s/lib/pkgconfig:/opt/qt%s/lib/pkgconfig:/usr/lib/qt%s/lib:/opt/qt%s/lib' % (
-			self.environ.get('PKG_CONFIG_PATH', ''), env.QTLIBS, env.QTLIBS, qt_ver, qt_ver, qt_ver, qt_ver)
+		path = self.qt_pkg_config_path()
 		for i in self.qt_vars:
-			self.check_cfg(package=i, args='--cflags --libs', mandatory=False, force_static=force_static, pkg_config_path=path)
+			self.check_cfg(
+				package=i,
+				args='--cflags --libs',
+				mandatory=False,
+				force_static=self.qt_static,
+				pkg_config_path=path)
 
 @conf
 def simplify_qt5_libs(self):
@@ -798,14 +920,16 @@ def simplify_qt5_libs(self):
 	Since library paths make really long command-lines,
 	and since everything depends on qtcore, remove the qtcore ones from qtgui, etc
 	"""
+	qt_ver = '6' if self.want_qt6 else '5'
 	env = self.env
-	def process_lib(vars_, coreval):
+
+	def process(vars_, prefix, coreval):
 		for d in vars_:
 			var = d.upper()
-			if var == 'QTCORE':
+			if var == 'QT%sCORE' % qt_ver:
 				continue
 
-			value = env['LIBPATH_'+var]
+			value = env[prefix + var]
 			if value:
 				core = env[coreval]
 				accu = []
@@ -813,15 +937,28 @@ def simplify_qt5_libs(self):
 					if lib in core:
 						continue
 					accu.append(lib)
-				env['LIBPATH_'+var] = accu
-	process_lib(self.qt_vars, 'LIBPATH_QTCORE')
+				env[prefix + var] = accu
+
+	pre = ''
+	if self.qt_static:
+		pre = 'ST'
+
+	process(self.qt_vars, pre + 'LIBPATH_', '%sLIBPATH_QT%sCORE' % (pre, qt_ver))
+	process(self.qt_vars, pre + 'LIB_', '%sLIB_QT%sCORE' % (pre, qt_ver))
+	process(self.qt_vars, 'DEFINES_', 'DEFINES_QT%sCORE' % qt_ver)
+	process(self.qt_vars, 'INCLUDES_', 'INCLUDES_QT%sCORE' % qt_ver)
 
 @conf
 def add_qt5_rpath(self):
 	"""
 	Defines rpath entries for Qt libraries
 	"""
+	qt_ver = '6' if self.want_qt6 else '5'
 	env = self.env
+
+	if self.qt_static:
+		return
+
 	if getattr(Options.options, 'want_rpath', False):
 		def process_rpath(vars_, coreval):
 			for d in vars_:
@@ -831,66 +968,214 @@ def add_qt5_rpath(self):
 					core = env[coreval]
 					accu = []
 					for lib in value:
-						if var != 'QTCORE':
+						if var != 'QT%sCORE' % qt_ver:
 							if lib in core:
 								continue
 						accu.append('-Wl,--rpath='+lib)
 					env['RPATH_' + var] = accu
-		process_rpath(self.qt_vars, 'LIBPATH_QTCORE')
+		process_rpath(self.qt_vars, 'LIBPATH_QT%sCORE' % qt_ver)
 
 @conf
 def set_qt5_libs_to_check(self):
 	qt_ver = '6' if self.want_qt6 else '5'
 
+	# We are forced to find all modules that are installed, because some modules
+	# will have a different name from their actual library. Like Qt5's qmltest
+	# module being the library Qt5QuickTest. Without doing this libraries like
+	# those will be unfindable. This is also the case for Qt6.
+
+	self.qt_var2mod = {}
+
+	populate = False
 	if not self.qt_vars:
-		dirlst = Utils.listdir(self.env.QTLIBS)
+		populate = True
 
-		pat = self.env.cxxshlib_PATTERN
-		if Utils.is_win32:
-			pat = pat.replace('.dll', '.lib')
-		if self.environ.get('QT' + qt_ver + '_FORCE_STATIC'):
-			pat = self.env.cxxstlib_PATTERN
-		if Utils.unversioned_sys_platform() == 'darwin':
-			pat = r"%s\.framework"
+	modules_dir = os.path.join(self.env.QTMKSPECSDIR, 'modules')
+	dirlst = Utils.listdir(modules_dir)
 
-		if self.want_qt6:
-			# match Qt6Name or QtName but not Qt5Name
-			mid_pattern = pat % 'Qt6?(?P<name>[^5]\\w+)'
-		else:
-			# match Qt5Name or QtName but not Qt6Name
-			mid_pattern = pat % 'Qt5?(?P<name>[^6]\\w+)'
-		re_qt = re.compile('^%s$' % mid_pattern)
+	for x in sorted(dirlst):
+		if x.startswith('qt_lib_') and (x.endswith('_private.pri') or x.endswith('impl.pri')):
+			continue
+		if not x.startswith('qt_lib_'):
+			continue
 
-		for x in sorted(dirlst):
-			m = re_qt.match(x)
-			if m:
-				self.qt_vars.append("Qt%s%s" % (qt_ver, m.group('name')))
-		if not self.qt_vars:
-			self.fatal('cannot find any Qt%s library (%r)' % (qt_ver, self.env.QTLIBS))
+		module = self.read_pri(os.path.join(modules_dir, x))
+		var = module['module'][0]
+		mod = module['QT_MODULES'][0]
+
+		self.qt_var2mod[var] = mod
+
+		if populate:
+			self.qt_vars.append(var)
+
+	if not self.qt_var2mod:
+		self.fatal('cannot find any Qt%s library (%r)' % (qt_ver, modules_dir))
 
 	qtextralibs = getattr(Options.options, 'qtextralibs', None)
 	if qtextralibs:
 		self.qt_vars.extend(qtextralibs.split(','))
 
 @conf
-def set_qt5_defines(self):
+def set_qt_env(self):
+	env = self.env
+	env.QTARCHDATA = self.cmd_and_log(env.QMAKE + ['-query', 'QT_INSTALL_ARCHDATA']).strip()
+	env.QTINCLUDES = self.cmd_and_log(env.QMAKE + ['-query', 'QT_INSTALL_HEADERS']).strip()
+	env.QTBINS = self.cmd_and_log(env.QMAKE + ['-query', 'QT_INSTALL_BINS']).strip()
+
+@conf
+def qt_check_static(self):
 	qt_ver = '6' if self.want_qt6 else '5'
 
-	if sys.platform != 'win32':
-		return
+	qconfig_pri = os.path.join(self.env.QTMKSPECSDIR, 'qconfig.pri')
+	qt_config = self.read_pri(qconfig_pri)
 
-	for x in self.qt_vars:
-		y=x.replace('Qt' + qt_ver, 'Qt')[2:].upper()
-		self.env.append_unique('DEFINES_%s' % x.upper(), 'QT_%s_LIB' % y)
+	static = False
+	if 'static' in qt_config['enabled_features']:
+		static = True
+
+	dynamic = False
+	if 'shared' in qt_config['enabled_features']:
+		dynamic = True
+
+	force_static = self.environ.get('QT%s_FORCE_STATIC' % qt_ver)
+
+	if force_static and self.static == False:
+		self.fatal('Qt libraries are forced static, but Qt has not been built statically.')
+
+	if force_static or (static and not dynamic):
+		self.qt_static = True
+	else:
+		self.qt_static = False
+
+@conf
+def set_qt_makespecs_dir(self):
+	ver = '6' if self.want_qt6 else '5'
+
+	if self.want_qt6 and 'PKGCONFIG' in self.env:
+		path = self.qt_pkg_config_path()
+
+		mkspecsdir = self.check_cfg(
+			package = 'Qt6Platform',
+			args = ['--variable', 'mkspecsdir'],
+			pkg_config_path = path,
+			quiet = True,
+			mandatory = False).strip()
+
+		found = mkspecsdir != ''
+		if found:
+			self.msg(
+				'Checking for Qt%s mkspecs path' % ver,
+				mkspecsdir if found else False)
+
+			self.env.QTMKSPECSDIR = mkspecsdir
+			return
+
+	mkspecsdir = os.path.join(self.env.QTARCHDATA, 'mkspecs')
+
+	found = os.path.exists(mkspecsdir)
+	self.msg(
+		'Checking for Qt%s mkspecs path' % ver,
+		mkspecsdir if found else 'not found',
+		color = 'GREEN' if found else 'YELLOW')
+
+	if not found:
+		self.fatal('Unable to find the Qt%s mkspecs directory' % ver)
+
+	self.env.QTMKSPECSDIR = mkspecsdir
+
+@conf
+def set_qt_makespec(self):
+	# qmake makes no effort to detect what the actual mkspec is, by which I mean,
+	# it gives back the makespec Qt has been built with. We don't detect it and
+	# shouldn't either. Attempts at detecting the correct mkspec ended up being
+	# way too complex. The user will know what the correct mkspec is.
+	ver = '6' if self.want_qt6 else '5'
+
+	mkspec = getattr(Options.options, 'mkspec', None) or self.environ.get('QMAKESPEC')
+
+	if not mkspec:
+		try:
+			# We want XSPEC, as that is the spec used to build the target libraries.
+			mkspec = self.cmd_and_log(self.env.QMAKE + ['-query', 'QMAKE_XSPEC']).strip()
+			self.msg('Determining Qt%s makespec' % ver, mkspec)
+
+			mkspecdir = os.path.join(self.env.QTMKSPECSDIR, mkspec)
+
+			if not os.path.exists(mkspecdir):
+				mkspecdir = os.path.join(self.env.QTMKSPECSDIR, 'unsupported', mkspec)
+		except Errors.WafError:
+			self.fatal('Unable to determine Qt%s makespec' % ver)
+	else:
+		mkspecdir = os.path.join(self.env.QTMKSPECSDIR, mkspec)
+
+		if not os.path.exists(mkspecdir):
+			mkspecdir = os.path.join(self.env.QTMKSPECSDIR, 'unsupported', mkspec)
+			if not os.path.exists(mkspecdir):
+				self.fatal('Unable to determine Qt%s makespec' % ver)
+
+		self.msg('Determining Qt%s makespec' % ver, mkspec)
+
+	self.env.QTMKSPEC = mkspec
+	self.env.QTMKSPECPATH = mkspecdir
+
+@conf
+def read_pri(self, path):
+	"""
+	Read information from a .pri file as a dict.
+
+	:param path: Path to the pri file
+	:type path: str
+	"""
+	ver = '6' if self.want_qt6 else '5'
+
+	# Lines have a format of QT.$lib_name.$key = $value, or $key = $value
+	# = can also be += or -=. This regex grabs the $key and $value components.
+	keyval_re = re.compile(r'^(QT\.\w+\.){0,1}(?P<key>\w+) *\+{0,1}= *(?P<val>.+)?')
+
+	result = {}
+	with open(path, 'r') as f:
+		for line in f:
+			if line.strip() == '':
+				continue
+
+			matches = keyval_re.match(line)
+			if len(matches.groups()) > 0:
+				match = matches.groupdict()
+				values = Utils.to_list(match['val'])
+
+				def replace(value):
+					value = value.replace('$$QT_MODULE_LIB_BASE', self.env.QTLIBS)
+					value = value.replace('$$QT_MODULE_INCLUDE_BASE', self.env.QTINCLUDES)
+
+					# CHECK (Rafaël Kooi): Should this be QT_INSTALL_LIBEXEC instead?
+					value = value.replace('$$QT_MODULE_BIN_BASE', self.env.QTBINS)
+
+					return value
+
+				if values != None:
+					result[match['key']] = list(map(replace, values))
+				else:
+					result[match['key']] = list()
+
+	if 'module' in result and len(result['module']) == 0:
+		result['module'] = ['Qt' + ver + result['name'][0][2:]]
+
+		# Qt5 does not specify CONFIG in (some of?) its modules.
+		if not 'CONFIG' in result:
+			result['CONFIG'] = ['no_link']
+
+	return result
 
 def options(opt):
 	"""
 	Command-line options
 	"""
 	opt.add_option('--want-rpath', action='store_true', default=False, dest='want_rpath', help='enable the rpath for qt libraries')
-	for i in 'qtdir qtbin qtlibs'.split():
-		opt.add_option('--'+i, type='string', default='', dest=i)
+
+	opt.add_option('--qtdir', type=str, default='', dest='qtdir', help='path to the root of the qt installation; to aid finding qmake')
+	opt.add_option('--qtbin', type=str, default='', dest='qtbin', help='path to the bin folder of the qt installation; to aid finding qmake')
 
 	opt.add_option('--translate', action='store_true', help='collect translation strings', dest='trans_qt5', default=False)
-	opt.add_option('--qtextralibs', type='string', default='', dest='qtextralibs', help='additional qt libraries on the system to add to default ones, comma separated')
+	opt.add_option('--qtextralibs', type=str, default='', dest='qtextralibs', help='additional qt libraries on the system to add to default ones, comma separated')
 
+	opt.add_option('--makespec', type=str, default=None, dest='mkspec', help='override the qt makespec')

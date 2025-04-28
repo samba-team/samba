@@ -38,7 +38,7 @@ EXTS_CXX = ('.cpp','.cc','.cxx','.C','.c++')
 
 def options(opt):
 	global MAX_BATCH
-	opt.add_option('--batchsize', action='store', dest='batchsize', type='int', default=MAX_BATCH,
+	opt.add_option('--batchsize', action='store', dest='batchsize', type=int, default=MAX_BATCH,
 		help='default unity batch size (0 disables unity builds)')
 
 @TaskGen.taskgen_method

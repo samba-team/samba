@@ -8,46 +8,6 @@ Filesystem-based cache system to share and re-use build artifacts
 Cache access operations (copy to and from) are delegated to
 independent pre-forked worker subprocesses.
 
-The following environment variables may be set:
-* WAFCACHE: several possibilities:
-  - File cache:
-    absolute path of the waf cache (~/.cache/wafcache_user,
-    where `user` represents the currently logged-in user)
-  - URL to a cache server, for example:
-    export WAFCACHE=http://localhost:8080/files/
-    in that case, GET/POST requests are made to urls of the form
-    http://localhost:8080/files/000000000/0 (cache management is delegated to the server)
-  - GCS, S3 or MINIO bucket
-    gs://my-bucket/    (uses gsutil command line tool or WAFCACHE_CMD)
-    s3://my-bucket/    (uses aws command line tool or WAFCACHE_CMD)
-    minio://my-bucket/ (uses mc command line tool or WAFCACHE_CMD)
-* WAFCACHE_CMD: bucket upload/download command, for example:
-    WAFCACHE_CMD="gsutil cp %{SRC} %{TGT}"
-  Note that the WAFCACHE bucket value is used for the source or destination
-  depending on the operation (upload or download). For example, with:
-    WAFCACHE="gs://mybucket/"
-  the following commands may be run:
-    gsutil cp build/myprogram  gs://mybucket/aa/aaaaa/1
-    gsutil cp gs://mybucket/bb/bbbbb/2 build/somefile
-* WAFCACHE_NO_PUSH: if set, disables pushing to the cache
-* WAFCACHE_VERBOSITY: if set, displays more detailed cache operations
-* WAFCACHE_STATS: if set, displays cache usage statistics on exit
-
-File cache specific options:
-  Files are copied using hard links by default; if the cache is located
-  onto another partition, the system switches to file copies instead.
-* WAFCACHE_TRIM_MAX_FOLDER: maximum amount of tasks to cache (1M)
-* WAFCACHE_EVICT_MAX_BYTES: maximum amount of cache size in bytes (10GB)
-* WAFCACHE_EVICT_INTERVAL_MINUTES: minimum time interval to try
-                                   and trim the cache (3 minutes)
-
-Upload specific options:
-* WAFCACHE_ASYNC_WORKERS: define a number of workers to upload results asynchronously
-                          this may improve build performance with many/long file uploads
-                          the default is unset (synchronous uploads)
-* WAFCACHE_ASYNC_NOWAIT: do not wait for uploads to complete (default: False)
-                         this requires asynchonous uploads to have an effect
-
 Usage::
 
 	def build(bld):
@@ -57,9 +17,74 @@ Usage::
 To troubleshoot::
 
 	waf clean build --zone=wafcache
+
+General parameters
+^^^^^^^^^^^^^^^^^^
+
+Use the following environment variables
+
+* WAFCACHE, which can be
+
+  - An absolute path to the waf cache folder, by default::
+
+      ~/.cache/wafcache_user # `user` represents the currently logged-in user
+
+  - A URL to a cache server, for example::
+
+      export WAFCACHE=http://localhost:8080/files/
+      #in that case, `GET/POST` requests are made to urls of the form
+      #`http://localhost:8080/files/000000000/0` (cache management is delegated to the server)
+
+  - A GCS, S3 or MINIO bucket::
+
+      gs://my-bucket/    # (uses gsutil command line tool or WAFCACHE_CMD)
+      s3://my-bucket/    # (uses aws command line tool or WAFCACHE_CMD)
+      minio://my-bucket/ # (uses mc command line tool or WAFCACHE_CMD)
+
+* WAFCACHE_CMD: bucket upload/download command, for example::
+
+    WAFCACHE_CMD="gsutil cp %{SRC} %{TGT}"
+
+* WAFCACHE_NO_PUSH: if set, disables pushing to the cache
+* WAFCACHE_VERBOSITY: if set, displays more detailed cache operations
+* WAFCACHE_STATS: if set, displays cache usage statistics on exit
+
+Remote buckets
+^^^^^^^^^^^^^^
+
+The WAFCACHE bucket value is used for the source or destination
+depending on the operation (upload or download). For example, with::
+
+    WAFCACHE="gs://mybucket/"
+
+the following commands may be run::
+
+    gsutil cp build/myprogram  gs://mybucket/aa/aaaaa/1
+    gsutil cp gs://mybucket/bb/bbbbb/2 build/somefile
+
+File cache
+^^^^^^^^^^
+
+Files are copied using hard links by default; if the cache is located
+onto another partition, the system switches to file copies instead.
+
+Additional environments can be set:
+
+* WAFCACHE_TRIM_MAX_FOLDER: maximum amount of tasks to cache (1M)
+* WAFCACHE_EVICT_MAX_BYTES: maximum amount of cache size in bytes (10GB)
+* WAFCACHE_EVICT_INTERVAL_MINUTES: minimum time interval to try and trim the cache (3 minutes)
+
+Asynchronous transfers
+^^^^^^^^^^^^^^^^^^^^^^
+
+* WAFCACHE_ASYNC_WORKERS: define a number of workers to upload results asynchronously
+                          this may improve build performance with many/long file uploads
+                          the default is unset (synchronous uploads)
+* WAFCACHE_ASYNC_NOWAIT: do not wait for uploads to complete (default: False)
+                         this requires asynchonous uploads to have an effect
 """
 
-import atexit, base64, errno, fcntl, getpass, os, re, shutil, sys, time, threading, traceback, urllib3, shlex
+import atexit, base64, errno, getpass, os, re, shutil, sys, time, threading, traceback, shlex
 try:
 	import subprocess32 as subprocess
 except ImportError:
@@ -451,29 +476,69 @@ def lru_evict():
 		if e.errno == errno.ENOENT:
 			with open(lockfile, 'w') as f:
 				f.write('')
-			return
 		else:
+			# any other errors such as permissions
 			raise
 
 	if st.st_mtime < time.time() - EVICT_INTERVAL_MINUTES * 60:
 		# check every EVICT_INTERVAL_MINUTES minutes if the cache is too big
-		# OCLOEXEC is unnecessary because no processes are spawned
+		# OCLOEXEC is unnecessary because no cleaning processes are spawned
 		fd = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o755)
 		try:
 			try:
-				fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-			except EnvironmentError:
-				if WAFCACHE_VERBOSITY:
-					sys.stderr.write('wafcache: another cleaning process is running\n')
+				import fcntl
+			except ImportError:
+				import msvcrt, ctypes, ctypes.wintypes
+				handle = msvcrt.get_osfhandle(fd)
+
+				kernel32 = ctypes.windll('kernel32', use_last_error=True)
+				DWORD = ctypes.wintypes.DWORD
+				HANDLE = ctypes.wintypes.HANDLE
+				class DUMMYSTRUCTNAME(ctypes.Structure):
+					_fields = [('Offset', ctypes.wintypes.DWORD), ('OffsetHigh', DWORD)]
+				class DUMMYUNIONNAME(ctypes.Union):
+					_fields_ = [('_dummystructname', DUMMYSTRUCTNAME), ('Pointer', ctypes.c_void_p)]
+				class OVERLAPPED(ctypes.Structure):
+					_fields_ = [('Internal', ctypes.c_void_p), ('InternalHigh', ctypes.c_void_p), ('_dummyunionname', DUMMYUNIONNAME), ('hEvent', HANDLE)]
+
+				LockFileEx = kernel32.LockFileEx
+				LockFileEx.argtypes = [HANDLE, DWORD, DWORD, DWORD, DWORD, POINTER(OVERLAPPED)]
+				LockFileEx.restype = BOOL
+
+				UnlockFileEx = kernel32.UnlockFileEx
+				UnlockFileEx.argtypes = [HANDLE, DWORD, DWORD, DWORD, POINTER(OVERLAPPED)]
+				UnlockFileEx.restype = BOOL
+
+				if LockFileEx(handle, 3, 0, 1, 0, ctypes.pointer(OVERLAPPED())):
+					try:
+						lru_trim()
+						os.utime(lockfile, None)
+					finally:
+						win32file.UnlockFileEx(handle, 0, 1, 0, ctypes.pointer(OVERLAPPED()))
+				else:
+					last_error = kernel32.GetLastError()
+					if last_error == 33:
+						if WAFCACHE_VERBOSITY:
+							sys.stderr.write('wafcache: another cleaning process is running\n')
+					else:
+						raise OSError(last_error)
+
 			else:
-				# now dow the actual cleanup
-				lru_trim()
-				os.utime(lockfile, None)
+				try:
+					fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+				except EnvironmentError:
+					if WAFCACHE_VERBOSITY:
+						sys.stderr.write('wafcache: another cleaning process is running\n')
+				else:
+					# now dow the actual cleanup
+					lru_trim()
+					os.utime(lockfile, None)
 		finally:
 			os.close(fd)
 
 class netcache(object):
 	def __init__(self):
+		import urllib3
 		self.http = urllib3.PoolManager()
 
 	def url_of(self, sig, i):

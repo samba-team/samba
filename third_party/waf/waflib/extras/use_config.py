@@ -88,7 +88,7 @@ DEFAULT_DIR = 'wafcfg'
 sys.path.append(osp.abspath(DEFAULT_DIR))
 
 def options(self):
-	group = self.add_option_group('configure options')
+	group = self.add_option_group('Configuration options')
 	group.add_option('--download', dest='download', default=False, action='store_true', help='try to download the tools if missing')
 
 	group.add_option('--use-config', action='store', default=None,

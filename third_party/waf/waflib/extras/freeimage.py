@@ -32,7 +32,7 @@ from waflib.Configure import conf
 
 
 def options(opt):
-	opt.add_option('--fi-path', type='string', default='', dest='fi_path',
+	opt.add_option('--fi-path', type=str, default='', dest='fi_path',
 				   help='''path to the FreeImage directory \
 						where the files are e.g. /FreeImage/Dist''')
 	opt.add_option('--fip', action='store_true', default=False, dest='fip',

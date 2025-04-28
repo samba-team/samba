@@ -8,7 +8,7 @@ from os import tmpfile, linesep
 
 def options(opt):
 	grp = opt.add_option_group('Softlink Libraries Options')
-	grp.add_option('--exclude', default='/usr/lib,/lib', help='No symbolic links are created for libs within [%default]')
+	grp.add_option('--exclude', default='/usr/lib,/lib', help='No symbolic links are created for libs within [%(default)s]')
 
 def configure(cnf):
 	cnf.find_program('ldd')

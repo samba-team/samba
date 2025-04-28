@@ -6,8 +6,6 @@
 C/C++/D configuration helpers
 """
 
-from __future__ import with_statement
-
 import os, re, shlex
 from waflib import Build, Utils, Task, Options, Logs, Errors, Runner
 from waflib.TaskGen import after_method, feature
@@ -461,7 +459,7 @@ def validate_c(self, kw):
 			kw['compile_mode'] = 'cxx'
 
 	if not 'type' in kw:
-		kw['type'] = 'cprogram'
+		kw['type'] = '%sprogram' % kw['compile_mode']
 
 	if not 'features' in kw:
 		if not 'header_name' in kw or kw.get('link_header_test', True):
@@ -566,6 +564,15 @@ def validate_c(self, kw):
 		self.undefine(kw['define_name'])
 	if not 'msg' in kw:
 		self.fatal('missing "msg" in conf.check(...)')
+
+	if 'cflags' in kw and not 'c' in kw['features']:
+		self.fatal('Invalid cflags in non-c configuration test, specify conf.check(features=)')
+	if 'cxxflags' in kw and not 'cxx' in kw['features']:
+		self.fatal('Invalid cxxflags in non-cxx configuration test, specify conf.check(features=)')
+	if 'fcflags' in kw and not 'fc' in kw['features']:
+		self.fatal('Invalid fcflags in non-fc configuration test, specify conf.check(features=)')
+	if 'dflags' in kw and not 'd' in kw['features']:
+		self.fatal('Invalid dflags in non-d configuration test, specify conf.check(features=)')
 
 @conf
 def post_check(self, *k, **kw):
@@ -1043,7 +1050,7 @@ def get_cc_version(conf, cc, gcc=False, icc=False, clang=False):
 
 	if clang and out.find('__clang__') < 0:
 		conf.fatal('Not clang/clang++')
-	if not clang and not icc and out.find('__clang__') >= 0:
+	if not clang and out.find('__clang__') >= 0:
 		conf.fatal('Could not find gcc/g++ (only Clang), if renamed try eg: CC=gcc48 CXX=g++48 waf configure')
 
 	k = {}
@@ -1098,7 +1105,6 @@ def get_cc_version(conf, cc, gcc=False, icc=False, clang=False):
 				# 20230100
 				ver = k['__INTEL_CLANG_COMPILER']
 				conf.env.CC_VERSION = (ver[:4], ver[4:6], ver[-2:])
-				conf.env.INTEL_CLANG_COMPILER = 1
 			else:
 				ver = k['__INTEL_COMPILER']
 				conf.env.CC_VERSION = (ver[:-2], ver[-2], ver[-1])
@@ -1164,17 +1170,6 @@ def get_suncc_version(conf, cc):
 		conf.env.CC_VERSION = (k['major'], k['minor'])
 	else:
 		conf.fatal('Could not determine the suncc version.')
-
-# ============ the --as-needed flag should added during the configuration, not at runtime =========
-
-@conf
-def add_as_needed(self):
-	"""
-	Adds ``--as-needed`` to the *LINKFLAGS*
-	On some platforms, it is a default flag.  In some cases (e.g., in NS-3) it is necessary to explicitly disable this feature with `-Wl,--no-as-needed` flag.
-	"""
-	if self.env.DEST_BINFMT == 'elf' and 'gcc' in (self.env.CXX_NAME, self.env.CC_NAME):
-		self.env.append_unique('LINKFLAGS', '-Wl,--as-needed')
 
 # ============ parallel configuration
 

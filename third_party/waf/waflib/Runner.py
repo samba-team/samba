@@ -43,9 +43,6 @@ class PriorityTasks(object):
 		self.lst = []
 	def append(self, task):
 		heapq.heappush(self.lst, task)
-	def appendleft(self, task):
-		"Deprecated, do not use"
-		heapq.heappush(self.lst, task)
 	def pop(self):
 		return heapq.heappop(self.lst)
 	def extend(self, lst):
@@ -346,7 +343,7 @@ class Parallel(object):
 				while sem.waiting and not sem.is_locked():
 					# take a frozen task, make it ready to run
 					x = sem.waiting.pop()
-					self._add_task(x)
+					self.add_task(x)
 
 	def get_out(self):
 		"""
@@ -365,16 +362,6 @@ class Parallel(object):
 		return tsk
 
 	def add_task(self, tsk):
-		"""
-		Enqueue a Task to :py:attr:`waflib.Runner.Parallel.ready` so that consumers can run them.
-
-		:param tsk: task instance
-		:type tsk: :py:attr:`waflib.Task.Task`
-		"""
-		# TODO change in waf 2.1
-		self.ready.put(tsk)
-
-	def _add_task(self, tsk):
 		if hasattr(tsk, 'semaphore'):
 			sem = tsk.semaphore
 			try:
@@ -392,7 +379,7 @@ class Parallel(object):
 			finally:
 				self.out.put(tsk)
 		else:
-			self.add_task(tsk)
+			self.ready.put(tsk)
 
 	def process_task(self, tsk):
 		"""
@@ -493,7 +480,7 @@ class Parallel(object):
 
 			st = self.task_status(tsk)
 			if st == Task.RUN_ME:
-				self._add_task(tsk)
+				self.add_task(tsk)
 			elif st == Task.ASK_LATER:
 				self.postpone(tsk)
 			elif st == Task.SKIP_ME:

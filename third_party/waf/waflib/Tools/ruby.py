@@ -180,7 +180,7 @@ def options(opt):
 	"""
 	Add the ``--with-ruby-archdir``, ``--with-ruby-libdir`` and ``--with-ruby-binary`` options
 	"""
-	opt.add_option('--with-ruby-archdir', type='string', dest='rubyarchdir', help='Specify directory where to install arch specific files')
-	opt.add_option('--with-ruby-libdir', type='string', dest='rubylibdir', help='Specify alternate ruby library path')
-	opt.add_option('--with-ruby-binary', type='string', dest='rubybinary', help='Specify alternate ruby binary')
+	opt.add_option('--with-ruby-archdir', type=str, dest='rubyarchdir', help='Specify directory where to install arch specific files')
+	opt.add_option('--with-ruby-libdir', type=str, dest='rubylibdir', help='Specify alternate ruby library path')
+	opt.add_option('--with-ruby-binary', type=str, dest='rubybinary', help='Specify alternate ruby binary')
 

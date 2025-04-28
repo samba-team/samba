@@ -6,7 +6,7 @@
 
 import os
 import re
-from waflib import Task
+from waflib import Task, Utils
 from waflib.TaskGen import extension
 from waflib.Tools import c_preproc
 from waflib import Utils
@@ -103,7 +103,21 @@ def configure(conf):
 	v = conf.env
 	if not v.WINRC:
 		if v.CC_NAME == 'msvc':
-			conf.find_program('RC', var='WINRC', path_list=v.PATH)
+			if Utils.is_win32:
+				conf.find_program('RC', var='WINRC', path_list=v.PATH)
+			else:
+				llvm_env_path = conf.environ.get('LLVM_PATH')
+				llvm_path = None
+				if llvm_env_path:
+					llvm_path = llvm_env_path
+				elif 'LLVM_PATH' in v:
+					llvm_path = v['LLVM_PATH']
+
+				paths = v.PATH
+				if llvm_path:
+					paths = [llvm_path] + v.PATH
+				conf.find_program('llvm-rc', var='WINRC', path_list=paths)
+
 			v.WINRC_TGT_F = '/fo'
 			v.WINRC_SRC_F = ''
 		else:

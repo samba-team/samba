@@ -35,7 +35,6 @@ When using this tool, the wscript will look like:
         bld(features='cpplint', source=bld.path.ant_glob('**/*.hpp'))
 '''
 
-from __future__ import absolute_import
 import sys, re
 import logging
 from waflib import Errors, Task, TaskGen, Logs, Options, Node, Utils
@@ -59,23 +58,23 @@ CPPLINT_STR = ('${CPPLINT} '
 
 
 def options(opt):
-    opt.add_option('--cpplint-filters', type='string',
+    opt.add_option('--cpplint-filters', type=str,
                    default='', dest='CPPLINT_FILTERS',
                    help='add filters to cpplint')
-    opt.add_option('--cpplint-length', type='int',
+    opt.add_option('--cpplint-length', type=int,
                    default=80, dest='CPPLINT_LINE_LENGTH',
                    help='specify the line length (default: 80)')
-    opt.add_option('--cpplint-level', default=1, type='int', dest='CPPLINT_LEVEL',
+    opt.add_option('--cpplint-level', default=1, type=int, dest='CPPLINT_LEVEL',
                    help='specify the log level (default: 1)')
-    opt.add_option('--cpplint-break', default=5, type='int', dest='CPPLINT_BREAK',
+    opt.add_option('--cpplint-break', default=5, type=int, dest='CPPLINT_BREAK',
                    help='break the build if error >= level (default: 5)')
-    opt.add_option('--cpplint-root', type='string',
+    opt.add_option('--cpplint-root', type=str,
                    default='', dest='CPPLINT_ROOT',
                    help='root directory used to derive header guard')
     opt.add_option('--cpplint-skip', action='store_true',
                    default=False, dest='CPPLINT_SKIP',
                    help='skip cpplint during build')
-    opt.add_option('--cpplint-output', type='string',
+    opt.add_option('--cpplint-output', type=str,
                    default='waf', dest='CPPLINT_OUTPUT',
                    help='select output format (waf, emacs, vs7, eclipse)')
 

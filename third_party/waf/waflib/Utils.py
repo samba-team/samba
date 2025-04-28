@@ -9,8 +9,6 @@ The portability fixes try to provide a consistent behavior of the Waf API
 through Python versions 2.5 to 3.X and across different platforms (win32, linux, etc)
 """
 
-from __future__ import with_statement
-
 import atexit, os, sys, errno, inspect, re, datetime, platform, base64, signal, functools, time, shlex
 
 try:
@@ -903,7 +901,7 @@ def get_process():
 	except IndexError:
 		filepath = os.path.dirname(os.path.abspath(__file__)) + os.sep + 'processor.py'
 		cmd = [sys.executable, '-c', readf(filepath)]
-		return subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, bufsize=0, close_fds=not is_win32)
+		return subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
 
 def run_prefork_process(cmd, kwargs, cargs):
 	"""
@@ -911,6 +909,11 @@ def run_prefork_process(cmd, kwargs, cargs):
 	"""
 	if not kwargs.get('env'):
 		kwargs['env'] = dict(os.environ)
+
+	if hasattr(subprocess, 'DEVNULL') and 'stdin' not in kwargs:
+		# prevent accidental communication errors
+		kwargs['stdin'] = subprocess.DEVNULL
+
 	try:
 		obj = base64.b64encode(cPickle.dumps([cmd, kwargs, cargs]))
 	except (TypeError, AttributeError):
@@ -920,12 +923,17 @@ def run_prefork_process(cmd, kwargs, cargs):
 	if not proc:
 		return run_regular_process(cmd, kwargs, cargs)
 
-	proc.stdin.write(obj)
-	proc.stdin.write('\n'.encode())
+	try:
+		proc.stdin.write(obj)
+		proc.stdin.write('\n'.encode())
+	except OSError:
+		proc.poll()
+		raise OSError('Preforked sub-process:%r is not receiving, status: %r' % (proc.pid, proc.returncode))
 	proc.stdin.flush()
 	obj = proc.stdout.readline()
 	if not obj:
-		raise OSError('Preforked sub-process %r died' % proc.pid)
+		proc.poll()
+		raise OSError('Preforked sub-process:%r is not responding, status: %r' % (proc.pid, proc.returncode))
 
 	process_pool.append(proc)
 	lst = cPickle.loads(base64.b64decode(obj))
@@ -1006,7 +1014,7 @@ def run_process(cmd, kwargs, cargs={}):
 	or falling back to subprocess.Popen. See :py:func:`waflib.Utils.run_prefork_process`
 	and :py:func:`waflib.Utils.run_regular_process`
 	"""
-	if kwargs.get('stdout') and kwargs.get('stderr'):
+	if kwargs.get('stdout') and kwargs.get('stderr') and 'stdin' not in kwargs:
 		return run_prefork_process(cmd, kwargs, cargs)
 	else:
 		return run_regular_process(cmd, kwargs, cargs)
@@ -1038,16 +1046,14 @@ def alloc_process_pool(n, force=False):
 def atexit_pool():
 	for k in process_pool:
 		try:
-			os.kill(k.pid, 9)
+			k.kill()
 		except OSError:
 			pass
-		else:
-			k.wait()
+
 # see #1889
 if (sys.hexversion<0x207000f and not is_win32) or sys.hexversion>=0x306000f:
 	atexit.register(atexit_pool)
 
-if os.environ.get('WAF_NO_PREFORK') or sys.platform == 'cli' or not sys.executable:
+if os.environ.get('WAF_NO_PREFORK') or sys.platform == 'cli' or not sys.executable or not hasattr(subprocess, 'DEVNULL'):
 	run_process = run_regular_process
 	get_process = alloc_process_pool = nada
-

@@ -53,18 +53,6 @@ py_compile.compile(sys.argv[1], sys.argv[2], sys.argv[3], True)
 Piece of Python code used in :py:class:`waflib.Tools.python.pyo` and :py:class:`waflib.Tools.python.pyc` for byte-compiling python files
 """
 
-DISTUTILS_IMP = """
-try:
-	from distutils.sysconfig import get_config_var, get_python_lib
-except ImportError:
-	from sysconfig import get_config_var, get_path
-	def get_python_lib(*k, **kw):
-		keyword='platlib' if kw.get('plat_specific') else 'purelib'
-		if 'prefix' in kw:
-			return get_path(keyword, vars={'installed_base': kw['prefix'], 'platbase': kw['prefix']})
-		return get_path(keyword)
-""".splitlines()
-
 @before_method('process_source')
 @feature('py')
 def feature_py(self):
@@ -89,12 +77,12 @@ def process_py(self, node):
 	"""
 	Add signature of .py file, so it will be byte-compiled when necessary
 	"""
-	assert(hasattr(self, 'install_path')), 'add features="py" for target "%s" in "%s/wscript".' % (self.target, self.path.nice_path())
+	assert(hasattr(self, 'install_path')), 'add features="py" for target "%s" in "%s/wscript".' % (self.target, self.path.abspath())
 	self.install_from = getattr(self, 'install_from', None)
 	relative_trick = getattr(self, 'relative_trick', True)
 	if self.install_from:
 		assert isinstance(self.install_from, Node.Node), \
-		'add features="py" for target "%s" in "%s/wscript" (%s).' % (self.target, self.path.nice_path(), type(self.install_from))
+		'add features="py" for target "%s" in "%s/wscript" (%s).' % (self.target, self.path.abspath(), type(self.install_from))
 
 	# where to install the python file
 	if self.install_path:
@@ -199,51 +187,76 @@ def init_pyembed(self):
 		self.uselib.append('PYEMBED')
 
 @conf
-def get_python_variables(self, variables, imports=None):
+def get_sysconfig_variable(self, variable):
+	"""
+	Spawn a new python process to dump configuration variables
+
+	:param variable: variable to print
+	:type variable: string
+	:return: the variable value
+	:rtype: string
+	"""
+
+	env = dict(os.environ)
+	try:
+		del env['MACOSX_DEPLOYMENT_TARGET'] # see comments in the OSX tool
+	except KeyError:
+		pass
+
+	cmd = self.env.PYTHON + ["-c", "import sysconfig; print(sysconfig.get_config_var(%r))" % variable]
+	out = self.cmd_and_log(cmd, env=env).strip()
+
+	if out == "None":
+		return ""
+	else:
+		return out
+
+@conf
+def get_sysconfig_variables(self, variables):
 	"""
 	Spawn a new python process to dump configuration variables
 
 	:param variables: variables to print
 	:type variables: list of string
-	:param imports: one import by element
-	:type imports: list of string
 	:return: the variable values
 	:rtype: list of string
 	"""
-	if not imports:
-		try:
-			imports = self.python_imports
-		except AttributeError:
-			imports = DISTUTILS_IMP
+	return [self.get_sysconfig_variable(variable=v) for v in variables]
 
-	program = list(imports) # copy
-	program.append('')
-	for v in variables:
-		program.append("print(repr(%s))" % v)
-	os_env = dict(os.environ)
+@conf
+def get_sysconfig_path(self, name):
+	"""
+	Spawn a new python process to dump configuration paths
+
+	:param name: path to print
+	:type variable: string
+	:return: the path value
+	:rtype: string
+	"""
+
+	env = dict(os.environ)
 	try:
-		del os_env['MACOSX_DEPLOYMENT_TARGET'] # see comments in the OSX tool
+		del env['MACOSX_DEPLOYMENT_TARGET'] # see comments in the OSX tool
 	except KeyError:
 		pass
 
-	try:
-		out = self.cmd_and_log(self.env.PYTHON + ['-c', '\n'.join(program)], env=os_env)
-	except Errors.WafError:
-		self.fatal('Could not run %r' % self.env.PYTHON)
-	self.to_log(out)
-	return_values = []
-	for s in out.splitlines():
-		s = s.strip()
-		if not s:
-			continue
-		if s == 'None':
-			return_values.append(None)
-		elif (s[0] == "'" and s[-1] == "'") or (s[0] == '"' and s[-1] == '"'):
-			return_values.append(eval(s))
-		elif s[0].isdigit():
-			return_values.append(int(s))
-		else: break
-	return return_values
+	if self.env.PREFIX:
+		# If project wide PREFIX is set, construct the install directory based on this
+		# Note: we could use sysconfig.get_preferred_scheme('user') but that is Python >= 3.10 only
+		pref_scheme = 'posix_user'  # Default to *nix name
+		if Utils.unversioned_sys_platform() == 'darwin':
+			pref_scheme = 'osx_framework_user'
+		elif Utils.unversioned_sys_platform() == 'win32':
+			pref_scheme = 'nt_user'
+		cmd = self.env.PYTHON + ["-c", "import sysconfig; print(sysconfig.get_path(%r, %r, {'userbase': %r}))" % (name, pref_scheme, self.env.PREFIX)]
+	else:
+		cmd = self.env.PYTHON + ["-c", "import sysconfig; print(sysconfig.get_path(%r))" % name]
+	out = self.cmd_and_log(cmd, env=env).strip()
+
+	if out == "None":
+		return ""
+	else:
+		return out
 
 @conf
 def test_pyembed(self, mode, msg='Testing pyembed configuration'):
@@ -301,8 +314,7 @@ def python_cross_compile(self, features='pyembed pyext'):
 @conf
 def check_python_headers(conf, features='pyembed pyext'):
 	"""
-	Check for headers and libraries necessary to extend or embed python.
-	It may use the module *distutils* or sysconfig in newer Python versions.
+	Check for headers and libraries necessary to extend or embed python by using the module *sysconfig*.
 	On success the environment variables xxx_PYEXT and xxx_PYEMBED are added:
 
 	* PYEXT: for compiling python extensions
@@ -328,7 +340,7 @@ def check_python_headers(conf, features='pyembed pyext'):
 	# so we actually do all this for compatibility reasons and for obtaining pyext_PATTERN below
 	v = 'prefix SO EXT_SUFFIX LDFLAGS LIBDIR LIBPL INCLUDEPY Py_ENABLE_SHARED MACOSX_DEPLOYMENT_TARGET LDSHARED CFLAGS LDVERSION'.split()
 	try:
-		lst = conf.get_python_variables(["get_config_var('%s') or ''" % x for x in v])
+		lst = conf.get_sysconfig_variables(variables=v)
 	except RuntimeError:
 		conf.fatal("Python development headers not found (-v for details).")
 
@@ -450,7 +462,7 @@ def check_python_headers(conf, features='pyembed pyext'):
 		env.LIBPATH_PYEXT = env.LIBPATH_PYEMBED
 		env.LIB_PYEXT = env.LIB_PYEMBED
 
-	conf.to_log("Found an include path for Python extensions: %r\n" % (dct['INCLUDEPY'],))
+	conf.to_log("Include path for Python extensions (found via sysconfig module): %r\n" % (dct['INCLUDEPY'],))
 	env.INCLUDES_PYEXT = [dct['INCLUDEPY']]
 	env.INCLUDES_PYEMBED = [dct['INCLUDEPY']]
 
@@ -463,21 +475,13 @@ def check_python_headers(conf, features='pyembed pyext'):
 		env.append_unique('CXXFLAGS_PYEXT', ['-fno-strict-aliasing'])
 
 	if env.CC_NAME == "msvc":
-		try:
-			from distutils.msvccompiler import MSVCCompiler
-		except ImportError:
-			# From https://github.com/python/cpython/blob/main/Lib/distutils/msvccompiler.py
-			env.append_value('CFLAGS_PYEXT', [ '/nologo', '/Ox', '/MD', '/W3', '/GX', '/DNDEBUG'])
-			env.append_value('CXXFLAGS_PYEXT', [ '/nologo', '/Ox', '/MD', '/W3', '/GX', '/DNDEBUG'])
-			env.append_value('LINKFLAGS_PYEXT', ['/DLL', '/nologo', '/INCREMENTAL:NO'])
-		else:
-			dist_compiler = MSVCCompiler()
-			dist_compiler.initialize()
-			env.append_value('CFLAGS_PYEXT', dist_compiler.compile_options)
-			env.append_value('CXXFLAGS_PYEXT', dist_compiler.compile_options)
-			env.append_value('LINKFLAGS_PYEXT', dist_compiler.ldflags_shared)
+		# From https://github.com/python/cpython/blob/main/Lib/distutils/msvccompiler.py
+		env.append_value('CFLAGS_PYEXT', [ '/nologo', '/Ox', '/MD', '/W3', '/EHsc', '/DNDEBUG'])
+		env.append_value('CXXFLAGS_PYEXT', [ '/nologo', '/Ox', '/MD', '/W3', '/EHsc', '/DNDEBUG'])
+		env.append_value('LINKFLAGS_PYEXT', ['/DLL', '/nologo', '/INCREMENTAL:NO'])
 
-	conf.check(header_name='Python.h', define_name='HAVE_PYTHON_H', uselib='PYEMBED', fragment=FRAG, errmsg='Could not build a Python embedded interpreter')
+	# See if it compiles
+	conf.check(header_name='Python.h', define_name='HAVE_PYTHON_H', uselib='PYEMBED', fragment=FRAG, errmsg='Broken python installation? Get python-config now!')
 
 @conf
 def check_python_version(conf, minver=None):
@@ -521,11 +525,7 @@ def check_python_version(conf, minver=None):
 			# Check environment for PYTHONDIR
 			pydir = conf.environ['PYTHONDIR']
 		else:
-			# Finally, try to guess
-			if Utils.is_win32:
-				(pydir,) = conf.get_python_variables(["get_python_lib(standard_lib=0) or ''"])
-			else:
-				(pydir,) = conf.get_python_variables(["get_python_lib(standard_lib=0, prefix=%r) or ''" % conf.env.PREFIX])
+			pydir = conf.get_sysconfig_path('purelib')
 
 		if 'PYTHONARCHDIR' in conf.env:
 			# Check if --pythonarchdir was specified
@@ -535,7 +535,8 @@ def check_python_version(conf, minver=None):
 			pyarchdir = conf.environ['PYTHONARCHDIR']
 		else:
 			# Finally, try to guess
-			(pyarchdir, ) = conf.get_python_variables(["get_python_lib(plat_specific=1, standard_lib=0, prefix=%r) or ''" % conf.env.PREFIX])
+			pyarchdir = conf.get_sysconfig_path('platlib')
+
 			if not pyarchdir:
 				pyarchdir = pydir
 

@@ -121,7 +121,11 @@ def apply_incpaths(self):
 	lst = self.to_incnodes(self.to_list(getattr(self, 'includes', [])) + self.env.INCLUDES)
 	self.includes_nodes = lst
 	cwd = self.get_cwd()
-	self.env.INCPATHS = [x.path_from(cwd) for x in lst]
+	if Utils.is_win32:
+		# Visual Studio limitations
+		self.env.INCPATHS = [x.path_from(cwd) if x.is_child_of(self.bld.srcnode) else x.abspath() for x in lst]
+	else:
+		self.env.INCPATHS = [x.path_from(cwd) for x in lst]
 
 class link_task(Task.Task):
 	"""
@@ -221,14 +225,24 @@ class link_task(Task.Task):
 class stlink_task(link_task):
 	"""
 	Base for static link tasks, which use *ar* most of the time.
-	The target is always removed before being written.
 	"""
-	run_str = '${AR} ${ARFLAGS} ${AR_TGT_F}${TGT} ${AR_SRC_F}${SRC}'
+	run_str = [
+		lambda task: task.remove_before_build(),
+		'${AR} ${ARFLAGS} ${AR_TGT_F}${TGT} ${AR_SRC_F}${SRC}'
+	]
 
 	chmod   = Utils.O644
 	"""Default installation mode for the static libraries"""
 
+	def remove_before_build(self):
+		"Remove the library before building it"
+		try:
+			os.remove(self.outputs[0].abspath())
+		except OSError:
+			pass
+
 def rm_tgt(cls):
+	# TODO obsolete code, remove in waf 2.2
 	old = cls.run
 	def wrap(self):
 		try:
@@ -237,7 +251,6 @@ def rm_tgt(cls):
 			pass
 		return old(self)
 	setattr(cls, 'run', wrap)
-rm_tgt(stlink_task)
 
 @feature('skip_stlib_link_deps')
 @before_method('process_use')

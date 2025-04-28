@@ -114,7 +114,7 @@ def options(opt):
 		option = opt.parser.get_option(k)
 		if option:
 			opt.parser.remove_option(k)
-			inst_dir.add_option(option)
+			inst_dir.add_argument(k, dest=option.dest, help=option.help, default=option.default)
 
 	inst_dir.add_option('--exec-prefix',
 		help = 'installation prefix for binaries [PREFIX]',
@@ -125,7 +125,10 @@ def options(opt):
 
 	for name, help, default in _options:
 		option_name = '--' + name
+
+		opt.parser.remove_option(option_name)
+
 		str_default = default
 		str_help = '%s [%s]' % (help, re.sub(r'\$\{([^}]+)\}', r'\1', str_default))
-		dirs_options.add_option(option_name, help=str_help, default='', dest=name.upper())
+		dirs_options.add_option(option_name, help=str_help, default='', dest=name)
 

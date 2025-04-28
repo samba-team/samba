@@ -70,6 +70,9 @@ def bibunitscan(self):
 	Logs.debug('tex: found the following bibunit files: %s', nodes)
 	return nodes
 
+known_tex_env_vars = ['TEXINPUTS', 'TEXFONTS', 'PKFONTS', 'TEXPKS', 'GFFONTS']
+"""Tex environment variables that are should cause rebuilds when the values change"""
+
 exts_deps_tex = ['', '.ltx', '.tex', '.bib', '.pdf', '.png', '.eps', '.ps', '.sty']
 """List of typical file extensions included in latex files"""
 
@@ -89,6 +92,9 @@ class tex(Task.Task):
 	"""
 	Compiles a tex/latex file.
 
+	A series of applications need to be run by setting certain environmental variables;
+	these variables are repeatedly regenerated during processing (self.env.env).
+
 	.. inheritance-diagram:: waflib.Tools.tex.latex waflib.Tools.tex.xelatex waflib.Tools.tex.pdflatex
 	   :top-classes: waflib.Tools.tex.tex
 	"""
@@ -107,6 +113,12 @@ class tex(Task.Task):
 	makeglossaries_fun.__doc__ = """
 	Execute the program **makeglossaries**
 	"""
+
+	def make_os_env_again(self):
+		if self.generator.env.env:
+			self.env.env = dict(self.generator.env.env)
+		else:
+			self.env.env = dict(os.environ)
 
 	def exec_command(self, cmd, **kw):
 		"""
@@ -255,15 +267,13 @@ class tex(Task.Task):
 			if g_bibtex_re.findall(ct):
 				self.info('calling bibtex')
 
-				self.env.env = {}
-				self.env.env.update(os.environ)
+				self.make_os_env_again()
 				self.env.env.update({'BIBINPUTS': self.texinputs(), 'BSTINPUTS': self.texinputs()})
 				self.env.SRCFILE = aux_node.name[:-4]
 				self.check_status('error when calling bibtex', self.bibtex_fun())
 
 		for node in getattr(self, 'multibibs', []):
-			self.env.env = {}
-			self.env.env.update(os.environ)
+			self.make_os_env_again()
 			self.env.env.update({'BIBINPUTS': self.texinputs(), 'BSTINPUTS': self.texinputs()})
 			self.env.SRCFILE = node.name[:-4]
 			self.check_status('error when calling bibtex', self.bibtex_fun())
@@ -303,7 +313,7 @@ class tex(Task.Task):
 			self.info('calling makeindex')
 
 			self.env.SRCFILE = self.idx_node.name
-			self.env.env = {}
+			self.make_os_env_again()
 			self.check_status('error when calling makeindex %s' % idx_path, self.makeindex_fun())
 
 	def bibtopic(self):
@@ -410,8 +420,7 @@ class tex(Task.Task):
 		"""
 		Runs the TeX compiler once
 		"""
-		self.env.env = {}
-		self.env.env.update(os.environ)
+		self.make_os_env_again()
 		self.env.env.update({'TEXINPUTS': self.texinputs()})
 		self.env.SRCFILE = self.inputs[0].abspath()
 		self.check_status('error when calling latex', self.texfun())
@@ -419,14 +428,17 @@ class tex(Task.Task):
 class latex(tex):
 	"Compiles LaTeX files"
 	texfun, vars = Task.compile_fun('${LATEX} ${LATEXFLAGS} ${SRCFILE}', shell=False)
+	vars.append('TEXDEPS')
 
 class pdflatex(tex):
 	"Compiles PdfLaTeX files"
 	texfun, vars =  Task.compile_fun('${PDFLATEX} ${PDFLATEXFLAGS} ${SRCFILE}', shell=False)
+	vars.append('TEXDEPS')
 
 class xelatex(tex):
 	"XeLaTeX files"
 	texfun, vars = Task.compile_fun('${XELATEX} ${XELATEXFLAGS} ${SRCFILE}', shell=False)
+	vars.append('TEXDEPS')
 
 class dvips(Task.Task):
 	"Converts dvi files to postscript"
@@ -489,7 +501,9 @@ def apply_tex(self):
 		elif self.type == 'xelatex':
 			task = self.create_task('xelatex', node, node.change_ext('.pdf'))
 
-		task.env = self.env
+		# rebuild when particular environment variables changes are detected
+		task.make_os_env_again()
+		task.env.TEXDEPS = Utils.h_list([task.env.env.get(x, '') for x in known_tex_env_vars])
 
 		# add the manual dependencies
 		if deps_lst:
@@ -529,6 +543,7 @@ def apply_tex(self):
 			if 'ps' in outs:
 				self.create_task('pdf2ps', task.outputs, node.change_ext('.ps'))
 	self.source = []
+
 
 def configure(self):
 	"""

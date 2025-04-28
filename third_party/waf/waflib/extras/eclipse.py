@@ -402,7 +402,6 @@ class eclipse(Build.BuildContext):
 		addTargetWrap('configure', True)
 		addTargetWrap('dist', False)
 		addTargetWrap('install', False)
-		addTargetWrap('check', False)
 		for addTgt in self.env.ECLIPSE_EXTRA_TARGETS or []:
 			addTargetWrap(addTgt, False)
 

@@ -454,9 +454,9 @@ def make_picture(producer):
 def options(opt):
 	opt.add_option('--dtitle', action='store', default='Parallel build representation for %r' % ' '.join(sys.argv),
 		help='title for the svg diagram', dest='dtitle')
-	opt.add_option('--dwidth', action='store', type='int', help='diagram width', default=800, dest='dwidth')
-	opt.add_option('--dtime', action='store', type='float', help='recording interval in seconds', default=0.009, dest='dtime')
-	opt.add_option('--dband', action='store', type='int', help='band width', default=22, dest='dband')
-	opt.add_option('--dmaxtime', action='store', type='float', help='maximum time, for drawing fair comparisons', default=0, dest='dmaxtime')
+	opt.add_option('--dwidth', action='store', type=int, help='diagram width', default=800, dest='dwidth')
+	opt.add_option('--dtime', action='store', type=float, help='recording interval in seconds', default=0.009, dest='dtime')
+	opt.add_option('--dband', action='store', type=int, help='band width', default=22, dest='dband')
+	opt.add_option('--dmaxtime', action='store', type=float, help='maximum time, for drawing fair comparisons', default=0, dest='dmaxtime')
 	opt.add_option('--dnotooltip', action='store_true', help='disable tooltips', default=False, dest='dnotooltip')
 

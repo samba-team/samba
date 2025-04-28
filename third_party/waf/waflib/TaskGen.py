@@ -619,9 +619,13 @@ def process_rule(self):
 		cls = Task.task_factory(name, rule, _vars, shell=shell, color=color)
 
 		if cls_str:
+			if isinstance(cls_str, str):
+				raise ValueError('cls_str should be a function %r' % self)
 			setattr(cls, '__str__', self.cls_str)
 
 		if cls_keyword:
+			if isinstance(cls_keyword, str):
+				raise ValueError('cls_keyword should be a function %r' % self)
 			setattr(cls, 'keyword', self.cls_keyword)
 
 		if deep_inputs:

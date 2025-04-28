@@ -151,6 +151,6 @@ def options(opt):
 	"""
 	Add the ``--with-perl-archdir`` and ``--with-perl-binary`` command-line options.
 	"""
-	opt.add_option('--with-perl-binary', type='string', dest='perlbinary', help = 'Specify alternate perl binary', default=None)
-	opt.add_option('--with-perl-archdir', type='string', dest='perlarchdir', help = 'Specify directory where to install arch specific files', default=None)
+	opt.add_option('--with-perl-binary', type=str, dest='perlbinary', help = 'Specify alternate perl binary', default=None)
+	opt.add_option('--with-perl-archdir', type=str, dest='perlarchdir', help = 'Specify directory where to install arch specific files', default=None)
 

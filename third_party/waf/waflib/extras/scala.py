@@ -32,6 +32,7 @@ def apply_scalac(self):
 	else:
 		outdir = self.path.get_bld()
 	outdir.mkdir()
+	self.outdir = outdir
 	self.env['OUTDIR'] = outdir.abspath()
 
 	self.scalac_task = tsk = self.create_task('scalac')

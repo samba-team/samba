@@ -158,6 +158,24 @@ def add_test_results(self, tup):
 	except AttributeError:
 		self.bld.utest_results = [tup]
 
+class test_result(object):
+	def __init__(self, test_path, exit_code, out, err, task):
+		self.task = task
+		self.generator = task.generator
+		self.out = out
+		self.err = err
+		self.exit_code = exit_code
+		self.test_path = test_path
+
+	def __iter__(self):
+		yield self.test_path
+		yield self.exit_code
+		yield self.out
+		yield self.err
+
+	def __getitem__(self, idx):
+		return list(self)[idx]
+
 @Task.deep_inputs
 class utest(Task.Task):
 	"""
@@ -228,7 +246,7 @@ class utest(Task.Task):
 		proc = Utils.subprocess.Popen(cmd, cwd=self.get_cwd().abspath(), env=self.get_test_env(),
 			stderr=Utils.subprocess.PIPE, stdout=Utils.subprocess.PIPE, shell=isinstance(cmd,str))
 		(stdout, stderr) = proc.communicate()
-		self.waf_unit_test_results = tup = (self.inputs[0].abspath(), proc.returncode, stdout, stderr)
+		self.waf_unit_test_results = tup = test_result(self.inputs[0].abspath(), proc.returncode, stdout, stderr, self)
 		testlock.acquire()
 		try:
 			return self.generator.add_test_results(tup)
@@ -255,14 +273,14 @@ def summary(bld):
 		tfail = len([x for x in lst if x[1]])
 
 		Logs.pprint('GREEN', '  tests that pass %d/%d' % (total-tfail, total))
-		for (f, code, out, err) in lst:
-			if not code:
-				Logs.pprint('GREEN', '    %s' % f)
+		for result in lst:
+			if not result.exit_code:
+				Logs.pprint('GREEN', '    %s' % result.test_path)
 
 		Logs.pprint('GREEN' if tfail == 0 else 'RED', '  tests that fail %d/%d' % (tfail, total))
-		for (f, code, out, err) in lst:
-			if code:
-				Logs.pprint('RED', '    %s' % f)
+		for result in lst:
+			if result.exit_code:
+				Logs.pprint('RED', '    %s' % result.test_path)
 
 def set_exit_code(bld):
 	"""
@@ -277,13 +295,13 @@ def set_exit_code(bld):
 			bld.add_post_fun(waf_unit_test.set_exit_code)
 	"""
 	lst = getattr(bld, 'utest_results', [])
-	for (f, code, out, err) in lst:
-		if code:
+	for result in lst:
+		if result.exit_code:
 			msg = []
-			if out:
-				msg.append('stdout:%s%s' % (os.linesep, out.decode('utf-8')))
-			if err:
-				msg.append('stderr:%s%s' % (os.linesep, err.decode('utf-8')))
+			if result.out:
+				msg.append('stdout:%s%s' % (os.linesep, result.out.decode('utf-8')))
+			if result.err:
+				msg.append('stderr:%s%s' % (os.linesep, result.err.decode('utf-8')))
 			bld.fatal(os.linesep.join(msg))
 
 
@@ -296,7 +314,7 @@ def options(opt):
 	opt.add_option('--clear-failed', action='store_true', default=False,
 		help='Force failed unit tests to run again next time', dest='clear_failed_tests')
 	opt.add_option('--testcmd', action='store', default=False, dest='testcmd',
-		help='Run the unit tests using the test-cmd string example "--testcmd="valgrind --error-exitcode=1 %s" to run under valgrind')
+		help='Run the unit tests using the test-cmd string. For example --testcmd="valgrind --error-exitcode=1 %%s" to run under valgrind')
 	opt.add_option('--dump-test-scripts', action='store_true', default=False,
 		help='Create python scripts to help debug tests', dest='dump_test_scripts')
 

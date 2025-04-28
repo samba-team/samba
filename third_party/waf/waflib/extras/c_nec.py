@@ -7,7 +7,7 @@ NEC SX Compiler for SX vector systems
 """
 
 import re
-from waflib import Utils
+from waflib import Errors, Utils
 from waflib.Tools import ccroot,ar
 from waflib.Configure import conf
 
@@ -26,8 +26,11 @@ def find_sxc(conf):
 def get_sxc_version(conf, fc):
 	version_re = re.compile(r"C\+\+/SX\s*Version\s*(?P<major>\d*)\.(?P<minor>\d*)", re.I).search
 	cmd = fc + ['-V']
-	p = Utils.subprocess.Popen(cmd, stdin=False, stdout=Utils.subprocess.PIPE, stderr=Utils.subprocess.PIPE, env=None)
-	out, err = p.communicate()
+
+	try:
+		out, err = conf.cmd_and_log(cmd, output=0)
+	except Errors.WafError:
+		conf.fatal('Could not determine an sxcc version %r' % cmd)
 
 	if out:
 		match = version_re(out)

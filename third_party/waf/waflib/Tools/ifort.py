@@ -99,7 +99,7 @@ def configure(conf):
 		conf.ifort_modifier_platform()
 
 
-all_ifort_platforms = [ ('intel64', 'amd64'), ('em64t', 'amd64'), ('ia32', 'x86'), ('Itanium', 'ia64')]
+all_ifort_platforms = [('intel64', 'amd64'), ('em64t', 'amd64'), ('ia32', 'x86')]
 """List of icl platforms"""
 
 @conf
@@ -137,9 +137,13 @@ def gather_ifort_versions(conf, versions):
 			except OSError:
 				pass
 			else:
-				batch_file=os.path.join(path,'bin','ifortvars.bat')
+				batch_file = os.path.join(path, 'bin', 'ifortvars.bat')
 				if os.path.isfile(batch_file):
 					targets[target] = target_compiler(conf, 'intel', arch, version, target, batch_file)
+				else:
+					batch_file = os.path.join(path, 'env', 'vars.bat')
+					if os.path.isfile(batch_file):
+						targets[target] = target_compiler(conf, 'oneapi', arch, version, target, batch_file)
 
 		for target,arch in all_ifort_platforms:
 			try:
@@ -308,7 +312,11 @@ def get_ifort_versions(self, eval_and_save=True):
 	return dct
 
 def _get_prog_names(self, compiler):
-	if compiler=='intel':
+	if compiler == 'oneapi':
+		compiler_name = 'ifx'
+		linker_name = 'XILINK'
+		lib_name = 'XILIB'
+	elif compiler == 'intel':
 		compiler_name = 'ifort'
 		linker_name = 'XILINK'
 		lib_name = 'XILIB'

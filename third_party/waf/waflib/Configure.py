@@ -31,11 +31,6 @@ class ConfigurationContext(Context.Context):
 
 	cmd = 'configure'
 
-	error_handlers = []
-	"""
-	Additional functions to handle configuration errors
-	"""
-
 	def __init__(self, **kw):
 		super(ConfigurationContext, self).__init__(**kw)
 		self.environ = dict(os.environ)
@@ -100,7 +95,7 @@ class ConfigurationContext(Context.Context):
 
 		top = self.top_dir
 		if not top:
-			top = Options.options.top
+			top = getattr(Options.options, 'top', None)
 		if not top:
 			top = getattr(Context.g_module, Context.TOP, None)
 		if not top:
@@ -112,7 +107,7 @@ class ConfigurationContext(Context.Context):
 
 		out = self.out_dir
 		if not out:
-			out = Options.options.out
+			out = getattr(Options.options, 'out', None)
 		if not out:
 			out = getattr(Context.g_module, Context.OUT, None)
 		if not out:
@@ -134,6 +129,8 @@ class ConfigurationContext(Context.Context):
 		self.init_dirs()
 
 		self.cachedir = self.bldnode.make_node(Build.CACHE_DIR)
+		if os.path.exists(self.cachedir.abspath()):
+			shutil.rmtree(self.cachedir.abspath())
 		self.cachedir.mkdir()
 
 		path = os.path.join(self.bldnode.abspath(), WAF_CONFIG_LOG)
@@ -197,17 +194,17 @@ class ConfigurationContext(Context.Context):
 		:param env: a ConfigSet, usually ``conf.env``
 		"""
 		if not env.PREFIX:
-			if Options.options.prefix or Utils.is_win32:
+			if getattr(Options.options, 'prefix', None):
 				env.PREFIX = Options.options.prefix
 			else:
 				env.PREFIX = '/'
 		if not env.BINDIR:
-			if Options.options.bindir:
+			if getattr(Options.options, 'bindir', None):
 				env.BINDIR = Options.options.bindir
 			else:
 				env.BINDIR = Utils.subst_vars('${PREFIX}/bin', env)
 		if not env.LIBDIR:
-			if Options.options.libdir:
+			if getattr(Options.options, 'libdir', None):
 				env.LIBDIR = Options.options.libdir
 			else:
 				env.LIBDIR = Utils.subst_vars('${PREFIX}/lib%s' % Utils.lib64(), env)
@@ -224,7 +221,7 @@ class ConfigurationContext(Context.Context):
 			tmpenv = self.all_envs[key]
 			tmpenv.store(os.path.join(self.cachedir.abspath(), key + Build.CACHE_SUFFIX))
 
-	def load(self, tool_list, tooldir=None, funs=None, with_sys_path=True, cache=False):
+	def load(self, tool_list, **kw):
 		"""
 		Load Waf tools, which will be imported whenever a build is started.
 
@@ -234,19 +231,20 @@ class ConfigurationContext(Context.Context):
 		:type tooldir: list of string
 		:param funs: functions to execute from the waf tools
 		:type funs: list of string
-		:param cache: whether to prevent the tool from running twice
+		:param cache: whether to prevent the tool from running twice (false by default)
 		:type cache: bool
 		"""
 
 		tools = Utils.to_list(tool_list)
-		if tooldir:
-			tooldir = Utils.to_list(tooldir)
+		tooldir = Utils.to_list(kw.get('tooldir', ''))
+		with_sys_path = kw.get('with_sys_path', True)
+		funs = kw.get('funs')
 		for tool in tools:
 			# avoid loading the same tool more than once with the same functions
 			# used by composite projects
 
-			if cache:
-				mag = (tool, id(self.env), tooldir, funs)
+			if kw.get('cache'):
+				mag = (tool, id(self.env), tuple(tooldir), funs)
 				if mag in self.tool_cache:
 					self.to_log('(tool %s is already loaded, skipping)' % tool)
 					continue
@@ -369,11 +367,11 @@ def cmd_to_list(self, cmd):
 	return cmd
 
 @conf
-def check_waf_version(self, mini='1.9.99', maxi='2.1.0', **kw):
+def check_waf_version(self, mini='1.9.99', maxi='2.2.0', **kw):
 	"""
 	Raise a Configuration error if the Waf version does not strictly match the given bounds::
 
-		conf.check_waf_version(mini='1.9.99', maxi='2.1.0')
+		conf.check_waf_version(mini='1.9.99', maxi='2.2.0')
 
 	:type  mini: number, tuple or string
 	:param mini: Minimum required version

@@ -23,7 +23,7 @@ def run():
 	txt = sys.stdin.readline().strip()
 	if not txt:
 		# parent process probably ended
-		sys.exit(1)
+		sys.exit(18)
 	[cmd, kwargs, cargs] = cPickle.loads(base64.b64decode(txt))
 	cargs = cargs or {}
 
@@ -65,4 +65,6 @@ while 1:
 		run()
 	except KeyboardInterrupt:
 		break
-
+	except Exception:
+		traceback.print_exc(file=sys.stderr)
+		sys.exit(19)

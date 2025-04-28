@@ -363,7 +363,10 @@ class package_reader(Context.Context):
 		with tarfile.open(tmpfile) as f:
 			temp = tempfile.mkdtemp(dir=pkgdir)
 			try:
-				f.extractall(temp)
+				if hasattr(tarfile, 'data_filter'):
+					f.extractall(temp, filter='data')
+				else:
+					f.extractall(temp)
 				os.rename(temp, os.path.join(pkgdir, subdir))
 			finally:
 				try:

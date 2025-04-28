@@ -116,7 +116,7 @@ class OptionsReview(Options.OptionsContext):
 		their default value from their optparse object and store them
 		into the review dictionaries.
 		"""
-		gr = self.get_option_group('configure options')
+		gr = self.get_option_group('Configuration options')
 		for opt in gr.option_list:
 			if opt.action != 'store' or opt.dest in ("out", "top"):
 				continue

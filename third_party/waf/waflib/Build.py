@@ -109,7 +109,7 @@ class BuildContext(Context.Context):
 		self.keep = Options.options.keep
 		"""Whether the build should continue past errors"""
 
-		self.progress_bar = Options.options.progress_bar
+		self.progress_bar = getattr(Options.options, 'progress_bar', 0)
 		"""
 		Level of progress status:
 

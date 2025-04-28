@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 vi:ts=4:noexpandtab
 
-import subprocess, shlex, sys
+import shlex
 
+from waflib import Errors
 from waflib.Tools import ccroot, gcc, gxx
 from waflib.Configure import conf
-from waflib.TaskGen import after_method, feature
 
 from waflib.Tools.compiler_c import c_compiler
 from waflib.Tools.compiler_cxx import cxx_compiler
@@ -20,19 +20,14 @@ def get_emscripten_version(conf, cc):
 	"""
 	Emscripten doesn't support processing '-' like clang/gcc
 	"""
-
 	dummy = conf.cachedir.parent.make_node("waf-emscripten.c")
 	dummy.write("")
 	cmd = cc + ['-dM', '-E', '-x', 'c', dummy.abspath()]
 	env = conf.env.env or None
 	try:
-		p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
-		out = p.communicate()[0]
-	except Exception as e:
-		conf.fatal('Could not determine emscripten version %r: %s' % (cmd, e))
-
-	if not isinstance(out, str):
-		out = out.decode(sys.stdout.encoding or 'latin-1')
+		out, err = conf.cmd_and_log(cmd, output=0, env=env)
+	except Errors.WafError as e:
+		conf.fatal('Could not determine the emscripten version %r: %s' % (cmd, e))
 
 	k = {}
 	out = out.splitlines()

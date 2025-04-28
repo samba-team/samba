@@ -9,7 +9,7 @@ A system for recording all outputs to a log file. Just add the following to your
     ctx.load('build_logs')
 """
 
-import atexit, sys, time, os, shutil, threading
+import atexit, datetime, sys, os, shutil, threading
 from waflib import ansiterm, Logs, Context
 
 # adding the logs under the build/ directory will clash with the clean/ command
@@ -17,7 +17,7 @@ try:
 	up = os.path.dirname(Context.g_module.__file__)
 except AttributeError:
 	up = '.'
-LOGFILE = os.path.join(up, 'logs', time.strftime('%Y_%m_%d_%H_%M.log'))
+LOGFILE = os.path.join(up, 'logs', datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S_%f.log'))
 
 wlock = threading.Lock()
 class log_to_file(object):

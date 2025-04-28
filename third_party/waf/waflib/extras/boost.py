@@ -131,28 +131,28 @@ BOOST_TOOLSETS = {
 
 def options(opt):
 	opt = opt.add_option_group('Boost Options')
-	opt.add_option('--boost-includes', type='string',
+	opt.add_option('--boost-includes', type=str,
 				   default='', dest='boost_includes',
 				   help='''path to the directory where the boost includes are,
 				   e.g., /path/to/boost_1_55_0/stage/include''')
-	opt.add_option('--boost-libs', type='string',
+	opt.add_option('--boost-libs', type=str,
 				   default='', dest='boost_libs',
 				   help='''path to the directory where the boost libs are,
 				   e.g., path/to/boost_1_55_0/stage/lib''')
 	opt.add_option('--boost-mt', action='store_true',
 				   default=False, dest='boost_mt',
 				   help='select multi-threaded libraries')
-	opt.add_option('--boost-abi', type='string', default='', dest='boost_abi',
+	opt.add_option('--boost-abi', type=str, default='', dest='boost_abi',
 				   help='''select libraries with tags (gd for debug, static is automatically added),
 				   see doc Boost, Getting Started, chapter 6.1''')
 	opt.add_option('--boost-linkage_autodetect', action="store_true", dest='boost_linkage_autodetect',
 				   help="auto-detect boost linkage options (don't get used to it / might break other stuff)")
-	opt.add_option('--boost-toolset', type='string',
+	opt.add_option('--boost-toolset', type=str,
 				   default='', dest='boost_toolset',
 				   help='force a toolset e.g. msvc, vc90, \
 						gcc, mingw, mgw45 (default: auto)')
 	py_version = '%d%d' % (sys.version_info[0], sys.version_info[1])
-	opt.add_option('--boost-python', type='string',
+	opt.add_option('--boost-python', type=str,
 				   default=py_version, dest='boost_python',
 				   help='select the lib python with this version \
 						(default: %s)' % py_version)

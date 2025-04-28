@@ -10,10 +10,15 @@ Provides default and command-line options, as well the command
 that reads the ``options`` wscript function.
 """
 
-import os, tempfile, optparse, sys, re
+import os, tempfile, argparse, sys, re
 from waflib import Logs, Utils, Context, Errors
 
-options = optparse.Values()
+
+class OptionValues:
+	def __str__(self):
+		return str(self.__dict__)
+
+options = OptionValues()
 """
 A global dictionary representing user-provided command-line options::
 
@@ -26,59 +31,45 @@ List of commands to execute extracted from the command-line. This list
 is consumed during the execution by :py:func:`waflib.Scripting.run_commands`.
 """
 
-envvars = []
-"""
-List of environment variable declarations placed after the Waf executable name.
-These are detected by searching for "=" in the remaining arguments.
-You probably do not want to use this.
-"""
-
 lockfile = os.environ.get('WAFLOCK', '.lock-waf_%s_build' % sys.platform)
 """
 Name of the lock file that marks a project as configured
 """
 
-class opt_parser(optparse.OptionParser):
+class ArgParser(argparse.ArgumentParser):
 	"""
 	Command-line options parser.
 	"""
-	def __init__(self, ctx, allow_unknown=False):
-		optparse.OptionParser.__init__(self, conflict_handler='resolve', add_help_option=False,
-			version='%s %s (%s)' % (Context.WAFNAME, Context.WAFVERSION, Context.WAFREVISION))
-		self.formatter.width = Logs.get_term_cols()
+	def __init__(self, ctx):
+		argparse.ArgumentParser.__init__(self, add_help=False, conflict_handler='resolve')
 		self.ctx = ctx
-		self.allow_unknown = allow_unknown
 
-	def _process_args(self, largs, rargs, values):
-		"""
-		Custom _process_args to allow unknown options according to the allow_unknown status
-		"""
-		while rargs:
-			try:
-				optparse.OptionParser._process_args(self,largs,rargs,values)
-			except (optparse.BadOptionError, optparse.AmbiguousOptionError) as e:
-				if self.allow_unknown:
-					largs.append(e.opt_str)
-				else:
-					self.error(str(e))
+	def format_help(self):
+		self.usage = self.get_usage()
+		return super(ArgParser, self).format_help()
 
-	def _process_long_opt(self, rargs, values):
-		# --custom-option=-ftxyz is interpreted as -f -t... see #2280
-		if self.allow_unknown:
-			back = [] + rargs
-			try:
-				optparse.OptionParser._process_long_opt(self, rargs, values)
-			except optparse.BadOptionError:
-				while rargs:
-					rargs.pop()
-				rargs.extend(back)
-				rargs.pop(0)
-				raise
-		else:
-			optparse.OptionParser._process_long_opt(self, rargs, values)
+	def format_usage(self):
+		return self.format_help()
 
-	def print_usage(self, file=None):
-		return self.print_help(file)
+	def _get_formatter(self):
+		"""Initialize the argument parser to the adequate terminal width"""
+		return self.formatter_class(prog=self.prog, width=Logs.get_term_cols())
+
+	def get_option(self, name):
+		if name in self._option_string_actions:
+			return self._option_string_actions[name]
+
+	def remove_option(self, name):
+		if name in self._option_string_actions:
+			action = self._option_string_actions[name]
+			self._remove_action(action)
+			action.option_strings.remove(name)
+			self._option_string_actions.pop(name, None)
+			for group in self._action_groups:
+				try:
+					group._group_actions.remove(action)
+				except ValueError:
+					pass
 
 	def get_usage(self):
 		"""
@@ -100,7 +91,7 @@ class opt_parser(optparse.OptionParser):
 					continue
 
 				if type(v) is type(Context.create_context):
-					if v.__doc__ and not k.startswith('_'):
+					if v.__doc__ and len(v.__doc__.splitlines()) < 3 and not k.startswith('_'):
 						cmds_str[k] = v.__doc__
 
 		just = 0
@@ -129,8 +120,8 @@ class OptionsContext(Context.Context):
 	def __init__(self, **kw):
 		super(OptionsContext, self).__init__(**kw)
 
-		self.parser = opt_parser(self)
-		"""Instance of :py:class:`waflib.Options.opt_parser`"""
+		self.parser = ArgParser(self)
+		"""Instance of :py:class:`waflib.Options.ArgParser`"""
 
 		self.option_groups = {}
 
@@ -142,23 +133,23 @@ class OptionsContext(Context.Context):
 		elif os.environ.get('CLICOLOR_FORCE', '') == '1':
 			color = 'yes'
 		p('-c', '--color',    dest='colors',  default=color, action='store', help='whether to use colors (yes/no/auto) [default: auto]', choices=('yes', 'no', 'auto'))
-		p('-j', '--jobs',     dest='jobs',    default=jobs,  type='int', help='amount of parallel jobs (%r)' % jobs)
+		p('-j', '--jobs',     dest='jobs',    default=jobs,  type=int, help='amount of parallel jobs (%r)' % jobs)
 		p('-k', '--keep',     dest='keep',    default=0,     action='count', help='continue despite errors (-kk to try harder)')
 		p('-v', '--verbose',  dest='verbose', default=0,     action='count', help='verbosity level -v -vv or -vvv [default: 0]')
 		p('--zones',          dest='zones',   default='',    action='store', help='debugging zones (task_gen, deps, tasks, etc)')
-		p('--profile',        dest='profile', default=0,     action='store_true', help=optparse.SUPPRESS_HELP)
-		p('--pdb',            dest='pdb',     default=0,     action='store_true', help=optparse.SUPPRESS_HELP)
-		p('-h', '--help',     dest='whelp',   default=0,     action='store_true', help="show this help message and exit")
+		p('--profile',        dest='profile', default=0,     action='store_true', help=argparse.SUPPRESS)
+		p('--pdb',            dest='pdb',     default=0,     action='store_true', help=argparse.SUPPRESS)
+		p('-h', '--help',     dest='whelp',   default=0,     action='store_true', help='show this help message and exit')
+		p('--version',        dest='version', default=False, action='store_true', help='show the Waf version and exit')
 
 		gr = self.add_option_group('Configuration options')
-		self.option_groups['configure options'] = gr
 
 		gr.add_option('-o', '--out', action='store', default='', help='build dir for the project', dest='out')
 		gr.add_option('-t', '--top', action='store', default='', help='src dir for the project', dest='top')
 
-		gr.add_option('--no-lock-in-run', action='store_true', default=os.environ.get('NO_LOCK_IN_RUN', ''), help=optparse.SUPPRESS_HELP, dest='no_lock_in_run')
-		gr.add_option('--no-lock-in-out', action='store_true', default=os.environ.get('NO_LOCK_IN_OUT', ''), help=optparse.SUPPRESS_HELP, dest='no_lock_in_out')
-		gr.add_option('--no-lock-in-top', action='store_true', default=os.environ.get('NO_LOCK_IN_TOP', ''), help=optparse.SUPPRESS_HELP, dest='no_lock_in_top')
+		gr.add_option('--no-lock-in-run', action='store_true', default=os.environ.get('NO_LOCK_IN_RUN', ''), help=argparse.SUPPRESS, dest='no_lock_in_run')
+		gr.add_option('--no-lock-in-out', action='store_true', default=os.environ.get('NO_LOCK_IN_OUT', ''), help=argparse.SUPPRESS, dest='no_lock_in_out')
+		gr.add_option('--no-lock-in-top', action='store_true', default=os.environ.get('NO_LOCK_IN_TOP', ''), help=argparse.SUPPRESS, dest='no_lock_in_top')
 
 		default_prefix = getattr(Context.g_module, 'default_prefix', os.environ.get('PREFIX'))
 		if not default_prefix:
@@ -173,20 +164,17 @@ class OptionsContext(Context.Context):
 		gr.add_option('--libdir', dest='libdir', help='libdir')
 
 		gr = self.add_option_group('Build and installation options')
-		self.option_groups['build and install options'] = gr
 		gr.add_option('-p', '--progress', dest='progress_bar', default=0, action='count', help= '-p: progress bar; -pp: ide output')
 		gr.add_option('--targets',        dest='targets', default='', action='store', help='task generators, e.g. "target1,target2"')
 
 		gr = self.add_option_group('Step options')
-		self.option_groups['step options'] = gr
 		gr.add_option('--files',          dest='files', default='', action='store', help='files to process, by regexp, e.g. "*/main.c,*/test/main.o"')
 
 		default_destdir = os.environ.get('DESTDIR', '')
 
 		gr = self.add_option_group('Installation and uninstallation options')
-		self.option_groups['install/uninstall options'] = gr
 		gr.add_option('--destdir', help='installation root [default: %r]' % default_destdir, default=default_destdir, dest='destdir')
-		gr.add_option('-f', '--force', dest='force', default=False, action='store_true', help='force file installation')
+		gr.add_option('-f', '--force', dest='force', default=False, action='store_true', help='disable file installation caching')
 		gr.add_option('--distcheck-args', metavar='ARGS', help='arguments to pass to distcheck', default=None, action='store')
 
 	def jobs(self):
@@ -227,16 +215,25 @@ class OptionsContext(Context.Context):
 		return count
 
 	def add_option(self, *k, **kw):
+		if 'type' in kw and type(kw['type']) == str:
+			Logs.warn('Invalid "type=str" in add_option (must be a class, not a string)')
+			if kw['type'] == 'int':
+				kw['type'] = int
+			elif kw['type'] == 'string':
+				kw['type'] = str
+		return self.add_argument(*k, **kw)
+
+	def add_argument(self, *k, **kw):
 		"""
-		Wraps ``optparse.add_option``::
+		Wraps ``argparse.add_argument``::
 
 			def options(ctx):
 				ctx.add_option('-u', '--use', dest='use', default=False,
 					action='store_true', help='a boolean option')
 
-		:rtype: optparse option object
+		:rtype: argparse option object
 		"""
-		return self.parser.add_option(*k, **kw)
+		return self.parser.add_argument(*k, **kw)
 
 	def add_option_group(self, *k, **kw):
 		"""
@@ -248,11 +245,11 @@ class OptionsContext(Context.Context):
 
 		:rtype: optparse option group object
 		"""
-		try:
-			gr = self.option_groups[k[0]]
-		except KeyError:
-			gr = self.parser.add_option_group(*k, **kw)
-		self.option_groups[k[0]] = gr
+		gr = self.get_option_group(k[0])
+		if not gr:
+			gr = self.parser.add_argument_group(*k, **kw)
+			gr.add_option = gr.add_argument
+			self.option_groups[k[0]] = gr
 		return gr
 
 	def get_option_group(self, opt_str):
@@ -269,7 +266,7 @@ class OptionsContext(Context.Context):
 		try:
 			return self.option_groups[opt_str]
 		except KeyError:
-			for group in self.parser.option_groups:
+			for group in self.parser._action_groups:
 				if group.title == opt_str:
 					return group
 			return None
@@ -287,15 +284,13 @@ class OptionsContext(Context.Context):
 		"""
 		Just parse the arguments
 		"""
-		self.parser.allow_unknown = allow_unknown
-		(options, leftover_args) = self.parser.parse_args(args=_args)
-		envvars = []
+		(options, leftover_args) = self.parser.parse_known_args(args=_args)
 		commands = []
 		for arg in leftover_args:
-			if '=' in arg:
-				envvars.append(arg)
-			elif arg != 'options':
-				commands.append(arg)
+			if not allow_unknown and arg.startswith('-'):
+				self.parser.print_help()
+				raise Errors.WafError('Unknown option: %r' % arg)
+			commands.append(arg)
 
 		if options.jobs < 1:
 			options.jobs = 1
@@ -304,22 +299,9 @@ class OptionsContext(Context.Context):
 			if getattr(options, name, None):
 				path = self.sanitize_path(getattr(options, name), cwd)
 				setattr(options, name, path)
-		return options, commands, envvars
+		return options, commands
 
-	def init_module_vars(self, arg_options, arg_commands, arg_envvars):
-		options.__dict__.clear()
-		del commands[:]
-		del envvars[:]
-
-		options.__dict__.update(arg_options.__dict__)
-		commands.extend(arg_commands)
-		envvars.extend(arg_envvars)
-
-		for var in envvars:
-			(name, value) = var.split('=', 1)
-			os.environ[name.strip()] = value
-
-	def init_logs(self, options, commands, envvars):
+	def init_logs(self, options, commands):
 		Logs.verbose = options.verbose
 		if options.verbose >= 1:
 			self.load('errcheck')
@@ -339,15 +321,20 @@ class OptionsContext(Context.Context):
 	def parse_args(self, _args=None):
 		"""
 		Parses arguments from a list which is not necessarily the command-line.
-		Initializes the module variables options, commands and envvars
+		Initializes the module variables options and commands
 		If help is requested, prints it and exit the application
 
 		:param _args: arguments
 		:type _args: list of strings
 		"""
-		options, commands, envvars = self.parse_cmd_args(_args)
-		self.init_logs(options, commands, envvars)
-		self.init_module_vars(options, commands, envvars)
+		arg_options, arg_commands = self.parse_cmd_args(_args)
+		self.init_logs(arg_options, commands)
+
+		options.__dict__.clear()
+		del commands[:]
+
+		options.__dict__.update(arg_options.__dict__)
+		commands.extend(arg_commands)
 
 	def execute(self):
 		"""

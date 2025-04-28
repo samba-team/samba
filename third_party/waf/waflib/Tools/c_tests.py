@@ -230,7 +230,7 @@ def check_endianness(self):
 	def check_msg(self):
 		return tmp[0]
 
-	self.check(fragment=ENDIAN_FRAGMENT, features='c cshlib grep_for_endianness',
+	self.check(fragment=ENDIAN_FRAGMENT, features='c cstlib grep_for_endianness',
 		msg='Checking for endianness', define='ENDIANNESS', tmp=tmp,
 		okmsg=check_msg, confcache=None)
 	return tmp[0]

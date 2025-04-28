@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # encoding: utf-8
-# Federico Pellegrin, 2016-2022 (fedepell) adapted for Python
+# Federico Pellegrin, 2016-2024 (fedepell) adapted for Python
 
 """
-This tool helps with finding Python Qt5 tools and libraries,
-and provides translation from QT5 files to Python code.
+This tool helps with finding Python Qt5/Qt6 tools and libraries,
+and provides translation from QT5/QT6 files to Python code.
 
 The following snippet illustrates the tool usage::
 
@@ -30,8 +30,8 @@ Load the "pyqt5" tool.
 
 Add into the sources list also the qrc resources files or ui5
 definition files and they will be translated into python code
-with the system tools (PyQt5, PySide2, PyQt4 are searched in this
-order) and then compiled
+with the system tools (PyQt6, PySide6, PyQt5, PySide2, PyQt4 are
+searched in this order) and then compiled
 """
 
 try:
@@ -207,40 +207,54 @@ def configure(self):
 @conf
 def find_pyqt5_binaries(self):
 	"""
-	Detects PyQt5 or PySide2 programs such as pyuic5/pyside2-uic, pyrcc5/pyside2-rcc
+	Detects PyQt5 or PySide2/6 programs such as pyuic5/pyside2-uic, pyrcc5/pyside2-rcc
 	"""
 	env = self.env
 
-	if getattr(Options.options, 'want_pyqt5', True):
+	if getattr(Options.options, 'want_pyqt6', True):
+		self.find_program(['pyuic6'], var='QT_PYUIC')
+		self.find_program(['pyrcc6'], var='QT_PYRCC')
+		self.find_program(['pylupdate6'], var='QT_PYLUPDATE')
+		self.find_program(['lrelease-qt6', 'lrelease'], var='QT_LRELEASE')
+	elif getattr(Options.options, 'want_pyside6', True):
+		self.find_program(['pyside6-uic','uic-qt6'], var='QT_PYUIC')
+		self.find_program(['pyside6-rcc','rcc-qt6'], var='QT_PYRCC')
+		self.find_program(['pyside6-lupdate','lupdate-qt6'], var='QT_PYLUPDATE')
+		self.find_program(['lrelease-qt6', 'lrelease'], var='QT_LRELEASE')
+	elif getattr(Options.options, 'want_pyqt5', True):
 		self.find_program(['pyuic5'], var='QT_PYUIC')
 		self.find_program(['pyrcc5'], var='QT_PYRCC')
 		self.find_program(['pylupdate5'], var='QT_PYLUPDATE')
+		self.find_program(['lrelease-qt5', 'lrelease'], var='QT_LRELEASE')
 	elif getattr(Options.options, 'want_pyside2', True):
 		self.find_program(['pyside2-uic','uic-qt5'], var='QT_PYUIC')
 		self.find_program(['pyside2-rcc','rcc-qt5'], var='QT_PYRCC')
 		self.find_program(['pyside2-lupdate','lupdate-qt5'], var='QT_PYLUPDATE')
+		self.find_program(['lrelease-qt5', 'lrelease'], var='QT_LRELEASE')
 	elif getattr(Options.options, 'want_pyqt4', True):
 		self.find_program(['pyuic4'], var='QT_PYUIC')
 		self.find_program(['pyrcc4'], var='QT_PYRCC')
 		self.find_program(['pylupdate4'], var='QT_PYLUPDATE')
 	else:
-		self.find_program(['pyuic5','pyside2-uic','pyuic4','uic-qt5'], var='QT_PYUIC')
-		self.find_program(['pyrcc5','pyside2-rcc','pyrcc4','rcc-qt5'], var='QT_PYRCC')
-		self.find_program(['pylupdate5', 'pyside2-lupdate','pylupdate4','lupdate-qt5'], var='QT_PYLUPDATE')
+		self.find_program(['pyuic6', 'pyside6-uic', 'pyuic5','pyside2-uic','pyuic4','uic-qt5'], var='QT_PYUIC')
+		self.find_program(['pyrcc6', 'pyside6-rcc', 'pyrcc5','pyside2-rcc','pyrcc4','rcc-qt5'], var='QT_PYRCC')
+		self.find_program(['pylupdate6', 'pyside6-lupdate', 'pylupdate5', 'pyside2-lupdate','pylupdate4','lupdate-qt5'], var='QT_PYLUPDATE')
+		self.find_program(['lrelease-qt6', 'lrelease-qt5', 'lrelease'], var='QT_LRELEASE')
 
 	if not env.QT_PYUIC:
-		self.fatal('cannot find the uic compiler for python for qt5')
+		self.fatal('cannot find the uic compiler for python for qt')
 
 	if not env.QT_PYRCC:
-		self.fatal('cannot find the rcc compiler for python for qt5')
+		self.fatal('cannot find the rcc compiler for python for qt')
 
-	self.find_program(['lrelease-qt5', 'lrelease'], var='QT_LRELEASE')
 
 def options(opt):
 	"""
 	Command-line options
 	"""
 	pyqt5opt=opt.add_option_group("Python QT5 Options")
-	pyqt5opt.add_option('--pyqt5-pyqt5', action='store_true', default=False, dest='want_pyqt5', help='use PyQt5 bindings as python QT5 bindings (default PyQt5 is searched first, PySide2 after, PyQt4 last)')
-	pyqt5opt.add_option('--pyqt5-pyside2', action='store_true', default=False, dest='want_pyside2', help='use PySide2 bindings as python QT5 bindings (default PyQt5 is searched first, PySide2 after, PyQt4 last)')
-	pyqt5opt.add_option('--pyqt5-pyqt4', action='store_true', default=False, dest='want_pyqt4', help='use PyQt4 bindings as python QT5 bindings (default PyQt5 is searched first, PySide2 after, PyQt4 last)')
+	pyqt5opt.add_option('--pyqt5-pyqt5', action='store_true', default=False, dest='want_pyqt5', help='use PyQt5 bindings as python QT bindings (default search order: PyQt6, PySide6, PyQt5, PySide2, PyQt4)')
+	pyqt5opt.add_option('--pyqt5-pyqt6', action='store_true', default=False, dest='want_pyqt6', help='use PyQt6 bindings as python QT bindings (default search order: PyQt6, PySide6, PyQt5, PySide2, PyQt4)')
+	pyqt5opt.add_option('--pyqt5-pyside2', action='store_true', default=False, dest='want_pyside2', help='use PySide2 bindings as python QT bindings (default search order: PyQt6, PySide6, PyQt5, PySide2, PyQt4)')
+	pyqt5opt.add_option('--pyqt5-pyside6', action='store_true', default=False, dest='want_pyside6', help='use PySide6 bindings as python QT bindings (default search order: PyQt6, PySide6, PyQt5, PySide2, PyQt4)')
+	pyqt5opt.add_option('--pyqt5-pyqt4', action='store_true', default=False, dest='want_pyqt4', help='use PyQt4 bindings as python QT bindings (default search order: PyQt6, PySide6, PyQt5, PySide2, PyQt4)')

@@ -4,8 +4,6 @@
 
 "Module called for configuring, compiling and installing targets"
 
-from __future__ import with_statement
-
 import os, shlex, shutil, traceback, errno, sys, stat
 from waflib import Utils, Configure, Logs, Options, ConfigSet, Context, Errors, Build, Node
 
@@ -50,11 +48,16 @@ def waf_entry_point(current_directory, version, wafdir):
 			sys.argv.pop(1)
 
 	ctx = Context.create_context('options')
-	(options, commands, env) = ctx.parse_cmd_args(allow_unknown=True)
-	if options.top:
+	# allow --ver option in user scripts #2453
+	ctx.parser.allow_abbrev = False
+	(options, commands) = ctx.parse_cmd_args(allow_unknown=True)
+	if options.version:
+		print('%s %s (%s)'%(Context.WAFNAME, Context.WAFVERSION, Context.WAFREVISION))
+		sys.exit(0)
+	if getattr(options, 'top', None):
 		start_dir = Context.run_dir = Context.top_dir = options.top
 		no_climb = True
-	if options.out:
+	if getattr(options, 'out', None):
 		Context.out_dir = options.out
 
 	# if 'configure' is in the commands, do not search any further
@@ -558,7 +561,10 @@ class DistCheck(Dist):
 
 		with tarfile.open(self.get_arch_name()) as t:
 			for x in t:
-				t.extract(x)
+				if hasattr(tarfile, 'data_filter'):
+					t.extract(x, filter='data')
+				else:
+					t.extract(x)
 
 		instdir = tempfile.mkdtemp('.inst', self.get_base_name())
 		cmd = self.make_distcheck_cmd(instdir)
