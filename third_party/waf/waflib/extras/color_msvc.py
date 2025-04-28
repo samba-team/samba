@@ -14,18 +14,18 @@ class ColorMSVCFormatter(Logs.formatter):
 	def __init__(self, colors):
 		self.colors = colors
 		Logs.formatter.__init__(self)
-	
+
 	def parseMessage(self, line, color):
 		# Split messaage from 'disk:filepath: type: message'
 		arr = line.split(':', 3)
 		if len(arr) < 4:
 			return line
-		
+
 		colored = self.colors.BOLD + arr[0] + ':' + arr[1] + ':' + self.colors.NORMAL
 		colored += color + arr[2] + ':' + self.colors.NORMAL
 		colored += arr[3]
 		return colored
-	
+
 	def format(self, rec):
 		frame = sys._getframe()
 		while frame:

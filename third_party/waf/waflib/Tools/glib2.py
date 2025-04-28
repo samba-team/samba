@@ -439,9 +439,7 @@ def find_glib_genmarshal(conf):
 
 @conf
 def find_glib_mkenums(conf):
-	if not conf.env.PERL:
-		conf.find_program('perl', var='PERL')
-	conf.find_program('glib-mkenums', interpreter='PERL', var='GLIB_MKENUMS')
+	conf.find_program('glib-mkenums', var='GLIB_MKENUMS')
 
 @conf
 def find_glib_compile_schemas(conf):
@@ -486,4 +484,3 @@ def options(opt):
 	"""
 	gr = opt.add_option_group('Installation directories')
 	gr.add_option('--gsettingsschemadir', help='GSettings schema location [DATADIR/glib-2.0/schemas]', default='', dest='GSETTINGSSCHEMADIR')
-

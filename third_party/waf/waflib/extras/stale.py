@@ -14,9 +14,16 @@ Of course, it will only work if there are no dynamically generated
 nodes/tasks, in which case the method will have to be modified
 to exclude some folders for example.
 
-Make sure to set bld.post_mode = waflib.Build.POST_AT_ONCE
+Make sure to specify bld.post_mode = waflib.Build.POST_AT_ONCE::
+
+	def build(bld):
+		bld.load('stale')
+		import waflib.Build
+		bld.post_mode = waflib.Build.POST_AT_ONCE
+
 """
 
+import os
 from waflib import Logs, Build
 from waflib.Runner import Parallel
 
@@ -26,7 +33,7 @@ MOC_H_EXTS = '.cpp .cxx .hpp .hxx .h'.split()
 def can_delete(node):
 	"""Imperfect moc cleanup which does not look for a Q_OBJECT macro in the files"""
 	if not node.name.endswith('.moc'):
-		return True
+		return os.path.isfile(node.abspath())
 	base = node.name[:-4]
 	p1 = node.parent.get_src()
 	p2 = node.parent.get_bld()
@@ -51,7 +58,7 @@ def stale_rec(node, nodes):
 		return
 
 	if getattr(node, 'children', []):
-		for x in node.children.values():
+		for x in list(node.children.values()):
 			if x.name != "c4che":
 				stale_rec(x, nodes)
 	else:
@@ -75,21 +82,26 @@ def refill_task_list(self):
 	self.stale_done = True
 
 	# this does not work in partial builds
-	if bld.targets != '*':
+	if bld.targets not in ('', '*'):
 		return iit
 
 	# this does not work in dynamic builds
-	if getattr(bld, 'post_mode') == Build.POST_AT_ONCE:
+	if getattr(bld, 'post_mode') != Build.POST_AT_ONCE:
+		Logs.warn('waflib.extras.stale is incompatible with dynamic builds')
 		return iit
 
 	# obtain the nodes to use during the build
 	nodes = []
-	for tasks in bld.groups:
-		for x in tasks:
+	for group in bld.groups:
+		for tg in group:
 			try:
-				nodes.extend(x.outputs)
+				nodes.extend(tg.outputs)
 			except AttributeError:
-				pass
+				for task in tg.tasks:
+					try:
+						nodes.extend(task.outputs)
+					except AttributeError:
+						pass
 
 	stale_rec(bld.bldnode, nodes)
 	return iit

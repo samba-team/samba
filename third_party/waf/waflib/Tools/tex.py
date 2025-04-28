@@ -355,9 +355,9 @@ class tex(Task.Task):
 		env = self.env
 
 		if not env.PROMPT_LATEX:
-			env.append_value('LATEXFLAGS', '-interaction=batchmode')
-			env.append_value('PDFLATEXFLAGS', '-interaction=batchmode')
-			env.append_value('XELATEXFLAGS', '-interaction=batchmode')
+			env.append_value('LATEXFLAGS', '-interaction=nonstopmode')
+			env.append_value('PDFLATEXFLAGS', '-interaction=nonstopmode')
+			env.append_value('XELATEXFLAGS', '-interaction=nonstopmode')
 
 		# important, set the cwd for everybody
 		self.cwd = self.inputs[0].parent.get_bld()
@@ -458,7 +458,7 @@ def apply_tex(self):
 
 	outs = Utils.to_list(getattr(self, 'outs', []))
 
-	# prompt for incomplete files (else the batchmode is used)
+	# prompt for incomplete files (else the nonstopmode is used)
 	try:
 		self.generator.bld.conf
 	except AttributeError:

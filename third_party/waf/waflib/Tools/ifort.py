@@ -11,7 +11,7 @@ from waflib.TaskGen import after_method, feature
 
 @conf
 def find_ifort(conf):
-	fc = conf.find_program('ifort', var='FC')
+	fc = conf.find_program(['ifx', 'ifort'], var='FC')
 	conf.get_ifort_version(fc)
 	conf.env.FC_NAME = 'IFORT'
 

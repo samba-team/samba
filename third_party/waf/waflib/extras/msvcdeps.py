@@ -265,8 +265,11 @@ def exec_command(self, cmd, **kw):
 		# Pipe through the remaining stdout content (not related to /showIncludes)
 		if self.generator.bld.logger:
 			self.generator.bld.logger.debug('out: %s' % os.linesep.join(out))
-		else:
-			sys.stdout.write(os.linesep.join(out) + os.linesep)
+		elif len(out) > 1:
+			# msvc will output the input file name by default, which is not useful
+			# in the single-file case as waf will already print task. For multi-file
+			# inputs or other messages, allow the full message to be forwarded.
+			Logs.info(os.linesep.join(out), extra={'stream':sys.stdout, 'c1': ''})
 
 		return ret
 	finally:
@@ -291,4 +294,3 @@ for k in ('c', 'cxx'):
 
 def options(opt):
 	raise ValueError('Do not load msvcdeps options')
-

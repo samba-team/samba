@@ -40,7 +40,7 @@ LIB_PATH="shared"
 
 os.environ['PYTHONUNBUFFERED'] = '1'
 
-if Context.HEXVERSION not in (0x2001a00,):
+if Context.HEXVERSION not in (0x2001b00,):
     Logs.error('''
 Please use the version of waf that comes with Samba, not
 a system installed version. See http://wiki.samba.org/index.php/Waf

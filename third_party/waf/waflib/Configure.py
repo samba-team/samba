@@ -496,12 +496,12 @@ def find_binary(self, filenames, exts, paths):
 		for ext in exts:
 			exe_name = f + ext
 			if os.path.isabs(exe_name):
-				if os.path.isfile(exe_name):
+				if os.path.isfile(exe_name) and os.access(exe_name, os.X_OK):
 					return exe_name
 			else:
 				for path in paths:
 					x = os.path.expanduser(os.path.join(path, exe_name))
-					if os.path.isfile(x):
+					if os.path.isfile(x) and os.access(x, os.X_OK):
 						return x
 	return None
 
