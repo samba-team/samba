@@ -45,11 +45,11 @@ Vagrant.configure("2") do |config|
         v.vm.provision :shell, path: "debian12-32bit/locale.sh"
     end
 
-    config.vm.define "fedora41" do |v|
-        v.vm.box = "fedora/41-cloud-base"
-        v.vm.hostname = "fedora41"
-        v.vm.provision :shell, path: "fedora41/bootstrap.sh"
-        v.vm.provision :shell, path: "fedora41/locale.sh"
+    config.vm.define "fedora42" do |v|
+        v.vm.box = "fedora/42-cloud-base"
+        v.vm.hostname = "fedora42"
+        v.vm.provision :shell, path: "fedora42/bootstrap.sh"
+        v.vm.provision :shell, path: "fedora42/locale.sh"
     end
 
     config.vm.define "opensuse155" do |v|
