@@ -184,48 +184,74 @@ static const struct mask2txt lease_mask[] = {
 	{0, NULL}
 };
 
+/* Add nested json key:value entry, up to 4 levels deep */
+static int add_nested_item_to_json(struct json_object *root_json,
+				   const char **subs,
+				   size_t nsubs,
+				   const char *key,
+				   uintmax_t value)
+{
+	struct json_object jobj_sub[4] = {0};
+	struct json_object *jo[5] = {root_json,
+				     &jobj_sub[0],
+				     &jobj_sub[1],
+				     &jobj_sub[2],
+				     &jobj_sub[3]};
+	size_t i = 0;
+	int result = 0;
+
+	if (nsubs > ARRAY_SIZE(jobj_sub)) {
+		return -1;
+	}
+
+	for (i = 0; i < nsubs; ++i) {
+		*(jo[i + 1]) = json_get_object(jo[i], subs[i]);
+		if (json_is_invalid(jo[i + 1])) {
+			goto failure;
+		}
+	}
+
+	result = json_add_int(jo[nsubs], key, value);
+	if (result < 0) {
+		goto failure;
+	}
+
+	for (i = nsubs; i > 0; --i) {
+		result = json_update_object(jo[i - 1], subs[i - 1], jo[i]);
+		if (result < 0) {
+			goto failure;
+		}
+	}
+
+	return 0;
+failure:
+	for (i = 0; i < nsubs; ++i) {
+		json_free(&jobj_sub[i]);
+	}
+	return -1;
+}
+
 int add_profile_item_to_json(struct traverse_state *state,
 			     const char *section,
 			     const char *subsection,
 			     const char *key,
 			     uintmax_t value)
 {
-	struct json_object section_json = {
-		.valid = false,
-	};
-	struct json_object subsection_json = {
-		.valid = false,
-	};
-	int result = 0;
+	const char *subs[] = {section, subsection};
 
-	section_json = json_get_object(&state->root_json, section);
-	if (json_is_invalid(&section_json)) {
-		goto failure;
-	}
-	subsection_json = json_get_object(&section_json, subsection);
-	if (json_is_invalid(&subsection_json)) {
-		goto failure;
-	}
+	return add_nested_item_to_json(&state->root_json, subs, 2, key, value);
+}
 
-	result = json_add_int(&subsection_json, key, value);
-	if (result < 0) {
-		goto failure;
-	}
+int add_profile_persvc_item_to_json(struct traverse_state *state,
+				    const char *section1,
+				    const char *section2,
+				    const char *section3,
+				    const char *key,
+				    uintmax_t value)
+{
+	const char *subs[] = {"Extended Profile", section1, section2, section3};
 
-	result = json_update_object(&section_json, subsection,  &subsection_json);
-	if (result < 0) {
-		goto failure;
-	}
-	result = json_update_object(&state->root_json, section, &section_json);
-	if (result < 0) {
-		goto failure;
-	}
-
-	return 0;
-failure:
-	json_free(&section_json);
-	json_free(&subsection_json);
-	return -1;
+	return add_nested_item_to_json(&state->root_json, subs, 4, key, value);
 }
 
 int add_section_to_json(struct traverse_state *state,

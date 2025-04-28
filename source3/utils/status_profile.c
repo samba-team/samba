@@ -77,6 +77,102 @@ static void print_buckets(struct traverse_state *state,
 }
 
 /*******************************************************************
+ dump the elements of the persvc profile structure
+  ******************************************************************/
+
+static void status_profile_dump_persvc_stats(struct traverse_state *state,
+					     const char *secname,
+					     const struct profile_stats *pstats)
+{
+	const char *latest_section = NULL;
+
+#define __PRINT_FIELD_LINE(name, _stats, field)                           \
+	do {                                                              \
+		uintmax_t val = (uintmax_t)(*pstats).values._stats.field; \
+		if (!state->json_output) {                                \
+			d_printf("%s %-59s%20ju\n",                       \
+				 secname,                                 \
+				 name "_" #field ":",                     \
+				 val);                                    \
+		} else {                                                  \
+			add_profile_persvc_item_to_json(state,            \
+							secname,          \
+							latest_section,   \
+							name,             \
+							#field,           \
+							val);             \
+		}                                                         \
+	} while (0);
+#define SMBPROFILE_STATS_START
+#define SMBPROFILE_STATS_SECTION_START(name, display) \
+	do {                                          \
+		latest_section = display;             \
+		profile_separator(display, state);    \
+	} while (0);
+#define SMBPROFILE_STATS_COUNT(name)                            \
+	do {                                                    \
+		__PRINT_FIELD_LINE(#name, name##_stats, count); \
+	} while (0);
+#define SMBPROFILE_STATS_TIME(name)                            \
+	do {                                                   \
+		__PRINT_FIELD_LINE(#name, name##_stats, time); \
+	} while (0);
+#define SMBPROFILE_STATS_BASIC(name)                            \
+	do {                                                    \
+		__PRINT_FIELD_LINE(#name, name##_stats, count); \
+		__PRINT_FIELD_LINE(#name, name##_stats, time);  \
+	} while (0);
+#define SMBPROFILE_STATS_BYTES(name)                            \
+	do {                                                    \
+		__PRINT_FIELD_LINE(#name, name##_stats, count); \
+		__PRINT_FIELD_LINE(#name, name##_stats, time);  \
+		__PRINT_FIELD_LINE(#name, name##_stats, idle);  \
+		__PRINT_FIELD_LINE(#name, name##_stats, bytes); \
+	} while (0);
+#define SMBPROFILE_STATS_IOBYTES(name)                                       \
+	do {                                                                 \
+		__PRINT_FIELD_LINE(#name, name##_stats, count);              \
+		__PRINT_FIELD_LINE(#name, name##_stats, failed_count);       \
+		__PRINT_FIELD_LINE(#name, name##_stats, time);               \
+		print_buckets(state, #name, &(*pstats).values.name##_stats); \
+		__PRINT_FIELD_LINE(#name, name##_stats, idle);               \
+		__PRINT_FIELD_LINE(#name, name##_stats, inbytes);            \
+		__PRINT_FIELD_LINE(#name, name##_stats, outbytes);           \
+	} while (0);
+#define SMBPROFILE_STATS_SECTION_END
+#define SMBPROFILE_STATS_END
+	SMBPROFILE_STATS_ALL_SECTIONS
+#undef __PRINT_FIELD_LINE
+#undef SMBPROFILE_STATS_START
+#undef SMBPROFILE_STATS_SECTION_START
+#undef SMBPROFILE_STATS_COUNT
+#undef SMBPROFILE_STATS_TIME
+#undef SMBPROFILE_STATS_BASIC
+#undef SMBPROFILE_STATS_BYTES
+#undef SMBPROFILE_STATS_IOBYTES
+#undef SMBPROFILE_STATS_SECTION_END
+#undef SMBPROFILE_STATS_END
+}
+
+static int status_profile_dump_persvc_cb(const char *key,
+					 const struct profile_stats *stats,
+					 void *private_data)
+{
+	struct traverse_state *state = private_data;
+
+	status_profile_dump_persvc_stats(state, key, stats);
+	return 0;
+}
+
+static void status_profile_dump_persvc(struct traverse_state *state)
+{
+	if (!state->json_output) {
+		return;
+	}
+	smbprofile_persvc_collect(status_profile_dump_persvc_cb, state);
+}
+
+/*******************************************************************
  dump the elements of the profile structure
   ******************************************************************/
 bool status_profile_dump(bool verbose,
@@ -146,6 +242,7 @@ bool status_profile_dump(bool verbose,
 #undef SMBPROFILE_STATS_SECTION_END
 #undef SMBPROFILE_STATS_END
 
+	status_profile_dump_persvc(state);
 	return True;
 }
 

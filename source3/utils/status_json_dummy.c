@@ -44,6 +44,16 @@ int add_profile_item_to_json(struct traverse_state *state,
 	return 0;
 }
 
+int add_profile_persvc_item_to_json(struct traverse_state *state,
+				    const char *section1,
+				    const char *section2,
+				    const char *section3,
+				    const char *key,
+				    uintmax_t value)
+{
+	return 0;
+}
+
 int traverse_connections_json(struct traverse_state *state,
 			      const struct connections_data *crec,
 			      const char *encryption_cipher,
