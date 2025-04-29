@@ -139,8 +139,44 @@ SMBC_open_ctx(SMBCCTX *context,
 	}
 	/*d_printf(">>>open: resolved %s as %s\n", path, targetpath);*/
 
-	status = cli_open(targetcli, targetpath, flags,
-			  context->internal->share_mode, &fd);
+	/*
+	 * Random error that the O_PATH if-block will never return
+	 */
+	status = NT_STATUS_LDAP(0);
+
+#ifdef O_PATH
+	if (flags & O_PATH) {
+		if ((flags & ~O_PATH) != 0) {
+			SAFE_FREE(file);
+			TALLOC_FREE(frame);
+			errno = EINVAL;
+			return NULL;
+		}
+		status = cli_ntcreate(
+			targetcli,  /* cli */
+			targetpath, /* fname */
+			0,	    /* CreateFlags */
+			SEC_FILE_READ_ATTRIBUTE | SEC_FILE_READ_EA |
+			SEC_STD_READ_CONTROL, /* DesiredAccess
+					       */
+			0, /* FileAttributes */
+			FILE_SHARE_READ | FILE_SHARE_WRITE |
+			FILE_SHARE_DELETE, /* ShareAccess */
+			FILE_OPEN, /* CreateDisposition */
+			0x0,	   /* CreateOptions */
+			0x0,	   /* SecurityFlags */
+			&fd,	   /* pfid */
+			NULL);	   /* cr */
+	}
+#endif
+	if (NT_STATUS_EQUAL(status, NT_STATUS_LDAP(0))) {
+		status = cli_open(targetcli,
+				  targetpath,
+				  flags,
+				  context->internal->share_mode,
+				  &fd);
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 
 		/* Handle the error ... */
