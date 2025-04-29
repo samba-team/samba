@@ -108,6 +108,8 @@ with_pthreadpool = ("WITH_PTHREADPOOL" in config_hash)
 
 have_cluster_support = "CLUSTER_SUPPORT" in config_hash
 
+quic_ko_wrapper = ("QUIC_KO_WRAPPER" in config_hash)
+
 def is_module_enabled(module):
     if module in config_hash["STRING_SHARED_MODULES"]:
         return True
@@ -1501,6 +1503,20 @@ for t in smb_transport_tests:
                              '--option=clientsmbtransports=tcp ' +
                              '--option=clientsmbtransport:force_bsd_tstream=yes',
                              description="smb-over-bsd-tstream")
+for t in smb_transport_tests:
+    if not quic_ko_wrapper:
+        break
+    plansmbtorture4testsuite(t, "fileserver:local",
+                             '//$SERVER/tmp -U$USERNAME%$PASSWORD ' +
+                             '--option=clientsmbtransports=quic ' +
+                             '--option=tlsverifypeer=ca_and_name',
+                             description="smb-over-quic-ko-bsd")
+    plansmbtorture4testsuite(t, "fileserver:local",
+                             '//$SERVER/tmp -U$USERNAME%$PASSWORD ' +
+                             '--option=clientsmbtransports=quic ' +
+                             '--option=tlsverifypeer=ca_and_name ' +
+                             '--option=clientsmbtransport:force_bsd_tstream=yes',
+                             description="smb-over-quic-ko-tstream")
 
 test = 'rpc.lsa.lookupsids'
 auth_options = ["", "ntlm", "spnego", "spnego,ntlm", "spnego,smb1", "spnego,smb2"]

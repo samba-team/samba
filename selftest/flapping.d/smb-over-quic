@@ -1,0 +1,5 @@
+#
+# quic_ko_wrapper is not 100% reliable, it would need
+# helper threads in order to do background keepalives...
+#
+^samba3.smb2.bench.smb-over-quic-ko-bsd.oplock1.fileserver
