@@ -91,7 +91,7 @@ def options(opt):
 
     opt.add_option('--with-system-mitkdc',
                    help=('Specify the path to the krb5kdc binary from MIT Kerberos'),
-                   type="string",
+                   type=str,
                    dest='with_system_mitkdc',
                    default=None)
 
@@ -152,7 +152,7 @@ def options(opt):
 
     opt.add_option('--vendor-suffix',
                    help=('Specify a vendor (or packager) name to include in the version string'),
-                   type="string",
+                   type=str,
                    dest='SAMBA_VERSION_VENDOR_SUFFIX',
                    default=None)
 
