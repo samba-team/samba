@@ -325,6 +325,9 @@ shutdown)
 
 takeip)
 	nfs_callout "$@" || exit $?
+	if [ -x "${CTDB_HELPER_BINDIR}/statd_callout_helper" ] ; then
+		"${CTDB_HELPER_BINDIR}/statd_callout_helper" takeip "$3"
+	fi
 	ctdb_service_set_reconfigure
 	;;
 

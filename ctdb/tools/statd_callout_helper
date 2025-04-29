@@ -80,6 +80,7 @@ create_add_del_client_dir()
 # script_state_dir set by ctdb_setup_state_dir()
 # shellcheck disable=SC2154
 statd_callout_state_dir="${script_state_dir}/statd_callout"
+statd_new_ips_file="${statd_callout_state_dir}/new_ips.txt"
 
 # Set default value, if necessary
 : "${CTDB_STATD_CALLOUT_SHARED_STORAGE:=persistent_db}"
@@ -216,9 +217,10 @@ persistent_db_grep_filter="${statd_callout_state_dir}/.grep_filter"
 
 persistent_db_make_grep_filter()
 {
+	_ips_file="$1"
 	while read -r _ip; do
 		echo "statd-state@${_ip}@"
-	done <"$CTDB_MY_PUBLIC_IPS_CACHE" >"$persistent_db_grep_filter"
+	done <"$_ips_file" >"$persistent_db_grep_filter"
 }
 
 update_persistent_db()
@@ -231,7 +233,7 @@ update_persistent_db()
 		exit 0
 	fi
 
-	persistent_db_make_grep_filter
+	persistent_db_make_grep_filter "$CTDB_MY_PUBLIC_IPS_CACHE"
 
 	# Use cat instead of direct grep since POSIX grep does not
 	# have -h
@@ -249,10 +251,14 @@ update_persistent_db()
 
 list_records_persistent_db()
 {
-	persistent_db_make_grep_filter
+	persistent_db_make_grep_filter "$statd_new_ips_file"
 
+	# Redirect below to /dev/null is because some versions of grep
+	# appear to not drain the input if the file passed to -f is
+	# empty (so it matches nothing).  This can cause the first sed
+	# command in the pipeline to exit with EPIPE.
 	$CTDB catdb "$statd_callout_db" |
-		sed -n -e 's|^key([0-9]*) = "\([^"]*\)".*|\1|p' |
+		sed -n -e 's|^key([0-9]*) = "\([^"]*\)".*|\1|p' 2>/dev/null |
 		grep -F -f "$persistent_db_grep_filter" |
 		sed -e 's|statd-state@\([^@]*\)@\(.*\)|\1 \2|'
 
@@ -308,11 +314,27 @@ update_shared_dir()
 	:
 }
 
+save_ip()
+{
+	_ip_addr=$1
+	_f="$statd_new_ips_file"
+	_lock="${_f}.lock"
+	_new="${_f}.new.$$"
+	{
+		flock --timeout 10 9 ||
+			die "statd_callout_helper save_ip: timeout"
+
+		cat "$_f" 2>/dev/null >"$_new"
+		echo "$_ip_addr" >>"$_new"
+		mv "$_new" "$_f"
+	} 9>"$_lock"
+}
+
 list_records_shared_dir()
 {
 	while read -r _ip; do
 		ls "${statd_callout_shared_dir}/statd-state@${_ip}@"*
-	done <"$CTDB_MY_PUBLIC_IPS_CACHE" |
+	done <"${statd_new_ips_file}" |
 		while read -r _f; do
 			if [ ! -f "$_f" ]; then
 				continue
@@ -379,6 +401,11 @@ startup()
 
 	mkdir -p "$statd_callout_state_dir"
 
+	# Create an empty file.  Some of the code that processes the
+	# file can't cope with a missing file, which can happen if a
+	# node doesn't take any IPs between takeover runs.
+	: >"${statd_new_ips_file}"
+
 	"startup_${statd_callout_mode}" "$_config_file"
 }
 
@@ -424,6 +451,11 @@ update)
 	update
 	;;
 
+takeip)
+	_ip_addr=$2
+	save_ip "$_ip_addr"
+	;;
+
 notify)
 	# we must restart the lockmanager (on all nodes) so that we get
 	# a clusterwide grace period (so other clients don't take out
@@ -437,6 +469,8 @@ notify)
 
 	statd_state="${statd_callout_state_dir}/.statd_state"
 	list_records >"$statd_state"
+	# Empty the file but don't remove it - see comment in startup()
+	: >"${statd_new_ips_file}"
 
 	if [ ! -s "$statd_state" ]; then
 		rm -f "$statd_state"

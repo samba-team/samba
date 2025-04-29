@@ -132,8 +132,9 @@ check_statd_callout_smnotify()
 
 	nfs_load_config
 
-	ctdb_get_my_public_addresses |
-		while read -r _ _sip _; do
+	find "$state_dir" -name "takeip@${FAKE_CTDB_PNN}@*" |
+		while read -r _f; do
+			_sip="${_f##*@}"
 			_prefix="mon@${_sip}@"
 			find "$state_dir" -name "${_prefix}*" |
 				while read -r _f; do
@@ -143,7 +144,8 @@ SM_NOTIFY: ${_sip} -> ${_cip}, MON_NAME=${FAKE_NFS_HOSTNAME}, STATE=${_state}
 EOF
 					rm -f "$_f"
 				done
-		done | {
+		done |
+		sort | {
 		ok
 		simple_test_event "notify"
 	} || exit $?
@@ -202,9 +204,15 @@ EOF
 				rm -f "${state_dir}/mon@${_sip}@${1}"
 			done
 		;;
+	takeip)
+		cmd="${CTDB_SCRIPTS_TOOLS_HELPER_DIR}/statd_callout_helper"
+		script_test "$cmd" "$event" "$@"
+		touch "${state_dir}/takeip@${FAKE_CTDB_PNN}@${1}"
+		;;
 	notify)
 		cmd="${CTDB_SCRIPTS_TOOLS_HELPER_DIR}/statd_callout_helper"
 		script_test "$cmd" "$event" "$@"
+		rm -f "${state_dir}/takeip@${FAKE_CTDB_PNN}@"*
 		;;
 	*)
 		cmd="${CTDB_SCRIPTS_TOOLS_HELPER_DIR}/statd_callout_helper"
