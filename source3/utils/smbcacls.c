@@ -266,7 +266,7 @@ static uint16_t get_fileinfo(struct cli_state *cli, const char *filename)
 		cli,			/* cli */
 		filename,		/* fname */
 		0,			/* CreatFlags */
-		READ_CONTROL_ACCESS,	/* CreatFlags */
+		READ_CONTROL_ACCESS,	/* DesiredAccess */
 		0,			/* FileAttributes */
 		FILE_SHARE_READ|
 		FILE_SHARE_WRITE,	/* ShareAccess */
