@@ -366,6 +366,8 @@ samba-fuzz:
   extends: .shared_template
   variables:
     # We match what Google is running over at oss-fuzz
+    # See https://github.com/google/oss-fuzz/pull/13018 for
+    # an upgrade to ubuntu 24.04
     SAMBA_CI_JOB_IMAGE: ${SAMBA_CI_CONTAINER_IMAGE_ubuntu2004}
 
 ctdb:
