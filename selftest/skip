@@ -128,7 +128,24 @@
 ^samba4.rap.printing # Not provided by Samba 4
 ^samba4.rap.rpc
 ^samba4.rap.sam # Not provided by Samba 4
-bench # don't run benchmarks in our selftest
+# don't run benchmarks in our selftest
+# except smb2.bench, which only runs for 10 seconds
+# each
+base.bench-holdcon
+base.bench-holdopen
+base.bench-readwrite
+base.bench-torture
+raw.bench-oplock
+raw.bench-lock
+raw.bench-open
+raw.bench-lookup
+raw.bench-tcon
+rpc.bench-schannel1
+rpc.bench-rpc
+bench.nbench
+ldap.bench-cldap
+nbt.bench
+nbt.bench-wins
 ^samba4..*trans2.scan # uses huge number of file descriptors
 ^samba4.*.base.scan.ioctl # bad idea in make test
 ^samba4.*.base.scan.pipe_number # bad idea in make test
