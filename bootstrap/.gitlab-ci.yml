@@ -93,6 +93,9 @@ ubuntu2004:
 ubuntu2204:
   extends: .build_image_template
 
+ubuntu2404:
+  extends: .build_image_template
+
 debian11:
   extends: .build_image_template
 

@@ -94,5 +94,12 @@ Vagrant.configure("2") do |config|
         v.vm.provision :shell, path: "ubuntu2204/locale.sh"
     end
 
+    config.vm.define "ubuntu2404" do |v|
+        v.vm.box = "ubuntu/noble64"
+        v.vm.hostname = "ubuntu2404"
+        v.vm.provision :shell, path: "ubuntu2404/bootstrap.sh"
+        v.vm.provision :shell, path: "ubuntu2404/locale.sh"
+    end
+
 
 end

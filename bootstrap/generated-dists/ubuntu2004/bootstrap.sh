@@ -42,6 +42,7 @@ apt-get -y install \
     krb5-config \
     krb5-kdc \
     krb5-user \
+    landscape-common \
     language-pack-en \
     lcov \
     libacl1-dev \

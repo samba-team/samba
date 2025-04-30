@@ -53,6 +53,7 @@ COMMON = [
     'jq',
     'lcov',
     'make',
+    'mold',
     'patch',
     'perl',
     'psmisc',  # for pstree in test
@@ -77,6 +78,7 @@ PKGS = [
     ('lmdb-utils', 'lmdb'),
     ('mingw-w64', 'mingw64-gcc'),
     ('zlib1g-dev', 'zlib-devel'),
+    ('landscape-common', ''), # for landscape/lib/os_release.py
     ('libbsd-dev', 'libbsd-devel'),
     ('liburing-dev', 'liburing-devel'),
     ('libarchive-dev', 'libarchive-devel'),
@@ -140,7 +142,6 @@ PKGS = [
     ('', 'libtirpc-devel'),  # for <rpc/rpc.h> header on fedora
     ('', 'rpcsvc-proto-devel'), # for <rpcsvc/rquota.h> header
     ('mawk', 'gawk'),
-    ('', 'mold'),
     ('shellcheck', 'ShellCheck'),
     ('', 'crypto-policies-scripts'),
 
@@ -458,6 +459,8 @@ DEB_DISTS = {
             'language-pack-en': '',   # included in locales
             'shfmt': '',
             'cargo': '', # included cargo is broken
+            'landscape-common': '',
+            'mold': '',
         }
     },
     'debian11-32bit': {
@@ -467,6 +470,8 @@ DEB_DISTS = {
             'language-pack-en': '',   # included in locales
             'shfmt': '',
             'cargo': '', # included cargo is broken
+            'landscape-common': '',
+            'mold': '',
         }
     },
     'debian12': {
@@ -476,6 +481,7 @@ DEB_DISTS = {
             'language-pack-en': '',   # included in locales
             'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
             'cargo': '', # included cargo is broken
+            'landscape-common': '',
         }
     },
     'debian12-32bit': {
@@ -485,6 +491,7 @@ DEB_DISTS = {
             'language-pack-en': '',   # included in locales
             'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
             'cargo': '', # included cargo is broken
+            'landscape-common': '',
         }
     },
     'ubuntu1804': {
@@ -493,6 +500,8 @@ DEB_DISTS = {
         'replace': {
             'liburing-dev': '',   # not available
             'shfmt': '',
+            'landscape-common': '',
+            'mold': '',
         }
     },
     'ubuntu1804-32bit': {
@@ -501,6 +510,8 @@ DEB_DISTS = {
         'replace': {
             'liburing-dev': '',   # not available
             'shfmt': '',
+            'landscape-common': '',
+            'mold': '',
         }
     },
     'ubuntu2004': {
@@ -509,6 +520,7 @@ DEB_DISTS = {
         'replace': {
             'liburing-dev': '',   # not available
             'shfmt': '',
+            'mold': '',
         }
     },
     'ubuntu2204': {
@@ -517,7 +529,14 @@ DEB_DISTS = {
         'replace': {
             'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
         },
-    }
+    },
+    'ubuntu2404': {
+        'docker_image': 'ubuntu:24.04',
+        'vagrant_box': 'ubuntu/noble64',
+        'replace': {
+            'libtracker-sparql-2.0-dev': '',  # only tracker 3.x is available
+        },
+    },
 }
 
 

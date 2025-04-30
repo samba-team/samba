@@ -83,6 +83,7 @@ apt-get -y install \
     make \
     mawk \
     mingw-w64 \
+    mold \
     patch \
     perl \
     perl-modules \
