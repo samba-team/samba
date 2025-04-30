@@ -197,6 +197,22 @@ samba_libs_configure_libs = samba_libs_configure_base + " --bundled-libraries=cm
 samba_libs_configure_bundled_libs = " --bundled-libraries=!talloc,!pytalloc-util,!tdb,!pytdb,!tevent,!pytevent,!popt"
 samba_libs_configure_samba = samba_libs_configure_base + samba_libs_configure_bundled_libs
 
+is_ubuntu = False
+try:
+    from landscape.lib.os_release import parse_os_release
+    v = parse_os_release()
+    if v["distributor-id"] == "Ubuntu":
+        is_ubuntu = True
+except ImportError:
+    pass
+
+# on ubuntu gcc implies _FORTIFY_SOURCE
+# before 24.04 it was _FORTIFY_SOURCE=2
+# and 24.04 has _FORTIFY_SOURCE=3
+# so we do not specify it explicitly.
+samba_o3_cflags = "-O3"
+if not is_ubuntu:
+    samba_o3_cflags += " -Wp,-D_FORTIFY_SOURCE=2"
 
 def format_option(name, value=None):
     """Format option as str list."""
@@ -838,7 +854,7 @@ tasks = {
     "samba-o3": {
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
-            ("configure", "ADDITIONAL_CFLAGS='-O3 -Wp,-D_FORTIFY_SOURCE=2' ./configure.developer --abi-check-disable" + himmelblau_configure_params + samba_configure_params),
+            ("configure", "ADDITIONAL_CFLAGS='" + samba_o3_cflags + "' ./configure.developer --abi-check-disable" + himmelblau_configure_params + samba_configure_params),
             ("make", "make -j"),
             ("test", make_test(cmd='make test', TESTS="--exclude=selftest/slow-none", include_envs=["none"])),
             ("quicktest", make_test(cmd='make quicktest', include_envs=["ad_dc", "ad_dc_smb1", "ad_dc_smb1_done"])),
