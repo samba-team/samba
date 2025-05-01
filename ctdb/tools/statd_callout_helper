@@ -435,16 +435,6 @@ notify)
 	dir=$(find_statd_sm_dir)
 	rm -f "${dir}/"* "${dir}.bak/"*
 
-	# We must also let some time pass between stopping and
-	# restarting the lock manager.  Otherwise there is a window
-	# where the lock manager will respond "strangely" immediately
-	# after restarting it, which causes clients to fail to reclaim
-	# their locks.
-	nfs_callout_init
-	"$CTDB_NFS_CALLOUT" "stop" "nlockmgr" >/dev/null 2>&1
-	sleep 2
-	"$CTDB_NFS_CALLOUT" "start" "nlockmgr" >/dev/null 2>&1
-
 	statd_state="${statd_callout_state_dir}/.statd_state"
 	list_records >"$statd_state"
 

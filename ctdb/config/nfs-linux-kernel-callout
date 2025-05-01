@@ -327,6 +327,24 @@ nfs_startup()
 }
 
 ##################################################
+# failover support
+
+nfs_startipreallocate()
+{
+	# Put the lock manager into grace
+	#
+	# We must let some time pass between stopping and restarting
+	# the lock manager.  Otherwise there is a window where the
+	# lock manager will respond "strangely" immediately after
+	# restarting it, which causes clients to fail to reclaim their
+	# locks.
+	nfs_callout_init
+	service_stop "nlockmgr" >/dev/null 2>&1
+	sleep 2
+	service_start "nlockmgr" >/dev/null 2>&1
+}
+
+##################################################
 # monitor-post support
 
 nfs_check_thread_count()
@@ -419,6 +437,9 @@ stop)
 start)
 	service_start "$2"
 	;;
+startipreallocate)
+	nfs_startipreallocate
+	;;
 monitor-list-shares)
 	nfs_monitor_list_shares
 	;;
@@ -428,7 +449,7 @@ monitor-post)
 register)
 	nfs_register
 	;;
-monitor-pre | releaseip | takeip | startipreallocate)
+monitor-pre | releaseip | takeip)
 	# Not required/implemented
 	:
 	;;
