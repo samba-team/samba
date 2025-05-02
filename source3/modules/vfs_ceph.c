@@ -472,7 +472,9 @@ static int cephwrap_openat(struct vfs_handle_struct *handle,
 	int result = -ENOENT;
 	int dirfd = -1;
 
-	if ((how->resolve & ~VFS_OPEN_HOW_WITH_BACKUP_INTENT) != 0) {
+	if ((how->resolve & ~(VFS_OPEN_HOW_WITH_BACKUP_INTENT |
+			      VFS_OPEN_HOW_RESOLVE_NO_XDEV)) != 0)
+	{
 		errno = ENOSYS;
 		return -1;
 	}
