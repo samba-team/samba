@@ -1954,6 +1954,8 @@ sub setup_fileserver
 
 	my $ip4 = Samba::get_ipv4_addr("FILESERVER");
 	my $fileserver_options = "
+	server smb transports = +quic
+
         smb3 unix extensions = yes
 	kernel change notify = yes
 	spotlight backend = elasticsearch
@@ -2678,6 +2680,9 @@ sub provision($$)
 
 	my $privatedir="$prefix/private";
 	push(@dirs,$privatedir);
+
+	my $tlsdir="$privatedir/tls";
+	push(@dirs, $tlsdir);
 
 	my $cachedir = "$prefix/cachedir";
 	push(@dirs, $cachedir);
