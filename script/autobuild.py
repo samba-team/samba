@@ -1088,7 +1088,7 @@ tasks = {
             ("allprivate-def-configure", "./configure.developer " + samba_configure_params + " --private-libraries=ALL"),
             ("allprivate-def-make", "nice -n 19 make -j 2"),
             # note wrapper libraries need to be public
-            ("allprivate-def-no-public", "ls ./bin/shared | egrep -v '^private$|lib[nprsu][saeoi][smscd].*-wrapper.so$|pam_set_items.so|pam_matrix.so' | wc -l | grep -q '^0'"),
+            ("allprivate-def-no-public", "ls ./bin/shared | egrep -v '^private$|lib[npqrsu][saueoi][smiscd].*-wrapper.so$|pam_set_items.so|pam_matrix.so' | wc -l | grep -q '^0'"),
             ("allprivate-def-only-private-ext", "ls ./bin/shared/private | egrep 'private-samba' | wc -l | grep -q '^0' && exit 1; exit 0"),
             ("allprivate-def-no-non-private-ext", "ls ./bin/shared/private | egrep -v 'private-samba|^libpypamtest.so$' | wc -l | grep -q '^0'"),
             ("allprivate-def-test", make_test(TESTS="samba3.smb2.create.*nt4_dc")),
@@ -1102,7 +1102,7 @@ tasks = {
             ("allprivate-ext-configure", "./configure.developer " + samba_configure_params + " --private-libraries=ALL --private-library-extension=private-library --private-extension-exception=pac,ndr"),
             ("allprivate-ext-make", "nice -n 19 make -j 2"),
             # note wrapper libraries need to be public
-            ("allprivate-ext-no-public", "ls ./bin/shared | egrep -v '^private$|lib[nprsu][saeoi][smscd].*-wrapper.so$|pam_set_items.so|pam_matrix.so' | wc -l | grep -q '^0'"),
+            ("allprivate-ext-no-public", "ls ./bin/shared | egrep -v '^private$|lib[npqrsu][saueoi][smiscd].*-wrapper.so$|pam_set_items.so|pam_matrix.so' | wc -l | grep -q '^0'"),
             ("allprivate-ext-no-private-default-ext", "ls ./bin/shared/private | grep 'private-samba' | wc -l | grep -q '^0'"),
             ("allprivate-ext-has-private-ext", "ls ./bin/shared/private | grep 'private-library' | wc -l | grep -q '^0' && exit 1; exit 0"),
             ("allprivate-ext-libndr-no-private-ext", "ls ./bin/shared/private | grep -v 'private-library' | grep 'libndr' | wc -l | grep -q '^1'"),

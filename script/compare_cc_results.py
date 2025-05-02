@@ -19,6 +19,7 @@ exceptions = [
     'PAM_MATRIX_SO_PATH',
     'LIBUID_WRAPPER_SO_PATH',
     'LIBRESOLV_WRAPPER_SO_PATH',
+    'LIBQUIC_KO_WRAPPER_SO_PATH',
 ]
 
 if len(sys.argv) < 3:

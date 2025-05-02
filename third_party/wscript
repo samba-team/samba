@@ -14,6 +14,7 @@ def configure(conf):
         conf.RECURSE('uid_wrapper')
         if Options.options.with_pam:
             conf.RECURSE('pam_wrapper')
+        conf.RECURSE('quic_ko_wrapper')
 
 
 def build(bld):
@@ -31,3 +32,5 @@ def build(bld):
         bld.RECURSE('uid_wrapper')
     if bld.CONFIG_GET('PAM_WRAPPER'):
         bld.RECURSE('pam_wrapper')
+    if bld.CONFIG_GET('QUIC_KO_WRAPPER'):
+        bld.RECURSE('quic_ko_wrapper')
