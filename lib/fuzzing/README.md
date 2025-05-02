@@ -17,10 +17,10 @@ Example command line to build binaries for use with
 [honggfuzz](https://github.com/google/honggfuzz/):
 
 ```sh
+CC=.../honggfuzz/hfuzz_cc/hfuzz-clang \
+LINK_CC=.../honggfuzz/hfuzz_cc/hfuzz-clang \
 ./configure -C --without-gettext --enable-debug --enable-developer \
-	--address-sanitizer --enable-libfuzzer --abi-check-disable \
-	CC=.../honggfuzz/hfuzz_cc/hfuzz-clang \
-	LINK_CC=.../honggfuzz/hfuzz_cc/hfuzz-clang
+	--address-sanitizer --enable-libfuzzer --abi-check-disable
 ```
 
 
@@ -43,9 +43,8 @@ Example command line to build binaries for use with
 [afl](http://lcamtuf.coredump.cx/afl/)
 
 ```sh
-./configure -C --without-gettext --enable-debug --enable-developer \
-	--enable-afl-fuzzer --abi-check-disable \
-	CC=afl-gcc
+CC=afl-gcc ./configure -C --without-gettext --enable-debug --enable-developer \
+	--enable-afl-fuzzer --abi-check-disable
 ```
 
 ## Fuzzing tiniparser

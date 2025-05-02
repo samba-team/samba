@@ -80,15 +80,14 @@ esac
 # --disable-new-dtags linker flag creates fuzzer binaries with RPATH
 # header instead of RUNPATH header. Modern linkers use RUNPATH by
 # default.
-./configure -C --without-gettext --enable-debug --enable-developer \
+LINK_CC="$CXX" ./configure -C --without-gettext --enable-debug --enable-developer \
 	--enable-libfuzzer \
 	$SANITIZER_ARG \
 	--disable-warnings-as-errors \
 	--abi-check-disable \
 	"--fuzz-target-ldflags=-Wl,--disable-new-dtags $LIB_FUZZING_ENGINE" \
 	--nonshared-binary=ALL \
-	"$@" \
-	LINK_CC="$CXX"
+	"$@"
 
 make -j
 
