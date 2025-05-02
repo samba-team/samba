@@ -6,6 +6,7 @@ def configure(conf):
     conf.RECURSE('cmocka')
     conf.RECURSE('popt')
     conf.RECURSE('quic')
+    conf.RECURSE('ngtcp2')
     if conf.CONFIG_GET('ENABLE_SELFTEST'):
         conf.RECURSE('socket_wrapper')
         conf.RECURSE('nss_wrapper')
@@ -19,6 +20,7 @@ def build(bld):
     bld.RECURSE('cmocka')
     bld.RECURSE('popt')
     bld.RECURSE('quic')
+    bld.RECURSE('ngtcp2')
     if bld.CONFIG_GET('SOCKET_WRAPPER'):
         bld.RECURSE('socket_wrapper')
     if bld.CONFIG_GET('NSS_WRAPPER'):

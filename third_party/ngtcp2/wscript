@@ -1,0 +1,131 @@
+#!/usr/bin/env python
+
+import sys
+from waflib import Logs
+from samba_utils import save_file
+
+def configure(conf):
+    if not sys.platform.startswith('linux'):
+        Logs.warn('libngtcp2 requires linux')
+        conf.SET_TARGET_TYPE('ngtcp2', 'EMPTY')
+        return
+
+    if not conf.CONFIG_GET('HAVE_GNUTLS_CB_TLS_SERVER_END_POINT'):
+        Logs.warn('libngtcp2 requires gnutls 3.7.2')
+        conf.SET_TARGET_TYPE('ngtcp2', 'EMPTY')
+        return
+
+    if conf.CHECK_LIBNGTCP2():
+        conf.DEFINE('HAVE_LIBNGTCP2', '1')
+        conf.define('USING_SYSTEM_LIBNGTCP2', 1)
+        return
+
+    conf.ADD_NAMED_CFLAGS('LIBNGTCP2_UNPICKY_CFLAGS',
+                          '-Wno-cast-qual',
+                          testflags=True)
+    conf.ADD_NAMED_CFLAGS('LIBNGTCP2_UNPICKY_CFLAGS',
+                          '-Wno-error=cast-qual',
+                          testflags=True)
+    conf.ADD_NAMED_CFLAGS('LIBNGTCP2_UNPICKY_CFLAGS',
+                          '-Wno-strict-aliasing',
+                          testflags=True)
+    conf.ADD_NAMED_CFLAGS('LIBNGTCP2_UNPICKY_CFLAGS',
+                          '-Wno-error=strict-aliasing',
+                          testflags=True)
+    conf.ADD_NAMED_CFLAGS('LIBNGTCP2_UNPICKY_CFLAGS',
+                          '-Wno-strict-overflow',
+                          testflags=True)
+    conf.ADD_NAMED_CFLAGS('LIBNGTCP2_UNPICKY_CFLAGS',
+                          '-Wno-error=strict-overflow',
+                          testflags=True)
+
+    conf.DEFINE('HAVE_LIBNGTCP2', '1')
+    return
+
+def build(bld):
+    if bld.CONFIG_SET('USING_SYSTEM_LIBNGTCP2'):
+        return
+
+    def generate_ngtcp2_version_h(task):
+        ngtcp2_version_h = task.outputs[0].bldpath(task.env)
+        h = '''
+        #ifndef NGTCP2_VERSION_H
+        #define NGTCP2_VERSION_H
+        #define NGTCP2_VERSION "1.11.0"
+        #define NGTCP2_VERSION_NUM 0x010b00
+        #endif
+        '''
+
+        save_file(ngtcp2_version_h, h, create_dir=True)
+        return 0
+
+    ngtcp2_version_h = 'lib/includes/ngtcp2/version.h'
+    bld.SAMBA_GENERATOR(ngtcp2_version_h,
+                        target=ngtcp2_version_h,
+                        rule=generate_ngtcp2_version_h,
+                        enabled=bld.CONFIG_SET('HAVE_LIBNGTCP2'))
+
+    bld.SAMBA_LIBRARY('ngtcp2',
+                      source='''
+                      lib/ngtcp2_acktr.c
+                      lib/ngtcp2_addr.c
+                      lib/ngtcp2_balloc.c
+                      lib/ngtcp2_bbr.c
+                      lib/ngtcp2_buf.c
+                      lib/ngtcp2_cc.c
+                      lib/ngtcp2_cid.c
+                      lib/ngtcp2_conn.c
+                      lib/ngtcp2_conv.c
+                      lib/ngtcp2_crypto.c
+                      lib/ngtcp2_dcidtr.c
+                      lib/ngtcp2_err.c
+                      lib/ngtcp2_frame_chain.c
+                      lib/ngtcp2_gaptr.c
+                      lib/ngtcp2_idtr.c
+                      lib/ngtcp2_ksl.c
+                      lib/ngtcp2_log.c
+                      lib/ngtcp2_map.c
+                      lib/ngtcp2_mem.c
+                      lib/ngtcp2_objalloc.c
+                      lib/ngtcp2_opl.c
+                      lib/ngtcp2_path.c
+                      lib/ngtcp2_pkt.c
+                      lib/ngtcp2_pmtud.c
+                      lib/ngtcp2_ppe.c
+                      lib/ngtcp2_pq.c
+                      lib/ngtcp2_pv.c
+                      lib/ngtcp2_qlog.c
+                      lib/ngtcp2_range.c
+                      lib/ngtcp2_ringbuf.c
+                      lib/ngtcp2_rob.c
+                      lib/ngtcp2_rst.c
+                      lib/ngtcp2_rtb.c
+                      lib/ngtcp2_settings.c
+                      lib/ngtcp2_str.c
+                      lib/ngtcp2_strm.c
+                      lib/ngtcp2_transport_params.c
+                      lib/ngtcp2_unreachable.c
+                      lib/ngtcp2_vec.c
+                      lib/ngtcp2_version.c
+                      lib/ngtcp2_window_filter.c
+                      ''',
+                      includes='crypto/includes lib/includes crypto lib',
+                      deps='replace',
+                      cflags_end=bld.env.LIBNGTCP2_UNPICKY_CFLAGS,
+                      private_library=True,
+                      enabled=bld.CONFIG_SET('HAVE_LIBNGTCP2'))
+    bld.SAMBA_SUBSYSTEM('libngtcp2', source='', public_deps='ngtcp2',
+                        enabled=bld.CONFIG_SET('HAVE_LIBNGTCP2'))
+    bld.SAMBA_LIBRARY('ngtcp2_crypto_gnutls',
+                      source='''
+                      crypto/shared.c
+                      crypto/gnutls/gnutls.c
+                      ''',
+                      includes='crypto/includes lib/includes crypto lib',
+                      deps='replace',
+                      public_deps='libngtcp2 gnutls',
+                      cflags_end=bld.env.LIBNGTCP2_UNPICKY_CFLAGS,
+                      private_library=True,
+                      enabled=bld.CONFIG_SET('HAVE_LIBNGTCP2'))
+    bld.SAMBA_SUBSYSTEM('libngtcp2_crypto_gnutls', source='', public_deps='ngtcp2_crypto_gnutls',
+                        enabled=bld.CONFIG_SET('HAVE_LIBNGTCP2'))

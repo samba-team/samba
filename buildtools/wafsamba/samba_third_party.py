@@ -51,3 +51,15 @@ Build.BuildContext.CHECK_PAM_WRAPPER = CHECK_PAM_WRAPPER
 def CHECK_LIBQUIC(conf):
     return conf.CHECK_BUNDLED_SYSTEM_PKG('libquic', minversion='1.1')
 Build.BuildContext.CHECK_LIBQUIC = CHECK_LIBQUIC
+
+@conf
+def CHECK_LIBNGTCP2(conf):
+    minversion = '1.12.0'
+    if not conf.CHECK_BUNDLED_SYSTEM_PKG('libngtcp2_crypto_gnutls',
+                                         minversion=minversion):
+        return False
+    if not conf.CHECK_BUNDLED_SYSTEM_PKG('libngtcp2',
+                                         minversion=minversion):
+        return False
+    return True
+Build.BuildContext.CHECK_LIBNGTCP2 = CHECK_LIBNGTCP2
