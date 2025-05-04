@@ -153,4 +153,21 @@ NTSTATUS tstream_tls_quic_handshake(struct tstream_tls_params *tlsp,
 				    const char *alpn,
 				    int sockfd);
 
+struct tevent_req *_tstream_tls_ngtcp2_connect_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct tstream_tls_params *tlsp,
+						    uint32_t timeout_msec,
+						    const char *alpn,
+						    int *sockfd,
+						    const char *location);
+int tstream_tls_ngtcp2_connect_recv(struct tevent_req *req,
+				    int *perrno,
+				    TALLOC_CTX *mem_ctx,
+				    struct tstream_context **quic_stream);
+#define tstream_tls_ngtcp2_connect_send(mem_ctx, ev, tls_params, \
+					timeout_msec, alpn, sockfd) \
+	_tstream_tls_ngtcp2_connect_send(mem_ctx, ev, tls_params, \
+					 timeout_msec, alpn, sockfd, \
+					 __location__)
+
 #endif /* _TLS_H_ */
