@@ -1549,8 +1549,8 @@ struct tevent_req *cli_smb2_list_send(
 				   .length=sizeof(linear_mode) };
 
 		in_cblobs = talloc_zero(mem_ctx, struct smb2_create_blobs);
-		if (in_cblobs == NULL) {
-			return NULL;
+		if (tevent_req_nomem(in_cblobs, req)) {
+			return tevent_req_post(req, ev);
 		}
 
 		status = smb2_create_blob_add(in_cblobs, in_cblobs,
