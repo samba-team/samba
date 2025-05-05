@@ -1544,17 +1544,7 @@ struct tevent_req *cli_smb2_list_send(
 		/* The mode MUST be 0 when opening an existing file/dir, and
 		 * will be ignored by the server.
 		 */
-		uint8_t linear_mode[4] = { 0 };
-		DATA_BLOB blob = { .data=linear_mode,
-				   .length=sizeof(linear_mode) };
-
-		in_cblobs = talloc_zero(mem_ctx, struct smb2_create_blobs);
-		if (tevent_req_nomem(in_cblobs, req)) {
-			return tevent_req_post(req, ev);
-		}
-
-		status = smb2_create_blob_add(in_cblobs, in_cblobs,
-					      SMB2_CREATE_TAG_POSIX, blob);
+		status = make_smb2_posix_create_ctx(mem_ctx, &in_cblobs, 0);
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}
