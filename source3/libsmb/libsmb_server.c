@@ -50,6 +50,7 @@ SMBC_check_server(SMBCCTX * context,
 	time_t now, next_echo;
 	unsigned char data[16] = {0};
 	NTSTATUS status;
+	bool ok = false;
 
 	if (!cli_state_is_connected(cli)) {
 		return 1;
@@ -63,38 +64,39 @@ SMBC_check_server(SMBCCTX * context,
 	}
 
 	status = cli_echo(cli, 1, data_blob_const(data, sizeof(data)));
-	if (!NT_STATUS_IS_OK(status)) {
-		bool ok = false;
-		/*
-		 * Some SMB2 servers (not Samba or Windows)
-		 * check the session status on SMB2_ECHO and return
-		 * NT_STATUS_USER_SESSION_DELETED
-		 * if the session was not set. That's OK, they still
-		 * replied.
-		 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=13218
-		 */
-		if (smbXcli_conn_protocol(cli->conn) >=
-		    PROTOCOL_SMB2_02) {
-			if (NT_STATUS_EQUAL(status,
-					    NT_STATUS_USER_SESSION_DELETED)) {
-				ok = true;
-			}
-		}
-		/*
-		 * Some NetApp servers return
-		 * NT_STATUS_INVALID_PARAMETER.That's OK, they still
-		 * replied.
-		 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=13007
-		 */
-		if (NT_STATUS_EQUAL(status,
-				    NT_STATUS_INVALID_PARAMETER)) {
-			ok = true;
-		}
-		if (!ok) {
-			return 1;
-		}
+	if (NT_STATUS_IS_OK(status)) {
+		goto done;
 	}
 
+	/*
+	 * Some SMB2 servers (not Samba or Windows)
+	 * check the session status on SMB2_ECHO and return
+	 * NT_STATUS_USER_SESSION_DELETED
+	 * if the session was not set. That's OK, they still
+	 * replied.
+	 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=13218
+	 */
+	if (smbXcli_conn_protocol(cli->conn) >=
+	    PROTOCOL_SMB2_02) {
+		if (NT_STATUS_EQUAL(status,
+				    NT_STATUS_USER_SESSION_DELETED)) {
+			ok = true;
+		}
+	}
+	/*
+	 * Some NetApp servers return
+	 * NT_STATUS_INVALID_PARAMETER.That's OK, they still
+	 * replied.
+	 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=13007
+	 */
+	if (NT_STATUS_EQUAL(status,
+			    NT_STATUS_INVALID_PARAMETER)) {
+		ok = true;
+	}
+	if (!ok) {
+		return 1;
+	}
+done:
 	server->last_echo_time = now;
 	return 0;
 }
