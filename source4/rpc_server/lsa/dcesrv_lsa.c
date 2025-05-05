@@ -2845,7 +2845,7 @@ static NTSTATUS dcesrv_lsa_EnumTrustDom(struct dcesrv_call_state *dce_call, TALL
 
 	policy_state = policy_handle->data;
 
-	/* search for all users in this domain. This could possibly be cached and
+	/* search for all trusted domains. This could possibly be cached and
 	   resumed based on resume_key */
 	count = gendb_search(policy_state->sam_ldb, mem_ctx, policy_state->system_dn, &domains, attrs,
 			     "objectclass=trustedDomain");
@@ -2937,7 +2937,7 @@ static NTSTATUS dcesrv_lsa_EnumTrustedDomainsEx(struct dcesrv_call_state *dce_ca
 
 	policy_state = policy_handle->data;
 
-	/* search for all users in this domain. This could possibly be cached and
+	/* search for all trusted domains. This could possibly be cached and
 	   resumed based on resume_key */
 	count = gendb_search(policy_state->sam_ldb, mem_ctx, policy_state->system_dn, &domains, attrs,
 			     "objectclass=trustedDomain");
