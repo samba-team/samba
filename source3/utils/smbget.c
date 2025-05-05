@@ -315,9 +315,12 @@ static void print_progress(const char *name, time_t start, time_t now,
 	char hpos[22], htotal[22], havg[22];
 	char *status, *filename;
 	int len;
-	if (now - start) {
-		avg = 1.0 * (pos - start_pos) / (now - start);
+
+	if (now == start || pos == start_pos) {
+		fprintf(stderr, "\r[%s] No progress yet", name);
+		return;
 	}
+	avg = 1.0 * (pos - start_pos) / (now - start);
 	eta = (total - pos) / avg;
 	if (total) {
 		prcnt = 100.0 * pos / total;
