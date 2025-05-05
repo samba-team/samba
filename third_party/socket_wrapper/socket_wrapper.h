@@ -86,4 +86,13 @@ bool socket_wrapper_enabled(void);
  */
 void socket_wrapper_indicate_no_inet_fd(int fd);
 
+/*
+ * This allows quic_ko_wrapper to create a socket
+ * that simulates an IPPROTO_QUIC socket with
+ * connected datagram semantics. The low-level
+ * AF_UNIX socket will use SOCK_SEQPACKET, but
+ * pretends to be UDP in the generated pcap files
+ */
+int socket_wrapper_ipproto_quic_socket(int family, int type);
+
 #endif /* __SOCKET_WRAPPER_H__ */

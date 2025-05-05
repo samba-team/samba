@@ -326,6 +326,8 @@ struct socket_info
 	int family;
 	int type;
 	int protocol;
+	int opt_type;
+	int opt_protocol;
 	int bound;
 	int bcast;
 	int is_server;
@@ -3684,13 +3686,15 @@ int signalfd(int fd, const sigset_t *mask, int flags)
  *   SOCKET
  ***************************************************************************/
 
-static int swrap_socket(int family, int type, int protocol)
+static int swrap_socket(int family, int type, int protocol, int allow_quic)
 {
 	struct socket_info *si = NULL;
 	struct socket_info _si = { 0 };
 	int fd;
 	int ret;
 	int real_type = type;
+	int opt_type;
+	int opt_protocol;
 
 	/*
 	 * Remove possible addition flags passed to socket() so
@@ -3737,17 +3741,35 @@ static int swrap_socket(int family, int type, int protocol)
 
 	switch (real_type) {
 	case SOCK_STREAM:
+		if (protocol == 0) {
+			protocol = 6; /* IPPROTO_TCP */
+		}
 		break;
 	case SOCK_DGRAM:
+		if (protocol == 0) {
+			protocol = 17; /* IPPROTO_UDP */
+		}
 		break;
 	default:
 		errno = EPROTONOSUPPORT;
 		return -1;
 	}
 
+	opt_type = real_type;
+	opt_protocol = protocol;
+
 	switch (protocol) {
-	case 0:
-		break;
+	case 261: /* IPPROTO_QUIC */
+		if (allow_quic) {
+			/* for the unix socket */
+			type &= ~real_type;
+			type |= SOCK_SEQPACKET;
+			/* capture should use UDP */
+			real_type = SOCK_DGRAM;
+			break;
+		}
+		errno = EPROTONOSUPPORT;
+		return -1;
 	case 6:
 		if (real_type == SOCK_STREAM) {
 			break;
@@ -3783,6 +3805,8 @@ static int swrap_socket(int family, int type, int protocol)
 	 * the type, not the flags */
 	si->type = real_type;
 	si->protocol = protocol;
+	si->opt_type = opt_type;
+	si->opt_protocol = opt_protocol;
 
 	/*
 	 * Setup myname so getsockname() can succeed to find out the socket
@@ -3833,7 +3857,13 @@ static int swrap_socket(int family, int type, int protocol)
 
 int socket(int family, int type, int protocol)
 {
-	return swrap_socket(family, type, protocol);
+	return swrap_socket(family, type, protocol, 0);
+}
+
+int socket_wrapper_ipproto_quic_socket(int family, int type)
+{
+	const int protocol = 261; /* IPPROTO_QUIC */
+	return swrap_socket(family, type, protocol, 1);
 }
 
 /****************************************************************************
@@ -4046,6 +4076,8 @@ static int swrap_accept(int s,
 	child_si->family = parent_si->family;
 	child_si->type = parent_si->type;
 	child_si->protocol = parent_si->protocol;
+	child_si->opt_type = parent_si->opt_type;
+	child_si->opt_protocol = parent_si->opt_protocol;
 	child_si->bound = 1;
 	child_si->is_server = 1;
 	child_si->connected = 1;
@@ -4973,7 +5005,7 @@ static int swrap_getsockopt(int s, int level, int optname,
 			}
 
 			*optlen = sizeof(int);
-			*(int *)optval = si->protocol;
+			*(int *)optval = si->opt_protocol;
 			ret = 0;
 			goto done;
 #endif /* SO_PROTOCOL */
@@ -4986,7 +5018,7 @@ static int swrap_getsockopt(int s, int level, int optname,
 			}
 
 			*optlen = sizeof(int);
-			*(int *)optval = si->type;
+			*(int *)optval = si->opt_type;
 			ret = 0;
 			goto done;
 		default:
@@ -5596,7 +5628,7 @@ static int swrap_sendmsg_filter_cmsg_sol_socket(const struct cmsghdr *cmsg,
 	return rc;
 }
 
-static const uint64_t swrap_unix_scm_right_magic = 0x8e0e13f27c42fc36;
+static const uint64_t swrap_unix_scm_right_magic = 0x8e0e13f27c42fc37;
 
 /*
  * We only allow up to 6 fds at a time
@@ -6807,6 +6839,7 @@ out:
 static int swrap_recvmsg_after(int fd,
 			       struct socket_info *si,
 			       struct msghdr *msg,
+			       int flags,
 			       const struct sockaddr_un *un_addr,
 			       socklen_t un_addrlen,
 			       ssize_t ret)
@@ -6835,8 +6868,16 @@ static int swrap_recvmsg_after(int fd,
 
 	SWRAP_LOCK_SI(si);
 
+	if (flags & MSG_PEEK) {
+		rc = 0;
+		goto done;
+	}
+
 	/* Convert the socket address before we leave */
-	if (si->type == SOCK_DGRAM && un_addr != NULL) {
+	if (si->type == SOCK_DGRAM &&
+	    si->protocol == 17 && /* IPPROTO_UDP */
+	    un_addr != NULL)
+	{
 		rc = sockaddr_convert_from_un(si,
 					      un_addr,
 					      un_addrlen,
@@ -6846,6 +6887,15 @@ static int swrap_recvmsg_after(int fd,
 		if (rc == -1) {
 			goto done;
 		}
+	}
+	if (si->type == SOCK_DGRAM &&
+	    si->protocol == 261 && /* IPPROTO_QUIC */
+	    un_addr != NULL &&
+	    msg->msg_name != NULL &&
+	    msg->msg_namelen > 0)
+	{
+		msg->msg_namelen = MIN(si->peername.sa_socklen, msg->msg_namelen);
+		memcpy(msg->msg_name, &si->peername.sa, msg->msg_namelen);
 	}
 
 	if (avail == 0) {
@@ -6999,6 +7049,7 @@ static ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags,
 	tret = swrap_recvmsg_after(s,
 				   si,
 				   &msg,
+				   flags,
 				   &from_addr.sa.un,
 				   from_addr.sa_socklen,
 				   ret);
@@ -7195,7 +7246,7 @@ static ssize_t swrap_recv(int s, void *buf, size_t len, int flags)
 
 	ret = libc_recv(s, buf, len, flags);
 
-	tret = swrap_recvmsg_after(s, si, &msg, NULL, 0, ret);
+	tret = swrap_recvmsg_after(s, si, &msg, flags, NULL, 0, ret);
 	if (tret != 0) {
 		return tret;
 	}
@@ -7255,7 +7306,7 @@ static ssize_t swrap_read(int s, void *buf, size_t len)
 
 	ret = libc_read(s, buf, len);
 
-	tret = swrap_recvmsg_after(s, si, &msg, NULL, 0, ret);
+	tret = swrap_recvmsg_after(s, si, &msg, 0, NULL, 0, ret);
 	if (tret != 0) {
 		return tret;
 	}
@@ -7457,6 +7508,7 @@ static ssize_t swrap_recvmsg(int s, struct msghdr *omsg, int flags)
 	rc = swrap_recvmsg_after(s,
 				 si,
 				 &msg,
+				 flags,
 				 &from_addr.sa.un,
 				 from_addr.sa_socklen,
 				 ret);
@@ -7660,7 +7712,7 @@ fail_swrap:
 		msg->msg_name = &tmp[i].convert_addr.sa;
 		msg->msg_namelen = tmp[i].convert_addr.sa_socklen;
 
-		swrap_recvmsg_after(s, si, msg,
+		swrap_recvmsg_after(s, si, msg, flags,
 				    &tmp[i].from_addr.sa.un,
 				    tmp[i].from_addr.sa_socklen,
 				    ret);
@@ -8179,7 +8231,7 @@ static ssize_t swrap_readv(int s, const struct iovec *vector, int count)
 
 	ret = libc_readv(s, msg.msg_iov, msg.msg_iovlen);
 
-	rc = swrap_recvmsg_after(s, si, &msg, NULL, 0, ret);
+	rc = swrap_recvmsg_after(s, si, &msg, 0, NULL, 0, ret);
 	if (rc != 0) {
 		return rc;
 	}
