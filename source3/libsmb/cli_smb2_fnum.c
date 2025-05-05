@@ -1556,7 +1556,6 @@ struct tevent_req *cli_smb2_list_send(
 		status = smb2_create_blob_add(in_cblobs, in_cblobs,
 					      SMB2_CREATE_TAG_POSIX, blob);
 		if (tevent_req_nterror(req, status)) {
-			tevent_req_nterror(req, status);
 			return tevent_req_post(req, ev);
 		}
 	}
