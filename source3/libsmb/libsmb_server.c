@@ -47,17 +47,17 @@ SMBC_check_server(SMBCCTX * context,
                   SMBCSRV * server)
 {
 	struct cli_state *cli = server->cli;
-	time_t now;
+	time_t now, next_echo;
 
 	if (!cli_state_is_connected(cli)) {
 		return 1;
 	}
 
 	now = time_mono(NULL);
+	next_echo = server->last_echo_time + cli->timeout/1000;
 
 	if (server->last_echo_time == (time_t)0 ||
-			now > server->last_echo_time +
-				(cli->timeout/1000)) {
+			now > next_echo) {
 		unsigned char data[16] = {0};
 		NTSTATUS status = cli_echo(cli,
 					1,
