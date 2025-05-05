@@ -243,36 +243,35 @@ check_server_cache:
 
 	}
 
-	if (srv) {
-		if (smbc_getFunctionCheckServer(context)(context, srv)) {
-			/*
-                         * This server is no good anymore
-                         * Try to remove it and check for more possible
-                         * servers in the cache
-                         */
-			if (smbc_getFunctionRemoveUnusedServer(context)(context,
-                                                                        srv)) {
-                                /*
-                                 * We could not remove the server completely,
-                                 * remove it from the cache so we will not get
-                                 * it again. It will be removed when the last
-                                 * file/dir is closed.
-                                 */
-				smbc_getFunctionRemoveCachedServer(context)(context,
-                                                                            srv);
-			}
+	if (srv == NULL) {
+		return NULL;
+	}
 
+	if (smbc_getFunctionCheckServer(context)(context, srv)) {
+		/*
+		 * This server is no good anymore
+		 * Try to remove it and check for more possible
+		 * servers in the cache
+		 */
+		if (smbc_getFunctionRemoveUnusedServer(context)(context, srv)) {
 			/*
-                         * Maybe there are more cached connections to this
-                         * server
-                         */
-			goto check_server_cache;
+			 * We could not remove the server completely,
+			 * remove it from the cache so we will not get
+			 * it again. It will be removed when the last
+			 * file/dir is closed.
+			 */
+			smbc_getFunctionRemoveCachedServer(context)(context,
+								    srv);
 		}
 
-		return srv;
- 	}
+		/*
+		 * Maybe there are more cached connections to this
+		 * server
+		 */
+		goto check_server_cache;
+	}
 
-        return NULL;
+	return srv;
 }
 
 static struct cli_credentials *SMBC_auth_credentials(TALLOC_CTX *mem_ctx,
