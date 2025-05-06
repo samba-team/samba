@@ -26,6 +26,8 @@ struct smbXcli_transport;
 
 struct smb_transports smbsock_transports_from_port(uint16_t port);
 
+extern bool smbsock_connect_require_bsd_socket;
+
 struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct loadparm_context *lp_ctx,

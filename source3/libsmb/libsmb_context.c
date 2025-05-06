@@ -27,6 +27,7 @@
 #include "source3/libsmb/proto.h"
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
+#include "libsmb/smbsock_connect.h"
 #include "secrets.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "auth/credentials/credentials.h"
@@ -51,6 +52,13 @@ SMBC_module_init(void * punused)
 	bool conf_loaded = False;
 	char *home = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
+
+	/*
+	 * We can't rely on periodic connection
+	 * monitoring, so we can't use
+	 * the ngtcp2 over udp quic support.
+	 */
+	smbsock_connect_require_bsd_socket = true;
 
 	setup_logging("libsmbclient", DEBUG_STDOUT);
 

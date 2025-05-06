@@ -22,6 +22,7 @@
 #include "../lib/async_req/async_sock.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "../lib/util/tevent_unix.h"
+#include "../lib/tsocket/tsocket.h"
 #include "client.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "async_smb.h"
@@ -372,12 +373,16 @@ struct smb_transports smbsock_transports_from_port(uint16_t port)
 	return ts;
 }
 
+bool smbsock_connect_require_bsd_socket;
+
 struct smbsock_connect_substate {
 	struct tevent_req *req;
 	size_t idx;
 	struct smb_transport transport;
 	struct tevent_req *subreq;
 	int sockfd;
+	struct samba_sockaddr laddr;
+	struct samba_sockaddr raddr;
 };
 
 struct smbsock_connect_state {
@@ -389,6 +394,8 @@ struct smbsock_connect_state {
 	const char *calling_name;
 	uint8_t calling_type;
 	struct tstream_tls_params *quic_tlsp;
+	bool allow_ngtcp2;
+	bool force_ngtcp2;
 	struct tevent_req *wake_subreq;
 	uint8_t num_substates;
 	uint8_t submit_idx;
@@ -411,6 +418,15 @@ static void smbsock_connect_tcp_connected(struct tevent_req *subreq);
 static void smbsock_connect_quic_connected(struct tevent_req *subreq);
 static void smbsock_connect_quic_ready(struct tevent_req *subreq);
 #endif /* HAVE_LIBQUIC */
+#ifdef HAVE_LIBNGTCP2
+static NTSTATUS smbsock_connect_ngtcp2_udp_sock(
+			const struct sockaddr_storage *addr,
+			uint16_t port,
+			int *_sockfd,
+			struct samba_sockaddr *laddr,
+			struct samba_sockaddr *raddr);
+static void smbsock_connect_ngtcp2_ready(struct tevent_req *subreq);
+#endif /* HAVE_LIBNGTCP2 */
 
 struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
@@ -493,6 +509,27 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 		}
 
 		try_quic = tstream_tls_params_quic_enabled(state->quic_tlsp);
+
+		state->allow_ngtcp2 = lpcfg_parm_bool(lp_ctx,
+						      NULL,
+						      "client smb transport",
+						      "allow_ngtcp2_quic",
+						      try_quic);
+		state->force_ngtcp2 = lpcfg_parm_bool(lp_ctx,
+						      NULL,
+						      "client smb transport",
+						      "force_ngtcp2_quic",
+						      false);
+	}
+
+	if (smbsock_connect_require_bsd_socket) {
+		/*
+		 * This is libsmbclient in use
+		 * there's no periodic connection
+		 * monitoring, so we can't use
+		 * the ngtcp2 over udp quic support.
+		 */
+		state->allow_ngtcp2 = false;
 	}
 
 	for (ti = 0; ti < ts.num_transports; ti++) {
@@ -614,6 +651,9 @@ static bool smbsock_connect_submit_next(struct tevent_req *req)
 		struct smbsock_connect_state);
 	struct smbsock_connect_substate *s =
 		&state->substates[state->submit_idx];
+#ifdef HAVE_LIBNGTCP2
+	NTSTATUS status;
+#endif /* HAVE_LIBNGTCP2 */
 
 	SMB_ASSERT(state->submit_idx < state->num_substates);
 
@@ -655,6 +695,10 @@ static bool smbsock_connect_submit_next(struct tevent_req *req)
 
 	case SMB_TRANSPORT_TYPE_QUIC:
 #ifdef HAVE_LIBQUIC
+		if (state->force_ngtcp2) {
+			goto try_ngtcp2;
+		}
+
 		s->subreq = open_socket_out_send(state,
 						 state->ev,
 						 IPPROTO_QUIC,
@@ -668,14 +712,47 @@ static bool smbsock_connect_submit_next(struct tevent_req *req)
 					smbsock_connect_quic_connected,
 					s);
 		break;
-#else /* ! HAVE_LIBQUIC */
+try_ngtcp2:
+#define __HAVE_LIBQUIC_OR_LIBNGTCP2 1
+#endif /* HAVE_LIBQUIC */
+#ifdef HAVE_LIBNGTCP2
+		if (!state->allow_ngtcp2) {
+			tevent_req_nterror(req, NT_STATUS_PROTOCOL_NOT_SUPPORTED);
+			return false;
+		}
+
+		status = smbsock_connect_ngtcp2_udp_sock(state->addr,
+							 s->transport.port,
+							 &s->sockfd,
+							 &s->laddr,
+							 &s->raddr);
+		if (tevent_req_nterror(req, status)) {
+			return false;
+		}
+
+		s->subreq = tstream_tls_ngtcp2_connect_send(state,
+							    state->ev,
+							    state->quic_tlsp,
+							    5000,
+							    "smb",
+							    &s->sockfd);
+		if (tevent_req_nomem(s->subreq, req)) {
+			return false;
+		}
+		tevent_req_set_callback(s->subreq,
+					smbsock_connect_ngtcp2_ready,
+					s);
+		break;
+#define __HAVE_LIBQUIC_OR_LIBNGTCP2 1
+#endif /* HAVE_LIBNGTCP2 */
+#ifndef __HAVE_LIBQUIC_OR_LIBNGTCP2
 		/*
 		 * Not supported yet, should already be
 		 * checked above.
 		 */
 		smb_panic(__location__);
 		break;
-#endif /* ! HAVE_LIBQUIC */
+#endif /* ! __HAVE_LIBQUIC_OR_LIBNGTCP2 */
 	}
 
 	if (s->subreq == NULL) {
@@ -863,6 +940,43 @@ static void smbsock_connect_quic_connected(struct tevent_req *subreq)
 
 	status = open_socket_out_recv(subreq, &s->sockfd);
 	TALLOC_FREE(subreq);
+#ifdef HAVE_LIBNGTCP2
+	if (NT_STATUS_EQUAL(status, NT_STATUS_PROTOCOL_NOT_SUPPORTED)) {
+		/*
+		 * fallback to ngtcp2 over udp sockets
+		 * in order to implement QUIC
+		 */
+
+		if (!state->allow_ngtcp2) {
+			goto fail;
+		}
+
+		status = smbsock_connect_ngtcp2_udp_sock(state->addr,
+							 s->transport.port,
+							 &s->sockfd,
+							 &s->laddr,
+							 &s->raddr);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+
+		s->subreq = tstream_tls_ngtcp2_connect_send(state,
+							    state->ev,
+							    state->quic_tlsp,
+							    5000,
+							    "smb",
+							    &s->sockfd);
+		if (s->subreq == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+		tevent_req_set_callback(s->subreq,
+					smbsock_connect_ngtcp2_ready,
+					s);
+		state->num_pending += 1;
+		return;
+	}
+#endif /* HAVE_LIBNGTCP2 */
 	if (NT_STATUS_IS_OK(status)) {
 		s->subreq = tstream_tls_quic_handshake_send(state,
 							    state->ev,
@@ -972,6 +1086,132 @@ static void smbsock_connect_quic_ready(struct tevent_req *subreq)
 	}
 }
 #endif /* HAVE_LIBQUIC */
+
+#ifdef HAVE_LIBNGTCP2
+static NTSTATUS smbsock_connect_ngtcp2_udp_sock(
+			const struct sockaddr_storage *_addr,
+			uint16_t port,
+			int *_sockfd,
+			struct samba_sockaddr *laddr,
+			struct samba_sockaddr *raddr)
+{
+	int sockfd = -1;
+	int ret;
+
+	*laddr = (struct samba_sockaddr) {
+		.sa_socklen = sizeof(laddr->u),
+	};
+	*raddr = (struct samba_sockaddr) {
+		.sa_socklen = sizeof(*_addr),
+		.u = {
+			.ss = *_addr,
+		},
+	};
+
+	sockfd = socket(raddr->u.sa.sa_family, SOCK_DGRAM, IPPROTO_UDP);
+	if (sockfd == -1) {
+		return map_nt_error_from_unix_common(errno);
+	}
+
+	switch (raddr->u.sa.sa_family) {
+	case AF_INET:
+		raddr->sa_socklen = sizeof(struct sockaddr_in);
+		break;
+	case AF_INET6:
+		raddr->sa_socklen = sizeof(struct sockaddr_in6);
+		break;
+	}
+
+	set_sockaddr_port(&raddr->u.sa, port);
+
+	ret = connect(sockfd, &raddr->u.sa, raddr->sa_socklen);
+	if (ret == -1) {
+		int saved_errno = errno;
+		close(sockfd);
+		return map_nt_error_from_unix_common(saved_errno);
+	}
+
+	ret = getsockname(sockfd, &laddr->u.sa, &laddr->sa_socklen);
+	if (ret == -1) {
+		int saved_errno = errno;
+		close(sockfd);
+		return map_nt_error_from_unix_common(saved_errno);
+	}
+
+	*_sockfd = sockfd;
+	return NT_STATUS_OK;
+}
+
+static void smbsock_connect_ngtcp2_ready(struct tevent_req *subreq)
+{
+	struct smbsock_connect_substate *s =
+		(struct smbsock_connect_substate *)
+		tevent_req_callback_data_void(subreq);
+	struct tevent_req *req = s->req;
+	struct smbsock_connect_state *state =
+		tevent_req_data(req,
+		struct smbsock_connect_state);
+	NTSTATUS status;
+	struct tstream_context *tstream = NULL;
+	int ret;
+	int error;
+
+	SMB_ASSERT(s->subreq == subreq);
+	s->subreq = NULL;
+	SMB_ASSERT(state->num_pending > 0);
+	state->num_pending -= 1;
+
+	ret = tstream_tls_ngtcp2_connect_recv(subreq,
+					      &error,
+					      state,
+					      &tstream);
+	TALLOC_FREE(subreq);
+	if (ret == 0) {
+		/*
+		 * smbsock_connect_cleanup()
+		 * will free all other subreqs
+		 */
+		state->transport = smbXcli_transport_tstream(state,
+							     &tstream,
+							     &s->laddr,
+							     &s->raddr,
+							     &s->transport);
+		if (tevent_req_nomem(state->transport, req)) {
+			return;
+		}
+		tevent_req_done(req);
+		return;
+	}
+	status = map_nt_error_from_unix_common(error);
+
+	/*
+	 * Do nothing, wait for the remaining
+	 * requests to come here.
+	 *
+	 * Submit the next requests if there
+	 * are unsubmitted requests remaining.
+	 */
+	if (state->submit_idx < state->num_substates) {
+		bool ok;
+
+		ok = smbsock_connect_submit_next(req);
+		if (!ok) {
+			return;
+		}
+	}
+
+	if (state->num_pending == 0) {
+		/*
+		 * All requests failed
+		 *
+		 * smbsock_connect_cleanup()
+		 * will free all other subreqs
+		 */
+		tevent_req_nterror(req, status);
+		return;
+	}
+}
+#endif /* HAVE_LIBNGTCP2 */
 
 NTSTATUS smbsock_connect_recv(struct tevent_req *req,
 			      TALLOC_CTX *mem_ctx,
