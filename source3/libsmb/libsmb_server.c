@@ -820,6 +820,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
 	SMBCSRV *srv=NULL;
 	SMBCSRV *ipc_srv=NULL;
 	struct smb_transports ts = smbsock_transports_from_port(port);
+	struct cli_credentials *creds = NULL;
 
 	/*
 	 * Use srv->cli->desthost and srv->cli->share instead of
@@ -842,110 +843,110 @@ SMBC_attr_server(TALLOC_CTX *ctx,
          */
         ipc_srv = SMBC_find_server(ctx, context, server, "*IPC$",
                                    pp_workgroup, pp_username, pp_password);
-        if (!ipc_srv) {
-		struct cli_credentials *creds = NULL;
+	if (ipc_srv != NULL) {
+		return ipc_srv;
+	}
 
-                /* We didn't find a cached connection.  Get the password */
-		if (!*pp_password || (*pp_password)[0] == '\0') {
-                        /* ... then retrieve it now. */
-			SMBC_call_auth_fn(ctx, context, server, share,
-                                          pp_workgroup,
-                                          pp_username,
-                                          pp_password);
-			if (!*pp_workgroup || !*pp_username || !*pp_password) {
-				errno = ENOMEM;
-				return NULL;
-			}
-                }
-
-                flags = 0;
-
-		creds = SMBC_auth_credentials(NULL,
-					      context,
-					      *pp_workgroup,
-					      *pp_username,
-					      *pp_password);
-		if (creds == NULL) {
+	/* We didn't find a cached connection.  Get the password */
+	if (!*pp_password || (*pp_password)[0] == '\0') {
+		/* ... then retrieve it now. */
+		SMBC_call_auth_fn(ctx, context, server, share,
+				  pp_workgroup,
+				  pp_username,
+				  pp_password);
+		if (!*pp_workgroup || !*pp_username || !*pp_password) {
 			errno = ENOMEM;
 			return NULL;
 		}
+	}
 
-		nt_status = cli_full_connection_creds(NULL,
-						      &ipc_cli,
-						      lp_netbios_name(),
-						      server,
-						      NULL,
-						      &ts,
-						      "IPC$",
-						      "?????",
-						      creds,
-						      flags);
-		if (! NT_STATUS_IS_OK(nt_status)) {
-			TALLOC_FREE(creds);
-                        DEBUG(1,("cli_full_connection failed! (%s)\n",
-                                 nt_errstr(nt_status)));
-                        errno = ENOTSUP;
-                        return NULL;
-                }
-		talloc_steal(ipc_cli, creds);
+	flags = 0;
 
-                ipc_srv = SMB_CALLOC_ARRAY(SMBCSRV, 1);
-                if (!ipc_srv) {
-                        errno = ENOMEM;
-                        cli_shutdown(ipc_cli);
-                        return NULL;
-                }
-                DLIST_ADD(ipc_srv->cli, ipc_cli);
+	creds = SMBC_auth_credentials(NULL,
+				      context,
+				      *pp_workgroup,
+				      *pp_username,
+				      *pp_password);
+	if (creds == NULL) {
+		errno = ENOMEM;
+		return NULL;
+	}
 
-                nt_status = cli_rpc_pipe_open_noauth(
-			ipc_srv->cli, &ndr_table_lsarpc, &pipe_hnd);
-                if (!NT_STATUS_IS_OK(nt_status)) {
-                        DEBUG(1, ("cli_nt_session_open fail!\n"));
-                        errno = ENOTSUP;
-                        cli_shutdown(ipc_srv->cli);
-                        free(ipc_srv);
-                        return NULL;
-                }
+	nt_status = cli_full_connection_creds(NULL,
+					      &ipc_cli,
+					      lp_netbios_name(),
+					      server,
+					      NULL,
+					      &ts,
+					      "IPC$",
+					      "?????",
+					      creds,
+					      flags);
+	if (! NT_STATUS_IS_OK(nt_status)) {
+		TALLOC_FREE(creds);
+		DEBUG(1,("cli_full_connection failed! (%s)\n",
+			 nt_errstr(nt_status)));
+		errno = ENOTSUP;
+		return NULL;
+	}
+	talloc_steal(ipc_cli, creds);
 
-                /*
-                 * Some systems don't support
-                 * SEC_FLAG_MAXIMUM_ALLOWED, but NT sends 0x2000000
-                 * so we might as well do it too.
-                 */
+	ipc_srv = SMB_CALLOC_ARRAY(SMBCSRV, 1);
+	if (!ipc_srv) {
+		errno = ENOMEM;
+		cli_shutdown(ipc_cli);
+		return NULL;
+	}
+	DLIST_ADD(ipc_srv->cli, ipc_cli);
 
-                nt_status = rpccli_lsa_open_policy(
-                        pipe_hnd,
-                        talloc_tos(),
-                        True,
-                        GENERIC_EXECUTE_ACCESS,
-                        &ipc_srv->pol);
+	nt_status = cli_rpc_pipe_open_noauth(
+		ipc_srv->cli, &ndr_table_lsarpc, &pipe_hnd);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(1, ("cli_nt_session_open fail!\n"));
+		errno = ENOTSUP;
+		cli_shutdown(ipc_srv->cli);
+		free(ipc_srv);
+		return NULL;
+	}
 
-                if (!NT_STATUS_IS_OK(nt_status)) {
-                        cli_shutdown(ipc_srv->cli);
-                        free(ipc_srv);
-			errno = cli_status_to_errno(nt_status);
-                        return NULL;
-                }
+	/*
+	 * Some systems don't support
+	 * SEC_FLAG_MAXIMUM_ALLOWED, but NT sends 0x2000000
+	 * so we might as well do it too.
+	 */
 
-                /* now add it to the cache (internal or external) */
+	nt_status = rpccli_lsa_open_policy(
+		pipe_hnd,
+		talloc_tos(),
+		True,
+		GENERIC_EXECUTE_ACCESS,
+		&ipc_srv->pol);
 
-                errno = 0;      /* let cache function set errno if it likes */
-                if (smbc_getFunctionAddCachedServer(context)(context, ipc_srv,
-                                                             server,
-                                                             "*IPC$",
-                                                             *pp_workgroup,
-                                                             *pp_username)) {
-                        DEBUG(3, (" Failed to add server to cache\n"));
-                        if (errno == 0) {
-                                errno = ENOMEM;
-                        }
-                        cli_shutdown(ipc_srv->cli);
-                        free(ipc_srv);
-                        return NULL;
-                }
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		cli_shutdown(ipc_srv->cli);
+		free(ipc_srv);
+		errno = cli_status_to_errno(nt_status);
+		return NULL;
+	}
 
-                DLIST_ADD(context->internal->servers, ipc_srv);
-        }
+	/* now add it to the cache (internal or external) */
+
+	errno = 0;      /* let cache function set errno if it likes */
+	if (smbc_getFunctionAddCachedServer(context)(context, ipc_srv,
+						     server,
+						     "*IPC$",
+						     *pp_workgroup,
+						     *pp_username)) {
+		DEBUG(3, (" Failed to add server to cache\n"));
+		if (errno == 0) {
+			errno = ENOMEM;
+		}
+		cli_shutdown(ipc_srv->cli);
+		free(ipc_srv);
+		return NULL;
+	}
+
+	DLIST_ADD(context->internal->servers, ipc_srv);
 
         return ipc_srv;
 }
