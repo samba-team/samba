@@ -150,7 +150,6 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	enum smb_encryption_setting encryption_state =
 		cli_credentials_get_smb_encryption(creds);
 	struct smb2_negotiate_contexts *in_contexts = NULL;
-	struct smb2_negotiate_contexts *out_contexts = NULL;
 
 	if (encryption_state >= SMB_ENCRYPTION_DESIRED) {
 		signing_state = SMB_SIGNING_REQUIRED;
@@ -226,8 +225,8 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 				 lp_client_min_protocol(),
 				 lp_client_max_protocol(),
 				 in_contexts,
-				 ctx,
-				 &out_contexts);
+				 NULL,
+				 NULL);
 	TALLOC_FREE(in_contexts);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
