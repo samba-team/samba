@@ -4236,7 +4236,7 @@ NTSTATUS smb2cli_req_get_sent_iov(struct tevent_req *req,
 
 static const struct {
 	enum protocol_types proto;
-	const char *smb1_name;
+	const char smb1_name[24]; /* strlen("MICROSOFT NETWORKS 1.03") == 23 */
 } smb1cli_prots[] = {
 	{PROTOCOL_CORE,		"PC NETWORK PROGRAM 1.0"},
 	{PROTOCOL_COREPLUS,	"MICROSOFT NETWORKS 1.03"},
