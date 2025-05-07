@@ -191,8 +191,9 @@ char *smb1_dfs_share_path(TALLOC_CTX *ctx,
 unsigned int cli_set_timeout(struct cli_state *cli, unsigned int timeout);
 bool cli_set_backup_intent(struct cli_state *cli, bool flag);
 extern struct GUID cli_state_client_guid;
+struct smbXcli_transport;
 struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
-				   int fd,
+				   struct smbXcli_transport **ptransport,
 				   const char *remote_name,
 				   enum smb_signing_setting signing_state,
 				   int flags);

@@ -65,13 +65,11 @@ bool cli_set_backup_intent(struct cli_state *cli, bool flag)
 struct GUID cli_state_client_guid;
 
 struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
-				   int fd,
+				   struct smbXcli_transport **ptransport,
 				   const char *remote_name,
 				   enum smb_signing_setting signing_state,
 				   int flags)
 {
-	struct smb_transport tp = { .type = SMB_TRANSPORT_TYPE_UNKNOWN, };
-	struct smbXcli_transport *transport = NULL;
 	struct cli_state *cli = NULL;
 	bool use_spnego = lp_client_use_spnego();
 	bool force_dos_errors = false;
@@ -195,13 +193,8 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 
 	smb2_capabilities = SMB2_CAP_ALL;
 
-	transport = smbXcli_transport_bsd(cli, fd, &tp);
-	if (transport == NULL) {
-		goto error;
-	}
-
 	cli->conn = smbXcli_conn_create(cli,
-					&transport,
+					ptransport,
 					remote_name,
 					signing_state,
 					smb1_capabilities,

@@ -710,6 +710,8 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	const char *machine_domain = NULL;
 	int flags = 0;
 	struct cli_credentials *creds = NULL;
+	struct smb_transport tp = { .type = SMB_TRANSPORT_TYPE_UNKNOWN, };
+	struct smbXcli_transport *xtp = NULL;
 
 	struct named_mutex *mutex;
 
@@ -782,23 +784,30 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 
 	/*
 	 * cm_prepare_connection() is responsible that sockfd does not leak.
-	 * Once cli_state_create() returns with success, the
-	 * smbXcli_conn_destructor() makes sure that close(sockfd) is finally
+	 * Once smbXcli_transport_bsd() returns with success, the
+	 * smbXcli_transport_destructor() makes sure that close(sockfd) is finally
 	 * called. Till that, close(sockfd) must be called on every unsuccessful
 	 * return.
 	 */
-	*cli = cli_state_create(NULL, sockfd, controller,
-				smb_sign_client_connections, flags);
-	if (*cli == NULL) {
+	set_socket_options(sockfd, lp_socket_options());
+	xtp = smbXcli_transport_bsd(NULL, sockfd, &tp);
+	if (xtp == NULL) {
 		close(sockfd);
 		DEBUG(1, ("Could not cli_initialize\n"));
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-	cli_set_timeout(*cli, 10000); /* 10 seconds */
+	*cli = cli_state_create(NULL, &xtp, controller,
+				smb_sign_client_connections, flags);
+	if (*cli == NULL) {
+		TALLOC_FREE(xtp);
+		DEBUG(1, ("Could not cli_initialize\n"));
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
-	set_socket_options(sockfd, lp_socket_options());
+	cli_set_timeout(*cli, 10000); /* 10 seconds */
 
 	result = smbXcli_negprot((*cli)->conn,
 				 (*cli)->timeout,

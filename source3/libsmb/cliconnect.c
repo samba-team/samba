@@ -2593,20 +2593,26 @@ static void cli_connect_nb_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct cli_connect_nb_state *state = tevent_req_data(
 		req, struct cli_connect_nb_state);
+	struct smb_transport tp = { .type = SMB_TRANSPORT_TYPE_UNKNOWN, };
+	struct smbXcli_transport *xtp = NULL;
 	NTSTATUS status;
 	int fd = 0;
-	uint16_t port;
 
-	status = cli_connect_sock_recv(subreq, &fd, &port);
+	status = cli_connect_sock_recv(subreq, &fd, &tp.port);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
-	state->cli = cli_state_create(state, fd, state->desthost,
+	xtp = smbXcli_transport_bsd(state, fd, &tp);
+	if (tevent_req_nomem(xtp, req)) {
+		close(fd);
+		return;
+	}
+
+	state->cli = cli_state_create(state, &xtp, state->desthost,
 				      state->signing_state, state->flags);
 	if (tevent_req_nomem(state->cli, req)) {
-		close(fd);
 		return;
 	}
 	tevent_req_done(req);
