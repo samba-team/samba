@@ -47,7 +47,7 @@ struct smbXcli_transport *smbXcli_transport_bsd(TALLOC_CTX *mem_ctx,
 						const struct smb_transport *tp);
 
 struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
-					 int fd,
+					 struct smbXcli_transport **ptransport,
 					 const char *remote_name,
 					 enum smb_signing_setting signing_state,
 					 uint32_t smb1_capabilities,

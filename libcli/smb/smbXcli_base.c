@@ -386,7 +386,7 @@ static int smbXcli_conn_destructor(struct smbXcli_conn *conn)
 }
 
 struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
-					 int fd,
+					 struct smbXcli_transport **ptransport,
 					 const char *remote_name,
 					 enum smb_signing_setting signing_state,
 					 uint32_t smb1_capabilities,
@@ -394,7 +394,6 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 					 uint32_t smb2_capabilities,
 					 const struct smb311_capabilities *smb3_capabilities)
 {
-	struct smb_transport tp = { .type = SMB_TRANSPORT_TYPE_UNKNOWN, };
 	struct smbXcli_conn *conn = NULL;
 
 	if (smb3_capabilities != NULL) {
@@ -412,10 +411,7 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	conn->transport = smbXcli_transport_bsd(conn, fd, &tp);
-	if (conn->transport == NULL) {
-		goto error;
-	}
+	conn->transport = talloc_move(conn, ptransport);
 
 	conn->remote_name = talloc_strdup(conn, remote_name);
 	if (conn->remote_name == NULL) {

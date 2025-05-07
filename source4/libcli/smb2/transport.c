@@ -48,6 +48,8 @@ struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
 					   struct smbcli_options *options)
 {
 	struct smb2_transport *transport;
+	struct smb_transport tp = { .type = SMB_TRANSPORT_TYPE_UNKNOWN, };
+	struct smbXcli_transport *xtp = NULL;
 
 	transport = talloc_zero(parent_ctx, struct smb2_transport);
 	if (!transport) return NULL;
@@ -63,8 +65,17 @@ struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
 		transport->options.max_protocol = PROTOCOL_LATEST;
 	}
 
+	xtp = smbXcli_transport_bsd(transport, sock->sockfd, &tp);
+	if (xtp == NULL) {
+		TALLOC_FREE(sock);
+		TALLOC_FREE(transport);
+		return NULL;
+	}
+	sock->sockfd = -1;
+	TALLOC_FREE(sock);
+
 	transport->conn = smbXcli_conn_create(transport,
-					      sock->sockfd,
+					      &xtp,
 					      sock->hostname,
 					      options->signing,
 					      0, /* smb1_capabilities */
@@ -72,11 +83,10 @@ struct smb2_transport *smb2_transport_init(struct smbcli_socket *sock,
 					      options->smb2_capabilities,
 					      &options->smb3_capabilities);
 	if (transport->conn == NULL) {
-		talloc_free(transport);
+		TALLOC_FREE(xtp);
+		TALLOC_FREE(transport);
 		return NULL;
 	}
-	sock->sockfd = -1;
-	TALLOC_FREE(sock);
 
 	talloc_set_destructor(transport, transport_destructor);
 

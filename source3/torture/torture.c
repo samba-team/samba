@@ -15004,6 +15004,11 @@ static bool run_smb1_truncated_sesssetup(int dummy)
 {
 	struct tevent_context *ev;
 	struct tevent_req *req;
+	struct smb_transport tp = {
+		.type = SMB_TRANSPORT_TYPE_TCP,
+		.port = 445,
+	};
+	struct smbXcli_transport *xtp = NULL;
 	struct smbXcli_conn *conn;
 	struct sockaddr_storage ss;
 	NTSTATUS status;
@@ -15025,7 +15030,13 @@ static bool run_smb1_truncated_sesssetup(int dummy)
 		return false;
 	}
 
-	conn = smbXcli_conn_create(talloc_tos(), fd, host, SMB_SIGNING_OFF, 0,
+	xtp = smbXcli_transport_bsd(talloc_tos(), fd, &tp);
+	if (xtp == NULL) {
+		d_fprintf(stderr, "smbXcli_transport_bsd failed\n");
+		return false;
+	}
+
+	conn = smbXcli_conn_create(talloc_tos(), &xtp, host, SMB_SIGNING_OFF, 0,
 				   NULL, 0, NULL);
 	if (conn == NULL) {
 		d_fprintf(stderr, "smbXcli_conn_create failed\n");
@@ -15193,6 +15204,11 @@ static bool do_smb1_exit(TALLOC_CTX *mem_ctx,
 static bool run_smb1_negotiate_exit(int dummy)
 {
 	struct tevent_context *ev;
+	struct smb_transport tp = {
+		.type = SMB_TRANSPORT_TYPE_TCP,
+		.port = 445,
+	};
+	struct smbXcli_transport *xtp = NULL;
 	struct smbXcli_conn *conn;
 	struct sockaddr_storage ss;
 	NTSTATUS status;
@@ -15214,7 +15230,13 @@ static bool run_smb1_negotiate_exit(int dummy)
 		return false;
 	}
 
-	conn = smbXcli_conn_create(talloc_tos(), fd, host, SMB_SIGNING_OFF, 0,
+	xtp = smbXcli_transport_bsd(talloc_tos(), fd, &tp);
+	if (xtp == NULL) {
+		d_fprintf(stderr, "smbXcli_transport_bsd failed\n");
+		return false;
+	}
+
+	conn = smbXcli_conn_create(talloc_tos(), &xtp, host, SMB_SIGNING_OFF, 0,
 				   NULL, 0, NULL);
 	if (conn == NULL) {
 		d_fprintf(stderr, "smbXcli_conn_create failed\n");
@@ -15304,6 +15326,11 @@ static bool run_ign_bad_negprot(int dummy)
 {
 	struct tevent_context *ev;
 	struct tevent_req *req;
+	struct smb_transport tp = {
+		.type = SMB_TRANSPORT_TYPE_TCP,
+		.port = 445,
+	};
+	struct smbXcli_transport *xtp = NULL;
 	struct smbXcli_conn *conn;
 	struct sockaddr_storage ss;
 	NTSTATUS status;
@@ -15325,7 +15352,13 @@ static bool run_ign_bad_negprot(int dummy)
 		return false;
 	}
 
-	conn = smbXcli_conn_create(talloc_tos(), fd, host, SMB_SIGNING_OFF, 0,
+	xtp = smbXcli_transport_bsd(talloc_tos(), fd, &tp);
+	if (xtp == NULL) {
+		d_fprintf(stderr, "smbXcli_transport_bsd failed\n");
+		return false;
+	}
+
+	conn = smbXcli_conn_create(talloc_tos(), &xtp, host, SMB_SIGNING_OFF, 0,
 				   NULL, 0, NULL);
 	if (conn == NULL) {
 		d_fprintf(stderr, "smbXcli_conn_create failed\n");

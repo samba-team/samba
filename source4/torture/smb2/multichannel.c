@@ -2549,6 +2549,11 @@ static bool test_multichannel_bug_15346(struct torture_context *tctx,
 		struct socket_context *sock = NULL;
 		uint16_t port = 445;
 		struct smbcli_options options = transport1->options;
+		struct smb_transport tp = {
+			.type = SMB_TRANSPORT_TYPE_TCP,
+			.port = port,
+		};
+		struct smbXcli_transport *xtp = NULL;
 
 		conn->state = state;
 		conn->idx = i;
@@ -2563,8 +2568,14 @@ static bool test_multichannel_bug_15346(struct torture_context *tctx,
 		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 						"socket_connect_multi failed");
 
+		xtp = smbXcli_transport_bsd(state->conns, sock->fd, &tp);
+		torture_assert_goto(tctx, xtp != NULL, ret, done,
+				    "smbXcli_transport_bsd failed");
+		sock->fd = -1;
+		TALLOC_FREE(sock);
+
 		conn->smbXcli = smbXcli_conn_create(state->conns,
-					sock->fd,
+					&xtp,
 					host,
 					SMB_SIGNING_OFF,
 					0,
@@ -2573,8 +2584,6 @@ static bool test_multichannel_bug_15346(struct torture_context *tctx,
 					&options.smb3_capabilities);
 		torture_assert_goto(tctx, conn->smbXcli != NULL, ret, done,
 				    "smbXcli_conn_create failed");
-		sock->fd = -1;
-		TALLOC_FREE(sock);
 	}
 
 	/*
