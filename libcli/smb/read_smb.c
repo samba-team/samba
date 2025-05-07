@@ -34,7 +34,6 @@ struct read_smb_state {
 	uint8_t *buf;
 };
 
-static ssize_t read_smb_more(uint8_t *buf, size_t buflen, void *private_data);
 static void read_smb_done(struct tevent_req *subreq);
 
 struct tevent_req *read_smb_send(TALLOC_CTX *mem_ctx,
@@ -62,7 +61,7 @@ struct tevent_req *read_smb_send(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
-static ssize_t read_smb_more(uint8_t *buf, size_t buflen, void *private_data)
+ssize_t read_smb_more(uint8_t *buf, size_t buflen, void *private_data)
 {
 	if (buflen > 4) {
 		return 0;	/* We've been here, we're done */
