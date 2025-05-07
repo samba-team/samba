@@ -2,20 +2,9 @@
 
 
 def build(bld):
-    bld.SAMBA_LIBRARY('smb_transport',
-        source='''
-            read_smb.c
-        ''',
-        deps='LIBASYNC_REQ',
-        public_deps='talloc tevent',
-        private_library=True,
-        private_headers='''
-            read_smb.h
-        ''',
-        )
-
     bld.SAMBA_LIBRARY('cli_smb_common',
     source='''
+           read_smb.c
            smb_signing.c
            smb_seal.c
            smb2_negotiate_context.c
@@ -49,11 +38,12 @@ def build(bld):
     ''',
     deps='''
         LIBCRYPTO gnutls NDR_SMB2_LEASE_STRUCT samba-errors gensec krb5samba
-        smb_transport GNUTLS_HELPERS NDR_IOCTL
+        LIBASYNC_REQ GNUTLS_HELPERS NDR_IOCTL
     ''',
-    public_deps='talloc samba-util iov_buf',
+    public_deps='talloc tevent samba-util iov_buf',
     private_library=True,
     private_headers='''
+                    read_smb.h
                     smb_common.h
                     smb2_constants.h
                     smb_constants.h
