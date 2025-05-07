@@ -371,6 +371,7 @@ struct smbsock_connect_substate {
 	size_t idx;
 	struct smb_transport transport;
 	struct tevent_req *subreq;
+	int sockfd;
 };
 
 struct smbsock_connect_state {
@@ -385,8 +386,7 @@ struct smbsock_connect_state {
 	uint8_t submit_idx;
 	uint8_t num_pending;
 	struct smbsock_connect_substate substates[SMB_TRANSPORTS_MAX_TRANSPORTS];
-	int sock;
-	struct smb_transport transport;
+	struct smbXcli_transport *transport;
 };
 
 static void smbsock_connect_cleanup(struct tevent_req *req,
@@ -419,7 +419,6 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 	}
 	state->ev = ev;
 	state->addr = addr;
-	state->sock = -1;
 	state->called_name =
 		(called_name != NULL) ? called_name : "*SMBSERVER";
 	state->called_type =
@@ -458,6 +457,7 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 		s->req = req;
 		s->idx = state->num_substates;
 		s->transport = *t;
+		s->sockfd = -1;
 
 		state->num_substates += 1;
 	}
@@ -515,6 +515,10 @@ static void smbsock_connect_cleanup(struct tevent_req *req,
 			&state->substates[si];
 
 		TALLOC_FREE(s->subreq);
+		if (s->sockfd != -1) {
+			close(s->sockfd);
+			s->sockfd = -1;
+		}
 	}
 
 	if (req_state == TEVENT_REQ_DONE) {
@@ -524,10 +528,7 @@ static void smbsock_connect_cleanup(struct tevent_req *req,
 		return;
 	}
 
-	if (state->sock != -1) {
-		close(state->sock);
-		state->sock = -1;
-	}
+	TALLOC_FREE(state->transport);
 
 	return;
 }
@@ -637,14 +638,21 @@ static void smbsock_connect_nbt_connected(struct tevent_req *subreq)
 	SMB_ASSERT(state->num_pending > 0);
 	state->num_pending -= 1;
 
-	status = nb_connect_recv(subreq, &state->sock);
+	status = nb_connect_recv(subreq, &s->sockfd);
 	TALLOC_FREE(subreq);
 	if (NT_STATUS_IS_OK(status)) {
 		/*
 		 * smbsock_connect_cleanup()
 		 * will free all other subreqs
 		 */
-		state->transport = s->transport;
+		set_socket_options(s->sockfd, lp_socket_options());
+		state->transport = smbXcli_transport_bsd(state,
+							 s->sockfd,
+							 &s->transport);
+		if (tevent_req_nomem(state->transport, req)) {
+			return;
+		}
+		s->sockfd = -1;
 		tevent_req_done(req);
 		return;
 	}
@@ -693,14 +701,21 @@ static void smbsock_connect_tcp_connected(struct tevent_req *subreq)
 	SMB_ASSERT(state->num_pending > 0);
 	state->num_pending -= 1;
 
-	status = open_socket_out_recv(subreq, &state->sock);
+	status = open_socket_out_recv(subreq, &s->sockfd);
 	TALLOC_FREE(subreq);
 	if (NT_STATUS_IS_OK(status)) {
 		/*
 		 * smbsock_connect_cleanup()
 		 * will free all other subreqs
 		 */
-		state->transport = s->transport;
+		set_socket_options(s->sockfd, lp_socket_options());
+		state->transport = smbXcli_transport_bsd(state,
+							 s->sockfd,
+							 &s->transport);
+		if (tevent_req_nomem(state->transport, req)) {
+			return;
+		}
+		s->sockfd = -1;
 		tevent_req_done(req);
 		return;
 	}
@@ -733,8 +748,9 @@ static void smbsock_connect_tcp_connected(struct tevent_req *subreq)
 	}
 }
 
-NTSTATUS smbsock_connect_recv(struct tevent_req *req, int *sock,
-			      uint16_t *ret_port)
+NTSTATUS smbsock_connect_recv(struct tevent_req *req,
+			      TALLOC_CTX *mem_ctx,
+			      struct smbXcli_transport **ptransport)
 {
 	struct smbsock_connect_state *state = tevent_req_data(
 		req, struct smbsock_connect_state);
@@ -744,11 +760,7 @@ NTSTATUS smbsock_connect_recv(struct tevent_req *req, int *sock,
 		tevent_req_received(req);
 		return status;
 	}
-	*sock = state->sock;
-	state->sock = -1;
-	if (ret_port != NULL) {
-		*ret_port = state->transport.port;
-	}
+	*ptransport = talloc_move(mem_ctx, &state->transport);
 	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
@@ -766,8 +778,6 @@ NTSTATUS smbsock_connect(const struct sockaddr_storage *addr,
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
-	int fd = -1;
-	uint16_t ret_port = 0;
 
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
@@ -787,21 +797,7 @@ NTSTATUS smbsock_connect(const struct sockaddr_storage *addr,
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = smbsock_connect_recv(req, &fd, &ret_port);
-	if (NT_STATUS_IS_OK(status)) {
-		struct smb_transport tp = {
-			.type = SMB_TRANSPORT_TYPE_UNKNOWN,
-			.port = ret_port,
-		};
-
-		set_socket_options(fd, lp_socket_options());
-		*ptransport = smbXcli_transport_bsd(mem_ctx, fd, &tp);
-		if (*ptransport == NULL) {
-			close(fd);
-			status = NT_STATUS_NO_MEMORY;
-			goto fail;
-		}
-	}
+	status = smbsock_connect_recv(req, mem_ctx, ptransport);
  fail:
 	TALLOC_FREE(frame);
 	return status;
@@ -975,8 +971,6 @@ static void smbsock_any_connect_connected(struct tevent_req *subreq)
 	struct smbsock_any_connect_state *state = tevent_req_data(
 		req, struct smbsock_any_connect_state);
 	NTSTATUS status;
-	int fd = 0;
-	uint16_t chosen_port = 0;
 	size_t i;
 	size_t chosen_index = 0;
 
@@ -991,27 +985,12 @@ static void smbsock_any_connect_connected(struct tevent_req *subreq)
 		return;
 	}
 
-	status = smbsock_connect_recv(subreq, &fd, &chosen_port);
+	status = smbsock_connect_recv(subreq, state, &state->transport);
 
 	TALLOC_FREE(subreq);
 	state->requests[chosen_index] = NULL;
 
 	if (NT_STATUS_IS_OK(status)) {
-		struct smb_transport tp = {
-			.type = SMB_TRANSPORT_TYPE_UNKNOWN,
-			.port = chosen_port,
-		};
-
-		/*
-		 * tevent_req_done() will kill all the other requests
-		 * via smbsock_any_connect_cleanup().
-		 */
-		set_socket_options(fd, lp_socket_options());
-		state->transport = smbXcli_transport_bsd(state, fd, &tp);
-		if (tevent_req_nomem(state->transport, req)) {
-			close(fd);
-			return;
-		}
 		state->chosen_index = chosen_index;
 		tevent_req_done(req);
 		return;

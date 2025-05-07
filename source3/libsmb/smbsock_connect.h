@@ -36,8 +36,10 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 					const char *calling_name,
 					int calling_type)
 	NONNULL(2) NONNULL(3) NONNULL(4) NONNULL(5);
-NTSTATUS smbsock_connect_recv(struct tevent_req *req, int *sock,
-			      uint16_t *ret_port);
+NTSTATUS smbsock_connect_recv(struct tevent_req *req,
+			      TALLOC_CTX *mem_ctx,
+			      struct smbXcli_transport **ptransport)
+	NONNULL(1) NONNULL(3);
 NTSTATUS smbsock_connect(const struct sockaddr_storage *addr,
 			 struct loadparm_context *lp_ctx,
 			 const struct smb_transports *transports,
