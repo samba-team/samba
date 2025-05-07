@@ -51,6 +51,7 @@ SMBC_open_ctx(SMBCCTX *context,
 	uint16_t fd;
 	uint16_t port = 0;
 	NTSTATUS status = NT_STATUS_OBJECT_PATH_INVALID;
+	struct cli_credentials *creds = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!context || !context->internal->initialized) {
@@ -101,102 +102,6 @@ SMBC_open_ctx(SMBCCTX *context,
 	/* Hmmm, the test for a directory is suspect here ... FIXME */
 
 	if (strlen(path) > 0 && path[strlen(path) - 1] == '\\') {
-		status = NT_STATUS_OBJECT_PATH_INVALID;
-	} else {
-		struct cli_credentials *creds = NULL;
-
-		file = SMB_MALLOC_P(SMBCFILE);
-		if (!file) {
-			errno = ENOMEM;
-			TALLOC_FREE(frame);
-			return NULL;
-		}
-
-		ZERO_STRUCTP(file);
-
-		creds = context->internal->creds;
-		/*d_printf(">>>open: resolving %s\n", path);*/
-		status = cli_resolve_path(
-			frame, "",
-			creds,
-			srv->cli, path, &targetcli, &targetpath);
-		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("Could not resolve %s\n", path);
-                        errno = ENOENT;
-			SAFE_FREE(file);
-			TALLOC_FREE(frame);
-			return NULL;
-		}
-		/*d_printf(">>>open: resolved %s as %s\n", path, targetpath);*/
-
-		status = cli_open(targetcli, targetpath, flags,
-                                   context->internal->share_mode, &fd);
-		if (!NT_STATUS_IS_OK(status)) {
-
-			/* Handle the error ... */
-
-			SAFE_FREE(file);
-			TALLOC_FREE(frame);
-			errno = cli_status_to_errno(status);
-			return NULL;
-		}
-
-		/* Fill in file struct */
-
-		file->cli_fd  = fd;
-		file->fname   = SMB_STRDUP(fname);
-		file->srv     = srv;
-		file->offset  = 0;
-		file->file    = True;
-		/*
-		 * targetcli is either equal to srv->cli or
-		 * is a subsidiary DFS connection. Either way
-		 * file->cli_fd belongs to it so we must cache
-		 * it for read/write/close, not re-resolve each time.
-		 * Re-resolving is both slow and incorrect.
-		 */
-		file->targetcli = targetcli;
-
-		DLIST_ADD(context->internal->files, file);
-
-                /*
-                 * If the file was opened in O_APPEND mode, all write
-                 * operations should be appended to the file.  To do that,
-                 * though, using this protocol, would require a getattrE()
-                 * call for each and every write, to determine where the end
-                 * of the file is. (There does not appear to be an append flag
-                 * in the protocol.)  Rather than add all of that overhead of
-                 * retrieving the current end-of-file offset prior to each
-                 * write operation, we'll assume that most append operations
-                 * will continuously write, so we'll just set the offset to
-                 * the end of the file now and hope that's adequate.
-                 *
-                 * Note to self: If this proves inadequate, and O_APPEND
-                 * should, in some cases, be forced for each write, add a
-                 * field in the context options structure, for
-                 * "strict_append_mode" which would select between the current
-                 * behavior (if FALSE) or issuing a getattrE() prior to each
-                 * write and forcing the write to the end of the file (if
-                 * TRUE).  Adding that capability will likely require adding
-                 * an "append" flag into the _SMBCFILE structure to track
-                 * whether a file was opened in O_APPEND mode.  -- djl
-                 */
-                if (flags & O_APPEND) {
-                        if (SMBC_lseek_ctx(context, file, 0, SEEK_END) < 0) {
-                                (void) SMBC_close_ctx(context, file);
-                                errno = ENXIO;
-				TALLOC_FREE(frame);
-                                return NULL;
-                        }
-                }
-
-		TALLOC_FREE(frame);
-		return file;
-	}
-
-	/* Check if opendir needed ... */
-
-	if (!NT_STATUS_IS_OK(status)) {
 		file = smbc_getFunctionOpendir(context)(context, fname);
 		TALLOC_FREE(frame);
 		if (file == NULL) {
@@ -205,9 +110,93 @@ SMBC_open_ctx(SMBCCTX *context,
 		return file;
 	}
 
-	errno = EINVAL; /* FIXME, correct errno ? */
+	file = SMB_MALLOC_P(SMBCFILE);
+	if (!file) {
+		errno = ENOMEM;
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	ZERO_STRUCTP(file);
+
+	creds = context->internal->creds;
+	/*d_printf(">>>open: resolving %s\n", path);*/
+	status = cli_resolve_path(
+		frame, "",
+		creds,
+		srv->cli, path, &targetcli, &targetpath);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Could not resolve %s\n", path);
+		errno = ENOENT;
+		SAFE_FREE(file);
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+	/*d_printf(">>>open: resolved %s as %s\n", path, targetpath);*/
+
+	status = cli_open(targetcli, targetpath, flags,
+			  context->internal->share_mode, &fd);
+	if (!NT_STATUS_IS_OK(status)) {
+
+		/* Handle the error ... */
+
+		SAFE_FREE(file);
+		TALLOC_FREE(frame);
+		errno = cli_status_to_errno(status);
+		return NULL;
+	}
+
+	/* Fill in file struct */
+
+	file->cli_fd  = fd;
+	file->fname   = SMB_STRDUP(fname);
+	file->srv     = srv;
+	file->offset  = 0;
+	file->file    = True;
+	/*
+	 * targetcli is either equal to srv->cli or
+	 * is a subsidiary DFS connection. Either way
+	 * file->cli_fd belongs to it so we must cache
+	 * it for read/write/close, not re-resolve each time.
+	 * Re-resolving is both slow and incorrect.
+	 */
+	file->targetcli = targetcli;
+
+	DLIST_ADD(context->internal->files, file);
+
+	/*
+	 * If the file was opened in O_APPEND mode, all write
+	 * operations should be appended to the file.  To do that,
+	 * though, using this protocol, would require a getattrE()
+	 * call for each and every write, to determine where the end
+	 * of the file is. (There does not appear to be an append flag
+	 * in the protocol.)  Rather than add all of that overhead of
+	 * retrieving the current end-of-file offset prior to each
+	 * write operation, we'll assume that most append operations
+	 * will continuously write, so we'll just set the offset to
+	 * the end of the file now and hope that's adequate.
+	 *
+	 * Note to self: If this proves inadequate, and O_APPEND
+	 * should, in some cases, be forced for each write, add a
+	 * field in the context options structure, for
+	 * "strict_append_mode" which would select between the current
+	 * behavior (if FALSE) or issuing a getattrE() prior to each
+	 * write and forcing the write to the end of the file (if
+	 * TRUE).  Adding that capability will likely require adding
+	 * an "append" flag into the _SMBCFILE structure to track
+	 * whether a file was opened in O_APPEND mode.  -- djl
+	 */
+	if (flags & O_APPEND) {
+		if (SMBC_lseek_ctx(context, file, 0, SEEK_END) < 0) {
+			(void) SMBC_close_ctx(context, file);
+			errno = ENXIO;
+			TALLOC_FREE(frame);
+			return NULL;
+		}
+	}
+
 	TALLOC_FREE(frame);
-	return NULL;
+	return file;
 }
 
 /*
