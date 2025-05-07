@@ -2499,20 +2499,11 @@ static void cli_connect_sock_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct cli_connect_sock_state *state = tevent_req_data(
 		req, struct cli_connect_sock_state);
-	struct smb_transport tp = { .type = SMB_TRANSPORT_TYPE_UNKNOWN, };
-	int fd;
 	NTSTATUS status;
 
-	status = smbsock_any_connect_recv(subreq, &fd, NULL, &tp.port);
+	status = smbsock_any_connect_recv(subreq, state, &state->transport, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-	set_socket_options(fd, lp_socket_options());
-
-	state->transport = smbXcli_transport_bsd(state, fd, &tp);
-	if (tevent_req_nomem(state->transport, req)) {
-		close(fd);
 		return;
 	}
 

@@ -22,17 +22,12 @@
 
 #include "includes.h"
 #include "system/network.h"
-#include "../lib/async_req/async_sock.h"
 #include "../lib/util/tevent_ntstatus.h"
-#include "lib/events/events.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
-#include "lib/socket/socket.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
-#include "../libcli/smb/smbXcli_base.h"
 #include "libcli/raw/raw_proto.h"
-#include "../libcli/smb/read_smb.h"
 #include "lib/util/util_net.h"
 #include "../source3/libsmb/smbsock_connect.h"
 
@@ -235,30 +230,20 @@ static void smbcli_sock_connect_recv_conn(struct tevent_req *subreq)
 	struct sock_connect_state *state =
 		tevent_req_callback_data(subreq,
 		struct sock_connect_state);
-	struct smb_transport tp = { .type = SMB_TRANSPORT_TYPE_UNKNOWN, };
-	int sockfd = -1;
+	struct smbXcli_transport *xtp = NULL;
 
 	state->ctx->status = smbsock_any_connect_recv(subreq,
-						      &sockfd,
-						      NULL,
+						      state,
+						      &xtp,
 						      NULL);
 	if (!composite_is_ok(state->ctx)) return;
 
-	set_socket_options(sockfd, state->socket_options);
-
 	state->result = talloc_zero(state, struct smbcli_socket);
 	if (composite_nomem(state->result, state->ctx)) {
-		close(sockfd);
 		return;
 	}
 
-	state->result->transport = smbXcli_transport_bsd(state->result,
-							 sockfd,
-							 &tp);
-	if (composite_nomem(state->result->transport, state->ctx)) {
-		close(sockfd);
-		return;
-	}
+	state->result->transport = talloc_move(state->result, &xtp);
 
 	state->result->hostname = talloc_steal(state->result, state->host_name);
 
