@@ -1427,7 +1427,7 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 static bool connect_preferred_dc(TALLOC_CTX *mem_ctx,
 				 struct winbindd_domain *domain,
 				 uint32_t request_flags,
-				 int *fd)
+				 struct smbXcli_transport **ptransport)
 {
 	char *saf_servername = NULL;
 	struct smb_transports ts =
@@ -1509,13 +1509,14 @@ static bool connect_preferred_dc(TALLOC_CTX *mem_ctx,
 
 	status = smbsock_connect(&domain->dcaddr, lp_ctx, &ts,
 				 domain->dcname, -1, NULL, -1,
-				 fd, NULL, 10);
+				 10, NULL, ptransport);
 	if (!NT_STATUS_IS_OK(status)) {
 		winbind_add_failed_connection_entry(domain,
 						    domain->dcname,
 						    NT_STATUS_UNSUCCESSFUL);
 		return false;
 	}
+	talloc_reparent(NULL, mem_ctx, *ptransport);
 	return true;
 
 fail:
@@ -1553,9 +1554,7 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 		smb_transports_parse("client smb transports",
 			lp_client_smb_transports());
 	int i;
-	int fd = -1;
 	size_t fd_index;
-	struct smb_transport tp = { .type = SMB_TRANSPORT_TYPE_UNKNOWN, };
 	struct smbXcli_transport *xtp = NULL;
 
 	NTSTATUS status;
@@ -1566,7 +1565,7 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 	D_NOTICE("First try to connect to the closest DC (using server "
 		 "affinity cache). If this fails, try to lookup the DC using "
 		 "DNS afterwards.\n");
-	ok = connect_preferred_dc(mem_ctx, domain, request_flags, &fd);
+	ok = connect_preferred_dc(mem_ctx, domain, request_flags, &xtp);
 	if (ok) {
 		goto return_transport;
 	}
@@ -1663,10 +1662,6 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 	TALLOC_FREE(addrs);
 	num_addrs = 0;
 
-	if (fd != -1) {
-		close(fd);
-		fd = -1;
-	}
 	TALLOC_FREE(xtp);
 
 	/*
@@ -1677,15 +1672,6 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 	goto again;
 
 return_transport:
-	if (fd != -1) {
-		set_socket_options(fd, lp_socket_options());
-		xtp = smbXcli_transport_bsd(NULL, fd, &tp);
-		if (xtp == NULL) {
-			close(fd);
-			DBG_ERR("smbXcli_transport_bsd() failed\n");
-			return false;
-		}
-	}
 
 	*ptransport = talloc_move(mem_ctx, &xtp);
 

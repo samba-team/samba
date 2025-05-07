@@ -758,12 +758,16 @@ NTSTATUS smbsock_connect(const struct sockaddr_storage *addr,
 			 const struct smb_transports *transports,
 			 const char *called_name, int called_type,
 			 const char *calling_name, int calling_type,
-			 int *pfd, uint16_t *ret_port, int sec_timeout)
+			 int sec_timeout,
+			 TALLOC_CTX *mem_ctx,
+			 struct smbXcli_transport **ptransport)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	int fd = -1;
+	uint16_t ret_port = 0;
 
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
@@ -783,7 +787,21 @@ NTSTATUS smbsock_connect(const struct sockaddr_storage *addr,
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = smbsock_connect_recv(req, pfd, ret_port);
+	status = smbsock_connect_recv(req, &fd, &ret_port);
+	if (NT_STATUS_IS_OK(status)) {
+		struct smb_transport tp = {
+			.type = SMB_TRANSPORT_TYPE_UNKNOWN,
+			.port = ret_port,
+		};
+
+		set_socket_options(fd, lp_socket_options());
+		*ptransport = smbXcli_transport_bsd(mem_ctx, fd, &tp);
+		if (*ptransport == NULL) {
+			close(fd);
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+	}
  fail:
 	TALLOC_FREE(frame);
 	return status;
