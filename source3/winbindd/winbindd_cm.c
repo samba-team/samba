@@ -693,12 +693,12 @@ NTSTATUS winbindd_get_trust_credentials(struct winbindd_domain *domain,
 }
 
 /************************************************************************
- Given a fd with a just-connected TCP connection to a DC, open a connection
+ Given just-connected transport connection to a DC, open a connection
  to the pipe.
 ************************************************************************/
 
 static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
-				      const int sockfd,
+				      struct smbXcli_transport **ptransport,
 				      const char *controller,
 				      struct cli_state **cli,
 				      bool *retry)
@@ -710,8 +710,6 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	const char *machine_domain = NULL;
 	int flags = 0;
 	struct cli_credentials *creds = NULL;
-	struct smb_transport tp = { .type = SMB_TRANSPORT_TYPE_UNKNOWN, };
-	struct smbXcli_transport *xtp = NULL;
 
 	struct named_mutex *mutex;
 
@@ -728,7 +726,6 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 			 * connect to a foreign domain
 			 * without a direct outbound trust.
 			 */
-			close(sockfd);
 			return NT_STATUS_NO_TRUST_LSA_SECRET;
 		}
 
@@ -775,33 +772,15 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	mutex = grab_named_mutex(talloc_tos(), controller,
 				 WINBIND_SERVER_MUTEX_WAIT_TIME);
 	if (mutex == NULL) {
-		close(sockfd);
 		DEBUG(0,("cm_prepare_connection: mutex grab failed for %s\n",
 			 controller));
 		result = NT_STATUS_POSSIBLE_DEADLOCK;
 		goto done;
 	}
 
-	/*
-	 * cm_prepare_connection() is responsible that sockfd does not leak.
-	 * Once smbXcli_transport_bsd() returns with success, the
-	 * smbXcli_transport_destructor() makes sure that close(sockfd) is finally
-	 * called. Till that, close(sockfd) must be called on every unsuccessful
-	 * return.
-	 */
-	set_socket_options(sockfd, lp_socket_options());
-	xtp = smbXcli_transport_bsd(NULL, sockfd, &tp);
-	if (xtp == NULL) {
-		close(sockfd);
-		DEBUG(1, ("Could not cli_initialize\n"));
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	*cli = cli_state_create(NULL, &xtp, controller,
+	*cli = cli_state_create(NULL, ptransport, controller,
 				smb_sign_client_connections, flags);
 	if (*cli == NULL) {
-		TALLOC_FREE(xtp);
 		DEBUG(1, ("Could not cli_initialize\n"));
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -1819,6 +1798,8 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 		 "if the domain has more than one DC. We will try to connect 3 "
 		 "times at most.\n");
 	for (retries = 0; retries < 3; retries++) {
+		struct smb_transport tp = { .type = SMB_TRANSPORT_TYPE_UNKNOWN, };
+		struct smbXcli_transport *xtp = NULL;
 		bool found_dc;
 
 		D_DEBUG("Attempt %d/3: DC '%s' of domain '%s'.\n",
@@ -1839,8 +1820,19 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 		new_conn->cli = NULL;
 
-		result = cm_prepare_connection(domain, fd, domain->dcname,
+		set_socket_options(fd, lp_socket_options());
+		xtp = smbXcli_transport_bsd(NULL, fd, &tp);
+		if (xtp == NULL) {
+			close(fd);
+			DBG_ERR("smbXcli_transport_bsd() failed\n");
+			result = NT_STATUS_NO_MEMORY;
+			break;
+		}
+		talloc_steal(talloc_tos(), xtp);
+
+		result = cm_prepare_connection(domain, &xtp, domain->dcname,
 			&new_conn->cli, &retry);
+		TALLOC_FREE(xtp);
 		if (NT_STATUS_IS_OK(result)) {
 			break;
 		}
