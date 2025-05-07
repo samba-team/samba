@@ -20,6 +20,8 @@
 #ifndef _LIBSMB_SMBSOCK_CONNECT_H_
 #define _LIBSMB_SMBSOCK_CONNECT_H_
 
+struct smbXcli_transport;
+
 /* The following definitions come from libsmb/smbsock_connect.c */
 
 struct smb_transports smbsock_transports_from_port(uint16_t port);
@@ -66,8 +68,9 @@ NTSTATUS smbsock_any_connect(const struct sockaddr_storage *addrs,
 			     struct loadparm_context *lp_ctx,
 			     const struct smb_transports *transports,
 			     int sec_timeout,
-			     int *pfd, size_t *chosen_index,
-			     uint16_t *chosen_port)
-	NONNULL(1) NONNULL(7) NONNULL(8) NONNULL(10);
+			     TALLOC_CTX *mem_ctx,
+			     struct smbXcli_transport **ptransport,
+			     size_t *chosen_index)
+	NONNULL(1) NONNULL(7) NONNULL(8) NONNULL(11);
 
 #endif /* _LIBSMB_SMBSOCK_CONNECT_H_ */

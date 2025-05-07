@@ -22,6 +22,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "../lib/util/tevent_unix.h"
 #include "client.h"
+#include "../libcli/smb/smbXcli_base.h"
 #include "async_smb.h"
 #include "../libcli/smb/read_smb.h"
 #include "libsmb/nmblib.h"
@@ -1042,13 +1043,16 @@ NTSTATUS smbsock_any_connect(const struct sockaddr_storage *addrs,
 			     struct loadparm_context *lp_ctx,
 			     const struct smb_transports *transports,
 			     int sec_timeout,
-			     int *pfd, size_t *chosen_index,
-			     uint16_t *chosen_port)
+			     TALLOC_CTX *mem_ctx,
+			     struct smbXcli_transport **ptransport,
+			     size_t *chosen_index)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	uint16_t chosen_port = 0;
+	int fd = -1;
 
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
@@ -1069,7 +1073,21 @@ NTSTATUS smbsock_any_connect(const struct sockaddr_storage *addrs,
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = smbsock_any_connect_recv(req, pfd, chosen_index, chosen_port);
+	status = smbsock_any_connect_recv(req, &fd, chosen_index, &chosen_port);
+	if (NT_STATUS_IS_OK(status)) {
+		struct smb_transport tp = {
+			.type = SMB_TRANSPORT_TYPE_UNKNOWN,
+			.port = chosen_port,
+		};
+
+		set_socket_options(fd, lp_socket_options());
+		*ptransport = smbXcli_transport_bsd(mem_ctx, fd, &tp);
+		if (*ptransport == NULL) {
+			close(fd);
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+	}
  fail:
 	TALLOC_FREE(frame);
 	return status;

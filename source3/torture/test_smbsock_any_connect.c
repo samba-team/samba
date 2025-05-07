@@ -25,7 +25,6 @@
 
 bool run_smb_any_connect(int dummy)
 {
-	int fd;
 	NTSTATUS status;
 	struct sockaddr_storage addrs[5];
 	struct smb_transports ts =
@@ -33,7 +32,7 @@ bool run_smb_any_connect(int dummy)
 			lp_client_smb_transports());
 	size_t chosen_index;
 	struct loadparm_context *lp_ctx = NULL;
-	uint16_t port;
+	struct smbXcli_transport *xtp = NULL;
 
 	lp_ctx = loadparm_init_s3(NULL, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
@@ -48,13 +47,13 @@ bool run_smb_any_connect(int dummy)
 
 	status = smbsock_any_connect(addrs, NULL, NULL, NULL, NULL,
 				     ARRAY_SIZE(addrs), lp_ctx, &ts, 0,
-				     &fd, &chosen_index, &port);
+				     NULL, &xtp, &chosen_index);
 	TALLOC_FREE(lp_ctx);
 
-	d_printf("smbsock_any_connect returned %s (fd %d)\n",
-		 nt_errstr(status), NT_STATUS_IS_OK(status) ? fd : -1);
+	d_printf("smbsock_any_connect returned %s\n",
+		 nt_errstr(status));
 	if (NT_STATUS_IS_OK(status)) {
-		close(fd);
+		TALLOC_FREE(xtp);
 	}
 	return true;
 }

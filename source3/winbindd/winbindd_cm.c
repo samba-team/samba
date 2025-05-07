@@ -1556,6 +1556,7 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 	int fd = -1;
 	size_t fd_index;
 	struct smb_transport tp = { .type = SMB_TRANSPORT_TYPE_UNKNOWN, };
+	struct smbXcli_transport *xtp = NULL;
 
 	NTSTATUS status;
 	bool ok;
@@ -1609,7 +1610,7 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 		num_dcs);
 	status = smbsock_any_connect(addrs, dcnames, NULL, NULL, NULL,
 				     num_addrs, lp_ctx, &ts,
-				     10, &fd, &fd_index, NULL);
+				     10, NULL, &xtp, &fd_index);
 	if (!NT_STATUS_IS_OK(status)) {
 		for (i=0; i<num_dcs; i++) {
 			char ab[INET6_ADDRSTRLEN];
@@ -1622,6 +1623,7 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 		}
 		return False;
 	}
+	talloc_reparent(NULL, mem_ctx, xtp);
 	D_NOTICE("Successfully connected to DC '%s'.\n", dcs[fd_index].name);
 
 	domain->dcaddr = addrs[fd_index];
@@ -1665,6 +1667,7 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 		close(fd);
 		fd = -1;
 	}
+	TALLOC_FREE(xtp);
 
 	/*
 	 * This should not be an infinite loop, since get_dcs() will not return
@@ -1674,14 +1677,17 @@ static bool find_dc(TALLOC_CTX *mem_ctx,
 	goto again;
 
 return_transport:
-	set_socket_options(fd, lp_socket_options());
-	*ptransport = smbXcli_transport_bsd(NULL, fd, &tp);
-	if (*ptransport == NULL) {
-		close(fd);
-		DBG_ERR("smbXcli_transport_bsd() failed\n");
-		return false;
+	if (fd != -1) {
+		set_socket_options(fd, lp_socket_options());
+		xtp = smbXcli_transport_bsd(NULL, fd, &tp);
+		if (xtp == NULL) {
+			close(fd);
+			DBG_ERR("smbXcli_transport_bsd() failed\n");
+			return false;
+		}
 	}
-	talloc_reparent(NULL, mem_ctx, *ptransport);
+
+	*ptransport = talloc_move(mem_ctx, &xtp);
 
 	return true;
 }
