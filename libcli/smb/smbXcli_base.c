@@ -23,6 +23,8 @@
 #include "../lib/async_req/async_sock.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "../lib/util/tevent_unix.h"
+#include "lib/tsocket/tsocket.h"
+#include "source3/lib/util_tsock.h"
 #include "lib/util/util_net.h"
 #include "lib/util/dlinklist.h"
 #include "lib/util/iov_buf.h"
@@ -48,6 +50,7 @@ struct smbXcli_tcon;
 struct smbXcli_transport {
 	struct smb_transport transport;
 	int sock_fd;
+	struct tstream_context *tstream;
 	struct samba_sockaddr laddr;
 	struct samba_sockaddr raddr;
 
@@ -346,8 +349,110 @@ static int smbXcli_transport_destructor(struct smbXcli_transport *xtp)
 		close(xtp->sock_fd);
 		xtp->sock_fd = -1;
 	}
-
+	TALLOC_FREE(xtp->tstream);
 	return 0;
+}
+
+static struct tevent_req *smbXcli_transport_tstream_writev_send(
+				TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct smbXcli_transport *xtp,
+				struct tevent_queue *queue,
+				struct iovec *iov,
+				int count)
+{
+	return tstream_writev_queue_send(mem_ctx,
+					 ev,
+					 xtp->tstream,
+					 queue,
+					 iov,
+					 count);
+}
+
+static ssize_t smbXcli_transport_tstream_writev_recv(struct tevent_req *req,
+						 int *perrno)
+{
+	return tstream_writev_queue_recv(req, perrno);
+}
+
+static struct tevent_req *smbXcli_transport_tstream_read_smb_send(
+				TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct smbXcli_transport *xtp)
+{
+	return tstream_read_packet_send(mem_ctx,
+					ev,
+					xtp->tstream,
+					4,
+					read_smb_more,
+					NULL);
+}
+
+static ssize_t smbXcli_transport_tstream_read_smb_recv(
+				struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				uint8_t **pbuf,
+				int *perrno)
+{
+	return tstream_read_packet_recv(req, mem_ctx, pbuf, perrno);
+}
+
+static struct tevent_req *smbXcli_transport_tstream_monitor_send(
+				TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct smbXcli_transport *xtp)
+{
+	return tstream_monitor_send(mem_ctx,
+				    ev,
+				    xtp->tstream);
+}
+
+static int smbXcli_transport_tstream_monitor_recv(struct tevent_req *req)
+{
+	int sys_errno = 0;
+	int ret;
+
+	ret = tstream_monitor_recv(req, &sys_errno);
+	if (ret == 0) {
+		sys_errno = EPIPE;
+	}
+	if (sys_errno == 0) {
+		sys_errno = EPIPE;
+	}
+
+	return sys_errno;
+}
+
+struct smbXcli_transport *smbXcli_transport_tstream(TALLOC_CTX *mem_ctx,
+						    struct tstream_context **pstream,
+						    const struct samba_sockaddr *laddr,
+						    const struct samba_sockaddr *raddr,
+						    const struct smb_transport *tp)
+{
+	struct smbXcli_transport *xtp = NULL;
+
+	xtp = talloc_zero(mem_ctx, struct smbXcli_transport);
+	if (xtp == NULL) {
+		return NULL;
+	}
+
+	xtp->transport = *tp;
+	xtp->sock_fd = -1;
+
+	xtp->laddr = *laddr;
+	xtp->raddr = *raddr;
+
+	xtp->tstream = talloc_move(xtp, pstream);
+
+	xtp->writev_send_fn = smbXcli_transport_tstream_writev_send;
+	xtp->writev_recv_fn = smbXcli_transport_tstream_writev_recv;
+	xtp->read_smb_send_fn = smbXcli_transport_tstream_read_smb_send;
+	xtp->read_smb_recv_fn = smbXcli_transport_tstream_read_smb_recv;
+	xtp->monitor_send_fn = smbXcli_transport_tstream_monitor_send;
+	xtp->monitor_recv_fn = smbXcli_transport_tstream_monitor_recv;
+
+	talloc_set_destructor(xtp, smbXcli_transport_destructor);
+	return xtp;
 }
 
 static struct tevent_req *smbXcli_transport_bsd_writev_send(
@@ -602,6 +707,15 @@ bool smbXcli_conn_is_connected(struct smbXcli_conn *conn)
 		return false;
 	}
 
+	if (conn->transport->tstream != NULL) {
+		ret = tstream_pending_bytes(conn->transport->tstream);
+		if (ret < 0) {
+			return false;
+		}
+
+		return true;
+	}
+
 	if (conn->transport->sock_fd == -1) {
 		return false;
 	}
@@ -667,6 +781,10 @@ bool smbXcli_conn_support_passthrough(struct smbXcli_conn *conn)
 
 void smbXcli_conn_set_sockopt(struct smbXcli_conn *conn, const char *options)
 {
+	if (conn->transport->sock_fd == -1) {
+		return;
+	}
+
 	set_socket_options(conn->transport->sock_fd, options);
 }
 
@@ -1362,10 +1480,12 @@ void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 {
 	struct smbXcli_session *session;
 	int sock_fd = conn->transport->sock_fd;
+	struct tstream_context *tstream = conn->transport->tstream;
 
 	tevent_queue_stop(conn->outgoing);
 
 	conn->transport->sock_fd = -1;
+	conn->transport->tstream = NULL;
 
 	session = conn->sessions;
 	if (talloc_array_length(conn->pending) == 0) {
@@ -1493,6 +1613,7 @@ void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 	if (sock_fd != -1) {
 		close(sock_fd);
 	}
+	TALLOC_FREE(tstream);
 }
 
 struct smbXcli_conn_monitor_state {

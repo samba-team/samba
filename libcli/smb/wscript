@@ -38,7 +38,7 @@ def build(bld):
     ''',
     deps='''
         LIBCRYPTO gnutls NDR_SMB2_LEASE_STRUCT samba-errors gensec krb5samba
-        LIBASYNC_REQ GNUTLS_HELPERS NDR_IOCTL
+        LIBASYNC_REQ util_tsock GNUTLS_HELPERS NDR_IOCTL
     ''',
     public_deps='talloc tevent samba-util iov_buf',
     private_library=True,

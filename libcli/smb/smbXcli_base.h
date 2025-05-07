@@ -41,6 +41,14 @@ struct smb2_create_blobs;
 struct smb_create_returns;
 struct smb_transport;
 struct smb311_capabilities;
+struct samba_sockaddr;
+struct tstream_context;
+
+struct smbXcli_transport *smbXcli_transport_tstream(TALLOC_CTX *mem_ctx,
+						    struct tstream_context **pstream,
+						    const struct samba_sockaddr *laddr,
+						    const struct samba_sockaddr *raddr,
+						    const struct smb_transport *tp);
 
 struct smbXcli_transport *smbXcli_transport_bsd(TALLOC_CTX *mem_ctx,
 						int *_fd,
