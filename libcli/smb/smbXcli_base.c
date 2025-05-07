@@ -53,9 +53,8 @@ struct smbXcli_transport {
 };
 
 struct smbXcli_conn {
-	int sock_fd;
-	struct sockaddr_storage local_ss;
-	struct sockaddr_storage remote_ss;
+	struct smbXcli_transport *transport;
+
 	const char *remote_name;
 
 	struct tevent_queue *outgoing;
@@ -395,11 +394,8 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 					 uint32_t smb2_capabilities,
 					 const struct smb311_capabilities *smb3_capabilities)
 {
+	struct smb_transport tp = { .type = SMB_TRANSPORT_TYPE_UNKNOWN, };
 	struct smbXcli_conn *conn = NULL;
-	void *ss = NULL;
-	struct sockaddr *sa = NULL;
-	socklen_t sa_length;
-	int ret;
 
 	if (smb3_capabilities != NULL) {
 		const struct smb3_signing_capabilities *sign_algos =
@@ -416,29 +412,13 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ret = set_blocking(fd, false);
-	if (ret < 0) {
+	conn->transport = smbXcli_transport_bsd(conn, fd, &tp);
+	if (conn->transport == NULL) {
 		goto error;
 	}
-	conn->sock_fd = fd;
 
 	conn->remote_name = talloc_strdup(conn, remote_name);
 	if (conn->remote_name == NULL) {
-		goto error;
-	}
-
-	ss = (void *)&conn->local_ss;
-	sa = (struct sockaddr *)ss;
-	sa_length = sizeof(conn->local_ss);
-	ret = getsockname(fd, sa, &sa_length);
-	if (ret == -1) {
-		goto error;
-	}
-	ss = (void *)&conn->remote_ss;
-	sa = (struct sockaddr *)ss;
-	sa_length = sizeof(conn->remote_ss);
-	ret = getpeername(fd, sa, &sa_length);
-	if (ret == -1) {
 		goto error;
 	}
 
@@ -537,11 +517,15 @@ bool smbXcli_conn_is_connected(struct smbXcli_conn *conn)
 		return false;
 	}
 
-	if (conn->sock_fd == -1) {
+	if (conn->transport == NULL) {
 		return false;
 	}
 
-	ret = samba_socket_poll_or_sock_error(conn->sock_fd);
+	if (conn->transport->sock_fd == -1) {
+		return false;
+	}
+
+	ret = samba_socket_poll_or_sock_error(conn->transport->sock_fd);
 	if (ret < 0) {
 		return false;
 	}
@@ -602,17 +586,17 @@ bool smbXcli_conn_support_passthrough(struct smbXcli_conn *conn)
 
 void smbXcli_conn_set_sockopt(struct smbXcli_conn *conn, const char *options)
 {
-	set_socket_options(conn->sock_fd, options);
+	set_socket_options(conn->transport->sock_fd, options);
 }
 
 const struct sockaddr_storage *smbXcli_conn_local_sockaddr(struct smbXcli_conn *conn)
 {
-	return &conn->local_ss;
+	return &conn->transport->laddr.u.ss;
 }
 
 const struct sockaddr_storage *smbXcli_conn_remote_sockaddr(struct smbXcli_conn *conn)
 {
-	return &conn->remote_ss;
+	return &conn->transport->raddr.u.ss;
 }
 
 const char *smbXcli_conn_remote_name(struct smbXcli_conn *conn)
@@ -707,8 +691,13 @@ struct tevent_req *smbXcli_conn_samba_suicide_send(TALLOC_CTX *mem_ctx,
 	state->iov.iov_base = state->buf;
 	state->iov.iov_len = sizeof(state->buf);
 
-	subreq = writev_send(state, ev, conn->outgoing, conn->sock_fd,
-			     false, &state->iov, 1);
+	subreq = writev_send(state,
+			     ev,
+			     conn->outgoing,
+			     conn->transport->sock_fd,
+			     false,
+			     &state->iov,
+			     1);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1275,7 +1264,7 @@ static bool smbXcli_conn_receive_next(struct smbXcli_conn *conn)
 	 */
 	conn->read_smb_req = read_smb_send(conn->pending,
 					   state->ev,
-					   conn->sock_fd);
+					   conn->transport->sock_fd);
 	if (conn->read_smb_req == NULL) {
 		return false;
 	}
@@ -1286,11 +1275,11 @@ static bool smbXcli_conn_receive_next(struct smbXcli_conn *conn)
 void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 {
 	struct smbXcli_session *session;
-	int sock_fd = conn->sock_fd;
+	int sock_fd = conn->transport->sock_fd;
 
 	tevent_queue_stop(conn->outgoing);
 
-	conn->sock_fd = -1;
+	conn->transport->sock_fd = -1;
 
 	session = conn->sessions;
 	if (talloc_array_length(conn->pending) == 0) {
@@ -1874,8 +1863,13 @@ static NTSTATUS smb1cli_req_writev_submit(struct tevent_req *req,
 
 	tevent_req_set_cancel_fn(req, smbXcli_req_cancel);
 
-	subreq = writev_send(state, state->ev, state->conn->outgoing,
-			     state->conn->sock_fd, false, iov, iov_count);
+	subreq = writev_send(state,
+			     state->ev,
+			     state->conn->outgoing,
+			     state->conn->transport->sock_fd,
+			     false,
+			     iov,
+			     iov_count);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -3527,8 +3521,13 @@ skip_credits:
 		state->conn->dispatch_incoming = smb2cli_conn_dispatch_incoming;
 	}
 
-	subreq = writev_send(state, state->ev, state->conn->outgoing,
-			     state->conn->sock_fd, false, iov, num_iov);
+	subreq = writev_send(state,
+			     state->ev,
+			     state->conn->outgoing,
+			     state->conn->transport->sock_fd,
+			     false,
+			     iov,
+			     num_iov);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
