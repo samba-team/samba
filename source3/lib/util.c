@@ -1604,10 +1604,10 @@ bool map_open_params_to_ntcreate(const char *smb_base_fname,
 	uint32_t create_options = FILE_NON_DIRECTORY_FILE;
 	uint32_t private_flags = 0;
 
-	DEBUG(10,("map_open_params_to_ntcreate: fname = %s, deny_mode = 0x%x, "
-		  "open_func = 0x%x\n",
-		  smb_base_fname, (unsigned int)deny_mode,
-		  (unsigned int)open_func ));
+	DBG_DEBUG("fname = %s, deny_mode = 0x%x, open_func = 0x%x\n",
+		  smb_base_fname,
+		  (unsigned int)deny_mode,
+		  (unsigned int)open_func);
 
 	/* Create the NT compatible access_mask. */
 	switch (GET_OPENX_MODE(deny_mode)) {
@@ -1623,8 +1623,8 @@ bool map_open_params_to_ntcreate(const char *smb_base_fname,
 			access_mask = FILE_GENERIC_READ|FILE_GENERIC_WRITE;
 			break;
 		default:
-			DEBUG(10,("map_open_params_to_ntcreate: bad open mode = 0x%x\n",
-				  (unsigned int)GET_OPENX_MODE(deny_mode)));
+			DBG_DEBUG("bad open mode = 0x%x\n",
+				  (unsigned int)GET_OPENX_MODE(deny_mode));
 			return False;
 	}
 
@@ -1656,8 +1656,8 @@ bool map_open_params_to_ntcreate(const char *smb_base_fname,
 				create_disposition = FILE_CREATE;
 				break;
 			}
-			DEBUG(10,("map_open_params_to_ntcreate: bad "
-				  "open_func 0x%x\n", (unsigned int)open_func));
+			DBG_DEBUG("bad open_func 0x%x\n",
+				  (unsigned int)open_func);
 			return False;
 	}
 
@@ -1703,7 +1703,7 @@ bool map_open_params_to_ntcreate(const char *smb_base_fname,
 			return False;
 	}
 
-	DEBUG(10,("map_open_params_to_ntcreate: file %s, access_mask = 0x%x, "
+	DBG_DEBUG("file %s, access_mask = 0x%x, "
 		  "share_mode = 0x%x, create_disposition = 0x%x, "
 		  "create_options = 0x%x private_flags = 0x%x\n",
 		  smb_base_fname,
@@ -1711,7 +1711,7 @@ bool map_open_params_to_ntcreate(const char *smb_base_fname,
 		  (unsigned int)share_mode,
 		  (unsigned int)create_disposition,
 		  (unsigned int)create_options,
-		  (unsigned int)private_flags));
+		  (unsigned int)private_flags);
 
 	if (paccess_mask) {
 		*paccess_mask = access_mask;
