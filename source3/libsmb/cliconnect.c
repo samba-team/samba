@@ -2406,8 +2406,7 @@ struct cli_connect_sock_state {
 	const char **called_names;
 	const char **calling_names;
 	int *called_types;
-	int fd;
-	uint16_t port;
+	struct smbXcli_transport *transport;
 };
 
 static void cli_connect_sock_done(struct tevent_req *subreq);
@@ -2500,20 +2499,29 @@ static void cli_connect_sock_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct cli_connect_sock_state *state = tevent_req_data(
 		req, struct cli_connect_sock_state);
+	struct smb_transport tp = { .type = SMB_TRANSPORT_TYPE_UNKNOWN, };
+	int fd;
 	NTSTATUS status;
 
-	status = smbsock_any_connect_recv(subreq, &state->fd, NULL,
-					  &state->port);
+	status = smbsock_any_connect_recv(subreq, &fd, NULL, &tp.port);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	set_socket_options(state->fd, lp_socket_options());
+	set_socket_options(fd, lp_socket_options());
+
+	state->transport = smbXcli_transport_bsd(state, fd, &tp);
+	if (tevent_req_nomem(state->transport, req)) {
+		close(fd);
+		return;
+	}
+
 	tevent_req_done(req);
 }
 
 static NTSTATUS cli_connect_sock_recv(struct tevent_req *req,
-				      int *pfd, uint16_t *pport)
+				      TALLOC_CTX *mem_ctx,
+				      struct smbXcli_transport **ptransport)
 {
 	struct cli_connect_sock_state *state = tevent_req_data(
 		req, struct cli_connect_sock_state);
@@ -2522,8 +2530,7 @@ static NTSTATUS cli_connect_sock_recv(struct tevent_req *req,
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
-	*pfd = state->fd;
-	*pport = state->port;
+	*ptransport = talloc_move(mem_ctx, &state->transport);
 	return NT_STATUS_OK;
 }
 
@@ -2593,20 +2600,12 @@ static void cli_connect_nb_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct cli_connect_nb_state *state = tevent_req_data(
 		req, struct cli_connect_nb_state);
-	struct smb_transport tp = { .type = SMB_TRANSPORT_TYPE_UNKNOWN, };
 	struct smbXcli_transport *xtp = NULL;
 	NTSTATUS status;
-	int fd = 0;
 
-	status = cli_connect_sock_recv(subreq, &fd, &tp.port);
+	status = cli_connect_sock_recv(subreq, state, &xtp);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-
-	xtp = smbXcli_transport_bsd(state, fd, &tp);
-	if (tevent_req_nomem(xtp, req)) {
-		close(fd);
 		return;
 	}
 
