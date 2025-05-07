@@ -50,6 +50,27 @@ struct smbXcli_transport {
 	int sock_fd;
 	struct samba_sockaddr laddr;
 	struct samba_sockaddr raddr;
+
+	struct tevent_req *(*writev_send_fn)(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct smbXcli_transport *xtp,
+					     struct tevent_queue *queue,
+					     struct iovec *iov,
+					     int count);
+	ssize_t (*writev_recv_fn)(struct tevent_req *req, int *perrno);
+
+	struct tevent_req *(*read_smb_send_fn)(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       struct smbXcli_transport *xtp);
+	ssize_t (*read_smb_recv_fn)(struct tevent_req *req,
+				    TALLOC_CTX *mem_ctx,
+				    uint8_t **pbuf,
+				    int *perrno);
+
+	struct tevent_req *(*monitor_send_fn)(TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct smbXcli_transport *xtp);
+	int (*monitor_recv_fn)(struct tevent_req *req);
 };
 
 struct smbXcli_conn {
@@ -246,6 +267,7 @@ struct smbXcli_req_state {
 	uint8_t *inbuf;
 
 	struct tevent_req *write_req;
+	ssize_t (*writev_recv_fn)(struct tevent_req *req, int *perrno);
 
 	struct timeval endtime;
 
@@ -328,6 +350,59 @@ static int smbXcli_transport_destructor(struct smbXcli_transport *xtp)
 	return 0;
 }
 
+static struct tevent_req *smbXcli_transport_bsd_writev_send(
+				TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct smbXcli_transport *xtp,
+				struct tevent_queue *queue,
+				struct iovec *iov,
+				int count)
+{
+	return writev_send(mem_ctx,
+			   ev,
+			   queue,
+			   xtp->sock_fd,
+			   false,
+			   iov,
+			   count);
+}
+
+static ssize_t smbXcli_transport_bsd_writev_recv(struct tevent_req *req,
+						 int *perrno)
+{
+	return writev_recv(req, perrno);
+}
+
+static struct tevent_req *smbXcli_transport_bsd_read_smb_send(
+				TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct smbXcli_transport *xtp)
+{
+	return read_smb_send(mem_ctx, ev, xtp->sock_fd);
+}
+
+static ssize_t smbXcli_transport_bsd_read_smb_recv(
+				struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				uint8_t **pbuf,
+				int *perrno)
+{
+	return read_smb_recv(req, mem_ctx, pbuf, perrno);
+}
+
+static struct tevent_req *smbXcli_transport_bsd_monitor_send(
+				TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct smbXcli_transport *xtp)
+{
+	return wait_for_error_send(mem_ctx, ev, xtp->sock_fd);
+}
+
+static int smbXcli_transport_bsd_monitor_recv(struct tevent_req *req)
+{
+	return wait_for_error_recv(req);
+}
+
 struct smbXcli_transport *smbXcli_transport_bsd(TALLOC_CTX *mem_ctx,
 						int *_fd,
 						const struct smb_transport *tp)
@@ -363,6 +438,13 @@ struct smbXcli_transport *smbXcli_transport_bsd(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(xtp);
 		return NULL;
 	}
+
+	xtp->writev_send_fn = smbXcli_transport_bsd_writev_send;
+	xtp->writev_recv_fn = smbXcli_transport_bsd_writev_recv;
+	xtp->read_smb_send_fn = smbXcli_transport_bsd_read_smb_send;
+	xtp->read_smb_recv_fn = smbXcli_transport_bsd_read_smb_recv;
+	xtp->monitor_send_fn = smbXcli_transport_bsd_monitor_send;
+	xtp->monitor_recv_fn = smbXcli_transport_bsd_monitor_recv;
 
 	*_fd = -1;
 	talloc_set_destructor(xtp, smbXcli_transport_destructor);
@@ -658,6 +740,7 @@ struct smbXcli_conn_samba_suicide_state {
 	struct iovec iov;
 	uint8_t buf[9];
 	struct tevent_req *write_req;
+	ssize_t (*writev_recv_fn)(struct tevent_req *req, int *perrno);
 };
 
 static void smbXcli_conn_samba_suicide_cleanup(struct tevent_req *req,
@@ -671,6 +754,7 @@ struct tevent_req *smbXcli_conn_samba_suicide_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct smbXcli_conn_samba_suicide_state *state;
+	struct smbXcli_transport *xtp = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbXcli_conn_samba_suicide_state);
@@ -690,16 +774,17 @@ struct tevent_req *smbXcli_conn_samba_suicide_send(TALLOC_CTX *mem_ctx,
 	state->iov.iov_base = state->buf;
 	state->iov.iov_len = sizeof(state->buf);
 
-	subreq = writev_send(state,
-			     ev,
-			     conn->outgoing,
-			     conn->transport->sock_fd,
-			     false,
-			     &state->iov,
-			     1);
+	xtp = conn->transport;
+	subreq = xtp->writev_send_fn(state,
+				     ev,
+				     xtp,
+				     conn->outgoing,
+				     &state->iov,
+				     1);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
+	state->writev_recv_fn = xtp->writev_recv_fn;
 	tevent_req_set_callback(subreq, smbXcli_conn_samba_suicide_done, req);
 	state->write_req = subreq;
 
@@ -745,7 +830,7 @@ static void smbXcli_conn_samba_suicide_done(struct tevent_req *subreq)
 
 	state->write_req = NULL;
 
-	nwritten = writev_recv(subreq, &err);
+	nwritten = state->writev_recv_fn(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (nwritten == -1) {
 		/* here, we need to notify all pending requests */
@@ -1025,7 +1110,7 @@ static NTSTATUS smbXcli_req_cancel_write_req(struct tevent_req *req)
 		return NT_STATUS_OK;
 	}
 
-	ret = writev_recv(state->write_req, &err);
+	ret = state->writev_recv_fn(state->write_req, &err);
 	TALLOC_FREE(state->write_req);
 	if (ret == -1) {
 		return map_nt_error_from_unix_common(err);
@@ -1234,6 +1319,7 @@ static bool smbXcli_conn_receive_next(struct smbXcli_conn *conn)
 	size_t num_pending = talloc_array_length(conn->pending);
 	struct tevent_req *req;
 	struct smbXcli_req_state *state;
+	struct smbXcli_transport *xtp = conn->transport;
 
 	if (conn->read_smb_req != NULL) {
 		return true;
@@ -1261,9 +1347,10 @@ static bool smbXcli_conn_receive_next(struct smbXcli_conn *conn)
 	 * We're the first ones, add the read_smb request that waits for the
 	 * answer from the server
 	 */
-	conn->read_smb_req = read_smb_send(conn->pending,
-					   state->ev,
-					   conn->transport->sock_fd);
+	xtp = conn->transport;
+	conn->read_smb_req = xtp->read_smb_send_fn(conn->pending,
+						   state->ev,
+						   xtp);
 	if (conn->read_smb_req == NULL) {
 		return false;
 	}
@@ -1411,6 +1498,7 @@ void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 struct smbXcli_conn_monitor_state {
 	struct smbXcli_conn *conn;
 	struct tevent_req *monitor_req;
+	int (*monitor_recv_fn)(struct tevent_req *req);
 };
 
 static void smbXcli_conn_monitor_cleanup(struct tevent_req *req,
@@ -1424,6 +1512,7 @@ struct tevent_req *smbXcli_conn_monitor_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req = NULL;
 	struct smbXcli_conn_monitor_state *state = NULL;
 	struct tevent_req *subreq = NULL;
+	struct smbXcli_transport *xtp = NULL;
 	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -1455,10 +1544,12 @@ struct tevent_req *smbXcli_conn_monitor_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = wait_for_error_send(state, ev, conn->transport->sock_fd);
+	xtp = conn->transport;
+	subreq = xtp->monitor_send_fn(state, ev, xtp);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
+	state->monitor_recv_fn = xtp->monitor_recv_fn;
 	tevent_req_set_callback(subreq, smbXcli_conn_monitor_done, req);
 	state->monitor_req = subreq;
 
@@ -1494,7 +1585,7 @@ static void smbXcli_conn_monitor_done(struct tevent_req *subreq)
 
 	state->monitor_req = NULL;
 
-	err = wait_for_error_recv(subreq);
+	err = state->monitor_recv_fn(subreq);
 	TALLOC_FREE(subreq);
 	/* here, we need to notify all pending requests */
 	status = map_nt_error_from_unix_common(err);
@@ -1932,6 +2023,7 @@ static NTSTATUS smb1cli_req_writev_submit(struct tevent_req *req,
 					  struct smbXcli_req_state *state,
 					  struct iovec *iov, int iov_count)
 {
+	struct smbXcli_transport *xtp = NULL;
 	struct tevent_req *subreq;
 	NTSTATUS status;
 	uint8_t cmd;
@@ -2035,16 +2127,17 @@ static NTSTATUS smb1cli_req_writev_submit(struct tevent_req *req,
 
 	tevent_req_set_cancel_fn(req, smbXcli_req_cancel);
 
-	subreq = writev_send(state,
-			     state->ev,
-			     state->conn->outgoing,
-			     state->conn->transport->sock_fd,
-			     false,
-			     iov,
-			     iov_count);
+	xtp = state->conn->transport;
+	subreq = xtp->writev_send_fn(state,
+				     state->ev,
+				     xtp,
+				     state->conn->outgoing,
+				     iov,
+				     iov_count);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	state->writev_recv_fn = xtp->writev_recv_fn;
 	tevent_req_set_callback(subreq, smb1cli_req_writev_done, req);
 	state->write_req = subreq;
 
@@ -2106,7 +2199,7 @@ static void smb1cli_req_writev_done(struct tevent_req *subreq)
 
 	state->write_req = NULL;
 
-	nwritten = writev_recv(subreq, &err);
+	nwritten = state->writev_recv_fn(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (nwritten == -1) {
 		/* here, we need to notify all pending requests */
@@ -2127,6 +2220,7 @@ static void smbXcli_conn_received(struct tevent_req *subreq)
 	struct smbXcli_conn *conn =
 		tevent_req_callback_data(subreq,
 		struct smbXcli_conn);
+	struct smbXcli_transport *xtp = conn->transport;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 	uint8_t *inbuf;
@@ -2142,7 +2236,7 @@ static void smbXcli_conn_received(struct tevent_req *subreq)
 	}
 	conn->read_smb_req = NULL;
 
-	received = read_smb_recv(subreq, frame, &inbuf, &err);
+	received = xtp->read_smb_recv_fn(subreq, frame, &inbuf, &err);
 	TALLOC_FREE(subreq);
 	if (received == -1) {
 		status = map_nt_error_from_unix_common(err);
@@ -3384,6 +3478,7 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 				     int num_reqs)
 {
+	struct smbXcli_transport *xtp = NULL;
 	struct smbXcli_req_state *state;
 	struct tevent_req *subreq;
 	struct iovec *iov;
@@ -3693,16 +3788,17 @@ skip_credits:
 		state->conn->dispatch_incoming = smb2cli_conn_dispatch_incoming;
 	}
 
-	subreq = writev_send(state,
-			     state->ev,
-			     state->conn->outgoing,
-			     state->conn->transport->sock_fd,
-			     false,
-			     iov,
-			     num_iov);
+	xtp = state->conn->transport;
+	subreq = xtp->writev_send_fn(state,
+				     state->ev,
+				     xtp,
+				     state->conn->outgoing,
+				     iov,
+				     num_iov);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	state->writev_recv_fn = xtp->writev_recv_fn;
 	tevent_req_set_callback(subreq, smb2cli_req_writev_done, reqs[0]);
 	state->write_req = subreq;
 
@@ -3769,7 +3865,7 @@ static void smb2cli_req_writev_done(struct tevent_req *subreq)
 
 	state->write_req = NULL;
 
-	nwritten = writev_recv(subreq, &err);
+	nwritten = state->writev_recv_fn(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (nwritten == -1) {
 		/* here, we need to notify all pending requests */
