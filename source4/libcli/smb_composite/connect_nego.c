@@ -109,8 +109,6 @@ static void smb_connect_nego_connect_done(struct composite_context *creq)
 		struct smb_connect_nego_state);
 	struct tevent_req *subreq = NULL;
 	struct smbcli_socket *sock = NULL;
-	struct smb_transport tp = { .type = SMB_TRANSPORT_TYPE_UNKNOWN, };
-	struct smbXcli_transport *xtp = NULL;
 	uint32_t smb1_capabilities;
 	uint32_t timeout_msec = state->options.request_timeout * 1000;
 	NTSTATUS status;
@@ -145,21 +143,15 @@ static void smb_connect_nego_connect_done(struct composite_context *creq)
 		smb1_capabilities |= CAP_LEVEL_II_OPLOCKS;
 	}
 
-	xtp = smbXcli_transport_bsd(state, sock->sockfd, &tp);
-	if (tevent_req_nomem(xtp, req)) {
-		return;
-	}
-	sock->sockfd = -1;
-	TALLOC_FREE(sock);
-
 	state->conn = smbXcli_conn_create(state,
-					  &xtp,
+					  &sock->transport,
 					  state->target_hostname,
 					  state->options.signing,
 					  smb1_capabilities,
 					  &state->options.client_guid,
 					  state->options.smb2_capabilities,
 					  &state->options.smb3_capabilities);
+	TALLOC_FREE(sock);
 	if (tevent_req_nomem(state->conn, req)) {
 		return;
 	}

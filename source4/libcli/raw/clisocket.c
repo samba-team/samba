@@ -30,6 +30,7 @@
 #include "lib/socket/socket.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
+#include "../libcli/smb/smbXcli_base.h"
 #include "libcli/raw/raw_proto.h"
 #include "../libcli/smb/read_smb.h"
 #include "lib/util/util_net.h"
@@ -141,10 +142,7 @@ failed:
 
 static int smbcli_socket_destructor(struct smbcli_socket *sock)
 {
-	if (sock->sockfd != -1) {
-		close(sock->sockfd);
-		sock->sockfd = -1;
-	}
+	TALLOC_FREE(sock->transport);
 
 	return 0;
 }
@@ -237,6 +235,7 @@ static void smbcli_sock_connect_recv_conn(struct tevent_req *subreq)
 	struct sock_connect_state *state =
 		tevent_req_callback_data(subreq,
 		struct sock_connect_state);
+	struct smb_transport tp = { .type = SMB_TRANSPORT_TYPE_UNKNOWN, };
 	int sockfd = -1;
 
 	state->ctx->status = smbsock_any_connect_recv(subreq,
@@ -253,7 +252,14 @@ static void smbcli_sock_connect_recv_conn(struct tevent_req *subreq)
 		return;
 	}
 
-	state->result->sockfd = sockfd;
+	state->result->transport = smbXcli_transport_bsd(state->result,
+							 sockfd,
+							 &tp);
+	if (composite_nomem(state->result->transport, state->ctx)) {
+		close(sockfd);
+		return;
+	}
+
 	state->result->hostname = talloc_steal(state->result, state->host_name);
 
 	talloc_set_destructor(state->result, smbcli_socket_destructor);

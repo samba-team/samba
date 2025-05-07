@@ -70,7 +70,7 @@ struct smbcli_negotiate {
 	
 /* this is the context for a SMB socket associated with the socket itself */
 struct smbcli_socket {
-	int sockfd;
+	struct smbXcli_transport *transport;
 
 	/* the hostname we connected to */
 	const char *hostname;

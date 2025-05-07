@@ -50,8 +50,6 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 					       struct smbcli_options *options)
 {
 	struct smbcli_transport *transport;
-	struct smb_transport tp = { .type = SMB_TRANSPORT_TYPE_UNKNOWN, };
-	struct smbXcli_transport *xtp = NULL;
 	uint32_t smb1_capabilities;
 
 	transport = talloc_zero(parent_ctx, struct smbcli_transport);
@@ -92,25 +90,16 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 		smb1_capabilities |= CAP_LEVEL_II_OPLOCKS;
 	}
 
-	xtp = smbXcli_transport_bsd(transport, sock->sockfd, &tp);
-	if (xtp == NULL) {
-		TALLOC_FREE(sock);
-		TALLOC_FREE(transport);
-		return NULL;
-	}
-	sock->sockfd = -1;
-	TALLOC_FREE(sock);
-
 	transport->conn = smbXcli_conn_create(transport,
-					      &xtp,
+					      &sock->transport,
 					      sock->hostname,
 					      options->signing,
 					      smb1_capabilities,
 					      NULL, /* client_guid */
 					      0, /* smb2_capabilities */
 					      NULL); /* smb3_ciphers */
+	TALLOC_FREE(sock);
 	if (transport->conn == NULL) {
-		TALLOC_FREE(xtp);
 		TALLOC_FREE(transport);
 		return NULL;
 	}
