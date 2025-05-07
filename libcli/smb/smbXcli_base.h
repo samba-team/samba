@@ -30,6 +30,7 @@
 #include "lib/util/time.h"
 #include "lib/util/data_blob.h"
 
+struct smbXcli_transport;
 struct smbXcli_conn;
 struct smbXcli_session;
 struct smbXcli_tcon;
@@ -38,7 +39,12 @@ struct GUID;
 struct iovec;
 struct smb2_create_blobs;
 struct smb_create_returns;
+struct smb_transport;
 struct smb311_capabilities;
+
+struct smbXcli_transport *smbXcli_transport_bsd(TALLOC_CTX *mem_ctx,
+						int fd,
+						const struct smb_transport *tp);
 
 struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 					 int fd,

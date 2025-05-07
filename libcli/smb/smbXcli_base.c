@@ -39,10 +39,18 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
+struct smbXcli_transport;
 struct smbXcli_conn;
 struct smbXcli_req;
 struct smbXcli_session;
 struct smbXcli_tcon;
+
+struct smbXcli_transport {
+	struct smb_transport transport;
+	int sock_fd;
+	struct samba_sockaddr laddr;
+	struct samba_sockaddr raddr;
+};
 
 struct smbXcli_conn {
 	int sock_fd;
@@ -309,6 +317,55 @@ struct smbXcli_req_state {
 		uint64_t cancel_aid;
 	} smb2;
 };
+
+static int smbXcli_transport_destructor(struct smbXcli_transport *xtp)
+{
+	if (xtp->sock_fd != -1) {
+		close(xtp->sock_fd);
+		xtp->sock_fd = -1;
+	}
+
+	return 0;
+}
+
+struct smbXcli_transport *smbXcli_transport_bsd(TALLOC_CTX *mem_ctx,
+						int fd,
+						const struct smb_transport *tp)
+{
+	struct smbXcli_transport *xtp = NULL;
+	int ret;
+
+	xtp = talloc_zero(mem_ctx, struct smbXcli_transport);
+	if (xtp == NULL) {
+		return NULL;
+	}
+
+	xtp->transport = *tp;
+	xtp->sock_fd = fd;
+
+	xtp->laddr.sa_socklen = sizeof(xtp->laddr.u);
+	ret = getsockname(fd, &xtp->laddr.u.sa, &xtp->laddr.sa_socklen);
+	if (ret == -1) {
+		TALLOC_FREE(xtp);
+		return NULL;
+	}
+
+	xtp->raddr.sa_socklen = sizeof(xtp->raddr.u);
+	ret = getpeername(fd, &xtp->raddr.u.sa, &xtp->raddr.sa_socklen);
+	if (ret == -1) {
+		TALLOC_FREE(xtp);
+		return NULL;
+	}
+
+	ret = set_blocking(fd, false);
+	if (ret < 0) {
+		TALLOC_FREE(xtp);
+		return NULL;
+	}
+
+	talloc_set_destructor(xtp, smbXcli_transport_destructor);
+	return xtp;
+}
 
 static int smbXcli_conn_destructor(struct smbXcli_conn *conn)
 {
