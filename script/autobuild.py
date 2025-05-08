@@ -879,6 +879,7 @@ tasks = {
          "./configure.developer ${PREFIX} "
          "--with-selftest-prefix=./bin/ab "
          "--with-cluster-support "
+         "--with-profiling-data "
          "--with-prometheus-exporter "
          "--bundled-libraries=!tdb"),
             ("samba-make", "make"),
@@ -1040,7 +1041,7 @@ tasks = {
         "sequence": [
         # build the fuzzers (static) via the oss-fuzz script
             ("fuzzers-mkdir-prefix", "mkdir -p ${PREFIX_DIR}"),
-            ("fuzzers-build", "OUT=${PREFIX_DIR} LIB_FUZZING_ENGINE= SANITIZER=address CXX= CFLAGS= ADDITIONAL_LDFLAGS='-fuse-ld=bfd' ./lib/fuzzing/oss-fuzz/build_samba.sh --enable-afl-fuzzer --with-prometheus-exporter"),
+            ("fuzzers-build", "OUT=${PREFIX_DIR} LIB_FUZZING_ENGINE= SANITIZER=address CXX= CFLAGS= ADDITIONAL_LDFLAGS='-fuse-ld=bfd' ./lib/fuzzing/oss-fuzz/build_samba.sh --enable-afl-fuzzer --with-profiling-data --with-prometheus-exporter"),
         ],
     },
 
@@ -1119,7 +1120,7 @@ tasks = {
         "sequence": [
             ("random-sleep", random_sleep(300, 900)),
 
-            ("configure", "./configure.developer ${ENABLE_COVERAGE} ${PREFIX} --with-profiling-data --disable-python --without-ad-dc --with-prometheus-exporter"),
+            ("configure", "./configure.developer " + samba_configure_params + " --disable-python --without-ad-dc"),
             ("make", "make -j"),
             ("find-python", "script/find_python.sh ${PREFIX}"),
             ("test", "make test-nopython"),

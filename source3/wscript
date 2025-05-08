@@ -208,6 +208,9 @@ long ret = splice(0,0,1,0,400,SPLICE_F_MOVE);
     # check for libevent, needed for prometheus http endpoint
     conf.SET_TARGET_TYPE('event', 'EMPTY')
     if Options.options.with_prometheus_exporter is True:
+        if not Options.options.with_profiling_data:
+            conf.fatal("Building --with-prometheus-exporter also require "
+                       "building --with-profiling-data.")
         Logs.info("Checking for libevent existence")
         if conf.CHECK_HEADERS('event2/http.h') and conf.CHECK_LIB('event', shlib=True):
             conf.CHECK_FUNCS_IN('evhttp_new', 'event')
