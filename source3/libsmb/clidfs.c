@@ -235,7 +235,9 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 			 smbXcli_conn_remote_name(c->conn));
 		cli_shutdown(c);
 		return status;
-	} else if (!NT_STATUS_IS_OK(status)) {
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Protocol negotiation to server %s (for a protocol between %s and %s) failed: %s\n",
 			 smbXcli_conn_remote_name(c->conn),
 			 lpcfg_get_smb_protocol(lp_client_min_protocol()),
