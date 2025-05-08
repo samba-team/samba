@@ -139,7 +139,7 @@ def options(opt):
     # enable options related to building python extensions
 
     opt.add_option('--with-json',
-                   action='store_true', dest='with_json',
+                   action='store_true', dest='with_json', default=True,
                    help=("Build with JSON support (default=True). This "
                          "requires the jansson development headers."))
     opt.add_option('--without-json',
