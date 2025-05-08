@@ -40,20 +40,6 @@ DEFAULT_PRIVATE_LIBS = get_default_private_libs()
 # install in /usr/local/samba by default
 default_prefix = Options.default_prefix = '/usr/local/samba'
 
-# This callback optionally takes a list of paths as arguments:
-# --with-system_mitkrb5 /path/to/krb5 /another/path
-def system_mitkrb5_callback(option, opt, value, parser):
-    setattr(parser.values, option.dest, True)
-    value = []
-    for arg in parser.rargs:
-        # stop on --foo like options
-        if arg[:2] == "--" and len(arg) > 2:
-            break
-        value.append(arg)
-    if len(value)>0:
-        del parser.rargs[:len(value)]
-        setattr(parser.values, option.dest, value)
-
 def options(opt):
     opt.BUILTIN_DEFAULT('NONE')
     opt.PRIVATE_EXTENSION_DEFAULT('private-samba')
@@ -91,9 +77,10 @@ def options(opt):
     opt.samba_add_onoff_option('pthreadpool', with_name="enable", without_name="disable", default=True)
 
     opt.add_option('--with-system-mitkrb5',
-                   help='build Samba with system MIT Kerberos. ' +
-                        'You may specify list of paths where Kerberos is installed (e.g. /usr/local /usr/kerberos) to search krb5-config',
-                   action='callback', callback=system_mitkrb5_callback, dest='with_system_mitkrb5', default=False)
+                   help='build Samba with system MIT Kerberos.',
+                   action='store_true',
+                   dest='with_system_mitkrb5',
+                   default=False)
 
     opt.add_option('--with-experimental-mit-ad-dc',
                    help='Enable the experimental MIT Kerberos-backed AD DC.  ' +
