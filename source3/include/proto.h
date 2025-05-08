@@ -711,8 +711,7 @@ struct smb_filename *full_path_from_dirfsp_atname(
 	const struct files_struct *dirfsp,
 	const struct smb_filename *atname);
 struct smb_filename *synthetic_smb_fname_split(TALLOC_CTX *ctx,
-						const char *fname,
-						bool posix_path);
+					       const char *fname);
 const char *smb_fname_str_dbg(const struct smb_filename *smb_fname);
 const char *fsp_str_dbg(const struct files_struct *fsp);
 const char *fsp_fnum_dbg(const struct files_struct *fsp);

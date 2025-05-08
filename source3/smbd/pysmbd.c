@@ -166,7 +166,7 @@ static int set_sys_acl_conn(const char *fname,
 	NTSTATUS status;
 
 	smb_fname = synthetic_smb_fname_split(
-		frame, canonicalize_path(talloc_tos(), conn, fname), false);
+		frame, canonicalize_path(talloc_tos(), conn, fname));
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
 		return -1;
@@ -218,7 +218,7 @@ static NTSTATUS init_files_struct(TALLOC_CTX *mem_ctx,
 	fsp->conn = conn;
 
 	smb_fname = synthetic_smb_fname_split(
-		fsp, canonicalize_path(talloc_tos(), conn, fname), false);
+		fsp, canonicalize_path(talloc_tos(), conn, fname));
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -333,7 +333,7 @@ static NTSTATUS get_nt_acl_conn(TALLOC_CTX *mem_ctx,
 	struct smb_filename *smb_fname =  NULL;
 
 	smb_fname = synthetic_smb_fname_split(
-		frame, canonicalize_path(talloc_tos(), conn, fname), false);
+		frame, canonicalize_path(talloc_tos(), conn, fname));
 
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
@@ -727,7 +727,7 @@ static PyObject *py_smbd_unlink(PyObject *self, PyObject *args, PyObject *kwargs
 	}
 
 	smb_fname = synthetic_smb_fname_split(
-		frame, canonicalize_path(talloc_tos(), conn, fname), false);
+		frame, canonicalize_path(talloc_tos(), conn, fname));
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
 		return PyErr_NoMemory();
@@ -1069,7 +1069,7 @@ static PyObject *py_smbd_get_sys_acl(PyObject *self, PyObject *args, PyObject *k
 	}
 
 	smb_fname = synthetic_smb_fname_split(
-		frame, canonicalize_path(talloc_tos(), conn, fname), false);
+		frame, canonicalize_path(talloc_tos(), conn, fname));
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
 		return NULL;

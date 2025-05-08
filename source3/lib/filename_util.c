@@ -94,23 +94,12 @@ struct smb_filename *cp_smb_filename_nostream(TALLOC_CTX *mem_ctx,
  * There are a few legitimate users of this.
  */
 struct smb_filename *synthetic_smb_fname_split(TALLOC_CTX *ctx,
-						const char *fname,
-						bool posix_path)
+					       const char *fname)
 {
 	char *stream_name = NULL;
 	char *base_name = NULL;
 	struct smb_filename *ret;
 	bool ok;
-
-	if (posix_path) {
-		/* No stream name looked for. */
-		return synthetic_smb_fname(ctx,
-				fname,
-				NULL,
-				NULL,
-				0,
-				SMB_FILENAME_POSIX_PATH);
-	}
 
 	ok = split_stream_filename(ctx,
 				fname,
