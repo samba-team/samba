@@ -2000,14 +2000,13 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 
 	if (IS_IPC(conn)) {
 		if (info_level != SMB_QUERY_CIFS_UNIX_INFO) {
-			DEBUG(0,("smbd_do_qfsinfo: not an allowed "
-				"info level (0x%x) on IPC$.\n",
-				(unsigned int)info_level));
+			DBG_ERR("not an allowed info level (0x%x) on IPC$.\n",
+				(unsigned int)info_level);
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
 
-	DEBUG(3,("smbd_do_qfsinfo: level = %d\n", info_level));
+	DBG_NOTICE("level = %d\n", info_level);
 
 	smb_fname = (struct smb_filename) {
 		.base_name = discard_const_p(char, filename),
