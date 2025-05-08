@@ -331,9 +331,9 @@ def configure(conf):
         conf.load('gccdeps')
 
     # make the install paths available in environment
-    conf.env.LIBDIR = Options.options.LIBDIR or '${PREFIX}/lib'
-    conf.env.BINDIR = Options.options.BINDIR or '${PREFIX}/bin'
-    conf.env.SBINDIR = Options.options.SBINDIR or '${PREFIX}/sbin'
+    conf.env.LIBDIR = Options.options.libdir or '${PREFIX}/lib'
+    conf.env.BINDIR = Options.options.bindir or '${PREFIX}/bin'
+    conf.env.SBINDIR = Options.options.sbindir or '${PREFIX}/sbin'
     conf.env.MODULESDIR = Options.options.MODULESDIR
     conf.env.PRIVATELIBDIR = Options.options.PRIVATELIBDIR
     conf.env.BUNDLED_LIBS = Options.options.BUNDLED_LIBS.split(',')
