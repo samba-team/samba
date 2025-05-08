@@ -502,7 +502,7 @@ def CHECK_MAKEFLAGS(options):
 
 waflib_options_parse_cmd_args = Options.OptionsContext.parse_cmd_args
 def wafsamba_options_parse_cmd_args(self, _args=None, cwd=None, allow_unknown=False):
-    (options, commands, envvars) = \
+    (options, leftover_args) = \
         waflib_options_parse_cmd_args(self,
                                       _args=_args,
                                       cwd=cwd,
@@ -526,7 +526,7 @@ def wafsamba_options_parse_cmd_args(self, _args=None, cwd=None, allow_unknown=Fa
                 return
         from waflib import Runner
         Runner.Spawner = NoOpSpawner
-    return options, commands, envvars
+    return options, leftover_args
 Options.OptionsContext.parse_cmd_args = wafsamba_options_parse_cmd_args
 
 option_groups = {}
