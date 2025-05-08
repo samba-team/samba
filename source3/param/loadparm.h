@@ -188,8 +188,6 @@ uint32_t lp_get_spoolss_state( void );
 struct smb1_signing_state;
 void set_use_sendfile(int snum, bool val);
 void lp_set_mangling_method(const char *new_method);
-bool lp_posix_pathnames(void);
-void lp_set_posix_pathnames(void);
 enum brl_flavour lp_posix_cifsu_locktype(files_struct *fsp);
 void lp_set_posix_default_cifsx_readwrite_locktype(enum brl_flavour val);
 int lp_min_receive_file_size(void);

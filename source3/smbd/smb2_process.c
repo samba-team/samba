@@ -772,7 +772,11 @@ bool init_smb1_request(struct smb_request *req,
 			req->conn = tcon->compat;
 		}
 	}
-	req->posix_pathnames = lp_posix_pathnames();
+
+#if defined(WITH_SMB1SERVER)
+	req->posix_pathnames = (xconn->smb1.unix_info.client_cap_low &
+				CIFS_UNIX_POSIX_PATHNAMES_CAP) != 0;
+#endif
 
 	/* Ensure we have at least wct words and 2 bytes of bcc. */
 	if (smb_size + req->wct*2 > req_size) {

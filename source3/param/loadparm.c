@@ -4667,27 +4667,6 @@ void lp_set_mangling_method(const char *new_method)
 }
 
 /*******************************************************************
- Global state for POSIX pathname processing.
-********************************************************************/
-
-static bool posix_pathnames;
-
-bool lp_posix_pathnames(void)
-{
-	return posix_pathnames;
-}
-
-/*******************************************************************
- Change everything needed to ensure POSIX pathname processing (currently
- not much).
-********************************************************************/
-
-void lp_set_posix_pathnames(void)
-{
-	posix_pathnames = true;
-}
-
-/*******************************************************************
  Global state for POSIX lock processing - CIFS unix extensions.
 ********************************************************************/
 

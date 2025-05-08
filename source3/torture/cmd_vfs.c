@@ -33,7 +33,7 @@ static const char *null_string = "";
 
 static uint32_t ssf_flags(void)
 {
-	return lp_posix_pathnames() ? SMB_FILENAME_POSIX_PATH : 0;
+	return false ? SMB_FILENAME_POSIX_PATH : 0;
 }
 
 static NTSTATUS cmd_load_module(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
@@ -401,9 +401,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	}
 	fsp->conn = vfs->conn;
 
-	smb_fname = synthetic_smb_fname_split(NULL,
-					argv[1],
-					lp_posix_pathnames());
+	smb_fname = synthetic_smb_fname_split(NULL, argv[1], false);
 	if (smb_fname == NULL) {
 		goto nomem;
 	}
@@ -517,8 +515,8 @@ static NTSTATUS cmd_pathfunc(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 		TALLOC_FREE(smb_fname);
 		/* unlink can be a stream:name */
 		smb_fname = synthetic_smb_fname_split(talloc_tos(),
-					argv[1],
-					lp_posix_pathnames());
+						      argv[1],
+						      false);
 		if (smb_fname == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -682,16 +680,12 @@ static NTSTATUS cmd_rename(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 		return NT_STATUS_OK;
 	}
 
-	smb_fname_src = synthetic_smb_fname_split(mem_ctx,
-					argv[1],
-					lp_posix_pathnames());
+	smb_fname_src = synthetic_smb_fname_split(mem_ctx, argv[1], false);
 	if (smb_fname_src == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	smb_fname_dst = synthetic_smb_fname_split(mem_ctx,
-					argv[2],
-					lp_posix_pathnames());
+	smb_fname_dst = synthetic_smb_fname_split(mem_ctx, argv[2], false);
 	if (smb_fname_dst == NULL) {
 		TALLOC_FREE(smb_fname_src);
 		return NT_STATUS_NO_MEMORY;
@@ -751,9 +745,7 @@ static NTSTATUS cmd_stat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		return NT_STATUS_OK;
 	}
 
-	smb_fname = synthetic_smb_fname_split(mem_ctx,
-					argv[1],
-					lp_posix_pathnames());
+	smb_fname = synthetic_smb_fname_split(mem_ctx, argv[1], false);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -892,9 +884,7 @@ static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		return NT_STATUS_OK;
 	}
 
-	smb_fname = synthetic_smb_fname_split(mem_ctx,
-					argv[1],
-					lp_posix_pathnames());
+	smb_fname = synthetic_smb_fname_split(mem_ctx, argv[1], false);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -959,9 +949,7 @@ static NTSTATUS cmd_chmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 
 	mode = atoi(argv[2]);
 
-	smb_fname = synthetic_smb_fname_split(mem_ctx,
-					argv[1],
-					lp_posix_pathnames());
+	smb_fname = synthetic_smb_fname_split(mem_ctx, argv[1], false);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1224,9 +1212,7 @@ static NTSTATUS cmd_symlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 		return NT_STATUS_OK;
 	}
 
-	new_smb_fname = synthetic_smb_fname_split(mem_ctx,
-					argv[2],
-					lp_posix_pathnames());
+	new_smb_fname = synthetic_smb_fname_split(mem_ctx, argv[2], false);
 	if (new_smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1271,9 +1257,7 @@ static NTSTATUS cmd_readlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 		return NT_STATUS_OK;
 	}
 
-	smb_fname = synthetic_smb_fname_split(mem_ctx,
-					argv[1],
-					lp_posix_pathnames());
+	smb_fname = synthetic_smb_fname_split(mem_ctx, argv[1], false);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1305,15 +1289,11 @@ static NTSTATUS cmd_link(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		return NT_STATUS_OK;
 	}
 
-	old_smb_fname = synthetic_smb_fname_split(mem_ctx,
-					argv[1],
-					lp_posix_pathnames());
+	old_smb_fname = synthetic_smb_fname_split(mem_ctx, argv[1], false);
 	if (old_smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	new_smb_fname = synthetic_smb_fname_split(mem_ctx,
-					argv[2],
-					lp_posix_pathnames());
+	new_smb_fname = synthetic_smb_fname_split(mem_ctx, argv[2], false);
 	if (new_smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1361,9 +1341,7 @@ static NTSTATUS cmd_mknod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	}
 	dev = (SMB_DEV_T)dev_val;
 
-	smb_fname = synthetic_smb_fname_split(mem_ctx,
-					argv[1],
-					lp_posix_pathnames());
+	smb_fname = synthetic_smb_fname_split(mem_ctx, argv[1], false);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1392,9 +1370,7 @@ static NTSTATUS cmd_realpath(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 		return NT_STATUS_OK;
 	}
 
-	smb_fname = synthetic_smb_fname_split(mem_ctx,
-					argv[1],
-					lp_posix_pathnames());
+	smb_fname = synthetic_smb_fname_split(mem_ctx, argv[1], false);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1423,9 +1399,7 @@ static NTSTATUS cmd_getxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 
 	buf = NULL;
 
-	smb_fname = synthetic_smb_fname_split(mem_ctx,
-					argv[1],
-					lp_posix_pathnames());
+	smb_fname = synthetic_smb_fname_split(mem_ctx, argv[1], false);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1481,9 +1455,7 @@ static NTSTATUS cmd_listxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 
 	buf = NULL;
 
-	smb_fname = synthetic_smb_fname_split(mem_ctx,
-					argv[1],
-					lp_posix_pathnames());
+	smb_fname = synthetic_smb_fname_split(mem_ctx, argv[1], false);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1552,9 +1524,7 @@ static NTSTATUS cmd_fsetxattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		flags = atoi(argv[4]);
 	}
 
-	smb_fname = synthetic_smb_fname_split(mem_ctx,
-					argv[1],
-					lp_posix_pathnames());
+	smb_fname = synthetic_smb_fname_split(mem_ctx, argv[1], false);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1594,9 +1564,7 @@ static NTSTATUS cmd_removexattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	smb_fname = synthetic_smb_fname_split(mem_ctx,
-					argv[1],
-					lp_posix_pathnames());
+	smb_fname = synthetic_smb_fname_split(mem_ctx, argv[1], false);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1774,9 +1742,7 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 	}
 	fsp->conn = vfs->conn;
 
-	smb_fname = synthetic_smb_fname_split(NULL,
-					argv[1],
-					lp_posix_pathnames());
+	smb_fname = synthetic_smb_fname_split(NULL, argv[1], false);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(fsp);
 		return NT_STATUS_NO_MEMORY;
@@ -1917,9 +1883,7 @@ static NTSTATUS cmd_sys_acl_get_file(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	smb_fname = synthetic_smb_fname_split(talloc_tos(),
-					argv[1],
-					lp_posix_pathnames());
+	smb_fname = synthetic_smb_fname_split(talloc_tos(), argv[1], false);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1972,9 +1936,7 @@ static NTSTATUS cmd_sys_acl_blob_get_file(struct vfs_state *vfs,
 		return NT_STATUS_OK;
 	}
 
-	smb_fname = synthetic_smb_fname_split(mem_ctx,
-					argv[1],
-					lp_posix_pathnames());
+	smb_fname = synthetic_smb_fname_split(mem_ctx, argv[1], false);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2070,9 +2032,7 @@ static NTSTATUS cmd_sys_acl_delete_def_file(struct vfs_state *vfs, TALLOC_CTX *m
 		return NT_STATUS_OK;
 	}
 
-	smb_fname = synthetic_smb_fname_split(mem_ctx,
-					argv[1],
-					lp_posix_pathnames());
+	smb_fname = synthetic_smb_fname_split(mem_ctx, argv[1], false);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

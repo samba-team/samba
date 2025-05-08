@@ -1777,7 +1777,6 @@ static void call_trans2setfsinfo(connection_struct *conn,
 			if (xconn->smb1.unix_info.client_cap_low &
 			    CIFS_UNIX_POSIX_PATHNAMES_CAP)
 			{
-				lp_set_posix_pathnames();
 				mangle_change_to_posix();
 			}
 

@@ -166,9 +166,7 @@ static int set_sys_acl_conn(const char *fname,
 	NTSTATUS status;
 
 	smb_fname = synthetic_smb_fname_split(
-		frame,
-		canonicalize_path(talloc_tos(), conn, fname),
-		lp_posix_pathnames());
+		frame, canonicalize_path(talloc_tos(), conn, fname), false);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
 		return -1;
@@ -220,9 +218,7 @@ static NTSTATUS init_files_struct(TALLOC_CTX *mem_ctx,
 	fsp->conn = conn;
 
 	smb_fname = synthetic_smb_fname_split(
-		fsp,
-		canonicalize_path(talloc_tos(), conn, fname),
-		lp_posix_pathnames());
+		fsp, canonicalize_path(talloc_tos(), conn, fname), false);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -337,9 +333,7 @@ static NTSTATUS get_nt_acl_conn(TALLOC_CTX *mem_ctx,
 	struct smb_filename *smb_fname =  NULL;
 
 	smb_fname = synthetic_smb_fname_split(
-		frame,
-		canonicalize_path(talloc_tos(), conn, fname),
-		lp_posix_pathnames());
+		frame, canonicalize_path(talloc_tos(), conn, fname), false);
 
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
@@ -733,9 +727,7 @@ static PyObject *py_smbd_unlink(PyObject *self, PyObject *args, PyObject *kwargs
 	}
 
 	smb_fname = synthetic_smb_fname_split(
-		frame,
-		canonicalize_path(talloc_tos(), conn, fname),
-		lp_posix_pathnames());
+		frame, canonicalize_path(talloc_tos(), conn, fname), false);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
 		return PyErr_NoMemory();
@@ -1077,9 +1069,7 @@ static PyObject *py_smbd_get_sys_acl(PyObject *self, PyObject *args, PyObject *k
 	}
 
 	smb_fname = synthetic_smb_fname_split(
-		frame,
-		canonicalize_path(talloc_tos(), conn, fname),
-		lp_posix_pathnames());
+		frame, canonicalize_path(talloc_tos(), conn, fname), false);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
 		return NULL;
@@ -1168,13 +1158,14 @@ static PyObject *py_smbd_mkdir(PyObject *self, PyObject *args, PyObject *kwargs)
 		return NULL;
 	}
 
-	smb_fname = synthetic_smb_fname(
-		talloc_tos(),
-		canonicalize_path(talloc_tos(), conn, fname),
-		NULL,
-		NULL,
-		0,
-		lp_posix_pathnames() ? SMB_FILENAME_POSIX_PATH : 0);
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					canonicalize_path(talloc_tos(),
+							  conn,
+							  fname),
+					NULL,
+					NULL,
+					0,
+					0);
 
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
