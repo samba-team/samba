@@ -53,7 +53,9 @@ static size_t cli_read_max_bufsize(struct cli_state *cli)
 		}
 
 		return useable_space;
-	} else if (smb1cli_conn_capabilities(cli->conn) & CAP_LARGE_READX) {
+	}
+
+	if (smb1cli_conn_capabilities(cli->conn) & CAP_LARGE_READX) {
 		/*
 		 * Note: CAP_LARGE_READX also works with signing
 		 */
