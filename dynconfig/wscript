@@ -302,8 +302,7 @@ def options(opt):
         option = opt.parser.get_option(k)
         if option:
             opt.parser.remove_option(k)
-    del opt.parser.defaults['PRIVATELIBDIR']
-    del opt.parser.defaults['MODULESDIR']
+    opt.parser.set_defaults(PRIVATELIBDIR=None, MODULESDIR=None)
 
     # get all the basic GNU options from the gnu_dirs tool
 
