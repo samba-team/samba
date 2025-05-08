@@ -6,6 +6,7 @@ from waflib import Build, Configure, Utils, Options, Logs, Errors
 from waflib.Configure import conf
 from samba_utils import TO_LIST, ADD_LD_LIBRARY_PATH, get_string
 
+Options.OptionsContext.arg_list = []
 
 def add_option(self, *k, **kw):
     '''syntax help: provide the "match" attribute to opt.add_option() so that folders can be added to specific config tests'''
@@ -13,8 +14,9 @@ def add_option(self, *k, **kw):
     match = kw.get('match', [])
     if match:
         del kw['match']
-    opt = self.parser.add_option(*k, **kw)
+    opt = self.parser.add_argument(*k, **kw)
     opt.match = match
+    Options.OptionsContext.arg_list.append(opt)
     return opt
 Options.OptionsContext.add_option = add_option
 

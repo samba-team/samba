@@ -155,7 +155,7 @@ def check(self, *k, **kw):
     additional_dirs = []
     if 'msg' in kw:
         msg = kw['msg']
-        for x in Options.OptionsContext.parser.parser.option_list:
+        for x in Options.OptionsContext.arg_list:
              if getattr(x, 'match', None) and msg in x.match:
                  d = getattr(Options.options, x.dest, '')
                  if d:
