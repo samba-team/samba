@@ -202,7 +202,7 @@ if ('XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']):
     if conf.env.build_winexe == True:
         bld.SAMBAMANPAGES(winexe_manpages)
 
-    if bld.CONFIG_SET('WITH_PROMETHEUS_EXPORTER'):
+    if bld.CONFIG_SET('HAVE_EVHTTP_NEW') and bld.CONFIG_SET('WITH_PROFILE'):
         bld.SAMBAMANPAGES(prometheus_manpages)
 
     if bld.CONFIG_SET('ENABLE_SELFTEST'):

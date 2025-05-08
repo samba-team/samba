@@ -951,7 +951,7 @@ plantestsuite("samba3.blackbox.smbclient_old_dir", "fileserver_smb1",
                             "script/tests/test_old_dirlisting.sh"),
                timelimit, smbclient3])
 
-with_prometheus_exporter = ("WITH_PROMETHEUS_EXPORTER" in config_hash)
+with_prometheus_exporter = ("HAVE_EVHTTP_NEW" and "WITH_PROFILE" in config_hash)
 
 for env in ["fileserver:local"]:
     plantestsuite("samba3.blackbox.net_usershare", env, [os.path.join(samba3srcdir, "script/tests/test_net_usershare.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', smbclient3])
