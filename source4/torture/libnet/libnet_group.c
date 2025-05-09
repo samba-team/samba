@@ -113,7 +113,7 @@ bool torture_grouplist(struct torture_context *torture)
 	struct libnet_GroupList req;
 	int i;
 
-	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
+	ctx = libnet_context_init(torture, torture->ev, torture->lp_ctx);
 	ctx->cred = samba_cmdline_get_creds();
 
 	domain_name.string = lpcfg_workgroup(torture->lp_ctx);
@@ -176,7 +176,7 @@ bool torture_creategroup(struct torture_context *torture)
 
 	mem_ctx = talloc_init("test_creategroup");
 
-	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
+	ctx = libnet_context_init(torture, torture->ev, torture->lp_ctx);
 	ctx->cred = samba_cmdline_get_creds();
 
 	req.in.group_name = TEST_GROUPNAME;

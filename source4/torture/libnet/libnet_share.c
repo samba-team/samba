@@ -175,7 +175,7 @@ bool torture_listshares(struct torture_context *torture)
 		goto done;
 	}
 
-	libnetctx = libnet_context_init(torture->ev, torture->lp_ctx);
+	libnetctx = libnet_context_init(torture, torture->ev, torture->lp_ctx);
 	if (!libnetctx) {
 		torture_comment(torture, "Couldn't allocate libnet context\n");
 		ret = false;
@@ -262,7 +262,7 @@ bool torture_delshare(struct torture_context *torture)
 	status = torture_rpc_binding(torture, &binding);
 	torture_assert_ntstatus_ok(torture, status, "Failed to get binding");
 
-	libnetctx = libnet_context_init(torture->ev, torture->lp_ctx);
+	libnetctx = libnet_context_init(torture, torture->ev, torture->lp_ctx);
 	libnetctx->cred = samba_cmdline_get_creds();
 
 	status = torture_rpc_connection(torture,

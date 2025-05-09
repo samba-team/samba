@@ -489,7 +489,7 @@ bool test_libnet_context_init(struct torture_context *tctx,
 	bool bret = true;
 	struct libnet_context *net_ctx;
 
-	net_ctx = libnet_context_init(tctx->ev, tctx->lp_ctx);
+	net_ctx = libnet_context_init(tctx, tctx->ev, tctx->lp_ctx);
 	torture_assert(tctx, net_ctx != NULL, "Failed to create libnet_context");
 
 	/* Use command line credentials for testing */

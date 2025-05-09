@@ -52,7 +52,7 @@ static bool test_NetShareAdd(struct torture_context *tctx,
 
 	printf("Creating share %s\n", sharename);
 
-	if (!(libnetctx = libnet_context_init(tctx->ev, tctx->lp_ctx))) {
+	if (!(libnetctx = libnet_context_init(tctx, tctx->ev, tctx->lp_ctx))) {
 		return false;
 	}
 
@@ -91,7 +91,7 @@ static bool test_NetShareDel(struct torture_context *tctx,
 
 	torture_comment(tctx, "Deleting share %s\n", sharename);
 
-	if (!(libnetctx = libnet_context_init(tctx->ev, tctx->lp_ctx))) {
+	if (!(libnetctx = libnet_context_init(tctx, tctx->ev, tctx->lp_ctx))) {
 		return false;
 	}
 

@@ -465,7 +465,7 @@ bool torture_userlist(struct torture_context *torture)
 	struct libnet_UserList req;
 	int i;
 
-	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
+	ctx = libnet_context_init(torture, torture->ev, torture->lp_ctx);
 	ctx->cred = samba_cmdline_get_creds();
 
 	domain_name.string = lpcfg_workgroup(torture->lp_ctx);

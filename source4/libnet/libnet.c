@@ -23,7 +23,8 @@
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
 
-struct libnet_context *libnet_context_init(struct tevent_context *ev,
+struct libnet_context *libnet_context_init(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
 					   struct loadparm_context *lp_ctx)
 {
 	struct libnet_context *ctx;
@@ -34,7 +35,7 @@ struct libnet_context *libnet_context_init(struct tevent_context *ev,
 	}
 
 	/* create brand new libnet context */
-	ctx = talloc_zero(ev, struct libnet_context);
+	ctx = talloc_zero(mem_ctx, struct libnet_context);
 	if (!ctx) {
 		return NULL;
 	}

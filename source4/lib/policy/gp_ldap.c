@@ -160,7 +160,7 @@ NTSTATUS gp_init(TALLOC_CTX *mem_ctx,
 	NTSTATUS rv;
 
 	/* Initialise the libnet context */
-	net_ctx = libnet_context_init(ev_ctx, lp_ctx);
+	net_ctx = libnet_context_init(mem_ctx, ev_ctx, lp_ctx);
 	net_ctx->cred = credentials;
 
 	/* Prepare libnet lookup structure for looking a DC (PDC is correct). */

@@ -865,7 +865,9 @@ static PyMethodDef net_obj_methods[] = {
 
 static void py_net_dealloc(py_net_Object *self)
 {
-	talloc_free(self->ev);
+	/* explicitly free libnet_ctx before ev */
+	talloc_free(self->libnet_ctx);
+	talloc_free(self->mem_ctx);
 	PyObject_Del(self);
 }
 
@@ -889,8 +891,8 @@ static PyObject *net_obj_new(PyTypeObject *type, PyObject *args, PyObject *kwarg
 
 	/* FIXME: we really need to get a context from the caller or we may end
 	 * up with 2 event contexts */
-	ret->ev = s4_event_context_init(NULL);
-	ret->mem_ctx = talloc_new(ret->ev);
+	ret->mem_ctx = talloc_new(NULL);
+	ret->ev = s4_event_context_init(ret->mem_ctx);
 
 	lp = lpcfg_from_py_object(ret->mem_ctx, py_lp);
 	if (lp == NULL) {
@@ -898,7 +900,7 @@ static PyObject *net_obj_new(PyTypeObject *type, PyObject *args, PyObject *kwarg
 		return NULL;
 	}
 
-	ret->libnet_ctx = libnet_context_init(ret->ev, lp);
+	ret->libnet_ctx = libnet_context_init(ret->mem_ctx, ret->ev, lp);
 	if (ret->libnet_ctx == NULL) {
 		PyErr_SetString(PyExc_RuntimeError, "Unable to initialize net");
 		Py_DECREF(ret);

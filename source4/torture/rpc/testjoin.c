@@ -546,7 +546,7 @@ _PUBLIC_ struct test_join *torture_join_domain(struct torture_context *tctx,
 		return NULL;
 	}
 	
-	libnet_ctx = libnet_context_init(tctx->ev, tctx->lp_ctx);
+	libnet_ctx = libnet_context_init(tctx, tctx->ev, tctx->lp_ctx);
 	if (!libnet_ctx) {
 		talloc_free(tj);
 		return NULL;

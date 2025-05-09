@@ -92,7 +92,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 			       location);
 	torture_assert(torture, s, "libnet_vampire_cb_state_init");
 
-	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
+	ctx = libnet_context_init(torture, torture->ev, torture->lp_ctx);
 	ctx->cred = samba_cmdline_get_creds();
 
 	ZERO_STRUCT(b);

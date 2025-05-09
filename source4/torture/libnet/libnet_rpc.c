@@ -89,7 +89,7 @@ static bool torture_rpc_connect(struct torture_context *torture,
 {
 	struct libnet_context *ctx;
 
-	ctx = libnet_context_init(torture->ev, torture->lp_ctx);
+	ctx = libnet_context_init(torture, torture->ev, torture->lp_ctx);
 	ctx->cred = samba_cmdline_get_creds();
 
 	torture_comment(torture, "Testing connection to LSA interface\n");

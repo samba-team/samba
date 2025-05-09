@@ -85,7 +85,7 @@ bool torture_domainopen(struct torture_context *torture)
 
 	mem_ctx = talloc_init("test_domain_open");
 
-	net_ctx = libnet_context_init(torture->ev, torture->lp_ctx);
+	net_ctx = libnet_context_init(torture, torture->ev, torture->lp_ctx);
 
 	status = torture_rpc_connection(torture,
 					&net_ctx->samr.pipe,
