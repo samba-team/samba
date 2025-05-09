@@ -908,7 +908,11 @@ bool torture_suite_init_tcase(struct torture_suite *suite,
 			      const char *name);
 int torture_suite_children_count(const struct torture_suite *suite);
 
-struct torture_context *torture_context_init(struct tevent_context *event_ctx, struct torture_results *results);
+struct torture_context *torture_context_init(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *event_ctx,
+					     struct loadparm_context *lp_ctx,
+					     struct torture_results *results,
+					     char *outputdir_template);
 
 struct torture_results *torture_results_init(TALLOC_CTX *mem_ctx, const struct torture_ui_ops *ui_ops);
 

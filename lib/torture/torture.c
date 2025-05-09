@@ -42,22 +42,38 @@ struct torture_results *torture_results_init(TALLOC_CTX *mem_ctx, const struct t
 /**
  * Initialize a torture context
  */
-struct torture_context *torture_context_init(struct tevent_context *event_ctx, 
-											 struct torture_results *results)
+struct torture_context *torture_context_init(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *event_ctx,
+					     struct loadparm_context *lp_ctx,
+					     struct torture_results *results,
+					     char *outputdir_template)
 {
-	struct torture_context *torture = talloc_zero(event_ctx, 
-						      struct torture_context);
+	struct torture_context *torture = NULL;
 
-	if (torture == NULL)
+	SMB_ASSERT(event_ctx);
+	SMB_ASSERT(lp_ctx);
+	SMB_ASSERT(results);
+	SMB_ASSERT(outputdir_template);
+
+	torture = talloc_zero(mem_ctx, struct torture_context);
+	if (torture == NULL) {
 		return NULL;
+	}
 
 	torture->ev = event_ctx;
-	torture->results = talloc_reference(torture, results);
+	torture->lp_ctx = lp_ctx;
+	torture->results = results;
 
 	/*
 	 * We start with an empty subunit prefix
 	 */
 	torture_subunit_prefix_reset(torture, NULL);
+
+	torture->outputdir = mkdtemp(outputdir_template);
+	if (torture->outputdir == NULL) {
+		TALLOC_FREE(torture);
+		return NULL;
+	}
 
 	return torture;
 }

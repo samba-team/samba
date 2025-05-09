@@ -423,6 +423,7 @@ int main(int argc, const char *argv[])
 	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC,OPT_NUMPROGS,
 	      OPT_EXTRA_USER,};
 	TALLOC_CTX *mem_ctx = NULL;
+	struct tevent_context *ev = NULL;
 	struct loadparm_context *lp_ctx = NULL;
 	bool ok;
 
@@ -691,9 +692,21 @@ int main(int argc, const char *argv[])
 	}
 
 	results = torture_results_init(mem_ctx, ui_ops);
+	if (results == NULL) {
+		perror("torture_results_init() failed");
+		poptFreeContext(pc);
+		talloc_free(mem_ctx);
+		return 1;
+	}
 
-	torture = torture_context_init(s4_event_context_init(mem_ctx),
-	                               results);
+	ev = s4_event_context_init(mem_ctx);
+	if (ev == NULL) {
+		perror("s4_event_context_init() failed");
+		poptFreeContext(pc);
+		talloc_free(mem_ctx);
+		return 1;
+	}
+
 	if (basedir != NULL) {
 		if (basedir[0] != '/') {
 			fprintf(stderr, "Please specify an absolute path to --basedir\n");
@@ -701,16 +714,16 @@ int main(int argc, const char *argv[])
 			talloc_free(mem_ctx);
 			return 1;
 		}
-		outputdir = talloc_asprintf(torture, "%s/smbtortureXXXXXX", basedir);
+		outputdir = talloc_asprintf(mem_ctx, "%s/smbtortureXXXXXX", basedir);
 	} else {
-		char *pwd = talloc_size(torture, PATH_MAX);
+		char *pwd = talloc_size(mem_ctx, PATH_MAX);
 		if (!getcwd(pwd, PATH_MAX)) {
 			fprintf(stderr, "Unable to determine current working directory\n");
 			poptFreeContext(pc);
 			talloc_free(mem_ctx);
 			return 1;
 		}
-		outputdir = talloc_asprintf(torture, "%s/smbtortureXXXXXX", pwd);
+		outputdir = talloc_asprintf(mem_ctx, "%s/smbtortureXXXXXX", pwd);
 	}
 	if (!outputdir) {
 		fprintf(stderr, "Could not allocate per-run output dir\n");
@@ -718,15 +731,14 @@ int main(int argc, const char *argv[])
 		talloc_free(mem_ctx);
 		return 1;
 	}
-	torture->outputdir = mkdtemp(outputdir);
-	if (!torture->outputdir) {
-		perror("Failed to make temp output dir");
+
+	torture = torture_context_init(mem_ctx, ev, lp_ctx, results, outputdir);
+	if (torture == NULL) {
+		perror("torture_context_init() failed");
 		poptFreeContext(pc);
 		talloc_free(mem_ctx);
 		return 1;
 	}
-
-	torture->lp_ctx = lp_ctx;
 
 	gensec_init();
 
@@ -764,10 +776,12 @@ int main(int argc, const char *argv[])
 
 	if (torture->results->returncode && correct) {
 		poptFreeContext(pc);
+		talloc_free(torture);
 		talloc_free(mem_ctx);
 		return(0);
 	} else {
 		poptFreeContext(pc);
+		talloc_free(torture);
 		talloc_free(mem_ctx);
 		return(1);
 	}
