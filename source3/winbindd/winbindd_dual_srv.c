@@ -662,106 +662,11 @@ NTSTATUS _wbint_QueryUserRidList(struct pipes_struct *p,
 
 NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)
 {
-	struct winbindd_domain *domain = wb_child_domain();
-	struct rpc_pipe_client *netlogon_pipe;
-	struct netr_DsRGetDCNameInfo *dc_info;
-	NTSTATUS status;
-	WERROR werr;
-	unsigned int orig_timeout;
-	struct dcerpc_binding_handle *b;
-	bool retry = false;
-	bool try_dsrgetdcname = false;
-
-	if (domain == NULL) {
-		return dsgetdcname(p->mem_ctx, global_messaging_context(),
-				   r->in.domain_name, r->in.domain_guid,
-				   r->in.site_name ? r->in.site_name : "",
-				   r->in.flags,
-				   r->out.dc_info);
-	}
-
-	if (domain->active_directory) {
-		try_dsrgetdcname = true;
-	}
-
-reconnect:
-	status = cm_connect_netlogon(domain, &netlogon_pipe);
-
-	reset_cm_connection_on_error(domain, NULL, status);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("Can't contact the NETLOGON pipe\n"));
-		return status;
-	}
-
-	b = netlogon_pipe->binding_handle;
-
-	/* This call can take a long time - allow the server to time out.
-	   35 seconds should do it. */
-
-	orig_timeout = rpccli_set_timeout(netlogon_pipe, 35000);
-
-	if (try_dsrgetdcname) {
-		status = dcerpc_netr_DsRGetDCName(b,
-			p->mem_ctx, domain->dcname,
-			r->in.domain_name, NULL, r->in.domain_guid,
-			r->in.flags, r->out.dc_info, &werr);
-		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(werr)) {
-			goto done;
-		}
-		if (!retry &&
-		    reset_cm_connection_on_error(domain, NULL, status))
-		{
-			retry = true;
-			goto reconnect;
-		}
-		try_dsrgetdcname = false;
-		retry = false;
-	}
-
-	/*
-	 * Fallback to less capable methods
-	 */
-
-	dc_info = talloc_zero(r->out.dc_info, struct netr_DsRGetDCNameInfo);
-	if (dc_info == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	if (r->in.flags & DS_PDC_REQUIRED) {
-		status = dcerpc_netr_GetDcName(b,
-			p->mem_ctx, domain->dcname,
-			r->in.domain_name, &dc_info->dc_unc, &werr);
-	} else {
-		status = dcerpc_netr_GetAnyDCName(b,
-			p->mem_ctx, domain->dcname,
-			r->in.domain_name, &dc_info->dc_unc, &werr);
-	}
-
-	if (!retry && reset_cm_connection_on_error(domain, b, status)) {
-		retry = true;
-		goto reconnect;
-	}
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("dcerpc_netr_Get[Any]DCName failed: %s\n",
-			   nt_errstr(status)));
-		goto done;
-	}
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(10, ("dcerpc_netr_Get[Any]DCName failed: %s\n",
-			   win_errstr(werr)));
-		status = werror_to_ntstatus(werr);
-		goto done;
-	}
-
-	*r->out.dc_info = dc_info;
-	status = NT_STATUS_OK;
-
-done:
-	/* And restore our original timeout. */
-	rpccli_set_timeout(netlogon_pipe, orig_timeout);
-
-	return status;
+	return dsgetdcname(p->mem_ctx, global_messaging_context(),
+			   r->in.domain_name, r->in.domain_guid,
+			   r->in.site_name ? r->in.site_name : "",
+			   r->in.flags,
+			   r->out.dc_info);
 }
 
 NTSTATUS _wbint_LookupRids(struct pipes_struct *p, struct wbint_LookupRids *r)
