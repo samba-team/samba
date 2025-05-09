@@ -32,6 +32,8 @@
 #undef vfs_ops
 #endif
 
+#include "smbprofile.h"
+
 /*
  * As we're now (thanks Andrew ! :-) using file_structs and connection
  * structs in the vfs - then anyone writing a vfs must include includes.h...
@@ -922,6 +924,25 @@ struct vfs_rename_how {
 };
 
 #define VFS_PWRITE_APPEND_OFFSET -1
+
+struct vfs_pthreadpool_job_state {
+	struct tevent_context *ev;
+	struct vfs_handle_struct *handle;
+	files_struct *dir_fsp;
+	const struct smb_filename *smb_fname;
+
+	/*
+	 * The following variables are talloced off "state" which is protected
+	 * by a destructor and thus are guaranteed to be safe to be used in the
+	 * job function in the worker thread.
+	 */
+	char *name;
+	const struct security_unix_token *token;
+
+	struct vfs_aio_state vfs_aio_state;
+	SMBPROFILE_BYTES_ASYNC_STATE(profile_bytes);
+	SMBPROFILE_BYTES_ASYNC_STATE(profile_bytes_x);
+};
 
 /*
     Available VFS operations. These values must be in sync with vfs_ops struct

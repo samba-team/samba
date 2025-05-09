@@ -3575,25 +3575,11 @@ static ssize_t vfswrap_fgetxattr(struct vfs_handle_struct *handle,
 }
 
 struct vfswrap_getxattrat_state {
-	struct tevent_context *ev;
-	struct vfs_handle_struct *handle;
-	files_struct *dir_fsp;
-	const struct smb_filename *smb_fname;
+	struct vfs_pthreadpool_job_state job_state;
 
-	/*
-	 * The following variables are talloced off "state" which is protected
-	 * by a destructor and thus are guaranteed to be safe to be used in the
-	 * job function in the worker thread.
-	 */
-	char *name;
 	const char *xattr_name;
 	uint8_t *xattr_value;
-	struct security_unix_token *token;
-
 	ssize_t xattr_size;
-	struct vfs_aio_state vfs_aio_state;
-	SMBPROFILE_BYTES_ASYNC_STATE(profile_bytes);
-	SMBPROFILE_BYTES_ASYNC_STATE(profile_bytes_x);
 };
 
 static int vfswrap_getxattrat_state_destructor(
@@ -3631,10 +3617,10 @@ static struct tevent_req *vfswrap_getxattrat_send(
 		return NULL;
 	}
 	*state = (struct vfswrap_getxattrat_state) {
-		.ev = ev,
-		.handle = handle,
-		.dir_fsp = dir_fsp,
-		.smb_fname = smb_fname,
+		.job_state.ev = ev,
+		.job_state.handle = handle,
+		.job_state.dir_fsp = dir_fsp,
+		.job_state.smb_fname = smb_fname,
 	};
 
 	max_threads = pthreadpool_tevent_max_threads(dir_fsp->conn->sconn->pool);
@@ -3653,8 +3639,8 @@ static struct tevent_req *vfswrap_getxattrat_send(
 
 	SMBPROFILE_BYTES_ASYNC_START_X(SNUM(handle->conn),
 				       syscall_asys_getxattrat,
-				       state->profile_bytes,
-				       state->profile_bytes_x,
+				       state->job_state.profile_bytes,
+				       state->job_state.profile_bytes_x,
 				       0);
 
 	if (fsp_get_pathref_fd(dir_fsp) == -1) {
@@ -3684,8 +3670,8 @@ static struct tevent_req *vfswrap_getxattrat_send(
 	 * must not be freed before all referencing threads terminate.
 	 */
 
-	state->name = talloc_strdup(state, smb_fname->base_name);
-	if (tevent_req_nomem(state->name, req)) {
+	state->job_state.name = talloc_strdup(state, smb_fname->base_name);
+	if (tevent_req_nomem(state->job_state.name, req)) {
 		return tevent_req_post(req, ev);
 	}
 
@@ -3702,18 +3688,19 @@ static struct tevent_req *vfswrap_getxattrat_send(
 	 * without a malloc in most cases.
 	 */
 	if (geteuid() == sec_initial_uid()) {
-		state->token = root_unix_token(state);
+		state->job_state.token = root_unix_token(state);
 	} else {
-		state->token = copy_unix_token(
+		state->job_state.token = copy_unix_token(
 					state,
 					dir_fsp->conn->session_info->unix_token);
 	}
-	if (tevent_req_nomem(state->token, req)) {
+
+	if (tevent_req_nomem(state->job_state.token, req)) {
 		return tevent_req_post(req, ev);
 	}
 
-	SMBPROFILE_BYTES_ASYNC_SET_IDLE_X(state->profile_bytes,
-					  state->profile_bytes_x);
+	SMBPROFILE_BYTES_ASYNC_SET_IDLE_X(state->job_state.profile_bytes,
+					  state->job_state.profile_bytes_x);
 
 	subreq = pthreadpool_tevent_job_send(
 			state,
@@ -3736,8 +3723,8 @@ static void vfswrap_getxattrat_do_sync(struct tevent_req *req)
 	struct vfswrap_getxattrat_state *state = tevent_req_data(
 		req, struct vfswrap_getxattrat_state);
 
-	state->xattr_size = vfswrap_fgetxattr(state->handle,
-					      state->smb_fname->fsp,
+	state->xattr_size = vfswrap_fgetxattr(state->job_state.handle,
+					      state->job_state.smb_fname->fsp,
 					      state->xattr_name,
 					      state->xattr_value,
 					      talloc_array_length(state->xattr_value));
@@ -3759,8 +3746,8 @@ static void vfswrap_getxattrat_do_async(void *private_data)
 	int ret;
 
 	PROFILE_TIMESTAMP(&start_time);
-	SMBPROFILE_BYTES_ASYNC_SET_BUSY_X(state->profile_bytes,
-					  state->profile_bytes_x);
+	SMBPROFILE_BYTES_ASYNC_SET_BUSY_X(state->job_state.profile_bytes,
+					  state->job_state.profile_bytes_x);
 
 	/*
 	 * Here we simulate a getxattrat()
@@ -3770,30 +3757,30 @@ static void vfswrap_getxattrat_do_async(void *private_data)
 	per_thread_cwd_activate();
 
 	/* Become the correct credential on this thread. */
-	ret = set_thread_credentials(state->token->uid,
-				     state->token->gid,
-				     (size_t)state->token->ngroups,
-				     state->token->groups);
+	ret = set_thread_credentials(state->job_state.token->uid,
+				     state->job_state.token->gid,
+				     (size_t)state->job_state.token->ngroups,
+				     state->job_state.token->groups);
 	if (ret != 0) {
 		state->xattr_size = -1;
-		state->vfs_aio_state.error = errno;
+		state->job_state.vfs_aio_state.error = errno;
 		goto end_profile;
 	}
 
-	state->xattr_size = vfswrap_fgetxattr(state->handle,
-					      state->smb_fname->fsp,
+	state->xattr_size = vfswrap_fgetxattr(state->job_state.handle,
+					      state->job_state.smb_fname->fsp,
 					      state->xattr_name,
 					      state->xattr_value,
 					      talloc_array_length(state->xattr_value));
 	if (state->xattr_size == -1) {
-		state->vfs_aio_state.error = errno;
+		state->job_state.vfs_aio_state.error = errno;
 	}
 
 end_profile:
 	PROFILE_TIMESTAMP(&end_time);
-	state->vfs_aio_state.duration = nsec_time_diff(&end_time, &start_time);
-	SMBPROFILE_BYTES_ASYNC_SET_IDLE_X(state->profile_bytes,
-					  state->profile_bytes_x);
+	state->job_state.vfs_aio_state.duration = nsec_time_diff(&end_time, &start_time);
+	SMBPROFILE_BYTES_ASYNC_SET_IDLE_X(state->job_state.profile_bytes,
+					state->job_state.profile_bytes_x);
 }
 
 static void vfswrap_getxattrat_done(struct tevent_req *subreq)
@@ -3808,13 +3795,14 @@ static void vfswrap_getxattrat_done(struct tevent_req *subreq)
 	/*
 	 * Make sure we run as the user again
 	 */
-	ok = change_to_user_and_service_by_fsp(state->dir_fsp);
+	ok = change_to_user_and_service_by_fsp(state->job_state.dir_fsp);
 	SMB_ASSERT(ok);
 
 	ret = pthreadpool_tevent_job_recv(subreq);
 	TALLOC_FREE(subreq);
-	SMBPROFILE_BYTES_ASYNC_END_X(state->profile_bytes,
-				     state->profile_bytes_x);
+
+	SMBPROFILE_BYTES_ASYNC_END_X(state->job_state.profile_bytes,
+				state->job_state.profile_bytes_x);
 	talloc_set_destructor(state, NULL);
 	if (ret != 0) {
 		if (ret != EAGAIN) {
@@ -3832,7 +3820,7 @@ static void vfswrap_getxattrat_done(struct tevent_req *subreq)
 	}
 
 	if (state->xattr_size == -1) {
-		tevent_req_error(req, state->vfs_aio_state.error);
+		tevent_req_error(req, state->job_state.vfs_aio_state.error);
 		return;
 	}
 
@@ -3870,7 +3858,7 @@ static ssize_t vfswrap_getxattrat_recv(struct tevent_req *req,
 		return -1;
 	}
 
-	*aio_state = state->vfs_aio_state;
+	*aio_state = state->job_state.vfs_aio_state;
 	xattr_size = state->xattr_size;
 	if (xattr_value != NULL) {
 		*xattr_value = talloc_move(mem_ctx, &state->xattr_value);
