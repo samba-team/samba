@@ -228,6 +228,7 @@ NTSTATUS net_update_dns_ext(struct net_context *c,
 		if ( num_addrs <= 0 ) {
 			DEBUG(4, ("net_update_dns_ext: Failed to find my "
 				  "non-loopback IP addresses!\n"));
+			SAFE_FREE(iplist_alloc);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		iplist = iplist_alloc;
