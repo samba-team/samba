@@ -370,7 +370,7 @@ static NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx,
 	NTSTATUS status;
 	const char *endpoint;
 
-	dcesrv_sock = talloc_zero(event_ctx, struct dcesrv_socket_context);
+	dcesrv_sock = talloc_zero(dce_ctx, struct dcesrv_socket_context);
 	NT_STATUS_HAVE_NO_MEMORY(dcesrv_sock);
 
 	/* remember the endpoint of this socket */
@@ -428,7 +428,7 @@ static NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx,
 	full_path = talloc_asprintf(dce_ctx, "%s/%s", lpcfg_ncalrpc_dir(lp_ctx),
 				    endpoint);
 
-	dcesrv_sock = talloc_zero(event_ctx, struct dcesrv_socket_context);
+	dcesrv_sock = talloc_zero(dce_ctx, struct dcesrv_socket_context);
 	NT_STATUS_HAVE_NO_MEMORY(dcesrv_sock);
 
 	/* remember the endpoint of this socket */
@@ -464,7 +464,7 @@ static NTSTATUS dcesrv_add_ep_np(struct dcesrv_context *dce_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	dcesrv_sock = talloc_zero(event_ctx, struct dcesrv_socket_context);
+	dcesrv_sock = talloc_zero(dce_ctx, struct dcesrv_socket_context);
 	NT_STATUS_HAVE_NO_MEMORY(dcesrv_sock);
 
 	/* remember the endpoint of this socket */
@@ -505,7 +505,7 @@ static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx,
 		port = atoi(endpoint);
 	}
 
-	dcesrv_sock = talloc_zero(event_ctx, struct dcesrv_socket_context);
+	dcesrv_sock = talloc_zero(dce_ctx, struct dcesrv_socket_context);
 	NT_STATUS_HAVE_NO_MEMORY(dcesrv_sock);
 
 	/* remember the endpoint of this socket */
