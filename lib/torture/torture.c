@@ -19,6 +19,7 @@
 */
 
 #include "source4/include/includes.h"
+#include <tevent.h>
 #include "../torture/torture.h"
 #include "../lib/util/dlinklist.h"
 #include "param/param.h"
@@ -516,22 +517,61 @@ static bool test_needs_running(const char *name, const char **restricted)
 	return false;
 }
 
-static bool internal_torture_run_test(struct torture_context *context,
+static bool internal_torture_run_test(struct torture_context *_context,
 					  struct torture_tcase *tcase,
 					  struct torture_test *test,
 					  bool already_setup,
 					  const char **restricted)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct torture_context *context = NULL;
+	char *subunit_testname = NULL;
 	bool success;
-	char *subunit_testname = torture_subunit_test_name(context, tcase, test);
 
-	if (!test_needs_running(subunit_testname, restricted))
+	if (already_setup) {
+		context = _context;
+	} else {
+		context = torture_context_child(frame, _context);
+		if (context == NULL) {
+			torture_ui_test_start(_context, tcase, test);
+			torture_ui_test_result(_context, TORTURE_ERROR,
+					       "torture_context_child() failed");
+			TALLOC_FREE(frame);
+			return false;
+		}
+	}
+
+	subunit_testname = torture_subunit_test_name(context, tcase, test);
+	if (subunit_testname == NULL) {
+		torture_ui_test_start(context, tcase, test);
+		torture_ui_test_result(context, TORTURE_ERROR,
+				       "torture_subunit_test_name() failed");
+		TALLOC_FREE(frame);
+		return false;
+	}
+	talloc_steal(frame, subunit_testname);
+
+	if (!test_needs_running(subunit_testname, restricted)) {
+		TALLOC_FREE(frame);
 		return true;
+	}
 
 	context->active_tcase = tcase;
 	context->active_test = test;
 
 	torture_ui_test_start(context, tcase, test);
+
+	if (!already_setup) {
+		int rc;
+
+		rc = tevent_re_initialise(context->ev);
+		if (rc != 0) {
+			torture_ui_test_result(context, TORTURE_ERROR,
+					       "tevent_re_initialise() failed");
+			TALLOC_FREE(frame);
+			return false;
+		}
+	}
 
 	context->last_reason = NULL;
 	context->last_result = TORTURE_OK;
@@ -569,11 +609,10 @@ static bool internal_torture_run_test(struct torture_context *context,
 	torture_ui_test_result(context, context->last_result,
 			       context->last_reason);
 
-	talloc_free(context->last_reason);
-	context->last_reason = NULL;
-
-	context->active_test = NULL;
-	context->active_tcase = NULL;
+	TALLOC_FREE(frame);
+	if (!already_setup) {
+		tevent_re_initialise(_context->ev);
+	}
 
 	return success;
 }
@@ -584,19 +623,43 @@ bool torture_run_tcase(struct torture_context *context,
 	return torture_run_tcase_restricted(context, tcase, NULL);
 }
 
-bool torture_run_tcase_restricted(struct torture_context *context,
+bool torture_run_tcase_restricted(struct torture_context *_context,
 		       struct torture_tcase *tcase, const char **restricted)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct torture_context *context = NULL;
 	bool ret = true;
 	struct torture_test *test;
 	bool setup_succeeded = true;
 	const char * setup_reason = "Setup failed";
+	enum torture_result fail_result = TORTURE_FAIL;
+	int rc;
+
+	context = torture_context_child(frame, _context);
+	if (context == NULL) {
+		setup_succeeded = false;
+		setup_reason = "torture_context_child() failed";
+		fail_result = TORTURE_ERROR;
+		context = _context;
+		goto setup_failed;
+	}
+
+	rc = tevent_re_initialise(context->ev);
+	if (rc != 0) {
+		setup_succeeded = false;
+		setup_reason = "tevent_re_initialise() failed";
+		fail_result = TORTURE_ERROR;
+		context = _context;
+		goto setup_failed;
+	}
+
+setup_failed:
 
 	context->active_tcase = tcase;
 	if (context->results->ui_ops->tcase_start) 
 		context->results->ui_ops->tcase_start(context, tcase);
 
-	if (tcase->fixture_persistent && tcase->setup) {
+	if (setup_succeeded && tcase->fixture_persistent && tcase->setup) {
 		setup_succeeded = tcase->setup(context, &tcase->data);
 	}
 
@@ -620,7 +683,7 @@ bool torture_run_tcase_restricted(struct torture_context *context,
 			context->active_tcase = tcase;
 			context->active_test = test;
 			torture_ui_test_start(context, tcase, test);
-			torture_ui_test_result(context, TORTURE_FAIL, setup_reason);
+			torture_ui_test_result(context, fail_result, setup_reason);
 		}
 	}
 
@@ -634,6 +697,9 @@ bool torture_run_tcase_restricted(struct torture_context *context,
 
 	if (context->results->ui_ops->tcase_finish)
 		context->results->ui_ops->tcase_finish(context, tcase);
+
+	TALLOC_FREE(frame);
+	tevent_re_initialise(_context->ev);
 
 	return (!setup_succeeded) ? false : ret;
 }
