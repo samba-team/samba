@@ -81,17 +81,33 @@ struct torture_context *torture_context_init(TALLOC_CTX *mem_ctx,
 /**
  * Create a sub torture context
  */
-struct torture_context *torture_context_child(struct torture_context *parent)
+struct torture_context *torture_context_child(TALLOC_CTX *mem_ctx,
+					      struct torture_context *parent)
 {
-	struct torture_context *subtorture = talloc_zero(parent, struct torture_context);
+	struct torture_context *subtorture = NULL;
 
-	if (subtorture == NULL)
+	SMB_ASSERT(parent);
+	SMB_ASSERT(parent->ev);
+	SMB_ASSERT(parent->lp_ctx);
+	SMB_ASSERT(parent->results);
+	SMB_ASSERT(parent->outputdir);
+
+	subtorture = talloc_zero(mem_ctx, struct torture_context);
+	if (subtorture == NULL) {
 		return NULL;
+	}
 
-	subtorture->ev = talloc_reference(subtorture, parent->ev);
-	subtorture->lp_ctx = talloc_reference(subtorture, parent->lp_ctx);
-	subtorture->outputdir = talloc_reference(subtorture, parent->outputdir);
-	subtorture->results = talloc_reference(subtorture, parent->results);
+	subtorture->ev = parent->ev;
+	subtorture->lp_ctx = parent->lp_ctx;
+	subtorture->results = parent->results;
+	subtorture->outputdir = parent->outputdir;
+
+	if (parent->active_prefix != NULL) {
+		memcpy(subtorture->_initial_prefix.subunit_prefix,
+		       parent->active_prefix->subunit_prefix,
+		       sizeof(subtorture->active_prefix->subunit_prefix));
+	}
+	subtorture->active_prefix = &subtorture->_initial_prefix;
 
 	return subtorture;
 }

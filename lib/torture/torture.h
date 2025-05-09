@@ -916,7 +916,8 @@ struct torture_context *torture_context_init(TALLOC_CTX *mem_ctx,
 
 struct torture_results *torture_results_init(TALLOC_CTX *mem_ctx, const struct torture_ui_ops *ui_ops);
 
-struct torture_context *torture_context_child(struct torture_context *tctx);
+struct torture_context *torture_context_child(TALLOC_CTX *mem_ctx,
+					      struct torture_context *parent);
 
 extern const struct torture_ui_ops torture_subunit_ui_ops;
 extern const struct torture_ui_ops torture_simple_ui_ops;
