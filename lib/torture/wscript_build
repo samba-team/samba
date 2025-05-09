@@ -3,6 +3,6 @@
 bld.SAMBA_LIBRARY('torture',
     private_library=True,
     source='torture.c subunit.c simple.c',
-    public_deps='samba-hostconfig samba-util samba-errors talloc tevent',
+    public_deps='samba-hostconfig samba-util samba-errors talloc tevent talloc_report',
     private_headers='torture.h'
     )

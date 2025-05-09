@@ -20,6 +20,7 @@
 
 #include "source4/include/includes.h"
 #include <tevent.h>
+#include "../lib/util/talloc_report.h"
 #include "../torture/torture.h"
 #include "../lib/util/dlinklist.h"
 #include "param/param.h"
@@ -517,6 +518,15 @@ static bool test_needs_running(const char *name, const char **restricted)
 	return false;
 }
 
+static void torture_dummy_signal0_handler(struct tevent_context *ev,
+					  struct tevent_signal *se,
+					  int signum,
+					  int count,
+					  void *siginfo,
+					  void *private_data)
+{
+}
+
 static bool internal_torture_run_test(struct torture_context *_context,
 					  struct torture_tcase *tcase,
 					  struct torture_test *test,
@@ -527,6 +537,8 @@ static bool internal_torture_run_test(struct torture_context *_context,
 	struct torture_context *context = NULL;
 	char *subunit_testname = NULL;
 	bool success;
+	size_t evtb1 = 0;
+	size_t evtb2 = 0;
 
 	if (already_setup) {
 		context = _context;
@@ -562,6 +574,7 @@ static bool internal_torture_run_test(struct torture_context *_context,
 	torture_ui_test_start(context, tcase, test);
 
 	if (!already_setup) {
+		struct tevent_signal *dummy_se = NULL;
 		int rc;
 
 		rc = tevent_re_initialise(context->ev);
@@ -571,6 +584,29 @@ static bool internal_torture_run_test(struct torture_context *_context,
 			TALLOC_FREE(frame);
 			return false;
 		}
+
+		/*
+		 * We call tevent_add_signal() in order
+		 * to have tevent_common_wakeup_init()
+		 * called.
+		 *
+		 * So that talloc_total_blocks(context->ev)
+		 * gives stable results.
+		 */
+		dummy_se = tevent_add_signal(context->ev,
+					     context,
+					     SIGCONT,
+					     0, /* sa_flags */
+					     torture_dummy_signal0_handler,
+					     NULL);
+		if (dummy_se == NULL) {
+			torture_ui_test_result(context, TORTURE_ERROR,
+					       "tevent_add_signal() failed");
+			TALLOC_FREE(frame);
+			return false;
+		}
+
+		evtb1 = talloc_total_blocks(context->ev);
 	}
 
 	context->last_reason = NULL;
@@ -609,6 +645,21 @@ static bool internal_torture_run_test(struct torture_context *_context,
 	torture_ui_test_result(context, context->last_result,
 			       context->last_reason);
 
+	if (!already_setup) {
+		TALLOC_FREE(context);
+
+		evtb2 = talloc_total_blocks(_context->ev);
+		if (evtb1 != evtb2) {
+			char *rp = talloc_report_str(frame, _context->ev);
+			DBG_ERR("%s: evtb1[%zu] evtb2[%zu]\n%s\n",
+				subunit_testname, evtb1, evtb2, rp);
+			TALLOC_FREE(rp);
+			if (success) {
+				SMB_ASSERT(evtb1 == evtb2);
+			}
+		}
+	}
+
 	TALLOC_FREE(frame);
 	if (!already_setup) {
 		tevent_re_initialise(_context->ev);
@@ -628,11 +679,14 @@ bool torture_run_tcase_restricted(struct torture_context *_context,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct torture_context *context = NULL;
+	struct tevent_signal *dummy_se = NULL;
 	bool ret = true;
 	struct torture_test *test;
 	bool setup_succeeded = true;
 	const char * setup_reason = "Setup failed";
 	enum torture_result fail_result = TORTURE_FAIL;
+	size_t evtb1 = 0;
+	size_t evtb2 = 0;
 	int rc;
 
 	context = torture_context_child(frame, _context);
@@ -652,6 +706,30 @@ bool torture_run_tcase_restricted(struct torture_context *_context,
 		context = _context;
 		goto setup_failed;
 	}
+
+	/*
+	 * We call tevent_add_signal() in order
+	 * to have tevent_common_wakeup_init()
+	 * called.
+	 *
+	 * So that talloc_total_blocks(context->ev)
+	 * gives stable results.
+	 */
+	dummy_se = tevent_add_signal(context->ev,
+				     context,
+				     SIGCONT,
+				     0, /* sa_flags */
+				     torture_dummy_signal0_handler,
+				     NULL);
+	if (dummy_se == NULL) {
+		setup_succeeded = false;
+		setup_reason = "tevent_add_signal() failed";
+		fail_result = TORTURE_ERROR;
+		context = _context;
+		goto setup_failed;
+	}
+
+	evtb1 = talloc_total_blocks(context->ev);
 
 setup_failed:
 
@@ -697,6 +775,23 @@ setup_failed:
 
 	if (context->results->ui_ops->tcase_finish)
 		context->results->ui_ops->tcase_finish(context, tcase);
+
+	if (setup_succeeded) {
+		if (context != _context) {
+			TALLOC_FREE(context);
+		}
+
+		evtb2 = talloc_total_blocks(_context->ev);
+		if (evtb1 != evtb2) {
+			char *rp = talloc_report_str(frame, _context->ev);
+			DBG_ERR("%s: evtb1[%zu] evtb2[%zu]\n%s\n",
+				tcase->name, evtb1, evtb2, rp);
+			TALLOC_FREE(rp);
+			if (ret) {
+				SMB_ASSERT(evtb1 == evtb2);
+			}
+		}
+	}
 
 	TALLOC_FREE(frame);
 	tevent_re_initialise(_context->ev);
