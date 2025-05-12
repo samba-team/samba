@@ -129,8 +129,88 @@ static void show_buf(const char *name, uint8_t *buf, size_t size)
   "charset", then convert it back again and ensure we get the same
   buffer back
 */
+
+struct test_buffer_cache {
+	const char *charset;
+	iconv_t cd;
+	smb_iconv_t cd2;
+	smb_iconv_t cd3;
+};
+
+static int test_buffer_cache_destructor(struct test_buffer_cache *c)
+{
+	if (c->cd3 != (smb_iconv_t)-1) {
+		smb_iconv_close(c->cd3);
+		c->cd3 = (smb_iconv_t)-1;
+	}
+	if (c->cd2 != (smb_iconv_t)-1) {
+		smb_iconv_close(c->cd2);
+		c->cd2 = (smb_iconv_t)-1;
+	}
+	if (c->cd != (iconv_t)-1) {
+		iconv_close(c->cd);
+		c->cd = (iconv_t)-1;
+	}
+
+	return 0;
+}
+
+static bool test_buffer_create_cache(struct torture_context *test,
+				     const char *charset,
+				     struct test_buffer_cache **_cache)
+{
+	struct test_buffer_cache *c = NULL;
+	bool use_builtin;
+
+	use_builtin = lpcfg_parm_bool(test->lp_ctx,
+				      NULL,
+				      "iconv",
+				      "use_builtin_handlers",
+				      true);
+
+	c = talloc_zero(test, struct test_buffer_cache);
+	torture_assert(test, c != NULL, "talloc_zero");
+	c->cd = (iconv_t)-1;
+	c->cd2 = (smb_iconv_t)-1;
+	c->cd3 = (smb_iconv_t)-1;
+	talloc_set_destructor(c, test_buffer_cache_destructor);
+
+	c->charset = talloc_strdup(c, charset);
+	torture_assert(test, c->charset != NULL, "talloc_strdup");
+
+	c->cd = iconv_open(charset, "UTF-16LE");
+	if (c->cd == (iconv_t)-1) {
+		torture_fail_goto(test, fail, talloc_asprintf(test,
+			"failed to open %s to UTF-16LE",
+			charset));
+	}
+	c->cd2 = smb_iconv_open_ex(c, charset, "UTF-16LE", use_builtin);
+	if (c->cd2 == (smb_iconv_t)-1) {
+		int saved_errno = errno;
+		torture_fail_goto(test, fail, talloc_asprintf(c,
+			"failed to open %s to UTF-16LE via smb_iconv_open_ex"
+			"use_builtin[%u] %s",
+			charset, use_builtin, strerror(saved_errno)));
+	}
+	c->cd3 = smb_iconv_open_ex(c, "UTF-16LE", charset, use_builtin);
+	if (c->cd3 == (smb_iconv_t)-1) {
+		int saved_errno = errno;
+		torture_fail_goto(test, fail, talloc_asprintf(c,
+			"failed to open UTF-16LE to %s via smb_iconv_open_ex"
+			"use_builtin[%u] %s",
+			charset, use_builtin, strerror(saved_errno)));
+	}
+
+	*_cache = c;
+	return true;
+fail:
+	TALLOC_FREE(c);
+	return false;
+}
+
 static bool test_buffer(struct torture_context *test, 
-			uint8_t *inbuf, size_t size, const char *charset)
+			struct test_buffer_cache *c,
+			uint8_t *inbuf, size_t size)
 {
 	uint8_t buf1[1000], buf2[1000], buf3[1000];
 	size_t outsize1, outsize2, outsize3;
@@ -140,41 +220,10 @@ static bool test_buffer(struct torture_context *test,
 	size_t size_in1, size_in2, size_in3;
 	size_t ret1, ret2, ret3, len1, len2;
 	int errno1, errno2;
-	static iconv_t cd;
-	static smb_iconv_t cd2, cd3;
-	static const char *last_charset;
-
-	if (cd && last_charset) {
-		iconv_close(cd);
-		smb_iconv_close(cd2);
-		smb_iconv_close(cd3);
-		cd = NULL;
-	}
-
-	if (!cd) {
-		cd = iconv_open(charset, "UTF-16LE");
-		if (cd == (iconv_t)-1) {
-			torture_fail(test, 
-				     talloc_asprintf(test, 
-						     "failed to open %s to UTF-16LE",
-						     charset));
-		}
-		cd2 = smb_iconv_open_ex(test, charset, "UTF-16LE", lpcfg_parm_bool(test->lp_ctx, NULL, "iconv", "use_builtin_handlers", true));
-		if (cd2 == (iconv_t)-1) {
-			torture_fail(test, 
-				     talloc_asprintf(test, 
-						     "failed to open %s to UTF-16LE via smb_iconv_open_ex",
-						     charset));
-		}
-		cd3 = smb_iconv_open_ex(test, "UTF-16LE", charset, lpcfg_parm_bool(test->lp_ctx, NULL, "iconv", "use_builtin_handlers", true));
-		if (cd3 == (iconv_t)-1) {
-			torture_fail(test, 
-				     talloc_asprintf(test, 
-						     "failed to open UTF-16LE to %s via smb_iconv_open_ex",
-						     charset));
-		}
-		last_charset = charset;
-	}
+	const char *charset = c->charset;
+	iconv_t cd = c->cd;
+	smb_iconv_t cd2 = c->cd2;
+	smb_iconv_t cd3 = c->cd3;
 
 	/* internal convert to charset - placing result in buf1 */
 	ptr_in1 = (const char *)inbuf;
@@ -345,9 +394,14 @@ static bool test_first_1m(struct torture_context *tctx)
 	unsigned int codepoint;
 	size_t size;
 	unsigned char inbuf[1000];
+	struct test_buffer_cache *c_utf8 = NULL;
+	bool ok;
 
 	if (iconv_untestable(tctx))
 		return true;
+
+	ok = test_buffer_create_cache(tctx, "UTF-8", &c_utf8);
+	torture_assert(tctx, ok, "test_buffer_create_cache");
 
 	for (codepoint=0;codepoint<(1<<20);codepoint++) {
 		if (gen_codepoint_utf16(codepoint, (char *)inbuf, &size) != 0) {
@@ -361,7 +415,7 @@ static bool test_first_1m(struct torture_context *tctx)
 			}
 		}
 
-		if (!test_buffer(tctx, inbuf, size, "UTF-8"))
+		if (!test_buffer(tctx, c_utf8, inbuf, size))
 			return false;
 	}
 	return true;
@@ -371,9 +425,18 @@ static bool test_random_5m(struct torture_context *tctx)
 {
 	unsigned char inbuf[1000];
 	unsigned int i;
+	struct test_buffer_cache *c_utf8 = NULL;
+	struct test_buffer_cache *c_cp850 = NULL;
+	bool ok;
 
 	if (iconv_untestable(tctx))
 		return true;
+
+	ok = test_buffer_create_cache(tctx, "UTF-8", &c_utf8);
+	torture_assert(tctx, ok, "test_buffer_create_cache(UTF-8)");
+
+	ok = test_buffer_create_cache(tctx, "CP850", &c_cp850);
+	torture_assert(tctx, ok, "test_buffer_create_cache(CP850)");
 
 	for (i=0;i<500000;i++) {
 		size_t size;
@@ -400,16 +463,19 @@ static bool test_random_5m(struct torture_context *tctx)
 				inbuf[c] |= 0xdc;
 			}
 		}
-		if (!test_buffer(tctx, inbuf, size, "UTF-8")) {
+		if (!test_buffer(tctx, c_utf8, inbuf, size)) {
 			printf("i=%d failed UTF-8\n", i);
 			return false;
 		}
 
-		if (!test_buffer(tctx, inbuf, size, "CP850")) {
+		if (!test_buffer(tctx, c_cp850, inbuf, size)) {
 			printf("i=%d failed CP850\n", i);
 			return false;
 		}
 	}
+
+	TALLOC_FREE(c_utf8);
+	TALLOC_FREE(c_cp850);
 	return true;
 }
 
