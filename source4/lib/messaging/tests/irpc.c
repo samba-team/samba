@@ -258,14 +258,14 @@ static bool irpc_setup(struct torture_context *tctx, void **_data)
 
 	data->ev = tctx->ev;
 	torture_assert(tctx, data->msg_ctx1 = 
-		       imessaging_init(tctx,
+		       imessaging_init(data,
 				      tctx->lp_ctx,
 				      cluster_id(0, MSG_ID1),
 				      data->ev),
 		       "Failed to init first messaging context");
 
 	torture_assert(tctx, data->msg_ctx2 = 
-		       imessaging_init(tctx,
+		       imessaging_init(data,
 				      tctx->lp_ctx,
 				      cluster_id(0, MSG_ID2), 
 				      data->ev),
@@ -278,6 +278,16 @@ static bool irpc_setup(struct torture_context *tctx, void **_data)
 	IRPC_REGISTER(data->msg_ctx1, rpcecho, ECHO_ECHODATA, irpc_EchoData, data);
 	IRPC_REGISTER(data->msg_ctx2, rpcecho, ECHO_ECHODATA, irpc_EchoData, data);
 
+	return true;
+}
+
+static bool irpc_teardown(struct torture_context *tctx, void *_data)
+{
+	struct irpc_test_data *data =
+		talloc_get_type_abort(_data,
+		struct irpc_test_data);
+
+	TALLOC_FREE(data);
 	return true;
 }
 
@@ -295,6 +305,7 @@ struct torture_suite *torture_local_irpc(TALLOC_CTX *mem_ctx)
 	values[4] = random() & 0xFFFFFFFF;
 
 	tcase->setup = irpc_setup;
+	tcase->teardown = irpc_teardown;
 
 	for (i = 0; i < 5; i++) {
 		torture_tcase_add_test_const(tcase, "addone", test_addone,
