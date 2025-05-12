@@ -51,76 +51,81 @@ static NTSTATUS make_dc_info_from_cldap_reply(
 /****************************************************************
 ****************************************************************/
 
-static void debug_dsdcinfo_flags(int lvl, uint32_t flags)
+static char *dsdcinfo_flags_str(TALLOC_CTX *mem_ctx, uint32_t flags)
 {
-	DEBUG(lvl,("debug_dsdcinfo_flags: 0x%08x\n\t", flags));
+	char *s = NULL;
+
+	s = talloc_asprintf(mem_ctx, "0x%08x\n\t", flags);
 
 	if (flags & DS_FORCE_REDISCOVERY)
-		DEBUGADD(lvl,("DS_FORCE_REDISCOVERY "));
+		talloc_asprintf_addbuf(&s, "DS_FORCE_REDISCOVERY ");
 	if (flags & 0x00000002)
-		DEBUGADD(lvl,("0x00000002 "));
+		talloc_asprintf_addbuf(&s, "0x00000002 ");
 	if (flags & 0x00000004)
-		DEBUGADD(lvl,("0x00000004 "));
+		talloc_asprintf_addbuf(&s, "0x00000004 ");
 	if (flags & 0x00000008)
-		DEBUGADD(lvl,("0x00000008 "));
+		talloc_asprintf_addbuf(&s, "0x00000008 ");
 	if (flags & DS_DIRECTORY_SERVICE_REQUIRED)
-		DEBUGADD(lvl,("DS_DIRECTORY_SERVICE_REQUIRED "));
+		talloc_asprintf_addbuf(&s, "DS_DIRECTORY_SERVICE_REQUIRED ");
 	if (flags & DS_DIRECTORY_SERVICE_PREFERRED)
-		DEBUGADD(lvl,("DS_DIRECTORY_SERVICE_PREFERRED "));
+		talloc_asprintf_addbuf(&s, "DS_DIRECTORY_SERVICE_PREFERRED ");
 	if (flags & DS_GC_SERVER_REQUIRED)
-		DEBUGADD(lvl,("DS_GC_SERVER_REQUIRED "));
+		talloc_asprintf_addbuf(&s, "DS_GC_SERVER_REQUIRED ");
 	if (flags & DS_PDC_REQUIRED)
-		DEBUGADD(lvl,("DS_PDC_REQUIRED "));
+		talloc_asprintf_addbuf(&s, "DS_PDC_REQUIRED ");
 	if (flags & DS_BACKGROUND_ONLY)
-		DEBUGADD(lvl,("DS_BACKGROUND_ONLY "));
+		talloc_asprintf_addbuf(&s, "DS_BACKGROUND_ONLY ");
 	if (flags & DS_IP_REQUIRED)
-		DEBUGADD(lvl,("DS_IP_REQUIRED "));
+		talloc_asprintf_addbuf(&s, "DS_IP_REQUIRED ");
 	if (flags & DS_KDC_REQUIRED)
-		DEBUGADD(lvl,("DS_KDC_REQUIRED "));
+		talloc_asprintf_addbuf(&s, "DS_KDC_REQUIRED ");
 	if (flags & DS_TIMESERV_REQUIRED)
-		DEBUGADD(lvl,("DS_TIMESERV_REQUIRED "));
+		talloc_asprintf_addbuf(&s, "DS_TIMESERV_REQUIRED ");
 	if (flags & DS_WRITABLE_REQUIRED)
-		DEBUGADD(lvl,("DS_WRITABLE_REQUIRED "));
+		talloc_asprintf_addbuf(&s, "DS_WRITABLE_REQUIRED ");
 	if (flags & DS_GOOD_TIMESERV_PREFERRED)
-		DEBUGADD(lvl,("DS_GOOD_TIMESERV_PREFERRED "));
+		talloc_asprintf_addbuf(&s, "DS_GOOD_TIMESERV_PREFERRED ");
 	if (flags & DS_AVOID_SELF)
-		DEBUGADD(lvl,("DS_AVOID_SELF "));
+		talloc_asprintf_addbuf(&s, "DS_AVOID_SELF ");
 	if (flags & DS_ONLY_LDAP_NEEDED)
-		DEBUGADD(lvl,("DS_ONLY_LDAP_NEEDED "));
+		talloc_asprintf_addbuf(&s, "DS_ONLY_LDAP_NEEDED ");
 	if (flags & DS_IS_FLAT_NAME)
-		DEBUGADD(lvl,("DS_IS_FLAT_NAME "));
+		talloc_asprintf_addbuf(&s, "DS_IS_FLAT_NAME ");
 	if (flags & DS_IS_DNS_NAME)
-		DEBUGADD(lvl,("DS_IS_DNS_NAME "));
+		talloc_asprintf_addbuf(&s, "DS_IS_DNS_NAME ");
 	if (flags & DS_TRY_NEXTCLOSEST_SITE)
-		DEBUGADD(lvl,("DS_TRY_NEXTCLOSEST_SITE "));
+		talloc_asprintf_addbuf(&s, "DS_TRY_NEXTCLOSEST_SITE ");
 	if (flags & DS_DIRECTORY_SERVICE_6_REQUIRED)
-		DEBUGADD(lvl,("DS_DIRECTORY_SERVICE_6_REQUIRED "));
+		talloc_asprintf_addbuf(&s, "DS_DIRECTORY_SERVICE_6_REQUIRED ");
 	if (flags & DS_WEB_SERVICE_REQUIRED)
-		DEBUGADD(lvl,("DS_WEB_SERVICE_REQUIRED "));
+		talloc_asprintf_addbuf(&s, "DS_WEB_SERVICE_REQUIRED ");
 	if (flags & DS_DIRECTORY_SERVICE_8_REQUIRED)
-		DEBUGADD(lvl,("DS_DIRECTORY_SERVICE_8_REQUIRED "));
+		talloc_asprintf_addbuf(&s, "DS_DIRECTORY_SERVICE_8_REQUIRED ");
 	if (flags & DS_DIRECTORY_SERVICE_9_REQUIRED)
-		DEBUGADD(lvl,("DS_DIRECTORY_SERVICE_9_REQUIRED "));
+		talloc_asprintf_addbuf(&s, "DS_DIRECTORY_SERVICE_9_REQUIRED ");
 	if (flags & DS_DIRECTORY_SERVICE_10_REQUIRED)
-		DEBUGADD(lvl,("DS_DIRECTORY_SERVICE_10_REQUIRED "));
+		talloc_asprintf_addbuf(&s,
+				       "DS_DIRECTORY_SERVICE_10_REQUIRED ");
 	if (flags & 0x01000000)
-		DEBUGADD(lvl,("0x01000000 "));
+		talloc_asprintf_addbuf(&s, "0x01000000 ");
 	if (flags & 0x02000000)
-		DEBUGADD(lvl,("0x02000000 "));
+		talloc_asprintf_addbuf(&s, "0x02000000 ");
 	if (flags & 0x04000000)
-		DEBUGADD(lvl,("0x04000000 "));
+		talloc_asprintf_addbuf(&s, "0x04000000 ");
 	if (flags & 0x08000000)
-		DEBUGADD(lvl,("0x08000000 "));
+		talloc_asprintf_addbuf(&s, "0x08000000 ");
 	if (flags & 0x10000000)
-		DEBUGADD(lvl,("0x10000000 "));
+		talloc_asprintf_addbuf(&s, "0x10000000 ");
 	if (flags & 0x20000000)
-		DEBUGADD(lvl,("0x20000000 "));
+		talloc_asprintf_addbuf(&s, "0x20000000 ");
 	if (flags & DS_RETURN_DNS_NAME)
-		DEBUGADD(lvl,("DS_RETURN_DNS_NAME "));
+		talloc_asprintf_addbuf(&s, "DS_RETURN_DNS_NAME ");
 	if (flags & DS_RETURN_FLAT_NAME)
-		DEBUGADD(lvl,("DS_RETURN_FLAT_NAME "));
+		talloc_asprintf_addbuf(&s, "DS_RETURN_FLAT_NAME ");
 	if (flags)
-		DEBUGADD(lvl,("\n"));
+		talloc_asprintf_addbuf(&s, "\n");
+
+	return s;
 }
 
 /****************************************************************
@@ -378,8 +383,6 @@ static bool check_allowed_required_flags(uint32_t flags,
 
 	/* FIXME: check for DSGETDC_VALID_FLAGS and check for exclusive bits
 	 * (DS_PDC_REQUIRED, DS_KDC_REQUIRED, DS_GC_SERVER_REQUIRED) */
-
-	debug_dsdcinfo_flags(10, flags);
 
 	if ((flags & DS_TRY_NEXTCLOSEST_SITE) && site_name) {
 		return false;
@@ -1135,6 +1138,14 @@ static NTSTATUS dsgetdcname_internal(TALLOC_CTX *mem_ctx,
 		  site_name ? site_name : "(null)", flags));
 
 	*info = NULL;
+
+	if (DEBUGLEVEL >= DBGLVL_DEBUG) {
+		char *dbg = dsdcinfo_flags_str(mem_ctx, flags);
+		if (dbg != NULL) {
+			DBG_DEBUG("%s", dbg);
+			TALLOC_FREE(dbg);
+		}
+	}
 
 	if (!check_allowed_required_flags(flags, site_name)) {
 		DEBUG(0,("invalid flags specified\n"));
