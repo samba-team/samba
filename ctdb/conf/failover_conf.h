@@ -25,6 +25,8 @@
 #define FAILOVER_CONF_SECTION "failover"
 
 #define FAILOVER_CONF_DISABLED "disabled"
+#define FAILOVER_CONF_SHUTDOWN_FAILOVER_TIMEOUT "shutdown failover timeout"
+
 
 void failover_conf_init(struct conf_context *conf);
 
