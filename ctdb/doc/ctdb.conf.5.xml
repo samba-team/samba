@@ -496,6 +496,24 @@
 	</listitem>
       </varlistentry>
 
+      <varlistentry>
+	<term>shutdown failover timeout = <parameter>TIMEOUT</parameter></term>
+	<listitem>
+	  <para>
+	    CTDB will wait for TIMEOUT seconds for failover to
+	    complete during shutdown.  This allows NFS servers on
+	    other nodes to go into grace during graceful shutdown of a
+	    node.
+	  </para>
+	  <para>
+	    Set this to 0 to disable explicit failover on shutdown.
+	  </para>
+	  <para>
+	    Default: <literal>10</literal>
+	  </para>
+	</listitem>
+      </varlistentry>
+
     </variablelist>
   </refsect1>
 
