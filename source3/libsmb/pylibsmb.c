@@ -3480,8 +3480,6 @@ MODULE_INIT_FUNC(libsmb_samba_cwrapper)
 	PyObject *m = NULL;
 	PyObject *mod = NULL;
 
-	talloc_stackframe();
-
 	if (PyType_Ready(&py_cli_state_type) < 0) {
 		return NULL;
 	}
