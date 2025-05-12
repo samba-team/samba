@@ -51,9 +51,46 @@ struct talloc_stackframe {
 
 static struct talloc_stackframe *global_ts;
 
+static void talloc_stackframe_destructor(void *ptr)
+{
+	struct talloc_stackframe *ts =
+		(struct talloc_stackframe *)ptr;
+	int i;
+
+	for (i = 0; i < ts->talloc_stacksize; i++) {
+		int idx = ts->talloc_stacksize - (i + 1);
+		DEBUG(0, ("Dangling frame[%d] %s\n",
+			  idx, talloc_get_name(ts->talloc_stack[idx])));
+	}
+	if (ts->talloc_stacksize > 0) {
+#if 0 /* TODO ifdef DEVELOPER */
+		smb_panic("Dangling frames.");
+#endif
+	}
+
+	free(ts);
+}
+
+static void talloc_stackframe_atexit(void)
+{
+	talloc_stackframe_destructor(global_ts);
+}
+
+static void talloc_stackframe_init(void)
+{
+	static bool done;
+
+	if (!done) {
+		atexit(talloc_stackframe_atexit);
+		done = true;
+	}
+}
+
 static struct talloc_stackframe *talloc_stackframe_get_existing(void)
 {
 	struct talloc_stackframe *ts = NULL;
+
+	talloc_stackframe_init();
 
 	ts = global_ts;
 
