@@ -38,10 +38,11 @@
  */
 
 #include "replace.h"
+#include <pthread.h>
 #include <talloc.h>
 #include "lib/util/talloc_stack.h"
-#include "lib/util/fault.h"
 #include "lib/util/debug.h"
+#include "lib/util/fault.h"
 
 struct talloc_stackframe {
 	int talloc_stacksize;
@@ -49,7 +50,13 @@ struct talloc_stackframe {
 	TALLOC_CTX **talloc_stack;
 };
 
+/* Variable to ensure TLS value is only initialized once. */
+#ifdef HAVE_PTHREAD
+static pthread_once_t ts_initialized = PTHREAD_ONCE_INIT;
+static pthread_key_t ts_key;
+#else /* ! HAVE_PTHREAD */
 static struct talloc_stackframe *global_ts;
+#endif
 
 static void talloc_stackframe_destructor(void *ptr)
 {
@@ -71,6 +78,18 @@ static void talloc_stackframe_destructor(void *ptr)
 	free(ts);
 }
 
+#ifdef HAVE_PTHREAD
+static void talloc_stackframe_init_once(void)
+{
+	int ret = pthread_key_create(&ts_key, talloc_stackframe_destructor);
+	SMB_ASSERT(ret == 0);
+}
+
+static void talloc_stackframe_init(void)
+{
+	pthread_once(&ts_initialized, talloc_stackframe_init_once);
+}
+#else /* ! HAVE_PTHREAD */
 static void talloc_stackframe_atexit(void)
 {
 	talloc_stackframe_destructor(global_ts);
@@ -85,6 +104,7 @@ static void talloc_stackframe_init(void)
 		done = true;
 	}
 }
+#endif
 
 static struct talloc_stackframe *talloc_stackframe_get_existing(void)
 {
@@ -92,7 +112,11 @@ static struct talloc_stackframe *talloc_stackframe_get_existing(void)
 
 	talloc_stackframe_init();
 
+#ifdef HAVE_PTHREAD
+	ts = (struct talloc_stackframe *)pthread_getspecific(ts_key);
+#else /* ! HAVE_PTHREAD */
 	ts = global_ts;
+#endif
 
 	return ts;
 }
@@ -100,6 +124,9 @@ static struct talloc_stackframe *talloc_stackframe_get_existing(void)
 static struct talloc_stackframe *talloc_stackframe_get(void)
 {
 	struct talloc_stackframe *ts = talloc_stackframe_get_existing();
+#ifdef HAVE_PTHREAD
+	int ret;
+#endif /* ! HAVE_PTHREAD */
 
 	if (ts != NULL) {
 		return ts;
@@ -119,7 +146,12 @@ static struct talloc_stackframe *talloc_stackframe_get(void)
 		smb_panic("talloc_stackframe_init malloc failed");
 	}
 
+#ifdef HAVE_PTHREAD
+	ret = pthread_setspecific(ts_key, ts);
+	SMB_ASSERT(ret == 0);
+#else /* ! HAVE_PTHREAD */
 	global_ts = ts;
+#endif
 
 	return ts;
 }
