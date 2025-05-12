@@ -54,6 +54,7 @@
 #include "common/sock_io.h"
 #include "common/srvid.h"
 
+#include "conf/ctdb_config.h"
 #include "conf/node.h"
 
 struct ctdb_client_pid_list {
@@ -2252,8 +2253,6 @@ static uint64_t ctdb_srvid_id(struct ctdb_context *ctdb, uint32_t extra_mask)
  * timeout.
  */
 
-#define CTDB_SHUTDOWN_FAILOVER_TIMEOUT 10
-
 struct shutdown_takeover_state {
 	bool takeover_done;
 	bool timed_out;
@@ -2348,7 +2347,7 @@ static void ctdb_shutdown_takeover(struct ctdb_context *ctdb)
 	};
 	int ret = 0;
 
-	if (CTDB_SHUTDOWN_FAILOVER_TIMEOUT <= 0) {
+	if (ctdb_config.shutdown_failover_timeout <= 0) {
 		return;
 	}
 
@@ -2371,7 +2370,7 @@ static void ctdb_shutdown_takeover(struct ctdb_context *ctdb)
 	state.te = tevent_add_timer(
 		ctdb->ev,
 		ctdb->srv,
-		timeval_current_ofs(CTDB_SHUTDOWN_FAILOVER_TIMEOUT, 0),
+		timeval_current_ofs(ctdb_config.shutdown_failover_timeout, 0),
 		shutdown_timeout_handler,
 		&state);
 	if (state.te == NULL) {
