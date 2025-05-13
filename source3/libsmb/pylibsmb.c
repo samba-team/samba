@@ -1677,6 +1677,7 @@ static PyObject *py_smb_savefile(struct py_cli_state *self, PyObject *args)
 		return NULL;
 	}
 	status = cli_close_recv(req);
+	TALLOC_FREE(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
 		return NULL;
@@ -2026,6 +2027,11 @@ static PyObject *py_cli_notify(struct py_cli_state *self,
 	flush_req = tevent_queue_wait_send(req,
 					   self->ev,
 					   send_queue);
+	if (flush_req == NULL) {
+		TALLOC_FREE(req);
+		PyErr_NoMemory();
+		return NULL;
+	}
 	endtime = timeval_current_ofs_msec(self->cli->timeout);
 	ok = tevent_req_set_endtime(flush_req,
 				    self->ev,
@@ -2374,7 +2380,8 @@ static NTSTATUS do_listing(struct py_cli_state *self,
 	tevent_req_set_callback(req, do_listing_cb, &state);
 
 	if (!py_tevent_req_wait_exc(self, req)) {
-		return NT_STATUS_INTERNAL_ERROR;
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto done;
 	}
 	TALLOC_FREE(req);
 
@@ -2385,6 +2392,7 @@ static NTSTATUS do_listing(struct py_cli_state *self,
 
 done:
 	TALLOC_FREE(mask);
+	TALLOC_FREE(req);
 	return status;
 }
 
@@ -2691,6 +2699,7 @@ static PyObject *py_smb_get_sd(struct py_cli_state *self, PyObject *args)
 		return NULL;
 	}
 	status = cli_query_security_descriptor_recv(req, NULL, &sd);
+	TALLOC_FREE(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
 		return NULL;
@@ -2728,6 +2737,7 @@ static PyObject *py_smb_set_sd(struct py_cli_state *self, PyObject *args)
 	}
 
 	status = cli_set_security_descriptor_recv(req);
+	TALLOC_FREE(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
 		return NULL;
