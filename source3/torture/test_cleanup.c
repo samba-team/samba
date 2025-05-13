@@ -22,7 +22,6 @@
 #include "torture/proto.h"
 #include "system/filesys.h"
 #include "system/select.h"
-#include "libsmb/libsmb.h"
 #include "libcli/smb/smbXcli_base.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/open_files.h"

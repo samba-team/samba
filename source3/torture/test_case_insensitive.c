@@ -20,7 +20,6 @@
 #include "includes.h"
 #include "torture/proto.h"
 #include "system/filesys.h"
-#include "libsmb/libsmb.h"
 
 /*
  * Regression test file creates on case insensitive file systems (e.g. OS/X)

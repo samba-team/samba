@@ -29,7 +29,6 @@
 #include "secrets.h"
 #include "ads.h"
 #include "passdb.h"
-#include "libsmb/libsmb.h"
 #include "source3/include/messages.h"
 #include "source3/include/g_lock.h"
 #include "lib/util/util_tdb.h"

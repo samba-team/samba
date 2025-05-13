@@ -23,7 +23,6 @@
 #include "nmbd/nmbd.h"
 #include "../lib/util/select.h"
 #include "system/select.h"
-#include "libsmb/libsmb.h"
 #include "libsmb/unexpected.h"
 #include "lib/util/string_wrappers.h"
 

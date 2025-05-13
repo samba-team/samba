@@ -19,7 +19,8 @@
 */
 
 #include "includes.h"
-#include "libsmb/libsmb.h"
+#include "source3/include/client.h"
+#include "source3/libsmb/proto.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "../libcli/smb/smb_signing.h"
 #include "../libcli/smb/smb_seal.h"

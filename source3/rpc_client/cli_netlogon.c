@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "libsmb/libsmb.h"
 #include "rpc_client/rpc_client.h"
 #include "rpc_client/cli_pipe.h"
 #include "../libcli/auth/libcli_auth.h"

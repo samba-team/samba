@@ -18,7 +18,6 @@
 
 #include "includes.h"
 #include "torture/proto.h"
-#include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/util/smb_strtox.h"

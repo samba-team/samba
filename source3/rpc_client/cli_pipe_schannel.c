@@ -25,7 +25,6 @@
 #include "rpc_client/cli_pipe.h"
 #include "librpc/rpc/dcerpc.h"
 #include "passdb.h"
-#include "libsmb/libsmb.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "libcli/auth/netlogon_creds_cli.h"
 #include "auth/gensec/gensec.h"

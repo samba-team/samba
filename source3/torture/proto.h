@@ -23,7 +23,8 @@
 #ifndef __TORTURE_H__
 #define __TORTURE_H__
 
-struct cli_state;
+#include "source3/include/client.h"
+#include "source3/libsmb/proto.h"
 
 /* The following definitions come from torture/denytest.c  */
 

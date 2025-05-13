@@ -24,7 +24,8 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "../libcli/security/dom_sid.h"
-#include "libsmb/libsmb.h"
+#include "source3/include/client.h"
+#include "source3/libsmb/proto.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>

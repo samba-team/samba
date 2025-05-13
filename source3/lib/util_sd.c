@@ -22,7 +22,8 @@
 */
 
 #include "includes.h"
-#include "libsmb/libsmb.h"
+#include "source3/include/client.h"
+#include "source3/libsmb/proto.h"
 #include "util_sd.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "../libcli/security/security.h"

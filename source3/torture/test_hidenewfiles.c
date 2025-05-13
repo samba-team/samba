@@ -19,7 +19,6 @@
 
 #include "includes.h"
 #include "torture/proto.h"
-#include "libsmb/libsmb.h"
 #include "libcli/security/security.h"
 
 static NTSTATUS servertime(

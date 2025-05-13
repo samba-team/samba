@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "libsmb/libsmb.h"
+#include "source3/include/client.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
 #include "../libcli/smb/smbXcli_base.h"

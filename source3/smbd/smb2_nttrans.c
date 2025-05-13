@@ -28,7 +28,7 @@
 #include "passdb/lookup_sid.h"
 #include "auth.h"
 #include "smbprofile.h"
-#include "libsmb/libsmb.h"
+#include "source3/libsmb/proto.h"
 #include "lib/util_ea.h"
 #include "librpc/gen_ndr/ndr_quota.h"
 #include "librpc/gen_ndr/ndr_security.h"

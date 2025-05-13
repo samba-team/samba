@@ -23,7 +23,6 @@
 */
 
 #include "includes.h"
-#include "libsmb/libsmb.h"
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
 

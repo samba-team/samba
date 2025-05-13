@@ -18,7 +18,9 @@
 */
 
 #include "includes.h"
-#include "libsmb/libsmb.h"
+#include "source3/include/client.h"
+#include "source3/libsmb/proto.h"
+#include "source3/libsmb/cli_smb2_fnum.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "fake_file.h"
 #include "../libcli/security/security.h"

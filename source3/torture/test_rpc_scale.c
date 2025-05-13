@@ -17,7 +17,6 @@
 
 #include "source3/include/includes.h"
 #include "source3/torture/proto.h"
-#include "source3/libsmb/libsmb.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "source3/rpc_client/rpc_client.h"

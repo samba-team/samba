@@ -21,7 +21,6 @@
 #include "includes.h"
 #include "rpcclient.h"
 #include "../librpc/gen_ndr/ndr_winspool.h"
-#include "libsmb/libsmb.h"
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
 #include "rpc_client/init_spoolss.h"

@@ -19,6 +19,8 @@
  */
 
 #include "includes.h"
+#include "source3/include/client.h"
+#include "source3/libsmb/proto.h"
 #include "ads.h"
 #include "libsmb/namequery.h"
 #include "librpc/gen_ndr/ndr_libnet_join.h"
@@ -35,10 +37,10 @@
 #include "../libds/common/flags.h"
 #include "secrets.h"
 #include "rpc_client/init_lsa.h"
+
 #include "rpc_client/cli_pipe.h"
 #include "../libcli/security/security.h"
 #include "passdb.h"
-#include "libsmb/libsmb.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "lib/param/loadparm.h"
 #include "libcli/auth/netlogon_creds_cli.h"

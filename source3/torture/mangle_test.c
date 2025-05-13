@@ -20,7 +20,6 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "torture/proto.h"
-#include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 #include "util_tdb.h"
 #include "lib/util/string_wrappers.h"

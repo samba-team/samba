@@ -25,7 +25,8 @@
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_net.h"
 #include "../libcli/smbreadline/smbreadline.h"
-#include "libsmb/libsmb.h"
+#include "source3/include/client.h"
+#include "source3/libsmb/proto.h"
 #include "libcli/security/dom_sid.h"
 
 #include <popt.h>

@@ -19,7 +19,6 @@
 
 #include "includes.h"
 #include "torture/proto.h"
-#include "libsmb/libsmb.h"
 #include "libcli/security/dom_sid.h"
 #include "libcli/security/secdesc.h"
 #include "libcli/security/security.h"

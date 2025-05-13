@@ -18,7 +18,8 @@
 */
 
 #include "includes.h"
-#include "libsmb/libsmb.h"
+#include "source3/include/client.h"
+#include "source3/libsmb/proto.h"
 #include "libsmb/clirap.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "lib/util/string_wrappers.h"

@@ -20,7 +20,6 @@
 #include "includes.h"
 #include "torture/proto.h"
 #include "../libcli/security/security.h"
-#include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 
 /*

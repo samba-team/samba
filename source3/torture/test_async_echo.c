@@ -19,7 +19,6 @@
 
 #include "includes.h"
 #include "torture/proto.h"
-#include "libsmb/libsmb.h"
 #include "rpc_client/cli_pipe.h"
 #include "librpc/gen_ndr/ndr_echo_c.h"
 

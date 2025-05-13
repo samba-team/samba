@@ -18,7 +18,8 @@
 */
 
 #include "includes.h"
-#include "libsmb/libsmb.h"
+#include "source3/include/client.h"
+#include "source3/libsmb/proto.h"
 #include "system/filesys.h"
 #include "locking/share_mode_lock.h"
 #include "locking/proto.h"

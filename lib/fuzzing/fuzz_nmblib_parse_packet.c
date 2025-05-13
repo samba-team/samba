@@ -17,7 +17,7 @@
 */
 
 #include "../../source3/include/includes.h"
-#include "libsmb/libsmb.h"
+#include "source3/include/proto.h"
 #include "libsmb/nmblib.h"
 #include "fuzzing/fuzzing.h"
 

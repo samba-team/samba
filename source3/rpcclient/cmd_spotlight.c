@@ -20,7 +20,6 @@
 
 #include "includes.h"
 #include "rpcclient.h"
-#include "libsmb/libsmb.h"
 #include "../librpc/gen_ndr/ndr_mdssvc_c.h"
 #include "../rpc_server/mdssvc/mdssvc.h"
 #include "../rpc_server/mdssvc/dalloc.h"

@@ -22,7 +22,8 @@
 #include "../lib/util/util_pw.h"
 #include "system/passwd.h"
 #include "passdb/lookup_sid.h"
-#include "libsmb/libsmb.h"
+#include "source3/include/client.h"
+#include "source3/libsmb/proto.h"
 #include "libcli/security/dom_sid.h"
 
 #undef DBGC_CLASS

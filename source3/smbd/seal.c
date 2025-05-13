@@ -22,7 +22,6 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_seal.h"
 #include "auth.h"
-#include "libsmb/libsmb.h"
 #include "../lib/tsocket/tsocket.h"
 #include "auth/gensec/gensec.h"
 

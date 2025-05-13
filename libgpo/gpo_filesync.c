@@ -19,7 +19,8 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "libsmb/libsmb.h"
+#include "source3/include/client.h"
+#include "source3/libsmb/proto.h"
 #include "../libgpo/gpo.h"
 #include "libgpo/gpo_proto.h"
 #include "lib/util/string_wrappers.h"

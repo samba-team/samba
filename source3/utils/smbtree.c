@@ -23,7 +23,6 @@
 #include "lib/cmdline/cmdline.h"
 #include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_srvsvc_c.h"
-#include "libsmb/libsmb.h"
 #include "libsmb/namequery.h"
 #include "libsmb/clirap.h"
 #include "../libcli/smb/smbXcli_base.h"

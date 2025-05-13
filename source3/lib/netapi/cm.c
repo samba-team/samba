@@ -21,7 +21,8 @@
 
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_private.h"
-#include "libsmb/libsmb.h"
+#include "source3/include/client.h"
+#include "source3/libsmb/proto.h"
 #include "rpc_client/cli_pipe.h"
 #include "../libcli/smb/smbXcli_base.h"
 

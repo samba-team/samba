@@ -20,7 +20,8 @@
 */
 
 #include "includes.h"
-#include "libsmb/libsmb.h"
+#include "source3/include/client.h"
+#include "source3/libsmb/proto.h"
 #include "libsmb/clirap.h"
 #include "msdfs.h"
 #include "trans2.h"

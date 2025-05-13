@@ -20,7 +20,8 @@
 #include "includes.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
-#include "libsmb/libsmb.h"
+#include "source3/include/client.h"
+#include "source3/libsmb/proto.h"
 #include "../libcli/smb/smbXcli_base.h"
 
 struct cli_message_start_state {

@@ -20,7 +20,8 @@
 */
 
 #include "includes.h"
-#include "libsmb/libsmb.h"
+#include "source3/include/client.h"
+#include "source3/libsmb/proto.h"
 #include "../libcli/smb/smbXcli_base.h"
 
 int cli_status_to_errno(NTSTATUS status)

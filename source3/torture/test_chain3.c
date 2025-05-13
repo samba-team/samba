@@ -20,7 +20,6 @@
 
 #include "includes.h"
 #include "torture/proto.h"
-#include "libsmb/libsmb.h"
 #include "system/filesys.h"
 #include "async_smb.h"
 #include "lib/util/tevent_ntstatus.h"

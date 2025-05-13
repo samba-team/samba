@@ -20,7 +20,8 @@
 #include "utils/net.h"
 #include "libsmb/nmblib.h"
 #include "libsmb/namequery.h"
-#include "libsmb/libsmb.h"
+#include "source3/include/client.h"
+#include "source3/libsmb/proto.h"
 #include "../libcli/smb/smbXcli_base.h"
 
 /*

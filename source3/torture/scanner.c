@@ -20,7 +20,6 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "torture/proto.h"
-#include "libsmb/libsmb.h"
 #include "../libcli/smb/smbXcli_base.h"
 
 #define VERBOSE 0

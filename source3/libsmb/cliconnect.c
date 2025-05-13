@@ -21,7 +21,9 @@
 */
 
 #include "includes.h"
-#include "libsmb/libsmb.h"
+#include "source3/include/client.h"
+#include "source3/libsmb/proto.h"
+#include "libads/ads_status.h"
 #include "libsmb/namequery.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "auth/credentials/credentials.h"

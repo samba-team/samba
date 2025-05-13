@@ -23,7 +23,6 @@
 #include "../libgpo/gpo_ini.h"
 
 #include "libgpo/gpo_proto.h"
-#include "libsmb/libsmb.h"
 
 /****************************************************************
  explode the GPO CIFS URI into their components

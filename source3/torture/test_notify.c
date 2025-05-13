@@ -19,7 +19,6 @@
 
 #include "includes.h"
 #include "torture/proto.h"
-#include "libsmb/libsmb.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "libcli/security/security.h"
 #include "lib/tevent_barrier.h"
