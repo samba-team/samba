@@ -313,7 +313,8 @@ static struct tevent_req *smbd_smb2_notify_send(TALLOC_CTX *mem_ctx,
 	/* allow this request to be canceled */
 	tevent_req_set_cancel_fn(req, smbd_smb2_notify_cancel);
 
-	SMBPROFILE_IOBYTES_ASYNC_SET_IDLE(state->smb2req->profile);
+	SMBPROFILE_IOBYTES_ASYNC_SET_IDLE_X(state->smb2req->profile,
+					    state->smb2req->profile_x);
 	return req;
 }
 
@@ -330,7 +331,8 @@ static void smbd_smb2_notify_reply(struct smb_request *smbreq,
 		return;
 	}
 
-	SMBPROFILE_IOBYTES_ASYNC_SET_BUSY(state->smb2req->profile);
+	SMBPROFILE_IOBYTES_ASYNC_SET_BUSY_X(state->smb2req->profile,
+					    state->smb2req->profile_x);
 
 	state->status = error_code;
 	if (!NT_STATUS_IS_OK(error_code)) {
