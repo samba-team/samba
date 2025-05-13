@@ -70,7 +70,7 @@ static void talloc_stackframe_destructor(void *ptr)
 			  idx, talloc_get_name(ts->talloc_stack[idx])));
 	}
 	if (ts->talloc_stacksize > 0) {
-#if 0 /* TODO ifdef DEVELOPER */
+#ifdef DEVELOPER
 		smb_panic("Dangling frames.");
 #endif
 	}
