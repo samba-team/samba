@@ -98,7 +98,7 @@ static NTSTATUS map_smb2_handle_to_fnum(struct cli_state *cli,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	*pfnum = (uint16_t)ret;
+	*pfnum = ret;
 	return NT_STATUS_OK;
 }
 
