@@ -844,7 +844,10 @@ static PyObject *py_cli_echo(struct py_cli_state *self,
 	}
 	status = cli_echo_recv(req);
 	TALLOC_FREE(req);
-	PyErr_NTSTATUS_NOT_OK_RAISE(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -1130,7 +1133,10 @@ static PyObject *py_cli_get_posix_fs_info(
 					    &free_file_nodes,
 					    &fs_identifier);
 	TALLOC_FREE(req);
-	PyErr_NTSTATUS_NOT_OK_RAISE(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
 
 	return Py_BuildValue("{s:I,s:I,s:I,s:I,s:I,s:I,s:I,s:I}",
 			     "optimal_transfer_size", optimal_transfer_size,
@@ -1643,7 +1649,10 @@ static PyObject *py_smb_savefile(struct py_cli_state *self, PyObject *args)
 	}
 	status = cli_ntcreate_recv(req, &fnum, NULL);
 	TALLOC_FREE(req);
-	PyErr_NTSTATUS_NOT_OK_RAISE(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
 
 	/* write the new file contents */
 	state.data = data;
@@ -1657,7 +1666,10 @@ static PyObject *py_smb_savefile(struct py_cli_state *self, PyObject *args)
 	}
 	status = cli_push_recv(req);
 	TALLOC_FREE(req);
-	PyErr_NTSTATUS_NOT_OK_RAISE(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
 
 	/* close the file handle */
 	req = cli_close_send(NULL, self->ev, self->cli, fnum, 0);
@@ -1665,7 +1677,10 @@ static PyObject *py_smb_savefile(struct py_cli_state *self, PyObject *args)
 		return NULL;
 	}
 	status = cli_close_recv(req);
-	PyErr_NTSTATUS_NOT_OK_RAISE(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -1754,11 +1769,17 @@ static PyObject *py_smb_loadfile(struct py_cli_state *self, PyObject *args)
 	}
 	status = cli_ntcreate_recv(req, &fnum, NULL);
 	TALLOC_FREE(req);
-	PyErr_NTSTATUS_NOT_OK_RAISE(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
 
 	/* get a buffer to hold the file contents */
 	status = py_smb_filesize(self, fnum, &size);
-	PyErr_NTSTATUS_NOT_OK_RAISE(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
 
 	result = PyBytes_FromStringAndSize(NULL, size);
 	if (result == NULL) {
@@ -2434,7 +2455,10 @@ static PyObject *py_smb_unlink(struct py_cli_state *self, PyObject *args)
 	}
 	status = cli_unlink_recv(req);
 	TALLOC_FREE(req);
-	PyErr_NTSTATUS_NOT_OK_RAISE(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -2455,7 +2479,10 @@ static PyObject *py_smb_rmdir(struct py_cli_state *self, PyObject *args)
 	}
 	status = cli_rmdir_recv(req);
 	TALLOC_FREE(req);
-	PyErr_NTSTATUS_NOT_OK_RAISE(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -2479,7 +2506,10 @@ static PyObject *py_smb_mkdir(struct py_cli_state *self, PyObject *args)
 	}
 	status = cli_mkdir_recv(req);
 	TALLOC_FREE(req);
-	PyErr_NTSTATUS_NOT_OK_RAISE(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
@@ -2661,7 +2691,10 @@ static PyObject *py_smb_get_sd(struct py_cli_state *self, PyObject *args)
 		return NULL;
 	}
 	status = cli_query_security_descriptor_recv(req, NULL, &sd);
-	PyErr_NTSTATUS_NOT_OK_RAISE(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
 
 	return py_return_ndr_struct(
 		"samba.dcerpc.security", "descriptor", sd, sd);
@@ -2695,7 +2728,10 @@ static PyObject *py_smb_set_sd(struct py_cli_state *self, PyObject *args)
 	}
 
 	status = cli_set_security_descriptor_recv(req);
-	PyErr_NTSTATUS_NOT_OK_RAISE(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
 
 	Py_RETURN_NONE;
 }
