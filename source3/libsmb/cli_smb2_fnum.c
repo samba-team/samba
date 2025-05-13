@@ -111,14 +111,16 @@ static NTSTATUS map_fnum_to_smb2_handle(struct cli_state *cli,
 				struct smb2_hnd **pph)	/* Out */
 {
 	struct idr_context *idp = cli->smb2.open_handles;
+	void *ph = NULL;
 
 	if (idp == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	*pph = (struct smb2_hnd *)idr_find(idp, fnum);
-	if (*pph == NULL) {
+	ph = idr_find(idp, fnum);
+	if (ph == NULL) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
+	*pph = talloc_get_type_abort(ph, struct smb2_hnd);
 	return NT_STATUS_OK;
 }
 
