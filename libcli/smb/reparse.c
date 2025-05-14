@@ -532,6 +532,7 @@ ssize_t reparse_data_buffer_marshall(const struct reparse_data_buffer *src,
 				     uint8_t *buf,
 				     size_t buflen)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	ssize_t ret = -1;
 
 	switch (src->tag) {
@@ -563,6 +564,7 @@ ssize_t reparse_data_buffer_marshall(const struct reparse_data_buffer *src,
 	}
 	}
 
+	TALLOC_FREE(frame);
 	return ret;
 }
 
