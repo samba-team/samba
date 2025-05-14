@@ -234,6 +234,13 @@ struct ctdb_call {
 #define CTDB_SRVID_TEST_RANGE  0xAE00000000000000LL
 
 
+/* Range of ports reserved for CTDB server (top 8 bits)
+ * All ports matching the 8 top bits are reserved for exclusive use by
+ * the CTDB server
+ */
+#define CTDB_SRVID_SERVER_RANGE  0x9E00000000000000LL
+
+
 enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_STATISTICS              = 1,
 		    /* #2 removed */
