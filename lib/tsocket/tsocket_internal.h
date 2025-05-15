@@ -122,6 +122,14 @@ struct tstream_context_ops {
 					      struct tstream_context *stream);
 	int (*disconnect_recv)(struct tevent_req *req,
 			       int *perrno);
+
+	/*
+	 * Optional
+	 */
+	struct tevent_req *(*monitor_send)(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   struct tstream_context *stream);
+	int (*monitor_recv)(struct tevent_req *req, int *perrno);
 };
 
 struct tstream_context *_tstream_context_create(TALLOC_CTX *mem_ctx,

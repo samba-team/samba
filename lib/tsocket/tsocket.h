@@ -473,6 +473,40 @@ int tstream_disconnect_recv(struct tevent_req *req,
 			    int *perrno);
 
 /**
+ * @brief Monitor the state of the stream
+ *
+ * This waits forever until a connection error happens.
+ *
+ * @param[in]  mem_ctx   The talloc memory context to use.
+ *
+ * @param[in]  ev        The tevent_context to run on.
+ *
+ * @param[in]  stream    The tstream context to work on.
+ *
+ * @return               A 'tevent_req' handle, where the caller can register
+ *                       a callback with tevent_req_set_callback(). NULL on
+ *                       fatal error.
+ */
+struct tevent_req *tstream_monitor_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct tstream_context *stream);
+
+/**
+ * @brief Get the result of a tstream_monitor_send().
+ *
+ * The caller can only have one outstanding tstream_monitor_send()
+ * at a time otherwise the caller will get *perrno = EBUSY.
+ *
+ * @param[in]  req      The tevent request from tstream_readv_send().
+ *
+ * @param[out] perrno   The error number.
+ *
+ * @return              -1 with perrno set to the actual errno.
+ *                      (0 is never returned!).
+ */
+int tstream_monitor_recv(struct tevent_req *req, int *perrno);
+
+/**
  * @}
  */
 
