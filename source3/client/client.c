@@ -6130,9 +6130,12 @@ static bool finished;
 
 static void cli_status_check(void)
 {
-	if (!cli_state_is_connected(cli)) {
-		DEBUG(0,("SMB echo failed (%s). The connection is "
-			 "disconnected now\n", nt_errstr(NT_STATUS_CONNECTION_DISCONNECTED)));
+	NTSTATUS status;
+
+	status = smbXcli_conn_monitor_once(cli->conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		D_ERR("The connection is disconnected now: %s\n",
+		      nt_errstr(status));
 		finished = true;
 		smb_readline_done();
 	}
