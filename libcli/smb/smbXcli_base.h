@@ -58,6 +58,17 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 bool smbXcli_conn_is_connected(struct smbXcli_conn *conn);
 void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status);
 
+struct tevent_req *smbXcli_conn_monitor_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct smbXcli_conn *conn);
+NTSTATUS smbXcli_conn_monitor_recv(struct tevent_req *req);
+/*
+ * This needs to be called multiple times per second
+ * on an idle connection in order to let the transport
+ * do low level keepalive handling.
+ */
+NTSTATUS smbXcli_conn_monitor_once(struct smbXcli_conn *conn);
+
 struct tevent_queue *smbXcli_conn_send_queue(struct smbXcli_conn *conn);
 bool smbXcli_conn_has_async_calls(struct smbXcli_conn *conn);
 

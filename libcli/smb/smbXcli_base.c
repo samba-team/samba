@@ -60,6 +60,7 @@ struct smbXcli_conn {
 	struct tevent_queue *outgoing;
 	struct tevent_req **pending;
 	struct tevent_req *read_smb_req;
+	struct tevent_req *monitor_req;
 	struct tevent_req *suicide_req;
 
 	enum protocol_types min_protocol;
@@ -1291,6 +1292,17 @@ void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 		smb2cli_session_increment_channel_sequence(session);
 	}
 
+	if (conn->monitor_req != NULL) {
+		/*
+		 * smbXcli_conn_monitor_send()
+		 * used tevent_req_defer_callback() already.
+		 */
+		if (!NT_STATUS_IS_OK(status)) {
+			tevent_req_nterror(conn->monitor_req, status);
+		}
+		conn->monitor_req = NULL;
+	}
+
 	if (conn->suicide_req != NULL) {
 		/*
 		 * smbXcli_conn_samba_suicide_send()
@@ -1394,6 +1406,168 @@ void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 	if (sock_fd != -1) {
 		close(sock_fd);
 	}
+}
+
+struct smbXcli_conn_monitor_state {
+	struct smbXcli_conn *conn;
+	struct tevent_req *monitor_req;
+};
+
+static void smbXcli_conn_monitor_cleanup(struct tevent_req *req,
+					 enum tevent_req_state req_state);
+static void smbXcli_conn_monitor_done(struct tevent_req *subreq);
+
+struct tevent_req *smbXcli_conn_monitor_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct smbXcli_conn *conn)
+{
+	struct tevent_req *req = NULL;
+	struct smbXcli_conn_monitor_state *state = NULL;
+	struct tevent_req *subreq = NULL;
+	bool ok;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smbXcli_conn_monitor_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->conn = conn;
+
+	if (conn->monitor_req != NULL) {
+		tevent_req_nterror(req, NT_STATUS_ALREADY_REGISTERED);
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_cleanup_fn(req, smbXcli_conn_monitor_cleanup);
+
+	/*
+	 * We need to use tevent_req_defer_callback()
+	 * in order to allow smbXcli_conn_disconnect()
+	 * to do a safe cleanup.
+	 */
+	tevent_req_defer_callback(req, ev);
+	conn->monitor_req = req;
+
+	ok = smbXcli_conn_is_connected(conn);
+	if (!ok) {
+		smbXcli_conn_disconnect(conn,
+				NT_STATUS_CONNECTION_DISCONNECTED);
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = wait_for_error_send(state, ev, conn->transport->sock_fd);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smbXcli_conn_monitor_done, req);
+	state->monitor_req = subreq;
+
+	return req;
+}
+
+static void smbXcli_conn_monitor_cleanup(struct tevent_req *req,
+					 enum tevent_req_state req_state)
+{
+	struct smbXcli_conn_monitor_state *state = tevent_req_data(
+		req, struct smbXcli_conn_monitor_state);
+
+	TALLOC_FREE(state->monitor_req);
+
+	if (state->conn == NULL) {
+		return;
+	}
+
+	if (state->conn->monitor_req == req) {
+		state->conn->monitor_req = NULL;
+	}
+	state->conn = NULL;
+}
+
+static void smbXcli_conn_monitor_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+							  struct tevent_req);
+	struct smbXcli_conn_monitor_state *state = tevent_req_data(
+		req, struct smbXcli_conn_monitor_state);
+	NTSTATUS status;
+	int err;
+
+	state->monitor_req = NULL;
+
+	err = wait_for_error_recv(subreq);
+	TALLOC_FREE(subreq);
+	/* here, we need to notify all pending requests */
+	status = map_nt_error_from_unix_common(err);
+	smbXcli_conn_disconnect(state->conn, status);
+}
+
+NTSTATUS smbXcli_conn_monitor_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS smbXcli_conn_monitor_once(struct smbXcli_conn *conn)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	bool ok;
+
+	if (smbXcli_conn_has_async_calls(conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER_MIX;
+		goto fail;
+	}
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	/*
+	 * We want tevent_req_poll()
+	 * to return -1 and errno=EAGAIN
+	 * instead of blocking in [e]poll waiting
+	 * for external events to happen.
+	 *
+	 * So we use tevent_context_set_wait_timeout(0)
+	 * that will cause tevent_loop_once() in
+	 * tevent_req_poll() to break with EAGAIN.
+	 * It also means that tevent_req_is_in_progress()
+	 * would still return true.
+	 */
+	tevent_context_set_wait_timeout(ev, 0);
+	req = smbXcli_conn_monitor_send(frame, ev, conn);
+	if (req == NULL) {
+		goto fail;
+	}
+	ok = tevent_req_poll(req, ev);
+	if (!ok) {
+		if (errno == EAGAIN) {
+			/*
+			 * This is exactly what we want:
+			 * no existing events happened
+			 * and we avoid blocking in
+			 * [e]poll waiting.
+			 *
+			 * See also the comment above before
+			 * tevent_context_set_wait_timeout!
+			 *
+			 * We don't call smbXcli_conn_monitor_recv()
+			 * and let TALLOC_FREE(frame) destroy req
+			 * as well.
+			 */
+			status = NT_STATUS_OK;
+			goto fail;
+		}
+		status = map_nt_error_from_unix_common(errno);
+		goto fail;
+	}
+	status = smbXcli_conn_monitor_recv(req);
+fail:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 /*
