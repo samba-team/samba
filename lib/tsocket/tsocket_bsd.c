@@ -928,14 +928,21 @@ struct tdgram_bsd_recvfrom_state {
 	struct tsocket_address *src;
 };
 
-static int tdgram_bsd_recvfrom_destructor(struct tdgram_bsd_recvfrom_state *state)
+static void tdgram_bsd_recvfrom_cleanup(struct tevent_req *req,
+					enum tevent_req_state req_state)
 {
-	struct tdgram_bsd *bsds = tdgram_context_data(state->dgram,
-				  struct tdgram_bsd);
+	struct tdgram_bsd_recvfrom_state *state =
+		tevent_req_data(req,
+		struct tdgram_bsd_recvfrom_state);
 
-	tdgram_bsd_set_readable_handler(bsds, NULL, NULL, NULL);
+	if (state->dgram != NULL) {
+		struct tdgram_bsd *bsds =
+			tdgram_context_data(state->dgram,
+			struct tdgram_bsd);
 
-	return 0;
+		tdgram_bsd_set_readable_handler(bsds, NULL, NULL, NULL);
+		state->dgram = NULL;
+	}
 }
 
 static void tdgram_bsd_recvfrom_handler(void *private_data);
@@ -961,7 +968,7 @@ static struct tevent_req *tdgram_bsd_recvfrom_send(TALLOC_CTX *mem_ctx,
 	state->len	= 0;
 	state->src	= NULL;
 
-	talloc_set_destructor(state, tdgram_bsd_recvfrom_destructor);
+	tevent_req_set_cleanup_fn(req, tdgram_bsd_recvfrom_cleanup);
 
 	if (bsds->fd == -1) {
 		tevent_req_error(req, ENOTCONN);
@@ -1120,14 +1127,21 @@ struct tdgram_bsd_sendto_state {
 	ssize_t ret;
 };
 
-static int tdgram_bsd_sendto_destructor(struct tdgram_bsd_sendto_state *state)
+static void tdgram_bsd_sendto_cleanup(struct tevent_req *req,
+				      enum tevent_req_state req_state)
 {
-	struct tdgram_bsd *bsds = tdgram_context_data(state->dgram,
-				  struct tdgram_bsd);
+	struct tdgram_bsd_sendto_state *state =
+		tevent_req_data(req,
+		struct tdgram_bsd_sendto_state);
 
-	tdgram_bsd_set_writeable_handler(bsds, NULL, NULL, NULL);
+	if (state->dgram != NULL) {
+		struct tdgram_bsd *bsds =
+			tdgram_context_data(state->dgram,
+			struct tdgram_bsd);
 
-	return 0;
+		tdgram_bsd_set_writeable_handler(bsds, NULL, NULL, NULL);
+		state->dgram = NULL;
+	}
 }
 
 static void tdgram_bsd_sendto_handler(void *private_data);
@@ -1156,7 +1170,7 @@ static struct tevent_req *tdgram_bsd_sendto_send(TALLOC_CTX *mem_ctx,
 	state->dst	= dst;
 	state->ret	= -1;
 
-	talloc_set_destructor(state, tdgram_bsd_sendto_destructor);
+	tevent_req_set_cleanup_fn(req, tdgram_bsd_sendto_cleanup);
 
 	if (bsds->fd == -1) {
 		tevent_req_error(req, ENOTCONN);
@@ -1982,14 +1996,21 @@ struct tstream_bsd_readv_state {
 	int ret;
 };
 
-static int tstream_bsd_readv_destructor(struct tstream_bsd_readv_state *state)
+static void tstream_bsd_readv_cleanup(struct tevent_req *req,
+				      enum tevent_req_state req_state)
 {
-	struct tstream_bsd *bsds = tstream_context_data(state->stream,
-				   struct tstream_bsd);
+	struct tstream_bsd_readv_state *state =
+		tevent_req_data(req,
+		struct tstream_bsd_readv_state);
 
-	tstream_bsd_set_readable_handler(bsds, NULL, NULL, NULL);
+	if (state->stream != NULL) {
+		struct tstream_bsd *bsds =
+			tstream_context_data(state->stream,
+			struct tstream_bsd);
 
-	return 0;
+		tstream_bsd_set_readable_handler(bsds, NULL, NULL, NULL);
+		state->stream = NULL;
+	}
 }
 
 static void tstream_bsd_readv_handler(void *private_data);
@@ -2021,7 +2042,7 @@ static struct tevent_req *tstream_bsd_readv_send(TALLOC_CTX *mem_ctx,
 	state->count	= count;
 	state->ret	= 0;
 
-	talloc_set_destructor(state, tstream_bsd_readv_destructor);
+	tevent_req_set_cleanup_fn(req, tstream_bsd_readv_cleanup);
 
 	if (bsds->fd == -1) {
 		tevent_req_error(req, ENOTCONN);
@@ -2148,14 +2169,21 @@ struct tstream_bsd_writev_state {
 	int ret;
 };
 
-static int tstream_bsd_writev_destructor(struct tstream_bsd_writev_state *state)
+static void tstream_bsd_writev_cleanup(struct tevent_req *req,
+				       enum tevent_req_state req_state)
 {
-	struct tstream_bsd *bsds = tstream_context_data(state->stream,
-				  struct tstream_bsd);
+	struct tstream_bsd_writev_state *state =
+		tevent_req_data(req,
+		struct tstream_bsd_writev_state);
 
-	tstream_bsd_set_writeable_handler(bsds, NULL, NULL, NULL);
+	if (state->stream != NULL) {
+		struct tstream_bsd *bsds =
+			tstream_context_data(state->stream,
+			struct tstream_bsd);
 
-	return 0;
+		tstream_bsd_set_writeable_handler(bsds, NULL, NULL, NULL);
+		state->stream = NULL;
+	}
 }
 
 static void tstream_bsd_writev_handler(void *private_data);
@@ -2187,7 +2215,7 @@ static struct tevent_req *tstream_bsd_writev_send(TALLOC_CTX *mem_ctx,
 	state->count	= count;
 	state->ret	= 0;
 
-	talloc_set_destructor(state, tstream_bsd_writev_destructor);
+	tevent_req_set_cleanup_fn(req, tstream_bsd_writev_cleanup);
 
 	if (bsds->fd == -1) {
 		tevent_req_error(req, ENOTCONN);
@@ -2401,19 +2429,25 @@ int _tstream_bsd_existing_socket(TALLOC_CTX *mem_ctx,
 struct tstream_bsd_connect_state {
 	int fd;
 	struct tevent_fd *fde;
-	struct tstream_conext *stream;
 	struct tsocket_address *local;
 };
 
-static int tstream_bsd_connect_destructor(struct tstream_bsd_connect_state *state)
+static void tstream_bsd_connect_cleanup(struct tevent_req *req,
+					enum tevent_req_state req_state)
 {
+	struct tstream_bsd_connect_state *state =
+		tevent_req_data(req,
+		struct tstream_bsd_connect_state);
+
+	if (req_state == TEVENT_REQ_DONE) {
+		return;
+	}
+
 	TALLOC_FREE(state->fde);
 	if (state->fd != -1) {
 		close(state->fd);
 		state->fd = -1;
 	}
-
-	return 0;
 }
 
 static void tstream_bsd_connect_fde_handler(struct tevent_context *ev,
@@ -2451,7 +2485,7 @@ static struct tevent_req *tstream_bsd_connect_send(TALLOC_CTX *mem_ctx,
 	state->fd = -1;
 	state->fde = NULL;
 
-	talloc_set_destructor(state, tstream_bsd_connect_destructor);
+	tevent_req_set_cleanup_fn(req, tstream_bsd_connect_cleanup);
 
 	/* give the wrappers a chance to report an error */
 	if (sys_errno != 0) {

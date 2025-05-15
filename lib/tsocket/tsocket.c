@@ -167,13 +167,16 @@ struct tdgram_recvfrom_state {
 	struct tsocket_address *src;
 };
 
-static int tdgram_recvfrom_destructor(struct tdgram_recvfrom_state *state)
+static void tdgram_recvfrom_cleanup(struct tevent_req *req,
+				    enum tevent_req_state req_state)
 {
+	struct tdgram_recvfrom_state *state = tevent_req_data(req,
+					      struct tdgram_recvfrom_state);
+
 	if (state->dgram) {
 		state->dgram->recvfrom_req = NULL;
+		state->dgram = NULL;
 	}
-
-	return 0;
 }
 
 static void tdgram_recvfrom_done(struct tevent_req *subreq);
@@ -204,7 +207,7 @@ struct tevent_req *tdgram_recvfrom_send(TALLOC_CTX *mem_ctx,
 	}
 	dgram->recvfrom_req = req;
 
-	talloc_set_destructor(state, tdgram_recvfrom_destructor);
+	tevent_req_set_cleanup_fn(req, tdgram_recvfrom_cleanup);
 
 	subreq = state->ops->recvfrom_send(state, ev, dgram);
 	if (tevent_req_nomem(subreq, req)) {
@@ -269,13 +272,16 @@ struct tdgram_sendto_state {
 	ssize_t ret;
 };
 
-static int tdgram_sendto_destructor(struct tdgram_sendto_state *state)
+static void tdgram_sendto_cleanup(struct tevent_req *req,
+				  enum tevent_req_state req_state)
 {
+	struct tdgram_sendto_state *state = tevent_req_data(req,
+					    struct tdgram_sendto_state);
+
 	if (state->dgram) {
 		state->dgram->sendto_req = NULL;
+		state->dgram = NULL;
 	}
-
-	return 0;
 }
 
 static void tdgram_sendto_done(struct tevent_req *subreq);
@@ -311,7 +317,7 @@ struct tevent_req *tdgram_sendto_send(TALLOC_CTX *mem_ctx,
 	}
 	dgram->sendto_req = req;
 
-	talloc_set_destructor(state, tdgram_sendto_destructor);
+	tevent_req_set_cleanup_fn(req, tdgram_sendto_cleanup);
 
 	subreq = state->ops->sendto_send(state, ev, dgram,
 					 buf, len, dst);
@@ -505,13 +511,16 @@ struct tstream_readv_state {
 	int ret;
 };
 
-static int tstream_readv_destructor(struct tstream_readv_state *state)
+static void tstream_readv_cleanup(struct tevent_req *req,
+				  enum tevent_req_state req_state)
 {
+	struct tstream_readv_state *state = tevent_req_data(req,
+					    struct tstream_readv_state);
+
 	if (state->stream) {
 		state->stream->readv_req = NULL;
+		state->stream = NULL;
 	}
-
-	return 0;
 }
 
 static void tstream_readv_done(struct tevent_req *subreq);
@@ -563,7 +572,7 @@ struct tevent_req *tstream_readv_send(TALLOC_CTX *mem_ctx,
 	}
 	stream->readv_req = req;
 
-	talloc_set_destructor(state, tstream_readv_destructor);
+	tevent_req_set_cleanup_fn(req, tstream_readv_cleanup);
 
 	subreq = state->ops->readv_send(state, ev, stream, vector, count);
 	if (tevent_req_nomem(subreq, req)) {
@@ -621,13 +630,16 @@ struct tstream_writev_state {
 	int ret;
 };
 
-static int tstream_writev_destructor(struct tstream_writev_state *state)
+static void tstream_writev_cleanup(struct tevent_req *req,
+				   enum tevent_req_state req_state)
 {
+	struct tstream_writev_state *state = tevent_req_data(req,
+					     struct tstream_writev_state);
+
 	if (state->stream) {
 		state->stream->writev_req = NULL;
+		state->stream = NULL;
 	}
-
-	return 0;
 }
 
 static void tstream_writev_done(struct tevent_req *subreq);
@@ -678,7 +690,7 @@ struct tevent_req *tstream_writev_send(TALLOC_CTX *mem_ctx,
 	}
 	stream->writev_req = req;
 
-	talloc_set_destructor(state, tstream_writev_destructor);
+	tevent_req_set_cleanup_fn(req, tstream_writev_cleanup);
 
 	subreq = state->ops->writev_send(state, ev, stream, vector, count);
 	if (tevent_req_nomem(subreq, req)) {
