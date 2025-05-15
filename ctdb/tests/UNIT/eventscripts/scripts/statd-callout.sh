@@ -23,13 +23,18 @@ setup()
 	if [ "$statd_callout_location" = "$CTDB_STATD_CALLOUT_SHARED_STORAGE" ]; then
 		statd_callout_location=""
 	fi
+
+	state_dir="${CTDB_TEST_TMP_DIR}/statd-callout-state"
+	mkdir -p "$state_dir"
 }
 
-ctdb_catdb_format_pairs()
+ctdb_catdb_format()
 {
 	_count=0
 
-	while read -r _k _v; do
+	while read -r _sip_cip; do
+		_k="statd-state@${_sip_cip}"
+		_v="DATETIME"
 		_kn=$(printf '%s' "$_k" | wc -c)
 		_vn=$(printf '%s' "$_v" | wc -c)
 		cat <<EOF
@@ -50,17 +55,19 @@ result_filter()
 	sed -e 's|^\(data(10) = \)".........."$|data(8) = "DATETIME"|'
 }
 
+ctdb_shared_state_list()
+{
+	find "$state_dir" -name "mon@*" |
+		while read -r _f; do
+			echo "${_f#*/mon@}"
+		done |
+		sort
+}
+
 check_ctdb_tdb_statd_state()
 {
-	ctdb_get_my_public_addresses |
-		while read -r _ _sip _; do
-			for _cip; do
-				cat <<EOF
-statd-state@${_sip}@${_cip} DATETIME
-EOF
-			done
-		done |
-		ctdb_catdb_format_pairs | {
+	ctdb_shared_state_list |
+		ctdb_catdb_format | {
 		ok
 		simple_test_command ctdb catdb "$statd_callout_location"
 	} || exit $?
@@ -68,13 +75,8 @@ EOF
 
 check_shared_dir_statd_state()
 {
-	ctdb_get_my_public_addresses |
-		while read -r _ _sip _; do
-			for _cip; do
-				echo "statd-state@${_sip}@${_cip}"
-			done
-		done |
-		sort | {
+	ctdb_shared_state_list |
+		sed -e 's|^|statd-state@|' | {
 		ok
 		_dir="${CTDB_TEST_TMP_DIR}${statd_callout_location}"
 		mkdir -p "$_dir"
@@ -132,11 +134,15 @@ check_statd_callout_smnotify()
 
 	ctdb_get_my_public_addresses |
 		while read -r _ _sip _; do
-			for _cip; do
-				cat <<EOF
+			_prefix="mon@${_sip}@"
+			find "$state_dir" -name "${_prefix}*" |
+				while read -r _f; do
+					_cip="${_f##*@}"
+					cat <<EOF
 SM_NOTIFY: ${_sip} -> ${_cip}, MON_NAME=${FAKE_NFS_HOSTNAME}, STATE=${_state}
 EOF
-			done
+					rm -f "$_f"
+				done
 		done | {
 		ok
 		simple_test_event "notify"
@@ -180,9 +186,25 @@ EOF
 	export CTDB_STATD_CALLOUT_CONFIG_FILE
 
 	case "$event" in
-	add-client | del-client)
+	add-client)
 		cmd="${CTDB_SCRIPTS_HELPER_BINDIR}/statd_callout"
 		unit_test "$cmd" "$event" "$@"
+		ctdb_get_my_public_addresses |
+			while read -r _ _sip _; do
+				touch "${state_dir}/mon@${_sip}@${1}"
+			done
+		;;
+	del-client)
+		cmd="${CTDB_SCRIPTS_HELPER_BINDIR}/statd_callout"
+		unit_test "$cmd" "$event" "$@"
+		ctdb_get_my_public_addresses |
+			while read -r _ _sip _; do
+				rm -f "${state_dir}/mon@${_sip}@${1}"
+			done
+		;;
+	notify)
+		cmd="${CTDB_SCRIPTS_TOOLS_HELPER_DIR}/statd_callout_helper"
+		script_test "$cmd" "$event" "$@"
 		;;
 	*)
 		cmd="${CTDB_SCRIPTS_TOOLS_HELPER_DIR}/statd_callout_helper"

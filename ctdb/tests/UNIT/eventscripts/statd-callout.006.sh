@@ -25,10 +25,10 @@ simple_test_event "update"
 
 ctdb_set_pnn 0
 
-check_statd_callout_smnotify "192.168.123.45"
+check_statd_callout_smnotify
 
 ctdb_set_pnn 1
 
-check_statd_callout_smnotify "192.168.123.46"
+check_statd_callout_smnotify
 
 check_shared_storage_statd_state
