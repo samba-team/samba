@@ -2519,8 +2519,9 @@ int32_t ctdb_control_start_ipreallocate(struct ctdb_context *ctdb,
 	struct start_ipreallocate_callback_state *state;
 
 	/* Nodes that are not RUNNING can not host IPs */
-	if (ctdb->runstate != CTDB_RUNSTATE_RUNNING) {
-		DBG_INFO("Skipping \"startipreallocate\" event, not RUNNING\n");
+	if (ctdb->runstate < CTDB_RUNSTATE_RUNNING) {
+		DBG_INFO("Skipping \"startipreallocate\" event, "
+			 "not RUNNING/SHUTDOWN\n");
 		return 0;
 	}
 
