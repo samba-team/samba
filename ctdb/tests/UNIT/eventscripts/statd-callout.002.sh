@@ -17,4 +17,4 @@ simple_test_event "add-client" "192.168.123.45"
 simple_test_event "add-client" "192.168.123.46"
 simple_test_event "update"
 
-check_shared_storage_statd_state "192.168.123.45" "192.168.123.46"
+check_shared_storage_statd_state
