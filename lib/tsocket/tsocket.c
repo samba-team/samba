@@ -445,6 +445,7 @@ struct tstream_context {
 
 	struct tevent_req *readv_req;
 	struct tevent_req *writev_req;
+	struct tevent_req *disconnect_req;
 };
 
 static int tstream_context_destructor(struct tstream_context *stream)
@@ -455,6 +456,10 @@ static int tstream_context_destructor(struct tstream_context *stream)
 
 	if (stream->writev_req) {
 		tevent_req_received(stream->writev_req);
+	}
+
+	if (stream->disconnect_req != NULL) {
+		tevent_req_received(stream->disconnect_req);
 	}
 
 	return 0;
@@ -479,6 +484,7 @@ struct tstream_context *_tstream_context_create(TALLOC_CTX *mem_ctx,
 	stream->ops		= ops;
 	stream->readv_req	= NULL;
 	stream->writev_req	= NULL;
+	stream->disconnect_req	= NULL;
 
 	state = talloc_size(stream, psize);
 	if (state == NULL) {
@@ -563,6 +569,11 @@ struct tevent_req *tstream_readv_send(TALLOC_CTX *mem_ctx,
 
 	if (to_read == 0) {
 		tevent_req_error(req, EINVAL);
+		goto post;
+	}
+
+	if (stream->disconnect_req != NULL) {
+		tevent_req_error(req, ECONNABORTED);
 		goto post;
 	}
 
@@ -684,6 +695,11 @@ struct tevent_req *tstream_writev_send(TALLOC_CTX *mem_ctx,
 		goto post;
 	}
 
+	if (stream->disconnect_req != NULL) {
+		tevent_req_error(req, ECONNABORTED);
+		goto post;
+	}
+
 	if (stream->writev_req) {
 		tevent_req_error(req, EBUSY);
 		goto post;
@@ -743,7 +759,22 @@ int tstream_writev_recv(struct tevent_req *req,
 
 struct tstream_disconnect_state {
 	const struct tstream_context_ops *ops;
+	struct tstream_context *stream;
 };
+
+static void tstream_disconnect_cleanup(struct tevent_req *req,
+				       enum tevent_req_state req_state)
+{
+	struct tstream_disconnect_state *state = tevent_req_data(req,
+						 struct tstream_disconnect_state);
+
+	if (state->stream != NULL) {
+		state->stream->disconnect_req = NULL;
+		state->stream = NULL;
+	}
+
+	return;
+}
 
 static void tstream_disconnect_done(struct tevent_req *subreq);
 
@@ -762,11 +793,20 @@ struct tevent_req *tstream_disconnect_send(TALLOC_CTX *mem_ctx,
 	}
 
 	state->ops = stream->ops;
+	state->stream = stream;
 
 	if (stream->readv_req || stream->writev_req) {
 		tevent_req_error(req, EBUSY);
 		goto post;
 	}
+
+	if (stream->disconnect_req != NULL) {
+		tevent_req_error(req, EALREADY);
+		goto post;
+	}
+	stream->disconnect_req = req;
+
+	tevent_req_set_cleanup_fn(req, tstream_disconnect_cleanup);
 
 	subreq = state->ops->disconnect_send(state, ev, stream);
 	if (tevent_req_nomem(subreq, req)) {
