@@ -556,6 +556,48 @@ struct smbXcli_transport *smbXcli_transport_bsd(TALLOC_CTX *mem_ctx,
 	return xtp;
 }
 
+struct smbXcli_transport *smbXcli_transport_bsd_tstream(
+						TALLOC_CTX *mem_ctx,
+						int *fd,
+						const struct smb_transport *tp)
+{
+	struct samba_sockaddr laddr = {
+		.sa_socklen = sizeof(struct sockaddr_storage),
+	};
+	struct samba_sockaddr raddr = {
+		.sa_socklen = sizeof(struct sockaddr_storage),
+	};
+	struct tstream_context *tstream = NULL;
+	struct smbXcli_transport *xtp = NULL;
+	int ret;
+
+	ret = getsockname(*fd, &laddr.u.sa, &laddr.sa_socklen);
+	if (ret == -1) {
+		return NULL;
+	}
+
+	ret = getpeername(*fd, &raddr.u.sa, &raddr.sa_socklen);
+	if (ret == -1) {
+		return NULL;
+	}
+
+	ret = set_blocking(*fd, false);
+	if (ret < 0) {
+		return NULL;
+	}
+
+	ret = tstream_bsd_existing_socket(mem_ctx, *fd, &tstream);
+	if (ret == -1) {
+		return NULL;
+	}
+	*fd = -1;
+	tstream_bsd_optimize_readv(tstream, true);
+
+	xtp = smbXcli_transport_tstream(mem_ctx, &tstream, &laddr, &raddr, tp);
+	TALLOC_FREE(tstream);
+	return xtp;
+}
+
 static int smbXcli_conn_destructor(struct smbXcli_conn *conn)
 {
 	/*

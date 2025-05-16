@@ -54,6 +54,11 @@ struct smbXcli_transport *smbXcli_transport_bsd(TALLOC_CTX *mem_ctx,
 						int *_fd,
 						const struct smb_transport *tp);
 
+struct smbXcli_transport *smbXcli_transport_bsd_tstream(
+						TALLOC_CTX *mem_ctx,
+						int *fd,
+						const struct smb_transport *tp);
+
 struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 					 struct smbXcli_transport **ptransport,
 					 const char *remote_name,
