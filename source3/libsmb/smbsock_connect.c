@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "../lib/param/param.h"
 #include "../lib/async_req/async_sock.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "../lib/util/tevent_unix.h"
@@ -387,6 +388,10 @@ struct smbsock_connect_state {
 	uint8_t num_pending;
 	struct smbsock_connect_substate substates[SMB_TRANSPORTS_MAX_TRANSPORTS];
 	struct smbXcli_transport *transport;
+	struct smbXcli_transport *(*create_bsd_transport)(
+						TALLOC_CTX *mem_ctx,
+						int *fd,
+						const struct smb_transport *tp);
 };
 
 static void smbsock_connect_cleanup(struct tevent_req *req,
@@ -408,6 +413,7 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct smbsock_connect_state *state;
+	bool force_bsd_tstream = false;
 	uint8_t num_unsupported = 0;
 	struct smb_transports ts = *transports;
 	uint8_t ti;
@@ -427,6 +433,17 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 		(calling_name != NULL) ? calling_name : lp_netbios_name();
 	state->calling_type =
 		(calling_type != -1) ? calling_type : 0x00;
+
+	force_bsd_tstream = lpcfg_parm_bool(lp_ctx,
+					    NULL,
+					    "client smb transport",
+					    "force_bsd_tstream",
+					    false);
+	if (force_bsd_tstream) {
+		state->create_bsd_transport = smbXcli_transport_bsd_tstream;
+	} else {
+		state->create_bsd_transport = smbXcli_transport_bsd;
+	}
 
 	tevent_req_set_cleanup_fn(req, smbsock_connect_cleanup);
 
@@ -646,9 +663,9 @@ static void smbsock_connect_nbt_connected(struct tevent_req *subreq)
 		 * will free all other subreqs
 		 */
 		set_socket_options(s->sockfd, lp_socket_options());
-		state->transport = smbXcli_transport_bsd(state,
-							 &s->sockfd,
-							 &s->transport);
+		state->transport = state->create_bsd_transport(state,
+							       &s->sockfd,
+							       &s->transport);
 		if (tevent_req_nomem(state->transport, req)) {
 			return;
 		}
@@ -708,9 +725,9 @@ static void smbsock_connect_tcp_connected(struct tevent_req *subreq)
 		 * will free all other subreqs
 		 */
 		set_socket_options(s->sockfd, lp_socket_options());
-		state->transport = smbXcli_transport_bsd(state,
-							 &s->sockfd,
-							 &s->transport);
+		state->transport = state->create_bsd_transport(state,
+							       &s->sockfd,
+							       &s->transport);
 		if (tevent_req_nomem(state->transport, req)) {
 			return;
 		}
