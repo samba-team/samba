@@ -214,6 +214,22 @@ struct tevent_req *tdgram_recvfrom_send(TALLOC_CTX *mem_ctx,
 		goto post;
 	}
 	tevent_req_set_callback(subreq, tdgram_recvfrom_done, req);
+	if (!tevent_req_is_in_progress(subreq)) {
+		/*
+		 * Allow the caller of
+		 * tdgram_recvfrom_send() to
+		 * see tevent_req_is_in_progress()
+		 * reporting false too.
+		 *
+		 * Useful for callers using
+		 * tdgram_bsd_optimize_recvfrom(true)
+		 * in order to check if data
+		 * was already waiting in the
+		 * receice buffer.
+		 */
+		tdgram_recvfrom_done(subreq);
+		goto post;
+	}
 
 	return req;
 
