@@ -455,13 +455,45 @@
       </varlistentry>
 
       <varlistentry>
+	<term>shutdown extra timeout = <parameter>TIMEOUT</parameter></term>
+	<listitem>
+	  <para>
+	    CTDB will wait for TIMEOUT seconds after failover
+	    completes during shutdown.  This can provide extra time
+	    for SMB durable handles to be reclaimed.  If set to 0 then
+	    no extra timeout occurs.
+	  </para>
+	  <para>
+	    This timeout only occurs if both of the following
+	    conditions are true:
+	  </para>
+	  <itemizedlist>
+	    <listitem>
+	      <para>
+		shutdown failover timeout (below) is not 0
+	      </para>
+	    </listitem>
+	    <listitem>
+	      <para>
+		Failover during shutdown completes and does not time out
+	      </para>
+	    </listitem>
+	  </itemizedlist>
+	  <para>
+	    Default: <literal>0</literal>
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
 	<term>shutdown failover timeout = <parameter>TIMEOUT</parameter></term>
 	<listitem>
 	  <para>
 	    CTDB will wait for TIMEOUT seconds for failover to
 	    complete during shutdown.  This allows NFS servers on
 	    other nodes to go into grace during graceful shutdown of a
-	    node.
+	    node.  Failover during shutdown also helps with SMB
+	    durable handle reclaim.
 	  </para>
 	  <para>
 	    Set this to 0 to disable explicit failover on shutdown.

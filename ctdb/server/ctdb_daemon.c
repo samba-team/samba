@@ -2416,6 +2416,29 @@ done:
 	srvid_deregister(ctdb->srv, CTDB_SRVID_TAKEOVER_RUN, &state);
 	srvid_deregister(ctdb->srv, CTDB_SRVID_LEADER, &state);
 	TALLOC_FREE(state.te);
+
+	if (!state.takeover_done || ctdb_config.shutdown_extra_timeout <= 0) {
+		return;
+	}
+
+	state.timed_out = false;
+	state.te = tevent_add_timer(
+		ctdb->ev,
+		ctdb->srv,
+		timeval_current_ofs(ctdb_config.shutdown_extra_timeout, 0),
+		shutdown_timeout_handler,
+		&state);
+	if (state.te == NULL) {
+		DBG_WARNING("Failed to set extra timeout\n");
+		return;
+	}
+
+	DBG_NOTICE("Waiting %ds for shutdown extra timeout\n",
+		   ctdb_config.shutdown_extra_timeout);
+	while (!state.timed_out) {
+		tevent_loop_once(ctdb->ev);
+	}
+	DBG_INFO("shutdown extra timeout complete\n");
 }
 
 void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code)
