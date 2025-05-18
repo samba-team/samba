@@ -439,7 +439,7 @@ static bool writev_cancel(struct tevent_req *req)
 
 static void writev_do(struct tevent_req *req, struct writev_state *state)
 {
-	ssize_t written;
+	ssize_t written = -1;
 	bool ok;
 
 	if (state->is_sock) {
@@ -627,7 +627,7 @@ static void read_packet_do(struct tevent_req *req,
 	struct read_packet_state *state =
 		tevent_req_data(req, struct read_packet_state);
 	size_t total;
-	ssize_t nread, more;
+	ssize_t nread = -1, more;
 	uint8_t *tmp;
 
 retry:
