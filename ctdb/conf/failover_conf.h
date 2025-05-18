@@ -25,6 +25,7 @@
 #define FAILOVER_CONF_SECTION "failover"
 
 #define FAILOVER_CONF_DISABLED "disabled"
+#define FAILOVER_CONF_SHUTDOWN_EXTRA_TIMEOUT "shutdown extra timeout"
 #define FAILOVER_CONF_SHUTDOWN_FAILOVER_TIMEOUT "shutdown failover timeout"
 
 
