@@ -682,7 +682,7 @@ NTSTATUS cli_qpathinfo1(struct cli_state *cli,
 			off_t *size,
 			uint32_t *pattr)
 {
-	int timezone = smb1cli_conn_server_time_zone(cli->conn);
+	int tz = smb1cli_conn_server_time_zone(cli->conn);
 	time_t (*date_fn)(const void *buf, int serverzone) = NULL;
 	uint8_t *rdata = NULL;
 	uint32_t num_rdata;
@@ -706,13 +706,13 @@ NTSTATUS cli_qpathinfo1(struct cli_state *cli,
 	}
 
 	if (change_time) {
-		*change_time = date_fn(rdata + 0, timezone);
+		*change_time = date_fn(rdata + 0, tz);
 	}
 	if (access_time) {
-		*access_time = date_fn(rdata + 4, timezone);
+		*access_time = date_fn(rdata + 4, tz);
 	}
 	if (write_time) {
-		*write_time = date_fn(rdata + 8, timezone);
+		*write_time = date_fn(rdata + 8, tz);
 	}
 	if (size) {
 		*size = PULL_LE_U32(rdata, 12);
