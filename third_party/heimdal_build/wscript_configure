@@ -79,6 +79,8 @@ heimdal_no_error_flags = ['-Wno-error=cast-qual',
                           '-Wno-error=discarded-qualifiers',
                           '-Wno-error=old-style-definition',
                           '-Wno-error=unused-result',
+                          '-Wno-error=implicit-fallthrough',
+                          '-Wno-error=strict-prototypes',
                           '-Wno-error=unused-variable'
 ]
 for flag in heimdal_no_error_flags:
