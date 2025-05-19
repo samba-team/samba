@@ -843,7 +843,6 @@ int main(void) {
             conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Werror -Wno-error=deprecated-declarations', testflags=True)
             conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=tautological-compare', testflags=True)
             conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=cast-align', testflags=True)
-            conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=unused-function', testflags=True)
             conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=format-truncation', testflags=True)
             conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=cast-qual', testflags=True)
             conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=format-nonliteral', testflags=True)

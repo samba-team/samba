@@ -654,12 +654,6 @@ static int get_assigned_silo(struct ldb_context *ldb,
 	return LDB_SUCCESS;
 }
 
-static inline struct ldb_val talloc_steal_ldb_val(TALLOC_CTX *mem_ctx, struct ldb_val val)
-{
-	val.data = talloc_steal(mem_ctx, val.data);
-	return val;
-}
-
 static uint32_t claim_get_value_count(const struct CLAIM_ENTRY *claim)
 {
 	switch (claim->type) {
