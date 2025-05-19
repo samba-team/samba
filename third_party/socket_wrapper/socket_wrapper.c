@@ -324,6 +324,7 @@ struct socket_info
 	 */
 
 	int family;
+	int type_flags; /* SOCK_CLOEXEC or SOCK_NONBLOCK */
 	int type;
 	int protocol;
 	int opt_type;
@@ -3804,6 +3805,7 @@ static int swrap_socket(int family, int type, int protocol, int allow_quic)
 	/* however, the rest of the socket_wrapper code expects just
 	 * the type, not the flags */
 	si->type = real_type;
+	si->type_flags = type & ~real_type;
 	si->protocol = protocol;
 	si->opt_type = opt_type;
 	si->opt_protocol = opt_protocol;
@@ -4074,6 +4076,7 @@ static int swrap_accept(int s,
 	child_si = &new_si;
 
 	child_si->family = parent_si->family;
+	child_si->type_flags = parent_si->type_flags;
 	child_si->type = parent_si->type;
 	child_si->protocol = parent_si->protocol;
 	child_si->opt_type = parent_si->opt_type;
@@ -5628,7 +5631,7 @@ static int swrap_sendmsg_filter_cmsg_sol_socket(const struct cmsghdr *cmsg,
 	return rc;
 }
 
-static const uint64_t swrap_unix_scm_right_magic = 0x8e0e13f27c42fc37;
+static const uint64_t swrap_unix_scm_right_magic = 0x8e0e13f27c42fc38;
 
 /*
  * We only allow up to 6 fds at a time
@@ -6504,6 +6507,90 @@ static ssize_t swrap_recvmsg_after_unix(struct msghdr *msg_tmp,
 #endif /* ! HAVE_STRUCT_MSGHDR_MSG_CONTROL */
 }
 
+static int swrap_protocol_fallback(int fd, struct socket_info *si)
+{
+	const char *env_var = "SOCKET_WRAPPER_ALLOW_DGRAM_SEQPACKET_FALLBACK";
+	const char *env_allow_dgram_seqpacket_fallback = NULL;
+	bool allow_dgram_seqpacket_fallback = false;
+	struct swrap_address un_addr = {
+		.sa_socklen = sizeof(struct sockaddr_un),
+		.sa = {
+			.un = si->un_addr,
+		},
+	};
+	int new_type;
+	int tfd = -1;
+	int rc;
+
+	if (si->is_server) {
+		errno = EHOSTUNREACH;
+		return -1;
+	}
+
+	if (!si->connected) {
+		errno = EHOSTUNREACH;
+		return -1;
+	}
+
+	if (si->opt_type != SOCK_DGRAM) {
+		errno = EHOSTUNREACH;
+		return -1;
+	}
+
+	if (si->opt_protocol != IPPROTO_UDP) {
+		errno = EHOSTUNREACH;
+		return -1;
+	}
+
+	env_allow_dgram_seqpacket_fallback = getenv(env_var);
+	if (env_allow_dgram_seqpacket_fallback != NULL &&
+	    strlen(env_allow_dgram_seqpacket_fallback) >= 1 &&
+	    strcmp(env_allow_dgram_seqpacket_fallback, "0") != 0)
+	{
+		allow_dgram_seqpacket_fallback = true;
+	}
+
+	if (!allow_dgram_seqpacket_fallback) {
+		errno = EHOSTUNREACH;
+		return -1;
+	}
+
+	/*
+	 * Change the low level socket to
+	 * SOCK_SEQPACKET as the other end
+	 * may used IPPROTO_QUIC with SOCK_SEQPACKET.
+	 */
+	new_type = SOCK_SEQPACKET | si->type_flags;
+	tfd = libc_socket(AF_UNIX, new_type, 0);
+	if (tfd == -1) {
+		errno = EHOSTUNREACH;
+		return -1;
+	}
+
+	/*
+	 * Now rebind the local end
+	 */
+	unlink(un_addr.sa.un.sun_path);
+	rc = libc_bind(tfd, &un_addr.sa.s, un_addr.sa_socklen);
+	if (rc == -1) {
+		close(tfd);
+		errno = EHOSTUNREACH;
+		return -1;
+	}
+
+	/*
+	 * Now replace the callers known fd.
+	 */
+	rc = libc_dup2(tfd, fd);
+	if (rc == -1) {
+		close(tfd);
+		errno = EHOSTUNREACH;
+		return -1;
+	}
+
+	return 0;
+}
+
 static ssize_t swrap_sendmsg_before(int fd,
 				    struct socket_info *si,
 				    struct msghdr *msg,
@@ -6643,6 +6730,14 @@ static ssize_t swrap_sendmsg_before(int fd,
 		ret = libc_connect(fd,
 				   (struct sockaddr *)(void *)tmp_un,
 				   sizeof(*tmp_un));
+		if (ret == -1 && errno == EPROTOTYPE) {
+			ret = swrap_protocol_fallback(fd, si);
+			if (ret == 0) {
+				ret = libc_connect(fd,
+						   (struct sockaddr *)(void *)tmp_un,
+						   sizeof(*tmp_un));
+			}
+		}
 
 		/* to give better errors */
 		if (ret == -1 && errno == ENOENT) {
