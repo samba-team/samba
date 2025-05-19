@@ -109,6 +109,7 @@ with_pthreadpool = ("WITH_PTHREADPOOL" in config_hash)
 have_cluster_support = "CLUSTER_SUPPORT" in config_hash
 
 quic_ko_wrapper = ("QUIC_KO_WRAPPER" in config_hash)
+ngtcp2_environ = {'SOCKET_WRAPPER_ALLOW_DGRAM_SEQPACKET_FALLBACK': '1'}
 
 def is_module_enabled(module):
     if module in config_hash["STRING_SHARED_MODULES"]:
@@ -1517,6 +1518,20 @@ for t in smb_transport_tests:
                              '--option=tlsverifypeer=ca_and_name ' +
                              '--option=clientsmbtransport:force_bsd_tstream=yes',
                              description="smb-over-quic-ko-tstream")
+for t in smb_transport_tests:
+    if not quic_ko_wrapper:
+        break
+    # Here we test the client using quic without
+    # quic.ko simulation based on ngtcp2 over udp.
+    # Note the server still uses quic.ko simulation
+    # so this is also behind the quic_ko_wrapper check.
+    plansmbtorture4testsuite(t, "fileserver",
+                             '//$SERVER/tmp -U$USERNAME%$PASSWORD ' +
+                             '--option=clientsmbtransports=quic ' +
+                             '--option=tlsverifypeer=no_check ' +
+                             '--option=clientsmbtransport:force_ngtcp2_quic=yes',
+                             description="smb-over-quic-ngtcp2",
+                             environ=ngtcp2_environ)
 
 test = 'rpc.lsa.lookupsids'
 auth_options = ["", "ntlm", "spnego", "spnego,ntlm", "spnego,smb1", "spnego,smb2"]
