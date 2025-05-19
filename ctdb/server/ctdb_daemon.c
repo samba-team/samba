@@ -2444,11 +2444,11 @@ done:
 void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code)
 {
 	if (ctdb->runstate == CTDB_RUNSTATE_SHUTDOWN) {
-		DEBUG(DEBUG_NOTICE,("Already shutting down so will not proceed.\n"));
+		D_NOTICE("Already shutting down so will not proceed.\n");
 		return;
 	}
 
-	DEBUG(DEBUG_ERR,("Shutdown sequence commencing.\n"));
+	D_ERR("Shutdown sequence commencing.\n");
 	ctdb_set_runstate(ctdb, CTDB_RUNSTATE_SHUTDOWN);
 	ctdb_shutdown_takeover(ctdb);
 	ctdb_stop_recoverd(ctdb);
@@ -2460,7 +2460,7 @@ void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code)
 		ctdb->methods->shutdown(ctdb);
 	}
 
-	DEBUG(DEBUG_ERR,("Shutdown sequence complete, exiting.\n"));
+	D_ERR("Shutdown sequence complete, exiting.\n");
 	exit(exit_code);
 }
 
