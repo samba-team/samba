@@ -380,6 +380,11 @@ static int test_asprintf(void)
 	return true;
 }
 
+/* This test explicitly triggers truncation, so we need to
+ * suppress the warning
+ */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
 static int test_snprintf(void)
 {
 	char tmp[10];
@@ -397,6 +402,7 @@ static int test_snprintf(void)
 	printf("success: snprintf\n");
 	return true;
 }
+#pragma GCC diagnostic pop
 
 static int test_vasprintf(void)
 {
