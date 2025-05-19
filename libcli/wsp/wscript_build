@@ -20,6 +20,11 @@ parser_cflags=''
 if bld.CONFIG_SET('HAVE_WNO_STRICT_OVERFLOW'):
     parser_cflags += ' -Wno-strict-overflow'
 
+if bld.CONFIG_SET('HAVE_WNO_UNUSED_BUT_SET_VARIABLE'):
+    # Suppress error: variable 'yynerrs' set but not used [-Werror,-Wunused-but-set-variable]
+    #                 for the generated code.
+    parser_cflags += ' -Wno-error=unused-but-set-variable'
+
 bld.SAMBA_SUBSYSTEM('LIBSAMBA_WSP_PARSER',
 	source='wsp_aqs_parser.y',
 	deps='talloc wsp_flex',

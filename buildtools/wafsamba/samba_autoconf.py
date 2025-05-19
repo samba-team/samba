@@ -836,11 +836,13 @@ int main(void) {
         if CHECK_CFLAGS(conf, ["-Wno-error=declaration-after-statement"]):
             conf.define('HAVE_WNO_ERROR_DECLARATION_AFTER_STATEMENT', 1)
 
+        if CHECK_CFLAGS(conf, ["-Wno-error=unused-but-set-variable"]):
+            conf.define('HAVE_WNO_ERROR_UNUSED_BUT_SET_VARIABLE', 1)
+
         if not Options.options.disable_warnings_as_errors:
             conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Werror -Wno-error=deprecated-declarations', testflags=True)
             conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=tautological-compare', testflags=True)
             conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=cast-align', testflags=True)
-            conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=unused-but-set-variable', testflags=True)
             conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=unused-function', testflags=True)
             conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=format-truncation', testflags=True)
             conf.ADD_NAMED_CFLAGS('PICKY_CFLAGS', '-Wno-error=cast-qual', testflags=True)

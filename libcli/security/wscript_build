@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 
 
+parser_cflags = ''
+if bld.CONFIG_SET('HAVE_WNO_UNUSED_BUT_SET_VARIABLE'):
+    # Suppress error: variable 'yynerrs' set but not used [-Werror,-Wunused-but-set-variable]
+    #                 for the generated code.
+    parser_cflags += ' -Wno-error=unused-but-set-variable'
 bld.SAMBA_LIBRARY('samba-security',
                   source=['dom_sid.c',
                           'display_sec.c', 'secace.c', 'secacl.c',
@@ -13,6 +18,7 @@ bld.SAMBA_LIBRARY('samba-security',
                           'claims_transformation.l',
                           'claims_transformation.y',
                   ],
+                  cflags=parser_cflags,
                   private_library=True,
                   deps='stable_sort talloc ndr NDR_SECURITY NDR_CONDITIONAL_ACE')
 
