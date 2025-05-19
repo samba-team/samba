@@ -49,6 +49,7 @@ bool remove_share_oplock(struct share_mode_lock *lck,
 			 struct files_struct *fsp);
 bool file_has_read_lease(struct files_struct *fsp);
 
+struct GUID;
 bool set_share_mode(
 	struct share_mode_lock *lck,
 	struct files_struct *fsp,
@@ -56,6 +57,7 @@ bool set_share_mode(
 	uint64_t mid,
 	uint16_t op_type,
 	const struct smb2_lease_key *lease_key,
+	const struct GUID *create_guid,
 	uint32_t share_access,
 	uint32_t access_mask);
 bool reset_share_mode_entry(

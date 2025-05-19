@@ -667,6 +667,13 @@ struct smbd_smb2_request {
 	uint64_t channel_generation;
 
 	/*
+	 * The client provided CreateGuid from a
+	 * SMB2_CREATE_DURABLE_HANDLE_REQUEST_V2 if any.
+	 */
+	struct GUID _create_guid;
+	struct GUID *create_guid;
+
+	/*
 	 * The sub request for async backend calls.
 	 * This is used for SMB2 Cancel.
 	 */

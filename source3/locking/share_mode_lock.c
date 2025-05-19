@@ -2075,6 +2075,7 @@ bool set_share_mode(struct share_mode_lock *lck,
 		    uint64_t mid,
 		    uint16_t op_type,
 		    const struct smb2_lease_key *lease_key,
+		    const struct GUID *create_guid,
 		    uint32_t share_access,
 		    uint32_t access_mask)
 {
@@ -2136,6 +2137,8 @@ bool set_share_mode(struct share_mode_lock *lck,
 	if (e.flags & SHARE_ENTRY_FLAG_PERSISTENT_OPEN) {
 		d->num_persistent++;
 		d->modified = true;
+		SMB_ASSERT(create_guid != NULL);
+		e.create_guid = *create_guid;
 	}
 
 	ok = share_mode_entry_put(&e, &e_buf);

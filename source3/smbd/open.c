@@ -3224,6 +3224,7 @@ static NTSTATUS check_and_store_share_mode(
 	uint32_t granted_lease = 0;
 	const struct smb2_lease_key *lease_key = NULL;
 	struct blocker_debug_state *blocker_debug_state = NULL;
+	const struct GUID *create_guid = NULL;
 	bool delete_on_close;
 	bool ok;
 
@@ -3263,12 +3264,17 @@ static NTSTATUS check_and_store_share_mode(
 
 	share_mode_flags_restrict(lck, access_mask, share_access, 0);
 
+	if (req != NULL && req->smb2req != NULL) {
+		create_guid = req->smb2req->create_guid;
+	}
+
 	ok = set_share_mode(lck,
 			    fsp,
 			    get_current_uid(fsp->conn),
 			    req ? req->mid : 0,
 			    oplock_type,
 			    lease_key,
+			    create_guid,
 			    share_access,
 			    access_mask);
 	if (!ok) {

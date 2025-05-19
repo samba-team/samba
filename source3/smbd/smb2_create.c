@@ -1412,6 +1412,13 @@ static void smbd_smb2_cc_before_exec_dhc2q(struct tevent_req *req)
 		return;
 	}
 	state->create_guid = &state->_create_guid;
+	/*
+	 * Make the CreateGuid available to the FSA and VFS layers via
+	 * the "req" argument to SMB_VFS_CREATE_FILE():
+	 * req->smb2req->create_guid.
+	 */
+	smb2req->_create_guid = state->_create_guid;
+	smb2req->create_guid = &smb2req->_create_guid;
 
 	/*
 	 * we need to store the create_guid later
