@@ -277,7 +277,7 @@ def HEIMDAL_BINARY(binname, source,
                       source         = source,
                       deps           = deps,
                       includes       = includes,
-                      cflags         = cflags,
+                      cflags         = cflags_end,
                       group          = group,
                       use_hostcc     = use_hostcc,
                       use_global_deps= use_global_deps)
