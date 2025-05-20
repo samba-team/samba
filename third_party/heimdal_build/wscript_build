@@ -295,6 +295,16 @@ def HEIMDAL_BINARY(binname, source,
                      install_path   = None,
                      install        = install)
 
+def HEIMDAL_LEX_CFLAGS():
+    lex_cflags = []
+    if bld.CONFIG_SET('HEIMDAL_UNPICKY_WNO_STRICT_OVERFLOW_CFLAGS'):
+        lex_cflags.append('-Wno-strict-overflow')
+    if bld.CONFIG_SET('HEIMDAL_LEX_WNO_STRICT_PROTOTYPES_CFLAGS'):
+        lex_cflags.append('-Wno-error=strict-prototypes')
+    if bld.CONFIG_SET('HEIMDAL_LEX_WNO_IMPLICIT_FALLTHROUGH_CFLAGS'):
+        lex_cflags.append('-Wno-error=implicit-fallthrough')
+    return lex_cflags
+
 
 if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
 
@@ -1009,7 +1019,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
         HEIMDAL_HX509_OBJH_SOURCE + ' lib/hx509/sel-lex.l lib/hx509/sel-gram.y',
         includes='../heimdal/lib/hx509',
         deps='roken com_err asn1 hcrypto asn1 HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 HEIMDAL_PKCS10_ASN1 wind heimbase',
-        cflags=bld.env.HEIMDAL_UNPICKY_WNO_STRICT_OVERFLOW_CFLAGS,
+        cflags=' '.join(HEIMDAL_LEX_CFLAGS()),
         version_script='lib/hx509/version-script.map',
         )
 
@@ -1086,7 +1096,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_ASN1_COMPILE'):
                       'lib/asn1/gen.c',
                       includes='../heimdal/lib/asn1',
                       group='hostcc_build_main',
-                      cflags=bld.env.HEIMDAL_UNPICKY_WNO_STRICT_OVERFLOW_CFLAGS,
+                      cflags=HEIMDAL_LEX_CFLAGS(),
                       deps='ROKEN_HOSTCC HEIMBASE_HOSTCC',
                       use_global_deps=False,
                       use_hostcc=True)
@@ -1104,9 +1114,11 @@ if not bld.CONFIG_SET('USING_SYSTEM_ASN1_COMPILE'):
         group='hostcc_build_main',
         deps='ROKEN_HOSTCC HEIMBASE_HOSTCC LIBREPLACE_HOSTCC HEIMDAL_VERS_HOSTCC '
              'HEIMDAL_ASN1_GEN_HOSTCC',
-        install=False
+        install=False,
+        cflags=' '.join(HEIMDAL_LEX_CFLAGS())
     )
     bld.env['ASN1_COMPILE'] = os.path.join(bld.bldnode.parent.abspath(), 'asn1_compile')
+
 
 
 if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
@@ -1117,7 +1129,8 @@ if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
         includes='../heimdal/lib/com_err',
         group='hostcc_base_build_main',
         deps='ROKEN_HOSTCC LIBREPLACE_HOSTCC HEIMDAL_VERS_HOSTCC',
-        install=False
+        install=False,
+        cflags=' '.join(HEIMDAL_LEX_CFLAGS())
         )
     bld.env['COMPILE_ET'] = os.path.join(bld.bldnode.parent.abspath(), 'compile_et')
 

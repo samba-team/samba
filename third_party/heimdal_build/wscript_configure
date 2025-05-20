@@ -79,8 +79,6 @@ heimdal_no_error_flags = ['-Wno-error=cast-qual',
                           '-Wno-error=discarded-qualifiers',
                           '-Wno-error=old-style-definition',
                           '-Wno-error=unused-result',
-                          '-Wno-error=implicit-fallthrough',
-                          '-Wno-error=strict-prototypes',
                           '-Wno-error=unused-variable'
 ]
 for flag in heimdal_no_error_flags:
@@ -94,6 +92,14 @@ conf.ADD_NAMED_CFLAGS('HEIMDAL_UNPICKY_WNO_STRICT_OVERFLOW_CFLAGS',
 
 conf.ADD_NAMED_CFLAGS('HEIMDAL_UNPICKY_WNO_FREE_NOHEAP_OBJECT_CFLAGS',
                       '-Wno-error=free-nonheap-object',
+                      testflags=True)
+
+conf.ADD_NAMED_CFLAGS('HEIMDAL_LEX_WNO_IMPLICIT_FALLTHROUGH_CFLAGS',
+                      '-Wno-error=implicit-fallthrough',
+                      testflags=True)
+
+conf.ADD_NAMED_CFLAGS('HEIMDAL_LEX_WNO_STRICT_PROTOTYPES_CFLAGS',
+                      '-Wno-error=strict-prototypes',
                       testflags=True)
 
 if len(bld.env.HEIMDAL_NO_ERROR_CFLAGS) == len(heimdal_no_error_flags):
