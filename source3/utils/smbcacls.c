@@ -1567,7 +1567,6 @@ static int write_dacl(struct dump_context *ctx,
 {
 	struct security_descriptor *sd = NULL;
 	char *str = NULL;
-	const char *output_fmt = "%s\r\n%s\r\n";
 	const char *tmp = NULL;
 	char *out_str = NULL;
 	uint8_t *dest = NULL;
@@ -1616,7 +1615,7 @@ static int write_dacl(struct dump_context *ctx,
 	if (tmp[0] == '\\') {
 		tmp++;
 	}
-	out_str = talloc_asprintf(frame, output_fmt, tmp, str);
+	out_str = talloc_asprintf(frame, "%s\r\n%s\r\n", tmp, str);
 
 	if (out_str == NULL) {
 		result = EXIT_FAILED;
