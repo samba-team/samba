@@ -71,6 +71,11 @@ struct tevent_req *wait_for_read_send(TALLOC_CTX *mem_ctx,
 				      bool check_errors);
 bool wait_for_read_recv(struct tevent_req *req, int *perr);
 
+struct tevent_req *wait_for_error_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       int fd);
+int wait_for_error_recv(struct tevent_req *req);
+
 struct samba_sockaddr;
 struct tevent_req *accept_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			       int listen_sock);

@@ -861,6 +861,86 @@ bool wait_for_read_recv(struct tevent_req *req, int *perr)
 	return true;
 }
 
+struct wait_for_error_state {
+	struct tevent_fd *fde;
+	int fd;
+};
+
+static void wait_for_error_cleanup(struct tevent_req *req,
+				   enum tevent_req_state req_state);
+static void wait_for_error_done(struct tevent_context *ev,
+				struct tevent_fd *fde,
+				uint16_t flags,
+				void *private_data);
+
+struct tevent_req *wait_for_error_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       int fd)
+{
+	struct tevent_req *req = NULL;
+	struct wait_for_error_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct wait_for_error_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->fd = fd;
+
+	tevent_req_set_cleanup_fn(req, wait_for_error_cleanup);
+
+	state->fde = tevent_add_fd(ev,
+				   state,
+				   state->fd,
+				   TEVENT_FD_ERROR,
+				   wait_for_error_done,
+				   req);
+	if (tevent_req_nomem(state->fde, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	return req;
+}
+
+static void wait_for_error_cleanup(struct tevent_req *req,
+				  enum tevent_req_state req_state)
+{
+	struct wait_for_error_state *state =
+		tevent_req_data(req, struct wait_for_error_state);
+
+	TALLOC_FREE(state->fde);
+	state->fd = -1;
+}
+
+static void wait_for_error_done(struct tevent_context *ev,
+			       struct tevent_fd *fde,
+			       uint16_t flags,
+			       void *private_data)
+{
+	struct tevent_req *req =
+		talloc_get_type_abort(private_data,
+		struct tevent_req);
+	struct wait_for_error_state *state =
+		tevent_req_data(req,
+		struct wait_for_error_state);
+	int ret;
+
+	errno = 0;
+	ret = samba_socket_poll_or_sock_error(state->fd);
+	if (ret == 0) {
+		errno = EPIPE;
+	}
+	if (errno == 0) {
+		errno = EPIPE;
+	}
+
+	tevent_req_error(req, errno);
+}
+
+int wait_for_error_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_unix(req);
+}
+
 struct accept_state {
 	struct tevent_fd *fde;
 	int listen_sock;
