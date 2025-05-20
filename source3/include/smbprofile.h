@@ -256,6 +256,94 @@ struct tevent_context;
 	\
 	SMBPROFILE_STATS_END
 
+#define SMBPROFILE_STATS_PERSVC_SECTIONS \
+	SMBPROFILE_STATS_START \
+	\
+	SMBPROFILE_STATS_SECTION_START(syscall, "System Calls") \
+	SMBPROFILE_STATS_BASIC(syscall_opendir) \
+	SMBPROFILE_STATS_BASIC(syscall_fdopendir) \
+	SMBPROFILE_STATS_BASIC(syscall_readdir) \
+	SMBPROFILE_STATS_BASIC(syscall_rewinddir) \
+	SMBPROFILE_STATS_BASIC(syscall_mkdirat) \
+	SMBPROFILE_STATS_BASIC(syscall_closedir) \
+	SMBPROFILE_STATS_BASIC(syscall_open) \
+	SMBPROFILE_STATS_BASIC(syscall_openat) \
+	SMBPROFILE_STATS_BASIC(syscall_createfile) \
+	SMBPROFILE_STATS_BASIC(syscall_close) \
+	SMBPROFILE_STATS_BYTES(syscall_pread) \
+	SMBPROFILE_STATS_BYTES(syscall_asys_pread) \
+	SMBPROFILE_STATS_BYTES(syscall_pwrite) \
+	SMBPROFILE_STATS_BYTES(syscall_asys_pwrite) \
+	SMBPROFILE_STATS_BASIC(syscall_lseek) \
+	SMBPROFILE_STATS_BYTES(syscall_sendfile) \
+	SMBPROFILE_STATS_BYTES(syscall_recvfile) \
+	SMBPROFILE_STATS_BASIC(syscall_renameat) \
+	SMBPROFILE_STATS_BYTES(syscall_asys_fsync) \
+	SMBPROFILE_STATS_BASIC(syscall_stat) \
+	SMBPROFILE_STATS_BASIC(syscall_fstat) \
+	SMBPROFILE_STATS_BASIC(syscall_lstat) \
+	SMBPROFILE_STATS_BASIC(syscall_fstatat) \
+	SMBPROFILE_STATS_BASIC(syscall_get_alloc_size) \
+	SMBPROFILE_STATS_BASIC(syscall_unlinkat) \
+	SMBPROFILE_STATS_BASIC(syscall_chmod) \
+	SMBPROFILE_STATS_BASIC(syscall_fchmod) \
+	SMBPROFILE_STATS_BASIC(syscall_fchown) \
+	SMBPROFILE_STATS_BASIC(syscall_lchown) \
+	SMBPROFILE_STATS_BASIC(syscall_chdir) \
+	SMBPROFILE_STATS_BASIC(syscall_getwd) \
+	SMBPROFILE_STATS_BASIC(syscall_fntimes) \
+	SMBPROFILE_STATS_BASIC(syscall_ftruncate) \
+	SMBPROFILE_STATS_BASIC(syscall_fallocate) \
+	SMBPROFILE_STATS_BASIC(syscall_fcntl_lock) \
+	SMBPROFILE_STATS_BASIC(syscall_fcntl) \
+	SMBPROFILE_STATS_BASIC(syscall_linux_setlease) \
+	SMBPROFILE_STATS_BASIC(syscall_fcntl_getlock) \
+	SMBPROFILE_STATS_BASIC(syscall_readlinkat) \
+	SMBPROFILE_STATS_BASIC(syscall_symlinkat) \
+	SMBPROFILE_STATS_BASIC(syscall_linkat) \
+	SMBPROFILE_STATS_BASIC(syscall_mknodat) \
+	SMBPROFILE_STATS_BASIC(syscall_realpath) \
+	SMBPROFILE_STATS_BASIC(syscall_get_quota) \
+	SMBPROFILE_STATS_BASIC(syscall_set_quota) \
+	SMBPROFILE_STATS_BASIC(syscall_get_sd) \
+	SMBPROFILE_STATS_BASIC(syscall_set_sd) \
+	SMBPROFILE_STATS_BASIC(syscall_brl_lock) \
+	SMBPROFILE_STATS_BASIC(syscall_brl_unlock) \
+	SMBPROFILE_STATS_BASIC(syscall_brl_cancel) \
+	SMBPROFILE_STATS_BYTES(syscall_asys_getxattrat) \
+	SMBPROFILE_STATS_SECTION_END \
+	\
+	SMBPROFILE_STATS_SECTION_START(acl, "ACL Calls") \
+	SMBPROFILE_STATS_BASIC(get_nt_acl) \
+	SMBPROFILE_STATS_BASIC(get_nt_acl_at) \
+	SMBPROFILE_STATS_BASIC(fget_nt_acl) \
+	SMBPROFILE_STATS_BASIC(fset_nt_acl) \
+	SMBPROFILE_STATS_SECTION_END \
+	\
+	SMBPROFILE_STATS_SECTION_START(smb2, "SMB2 Calls") \
+	SMBPROFILE_STATS_IOBYTES(smb2_negprot) \
+	SMBPROFILE_STATS_IOBYTES(smb2_sesssetup) \
+	SMBPROFILE_STATS_IOBYTES(smb2_logoff) \
+	SMBPROFILE_STATS_IOBYTES(smb2_tcon) \
+	SMBPROFILE_STATS_IOBYTES(smb2_tdis) \
+	SMBPROFILE_STATS_IOBYTES(smb2_create) \
+	SMBPROFILE_STATS_IOBYTES(smb2_close) \
+	SMBPROFILE_STATS_IOBYTES(smb2_flush) \
+	SMBPROFILE_STATS_IOBYTES(smb2_read) \
+	SMBPROFILE_STATS_IOBYTES(smb2_write) \
+	SMBPROFILE_STATS_IOBYTES(smb2_lock) \
+	SMBPROFILE_STATS_IOBYTES(smb2_ioctl) \
+	SMBPROFILE_STATS_IOBYTES(smb2_cancel) \
+	SMBPROFILE_STATS_IOBYTES(smb2_keepalive) \
+	SMBPROFILE_STATS_IOBYTES(smb2_find) \
+	SMBPROFILE_STATS_IOBYTES(smb2_notify) \
+	SMBPROFILE_STATS_IOBYTES(smb2_getinfo) \
+	SMBPROFILE_STATS_IOBYTES(smb2_setinfo) \
+	SMBPROFILE_STATS_IOBYTES(smb2_break) \
+	SMBPROFILE_STATS_SECTION_END \
+	\
+	SMBPROFILE_STATS_END
+
 /* this file defines the profile structure in the profile shared
    memory area */
 

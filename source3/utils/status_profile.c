@@ -141,7 +141,7 @@ static void status_profile_dump_persvc_stats(struct traverse_state *state,
 	} while (0);
 #define SMBPROFILE_STATS_SECTION_END
 #define SMBPROFILE_STATS_END
-	SMBPROFILE_STATS_ALL_SECTIONS
+	SMBPROFILE_STATS_PERSVC_SECTIONS
 #undef __PRINT_FIELD_LINE
 #undef SMBPROFILE_STATS_START
 #undef SMBPROFILE_STATS_SECTION_START
