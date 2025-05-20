@@ -183,42 +183,62 @@ static char *iscmd(const char *buf, const char *s)
 static void parse_configuration(const char *fn)
 {
 	struct command *c;
-	char s[1024];
+	char *conf_line = NULL;
 	char *str;
+	size_t len = 0;
 	unsigned int lineno = 0;
 	FILE *cmd;
+	const char *err_message = NULL;
+	char err_buf[256];
 
 	cmd = fopen(fn, "r");
 	if (cmd == NULL)
 		err(1, "open: %s", fn);
 
-	while (fgets(s, sizeof(s),  cmd) != NULL) {
-
-		s[strcspn(s, "#\n")] = '\0';
+	while (getline(&conf_line, &len, cmd) != -1) {
 		lineno++;
 
+		conf_line[strcspn(conf_line, "#\n")] = '\0';
+		if (conf_line[0] == '\0') {
+			continue;
+		}
+
 		c = calloc(1, sizeof(*c));
-		if (c == NULL)
-			errx(1, "malloc");
+		if (c == NULL) {
+			err_message = "calloc failed";
+			goto out;
+		}
 
 		c->lineno = lineno;
+
+		if ((str = iscmd(conf_line, "expect ")) != NULL) {
+			c->type = CMD_EXPECT;
+		} else if ((str = iscmd(conf_line, "send ")) != NULL) {
+			c->type = CMD_SEND;
+		} else if ((str = iscmd(conf_line, "password ")) != NULL) {
+			c->type = CMD_PASSWORD;
+		} else {
+			free(c);
+			snprintf(err_buf,
+				 sizeof(err_buf),
+				 "Invalid command on line %d: %s",
+				 lineno,
+				 conf_line);
+			err_message = err_buf;
+			goto out;
+		}
+
+		c->str = str;
+
 		(*next) = c;
 		next = &(c->next);
-
-		if ((str = iscmd(s, "expect ")) != NULL) {
-			c->type = CMD_EXPECT;
-			c->str = str;
-		} else if ((str = iscmd(s, "send ")) != NULL) {
-			c->type = CMD_SEND;
-			c->str = str;
-		} else if ((str = iscmd(s, "password ")) != NULL) {
-			c->type = CMD_PASSWORD;
-			c->str = str;
-		} else
-			errx(1, "Invalid command on line %d: %s", lineno, s);
 	}
-
+out:
+	free(conf_line);
 	fclose(cmd);
+	if (err_message) {
+		errx(1, "%s", err_message);
+	}
 }
 
 /*
