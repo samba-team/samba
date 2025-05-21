@@ -328,10 +328,11 @@ static int smbXcli_transport_destructor(struct smbXcli_transport *xtp)
 }
 
 struct smbXcli_transport *smbXcli_transport_bsd(TALLOC_CTX *mem_ctx,
-						int fd,
+						int *_fd,
 						const struct smb_transport *tp)
 {
 	struct smbXcli_transport *xtp = NULL;
+	int fd = *_fd;
 	int ret;
 
 	xtp = talloc_zero(mem_ctx, struct smbXcli_transport);
@@ -362,6 +363,7 @@ struct smbXcli_transport *smbXcli_transport_bsd(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	*_fd = -1;
 	talloc_set_destructor(xtp, smbXcli_transport_destructor);
 	return xtp;
 }

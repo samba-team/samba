@@ -647,12 +647,11 @@ static void smbsock_connect_nbt_connected(struct tevent_req *subreq)
 		 */
 		set_socket_options(s->sockfd, lp_socket_options());
 		state->transport = smbXcli_transport_bsd(state,
-							 s->sockfd,
+							 &s->sockfd,
 							 &s->transport);
 		if (tevent_req_nomem(state->transport, req)) {
 			return;
 		}
-		s->sockfd = -1;
 		tevent_req_done(req);
 		return;
 	}
@@ -710,12 +709,11 @@ static void smbsock_connect_tcp_connected(struct tevent_req *subreq)
 		 */
 		set_socket_options(s->sockfd, lp_socket_options());
 		state->transport = smbXcli_transport_bsd(state,
-							 s->sockfd,
+							 &s->sockfd,
 							 &s->transport);
 		if (tevent_req_nomem(state->transport, req)) {
 			return;
 		}
-		s->sockfd = -1;
 		tevent_req_done(req);
 		return;
 	}

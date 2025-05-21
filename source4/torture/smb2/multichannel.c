@@ -2568,10 +2568,9 @@ static bool test_multichannel_bug_15346(struct torture_context *tctx,
 		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 						"socket_connect_multi failed");
 
-		xtp = smbXcli_transport_bsd(state->conns, sock->fd, &tp);
+		xtp = smbXcli_transport_bsd(state->conns, &sock->fd, &tp);
 		torture_assert_goto(tctx, xtp != NULL, ret, done,
 				    "smbXcli_transport_bsd failed");
-		sock->fd = -1;
 		TALLOC_FREE(sock);
 
 		conn->smbXcli = smbXcli_conn_create(state->conns,
