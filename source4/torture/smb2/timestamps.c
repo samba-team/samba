@@ -1164,7 +1164,7 @@ static bool getinfo_both(struct torture_context *tctx,
 	union smb_fileinfo finfo;
 	union smb_fileinfo pinfo;
 	struct smb2_create cr;
-	struct smb2_handle h2;
+	struct smb2_handle h2 = {0};
 	NTSTATUS status;
 	bool ret = true;
 
