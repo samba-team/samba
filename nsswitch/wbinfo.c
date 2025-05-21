@@ -1519,7 +1519,7 @@ static bool wbinfo_lookup_sids(const char *arg)
 	int i, num_sids;
 	const char *p;
 	wbcErr wbc_status;
-	bool ret;
+	bool ret = false;
 
 	num_sids = 0;
 	sids = NULL;
