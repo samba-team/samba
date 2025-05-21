@@ -278,6 +278,47 @@ bool has_other_nonposix_opens(struct share_mode_lock *lck,
 	return state.found_another;
 }
 
+struct has_delete_access_opens_state {
+	bool delete_access;
+	bool delete_pending;
+};
+
+static bool has_delete_access_opens_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct has_delete_access_opens_state *state = private_data;
+
+	if (share_entry_stale_pid(e)) {
+		return false;
+	}
+
+	if (e->access_mask & SEC_STD_DELETE) {
+		state->delete_access = true;
+	}
+	return false;
+}
+
+bool has_delete_opens(struct files_struct *fsp,
+		      struct share_mode_lock *lck,
+		      bool *delete_access,
+		      bool *delete_pending)
+{
+	struct has_delete_access_opens_state state = {};
+	bool ok;
+
+	ok = share_mode_forall_entries(
+		lck, has_delete_access_opens_fn, &state);
+	if (!ok) {
+		return false;
+	}
+
+	*delete_access = state.delete_access;
+	*delete_pending = is_delete_on_close_set(lck, fsp->name_hash);
+	return true;
+}
+
 bool has_nonposix_opens(struct share_mode_lock *lck)
 {
 	struct has_other_nonposix_opens_state state = {};
