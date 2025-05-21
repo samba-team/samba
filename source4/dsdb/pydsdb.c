@@ -343,7 +343,7 @@ static PyObject *py_dsdb_get_searchFlags_from_lDAPDisplayName(PyObject *self, Py
 		return NULL;
 	}
 
-	return PyLong_FromLong(attribute->searchFlags);
+	return PyLong_FromUnsignedLong(attribute->searchFlags);
 }
 
 /*
@@ -375,7 +375,7 @@ static PyObject *py_dsdb_get_systemFlags_from_lDAPDisplayName(PyObject *self, Py
 		return NULL;
 	}
 
-	return PyLong_FromLong(attribute->systemFlags);
+	return PyLong_FromUnsignedLong(attribute->systemFlags);
 }
 
 /*
@@ -407,7 +407,7 @@ static PyObject *py_dsdb_get_linkId_from_lDAPDisplayName(PyObject *self, PyObjec
 		return NULL;
 	}
 
-	return PyLong_FromLong(attribute->linkID);
+	return PyLong_FromUnsignedLong(attribute->linkID);
 }
 
 /*
@@ -1291,7 +1291,7 @@ static PyObject *py_dsdb_allocate_rid(PyObject *self, PyObject *args)
 	TALLOC_FREE(rid_return);
 	TALLOC_FREE(ext_res);
 
-	return PyLong_FromLong(rid);
+	return PyLong_FromUnsignedLong(rid);
 }
 
 #ifdef AD_DC_BUILD_IS_ENABLED
@@ -1842,7 +1842,7 @@ MODULE_INIT_FUNC(dsdb)
 	if (m == NULL)
 		return NULL;
 
-#define ADD_DSDB_FLAG(val)  PyModule_AddObject(m, #val, PyLong_FromLong(val))
+#define ADD_DSDB_FLAG(val)  PyModule_AddObject(m, #val, PyLong_FromUnsignedLong(val))
 
 	/* "userAccountControl" flags */
 	ADD_DSDB_FLAG(UF_NORMAL_ACCOUNT);
