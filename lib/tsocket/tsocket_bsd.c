@@ -1666,6 +1666,8 @@ struct tstream_bsd {
 	bool optimize_readv;
 	bool fail_readv_first_error;
 
+	void *error_private;
+	void (*error_handler)(void *private_data);
 	void *readable_private;
 	void (*readable_handler)(void *private_data);
 	void *writeable_private;
@@ -1786,6 +1788,17 @@ static void tstream_bsd_fde_handler(struct tevent_context *ev,
 		}
 
 		/*
+		 * Failing reads and writes will also terminate
+		 * pending monitor requests at the main tstream layer,
+		 * so we only call the error handler if it is the only
+		 * pending request
+		 */
+		if (bsds->error_handler != NULL) {
+			bsds->error_handler(bsds->error_private);
+			return;
+		}
+
+		/*
 		 * We may hit this because we don't clear TEVENT_FD_ERROR
 		 * in tstream_bsd_set_readable_handler() nor
 		 * tstream_bsd_set_writeable_handler().
@@ -1825,6 +1838,72 @@ static void tstream_bsd_fde_handler(struct tevent_context *ev,
 	}
 }
 
+static int tstream_bsd_set_error_handler(struct tstream_bsd *bsds,
+					    struct tevent_context *ev,
+					    void (*handler)(void *private_data),
+					    void *private_data)
+{
+	if (ev == NULL) {
+		if (handler) {
+			errno = EINVAL;
+			return -1;
+		}
+		if (!bsds->error_handler) {
+			return 0;
+		}
+		bsds->error_handler = NULL;
+		bsds->error_private = NULL;
+
+		/*
+		 * Here we are lazy as it's very likely that the next
+		 * tevent_monitor_send() will come in shortly,
+		 * so we keep TEVENT_FD_ERROR alive.
+		 */
+		return 0;
+	}
+
+	/* monitor, read and write must use the same tevent_context */
+	if (bsds->event_ptr != ev) {
+		if (bsds->error_handler ||
+		    bsds->readable_handler ||
+		    bsds->writeable_handler)
+		{
+			errno = EINVAL;
+			return -1;
+		}
+		bsds->event_ptr = NULL;
+		TALLOC_FREE(bsds->fde);
+	}
+
+	if (tevent_fd_get_flags(bsds->fde) == 0) {
+		TALLOC_FREE(bsds->fde);
+
+		bsds->fde = tevent_add_fd(ev, bsds,
+					  bsds->fd,
+					  TEVENT_FD_ERROR,
+					  tstream_bsd_fde_handler,
+					  bsds);
+		if (!bsds->fde) {
+			errno = ENOMEM;
+			return -1;
+		}
+
+		/* cache the event context we're running on */
+		bsds->event_ptr = ev;
+	} else if (!bsds->error_handler) {
+		/*
+		 * TEVENT_FD_ERROR is likely already set, so
+		 * TEVENT_FD_WANTERROR() is most likely a no-op.
+		 */
+		TEVENT_FD_WANTERROR(bsds->fde);
+	}
+
+	bsds->error_handler = handler;
+	bsds->error_private = private_data;
+
+	return 0;
+}
+
 static int tstream_bsd_set_readable_handler(struct tstream_bsd *bsds,
 					    struct tevent_context *ev,
 					    void (*handler)(void *private_data),
@@ -1849,9 +1928,12 @@ static int tstream_bsd_set_readable_handler(struct tstream_bsd *bsds,
 		return 0;
 	}
 
-	/* read and write must use the same tevent_context */
+	/* monitor, read and write must use the same tevent_context */
 	if (bsds->event_ptr != ev) {
-		if (bsds->readable_handler || bsds->writeable_handler) {
+		if (bsds->error_handler ||
+		    bsds->readable_handler ||
+		    bsds->writeable_handler)
+		{
 			errno = EINVAL;
 			return -1;
 		}
@@ -1919,9 +2001,12 @@ static int tstream_bsd_set_writeable_handler(struct tstream_bsd *bsds,
 		return 0;
 	}
 
-	/* read and write must use the same tevent_context */
+	/* monitor, read and write must use the same tevent_context */
 	if (bsds->event_ptr != ev) {
-		if (bsds->readable_handler || bsds->writeable_handler) {
+		if (bsds->error_handler ||
+		    bsds->readable_handler ||
+		    bsds->writeable_handler)
+		{
 			errno = EINVAL;
 			return -1;
 		}
@@ -2377,6 +2462,91 @@ static int tstream_bsd_disconnect_recv(struct tevent_req *req,
 	return ret;
 }
 
+struct tstream_bsd_monitor_state {
+	struct tstream_context *stream;
+};
+
+static void tstream_bsd_monitor_cleanup(struct tevent_req *req,
+					enum tevent_req_state req_state)
+{
+	struct tstream_bsd_monitor_state *state =
+		tevent_req_data(req,
+		struct tstream_bsd_monitor_state);
+
+	if (state->stream != NULL) {
+		struct tstream_bsd *bsds =
+			tstream_context_data(state->stream,
+			struct tstream_bsd);
+
+		tstream_bsd_set_error_handler(bsds, NULL, NULL, NULL);
+		state->stream = NULL;
+	}
+}
+
+static void tstream_bsd_monitor_handler(void *private_data);
+
+static struct tevent_req *tstream_bsd_monitor_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct tstream_context *stream)
+{
+	struct tevent_req *req = NULL;
+	struct tstream_bsd_monitor_state *state = NULL;
+	struct tstream_bsd *bsds =
+		tstream_context_data(stream, struct tstream_bsd);
+	int ret;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct tstream_bsd_monitor_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->stream = stream;
+
+	tevent_req_set_cleanup_fn(req, tstream_bsd_monitor_cleanup);
+
+	if (bsds->fd == -1) {
+		tevent_req_error(req, ENOTCONN);
+		return tevent_req_post(req, ev);
+	}
+
+	ret = tstream_bsd_set_error_handler(bsds, ev,
+					    tstream_bsd_monitor_handler,
+					    req);
+	if (ret == -1) {
+		tevent_req_error(req, errno);
+		return tevent_req_post(req, ev);
+	}
+
+	return req;
+}
+
+static void tstream_bsd_monitor_handler(void *private_data)
+{
+	struct tevent_req *req = talloc_get_type_abort(private_data,
+				 struct tevent_req);
+	struct tstream_bsd_monitor_state *state = tevent_req_data(req,
+					struct tstream_bsd_monitor_state);
+	struct tstream_context *stream = state->stream;
+	struct tstream_bsd *bsds = tstream_context_data(stream, struct tstream_bsd);
+
+	/*
+	 * tstream_bsd_fde_handler already
+	 * made sure that bsds->error is not 0.
+	 */
+	tevent_req_error(req, bsds->error);
+}
+
+static int tstream_bsd_monitor_recv(struct tevent_req *req,
+				    int *perrno)
+{
+	int ret;
+
+	ret = tsocket_simple_int_recv(req, perrno);
+
+	tevent_req_received(req);
+	return ret;
+}
+
 static const struct tstream_context_ops tstream_bsd_ops = {
 	.name			= "bsd",
 
@@ -2390,6 +2560,9 @@ static const struct tstream_context_ops tstream_bsd_ops = {
 
 	.disconnect_send	= tstream_bsd_disconnect_send,
 	.disconnect_recv	= tstream_bsd_disconnect_recv,
+
+	.monitor_send		= tstream_bsd_monitor_send,
+	.monitor_recv		= tstream_bsd_monitor_recv,
 };
 
 static int tstream_bsd_destructor(struct tstream_bsd *bsds)
