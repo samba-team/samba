@@ -942,6 +942,88 @@ static int tstream_npa_disconnect_recv(struct tevent_req *req,
 	return ret;
 }
 
+struct tstream_npa_monitor_state {
+	struct tevent_req *subreq;
+};
+
+static void tstream_npa_monitor_cleanup(struct tevent_req *req,
+					enum tevent_req_state req_state)
+{
+	struct tstream_npa_monitor_state *state =
+		tevent_req_data(req,
+		struct tstream_npa_monitor_state);
+
+	TALLOC_FREE(state->subreq);
+}
+
+static void tstream_npa_monitor_done(struct tevent_req *subreq);
+
+static struct tevent_req *tstream_npa_monitor_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct tstream_context *stream)
+{
+	struct tevent_req *req = NULL;
+	struct tstream_npa_monitor_state *state = NULL;
+	struct tstream_npa *npas =
+		tstream_context_data(stream, struct tstream_npa);
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct tstream_npa_monitor_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	tevent_req_set_cleanup_fn(req, tstream_npa_monitor_cleanup);
+
+	state->subreq = tstream_monitor_send(state,
+					     ev,
+					     npas->unix_stream);
+	if (tevent_req_nomem(state->subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(state->subreq,
+				tstream_npa_monitor_done,
+				req);
+
+	return req;
+}
+
+static void tstream_npa_monitor_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct tstream_npa_monitor_state *state =
+		tevent_req_data(req,
+		struct tstream_npa_monitor_state);
+	int ret;
+	int sys_error = EPIPE;
+
+	state->subreq = NULL;
+
+	ret = tstream_monitor_recv(subreq, &sys_error);
+	TALLOC_FREE(subreq);
+	if (ret == 0) {
+		sys_error = EPIPE;
+	}
+	if (sys_error == 0) {
+		sys_error = EPIPE;
+	}
+
+	tevent_req_error(req, sys_error);
+}
+
+static int tstream_npa_monitor_recv(struct tevent_req *req,
+				    int *perrno)
+{
+	int ret;
+
+	ret = tsocket_simple_int_recv(req, perrno);
+
+	tevent_req_received(req);
+	return ret;
+}
+
 static const struct tstream_context_ops tstream_npa_ops = {
 	.name			= "npa",
 
@@ -955,6 +1037,9 @@ static const struct tstream_context_ops tstream_npa_ops = {
 
 	.disconnect_send	= tstream_npa_disconnect_send,
 	.disconnect_recv	= tstream_npa_disconnect_recv,
+
+	.monitor_send		= tstream_npa_monitor_send,
+	.monitor_recv		= tstream_npa_monitor_recv,
 };
 
 int _tstream_npa_existing_stream(TALLOC_CTX *mem_ctx,
