@@ -217,6 +217,11 @@ static void ctdb_run_startup(struct tevent_context *ev,
  */
 static void ctdb_startup_callback(struct ctdb_context *ctdb, int status, void *p)
 {
+	if (ctdb->runstate == CTDB_RUNSTATE_SHUTDOWN) {
+		DBG_WARNING("Detected early shutdown, not starting monitoring\n");
+		return;
+	}
+
 	if (status != 0) {
 		DEBUG(DEBUG_ERR,("startup event failed\n"));
 		tevent_add_timer(ctdb->ev, ctdb->monitor->monitor_context,
@@ -248,6 +253,12 @@ static void ctdb_run_startup(struct tevent_context *ev,
 	struct ctdb_context *ctdb = talloc_get_type(private_data,
 						    struct ctdb_context);
 	int ret;
+
+	if (ctdb->runstate == CTDB_RUNSTATE_SHUTDOWN) {
+		DBG_WARNING(
+			"Detected early shutdown, not running startup event\n");
+		return;
+	}
 
 	/* This is necessary to avoid the "startup" event colliding
 	 * with the "ipreallocated" event from the takeover run
@@ -432,6 +443,13 @@ void ctdb_stop_monitoring(struct ctdb_context *ctdb)
  */
 void ctdb_wait_for_first_recovery(struct ctdb_context *ctdb)
 {
+	if (ctdb->runstate == CTDB_RUNSTATE_SHUTDOWN) {
+		DBG_WARNING(
+			"Detected early shutdown, "
+			"not waiting for first recovery\n");
+		return;
+	}
+
 	ctdb_set_runstate(ctdb, CTDB_RUNSTATE_FIRST_RECOVERY);
 
 	ctdb->monitor = talloc(ctdb, struct ctdb_monitor_state);
