@@ -89,18 +89,6 @@ bool torture_lease_handler(struct smb2_transport *transport,
 }
 
 /*
- * A lease break handler which ignores incoming lease break requests
- * To be used in cases where the client is expected to ignore incoming
- * lease break requests
- */
-bool torture_lease_ignore_handler(struct smb2_transport *transport,
-			   const struct smb2_lease_break *lb,
-			   void *private_data)
-{
-	return true;
-}
-
-/*
    Timer handler function notifies the registering function that time is up
 */
 static void timeout_cb(struct tevent_context *ev,

@@ -147,9 +147,6 @@ extern struct lease_break_info lease_break_info;
 bool torture_lease_handler(struct smb2_transport *transport,
 			   const struct smb2_lease_break *lb,
 			   void *private_data);
-bool torture_lease_ignore_handler(struct smb2_transport *transport,
-				  const struct smb2_lease_break *lb,
-				  void *private_data);
 void torture_wait_for_lease_break(struct torture_context *tctx);
 
 static inline void torture_reset_lease_break_info(struct torture_context *tctx,
