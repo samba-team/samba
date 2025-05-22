@@ -6685,6 +6685,115 @@ done:
 	return ret;
 }
 
+static bool test_rename_dst_parent(struct torture_context *tctx,
+				   struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *srcdir = "test_rename_dst_parent_src";
+	const char *srcfile = "test_rename_dst_parent_src\\file";
+	const char *dstdir = "test_rename_dst_parent_dst";
+	const char *dstfile = "test_rename_dst_parent_dst\\file";
+	struct smb2_create create_dp;
+	struct smb2_lease lease_dp;
+	struct smb2_handle h1 = {};
+	struct smb2_handle handle_sf = {};
+	struct smb2_handle handle_dp = {};
+	union smb_setfileinfo sfinfo = {};
+	NTSTATUS status;
+	bool ret = true;
+
+	tree->session->transport->lease.handler	= torture_lease_handler;
+	tree->session->transport->lease.private_data = tree;
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	status = torture_smb2_testdir(tree, srcdir, &h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir\n");
+	smb2_util_close(tree, h1);
+
+	status = torture_smb2_testdir(tree, dstdir, &h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir\n");
+	smb2_util_close(tree, h1);
+
+	status = smb2_create_simple_file(tctx, tree, srcfile, &handle_sf);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create_simple_file\n");
+
+	/* Get a RH lease on the destination parent */
+
+	smb2_lease_v2_create_share(&create_dp, &lease_dp, true, dstdir,
+				   smb2_util_share_access("RWD"),
+				   0x01, NULL,
+				   smb2_util_lease_state("RH"), 0);
+	create_dp.in.desired_access = DELETE_ACCESS;
+	status = smb2_create(tree, mem_ctx, &create_dp);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	handle_dp = create_dp.out.file.handle;
+	CHECK_LEASE_V2(&create_dp, "RH", true, 0x01, 0, 0, 1);
+
+	/*
+	 * Rename, expect break on dst parent. As we'll be keeping our
+	 * conflicting open, the rename should fail.
+	 */
+
+	sfinfo.generic.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sfinfo.generic.in.file.handle = handle_sf;
+	sfinfo.rename_information.in.new_name = dstfile;
+
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_equal_goto(
+		tctx, status, NT_STATUS_SHARING_VIOLATION, ret, done,
+		"smb2_setinfo_file\n");
+
+	CHECK_BREAK_INFO_V2(tree->session->transport,
+			    "RH", "R", 0x01, 2);
+
+	/* Upgrade lease to "RH" */
+
+	smb2_lease_v2_create_share(&create_dp, &lease_dp, true, dstdir,
+				   smb2_util_share_access("RWD"),
+				   0x01, NULL,
+				   smb2_util_lease_state("RH"), 0);
+	create_dp.in.desired_access = DELETE_ACCESS;
+	status = smb2_create(tree, mem_ctx, &create_dp);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = create_dp.out.file.handle;
+	smb2_util_close(tree, h1);
+	CHECK_LEASE_V2(&create_dp, "RH", true, 0x01, 0, 0, 3);
+
+	/*
+	 * Rename, expect break on dst parent. Let the break
+	 * handler close the handle so the rename should pass.
+	 */
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+	lease_break_info.lease_handle = handle_dp;
+
+	sfinfo.generic.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sfinfo.generic.in.file.handle = handle_sf;
+	sfinfo.rename_information.in.new_name = dstfile;
+
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	CHECK_LEASE_BREAK(&lease_break_info.lease_break, "RH", "R", 0x01);
+
+done:
+	if (!smb2_util_handle_empty(handle_sf)) {
+		smb2_util_close(tree, handle_sf);
+	}
+	if (!smb2_util_handle_empty(handle_dp)) {
+		smb2_util_close(tree, handle_dp);
+	}
+	smb2_deltree(tree, srcdir);
+	smb2_deltree(tree, dstdir);
+	return ret;
+}
+
 static bool test_overwrite(struct torture_context *tctx,
 			   struct smb2_tree *tree,
 			   struct smb2_tree *tree2)
@@ -7624,6 +7733,7 @@ struct torture_suite *torture_smb2_dirlease_init(TALLOC_CTX *ctx)
 	torture_suite_add_2smb2_test(suite, "setctime", test_dirlease_setctime);
 	torture_suite_add_2smb2_test(suite, "setatime", test_dirlease_setatime);
 	torture_suite_add_1smb2_test(suite, "rename", test_rename);
+	torture_suite_add_1smb2_test(suite, "rename_dst_parent", test_rename_dst_parent);
 	torture_suite_add_2smb2_test(suite, "overwrite", test_overwrite);
 	torture_suite_add_1smb2_test(suite, "hardlink", test_hardlink);
 	torture_suite_add_1smb2_test(suite, "unlink_same_set_and_close", test_unlink_same_set_and_close);
