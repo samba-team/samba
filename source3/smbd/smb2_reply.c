@@ -1344,49 +1344,6 @@ static void notify_rename(struct connection_struct *conn,
 }
 
 /****************************************************************************
- Returns an error if the parent directory for a filename is open in an
- incompatible way.
-****************************************************************************/
-
-static NTSTATUS parent_dirname_compatible_open(connection_struct *conn,
-					const struct smb_filename *smb_fname_dst_in)
-{
-	struct smb_filename *smb_fname_parent = NULL;
-	struct file_id id;
-	files_struct *fsp = NULL;
-	int ret;
-	NTSTATUS status;
-
-	status = SMB_VFS_PARENT_PATHNAME(conn,
-					 talloc_tos(),
-					 smb_fname_dst_in,
-					 &smb_fname_parent,
-					 NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	ret = vfs_stat(conn, smb_fname_parent);
-	if (ret == -1) {
-		return map_nt_error_from_unix(errno);
-	}
-
-	/*
-	 * We're only checking on this smbd here, mostly good
-	 * enough.. and will pass tests.
-	 */
-
-	id = vfs_file_id_from_sbuf(conn, &smb_fname_parent->st);
-	for (fsp = file_find_di_first(conn->sconn, id, true); fsp;
-			fsp = file_find_di_next(fsp, true)) {
-		if (fsp->access_mask & DELETE_ACCESS) {
-			return NT_STATUS_SHARING_VIOLATION;
-                }
-        }
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
  Rename an open file - given an fsp.
 ****************************************************************************/
 
@@ -1413,11 +1370,6 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	bool case_preserve = fsp->fsp_flags.posix_open ?
 				true : conn->case_preserve;
 	struct vfs_rename_how rhow = { .flags = 0, };
-
-	status = parent_dirname_compatible_open(conn, smb_fname_dst_in);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
 
 	if (file_has_open_streams(fsp)) {
 		return NT_STATUS_ACCESS_DENIED;
