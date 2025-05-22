@@ -1639,6 +1639,12 @@ static void delay_for_handle_lease_break_fsp_check(struct tevent_req *req)
 
 	DBG_DEBUG("fsp [%s]\n", fsp_str_dbg(state->fsp));
 
+	if (state->lck == NULL) {
+		DBG_DEBUG("fsp [%s] all opens are gone\n",
+			  fsp_str_dbg(state->fsp));
+		return;
+	}
+
 	ok = share_mode_forall_leases(state->lck,
 				      delay_for_handle_lease_break_fn,
 				      state);
@@ -1696,11 +1702,6 @@ static void delay_for_handle_lease_break_fsp_done(struct tevent_req *subreq)
 	}
 
 	state->lck = get_existing_share_mode_lock(state, state->fsp->file_id);
-	if (state->lck == NULL) {
-		tevent_req_nterror(req, NT_STATUS_UNSUCCESSFUL);
-		return;
-	}
-
 	/*
 	 * This could potentially end up looping for some if a client
 	 * aggressively reaquires H-leases on the file, but we have a
@@ -1964,11 +1965,6 @@ static void delay_for_handle_lease_break_below_done(struct tevent_req *subreq)
 	state->recursive_h_leases_break = false;
 
 	state->lck = get_existing_share_mode_lock(state, state->fsp->file_id);
-	if (state->lck == NULL) {
-		tevent_req_nterror(req, NT_STATUS_UNSUCCESSFUL);
-		return;
-	}
-
 	delay_for_handle_lease_break_check(req);
 }
 
