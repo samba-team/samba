@@ -128,18 +128,4 @@ bool sockaddr_storage_to_samba_sockaddr(
 bool samba_sockaddr_set_port(struct samba_sockaddr *sa, uint16_t port);
 bool samba_sockaddr_get_port(const struct samba_sockaddr *sa, uint16_t *port);
 
-/*
- * check for POLLERR or POLL*HUP
- */
-int samba_socket_poll_error(int fd);
-/*
- * getsockopt(fd, SOL_SOCKET, SO_ERROR, &error, &len)
- */
-int samba_socket_sock_error(int fd);
-/*
- * check for POLL*HUP and fallback to
- * getsockopt(fd, SOL_SOCKET, SO_ERROR, &error, &len)
- */
-int samba_socket_poll_or_sock_error(int fd);
-
 #endif /* _SAMBA_UTIL_NET_H_ */

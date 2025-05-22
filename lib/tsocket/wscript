@@ -13,7 +13,7 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM(
         'LIBTSOCKET',
 	source='tsocket.c tsocket_helpers.c tsocket_bsd.c',
-	public_deps='talloc tevent iov_buf socket-blocking',
+	public_deps='talloc tevent iov_buf socket-blocking LIBASYNC_REQ',
 	public_headers='tsocket.h tsocket_internal.h'
     )
 

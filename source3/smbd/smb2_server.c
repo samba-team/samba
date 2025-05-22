@@ -33,6 +33,7 @@
 #include "../lib/util/bitmap.h"
 #include "../librpc/gen_ndr/krb5pac.h"
 #include "lib/util/iov_buf.h"
+#include "lib/async_req/async_sock.h"
 #include "auth.h"
 #include "libcli/smb/smbXcli_base.h"
 #include "source3/lib/substitute.h"

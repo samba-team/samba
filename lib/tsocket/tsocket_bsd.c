@@ -30,6 +30,7 @@
 #include "lib/util/blocking.h"
 #include "lib/util/util_net.h"
 #include "lib/util/samba_util.h"
+#include "lib/async_req/async_sock.h"
 
 static int tsocket_bsd_error_from_errno(int ret,
 					int sys_errno,

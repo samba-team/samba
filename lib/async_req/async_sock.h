@@ -28,6 +28,20 @@
 #include <tevent.h>
 #include "system/network.h"
 
+/*
+ * check for POLLERR or POLL*HUP
+ */
+int samba_socket_poll_error(int fd);
+/*
+ * getsockopt(fd, SOL_SOCKET, SO_ERROR, &error, &len)
+ */
+int samba_socket_sock_error(int fd);
+/*
+ * check for POLL*HUP and fallback to
+ * getsockopt(fd, SOL_SOCKET, SO_ERROR, &error, &len)
+ */
+int samba_socket_poll_or_sock_error(int fd);
+
 struct tevent_req *async_connect_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev, int fd,
 	const struct sockaddr *address, socklen_t address_len,

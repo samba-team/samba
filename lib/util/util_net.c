@@ -27,8 +27,6 @@
 #include "system/network.h"
 #include "system/locale.h"
 #include "system/filesys.h"
-#include "system/select.h"
-#include "lib/util/select.h"
 #include "lib/util/util_net.h"
 
 #undef strcasecmp
@@ -1140,101 +1138,4 @@ bool samba_sockaddr_get_port(const struct samba_sockaddr *sa, uint16_t *port)
 	}
 #endif
 	return false;
-}
-
-int samba_socket_poll_error(int fd)
-{
-	struct pollfd pfd = {
-		.fd = fd,
-#ifdef POLLRDHUP
-		.events = POLLRDHUP, /* POLLERR and POLLHUP are not needed */
-#endif
-	};
-	int ret;
-
-	errno = 0;
-	ret = sys_poll_intr(&pfd, 1, 0);
-	if (ret == 0) {
-		return 0;
-	}
-	if (ret != 1) {
-		return POLLNVAL;
-	}
-
-	if (pfd.revents & POLLERR) {
-		return POLLERR;
-	}
-	if (pfd.revents & POLLHUP) {
-		return POLLHUP;
-	}
-#ifdef POLLRDHUP
-	if (pfd.revents & POLLRDHUP) {
-		return POLLRDHUP;
-	}
-#endif
-
-	/* should never be reached! */
-	return POLLNVAL;
-}
-
-int samba_socket_sock_error(int fd)
-{
-	int ret, error = 0;
-	socklen_t len = sizeof(error);
-
-	/*
-	 * if no data is available check if the socket is in error state. For
-	 * dgram sockets it's the way to return ICMP error messages of
-	 * connected sockets to the caller.
-	 */
-	ret = getsockopt(fd, SOL_SOCKET, SO_ERROR, &error, &len);
-	if (ret == -1) {
-		return ret;
-	}
-	if (error != 0) {
-		errno = error;
-		return -1;
-	}
-	return 0;
-}
-
-int samba_socket_poll_or_sock_error(int fd)
-{
-	int ret;
-	int poll_error = 0;
-
-	poll_error = samba_socket_poll_error(fd);
-	if (poll_error == 0) {
-		return 0;
-	}
-
-#ifdef POLLRDHUP
-	if (poll_error == POLLRDHUP) {
-		errno = ECONNRESET;
-		return -1;
-	}
-#endif
-
-	if (poll_error == POLLHUP) {
-		errno = EPIPE;
-		return -1;
-	}
-
-	/*
-	 * POLLERR and POLLNVAL fallback to
-	 * getsockopt(fd, SOL_SOCKET, SO_ERROR)
-	 * and force EPIPE as fallback.
-	 */
-
-	errno = 0;
-	ret = samba_socket_sock_error(fd);
-	if (ret == 0) {
-		errno = EPIPE;
-	}
-
-	if (errno == 0) {
-		errno = EPIPE;
-	}
-
-	return -1;
 }
