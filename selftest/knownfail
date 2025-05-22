@@ -204,7 +204,6 @@
 ^samba4.smb2.ioctl-on-stream.ioctl-on-stream\(ad_dc_ntvfs\)
 ^samba3.smb2.dir.one
 ^samba3.smb2.dir.modify
-^samba3.smb2.oplock.batch20
 ^samba3.smb2.oplock.stream1
 ^samba3.smb2.streams.rename
 ^samba3.smb2.streams.rename2
