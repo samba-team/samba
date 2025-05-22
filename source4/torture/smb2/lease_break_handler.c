@@ -31,7 +31,7 @@
 
 struct lease_break_info lease_break_info;
 
-void torture_lease_break_callback(struct smb2_request *req)
+static void torture_lease_break_callback(struct smb2_request *req)
 {
 	NTSTATUS status;
 
