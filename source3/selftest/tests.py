@@ -1488,6 +1488,20 @@ for t in vfs_io_uring_tests:
                              '//$SERVER_IP/io_uring -U$USERNAME%$PASSWORD',
                              "vfs_io_uring")
 
+smb_transport_tests = [
+    "smb2.bench",
+    "smb2.connect",
+    "smb2.credits",
+    "smb2.ioctl",
+    "smb2.rw",
+]
+for t in smb_transport_tests:
+    plansmbtorture4testsuite(t, "fileserver",
+                             '//$SERVER/tmp -U$USERNAME%$PASSWORD ' +
+                             '--option=clientsmbtransports=tcp ' +
+                             '--option=clientsmbtransport:force_bsd_tstream=yes',
+                             description="smb-over-bsd-tstream")
+
 test = 'rpc.lsa.lookupsids'
 auth_options = ["", "ntlm", "spnego", "spnego,ntlm", "spnego,smb1", "spnego,smb2"]
 signseal_options = ["", ",connect", ",packet", ",sign", ",seal"]
