@@ -175,10 +175,12 @@ struct smbd_smb2_setinfo_state {
 	struct files_struct *fsp;
 	struct share_mode_lock *lck;
 	struct files_struct *dstfsp;
+	struct files_struct *dst_parent_dirfsp;
 	uint16_t file_info_level;
 	DATA_BLOB data;
 	bool delay;
 	bool rename_dst_check_done;
+	bool rename_dst_parent_check_done;
 };
 
 static void smbd_smb2_setinfo_lease_break_check(struct tevent_req *req);
@@ -394,6 +396,9 @@ static void smbd_smb2_setinfo_lease_break_fsp_check(struct tevent_req *req);
 static void smbd_smb2_setinfo_lease_break_fsp_done(struct tevent_req *subreq);
 static void smbd_smb2_setinfo_rename_dst_check(struct tevent_req *req);
 static void smbd_smb2_setinfo_rename_dst_delay_done(struct tevent_req *subreq);
+static void smbd_smb2_setinfo_rename_dst_parent_check(struct tevent_req *req);
+static void smbd_smb2_setinfo_rename_dst_parent_delay_done(
+	struct tevent_req *subreq);
 
 static void smbd_smb2_setinfo_lease_break_check(struct tevent_req *req)
 {
@@ -410,6 +415,16 @@ static void smbd_smb2_setinfo_lease_break_check(struct tevent_req *req)
 	}
 	if (state->delay) {
 		DBG_DEBUG("Waiting for h-lease breaks on rename destination\n");
+		return;
+	}
+
+	smbd_smb2_setinfo_rename_dst_parent_check(req);
+	if (!tevent_req_is_in_progress(req)) {
+		return;
+	}
+	if (state->delay) {
+		DBG_DEBUG("Waiting for h-lease breaks on rename destination "
+			  "parent directory\n");
 		return;
 	}
 
@@ -764,6 +779,169 @@ static void smbd_smb2_setinfo_rename_dst_delay_done(struct tevent_req *subreq)
 	 * trigger the fsp check.
 	 */
 	state->rename_dst_check_done = true;
+	smbd_smb2_setinfo_lease_break_check(req);
+}
+
+static void smbd_smb2_setinfo_rename_dst_parent_check(struct tevent_req *req)
+{
+	struct smbd_smb2_setinfo_state *state = tevent_req_data(
+		req, struct smbd_smb2_setinfo_state);
+	struct tevent_req *subreq = NULL;
+	struct timeval timeout;
+	bool overwrite = false;
+	struct files_struct *fsp = state->fsp;
+	struct files_struct *dst_parent_dirfsp = NULL;
+	struct smb_filename *smb_fname_dst = NULL;
+	char *dst_original_lcomp = NULL;
+	NTSTATUS status;
+
+	if (state->rename_dst_parent_check_done) {
+		return;
+	}
+	state->rename_dst_parent_check_done = true;
+
+	if (state->file_info_level != SMB2_FILE_RENAME_INFORMATION_INTERNAL) {
+		return;
+	}
+	if (is_named_stream(fsp->fsp_name)) {
+		return;
+	}
+	status = smb2_parse_file_rename_information(state,
+						    fsp->conn,
+						    state->smb2req->smb1req,
+						    (char *)state->data.data,
+						    state->data.length,
+						    fsp,
+						    fsp->fsp_name,
+						    &overwrite,
+						    &dst_parent_dirfsp,
+						    &smb_fname_dst,
+						    &dst_original_lcomp);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	SMB_ASSERT(dst_parent_dirfsp != NULL);
+	state->dst_parent_dirfsp = dst_parent_dirfsp;
+
+	state->lck = get_existing_share_mode_lock(state,
+						  dst_parent_dirfsp->file_id);
+	if (state->lck == NULL) {
+		/* No opens around */
+		return;
+	}
+
+	timeout = tevent_timeval_set(OPLOCK_BREAK_TIMEOUT, 0);
+	timeout = timeval_sum(&state->smb2req->request_time, &timeout);
+
+	subreq = delay_for_handle_lease_break_send(state,
+						   state->ev,
+						   timeout,
+						   dst_parent_dirfsp,
+						   SEC_STD_DELETE,
+						   false,
+						   &state->lck);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	if (tevent_req_is_in_progress(subreq)) {
+		state->delay = true;
+		tevent_req_set_callback(
+			subreq,
+			smbd_smb2_setinfo_rename_dst_parent_delay_done,
+			req);
+		return;
+	}
+
+	status = delay_for_handle_lease_break_recv(subreq, state, &state->lck);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (state->lck != NULL) {
+		bool delete_open;
+		bool detete_pending;
+		bool ok;
+
+		ok = has_delete_opens(dst_parent_dirfsp,
+				      state->lck,
+				      &delete_open,
+				      &detete_pending);
+		TALLOC_FREE(state->lck);
+		if (!ok) {
+			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+			return;
+		}
+
+		if (detete_pending) {
+			tevent_req_nterror(req, NT_STATUS_DELETE_PENDING);
+			return;
+		}
+		if (delete_open) {
+			tevent_req_nterror(req, NT_STATUS_SHARING_VIOLATION);
+			return;
+		}
+	}
+
+	return;
+}
+
+static void smbd_smb2_setinfo_rename_dst_parent_delay_done(
+	struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smbd_smb2_setinfo_state *state = tevent_req_data(
+		req, struct smbd_smb2_setinfo_state);
+	struct smbXsrv_session *session = state->smb2req->session;
+	NTSTATUS status;
+	bool ok;
+
+	status = delay_for_handle_lease_break_recv(subreq, state, &state->lck);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	/*
+	 * Make sure we run as the user again
+	 */
+	ok = change_to_user_and_service(state->fsp->conn,
+					session->global->session_wire_id);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return;
+	}
+
+	if (state->lck != NULL) {
+		bool delete_open;
+		bool detete_pending;
+
+		ok = has_delete_opens(state->dst_parent_dirfsp,
+				      state->lck,
+				      &delete_open,
+				      &detete_pending);
+		TALLOC_FREE(state->lck);
+		if (!ok) {
+			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+			return;
+		}
+
+		if (detete_pending) {
+			tevent_req_nterror(req, NT_STATUS_DELETE_PENDING);
+			return;
+		}
+		if (delete_open) {
+			tevent_req_nterror(req, NT_STATUS_SHARING_VIOLATION);
+			return;
+		}
+	}
+
+	/*
+	 * We've finished breaking H-lease on the rename destination, now
+	 * trigger the fsp check.
+	 */
+	state->rename_dst_parent_check_done = true;
 	smbd_smb2_setinfo_lease_break_check(req);
 }
 
