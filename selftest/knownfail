@@ -205,9 +205,7 @@
 ^samba3.smb2.dir.one
 ^samba3.smb2.dir.modify
 ^samba3.smb2.oplock.stream1
-^samba3.smb2.streams.rename
 ^samba3.smb2.streams.rename2
-^samba3.smb2.streams streams_xattr.rename\(nt4_dc\)
 ^samba3.smb2.streams streams_xattr.rename2\(nt4_dc\)
 ^samba3.smb2.getinfo.complex
 ^samba3.smb2.getinfo.fsinfo # quotas don't work yet
