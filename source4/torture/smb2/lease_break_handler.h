@@ -28,6 +28,10 @@ struct lease_break_info {
 	struct smb2_transport *lease_transport;
 	bool lease_skip_ack;
 	struct smb2_lease_break_ack lease_break_ack;
+
+	struct smb2_handle lease_handle;
+	struct smb2_close close;
+
 	int count;
 	int failures;
 
