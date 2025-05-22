@@ -42,6 +42,17 @@ static void torture_lease_break_callback(struct smb2_request *req)
 	return;
 }
 
+static void torture_lease_break_close_callback(struct smb2_request *req)
+{
+	NTSTATUS status;
+
+	status = smb2_close_recv(req, &lease_break_info.close);
+	if (!NT_STATUS_IS_OK(status)) {
+		lease_break_info.failures++;
+	}
+	return;
+}
+
 /* a lease break request handler */
 bool torture_lease_handler(struct smb2_transport *transport,
 			   const struct smb2_lease_break *lb,
@@ -63,6 +74,25 @@ bool torture_lease_handler(struct smb2_transport *transport,
 	lease_break_info.lease_transport = transport;
 	lease_break_info.lease_break = *lb;
 	lease_break_info.count++;
+
+	if (!smb2_util_handle_empty(lease_break_info.lease_handle) &&
+	    (lb->current_lease.lease_state & SMB2_LEASE_HANDLE) &&
+	    !(lb->new_lease_state & SMB2_LEASE_HANDLE))
+	{
+		torture_comment(lease_break_info.tctx,
+			"transport[%p] closing handle\n",
+			transport);
+
+		ZERO_STRUCT(lease_break_info.close);
+		lease_break_info.close.in.file.handle =
+			lease_break_info.lease_handle;
+		ZERO_STRUCT(lease_break_info.lease_handle);
+
+		req = smb2_close_send(tree, &lease_break_info.close);
+		req->async.fn = torture_lease_break_close_callback;
+		req->async.private_data = NULL;
+		return true;
+	}
 
 	if (lease_break_info.lease_skip_ack) {
 		torture_comment(lease_break_info.tctx,
