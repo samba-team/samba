@@ -2532,7 +2532,11 @@ static bool torture_smb2_inotify_rename(struct torture_context *torture,
 
 	torture_comment(torture, "Testing change notify of a rename with inotify\n");
 
-	status = torture_smb2_testdir(tree1, BASEDIR_INR, &h1);
+	status = torture_smb2_testdir_access(
+		tree1,
+		BASEDIR_INR,
+		&h1,
+		SEC_RIGHTS_DIR_ALL & ~SEC_STD_DELETE);
 	torture_assert_ntstatus_ok_goto(torture, status, ok, done, "torture_smb2_testdir failed");
 
 	ZERO_STRUCT(create);
