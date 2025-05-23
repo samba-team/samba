@@ -627,9 +627,12 @@ static void prefork_child_pipe_handler(struct tevent_context *ev,
 		rc_inuse = prefork_restart(ev, rc);
 	} else if (WIFEXITED(status)) {
 		status = WEXITSTATUS(status);
-		DBG_ERR("%s: Parent %d, Child %d exited with status %d\n",
-			rc->service_name, getpid(), pid,  status);
-		if (status != 0) {
+		if (status == 0) {
+			DBG_WARNING("%s: Parent %d, Child %d exited with status 0\n",
+				    rc->service_name, getpid(), pid);
+		} else {
+			DBG_ERR("%s: Parent %d, Child %d exited with status %d\n",
+				rc->service_name, getpid(), pid,  status);
 			rc_inuse = prefork_restart(ev, rc);
 		}
 	} else if (WIFSIGNALED(status)) {
