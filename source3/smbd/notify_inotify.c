@@ -24,7 +24,7 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/notify.h"
 #include "smbd/smbd.h"
-#include "lib/util/sys_rw_data.h"
+#include "lib/util/sys_rw.h"
 
 #include <sys/inotify.h>
 
@@ -258,38 +258,25 @@ static void inotify_handler(struct tevent_context *ev, struct tevent_fd *fde,
 {
 	struct inotify_private *in = talloc_get_type(private_data,
 						     struct inotify_private);
+	char buf[sizeof(struct inotify_event) + NAME_MAX + 1];
 	int bufsize = 0;
-	struct inotify_event *e0, *e;
+	struct inotify_event *e = NULL;
 	uint32_t prev_cookie=0;
 	int prev_wd = -1;
 	ssize_t ret;
 
-	/*
-	  we must use FIONREAD as we cannot predict the length of the
-	  filenames, and thus can't know how much to allocate
-	  otherwise
-	*/
-	if (ioctl(in->fd, FIONREAD, &bufsize) != 0 ||
-	    bufsize == 0) {
-		DEBUG(0,("No data on inotify fd?!\n"));
-		TALLOC_FREE(fde);
-		return;
-	}
-
-	e0 = e = (struct inotify_event *)TALLOC_SIZE(in, bufsize + 1);
-	if (e == NULL) return;
-	((uint8_t *)e)[bufsize] = '\0';
-
-	ret = read_data(in->fd, e0, bufsize);
-	if (ret != bufsize) {
+	ret = sys_read(in->fd, buf, sizeof(buf));
+	if (ret == -1) {
 		DEBUG(0, ("Failed to read all inotify data - %s\n",
 			  strerror(errno)));
-		talloc_free(e0);
 		/* the inotify fd will now be out of sync,
 		 * can't keep reading data off it */
 		TALLOC_FREE(fde);
 		return;
 	}
+	bufsize = ret;
+
+	e = (struct inotify_event *)buf;
 
 	/* we can get more than one event in the buffer */
 	while (e && (bufsize >= sizeof(*e))) {
@@ -303,8 +290,6 @@ static void inotify_handler(struct tevent_context *ev, struct tevent_fd *fde,
 		prev_cookie = e->cookie;
 		e = e2;
 	}
-
-	talloc_free(e0);
 }
 
 /*
