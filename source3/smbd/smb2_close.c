@@ -369,6 +369,7 @@ static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 							   ev,
 							   timeout,
 							   in_fsp,
+							   SEC_RIGHTS_DIR_ALL,
 							   false,
 							   &lck);
 		if (tevent_req_nomem(subreq, req)) {
