@@ -173,8 +173,8 @@ static void conn_clear_vuid_cache(connection_struct *conn, uint64_t vuid)
 
 	for (i=0; i<VUID_CACHE_SIZE; i++) {
 		ent = &conn->vuid_cache->array[i];
-		if (ent->vuid != vuid) {
-			continue;
+		if (ent->vuid == vuid) {
+			break;
 		}
 	}
 	if (i == VUID_CACHE_SIZE) {
