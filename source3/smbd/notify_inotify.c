@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Copyright (C) Andrew Tridgell 2006
@@ -46,7 +46,7 @@ struct inotify_watch_context {
 	struct inotify_watch_context *next, *prev;
 	struct inotify_private *in;
 	int wd;
-	void (*callback)(struct sys_notify_context *ctx, 
+	void (*callback)(struct sys_notify_context *ctx,
 			 void *private_data,
 			 struct notify_event *ev,
 			 uint32_t filter);
@@ -169,8 +169,8 @@ static bool filter_match(struct inotify_watch_context *w,
 
   the cookies are used to correctly handle renames
 */
-static void inotify_dispatch(struct inotify_private *in, 
-			     struct inotify_event *e, 
+static void inotify_dispatch(struct inotify_private *in,
+			     struct inotify_event *e,
 			     int prev_wd,
 			     uint32_t prev_cookie,
 			     struct inotify_event *e2)
@@ -269,7 +269,7 @@ static void inotify_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	  filenames, and thus can't know how much to allocate
 	  otherwise
 	*/
-	if (ioctl(in->fd, FIONREAD, &bufsize) != 0 || 
+	if (ioctl(in->fd, FIONREAD, &bufsize) != 0 ||
 	    bufsize == 0) {
 		DEBUG(0,("No data on inotify fd?!\n"));
 		TALLOC_FREE(fde);
