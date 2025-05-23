@@ -621,21 +621,21 @@ static void prefork_child_pipe_handler(struct tevent_context *ev,
 	irpc_cleanup(rc->lp_ctx, ev, pid);
 	status = tfork_status(&rc->t, false);
 	if (status == -1) {
-		DBG_ERR("Parent %d, Child %d terminated, "
+		DBG_ERR("%s: Parent %d, Child %d terminated, "
 			"unable to get status code from tfork\n",
-			getpid(), pid);
+			rc->service_name, getpid(), pid);
 		rc_inuse = prefork_restart(ev, rc);
 	} else if (WIFEXITED(status)) {
 		status = WEXITSTATUS(status);
-		DBG_ERR("Parent %d, Child %d exited with status %d\n",
-			 getpid(), pid,  status);
+		DBG_ERR("%s: Parent %d, Child %d exited with status %d\n",
+			rc->service_name, getpid(), pid,  status);
 		if (status != 0) {
 			rc_inuse = prefork_restart(ev, rc);
 		}
 	} else if (WIFSIGNALED(status)) {
 		status = WTERMSIG(status);
-		DBG_ERR("Parent %d, Child %d terminated with signal %d\n",
-			getpid(), pid, status);
+		DBG_ERR("%s: Parent %d, Child %d terminated with signal %d\n",
+			rc->service_name, getpid(), pid, status);
 		if (status == SIGABRT || status == SIGBUS || status == SIGFPE ||
 		    status == SIGILL || status == SIGSYS || status == SIGSEGV ||
 		    status == SIGKILL) {
