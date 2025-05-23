@@ -375,9 +375,6 @@ struct winbindd_domain *wb_child_domain(void);
 bool update_trusted_domains_dc(void);
 
 /* The following definitions come from winbindd/winbindd_group.c  */
-bool fill_grent(TALLOC_CTX *mem_ctx, struct winbindd_gr *gr,
-		const char *dom_name, const char *gr_name, gid_t unix_gid);
-
 struct db_context;
 NTSTATUS winbindd_print_groupmembers(struct db_context *members,
 				     TALLOC_CTX *mem_ctx,

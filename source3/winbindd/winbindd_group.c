@@ -29,50 +29,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-/* Fill a grent structure from various other information */
-
-bool fill_grent(TALLOC_CTX *mem_ctx, struct winbindd_gr *gr,
-		const char *dom_name, const char *gr_name, gid_t unix_gid)
-{
-	const char *full_group_name;
-	char *mapped_name = NULL;
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-
-	nt_status = normalize_name_map(mem_ctx, dom_name, gr_name,
-				       &mapped_name);
-
-	D_DEBUG("Filling domain '%s' and group '%s'.\n", dom_name, gr_name);
-	/* Basic whitespace replacement */
-	if (NT_STATUS_IS_OK(nt_status)) {
-		full_group_name = fill_domain_username_talloc(mem_ctx, dom_name,
-				     mapped_name, true);
-	}
-	/* Mapped to an alias */
-	else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_RENAMED)) {
-		full_group_name = mapped_name;
-	}
-	/* no change */
-	else {
-		full_group_name = fill_domain_username_talloc(mem_ctx, dom_name,
-				      gr_name, True );
-	}
-
-	if (full_group_name == NULL) {
-		D_DEBUG("Returning false, since there is no full group name.\n");
-		return false;
-	}
-
-	gr->gr_gid = unix_gid;
-
-	/* Group name and password */
-
-	strlcpy(gr->gr_name, full_group_name, sizeof(gr->gr_name));
-	strlcpy(gr->gr_passwd, "x", sizeof(gr->gr_passwd));
-
-	D_DEBUG("Returning true. Full group name is '%s'.\n", gr_name);
-	return True;
-}
-
 struct getgr_countmem {
 	int num;
 	size_t len;
