@@ -1336,8 +1336,13 @@ void contend_dirleases(struct connection_struct *conn,
 
 	ret = SMB_VFS_STAT(conn, parent_fname);
 	if (ret != 0) {
-		DBG_ERR("Failed to stat [%s]: %s\n",
-			smb_fname_str_dbg(parent_fname), strerror(errno));
+		DBG_ERR("Trigger [conn: %s] [smb_fname: %s] cwd [%s], "
+			"failed to stat parent [%s]: %s\n",
+			conn->connectpath,
+			smb_fname_str_dbg(smb_fname),
+			get_current_dir_name(),
+			smb_fname_str_dbg(parent_fname),
+			strerror(errno));
 		TALLOC_FREE(parent_fname);
 		return;
 	}
