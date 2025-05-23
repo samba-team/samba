@@ -1090,7 +1090,7 @@ static NTSTATUS unpack_nt_owners(struct connection_struct *conn,
 	*pgrp = (gid_t)-1;
 
 	if(security_info_sent == 0) {
-		DEBUG(0,("unpack_nt_owners: no security info sent !\n"));
+		DBG_NOTICE("no security info sent !\n");
 		return NT_STATUS_OK;
 	}
 
