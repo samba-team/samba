@@ -499,6 +499,7 @@ int tevent_common_invoke_timer_handler(struct tevent_timer *te,
 				       struct timeval current_time,
 				       bool *removed);
 
+void tevent_common_immediate_cancel(struct tevent_immediate *im);
 void tevent_common_schedule_immediate(struct tevent_immediate *im,
 				      struct tevent_context *ev,
 				      tevent_immediate_handler_t handler,

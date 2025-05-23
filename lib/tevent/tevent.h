@@ -362,6 +362,12 @@ struct tevent_immediate *_tevent_create_immediate(TALLOC_CTX *mem_ctx,
  * @param[in] ctx      The tevent_context to run this event
  * @param[in] handler  The event handler to run when this event fires
  * @param[in] private_data  Data to pass to the event handler
+ *
+ * @note To cancel an immediate handler, call talloc_free() on the event returned
+ * from tevent_create_immediate() or call tevent_reset_immediate() to
+ * keep the structure alive for later usage.
+ *
+ * @see tevent_create_immediate, tevent_reset_immediate
  */
 void tevent_schedule_immediate(struct tevent_immediate *im,
                 struct tevent_context *ctx,
@@ -378,6 +384,17 @@ void _tevent_schedule_immediate(struct tevent_immediate *im,
 	_tevent_schedule_immediate(im, ctx, handler, private_data, \
 				   #handler, __location__);
 #endif
+
+/**
+ * Reset an event for immediate execution.
+ *
+ * Undo the effect of tevent_schedule_immediate().
+ *
+ * @param[in] im The tevent_immediate object to clear the handler
+ *
+ * @see tevent_schedule_immediate.
+ */
+void tevent_reset_immediate(struct tevent_immediate *im);
 
 /**
  * @brief Associate a custom tag with the event.

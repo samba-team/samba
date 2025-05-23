@@ -29,7 +29,7 @@
 #include "tevent_internal.h"
 #include "tevent_util.h"
 
-static void tevent_common_immediate_cancel(struct tevent_immediate *im)
+void tevent_common_immediate_cancel(struct tevent_immediate *im)
 {
 	const char *create_location = im->create_location;
 	bool busy = im->busy;

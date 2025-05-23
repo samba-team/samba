@@ -752,6 +752,14 @@ void _tevent_schedule_immediate(struct tevent_immediate *im,
 }
 
 /*
+  reset an immediate event
+*/
+void tevent_reset_immediate(struct tevent_immediate *im)
+{
+	tevent_common_immediate_cancel(im);
+}
+
+/*
   add a signal event
 
   sa_flags are flags to sigaction(2)
