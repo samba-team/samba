@@ -2619,6 +2619,7 @@ static struct files_struct *smbXsrv_wait_for_handle_lease_break_fn(
 						   state->ev,
 						   timeout,
 						   fsp,
+						   SEC_RIGHTS_DIR_ALL,
 						   false,
 						   &lck);
 	if (tevent_req_nomem(subreq, state->req)) {

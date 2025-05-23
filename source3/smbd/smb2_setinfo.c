@@ -489,6 +489,7 @@ static void smbd_smb2_setinfo_lease_break_fsp_check(struct tevent_req *req)
 						   state->ev,
 						   timeout,
 						   fsp,
+						   SEC_RIGHTS_DIR_ALL,
 						   rename,
 						   &state->lck);
 	if (tevent_req_nomem(subreq, req)) {
@@ -656,6 +657,7 @@ static void smbd_smb2_setinfo_rename_dst_check(struct tevent_req *req)
 						   state->ev,
 						   timeout,
 						   state->dstfsp,
+						   SEC_RIGHTS_DIR_ALL,
 						   false,
 						   &state->lck);
 	if (subreq == NULL) {

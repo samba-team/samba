@@ -1516,6 +1516,7 @@ struct delay_for_handle_lease_break_state {
 	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev;
 	struct timeval timeout;
+	uint32_t access_mask;
 	bool recursive;
 	bool recursive_h_leases_break;
 	struct files_struct *fsp;
@@ -1546,6 +1547,7 @@ struct tevent_req *delay_for_handle_lease_break_send(
 	struct tevent_context *ev,
 	struct timeval timeout,
 	struct files_struct *fsp,
+	uint32_t access_mask,
 	bool recursive,
 	struct share_mode_lock **lck)
 {
@@ -1564,6 +1566,7 @@ struct tevent_req *delay_for_handle_lease_break_send(
 		.mem_ctx = mem_ctx,
 		.ev = ev,
 		.timeout = timeout,
+		.access_mask = access_mask,
 		.recursive = recursive,
 		.recursive_h_leases_break = recursive,
 		.fsp = fsp,
@@ -1602,6 +1605,10 @@ static bool delay_for_handle_lease_break_fn(struct share_mode_entry *e,
 		if (ours) {
 			return false;
 		}
+	}
+
+	if ((state->access_mask & e->access_mask) == 0) {
+		return false;
 	}
 
 	lease_type = get_lease_type(e, fsp->file_id);
