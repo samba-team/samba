@@ -117,7 +117,7 @@ static void wb_getpwsid_normalize_done(struct tevent_req *subreq)
 	status = dcerpc_wbint_NormalizeNameMap_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
-		DBG_ERR("wbint_NormalizeAndMapToAlias(%s, %s) call failed: %s\n",
+		DBG_ERR("wbint_NormalizeNameMap(%s, %s) call failed: %s\n",
 			state->userinfo->domain_name,
 			state->userinfo->acct_name,
 			nt_errstr(status));
