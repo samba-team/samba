@@ -21,6 +21,7 @@
 #include "winbindd.h"
 #include "libcli/security/dom_sid.h"
 #include "lib/util/string_wrappers.h"
+#include "librpc/gen_ndr/ndr_winbind_c.h"
 
 struct winbindd_getgrnam_state {
 	struct tevent_context *ev;
@@ -30,12 +31,13 @@ struct winbindd_getgrnam_state {
 	struct dom_sid sid;
 	const char *domname;
 	const char *name;
+	const char *mapped_name;
+	const char *full_group_name;
 	gid_t gid;
 	struct db_context *members;
 };
 
 static void winbindd_getgrnam_lookupname_done(struct tevent_req *subreq);
-static void winbindd_getgrnam_done(struct tevent_req *subreq);
 
 struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
@@ -111,6 +113,7 @@ struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
+static void winbindd_getgrnam_getgrsid_done(struct tevent_req *subreq);
 static void winbindd_getgrnam_lookupname_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
@@ -151,21 +154,71 @@ static void winbindd_getgrnam_lookupname_done(struct tevent_req *subreq)
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
-	tevent_req_set_callback(subreq, winbindd_getgrnam_done, req);
+	tevent_req_set_callback(subreq, winbindd_getgrnam_getgrsid_done, req);
 }
 
-static void winbindd_getgrnam_done(struct tevent_req *subreq)
+static void winbindd_getgrnam_normalize_done(struct tevent_req *subreq);
+static void winbindd_getgrnam_getgrsid_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+							  struct tevent_req);
+	struct winbindd_getgrnam_state *state = tevent_req_data(
+		req, struct winbindd_getgrnam_state);
+	NTSTATUS status;
+
+	status = wb_getgrsid_recv(subreq,
+				  state,
+				  &state->domname,
+				  &state->name,
+				  &state->gid,
+				  &state->members);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	subreq = dcerpc_wbint_NormalizeNameMap_send(state,
+						    state->ev,
+						    idmap_child_handle(),
+						    state->domname,
+						    state->name,
+						    &state->mapped_name);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, winbindd_getgrnam_normalize_done, req);
+}
+
+static void winbindd_getgrnam_normalize_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
 	struct winbindd_getgrnam_state *state = tevent_req_data(
 		req, struct winbindd_getgrnam_state);
 	NTSTATUS status;
+	NTSTATUS result;
 
-	status = wb_getgrsid_recv(subreq, state, &state->domname, &state->name,
-				  &state->gid, &state->members);
+	status = dcerpc_wbint_NormalizeNameMap_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
+		DBG_ERR("wbint_NormalizeNameMap(%s, %s) call failed: %s\n",
+			state->domname,
+			state->name,
+			nt_errstr(status));
+		return;
+	} else if (NT_STATUS_IS_OK(result)) {
+		state->full_group_name = fill_domain_username_talloc(
+			state, state->domname, state->mapped_name, true);
+
+	} else if (NT_STATUS_EQUAL(result, NT_STATUS_FILE_RENAMED)) {
+		state->full_group_name = state->mapped_name;
+	} else {
+		state->full_group_name = fill_domain_username_talloc(
+			state, state->domname, state->name, True);
+	}
+
+	if (tevent_req_nomem(state->full_group_name, req)) {
+		D_WARNING("Failed to fill full group name.\n");
 		return;
 	}
 	tevent_req_done(req);
@@ -176,6 +229,7 @@ NTSTATUS winbindd_getgrnam_recv(struct tevent_req *req,
 {
 	struct winbindd_getgrnam_state *state = tevent_req_data(
 		req, struct winbindd_getgrnam_state);
+	struct winbindd_gr *gr = &response->data.gr;
 	NTSTATUS status;
 	int num_members;
 	char *buf;
@@ -188,11 +242,12 @@ NTSTATUS winbindd_getgrnam_recv(struct tevent_req *req,
 		return status;
 	}
 
-	if (!fill_grent(talloc_tos(), &response->data.gr, state->domname,
-			state->name, state->gid)) {
-		D_WARNING("fill_grent failed\n");
-		return NT_STATUS_NO_MEMORY;
-	}
+	gr->gr_gid = state->gid;
+
+	strlcpy(gr->gr_name, state->full_group_name, sizeof(gr->gr_name));
+	strlcpy(gr->gr_passwd, "x", sizeof(gr->gr_passwd));
+
+	D_DEBUG("Full group name is '%s'.\n", gr->gr_name);
 
 	status = winbindd_print_groupmembers(state->members, response,
 					     &num_members, &buf);
