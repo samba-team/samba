@@ -346,7 +346,6 @@ NTSTATUS check_parent_access_fsp(struct files_struct *fsp,
 	NTSTATUS status;
 	struct security_descriptor *parent_sd = NULL;
 	uint32_t access_granted = 0;
-	uint32_t name_hash;
 	bool delete_on_close_set;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -406,15 +405,7 @@ NTSTATUS check_parent_access_fsp(struct files_struct *fsp,
 		goto out;
 	}
 
-	/* Check if the directory has delete-on-close set */
-	status = file_name_hash(fsp->conn,
-				fsp->fsp_name->base_name,
-				&name_hash);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
-	get_file_infos(fsp->file_id, name_hash, &delete_on_close_set, NULL);
+	get_file_infos(fsp->file_id, fsp->name_hash, &delete_on_close_set, NULL);
 	if (delete_on_close_set) {
 		status = NT_STATUS_DELETE_PENDING;
 		goto out;
