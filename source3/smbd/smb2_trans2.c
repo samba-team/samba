@@ -920,6 +920,7 @@ struct smbd_dirptr_lanman2_state {
 	uint32_t info_level;
 	bool check_mangled_names;
 	bool case_sensitive;
+	bool posix_paths;
 };
 
 static bool smbd_dirptr_lanman2_match_fn(TALLOC_CTX *ctx,
@@ -936,7 +937,9 @@ static bool smbd_dirptr_lanman2_match_fn(TALLOC_CTX *ctx,
 	const char *fname;
 
 	/* Mangle fname if it's an illegal name. */
-	if (mangle_must_mangle(dname, state->conn->params)) {
+	if (!state->posix_paths &&
+	    mangle_must_mangle(dname, state->conn->params))
+	{
 		/*
 		 * Slow path - ensure we can push the original name as UCS2. If
 		 * not, then just don't return this name.
@@ -1800,6 +1803,9 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 		state.check_mangled_names = true;
 	}
 	state.case_sensitive = dptr_case_sensitive(dirptr);
+	if (dirfsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH) {
+		state.posix_paths = true;
+	}
 
 	p = strrchr_m(path_mask,'/');
 	if(p != NULL) {

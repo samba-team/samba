@@ -1,1 +1,0 @@
-^samba.tests.smb3unix.*test_posix_reserved_char\(fileserver_smb1\)
