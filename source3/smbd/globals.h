@@ -162,8 +162,7 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 			 int *ret_data_len);
 
 NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
-			       connection_struct *conn,
-			       struct dptr_struct *dirptr,
+			       struct files_struct *dirfsp,
 			       uint16_t flags2,
 			       const char *path_mask,
 			       uint32_t dirtype,

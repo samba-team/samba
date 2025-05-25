@@ -1758,8 +1758,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 }
 
 NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
-			       connection_struct *conn,
-			       struct dptr_struct *dirptr,
+			       struct files_struct *dirfsp,
 			       uint16_t flags2,
 			       const char *path_mask,
 			       uint32_t dirtype,
@@ -1778,6 +1777,8 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 			       struct ea_list *name_list,
 			       struct file_id *file_id)
 {
+	struct connection_struct *conn = dirfsp->conn;
+	struct dptr_struct *dirptr = dirfsp->dptr;
 	const char *p;
 	const char *mask = NULL;
 	uint32_t mode = 0;

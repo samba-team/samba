@@ -769,8 +769,7 @@ static void call_trans2open(connection_struct *conn,
 }
 
 static NTSTATUS get_lanman2_dir_entry(TALLOC_CTX *ctx,
-				connection_struct *conn,
-				struct dptr_struct *dirptr,
+				struct files_struct *dirfsp,
 				uint16_t flags2,
 				const char *path_mask,
 				uint32_t dirtype,
@@ -792,7 +791,7 @@ static NTSTATUS get_lanman2_dir_entry(TALLOC_CTX *ctx,
 		align = 1;
 	}
 
-	return smbd_dirptr_lanman2_entry(ctx, conn, dirptr, flags2,
+	return smbd_dirptr_lanman2_entry(ctx, dirfsp, flags2,
 					 path_mask, dirtype, info_level,
 					 requires_resume_key, dont_descend,
 					 true, align, do_pad,
@@ -1108,8 +1107,7 @@ static void call_trans2findfirst(connection_struct *conn,
 	for (i=0;(i<maxentries) && !finished && !out_of_space;i++) {
 
 		ntstatus = get_lanman2_dir_entry(talloc_tos(),
-						 conn,
-						 fsp->dptr,
+						 fsp,
 						 req->flags2,
 						 mask,
 						 dirtype,
@@ -1568,8 +1566,7 @@ static void call_trans2findnext(connection_struct *conn,
 	for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++) {
 
 		ntstatus = get_lanman2_dir_entry(ctx,
-						 conn,
-						 fsp->dptr,
+						 fsp,
 						 req->flags2,
 						 mask,
 						 dirtype,

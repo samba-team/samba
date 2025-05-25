@@ -534,8 +534,7 @@ static bool smb2_query_directory_next_entry(struct tevent_req *req)
 	SMB_ASSERT(space_remaining >= 0);
 
 	status = smbd_dirptr_lanman2_entry(state,
-					   state->dirfsp->conn,
-					   state->dirfsp->dptr,
+					   state->dirfsp,
 					   state->smbreq->flags2,
 					   state->in_file_name,
 					   state->dirtype,
