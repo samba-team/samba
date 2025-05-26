@@ -421,12 +421,15 @@ int inotify_watch(TALLOC_CTX *mem_ctx,
 		return ENOMEM;
 	}
 
-	w->in = in;
-	w->callback = callback;
-	w->private_data = private_data;
-	w->mask = mask;
-	w->filter = orig_filter;
-	w->path = talloc_strdup(w, path);
+	*w = (struct inotify_watch_context) {
+		.in = in,
+		.callback = callback,
+		.private_data = private_data,
+		.mask = mask,
+		.filter = orig_filter,
+		.path = talloc_strdup(w, path),
+	};
+
 	if (w->path == NULL) {
 		*filter = orig_filter;
 		TALLOC_FREE(w);
