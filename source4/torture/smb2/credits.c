@@ -571,6 +571,15 @@ static bool test_ipc_max_async_credits(struct torture_context *tctx,
 				ok,
 				out,
 				"FSCTL_NAMED_PIPE_READ_WRITE failed");
+		}
+	}
+
+	for (i = 0; i < num_loops; i++) {
+		for (t = 0; t < num_trees; t++) {
+			struct test_ipc_async_credits_state
+				*state = states[t];
+			struct test_ipc_async_credits_loop
+				*loop = &state->loops[i];
 
 			tevent_schedule_immediate(
 				loop->im,
@@ -1232,6 +1241,15 @@ static bool test_notify_max_async_credits(struct torture_context *tctx,
 				NULL); /* psymlink */
 			torture_assert_ntstatus_ok_goto(
 				tctx, status, ok, out, "smb2cli_create failed");
+		}
+	}
+
+	for (i = 0; i < num_loops; i++) {
+		for (t = 0; t < num_trees; t++) {
+			struct test_notify_async_credit_state
+				*state = states[t];
+			struct test_notify_async_credit_loop
+				*loop = &state->loops[i];
 
 			tevent_schedule_immediate(loop->im,
 						  tctx->ev,
