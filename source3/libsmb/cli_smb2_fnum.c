@@ -1334,6 +1334,7 @@ static NTSTATUS parse_finfo_posix_info(const uint8_t *dir_data,
 	finfo->st_ex_mode = wire_mode_to_unix(info.cc.posix_mode);
 	sid_copy(&finfo->owner_sid, &info.cc.owner);
 	sid_copy(&finfo->group_sid, &info.cc.group);
+	finfo->flags.posix = true;
 
 	if (dir_data_length < 4) {
 		return NT_STATUS_INFO_LENGTH_MISMATCH;
