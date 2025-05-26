@@ -151,7 +151,9 @@ _PUBLIC_ void mdfour(uint8_t *out, const uint8_t *in, int n)
 
 	for (i=0;i<128;i++)
 		buf[i] = 0;
-	memcpy(buf, in, n);
+	if (in != NULL) {
+		memcpy(buf, in, n);
+	}
 	buf[n] = 0x80;
 
 	if (n <= 55) {
