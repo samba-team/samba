@@ -445,6 +445,8 @@ static bool test_ipc_max_async_credits(struct torture_context *tctx,
 				       size_t max_data)
 {
 	struct test_ipc_async_credits_state *states[num_trees];
+	struct timeval timeout_tv = { .tv_sec = 0, };
+	struct tevent_req *timeout_req = NULL;
 	bool stop_loop = false;
 	NTSTATUS status;
 	size_t i, t;
@@ -589,6 +591,10 @@ static bool test_ipc_max_async_credits(struct torture_context *tctx,
 		}
 	}
 
+	timeout_tv = timeval_current_ofs(10, 0);
+	timeout_req = tevent_wakeup_send(tctx, tctx->ev, timeout_tv);
+	torture_assert_goto(tctx, timeout_req, ok, out, "tevent_wakeup_send");
+
 	/* Loop to send and receive packets */
 	while (!stop_loop) {
 		size_t loops_ready = 0;
@@ -597,6 +603,9 @@ static bool test_ipc_max_async_credits(struct torture_context *tctx,
 		rc = tevent_loop_once(tctx->ev);
 		torture_assert_int_equal_goto(
 			tctx, rc, 0, ok, out, "tevent_loop_once");
+
+		ok = tevent_req_is_in_progress(timeout_req);
+		torture_assert_goto(tctx, ok, ok, out, "timeout_req");
 
 		for (i = 0; i < num_trees; i++) {
 			struct test_ipc_async_credits_state
@@ -1171,6 +1180,8 @@ static bool test_notify_max_async_credits(struct torture_context *tctx,
 				   size_t num_loops)
 {
 	struct test_notify_async_credit_state *states[num_trees];
+	struct timeval timeout_tv = { .tv_sec = 0, };
+	struct tevent_req *timeout_req = NULL;
 	bool stop_loop = false;
 	NTSTATUS status;
 	size_t i, t;
@@ -1286,6 +1297,10 @@ static bool test_notify_max_async_credits(struct torture_context *tctx,
 		}
 	}
 
+	timeout_tv = timeval_current_ofs(10, 0);
+	timeout_req = tevent_wakeup_send(tctx, tctx->ev, timeout_tv);
+	torture_assert_goto(tctx, timeout_req, ok, out, "tevent_wakeup_send");
+
 	/* Loop to send and receive packets */
 	while (!stop_loop) {
 		size_t loops_ready = 0;
@@ -1294,6 +1309,9 @@ static bool test_notify_max_async_credits(struct torture_context *tctx,
 		rc = tevent_loop_once(tctx->ev);
 		torture_assert_int_equal_goto(
 			tctx, rc, 0, ok, out, "tevent_loop_once");
+
+		ok = tevent_req_is_in_progress(timeout_req);
+		torture_assert_goto(tctx, ok, ok, out, "timeout_req");
 
 		for (i = 0; i < num_trees; i++) {
 			struct test_notify_async_credit_state
