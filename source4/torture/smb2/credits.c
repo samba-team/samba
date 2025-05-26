@@ -741,7 +741,12 @@ static bool test_ipc_max_data_zero(struct torture_context *tctx,
 					max_credits,
 					0);
 out:
-	TALLOC_FREE(tree1);
+	if (tree1 != NULL) {
+		smbXcli_conn_disconnect(tree1->session->transport->conn,
+					NT_STATUS_LOCAL_DISCONNECT);
+	}
+	smbXcli_conn_disconnect(tree0->session->transport->conn,
+				NT_STATUS_LOCAL_DISCONNECT);
 
 	return ok;
 }
@@ -789,7 +794,12 @@ static bool test_1conn_ipc_max_async_credits(struct torture_context *tctx,
 					max_credits,
 					1024); /* max_data */
 out:
-	TALLOC_FREE(tree1);
+	if (tree1 != NULL) {
+		smbXcli_conn_disconnect(tree1->session->transport->conn,
+					NT_STATUS_LOCAL_DISCONNECT);
+	}
+	smbXcli_conn_disconnect(transport0->conn,
+				NT_STATUS_LOCAL_DISCONNECT);
 
 	return ok;
 }
@@ -868,8 +878,16 @@ static bool test_2conn_ipc_max_async_credits(struct torture_context *tctx,
 					max_credits,
 					1024); /* max_data */
 out:
-	TALLOC_FREE(tree2);
-	TALLOC_FREE(tree1);
+	if (tree2 != NULL) {
+		smbXcli_conn_disconnect(tree2->session->transport->conn,
+					NT_STATUS_LOCAL_DISCONNECT);
+	}
+	if (tree1 != NULL) {
+		smbXcli_conn_disconnect(tree1->session->transport->conn,
+					NT_STATUS_LOCAL_DISCONNECT);
+	}
+	smbXcli_conn_disconnect(transport0->conn,
+				NT_STATUS_LOCAL_DISCONNECT);
 
 	return ok;
 }
@@ -969,6 +987,16 @@ static bool test_multichannel_ipc_max_async_credits(
 					max_credits,
 					1024); /* max_data */
 out:
+	if (tree1a != NULL) {
+		smbXcli_conn_disconnect(tree1a->session->transport->conn,
+					NT_STATUS_LOCAL_DISCONNECT);
+	}
+	if (transport1b != NULL) {
+		smbXcli_conn_disconnect(transport1b->conn,
+					NT_STATUS_LOCAL_DISCONNECT);
+	}
+	smbXcli_conn_disconnect(tree0->session->transport->conn,
+				NT_STATUS_LOCAL_DISCONNECT);
 
 	return ok;
 }
@@ -1406,6 +1434,8 @@ out:
 	/* Cleanup TESTDIR */
 	smb2_deltree(tree0, TESTDIR);
 
+	smbXcli_conn_disconnect(tree0->session->transport->conn,
+				NT_STATUS_LOCAL_DISCONNECT);
 	return ok;
 }
 
@@ -1446,6 +1476,10 @@ out:
 	/* Cleanup TESTDIR */
 	smb2_deltree(tree1, TESTDIR);
 
+	smbXcli_conn_disconnect(tree1->session->transport->conn,
+				NT_STATUS_LOCAL_DISCONNECT);
+	smbXcli_conn_disconnect(tree2->session->transport->conn,
+				NT_STATUS_LOCAL_DISCONNECT);
 	return ok;
 }
 
@@ -1533,6 +1567,13 @@ static bool test_multichannel_notify_max_async_credits(
 out:
 	/* Cleanup TESTDIR */
 	smb2_deltree(tree1a, TESTDIR);
+
+	smbXcli_conn_disconnect(transport1a->conn,
+				NT_STATUS_LOCAL_DISCONNECT);
+	if (transport1b != NULL) {
+		smbXcli_conn_disconnect(transport1b->conn,
+					NT_STATUS_LOCAL_DISCONNECT);
+	}
 
 	return ok;
 }
