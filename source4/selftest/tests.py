@@ -2252,6 +2252,8 @@ if have_cluster_support:
                         "samba.tests.blackbox.rpcd_witness_samba_only",
                         environ=cluster_environ)
 
+planpythontestsuite("ad_dc:local", "samba.tests.nss.group")
+
 if 'WITH_SYSTEMD_USERDB' in config_hash:
     planpythontestsuite("ad_dc:local", "samba.tests.varlink.getuserrecord")
     planpythontestsuite("ad_dc:local", "samba.tests.varlink.getgrouprecord")
