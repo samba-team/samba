@@ -104,7 +104,8 @@ static void export_time(const char *name,
 	}
 }
 
-static void export_basic(const char *name,
+static void export_basic(const char *svc,
+			 const char *name,
 			 const struct smbprofile_stats_basic *val,
 			 struct export_state *state)
 {
@@ -122,17 +123,19 @@ static void export_basic(const char *name,
 			state->sent_help_smb1_request_total = true;
 		}
 
-		evbuffer_add_printf(
-			state->buf,
-			"smb_smb1_request_total { operation=\"%s\" } "
-			"%" PRIu64 "\n",
-			name + 3,
-			val->count);
+		evbuffer_add_printf(state->buf,
+				    "smb_smb1_request_total { "
+				    "share=\"%s\",operation=\"%s\" } "
+				    "%" PRIu64 "\n",
+				    svc,
+				    name + 3,
+				    val->count);
 	}
 	return;
 }
 
-static void export_iobytes_inbytes(const char *name,
+static void export_iobytes_inbytes(const char *svc,
+				   const char *name,
 				   const struct smbprofile_stats_iobytes *val,
 				   struct export_state *state)
 {
@@ -149,18 +152,20 @@ static void export_iobytes_inbytes(const char *name,
 			state->sent_help_smb2_request_inbytes = true;
 		}
 
-		evbuffer_add_printf(
-			state->buf,
-			"smb_smb2_request_inbytes { operation=\"%s\" } "
-			"%" PRIu64 "\n",
-			name + 5,
-			val->inbytes);
+		evbuffer_add_printf(state->buf,
+				    "smb_smb2_request_inbytes { "
+				    "share=\"%s\",operation=\"%s\" } "
+				    "%" PRIu64 "\n",
+				    svc,
+				    name + 5,
+				    val->inbytes);
 	}
 }
 
-static void export_iobytes_outbytes(const char *name,
-				   const struct smbprofile_stats_iobytes *val,
-				   struct export_state *state)
+static void export_iobytes_outbytes(const char *svc,
+				    const char *name,
+				    const struct smbprofile_stats_iobytes *val,
+				    struct export_state *state)
 {
 	bool is_smb2;
 
@@ -175,16 +180,18 @@ static void export_iobytes_outbytes(const char *name,
 			state->sent_help_smb2_request_outbytes = true;
 		}
 
-		evbuffer_add_printf(
-			state->buf,
-			"smb_smb2_request_outbytes { operation=\"%s\" } "
-			"%" PRIu64 "\n",
-			name + 5,
-			val->outbytes);
+		evbuffer_add_printf(state->buf,
+				    "smb_smb2_request_outbytes { "
+				    "share=\"%s\",operation=\"%s\" } "
+				    "%" PRIu64 "\n",
+				    svc,
+				    name + 5,
+				    val->outbytes);
 	}
 }
 
-static void export_iobytes_buckets(const char *name,
+static void export_iobytes_buckets(const char *svc,
+				   const char *name,
 				   const struct smbprofile_stats_iobytes *val,
 				   struct export_state *state)
 {
@@ -208,37 +215,42 @@ static void export_iobytes_buckets(const char *name,
 			evbuffer_add_printf(
 				state->buf,
 				"smb_smb2_request_duration_microseconds_bucket "
-				"{operation=\"%s\",le=\"%d000\"} "
+				"{share=\"%s\",operation=\"%s\",le=\"%d000\"} "
 				"%" PRIu64 "\n",
+				svc,
 				name + 5,
-				1<<i,
+				1 << i,
 				val->buckets[i]);
 		}
 		evbuffer_add_printf(
 			state->buf,
 			"smb_smb2_request_duration_microseconds_bucket "
-			"{operation=\"%s\",le=\"+Inf\"} "
+			"{share=\"%s\",operation=\"%s\",le=\"+Inf\"} "
 			"%" PRIu64 "\n",
+			svc,
 			name + 5,
 			val->buckets[9]);
 		evbuffer_add_printf(
 			state->buf,
 			"smb_smb2_request_duration_microseconds_sum "
-			"{operation=\"%s\"} "
+			"{share=\"%s\",operation=\"%s\"} "
 			"%" PRIu64 "\n",
+			svc,
 			name + 5,
 			val->time);
 		evbuffer_add_printf(
 			state->buf,
 			"smb_smb2_request_duration_microseconds_count "
-			"{operation=\"%s\"} "
+			"{share=\"%s\",operation=\"%s\"} "
 			"%" PRIu64 "\n",
+			svc,
 			name + 5,
 			val->count);
 	}
 }
 
-static void export_iobytes_failed(const char *name,
+static void export_iobytes_failed(const char *svc,
+				  const char *name,
 				  const struct smbprofile_stats_iobytes *val,
 				  struct export_state *state)
 {
@@ -255,13 +267,305 @@ static void export_iobytes_failed(const char *name,
 			state->sent_help_smb2_request_failed = true;
 		}
 
-		evbuffer_add_printf(
-			state->buf,
-			"smb_smb2_request_failed { operation=\"%s\" } "
-			"%" PRIu64 "\n",
-			name + 5,
-			val->failed_count);
+		evbuffer_add_printf(state->buf,
+				    "smb_smb2_request_failed { "
+				    "share=\"%s\",operation=\"%s\" } "
+				    "%" PRIu64 "\n",
+				    svc,
+				    name + 5,
+				    val->failed_count);
 	}
+}
+
+static void export_profile_stats(const struct profile_stats *stats,
+				 struct export_state *state)
+{
+#define SMBPROFILE_STATS_START
+#define SMBPROFILE_STATS_SECTION_START(name, display)
+#define SMBPROFILE_STATS_COUNT(name)                                     \
+	do {                                                             \
+		export_count(#name, &stats->values.name##_stats, state); \
+	} while (0);
+#define SMBPROFILE_STATS_TIME(name)                                     \
+	do {                                                            \
+		export_time(#name, &stats->values.name##_stats, state); \
+	} while (0);
+#define SMBPROFILE_STATS_BASIC(name)                                         \
+	do {                                                                 \
+		export_basic("", #name, &stats->values.name##_stats, state); \
+	} while (0);
+#define SMBPROFILE_STATS_BYTES(name)
+#define SMBPROFILE_STATS_IOBYTES(name)
+#define SMBPROFILE_STATS_SECTION_END
+#define SMBPROFILE_STATS_END
+	SMBPROFILE_STATS_ALL_SECTIONS
+#undef SMBPROFILE_STATS_START
+#undef SMBPROFILE_STATS_SECTION_START
+#undef SMBPROFILE_STATS_COUNT
+#undef SMBPROFILE_STATS_TIME
+#undef SMBPROFILE_STATS_BASIC
+#undef SMBPROFILE_STATS_BYTES
+#undef SMBPROFILE_STATS_IOBYTES
+#undef SMBPROFILE_STATS_SECTION_END
+#undef SMBPROFILE_STATS_END
+
+#define SMBPROFILE_STATS_START
+#define SMBPROFILE_STATS_SECTION_START(name, display)
+#define SMBPROFILE_STATS_COUNT(name)
+#define SMBPROFILE_STATS_TIME(name)
+#define SMBPROFILE_STATS_BASIC(name)
+#define SMBPROFILE_STATS_BYTES(name)
+#define SMBPROFILE_STATS_IOBYTES(name)                              \
+	do {                                                        \
+		export_iobytes_inbytes("",                          \
+				       #name,                       \
+				       &stats->values.name##_stats, \
+				       state);                      \
+	} while (0);
+#define SMBPROFILE_STATS_SECTION_END
+#define SMBPROFILE_STATS_END
+	SMBPROFILE_STATS_ALL_SECTIONS
+#undef SMBPROFILE_STATS_START
+#undef SMBPROFILE_STATS_SECTION_START
+#undef SMBPROFILE_STATS_COUNT
+#undef SMBPROFILE_STATS_TIME
+#undef SMBPROFILE_STATS_BASIC
+#undef SMBPROFILE_STATS_BYTES
+#undef SMBPROFILE_STATS_IOBYTES
+#undef SMBPROFILE_STATS_SECTION_END
+#undef SMBPROFILE_STATS_END
+
+#define SMBPROFILE_STATS_START
+#define SMBPROFILE_STATS_SECTION_START(name, display)
+#define SMBPROFILE_STATS_COUNT(name)
+#define SMBPROFILE_STATS_TIME(name)
+#define SMBPROFILE_STATS_BASIC(name)
+#define SMBPROFILE_STATS_BYTES(name)
+#define SMBPROFILE_STATS_IOBYTES(name)                               \
+	do {                                                         \
+		export_iobytes_outbytes("",                          \
+					#name,                       \
+					&stats->values.name##_stats, \
+					state);                      \
+	} while (0);
+#define SMBPROFILE_STATS_SECTION_END
+#define SMBPROFILE_STATS_END
+	SMBPROFILE_STATS_ALL_SECTIONS
+#undef SMBPROFILE_STATS_START
+#undef SMBPROFILE_STATS_SECTION_START
+#undef SMBPROFILE_STATS_COUNT
+#undef SMBPROFILE_STATS_TIME
+#undef SMBPROFILE_STATS_BASIC
+#undef SMBPROFILE_STATS_BYTES
+#undef SMBPROFILE_STATS_IOBYTES
+#undef SMBPROFILE_STATS_SECTION_END
+#undef SMBPROFILE_STATS_END
+
+#define SMBPROFILE_STATS_START
+#define SMBPROFILE_STATS_SECTION_START(name, display)
+#define SMBPROFILE_STATS_COUNT(name)
+#define SMBPROFILE_STATS_TIME(name)
+#define SMBPROFILE_STATS_BASIC(name)
+#define SMBPROFILE_STATS_BYTES(name)
+#define SMBPROFILE_STATS_IOBYTES(name)                              \
+	do {                                                        \
+		export_iobytes_buckets("",                          \
+				       #name,                       \
+				       &stats->values.name##_stats, \
+				       state);                      \
+	} while (0);
+#define SMBPROFILE_STATS_SECTION_END
+#define SMBPROFILE_STATS_END
+	SMBPROFILE_STATS_ALL_SECTIONS
+#undef SMBPROFILE_STATS_START
+#undef SMBPROFILE_STATS_SECTION_START
+#undef SMBPROFILE_STATS_COUNT
+#undef SMBPROFILE_STATS_TIME
+#undef SMBPROFILE_STATS_BASIC
+#undef SMBPROFILE_STATS_BYTES
+#undef SMBPROFILE_STATS_IOBYTES
+#undef SMBPROFILE_STATS_SECTION_END
+#undef SMBPROFILE_STATS_END
+
+#define SMBPROFILE_STATS_START
+#define SMBPROFILE_STATS_SECTION_START(name, display)
+#define SMBPROFILE_STATS_COUNT(name)
+#define SMBPROFILE_STATS_TIME(name)
+#define SMBPROFILE_STATS_BASIC(name)
+#define SMBPROFILE_STATS_BYTES(name)
+#define SMBPROFILE_STATS_IOBYTES(name)                             \
+	do {                                                       \
+		export_iobytes_failed("",                          \
+				      #name,                       \
+				      &stats->values.name##_stats, \
+				      state);                      \
+	} while (0);
+#define SMBPROFILE_STATS_SECTION_END
+#define SMBPROFILE_STATS_END
+	SMBPROFILE_STATS_ALL_SECTIONS
+#undef SMBPROFILE_STATS_START
+#undef SMBPROFILE_STATS_SECTION_START
+#undef SMBPROFILE_STATS_COUNT
+#undef SMBPROFILE_STATS_TIME
+#undef SMBPROFILE_STATS_BASIC
+#undef SMBPROFILE_STATS_BYTES
+#undef SMBPROFILE_STATS_IOBYTES
+#undef SMBPROFILE_STATS_SECTION_END
+#undef SMBPROFILE_STATS_END
+}
+
+static void export_profile_persvc_stats(const struct profile_stats *stats,
+					const char *svc,
+					struct export_state *state)
+{
+#define SMBPROFILE_STATS_START
+#define SMBPROFILE_STATS_SECTION_START(name, display)
+#define SMBPROFILE_STATS_BASIC(name)                                          \
+	do {                                                                  \
+		export_basic(svc, #name, &stats->values.name##_stats, state); \
+	} while (0);
+#define SMBPROFILE_STATS_BYTES(name)
+#define SMBPROFILE_STATS_IOBYTES(name)
+#define SMBPROFILE_STATS_SECTION_END
+#define SMBPROFILE_STATS_END
+	SMBPROFILE_STATS_PERSVC_SECTIONS
+#undef SMBPROFILE_STATS_START
+#undef SMBPROFILE_STATS_SECTION_START
+#undef SMBPROFILE_STATS_COUNT
+#undef SMBPROFILE_STATS_TIME
+#undef SMBPROFILE_STATS_BASIC
+#undef SMBPROFILE_STATS_BYTES
+#undef SMBPROFILE_STATS_IOBYTES
+#undef SMBPROFILE_STATS_SECTION_END
+#undef SMBPROFILE_STATS_END
+
+#define SMBPROFILE_STATS_START
+#define SMBPROFILE_STATS_SECTION_START(name, display)
+#define SMBPROFILE_STATS_COUNT(name)
+#define SMBPROFILE_STATS_TIME(name)
+#define SMBPROFILE_STATS_BASIC(name)
+#define SMBPROFILE_STATS_BYTES(name)
+#define SMBPROFILE_STATS_IOBYTES(name)                              \
+	do {                                                        \
+		export_iobytes_inbytes(svc,                         \
+				       #name,                       \
+				       &stats->values.name##_stats, \
+				       state);                      \
+	} while (0);
+#define SMBPROFILE_STATS_SECTION_END
+#define SMBPROFILE_STATS_END
+	SMBPROFILE_STATS_ALL_SECTIONS
+#undef SMBPROFILE_STATS_START
+#undef SMBPROFILE_STATS_SECTION_START
+#undef SMBPROFILE_STATS_COUNT
+#undef SMBPROFILE_STATS_TIME
+#undef SMBPROFILE_STATS_BASIC
+#undef SMBPROFILE_STATS_BYTES
+#undef SMBPROFILE_STATS_IOBYTES
+#undef SMBPROFILE_STATS_SECTION_END
+#undef SMBPROFILE_STATS_END
+
+#define SMBPROFILE_STATS_START
+#define SMBPROFILE_STATS_SECTION_START(name, display)
+#define SMBPROFILE_STATS_COUNT(name)
+#define SMBPROFILE_STATS_TIME(name)
+#define SMBPROFILE_STATS_BASIC(name)
+#define SMBPROFILE_STATS_BYTES(name)
+#define SMBPROFILE_STATS_IOBYTES(name)                               \
+	do {                                                         \
+		export_iobytes_outbytes(svc,                         \
+					#name,                       \
+					&stats->values.name##_stats, \
+					state);                      \
+	} while (0);
+#define SMBPROFILE_STATS_SECTION_END
+#define SMBPROFILE_STATS_END
+	SMBPROFILE_STATS_PERSVC_SECTIONS
+#undef SMBPROFILE_STATS_START
+#undef SMBPROFILE_STATS_SECTION_START
+#undef SMBPROFILE_STATS_COUNT
+#undef SMBPROFILE_STATS_TIME
+#undef SMBPROFILE_STATS_BASIC
+#undef SMBPROFILE_STATS_BYTES
+#undef SMBPROFILE_STATS_IOBYTES
+#undef SMBPROFILE_STATS_SECTION_END
+#undef SMBPROFILE_STATS_END
+
+#define SMBPROFILE_STATS_START
+#define SMBPROFILE_STATS_SECTION_START(name, display)
+#define SMBPROFILE_STATS_COUNT(name)
+#define SMBPROFILE_STATS_TIME(name)
+#define SMBPROFILE_STATS_BASIC(name)
+#define SMBPROFILE_STATS_BYTES(name)
+#define SMBPROFILE_STATS_IOBYTES(name)                              \
+	do {                                                        \
+		export_iobytes_buckets(svc,                         \
+				       #name,                       \
+				       &stats->values.name##_stats, \
+				       state);                      \
+	} while (0);
+#define SMBPROFILE_STATS_SECTION_END
+#define SMBPROFILE_STATS_END
+	SMBPROFILE_STATS_PERSVC_SECTIONS
+#undef SMBPROFILE_STATS_START
+#undef SMBPROFILE_STATS_SECTION_START
+#undef SMBPROFILE_STATS_COUNT
+#undef SMBPROFILE_STATS_TIME
+#undef SMBPROFILE_STATS_BASIC
+#undef SMBPROFILE_STATS_BYTES
+#undef SMBPROFILE_STATS_IOBYTES
+#undef SMBPROFILE_STATS_SECTION_END
+#undef SMBPROFILE_STATS_END
+
+#define SMBPROFILE_STATS_START
+#define SMBPROFILE_STATS_SECTION_START(name, display)
+#define SMBPROFILE_STATS_COUNT(name)
+#define SMBPROFILE_STATS_TIME(name)
+#define SMBPROFILE_STATS_BASIC(name)
+#define SMBPROFILE_STATS_BYTES(name)
+#define SMBPROFILE_STATS_IOBYTES(name)                             \
+	do {                                                       \
+		export_iobytes_failed(svc,                         \
+				      #name,                       \
+				      &stats->values.name##_stats, \
+				      state);                      \
+	} while (0);
+#define SMBPROFILE_STATS_SECTION_END
+#define SMBPROFILE_STATS_END
+	SMBPROFILE_STATS_PERSVC_SECTIONS
+#undef SMBPROFILE_STATS_START
+#undef SMBPROFILE_STATS_SECTION_START
+#undef SMBPROFILE_STATS_COUNT
+#undef SMBPROFILE_STATS_TIME
+#undef SMBPROFILE_STATS_BASIC
+#undef SMBPROFILE_STATS_BYTES
+#undef SMBPROFILE_STATS_IOBYTES
+#undef SMBPROFILE_STATS_SECTION_END
+#undef SMBPROFILE_STATS_END
+}
+
+static int export_profile_persvc(const char *key,
+				 const struct profile_stats *stats,
+				 void *userp)
+{
+	struct export_state *state = userp;
+	char *svc = NULL;
+	char *sep = NULL;
+
+	svc = strdup(key);
+	if (svc == NULL) {
+		return -1;
+	}
+
+	/* convert dbkey into service name only */
+	sep = strchr(svc, ':');
+	if (sep != NULL) {
+		*sep = '\0';
+	}
+
+	export_profile_persvc_stats(stats, svc, state);
+	free(svc);
+	return 0;
 }
 
 static void metrics_handler(struct evhttp_request *req, void *arg)
@@ -299,10 +603,7 @@ static void metrics_handler(struct evhttp_request *req, void *arg)
 				    "Could not open %s: %s\n",
 				    tdbfilename,
 				    strerror(errno));
-		evhttp_send_reply(req,
-				  HTTP_INTERNAL,
-				  "TDB failure",
-				  state.buf);
+		evhttp_send_reply(req, HTTP_INTERNAL, "TDB failure", state.buf);
 		evbuffer_free(state.buf);
 		return;
 	}
@@ -322,162 +623,49 @@ static void metrics_handler(struct evhttp_request *req, void *arg)
 
 	tdb_close(tdb);
 
-	evbuffer_add_printf(
-		state.buf,
-		"# HELP smb_worker_smbd_num Number of worker smbds "
-		"serving clients\n"
-		"# TYPE smb_worker_smbd_num gauge\n"
-		"smb_worker_smbd_num %zu\n",
-		num_workers);
+	evbuffer_add_printf(state.buf,
+			    "# HELP smb_worker_smbd_num Number of worker smbds "
+			    "serving clients\n"
+			    "# TYPE smb_worker_smbd_num gauge\n"
+			    "smb_worker_smbd_num %zu\n",
+			    num_workers);
 
 	evbuffer_add_printf(
 		state.buf,
 		"# HELP smb_num_authenticated_sessions Number of users "
 		"logged in\n"
 		"# TYPE smb_num_authenticated_sessions gauge\n"
-		"smb_num_authenticated_sessions %"PRIu64"\n",
+		"smb_num_authenticated_sessions %" PRIu64 "\n",
 		stats.values.num_sessions_stats.count);
 
 	evbuffer_add_printf(
 		state.buf,
 		"# HELP smb_num_tree_connects Number of share connections\n"
 		"# TYPE smb_num_tree_connects gauge\n"
-		"smb_num_tree_connects %"PRIu64"\n",
+		"smb_num_tree_connects %" PRIu64 "\n",
 		stats.values.num_tcons_stats.count);
 
-	evbuffer_add_printf(
-		state.buf,
-		"# HELP smb_num_open_files Number of open files\n"
-		"# TYPE smb_num_open_files gauge\n"
-		"smb_num_open_files %"PRIu64"\n",
-		stats.values.num_files_stats.count);
+	evbuffer_add_printf(state.buf,
+			    "# HELP smb_num_open_files Number of open files\n"
+			    "# TYPE smb_num_open_files gauge\n"
+			    "smb_num_open_files %" PRIu64 "\n",
+			    stats.values.num_files_stats.count);
 
-#define SMBPROFILE_STATS_START
-#define SMBPROFILE_STATS_SECTION_START(name, display)
-#define SMBPROFILE_STATS_COUNT(name)                                     \
-	do {                                                             \
-		export_count(#name, &stats.values.name##_stats, &state); \
-	} while (0);
-#define SMBPROFILE_STATS_TIME(name)                                     \
-	do {                                                            \
-		export_time(#name, &stats.values.name##_stats, &state); \
-	} while (0);
-#define SMBPROFILE_STATS_BASIC(name)                                     \
-	do {                                                             \
-		export_basic(#name, &stats.values.name##_stats, &state); \
-	} while (0);
-#define SMBPROFILE_STATS_BYTES(name)
-#define SMBPROFILE_STATS_IOBYTES(name)
-#define SMBPROFILE_STATS_SECTION_END
-#define SMBPROFILE_STATS_END
-	SMBPROFILE_STATS_ALL_SECTIONS
-#undef SMBPROFILE_STATS_START
-#undef SMBPROFILE_STATS_SECTION_START
-#undef SMBPROFILE_STATS_COUNT
-#undef SMBPROFILE_STATS_TIME
-#undef SMBPROFILE_STATS_BASIC
-#undef SMBPROFILE_STATS_BYTES
-#undef SMBPROFILE_STATS_IOBYTES
-#undef SMBPROFILE_STATS_SECTION_END
-#undef SMBPROFILE_STATS_END
+	export_profile_stats(&stats, &state);
 
-#define SMBPROFILE_STATS_START
-#define SMBPROFILE_STATS_SECTION_START(name, display)
-#define SMBPROFILE_STATS_COUNT(name)
-#define SMBPROFILE_STATS_TIME(name)
-#define SMBPROFILE_STATS_BASIC(name)
-#define SMBPROFILE_STATS_BYTES(name)
-#define SMBPROFILE_STATS_IOBYTES(name)					\
-	do {                                                               \
-		export_iobytes_inbytes(                                    \
-	           #name, &stats.values.name##_stats, &state);             \
-	} while (0);
-#define SMBPROFILE_STATS_SECTION_END
-#define SMBPROFILE_STATS_END
-	SMBPROFILE_STATS_ALL_SECTIONS
-#undef SMBPROFILE_STATS_START
-#undef SMBPROFILE_STATS_SECTION_START
-#undef SMBPROFILE_STATS_COUNT
-#undef SMBPROFILE_STATS_TIME
-#undef SMBPROFILE_STATS_BASIC
-#undef SMBPROFILE_STATS_BYTES
-#undef SMBPROFILE_STATS_IOBYTES
-#undef SMBPROFILE_STATS_SECTION_END
-#undef SMBPROFILE_STATS_END
+	/*
+	 * Re-open TDB file with read-only mode and iterate-export per-share
+	 * metrics. Ignore failure case this time.
+	 */
+	tdb = tdb_open(tdbfilename, 0, 0, O_RDONLY, 0);
+	if (tdb == NULL) {
+		goto out;
+	}
 
-#define SMBPROFILE_STATS_START
-#define SMBPROFILE_STATS_SECTION_START(name, display)
-#define SMBPROFILE_STATS_COUNT(name)
-#define SMBPROFILE_STATS_TIME(name)
-#define SMBPROFILE_STATS_BASIC(name)
-#define SMBPROFILE_STATS_BYTES(name)
-#define SMBPROFILE_STATS_IOBYTES(name)					\
-	do {                                                               \
-		export_iobytes_outbytes(                                    \
-	           #name, &stats.values.name##_stats, &state);             \
-	} while (0);
-#define SMBPROFILE_STATS_SECTION_END
-#define SMBPROFILE_STATS_END
-	SMBPROFILE_STATS_ALL_SECTIONS
-#undef SMBPROFILE_STATS_START
-#undef SMBPROFILE_STATS_SECTION_START
-#undef SMBPROFILE_STATS_COUNT
-#undef SMBPROFILE_STATS_TIME
-#undef SMBPROFILE_STATS_BASIC
-#undef SMBPROFILE_STATS_BYTES
-#undef SMBPROFILE_STATS_IOBYTES
-#undef SMBPROFILE_STATS_SECTION_END
-#undef SMBPROFILE_STATS_END
+	smbprofile_persvc_collect_tdb(tdb, export_profile_persvc, &state);
 
-#define SMBPROFILE_STATS_START
-#define SMBPROFILE_STATS_SECTION_START(name, display)
-#define SMBPROFILE_STATS_COUNT(name)
-#define SMBPROFILE_STATS_TIME(name)
-#define SMBPROFILE_STATS_BASIC(name)
-#define SMBPROFILE_STATS_BYTES(name)
-#define SMBPROFILE_STATS_IOBYTES(name)					\
-	do {                                                               \
-		export_iobytes_buckets(                                    \
-	           #name, &stats.values.name##_stats, &state);             \
-	} while (0);
-#define SMBPROFILE_STATS_SECTION_END
-#define SMBPROFILE_STATS_END
-	SMBPROFILE_STATS_ALL_SECTIONS
-#undef SMBPROFILE_STATS_START
-#undef SMBPROFILE_STATS_SECTION_START
-#undef SMBPROFILE_STATS_COUNT
-#undef SMBPROFILE_STATS_TIME
-#undef SMBPROFILE_STATS_BASIC
-#undef SMBPROFILE_STATS_BYTES
-#undef SMBPROFILE_STATS_IOBYTES
-#undef SMBPROFILE_STATS_SECTION_END
-#undef SMBPROFILE_STATS_END
-
-#define SMBPROFILE_STATS_START
-#define SMBPROFILE_STATS_SECTION_START(name, display)
-#define SMBPROFILE_STATS_COUNT(name)
-#define SMBPROFILE_STATS_TIME(name)
-#define SMBPROFILE_STATS_BASIC(name)
-#define SMBPROFILE_STATS_BYTES(name)
-#define SMBPROFILE_STATS_IOBYTES(name)                            \
-	do {                                                      \
-		export_iobytes_failed(#name,                      \
-				      &stats.values.name##_stats, \
-				      &state);                    \
-	} while (0);
-#define SMBPROFILE_STATS_SECTION_END
-#define SMBPROFILE_STATS_END
-	SMBPROFILE_STATS_ALL_SECTIONS
-#undef SMBPROFILE_STATS_START
-#undef SMBPROFILE_STATS_SECTION_START
-#undef SMBPROFILE_STATS_COUNT
-#undef SMBPROFILE_STATS_TIME
-#undef SMBPROFILE_STATS_BASIC
-#undef SMBPROFILE_STATS_BYTES
-#undef SMBPROFILE_STATS_IOBYTES
-#undef SMBPROFILE_STATS_SECTION_END
-#undef SMBPROFILE_STATS_END
-
+	tdb_close(tdb);
+out:
 	evhttp_send_reply(req, HTTP_OK, "OK", state.buf);
 	evbuffer_free(state.buf);
 }
