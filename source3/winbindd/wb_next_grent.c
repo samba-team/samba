@@ -27,6 +27,10 @@ struct wb_next_grent_state {
 	int max_nesting;
 	struct getgrent_state *gstate;
 	struct winbindd_gr *gr;
+	const char *domname;
+	const char *name;
+	const char *mapped_name;
+	gid_t gid;
 	struct db_context *members;
 };
 
@@ -147,17 +151,21 @@ static void wb_next_grent_fetch_done(struct tevent_req *subreq)
 	wb_next_grent_send_do(req, state);
 }
 
+static void wb_next_grent_normalize_done(struct tevent_req *subreq);
 static void wb_next_grent_getgrsid_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
 	struct wb_next_grent_state *state = tevent_req_data(
 		req, struct wb_next_grent_state);
-	const char *domname, *name;
 	NTSTATUS status;
 
-	status = wb_getgrsid_recv(subreq, talloc_tos(), &domname, &name,
-				  &state->gr->gr_gid, &state->members);
+	status = wb_getgrsid_recv(subreq,
+				  state,
+				  &state->domname,
+				  &state->name,
+				  &state->gid,
+				  &state->members);
 	TALLOC_FREE(subreq);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
@@ -170,12 +178,62 @@ static void wb_next_grent_getgrsid_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (!fill_grent(talloc_tos(), state->gr, domname, name,
-			state->gr->gr_gid)) {
-		D_WARNING("fill_grent failed\n");
-		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+	subreq = dcerpc_wbint_NormalizeNameMap_send(state,
+						    state->ev,
+						    idmap_child_handle(),
+						    state->domname,
+						    state->name,
+						    &state->mapped_name);
+	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
+	tevent_req_set_callback(subreq, wb_next_grent_normalize_done, req);
+}
+
+static void wb_next_grent_normalize_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wb_next_grent_state *state = tevent_req_data(
+		req, struct wb_next_grent_state);
+	struct winbindd_gr *gr = state->gr;
+	const char *full_group_name = NULL;
+	NTSTATUS status;
+	NTSTATUS result;
+
+	status = dcerpc_wbint_NormalizeNameMap_recv(subreq, state, &result);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		DBG_ERR("wbint_NormalizeNameMap(%s, %s) call failed: %s\n",
+			state->domname,
+			state->name,
+			nt_errstr(status));
+		return;
+	} else if (NT_STATUS_IS_OK(result)) {
+		full_group_name = fill_domain_username_talloc(
+			state, state->domname, state->mapped_name, true);
+
+	} else if (NT_STATUS_EQUAL(result, NT_STATUS_FILE_RENAMED)) {
+		full_group_name = state->mapped_name;
+	} else {
+		full_group_name = fill_domain_username_talloc(state,
+							      state->domname,
+							      state->name,
+							      True);
+	}
+
+	if (tevent_req_nomem(full_group_name, req)) {
+		D_WARNING("Failed to fill full group name.\n");
+		return;
+	}
+
+	gr->gr_gid = state->gid;
+
+	strlcpy(gr->gr_name, full_group_name, sizeof(gr->gr_name));
+	strlcpy(gr->gr_passwd, "x", sizeof(gr->gr_passwd));
+
+	D_DEBUG("Full group name is '%s'.\n", gr->gr_name);
+
 	state->gstate->next_group += 1;
 	tevent_req_done(req);
 }
