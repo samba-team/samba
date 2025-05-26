@@ -1325,7 +1325,10 @@ bool reopen_logs_internal(void)
 		b = debug_find_backend("file");
 		assert(b != NULL);
 
-		b->log_level = MAX_DEBUG_LEVEL;
+	        /* Cases where file@<level> is not set explicitly */
+		if (b->log_level == -1) {
+			b->log_level = MAX_DEBUG_LEVEL;
+		}
 		break;
 	}
 
