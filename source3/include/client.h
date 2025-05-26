@@ -111,6 +111,9 @@ struct file_info {
 	nlink_t st_ex_nlink;
 	struct dom_sid owner_sid;
 	struct dom_sid group_sid;
+	struct {
+		bool posix : 1;
+	} flags;
 };
 
 #define CLI_FULL_CONNECTION_DONT_SPNEGO 0x0001
