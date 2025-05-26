@@ -1522,17 +1522,15 @@ static bool test_stream_rename2(struct torture_context *tctx,
 	status = smb2_setinfo_file(tree, &sinfo);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 
-	if (!torture_setting_bool(tctx, "samba4", false)) {
-		/*
-		 * Check SMB2 rename to the default stream using :<stream>.
-		 */
-		torture_comment(tctx, "(%s) Checking SMB2 rename to default stream "
-				"using :<stream>\n", __location__);
-		sinfo.rename_information.in.file.handle = h1;
-		sinfo.rename_information.in.new_name = stream_name_default;
-		status = smb2_setinfo_file(tree, &sinfo);
-		CHECK_STATUS(status, NT_STATUS_OK);
-	}
+	/*
+	 * Check SMB2 rename to the default stream using :<stream>.
+	 */
+	torture_comment(tctx, "(%s) Checking SMB2 rename to default stream "
+			"using :<stream>\n", __location__);
+	sinfo.rename_information.in.file.handle = h1;
+	sinfo.rename_information.in.new_name = stream_name_default;
+	status = smb2_setinfo_file(tree, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
 
 	smb2_util_close(tree, h1);
 
