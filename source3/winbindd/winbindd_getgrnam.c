@@ -25,6 +25,8 @@
 
 struct winbindd_getgrnam_state {
 	struct tevent_context *ev;
+	const char *request_name;
+	const char *unmapped_name;
 	char *name_namespace;
 	char *name_domain;
 	char *name_group;
@@ -37,8 +39,7 @@ struct winbindd_getgrnam_state {
 	struct db_context *members;
 };
 
-static void winbindd_getgrnam_lookupname_done(struct tevent_req *subreq);
-
+static void winbindd_getgrnam_unmap_done(struct tevent_req *subreq);
 struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
 					  struct winbindd_cli_state *cli,
@@ -46,9 +47,6 @@ struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct winbindd_getgrnam_state *state;
-	char *tmp;
-	NTSTATUS nt_status;
-	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_getgrnam_state);
@@ -66,25 +64,59 @@ struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
 		   (unsigned int)cli->pid,
 		   request->data.groupname);
 
-	nt_status = normalize_name_unmap(state, request->data.groupname, &tmp);
-	/* If we didn't map anything in the above call, just reset the
-	   tmp pointer to the original string */
-	if (!NT_STATUS_IS_OK(nt_status) &&
-	    !NT_STATUS_EQUAL(nt_status, NT_STATUS_FILE_RENAMED))
+	state->request_name = talloc_strdup(state, request->data.groupname);
+	if (tevent_req_nomem(state->request_name, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = dcerpc_wbint_NormalizeNameUnmap_send(state,
+						      state->ev,
+						      idmap_child_handle(),
+						      state->request_name,
+						      &state->unmapped_name);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, winbindd_getgrnam_unmap_done, req);
+	return req;
+}
+
+static void winbindd_getgrnam_lookupname_done(struct tevent_req *subreq);
+static void winbindd_getgrnam_unmap_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+							  struct tevent_req);
+	struct winbindd_getgrnam_state *state = tevent_req_data(
+		req, struct winbindd_getgrnam_state);
+	NTSTATUS status;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	bool ok;
+
+	status = dcerpc_wbint_NormalizeNameUnmap_recv(subreq, state, &result);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	/* If we didn't map anything in the above call, use the original string */
+	if (!NT_STATUS_IS_OK(result) &&
+	    !NT_STATUS_EQUAL(result, NT_STATUS_FILE_RENAMED))
 	{
-		tmp = request->data.groupname;
+		state->unmapped_name = state->request_name;
 	}
 
 	/* Parse domain and groupname */
 
-	ok = parse_domain_user(state, tmp,
+	ok = parse_domain_user(state,
+			       state->unmapped_name,
 			       &state->name_namespace,
 			       &state->name_domain,
 			       &state->name_group);
 	if (!ok) {
-		DBG_INFO("Could not parse domain user: %s\n", tmp);
+		DBG_INFO("Could not parse domain user: %s\n",
+			 state->unmapped_name);
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
+		return;
 	}
 
 	/* if no domain or our local domain and no local tdb group, default to
@@ -96,21 +128,20 @@ struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
 		state->name_domain = talloc_strdup(state,
 						get_global_sam_name());
 		if (tevent_req_nomem(state->name_domain, req)) {
-			return tevent_req_post(req, ev);
+			return;
 		}
 	}
 
-	subreq = wb_lookupname_send(state, ev,
+	subreq = wb_lookupname_send(state,
+				    state->ev,
 				    state->name_namespace,
 				    state->name_domain,
 				    state->name_group,
 				    0);
 	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
+		return;
 	}
-	tevent_req_set_callback(subreq, winbindd_getgrnam_lookupname_done,
-				req);
-	return req;
+	tevent_req_set_callback(subreq, winbindd_getgrnam_lookupname_done, req);
 }
 
 static void winbindd_getgrnam_getgrsid_done(struct tevent_req *subreq);
