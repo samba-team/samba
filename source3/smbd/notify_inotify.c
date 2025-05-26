@@ -179,8 +179,8 @@ static void inotify_dispatch(struct inotify_private *in,
 	struct notify_event ne;
 	uint32_t filter;
 
-	DEBUG(10, ("inotify_dispatch called with mask=%x, name=[%s]\n",
-		   e->mask, e->len ? e->name : ""));
+	DBG_DEBUG("called with mask=%x, name=[%s]\n",
+		  e->mask, e->len ? e->name : "");
 
 	/* ignore extraneous events, such as unmount and IN_IGNORED events */
 	if ((e->mask & (IN_ATTRIB|IN_MODIFY|IN_CREATE|IN_DELETE|
