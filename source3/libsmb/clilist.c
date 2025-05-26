@@ -66,7 +66,9 @@ NTSTATUS is_bad_finfo_name(const struct cli_state *cli,
 	NTSTATUS status = NT_STATUS_OK;
 	bool windows_names = true;
 
-	if (cli->requested_posix_capabilities & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
+	if ((cli->requested_posix_capabilities & CIFS_UNIX_POSIX_PATHNAMES_CAP)
+	    || finfo->flags.posix)
+	{
 		windows_names = false;
 	}
 	if (finfo->name != NULL) {
