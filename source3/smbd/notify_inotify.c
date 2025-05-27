@@ -317,10 +317,7 @@ static bool handle_local_rename(struct inotify_watch_context *w,
 */
 static void inotify_dispatch(struct tevent_context *ev,
 			     struct inotify_private *in,
-			     struct inotify_event *e,
-			     int prev_wd,
-			     uint32_t prev_cookie,
-			     struct inotify_event *e2)
+			     struct inotify_event *e)
 {
 	struct inotify_watch_context *w, *next;
 	struct notify_event ne;
@@ -410,8 +407,6 @@ static void inotify_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	char buf[sizeof(struct inotify_event) + NAME_MAX + 1];
 	int bufsize = 0;
 	struct inotify_event *e = NULL;
-	uint32_t prev_cookie=0;
-	int prev_wd = -1;
 	ssize_t ret;
 
 	ret = sys_read(in->fd, buf, sizeof(buf));
@@ -434,9 +429,7 @@ static void inotify_handler(struct tevent_context *ev, struct tevent_fd *fde,
 		if (bufsize >= sizeof(*e)) {
 			e2 = (struct inotify_event *)(e->len + sizeof(*e) + (char *)e);
 		}
-		inotify_dispatch(ev, in, e, prev_wd, prev_cookie, e2);
-		prev_wd = e->wd;
-		prev_cookie = e->cookie;
+		inotify_dispatch(ev, in, e);
 		e = e2;
 	}
 }
