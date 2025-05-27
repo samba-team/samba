@@ -21,9 +21,12 @@
 #include "winbindd.h"
 #include "passdb/lookup_sid.h" /* only for LOOKUP_NAME_NO_NSS flag */
 #include "libcli/security/dom_sid.h"
+#include "librpc/gen_ndr/ndr_winbind_c.h"
 
 struct winbindd_getgroups_state {
 	struct tevent_context *ev;
+	const char *request_name;
+	const char *unmapped_name;
 	char *namespace;
 	char *domname;
 	char *username;
@@ -38,6 +41,7 @@ struct winbindd_getgroups_state {
 static void winbindd_getgroups_lookupname_done(struct tevent_req *subreq);
 static void winbindd_getgroups_gettoken_done(struct tevent_req *subreq);
 static void winbindd_getgroups_sid2gid_done(struct tevent_req *subreq);
+static void winbindd_getgroups_unmap_done(struct tevent_req *subreq);
 
 struct tevent_req *winbindd_getgroups_send(TALLOC_CTX *mem_ctx,
 					   struct tevent_context *ev,
@@ -46,9 +50,6 @@ struct tevent_req *winbindd_getgroups_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct winbindd_getgroups_state *state;
-	char *domuser, *mapped_user;
-	NTSTATUS status;
-	bool ok;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_getgroups_state);
@@ -66,37 +67,68 @@ struct tevent_req *winbindd_getgroups_send(TALLOC_CTX *mem_ctx,
 		 (unsigned int)cli->pid,
 		 request->data.username);
 
-	domuser = request->data.username;
-
-	status = normalize_name_unmap(state, domuser, &mapped_user);
-
-	if (NT_STATUS_IS_OK(status)
-	    || NT_STATUS_EQUAL(status, NT_STATUS_FILE_RENAMED)) {
-		/* normalize_name_unmapped did something */
-		domuser = mapped_user;
+	state->request_name = talloc_strdup(state, request->data.username);
+	if (tevent_req_nomem(state->request_name, req)) {
+		return tevent_req_post(req, ev);
 	}
 
-	ok = parse_domain_user(state, domuser,
+	subreq = dcerpc_wbint_NormalizeNameUnmap_send(state,
+						      state->ev,
+						      idmap_child_handle(),
+						      state->request_name,
+						      &state->unmapped_name);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, winbindd_getgroups_unmap_done, req);
+	return req;
+}
+
+static void winbindd_getgroups_unmap_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+							  struct tevent_req);
+	struct winbindd_getgroups_state *state = tevent_req_data(
+		req, struct winbindd_getgroups_state);
+	NTSTATUS status;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	bool ok;
+
+	status = dcerpc_wbint_NormalizeNameUnmap_recv(subreq, state, &result);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (NT_STATUS_IS_OK(result) ||
+	    NT_STATUS_EQUAL(result, NT_STATUS_FILE_RENAMED))
+	{
+		/* dcerpc_wbint_NormalizeNameUnmap did something */
+		state->request_name = state->unmapped_name;
+	}
+
+	ok = parse_domain_user(state,
+			       state->request_name,
 			       &state->namespace,
 			       &state->domname,
 			       &state->username);
 	if (!ok) {
-		D_WARNING("Could not parse domain user: %s\n", domuser);
+		D_WARNING("Could not parse domain user: %s\n", state->request_name);
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
+		return;
 	}
 
-	subreq = wb_lookupname_send(state, ev,
+	subreq = wb_lookupname_send(state,
+				    state->ev,
 				    state->namespace,
 				    state->domname,
 				    state->username,
 				    LOOKUP_NAME_NO_NSS);
 	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
+		return;
 	}
 	tevent_req_set_callback(subreq, winbindd_getgroups_lookupname_done,
 				req);
-	return req;
 }
 
 static void winbindd_getgroups_lookupname_done(struct tevent_req *subreq)
