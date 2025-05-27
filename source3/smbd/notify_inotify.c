@@ -25,6 +25,7 @@
 #include "../librpc/gen_ndr/notify.h"
 #include "smbd/smbd.h"
 #include "lib/util/sys_rw.h"
+#include "smbd/globals.h"
 
 #include <sys/inotify.h>
 
@@ -55,6 +56,7 @@ struct inotify_watch_context {
 	uint32_t filter; /* the windows completion filter */
 	const char *path;
 
+	char *last_mkdir;
 	struct inotify_event *moved_from_event;
 };
 
@@ -218,13 +220,49 @@ static void save_moved_from(struct tevent_context *ev,
 			 w);
 }
 
-static void handle_local_rename(struct inotify_watch_context *w,
+static bool handle_local_rename(struct inotify_watch_context *w,
 				struct inotify_event *to)
 {
 	struct inotify_private *in = w->in;
 	struct inotify_event *from = w->moved_from_event;
 	struct notify_event ne = {};
 	uint32_t filter;
+
+	if ((w->last_mkdir != NULL) && (w->moved_from_event != NULL) &&
+	    IS_SMBD_TMPNAME(w->moved_from_event->name, NULL))
+	{
+		if (strcmp(to->name, w->last_mkdir) == 0) {
+			/*
+			 * Assume this is a rename() from smbd after a
+			 * mkdir of the real target directory. See the
+			 * comment about RENAME_NOREPLACE in
+			 * mkdir_internals(). We have already sent out
+			 * the mkdir notify event, this MOVED_FROM/TO
+			 * pair is just internal fluff that the client
+			 * should not get wind of via notify.
+			 */
+			TALLOC_FREE(w->last_mkdir);
+			TALLOC_FREE(w->moved_from_event);
+			return true;
+		}
+
+		if (strcmp(w->moved_from_event->name, w->last_mkdir) == 0) {
+			/*
+			 * Assume this is a renameat2() from smbd's
+			 * mkdir_internal().
+			 */
+			TALLOC_FREE(w->last_mkdir);
+			TALLOC_FREE(w->moved_from_event);
+
+			/*
+			 * Pretend this is not a rename but a new
+			 * directory.
+			 */
+			to->mask = IN_ISDIR | IN_CREATE;
+
+			return false;
+		}
+	}
 
 	ne = (struct notify_event){
 		.action = NOTIFY_ACTION_OLD_NAME,
@@ -250,10 +288,10 @@ static void handle_local_rename(struct inotify_watch_context *w,
 	}
 
 	if (to->mask & IN_ISDIR) {
-		return;
+		return true;
 	}
 	if ((w->filter & FILE_NOTIFY_CHANGE_CREATION) == 0) {
-		return;
+		return true;
 	}
 
 	/*
@@ -268,6 +306,8 @@ static void handle_local_rename(struct inotify_watch_context *w,
 	if (filter_match(w, to)) {
 		w->callback(in->ctx, w->private_data, &ne, filter);
 	}
+
+	return true;
 }
 
 /*
@@ -307,12 +347,29 @@ static void inotify_dispatch(struct tevent_context *ev,
 
 	if (e->mask & IN_MOVED_TO) {
 		for (w = in->watches; w != NULL; w = w->next) {
-			if ((w->wd == e->wd) && (w->moved_from_event != NULL) &&
+			if ((w->wd == e->wd) &&
+			    (w->moved_from_event != NULL) &&
 			    (w->moved_from_event->cookie == e->cookie))
 			{
-				handle_local_rename(w, e);
-				return;
+				bool handled = handle_local_rename(w, e);
+				if (handled) {
+					return;
+				}
 			}
+		}
+	}
+
+	if ((e->mask & IN_CREATE) && (e->mask & IN_ISDIR)) {
+		for (w = in->watches; w != NULL; w = w->next) {
+			if (w->wd != e->wd) {
+				continue;
+			}
+			TALLOC_FREE(w->last_mkdir);
+			w->last_mkdir = talloc_strdup(w, e->name);
+		}
+
+		if (IS_SMBD_TMPNAME(e->name, NULL)) {
+			return;
 		}
 	}
 
