@@ -75,7 +75,7 @@ def configure(conf):
 	BINDIR and LIBDIR will be overwritten.
 	"""
 	def get_param(varname, default):
-		return getattr(Options.options, varname, '') or default
+		return getattr(Options.options, varname.lower(), '') or default
 
 	env = conf.env
 	env.LIBDIR = env.BINDIR = []
