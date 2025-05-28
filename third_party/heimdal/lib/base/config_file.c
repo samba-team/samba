@@ -312,6 +312,11 @@ parse_plist_config(heim_context context, const char *path, heim_config_section *
     CFRelease(url);
     if (s == NULL) {
         heim_clear_error_message(context);
+	if (path[0] != '/') {
+	    char cwd[PATH_MAX];
+	    if (getcwd(cwd, sizeof(cwd)) == NULL)
+		return errno;
+	}
         return ENOMEM;
     }
 
@@ -571,6 +576,7 @@ heim_config_parse_file_multi(heim_context context,
 {
     const char *str;
     char *newfname = NULL;
+    char *exp_fname = NULL;
     unsigned lineno = 0;
     heim_error_code ret = 0;
     struct fileptr f;
@@ -603,6 +609,19 @@ heim_config_parse_file_multi(heim_context context,
         fname = newfname;
     }
 
+    /*
+     * Note that heim_config_parse_dir_multi() doesn't want tokens
+     * expanded here, but it happens to limit the names of files to
+     * include such that there can be no tokens to expand.  Don't
+     * add token expansion for tokens using _, say.
+     */
+    ret = heim_expand_path_tokens(context, fname, 1, &exp_fname, NULL);
+    if (ret)
+	goto out;
+    free(newfname);
+    fname = newfname = exp_fname;
+
+
     if (is_plist_file(fname)) {
 #if defined(HAVE_FRAMEWORK_COREFOUNDATION)
         ret = parse_plist_config(context, fname, res);
@@ -618,20 +637,6 @@ heim_config_parse_file_multi(heim_context context,
 	goto out;
 #endif
     } else {
-	char *exp_fname = NULL;
-
-        /*
-         * Note that heim_config_parse_dir_multi() doesn't want tokens
-         * expanded here, but it happens to limit the names of files to
-         * include such that there can be no tokens to expand.  Don't
-         * add token expansion for tokens using _, say.
-         */
-        ret = heim_expand_path_tokens(context, fname, 1, &exp_fname, NULL);
-        if (ret)
-            goto out;
-	free(newfname);
-        fname = newfname = exp_fname;
-
         f.context = context;
         f.f = fopen(fname, "r");
         f.s = NULL;

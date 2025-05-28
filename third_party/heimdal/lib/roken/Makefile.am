@@ -54,6 +54,7 @@ libtest_la_CFLAGS = -DTEST_SNPRINTF -DTEST_STRPFTIME
 
 parse_reply_test_SOURCES = parse_reply-test.c resolve.c
 parse_reply_test_CFLAGS  = -DTEST_RESOLVE
+parse_reply_test_LDFLAGS = -lresolv
 
 test_readenv_SOURCES = test-readenv.c test-mem.c
 test_auxval_SOURCES = test-auxval.c

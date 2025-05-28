@@ -403,6 +403,7 @@ LDADD = libgssapi.la \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(LIB_roken)
 
+test_names_LDFLAGS = -lresolv
 test_names_LDADD = $(LDADD) $(top_builddir)/lib/asn1/libasn1.la
 test_context_LDADD = $(LDADD) $(top_builddir)/lib/asn1/libasn1.la $(top_builddir)/lib/wind/libwind.la
 

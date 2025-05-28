@@ -330,6 +330,8 @@ test_rfc3961_LDADD = 				\
 	$(LIB_hcrypto)				\
 	$(LIB_roken)
 
+test_plugin_LDFLAGS = -lresolv
+
 if DEVELOPER_MODE
 headerdeps = $(dist_libkrb5_la_SOURCES)
 endif

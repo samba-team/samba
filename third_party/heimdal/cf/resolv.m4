@@ -73,13 +73,13 @@ AC_FIND_FUNC(res_ndestroy, resolv,
 ],
 [0])
 
-AC_FIND_FUNC_NO_LIBS(dns_search,,
+AC_FIND_FUNC(dns_search, resolv,
 [
 #ifdef HAVE_DNS_H
 #include <dns.h>
 #endif
 ],
-[0,0,0,0,0,0,0,0])
+[0])
 
 
 AC_FIND_FUNC(dn_expand, resolv,

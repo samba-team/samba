@@ -2289,6 +2289,11 @@ out:
     free(csec);
     free(cusec);
 
+    if (r->ek.encrypted_pa_data) {
+	free_METHOD_DATA(r->ek.encrypted_pa_data);
+	free(r->ek.encrypted_pa_data);
+    }
+
     free_TGS_REP(&r->rep);
     free_TransitedEncoding(&r->et.transited);
     free(r->et.starttime);
