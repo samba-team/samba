@@ -423,14 +423,21 @@ static void inotify_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	e = (struct inotify_event *)buf;
 
 	/* we can get more than one event in the buffer */
-	while (e && (bufsize >= sizeof(*e))) {
-		struct inotify_event *e2 = NULL;
-		bufsize -= e->len + sizeof(*e);
-		if (bufsize >= sizeof(*e)) {
-			e2 = (struct inotify_event *)(e->len + sizeof(*e) + (char *)e);
+	while (bufsize >= sizeof(struct inotify_event)) {
+		size_t e_len = sizeof(struct inotify_event) + e->len;
+
+		if ((e_len < sizeof(struct inotify_event)) ||
+		    (e_len > bufsize))
+		{
+			DBG_ERR("Invalid data from inotify\n");
+			TALLOC_FREE(fde);
+			return;
 		}
+
 		inotify_dispatch(ev, in, e);
-		e = e2;
+
+		e = (struct inotify_event *)((char *)e + e_len);
+		bufsize -= e_len;
 	}
 }
 
