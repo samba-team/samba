@@ -605,6 +605,7 @@ static bool internal_torture_run_test(struct torture_context *_context,
 			TALLOC_FREE(frame);
 			return false;
 		}
+		TALLOC_FREE(dummy_se);
 
 		evtb1 = talloc_total_blocks(context->ev);
 	}
@@ -728,6 +729,7 @@ bool torture_run_tcase_restricted(struct torture_context *_context,
 		context = _context;
 		goto setup_failed;
 	}
+	TALLOC_FREE(dummy_se);
 
 	evtb1 = talloc_total_blocks(context->ev);
 
