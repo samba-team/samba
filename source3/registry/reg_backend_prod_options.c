@@ -40,6 +40,7 @@ static int prod_options_fetch_values(const char *key, struct regval_ctr *regvals
 	switch (lp_server_role()) {
 		case ROLE_DOMAIN_PDC:
 		case ROLE_DOMAIN_BDC:
+		case ROLE_ACTIVE_DIRECTORY_DC:
 		case ROLE_IPA_DC:
 			value_ascii = "LanmanNT";
 			break;
