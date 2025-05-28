@@ -4540,7 +4540,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 #ifdef OPENBSD
 	/*
 	 * OpenBSD requires to have write permissions
-	 * on both source and destimation of renameat(),
+	 * on both source and destination of renameat(),
 	 * see https://bugzilla.samba.org/show_bug.cgi?id=15801
 	 *
 	 * For now just disable the new code by default.
