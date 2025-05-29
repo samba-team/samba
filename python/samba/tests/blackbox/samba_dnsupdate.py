@@ -123,3 +123,16 @@ class SambaDnsUpdateTests(samba.tests.BlackboxTestCase):
                             errf=StringIO())
         if result is not None:
             self.fail("Error deleting site")
+
+    def test_samba_dnsupdate_samba_tool_all_names(self):
+        """We ask it to update all names, which should all already
+        exist and cause no errors."""
+        try:
+            out = self.check_output(["samba_dnsupdate",
+                                     "--verbose",
+                                     "--use-samba-tool",
+                                     "--all-names"])
+        except samba.tests.BlackboxProcessError as e:
+            self.fail(f"samba_dnsupdate returned an error: {e}")
+        self.assertIn(b"Record already exists", out)
+        self.assertNotIn(b"ERROR", out)

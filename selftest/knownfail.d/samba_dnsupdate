@@ -1,0 +1,1 @@
+^samba.tests.blackbox.samba_dnsupdate.+SambaDnsUpdateTests.test_samba_dnsupdate_samba_tool_all_names
