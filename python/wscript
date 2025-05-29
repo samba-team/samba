@@ -72,6 +72,19 @@ def configure(conf):
     finally:
         f.close()
 
+    # In many places we fill in a uint32_t with an unsigned int, using
+    # PyArg_ParseTuple("I"), which will overwrite memory if the size
+    # of the int is not 4. There are no systems on which Samba will
+    # compile where int is not 32 bit, but we are testing in case this
+    # changes.
+    if 'SIZEOF_INT' not in conf.env:
+        conf.CHECK_SIZEOF('int uint32_t')
+    sizeof_int = conf.env['SIZEOF_INT']
+    sizeof_uint32 = conf.env['SIZEOF_UINT32_T']
+    if sizeof_int != sizeof_uint32:
+        conf.fatal("Samba python bindings won't work with int bigger than uint32_t "
+                   f"(int: {sizeof_int}, uint32_t: {sizeof_uint32}).")
+
     if conf.CONFIG_GET('ENABLE_SELFTEST'):
         for module, package in selftest_pkgs.items():
             find_third_party_module(conf, module, package)
