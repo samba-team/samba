@@ -750,6 +750,7 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly);
 void smbprofile_persvc_mkref(int snum, const char *svc, const char *remote);
 void smbprofile_persvc_unref(int snum);
 struct profile_stats *smbprofile_persvc_get(int snum);
+void smbprofile_persvc_reset(void);
 
 int smbprofile_persvc_collect(int (*fn)(const char *key,
 					const struct profile_stats *stats,
@@ -903,6 +904,11 @@ static inline void smbprofile_persvc_unref(int snum)
 static inline struct profile_stats *smbprofile_persvc_get(int snum)
 {
 	return NULL;
+}
+
+static inline void smbprofile_persvc_reset(void)
+{
+	return;
 }
 
 #endif /* WITH_PROFILE */

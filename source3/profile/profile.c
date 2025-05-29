@@ -67,6 +67,7 @@ void set_profile_level(int level, const struct server_id *src)
 		break;
 	case 3:		/* reset profile values */
 		ZERO_STRUCT(profile_p->values);
+		smbprofile_persvc_reset();
 		tdb_wipe_all(smbprofile_state.internal.db->tdb);
 		DEBUG(1,("INFO: Profiling values cleared from pid %d\n",
 			 (int)procid_to_pid(src)));
@@ -551,4 +552,26 @@ int smbprofile_persvc_collect(int (*fn)(const char *key,
 	return smbprofile_persvc_collect_tdb(smbprofile_state.internal.db->tdb,
 					     fn,
 					     private_data);
+}
+
+void smbprofile_persvc_reset(void)
+{
+	struct profile_stats_persvc *entry = NULL;
+	size_t i, cap;
+
+	if (!smbprofile_active()) {
+		return;
+	}
+
+	if (smbprofile_state.internal.db == NULL) {
+		return;
+	}
+
+	cap = talloc_array_length(smbprofile_state.persvc.tbl);
+	for (i = 0; i < cap; ++i) {
+		entry = smbprofile_state.persvc.tbl[i];
+		if ((entry != NULL) && entry->refcnt) {
+			ZERO_STRUCT(entry->stats);
+		}
+	}
 }
