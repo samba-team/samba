@@ -589,10 +589,11 @@ def call_samba_tool(d, op="add", zone=None):
     global error_count
     try:
         cmd = cmd_dns()
+        full_args = ["dns", op, "--use-kerberos", "off", "-P"] + args
         if opts.verbose:
-            print(f'Calling samba-tool dns {op} --use-kerberos off -P {args}')
-        command, args = cmd._resolve("dns", op, "--use-kerberos", "off", "-P", *args)
-        ret = command._run(*args)
+            print(f'Calling samba-tool {" ".join(full_args)}')
+        command, resolved_args = cmd._resolve(*full_args)
+        ret = command._run(*resolved_args)
         if ret == -1:
             if opts.fail_immediately:
                 sys.exit(1)
