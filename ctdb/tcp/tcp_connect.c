@@ -578,6 +578,7 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	}
 
 	TALLOC_FREE(ips_ctx);
+	close(lock_fd);
 
 	if (i == ctdb->num_nodes) {
 		D_ERR("Unable to bind to any node address - giving up\n");
