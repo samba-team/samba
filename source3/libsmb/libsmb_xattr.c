@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "source3/include/client.h"
 #include "source3/libsmb/proto.h"
+#include "source3/libsmb/cli_smb2_fnum.h"
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
 #include "../librpc/gen_ndr/ndr_lsa.h"
@@ -2223,6 +2224,32 @@ SMBC_fgetxattr_ctx(SMBCCTX *context,
 	}
 
 	DEBUG(4, ("smbc_fgetxattr(%s, %s)\n", file->fname, name));
+
+	if (strequal(name, "posix.attr.enabled")) {
+		bool is_posix;
+		int len;
+
+		is_posix = cli_smb2_fnum_is_posix(file->targetcli,
+						  file->cli_fd);
+		len = snprintf(discard_const_p(char, value),
+			       size,
+			       "%d",
+			       is_posix ? 1 : 0);
+		if (len < 0) {
+			TALLOC_FREE(frame);
+			errno = EINVAL;
+			return -1;
+		}
+
+		if ((size_t)len > size) {
+			TALLOC_FREE(frame);
+			errno = ERANGE;
+			return -1;
+		}
+
+		TALLOC_FREE(frame);
+		return len;
+	}
 
 	ret = SMBC_getxattr_ctx(context, file->fname, name, value, size);
 
