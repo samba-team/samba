@@ -2500,7 +2500,7 @@ grant:
 	if (lp_locking(fsp->conn->params) && file_has_brlocks(fsp)) {
 		DBG_DEBUG("file %s has byte range locks\n",
 			  fsp_str_dbg(fsp));
-		granted &= ~SMB2_LEASE_READ;
+		granted &= ~(SMB2_LEASE_READ | SMB2_LEASE_HANDLE);
 	}
 
 	if (state.disallow_write_lease) {
