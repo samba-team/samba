@@ -30,8 +30,8 @@ dlz "AD DNS Zone" {
 
     # For BIND 9.16.x
     ${BIND9_16} database "dlopen ${MODULESDIR}/bind9/dlz_bind9_16.so";
-    #
-    # For BIND 9.18.x
+
+    # For BIND 9.18.x and 9.20.x
     ${BIND9_18} database "dlopen ${MODULESDIR}/bind9/dlz_bind9_18.so";
 };
 
