@@ -612,6 +612,16 @@
 <refsect3>
 	<title>dns add <replaceable>server</replaceable> <replaceable>zone</replaceable> <replaceable>name</replaceable> <replaceable>A|AAAA|PTR|CNAME|NS|MX|SRV|TXT</replaceable> <replaceable>data</replaceable></title>
 	<para>Add a DNS record.</para>
+	<variablelist>
+	<varlistentry>
+	<term>--allow-existing</term>
+	<listitem><para> Do not treat an existing record of this name
+	and type as an error. This has no functional change (the new
+	DNS record is not added) but the message and samba-tool
+	return code will not indicate error. </para></listitem>
+	</varlistentry>
+	</variablelist>
+	
 </refsect3>
 
 
