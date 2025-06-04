@@ -3588,6 +3588,34 @@ static int vfswrap_getxattrat_state_destructor(
 	return -1;
 }
 
+/*  Check if there are enough threads available
+ *  to run asynchronous jobs and if the current
+ *  platform provides per-thread credentials.
+ */
+bool vfswrap_check_async_with_thread_creds(struct pthreadpool_tevent *pool)
+{
+	size_t max_threads = 0;
+	bool have_per_thread_cwd = false;
+	bool have_per_thread_creds = false;
+	bool do_async = false;
+
+	max_threads = pthreadpool_tevent_max_threads(pool);
+	if (max_threads >= 1) {
+		/*
+		* We need a non sync threadpool!
+		*/
+		have_per_thread_cwd = per_thread_cwd_supported();
+	}
+#ifdef HAVE_LINUX_THREAD_CREDENTIALS
+	have_per_thread_creds = true;
+#endif
+	if (have_per_thread_cwd && have_per_thread_creds) {
+		do_async = true;
+	}
+
+	return do_async;
+}
+
 static void vfswrap_getxattrat_do_sync(struct tevent_req *req);
 static void vfswrap_getxattrat_do_async(void *private_data);
 static void vfswrap_getxattrat_done(struct tevent_req *subreq);
@@ -3604,9 +3632,6 @@ static struct tevent_req *vfswrap_getxattrat_send(
 	struct tevent_req *req = NULL;
 	struct tevent_req *subreq = NULL;
 	struct vfswrap_getxattrat_state *state = NULL;
-	size_t max_threads = 0;
-	bool have_per_thread_cwd = false;
-	bool have_per_thread_creds = false;
 	bool do_async = false;
 
 	SMB_ASSERT(!is_named_stream(smb_fname));
@@ -3623,19 +3648,8 @@ static struct tevent_req *vfswrap_getxattrat_send(
 		.job_state.smb_fname = smb_fname,
 	};
 
-	max_threads = pthreadpool_tevent_max_threads(dir_fsp->conn->sconn->pool);
-	if (max_threads >= 1) {
-		/*
-		 * We need a non sync threadpool!
-		 */
-		have_per_thread_cwd = per_thread_cwd_supported();
-	}
-#ifdef HAVE_LINUX_THREAD_CREDENTIALS
-	have_per_thread_creds = true;
-#endif
-	if (have_per_thread_cwd && have_per_thread_creds) {
-		do_async = true;
-	}
+	do_async = vfswrap_check_async_with_thread_creds(
+		dir_fsp->conn->sconn->pool);
 
 	SMBPROFILE_BYTES_ASYNC_START_X(SNUM(handle->conn),
 				       syscall_asys_getxattrat,

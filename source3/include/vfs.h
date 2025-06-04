@@ -414,6 +414,7 @@ struct ea_list;
 struct smb_file_time;
 struct smb_filename;
 struct dfs_GetDFSReferral;
+struct pthreadpool_tevent;
 
 typedef union unid_t {
 	uid_t uid;
@@ -1874,6 +1875,8 @@ void *vfs_fetch_fsp_extension(vfs_handle_struct *handle, const struct files_stru
 
 void smb_vfs_assert_all_fns(const struct vfs_fn_pointers* fns,
 			    const char *module);
+
+bool vfswrap_check_async_with_thread_creds(struct pthreadpool_tevent *pool);
 
 /*
  * Helper functions from source3/modules/vfs_not_implemented.c
