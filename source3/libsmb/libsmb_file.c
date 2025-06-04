@@ -54,6 +54,7 @@ SMBC_open_ctx(SMBCCTX *context,
 	NTSTATUS status = NT_STATUS_OBJECT_PATH_INVALID;
 	struct cli_credentials *creds = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
+	bool smb311_posix_saved;
 
 	if (!context || !context->internal->initialized) {
 		TALLOC_FREE(frame);
@@ -140,6 +141,17 @@ SMBC_open_ctx(SMBCCTX *context,
 	/*d_printf(">>>open: resolved %s as %s\n", path, targetpath);*/
 
 	/*
+	 * Indicate to cli_smb2_create_fnum_send() that we want file
+	 * handles with posix extensions.
+	 */
+
+	smb311_posix_saved = targetcli->smb2.client_smb311_posix;
+	targetcli->smb2.client_smb311_posix =
+		smbc_getOptionPosixExtensions(context) &&
+		(smbXcli_conn_protocol(targetcli->conn) >= PROTOCOL_SMB3_11) &&
+		smbXcli_conn_have_posix(targetcli->conn);
+
+	/*
 	 * Random error that the O_PATH if-block will never return
 	 */
 	status = NT_STATUS_LDAP(0);
@@ -176,6 +188,8 @@ SMBC_open_ctx(SMBCCTX *context,
 				  context->internal->share_mode,
 				  &fd);
 	}
+
+	targetcli->smb2.client_smb311_posix = smb311_posix_saved;
 
 	if (!NT_STATUS_IS_OK(status)) {
 
