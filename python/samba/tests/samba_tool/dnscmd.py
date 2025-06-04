@@ -648,6 +648,19 @@ class DnsCmdTestCase(SambaToolCmdTest):
                                               self.good_records[record_type][0],
                                               self.creds_string)
             self.assertCmdFail(result)
+            # Now we repeat the second add with --allow-existing,
+            # which should not complain.
+            result, out, err = self.runsubcmd("dns", "add",
+                                              os.environ["SERVER"],
+                                              self.zone, "testrecord",
+                                              record_type,
+                                              self.good_records[record_type][0],
+                                              self.creds_string,
+                                              "--allow-existing",
+                                              catch_error=True)
+            self.assertCmdSuccess(result, out, err)
+            self.assertIn("Record already exists", out)
+
             result, out, err = self.runsubcmd("dns", "query",
                                               os.environ["SERVER"],
                                               self.zone, "testrecord",

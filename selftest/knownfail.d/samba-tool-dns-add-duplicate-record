@@ -1,0 +1,1 @@
+samba.tests.samba_tool.dnscmd.+DnsCmdTestCase.test_add_duplicate_record
