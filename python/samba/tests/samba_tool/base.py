@@ -63,21 +63,34 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
                      credentials=creds, lp=lp)
 
     @classmethod
-    def _run(cls, *argv, verbose=False):
+    def _run(cls, *argv, verbose=False, catch_error=False):
         """run a samba-tool command.
 
         positional arguments are effectively what gets passed to
         bin/samba-tool.
 
+        Add catch_error=True to make samba-tool exceptions into
+        failures.
+
         Add verbose=True during development to see the expanded
         command and results.
+
         """
-        cmd, args = cmd_sambatool()._resolve('samba-tool', *argv,
-                                             outf=cls.stringIO(),
-                                             errf=cls.stringIO())
-        result = cmd._run(*args)
-        out = cmd.outf.getvalue()
-        err = cmd.errf.getvalue()
+        try:
+            cmd, args = cmd_sambatool()._resolve('samba-tool', *argv,
+                                                 outf=cls.stringIO(),
+                                                 errf=cls.stringIO())
+            result = cmd._run(*args)
+            out = cmd.outf.getvalue()
+            err = cmd.errf.getvalue()
+        except (Exception, SystemExit) as e:
+            # We need to catch SystemExit as well as Exception,
+            # because samba-tool will often convert exceptions into
+            # exits (SystemExit is a subclass of BaseException but not
+            # Exception).
+            if catch_error:
+                raise AssertionError(f"'samba-tool {' '.join(argv)}' raised {e}")
+            raise
 
         if verbose:
             print(f"bin/samba-tool {' '.join(argv)}\n\nstdout:\n"
