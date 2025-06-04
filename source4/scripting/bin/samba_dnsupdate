@@ -590,6 +590,8 @@ def call_samba_tool(d, op="add", zone=None):
     try:
         cmd = cmd_dns()
         full_args = ["dns", op, "--use-kerberos", "off", "-P"] + args
+        if op == 'add':
+            full_args.append("--allow-existing")
         if opts.verbose:
             print(f'Calling samba-tool {" ".join(full_args)}')
         command, resolved_args = cmd._resolve(*full_args)
