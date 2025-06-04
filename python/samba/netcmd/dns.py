@@ -1159,8 +1159,13 @@ class cmd_add_record(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    def run(self, server, zone, name, rtype, data, sambaopts=None,
-            credopts=None, versionopts=None):
+    takes_options = [
+        Option("--allow-existing", help="no error if record already exists",
+               action="store_true"),
+    ]
+
+    def run(self, server, zone, name, rtype, data, allow_existing=False,
+            sambaopts=None, credopts=None, versionopts=None):
 
         if rtype.upper() not in ('A', 'AAAA', 'PTR', 'CNAME', 'NS', 'MX', 'SRV', 'TXT'):
             raise CommandError('Adding record of type %s is not supported' % rtype)
@@ -1183,9 +1188,16 @@ class cmd_add_record(Command):
                 'Record already exists; record could not be added. '
                 f'zone[{zone}] name[{name}]')
         }
-        dns_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
-                                     0, server, zone, name, add_rec_buf, None,
-                                     messages=messages)
+        try:
+            dns_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                         0, server, zone, name, add_rec_buf, None,
+                                         messages=messages)
+        except CommandError as e:
+            if e.inner_exception.args[0] == werror.WERR_DNS_ERROR_RECORD_ALREADY_EXISTS:
+                if allow_existing:
+                    self.outf.write('Record already exists, not adding\n')
+                    return
+            raise
 
         self.outf.write('Record added successfully\n')
 
