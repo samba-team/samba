@@ -963,6 +963,7 @@ interface security
 	const string GUID_DRS_DNS_HOST_NAME           = "72e39547-7b18-11d1-adef-00c04fd8d5cd";
 	const string GUID_DRS_ADD_DNS_HOST_NAME       = "80863791-dbe9-4eb8-837e-7f0ab55d9ac7";
 	const string GUID_DRS_BEHAVIOR_VERSION        = "d31a8757-2447-4545-8081-3bb610cacbf2";
+	const string GUID_DRS_DS_VALIDATED_WRITE_COMPUTER = "9b026da6-0d3c-465c-8bee-5199d7165cba";
 
 	/* A type to describe the mapping of generic access rights to object
 	   specific access rights. */

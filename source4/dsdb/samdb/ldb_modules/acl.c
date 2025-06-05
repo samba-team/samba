@@ -36,6 +36,8 @@
 #include "auth/auth.h"
 #include "libcli/security/security.h"
 #include "dsdb/samdb/samdb.h"
+#include "librpc/gen_ndr/keycredlink.h"
+#include "librpc/gen_ndr/ndr_keycredlink.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
 #include "dsdb/samdb/ldb_modules/util.h"
@@ -1122,6 +1124,216 @@ fail:
 	return LDB_ERR_CONSTRAINT_VIOLATION;
 }
 
+static int acl_check_ms_ds_key_credential_link(
+	TALLOC_CTX *mem_ctx,
+	struct ldb_module *module,
+	struct ldb_request *req,
+	const struct ldb_message_element *el,
+	struct security_descriptor *sd,
+	struct dom_sid *sid,
+	const struct dsdb_attribute *attr,
+	const struct dsdb_class *objectclass)
+{
+	int ret;
+	TALLOC_CTX *tmp_ctx = NULL;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	const struct dsdb_schema *schema = NULL;
+	const struct ldb_message *msg = NULL;
+	const struct dsdb_class *computer_objectclass = NULL;
+	bool is_subclass;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb);
+	}
+
+	if (req->operation == LDB_MODIFY) {
+		msg = req->op.mod.message;
+	} else if (req->operation == LDB_ADD) {
+		msg = req->op.add.message;
+	}
+
+	/* The attribute only accepts single values */
+	if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_ADD && el->num_values == 0) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	/* if we have Write Property, we can do whatever we like */
+	ret = acl_check_access_on_attribute(module,
+					    tmp_ctx,
+					    sd,
+					    sid,
+					    SEC_ADS_WRITE_PROP,
+					    attr,
+					    objectclass);
+	if (ret == LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
+	}
+
+	ret = acl_check_extended_right(tmp_ctx,
+				       module,
+				       req,
+				       objectclass,
+				       sd,
+				       acl_user_token(module),
+				       GUID_DRS_DS_VALIDATED_WRITE_COMPUTER,
+				       SEC_ADS_SELF_WRITE,
+				       sid);
+	if (ret != LDB_SUCCESS) {
+		dsdb_acl_debug(sd,
+			       acl_user_token(module),
+			       msg->dn,
+			       true,
+			       DBGLVL_DEBUG);
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/*
+	 * If we have “validated write msDS-KeyCredentialLink”, allow delete of
+	 * any existing value (this keeps constrained delete to the same rules
+	 * as unconstrained).
+	 */
+	if (req->operation == LDB_MODIFY) {
+		struct ldb_result *acl_res = NULL;
+		static const char *acl_attrs[] = {"msDS-KeyCredentialLink",
+						  "objectSid",
+						  NULL};
+		bool existing_value_present = false;
+		struct dom_sid object_sid;
+		struct dom_sid *requestor_sid = NULL;
+
+		/* If not add or replace (e.g. delete), return success */
+		if (LDB_FLAG_MOD_TYPE(el->flags) != LDB_FLAG_MOD_ADD &&
+		    LDB_FLAG_MOD_TYPE(el->flags) != LDB_FLAG_MOD_REPLACE)
+		{
+			talloc_free(tmp_ctx);
+			return LDB_SUCCESS;
+		}
+
+		/* Search for any existing values. */
+		ret = dsdb_module_search_dn(module,
+					    tmp_ctx,
+					    &acl_res,
+					    msg->dn,
+					    acl_attrs,
+					    DSDB_FLAG_NEXT_MODULE |
+						    DSDB_FLAG_AS_SYSTEM |
+						    DSDB_SEARCH_SHOW_RECYCLED,
+					    req);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		/* An existing value must not be present. */
+		existing_value_present = ldb_msg_find_ldb_val(
+						 acl_res->msgs[0],
+						 "msDS-KeyCredentialLink") !=
+					 NULL;
+		if (existing_value_present) {
+			goto fail;
+		}
+
+		ret = samdb_result_dom_sid_buf(acl_res->msgs[0],
+					       "objectSid",
+					       &object_sid);
+		if (ret) {
+			talloc_free(tmp_ctx);
+			return ldb_operr(ldb);
+		}
+
+		/* The requestor must be SELF. */
+		requestor_sid = &acl_user_token(module)
+					 ->sids[PRIMARY_USER_SID_INDEX];
+		if (!dom_sid_equal(requestor_sid, &object_sid)) {
+			goto fail;
+		}
+	} else if (req->operation != LDB_ADD) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* Check if the account has objectclass 'computer'. */
+
+	schema = dsdb_get_schema(ldb, req);
+	if (schema == NULL) {
+		talloc_free(tmp_ctx);
+		return ldb_operr(ldb);
+	}
+
+	computer_objectclass = dsdb_class_by_lDAPDisplayName(schema,
+							     "computer");
+	if (computer_objectclass == NULL) {
+		talloc_free(tmp_ctx);
+		return ldb_operr(ldb);
+	}
+
+	is_subclass = dsdb_is_subclass_of(schema,
+					  objectclass,
+					  computer_objectclass);
+	if (!is_subclass) {
+		/* The account is not a computer. */
+		goto fail;
+	}
+
+	if (req->operation == LDB_MODIFY &&
+	    LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE &&
+	    el->num_values == 0)
+	{
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
+	}
+
+	/* The attribute only accepts single values */
+	if (el->num_values != 1) {
+		goto fail;
+	}
+
+	{
+		struct dsdb_dn *dsdb_dn = NULL;
+		struct KEYCREDENTIALLINK_BLOB key_credential_link;
+		enum ndr_err_code ndr_err;
+
+		dsdb_dn = dsdb_dn_parse(tmp_ctx,
+					ldb,
+					&el->values[0],
+					DSDB_SYNTAX_BINARY_DN);
+		if (dsdb_dn == NULL) {
+			goto fail;
+		}
+
+		/*
+		 * Ensure that the binary portion of the attribute is a
+		 * well‐formed KEYCREDENTIALLINK_BLOB value.
+		 */
+
+		ndr_err = ndr_pull_struct_blob(
+			&dsdb_dn->extra_part,
+			tmp_ctx,
+			&key_credential_link,
+			(ndr_pull_flags_fn_t)ndr_pull_KEYCREDENTIALLINK_BLOB);
+
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			goto fail;
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+
+fail:
+	ldb_debug_set(
+		ldb,
+		LDB_DEBUG_WARNING,
+		"acl: msDS-KeyCredentialLink validation failed for [%s]\n",
+		ldb_dn_get_linearized(msg->dn));
+	talloc_free(tmp_ctx);
+	return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+}
+
 /* checks if modifications are allowed on "Member" attribute */
 static int acl_check_self_membership(TALLOC_CTX *mem_ctx,
 				     struct ldb_module *module,
@@ -1515,6 +1727,26 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 			if (ret != LDB_SUCCESS) {
 				ldb_asprintf_errstring(ldb_module_get_ctx(module),
 						       "Object %s cannot be created with dnsHostName",
+						       ldb_dn_get_linearized(msg->dn));
+				dsdb_acl_debug(control_sd->default_sd,
+					       acl_user_token(module),
+					       msg->dn,
+					       true,
+					       10);
+				return ret;
+			}
+		} else if (ldb_attr_cmp("msDS-KeyCredentialLink", el->name) == 0) {
+			ret = acl_check_ms_ds_key_credential_link(req,
+						      module,
+						      req,
+						      el,
+						      control_sd->default_sd,
+						      NULL,
+						      attr,
+						      objectclass);
+			if (ret != LDB_SUCCESS) {
+				ldb_asprintf_errstring(ldb_module_get_ctx(module),
+						       "Object %s cannot be created with msDS-KeyCredentialLink",
 						       ldb_dn_get_linearized(msg->dn));
 				dsdb_acl_debug(control_sd->default_sd,
 					       acl_user_token(module),
@@ -2113,6 +2345,18 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 						      attr,
 						      objectclass,
 						      implicit_validated_write_control);
+			if (ret != LDB_SUCCESS) {
+				goto fail;
+			}
+		} else if (ldb_attr_cmp("msDS-KeyCredentialLink", el->name) == 0) {
+			ret = acl_check_ms_ds_key_credential_link(tmp_ctx,
+						      module,
+						      req,
+						      el,
+						      sd,
+						      sid,
+						      attr,
+						      objectclass);
 			if (ret != LDB_SUCCESS) {
 				goto fail;
 			}
