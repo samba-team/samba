@@ -1,4 +1,88 @@
                    ==============================
+                   Release Notes for Samba 4.22.2
+                           June 05, 2025
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.22 release series.
+It contains the security-relevant bugfix CVE-2025-0620:
+
+    smbd doesn't pick up group membership changes
+    when re-authenticating an expired SMB session
+    https://www.samba.org/samba/security/CVE-2025-0620.html
+
+
+Description of CVE-2025-0620
+-----------------------------
+
+    With Kerberos authentication SMB sessions typically have an
+    associated lifetime, requiring re-authentication by the
+    client when the session expires. As part of the
+    re-authentication, Samba receives the current group
+    membership information and is expected to reflect this
+    change in further SMB request processing.
+
+    For historic reasons, Samba maintains a cache of
+    associations between a user's impersonation information and
+    connected shares. A recent change in this cache caused Samba
+    to not reflect group membership changes from session
+    re-authentication when processing further SMB requests.
+
+    As a result, when an administrator removes a user from a
+    particular group in Active Directory, this change will not
+    become effective unless the user disconnects from the server
+    and establishes a new connection.
+
+
+Changes since 4.22.1
+--------------------
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 15707: (CVE-2025-0620) [SECURITY] CVE-2025-0620: smbd doesn't pick up
+     group membership changes when re-authenticating an expired SMB
+     session.
+   * BUG 15861: Profile sync fails due to Directory Leases.
+
+o  Pavel Filipenský <pfilipensky@samba.org>
+   * BUG 15727: net ad join fails with "Failed to join domain: failed to create
+     kerberos keytab".
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15851: dcerpcd not able to bind to listening port.
+
+o  Anoop C S <anoopcs@samba.org>
+   * BUG 15819: vfs_ceph_snapshots fails to list snapshots for entries at any
+     level beyond share root.
+
+o  Martin Schwenke <mschwenke@ddn.com>
+   * BUG 15858: CTDB does not put nodes running NFS into grace on graceful
+     shutdown.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.22.1
                            April 17, 2025
                    ==============================
@@ -74,8 +158,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.22.0
                           March 06, 2025
