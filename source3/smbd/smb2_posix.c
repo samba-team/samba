@@ -44,7 +44,7 @@ static NTSTATUS reparse_buffer_parse_posix_type(uint32_t reparse_tag,
 		 * anything that is not a NFS one (or symlink) as S_IFREG.
 		 */
 		DBG_INFO("Unhandled NFS reparse tag: 0x%" PRIx32 "\n",
-			 reparse->tag);
+			 reparse_tag);
 		*type = S_IFREG;
 		return NT_STATUS_OK;
 	}
