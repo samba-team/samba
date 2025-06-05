@@ -47,6 +47,14 @@ bld.SAMBA3_SUBSYSTEM('HASH_INODE',
                     source='hash_inode.c',
                     deps='gnutls')
 
+bld.SAMBA3_SUBSYSTEM('VARLINK_KEYBRIDGE',
+                     source='varlink_keybridge.c',
+                     enabled=(
+                        bld.SAMBA3_IS_ENABLED_MODULE('vfs_ceph_new')
+                        and bld.env.with_varlink
+                     ),
+                     deps='varlink')
+
 #
 # This is always be static, see
 # source3/wscript: required_static_modules
@@ -542,7 +550,7 @@ bld.SAMBA3_MODULE('vfs_ceph',
 bld.SAMBA3_MODULE('vfs_ceph_new',
                  subsystem='vfs',
                  source='vfs_ceph_new.c',
-                 deps='POSIXACL_XATTR samba-util',
+                 deps='POSIXACL_XATTR VARLINK_KEYBRIDGE samba-util',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_ceph_new'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_ceph_new'),

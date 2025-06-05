@@ -613,15 +613,19 @@ msg.msg_accrightslen = sizeof(fd);
         conf.env.build_winbind = True
         conf.DEFINE('WITH_WINBIND', '1')
 
-    if Options.options.with_systemd_userdb:
+    if Options.options.with_varlink or Options.options.with_systemd_userdb:
         conf.CHECK_CFG(package='libvarlink', args='"libvarlink >= 24" --cflags --libs',
                        msg='Checking for libvarlink >= 24', mandatory=True)
-        if conf.CHECK_HEADERS('varlink.h', lib='varlink') and conf.CHECK_LIB('varlink', shlib=True):
-            if conf.CHECK_FUNCS_IN('varlink_service_new', 'varlink', headers='varlink.h'):
-                conf.env.with_systemd_userdb = True
-                conf.DEFINE('WITH_SYSTEMD_USERDB', '1')
-        if not conf.env.with_systemd_userdb:
+        if (conf.CHECK_HEADERS('varlink.h', lib='varlink') and
+            conf.CHECK_LIB('varlink', shlib=True) and
+            conf.CHECK_FUNCS_IN('varlink_service_new', 'varlink', headers='varlink.h')):
+                conf.env.with_varlink = True
+        else:
             conf.fatal("libvarlink not found.")
+        if Options.options.with_systemd_userdb:
+            conf.env.with_systemd_userdb = True
+            conf.DEFINE('WITH_SYSTEMD_USERDB', '1')
+
 
     conf.find_program('awk', var='AWK')
 
@@ -1658,6 +1662,15 @@ int main(void) {
         if (conf.CHECK_FUNCS_IN('ceph_ll_nonblocking_readv_writev', 'cephfs',
                                 headers='cephfs/libcephfs.h')):
             conf.DEFINE('HAVE_CEPH_ASYNCIO', '1')
+
+        ceph_fscrypt = conf.CHECK_FUNCS_IN(
+            'ceph_ll_set_fscrypt_policy_v2',
+            'cephfs',
+            headers='cephfs/libcephfs.h',
+        )
+        fscrypt = conf.CHECK_HEADERS('linux/fscrypt.h')
+        if conf.env.with_varlink and ceph_fscrypt and fscrypt:
+            conf.DEFINE('HAVE_CEPH_FSCRYPT', '1')
 
     if conf.CONFIG_SET('HAVE_CEPH'):
         Logs.info("building ceph vfs modules")

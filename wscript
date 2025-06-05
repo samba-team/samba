@@ -162,6 +162,11 @@ def options(opt):
                                      "Varlink"),
                                default=False)
 
+    opt.add_option('--with-varlink',
+                   help=("Build with Varlink support"),
+                   action='store_true',
+                   dest='with_varlink')
+
 def configure(conf):
     if Options.options.SAMBA_VERSION_VENDOR_SUFFIX:
         conf.env.SAMBA_VERSION_VENDOR_SUFFIX = Options.options.SAMBA_VERSION_VENDOR_SUFFIX
