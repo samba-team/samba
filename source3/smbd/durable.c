@@ -117,6 +117,11 @@ NTSTATUS vfs_default_durable_cookie(struct files_struct *fsp,
 	cookie.stat_info.st_ex_blocks = fsp->fsp_name->st.st_ex_blocks;
 	cookie.stat_info.st_ex_flags = fsp->fsp_name->st.st_ex_flags;
 
+	if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
+		DBG_DEBUG("Fresh cookie\n");
+		NDR_PRINT_DEBUG(vfs_default_durable_cookie, &cookie);
+	}
+
 	ndr_err = ndr_push_struct_blob(cookie_blob, mem_ctx, &cookie,
 			(ndr_push_flags_fn_t)ndr_push_vfs_default_durable_cookie);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -180,6 +185,11 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
 		return status;
+	}
+
+	if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
+		DBG_DEBUG("Old cookie\n");
+		NDR_PRINT_DEBUG(vfs_default_durable_cookie, &cookie);
 	}
 
 	if (strcmp(cookie.magic, VFS_DEFAULT_DURABLE_COOKIE_MAGIC) != 0) {
@@ -277,6 +287,11 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
 		return status;
+	}
+
+	if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
+		DBG_DEBUG("New cookie\n");
+		NDR_PRINT_DEBUG(vfs_default_durable_cookie, &cookie);
 	}
 
 	status = fd_close(fsp);
@@ -815,6 +830,11 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
 		return status;
+	}
+
+	if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
+		DBG_DEBUG("Cookie:\n");
+		NDR_PRINT_DEBUG(vfs_default_durable_cookie, &state.cookie);
 	}
 
 	if (strcmp(state.cookie.magic, VFS_DEFAULT_DURABLE_COOKIE_MAGIC) != 0) {
