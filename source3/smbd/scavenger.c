@@ -528,7 +528,7 @@ static bool share_mode_cleanup_disconnected(
 
 	state.lck = get_existing_share_mode_lock(frame, fid);
 	if (state.lck == NULL) {
-		DBG_INFO("Could not fetch share mode entry for %s\n",
+		DBG_WARNING("Could not fetch share mode entry for %s\n",
 			 file_id_str_buf(fid, &idbuf));
 		goto done;
 	}
@@ -536,7 +536,7 @@ static bool share_mode_cleanup_disconnected(
 
 	ok = brl_cleanup_disconnected(fid, open_persistent_id);
 	if (!ok) {
-		DBG_DEBUG("failed to clean up byte range locks associated "
+		DBG_WARNING("failed to clean up byte range locks associated "
 			  "with file (file-id='%s', servicepath='%s', "
 			  "name='%s') and open_persistent_id %"PRIu64" "
 			  "==> do not cleanup\n",
@@ -558,7 +558,7 @@ static bool share_mode_cleanup_disconnected(
 	ok = share_mode_forall_entries(
 		state.lck, cleanup_disconnected_share_mode_entry_fn, &state);
 	if (!ok) {
-		DBG_DEBUG("failed to clean up entry associated "
+		DBG_WARNING("failed to clean up entry associated "
 			  "with file (file-id='%s', servicepath='%s', "
 			  "name='%s') and open_persistent_id %"PRIu64" "
 			  "==> do not cleanup\n",
