@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Locking functions
    Copyright (C) Andrew Tridgell 1992-2000
