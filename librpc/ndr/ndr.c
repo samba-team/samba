@@ -305,7 +305,6 @@ _PUBLIC_ void ndr_print_debugc_helper(struct ndr_print *ndr, const char *format,
 {
 	va_list ap;
 	char *s = NULL;
-	uint32_t i;
 	int ret;
 	int dbgc_class;
 
@@ -325,11 +324,7 @@ _PUBLIC_ void ndr_print_debugc_helper(struct ndr_print *ndr, const char *format,
 		return;
 	}
 
-	for (i=0;i<ndr->depth;i++) {
-		DEBUGADDC(dbgc_class, 1,("    "));
-	}
-
-	DEBUGADDC(dbgc_class, 1,("%s\n", s));
+	DEBUGADDC(dbgc_class, 1, ("%*.s\n", 4 * ndr->depth, s));
 	free(s);
 }
 
@@ -337,7 +332,6 @@ _PUBLIC_ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, 
 {
 	va_list ap;
 	char *s = NULL;
-	uint32_t i;
 	int ret;
 
 	va_start(ap, format);
@@ -354,23 +348,16 @@ _PUBLIC_ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, 
 		return;
 	}
 
-	for (i=0;i<ndr->depth;i++) {
-		DEBUGADD(1,("    "));
-	}
-
-	DEBUGADD(1,("%s\n", s));
+	DEBUGADD(1, ("%*.s%s\n", 4 * ndr->depth, "", s));
 	free(s);
 }
 
 _PUBLIC_ void ndr_print_printf_helper(struct ndr_print *ndr, const char *format, ...)
 {
 	va_list ap;
-	uint32_t i;
 
 	if (!ndr->no_newline) {
-		for (i=0;i<ndr->depth;i++) {
-			printf("    ");
-		}
+		printf("%*.s", 4 * ndr->depth, "");
 	}
 
 	va_start(ap, format);
@@ -384,13 +371,12 @@ _PUBLIC_ void ndr_print_printf_helper(struct ndr_print *ndr, const char *format,
 _PUBLIC_ void ndr_print_string_helper(struct ndr_print *ndr, const char *format, ...)
 {
 	va_list ap;
-	uint32_t i;
 
 	if (!ndr->no_newline) {
-		for (i=0;i<ndr->depth;i++) {
-			ndr->private_data = talloc_asprintf_append_buffer(
-				(char *)ndr->private_data, "    ");
-		}
+		talloc_asprintf_addbuf((char **)&ndr->private_data,
+				       "%*.s",
+				       ndr->depth * 4,
+				       "");
 	}
 
 	va_start(ap, format);
@@ -398,8 +384,7 @@ _PUBLIC_ void ndr_print_string_helper(struct ndr_print *ndr, const char *format,
 						    format, ap);
 	va_end(ap);
 	if (!ndr->no_newline) {
-		ndr->private_data = talloc_asprintf_append_buffer((char *)ndr->private_data,
-								  "\n");
+		talloc_asprintf_addbuf((char **)&ndr->private_data, "\n");
 	}
 }
 

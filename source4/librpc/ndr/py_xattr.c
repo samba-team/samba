@@ -44,7 +44,7 @@ static void ntacl_print_debug_helper(struct ndr_print *ndr, const char *format, 
 {
         va_list ap;
         char *s = NULL;
-        int i, ret;
+        int ret;
 
         va_start(ap, format);
         ret = vasprintf(&s, format, ap);
@@ -54,11 +54,8 @@ static void ntacl_print_debug_helper(struct ndr_print *ndr, const char *format, 
 		return;
 	}
 
-        for (i=0;i<ndr->depth;i++) {
-                printf("    ");
-        }
+	printf("%*.s\n", 4 * ndr->depth, s);
 
-        printf("%s\n", s);
         free(s);
 }
 

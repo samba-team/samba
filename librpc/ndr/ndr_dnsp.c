@@ -193,10 +193,7 @@ _PUBLIC_ void ndr_print_dnsp_string_list(struct ndr_print *ndr, const char *name
 	uint32_t i;
 
 	ndr->no_newline = true;
-	for (i=0; i<ndr->depth; i++) {
-		ndr->print(ndr, "    ");
-	}
-	ndr->print(ndr, "%-25s:", name);
+	ndr->print(ndr, "%*.s%-25s:", 4 * ndr->depth, "", name);
 	for (i=0; i<list->count; i++) {
 		ndr->print(ndr, " \"%s\"", list->str[i]);
 	}
