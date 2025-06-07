@@ -2697,7 +2697,7 @@ int ad_fset(struct vfs_handle_struct *handle,
 	switch (ad->ad_type) {
 	case ADOUBLE_META:
 		rc = SMB_VFS_NEXT_FSETXATTR(handle,
-				   fsp->base_fsp ? fsp->base_fsp : fsp,
+				   metadata_fsp(fsp),
 				   AFPINFO_EA_NETATALK,
 				   ad->ad_data,
 				   AD_DATASZ_XATTR, 0);
