@@ -95,6 +95,7 @@ static struct {
 	bool reopening_logs;
 	bool schedule_reopen_logs;
 	int forced_log_priority;
+	bool disable_syslog;
 
 	struct debug_settings settings;
 	debug_callback_fn callback;
@@ -301,6 +302,10 @@ static void debug_syslog_reload(bool enabled, bool previously_enabled,
 static void debug_syslog_log(int msg_level, const char *msg, size_t msg_len)
 {
 	int priority;
+
+	if (state.disable_syslog) {
+		return;
+	}
 
 	priority = debug_level_to_priority(msg_level);
 
@@ -1122,6 +1127,16 @@ void debug_set_hostname(const char *name)
 void debug_set_forced_log_priority(int forced_log_priority)
 {
 	state.forced_log_priority = forced_log_priority;
+}
+
+void debug_disable_syslog(void)
+{
+	state.disable_syslog = true;
+}
+
+void debug_enable_syslog(void)
+{
+	state.disable_syslog = false;
 }
 
 /**

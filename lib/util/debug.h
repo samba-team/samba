@@ -276,9 +276,16 @@ void debuglevel_set_class(size_t idx, int level);
 #define DBGLVL_INFO	 5	/* informational message */
 #define DBGLVL_DEBUG	10	/* debug-level message */
 
+/*
+ * Logging to syslog will be disabled as messages on debug level 0 are always
+ * reported to syslog too. We don't want to clutter the syslog with startup
+ * messages from rpc on demand daemons.
+ */
 #define DBG_STARTUP_NOTICE(...) do { \
 	debug_set_forced_log_priority(DBGLVL_NOTICE); \
+	debug_disable_syslog(); \
 	D_ERR(__VA_ARGS__); \
+	debug_enable_syslog(); \
 	debug_set_forced_log_priority(-1); \
 } while(0)
 
@@ -362,6 +369,8 @@ void debug_set_settings(struct debug_settings *settings,
 			int syslog_level, bool syslog_only);
 void debug_set_hostname(const char *name);
 void debug_set_forced_log_priority(int forced_log_priority);
+void debug_disable_syslog(void);
+void debug_enable_syslog(void);
 bool reopen_logs_internal( void );
 void force_check_log_size( void );
 bool need_to_check_log_size( void );
