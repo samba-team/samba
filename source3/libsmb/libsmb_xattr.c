@@ -33,6 +33,7 @@
 #include "rpc_client/cli_lsarpc.h"
 #include "../libcli/security/security.h"
 #include "lib/util/string_wrappers.h"
+#include "source3/include/trans2.h"
 
 /*
  * Find an lsa pipe handle associated with a cli struct.
@@ -2249,6 +2250,70 @@ SMBC_fgetxattr_ctx(SMBCCTX *context,
 
 		TALLOC_FREE(frame);
 		return len;
+	}
+
+	if (strequal(name, "smb311_posix.statinfo")) {
+		struct stat st = {};
+		struct timespec t = {};
+		DATA_BLOB out = {};
+		uint32_t *_attrs = NULL;
+		NTSTATUS status;
+
+		if (size != (sizeof(struct stat) + 4)) {
+			TALLOC_FREE(frame);
+			errno = EINVAL;
+			return -1;
+		}
+
+		status = cli_smb2_query_info_fnum(file->targetcli,
+						  file->cli_fd,
+						  SMB2_0_INFO_FILE,
+						  FSCC_FILE_POSIX_INFORMATION,
+						  65536,
+						  NULL,
+						  0,
+						  0,
+						  frame,
+						  &out);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			errno = map_errno_from_nt_status(status);
+			return -1;
+		}
+
+		if (out.length < 80) {
+			TALLOC_FREE(frame);
+			errno = EIO;
+			return -1;
+		}
+
+		t = nt_time_to_unix_timespec(PULL_LE_U64(out.data, 8));
+		st.st_atime = t.tv_sec;
+		set_atimensec(&st, t.tv_nsec);
+
+		t = nt_time_to_unix_timespec(PULL_LE_U64(out.data, 16));
+		st.st_mtime = t.tv_sec;
+		set_mtimensec(&st, t.tv_nsec);
+
+		t = nt_time_to_unix_timespec(PULL_LE_U64(out.data, 24));
+		st.st_ctime = t.tv_sec;
+		set_ctimensec(&st, t.tv_nsec);
+
+		st.st_size = PULL_LE_U64(out.data, 32);
+		st.st_ino = PULL_LE_U64(out.data, 52);
+		st.st_dev = PULL_LE_U32(out.data, 60);
+		st.st_nlink = PULL_LE_U32(out.data, 68);
+		st.st_mode = PULL_LE_U32(out.data, 76);
+
+		memcpy(discard_const_p(char, value), &st, sizeof(struct stat));
+
+		_attrs = (uint32_t *)(discard_const_p(char, value) +
+				      sizeof(struct stat));
+		*_attrs = PULL_LE_U32(out.data, 48);
+
+		TALLOC_FREE(frame);
+
+		return sizeof(struct stat);
 	}
 
 	ret = SMBC_getxattr_ctx(context, file->fname, name, value, size);
