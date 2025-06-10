@@ -1,0 +1,167 @@
+/*
+   Definitions for packing and unpacking of msDS-KeyCredentialLink
+   structures, derived from [MS-ADTS] 2.2.20 Key Credential Link Structures
+
+   Note: - KeyMaterial is treated as a binary blob
+         - KEYCREDENTIALLINK_ENTRY ordering by identifier not enforced
+	 - Presence of the mandatory KEYCREDENTIALLINK_ENTRYs Key_ID,
+	   KeyMaterial and KeyUsage is not enforced
+*/
+
+#include "idl_types.h"
+
+[
+  pointer_default(unique),
+  helper("../librpc/ndr/ndr_keycredlink.h")
+]
+interface keycredlink
+{
+	/* Public structures. */
+
+	typedef [enum8bit, public] enum {
+		KeyID = 0x01,
+		KeyHash = 0x02,
+		KeyMaterial = 0x03,
+		KeyUsage = 0x04,
+		KeySource = 0x05,
+		DeviceId = 0x06,
+		CustomKeyInformation = 0x07,
+		KeyApproximateLastLogonTimeStamp = 0x08,
+		KeyCreationTime = 0x09
+	} KEYCREDENTIALLINK_ENTRY_Identifier;
+
+	typedef [enum8bit, public] enum {
+		KEY_USAGE_NGC  = 0x01,
+		KEY_USAGE_FIDO = 0x02,
+		KEY_USAGE_FEK  = 0x03
+	} KEYCREDENTIALLINK_ENTRY_KeyUsage;
+
+	typedef [enum8bit, public] enum {
+		KEY_SOURCE_AD = 0x00
+	} KEYCREDENTIALLINK_ENTRY_KeySource;
+
+	typedef [bitmap8bit, public] bitmap {
+		CUSTOM_KEY_INFO_FLAGS_ATTESTATION  = 0x01,
+		/* Reserved for future use */
+		CUSTOM_KEY_INFO_FLAGS_MFA_NOT_USED = 0x02
+		/*
+		 * During creation of this key, the requesting client
+		 * authenticated using only a single credential.
+		 */
+	} CUSTOM_KEY_INFO_Flags;
+
+	typedef [enum8bit, public] enum {
+		Unspecified = 0x00,    // No volume specified
+				       // defined as None in the docs but this
+				       // causes issues in the python bindings
+		OSV  = 0x01,    // Operating system volume
+		FDV  = 0x02,    // Fixed data volume
+		RDV  = 0x03     // Removable data volume
+	} CUSTOM_KEY_INFO_VolType;
+
+	typedef [enum8bit, public] enum {
+		Unsupported = 0x00,    // Notification is not supported
+				       // defined as None in the docs but this
+				       // causes issues in the python bindings
+		Supported   = 0x01     // Notification is supported
+	} CUSTOM_KEY_INFO_SupportsNotification;
+
+	typedef [enum8bit, public] enum {
+		Unknown = 0x00,
+		Weak    = 0x01,
+		Normal  = 0x02
+	} CUSTOM_KEY_INFO_KeyStrength;
+
+	/*
+	 * Extended custom key information
+	 */
+	typedef [public, flag(NDR_NOALIGN)] struct {
+		[value(0)] uint8 version;
+		uint8 size;
+		uint8 data[size];
+		/*
+		 * A Concise Binary Object Representation (CBOR)-encoded blob
+		 * whose length is specified by the Size field.
+		 * CBOR is a binary data serialization format defined in
+		 * [RFC7049]. The contents of this field are opaque and
+		 * have no behavioural impact on the protocol.
+		 */
+	} EncodedExtendedCKI;
+
+	/*
+	 * This structure has two possible representations which are
+	 * differentiated by the sized of the encoded data.
+	 *
+	 * a) only the Version and Flags fields are present;
+	 *    and the structure has a size of 2 bytes.
+	 * b) all additional are also present
+	 *    - the structure's total size is variable but not 2
+	 *
+	 * The boolean isExtended attribute is used to indicate which version
+	 * was unpacked or should be packed.
+	 *
+	 * Note: isExtended and count are not present in the packed binary
+	 *       representation
+	 */
+
+	typedef [nopush, nopull] struct {
+		[value(1)] uint8 version;
+		CUSTOM_KEY_INFO_Flags flags;
+		boolean8 isExtended;
+		/*
+		 * Not present in packed representation indicates
+		 * that the following fields are present
+		 */
+		CUSTOM_KEY_INFO_VolType volType;
+		CUSTOM_KEY_INFO_SupportsNotification supportsNotification;
+		[value(1)] uint8 fekKeyVersion;
+		CUSTOM_KEY_INFO_KeyStrength keyStrength;
+		uint8 reserved[10];     /* Reserved bytes not currently used */
+		uint32 count;
+		/* Not present in packed representation size cki array */
+		EncodedExtendedCKI cki[count];
+	} CUSTOM_KEY_INFORMATION;
+
+	typedef [switch_type(KEYCREDENTIALLINK_ENTRY_Identifier),
+	         public,
+		 nopull,
+		 nodiscriminant,
+		 gensize,
+		 flag(NDR_NOALIGN)]
+	union {
+	[case(KeyID)]
+		uint8 keyId[32];
+	[case(KeyHash)]
+		uint8 keyHash[32];
+	[case(KeyUsage)]
+		KEYCREDENTIALLINK_ENTRY_KeyUsage keyUsage;
+	[case(KeySource), value(KEY_SOURCE_AD)]
+		KEYCREDENTIALLINK_ENTRY_KeySource keySource;
+	[case(KeyMaterial)] [flag(NDR_REMAINING)]
+		DATA_BLOB keyMaterial;
+		/* Currently treating Key Material as an opaque binary blob */
+	[case(DeviceId)]
+		uint8 deviceId[16];
+	[case(CustomKeyInformation)]
+		CUSTOM_KEY_INFORMATION customKeyInformation;
+	[case(KeyApproximateLastLogonTimeStamp)]
+		NTTIME lastLogon;
+	[case(KeyCreationTime)]
+		NTTIME created;
+	} KEYCREDENTIALLINK_ENTRY_Value;
+
+	typedef [public, nopull, flag(NDR_NOALIGN)] struct {
+		[value(
+			ndr_size_KEYCREDENTIALLINK_ENTRY_Value(
+				&value,identifier,ndr->flags))]
+			uint16 length;
+		KEYCREDENTIALLINK_ENTRY_Identifier identifier;
+		[switch_is(identifier)] KEYCREDENTIALLINK_ENTRY_Value value;
+	} KEYCREDENTIALLINK_ENTRY;
+
+	typedef [public, nopull, nopush, flag(NDR_NOALIGN)] struct {
+		[value(0x0200)] uint32 version;
+		uint32 count;
+		KEYCREDENTIALLINK_ENTRY entries[count];
+	} KEYCREDENTIALLINK_BLOB;
+}

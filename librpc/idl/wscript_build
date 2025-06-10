@@ -132,6 +132,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     drsblobs.idl
                     gmsa.idl
                     idmap.idl
+                    keycredlink.idl
                     krb5pac.idl
                     krb5ccache.idl
                     schannel.idl
