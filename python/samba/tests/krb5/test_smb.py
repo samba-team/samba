@@ -74,8 +74,6 @@ class SmbTests(KDCBaseTest):
 
         mach_credentials = self.get_dc_creds()
 
-        mach_credentials = self.get_dc_creds()
-
         # Talk to the KDC to obtain the service ticket, which gets placed into
         # the cache. The machine account name has to match the name in the
         # ticket, to ensure that the krbtgt ticket doesn't also need to be
