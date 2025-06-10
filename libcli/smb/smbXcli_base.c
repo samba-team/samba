@@ -4485,7 +4485,7 @@ static void smbXcli_negprot_smb1_done(struct tevent_req *subreq)
 	bool server_writeunlock = false;
 	struct GUID server_guid = GUID_zero();
 	DATA_BLOB server_gss_blob = data_blob_null;
-	uint8_t server_challenge[8];
+	uint8_t server_challenge[8] = {};
 	char *server_workgroup = NULL;
 	char *server_name = NULL;
 	int server_time_zone = 0;
@@ -4504,8 +4504,6 @@ static void smbXcli_negprot_smb1_done(struct tevent_req *subreq)
 		.wct = 0x01, /* CORE */
 	}
 	};
-
-	ZERO_STRUCT(server_challenge);
 
 	status = smb1cli_req_recv(subreq, state,
 				  &recv_iov,
