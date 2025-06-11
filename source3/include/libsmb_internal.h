@@ -239,6 +239,7 @@ struct SMBC_internal_data {
                 smbc_removexattr_fn             removexattr_fn;
                 smbc_listxattr_fn               listxattr_fn;
 #endif
+		smbc_fgetxattr_fn		fgetxattr_fn;
         }               posix_emu;
 
 #if 0 /* Left in libsmbclient.h for backward compatibility */
@@ -569,6 +570,13 @@ SMBC_getxattr_ctx(SMBCCTX *context,
                   const char *name,
                   const void *value,
                   size_t size);
+
+int
+SMBC_fgetxattr_ctx(SMBCCTX *context,
+		   SMBCFILE *file,
+		   const char *name,
+		   const void *value,
+		   size_t size);
 
 int
 SMBC_removexattr_ctx(SMBCCTX *context,

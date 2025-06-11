@@ -2200,6 +2200,40 @@ SMBC_getxattr_ctx(SMBCCTX *context,
         return -1;
 }
 
+int
+SMBC_fgetxattr_ctx(SMBCCTX *context,
+		   SMBCFILE *file,
+		   const char *name,
+		   const void *value,
+		   size_t size)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	int ret;
+
+	if (!context || !context->internal->initialized) {
+		TALLOC_FREE(frame);
+		errno = EINVAL; /* Best I can think of ... */
+		return -1;
+	}
+
+	if (!file) {
+		TALLOC_FREE(frame);
+		errno = EINVAL;
+		return -1;
+	}
+
+	DEBUG(4, ("smbc_fgetxattr(%s, %s)\n", file->fname, name));
+
+	ret = SMBC_getxattr_ctx(context, file->fname, name, value, size);
+
+	{
+		int errno_saved = errno;
+		TALLOC_FREE(frame);
+		errno = errno_saved;
+	}
+
+	return ret;
+}
 
 int
 SMBC_removexattr_ctx(SMBCCTX *context,

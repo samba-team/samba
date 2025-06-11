@@ -1073,6 +1073,18 @@ smbc_setFunctionGetxattr(SMBCCTX *c, smbc_getxattr_fn fn)
         c->getxattr = fn;
 }
 
+void
+smbc_setFunctionFGetxattr(SMBCCTX *c, smbc_fgetxattr_fn fn)
+{
+        c->internal->posix_emu.fgetxattr_fn = fn;
+}
+
+smbc_fgetxattr_fn
+smbc_getFunctionFGetxattr(SMBCCTX *c)
+{
+        return c->internal->posix_emu.fgetxattr_fn;
+}
+
 smbc_removexattr_fn
 smbc_getFunctionRemovexattr(SMBCCTX *c)
 {

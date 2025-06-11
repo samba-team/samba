@@ -232,6 +232,7 @@ smbc_new_context(void)
         smbc_setFunctionUtimes(context, SMBC_utimes_ctx);
         smbc_setFunctionSetxattr(context, SMBC_setxattr_ctx);
         smbc_setFunctionGetxattr(context, SMBC_getxattr_ctx);
+        smbc_setFunctionFGetxattr(context, SMBC_fgetxattr_ctx);
         smbc_setFunctionRemovexattr(context, SMBC_removexattr_ctx);
         smbc_setFunctionListxattr(context, SMBC_listxattr_ctx);
 

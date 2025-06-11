@@ -1156,6 +1156,14 @@ typedef int (*smbc_getxattr_fn)(SMBCCTX *context,
 smbc_getxattr_fn smbc_getFunctionGetxattr(SMBCCTX *c);
 void smbc_setFunctionGetxattr(SMBCCTX *c, smbc_getxattr_fn fn);
 
+typedef int (*smbc_fgetxattr_fn)(SMBCCTX *context,
+				 SMBCFILE *file,
+				 const char *name,
+				 const void *value,
+				 size_t size);
+smbc_fgetxattr_fn smbc_getFunctionFGetxattr(SMBCCTX *c);
+void smbc_setFunctionFGetxattr(SMBCCTX *c, smbc_fgetxattr_fn fn);
+
 typedef int (*smbc_removexattr_fn)(SMBCCTX *context,
                                    const char *fname,
                                    const char *name);

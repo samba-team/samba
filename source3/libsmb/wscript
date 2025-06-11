@@ -26,5 +26,5 @@ def build(bld):
                        public_headers='../include/libsmbclient.h',
                        abi_directory='ABI',
                        abi_match='smbc_*',
-                       vnum='0.8.0',
+                       vnum='0.8.1',
                        pc_files='smbclient.pc')
