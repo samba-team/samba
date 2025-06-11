@@ -223,6 +223,8 @@ struct chat_struct {
 	fstring reply;
 };
 
+static void free_pw_chat(struct chat_struct *list);
+
 /**************************************************************
  Create a linked list containing chat data.
 ***************************************************************/
@@ -239,6 +241,7 @@ static struct chat_struct *make_pw_chat(const char *p)
 		t = SMB_CALLOC_ARRAY(struct chat_struct, 1);
 		if (!t) {
 			DEBUG(0,("make_pw_chat: malloc failed!\n"));
+			free_pw_chat(list);
 			TALLOC_FREE(frame);
 			return NULL;
 		}
