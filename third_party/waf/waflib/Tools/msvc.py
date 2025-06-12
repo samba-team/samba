@@ -109,10 +109,10 @@ class MSVCVersion(object):
 		m = re.search(r'^(.*)\s+(\d+[.]\d+)', ver)
 		if m:
 			self.name = m.group(1)
-			self.number = float(m.group(2))
+			self.number = tuple(int(i) for i in m.group(2).split('.'))
 		else:
 			self.name = ver
-			self.number = 0.
+			self.number = tuple()
 
 	def __lt__(self, other):
 		if self.number == other.number:
