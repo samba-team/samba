@@ -38,7 +38,8 @@ class GroupCmdTestCase(SambaToolCmdTest):
         self.groups.append(self._randomGroup({"name": "testgroup1"}))
         self.groups.append(self._randomGroup({"name": "testgroup2"}))
         self.groups.append(self._randomGroup({"name": "testgroup3"}))
-        self.groups.append(self._randomGroup({"name": "testgroup4"}))
+        self.groups.append(self._randomGroup(
+            {"name": "16 character name for bug 15854"[:16]}))
         self.groups.append(self._randomGroup({"name": "testgroup5 (with brackets)"}))
         self.groups.append(self._randomPosixGroup({"name": "posixgroup1"}))
         self.groups.append(self._randomPosixGroup({"name": "posixgroup2"}))
