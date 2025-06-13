@@ -334,6 +334,20 @@ class GroupCmdTestCase(SambaToolCmdTest):
             name = str(groupobj.get("dn", idx=0))
             self.assertMatch(out, name, "group '%s' not found" % name)
 
+    def test_addmember(self):
+        groups = [g['name'] for g in self.groups]
+        for parent, child in zip(groups, groups[1:]):
+            (result, out, err) = self.runsubcmd(
+                "group", "addmembers", parent, child)
+            self.assertCmdSuccess(result, out, err)
+
+        (result, out, err) = self.runsubcmd(
+            "group", "addmembers", groups[-1], ','.join(groups[:-1]))
+        self.assertCmdSuccess(result, out, err)
+
+        (result, out, err) = self.runsubcmd(
+            "group", "addmembers", groups[0], "alice,bob")
+        self.assertCmdSuccess(result, out, err)
 
     def test_move(self):
         full_ou_dn = str(self.samdb.normalize_dn_in_domain("OU=movetest_grp"))
