@@ -35,6 +35,7 @@ from samba.common import normalise_int32
 from samba.common import get_bytes, cmp
 from samba.dcerpc import security
 from samba import is_ad_dc_built
+from samba import string_is_guid
 from samba import NTSTATUSError, ntstatus
 import binascii
 
@@ -388,6 +389,13 @@ lockoutTime: 0
 
         partial_groupfilter = None
 
+        # If <group> looks like a SID, GUID, or DN, we use it
+        # accordingly, otherwise as a name.
+        #
+        # Because misc.GUID() will read any 16 byte sequence as a
+        # binary guid, we need to be careful not to read 16 character
+        # names as GUIDs.
+
         group_sid = None
         try:
             group_sid = security.dom_sid(group)
@@ -397,7 +405,7 @@ lockoutTime: 0
             partial_groupfilter = "(objectClass=*)"
 
         group_guid = None
-        if partial_groupfilter is None:
+        if partial_groupfilter is None and string_is_guid(group):
             try:
                 group_guid = misc.GUID(group)
             except NTSTATUSError as e:
