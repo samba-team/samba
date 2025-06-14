@@ -1680,6 +1680,9 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 
 	DBG_DEBUG("response construction phase\n");
 
+	state->op->create_action = state->info;
+	state->out_create_action = state->info;
+
 	state->out_file_attributes = fdos_mode(state->result);
 
 	if ((state->out_file_attributes & FILE_ATTRIBUTE_REPARSE_POINT) &&
@@ -1960,9 +1963,6 @@ static void smbd_smb2_create_finish(struct tevent_req *req)
 	} else {
 		state->out_oplock_level	= map_samba_oplock_levels_to_smb2(result->oplock_type);
 	}
-
-	state->op->create_action = state->info;
-	state->out_create_action = state->info;
 
 	state->out_creation_ts = get_create_timespec(smb1req->conn,
 					result, result->fsp_name);
