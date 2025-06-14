@@ -963,6 +963,10 @@ static int cephwrap_fntimes(struct vfs_handle_struct *handle,
 		stx.stx_mtime = ft->mtime;
 		mask |= CEPH_SETATTR_MTIME;
 	}
+	if (!is_omit_timespec(&ft->ctime)) {
+		stx.stx_ctime = ft->ctime;
+		mask |= CEPH_SETATTR_CTIME;
+	}
 	if (!is_omit_timespec(&ft->create_time)) {
 		stx.stx_btime = ft->create_time;
 		mask |= CEPH_SETATTR_BTIME;
