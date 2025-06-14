@@ -954,20 +954,33 @@ static int cephwrap_fntimes(struct vfs_handle_struct *handle,
 	struct ceph_statx stx = { 0 };
 	int result;
 	int mask = 0;
+	struct timespec time_now = timespec_current();
 
 	if (!is_omit_timespec(&ft->atime)) {
+		if (ft->atime.tv_nsec == UTIME_NOW) {
+			ft->atime = time_now;
+		}
 		stx.stx_atime = ft->atime;
 		mask |= CEPH_SETATTR_ATIME;
 	}
 	if (!is_omit_timespec(&ft->mtime)) {
+		if (ft->mtime.tv_nsec == UTIME_NOW) {
+			ft->mtime = time_now;
+		}
 		stx.stx_mtime = ft->mtime;
 		mask |= CEPH_SETATTR_MTIME;
 	}
 	if (!is_omit_timespec(&ft->ctime)) {
+		if (ft->ctime.tv_nsec == UTIME_NOW) {
+			ft->ctime = time_now;
+		}
 		stx.stx_ctime = ft->ctime;
 		mask |= CEPH_SETATTR_CTIME;
 	}
 	if (!is_omit_timespec(&ft->create_time)) {
+		if (ft->create_time.tv_nsec == UTIME_NOW) {
+			ft->create_time = time_now;
+		}
 		stx.stx_btime = ft->create_time;
 		mask |= CEPH_SETATTR_BTIME;
 	}
