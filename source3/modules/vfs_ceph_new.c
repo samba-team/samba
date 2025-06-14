@@ -1031,23 +1031,37 @@ static int vfs_ceph_ll_fchmod(struct vfs_handle_struct *handle,
 					  cfh->uperm);
 }
 
-static void vfs_ceph_fill_statx_mask_from_ft(const struct smb_file_time *ft,
+static void vfs_ceph_fill_statx_mask_from_ft(struct smb_file_time *ft,
 					     struct ceph_statx *stx,
 					     int *mask)
 {
+	struct timespec time_now = timespec_current();
+
 	if (!is_omit_timespec(&ft->atime)) {
+		if (ft->atime.tv_nsec == UTIME_NOW) {
+			ft->atime = time_now;
+		}
 		stx->stx_atime = ft->atime;
 		*mask |= CEPH_SETATTR_ATIME;
 	}
 	if (!is_omit_timespec(&ft->mtime)) {
+		if (ft->mtime.tv_nsec == UTIME_NOW) {
+			ft->mtime = time_now;
+		}
 		stx->stx_mtime = ft->mtime;
 		*mask |= CEPH_SETATTR_MTIME;
 	}
 	if (!is_omit_timespec(&ft->ctime)) {
+		if (ft->ctime.tv_nsec == UTIME_NOW) {
+			ft->ctime = time_now;
+		}
 		stx->stx_ctime = ft->ctime;
 		*mask |= CEPH_SETATTR_CTIME;
 	}
 	if (!is_omit_timespec(&ft->create_time)) {
+		if (ft->create_time.tv_nsec == UTIME_NOW) {
+			ft->create_time = time_now;
+		}
 		stx->stx_btime = ft->create_time;
 		*mask |= CEPH_SETATTR_BTIME;
 	}
@@ -1055,7 +1069,7 @@ static void vfs_ceph_fill_statx_mask_from_ft(const struct smb_file_time *ft,
 
 static int vfs_ceph_ll_utimes(struct vfs_handle_struct *handle,
 			      const struct vfs_ceph_iref *iref,
-			      const struct smb_file_time *ft)
+			      struct smb_file_time *ft)
 {
 	struct ceph_statx stx = {0};
 	struct UserPerm *uperm = NULL;
@@ -1094,7 +1108,7 @@ static int vfs_ceph_ll_utimes(struct vfs_handle_struct *handle,
 
 static int vfs_ceph_ll_futimes(struct vfs_handle_struct *handle,
 			       const struct vfs_ceph_fh *cfh,
-			       const struct smb_file_time *ft)
+			       struct smb_file_time *ft)
 {
 	struct ceph_statx stx = {0};
 	int mask = 0;
