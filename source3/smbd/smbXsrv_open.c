@@ -645,6 +645,12 @@ static NTSTATUS smbXsrv_open_set_replay_cache(struct smbXsrv_open *op)
 		status = ndr_map_error2ntstatus(ndr_err);
 		return status;
 	}
+
+	DBG_DEBUG("Replay Cache: store create_guid [%s]\n",
+		  GUID_buf_string(&op->global->create_guid, &buf));
+	if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
+		NDR_PRINT_DEBUG(smbXsrv_open_replay_cache, &rc);
+	}
 	val = make_tdb_data(blob.data, blob.length);
 
 	status = dbwrap_store_bystring(db, guid_string, val, TDB_REPLACE);
@@ -662,6 +668,9 @@ NTSTATUS smbXsrv_open_purge_replay_cache(struct smbXsrv_client *client,
 {
 	struct GUID_txt_buf buf;
 	NTSTATUS status;
+
+	DBG_DEBUG("Replay Cache: purge create_guid [%s]\n",
+		  GUID_buf_string(create_guid, &buf));
 
 	if (client->open_table == NULL) {
 		return NT_STATUS_OK;
@@ -694,6 +703,9 @@ static NTSTATUS smbXsrv_open_clear_replay_cache(struct smbXsrv_open *op)
 	if (GUID_all_zero(create_guid)) {
 		return NT_STATUS_OK;
 	}
+
+	DBG_DEBUG("Replay Cache: clear create_guid [%s]\n",
+		  GUID_buf_string(create_guid, &buf));
 
 	status = dbwrap_purge_bystring(db, GUID_buf_string(create_guid, &buf));
 
@@ -1055,6 +1067,11 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 	if (val.dsize == 0) {
 		uint8_t data[SMBXSRV_OPEN_REPLAY_CACHE_FIXED_SIZE];
 
+		DBG_DEBUG("Fresh replay-cache record\n");
+		if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
+			NDR_PRINT_DEBUG(smbXsrv_open_replay_cache, &rc);
+		}
+
 		blob = data_blob_const(data, ARRAY_SIZE(data));
 		ndr_err = ndr_push_struct_into_fixed_blob(&blob, &rc,
 			(ndr_push_flags_fn_t)ndr_push_smbXsrv_open_replay_cache);
@@ -1092,7 +1109,14 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 		TALLOC_FREE(frame);
 		return status;
 	}
+
+	DBG_DEBUG("Found smbXsrv_open_replay_cache record\n");
+	if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
+		NDR_PRINT_DEBUG(smbXsrv_open_replay_cache, &rc);
+	}
+
 	if (rc.local_id != 0) {
+		DBG_DEBUG("Found replay-cache record with local_id\n");
 		if (GUID_equal(&rc.holder_req_guid, &caller_req_guid)) {
 			/*
 			 * This should not happen
@@ -1136,6 +1160,7 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 	}
 
 	if (GUID_equal(&rc.holder_req_guid, &caller_req_guid)) {
+		DBG_DEBUG("Still the holder\n");
 		/*
 		 * We're still the holder
 		 */
