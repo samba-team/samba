@@ -3717,7 +3717,7 @@ static PyObject *py_ldb_msg_element_str(PyLdbMessageElementObject *self)
 	if (el->num_values == 1)
 		return PyUnicode_FromStringAndSize((char *)el->values[0].data, el->values[0].length);
 	else
-		Py_RETURN_NONE;
+		return PyUnicode_FromString("");
 }
 
 static void py_ldb_msg_element_dealloc(PyLdbMessageElementObject *self)
