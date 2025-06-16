@@ -581,6 +581,7 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		    int argc, const char *argv[])
 {
 	struct pam_matrix_ctx pctx;
+	const void *pwd = NULL;
 	int rv;
 
 	(void) flags; /* unused */
@@ -594,11 +595,12 @@ pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	}
 
 	rv = pam_matrix_read_password(pamh, pctx.flags, PAM_AUTHTOK, "Password: ",
-				      NULL, (const void **) &pctx.pli.password);
+				      NULL, &pwd);
 	if (rv != PAM_SUCCESS) {
 		rv = PAM_AUTHINFO_UNAVAIL;
 		goto done;
 	}
+	pctx.pli.password = discard_const(pwd);
 
 	/* Auth and get rid of the authtok */
 	rv = pam_matrix_auth(pamh, &pctx);
@@ -763,6 +765,7 @@ pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 {
 	struct pam_matrix_ctx pctx;
 	const char *old_pass;
+	const void *pwd = NULL;
 	int rv;
 	time_t *auth_stamp = NULL;
 	const time_t *auth_stamp_out = NULL;
@@ -780,11 +783,12 @@ pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 		rv = pam_matrix_read_password(
 					pamh, pctx.flags, PAM_OLDAUTHTOK,
 					"Old password: ", NULL,
-					(const void **) &pctx.pli.password);
+					&pwd);
 		if (rv != PAM_SUCCESS) {
 			rv = PAM_AUTHINFO_UNAVAIL;
 			goto done;
 		}
+		pctx.pli.password = discard_const(pwd);
 
 		auth_stamp = malloc(sizeof(time_t));
 		if (auth_stamp == NULL) {
@@ -824,11 +828,12 @@ pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 					PAM_AUTHTOK,
 					"New Password :",
 					"Verify New Password :",
-					(const void **) &pctx.pli.password);
+					&pwd);
 		if (rv != PAM_SUCCESS) {
 			rv = PAM_AUTHINFO_UNAVAIL;
 			goto done;
 		}
+		pctx.pli.password = discard_const(pwd);
 
 		/* Write the new password to the db */
 		rv = pam_matrix_lib_items_put(pctx.passdb, &pctx.pli);
