@@ -18,12 +18,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "smbXsrv_open.h"
 #include "includes.h"
 #include "system/filesys.h"
 #include "lib/util/server_id.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "smbXsrv_open.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_rbt.h"
 #include "dbwrap/dbwrap_open.h"
