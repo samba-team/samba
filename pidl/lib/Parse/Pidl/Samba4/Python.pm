@@ -2039,6 +2039,12 @@ sub ConvertObjectFromPythonData($$$$$$;$$)
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "DATA_BLOB") {
+		$self->pidl("if (!PyBytes_Check($cvar)) {");
+		$self->indent;
+		$self->pidl("PyErr_Format(PyExc_TypeError, \"Expected bytes object, got %s\", Py_TYPE($cvar)->tp_name);");
+		$self->pidl("$fail");
+		$self->deindent;
+		$self->pidl("}");
 		$self->pidl("$target = data_blob_talloc($mem_ctx, PyBytes_AS_STRING($cvar), PyBytes_GET_SIZE($cvar));");
 		return;
 	}
