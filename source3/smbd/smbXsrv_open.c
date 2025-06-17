@@ -1453,7 +1453,9 @@ fail:
 }
 
 struct smbXsrv_open_global_traverse_state {
-	int (*fn)(struct db_record *rec, struct smbXsrv_open_global0 *, void *);
+	int (*fn)(struct db_record *rec,
+		  struct smbXsrv_open_global0 *global,
+		  void *private_data);
 	void *private_data;
 };
 
@@ -1479,7 +1481,9 @@ static int smbXsrv_open_global_traverse_fn(struct db_record *rec, void *data)
 }
 
 NTSTATUS smbXsrv_open_global_traverse(
-	int (*fn)(struct db_record *rec, struct smbXsrv_open_global0 *, void *),
+	int (*fn)(struct db_record *rec,
+		  struct smbXsrv_open_global0 *global,
+		  void *private_data),
 	void *private_data)
 {
 
