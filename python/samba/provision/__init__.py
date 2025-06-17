@@ -1462,11 +1462,15 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
         protected1wd_descr = b64encode(get_config_delete_protected1wd_descriptor(names.domainsid)).decode('utf8')
         protected2_descr = b64encode(get_config_delete_protected2_descriptor(names.domainsid)).decode('utf8')
 
+        incl_2012 = ""
+        incl_2016 = ""
         if "2008" in schema.base_schema:
-            # exclude 2012-specific changes if we're using a 2008 schema
+            # exclude 2012 and later changes if we're using a 2008 schema
             incl_2012 = "#"
-        else:
-            incl_2012 = ""
+            incl_2016 = "#"
+        elif "2012" in schema.base_schema:
+            # exclude 2016 and later changes if we're using a 2012 schema
+            incl_2016 = "#"
 
         setup_add_ldif(samdb, setup_path("provision_configuration.ldif"), {
                 "CONFIGDN": names.configdn,
@@ -1493,6 +1497,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
         setup_add_ldif(samdb, setup_path("extended-rights.ldif"), {
                 "CONFIGDN": names.configdn,
                 "INC2012": incl_2012,
+                "INC2016": incl_2016,
                 })
 
         logger.info("Setting up display specifiers")

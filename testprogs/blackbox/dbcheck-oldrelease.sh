@@ -487,6 +487,9 @@ referenceprovision()
 
 		# on top of this, also apply 2008R2 changes we accidentally missed in the past
 		$PYTHON $BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX/${RELEASE}/private/sam.ldb --ldf-file=samba-4.7-missing-for-schema45.ldif,fix-forest-rev.ldf
+
+		# also apply 2016 changes we accidentally missed in the past
+		$PYTHON $BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX/${RELEASE}/private/sam.ldb --ldf-file=samba-4.23-missing-for-schema81.ldif,fix-forest-rev.ldf
 	fi
 }
 

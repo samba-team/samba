@@ -1,0 +1,13 @@
+# Missing objects and values that should be in Samba 4.23 to honour the
+# claimed schema 81
+#
+#
+dn: CN=DS-Validated-Write-Computer,CN=Extended-Rights,CN=Configuration,DC=X
+changetype: add
+objectClass: controlAccessRight
+displayName: Validated write to computer attributes.
+rightsGuid: 9b026da6-0d3c-465c-8bee-5199d7165cba
+appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
+ShowInAdvancedViewOnly: TRUE
+validAccesses: 8
+-

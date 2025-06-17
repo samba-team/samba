@@ -832,4 +832,11 @@ ${INC2012}displayName: Write secret attributes of objects in a Partition
 ${INC2012}rightsGuid: 94825A8D-B171-4116-8146-1E34D8F54401
 ${INC2012}appliesTo: 26f11b08-a29d-4869-99bb-ef0b99fd883e
 ${INC2012}validAccesses: 256
-
+${INC2016}
+${INC2016}dn: CN=DS-Validated-Write-Computer,CN=Extended-Rights,${CONFIGDN}
+${INC2016}objectClass: controlAccessRight
+${INC2016}displayName: Validated write to computer attributes.
+${INC2016}rightsGuid: 9b026da6-0d3c-465c-8bee-5199d7165cba
+${INC2016}appliesTo: bf967a86-0de6-11d0-a285-00aa003049e2
+${INC2016}validAccesses: 8
+${INC2016}showInAdvancedViewOnly: TRUE
