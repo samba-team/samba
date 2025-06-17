@@ -1,7 +1,7 @@
 # This is the schema of the extended rights built in to Active Directory
 #
 # This file is needed to document the rights that are available and to
-# create the appropritate objects in the AD database, which are used
+# create the appropriate objects in the AD database, which are used
 # by the administrative tools.
 #
 # The primary source is MS-ADTS 12/1/2017 v47.0 under 6.1.1.2.7
@@ -82,7 +82,7 @@
 #
 # https://github.com/MicrosoftDocs/windowsserverdocs/blob/master/WindowsServerDocs/identity/ad-ds/deploy/Schema-Updates.md
 #
-# in this repoo this is kept in
+# in this repo this is kept in
 # source4/setup/adprep/WindowsServerDocs/Schema-Updates.md
 # and is licenced under the MIT licence
 #
@@ -115,7 +115,7 @@
 # rightsGuid: This value is the identifier of the control access right
 #             used for security descriptors and SDDL.
 # appliesTo: Each value in this attribute is a GUID, with each GUID
-#            equaling an attribute schemaIDGUID on a schema object
+#            equalling an attribute schemaIDGUID on a schema object
 #            defining a class in the schema NC. This class defines the
 #            objects in which the control access right can be a
 #            security descriptor for. The appliesTo values on the
@@ -128,7 +128,7 @@
 # validAccesses: This is implementation-specific information for the
 #                administrative application.
 #
-# NOTE: while it is claimed that validAccesses is implementation-specfic
+# NOTE: while it is claimed that validAccesses is implementation-specific
 # it can be determined by careful reading of other parts of MS-ADTS
 
 dn: CN=Change-Rid-Master,CN=Extended-Rights,${CONFIGDN}
