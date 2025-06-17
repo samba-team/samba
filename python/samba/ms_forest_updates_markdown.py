@@ -112,9 +112,9 @@ def extract_dn(text):
     if dn == 'CN=ad://ext/AuthenticationSilo,CN=Claim Types,CN=Claims Configuration,CN=Services':
         return 'CN=ad://ext/AuthenticationSilo,CN=Claim Types,CN=Claims Configuration,CN=Services,${CONFIG_DN}'
 
-    # Granting the "CN=Send-As,CN=Extended-Rights" to gMSA accounts.
-    if dn.endswith(',CN=Extended-Rights" to gMSA accounts.'):
-        dn = dn.replace('" to gMSA accounts.', '')
+    # Granting the `CN=Send-As,CN=Extended-Rights` to gMSA accounts.
+    if dn.endswith(',CN=Extended-Rights to gMSA accounts.'):
+        dn = dn.replace(' to gMSA accounts.', '')
         return dn + ",${CONFIG_DN}"
 
     return dn
