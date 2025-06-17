@@ -1510,6 +1510,8 @@ NTSTATUS smbXsrv_open_global_traverse(
 
 struct smbXsrv_open_cleanup_state {
 	uint32_t global_id;
+	struct GUID client_guid;
+	struct GUID create_guid;
 	NTSTATUS status;
 };
 
@@ -1594,6 +1596,8 @@ do_delete:
 		  state->global_id,
 		  dbwrap_name(dbwrap_record_get_db(rec)));
 	state->status = NT_STATUS_OK;
+	state->client_guid = global->client_guid;
+	state->create_guid = global->create_guid;
 }
 
 NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id)
@@ -1618,5 +1622,40 @@ NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id)
 		return status;
 	}
 
-	return state.status;
+	if (!NT_STATUS_IS_OK(state.status)) {
+		return state.status;
+	}
+
+	if (GUID_all_zero(&state.create_guid)) {
+		return NT_STATUS_OK;
+	}
+	status = smbXsrv_replay_cleanup(&state.client_guid, &state.create_guid);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("Failed to remove replay record\n");
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS smbXsrv_replay_cleanup(const struct GUID *client_guid,
+				const struct GUID *create_guid)
+{
+	struct smbXsrv_open_replay_cache_key_buf rc_key_buf;
+	TDB_DATA key;
+	NTSTATUS status;
+
+	key = smbXsrv_open_replay_cache_key(client_guid,
+					    create_guid,
+					    &rc_key_buf);
+
+	status = dbwrap_purge(smbXsrv_open_global_db_ctx, key);
+	if (!NT_STATUS_IS_OK(status)) {
+		struct GUID_txt_buf create_guid_buf;
+		DBG_ERR("create_guid [%s] purge replay-cache "
+			"record failed: %s\n",
+			GUID_buf_string(create_guid, &create_guid_buf),
+			nt_errstr(status));
+	}
+	return status;
 }

@@ -76,5 +76,7 @@ NTSTATUS smbXsrv_open_global_traverse(
 	void *private_data);
 
 NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id);
+NTSTATUS smbXsrv_replay_cleanup(const struct GUID *client_guid,
+				const struct GUID *create_guid);
 
 #endif
