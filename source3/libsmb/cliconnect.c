@@ -2073,7 +2073,7 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 		smb1cli_session_protect_session_key(cli->smb1.session);
 	}
 
-	smb1cli_tcon_set_values(state->cli->smb1.tcon,
+	smb1cli_tcon_set_values(cli->smb1.tcon,
 				SVAL(inhdr, HDR_TID),
 				optional_support,
 				0, /* maximal_access */
