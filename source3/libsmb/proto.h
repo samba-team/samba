@@ -917,8 +917,6 @@ NTSTATUS cli_read_recv(struct tevent_req *req, size_t *received);
 NTSTATUS cli_read(struct cli_state *cli, uint16_t fnum,
 		  char *buf, off_t offset, size_t size,
 		  size_t *nread);
-NTSTATUS cli_smbwrite(struct cli_state *cli, uint16_t fnum, char *buf,
-		      off_t offset, size_t size1, size_t *ptotal);
 struct tevent_req *cli_write_andx_create(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,
 					 struct cli_state *cli, uint16_t fnum,

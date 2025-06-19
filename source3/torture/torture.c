@@ -477,6 +477,74 @@ void torture_conn_set_sockopt(struct cli_state *cli)
 	smbXcli_conn_set_sockopt(cli->conn, sockops);
 }
 
+/****************************************************************************
+  write to a file using a SMBwrite and not bypassing 0 byte writes
+****************************************************************************/
+
+NTSTATUS cli_smbwrite(struct cli_state *cli, uint16_t fnum, char *buf,
+		      off_t offset, size_t size1, size_t *ptotal)
+{
+	uint8_t *bytes;
+	ssize_t total = 0;
+
+	/*
+	 * 3 bytes prefix
+	 */
+
+	bytes = talloc_array(talloc_tos(), uint8_t, 3);
+	if (bytes == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	bytes[0] = 1;
+
+	do {
+		uint32_t usable_space = cli_state_available_size(cli, 48);
+		size_t size = MIN(size1, usable_space);
+		struct tevent_req *req;
+		uint16_t vwv[5];
+		uint16_t *ret_vwv;
+		NTSTATUS status;
+
+		SSVAL(vwv+0, 0, fnum);
+		SSVAL(vwv+1, 0, size);
+		SIVAL(vwv+2, 0, offset);
+		SSVAL(vwv+4, 0, 0);
+
+		bytes = talloc_realloc(talloc_tos(), bytes, uint8_t,
+					     size+3);
+		if (bytes == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		SSVAL(bytes, 1, size);
+		memcpy(bytes + 3, buf + total, size);
+
+		status = cli_smb(talloc_tos(), cli, SMBwrite, 0, 5, vwv,
+				 size+3, bytes, &req, 1, NULL, &ret_vwv,
+				 NULL, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(bytes);
+			return status;
+		}
+
+		size = SVAL(ret_vwv+0, 0);
+		TALLOC_FREE(req);
+		if (size == 0) {
+			break;
+		}
+		size1 -= size;
+		total += size;
+		offset += size;
+
+	} while (size1);
+
+	TALLOC_FREE(bytes);
+
+	if (ptotal != NULL) {
+		*ptotal = total;
+	}
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS torture_delete_fn(struct file_info *finfo,
 				  const char *pattern,
 				  void *state)

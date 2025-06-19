@@ -77,6 +77,9 @@ NTSTATUS torture_setup_unix_extensions(struct cli_state *cli);
 void torture_conn_set_sockopt(struct cli_state *cli);
 void torture_deltree(struct cli_state *cli, const char *dname);
 
+NTSTATUS cli_smbwrite(struct cli_state *cli, uint16_t fnum, char *buf,
+		      off_t offset, size_t size1, size_t *ptotal);
+
 NTSTATUS cli_qpathinfo1(struct cli_state *cli,
 			const char *fname,
 			time_t *change_time,
