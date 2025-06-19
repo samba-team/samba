@@ -1399,7 +1399,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
             if fixing_msDS_HasInstantiatedNCs:
                 dsdb_dn.prefix = "B:8:%08X:" % int(res[0]['instanceType'][0])
-                dsdb_dn.binary = "%08X" % int(res[0]['instanceType'][0])
 
                 if str(dsdb_dn) != str(val):
                     error_count += 1

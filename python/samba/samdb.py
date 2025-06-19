@@ -28,16 +28,18 @@ import time
 import base64
 import os
 import re
+from typing import Optional, Union
+
 from samba import dsdb, dsdb_dns
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs, misc
 from samba.common import normalise_int32
-from samba.common import get_bytes, cmp
+from samba.common import cmp_with_nones
 from samba.dcerpc import security
 from samba import is_ad_dc_built
 from samba import string_is_guid
 from samba import NTSTATUSError, ntstatus
-import binascii
+
 
 __docformat__ = "restructuredText"
 
@@ -1679,55 +1681,48 @@ schemaUpdateNow: 1
             "tokenGroups", res[0]["tokenGroups"][0]).decode("utf8")
 
 
-class dsdb_Dn(object):
-    """a class for binary DN"""
+class BaseDsdbDn:
+    """Base class for DN wrappers. For ordinary DNs the wrapper is
+    thin and provides only a GUID sort order which matches that used
+    in the repl_meta_data dsdb module. For Binary DNs (syntax 2.5.5.7)
+    and String DNs (syntax 2.5.5.14), the extra blob is stored and
+    normalised as appropriate.
+    """
+    binary = None
 
-    def __init__(self, samdb, dnstring, syntax_oid=None):
-        """create a dsdb_Dn"""
-        if syntax_oid is None:
-            # auto-detect based on string
-            if dnstring.startswith("B:"):
-                syntax_oid = dsdb.DSDB_SYNTAX_BINARY_DN
-            elif dnstring.startswith("S:"):
-                syntax_oid = dsdb.DSDB_SYNTAX_STRING_DN
-            else:
-                syntax_oid = dsdb.DSDB_SYNTAX_OR_NAME
-        if syntax_oid in [dsdb.DSDB_SYNTAX_BINARY_DN, dsdb.DSDB_SYNTAX_STRING_DN]:
-            # it is a binary DN
-            colons = dnstring.split(':')
-            if len(colons) < 4:
-                raise RuntimeError("Invalid DN %s" % dnstring)
-            prefix_len = 4 + len(colons[1]) + int(colons[1])
-            self.prefix = dnstring[0:prefix_len]
-            self.binary = self.prefix[3 + len(colons[1]):-1]
-            self.dnstring = dnstring[prefix_len:]
+    def __init__(self, samdb:samba.Ldb, dnstring):
+        if isinstance(dnstring, bytes):
+            dnstring = dnstring.decode()
         else:
-            self.dnstring = dnstring
-            self.prefix = ''
-            self.binary = ''
-        self.dn = ldb.Dn(samdb, self.dnstring)
+            # this allows casting between compatible types:
+            #  a = BinaryDn('B:...')
+            #  b = KeyCredentialLinkDn(a)
+            dnstring = str(dnstring)
+        self.parse(samdb, dnstring)
 
-    def __str__(self):
-        return self.prefix + str(self.dn.extended_str(mode=1))
-
-    def __cmp__(self, other):
-        """ compare dsdb_Dn values similar to parsed_dn_compare()"""
+    def __cmp__(self, other) -> int:
+        """Compare DsdbDn values similar to parsed_dn_compare()"""
         dn1 = self
         dn2 = other
+
         guid1 = dn1.dn.get_extended_component("GUID")
         guid2 = dn2.dn.get_extended_component("GUID")
 
-        v = cmp(guid1, guid2)
+        v = cmp_with_nones(guid1, guid2)
         if v != 0:
             return v
-        v = cmp(dn1.binary, dn2.binary)
+        v = cmp_with_nones(dn1.binary, dn2.binary)
         return v
 
     # In Python3, __cmp__ is replaced by these 6 methods
     def __eq__(self, other):
+        if not isinstance(other, BaseDsdbDn):
+            return NotImplemented
         return self.__cmp__(other) == 0
 
     def __ne__(self, other):
+        if not isinstance(other, BaseDsdbDn):
+            return NotImplemented
         return self.__cmp__(other) != 0
 
     def __lt__(self, other):
@@ -1742,12 +1737,173 @@ class dsdb_Dn(object):
     def __ge__(self, other):
         return self.__cmp__(other) >= 0
 
-    def get_binary_integer(self):
-        """return binary part of a dsdb_Dn as an integer, or None"""
-        if self.prefix == '':
-            return None
-        return int(self.binary, 16)
+    def get_bytes(self) -> Optional[bytes]:
+        return self.binary
 
-    def get_bytes(self):
-        """return binary as a byte string"""
-        return binascii.unhexlify(self.binary)
+    def __str__(self) -> str:
+        dnstr = self.dn.extended_str(mode=1)
+        return f"{self.prefix}{dnstr}"
+
+    def get_binary_integer(self) -> int:
+        # Overridden in BinaryDn to return the binary value as an integer.
+        # We will remove it from here soon.
+        return 0
+
+
+class PlainDn(BaseDsdbDn):
+    """This does very little, other than providing the sort order (via
+    BaseDsdbDn.__cmp__), and a common interface with StringDn an BinaryDn.
+
+    Most of the time you should just use ldb.Dn.
+    """
+    def parse(self, samdb, dnstring):
+        self.dn = ldb.Dn(samdb, dnstring)
+
+    def __str__(self):
+        return self.dn.extended_str(mode=1)
+
+    @property
+    def prefix(self):
+        """PlainDn has no prefix."""
+        # Having a value here is convenient for e.g. cmp().
+        # Using @property with a getter only ensures it can't be
+        # overwritten by mistake.
+        return ''
+
+
+class StringDn(BaseDsdbDn):
+    """Wraps MS-ADTS 3.1.1.2.2.2.1 Object(DN-String).
+
+    This is only used for ms-DS-Revealed-List ("identifies security
+    principals whose current computer account passwords have been
+    replicated to the RODC"), which is not currently used by Samba.
+    """
+    # while Microsoft say DN-String, we use StringDn because in so
+    # many places we use 'dnstring' to mean a stringified DN.
+
+    syntax_oid = dsdb.DSDB_SYNTAX_STRING_DN
+
+    @property
+    def prefix(self) -> str:
+        """Representation of the string part of the DN."""
+        return f"S:{len(self.binary)}:{self.binary.decode('utf-8')}:"
+
+    @prefix.setter
+    def prefix(self, value:str) -> None:
+        m = re.match(r"^S:(\d+):([^:]*):$", value)
+        if m is None:
+            raise ValueError(f"Invalid String DN prefix {value}")
+
+        _len, _s = m.groups()
+
+        # the length is the length in bytes of the utf-8 encoded
+        # string, which is not the same as len(string) when the string
+        # is not ASCII.
+        #
+        # That's one reason we store the string as bytes, but we also
+        # do it for backwards compatibility and to share code with
+        # BinaryDn.
+        self.binary = _s.encode('utf-8')
+        if int(_len) != len(self.binary):
+            raise ValueError(f"Invalid length {_len} in String DN prefix "
+                             f"'{value}'")
+
+    def parse(self, samdb, dnstring):
+        m = re.match(r"^(S:\d+:[^:]*:)(.+)$", dnstring)
+        if m is None:
+            raise ValueError("Invalid String DN %s" % dnstring)
+
+        _prefix, _dn = m.groups()
+        self.dn = ldb.Dn(samdb, _dn)
+        self.prefix = _prefix
+
+
+class BinaryDn(BaseDsdbDn):
+    """Wraps MS-ADTS 3.1.1.2.2.2.3 Object(DN-Binary).
+    """
+    syntax_oid = dsdb.DSDB_SYNTAX_BINARY_DN
+
+    @property
+    def prefix(self) -> str:
+        """String representation of the binary part of the DN."""
+        # convention seems to be upper-case hex characters
+        h = self.binary.hex().upper()
+        return f"B:{len(h)}:{h}:"
+
+    @prefix.setter
+    def prefix(self, value:str) -> None:
+        m = re.match(r"^B:(\d+):([0-9A-Fa-f]*):$", value)
+        if m is None:
+            raise ValueError("Invalid prefix for binary DN %s" % value)
+
+        _len, _binary = m.groups()
+        length = int(_len)
+        if length != len(_binary):
+            raise ValueError(f"Invalid length {_len} in binary DN prefix "
+                             f"'{value}'")
+        if length & 1:
+            raise ValueError(f"Invalid hex string in binary DN prefix {value} "
+                             f"(should be even length, not {_len}")
+
+        self.binary = bytes.fromhex(_binary)
+
+    def parse(self, samdb, dnstring):
+        m = re.match(r"^(B:\d+:[0-9A-Fa-f]*:)(.+)$", dnstring)
+        if m is None:
+            raise ValueError("Invalid binary DN %s" % dnstring)
+
+        _prefix, _dn = m.groups()
+        self.prefix = _prefix
+        self.dn = ldb.Dn(samdb, _dn)
+
+    def get_binary_integer(self) -> int:
+        """return binary part of a DsdbDn as an integer."""
+        # used in some KCC things. Big-endian.
+        return int(self.binary.hex(), 16)
+
+    @classmethod
+    def from_bytes_and_dn(cls, samdb: SamDB,
+                          raw_bytes: bytes,
+                          dn: Union[ldb.Dn, str]):
+        encoded = raw_bytes.hex()
+        return cls(samdb, f"B:{len(encoded)}:{encoded}:{dn}")
+
+
+def dsdb_dn_by_syntax_oid(samdb: samba.Ldb,
+                          dnstring: str,
+                          syntax_oid: str) -> BaseDsdbDn:
+    """Parse a DN string into a DsdbDn according to the given syntax."""
+    if syntax_oid == dsdb.DSDB_SYNTAX_BINARY_DN:
+        return BinaryDn(samdb, dnstring)
+    if syntax_oid == dsdb.DSDB_SYNTAX_STRING_DN:
+        return StringDn(samdb, dnstring)
+
+    return PlainDn(samdb, dnstring)
+
+
+def dsdb_dn_guess(samdb: samba.Ldb,
+                  dnstring: str,
+                  syntax_oid=None) -> BaseDsdbDn:
+    """Parse a DN string into a BaseDsdbDn instance of the subtype
+    that the string seems to want to be.
+
+    dnstring can be bytes or str. If syntax_oid is given, it overrules
+    heuristics, and parsing of the indicated type is attempted.
+    """
+    if syntax_oid is not None:
+        return dsdb_dn_by_syntax_oid(samdb, dnstring, syntax_oid)
+
+    if isinstance(dnstring, bytes):
+        dnstring = dnstring.decode()
+
+    if dnstring.startswith("B:"):
+        return BinaryDn(samdb, dnstring)
+    if dnstring.startswith("S:"):
+        return StringDn(samdb, dnstring)
+
+    return PlainDn(samdb, dnstring)
+
+
+# as a temporary measure, we let dsdb_Dn continue to work more or less
+# as before.
+dsdb_Dn = dsdb_dn_guess
