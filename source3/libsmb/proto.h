@@ -222,13 +222,6 @@ struct tevent_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				 DATA_BLOB data);
 NTSTATUS cli_echo_recv(struct tevent_req *req);
 NTSTATUS cli_echo(struct cli_state *cli, uint16_t num_echos, DATA_BLOB data);
-NTSTATUS cli_smb(TALLOC_CTX *mem_ctx, struct cli_state *cli,
-		 uint8_t smb_command, uint8_t additional_flags,
-		 uint8_t wct, uint16_t *vwv,
-		 uint32_t num_bytes, const uint8_t *bytes,
-		 struct tevent_req **result_parent,
-		 uint8_t min_wct, uint8_t *pwct, uint16_t **pvwv,
-		 uint32_t *pnum_bytes, uint8_t **pbytes);
 
 /* The following definitions come from libsmb/clierror.c  */
 
