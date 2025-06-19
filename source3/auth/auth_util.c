@@ -1399,16 +1399,9 @@ static NTSTATUS make_new_session_info_guest(TALLOC_CTX *mem_ctx,
 	struct auth_serversupplied_info *server_info = NULL;
 	const char *guest_account = lp_guest_account();
 	const char *domain = lp_netbios_name();
-	struct netr_SamInfo3 info3;
-	TALLOC_CTX *tmp_ctx;
+	struct netr_SamInfo3 info3 = {};
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ZERO_STRUCT(info3);
 
 	status = get_guest_info3(tmp_ctx, &info3);
 	if (!NT_STATUS_IS_OK(status)) {
