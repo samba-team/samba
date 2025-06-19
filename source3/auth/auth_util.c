@@ -1748,22 +1748,6 @@ static struct auth_serversupplied_info *copy_session_info_serverinfo_guest(TALLO
 	return dst;
 }
 
-/*
- * Set a new session key. Used in the rpc server where we have to override the
- * SMB level session key with SystemLibraryDTC
- */
-
-bool session_info_set_session_key(struct auth_session_info *info,
-				 DATA_BLOB session_key)
-{
-	TALLOC_FREE(info->session_key.data);
-
-	info->session_key = data_blob_talloc(
-		info, session_key.data, session_key.length);
-
-	return (info->session_key.data != NULL);
-}
-
 static struct auth_session_info *guest_info = NULL;
 static struct auth_session_info *anonymous_info = NULL;
 
