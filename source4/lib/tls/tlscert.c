@@ -45,7 +45,7 @@ void tls_cert_generate(TALLOC_CTX *mem_ctx,
 {
 	gnutls_x509_crt_t cacrt, crt;
 	gnutls_x509_privkey_t key, cakey;
-	uint32_t serial = (uint32_t)time(NULL);
+	uint8_t serial[8];
 	unsigned char keyid[100];
 	char buf[4096];
 	size_t bufsize;
@@ -90,7 +90,10 @@ void tls_cert_generate(TALLOC_CTX *mem_ctx,
 				      GNUTLS_OID_X520_COMMON_NAME, 0,
 				      hostname, strlen(hostname)));
 	TLSCHECK(gnutls_x509_crt_set_key(cacrt, cakey));
+
+	PUSH_BE_U64(serial, 0, time(NULL));
 	TLSCHECK(gnutls_x509_crt_set_serial(cacrt, &serial, sizeof(serial)));
+
 	TLSCHECK(gnutls_x509_crt_set_activation_time(cacrt, activation));
 	TLSCHECK(gnutls_x509_crt_set_expiration_time(cacrt, expiry));
 	TLSCHECK(gnutls_x509_crt_set_ca_status(cacrt, 1));
