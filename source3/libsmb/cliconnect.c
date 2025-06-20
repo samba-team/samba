@@ -2028,8 +2028,7 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 		}
 	} else {
 		cli->dev = talloc_strdup(cli, "");
-		if (cli->dev == NULL) {
-			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+		if (tevent_req_nomem(cli->dev, req)) {
 			return;
 		}
 	}
