@@ -229,23 +229,6 @@ NTSTATUS smb1cli_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			    uint32_t *num_param,
 			    uint8_t **data, uint32_t min_data,
 			    uint32_t *num_data);
-NTSTATUS smb1cli_trans(TALLOC_CTX *mem_ctx, struct smbXcli_conn *conn,
-		uint8_t trans_cmd,
-		uint8_t additional_flags, uint8_t clear_flags,
-		uint16_t additional_flags2, uint16_t clear_flags2,
-		uint32_t timeout_msec,
-		uint32_t pid,
-		struct smbXcli_tcon *tcon,
-		struct smbXcli_session *session,
-		const char *pipe_name, uint16_t fid, uint16_t function,
-		int flags,
-		uint16_t *setup, uint8_t num_setup, uint8_t max_setup,
-		uint8_t *param, uint32_t num_param, uint32_t max_param,
-		uint8_t *data, uint32_t num_data, uint32_t max_data,
-		uint16_t *recv_flags2,
-		uint16_t **rsetup, uint8_t min_rsetup, uint8_t *num_rsetup,
-		uint8_t **rparam, uint32_t min_rparam, uint32_t *num_rparam,
-		uint8_t **rdata, uint32_t min_rdata, uint32_t *num_rdata);
 
 struct tevent_req *smb1cli_echo_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
@@ -254,8 +237,6 @@ struct tevent_req *smb1cli_echo_send(TALLOC_CTX *mem_ctx,
 				     uint16_t num_echos,
 				     DATA_BLOB data);
 NTSTATUS smb1cli_echo_recv(struct tevent_req *req);
-NTSTATUS smb1cli_echo(struct smbXcli_conn *conn, uint32_t timeout_msec,
-		      uint16_t num_echos, DATA_BLOB data);
 
 struct tevent_req *smb1cli_session_setup_lm21_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
