@@ -614,7 +614,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 		return -1;
 	}
 
-	if (ret == 0 && tvalp) {
+	if (ret == 0) {
 		/*
 		 * tevent_context_set_wait_timeout(0) was used.
 		 */
