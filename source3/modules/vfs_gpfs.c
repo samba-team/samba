@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "smbd/smbd.h"
+#include "smbd/globals.h"
 #include "include/smbprofile.h"
 #include "modules/non_posix_acls.h"
 #include "libcli/security/security.h"
@@ -29,6 +30,7 @@
 #include "system/filesys.h"
 #include "auth.h"
 #include "lib/util/tevent_unix.h"
+#include "lib/pthreadpool/pthreadpool_tevent.h"
 #include "lib/util/gpfswrap.h"
 
 #include <gnutls/gnutls.h>
@@ -1433,6 +1435,322 @@ static unsigned int vfs_gpfs_dosmode_to_winattrs(uint32_t dosmode)
 	return winattrs;
 }
 
+struct vfs_gpfs_get_dos_attributes_state {
+	struct vfs_pthreadpool_job_state job_state;
+	struct gpfs_winattr attrs;
+	uint32_t dosmode;
+};
+
+static int vfs_gpfs_get_dos_attributes_state_destructor(
+		struct vfs_gpfs_get_dos_attributes_state *state)
+{
+	return -1;
+}
+
+static int vfs_gpfs_get_winattrs_helper(
+	struct vfs_gpfs_get_dos_attributes_state *state)
+{
+	int ret = 0;
+	files_struct* fd = state->job_state.smb_fname->fsp;
+
+	ret = gpfswrap_get_winattrs(fsp_get_pathref_fd(fd), &state->attrs);
+
+	if (ret == -1) {
+		state->job_state.vfs_aio_state.error = errno;
+		return ret;
+	}
+
+	if (ret == -1 && errno == EACCES) {
+		int saved_errno = 0;
+
+		/*
+		 * According to MS-FSA 2.1.5.1.2.1 "Algorithm to Check Access to
+		 * an Existing File" FILE_LIST_DIRECTORY on a directory implies
+		 * FILE_READ_ATTRIBUTES for directory entries. Being able to
+		 * open a file implies FILE_LIST_DIRECTORY.
+		 */
+
+		set_effective_capability(DAC_OVERRIDE_CAPABILITY);
+
+		ret = gpfswrap_get_winattrs(
+			fsp_get_pathref_fd(fd),
+			&state->attrs);
+		if (ret == -1) {
+			saved_errno = errno;
+		}
+
+		drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
+
+		if (saved_errno != 0) {
+			state->job_state.vfs_aio_state.error = saved_errno;
+			ret = saved_errno;
+		}
+	}
+	return ret;
+}
+
+static void vfs_gpfs_get_winattrs_do_sync(struct tevent_req *req);
+static void vfs_gpfs_get_winattrs_do_async(void *private_data);
+static void vfs_gpfs_get_winattrs_done(struct tevent_req *subreq);
+
+static struct tevent_req *vfs_gpfs_get_dos_attributes_send(
+						TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct vfs_handle_struct *handle,
+						files_struct *dir_fsp,
+						struct smb_filename *smb_fname)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct vfs_gpfs_get_dos_attributes_state *state = NULL;
+	bool do_async = false;
+	struct gpfs_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return NULL);
+
+	if (!config->winattr) {
+		return SMB_VFS_GET_DOS_ATTRIBUTES_SEND(mem_ctx,
+				ev,
+				dir_fsp,
+				smb_fname);
+	}
+
+	SMB_ASSERT(!is_named_stream(smb_fname));
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct vfs_gpfs_get_dos_attributes_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	*state = (struct vfs_gpfs_get_dos_attributes_state) {
+		.job_state.ev = ev,
+		.job_state.handle = handle,
+		.job_state.dir_fsp = dir_fsp,
+		.job_state.smb_fname = smb_fname,
+	};
+
+	do_async = vfswrap_check_async_with_thread_creds(
+						dir_fsp->conn->sconn->pool);
+
+	SMBPROFILE_BYTES_ASYNC_START_X(SNUM(handle->conn),
+						syscall_asys_getxattrat,
+						state->job_state.profile_bytes,
+						state->job_state.profile_bytes_x,
+						0);
+
+
+	if (fsp_get_pathref_fd(dir_fsp) == -1) {
+		DBG_ERR("Need a valid directory fd for [%s]\n",
+		fsp_str_dbg(dir_fsp));
+
+		tevent_req_error(req, EINVAL);
+		return tevent_req_post(req, ev);
+	}
+
+	if (!do_async) {
+		vfs_gpfs_get_winattrs_do_sync(req);
+		return tevent_req_post(req, ev);
+	}
+
+	/*
+	 * Now allocate all parameters from a memory context that won't go away
+	 * no matter what. These parameters will get used in threads and we
+	 * can't reliably cancel threads, so all buffers passed to the threads
+	 * must not be freed before all referencing threads terminate.
+	 */
+
+	state->job_state.name = talloc_strdup(state, smb_fname->base_name);
+	if (tevent_req_nomem(state->job_state.name, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/*
+	 * This is a hot codepath so at first glance one might think we should
+	 * somehow optimize away the token allocation and do a
+	 * talloc_reference() or similar black magic instead. But due to the
+	 * talloc_stackframe pool per SMB2 request this should be a simple copy
+	 * without a malloc in most cases.
+	 */
+	if (geteuid() == sec_initial_uid()) {
+		state->job_state.token = root_unix_token(state);
+	} else {
+		state->job_state.token = copy_unix_token(
+						state,
+						dir_fsp->conn->session_info->unix_token);
+	}
+
+	if (tevent_req_nomem(state->job_state.token, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	SMBPROFILE_BYTES_ASYNC_SET_IDLE_X(state->job_state.profile_bytes,
+						state->job_state.profile_bytes_x);
+
+	subreq = pthreadpool_tevent_job_send(
+			state,
+			ev,
+			dir_fsp->conn->sconn->pool,
+			vfs_gpfs_get_winattrs_do_async,
+			state);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, vfs_gpfs_get_winattrs_done, req);
+
+	talloc_set_destructor(
+		state,
+		vfs_gpfs_get_dos_attributes_state_destructor);
+
+	return req;
+}
+
+static void vfs_gpfs_get_winattrs_do_async(void *private_data)
+{
+	struct vfs_gpfs_get_dos_attributes_state *state = talloc_get_type_abort(
+		private_data, struct vfs_gpfs_get_dos_attributes_state);
+
+	struct timespec start_time, end_time;
+	int ret;
+
+	PROFILE_TIMESTAMP(&start_time);
+
+	SMBPROFILE_BYTES_ASYNC_SET_BUSY_X(state->job_state.profile_bytes,
+						state->job_state.profile_bytes_x);
+
+	/*
+	 * Here we simulate a getxattrat()
+	 * call using fchdir();getxattr()
+	 */
+
+	per_thread_cwd_activate();
+
+	/* Become the correct credential on this thread. */
+	ret = set_thread_credentials(state->job_state.token->uid,
+					state->job_state.token->gid,
+					(size_t)state->job_state.token->ngroups,
+					state->job_state.token->groups);
+
+	if (ret != 0) {
+		state->job_state.vfs_aio_state.error = errno;
+		goto end_profile;
+	}
+
+	ret = vfs_gpfs_get_winattrs_helper(state);
+
+	if (ret == -1) {
+		DBG_WARNING("Getting winattrs failed for %s: %s\n",
+				state->job_state.dir_fsp->fsp_name->base_name,
+				strerror(errno));
+		goto end_profile;
+	}
+
+end_profile:
+	PROFILE_TIMESTAMP(&end_time);
+	state->job_state.vfs_aio_state.duration = nsec_time_diff(
+		&end_time,
+		&start_time);
+	SMBPROFILE_BYTES_ASYNC_SET_IDLE_X(state->job_state.profile_bytes,
+					state->job_state.profile_bytes_x);
+}
+
+static void vfs_gpfs_get_winattrs_done(struct tevent_req *subreq)
+{
+	int ret;
+	bool ok;
+	struct timespec ts;
+
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+
+	struct vfs_gpfs_get_dos_attributes_state *state = tevent_req_data(
+		req, struct vfs_gpfs_get_dos_attributes_state);
+
+	/*
+	 * Make sure we run as the user again
+	 */
+	ok = change_to_user_and_service_by_fsp(state->job_state.dir_fsp);
+	SMB_ASSERT(ok);
+
+	ret = pthreadpool_tevent_job_recv(subreq);
+	TALLOC_FREE(subreq);
+	SMBPROFILE_BYTES_ASYNC_END_X(state->job_state.profile_bytes,
+					state->job_state.profile_bytes_x);
+	talloc_set_destructor(state, NULL);
+	if (ret != 0) {
+		if (ret != EAGAIN) {
+			tevent_req_error(req, ret);
+			return;
+		}
+
+		/*
+		 * If we get EAGAIN from pthreadpool_tevent_job_recv() this
+		 * means the lower level pthreadpool failed to create a new
+		 * thread. Fallback to sync processing in that case to allow
+		 * some progress for the client.
+		 */
+		vfs_gpfs_get_winattrs_do_sync(req);
+		return;
+	}
+
+	ts.tv_sec = state->attrs.creationTime.tv_sec;
+	ts.tv_nsec = state->attrs.creationTime.tv_nsec;
+
+	state->dosmode = vfs_gpfs_winattrs_to_dosmode(state->attrs.winAttrs);
+	update_stat_ex_create_time(&(state->job_state.dir_fsp->fsp_name->st),
+								ts);
+
+	tevent_req_done(req);
+}
+
+static NTSTATUS vfs_gpfs_get_dos_attributes_recv(
+					struct tevent_req *req,
+					struct vfs_aio_state *aio_state,
+					uint32_t *dosmode)
+{
+	struct vfs_gpfs_get_dos_attributes_state *state =
+		tevent_req_data(req,
+		struct vfs_gpfs_get_dos_attributes_state);
+
+	if (tevent_req_is_unix_error(req, &aio_state->error)) {
+		tevent_req_received(req);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	*aio_state = state->job_state.vfs_aio_state;
+	*dosmode = state->dosmode;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+static void vfs_gpfs_get_winattrs_do_sync(struct tevent_req *req)
+{
+	struct timespec ts;
+	int ret;
+
+	struct vfs_gpfs_get_dos_attributes_state *state =
+		tevent_req_data(req,
+		struct vfs_gpfs_get_dos_attributes_state);
+
+	ret = vfs_gpfs_get_winattrs_helper(state);
+
+	if (ret == -1) {
+		state->job_state.vfs_aio_state.error = errno;
+		tevent_req_error(req, errno);
+		return;
+	}
+
+	ts.tv_sec = state->attrs.creationTime.tv_sec;
+	ts.tv_nsec = state->attrs.creationTime.tv_nsec;
+
+	state->dosmode = vfs_gpfs_winattrs_to_dosmode(state->attrs.winAttrs);
+	update_stat_ex_create_time(&(state->job_state.dir_fsp->fsp_name->st), ts);
+
+	tevent_req_done(req);
+}
+
 static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 					     struct files_struct *fsp,
 					     uint32_t *dosmode)
@@ -1940,12 +2258,6 @@ static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 		}
 	}
 
-	/*
-	 * Unless we have an async implementation of get_dos_attributes turn
-	 * this off.
-	 */
-	lp_do_parameter(SNUM(handle->conn), "smbd async dosmode", "false");
-
 	return 0;
 }
 
@@ -2375,8 +2687,8 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.filesystem_sharemode_fn = vfs_gpfs_filesystem_sharemode,
 	.linux_setlease_fn = vfs_gpfs_setlease,
 	.get_real_filename_at_fn = vfs_gpfs_get_real_filename_at,
-	.get_dos_attributes_send_fn = vfs_not_implemented_get_dos_attributes_send,
-	.get_dos_attributes_recv_fn = vfs_not_implemented_get_dos_attributes_recv,
+	.get_dos_attributes_send_fn = vfs_gpfs_get_dos_attributes_send,
+	.get_dos_attributes_recv_fn = vfs_gpfs_get_dos_attributes_recv,
 	.fget_dos_attributes_fn = vfs_gpfs_fget_dos_attributes,
 	.fset_dos_attributes_fn = vfs_gpfs_fset_dos_attributes,
 	.fget_nt_acl_fn = gpfsacl_fget_nt_acl,
