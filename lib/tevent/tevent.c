@@ -611,7 +611,7 @@ uint32_t tevent_context_set_wait_timeout(struct tevent_context *ev,
 	ev->wait_timeout = tevent_timeval_set((time_t)secs,
 					      (secs == 0) ?  INT32_MAX: 0);
 
-	return ret;
+	return MIN(ret, INT32_MAX);
 }
 
 /*
