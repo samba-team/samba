@@ -506,7 +506,7 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 		return 0;
 	}
 
-	if (pollrtn == 0 && tvalp) {
+	if (pollrtn == 0) {
 		/*
 		 * tevent_context_set_wait_timeout(0) was used.
 		 */
