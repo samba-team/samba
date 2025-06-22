@@ -182,19 +182,23 @@ static NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
-		old_el = ldb_msg_find_element(new_msg, "dnsRecord");
-		if (old_el == NULL) {
-			TALLOC_FREE(new_msg);
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-		old_el->flags = LDB_FLAG_MOD_DELETE;
-
+		/*
+		 * This empty record will become the replacement for old_el.
+		 * (we add it first because it reallocs).
+		 */
 		ret = ldb_msg_add_empty(
 		    new_msg, "dnsRecord", LDB_FLAG_MOD_ADD, &el);
 		if (ret != LDB_SUCCESS) {
 			TALLOC_FREE(new_msg);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
+
+		old_el = ldb_msg_find_element(new_msg, "dnsRecord");
+		if (old_el == NULL || old_el == el) {
+			TALLOC_FREE(new_msg);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		old_el->flags = LDB_FLAG_MOD_DELETE;
 
 		status = copy_current_records(new_msg, old_el, el, dns_timestamp);
 
