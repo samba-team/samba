@@ -32,6 +32,11 @@ interface keycredlink
 
 	typedef [enum8bit, public] enum {
 		KEY_USAGE_NGC  = 0x01,
+			/*
+			* KeyMaterial is a 2048 bit RSA (RFC8017) public key
+			* encoded as a BCRYPT_RSAKEY_BLOB,
+			* see bcrypt_rsakey_blob.idl
+			*/
 		KEY_USAGE_FIDO = 0x02,
 		KEY_USAGE_FEK  = 0x03
 	} KEYCREDENTIALLINK_ENTRY_KeyUsage;

@@ -1,0 +1,43 @@
+/*
+   Definitions for packing and unpacking of BCRYPT_RSAPUBLIC_BLOB
+   structures, derived from
+     https://learn.microsoft.com/en-us/windows/win32/api/
+             bcrypt/ns-bcrypt-bcrypt_rsakey_blob
+
+   Note: - Currently only handles RSA public keys
+*/
+
+#include "idl_types.h"
+
+[
+  pointer_default(unique)
+]
+interface bcrypt_rsakey_blob
+{
+	const uint32 BCRYPT_RSAPUBLIC_MAGIC      = 0x31415352;  /* RSA1 */
+
+	/* Public structures. */
+	typedef [public] struct {
+		/* Currently only handle RSA Public Key blobs */
+		[value(0x31415352), range(0x31415352, 0x31415352)]
+			uint32 magic; /* RSA1 */
+		uint32 bit_length;
+		/*
+		 * As of Windows 10 version 1903, public exponents larger
+		 * than (2^64 - 1) are no longer supported.
+		 */
+		[range(0x0,0x8)] uint32 public_exponent_len;
+		uint32 modulus_len;
+		/*
+		 * We're only supporting public keys, so the private
+		 * key prime lengths should be zero
+		 */
+		[value(0), range(0x0,0x0)] uint32 prime1_len_unused;
+		[value(0), range(0x0,0x0)] uint32 prime2_len_unused;
+		/*
+		 * The exponent and modulus are big-endian
+		 */
+		uint8 public_exponent[public_exponent_len];
+		uint8 modulus[modulus_len];
+	} BCRYPT_RSAPUBLIC_BLOB;
+}

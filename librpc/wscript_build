@@ -648,7 +648,7 @@ bld.SAMBA_LIBRARY('ndr-samba',
     NDR_NTPRINTING NDR_FSRVP NDR_WITNESS NDR_MDSSVC NDR_OPEN_FILES NDR_SMBXSRV
     NDR_SMB3POSIX NDR_RPCD_WITNESS
     NDR_KRB5CCACHE NDR_WSP NDR_GKDI NDR_GMSA
-    NDR_KEYCREDLINK''',
+    NDR_KEYCREDLINK NDR_BCRYPT_RSAKEY_BLOB''',
     private_library=True,
     grouping_library=True
     )
@@ -759,6 +759,11 @@ bld.SAMBA_SUBSYSTEM('NDR_FSRVP_STATE',
 
 bld.SAMBA_SUBSYSTEM('NDR_KEYCREDLINK',
     source='ndr/ndr_keycredlink.c gen_ndr/ndr_keycredlink.c',
+    public_deps='ndr'
+    )
+
+bld.SAMBA_SUBSYSTEM('NDR_BCRYPT_RSAKEY_BLOB',
+    source='gen_ndr/ndr_bcrypt_rsakey_blob.c',
     public_deps='ndr'
     )
 #
