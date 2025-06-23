@@ -46,13 +46,11 @@ find_lsa_pipe_hnd(struct cli_state *ipc_cli)
 	for (pipe_hnd = ipc_cli->pipe_list;
              pipe_hnd;
              pipe_hnd = pipe_hnd->next) {
-		struct dcerpc_binding_handle *bh = NULL;
-		const struct dcerpc_binding *bd = NULL;
-		struct ndr_syntax_id syntax;
-
-		bh = pipe_hnd->binding_handle;
-		bd = dcerpc_binding_handle_get_binding(bh);
-		syntax = dcerpc_binding_get_abstract_syntax(bd);
+		struct dcerpc_binding_handle *bh = pipe_hnd->binding_handle;
+		const struct dcerpc_binding *bd =
+			dcerpc_binding_handle_get_binding(bh);
+		struct ndr_syntax_id syntax =
+			dcerpc_binding_get_abstract_syntax(bd);
 
 		if (ndr_syntax_id_equal(&syntax,
 					&ndr_table_lsarpc.syntax_id)) {
