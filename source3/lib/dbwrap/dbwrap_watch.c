@@ -653,6 +653,7 @@ static NTSTATUS dbwrap_watched_delete(struct db_record *rec)
 }
 
 struct dbwrap_watched_traverse_state {
+	struct db_context *db;
 	int (*fn)(struct db_record *rec, void *private_data);
 	void *private_data;
 };
@@ -672,6 +673,7 @@ static int dbwrap_watched_traverse_fn(struct db_record *rec,
 		return 0;
 	}
 	prec.value_valid = true;
+	prec.db = state->db;
 
 	return state->fn(&prec, state->private_data);
 }
@@ -684,7 +686,7 @@ static int dbwrap_watched_traverse(struct db_context *db,
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_watched_ctx);
 	struct dbwrap_watched_traverse_state state = {
-		.fn = fn, .private_data = private_data };
+		.db = db, .fn = fn, .private_data = private_data };
 	NTSTATUS status;
 	int ret;
 
@@ -704,7 +706,7 @@ static int dbwrap_watched_traverse_read(struct db_context *db,
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_watched_ctx);
 	struct dbwrap_watched_traverse_state state = {
-		.fn = fn, .private_data = private_data };
+		.db = db, .fn = fn, .private_data = private_data };
 	NTSTATUS status;
 	int ret;
 
