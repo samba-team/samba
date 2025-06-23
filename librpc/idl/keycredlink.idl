@@ -56,19 +56,23 @@ interface keycredlink
 	} CUSTOM_KEY_INFO_Flags;
 
 	typedef [enum8bit, public] enum {
-		Unspecified = 0x00,    // No volume specified
-				       // defined as None in the docs but this
-				       // causes issues in the python bindings
-		OSV  = 0x01,    // Operating system volume
-		FDV  = 0x02,    // Fixed data volume
-		RDV  = 0x03     // Removable data volume
+		Unspecified = 0x00,    /*
+					* No volume specified
+				        * defined as None in the docs but this
+				        * causes issues in the python bindings
+					*/
+		OSV  = 0x01,    /* Operating system volume */
+		FDV  = 0x02,    /* Fixed data volume       */
+		RDV  = 0x03     /* Removable data volume   */
 	} CUSTOM_KEY_INFO_VolType;
 
 	typedef [enum8bit, public] enum {
-		Unsupported = 0x00,    // Notification is not supported
-				       // defined as None in the docs but this
-				       // causes issues in the python bindings
-		Supported   = 0x01     // Notification is supported
+		Unsupported = 0x00,    /*
+					* Notification is not supported
+				        * defined as None in the docs but this
+				        * causes issues in the python bindings
+					*/
+		Supported   = 0x01     /* Notification is supported */
 	} CUSTOM_KEY_INFO_SupportsNotification;
 
 	typedef [enum8bit, public] enum {
@@ -135,8 +139,14 @@ interface keycredlink
 		 flag(NDR_NOALIGN)]
 	union {
 	[case(KeyID)]
+		/*
+		 * SHA-256 hash of the KeyMaterial
+		 */
 		uint8 keyId[32];
 	[case(KeyHash)]
+	        /*
+		 * SHA-256 hash of all entries following this entry
+		 */
 		uint8 keyHash[32];
 	[case(KeyUsage)]
 		KEYCREDENTIALLINK_ENTRY_KeyUsage keyUsage;
