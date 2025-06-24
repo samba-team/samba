@@ -3056,12 +3056,14 @@ static NTSTATUS smbd_smb2_request_dispatch_update_counts(
 	return status;
 }
 
+#ifdef WITH_PROFILE
 static int smb2_request_to_snum(const struct smbd_smb2_request *req)
 {
 	return (req->tcon != NULL) && (req->tcon->compat != NULL)
 		       ? SNUM(req->tcon->compat)
 		       : GLOBAL_SECTION_SNUM;
 }
+#endif
 
 NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 {
