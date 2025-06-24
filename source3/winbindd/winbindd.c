@@ -1478,13 +1478,13 @@ int main(int argc, const char **argv)
 		const char *workgroup = lp_workgroup();
 
 		if (workgroup == NULL || strlen(workgroup) == 0) {
-			DBG_ERR("For 'secuirity = ADS' mode, the 'workgroup' "
+			DBG_ERR("For 'security = ADS' mode, the 'workgroup' "
 				"parameter is required to be set!\n");
 			exit(1);
 		}
 
 		if (realm == NULL || strlen(realm) == 0) {
-			DBG_ERR("For 'secuirity = ADS' mode, the 'realm' "
+			DBG_ERR("For 'security = ADS' mode, the 'realm' "
 				"parameter is required to be set!\n");
 			exit(1);
 		}
