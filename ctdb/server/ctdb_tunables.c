@@ -142,12 +142,10 @@ int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb, TDB_DATA *outdata)
 
 bool ctdb_tunables_load(struct ctdb_context *ctdb)
 {
-	bool status;
+	bool status = false; /* fail by default */
+	bool dir_status = false;
 	TALLOC_CTX *tmp_ctx;
-	char *file = NULL;
-
-	/* Fail by default */
-	status = false;
+	char *path = NULL;
 
 	tmp_ctx = talloc_new(ctdb);
 	if (tmp_ctx == NULL) {
@@ -157,15 +155,33 @@ bool ctdb_tunables_load(struct ctdb_context *ctdb)
 
 	ctdb_tunable_set_defaults(&ctdb->tunable);
 
-	file = path_etcdir_append(tmp_ctx, "ctdb.tunables");
-	if (file == NULL) {
+	path = path_etcdir_append(tmp_ctx, "ctdb.tunables");
+	if (path == NULL) {
 		D_ERR("Failed to construct path for ctdb.tunables\n");
 		goto done;
 	}
 
-	status = ctdb_tunable_load_file(tmp_ctx, &ctdb->tunable, file);
-	/* No need to log error, already logged above */
+	status = ctdb_tunable_load_file(tmp_ctx, &ctdb->tunable, path);
 
+	/*
+	 * Continue loading directory on failure to avoid forcing a
+	 * typo-prone admin to play whack-a-mole.  Final result is
+	 * still failure.
+	 */
+
+	/* Avoid talloc confusion in static analysers... */
+	talloc_free(path);
+
+	path = path_etcdir_append(tmp_ctx, "tunables.d");
+	if (path == NULL) {
+		D_ERR("Failed to construct path for tunables.d\n");
+		goto done;
+	}
+
+	dir_status = ctdb_tunable_load_directory(tmp_ctx, &ctdb->tunable, path);
+	if (!dir_status) {
+		status = false;
+	}
 done:
 	talloc_free(tmp_ctx);
 	return status;

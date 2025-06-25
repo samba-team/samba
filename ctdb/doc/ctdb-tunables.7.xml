@@ -38,9 +38,17 @@
     </para>
 
     <para>
-      Tunables can be set at startup from the
-      <filename>/usr/local/etc/ctdb/ctdb.tunables</filename>
-      configuration file.
+      Tunables can be set at startup via optional configuration files.
+      First, <filename>/usr/local/etc/ctdb/ctdb.tunables</filename> is
+      loaded, if this file exists.  After this, all files with names
+      matching <filename>*.tunables</filename> in directory
+      <filename>/usr/local/etc/ctdb/tunables.d/</filename> are loaded
+      in the current locale's collation order, if the directory
+      exists.
+    </para>
+
+    <para>
+      The format of lines in tunables files is:
 
       <literallayout>
 <replaceable>TUNABLE</replaceable>=<replaceable>VALUE</replaceable>
@@ -722,6 +730,7 @@ MonitorInterval=20
 
     <simplelist>
       <member><filename>/usr/local/etc/ctdb/ctdb.tunables</filename></member>
+      <member><filename>/usr/local/etc/ctdb/tunables.d/*.tunables</filename></member>
     </simplelist>
   </refsect1>
 
