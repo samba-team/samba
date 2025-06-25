@@ -84,7 +84,6 @@ from samba.dsdb import (
     DS_GUID_DOMAIN_CONTROLLERS_CONTAINER,
     DS_GUID_MANAGED_SERVICE_ACCOUNTS_CONTAINER,
     DS_GUID_USERS_CONTAINER,
-    DSDB_SYNTAX_BINARY_DN,
     GTYPE_SECURITY_DOMAIN_LOCAL_GROUP,
     GTYPE_SECURITY_GLOBAL_GROUP,
     GTYPE_SECURITY_UNIVERSAL_GROUP,
@@ -102,7 +101,7 @@ from samba.dsdb import (
 from samba.join import DCJoinContext
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.param import LoadParm
-from samba.samdb import SamDB, dsdb_Dn
+from samba.samdb import SamDB, BinaryDn
 from samba.security import (
     claims_tf_policy_parse_rules,
     claims_tf_policy_wrap_xml,
@@ -1524,8 +1523,7 @@ class KDCBaseTest(TestCaseInTempDir, RawKerberosTest):
             self.assertFalse(revealed)
             return
 
-        revealed_dns = set(str(dsdb_Dn(samdb, str(user),
-                                       syntax_oid=DSDB_SYNTAX_BINARY_DN).dn)
+        revealed_dns = set(str(BinaryDn(samdb, str(user)).dn)
                            for user in revealed_users)
 
         if revealed:
