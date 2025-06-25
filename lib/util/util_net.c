@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba utility functions
    Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008
@@ -440,7 +440,7 @@ _PUBLIC_ bool same_net_v4(struct in_addr ip1, struct in_addr ip2, struct in_addr
 	nmask = ntohl(mask.s_addr);
 	net1  = ntohl(ip1.s_addr);
 	net2  = ntohl(ip2.s_addr);
-            
+
 	return((net1 & nmask) == (net2 & nmask));
 }
 
