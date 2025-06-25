@@ -36,8 +36,8 @@ int main(int argc, const char **argv)
 	int ret = 0;
 	int i;
 
-	if (argc != 2) {
-		fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+	if (argc != 2 && argc != 3) {
+		fprintf(stderr, "Usage: %s <filename> [<filename>]\n", argv[0]);
 		return 1;
 	}
 
@@ -52,6 +52,14 @@ int main(int argc, const char **argv)
 	if (!status) {
 		ret = EINVAL;
 		goto done;
+	}
+
+	if (argc == 3) {
+		status = ctdb_tunable_load_file(mem_ctx, &tun_list, argv[2]);
+		if (!status) {
+			ret = EINVAL;
+			goto done;
+		}
 	}
 
 	list = ctdb_tunable_names(mem_ctx);

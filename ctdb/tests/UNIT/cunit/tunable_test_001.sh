@@ -3,10 +3,11 @@
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
 tfile="${CTDB_TEST_TMP_DIR}/tunable.$$"
+tfile2="${CTDB_TEST_TMP_DIR}/tunable2.$$"
 
 remove_files()
 {
-	rm -f "$tfile"
+	rm -f "$tfile" "$tfile2"
 }
 test_cleanup remove_files
 
@@ -111,9 +112,12 @@ ok_tunable_1()
 }
 
 # Set required output to a version of $defaults where values for
-# tunables specified in $tfile replace the default values
+# tunables specified in the given file(s) replace the default values
 ok_tunable()
 {
+	_f1="${1:-"${tfile}"}"
+	_f2="${2:-""}"
+
 	# Construct a version of $defaults prepended with a lowercase
 	# version of the tunable variable, to allow case-insensitive
 	# matching.  This would be easier with the GNU sed
@@ -125,7 +129,15 @@ ok_tunable()
 
 	log=""
 
-	ok_tunable_1 "$tfile"
+	#
+	# Replace values for tunables that are set in each file
+	#
+
+	ok_tunable_1 "$_f1"
+
+	if [ -n "$_f2" ]; then
+		ok_tunable_1 "$_f2"
+	fi
 
 	# Set result, stripping off lowercase tunable prefix
 	ok "${log}$(echo "$_map" | awk -F: '{ print $2 }')"
@@ -359,3 +371,42 @@ ReCoVerInTeRvAl	 =    10
 EOF
 ok_tunable
 unit_test tunable_test "$tfile"
+
+#
+# Subsequent tests will use the same 1st file, to reduce clutter
+#
+
+cat >"$tfile" <<EOF
+EnableBans=0
+RecoverInterval=10
+ElectionTimeout=5
+EOF
+
+#
+# 2nd argument is a file
+#
+
+test_case "OK, several tunables, empty 2nd file"
+: >"$tfile2"
+ok_tunable "$tfile" "$tfile2"
+unit_test tunable_test "$tfile" "$tfile2"
+
+test_case "OK, several tunables, 2nd file disjoint"
+cat >"$tfile2" <<EOF
+RecoverTimeout=123
+EOF
+ok_tunable "$tfile" "$tfile2"
+unit_test tunable_test "$tfile" "$tfile2"
+
+test_case "OK, several tunables, 2nd file overlaps"
+cat >"$tfile2" <<EOF
+RecoverTimeout=123
+ElectionTimeout=10
+EOF
+ok_tunable "$tfile" "$tfile2"
+unit_test tunable_test "$tfile" "$tfile2"
+
+test_case "OK, several tunables, missing 2nd file"
+rm -f "$tfile2"
+ok_tunable "$tfile" "$tfile2"
+unit_test tunable_test "$tfile" "$tfile2"
