@@ -2734,7 +2734,8 @@ enum {
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case OPT_CHALLENGE:
-			opt_challenge = strhex_to_data_blob(NULL, hex_challenge);
+			opt_challenge = strhex_to_data_blob(frame,
+							    hex_challenge);
 			if (opt_challenge.length != 8) {
 				fprintf(stderr, "hex decode of %s failed! "
 					"(got %d bytes, expected 8)\n",
@@ -2744,7 +2745,8 @@ enum {
 			}
 			break;
 		case OPT_LM:
-			opt_lm_response = strhex_to_data_blob(NULL, hex_lm_response);
+			opt_lm_response = strhex_to_data_blob(frame,
+							      hex_lm_response);
 			if (opt_lm_response.length != 24) {
 				fprintf(stderr, "hex decode of %s failed! "
 					"(got %d bytes, expected 24)\n",
@@ -2755,7 +2757,8 @@ enum {
 			break;
 
 		case OPT_NT:
-			opt_nt_response = strhex_to_data_blob(NULL, hex_nt_response);
+			opt_nt_response = strhex_to_data_blob(frame,
+							      hex_nt_response);
 			if (opt_nt_response.length < 24) {
 				fprintf(stderr, "hex decode of %s failed! "
 					"(only got %d bytes, needed at least 24)\n",
