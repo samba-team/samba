@@ -35,7 +35,7 @@ from samba import WERRORError
 from samba.join import DCJoinContext
 from samba.dcerpc import drsuapi, misc, drsblobs, security
 from samba.ndr import ndr_unpack, ndr_pack
-from samba.samdb import dsdb_Dn
+from samba.samdb import BinaryDn
 from samba.credentials import Credentials
 
 import random
@@ -667,7 +667,7 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         unpacked_attrs = []
         for attribute in revealed_users:
             attribute = attribute.decode('utf8')
-            dsdb_dn = dsdb_Dn(self.ldb_dc1, attribute)
+            dsdb_dn = BinaryDn(self.ldb_dc1, attribute)
             metadata = ndr_unpack(drsblobs.replPropertyMetaData1, dsdb_dn.get_bytes())
             if user_dn in attribute:
                 unpacked_attrs.append(metadata)
