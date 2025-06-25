@@ -67,6 +67,27 @@ ok_tunable_defaults()
 	ok "$defaults"
 }
 
+# Update $_map with tunable settings from 1 file
+# values
+ok_tunable_1()
+{
+	_file="$1"
+
+	if [ ! -r "$_file" ]; then
+		return
+	fi
+
+	while IFS='= 	' read -r _var _val; do
+		case "$_var" in
+		\#* | "") continue ;;
+		esac
+		_decval=$((_val))
+		_vl=$(echo "$_var" | tr '[:upper:]' '[:lower:]')
+		_map=$(echo "$_map" |
+			sed -e "s|^\\(${_vl}:.*=\\).*\$|\\1${_decval}|")
+	done <"$_file"
+}
+
 # Set required output to a version of $defaults where values for
 # tunables specified in $tfile replace the default values
 ok_tunable()
@@ -80,16 +101,7 @@ ok_tunable()
 	_map=$(echo "$defaults" |
 		awk -F= '$0 { printf "%s:%s=%s\n", tolower($1), $1, $2 }')
 
-	# Replace values for tunables set in $tfile
-	while IFS='= 	' read -r _var _val; do
-		case "$_var" in
-		\#* | "") continue ;;
-		esac
-		_decval=$((_val))
-		_vl=$(echo "$_var" | tr '[:upper:]' '[:lower:]')
-		_map=$(echo "$_map" |
-			sed -e "s|^\\(${_vl}:.*=\\).*\$|\\1${_decval}|")
-	done <"$tfile"
+	ok_tunable_1 "$tfile"
 
 	# Set result, stripping off lowercase tunable prefix
 	ok "$(echo "$_map" | awk -F: '{ print $2 }')"

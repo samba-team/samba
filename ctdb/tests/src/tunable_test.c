@@ -42,6 +42,8 @@ int main(int argc, const char **argv)
 	mem_ctx = talloc_new(NULL);
 	assert(mem_ctx != NULL);
 
+	ctdb_tunable_set_defaults(&tun_list);
+
 	status = ctdb_tunable_load_file(mem_ctx, &tun_list, argv[1]);
 	if (!status) {
 		ret = EINVAL;

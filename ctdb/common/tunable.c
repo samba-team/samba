@@ -362,8 +362,6 @@ bool ctdb_tunable_load_file(TALLOC_CTX *mem_ctx,
 	FILE *fp;
 	bool status;
 
-	ctdb_tunable_set_defaults(tun_list);
-
 	fp = fopen(file, "r");
 	if (fp == NULL) {
 		if (errno == ENOENT) {

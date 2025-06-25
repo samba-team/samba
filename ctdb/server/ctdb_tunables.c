@@ -155,6 +155,8 @@ bool ctdb_tunables_load(struct ctdb_context *ctdb)
 		goto done;
 	}
 
+	ctdb_tunable_set_defaults(&ctdb->tunable);
+
 	file = path_etcdir_append(tmp_ctx, "ctdb.tunables");
 	if (file == NULL) {
 		D_ERR("Failed to construct path for ctdb.tunables\n");
