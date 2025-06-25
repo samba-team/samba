@@ -20,6 +20,13 @@
 #ifndef __CTDB_TUNABLE_H__
 #define __CTDB_TUNABLE_H__
 
+#include <stdbool.h>
+#include <stdint.h>
+
+#include <talloc.h>
+
+#include "protocol/protocol.h"
+
 void ctdb_tunable_set_defaults(struct ctdb_tunable_list *tun_list);
 bool ctdb_tunable_get_value(struct ctdb_tunable_list *tun_list,
 			    const char *tunable_str, uint32_t *value);
