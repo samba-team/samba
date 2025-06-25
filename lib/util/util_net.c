@@ -326,21 +326,6 @@ bool interpret_string_addr(struct sockaddr_storage *pss,
 					false);
 }
 
-/*******************************************************************
- Map a text hostname or IP address (IPv4 or IPv6) into a
- struct sockaddr_storage. Version that prefers IPv4.
-******************************************************************/
-
-bool interpret_string_addr_prefer_ipv4(struct sockaddr_storage *pss,
-		const char *str,
-		int flags)
-{
-	return interpret_string_addr_pref(pss,
-					str,
-					flags,
-					true);
-}
-
 /**
  * Interpret an internet address or name into an IP address in 4 byte form.
  * RETURNS IN NETWORK BYTE ORDER (big endian).

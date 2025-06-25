@@ -47,15 +47,6 @@ bool interpret_string_addr(struct sockaddr_storage *pss,
 			   const char *str,
 			   int flags);
 
-/*******************************************************************
- Map a text hostname or IP address (IPv4 or IPv6) into a
- struct sockaddr_storage. Version that prefers IPv4.
-******************************************************************/
-
-bool interpret_string_addr_prefer_ipv4(struct sockaddr_storage *pss,
-				       const char *str,
-				       int flags);
-
 void set_sockaddr_port(struct sockaddr *psa, uint16_t port);
 
 /**
