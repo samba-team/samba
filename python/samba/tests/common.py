@@ -29,3 +29,6 @@ class CommonTests(samba.tests.TestCase):
         self.assertEqual('17', normalise_int32('17'))
         self.assertEqual('-123', normalise_int32('-123'))
         self.assertEqual('-1294967296', normalise_int32('3000000000'))
+        self.assertRaises(ValueError, normalise_int32, 1 << 32)
+        self.assertRaises(ValueError, normalise_int32, 12345678901234567890)
+        self.assertRaises(ValueError, normalise_int32, -1000000000000)
