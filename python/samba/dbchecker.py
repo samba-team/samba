@@ -27,7 +27,7 @@ from samba.dcerpc import misc
 from samba.dcerpc import drsuapi
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs
-from samba.samdb import dsdb_Dn
+from samba.samdb import BinaryDn, StringDn, dsdb_dn_by_syntax_oid, dsdb_dn_guess
 from samba.dcerpc import security
 from samba.descriptor import (
         get_wellknown_sds,
@@ -356,7 +356,7 @@ class dbcheck(object):
             listwko = []
             proposed_objectguid = None
             for o in wko:
-                dsdb_dn = dsdb_Dn(self.samdb, o.decode('utf8'), dsdb.DSDB_SYNTAX_BINARY_DN)
+                dsdb_dn = BinaryDn(self.samdb, o)
                 if self.is_deleted_objects_dn(dsdb_dn):
                     self.report("wellKnownObjects had duplicate Deleted Objects value %s" % o)
                     # We really want to put this back in the same spot
@@ -811,7 +811,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         """fix missing <SID=...> on linked attributes"""
         self.report("ERROR: missing DN SID component for %s in object %s - %s" % (attrname, dn, val))
 
-        if len(dsdb_dn.prefix) != 0:
+        if isinstance(dn, (BinaryDn, StringDn)):
             self.report("Not fixing missing DN SID on DN+BINARY or DN+STRING")
             return
 
@@ -1091,7 +1091,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                 controls=["show_deleted:0", "extended_dn:0", "reveal_internals:0"])
         syntax_oid = self.samdb_schema.get_syntax_oid_from_lDAPDisplayName(attrname)
         for val in res[0][attrname]:
-            dsdb_dn = dsdb_Dn(self.samdb, val.decode('utf8'), syntax_oid)
+            dsdb_dn = dsdb_dn_by_syntax_oid(self.samdb, val, syntax_oid)
             guid2 = dsdb_dn.dn.get_extended_component("GUID")
             if guid == guid2:
                 return dsdb_dn
@@ -1117,7 +1117,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.duplicate_link_cache[duplicate_cache_key] = False
 
         for val in obj[forward_attr]:
-            dsdb_dn = dsdb_Dn(self.samdb, val.decode('utf8'), forward_syntax)
+            dsdb_dn = dsdb_dn_by_syntax_oid(self.samdb, val, forward_syntax)
 
             # all DNs should have a GUID component
             guid = dsdb_dn.dn.get_extended_component("GUID")
@@ -1232,7 +1232,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             raise
 
         for r in res:
-            target_dn = dsdb_Dn(self.samdb, r.dn.extended_str(), forward_syntax)
+            target_dn = dsdb_dn_by_syntax_oid(self.samdb, r.dn.extended_str(),
+                                              forward_syntax)
 
             guid = target_dn.dn.get_extended_component("GUID")
             guidstr = str(misc.GUID(guid))
@@ -1350,14 +1351,14 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
             # We now construct the sorted dn values.
             # They're sorted by the objectGUID of the target
-            # See dsdb_Dn.__cmp__()
+            # See BaseDsdbDn.__cmp__()
             vals = [str(dn) for dn in sorted(forward_links)]
             self.err_recover_forward_links(obj, attrname, vals)
             # We should continue with the fixed values
             obj[attrname] = ldb.MessageElement(vals, 0, attrname)
 
         for val in obj[attrname]:
-            dsdb_dn = dsdb_Dn(self.samdb, val.decode('utf8'), syntax_oid)
+            dsdb_dn = dsdb_dn_by_syntax_oid(self.samdb, val, syntax_oid)
 
             # all DNs should have a GUID component
             guid = dsdb_dn.dn.get_extended_component("GUID")
@@ -1507,7 +1508,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             match_count = 0
             if reverse_link_name in res[0]:
                 for v in res[0][reverse_link_name]:
-                    v_dn = dsdb_Dn(self.samdb, v.decode('utf8'))
+                    v_dn = dsdb_dn_guess(self.samdb, v)
                     v_guid = v_dn.dn.get_extended_component("GUID")
                     v_blob = v_dn.dn.get_extended_component("RMD_FLAGS")
                     v_rmd_flags = 0
@@ -1524,7 +1525,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                         # Forward binary multi-valued linked attribute
                         forward_count = 0
                         for w in obj[attrname]:
-                            w_guid = dsdb_Dn(self.samdb, w.decode('utf8')).dn.get_extended_component("GUID")
+                            w_guid = dsdb_dn_guess(self.samdb, w).dn.get_extended_component("GUID")
                             if w_guid == guid:
                                 forward_count += 1
 
@@ -1532,7 +1533,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                             continue
             expected_count = 0
             for v in obj[attrname]:
-                v_dn = dsdb_Dn(self.samdb, v.decode('utf8'))
+                v_dn = dsdb_dn_guess(self.samdb, v)
                 v_guid = v_dn.dn.get_extended_component("GUID")
                 v_blob = v_dn.dn.get_extended_component("RMD_FLAGS")
                 v_rmd_flags = 0
