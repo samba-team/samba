@@ -23,7 +23,7 @@ import os
 
 from samba import Ldb, ldb, read_and_sub_file
 from samba.auth import system_session
-from samba.samdb import SamDB, dsdb_Dn
+from samba.samdb import SamDB, dsdb_dn_guess
 
 
 class LdifError(Exception):
@@ -231,8 +231,8 @@ def samdb_to_ldif_file(samdb, dburl, lp, creds, ldif_file):
                     if k in ncattrs:
                         for value in res_msg[k]:
                             # Some of these have binary DNs so
-                            # use dsdb_Dn to split out relevant parts
-                            dsdn = dsdb_Dn(samdb, value.decode('utf8'))
+                            # use dsdb_dn_guess to split out relevant parts.
+                            dsdn = dsdb_dn_guess(samdb, value)
                             dnstr = str(dsdn.dn)
                             if dnstr not in nclist:
                                 nclist.append(dnstr)
