@@ -668,10 +668,10 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
         for attribute in revealed_users:
             attribute = attribute.decode('utf8')
             dsdb_dn = BinaryDn(self.ldb_dc1, attribute)
-            metadata = ndr_unpack(drsblobs.replPropertyMetaData1, dsdb_dn.get_bytes())
+            metadata = ndr_unpack(drsblobs.replPropertyMetaData1, dsdb_dn.binary)
             if user_dn in attribute:
                 unpacked_attrs.append(metadata)
-                packed_attrs.append(dsdb_dn.get_bytes())
+                packed_attrs.append(dsdb_dn.binary)
                 actual_attrids.append(metadata.attid)
 
         self.assertEqual(sorted(actual_attrids), sorted(attrlist))
