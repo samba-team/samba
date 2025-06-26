@@ -602,9 +602,10 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                           validate=False):
             self.report("Removed duplicate value on attribute %s" % attrname)
 
-    def is_deleted_objects_dn(self, dsdb_dn):
-        """see if a dsdb_Dn is the special Deleted Objects DN"""
-        return dsdb_dn.prefix == "B:32:%s:" % dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER
+    def is_deleted_objects_dn(self, binary_dn):
+        """see if a BinaryDn is the special Deleted Objects DN"""
+        deleted_objects_guid = bytes.fromhex(dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER)
+        return binary_dn.binary == deleted_objects_guid
 
     def err_missing_objectclass(self, dn):
         """handle object without objectclass"""
