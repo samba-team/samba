@@ -4,10 +4,13 @@
 
 tfile="${CTDB_TEST_TMP_DIR}/tunable.$$"
 tfile2="${CTDB_TEST_TMP_DIR}/tunable2.$$"
+tdir="${CTDB_TEST_TMP_DIR}/tunabled.$$"
 
 remove_files()
 {
 	rm -f "$tfile" "$tfile2"
+	rm -f "${tdir}/"* 2>/dev/null || true
+	rmdir "$tdir" 2>/dev/null || true
 }
 test_cleanup remove_files
 
@@ -136,7 +139,18 @@ ok_tunable()
 	ok_tunable_1 "$_f1"
 
 	if [ -n "$_f2" ]; then
-		ok_tunable_1 "$_f2"
+		if [ -f "$_f2" ]; then
+			ok_tunable_1 "$_f2"
+		elif [ -d "$_f2" ]; then
+			for _t in "${_f2}/"*.tunables; do
+				if [ ! -e "$_t" ]; then
+					break
+				fi
+				ok_tunable_1 "$_t"
+			done
+		elif [ ! -e "$_f2" ]; then
+			tunable_log "INFO" "Optional tunables directory ${_f2} not found"
+		fi
 	fi
 
 	# Set result, stripping off lowercase tunable prefix
@@ -406,7 +420,68 @@ EOF
 ok_tunable "$tfile" "$tfile2"
 unit_test tunable_test "$tfile" "$tfile2"
 
-test_case "OK, several tunables, missing 2nd file"
+#
+# 2nd argument is a directory
+#
+
+test_case "OK, several tunables, missing directory"
 rm -f "$tfile2"
-ok_tunable "$tfile" "$tfile2"
-unit_test tunable_test "$tfile" "$tfile2"
+rmdir "$tdir" 2>/dev/null || true
+ok_tunable "$tfile" "$tdir"
+unit_test tunable_test "$tfile" "$tdir"
+
+test_case "OK, several tunables, empty directory"
+mkdir -p "$tdir"
+ok_tunable "$tfile" "$tdir"
+unit_test tunable_test "$tfile" "$tdir"
+
+test_case "OK, several tunables, README in directory"
+cat >"${tdir}/README" <<EOF
+This will be ignored because the file doesn't end in ".tunables"
+
+RecoverInterval=55
+EOF
+ok_tunable "$tfile" "$tdir"
+unit_test tunable_test "$tfile" "$tdir"
+
+#
+# README can stay there...
+#
+# Subsequent testcases add files, leaving existing ones there
+#
+
+test_case "OK, several tunables,  single file in directory"
+cat >"${tdir}/f70.tunables" <<EOF
+RecoverInterval=45
+EOF
+ok_tunable "$tfile" "$tdir"
+unit_test tunable_test "$tfile" "$tdir"
+
+test_case "OK, several tunables,  2 disjoint files in directory"
+cat >"${tdir}/f10.tunables" <<EOF
+RecoverTimeout=42
+EOF
+ok_tunable "$tfile" "$tdir"
+unit_test tunable_test "$tfile" "$tdir"
+
+test_case "OK, several tunables,  3rd file in directory overlaps"
+cat >"${tdir}/f40.tunables" <<EOF
+RecoverInterval=21
+RecoverTimeout=54
+EOF
+ok_tunable "$tfile" "$tdir"
+unit_test tunable_test "$tfile" "$tdir"
+
+test_case "OK, several tunables, error in directory file"
+cat >"${tdir}/f20.tunables" <<EOF
+Oops!
+EOF
+required_error EINVAL <<EOF
+Loading tunables from ${tfile}
+Loading tunables from ${tdir}/f10.tunables
+Loading tunables from ${tdir}/f20.tunables
+${tdir}/f20.tunables: Invalid tunables line containing "Oops!"
+Loading tunables from ${tdir}/f40.tunables
+Loading tunables from ${tdir}/f70.tunables
+EOF
+unit_test tunable_test "$tfile" "$tdir"

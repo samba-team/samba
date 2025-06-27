@@ -27,6 +27,14 @@
 
 #include "common/tunable.c"
 
+static void usage(const char * prog)
+{
+	fprintf(stderr,
+		"Usage: %s <filename> [<filename>|<dir>]\n",
+		prog);
+	exit(1);
+}
+
 int main(int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
@@ -37,8 +45,7 @@ int main(int argc, const char **argv)
 	int i;
 
 	if (argc != 2 && argc != 3) {
-		fprintf(stderr, "Usage: %s <filename> [<filename>]\n", argv[0]);
-		return 1;
+		usage(argv[0]);
 	}
 
 	mem_ctx = talloc_new(NULL);
@@ -55,7 +62,33 @@ int main(int argc, const char **argv)
 	}
 
 	if (argc == 3) {
-		status = ctdb_tunable_load_file(mem_ctx, &tun_list, argv[2]);
+		struct stat st = {};
+		int stat_failed = false;
+
+		ret = stat(argv[2], &st);
+		if (ret != 0) {
+			if (errno == ENOENT || errno == EACCES) {
+				stat_failed = true;
+			} else {
+				usage(argv[0]);
+			}
+		}
+
+		/*
+		 * If stat() failed then continue and test the failure
+		 * path in directory loading.  The failure path in
+		 * file loading can already be tested with the
+		 * mandatory 1st file argument.
+		 */
+		if (stat_failed || S_ISDIR(st.st_mode)) {
+			status = ctdb_tunable_load_directory(mem_ctx,
+							     &tun_list,
+							     argv[2]);
+		} else {
+			status = ctdb_tunable_load_file(mem_ctx,
+							&tun_list,
+							argv[2]);
+		}
 		if (!status) {
 			ret = EINVAL;
 			goto done;
@@ -65,6 +98,7 @@ int main(int argc, const char **argv)
 	list = ctdb_tunable_names(mem_ctx);
 	assert(list != NULL);
 
+	ret = 0;
 	for (i = 0; i < list->count; i++) {
 		const char *var = list->var[i];
 		uint32_t val;
