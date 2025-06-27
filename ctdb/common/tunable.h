@@ -38,5 +38,8 @@ char *ctdb_tunable_names_to_string(TALLOC_CTX *mem_ctx);
 bool ctdb_tunable_load_file(TALLOC_CTX *mem_ctx,
 			    struct ctdb_tunable_list *tun_list,
 			    const char *file);
+bool ctdb_tunable_load_directory(TALLOC_CTX *mem_ctx,
+				 struct ctdb_tunable_list *tun_list,
+				 const char *dir);
 
 #endif /* __CTDB_TUNABLE_H__ */

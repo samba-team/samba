@@ -18,7 +18,9 @@
 */
 
 #include "replace.h"
+#include "system/dir.h"
 #include "system/filesys.h"
+#include "system/glob.h"
 #include "system/locale.h"
 #include "system/network.h"
 
@@ -399,4 +401,77 @@ bool ctdb_tunable_load_file(TALLOC_CTX *mem_ctx,
 	}
 
 	return status && state.status;
+}
+
+static int tunables_filter(const struct dirent *de)
+{
+	int ret;
+
+	/* Match a script pattern */
+	ret = fnmatch("*.tunables", de->d_name, 0);
+	if (ret == 0) {
+		return 1;
+	}
+
+	return 0;
+}
+
+bool ctdb_tunable_load_directory(TALLOC_CTX *mem_ctx,
+				 struct ctdb_tunable_list *tun_list,
+				 const char *dir)
+{
+	struct dirent **namelist = NULL;
+	int count = 0;
+	bool status = true;
+	int i = 0;
+
+	count = scandir(dir, &namelist, tunables_filter, alphasort);
+	if (count == -1) {
+		switch (errno) {
+		case ENOENT:
+			D_INFO("Optional tunables directory %s not found\n",
+			       dir);
+			break;
+		default:
+			DBG_ERR("Failed to open directory %s (err=%d)\n",
+				dir,
+				errno);
+			status = false;
+		}
+		goto done;
+	}
+
+	if (count == 0) {
+		goto done;
+	}
+
+	for (i = 0; i < count; i++) {
+		char *file = NULL;
+		bool file_status = false;
+
+		file = talloc_asprintf(mem_ctx,
+				       "%s/%s",
+				       dir,
+				       namelist[i]->d_name);
+		if (file == NULL) {
+			DBG_ERR("Memory allocation error\n");
+			goto done;
+		}
+
+		file_status = ctdb_tunable_load_file(mem_ctx, tun_list, file);
+		if (!file_status) {
+			status = false;
+		}
+		TALLOC_FREE(file);
+	}
+
+done:
+	if (namelist != NULL && count != -1) {
+		for (i = 0; i < count; i++) {
+			free(namelist[i]);
+		}
+		free(namelist);
+	}
+
+	return status;
 }
