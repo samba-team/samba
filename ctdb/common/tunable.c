@@ -289,7 +289,7 @@ char *ctdb_tunable_names_to_string(TALLOC_CTX *mem_ctx)
 struct tunable_load_state {
 	struct ctdb_tunable_list *tun_list;
 	bool status;
-	const char *func;
+	const char *file;
 };
 
 static bool tunable_section(const char *section, void *private_data)
@@ -297,8 +297,9 @@ static bool tunable_section(const char *section, void *private_data)
 	struct tunable_load_state *state =
 		(struct tunable_load_state *)private_data;
 
-	D_ERR("%s: Invalid line for section [%s] - sections not supported \n",
-	      state->func,
+	D_ERR("%s: Invalid line for section [%s] - "
+	      "tunables sections not supported \n",
+	      state->file,
 	      section);
 	state->status = false;
 
@@ -317,7 +318,9 @@ static bool tunable_option(const char *name,
 	int ret;
 
 	if (value[0] == '\0') {
-		D_ERR("%s: Invalid line containing \"%s\"\n", state->func, name);
+		D_ERR("%s: Invalid tunables line containing \"%s\"\n",
+		      state->file,
+		      name);
 		state->status = false;
 		return true;
 	}
@@ -325,7 +328,7 @@ static bool tunable_option(const char *name,
 	num = smb_strtoul(value, NULL, 0, &ret, SMB_STR_FULL_STR_CONV);
 	if (ret != 0) {
 		D_ERR("%s: Invalid value \"%s\" for tunable \"%s\"\n",
-		      state->func,
+		      state->file,
 		      value,
 		      name);
 		state->status = false;
@@ -337,12 +340,12 @@ static bool tunable_option(const char *name,
 				    (uint32_t)num,
 				    &obsolete);
 	if (!ok) {
-		D_ERR("%s: Unknown tunable \"%s\"\n", state->func, name);
+		D_ERR("%s: Unknown tunable \"%s\"\n", state->file, name);
 		state->status = false;
 		return true;
 	}
 	if (obsolete) {
-		D_ERR("%s: Obsolete tunable \"%s\"\n", state->func, name);
+		D_ERR("%s: Obsolete tunable \"%s\"\n", state->file, name);
 		state->status = false;
 		return true;
 	}
@@ -356,8 +359,8 @@ bool ctdb_tunable_load_file(TALLOC_CTX *mem_ctx,
 {
 	struct tunable_load_state state = {
 		.tun_list = tun_list,
+		.file = file,
 		.status = true,
-		.func = __FUNCTION__,
 	};
 	FILE *fp;
 	bool status;
@@ -392,7 +395,7 @@ bool ctdb_tunable_load_file(TALLOC_CTX *mem_ctx,
 	fclose(fp);
 
 	if (!status) {
-		DBG_ERR("Syntax error\n");
+		D_ERR("%s: Syntax error\n", file);
 	}
 
 	return status && state.status;
