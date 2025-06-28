@@ -4,7 +4,7 @@
 
 tfile="${CTDB_TEST_TMP_DIR}/tunable.$$"
 
-remove_files ()
+remove_files()
 {
 	rm -f "$tfile"
 }
@@ -62,14 +62,14 @@ IPAllocAlgorithm=2
 AllowMixedVersions=0
 "
 
-ok_tunable_defaults ()
+ok_tunable_defaults()
 {
 	ok "$defaults"
 }
 
 # Set required output to a version of $defaults where values for
 # tunables specified in $tfile replace the default values
-ok_tunable ()
+ok_tunable()
 {
 	# Construct a version of $defaults prepended with a lowercase
 	# version of the tunable variable, to allow case-insensitive
@@ -78,17 +78,17 @@ ok_tunable ()
 	# condition in awk causes empty lines to be skipped, in case
 	# there are trailing empty lines in $defaults.
 	_map=$(echo "$defaults" |
-	       awk -F= '$0 { printf "%s:%s=%s\n", tolower($1), $1, $2 }')
+		awk -F= '$0 { printf "%s:%s=%s\n", tolower($1), $1, $2 }')
 
 	# Replace values for tunables set in $tfile
-	while IFS='= 	' read -r _var _val ; do
+	while IFS='= 	' read -r _var _val; do
 		case "$_var" in
 		\#* | "") continue ;;
 		esac
 		_decval=$((_val))
 		_vl=$(echo "$_var" | tr '[:upper:]' '[:lower:]')
 		_map=$(echo "$_map" |
-		       sed -e "s|^\\(${_vl}:.*=\\).*\$|\\1${_decval}|")
+			sed -e "s|^\\(${_vl}:.*=\\).*\$|\\1${_decval}|")
 	done <"$tfile"
 
 	# Set result, stripping off lowercase tunable prefix
