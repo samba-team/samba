@@ -67,6 +67,25 @@ ok_tunable_defaults()
 	ok "$defaults"
 }
 
+tunable_log()
+{
+	_level="$1"
+	_msg="$2"
+
+	_all=":DEBUG:INFO:NOTICE:WARNING:ERR:"
+	# Keep the debug levels log at.  This strips off the levels up
+	# to and including the current $CTDB_DEBUGLEVEL, but then puts
+	# back $CTDB_DEBUGLEVEL.  Cheaper than a loop...
+	_want=":${CTDB_DEBUGLEVEL}:${_all#*":${CTDB_DEBUGLEVEL}:"}"
+
+	case "$_want" in
+	*":${_level}:"*)
+		log="${log}${_msg}
+" # Intentional newline
+		;;
+	esac
+}
+
 # Update $_map with tunable settings from 1 file
 # values
 ok_tunable_1()
@@ -76,6 +95,8 @@ ok_tunable_1()
 	if [ ! -r "$_file" ]; then
 		return
 	fi
+
+	tunable_log "NOTICE" "Loading tunables from ${_file}"
 
 	while IFS='= 	' read -r _var _val; do
 		case "$_var" in
@@ -101,11 +122,15 @@ ok_tunable()
 	_map=$(echo "$defaults" |
 		awk -F= '$0 { printf "%s:%s=%s\n", tolower($1), $1, $2 }')
 
+	log=""
+
 	ok_tunable_1 "$tfile"
 
 	# Set result, stripping off lowercase tunable prefix
-	ok "$(echo "$_map" | awk -F: '{ print $2 }')"
+	ok "${log}$(echo "$_map" | awk -F: '{ print $2 }')"
 }
+
+export CTDB_DEBUGLEVEL="NOTICE"
 
 test_case "Unreadable file"
 : >"$tfile"
@@ -125,6 +150,7 @@ rm -f "$tfile"
 test_case "Invalid file, contains 1 word"
 echo "Hello" >"$tfile"
 required_error EINVAL <<EOF
+Loading tunables from ${tfile}
 ctdb_tunable_load_file: Invalid line containing "Hello"
 EOF
 unit_test tunable_test "$tfile"
@@ -132,6 +158,7 @@ unit_test tunable_test "$tfile"
 test_case "Invalid file, contains multiple words"
 echo "Hello world!" >"$tfile"
 required_error EINVAL <<EOF
+Loading tunables from ${tfile}
 ctdb_tunable_load_file: Invalid line containing "Hello world!"
 EOF
 unit_test tunable_test "$tfile"
@@ -139,6 +166,7 @@ unit_test tunable_test "$tfile"
 test_case "Invalid file, missing value"
 echo "EnableBans=" >"$tfile"
 required_error EINVAL <<EOF
+Loading tunables from ${tfile}
 ctdb_tunable_load_file: Invalid line containing "EnableBans"
 EOF
 unit_test tunable_test "$tfile"
@@ -146,6 +174,7 @@ unit_test tunable_test "$tfile"
 test_case "Invalid file, invalid value (not a number)"
 echo "EnableBans=value" >"$tfile"
 required_error EINVAL <<EOF
+Loading tunables from ${tfile}
 ctdb_tunable_load_file: Invalid value "value" for tunable "EnableBans"
 EOF
 unit_test tunable_test "$tfile"
@@ -153,6 +182,7 @@ unit_test tunable_test "$tfile"
 test_case "Invalid file, missing key"
 echo "=123" >"$tfile"
 required_error EINVAL <<EOF
+Loading tunables from ${tfile}
 ctdb_tunable_load_file: Syntax error
 EOF
 unit_test tunable_test "$tfile"
@@ -162,6 +192,7 @@ cat >"$tfile" <<EOF
  =0
 EOF
 required_error EINVAL <<EOF
+Loading tunables from ${tfile}
 ctdb_tunable_load_file: Syntax error
 EOF
 unit_test tunable_test "$tfile"
@@ -169,6 +200,7 @@ unit_test tunable_test "$tfile"
 test_case "Invalid file, unknown tunable"
 echo "HelloWorld=123" >"$tfile"
 required_error EINVAL <<EOF
+Loading tunables from ${tfile}
 ctdb_tunable_load_file: Unknown tunable "HelloWorld"
 EOF
 unit_test tunable_test "$tfile"
@@ -176,6 +208,7 @@ unit_test tunable_test "$tfile"
 test_case "Invalid file, obsolete tunable"
 echo "MaxRedirectCount=123" >"$tfile"
 required_error EINVAL <<EOF
+Loading tunables from ${tfile}
 ctdb_tunable_load_file: Obsolete tunable "MaxRedirectCount"
 EOF
 unit_test tunable_test "$tfile"
@@ -183,6 +216,7 @@ unit_test tunable_test "$tfile"
 test_case "Invalid file, trailing non-whitespace garbage"
 echo "EnableBans=0xgg" >"$tfile"
 required_error EINVAL <<EOF
+Loading tunables from ${tfile}
 ctdb_tunable_load_file: Invalid value "0xgg" for tunable "EnableBans"
 EOF
 unit_test tunable_test "$tfile"
@@ -196,6 +230,7 @@ HelloWorld=123
 MaxRedirectCount =123
 EOF
 required_error EINVAL <<EOF
+Loading tunables from ${tfile}
 ctdb_tunable_load_file: Invalid line containing "EnableBans"
 ctdb_tunable_load_file: Invalid value "value" for tunable "EnableBans"
 ctdb_tunable_load_file: Syntax error
@@ -209,6 +244,7 @@ EnableBans=value
 EnableBans=0
 EOF
 required_error EINVAL <<EOF
+Loading tunables from ${tfile}
 ctdb_tunable_load_file: Unknown tunable "HelloWorld"
 ctdb_tunable_load_file: Invalid value "value" for tunable "EnableBans"
 EOF
@@ -216,12 +252,12 @@ unit_test tunable_test "$tfile"
 
 test_case "OK, missing file"
 rm -f "$tfile"
-ok_tunable_defaults
+ok_tunable
 unit_test tunable_test "$tfile"
 
 test_case "OK, empty file"
 : >"$tfile"
-ok_tunable_defaults
+ok_tunable
 unit_test tunable_test "$tfile"
 
 test_case "OK, comments and blanks only"
@@ -232,7 +268,7 @@ cat >"$tfile" <<EOF
 
 
 EOF
-ok_tunable_defaults
+ok_tunable
 unit_test tunable_test "$tfile"
 
 test_case "OK, 1 tunable"

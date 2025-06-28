@@ -23,6 +23,8 @@
 #include <talloc.h>
 #include <assert.h>
 
+#include "common/logging.c"
+
 #include "common/tunable.c"
 
 int main(int argc, const char **argv)
@@ -41,6 +43,8 @@ int main(int argc, const char **argv)
 
 	mem_ctx = talloc_new(NULL);
 	assert(mem_ctx != NULL);
+
+	logging_init(mem_ctx, "file:", NULL, "tunable_test");
 
 	ctdb_tunable_set_defaults(&tun_list);
 
