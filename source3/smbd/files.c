@@ -120,7 +120,7 @@ NTSTATUS fsp_bind_smb(struct files_struct *fsp, struct smb_request *req)
 	now = timeval_to_nttime(&fsp->open_time);
 
 	status = smbXsrv_open_create(req->xconn,
-				     fsp->conn->session_info,
+				     req->session,
 				     now,
 				     &op);
 	if (!NT_STATUS_IS_OK(status)) {

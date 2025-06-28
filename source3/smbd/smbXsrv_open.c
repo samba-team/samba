@@ -565,11 +565,12 @@ static int smbXsrv_open_destructor(struct smbXsrv_open *op)
 }
 
 NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
-			     struct auth_session_info *session_info,
+			     struct smbXsrv_session *session,
 			     NTTIME now,
 			     struct smbXsrv_open **_open)
 {
 	struct smbXsrv_open_table *table = conn->client->open_table;
+	struct auth_session_info *session_info = NULL;
 	struct smbXsrv_open *op = NULL;
 	struct smbXsrv_open_global0 *global = NULL;
 	NTSTATUS status;
@@ -577,6 +578,7 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 	struct security_token *current_token = NULL;
 	int local_id;
 
+	session_info = session->global->auth_session_info;
 	if (session_info == NULL) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -599,6 +601,7 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 	op->table = table;
 	op->status = NT_STATUS_OK; /* TODO: start with INTERNAL_ERROR */
 	op->idle_time = now;
+	op->session = session;
 
 	global = talloc_zero(op, struct smbXsrv_open_global0);
 	if (global == NULL) {
@@ -1318,7 +1321,7 @@ not_found:
 }
 
 NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
-			       struct auth_session_info *session_info,
+			       struct smbXsrv_session *session,
 			       uint64_t persistent_id,
 			       const struct GUID *create_guid,
 			       const struct smb2_lease_key *lease_key,
@@ -1332,6 +1335,8 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 		.lease_key = lease_key,
 		.me = messaging_server_id(conn->client->msg_ctx),
 	};
+	struct auth_session_info *session_info =
+		session->global->auth_session_info;
 	struct smbXsrv_open_global_key_buf key_buf;
 	TDB_DATA key = smbXsrv_open_global_id_to_key(
 		persistent_id & UINT32_MAX, &key_buf);
@@ -1400,6 +1405,8 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 			  nt_errstr(status));
 		goto fail;
 	}
+
+	state.op->session = session;
 
 	talloc_set_destructor(state.op, smbXsrv_open_destructor);
 

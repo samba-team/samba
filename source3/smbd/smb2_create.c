@@ -1102,7 +1102,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			lease_key = &state->lease_ptr->lease_key;
 		}
 		status = smb2srv_open_recreate(smb2req->xconn,
-					       smb1req->conn->session_info,
+					       smb2req->session,
 					       state->persistent_id,
 					       state->create_guid,
 					       lease_key,
