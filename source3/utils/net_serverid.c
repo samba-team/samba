@@ -734,8 +734,7 @@ static int wipedbs_traverse_replay_records(struct db_record *rec,
 	return 0;
 }
 
-static int net_serverid_wipedbs(struct net_context *c, int argc,
-				const char **argv)
+int net_serverid_wipedbs(struct net_context *c, int argc, const char **argv)
 {
 	int ret = -1;
 	NTSTATUS status;

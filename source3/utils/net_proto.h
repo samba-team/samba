@@ -407,6 +407,8 @@ int net_printing(struct net_context *c, int argc, const char **argv);
 
 int net_serverid(struct net_context *c, int argc, const char **argv);
 
+int net_serverid_wipedbs(struct net_context *c, int argc, const char **argv);
+
 /* The following definitions come from utils/net_util.c  */
 
 NTSTATUS net_rpc_lookup_name(struct net_context *c,

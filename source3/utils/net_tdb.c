@@ -88,6 +88,22 @@ out:
 	TALLOC_FREE(mem_ctx);
 	return ret;
 }
+static int net_tdb_smbXsrv(struct net_context *c, int argc, const char **argv)
+{
+	struct functable func[] = {
+		{
+			"wipedbs",
+			net_serverid_wipedbs,
+			NET_TRANSPORT_LOCAL,
+			N_("Clean dead entries from smbXsrv databases"),
+			N_("net tdb smbXsrv wipedbs\n"
+			   "    Clean dead entries from smbXsrv databases")
+		},
+		{NULL, NULL, 0, NULL, NULL}
+	};
+
+	return net_run_function(c, argc, argv, "net tdb smbXsrv", func);
+}
 
 int net_tdb(struct net_context *c, int argc, const char **argv)
 {
@@ -97,6 +113,14 @@ int net_tdb(struct net_context *c, int argc, const char **argv)
 		  NET_TRANSPORT_LOCAL,
 		  N_("Show information for a record in locking.tdb"),
 		  N_("net tdb locking <key>")
+		},
+		{
+			"smbXsrv",
+			net_tdb_smbXsrv,
+			NET_TRANSPORT_LOCAL,
+			N_("Manage smbXsrv databases"),
+			N_("net tdb smbXsrv\n"
+			   "    Manage smbXsrv databases")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
