@@ -93,6 +93,7 @@ ok_tunable_1()
 	_file="$1"
 
 	if [ ! -r "$_file" ]; then
+		tunable_log "INFO" "Optional tunables file ${_file} not found"
 		return
 	fi
 
@@ -130,7 +131,7 @@ ok_tunable()
 	ok "${log}$(echo "$_map" | awk -F: '{ print $2 }')"
 }
 
-export CTDB_DEBUGLEVEL="NOTICE"
+export CTDB_DEBUGLEVEL="INFO"
 
 test_case "Unreadable file"
 : >"$tfile"

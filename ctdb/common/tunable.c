@@ -365,7 +365,7 @@ bool ctdb_tunable_load_file(TALLOC_CTX *mem_ctx,
 	fp = fopen(file, "r");
 	if (fp == NULL) {
 		if (errno == ENOENT) {
-			/* Doesn't need to exist */
+			D_INFO("Optional tunables file %s not found\n", file);
 			return true;
 		}
 
