@@ -5776,6 +5776,128 @@ done:
 	return ret;
 }
 
+/*
+ * This verifies a second replay on a durable handle, after the handle has
+ * already been used, is "ignored" and handled as a normal open.
+ */
+static bool test_replay_twice_durable(struct torture_context *tctx,
+				      struct smb2_tree *tree)
+{
+	struct smb2_create io1;
+	struct smb2_lease ls1;
+	struct smb2_handle h1 = {0};
+	struct smb2_handle h2 = {0};
+	uint32_t caps;
+	struct smbcli_options options = tree->session->transport->options;
+	uint64_t lease1 = random();
+	struct GUID create_guid1 = GUID_random();
+	bool lease_ok;
+	char *fname = NULL;
+	struct smb2_write wrt;
+	NTSTATUS status;
+	bool ret = true;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	fname = talloc_asprintf(tctx, "lease_break-%ld.dat", random());
+	torture_assert_not_null_goto(tctx, fname, ret, done,
+				     "talloc_asprintf failed\n");
+
+	/*
+	 * Get a durable open
+	 */
+	smb2_lease_v2_create_share(&io1, &ls1, false, fname,
+				   smb2_util_share_access("RWD"),
+				   lease1, NULL,
+				   smb2_util_lease_state("RWH"), 1);
+	io1.in.durable_open_v2 = true;
+	io1.in.create_guid = create_guid1;
+
+	status = smb2_create(tree, tree, &io1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = io1.out.file.handle;
+	torture_assert_goto(tctx, io1.out.durable_open_v2 == true,
+			    ret, done, "Durable open not granted\n");
+
+	torture_assert_goto(tctx, io1.out.oplock_level == SMB2_OPLOCK_LEVEL_LEASE,
+			    ret, done, "Bad oplock level\n");
+	lease_ok = io1.out.lease_response_v2.lease_state == smb2_util_lease_state("RWH");
+	torture_assert_goto(tctx, lease_ok, ret, done, "Bad lease state\n");
+
+	TALLOC_FREE(tree);
+	sleep(1);
+
+	/*
+	 * Reconnect, then replay
+	 */
+
+	ret = torture_smb2_connection_ext(tctx, 0, &options, &tree);
+	torture_assert_goto(tctx, ret, ret, done, "torture_smb2_connection_ext failed\n");
+
+	smb2cli_session_increment_channel_sequence(tree->session->smbXcli);
+
+	smb2cli_session_start_replay(tree->session->smbXcli);
+	status = smb2_create(tree, tree, &io1);
+	smb2cli_session_stop_replay(tree->session->smbXcli);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = io1.out.file.handle;
+
+	CHECK_VAL(io1.out.create_action, NTCREATEX_ACTION_CREATED);
+
+	/* Replay a second time */
+	smb2cli_session_start_replay(tree->session->smbXcli);
+	status = smb2_create(tree, tree, &io1);
+	smb2cli_session_stop_replay(tree->session->smbXcli);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	CHECK_VAL(io1.out.create_action, NTCREATEX_ACTION_CREATED);
+
+	/*
+	 * Verify the handle is usable
+	 */
+
+	ZERO_STRUCT(wrt);
+	wrt.in.file.handle = h1;
+	wrt.in.offset = 0;
+	wrt.in.data = data_blob_string_const("data");
+
+	status = smb2_write(tree, &wrt);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_write failed\n");
+
+	/*
+	 * Replay is "ignored", opens new handle
+	 */
+
+	smb2cli_session_start_replay(tree->session->smbXcli);
+	status = smb2_create(tree, tree, &io1);
+	smb2cli_session_stop_replay(tree->session->smbXcli);
+
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h2 = io1.out.file.handle;
+
+	CHECK_VAL(io1.out.create_action, NTCREATEX_ACTION_EXISTED);
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree, h2);
+	}
+	if (fname != NULL) {
+		smb2_util_unlink(tree, fname);
+	}
+	TALLOC_FREE(tree);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_replay_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -5840,6 +5962,7 @@ struct torture_suite *torture_smb2_replay_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "durable-reconnect-replay1", test_durable_reconnect_replay1);
 	torture_suite_add_1smb2_test(suite, "durable-reconnect-replay2", test_durable_reconnect_replay2);
 	torture_suite_add_1smb2_test(suite, "durable-reconnect-replay3", test_durable_reconnect_replay3);
+	torture_suite_add_1smb2_test(suite, "replay-twice-durable", test_replay_twice_durable);
 
 	suite->description = talloc_strdup(suite, "SMB2 REPLAY tests");
 
