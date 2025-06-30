@@ -1,0 +1,126 @@
+/*
+   Definitions for packing and unpacking TPM 2.0 Public key
+   structures, derived from:
+
+    https://dox.ipxe.org/Tpm20_8h_source.html#l00164
+    https://stackoverflow.com/questions/78958315/cannot-parse-tpm2-0-public-key
+
+   Note: This is a greatly simplified implementation, that:
+        - only handles TPM version 2.0 blobs
+        - only extracts the RSA public key
+        - ignores other fields
+	- and in the case of unions assumes that only the RSA option will
+	  be present.
+*/
+
+#include "idl_types.h"
+
+[
+  pointer_default(unique)
+]
+interface tpm20_rsakey_blob
+{
+	const uint32 TPM20_MAGIC      = 0x4D504350; /* PCPM */
+
+	const uint32 PCP_TYPE_TPM_12  = 0x00000001;
+	const uint32 PCP_TYPE_TPM_20  = 0x00000002;
+
+ 	const uint16 TPM_ALG_RSA    = 0x0001;
+	const uint16 TPM_ALG_NULL   = 0x0010;
+	const uint16 TPM_ALG_SHA256 = 0x000B;
+	const uint16 TPM_ALG_RSASSA = 0x0014;
+
+
+	const uint16 TPM_RSA_EXPONENT_SIZE = sizeof(uint32_t);
+
+	/* Public structures. */
+	typedef struct {
+		/* Only supporting Public keys with SHA256 hashes */
+		[flag(NDR_BIG_ENDIAN), value(0x0014), range(0x0014, 0x0014)]
+			uint16 scheme;
+		/*
+		 * Strictly speaking this is a union but we're
+		 * restricting the scheme to RSASSA, and the
+		 * TPMS_SCHEME_RSA contains just the hash algorithm
+		 */
+		[flag(NDR_BIG_ENDIAN), value(0x000B), range(0x000B, 0x000B)]
+			uint16 hash_algorithm;
+	} TPMT_RSA_SCHEME;
+
+	typedef [public] struct {
+		/* Only catering for TPM_ALG_NONE */
+		[flag(NDR_BIG_ENDIAN), value(0x0010), range(0x0010, 0x0010)]
+			uint16 symmetric_algorithm;
+		TPMT_RSA_SCHEME	       scheme;
+		[flag(NDR_BIG_ENDIAN)] uint16	keyBits;
+		/*
+		 * Defined in the spec as a big endian uint32, but defined
+		 * here as a byte array for convenience
+		 */
+		uint8 exponent[TPM_RSA_EXPONENT_SIZE];
+	 } TPMS_RSA_PARMS;
+
+
+	typedef [public] struct {
+		[flag(NDR_BIG_ENDIAN)] uint16 size;
+		uint8 buffer[size];
+	} TPM2B_PUBLIC_KEY_RSA;
+
+	typedef [public] struct {
+		[flag(NDR_BIG_ENDIAN)] uint16    size;
+		uint8     buffer[size];
+	} TPM2B_DIGEST;
+
+	typedef [public] struct {
+		[flag(NDR_BIG_ENDIAN)] uint16 size;
+		/* definitions folded in from TPMT_PUBLIC */
+
+		/* Only supporting RSA Public keys with SHA256 hashes */
+		[flag(NDR_BIG_ENDIAN), value(0x0001), range(0x0001, 0x0001)]
+			uint16               type;
+		[flag(NDR_BIG_ENDIAN), value(0x000B), range(0x000B, 0x000B)]
+			uint16               hash_algorithm;
+		uint32               attributes;
+		TPM2B_DIGEST         auth_policy;
+		/*
+		 * strictly speaking the next two elements are unions
+		 * but we're only processing RSA entries, by restricting
+		 * the values of type.
+		 */
+		TPMS_RSA_PARMS       rsa_detail;
+		TPM2B_PUBLIC_KEY_RSA rsa;
+	} TPM2B_PUBLIC;
+
+	/*
+	 * As far as I can tell the TPM20_KEY_BLOB is little endian,
+	 * BUT the TPM2B_PUBLIC is big endian
+	 */
+	typedef [public] struct {
+		[value(0x4D504350), range(0x4D504350, 0x4D504350)]
+			uint32 magic; /* PCPM */
+		[value(46)] uint32 header_length;
+		/* Only supporting version 2.0 blobs */
+		[value(0x00000002), range(0x00000002, 0x00000002)]
+			uint32 type;
+		uint32 flags;
+		uint32 public_length;
+		/*
+		* Ignore the rest of the lengths and the pcra_alg_id
+		* only getting the public key, for key trust authentication
+		*/
+		uint32 private_length;
+		uint32 migration_public_length;
+		uint32 migration_private_length;
+		uint32 policy_digest_list_length;
+		uint32 pcr_binding_length;
+		uint32 pcr_digest_length;
+		uint32 encrypted_secret_length;
+		uint32 tpm12_hostage_blob_length;
+		uint16 pcr_alg_id;
+
+		/* Lets get the public key */
+		[flag(NDR_NOALIGN)] TPM2B_PUBLIC public_key;
+		/* just collect all the remaining bytes after the public key */
+		[flag(NDR_REMAINING)] DATA_BLOB remaining;
+	} TPM20_RSAKEY_BLOB;
+}

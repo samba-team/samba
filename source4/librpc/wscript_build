@@ -284,6 +284,14 @@ bld.SAMBA_PYTHON('python_bycrypt_rsakey_blob',
         cflags_end=gen_cflags
         )
 
+bld.SAMBA_PYTHON('python_tpm20_rsakey_blob',
+        source=('../../librpc/gen_ndr/py_tpm20_rsakey_blob.c '
+                '../../librpc/gen_ndr/ndr_tpm20_rsakey_blob.c'),
+        deps='NDR_TPM20_RSAKEY_BLOB %s %s' % (pytalloc_util, pyrpc_util),
+        realname='samba/dcerpc/tpm20_rsakey_blob.so',
+        cflags_end=gen_cflags
+        )
+
 bld.SAMBA_PYTHON('python_gkdi',
         source='../../librpc/gen_ndr/py_gkdi.c',
         deps='RPC_NDR_GKDI %s %s' % (pytalloc_util, pyrpc_util),

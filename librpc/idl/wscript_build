@@ -145,6 +145,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     security.idl
                     server_id.idl
                     smb_acl.idl
+                    tpm20_rsakey_blob.idl
                     xattr.idl
                     smb3posix.idl
                     ''',
