@@ -518,16 +518,24 @@ again:
 		struct NETLOGON_SAM_LOGON_RESPONSE_EX *cldap_reply = NULL;
 		char server[INET6_ADDRSTRLEN];
 
+		print_sockaddr(server, sizeof(server), &req_sa_list[i]->u.ss);
+
 		if (responses[i] == NULL) {
+			add_failed_connection_entry(
+				domain,
+				server,
+				NT_STATUS_INVALID_NETWORK_RESPONSE);
 			continue;
 		}
-
-		print_sockaddr(server, sizeof(server), &req_sa_list[i]->u.ss);
 
 		if (responses[i]->ntver != NETLOGON_NT_VERSION_5EX) {
 			DBG_NOTICE("realm=[%s] nt_version mismatch: 0x%08x for %s\n",
 				   ads->server.realm,
 				   responses[i]->ntver, server);
+			add_failed_connection_entry(
+				domain,
+				server,
+				NT_STATUS_INVALID_NETWORK_RESPONSE);
 			continue;
 		}
 
@@ -593,16 +601,6 @@ again:
 		if (!expired) {
 			goto again;
 		}
-	}
-
-	/* keep track of failures as all were not suitable */
-	for (i = 0; i < num_requests; i++) {
-		char server[INET6_ADDRSTRLEN];
-
-		print_sockaddr(server, sizeof(server), &req_sa_list[i]->u.ss);
-
-		add_failed_connection_entry(domain, server,
-					    NT_STATUS_UNSUCCESSFUL);
 	}
 
 	status = NT_STATUS_NO_LOGON_SERVERS;
