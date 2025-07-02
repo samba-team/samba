@@ -2473,8 +2473,7 @@ struct vfs_ceph_aio_state {
 	struct timespec finish_time;
 	ssize_t result;
 	struct vfs_aio_state vfs_aio_state;
-	SMBPROFILE_BYTES_ASYNC_STATE(profile_bytes);
-	SMBPROFILE_BYTES_ASYNC_STATE(profile_bytes_x);
+	SMBPROFILE_BYTES_ASYNC_STATE_X(profile_bytes, profile_bytes_x);
 };
 
 static void vfs_ceph_aio_start(struct vfs_ceph_aio_state *state)
@@ -2745,8 +2744,8 @@ static ssize_t vfs_ceph_pread_recv(struct tevent_req *req,
 		  state->off,
 		  state->len);
 
-	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes);
-	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes_x);
+	SMBPROFILE_BYTES_ASYNC_END_X(state->profile_bytes,
+				     state->profile_bytes_x);
 
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		goto out;
@@ -2861,8 +2860,8 @@ static ssize_t vfs_ceph_pwrite_recv(struct tevent_req *req,
 		  state->off,
 		  state->len);
 
-	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes);
-	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes_x);
+	SMBPROFILE_BYTES_ASYNC_END_X(state->profile_bytes,
+				     state->profile_bytes_x);
 
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		goto out;
@@ -3064,8 +3063,8 @@ static int vfs_ceph_fsync_recv(struct tevent_req *req,
 		  state->len,
 		  state->result);
 
-	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes);
-	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes_x);
+	SMBPROFILE_BYTES_ASYNC_END_X(state->profile_bytes,
+				     state->profile_bytes_x);
 
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		goto out;
