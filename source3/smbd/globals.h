@@ -655,8 +655,7 @@ struct smbd_smb2_request {
 
 	struct timeval request_time;
 
-	SMBPROFILE_IOBYTES_ASYNC_STATE(profile);
-	SMBPROFILE_IOBYTES_ASYNC_STATE(profile_x);
+	SMBPROFILE_IOBYTES_ASYNC_STATE_X(profile, profile_x);
 
 	/* fake smb1 request. */
 	struct smb_request *smb1req;
