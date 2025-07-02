@@ -755,6 +755,12 @@ static NTSTATUS make_dc_info_from_cldap_reply(
 
 	char addr[INET6_ADDRSTRLEN];
 
+	if (r->command == LOGON_SAM_LOGON_PAUSE_RESPONSE ||
+	    r->command == LOGON_SAM_LOGON_PAUSE_RESPONSE_EX)
+	{
+		return NT_STATUS_NETLOGON_NOT_STARTED;
+	}
+
 	if (sa != NULL) {
 		print_sockaddr(addr, sizeof(addr), &sa->u.ss);
 		dc_address = addr;
