@@ -2230,3 +2230,22 @@ fail:
 	TALLOC_FREE(xids);
 	return false;
 }
+
+/**
+ * Helper to extract the DNS Domain Name from a struct winbindd_domain
+ */
+const char *find_dns_domain_name(const char *domain_name)
+{
+	struct winbindd_domain *wbdom = NULL;
+
+	wbdom = find_domain_from_name(domain_name);
+	if (wbdom == NULL) {
+		return domain_name;
+	}
+
+	if (wbdom->active_directory && wbdom->alt_name != NULL) {
+		return wbdom->alt_name;
+	}
+
+	return wbdom->name;
+}
