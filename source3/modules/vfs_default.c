@@ -912,8 +912,8 @@ static void vfs_pread_done(struct tevent_req *subreq)
 
 	ret = pthreadpool_tevent_job_recv(subreq);
 	TALLOC_FREE(subreq);
-	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes);
-	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes_x);
+	SMBPROFILE_BYTES_ASYNC_END_X(state->profile_bytes,
+				     state->profile_bytes_x);
 	talloc_set_destructor(state, NULL);
 	if (ret != 0) {
 		if (ret != EAGAIN) {
@@ -955,8 +955,7 @@ struct vfswrap_pwrite_state {
 	bool posix_append;
 
 	struct vfs_aio_state vfs_aio_state;
-	SMBPROFILE_BYTES_ASYNC_STATE(profile_bytes);
-	SMBPROFILE_BYTES_ASYNC_STATE(profile_bytes_x);
+	SMBPROFILE_BYTES_ASYNC_STATE_X(profile_bytes, profile_bytes_x);
 };
 
 static void vfs_pwrite_do(void *private_data);
@@ -1188,8 +1187,8 @@ static void vfs_fsync_done(struct tevent_req *subreq)
 
 	ret = pthreadpool_tevent_job_recv(subreq);
 	TALLOC_FREE(subreq);
-	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes);
-	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes_x);
+	SMBPROFILE_BYTES_ASYNC_END_X(state->profile_bytes,
+				     state->profile_bytes_x);
 	talloc_set_destructor(state, NULL);
 	if (ret != 0) {
 		if (ret != EAGAIN) {
@@ -3814,8 +3813,8 @@ static void vfswrap_getxattrat_done(struct tevent_req *subreq)
 
 	ret = pthreadpool_tevent_job_recv(subreq);
 	TALLOC_FREE(subreq);
-	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes);
-	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes_x);
+	SMBPROFILE_BYTES_ASYNC_END_X(state->profile_bytes,
+				     state->profile_bytes_x);
 	talloc_set_destructor(state, NULL);
 	if (ret != 0) {
 		if (ret != EAGAIN) {
