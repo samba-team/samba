@@ -289,10 +289,19 @@ static void wb_queryuser_done(struct tevent_req *subreq)
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) &&
 	    !state->tried_dclookup) {
-		D_DEBUG("GetNssInfo got DOMAIN_CONTROLLER_NOT_FOUND, calling wb_dsgetdcname_send()\n");
-		subreq = wb_dsgetdcname_send(
-			state, state->ev, state->info->domain_name, NULL, NULL,
-			DS_RETURN_DNS_NAME);
+		const char *domain_name = find_dns_domain_name(
+			state->info->domain_name);
+
+		D_DEBUG("GetNssInfo got DOMAIN_CONTROLLER_NOT_FOUND, calling "
+			"wb_dsgetdcname_send(%s)\n",
+			domain_name);
+
+		subreq = wb_dsgetdcname_send(state,
+					     state->ev,
+					     domain_name,
+					     NULL,
+					     NULL,
+					     DS_RETURN_DNS_NAME);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
