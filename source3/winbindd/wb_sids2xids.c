@@ -612,13 +612,22 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 	    !state->tried_dclookup) {
 
 		struct lsa_DomainInfo *d;
+		const char *domain_name = NULL;
 
-		D_DEBUG("Domain controller not found. Calling wb_dsgetdcname_send() to get it.\n");
 		d = &state->idmap_doms.domains[state->dom_index];
 
-		subreq = wb_dsgetdcname_send(
-			state, state->ev, d->name.string, NULL, NULL,
-			DS_RETURN_DNS_NAME);
+		domain_name = find_dns_domain_name(d->name.string);
+
+		D_DEBUG("Domain controller not found. Calling "
+			"wb_dsgetdcname_send(%s) to get it.\n",
+			domain_name);
+
+		subreq = wb_dsgetdcname_send(state,
+					     state->ev,
+					     domain_name,
+					     NULL,
+					     NULL,
+					     DS_RETURN_DNS_NAME);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}

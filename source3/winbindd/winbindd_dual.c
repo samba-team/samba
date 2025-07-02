@@ -532,6 +532,7 @@ static void wb_domain_request_trigger(struct tevent_req *req,
 	struct wb_domain_request_state *state = tevent_req_data(
 		req, struct wb_domain_request_state);
 	struct winbindd_domain *domain = state->domain;
+	const char *domain_name = NULL;
 	struct tevent_req *subreq = NULL;
 	size_t shortest_queue_length;
 
@@ -604,8 +605,11 @@ static void wb_domain_request_trigger(struct tevent_req *req,
 	 * which is indicated by DS_RETURN_DNS_NAME.
 	 * For NT4 domains we still get the netbios name.
 	 */
+
+	domain_name = find_dns_domain_name(state->domain->name);
+
 	subreq = wb_dsgetdcname_send(state, state->ev,
-				     state->domain->name,
+				     domain_name,
 				     NULL, /* domain_guid */
 				     NULL, /* site_name */
 				     DS_RETURN_DNS_NAME); /* flags */

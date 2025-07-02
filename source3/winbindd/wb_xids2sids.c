@@ -143,9 +143,15 @@ static void wb_xids2sids_dom_done(struct tevent_req *subreq)
 	if (NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) &&
 	    !state->tried_dclookup) {
 
-		subreq = wb_dsgetdcname_send(
-			state, state->ev, state->dom_map->name, NULL, NULL,
-			DS_RETURN_DNS_NAME);
+		const char *domain_name = find_dns_domain_name(
+			state->dom_map->name);
+
+		subreq = wb_dsgetdcname_send(state,
+					     state->ev,
+					     domain_name,
+					     NULL,
+					     NULL,
+					     DS_RETURN_DNS_NAME);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
