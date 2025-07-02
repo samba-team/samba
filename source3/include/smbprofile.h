@@ -895,6 +895,10 @@ int smbprofile_persvc_collect_tdb(struct tdb_context *tdb,
 		SMBPROFILE_BYTES_ASYNC_END(__profasync_persvc_##x); \
 	} while (0)
 
+#define SMBPROFILE_BYTES_ASYNC_STATE_X(_async_name, _async_persvc_name) \
+	struct smbprofile_stats_bytes_async _async_name;                \
+	struct smbprofile_stats_bytes_async _async_persvc_name;
+
 #define SMBPROFILE_BYTES_ASYNC_START_X(_snum, _name, _async, _async_persvc, _bytes) \
 	_SMBPROFILE_BYTES_ASYNC_START(_name##_stats, profile_p, _async, _bytes);    \
 	do {                                                                        \
@@ -924,6 +928,10 @@ int smbprofile_persvc_collect_tdb(struct tdb_context *tdb,
 		_SMBPROFILE_BYTES_ASYNC_END(_async);        \
 		_SMBPROFILE_BYTES_ASYNC_END(_async_persvc); \
 	} while (0)
+
+#define SMBPROFILE_IOBYTES_ASYNC_STATE_X(_async_name, _async_persvc_name) \
+	struct smbprofile_stats_iobytes_async _async_name;                \
+	struct smbprofile_stats_iobytes_async _async_persvc_name;
 
 #define SMBPROFILE_IOBYTES_ASYNC_START_X(_snum, _name, _async, _async_persvc, _bytes) \
 	_SMBPROFILE_IOBYTES_ASYNC_START(_name##_stats, profile_p, _async, _bytes);    \
@@ -968,10 +976,12 @@ int smbprofile_persvc_collect_tdb(struct tdb_context *tdb,
 #define START_PROFILE_BYTES_X(_snum, x, n)
 #define END_PROFILE_X(x)
 #define END_PROFILE_BYTES_X(x)
+#define SMBPROFILE_BYTES_ASYNC_STATE_X(_async_name, _async_persvc_name)
 #define SMBPROFILE_BYTES_ASYNC_START_X(_name, _snum, _async, _async_persvc, _bytes)
 #define SMBPROFILE_BYTES_ASYNC_SET_IDLE_X(_async, _async_persvc)
 #define SMBPROFILE_BYTES_ASYNC_SET_BUSY_X(_async, _async_persvc)
 #define SMBPROFILE_BYTES_ASYNC_END_X(_async, _async_persvc)
+#define SMBPROFILE_IOBYTES_ASYNC_STATE_X(_async_name, _async_persvc_name)
 #define SMBPROFILE_IOBYTES_ASYNC_START_X(_name, _snum, _async, _async_persvc, _bytes)
 #define SMBPROFILE_IOBYTES_ASYNC_SET_IDLE_X(_async, _async_persvc)
 #define SMBPROFILE_IOBYTES_ASYNC_SET_BUSY_X(_async, _async_persvc)
