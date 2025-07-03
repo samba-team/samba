@@ -787,23 +787,30 @@ static void netlogon_pings_done(struct tevent_req *subreq)
 	state->num_received += 1;
 
 	if (NT_STATUS_IS_OK(status)) {
+		enum netlogon_command cmd;
 		uint32_t ret_flags;
-		bool ok;
+		bool ok = true;
 
 		switch (response->ntver) {
 		case NETLOGON_NT_VERSION_5EX:
 			ret_flags = response->data.nt5_ex.server_type;
+			cmd = response->data.nt5_ex.command;
+			ok &= !(cmd == LOGON_SAM_LOGON_PAUSE_RESPONSE ||
+				cmd == LOGON_SAM_LOGON_PAUSE_RESPONSE_EX);
 			break;
 		case NETLOGON_NT_VERSION_5:
 			ret_flags = response->data.nt5.server_type;
+			cmd = response->data.nt5.command;
+			ok &= !(cmd == LOGON_SAM_LOGON_PAUSE_RESPONSE ||
+				cmd == LOGON_SAM_LOGON_PAUSE_RESPONSE_EX);
 			break;
 		default:
 			ret_flags = 0;
 			break;
 		}
 
-		ok = check_cldap_reply_required_flags(ret_flags,
-						      state->required_flags);
+		ok &= check_cldap_reply_required_flags(ret_flags,
+						       state->required_flags);
 		if (ok) {
 			state->responses[i] = talloc_move(state->responses,
 							  &response);
