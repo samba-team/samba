@@ -281,12 +281,11 @@ sub setup_dns_hub_internal($$$)
 		warn("Unable to create $prefix");
 		return undef;
 	}
-	my $prefix_abs = abs_path($prefix);
 
-	die ("prefix=''") if $prefix_abs eq "";
-	die ("prefix='/'") if $prefix_abs eq "/";
+	die ("prefix=''") if $prefix eq "";
+	die ("prefix='/'") if $prefix eq "/";
 
-	unless (system("rm -rf $prefix_abs/*") == 0) {
+	unless (system("rm -rf $prefix/*") == 0) {
 		warn("Unable to clean up");
 	}
 
@@ -296,9 +295,9 @@ sub setup_dns_hub_internal($$$)
 	$env->{SERVER_IP} = Samba::get_ipv4_addr($hostname);
 	$env->{SERVER_IPV6} = Samba::get_ipv6_addr($hostname);
 	$env->{SOCKET_WRAPPER_DEFAULT_IFACE} = Samba::get_interface($hostname);
-	$env->{DNS_HUB_LOG} = "$prefix_abs/dns_hub.log";
-	$env->{RESOLV_CONF} = "$prefix_abs/resolv.conf";
-	$env->{TESTENV_DIR} = $prefix_abs;
+	$env->{DNS_HUB_LOG} = "$prefix/dns_hub.log";
+	$env->{RESOLV_CONF} = "$prefix/resolv.conf";
+	$env->{TESTENV_DIR} = $prefix;
 
 	my $ctx = undef;
 	$ctx->{resolv_conf} = $env->{RESOLV_CONF};
@@ -338,7 +337,7 @@ sub setup_dns_hub_internal($$$)
 	my $pid = Samba::fork_and_exec($self, $env, $daemon_ctx, $STDIN_READER);
 
 	$env->{SAMBA_PID} = $pid;
-	$env->{KRB5_CONFIG} = "$prefix_abs/no_krb5.conf";
+	$env->{KRB5_CONFIG} = "$prefix/no_krb5.conf";
 
 	# close the parent's read-end of the pipe
 	close($STDIN_READER);
@@ -550,12 +549,11 @@ sub provision_raw_prepare($$$$$$$$$$$$$$)
 		warn("Unable to create $prefix");
 		return undef;
 	}
-	my $prefix_abs = abs_path($prefix);
 
-	die ("prefix=''") if $prefix_abs eq "";
-	die ("prefix='/'") if $prefix_abs eq "/";
+	die ("prefix=''") if $prefix eq "";
+	die ("prefix='/'") if $prefix eq "/";
 
-	unless (system("rm -rf $prefix_abs/*") == 0) {
+	unless (system("rm -rf $prefix/*") == 0) {
 		warn("Unable to clean up");
 	}
 
@@ -563,7 +561,7 @@ sub provision_raw_prepare($$$$$$$$$$$$$$)
 	my $swiface = Samba::get_interface($hostname);
 
 	$ctx->{prefix} = $prefix;
-	$ctx->{prefix_abs} = $prefix_abs;
+	$ctx->{prefix_abs} = $prefix;
 
 	$ctx->{server_role} = $server_role;
 	$ctx->{hostname} = $hostname;
@@ -573,7 +571,7 @@ sub provision_raw_prepare($$$$$$$$$$$$$$)
 	$ctx->{kdc_ipv4} = $kdc_ipv4;
 	$ctx->{kdc_ipv6} = $kdc_ipv6;
 	$ctx->{force_fips_mode} = $force_fips_mode;
-	$ctx->{krb5_ccname} = "$prefix_abs/krb5cc_%{uid}";
+	$ctx->{krb5_ccname} = "$prefix/krb5cc_%{uid}";
 	if ($functional_level eq "2000") {
 		$ctx->{supported_enctypes} = "arcfour-hmac-md5 des-cbc-md5 des-cbc-crc";
 	}
@@ -603,23 +601,23 @@ sub provision_raw_prepare($$$$$$$$$$$$$$)
 	$ctx->{unix_gids_str} = $);
 	@{$ctx->{unix_gids}} = split(" ", $ctx->{unix_gids_str});
 
-	$ctx->{etcdir} = "$prefix_abs/etc";
-	$ctx->{piddir} = "$prefix_abs/pid";
+	$ctx->{etcdir} = "$prefix/etc";
+	$ctx->{piddir} = "$prefix/pid";
 	$ctx->{smb_conf} = "$ctx->{etcdir}/smb.conf";
 	$ctx->{krb5_conf} = "$ctx->{etcdir}/krb5.conf";
-	$ctx->{krb5_ccache} = "$prefix_abs/krb5_ccache";
+	$ctx->{krb5_ccache} = "$prefix/krb5_ccache";
 	$ctx->{mitkdc_conf} = "$ctx->{etcdir}/mitkdc.conf";
-	$ctx->{gnupghome} = "$prefix_abs/gnupg";
-	$ctx->{privatedir} = "$prefix_abs/private";
-	$ctx->{binddnsdir} = "$prefix_abs/bind-dns";
-	$ctx->{ncalrpcdir} = "$prefix_abs/ncalrpc";
-	$ctx->{lockdir} = "$prefix_abs/lockdir";
-	$ctx->{logdir} = "$prefix_abs/logs";
-	$ctx->{statedir} = "$prefix_abs/statedir";
-	$ctx->{cachedir} = "$prefix_abs/cachedir";
-	$ctx->{winbindd_socket_dir} = "$prefix_abs/wbsock";
-	$ctx->{nmbd_socket_dir} = "$prefix_abs/nmbsock";
-	$ctx->{ntp_signd_socket_dir} = "$prefix_abs/ntp_signd_socket";
+	$ctx->{gnupghome} = "$prefix/gnupg";
+	$ctx->{privatedir} = "$prefix/private";
+	$ctx->{binddnsdir} = "$prefix/bind-dns";
+	$ctx->{ncalrpcdir} = "$prefix/ncalrpc";
+	$ctx->{lockdir} = "$prefix/lockdir";
+	$ctx->{logdir} = "$prefix/logs";
+	$ctx->{statedir} = "$prefix/statedir";
+	$ctx->{cachedir} = "$prefix/cachedir";
+	$ctx->{winbindd_socket_dir} = "$prefix/wbsock";
+	$ctx->{nmbd_socket_dir} = "$prefix/nmbsock";
+	$ctx->{ntp_signd_socket_dir} = "$prefix/ntp_signd_socket";
 	$ctx->{nsswrap_passwd} = "$ctx->{etcdir}/passwd";
 	$ctx->{nsswrap_group} = "$ctx->{etcdir}/group";
 	$ctx->{nsswrap_hosts} = "$ENV{SELFTEST_PREFIX}/hosts";
@@ -2032,11 +2030,9 @@ sub provision_ad_dc()
 	    $extra_provision_options,
 	    $functional_level) = @_;
 
-	my $prefix_abs = abs_path($prefix);
-
 	my $bindir_abs = abs_path($self->{bindir});
-	my $lockdir="$prefix_abs/lockdir";
-        my $conffile="$prefix_abs/etc/smb.conf";
+	my $lockdir="$prefix/lockdir";
+	my $conffile="$prefix/etc/smb.conf";
 
 	my $require_mutexes = "dbwrap_tdb_require_mutexes:* = yes";
 	if ($ENV{SELFTEST_DONT_REQUIRE_TDB_MUTEX_SUPPORT} // '' eq "1") {
@@ -2067,7 +2063,7 @@ sub provision_ad_dc()
 	$password_hash_gpg_key_ids = "" unless defined($config_h->{HAVE_GPGME});
 
 	my $extra_smbconf_options = "
-        xattr_tdb:file = $prefix_abs/statedir/xattr.tdb
+        xattr_tdb:file = $prefix/statedir/xattr.tdb
 
 	dbwrap_tdb_mutexes:* = yes
 	${require_mutexes}
