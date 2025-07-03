@@ -326,7 +326,6 @@ die("using '/' as absolute prefix isn't allowed") unless $prefix ne "/";
 $ENV{SAMBA_SELFTEST} = "1";
 
 $ENV{PREFIX} = $prefix;
-$ENV{PREFIX_ABS} = $prefix;
 $ENV{SRCDIR} = $srcdir;
 $ENV{SRCDIR_ABS} = $srcdir_abs;
 $ENV{BINDIR} = $bindir_abs;
