@@ -315,6 +315,9 @@ WERROR _wkssvc_NetWkstaGetInfo(struct pipes_struct *p,
 			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		break;
+	case 502:
+		return WERR_ACCESS_DENIED;
+		break;
 	default:
 		return WERR_INVALID_LEVEL;
 	}
