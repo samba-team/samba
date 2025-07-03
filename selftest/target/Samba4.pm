@@ -561,8 +561,6 @@ sub provision_raw_prepare($$$$$$$$$$$$$$)
 	my $swiface = Samba::get_interface($hostname);
 
 	$ctx->{prefix} = $prefix;
-	$ctx->{prefix_abs} = $prefix;
-
 	$ctx->{server_role} = $server_role;
 	$ctx->{hostname} = $hostname;
 	$ctx->{netbiosname} = $netbiosname;
