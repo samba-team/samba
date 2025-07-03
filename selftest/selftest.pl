@@ -299,6 +299,7 @@ my $torture_maxtime = ($ENV{TORTURE_MAXTIME} or 1200);
 $prefix =~ s+//+/+;
 $prefix =~ s+/\./+/+;
 $prefix =~ s+/$++;
+$prefix = abs_path($prefix);
 
 die("using an empty prefix isn't allowed") unless $prefix ne "";
 
@@ -314,19 +315,18 @@ chmod 0700, $prefix;
 # We need to have no umask limitations for the tests.
 umask 0000;
 
-my $prefix_abs = abs_path($prefix);
 my $tmpdir_abs = abs_path("$prefix/tmp");
 mkdir($tmpdir_abs, 0777) unless -d $tmpdir_abs;
 
 my $srcdir_abs = abs_path($srcdir);
 
-die("using an empty absolute prefix isn't allowed") unless $prefix_abs ne "";
-die("using '/' as absolute prefix isn't allowed") unless $prefix_abs ne "/";
+die("using an empty absolute prefix isn't allowed") unless $prefix ne "";
+die("using '/' as absolute prefix isn't allowed") unless $prefix ne "/";
 
 $ENV{SAMBA_SELFTEST} = "1";
 
 $ENV{PREFIX} = $prefix;
-$ENV{PREFIX_ABS} = $prefix_abs;
+$ENV{PREFIX_ABS} = $prefix;
 $ENV{SRCDIR} = $srcdir;
 $ENV{SRCDIR_ABS} = $srcdir_abs;
 $ENV{BINDIR} = $bindir_abs;
@@ -435,7 +435,7 @@ $ENV{NSS_WRAPPER_MAX_HOSTENTS} = 200;
 
 my $socket_wrapper_dir;
 if ($opt_socket_wrapper) {
-	$socket_wrapper_dir = SocketWrapper::setup_dir("$prefix_abs/w", $opt_socket_wrapper_pcap);
+	$socket_wrapper_dir = SocketWrapper::setup_dir("$prefix/w", $opt_socket_wrapper_pcap);
 	print "SOCKET_WRAPPER_DIR=$socket_wrapper_dir\n";
 } elsif (not $opt_list) {
 	 unless ($< == 0) {
@@ -522,7 +522,7 @@ foreach (@opt_include) {
 $ENV{SOCKET_WRAPPER_IPV4_NETWORK} = "10.53.57.0";
 my $interfaces = Samba::get_interfaces_config("client", 6);
 
-my $clientdir = "$prefix_abs/client";
+my $clientdir = "$prefix/client";
 
 my $conffile = "$clientdir/client.conf";
 $ENV{SMB_CONF_PATH} = $conffile;
@@ -680,7 +680,7 @@ if ($#testlists == -1) {
 	die("No testlists specified");
 }
 
-$ENV{SELFTEST_PREFIX} = "$prefix_abs";
+$ENV{SELFTEST_PREFIX} = "$prefix";
 $ENV{SELFTEST_TMPDIR} = "$tmpdir_abs";
 $ENV{TMPDIR} = "$tmpdir_abs";
 $ENV{TEST_DATA_PREFIX} = "$tmpdir_abs";
@@ -912,8 +912,8 @@ sub teardown_env($)
 }
 
 # This 'global' file needs to be empty when we start
-unlink("$prefix_abs/dns_host_file");
-unlink("$prefix_abs/hosts");
+unlink("$prefix/dns_host_file");
+unlink("$prefix/hosts");
 
 if ($opt_random_order) {
 	require List::Util;
