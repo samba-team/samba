@@ -222,7 +222,7 @@ sub prepare_keyblobs($)
 	my $pkinitkey_private = "$ca_pkinitdir/USER-$pkinitprincipalname-private-key.pem";
 
 	my $tlsdir = "$ctx->{tlsdir}";
-	my $pkinitdir = "$ctx->{prefix_abs}/pkinit";
+	my $pkinitdir = "$ctx->{prefix}/pkinit";
 	#TLS and PKINIT crypto blobs
 	my $dhfile = "$tlsdir/dhparms.pem";
 	my $cafile = "$tlsdir/ca.pem";

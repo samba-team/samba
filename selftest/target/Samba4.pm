@@ -853,14 +853,14 @@ sub provision_raw_step1($$)
 
 	open(PWD, ">$ctx->{nsswrap_passwd}");
 	if ($ctx->{unix_uid} != 0) {
-		print PWD "root:x:0:0:root gecos:$ctx->{prefix_abs}:/bin/false\n";
+		print PWD "root:x:0:0:root gecos:$ctx->{prefix}:/bin/false\n";
 	}
-	print PWD "$ctx->{unix_name}:x:$ctx->{unix_uid}:65531:$ctx->{unix_name} gecos:$ctx->{prefix_abs}:/bin/false\n";
-	print PWD "nobody:x:65534:65533:nobody gecos:$ctx->{prefix_abs}:/bin/false
-pdbtest:x:65533:65533:pdbtest gecos:$ctx->{prefix_abs}:/bin/false
-pdbtest2:x:65532:65533:pdbtest gecos:$ctx->{prefix_abs}:/bin/false
-pdbtest3:x:65531:65533:pdbtest gecos:$ctx->{prefix_abs}:/bin/false
-pdbtest4:x:65530:65533:pdbtest gecos:$ctx->{prefix_abs}:/bin/false
+	print PWD "$ctx->{unix_name}:x:$ctx->{unix_uid}:65531:$ctx->{unix_name} gecos:$ctx->{prefix}:/bin/false\n";
+	print PWD "nobody:x:65534:65533:nobody gecos:$ctx->{prefix}:/bin/false
+pdbtest:x:65533:65533:pdbtest gecos:$ctx->{prefix}:/bin/false
+pdbtest2:x:65532:65533:pdbtest gecos:$ctx->{prefix}:/bin/false
+pdbtest3:x:65531:65533:pdbtest gecos:$ctx->{prefix}:/bin/false
+pdbtest4:x:65530:65533:pdbtest gecos:$ctx->{prefix}:/bin/false
 ";
 	close(PWD);
         my $uid_rfc2307test = 65533;
@@ -942,7 +942,7 @@ nogroup:x:65534:nobody
 		PRIVATEDIR => $ctx->{privatedir},
 		BINDDNSDIR => $ctx->{binddnsdir},
 		SERVERCONFFILE => $ctx->{smb_conf},
-		TESTENV_DIR => $ctx->{prefix_abs},
+		TESTENV_DIR => $ctx->{prefix},
 		CONFIGURATION => $configuration,
 		SOCKET_WRAPPER_DEFAULT_IFACE => $ctx->{swiface},
 		NSS_WRAPPER_PASSWD => $ctx->{nsswrap_passwd},
@@ -1219,7 +1219,7 @@ sub provision($$$$$$$$$$$)
 					       $force_fips_mode,
 					       $extra_provision_options);
 
-	$ctx->{share} = "$ctx->{prefix_abs}/share";
+	$ctx->{share} = "$ctx->{prefix}/share";
 	push(@{$ctx->{directories}}, "$ctx->{share}");
 	push(@{$ctx->{directories}}, "$ctx->{share}/test1");
 	push(@{$ctx->{directories}}, "$ctx->{share}/test2");
@@ -1931,7 +1931,7 @@ sub provision_rodc($$$)
 		return undef;
 	}
 
-	$ctx->{share} = "$ctx->{prefix_abs}/share";
+	$ctx->{share} = "$ctx->{prefix}/share";
 	push(@{$ctx->{directories}}, "$ctx->{share}");
 
 	$ctx->{smb_conf_extra_options} = "
@@ -3376,11 +3376,11 @@ sub prepare_dc_testenv
 					       undef);
 
 	# the restore uses a slightly different state-dir location to other testenvs
-	$ctx->{statedir} = "$ctx->{prefix_abs}/state";
+	$ctx->{statedir} = "$ctx->{prefix}/state";
 	push(@{$ctx->{directories}}, "$ctx->{statedir}");
 
 	# add support for sysvol/netlogon/tmp shares
-	$ctx->{share} = "$ctx->{prefix_abs}/share";
+	$ctx->{share} = "$ctx->{prefix}/share";
 	push(@{$ctx->{directories}}, "$ctx->{share}");
 	push(@{$ctx->{directories}}, "$ctx->{share}/test1");
 
