@@ -46,26 +46,9 @@ static size_t classic_interfaces(
 		&ndr_table_svcctl,
 		&ndr_table_ntsvcs,
 		&ndr_table_eventlog,
-		/*
-		 * This last item is truncated from the list by the
-		 * num_ifaces -= 1 below.  Take care when adding new
-		 * services.
-		 */
 		&ndr_table_wkssvc,
 	};
 	size_t num_ifaces = ARRAY_SIZE(ifaces);
-
-	switch(lp_server_role()) {
-	case ROLE_ACTIVE_DIRECTORY_DC:
-		/*
-		 * On the AD DC wkssvc is provided by the 'samba'
-		 * binary from source4/
-		 */
-		num_ifaces -= 1;
-		break;
-	default:
-		break;
-	}
 
 	*pifaces = ifaces;
 	return num_ifaces;
@@ -90,18 +73,6 @@ static NTSTATUS classic_servers(
 	ep_servers[4] = ntsvcs_get_ep_server();
 	ep_servers[5] = eventlog_get_ep_server();
 	ep_servers[6] = wkssvc_get_ep_server();
-
-	switch(lp_server_role()) {
-	case ROLE_ACTIVE_DIRECTORY_DC:
-		/*
-		 * On the AD DC wkssvc is provided by the 'samba'
-		 * binary from source4/
-		 */
-		num_servers -= 1;
-		break;
-	default:
-		break;
-	}
 
 	ok = secrets_init();
 	if (!ok) {

@@ -63,15 +63,6 @@ bld.SAMBA_MODULE('dcerpc_srvsvc',
                  enabled=bld.CONFIG_SET('WITH_NTVFS_FILESERVER')
                  )
 
-
-bld.SAMBA_MODULE('dcerpc_wkssvc',
-                 source='wkssvc/dcesrv_wkssvc.c',
-                 subsystem='dcerpc_server',
-                 init_function='dcerpc_server_wkssvc_init',
-                 deps='DCERPC_COMMON ndr-standard'
-                 )
-
-
 bld.SAMBA_MODULE('dcerpc_unixinfo',
                  source='unixinfo/dcesrv_unixinfo.c',
                  subsystem='dcerpc_server',
