@@ -505,8 +505,7 @@ sub setup_clusteredmember
 
 	print "PROVISIONING CLUSTEREDMEMBER...\n";
 
-	my $prefix_abs = abs_path($prefix);
-	mkdir($prefix_abs, 0777);
+	mkdir($prefix, 0777);
 
 	my $ctdb_data = $self->setup_ctdb($prefix);
 
@@ -560,7 +559,7 @@ sub setup_clusteredmember
 		    server => "$server_name",
 		    password => "clustermember8pass",
 		    netbios_name => "CLUSTEREDMEMBER",
-		    share_dir => "${prefix_abs}/shared",
+		    share_dir => "${prefix}/shared",
 		    extra_options => $member_options,
 		    no_delete_prefix => 1);
 		if (not $node_ret) {
@@ -624,13 +623,13 @@ sub setup_clusteredmember
 
 	my $ctx;
 	$ctx = {};
-	$ctx->{krb5_conf} = "$prefix_abs/lib/krb5.conf";
+	$ctx->{krb5_conf} = "$prefix/lib/krb5.conf";
 	$ctx->{domain} = $dcvars->{DOMAIN};
 	$ctx->{realm} = $dcvars->{REALM};
 	$ctx->{dnsname} = lc($dcvars->{REALM});
 	$ctx->{kdc_ipv4} = $dcvars->{SERVER_IP};
 	$ctx->{kdc_ipv6} = $dcvars->{SERVER_IPV6};
-	$ctx->{krb5_ccname} = "$prefix_abs/krb5cc_%{uid}";
+	$ctx->{krb5_ccname} = "$prefix/krb5cc_%{uid}";
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
@@ -697,7 +696,7 @@ sub setup_clusteredmember
 	}
 	chomp @shares;
 
-	my $unclistdir = "${prefix_abs}/unclists";
+	my $unclistdir = "${prefix}/unclists";
 	mkdir($unclistdir, 0777);
 	foreach my $share (@shares) {
 		my $l = "${unclistdir}/${share}.txt";
@@ -744,12 +743,11 @@ sub provision_ad_member
 		return undef;
 	}
 
-	my $prefix_abs = abs_path($prefix);
 	my @dirs = ();
 
-	mkdir($prefix_abs, 0777);
+	mkdir($prefix, 0777);
 
-	my $share_dir="$prefix_abs/share";
+	my $share_dir="$prefix/share";
 	push(@dirs, $share_dir);
 
 	my $substitution_path = "$share_dir/D_$dcvars->{DOMAIN}";
@@ -800,15 +798,15 @@ sub provision_ad_member
 	";
 		$keytab = "
 	sync machine password to keytab = \\
-	\"$prefix_abs/keytab0:account_name:machine_password\", \\
-	\"$prefix_abs/keytab0k:account_name:sync_kvno:machine_password:sync_etypes\", \\
-	\"$prefix_abs/keytab1:sync_spns:machine_password:sync_etypes\", \\
-	\"$prefix_abs/keytab1k:sync_spns:sync_kvno:machine_password:sync_etypes\", \\
-	\"$prefix_abs/keytab2:spn_prefixes=host,imap,smtp:additional_dns_hostnames:netbios_aliases:machine_password:sync_etypes\", \\
-	\"$prefix_abs/keytab2k:spn_prefixes=host,imap,smtp:additional_dns_hostnames:sync_kvno:machine_password:sync_etypes\", \\
-	\"$prefix_abs/keytab3:spns=wurst/brot\@$dcvars->{REALM}:machine_password:sync_etypes\", \\
-	\"$prefix_abs/keytab3k:spns=wurst/brot\@$dcvars->{REALM},wurst1/brot\@$dcvars->{REALM},wurst2/brot\@$dcvars->{REALM}:sync_kvno:machine_password:sync_etypes\", \\
-	\"$prefix_abs/keytab4k:account_name:sync_account_name:spn_prefixes=host,imap,smtp:additional_dns_hostnames:netbios_aliases:spns=wurst/brot\@$dcvars->{REALM},wurst1/brot\@$dcvars->{REALM},wurst2/brot\@$dcvars->{REALM}:sync_kvno:machine_password:sync_etypes\"
+	\"$prefix/keytab0:account_name:machine_password\", \\
+	\"$prefix/keytab0k:account_name:sync_kvno:machine_password:sync_etypes\", \\
+	\"$prefix/keytab1:sync_spns:machine_password:sync_etypes\", \\
+	\"$prefix/keytab1k:sync_spns:sync_kvno:machine_password:sync_etypes\", \\
+	\"$prefix/keytab2:spn_prefixes=host,imap,smtp:additional_dns_hostnames:netbios_aliases:machine_password:sync_etypes\", \\
+	\"$prefix/keytab2k:spn_prefixes=host,imap,smtp:additional_dns_hostnames:sync_kvno:machine_password:sync_etypes\", \\
+	\"$prefix/keytab3:spns=wurst/brot\@$dcvars->{REALM}:machine_password:sync_etypes\", \\
+	\"$prefix/keytab3k:spns=wurst/brot\@$dcvars->{REALM},wurst1/brot\@$dcvars->{REALM},wurst2/brot\@$dcvars->{REALM}:sync_kvno:machine_password:sync_etypes\", \\
+	\"$prefix/keytab4k:account_name:sync_account_name:spn_prefixes=host,imap,smtp:additional_dns_hostnames:netbios_aliases:spns=wurst/brot\@$dcvars->{REALM},wurst1/brot\@$dcvars->{REALM},wurst2/brot\@$dcvars->{REALM}:sync_kvno:machine_password:sync_etypes\"
 	";
 	}
 
@@ -906,13 +904,13 @@ sub provision_ad_member
 
 	my $ctx;
 	$ctx = {};
-	$ctx->{krb5_conf} = "$prefix_abs/lib/krb5.conf";
+	$ctx->{krb5_conf} = "$prefix/lib/krb5.conf";
 	$ctx->{domain} = $dcvars->{DOMAIN};
 	$ctx->{realm} = $dcvars->{REALM};
 	$ctx->{dnsname} = lc($dcvars->{REALM});
 	$ctx->{kdc_ipv4} = $dcvars->{SERVER_IP};
 	$ctx->{kdc_ipv6} = $dcvars->{SERVER_IPV6};
-	$ctx->{krb5_ccname} = "$prefix_abs/krb5cc_%{uid}";
+	$ctx->{krb5_ccname} = "$prefix/krb5cc_%{uid}";
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
@@ -1025,7 +1023,7 @@ sub provision_ad_member
 
 		### Change SOCKET_WRAPPER_DIR so it can't connect to AD
 		my $swrap_env = $ENV{SOCKET_WRAPPER_DIR};
-		$ENV{SOCKET_WRAPPER_DIR} = "$prefix_abs";
+		$ENV{SOCKET_WRAPPER_DIR} = "$prefix";
 
 		# Start winbindd in offline mode
 		if (not $self->check_or_start(
@@ -1178,15 +1176,14 @@ sub setup_ad_member_rfc2307
 	$ret->{DOMSID} = $dcvars->{DOMSID};
 
 	my $ctx;
-	my $prefix_abs = abs_path($prefix);
 	$ctx = {};
-	$ctx->{krb5_conf} = "$prefix_abs/lib/krb5.conf";
+	$ctx->{krb5_conf} = "$prefix/lib/krb5.conf";
 	$ctx->{domain} = $dcvars->{DOMAIN};
 	$ctx->{realm} = $dcvars->{REALM};
 	$ctx->{dnsname} = lc($dcvars->{REALM});
 	$ctx->{kdc_ipv4} = $dcvars->{SERVER_IP};
 	$ctx->{kdc_ipv6} = $dcvars->{SERVER_IPV6};
-	$ctx->{krb5_ccname} = "$prefix_abs/krb5cc_%{uid}";
+	$ctx->{krb5_ccname} = "$prefix/krb5cc_%{uid}";
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
@@ -1281,15 +1278,14 @@ sub setup_admem_idmap_autorid
 	$ret->{DOMSID} = $dcvars->{DOMSID};
 
 	my $ctx;
-	my $prefix_abs = abs_path($prefix);
 	$ctx = {};
-	$ctx->{krb5_conf} = "$prefix_abs/lib/krb5.conf";
+	$ctx->{krb5_conf} = "$prefix/lib/krb5.conf";
 	$ctx->{domain} = $dcvars->{DOMAIN};
 	$ctx->{realm} = $dcvars->{REALM};
 	$ctx->{dnsname} = lc($dcvars->{REALM});
 	$ctx->{kdc_ipv4} = $dcvars->{SERVER_IP};
 	$ctx->{kdc_ipv6} = $dcvars->{SERVER_IPV6};
-	$ctx->{krb5_ccname} = "$prefix_abs/krb5cc_%{uid}";
+	$ctx->{krb5_ccname} = "$prefix/krb5cc_%{uid}";
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
@@ -1384,15 +1380,14 @@ sub setup_ad_member_idmap_rid
 	$ret->{DOMSID} = $dcvars->{DOMSID};
 
 	my $ctx;
-	my $prefix_abs = abs_path($prefix);
 	$ctx = {};
-	$ctx->{krb5_conf} = "$prefix_abs/lib/krb5.conf";
+	$ctx->{krb5_conf} = "$prefix/lib/krb5.conf";
 	$ctx->{domain} = $dcvars->{DOMAIN};
 	$ctx->{realm} = $dcvars->{REALM};
 	$ctx->{dnsname} = lc($dcvars->{REALM});
 	$ctx->{kdc_ipv4} = $dcvars->{SERVER_IP};
 	$ctx->{kdc_ipv6} = $dcvars->{SERVER_IPV6};
-	$ctx->{krb5_ccname} = "$prefix_abs/krb5cc_%{uid}";
+	$ctx->{krb5_ccname} = "$prefix/krb5cc_%{uid}";
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
@@ -1491,15 +1486,14 @@ sub setup_ad_member_idmap_ad
 	$ret->{DOMSID} = $dcvars->{DOMSID};
 
 	my $ctx;
-	my $prefix_abs = abs_path($prefix);
 	$ctx = {};
-	$ctx->{krb5_conf} = "$prefix_abs/lib/krb5.conf";
+	$ctx->{krb5_conf} = "$prefix/lib/krb5.conf";
 	$ctx->{domain} = $dcvars->{DOMAIN};
 	$ctx->{realm} = $dcvars->{REALM};
 	$ctx->{dnsname} = lc($dcvars->{REALM});
 	$ctx->{kdc_ipv4} = $dcvars->{SERVER_IP};
 	$ctx->{kdc_ipv6} = $dcvars->{SERVER_IPV6};
-	$ctx->{krb5_ccname} = "$prefix_abs/krb5cc_%{uid}";
+	$ctx->{krb5_ccname} = "$prefix/krb5cc_%{uid}";
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
@@ -1595,15 +1589,14 @@ sub setup_ad_member_oneway
 	$ret->{DOMSID} = $dcvars->{DOMSID};
 
 	my $ctx;
-	my $prefix_abs = abs_path($prefix);
 	$ctx = {};
-	$ctx->{krb5_conf} = "$prefix_abs/lib/krb5.conf";
+	$ctx->{krb5_conf} = "$prefix/lib/krb5.conf";
 	$ctx->{domain} = $dcvars->{DOMAIN};
 	$ctx->{realm} = $dcvars->{REALM};
 	$ctx->{dnsname} = lc($dcvars->{REALM});
 	$ctx->{kdc_ipv4} = $dcvars->{SERVER_IP};
 	$ctx->{kdc_ipv6} = $dcvars->{SERVER_IPV6};
-	$ctx->{krb5_ccname} = "$prefix_abs/krb5cc_%{uid}";
+	$ctx->{krb5_ccname} = "$prefix/krb5cc_%{uid}";
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
@@ -1763,9 +1756,9 @@ sub setup_simpleserver
 
 	print "PROVISIONING simple server...";
 
-	my $prefix_abs = abs_path($path);
+	my $prefix = abs_path($path);
 
-	my $external_streams_depot="$prefix_abs/external_streams_depot";
+	my $external_streams_depot="$prefix/external_streams_depot";
 
 	my $simpleserver_options_globals = "
 	lanman auth = yes
@@ -1778,14 +1771,14 @@ sub setup_simpleserver
 
 	my $simpleserver_options = "
 [vfs_aio_pthread]
-	path = $prefix_abs/share
+	path = $prefix/share
 	read only = no
 	vfs objects = aio_pthread
 	aio_pthread:aio open = yes
 	smbd async dosmode = no
 
 [vfs_aio_pthread_async_dosmode_default1]
-	path = $prefix_abs/share
+	path = $prefix/share
 	read only = no
 	vfs objects = aio_pthread
 	store dos attributes = yes
@@ -1793,7 +1786,7 @@ sub setup_simpleserver
 	smbd async dosmode = yes
 
 [vfs_aio_pthread_async_dosmode_default2]
-	path = $prefix_abs/share
+	path = $prefix/share
 	read only = no
 	vfs objects = aio_pthread xattr_tdb
 	store dos attributes = yes
@@ -1801,30 +1794,30 @@ sub setup_simpleserver
 	smbd async dosmode = yes
 
 [async_dosmode_shadow_copy2]
-	path = $prefix_abs/share
+	path = $prefix/share
 	read only = no
 	vfs objects = shadow_copy2 xattr_tdb
 	smbd async dosmode = yes
 
 [vfs_aio_fork]
-	path = $prefix_abs/share
+	path = $prefix/share
         vfs objects = aio_fork
         read only = no
         vfs_aio_fork:erratic_testing_mode=yes
 
 [dosmode]
-	path = $prefix_abs/share
+	path = $prefix/share
 	vfs objects =
 	store dos attributes = yes
 	hide files = /hidefile/
 	hide dot files = yes
 
 [hidenewfiles]
-	path = $prefix_abs/share
+	path = $prefix/share
 	hide new files timeout = 5
 
 [external_streams_depot]
-	path = $prefix_abs/share
+	path = $prefix/share
 	read only = no
 	streams_depot:directory = $external_streams_depot
 ";
@@ -1842,7 +1835,7 @@ sub setup_simpleserver
 	remove_tree($external_streams_depot);
 	mkdir($external_streams_depot, 0777);
 
-	my $pam_service_dir = "$prefix_abs/pam_services";
+	my $pam_service_dir = "$prefix/pam_services";
 	remove_tree($pam_service_dir);
 	mkdir($pam_service_dir, 0777);
 	my $pam_service_file = "$pam_service_dir/samba";
@@ -1889,18 +1882,18 @@ sub create_file_chmod($$)
 sub setup_fileserver
 {
 	my ($self, $path, $more_conf, $server) = @_;
-	my $prefix_abs = abs_path($path);
+	my $prefix = abs_path($path);
 	my $srcdir_abs = abs_path($self->{srcdir});
 
 	print "PROVISIONING file server ...\n";
 
 	my @dirs = ();
 
-	mkdir($prefix_abs, 0777);
+	mkdir($prefix, 0777);
 
-	my $usershare_dir="$prefix_abs/lib/usershare";
+	my $usershare_dir="$prefix/lib/usershare";
 
-	my $share_dir="$prefix_abs/share";
+	my $share_dir="$prefix/share";
 
 	# Create share directory structure
 	my $lower_case_share_dir="$share_dir/lower-case";
@@ -1973,18 +1966,18 @@ sub setup_fileserver
 	usershare allow guests = yes
 	usershare prefix allow list = $usershare_sharedir
 
-	get quota command = $prefix_abs/getset_quota.py
-	set quota command = $prefix_abs/getset_quota.py
+	get quota command = $prefix/getset_quota.py
+	set quota command = $prefix/getset_quota.py
 	veto files : user1 = /user1file/
 	veto files : +group1 = /group1file/
 [tarmode]
 	path = $tarmode_sharedir
 	comment = tar test share
-	xattr_tdb:file = $prefix_abs/tarmode-xattr.tdb
+	xattr_tdb:file = $prefix/tarmode-xattr.tdb
 [tarmode2]
 	path = $tarmode2_sharedir
 	comment = tar test share
-	xattr_tdb:file = $prefix_abs/tarmode2-xattr.tdb
+	xattr_tdb:file = $prefix/tarmode2-xattr.tdb
 [spotlight]
 	path = $share_dir
 	spotlight = yes
@@ -2156,7 +2149,7 @@ sub setup_fileserver
 
 	$vars or return undef;
 
-	mkdir("$prefix_abs/lib", 0755);
+	mkdir("$prefix/lib", 0755);
 	remove_tree($usershare_dir);
 	mkdir($usershare_dir, 01770);
 
@@ -2228,7 +2221,7 @@ sub setup_fileserver
 sub setup_fileserver_smb1
 {
 	my ($self, $path) = @_;
-	my $prefix_abs = abs_path($path);
+	my $prefix = abs_path($path);
 	my $conf = "
 [global]
 	client min protocol = CORE
@@ -2236,17 +2229,17 @@ sub setup_fileserver_smb1
 	check parent directory delete on close = yes
 
 [hidenewfiles]
-	path = $prefix_abs/share
+	path = $prefix/share
 	hide new files timeout = 5
 [vfs_aio_pthread]
-	path = $prefix_abs/share
+	path = $prefix/share
 	read only = no
 	vfs objects = aio_pthread
 	aio_pthread:aio open = yes
 	smbd async dosmode = no
 
 [vfs_aio_pthread_async_dosmode_default1]
-	path = $prefix_abs/share
+	path = $prefix/share
 	read only = no
 	vfs objects = aio_pthread
 	store dos attributes = yes
@@ -2254,7 +2247,7 @@ sub setup_fileserver_smb1
 	smbd async dosmode = yes
 
 [vfs_aio_pthread_async_dosmode_default2]
-	path = $prefix_abs/share
+	path = $prefix/share
 	read only = no
 	vfs objects = aio_pthread xattr_tdb
 	store dos attributes = yes
@@ -2262,7 +2255,7 @@ sub setup_fileserver_smb1
 	smbd async dosmode = yes
 
 [vfs_aio_fork]
-	path = $prefix_abs/share
+	path = $prefix/share
         vfs objects = aio_fork
         read only = no
         vfs_aio_fork:erratic_testing_mode=yes
@@ -2314,15 +2307,14 @@ sub setup_ktest
 	$ret or return undef;
 
 	my $ctx;
-	my $prefix_abs = abs_path($prefix);
 	$ctx = {};
-	$ctx->{krb5_conf} = "$prefix_abs/lib/krb5.conf";
+	$ctx->{krb5_conf} = "$prefix/lib/krb5.conf";
 	$ctx->{domain} = "KTEST";
 	$ctx->{realm} = "KTEST.SAMBA.EXAMPLE.COM";
 	$ctx->{dnsname} = lc($ctx->{realm});
 	$ctx->{kdc_ipv4} = "0.0.0.0";
 	$ctx->{kdc_ipv6} = "::";
-	$ctx->{krb5_ccname} = "$prefix_abs/krb5cc_%{uid}";
+	$ctx->{krb5_ccname} = "$prefix/krb5cc_%{uid}";
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
@@ -2388,9 +2380,9 @@ sub setup_ktest
 sub setup_maptoguest
 {
 	my ($self, $path) = @_;
-	my $prefix_abs = abs_path($path);
-	my $libdir="$prefix_abs/lib";
-	my $share_dir="$prefix_abs/share";
+	my $prefix = abs_path($path);
+	my $libdir="$prefix/lib";
+	my $share_dir="$prefix/share";
 	my $errorinjectconf="$libdir/error_inject.conf";
 
 	print "PROVISIONING maptoguest...";
@@ -2671,36 +2663,35 @@ sub provision($$)
 	my $unix_gids_str = $);
 	my @unix_gids = split(" ", $unix_gids_str);
 
-	my $prefix_abs = abs_path($prefix);
 	my $bindir_abs = abs_path($self->{bindir});
 
 	my @dirs = ();
 
-	my $shrdir=$args{share_dir} // "$prefix_abs/share";
+	my $shrdir=$args{share_dir} // "$prefix/share";
 	push(@dirs,$shrdir);
 
-	my $libdir="$prefix_abs/lib";
+	my $libdir="$prefix/lib";
 	push(@dirs,$libdir);
 
-	my $piddir="$prefix_abs/pid";
+	my $piddir="$prefix/pid";
 	push(@dirs,$piddir);
 
-	my $privatedir="$prefix_abs/private";
+	my $privatedir="$prefix/private";
 	push(@dirs,$privatedir);
 
-	my $cachedir = "$prefix_abs/cachedir";
+	my $cachedir = "$prefix/cachedir";
 	push(@dirs, $cachedir);
 
-	my $binddnsdir = "$prefix_abs/bind-dns";
+	my $binddnsdir = "$prefix/bind-dns";
 	push(@dirs, $binddnsdir);
 
-	my $lockdir="$prefix_abs/lockdir";
+	my $lockdir="$prefix/lockdir";
 	push(@dirs,$lockdir);
 
-	my $eventlogdir="$prefix_abs/lockdir/eventlog";
+	my $eventlogdir="$prefix/lockdir/eventlog";
 	push(@dirs,$eventlogdir);
 
-	my $logdir="$prefix_abs/logs";
+	my $logdir="$prefix/logs";
 	push(@dirs,$logdir);
 
 	my $driver32dir="$shrdir/W32X86";
@@ -2794,21 +2785,21 @@ sub provision($$)
 	push(@dirs,$fakedircreatetimes_shrdir);
 
 	# this gets autocreated by winbindd
-	my $wbsockdir="$prefix_abs/wbsock";
+	my $wbsockdir="$prefix/wbsock";
 
-	my $nmbdsockdir="$prefix_abs/nmbd";
+	my $nmbdsockdir="$prefix/nmbd";
 	unlink($nmbdsockdir);
 
 	##
 	## create the test directory layout
 	##
-	die ("prefix_abs = ''") if $prefix_abs eq "";
-	die ("prefix_abs = '/'") if $prefix_abs eq "/";
+	die ("prefix = ''") if $prefix eq "";
+	die ("prefix = '/'") if $prefix eq "/";
 
-	mkdir($prefix_abs, 0777);
+	mkdir($prefix, 0777);
 	print "CREATE TEST ENVIRONMENT IN '$prefix'...";
 	if (not defined($no_delete_prefix) or not $no_delete_prefix) {
-	    system("rm -rf $prefix_abs/*");
+	    system("rm -rf $prefix/*");
 	}
 	mkdir($_, 0777) foreach(@dirs);
 
@@ -3078,7 +3069,7 @@ sub provision($$)
 	lpq cache time = 0
 	print notify backchannel = yes
 
-	ncalrpc dir = $prefix_abs/ncalrpc
+	ncalrpc dir = $prefix/ncalrpc
 
         # The samba3.blackbox.smbclient_s3 test uses this to test that
         # sending messages works, and that the %m sub works.
@@ -3680,16 +3671,16 @@ sub provision($$)
 	delay_inject:brl_lock_windows_use_timer = no
 
 [delete_readonly]
-	path = $prefix_abs/share
+	path = $prefix/share
 	delete readonly = yes
 
 [enc_desired]
-	path = $prefix_abs/share
+	path = $prefix/share
 	vfs objects =
 	server smb encrypt = desired
 
 [enc_off]
-	path = $prefix_abs/share
+	path = $prefix/share
 	vfs objects =
 	server smb encrypt = off
 
@@ -3806,17 +3797,17 @@ include = $aliceconfdir/%U.conf
            warn("Unable to open $nss_wrapper_passwd");
            return undef;
         }
-	print PASSWD "nobody:x:$uid_nobody:$gid_nobody:nobody gecos:$prefix_abs:/bin/false
-$unix_name:x:$unix_uid:$unix_gids[0]:$unix_name gecos:$prefix_abs:/bin/false
-pdbtest:x:$uid_pdbtest:$gid_nogroup:pdbtest gecos:$prefix_abs:/bin/false
-pdbtest2:x:$uid_pdbtest2:$gid_nogroup:pdbtest gecos:$prefix_abs:/bin/false
-userdup:x:$uid_userdup:$gid_userdup:userdup gecos:$prefix_abs:/bin/false
-pdbtest_wkn:x:$uid_pdbtest_wkn:$gid_everyone:pdbtest_wkn gecos:$prefix_abs:/bin/false
-force_user:x:$uid_force_user:$gid_force_user:force user gecos:$prefix_abs:/bin/false
-smbget_user:x:$uid_smbget:$gid_domusers:smbget_user gecos:$prefix_abs:/bin/false
-user1:x:$uid_user1:$gid_nogroup:user1 gecos:$prefix_abs:/bin/false
-user2:x:$uid_user2:$gid_nogroup:user2 gecos:$prefix_abs:/bin/false
-gooduser:x:$uid_gooduser:$gid_domusers:gooduser gecos:$prefix_abs:/bin/false
+	print PASSWD "nobody:x:$uid_nobody:$gid_nobody:nobody gecos:$prefix:/bin/false
+$unix_name:x:$unix_uid:$unix_gids[0]:$unix_name gecos:$prefix:/bin/false
+pdbtest:x:$uid_pdbtest:$gid_nogroup:pdbtest gecos:$prefix:/bin/false
+pdbtest2:x:$uid_pdbtest2:$gid_nogroup:pdbtest gecos:$prefix:/bin/false
+userdup:x:$uid_userdup:$gid_userdup:userdup gecos:$prefix:/bin/false
+pdbtest_wkn:x:$uid_pdbtest_wkn:$gid_everyone:pdbtest_wkn gecos:$prefix:/bin/false
+force_user:x:$uid_force_user:$gid_force_user:force user gecos:$prefix:/bin/false
+smbget_user:x:$uid_smbget:$gid_domusers:smbget_user gecos:$prefix:/bin/false
+user1:x:$uid_user1:$gid_nogroup:user1 gecos:$prefix:/bin/false
+user2:x:$uid_user2:$gid_nogroup:user2 gecos:$prefix:/bin/false
+gooduser:x:$uid_gooduser:$gid_domusers:gooduser gecos:$prefix:/bin/false
 eviluser:x:$uid_eviluser:$gid_domusers:eviluser gecos::/bin/false
 slashuser:x:$uid_slashuser:$gid_domusers:slashuser gecos:/:/bin/false
 bob:x:$uid_localbob:$gid_domusers:localbob gecos:/:/bin/false
@@ -3825,7 +3816,7 @@ jackthemapper:x:$uid_localjackthemapper:$gid_domusers:localjackthemaper gecos:/:
 jacknomapper:x:$uid_localjacknomapper:$gid_domusers:localjacknomaper gecos:/:/bin/false
 ";
 	if ($unix_uid != 0) {
-		print PASSWD "root:x:$uid_root:$gid_root:root gecos:$prefix_abs:/bin/false
+		print PASSWD "root:x:$uid_root:$gid_root:root gecos:$prefix:/bin/false
 ";
 	}
 	close(PASSWD);
@@ -3912,7 +3903,7 @@ group2:x:$gid_group2:user2
 	$ret{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
 	$ret{SMBD_TEST_LOG_POS} = 0;
 	$ret{SERVERCONFFILE} = $conffile;
-	$ret{TESTENV_DIR} = $prefix_abs;
+	$ret{TESTENV_DIR} = $prefix;
 	$ret{CONFIGURATION} ="--configfile=$conffile";
 	$ret{LOCK_DIR} = $lockdir;
 	$ret{SERVER} = $server;
@@ -4204,18 +4195,16 @@ sub provision_ctdb($$$$)
 
 	print "PROVISIONING CTDB...\n";
 
-	my $prefix_abs = abs_path($prefix);
-
 	#
 	# check / create directories:
 	#
-	die ("prefix_abs = ''") if $prefix_abs eq "";
-	die ("prefix_abs = '/'") if $prefix_abs eq "/";
+	die ("prefix = ''") if $prefix eq "";
+	die ("prefix = '/'") if $prefix eq "/";
 
-	mkdir ($prefix_abs, 0777);
+	mkdir ($prefix, 0777);
 
-	print "CREATE CTDB TEST ENVIRONMENT in '$prefix_abs'...\n";
-	system("rm -rf $prefix_abs/*");
+	print "CREATE CTDB TEST ENVIRONMENT in '$prefix'...\n";
+	system("rm -rf $prefix/*");
 
 	#
 	# Per-node data
@@ -4256,7 +4245,7 @@ sub provision_ctdb($$$$)
 	# the CTDB-specific setup
 	#
 	my $cmd;
-	$cmd .= "ctdb/tests/local_daemons.sh " . $prefix_abs . " setup";
+	$cmd .= "ctdb/tests/local_daemons.sh " . $prefix . " setup";
 	$cmd .= " -n " . $num_nodes;
 	$cmd .= " -N " . $nodes_file;
 	# CTDB should not attempt to manage public addresses -
@@ -4275,7 +4264,7 @@ sub provision_ctdb($$$$)
 	for (my $i = 0; $i < $num_nodes; $i++) {
 		my ($cmd, $ret, $out);
 
-		my $cmd_prefix = "ctdb/tests/local_daemons.sh ${prefix_abs}";
+		my $cmd_prefix = "ctdb/tests/local_daemons.sh ${prefix}";
 
 		#
 		# socket
