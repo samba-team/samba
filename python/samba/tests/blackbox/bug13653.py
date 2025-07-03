@@ -131,7 +131,7 @@ class Bug13653Tests(BlackboxTestCase):
         super().setUp()
         self.env = os.environ["TEST_ENV"]
         self.server = os.environ["SERVER"]
-        self.prefix = os.environ["PREFIX_ABS"]
+        self.prefix = os.environ["PREFIX"]
         lp = env_loadparm()
         creds = Credentials()
         session = system_session()

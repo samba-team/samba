@@ -21,7 +21,7 @@ treport()
 	TBASE=$TNOW
 }
 
-rm -f $PREFIX_ABS/var/locks/group_mapping.?db
+rm -f $PREFIX/var/locks/group_mapping.?db
 
 NLOCAL=12
 NGROUP=11

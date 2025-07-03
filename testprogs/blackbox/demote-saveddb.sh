@@ -7,7 +7,7 @@ EOF
 	exit 1
 fi
 
-PREFIX_ABS="$1"
+PREFIX="$1"
 shift 1
 
 failed=0
@@ -54,15 +54,15 @@ fi
 
 undump()
 {
-	$SRCDIR_ABS/source4/selftest/provisions/undump.sh $samba_tree_dir $PREFIX_ABS $samba_tdbrestore
+	$SRCDIR_ABS/source4/selftest/provisions/undump.sh $samba_tree_dir $PREFIX $samba_tdbrestore
 }
 
 demote()
 {
-	$PYTHON $BINDIR/samba-tool domain demote -H tdb://$PREFIX_ABS/private/sam.ldb --remove-other-dead-server=$1
+	$PYTHON $BINDIR/samba-tool domain demote -H tdb://$PREFIX/private/sam.ldb --remove-other-dead-server=$1
 }
 
-remove_directory $PREFIX_ABS
+remove_directory $PREFIX
 
 testit "undump" undump || failed=$(expr $failed + 1)
 testit "demote-q-0-0" demote "q-0-0" || failed=$(expr $failed + 1)
@@ -72,6 +72,6 @@ testit_expect_failure "demote-q-0-1" demote "q-0-1" || failed=$(expr $failed + 1
 testit "demote-q-1-0" demote "q-1-0" || failed=$(expr $failed + 1)
 testit "demote-q-1-1" demote "q-1-1" || failed=$(expr $failed + 1)
 
-remove_directory $PREFIX_ABS
+remove_directory $PREFIX
 
 exit $failed

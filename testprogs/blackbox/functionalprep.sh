@@ -7,7 +7,7 @@ EOF
 	exit 1
 fi
 
-PREFIX_ABS="$1"
+PREFIX="$1"
 shift 1
 
 failed=0
@@ -46,39 +46,39 @@ fi
 
 cleanup_output_directories()
 {
-	remove_directory $PREFIX_ABS/2012R2_schema
-	remove_directory $PREFIX_ABS/2019_schema
-	remove_directory $PREFIX_ABS/$RELEASE
-	remove_directory $PREFIX_ABS/$OLD_RELEASE
+	remove_directory $PREFIX/2012R2_schema
+	remove_directory $PREFIX/2019_schema
+	remove_directory $PREFIX/$RELEASE
+	remove_directory $PREFIX/$OLD_RELEASE
 }
 
 undump()
 {
-	$samba_undump $release_dir $PREFIX_ABS/$RELEASE $samba_tdbrestore
+	$samba_undump $release_dir $PREFIX/$RELEASE $samba_tdbrestore
 }
 
 undump_old()
 {
-	$samba_undump $old_release_dir $PREFIX_ABS/$OLD_RELEASE $samba_tdbrestore
+	$samba_undump $old_release_dir $PREFIX/$OLD_RELEASE $samba_tdbrestore
 }
 
 PROVISION_OPTS="--use-ntvfs --host-ip6=::1 --host-ip=127.0.0.1"
 
 provision_schema_2019_prep_skip()
 {
-	$PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=REALM --realm=REALM.COM --targetdir=$PREFIX_ABS/2019_schema --base-schema=2019 --adprep-level=SKIP --host-name=FLPREP
+	$PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=REALM --realm=REALM.COM --targetdir=$PREFIX/2019_schema --base-schema=2019 --adprep-level=SKIP --host-name=FLPREP
 }
 
 provision_2012r2()
 {
-	$PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=REALM --realm=REALM.COM --targetdir=$PREFIX_ABS/2012R2_schema --base-schema=2012_R2 --host-name=FLPREP
+	$PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=REALM --realm=REALM.COM --targetdir=$PREFIX/2012R2_schema --base-schema=2012_R2 --host-name=FLPREP
 }
 
 ldapcmp_ignore()
 {
 	# At some point we will need to ignore, but right now, it should be perfect
 	IGNORE_ATTRS=$1
-	$PYTHON $BINDIR/samba-tool ldapcmp tdb://$PREFIX_ABS/$2/private/sam.ldb tdb://$PREFIX_ABS/$3/private/sam.ldb --two --skip-missing-dn --filter msDS-SupportedEncryptionTypes,servicePrincipalName
+	$PYTHON $BINDIR/samba-tool ldapcmp tdb://$PREFIX/$2/private/sam.ldb tdb://$PREFIX/$3/private/sam.ldb --two --skip-missing-dn --filter msDS-SupportedEncryptionTypes,servicePrincipalName
 }
 
 ldapcmp()
@@ -90,13 +90,13 @@ ldapcmp()
 
 functional_prep_2016()
 {
-	$PYTHON $BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX_ABS/2019_schema/private/sam.ldb --function-level=2016
+	$PYTHON $BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX/2019_schema/private/sam.ldb --function-level=2016
 }
 
 level_raise_2012R2()
 {
 	$PYTHON $BINDIR/samba-tool domain level raise \
-		-H tdb://$PREFIX_ABS/2019_schema/private/sam.ldb \
+		-H tdb://$PREFIX/2019_schema/private/sam.ldb \
 		--option="ad dc functional level = 2012_R2" \
 		--domain-level=2012_R2 --forest-level=2012_R2
 }
@@ -104,41 +104,41 @@ level_raise_2012R2()
 level_raise_2016()
 {
 	$PYTHON $BINDIR/samba-tool domain level raise \
-		-H tdb://$PREFIX_ABS/2019_schema/private/sam.ldb \
+		-H tdb://$PREFIX/2019_schema/private/sam.ldb \
 		--option="ad dc functional level = 2016" \
 		--domain-level=2016 --forest-level=2016
 }
 
 functional_prep_2012R2()
 {
-	$PYTHON $BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX_ABS/2012R2_schema/private/sam.ldb --function-level=2012_R2
+	$PYTHON $BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX/2012R2_schema/private/sam.ldb --function-level=2012_R2
 }
 
 functional_prep_2012R2_old()
 {
-	$PYTHON $BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX_ABS/$OLD_RELEASE/private/sam.ldb --function-level=2012_R2
+	$PYTHON $BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX/$OLD_RELEASE/private/sam.ldb --function-level=2012_R2
 }
 
 functional_prep_2016_old()
 {
-	$PYTHON $BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX_ABS/$OLD_RELEASE/private/sam.ldb --function-level=2016
+	$PYTHON $BINDIR/samba-tool domain functionalprep -H tdb://$PREFIX/$OLD_RELEASE/private/sam.ldb --function-level=2016
 }
 
 steal_roles()
 {
 	# Must steal schema master and infrastructure roles first
-	$PYTHON $BINDIR/samba-tool fsmo seize --role=schema -H tdb://$PREFIX_ABS/$OLD_RELEASE/private/sam.ldb --force
-	$PYTHON $BINDIR/samba-tool fsmo seize --role=infrastructure -H tdb://$PREFIX_ABS/$OLD_RELEASE/private/sam.ldb --force
+	$PYTHON $BINDIR/samba-tool fsmo seize --role=schema -H tdb://$PREFIX/$OLD_RELEASE/private/sam.ldb --force
+	$PYTHON $BINDIR/samba-tool fsmo seize --role=infrastructure -H tdb://$PREFIX/$OLD_RELEASE/private/sam.ldb --force
 }
 
 schema_upgrade_2012R2_old()
 {
-	$PYTHON $BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX_ABS/$OLD_RELEASE/private/sam.ldb --schema=2012_R2
+	$PYTHON $BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX/$OLD_RELEASE/private/sam.ldb --schema=2012_R2
 }
 
 schema_upgrade_2019_old()
 {
-	$PYTHON $BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX_ABS/$OLD_RELEASE/private/sam.ldb --schema=2019
+	$PYTHON $BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX/$OLD_RELEASE/private/sam.ldb --schema=2019
 }
 
 # double-check we cleaned up from the last test run

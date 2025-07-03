@@ -1,6 +1,6 @@
 if [ $# -lt 6 ]; then
 	cat <<EOF
-Usage: test_client_etypes.sh DC_SERVER DC_USERNAME DC_PASSWORD PREFIX_ABS ETYPE_CONF EXPECTED
+Usage: test_client_etypes.sh DC_SERVER DC_USERNAME DC_PASSWORD PREFIX ETYPE_CONF EXPECTED
 EOF
 	exit 1
 fi

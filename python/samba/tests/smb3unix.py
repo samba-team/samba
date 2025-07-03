@@ -37,7 +37,7 @@ class Smb3UnixTests(samba.tests.libsmb.LibsmbTests):
         super().setUp()
 
         self.samsid = os.environ["SAMSID"]
-        prefix_abs = os.environ["PREFIX_ABS"]
+        prefix_abs = os.environ["PREFIX"]
         p = subprocess.run(['stat', '-f', '-c', '%T', prefix_abs], capture_output=True, text=True)
         self.fstype = p.stdout.strip().lower()
 

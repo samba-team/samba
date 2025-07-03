@@ -7,19 +7,19 @@ EOF
 	exit 1
 fi
 
-PREFIX_ABS="$1"
+PREFIX="$1"
 shift 1
 
 . $(dirname $0)/subunit.sh
 
 cleanup_output_directories()
 {
-	if [ -d $PREFIX_ABS/2012R2_schema ]; then
-		rm -fr $PREFIX_ABS/2012R2_schema
+	if [ -d $PREFIX/2012R2_schema ]; then
+		rm -fr $PREFIX/2012R2_schema
 	fi
 
-	if [ -d $PREFIX_ABS/2008R2_schema ]; then
-		rm -fr $PREFIX_ABS/2008R2_schema
+	if [ -d $PREFIX/2008R2_schema ]; then
+		rm -fr $PREFIX/2008R2_schema
 	fi
 }
 
@@ -27,17 +27,17 @@ PROVISION_OPTS="--use-ntvfs --host-ip6=::1 --host-ip=127.0.0.1"
 
 provision_2012r2()
 {
-	$PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=SAMBA --realm=w2012r2.samba.corp --targetdir=$PREFIX_ABS/2012R2_schema --base-schema=2012_R2 --adprep-level=SKIP
+	$PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=SAMBA --realm=w2012r2.samba.corp --targetdir=$PREFIX/2012R2_schema --base-schema=2012_R2 --adprep-level=SKIP
 }
 
 provision_2008r2()
 {
-	$PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=SAMBA --realm=w2008r2.samba.corp --targetdir=$PREFIX_ABS/2008R2_schema --base-schema=2008_R2
+	$PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=SAMBA --realm=w2008r2.samba.corp --targetdir=$PREFIX/2008R2_schema --base-schema=2008_R2
 }
 
 provision_2008r2_old()
 {
-	$PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=SAMBA --realm=w2008r2.samba.corp --targetdir=$PREFIX_ABS/2008R2_old_schema --base-schema=2008_R2_old
+	$PYTHON $BINDIR/samba-tool domain provision $PROVISION_OPTS --domain=SAMBA --realm=w2008r2.samba.corp --targetdir=$PREFIX/2008R2_old_schema --base-schema=2008_R2_old
 }
 
 ldapcmp_ignore()
@@ -54,7 +54,7 @@ ldapcmp_ignore()
 	# objects, but we don't have the 2012 DisplaySpecifiers documentation...
 	IGNORE_ATTRS="$IGNORE_ATTRS,adminContextMenu,adminPropertyPages"
 
-	$PYTHON $BINDIR/samba-tool ldapcmp tdb://$PREFIX_ABS/$2_schema/private/sam.ldb tdb://$PREFIX_ABS/$3_schema/private/sam.ldb --two --filter=$IGNORE_ATTRS --skip-missing-dn
+	$PYTHON $BINDIR/samba-tool ldapcmp tdb://$PREFIX/$2_schema/private/sam.ldb tdb://$PREFIX/$3_schema/private/sam.ldb --two --filter=$IGNORE_ATTRS --skip-missing-dn
 }
 
 ldapcmp_old()
@@ -92,12 +92,12 @@ ldapcmp_2008R2_2008R2_old()
 
 schema_upgrade()
 {
-	$PYTHON $BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX_ABS/2008R2_schema/private/sam.ldb --schema=2012_R2
+	$PYTHON $BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX/2008R2_schema/private/sam.ldb --schema=2012_R2
 }
 
 schema_upgrade_old()
 {
-	$PYTHON $BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX_ABS/2008R2_old_schema/private/sam.ldb --schema=2012_R2
+	$PYTHON $BINDIR/samba-tool domain schemaupgrade -H tdb://$PREFIX/2008R2_old_schema/private/sam.ldb --schema=2012_R2
 }
 
 # double-check we cleaned up from the last test run

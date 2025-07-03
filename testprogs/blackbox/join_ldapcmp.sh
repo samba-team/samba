@@ -3,7 +3,7 @@
 
 . $(dirname $0)/subunit.sh
 
-TARGET_DIR="$PREFIX_ABS/join_$SERVER"
+TARGET_DIR="$PREFIX/join_$SERVER"
 
 cleanup_output_dir()
 {
@@ -28,7 +28,7 @@ demote_joined_dc()
 
 ldapcmp_result()
 {
-	DB1_PATH="tdb://$PREFIX_ABS/$SERVER/private/sam.ldb"
+	DB1_PATH="tdb://$PREFIX/$SERVER/private/sam.ldb"
 	DB2_PATH="tdb://$TARGET_DIR/private/sam.ldb"
 
 	# interSiteTopologyGenerator gets periodically updated. With the restored

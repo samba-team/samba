@@ -469,7 +469,7 @@ test_pwd_change()
 	shift
 
 	# get biggest vno before password change from keytab1k
-	get_biggest_vno "$PREFIX_ABS/ad_member_idmap_nss/keytab1k"
+	get_biggest_vno "$PREFIX/ad_member_idmap_nss/keytab1k"
 	old_vno=$vno
 
 	if [ ! "$old_vno" -gt 0 ] ; then
@@ -502,7 +502,7 @@ test_pwd_change()
 	fi
 
 	# if keytab was updated the bigest vno should be incremented by one
-	get_biggest_vno "$PREFIX_ABS/ad_member_idmap_nss/keytab1k"
+	get_biggest_vno "$PREFIX/ad_member_idmap_nss/keytab1k"
 
 	if [ ! "$vno" -eq $((old_vno + 1)) ] ; then
 		echo "Old vno=$old_vno, new vno=$vno. Increment by one failed."
@@ -512,7 +512,7 @@ test_pwd_change()
 	# Store keytabs in the tmp dir
 	for keytab in $keytabs_all
 	do
-		$samba_net ads keytab list "$PREFIX_ABS/ad_member_idmap_nss/$keytab" | grep -v "^Vno\|^Warning\|^$"  > "$TMPDIR/${keytab}_${testname}"
+		$samba_net ads keytab list "$PREFIX/ad_member_idmap_nss/$keytab" | grep -v "^Vno\|^Warning\|^$"  > "$TMPDIR/${keytab}_${testname}"
 	done
 
 	# Compare keytabs that do not sync kvno
@@ -540,7 +540,7 @@ test_pwd_change()
 
 
 # Create tmp dir
-TMPDIR=$(mktemp -d "$PREFIX_ABS/ad_member_idmap_nss/keytab_dir_XXXXXX")
+TMPDIR=$(mktemp -d "$PREFIX/ad_member_idmap_nss/keytab_dir_XXXXXX")
 
 # Create template files using the variables defined above
 printf '%s' "$keytab0" > "$TMPDIR/keytab0_template"
@@ -563,7 +563,7 @@ printf '%s' "$keytab4k" > "$TMPDIR/keytab4k_template"
 # Remove all keytabs
 for keytab in $keytabs_all
 do
-	rm -f "$PREFIX_ABS/ad_member_idmap_nss/$keytab"
+	rm -f "$PREFIX/ad_member_idmap_nss/$keytab"
 done
 
 DC_DNSNAME="${DC_SERVER}.${REALM}"

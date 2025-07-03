@@ -28,8 +28,6 @@ shift 1
 TESTENV=${1}
 shift 1
 
-PREFIX_ABS="$(readlink -f "${PREFIX}")"
-
 # Do not let deprecated option warnings muck this up
 SAMBA_DEPRECATED_SUPPRESS=1
 export SAMBA_DEPRECATED_SUPPRESS
@@ -56,10 +54,10 @@ ${SMBCLIENT} //${SERVER}/${SHARE} ${CONF} -U${USER}%${PASSWORD} \
 	<smbclient-stdin >smbclient-stdout 2>smbclient-stderr &
 CLIENT_PID=$!
 
-log_file="${PREFIX_ABS}/${TESTENV}/smbd_test.log"
+log_file="${PREFIX}/${TESTENV}/smbd_test.log"
 # Add support for "SMBD_DONT_LOG_STDOUT=1"
-if [ -r "${PREFIX_ABS}/${TESTENV}/logs/log.smbd" ]; then
-	log_file="${PREFIX_ABS}/${TESTENV}/logs/log.smbd"
+if [ -r "${PREFIX}/${TESTENV}/logs/log.smbd" ]; then
+	log_file="${PREFIX}/${TESTENV}/logs/log.smbd"
 fi
 
 # Count the number of chdir_current_service: vfs_ChDir.*failed: Permission denied

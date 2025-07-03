@@ -1,6 +1,6 @@
 if [ $# -lt 4 ]; then
 	cat <<EOF
-Usage: test_net_offline.sh DC_SERVER DC_USERNAME DC_PASSWORD PREFIX_ABS
+Usage: test_net_offline.sh DC_SERVER DC_USERNAME DC_PASSWORD PREFIX
 EOF
 	exit 1
 fi

@@ -9,8 +9,8 @@ EOF
 	exit 1
 fi
 
-ORIG_DC_PREFIX_ABS="$1"
-RESTORED_DC_PREFIX_ABS="$2"
+ORIG_DC_PREFIX="$1"
+RESTORED_DC_PREFIX="$2"
 shift 2
 
 . $(dirname $0)/subunit.sh
@@ -27,8 +27,8 @@ basedn()
 ldapcmp_with_orig()
 {
 
-	DB1_PATH="tdb://$ORIG_DC_PREFIX_ABS/private/sam.ldb"
-	DB2_PATH="tdb://$RESTORED_DC_PREFIX_ABS/private/sam.ldb"
+	DB1_PATH="tdb://$ORIG_DC_PREFIX/private/sam.ldb"
+	DB2_PATH="tdb://$RESTORED_DC_PREFIX/private/sam.ldb"
 
 	# check if the 2 DCs are in different domains
 	DC1_BASEDN=$(basedn $DB1_PATH)

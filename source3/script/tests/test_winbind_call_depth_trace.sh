@@ -19,14 +19,13 @@ incdir=$(dirname "$0")/../../../testprogs/blackbox
 
 failed=0
 
-PREFIX_ABS="$(readlink -f "${PREFIX}")"
 # Strip from TESTENV the ':local' if present
 TESTENV_SUBDIR=${TESTENV%:*}
 
-LOGFILE="${PREFIX_ABS}/${TESTENV_SUBDIR}/logs/log.winbindd"
+LOGFILE="${PREFIX}/${TESTENV_SUBDIR}/logs/log.winbindd"
 # Add support for "WINBINDD_DONT_LOG_STDOUT=1"
 if [ ! -r "${LOGFILE}" ]; then
-	TEST_LOGFILE="${PREFIX_ABS}/${TESTENV_SUBDIR}/winbindd_test.log"
+	TEST_LOGFILE="${PREFIX}/${TESTENV_SUBDIR}/winbindd_test.log"
 	subunit_start_test "test winbind call depth trace"
 	subunit_skip_test "test winbind call depth trace" <<EOF
 Test is skipped, we need $LOGFILE but have only $TEST_LOGFILE which is missing debug headers (they are not printed to stdout).

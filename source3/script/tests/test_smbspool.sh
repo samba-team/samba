@@ -105,7 +105,7 @@ test_smbspool_authinforequired_unknown()
 #
 test_vlp_verify()
 {
-	tdbfile="$PREFIX_ABS/$TARGET_ENV/lockdir/vlp.tdb"
+	tdbfile="$PREFIX/$TARGET_ENV/lockdir/vlp.tdb"
 	if [ ! -w $tdbfile ]; then
 		echo "vlp tdbfile $tdbfile doesn't exist or is not writeable!"
 		return 1
@@ -128,7 +128,7 @@ test_vlp_verify()
 	fi
 
 	file=$(echo "$out" | awk '/[0-9]+/ { print $6 };')
-	if [ ! -r $PREFIX_ABS/$TARGET_ENV/share/$file ]; then
+	if [ ! -r $PREFIX/$TARGET_ENV/share/$file ]; then
 		echo "$file doesn't exist"
 		echo "$out"
 		return 1
@@ -144,7 +144,7 @@ test_vlp_verify()
 
 test_delete_on_close()
 {
-	tdbfile="$PREFIX_ABS/$TARGET_ENV/lockdir/vlp.tdb"
+	tdbfile="$PREFIX/$TARGET_ENV/lockdir/vlp.tdb"
 	if [ ! -w $tdbfile ]; then
 		echo "vlp tdbfile $tdbfile doesn't exist or is not writeable!"
 		return 1

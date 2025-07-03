@@ -212,11 +212,11 @@ for env in ["ad_dc_ntvfs", "fl2008r2dc", "fl2003dc"]:
 envraw = "fl2008r2dc"
 env = "%s:local" % envraw
 plantestsuite("samba4.ldap_tls_reload(%s)" % (env), env,
-              "%s/test_ldap_tls_reload.sh $PREFIX_ABS $PREFIX_ABS/%s/private/tls $SERVER.$REALM" % (bbdir, envraw))
+              "%s/test_ldap_tls_reload.sh $PREFIX $PREFIX/%s/private/tls $SERVER.$REALM" % (bbdir, envraw))
 
 for options in ['-U"$USERNAME%$PASSWORD"']:
     plantestsuite("samba4.ldb.ldapi with options %s(ad_dc_ntvfs:local)" % options, "ad_dc_ntvfs:local",
-                  "%s/test_ldb.sh ldapi $PREFIX_ABS/ad_dc_ntvfs/private/ldapi %s" % (bbdir, options))
+                  "%s/test_ldb.sh ldapi $PREFIX/ad_dc_ntvfs/private/ldapi %s" % (bbdir, options))
 
 for t in smbtorture4_testsuites("ldap."):
     if t == "ldap.nested-search":
@@ -237,7 +237,7 @@ for t in smbtorture4_testsuites("dsdb."):
 plantestsuite_loadlist("samba4.tests.attr_from_server.python(ad_dc_ntvfs)",
                        "ad_dc_ntvfs:local",
                        [python, os.path.join(DSDB_PYTEST_DIR, "attr_from_server.py"),
-                        '$PREFIX_ABS/ad_dc_ntvfs/private/sam.ldb', '$LOADLIST', '$LISTOPT'])
+                        '$PREFIX/ad_dc_ntvfs/private/sam.ldb', '$LOADLIST', '$LISTOPT'])
 
 # Tests for RPC
 
@@ -636,11 +636,11 @@ for env in ["ad_member", "ad_dc_ntvfs", "chgdcpass"]:
 plantestsuite("samba4.blackbox.samba_tool(ad_dc_default:local)", "ad_dc_default:local", [os.path.join(samba4srcdir, "utils/tests/test_samba_tool.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$DOMAIN', smbclient3])
 plantestsuite("samba4.blackbox.net_rpc_user(ad_dc)", "ad_dc", [os.path.join(bbdir, "test_net_rpc_user.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$DOMAIN'])
 
-plantestsuite("samba4.blackbox.test_primary_group", "ad_dc:local", [os.path.join(bbdir, "test_primary_group.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$DOMAIN', '$PREFIX_ABS'])
+plantestsuite("samba4.blackbox.test_primary_group", "ad_dc:local", [os.path.join(bbdir, "test_primary_group.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$DOMAIN', '$PREFIX'])
 
-plantestsuite("samba4.blackbox.test_alias_membership", "ad_member_idmap_rid:local", [os.path.join(bbdir, "test_alias_membership.sh"), '$PREFIX_ABS'])
+plantestsuite("samba4.blackbox.test_alias_membership", "ad_member_idmap_rid:local", [os.path.join(bbdir, "test_alias_membership.sh"), '$PREFIX'])
 
-plantestsuite("samba4.blackbox.test_old_enctypes", "fl2003dc:local", [os.path.join(bbdir, "test_old_enctypes.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$NETBIOSNAME', '$PREFIX_ABS'])
+plantestsuite("samba4.blackbox.test_old_enctypes", "fl2003dc:local", [os.path.join(bbdir, "test_old_enctypes.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$NETBIOSNAME', '$PREFIX'])
 
 planpythontestsuite("ad_dc_default", "samba.tests.blackbox.claims")
 
@@ -821,7 +821,7 @@ plantestsuite("samba4.blackbox.pkinit_pac",
                '$PREFIX/ad_dc',
                configuration])
 
-plantestsuite("samba.blackbox.client_kerberos", "ad_dc", [os.path.join(bbdir, "test_client_kerberos.sh"), '$DOMAIN', '$REALM', '$USERNAME', '$PASSWORD', '$SERVER', '$PREFIX_ABS', '$SMB_CONF_PATH'])
+plantestsuite("samba.blackbox.client_kerberos", "ad_dc", [os.path.join(bbdir, "test_client_kerberos.sh"), '$DOMAIN', '$REALM', '$USERNAME', '$PASSWORD', '$SERVER', '$PREFIX', '$SMB_CONF_PATH'])
 
 env="ad_member:local"
 plantestsuite("samba.blackbox.rpcclient_schannel",
@@ -832,7 +832,7 @@ plantestsuite("samba.blackbox.rpcclient_schannel",
                '$DC_USERNAME',
                '$DC_PASSWORD',
                '$DC_SERVER',
-               '$PREFIX_ABS',
+               '$PREFIX',
                '$SMB_CONF_PATH',
                env])
 env="ad_member_fips:local"
@@ -844,7 +844,7 @@ plantestsuite("samba.blackbox.rpcclient_schannel",
                '$DC_USERNAME',
                '$DC_PASSWORD',
                '$DC_SERVER',
-               '$PREFIX_ABS',
+               '$PREFIX',
                '$SMB_CONF_PATH',
                env],
               environ={'GNUTLS_FORCE_FIPS_MODE': '1',
@@ -901,11 +901,11 @@ plantestsuite("samba4.blackbox.rfc2307_mapping",
               ])
 plantestsuite("samba4.blackbox.chgdcpass", "chgdcpass", [os.path.join(bbdir, "test_chgdcpass.sh"), '$SERVER', r"CHGDCPASS\$", '$REALM', '$DOMAIN', '$PREFIX/chgdcpass', "aes256-cts-hmac-sha1-96", '$PREFIX/chgdcpass', smbclient3])
 plantestsuite("samba4.blackbox.samba_upgradedns(chgdcpass:local)", "chgdcpass:local", [os.path.join(bbdir, "test_samba_upgradedns.sh"), '$SERVER', '$REALM', '$PREFIX', '$SELFTEST_PREFIX/chgdcpass'])
-plantestsuite("samba4.blackbox.net_ads", "ad_dc:client", [os.path.join(bbdir, "test_net_ads.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$PREFIX_ABS'])
-plantestsuite("samba4.blackbox.net_offlinejoin", "ad_dc:client", [os.path.join(bbdir, "test_net_offline.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$PREFIX_ABS'])
-plantestsuite("samba4.blackbox.client_etypes_all(ad_dc:client)", "ad_dc:client", [os.path.join(bbdir, "test_client_etypes.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$PREFIX_ABS', 'all', '17_18_23'])
-plantestsuite("samba4.blackbox.client_etypes_legacy(ad_dc:client)", "ad_dc:client", [os.path.join(bbdir, "test_client_etypes.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$PREFIX_ABS', 'legacy', '23'])
-plantestsuite("samba4.blackbox.client_etypes_strong(ad_dc:client)", "ad_dc:client", [os.path.join(bbdir, "test_client_etypes.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$PREFIX_ABS', 'strong', '17_18'])
+plantestsuite("samba4.blackbox.net_ads", "ad_dc:client", [os.path.join(bbdir, "test_net_ads.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$PREFIX'])
+plantestsuite("samba4.blackbox.net_offlinejoin", "ad_dc:client", [os.path.join(bbdir, "test_net_offline.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$PREFIX'])
+plantestsuite("samba4.blackbox.client_etypes_all(ad_dc:client)", "ad_dc:client", [os.path.join(bbdir, "test_client_etypes.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$PREFIX', 'all', '17_18_23'])
+plantestsuite("samba4.blackbox.client_etypes_legacy(ad_dc:client)", "ad_dc:client", [os.path.join(bbdir, "test_client_etypes.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$PREFIX', 'legacy', '23'])
+plantestsuite("samba4.blackbox.client_etypes_strong(ad_dc:client)", "ad_dc:client", [os.path.join(bbdir, "test_client_etypes.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$PREFIX', 'strong', '17_18'])
 plantestsuite("samba4.blackbox.net_ads_dns(ad_member:local)", "ad_member:local", [os.path.join(bbdir, "test_net_ads_dns.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$REALM', '$USERNAME', '$PASSWORD'])
 plantestsuite("samba4.blackbox.samba-tool_ntacl(ad_member:local)", "ad_member:local", [os.path.join(bbdir, "test_samba-tool_ntacl.sh"), '$PREFIX', '$DOMSID', configuration])
 
@@ -944,7 +944,7 @@ if have_gnutls_fips_mode_support:
                    '$DC_SERVER',
                    '$DC_USERNAME',
                    '$DC_PASSWORD',
-                   '$PREFIX_ABS'],
+                   '$PREFIX'],
                   environ={'GNUTLS_FORCE_FIPS_MODE': '1',
                            'OPENSSL_FORCE_FIPS_MODE': '1'})
 
@@ -1615,9 +1615,9 @@ for env in ['ad_dc_default:local', 'schema_dc:local']:
 
     planpythontestsuite(env, "samba.tests.dsdb_schema_attributes")
 
-plantestsuite_loadlist("samba4.urgent_replication.python(ad_dc_ntvfs)", "ad_dc_ntvfs:local", [python, os.path.join(DSDB_PYTEST_DIR, "urgent_replication.py"), '$PREFIX_ABS/ad_dc_ntvfs/private/sam.ldb', '$LOADLIST', '$LISTOPT'])
+plantestsuite_loadlist("samba4.urgent_replication.python(ad_dc_ntvfs)", "ad_dc_ntvfs:local", [python, os.path.join(DSDB_PYTEST_DIR, "urgent_replication.py"), '$PREFIX/ad_dc_ntvfs/private/sam.ldb', '$LOADLIST', '$LISTOPT'])
 plantestsuite_loadlist("samba4.ldap.dirsync.python(ad_dc_ntvfs)", "ad_dc_ntvfs", [python, os.path.join(DSDB_PYTEST_DIR, "dirsync.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
-plantestsuite_loadlist("samba4.ldap.match_rules.python", "ad_dc_ntvfs", [python, os.path.join(srcdir(), "lib/ldb-samba/tests/match_rules.py"), '$PREFIX_ABS/ad_dc_ntvfs/private/sam.ldb', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
+plantestsuite_loadlist("samba4.ldap.match_rules.python", "ad_dc_ntvfs", [python, os.path.join(srcdir(), "lib/ldb-samba/tests/match_rules.py"), '$PREFIX/ad_dc_ntvfs/private/sam.ldb', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 plantestsuite_loadlist("samba4.ldap.match_rules.python", "ad_dc_ntvfs", [python, os.path.join(srcdir(), "lib/ldb-samba/tests/match_rules_remote.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 plantestsuite("samba4.ldap.index.python", "none", [python, os.path.join(srcdir(), "lib/ldb-samba/tests/index.py")])
 plantestsuite_loadlist("samba4.ldap.notification.python(ad_dc_ntvfs)", "ad_dc_ntvfs", [python, os.path.join(DSDB_PYTEST_DIR, "notification.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
@@ -1641,13 +1641,13 @@ plantestsuite_loadlist("samba4.ldap.large_ldap.straight_ldap.python(%s)" % env, 
 
 planoldpythontestsuite("ad_dc_default", "sort", environ={'SERVER' : '$SERVER', 'DATA_DIR' : os.path.join(samba4srcdir, 'dsdb/tests/python/testdata/')}, name="samba4.ldap.sort.python", extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')], extra_args=['-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'])
 
-plantestsuite_loadlist("samba4.ldap.linked_attributes.python(ad_dc)", "ad_dc:local", [python, os.path.join(DSDB_PYTEST_DIR, "linked_attributes.py"), '$PREFIX_ABS/ad_dc/private/sam.ldb', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
+plantestsuite_loadlist("samba4.ldap.linked_attributes.python(ad_dc)", "ad_dc:local", [python, os.path.join(DSDB_PYTEST_DIR, "linked_attributes.py"), '$PREFIX/ad_dc/private/sam.ldb', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 
 plantestsuite_loadlist("samba4.ldap.subtree_rename.python(ad_dc_ntvfs)",
                        "ad_dc_ntvfs:local",
                        [python, os.path.join(samba4srcdir,
                                              "dsdb/tests/python/subtree_rename.py"),
-                        '$PREFIX_ABS/ad_dc_ntvfs/private/sam.ldb',
+                        '$PREFIX/ad_dc_ntvfs/private/sam.ldb',
                         '-U"$USERNAME%$PASSWORD"',
                         '--workgroup=$DOMAIN',
                         '$LOADLIST',
@@ -1668,7 +1668,7 @@ for env in ['offlinebackupdc', 'restoredc', 'renamedc', 'labdc']:
     plantestsuite("samba4.blackbox.ldapcmp_restore", env,
                   ["PYTHON=%s" % python,
                    os.path.join(bbdir, "ldapcmp_restoredc.sh"),
-                   '$PREFIX_ABS/backupfromdc', '$PREFIX_ABS/%s' % env])
+                   '$PREFIX/backupfromdc', '$PREFIX/%s' % env])
 
 # we also test joining backupfromdc here, as it's a bit special in that it
 # doesn't have Default-First-Site-Name

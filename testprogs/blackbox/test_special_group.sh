@@ -7,7 +7,7 @@ EOF
 	exit 1
 fi
 
-PREFIX_ABS="$1"
+PREFIX="$1"
 shift 1
 
 failed=0
@@ -31,17 +31,17 @@ fi
 
 cleanup_output_directories()
 {
-	remove_directory $PREFIX_ABS/$OLD_RELEASE
+	remove_directory $PREFIX/$OLD_RELEASE
 }
 
 undump_old()
 {
-	$samba_undump $old_release_dir $PREFIX_ABS/$OLD_RELEASE $samba_tdbrestore
+	$samba_undump $old_release_dir $PREFIX/$OLD_RELEASE $samba_tdbrestore
 }
 
 add_special_group()
 {
-	$PYTHON $BINDIR/samba-tool group add 'protected users' --special -H tdb://$PREFIX_ABS/$OLD_RELEASE/private/sam.ldb
+	$PYTHON $BINDIR/samba-tool group add 'protected users' --special -H tdb://$PREFIX/$OLD_RELEASE/private/sam.ldb
 }
 
 # double-check we cleaned up from the last test run

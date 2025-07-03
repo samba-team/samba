@@ -71,7 +71,7 @@ plantestsuite_loadlist("samba4.ldb.multi_connect.python(ad_dc_ntvfs)",
                        "ad_dc_ntvfs",
                        [python, os.path.join(samba4srcdir,
                                              "dsdb/tests/python/ad_dc_multi_bind.py"),
-                        'tdb://$PREFIX_ABS/ad_dc_ntvfs/private/sam.ldb',
+                        'tdb://$PREFIX/ad_dc_ntvfs/private/sam.ldb',
                         '$LOADLIST', '$LISTOPT'])
 
 plantestsuite_loadlist("samba4.ldap.vlv.python(ad_dc_ntvfs)", "ad_dc_ntvfs",

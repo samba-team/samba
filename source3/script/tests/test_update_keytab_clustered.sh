@@ -66,11 +66,11 @@ test_pwd_change()
 	local cmd="$*";
 
 	# get biggest vno before password change
-	get_biggest_vno "$PREFIX_ABS/clusteredmember/node.0/keytab0"
+	get_biggest_vno "$PREFIX/clusteredmember/node.0/keytab0"
 	old_vno_node0=$vno
-	get_biggest_vno "$PREFIX_ABS/clusteredmember/node.1/keytab0"
+	get_biggest_vno "$PREFIX/clusteredmember/node.1/keytab0"
 	old_vno_node1=$vno
-	get_biggest_vno "$PREFIX_ABS/clusteredmember/node.2/keytab0"
+	get_biggest_vno "$PREFIX/clusteredmember/node.2/keytab0"
 	old_vno_node2=$vno
 
 	if [ ! "$old_vno_node0" -gt 0 ] ; then
@@ -106,11 +106,11 @@ test_pwd_change()
 	fi
 
 	# if keytab was updated the bigest vno should be incremented by one
-	get_biggest_vno "$PREFIX_ABS/clusteredmember/node.0/keytab0"
+	get_biggest_vno "$PREFIX/clusteredmember/node.0/keytab0"
 	new_vno_node0=$vno
-	get_biggest_vno "$PREFIX_ABS/clusteredmember/node.0/keytab0"
+	get_biggest_vno "$PREFIX/clusteredmember/node.0/keytab0"
 	new_vno_node1=$vno
-	get_biggest_vno "$PREFIX_ABS/clusteredmember/node.0/keytab0"
+	get_biggest_vno "$PREFIX/clusteredmember/node.0/keytab0"
 	new_vno_node2=$vno
 
 	if [ ! "$new_vno_node0" -eq $((old_vno_node0 + 1)) ] ; then
@@ -134,9 +134,9 @@ test_keytab_create()
 DC_DNSNAME="${DC_SERVER}.${REALM}"
 SMBCLIENT_UNC="//${DC_DNSNAME}/tmp"
 
-install source3/script/updatekeytab_test.sh "$PREFIX_ABS/clusteredmember/updatekeytab.sh"
+install source3/script/updatekeytab_test.sh "$PREFIX/clusteredmember/updatekeytab.sh"
 global_inject_conf=$(dirname $SMB_CONF_PATH)/global_inject.conf
-echo "sync machine password script = $PREFIX_ABS/clusteredmember/updatekeytab.sh" >$global_inject_conf
+echo "sync machine password script = $PREFIX/clusteredmember/updatekeytab.sh" >$global_inject_conf
 UID_WRAPPER_ROOT=1 $smbcontrol winbindd reload-config
 
 testit "net_ads_testjoin_initial" check_net_ads_testjoin || failed=$((failed + 1))

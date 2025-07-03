@@ -7,7 +7,7 @@ EOF
 	exit 1
 fi
 
-PREFIX_ABS="$1"
+PREFIX="$1"
 RELEASE="$2"
 shift 2
 
@@ -35,7 +35,7 @@ fi
 
 delete_member_of_deleted_group()
 {
-	TZ=UTC $ldbdel -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb 'CN=User1 UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp'
+	TZ=UTC $ldbdel -H tdb://$PREFIX/${RELEASE}/private/sam.ldb 'CN=User1 UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp'
 	if [ "$?" != "0" ]; then
 		return 1
 	fi
@@ -43,7 +43,7 @@ delete_member_of_deleted_group()
 
 delete_backlink_memberof_deleted_group()
 {
-	TZ=UTC $ldbdel -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb 'CN=User UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp'
+	TZ=UTC $ldbdel -H tdb://$PREFIX/${RELEASE}/private/sam.ldb 'CN=User UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp'
 	if [ "$?" != "0" ]; then
 		return 1
 	fi
@@ -51,13 +51,13 @@ delete_backlink_memberof_deleted_group()
 
 delete_dangling_backlink_memberof_group()
 {
-	TZ=UTC $ldbdel -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb 'CN=dangling-back,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp'
+	TZ=UTC $ldbdel -H tdb://$PREFIX/${RELEASE}/private/sam.ldb 'CN=dangling-back,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp'
 	if [ "$?" != "0" ]; then
 		return 1
 	fi
 }
 
-remove_directory $PREFIX_ABS/${RELEASE}
+remove_directory $PREFIX/${RELEASE}
 
 testit $RELEASE undump || failed=$(expr $failed + 1)
 testit "add_dangling_link" add_dangling_link || failed=$(expr $failed + 1)
@@ -77,6 +77,6 @@ testit "delete_member_of_deleted_group" delete_member_of_deleted_group || failed
 testit "delete_backlink_memberof_deleted_group" delete_backlink_memberof_deleted_group || failed=$(expr $failed + 1)
 testit "delete_dangling_backlink_memberof_group" delete_dangling_backlink_memberof_group || failed=$(expr $failed + 1)
 
-remove_directory $PREFIX_ABS/${RELEASE}
+remove_directory $PREFIX/${RELEASE}
 
 exit $failed

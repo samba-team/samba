@@ -33,7 +33,7 @@ incdir=$(dirname "$0")/../../../testprogs/blackbox
 
 failed=0
 
-TMPDIR=${PREFIX_ABS}/$(basename "${0}")
+TMPDIR=${PREFIX}/$(basename "${0}")
 mkdir -p "${TMPDIR}" || exit 1
 cd "${TMPDIR}" || exit 1
 
@@ -298,6 +298,6 @@ testit "per-user" test_per_user || failed=$(("$failed" + 1))
 
 do_cleanup
 
-cd "${PREFIX_ABS}" && rm -rf ${TMPDIR}
+cd "${PREFIX}" && rm -rf ${TMPDIR}
 
 exit "$failed"

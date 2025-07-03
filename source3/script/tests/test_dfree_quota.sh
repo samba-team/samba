@@ -191,7 +191,7 @@ test_smbcquotas()
 		mproto="-m SMB1"
 	fi
 
-	smbcquotas_stderr="$(mktemp "${PREFIX_ABS}/smbcquotas.XXXXXXXXXX")"
+	smbcquotas_stderr="$(mktemp "${PREFIX}/smbcquotas.XXXXXXXXXX")"
 
 	output=$($VALGRIND $smbcquotas $mproto //$SERVER/dfq "$@" 2>"${smbcquotas_stderr}")
 	status=$?

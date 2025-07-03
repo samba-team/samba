@@ -2,7 +2,7 @@
 
 if [ $# -lt 5 ]; then
 	cat <<EOF
-Usage: test_primary_group.sh SERVER USERNAME PASSWORD DOMAIN PREFIX_ABS
+Usage: test_primary_group.sh SERVER USERNAME PASSWORD DOMAIN PREFIX
 EOF
 	exit 1
 fi
@@ -11,11 +11,11 @@ SERVER=$1
 USERNAME=$2
 PASSWORD=$3
 DOMAIN=$4
-PREFIX_ABS=$5
+PREFIX=$5
 shift 5
 failed=0
 
-TMPDIR="$PREFIX_ABS/$(basename $0)"
+TMPDIR="$PREFIX/$(basename $0)"
 export TMPDIR
 
 . $(dirname $0)/subunit.sh
