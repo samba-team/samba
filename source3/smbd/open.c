@@ -4264,7 +4264,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			     parent_dir_fname,
 			     info,
 			     new_dos_attributes,
-			     &smb_fname->st.st_ex_mode);
+			     &unx_mode);
 
 	/* Determine sparse flag. */
 	if (posix_open) {
