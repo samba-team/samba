@@ -230,7 +230,7 @@ struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
 	const char *revzone = "in-addr.arpa";
 	const char *revzone6 = "ip6.arpa";
 	int len1, len2;
-	unsigned int i = 0;
+	int32_t i = 0;
 
 	zoneinfo = talloc_zero(zone, struct dnsserver_zoneinfo);
 	if (zoneinfo == NULL) {
