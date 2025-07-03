@@ -2576,6 +2576,14 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 	for(i = 0; i < numdcs; i++) {
 		/* Copy all the IP addresses from the SRV response */
 		size_t j;
+
+		status = check_negative_conn_cache(name, dcs[i].hostname);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("Skipping blacklisted server [%s] "
+				  "for domain [%s]", dcs[i].hostname, name);
+			continue;
+		}
+
 		for (j = 0; j < dcs[i].num_ips; j++) {
 			char addr[INET6_ADDRSTRLEN];
 
@@ -2584,12 +2592,19 @@ static NTSTATUS resolve_ads(TALLOC_CTX *ctx,
 				continue;
 			}
 
+			print_sockaddr(addr,
+				       sizeof(addr),
+				       &srv_addrs[num_srv_addrs]);
+
 			DBG_DEBUG("SRV lookup %s got IP[%zu] %s\n",
-				name,
-				j,
-				print_sockaddr(addr,
-					sizeof(addr),
-					&srv_addrs[num_srv_addrs]));
+				  name, j, addr);
+
+			status = check_negative_conn_cache(name, addr);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_DEBUG("Skipping blacklisted server [%s] "
+					   "for domain [%s]", addr, name);
+				continue;
+			}
 
 			num_srv_addrs++;
 		}
