@@ -1230,6 +1230,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("netlogon_pings failed: %s\n", nt_errstr(status));
+		result = talloc_move(mem_ctx, &kdc_str);
 		goto out;
 	}
 
