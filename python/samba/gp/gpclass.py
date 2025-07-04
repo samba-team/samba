@@ -673,8 +673,10 @@ class GP_LINK:
         self.gp_opts = int(gPOptions)
 
     def gpo_parse_gplink(self, gPLink):
+        # normally formed link looks like [LDAP://host/path;options]
+        # empty link looks like [ ]
         for p in gPLink.decode().split(']'):
-            if not p:
+            if not p or ';' not in p:
                 continue
             log.debug('gpo_parse_gplink: processing link')
             p = p.lstrip('[')
