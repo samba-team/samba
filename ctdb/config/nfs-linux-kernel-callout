@@ -203,7 +203,7 @@ service_stop()
 		pkill -9 nfsd
 		;;
 	nlockmgr)
-		if service_is_defined "$nfs_lock_service" ; then
+		if service_is_defined "$nfs_lock_service"; then
 			service "$nfs_lock_service" stop >/dev/null 2>&1 || true
 		else
 			service "$nfs_service" stop >/dev/null 2>&1 || true
@@ -287,7 +287,7 @@ service_start()
 		nfs_service_start
 		;;
 	nlockmgr)
-		if service_is_defined "$nfs_lock_service" ; then
+		if service_is_defined "$nfs_lock_service"; then
 			service "$nfs_lock_service" start
 		else
 			service "$nfs_service" start
