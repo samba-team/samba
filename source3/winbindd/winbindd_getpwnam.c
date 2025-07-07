@@ -38,7 +38,7 @@ struct winbindd_getpwnam_state {
 static void winbindd_getpwnam_lookupname_done(struct tevent_req *subreq);
 static void winbindd_getpwnam_done(struct tevent_req *subreq);
 
-static void winbindd_getgrnam_unmap_done(struct tevent_req *subreq);
+static void winbindd_getpwnam_initialized(struct tevent_req *subreq);
 struct tevent_req *winbindd_getpwnam_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
 					  struct winbindd_cli_state *cli,
@@ -68,19 +68,42 @@ struct tevent_req *winbindd_getpwnam_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	subreq = wb_parent_idmap_setup_send(state, ev);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, winbindd_getpwnam_initialized, req);
+	return req;
+}
+
+static void winbindd_getpwnam_unmap_done(struct tevent_req *subreq);
+static void winbindd_getpwnam_initialized(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+							  struct tevent_req);
+	struct winbindd_getpwnam_state *state = tevent_req_data(
+		req, struct winbindd_getpwnam_state);
+	const struct wb_parent_idmap_config *cfg = NULL;
+	NTSTATUS status;
+
+	status = wb_parent_idmap_setup_recv(subreq, &cfg);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
 	subreq = dcerpc_wbint_NormalizeNameUnmap_send(state,
 						      state->ev,
 						      idmap_child_handle(),
 						      state->request_name,
 						      &state->unmapped_name);
 	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
+		return;
 	}
-	tevent_req_set_callback(subreq, winbindd_getgrnam_unmap_done, req);
-	return req;
+	tevent_req_set_callback(subreq, winbindd_getpwnam_unmap_done, req);
 }
 
-static void winbindd_getgrnam_unmap_done(struct tevent_req *subreq)
+static void winbindd_getpwnam_unmap_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(subreq,
 							  struct tevent_req);
