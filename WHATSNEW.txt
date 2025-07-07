@@ -1,4 +1,89 @@
                    ==============================
+                   Release Notes for Samba 4.22.3
+                           July 07, 2025
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.22 release series.
+
+
+Important Change in Upcoming Microsoft Update
+---------------------------------------------
+
+On 8th of July, Microsoft will release an important security update for
+Active Directory Domain Controllers for Windows Server versions prior to
+2025.
+
+This update includes a change to the Microsoft RPC Netlogon protocol,
+which improves security by tightening access checks for a set of RPC
+requests. Samba running as domain members in these environments will be
+impacted by this change if a specific configuration is used, see below
+for which configuration is affected.
+
+Windows Server version 2025 is already equipped with these specific
+security hardenings, and Microsoft is now planning to deploy them to all
+supported Windows Server versions down to Windows Server 2008.
+
+
+Who is affected?
+
+Samba installations acting as member servers in Windows AD domains will
+be affected if they are configured to use the 'ad' idmapping backend.
+Samba servers not using this configuration will not be affected by the
+change – at least to our current knowledge and understanding of the
+change – and no further action is required.
+
+Current versions of Samba with the affected configuration will no longer
+function correctly once the Microsoft update has been applied. Users
+will not be able to connect to the SMB service provided by Samba for any
+domain configured to use the 'ad' idmapping backend.
+
+See https://bugzilla.samba.org/show_bug.cgi?id=15876.
+
+
+Changes since 4.22.2
+--------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 15854: samba-tool cannot add user to group whose name is exactly 16
+     characters long.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 15876: Windows security hardening locks out schannel'ed netlogon dc
+     calls like netr_DsRGetDCName.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 15876: Windows security hardening locks out schannel'ed netlogon dc
+     calls like netr_DsRGetDCName.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 15869: Startup messages of rpc deamons fills /var/log/messages.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical:matrix.org matrix room, or
+#samba-technical IRC channel on irc.libera.chat.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+                   ==============================
                    Release Notes for Samba 4.22.2
                            June 05, 2025
                    ==============================
@@ -80,8 +165,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
                    ==============================
                    Release Notes for Samba 4.22.1
                            April 17, 2025
