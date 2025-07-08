@@ -1325,6 +1325,12 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	}
 	state->op = state->result->op;
 
+	if ((state->in_create_disposition == FILE_SUPERSEDE) &&
+	    (state->info == FILE_WAS_OVERWRITTEN))
+	{
+		state->info = FILE_WAS_SUPERSEDED;
+	}
+
 	smbd_smb2_create_after_exec(req);
 	if (!tevent_req_is_in_progress(req)) {
 		return tevent_req_post(req, state->ev);
@@ -1955,13 +1961,8 @@ static void smbd_smb2_create_finish(struct tevent_req *req)
 		state->out_oplock_level	= map_samba_oplock_levels_to_smb2(result->oplock_type);
 	}
 
-	if ((state->in_create_disposition == FILE_SUPERSEDE)
-	    && (state->info == FILE_WAS_OVERWRITTEN)) {
-		state->out_create_action = FILE_WAS_SUPERSEDED;
-	} else {
-		state->out_create_action = state->info;
-	}
-	result->op->create_action = state->out_create_action;
+	state->op->create_action = state->info;
+	state->out_create_action = state->info;
 
 	state->out_creation_ts = get_create_timespec(smb1req->conn,
 					result, result->fsp_name);
