@@ -21,11 +21,11 @@
 """Network Data Representation (NDR) marshalling and unmarshalling."""
 
 
-def ndr_pack(object):
+def ndr_pack(object) -> bytes:
     """Pack a NDR object.
 
     :param object: Object to pack
-    :return: String object with marshalled object.
+    :return: bytes object with marshalled object.
     """
     ndr_pack = getattr(object, "__ndr_pack__", None)
     if ndr_pack is None:
@@ -33,7 +33,7 @@ def ndr_pack(object):
     return ndr_pack()
 
 
-def ndr_unpack(cls, data, allow_remaining=False):
+def ndr_unpack(cls, data:bytes, allow_remaining=False):
     """NDR unpack an object.
 
     :param cls: Class of the object to unpack
@@ -75,13 +75,13 @@ def ndr_deepcopy(object):
     return copy
 
 
-def ndr_pack_in(object, bigendian=False, ndr64=False):
+def ndr_pack_in(object, bigendian=False, ndr64=False) -> bytes:
     """Pack the input of an NDR function object.
 
     :param object: Object to pack
     :param bigendian: use LIBNDR_FLAG_BIGENDIAN (default=False)
     :param ndr64: use LIBNDR_FLAG_NDR64 (default=False)
-    :return: String object with marshalled object.
+    :return: bytes object with marshalled object.
     """
     ndr_pack_in_fn = getattr(object, "__ndr_pack_in__", None)
     if ndr_pack_in_fn is None:
@@ -89,7 +89,11 @@ def ndr_pack_in(object, bigendian=False, ndr64=False):
     return ndr_pack_in_fn(bigendian=bigendian, ndr64=ndr64)
 
 
-def ndr_unpack_in(object, data, bigendian=False, ndr64=False, allow_remaining=False):
+def ndr_unpack_in(object,
+                  data: bytes,
+                  bigendian=False,
+                  ndr64=False,
+                  allow_remaining=False):
     """Unpack the input of an NDR function object.
 
     :param cls: Class of the object to unpack
