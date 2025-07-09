@@ -69,7 +69,12 @@ from collections import defaultdict
 
 def process_file_no_traceid(record_list, fname):
     with open(fname, "r") as infile:
-        data = infile.readlines()
+        try:
+            data = infile.readlines()
+        except UnicodeDecodeError:
+            print("This file is not Unicode encoded: ", fname, file=sys.stderr)
+            return
+
     date = ""
     record_lines = []
 
@@ -89,7 +94,12 @@ def process_file_no_traceid(record_list, fname):
 
 def process_file(record_list, traceid_set, fname, opid, otraceid):
     with open(fname, "r") as infile:
-        data = infile.readlines()
+        try:
+            data = infile.readlines()
+        except UnicodeDecodeError:
+            print("This file is not Unicode encoded: ", fname, file=sys.stderr)
+            return
+
     pid = None
     traceid = 0
     traceid_prev = None
