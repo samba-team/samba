@@ -296,6 +296,58 @@ static NTSTATUS smbXsrv_open_global_verify_record(
 	return NT_STATUS_FATAL_APP_EXIT;
 }
 
+struct smbXsrv_open_global_lookup_state {
+	TALLOC_CTX *mem_ctx;
+	struct smbXsrv_open_global0 *global;
+	NTSTATUS status;
+};
+
+static void smbXsrv_open_global_lookup_fn(struct db_record *rec,
+					  TDB_DATA val,
+					  void *private_data)
+{
+	struct smbXsrv_open_global_lookup_state *state = private_data;
+	TDB_DATA key = dbwrap_record_get_key(rec);
+
+	state->status = smbXsrv_open_global_parse_record(state->mem_ctx,
+							 key,
+							 val,
+							 &state->global);
+	if (!NT_STATUS_IS_OK(state->status)) {
+		return;
+	}
+	return;
+}
+
+static NTSTATUS smbXsrv_open_global_lookup(
+			struct smbXsrv_open_table *table,
+			TALLOC_CTX *mem_ctx,
+			uint32_t open_global_id,
+			const struct smbXsrv_open_global0 **_global)
+{
+	struct smbXsrv_open_global_key_buf key_buf;
+	TDB_DATA key = smbXsrv_open_global_id_to_key(open_global_id, &key_buf);
+	struct smbXsrv_open_global_lookup_state state = {
+		.mem_ctx = mem_ctx,
+	};
+	NTSTATUS status;
+
+	status = dbwrap_do_locked(table->global.db_ctx,
+				  key,
+				  smbXsrv_open_global_lookup_fn,
+				  &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("dbwrap_do_locked failed\n");
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(state.status)) {
+		DBG_ERR("smbXsrv_open_global_lookup_fn failed\n");
+		return state.status;
+	}
+	*_global = state.global;
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS smbXsrv_open_global_store(
 	struct db_record *rec,
 	TDB_DATA key,
@@ -618,13 +670,7 @@ static NTSTATUS smbXsrv_open_set_replay_cache(struct smbXsrv_open *op)
 	struct GUID_txt_buf buf;
 	char *guid_string;
 	struct db_context *db = op->table->local.replay_cache_db_ctx;
-	struct smbXsrv_open_replay_cache rc = {
-		.idle_time = op->idle_time,
-		.local_id = op->local_id,
-	};
-	uint8_t data[SMBXSRV_OPEN_REPLAY_CACHE_FIXED_SIZE] = { 0 };
-	DATA_BLOB blob = { .data = data, .length = sizeof(data), };
-	enum ndr_err_code ndr_err;
+	struct smbXsrv_open_global_key_buf open_key_buf;
 	NTSTATUS status;
 	TDB_DATA val;
 
@@ -639,19 +685,11 @@ static NTSTATUS smbXsrv_open_set_replay_cache(struct smbXsrv_open *op)
 	create_guid = &op->global->create_guid;
 	guid_string = GUID_buf_string(create_guid, &buf);
 
-	ndr_err = ndr_push_struct_into_fixed_blob(&blob, &rc,
-		(ndr_push_flags_fn_t)ndr_push_smbXsrv_open_replay_cache);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		status = ndr_map_error2ntstatus(ndr_err);
-		return status;
-	}
+	val = smbXsrv_open_global_id_to_key(op->global->open_global_id,
+					    &open_key_buf);
 
 	DBG_DEBUG("Replay Cache: store create_guid [%s]\n",
 		  GUID_buf_string(&op->global->create_guid, &buf));
-	if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
-		NDR_PRINT_DEBUG(smbXsrv_open_replay_cache, &rc);
-	}
-	val = make_tdb_data(blob.data, blob.length);
 
 	status = dbwrap_store_bystring(db, guid_string, val, TDB_REPLACE);
 
@@ -1039,13 +1077,10 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 	const char *create_guid_str = GUID_buf_string(&create_guid, &_create_guid_buf);
 	TDB_DATA create_guid_key = string_term_tdb_data(create_guid_str);
 	struct db_record *db_rec = NULL;
+	const struct smbXsrv_open_global0 *global = NULL;
 	struct smbXsrv_open *op = NULL;
-	struct smbXsrv_open_replay_cache rc = {
-		.idle_time = now,
-		.local_id = 0,
-	};
-	enum ndr_err_code ndr_err;
-	DATA_BLOB blob = data_blob_null;
+	uint32_t open_global_id;
+
 	TDB_DATA val;
 
 	*_open = NULL;
@@ -1058,23 +1093,11 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 
 	val = dbwrap_record_get_value(db_rec);
 	if (val.dsize == 0) {
-		uint8_t data[SMBXSRV_OPEN_REPLAY_CACHE_FIXED_SIZE];
+		struct smbXsrv_open_global_key_buf open_key_buf;
 
 		DBG_DEBUG("Fresh replay-cache record\n");
-		if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
-			NDR_PRINT_DEBUG(smbXsrv_open_replay_cache, &rc);
-		}
 
-		blob = data_blob_const(data, ARRAY_SIZE(data));
-		ndr_err = ndr_push_struct_into_fixed_blob(&blob, &rc,
-			(ndr_push_flags_fn_t)ndr_push_smbXsrv_open_replay_cache);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			status = ndr_map_error2ntstatus(ndr_err);
-			TALLOC_FREE(frame);
-			return status;
-		}
-
-		val = make_tdb_data(blob.data, blob.length);
+		val = smbXsrv_open_global_id_to_key(0, &open_key_buf);
 		status = dbwrap_record_store(db_rec, val, TDB_REPLACE);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(frame);
@@ -1089,26 +1112,21 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 		return NT_STATUS_FWP_RESERVED;
 	}
 
-	if (val.dsize != SMBXSRV_OPEN_REPLAY_CACHE_FIXED_SIZE) {
+	/*
+	 * For now we expect the size of the record containing the global
+	 * key to be the size of an uint32_t. If we ever change this, this
+	 * will needs revisiting.
+	 */
+	if (val.dsize != sizeof(uint32_t)) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
+	open_global_id = PULL_BE_U32(val.dptr, 0);
 
-	blob = data_blob_const(val.dptr, val.dsize);
-	ndr_err = ndr_pull_struct_blob_all_noalloc(&blob, &rc,
-			(ndr_pull_flags_fn_t)ndr_pull_smbXsrv_open_replay_cache);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		status = ndr_map_error2ntstatus(ndr_err);
-		TALLOC_FREE(frame);
-		return status;
-	}
+	DBG_DEBUG("Found replay cache record open_global_id [%"PRIx32"]\n",
+		  open_global_id);
 
-	DBG_DEBUG("Found smbXsrv_open_replay_cache record\n");
-	if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
-		NDR_PRINT_DEBUG(smbXsrv_open_replay_cache, &rc);
-	}
-
-	if (rc.local_id == 0) {
+	if (open_global_id == 0) {
 		/*
 		 * The original request (or a former replay) is still
 		 * pending, ask the client to retry by sending
@@ -1119,31 +1137,43 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 		return NT_STATUS_FILE_NOT_AVAILABLE;
 	}
 
-	DBG_DEBUG("Found replay-cache record with local_id\n");
-
-	status = smbXsrv_open_local_lookup(table,
-					   rc.local_id,
-					   0, /* global_id */
-					   now,
-					   &op);
+	TALLOC_FREE(db_rec);
+	status = smbXsrv_open_global_lookup(table,
+					    frame,
+					    open_global_id,
+					    &global);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("stale local_id %u for create %s [%s] - %s\n",
-			(unsigned)rc.local_id,
-			create_guid_str,
-			name,
-			nt_errstr(status));
-
+		DBG_DEBUG("Global open not found for create "
+			  "[0x%"PRIx32"] [%s] [%s]\n",
+			  open_global_id, create_guid_str, name);
 		TALLOC_FREE(frame);
 		return status;
 	}
 
-	/*
-	 * We found an open the caller can reuse.
-	 */
-	SMB_ASSERT(op != NULL);
-	*_open = op;
+	if (CHECK_DEBUGLVL(DBGLVL_DEBUG)) {
+		NDR_PRINT_DEBUG(smbXsrv_open_global0, global);
+	}
+
+	status = smbXsrv_open_local_lookup(table,
+					   global->open_volatile_id,
+					   global->open_persistent_id,
+					   now,
+					   &op);
+	if (NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("Found local open\n");
+
+		/*
+		 * We found an open the caller can reuse.
+		 */
+		SMB_ASSERT(op != NULL);
+		*_open = op;
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	DBG_DEBUG("No local open\n");
 	TALLOC_FREE(frame);
-	return NT_STATUS_OK;
+	return status;
 }
 
 struct smb2srv_open_recreate_state {
