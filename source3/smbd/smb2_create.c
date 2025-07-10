@@ -1453,6 +1453,7 @@ static void smbd_smb2_cc_before_exec_dhc2q(struct tevent_req *req)
 	}
 
 	status = smb2srv_open_lookup_replay_cache(smb2req->xconn,
+						  smb2req->session,
 						  *state->create_guid,
 						  state->fname,
 						  now,

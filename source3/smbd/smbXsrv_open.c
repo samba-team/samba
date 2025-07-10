@@ -1121,6 +1121,7 @@ NTSTATUS smb2srv_open_lookup(struct smbXsrv_connection *conn,
  * retry loop on the client.
  */
 NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
+					  struct smbXsrv_session *session,
 					  struct GUID create_guid,
 					  const char *name,
 					  NTTIME now,
@@ -1221,8 +1222,13 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 					   now,
 					   &op);
 	if (NT_STATUS_IS_OK(status)) {
+		if (op->session->global->session_global_id !=
+		    session->global->session_global_id)
+		{
+			TALLOC_FREE(frame);
+			return NT_STATUS_DUPLICATE_OBJECTID;
+		}
 		DBG_DEBUG("Found local open\n");
-
 		/*
 		 * We found an open the caller can reuse.
 		 */
