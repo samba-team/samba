@@ -635,6 +635,8 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 	global->server_id = messaging_server_id(conn->client->msg_ctx);
 	global->open_time = now;
 	global->open_owner = *current_sid;
+	global->session_global_id = session->global->session_global_id;
+	global->tcon_global_id = tcon->global->tcon_global_id;
 	if (conn->protocol >= PROTOCOL_SMB2_10) {
 		global->client_guid = conn->smb2.client.guid;
 	}
@@ -943,6 +945,8 @@ NTSTATUS smbXsrv_open_close(struct smbXsrv_open *op, NTTIME now)
 
 	op->status = NT_STATUS_FILE_CLOSED;
 	global->disconnect_time = now;
+	global->session_global_id = 0;
+	global->tcon_global_id = 0;
 	server_id_set_disconnected(&global->server_id);
 
 	status = dbwrap_do_locked(
@@ -1234,6 +1238,8 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 }
 
 struct smb2srv_open_recreate_state {
+	struct smbXsrv_session *session;
+	struct smbXsrv_tcon *tcon;
 	struct smbXsrv_open *op;
 	const struct GUID *client_guid;
 	const struct GUID *create_guid;
@@ -1308,6 +1314,8 @@ static void smb2srv_open_recreate_fn(
 
 	global->open_volatile_id = state->op->local_id;
 	global->server_id = state->me;
+	global->session_global_id = state->session->global->session_global_id;
+	global->tcon_global_id = state->tcon->global->tcon_global_id;
 
 	state->status = smbXsrv_open_global_store(rec, key, oldval, global);
 	if (!NT_STATUS_IS_OK(state->status)) {
@@ -1333,6 +1341,8 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 {
 	struct smbXsrv_open_table *table = conn->client->open_table;
 	struct smb2srv_open_recreate_state state = {
+		.session = session,
+		.tcon = tcon,
 		.client_guid = &conn->client->global->client_guid,
 		.create_guid = create_guid,
 		.lease_key = lease_key,

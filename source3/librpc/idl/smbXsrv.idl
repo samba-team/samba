@@ -422,6 +422,8 @@ interface smbXsrv
 
 	typedef struct {
 		server_id				server_id;
+		hyper					session_global_id;
+		uint32					tcon_global_id;
 		uint32					open_global_id;
 		hyper					open_persistent_id;
 		hyper					open_volatile_id;
