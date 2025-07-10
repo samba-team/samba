@@ -1082,7 +1082,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		state->result = state->op->compat;
 		state->result->op = state->op;
 		state->update_open = false;
-		state->info = state->op->create_action;
+		state->info = state->op->global->create_action;
 
 		smbd_smb2_create_after_exec(req);
 		if (!tevent_req_is_in_progress(req)) {
@@ -1708,7 +1708,7 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 
 	DBG_DEBUG("response construction phase\n");
 
-	state->op->create_action = state->info;
+	state->op->global->create_action = state->info;
 	state->out_create_action = state->info;
 
 	state->out_file_attributes = fdos_mode(state->result);

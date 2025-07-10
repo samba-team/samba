@@ -430,6 +430,7 @@ interface smbXsrv
 		GUID					create_guid;
 		GUID					client_guid;
 		GUID					app_instance_id;
+		uint32					create_action;
 		/*
 		 * TODO: for durable/resilient/persistent handles we need more
 		 *       things here. See [MS-SMB2] 3.3.1.10 Per Open
@@ -477,7 +478,6 @@ interface smbXsrv
 		NTTIME					idle_time;
 		[ignore] files_struct			*compat;
 		smbXsrv_open_flags			flags;
-		uint32					create_action;
 		hyper					request_count;
 		hyper					pre_request_count;
 	} smbXsrv_open;
