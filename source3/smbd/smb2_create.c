@@ -1365,6 +1365,114 @@ static void smbd_smb2_create_purge_replay_cache(struct tevent_req *req,
 	state->purge_create_guid = NULL;
 }
 
+static void smbd_smb2_cc_before_exec_dhc2q(struct tevent_req *req)
+{
+	struct smbd_smb2_create_state *state = tevent_req_data(
+		req, struct smbd_smb2_create_state);
+	struct smbd_smb2_request *smb2req = state->smb2req;
+	const uint8_t *p = state->dh2q->data.data;
+	NTTIME now = timeval_to_nttime(&smb2req->request_time);
+	uint32_t durable_v2_timeout = 0;
+	DATA_BLOB create_guid_blob;
+	const uint8_t *hdr = NULL;
+	uint32_t flags;
+	NTSTATUS status;
+
+	if (state->dh2q->data.length != 32) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	if (state->dhnq != NULL) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	durable_v2_timeout = IVAL(p, 0);
+	create_guid_blob = data_blob_const(p + 16, 16);
+
+	status = GUID_from_ndr_blob(&create_guid_blob,
+				    &state->_create_guid);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	state->create_guid = &state->_create_guid;
+
+	/*
+	 * we need to store the create_guid later
+	 */
+	state->update_open = true;
+
+	/*
+	 * And we need to create a cache for replaying the
+	 * create.
+	 */
+	state->need_replay_cache = true;
+
+	/*
+	 * durable handle v2 request processed below
+	 */
+	state->durable_requested = true;
+	state->durable_timeout_msec = MIN(durable_v2_timeout, 300*1000);
+	if (state->durable_timeout_msec == 0) {
+		/*
+		 * Set the timeout to 1 min as default.
+		 *
+		 * This matches Windows 2012.
+		 */
+		state->durable_timeout_msec = (60*1000);
+	}
+
+	/*
+	 * Check for replay operation.
+	 * Only consider it when we have dh2q.
+	 * If we do not have a replay operation, verify that
+	 * the create_guid is not cached for replay.
+	 */
+	hdr = SMBD_SMB2_IN_HDR_PTR(smb2req);
+	flags = IVAL(hdr, SMB2_HDR_FLAGS);
+	state->replay_operation = flags & SMB2_HDR_FLAG_REPLAY_OPERATION;
+
+	status = smb2srv_open_lookup_replay_cache(smb2req->xconn,
+						  state->req_guid,
+						  *state->create_guid,
+						  state->fname,
+						  now,
+						  &state->op);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_FWP_RESERVED)) {
+		/*
+		 * We've reserved the replay_cache record
+		 * for ourself, indicating we're still
+		 * in progress.
+		 *
+		 * It means the smbd_smb2_create_cleanup()
+		 * may need to call smbXsrv_open_purge_replay_cache()
+		 * in order to cleanup.
+		 */
+		SMB_ASSERT(state->op == NULL);
+		state->_purge_create_guid = state->_create_guid;
+		state->purge_create_guid = &state->_purge_create_guid;
+		state->replay_operation = false;
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_NOT_AVAILABLE)) {
+		tevent_req_nterror(req, status);
+		return;
+	} else if (tevent_req_nterror(req, status)) {
+		DBG_WARNING("smb2srv_open_lookup_replay_cache "
+			    "failed: %s\n", nt_errstr(status));
+		return;
+	} else if (!state->replay_operation) {
+		/*
+		 * If a create without replay operation flag
+		 * is sent but with a create_guid that is
+		 * currently in the replay cache -- fail.
+		 */
+		(void)tevent_req_nterror(req, NT_STATUS_DUPLICATE_OBJECTID);
+		return;
+	}
+
+	return;
+}
+
 static void smbd_smb2_create_before_exec(struct tevent_req *req)
 {
 	struct smbd_smb2_create_state *state = tevent_req_data(
@@ -1450,105 +1558,8 @@ static void smbd_smb2_create_before_exec(struct tevent_req *req)
 	}
 
 	if (state->dh2q != NULL) {
-		const uint8_t *p = state->dh2q->data.data;
-		NTTIME now = timeval_to_nttime(&smb2req->request_time);
-		uint32_t durable_v2_timeout = 0;
-		DATA_BLOB create_guid_blob;
-		const uint8_t *hdr;
-		uint32_t flags;
-
-		if (state->dh2q->data.length != 32) {
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
-		}
-
-		if (state->dhnq != NULL) {
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return;
-		}
-
-		durable_v2_timeout = IVAL(p, 0);
-		create_guid_blob = data_blob_const(p + 16, 16);
-
-		status = GUID_from_ndr_blob(&create_guid_blob,
-					    &state->_create_guid);
-		if (tevent_req_nterror(req, status)) {
-			return;
-		}
-		state->create_guid = &state->_create_guid;
-
-		/*
-		 * we need to store the create_guid later
-		 */
-		state->update_open = true;
-
-		/*
-		 * And we need to create a cache for replaying the
-		 * create.
-		 */
-		state->need_replay_cache = true;
-
-		/*
-		 * durable handle v2 request processed below
-		 */
-		state->durable_requested = true;
-		state->durable_timeout_msec = MIN(durable_v2_timeout, 300*1000);
-		if (state->durable_timeout_msec == 0) {
-			/*
-			 * Set the timeout to 1 min as default.
-			 *
-			 * This matches Windows 2012.
-			 */
-			state->durable_timeout_msec = (60*1000);
-		}
-
-		/*
-		 * Check for replay operation.
-		 * Only consider it when we have dh2q.
-		 * If we do not have a replay operation, verify that
-		 * the create_guid is not cached for replay.
-		 */
-		hdr = SMBD_SMB2_IN_HDR_PTR(smb2req);
-		flags = IVAL(hdr, SMB2_HDR_FLAGS);
-		state->replay_operation =
-			flags & SMB2_HDR_FLAG_REPLAY_OPERATION;
-
-		status = smb2srv_open_lookup_replay_cache(smb2req->xconn,
-							  state->req_guid,
-							  *state->create_guid,
-							  state->fname,
-							  now,
-							  &state->op);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_FWP_RESERVED)) {
-			/*
-			 * We've reserved the replay_cache record
-			 * for ourself, indicating we're still
-			 * in progress.
-			 *
-			 * It means the smbd_smb2_create_cleanup()
-			 * may need to call smbXsrv_open_purge_replay_cache()
-			 * in order to cleanup.
-			 */
-			SMB_ASSERT(state->op == NULL);
-			state->_purge_create_guid = state->_create_guid;
-			state->purge_create_guid = &state->_purge_create_guid;
-			status = NT_STATUS_OK;
-			state->replay_operation = false;
-		} else if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_NOT_AVAILABLE)) {
-			tevent_req_nterror(req, status);
-			return;
-		} else if (tevent_req_nterror(req, status)) {
-			DBG_WARNING("smb2srv_open_lookup_replay_cache "
-				    "failed: %s\n", nt_errstr(status));
-			return;
-		} else if (!state->replay_operation) {
-			/*
-			 * If a create without replay operation flag
-			 * is sent but with a create_guid that is
-			 * currently in the replay cache -- fail.
-			 */
-			status = NT_STATUS_DUPLICATE_OBJECTID;
-			(void)tevent_req_nterror(req, status);
+		smbd_smb2_cc_before_exec_dhc2q(req);
+		if (!tevent_req_is_in_progress(req)) {
 			return;
 		}
 	}
