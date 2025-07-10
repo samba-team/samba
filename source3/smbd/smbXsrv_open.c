@@ -992,26 +992,23 @@ NTSTATUS smb2srv_open_lookup(struct smbXsrv_connection *conn,
  * cases:
  *
  * 1. There is no record in the cache
- *    => we add the passes caller_req_guid as holder_req_guid
- *       together with local_id as 0.
  *    => We return STATUS_FWP_RESERVED in order to indicate
  *       that the caller holds the current reservation
+ *    This is the "normal" CREATE processing
  *
- * 2. There is a record in the cache and holder_req_guid
- *    is already the same as caller_req_guid and local_id is 0
- *    => We return STATUS_FWP_RESERVED in order to indicate
- *       that the caller holds the current reservation
- *
- * 3. There is a record in the cache with a holder_req_guid
- *    other than caller_req_guid (and local_id is 0):
+ * 2. There is a record in the cache and open_persistent_id is 0
  *    => We return NT_STATUS_FILE_NOT_AVAILABLE to indicate
  *       the original request is still pending
+ *    This is the CREATE pending (still being processed) case
  *
- * 4. There is a record in the cache with a zero holder_req_guid
- *    and a valid local_id:
- *    => We lookup the existing open by local_id
- *    => We return NT_STATUS_OK together with the smbXsrv_open
- *
+ * 3. There is a record in the cache with a valid open_persistent_id:
+ *    => We lookup the existing global open by open_persistent_id
+ *    => We lookup a matching local open and return NT_STATUS_OK together
+ *       with the smbXsrv_open if one is found
+ *       This is the successful CREATE-replay case in the same process
+ *    => Otherwise we return NT_STATUS_HANDLE_NO_LONGER_VALID together with
+ *       open_persistent_id to trigger a handle reconnect
+ *       This is the successful CREATE-replay case in a different process
  *
  * With NT_STATUS_OK the caller can continue the replay processing.
  *
@@ -1019,8 +1016,7 @@ NTSTATUS smb2srv_open_lookup(struct smbXsrv_connection *conn,
  * open processing:
  * - On success:
  *   - smbXsrv_open_update()/smbXsrv_open_set_replay_cache()
- *     will convert the record to a zero holder_req_guid
- *     with a valid local_id.
+ *     will update the record with a valid open_persistent_id.
  * - On failure:
  *   - smbXsrv_open_purge_replay_cache() should cleanup
  *     the reservation.
@@ -1030,7 +1026,6 @@ NTSTATUS smb2srv_open_lookup(struct smbXsrv_connection *conn,
  * retry loop on the client.
  */
 NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
-					  struct GUID caller_req_guid,
 					  struct GUID create_guid,
 					  const char *name,
 					  NTTIME now,
@@ -1040,14 +1035,12 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 	NTSTATUS status;
 	struct smbXsrv_open_table *table = conn->client->open_table;
 	struct db_context *db = table->local.replay_cache_db_ctx;
-	struct GUID_txt_buf tmp_guid_buf;
 	struct GUID_txt_buf _create_guid_buf;
 	const char *create_guid_str = GUID_buf_string(&create_guid, &_create_guid_buf);
 	TDB_DATA create_guid_key = string_term_tdb_data(create_guid_str);
 	struct db_record *db_rec = NULL;
 	struct smbXsrv_open *op = NULL;
 	struct smbXsrv_open_replay_cache rc = {
-		.holder_req_guid = caller_req_guid,
 		.idle_time = now,
 		.local_id = 0,
 	};
@@ -1117,21 +1110,6 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 
 	if (rc.local_id != 0) {
 		DBG_DEBUG("Found replay-cache record with local_id\n");
-		if (GUID_equal(&rc.holder_req_guid, &caller_req_guid)) {
-			/*
-			 * This should not happen
-			 */
-			status = NT_STATUS_INTERNAL_ERROR;
-			DBG_ERR("caller %s already holds local_id %u for create %s [%s] - %s\n",
-				GUID_buf_string(&caller_req_guid, &tmp_guid_buf),
-				(unsigned)rc.local_id,
-				create_guid_str,
-				name,
-				nt_errstr(status));
-
-			TALLOC_FREE(frame);
-			return status;
-		}
 
 		status = smbXsrv_open_local_lookup(table,
 						   rc.local_id,
@@ -1139,8 +1117,7 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 						   now,
 						   &op);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("holder %s stale for local_id %u for create %s [%s] - %s\n",
-				GUID_buf_string(&rc.holder_req_guid, &tmp_guid_buf),
+			DBG_ERR("stale local_id %u for create %s [%s] - %s\n",
 				(unsigned)rc.local_id,
 				create_guid_str,
 				name,
@@ -1159,23 +1136,12 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 		return NT_STATUS_OK;
 	}
 
-	if (GUID_equal(&rc.holder_req_guid, &caller_req_guid)) {
-		DBG_DEBUG("Still the holder\n");
-		/*
-		 * We're still the holder
-		 */
-		*_open = NULL;
-		TALLOC_FREE(frame);
-		return NT_STATUS_FWP_RESERVED;
-	}
-
 	/*
 	 * The original request (or a former replay) is still
 	 * pending, ask the client to retry by sending FILE_NOT_AVAILABLE.
 	 */
 	status = NT_STATUS_FILE_NOT_AVAILABLE;
-	DBG_DEBUG("holder %s still pending for create %s [%s] - %s\n",
-		   GUID_buf_string(&rc.holder_req_guid, &tmp_guid_buf),
+	DBG_DEBUG("still pending create %s [%s] - %s\n",
 		   create_guid_str,
 		   name,
 		   nt_errstr(status));

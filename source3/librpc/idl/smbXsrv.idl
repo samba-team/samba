@@ -493,9 +493,8 @@ interface smbXsrv
 		[switch_is(version)] smbXsrv_openU	info;
 	} smbXsrv_openB;
 
-	const uint32 SMBXSRV_OPEN_REPLAY_CACHE_FIXED_SIZE = 28;
+	const uint32 SMBXSRV_OPEN_REPLAY_CACHE_FIXED_SIZE = 12;
 	typedef [public] struct {
-		GUID					holder_req_guid;
 		NTTIME					idle_time;
 		uint32					local_id;
 	} smbXsrv_open_replay_cache;

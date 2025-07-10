@@ -1433,8 +1433,25 @@ static void smbd_smb2_cc_before_exec_dhc2q(struct tevent_req *req)
 	flags = IVAL(hdr, SMB2_HDR_FLAGS);
 	state->replay_operation = flags & SMB2_HDR_FLAG_REPLAY_OPERATION;
 
+	if (state->open_was_deferred) {
+		/*
+		 * When processing a redispatched deferred open, we have the
+		 * following state:
+		 * - no OPEN record
+		 * - RC record with global_file_id=0 (pending open state)
+		 *
+		 * We just skip calling smb2srv_open_lookup_replay_cache() as
+		 * - we already have a RC record
+		 * - it would fail with NT_STATUS_FILE_NOT_AVAILABLE which is
+		 *   not what we want in this "internal replay" case
+		 *
+		 * So we just set replay_operation to false and move on.
+		 */
+		state->replay_operation = false;
+		return;
+	}
+
 	status = smb2srv_open_lookup_replay_cache(smb2req->xconn,
-						  state->req_guid,
 						  *state->create_guid,
 						  state->fname,
 						  now,

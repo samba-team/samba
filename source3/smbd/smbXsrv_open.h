@@ -53,7 +53,6 @@ NTSTATUS smb2srv_open_lookup(struct smbXsrv_connection *conn,
 NTSTATUS smbXsrv_open_purge_replay_cache(struct smbXsrv_client *client,
 					 const struct GUID *create_guid);
 NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
-					  struct GUID caller_req_guid,
 					  struct GUID create_guid,
 					  const char *name,
 					  NTTIME now,
