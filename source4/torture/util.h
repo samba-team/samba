@@ -36,6 +36,14 @@ struct cli_credentials;
 #define TARGET_IS_WIN7(_tctx) (torture_setting_bool(_tctx, "win7", false))
 #define TARGET_IS_SAMBA3(_tctx) (torture_setting_bool(_tctx, "samba3", false))
 #define TARGET_IS_SAMBA4(_tctx) (torture_setting_bool(_tctx, "samba4", false))
+#define TARGET_IS_W2K16(_tctx) (torture_setting_bool(_tctx, "w2k16", false))
+#define TARGET_IS_WINDOWS(_tctx) \
+	((torture_setting_bool(_tctx, "winxp", false)) 	|| \
+	 (torture_setting_bool(_tctx, "w2k3", false)) 	|| \
+	 (torture_setting_bool(_tctx, "w2k8", false)) 	|| \
+	 (torture_setting_bool(_tctx, "win7", false)) 	|| \
+	 (torture_setting_bool(_tctx, "w2k12", false)) 	|| \
+	 (torture_setting_bool(_tctx, "w2k16", false)))
 
 /**
   setup a directory ready for a test

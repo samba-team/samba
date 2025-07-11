@@ -596,6 +596,10 @@ int main(int argc, const char *argv[])
 
 		lpcfg_set_cmdline(lp_ctx, "torture:hide_on_access_denied",
 		    "true");
+	} else if (strcmp(target, "w2k16") == 0) {
+		lpcfg_set_cmdline(lp_ctx, "torture:hide_on_access_denied",
+		    "true");
+		lpcfg_set_cmdline(lp_ctx, "torture:w2k16", "true");
 	} else if (strcmp(target, "onefs") == 0) {
 		lpcfg_set_cmdline(lp_ctx, "torture:onefs", "true");
 		lpcfg_set_cmdline(lp_ctx, "torture:openx_deny_dos_support",
