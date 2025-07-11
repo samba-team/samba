@@ -20,6 +20,7 @@
 import os
 import samba
 from samba.samdb import BinaryDn, PlainDn, StringDn
+from samba.key_credential_link import KeyCredentialLinkDn
 from samba.tests import TestCaseInTempDir
 
 
@@ -65,6 +66,88 @@ class DsdbDnTests(TestCaseInTempDir):
             with self.assertRaises(ValueError) as cm:
                 dn2.prefix = badstring
             self.assertIn(errmsg, str(cm.exception))
+
+    def test_KeyCredentialLinkDn_valid(self):
+        """Simple KeyCredentialLinkDn objects."""
+        sam = self._temp_ldb()
+        for name, dnstring, count in [
+                ('empty', "B:8:00020000:DC=example,DC=com", 0),
+                ('key id',
+                 "B:78:00020000"
+                 "2000" "01" # length, key id
+                 "000102030405060708090A0B0C0D0E0F"
+                 "101112131415161718191A1B1C1D1E1F"
+                 ":DC=example,DC=com", 1),
+                ('key hash',
+                 "B:78:00020000"
+                 "2000" "02" # length, key hash
+                 "000102030405060708090A0B0C0D0E0F"
+                 "101112131415161718191A1B1C1D1E1F"
+                 ":DC=example,DC=com", 1),
+                ('key usage',
+                 "B:16:00020000"
+                 "0100" "04" # length, key_usage
+                 "01"
+                 ":DC=example,DC=com", 1),
+        ]:
+            print(f"{name}: {dnstring}")
+            k = KeyCredentialLinkDn(sam, dnstring)
+            self.assertEqual(k.blob.count, count)
+            b = BinaryDn(sam, dnstring)
+            self.assertEqual(k, b)
+            self.assertEqual(str(k), str(b))
+            self.assertEqual(str(k).upper(), dnstring.upper())
+
+    def test_KeyCredentialLinkDn_invalid(self):
+        """KeyCredentialLinkDn objects that should fail."""
+        sam = self._temp_ldb()
+        for name, dnstring, valid_binary in [
+                ('bad version', "B:8:00030000:DC=example,DC=com", True),
+                ('length mismatch 1',
+                 "B:78:00020000"
+                 "2200" "01" # length, key_id
+                 "000102030405060708090A0B0C0D0E0F"
+                 "101112131415161718191A1B1C1D1E1F"
+                 ":DC=example,DC=com", True),
+                ('length mismatch 2',
+                 "B:80:00020000"
+                 "2000" "01" # length, key_id
+                 "000102030405060708090A0B0C0D0E0F"
+                 "101112131415161718191A1B1C1D1E1F00"
+                 ":DC=example,DC=com", True),
+                ('binary length mismatch',
+                 "B:10:00020000"
+                 ":DC=example,DC=com", False),
+                #('bad key usage',
+                # "B:16:00020000"
+                # "0100" "04" # length, key_usage
+                # "FF"
+                # ":DC=example,DC=com", True),
+                ('bad entry id 00',
+                 "B:16:00020000"
+                 "0100" "00" # length, invalid
+                 "FF"
+                 ":DC=example,DC=com", True),
+                ('bad entry id ff',
+                 "B:16:00020000"
+                 "0100" "FF" # length, invalid
+                 "FF"
+                 ":DC=example,DC=com", True),
+        ]:
+            print(name)
+            with self.assertRaises(ValueError) as cm:
+                k = KeyCredentialLinkDn(sam, dnstring)
+
+            print(cm.exception)
+            try:
+                b = BinaryDn(sam, dnstring)
+            except ValueError:
+                if valid_binary:
+                    self.fail(f"{name}: expected {dnstring} to be valid binary dn")
+            else:
+                if not valid_binary:
+                    self.fail(f"{name}: expected {dnstring} to be invalid binary dn, "
+                              f"got {b}")
 
     def test_PlainDn(self):
         sam = self._temp_ldb("test_PlainDn.ldb")
