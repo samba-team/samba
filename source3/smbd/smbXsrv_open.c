@@ -566,6 +566,7 @@ static int smbXsrv_open_destructor(struct smbXsrv_open *op)
 
 NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 			     struct smbXsrv_session *session,
+			     struct smbXsrv_tcon *tcon,
 			     NTTIME now,
 			     struct smbXsrv_open **_open)
 {
@@ -602,6 +603,7 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 	op->status = NT_STATUS_OK; /* TODO: start with INTERNAL_ERROR */
 	op->idle_time = now;
 	op->session = session;
+	op->tcon = tcon;
 
 	global = talloc_zero(op, struct smbXsrv_open_global0);
 	if (global == NULL) {
@@ -1322,6 +1324,7 @@ not_found:
 
 NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 			       struct smbXsrv_session *session,
+			       struct smbXsrv_tcon *tcon,
 			       uint64_t persistent_id,
 			       const struct GUID *create_guid,
 			       const struct smb2_lease_key *lease_key,
@@ -1407,6 +1410,7 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 	}
 
 	state.op->session = session;
+	state.op->tcon = tcon;
 
 	talloc_set_destructor(state.op, smbXsrv_open_destructor);
 

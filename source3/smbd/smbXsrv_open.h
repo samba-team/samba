@@ -36,6 +36,7 @@ struct smbXsrv_client;
 NTSTATUS smbXsrv_open_global_init(void);
 NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 			     struct smbXsrv_session *session,
+			     struct smbXsrv_tcon *tcon,
 			     NTTIME now,
 			     struct smbXsrv_open **_open);
 NTSTATUS smbXsrv_open_update(struct smbXsrv_open *_open);
@@ -60,6 +61,7 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 struct smb2_lease_key;
 NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 			       struct smbXsrv_session *session,
+			       struct smbXsrv_tcon *tcon,
 			       uint64_t persistent_id,
 			       const struct GUID *create_guid,
 			       const struct smb2_lease_key *lease_key,

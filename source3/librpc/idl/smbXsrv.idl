@@ -475,6 +475,7 @@ interface smbXsrv
 		uint32					local_id;
 		[ref] smbXsrv_open_global0		*global;
 		smbXsrv_session				*session;
+		smbXsrv_tcon				*tcon;
 		NTSTATUS				status;
 		NTTIME					idle_time;
 		[ignore] files_struct			*compat;
