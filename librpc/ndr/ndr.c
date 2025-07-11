@@ -48,6 +48,11 @@
  */
 #define NDR_TOKEN_MAX_LIST_SIZE 65535
 
+/*
+ * An arbitrary limit used by the fixed-size pull/push functions
+ */
+#define NDR_FIXED_SIZE_MARSHALL_MAX_TOKENS 10
+
 size_t ndr_token_max_list_size(void) {
 	return NDR_TOKEN_MAX_LIST_SIZE;
 };
@@ -1081,6 +1086,12 @@ _PUBLIC_ enum ndr_err_code ndr_token_store(TALLOC_CTX *mem_ctx,
 			 const void *key,
 			 uint32_t value)
 {
+	if (list->fixed_alloc_count != 0) {
+		if (list->count >= list->fixed_alloc_count) {
+			return NDR_ERR_RANGE;
+		}
+		goto store;
+	}
 	if (list->tokens == NULL) {
 		list->tokens = talloc_array(mem_ctx, struct ndr_token, 10);
 		if (list->tokens == NULL) {
@@ -1115,6 +1126,7 @@ _PUBLIC_ enum ndr_err_code ndr_token_store(TALLOC_CTX *mem_ctx,
 			list->tokens = new_tokens;
 		}
 	}
+store:
 	list->tokens[list->count].key = key;
 	list->tokens[list->count].value = value;
 	list->count++;
@@ -1511,10 +1523,16 @@ _PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_noalloc(const uint8_t *buf,
 	 * This allows us to keep the safety of the PIDL-generated
 	 * code without the talloc() overhead.
 	 */
+	struct ndr_token tokens[NDR_FIXED_SIZE_MARSHALL_MAX_TOKENS];
+	struct ndr_token_list switch_list = {
+		.tokens = tokens,
+		.fixed_alloc_count = ARRAY_SIZE(tokens),
+	};
 	struct ndr_pull ndr = {
 		.data = discard_const_p(uint8_t, buf),
 		.data_size = buflen,
 		.current_mem_ctx = (void *)-1,
+		.switch_list = switch_list,
 	};
 
 	NDR_CHECK(fn(&ndr, NDR_SCALARS|NDR_BUFFERS, p));
@@ -1632,10 +1650,16 @@ _PUBLIC_ enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem
 _PUBLIC_ enum ndr_err_code ndr_push_struct_into_fixed_blob(
 	DATA_BLOB *blob, const void *p, ndr_push_flags_fn_t fn)
 {
+	struct ndr_token tokens[NDR_FIXED_SIZE_MARSHALL_MAX_TOKENS];
+	struct ndr_token_list switch_list = {
+		.tokens = tokens,
+		.fixed_alloc_count = ARRAY_SIZE(tokens),
+	};
 	struct ndr_push ndr = {
 		.data = blob->data,
 		.alloc_size = blob->length,
-		.fixed_buf_size = true
+		.fixed_buf_size = true,
+		.switch_list = switch_list,
 	};
 
 	NDR_CHECK(fn(&ndr, NDR_SCALARS|NDR_BUFFERS, p));

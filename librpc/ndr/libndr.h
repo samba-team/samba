@@ -44,6 +44,7 @@ struct ndr_token;
 struct ndr_token_list {
 	struct ndr_token *tokens;
 	uint32_t count;
+	uint32_t fixed_alloc_count;
 };
 
 struct ndr_compression_state;
