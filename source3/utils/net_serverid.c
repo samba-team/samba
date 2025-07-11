@@ -235,6 +235,7 @@ done:
 
 static int wipedbs_traverse_open(struct db_record *db_rec,
 				 struct smbXsrv_open_global0 *open,
+				 TDB_DATA *open_global_key,
 				 void *wipedbs_state)
 {
 	struct wipedbs_state *state =

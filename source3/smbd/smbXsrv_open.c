@@ -1455,6 +1455,7 @@ fail:
 struct smbXsrv_open_global_traverse_state {
 	int (*fn)(struct db_record *rec,
 		  struct smbXsrv_open_global0 *global,
+		  TDB_DATA *rc_open_global_key,
 		  void *private_data);
 	void *private_data;
 };
@@ -1469,13 +1470,22 @@ static int smbXsrv_open_global_traverse_fn(struct db_record *rec, void *data)
 	NTSTATUS status;
 	int ret = -1;
 
+	/*
+	 * Currently expected fixed size of the replay cache record is the
+	 * size of the open_global record's key and the expected size of
+	 * the key is 32 bytes (client GUID + create GUID).
+	 */
+	if ((key.dsize == 32) && (val.dsize == sizeof(uint32_t))) {
+		return state->fn(rec, NULL, &val, state->private_data);
+	}
+
 	status = smbXsrv_open_global_parse_record(
 		talloc_tos(), key, val, &global);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
 
-	ret = state->fn(rec, global, state->private_data);
+	ret = state->fn(rec, global, NULL, state->private_data);
 	talloc_free(global);
 	return ret;
 }
@@ -1483,6 +1493,7 @@ static int smbXsrv_open_global_traverse_fn(struct db_record *rec, void *data)
 NTSTATUS smbXsrv_open_global_traverse(
 	int (*fn)(struct db_record *rec,
 		  struct smbXsrv_open_global0 *global,
+		  TDB_DATA *rc_open_global_key,
 		  void *private_data),
 	void *private_data)
 {
