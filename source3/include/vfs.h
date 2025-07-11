@@ -1515,7 +1515,8 @@ struct tevent_req *smb_vfs_call_pread_send(struct vfs_handle_struct *handle,
 					   struct files_struct *fsp,
 					   void *data,
 					   size_t n, off_t offset);
-ssize_t SMB_VFS_PREAD_RECV(struct tevent_req *req, struct vfs_aio_state *state);
+ssize_t smb_vfs_call_pread_recv(struct tevent_req *req,
+				struct vfs_aio_state *state);
 
 ssize_t smb_vfs_call_pwrite(struct vfs_handle_struct *handle,
 			    struct files_struct *fsp, const void *data,
@@ -1526,7 +1527,8 @@ struct tevent_req *smb_vfs_call_pwrite_send(struct vfs_handle_struct *handle,
 					    struct files_struct *fsp,
 					    const void *data,
 					    size_t n, off_t offset);
-ssize_t SMB_VFS_PWRITE_RECV(struct tevent_req *req, struct vfs_aio_state *state);
+ssize_t smb_vfs_call_pwrite_recv(struct tevent_req *req,
+				 struct vfs_aio_state *state);
 
 off_t smb_vfs_call_lseek(struct vfs_handle_struct *handle,
 			     struct files_struct *fsp, off_t offset,
@@ -1548,7 +1550,8 @@ struct tevent_req *smb_vfs_call_fsync_send(struct vfs_handle_struct *handle,
 					   TALLOC_CTX *mem_ctx,
 					   struct tevent_context *ev,
 					   struct files_struct *fsp);
-int SMB_VFS_FSYNC_RECV(struct tevent_req *req, struct vfs_aio_state *state);
+int smb_vfs_call_fsync_recv(struct tevent_req *req,
+			    struct vfs_aio_state *state);
 
 int smb_vfs_fsync_sync(files_struct *fsp);
 int smb_vfs_call_stat(struct vfs_handle_struct *handle,

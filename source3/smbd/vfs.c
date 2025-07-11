@@ -1687,8 +1687,8 @@ static void smb_vfs_call_pread_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-ssize_t SMB_VFS_PREAD_RECV(struct tevent_req *req,
-			   struct vfs_aio_state *vfs_aio_state)
+ssize_t smb_vfs_call_pread_recv(struct tevent_req *req,
+				struct vfs_aio_state *vfs_aio_state)
 {
 	struct smb_vfs_call_pread_state *state = tevent_req_data(
 		req, struct smb_vfs_call_pread_state);
@@ -1763,8 +1763,8 @@ static void smb_vfs_call_pwrite_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-ssize_t SMB_VFS_PWRITE_RECV(struct tevent_req *req,
-			    struct vfs_aio_state *vfs_aio_state)
+ssize_t smb_vfs_call_pwrite_recv(struct tevent_req *req,
+				 struct vfs_aio_state *vfs_aio_state)
 {
 	struct smb_vfs_call_pwrite_state *state = tevent_req_data(
 		req, struct smb_vfs_call_pwrite_state);
@@ -1869,7 +1869,8 @@ static void smb_vfs_call_fsync_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-int SMB_VFS_FSYNC_RECV(struct tevent_req *req, struct vfs_aio_state *vfs_aio_state)
+int smb_vfs_call_fsync_recv(struct tevent_req *req,
+			    struct vfs_aio_state *vfs_aio_state)
 {
 	struct smb_vfs_call_fsync_state *state = tevent_req_data(
 		req, struct smb_vfs_call_fsync_state);

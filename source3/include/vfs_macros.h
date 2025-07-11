@@ -163,9 +163,14 @@
 #define SMB_VFS_PREAD_SEND(mem_ctx, ev, fsp, data, n, off) \
 	smb_vfs_call_pread_send((fsp)->conn->vfs_handles, (mem_ctx), (ev), \
 				(fsp), (data), (n), (off))
+#define SMB_VFS_PREAD_RECV(req, aio_state) \
+	smb_vfs_call_pread_recv((req), (aio_state))
+
 #define SMB_VFS_NEXT_PREAD_SEND(mem_ctx, ev, handle, fsp, data, n, off)	\
 	smb_vfs_call_pread_send((handle)->next, (mem_ctx), (ev), (fsp), \
 				(data), (n), (off))
+#define SMB_VFS_NEXT_PREAD_RECV(req, aio_state) \
+	smb_vfs_call_pread_recv((req), (aio_state))
 
 #define SMB_VFS_PWRITE(fsp, data, n, off) \
 	smb_vfs_call_pwrite((fsp)->conn->vfs_handles, (fsp), (data), (n), (off))
@@ -175,9 +180,14 @@
 #define SMB_VFS_PWRITE_SEND(mem_ctx, ev, fsp, data, n, off) \
 	smb_vfs_call_pwrite_send((fsp)->conn->vfs_handles, (mem_ctx), (ev), \
 				(fsp), (data), (n), (off))
+#define SMB_VFS_PWRITE_RECV(req, aio_state) \
+	smb_vfs_call_pwrite_recv((req), (aio_state))
+
 #define SMB_VFS_NEXT_PWRITE_SEND(mem_ctx, ev, handle, fsp, data, n, off) \
 	smb_vfs_call_pwrite_send((handle)->next, (mem_ctx), (ev), (fsp), \
 				(data), (n), (off))
+#define SMB_VFS_NEXT_PWRITE_RECV(req, aio_state) \
+	smb_vfs_call_pwrite_recv((req), (aio_state))
 
 #define SMB_VFS_LSEEK(fsp, offset, whence) \
 	smb_vfs_call_lseek((fsp)->conn->vfs_handles, (fsp), (offset), (whence))
@@ -202,8 +212,13 @@
 #define SMB_VFS_FSYNC_SEND(mem_ctx, ev, fsp) \
 	smb_vfs_call_fsync_send((fsp)->conn->vfs_handles, (mem_ctx), (ev), \
 				(fsp))
+#define SMB_VFS_FSYNC_RECV(req, aio_state) \
+	smb_vfs_call_fsync_recv((req), (aio_state))
+
 #define SMB_VFS_NEXT_FSYNC_SEND(mem_ctx, ev, handle, fsp)		\
 	smb_vfs_call_fsync_send((handle)->next, (mem_ctx), (ev), (fsp))
+#define SMB_VFS_NEXT_FSYNC_RECV(req, aio_state) \
+	smb_vfs_call_fsync_recv((req), (aio_state))
 
 #define SMB_VFS_STAT(conn, smb_fname) \
 	smb_vfs_call_stat((conn)->vfs_handles, (smb_fname))
