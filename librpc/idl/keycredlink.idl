@@ -37,6 +37,7 @@ interface keycredlink
 			* encoded as a
 			*   BCRYPT_RSAKEY_BLOB, see bcrypt_rsakey_blob.idl
 			*   TPM20_RSAKEY_BLOB, see tpm20_rsakey_blob.idl
+			*   X509 public key
 			*/
 		KEY_USAGE_FIDO = 0x02,
 		KEY_USAGE_FEK  = 0x03
@@ -153,9 +154,13 @@ interface keycredlink
 		KEYCREDENTIALLINK_ENTRY_KeyUsage keyUsage;
 	[case(KeySource), value(KEY_SOURCE_AD)]
 		KEYCREDENTIALLINK_ENTRY_KeySource keySource;
+		/*
+		 * Currently treating Key Material as an opaque binary blob
+		 * But if needed it can be partially decoded with
+		 * ndr_pull_KeyMaterialInternal
+		 */
 	[case(KeyMaterial)] [flag(NDR_REMAINING)]
 		DATA_BLOB keyMaterial;
-		/* Currently treating Key Material as an opaque binary blob */
 	[case(DeviceId)]
 		uint8 deviceId[16];
 	[case(CustomKeyInformation)]
@@ -180,4 +185,19 @@ interface keycredlink
 		uint32 count;
 		KEYCREDENTIALLINK_ENTRY entries[count];
 	} KEYCREDENTIALLINK_BLOB;
+
+	/* Internal representation of KeyMaterial, that
+	 *   - BCRYPT_RSAKEY_BLOB
+	 *   - TPM20_RSAKEY_BLOB
+	 *   - X509 encoded
+	 * public keys are converted to.
+	 *
+	 * Note: that push is NOT implemented, and currently returns
+	 * NDR_ERR_VALIDATE.
+	 */
+	typedef [public, nopull, nopush] struct {
+		uint16 bit_size;
+		DATA_BLOB modulus;
+		DATA_BLOB exponent;
+	} KeyMaterialInternal;
 }

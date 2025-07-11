@@ -548,6 +548,238 @@ class KeyCredentialLinkTests(TestCase):
         packed = ndr_pack(blob)
         self.assertEqual(source, packed)
 
+    def test_unpack_tpm_key_material(self):
+        """
+        ensure that sample TPM 20 key material can be unpacked
+        into a KeyMaterialInternal structure
+        """
+        key_material = bytes.fromhex(
+            "50 43 50 4D"  # Magic value PCPM
+            "2E 00 00 00"  # header length
+            "02 00 00 00"  # type TPM 2.0
+            "00 00 00 00"  # flags
+            "00 00 00 00"  # public_length
+            "00 00 00 00"  # private length
+            "00 00 00 00"  # migration public length
+            "00 00 00 00"  # migration private length
+            "00 00 00 00"  # policy digest list length
+            "00 00 00 00"  # PCR binding length
+            "00 00 00 00"  # PCR digest length
+            "00 00 00 00"  # Encrypted secret length
+            "00 00 00 00"  # TPM 1.2 hostage blob length
+            "00 00"  # PCRA Algorithm Id
+            "18 01"  # size 280 bytes
+            "00 01"  # type
+            "00 0B"  # hash algorithm
+            "00 05 24 72"  # attributes
+            "00 00"  # auth policy"
+            "00 10"  # algorithm
+            "00 14"  # scheme
+            "00 0B"  # hash algorithm
+            "08 00"  # key bits
+            "01 02 03 04"  # exponent
+            "01 00"  # size 256 bytes
+            "9A 9E F6 5D E2 92 D6 D0 E5 B3 C4 35 B1 5B 36 F3"
+            "9E 83 7B A9 34 AB D9 67 E1 1C 75 43 E5 B6 48 9B"
+            "6E CD 8D FC 30 5F 4C B6 8E A0 69 A4 07 21 E7 D7"
+            "A1 74 4A 29 BC C9 5D 78 70 C4 3B E4 20 54 BC D0"
+            "AA FF 21 44 54 FC 09 08 2A CC DE 44 68 ED 9F B2"
+            "3E F7 ED 82 D7 2D 28 74 42 2A 2F 55 A2 E0 DA 45"
+            "F1 08 C0 83 8C 95 81 6D 92 CC A8 5D A4 B8 06 8C"
+            "76 F5 68 94 E7 60 E6 F4 EE 40 50 28 6C 82 47 89"
+            "07 E7 BC 0D 56 5D DA 86 57 E2 CE D3 19 A1 A2 7F"
+            "56 F8 99 8B 4A 71 32 6A 57 3B F9 E5 2D 39 35 6E"
+            "13 3E 84 DC 5C 96 E1 75 38 C3 AA 23 5B 68 BE 41"
+            "52 49 72 7A F6 2A 8F C5 C5 E0 6C DB 99 D1 A8 84"
+            "5F 70 21 87 2E A0 D2 68 D3 76 5C 9E D4 9C B5 E1"
+            "72 9D 17 8B DC 11 55 09 90 8D 96 F3 68 34 DD 50"
+            "63 AC 4A 74 A7 AF 0D DC 15 06 07 D7 5A B3 86 1A"
+            "54 96 E0 FA 66 25 31 F5 B4 C7 97 C7 7C 70 94 E3"
+        )
+
+        exponent = bytes.fromhex("01 02 03 04")
+        modulus = bytes.fromhex(
+            "9A 9E F6 5D E2 92 D6 D0 E5 B3 C4 35 B1 5B 36 F3"
+            "9E 83 7B A9 34 AB D9 67 E1 1C 75 43 E5 B6 48 9B"
+            "6E CD 8D FC 30 5F 4C B6 8E A0 69 A4 07 21 E7 D7"
+            "A1 74 4A 29 BC C9 5D 78 70 C4 3B E4 20 54 BC D0"
+            "AA FF 21 44 54 FC 09 08 2A CC DE 44 68 ED 9F B2"
+            "3E F7 ED 82 D7 2D 28 74 42 2A 2F 55 A2 E0 DA 45"
+            "F1 08 C0 83 8C 95 81 6D 92 CC A8 5D A4 B8 06 8C"
+            "76 F5 68 94 E7 60 E6 F4 EE 40 50 28 6C 82 47 89"
+            "07 E7 BC 0D 56 5D DA 86 57 E2 CE D3 19 A1 A2 7F"
+            "56 F8 99 8B 4A 71 32 6A 57 3B F9 E5 2D 39 35 6E"
+            "13 3E 84 DC 5C 96 E1 75 38 C3 AA 23 5B 68 BE 41"
+            "52 49 72 7A F6 2A 8F C5 C5 E0 6C DB 99 D1 A8 84"
+            "5F 70 21 87 2E A0 D2 68 D3 76 5C 9E D4 9C B5 E1"
+            "72 9D 17 8B DC 11 55 09 90 8D 96 F3 68 34 DD 50"
+            "63 AC 4A 74 A7 AF 0D DC 15 06 07 D7 5A B3 86 1A"
+            "54 96 E0 FA 66 25 31 F5 B4 C7 97 C7 7C 70 94 E3"
+        )
+        kmi = ndr_unpack(keycredlink.KeyMaterialInternal, key_material)
+        self.assertEqual(kmi.bit_size, 2048)
+        self.assertEqual(len(kmi.exponent), 4)
+        self.assertEqual(kmi.exponent, exponent)
+        self.assertEqual(len(kmi.modulus), 256)
+        self.assertEqual(kmi.modulus, modulus)
+
+    def test_unpack_bcrypt_key_material(self):
+        """
+        ensure that sample bcrypt key material can be unpacked
+        into a KeyMaterialInternal structure
+        """
+        key_material = bytes.fromhex(
+            "52 53 41 31"  # Magic value RSA1
+            "00 08 00 00"  # bit length, 2048
+            "04 00 00 00"  # public exponent length
+            "00 01 00 00"  # modulus length, 256
+            "00 00 00 00"  # prime one length"
+            "00 00 00 00"  # prime two length"
+            "01 02 03 04"  # public exponent
+            "9A 9E F6 5D E2 92 D6 D0 E5 B3 C4 35 B1 5B 36 F3"
+            "9E 83 7B A9 34 AB D9 67 E1 1C 75 43 E5 B6 48 9B"
+            "6E CD 8D FC 30 5F 4C B6 8E A0 69 A4 07 21 E7 D7"
+            "A1 74 4A 29 BC C9 5D 78 70 C4 3B E4 20 54 BC D0"
+            "AA FF 21 44 54 FC 09 08 2A CC DE 44 68 ED 9F B2"
+            "3E F7 ED 82 D7 2D 28 74 42 2A 2F 55 A2 E0 DA 45"
+            "F1 08 C0 83 8C 95 81 6D 92 CC A8 5D A4 B8 06 8C"
+            "76 F5 68 94 E7 60 E6 F4 EE 40 50 28 6C 82 47 89"
+            "07 E7 BC 0D 56 5D DA 86 57 E2 CE D3 19 A1 A2 7F"
+            "56 F8 99 8B 4A 71 32 6A 57 3B F9 E5 2D 39 35 6E"
+            "13 3E 84 DC 5C 96 E1 75 38 C3 AA 23 5B 68 BE 41"
+            "52 49 72 7A F6 2A 8F C5 C5 E0 6C DB 99 D1 A8 84"
+            "5F 70 21 87 2E A0 D2 68 D3 76 5C 9E D4 9C B5 E1"
+            "72 9D 17 8B DC 11 55 09 90 8D 96 F3 68 34 DD 50"
+            "63 AC 4A 74 A7 AF 0D DC 15 06 07 D7 5A B3 86 1A"
+            "54 96 E0 FA 66 25 31 F5 B4 C7 97 C7 7C 70 94 E3"
+        )
+        exponent = bytes.fromhex("01 02 03 04")
+        modulus = bytes.fromhex(
+            "9A 9E F6 5D E2 92 D6 D0 E5 B3 C4 35 B1 5B 36 F3"
+            "9E 83 7B A9 34 AB D9 67 E1 1C 75 43 E5 B6 48 9B"
+            "6E CD 8D FC 30 5F 4C B6 8E A0 69 A4 07 21 E7 D7"
+            "A1 74 4A 29 BC C9 5D 78 70 C4 3B E4 20 54 BC D0"
+            "AA FF 21 44 54 FC 09 08 2A CC DE 44 68 ED 9F B2"
+            "3E F7 ED 82 D7 2D 28 74 42 2A 2F 55 A2 E0 DA 45"
+            "F1 08 C0 83 8C 95 81 6D 92 CC A8 5D A4 B8 06 8C"
+            "76 F5 68 94 E7 60 E6 F4 EE 40 50 28 6C 82 47 89"
+            "07 E7 BC 0D 56 5D DA 86 57 E2 CE D3 19 A1 A2 7F"
+            "56 F8 99 8B 4A 71 32 6A 57 3B F9 E5 2D 39 35 6E"
+            "13 3E 84 DC 5C 96 E1 75 38 C3 AA 23 5B 68 BE 41"
+            "52 49 72 7A F6 2A 8F C5 C5 E0 6C DB 99 D1 A8 84"
+            "5F 70 21 87 2E A0 D2 68 D3 76 5C 9E D4 9C B5 E1"
+            "72 9D 17 8B DC 11 55 09 90 8D 96 F3 68 34 DD 50"
+            "63 AC 4A 74 A7 AF 0D DC 15 06 07 D7 5A B3 86 1A"
+            "54 96 E0 FA 66 25 31 F5 B4 C7 97 C7 7C 70 94 E3"
+        )
+
+        kmi = ndr_unpack(keycredlink.KeyMaterialInternal, key_material)
+        self.assertEqual(kmi.bit_size, 2048)
+        self.assertEqual(len(kmi.exponent), 4)
+        self.assertEqual(kmi.exponent, exponent)
+        self.assertEqual(len(kmi.modulus), 256)
+        self.assertEqual(kmi.modulus, modulus)
+
+    def test_unpack_der_key_material(self):
+        """
+        ensure that sample X509 public key material can be unpacked
+        into a KeyMaterialInternal structure
+        """
+        key_material = bytes.fromhex(
+            "30 82 01 22"  # Sequence 290 bytes, 2 elements
+            "30 0d"  # Sequence 13 bytes, 2 elements
+            # OID 9 bytes, 1.2.840.113549.1.1.1
+            "06 09 2a 86 48 86 f7 0d 01 01 01"
+            "05 00"  # Null
+            "03 82 01 0f 00"  # Bit string, 2160 bits, 0 unused bits
+            "30 82 01 0a"  # Sequence 266 bytes, 2 elements
+            "02 82 01 01"  # Integer 2048 bit, 257 bytes
+            # MODULUS is 257 bytes as it's most significant byte
+            # is 0xbd 0b10111101 and has bit 8 set,
+            # which DER Integer encoding uses as the sign bit,
+            # so need the leading 00 byte to prevent the value
+            # being interpreted as a negative integer
+            "00 bd ae 45 8b 17 cd 3e 62 71 66 67 7f a2 46 c4"
+            "47 78 79 f2 8c d4 2e 0c a0 90 1c f6 33 e1 94 89"
+            "b9 44 15 e3 29 e7 b6 91 ca ab 7e c6 25 60 e3 7a"
+            "c4 09 97 8a 4e 79 cb a6 1f f8 29 3f 8a 0d 45 58"
+            "9b 0e bf a5 fa 1c a2 5e 31 a1 e7 ba 7e 17 62 03"
+            "79 c0 07 48 11 8b fa 58 17 56 1a a1 62 d2 02 02"
+            "2a 64 8d 8c 53 fa 28 7c 89 18 34 70 64 a7 08 10"
+            "c9 3b 1b 2c 23 88 9c 35 50 78 d1 89 33 ce 82 b2"
+            "84 f4 99 d8 3e 67 11 a1 5c 1a 64 b8 6a 3e e6 95"
+            "2e 47 33 51 7e b7 62 b4 08 2c c4 87 52 00 9e 28"
+            "f2 16 9f 1b c1 3a 93 6d a3 38 9b 34 39 88 85 ea"
+            "38 ad c2 2b c3 7c 15 cb 8f 15 37 ed 88 62 5c 34"
+            "75 6f b0 eb 5c 42 6a cd 03 cc 49 bc b4 78 14 e1"
+            "5e 98 83 6f e7 19 a8 43 cb ca 07 b2 4e a4 36 60"
+            "95 ac 6f e2 1d 3a 33 f6 0e 94 ae fb d2 ac 9f c2"
+            "9f 5b 77 8f 46 3c ee 13 27 19 8e 68 71 27 3f 50"
+            "59"
+            "02 03 01 00 01"  # Integer 3 bytes EXPONENT
+        )
+
+        modulus = bytes.fromhex(
+            "bd ae 45 8b 17 cd 3e 62 71 66 67 7f a2 46 c4"
+            "47 78 79 f2 8c d4 2e 0c a0 90 1c f6 33 e1 94 89"
+            "b9 44 15 e3 29 e7 b6 91 ca ab 7e c6 25 60 e3 7a"
+            "c4 09 97 8a 4e 79 cb a6 1f f8 29 3f 8a 0d 45 58"
+            "9b 0e bf a5 fa 1c a2 5e 31 a1 e7 ba 7e 17 62 03"
+            "79 c0 07 48 11 8b fa 58 17 56 1a a1 62 d2 02 02"
+            "2a 64 8d 8c 53 fa 28 7c 89 18 34 70 64 a7 08 10"
+            "c9 3b 1b 2c 23 88 9c 35 50 78 d1 89 33 ce 82 b2"
+            "84 f4 99 d8 3e 67 11 a1 5c 1a 64 b8 6a 3e e6 95"
+            "2e 47 33 51 7e b7 62 b4 08 2c c4 87 52 00 9e 28"
+            "f2 16 9f 1b c1 3a 93 6d a3 38 9b 34 39 88 85 ea"
+            "38 ad c2 2b c3 7c 15 cb 8f 15 37 ed 88 62 5c 34"
+            "75 6f b0 eb 5c 42 6a cd 03 cc 49 bc b4 78 14 e1"
+            "5e 98 83 6f e7 19 a8 43 cb ca 07 b2 4e a4 36 60"
+            "95 ac 6f e2 1d 3a 33 f6 0e 94 ae fb d2 ac 9f c2"
+            "9f 5b 77 8f 46 3c ee 13 27 19 8e 68 71 27 3f 50"
+            "59"
+        )
+        exponent = bytes.fromhex("01 00 01")
+
+        kmi = ndr_unpack(keycredlink.KeyMaterialInternal, key_material)
+        self.assertEqual(kmi.bit_size, 2048)
+        self.assertEqual(len(kmi.exponent), 3)
+        self.assertEqual(kmi.exponent, exponent)
+        self.assertEqual(len(kmi.modulus), 256)
+        self.assertEqual(kmi.modulus, modulus)
+
+    def test_unpack_invalid_key_material(self):
+        """
+        ensure that an unknown key is rejected
+        """
+        key_material = b"NOT REALLY A KEY POSSIBLY A PASSWORD"
+        with self.assertRaises(RuntimeError) as e:
+            ndr_unpack(keycredlink.KeyMaterialInternal, key_material)
+
+        self.assertEqual(e.exception.args[0], 10)
+        self.assertEqual(e.exception.args[1], "Validate Error")
+
+    def test_unpack_too_short_key_material(self):
+        """
+        ensure that key material shorter than 5 bytes is rejected
+        """
+        key_material = b"1234"
+        with self.assertRaises(RuntimeError) as e:
+            ndr_unpack(keycredlink.KeyMaterialInternal, key_material)
+
+        self.assertEqual(e.exception.args[0], 6)
+        self.assertEqual(e.exception.args[1], "Length Error")
+
+    def test_unpack_too_long_key_material(self):
+        """
+        ensure that key material longer than 64KiB is rejected
+        """
+        key_material = b"4" * ((64 * 1024) + 1)
+        with self.assertRaises(RuntimeError) as e:
+            ndr_unpack(keycredlink.KeyMaterialInternal, key_material)
+
+        self.assertEqual(e.exception.args[0], 6)
+        self.assertEqual(e.exception.args[1], "Length Error")
+
 
 if __name__ == "__main__":
     import unittest
