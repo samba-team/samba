@@ -3141,6 +3141,13 @@ Dump the locking table of a certain global lock.
 		</itemizedlist>
 
 	</refsect3>
+
+	<refsect3>
+		<title>tdb smbXsrv wipedbs</title>
+		<para>Clean stale entries from smbXsrv databases.</para>
+		<para>An alias for <command>net serverid wipedbs</command>.
+		</para>
+	</refsect3>
 </refsect2>
 
 <refsect2>
@@ -3751,6 +3758,35 @@ net witness force-response   Force an AsyncNotify response based on json input (
 </para>
 
 </refsect3>
+
+</refsect2>
+
+<refsect2>
+  <title>serverid</title>
+  <para>Check existence of a serverid and clean stale entries from fileserver
+  state databases.</para>
+  <para>The following commands are implemented:
+  <simplelist>
+    <member>net serverid exists          Check existence of a serverid</member>
+    <member>net serverid wipedbs         Clean stale entries from fileserver state databases</member>
+  </simplelist>
+  </para>
+
+<refsect3>
+  <title>serverid exists &lt;serverid&gt;</title>
+  <para>Checks if a serverid exits.</para>
+</refsect3>
+
+<refsect3>
+  <title>serverid wipedbs</title>
+  <para>Clean stale entries from fileserver state databases</para>
+  <para>Options for wipedbs:</para>
+  <para>        --test</para>
+  <para>            Only check for stale entries and log them</para>
+  <para>        --verbose</para>
+  <para>            Produce verbose logging</para>
+</refsect3>
+
 
 </refsect2>
 
