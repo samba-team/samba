@@ -1545,6 +1545,10 @@ static bool test_sd_flags_vs_chown(struct torture_context *tctx,
 		uint32_t child_get_ace_inherit;
 	} tflags[16] = {{0}}; /* 2^4 */
 
+	if (TARGET_IS_WINDOWS(tctx)) {
+		torture_skip(tctx, "Not supported by windows backend\n");
+	}
+
 	owner_sd = security_descriptor_dacl_create(tctx,
 						   0,
 						   SID_WORLD,
