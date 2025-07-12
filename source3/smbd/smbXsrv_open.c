@@ -1108,45 +1108,42 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 		NDR_PRINT_DEBUG(smbXsrv_open_replay_cache, &rc);
 	}
 
-	if (rc.local_id != 0) {
-		DBG_DEBUG("Found replay-cache record with local_id\n");
-
-		status = smbXsrv_open_local_lookup(table,
-						   rc.local_id,
-						   0, /* global_id */
-						   now,
-						   &op);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("stale local_id %u for create %s [%s] - %s\n",
-				(unsigned)rc.local_id,
-				create_guid_str,
-				name,
-				nt_errstr(status));
-
-			TALLOC_FREE(frame);
-			return status;
-		}
-
+	if (rc.local_id == 0) {
 		/*
-		 * We found an open the caller can reuse.
+		 * The original request (or a former replay) is still
+		 * pending, ask the client to retry by sending
+		 * STATUS_FILE_NOT_AVAILABLE.
 		 */
-		SMB_ASSERT(op != NULL);
-		*_open = op;
+		DBG_DEBUG("Pending create [%s] [%s]\n", create_guid_str, name);
 		TALLOC_FREE(frame);
-		return NT_STATUS_OK;
+		return NT_STATUS_FILE_NOT_AVAILABLE;
+	}
+
+	DBG_DEBUG("Found replay-cache record with local_id\n");
+
+	status = smbXsrv_open_local_lookup(table,
+					   rc.local_id,
+					   0, /* global_id */
+					   now,
+					   &op);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("stale local_id %u for create %s [%s] - %s\n",
+			(unsigned)rc.local_id,
+			create_guid_str,
+			name,
+			nt_errstr(status));
+
+		TALLOC_FREE(frame);
+		return status;
 	}
 
 	/*
-	 * The original request (or a former replay) is still
-	 * pending, ask the client to retry by sending FILE_NOT_AVAILABLE.
+	 * We found an open the caller can reuse.
 	 */
-	status = NT_STATUS_FILE_NOT_AVAILABLE;
-	DBG_DEBUG("still pending create %s [%s] - %s\n",
-		   create_guid_str,
-		   name,
-		   nt_errstr(status));
+	SMB_ASSERT(op != NULL);
+	*_open = op;
 	TALLOC_FREE(frame);
-	return status;
+	return NT_STATUS_OK;
 }
 
 struct smb2srv_open_recreate_state {
