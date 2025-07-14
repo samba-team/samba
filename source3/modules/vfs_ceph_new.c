@@ -2459,17 +2459,16 @@ struct vfs_ceph_aio_state {
 	struct vfs_ceph_fh *cfh;
 #if HAVE_CEPH_ASYNCIO
 	struct tevent_req *req;
-	bool orphaned;
 	struct tevent_immediate *im;
 	void *data;
-	size_t len;
-	off_t off;
-	bool write;
-	bool fsync;
-
 	struct ceph_ll_io_info io_info;
 	struct iovec iov;
+	bool orphaned;
+	bool write;
+	bool fsync;
 #endif
+	size_t len;
+	off_t off;
 	struct timespec start_time;
 	struct timespec finish_time;
 	ssize_t result;
@@ -2628,32 +2627,6 @@ static void vfs_ceph_aio_done(struct tevent_context *ev,
 	tevent_req_done(req);
 }
 
-static ssize_t vfs_ceph_aio_recv(struct tevent_req *req,
-				 struct vfs_aio_state *vfs_aio_state)
-{
-	struct vfs_ceph_aio_state *state = tevent_req_data(
-		req, struct vfs_ceph_aio_state);
-	ssize_t res = -1;
-
-	DBG_DEBUG("[CEPH] aio_recv: ino=%" PRIu64
-		  " fd=%d off=%jd len=%ju result=%ld\n",
-		  state->cfh->iref.ino,
-		  state->cfh->fd,
-		  state->off,
-		  state->len,
-		  state->result);
-
-	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
-		goto out;
-	}
-
-	*vfs_aio_state = state->vfs_aio_state;
-	res = state->result;
-out:
-	tevent_req_received(req);
-	return res;
-}
-
 #endif /* HAVE_CEPH_ASYNCIO */
 
 static void vfs_ceph_aio_prepare(struct vfs_handle_struct *handle,
@@ -2761,21 +2734,29 @@ static ssize_t vfs_ceph_pread_recv(struct tevent_req *req,
 {
 	struct vfs_ceph_aio_state *state = tevent_req_data(
 		req, struct vfs_ceph_aio_state);
+	ssize_t res = -1;
 
-	DBG_DEBUG("[CEPH] pread_recv: bytes_read=%zd\n", state->result);
+	DBG_DEBUG("[CEPH] pread_recv: bytes_read=%zd"
+		  " ino=%" PRIu64
+		  " fd=%d off=%jd len=%ju\n",
+		  state->result,
+		  state->cfh->iref.ino,
+		  state->cfh->fd,
+		  state->off,
+		  state->len);
 
 	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes);
 	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes_x);
 
-#if HAVE_CEPH_ASYNCIO
-	return vfs_ceph_aio_recv(req, vfs_aio_state);
-#endif
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
-		return -1;
+		goto out;
 	}
 
 	*vfs_aio_state = state->vfs_aio_state;
-	return state->result;
+	res = state->result;
+out:
+	tevent_req_received(req);
+	return res;
 }
 
 static ssize_t vfs_ceph_pwrite(struct vfs_handle_struct *handle,
@@ -2869,22 +2850,29 @@ static ssize_t vfs_ceph_pwrite_recv(struct tevent_req *req,
 {
 	struct vfs_ceph_aio_state *state = tevent_req_data(
 		req, struct vfs_ceph_aio_state);
+	ssize_t res = -1;
 
-	DBG_DEBUG("[CEPH] pwrite_recv: bytes_written=%zd\n", state->result);
+	DBG_DEBUG("[CEPH] pwrite_recv: bytes_written=%zd"
+		  " ino=%" PRIu64
+		  " fd=%d off=%jd len=%ju\n",
+		  state->result,
+		  state->cfh->iref.ino,
+		  state->cfh->fd,
+		  state->off,
+		  state->len);
 
 	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes);
 	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes_x);
 
-#if HAVE_CEPH_ASYNCIO
-	return vfs_ceph_aio_recv(req, vfs_aio_state);
-#endif
-
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
-		return -1;
+		goto out;
 	}
 
 	*vfs_aio_state = state->vfs_aio_state;
-	return state->result;
+	res = state->result;
+out:
+	tevent_req_received(req);
+	return res;
 }
 
 static off_t vfs_ceph_lseek(struct vfs_handle_struct *handle,
@@ -3063,24 +3051,31 @@ static int vfs_ceph_fsync_recv(struct tevent_req *req,
 {
 	struct vfs_ceph_aio_state *state = tevent_req_data(
 		req, struct vfs_ceph_aio_state);
+	ssize_t res = -1;
 
-	DBG_DEBUG("[CEPH] fsync_recv: error=%d duration=%" PRIu64 "\n",
+	DBG_DEBUG("[CEPH] fsync_recv: error=%d duration=%" PRIu64
+		  " ino=%" PRIu64
+		  " fd=%d off=%jd len=%ju result=%ld\n",
 		  state->vfs_aio_state.error,
-		  state->vfs_aio_state.duration);
+		  state->vfs_aio_state.duration,
+		  state->cfh->iref.ino,
+		  state->cfh->fd,
+		  state->off,
+		  state->len,
+		  state->result);
 
 	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes);
 	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes_x);
 
-#if HAVE_CEPH_ASYNCIO
-	return vfs_ceph_aio_recv(req, vfs_aio_state);
-#endif
-
 	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
-		return -1;
+		goto out;
 	}
 
 	*vfs_aio_state = state->vfs_aio_state;
-	return 0;
+	res = state->result;
+out:
+	tevent_req_received(req);
+	return res;
 }
 
 static int vfs_ceph_stat(struct vfs_handle_struct *handle,
