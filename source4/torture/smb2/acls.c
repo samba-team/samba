@@ -89,6 +89,26 @@
 } while (0)
 
 /*
+ * Helper function to restore original sd.
+ */
+static NTSTATUS restore_sd_orig(struct smb2_tree *tree,
+				union smb_setfileinfo *si,
+				struct smb2_handle handle,
+				struct security_descriptor *sd)
+{
+	if (tree == NULL || smb2_util_handle_empty(handle) || sd == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	si->set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	si->set_secdesc.in.file.handle = handle;
+	si->set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	si->set_secdesc.in.sd = sd;
+
+	return smb2_setinfo_file(tree, si);
+}
+
+/*
   test the behaviour of the well known SID_CREATOR_OWNER sid, and some generic
   mapping bits
   Note: This test was copied from raw/acls.c.
@@ -102,7 +122,7 @@ static bool test_creator_sid(struct torture_context *tctx, struct smb2_tree *tre
 	struct smb2_handle handle = {{0}};
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
-	struct security_descriptor *sd, *sd_orig, *sd2;
+	struct security_descriptor *sd, *sd_orig = NULL, *sd2;
 	const char *owner_sid;
 
 	if (!smb2_util_setup_dir(tctx, tree, BASEDIR))
@@ -274,15 +294,12 @@ static bool test_creator_sid(struct torture_context *tctx, struct smb2_tree *tre
 	CHECK_ACCESS_FLAGS(io.out.file.handle, SEC_RIGHTS_FILE_READ);
 	smb2_util_close(tree, io.out.file.handle);
 
-
-	torture_comment(tctx, "put back original sd\n");
-	set.set_secdesc.in.sd = sd_orig;
-	status = smb2_setinfo_file(tree, &set);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-
 done:
-	smb2_util_close(tree, handle);
+	torture_comment(tctx, "put back original sd\n");
+	restore_sd_orig(tree, &set, handle, sd_orig);
+	if (!smb2_util_handle_empty(handle)) {
+		smb2_util_close(tree, handle);
+	}
 	smb2_deltree(tree, BASEDIR);
 	smb2_tdis(tree);
 	smb2_logoff(tree->session);
@@ -305,7 +322,7 @@ static bool test_generic_bits(struct torture_context *tctx, struct smb2_tree *tr
 	int i;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
-	struct security_descriptor *sd, *sd_orig, *sd2;
+	struct security_descriptor *sd, *sd_orig = NULL, *sd2;
 	const char *owner_sid;
 	const struct {
 		uint32_t gen_bits;
@@ -640,16 +657,13 @@ static bool test_generic_bits(struct torture_context *tctx, struct smb2_tree *tr
 		smb2_util_close(tree, io.out.file.handle);
 	}
 
-	torture_comment(tctx, "put back original sd\n");
-	set.set_secdesc.in.sd = sd_orig;
-	status = smb2_setinfo_file(tree, &set);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	smb2_util_close(tree, handle);
-	smb2_util_unlink(tree, fname);
-
 done:
-	smb2_util_close(tree, handle);
+	torture_comment(tctx, "put back original sd\n");
+	restore_sd_orig(tree, &set, handle, sd_orig);
+	if (!smb2_util_handle_empty(handle)) {
+		smb2_util_close(tree, handle);
+	}
+	smb2_util_unlink(tree, fname);
 	smb2_deltree(tree, BASEDIR);
 	smb2_tdis(tree);
 	smb2_logoff(tree->session);
@@ -671,7 +685,7 @@ static bool test_owner_bits(struct torture_context *tctx, struct smb2_tree *tree
 	int i;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
-	struct security_descriptor *sd, *sd_orig;
+	struct security_descriptor *sd, *sd_orig = NULL;
 	const char *owner_sid;
 	uint32_t expected_bits;
 
@@ -775,13 +789,12 @@ static bool test_owner_bits(struct torture_context *tctx, struct smb2_tree *tree
 		}
 	}
 
-	torture_comment(tctx, "put back original sd\n");
-	set.set_secdesc.in.sd = sd_orig;
-	status = smb2_setinfo_file(tree, &set);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
 done:
-	smb2_util_close(tree, handle);
+	torture_comment(tctx, "put back original sd\n");
+	restore_sd_orig(tree, &set, handle, sd_orig);
+	if (!smb2_util_handle_empty(handle)) {
+		smb2_util_close(tree, handle);
+	}
 	smb2_util_unlink(tree, fname);
 	smb2_deltree(tree, BASEDIR);
 	smb2_tdis(tree);
@@ -1252,19 +1265,14 @@ static bool test_inheritance(struct torture_context *tctx, struct smb2_tree *tre
 	CHECK_ACCESS_FLAGS(handle2, SEC_FILE_WRITE_DATA);
 	smb2_util_close(tree, handle2);
 
+done:
+	torture_comment(tctx, "put back original sd\n");
+	restore_sd_orig(tree, &set, handle, sd_orig);
+	if (!smb2_util_handle_empty(handle)) {
+		smb2_util_close(tree, handle);
+	}
 	smb2_util_unlink(tree, fname1);
 	smb2_util_rmdir(tree, dname);
-
-done:
-	if (sd_orig != NULL) {
-		set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
-		set.set_secdesc.in.file.handle = handle;
-		set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
-		set.set_secdesc.in.sd = sd_orig;
-		status = smb2_setinfo_file(tree, &set);
-	}
-
-	smb2_util_close(tree, handle);
 	smb2_deltree(tree, BASEDIR);
 	smb2_tdis(tree);
 	smb2_logoff(tree->session);
@@ -1493,7 +1501,12 @@ static bool test_inheritance_flags(struct torture_context *tctx,
 	}
 
 done:
-	smb2_util_close(tree, handle);
+	torture_comment(tctx, "put back original sd\n");
+	restore_sd_orig(tree, &set, handle, sd_orig);
+	if (!smb2_util_handle_empty(handle)) {
+		smb2_util_close(tree, handle);
+	}
+	smb2_util_unlink(tree, fname1);
 	smb2_deltree(tree, BASEDIR);
 	smb2_tdis(tree);
 	smb2_logoff(tree->session);
@@ -1770,7 +1783,12 @@ static bool test_sd_flags_vs_chown(struct torture_context *tctx,
 	}
 
 done:
-	smb2_util_close(tree, handle);
+	torture_comment(tctx, "put back original sd\n");
+	restore_sd_orig(tree, &set, handle, sd_orig);
+	if (!smb2_util_handle_empty(handle)) {
+		smb2_util_close(tree, handle);
+	}
+	smb2_util_unlink(tree, fname1);
 	smb2_deltree(tree, BASEDIR);
 	smb2_tdis(tree);
 	smb2_logoff(tree->session);
@@ -1902,17 +1920,13 @@ static bool test_inheritance_dynamic(struct torture_context *tctx,
 	}
 	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
 
-	smb2_util_unlink(tree, fname1);
-
 done:
 	torture_comment(tctx, "put back original sd\n");
-	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
-	set.set_secdesc.in.file.handle = handle;
-	set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
-	set.set_secdesc.in.sd = sd_orig;
-	status = smb2_setinfo_file(tree, &set);
-
-	smb2_util_close(tree, handle);
+	restore_sd_orig(tree, &set, handle, sd_orig);
+	if (!smb2_util_handle_empty(handle)) {
+		smb2_util_close(tree, handle);
+	}
+	smb2_util_unlink(tree, fname1);
 	smb2_util_rmdir(tree, dname);
 	smb2_deltree(tree, BASEDIR);
 	smb2_tdis(tree);
@@ -2147,7 +2161,8 @@ static bool test_access_based(struct torture_context *tctx,
 	struct smb2_create io;
 	const char *fname = BASEDIR "\\testfile";
 	bool ret = true;
-	struct smb2_handle fhandle, dhandle;
+	struct smb2_handle fhandle = {{0}};
+	struct smb2_handle dhandle = {{0}};
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
 	struct security_descriptor *sd, *sd_orig=NULL;
@@ -2315,9 +2330,12 @@ static bool test_access_based(struct torture_context *tctx,
 	}
 
 done:
-
 	if (tree1) {
-		smb2_util_close(tree1, fhandle);
+		torture_comment(tctx, "put back original sd\n");
+		restore_sd_orig(tree1, &set, fhandle, sd_orig);
+		if (!smb2_util_handle_empty(fhandle)) {
+			smb2_util_close(tree1, fhandle);
+		}
 		smb2_util_close(tree1, dhandle);
 		smb2_util_unlink(tree1, fname);
 		smb2_deltree(tree1, BASEDIR);
@@ -2458,9 +2476,12 @@ static bool test_owner_rights(struct torture_context *tctx,
 	ZERO_STRUCT(handle);
 
 done:
+	torture_comment(tctx, "put back original sd\n");
+	restore_sd_orig(tree, &si, handle, sd_orig);
 	if (!smb2_util_handle_empty(handle)) {
 		smb2_util_close(tree, handle);
 	}
+	smb2_util_unlink(tree, fname);
 	smb2_deltree(tree, BASEDIR);
 	return ret;
 }
@@ -2474,6 +2495,7 @@ static bool test_owner_rights_deny(struct torture_context *tctx,
 	const char *fname = BASEDIR "\\owner_right_deny.txt";
 	struct smb2_create cr;
 	struct smb2_handle handle = {{0}};
+	struct smb2_handle handle2 = {{0}};
 	union smb_fileinfo gi;
 	union smb_setfileinfo si;
 	struct security_descriptor *sd_orig = NULL;
@@ -2553,11 +2575,6 @@ static bool test_owner_rights_deny(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_setinfo_file failed\n");
 
-	status = smb2_util_close(tree, handle);
-	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
-					"smb2_util_close failed\n");
-	ZERO_STRUCT(handle);
-
 	cr = (struct smb2_create) {
 		.in.desired_access = SEC_STD_READ_CONTROL,
 		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
@@ -2570,12 +2587,12 @@ static bool test_owner_rights_deny(struct torture_context *tctx,
 
 	status = smb2_create(tree, tctx, &cr);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
-					"smb2_setinfo_file failed\n");
-	handle = cr.out.file.handle;
+					"smb2_create failed\n");
+	handle2 = cr.out.file.handle;
 
 	mxac_status = NT_STATUS(cr.out.maximal_access_status);
 	torture_assert_ntstatus_ok_goto(tctx, mxac_status, ret, done,
-					"smb2_setinfo_file failed\n");
+					"Invalid maximal access status\n");
 
 	/*
 	 * For some reasons Windows 2016 doesn't set SEC_STD_DELETE but we
@@ -2587,15 +2604,23 @@ static bool test_owner_rights_deny(struct torture_context *tctx,
 				      ret, done,
 				      "Wrong maximum access\n");
 
-	status = smb2_util_close(tree, handle);
+	status = smb2_util_close(tree, handle2);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_util_close failed\n");
-	ZERO_STRUCT(handle);
+	ZERO_STRUCT(handle2);
 
 done:
+	torture_comment(tctx, "put back original sd\n");
+	restore_sd_orig(tree, &si, handle, sd_orig);
+
+	if (!smb2_util_handle_empty(handle2)) {
+		smb2_util_close(tree, handle2);
+	}
+
 	if (!smb2_util_handle_empty(handle)) {
 		smb2_util_close(tree, handle);
 	}
+	smb2_util_unlink(tree, fname);
 	smb2_deltree(tree, BASEDIR);
 	return ret;
 }
@@ -2609,6 +2634,7 @@ static bool test_owner_rights_deny1(struct torture_context *tctx,
 	const char *fname = BASEDIR "\\owner_right_deny1.txt";
 	struct smb2_create cr;
 	struct smb2_handle handle = {{0}};
+	struct smb2_handle handle2 = {{0}};
 	union smb_fileinfo gi;
 	union smb_setfileinfo si;
 	struct security_descriptor *sd_orig = NULL;
@@ -2695,11 +2721,6 @@ static bool test_owner_rights_deny1(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_setinfo_file failed\n");
 
-	status = smb2_util_close(tree, handle);
-	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
-					"smb2_util_close failed\n");
-	ZERO_STRUCT(handle);
-
 	cr = (struct smb2_create) {
 		.in.desired_access = SEC_STD_READ_CONTROL,
 		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
@@ -2712,12 +2733,12 @@ static bool test_owner_rights_deny1(struct torture_context *tctx,
 
 	status = smb2_create(tree, tctx, &cr);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
-					"smb2_setinfo_file failed\n");
-	handle = cr.out.file.handle;
+					"smb2_create failed\n");
+	handle2 = cr.out.file.handle;
 
 	mxac_status = NT_STATUS(cr.out.maximal_access_status);
 	torture_assert_ntstatus_ok_goto(tctx, mxac_status, ret, done,
-					"smb2_setinfo_file failed\n");
+					"Invalid maximal access status\n");
 
 	/*
 	 * For some reasons Windows 2016 doesn't set SEC_STD_DELETE but we
@@ -2729,15 +2750,23 @@ static bool test_owner_rights_deny1(struct torture_context *tctx,
 				ret, done,
 				"Wrong maximum access\n");
 
-	status = smb2_util_close(tree, handle);
+	status = smb2_util_close(tree, handle2);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_util_close failed\n");
-	ZERO_STRUCT(handle);
+	ZERO_STRUCT(handle2);
 
 done:
+	torture_comment(tctx, "put back original sd\n");
+	restore_sd_orig(tree, &si, handle, sd_orig);
+
+	if (!smb2_util_handle_empty(handle2)) {
+		smb2_util_close(tree, handle2);
+	}
+
 	if (!smb2_util_handle_empty(handle)) {
 		smb2_util_close(tree, handle);
 	}
+	smb2_util_unlink(tree, fname);
 	smb2_deltree(tree, BASEDIR);
 	return ret;
 }
@@ -2752,6 +2781,7 @@ static bool test_deny1(struct torture_context *tctx,
 	const char *fname = BASEDIR "\\test_deny1.txt";
 	struct smb2_create cr;
 	struct smb2_handle handle = {{0}};
+	struct smb2_handle handle2 = {{0}};
 	union smb_fileinfo gi;
 	union smb_setfileinfo si;
 	struct security_descriptor *sd_orig = NULL;
@@ -2830,10 +2860,6 @@ static bool test_deny1(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_setinfo_file failed\n");
 
-	status = smb2_util_close(tree, handle);
-	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
-					"smb2_util_close failed\n");
-	ZERO_STRUCT(handle);
 
 	cr = (struct smb2_create) {
 		.in.desired_access = SEC_STD_READ_CONTROL | SEC_FILE_WRITE_DATA,
@@ -2848,7 +2874,7 @@ static bool test_deny1(struct torture_context *tctx,
 	status = smb2_create(tree, tctx, &cr);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_create failed\n");
-	handle = cr.out.file.handle;
+	handle2 = cr.out.file.handle;
 
 	mxac_status = NT_STATUS(cr.out.maximal_access_status);
 	torture_assert_ntstatus_ok_goto(tctx, mxac_status, ret, done,
@@ -2867,15 +2893,22 @@ static bool test_deny1(struct torture_context *tctx,
 				      ret, done,
 				      "Wrong maximum access\n");
 
-	status = smb2_util_close(tree, handle);
+	status = smb2_util_close(tree, handle2);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_util_close failed\n");
-	ZERO_STRUCT(handle);
+	ZERO_STRUCT(handle2);
 
 done:
+	torture_comment(tctx, "put back original sd\n");
+	restore_sd_orig(tree, &si, handle, sd_orig);
 	if (!smb2_util_handle_empty(handle)) {
 		smb2_util_close(tree, handle);
 	}
+
+	if (!smb2_util_handle_empty(handle2)) {
+		smb2_util_close(tree, handle2);
+	}
+	smb2_util_unlink(tree, fname);
 	smb2_deltree(tree, BASEDIR);
 	return ret;
 }
@@ -2894,6 +2927,7 @@ static bool test_mxac_not_granted(struct torture_context *tctx,
 	const char *fname = BASEDIR "\\test_mxac_not_granted.txt";
 	struct smb2_create cr;
 	struct smb2_handle handle = {{0}};
+	struct smb2_handle handle2 = {{0}};
 	union smb_fileinfo gi;
 	union smb_setfileinfo si;
 	struct security_descriptor *sd_orig = NULL;
@@ -2960,11 +2994,6 @@ static bool test_mxac_not_granted(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_setinfo_file failed\n");
 
-	status = smb2_util_close(tree, handle);
-	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
-					"smb2_util_close failed\n");
-	ZERO_STRUCT(handle);
-
 	cr = (struct smb2_create) {
 		.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED |
 				     SEC_FILE_WRITE_DATA,
@@ -2982,9 +3011,17 @@ static bool test_mxac_not_granted(struct torture_context *tctx,
 					   "Wrong smb2_create result\n");
 
 done:
+	torture_comment(tctx, "put back original sd\n");
+	restore_sd_orig(tree, &si, handle, sd_orig);
+
+	if (!smb2_util_handle_empty(handle2)) {
+		smb2_util_close(tree, handle2);
+	}
+
 	if (!smb2_util_handle_empty(handle)) {
 		smb2_util_close(tree, handle);
 	}
+	smb2_util_unlink(tree, fname);
 	smb2_deltree(tree, BASEDIR);
 	return ret;
 }
@@ -2997,7 +3034,8 @@ static bool test_overwrite_read_only_file(struct torture_context *tctx,
 	struct smb2_create c2 = {};
 	const char *fname = BASEDIR "\\test_overwrite_read_only_file.txt";
 	struct smb2_handle handle = {{0}};
-	struct smb2_handle h2 = {};
+	struct smb2_handle h2 = {{0}};
+	struct smb2_handle h3 = {{0}};
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
 	struct security_descriptor *sd = NULL, *sd_orig = NULL;
@@ -3083,9 +3121,6 @@ static bool test_overwrite_read_only_file(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_setinfo_file failed\n");
 
-	smb2_util_close(tree, handle);
-	ZERO_STRUCT(handle);
-
 	for (i = 0; i < ARRAY_SIZE(fs_tcases); i++) {
 		torture_comment(tctx, "Verify open with %s disposition\n",
 				fs_tcases[i].disposition_string);
@@ -3120,11 +3155,11 @@ static bool test_overwrite_read_only_file(struct torture_context *tctx,
 	status = smb2_create(tree, tctx, &c);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_create failed\n");
-	handle = c.out.file.handle;
+	h2 = c.out.file.handle;
 
 	ZERO_STRUCT(set);
 	set.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
-	set.set_secdesc.in.file.handle = handle;
+	set.set_secdesc.in.file.handle = h2;
 	set.set_secdesc.in.secinfo_flags = SECINFO_DACL;
 	set.set_secdesc.in.sd = sd_orig;
 
@@ -3132,10 +3167,10 @@ static bool test_overwrite_read_only_file(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_setinfo_file failed\n");
 
-	status = smb2_util_close(tree, handle);
+	status = smb2_util_close(tree, h2);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"smb2_util_close failed\n");
-	ZERO_STRUCT(handle);
+	ZERO_STRUCT(h2);
 
 	for (i = 0; i < ARRAY_SIZE(sharing_tcases); i++) {
 		struct tcase *tcase = &sharing_tcases[i];
@@ -3157,7 +3192,7 @@ static bool test_overwrite_read_only_file(struct torture_context *tctx,
 		status = smb2_create(tree, tctx, &c);
 		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 						"smb2_create failed\n");
-		handle = c.out.file.handle;
+		h2 = c.out.file.handle;
 
 		torture_comment(tctx, "A second open with %s must return %s\n",
 			tcase->disposition_string, nt_errstr(tcase->expected_status));
@@ -3177,10 +3212,10 @@ static bool test_overwrite_read_only_file(struct torture_context *tctx,
 						   ret, done,
 						   "Wrong status code\n");
 
-		status = smb2_util_close(tree, handle);
+		status = smb2_util_close(tree, h2);
 		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 						"smb2_util_close failed\n");
-		ZERO_STRUCT(handle);
+		ZERO_STRUCT(h2);
 
 		torture_comment(tctx, "First open with %s\n",
 				tcase->disposition_string);
@@ -3197,7 +3232,7 @@ static bool test_overwrite_read_only_file(struct torture_context *tctx,
 		status = smb2_create(tree, tctx, &c);
 		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 						"smb2_create failed\n");
-		handle = c.out.file.handle;
+		h2 = c.out.file.handle;
 
 		torture_comment(tctx, "A second read-only open with SHARE_READ "
 				"must work\n");
@@ -3214,25 +3249,30 @@ static bool test_overwrite_read_only_file(struct torture_context *tctx,
 		status = smb2_create(tree, tctx, &c);
 		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 						"smb2_create failed\n");
-		h2 = c.out.file.handle;
-
-		status = smb2_util_close(tree, handle);
-		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
-						"smb2_util_close failed\n");
-		ZERO_STRUCT(handle);
+		h3 = c.out.file.handle;
 
 		status = smb2_util_close(tree, h2);
 		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 						"smb2_util_close failed\n");
 		ZERO_STRUCT(h2);
+
+		status = smb2_util_close(tree, h3);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"smb2_util_close failed\n");
+		ZERO_STRUCT(h3);
 	}
 
 done:
-	if (!smb2_util_handle_empty(handle)) {
-		smb2_util_close(tree, handle);
-	}
+	torture_comment(tctx, "put back original sd\n");
+	restore_sd_orig(tree, &set, handle, sd_orig);
 	if (!smb2_util_handle_empty(h2)) {
 		smb2_util_close(tree, h2);
+	}
+	if (!smb2_util_handle_empty(h3)) {
+		smb2_util_close(tree, h3);
+	}
+	if (!smb2_util_handle_empty(handle)) {
+		smb2_util_close(tree, handle);
 	}
 	smb2_util_unlink(tree, fname);
 	smb2_deltree(tree, BASEDIR);
