@@ -5,6 +5,7 @@ import "security.idl";
 import "file_id.idl";
 import "smb2_lease_struct.idl";
 import "misc.idl";
+import "smbXsrv.idl";
 
 [
 	pointer_default(unique)
@@ -68,6 +69,7 @@ interface open_files
 		SHARE_MODE_LEASE_READ		= 0x001
 	} share_mode_flags;
 
+	/* Version 0 */
 	typedef [public] struct {
 		hyper unique_content_epoch;
 		share_mode_flags flags;
@@ -80,6 +82,18 @@ interface open_files
 		[skip] boolean8 modified;
 		[ignore] file_id id; /* In memory key used to lookup cache. */
 	} share_mode_data;
+
+	typedef union {
+		[case(0)] share_mode_data		*data0;
+		[default] hyper				*dummy;
+	} share_mode_dataU;
+
+	typedef [public] struct {
+		smbXsrv_version_values		version;
+		hyper				unique_content_epoch;
+		share_mode_flags		flags;
+		[switch_is(version)]		share_mode_dataU data;
+	} share_mode_dataB;
 
 	/* these are 0x30 (48) characters */
 	const string VFS_DEFAULT_DURABLE_COOKIE_MAGIC =

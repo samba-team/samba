@@ -56,6 +56,7 @@ struct share_mode_lock {
 #include "messages.h"
 #include "util_tdb.h"
 #include "../librpc/gen_ndr/ndr_open_files.h"
+#include "../librpc/gen_ndr/ndr_smbXsrv.h"
 #include "source3/lib/dbwrap/dbwrap_watch.h"
 #include "locking/leases_db.h"
 #include "../lib/util/memcache.h"
@@ -252,6 +253,12 @@ static enum ndr_err_code get_share_mode_blob_header(
 		.data = discard_const_p(uint8_t, buf),
 		.data_size = buflen,
 	};
+	enum smbXsrv_version_values v;
+	NDR_CHECK(ndr_pull_smbXsrv_version_values(&ndr, NDR_SCALARS, &v));
+	if (v != SMBXSRV_VERSION_0) {
+		DBG_ERR("Invalid version\n");
+		return NDR_ERR_VALIDATE;
+	}
 	NDR_CHECK(ndr_pull_hyper(&ndr, NDR_SCALARS, pepoch));
 	NDR_CHECK(ndr_pull_uint16(&ndr, NDR_SCALARS, pflags));
 	return NDR_ERR_SUCCESS;
@@ -580,7 +587,9 @@ static struct share_mode_data *parse_share_mode_data(
 	const uint8_t *buf,
 	size_t buflen)
 {
-	struct share_mode_data *d;
+	struct share_mode_dataB data_blob;
+	struct share_mode_data *d = NULL;
+	struct file_id_buf idbuf;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 
@@ -590,32 +599,36 @@ static struct share_mode_data *parse_share_mode_data(
 		return d;
 	}
 
-	d = talloc(mem_ctx, struct share_mode_data);
-	if (d == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		goto fail;
-	}
-
 	blob = (DATA_BLOB) {
 		.data = discard_const_p(uint8_t, buf),
 		.length = buflen,
 	};
 	ndr_err = ndr_pull_struct_blob_all(
-		&blob, d, d, (ndr_pull_flags_fn_t)ndr_pull_share_mode_data);
+		&blob, mem_ctx, &data_blob,
+		(ndr_pull_flags_fn_t)ndr_pull_share_mode_dataB);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DBG_WARNING("ndr_pull_share_mode_data failed: %s\n",
 			    ndr_errstr(ndr_err));
 		goto fail;
 	}
 
+	if (data_blob.version != SMBXSRV_VERSION_0) {
+		DBG_ERR("Invalid record in locking.tdb:"
+			 "key '%s' unsupported version: %d\n",
+			 file_id_str_buf(id, &idbuf),
+			 (int)data_blob.version);
+		goto fail;
+	}
+	d = data_blob.data.data0;
+
 	if (DEBUGLEVEL >= 10) {
-		DEBUG(10, ("parse_share_modes:\n"));
+		DBG_DEBUG("parse_share_modes:\n");
 		NDR_PRINT_DEBUG(share_mode_data, d);
 	}
 
 	return d;
 fail:
-	TALLOC_FREE(d);
+	TALLOC_FREE(data_blob.data.data0);
 	return NULL;
 }
 
@@ -644,13 +657,21 @@ static NTSTATUS share_mode_data_ltdb_store(struct share_mode_data *d,
 	}
 
 	if (ltdb->num_share_entries != 0 || num_share_mode_dbufs != 0) {
+		struct share_mode_dataB data_blob;
 		enum ndr_err_code ndr_err;
+
+		data_blob = (struct share_mode_dataB) {
+			.version = smbXsrv_version_global_current(),
+			.unique_content_epoch = d->unique_content_epoch,
+			.flags = d->flags,
+		};
+		data_blob.data.data0 = d;
 
 		ndr_err = ndr_push_struct_blob(
 			&blob,
 			ltdb,
-			d,
-			(ndr_push_flags_fn_t)ndr_push_share_mode_data);
+			&data_blob,
+			(ndr_push_flags_fn_t)ndr_push_share_mode_dataB);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			DBG_ERR("ndr_push_share_mode_data failed: %s\n",
 				  ndr_errstr(ndr_err));
