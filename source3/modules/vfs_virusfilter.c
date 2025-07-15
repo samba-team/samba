@@ -219,6 +219,11 @@ static int virusfilter_vfs_connect(
 	int ret = -1;
 	bool ok;
 
+	ret = SMB_VFS_NEXT_CONNECT(handle, svc, user);
+	if (ret < 0) {
+		return ret;
+	}
+
 	config = talloc_zero(handle, struct virusfilter_config);
 	if (config == NULL) {
 		DBG_ERR("talloc_zero failed\n");
@@ -578,7 +583,7 @@ static int virusfilter_vfs_connect(
 		}
 	}
 
-	return SMB_VFS_NEXT_CONNECT(handle, svc, user);
+	return 0;
 }
 
 static void virusfilter_vfs_disconnect(struct vfs_handle_struct *handle)
