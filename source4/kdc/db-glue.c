@@ -656,6 +656,11 @@ krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 	*supported_enctypes_out = 0;
 
+	if (entry == NULL) {
+		DBG_ERR("entry is NULL");
+		return EINVAL;
+	}
+
 	/* Is this the krbtgt or a RODC krbtgt */
 	if (is_rodc) {
 		krbtgt_number = ldb_msg_find_attr_as_int(msg, "msDS-SecondaryKrbTgtNumber", -1);
