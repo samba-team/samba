@@ -19,7 +19,7 @@
 
 import samba
 import samba.tests
-from samba.common import normalise_int32
+from samba.common import normalise_int32, cmp_with_nones
 
 
 class CommonTests(samba.tests.TestCase):
@@ -32,3 +32,17 @@ class CommonTests(samba.tests.TestCase):
         self.assertRaises(ValueError, normalise_int32, 1 << 32)
         self.assertRaises(ValueError, normalise_int32, 12345678901234567890)
         self.assertRaises(ValueError, normalise_int32, -1000000000000)
+
+    def test_cmp_with_nones(self):
+        for pair, outcome in [
+                ((0, 0), 0),
+                ((2, 0), 1),
+                ((1, 2), -1),
+                ((None, 2), -1),
+                ((None, None), 0),
+                ((-6, None), 1),
+                (('a', None), 1),
+                ((object(), None), 1),
+                ((None, 1.2), -1),
+        ]:
+            self.assertEqual(cmp_with_nones(*pair), outcome)

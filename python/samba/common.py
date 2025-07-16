@@ -30,6 +30,23 @@ def cmp(x, y):
     return (x > y) - (x < y)
 
 
+def cmp_with_nones(x, y):
+    """This is like cmp(), but will cope if a value is None.
+
+    We sort Nones to the start.
+    """
+    # avoids
+    # TypeError: '>' not supported between instances of 'NoneType' and 'int'
+    if x == y:
+        return 0
+    if x is None:
+        return -1
+    if y is None:
+        return 1
+
+    return (x > y) - (x < y)
+
+
 def confirm(msg, forced=False, allow_all=False):
     """confirm an action with the user
 
