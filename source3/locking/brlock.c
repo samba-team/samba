@@ -35,6 +35,7 @@
 #include "messages.h"
 #include "util_tdb.h"
 #include "source3/locking/share_mode_lock.h"
+#include "../librpc/gen_ndr/ndr_smbXsrv.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
@@ -1613,14 +1614,20 @@ static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 			smb_panic("Could not delete byte range lock entry");
 		}
 	} else {
-		TDB_DATA data = {
-			.dsize = br_lck->num_locks * sizeof(struct lock_struct),
-			.dptr = (uint8_t *)br_lck->lock_data,
+		uint8_t version_buf[sizeof(uint32_t)];
+		TDB_DATA data[] = {
+			[0].dsize = sizeof(uint32_t),
+			[0].dptr = version_buf,
+			[1].dsize = br_lck->num_locks * sizeof(struct lock_struct),
+			[1].dptr = (uint8_t *)br_lck->lock_data,
 		};
 		NTSTATUS status;
 
-		status = dbwrap_record_store(br_lck->record,
+		PUSH_BE_U32(version_buf, 0, smbXsrv_version_global_current());
+
+		status = dbwrap_record_storev(br_lck->record,
 					     data,
+					     ARRAY_SIZE(data),
 					     DBWRAP_REPLACE);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("store returned %s\n", nt_errstr(status)));
@@ -1643,20 +1650,39 @@ static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 
 static bool brl_parse_data(struct byte_range_lock *br_lck, TDB_DATA data)
 {
-	size_t data_len;
+	size_t data_len = data.dsize;
+	uint32_t version;
 
-	if (data.dsize == 0) {
+	if (data_len == 0) {
 		return true;
 	}
-	if (data.dsize % sizeof(struct lock_struct) != 0) {
-		DEBUG(1, ("Invalid data size: %u\n", (unsigned)data.dsize));
+	if (data_len < sizeof(uint32_t)) {
+		DBG_WARNING("Invalid data size: %zu\n", data_len);
+		return false;
+	}
+	version = PULL_BE_U32(data.dptr, 0);
+	if (version != SMBXSRV_VERSION_0) {
+		DBG_WARNING("Invalid version: %"PRIu32"\n", version);
 		return false;
 	}
 
-	br_lck->num_locks = data.dsize / sizeof(struct lock_struct);
+	data_len -= sizeof(uint32_t);
+
+	if (data_len % sizeof(struct lock_struct) != 0) {
+		DBG_WARNING("Invalid data size: %zu\n", data_len);
+		return false;
+	}
+
+	br_lck->num_locks = data_len / sizeof(struct lock_struct);
+	if (br_lck->num_locks < 1) {
+		DBG_WARNING("Invalid data size: %zu\n", data_len);
+		return false;
+	}
 	data_len = br_lck->num_locks * sizeof(struct lock_struct);
 
-	br_lck->lock_data = talloc_memdup(br_lck, data.dptr, data_len);
+	br_lck->lock_data = talloc_memdup(br_lck,
+					  data.dptr + sizeof(uint32_t),
+					  data_len);
 	if (br_lck->lock_data == NULL) {
 		DEBUG(1, ("talloc_memdup failed\n"));
 		return false;
