@@ -3196,6 +3196,13 @@ static bool init_wcache(void)
 		return false;
 	}
 
+	/*
+	 * Create a dummy SEQNUM entry early, otherwise every call via the
+	 * winbind NDR interface will fail to call wcache_store_ndr() when there
+	 * is no SEQNUM present already
+	 */
+	wcache_store_seqnum(lp_workgroup(), 0, 0);
+
 	return true;
 }
 
