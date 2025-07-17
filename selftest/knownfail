@@ -341,5 +341,3 @@
 
 # Currently winbindd_cache.tdb is not working as expected
 ^samba3.winbind_cache_sanity.WINBINDD_CACHE_VERSION.*
-^samba3.winbind_cache_sanity.SEQNUM.*
-^samba3.winbind_cache_sanity.NDR.*
