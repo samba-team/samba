@@ -57,7 +57,7 @@ o  Stefan Metzmacher <metze@samba.org>
      calls like netr_DsRGetDCName.
 
 o  Andreas Schneider <asn@samba.org>
-   * BUG 15869: Startup messages of rpc deamons fills /var/log/messages.
+   * BUG 15869: Startup messages of rpc daemons fills /var/log/messages.
 
 
 #######################################
