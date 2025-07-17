@@ -84,6 +84,17 @@ struct SDBFlags {
 	unsigned int do_not_store:1;
 };
 
+struct sdb_pub_key {
+	unsigned int bit_size;
+	krb5_data modulus;
+	krb5_data exponent;
+};
+
+struct sdb_pub_keys {
+	unsigned int len;
+	struct sdb_pub_key *keys;
+};
+
 struct sdb_entry {
 	struct samba_kdc_entry *skdc_entry;
 	krb5_principal principal;
@@ -101,6 +112,7 @@ struct sdb_entry {
 	int *max_life;
 	int *max_renew;
 	struct SDBFlags flags;
+	struct sdb_pub_keys pub_keys;
 };
 
 #define SDB_ERR_NOENTRY 36150275
@@ -147,6 +159,8 @@ struct sdb_entry {
 #define SDB_F_FORCE_CANON		0x4000	/* force canonicalization */
 #define SDB_F_RODC_NUMBER_SPECIFIED	0x8000	/* we want a particular RODC number */
 
+void sdb_pub_key_free(struct sdb_pub_key *key);
+void sdb_pub_keys_free(struct sdb_pub_keys *keys);
 void sdb_key_free(struct sdb_key *key);
 void sdb_keys_free(struct sdb_keys *keys);
 void sdb_entry_free(struct sdb_entry *e);

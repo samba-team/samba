@@ -59,11 +59,49 @@ void sdb_keys_free(struct sdb_keys *keys)
 		return;
 	}
 
-	for (i=0; i < keys->len; i++) {
+	for (i = 0; i < keys->len; i++) {
 		sdb_key_free(&keys->val[i]);
 	}
 
 	SAFE_FREE(keys->val);
+	ZERO_STRUCTP(keys);
+}
+
+/**
+ * @brief free the memory allocated to a sdb_key structure.
+ *
+ * @param[in,out] keys sdb_key to be freed, will be zeroed on return
+ */
+void sdb_pub_key_free(struct sdb_pub_key *k)
+{
+	if (k == NULL) {
+		return;
+	}
+
+	SAFE_FREE(k->exponent.data);
+	SAFE_FREE(k->modulus.data);
+
+	ZERO_STRUCTP(k);
+}
+
+/**
+ * @brief free the memory allocated to a sdb_pub_keys structure.
+ *
+ * @param[in,out] keys sdb_pub_keys to be freed, will be zeroed on return
+ */
+void sdb_pub_keys_free(struct sdb_pub_keys *keys)
+{
+	unsigned int i;
+
+	if (keys == NULL) {
+		return;
+	}
+
+	for (i = 0; i < keys->len; i++) {
+		sdb_pub_key_free(&keys->keys[i]);
+	}
+
+	SAFE_FREE(keys->keys);
 	ZERO_STRUCTP(keys);
 }
 
@@ -82,6 +120,7 @@ void sdb_entry_free(struct sdb_entry *s)
 	krb5_free_principal(NULL, s->principal);
 
 	sdb_keys_free(&s->keys);
+	sdb_pub_keys_free(&s->pub_keys);
 
 	if (s->etypes != NULL) {
 		SAFE_FREE(s->etypes->val);
