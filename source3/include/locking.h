@@ -49,10 +49,15 @@ struct files_struct;
 struct byte_range_lock;
 typedef uint64_t br_off;
 
-/* Internal structure in brlock.tdb.
-   The data in brlock records is an unsorted linear array of these
-   records.  It is unnecessary to store the count as tdb provides the
-   size of the record */
+/*
+ * Internal structure in brlock.tdb
+ *
+ * The data in brlock records is an unsorted linear array of these
+ * records.
+ *
+ * It is unnecessary to store the count as tdb provides the size of
+ * the record.
+ */
 
 struct lock_struct {
 	struct lock_context context;
