@@ -1586,6 +1586,7 @@ static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 {
 	unsigned i;
 	struct lock_struct *locks = br_lck->lock_data;
+	bool have_persistent_lock = false;
 
 	if (!br_lck->modified) {
 		DEBUG(10, ("br_lck not modified\n"));
@@ -1603,6 +1604,9 @@ static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 			locks[i] = locks[br_lck->num_locks-1];
 			br_lck->num_locks -= 1;
 			continue;
+		}
+		if (locks[i].persistent) {
+			have_persistent_lock = true;
 		}
 		i += 1;
 	}
@@ -1624,13 +1628,18 @@ static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 			[1].dptr = (uint8_t *)br_lck->lock_data,
 		};
 		NTSTATUS status;
+		int store_flags = DBWRAP_REPLACE;
+
+		if (have_persistent_lock) {
+			store_flags |= DBWRAP_STORE_PERSISTENT;
+		}
 
 		PUSH_BE_U32(version_buf, 0, smbXsrv_version_global_current());
 
 		status = dbwrap_record_storev(br_lck->record,
 					     data,
 					     ARRAY_SIZE(data),
-					     DBWRAP_REPLACE);
+					     store_flags);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("store returned %s\n", nt_errstr(status)));
 			smb_panic("Could not store byte range mode entry");
