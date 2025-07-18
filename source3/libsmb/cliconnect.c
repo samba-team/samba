@@ -993,58 +993,6 @@ static void cli_session_setup_gensec_remote_done(struct tevent_req *subreq)
 	cli_session_setup_gensec_local_next(req);
 }
 
-static void cli_session_dump_keys(TALLOC_CTX *mem_ctx,
-				  struct smbXcli_session *session,
-				  DATA_BLOB session_key)
-{
-	NTSTATUS status;
-	DATA_BLOB sig = data_blob_null;
-	DATA_BLOB app = data_blob_null;
-	DATA_BLOB enc = data_blob_null;
-	DATA_BLOB dec = data_blob_null;
-	uint64_t sid = smb2cli_session_current_id(session);
-
-	status = smb2cli_session_signing_key(session, mem_ctx, &sig);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-	status = smbXcli_session_application_key(session, mem_ctx, &app);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-	status = smb2cli_session_encryption_key(session, mem_ctx, &enc);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-	status = smb2cli_session_decryption_key(session, mem_ctx, &dec);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
-	DEBUG(0, ("debug encryption: dumping generated session keys\n"));
-	DEBUGADD(0, ("Session Id    "));
-	dump_data(0, (uint8_t*)&sid, sizeof(sid));
-	DEBUGADD(0, ("Session Key   "));
-	dump_data(0, session_key.data, session_key.length);
-	DEBUGADD(0, ("Signing Key   "));
-	dump_data(0, sig.data, sig.length);
-	DEBUGADD(0, ("App Key       "));
-	dump_data(0, app.data, app.length);
-
-	/* In client code, ServerIn is the encryption key */
-
-	DEBUGADD(0, ("ServerIn Key  "));
-	dump_data(0, enc.data, enc.length);
-	DEBUGADD(0, ("ServerOut Key "));
-	dump_data(0, dec.data, dec.length);
-
-out:
-	data_blob_clear_free(&sig);
-	data_blob_clear_free(&app);
-	data_blob_clear_free(&enc);
-	data_blob_clear_free(&dec);
-}
-
 static void cli_session_setup_gensec_ready(struct tevent_req *req)
 {
 	struct cli_session_setup_gensec_state *state =
@@ -1115,7 +1063,9 @@ static void cli_session_setup_gensec_ready(struct tevent_req *req)
 		if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB3_00
 		    && lp_debug_encryption())
 		{
-			cli_session_dump_keys(state, session, state->session_key);
+			smbXcli_session_dump_keys(state,
+						  session,
+						  state->session_key);
 		}
 	} else {
 		struct smbXcli_session *session = state->cli->smb1.session;

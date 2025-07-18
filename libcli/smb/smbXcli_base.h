@@ -530,6 +530,9 @@ struct smbXcli_session *smbXcli_session_shallow_copy(TALLOC_CTX *mem_ctx,
 					       struct smbXcli_session *src);
 bool smbXcli_session_is_guest(struct smbXcli_session *session);
 bool smbXcli_session_is_authenticated(struct smbXcli_session *session);
+void smbXcli_session_dump_keys(TALLOC_CTX *mem_ctx,
+			       struct smbXcli_session *session,
+			       DATA_BLOB session_key);
 NTSTATUS smb2cli_session_signing_key(struct smbXcli_session *session,
 				     TALLOC_CTX *mem_ctx,
 				     DATA_BLOB *key);
