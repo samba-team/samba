@@ -1475,6 +1475,7 @@ static void test_smb2_bench_session_setup_loop_do_setup(
 	struct test_smb2_bench_session_setup_shared_state *state = loop->state;
 
 	loop->session = smb2_session_init(loop->conn->transport,
+					  state->tctx->lp_ctx,
 					  state->gensec_settings,
 					  loop->conn->transport);
 	torture_assert_goto(state->tctx, loop->session != NULL,

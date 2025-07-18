@@ -43,6 +43,7 @@ static bool try_failed_login(struct torture_context *tctx, struct smb2_tree *tre
 	bool result = true;
 
 	session = smb2_session_init(tree->session->transport,
+				    tctx->lp_ctx,
 				    lpcfg_gensec_settings(tctx, tctx->lp_ctx),
 				    tctx);
 	torture_assert(tctx, session, "Session initialization failed");

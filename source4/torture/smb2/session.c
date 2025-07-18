@@ -2451,6 +2451,7 @@ static bool test_session_bind_auth_mismatch(struct torture_context *tctx,
 	 * are mapped to guest.
 	 */
 	session3_1 = smb2_session_init(transport1,
+				       tctx->lp_ctx,
 				       lpcfg_gensec_settings(tctx, tctx->lp_ctx),
 				       tctx);
 	torture_assert(tctx, session3_1 != NULL, "smb2_session_channel failed");
@@ -2805,6 +2806,7 @@ static bool test_session_bind_negative_smbXtoX(struct torture_context *tctx,
 	 * session keys.
 	 */
 	session1_2 = smb2_session_init(transport2,
+				       tctx->lp_ctx,
 				       lpcfg_gensec_settings(tctx, tctx->lp_ctx),
 				       tree2_0);
 	torture_assert(tctx, session1_2 != NULL, "smb2_session_channel failed");
@@ -5772,6 +5774,7 @@ static bool test_session_anon_encryption2(struct torture_context *tctx,
 	torture_assert(tctx, ok, "smbXcli_session_is_authenticated(user)");
 
 	anon_session = smb2_session_init(transport,
+					 tctx->lp_ctx,
 					 lpcfg_gensec_settings(tctx, tctx->lp_ctx),
 					 tctx);
 	torture_assert(tctx, anon_session != NULL, "smb2_session_init(anon)");
@@ -5919,6 +5922,7 @@ static bool test_session_anon_encryption3(struct torture_context *tctx,
 	torture_assert(tctx, ok, "smbXcli_session_is_authenticated(user)");
 
 	anon_session = smb2_session_init(transport,
+					 tctx->lp_ctx,
 					 lpcfg_gensec_settings(tctx, tctx->lp_ctx),
 					 tctx);
 	torture_assert(tctx, anon_session != NULL, "smb2_session_init(anon)");
@@ -6153,6 +6157,7 @@ static bool test_session_anon_signing2(struct torture_context *tctx,
 	 */
 	session_id = smb2cli_session_current_id(anon_session->smbXcli);
 	anon_session_nosign = smb2_session_init(transport,
+						tctx->lp_ctx,
 					        lpcfg_gensec_settings(tctx, tctx->lp_ctx),
 					        tctx);
 	torture_assert(tctx, anon_session_nosign != NULL, "smb2_session_init(anon_nosign)");

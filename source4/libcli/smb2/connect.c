@@ -36,6 +36,7 @@
 struct smb2_connect_state {
 	struct tevent_context *ev;
 	struct cli_credentials *credentials;
+	struct loadparm_context *lp_ctx;
 	bool fallback_to_anonymous;
 	uint64_t previous_session_id;
 	struct resolve_context *resolve_ctx;
@@ -86,6 +87,7 @@ struct tevent_req *smb2_connect_send(TALLOC_CTX *mem_ctx,
 
 	state->ev = ev;
 	state->credentials = credentials;
+	state->lp_ctx = lp_ctx;
 	state->fallback_to_anonymous = fallback_to_anonymous;
 	state->previous_session_id = previous_session_id;
 	state->options = *options;
@@ -214,7 +216,10 @@ static void smb2_connect_session_start(struct tevent_req *req)
 	struct smb2_transport *transport = state->transport;
 	struct tevent_req *subreq = NULL;
 
-	state->session = smb2_session_init(transport, state->gensec_settings, state);
+	state->session = smb2_session_init(transport,
+					   state->lp_ctx,
+					   state->gensec_settings,
+					   state);
 	if (tevent_req_nomem(state->session, req)) {
 		return;
 	}

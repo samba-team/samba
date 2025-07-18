@@ -364,6 +364,7 @@ bool torture_smb2_session_setup(struct torture_context *tctx,
 	struct smb2_session *session;
 
 	session = smb2_session_init(transport,
+				    tctx->lp_ctx,
 				    lpcfg_gensec_settings(tctx, tctx->lp_ctx),
 				    mem_ctx);
 

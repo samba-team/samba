@@ -129,6 +129,8 @@ struct smb2_session {
 	struct smbXcli_session *smbXcli;
 	bool needs_bind;
 	bool anonymous_session_key;
+	bool debug_encryption;
+	const char *wireshark_keyfile;
 	DATA_BLOB forced_session_key;
 };
 

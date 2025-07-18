@@ -29,11 +29,13 @@
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "lib/param/param.h"
 
 /**
   initialise a smb2_session structure
  */
 struct smb2_session *smb2_session_init(struct smb2_transport *transport,
+				       struct loadparm_context *lp_ctx,
 				       struct gensec_settings *settings,
 				       TALLOC_CTX *parent_ctx)
 {
@@ -45,6 +47,11 @@ struct smb2_session *smb2_session_init(struct smb2_transport *transport,
 		return NULL;
 	}
 	session->transport = talloc_steal(session, transport);
+	session->debug_encryption = lpcfg_debug_encryption(lp_ctx);
+	session->wireshark_keyfile = lpcfg_parm_string(lp_ctx,
+						       NULL,
+						       "debug encryption",
+						       "wireshark keyfile");
 
 	session->smbXcli = smbXcli_session_create(session, transport->conn);
 	if (session->smbXcli == NULL) {
