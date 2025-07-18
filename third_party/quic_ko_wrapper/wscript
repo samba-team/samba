@@ -105,9 +105,6 @@ def configure(conf):
     conf.DEFINE('QUIC_KO_WRAPPER', 1)
 
 def build(bld):
-    if bld.CONFIG_SET("USING_SYSTEM_QUIC_KO_WRAPPER"):
-        return
-
     # We need to do it this way or the library wont work.
     # We need force_unversioned=True as symbol versioning
     # breaks preloading!
