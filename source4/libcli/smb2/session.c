@@ -433,6 +433,43 @@ static void smb2_session_setup_spnego_both_ready(struct tevent_req *req)
 		if (tevent_req_nterror(req, status)) {
 			return;
 		}
+		if ((smbXcli_conn_protocol(session->transport->conn)
+		     >= PROTOCOL_SMB3_00) &&
+		    session->debug_encryption)
+		{
+			DATA_BLOB sig, app, enc, dec;
+
+			status = smb2cli_session_signing_key(
+				session->smbXcli, state, &sig);
+			if (tevent_req_nterror(req, status)) {
+				return;
+			}
+			status = smbXcli_session_application_key(
+				session->smbXcli, state, &app);
+			if (tevent_req_nterror(req, status)) {
+				return;
+			}
+			status = smb2cli_session_encryption_key(
+				session->smbXcli, state, &enc);
+			if (tevent_req_nterror(req, status)) {
+				return;
+			}
+			status = smb2cli_session_decryption_key(
+				session->smbXcli, state, &dec);
+			if (tevent_req_nterror(req, status)) {
+				return;
+			}
+
+			smbXcli_session_dump_keys(
+				smb2cli_session_current_id(session->smbXcli),
+				&session_key,
+				smb2cli_conn_server_signing_algo(
+					session->transport->conn),
+				&sig,
+				&app,
+				&enc,
+				&dec);
+		}
 	}
 	tevent_req_done(req);
 	return;
