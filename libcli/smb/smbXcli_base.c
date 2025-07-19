@@ -7606,8 +7606,16 @@ void smbXcli_session_dump_keys(uint64_t session_id,
 			       DATA_BLOB *signing_key,
 			       DATA_BLOB *application_key,
 			       DATA_BLOB *encryption_key,
-			       DATA_BLOB *decryption_key)
+			       DATA_BLOB *decryption_key,
+			       const char *wireshark_keyfile)
 {
+	DATA_BLOB sidb = {
+		.data = (uint8_t *)&session_id, .length = sizeof(session_id)
+	};
+	char *line = NULL;
+	int fd = -1;
+	ssize_t written;
+
 	DEBUG(0, ("debug encryption: dumping generated session keys\n"));
 	DEBUGADD(0, ("Session Id    "));
 	dump_data(0, (uint8_t*)&session_id, sizeof(session_id));
@@ -7625,4 +7633,40 @@ void smbXcli_session_dump_keys(uint64_t session_id,
 	dump_data(0, encryption_key->data, encryption_key->length);
 	DEBUGADD(0, ("ServerOut Key "));
 	dump_data(0, decryption_key->data, decryption_key->length);
+
+	DEBUGADD(0, ("Wireshark configuration line:\n"));
+	line = talloc_asprintf(
+		talloc_tos(),
+		"%s,%s,%s,%s\n",
+		data_blob_hex_string_lower(talloc_tos(), &sidb),
+		data_blob_hex_string_lower(talloc_tos(), session_key),
+		data_blob_hex_string_lower(talloc_tos(), decryption_key),
+		data_blob_hex_string_lower(talloc_tos(), encryption_key));
+	if (line == NULL) {
+		return;
+	}
+	DEBUGADD(0, ("%s", line));
+
+	if (wireshark_keyfile == NULL) {
+		goto done;
+	}
+	fd = open(wireshark_keyfile, O_WRONLY | O_APPEND);
+	if (fd == -1) {
+		DBG_ERR("Failed to open '%s': %s\n",
+			wireshark_keyfile, strerror(errno));
+		goto done;
+	}
+
+	written = write(fd, line, strlen(line));
+	if (written != strlen(line)) {
+		DBG_ERR("Failed to write '%s' to '%s', only wrote: %zd\n",
+			line, wireshark_keyfile, written);
+		goto done;
+	}
+
+done:
+	TALLOC_FREE(line);
+	if (fd != -1) {
+		close(fd);
+	}
 }

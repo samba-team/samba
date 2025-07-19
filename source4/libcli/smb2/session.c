@@ -433,9 +433,9 @@ static void smb2_session_setup_spnego_both_ready(struct tevent_req *req)
 		if (tevent_req_nterror(req, status)) {
 			return;
 		}
-		if ((smbXcli_conn_protocol(session->transport->conn)
-		     >= PROTOCOL_SMB3_00) &&
-		    session->debug_encryption)
+		if ((smbXcli_conn_protocol(session->transport->conn) >=
+		     PROTOCOL_SMB3_00)
+		    && session->debug_encryption)
 		{
 			DATA_BLOB sig, app, enc, dec;
 
@@ -468,7 +468,8 @@ static void smb2_session_setup_spnego_both_ready(struct tevent_req *req)
 				&sig,
 				&app,
 				&enc,
-				&dec);
+				&dec,
+				session->wireshark_keyfile);
 		}
 	}
 	tevent_req_done(req);

@@ -536,7 +536,8 @@ void smbXcli_session_dump_keys(uint64_t session_id,
 			       DATA_BLOB *signing_key,
 			       DATA_BLOB *application_key,
 			       DATA_BLOB *encryption_key,
-			       DATA_BLOB *decryption_key);
+			       DATA_BLOB *decryption_key,
+			       const char *wireshark_keyfile);
 NTSTATUS smb2cli_session_signing_key(struct smbXcli_session *session,
 				     TALLOC_CTX *mem_ctx,
 				     DATA_BLOB *key);

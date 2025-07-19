@@ -1064,6 +1064,11 @@ static void cli_session_setup_gensec_ready(struct tevent_req *req)
 		    && lp_debug_encryption())
 		{
 			DATA_BLOB sig, app, enc, dec;
+			const char *wireshark_keyfile = lp_parm_const_string(
+				GLOBAL_SECTION_SNUM,
+				"debug encryption",
+				"wireshark keyfile",
+				NULL);
 
 			status = smb2cli_session_signing_key(session, state, &sig);
 			if (tevent_req_nterror(req, status)) {
@@ -1088,7 +1093,8 @@ static void cli_session_setup_gensec_ready(struct tevent_req *req)
 						  &sig,
 						  &app,
 						  &enc,
-						  &dec);
+						  &dec,
+						  wireshark_keyfile);
 		}
 	} else {
 		struct smbXcli_session *session = state->cli->smb1.session;
