@@ -1063,9 +1063,31 @@ static void cli_session_setup_gensec_ready(struct tevent_req *req)
 		if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB3_00
 		    && lp_debug_encryption())
 		{
-			smbXcli_session_dump_keys(state,
-						  session,
-						  state->session_key);
+			DATA_BLOB sig, app, enc, dec;
+
+			status = smb2cli_session_signing_key(session, state, &sig);
+			if (tevent_req_nterror(req, status)) {
+				return;
+			}
+			status = smbXcli_session_application_key(session, state, &app);
+			if (tevent_req_nterror(req, status)) {
+				return;
+			}
+			status = smb2cli_session_encryption_key(session, state, &enc);
+			if (tevent_req_nterror(req, status)) {
+				return;
+			}
+			status = smb2cli_session_decryption_key(session, state, &dec);
+			if (tevent_req_nterror(req, status)) {
+				return;
+			}
+
+			smbXcli_session_dump_keys(smb2cli_session_current_id(session),
+						  &state->session_key,
+						  &sig,
+						  &app,
+						  &enc,
+						  &dec);
 		}
 	} else {
 		struct smbXcli_session *session = state->cli->smb1.session;
