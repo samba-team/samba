@@ -1084,6 +1084,7 @@ static void cli_session_setup_gensec_ready(struct tevent_req *req)
 
 			smbXcli_session_dump_keys(smb2cli_session_current_id(session),
 						  &state->session_key,
+						  smb2cli_conn_server_signing_algo(state->cli->conn),
 						  &sig,
 						  &app,
 						  &enc,

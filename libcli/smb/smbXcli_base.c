@@ -7602,6 +7602,7 @@ NTSTATUS smb2cli_parse_dyn_buffer(uint32_t dyn_offset,
 
 void smbXcli_session_dump_keys(uint64_t session_id,
 			       DATA_BLOB *session_key,
+			       uint16_t signing_algo,
 			       DATA_BLOB *signing_key,
 			       DATA_BLOB *application_key,
 			       DATA_BLOB *encryption_key,
@@ -7612,6 +7613,7 @@ void smbXcli_session_dump_keys(uint64_t session_id,
 	dump_data(0, (uint8_t*)&session_id, sizeof(session_id));
 	DEBUGADD(0, ("Session Key   "));
 	dump_data(0, session_key->data, session_key->length);
+	DEBUGADD(0, ("Signing Algo: %u\n", signing_algo));
 	DEBUGADD(0, ("Signing Key   "));
 	dump_data(0, signing_key->data, signing_key->length);
 	DEBUGADD(0, ("App Key       "));

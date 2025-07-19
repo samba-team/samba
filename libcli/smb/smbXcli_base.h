@@ -532,6 +532,7 @@ bool smbXcli_session_is_guest(struct smbXcli_session *session);
 bool smbXcli_session_is_authenticated(struct smbXcli_session *session);
 void smbXcli_session_dump_keys(uint64_t session_id,
 			       DATA_BLOB *session_key,
+			       uint16_t signing_algo,
 			       DATA_BLOB *signing_key,
 			       DATA_BLOB *application_key,
 			       DATA_BLOB *encryption_key,
