@@ -30,6 +30,7 @@
 #include "../libcli/security/security.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "source3/lib/substitute.h"
+#include "libcli/smb/smbXcli_base.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
@@ -384,30 +385,20 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	x->global->application_key_blob = x->global->application_key->blob;
 
 	if (xconn->protocol >= PROTOCOL_SMB3_00 && lp_debug_encryption()) {
-		DEBUG(0, ("debug encryption: dumping generated session keys\n"));
-		DEBUGADD(0, ("Session Id    "));
-		dump_data(0, (uint8_t*)&session->global->session_wire_id,
-			  sizeof(session->global->session_wire_id));
-		DEBUGADD(0, ("Session Key   "));
-		dump_data(0, session_info->session_key.data,
-			  session_info->session_key.length);
-		DEBUGADD(0, ("Signing Algo: %u\n", x->global->signing_algo));
-		DEBUGADD(0, ("Signing Key   "));
-		dump_data(0, x->global->signing_key_blob.data,
-			  x->global->signing_key_blob.length);
-		DEBUGADD(0, ("App Key       "));
-		dump_data(0, x->global->application_key_blob.data,
-			  x->global->application_key_blob.length);
+		const char *wireshark_keyfile = lp_parm_const_string(
+			GLOBAL_SECTION_SNUM,
+			"debug encryption",
+			"wireshark keyfile",
+			NULL);
 
-		/* In server code, ServerIn is the decryption key */
-
-		DEBUGADD(0, ("Cipher Algo: %u\n", x->global->encryption_cipher));
-		DEBUGADD(0, ("ServerIn Key  "));
-		dump_data(0, x->global->decryption_key_blob.data,
-			  x->global->decryption_key_blob.length);
-		DEBUGADD(0, ("ServerOut Key "));
-		dump_data(0, x->global->encryption_key_blob.data,
-			  x->global->encryption_key_blob.length);
+		smbXcli_session_dump_keys(session->global->session_wire_id,
+					  &session_info->session_key,
+					  x->global->signing_algo,
+					  &x->global->signing_key_blob,
+					  &x->global->application_key_blob,
+					  &x->global->encryption_key_blob,
+					  &x->global->decryption_key_blob,
+					  wireshark_keyfile);
 	}
 
 	status = smb2_signing_key_copy(x->global->channels,
