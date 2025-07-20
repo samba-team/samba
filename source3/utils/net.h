@@ -97,6 +97,7 @@ struct net_context {
 	const char *opt_witness_new_ip;
 	int opt_witness_new_node;
 	const char *opt_witness_forced_response;
+	const char *opt_krb5_ccache;
 
 	int opt_have_ip;
 	struct sockaddr_storage opt_dest_ip;
