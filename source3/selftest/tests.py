@@ -1900,6 +1900,18 @@ plantestsuite(
      "bin/samba-tool",
      '$DNSNAME'])
 
+for auth in ["$DC_USERNAME", "$DOMAIN\\\\$DC_USERNAME", "$DC_USERNAME@$REALM" ]:
+    plantestsuite(
+        "samba3.blackbox.net_ads_kerberos (%s)" % auth,
+        "ad_member:local",
+        [os.path.join(samba3srcdir,
+                      "script/tests/test_net_ads_kerberos.sh"),
+         auth,
+         '$REALM',
+         '$DC_PASSWORD',
+         '$PREFIX',
+         configuration])
+
 plantestsuite("samba3.blackbox.force-user-unlink",
               "maptoguest:local",
               [os.path.join(samba3srcdir,
