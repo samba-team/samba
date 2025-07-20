@@ -3030,7 +3030,7 @@ static int net_ads_kerberos_renew(struct net_context *c, int argc, const char **
 		return -1;
 	}
 
-	ret = smb_krb5_renew_ticket(NULL, NULL, NULL, NULL);
+	ret = smb_krb5_renew_ticket(c->opt_krb5_ccache, NULL, NULL, NULL);
 	if (ret) {
 		d_printf(_("failed to renew kerberos ticket: %s\n"),
 			error_message(ret));
@@ -3085,7 +3085,7 @@ static int net_ads_kerberos_pac_common(struct net_context *c, int argc, const ch
 				     0,
 				     NULL,
 				     NULL,
-				     NULL,
+				     c->opt_krb5_ccache,
 				     true,
 				     true,
 				     2592000, /* one month */
@@ -3266,7 +3266,7 @@ static int net_ads_kerberos_kinit(struct net_context *c, int argc, const char **
 					  0,
 					  NULL,
 					  NULL,
-					  NULL,
+					  c->opt_krb5_ccache,
 					  true,
 					  true,
 					  2592000, /* one month */
