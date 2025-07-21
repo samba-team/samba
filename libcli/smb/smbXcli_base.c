@@ -7600,6 +7600,17 @@ NTSTATUS smb2cli_parse_dyn_buffer(uint32_t dyn_offset,
 	return NT_STATUS_OK;
 }
 
+struct smbXcli_session_dump_cp_state {
+	char *s;
+};
+
+static void smbXcli_session_dump_keys_cb(const char *buf, void *private_data)
+{
+	struct smbXcli_session_dump_cp_state *state = private_data;
+
+	talloc_asprintf_addbuf(&state->s, "%s", buf);
+}
+
 void smbXcli_session_dump_keys(uint64_t session_id,
 			       DATA_BLOB *session_key,
 			       uint16_t signing_algo,
@@ -7609,6 +7620,9 @@ void smbXcli_session_dump_keys(uint64_t session_id,
 			       DATA_BLOB *decryption_key,
 			       const char *wireshark_keyfile)
 {
+	struct smbXcli_session_dump_cp_state state = {
+		.s = talloc_strdup(talloc_tos(), ""),
+	};
 	DATA_BLOB sidb = {
 		.data = (uint8_t *)&session_id, .length = sizeof(session_id)
 	};
@@ -7616,36 +7630,62 @@ void smbXcli_session_dump_keys(uint64_t session_id,
 	int fd = -1;
 	ssize_t written;
 
-	DEBUG(0, ("debug encryption: dumping generated session keys\n"));
-	DEBUGADD(0, ("Session Id    "));
-	dump_data(0, (uint8_t*)&session_id, sizeof(session_id));
-	DEBUGADD(0, ("Session Key   "));
-	dump_data(0, session_key->data, session_key->length);
-	DEBUGADD(0, ("Signing Algo: %u\n", signing_algo));
-	DEBUGADD(0, ("Signing Key   "));
-	dump_data(0, signing_key->data, signing_key->length);
-	DEBUGADD(0, ("App Key       "));
-	dump_data(0, application_key->data, application_key->length);
+	talloc_asprintf_addbuf(&state.s, "debug encryption: dumping generated session keys\n");
+	talloc_asprintf_addbuf(&state.s, "Session Id    ");
+	dump_data_cb((uint8_t*)&session_id,
+		     sizeof(session_id),
+		     false,
+		     smbXcli_session_dump_keys_cb,
+		     &state);
+	talloc_asprintf_addbuf(&state.s, "Session Key   ");
+	dump_data_cb(session_key->data,
+		     session_key->length,
+		     false,
+		     smbXcli_session_dump_keys_cb,
+		     &state);
+	talloc_asprintf_addbuf(&state.s, "Signing Algo: %u\n", signing_algo);
+	talloc_asprintf_addbuf(&state.s, "Signing Key   ");
+	dump_data_cb(signing_key->data,
+		     signing_key->length,
+		     false,
+		     smbXcli_session_dump_keys_cb,
+		     &state);
+	talloc_asprintf_addbuf(&state.s, "App Key       ");
+	dump_data_cb(application_key->data,
+		     application_key->length,
+		     false,
+		     smbXcli_session_dump_keys_cb,
+		     &state);
 
 	/* In client code, ServerIn is the encryption key */
 
-	DEBUGADD(0, ("ServerIn Key  "));
-	dump_data(0, encryption_key->data, encryption_key->length);
-	DEBUGADD(0, ("ServerOut Key "));
-	dump_data(0, decryption_key->data, decryption_key->length);
+	talloc_asprintf_addbuf(&state.s, "ServerIn Key  ");
+	dump_data_cb(encryption_key->data,
+		     encryption_key->length,
+		     false,
+		     smbXcli_session_dump_keys_cb,
+		     &state);
+	talloc_asprintf_addbuf(&state.s, "ServerOut Key ");
+	dump_data_cb(decryption_key->data,
+		     decryption_key->length,
+		     false,
+		     smbXcli_session_dump_keys_cb,
+		     &state);
 
-	DEBUGADD(0, ("Wireshark configuration line:\n"));
+	talloc_asprintf_addbuf(&state.s, "Wireshark configuration line:\n");
 	line = talloc_asprintf(
 		talloc_tos(),
 		"%s,%s,%s,%s\n",
-		data_blob_hex_string_lower(talloc_tos(), &sidb),
-		data_blob_hex_string_lower(talloc_tos(), session_key),
-		data_blob_hex_string_lower(talloc_tos(), decryption_key),
-		data_blob_hex_string_lower(talloc_tos(), encryption_key));
+		data_blob_hex_string_lower(state.s, &sidb),
+		data_blob_hex_string_lower(state.s, session_key),
+		data_blob_hex_string_lower(state.s, decryption_key),
+		data_blob_hex_string_lower(state.s, encryption_key));
 	if (line == NULL) {
-		return;
+		goto done;
 	}
-	DEBUGADD(0, ("%s", line));
+	talloc_asprintf_addbuf(&state.s, "%s", line);
+
+	DEBUG(0, ("%s", state.s));
 
 	if (wireshark_keyfile == NULL) {
 		goto done;
@@ -7666,6 +7706,7 @@ void smbXcli_session_dump_keys(uint64_t session_id,
 
 done:
 	TALLOC_FREE(line);
+	TALLOC_FREE(state.s);
 	if (fd != -1) {
 		close(fd);
 	}
