@@ -1895,6 +1895,11 @@ struct tevent_req *tldap_search_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
+	if (timelimit != 0) {
+		struct timeval end;
+		end = timeval_current_ofs(timelimit * 1.5F, 0);
+		tevent_req_set_endtime(subreq, ev, end);
+	}
 	tevent_req_set_callback(subreq, tldap_search_done, req);
 	return req;
 
