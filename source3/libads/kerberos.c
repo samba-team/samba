@@ -531,10 +531,12 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	DBG_DEBUG("%zu additional KDCs to test\n", num_dcs);
 	if (num_dcs == 0) {
 		/*
-		 * We do not have additional KDCs, but we have the one passed
-		 * in via `pss`. So just use that one and leave.
+		 * We do not have additional KDCs, but if we have one passed
+		 * in via `pss` just use that one, otherwise fail
 		 */
-		result = talloc_move(mem_ctx, &kdc_str);
+		if (pss != NULL) {
+			result = talloc_move(mem_ctx, &kdc_str);
+		}
 		goto out;
 	}
 
@@ -575,6 +577,13 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("get_kdc_ip_string: cldap_multi_netlogon failed: "
 			  "%s\n", nt_errstr(status)));
+		/*
+		 * cldap_multi_netlogon() failed, but if we have one passed
+		 * in via `pss` just just use that one, otherwise fail
+		 */
+		if (pss != NULL) {
+			result = talloc_move(mem_ctx, &kdc_str);
+		}
 		goto out;
 	}
 
