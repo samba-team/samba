@@ -1089,7 +1089,9 @@ static bool dcip_check_name(TALLOC_CTX *mem_ctx,
 
 	if ((lp_security() == SEC_ADS) && (domain->alt_name != NULL)) {
 		is_ad_domain = true;
-	} else if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
+	} else if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC ||
+		   lp_server_role() == ROLE_IPA_DC)
+	{
 		is_ad_domain = domain->active_directory;
 	}
 
