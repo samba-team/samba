@@ -45,7 +45,7 @@ struct tevent_req *netlogon_pings_send(TALLOC_CTX *mem_ctx,
 				       struct tsocket_address **servers,
 				       size_t num_servers,
 				       struct netlogon_ping_filter filter,
-				       size_t min_servers,
+				       size_t wanted_servers,
 				       struct timeval timeout);
 NTSTATUS netlogon_pings_recv(struct tevent_req *req,
 			     TALLOC_CTX *mem_ctx,
@@ -55,7 +55,7 @@ NTSTATUS netlogon_pings(TALLOC_CTX *mem_ctx,
 			struct tsocket_address **servers,
 			int num_servers,
 			struct netlogon_ping_filter filter,
-			int min_servers,
+			int wanted_servers,
 			struct timeval timeout,
 			struct netlogon_samlogon_response ***responses);
 

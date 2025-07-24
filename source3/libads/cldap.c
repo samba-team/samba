@@ -69,7 +69,7 @@ static bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 			.acct_ctrl = -1,
 			.required_flags = required_flags,
 		},
-		1,				    /* min_servers */
+		1,				    /* wanted_servers */
 		timeval_current_ofs(MAX(3, lp_ldap_timeout() / 2), 0),
 		&responses);
 	if (!NT_STATUS_IS_OK(status)) {

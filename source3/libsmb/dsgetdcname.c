@@ -871,7 +871,7 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 			.domain = domain_name,
 			.required_flags = flags,
 		},
-		1, /* min_servers */
+		1, /* wanted_servers */
 		timeval_current_ofs(MAX(3, lp_ldap_timeout() / 2), 0),
 		&responses);
 

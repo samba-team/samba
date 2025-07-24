@@ -74,7 +74,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 						     NETLOGON_NT_VERSION_5EX,
 					.acct_ctrl = -1,
 				},
-				1, /* min_servers */
+				1, /* wanted_servers */
 				tevent_timeval_current_ofs(2, 0), /* timeout */
 				&responses);
 
