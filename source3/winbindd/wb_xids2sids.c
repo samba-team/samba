@@ -130,6 +130,7 @@ static void wb_xids2sids_dom_done(struct tevent_req *subreq)
 	struct wb_xids2sids_dom_state *state = tevent_req_data(
 		req, struct wb_xids2sids_dom_state);
 	const struct wb_parent_idmap_config_dom *dom_map = state->dom_map;
+	uint32_t dsgetdcname_flags = DS_RETURN_DNS_NAME;
 	NTSTATUS status, result;
 	size_t i;
 	size_t dom_sid_idx;
@@ -138,6 +139,13 @@ static void wb_xids2sids_dom_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
+	}
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_HOST_UNREACHABLE)) {
+		winbind_idmap_add_failed_connection_entry(dom_map->name);
+		/* Trigger DC lookup and reconnect below */
+		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		dsgetdcname_flags |= DS_FORCE_REDISCOVERY;
 	}
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) &&
@@ -151,7 +159,7 @@ static void wb_xids2sids_dom_done(struct tevent_req *subreq)
 					     domain_name,
 					     NULL,
 					     NULL,
-					     DS_RETURN_DNS_NAME);
+					     dsgetdcname_flags);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}

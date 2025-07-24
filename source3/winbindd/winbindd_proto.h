@@ -210,6 +210,7 @@ void winbind_add_failed_connection_entry(
 	const struct winbindd_domain *domain,
 	const char *server,
 	NTSTATUS result);
+void winbind_idmap_add_failed_connection_entry(const char *domain_name);
 
 struct cli_credentials;
 NTSTATUS winbindd_get_trust_credentials(struct winbindd_domain *domain,

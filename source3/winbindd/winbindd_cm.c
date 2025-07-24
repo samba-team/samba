@@ -88,6 +88,8 @@
 #include "lib/util/string_wrappers.h"
 #include "lib/global_contexts.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
+#include "source3/libsmb/namequery.h"
+#include "source3/libsmb/dsgetdcname.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -334,6 +336,56 @@ void winbind_add_failed_connection_entry(
 		saf_delete(domain->alt_name);
 	}
 	winbindd_unset_locator_kdc_env(domain);
+}
+
+void winbind_idmap_add_failed_connection_entry(const char *_domain_name)
+{
+	struct netr_DsRGetDCNameInfo *dcinfo = NULL;
+	const char *dc_unc = NULL;
+	const char *dc_address = NULL;
+	char *domain_name = NULL;
+	struct winbindd_domain *domain = NULL;
+	NTSTATUS failed_status = NT_STATUS_HOST_UNREACHABLE;
+	NTSTATUS status;
+
+	domain_name = talloc_strdup_upper(talloc_tos(), _domain_name);
+	if (domain_name == NULL) {
+		DBG_ERR("talloc_strdup_upper failed\n");
+		return;
+	}
+
+	status = wb_dsgetdcname_gencache_get(talloc_tos(), domain_name, &dcinfo);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("Missing DC cache for domain '%s'\n", domain_name);
+		goto done;
+	}
+
+	dc_unc = dcinfo->dc_unc;
+	while (dc_unc[0] == '\\') {
+		dc_unc++;
+	}
+	dc_address = dcinfo->dc_address;
+	while (dc_address[0] == '\\') {
+		dc_address++;
+	}
+
+	add_failed_connection_entry(domain_name, dc_unc, failed_status);
+	add_failed_connection_entry(domain_name, dc_address, failed_status);
+
+	domain = find_domain_from_name_noinit(domain_name);
+	if (domain == NULL) {
+		goto done;
+	}
+	if (domain->alt_name == NULL) {
+		goto done;
+	}
+
+	add_failed_connection_entry(domain->alt_name, dc_unc, failed_status);
+	add_failed_connection_entry(domain->alt_name, dc_address, failed_status);
+
+done:
+	TALLOC_FREE(domain_name);
+	TALLOC_FREE(dcinfo);
 }
 
 /* Choose between anonymous or authenticated connections.  We need to use
