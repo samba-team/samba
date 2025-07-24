@@ -4456,7 +4456,7 @@ static bool check_dom_trust_pw(struct dcerpc_pipe *p,
 							     : ACB_DOMTRUST,
 					.user = account,
 				},
-				1, /* min_servers */
+				1, /* wanted_servers */
 				tevent_timeval_current_ofs(2, 0), /* timeout */
 				&responses);
 	torture_assert_ntstatus_ok(tctx, status, "netlogon_pings");

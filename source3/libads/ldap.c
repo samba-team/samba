@@ -501,7 +501,7 @@ again:
 					.required_flags = ads->config.flags |
 							  DS_ONLY_LDAP_NEEDED,
 				},
-				1,	 /* min_servers */
+				1,	 /* wanted_servers */
 				endtime, /* timeout */
 				&responses);
 	if (!NT_STATUS_IS_OK(status)) {
