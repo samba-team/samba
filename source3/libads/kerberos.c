@@ -1223,7 +1223,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 					.acct_ctrl = -1,
 					.required_flags = DS_KDC_REQUIRED,
 				},
-				MIN(num_dcs, 3),	   /* min_servers */
+				MIN(num_dcs, 3),	   /* wanted_servers */
 				timeval_current_ofs(3, 0), /* timeout */
 				&responses);
 	TALLOC_FREE(dc_addrs2);
