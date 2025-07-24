@@ -822,17 +822,18 @@ static void netlogon_pings_done(struct tevent_req *subreq)
 		tevent_req_done(req);
 		return;
 	}
-	if (state->num_received == state->num_servers) {
+	if (state->num_received < state->num_servers) {
 		/*
-		 * Everybody replied, but we did not get enough good
-		 * answers (see above)
+		 * Wait for more answers
 		 */
-		tevent_req_nterror(req, NT_STATUS_NOT_FOUND);
 		return;
 	}
 	/*
-	 * Wait for more answers
+	 * Everybody replied, but we did not get enough good
+	 * answers (see above)
 	 */
+	tevent_req_nterror(req, NT_STATUS_NOT_FOUND);
+	return;
 }
 
 NTSTATUS netlogon_pings_recv(struct tevent_req *req,
