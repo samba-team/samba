@@ -279,12 +279,20 @@ static void wb_queryuser_done(struct tevent_req *subreq)
 	NTSTATUS status, result;
 	bool need_group_name = false;
 	const char *tmpl = NULL;
+	uint32_t dsgetdcname_flags = DS_RETURN_DNS_NAME;
 
 	status = dcerpc_wbint_GetNssInfo_recv(subreq, info, &result);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		D_WARNING("GetNssInfo failed with %s.\n", nt_errstr(status));
 		return;
+	}
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_HOST_UNREACHABLE)) {
+		winbind_idmap_add_failed_connection_entry(info->domain_name);
+		/* Trigger DC lookup and reconnect below */
+		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		dsgetdcname_flags |= DS_FORCE_REDISCOVERY;
 	}
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) &&
@@ -301,7 +309,7 @@ static void wb_queryuser_done(struct tevent_req *subreq)
 					     domain_name,
 					     NULL,
 					     NULL,
-					     DS_RETURN_DNS_NAME);
+					     dsgetdcname_flags);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}

@@ -50,6 +50,7 @@ struct idmap_ad_context {
 
 	bool unix_primary_group;
 	bool unix_nss_info;
+	int ldap_timeout;
 
 	struct ldb_context *ldb;
 	struct ldb_dn **deny_ous;
@@ -576,6 +577,8 @@ static NTSTATUS idmap_ad_context_create(TALLOC_CTX *mem_ctx,
 		domname, "unix_primary_group", false);
 	ctx->unix_nss_info = idmap_config_bool(
 		domname, "unix_nss_info", false);
+	ctx->ldap_timeout = idmap_config_int(
+		domname, "ldap_timeout", 10);
 
 	schema_mode = idmap_config_const_string(
 		domname, "schema_mode", "rfc2307");
@@ -742,7 +745,7 @@ static NTSTATUS idmap_ad_query_user(struct idmap_domain *domain,
 
 	rc = tldap_search(ctx->ld, ctx->default_nc, TLDAP_SCOPE_SUB, filter,
 			  attrs, ARRAY_SIZE(attrs), 0, NULL, 0, NULL, 0,
-			  0, 0, 0, talloc_tos(), &msgs);
+			  ctx->ldap_timeout, 0, 0, talloc_tos(), &msgs);
 	if (!TLDAP_RC_IS_SUCCESS(rc)) {
 		return NT_STATUS_LDAP(TLDAP_RC_V(rc));
 	}
@@ -815,13 +818,17 @@ static NTSTATUS idmap_ad_query_user_retry(struct idmap_domain *domain,
 {
 	const NTSTATUS status_server_down =
 		NT_STATUS_LDAP(TLDAP_RC_V(TLDAP_SERVER_DOWN));
+	const NTSTATUS status_timeout =
+		NT_STATUS_LDAP(TLDAP_RC_V(TLDAP_TIMEOUT));
 	NTSTATUS status;
 
 	status = idmap_ad_query_user(domain, info);
 
-	if (NT_STATUS_EQUAL(status, status_server_down)) {
+	if (NT_STATUS_EQUAL(status, status_server_down) ||
+	    NT_STATUS_EQUAL(status, status_timeout))
+	{
 		TALLOC_FREE(domain->private_data);
-		status = idmap_ad_query_user(domain, info);
+		return NT_STATUS_HOST_UNREACHABLE;
 	}
 
 	return status;
@@ -978,7 +985,7 @@ static NTSTATUS idmap_ad_unixids_to_sids(struct idmap_domain *dom,
 
 	rc = tldap_search(ctx->ld, ctx->default_nc, TLDAP_SCOPE_SUB, filter,
 			  attrs, ARRAY_SIZE(attrs), 0, NULL, 0, NULL, 0,
-			  0, 0, 0, talloc_tos(), &msgs);
+			  ctx->ldap_timeout, 0, 0, talloc_tos(), &msgs);
 	if (!TLDAP_RC_IS_SUCCESS(rc)) {
 		return NT_STATUS_LDAP(TLDAP_RC_V(rc));
 	}
@@ -1142,7 +1149,7 @@ static NTSTATUS idmap_ad_sids_to_unixids(struct idmap_domain *dom,
 
 	rc = tldap_search(ctx->ld, ctx->default_nc, TLDAP_SCOPE_SUB, filter,
 			  attrs, ARRAY_SIZE(attrs), 0, NULL, 0, NULL, 0,
-			  0, 0, 0, talloc_tos(), &msgs);
+			  ctx->ldap_timeout, 0, 0, talloc_tos(), &msgs);
 	if (!TLDAP_RC_IS_SUCCESS(rc)) {
 		return NT_STATUS_LDAP(TLDAP_RC_V(rc));
 	}
@@ -1249,13 +1256,17 @@ static NTSTATUS idmap_ad_unixids_to_sids_retry(struct idmap_domain *dom,
 {
 	const NTSTATUS status_server_down =
 		NT_STATUS_LDAP(TLDAP_RC_V(TLDAP_SERVER_DOWN));
+	const NTSTATUS status_timeout =
+		NT_STATUS_LDAP(TLDAP_RC_V(TLDAP_TIMEOUT));
 	NTSTATUS status;
 
 	status = idmap_ad_unixids_to_sids(dom, ids);
 
-	if (NT_STATUS_EQUAL(status, status_server_down)) {
+	if (NT_STATUS_EQUAL(status, status_server_down) ||
+	    NT_STATUS_EQUAL(status, status_timeout))
+	{
 		TALLOC_FREE(dom->private_data);
-		status = idmap_ad_unixids_to_sids(dom, ids);
+		return NT_STATUS_HOST_UNREACHABLE;
 	}
 
 	return status;
@@ -1266,13 +1277,17 @@ static NTSTATUS idmap_ad_sids_to_unixids_retry(struct idmap_domain *dom,
 {
 	const NTSTATUS status_server_down =
 		NT_STATUS_LDAP(TLDAP_RC_V(TLDAP_SERVER_DOWN));
+	const NTSTATUS status_timeout =
+		NT_STATUS_LDAP(TLDAP_RC_V(TLDAP_TIMEOUT));
 	NTSTATUS status;
 
 	status = idmap_ad_sids_to_unixids(dom, ids);
 
-	if (NT_STATUS_EQUAL(status, status_server_down)) {
+	if (NT_STATUS_EQUAL(status, status_server_down) ||
+	    NT_STATUS_EQUAL(status, status_timeout))
+	{
 		TALLOC_FREE(dom->private_data);
-		status = idmap_ad_sids_to_unixids(dom, ids);
+		return NT_STATUS_HOST_UNREACHABLE;
 	}
 
 	return status;

@@ -598,6 +598,7 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 	NTSTATUS status, result;
 	const struct wbint_TransIDArray *src = NULL;
 	struct wbint_TransIDArray *dst = NULL;
+	uint32_t dsgetdcname_flags = DS_RETURN_DNS_NAME;
 	uint32_t si;
 
 	status = dcerpc_wbint_Sids2UnixIDs_recv(subreq, state, &result);
@@ -606,6 +607,15 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		D_WARNING("Failed with %s.\n", nt_errstr(status));
 		return;
+	}
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_HOST_UNREACHABLE)) {
+		struct lsa_DomainInfo *d =
+			&state->idmap_doms.domains[state->dom_index];
+		winbind_idmap_add_failed_connection_entry(d->name.string);
+		/* Trigger DC lookup and reconnect below */
+		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		dsgetdcname_flags |= DS_FORCE_REDISCOVERY;
 	}
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) &&
@@ -627,7 +637,7 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 					     domain_name,
 					     NULL,
 					     NULL,
-					     DS_RETURN_DNS_NAME);
+					     dsgetdcname_flags);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
