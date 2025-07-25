@@ -143,7 +143,6 @@ void wcache_invalidate_samlogon(struct winbindd_domain *domain,
 				const struct dom_sid *user_sid);
 bool wcache_invalidate_cache(void);
 bool wcache_invalidate_cache_noinit(void);
-bool initialize_winbindd_cache(void);
 void close_winbindd_cache(void);
 bool lookup_cached_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 		       char **domain_name, char **name,
