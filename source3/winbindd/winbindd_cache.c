@@ -3167,10 +3167,33 @@ bool wcache_invalidate_cache_noinit(void)
 	return true;
 }
 
-static bool init_wcache(void)
+static TDB_CONTEXT *wcache_open(void)
 {
 	char *db_path;
+	TDB_CONTEXT *tdb = NULL;
 
+	db_path = wcache_path();
+	if (db_path == NULL) {
+		return NULL;
+	}
+
+	/* when working offline we must not clear the cache on restart */
+	tdb = tdb_open_log(db_path,
+			   WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
+			   TDB_INCOMPATIBLE_HASH |
+				   (lp_winbind_offline_logon()
+					    ? TDB_DEFAULT
+					    : (TDB_DEFAULT |
+					       TDB_CLEAR_IF_FIRST)),
+			   O_RDWR | O_CREAT,
+			   0600);
+	TALLOC_FREE(db_path);
+
+	return tdb;
+}
+
+static bool init_wcache(void)
+{
 	if (wcache == NULL) {
 		wcache = SMB_XMALLOC_P(struct winbind_cache);
 		ZERO_STRUCTP(wcache);
@@ -3179,18 +3202,7 @@ static bool init_wcache(void)
 	if (wcache->tdb != NULL)
 		return true;
 
-	db_path = wcache_path();
-	if (db_path == NULL) {
-		return false;
-	}
-
-	/* when working offline we must not clear the cache on restart */
-	wcache->tdb = tdb_open_log(db_path,
-				WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
-				TDB_INCOMPATIBLE_HASH |
-					(lp_winbind_offline_logon() ? TDB_DEFAULT : (TDB_DEFAULT | TDB_CLEAR_IF_FIRST)),
-				O_RDWR|O_CREAT, 0600);
-	TALLOC_FREE(db_path);
+	wcache->tdb = wcache_open();
 	if (wcache->tdb == NULL) {
 		DBG_ERR("Failed to open winbindd_cache.tdb!\n");
 		return false;
@@ -3397,8 +3409,6 @@ static int traverse_fn_cleanup(TDB_CONTEXT *the_tdb, TDB_DATA kbuf,
 /* flush the cache */
 static void wcache_flush_cache(void)
 {
-	char *db_path;
-
 	if (!wcache)
 		return;
 	if (wcache->tdb) {
@@ -3409,18 +3419,7 @@ static void wcache_flush_cache(void)
 		return;
 	}
 
-	db_path = wcache_path();
-	if (db_path == NULL) {
-		return;
-	}
-
-	/* when working offline we must not clear the cache on restart */
-	wcache->tdb = tdb_open_log(db_path,
-				WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
-				TDB_INCOMPATIBLE_HASH |
-				(lp_winbind_offline_logon() ? TDB_DEFAULT : (TDB_DEFAULT | TDB_CLEAR_IF_FIRST)),
-				O_RDWR|O_CREAT, 0600);
-	TALLOC_FREE(db_path);
+	wcache->tdb = wcache_open();
 	if (!wcache->tdb) {
 		DBG_ERR("Failed to open winbindd_cache.tdb!\n");
 		return;
@@ -4244,14 +4243,7 @@ int winbindd_validate_cache(void)
 		goto done;
 	}
 
-	tdb = tdb_open_log(tdb_path,
-			   WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
-			   TDB_INCOMPATIBLE_HASH |
-			   ( lp_winbind_offline_logon()
-			     ? TDB_DEFAULT
-			     : TDB_DEFAULT | TDB_CLEAR_IF_FIRST ),
-			   O_RDWR|O_CREAT,
-			   0600);
+	tdb = wcache_open();
 	if (!tdb) {
 		DBG_ERR("winbindd_validate_cache: "
 			  "error opening/initializing tdb\n");
