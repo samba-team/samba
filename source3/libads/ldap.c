@@ -280,6 +280,15 @@ static bool ads_fill_cldap_reply(ADS_STRUCT *ads,
 		goto out;
 	}
 
+	if (cldap_reply->command == LOGON_SAM_LOGON_PAUSE_RESPONSE ||
+	    cldap_reply->command == LOGON_SAM_LOGON_PAUSE_RESPONSE_EX)
+	{
+		DBG_NOTICE("DC %s in paused state\n", addr);
+		ret = false;
+		goto out;
+	}
+
+
 	/* Fill in the ads->config values */
 
 	ADS_TALLOC_CONST_FREE(ads->config.workgroup);
