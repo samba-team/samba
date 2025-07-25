@@ -3212,7 +3212,7 @@ static bool init_wcache(void)
  only opener.
 ************************************************************************/
 
-bool initialize_winbindd_cache(void)
+static bool initialize_winbindd_cache(void)
 {
 	bool cache_bad = false;
 	uint32_t vers = 0;
