@@ -45,6 +45,9 @@
 #include "kdc/pac-glue.h"
 #include "librpc/gen_ndr/ndr_irpc_c.h"
 #include "lib/messaging/irpc.h"
+#include "librpc/gen_ndr/ndr_keycredlink.h"
+#include "talloc.h"
+#include "util/debug.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_KERBEROS
@@ -1184,6 +1187,237 @@ static krb5_error_code samba_kdc_get_entry_principal(
 
 	return code;
 }
+/**
+ * @brief Extract the KeyMaterial from a KEYCREDENTIALLINK_BLOB
+ *        as a KeyMaterialInternal structure.
+ *
+ * The following validation is performed on the KEYCREDENTIALLINK_BLOB:
+ *   1) can be unpacked
+ *   2) has one and only one KeyUsage
+ *   3) that KeyUsage is KEY_USAGE_NGC
+ *   4) has one and only one KeyMaterial
+ *   5) that KeyMaterial can be unpacked
+ *
+ * @param[in] mem_ctx  talloc memory context, that will own pub_key
+ * @param[in] value    ldb value containing the raw KEYCREDENTIALLINK_BLOB
+ * @param[out] pub_key the extracted public key
+ *
+ * @return 0 No error pub_key will be valid
+ *         EINVAL KeyMaterial was invalid, pub_key will be NULL
+ *         ENOMEM memory allocation error pub_key will be NULL
+ */
+static krb5_error_code unpack_key_credential_link_blob(
+	TALLOC_CTX *mem_ctx,
+	struct ldb_val *value,
+	struct KeyMaterialInternal **pub_key)
+{
+
+	krb5_error_code ret = 0;
+	enum ndr_err_code ndr_err = NDR_ERR_SUCCESS;
+	struct KEYCREDENTIALLINK_BLOB blob = {};
+	DATA_BLOB key_material = data_blob_null;
+	int key_usage = 0;
+
+	size_t i = 0;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		*pub_key = NULL;
+		return ENOMEM;
+	}
+	*pub_key = NULL;
+
+	/* Unpack the KEYCREDENTIALLINK_BLOB */
+	ndr_err = ndr_pull_struct_blob_all(
+		value,
+		tmp_ctx,
+		&blob,
+		(ndr_pull_flags_fn_t)ndr_pull_KEYCREDENTIALLINK_BLOB);
+	if (ndr_err != NDR_ERR_SUCCESS) {
+		DBG_WARNING("Unable to unpack KEYCREDENTIALLINK_BLOB, "
+			    "ndr_err_code (%d)",
+			    ndr_err);
+		ret = EINVAL;
+		goto out;
+	}
+
+	/* No need to check the version as that's checked in the ndr_pull */
+
+	/* get the KeyMaterial and KeyUsage */
+	for (i = 0; i < blob.count; i++) {
+		struct KEYCREDENTIALLINK_ENTRY *e = NULL;
+		e = &blob.entries[i];
+		switch (e->identifier) {
+		case KeyMaterial:
+			if (key_material.data != NULL) {
+				DBG_WARNING("Duplicate KeyMaterial");
+				ret = EINVAL;
+				goto out;
+			}
+			key_material = e->value.keyMaterial;
+			break;
+		case KeyUsage:
+			if (key_usage != 0) {
+				DBG_WARNING("Duplicate KeyUsage");
+				ret = EINVAL;
+				goto out;
+			}
+			if (e->value.keyUsage != KEY_USAGE_NGC) {
+				DBG_WARNING("Invalid KeyUsage (%d)",
+					    e->value.keyUsage);
+				ret = EINVAL;
+				goto out;
+			}
+			key_usage = e->value.keyUsage;
+			break;
+		default:
+			break;
+		}
+	}
+	if (key_usage == 0) {
+		DBG_WARNING("No KeyUsage");
+		ret = EINVAL;
+		goto out;
+	}
+	if (key_material.data == NULL) {
+		DBG_WARNING("No KeyMaterial");
+		ret = EINVAL;
+		goto out;
+	}
+
+	/* Unpack the KeyMaterial */
+	*pub_key = talloc(mem_ctx, struct KeyMaterialInternal);
+	if (*pub_key == NULL) {
+		DBG_WARNING("Unable to allocate KeyMaterialInternal");
+		ret = ENOMEM;
+		goto out;
+	}
+	ndr_err = ndr_pull_struct_blob_all(
+		&key_material,
+		mem_ctx,
+		*pub_key,
+		(ndr_pull_flags_fn_t)ndr_pull_KeyMaterialInternal);
+	if (ndr_err != NDR_ERR_SUCCESS) {
+		DBG_WARNING("Unable to unpack KeyMaterialInternal, "
+			    "ndr_err_code (%d)",
+			    ndr_err);
+		ret = EINVAL;
+		TALLOC_FREE(*pub_key);
+		goto out;
+	}
+
+out:
+	TALLOC_FREE(tmp_ctx);
+	return ret;
+}
+
+/**
+ * @brief extract the public keys for key trust authentication from the
+ *        ldb message.
+ *
+ * Processes the KEYCREDENTIALLINK_BLOBs in the msDS-KeyCredentialLink
+ * attribute, extracting all the valid public keys.
+ *
+ * @param mem_ctx[in] talloc memory context
+ * @param msg[in]     ldb message containing the public keys
+ * @param entry[out]  entry will be updated with the keys
+ *
+ * @note Invalid KEYCREDENTIALLINK_BLOB's will be ignored
+ * @note There may be no public keys, indicating that key trust logon is
+ *       not enabled for this object.
+ *
+ * @return 0  No error, and there are zero or more valid keys in entry
+ *         >0 Errors detected
+ */
+static krb5_error_code get_key_trust_public_keys(TALLOC_CTX *mem_ctx,
+						 struct ldb_message *msg,
+						 struct sdb_entry *entry)
+{
+	krb5_error_code ret = 0;
+	struct ldb_message_element *el = NULL;
+	size_t i = 0;
+	struct sdb_pub_keys pub_keys = {};
+
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return ENOMEM;
+	}
+
+	el = ldb_msg_find_element(msg, "msDS-KeyCredentialLink");
+	if (el == NULL || el->num_values == 0) {
+		/* No msDS-KeyCredentialLink nothing to do */
+		goto out;
+	}
+
+	for (i = 0; i < el->num_values; i++) {
+		krb5_error_code r = 0;
+		struct KeyMaterialInternal *kmi = NULL;
+		struct sdb_pub_key pub_key = {};
+		r = unpack_key_credential_link_blob(tmp_ctx,
+						    &el->values[i],
+						    &kmi);
+		if (r == 0) {
+			/* Get bit size*/
+			pub_key.bit_size = kmi->bit_size;
+
+			/* get Exponent */
+			pub_key.exponent.length = kmi->exponent.length;
+			pub_key.exponent.data = malloc(kmi->exponent.length);
+			if (pub_key.exponent.data == NULL) {
+				goto pub_keys_oom;
+			}
+			memcpy(pub_key.exponent.data,
+			       kmi->exponent.data,
+			       kmi->exponent.length);
+
+			/* get Modulus */
+			pub_key.modulus.length = kmi->modulus.length;
+			pub_key.modulus.data = malloc(kmi->modulus.length);
+			if (pub_key.modulus.data == NULL) {
+					SAFE_FREE(pub_key.exponent.data);
+					goto pub_keys_oom;
+			}
+			memcpy(pub_key.modulus.data,
+			       kmi->modulus.data,
+			       kmi->modulus.length);
+
+			/* Add public key to the list of public keys */
+			if (pub_keys.keys == NULL) {
+				pub_keys.len = 0;
+				pub_keys.keys = calloc(1, sizeof(pub_key));
+				if (pub_keys.keys == NULL) {
+					SAFE_FREE(pub_key.exponent.data);
+					SAFE_FREE(pub_key.modulus.data);
+					goto pub_keys_oom;
+				}
+			} else {
+				pub_keys.keys = reallocarray(pub_keys.keys,
+							pub_keys.len + 1,
+							sizeof(pub_key));
+				if (pub_keys.keys == NULL) {
+					SAFE_FREE(pub_key.exponent.data);
+					SAFE_FREE(pub_key.modulus.data);
+					goto pub_keys_oom;
+				}
+			}
+			pub_keys.keys[pub_keys.len] = pub_key;
+			pub_keys.len++;
+		}
+		TALLOC_FREE(kmi);
+	}
+	if (pub_keys.len != 0) {
+		entry->pub_keys = pub_keys;
+	}
+	goto out;
+
+pub_keys_oom:
+	sdb_pub_keys_free(&pub_keys);
+	ret = ENOMEM;
+
+out:
+	TALLOC_FREE(tmp_ctx);
+	return ret;
+}
 
 /*
  * Construct an hdb_entry from a directory entry.
@@ -1923,6 +2157,15 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	p->client_policy = talloc_steal(p, authn_client_policy);
 	p->server_policy = talloc_steal(p, authn_server_policy);
+
+	/*
+	 * get_key_trust_public_keys will return ENOENT if there are no
+	 * public keys loaded for an object, this is not an error condition
+	 */
+	ret = get_key_trust_public_keys(tmp_ctx, msg, entry);
+	if (ret != 0 && ret != ENOENT) {
+		goto out;
+	}
 
 	talloc_steal(kdc_db_ctx, p);
 

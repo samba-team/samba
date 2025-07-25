@@ -67,7 +67,9 @@
 	/* Required for Group Managed Service Accounts. */ \
 	"msDS-ManagedPasswordId",		\
 	"msDS-ManagedPasswordInterval",		\
-	"whenCreated"
+	"whenCreated",				\
+	/* Required for Key Trust authentication */\
+	"msDS-CustomKeyInformation"
 
 #define AUTHN_POLICY_ATTRS                     \
 	/* Required for authentication policies / silos */ \

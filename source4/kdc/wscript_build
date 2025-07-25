@@ -26,6 +26,17 @@ if bld.CONFIG_SET('SAMBA4_USES_HEIMDAL'):
                      ''',
                      internal_module=False)
 
+    bld.SAMBA_BINARY('test_db_glue',
+                    source='tests/db-glue-test.c',
+                    deps='''
+                        db-glue
+                        HDB_SAMBA4
+                        cmocka
+                        talloc
+                        ''',
+                    for_selftest=True,
+                    )
+
 if bld.CONFIG_GET('SAMBA_USES_MITKDC'):
     bld.SAMBA_MODULE('service_kdc',
                      source='kdc-service-mit.c',
@@ -53,6 +64,7 @@ bld.SAMBA_LIBRARY('HDB_SAMBA4',
                   private_library=True,
                   enabled=bld.CONFIG_SET('SAMBA4_USES_HEIMDAL')
                   )
+
 
 # A plugin for Heimdal's kadmin for users who need to operate that tool
 bld.SAMBA_LIBRARY('HDB_SAMBA4_PLUGIN',
