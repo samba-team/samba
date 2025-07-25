@@ -3171,6 +3171,7 @@ static TDB_CONTEXT *wcache_open(void)
 {
 	char *db_path;
 	TDB_CONTEXT *tdb = NULL;
+	bool wcache_wiped = !lp_winbind_offline_logon();
 
 	db_path = wcache_path();
 	if (db_path == NULL) {
@@ -3188,6 +3189,12 @@ static TDB_CONTEXT *wcache_open(void)
 			   O_RDWR | O_CREAT,
 			   0600);
 	TALLOC_FREE(db_path);
+
+	if (wcache_wiped) {
+		tdb_store_uint32(tdb,
+				 WINBINDD_CACHE_VERSION_KEYSTR,
+				 WINBINDD_CACHE_VERSION);
+	}
 
 	return tdb;
 }
