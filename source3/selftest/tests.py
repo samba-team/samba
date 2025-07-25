@@ -727,6 +727,10 @@ plantestsuite("samba3.winbind_call_depth_trace", env,
               [os.path.join(srcdir(),
                             "source3/script/tests/test_winbind_call_depth_trace.sh"),
                smbcontrol, configuration, '$PREFIX', env])
+plantestsuite("samba3.winbind_cache_sanity", env,
+              [os.path.join(srcdir(),
+                            "source3/script/tests/test_winbind_cache_sanity.sh"),
+               '$DOMAIN', '$LOCK_DIR/winbindd_cache.tdb'])
 
 env = "fl2008r2dc:local"
 plantestsuite("samba3.wbinfo_user_info", env,
