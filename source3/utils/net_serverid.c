@@ -29,6 +29,7 @@
 #include "smbd/smbXsrv_open.h"
 #include "util_tdb.h"
 #include "librpc/gen_ndr/ndr_open_files.h"
+#include "librpc/gen_ndr/ndr_smbXsrv.h"
 
 struct wipedbs_record_marker {
 	struct wipedbs_record_marker *prev, *next;
@@ -47,6 +48,8 @@ struct wipedbs_server_data {
 
 struct wipedbs_state {
 	struct db_context *id2server_data;
+	struct db_context *open_records_db;
+	struct db_context *replay_records_db;
 	struct {
 		struct {
 			int total;
@@ -58,7 +61,7 @@ struct wipedbs_state {
 			int disconnected;
 			int todelete;
 			int failure;
-		} session, tcon, open;
+		} session, tcon, open, replay;
 		int open_timed_out;
 	} stat;
 	struct server_id *server_ids;
@@ -233,9 +236,63 @@ done:
 	return ret;
 }
 
+static int wipedbs_traverse_open_replay(struct db_record *db_rec,
+					TDB_DATA *rc_open_global_key,
+					struct wipedbs_state *state)
+{
+	struct wipedbs_record_marker *rec = NULL;
+	TDB_DATA tmp;
+	NTSTATUS status;
+	int ret = -1;
+
+	state->stat.replay.total++;
+
+	rec = talloc_zero(state, struct wipedbs_record_marker);
+	if (rec == NULL) {
+		DBG_ERR("Out of memory!\n");
+		goto done;
+	}
+
+	tmp = dbwrap_record_get_key(db_rec);
+	rec->key = tdb_data_talloc_copy(rec, tmp);
+	tmp = dbwrap_record_get_value(db_rec);
+	rec->val = tdb_data_talloc_copy(rec, tmp);
+
+	rec->desc = talloc_asprintf(
+		rec,
+		"replay rec [global key: %s]",
+		hex_encode_talloc(rec,
+				  rc_open_global_key->dptr,
+				  rc_open_global_key->dsize));
+
+	if ((rec->key.dptr == NULL) || (rec->val.dptr == NULL) ||
+	    (rec->desc == NULL))
+	{
+		DEBUG(0, ("Out of memory!\n"));
+		goto done;
+	}
+
+	tmp = make_tdb_data((const void*)&rec, sizeof(rec));
+
+	status = dbwrap_store(state->replay_records_db,
+			      rec->key,
+			      tmp,
+			      TDB_INSERT);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to store replay record for %s: %s\n",
+			rec->desc, nt_errstr(status));
+		ret = -1;
+		goto done;
+	}
+	ret = 0;
+
+done:
+	return ret;
+}
+
 static int wipedbs_traverse_open(struct db_record *db_rec,
 				 struct smbXsrv_open_global0 *open,
-				 TDB_DATA *open_global_key,
+				 TDB_DATA *rc_open_global_key,
 				 void *wipedbs_state)
 {
 	struct wipedbs_state *state =
@@ -243,8 +300,16 @@ static int wipedbs_traverse_open(struct db_record *db_rec,
 		struct wipedbs_state);
 	struct wipedbs_server_data *sd;
 	struct wipedbs_record_marker *rec;
+	TDB_DATA val;
 	TDB_DATA tmp;
+	NTSTATUS status;
 	int ret = -1;
+
+	if (rc_open_global_key != NULL) {
+		return wipedbs_traverse_open_replay(db_rec,
+						    rc_open_global_key,
+						    state);
+	}
 
 	state->stat.open.total++;
 
@@ -324,6 +389,16 @@ static int wipedbs_traverse_open(struct db_record *db_rec,
 	state->open_db = dbwrap_record_get_db(db_rec);
 
 	DLIST_ADD(sd->open_records, rec);
+
+	val = make_tdb_data((const void*)&rec, sizeof(rec));
+
+	status = dbwrap_store(state->open_records_db, rec->key, val, TDB_INSERT);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to store server entry for %s: %s\n",
+			rec->desc, nt_errstr(status));
+		ret = -1;
+		goto done;
+	}
 	ret = 0;
 
 done:
@@ -441,6 +516,7 @@ done:
 }
 
 struct wipedbs_delete_state {
+	struct wipedbs_state *state;
 	struct wipedbs_record_marker *cur;
 	bool verbose;
 	bool dry_run;
@@ -471,58 +547,108 @@ static void wipedbs_delete_fn(
 
 	if (!state->dry_run) {
 		status = dbwrap_record_delete(rec);
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("Failed to delete record <%s> from %s: %s\n",
-			cur->desc,
-			dbwrap_name(db),
-			nt_errstr(status));
-		return;
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("Failed to delete record <%s> from %s: %s\n",
+				cur->desc,
+				dbwrap_name(db),
+				nt_errstr(status));
+			return;
+		}
 	}
 
 	state->num += 1;
 }
 
-static int wipedbs_delete_records(struct db_context *db,
+static void wipedbs_delete_replay_record(
+	struct wipedbs_delete_state *delete_state)
+{
+	TALLOC_CTX *mem_ctx = NULL;
+	struct wipedbs_record_marker *cur = delete_state->cur;
+	DATA_BLOB blob = data_blob_const(cur->val.dptr, cur->val.dsize);
+	struct smbXsrv_open_globalB global_blob;
+	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+
+	/* Deleting open records, also remove associated replay record */
+
+	mem_ctx = talloc_new(delete_state->state);
+	if (mem_ctx == NULL) {
+		DBG_ERR("talloc_new failed\n");
+		return;
+	}
+
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &global_blob,
+			(ndr_pull_flags_fn_t)ndr_pull_smbXsrv_open_globalB);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_ERR("Invalid record in smbXsrv_open_global.tdb:"
+			"key '%s' ndr_pull_struct_blob - %s\n%s\n",
+			tdb_data_dbg(cur->key),
+			ndr_errstr(ndr_err),
+			tdb_data_dbg(cur->val));
+		return;
+	}
+
+	if (global_blob.version != SMBXSRV_VERSION_0) {
+		DBG_ERR("Unsupported open record version %u\n",
+			global_blob.version);
+		TALLOC_FREE(mem_ctx);
+		return;
+	}
+
+	status = smbXsrv_replay_cleanup(&global_blob.info.info0->client_guid,
+					&global_blob.info.info0->create_guid);
+	TALLOC_FREE(mem_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Replay record cleanup failed\n");
+		return;
+	}
+}
+
+static int wipedbs_delete_records(struct wipedbs_state *state,
+				  struct db_context *db,
 				  struct wipedbs_record_marker *records,
 				  bool dry_run, bool verbose, int *count)
 {
-	struct wipedbs_delete_state state = {
-		.verbose = verbose, .dry_run = dry_run,
+	struct wipedbs_delete_state delete_state = {
+		.state = state, .verbose = verbose, .dry_run = dry_run,
 	};
 
 	if (db == NULL) {
 		return 0;
 	}
 
-	for (state.cur = records;
-	     state.cur != NULL;
-	     state.cur = state.cur->next) {
+	for (delete_state.cur = records;
+	     delete_state.cur != NULL;
+	     delete_state.cur = delete_state.cur->next) {
 
 		NTSTATUS status = dbwrap_do_locked(
-			db, state.cur->key, wipedbs_delete_fn, &state);
+			db, delete_state.cur->key, wipedbs_delete_fn, &delete_state);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("dbwrap_do_locked failed for record <%s> "
 				"from %s\n",
-				state.cur->desc,
+				delete_state.cur->desc,
 				dbwrap_name(db));
 		}
+
+		if (state->open_db != db) {
+			continue;
+		}
+		wipedbs_delete_replay_record(&delete_state);
 	}
 
 	if (verbose) {
 		d_printf("Deleted %zu of %zu records from %s\n",
-			 state.num,
-			 state.total,
+			 delete_state.num,
+			 delete_state.total,
 			 dbwrap_name(db));
 	}
 
 	if (count) {
-		*count += state.total;
+		*count += delete_state.total;
 	}
 
-	return state.total - state.num;
+	return delete_state.total - delete_state.num;
 }
 
 static int wipedbs_traverse_server_data(struct db_record *rec,
@@ -547,20 +673,63 @@ static int wipedbs_traverse_server_data(struct db_record *rec,
 		return 0;
 	}
 
-	ret = wipedbs_delete_records(state->session_db, sd->session_records,
+	ret = wipedbs_delete_records(state, state->session_db, sd->session_records,
 				     dry_run, state->verbose,
 				     &state->stat.session.todelete);
 	state->stat.session.failure += ret;
 
-	ret = wipedbs_delete_records(state->tcon_db, sd->tcon_records,
+	ret = wipedbs_delete_records(state, state->tcon_db, sd->tcon_records,
 				     dry_run, state->verbose,
 				     &state->stat.tcon.todelete);
 	state->stat.tcon.failure += ret;
 
-	ret = wipedbs_delete_records(state->open_db, sd->open_records,
+	ret = wipedbs_delete_records(state, state->open_db, sd->open_records,
 				     dry_run, state->verbose,
 				     &state->stat.open.todelete);
 	state->stat.open.failure += ret;
+
+	return 0;
+}
+
+static int wipedbs_traverse_replay_records(struct db_record *rec,
+					   void *wipedbs_state)
+{
+	struct wipedbs_state *state = talloc_get_type_abort(
+		wipedbs_state, struct wipedbs_state);
+	bool dry_run = state->testmode;
+	TDB_DATA key = dbwrap_record_get_key(rec);
+	TDB_DATA val = dbwrap_record_get_value(rec);
+	struct wipedbs_record_marker *m = talloc_get_type_abort(
+		*(void **)val.dptr, struct wipedbs_record_marker);
+	TDB_DATA open_key;
+	bool exists;
+	NTSTATUS status;
+
+	exists = dbwrap_exists(state->open_db, key);
+	if (!exists) {
+		/*
+		 * Already properly removed when removing the
+		 * open record.
+		 */
+		return 0;
+	}
+
+	open_key = m->val;
+	exists = dbwrap_exists(state->open_records_db, open_key);
+	if (exists) {
+		return 0;
+	}
+
+	state->stat.replay.todelete++;
+
+	if (!dry_run) {
+		status = dbwrap_purge(state->open_db, key);
+		if (!NT_STATUS_IS_OK(status)) {
+			state->stat.replay.failure++;
+			DBG_ERR("dbwrap_purge failed\n");
+			return -1;
+		}
+	}
 
 	return 0;
 }
@@ -593,6 +762,18 @@ static int net_serverid_wipedbs(struct net_context *c, int argc,
 		goto done;
 	}
 
+	state->open_records_db = db_open_rbt(state);
+	if (state->open_records_db == NULL) {
+		DBG_ERR("Failed to open temporary database\n");
+		goto done;
+	}
+
+	state->replay_records_db = db_open_rbt(state);
+	if (state->replay_records_db == NULL) {
+		DBG_ERR("Failed to open temporary database\n");
+		goto done;
+	}
+
 	status = smbXsrv_session_global_traverse(wipedbs_traverse_sessions,
 						 state);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -619,6 +800,14 @@ static int net_serverid_wipedbs(struct net_context *c, int argc,
 				      state, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to traverse db: %s\n", nt_errstr(status)));
+		goto done;
+	}
+
+	status = dbwrap_traverse_read(state->replay_records_db,
+				      wipedbs_traverse_replay_records,
+				      state, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to replay records: %s\n", nt_errstr(status));
 		goto done;
 	}
 
@@ -649,6 +838,13 @@ static int net_serverid_wipedbs(struct net_context *c, int argc,
 		 state->stat.open_timed_out,
 		 state->stat.open.todelete - state->stat.open.failure,
 		 state->stat.open.todelete);
+
+	d_printf("Found %d replay records, %d alive, "
+		 "cleaned up %d entries, %d failed\n",
+		 state->stat.replay.total,
+		 state->stat.replay.total - state->stat.replay.todelete,
+		 state->stat.replay.todelete,
+		 state->stat.replay.failure);
 
 	ret = 0;
 done:
