@@ -493,6 +493,12 @@ interface smbXsrv
 		[switch_is(version)] smbXsrv_openU	info;
 	} smbXsrv_openB;
 
+	const uint32 SMBXSRV_OPEN_REPLAY_CACHE_KEY_FIXED_SIZE = 32;
+	typedef [public] struct {
+		GUID					client_guid;
+		GUID					create_guid;
+	} smbXsrv_open_replay_cache_key;
+
 	typedef [public] struct {
 		DATA_BLOB				open_global_key;
 	} smbXsrv_open_replay_cache;
