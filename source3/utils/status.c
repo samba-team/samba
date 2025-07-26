@@ -133,7 +133,7 @@ static int print_share_mode_stdout(struct traverse_state *state,
 				   const char *pid,
 				   const char *user_name,
 				   const char *denymode,
-				   int access_mask,
+				   const struct share_mode_entry *e,
 				   const char *rw,
 				   const char *oplock,
 				   const char *servicepath,
@@ -142,14 +142,16 @@ static int print_share_mode_stdout(struct traverse_state *state,
 {
 	if (state->first) {
 		d_printf("\nLocked files:\n");
-		d_printf("Pid          User(ID)   DenyMode   Access      R/W        Oplock           SharePath   Name   Time\n");
-		d_printf("--------------------------------------------------------------------------------------------------\n");
+		d_printf("Pid          User(ID)   DenyMode   Access      R/W        Oplock           Persistent SharePath   Name   Time\n");
+		d_printf("------------------------------------------------------------------------------------------------------\n");
 
 		state->first = false;
 	}
 
-	d_printf("%-11s  %-9s  %-10s 0x%-8x  %-10s %-14s   %s   %s   %s",
-		 pid, user_name, denymode, access_mask, rw, oplock,
+	d_printf("%-11s  %-9s  %-10s 0x%-8x  %-10s %-16s %-10s %s   %s   %s",
+		 pid, user_name, denymode, e->access_mask,
+		 rw, oplock,
+		 e->flags & SHARE_ENTRY_FLAG_PERSISTENT_OPEN ? "yes" : "no",
 		 servicepath, filename, timestr);
 	return 0;
 }
@@ -213,7 +215,10 @@ static int print_share_mode(struct file_id fid,
 		return 0;
 	}
 
-	if (do_checks && !serverid_exists(&e->pid)) {
+	if (do_checks &&
+	    !(e->flags & SHARE_ENTRY_FLAG_PERSISTENT_OPEN) &&
+	    !serverid_exists(&e->pid))
+	{
 		/* the process for this entry does not exist any more */
 		TALLOC_FREE(tmp_ctx);
 		return 0;
@@ -329,7 +334,7 @@ static int print_share_mode(struct file_id fid,
 						pid,
 						user_str,
 						denymode,
-						(unsigned int)e->access_mask,
+						e,
 						rw,
 						oplock,
 						d->servicepath,

@@ -185,6 +185,15 @@ static const struct mask2txt lease_mask[] = {
 	{0, NULL}
 };
 
+static const struct mask2txt flags_mask[] = {
+	{SHARE_ENTRY_FLAG_POSIX_OPEN, "posix"},
+	{SHARE_ENTRY_FLAG_STREAM_BASEOPEN, "baseopen"},
+	{SHARE_ENTRY_FLAG_DENY_DOS, "deny-dos"},
+	{SHARE_ENTRY_FLAG_DENY_FCB, "deny-fcb"},
+	{SHARE_ENTRY_FLAG_PERSISTENT_OPEN, "persistent"},
+	{0, NULL}
+};
+
 /* Add nested json key:value entry, up to 4 levels deep */
 static int add_nested_item_to_json(struct json_object *root_json,
 				   const char **subs,
@@ -721,6 +730,49 @@ failure:
 	return -1;
 }
 
+static int add_flags_to_json(struct json_object *parent_json,
+			     uint16_t flags)
+{
+	struct json_object flags_json;
+	char *flags_hex = NULL;
+	int result;
+
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return -1;
+	}
+
+	flags_json = json_new_object();
+	if (json_is_invalid(&flags_json)) {
+		goto failure;
+	}
+
+	flags_hex = talloc_asprintf(tmp_ctx, "0x%08x", flags);
+	if (flags_hex == NULL) {
+		  goto failure;
+	}
+	result = json_add_string(&flags_json, "hex", flags_hex);
+	if (result < 0) {
+		  goto failure;
+	}
+	result = map_mask_to_json(&flags_json, flags, flags_mask);
+	if (result < 0) {
+		goto failure;
+	}
+
+	result = json_add_object(parent_json, "flags_mask", &flags_json);
+	if (result < 0) {
+		goto failure;
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return 0;
+failure:
+	json_free(&flags_json);
+	TALLOC_FREE(tmp_ctx);
+	return -1;
+}
+
 static int add_caching_to_json(struct json_object *parent_json,
 			      int op_type,
 			      int lease_type)
@@ -1061,6 +1113,10 @@ static int add_open_to_json(struct json_object *parent_json,
 	}
 	add_lease = e->op_type & LEASE_OPLOCK;
 	result = add_lease_to_json(&sub_json, lease_type, e->lease_key, add_lease);
+	if (result < 0) {
+		goto failure;
+	}
+	result = add_flags_to_json(&sub_json, e->flags);
 	if (result < 0) {
 		goto failure;
 	}
