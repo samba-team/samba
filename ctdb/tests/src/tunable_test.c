@@ -51,7 +51,10 @@ int main(int argc, const char **argv)
 	mem_ctx = talloc_new(NULL);
 	assert(mem_ctx != NULL);
 
-	logging_init(mem_ctx, "file:", NULL, "tunable_test");
+	ret = logging_init(mem_ctx, "file:", NULL, "tunable_test");
+	if (ret != 0) {
+		fprintf(stderr, "%s: error initialising logging\n", argv[0]);
+	}
 
 	ctdb_tunable_set_defaults(&tun_list);
 
