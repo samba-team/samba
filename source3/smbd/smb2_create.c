@@ -682,6 +682,7 @@ struct smbd_smb2_create_state {
 	struct deferred_open_record *open_rec;
 	files_struct *result;
 	bool replay_operation;
+	bool replay_reconnect;
 	uint8_t in_oplock_level;
 	uint32_t in_create_disposition;
 	uint32_t in_create_options;
@@ -1078,7 +1079,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	 * there is nothing else to do), durable_reconnect or
 	 * new open.
 	 */
-	if (state->replay_operation) {
+	if (state->replay_operation && !state->replay_reconnect) {
+		SMB_ASSERT(state->op != NULL);
 		state->result = state->op->compat;
 		state->result->op = state->op;
 		state->update_open = false;
@@ -1093,10 +1095,16 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		return req;
 	}
 
-	if (state->do_durable_reconnect) {
+	if (state->do_durable_reconnect || state->replay_reconnect) {
 		DATA_BLOB new_cookie = data_blob_null;
 		NTTIME now = timeval_to_nttime(&smb2req->request_time);
 		const struct smb2_lease_key *lease_key = NULL;
+
+		/*
+		 * Assert a replay on a multichannel connection doesn't end up
+		 * here.
+		 */
+		SMB_ASSERT(state->op == NULL);
 
 		if (state->lease_ptr != NULL) {
 			lease_key = &state->lease_ptr->lease_key;
@@ -1168,7 +1176,11 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		state->update_open = true;
 
-		state->info = FILE_WAS_OPENED;
+		if (!state->replay_reconnect) {
+			state->info = FILE_WAS_OPENED;
+		} else {
+			state->info = state->op->global->create_action;
+		}
 
 		smbd_smb2_create_after_exec(req);
 		if (!tevent_req_is_in_progress(req)) {
@@ -1457,6 +1469,7 @@ static void smbd_smb2_cc_before_exec_dhc2q(struct tevent_req *req)
 						  *state->create_guid,
 						  state->fname,
 						  now,
+						  &state->persistent_id,
 						  &state->op);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_FWP_RESERVED)) {
 		/*
@@ -1475,6 +1488,8 @@ static void smbd_smb2_cc_before_exec_dhc2q(struct tevent_req *req)
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_NOT_AVAILABLE)) {
 		tevent_req_nterror(req, status);
 		return;
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_HANDLE_NO_LONGER_VALID)) {
+		state->replay_reconnect = true;
 	} else if (tevent_req_nterror(req, status)) {
 		DBG_WARNING("smb2srv_open_lookup_replay_cache "
 			    "failed: %s\n", nt_errstr(status));
@@ -1665,7 +1680,7 @@ static void smbd_smb2_create_before_exec(struct tevent_req *req)
 		 * established open carries a lease with the
 		 * same lease key.
 		 */
-		if (state->replay_operation) {
+		if (state->replay_operation && !state->replay_reconnect) {
 			struct smb2_lease *op_ls =
 				&state->op->compat->lease->lease;
 			int op_oplock = state->op->compat->oplock_type;
