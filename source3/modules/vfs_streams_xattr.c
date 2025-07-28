@@ -659,8 +659,7 @@ static int streams_xattr_renameat(vfs_handle_struct *handle,
 	}
 
 	/* Don't rename if the streams are identical. */
-	if (strcasecmp_m(smb_fname_src->stream_name,
-		       smb_fname_dst->stream_name) == 0) {
+	if (strequal(smb_fname_src->stream_name, smb_fname_dst->stream_name)) {
 		goto done;
 	}
 
