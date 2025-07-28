@@ -1673,7 +1673,8 @@ NTSTATUS secrets_prepare_password_change(const char *domain, const char *dcname,
 					 TALLOC_CTX *mem_ctx,
 					 struct secrets_domain_info1 **pinfo,
 					 struct secrets_domain_info1_change **pprev,
-					 NTSTATUS (*sync_pw2keytabs_fn)(void))
+					 NTSTATUS (*sync_pw2keytabs_fn)(const char *),
+					 const char *opt_host)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct db_context *db = NULL;
@@ -1770,7 +1771,7 @@ NTSTATUS secrets_prepare_password_change(const char *domain, const char *dcname,
 	}
 
 	if (prev == NULL && sync_pw2keytabs_fn != NULL) {
-		status = sync_pw2keytabs_fn();
+		status = sync_pw2keytabs_fn(opt_host);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("Sync of machine password failed.\n");
 			TALLOC_FREE(frame);
@@ -2022,7 +2023,8 @@ NTSTATUS secrets_defer_password_change(const char *change_server,
 NTSTATUS secrets_finish_password_change(const char *change_server,
 					NTTIME change_time,
 					const struct secrets_domain_info1 *cookie,
-					NTSTATUS (*sync_pw2keytabs_fn)(void))
+					NTSTATUS (*sync_pw2keytabs_fn)(const char *),
+					const char *prefer_dc)
 {
 	const char *domain = cookie->domain_info.name.string;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -2101,7 +2103,7 @@ NTSTATUS secrets_finish_password_change(const char *change_server,
 	}
 
 	if (sync_pw2keytabs_fn != NULL) {
-		status = sync_pw2keytabs_fn();
+		status = sync_pw2keytabs_fn(prefer_dc);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("Sync of machine password failed.\n");
 			TALLOC_FREE(frame);

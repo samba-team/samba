@@ -235,10 +235,11 @@ static int net_changesecretpw(struct net_context *c, int argc,
 							 &info,
 							 &prev,
 #ifdef HAVE_ADS
-							 sync_pw2keytabs);
+							 sync_pw2keytabs,
 #else
-							 NULL);
+							 NULL,
 #endif
+							 c->opt_host);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_fprintf(stderr,
 			        _("Unable to write the machine account password in the secrets database"));
@@ -261,10 +262,11 @@ static int net_changesecretpw(struct net_context *c, int argc,
 							now,
 							info,
 #ifdef HAVE_ADS
-							sync_pw2keytabs);
+							sync_pw2keytabs,
 #else
-							NULL);
+							NULL,
 #endif
+							c->opt_host);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_fprintf(stderr,
 			        _("Unable to write the machine account password in the secrets database"));

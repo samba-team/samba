@@ -229,6 +229,6 @@ struct spn_struct {
 /* parse a windows style SPN, returns NULL if parsing fails */
 struct spn_struct *parse_spn(TALLOC_CTX *ctx, const char *srvprinc);
 
-NTSTATUS sync_pw2keytabs(void);
+NTSTATUS sync_pw2keytabs(const char *prefer_dc);
 
 #endif /* _LIBADS_ADS_PROTO_H_ */
