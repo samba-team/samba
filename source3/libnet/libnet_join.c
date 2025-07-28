@@ -866,7 +866,7 @@ static ADS_STATUS libnet_join_set_etypes(TALLOC_CTX *mem_ctx,
 static bool libnet_join_create_keytab(TALLOC_CTX *mem_ctx,
 				      struct libnet_JoinCtx *r)
 {
-	NTSTATUS ntstatus = sync_pw2keytabs();
+	NTSTATUS ntstatus = sync_pw2keytabs(r->in.dc_name);
 
 	return NT_STATUS_IS_OK(ntstatus);
 }

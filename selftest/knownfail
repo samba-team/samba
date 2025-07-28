@@ -340,7 +340,6 @@
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_security_descriptor.*
 ^samba4.blackbox.dbcheck-links.release-4-5-0-pre1.dbcheck_dangling_multi_valued_clean
 ^samba4.blackbox.dbcheck-links.release-4-5-0-pre1.dangling_multi_valued_check_missing
-^samba4.blackbox.net_ads_join.join
 
 # We currently don't send referrals for LDAP modify of non-replicated attrs
 ^samba4.ldap.rodc.python\(rodc\).__main__.RodcTests.test_modify_nonreplicated.*

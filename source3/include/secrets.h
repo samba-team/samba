@@ -125,12 +125,15 @@ char *secrets_domain_info_string(TALLOC_CTX *mem_ctx, const struct secrets_domai
 NTSTATUS secrets_fetch_or_upgrade_domain_info(const char *domain,
 					TALLOC_CTX *mem_ctx,
 					struct secrets_domain_info1 **pinfo);
-NTSTATUS secrets_prepare_password_change(const char *domain, const char *dcname,
-					 const char *cleartext_unix,
-					 TALLOC_CTX *mem_ctx,
-					 struct secrets_domain_info1 **pinfo,
-					 struct secrets_domain_info1_change **pprev,
-					 NTSTATUS (*sync_pw2keytabs_fn)(void));
+NTSTATUS secrets_prepare_password_change(
+	const char *domain,
+	const char *dcname,
+	const char *cleartext_unix,
+	TALLOC_CTX *mem_ctx,
+	struct secrets_domain_info1 **pinfo,
+	struct secrets_domain_info1_change **pprev,
+	NTSTATUS (*sync_pw2keytabs_fn)(const char *),
+	const char *opt_host);
 NTSTATUS secrets_failed_password_change(const char *change_server,
 					NTSTATUS local_status,
 					NTSTATUS remote_status,
@@ -139,10 +142,12 @@ NTSTATUS secrets_defer_password_change(const char *change_server,
 				       NTSTATUS local_status,
 				       NTSTATUS remote_status,
 				       const struct secrets_domain_info1 *info);
-NTSTATUS secrets_finish_password_change(const char *change_server,
-					NTTIME change_time,
-					const struct secrets_domain_info1 *info,
-					NTSTATUS (*sync_pw2keytabs_fn)(void));
+NTSTATUS secrets_finish_password_change(
+	const char *change_server,
+	NTTIME change_time,
+	const struct secrets_domain_info1 *info,
+	NTSTATUS (*sync_pw2keytabs_fn)(const char *),
+	const char *prefer_dc);
 bool secrets_delete_machine_password_ex(const char *domain, const char *realm);
 bool secrets_delete_domain_sid(const char *domain);
 char *secrets_fetch_prev_machine_password(const char *domain);

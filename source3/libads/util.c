@@ -59,10 +59,11 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
 						 &info,
 						 &prev,
 #ifdef HAVE_ADS
-						 sync_pw2keytabs);
+						 sync_pw2keytabs,
 #else
-						 NULL);
+						 NULL,
 #endif
+						 ads->auth.kdc_server);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ADS_ERROR_NT(status);
 	}
@@ -138,10 +139,11 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
 						now,
 						info,
 #ifdef HAVE_ADS
-						sync_pw2keytabs);
+						sync_pw2keytabs,
 #else
-						NULL);
+						NULL,
 #endif
+						ads->auth.kdc_server);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1,("Failed to save machine password\n"));
 		return ADS_ERROR_NT(status);
