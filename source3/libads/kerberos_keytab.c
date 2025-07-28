@@ -84,6 +84,7 @@ struct pw2kt_global_state {
 	char *ad_upn;
 	char *ad_sam_account;
 	char **ad_spn_array;
+	const char *prefer_dc;
 	size_t ad_num_spns;
 	/* This is from secrets.db */
 	struct secrets_domain_info1 *info;
@@ -869,8 +870,11 @@ static ADS_STATUS pw2kt_get_dc_info(struct pw2kt_global_state *state)
 	int count;
 	bool ok;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
-	ADS_STRUCT *ads = ads_init(
-		tmp_ctx, lp_realm(), lp_workgroup(), NULL, ADS_SASL_SIGN);
+	ADS_STRUCT *ads = ads_init(tmp_ctx,
+				   lp_realm(),
+				   lp_workgroup(),
+				   state->prefer_dc,
+				   ADS_SASL_SIGN);
 
 	if (ads == NULL) {
 		DBG_ERR("ads_init() failed\n");
@@ -1029,7 +1033,20 @@ static bool pw2kt_default_keytab_name(char *name_str, size_t name_size)
 	return true;
 }
 
-NTSTATUS sync_pw2keytabs(void)
+/**
+ * @internal
+ *
+ * @brief Sync machine password from secrets to keytab
+ *
+ * @param prefer_dc  The DC we should talk to. This is especially important
+ *                   during domain join. Pass NULL if we should pick a random
+ *                   one.
+ *
+ * @return An NTSTATUS error code.
+ *
+ * @see NT_STATUS_IS_OK()
+ */
+NTSTATUS sync_pw2keytabs(const char *prefer_dc)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	const struct loadparm_substitution *lp_sub =
@@ -1055,6 +1072,7 @@ NTSTATUS sync_pw2keytabs(void)
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
+	state->prefer_dc = prefer_dc;
 
 	lp_ptr = lp_sync_machine_password_to_keytab();
 	if (lp_ptr == NULL) {
