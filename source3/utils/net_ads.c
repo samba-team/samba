@@ -2965,7 +2965,7 @@ static int net_ads_keytab_create(struct net_context *c, int argc, const char **a
 		net_use_krb_machine_account(c);
 	}
 
-	ntstatus = sync_pw2keytabs();
+	ntstatus = sync_pw2keytabs(c->opt_host);
 	ret = NT_STATUS_IS_OK(ntstatus) ? 0 : 1;
 	return ret;
 }

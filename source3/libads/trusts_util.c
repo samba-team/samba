@@ -360,10 +360,11 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 							 &info,
 							 &prev,
 #ifdef HAVE_ADS
-							 sync_pw2keytabs);
+							 sync_pw2keytabs,
 #else
-							 NULL);
+							 NULL,
 #endif
+							 NULL /* opt_host */);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("secrets_prepare_password_change() failed for domain %s!\n",
 				  domain));
@@ -610,10 +611,11 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 			prev->password->change_time,
 			info,
 #ifdef HAVE_ADS
-			sync_pw2keytabs);
+			sync_pw2keytabs,
 #else
-			NULL);
+			NULL,
 #endif
+			prev->password->change_server);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("secrets_prepare_password_change() failed for domain %s!\n",
 				  domain));
@@ -759,10 +761,11 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 			info->next_change->change_time,
 			info,
 #ifdef HAVE_ADS
-			sync_pw2keytabs);
+			sync_pw2keytabs,
 #else
-			NULL);
+			NULL,
 #endif
+			info->next_change->change_server);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("secrets_finish_password_change() failed for domain %s!\n",
 				  domain));
