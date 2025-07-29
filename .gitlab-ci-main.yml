@@ -572,7 +572,7 @@ coverity:
     - wget https://scan.coverity.com/download/linux64 --post-data "token=$COVERITY_SCAN_TOKEN&project=$COVERITY_SCAN_PROJECT_NAME" -O /tmp/coverity_tool.tgz
     - tar xf /tmp/coverity_tool.tgz
     - ./configure.developer --with-cluster-support
-    - cov-analysis-linux64-*/bin/cov-build --dir cov-int make -j$(nproc)
+    - cov-analysis-linux64-*/bin/coverity capture --dir cov-int --project-dir ./
     - tar czf cov-int.tar.gz cov-int
     - curl
       --form token=$COVERITY_SCAN_TOKEN

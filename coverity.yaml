@@ -1,0 +1,19 @@
+---
+# To see all config options, visit:
+# https://documentation.blackduck.com/bundle/coverity-docs/page/cli/topics/options_reference.html
+version: 1
+
+capture:
+  languages:
+    include:
+      - c-family
+  build:
+    build-command: make -j$(nproc)
+    clean-command: make clean
+
+analyze:
+  model-file: coverity/user_models.xmldb
+  checkers:
+    c-family-security: true
+    concurrency: false
+    rule: true
