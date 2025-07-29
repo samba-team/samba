@@ -3606,7 +3606,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
         except LdbError:
             self.fail()
 
-    def test_modify_spn_matching_dns_host_name_invalid(self):
+    def test_modify_spn_matching_dns_host_name_valid(self):
         '''Test modifying SPN with validated write, matching a valid dNSHostName '''
 
         ou_dn = f'OU=test_modify_ou1,{self.base_dn}'
