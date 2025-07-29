@@ -452,6 +452,7 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 				  const struct ldb_val *spn_value,
 				  uint32_t userAccountControl,
 				  const struct ldb_val *samAccountName,
+				  const struct ldb_val *original_dnsHostName,
 				  const struct ldb_val *dnsHostName,
 				  const char *netbios_name,
 				  const char *ntds_guid)
@@ -582,6 +583,14 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 	{
 		goto success;
 	}
+	if ((original_dnsHostName != NULL) &&
+	    strlen(instanceName) == original_dnsHostName->length &&
+	    (strncasecmp(instanceName,
+			 (const char *)original_dnsHostName->data,
+			 original_dnsHostName->length) == 0))
+	{
+		goto success;
+	}
 	if (is_dc) {
 		const char *guid_str = NULL;
 		guid_str = talloc_asprintf(mem_ctx,"%s._msdcs.%s",
@@ -637,6 +646,7 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 	struct ldb_dn *partitions_dn = samdb_partitions_dn(ldb, tmp_ctx);
 	uint32_t userAccountControl;
 	const char *netbios_name;
+	const struct ldb_val *original_dns_host_name_val = NULL;
 	const struct ldb_val *dns_host_name_val = NULL;
 	const struct ldb_val *sam_account_name_val = NULL;
 	struct GUID ntds;
@@ -739,12 +749,13 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 	}
 
 	if (req->operation == LDB_MODIFY) {
-		dns_host_name_val = ldb_msg_find_ldb_val(search_res, "dNSHostName");
+		original_dns_host_name_val = ldb_msg_find_ldb_val(
+			search_res, "dNSHostName");
 	}
 
 	ret = dsdb_msg_get_single_value(msg,
 					"dNSHostName",
-					dns_host_name_val,
+					original_dns_host_name_val,
 					&dns_host_name_val,
 					req->operation);
 	if (ret != LDB_SUCCESS) {
@@ -809,6 +820,7 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 					     &el->values[i],
 					     userAccountControl,
 					     sam_account_name_val,
+					     original_dns_host_name_val,
 					     dns_host_name_val,
 					     netbios_name,
 					     ntds_guid);
