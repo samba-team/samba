@@ -3723,7 +3723,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
 
         self.ldb_admin.create_ou(ou_dn)
 
-        sam_account_name = '3e0abfd0-126a-11d0-a060-00aa006c33ed'
+        sam_account_name = samba.dsdb.DS_GUID_SCHEMA_ATTR_SAM_ACCOUNT_NAME
 
         # Grant Write Property.
         mod = (f'(OA;CI;WP;{sam_account_name};;'
@@ -3776,7 +3776,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
 
         self.ldb_admin.create_ou(ou_dn)
 
-        sam_account_name = '3e0abfd0-126a-11d0-a060-00aa006c33ed'
+        sam_account_name = samba.dsdb.DS_GUID_SCHEMA_ATTR_SAM_ACCOUNT_NAME
 
         # Grant Write Property.
         mod = (f'(OA;CI;WP;{sam_account_name};;'
