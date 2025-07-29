@@ -349,14 +349,18 @@ static bool test_buffer(struct torture_context *test,
 static bool test_codepoint(struct torture_context *tctx, unsigned int codepoint)
 {
 	uint8_t buf[10];
-	size_t size, size2;
+	ssize_t size;
+	size_t size2;
 	codepoint_t c;
 
 	size = push_codepoint_handle(lpcfg_iconv_handle(tctx->lp_ctx), (char *)buf, codepoint);
-	torture_assert(tctx, size != -1 || (codepoint >= 0xd800 && codepoint <= 0x10000), 
+	torture_assert(tctx,
+		       size >= 0 ||
+			       (codepoint >= 0xd800 && codepoint <= 0x10000),
 		       "Invalid Codepoint range");
 
-	if (size == -1) return true;
+	if (size < 0)
+		return true;
 
 	buf[size] = random();
 	buf[size+1] = random();
