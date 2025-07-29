@@ -1298,6 +1298,39 @@ _PUBLIC_ void *_talloc_realloc_array(const void *ctx, void *ptr, size_t el_size,
 
 #ifdef DOXYGEN
 /**
+ * @brief Change the size of a talloc array, zero out additional space.
+ *
+ * Same as talloc_realloc() with the additional behavior to zero out
+ * code in case the array is expanded.
+ *
+ * @param[in]  ctx      The parent context used if ptr is NULL.
+ *
+ * @param[in]  ptr      The chunk to be resized.
+ *
+ * @param[in]  type     The type of the array element inside ptr.
+ *
+ * @param[in]  count    The intended number of array elements.
+ *
+ * @return              The new array, NULL on error. The call will fail either
+ *                      due to a lack of memory, or because the pointer has more
+ *                      than one parent (see talloc_reference()).
+ */
+_PUBLIC_ void *talloc_realloc_zero(const void *ctx,
+				   void *ptr,
+				   #type,
+				   size_t count);
+#else
+#define talloc_realloc_zero(ctx, p, type, count) \
+	(type *)_talloc_realloc_array_zero(ctx, p, sizeof(type), count, #type)
+_PUBLIC_ void *_talloc_realloc_array_zero(const void *ctx,
+					  void *ptr,
+					  size_t el_size,
+					  unsigned count,
+					  const char *name);
+#endif
+
+#ifdef DOXYGEN
+/**
  * @brief Untyped realloc to change the size of a talloc array.
  *
  * The macro is useful when the type is not known so the typesafe

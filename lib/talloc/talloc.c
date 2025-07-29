@@ -2811,6 +2811,39 @@ _PUBLIC_ void *_talloc_realloc_array(const void *ctx, void *ptr, size_t el_size,
 }
 
 /*
+ * realloc an array, checking for integer overflow in the array size
+ * and zero out potential additional memory
+ */
+_PUBLIC_ void *_talloc_realloc_array_zero(const void *ctx,
+					  void *ptr,
+					  size_t el_size,
+					  unsigned count,
+					  const char *name)
+{
+	size_t existing, newsize;
+	void *newptr = NULL;
+
+	if (count >= MAX_TALLOC_SIZE / el_size) {
+		return NULL;
+	}
+
+	existing = talloc_get_size(ptr);
+	newsize = el_size * count;
+
+	newptr = _talloc_realloc(ctx, ptr, newsize, name);
+	if (newptr == NULL) {
+		return NULL;
+	}
+
+	if (newsize > existing) {
+		size_t to_zero = newsize - existing;
+		memset_s(((char *)newptr) + existing, to_zero, 0, to_zero);
+	}
+
+	return newptr;
+}
+
+/*
   a function version of talloc_realloc(), so it can be passed as a function pointer
   to libraries that want a realloc function (a realloc function encapsulates
   all the basic capabilities of an allocation library, which is why this is useful)
