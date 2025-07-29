@@ -373,17 +373,15 @@ static bool smbprofile_persvc_grow(int snum)
 	}
 
 	new_cap = (size_t)snum + 1;
-	new_tbl = talloc_realloc(NULL,
-				 smbprofile_state.persvc.tbl,
-				 struct profile_stats_persvc *,
-				 new_cap);
+	new_tbl = talloc_realloc_zero(NULL,
+				      smbprofile_state.persvc.tbl,
+				      struct profile_stats_persvc *,
+				      new_cap);
 
 	if (new_tbl == NULL) {
 		DBG_ERR("Failed to realloc persvc table for snum %d\n", snum);
 		return false;
 	}
-
-	memset(&new_tbl[cur_cap], 0, (new_cap - cur_cap) * sizeof(*new_tbl));
 
 	smbprofile_state.persvc.tbl = new_tbl;
 	return true;

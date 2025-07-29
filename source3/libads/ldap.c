@@ -2871,12 +2871,14 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 	}
 
 	/* Make sure to NULL terminate the array */
-	spn_array = talloc_realloc(ctx, spn_array, const char *, num_spns + 1);
+	spn_array = talloc_realloc_zero(ctx,
+					spn_array,
+					const char *,
+					num_spns + 1);
 	if (spn_array == NULL) {
 		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto done;
 	}
-	spn_array[num_spns] = NULL;
 
 	controlstr = talloc_asprintf(ctx, "%u", acct_control);
 	if (controlstr == NULL) {

@@ -317,10 +317,10 @@ static bool get_trusted_domains(struct torture_context *torture,
 	while (next_token_talloc(torture, &extra_data, &line, "\n")) {
 		char *p, *lp;
 
-		d = talloc_realloc(torture, d,
-				   struct torture_trust_domain,
-				   dcount + 2);
-		ZERO_STRUCT(d[dcount+1]);
+		d = talloc_realloc_zero(torture,
+					d,
+					struct torture_trust_domain,
+					dcount + 2);
 
 		lp = line;
 		p = strchr(lp, '\\');
@@ -646,8 +646,7 @@ static bool get_user_list(struct torture_context *torture, char ***users)
 	    next_token_talloc(torture, &extra_data, &name, ",");
 	    count++)
 	{
-		u = talloc_realloc(torture, u, char *, count + 2);
-		u[count+1] = NULL;
+		u = talloc_realloc_zero(torture, u, char *, count + 2);
 		u[count] = talloc_move(u, &name);
 	}
 
@@ -707,8 +706,7 @@ static bool get_group_list(struct torture_context *torture,
 	    next_token_talloc(torture, &extra_data, &name, ",");
 	    count++)
 	{
-		g = talloc_realloc(torture, g, char *, count + 2);
-		g[count+1] = NULL;
+		g = talloc_realloc_zero(torture, g, char *, count + 2);
 		g[count] = talloc_move(g, &name);
 	}
 

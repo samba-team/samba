@@ -553,16 +553,13 @@ static bool ad_pack_xattrs(struct vfs_handle_struct *handle,
 
 	oldsize = talloc_get_size(ad->ad_data);
 	if (oldsize < AD_XATTR_MAX_HDR_SIZE) {
-		ad->ad_data = talloc_realloc(ad,
-					     ad->ad_data,
-					     char,
-					     AD_XATTR_MAX_HDR_SIZE);
+		ad->ad_data = talloc_realloc_zero(ad,
+						  ad->ad_data,
+						  char,
+						  AD_XATTR_MAX_HDR_SIZE);
 		if (ad->ad_data == NULL) {
 			return false;
 		}
-		memset(ad->ad_data + oldsize,
-		       0,
-		       AD_XATTR_MAX_HDR_SIZE - oldsize);
 	}
 
 	/*
