@@ -156,6 +156,7 @@ char *netapi_read_file(const char *filename, uint32_t *psize)
 	err = ferror(file);
 	if (err != 0) {
 		free(p);
+		p = NULL;
 		goto fail;
 	}
 
