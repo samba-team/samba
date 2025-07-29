@@ -3667,7 +3667,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
         self.sd_utils.dacl_add_ace(ou_dn, mod)
 
         original_host_name = 'invalid_host_name'
-        original_spn = 'host/{original_host_name}'
+        original_spn = f'host/{original_host_name}'
 
         # Create the account.
         self.ldb_admin.add({
@@ -3688,10 +3688,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
                                 'dNSHostName')
         try:
             self.ldb_user.modify(m)
-        except LdbError as err:
-            num, estr = err.args
-            self.assertEqual(ERR_CONSTRAINT_VIOLATION, num)
-        else:
+        except LdbError:
             self.fail()
 
     def test_modify_dns_host_name_spn_matching_account_name_original(self):
