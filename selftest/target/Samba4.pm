@@ -869,7 +869,7 @@ nogroup:x:65534:nobody
 
 	my $hostname = lc($ctx->{hostname});
 	open(HOSTS, ">>$ctx->{nsswrap_hosts}");
-	if ($hostname eq "localdc") {
+	if ($hostname eq "localdc" || $hostname eq "localvampiredc") {
 		print HOSTS "$ctx->{ipv4} ${hostname}.$ctx->{dnsname} $ctx->{dnsname} ${hostname}\n";
 		print HOSTS "$ctx->{ipv6} ${hostname}.$ctx->{dnsname} $ctx->{dnsname} ${hostname}\n";
 	} else {
