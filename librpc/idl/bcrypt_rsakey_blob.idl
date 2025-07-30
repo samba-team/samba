@@ -21,13 +21,22 @@ interface bcrypt_rsakey_blob
 		/* Currently only handle RSA Public Key blobs */
 		[value(0x31415352), range(0x31415352, 0x31415352)]
 			uint32 magic; /* RSA1 */
-		uint32 bit_length;
+		/*
+		 * In key_credential_links we expect bit_length to be
+		 * 2048, but we accept a wider range in part because
+		 * testing is much easier with small numbers.
+		 */
+		[range(1,65536)]uint32 bit_length;
 		/*
 		 * As of Windows 10 version 1903, public exponents larger
 		 * than (2^64 - 1) are no longer supported.
 		 */
-		[range(0x0,0x8)] uint32 public_exponent_len;
-		uint32 modulus_len;
+		[range(0x1,0x8)] uint32 public_exponent_len;
+		/*
+		 * modulus_len is the key size in bytes, more or less
+		 * bit_length / 8.
+		 */
+		[range(0x1, 0x2001)] uint32 modulus_len;
 		/*
 		 * We're only supporting public keys, so the private
 		 * key prime lengths should be zero
