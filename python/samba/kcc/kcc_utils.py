@@ -29,7 +29,7 @@ from samba.dcerpc import (
     drsuapi,
     misc,
 )
-from samba.samdb import dsdb_dn_guess
+from samba.samdb import dsdb_dn_guess, BinaryDn
 from samba.ndr import ndr_unpack, ndr_pack
 from collections import Counter
 
@@ -746,7 +746,6 @@ class DirectoryServiceAgent(object):
                     # msDS-HasInstantiatedNCs is a BinaryDN, but the
                     # others are plain DNs.
                     dsdn = dsdb_dn_guess(samdb, value)
-                    flags = dsdn.get_binary_integer()
                     dnstr = str(dsdn.dn)
 
                     if dnstr not in tmp_table:
@@ -756,7 +755,15 @@ class DirectoryServiceAgent(object):
                         rep = tmp_table[dnstr]
 
                     if k == "msDS-HasInstantiatedNCs":
-                        rep.set_instantiated_flags(flags)
+                        # msDS-HasInstantiatedNCs should only be DN+Binary
+                        # (MS-ADTS 6.1.1.2.2.1.2.1.1 and 6.1.2.3.1)
+                        # but sometimes we see it as a plain DN.
+                        if isinstance(dsdn, BinaryDn):
+                            flags = dsdn.get_binary_integer()
+                            rep.set_instantiated_flags(flags)
+                        else:
+                            print("msDS-HasInstantiatedNCsis not a BinaryDn '{dsdn}'",
+                                  file=sys.stderr)
                         continue
 
                     rep.identify_by_dsa_attr(samdb, k)
