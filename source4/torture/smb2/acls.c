@@ -2201,12 +2201,16 @@ static bool test_access_based(struct torture_context *tctx,
 	ZERO_STRUCT(fhandle);
 	ZERO_STRUCT(dhandle);
 
-	if (!torture_smb2_con_share(tctx, "hideunread", &tree1)) {
-		torture_result(tctx, TORTURE_FAIL, "(%s) Unable to connect "
-			"to share 'hideunread'\n",
-                       __location__);
-		ret = false;
-		goto done;
+	if (TARGET_IS_WINDOWS(tctx)) {
+		tree1 = tree;
+	} else {
+		if (!torture_smb2_con_share(tctx, "hideunread", &tree1)) {
+			torture_result(tctx, TORTURE_FAIL, "(%s) Unable to connect "
+				"to share 'hideunread'\n",
+	                       __location__);
+			ret = false;
+			goto done;
+		}
 	}
 
 	flags = smb2cli_tcon_flags(tree1->smbXcli);
@@ -2216,7 +2220,8 @@ static bool test_access_based(struct torture_context *tctx,
 
 	torture_comment(tctx, "TESTING ACCESS BASED ENUMERATION\n");
 
-	if ((flags & SMB2_SHAREFLAG_ACCESS_BASED_DIRECTORY_ENUM)==0) {
+	if (((flags & SMB2_SHAREFLAG_ACCESS_BASED_DIRECTORY_ENUM)==0) &&
+	    (!TARGET_IS_WINDOWS(tctx))) {
 		torture_result(tctx, TORTURE_FAIL, "(%s) No access enumeration "
 			"on share 'hideunread'\n",
                        __location__);
@@ -2346,8 +2351,12 @@ done:
 		smb2_tdis(tree1);
 		smb2_logoff(tree1->session);
 	}
-	smb2_tdis(tree);
-	smb2_logoff(tree->session);
+
+	if (tree != tree1) {
+		smb2_tdis(tree);
+		smb2_logoff(tree->session);
+	}
+
 	return ret;
 }
 
