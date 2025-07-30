@@ -28,7 +28,7 @@ import time
 import base64
 import os
 import re
-from typing import Optional, Union
+from typing import Union
 
 from samba import dsdb, dsdb_dns
 from samba.ndr import ndr_unpack, ndr_pack
@@ -1737,17 +1737,9 @@ class BaseDsdbDn:
     def __ge__(self, other):
         return self.__cmp__(other) >= 0
 
-    def get_bytes(self) -> Optional[bytes]:
-        return self.binary
-
     def __str__(self) -> str:
         dnstr = self.dn.extended_str(mode=1)
         return f"{self.prefix}{dnstr}"
-
-    def get_binary_integer(self) -> int:
-        # Overridden in BinaryDn to return the binary value as an integer.
-        # We will remove it from here soon.
-        return 0
 
 
 class PlainDn(BaseDsdbDn):
