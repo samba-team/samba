@@ -254,7 +254,7 @@ static void terror(const char *why)
 	printf("%s\n", why);
 }
 
-static void create_tdb(const char *tdbname)
+static int create_tdb(const char *tdbname)
 {
 	struct tdb_logging_context log_ctx = { NULL, NULL};
 	log_ctx.log_fn = tdb_log;
@@ -267,10 +267,13 @@ static void create_tdb(const char *tdbname)
 			  O_RDWR | O_CREAT | O_TRUNC, 0600, &log_ctx, NULL);
 	if (!tdb) {
 		printf("Could not create %s: %s\n", tdbname, strerror(errno));
+		return -1;
 	}
+
+	return 0;
 }
 
-static void open_tdb(const char *tdbname)
+static int open_tdb(const char *tdbname)
 {
 	struct tdb_logging_context log_ctx = { NULL, NULL };
 	log_ctx.log_fn = tdb_log_open;
@@ -300,16 +303,19 @@ static void open_tdb(const char *tdbname)
 
 	if (!tdb) {
 		printf("Could not open %s: %s\n", tdbname, strerror(errno));
+		return -1;
 	}
+
+	return 0;
 }
 
-static void insert_tdb(char *keyname, size_t keylen, char* data, size_t datalen)
+static int insert_tdb(char *keyname, size_t keylen, char* data, size_t datalen)
 {
 	TDB_DATA key, dbuf;
 
 	if ((keyname == NULL) || (keylen == 0)) {
 		terror("need key");
-		return;
+		return -1;
 	}
 
 	key.dptr = (unsigned char *)keyname;
@@ -319,21 +325,24 @@ static void insert_tdb(char *keyname, size_t keylen, char* data, size_t datalen)
 
 	if (tdb_store(tdb, key, dbuf, TDB_INSERT) != 0) {
 		terror("insert failed");
+		return -1;
 	}
+
+	return 0;
 }
 
-static void store_tdb(char *keyname, size_t keylen, char* data, size_t datalen)
+static int store_tdb(char *keyname, size_t keylen, char* data, size_t datalen)
 {
 	TDB_DATA key, dbuf;
 
 	if ((keyname == NULL) || (keylen == 0)) {
 		terror("need key");
-		return;
+		return -1;
 	}
 
 	if ((data == NULL) || (datalen == 0)) {
 		terror("need data");
-		return;
+		return -1;
 	}
 
 	key.dptr = (unsigned char *)keyname;
@@ -346,7 +355,10 @@ static void store_tdb(char *keyname, size_t keylen, char* data, size_t datalen)
 
 	if (tdb_store(tdb, key, dbuf, TDB_REPLACE) != 0) {
 		terror("store failed");
+		return -1;
 	}
+
+	return 0;
 }
 
 static bool parse_hex(const char *src, size_t srclen, uint8_t *dst)
@@ -369,16 +381,16 @@ static bool parse_hex(const char *src, size_t srclen, uint8_t *dst)
 	return true;
 }
 
-static void store_hex_tdb(char *keystr, size_t keylen,
+static int store_hex_tdb(char *keystr, size_t keylen,
 			  char *datastr, size_t datalen)
 {
 	if ((keystr == NULL) || (keylen == 0)) {
 		terror("need key");
-		return;
+		return -1;
 	}
 	if ((datastr == NULL) || (datalen == 0)) {
 		terror("need data");
-		return;
+		return -1;
 	}
 
 	{
@@ -391,12 +403,12 @@ static void store_hex_tdb(char *keystr, size_t keylen,
 		ok = parse_hex(keystr, keylen, keybuf);
 		if (!ok) {
 			terror("need hex key");
-			return;
+			return -1;
 		}
 		ok = parse_hex(datastr, datalen, databuf);
 		if (!ok) {
 			terror("need hex data");
-			return;
+			return -1;
 		}
 
 		printf("storing key/data:\n");
@@ -405,17 +417,20 @@ static void store_hex_tdb(char *keystr, size_t keylen,
 
 		if (tdb_store(tdb, key, data, TDB_REPLACE) != 0) {
 			terror("store failed");
+			return -1;
 		}
 	}
+
+	return 0;
 }
 
-static void show_tdb(char *keyname, size_t keylen)
+static int show_tdb(char *keyname, size_t keylen)
 {
 	TDB_DATA key, dbuf;
 
 	if ((keyname == NULL) || (keylen == 0)) {
 		terror("need key");
-		return;
+		return -1;
 	}
 
 	key.dptr = (unsigned char *)keyname;
@@ -424,23 +439,23 @@ static void show_tdb(char *keyname, size_t keylen)
 	dbuf = tdb_fetch(tdb, key);
 	if (!dbuf.dptr) {
 	    terror("fetch failed");
-	    return;
+	    return -1;
 	}
 
 	print_rec(tdb, key, dbuf, NULL);
 
 	free( dbuf.dptr );
 
-	return;
+	return 0;
 }
 
-static void delete_tdb(char *keyname, size_t keylen)
+static int delete_tdb(char *keyname, size_t keylen)
 {
 	TDB_DATA key;
 
 	if ((keyname == NULL) || (keylen == 0)) {
 		terror("need key");
-		return;
+		return -1;
 	}
 
 	key.dptr = (unsigned char *)keyname;
@@ -448,22 +463,25 @@ static void delete_tdb(char *keyname, size_t keylen)
 
 	if (tdb_delete(tdb, key) != 0) {
 		terror("delete failed");
+		return -1;
 	}
+
+	return 0;
 }
 
-static void move_rec(char *keyname, size_t keylen, char* tdbname)
+static int move_rec(char *keyname, size_t keylen, char* tdbname)
 {
 	TDB_DATA key, dbuf;
 	TDB_CONTEXT *dst_tdb;
 
 	if ((keyname == NULL) || (keylen == 0)) {
 		terror("need key");
-		return;
+		return -1;
 	}
 
 	if ( !tdbname ) {
 		terror("need destination tdb name");
-		return;
+		return -1;
 	}
 
 	key.dptr = (unsigned char *)keyname;
@@ -472,7 +490,7 @@ static void move_rec(char *keyname, size_t keylen, char* tdbname)
 	dbuf = tdb_fetch(tdb, key);
 	if (!dbuf.dptr) {
 		terror("fetch failed");
-		return;
+		return -1;
 	}
 
 	print_rec(tdb, key, dbuf, NULL);
@@ -480,7 +498,7 @@ static void move_rec(char *keyname, size_t keylen, char* tdbname)
 	dst_tdb = tdb_open(tdbname, 0, 0, O_RDWR, 0600);
 	if ( !dst_tdb ) {
 		terror("unable to open destination tdb");
-		return;
+		return -1;
 	}
 
 	if (tdb_store( dst_tdb, key, dbuf, TDB_REPLACE ) != 0) {
@@ -491,7 +509,7 @@ static void move_rec(char *keyname, size_t keylen, char* tdbname)
 
 	tdb_close( dst_tdb );
 
-	return;
+	return 0;
 }
 
 static int print_rec(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
@@ -527,16 +545,19 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *
 	return 0;
 }
 
-static void info_tdb(void)
+static int info_tdb(void)
 {
 	char *summary = tdb_summary(tdb);
 
 	if (!summary) {
 		printf("Error = %s\n", tdb_errorstr(tdb));
+		return -1;
 	} else {
 		printf("%s", summary);
 		free(summary);
 	}
+
+	return 0;
 }
 
 static void speed_tdb(const char *tlimit)
@@ -627,28 +648,34 @@ static char *tdb_getline(const char *prompt)
 	return p?thisline:NULL;
 }
 
-static void first_record(TDB_CONTEXT *the_tdb, TDB_DATA *pkey)
+static int first_record(TDB_CONTEXT *the_tdb, TDB_DATA *pkey)
 {
 	TDB_DATA dbuf;
 	*pkey = tdb_firstkey(the_tdb);
 
 	dbuf = tdb_fetch(the_tdb, *pkey);
-	if (!dbuf.dptr) terror("fetch failed");
-	else {
+	if (!dbuf.dptr) {
+		terror("fetch failed");
+		return -1;
+	} else {
 		print_rec(the_tdb, *pkey, dbuf, NULL);
+		return 0;
 	}
 }
 
-static void next_record(TDB_CONTEXT *the_tdb, TDB_DATA *pkey)
+static int next_record(TDB_CONTEXT *the_tdb, TDB_DATA *pkey)
 {
 	TDB_DATA dbuf;
 	*pkey = tdb_nextkey(the_tdb, *pkey);
 
 	dbuf = tdb_fetch(the_tdb, *pkey);
-	if (!dbuf.dptr)
+	if (!dbuf.dptr) {
 		terror("fetch failed");
-	else
+		return -1;
+	} else {
 		print_rec(the_tdb, *pkey, dbuf, NULL);
+		return 0;
+	}
 }
 
 static int count(TDB_DATA key, TDB_DATA data, void *private_data)
@@ -657,16 +684,20 @@ static int count(TDB_DATA key, TDB_DATA data, void *private_data)
 	return 0;
 }
 
-static void check_db(TDB_CONTEXT *the_tdb)
+static int check_db(TDB_CONTEXT *the_tdb)
 {
 	int tdbcount = 0;
-	if (!the_tdb)
+	if (!the_tdb) {
 		printf("Error: No database opened!\n");
-	else if (tdb_check(the_tdb, count, &tdbcount) == -1)
+		return -1;
+	} else if (tdb_check(the_tdb, count, &tdbcount) == -1) {
 		printf("Integrity check for the opened database failed.\n");
-	else
+		return -1;
+	} else {
 		printf("Database integrity is OK and has %d records.\n",
 		       tdbcount);
+	}
+	return 0;
 }
 
 static int do_command(void)
@@ -674,6 +705,7 @@ static int do_command(void)
 	COMMAND_TABLE *ctp = cmd_table;
 	enum commands mycmd = CMD_HELP;
 	int cmd_len;
+	int ret;
 
 	if (cmdname != NULL) {
 		if (strlen(cmdname) == 0) {
@@ -693,16 +725,16 @@ static int do_command(void)
 	switch (mycmd) {
 	case CMD_CREATE_TDB:
 		bIterate = 0;
-		create_tdb(arg1);
-		return 0;
+		return create_tdb(arg1);
 	case CMD_OPEN_TDB:
 		bIterate = 0;
-		open_tdb(arg1);
-		return 0;
+		return open_tdb(arg1);
 	case CMD_SYSTEM:
 		/* Shell command */
-		if (system(arg1) == -1) {
+		ret = system(arg1);
+		if (ret != 0) {
 			terror("system() call failed\n");
+			return ret;
 		}
 		return 0;
 	case CMD_QUIT:
@@ -713,75 +745,64 @@ static int do_command(void)
 			bIterate = 0;
 			terror("database not open");
 			help();
-			return 0;
+			return -1;
 		}
 		switch (mycmd) {
 		case CMD_TRANSACTION_START:
 			bIterate = 0;
-			tdb_transaction_start(tdb);
-			return 0;
+			return tdb_transaction_start(tdb);
 		case CMD_TRANSACTION_COMMIT:
 			bIterate = 0;
-			tdb_transaction_commit(tdb);
-			return 0;
+			return tdb_transaction_commit(tdb);
 		case CMD_REPACK:
 			bIterate = 0;
-			tdb_repack(tdb);
-			return 0;
+			return tdb_repack(tdb);
 		case CMD_TRANSACTION_CANCEL:
 			bIterate = 0;
-			tdb_transaction_cancel(tdb);
-			return 0;
+			return tdb_transaction_cancel(tdb);
 		case CMD_ERASE:
 			bIterate = 0;
-			tdb_wipe_all(tdb);
-			return 0;
+			return tdb_wipe_all(tdb);
 		case CMD_DUMP:
 			bIterate = 0;
-			tdb_traverse(tdb, print_rec, NULL);
-			return 0;
+			ret = tdb_traverse(tdb, print_rec, NULL);
+			return (ret == -1) ? ret : 0;
 		case CMD_INSERT:
 			bIterate = 0;
-			insert_tdb(arg1, arg1len,arg2,arg2len);
-			return 0;
+			return insert_tdb(arg1, arg1len,arg2,arg2len);
 		case CMD_MOVE:
 			bIterate = 0;
-			move_rec(arg1,arg1len,arg2);
-			return 0;
+			return move_rec(arg1,arg1len,arg2);
 		case CMD_STORE:
 			bIterate = 0;
-			store_tdb(arg1,arg1len,arg2,arg2len);
-			return 0;
+			return store_tdb(arg1,arg1len,arg2,arg2len);
 		case CMD_STOREHEX:
 			bIterate = 0;
-			store_hex_tdb(arg1,arg1len,arg2,arg2len);
-			return 0;
+			return store_hex_tdb(arg1,arg1len,arg2,arg2len);
 		case CMD_SHOW:
 			bIterate = 0;
-			show_tdb(arg1, arg1len);
-			return 0;
+			return show_tdb(arg1, arg1len);
 		case CMD_KEYS:
-			tdb_traverse(tdb, print_key, NULL);
-			return 0;
+			ret = tdb_traverse(tdb, print_key, NULL);
+			return (ret == -1) ? ret : 0;
 		case CMD_HEXKEYS:
-			tdb_traverse(tdb, print_hexkey, NULL);
-			return 0;
+			ret = tdb_traverse(tdb, print_hexkey, NULL);
+			return (ret == -1) ? ret : 0;
 		case CMD_DELETE:
 			bIterate = 0;
-			delete_tdb(arg1,arg1len);
-			return 0;
+			return delete_tdb(arg1,arg1len);
 		case CMD_LIST_HASH_FREE:
 			tdb_dump_all(tdb);
 			return 0;
 		case CMD_LIST_FREE:
-			tdb_printfreelist(tdb);
-			return 0;
+			return tdb_printfreelist(tdb);
 		case CMD_FREELIST_SIZE: {
 			int size;
 
 			size = tdb_freelist_size(tdb);
 			if (size < 0) {
 				printf("Error getting freelist size.\n");
+				return -1;
 			} else {
 				printf("freelist size: %d\n", size);
 			}
@@ -789,8 +810,7 @@ static int do_command(void)
 			return 0;
 		}
 		case CMD_INFO:
-			info_tdb();
-			return 0;
+			return info_tdb();
 		case CMD_SPEED:
 			speed_tdb(arg1);
 			return 0;
@@ -799,15 +819,13 @@ static int do_command(void)
 			return 0;
 		case CMD_FIRST:
 			bIterate = 1;
-			first_record(tdb, &iterate_kbuf);
-			return 0;
+			return first_record(tdb, &iterate_kbuf);
 		case CMD_NEXT:
 			if (bIterate)
-				next_record(tdb, &iterate_kbuf);
+				return next_record(tdb, &iterate_kbuf);
 			return 0;
 		case CMD_CHECK:
-			check_db(tdb);
-			return 0;
+			return check_db(tdb);
 		case CMD_HELP:
 			help();
 			return 0;
@@ -859,6 +877,7 @@ static char *tdb_convert_string(char *instring, size_t *sizep)
 
 int main(int argc, char *argv[])
 {
+	int ret = 0;
 	cmdname = "";
 	arg1 = NULL;
 	arg1len = 0;
@@ -914,11 +933,14 @@ int main(int argc, char *argv[])
 		cmdname = argv[2];
 		FALL_THROUGH;
 	default:
-		do_command();
+		ret = do_command();
+		if (ret != 0) {
+			ret = 1;
+		}
 		break;
 	}
 
 	if (tdb) tdb_close(tdb);
 
-	return 0;
+	return ret;
 }
