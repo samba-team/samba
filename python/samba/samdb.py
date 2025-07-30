@@ -1899,8 +1899,3 @@ def dsdb_dn_guess(samdb: samba.Ldb,
         return StringDn(samdb, dnstring)
 
     return PlainDn(samdb, dnstring)
-
-
-# as a temporary measure, we let dsdb_Dn continue to work more or less
-# as before.
-dsdb_Dn = dsdb_dn_guess
