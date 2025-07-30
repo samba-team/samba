@@ -1741,6 +1741,11 @@ class BaseDsdbDn:
         dnstr = self.dn.extended_str(mode=1)
         return f"{self.prefix}{dnstr}"
 
+    def get_linearized(self) -> str:
+        """Return the DN as a string without any extended attributes."""
+        dnstr = self.dn.get_linearized()
+        return f"{self.prefix}{dnstr}"
+
 
 class PlainDn(BaseDsdbDn):
     """This does very little, other than providing the sort order (via

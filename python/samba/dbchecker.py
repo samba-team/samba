@@ -1497,7 +1497,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     # otherwise the LDB code will correct it on the way through
                     # (Note: we still want to preserve the DSDB DN prefix in the
                     # case of binary DNs)
-                    bad_dn = dsdb_dn.prefix + dsdb_dn.dn.get_linearized()
+                    bad_dn = dsdb_dn.get_linearized()
                     self.err_dn_string_component_old(obj.dn, attrname, bad_dn,
                                                      dsdb_dn, res[0].dn)
                 continue
