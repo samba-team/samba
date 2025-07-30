@@ -29,7 +29,7 @@ class DsdbDnTests(TestCaseInTempDir):
         sam = samba.Ldb(url=url)
         dn1 = dsdb_Dn(sam, "DC=foo,DC=bar")
         dn2 = dsdb_Dn(sam, "B:8:0000000D:<GUID=b3f0ec29-17f4-452a-b002-963e1909d101>;DC=samba,DC=example,DC=com")
-        self.assertEqual(dn2.binary, "0000000D")
+        self.assertEqual(dn2.binary, b"\x00\x00\x00\x0D")
         self.assertEqual(13, dn2.get_binary_integer())
         os.unlink(url)
 
