@@ -2177,6 +2177,7 @@ static int cmd_mput(void)
 		ret = file_find(ctx, &file_list, ".", p, true);
 		if (ret) {
 			free_file_list(file_list);
+			file_list = NULL;
 			continue;
 		}
 
@@ -2267,12 +2268,19 @@ static int cmd_mput(void)
 					break;
 				}
 			}
-			do_put(rname, lname, false);
+			ret = do_put(rname, lname, false);
+			if (ret != 0) {
+				break;
+			}
 		}
 		free_file_list(file_list);
+		file_list = NULL;
 		SAFE_FREE(quest);
 		SAFE_FREE(lname);
 		SAFE_FREE(rname);
+		if (ret != 0) {
+			return ret;
+		}
 	}
 
 	return 0;
