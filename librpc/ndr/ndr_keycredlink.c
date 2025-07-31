@@ -746,9 +746,9 @@ static enum ndr_err_code pull_DER_RSA_KEY(struct ndr_pull *ndr,
 		goto out;
 	}
 	if (!asn1_end_tag(asn)) { /* PublicKeyInfo */
-		return ndr_pull_error(ndr,
-				      NDR_ERR_UNREAD_BYTES,
-				      "ASN1 element PublicKeyInfo");
+		ret = ndr_pull_error(ndr,
+				     NDR_ERR_UNREAD_BYTES,
+				     "ASN1 element PublicKeyInfo");
 		goto out;
 	}
 
