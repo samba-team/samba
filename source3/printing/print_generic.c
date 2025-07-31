@@ -225,7 +225,7 @@ static int generic_job_submit(int snum, struct printjob *pjob,
 	char *jobname = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 	fstring job_page_count, job_size;
-	print_queue_struct *q;
+	print_queue_struct *q = NULL;
 	print_status_struct status;
 
 	/* we print from the directory path to give the best chance of
@@ -299,7 +299,6 @@ static int generic_job_submit(int snum, struct printjob *pjob,
 				break;
 			}
 		}
-		SAFE_FREE(q);
 		ret = 0;
 	}
 	if (pjob->sysjob == -1) {
@@ -313,6 +312,7 @@ static int generic_job_submit(int snum, struct printjob *pjob,
 	if (chdir(current_directory) == -1) {
 		smb_panic("chdir failed in generic_job_submit");
 	}
+	SAFE_FREE(q);
 	TALLOC_FREE(current_directory);
         return ret;
 }
