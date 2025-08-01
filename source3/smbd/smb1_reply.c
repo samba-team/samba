@@ -3812,7 +3812,7 @@ void error_to_writebrawerr(struct smb_request *req)
 
 	reply_smb1_outbuf(req, 1, 0);
 
-	memcpy(req->outbuf, old_outbuf, smb_size);
+	memmove(req->outbuf, old_outbuf, smb_size);
 	TALLOC_FREE(old_outbuf);
 }
 
