@@ -362,7 +362,7 @@ static bool create_special_id(TALLOC_CTX *mem_ctx,
 static bool map_smb4_to_nfs4_id(TALLOC_CTX *mem_ctx,
 				struct nfs4acl_config *config,
 				nfsace4 *nace,
-				SMB_ACE4PROP_T *sace)
+				const SMB_ACE4PROP_T *sace)
 {
 	const char *nfs4_id = NULL;
 	const char *name = NULL;
