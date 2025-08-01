@@ -178,8 +178,6 @@ bool wcache_tdc_fetch_list( struct winbindd_tdc_domain **domains, size_t *num_do
 bool wcache_tdc_add_domain( struct winbindd_domain *domain );
 struct winbindd_tdc_domain * wcache_tdc_fetch_domain( TALLOC_CTX *ctx, const char *name );
 void wcache_tdc_clear( void );
-bool wcache_store_seqnum(const char *domain_name, uint32_t seqnum,
-			 time_t last_seq_check);
 bool wcache_fetch_ndr(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		      uint32_t opnum, const DATA_BLOB *req, DATA_BLOB *resp);
 void wcache_store_ndr(struct winbindd_domain *domain, uint32_t opnum,
