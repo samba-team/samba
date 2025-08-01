@@ -1279,6 +1279,10 @@ bool set_sticky_write_time_fsp(struct files_struct *fsp, struct timespec mtime)
 {
 	bool ok;
 
+	if (fsp->fsp_flags.posix_open) {
+		return true;
+	}
+
 	if (is_omit_timespec(&mtime)) {
 		return true;
 	}
