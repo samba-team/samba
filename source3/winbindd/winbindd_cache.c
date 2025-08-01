@@ -505,8 +505,8 @@ static NTSTATUS fetch_cache_seqnum( struct winbindd_domain *domain, time_t now )
 	return NT_STATUS_OK;
 }
 
-bool wcache_store_seqnum(const char *domain_name, uint32_t seqnum,
-			 time_t last_seq_check)
+static bool wcache_store_seqnum(const char *domain_name, uint32_t seqnum,
+				time_t last_seq_check)
 {
 	size_t len = strlen(domain_name);
 	char keystr[len+8];
