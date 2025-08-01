@@ -1277,6 +1277,9 @@ done:
 
 void set_sticky_write_time_fsp(struct files_struct *fsp, struct timespec mtime)
 {
+	if (fsp->fsp_flags.posix_open) {
+		return;
+	}
 	if (is_omit_timespec(&mtime)) {
 		return;
 	}
