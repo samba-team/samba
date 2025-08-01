@@ -16,13 +16,8 @@
 #
 
 import os
-import time
 import ldb
 from samba.tests.samba_tool.base import SambaToolCmdTest
-from samba import (
-        nttime2unix,
-        dsdb
-        )
 
 
 class GroupCmdTestCase(SambaToolCmdTest):
