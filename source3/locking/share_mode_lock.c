@@ -2221,6 +2221,7 @@ done:
 }
 
 static bool share_mode_for_one_entry(
+	struct share_mode_data *d,
 	bool (*fn)(struct share_mode_entry *e,
 		   bool *modified,
 		   void *private_data),
@@ -2278,6 +2279,10 @@ static bool share_mode_for_one_entry(
 				SHARE_MODE_ENTRY_SIZE);
 		}
 		*num_share_modes -= 1;
+		if (e.flags & SHARE_ENTRY_FLAG_PERSISTENT_OPEN) {
+			SMB_ASSERT(d->num_persistent > 0);
+			d->num_persistent--;
+		}
 		*writeback = true;
 		return stop;
 	}
@@ -2363,6 +2368,7 @@ bool share_mode_forall_entries(
 	i = 0;
 	while (i<num_share_entries) {
 		stop = share_mode_for_one_entry(
+			d,
 			fn,
 			private_data,
 			&i,
