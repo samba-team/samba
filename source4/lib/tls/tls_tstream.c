@@ -911,13 +911,17 @@ bool tstream_tls_params_enabled(struct tstream_tls_params *tls_params)
 
 bool tstream_tls_params_quic_enabled(struct tstream_tls_params *tls_params)
 {
-	bool quic = false;
 #ifdef HAVE_LIBQUIC
+
 	struct tstream_tls_params_internal *tlsp = tls_params->internal;
 
-	quic = tlsp->quic;
+	return tlsp->quic;
+
+#else /* HAVE_LIBQUIC */
+
+	return false;
+
 #endif /* HAVE_LIBQUIC */
-	return quic;
 }
 
 enum tls_verify_peer_state tstream_tls_params_verify_peer(
