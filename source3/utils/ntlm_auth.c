@@ -1355,7 +1355,11 @@ static NTSTATUS ntlm_auth_prepare_gensec_server(TALLOC_CTX *mem_ctx,
 
 	cli_credentials_set_conf(server_credentials, lp_ctx);
 
-	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC || lp_security() == SEC_ADS || USE_KERBEROS_KEYTAB) {
+	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC ||
+	    lp_server_role() == ROLE_IPA_DC ||
+	    lp_security() == SEC_ADS ||
+	    USE_KERBEROS_KEYTAB)
+	{
 		cli_credentials_set_kerberos_state(server_credentials,
 						   CRED_USE_KERBEROS_DESIRED,
 						   CRED_SPECIFIED);
