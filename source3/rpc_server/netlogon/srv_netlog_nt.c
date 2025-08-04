@@ -2907,7 +2907,10 @@ WERROR _netr_DsRGetForestTrustInformation(struct pipes_struct *p,
 		return WERR_INVALID_FLAGS;
 	}
 
-	if ((r->in.flags & DS_GFTI_UPDATE_TDO) && (lp_server_role() != ROLE_DOMAIN_PDC)) {
+	if ((r->in.flags & DS_GFTI_UPDATE_TDO) &&
+	    (lp_server_role() != ROLE_DOMAIN_PDC) &&
+	    (lp_server_role() != ROLE_IPA_DC))
+	{
 		p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 		return WERR_NERR_NOTPRIMARY;
 	}
