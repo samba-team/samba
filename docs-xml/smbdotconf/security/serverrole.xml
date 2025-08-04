@@ -78,7 +78,7 @@
     url="http://wiki.samba.org/index.php/Samba4/HOWTO">Samba4
     HOWTO</ulink></para>
 
-    <para><anchor id="IPA-DC"/><emphasis>SERVER ROLE = IPA DOMAIN CONTROLLER</emphasis></para>
+    <para><anchor id="IPA-DC"/><emphasis>SERVER ROLE = IPA PRIMARY DOMAIN CONTROLLER</emphasis></para>
 
     <para>This mode of operation runs Samba in a hybrid mode for IPA
     domain controller, providing forest trust to Active Directory.
