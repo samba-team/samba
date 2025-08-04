@@ -90,6 +90,8 @@ NTSTATUS tstream_tls_params_server_lpcfg(TALLOC_CTX *mem_ctx,
 
 bool tstream_tls_params_enabled(struct tstream_tls_params *params);
 bool tstream_tls_params_quic_enabled(struct tstream_tls_params *params);
+enum tls_verify_peer_state tstream_tls_params_verify_peer(
+	struct tstream_tls_params *tls_params);
 const char *tstream_tls_params_peer_name(
 	const struct tstream_tls_params *params);
 

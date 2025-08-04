@@ -920,6 +920,22 @@ bool tstream_tls_params_quic_enabled(struct tstream_tls_params *tls_params)
 	return quic;
 }
 
+enum tls_verify_peer_state tstream_tls_params_verify_peer(
+	struct tstream_tls_params *tls_params)
+{
+#ifdef HAVE_LIBQUIC
+
+	struct tstream_tls_params_internal *tlsp = tls_params->internal;
+
+	return tlsp->verify_peer;
+
+#else /* HAVE_LIBQUIC */
+
+	return TLS_VERIFY_PEER_NO_CHECK;
+
+#endif /* HAVE_LIBQUIC */
+}
+
 const char *tstream_tls_params_peer_name(
 	const struct tstream_tls_params *params)
 {
