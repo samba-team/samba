@@ -51,6 +51,7 @@ struct smbXcli_transport {
 	struct smb_transport transport;
 	int sock_fd;
 	struct tstream_context *tstream;
+	enum tls_verify_peer_state verify_peer;
 	struct samba_sockaddr laddr;
 	struct samba_sockaddr raddr;
 
@@ -423,11 +424,13 @@ static int smbXcli_transport_tstream_monitor_recv(struct tevent_req *req)
 	return sys_errno;
 }
 
-struct smbXcli_transport *smbXcli_transport_tstream(TALLOC_CTX *mem_ctx,
-						    struct tstream_context **pstream,
-						    const struct samba_sockaddr *laddr,
-						    const struct samba_sockaddr *raddr,
-						    const struct smb_transport *tp)
+struct smbXcli_transport *smbXcli_transport_tstream(
+	TALLOC_CTX *mem_ctx,
+	struct tstream_context **pstream,
+	enum tls_verify_peer_state verify_peer,
+	const struct samba_sockaddr *laddr,
+	const struct samba_sockaddr *raddr,
+	const struct smb_transport *tp)
 {
 	struct smbXcli_transport *xtp = NULL;
 
@@ -438,6 +441,7 @@ struct smbXcli_transport *smbXcli_transport_tstream(TALLOC_CTX *mem_ctx,
 
 	xtp->transport = *tp;
 	xtp->sock_fd = -1;
+	xtp->verify_peer = verify_peer;
 
 	xtp->laddr = *laddr;
 	xtp->raddr = *raddr;
@@ -508,9 +512,11 @@ static int smbXcli_transport_bsd_monitor_recv(struct tevent_req *req)
 	return wait_for_error_recv(req);
 }
 
-struct smbXcli_transport *smbXcli_transport_bsd(TALLOC_CTX *mem_ctx,
-						int *_fd,
-						const struct smb_transport *tp)
+struct smbXcli_transport *smbXcli_transport_bsd(
+	TALLOC_CTX *mem_ctx,
+	int *_fd,
+	enum tls_verify_peer_state verify_peer,
+	const struct smb_transport *tp)
 {
 	struct smbXcli_transport *xtp = NULL;
 	int fd = *_fd;
@@ -523,6 +529,7 @@ struct smbXcli_transport *smbXcli_transport_bsd(TALLOC_CTX *mem_ctx,
 
 	xtp->transport = *tp;
 	xtp->sock_fd = fd;
+	xtp->verify_peer = verify_peer;
 
 	xtp->laddr.sa_socklen = sizeof(xtp->laddr.u);
 	ret = getsockname(fd, &xtp->laddr.u.sa, &xtp->laddr.sa_socklen);
@@ -557,9 +564,10 @@ struct smbXcli_transport *smbXcli_transport_bsd(TALLOC_CTX *mem_ctx,
 }
 
 struct smbXcli_transport *smbXcli_transport_bsd_tstream(
-						TALLOC_CTX *mem_ctx,
-						int *fd,
-						const struct smb_transport *tp)
+	TALLOC_CTX *mem_ctx,
+	int *fd,
+	enum tls_verify_peer_state verify_peer,
+	const struct smb_transport *tp)
 {
 	struct samba_sockaddr laddr = {
 		.sa_socklen = sizeof(struct sockaddr_storage),
@@ -593,7 +601,8 @@ struct smbXcli_transport *smbXcli_transport_bsd_tstream(
 	*fd = -1;
 	tstream_bsd_optimize_readv(tstream, true);
 
-	xtp = smbXcli_transport_tstream(mem_ctx, &tstream, &laddr, &raddr, tp);
+	xtp = smbXcli_transport_tstream(
+		mem_ctx, &tstream, verify_peer, &laddr, &raddr, tp);
 	TALLOC_FREE(tstream);
 	return xtp;
 }

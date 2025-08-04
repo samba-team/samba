@@ -403,9 +403,10 @@ struct smbsock_connect_state {
 	struct smbsock_connect_substate substates[SMB_TRANSPORTS_MAX_TRANSPORTS];
 	struct smbXcli_transport *transport;
 	struct smbXcli_transport *(*create_bsd_transport)(
-						TALLOC_CTX *mem_ctx,
-						int *fd,
-						const struct smb_transport *tp);
+		TALLOC_CTX *mem_ctx,
+		int *fd,
+		enum tls_verify_peer_state verify_peer,
+		const struct smb_transport *tp);
 };
 
 static void smbsock_connect_cleanup(struct tevent_req *req,
@@ -821,9 +822,11 @@ static void smbsock_connect_nbt_connected(struct tevent_req *subreq)
 		 * will free all other subreqs
 		 */
 		set_socket_options(s->sockfd, lp_socket_options());
-		state->transport = state->create_bsd_transport(state,
-							       &s->sockfd,
-							       &s->transport);
+		state->transport = state->create_bsd_transport(
+			state,
+			&s->sockfd,
+			TLS_VERIFY_PEER_NO_CHECK,
+			&s->transport);
 		if (tevent_req_nomem(state->transport, req)) {
 			return;
 		}
@@ -883,9 +886,11 @@ static void smbsock_connect_tcp_connected(struct tevent_req *subreq)
 		 * will free all other subreqs
 		 */
 		set_socket_options(s->sockfd, lp_socket_options());
-		state->transport = state->create_bsd_transport(state,
-							       &s->sockfd,
-							       &s->transport);
+		state->transport = state->create_bsd_transport(
+			state,
+			&s->sockfd,
+			TLS_VERIFY_PEER_NO_CHECK,
+			&s->transport);
 		if (tevent_req_nomem(state->transport, req)) {
 			return;
 		}
@@ -1048,9 +1053,11 @@ static void smbsock_connect_quic_ready(struct tevent_req *subreq)
 		 * smbsock_connect_cleanup()
 		 * will free all other subreqs
 		 */
-		state->transport = state->create_bsd_transport(state,
-							       &s->sockfd,
-							       &s->transport);
+		state->transport = state->create_bsd_transport(
+			state,
+			&s->sockfd,
+			tstream_tls_params_verify_peer(state->quic_tlsp),
+			&s->transport);
 		if (tevent_req_nomem(state->transport, req)) {
 			return;
 		}
@@ -1171,11 +1178,13 @@ static void smbsock_connect_ngtcp2_ready(struct tevent_req *subreq)
 		 * smbsock_connect_cleanup()
 		 * will free all other subreqs
 		 */
-		state->transport = smbXcli_transport_tstream(state,
-							     &tstream,
-							     &s->laddr,
-							     &s->raddr,
-							     &s->transport);
+		state->transport = smbXcli_transport_tstream(
+			state,
+			&tstream,
+			tstream_tls_params_verify_peer(state->quic_tlsp),
+			&s->laddr,
+			&s->raddr,
+			&s->transport);
 		if (tevent_req_nomem(state->transport, req)) {
 			return;
 		}

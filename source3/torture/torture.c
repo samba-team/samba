@@ -15135,7 +15135,10 @@ static bool run_smb1_truncated_sesssetup(int dummy)
 		return false;
 	}
 
-	xtp = smbXcli_transport_bsd(talloc_tos(), &fd, &tp);
+	xtp = smbXcli_transport_bsd(talloc_tos(),
+				    &fd,
+				    TLS_VERIFY_PEER_NO_CHECK,
+				    &tp);
 	if (xtp == NULL) {
 		d_fprintf(stderr, "smbXcli_transport_bsd failed\n");
 		return false;
@@ -15335,7 +15338,10 @@ static bool run_smb1_negotiate_exit(int dummy)
 		return false;
 	}
 
-	xtp = smbXcli_transport_bsd(talloc_tos(), &fd, &tp);
+	xtp = smbXcli_transport_bsd(talloc_tos(),
+				    &fd,
+				    TLS_VERIFY_PEER_NO_CHECK,
+				    &tp);
 	if (xtp == NULL) {
 		d_fprintf(stderr, "smbXcli_transport_bsd failed\n");
 		return false;
@@ -15457,7 +15463,10 @@ static bool run_ign_bad_negprot(int dummy)
 		return false;
 	}
 
-	xtp = smbXcli_transport_bsd(talloc_tos(), &fd, &tp);
+	xtp = smbXcli_transport_bsd(talloc_tos(),
+				    &fd,
+				    TLS_VERIFY_PEER_NO_CHECK,
+				    &tp);
 	if (xtp == NULL) {
 		d_fprintf(stderr, "smbXcli_transport_bsd failed\n");
 		return false;

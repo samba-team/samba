@@ -29,6 +29,7 @@
 #include "libcli/util/ntstatus.h"
 #include "lib/util/time.h"
 #include "lib/util/data_blob.h"
+#include "source4/lib/tls/tls.h"
 
 struct smbXcli_transport;
 struct smbXcli_conn;
@@ -44,20 +45,25 @@ struct smb311_capabilities;
 struct samba_sockaddr;
 struct tstream_context;
 
-struct smbXcli_transport *smbXcli_transport_tstream(TALLOC_CTX *mem_ctx,
-						    struct tstream_context **pstream,
-						    const struct samba_sockaddr *laddr,
-						    const struct samba_sockaddr *raddr,
-						    const struct smb_transport *tp);
+struct smbXcli_transport *smbXcli_transport_tstream(
+	TALLOC_CTX *mem_ctx,
+	struct tstream_context **pstream,
+	enum tls_verify_peer_state verify_peer,
+	const struct samba_sockaddr *laddr,
+	const struct samba_sockaddr *raddr,
+	const struct smb_transport *tp);
 
-struct smbXcli_transport *smbXcli_transport_bsd(TALLOC_CTX *mem_ctx,
-						int *_fd,
-						const struct smb_transport *tp);
+struct smbXcli_transport *smbXcli_transport_bsd(
+	TALLOC_CTX *mem_ctx,
+	int *_fd,
+	enum tls_verify_peer_state verify_peer,
+	const struct smb_transport *tp);
 
 struct smbXcli_transport *smbXcli_transport_bsd_tstream(
-						TALLOC_CTX *mem_ctx,
-						int *fd,
-						const struct smb_transport *tp);
+	TALLOC_CTX *mem_ctx,
+	int *fd,
+	enum tls_verify_peer_state verify_peer,
+	const struct smb_transport *tp);
 
 struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 					 struct smbXcli_transport **ptransport,
