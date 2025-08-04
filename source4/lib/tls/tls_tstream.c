@@ -2607,7 +2607,7 @@ static int tstream_ngtcp2_acked_stream_data_offset_cb(ngtcp2_conn *conn,
 		  "offset[%"PRIu64"] pushed[%"PRIu64"][%zd]\n",
 		  si->stream_id, si->writev.pushed_offset,
 		  si->writev.pushed ? si->writev.pushed->offset : 0,
-		  si->writev.pushed ? si->writev.pushed->length : -1);
+		  si->writev.pushed ? (ssize_t)si->writev.pushed->length : -1);
 
 	return 0;
 }
