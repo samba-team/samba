@@ -1314,7 +1314,6 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	const struct smb_transports *ts = &parent->transports;
 	uint8_t ti;
 	int num_interfaces = iface_count();
-	int i;
 	unsigned dns_port = 0;
 
 #ifdef HAVE_ATEXIT
@@ -1362,6 +1361,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 		   told to only bind to those interfaces. Create a
 		   socket per interface and bind to only these.
 		*/
+		int i;
 
 		/* Now open a listen socket for each of the
 		   interfaces. */
@@ -1393,6 +1393,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 #endif
 			"0.0.0.0",
 		};
+		size_t i;
 
 		for (i = 0; i < ARRAY_SIZE(sock_addrs); i++) {
 			const char *sock_tok = sock_addrs[i];
