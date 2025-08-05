@@ -33,6 +33,18 @@
 #include "system/filesys.h"
 #include "system/passwd.h"
 
+static bool str_is_ascii(const char *s) {
+	if (s != NULL) {
+		for (; s[0] != '\0'; s++) {
+			if (!isascii(s[0])) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 /**
  * Create a new credentials structure
  * @param mem_ctx TALLOC_CTX parent for credentials structure
@@ -435,6 +447,14 @@ _PUBLIC_ bool cli_credentials_set_principal(struct cli_credentials *cred,
 		/* If `val = NULL` is passed, principal is reset */
 		cred->principal = NULL;
 		if (val != NULL) {
+			char *p = strchr(val, '@');
+			if (p != NULL) {
+				/* For realm names, only ASCII is allowed */
+				if (!str_is_ascii(p + 1)) {
+					return false;
+				}
+			}
+
 			cred->principal = talloc_strdup(cred, val);
 			if (cred->principal == NULL) {
 				return false;
@@ -951,6 +971,11 @@ _PUBLIC_ bool cli_credentials_set_realm(struct cli_credentials *cred,
 		/* If `val = NULL` is passed, realm is reset */
 		cred->realm = NULL;
 		if (val != NULL) {
+			/* For realm names, only ASCII is allowed */
+			if (!str_is_ascii(val)) {
+				return false;
+			}
+
 			cred->realm = strupper_talloc(cred, val);
 			if (cred->realm == NULL) {
 				return false;
