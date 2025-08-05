@@ -24,7 +24,7 @@ testit "flush" "$NET" "cache" "flush" || failed=$(expr $failed + 1)
 testit "lookuprids1" "$WBINFO" "-R" "512,12345" || failed=$(expr $failed + 1)
 
 opnum=$($PYTHON -c'from samba.dcerpc.winbind import wbint_LookupRids; print(wbint_LookupRids.opnum())')
-key=$("$TDBDUMP" "$cache" | grep ^key.*NDR.*/"$opnum"/ | cut -d\" -f2)
+key=$("$TDBDUMP" "$cache" | awk -F'"' -v opnum="${opnum}" '/key.*NDR/ { regex = "NDR/[^/]+/" opnum "/.*$"; if (match($2, regex)) print substr($2, RSTART, RLENGTH) }')
 
 testit "delete" "$TDBTOOL" "$cache" delete "$key"
 testit "lookuprids2" "$WBINFO" "-R" "512,12345" || failed=$(expr $failed + 1)
