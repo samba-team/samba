@@ -1,4 +1,8 @@
-#!/bin/sh
+#!/bin/bash
+
+# Disabling history expansion temporarily
+# This is needed, as the tdb key can include e.g. !6
+set +H
 
 WBINFO="$VALGRIND ${WBINFO:-$BINDIR/wbinfo}"
 samba_tdbtool=tdbtool
@@ -26,7 +30,7 @@ testit "lookuprids1" "$WBINFO" "-R" "512,12345" || failed=$(expr $failed + 1)
 opnum=$($PYTHON -c'from samba.dcerpc.winbind import wbint_LookupRids; print(wbint_LookupRids.opnum())')
 key=$("$TDBDUMP" "$cache" | awk -F'"' -v opnum="${opnum}" '/key.*NDR/ { regex = "NDR/[^/]+/" opnum "/.*$"; if (match($2, regex)) print substr($2, RSTART, RLENGTH) }')
 
-testit "delete" "$TDBTOOL" "$cache" delete "$key"
+testit "delete key" "$TDBTOOL" "$cache" delete "$key" || failed=$((failed + 1))
 testit "lookuprids2" "$WBINFO" "-R" "512,12345" || failed=$(expr $failed + 1)
 
 testok $0 $failed
