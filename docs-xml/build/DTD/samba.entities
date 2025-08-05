@@ -764,10 +764,19 @@
 	<term>--use-kerberos=desired|required|off</term>
 	<listitem>
 		<para>
-			 This parameter determines whether Samba client tools
-			 will try to authenticate using Kerberos. For Kerberos
-			 authentication you need to use dns names instead of IP
-			 addresses when connecting to a service.
+			This parameter determines whether Samba client tools
+			will try to authenticate using Kerberos. For Kerberos
+			authentication you should use DNS names instead of IP
+			addresses when connecting to a service.
+
+			By default Samba client tools will try to use the
+			default Kerberos credential cache (ccache).
+			In case the ccache does not exist or -U|--user option
+			was specified, clients will ask to enter a password and
+			will obtain a Kerberos ticket (kinit) for you.
+
+			If you want to use an alternative Kerberos credentical
+			cache, use the --use-krb5-ccache option.
 		</para>
 
 		<para>
@@ -789,7 +798,7 @@
 		</para>
 
 		<para>
-			This will set --use-kerberos=required too.
+			This will enforce --use-kerberos=required.
 		</para>
 	</listitem>
 </varlistentry>
