@@ -53,6 +53,10 @@ NTSTATUS smb2srv_open_lookup(struct smbXsrv_connection *conn,
 			     uint64_t volatile_id,
 			     NTTIME now,
 			     struct smbXsrv_open **_open);
+NTSTATUS smbXsrv_open_global_lookup(TALLOC_CTX *mem_ctx,
+				    uint32_t open_global_id,
+				    const struct smbXsrv_open_global0 **global);
+
 NTSTATUS smbXsrv_open_purge_replay_cache(struct smbXsrv_client *client,
 					 const struct GUID *create_guid);
 NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,

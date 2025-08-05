@@ -315,8 +315,7 @@ static void smbXsrv_open_global_lookup_fn(struct db_record *rec,
 							 &state->global);
 }
 
-static NTSTATUS smbXsrv_open_global_lookup(
-			struct smbXsrv_open_table *table,
+NTSTATUS smbXsrv_open_global_lookup(
 			TALLOC_CTX *mem_ctx,
 			uint32_t open_global_id,
 			const struct smbXsrv_open_global0 **_global)
@@ -328,7 +327,7 @@ static NTSTATUS smbXsrv_open_global_lookup(
 	};
 	NTSTATUS status;
 
-	status = dbwrap_do_locked(table->global.db_ctx,
+	status = dbwrap_do_locked(smbXsrv_open_global_db_ctx,
 				  key,
 				  smbXsrv_open_global_lookup_fn,
 				  &state);
@@ -1210,8 +1209,7 @@ NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
 	}
 
 	TALLOC_FREE(db_rec);
-	status = smbXsrv_open_global_lookup(table,
-					    frame,
+	status = smbXsrv_open_global_lookup(frame,
 					    open_global_id,
 					    &global);
 	if (!NT_STATUS_IS_OK(status)) {
