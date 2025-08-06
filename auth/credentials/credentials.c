@@ -432,12 +432,15 @@ _PUBLIC_ bool cli_credentials_set_principal(struct cli_credentials *cred,
 				   enum credentials_obtained obtained)
 {
 	if (obtained >= cred->principal_obtained) {
-		cred->principal = talloc_strdup(cred, val);
-		if (cred->principal == NULL) {
-			return false;
+		/* If `val = NULL` is passed, principal is reset */
+		cred->principal = NULL;
+		if (val != NULL) {
+			cred->principal = talloc_strdup(cred, val);
+			if (cred->principal == NULL) {
+				return false;
+			}
 		}
 		cred->principal_obtained = obtained;
-
 		cli_credentials_invalidate_ccache(cred, cred->principal_obtained);
 		return true;
 	}
@@ -1553,7 +1556,9 @@ _PUBLIC_ void cli_credentials_get_ntlm_username_domain(struct cli_credentials *c
 					      const char **username,
 					      const char **domain)
 {
-	if (cred->principal_obtained >= cred->username_obtained) {
+	if (!cli_credentials_is_anonymous(cred) &&
+	    cred->principal_obtained >= cred->username_obtained)
+	{
 		*domain = talloc_strdup(mem_ctx, "");
 		*username = cli_credentials_get_principal(cred, mem_ctx);
 	} else {
