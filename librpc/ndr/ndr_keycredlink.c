@@ -635,7 +635,6 @@ static enum ndr_err_code read_integer(TALLOC_CTX *mem_ctx,
  * @param[in,out] ndr       ndr pull context
  * @param[in]     ndr_flags
  * @param[out]    kmi       the KeyMaterialInternal structure to populate
- *			    kmi needs to be a talloc context.
  *
  * @return NDR_ERR_SUCCESS if successful
  *         The contents of kmi are undefined on an error
@@ -664,11 +663,13 @@ static enum ndr_err_code read_public_key(struct ndr_pull *ndr,
 	}
 
 	/* modulus INTEGER  */
-	NDR_CHECK(read_integer(kmi, ndr, asn, "MODULUS", &kmi->modulus));
+	NDR_CHECK(read_integer(
+		ndr->current_mem_ctx, ndr, asn, "MODULUS", &kmi->modulus));
 	kmi->bit_size = (kmi->modulus.length * 8) - unused_bits;
 
 	/* public exponent INTEGER */
-	NDR_CHECK(read_integer(kmi, ndr, asn, "EXPONENT", &kmi->exponent));
+	NDR_CHECK(read_integer(
+		ndr->current_mem_ctx, ndr, asn, "EXPONENT", &kmi->exponent));
 
 	if (!asn1_end_tag(asn)) { /* RSAPublicKey */
 		return ndr_pull_error(ndr,
@@ -690,7 +691,6 @@ static enum ndr_err_code read_public_key(struct ndr_pull *ndr,
  * @param[in,out] ndr ndr pull context
  * @param[in]     ndr_flags
  * @param[out]    kmi the KeyMaterialInternal structure to populate
- *                    kmi needs to be a talloc context.
  * @param[in]     size number of bytes to process from the ndr context
  *
  * @return NDR_ERR_SUCCESS if successful
@@ -766,7 +766,6 @@ out:
  * @param[in,out] ndr       ndr pull context
  * @param[in]     ndr_flags
  * @param[out]    kmi       the KeyMaterialInternal structure to populate
- *                              kmi needs to be a talloc context.
  *
  * @return NDR_ERR_SUCCESS if successful
  *         The contents of kmi are undefined on an error
@@ -799,7 +798,7 @@ static enum ndr_err_code pull_TPM20_RSAKEY_BLOB(struct ndr_pull *ndr,
 		goto out_km;
 	}
 	kmi->bit_size = km->public_key.rsa_detail.keyBits;
-	kmi->modulus = data_blob_talloc(kmi,
+	kmi->modulus = data_blob_talloc(ndr->current_mem_ctx,
 					km->public_key.rsa.buffer,
 					km->public_key.rsa.size);
 	if (kmi->modulus.data == NULL) {
@@ -810,7 +809,7 @@ static enum ndr_err_code pull_TPM20_RSAKEY_BLOB(struct ndr_pull *ndr,
 		goto out_km;
 	}
 
-	kmi->exponent = data_blob_talloc(kmi,
+	kmi->exponent = data_blob_talloc(ndr->current_mem_ctx,
 					 km->public_key.rsa_detail.exponent,
 					 TPM_RSA_EXPONENT_SIZE);
 	if (kmi->exponent.data == NULL) {
@@ -837,7 +836,6 @@ out:
  * @param[in,out] ndr       ndr pull context
  * @param[in]     ndr_flags
  * @param[out]    kmi       the KeyMaterialInternal structure to populate
- *                              kmi needs to be a talloc context.
  *
  * @return NDR_ERR_SUCCESS if successful
  *         The contents of kmi are undefined on an error
@@ -873,7 +871,7 @@ static enum ndr_err_code pull_BCRYPT_RSAPUBLIC_BLOB(
 
 	kmi->bit_size = km->bit_length;
 
-	kmi->modulus = data_blob_talloc(kmi,
+	kmi->modulus = data_blob_talloc(ndr->current_mem_ctx,
 					km->modulus,
 					km->modulus_len);
 	if (kmi->modulus.data == NULL) {
@@ -884,7 +882,7 @@ static enum ndr_err_code pull_BCRYPT_RSAPUBLIC_BLOB(
 		goto out_km;
 	}
 
-	kmi->exponent = data_blob_talloc(kmi,
+	kmi->exponent = data_blob_talloc(ndr->current_mem_ctx,
 					 km->public_exponent,
 					 km->public_exponent_len);
 	if (kmi->exponent.data == NULL) {
@@ -912,7 +910,6 @@ out:
  * @param[in,out] ndr       ndr pull context
  * @param[in]     ndr_flags
  * @param[out]    kmi       the KeyMaterialInternal structure to populate
- *                              kmi needs to be a talloc context.
  *
  * @return NDR_ERR_SUCCESS if successful
  *         The contents of kmi are undefined on an error
@@ -978,7 +975,6 @@ enum ndr_err_code ndr_pull_KeyMaterialInternal(struct ndr_pull *ndr,
  * @param[in,out] ndr       ndr push context
  * @param[in]     ndr_flags
  * @param[out]    kmi       the KeyMaterialInternal structure to populate
- *                              kmi needs to be a talloc context.
  *
  * @note This is not currently implemented and will always return
  *       NDR_ERR_VALIDATE
