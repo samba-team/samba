@@ -1305,6 +1305,11 @@ static krb5_error_code unpack_key_credential_link_blob(
 		TALLOC_FREE(*pub_key);
 		goto out;
 	}
+	/*
+	 * Steal modulus and exponent data from the ndr context onto the pub_key
+	 */
+	talloc_steal(*pub_key, (*pub_key)->modulus.data);
+	talloc_steal(*pub_key, (*pub_key)->exponent.data);
 
 out:
 	TALLOC_FREE(tmp_ctx);
