@@ -24,10 +24,8 @@
 
 #include "lib/replace/replace.h"
 
-#include "librpc/gen_ndr/ndr_keycredlink.h"
-#include "gen_ndr/keycredlink.h"
+#include "gen_ndr/ndr_keycredlink.h"
 #include "lib/util/data_blob.h"
-#include "lib/util/debug.h"
 #include "libndr.h"
 #include "librpc/gen_ndr/ndr_bcrypt_rsakey_blob.h"
 #include "librpc/gen_ndr/ndr_tpm20_rsakey_blob.h"
