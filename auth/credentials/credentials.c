@@ -933,7 +933,14 @@ _PUBLIC_ bool cli_credentials_set_realm(struct cli_credentials *cred,
 			       enum credentials_obtained obtained)
 {
 	if (obtained >= cred->realm_obtained) {
-		cred->realm = strupper_talloc(cred, val);
+		/* If `val = NULL` is passed, realm is reset */
+		cred->realm = NULL;
+		if (val != NULL) {
+			cred->realm = strupper_talloc(cred, val);
+			if (cred->realm == NULL) {
+				return false;
+			}
+		}
 		cred->realm_obtained = obtained;
 		cli_credentials_invalidate_ccache(cred, cred->realm_obtained);
 		return true;
