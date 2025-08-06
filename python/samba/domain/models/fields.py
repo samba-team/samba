@@ -27,6 +27,7 @@ from enum import IntEnum, IntFlag
 from xml.etree import ElementTree
 
 from ldb import Dn, MessageElement, binary_encode, string_to_time, timestring
+from samba.key_credential_link import KeyCredentialLinkDn
 from samba.dcerpc import security
 from samba.dcerpc.misc import GUID
 from samba.ndr import ndr_pack, ndr_unpack
@@ -550,3 +551,44 @@ class PossibleClaimValuesField(Field):
 
         # Back to str as that is what MessageElement needs.
         return MessageElement(out.getvalue().decode("utf-16"), flags, self.name)
+
+
+class BaseDsdbDnField(Field):
+    """Generic DN + Binary field or DN + String field.
+
+    These have this form:
+
+    B:<hex length>:<binary hex>:<ordinary DN>
+    S:<utf8 length>:<utf8 string>:<ordinary DN>
+
+    <hex length> is the length of <binary hex> (in decimal), i.e.
+    twice the length of the encoded value.
+
+    Subclasses should set dsdb_dn to a BaseDsdbDn subtype.
+    """
+    dsdb_dn = NotImplemented
+
+    def from_db_value(self, samdb, value):
+        """Convert MessageElement to a Dn object or list of Dn objects."""
+        if value is None:
+            return
+        elif isinstance(value, self.dsdb_dn):
+            return value
+        elif len(value) > 1 or self.many:
+            return [self.dsdb_dn(samdb, str(item)) for item in value]
+        else:
+            return self.dsdb_dn(samdb, str(value))
+
+    def to_db_value(self, samdb, value, flags):
+        """Convert Dn object or list of Dn objects into a MessageElement."""
+        if value is None:
+            return
+        elif isinstance(value, list):
+            return MessageElement(
+                [str(item) for item in value], flags, self.name)
+        else:
+            return MessageElement(str(value), flags, self.name)
+
+
+class KeyCredentialLinkDnField(BaseDsdbDnField):
+    dsdb_dn = KeyCredentialLinkDn

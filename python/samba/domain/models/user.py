@@ -27,6 +27,7 @@ from samba.dsdb import DS_GUID_USERS_CONTAINER
 
 from .exceptions import NotFound
 from .fields import DnField, EnumField, IntegerField, NtTimeField, StringField
+from .fields import KeyCredentialLinkDnField
 from .group import Group
 from .org import OrganizationalPerson
 from .types import AccountType, UserAccountControl
@@ -41,6 +42,8 @@ class User(OrganizationalPerson):
     bad_pwd_count = IntegerField("badPwdCount", readonly=True)
     code_page = IntegerField("codePage")
     display_name = StringField("displayName")
+    key_credential_link = KeyCredentialLinkDnField("msDS-KeyCredentialLink",
+                                                   many=True)
     last_logoff = NtTimeField("lastLogoff", readonly=True)
     last_logon = NtTimeField("lastLogon", readonly=True)
     logon_count = IntegerField("logonCount", readonly=True)
