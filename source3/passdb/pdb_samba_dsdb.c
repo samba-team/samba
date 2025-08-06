@@ -768,7 +768,7 @@ static NTSTATUS pdb_samba_dsdb_create_user(struct pdb_methods *m,
 {
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_samba_dsdb_state);
-	struct dom_sid *sid;
+	struct dom_sid *sid = NULL;
 	struct ldb_dn *dn;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
@@ -1582,7 +1582,7 @@ static NTSTATUS pdb_samba_dsdb_create_alias(struct pdb_methods *m,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_samba_dsdb_state);
-	struct dom_sid *sid;
+	struct dom_sid *sid = NULL;
 
 	struct ldb_dn *dn;
 	NTSTATUS status;
