@@ -379,9 +379,31 @@ _PUBLIC_ char *cli_credentials_get_principal_and_obtained(struct cli_credentials
 
 	if (cred->principal_obtained == CRED_CALLBACK &&
 	    !cred->callback_running) {
+		const char *princ = NULL;
+
 	    	cred->callback_running = true;
-		cred->principal = cred->principal_cb(cred);
+		princ = cred->principal_cb(cred);
 	    	cred->callback_running = false;
+
+		cred->principal = NULL;
+		if (princ != NULL) {
+			char *p = NULL;
+
+			cred->principal = talloc_strdup(cred, princ);
+			if (cred->principal == NULL) {
+				return NULL;
+			}
+
+			p = strchr(cred->principal, '@');
+			if (p != NULL) {
+				p += 1;
+
+				for (; p[0] != '\0'; p++) {
+					*p = toupper(p[0]);
+				}
+			}
+		}
+
 		if (cred->principal_obtained == CRED_CALLBACK) {
 			cred->principal_obtained = CRED_CALLBACK_RESULT;
 			cli_credentials_invalidate_ccache(cred, cred->principal_obtained);
@@ -458,6 +480,15 @@ _PUBLIC_ bool cli_credentials_set_principal(struct cli_credentials *cred,
 			cred->principal = talloc_strdup(cred, val);
 			if (cred->principal == NULL) {
 				return false;
+			}
+
+			p = strchr(cred->principal, '@');
+			if (p != NULL) {
+				p += 1;
+
+				for (; p[0] != '\0'; p++) {
+					*p = toupper(p[0]);
+				}
 			}
 		}
 		cred->principal_obtained = obtained;
@@ -1077,8 +1108,6 @@ _PUBLIC_ void cli_credentials_parse_string(struct cli_credentials *credentials, 
 	}
 
 	if ((p = strchr_m(uname,'@'))) {
-		char *x = NULL;
-
 		/*
 		 * We also need to set username and domain
 		 * in order to undo the effect of
@@ -1086,11 +1115,6 @@ _PUBLIC_ void cli_credentials_parse_string(struct cli_credentials *credentials, 
 		 */
 		cli_credentials_set_username(credentials, uname, obtained);
 		cli_credentials_set_domain(credentials, "", obtained);
-
-		/* Make sure the realm is uppercase */
-		for (x = p + 1; x[0] != '\0'; x++) {
-			*x = toupper_m(*x);
-		}
 
 		cli_credentials_set_principal(credentials, uname, obtained);
 		*p = 0;
