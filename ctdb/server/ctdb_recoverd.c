@@ -1902,6 +1902,7 @@ static void cluster_lock_election(struct ctdb_recoverd *rec)
 	 * attempt to retake it.  This provides stability.
 	 */
 	if (cluster_lock_held(rec)) {
+		rec->leader = rec->pnn;
 		goto done;
 	}
 
