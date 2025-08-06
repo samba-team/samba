@@ -461,9 +461,24 @@ _PUBLIC_ char *cli_credentials_get_principal(struct cli_credentials *cred, TALLO
 	return cli_credentials_get_principal_and_obtained(cred, mem_ctx, &obtained);
 }
 
+/**
+ * @brief Set the principal for the credentials context.
+ *
+ * The realm of the principal will be checked if it is ASCII only and upper
+ * cased if it isn't yet.
+ *
+ * @param cred The credential context.
+ *
+ * @param val  The principal to set or NULL to reset.
+ *
+ * @param obtained            This way the described principal was specified.
+ *
+ * @return true on success, false if the realm is not ASCII or the allocation
+ * failed.
+ */
 _PUBLIC_ bool cli_credentials_set_principal(struct cli_credentials *cred,
-				   const char *val,
-				   enum credentials_obtained obtained)
+					    const char *val,
+					    enum credentials_obtained obtained)
 {
 	if (obtained >= cred->principal_obtained) {
 		/* If `val = NULL` is passed, principal is reset */
@@ -991,12 +1006,22 @@ _PUBLIC_ const char *cli_credentials_get_realm(struct cli_credentials *cred)
 }
 
 /**
- * Set the realm for this credentials context, and force it to
- * uppercase for the sanity of our local kerberos libraries
+ * @brief Set the realm for this credentials context.
+ *
+ * The realm be checked if it is ASCII only and upper cased if it isn't yet.
+ *
+ * @param cred The credential context.
+ *
+ * @param val  The realm to set or NULL to reset.
+ *
+ * @param obtained            This way the described realm was specified.
+ *
+ * @return true on success, false if the realm is not ASCII or the allocation
+ * failed.
  */
 _PUBLIC_ bool cli_credentials_set_realm(struct cli_credentials *cred,
-			       const char *val,
-			       enum credentials_obtained obtained)
+					const char *val,
+					enum credentials_obtained obtained)
 {
 	if (obtained >= cred->realm_obtained) {
 		/* If `val = NULL` is passed, realm is reset */
