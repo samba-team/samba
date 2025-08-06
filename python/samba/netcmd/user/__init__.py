@@ -27,6 +27,7 @@ from .disable import cmd_user_disable
 from .edit import cmd_user_edit
 from .enable import cmd_user_enable
 from .getgroups import cmd_user_getgroups
+from .keytrust import cmd_user_keytrust
 from .list import cmd_user_list
 from .move import cmd_user_move
 from .password import cmd_user_password
@@ -52,6 +53,7 @@ class cmd_user(SuperCommand):
     subcommands["delete"] = cmd_user_delete()
     subcommands["disable"] = cmd_user_disable()
     subcommands["enable"] = cmd_user_enable()
+    subcommands["keytrust"] = cmd_user_keytrust()
     subcommands["list"] = cmd_user_list()
     subcommands["setexpiry"] = cmd_user_setexpiry()
     subcommands["password"] = cmd_user_password()

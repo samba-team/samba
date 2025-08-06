@@ -1194,6 +1194,7 @@ planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.processes")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.user")
 planpythontestsuite("ad_dc_default", "samba.tests.samba_tool.user_auth_policy")
 planpythontestsuite("ad_dc_default", "samba.tests.samba_tool.user_auth_silo")
+planpythontestsuite("ad_dc_default", "samba.tests.samba_tool.user_keytrust")
 for env in ["ad_dc_default:local", "ad_dc_no_ntlm:local"]:
     planpythontestsuite(env, "samba.tests.samba_tool.user_wdigest")
 for env, nt_hash in [("ad_dc:local", True),
