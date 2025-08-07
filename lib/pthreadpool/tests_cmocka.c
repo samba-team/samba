@@ -19,6 +19,7 @@
 
 #include <errno.h>
 #include <pthread.h>
+#include <stdint.h>
 #include <setjmp.h>
 #include <stdlib.h>
 #include <string.h>
