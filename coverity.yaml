@@ -12,7 +12,8 @@ capture:
     clean-command: make clean
 
 analyze:
-  model-file: coverity/user_models.xmldb
+  # Uncomment this line if you run locally and created a modelling db
+  # model-file: coverity/user_models.xmldb
   checkers:
     c-family-security: true
     concurrency: false
