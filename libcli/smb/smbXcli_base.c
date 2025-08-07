@@ -5334,6 +5334,7 @@ static size_t smbXcli_padding_helper(uint32_t offset, size_t n)
 
 static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_state *state)
 {
+	struct smbXcli_conn *conn = state->conn;
 	size_t i;
 	uint8_t *buf;
 	uint16_t dialect_count = 0;
@@ -5343,11 +5344,11 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 		bool ok;
 		uint8_t val[2];
 
-		if (smb2cli_prots[i].proto < state->conn->min_protocol) {
+		if (smb2cli_prots[i].proto < conn->min_protocol) {
 			continue;
 		}
 
-		if (smb2cli_prots[i].proto > state->conn->max_protocol) {
+		if (smb2cli_prots[i].proto > conn->max_protocol) {
 			continue;
 		}
 
@@ -5364,27 +5365,27 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 	buf = state->smb2.fixed;
 	SSVAL(buf, 0, 36);
 	SSVAL(buf, 2, dialect_count);
-	SSVAL(buf, 4, state->conn->smb2.client.security_mode);
+	SSVAL(buf, 4, conn->smb2.client.security_mode);
 	SSVAL(buf, 6, 0);	/* Reserved */
-	if (state->conn->max_protocol >= PROTOCOL_SMB3_00) {
-		SIVAL(buf, 8, state->conn->smb2.client.capabilities);
+	if (conn->max_protocol >= PROTOCOL_SMB3_00) {
+		SIVAL(buf, 8, conn->smb2.client.capabilities);
 	} else {
 		SIVAL(buf, 8, 0); 	/* Capabilities */
 	}
-	if (state->conn->max_protocol >= PROTOCOL_SMB2_10) {
+	if (conn->max_protocol >= PROTOCOL_SMB2_10) {
 		struct GUID_ndr_buf guid_buf = { .buf = {0}, };
 
-		GUID_to_ndr_buf(&state->conn->smb2.client.guid, &guid_buf);
+		GUID_to_ndr_buf(&conn->smb2.client.guid, &guid_buf);
 		memcpy(buf+12, guid_buf.buf, 16); /* ClientGuid */
 	} else {
 		memset(buf+12, 0, 16);	/* ClientGuid */
 	}
 
-	if (state->conn->max_protocol >= PROTOCOL_SMB3_11) {
+	if (conn->max_protocol >= PROTOCOL_SMB3_11) {
 		const struct smb3_signing_capabilities *client_sign_algos =
-			&state->conn->smb2.client.smb3_capabilities.signing;
+			&conn->smb2.client.smb3_capabilities.signing;
 		const struct smb3_encryption_capabilities *client_ciphers =
-			&state->conn->smb2.client.smb3_capabilities.encryption;
+			&conn->smb2.client.smb3_capabilities.encryption;
 		NTSTATUS status;
 		struct smb2_negotiate_contexts c = { .num_contexts = 0, };
 		uint8_t *netname_utf16 = NULL;
@@ -5445,10 +5446,13 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 			}
 		}
 
-		ok = convert_string_talloc(state, CH_UNIX, CH_UTF16,
-					   state->conn->remote_name,
-					   strlen(state->conn->remote_name),
-					   &netname_utf16, &netname_utf16_len);
+		ok = convert_string_talloc(state,
+					   CH_UNIX,
+					   CH_UTF16,
+					   conn->remote_name,
+					   strlen(conn->remote_name),
+					   &netname_utf16,
+					   &netname_utf16_len);
 		if (!ok) {
 			return NULL;
 		}
@@ -5505,13 +5509,19 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 		SBVAL(buf, 28, 0);	/* Reserved/ClientStartTime */
 	}
 
-	return smb2cli_req_send(state, state->ev,
-				state->conn, SMB2_OP_NEGPROT,
-				0, 0, /* flags */
+	return smb2cli_req_send(state,
+				state->ev,
+				conn,
+				SMB2_OP_NEGPROT,
+				0, /* additional_flags */
+				0, /* clear_flags */
 				state->timeout_msec,
-				NULL, NULL, /* tcon, session */
-				state->smb2.fixed, sizeof(state->smb2.fixed),
-				dyn.data, dyn.length,
+				NULL, /* tcon */
+				NULL, /* session */
+				state->smb2.fixed,
+				sizeof(state->smb2.fixed),
+				dyn.data,
+				dyn.length,
 				UINT16_MAX); /* max_dyn_len */
 }
 
