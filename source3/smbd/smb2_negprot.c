@@ -1132,7 +1132,7 @@ NTSTATUS smb2_multi_protocol_reply_negprot(struct smb_request *req)
 	bool choice_set = false;
 	int protocol;
 	const char *p;
-	int num_cliprotos;
+	size_t num_cliprotos;
 	char **cliprotos;
 	size_t i;
 	size_t converted_size;
