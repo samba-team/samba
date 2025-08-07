@@ -4063,6 +4063,15 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	} else {
 		if (flags & O_TRUNC) {
 			info = FILE_WAS_OVERWRITTEN;
+			/*
+			 * We did not truncate the file yet, we're doing that
+			 * explicitly with SMB_VFS_FTRUNCATE() below under the
+			 * sharemode glock. For correct handling of RH leases in
+			 * the presence of byterange locks, the leases code
+			 * needs the "correct" filesize which should be 0 at
+			 * this place if we did the O_TRUNC at open() time.
+			 */
+			fsp->fsp_name->st.st_ex_size = 0;
 		} else {
 			info = FILE_WAS_OPENED;
 		}
