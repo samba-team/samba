@@ -936,6 +936,11 @@ enum tls_verify_peer_state tstream_tls_params_verify_peer(
 #endif /* HAVE_LIBQUIC */
 }
 
+bool tstream_tls_verify_peer_trusted(enum tls_verify_peer_state verify_peer)
+{
+	return (verify_peer >= TLS_VERIFY_PEER_CA_AND_NAME);
+}
+
 const char *tstream_tls_params_peer_name(
 	const struct tstream_tls_params *params)
 {
