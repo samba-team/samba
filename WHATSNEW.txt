@@ -1,12 +1,12 @@
 Release Announcements
 =====================
 
-This is the first release candidate release of Samba 4.23.  This is *not*
+This is the first pre candidate release of Samba 4.24.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.23 will be the next version of the Samba suite.
+Samba 4.24 will be the next version of the Samba suite.
 
 
 UPGRADING
@@ -15,26 +15,6 @@ UPGRADING
 
 NEW FEATURES/CHANGES
 ====================
-
-Enable SMB3 Unix Extensions by default
---------------------------------------
-todo
-
-Add support for SMB3 over QUIC
-------------------------------
-todo
-
-Modern write time update logic
-------------------------------
-todo
-
-Initial version of smb_prometheus_endpoint
-------------------------------------------
-todo
-
-samba-tool improvements
------------------------
-todo
 
 
 REMOVED FEATURES
@@ -46,15 +26,11 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
-  smbd profiling share                    New             no
-  client smb transports                   New             tcp, nbt
-  server smb transports                   New             tcp, nbt
-  winbind varlink service                 New             no
 
 KNOWN ISSUES
 ============
 
-https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.23#Release_blocking_bugs
+https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.24#Release_blocking_bugs
 
 
 #######################################
