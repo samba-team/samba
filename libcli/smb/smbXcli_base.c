@@ -164,6 +164,7 @@ struct smbXcli_conn {
 			uint16_t sign_algo;
 			uint16_t cipher;
 			bool smb311_posix;
+			bool transport_trusted;
 		} server;
 
 		uint64_t mid;
@@ -5395,6 +5396,7 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 			&conn->smb2.client.smb3_capabilities.signing;
 		const struct smb3_encryption_capabilities *client_ciphers =
 			&conn->smb2.client.smb3_capabilities.encryption;
+		enum tls_verify_peer_state verify_peer;
 		NTSTATUS status;
 		struct smb2_negotiate_contexts c = { .num_contexts = 0, };
 		uint8_t *netname_utf16 = NULL;
@@ -5450,6 +5452,26 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 
 			status = smb2_negotiate_context_add(
 				state, &c, SMB2_SIGNING_CAPABILITIES, p, ofs);
+			if (!NT_STATUS_IS_OK(status)) {
+				return NULL;
+			}
+		}
+
+		verify_peer = conn->transport->verify_peer;
+
+		if (tstream_tls_verify_peer_trusted(verify_peer)) {
+			uint8_t cap_buf[sizeof(uint32_t)];
+
+			PUSH_LE_U32(cap_buf,
+				    0,
+				    SMB2_ACCEPT_TRANSPORT_LEVEL_SECURITY);
+
+			status = smb2_negotiate_context_add(
+				state,
+				&c,
+				SMB2_TRANSPORT_CAPABILITIES,
+				cap_buf,
+				sizeof(cap_buf));
 			if (!NT_STATUS_IS_OK(status)) {
 				return NULL;
 			}
@@ -5566,6 +5588,7 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	struct smb2_negotiate_context *sign_algo = NULL;
 	struct smb2_negotiate_context *cipher = NULL;
 	struct smb2_negotiate_context *posix = NULL;
+	struct smb2_negotiate_context *transport_caps = NULL;
 	struct iovec sent_iov[3] = {{0}, {0}, {0}};
 	static const struct smb2cli_req_expected_response expected[] = {
 	{
@@ -5931,6 +5954,23 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 		}
 
 		conn->smb2.server.cipher = cipher_selected;
+	}
+
+	transport_caps = smb2_negotiate_context_find(
+		state->out_ctx, SMB2_TRANSPORT_CAPABILITIES);
+	if (transport_caps != NULL) {
+		uint32_t caps;
+
+		if (transport_caps->data.length != sizeof(uint32_t)) {
+			tevent_req_nterror(req,
+					   NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		caps = PULL_LE_U32(transport_caps->data.data, 0);
+
+		conn->smb2.server.transport_trusted =
+			(caps & SMB2_ACCEPT_TRANSPORT_LEVEL_SECURITY) != 0;
 	}
 
 	posix = smb2_negotiate_context_find(
