@@ -16,6 +16,26 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+Enable SMB3 Unix Extensions by default
+--------------------------------------
+todo
+
+Add support for SMB3 over QUIC
+------------------------------
+todo
+
+Modern write time update logic
+------------------------------
+todo
+
+Initial version of smb_prometheus_endpoint
+------------------------------------------
+todo
+
+samba-tool improvements
+-----------------------
+todo
+
 
 REMOVED FEATURES
 ================
@@ -26,6 +46,10 @@ smb.conf changes
 
   Parameter Name                          Description     Default
   --------------                          -----------     -------
+  smbd profiling share                    New             no
+  client smb transports                   New             tcp, nbt
+  server smb transports                   New             tcp, nbt
+  winbind varlink service                 New             no
 
 KNOWN ISSUES
 ============
