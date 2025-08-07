@@ -912,9 +912,20 @@ _PUBLIC_ const char *cli_credentials_get_realm(struct cli_credentials *cred)
 
 	if (cred->realm_obtained == CRED_CALLBACK &&
 	    !cred->callback_running) {
+		const char *realm = NULL;
+
 	    	cred->callback_running = true;
-		cred->realm = cred->realm_cb(cred);
+		realm = cred->realm_cb(cred);
 	    	cred->callback_running = false;
+
+		cred->realm = NULL;
+		if (realm != NULL) {
+			cred->realm = strupper_talloc(cred, realm);
+			if (cred->realm == NULL) {
+				return NULL;
+			}
+		}
+
 		if (cred->realm_obtained == CRED_CALLBACK) {
 			cred->realm_obtained = CRED_CALLBACK_RESULT;
 			cli_credentials_invalidate_ccache(cred, cred->realm_obtained);
