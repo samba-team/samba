@@ -36,6 +36,7 @@
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #include "../../../third_party/cmocka/cmocka.h"
 
