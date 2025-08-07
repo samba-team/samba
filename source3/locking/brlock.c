@@ -2002,11 +2002,24 @@ void brl_set_modified(struct byte_range_lock *br_lck, bool modified)
 bool file_has_brlocks(files_struct *fsp)
 {
 	struct byte_range_lock *br_lck = NULL;
+	uint i, num_locks;
 
 	br_lck = brl_get_locks_readonly(fsp);
 	if (br_lck == NULL) {
 		return false;
 	}
 
-	return (brl_num_locks(br_lck) > 0);
+	num_locks = brl_num_locks(br_lck);
+	if (num_locks == 0) {
+		return false;
+	}
+
+	for (i = 0; i < num_locks; i++) {
+		struct lock_struct *l = &br_lck->lock_data[i];
+
+		if (l->start < fsp->fsp_name->st.st_ex_size) {
+			return true;
+		}
+	}
+	return false;
 }
